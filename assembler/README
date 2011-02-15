@@ -1,0 +1,36 @@
+ASSEMBLER
+15 Feb 2011
+
+De novo sequence assembler for short mate paired reads (70+ bp).
+
+=== INSTALLATION ===
+
+With a GNU environment (g++, make):
+
+> make
+
+=== USAGE ===
+
+ERROR CORRECTION:
+
+> ./assember-ec [-i `indir`] [-o `outdir`]
+
+Inputs mate paired reads from `indir` (default "data"), corrects errors etc.
+Outputs corrected mate paired reads to `outdir` (default "data-ec").
+
+ASSEMBLY:
+
+> ./assembler [-i `indir`] [-o `outfile`] [-s]
+
+Inputs mate paired reads from `indir` (default "data-ec"), builds de Bruijn graph, simplifies it etc..
+Outputs final de Bruijn graph to `outfile` (default "assembly.out").
+
+If -s key presented then outputs linear sequence of contigs (scaffold), but not the graph.
+
+=== CODE STYLE ===
+
+I'm using Google C++ Style Guide: http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml .
+
+=== P.S. ===
+
+It's good idea to make ./assembler-sf (scaffolder) as separate utility program.
