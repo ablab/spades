@@ -10,10 +10,15 @@ int main(int argc, char *argv[]) {
 	
 	std::cerr << "Hello, I'm assembler!" << std::endl;
 	
-	//std::tuple<long long,long long,long long> p = std::make_tuple(1LL,2LL,3LL);
-	//std::cerr << sizeof(p) << std::endl;
-	std::list<int>::iterator li;
-	std::cerr << sizeof(li) << std::endl;
+	// TODO: parse reads
+	
+	// TODO: build graph
+	
+	// TODO: simplity graph
+	
+	// TODO: scaffold
+	
+	// TODO: output graph / contigs
 
 	return 0;
 }
