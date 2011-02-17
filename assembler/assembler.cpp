@@ -1,24 +1,24 @@
-#include <cstdio>
 #include <cassert>
 #include <iostream>
 #include <list>
 #include <vector>
-#include "graph.hpp"
-#include "read.hpp"
+#include "parser.hpp"
+
+using namespace std;
+
+pair<string,string> filenames = make_pair("./data/s_6_1.fastq.gz", "./data/s_6_2.fastq.gz");
 
 int main(int argc, char *argv[]) {
   
-  std::cerr << "Hello, I am assembler!" << std::endl;
+	std::cerr << "Hello, I am assembler!" << std::endl;
   
-  // TODO: parse reads
-  
-  // TODO: build graph
-  
-  // TODO: simplity graph
-  
-  // TODO: scaffold
-  
-  // TODO: output graph / contigs
-
-  return 0;
+	FASTQParser* fqp = new FASTQParser();
+	fqp->open(filenames.first, filenames.second);
+	while (!fqp->eof()) {
+		MatePair mp = fqp->read();
+		cout <<  mp.id << endl << mp.seq1 << endl << mp.seq2 << endl;
+	}
+	fqp->close();
+	
+	return 0;
 }

@@ -1,14 +1,14 @@
 CC=g++
 CFLAGS=-c -Wall -pedantic -Wno-long-long
-LDFLAGS=
+LDFLAGS=-lz
 
-SOURCES=assembler.cpp
+SOURCES=assembler.cpp parser.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=assembler
 
-SOURCES-EC=assembler-ec.cpp
-OBJECTS-EC=$(SOURCES-EC:.cpp=.o)
-EXECUTABLE-EC=assembler-ec
+#SOURCES-EC=assembler-ec.cpp
+#OBJECTS-EC=$(SOURCES-EC:.cpp=.o)
+#EXECUTABLE-EC=assembler-ec
 
 all: $(SOURCES) $(EXECUTABLE) $(SOURCES-EC) $(EXECUTABLE-EC)
 	rm -rf *.o
