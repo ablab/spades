@@ -10,7 +10,7 @@ OBJECTS=$(addprefix $(BUILD_DIR)/,$(SOURCES:.cpp=.o))
 EXECUTABLE=assembler
 
 all: $(FILES) $(EXECUTABLE)
-	rm -rf *.o
+#	rm -rf $(BUILD_DIR)/*.o
 	
 $(EXECUTABLE): $(OBJECTS) 
 	$(CC) $(LDFLAGS) $(OBJECTS) -o $(BUILD_DIR)/$@
@@ -18,9 +18,6 @@ $(EXECUTABLE): $(OBJECTS)
 $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cpp 
 	$(CC) -c $(CFLAGS) $< -o $@
 
-#.cpp.o: 
-#	$(CC) $(CFLAGS) $(SOURCE_DIR)/$< -o $(BUILD_DIR)/$@
-	
 clean:
-	rm -rf *.o $(EXECUTABLE)
+	rm -rf $(BUID_DIR)/*
 
