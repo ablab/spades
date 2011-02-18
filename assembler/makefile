@@ -15,12 +15,15 @@ all: $(FILES) $(EXECUTABLE)
 $(EXECUTABLE): $(OBJECTS) 
 	$(CC) $(LDFLAGS) $(OBJECTS) -o $(BUILD_DIR)/$@
 
-$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cpp $(BUILD_DIR) 
+$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cpp $(BUILD_DIR)/.d 
 	$(CC) -c $(CFLAGS) $< -o $@
 
-$(BUILD_DIR):
+$(BUILD_DIR)/.d:
 	mkdir -p $@
+	touch $@
 
 clean:
 	rm -rf $(BUID_DIR)/*
+
+.PRECIOUS: $(BUILD_DIR)/.d
 
