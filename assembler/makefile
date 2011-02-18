@@ -15,8 +15,11 @@ all: $(FILES) $(EXECUTABLE)
 $(EXECUTABLE): $(OBJECTS) 
 	$(CC) $(LDFLAGS) $(OBJECTS) -o $(BUILD_DIR)/$@
 
-$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cpp 
+$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cpp $(BUILD_DIR) 
 	$(CC) -c $(CFLAGS) $< -o $@
+
+$(BUILD_DIR):
+	mkdir -p $@
 
 clean:
 	rm -rf $(BUID_DIR)/*
