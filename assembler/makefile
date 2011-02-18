@@ -2,7 +2,7 @@ CC=g++
 CFLAGS=-c -Wall -pedantic -Wno-long-long
 LDFLAGS=-lz
 
-SOURCES=assembler.cpp parser.cpp
+SOURCES=src/assembler.cpp src/parser.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=assembler
 
