@@ -8,20 +8,24 @@
 #ifndef CONDENSED_GRAPH_H_
 #define CONDENSED_GRAPH_H_
 
-class Nucl {
+enum Nucl {
 
 };
 
-class nucl_iterator {
-
+class NuclIterator {
+	int nuclCount;
+	int currCharPos;
+	int currNuclCount;
+public:
+	void next
 };
 
 class Nucls {
 	int nuclCount;
 	char* nucls;
 public:
-	nucl_iterator iter(bool direction);
-	nucl_iterator iter(bool direction, int offset);
+	NuclIterator iter(bool direction);
+	NuclIterator iter(bool direction, int offset);
 };
 
 class Vertex {
@@ -32,11 +36,11 @@ class Vertex {
 	Arc* arcs;
 public:
 	int getCoverage();
-	void getArcCount();
+	int getArcCount();
 	void getArcBounds(Arc* start, Arc* end);
 	Arc& getArc(Nucl& nucl);
-	nucl_iterator nuclIter();
-	nucl_iterator nuclChainIter();
+	NuclIterator nuclIter();
+	NuclIterator nucKOffsetIter();
 	Vertex* complement();
 };
 
