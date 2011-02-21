@@ -4,6 +4,7 @@
 #include <vector>
 #include <ctime>
 #include "parser.hpp"
+#include "condensed_graph.hpp"
 
 using namespace std;
 
