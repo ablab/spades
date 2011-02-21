@@ -21,8 +21,10 @@ public:
 class MatePair {
 public:
 	MatePair(const std::string &s1, const std::string &s2, const int id_);
-	const int id; // consecutive number from input file :)
-	const Read seq1, seq2;
+	MatePair(const MatePair &mp);
+	int id; // consecutive number from input file :)
+private:
+	Read seq1, seq2;
 };
 
 class FASTQParser {

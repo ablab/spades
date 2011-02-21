@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-c -Wall -pedantic -Wno-long-long
+CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long
 LDFLAGS=-lz
 
 SOURCE_DIR=src
