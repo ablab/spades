@@ -21,14 +21,12 @@ int main(int argc, char *argv[]) {
 		MatePair mp = fqp->read(); // is it copy? :)
 		if (mp.id != -1) { // have 'N' in reads
 			mps.push_back(mp); // it's copy! :)
-			//cout <<  mp.id << endl; // << mp.seq1.str() << endl <<  mp.seq2.str() << endl;
+			cout <<  mp.id << endl << mp.seq1.str() << endl <<  mp.seq2.str() << endl;
 		}
 	}
 	cout << mps.back().id << endl;
 	cout << mps.size() << endl;
 	cout << "seconds: " << (time(NULL) - now) << endl;
-	//cout << "memory: " << sizeof(mps) << endl;
 	fqp->close();
-	
 	return 0;
 }

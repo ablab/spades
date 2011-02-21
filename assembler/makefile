@@ -4,7 +4,7 @@ LDFLAGS=-lz
 
 SOURCE_DIR=src
 BUILD_DIR=build
-SOURCES=parser.cpp assembler.cpp
+SOURCES=parser.cpp seq.cpp assembler.cpp
 FILES=$(addprefix $(SOURCE_DIR)/,$(SOURCES))
 OBJECTS=$(addprefix $(BUILD_DIR)/,$(SOURCES:.cpp=.o))
 EXECUTABLE=assembler
