@@ -16,7 +16,7 @@ template <int size> // max number of nucleotides
 class Seq {
 public:
 	Seq(const std::string &s);
-	char operator[] (const int &index) const;
+	char operator[] (const int index) const;
 	std::string str() const;
 private:
 	char _bytes[(size >> 2) + ((size & 3) != 0)]; // little-endian
@@ -25,12 +25,12 @@ private:
 //template <>
 //class Seq<0> {};
 
-class SeqVarLen { // runtime length sequence (slow!!!)
+class Sequence { // runtime length sequence (slow!!!)
 public:
-	SeqVarLen(const std::string &s);
-	~SeqVarLen();
+	Sequence(const std::string &s);
+	~Sequence();
 	char operator[](int index) const;
-	SeqVarLen& operator!() const;
+	Sequence& operator!() const;
 //	SeqVarLen operator+ (const SeqVarLen &svl1, const SeqVarLen &svl2) const;
 	std::string str() const;
 	int len() const;
@@ -38,7 +38,7 @@ public:
 	Seq<4>* _bytes;
 	int _len;
 	bool _reverse;
-	SeqVarLen(const SeqVarLen *svl, bool reverse); // reverse
+	Sequence(const Sequence *svl, bool reverse); // reverse
 };
 
 template <int size> // max number of nucleotides in each read
@@ -80,7 +80,7 @@ Seq<size>::Seq (const std::string &s) {
 }
 
 template <int size>
-char Seq<size>::operator[] (const int &index) const {
+char Seq<size>::operator[] (const int index) const {
 	switch ( ( this->_bytes[index >> 2] >> ((3-(index%4))*2) ) & 3) { // little endian!
 		case 0: return 'A'; break;
 		case 1: return 'C'; break;

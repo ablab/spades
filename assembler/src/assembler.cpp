@@ -16,9 +16,9 @@ int main(int argc, char *argv[]) {
   
 	std::cerr << "Hello, I am assembler!" << std::endl;
 	time_t now = time(NULL);
-	SeqVarLen x = SeqVarLen("ACGTACGTTCGATCGAAA");
+	Sequence x = Sequence("ACGTACGTTCGATCGAAA");
 	cerr << "SeqVarLen Test 1: " << x.str() << endl;
-	SeqVarLen y = !x;
+	Sequence y = !x;
 	cerr << "SeqVarLen Test 2: " << y.str() << endl;
 	//return 0;
 	FASTQParser<MPSIZE>* fqp = new FASTQParser<MPSIZE>();

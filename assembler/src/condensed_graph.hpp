@@ -50,7 +50,7 @@ public:
 class Vertex {
 	int _coverage;
 	//int _nucl_count;
-	SeqVarLen* _nucls;
+	Sequence* _nucls;
 	bool _direction;
 	int _arc_count;
 	Arc* _arcs;
