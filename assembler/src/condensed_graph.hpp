@@ -21,6 +21,7 @@ class Nucls {
 	char* nucls;
 public:
 	nucl_iterator iter(bool direction);
+	nucl_iterator iter(bool direction, int offset);
 };
 
 class Vertex {
@@ -35,6 +36,7 @@ public:
 	void getArcBounds(Arc* start, Arc* end);
 	Arc& getArc(Nucl& nucl);
 	nucl_iterator nuclIter();
+	nucl_iterator nuclChainIter();
 	Vertex* complement();
 };
 
