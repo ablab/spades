@@ -71,6 +71,9 @@ void FASTQParser::do_read() {
 MatePair::MatePair(const std::string &s1, const std::string &s2, const int id_) : id(id_), seq1(s1), seq2(s2) {
 }
 
+MatePair::MatePair(const MatePair &mp) : id(mp.id), seq1(mp.seq1), seq2(mp.seq2) {
+}
+
 Read::Read (const std::string &s) {
 	char byte = 0;
 	int cnt = 6;
