@@ -10,6 +10,21 @@
 
 #include <string>
 
+char complement(char c) {
+	switch (c) {
+		case 'A':
+			return 'T';
+		case 'C':
+			return 'G';
+		case 'G':
+			return 'C';
+		case 'T':
+			return 'A';
+		default:
+			return 'N';
+	}
+}
+
 template <int size> // max number of nucleotides
 class Seq {
 public:
@@ -24,13 +39,16 @@ class SeqVarLen { // runtime length sequence (slow!!!)
 public:
 	SeqVarLen(const std::string &s);
 	~SeqVarLen();
-	char operator[] (const int &index) const;
+	char operator[](int index) const;
+	SeqVarLen& operator!() const;
 //	SeqVarLen operator+ (const SeqVarLen &svl1, const SeqVarLen &svl2) const;
 	std::string str() const;
 	int len() const;
 public:
 	Seq<4>* _bytes;
 	int _len;
+	bool _reverse;
+	SeqVarLen(const SeqVarLen *svl, bool reverse); // reverse
 };
 
 template <int size> // max number of nucleotides in each read
