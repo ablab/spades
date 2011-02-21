@@ -17,6 +17,20 @@ enum Nucl {
 	A, T, G, C
 };
 
+class Vertex;
+
+class Arc {
+	int _coverage;
+	Vertex* _head;
+public:
+	Arc(int coverage, Vertex* head) : _coverage(coverage), _head(head)
+	{}
+
+	//static
+	int coverage();
+	Vertex* head();
+};
+
 class Vertex {
 	int _coverage;
 	int _nucl_count;
@@ -41,20 +55,8 @@ public:
 	Vertex* Complement();
 };
 
-class Arc {
-	int _coverage;
-	Vertex* _head;
-public:
-	Arc(int coverage, Vertex* head) : _coverage(coverage), _head(head)
-	{}
-
-	//static
-	int coverage();
-	Vertex* head();
-};
-
 class Graph {
-	vector<Vertex*> component_roots;
+	vector<Vertex*> _component_roots;
 public:
 	vector<Vertex*> component_roots();
 };
