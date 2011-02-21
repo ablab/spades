@@ -11,11 +11,27 @@ using namespace std;
 #ifndef CONDENSED_GRAPH_H_
 #define CONDENSED_GRAPH_H_
 
+namespace assembler {
 static const int k = 25;
 
-enum Nucl {
+/*enum Nucl {
 	A, T, G, C
-};
+};*/
+
+char ComplementNucl(char c) {
+	switch (c) {
+	case 'A':
+		return 'T';
+	case 'C':
+		return 'G';
+	case 'G':
+		return 'C';
+	case 'T':
+		return 'A';
+	default:
+		return 'N';
+	}
+}
 
 class Vertex;
 
@@ -27,14 +43,14 @@ public:
 	{}
 
 	//static
-	int coverage();
-	Vertex* head();
+	int coverage() {return _coverage;};
+	Vertex* head() {return _head;};
 };
 
 class Vertex {
 	int _coverage;
-	int _nucl_count;
-	char* _nucls;
+	//int _nucl_count;
+	SeqVarLen* _nucls;
 	bool _direction;
 	int _arc_count;
 	Arc* _arcs;
@@ -46,13 +62,20 @@ public:
 	{}
 
 	//static Vertex AbsentVertex = Vertex(0, 0, NULL, true, 0, NULL);
-	int nucl_count();
-	Nucl operator[](const int &index) const;
-	int coverage();
-	int arc_count();
-	void ArcBounds(Arc* start, Arc* end);
-	Arc* FindArc(Nucl& nucl);
-	Vertex* Complement();
+	int nucl_count() {return _nucls->count();};
+
+	char operator[](const int &index) const {
+		if (_direction) {
+			return _nucls[index];
+		} else {
+			return ComplementNucl(_nucls[_nucls->len() - 1 - index]);
+		}
+	};
+	int coverage() {return _coverage;};
+	int arc_count() {return _arc_count;};
+	Arc* arcs() {return _arcs;};
+	Arc* FindArc(char nucl);
+	Vertex* Complement() {};
 };
 
 class Graph {
@@ -60,5 +83,5 @@ class Graph {
 public:
 	vector<Vertex*> component_roots();
 };
-
+}
 #endif /* CONDENSED_GRAPH_H_ */
