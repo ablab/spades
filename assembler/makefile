@@ -13,7 +13,7 @@ all: $(FILES) $(EXECUTABLE)
 #	rm -rf $(BUILD_DIR)/*.o
 	
 $(EXECUTABLE): $(OBJECTS) 
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $(BUILD_DIR)/$@
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $(BUILD_DIR)/$@
 
 $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cpp $(BUILD_DIR)/.d 
 	$(CC) -c $(CFLAGS) $< -o $@
