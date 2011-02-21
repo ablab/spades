@@ -17,21 +17,23 @@ public:
 	char operator[] (const int &index) const;
 	std::string str() const;
 public:
-	char bytes[size << 2]; // little-endian, max length: 100bp
+	char bytes[(size << 2) + ((size & 3) != 0)]; // little-endian
 };
 
+template <int size> // max number of nucleotides in each read
 class MatePair {
 public:
 	MatePair(const std::string &s1, const std::string &s2, const int id_);
 	MatePair(const MatePair &mp);
 // private:
 	int id; // consecutive number from input file :)
-	Seq<100> seq1, seq2;
+	Seq<size> seq1;
+	Seq<size> seq2;
 };
 
-// ********************
-// * TEMPLATE METHODS *
-// ********************
+// ******************** //
+// * TEMPLATE METHODS * //
+// ******************** //
 
 template <int size>
 Seq<size>::Seq (const std::string &s) {
@@ -75,5 +77,15 @@ std::string Seq<size>::str() const {
 	}
 	return res;
  }
+
+template <int size>
+MatePair<size>::MatePair(const std::string &s1, const std::string &s2, const int id_) : id(id_), seq1(s1), seq2(s2) {
+	//
+}
+
+template <int size>
+MatePair<size>::MatePair(const MatePair &mp) : id(mp.id), seq1(mp.seq1), seq2(mp.seq2) {
+	//
+}
 
 #endif /* SEQ_HPP_ */
