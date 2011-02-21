@@ -20,6 +20,16 @@ public:
 	char bytes[(size << 2) + ((size & 3) != 0)]; // little-endian
 };
 
+class SeqVarLen { // runtime length sequence
+public:
+	SeqVarLen(const std::string &s, int len);
+	char operator[] (const int &index) const;
+	std::string str() const;
+	int len() const;
+public:
+	int _len;
+};
+
 template <int size> // max number of nucleotides in each read
 class MatePair {
 public:
