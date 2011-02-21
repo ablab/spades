@@ -18,7 +18,7 @@ static const int k = 25;
 	A, T, G, C
 };*/
 
-char ComplementNucl(char c) {
+/*char ComplementNucl(char c) {
 	switch (c) {
 	case 'A':
 		return 'T';
@@ -31,7 +31,7 @@ char ComplementNucl(char c) {
 	default:
 		return 'N';
 	}
-}
+}*/
 
 class Vertex;
 

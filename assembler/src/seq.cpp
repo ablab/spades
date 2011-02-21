@@ -54,3 +54,19 @@ SeqVarLen::SeqVarLen(const SeqVarLen *svl, bool reverse = false): _bytes(svl->_b
 		this->_reverse = !this->_reverse;
 	}
 }
+
+char complement(char c) {
+	switch (c) {
+		case 'A':
+			return 'T';
+		case 'C':
+			return 'G';
+		case 'G':
+			return 'C';
+		case 'T':
+			return 'A';
+		default:
+			return 'N';
+	}
+}
+

@@ -10,20 +10,7 @@
 
 #include <string>
 
-char complement(char c) {
-	switch (c) {
-		case 'A':
-			return 'T';
-		case 'C':
-			return 'G';
-		case 'G':
-			return 'C';
-		case 'T':
-			return 'A';
-		default:
-			return 'N';
-	}
-}
+char complement(char c);
 
 template <int size> // max number of nucleotides
 class Seq {
@@ -34,6 +21,9 @@ public:
 private:
 	char _bytes[(size >> 2) + ((size & 3) != 0)]; // little-endian
 };
+
+//template <>
+//class Seq<0> {};
 
 class SeqVarLen { // runtime length sequence (slow!!!)
 public:
