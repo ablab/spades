@@ -3,6 +3,7 @@
 #include <list>
 #include <vector>
 #include "parser.hpp"
+#include "condensed_graph.hpp"
 
 using namespace std;
 

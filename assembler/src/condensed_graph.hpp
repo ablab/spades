@@ -1,60 +1,62 @@
-/*
+/**
  * condensed_graph.h
  *
  *  Created on: Feb 21, 2011
  *      Author: sergey
  */
+#include <vector>
+
+using namespace std;
 
 #ifndef CONDENSED_GRAPH_H_
 #define CONDENSED_GRAPH_H_
 
+static const int k = 25;
+
 enum Nucl {
-
-};
-
-class NuclIterator {
-	int nuclCount;
-	int currCharPos;
-	int currNuclCount;
-public:
-	void next
-};
-
-class Nucls {
-	int nuclCount;
-	char* nucls;
-public:
-	NuclIterator iter(bool direction);
-	NuclIterator iter(bool direction, int offset);
+	A, T, G, C
 };
 
 class Vertex {
-	int coverage;
-	Nucls& nucls;
-	bool direction;
-	int arcCount;
-	Arc* arcs;
+	int _coverage;
+	int _nucl_count;
+	char* _nucls;
+	bool _direction;
+	int _arc_count;
+	Arc* _arcs;
 public:
-	int getCoverage();
-	int getArcCount();
-	void getArcBounds(Arc* start, Arc* end);
-	Arc& getArc(Nucl& nucl);
-	NuclIterator nuclIter();
-	NuclIterator nucKOffsetIter();
-	Vertex* complement();
+	Vertex(int coverage, int nucl_count, char* nucls, bool direction
+			, int arc_count, Arc* arcs):
+	_coverage(coverage), _nucl_count(nucl_count), _nucls(nucls), _direction(direction)
+	, _arc_count(arc_count), _arcs(arcs)
+	{}
+
+	//static Vertex AbsentVertex = Vertex(0, 0, NULL, true, 0, NULL);
+	int nucl_count();
+	Nucl operator[](const int &index) const;
+	int coverage();
+	int arc_count();
+	void ArcBounds(Arc* start, Arc* end);
+	Arc* FindArc(Nucl& nucl);
+	Vertex* Complement();
 };
 
 class Arc {
-	int coverage;
-	Vertex* v;
+	int _coverage;
+	Vertex* _head;
 public:
-	int getCoverage();
-	Vertex* getV();
+	Arc(int coverage, Vertex* head) : _coverage(coverage), _head(head)
+	{}
+
+	//static
+	int coverage();
+	Vertex* head();
 };
 
 class Graph {
-	int rootCount;
-	Vertex* roots;
+	vector<Vertex*> component_roots;
+public:
+	vector<Vertex*> component_roots();
 };
 
 #endif /* CONDENSED_GRAPH_H_ */
