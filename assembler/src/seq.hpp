@@ -16,17 +16,19 @@ public:
 	Seq(const std::string &s);
 	char operator[] (const int &index) const;
 	std::string str() const;
-public:
-	char bytes[(size << 2) + ((size & 3) != 0)]; // little-endian
+private:
+	char _bytes[(size >> 2) + ((size & 3) != 0)]; // little-endian
 };
 
-class SeqVarLen { // runtime length sequence
+class SeqVarLen { // runtime length sequence (slow!!!)
 public:
-	SeqVarLen(const std::string &s, int len);
+	SeqVarLen(const std::string &s);
 	char operator[] (const int &index) const;
+//	SeqVarLen operator+ (const SeqVarLen &svl1, const SeqVarLen &svl2) const;
 	std::string str() const;
 	int len() const;
 public:
+	Seq<4>* _bytes;
 	int _len;
 };
 
@@ -58,19 +60,19 @@ Seq<size>::Seq (const std::string &s) {
 		}
 		cnt -= 2;
 		if (cnt < 0) {
-			this->bytes[cur++] = byte;
+			this->_bytes[cur++] = byte;
 			cnt = 6;
 			byte = 0;
 		}
 	}
 	if (cnt != 6) {
-		this->bytes[cur++] = byte;
+		this->_bytes[cur++] = byte;
 	}
 }
 
 template <int size>
 char Seq<size>::operator[] (const int &index) const {
-	switch ( ( this->bytes[index >> 2] >> ((3-(index%4))*2) ) & 3) { // little endian!
+	switch ( ( this->_bytes[index >> 2] >> ((3-(index%4))*2) ) & 3) { // little endian!
 		case 0: return 'A'; break;
 		case 1: return 'C'; break;
 		case 2: return 'G'; break;

@@ -37,13 +37,13 @@ MatePair<size> FASTQParser<size>::read() {
 	// assert that they are mate pairs (have: name/1 and name/2)!
 	assert(strncmp(this->seq1->name.s, this->seq2->name.s, this->seq1->name.l - 1) == 0);
 	// if there is 'N' in sequence, then throw out this mate read
-	for (int i = 0; i < this->seq1->seq.l; ++i) {
+	for (unsigned int i = 0; i < this->seq1->seq.l; ++i) {
 		if (this->seq1->seq.s[i] == 'N') {
 			this->do_read();
 			return MatePair<size>("", "", -1);
 		}
 	}
-	for (int i = 0; i < this->seq2->seq.l; ++i) {
+	for (unsigned int i = 0; i < this->seq2->seq.l; ++i) {
 		if (this->seq2->seq.s[i] == 'N') {
 			this->do_read();
 			return MatePair<size>("", "", -1);
