@@ -3,6 +3,7 @@
 
 #include <string>
 #include <zlib.h>
+#include <iostream>
 #include "seq.hpp"
 #include "libs/kseq/kseq.h"
 
@@ -65,6 +66,10 @@ template <int size>
 void FASTQParser<size>::open(std::string filename1, std::string filename2) {
 	this->fp1 = gzopen(filename1.c_str(), "r"); // STEP 2: open the file handler
 	this->fp2 = gzopen(filename2.c_str(), "r"); // STEP 2: open the file handler
+	bool fail = false;
+	if (!this->fp1) { std::cerr << "File " << filename1 << " not found!" << std::endl; fail = true; }
+	if (!this->fp2) { std::cerr << "File " << filename2 << " not found!" << std::endl; fail = true; }
+	if (fail) { this->eof_bit = true; this->opened = true; return; } // behave like it's empty file
 	this->seq1 = kseq_init(fp1); // STEP 3: initialize seq
 	this->seq2 = kseq_init(fp2); // STEP 3: initialize seq
 	this->eof_bit = false;

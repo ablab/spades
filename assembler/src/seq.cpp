@@ -15,6 +15,10 @@ SeqVarLen::SeqVarLen(const std::string &s): _len(s.size()) {
 	}
 }
 
+SeqVarLen::~SeqVarLen() {
+	free(_bytes);
+}
+
 char SeqVarLen::operator[] (const int &index) const {
 	return _bytes[index / 4][index % 4];
 }

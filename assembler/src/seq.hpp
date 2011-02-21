@@ -23,6 +23,7 @@ private:
 class SeqVarLen { // runtime length sequence (slow!!!)
 public:
 	SeqVarLen(const std::string &s);
+	~SeqVarLen();
 	char operator[] (const int &index) const;
 //	SeqVarLen operator+ (const SeqVarLen &svl1, const SeqVarLen &svl2) const;
 	std::string str() const;

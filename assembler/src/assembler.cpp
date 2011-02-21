@@ -16,8 +16,9 @@ int main(int argc, char *argv[]) {
   
 	std::cerr << "Hello, I am assembler!" << std::endl;
 	time_t now = time(NULL);
-	//SeqVarLen x = SeqVarLen("ACGTACGTTCGATCGAAA");
-	//cerr << x.str() << endl;
+	cerr << "SeqVarLen Test: ";
+	SeqVarLen x = SeqVarLen("ACGTACGTTCGATCGAAA");
+	cerr << x.str() << endl;
 	//return 0;
 	FASTQParser<MPSIZE>* fqp = new FASTQParser<MPSIZE>();
 	fqp->open(filenames.first, filenames.second);
