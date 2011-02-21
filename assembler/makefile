@@ -23,7 +23,7 @@ $(BUILD_DIR)/.d:
 	touch $@
 
 clean:
-	rm -rf $(BUID_DIR)/*
+	rm -rf ./$(BUILD_DIR)/*
 
 .PRECIOUS: $(BUILD_DIR)/.d
 

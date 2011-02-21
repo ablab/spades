@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
 	fqp->open(filenames.first, filenames.second);
 	while (!fqp->eof()) {
 		MatePair mp = fqp->read();
-		if (mp.id != -1 ) {
+		if (mp.id != -1) { // have 'N' in reads
 			cout <<  mp.id << endl <<  mp.seq1.str() << endl <<  mp.seq2.str() << endl;
 		}
 	}
