@@ -12,6 +12,7 @@
 
 #define MPSIZE 100
 #define K 25
+#define HASH_SEED 1845724623
 
 typedef Seq<K> Kmer;
 typedef Seq<MPSIZE> Read;

@@ -5,6 +5,7 @@
 #include <ostream>
 #include <cassert>
 #include "../seq.hpp"
+#include "parameters.h"
 
 using namespace std;
 
@@ -12,32 +13,27 @@ class CEdge;
 
 class CVertex
 {
-  
-  
+	Kmer* kmer;
+	typedef vector < CEdge > CEdgeArray;
 public:
-  CVertex ( unsigned id ) : id ( id ) {};
+	CVertex ( Kmer * kmer ) : kmer (kmer) {};
 };
 
 class CEdge
 {
-  typedef vector < CVertex > CVertexArray;
-
-  CVertex * vertex;
-  CVertexArray IncomingEdges;
+	CVertex* endVertex;
+	Sequence label;
 };
 
 /// A straightforward graph implementation.
 class CGraph
 {
-//protected:
-  typedef vector < CVertex > CVertexArray;
-  //CLiterals Literals;
-
+	typedef vector < CVertex > CVertexArray;
 public:
-  CGraph ( unsigned number_of_vertices );
+	CGraph ( unsigned number_of_vertices );
+	void AddVertex ( CVertex v );
 };
 
 extern ostream & operator << ( ostream & os, const CGraph & g );
 
 #endif // _graph_h_
-
