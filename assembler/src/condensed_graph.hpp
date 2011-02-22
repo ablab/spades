@@ -5,7 +5,7 @@
  *      Author: sergey
  */
 #include <vector>
-#include <seq.hpp>
+#include "seq.hpp"
 
 using namespace std;
 
@@ -26,7 +26,7 @@ char toIndex(char c) {
 	case 'T':
 		return 3;
 	default:
-		//throw exception
+		break;//throw exception
 	}
 }
 
@@ -75,10 +75,10 @@ class Vertex {
 	//delete this pointer later
 	Vertex* _complement;
 public:
-	Vertex(int coverage, int nucl_count, char* nucls, bool direction,
+	Vertex(int coverage, int nucl_count, Sequence* nucls, bool direction,
 			int arc_count, Arc* arcs, Vertex* complement) :
-		_coverage(coverage), _nucl_count(nucl_count), _nucls(nucls),
-				_direction(direction), _arc_count(arc_count), _arcs(arcs), _complement(complement) {
+		_coverage(coverage), _nucls(nucls),
+				_direction(direction), _arc_count(_arc_count), _arcs(arcs), _complement(complement) {
 	}
 
 	//static Vertex AbsentVertex = Vertex(0, 0, NULL, true, 0, NULL);
@@ -87,8 +87,8 @@ public:
 	}
 	;
 
-	char operator[](const int &index) const {
-		return _nucls[index];
+	Nucl operator[](const int &index) const {
+		return (*_nucls)[index];
 	}
 	;
 
@@ -108,7 +108,7 @@ public:
 	;
 
 	Arc* FindArc(char nucl) {
-		return _arcs[toIndex(nucl)];
+		return _arcs + toIndex(nucl);
 	}
 
 	Vertex* complement() {
@@ -136,7 +136,7 @@ public:
 class MyHashTable {
 	int _array_size;
 	//pair<Vertex*, int> - vertex and offset
-	vector<KerPos>* array;
+	vector<KmerPos>* array;
 };
 
 }
