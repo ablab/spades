@@ -19,7 +19,7 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cpp $(BUILD_DIR)/.d
 	$(CC) -c $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/.d:
-	mkdir -p $@
+	mkdir -p $(BUILD_DIR)
 	touch $@
 
 clean:
