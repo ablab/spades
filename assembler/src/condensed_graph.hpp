@@ -29,6 +29,7 @@ char toIndex(char c) {
 		//throw exception
 	}
 }
+
 /*char ComplementNucl(char c) {
  switch (c) {
  case 'A':
