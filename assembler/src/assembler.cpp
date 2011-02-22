@@ -13,7 +13,7 @@ pair<string,string> filenames = make_pair("./data/s_6_1.fastq.gz", "./data/s_6_2
 #define MPSIZE 100
 
 int main(int argc, char *argv[]) {
-  
+
 	std::cerr << "Hello, I am assembler!" << std::endl;
 	time_t now = time(NULL);
 	Sequence x = Sequence("ACGTACGTTCGATCGAAA");
