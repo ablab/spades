@@ -10,19 +10,23 @@
 
 #include <string>
 
-char complement(char c);
+char complement(char c); // 0123 -> 3210
 
-char nucl(char c);
+char nucl(char c); // 0123 -> ACGT
 
 template <int size> // max number of nucleotides
 class Seq {
 public:
-	//Seq(const std::string &s);
 	Seq(const char* s);
+	Seq(const Seq<size> &s);
 	char operator[] (const int index) const;
+	Seq<size> shift_right(char c) const; // char should be 0123
+	Seq<size> shift_left(char c) const; // char should be 0123
 	std::string str() const;
+	int len() const;
 private:
-	char _bytes[(size >> 2) + ((size & 3) != 0)]; // little-endian
+	const static int _bytelen = (size >> 2) + ((size & 3) != 0);
+	char _bytes[_bytelen]; // little-endian
 };
 
 class Sequence { // runtime length sequence (slow!!!)
@@ -61,15 +65,20 @@ const MatePair<size> MatePair<size>::null = MatePair<size>("", "", -1);
 // ******************** //
 
 template <int size>
+Seq<size>::Seq (const Seq<size> &s) {
+	memcpy(_bytes, s._bytes, (size >> 2) + ((size & 3) != 0));
+}
+
+template <int size>
 Seq<size>::Seq (const char* s) {
 	char byte = 0;
 	int cnt = 6;
 	int cur = 0;
 	for (const char* si = s; *si != 0; si++) { // unsafe!
 		switch (*si) {
-			case 'C': byte |= (1 << cnt); break;
-			case 'G': byte |= (2 << cnt); break;
-			case 'T': byte |= (3 << cnt); break;
+			case 'C': case '1': byte |= (1 << cnt); break;
+			case 'G': case '2': byte |= (2 << cnt); break;
+			case 'T': case '3': byte |= (3 << cnt); break;
 		}
 		cnt -= 2;
 		if (cnt < 0) {
@@ -92,10 +101,43 @@ template <int size>
 std::string Seq<size>::str() const {
 	std::string res = "";
 	for (int i = 0; i < size; ++i) {
-		res += this->operator[](i);
+		res += nucl((*this)[i]);
 	}
 	return res;
- }
+}
+
+template <int size>
+int Seq<size>::len() const {
+	return size;
+}
+
+template <int size>
+Seq<size> Seq<size>::shift_right(char c) const {
+	Seq<size> res = *this;
+	c <<= (((4-(size%4))%4)*2); // omg >.<
+	for (int i = _bytelen - 1; i >= 0; --i) {
+		char rm = (_bytes[i] & 192) >> 6;
+		res._bytes[i] <<= 2;
+		res._bytes[i] &= 252;
+		res._bytes[i] |= c;
+		c = rm;
+	}
+	return res;
+}
+
+template <int size>
+Seq<size> Seq<size>::shift_left(char c) const {
+	Seq<size> res = *this;
+	for (int i = 0; i < _bytelen; ++i) {
+		char rm = _bytes[i] & 3;
+		res._bytes[i] >>= 2;
+		res._bytes[i] &= 63;
+		res._bytes[i] |= (c << 6);
+		c = rm;
+	}
+	return res;
+}
+
 
 template <int size>
 MatePair<size>::MatePair(const char *s1, const char *s2, const int id_) : id(id_), seq1(s1), seq2(s2) {
@@ -106,6 +148,7 @@ template <int size>
 MatePair<size>::MatePair(const MatePair &mp) : id(mp.id), seq1(mp.seq1), seq2(mp.seq2) {
 	//
 }
+
 
 /*
 template <int size> // max number of nucleotides
