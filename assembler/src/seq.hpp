@@ -10,20 +10,16 @@
 
 #include <string>
 
-enum Nucl {
-	A, C, G, T
-};
+char complement(char c);
 
-char to_char(Nucl c);
-
-Nucl complement(Nucl c);
+char nucl(char c);
 
 template <int size> // max number of nucleotides
 class Seq {
 public:
 	//Seq(const std::string &s);
 	Seq(const char* s);
-	Nucl operator[] (const int index) const;
+	char operator[] (const int index) const;
 	std::string str() const;
 private:
 	char _bytes[(size >> 2) + ((size & 3) != 0)]; // little-endian
@@ -48,7 +44,7 @@ class Sequence { // runtime length sequence (slow!!!)
 public:
 	Sequence(const std::string &s);
 	~Sequence();
-	Nucl operator[](int index) const;
+	char operator[](int index) const;
 	Sequence& operator!() const;
 //	SeqVarLen operator+ (const SeqVarLen &svl1, const SeqVarLen &svl2) const;
 	std::string str() const;
@@ -79,29 +75,6 @@ const MatePair<size> MatePair<size>::null = MatePair<size>("", "", -1);
 // * TEMPLATE METHODS * //
 // ******************** //
 
-/*template <int size>
-Seq<size>::Seq (const std::string &s) {
-	char byte = 0;
-	int cnt = 6;
-	int cur = 0;
-	for (std::string::const_iterator si = s.begin(); si != s.end(); si++) {
-		switch (*si) {
-			case 'C': byte |= (1 << cnt); break;
-			case 'G': byte |= (2 << cnt); break;
-			case 'T': byte |= (3 << cnt); break;
-		}
-		cnt -= 2;
-		if (cnt < 0) {
-			this->_bytes[cur++] = byte;
-			cnt = 6;
-			byte = 0;
-		}
-	}
-	if (cnt != 6) {
-		this->_bytes[cur++] = byte;
-	}
-}*/
-
 template <int size>
 Seq<size>::Seq (const char* s) {
 	char byte = 0;
@@ -126,8 +99,8 @@ Seq<size>::Seq (const char* s) {
 }
 
 template <int size>
-Nucl Seq<size>::operator[] (const int index) const {
-	return (Nucl)((_bytes[index >> 2] >> ((3-(index%4))*2) ) & 3);
+char Seq<size>::operator[] (const int index) const {
+	return ((_bytes[index >> 2] >> ((3-(index%4))*2) ) & 3);
 }
 
 template <int size>
@@ -149,6 +122,7 @@ MatePair<size>::MatePair(const MatePair &mp) : id(mp.id), seq1(mp.seq1), seq2(mp
 	//
 }
 
+/*
 template <int size> // max number of nucleotides
 class Kmer {
 public:
@@ -162,5 +136,6 @@ public:
 	bool IsCanonic();
 private:
 
-};
+};*/
+
 #endif /* SEQ_HPP_ */

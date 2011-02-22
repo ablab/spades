@@ -1,5 +1,5 @@
 root=.
-sources=main.cpp
+sources=main.cpp graph.cpp
 subdirs=
 
 prog=abruijn
