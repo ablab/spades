@@ -1,15 +1,21 @@
 #ifndef HASHTABLE_H_
 #define HASHTABLE_H_
+#include "pairedGraph.h"
 
-struct hashTable;// index: kmer, value: list of second parts
+class ListItem {
+	ListItem *next;
+};
 
-*hashTable createHashTable();
-
-//0 if success
-//1 otherwise
-int put(hashTable table, kmerType upper, lmerType lower);
-
-
+class Record {
+	Sequence *lower;
+	ListItem *next;
+};
+class HashTable {
+public:
+	HashTable();
+	ListItem *get(Kmer kmer);
+	ListItem *put(Kmer kmer, Sequence *pair, ListItem *next);
+};
 
 #endif /*HASHTABLE_H_*/
 
