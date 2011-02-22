@@ -42,6 +42,8 @@ public:
 
 	int addEdge(Vertex *neighbour, short coverage);
 
+	void getEdges(Arc *begin, Arc *end);
+
 	Kmer getKmer(int position);
 };
 
