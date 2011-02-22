@@ -29,6 +29,20 @@ private:
 	char _bytes[(size >> 2) + ((size & 3) != 0)]; // little-endian
 };
 
+//template <>
+//class Seq<0> {};
+
+/*struct A {
+	int _cnt;
+	int _len;
+	Seq<4>* _bytes;
+};
+
+struct B {
+	int from, size;
+	A* a;
+};*/
+
 
 class Sequence { // runtime length sequence (slow!!!)
 public:
