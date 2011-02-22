@@ -10,6 +10,10 @@
 
 #include <string>
 
+enum Nucl {
+	A, T, G, C
+};
+
 char complement(char c);
 
 template <int size> // max number of nucleotides
@@ -149,4 +153,29 @@ MatePair<size>::MatePair(const MatePair &mp) : id(mp.id), seq1(mp.seq1), seq2(mp
 	//
 }
 
+template <int size> // max number of nucleotides
+class Seq {
+public:
+	//Seq(const std::string &s);
+	Seq(const char* s);
+	char operator[] (const int index) const;
+	std::string str() const;
+private:
+	char _bytes[(size >> 2) + ((size & 3) != 0)]; // little-endian
+};
+
+template <int size> // max number of nucleotides
+class Kmer {
+public:
+	Kmer(const char* s);
+	char operator[] (const int index) const;
+	std::string str() const;
+	void PushBack(Nucl c);
+	void PushFront(Nucl c);
+	bool Follows(Kmer prev);
+	Kmer RevCompl();
+	bool Canonic();
+private:
+
+};
 #endif /* SEQ_HPP_ */
