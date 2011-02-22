@@ -35,7 +35,7 @@ char Sequence::operator[] (int index) const {
 std::string Sequence::str() const {
 	std::string res = "";
 	for (int i = 0; i < this->_len; ++i) {
-		res += this->operator[](i);
+		res += nucl((*this)[i]);
 	}
 	return res;
 }
@@ -51,22 +51,21 @@ Sequence& Sequence::operator! () const {
 
 Sequence::Sequence(const Sequence *svl, bool reverse = false): _bytes(svl->_bytes), _len(svl->_len), _reverse(svl->_reverse) {
 	if (reverse) {
-		this->_reverse = !this->_reverse;
+		_reverse = !_reverse;
 	}
 }
 
 char complement(char c) {
-	switch (c) {
-		case 'A':
-			return 'T';
-		case 'C':
-			return 'G';
-		case 'G':
-			return 'C';
-		case 'T':
-			return 'A';
-		default:
-			return 'N';
+	return 3 - c;
+}
+
+char nucl(char c) {
+	switch(c) {
+		case 0: return 'A';
+		case 1: return 'C';
+		case 2: return 'G';
+		case 3: return 'T';
+		default: return 'N';
 	}
 }
 

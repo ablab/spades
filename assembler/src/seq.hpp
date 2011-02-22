@@ -10,11 +10,9 @@
 
 #include <string>
 
-enum Nucl {
-	A, T, G, C
-};
-
 char complement(char c);
+
+char nucl(char c);
 
 template <int size> // max number of nucleotides
 class Seq {
@@ -77,29 +75,6 @@ const MatePair<size> MatePair<size>::null = MatePair<size>("", "", -1);
 // * TEMPLATE METHODS * //
 // ******************** //
 
-/*template <int size>
-Seq<size>::Seq (const std::string &s) {
-	char byte = 0;
-	int cnt = 6;
-	int cur = 0;
-	for (std::string::const_iterator si = s.begin(); si != s.end(); si++) {
-		switch (*si) {
-			case 'C': byte |= (1 << cnt); break;
-			case 'G': byte |= (2 << cnt); break;
-			case 'T': byte |= (3 << cnt); break;
-		}
-		cnt -= 2;
-		if (cnt < 0) {
-			this->_bytes[cur++] = byte;
-			cnt = 6;
-			byte = 0;
-		}
-	}
-	if (cnt != 6) {
-		this->_bytes[cur++] = byte;
-	}
-}*/
-
 template <int size>
 Seq<size>::Seq (const char* s) {
 	char byte = 0;
@@ -125,13 +100,7 @@ Seq<size>::Seq (const char* s) {
 
 template <int size>
 char Seq<size>::operator[] (const int index) const {
-	switch ( ( this->_bytes[index >> 2] >> ((3-(index%4))*2) ) & 3) { // little endian!
-		case 0: return 'A'; break;
-		case 1: return 'C'; break;
-		case 2: return 'G'; break;
-		case 3: return 'T'; break;
-		default: return 'N';
-	}
+	return ((_bytes[index >> 2] >> ((3-(index%4))*2) ) & 3);
 }
 
 template <int size>
@@ -153,6 +122,7 @@ MatePair<size>::MatePair(const MatePair &mp) : id(mp.id), seq1(mp.seq1), seq2(mp
 	//
 }
 
+/*
 template <int size> // max number of nucleotides
 class Kmer {
 public:
@@ -163,8 +133,9 @@ public:
 	void PushFront(Nucl c);
 	bool Follows(Kmer prev);
 	Kmer RevCompl();
-	bool Canonic();
+	bool IsCanonic();
 private:
 
-};
+};*/
+
 #endif /* SEQ_HPP_ */
