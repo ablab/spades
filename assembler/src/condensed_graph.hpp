@@ -14,9 +14,9 @@ using namespace std;
 namespace assembler {
 static const int k = 25;
 
-/*enum Nucl {
+enum Nucl {
 	A, T, G, C
-};*/
+};
 
 /*char ComplementNucl(char c) {
 	switch (c) {
@@ -32,6 +32,10 @@ static const int k = 25;
 		return 'N';
 	}
 }*/
+
+Nucl ComplementNucl(Nucl c) {
+	return 3 - c;
+}
 
 class Vertex;
 
