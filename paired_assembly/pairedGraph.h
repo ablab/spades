@@ -20,15 +20,9 @@ public:
 
 class Vertex;
 
-class Arc {
-	int _coverage;
+struct Arc {
+	short _coverage;
 	Vertex* _head;
-public:
-	Arc(int coverage, Vertex* head) : _coverage(coverage), _head(head)
-	{}
-
-	int coverage() {return _coverage;};
-	Vertex* head() {return _head;};
 };
 
 class Vertex {
@@ -36,7 +30,7 @@ class Vertex {
 	Sequence *_upper;
 	Sequence *_lower;
 	int _neighbours_count;
-	Vertex* _neighbours;
+	Arc* _neighbours;
 	short _delta_d;
 	Vertex *real_vertex;
 public:
@@ -46,7 +40,7 @@ public:
 
 	int neighbours_count() {return _neighbours_count;};
 
-	int addEdge(Vertex *neighbour);
+	int addEdge(Vertex *neighbour, short coverage);
 
 	Kmer getKmer(int position);
 };
