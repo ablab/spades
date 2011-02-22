@@ -11,17 +11,19 @@
 #include <string>
 
 enum Nucl {
-	A, T, G, C
+	A, C, G, T
 };
 
-char complement(char c);
+char to_char(Nucl c);
+
+Nucl complement(Nucl c);
 
 template <int size> // max number of nucleotides
 class Seq {
 public:
 	//Seq(const std::string &s);
 	Seq(const char* s);
-	char operator[] (const int index) const;
+	Nucl operator[] (const int index) const;
 	std::string str() const;
 private:
 	char _bytes[(size >> 2) + ((size & 3) != 0)]; // little-endian
@@ -32,7 +34,7 @@ class Sequence { // runtime length sequence (slow!!!)
 public:
 	Sequence(const std::string &s);
 	~Sequence();
-	char operator[](int index) const;
+	Nucl operator[](int index) const;
 	Sequence& operator!() const;
 //	SeqVarLen operator+ (const SeqVarLen &svl1, const SeqVarLen &svl2) const;
 	std::string str() const;
@@ -110,14 +112,8 @@ Seq<size>::Seq (const char* s) {
 }
 
 template <int size>
-char Seq<size>::operator[] (const int index) const {
-	switch ( ( this->_bytes[index >> 2] >> ((3-(index%4))*2) ) & 3) { // little endian!
-		case 0: return 'A'; break;
-		case 1: return 'C'; break;
-		case 2: return 'G'; break;
-		case 3: return 'T'; break;
-		default: return 'N';
-	}
+Nucl Seq<size>::operator[] (const int index) const {
+	return (Nucl)((_bytes[index >> 2] >> ((3-(index%4))*2) ) & 3);
 }
 
 template <int size>
@@ -149,7 +145,7 @@ public:
 	void PushFront(Nucl c);
 	bool Follows(Kmer prev);
 	Kmer RevCompl();
-	bool Canonic();
+	bool IsCanonic();
 private:
 
 };

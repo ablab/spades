@@ -22,20 +22,35 @@ Sequence::~Sequence() {
 	}
 }
 
-char Sequence::operator[] (int index) const {
+Nucl Sequence::operator[] (int index) const {
 	if (_reverse) {
 		index = _len - index - 1;
-		return complement(_bytes[index / 4][index % 4]);
+		return complement((Nucl)(_bytes[index / 4][index % 4]));
 	}
 	else {
 		return _bytes[index / 4][index % 4];
 	}
 }
 
+char to_char(Nucl c) {
+	switch (c) {
+	case A:
+		return 'A';
+	case C:
+		return 'C';
+	case G:
+		return 'G';
+	case T:
+		return 'T';
+	default:
+		return 'N';
+	}
+}
+
 std::string Sequence::str() const {
 	std::string res = "";
 	for (int i = 0; i < this->_len; ++i) {
-		res += this->operator[](i);
+		res += to_char(operator[](i));
 	}
 	return res;
 }
@@ -51,12 +66,13 @@ Sequence& Sequence::operator! () const {
 
 Sequence::Sequence(const Sequence *svl, bool reverse = false): _bytes(svl->_bytes), _len(svl->_len), _reverse(svl->_reverse) {
 	if (reverse) {
-		this->_reverse = !this->_reverse;
+		_reverse = !_reverse;
 	}
 }
 
-char complement(char c) {
-	switch (c) {
+Nucl complement(Nucl c) {
+	return (Nucl) (3 - (char) c);
+	/*switch (c) {
 		case 'A':
 			return 'T';
 		case 'C':
@@ -67,6 +83,6 @@ char complement(char c) {
 			return 'A';
 		default:
 			return 'N';
-	}
+	}*/
 }
 
