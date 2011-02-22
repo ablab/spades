@@ -15,7 +15,8 @@ char complement(char c);
 template <int size> // max number of nucleotides
 class Seq {
 public:
-	Seq(const std::string &s);
+	//Seq(const std::string &s);
+	Seq(const char* s);
 	char operator[] (const int index) const;
 	std::string str() const;
 private:
@@ -24,6 +25,18 @@ private:
 
 //template <>
 //class Seq<0> {};
+
+/*struct A {
+	int _cnt;
+	int _len;
+	Seq<4>* _bytes;
+};
+
+struct B {
+	int from, size;
+	A* a;
+};*/
+
 
 class Sequence { // runtime length sequence (slow!!!)
 public:
@@ -44,24 +57,51 @@ public:
 template <int size> // max number of nucleotides in each read
 class MatePair {
 public:
-	MatePair(const std::string &s1, const std::string &s2, const int id_);
+	MatePair(const char *s1, const char *s2, const int id_);
 	MatePair(const MatePair &mp);
-// private:
+	const static MatePair<size> null;
+//private:
 	int id; // consecutive number from input file :)
 	Seq<size> seq1;
 	Seq<size> seq2;
 };
 
+template <int size>
+const MatePair<size> MatePair<size>::null = MatePair<size>("", "", -1);
+
 // ******************** //
 // * TEMPLATE METHODS * //
 // ******************** //
 
-template <int size>
+/*template <int size>
 Seq<size>::Seq (const std::string &s) {
 	char byte = 0;
 	int cnt = 6;
 	int cur = 0;
 	for (std::string::const_iterator si = s.begin(); si != s.end(); si++) {
+		switch (*si) {
+			case 'C': byte |= (1 << cnt); break;
+			case 'G': byte |= (2 << cnt); break;
+			case 'T': byte |= (3 << cnt); break;
+		}
+		cnt -= 2;
+		if (cnt < 0) {
+			this->_bytes[cur++] = byte;
+			cnt = 6;
+			byte = 0;
+		}
+	}
+	if (cnt != 6) {
+		this->_bytes[cur++] = byte;
+	}
+}*/
+
+template <int size>
+Seq<size>::Seq (const char* s) {
+	char byte = 0;
+	int cnt = 6;
+	int cur = 0;
+	for (const char* si = s; *si != 0; si++) { // unsafe!
 		switch (*si) {
 			case 'C': byte |= (1 << cnt); break;
 			case 'G': byte |= (2 << cnt); break;
@@ -100,7 +140,7 @@ std::string Seq<size>::str() const {
  }
 
 template <int size>
-MatePair<size>::MatePair(const std::string &s1, const std::string &s2, const int id_) : id(id_), seq1(s1), seq2(s2) {
+MatePair<size>::MatePair(const char *s1, const char *s2, const int id_) : id(id_), seq1(s1), seq2(s2) {
 	//
 }
 

@@ -12,7 +12,7 @@
 Sequence::Sequence(const std::string &s): _len(s.size()), _reverse(false) {
 	_bytes = (Seq<4>*) malloc(this->_len >> 2); // sizeof(Seq<4>()) == 1;
 	for (int i = 0; i < _len / 4; ++i) {
-		_bytes[i] = Seq<4>(s.substr(i*4, 4));
+		_bytes[i] = Seq<4>(s.substr(i*4, 4).c_str());
 	}
 }
 

@@ -1,8 +1,10 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
+#include <algorithm>
 #include <string>
 #include <zlib.h>
+#include <cstdlib>
 #include <iostream>
 #include "seq.hpp"
 #include "libs/kseq/kseq.h"
@@ -10,7 +12,7 @@
 // STEP 1: declare the type of file handler and the read() function 
 KSEQ_INIT(gzFile, gzread)
 
-template <int size> // size of reads
+template <int size> // size of reads in base pairs
 class FASTQParser {
 public:
 	FASTQParser();
@@ -37,17 +39,13 @@ MatePair<size> FASTQParser<size>::read() {
 	// invariant: actual read from file was already done by do_read();
 	// assert that they are mate pairs (have: name/1 and name/2)!
 	assert(strncmp(this->seq1->name.s, this->seq2->name.s, this->seq1->name.l - 1) == 0);
+	// assume that all paired reads have the same length
+	assert(this->seq1->seq.l == this->seq2->seq.l);
 	// if there is 'N' in sequence, then throw out this mate read
-	for (unsigned int i = 0; i < this->seq1->seq.l; ++i) {
-		if (this->seq1->seq.s[i] == 'N') {
+	for (char *si1 = this->seq1->seq.s, *si2 = this->seq2->seq.s; *si1 != 0; ++si1, ++si2) {
+		if (*si1 == 'N' || *si2 == 'N') {
 			this->do_read();
-			return MatePair<size>("", "", -1);
-		}
-	}
-	for (unsigned int i = 0; i < this->seq2->seq.l; ++i) {
-		if (this->seq2->seq.s[i] == 'N') {
-			this->do_read();
-			return MatePair<size>("", "", -1);
+			return MatePair<size>::null;
 		}
 	}
 	// fill result

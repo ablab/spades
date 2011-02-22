@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 	int cnt = 0;
 	while (!fqp->eof()) {
 		MatePair<MPSIZE> mp = fqp->read(); // is it copy? :)
-		if (mp.id != -1) { // have 'N' in reads
+		if (mp.id != -1) { // don't have 'N' in reads
 			mps.push_back(mp); // it's copy! :)
 			//cout <<  mp.id << endl << mp.seq1.str() << endl <<  mp.seq2.str() << endl;
 		}
