@@ -23,7 +23,7 @@ public:
 	Seq<size> shift_right(char c) const; // char should be 0123
 	Seq<size> shift_left(char c) const; // char should be 0123
 	std::string str() const;
-	int len() const;
+	static int len();
 private:
 	const static int _bytelen = (size >> 2) + ((size & 3) != 0);
 	char _bytes[_bytelen]; // little-endian
@@ -107,7 +107,7 @@ std::string Seq<size>::str() const {
 }
 
 template <int size>
-int Seq<size>::len() const {
+int Seq<size>::len() {
 	return size;
 }
 
