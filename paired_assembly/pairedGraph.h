@@ -1,49 +1,72 @@
-#ifndef PAIREDGRAPH_H_
-#define PAIREDGRAPH_H_
 #include <vector>
-typedef char *sequence;
 
-struct Node {
-    sequence upperString;
-    sequence lowerString;
-    short upperSize;
-    short lowerSize;
-    Node* neighbours;
-//may be only d or only delta
-    char delta;
-    char d;
-//bounds for d?
+using namespace std;
+
+#ifndef CONDENSED_GRAPH_H_
+#define CONDENSED_GRAPH_H_
+
+namespace paired_assembler {
+
+typedef int Kmer;
+
+class Sequence {
+	char *_nucleotides;
+	short _length;
+public:
+	Sequence(char *nucleotides, short length) : _nucleotides(nucleotides), _length(length)
+	{}
+	char operator[](const int &index);
 };
-//TEMPORARY
-typedef std::vector<Node *> graph;
-typedef std::vector<Node *> nodelist;
-typedef long long Kmer;
-typedef sequence Read;
 
-int isDeleted(Node* A);
-int deleteNode(Node* A);
+class Vertex;
 
-int addNode(Node* A);
-int addEdgesFromNode(Node* A);
+class Arc {
+	int _coverage;
+	Vertex* _head;
+public:
+	Arc(int coverage, Vertex* head) : _coverage(coverage), _head(head)
+	{}
 
-int addEdge(Node* A , Node * B);
+	int coverage() {return _coverage;};
+	Vertex* head() {return _head;};
+};
 
-//unused? 
-int removeEdge(Node* A, Node* B);
+class Vertex {
+	int _coverage;
+	Sequence *_upper;
+	Sequence *_lower;
+	int _neighbours_count;
+	Vertex* _neighbours;
+	short _delta_d;
+	Vertex *real_vertex;
+public:
+	Vertex(int coverage, int length, Sequence *kmer, Sequence *pair, bool direction, int delta_d);
 
-int appendNode(Node* A, Node* B);
-//Добавляет B к A.
-//Храним ли мы логи?
-//возвращаем удалось ли смерджить
-//интеллектуально выделять память.
+	int coverage() {return _coverage;};
 
-int merge(Node * A, Node * B);
+	int neighbours_count() {return _neighbours_count;};
 
-nodelist findKmer(Kmer k);
+	int addEdge(Vertex *neighbour);
 
-nodelist findRead(Read r);
+	Kmer getKmer(int position);
+};
 
-//В частности, удаляем "удаленные" вершины; возможно она не graph а void.
-graph rearrange();
+class Graph {
+	HashTable map;
 
-#endif /*PAIREDGRAPH_H_*/
+	int merge(Vertex *u, Vertex* v);
+
+	int split(Vertex *u, Vertex* v, short position);
+};
+
+class GraphIterator {
+public:
+	GraphIterator(Graph *graph);
+
+	Vertex *nextVertex();
+
+	bool hasNext();
+};
+
+};
+#endif /* CONDENSED_GRAPH_H_ */
