@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <ext/hash_map>
+#include <algorithm>
 
 #define forn(i, n) for(int i = 0; i < (int) n; i++)
 #define ll long long

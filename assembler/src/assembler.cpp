@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 	cout << "seconds: " << (time(NULL) - now) << endl;
 	fqp->close();
 	freopen("./data/reads.txt", "w", stdout);
-	for(int i = 0; i < 1000000; i++) {
+	for(int i = 0; i < mps.size(); i++) {
 		Seq<MPSIZE> tmp = mps[i].seq1;
 		string s = tmp.str();
 		std::cout<<s;
