@@ -133,10 +133,13 @@ class MySimpleHashTable {
 public:
 	//todo think of using references
 	void put(Kmer k, pair <Vertex*, int> v) {
-
+//		h.insert(make_pair(k, v));
 	}
 
-	const pair <Vertex*, int>& get(Kmer k);
+	const pair <Vertex*, int>& get(Kmer k) {
+//		return h[k];
+	}
+
 	void remove(Kmer k);
 };
 
