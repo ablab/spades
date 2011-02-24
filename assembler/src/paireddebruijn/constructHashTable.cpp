@@ -29,7 +29,7 @@ int main() {
 	//freopen("config.ini", "r", stdin);
 	//scanf ("Upper k-mer size = %d",&k);
 	//scanf ("Lower k-mer size = %d",&l);
-	freopen("./data/reads.txt", "r", stdin);
+	freopen("reads.txt", "r", stdin);
 	l = 31;
 	k = 25;
 	ll upper_cut = (((ll) 1) << (2 * k)) - 1;
@@ -39,11 +39,14 @@ int main() {
 	int shift = (l - k) / 2;
 	int maxn = 1 << 20;
 	int read_num = 0;
-
+    
+	long totalKmers=0;
+	long uniqPairs=0;
 	ll upper_max = ((ll) 1) << 55;
+
 	while (1) {
 		if (!(read_num & 1023))
-			cerr << "read:" << read_num << endl;
+			cerr << "read:" << read_num <<"  Lmers: "<<totalKmers<<  "Unique: "<<uniqPairs<<endl;
 		read_num++;
 		char r1[102];
 		char r2[102];
@@ -69,16 +72,20 @@ int main() {
 			lower = lower << 2;
 			lower += r2[j];
 		}
-		forn(j, read_length - l) {
-			if ((upper > 0) && (upper < upper_max)) {
-			//if (1){
-				if (pairedTable.find(upper) != pairedTable.end())
-					pairedTable[upper].pb(lower);
+		forn(j, read_length - l+1) {
+//			if ((upper > 0) && (upper < upper_max)) {
+			if (1){
+				if (pairedTable.find(upper) != pairedTable.end()) {
+					if(find(pairedTable[upper].begin(), pairedTable[upper].end(), lower) == pairedTable[upper].end())
+					    {pairedTable[upper].pb(lower);++uniqPairs;}
+				}
 				else {
 					vector<ll> tmp;
 					tmp.pb(lower);
 					pairedTable.insert(make_pair(upper, tmp));
+					++uniqPairs;
 				}
+			totalKmers++;
 			}
 			upper <<= 2;
 			lower <<= 2;
@@ -95,7 +102,7 @@ int main() {
 	for (myMap::iterator iter = pairedTable.begin(); iter != pairedTable.end(); iter++) {
 		pair<ll, vector<ll> > p = (*iter);
 		//		cerr<<j<<endl;
-		cout << p.fi << endl;
+		cout << p.fi << " "<< p.se.size() <<endl;
 		//		cerr << p.fi << endl;
 		forn(i, p.se.size()) {
 			cout << p.se[i] << " ";
