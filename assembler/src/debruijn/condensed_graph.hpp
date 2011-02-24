@@ -8,7 +8,7 @@
 #include <set>
 #include <ext/hash_map>
 #include <cstring>
-#include "seq.hpp"
+#include "../seq.hpp"
 
 using namespace std;
 using namespace __gnu_cxx;
@@ -119,7 +119,7 @@ class Graph {
 
 	bool Empty(Vertex** vs) {
 		for (int i = 0; i < 4; ++i) {
-			if (vs[i] != null)
+			if (vs[i] != NULL)
 				return false;
 		}
 		return true;
