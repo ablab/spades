@@ -12,8 +12,8 @@
 
 CC=g++
 cflags +=-Wall
-CFLAGS=-I$(root) $(cflags) -DVERSION=$(VERSION_STR)  $(ADDCFLAGS) 
-
+CFLAGS=-I$(root) $(cflags) -DVERSION=$(VERSION_STR)  $(ADDCFLAGS)
+LDFLAGS=-lz
 
 DEPS=.depend
 CDEPSFLAGS=-MM -MG
@@ -57,7 +57,7 @@ $(lib): $(objects) $(subdirlibs)
 	$(LD) -o $(lib) $(objects) $(subdirlibs)
 
 $(prog): $(objects) $(subdirlibs) 
-	$(CC) $(CFLAGS) $+ -o $@
+	$(CC) $(CFLAGS) $+ $(LDFLAGS) -o $@
 
 $(subdirlibs): 
 

@@ -26,10 +26,10 @@ struct HashSym {
 };
 
 struct HashSymWeighted {
-	unsigned int operator() (const Kmer* seq) {
-		return 0;
-		// Will use frequency of seq
-	}
+  unsigned int operator() (const Kmer* seq) {
+    return 0;
+    // Will use frequency of seq
+  }
 };
 
 hash_map<Kmer, CVertex, HashSym> kmers_map;
