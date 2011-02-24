@@ -1,5 +1,5 @@
 #include <vector>
-
+#include "hashTable.h"
 using namespace std;
 
 #ifndef CONDENSED_GRAPH_H_

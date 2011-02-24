@@ -87,10 +87,10 @@ public:
 	}
 	;
 
-	Nucl operator[](const int &index) const {
+	/*Nucl operator[](const int &index) const {
 		return (*_nucls)[index];
 	}
-	;
+	;*/
 
 	int coverage() {
 		return _coverage;
