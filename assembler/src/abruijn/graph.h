@@ -17,10 +17,13 @@ class CVertex
 	typedef vector < CEdge > CEdgeArray;
 public:
 	CVertex ( Kmer * kmer ) : kmer (kmer) {};
+	void AddEdge ( CEdge e );
 };
 
 class CEdge
 {
+public:
+	CEdge ( CVertex endVertex, Seq<MPSIZE> r, int pos1, int pos2);
 	CVertex* endVertex;
 	Sequence label;
 };

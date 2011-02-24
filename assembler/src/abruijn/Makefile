@@ -1,5 +1,5 @@
 root=.
-sources=main.cpp graph.cpp toyexamples.cpp ../graphVisualizer.cpp
+sources=main.cpp graph.cpp graphBuilder.cpp toyexamples.cpp ../graphVisualizer.cpp
 subdirs=
 
 prog=abruijn
