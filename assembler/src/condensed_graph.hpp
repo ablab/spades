@@ -41,41 +41,7 @@ char toIndex(char c) {
 	}
 }
 
-/*char ComplementNucl(char c) {
- switch (c) {
- case 'A':
- return 'T';
- case 'C':
- return 'G';
- case 'G':
- return 'C';
- case 'T':
- return 'A';
- default:
- return 'N';
- }
- }*/
-
 class Vertex;
-
-/*class Arc {
- int _coverage;
- Vertex* _head;
- public:
- Arc(int coverage, Vertex* head) :
- _coverage(coverage), _head(head) {
- }
-
- //static
- int coverage() {
- return _coverage;
- }
- ;
- Vertex* head() {
- return _head;
- }
- ;
- };*/
 
 class Vertex {
 	Sequence _nucls;
@@ -167,10 +133,13 @@ class MySimpleHashTable {
 public:
 	//todo think of using references
 	void put(Kmer k, pair <Vertex*, int> v) {
-
+//		h.insert(make_pair(k, v));
 	}
 
-	const pair <Vertex*, int>& get(Kmer k);
+	const pair <Vertex*, int>& get(Kmer k) {
+//		return h[k];
+	}
+
 	void remove(Kmer k);
 };
 
