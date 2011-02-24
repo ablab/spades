@@ -38,7 +38,7 @@ public:
 //	SeqVarLen operator+ (const SeqVarLen &svl1, const SeqVarLen &svl2) const;
 	std::string str() const;
 	int len() const;
-public:
+private:
 	Seq<4>* _bytes;
 	int _len;
 	bool _reverse;
