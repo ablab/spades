@@ -14,14 +14,18 @@ char complement(char c); // 0123 -> 3210
 
 char nucl(char c); // 0123 -> ACGT
 
+class Sequence;
+
 template <int size> // max number of nucleotides
 class Seq {
 public:
 	Seq(const char* s);
 	Seq(const Seq<size> &s);
 	char operator[] (const int index) const;
+	Seq<size> operator!() const;
 	Seq<size> shift_right(char c) const; // char should be 0123
 	Seq<size> shift_left(char c) const; // char should be 0123
+	Sequence substring(int from, int to) const;
 	std::string str() const;
 	static int len();
 private:
@@ -111,6 +115,13 @@ int Seq<size>::len() {
 	return size;
 }
 
+
+template <int size>
+Seq<size> Seq<size>::operator! () const {
+	Sequence s = Sequence(this->str());
+	return Seq<size>((!s).str());
+}
+
 template <int size>
 Seq<size> Seq<size>::shift_right(char c) const {
 	Seq<size> res = *this;
@@ -138,6 +149,13 @@ Seq<size> Seq<size>::shift_left(char c) const {
 	return res;
 }
 
+
+template <int size>
+Sequence Seq<size>::substring(int from, int to) const {
+	std::string s = str();
+	s = s.substr(from, to);
+	return Sequence(s);
+}
 
 template <int size>
 MatePair<size>::MatePair(const char *s1, const char *s2, const int id_) : id(id_), seq1(s1), seq2(s2) {

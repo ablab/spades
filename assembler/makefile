@@ -2,7 +2,7 @@
 
 a: 
 	make -C src/abruijn
-
+	
 d:
 	make -C src/debruijn
 
