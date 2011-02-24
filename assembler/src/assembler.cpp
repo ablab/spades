@@ -1,8 +1,10 @@
 #include <cassert>
 #include <iostream>
 #include <list>
+#include <cstdio>
 #include <vector>
 #include <ctime>
+#include <string>
 #include "parser.hpp"
 //#include "condensed_graph.hpp"
 
@@ -40,5 +42,15 @@ int main(int argc, char *argv[]) {
 	cout << "Clear (without N) reads: " << mps.size() << endl;
 	cout << "seconds: " << (time(NULL) - now) << endl;
 	fqp->close();
+	freopen("./data/reads.txt", "w", stdout);
+	for(int i = 0; i < 1000000; i++) {
+		Seq<MPSIZE> tmp = mps[i].seq1;
+		string s = tmp.str();
+		std::cout<<s;
+		tmp = mps[i].seq2;
+		s = tmp.str();
+		std::cout<<" "<<s<<endl;
+		//std::cout << mps[i].seq1::str() << mps[i].seq2::str() << endl;
+	}
 	return 0;
 }

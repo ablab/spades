@@ -4,16 +4,19 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../constructHashTable.cpp \
 ../main.cpp \
 ../pairedGraph.cpp 
 
-CPP_DEPS += \
-./main.d \
-./pairedGraph.d 
-
 OBJS += \
+./constructHashTable.o \
 ./main.o \
 ./pairedGraph.o 
+
+CPP_DEPS += \
+./constructHashTable.d \
+./main.d \
+./pairedGraph.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
