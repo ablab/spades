@@ -39,6 +39,8 @@ int main() {
 	int shift = (l - k) / 2;
 	int maxn = 1 << 20;
 	int read_num = 0;
+
+	ll upper_max = ((ll) 1) << 55;
 	while (1) {
 		if (!(read_num & 1023))
 			cerr << "read:" << read_num << endl;
@@ -67,10 +69,9 @@ int main() {
 			lower = lower << 2;
 			lower += r2[j];
 		}
-		ll upper_max = ((ll) 1) << 45;
 		forn(j, read_length - l) {
-			//if ((upper > 0) && (upper < upper_max))
-			if (1){
+			if ((upper > 0) && (upper < upper_max)) {
+			//if (1){
 				if (pairedTable.find(upper) != pairedTable.end())
 					pairedTable[upper].pb(lower);
 				else {
