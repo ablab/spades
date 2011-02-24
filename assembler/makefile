@@ -5,7 +5,7 @@ LDFLAGS=-lz
 SOURCE_DIR=src
 BUILD_DIR=build
 
-SOURCES=parser.cpp seq.cpp assembler.cpp condensed_graph.cpp
+SOURCES=parser.cpp seq.cpp assembler.cpp condensed_graph.cpp graphVisualizer.cpp
 HEADERS=$(addprefix $(SOURCE_DIR)/,parser.hpp seq.hpp condensed_graph.hpp)
 FILES=$(addprefix $(SOURCE_DIR)/,$(SOURCES))
 OBJECTS=$(addprefix $(BUILD_DIR)/,$(SOURCES:.cpp=.o))
