@@ -1,10 +1,12 @@
 #include "common.h"
+#include "../seq.hpp"
 
 using namespace std;
 
 //typedef __gnu_cxx::hash_map<ll, vector<ll> > myMap;
 typedef map<ll, vector<ll> > myMap;
 
+typedef vector<Sequence> downSeqs;
 myMap pairedTable;
 int k = 25;
 int l = 31;
@@ -35,6 +37,10 @@ string decompress(ll a){
 		a >>=2;
 	}
 	return res;
+}
+
+downSeqs clusterize(int* a, int size) {
+	downSeqs res;
 }
 void readsToPairs(){
 	//freopen("config.ini", "r", stdin);
@@ -145,14 +151,12 @@ int main() {
 			scanf("%lld", &lmers[i]);
 		//	cerr << lmers[i]<<endl;
 		}
-		cerr <<"tsts";
 		sort(lmers, lmers+lsize);
-		cerr << "srted";
 		string s = decompress(lmers[0]);
 		forn(i, lsize)
 			cerr<< lmers[i ] << ":"<<decompress(lmers[i]) <<" ";
-		cerr <<endl<< "end";
-		return 0;
+		cerr <<endl << endl;
+		//return 0;
 	}
 
 }
