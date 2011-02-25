@@ -117,4 +117,18 @@ int main() {
 			cerr << j << endl;
 		j++;
 	}
+	pairedTable.clear();
+	fclose(stdout);
+	freopen(".data/reads.out","r",stdin);
+	int ok = 1;
+	int lmers[1000];
+	ll kmer;
+	ll lsize;
+	while (1) {
+		ok = scanf("%lld %d", &kmer, &lsize);
+		if (ok != 2) break;
+		forn(i, lsize) {
+			scanf("%lld");
+		}
+	}
 }
