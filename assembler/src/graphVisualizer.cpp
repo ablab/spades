@@ -2,12 +2,12 @@
 
 namespace gvis {
 
-void startGraphRecord(string name) {
-	cout << "digraph " << name << " {" << endl;
+void startGraphRecord(ostream &out, string name) {
+	out << "digraph " << name << " {" << endl;
 }
 
-void endGraphRecord() {
-	cout << "}" << endl;
+void endGraphRecord(ostream &out) {
+	out << "}" << endl;
 }
 
 }
