@@ -2,13 +2,13 @@ CC=g++
 CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long
 LDFLAGS=-lz
 
-SOURCE_DIR=src
-BUILD_DIR=build
-SOURCES=parser.cpp seq.cpp paireddebruijn/constructHashTable.cpp
-HEADERS=$(addprefix $(SOURCE_DIR)/,parser.hpp seq.hpp condensed_graph.hpp paireddebruijn/common.h)
+SOURCE_DIR=src/paireddebruijn
+BUILD_DIR=build/paireddebruijn
+SOURCES= constructHashTable.cpp
+HEADERS=$(addprefix $(SOURCE_DIR)/, common.h)
 FILES=$(addprefix $(SOURCE_DIR)/,$(SOURCES))
 OBJECTS=$(addprefix $(BUILD_DIR)/,$(SOURCES:.cpp=.o))
-EXECUTABLE=paireddebruijn/constructHashTable
+EXECUTABLE=constructHashTable
 
 all: $(FILES) $(EXECUTABLE)
 
