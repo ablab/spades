@@ -27,7 +27,7 @@ public:
 	Seq<size> shift_left(char c) const; // char should be 0123
 	Sequence substring(int from, int to) const;
 	std::string str() const;
-	static int len();
+	static int size();
 private:
 	const static int _bytelen = (size >> 2) + ((size & 3) != 0);
 	char _bytes[_bytelen]; // little-endian
@@ -41,7 +41,7 @@ public:
 	Sequence& operator!() const;
 //	SeqVarLen operator+ (const SeqVarLen &svl1, const SeqVarLen &svl2) const;
 	std::string str() const;
-	int len() const;
+	int size() const;
 private:
 	Seq<4>* _bytes;
 	int _len;
@@ -111,7 +111,7 @@ std::string Seq<size>::str() const {
 }
 
 template <int size>
-int Seq<size>::len() {
+int Seq<size>::size() {
 	return size;
 }
 

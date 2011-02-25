@@ -40,7 +40,7 @@ std::string Sequence::str() const {
 	return res;
 }
 
-int Sequence::len() const {
+int Sequence::size() const {
 	return _len;
 }
 

@@ -67,7 +67,7 @@ public:
 
 	//static Vertex AbsentVertex = Vertex(0, 0, NULL, true, 0, NULL);
 	int nucl_count() {
-		return _nucls.len();
+		return _nucls.size();
 	}
 	;
 
@@ -167,7 +167,7 @@ class SimpleHash {
 public:
 	unsigned int operator() (const Kmer& seq) const {
 	    unsigned int h = HASH_SEED;
-		for (int i = 0; i < seq.len(); i++) {
+		for (int i = 0; i < seq.size(); i++) {
 			h = ((h << 5) - h) + seq[i];
 		}
 		return h;
