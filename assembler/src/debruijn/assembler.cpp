@@ -18,14 +18,14 @@ int main(int argc, char *argv[]) {
 
 	std::cerr << "Hello, I am assembler!" << std::endl;
 	time_t now = time(NULL);
-	/*Seq<10> x = Seq<10>("ACGTACGTTC");
+	Seq<10> x = Seq<10>("ACGTACGTTC");
 	Seq<10> y = x.shift_right(0);
 	Seq<10> z = y.shift_left(3);
 	cerr << "Seq Shift Test 1: " << x.str() << endl;
 	cerr << "Seq Shift Test 2: " << y.str() << endl;
 	cerr << "Seq Shift Test 3: " << z.str() << endl;
 	cerr << "sizeof(Seq<10>): " << sizeof(z) << endl;
-	return 0;*/
+	return 0;
 	FASTQParser<MPSIZE>* fqp = new FASTQParser<MPSIZE>();
 	fqp->open(filenames.first, filenames.second);
 	vector<MatePair<MPSIZE> > mps;

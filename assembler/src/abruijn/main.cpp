@@ -1,12 +1,11 @@
 #include <iostream>
-#include "graph.h"
-//#include "graphBuilder.h"
-#include "toyexamples.h"
+#include "toyexamples.hpp"
+#include "graph.hpp"
+#include "graphBuilder.hpp"
 
 int main() {
   std::cout << "Hello, A Bruijn!";
-  //CGraph graph = GraphBuilder().build();
+  CGraph graph = GraphBuilder().build();
 
-  ConstructDeBruijnGraph ( "ACTGTACGTAC", 4 );
-
+  //ConstructDeBruijnGraph ( "ACTGTACGTAC", 4 );
 }

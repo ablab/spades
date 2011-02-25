@@ -5,7 +5,7 @@
 #include <ostream>
 #include <cassert>
 #include "../seq.hpp"
-#include "parameters.h"
+#include "parameters.hpp"
 
 using namespace std;
 
@@ -16,7 +16,9 @@ class CVertex
 	Kmer* kmer;
 	typedef vector < CEdge > CEdgeArray;
 public:
+	CVertex () {}; // TODO delete it
 	CVertex ( Kmer * kmer ) : kmer (kmer) {};
+	CVertex (const CVertex &cv ) {}; // TODO
 	void AddEdge ( CEdge e );
 };
 

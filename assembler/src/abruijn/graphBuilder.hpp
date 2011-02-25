@@ -8,11 +8,12 @@
 #ifndef GRAPHBUILDER_H_
 #define GRAPHBUILDER_H_
 
+#include "graph.hpp"
+
 class GraphBuilder
 {
-	CGraph graph;
 public:
-	GraphBuilder();
+	GraphBuilder() {}
 	CGraph build();
 };
 
