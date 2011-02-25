@@ -40,7 +40,7 @@ int main() {
 	int maxn = 1 << 20;
 	int read_num = 0;
 
-	ll upper_max = ((ll) 1) << 55;
+	ll upper_max = ((ll) 1) << 46;
 	while (1) {
 		if (!(read_num & 1023))
 			cerr << "read:" << read_num << endl;
@@ -70,7 +70,7 @@ int main() {
 			lower += r2[j];
 		}
 		forn(j, read_length - l) {
-			if ((upper > 0) && (upper < upper_max)) {
+			if ((upper >= 0) && (upper < upper_max)) {
 			//if (1){
 				if (pairedTable.find(upper) != pairedTable.end())
 					pairedTable[upper].pb(lower);
