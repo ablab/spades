@@ -13,13 +13,22 @@
 
 template <int _size>
 class DeBruijn {
-public:
-	void addNode(const Seq<_size> &seq);
 private:
-	struct Data {
+	struct data {
 		int edges;
 	};
-	google::sparse_hash_map<Seq<_size>, DeBruijn::Data> nodes;
+	//typedef google::sparse_hash_map<Seq<_size>, DeBruijn::Data, typename Seq<_size>::hash, typename Seq<_size>::equal_to> hash_map;
+	//hash_map _nodes;
+public:
+	void addNode(const Seq<_size> &seq) {
+		/*hash_map::iterator ni = _nodes.find(seq);
+		if (ni == _nodes.end()) {
+			_nodes[seq] = data();
+		}
+		else {
+			ni.second.edges += 1;
+		}*/
+	}
 };
 
 #endif /* DEBRUIJN_HPP_ */

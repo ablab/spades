@@ -9,7 +9,7 @@ all:$(EXEC)
 	@echo "Make successful"
 
 CC=g++
-CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long
+CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -std=c++0x
 LDFLAGS=-lz
 DEPSFL=-MM -MG
 
