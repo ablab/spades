@@ -1,1 +1,4 @@
 build/
+data/
+.project
+.cproject
