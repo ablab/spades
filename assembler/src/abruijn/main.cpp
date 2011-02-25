@@ -1,6 +1,6 @@
 #include <iostream>
-#include "graph.h"
-#include "graphBuilder.h"
+#include "graph.hpp"
+#include "graphBuilder.hpp"
 
 int main() {
 	std::cout << "Hello, A Bruijn!";

@@ -1,4 +1,4 @@
-#include "toyexamples.h"
+#include "toyexamples.hpp"
 
 #include <string>
 #include <set>
