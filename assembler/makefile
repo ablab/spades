@@ -1,31 +1,14 @@
-CC=g++
-CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long
-LDFLAGS=-lz
+.PHONY: a d p
 
-SOURCE_DIR=src
-BUILD_DIR=build
-SOURCES=parser.cpp seq.cpp paireddebruijn/constructHashTable.cpp
-HEADERS=$(addprefix $(SOURCE_DIR)/,parser.hpp seq.hpp condensed_graph.hpp paireddebruijn/common.h)
-FILES=$(addprefix $(SOURCE_DIR)/,$(SOURCES))
-OBJECTS=$(addprefix $(BUILD_DIR)/,$(SOURCES:.cpp=.o))
-EXECUTABLE=paireddebruijn/constructHashTable
-
-all: $(FILES) $(EXECUTABLE)
-
-#	rm -rf $(BUILD_DIR)/*.o
+a: 
+	make -C src/abruijn
 	
-$(EXECUTABLE): $(OBJECTS) 
-	$(CC) $(OBJECTS) $(LDFLAGS) -o $(BUILD_DIR)/$@
+d:
+	make -C src/debruijn
 
-$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cpp $(BUILD_DIR)/.d $(HEADERS) 
-	$(CC) -c $(CFLAGS) $< -o $@
-
-$(BUILD_DIR)/.d:
-	mkdir -p $(BUILD_DIR)
-	touch $@		
+p:
+	make -C src/paireddebruijn	
 
 clean:
-	rm -rf ./$(BUILD_DIR)/*
-
-.PRECIOUS: $(BUILD_DIR)/.d
+	rm -rf ./build/*
 

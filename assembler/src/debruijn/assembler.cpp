@@ -5,7 +5,7 @@
 #include <vector>
 #include <ctime>
 #include <string>
-#include "parser.hpp"
+#include "../parser.hpp"
 //#include "condensed_graph.hpp"
 
 using namespace std;

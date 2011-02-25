@@ -6,13 +6,11 @@
 #include "vector"
 using namespace std;
 
-void startGraphRecord(string name) {
-	cout << "digraph " << name << " {" << endl;
-}
+namespace gvis {
 
-void endGraphRecord() {
-	cout << "}" << endl;
-}
+void startGraphRecord(string name);
+
+void endGraphRecord();
 
 template<typename tVertex>
 void recordVertex(tVertex vertexId, string vertexLabel) {
@@ -77,5 +75,5 @@ public:
 		outputGraph<tVertex>(_name, _vertices, _edges);
 	}
 };
-	
+}
 #endif //GRAPH_VIS_//

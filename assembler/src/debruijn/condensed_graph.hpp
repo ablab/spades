@@ -5,9 +5,10 @@
  *      Author: sergey
  */
 #include <vector>
+#include <set>
 #include <ext/hash_map>
 #include <cstring>
-#include "seq.hpp"
+#include "../seq.hpp"
 
 using namespace std;
 using namespace __gnu_cxx;
@@ -52,12 +53,17 @@ class Vertex {
 	int _arc_coverage[4];
 public:
 	//todo talk with Kolya about problem with Sequence copying!!!
-	Vertex(Sequence nucls, Vertex** arcs, Vertex* complement) :
-		_nucls(nucls), _complement(complement) {
+	Vertex(Sequence nucls, Vertex** arcs) :
+		_nucls(nucls) {
 		memcpy(arcs, _arcs, 4 * sizeof(Vertex*));
 		//		_arcs = arcs;
 	}
 	;
+
+	~Vertex() {
+		delete [] _arcs;
+		delete [] _arc_coverage;
+ 	}
 
 	//static Vertex AbsentVertex = Vertex(0, 0, NULL, true, 0, NULL);
 	int nucl_count() {
@@ -68,11 +74,6 @@ public:
 	char operator[](const int &index) const {
 		return _nucls[index];
 	}
-
-	int coverage() {
-		return _coverage;
-	}
-	;
 
 	int arc_count() {
 		int c = 0;
@@ -96,12 +97,60 @@ public:
 		return _complement;
 	}
 	;
+
+	void set_complement(Vertex* complement) {
+		_complement = complement;
+	}
+	;
+
+	int coverage() {
+		return _coverage;
+	}
+	;
+
+	void set_coverage(int coverage) {
+		_coverage = coverage;
+	}
+	;
 };
 
 class Graph {
-	vector<Vertex*> _component_roots;
+	set<Vertex*> _component_roots;
+
+	bool Empty(Vertex** vs) {
+		for (int i = 0; i < 4; ++i) {
+			if (vs[i] != NULL)
+				return false;
+		}
+		return true;
+	}
+
 public:
-	vector<Vertex*> component_roots();
+	const set<Vertex*>& component_roots() {
+		return _component_roots;
+	}
+
+	/**
+	 * adds two complement vertices
+	 */
+	void AddVertices(Sequence nucls, Vertex** outgoing_vert, Vertex** outgoing_vert_for_compl) {
+		Vertex* v1 = new Vertex(nucls, outgoing_vert);
+		Vertex* v2 = new Vertex(!nucls, outgoing_vert_for_compl);
+		v1->set_complement(v2);
+		v2->set_complement(v1);
+		if (Empty(outgoing_vert)) {
+			_component_roots.insert(v1);
+		}
+	}
+
+	/**
+	 * deletes vertex and its complement
+	 */
+	void DeleteVertices(Vertex* v) {
+		Vertex* complement = v->complement();
+		delete v;
+		delete complement;
+	}
 };
 
 /*class KmerPos {
