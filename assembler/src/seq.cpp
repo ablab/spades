@@ -9,9 +9,9 @@
 #include <cstdlib>
 #include "seq.hpp"
 
-Sequence::Sequence(const std::string &s): _len(s.size()), _reverse(false) {
-	_bytes = (Seq<4>*) malloc(this->_len >> 2); // sizeof(Seq<4>()) == 1;
-	for (int i = 0; i < _len / 4; ++i) {
+Sequence::Sequence(const std::string &s): _size(s.size()), _reverse(false) {
+	_bytes = (Seq<4>*) malloc(this->_size >> 2); // sizeof(Seq<4>()) == 1;
+	for (int i = 0; i < _size / 4; ++i) {
 		_bytes[i] = Seq<4>(s.substr(i*4, 4).c_str());
 	}
 }
@@ -24,7 +24,7 @@ Sequence::~Sequence() {
 
 char Sequence::operator[] (int index) const {
 	if (_reverse) {
-		index = _len - index - 1;
+		index = _size - index - 1;
 		return complement(_bytes[index / 4][index % 4]);
 	}
 	else {
@@ -34,14 +34,14 @@ char Sequence::operator[] (int index) const {
 
 std::string Sequence::str() const {
 	std::string res = "";
-	for (int i = 0; i < this->_len; ++i) {
+	for (int i = 0; i < this->_size; ++i) {
 		res += nucl((*this)[i]);
 	}
 	return res;
 }
 
 int Sequence::size() const {
-	return _len;
+	return _size;
 }
 
 Sequence& Sequence::operator! () const {
@@ -49,7 +49,7 @@ Sequence& Sequence::operator! () const {
 	return *res;
 }
 
-Sequence::Sequence(const Sequence *svl, bool reverse = false): _bytes(svl->_bytes), _len(svl->_len), _reverse(svl->_reverse) {
+Sequence::Sequence(const Sequence *svl, bool reverse = false): _bytes(svl->_bytes), _size(svl->_size), _reverse(svl->_reverse) {
 	if (reverse) {
 		_reverse = !_reverse;
 	}
