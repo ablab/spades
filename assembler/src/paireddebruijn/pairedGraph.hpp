@@ -64,5 +64,5 @@ public:
 	bool hasNext();
 };
 
-};
+}
 #endif /* CONDENSED_GRAPH_H_ */

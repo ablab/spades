@@ -6,7 +6,7 @@ EXEC=$(builddir)/$(PROG)
 OBJS := $(addprefix $(builddir)/, $(notdir $(SRC:.cpp=.o)))
 
 all:$(EXEC)
-	@echo "Make successful"
+	@echo "vvvvvvvvvv MAKE SUCCESSFUL vvvvvvvvvv"
 
 CC=g++
 CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -std=c++0x

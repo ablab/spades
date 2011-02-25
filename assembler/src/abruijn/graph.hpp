@@ -13,29 +13,34 @@ class CEdge;
 
 class CVertex
 {
-	Kmer* kmer;
+	Sequence * kmer;
 	typedef vector < CEdge > CEdgeArray;
+	CEdgeArray edgeArray;
 public:
-	CVertex () {}; // TODO delete it
-	CVertex ( Kmer * kmer ) : kmer (kmer) {};
+	CVertex () {};
+	CVertex ( Sequence * kmer ) : kmer (kmer) {};
 	CVertex (const CVertex &cv ) {}; // TODO
 	void AddEdge ( CEdge e );
 };
 
 class CEdge
 {
-public:
-	CEdge ( CVertex endVertex, Seq<MPSIZE> r, int pos1, int pos2);
+//	Seq<MPSIZE> r; TODO
+//	int pos1, pos2;
 	CVertex* endVertex;
-	Sequence label;
+public:
+	CEdge ( CVertex * endVertex, Seq<MPSIZE> * r, int pos1, int pos2 ) :
+		endVertex (endVertex) {};
+//	Sequence label;
 };
 
 /// A straightforward graph implementation.
 class CGraph
 {
 	typedef vector < CVertex > CVertexArray;
+	CVertexArray vertexArray;
 public:
-	CGraph ( unsigned number_of_vertices );
+	CGraph () {}
 	void AddVertex ( CVertex v );
 };
 

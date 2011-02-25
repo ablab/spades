@@ -3,4 +3,3 @@ DIR=abruijn
 PROG=abruijn
 
 include ../makefile.inc
-
