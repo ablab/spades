@@ -1,6 +1,6 @@
-SRC=pairedGraph.cpp main.cpp constructHashTable.pp ../seq.cpp ../parser.cpp
-DIR=paired
-PROG=paired
+SRC=constructHashTable.cpp ../seq.cpp ../parser.cpp #pairedGraph.cpp main.cpp 
+DIR=paireddebruijn
+PROG=paireddebruijn
 
 include ../makefile.inc
 
