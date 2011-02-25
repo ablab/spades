@@ -6,8 +6,8 @@ using namespace std;
 typedef map<ll, vector<ll> > myMap;
 
 myMap pairedTable;
-int k;
-int l;
+int k = 25;
+int l = 31;
 int read_length;
 
 inline int value(char a) {
@@ -25,13 +25,22 @@ inline int value(char a) {
 	}
 
 }
-int main() {
+string decompress(ll a){
+	string res = "";
+	res.reserve(l);
+	forn(i,l)
+		res += " ";
+	forn(i, l) {
+		res[l-i - 1] = '0' + (a & 3);
+		a >>=2;
+	}
+	return res;
+}
+void readsToPairs(){
 	//freopen("config.ini", "r", stdin);
 	//scanf ("Upper k-mer size = %d",&k);
 	//scanf ("Lower k-mer size = %d",&l);
 	freopen("data/reads.txt", "r", stdin);
-	l = 31;
-	k = 25;
 	ll upper_cut = (((ll) 1) << (2 * k)) - 1;
 
 	ll lower_cut = (((ll) 1) << (2 * l)) - 1;
@@ -39,18 +48,15 @@ int main() {
 	int shift = (l - k) / 2;
 	int maxn = 1 << 20;
 	int read_num = 0;
-
-    
 	long totalKmers=0;
 	long uniqPairs=0;
-	ll upper_max = ((ll) 1) << 55;
-
+	ll upper_max = ((ll) 1) << 46;
 	while (1) {
 		if (!(read_num & 1023))
 			cerr << "read num:" << read_num <<"  Lmers: "<<totalKmers<<  "Unique: "<<uniqPairs<<endl;
 		read_num++;
-		if (read_num > 800000)
-			break;
+	//		if (read_num > 8000)
+		//		break;
 		char r1[102];
 		char r2[102];
 		char rr1[102];
@@ -82,7 +88,7 @@ int main() {
 //			if (1){
 				if (pairedTable.find(upper) != pairedTable.end()) {
 					if(find(pairedTable[upper].begin(), pairedTable[upper].end(), lower) == pairedTable[upper].end())
-					    {pairedTable[upper].pb(lower);++uniqPairs;}
+						{pairedTable[upper].pb(lower);++uniqPairs;}
 				}
 				else {
 					vector<ll> tmp;
@@ -102,7 +108,7 @@ int main() {
 			lower &= lower_cut;
 		}
 	}
-	freopen("./data/reads.out", "w", stdout);
+	freopen("data/reads.out", "w", stdout);
 	int j = 0;
 	for (myMap::iterator iter = pairedTable.begin(); iter != pairedTable.end(); iter++) {
 		pair<ll, vector<ll> > p = (*iter);
@@ -119,16 +125,34 @@ int main() {
 	}
 	pairedTable.clear();
 	fclose(stdout);
-	freopen(".data/reads.out","r",stdin);
+	//return 0;
+}
+int main() {
+	FILE* f = freopen("data/reads.out","r",stdin);
+	cerr << f <<endl;
 	int ok = 1;
-	int lmers[1000];
+	const int MAXLMERSIZE = 2000;
+	ll lmers[MAXLMERSIZE];
+
 	ll kmer;
-	ll lsize;
+	int lsize;
 	while (1) {
 		ok = scanf("%lld %d", &kmer, &lsize);
-		if (ok != 2) break;
-		forn(i, lsize) {
-			scanf("%lld");
+		if (ok != 2) {
+			break;
 		}
+		forn(i, lsize) {
+			scanf("%lld", &lmers[i]);
+		//	cerr << lmers[i]<<endl;
+		}
+		cerr <<"tsts";
+		sort(lmers, lmers+lsize);
+		cerr << "srted";
+		string s = decompress(lmers[0]);
+		forn(i, lsize)
+			cerr<< lmers[i ] << ":"<<decompress(lmers[i]) <<" ";
+		cerr <<endl<< "end";
+		return 0;
 	}
+
 }
