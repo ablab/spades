@@ -29,7 +29,7 @@ int main() {
 	//freopen("config.ini", "r", stdin);
 	//scanf ("Upper k-mer size = %d",&k);
 	//scanf ("Lower k-mer size = %d",&l);
-	freopen("reads.txt", "r", stdin);
+	freopen("data/reads.txt", "r", stdin);
 	l = 31;
 	k = 25;
 	ll upper_cut = (((ll) 1) << (2 * k)) - 1;
@@ -47,15 +47,19 @@ int main() {
 
 	while (1) {
 		if (!(read_num & 1023))
-			cerr << "read:" << read_num <<"  Lmers: "<<totalKmers<<  "Unique: "<<uniqPairs<<endl;
+			cerr << "read num:" << read_num <<"  Lmers: "<<totalKmers<<  "Unique: "<<uniqPairs<<endl;
 		read_num++;
+		if (read_num > 800000)
+			break;
 		char r1[102];
 		char r2[102];
 		char rr1[102];
 		char rr2[102];
 		int n = scanf("%s %s", &rr1, &rr2);
-		if (n != 2)
+		if (n != 2) {
+			cerr <<"input error"<< endl;
 			break;
+		}
 		//cerr << n;
 		//cerr<< rr1;
 		//return 0;
@@ -74,8 +78,8 @@ int main() {
 			lower += r2[j];
 		}
 		forn(j, read_length - l+1) {
-//			if ((upper > 0) && (upper < upper_max)) {
-			if (1){
+			if ((upper >= 0) && (upper < upper_max)) {
+//			if (1){
 				if (pairedTable.find(upper) != pairedTable.end()) {
 					if(find(pairedTable[upper].begin(), pairedTable[upper].end(), lower) == pairedTable[upper].end())
 					    {pairedTable[upper].pb(lower);++uniqPairs;}
