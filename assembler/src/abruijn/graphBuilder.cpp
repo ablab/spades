@@ -1,40 +1,16 @@
 #include <iostream>
-#include "graph.h"
-#include "parameters.h"
+#include <algorithm>
+#include "graph.hpp"
+#include "hash.hpp"
+#include "graphBuilder.hpp"
+#include "parameters.hpp"
 #include "../parser.hpp"
 #include <ext/hash_map>
 
 using namespace std;
 using namespace __gnu_cxx;
 
-// seq[0]*31^(n-1) + seq[1]*31^(n-2) + ... + seq[n-1]*31^0
-template< typename T >
-struct Hash {
-	unsigned int operator() (const T* seq) const {
-	    unsigned int h = HASH_SEED;
-		for (int i = 0; i < seq->len(); i++) {
-			h = ((h << 5) - h) + (*seq)[i];
-		}
-		return h;
-	}
-};
-
-template< typename T >
-struct HashSym {
-	unsigned int operator() (const T* seq) const {
-		Hash<T> h;
-		return h(seq) ^ h(!seq);
-	}
-};
-
-struct HashSymWeighted {
-  unsigned int operator() (const Kmer* seq) {
-    return 0;
-    // Will use frequency of seq
-  }
-};
-
-hash_map<Sequence, CVertex, HashSym<Kmer> > kmers_map;
+hash_map < Sequence, CVertex, HashSym<Sequence> > kmers_map;
 CGraph graph(1000000);
 
 void processRead(Seq<MPSIZE> r) {
@@ -45,9 +21,9 @@ void processRead(Seq<MPSIZE> r) {
 	unsigned int h2 = -1;
 	int pos2 = -1;
 	for (int i = 0; i + K <= MPSIZE; i++) {
-		Hash<Sequence> hh;
-		Sequence* kmer = &r.substring(i, i + K);
-		unsigned int h = hh(kmer);
+		HashSym<Sequence> hh;
+		//Sequence* kmer = &);
+		unsigned int h = hh(r.substring(i, i + K));
 		if (h < h1) {
 			h2 = h1;
 			pos2 = pos1;
@@ -62,6 +38,10 @@ void processRead(Seq<MPSIZE> r) {
 		int t = pos1; pos1 = pos2; pos2 = t;
 		t = h1; h1 = h2; h2 = t;
 	}
+	CVertex v;
+	Sequence s = r.substring(0, 1);
+	pair<Sequence, CVertex> p = make_pair(s, v);
+	kmers_map.insert(p);
 //	Kmer k1 = r.substring(pos1, pos1 + K);
 	CVertex v1 = kmers_map[r.substring(pos1, pos1 + K)];
 	CVertex v2 = kmers_map[r.substring(pos2, pos2 + K)];
@@ -71,7 +51,7 @@ void processRead(Seq<MPSIZE> r) {
 	v1.AddEdge(e);
 }
 
-CGraph build() {
+CGraph GraphBuilder::build() {
 	FASTQParser<MPSIZE>* fqp = new FASTQParser<MPSIZE>();
 	fqp->open(filenames.first, filenames.second);
 	while (!fqp->eof()) {

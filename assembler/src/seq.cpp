@@ -32,6 +32,11 @@ char Sequence::operator[] (int index) const {
 	}
 }
 
+// TODO rewrite this!
+bool Sequence::operator== (const Sequence &that) const {
+	return this->str() == that.str();
+}
+
 std::string Sequence::str() const {
 	std::string res = "";
 	for (int i = 0; i < this->_size; ++i) {

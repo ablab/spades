@@ -38,6 +38,7 @@ public:
 	Sequence(const std::string &s);
 	~Sequence();
 	char operator[](int index) const;
+	bool operator==(const Sequence &that) const;
 	Sequence& operator!() const;
 //	SeqVarLen operator+ (const SeqVarLen &svl1, const SeqVarLen &svl2) const;
 	std::string str() const;
