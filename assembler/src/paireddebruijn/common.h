@@ -5,7 +5,7 @@
 #include <map>
 #include <ext/hash_map>
 #include <algorithm>
-
+#include <string>
 #define forn(i, n) for(int i = 0; i < (int) n; i++)
 #define ll long long
 #define pb push_back
