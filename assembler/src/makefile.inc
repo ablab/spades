@@ -6,6 +6,7 @@ EXEC=$(builddir)/$(PROG)
 OBJS := $(addprefix $(builddir)/, $(notdir $(SRC:.cpp=.o)))
 
 all:$(EXEC)
+	@echo "Make successful"
 
 CC=g++
 CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long
@@ -17,6 +18,7 @@ DEPSFL=-MM -MG
 # link
 $(EXEC): $(OBJS) 
 	$(CC) $(OBJS) $(LDFLAGS) -o $(builddir)/$@
+	@cp $(builddir)/$@ .
     
 # pull in dependency info for *existing* .o files
 -include $(OBJS:.o=.d)
@@ -30,7 +32,7 @@ $(EXEC): $(OBJS)
 #   sed:    strip leading spaces
 #   sed:    add trailing colons
 $(builddir)/%.o: %.cpp $(builddir)/.d
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@
 	@echo $(builddir) > $(builddir)/$*.d.tmp
 	@tr "\n" "/" <$(builddir)/$*.d.tmp >$(builddir)/$*.d
 	$(CC) $(DEPSFL) $(CFLAGS) $< >> $(builddir)/$*.d
@@ -40,7 +42,7 @@ $(builddir)/%.o: %.cpp $(builddir)/.d
 	@rm -f $(builddir)/$*.d.tmp
 
 $(builddir)/%.o: ../%.cpp $(builddir)/.d
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@
 	@echo $(builddir) > $(builddir)/$*.d.tmp
 	@tr "\n" "/" <$(builddir)/$*.d.tmp >$(builddir)/$*.d
 	$(CC) $(DEPSFL) $(CFLAGS) $< >> $(builddir)/$*.d
