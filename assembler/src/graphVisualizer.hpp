@@ -8,48 +8,48 @@ using namespace std;
 
 namespace gvis {
 
-void startGraphRecord(string name);
+void startGraphRecord(ostream &out, string name);
 
-void endGraphRecord();
+void endGraphRecord(ostream &out);
 
 template<typename tVertex>
-void recordVertex(tVertex vertexId, string vertexLabel) {
+void recordVertex(ostream &out, tVertex vertexId, string vertexLabel) {
 	if(vertexLabel.length() != 0)
-		cout << vertexId << " [label" << "=" << vertexLabel << "]" << endl;
+		out << vertexId << " [label" << "=" << vertexLabel << "]" << endl;
 	else
-		cout << vertexId << ";" << endl;
+		out << vertexId << ";" << endl;
 }
 
 template<typename tVertex>
-void recordEdge(tVertex fromId, tVertex toId, string edgeLabel) {
-	cout << fromId << "->" << toId;
+void recordEdge(ostream &out, tVertex fromId, tVertex toId, string edgeLabel) {
+	out << fromId << "->" << toId;
 	if(edgeLabel.length() != 0)
-		cout << "[label=" << edgeLabel << "]";
-	cout << endl;
+		out << "[label=" << edgeLabel << "]";
+	out << endl;
 }
 
 template<typename tVertex>
-void recordVertices(vector<pair<tVertex, string> > vertices) {
+void recordVertices(ostream &out, vector<pair<tVertex, string> > vertices) {
 	for(typename vector<pair<tVertex, string> >::iterator it = vertices.begin(); it != vertices.end(); it++) {
 		pair<tVertex, string> v = *it;
-		recordVertex(v.first, v.second);
+		recordVertex(out, v.first, v.second);
 	}
 }
 
 template<typename tVertex>
-void recordEdges(vector<pair<pair<tVertex, tVertex>, string> > edges) {
+void recordEdges(ostream &out, vector<pair<pair<tVertex, tVertex>, string> > edges) {
 	for(typename vector<pair<pair<tVertex, tVertex>, string> >::iterator it = edges.begin(); it != edges.end(); it++) {
 		pair<pair<tVertex, tVertex>, string> e = *it;
-		recordEdge(e.first.first, e.first.second, e.second);
+		recordEdge(out, e.first.first, e.first.second, e.second);
 	}
 }
 
 template<typename tVertex>
-void outputGraph(string graphName, vector<pair<tVertex, string> > vertices, vector< pair< pair<tVertex, tVertex>, string> > edges) {
-	startGraphRecord(graphName);
-	recordVertices<tVertex>(vertices);
-	recordEdges<tVertex>(edges);
-	endGraphRecord();
+void outputGraph(ostream &out, string graphName, vector<pair<tVertex, string> > vertices, vector< pair< pair<tVertex, tVertex>, string> > edges) {
+	startGraphRecord(out, graphName);
+	recordVertices<tVertex>(out, vertices);
+	recordEdges<tVertex>(out, edges);
+	endGraphRecord(out);
 }
 
 template<typename tVertex>
@@ -72,7 +72,11 @@ public:
 	}
 
 	void output() {
-		outputGraph<tVertex>(_name, _vertices, _edges);
+		outputGraph<tVertex>(cout, _name, _vertices, _edges);
+	}
+
+	void output(ostream out) {
+		outputGraph<tVertex>(out, _name, _vertices, _edges);
 	}
 };
 }
