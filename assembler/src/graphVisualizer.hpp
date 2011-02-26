@@ -57,17 +57,17 @@ class GraphScheme {
 public:
 	string _name;
 	vector<pair<tVertex, string> > _vertices;
-	vector< pair< pair<tVertex, tVertex>, string> > _edges;
+	vector<pair<pair<tVertex, tVertex>, string> > _edges;
 
 	GraphScheme(string name) {
 		_name = name;
 	}
 
-	void addVertex(tVertex vertexId, string label) {
+	void addVertex(tVertex vertexId, string &label) {
 		_vertices.push_back(make_pair(vertexId, label));
 	}
 
-	void addEdge(tVertex fromId, tVertex toId, string label) {
+	void addEdge(tVertex fromId, tVertex toId, string &label) {
 		_edges.push_back(make_pair(make_pair(fromId, toId), label));
 	}
 

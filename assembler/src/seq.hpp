@@ -11,6 +11,10 @@
 #include <string>
 #include <functional>
 #include <memory>
+#include <iostream> // for debug
+#include <cstring>
+#include <cassert>
+#include <cstring>
 
 char complement(char c); // 0123 -> 3210
 char nucl(char c); // 0123 -> ACGT
@@ -24,7 +28,7 @@ class Sequence { // runtime length sequence (slow!!!)
 public:
 	Sequence(const std::string &s);
 	~Sequence();
-	char operator[](int index) const;
+	char operator[](const size_t index) const;
 	bool operator==(const Sequence &that) const;
 	Sequence& operator!() const;
 	std::string str() const;
@@ -41,7 +45,7 @@ private:
 template <size_t _size> // max number of nucleotides
 class Seq {
 private:
-	const static size_t _byteslen = (_size >> 2) + ((_size & 3) != 0);
+	const static size_t _byteslen = (_size / 4) + (_size % 4 != 0); // compile-time constant
 	char _bytes[_byteslen]; // little-endian
 public:
 	Seq() {}; // random Seq, use with care!
@@ -68,12 +72,21 @@ public:
 		}
 	}
 
-	Seq(const Seq<_size> &s) {
-		memcpy(_bytes, s._bytes, (_size >> 2) + ((_size & 3) != 0));
+	Seq(const Seq<_size> &seq) {
+		//std::cerr << "Hey!" << std::endl;
+		memcpy(_bytes, seq._bytes, _byteslen);
 	}
 
 	char operator[] (const size_t index) const { // 0123
-		return ((_bytes[index >> 2] >> ((3-(index%4))*2) ) & 3);
+		int i = index;
+		return ((_bytes[i >> 2] >> ((3-(i%4))*2) ) & 3);
+	}
+
+	Seq<_size>& operator= (const Seq<_size> &seq) {
+		if (this != &seq) {
+			memcpy(this->_bytes, seq._bytes, _byteslen);
+		}
+		return *this;
 	}
 
 	Seq<_size> operator!() const { // TODO: optimize
@@ -81,25 +94,30 @@ public:
 		return Seq<_size>((!s).str());
 	}
 
+	// add nucleotide to the right
 	Seq<_size> shift_right(char c) const { // char should be 0123
-		Seq<_size> res = *this;
+		return Seq<_size>(this->str().substr(0, _size-1).append(1, c).c_str());
+		assert(c <= 3);
+		Seq<_size> res = *this; // copy constructor
 		c <<= (((4-(_size%4))%4)*2); // omg >.<
-		for (int i = _byteslen - 1; i >= 0; --i) {
-			char rm = (_bytes[i] & 192) >> 6;
+		for (int i = _byteslen - 1; i >= 0; --i) { // don't make it size_t :)
+			char rm = (res._bytes[i] >> 6) & 3;
 			res._bytes[i] <<= 2;
-			res._bytes[i] &= 252;
+			//res._bytes[i] &= 252;
 			res._bytes[i] |= c;
 			c = rm;
 		}
 		return res;
 	}
 
+	// add nucleotide to the left
 	Seq<_size> shift_left(char c) const { // char should be 0123
-		Seq<_size> res = *this;
+		Seq<_size> res = *this; // copy constructor
+		// TODO: clear last nucleotide
 		for (size_t i = 0; i < _byteslen; ++i) {
-			char rm = _bytes[i] & 3;
+			char rm = res._bytes[i] & 3;
 			res._bytes[i] >>= 2;
-			res._bytes[i] &= 63;
+			//res._bytes[i] &= 63;
 			res._bytes[i] |= (c << 6);
 			c = rm;
 		}
@@ -114,9 +132,11 @@ public:
 
 	// string representation of Seq - only for debug and output purposes
 	std::string str() const {
-		std::string res = "";
-		for (int i = 0; i < _size; ++i) {
-			res += nucl((*this)[i]);
+		std::string res(_size, 'A');
+		//std::string res = "";
+		for (size_t i = 0; i < _size; ++i) {
+			char c = nucl(this->operator[](i));
+			res[i] = c;
 		}
 		return res;
 	}
@@ -147,19 +167,19 @@ public:
 		}
 	};
 
-};
-
-/*namespace std { // hacking standard hash function for Seq<_size>
-	namespace tr1 { // hacking standard hash function for Seq<_size>
-		template <>
-		template <int _size>
-		struct hash<Seq<_size> > {
-			size_t operator()(const Seq<_size> &seq) const{
-				return 1;
-			}
-		};
+	template <int _size2>
+	Seq<_size2> head() { // TODO: optimize (Kolya)
+		std::string s = str();
+		return Seq<_size2>(s.substr(0, _size2).c_str());
 	}
-}*/
+
+	template <int _size2>
+	Seq<_size2> tail() const { // TODO: optimize (Kolya)
+		std::string s = str();
+		return Seq<_size2>(s.substr(_size - _size2, _size2).c_str());
+	}
+
+};
 
 // *****************************************
 
@@ -169,12 +189,15 @@ class MatePair {
 public:
 	MatePair(const char *s1, const char *s2, const int id_) : id(id_), seq1(s1), seq2(s2) {};
 	MatePair(const MatePair &mp) : id(mp.id), seq1(mp.seq1), seq2(mp.seq2) {};
-	const static MatePair<_size> null = MatePair<_size>("", "", -1);
-private:
+	const static MatePair<_size> null;
+public: // make private!
 	int id; // consecutive number from input file :)
 	Seq<_size> seq1;
 	Seq<_size> seq2;
 };
+
+template <int _size>
+const MatePair<_size> MatePair<_size>::null = MatePair<_size>("", "", -1);
 
 // *****************************************
 
