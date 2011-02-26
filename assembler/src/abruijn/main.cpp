@@ -7,5 +7,5 @@ int main() {
   //std::cout << "Hello, A Bruijn!";
   //CGraph graph = GraphBuilder().build();
 
-  ConstructDeBruijnGraph ( "ACTGTACGTACCTGT", 7, 4 );
+  ConstructDeBruijnGraph ( "ACTGTACGTACCTGTGTCATTCAGTCATGTACTGATCCCCGTA", 11, 7 );
 }
