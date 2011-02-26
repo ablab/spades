@@ -3,6 +3,20 @@ ASSEMBLER
 
 De novo sequence assembler for short mate paired reads (70+ bp).
 
+=== PREREQ ===
+
+You need zlib (dev) and google-sparsehash installed in your system.
+
+In Ubuntu it's simple:
+ 
+> sudo apt-get install zlib1g-dev
+
+> cd ./assembler/src/libs/sparsehash-1.10/
+> ./configure
+> make
+> sudo make install
+> make clean
+
 === INSTALLATION ===
 
 With a GNU environment (g++, make):
@@ -11,26 +25,41 @@ With a GNU environment (g++, make):
 
 === USAGE ===
 
-ERROR CORRECTION:
+For usual de Bruijn graph run:
 
-> ./assember-ec [-i `indir`] [-o `outdir`]
+> ./build/debruijn/debruijn
 
-Inputs mate paired reads from `indir` (default "data"), corrects errors etc.
-Outputs corrected mate paired reads to `outdir` (default "data-ec").
+For A-Bruijn graph run:
 
-ASSEMBLY:
+> ./build/abruijn/abruijn
 
-> ./assembler [-i `indir`] [-o `outfile`] [-s]
+For Paired de Bruijn graph run:
 
-Inputs mate paired reads from `indir` (default "data-ec"), builds de Bruijn graph, simplifies it etc..
-Outputs final de Bruijn graph to `outfile` (default "assembly.out").
+> ./build/paireddebruijn/paireddebruijn
 
-If -s key presented then outputs linear sequence of contigs (scaffold), but not the graph.
+
+#ERROR CORRECTION:
+#
+#> ./assember-ec [-i `indir`] [-o `outdir`]
+#
+#Inputs mate paired reads from `indir` (default "data"), corrects errors etc.
+#Outputs corrected mate paired reads to `outdir` (default "data-ec").
+#
+#ASSEMBLY:
+#
+#> ./assembler [-i `indir`] [-o `outfile`] [-s]
+#
+#Inputs mate paired reads from `indir` (default "data-ec"), builds de Bruijn graph, simplifies it etc..
+#Outputs final de Bruijn graph to `outfile` (default "assembly.out").
+#
+#If -s key presented then outputs linear sequence of contigs (scaffold), but not the graph.
 
 === CODE STYLE ===
 
 I'm using Google C++ Style Guide: http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml .
 
-=== P.S. ===
+#=== P.S. ===
+#
+#It's good idea to make ./assembler-sf (scaffolder) as separate utility program.
 
-It's good idea to make ./assembler-sf (scaffolder) as separate utility program.
+// This README was updated 26 Feb 2011
