@@ -13,52 +13,43 @@ using namespace std;
 pair<string,string> filenames = make_pair("./data/s_6_1.fastq.gz", "./data/s_6_2.fastq.gz");
 
 #define MPSIZE 100
+#define K 11
 
 int main(int argc, char *argv[]) {
 
 	std::cerr << "Hello, I am assembler!" << std::endl;
-	DeBruijn<12> graph;
-	graph.addNode(Seq<12>("AAACCCGGGTTT"));
-	graph.addNode(Seq<12>("TTTCCCGGGAAA"));
 
-	Seq<10> x3 = Seq<10>("ACGTACGTTC");
-	size_t h = Seq<10>::hash()(x3);
-	cerr << h << endl;
+	time_t now = time(NULL);
 
-	//time_t now = time(NULL);
-	Seq<9> x = Seq<9>("ACGTACGTTTTTT");
-	Seq<9> y = x.shift_right(0);
-	Seq<9> z = y.shift_left(3);
-	cerr << "Seq Shift Test 1: " << x.str() << endl;
-	cerr << "Seq Shift Test 2: " << y.str() << endl;
-	cerr << "Seq Shift Test 3: " << z.str() << endl;
-	cerr << "sizeof(Seq<10>): " << sizeof(z) << endl;
-	/*
+	Seq<3> s = Seq<3>("ACG");
+	s.shift_right(0);
+	//return 0;
+
+	// simple de Bruijn graph
+	DeBruijn<K> graph;
+	// start parsing...
 	FASTQParser<MPSIZE>* fqp = new FASTQParser<MPSIZE>();
 	fqp->open(filenames.first, filenames.second);
-	vector<MatePair<MPSIZE> > mps;
 	int cnt = 0;
 	while (!fqp->eof()) {
 		MatePair<MPSIZE> mp = fqp->read(); // is it copy? :)
 		if (mp.id != -1) { // don't have 'N' in reads
-			mps.push_back(mp); // it's copy! :)
-			//cout <<  mp.id << endl << mp.seq1.str() << endl <<  mp.seq2.str() << endl;
+			Seq<K> head = mp.seq1.head<K>();
+			Seq<K> tail;
+			for (size_t i = K; i < MPSIZE; ++i) {
+				cerr << head.str() << endl;
+				tail = head.shift_right(mp.seq1[i]);
+				graph.addEdge(head, tail);
+				head = tail;
+			}
 		}
 		cnt++;
 	}
 	cout << "Total reads: " << cnt << endl;
-	cout << "Clear (without N) reads: " << mps.size() << endl;
+	cout << "Total nodes: " << graph._nodes.size() << endl;
+	//cout << "Clear (without N) reads: " << mps.size() << endl;
 	cout << "seconds: " << (time(NULL) - now) << endl;
 	fqp->close();
-	freopen("./data/reads.txt", "w", stdout);
-	for(int i = 0; i < mps.size(); i++) {
-		Seq<MPSIZE> tmp = mps[i].seq1;
-		string s = tmp.str();
-		std::cout<<s;
-		tmp = mps[i].seq2;
-		s = tmp.str();
-		std::cout<<" "<<s<<endl;
-		//std::cout << mps[i].seq1::str() << mps[i].seq2::str() << endl;
-	}*/
+
 	return 0;
 }

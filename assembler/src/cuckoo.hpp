@@ -8,11 +8,6 @@
 #ifndef CUCKOO_HPP_
 #define CUCKOO_HPP_
 
-template <class key, class value, class hash = hash<key> >
-class cuckoo {
-public:
-	cuckoo() {};
-	virtual ~cuckoo() {};
-};
+// TODO
 
 #endif /* CUCKOO_HPP_ */

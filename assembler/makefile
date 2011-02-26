@@ -12,3 +12,4 @@ p:
 clean:
 	rm -rf ./build/*
 
+all: a d p

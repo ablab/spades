@@ -22,13 +22,14 @@ Sequence::~Sequence() {
 	}
 }
 
-char Sequence::operator[] (int index) const {
+char Sequence::operator[] (const size_t index) const {
+	int i = index;
 	if (_reverse) {
-		index = _size - index - 1;
-		return complement(_bytes[index / 4][index % 4]);
+		i = _size - i - 1;
+		return complement(_bytes[i / 4][i % 4]);
 	}
 	else {
-		return _bytes[index / 4][index % 4];
+		return _bytes[i / 4][i % 4];
 	}
 }
 

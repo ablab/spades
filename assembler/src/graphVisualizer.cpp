@@ -1,4 +1,4 @@
-#import "graphVisualizer.hpp"
+#include "graphVisualizer.hpp"
 
 namespace gvis {
 
