@@ -8,8 +8,8 @@ using namespace std;
 
 /// Given a genomic string and k, prints 
 /// the corresponding de Bruijn graph to a given file.
-/// The implementation is highly inefficient.
-extern void ConstructDeBruijnGraph ( string genome, unsigned k );
+/// The implementation is highly INEFFICIENT.
+extern void ConstructDeBruijnGraph ( string genome, unsigned read_size, unsigned k );
 
 #endif
 
