@@ -99,16 +99,6 @@ public:
 	// add nucleotide to the right
 	Seq<_size> shift_right(char c) const { // char should be 0123
 		assert(c <= 3);
-		/*std::cerr << "!!1" << std::endl;
-		std::string s = str();
-		std::cerr << "!!2" << s << std::endl;
-		std::cerr << _size-1 << std::endl;
-		s = s.substr(1);
-		std::cerr << "!!3" << std::endl;
-		s.append(1, c);
-		std::cerr << "!!4" << std::endl;
-		std::cerr << "!!5" << std::endl;
-		return Seq<_size>(s.c_str());*/
 		Seq<_size> res = *this; // copy constructor
 		c <<= (((4-(_size%4))%4)*2); // omg >.<
 		for (int i = _byteslen - 1; i >= 0; --i) { // don't make it size_t :)
@@ -159,7 +149,7 @@ public:
 		 size_t operator() (const Seq<_size> &seq) const {
 			size_t h = 0;
 			for (size_t i = 0; i < _byteslen; ++i) {
-				h += seq._bytes[i];
+				h *= seq._bytes[i]*13;
 			}
 			return h;
 		}

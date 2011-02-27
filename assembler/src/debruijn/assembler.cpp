@@ -30,28 +30,24 @@ int main(int argc, char *argv[]) {
 	int cnt = 0;
 	while (!fqp->eof()) {
 		MatePair<MPSIZE> mp = fqp->read(); // is it copy? :)
-		cerr << mp.seq1.str() << endl;
-		cerr << mp.seq2.str() << endl;
 		if (mp.id != -1) { // don't have 'N' in reads
+			//cerr << mp.seq1.str() << endl;
+			//cerr << mp.seq2.str() << endl;
+			if (cnt == 100) {
+				cerr << graph.size() << endl;
+				cnt = 0;
+			}
 			Seq<K> head = mp.seq1.head<K>();
 			Seq<K> tail;
 			for (size_t i = K; i < MPSIZE; ++i) {
-				cerr << "?" << i << nucl(mp.seq1[i]) << endl;
-				cerr << head.str() << endl;
 				tail = head.shift_right(mp.seq1[i]);
-				cerr << "~" << endl;
-				cerr << head.str() << endl;
-				cerr << tail.str() << endl;
 				graph.addEdge(head, tail);
 				head = tail;
-				cerr << "!" << endl;
 			}
+			cnt++;
 		}
-		cnt++;
 	}
-	cout << "Total reads: " << cnt << endl;
-	cout << "Total nodes: " << graph._nodes.size() << endl;
-	//cout << "Clear (without N) reads: " << mps.size() << endl;
+	cout << "Total nodes: " << graph.size() << endl;
 	cout << "seconds: " << (time(NULL) - now) << endl;
 	fqp->close();
 
