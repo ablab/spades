@@ -15,6 +15,7 @@
 #include <cstring>
 #include <cassert>
 #include <cstring>
+#include <array>
 
 char complement(char c); // 0123 -> 3210
 char nucl(char c); // 0123 -> ACGT
@@ -46,7 +47,8 @@ template <size_t _size> // max number of nucleotides
 class Seq {
 private:
 	const static size_t _byteslen = (_size / 4) + (_size % 4 != 0); // compile-time constant
-	char _bytes[_byteslen]; // little-endian
+	//char _bytes[_byteslen]; // little-endian
+	std::array<char,_byteslen> _bytes; // 0 bits overhead
 public:
 	Seq() {}; // random Seq, use with care!
 
@@ -72,9 +74,9 @@ public:
 		}
 	}
 
-	Seq(const Seq<_size> &seq) {
+	Seq(const Seq<_size> &seq) : _bytes(seq._bytes) {
 		//std::cerr << "Hey!" << std::endl;
-		memcpy(_bytes, seq._bytes, _byteslen);
+		//memcpy(_bytes, seq._bytes, _byteslen);
 	}
 
 	char operator[] (const size_t index) const { // 0123
@@ -82,12 +84,12 @@ public:
 		return ((_bytes[i >> 2] >> ((3-(i%4))*2) ) & 3);
 	}
 
-	Seq<_size>& operator= (const Seq<_size> &seq) {
+	/*Seq<_size>& operator= (const Seq<_size> &seq) {
 		if (this != &seq) {
 			memcpy(this->_bytes, seq._bytes, _byteslen);
 		}
 		return *this;
-	}
+	}*/
 
 	Seq<_size> operator!() const { // TODO: optimize
 		Sequence s = Sequence(this->str());
@@ -96,8 +98,17 @@ public:
 
 	// add nucleotide to the right
 	Seq<_size> shift_right(char c) const { // char should be 0123
-		return Seq<_size>(this->str().substr(0, _size-1).append(1, c).c_str());
 		assert(c <= 3);
+		/*std::cerr << "!!1" << std::endl;
+		std::string s = str();
+		std::cerr << "!!2" << s << std::endl;
+		std::cerr << _size-1 << std::endl;
+		s = s.substr(1);
+		std::cerr << "!!3" << std::endl;
+		s.append(1, c);
+		std::cerr << "!!4" << std::endl;
+		std::cerr << "!!5" << std::endl;
+		return Seq<_size>(s.c_str());*/
 		Seq<_size> res = *this; // copy constructor
 		c <<= (((4-(_size%4))%4)*2); // omg >.<
 		for (int i = _byteslen - 1; i >= 0; --i) { // don't make it size_t :)
@@ -135,8 +146,7 @@ public:
 		std::string res(_size, 'A');
 		//std::string res = "";
 		for (size_t i = 0; i < _size; ++i) {
-			char c = nucl(this->operator[](i));
-			res[i] = c;
+			res[i] = nucl(this->operator[](i));
 		}
 		return res;
 	}
@@ -157,13 +167,15 @@ public:
 
 	struct equal_to {
 		bool operator() (const Seq<_size> &l, const Seq<_size> &r) const {
-			 return 0 == memcmp(l._bytes, r._bytes, _byteslen);
+			return l._bytes == r._bytes;
+			//return 0 == memcmp(l._bytes.data(), r._bytes.data(), _byteslen);
 		}
 	};
 
 	struct less {
 		int operator() (const Seq<_size> &l, const Seq<_size> &r) const {
-			 return 0 > memcmp(l._bytes, r._bytes, _byteslen);
+			return l._bytes < r._bytes;
+			//return 0 > memcmp(l._bytes.data(), r._bytes.data(), _byteslen);
 		}
 	};
 
