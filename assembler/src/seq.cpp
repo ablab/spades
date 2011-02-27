@@ -9,11 +9,13 @@
 #include <cstdlib>
 #include "seq.hpp"
 
-Sequence::Sequence(const std::string &s): _size(s.size()), _reverse(false) {
+
+Sequence::Sequence(const std::string &s): _size(s.size()), _reverse(false) {  //ACGT string only.
 	_bytes = (Seq<4>*) malloc(this->_size >> 2); // sizeof(Seq<4>()) == 1;
 	for (int i = 0; i < _size / 4; ++i) {
 		_bytes[i] = Seq<4>(s.substr(i*4, 4).c_str());
 	}
+	//TODO:  Поправить конструктор(в том числе и для Seq) чтоб адекватно работало для 0123
 }
 
 Sequence::~Sequence() {
