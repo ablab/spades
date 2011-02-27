@@ -46,7 +46,7 @@ string decompress(ll a) {
 	forn(i,l)
 		res += " ";
 	forn(i, l) {
-		res[l - i - 1] = nucl('0' + (a & 3));
+		res[l - i - 1] = '0' + (a & 3);
 		a >>= 2;
 	}
 	return res;
@@ -140,8 +140,6 @@ downSeqs clusterize(ll* a, int size) {
 			Sequence* tmpSeq = new Sequence(s);
 			res.pb(tmpSeq);
 			color++;
-			printf("%s ",s.c_str());
-
 		}
 
 	}
@@ -258,7 +256,7 @@ void readsToPairs(char *inputFile, char *outputFile) {
 int main1() {
 	FILE* f = freopen("data/klmers.out", "r", stdin);
 	FILE* decompressed = fopen("data/decompressed.out", "w" );
-	freopen("data/error.log", "w",stderr);
+//	freopen("data/error.log", "w",stderr);
 	cerr << f << endl;
 	int ok = 1;
 	ll lmers[MAXLMERSIZE];
@@ -305,8 +303,8 @@ int main1() {
 		}
 		printf("\n");
 		fprintf(decompressed, "\n");
-		return 0;
-		if (!(count & ((1 << 12) - 1) ))
+	//	return 0;
+		if (!(count & ((1 << 10) - 1) ))
 			cerr<< "klmer numero "<< count <<"generated" <<endl;
 		//forn(i, lsize)
 		//	cerr << lmers[i] << ":" << decompress(lmers[i]) << " ";

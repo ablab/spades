@@ -10,12 +10,23 @@
 #include "seq.hpp"
 
 
-Sequence::Sequence(const std::string &s): _size(s.size()), _reverse(false) {  //ACGT string only.
-	_bytes = (Seq<4>*) malloc(this->_size >> 2); // sizeof(Seq<4>()) == 1;
+Sequence::Sequence(const std::string &s): _size(s.size()), _reverse(false) {  //BUGGED!!!
+	_bytes = (Seq<4>*) malloc((this->_size >> 2) + 1); // sizeof(Seq<4>()) == 1;
 	for (int i = 0; i < _size / 4; ++i) {
 		_bytes[i] = Seq<4>(s.substr(i*4, 4).c_str());
 	}
-	//TODO:  Поправить конструктор(в том числе и для Seq) чтоб адекватно работало для 0123
+	if (_size & 3) {
+//		_bytes[_size/4 + 1]
+	}
+	/*
+	 * Sequence* tst = new Sequence("AAAAAAC");
+	   string s = tst->str();
+       cout<<s.c_str()<<endl;
+
+
+       this code returns "AAAAAAA" !!!!
+	 */
+	//TODO: bugfix!
 }
 
 Sequence::~Sequence() {
