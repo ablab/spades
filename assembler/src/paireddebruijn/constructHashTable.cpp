@@ -15,7 +15,7 @@ int uniqPairs = 0;
 ll upperMask = (((ll) 1) << (2 * k)) - 1;
 ll lowerMask = (((ll) 1) << (2 * l)) - 1;
 
-ll upper_max = ((ll) 1) << 46;
+ll upperMax = ((ll) 1) << 46;
 const int MAXLMERSIZE = 2000;
 
 
@@ -53,16 +53,18 @@ string decompress(ll a) {
 }
 
 //toDo
-downSeqs clusterize(int* a, int size) {
+downSeqs clusterize(ll* a, int size) {
 	downSeqs res;
 	res.clear();
 	int right[MAXLMERSIZE];
 	int left[MAXLMERSIZE];
+	int used[MAXLMERSIZE];
 	//-1 = no neighbor;
 	//-2 = more than 1 neighbor
 	forn(i, size) {
 		right[i] = -1;
 		left[i] = -1;
+		used[i] = 0;
 	}
 	ll diff;
 	forn(i, size) {
@@ -87,6 +89,15 @@ downSeqs clusterize(int* a, int size) {
 			}
 		}
 	}
+	if (size > 30) {
+		forn(i, size)
+			cerr<<left[i] <<" ";
+		cerr<<endl;
+		forn(i, size)
+			cerr<<right[i] <<" ";
+		cerr<<endl;
+		cerr<<endl;
+	}
 	return res;
 }
 
@@ -103,11 +114,13 @@ ll extractMer(char *read, int shift, int length) {
 	return res;
 }
 
-bool checkBoundsForUpper(ll upper) {
-	return true;
+inline bool checkBoundsForUpper(ll upper) {
+	if ((upper >= 0) && (upper < upperMax))
+		return true;
+	else return false;
 }
 
-void addPairToTable(myMap table, ll upper, ll lower) {
+void addPairToTable(myMap& table, ll upper, ll lower) {
 	if (table.find(upper) != table.end()) {
 		if (find(table[upper].begin(), table[upper].end(), lower)
 				== table[upper].end()) {
@@ -116,21 +129,27 @@ void addPairToTable(myMap table, ll upper, ll lower) {
 		}
 	} else {
 		vector<ll> tmp;
+		tmp.clear();
 		tmp.pb(lower);
 		table.insert(make_pair(upper, tmp));
+
+//		cerr<<"inserting"<<table.size();
 		++uniqPairs;
 	}
 }
 
-void processReadPair(myMap table, char *upperRead, char *lowerRead) {
+void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	int shift = (l - k) / 2;
 	ll upper = extractMer(upperRead, shift, k);
 	ll lower = extractMer(lowerRead, 0, l);
+//	fprintf(stderr,"%lld %lld\n", upper, lower);
 	for (int j = 0; j + l <= readLength; j++) {
 		if (checkBoundsForUpper(upper)) {
 			addPairToTable(table, upper, lower);
 			totalKmers++;
+
 		}
+
 		upper <<= 2;
 		upper += upperRead[j + l - shift];
 		upper &= upperMask;
@@ -138,22 +157,30 @@ void processReadPair(myMap table, char *upperRead, char *lowerRead) {
 		lower <<= 2;
 		lower += lowerRead[j + l];
 		lower &= lowerMask;
+		//fprintf(stderr,"%d %d\n", upper, lower);
+
 	}
+//	cerr << table.size()<<endl;
 }
 
 void constructTable(myMap &table) {
+	int count = 0;
 	char *upperNuclRead = new char[readLength + 2];
 	char *lowerNuclRead = new char[readLength + 2];
 	char *upperRead = new char[readLength + 2];
 	char *lowerRead = new char[readLength + 2];
 	while (nextReadPair(upperNuclRead, lowerNuclRead)) {
+//		fprintf(stderr, "%s", upperNuclRead);
 		codeRead(upperNuclRead, upperRead);
 		codeRead(lowerNuclRead, lowerRead);
 		processReadPair(table, upperRead, lowerRead);
+		if (!(count & (1024*128 - 1)))
+			cerr<<"read number "<<count<<" processed"<<endl;
+		count++;
 	}
 }
 
-void outputTable(myMap pairedTable) {
+void outputTable(myMap &pairedTable) {
 	int j = 0;
 	for (myMap::iterator iter = pairedTable.begin(); iter != pairedTable.end(); iter++) {
 		pair<ll, vector<ll> > p = (*iter);
@@ -171,9 +198,13 @@ void outputTable(myMap pairedTable) {
 
 void readsToPairs(char *inputFile, char *outputFile) {
 	myMap table;
+	cerr << 1;
 	freopen(inputFile, "r", stdin);
+	cerr << 2;
 	constructTable(table);
+	cerr << 3;
 	freopen(outputFile, "w", stdout);
+	cerr << 4;
 	outputTable(table);
 	fclose(stdout);
 	delete &table;
@@ -197,9 +228,10 @@ int main1() {
 			//	cerr << lmers[i]<<endl;
 		}
 		sort(lmers, lmers + lsize);
+		clusterize(lmers, lsize);
 		string s = decompress(lmers[0]);
-		forn(i, lsize)
-			cerr << lmers[i] << ":" << decompress(lmers[i]) << " ";
-		cerr << endl << endl;
+		//forn(i, lsize)
+		//	cerr << lmers[i] << ":" << decompress(lmers[i]) << " ";
+		//cerr << endl << endl;
 	}
 }
