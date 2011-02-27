@@ -10,9 +10,14 @@ typedef vector<Sequence> downSeqs;
 int k = 25;
 int l = 31;
 int readLength = 100;
-long totalKmers = 0;
-long uniqPairs = 0;
+int totalKmers = 0;
+int uniqPairs = 0;
+ll upperMask = (((ll) 1) << (2 * k)) - 1;
+ll lowerMask = (((ll) 1) << (2 * l)) - 1;
+
 ll upper_max = ((ll) 1) << 46;
+const int MAXLMERSIZE = 2000;
+
 
 inline int codeNucleotide(char a) {
 	if (a == 'A')
@@ -50,10 +55,42 @@ string decompress(ll a) {
 //toDo
 downSeqs clusterize(int* a, int size) {
 	downSeqs res;
+	res.clear();
+	int right[MAXLMERSIZE];
+	int left[MAXLMERSIZE];
+	//-1 = no neighbor;
+	//-2 = more than 1 neighbor
+	forn(i, size) {
+		right[i] = -1;
+		left[i] = -1;
+	}
+	ll diff;
+	forn(i, size) {
+		ll tmp = (a[i] << 2) && lowerMask;
+		forn(j, size) {
+			diff = a[j] - tmp;
+			if ((a[j] - tmp >= 0) && (a[j] - tmp <= 3) && (i != j)){
+				if (left[i] == -1)
+					left[i] = j;
+				else
+					left[i]  = -2;
+			}
+		}
+		tmp = a[i] >> 2;
+		forn(j, size) {
+			diff = a[j] - tmp;
+			if ((i != j) && ((diff & (lowerMask >> 2)) == 0)){
+				if (right[i] == -1)
+					right[i] = j;
+				else
+					right[i]  = -2;
+			}
+		}
+	}
 	return res;
 }
 
-bool nextReadPair(char * &read1, char * &read2) {
+inline bool nextReadPair(char * &read1, char * &read2) {
 	return scanf("%s %s", read1, read2) == 2;
 }
 
@@ -86,8 +123,6 @@ void addPairToTable(myMap table, ll upper, ll lower) {
 }
 
 void processReadPair(myMap table, char *upperRead, char *lowerRead) {
-	ll upperMask = (((ll) 1) << (2 * k)) - 1;
-	ll lowerMask = (((ll) 1) << (2 * l)) - 1;
 	int shift = (l - k) / 2;
 	ll upper = extractMer(upperRead, shift, k);
 	ll lower = extractMer(lowerRead, 0, l);
@@ -148,7 +183,6 @@ int main1() {
 	FILE* f = freopen("data/reads.out", "r", stdin);
 	cerr << f << endl;
 	int ok = 1;
-	const int MAXLMERSIZE = 2000;
 	ll lmers[MAXLMERSIZE];
 
 	ll kmer;
