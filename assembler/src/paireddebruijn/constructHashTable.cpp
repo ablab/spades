@@ -6,7 +6,7 @@ using namespace std;
 
 typedef map<ll, vector<ll> > myMap;
 
-typedef vector<Sequence> downSeqs;
+typedef vector<Sequence*> downSeqs;
 int k = 25;
 int l = 31;
 int readLength = 100;
@@ -16,7 +16,7 @@ ll upperMask = (((ll) 1) << (2 * k)) - 1;
 ll lowerMask = (((ll) 1) << (2 * l)) - 1;
 
 ll upperMax = ((ll) 1) << 46;
-const int MAXLMERSIZE = 2000;
+const int MAXLMERSIZE = 10000;
 
 
 inline int codeNucleotide(char a) {
@@ -24,9 +24,9 @@ inline int codeNucleotide(char a) {
 		return 0;
 	else if (a == 'C')
 		return 1;
-	else if (a == 'T')
-		return 2;
 	else if (a == 'G')
+		return 2;
+	else if (a == 'T')
 		return 3;
 	else {
 		std::cerr << "oops!";
@@ -46,7 +46,7 @@ string decompress(ll a) {
 	forn(i,l)
 		res += " ";
 	forn(i, l) {
-		res[l - i - 1] = '0' + (a & 3);
+		res[l - i - 1] = nucl('0' + (a & 3));
 		a >>= 2;
 	}
 	return res;
@@ -68,38 +68,82 @@ downSeqs clusterize(ll* a, int size) {
 	}
 	ll diff;
 	forn(i, size) {
-		ll tmp = (a[i] << 2) && lowerMask;
+		ll tmp = ((a[i] << 2) & lowerMask);
 		forn(j, size) {
 			diff = a[j] - tmp;
 			if ((a[j] - tmp >= 0) && (a[j] - tmp <= 3) && (i != j)){
-				if (left[i] == -1)
-					left[i] = j;
-				else
-					left[i]  = -2;
-			}
-		}
-		tmp = a[i] >> 2;
-		forn(j, size) {
-			diff = a[j] - tmp;
-			if ((i != j) && ((diff & (lowerMask >> 2)) == 0)){
 				if (right[i] == -1)
 					right[i] = j;
 				else
 					right[i]  = -2;
 			}
 		}
+		tmp = a[i] >> 2;
+		forn(j, size) {
+			diff = a[j] - tmp;
+			if ((i != j) && ((diff & (lowerMask >> 2)) == 0)){
+				if (left[i] == -1)
+					left[i] = j;
+				else
+					left[i]  = -2;
+			}
+		}
+
 	}
-	if (size > 30) {
+//	forn(i,size)
+//		cerr<<decompress(a[i ]) << " ";
+/*	if (size > 30) {
 		forn(i,size)
 			cerr<<decompress(a[i ]) << " ";
-		cerr<<endl;
+		cerr<<"left"<<endl;
 		forn(i, size)
 			cerr<<left[i] <<" ";
 		cerr<<endl;
+
+		cerr<<"right"<<endl;
 		forn(i, size)
 			cerr<<right[i] <<" ";
 		cerr<<endl;
 		cerr<<endl;
+	}*/
+	int color = 1;
+	forn(i, size) {
+		int seqlength = l;
+		if (used[i] == 0) {
+			int ii = i;
+			used[i] = color;
+			while ((left[ii] >= 0) && (right[left[ii]] == ii) && (left[ii] != i)){
+				ii = left[ii];
+				used[ii] = color;
+				seqlength++;
+			}
+			int leftend = ii;
+
+			ii = i;
+			while ((right[ii] >= 0) && (left[right[ii]] == ii) && (right[ii] != i)){
+				ii = right[ii];
+				used[ii] = color;
+				seqlength++;
+			}
+			int rightend = ii;
+			ii = leftend;
+			string s = decompress(a[leftend]);
+	//		cerr << s << " ";
+			//cerr << a[ii]<<" and " << ii << " ";
+			while (ii != rightend) {
+
+				ii = right[ii];
+				//cerr << a[ii] << " and " << ii << " ";
+				s += (a[ii] & 3) + '0';
+			}
+		//	cerr << s << endl;
+			Sequence* tmpSeq = new Sequence(s);
+			res.pb(tmpSeq);
+			color++;
+			printf("%s ",s.c_str());
+
+		}
+
 	}
 	return res;
 }
@@ -208,36 +252,66 @@ void readsToPairs(char *inputFile, char *outputFile) {
 	freopen(outputFile, "w", stdout);
 	outputTable(table);
 	fclose(stdout);
-	delete &table;
+	table.clear();
 }
 
 int main1() {
 	FILE* f = freopen("data/klmers.out", "r", stdin);
+	FILE* decompressed = fopen("data/decompressed.out", "w" );
+	freopen("data/error.log", "w",stderr);
 	cerr << f << endl;
 	int ok = 1;
 	ll lmers[MAXLMERSIZE];
 
 	ll kmer;
 	int lsize;
+	freopen("data/vertixes.out", "w", stdout);
+	int count = 0;
 	while (1) {
+		count++;
 		ok = scanf("%lld %d", &kmer, &lsize);
 		if (ok != 2) {
 			cerr<< "error in reads.";
 
 			break;
 		}
+		if (lsize > MAXLMERSIZE)
+			continue;
 		forn(i, lsize) {
-			scanf("%lld", &lmers[i % MAXLMERSIZE]);
-//			cerr <<i<<" "<< lmers[i%2000]<<endl;
-		}
-		cerr<<"FUCK "<<endl;
-		sort(lmers, lmers + lsize%2000);
-		clusterize(lmers, lsize% 2000);
+			if (scanf("%lld", &lmers[i % MAXLMERSIZE]) != 1) {
+				cerr << "Error in main1 reading l-mers";
+				return -1;
+			}
 
-		string s = decompress(lmers[0]);
+		//	cerr <<i<<" "<< lmers[i%MAXLMERSIZE]<<" ";
+		}
+//		cerr << endl;
+		//cerr<<"FUCK "<<endl;
+		sort(lmers, lmers + lsize % MAXLMERSIZE);
+		downSeqs clusters =  clusterize(lmers, lsize % MAXLMERSIZE);
+		int clsize = clusters.size();
+		string outstring;
+
+		string s = decompress(kmer);
+		fprintf(decompressed, "%s %d\n", s.c_str(), lsize);
+		printf("%s %d\n", s.c_str(), clsize);
+		forn(i, lsize) {
+
+			fprintf(decompressed, "%s ", decompress(lmers[i]).c_str());
+		}
+		forn(i, clsize) {
+			outstring = clusters[i]->str();
+			printf("%s ",outstring.c_str());
+		}
+		printf("\n");
+		fprintf(decompressed, "\n");
+		return 0;
+		if (!(count & ((1 << 12) - 1) ))
+			cerr<< "klmer numero "<< count <<"generated" <<endl;
 		//forn(i, lsize)
 		//	cerr << lmers[i] << ":" << decompress(lmers[i]) << " ";
 		//cerr << endl << endl;
 	}
 	cerr<<"finished";
+	return 0;
 }
