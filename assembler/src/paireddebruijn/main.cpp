@@ -2,5 +2,6 @@
 #include "graphConstruction.hpp"
 
 int main() {
-	readsToPairs("data/reads.in", "data/klmers.out");
+//	readsToPairs("data/reads.in", "data/klmers.out");
+	main1();
 }

@@ -90,6 +90,9 @@ downSeqs clusterize(ll* a, int size) {
 		}
 	}
 	if (size > 30) {
+		forn(i,size)
+			cerr<<decompress(a[i ]) << " ";
+		cerr<<endl;
 		forn(i, size)
 			cerr<<left[i] <<" ";
 		cerr<<endl;
@@ -198,20 +201,18 @@ void outputTable(myMap &pairedTable) {
 
 void readsToPairs(char *inputFile, char *outputFile) {
 	myMap table;
-	cerr << 1;
+	cerr << "generation of k-l pairs started"<<endl;
 	freopen(inputFile, "r", stdin);
-	cerr << 2;
 	constructTable(table);
-	cerr << 3;
+	cerr << "generation of k-l pairs finished, dumping to disk."<<endl;
 	freopen(outputFile, "w", stdout);
-	cerr << 4;
 	outputTable(table);
 	fclose(stdout);
 	delete &table;
 }
 
 int main1() {
-	FILE* f = freopen("data/reads.out", "r", stdin);
+	FILE* f = freopen("data/klmers.out", "r", stdin);
 	cerr << f << endl;
 	int ok = 1;
 	ll lmers[MAXLMERSIZE];
@@ -221,17 +222,22 @@ int main1() {
 	while (1) {
 		ok = scanf("%lld %d", &kmer, &lsize);
 		if (ok != 2) {
+			cerr<< "error in reads.";
+
 			break;
 		}
 		forn(i, lsize) {
-			scanf("%lld", &lmers[i]);
-			//	cerr << lmers[i]<<endl;
+			scanf("%lld", &lmers[i % MAXLMERSIZE]);
+//			cerr <<i<<" "<< lmers[i%2000]<<endl;
 		}
-		sort(lmers, lmers + lsize);
-		clusterize(lmers, lsize);
+		cerr<<"FUCK "<<endl;
+		sort(lmers, lmers + lsize%2000);
+		clusterize(lmers, lsize% 2000);
+
 		string s = decompress(lmers[0]);
 		//forn(i, lsize)
 		//	cerr << lmers[i] << ":" << decompress(lmers[i]) << " ";
 		//cerr << endl << endl;
 	}
+	cerr<<"finished";
 }
