@@ -4,3 +4,4 @@ data/
 .project
 *.exe
 *.exe.stackdump
+~*
