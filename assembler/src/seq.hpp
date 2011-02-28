@@ -32,6 +32,11 @@ public:
 	char operator[](const size_t index) const;
 	bool operator==(const Sequence &that) const;
 	Sequence& operator!() const;
+	/**
+	 * start -inclusive, end -exclusive;
+	 */
+	Sequence substr(int start, int end) const;
+//	SeqVarLen operator+ (const SeqVarLen &svl1, const SeqVarLen &svl2) const;
 	std::string str() const;
 	int size() const;
 private:

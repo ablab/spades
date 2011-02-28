@@ -8,6 +8,9 @@
 #include <iostream>
 #include <cstdlib>
 #include "seq.hpp"
+#include <string>
+
+using namespace std;
 
 
 Sequence::Sequence(const std::string &s): _size(s.size()), _reverse(false) {  //accepts both 0123 and ACGT
@@ -57,6 +60,15 @@ int Sequence::size() const {
 Sequence& Sequence::operator! () const {
 	Sequence* res = new Sequence(this, true);
 	return *res;
+}
+
+Sequence Sequence::substr(int start, int end) const {
+	//todo rewrite when other constructors will exist
+	string s = "";
+	for (int i = start; i < end; ++i) {
+		s += operator[](i);
+	}
+	return Sequence(s);
 }
 
 Sequence::Sequence(const Sequence *svl, bool reverse = false): _bytes(svl->_bytes), _size(svl->_size), _reverse(svl->_reverse) {
