@@ -8,7 +8,7 @@ using namespace std;
 
 namespace paired_assembler {
 
-typedef int Kmer;
+//typedef int Kmer;
 
 //class Sequence {
 //	char *_nucleotides;
@@ -25,6 +25,12 @@ class Vertex;
 //	short _coverage;
 //	Vertex* _head;
 //};
+class VertexPrototype {
+	public:
+	Sequence *lower;
+	int start;
+	int finish;
+};
 
 class Vertex {
 	//	int _coverage;
@@ -62,11 +68,12 @@ class Graph {
 	//	int merge(Vertex *u, Vertex* v);
 	//
 	//	int split(Vertex *u, Vertex* v, short position);
+public:
 	vector<Vertex *> vertices;
-	Vertex *addVertex(Sequence *upper, Sequence *lower) {
+	int addVertex(Sequence *upper, Sequence *lower) {
 		Vertex *newVertex = new Vertex(upper, lower);
 		vertices.push_back(newVertex);
-		return newVertex;
+		return vertices.size()-1;
 	}
 };
 

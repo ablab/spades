@@ -10,6 +10,6 @@ int main() {
 //	pairsToSequences(parsed_k_l_mers, parsed_k_sequence);
 //	map<>sequencesToMap(parsed_k_sequence);
 
-	constructGraph();
+//	constructGraph();
 
 }

@@ -15,6 +15,8 @@
 #define mp make_pair
 #define fi first
 #define se second
+#define edgesMap  map<ll, vector<VertexPrototype *> >
+
 
 using namespace std;
 const string parsed_reads = "data/reads_var_d.txt";
@@ -25,5 +27,6 @@ const string error_log = "data/error.log";
 const int k = 25;
 const int l = 31;
 const int readLength = 100;
-
+const int maxSeqLength = 200;
 #endif /*COMMON_HPP_*/
+string decompress(ll a, int l);
