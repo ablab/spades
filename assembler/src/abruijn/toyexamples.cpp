@@ -80,8 +80,10 @@ extern void ConstructDeBruijnGraph ( string genome, unsigned read_size, unsigned
 
   // preparing a file
   ofstream f;
-  f.open ( "graph.dot" );
+  //f.open ( "graph.dot" );
+  f.open ( ( genome + ".dot" ).c_str () );
   f << "## genome=" << genome << " readsize=" << read_size << " k=" << k << endl;
+  f << "##dot -Tjpg " << genome << ".dot -o " << genome << ".jpg" << endl;
   f << "digraph " << genome << " {" << endl;
 
   //////////////////////////// DE BRUIJN GRAPH
