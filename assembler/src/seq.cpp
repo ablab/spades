@@ -10,23 +10,14 @@
 #include "seq.hpp"
 
 
-Sequence::Sequence(const std::string &s): _size(s.size()), _reverse(false) {  //BUGGED!!!
+Sequence::Sequence(const std::string &s): _size(s.size()), _reverse(false) {  //accepts both 0123 and ACGT
 	_bytes = (Seq<4>*) malloc((this->_size >> 2) + 1); // sizeof(Seq<4>()) == 1;
 	for (int i = 0; i < _size / 4; ++i) {
 		_bytes[i] = Seq<4>(s.substr(i*4, 4).c_str());
 	}
 	if (_size & 3) {
-//		_bytes[_size/4 + 1]
+		_bytes[_size/4] = Seq<4>(s.substr((_size/4)*4, _size & 3).c_str());
 	}
-	/*
-	 * Sequence* tst = new Sequence("AAAAAAC");
-	   string s = tst->str();
-       cout<<s.c_str()<<endl;
-
-
-       this code returns "AAAAAAA" !!!!
-	 */
-	//TODO: bugfix!
 }
 
 Sequence::~Sequence() {

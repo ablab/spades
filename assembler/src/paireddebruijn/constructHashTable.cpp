@@ -303,8 +303,8 @@ int main1() {
 		}
 		printf("\n");
 		fprintf(decompressed, "\n");
-	//	return 0;
-		if (!(count & ((1 << 10) - 1) ))
+	 //	return 0;
+		if (!(count & ((1 << 15) - 1) ))
 			cerr<< "klmer numero "<< count <<"generated" <<endl;
 		//forn(i, lsize)
 		//	cerr << lmers[i] << ":" << decompress(lmers[i]) << " ";
