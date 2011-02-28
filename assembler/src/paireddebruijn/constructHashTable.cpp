@@ -171,7 +171,7 @@ ll extractMer(char *read, int shift, int length) {
 	ll res = 0;
 	for (int i = 0; i < length; i++) {
 		res = res << 2;
-		res += read[shift + length];
+		res += read[shift + i];
 	}
 	return res;
 }
@@ -245,7 +245,7 @@ void constructTable(myMap &table) {
 
 void outputTable(myMap &pairedTable) {
 	int j = 0;
-	for (myMap::iterator iter = pairedTable.begin(); iter != pairedTable.end(); iter++) {
+	for (myMap::iterator iter = pairedTable.begin() ; iter != pairedTable.end(); iter++) {
 		pair<ll, vector<ll> > p = (*iter);
 		cout << p.fi << " " << p.se.size() << endl;
 		forn(i, p.se.size()) {
@@ -266,13 +266,14 @@ void readsToPairs(char *inputFile, char *outputFile) {
 	constructTable(table);
 	cerr << "generation of k-l pairs finished, dumping to disk."<<endl;
 	freopen(outputFile, "w", stdout);
+	cerr<< "outputFile opened";
 	outputTable(table);
 	fclose(stdout);
 	table.clear();
 }
 
 int main1() {
-	FILE* f = freopen("data/klmers.out", "r", stdin);
+	FILE* f = freopen("data/klmers_var_d.out", "r", stdin);
 	FILE* decompressed = fopen("data/decompressed.out", "w" );
 //	freopen("data/error.log", "w",stderr);
 	cerr << f << endl;
