@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <vector>
 #include <ctime>
+#include <array>
 #include <string>
 #include "../parser.hpp"
 #include "debruijn.hpp"
@@ -21,10 +22,6 @@ int main(int argc, char *argv[]) {
 
 	time_t now = time(NULL);
 
-	Seq<3> s = Seq<3>("ACG");
-	s.shift_right(0);
-	//return 0;
-
 	// simple de Bruijn graph
 	DeBruijn<K> graph;
 	// start parsing...
@@ -33,14 +30,21 @@ int main(int argc, char *argv[]) {
 	int cnt = 0;
 	while (!fqp->eof()) {
 		MatePair<MPSIZE> mp = fqp->read(); // is it copy? :)
+		cerr << mp.seq1.str() << endl;
+		cerr << mp.seq2.str() << endl;
 		if (mp.id != -1) { // don't have 'N' in reads
 			Seq<K> head = mp.seq1.head<K>();
 			Seq<K> tail;
 			for (size_t i = K; i < MPSIZE; ++i) {
+				cerr << "?" << i << nucl(mp.seq1[i]) << endl;
 				cerr << head.str() << endl;
 				tail = head.shift_right(mp.seq1[i]);
+				cerr << "~" << endl;
+				cerr << head.str() << endl;
+				cerr << tail.str() << endl;
 				graph.addEdge(head, tail);
 				head = tail;
+				cerr << "!" << endl;
 			}
 		}
 		cnt++;

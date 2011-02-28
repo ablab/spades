@@ -1,11 +1,13 @@
 #ifndef GRAPHCONSTRUCTION_H_
 #define GRAPHCONSTRUCTION_H_
 #include "simpleGraph.hpp"
+#include "pairedGraph.hpp"
+#include "common.hpp"
 
-void constructGraph(PairedGraph *g, char *inputFile);
+using namespace paired_assembler;
 
-void clusterReadPaires(PairedGraph *g, char *tmpFile);
-
-void threadReads(PairedGraph *g, char *inputFile);
+void constructGraph();
+edgesMap sequencesToMap(string parsed_k_sequence);
+void createVertices(Graph *g, edgesMap &edges);
 
 #endif /*GRAPHCONSTRUCTION_H_*/

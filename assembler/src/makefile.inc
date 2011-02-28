@@ -18,7 +18,7 @@ DEPSFL=-MM -MG
 # link
 $(EXEC): $(OBJS) 
 	$(CC) $(OBJS) $(LDFLAGS) -o $(builddir)/$@
-	@cp $(builddir)/$@ .
+#	@cp $(builddir)/$@ .
     
 # pull in dependency info for *existing* .o files
 -include $(OBJS:.o=.d)
