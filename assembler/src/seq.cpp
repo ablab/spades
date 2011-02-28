@@ -8,14 +8,19 @@
 #include <iostream>
 #include <cstdlib>
 #include "seq.hpp"
+#include <string>
+
+using namespace std;
 
 
-Sequence::Sequence(const std::string &s): _size(s.size()), _reverse(false) {  //ACGT string only.
-	_bytes = (Seq<4>*) malloc(this->_size >> 2); // sizeof(Seq<4>()) == 1;
+Sequence::Sequence(const std::string &s): _size(s.size()), _reverse(false) {  //accepts both 0123 and ACGT
+	_bytes = (Seq<4>*) malloc((this->_size >> 2) + 1); // sizeof(Seq<4>()) == 1;
 	for (int i = 0; i < _size / 4; ++i) {
 		_bytes[i] = Seq<4>(s.substr(i*4, 4).c_str());
 	}
-	//TODO:  Поправить конструктор(в том числе и для Seq) чтоб адекватно работало для 0123
+	if (_size & 3) {
+		_bytes[_size/4] = Seq<4>(s.substr((_size/4)*4, _size & 3).c_str());
+	}
 }
 
 Sequence::~Sequence() {
@@ -55,6 +60,15 @@ int Sequence::size() const {
 Sequence& Sequence::operator! () const {
 	Sequence* res = new Sequence(this, true);
 	return *res;
+}
+
+Sequence Sequence::substr(int start, int end) const {
+	//todo rewrite when other constructors will exist
+	string s = "";
+	for (int i = start; i < end; ++i) {
+		s += operator[](i);
+	}
+	return Sequence(s);
 }
 
 Sequence::Sequence(const Sequence *svl, bool reverse = false): _bytes(svl->_bytes), _size(svl->_size), _reverse(svl->_reverse) {

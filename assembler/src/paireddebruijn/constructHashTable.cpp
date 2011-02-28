@@ -7,9 +7,12 @@ using namespace std;
 typedef map<ll, vector<ll> > myMap;
 
 typedef vector<Sequence*> downSeqs;
-int k = 25;
-int l = 31;
-int readLength = 100;
+
+
+const int k = 25;
+const int l = 31;
+const int readLength = 100;
+
 int totalKmers = 0;
 int uniqPairs = 0;
 ll upperMask = (((ll) 1) << (2 * k)) - 1;
@@ -18,6 +21,18 @@ ll lowerMask = (((ll) 1) << (2 * l)) - 1;
 ll upperMax = ((ll) 1) << 46;
 const int MAXLMERSIZE = 10000;
 
+string decompress(ll a, int l) {
+
+	string res = "";
+	res.reserve(l);
+	forn(i,l)
+		res += " ";
+	forn(i, l) {
+		res[l - i - 1] = nucl((a & 3));
+		a >>= 2;
+	}
+	return res;
+}
 
 inline int codeNucleotide(char a) {
 	if (a == 'A')
@@ -33,23 +48,25 @@ inline int codeNucleotide(char a) {
 		return -1;
 	}
 }
+void testSequence(){
+	srand(239);
+	forn(i, 1000) {
 
+		ll ts = ((ll) rand()) * ((ll) rand());
+		//cerr << ts;
+		string s = decompress(ts, l);
+
+		Sequence* tst = new Sequence(s);
+		string ss = tst->str();
+		assert (ss == s);
+		//cerr << s <<endl<< ss<<endl<<endl;
+
+	}
+}
 void codeRead(char *read, char *code) {
 	for (int i = 0; i < readLength; i++) {
 		code[i] = codeNucleotide(read[i]);
 	}
-}
-
-string decompress(ll a) {
-	string res = "";
-	res.reserve(l);
-	forn(i,l)
-		res += " ";
-	forn(i, l) {
-		res[l - i - 1] = nucl('0' + (a & 3));
-		a >>= 2;
-	}
-	return res;
 }
 
 //toDo
@@ -127,7 +144,7 @@ downSeqs clusterize(ll* a, int size) {
 			}
 			int rightend = ii;
 			ii = leftend;
-			string s = decompress(a[leftend]);
+			string s = decompress(a[leftend], l);
 	//		cerr << s << " ";
 			//cerr << a[ii]<<" and " << ii << " ";
 			while (ii != rightend) {
@@ -140,8 +157,6 @@ downSeqs clusterize(ll* a, int size) {
 			Sequence* tmpSeq = new Sequence(s);
 			res.pb(tmpSeq);
 			color++;
-			printf("%s ",s.c_str());
-
 		}
 
 	}
@@ -156,13 +171,13 @@ ll extractMer(char *read, int shift, int length) {
 	ll res = 0;
 	for (int i = 0; i < length; i++) {
 		res = res << 2;
-		res += read[shift + length];
+		res += read[shift + i];
 	}
 	return res;
 }
 
 inline bool checkBoundsForUpper(ll upper) {
-	if ((upper >= 0) && (upper < upperMax))
+	if ((upper >= 1<<20) && (upper < upperMax))
 		return true;
 	else return false;
 }
@@ -210,6 +225,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 //	cerr << table.size()<<endl;
 }
 
+
 void constructTable(myMap &table) {
 	int count = 0;
 	char *upperNuclRead = new char[readLength + 2];
@@ -229,7 +245,7 @@ void constructTable(myMap &table) {
 
 void outputTable(myMap &pairedTable) {
 	int j = 0;
-	for (myMap::iterator iter = pairedTable.begin(); iter != pairedTable.end(); iter++) {
+	for (myMap::iterator iter = pairedTable.begin() ; iter != pairedTable.end(); iter++) {
 		pair<ll, vector<ll> > p = (*iter);
 		cout << p.fi << " " << p.se.size() << endl;
 		forn(i, p.se.size()) {
@@ -243,74 +259,66 @@ void outputTable(myMap &pairedTable) {
 	pairedTable.clear();
 }
 
-void readsToPairs(char *inputFile, char *outputFile) {
+void readsToPairs(string inputFile, string outputFile) {
+
 	myMap table;
 	cerr << "generation of k-l pairs started"<<endl;
-	freopen(inputFile, "r", stdin);
+	freopen(inputFile.c_str(), "r", stdin);
 	constructTable(table);
 	cerr << "generation of k-l pairs finished, dumping to disk."<<endl;
-	freopen(outputFile, "w", stdout);
+	freopen(outputFile.c_str(), "w", stdout);
+	cerr<< "outputFile opened";
 	outputTable(table);
 	fclose(stdout);
 	table.clear();
 }
 
-int main1() {
-	FILE* f = freopen("data/klmers.out", "r", stdin);
+int pairsToSequences(string inputFile, string outputFile) {
+	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
 	FILE* decompressed = fopen("data/decompressed.out", "w" );
-	freopen("data/error.log", "w",stderr);
-	cerr << f << endl;
 	int ok = 1;
 	ll lmers[MAXLMERSIZE];
 
 	ll kmer;
 	int lsize;
-	freopen("data/vertixes.out", "w", stdout);
+	FILE* outFile = freopen(outputFile.c_str(), "w", stdout);
 	int count = 0;
 	while (1) {
 		count++;
-		ok = scanf("%lld %d", &kmer, &lsize);
+		ok = fscanf(inFile, "%lld %d", &kmer, &lsize);
 		if (ok != 2) {
 			cerr<< "error in reads.";
-
 			break;
 		}
 		if (lsize > MAXLMERSIZE)
 			continue;
 		forn(i, lsize) {
-			if (scanf("%lld", &lmers[i % MAXLMERSIZE]) != 1) {
+			if (fscanf(inFile, "%lld", &lmers[i]) != 1) {
 				cerr << "Error in main1 reading l-mers";
 				return -1;
 			}
-
-		//	cerr <<i<<" "<< lmers[i%MAXLMERSIZE]<<" ";
 		}
-//		cerr << endl;
-		//cerr<<"FUCK "<<endl;
-		sort(lmers, lmers + lsize % MAXLMERSIZE);
-		downSeqs clusters =  clusterize(lmers, lsize % MAXLMERSIZE);
+		sort(lmers, lmers + lsize);
+		downSeqs clusters =  clusterize(lmers, lsize);
 		int clsize = clusters.size();
 		string outstring;
 
-		string s = decompress(kmer);
+		string s = decompress(kmer, k);
 		fprintf(decompressed, "%s %d\n", s.c_str(), lsize);
-		printf("%s %d\n", s.c_str(), clsize);
+		fprintf(outFile, "%s %d\n", s.c_str(), clsize);
 		forn(i, lsize) {
 
-			fprintf(decompressed, "%s ", decompress(lmers[i]).c_str());
+			fprintf(decompressed, "%s ", decompress(lmers[i], l).c_str());
 		}
 		forn(i, clsize) {
 			outstring = clusters[i]->str();
 			printf("%s ",outstring.c_str());
 		}
-		printf("\n");
+		fprintf(outFile, "\n");
 		fprintf(decompressed, "\n");
-		return 0;
-		if (!(count & ((1 << 12) - 1) ))
+	 //	return 0;
+		if (!(count & ((1 << 15) - 1) ))
 			cerr<< "klmer numero "<< count <<"generated" <<endl;
-		//forn(i, lsize)
-		//	cerr << lmers[i] << ":" << decompress(lmers[i]) << " ";
-		//cerr << endl << endl;
 	}
 	cerr<<"finished";
 	return 0;

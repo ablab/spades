@@ -16,7 +16,7 @@ using namespace __gnu_cxx;
 #ifndef CONDENSED_GRAPH_H_
 #define CONDENSED_GRAPH_H_
 
-typedef int _v_idx;
+//typedef int _v_idx;
 
 namespace assembler {
 
@@ -45,28 +45,36 @@ char toIndex(char c) {
 class Vertex;
 
 class Vertex {
+
 	Sequence _nucls;
-	Vertex* _arcs[4];
+	Vertex* _desc[4];
 	Vertex* _complement;
 
 	int _coverage;
 	int _arc_coverage[4];
 public:
-	//todo talk with Kolya about problem with Sequence copying!!!
-	Vertex(Sequence nucls, Vertex** arcs) :
+
+	Vertex(Sequence nucls) :
 		_nucls(nucls) {
-		memcpy(arcs, _arcs, 4 * sizeof(Vertex*));
+		fill_n(_desc, 4, 0);
+	}
+
+	//todo talk with Kolya about problem with Sequence copying!!!
+	Vertex(Sequence nucls, Vertex** desc) :
+		_nucls(nucls) {
+		memcpy(desc, _desc, 4 * sizeof(Vertex*));
 		//		_arcs = arcs;
 	}
 	;
 
 	~Vertex() {
-		delete [] _arcs;
+		delete [] _desc;
 		delete [] _arc_coverage;
  	}
 
 	//static Vertex AbsentVertex = Vertex(0, 0, NULL, true, 0, NULL);
-	int nucl_count() {
+
+	size_t size() {
 		return _nucls.size();
 	}
 	;
@@ -75,22 +83,32 @@ public:
 		return _nucls[index];
 	}
 
-	int arc_count() {
+	int DescCount() {
 		int c = 0;
 		for (int i = 0; i < 4; ++i)
-			if (_arcs[i] != NULL)
+			if (_desc[i] != NULL)
 				c++;
 		return c;
 	}
 	;
 
-	Vertex** arcs() {
-		return _arcs;
+	Vertex** desc() {
+		return _desc;
 	}
 	;
 
-	Vertex* Arc(char nucl) {
-		return _arcs[(int)nucl];
+	Vertex* desc(char nucl) {
+		return _desc[(int)nucl];
+	}
+
+	Sequence nucls() {
+		return _nucls;
+	}
+
+	void AddDesc(Vertex* v) {
+		//check if k-1 mers differ
+		int k_th_nucl = (*v)[K];
+		_desc[k_th_nucl] = v;
 	}
 
 	Vertex* complement() {
@@ -130,10 +148,31 @@ public:
 		return _component_roots;
 	}
 
+	vector<Vertex*> Anc(Vertex* v) {
+		vector<Vertex*> ans;
+		Vertex** compl_desc = v->complement()->desc();
+		for (int i = 3; i >= 0; --i) {
+			if (compl_desc[i] != NULL) {
+				ans.push_back(compl_desc[i]->complement());
+			}
+		}
+		return ans;
+	}
+
+	vector<Vertex*> Desc(Vertex* v) {
+		vector<Vertex*> ans;
+		Vertex** desc = v->desc();
+		for (int i = 0; i < 4; ++i) {
+			if (desc[i] != NULL) {
+				ans.push_back(desc[i]);
+			}
+		}
+		return ans;
+	}
 	/**
 	 * adds two complement vertices
 	 */
-	void AddVertices(Sequence nucls, Vertex** outgoing_vert, Vertex** outgoing_vert_for_compl) {
+	Vertex* AddVertices(Sequence nucls, Vertex** outgoing_vert, Vertex** outgoing_vert_for_compl) {
 		Vertex* v1 = new Vertex(nucls, outgoing_vert);
 		Vertex* v2 = new Vertex(!nucls, outgoing_vert_for_compl);
 		v1->set_complement(v2);
@@ -141,6 +180,15 @@ public:
 		if (Empty(outgoing_vert)) {
 			_component_roots.insert(v1);
 		}
+		return v1;
+	}
+
+	Vertex* AddVertices(Sequence nucls) {
+		Vertex* v1 = new Vertex(nucls);
+		Vertex* v2 = new Vertex(!nucls);
+		v1->set_complement(v2);
+		v2->set_complement(v1);
+		return v1;
 	}
 
 	/**
@@ -150,6 +198,42 @@ public:
 		Vertex* complement = v->complement();
 		delete v;
 		delete complement;
+	}
+
+	void LinkVertices(Vertex* anc, Vertex* desc) {
+		anc->AddDesc(desc);
+		desc->complement()->AddDesc(anc->complement());
+	}
+
+	/**
+	 * deals with incoming links and their complement only!!!
+	 */
+	void FixIncoming(Vertex* v, Vertex* new_v) {
+		//todo throw exception if start k-mers differ
+		vector<Vertex*> anc = Anc(v);
+		for (size_t i = 0; i < anc.size(); ++i) {
+			LinkVertices(anc[i], new_v);
+		}
+	}
+
+	//pos exclusive! (goes into second vertex)
+	Vertex* SplitVertex(Vertex* v, int pos) {
+		if (pos == v->size() - 1) {
+			return v;
+		};
+
+		Sequence nucls = v->nucls();
+
+		Vertex* v1 = AddVertices(nucls.substr(0, pos));
+		Vertex* v2 = AddVertices(nucls.substr(pos - (k - 1), nucls.len()));
+
+		LinkVertices(v1, v2);
+
+		FixIncoming(v, v1);
+
+		FixIncoming(v->complement(), v2->complement());
+
+		return v2;
 	}
 };
 
