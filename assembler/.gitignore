@@ -2,3 +2,5 @@ build/
 data/
 .cproject
 .project
+*.exe
+*.exe.stackdump
