@@ -171,7 +171,7 @@ ll extractMer(char *read, int shift, int length) {
 	ll res = 0;
 	for (int i = 0; i < length; i++) {
 		res = res << 2;
-		res += read[shift + length];
+		res += read[shift + i];
 	}
 	return res;
 }
@@ -245,7 +245,7 @@ void constructTable(myMap &table) {
 
 void outputTable(myMap &pairedTable) {
 	int j = 0;
-	for (myMap::iterator iter = pairedTable.begin(); iter != pairedTable.end(); iter++) {
+	for (myMap::iterator iter = pairedTable.begin() ; iter != pairedTable.end(); iter++) {
 		pair<ll, vector<ll> > p = (*iter);
 		cout << p.fi << " " << p.se.size() << endl;
 		forn(i, p.se.size()) {
@@ -259,58 +259,53 @@ void outputTable(myMap &pairedTable) {
 	pairedTable.clear();
 }
 
-void readsToPairs(char *inputFile, char *outputFile) {
+void readsToPairs(string inputFile, string outputFile) {
+
 	myMap table;
 	cerr << "generation of k-l pairs started"<<endl;
-	freopen(inputFile, "r", stdin);
+	freopen(inputFile.c_str(), "r", stdin);
 	constructTable(table);
 	cerr << "generation of k-l pairs finished, dumping to disk."<<endl;
-	freopen(outputFile, "w", stdout);
+	freopen(outputFile.c_str(), "w", stdout);
+	cerr<< "outputFile opened";
 	outputTable(table);
 	fclose(stdout);
 	table.clear();
 }
 
-int main1() {
-	FILE* f = freopen("data/klmers.out", "r", stdin);
+int pairsToSequences(string inputFile, string outputFile) {
+	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
 	FILE* decompressed = fopen("data/decompressed.out", "w" );
-//	freopen("data/error.log", "w",stderr);
-	cerr << f << endl;
 	int ok = 1;
 	ll lmers[MAXLMERSIZE];
 
 	ll kmer;
 	int lsize;
-	freopen("data/vertixes.out", "w", stdout);
+	FILE* outFile = freopen(outputFile.c_str(), "w", stdout);
 	int count = 0;
 	while (1) {
 		count++;
-		ok = scanf("%lld %d", &kmer, &lsize);
+		ok = fscanf(inFile, "%lld %d", &kmer, &lsize);
 		if (ok != 2) {
 			cerr<< "error in reads.";
-
 			break;
 		}
 		if (lsize > MAXLMERSIZE)
 			continue;
 		forn(i, lsize) {
-			if (scanf("%lld", &lmers[i % MAXLMERSIZE]) != 1) {
+			if (fscanf(inFile, "%lld", &lmers[i]) != 1) {
 				cerr << "Error in main1 reading l-mers";
 				return -1;
 			}
-
-		//	cerr <<i<<" "<< lmers[i%MAXLMERSIZE]<<" ";
 		}
-//		cerr << endl;
-		//cerr<<"FUCK "<<endl;
-		sort(lmers, lmers + lsize % MAXLMERSIZE);
-		downSeqs clusters =  clusterize(lmers, lsize % MAXLMERSIZE);
+		sort(lmers, lmers + lsize);
+		downSeqs clusters =  clusterize(lmers, lsize);
 		int clsize = clusters.size();
 		string outstring;
 
 		string s = decompress(kmer, k);
 		fprintf(decompressed, "%s %d\n", s.c_str(), lsize);
-		printf("%s %d\n", s.c_str(), clsize);
+		fprintf(outFile, "%s %d\n", s.c_str(), clsize);
 		forn(i, lsize) {
 
 			fprintf(decompressed, "%s ", decompress(lmers[i], l).c_str());
@@ -319,14 +314,11 @@ int main1() {
 			outstring = clusters[i]->str();
 			printf("%s ",outstring.c_str());
 		}
-		printf("\n");
+		fprintf(outFile, "\n");
 		fprintf(decompressed, "\n");
 	 //	return 0;
 		if (!(count & ((1 << 15) - 1) ))
 			cerr<< "klmer numero "<< count <<"generated" <<endl;
-		//forn(i, lsize)
-		//	cerr << lmers[i] << ":" << decompress(lmers[i]) << " ";
-		//cerr << endl << endl;
 	}
 	cerr<<"finished";
 	return 0;
