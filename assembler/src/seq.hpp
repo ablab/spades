@@ -142,7 +142,7 @@ public:
 
 	Sequence substring(int from, int to) const { // TODO: optimize
 		std::string s = str();
-		s = s.substr(from, to);
+		s = s.substr(from, to - from);
 		return Sequence(s);
 	}
 
