@@ -7,9 +7,12 @@ using namespace std;
 typedef map<ll, vector<ll> > myMap;
 
 typedef vector<Sequence*> downSeqs;
-int k = 25;
-int l = 31;
-int readLength = 100;
+
+
+const int k = 25;
+const int l = 31;
+const int readLength = 100;
+
 int totalKmers = 0;
 int uniqPairs = 0;
 ll upperMask = (((ll) 1) << (2 * k)) - 1;
@@ -18,6 +21,18 @@ ll lowerMask = (((ll) 1) << (2 * l)) - 1;
 ll upperMax = ((ll) 1) << 46;
 const int MAXLMERSIZE = 10000;
 
+string decompress(ll a, int l) {
+
+	string res = "";
+	res.reserve(l);
+	forn(i,l)
+		res += " ";
+	forn(i, l) {
+		res[l - i - 1] = nucl((a & 3));
+		a >>= 2;
+	}
+	return res;
+}
 
 inline int codeNucleotide(char a) {
 	if (a == 'A')
@@ -33,23 +48,25 @@ inline int codeNucleotide(char a) {
 		return -1;
 	}
 }
+void testSequence(){
+	srand(239);
+	forn(i, 1000) {
 
+		ll ts = ((ll) rand()) * ((ll) rand());
+		//cerr << ts;
+		string s = decompress(ts, l);
+
+		Sequence* tst = new Sequence(s);
+		string ss = tst->str();
+		assert (ss == s);
+		//cerr << s <<endl<< ss<<endl<<endl;
+
+	}
+}
 void codeRead(char *read, char *code) {
 	for (int i = 0; i < readLength; i++) {
 		code[i] = codeNucleotide(read[i]);
 	}
-}
-
-string decompress(ll a) {
-	string res = "";
-	res.reserve(l);
-	forn(i,l)
-		res += " ";
-	forn(i, l) {
-		res[l - i - 1] = '0' + (a & 3);
-		a >>= 2;
-	}
-	return res;
 }
 
 //toDo
@@ -127,7 +144,7 @@ downSeqs clusterize(ll* a, int size) {
 			}
 			int rightend = ii;
 			ii = leftend;
-			string s = decompress(a[leftend]);
+			string s = decompress(a[leftend], l);
 	//		cerr << s << " ";
 			//cerr << a[ii]<<" and " << ii << " ";
 			while (ii != rightend) {
@@ -160,7 +177,7 @@ ll extractMer(char *read, int shift, int length) {
 }
 
 inline bool checkBoundsForUpper(ll upper) {
-	if ((upper >= 0) && (upper < upperMax))
+	if ((upper >= 1<<20) && (upper < upperMax))
 		return true;
 	else return false;
 }
@@ -207,6 +224,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	}
 //	cerr << table.size()<<endl;
 }
+
 
 void constructTable(myMap &table) {
 	int count = 0;
@@ -290,12 +308,12 @@ int main1() {
 		int clsize = clusters.size();
 		string outstring;
 
-		string s = decompress(kmer);
+		string s = decompress(kmer, k);
 		fprintf(decompressed, "%s %d\n", s.c_str(), lsize);
 		printf("%s %d\n", s.c_str(), clsize);
 		forn(i, lsize) {
 
-			fprintf(decompressed, "%s ", decompress(lmers[i]).c_str());
+			fprintf(decompressed, "%s ", decompress(lmers[i], l).c_str());
 		}
 		forn(i, clsize) {
 			outstring = clusters[i]->str();
