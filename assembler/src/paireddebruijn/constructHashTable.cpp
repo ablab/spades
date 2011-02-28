@@ -259,20 +259,21 @@ void outputTable(myMap &pairedTable) {
 	pairedTable.clear();
 }
 
-void readsToPairs(char *inputFile, char *outputFile) {
+void readsToPairs(string inputFile, string outputFile) {
+
 	myMap table;
 	cerr << "generation of k-l pairs started"<<endl;
-	freopen(inputFile, "r", stdin);
+	freopen(inputFile.c_str(), "r", stdin);
 	constructTable(table);
 	cerr << "generation of k-l pairs finished, dumping to disk."<<endl;
-	freopen(outputFile, "w", stdout);
+	freopen(outputFile.c_str(), "w", stdout);
 	cerr<< "outputFile opened";
 	outputTable(table);
 	fclose(stdout);
 	table.clear();
 }
 
-int main1() {
+int pairsToSequences() {
 	FILE* f = freopen("data/klmers_var_d.out", "r", stdin);
 	FILE* decompressed = fopen("data/decompressed.out", "w" );
 //	freopen("data/error.log", "w",stderr);
@@ -289,7 +290,6 @@ int main1() {
 		ok = scanf("%lld %d", &kmer, &lsize);
 		if (ok != 2) {
 			cerr<< "error in reads.";
-
 			break;
 		}
 		if (lsize > MAXLMERSIZE)
@@ -325,9 +325,6 @@ int main1() {
 	 //	return 0;
 		if (!(count & ((1 << 15) - 1) ))
 			cerr<< "klmer numero "<< count <<"generated" <<endl;
-		//forn(i, lsize)
-		//	cerr << lmers[i] << ":" << decompress(lmers[i]) << " ";
-		//cerr << endl << endl;
 	}
 	cerr<<"finished";
 	return 0;
