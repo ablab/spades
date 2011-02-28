@@ -1,19 +1,10 @@
-#include "simpleGraph.hpp"
 #include "constructHashTable.hpp"
+#include "common.hpp"
 
-char *tmpFile = "data/reads.out";
-
-void clusterReadPaires(PairedGraph *g, char *tmpFile) {
-
-}
-
-void threadReads(PairedGraph *g, char *inputFile) {
-
-}
-
-void constructGraph(PairedGraph *g, char *inputFile) {
-	readsToPairs(inputFile, tmpFile);
-	clusterReadPaires(g, tmpFile);
-	threadReads(g, inputFile);
+void constructGraph() {
+	readsToPairs(parsed_reads, parsed_k_l_mers);
+	pairsToSequences(parsed_k_l_mers, parsed_k_sequence);
+//	map<ll, vector<Sequence *> > sequencesToMap(parsed_k_sequence);
+//	Graph * g = new GraphBuilder();
 }
 

@@ -1,4 +1,4 @@
-#include "common.h"
+#include "common.hpp"
 #include "../seq.hpp"
 #include "constructHashTable.hpp"
 
@@ -8,10 +8,6 @@ typedef map<ll, vector<ll> > myMap;
 
 typedef vector<Sequence*> downSeqs;
 
-
-const int k = 25;
-const int l = 31;
-const int readLength = 100;
 
 int totalKmers = 0;
 int uniqPairs = 0;
