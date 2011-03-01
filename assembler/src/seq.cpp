@@ -81,6 +81,26 @@ Sequence Sequence::Subseq(size_t from, size_t to) const {
 		return Sequence(data_, from_ + from, to - from, false);
 	}
 }
+//TODO: must be KMP or hashing instead of this shit
+int Sequence::find (const Sequence &t) {
+	for(int i = 0; i < size()- t.size() + 1; i++) {
+		if (Subseq(i, i + t.size()) == t) {
+			return 1;
+		}
+	}
+	return 0;
+}
+int similar(const Sequence &a, const Sequence &b, int k){
+	Sequence c = a.Subseq(0 , k);
+	if (b.find(c)) {
+		return 1;
+	}
+	c = b.Subseq(0, k);
+	if (a.find(c)) {
+		return 1;
+	}
+	return 0;
+}
 
 // TODO optimize
 // TODO might be opposite to correct

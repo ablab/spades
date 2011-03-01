@@ -41,4 +41,7 @@ ExpandDown(K,S)
 
 ExpandUp(K,S) similar to ExpandDown with changed direction. 
 	  
-	
+TODO2(may be it is a good idea to..)
+1) Another ways of generating sequence from k-l mers. Now we expand k-l mer while it can be done uniquely to left, and it expansion can be uniquely expand to right and vice verse. Instead of sequence graph(?) suffix tree(?)
+
+2) Clustering not only from k to l (downwards), but also from sequences to kmers. (text about this idea is halfly written).
