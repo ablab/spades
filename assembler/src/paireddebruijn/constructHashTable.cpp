@@ -44,7 +44,7 @@ inline int codeNucleotide(char a) {
 		return -1;
 	}
 }
-void testSequence(){
+/*void testSequence(){
 	srand(239);
 	forn(i, 1000) {
 
@@ -53,12 +53,12 @@ void testSequence(){
 		string s = decompress(ts, l);
 
 		Sequence* tst = new Sequence(s);
-		string ss = tst->str();
+		string ss = tst->Str();
 		assert (ss == s);
 		//cerr << s <<endl<< ss<<endl<<endl;
 
 	}
-}
+}*/
 void codeRead(char *read, char *code) {
 	for (int i = 0; i < readLength; i++) {
 		code[i] = codeNucleotide(read[i]);
@@ -292,7 +292,7 @@ int pairsToSequences(string inputFile, string outputFile) {
 			fprintf(decompressed, "%s ", decompress(lmers[i], l).c_str());
 		}
 		forn(i, clsize) {
-			outstring = clusters[i]->str();
+			outstring = clusters[i]->Str();
 			fprintf(outFile, "%s ",outstring.c_str());
 		}
 		fprintf(outFile, "\n");
