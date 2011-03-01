@@ -91,14 +91,14 @@ int Sequence::find (const Sequence &t) {
 	return 0;
 }
 int similar(const Sequence &a, const Sequence &b, int k){
-	Sequence c = a.Subseq(0 , k);
-	if (b.find(c)) {
+	Sequence c(a.Subseq(0, k));
+//	if (b.find(c)) {
 		return 1;
-	}
-	c = b.Subseq(0, k);
-	if (a.find(c)) {
+//	}
+	Sequence d(b.Subseq(0, k));
+//	if (a.find(d)) {
 		return 1;
-	}
+//	}
 	return 0;
 }
 
