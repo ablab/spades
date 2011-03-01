@@ -22,6 +22,9 @@ int main(int argc, char *argv[]) {
 
 	time_t now = time(NULL);
 
+	Sequence k("0000001");
+	cerr << k.str() << endl;
+	return 0;
 	// simple de Bruijn graph
 	DeBruijn<K> graph;
 	// start parsing...
