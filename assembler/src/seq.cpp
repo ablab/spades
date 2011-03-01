@@ -74,7 +74,12 @@ const Sequence Sequence::operator! () const {
 	return Sequence(data_, from_, size_, !rtl_);
 }
 
+//including from, excluding to
+//safe if not #DEFINE NDEBUG
 Sequence Sequence::Subseq(size_t from, size_t to) const {
+	assert (to > from);
+	assert(from > 0);
+	assert (to <= size_);
 	if (rtl_) {
 		return Sequence(data_, from_ + size_ - to, to - from, true);
 	} else {
@@ -82,23 +87,23 @@ Sequence Sequence::Subseq(size_t from, size_t to) const {
 	}
 }
 //TODO: must be KMP or hashing instead of this shit
-int Sequence::find (const Sequence &t) {
+int Sequence::find (const Sequence &t) const{
 	for(int i = 0; i < size()- t.size() + 1; i++) {
 		if (Subseq(i, i + t.size()) == t) {
-			return 1;
+			return i;
 		}
 	}
-	return 0;
+	return -1;
 }
-int similar(const Sequence &a, const Sequence &b, int k){
-	Sequence c(a.Subseq(0, k));
-//	if (b.find(c)) {
+int Sequence::similar(const Sequence &t, int k) const{
+	Sequence c(Subseq(0, k));
+	if (t.find(c) != -1) {
 		return 1;
-//	}
-	Sequence d(b.Subseq(0, k));
-//	if (a.find(d)) {
+	}
+	Sequence d(t.Subseq(0, k));
+	if (find(d) != -1) {
 		return 1;
-//	}
+	}
 	return 0;
 }
 

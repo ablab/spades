@@ -59,7 +59,8 @@ public:
 	Sequence Subseq(size_t from, size_t to) const;
 	Sequence operator+ (const Sequence &s) const;
 	Sequence(const Sequence& s);
-	int find(const Sequence& t);
+	int find(const Sequence& t) const;
+	int similar(const Sequence& t, int k) const;
 	std::string Str() const;
 	size_t size() const;
 private:

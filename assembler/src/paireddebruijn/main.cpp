@@ -3,6 +3,27 @@
 #include "../seq.hpp"
 #include "common.hpp"
 
+
+
+int testFind() {
+	Sequence s("ACATACAGACATACA");
+	int t = s.find(Sequence("TACAC"));
+	cout << t;
+	return 0;
+}
+
+int testSimilar() {
+	Sequence s("ACATACAGACATACA");
+	Sequence t("TACAC");
+	forn(i, 10) {
+		int ii = i+1;
+		//cout << ii;
+		int k = s.similar(t, ii);
+		cout << k;
+	}
+	return 0;
+}
+
 int main() {
 	//	freopen("error_log", "w",stderr);
 
@@ -11,5 +32,6 @@ int main() {
 //	map<>sequencesToMap(parsed_k_sequence);
 
 //	constructGraph();
-
+	testSimilar();
+	return 0;
 }
