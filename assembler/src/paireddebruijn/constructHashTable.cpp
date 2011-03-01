@@ -53,7 +53,7 @@ void testSequence(){
 		string s = decompress(ts, l);
 
 		Sequence* tst = new Sequence(s);
-		string ss = tst->str();
+		string ss = tst->Str();
 		assert (ss == s);
 		//cerr << s <<endl<< ss<<endl<<endl;
 
@@ -292,7 +292,7 @@ int pairsToSequences(string inputFile, string outputFile) {
 			fprintf(decompressed, "%s ", decompress(lmers[i], l).c_str());
 		}
 		forn(i, clsize) {
-			outstring = clusters[i]->str();
+			outstring = clusters[i]->Str();
 			fprintf(outFile, "%s ",outstring.c_str());
 		}
 		fprintf(outFile, "\n");
