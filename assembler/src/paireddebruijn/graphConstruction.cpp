@@ -53,10 +53,10 @@ void createVertices(Graph *g, edgesMap &edges){
 			ll kmer = iter->fi;
 			if ((!(iter->se)[i]->used)){
 				ll finishKmer = kmer&(~((ll)3<<(2*(k-1))));
-				Sequence *finishSeq = new Sequence((iter->se)[i]->lower);
+//				Sequence *finishSeq = new Sequence((iter->se)[i]->lower);
 				ll startKmer = kmer>>2;
-				expandDown(edges, verts, finishKmer, );
-				expandUp(edges, verts, kmer, (iter->se)[i]->lower);
+//				expandDown(edges, verts, finishKmer, );
+//				expandUp(edges, verts, kmer, (iter->se)[i]->lower);
 			}
 		}
 		edges.erase(iter++);
@@ -68,7 +68,7 @@ void expandDown(edgesMap &edges, vertecesMap &verts, ll kmer, Sequence lo_seq){
 	ll lowKmer = kmer&(~(3<<(2*(k-1))));
 	vertecesMap::iterator iter=verts.find(lowKmer);
 	if (iter != verts.end()){
-		if (CheckLow(lo_seq, (iter->se))) return;
+	//	if (CheckLow(lo_seq, (iter->se))) return;
 	}
 
 
