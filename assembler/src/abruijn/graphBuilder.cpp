@@ -24,7 +24,7 @@ void processRead(Seq<MPSIZE> r) {
 	for (int i = 0; i + K <= MPSIZE; i++) {
 		HashSym<Sequence> hh;
 		//Sequence* kmer = &);
-		unsigned int h = hh(r.substring(i, i + K));
+		unsigned int h = hh(Sequence(r).Subseq(i, i + K));
 		if (h < h1) {
 			h2 = h1;
 			pos2 = pos1;
@@ -39,15 +39,13 @@ void processRead(Seq<MPSIZE> r) {
 		int t = pos1; pos1 = pos2; pos2 = t;
 		t = h1; h1 = h2; h2 = t;
 	}
-	Sequence k1 = r.substring(pos1, pos1 + K);
+	Sequence k1 = Sequence(r).Subseq(pos1, pos1 + K);
 	if (kmers_map.count(k1)) {
 		CVertex v(&k1);
 	} else {
 
 	}
-	Sequence k2 = r.substring(pos2, pos2 + K);
 	CVertex v1 = kmers_map[k1];
-	CVertex v2 = kmers_map[r.substring(pos2, pos2 + K)];
 	v1.hits_++;
 	graph.AddVertex(v1);
 	graph.AddVertex(v2);

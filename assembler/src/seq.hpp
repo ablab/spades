@@ -17,68 +17,11 @@
 #include <cstring>
 #include <array>
 #include <vector>
+#include "nucl.hpp"
 
 typedef long long word;
 
 using namespace std;
-
-char complement(char c); // 0123 -> 3210
-char nucl(char c); // 0123 -> ACGT
-
-template <size_t _size> // max number of nucleotides
-class Seq;
-
-// *****************************************
-
-class Data {
-public:
-	vector < Seq<4> > bytes_;
-	int ref_;
-	void IncRef() {++ref_;}
-	void DecRef() {--ref_;}
-	Data(vector< Seq<4> > bytes) : bytes_(bytes) , ref_(1) {}
-};
-
-class Sequence { // immutable runtime length sequence (slow!!!)
-public:
-//	template <size_t _size> static Sequence constr(const Seq<_size> seq);
-
-	Sequence(const std::string &s);
-
-	template <size_t _size> Sequence(const Seq<_size> seq) {
-		this(seq.str());
-	}
-
-	~Sequence();
-	char operator[](const size_t index) const;
-	bool operator==(const Sequence& that) const;
-	const Sequence operator!() const;
-
-	/**
-	 * @param from inclusive
-	 * @param to exclusive;
-	 */
-	Sequence Subseq(size_t from, size_t to) const;
-	Sequence operator+ (const Sequence &s) const;
-	Sequence(const Sequence& s);
-	int find(const Sequence& t) const;
-	int similar(const Sequence& t, int k) const;
-	std::string Str() const;
-	size_t size() const;
-private:
-	Data* data_;
-	const size_t from_;
-	const size_t size_;
-	/**
-	 * Right to left + complimentary?
-	 */
-	const bool rtl_;
-//	Sequence(const Sequence *svl, bool reverse); // reverse
-	Sequence(Data* data, size_t from, size_t size, bool rtl);
-	Sequence& operator=(const Sequence& that) {cerr << "Don't call operator= for Sequence"; return *this;};
-};
-
-// *****************************************
 
 template <size_t _size> // max number of nucleotides
 class Seq {
@@ -110,8 +53,7 @@ private:
 		}
 	}
 
-	Seq(std::array<char,_byteslen> bytes): _bytes(bytes)
-	{};
+	Seq(std::array<char,_byteslen> bytes): _bytes(bytes) {};
 
 public:
 	Seq() {}; // random Seq, use with care!
@@ -129,7 +71,8 @@ public:
 		memcpy(_bytes, seq._bytes, _byteslen);
 	}
 
-	template <class T> Seq(const T& t, size_t offset = 0) {
+	template <typename T>
+	Seq(const T& t, size_t offset = 0) {
 		char a[_size];
 		for (size_t i = 0; i < _size; ++i) {
 			a[i] = t[offset + i];
@@ -142,31 +85,16 @@ public:
 		return ((_bytes[i >> 2] >> ((i%4))*2) & 3);
 	}
 
-	/*Seq<_size>& operator= (const Seq<_size> &seq) {
-		if (this != &seq) {
-			memcpy(this->_bytes, seq._bytes, _byteslen);
-		}
-		return *this;
-	}*/
-
 	Seq<_size> operator!() const { // TODO: optimize
-		Sequence s = Sequence(this->str());
-		return Seq<_size>((!s).Str());
+		// TODO!!!
+		return *this;
+		//Sequence s = Sequence(this->str());
+		//return Seq<_size>((!s).Str());
 	}
 
 //	// add nucleotide to the right
 //	Seq<_size> shift_right(char c) const { // char should be 0123
 //		assert(c <= 3);
-//		/*std::cerr << "!!1" << std::endl;
-//		std::string s = str();
-//		std::cerr << "!!2" << s << std::endl;
-//		std::cerr << _size-1 << std::endl;
-//		s = s.substr(1);
-//		std::cerr << "!!3" << std::endl;
-//		s.append(1, c);
-//		std::cerr << "!!4" << std::endl;
-//		std::cerr << "!!5" << std::endl;
-//		return Seq<_size>(s.c_str());*/
 //		Seq<_size> res = *this; // copy constructor
 //		c <<= (((4-(_size%4))%4)*2); // omg >.<
 //		for (int i = _byteslen - 1; i >= 0; --i) { // don't make it size_t :)
@@ -211,11 +139,11 @@ public:
 //		return res;
 //	}
 
-	Sequence substring(int from, int to) const { // TODO: optimize
+	/*Sequence substring(int from, int to) const { // TODO: optimize
 		std::string s = str();
 		s = s.substr(from, to - from);
 		return Sequence(s);
-	}
+	}*/
 
 	// string representation of Seq - only for debug and output purposes
 	std::string str() const {

@@ -11,7 +11,7 @@
 
 using namespace std;
 
-pair<string,string> filenames = make_pair("./data/s_6_1.fastq.gz", "./data/s_6_2.fastq.gz");
+pair<string,string> filenames = make_pair("./data-short/s_6_1.fastq.gz", "./data-short/s_6_2.fastq.gz");
 
 #define MPSIZE 100
 #define K 11
@@ -22,8 +22,9 @@ int main(int argc, char *argv[]) {
 
 	time_t now = time(NULL);
 
-	Sequence k("0000001");
-	cerr << k.Str() << endl;
+	Seq<7> s("ACGTACG");
+	cerr << s.str()<<endl;
+	cerr << (s << 'A').str() << endl;
 	return 0;
 	// simple de Bruijn graph
 	DeBruijn<K> graph;
@@ -34,12 +35,6 @@ int main(int argc, char *argv[]) {
 	while (!fqp->eof()) {
 		MatePair<MPSIZE> mp = fqp->read(); // is it copy? :)
 		if (mp.id != -1) { // don't have 'N' in reads
-			//cerr << mp.seq1.str() << endl;
-			//cerr << mp.seq2.str() << endl;
-			if (cnt == 100) {
-				cerr << graph.size() << endl;
-				cnt = 0;
-			}
 			Seq<K> head = mp.seq1.head<K>();
 			Seq<K> tail;
 			for (size_t i = K; i < MPSIZE; ++i) {
