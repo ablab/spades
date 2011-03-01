@@ -1,5 +1,5 @@
 #include "common.hpp"
-#include "../seq.hpp"
+#include "../sequence.hpp"
 #include "constructHashTable.hpp"
 
 using namespace std;

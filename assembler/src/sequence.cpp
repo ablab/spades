@@ -6,6 +6,7 @@
  */
 
 #include "sequence.hpp"
+#include "nucl.hpp"
 
 Sequence::Sequence(Data* data, size_t from, size_t size, bool rtl) :
 	data_ (data),
@@ -25,7 +26,10 @@ Sequence::Sequence(const Sequence &s) :
 	data_->IncRef();
 }
 
-void Sequence::init(const std::string &s): from_(0), size_(s.size()), rtl_(false) {  //accepts both 0123 and ACGT
+void Sequence::init(const std::string &s) {  //accepts both 0123 and ACGT
+	from_ = 0;
+	size_ = s.size();
+	rtl_ = false;
 	vector< Seq<4> > inner_data((size_ + 3) >> 2);
 	for (size_t i = 0; i < size_ / 4; ++i) {
 		inner_data[i] = Seq<4>(s.substr(i * 4, 4).c_str());

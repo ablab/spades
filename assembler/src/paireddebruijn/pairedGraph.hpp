@@ -1,5 +1,5 @@
 #include "vector"
-#include "../seq.hpp"
+#include "../sequence.hpp"
 //#include "hashTable.h"
 using namespace std;
 

@@ -51,12 +51,12 @@ public:
 	size_t size() const;
 private:
 	Data* data_;
-	const size_t from_;
-	const size_t size_;
+	size_t from_; // should be const
+	size_t size_; // should be const
 	/**
 	 * Right to left + complimentary?
 	 */
-	const bool rtl_;
+	bool rtl_; // should be const
 //	Sequence(const Sequence *svl, bool reverse); // reverse
 	Sequence(Data* data, size_t from, size_t size, bool rtl);
 	Sequence& operator=(const Sequence& that) {cerr << "Don't call operator= for Sequence"; return *this;};
