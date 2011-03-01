@@ -17,20 +17,22 @@ class CVertex
 	typedef vector < CEdge > CEdgeArray;
 	CEdgeArray edgeArray;
 public:
+	int hits_;
 	CVertex () {};
 	CVertex ( Sequence * kmer ) : kmer (kmer) {};
-	CVertex (const CVertex &cv ) {}; // TODO
+//	CVertex (const CVertex &cv ) {};
 	void AddEdge ( CEdge e );
+//	int hits() {return hits_;}
 };
 
 class CEdge
 {
-//	Seq<MPSIZE> r; TODO
-//	int pos1, pos2;
+	Seq<MPSIZE> r;
+	int pos1, pos2;
 	CVertex* endVertex;
 public:
 	CEdge ( CVertex * endVertex, Seq<MPSIZE> * r, int pos1, int pos2 ) :
-		endVertex (endVertex) {};
+		endVertex (endVertex), pos1 (pos1), pos2 (pos2) {};
 //	Sequence label;
 };
 

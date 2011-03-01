@@ -10,7 +10,8 @@
 using namespace std;
 using namespace __gnu_cxx;
 
-hash_map < Sequence, CVertex, HashSym<Sequence> > kmers_map;
+typedef hash_map< Sequence, CVertex, HashSym<Sequence> > seq2ver;
+seq2ver kmers_map;
 CGraph graph;
 
 void processRead(Seq<MPSIZE> r) {
@@ -38,13 +39,16 @@ void processRead(Seq<MPSIZE> r) {
 		int t = pos1; pos1 = pos2; pos2 = t;
 		t = h1; h1 = h2; h2 = t;
 	}
-	Sequence s = r.substring(0, 1);
-	CVertex v(&s);
-	pair<Sequence, CVertex> p = make_pair(s, v);
-	kmers_map.insert(p);
-//	Kmer k1 = r.substring(pos1, pos1 + K);
-	CVertex v1 = kmers_map[r.substring(pos1, pos1 + K)];
+	Sequence k1 = r.substring(pos1, pos1 + K);
+	if (kmers_map.count(k1)) {
+		CVertex v(&k1);
+	} else {
+
+	}
+	Sequence k2 = r.substring(pos2, pos2 + K);
+	CVertex v1 = kmers_map[k1];
 	CVertex v2 = kmers_map[r.substring(pos2, pos2 + K)];
+	v1.hits_++;
 	graph.AddVertex(v1);
 	graph.AddVertex(v2);
 	CEdge e(&v2, &r, pos1, pos2);
@@ -61,7 +65,16 @@ CGraph GraphBuilder::build() {
 		}
 		processRead(r.seq1);
 		processRead(r.seq2);
+		if (r.id == 100000) {
+			break;
+		}
 		//cout <<  mp.id << endl << mp.seq1.str() << endl <<  mp.seq2.str() << endl;
+	}
+	debug(kmers_map.size());
+	seq2ver::iterator p;
+	for (p = kmers_map.begin(); p != kmers_map.end(); ++p) {
+		debug((p->first).Str());
+		debug((p->second).hits_);
 	}
 	return graph;
 }
