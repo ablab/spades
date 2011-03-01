@@ -42,7 +42,7 @@ private:
 				case 'T': case '3': case 3: byte |= (3 << cnt); break;
 			}
 			cnt += 2;
-			if (cnt == 6) {
+			if (cnt == 8) {
 				this->_bytes[cur++] = byte;
 				cnt = 0;
 				byte = 0;
@@ -82,7 +82,7 @@ public:
 
 	char operator[] (const size_t index) const { // 0123
 		int i = index;
-		return ((_bytes[i >> 2] >> ((i%4))*2) & 3);
+		return (((_bytes[i >> 2]) >> ((i%4)*2)) & 3);
 	}
 
 	Seq<_size> operator!() const { // TODO: optimize

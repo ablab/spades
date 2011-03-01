@@ -7,18 +7,23 @@
 
 int testFind() {
 	Sequence s("ACATACAGACATACA");
-	int t = s.find(Sequence("TACAC"));
+	cerr<<s.Str()<<endl;
+	Sequence ss = s.Subseq(5,10);
+	cerr<<s.Str()<<" "<<ss.Str()<<endl;
+	int t = s.find(ss);
 	cout << t;
 	return 0;
 }
 
 int testSimilar() {
 	Sequence s("ACATACAGACATACA");
-	Sequence t("ATACAC");
+	Sequence t("ATACAGACATACATT");
 	forn(i, 4) {
 		int ii = i+1;
 		//cout << ii;
 		int k = s.similar(t, ii);
+		cout << k;
+		 k = t.similar(s, ii);
 		cout << k;
 	}
 	return 0;
@@ -31,5 +36,6 @@ int main() {
 //	map<>sequencesToMap(parsed_k_sequence);
 	constructGraph();
 //	testSimilar();
+//	testFind();
 	return 0;
 }

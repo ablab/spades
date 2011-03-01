@@ -30,7 +30,7 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 		int size, scanf_res;
 		ll kmer;
 		scanf_res = fscanf(inFile, "%lld %d", &kmer, &size);
-		cerr<<scanf_res;
+//		cerr<<scanf_res;
 		if ((scanf_res) != 2) {
 
 			if (scanf_res == -1){
@@ -48,10 +48,10 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 			if (!scanf_res) {
 				cerr << "sequencesToMap error in reading sequences";
 			}
-			cerr <<s;
+//			cerr <<s;
 			Sequence *seq = new Sequence(s);
 //			cerr <<"seq = "<<seq->size(); //Magic
-			cerr <<endl; //Magic
+//			cerr <<endl; //Magic
 			VertexPrototype *v = new VertexPrototype();
 			v->lower = seq;
 			v->start = 0;
@@ -65,65 +65,83 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 }
 
 void createVertices(Graph *g, edgesMap &edges) {
+	int mass[21000];
+	forn(i,21000) mass[i]=0;
 	vertecesMap verts;
 	cerr<<"Start createVertices "<<edges.size()<<endl;
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
 		int size = iter->second.size();
 		ll kmer = iter->fi;
-		cerr<<kmer<<" "<<size<<endl;
+//		cerr<<kmer<<" "<<size<<endl;
 		forn(i, size) {
 			if ((!(iter->se)[i]->used)){
+				int length = 1;
 				(iter->se)[i]->used=1;
-				cerr<<(iter->se)[i]->lower->Str()<<" "<<(iter->se)[i]->lower->size();
+			//	cerr<<(iter->se)[i]->lower->Str()<<" "<<(iter->se)[i]->lower->size();
 				ll finishKmer = kmer&(~((ll)3<<(2*(k-1))));
 				Sequence *finishSeq = new Sequence((iter->se)[i]->lower->Str().c_str());
 				ll startKmer = kmer>>2;
 				Sequence *startSeq = new Sequence((iter->se)[i]->lower->Str().c_str());
-				cerr<<"expandDown "<<finishKmer<<" "<<finishSeq->Str()<<endl;
-				expandDown(edges, verts, finishKmer, finishSeq);
+				//cerr<<"expandDown "<<finishKmer<<" "<<finishSeq->Str()<<endl;
+				length += expandDown(edges, verts, finishKmer, finishSeq);
 				int toVert = storeVertex(verts, finishKmer, finishSeq);
-				expandUp(edges, verts, startKmer, startSeq);
+				length += expandUp(edges, verts, startKmer, startSeq);
 				int fromVert = storeVertex(verts, startKmer, startSeq);
-				cerr<<"from "<<fromVert<<" to "<<toVert<<endl;
+				cerr<<"from "<<fromVert<<" to "<<toVert<<" length " <<length<<endl;
+				if (fromVert-toVert!=1)
+				cerr<<"GOOD"<<endl;
+				mass[fromVert]++;
+				mass[toVert]++;
+
 			}
 		}
 		edges.erase(iter++);
 	}
+	forn(i, 21000) {
+		cerr<<i<< " "<<mass[i]<<endl;
+	}
 }
 
-void expandDown(edgesMap &edges, vertecesMap &verts, ll finishKmer,
-		Sequence *finishSeq) {
+int expandDown(edgesMap &edges, vertecesMap &verts, ll &finishKmer,
+		Sequence* &finishSeq) {
+	int length=0;
 	while (1) {
 		vertecesMap::iterator iter = verts.find(finishKmer);
 		if (iter != verts.end()) {
 			int size = iter->second.size();
+//			cerr<<"size "<<size<< " find "<< finishSeq->Str()<< endl;
 			forn(i, size) {
+//				cerr<<((iter->se)[i]->lower)->Str()<<endl;
 				if (finishSeq->similar(*((iter->se)[i]->lower), k))
-					return;
+					return length;
 			}
 		}
 		if (!CheckUnuqueWayUp(edges, finishKmer, finishSeq))
-			return;
+			return length;
 		if (!GoUnuqueWayDown(edges, finishKmer, finishSeq))
-			return;
+			return length;
+		else length++;
 	}
 }
 
-void expandUp(edgesMap &edges, vertecesMap &verts, ll startKmer,
-		Sequence *startSeq) {
+int expandUp(edgesMap &edges, vertecesMap &verts, ll &startKmer,
+		Sequence* &startSeq) {
+	int length=0;
+
 	while (1) {
 		vertecesMap::iterator iter = verts.find(startKmer);
 		if (iter != verts.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
 				if (startSeq->similar( *((iter->se)[i]->lower), k))
-					return;
+					return length;
 			}
 		}
 		if (!CheckUnuqueWayDown(edges, startKmer, startSeq))
-			return;
+			return length;
 		if (!GoUnuqueWayUp(edges, startKmer, startSeq))
-			return;
+			return length;
+		else length++;
 	}
 }
 
