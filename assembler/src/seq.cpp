@@ -22,7 +22,13 @@ Sequence::Sequence(const std::string &s): _size(s.size()), _reverse(false) {  //
 		_bytes[_size/4] = Seq<4>(s.substr((_size/4)*4, _size & 3).c_str());
 	}
 }
+Sequence Sequence::shift_right() const{
+	return *this;
+}
 
+Sequence Sequence::shift_left() const{
+	return *this;
+}
 Sequence::~Sequence() {
 	if (!_reverse) { // cheat, free only one memory! should be implemented with pointer counters
 		free(_bytes);

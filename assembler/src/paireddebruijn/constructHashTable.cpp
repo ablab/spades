@@ -1,4 +1,4 @@
-#include "common.h"
+#include "common.hpp"
 #include "../seq.hpp"
 #include "constructHashTable.hpp"
 
@@ -8,10 +8,6 @@ typedef map<ll, vector<ll> > myMap;
 
 typedef vector<Sequence*> downSeqs;
 
-
-const int k = 25;
-const int l = 31;
-const int readLength = 100;
 
 int totalKmers = 0;
 int uniqPairs = 0;
@@ -107,22 +103,6 @@ downSeqs clusterize(ll* a, int size) {
 		}
 
 	}
-//	forn(i,size)
-//		cerr<<decompress(a[i ]) << " ";
-/*	if (size > 30) {
-		forn(i,size)
-			cerr<<decompress(a[i ]) << " ";
-		cerr<<"left"<<endl;
-		forn(i, size)
-			cerr<<left[i] <<" ";
-		cerr<<endl;
-
-		cerr<<"right"<<endl;
-		forn(i, size)
-			cerr<<right[i] <<" ";
-		cerr<<endl;
-		cerr<<endl;
-	}*/
 	int color = 1;
 	forn(i, size) {
 		int seqlength = l;
@@ -145,20 +125,14 @@ downSeqs clusterize(ll* a, int size) {
 			int rightend = ii;
 			ii = leftend;
 			string s = decompress(a[leftend], l);
-	//		cerr << s << " ";
-			//cerr << a[ii]<<" and " << ii << " ";
 			while (ii != rightend) {
-
 				ii = right[ii];
-				//cerr << a[ii] << " and " << ii << " ";
 				s += (a[ii] & 3) + '0';
 			}
-		//	cerr << s << endl;
 			Sequence* tmpSeq = new Sequence(s);
 			res.pb(tmpSeq);
 			color++;
 		}
-
 	}
 	return res;
 }
@@ -177,6 +151,7 @@ ll extractMer(char *read, int shift, int length) {
 }
 
 inline bool checkBoundsForUpper(ll upper) {
+	return true;
 	if ((upper >= 1<<20) && (upper < upperMax))
 		return true;
 	else return false;
@@ -278,21 +253,27 @@ int pairsToSequences(string inputFile, string outputFile) {
 	FILE* decompressed = fopen("data/decompressed.out", "w" );
 	int ok = 1;
 	ll lmers[MAXLMERSIZE];
-
 	ll kmer;
 	int lsize;
-	FILE* outFile = freopen(outputFile.c_str(), "w", stdout);
+	FILE* outFile = fopen(outputFile.c_str(), "w");
 	int count = 0;
 	while (1) {
 		count++;
 		ok = fscanf(inFile, "%lld %d", &kmer, &lsize);
 		if (ok != 2) {
-			cerr<< "error in reads.";
+			if (ok != 0)
+				cerr<< "error in reads.";
+			else
+				cerr << "Finished!!";
 			break;
 		}
-		if (lsize > MAXLMERSIZE)
-			continue;
+		if (lsize > MAXLMERSIZE) {
+			cerr << "TOO BIIIIG";
+			return -2;
+		}
+
 		forn(i, lsize) {
+
 			if (fscanf(inFile, "%lld", &lmers[i]) != 1) {
 				cerr << "Error in main1 reading l-mers";
 				return -1;
@@ -312,7 +293,7 @@ int pairsToSequences(string inputFile, string outputFile) {
 		}
 		forn(i, clsize) {
 			outstring = clusters[i]->str();
-			printf("%s ",outstring.c_str());
+			fprintf(outFile, "%s ",outstring.c_str());
 		}
 		fprintf(outFile, "\n");
 		fprintf(decompressed, "\n");
