@@ -29,8 +29,8 @@ private:
 	};
 	typedef Seq<_size> key;
 	typedef DeBruijn::data value;
-	typedef google::sparse_hash_map<key, value,	typename key::hash, typename key::equal_to> hash_map;
-	//typedef std::map<key, value,	typename key::less> hash_map;
+	//typedef google::sparse_hash_map<key, value,	typename key::hash, typename key::equal_to> hash_map;
+	typedef std::map<key, value, typename key::less> hash_map;
 	//typedef std::tr1::unordered_map<key, value,	typename key::hash, typename key::equal_to> hash_map;
 	hash_map _nodes;
 public:
