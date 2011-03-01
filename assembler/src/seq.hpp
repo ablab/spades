@@ -16,6 +16,9 @@
 #include <cassert>
 #include <cstring>
 #include <array>
+#include <vector>
+
+using namespace std;
 
 char complement(char c); // 0123 -> 3210
 char nucl(char c); // 0123 -> ACGT
@@ -25,27 +28,43 @@ class Seq;
 
 // *****************************************
 
-class Sequence { // runtime length sequence (slow!!!)
+class Data {
+public:
+	vector < Seq<4> > bytes_;
+	int ref_;
+	void IncRef() {++ref_;}
+	void DecRef() {--ref_;}
+	Data(vector< Seq<4> > bytes) : bytes_(bytes) , ref_(1) {}
+};
+
+class Sequence { // immutable runtime length sequence (slow!!!)
 public:
 	Sequence(const std::string &s);
 	~Sequence();
 	char operator[](const size_t index) const;
-	bool operator==(const Sequence &that) const;
-	Sequence& operator!() const;
+	bool operator==(const Sequence& that) const;
+	const Sequence operator!() const;
+
 	/**
-	 * start -inclusive, end -exclusive;
+	 * @param from inclusive
+	 * @param to exclusive;
 	 */
-	Sequence substr(int start, int end) const;
-	Sequence shift_right() const;
-	Sequence shift_left() const;
-//	SeqVarLen operator+ (const SeqVarLen &svl1, const SeqVarLen &svl2) const;
-	std::string str() const;
-	int size() const;
+	Sequence Subseq(size_t from, size_t to) const;
+	Sequence operator+ (const Sequence &s) const;
+	Sequence(const Sequence& s);
+	std::string Str() const;
+	size_t size() const;
 private:
-	Seq<4>* _bytes;
-	int _size;
-	bool _reverse;
-	Sequence(const Sequence *svl, bool reverse); // reverse
+	Data* data_;
+	const size_t from_;
+	const size_t size_;
+	/**
+	 * Right to left + complimentary?
+	 */
+	const bool rtl_;
+//	Sequence(const Sequence *svl, bool reverse); // reverse
+	Sequence(Data* data, size_t from, size_t size, bool rtl);
+	Sequence& operator=(const Sequence& that) {cerr << "Don't call operator= for Sequence"; return *this;};
 };
 
 // *****************************************
@@ -100,12 +119,22 @@ public:
 
 	Seq<_size> operator!() const { // TODO: optimize
 		Sequence s = Sequence(this->str());
-		return Seq<_size>((!s).str());
+		return Seq<_size>((!s).Str());
 	}
 
 	// add nucleotide to the right
 	Seq<_size> shift_right(char c) const { // char should be 0123
 		assert(c <= 3);
+		/*std::cerr << "!!1" << std::endl;
+		std::string s = str();
+		std::cerr << "!!2" << s << std::endl;
+		std::cerr << _size-1 << std::endl;
+		s = s.substr(1);
+		std::cerr << "!!3" << std::endl;
+		s.append(1, c);
+		std::cerr << "!!4" << std::endl;
+		std::cerr << "!!5" << std::endl;
+		return Seq<_size>(s.c_str());*/
 		Seq<_size> res = *this; // copy constructor
 		c <<= (((4-(_size%4))%4)*2); // omg >.<
 		for (int i = _byteslen - 1; i >= 0; --i) { // don't make it size_t :)
@@ -116,6 +145,11 @@ public:
 			c = rm;
 		}
 		return res;
+	}
+
+	Seq<_size> operator<<(char c) const {
+		// TODO operator <<
+		return Seq();
 	}
 
 	// add nucleotide to the left
@@ -156,7 +190,7 @@ public:
 		 size_t operator() (const Seq<_size> &seq) const {
 			size_t h = 0;
 			for (size_t i = 0; i < _byteslen; ++i) {
-				h *= seq._bytes[i]*13;
+				h += seq._bytes[i];
 			}
 			return h;
 		}

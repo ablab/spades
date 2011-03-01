@@ -12,79 +12,104 @@
 
 using namespace std;
 
-
-Sequence::Sequence(const std::string &s): _size(s.size()), _reverse(false) {  //accepts both 0123 and ACGT
-	_bytes = (Seq<4>*) malloc((this->_size >> 2) + 1); // sizeof(Seq<4>()) == 1;
-	for (int i = 0; i < _size / 4; ++i) {
-		_bytes[i] = Seq<4>(s.substr(i*4, 4).c_str());
-	}
-	if (_size & 3) {
-		_bytes[_size/4] = Seq<4>(s.substr((_size/4)*4, _size & 3).c_str());
-	}
-}
-Sequence Sequence::shift_right() const{
-	return *this;
+Sequence::Sequence(Data* data, size_t from, size_t size, bool rtl) :
+	data_ (data),
+	from_ (from),
+	size_ (size),
+	rtl_ (rtl)
+{
+	data_->IncRef();
 }
 
-Sequence Sequence::shift_left() const{
-	return *this;
+Sequence::Sequence(const Sequence &s) :
+	data_ (s.data_),
+	from_ (s.from_),
+	size_ (s.size_),
+	rtl_ (s.rtl_)
+{
+	data_->IncRef();
 }
+
+Sequence::Sequence(const std::string &s): from_(0), size_(s.size()), rtl_(false) {  //accepts both 0123 and ACGT
+	vector< Seq<4> > inner_data((size_ + 3) >> 2);
+	for (size_t i = 0; i < size_ / 4; ++i) {
+		inner_data[i] = Seq<4>(s.substr(i * 4, 4).c_str());
+	}
+	if (size_ & 3) {
+		inner_data[size_ / 4] = Seq<4>(s.substr((size_ / 4) * 4, size_ & 3).c_str());
+	}
+	data_ = new Data(inner_data);
+}
+
 Sequence::~Sequence() {
-	if (!_reverse) { // cheat, free only one memory! should be implemented with pointer counters
-		free(_bytes);
+	if (--data_->ref_ == 0) {
+		delete data_;
 	}
 }
 
 char Sequence::operator[] (const size_t index) const {
-	int i = index;
-	if (_reverse) {
-		i = _size - i - 1;
-		return complement(_bytes[i / 4][i % 4]);
+	if (rtl_) {
+		int i = from_ + size_ - 1 - index;
+		return complement(data_->bytes_[i / 4][i % 4]);
 	}
 	else {
-		return _bytes[i / 4][i % 4];
+		int i = from_ + index;
+		return data_->bytes_[i / 4][i % 4];
 	}
 }
 
-// TODO rewrite this!
 bool Sequence::operator== (const Sequence &that) const {
-	return this->str() == that.str();
+	if (size_ != that.size_) {
+		return false;
+	}
+	for (size_t i = 0; i < size_; ++i) {
+		if (operator [](i) != that[i]) {
+			return false;
+		}
+	}
+	return true;
 }
 
-std::string Sequence::str() const {
+const Sequence Sequence::operator! () const {
+	return Sequence(data_, from_, size_, !rtl_);
+}
+
+Sequence Sequence::Subseq(size_t from, size_t to) const {
+	if (rtl_) {
+		return Sequence(data_, from_ + size_ - to, to - from, true);
+	} else {
+		return Sequence(data_, from_ + from, to - from, false);
+	}
+}
+
+// TODO optimize
+// TODO might be opposite to correct
+Sequence Sequence::operator+ (const Sequence &s) const {
+	int total = size_ + s.size_;
+	vector< Seq<4> > bytes((total + 3) >> 2);
+	for (size_t i = 0; i < size_; ++i) {
+		bytes[i / 4] = bytes[i / 4].shift_left((operator [](i))); // TODO :-) use <<=
+	}
+	for (size_t i = 0, j = size_; i < s.size_; ++i, ++j) {
+		bytes[j / 4] = (bytes[j / 4]) << s[i];
+	}
+	return Sequence(new Data(bytes), 0, total, false);
+}
+
+std::string Sequence::Str() const {
 	std::string res = "";
-	for (int i = 0; i < this->_size; ++i) {
-		res += nucl((*this)[i]);
+	for (size_t i = 0; i < size_; ++i) {
+		res += nucl(operator [](i));
 	}
 	return res;
 }
 
-int Sequence::size() const {
-	return _size;
-}
-
-Sequence& Sequence::operator! () const {
-	Sequence* res = new Sequence(this, true);
-	return *res;
-}
-
-Sequence Sequence::substr(int start, int end) const {
-	//todo rewrite when other constructors will exist
-	string s = "";
-	for (int i = start; i < end; ++i) {
-		s += operator[](i);
-	}
-	return Sequence(s);
-}
-
-Sequence::Sequence(const Sequence *svl, bool reverse = false): _bytes(svl->_bytes), _size(svl->_size), _reverse(svl->_reverse) {
-	if (reverse) {
-		_reverse = !_reverse;
-	}
+size_t Sequence::size() const {
+	return size_;
 }
 
 char complement(char c) {
-	return 3 - c;
+	return c ^ 3;
 }
 
 char nucl(char c) {
