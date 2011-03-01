@@ -88,7 +88,7 @@ Sequence Sequence::operator+ (const Sequence &s) const {
 	int total = size_ + s.size_;
 	vector< Seq<4> > bytes((total + 3) >> 2);
 	for (size_t i = 0; i < size_; ++i) {
-		bytes[i / 4] = bytes[i / 4].shift_left((operator [](i))); // TODO :-) use <<=
+		bytes[i / 4] = (bytes[i / 4] << operator [](i)); // TODO :-) use <<=
 	}
 	for (size_t i = 0, j = size_; i < s.size_; ++i, ++j) {
 		bytes[j / 4] = (bytes[j / 4]) << s[i];
