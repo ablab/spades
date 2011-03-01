@@ -15,7 +15,7 @@ int CheckUnuqueWayUp(edgesMap &edges, ll finishKmer, Sequence *finishSeq);
 int GoUnuqueWayUp(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq);
 int CheckUnuqueWayDown(edgesMap &edges, ll finishKmer, Sequence *finishSeq);
 int GoUnuqueWayDown(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq);
-
+int storeVertex(vertecesMap &verts, ll newKmer, Sequence* newSeq);
 
 
 
