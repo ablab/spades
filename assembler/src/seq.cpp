@@ -11,7 +11,7 @@
 #include <string>
 
 using namespace std;
-
+//SEQUENCE IS UNMUTABLE!!!
 Sequence::Sequence(Data* data, size_t from, size_t size, bool rtl) :
 	data_ (data),
 	from_ (from),
@@ -74,7 +74,12 @@ const Sequence Sequence::operator! () const {
 	return Sequence(data_, from_, size_, !rtl_);
 }
 
+//including from, excluding to
+//safe if not #DEFINE NDEBUG
 Sequence Sequence::Subseq(size_t from, size_t to) const {
+	assert (to >= from);
+	assert (from >= 0);
+	assert (to - from <= size_);
 	if (rtl_) {
 		return Sequence(data_, from_ + size_ - to, to - from, true);
 	} else {
@@ -82,23 +87,23 @@ Sequence Sequence::Subseq(size_t from, size_t to) const {
 	}
 }
 //TODO: must be KMP or hashing instead of this shit
-int Sequence::find (const Sequence &t) {
+int Sequence::find (const Sequence &t) const{
 	for(int i = 0; i < size()- t.size() + 1; i++) {
 		if (Subseq(i, i + t.size()) == t) {
-			return 1;
+			return i;
 		}
 	}
-	return 0;
+	return -1;
 }
-int similar(const Sequence &a, const Sequence &b, int k){
-	Sequence c(a.Subseq(0, k));
-//	if (b.find(c)) {
+int Sequence::similar(const Sequence &t, int k) const{
+	Sequence c(Subseq(0, k));
+	if (t.find(c) != -1) {
 		return 1;
-//	}
-	Sequence d(b.Subseq(0, k));
-//	if (a.find(d)) {
+	}
+	Sequence d(t.Subseq(0, k));
+	if (find(d) != -1) {
 		return 1;
-//	}
+	}
 	return 0;
 }
 
@@ -108,7 +113,7 @@ Sequence Sequence::operator+ (const Sequence &s) const {
 	int total = size_ + s.size_;
 	vector< Seq<4> > bytes((total + 3) >> 2);
 	for (size_t i = 0; i < size_; ++i) {
-		bytes[i / 4] = bytes[i / 4].shift_left((operator [](i))); // TODO :-) use <<=
+		bytes[i / 4] = (bytes[i / 4] << operator [](i)); // TODO :-) use <<=
 	}
 	for (size_t i = 0, j = size_; i < s.size_; ++i, ++j) {
 		bytes[j / 4] = (bytes[j / 4]) << s[i];

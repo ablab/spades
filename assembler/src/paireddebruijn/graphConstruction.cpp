@@ -2,6 +2,8 @@
 #include "common.hpp"
 #include "graphConstruction.hpp"
 
+#define similar(a,b,c) false
+
 int VertexCount;
 
 using namespace paired_assembler;

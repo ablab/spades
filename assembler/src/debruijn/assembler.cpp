@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 			Seq<K> head = mp.seq1.head<K>();
 			Seq<K> tail;
 			for (size_t i = K; i < MPSIZE; ++i) {
-				tail = head.shift_right(mp.seq1[i]);
+				tail = head << mp.seq1[i];
 				graph.addEdge(head, tail);
 				head = tail;
 			}

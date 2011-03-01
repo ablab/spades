@@ -132,8 +132,42 @@ public:
 	;
 };
 
+class SimpleHash {
+public:
+	unsigned int operator() (const Kmer& seq) const {
+	    unsigned int h = HASH_SEED;
+		for (int i = 0; i < seq.size(); i++) {
+			h = ((h << 5) - h) + seq[i];
+		}
+		return h;
+	}
+};
+
+class MySimpleHashTable {
+	//pair<Vertex*, int> - vertex and offset
+//	hash_map<const Kmer, pair <Vertex*, int> , SimpleHash> h;
+	hash_map<const Kmer, pair<Vertex*, size_t>, SimpleHash, Kmer::equal_to > h;
+	//vector<V> array[size];
+public:
+
+	//todo think of using references
+	void put(Kmer k, pair <Vertex*, size_t> v) {
+		h.insert(make_pair(k, v));
+	}
+
+	const pair<Vertex*, size_t> get(Kmer k) {
+		return h[k];
+	}
+
+//	void remove(Kmer k) {
+//		h.
+//	}
+};
+
 class Graph {
-	set<Vertex*> _component_roots;
+	set<Vertex*> component_roots_;
+
+	MySimpleHashTable h_;
 
 	bool Empty(Vertex** vs) {
 		for (int i = 0; i < 4; ++i) {
@@ -145,7 +179,7 @@ class Graph {
 
 public:
 	const set<Vertex*>& component_roots() {
-		return _component_roots;
+		return component_roots_;
 	}
 
 	vector<Vertex*> Anc(Vertex* v) {
@@ -169,21 +203,25 @@ public:
 		}
 		return ans;
 	}
+
 	/**
 	 * adds two complement vertices
 	 */
-	Vertex* AddVertices(Sequence nucls, Vertex** outgoing_vert, Vertex** outgoing_vert_for_compl) {
-		Vertex* v1 = new Vertex(nucls, outgoing_vert);
-		Vertex* v2 = new Vertex(!nucls, outgoing_vert_for_compl);
-		v1->set_complement(v2);
-		v2->set_complement(v1);
-		if (Empty(outgoing_vert)) {
-			_component_roots.insert(v1);
-		}
-		return v1;
-	}
+//	Vertex* AddVertices(Sequence nucls, Vertex** outgoing_vert, Vertex** outgoing_vert_for_compl) {
+//		Vertex* v1 = new Vertex(nucls, outgoing_vert);
+//		Vertex* v2 = new Vertex(!nucls, outgoing_vert_for_compl);
+//		v1->set_complement(v2);
+//		v2->set_complement(v1);
+//		if (Empty(outgoing_vert)) {
+//			component_roots_.insert(v1);
+//		}
+//		return v1;
+//	}
 
-	Vertex* AddVertices(Sequence nucls) {
+	/**
+	 * adds vertex and its complement
+	 */
+	Vertex* AddVertex(Sequence nucls) {
 		Vertex* v1 = new Vertex(nucls);
 		Vertex* v2 = new Vertex(!nucls);
 		v1->set_complement(v2);
@@ -194,15 +232,18 @@ public:
 	/**
 	 * deletes vertex and its complement
 	 */
-	void DeleteVertices(Vertex* v) {
+	void DeleteVertex(Vertex* v) {
 		Vertex* complement = v->complement();
 		delete v;
 		delete complement;
 	}
 
 	void LinkVertices(Vertex* anc, Vertex* desc) {
+		//todo add check for consistency
 		anc->AddDesc(desc);
+		component_roots_.erase(anc);
 		desc->complement()->AddDesc(anc->complement());
+		component_roots_.erase(desc->complement());
 	}
 
 	/**
@@ -216,6 +257,10 @@ public:
 		}
 	}
 
+	void RenewHashForVertex(Vertex* v) {
+
+	}
+
 	//pos exclusive! (goes into second vertex)
 	Vertex* SplitVertex(Vertex* v, size_t pos) {
 		if (pos == v->size() - 1) {
@@ -224,8 +269,8 @@ public:
 
 		Sequence nucls = v->nucls();
 
-		Vertex* v1 = AddVertices(nucls.Subseq(0, pos));
-		Vertex* v2 = AddVertices(nucls.Subseq(pos - (k - 1), nucls.size()));
+		Vertex* v1 = AddVertex(nucls.Subseq(0, pos));
+		Vertex* v2 = AddVertex(nucls.Subseq(pos - (k - 1), nucls.size()));
 
 		LinkVertices(v1, v2);
 
@@ -237,6 +282,7 @@ public:
 	}
 
 	bool SplitVertexRenewHash(Vertex* v, size_t pos) {
+//		SplitVertex
 		return false;
 	}
 };
@@ -250,37 +296,6 @@ public:
 		_v(v), _offset(offset) {
 	}
 };*/
-
-class SimpleHash {
-public:
-	unsigned int operator() (const Kmer& seq) const {
-	    unsigned int h = HASH_SEED;
-		for (int i = 0; i < seq.size(); i++) {
-			h = ((h << 5) - h) + seq[i];
-		}
-		return h;
-	}
-};
-
-class MySimpleHashTable {
-	//pair<Vertex*, int> - vertex and offset
-//	hash_map<const Kmer, pair <Vertex*, int> , SimpleHash> h;
-	hash_map<const Kmer, pair<Vertex*, size_t>, SimpleHash, Kmer::equal_to > h;
-	//vector<V> array[size];
-public:
-	//todo think of using references
-	void put(Kmer k, pair <Vertex*, size_t> v) {
-		h.insert(make_pair(k, v));
-	}
-
-	const pair<Vertex*, size_t> get(Kmer k) {
-		return h[k];
-	}
-
-//	void remove(Kmer k) {
-//		h.
-//	}
-};
 
 /*class VertexPool {
  _v_idx _size;

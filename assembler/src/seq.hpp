@@ -18,6 +18,8 @@
 #include <array>
 #include <vector>
 
+typedef long long word;
+
 using namespace std;
 
 char complement(char c); // 0123 -> 3210
@@ -59,7 +61,8 @@ public:
 	Sequence Subseq(size_t from, size_t to) const;
 	Sequence operator+ (const Sequence &s) const;
 	Sequence(const Sequence& s);
-	int find(const Sequence& t);
+	int find(const Sequence& t) const;
+	int similar(const Sequence& t, int k) const;
 	std::string Str() const;
 	size_t size() const;
 private:
@@ -80,32 +83,41 @@ private:
 template <size_t _size> // max number of nucleotides
 class Seq {
 private:
-	const static size_t _byteslen = (_size / 4) + (_size % 4 != 0); // compile-time constant
-	//char _bytes[_byteslen]; // little-endian
+	const static size_t _byteslen = (_size + 3) >> 2; // compile-time constant
+	const static char _lastnuclshift = ((_size + 3) & 3) << 1;	// compile-time constant
+	//char _bytes[_byteslen]; // little-endian todo AAAAAAAAAAAa
 	std::array<char,_byteslen> _bytes; // 0 bits overhead
+
+	void init(const char* s){
+		char byte = 0;
+		int cnt = 0;
+		int cur = 0;
+		for (size_t pos = 0; pos < _size; ++pos, ++s) { // unsafe!
+			switch (*s) {
+				case 'C': case '1': case 1: byte |= (1 << cnt); break;
+				case 'G': case '2': case 2: byte |= (2 << cnt); break;
+				case 'T': case '3': case 3: byte |= (3 << cnt); break;
+			}
+			cnt += 2;
+			if (cnt == 6) {
+				this->_bytes[cur++] = byte;
+				cnt = 0;
+				byte = 0;
+			}
+		}
+		if (cnt != 0) {
+			this->_bytes[cur++] = byte;
+		}
+	}
+
+	Seq(std::array<char,_byteslen> bytes): _bytes(bytes)
+	{};
+
 public:
 	Seq() {}; // random Seq, use with care!
 
 	Seq(const char* s) {
-		char byte = 0;
-		int cnt = 6;
-		int cur = 0;
-		for (size_t pos = 0; pos < _size; ++pos, ++s) { // unsafe!
-			switch (*s) {
-				case 'C': case '1': byte |= (1 << cnt); break;
-				case 'G': case '2': byte |= (2 << cnt); break;
-				case 'T': case '3': byte |= (3 << cnt); break;
-			}
-			cnt -= 2;
-			if (cnt < 0) {
-				this->_bytes[cur++] = byte;
-				cnt = 6;
-				byte = 0;
-			}
-		}
-		if (cnt != 6) {
-			this->_bytes[cur++] = byte;
-		}
+		init(s);
 	}
 
 	Seq(const Seq<_size> &seq) : _bytes(seq._bytes) {
@@ -117,9 +129,17 @@ public:
 		memcpy(_bytes, seq._bytes, _byteslen);
 	}
 
+	template <class T> Seq(const T& t, size_t offset = 0) {
+		char a[_size];
+		for (size_t i = 0; i < _size; ++i) {
+			a[i] = t[offset + i];
+		}
+		init(a);
+	}
+
 	char operator[] (const size_t index) const { // 0123
 		int i = index;
-		return ((_bytes[i >> 2] >> ((3-(i%4))*2) ) & 3);
+		return ((_bytes[i >> 2] >> ((i%4))*2) & 3);
 	}
 
 	/*Seq<_size>& operator= (const Seq<_size> &seq) {
@@ -134,49 +154,62 @@ public:
 		return Seq<_size>((!s).Str());
 	}
 
-	// add nucleotide to the right
-	Seq<_size> shift_right(char c) const { // char should be 0123
-		assert(c <= 3);
-		/*std::cerr << "!!1" << std::endl;
-		std::string s = str();
-		std::cerr << "!!2" << s << std::endl;
-		std::cerr << _size-1 << std::endl;
-		s = s.substr(1);
-		std::cerr << "!!3" << std::endl;
-		s.append(1, c);
-		std::cerr << "!!4" << std::endl;
-		std::cerr << "!!5" << std::endl;
-		return Seq<_size>(s.c_str());*/
-		Seq<_size> res = *this; // copy constructor
-		c <<= (((4-(_size%4))%4)*2); // omg >.<
-		for (int i = _byteslen - 1; i >= 0; --i) { // don't make it size_t :)
-			char rm = (res._bytes[i] >> 6) & 3;
-			res._bytes[i] <<= 2;
-			//res._bytes[i] &= 252;
-			res._bytes[i] |= c;
-			c = rm;
-		}
-		return res;
-	}
+//	// add nucleotide to the right
+//	Seq<_size> shift_right(char c) const { // char should be 0123
+//		assert(c <= 3);
+//		/*std::cerr << "!!1" << std::endl;
+//		std::string s = str();
+//		std::cerr << "!!2" << s << std::endl;
+//		std::cerr << _size-1 << std::endl;
+//		s = s.substr(1);
+//		std::cerr << "!!3" << std::endl;
+//		s.append(1, c);
+//		std::cerr << "!!4" << std::endl;
+//		std::cerr << "!!5" << std::endl;
+//		return Seq<_size>(s.c_str());*/
+//		Seq<_size> res = *this; // copy constructor
+//		c <<= (((4-(_size%4))%4)*2); // omg >.<
+//		for (int i = _byteslen - 1; i >= 0; --i) { // don't make it size_t :)
+//			char rm = (res._bytes[i] >> 6) & 3;
+//			res._bytes[i] <<= 2;
+//			//res._bytes[i] &= 252;
+//			res._bytes[i] |= c;
+//			c = rm;
+//		}
+//		return res;
+//	}
 
+	//todo optimize via machine words;
+	/**
+	 * add one nucl to the right, shifting seq
+	 */
 	Seq<_size> operator<<(char c) const {
-		// TODO operator <<
-		return Seq();
+		std::array<char,_byteslen> new_a(_bytes);
+		char buf = new_a[_byteslen - 1] & 3;
+		new_a[_byteslen - 1] >>= 2;
+		new_a[_byteslen - 1] |= c << _lastnuclshift;
+		for (size_t i = _byteslen - 2; i >= 0; --i) {
+			char new_buf = new_a[i] & 3;
+			new_a[i] >>= 2;
+			new_a[i] |= buf << 6;
+			buf = new_buf;
+		}
+		return Seq<_size>(new_a);
 	}
 
-	// add nucleotide to the left
-	Seq<_size> shift_left(char c) const { // char should be 0123
-		Seq<_size> res = *this; // copy constructor
-		// TODO: clear last nucleotide
-		for (size_t i = 0; i < _byteslen; ++i) {
-			char rm = res._bytes[i] & 3;
-			res._bytes[i] >>= 2;
-			//res._bytes[i] &= 63;
-			res._bytes[i] |= (c << 6);
-			c = rm;
-		}
-		return res;
-	}
+//	// add nucleotide to the left
+//	Seq<_size> shift_left(char c) const { // char should be 0123
+//		Seq<_size> res = *this; // copy constructor
+//		// TODO: clear last nucleotide
+//		for (size_t i = 0; i < _byteslen; ++i) {
+//			char rm = res._bytes[i] & 3;
+//			res._bytes[i] >>= 2;
+//			//res._bytes[i] &= 63;
+//			res._bytes[i] |= (c << 6);
+//			c = rm;
+//		}
+//		return res;
+//	}
 
 	Sequence substring(int from, int to) const { // TODO: optimize
 		std::string s = str();
