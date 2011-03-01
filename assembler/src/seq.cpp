@@ -11,7 +11,7 @@
 #include <string>
 
 using namespace std;
-
+//SEQUENCE IS UNMUTABLE!!!
 Sequence::Sequence(Data* data, size_t from, size_t size, bool rtl) :
 	data_ (data),
 	from_ (from),
@@ -77,9 +77,9 @@ const Sequence Sequence::operator! () const {
 //including from, excluding to
 //safe if not #DEFINE NDEBUG
 Sequence Sequence::Subseq(size_t from, size_t to) const {
-	assert (to > from);
-	assert(from > 0);
-	assert (to <= size_);
+	assert (to >= from);
+	assert (from >= 0);
+	assert (to - from <= size_);
 	if (rtl_) {
 		return Sequence(data_, from_ + size_ - to, to - from, true);
 	} else {
