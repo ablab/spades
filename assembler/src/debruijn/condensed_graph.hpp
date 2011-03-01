@@ -56,7 +56,7 @@ public:
 
 	Vertex(Sequence nucls) :
 		_nucls(nucls) {
-		fill_n(_desc, 4, 0);
+		fill_n(_desc, 4, (Vertex*) NULL);
 	}
 
 	//todo talk with Kolya about problem with Sequence copying!!!
@@ -217,15 +217,15 @@ public:
 	}
 
 	//pos exclusive! (goes into second vertex)
-	Vertex* SplitVertex(Vertex* v, int pos) {
+	Vertex* SplitVertex(Vertex* v, size_t pos) {
 		if (pos == v->size() - 1) {
 			return v;
 		};
 
 		Sequence nucls = v->nucls();
 
-		Vertex* v1 = AddVertices(nucls.substr(0, pos));
-		Vertex* v2 = AddVertices(nucls.substr(pos - (k - 1), nucls.len()));
+		Vertex* v1 = AddVertices(nucls.Subseq(0, pos));
+		Vertex* v2 = AddVertices(nucls.Subseq(pos - (k - 1), nucls.size()));
 
 		LinkVertices(v1, v2);
 
@@ -234,6 +234,10 @@ public:
 		FixIncoming(v->complement(), v2->complement());
 
 		return v2;
+	}
+
+	bool SplitVertexRenewHash(Vertex* v, size_t pos) {
+		return false;
 	}
 };
 
@@ -261,19 +265,21 @@ public:
 class MySimpleHashTable {
 	//pair<Vertex*, int> - vertex and offset
 //	hash_map<const Kmer, pair <Vertex*, int> , SimpleHash> h;
-	hash_map<const Kmer, pair<Vertex*, int>, SimpleHash > h;
+	hash_map<const Kmer, pair<Vertex*, size_t>, SimpleHash, Kmer::equal_to > h;
 	//vector<V> array[size];
 public:
 	//todo think of using references
-	void put(Kmer k, pair <Vertex*, int> v) {
-//		h.insert(make_pair(k, v));
+	void put(Kmer k, pair <Vertex*, size_t> v) {
+		h.insert(make_pair(k, v));
 	}
 
-	const pair <Vertex*, int>& get(Kmer k) {
-//		return h[k];
+	const pair<Vertex*, size_t> get(Kmer k) {
+		return h[k];
 	}
 
-	void remove(Kmer k);
+//	void remove(Kmer k) {
+//		h.
+//	}
 };
 
 /*class VertexPool {

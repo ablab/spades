@@ -39,7 +39,14 @@ public:
 
 class Sequence { // immutable runtime length sequence (slow!!!)
 public:
+//	template <size_t _size> static Sequence constr(const Seq<_size> seq);
+
 	Sequence(const std::string &s);
+
+	template <size_t _size> Sequence(const Seq<_size> seq) {
+		this(seq.str());
+	}
+
 	~Sequence();
 	char operator[](const size_t index) const;
 	bool operator==(const Sequence& that) const;
@@ -103,6 +110,10 @@ public:
 	Seq(const Seq<_size> &seq) : _bytes(seq._bytes) {
 		//std::cerr << "Hey!" << std::endl;
 		//memcpy(_bytes, seq._bytes, _byteslen);
+	}
+
+	template <size_t _bigger_size> Seq(const Seq<_bigger_size>& seq) {
+		memcpy(_bytes, seq._bytes, _byteslen);
 	}
 
 	char operator[] (const size_t index) const { // 0123
