@@ -37,6 +37,7 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 			v->lower = seq;
 			v->start = 0;
 			v->finish = 0;
+			v->used =0;
 			prototypes.pb(v);
 		}
 		res.insert(mp(kmer, prototypes));
@@ -45,13 +46,31 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 }
 
 void createVertices(Graph *g, edgesMap &edges){
-	for(edgesMap::iterator iter = edges.begin(); iter != edges.end(); ++iter){
+	vertecesMap verts;
+	for(edgesMap::iterator iter = edges.begin(); iter != edges.end(); ){
 		int size = iter->second.size();
 		forn(i, size) {
-			if (((iter->se)[i]->start == 0) && ((iter->se)[i]->finish == 0)){
-				g->addVertex(new Sequence(decompress(k>>2, k - 1)), (iter->se)[i]->lower);//(lower->shiftRight)
+			ll kmer = iter->fi;
+			if ((!(iter->se)[i]->used)){
+				ll finishKmer = kmer&(~((ll)3<<(2*(k-1))));
+				Sequence *finishSeq = new Sequence((iter->se)[i]->lower);
+				ll startKmer = kmer>>2;
+				expandDown(edges, verts, finishKmer, );
+				expandUp(edges, verts, kmer, (iter->se)[i]->lower);
 			}
 		}
+		edges.erase(iter++);
 	}
+}
+
+
+void expandDown(edgesMap &edges, vertecesMap &verts, ll kmer, Sequence lo_seq){
+	ll lowKmer = kmer&(~(3<<(2*(k-1))));
+	vertecesMap::iterator iter=verts.find(lowKmer);
+	if (iter != verts.end()){
+		if (CheckLow(lo_seq, (iter->se))) return;
+	}
+
+
 }
 

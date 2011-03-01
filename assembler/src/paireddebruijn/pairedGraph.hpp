@@ -30,6 +30,7 @@ class VertexPrototype {
 	Sequence *lower;
 	int start;
 	int finish;
+	bool used;
 };
 
 class Vertex {
