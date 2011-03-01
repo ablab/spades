@@ -53,11 +53,13 @@ void createVertices(Graph *g, edgesMap &edges) {
 		int size = iter->second.size();
 		forn(i, size) {
 			ll kmer = iter->fi;
-			if ((!(iter->se)[i]->used)) {
-				ll finishKmer = kmer & (~((ll) 3 << (2 * (k - 1))));
+			if ((!(iter->se)[i]->used)){
+				ll finishKmer = kmer&(~((ll)3<<(2*(k-1))));
 				Sequence *finishSeq = new Sequence((iter->se)[i]->lower->Str());
-				ll startKmer = kmer >> 2;
+				ll startKmer = kmer>>2;
+				Sequence *startSeq = new Sequence((iter->se)[i]->lower->Str());
 				expandDown(edges, verts, finishKmer, finishSeq);
+				expandUp(edges, verts, startKmer, startSeq);
 			}
 		}
 		edges.erase(iter++);
@@ -82,6 +84,24 @@ void expandDown(edgesMap &edges, vertecesMap &verts, ll finishKmer,
 	}
 }
 
+void expandUp(edgesMap &edges, vertecesMap &verts, ll startKmer,
+		Sequence *startSeq) {
+	while (1) {
+		vertecesMap::iterator iter = verts.find(startKmer);
+		if (iter != verts.end()) {
+			int size = iter->second.size();
+			forn(i, size) {
+				if (similar(startSeq, (iter->se)[i]->lower, k))
+					return;
+			}
+		}
+		if (!CheckUnuqueWayDown(edges, startKmer, startSeq))
+			return;
+		if (!GoUnuqueWayUp(edges, startKmer, startSeq))
+			return;
+	}
+}
+
 int CheckUnuqueWayUp(edgesMap &edges, ll finishKmer, Sequence *finishSeq) {
 	int count = 0;
 	for (int Nucl = 0; Nucl < 4; Nucl++) {
@@ -97,7 +117,6 @@ int CheckUnuqueWayUp(edgesMap &edges, ll finishKmer, Sequence *finishSeq) {
 				}
 			}
 		}
-
 	}
 	return count;
 }

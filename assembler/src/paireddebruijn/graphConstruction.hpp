@@ -10,6 +10,7 @@ void constructGraph();
 edgesMap sequencesToMap(string parsed_k_sequence);
 void createVertices(Graph *g, edgesMap &edges);
 void expandDown(edgesMap &edges, vertecesMap &verts, ll finishKmer, Sequence *finishSeq);
+void expandUp(edgesMap &edges, vertecesMap &verts, ll startKmer, Sequence *startSeq);
 int CheckUnuqueWayUp(edgesMap &edges, ll finishKmer, Sequence *finishSeq);
 int GoUnuqueWayUp(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq);
 int CheckUnuqueWayDown(edgesMap &edges, ll finishKmer, Sequence *finishSeq);

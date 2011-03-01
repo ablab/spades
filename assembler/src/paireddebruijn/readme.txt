@@ -9,6 +9,7 @@ Out: Repeat graph for this pairs.
 2. For each k-mers K do
 3.   For each sequence S from K.seq do
 4.     Unipath(K,S)->V_start,V_finish;
+	//What is a neighbor? k-1 and k-1 intersecting on k-2 nucleo and lower sequences intersects somehow?
 5.     If V_start not present in M put it into M. 
 6.     If V_finish not present in M put it into M.
 7.     Create edge (V_start,V_finish). Store it wisely. (id of edge in vertices, sequence in file)
@@ -40,4 +41,7 @@ ExpandDown(K,S)
 
 ExpandUp(K,S) similar to ExpandDown with changed direction. 
 	  
-	
+TODO2(may be it is a good idea to..)
+1) Another ways of generating sequence from k-l mers. Now we expand k-l mer while it can be done uniquely to left, and it expansion can be uniquely expand to right and vice verse. Instead of sequence graph(?) suffix tree(?)
+
+2) Clustering not only from k to l (downwards), but also from sequences to kmers. (text about this idea is halfly written).
