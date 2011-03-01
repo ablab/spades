@@ -53,7 +53,7 @@ inline int codeNucleotide(char a) {
 		string s = decompress(ts, l);
 
 		Sequence* tst = new Sequence(s);
-//		string ss = tst->str();
+		string ss = tst->Str();
 		assert (ss == s);
 		//cerr << s <<endl<< ss<<endl<<endl;
 
