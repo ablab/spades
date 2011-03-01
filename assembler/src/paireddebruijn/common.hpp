@@ -16,6 +16,7 @@
 #define fi first
 #define se second
 #define edgesMap  map<ll, vector<VertexPrototype *> >
+#define vertecesMap  map<ll, vector<VertexPrototype *> >
 
 
 using namespace std;
