@@ -261,7 +261,7 @@ void outputTable(myMap &pairedTable) {
 			cout << p.se[i] << " ";
 		}
 		cout << endl << endl;
-		if (!(j & 1023))
+		if (!(j & (1024*128-1)))
 			cerr << j << endl;
 		j++;
 	}
@@ -332,7 +332,7 @@ int pairsToSequences(string inputFile, string outputFile) {
 		fprintf(decompressed, "\n");
 	 //	return 0;
 		if (!(count & ((1 << 15) - 1) ))
-			cerr<< "klmer numero "<< count <<"generated" <<endl;
+			cerr<< "k-sequence pairs for k "<< count <<" generated" <<endl;
 	}
 	cerr<<"finished";
 	return 0;
