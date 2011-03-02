@@ -6,12 +6,18 @@
 #include "parameters.hpp"
 #include "../parser.hpp"
 #include <ext/hash_map>
+#include "../logging.hpp";
+
+LOGGER("a.graphBuilder")
 
 using namespace std;
 using namespace __gnu_cxx;
 
-hash_map < Sequence, CVertex, HashSym<Sequence> > kmers_map;
+typedef hash_map< Sequence, CVertex, HashSym<Sequence> > seq2ver;
+seq2ver kmers_map;
 CGraph graph;
+
+LoggerPtr logger(Logger::getLogger("a.graphBuilder"));
 
 void processRead(Seq<MPSIZE> r) {
 	// Processing in O(length * k).
@@ -38,20 +44,22 @@ void processRead(Seq<MPSIZE> r) {
 		int t = pos1; pos1 = pos2; pos2 = t;
 		t = h1; h1 = h2; h2 = t;
 	}
-	Sequence s = Sequence(r).Subseq(0, 1);
-	CVertex v(&s);
-	pair<Sequence, CVertex> p = make_pair(s, v);
-	kmers_map.insert(p);
-//	Kmer k1 = r.substring(pos1, pos1 + K);
-	CVertex v1 = kmers_map[Sequence(r).Subseq(pos1, pos1 + K)];
-	CVertex v2 = kmers_map[Sequence(r).Subseq(pos2, pos2 + K)];
+	Sequence k1 = Sequence(r).Subseq(pos1, pos1 + K);
+	if (kmers_map.count(k1)) {
+		CVertex v(&k1);
+	} else {
+
+	}
+	CVertex v1 = kmers_map[k1];
+	v1.hits_++;
 	graph.AddVertex(v1);
-	graph.AddVertex(v2);
-	CEdge e(&v2, &r, pos1, pos2);
-	v1.AddEdge(e);
+//	graph.AddVertex(v2);
+//	CEdge e(&v2, &r, pos1, pos2);
+//	v1.AddEdge(e);
 }
 
 CGraph GraphBuilder::build() {
+	DEBUG("Building");
 	FASTQParser<MPSIZE>* fqp = new FASTQParser<MPSIZE>();
 	fqp->open(filenames.first, filenames.second);
 	while (!fqp->eof()) {
@@ -61,7 +69,16 @@ CGraph GraphBuilder::build() {
 		}
 		processRead(r.seq1);
 		processRead(r.seq2);
-		//cout <<  mp.id << endl << mp.seq1.str() << endl <<  mp.seq2.str() << endl;
+		if (r.id == 10) {
+			break;
+		}
+	}
+
+	DEBUG(kmers_map.size());
+	seq2ver::iterator p;
+	for (p = kmers_map.begin(); p != kmers_map.end(); ++p) {
+		DEBUG((p->first).Str());
+		DEBUG((p->second).hits_);
 	}
 	return graph;
 }

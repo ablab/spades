@@ -9,7 +9,7 @@ all:$(EXEC)
 
 CC=g++
 CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -std=c++0x
-LDFLAGS=-lz
+LDFLAGS=-L/usr/local/lib -lz -llog4cxx -lapr-1 -laprutil-1
 DEPSFL=-MM -MG
 
 
