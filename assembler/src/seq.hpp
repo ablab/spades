@@ -31,7 +31,7 @@ private:
 	// compile-time static constants.
 	const static size_t Tbits = sizeof(T) << 3; // ex. 8: 2^8 = 256 or 16
 	const static size_t Tnucl = sizeof(T) << 2; // ex. 4: 8/2 = 4 or 16/2 = 8
-	const static size_t Tnucl_bits = log<sizeof(T),2>::value + 2; // ex. 2: 2^2 = 4 or 3: 2^3 = 8
+	const static size_t Tnucl_bits = log_<sizeof(T),2>::value + 2; // ex. 2: 2^2 = 4 or 3: 2^3 = 8
 	const static size_t data_size_ = (size_ + Tnucl - 1) >> Tnucl_bits;
 	std::array<T,data_size_> data_; // 0 bits overhead
 
@@ -62,9 +62,9 @@ public:
 		init(s);
 	}
 
-	Seq(const Seq<size_> &seq) : data_(seq.data_) {
+	/*Seq(const Seq<size_,T> &seq): data_(seq.data_) {
 		//does memcpy faster?
-	}
+	}*/
 
 	template <size_t _bigger_size>
 	Seq(const Seq<_bigger_size>& seq) {
