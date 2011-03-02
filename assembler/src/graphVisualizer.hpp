@@ -63,11 +63,11 @@ public:
 		_name = name;
 	}
 
-	void addVertex(tVertex vertexId, string &label) {
+	void addVertex(tVertex vertexId,const string &label) {
 		_vertices.push_back(make_pair(vertexId, label));
 	}
 
-	void addEdge(tVertex fromId, tVertex toId, string &label) {
+	void addEdge(tVertex fromId, tVertex toId, const string &label) {
 		_edges.push_back(make_pair(make_pair(fromId, toId), label));
 	}
 

@@ -22,9 +22,11 @@ using namespace __gnu_cxx;
 namespace assembler {
 
 #define K 25
+#define N 100
 #define HASH_SEED 1845724623
 
 typedef Seq<K> Kmer;
+typedef Seq<N> Read;
 
 static const int k = 25;
 
@@ -75,14 +77,14 @@ public:
 
 	//static Vertex AbsentVertex = Vertex(0, 0, NULL, true, 0, NULL);
 
-	size_t size() {
-		return _nucls.size();
-	}
-	;
+//	size_t size() {
+//		return _nucls.size();
+//	}
+//	;
 
-	char operator[](const int &index) const {
-		return _nucls[index];
-	}
+//	char operator[](const int &index) const {
+//		return _nucls[index];
+//	}
 
 	int DescCount() {
 		int c = 0;
@@ -108,7 +110,7 @@ public:
 
 	void AddDesc(Vertex* v) {
 		//check if k-1 mers differ
-		int k_th_nucl = (*v)[K];
+		int k_th_nucl = v->nucls()[K];
 		_desc[k_th_nucl] = v;
 	}
 
@@ -156,7 +158,13 @@ public:
 		h.insert(make_pair(k, v));
 	}
 
+	bool contains(Kmer k) {
+		return h.count(k) == 1;
+	}
+
 	const pair<Vertex*, size_t> get(Kmer k) {
+		assert(contains(k));
+
 		return h[k];
 	}
 
@@ -176,6 +184,15 @@ class Graph {
 				return false;
 		}
 		return true;
+	}
+
+	void RenewHashForSingleVertex(Vertex* v) {
+		Kmer k(v->nucls());
+		h_.put(k, make_pair(v, 0));
+		for (size_t i = K + 1, n = v->nucls().size(); i < n; ++i) {
+			k = k << v->nucls()[i];
+			h_.put(k, make_pair(v, i - K));
+		}
 	}
 
 public:
@@ -205,6 +222,21 @@ public:
 		return ans;
 	}
 
+	bool AddIfRoot(Vertex* v) {
+		bool f = false;
+		if (Anc(v).empty()) {
+			component_roots_.insert(v);
+			f = true;
+		}
+		if (Desc(v).empty()) {
+			component_roots_.insert(v->complement());
+			f = true;
+		}
+		return f;
+
+	}
+
+
 	/**
 	 * adds two complement vertices
 	 */
@@ -228,6 +260,20 @@ public:
 		v1->set_complement(v2);
 		v2->set_complement(v1);
 		return v1;
+	}
+
+	bool MergePossible(Vertex* v1, Vertex* v2) {
+		return v1->complement() != v2;
+	}
+
+	Vertex* Merge(Vertex* v1, Vertex* v2) {
+		assert(MergePossible(v1, v2));
+
+		Vertex* v = AddVertex(v1->nucls() + v2->nucls());
+		FixIncoming(v1, v);
+		FixIncoming(v2->complement(), v->complement());
+		RenewHashForVertexKmers(v);
+		return v;
 	}
 
 	/**
@@ -258,13 +304,18 @@ public:
 		}
 	}
 
-	void RenewHashForVertex(Vertex* v) {
-
+	/**
+	 *	renews hash for vertex and complementary
+	 *	todo renew not all hashes
+	 */
+	void RenewHashForVertexKmers(Vertex* v) {
+		RenewHashForSingleVertex(v);
+		RenewHashForSingleVertex(v->complement());
 	}
 
 	//pos exclusive! (goes into second vertex)
 	Vertex* SplitVertex(Vertex* v, size_t pos) {
-		if (pos == v->size() - 1) {
+		if (pos == v->nucls().size() - 1) {
 			return v;
 		};
 
@@ -279,13 +330,18 @@ public:
 
 		FixIncoming(v->complement(), v2->complement());
 
+		RenewHashForVertexKmers(v1);
+
+		RenewHashForVertexKmers(v2);
+
 		return v2;
 	}
 
-	bool SplitVertexRenewHash(Vertex* v, size_t pos) {
-//		SplitVertex
-		return false;
+	void ThreadRead(Read r) {
+		Kmer k(r);
+
 	}
+
 };
 
 /*class KmerPos {
