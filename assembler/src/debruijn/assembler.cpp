@@ -16,27 +16,12 @@ pair<string,string> filenames = make_pair("./data-short/s_6_1.fastq.gz", "./data
 #define MPSIZE 100
 #define K 11
 
-
-bool seq_test() {
-	Seq<10,long long> s("ACGTACGTAC");
-	assert(s.str() == "ACGTACGTAC");
-	assert((s << 'A').str() == "CGTACGTACA");
-	assert((s << 'T').str() == "CGTACGTACT");
-	assert((s >> 'A').str() == "AACGTACGTA");
-	assert((s >> 'T').str() == "TACGTACGTA");
-	assert(s.tail<9>().str() == "CGTACGTAC");
-	assert(s.head<9>().str() == "ACGTACGTA");
-	assert((!s).str() == "GTACGTACGT");
-	return true;
-}
-
 int main(int argc, char *argv[]) {
 
 	std::cerr << "Hello, I am assembler!" << std::endl;
 
 	time_t now = time(NULL);
 
-	seq_test();
 	// simple de Bruijn graph
 	DeBruijn<K> graph;
 	// start parsing...

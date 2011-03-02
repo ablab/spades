@@ -94,6 +94,7 @@ public:
 		reverse(s.begin(), s.end());
 		transform(s.begin(), s.end(), s.begin(), unnucl);
 		transform(s.begin(), s.end(), s.begin(), complement);
+		transform(s.begin(), s.end(), s.begin(), nucl);
 		return Seq<size_,T>(s.c_str());
 	}
 
