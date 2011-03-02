@@ -6,6 +6,9 @@
 #include "parameters.hpp"
 #include "../parser.hpp"
 #include <ext/hash_map>
+#include "../logging.hpp";
+
+LOGGER("a.graphBuilder")
 
 using namespace std;
 using namespace __gnu_cxx;
@@ -13,6 +16,8 @@ using namespace __gnu_cxx;
 typedef hash_map< Sequence, CVertex, HashSym<Sequence> > seq2ver;
 seq2ver kmers_map;
 CGraph graph;
+
+LoggerPtr logger(Logger::getLogger("a.graphBuilder"));
 
 void processRead(Seq<MPSIZE> r) {
 	// Processing in O(length * k).
@@ -48,12 +53,13 @@ void processRead(Seq<MPSIZE> r) {
 	CVertex v1 = kmers_map[k1];
 	v1.hits_++;
 	graph.AddVertex(v1);
-	graph.AddVertex(v2);
-	CEdge e(&v2, &r, pos1, pos2);
-	v1.AddEdge(e);
+//	graph.AddVertex(v2);
+//	CEdge e(&v2, &r, pos1, pos2);
+//	v1.AddEdge(e);
 }
 
 CGraph GraphBuilder::build() {
+	DEBUG("Building");
 	FASTQParser<MPSIZE>* fqp = new FASTQParser<MPSIZE>();
 	fqp->open(filenames.first, filenames.second);
 	while (!fqp->eof()) {
@@ -63,16 +69,16 @@ CGraph GraphBuilder::build() {
 		}
 		processRead(r.seq1);
 		processRead(r.seq2);
-		if (r.id == 100000) {
+		if (r.id == 10) {
 			break;
 		}
-		//cout <<  mp.id << endl << mp.seq1.str() << endl <<  mp.seq2.str() << endl;
 	}
-	debug(kmers_map.size());
+
+	DEBUG(kmers_map.size());
 	seq2ver::iterator p;
 	for (p = kmers_map.begin(); p != kmers_map.end(); ++p) {
-		debug((p->first).Str());
-		debug((p->second).hits_);
+		DEBUG((p->first).Str());
+		DEBUG((p->second).hits_);
 	}
 	return graph;
 }
