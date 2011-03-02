@@ -21,6 +21,7 @@
 #include <apr_file_io.h>
 #include <log4cxx/helpers/transcoder.h>
 #include <algorithm>
+#include <string.h>
 
 using namespace log4cxx;
 using namespace log4cxx::helpers;

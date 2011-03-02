@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <stdlib.h>
 #include <locale.h>
+#include <string.h>
 
 void initialize() {
     setlocale(LC_CTYPE, "");

@@ -34,6 +34,7 @@
 #if LOG4CXX_LOGCHAR_IS_UNICHAR || LOG4CXX_CFSTRING_API || LOG4CXX_UNICHAR_API
 #include <CoreFoundation/CFString.h>
 #endif
+#include <string.h>
 
 using namespace log4cxx;
 using namespace log4cxx::helpers;

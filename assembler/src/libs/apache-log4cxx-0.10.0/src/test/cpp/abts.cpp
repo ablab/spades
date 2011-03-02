@@ -19,6 +19,7 @@
 #include "abts.h"
 #include "abts_tests.h"
 #include "testutil.h"
+#include <string.h>
 
 
 

@@ -28,6 +28,7 @@
 #include <apr_portable.h>
 #include <log4cxx/helpers/mutex.h>
 #include <log4cxx/helpers/synchronized.h>
+#include <string.h>
 
 using namespace log4cxx;
 using namespace log4cxx::helpers;

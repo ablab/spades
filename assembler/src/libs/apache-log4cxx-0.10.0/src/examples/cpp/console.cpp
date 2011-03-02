@@ -22,6 +22,7 @@
 #include <log4cxx/logmanager.h>
 #include <iostream>
 #include <locale.h>
+#include <string.h>
 
 using namespace log4cxx;
 using namespace log4cxx::helpers;

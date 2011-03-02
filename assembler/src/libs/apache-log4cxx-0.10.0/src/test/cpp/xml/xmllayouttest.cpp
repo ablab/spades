@@ -37,6 +37,7 @@
 #include "../xml/xlevel.h"
 #include <log4cxx/helpers/bytebuffer.h>
 #include <log4cxx/helpers/transcoder.h>
+#include <string.h>
 
 
 using namespace log4cxx;
