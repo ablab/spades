@@ -9,6 +9,7 @@
 #include <ext/hash_map>
 #include <cstring>
 #include "../seq.hpp"
+#include "../sequence.hpp"
 
 using namespace std;
 using namespace __gnu_cxx;

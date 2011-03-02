@@ -4,7 +4,7 @@
 #include <vector>
 #include <ostream>
 #include <cassert>
-#include "../seq.hpp"
+#include "../sequence.hpp"
 #include "parameters.hpp"
 
 using namespace std;
