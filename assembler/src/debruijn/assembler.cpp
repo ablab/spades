@@ -26,6 +26,7 @@ bool seq_test() {
 	assert((s >> 'T').str() == "TACGTACGTA");
 	assert(s.tail<9>().str() == "CGTACGTAC");
 	assert(s.head<9>().str() == "ACGTACGTA");
+	assert((!s).str() == "GTACGTACGT");
 	return true;
 }
 
