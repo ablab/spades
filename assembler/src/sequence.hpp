@@ -10,17 +10,17 @@
 
 #include "seq.hpp"
 
-class Data {
-public:
-	vector < Seq<4> > bytes_;
-	int ref_;
-	void IncRef() {++ref_;}
-	void DecRef() {--ref_;}
-	Data(vector< Seq<4> > bytes) : bytes_(bytes) , ref_(1) {}
-};
-
 //SEQUENCE IS IMMUTABLE!!!
 class Sequence { // immutable runtime length sequence (slow!!!)
+	class Data {
+	public:
+		vector < Seq<4> > bytes_;
+		int ref_;
+		void IncRef() {++ref_;}
+		void DecRef() {--ref_;}
+		Data(vector< Seq<4> > bytes) : bytes_(bytes) , ref_(1) {}
+	};
+
 public:
 //	template <size_t _size> static Sequence constr(const Seq<_size> seq);
 
@@ -45,7 +45,7 @@ public:
 	Sequence Subseq(size_t from, size_t to) const;
 	Sequence operator+ (const Sequence &s) const;
 	Sequence(const Sequence& s);
-	int find(const Sequence& t) const;
+	int find(const Sequence& t, int from = 0) const;
 	int similar(const Sequence& t, int k) const;
 	std::string Str() const;
 	size_t size() const;

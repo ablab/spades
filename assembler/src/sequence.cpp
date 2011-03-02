@@ -92,23 +92,60 @@ Sequence Sequence::Subseq(size_t from, size_t to) const {
 	}
 }
 //TODO: must be KMP or hashing instead of this shit
-int Sequence::find (const Sequence &t) const{
 
-	for(int i = 0; i < size()- t.size() + 1; i++) {
+int Sequence::find (const Sequence &t, int from) const{
+	for(size_t i = from; i <= size()- t.size(); i++) {
 		if (Subseq(i, i + t.size()) == t) {
 			return i;
 		}
 	}
 	return -1;
 }
+/*int Sequence::findAfter(const Sequence &t, int pos){
+
+
+	return -1;
+}*/
 int Sequence::similar(const Sequence &t, int k) const{
 	Sequence c(Subseq(0, k));
-	if (t.find(c) != -1) {
-		return 1;
+
+//	cerr << endl <<"trying 1" << endl;
+	int tsz = t.size();
+	int sz = size();
+	int res;
+	int i;
+	int from = 0;
+	while ((res = t.find(c, from)) != -1) {
+//		cerr <<"Res=" << res <<endl;
+		from = res + 1;
+		for( i = k; i < tsz - res; i++) {
+			if (i >= sz) break;
+//			cerr << t[i +res]+'0'<< " ";
+//			cerr << this->operator[](i) +'0'<< endl;
+			if (t[i + res] != this->operator[](i)) {
+				break;
+			}
+		}
+		if (i == tsz - res)
+			return 1;
+
 	}
+	from = 0;
 	Sequence d(t.Subseq(0, k));
-	if (find(d) != -1) {
-		return 1;
+//	cerr << endl <<"trying 2" << endl;
+		while ((res = find(d, from)) != -1) {
+//		cerr <<"Res=" << res <<endl;
+		from = res + 1;
+		for(i = k; i < sz - res; i++) {
+			if (i >= tsz) break;
+//			cerr << t[i] + '0'<< " ";
+//			cerr << this->operator[](i + res) + '0' << endl;
+			if (t[i] != this->operator[](i + res)) {
+				break;
+			};
+		}
+		if (i == sz - res)
+			return 1;
 	}
 	return 0;
 }
