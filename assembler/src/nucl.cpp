@@ -20,3 +20,13 @@ char nucl(char c) {
 		default: return 'N';
 	}
 }
+
+char to_char(char nucl) {
+	switch(nucl) {
+		case 'A': return 0;
+		case 'C': return 1;
+		case 'G': return 2;
+		case 'T': return 3;
+		default: return 100;
+	}
+}

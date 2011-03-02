@@ -1,4 +1,4 @@
-SRC=seq.cpp
+SRC=test.cpp seq.cpp nucl.cpp
 DIR=common
 PROG=commonTest
 
