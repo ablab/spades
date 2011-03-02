@@ -9,6 +9,8 @@
 #include "seq.hpp"
 #include "libs/kseq/kseq.h"
 
+using namespace std;
+
 // STEP 1: declare the type of file handler and the read() function 
 KSEQ_INIT(gzFile, gzread)
 
@@ -20,12 +22,28 @@ public:
 		_opened = false;
 	}
 
-	void open(std::string filename1, std::string filename2) { // open two files with mate paired reads
+	static vector<MatePair<size> >* readAll(const string &filename1, const string &filename2) {
+		FASTQParser<size>* fqp = new FASTQParser<size>();
+		vector<MatePair<size> >* res = new vector<MatePair<size> >;
+		fqp->open(filename1, filename2);
+		while (!fqp->eof()) {
+			MatePair<size> mp = fqp->read(); // is it copy? :)
+			if (mp.id != -1) { // don't have 'N' in reads
+				res->push_back(mp);
+			}
+		}
+		fqp->close();
+		return res;
+	}
+
+public: // make it private!
+
+	void open(string filename1, string filename2) { // open two files with mate paired reads
 		_fp1 = gzopen(filename1.c_str(), "r"); // STEP 2: open the file handler
 		_fp2 = gzopen(filename2.c_str(), "r"); // STEP 2: open the file handler
 		bool fail = false;
-		if (!_fp1) { std::cerr << "File " << filename1 << " not found!" << std::endl; fail = true; }
-		if (!_fp2) { std::cerr << "File " << filename2 << " not found!" << std::endl; fail = true; }
+		if (!_fp1) { cerr << "File " << filename1 << " not found!" << endl; fail = true; }
+		if (!_fp2) { cerr << "File " << filename2 << " not found!" << endl; fail = true; }
 		if (fail) {
 			_opened = false;
 			return;

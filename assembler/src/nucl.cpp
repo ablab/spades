@@ -8,6 +8,7 @@
 #include "nucl.hpp"
 #include <cassert>
 #include <iostream>
+using namespace std;
 
 char complement(char c) { // 0123 -> 3210
 	assert(c >= 0);

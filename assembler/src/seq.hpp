@@ -39,7 +39,7 @@ private:
 		T data = 0;
 		size_t cnt = 0;
 		int cur = 0;
-		for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
+		for (size_t pos = 0; pos < size_ && *s != 0; ++pos, ++s) { // unsafe!
 			data |= (unnucl(*s) << cnt);
 			cnt += 2;
 			if (cnt == Tbits) {
@@ -185,20 +185,20 @@ public:
 // *****************************************
 
 
-template <int _size> // max number of nucleotides in each read
+template <int _size, typename T = char> // max number of nucleotides in each read
 class MatePair {
 public:
 	MatePair(const char *s1, const char *s2, const int id_) : id(id_), seq1(s1), seq2(s2) {};
 	MatePair(const MatePair &mp) : id(mp.id), seq1(mp.seq1), seq2(mp.seq2) {};
-	const static MatePair<_size> null;
+	const static MatePair<_size, T> null;
 public: // make private!
 	int id; // consecutive number from input file :)
-	Seq<_size> seq1;
-	Seq<_size> seq2;
+	Seq<_size, T> seq1;
+	Seq<_size, T> seq2;
 };
 
-template <int _size>
-const MatePair<_size> MatePair<_size>::null = MatePair<_size>("", "", -1);
+template <int _size, typename T>
+const MatePair<_size, T> MatePair<_size, T>::null = MatePair<_size>("", "", -1);
 
 // *****************************************
 // LEGACY CODE
