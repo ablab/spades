@@ -45,7 +45,7 @@ private:
 				case 'G': case '2': case 2: data |= (2 << cnt); break;
 				case 'T': case '3': case 3: data |= (3 << cnt); break;
 			}
-			cnt += 2; // because 2 bits per char
+			cnt += 2;
 			if (cnt == Tbits) {
 				this->data_[cur++] = data;
 				cnt = 0;
@@ -88,8 +88,7 @@ public:
 
 	char operator[] (const size_t index) const { // 0123
 		int ind = index >> Tnucl_bits;
-		return (data_[ind] >> ((index % Tnucl)*2)) & 3; // optimize with shifts
-		//return ((data_[i >> 2] >> ((i%4))*2) & 3);
+		return (data_[ind] >> ((index % Tnucl)*2)) & 3;
 	}
 
 	Seq<size_> operator!() const { // TODO: optimize
