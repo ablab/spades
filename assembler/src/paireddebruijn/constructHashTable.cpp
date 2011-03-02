@@ -66,42 +66,61 @@ void codeRead(char *read, char *code) {
 }
 
 //toDo
-downSeqs clusterize(ll* a, int size) {
+downSeqs clusterize(ll* a, int size, int max_shift) {
 	downSeqs res;
 	res.clear();
+	assert (max_shift <= 20);
 	int right[MAXLMERSIZE];
 	int left[MAXLMERSIZE];
 	int used[MAXLMERSIZE];
+	int shift_left[MAXLMERSIZE];
+	int shift_right[MAXLMERSIZE];
 	//-1 = no neighbor;
 	//-2 = more than 1 neighbor
 	forn(i, size) {
 		right[i] = -1;
 		left[i] = -1;
 		used[i] = 0;
+		shift_left[i] = 0;
+		shift_right[i] = 0;
 	}
 	ll diff;
 	forn(i, size) {
-		ll tmp = ((a[i] << 2) & lowerMask);
-		forn(j, size) {
-			diff = a[j] - tmp;
-			if ((a[j] - tmp >= 0) && (a[j] - tmp <= 3) && (i != j)){
-				if (right[i] == -1)
-					right[i] = j;
-				else
-					right[i]  = -2;
+		ll right_tmp = a[i];
+		ll left_tmp = a[i];
+		ll p2 = 0;
+		ll upper_bound;
+		forn(shift, max_shift) {
+		    right_tmp = ((right_tmp << 2) & lowerMask);
+		    p2 += 2;
+		    upper_bound = ((ll) 1) << p2;
+		    if (!shift_right[i]){
+				forn(j, size) {
+					diff = a[j] - right_tmp;
+					if ((diff >= 0) && (diff < upper_bound) && (i != j)){
+						shift_right[i] = p2/2;
+						if (right[i] == -1) {
+							right[i] = j;
+						}
+						else
+							right[i]  = -2;
+					}
+				}
+		    }
+			left_tmp >>= 2;
+			if (!shift_left[i]) {
+				forn(j, size) {
+					diff = a[j] - left_tmp;
+					if ((i != j) && ((diff & (lowerMask >> p2)) == 0)){
+						shift_left[i] = p2/2;
+						if (left[i] == -1)
+							left[i] = j;
+						else
+							left[i]  = -2;
+					}
+				}
 			}
 		}
-		tmp = a[i] >> 2;
-		forn(j, size) {
-			diff = a[j] - tmp;
-			if ((i != j) && ((diff & (lowerMask >> 2)) == 0)){
-				if (left[i] == -1)
-					left[i] = j;
-				else
-					left[i]  = -2;
-			}
-		}
-
 	}
 	int color = 1;
 	forn(i, size) {
@@ -110,14 +129,15 @@ downSeqs clusterize(ll* a, int size) {
 			int ii = i;
 			used[i] = color;
 			while ((left[ii] >= 0) && (right[left[ii]] == ii) && (left[ii] != i)){
+				seqlength += shift_left[ii];
 				ii = left[ii];
 				used[ii] = color;
-				seqlength++;
 			}
 			int leftend = ii;
 
 			ii = i;
 			while ((right[ii] >= 0) && (left[right[ii]] == ii) && (right[ii] != i)){
+				seqlength += shift_right[ii];
 				ii = right[ii];
 				used[ii] = color;
 				seqlength++;
@@ -126,14 +146,28 @@ downSeqs clusterize(ll* a, int size) {
 			ii = leftend;
 			string s = decompress(a[leftend], l);
 			while (ii != rightend) {
+		//		cerr << "clusterizing....";
+				int p = shift_right[ii];
+				ll maxsd = ((ll) 3) << (2 * (p-1));
 				ii = right[ii];
-				s += (a[ii] & 3) + '0';
+				forn(j, p)
+					s += nucl((a[ii] & maxsd) >> (2*(p-j-1)));
 			}
 			Sequence* tmpSeq = new Sequence(s);
 			res.pb(tmpSeq);
 			color++;
 		}
 	}
+	/*{
+		forn(i, size) {
+			cerr << left[i] << " ";
+		}
+		cerr << endl;
+		forn(i, size) {
+			cerr << right[i] << " ";
+		}
+	}*/
+//	assert(0);
 	return res;
 }
 
@@ -227,7 +261,7 @@ void outputTable(myMap &pairedTable) {
 			cout << p.se[i] << " ";
 		}
 		cout << endl << endl;
-		if (!(j & 1023))
+		if (!(j & (1024*128-1)))
 			cerr << j << endl;
 		j++;
 	}
@@ -247,10 +281,12 @@ void readsToPairs(string inputFile, string outputFile) {
 	fclose(stdout);
 	table.clear();
 }
-
+//#define OUTPUT_DECOMPRESSED
 int pairsToSequences(string inputFile, string outputFile) {
 	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
+#ifdef OUTPUT_DECOMPRESSED
 	FILE* decompressed = fopen("data/decompressed.out", "w" );
+#endif
 	int ok = 1;
 	ll lmers[MAXLMERSIZE];
 	ll kmer;
@@ -280,26 +316,29 @@ int pairsToSequences(string inputFile, string outputFile) {
 			}
 		}
 		sort(lmers, lmers + lsize);
-		downSeqs clusters =  clusterize(lmers, lsize);
+		downSeqs clusters =  clusterize(lmers, lsize, 3);
 		int clsize = clusters.size();
 		string outstring;
 
-		string s = decompress(kmer, k);
-		fprintf(decompressed, "%s %d\n", s.c_str(), lsize);
-		fprintf(outFile, "%s %d\n", s.c_str(), clsize);
+//		string s = decompress(kmer, k);
+//		fprintf(decompressed, "%s %d\n", s.c_str(), lsize);
+		fprintf(outFile, "%lld %d\n", kmer, clsize);
+#ifdef OUTPUT_DECOMPRESSED
 		forn(i, lsize) {
-
 			fprintf(decompressed, "%s ", decompress(lmers[i], l).c_str());
 		}
+#endif
 		forn(i, clsize) {
 			outstring = clusters[i]->Str();
 			fprintf(outFile, "%s ",outstring.c_str());
 		}
 		fprintf(outFile, "\n");
+#ifdef OUTPUT_DECOMPRESSED
 		fprintf(decompressed, "\n");
-	 //	return 0;
+#endif
+		//	return 0;
 		if (!(count & ((1 << 15) - 1) ))
-			cerr<< "klmer numero "<< count <<"generated" <<endl;
+			cerr<< "k-sequence pairs for k "<< count <<" generated" <<endl;
 	}
 	cerr<<"finished";
 	return 0;

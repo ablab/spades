@@ -1,4 +1,3 @@
-
 builddir=../../build/$(DIR)
 
 EXEC=$(builddir)/$(PROG)

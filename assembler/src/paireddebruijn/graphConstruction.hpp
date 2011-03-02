@@ -3,12 +3,13 @@
 #include "simpleGraph.hpp"
 #include "pairedGraph.hpp"
 #include "common.hpp"
+#include "../graphVisualizer.hpp"
 
 using namespace paired_assembler;
 
 void constructGraph();
 edgesMap sequencesToMap(string parsed_k_sequence);
-void createVertices(Graph *g, edgesMap &edges);
+void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges);
 int expandDown(edgesMap &edges, vertecesMap &verts, ll &finishKmer, Sequence* &finishSeq);
 int expandUp(edgesMap &edges, vertecesMap &verts, ll &startKmer, Sequence* &startSeq);
 int CheckUnuqueWayUp(edgesMap &edges, ll finishKmer, Sequence *finishSeq);

@@ -29,4 +29,3 @@ char unnucl(char c) {
 		default: return 0;
 	}
 }
-
