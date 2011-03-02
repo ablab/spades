@@ -1,7 +1,10 @@
-Here is still nothing valuable!!!
+TODO:  Similarity with SNP exclusion
+	   Store graph in memory
+	   Tourbus!
+	   Dumping Sequence to disk
 
 
-ToDo:
+ToRefactor: 
 In: Map I from k-mers to vector of sequences.
 Out: Repeat graph for this pairs.
 
@@ -41,6 +44,7 @@ ExpandDown(K,S)
 
 ExpandUp(K,S) similar to ExpandDown with changed direction. 
 	  
+	    
 TODO2(may be it is a good idea to..)
 1) Another ways of generating sequence from k-l mers. Now we expand k-l mer while it can be done uniquely to left, and it expansion can be uniquely expand to right and vice verse. Instead of sequence graph(?) suffix tree(?)
 

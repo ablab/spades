@@ -46,6 +46,7 @@ int main(int argc, char *argv[]) {
 	while (!fqp->eof()) {
 		MatePair<MPSIZE> mp = fqp->read(); // is it copy? :)
 		if (mp.id != -1) { // don't have 'N' in reads
+			// TODO: process seq2!
 			Seq<K> head = mp.seq1.head<K>();
 			Seq<K> tail;
 			for (size_t i = K; i < MPSIZE; ++i) {
