@@ -22,9 +22,11 @@ using namespace __gnu_cxx;
 namespace assembler {
 
 #define K 25
+#define N 100
 #define HASH_SEED 1845724623
 
 typedef Seq<K> Kmer;
+typedef Seq<N> Read;
 
 static const int k = 25;
 
@@ -156,7 +158,13 @@ public:
 		h.insert(make_pair(k, v));
 	}
 
+	bool contains(Kmer k) {
+		return h.count(k) == 1;
+	}
+
 	const pair<Vertex*, size_t> get(Kmer k) {
+		assert(contains(k));
+
 		return h[k];
 	}
 
@@ -254,7 +262,13 @@ public:
 		return v1;
 	}
 
+	bool MergePossible(Vertex* v1, Vertex* v2) {
+		return v1->complement() != v2;
+	}
+
 	Vertex* Merge(Vertex* v1, Vertex* v2) {
+		assert(MergePossible(v1, v2));
+
 		Vertex* v = AddVertex(v1->nucls() + v2->nucls());
 		FixIncoming(v1, v);
 		FixIncoming(v2->complement(), v->complement());
@@ -321,6 +335,11 @@ public:
 		RenewHashForVertexKmers(v2);
 
 		return v2;
+	}
+
+	void ThreadRead(Read r) {
+		Kmer k(r);
+
 	}
 
 };

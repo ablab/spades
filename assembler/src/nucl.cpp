@@ -11,6 +11,7 @@
 char complement(char c) {
 	assert(c >= 0);
 	assert(c < 4);
+
 	return c ^ 3;
 }
 
