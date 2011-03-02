@@ -8,12 +8,12 @@ using namespace std;
 
 namespace gvis {
 
-void startGraphRecord(ostream &out, string name);
+void startGraphRecord(ostream &out, string &name);
 
 void endGraphRecord(ostream &out);
 
 template<typename tVertex>
-void recordVertex(ostream &out, tVertex vertexId, string vertexLabel) {
+void recordVertex(ostream &out, tVertex vertexId, string &vertexLabel) {
 	if(vertexLabel.length() != 0)
 		out << vertexId << " [label" << "=" << vertexLabel << "]" << endl;
 	else
@@ -21,7 +21,7 @@ void recordVertex(ostream &out, tVertex vertexId, string vertexLabel) {
 }
 
 template<typename tVertex>
-void recordEdge(ostream &out, tVertex fromId, tVertex toId, string edgeLabel) {
+void recordEdge(ostream &out, tVertex fromId, tVertex toId, string &edgeLabel) {
 	out << fromId << "->" << toId;
 	if(edgeLabel.length() != 0)
 		out << "[label=" << edgeLabel << "]";
@@ -29,7 +29,7 @@ void recordEdge(ostream &out, tVertex fromId, tVertex toId, string edgeLabel) {
 }
 
 template<typename tVertex>
-void recordVertices(ostream &out, vector<pair<tVertex, string> > vertices) {
+void recordVertices(ostream &out, vector<pair<tVertex, string> > &vertices) {
 	for(typename vector<pair<tVertex, string> >::iterator it = vertices.begin(); it != vertices.end(); it++) {
 		pair<tVertex, string> v = *it;
 		recordVertex(out, v.first, v.second);
@@ -37,7 +37,7 @@ void recordVertices(ostream &out, vector<pair<tVertex, string> > vertices) {
 }
 
 template<typename tVertex>
-void recordEdges(ostream &out, vector<pair<pair<tVertex, tVertex>, string> > edges) {
+void recordEdges(ostream &out, vector<pair<pair<tVertex, tVertex>, string> > &edges) {
 	for(typename vector<pair<pair<tVertex, tVertex>, string> >::iterator it = edges.begin(); it != edges.end(); it++) {
 		pair<pair<tVertex, tVertex>, string> e = *it;
 		recordEdge(out, e.first.first, e.first.second, e.second);
@@ -45,7 +45,7 @@ void recordEdges(ostream &out, vector<pair<pair<tVertex, tVertex>, string> > edg
 }
 
 template<typename tVertex>
-void outputGraph(ostream &out, string graphName, vector<pair<tVertex, string> > vertices, vector< pair< pair<tVertex, tVertex>, string> > edges) {
+void outputGraph(ostream &out, string &graphName, vector<pair<tVertex, string> > &vertices, vector< pair< pair<tVertex, tVertex>, string> > &edges) {
 	startGraphRecord(out, graphName);
 	recordVertices<tVertex>(out, vertices);
 	recordEdges<tVertex>(out, edges);
