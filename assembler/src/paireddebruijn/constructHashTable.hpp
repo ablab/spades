@@ -8,4 +8,5 @@ void readsToPairs(string inputFile, string outputFile);
 int pairsToSequences(string inputFile, string outputFile);
 string decompress(ll a, int l);
 void codeRead(char *read, char *code);
+ll extractMer(char *read, int shift, int length);
 #endif /* CONSTRUCTHASHTABLE_HPP_ */
