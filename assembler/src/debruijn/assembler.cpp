@@ -18,16 +18,15 @@ pair<string,string> filenames = make_pair("./data-short/s_6_1.fastq.gz", "./data
 
 
 bool seq_test() {
-	Seq<10,long long> s("AACCGGTTAA");
-	cerr << s.str() << endl;
-	if (s.str() != "ACGTACGTAC") {
-		cerr << s.str();
-		return false;
-	}
+	Seq<10,long long> s("ACGTACGTAC");
+	assert(s.str() == "ACGTACGTAC");
 	assert((s << 'A').str() == "CGTACGTACA");
 	assert((s << 'T').str() == "CGTACGTACT");
+	assert((s >> 'A').str() == "AACGTACGTA");
+	assert((s >> 'T').str() == "TACGTACGTA");
 	assert(s.tail<9>().str() == "CGTACGTAC");
 	assert(s.head<9>().str() == "ACGTACGTA");
+	assert((!s).str() == "GTACGTACGT");
 	return true;
 }
 

@@ -17,7 +17,9 @@
 #include <cstring>
 #include <array>
 #include <vector>
+#include <algorithm>
 #include "nucl.hpp"
+#include "log.hpp"
 
 typedef long long word;
 
@@ -28,23 +30,17 @@ class Seq {
 private:
 	// compile-time static constants.
 	const static size_t Tbits = sizeof(T) << 3; // ex. 8: 2^8 = 256 or 16
-	const static size_t Tnucl = Tbits >> 1; // ex. 4: 8/2 = 4 or 16/2 = 8
-	const static size_t Tnucl_bits = 1 + sizeof(T); // ex. 2: 2^2 = 4 or 3: 2^3 = 8
+	const static size_t Tnucl = sizeof(T) << 2; // ex. 4: 8/2 = 4 or 16/2 = 8
+	const static size_t Tnucl_bits = log_<sizeof(T),2>::value + 2; // ex. 2: 2^2 = 4 or 3: 2^3 = 8
 	const static size_t data_size_ = (size_ + Tnucl - 1) >> Tnucl_bits;
 	std::array<T,data_size_> data_; // 0 bits overhead
-
-	//const static char _lastnuclshift = ((size_ + 3) & 3) << 1;
 
 	void init(const char* s) {
 		T data = 0;
 		size_t cnt = 0;
 		int cur = 0;
 		for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
-			switch (*s) {
-				case 'C': case '1': case 1: data |= (1 << cnt); break;
-				case 'G': case '2': case 2: data |= (2 << cnt); break;
-				case 'T': case '3': case 3: data |= (3 << cnt); break;
-			}
+			data |= (unnucl(*s) << cnt);
 			cnt += 2;
 			if (cnt == Tbits) {
 				this->data_[cur++] = data;
@@ -57,7 +53,7 @@ private:
 		}
 	}
 
-	Seq(std::array<T,data_size_> bytes): data_(bytes) {};
+	Seq(std::array<T,data_size_> data): data_(data) {};
 
 public:
 	Seq() {}; // random Seq, use with care!
@@ -66,24 +62,15 @@ public:
 		init(s);
 	}
 
-	Seq(const Seq<size_> &seq) : data_(seq.data_) {
-		//memcpy?
-	}
+	/*Seq(const Seq<size_,T> &seq): data_(seq.data_) {
+		//does memcpy faster?
+	}*/
 
 	template <size_t _bigger_size>
 	Seq(const Seq<_bigger_size>& seq) {
 		assert(_bigger_size > size_);
 		std::copy(data_, seq.data, size_);
-		//memcpy(data_, seq._bytes, data_size_); ?
-	}
-
-	template <typename T2>
-	Seq(const T2& t, size_t offset = 0) {
-		char a[size_];
-		for (size_t i = 0; i < size_; ++i) {
-			a[i] = t[offset + i];
-		}
-		init(a);
+		//memcpy(data_, seq._bytes, data_size_); faster?
 	}
 
 	char operator[] (const size_t index) const { // 0123
@@ -91,61 +78,49 @@ public:
 		return (data_[ind] >> ((index % Tnucl)*2)) & 3;
 	}
 
-	Seq<size_> operator!() const { // TODO: optimize
-		// TODO!!!
-		return *this;
-		//Sequence s = Sequence(this->str());
-		//return Seq<_size>((!s).Str());
-	}
-
-//	// add nucleotide to the right
-//	Seq<_size> shift_right(char c) const { // char should be 0123
-//		assert(c <= 3);
-//		Seq<_size> res = *this; // copy constructor
-//		c <<= (((4-(_size%4))%4)*2); // omg >.<
-//		for (int i = _byteslen - 1; i >= 0; --i) { // don't make it size_t :)
-//			char rm = (res._bytes[i] >> 6) & 3;
-//			res._bytes[i] <<= 2;
-//			//res._bytes[i] &= 252;
-//			res._bytes[i] |= c;
-//			c = rm;
-//		}
-//		return res;
-//	}
-
-	//todo optimize via machine words;
-	/**
-	 * add one nucl to the right, shifting seq
+	/*
+	 * reverse complement from the Seq
 	 */
-	Seq<size_> operator<<(char c) const {
-		/*std::array<T,data_size_> new_a(data_);
-		char buf = new_a[data_size_ - 1] & 3;
-		new_a[data_size_ - 1] >>= 2;
-		new_a[data_size_ - 1] |= c << _lastnuclshift;
-		for (size_t i = data_size_ - 2; i >= 0; --i) { // bug!
-			char new_buf = new_a[i] & 3;
-			new_a[i] >>= 2;
-			new_a[i] |= buf << 6;
-			buf = new_buf;
-		}
-		return Seq<size_>(new_a);*/
-		// TODO!
-		return *this;
+	Seq<size_,T> operator!() const { // TODO: optimize
+		string s = this->str();
+		reverse(s.begin(), s.end());
+		transform(s.begin(), s.end(), s.begin(), unnucl);
+		transform(s.begin(), s.end(), s.begin(), complement);
+		return Seq<size_,T>(s.c_str());
 	}
 
-//	// add nucleotide to the left
-//	Seq<_size> shift_left(char c) const { // char should be 0123
-//		Seq<_size> res = *this; // copy constructor
-//		// TODO: clear last nucleotide
-//		for (size_t i = 0; i < _byteslen; ++i) {
-//			char rm = res._bytes[i] & 3;
-//			res._bytes[i] >>= 2;
-//			//res._bytes[i] &= 63;
-//			res._bytes[i] |= (c << 6);
-//			c = rm;
-//		}
-//		return res;
-//	}
+	/**
+	 * add one nucl to the right, shifting seq to the left
+	 */
+	Seq<size_,T> operator<<(char c) const {
+		Seq<size_, T> res(data_);
+		if (data_size_ != 0) { // unless empty sequence
+			T rm = res.data_[data_size_ - 1] & 3;
+			res.data_[data_size_ - 1] >>= 2;
+			T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
+			res.data_[data_size_ - 1] |= (unnucl(c) << lastnuclshift_);
+			if (data_size_ >= 2) { // if we have at least 2 elements in data
+				size_t i = data_size_ - 1;
+				do {
+					--i;
+					T new_rm = res.data_[i] & 3;
+					res.data_[i] >>= 2;
+					res.data_[i] &= (1 << (Tbits - 2)) - 1; // because if we shift negative, it fill with 1s :(
+					res.data_[i] |= rm << (Tbits - 2);
+					rm = new_rm;
+				} while (i != 0);
+			}
+		}
+		return res;
+	}
+
+	/**
+	 * add one nucl to the left, shifting seq to the right
+	 */
+	Seq<size_> operator>>(char c) {	// TODO: optimize, better name
+		string s = c + this->str().substr(0, size_ - 1);
+		return Seq<size_>(s.c_str());
+	}
 
 	// string representation of Seq - only for debug and output purposes
 	std::string str() const {
@@ -217,5 +192,44 @@ template <int _size>
 const MatePair<_size> MatePair<_size>::null = MatePair<_size>("", "", -1);
 
 // *****************************************
+// LEGACY CODE
+
+/*template <typename T2>
+Seq(const T2& t, size_t offset = 0) {
+	char a[size_];
+	for (size_t i = 0; i < size_; ++i) {
+		a[i] = t[offset + i];
+	}
+	init(a);
+}*/
+
+//	// add nucleotide to the right
+//	Seq<_size> shift_right(char c) const { // char should be 0123
+//		assert(c <= 3);
+//		Seq<_size> res = *this; // copy constructor
+//		c <<= (((4-(_size%4))%4)*2); // omg >.<
+//		for (int i = _byteslen - 1; i >= 0; --i) { // don't make it size_t :)
+//			char rm = (res._bytes[i] >> 6) & 3;
+//			res._bytes[i] <<= 2;
+//			//res._bytes[i] &= 252;
+//			res._bytes[i] |= c;
+//			c = rm;
+//		}
+//		return res;
+//	}
+//
+//	// add nucleotide to the left
+//	Seq<_size> shift_left(char c) const { // char should be 0123
+//		Seq<_size> res = *this; // copy constructor
+//		// TODO: clear last nucleotide
+//		for (size_t i = 0; i < _byteslen; ++i) {
+//			char rm = res._bytes[i] & 3;
+//			res._bytes[i] >>= 2;
+//			//res._bytes[i] &= 63;
+//			res._bytes[i] |= (c << 6);
+//			c = rm;
+//		}
+//		return res;
+//	}
 
 #endif /* SEQ_HPP_ */
