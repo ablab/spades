@@ -20,7 +20,7 @@
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.290293335.1046149687." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.1087437105" name="cdt.managedbuild.toolchain.gnu.base" superClass="cdt.managedbuild.toolchain.gnu.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.777699050" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder autoBuildTarget="d" enableAutoBuild="true" id="cdt.managedbuild.target.gnu.builder.base.820482463" incrementalBuildTarget="d" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+							<builder autoBuildTarget="all" enableAutoBuild="true" id="cdt.managedbuild.target.gnu.builder.base.820482463" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.876904809" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1457679292" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1222308254" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -579,7 +579,7 @@
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.290293335.1046149687.679702997." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.1985205787" name="cdt.managedbuild.toolchain.gnu.base" superClass="cdt.managedbuild.toolchain.gnu.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.1106638056" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder autoBuildTarget="p" enableAutoBuild="true" id="cdt.managedbuild.target.gnu.builder.base.499880988" incrementalBuildTarget="p" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+							<builder autoBuildTarget="all" enableAutoBuild="true" id="cdt.managedbuild.target.gnu.builder.base.499880988" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1873567753" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.425427971" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1891366804" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -1138,7 +1138,7 @@
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.290293335.1046149687.1448003032." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.286993647" name="cdt.managedbuild.toolchain.gnu.base" superClass="cdt.managedbuild.toolchain.gnu.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.1466746609" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder autoBuildTarget="a" enableAutoBuild="true" id="cdt.managedbuild.target.gnu.builder.base.594654551" incrementalBuildTarget="a" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+							<builder autoBuildTarget="all" enableAutoBuild="true" id="cdt.managedbuild.target.gnu.builder.base.594654551" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1390545044" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.2003975056" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.541391772" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -1697,7 +1697,7 @@
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.290293335.1046149687.1448003032.782414958." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.730526624" name="cdt.managedbuild.toolchain.gnu.base" superClass="cdt.managedbuild.toolchain.gnu.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.1203042257" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder autoBuildTarget="at" enableAutoBuild="true" id="cdt.managedbuild.target.gnu.builder.base.629698283" incrementalBuildTarget="at" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+							<builder autoBuildTarget="all" enableAutoBuild="true" id="cdt.managedbuild.target.gnu.builder.base.629698283" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.580927035" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.849637366" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1583311057" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -2256,7 +2256,7 @@
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.290293335.1046149687.523348701." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.903410719" name="cdt.managedbuild.toolchain.gnu.base" superClass="cdt.managedbuild.toolchain.gnu.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.1238287588" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder autoBuildTarget="dt" enableAutoBuild="true" id="cdt.managedbuild.target.gnu.builder.base.104394484" incrementalBuildTarget="dt" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+							<builder autoBuildTarget="all" enableAutoBuild="true" id="cdt.managedbuild.target.gnu.builder.base.104394484" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1372586648" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.8444498" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.656533295" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -2815,7 +2815,7 @@
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.290293335.1046149687.679702997.240781501." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.997879479" name="cdt.managedbuild.toolchain.gnu.base" superClass="cdt.managedbuild.toolchain.gnu.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.1866453743" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder autoBuildTarget="pt" enableAutoBuild="true" id="cdt.managedbuild.target.gnu.builder.base.235447943" incrementalBuildTarget="pt" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+							<builder autoBuildTarget="all" enableAutoBuild="true" id="cdt.managedbuild.target.gnu.builder.base.235447943" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1370902421" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1521639990" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.89790456" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -3374,7 +3374,7 @@
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.290293335.1046149687.659732468." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.1104702503" name="cdt.managedbuild.toolchain.gnu.base" superClass="cdt.managedbuild.toolchain.gnu.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.1921038336" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder autoBuildTarget="ct" enableAutoBuild="true" id="cdt.managedbuild.target.gnu.builder.base.310064371" incrementalBuildTarget="ct" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+							<builder autoBuildTarget="all" enableAutoBuild="true" id="cdt.managedbuild.target.gnu.builder.base.310064371" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.2075690237" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.59506673" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.437433784" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
