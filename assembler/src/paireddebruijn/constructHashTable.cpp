@@ -247,10 +247,12 @@ void readsToPairs(string inputFile, string outputFile) {
 	fclose(stdout);
 	table.clear();
 }
-
+//#define OUTPUT_DECOMPRESSED
 int pairsToSequences(string inputFile, string outputFile) {
 	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
+#ifdef OUTPUT_DECOMPRESSED
 	FILE* decompressed = fopen("data/decompressed.out", "w" );
+#endif
 	int ok = 1;
 	ll lmers[MAXLMERSIZE];
 	ll kmer;
@@ -284,20 +286,24 @@ int pairsToSequences(string inputFile, string outputFile) {
 		int clsize = clusters.size();
 		string outstring;
 
-		string s = decompress(kmer, k);
-		fprintf(decompressed, "%s %d\n", s.c_str(), lsize);
-		fprintf(outFile, "%s %d\n", s.c_str(), clsize);
+//		string s = decompress(kmer, k);
+//		fprintf(decompressed, "%s %d\n", s.c_str(), lsize);
+		fprintf(outFile, "%lld %d\n", kmer, clsize);
+#ifdef OUTPUT_DECOMPRESSED
 		forn(i, lsize) {
 
 			fprintf(decompressed, "%s ", decompress(lmers[i], l).c_str());
 		}
+#endif
 		forn(i, clsize) {
 			outstring = clusters[i]->Str();
 			fprintf(outFile, "%s ",outstring.c_str());
 		}
 		fprintf(outFile, "\n");
+#ifdef OUTPUT_DECOMPRESSED
 		fprintf(decompressed, "\n");
-	 //	return 0;
+#endif
+		//	return 0;
 		if (!(count & ((1 << 15) - 1) ))
 			cerr<< "klmer numero "<< count <<"generated" <<endl;
 	}
