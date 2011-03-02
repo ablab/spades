@@ -6,7 +6,8 @@
 #include <zlib.h>
 #include <cstdlib>
 #include <iostream>
-#include "seq.hpp"
+#include <vector>
+#include "matepair.hpp"
 #include "libs/kseq/kseq.h"
 
 using namespace std;
@@ -28,7 +29,7 @@ public:
 		fqp->open(filename1, filename2);
 		while (!fqp->eof()) {
 			MatePair<size> mp = fqp->read(); // is it copy? :)
-			if (mp.id != -1) { // don't have 'N' in reads
+			if (mp.id() != -1) { // don't have 'N' in reads
 				res->push_back(mp);
 			}
 		}

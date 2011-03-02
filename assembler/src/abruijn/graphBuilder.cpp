@@ -5,6 +5,7 @@
 #include "graphBuilder.hpp"
 #include "parameters.hpp"
 #include "../parser.hpp"
+#include "../matepair.hpp"
 #include <ext/hash_map>
 #include "../logging.hpp";
 
@@ -64,12 +65,12 @@ CGraph GraphBuilder::build() {
 	fqp->open(filenames.first, filenames.second);
 	while (!fqp->eof()) {
 		MatePair<MPSIZE> r = fqp->read(); // is it copy? :)
-		if (r.id == -1) { // don't have 'N' in reads
+		if (r.id() == -1) { // don't have 'N' in reads
 			continue;
 		}
-		processRead(r.seq1);
-		processRead(r.seq2);
-		if (r.id == 10) {
+		processRead(r.seq1());
+		processRead(r.seq2());
+		if (r.id() == 10) {
 			break;
 		}
 	}
