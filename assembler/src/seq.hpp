@@ -66,10 +66,18 @@ public:
 		//does memcpy faster?
 	}*/
 
-	template <size_t _bigger_size>
-	Seq(const Seq<_bigger_size>& seq) {
+	template <typename S> Seq(const S& s, size_t offset = 0) {
+		char a[size_];
+		for (size_t i = 0; i < size_; ++i) {
+			a[i] = s[offset + i];
+		}
+		init(a);
+	}
+
+	template <size_t _bigger_size, T>
+	Seq(const Seq<_bigger_size, T>& seq) {
 		assert(_bigger_size > size_);
-		std::copy(data_, seq.data, size_);
+		std::copy(data_, seq.data_, size_);
 		//memcpy(data_, seq._bytes, data_size_); faster?
 	}
 
