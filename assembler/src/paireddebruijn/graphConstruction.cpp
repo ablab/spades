@@ -1,8 +1,9 @@
 #include "constructHashTable.hpp"
 #include "common.hpp"
 #include "graphConstruction.hpp"
+#include "../seq.hpp"
 
-#define similar(a,b,c) false
+
 
 int VertexCount;
 
@@ -20,6 +21,7 @@ void constructGraph() {
 
 edgesMap sequencesToMap(string parsed_k_sequence) {
 	FILE *inFile = fopen(parsed_k_sequence.c_str(), "r");
+
 	vector<VertexPrototype *> prototypes;
 	edgesMap res;
 	prototypes.reserve(maxSeqLength);
@@ -27,21 +29,29 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 		char s[maxSeqLength];
 		int size, scanf_res;
 		ll kmer;
-		if ((scanf_res = fscanf(inFile, "%lld %d", &kmer, &size)) != 2) {
-			if (scanf_res == 0){
+		scanf_res = fscanf(inFile, "%lld %d", &kmer, &size);
+//		cerr<<scanf_res;
+		if ((scanf_res) != 2) {
+
+			if (scanf_res == -1){
 				cerr << "sequencesToMap finished reading";
 				break;
 			}
 			else {
 				cerr << "sequencesToMap error in reading headers";
+				continue;
 			}
 		}
 		prototypes.clear();
 		forn(i, size) {
 			scanf_res = fscanf(inFile, "%s", s);
-			if (!scanf_res)
+			if (!scanf_res) {
 				cerr << "sequencesToMap error in reading sequences";
+			}
+//			cerr <<s;
 			Sequence *seq = new Sequence(s);
+//			cerr <<"seq = "<<seq->size(); //Magic
+//			cerr <<endl; //Magic
 			VertexPrototype *v = new VertexPrototype();
 			v->lower = seq;
 			v->start = 0;
@@ -55,61 +65,83 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 }
 
 void createVertices(Graph *g, edgesMap &edges) {
+	int mass[21000];
+	forn(i,21000) mass[i]=0;
 	vertecesMap verts;
+	cerr<<"Start createVertices "<<edges.size()<<endl;
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
 		int size = iter->second.size();
+		ll kmer = iter->fi;
+//		cerr<<kmer<<" "<<size<<endl;
 		forn(i, size) {
-			ll kmer = iter->fi;
 			if ((!(iter->se)[i]->used)){
+				int length = 1;
 				(iter->se)[i]->used=1;
+			//	cerr<<(iter->se)[i]->lower->Str()<<" "<<(iter->se)[i]->lower->size();
 				ll finishKmer = kmer&(~((ll)3<<(2*(k-1))));
-				Sequence *finishSeq = new Sequence((iter->se)[i]->lower->Str());
+				Sequence *finishSeq = new Sequence((iter->se)[i]->lower->Str().c_str());
 				ll startKmer = kmer>>2;
-				Sequence *startSeq = new Sequence((iter->se)[i]->lower->Str());
-				expandDown(edges, verts, finishKmer, finishSeq);
+				Sequence *startSeq = new Sequence((iter->se)[i]->lower->Str().c_str());
+				//cerr<<"expandDown "<<finishKmer<<" "<<finishSeq->Str()<<endl;
+				length += expandDown(edges, verts, finishKmer, finishSeq);
 				int toVert = storeVertex(verts, finishKmer, finishSeq);
-				expandUp(edges, verts, startKmer, startSeq);
+				length += expandUp(edges, verts, startKmer, startSeq);
 				int fromVert = storeVertex(verts, startKmer, startSeq);
-				cerr<<"from "<<fromVert<<" to "<<toVert<<endl;
+				cerr<<"from "<<fromVert<<" to "<<toVert<<" length " <<length<<endl;
+				if (fromVert-toVert!=1)
+				cerr<<"GOOD"<<endl;
+				mass[fromVert]++;
+				mass[toVert]++;
+
 			}
 		}
 		edges.erase(iter++);
 	}
+	forn(i, 21000) {
+		cerr<<i<< " "<<mass[i]<<endl;
+	}
 }
 
-void expandDown(edgesMap &edges, vertecesMap &verts, ll finishKmer,
-		Sequence *finishSeq) {
+int expandDown(edgesMap &edges, vertecesMap &verts, ll &finishKmer,
+		Sequence* &finishSeq) {
+	int length=0;
 	while (1) {
 		vertecesMap::iterator iter = verts.find(finishKmer);
 		if (iter != verts.end()) {
 			int size = iter->second.size();
+//			cerr<<"size "<<size<< " find "<< finishSeq->Str()<< endl;
 			forn(i, size) {
-				if (similar(finishSeq, (iter->se)[i]->lower, k))
-					return;
+//				cerr<<((iter->se)[i]->lower)->Str()<<endl;
+				if (finishSeq->similar(*((iter->se)[i]->lower), k))
+					return length;
 			}
 		}
 		if (!CheckUnuqueWayUp(edges, finishKmer, finishSeq))
-			return;
+			return length;
 		if (!GoUnuqueWayDown(edges, finishKmer, finishSeq))
-			return;
+			return length;
+		else length++;
 	}
 }
 
-void expandUp(edgesMap &edges, vertecesMap &verts, ll startKmer,
-		Sequence *startSeq) {
+int expandUp(edgesMap &edges, vertecesMap &verts, ll &startKmer,
+		Sequence* &startSeq) {
+	int length=0;
+
 	while (1) {
 		vertecesMap::iterator iter = verts.find(startKmer);
 		if (iter != verts.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (similar(startSeq, (iter->se)[i]->lower, k))
-					return;
+				if (startSeq->similar( *((iter->se)[i]->lower), k))
+					return length;
 			}
 		}
 		if (!CheckUnuqueWayDown(edges, startKmer, startSeq))
-			return;
+			return length;
 		if (!GoUnuqueWayUp(edges, startKmer, startSeq))
-			return;
+			return length;
+		else length++;
 	}
 }
 
@@ -121,7 +153,7 @@ int CheckUnuqueWayUp(edgesMap &edges, ll finishKmer, Sequence *finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (similar(finishSeq, (iter->se)[i]->lower, k)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), k)) {
 					count++;
 					if (count > 1)
 						return 0;
@@ -144,7 +176,7 @@ int GoUnuqueWayUp(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (similar(finishSeq, (iter->se)[i]->lower, k)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), k)) {
 					count++;
 					if (count > 1)
 						return 0;
@@ -178,7 +210,7 @@ int GoUnuqueWayDown(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (similar(finishSeq, (iter->se)[i]->lower, k)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), k)) {
 					if ((iter->se)[i]->used) return 0;
 					count++;
 					if (count > 1)
@@ -212,7 +244,7 @@ int CheckUnuqueWayDown(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (similar(finishSeq, (iter->se)[i]->lower, k)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), k)) {
 					count++;
 					if (count > 1)
 						return 0;
@@ -232,7 +264,7 @@ int storeVertex(vertecesMap &verts, ll newKmer, Sequence* newSeq){
 	if (iter != verts.end()) {
 		int size = iter->second.size();
 		forn(i, size) {
-			if (similar(newSeq, (iter->se)[i]->lower, k))
+			if (newSeq->similar( *((iter->se)[i]->lower), k))
 				return (iter->se)[i]->start;
 		}
 		VertexPrototype *v = new VertexPrototype();

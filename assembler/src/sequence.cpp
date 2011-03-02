@@ -65,9 +65,11 @@ bool Sequence::operator== (const Sequence &that) const {
 	if (size_ != that.size_) {
 		return false;
 	}
+
 	for (size_t i = 0; i < size_; ++i) {
 		if (operator [](i) != that[i]) {
 			return false;
+
 		}
 	}
 	return true;
@@ -91,6 +93,7 @@ Sequence Sequence::Subseq(size_t from, size_t to) const {
 }
 //TODO: must be KMP or hashing instead of this shit
 int Sequence::find (const Sequence &t) const{
+
 	for(int i = 0; i < size()- t.size() + 1; i++) {
 		if (Subseq(i, i + t.size()) == t) {
 			return i;
