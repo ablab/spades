@@ -51,9 +51,9 @@ void TestCodeReadAllA() {
 	fill_n(input, readLength, 'A');
 	fill_n(result, readLength, 0);
 	codeRead(input, code);
-	checkArraysEqual<char>(result, code, readLength);
-	delete input;
-	delete code;
+	checkArraysEqual<char> (result, code, readLength);
+	delete[] input;
+	delete[] code;
 }
 
 void TestCodeReadAllACGT() {
@@ -77,12 +77,40 @@ void TestCodeReadAllACGT() {
 	codeRead(input, code);
 	for (int i = 0; i < readLength; i++)
 		ASSERT_EQUAL(result[0], code[0]);
-	checkArraysEqual<char>(result, code, readLength);
-	delete input;
-	delete code;
+	checkArraysEqual<char> (result, code, readLength);
+	delete[] input;
+	delete[] code;
 }
 
+void TestExtractMerLen2() {
+	char *input = new char[2];
+	for (input[0] = 0; input[0] < 4; input[0]++)
+		for (input[1] = 0; input[1] < 4; input[1]++)
+			ASSERT_EQUAL(input[0] * 4 + input[1], extractMer(input, 0, 2));
+	delete[] input;
+}
 
+void TestExtractMerLen3FromLen20() {
+	int length = 20;
+	char *input = new char[length];
+	for (int i = 0; i < length; i++)
+		input[i] = (100l << i) % 101 % 4;
+	for (int i = 0; i + 2 < length; i++)
+		ASSERT_EQUAL(input[i] * 16 + input[i + 1] * 4 + input[i + 2], extractMer(input, i, 3));
+	delete[] input;
+}
+
+void TestExtractMerAllA() {
+	char *input = new char[100];
+	fill_n(input, readLength, 0);
+	for (int merLength = 1; merLength < 100; merLength++) {
+		for (int shift = 0; shift + merLength < 100; shift++) {
+			ll result = extractMer(input, shift, merLength);
+			ASSERT_EQUAL(0l, result);
+		}
+	}
+	delete[] input;
+}
 
 cute::suite HashTableSuite() {
 	cute::suite s;
@@ -92,6 +120,9 @@ cute::suite HashTableSuite() {
 	s.push_back(CUTE(TestMultyNucleotideDecompress));
 	s.push_back(CUTE(TestCodeReadAllA));
 	s.push_back(CUTE(TestCodeReadAllACGT));
+	s.push_back(CUTE(TestExtractMerLen2));
+	s.push_back(CUTE(TestExtractMerLen3FromLen20));
+	s.push_back(CUTE(TestExtractMerAllA));
 	return s;
 }
 
