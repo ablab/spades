@@ -2,7 +2,7 @@ TODO:  Similarity with SNP exclusion
 	   Store graph in memory
 	   Tourbus!
 	   Dumping Sequence to disk
-
+	   Coverage and delta integration.
 
 ToRefactor: 
 In: Map I from k-mers to vector of sequences.
