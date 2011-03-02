@@ -17,6 +17,7 @@
 #include <cstring>
 #include <array>
 #include <vector>
+#include <algorithm>
 #include "nucl.hpp"
 
 typedef long long word;
@@ -92,10 +93,9 @@ public:
 	}
 
 	Seq<size_> operator!() const { // TODO: optimize
-		// TODO!!!
-		return *this;
-		//Sequence s = Sequence(this->str());
-		//return Seq<_size>((!s).Str());
+		string s = this->str();
+		reverse(s.begin(), s.end());
+		return Seq<size_>(s);
 	}
 
 //	// add nucleotide to the right
@@ -113,11 +113,12 @@ public:
 //		return res;
 //	}
 
-	//todo optimize via machine words;
 	/**
-	 * add one nucl to the right, shifting seq
+	 * add one nucl to the right, shifting seq to the left
 	 */
-	Seq<size_> operator<<(char c) const {
+	Seq<size_> operator<<(char c) const {		// TODO: optimize
+		string s = (this->str() + c).substr(1);
+		return Seq<size_>(s);
 		/*std::array<T,data_size_> new_a(data_);
 		char buf = new_a[data_size_ - 1] & 3;
 		new_a[data_size_ - 1] >>= 2;
@@ -129,9 +130,16 @@ public:
 			buf = new_buf;
 		}
 		return Seq<size_>(new_a);*/
-		// TODO!
-		return *this;
 	}
+
+	/**
+	 * add one nucl to the left, shifting seq to the right
+	 */
+	Seq<size_> operator>>(char c) {		// TODO: optimize, better name
+		string s = c + this->str().substr(0, size_ - 1);
+		return Seq<size_>(s);
+	}
+
 
 //	// add nucleotide to the left
 //	Seq<_size> shift_left(char c) const { // char should be 0123
