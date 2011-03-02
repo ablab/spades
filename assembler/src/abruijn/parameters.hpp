@@ -14,8 +14,6 @@
 #define K 25
 #define HASH_SEED 1845724623
 
-#define debug(s) std::cerr << (s) << "\n";
-
 typedef Seq<K> Kmer;
 typedef Seq<MPSIZE> Read;
 
