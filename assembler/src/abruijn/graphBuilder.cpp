@@ -65,7 +65,7 @@ CGraph GraphBuilder::build() {
 	fqp->open(filenames.first, filenames.second);
 	while (!fqp->eof()) {
 		MatePair<MPSIZE> r = fqp->read(); // is it copy? :)
-		if (r.id() == -1) { // don't have 'N' in reads
+		if (r.hasN()) { // have 'N' in reads
 			continue;
 		}
 		processRead(r.seq1());

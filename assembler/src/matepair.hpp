@@ -17,19 +17,27 @@ public:
 		// nothing
 	}
 
-	bool isNull() {
-		return this == null;
+	/*MatePair(): id_(-1) {
+		// nothing
+	}*/
+
+	bool hasN() const {
+		return id_ == -1;
+		//return this == &null;
 	}
 
 	int id() const {
+		assert(!hasN());
 		return id_;
 	}
 
 	Seq<size_,T> seq1() const {
+		assert(!hasN());
 		return seq1_;
 	}
 
 	Seq<size_,T> seq2() const {
+		assert(!hasN());
 		return seq2_;
 	}
 

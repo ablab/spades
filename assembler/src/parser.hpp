@@ -19,25 +19,34 @@ template <int size> // size of reads in base pairs
 class FASTQParser {
 public:
 
-	FASTQParser() {
+	FASTQParser(const string &filename1, const string &filename2) {
 		_opened = false;
+		open(filename1, filename2);
 	}
 
-	static vector<MatePair<size> >* readAll(const string &filename1, const string &filename2) {
-		FASTQParser<size>* fqp = new FASTQParser<size>();
-		vector<MatePair<size> >* res = new vector<MatePair<size> >;
-		fqp->open(filename1, filename2);
-		while (!fqp->eof()) {
-			MatePair<size> mp = fqp->read(); // is it copy? :)
-			if (mp.id() != -1) { // don't have 'N' in reads
+
+	~FASTQParser() {
+		close();
+	}
+
+static vector<MatePair<size> >* readAll(const string &filename1, const string &filename2, int count = 0) {
+		FASTQParser<size> fqp(filename1, filename2);
+		vector<MatePair<size> >* res = new vector<MatePair<size> >();
+		while (!fqp.eof()) {
+			MatePair<size> mp = fqp.read(); // is it copy? :)
+			if (!mp.hasN()) { // don't have 'N' in reads
 				res->push_back(mp);
 			}
 		}
-		fqp->close();
+		fqp.close();
 		return res;
 	}
 
 public: // make it private!
+
+	FASTQParser() {
+		_opened = false;
+	}
 
 	void open(string filename1, string filename2) { // open two files with mate paired reads
 		_fp1 = gzopen(filename1.c_str(), "r"); // STEP 2: open the file handler
@@ -99,6 +108,7 @@ private:
 	bool _eof;
 	bool _opened; // ready for read
 	int _cnt;
+
 	void do_read() { // do actual read, it's one sequence ahead of read()
 		if (kseq_read(_seq1) < 0 || kseq_read(_seq2) < 0) { // STEP 4: read sequence
 			_eof = true;
