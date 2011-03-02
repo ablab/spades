@@ -8,8 +8,9 @@
 #include <set>
 #include <ext/hash_map>
 #include <cstring>
-#include "../seq.hpp"
-#include "../sequence.hpp"
+#include "seq.hpp"
+#include "sequence.hpp"
+#include "nucl.hpp"
 
 using namespace std;
 using namespace __gnu_cxx;
@@ -28,117 +29,97 @@ namespace assembler {
 typedef Seq<K> Kmer;
 typedef Seq<N> Read;
 
-static const int k = 25;
-
-char toIndex(char c) {
-	switch (c) {
-	case 'A':
-		return 0;
-	case 'C':
-		return 1;
-	case 'G':
-		return 2;
-	case 'T':
-		return 3;
-	default:
-		break;//throw exception
-	}
-}
-
 class Vertex;
 
 class Vertex {
 
-	Sequence _nucls;
-	Vertex* _desc[4];
-	Vertex* _complement;
+	Sequence nucls_;
+	Vertex* desc_[4];
+	Vertex* complement_;
 
-	int _coverage;
-	int _arc_coverage[4];
+	int coverage_;
+	int arc_coverage_[4];
 public:
 
 	Vertex(Sequence nucls) :
-		_nucls(nucls) {
-		fill_n(_desc, 4, (Vertex*) NULL);
+		nucls_(nucls) {
+		fill_n(desc_, 4, (Vertex*) NULL);
 	}
 
 	//todo talk with Kolya about problem with Sequence copying!!!
 	Vertex(Sequence nucls, Vertex** desc) :
-		_nucls(nucls) {
-		memcpy(desc, _desc, 4 * sizeof(Vertex*));
+		nucls_(nucls) {
+		memcpy(desc, desc_, 4 * sizeof(Vertex*));
 		//		_arcs = arcs;
 	}
-	;
 
 	~Vertex() {
-		delete [] _desc;
-		delete [] _arc_coverage;
- 	}
+		delete[] desc_;
+		delete[] arc_coverage_;
+	}
 
 	//static Vertex AbsentVertex = Vertex(0, 0, NULL, true, 0, NULL);
 
-//	size_t size() {
-//		return _nucls.size();
-//	}
-//	;
+	//	size_t size() {
+	//		return _nucls.size();
+	//	}
+	//	;
 
-//	char operator[](const int &index) const {
-//		return _nucls[index];
-//	}
+	//	char operator[](const int &index) const {
+	//		return _nucls[index];
+	//	}
 
 	int DescCount() {
 		int c = 0;
 		for (int i = 0; i < 4; ++i)
-			if (_desc[i] != NULL)
+			if (desc_[i] != NULL)
 				c++;
 		return c;
 	}
-	;
 
 	Vertex** desc() {
-		return _desc;
+		return desc_;
 	}
-	;
 
 	Vertex* desc(char nucl) {
-		return _desc[(int)nucl];
+		return desc_[(int) nucl];
+	}
+
+	size_t size() {
+		return nucls_.size();
 	}
 
 	Sequence nucls() {
-		return _nucls;
+		return nucls_;
 	}
 
 	void AddDesc(Vertex* v) {
 		//check if k-1 mers differ
 		int k_th_nucl = v->nucls()[K];
-		_desc[k_th_nucl] = v;
+		desc_[k_th_nucl] = v;
 	}
 
 	Vertex* complement() {
-		return _complement;
+		return complement_;
 	}
-	;
 
 	void set_complement(Vertex* complement) {
-		_complement = complement;
+		complement_ = complement;
 	}
-	;
 
 	int coverage() {
-		return _coverage;
+		return coverage_;
 	}
-	;
 
 	void set_coverage(int coverage) {
-		_coverage = coverage;
+		coverage_ = coverage;
 	}
-	;
 };
 
 class SimpleHash {
 public:
-	unsigned int operator() (const Kmer& seq) const {
-	    unsigned int h = HASH_SEED;
+	unsigned int operator()(const Kmer& seq) const {
+		unsigned int h = HASH_SEED;
 		for (int i = 0; i < seq.size(); i++) {
 			h = ((h << 5) - h) + seq[i];
 		}
@@ -148,13 +129,13 @@ public:
 
 class MySimpleHashTable {
 	//pair<Vertex*, int> - vertex and offset
-//	hash_map<const Kmer, pair <Vertex*, int> , SimpleHash> h;
-	hash_map<const Kmer, pair<Vertex*, size_t>, SimpleHash, Kmer::equal_to > h;
+	//	hash_map<const Kmer, pair <Vertex*, int> , SimpleHash> h;
+	hash_map<const Kmer, pair<Vertex*, size_t> , SimpleHash, Kmer::equal_to> h;
 	//vector<V> array[size];
 public:
 
 	//todo think of using references
-	void put(Kmer k, pair <Vertex*, size_t> v) {
+	void put(Kmer k, pair<Vertex*, size_t> v) {
 		h.insert(make_pair(k, v));
 	}
 
@@ -168,9 +149,9 @@ public:
 		return h[k];
 	}
 
-//	void remove(Kmer k) {
-//		h.
-//	}
+	//	void remove(Kmer k) {
+	//		h.
+	//	}
 };
 
 class Graph {
@@ -236,20 +217,19 @@ public:
 
 	}
 
-
 	/**
 	 * adds two complement vertices
 	 */
-//	Vertex* AddVertices(Sequence nucls, Vertex** outgoing_vert, Vertex** outgoing_vert_for_compl) {
-//		Vertex* v1 = new Vertex(nucls, outgoing_vert);
-//		Vertex* v2 = new Vertex(!nucls, outgoing_vert_for_compl);
-//		v1->set_complement(v2);
-//		v2->set_complement(v1);
-//		if (Empty(outgoing_vert)) {
-//			component_roots_.insert(v1);
-//		}
-//		return v1;
-//	}
+	//	Vertex* AddVertices(Sequence nucls, Vertex** outgoing_vert, Vertex** outgoing_vert_for_compl) {
+	//		Vertex* v1 = new Vertex(nucls, outgoing_vert);
+	//		Vertex* v2 = new Vertex(!nucls, outgoing_vert_for_compl);
+	//		v1->set_complement(v2);
+	//		v2->set_complement(v1);
+	//		if (Empty(outgoing_vert)) {
+	//			component_roots_.insert(v1);
+	//		}
+	//		return v1;
+	//	}
 
 	/**
 	 * adds vertex and its complement
@@ -322,7 +302,7 @@ public:
 		Sequence nucls = v->nucls();
 
 		Vertex* v1 = AddVertex(nucls.Subseq(0, pos));
-		Vertex* v2 = AddVertex(nucls.Subseq(pos - (k - 1), nucls.size()));
+		Vertex* v2 = AddVertex(nucls.Subseq(pos - (K - 1), nucls.size()));
 
 		LinkVertices(v1, v2);
 
@@ -337,22 +317,37 @@ public:
 		return v2;
 	}
 
+	pair<Vertex*, int> GetPosMaybeMissing(Kmer k) {
+		if (!h_.contains(k)) {
+			AddVertex(Sequence(k));
+		}
+		return h_.get(k);
+	}
+
 	void ThreadRead(Read r) {
 		Kmer k(r);
+		pair<Vertex*, int> prev_pos = GetPosMaybeMissing(k);
+		for (size_t i = K + 1; i < N; ++i) {
+			k = k << r[i];
+			pair<Vertex*, int> curr_pos = GetPosMaybeMissing(k);
 
+			if (prev_pos.second + K == prev_pos.first->nucls().size())
+
+			prev_pos = curr_pos;
+		}
 	}
 
 };
 
 /*class KmerPos {
-	//vertex, offset and direction of the canonical
-	Vertex* _v;
-	int _offset;
-public:
-	KmerPos(Vertex* v, int offset) :
-		_v(v), _offset(offset) {
-	}
-};*/
+ //vertex, offset and direction of the canonical
+ Vertex* _v;
+ int _offset;
+ public:
+ KmerPos(Vertex* v, int offset) :
+ _v(v), _offset(offset) {
+ }
+ };*/
 
 /*class VertexPool {
  _v_idx _size;

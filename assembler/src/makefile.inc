@@ -8,7 +8,7 @@ all:$(EXEC)
 	@echo "vvvvvvvvvv MAKE SUCCESSFUL vvvvvvvvvv"
 
 CC=g++
-CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -std=c++0x
+CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -std=c++0x -I./..
 LDFLAGS=-lz
 DEPSFL=-MM -MG
 
