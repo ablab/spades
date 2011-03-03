@@ -5,7 +5,6 @@
 #include "graphBuilder.hpp"
 #include "parameters.hpp"
 #include "../ireadstream.hpp"
-#include "../matepair.hpp"
 #include <ext/hash_map>
 #include "../logging.hpp"
 
