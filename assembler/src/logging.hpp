@@ -12,7 +12,7 @@
 
 using namespace log4cxx;
 
-#define LOGGER(category) LoggerPtr _default_logger(Logger::getLogger(category));
+#define LOGGER(category) static LoggerPtr _default_logger(Logger::getLogger(category));
 
 #define TRACE(message) LOG4CXX_TRACE(_default_logger, message);
 #define DEBUG(message) LOG4CXX_DEBUG(_default_logger, message);
