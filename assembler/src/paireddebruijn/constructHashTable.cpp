@@ -4,8 +4,6 @@
 
 using namespace std;
 
-typedef map<ll, vector<ll> > myMap;
-
 typedef vector<Sequence*> downSeqs;
 
 
