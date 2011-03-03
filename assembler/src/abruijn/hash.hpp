@@ -32,4 +32,12 @@ struct HashSymWeighted {
   }
 };
 
+template< typename T >
+struct EqSym {
+public:
+	unsigned int operator() (const T &s1, const T &s2) const {
+		return (s1 == s2) || (s1 == !s2);
+	};
+};
+
 #endif /* HASH_HPP_ */
