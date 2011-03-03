@@ -85,8 +85,8 @@ Sequence Sequence::Subseq(size_t from, size_t to) const {
 }
 //TODO: must be KMP or hashing instead of this shit
 
-int Sequence::find(const Sequence &t, int from) const {
-	for (int i = from; i <= size() - t.size(); i++) {
+int Sequence::find (const Sequence &t, int from) const{
+	for(size_t i = from; i <= size()- t.size(); i++) {
 		if (Subseq(i, i + t.size()) == t) {
 			return i;
 		}

@@ -5,11 +5,13 @@ De novo sequence assembler for short mate paired reads (70+ bp).
 
 === PREREQ ===
 
-You need zlib (dev) and google-sparsehash installed in your system.
+You need zlib (dev), liblog4cxx and google-sparsehash installed in your system.
 
 In Ubuntu it's simple:
  
 > sudo apt-get install zlib1g-dev
+
+> sudo apt-get install liblog4cxx10-dev
 
 > cd ./assembler/src/libs/sparsehash-1.10/
 > ./configure
