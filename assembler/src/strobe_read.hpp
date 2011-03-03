@@ -11,35 +11,39 @@
 #include "seq.hpp"
 using namespace std;
 
+/*
+ * Use single_read<size,T>::type for single read
+ * Use mate_read<size,T>::type for mate read
+ * Use strobe_read<size,cnt,T>::type for cnt-read
+ *
+ * where size -- number of nucleotides in each read
+ * (we don't store info about gaps' size here)
+ */
 template <int size, int cnt = 1, typename T = char>
 class strobe_read {
 public:
-	strobe_read(array<Seq<size,T>,cnt> data, const int id = -1) : id_(id), data_(data) {
-		;
+	void put(int i, const string &s) { // by value (probably faster)
+		data_[i] = Seq<size,T>(s);
 	}
-	strobe_read() : id_(-1) {
-		;
-	}
+
 	Seq<size,T> get(int i) {
 		return data_[i];
 	}
-	void put(int i, const Seq<size,T> &s) {
-		assert(i < cnt);
-		data_[i] = s;
-	}
-	bool valid() {
-		return id != -1;
-	}
-	int id() {
-		assert(valid());
-		return id;
-	}
-	void invalidate() {
-		id = -1;
-	}
+
 private:
-	int id_;
 	array<Seq<size,T>,cnt> data_;
+};
+
+// use mate_read<size, T>::type for mate reads
+template <int size, typename T = char>
+struct mate_read {
+	typedef strobe_read<size,2,T> type; // because "There is no direct way to have templated typedefs in C++" :(
+};
+
+// use single_read<size, T>::type for single reads
+template <int size, typename T = char>
+struct single_read {
+	typedef strobe_read<size,1,T> type; // because "There is no direct way to have templated typedefs in C++" :(
 };
 
 #endif /* STROBE_READ_HPP_ */

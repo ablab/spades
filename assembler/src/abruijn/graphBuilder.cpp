@@ -4,10 +4,10 @@
 #include "hash.hpp"
 #include "graphBuilder.hpp"
 #include "parameters.hpp"
-#include "../parser.hpp"
+#include "../ireadstream.hpp"
 #include "../matepair.hpp"
 #include <ext/hash_map>
-#include "../logging.hpp";
+#include "../logging.hpp"
 
 LOGGER("a.graphBuilder")
 
@@ -61,16 +61,14 @@ void processRead(Seq<MPSIZE> r) {
 
 CGraph GraphBuilder::build() {
 	DEBUG("Building");
-	FASTQParser<MPSIZE>* fqp = new FASTQParser<MPSIZE>();
-	fqp->open(filenames.first, filenames.second);
-	while (!fqp->eof()) {
-		MatePair<MPSIZE> r = fqp->read(); // is it copy? :)
-		if (r.hasN()) { // have 'N' in reads
-			continue;
-		}
-		processRead(r.seq1());
-		processRead(r.seq2());
-		if (r.id() == 10) {
+	ireadstream<MPSIZE,2> irs(filenames.first.c_str(), filenames.second.c_str());
+	int cnt = 0;
+	mate_read<MPSIZE>::type mp;
+	while (!irs.eof()) {
+		irs >> mp;
+		processRead(mp.get(1));
+		processRead(mp.get(2));
+		if (cnt++ == 10) {
 			break;
 		}
 	}

@@ -13,8 +13,7 @@
 #include <ctime>
 #include <array>
 #include <string>
-#include "parser.hpp"
-#include "parser.hpp"
+#include "ireadstream.hpp"
 
 using namespace std;
 
@@ -25,7 +24,7 @@ int main(int argc, char *argv[]) {
 	std::cerr << "Hello, I am assembler!" << std::endl;
 	time_t now = time(NULL);
 
-	vector<MatePair<MPSIZE> > *mate_pairs = FASTQParser<MPSIZE>::readAll("./data/short/s_6_1.fastq.gz", "./data/short/s_6_2.fastq.gz");
+	//vector<MatePair<MPSIZE> > *mate_pairs = FASTQParser<MPSIZE>::readAll("./data/short/s_6_1.fastq.gz", "./data/short/s_6_2.fastq.gz");
 
 	cerr << "Time: " << (time(NULL) - now) << " sec." << endl;
 	return 0;

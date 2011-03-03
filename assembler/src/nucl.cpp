@@ -30,7 +30,7 @@ char nucl(char c) { // 01234 -> ACGT
 }
 
 char unnucl(char c) { // ACGT -> 0123
-	assert(c == 'A' || c == 'C' || c == 'G' || c == 'T');
+	assert(is_nucl(c));
 	switch(c) {
 		case 'C': case '1': case 1: return 1;
 		case 'G': case '2': case 2: return 2;
@@ -38,3 +38,9 @@ char unnucl(char c) { // ACGT -> 0123
 		default: return 0;
 	}
 }
+
+bool is_nucl(char c) {
+	return (c == 'A' || c == 'C' || c == 'G' || c == 'T');
+}
+
+

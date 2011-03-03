@@ -2,7 +2,7 @@
 #include "ide_listener.h"
 #include "cute_runner.h"
 #include "seqTest.hpp"
-#include "parserTest.hpp"
+#include "ireadstreamTest.hpp"
 #include "nuclTest.hpp"
 #include "ifaststreamTest.hpp"
 #include "qualTest.hpp"
@@ -13,8 +13,8 @@ void runSuite() {
 	 s += SeqSuite();
 	 s += QualSuite();
 	 s += NuclSuite();
-	 s += ParserSuite();
 	 s += IFastaStreamSuite();
+	 s += IReadStreamSuite();
 	 cute::ide_listener lis;
 	 cute::makeRunner(lis)(s, "The Suite");
  }

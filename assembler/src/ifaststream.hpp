@@ -8,6 +8,7 @@
 #ifndef IFASTSTREAM_HPP_
 #define IFASTSTREAM_HPP_
 
+#include <zlib.h>
 #include "libs/kseq/kseq.h"
 
 using namespace std;
@@ -15,13 +16,18 @@ using namespace std;
 // STEP 1: declare the type of file handler and the read() function
 KSEQ_INIT(gzFile, gzread)
 
+/*
+ * Read name, seq and qual strings from FASTQ data (one by one)
+ */
 class ifaststream {
 public:
 	ifaststream(const char* filename) {
 		is_open_ = open(filename);
 		if (is_open_){
 			eof_ = false;
-			do_read();
+			state_ = 2;
+			read_ahead();
+			state_ = 0;
 		}
 	}
 
@@ -51,12 +57,21 @@ public:
 			break;
 		case 2:
 			s = seq_->qual.s;
-			do_read(); // make actual read for the next result
+			read_ahead(); // make actual read for the next result
 			break;
 		}
-		state_++;
+		state_ = (state_ + 1) % 3; // next state
 		return *this;
 	}
+
+	void close() {
+		if (is_open()) {
+			kseq_destroy(seq_); // STEP 5: destroy seq
+			gzclose(fp_); // STEP 6: close the file handler
+			is_open_ = false;
+		}
+	}
+
 
 private:
 	gzFile fp_;
@@ -78,20 +93,11 @@ private:
 		return true;
 	}
 
-	void close() {
-		if (is_open()) {
-			kseq_destroy(seq_); // STEP 5: destroy seq
-			gzclose(fp_); // STEP 6: close the file handler
-		}
-	}
-
-	void do_read() {
+	void read_ahead() {
 		assert(is_open());
 		assert(!eof());
-		if (kseq_read(seq_) >= 0) {
-			state_ = 0;
-		}
-		else {
+		assert(state_ == 2);
+		if (kseq_read(seq_) < 0) {
 			eof_ = true;
 		}
 	}

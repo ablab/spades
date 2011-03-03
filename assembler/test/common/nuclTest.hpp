@@ -21,6 +21,14 @@ void TestNucl() {
 	ASSERT_EQUAL(2, complement(1));
 	ASSERT_EQUAL(1, complement(2));
 	ASSERT_EQUAL(0, complement(3));
+	ASSERT(is_nucl('A'));
+	ASSERT(is_nucl('C'));
+	ASSERT(is_nucl('G'));
+	ASSERT(is_nucl('T'));
+	ASSERT(!is_nucl(0));
+	ASSERT(!is_nucl(1));
+	ASSERT(!is_nucl('0'));
+	ASSERT(!is_nucl('1'));
 }
 
 cute::suite NuclSuite(){
