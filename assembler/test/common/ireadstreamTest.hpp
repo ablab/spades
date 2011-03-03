@@ -9,9 +9,9 @@
 #include "ireadstream.hpp"
 
 void TestIReadStream() {
-	ireadstream<100,2,char> irs("./data/short/s_6_1.fastq.gz", "./data/short/s_6_2.fastq.gz");
-	strobe_read<100,2,char> sr;
-	mate_read<100,char>::type mr;
+	ireadstream<100,2,short> irs("./data/test/s_6_1.fastq.gz", "./data/test/s_6_2.fastq.gz");
+	strobe_read<100,2,short> sr;
+	mate_read<100,short>::type mr;
 	irs >> sr >> mr;
 	ASSERT_EQUAL("CATTATTAGGGATGATTGTGACCCGCGTCAGACCAATCAAATTCGCCAGCGTTTCCACGGGTTTTAGATGACCATAGTGCACCGGATCAAAGGTGCCGCC", sr.get(0).str());
 	ASSERT_EQUAL("ATTACGGTCAGTCAGTGTGGGCAGAGCTGGAAGGGTTATCTCTTCTGTTGTGCCATAAACCCCTGGCGGACGTATTTATCGACGGTTGATATGTAATCTT", sr.get(1).str());
@@ -20,8 +20,8 @@ void TestIReadStream() {
 }
 
 void TestIReadStreamFull() {
-	ireadstream<100,2,char> irs("./data/short/s_6_1.fastq.gz", "./data/short/s_6_2.fastq.gz");
-	mate_read<100,char>::type mr;
+	ireadstream<100,2,short> irs("./data/test/s_6_1.fastq.gz", "./data/test/s_6_2.fastq.gz");
+	mate_read<100,short>::type mr;
 	while (!irs.eof()) {
 		irs >> mr;
 	}

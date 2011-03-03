@@ -6,24 +6,22 @@
  */
 
 #ifndef SEQ_HPP_
+/*
+ * Sequence class with compile-time size
+ *
+ *  Created on: 20.02.2011
+ *      Author: vyahhi
+ */
+
 #define SEQ_HPP_
 
 #include <string>
-#include <functional>
-#include <memory>
 #include <iostream> // for debug
-#include <cstring>
 #include <cassert>
-#include <cstring>
 #include <array>
-#include <vector>
 #include <algorithm>
 #include "nucl.hpp"
 #include "log.hpp"
-
-typedef long long word;
-
-using namespace std;
 
 template <size_t size_, typename T = char> // max number of nucleotides, type for storage
 class Seq {
@@ -40,7 +38,7 @@ private:
 		size_t cnt = 0;
 		int cur = 0;
 		for (size_t pos = 0; pos < size_ && *s != 0; ++pos, ++s) { // unsafe!
-			data |= (unnucl(*s) << cnt);
+			data |= (denucl(*s) << cnt);
 			cnt += 2;
 			if (cnt == Tbits) {
 				this->data_[cur++] = data;
@@ -56,7 +54,9 @@ private:
 	Seq(std::array<T,data_size_> data): data_(data) {};
 
 public:
-	Seq() {}; // random Seq, use with care!
+	Seq() {
+		std::fill(data_.begin(), data_.end(), 0);
+	};
 
 	Seq(const char* s) {
 		init(s);
@@ -90,11 +90,11 @@ public:
 	 * reverse complement from the Seq
 	 */
 	Seq<size_,T> operator!() const { // TODO: optimize
-		string s = this->str();
-		reverse(s.begin(), s.end());
-		transform(s.begin(), s.end(), s.begin(), unnucl);
-		transform(s.begin(), s.end(), s.begin(), complement);
-		transform(s.begin(), s.end(), s.begin(), nucl);
+		std::string s = this->str();
+		std::reverse(s.begin(), s.end());
+		std::transform(s.begin(), s.end(), s.begin(), denucl);
+		std::transform(s.begin(), s.end(), s.begin(), complement);
+		std::transform(s.begin(), s.end(), s.begin(), nucl);
 		return Seq<size_,T>(s.c_str());
 	}
 
@@ -107,7 +107,7 @@ public:
 			T rm = res.data_[data_size_ - 1] & 3;
 			res.data_[data_size_ - 1] >>= 2;
 			T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
-			res.data_[data_size_ - 1] |= (unnucl(c) << lastnuclshift_);
+			res.data_[data_size_ - 1] |= (denucl(c) << lastnuclshift_);
 			if (data_size_ >= 2) { // if we have at least 2 elements in data
 				size_t i = data_size_ - 1;
 				do {
@@ -127,7 +127,7 @@ public:
 	 * add one nucl to the left, shifting seq to the right
 	 */
 	Seq<size_> operator>>(char c) {	// TODO: optimize, better name
-		string s = c + this->str().substr(0, size_ - 1);
+		std::string s = c + this->str().substr(0, size_ - 1);
 		return Seq<size_>(s.c_str());
 	}
 

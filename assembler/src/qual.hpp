@@ -8,6 +8,8 @@
 #ifndef QUAL_HPP_
 #define QUAL_HPP_
 
+#include <array>
+
 template <int size>
 class Qual {
 public:

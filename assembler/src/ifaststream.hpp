@@ -8,8 +8,9 @@
 #ifndef IFASTSTREAM_HPP_
 #define IFASTSTREAM_HPP_
 
-#include <zlib.h>
 #include "libs/kseq/kseq.h"
+#include <zlib.h>
+#include <cassert>
 
 using namespace std;
 

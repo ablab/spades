@@ -74,6 +74,17 @@ public:
 		}
 		return false;
 	}
+
+	vector<strobe_read<size,cnt,T>>* readAll() {
+		vector<strobe_read<size,cnt,T> > *v = new vector<strobe_read<size,cnt,T> >();
+		strobe_read<size,cnt,T> sr;
+		while (!eof()) {
+			this->operator>>(sr);
+			v->push_back(sr);
+		}
+		return v;
+	}
+
 private:
 	strobe_read<size,cnt,T> next_sr_;
 

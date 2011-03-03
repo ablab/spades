@@ -9,16 +9,20 @@
 #define SEQUENCE_HPP_
 
 #include "seq.hpp"
+#include <vector>
+#include <string>
 
 //SEQUENCE IS IMMUTABLE!!!
 class Sequence { // immutable runtime length sequence (slow!!!)
 	class Data {
 	public:
-		vector < Seq<4> > bytes_;
-		int ref_;
+		std::vector <Seq<4> > bytes_;
 		void IncRef() {++ref_;}
 		void DecRef() {--ref_;}
-		Data(vector< Seq<4> > bytes) : bytes_(bytes) , ref_(1) {}
+		Data(std::vector<Seq<4> > &bytes) : bytes_(bytes) , ref_(1) {}
+	private:
+		int ref_;
+		friend class Sequence;
 	};
 
 public:
@@ -59,7 +63,10 @@ private:
 	bool rtl_; // should be const
 //	Sequence(const Sequence *svl, bool reverse); // reverse
 	Sequence(Data* data, size_t from, size_t size, bool rtl);
-	Sequence& operator=(const Sequence& that) {cerr << "Don't call operator= for Sequence"; return *this;};
+	Sequence& operator=(const Sequence& that) {
+		std::cerr << "Don't call operator= for Sequence" << std::endl;
+		return *this;
+	};
 };
 
 #endif /* SEQUENCE_HPP_ */

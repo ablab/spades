@@ -5,27 +5,39 @@
  *      Author: vyahhi
  */
 
+#include "ireadstream.hpp"
 #include <cassert>
 #include <iostream>
-#include <list>
 #include <cstdio>
 #include <vector>
 #include <ctime>
-#include <array>
 #include <string>
-#include "ireadstream.hpp"
-
 using namespace std;
 
 #define MPSIZE 100
 #define K 11
 
 int main(int argc, char *argv[]) {
-	std::cerr << "Hello, I am assembler!" << std::endl;
+	cerr << "Hello, I am assembler!" << endl;
 	time_t now = time(NULL);
 
-	//vector<MatePair<MPSIZE> > *mate_pairs = FASTQParser<MPSIZE>::readAll("./data/short/s_6_1.fastq.gz", "./data/short/s_6_2.fastq.gz");
+	// read all 'read's
 
-	cerr << "Time: " << (time(NULL) - now) << " sec." << endl;
+	ireadstream<100,2,int> irs("./data/test/s_6_1.fastq.gz", "./data/test/s_6_2.fastq.gz");
+	vector<mate_read<100,int>::type> *v = irs.readAll();
+	irs.close();
+	cerr << "Total reads (mate, without Ns): " << v->size() << endl;
+	cerr << "Current time: " << (time(NULL) - now) << " sec." << endl;
+
+	// construct graph
+
+
+
+	// simplify graph
+
+
+	// output graph
+
+	cerr << "Total Time: " << (time(NULL) - now) << " sec." << endl;
 	return 0;
 }

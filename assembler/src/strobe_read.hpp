@@ -22,6 +22,10 @@ using namespace std;
 template <int size, int cnt = 1, typename T = char>
 class strobe_read {
 public:
+	strobe_read() {
+		// random sequences constructor
+	}
+
 	void put(int i, const string &s) { // by value (probably faster)
 		data_[i] = Seq<size,T>(s);
 	}
