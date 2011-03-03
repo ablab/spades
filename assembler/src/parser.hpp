@@ -9,17 +9,18 @@
 #include <vector>
 #include "matepair.hpp"
 #include "libs/kseq/kseq.h"
+#include "ifaststream.hpp"
 
 using namespace std;
 
 // STEP 1: declare the type of file handler and the read() function 
-KSEQ_INIT(gzFile, gzread)
+//KSEQ_INIT(gzFile, gzread)
 
 template <int size> // size of reads in base pairs
 class FASTQParser {
 public:
 
-	FASTQParser(const string &filename1, const string &filename2) {
+	FASTQParser(const string &filename1, const string &filename2) __attribute__ ((deprecated)) {
 		_opened = false;
 		open(filename1, filename2);
 	}

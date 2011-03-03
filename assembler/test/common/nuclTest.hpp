@@ -8,7 +8,7 @@
 #include "cute.h"
 #include "nucl.hpp"
 
-void TestIt() {
+void TestNucl() {
 	ASSERT_EQUAL('A', nucl(0));
 	ASSERT_EQUAL('C', nucl(1));
 	ASSERT_EQUAL('G', nucl(2));
@@ -25,6 +25,6 @@ void TestIt() {
 
 cute::suite NuclSuite(){
 	cute::suite s;
-	s.push_back(CUTE(TestIt));
+	s.push_back(CUTE(TestNucl));
 	return s;
 }

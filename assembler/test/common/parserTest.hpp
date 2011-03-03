@@ -8,12 +8,12 @@
 #include "cute.h"
 #include "parser.hpp"
 
-void TestEmpty() {
+void TestParserEmpty() {
 	//
 }
 
 cute::suite ParserSuite(){
 	cute::suite s;
-	s.push_back(CUTE(TestEmpty));
+	s.push_back(CUTE(TestParserEmpty));
 	return s;
 }

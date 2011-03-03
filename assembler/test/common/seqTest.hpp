@@ -2,11 +2,11 @@
 #include "seq.hpp"
 #include "nucl.hpp"
 
-void TestSelector() {
+void TestSeqSelector() {
 	ASSERT_EQUAL('G', nucl(Seq<10>("ACGTACGTAC")[2]));
 }
 
-void TestShifts() {
+void TestSeqShifts() {
 	Seq<10> s("ACGTACGTAC");
 	ASSERT_EQUAL("CGTACGTACA", (s << 'A').str());
 	ASSERT_EQUAL("CGTACGTACT", (s << 'T').str());
@@ -14,30 +14,30 @@ void TestShifts() {
 	ASSERT_EQUAL("TACGTACGTA", (s >> 'T').str());
 }
 
-void TestStr() {
+void TestSeqStr() {
 	Seq<10> s("ACGTACGTAC");
 	ASSERT_EQUAL("ACGTACGTAC", s.str());
 }
 
-void TestHeadAndTail() {
+void TestSeqHeadAndTail() {
 	Seq<10> s("ACGTACGTAC");
 	ASSERT_EQUAL("CGTACGTAC", s.tail<9>().str());
 	ASSERT_EQUAL("ACGTACGTA", s.head<9>().str());
 }
 
 
-void TestReverseComplement() {
+void TestSeqReverseComplement() {
 	Seq<10> s("ACGTACGTAC");
 	ASSERT((!s).str() == "GTACGTACGT");
 }
 
 cute::suite SeqSuite(){
 	cute::suite s;
-	s.push_back(CUTE(TestSelector));
-	s.push_back(CUTE(TestStr));
-	s.push_back(CUTE(TestShifts));
-	s.push_back(CUTE(TestHeadAndTail));
-	s.push_back(CUTE(TestReverseComplement));
+	s.push_back(CUTE(TestSeqSelector));
+	s.push_back(CUTE(TestSeqStr));
+	s.push_back(CUTE(TestSeqShifts));
+	s.push_back(CUTE(TestSeqHeadAndTail));
+	s.push_back(CUTE(TestSeqReverseComplement));
 	return s;
 }
 

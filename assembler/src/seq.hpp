@@ -168,13 +168,13 @@ public:
 		}
 	};
 
-	template <int size2, typename T2>
+	template <int size2, typename T2 = char>
 	Seq<size2,T2> head() { // TODO: optimize (Kolya)
 		std::string s = str();
 		return Seq<size2,T2>(s.substr(0, size2).c_str());
 	}
 
-	template <int size2, typename T2>
+	template <int size2, typename T2 = char>
 	Seq<size2,T2> tail() const { // TODO: optimize (Kolya)
 		std::string s = str();
 		return Seq<size2,T2>(s.substr(size_ - size2, size2).c_str());
