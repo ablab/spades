@@ -316,7 +316,7 @@ int pairsToSequences(string inputFile, string outputFile) {
 			}
 		}
 		sort(lmers, lmers + lsize);
-		downSeqs clusters =  clusterize(lmers, lsize, 3);
+		downSeqs clusters =  clusterize(lmers, lsize, 0);
 		int clsize = clusters.size();
 		string outstring;
 

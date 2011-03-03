@@ -46,7 +46,7 @@ public:
 	Sequence operator+ (const Sequence &s) const;
 	Sequence(const Sequence& s);
 	int find(const Sequence& t, int from = 0) const;
-	int similar(const Sequence& t, int k) const;
+	int similar(const Sequence &t, int k, char directed = 0) const;
 	std::string Str() const;
 	size_t size() const;
 private:
