@@ -269,6 +269,8 @@ public:
 	 */
 	void DeleteVertex(Vertex* v) {
 		Vertex* complement = v->complement();
+		component_roots_.erase(v);
+		component_roots_.erase(complement);
 		delete v;
 		delete complement;
 	}
@@ -287,8 +289,12 @@ public:
 	void FixIncoming(Vertex* v, Vertex* new_v) {
 		//todo throw exception if start k-mers differ
 		vector<Vertex*> anc = Anc(v);
-		for (size_t i = 0; i < anc.size(); ++i) {
-			LinkVertices(anc[i], new_v);
+		if (anc.empty()) {
+			component_roots_.insert(new_v);
+		} else {
+			for (size_t i = 0; i < anc.size(); ++i) {
+				LinkVertices(anc[i], new_v);
+			}
 		}
 	}
 
@@ -302,6 +308,7 @@ public:
 	}
 
 	//pos exclusive! (goes into second vertex)
+	//deletes vertex if actual split happens
 	Vertex* SplitVertex(Vertex* v, size_t pos, bool return_second) {
 		if (pos == v->size()) {
 			return v;
@@ -322,7 +329,7 @@ public:
 
 		RenewHashForVertexKmers(v2);
 
-		delete v;
+		DeleteVertex(v);
 
 		return return_second ? v2 : v1;
 	}
@@ -346,15 +353,16 @@ public:
 			size_t prev_offset = prev_pos.second;
 			size_t curr_offset = curr_pos.second;
 
-			if (IsLastKmer(v1, prev_offset) && IsFirstKmer(v2,curr_offset)
+			if (IsLastKmer(v1, prev_offset) && IsFirstKmer(v2, curr_offset)
 					&& MergePossible(v1, v2)) {
 				Merge(v1, v2);
-			} else if () {
-
+			} else if (v1 == v2 && prev_offset + 1 == curr_offset) {
+				//do nothing
 			} else {
 				//todo write correct (have to check if was split)
-				LinkVertices(SplitVertex(v1, prev_offset + K, true)
-						, SplitVertex(v2->complement(), N - curr_offset, false)->complement());
+				LinkVertices(
+						SplitVertex(v1, prev_offset + K, true),
+						SplitVertex(v2->complement(), N - curr_offset, false)->complement());
 			}
 
 			prev_pos = curr_pos;
