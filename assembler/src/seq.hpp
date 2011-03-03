@@ -39,7 +39,7 @@ private:
 		T data = 0;
 		size_t cnt = 0;
 		int cur = 0;
-		for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
+		for (size_t pos = 0; pos < size_ && *s != 0; ++pos, ++s) { // unsafe!
 			data |= (unnucl(*s) << cnt);
 			cnt += 2;
 			if (cnt == Tbits) {
@@ -94,6 +94,7 @@ public:
 		reverse(s.begin(), s.end());
 		transform(s.begin(), s.end(), s.begin(), unnucl);
 		transform(s.begin(), s.end(), s.begin(), complement);
+		transform(s.begin(), s.end(), s.begin(), nucl);
 		return Seq<size_,T>(s.c_str());
 	}
 
@@ -167,37 +168,19 @@ public:
 		}
 	};
 
-	template <int _size2>
-	Seq<_size2> head() { // TODO: optimize (Kolya)
+	template <int size2, typename T2>
+	Seq<size2,T2> head() { // TODO: optimize (Kolya)
 		std::string s = str();
-		return Seq<_size2>(s.substr(0, _size2).c_str());
+		return Seq<size2,T2>(s.substr(0, size2).c_str());
 	}
 
-	template <int _size2>
-	Seq<_size2> tail() const { // TODO: optimize (Kolya)
+	template <int size2, typename T2>
+	Seq<size2,T2> tail() const { // TODO: optimize (Kolya)
 		std::string s = str();
-		return Seq<_size2>(s.substr(size_ - _size2, _size2).c_str());
+		return Seq<size2,T2>(s.substr(size_ - size2, size2).c_str());
 	}
 
 };
-
-// *****************************************
-
-
-template <int _size> // max number of nucleotides in each read
-class MatePair {
-public:
-	MatePair(const char *s1, const char *s2, const int id_) : id(id_), seq1(s1), seq2(s2) {};
-	MatePair(const MatePair &mp) : id(mp.id), seq1(mp.seq1), seq2(mp.seq2) {};
-	const static MatePair<_size> null;
-public: // make private!
-	int id; // consecutive number from input file :)
-	Seq<_size> seq1;
-	Seq<_size> seq2;
-};
-
-template <int _size>
-const MatePair<_size> MatePair<_size>::null = MatePair<_size>("", "", -1);
 
 // *****************************************
 // LEGACY CODE

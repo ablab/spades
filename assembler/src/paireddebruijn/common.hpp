@@ -18,6 +18,7 @@
 #define edgesMap  map<ll, vector<VertexPrototype *> >
 #define vertecesMap  map<ll, vector<VertexPrototype *> >
 
+#define MAX_VERT_NUMBER 100000
 
 using namespace std;
 const string parsed_reads = "data/reads_var_d.txt";

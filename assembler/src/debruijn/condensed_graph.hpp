@@ -130,23 +130,23 @@ public:
 class MySimpleHashTable {
 	//pair<Vertex*, int> - vertex and offset
 	//	hash_map<const Kmer, pair <Vertex*, int> , SimpleHash> h;
-	hash_map<const Kmer, pair<Vertex*, size_t> , SimpleHash, Kmer::equal_to> h;
+	hash_map<const Kmer, pair<Vertex*, size_t> , SimpleHash, Kmer::equal_to> h_;
 	//vector<V> array[size];
 public:
 
 	//todo think of using references
 	void put(Kmer k, pair<Vertex*, size_t> v) {
-		h.insert(make_pair(k, v));
+		h_.insert(make_pair(k, v));
 	}
 
 	bool contains(Kmer k) {
-		return h.count(k) == 1;
+		return h_.count(k) == 1;
 	}
 
 	const pair<Vertex*, size_t> get(Kmer k) {
 		assert(contains(k));
 
-		return h[k];
+		return h_[k];
 	}
 
 	//	void remove(Kmer k) {
@@ -203,6 +203,14 @@ public:
 		return ans;
 	}
 
+	bool IsLast(Vertex* v) {
+		return Empty(v->desc());
+	}
+
+	bool IsFirst(Vertex* v) {
+		return IsLast(v->complement());
+	}
+
 	bool AddIfRoot(Vertex* v) {
 		bool f = false;
 		if (Anc(v).empty()) {
@@ -243,7 +251,7 @@ public:
 	}
 
 	bool MergePossible(Vertex* v1, Vertex* v2) {
-		return v1->complement() != v2;
+		return IsLast(v1) && IsFirst(v2) && v1->complement() != v2 && v1 != v2;
 	}
 
 	Vertex* Merge(Vertex* v1, Vertex* v2) {
@@ -294,8 +302,8 @@ public:
 	}
 
 	//pos exclusive! (goes into second vertex)
-	Vertex* SplitVertex(Vertex* v, size_t pos) {
-		if (pos == v->nucls().size() - 1) {
+	Vertex* SplitVertex(Vertex* v, size_t pos, bool return_second) {
+		if (pos == v->size()) {
 			return v;
 		};
 
@@ -314,7 +322,9 @@ public:
 
 		RenewHashForVertexKmers(v2);
 
-		return v2;
+		delete v;
+
+		return return_second ? v2 : v1;
 	}
 
 	pair<Vertex*, int> GetPosMaybeMissing(Kmer k) {
@@ -331,10 +341,32 @@ public:
 			k = k << r[i];
 			pair<Vertex*, int> curr_pos = GetPosMaybeMissing(k);
 
-			if (prev_pos.second + K == prev_pos.first->nucls().size())
+			Vertex* v1 = prev_pos.first;
+			Vertex* v2 = curr_pos.first;
+			size_t prev_offset = prev_pos.second;
+			size_t curr_offset = curr_pos.second;
+
+			if (IsLastKmer(v1, prev_offset) && IsFirstKmer(v2,curr_offset)
+					&& MergePossible(v1, v2)) {
+				Merge(v1, v2);
+			} else if () {
+
+			} else {
+				//todo write correct (have to check if was split)
+				LinkVertices(SplitVertex(v1, prev_offset + K, true)
+						, SplitVertex(v2->complement(), N - curr_offset, false)->complement());
+			}
 
 			prev_pos = curr_pos;
 		}
+	}
+
+	bool IsLastKmer(Vertex* v, size_t pos) {
+		return pos + K == v->size();
+	}
+
+	bool IsFirstKmer(Vertex* v, size_t pos) {
+		return pos == 0;
 	}
 
 };
