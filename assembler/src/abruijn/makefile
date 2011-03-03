@@ -1,4 +1,5 @@
-SRC=main.cpp hash.cpp graph.cpp graphBuilder.cpp toyexamples.cpp sequence.cpp nucl.cpp
+include srclist.inc
+SRC=main.cpp $(SRC1) 
 DIR=abruijn
 PROG=abruijn
 

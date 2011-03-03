@@ -13,7 +13,7 @@ LOGGER("a.graphBuilder")
 using namespace std;
 using namespace __gnu_cxx;
 
-typedef hash_map< Sequence, CVertex, HashSym<Sequence> > seq2ver;
+typedef hash_map< Sequence, CVertex, HashSym<Sequence>, EqSym<Sequence> > seq2ver;
 seq2ver kmers_map;
 CGraph graph;
 
@@ -28,7 +28,6 @@ void processRead(Seq<MPSIZE> r) {
 	int pos2 = -1;
 	for (int i = 0; i + K <= MPSIZE; i++) {
 		HashSym<Sequence> hh;
-		//Sequence* kmer = &);
 		unsigned int h = hh(Sequence(r).Subseq(i, i + K));
 		if (h < h1) {
 			h2 = h1;
@@ -59,7 +58,7 @@ void processRead(Seq<MPSIZE> r) {
 }
 
 CGraph GraphBuilder::build() {
-	DEBUG("Building");
+	INFO("Building graph...");
 	ireadstream<MPSIZE,2> irs(filenames.first.c_str(), filenames.second.c_str());
 	int cnt = 0;
 	mate_read<MPSIZE>::type mp;
