@@ -1,4 +1,4 @@
-SRC=test.cpp hash.cpp graph.cpp graphBuilder.cpp seq.cpp toyexamples.cpp
+SRC=test.cpp
 DIR=abruijn
 PROG=abruijnTest
 
