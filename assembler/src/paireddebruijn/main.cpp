@@ -28,7 +28,9 @@ int testSimilar() {
 }
 
 int main() {
-	//	freopen("error_log", "w",stderr);
+	freopen(error_log.c_str(), "w",stderr);
+	freopen("data/graph.dot", "w",stdout);
+
 	//readsToPairs(parsed_reads, parsed_k_l_mers);
 //	pairsToSequences(parsed_k_l_mers, parsed_k_sequence);
 //	map<>sequencesToMap(parsed_k_sequence);

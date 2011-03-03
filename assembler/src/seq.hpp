@@ -131,6 +131,10 @@ public:
 		return Seq<size_>(s.c_str());
 	}
 
+	bool operator==(Seq<size_, T> s) const {	// TODO: optimize
+		return str() == s.str();
+	}
+
 	// string representation of Seq - only for debug and output purposes
 	std::string str() const {
 		std::string res(size_, '-');

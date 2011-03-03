@@ -22,9 +22,10 @@
 
 using namespace std;
 const string parsed_reads = "data/reads_var_d.txt";
-const string parsed_k_l_mers = "data/klmers_var_d.txt";
-const string parsed_k_sequence = "data/vertices_var_d.txt";
+const string parsed_k_l_mers = "data/klmers_const_d.txt";
+const string parsed_k_sequence = "data/vertices_const_d.txt";
 const string error_log = "data/error.log";
+const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
 const int k = 25;
 const int l = 31;
