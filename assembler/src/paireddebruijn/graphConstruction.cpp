@@ -12,7 +12,7 @@ void constructGraph() {
 	//	readsToPairs(parsed_reads, parsed_k_l_mers);
 	//	pairsToSequences(parsed_k_l_mers, parsed_k_sequence);
 	cerr << "Read edges" << endl;
-	edgesMap edges = sequencesToMap(parsed_k_sequence);
+	edgesMap edges = sequencesToMap(parsed_k_sequence, true);
 	cerr << "Go to graph" << endl;
 	gvis::GraphScheme<int> g("Paired");
 	cerr << "Start vertices" << endl;
@@ -20,7 +20,7 @@ void constructGraph() {
 	createVertices(g, edges);
 }
 
-edgesMap sequencesToMap(string parsed_k_sequence) {
+edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 	FILE *inFile = fopen(parsed_k_sequence.c_str(), "r");
 
 	vector<VertexPrototype *> prototypes;
@@ -49,7 +49,11 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 				cerr << "sequencesToMap error in reading sequences";
 			}
 			//			cerr <<s;
-			Sequence *seq = new Sequence(s);
+			Sequence *seq;
+			if (usePaired) {
+				seq = new Sequence(s);
+			} else
+				seq = new Sequence(auxilary_lmer);
 			//			cerr <<"seq = "<<seq->size(); //Magic
 			//			cerr <<endl; //Magic
 			VertexPrototype *v = new VertexPrototype();
@@ -57,7 +61,8 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 			v->start = 0;
 			v->finish = 0;
 			v->used = 0;
-			prototypes.pb(v);
+			if (usePaired || !i)
+				prototypes.pb(v);
 		}
 		res.insert(mp(kmer, prototypes));
 	}
@@ -86,21 +91,28 @@ void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 				cerr << "seq " << (iter->se)[i]->lower->Str() << endl;
 				//	cerr<<(iter->se)[i]->lower->Str()<<" "<<(iter->se)[i]->lower->size();
 				ll finishKmer = kmer & (~((ll) 3 << (2 * (k - 1))));
-				Sequence *finishSeq = new Sequence( (iter->se)[i]->lower->Subseq(1,(iter->se)[i]->lower->size()));;
+				Sequence *finishSeq = new Sequence(
+						(iter->se)[i]->lower->Subseq(1,
+								(iter->se)[i]->lower->size()));
+				;
 				ll startKmer = kmer >> 2;
-				Sequence *startSeq = new Sequence( (iter->se)[i]->lower->Subseq(0,(iter->se)[i]->lower->size()-1));
-				cerr<<"expandDown "<<finishKmer<<" "<<finishSeq->Str()<<endl;
-				length += expandDown(edges, verts, finishKmer, finishSeq);
-				int toVert = storeVertex(verts, finishKmer, finishSeq);
+				Sequence *startSeq = new Sequence(
+						(iter->se)[i]->lower->Subseq(0,
+								(iter->se)[i]->lower->size() - 1));
+				cerr << "expandDown " << finishKmer << " " << finishSeq->Str()
+						<< endl;
+				length += expandRight(edges, verts, finishKmer, finishSeq);
+				int toVert = storeVertex(g, verts, finishKmer, finishSeq);
 
-				if (toVert == VertexCount - 1)
-					g.addVertex(toVert, decompress(finishKmer, k - 1));
+				//				if (toVert == VertexCount - 1)
+	//			g.addVertex(toVert, decompress(finishKmer, k - 1));
 
-				cerr<<"expandUp "<<startKmer<<" "<<startSeq->Str()<<endl;
-				length += expandUp(edges, verts, startKmer, startSeq);
-				int fromVert = storeVertex(verts, startKmer, startSeq);
-				if (fromVert == VertexCount - 1)
-					g.addVertex(fromVert, decompress(startKmer, k - 1));
+				cerr << "expandUp " << startKmer << " " << startSeq->Str()
+						<< endl;
+				length += expandLeft(edges, verts, startKmer, startSeq);
+				int fromVert = storeVertex(g, verts, startKmer, startSeq);
+//				if (fromVert == VertexCount - 1)
+	//				g.addVertex(fromVert, decompress(startKmer, k - 1));
 				cerr << "from " << fromVert << " to " << toVert << " length "
 						<< length << endl;
 				if (fromVert - toVert != 1)
@@ -112,77 +124,77 @@ void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 
 			}
 		}
-//		edges.erase(iter++);
+		//		edges.erase(iter++);
 		iter++;
 	}
 	g.output();
 	forn(i, VertexCount) {
-		cerr << i << " +" << inD[i] << " -" << outD[i]
-				<< endl;
+		cerr << i << " +" << inD[i] << " -" << outD[i] << endl;
 	}
 }
 
-int expandDown(edgesMap &edges, vertecesMap &verts, ll &finishKmer,
+int expandRight(edgesMap &edges, vertecesMap &verts, ll &finishKmer,
 		Sequence* &finishSeq) {
 	int length = 0;
-
 	vertecesMap::iterator iter;
 	while (1) {
-		cerr<<"expandDown: process "<<decompress(finishKmer,k-1)<<" "<<finishSeq->Str()<<endl;
+		cerr << "expandDown: process " << decompress(finishKmer, k - 1) << " "
+				<< finishSeq->Str() << endl;
 		iter = verts.find(finishKmer);
 		if (iter != verts.end()) {
 
 			int size = iter->second.size();
-//			cerr<<"expandDown Such kMer exist in vertices"<<size<< " find "<< finishSeq->Str()<< endl;
+			//			cerr<<"expandRight Such kMer exist in vertices"<<size<< " find "<< finishSeq->Str()<< endl;
 			forn(i, size) {
-//				cerr<<"posible "<<((iter->se)[i]->lower)->Str()<<endl;
-				if (finishSeq->similar(*((iter->se)[i]->lower), l-1, 0)){
-					cerr<<"expandDown: vertex presented "<<(iter->se)[i]->start<<endl;
+				//				cerr<<"posible "<<((iter->se)[i]->lower)->Str()<<endl;
+				if (finishSeq->similar(*((iter->se)[i]->lower), l - 1, 0)) {
+					cerr << "expandDown: vertex presented "
+							<< (iter->se)[i]->start << endl;
 					return length;
 				}
 			}
 		}
 
-		if (!CheckUnuqueWayUp(edges, finishKmer, finishSeq)){
-			cerr<<"expandDown: way up not unique"<<endl;
+		if (!CheckUnuqueWayUp(edges, finishKmer, finishSeq)) {
+			cerr << "expandDown: way up not unique" << endl;
 			return length;
 		}
 
-		if (!GoUnuqueWayDown(edges, finishKmer, finishSeq)){
-			cerr<<"expandDown: way down not unique"<<endl;
+		if (!goUniqueWayRight(edges, finishKmer, finishSeq)) {
+			cerr << "expandDown: way down not unique" << endl;
 			return length;
-		}
-		else
+		} else
 			length++;
 	}
 }
 
-int expandUp(edgesMap &edges, vertecesMap &verts, ll &startKmer,
+int expandLeft(edgesMap &edges, vertecesMap &verts, ll &startKmer,
 		Sequence* &startSeq) {
 	int length = 0;
 
 	while (1) {
-		cerr<<"expandUp: process "<<decompress(startKmer,k-1)<<" "<<startSeq->Str()<<endl;
+		cerr << "expandUp: process " << decompress(startKmer, k - 1) << " "
+				<< startSeq->Str() << endl;
 		vertecesMap::iterator iter = verts.find(startKmer);
 		if (iter != verts.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (startSeq->similar(*((iter->se)[i]->lower), l-1, 0)){
-					cerr<<"expandUp: vertex presented "<<(iter->se)[i]->start<<endl;
+				if (startSeq->similar(*((iter->se)[i]->lower), l - 1, 0)) {
+					cerr << "expandUp: vertex presented "
+							<< (iter->se)[i]->start << endl;
 
 					return length;
 				}
 			}
 		}
-		if (!CheckUnuqueWayDown(edges, startKmer, startSeq)){
-			cerr<<"expandUp: way down not unique"<<endl;
+		if (!checkUniqueWayRight(edges, startKmer, startSeq)) {
+			cerr << "expandUp: way down not unique" << endl;
 			return length;
 		}
-		if (!GoUnuqueWayUp(edges, startKmer, startSeq)){
-			cerr<<"expandUp: way up not unique"<<endl;
+		if (!goUnuqueWayLeft(edges, startKmer, startSeq)) {
+			cerr << "expandUp: way up not unique" << endl;
 			return length;
-		}
-		else
+		} else
 			length++;
 	}
 }
@@ -195,22 +207,23 @@ int CheckUnuqueWayUp(edgesMap &edges, ll finishKmer, Sequence *finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*(iter->se)[i]->lower, l-1, -1)) {
+				if (finishSeq->similar(*(iter->se)[i]->lower, l - 1, -1)) {
 					count++;
-//					cerr<<"posible way up "<<count<<" "<<decompress(tmpKmer,k) <<" "<<((iter->se)[i]->lower)->Str()<< " similar for "<<finishSeq->Str()<<" with dir -1 and param "<<l-1<< endl;
-					if (count > 1){
-						cerr<<"count > 1"<<endl;
+					//					cerr<<"posible way up "<<count<<" "<<decompress(tmpKmer,k) <<" "<<((iter->se)[i]->lower)->Str()<< " similar for "<<finishSeq->Str()<<" with dir -1 and param "<<l-1<< endl;
+					if (count > 1) {
+						cerr << "count > 1" << endl;
 						return 0;
 					}
 				}
 			}
 		}
 	}
-	if (count==0) cerr<<"CheckUnuqueWayUp count = 0"<<endl;
+	if (count == 0)
+		cerr << "CheckUnuqueWayUp count = 0" << endl;
 	return count;
 }
 
-int GoUnuqueWayUp(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
+int goUnuqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	int count = 0;
 	Sequence *PossibleSequence;
 	ll PossibleKmer;
@@ -222,7 +235,7 @@ int GoUnuqueWayUp(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), l-1, -1)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), l - 1, -1)) {
 					count++;
 					if (count > 1)
 						return 0;
@@ -237,15 +250,17 @@ int GoUnuqueWayUp(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	}
 	if (count == 1) {
 		finishKmer = PossibleKmer >> 2;
-		finishSeq = new Sequence((PossibleIter->se)[seqIndex]->lower->Subseq(0,(PossibleIter->se)[seqIndex]->lower->size()-1));//PossibleSequence;
+		finishSeq = new Sequence(
+				(PossibleIter->se)[seqIndex]->lower->Subseq(0,
+						(PossibleIter->se)[seqIndex]->lower->size() - 1));//PossibleSequence;
 		(PossibleIter->se)[seqIndex]->used = 1;
 		return 1;
 	}
-	cerr<<"GoUnuqueWayUp: no way up exist"<<endl;
+	cerr << "GoUnuqueWayUp: no way up exist" << endl;
 	return 0;
 }
 
-int GoUnuqueWayDown(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
+int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	int count = 0;
 	Sequence *PossibleSequence;
 	ll PossibleKmer;
@@ -257,7 +272,7 @@ int GoUnuqueWayDown(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), l-1, 1)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), l - 1, 1)) {
 					if ((iter->se)[i]->used)
 						return 0;
 					count++;
@@ -274,17 +289,19 @@ int GoUnuqueWayDown(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	}
 	if (count == 1) {
 		finishKmer = (PossibleKmer) & (~(((ll) 3) << (2 * (k - 1))));
-		finishSeq = new Sequence((PossibleIter->se)[seqIndex]->lower->Subseq(1,(PossibleIter->se)[seqIndex]->lower->size()));//PossibleSequence;
-//		finishSeq = PossibleSequence;
+		finishSeq = new Sequence(
+				(PossibleIter->se)[seqIndex]->lower->Subseq(1,
+						(PossibleIter->se)[seqIndex]->lower->size()));//PossibleSequence;
+		//		finishSeq = PossibleSequence;
 		(PossibleIter->se)[seqIndex]->used = 1;
 		return 1;
-	} else{
-		cerr<<"GoUnuqueWayDown: no way down exist"<<endl;
+	} else {
+		cerr << "goUnuqueWayRight: no way right exist" << endl;
 		return 0;
 	}
 }
 
-int CheckUnuqueWayDown(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
+int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
 	int count = 0;
 	for (int Nucl = 0; Nucl < 4; Nucl++) {
 		ll tmpKmer = (ll) Nucl | (finishKmer << (2));
@@ -292,10 +309,10 @@ int CheckUnuqueWayDown(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), l-1, 1)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), l - 1, 1)) {
 					count++;
-					if (count > 1){
-						cerr<<"count > 1"<<endl;
+					if (count > 1) {
+						cerr << "count > 1" << endl;
 						return 0;
 					}
 				}
@@ -305,16 +322,17 @@ int CheckUnuqueWayDown(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
 	if (count == 1) {
 		return 1;
 	} else {
-		cerr<<"CheckUnuqueWayDown count = 0"<<endl;
+		cerr << "checkUnuqueWayLeft count = 0" << endl;
 		return 0;
 	}
 }
-int storeVertex(vertecesMap &verts, ll newKmer, Sequence* newSeq) {
+int storeVertex(gvis::GraphScheme<int> &g, vertecesMap &verts, ll newKmer,
+		Sequence* newSeq) {
 	vertecesMap::iterator iter = verts.find(newKmer);
 	if (iter != verts.end()) {
 		int size = iter->second.size();
 		forn(i, size) {
-			if (newSeq->similar(*((iter->se)[i]->lower), l-1,0))
+			if (newSeq->similar(*((iter->se)[i]->lower), l - 1, 0))
 				return (iter->se)[i]->start;
 		}
 		VertexPrototype *v = new VertexPrototype();
@@ -325,6 +343,7 @@ int storeVertex(vertecesMap &verts, ll newKmer, Sequence* newSeq) {
 		VertexCount++;
 
 		(iter->se).pb(v);
+		g.addVertex(VertexCount - 1, decompress(newKmer, k - 1));
 		return VertexCount - 1;
 	} else {
 		vector<VertexPrototype *> prototypes;
@@ -336,6 +355,7 @@ int storeVertex(vertecesMap &verts, ll newKmer, Sequence* newSeq) {
 		VertexCount++;
 		prototypes.pb(v);
 		verts.insert(mp(newKmer, prototypes));
+		g.addVertex(VertexCount - 1, decompress(newKmer, k - 1));
 		return VertexCount - 1;
 	}
 

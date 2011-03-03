@@ -8,15 +8,15 @@
 using namespace paired_assembler;
 
 void constructGraph();
-edgesMap sequencesToMap(string parsed_k_sequence);
+edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired = true);
 void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges);
-int expandDown(edgesMap &edges, vertecesMap &verts, ll &finishKmer, Sequence* &finishSeq);
-int expandUp(edgesMap &edges, vertecesMap &verts, ll &startKmer, Sequence* &startSeq);
+int expandRight(edgesMap &edges, vertecesMap &verts, ll &finishKmer, Sequence* &finishSeq);
+int expandLeft(edgesMap &edges, vertecesMap &verts, ll &startKmer, Sequence* &startSeq);
 int CheckUnuqueWayUp(edgesMap &edges, ll finishKmer, Sequence *finishSeq);
-int GoUnuqueWayUp(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq);
-int CheckUnuqueWayDown(edgesMap &edges, ll finishKmer, Sequence *finishSeq);
-int GoUnuqueWayDown(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq);
-int storeVertex(vertecesMap &verts, ll newKmer, Sequence* newSeq);
+int goUnuqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq);
+int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence *finishSeq);
+int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq);
+int storeVertex(gvis::GraphScheme<int> &g, vertecesMap &verts, ll newKmer, Sequence* newSeq);
 
 
 
