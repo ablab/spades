@@ -2,7 +2,7 @@
 
 namespace gvis {
 
-void startGraphRecord(ostream &out, string &name) {
+void startGraphRecord(ostream &out, const string &name) {
 	out << "digraph " << name << " {" << endl;
 }
 

@@ -1,5 +1,5 @@
 /*
- * log.hpp
+ * Compile time log(n,base) function for use in templates
  *
  *  Created on: 02.03.2011
  *      Author: vyahhi

@@ -22,7 +22,7 @@ void Sequence::init(const std::string &s) { //accepts both 0123 and ACGT
 	from_ = 0;
 	size_ = s.size();
 	rtl_ = false;
-	vector<Seq<4> > inner_data((size_ + 3) >> 2);
+	std::vector<Seq<4> > inner_data((size_ + 3) >> 2);
 	for (size_t i = 0; i < size_ / 4; ++i) {
 		inner_data[i] = Seq<4> (s.substr(i * 4, 4).c_str());
 	}
@@ -154,7 +154,7 @@ int Sequence::similar(const Sequence &t, int k, char directed) const {
 // TODO might be opposite to correct
 Sequence Sequence::operator+(const Sequence &s) const {
 	int total = size_ + s.size_;
-	vector<Seq<4> > bytes((total + 3) >> 2);
+	std::vector<Seq<4> > bytes((total + 3) >> 2);
 	for (size_t i = 0; i < size_; ++i) {
 		bytes[i / 4] = (bytes[i / 4] << operator [](i)); // TODO :-) use <<=
 	}

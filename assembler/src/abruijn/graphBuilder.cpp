@@ -4,17 +4,16 @@
 #include "hash.hpp"
 #include "graphBuilder.hpp"
 #include "parameters.hpp"
-#include "../parser.hpp"
-#include "../matepair.hpp"
+#include "../ireadstream.hpp"
 #include <ext/hash_map>
-#include "../logging.hpp";
+#include "../logging.hpp"
 
 LOGGER("a.graphBuilder")
 
 using namespace std;
 using namespace __gnu_cxx;
 
-typedef hash_map< Sequence, CVertex, HashSym<Sequence> > seq2ver;
+typedef hash_map< Sequence, CVertex, HashSym<Sequence>, EqSym<Sequence> > seq2ver;
 seq2ver kmers_map;
 CGraph graph;
 
@@ -29,7 +28,6 @@ void processRead(Seq<MPSIZE> r) {
 	int pos2 = -1;
 	for (int i = 0; i + K <= MPSIZE; i++) {
 		HashSym<Sequence> hh;
-		//Sequence* kmer = &);
 		unsigned int h = hh(Sequence(r).Subseq(i, i + K));
 		if (h < h1) {
 			h2 = h1;
@@ -60,17 +58,15 @@ void processRead(Seq<MPSIZE> r) {
 }
 
 CGraph GraphBuilder::build() {
-	DEBUG("Building");
-	FASTQParser<MPSIZE>* fqp = new FASTQParser<MPSIZE>();
-	fqp->open(filenames.first, filenames.second);
-	while (!fqp->eof()) {
-		MatePair<MPSIZE> r = fqp->read(); // is it copy? :)
-		if (r.hasN()) { // have 'N' in reads
-			continue;
-		}
-		processRead(r.seq1());
-		processRead(r.seq2());
-		if (r.id() == 10) {
+	INFO("Building graph...");
+	ireadstream<MPSIZE,2> irs(filenames.first.c_str(), filenames.second.c_str());
+	int cnt = 0;
+	mate_read<MPSIZE>::type mp;
+	while (!irs.eof()) {
+		irs >> mp;
+		processRead(mp[0]);
+		processRead(mp[1]);
+		if (cnt++ == 10) {
 			break;
 		}
 	}
