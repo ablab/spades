@@ -131,9 +131,27 @@ public:
 	 * add one nucl to the left, shifting seq to the right
 	 */
 	Seq<size_> operator>>(char c) {	// TODO: optimize, better name
-		assert(is_nucl(c));
-		std::string s = c + this->str().substr(0, size_ - 1);
+        std::string s = c + this->str().substr(0, size_ - 1);
 		return Seq<size_>(s.c_str());
+		assert(is_nucl(c));
+        Seq<size_, T> res(data_);
+        if (data_size_ != 0) { // unless empty sequence
+                T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
+                T rm = res.data_[0] & (3 << lastnuclshift_);
+                res.data_[0] <<= 2;
+                res.data_[0] |= denucl(c);
+                if (data_size_ >= 2) { // if we have at least 2 elements in data
+                        size_t i = 0;
+                        do {
+                                ++i;
+                                T new_rm = res.data_[i] & (3 << (Tbits - 2));
+                                res.data_[i] <<= 2;
+                                res.data_[i] |= rm >> (Tbits - 2);
+                                rm = new_rm;
+                        } while (i < data_size_);
+                }
+        }
+        return res;
 	}
 
 	bool operator==(Seq<size_, T> s) const {	// TODO: optimize
