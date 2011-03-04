@@ -29,7 +29,7 @@ const string error_log = "data/error.log";
 const string parsed_l_mers = "data/lmers_const_d.txt";
 const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
-const int k = 25;
+const int k = 31;
 const int l = 31;
 const int readLength = 100;
 const int maxSeqLength = 200;

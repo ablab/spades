@@ -5,6 +5,7 @@
 #include "../graphVisualizer.hpp"
 
 int VertexCount;
+char EdgeStr[1000000];
 
 using namespace paired_assembler;
 
@@ -54,8 +55,6 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 				seq = new Sequence(s);
 			} else
 				seq = new Sequence(auxilary_lmer);
-			//			cerr <<"seq = "<<seq->size(); //Magic
-			//			cerr <<endl; //Magic
 			VertexPrototype *v = new VertexPrototype();
 			v->lower = seq;
 			v->start = 0;
@@ -71,7 +70,8 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 
 void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 	int inD[MAX_VERT_NUMBER], outD[MAX_VERT_NUMBER];
-	char Buffer[20];
+	char Buffer[2000];
+	int EdgeId = 0;
 	vertecesMap verts;
 	cerr << "Start createVertices " << edges.size() << endl;
 	forn(i,MAX_VERT_NUMBER) {
@@ -82,49 +82,42 @@ void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
 		int size = iter->second.size();
 		ll kmer = iter->fi;
-		//cerr << "kmer " << kmer << " " << decompress(kmer, k) << " Pairs "		<< size << endl;
 		forn(i, size) {
 			if ((!(iter->se)[i]->used)) {
 				int length = 1;
+				sprintf(EdgeStr + 500000, "%s", decompress(kmer, k).c_str());
 				(iter->se)[i]->used = 1;
-				cerr << "seq " << (iter->se)[i]->lower->Str() << endl;
-				//	cerr<<(iter->se)[i]->lower->Str()<<" "<<(iter->se)[i]->lower->size();
 				ll finishKmer = kmer & (~((ll) 3 << (2 * (k - 1))));
 				Sequence *finishSeq = new Sequence(
 						(iter->se)[i]->lower->Subseq(1,
 								(iter->se)[i]->lower->size()));
-				;
 				ll startKmer = kmer >> 2;
-				Sequence *startSeq = new Sequence(
-						(iter->se)[i]->lower->Subseq(0,
-								(iter->se)[i]->lower->size() - 1));
-				cerr << "expandRight " << finishKmer << " " << finishSeq->Str()
-						<< endl;
+				Sequence *startSeq = new Sequence((iter->se)[i]->lower->Subseq(
+						0, (iter->se)[i]->lower->size() - 1));
 				length += expandRight(edges, verts, finishKmer, finishSeq);
 				int toVert = storeVertex(g, verts, finishKmer, finishSeq);
 
-				//				if (toVert == VertexCount - 1)
-	//			g.addVertex(toVert, decompress(finishKmer, k - 1));
-
-				cerr << "expandLeft " << startKmer << " " << startSeq->Str()
-						<< endl;
-				length += expandLeft(edges, verts, startKmer, startSeq);
+				int toleft = expandLeft(edges, verts, startKmer, startSeq);
+				length += toleft;
 				int fromVert = storeVertex(g, verts, startKmer, startSeq);
-//				if (fromVert == VertexCount - 1)
-	//				g.addVertex(fromVert, decompress(startKmer, k - 1));
-				cerr << "from " << fromVert << " to " << toVert << " length "
-						<< length << endl;
-				if (fromVert - toVert != 1)
-					cerr << "GOOD" << endl;
-				sprintf(Buffer, "%d", length);
+				cerr << EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
+						+ 500000 - toleft)) << endl;
+				if ((length < 300)&&(length>k-1)) {
+					EdgeStr[500000 - toleft+length]=0;
+					sprintf(Buffer, "\"%d: (%d) %s\"", EdgeId, length, EdgeStr
+							+ 500000 - toleft+k-1);
+				} else {
+					sprintf(Buffer, "\"%d: (%d)\"", EdgeId, length);
+				}
+				EdgeId++;
 				g.addEdge(fromVert, toVert, Buffer);
 				outD[fromVert]++;
 				inD[toVert]++;
 
 			}
 		}
-		//		edges.erase(iter++);
-		iter++;
+		(iter->second).clear();
+		edges.erase(iter++);
 	}
 	g.output();
 	forn(i, VertexCount) {
@@ -137,33 +130,28 @@ int expandRight(edgesMap &edges, vertecesMap &verts, ll &finishKmer,
 	int length = 0;
 	vertecesMap::iterator iter;
 	while (1) {
-		cerr << "expandRight: process " << decompress(finishKmer, k - 1) << " "
-				<< finishSeq->Str() << endl;
 		iter = verts.find(finishKmer);
 		if (iter != verts.end()) {
 
 			int size = iter->second.size();
-			//			cerr<<"expandRight Such kMer exist in vertices"<<size<< " find "<< finishSeq->Str()<< endl;
 			forn(i, size) {
-				//				cerr<<"posible "<<((iter->se)[i]->lower)->Str()<<endl;
 				if (finishSeq->similar(*((iter->se)[i]->lower), l - 1, 0)) {
-					cerr << "expandRight: vertex presented "
-							<< (iter->se)[i]->start << endl;
 					return length;
 				}
 			}
 		}
 
 		if (!checkUniqueWayLeft(edges, finishKmer, finishSeq)) {
-			cerr << "expandRight: way Left not unique" << endl;
 			return length;
 		}
 
 		if (!goUniqueWayRight(edges, finishKmer, finishSeq)) {
-			cerr << "expandRight: way Right not unique" << endl;
 			return length;
-		} else
+		} else {
+			EdgeStr[500000 + k + length] = nucl(finishKmer & 3);
 			length++;
+			EdgeStr[500000 + k + length] = 0;
+		}
 	}
 }
 
@@ -172,29 +160,25 @@ int expandLeft(edgesMap &edges, vertecesMap &verts, ll &startKmer,
 	int length = 0;
 
 	while (1) {
-		cerr << "expandLeft: process " << decompress(startKmer, k - 1) << " "
-				<< startSeq->Str() << endl;
 		vertecesMap::iterator iter = verts.find(startKmer);
 		if (iter != verts.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
 				if (startSeq->similar(*((iter->se)[i]->lower), l - 1, 0)) {
-					cerr << "expandLeft: vertex presented "
-							<< (iter->se)[i]->start << endl;
 
 					return length;
 				}
 			}
 		}
 		if (!checkUniqueWayRight(edges, startKmer, startSeq)) {
-			cerr << "expandLeft: way Right not unique" << endl;
 			return length;
 		}
 		if (!goUniqueWayLeft(edges, startKmer, startSeq)) {
-			cerr << "expandLeft: way Left not unique" << endl;
 			return length;
-		} else
+		} else {
 			length++;
+			EdgeStr[500000 - length] = nucl((startKmer >> ((k - 2) * 2)) & 3);
+		}
 	}
 }
 
@@ -208,25 +192,21 @@ int checkUniqueWayLeft(edgesMap &edges, ll finishKmer, Sequence *finishSeq) {
 			forn(i, size) {
 				if (finishSeq->similar(*(iter->se)[i]->lower, l - 1, -1)) {
 					count++;
-					//					cerr<<"posible way Left "<<count<<" "<<decompress(tmpKmer,k) <<" "<<((iter->se)[i]->lower)->Str()<< " similar for "<<finishSeq->Str()<<" with dir -1 and param "<<l-1<< endl;
 					if (count > 1) {
-						cerr << "count > 1" << endl;
 						return 0;
 					}
 				}
 			}
 		}
 	}
-	if (count == 0)
-		cerr << "checkUniqueWayLeft count = 0" << endl;
 	return count;
 }
 
 int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	int count = 0;
 	Sequence *PossibleSequence;
-	ll PossibleKmer;
-	int seqIndex;
+	ll PossibleKmer = 0;
+	int seqIndex = 0;
 	edgesMap::iterator PossibleIter;
 	for (int Nucl = 0; Nucl < 4; Nucl++) {
 		ll tmpKmer = (ll) Nucl << (2 * (k - 1)) | finishKmer;
@@ -249,21 +229,19 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	}
 	if (count == 1) {
 		finishKmer = PossibleKmer >> 2;
-		finishSeq = new Sequence(
-				(PossibleIter->se)[seqIndex]->lower->Subseq(0,
-						(PossibleIter->se)[seqIndex]->lower->size() - 1));//PossibleSequence;
+		finishSeq = new Sequence((PossibleIter->se)[seqIndex]->lower->Subseq(0,
+				(PossibleIter->se)[seqIndex]->lower->size() - 1));//PossibleSequence;
 		(PossibleIter->se)[seqIndex]->used = 1;
 		return 1;
 	}
-	cerr << "goUniqueWayLeft: no way Left exist" << endl;
 	return 0;
 }
 
 int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	int count = 0;
 	Sequence *PossibleSequence;
-	ll PossibleKmer;
-	int seqIndex;
+	ll PossibleKmer = 0;
+	int seqIndex = 0;
 	edgesMap::iterator PossibleIter;
 	for (int Nucl = 0; Nucl < 4; Nucl++) {
 		ll tmpKmer = (ll) Nucl | (finishKmer << (2));
@@ -288,14 +266,11 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	}
 	if (count == 1) {
 		finishKmer = (PossibleKmer) & (~(((ll) 3) << (2 * (k - 1))));
-		finishSeq = new Sequence(
-				(PossibleIter->se)[seqIndex]->lower->Subseq(1,
-						(PossibleIter->se)[seqIndex]->lower->size()));//PossibleSequence;
-		//		finishSeq = PossibleSequence;
+		finishSeq = new Sequence((PossibleIter->se)[seqIndex]->lower->Subseq(1,
+				(PossibleIter->se)[seqIndex]->lower->size()));//PossibleSequence;
 		(PossibleIter->se)[seqIndex]->used = 1;
 		return 1;
 	} else {
-		cerr << "goUniqueWayRight: no way right exist" << endl;
 		return 0;
 	}
 }
@@ -311,7 +286,6 @@ int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
 				if (finishSeq->similar(*((iter->se)[i]->lower), l - 1, 1)) {
 					count++;
 					if (count > 1) {
-						cerr << "count > 1" << endl;
 						return 0;
 					}
 				}
@@ -321,7 +295,6 @@ int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
 	if (count == 1) {
 		return 1;
 	} else {
-		cerr << "checkUniqueWayLeft count = 0" << endl;
 		return 0;
 	}
 }
