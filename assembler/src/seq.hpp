@@ -26,6 +26,9 @@ private:
 	const static size_t data_size_ = (size_ + Tnucl - 1) >> Tnucl_bits;
 	std::array<T,data_size_> data_; // invariant: all nucleotides >= size_ are 'A's
 
+	/*
+	 * gets ACGT-string and initialize data_ array on the object
+	 */
 	void init(const char* s) {
 		T data = 0;
 		size_t cnt = 0;
@@ -62,9 +65,9 @@ public:
 		init(s);
 	}
 
-	/*Seq(const Seq<size_,T> &seq): data_(seq.data_) {
+	Seq(const Seq<size_,T> &seq): data_(seq.data_) {
 		//does memcpy faster?
-	}*/
+	}
 
 	template <typename S> Seq(const S& s, size_t offset = 0) { // TODO: optimize
 		char a[size_];
