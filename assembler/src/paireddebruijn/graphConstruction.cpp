@@ -12,7 +12,7 @@ void constructGraph() {
 	//	readsToPairs(parsed_reads, parsed_k_l_mers);
 	//	pairsToSequences(parsed_k_l_mers, parsed_k_sequence);
 	cerr << "Read edges" << endl;
-	edgesMap edges = sequencesToMap(parsed_k_sequence, false);
+	edgesMap edges = sequencesToMap(parsed_k_sequence, true);
 	cerr << "go to graph" << endl;
 	gvis::GraphScheme<int> g("Paired");
 	cerr << "Start vertices" << endl;

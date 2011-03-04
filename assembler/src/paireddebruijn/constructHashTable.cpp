@@ -280,16 +280,15 @@ void readsToPairs(string inputFile, string outputFile) {
 	table.clear();
 }
 //#define OUTPUT_DECOMPRESSED
-int pairsToSequences(string inputFile, string outputFile) {
+int pairsToLmers(string inputFile, string outputFile) {
 	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
-#ifdef OUTPUT_DECOMPRESSED
-	FILE* decompressed = fopen("data/decompressed.out", "w" );
-#endif
-	int ok = 1;
-	ll lmers[MAXLMERSIZE];
-	ll kmer;
-	int lsize;
 	FILE* outFile = fopen(outputFile.c_str(), "w");
+
+	int ok = 1;
+	ll kmer; int lsize;
+	ll lmers[MAXLMERSIZE];
+
+	set<ll> lset;
 	int count = 0;
 	while (1) {
 		count++;
@@ -307,9 +306,62 @@ int pairsToSequences(string inputFile, string outputFile) {
 		}
 
 		forn(i, lsize) {
-
 			if (fscanf(inFile, "%lld", &lmers[i]) != 1) {
-				cerr << "Error in main1 reading l-mers";
+				cerr << "Error in pairsToSequences reading l-mers";
+				return -1;
+			}
+		}
+		sort(lmers, lmers + lsize);
+		forn(i, lsize) {
+			lset.insert(lmers[i]);
+		}
+	}
+	int lsetsize = lset.size();
+	fprintf(outFile, "%d\n", lsetsize);
+	for(set<ll>::iterator i = lset.begin(); i != lset.end(); i++ ) {
+		fprintf(outFile, "%lld ", *i);
+	}
+	return 0;
+}
+
+int pairsToSequences(string inputFile,string  lmerFile, string outputFile) {
+	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
+#ifdef OUTPUT_DECOMPRESSED
+	FILE* decompressed = fopen("data/decompressed.out", "w" );
+#endif
+	int ok = 1;
+	ll lmersize, tmp;
+	FILE* lFile = fopen(lmerFile.c_str(), "r");
+	fscanf(lFile, "%lld", &lmersize);
+	set<ll> lset;
+	forn(i, lmersize) {
+		fscanf(lFile, "%lld", &tmp);
+		lset.insert(tmp);
+	}
+	ll lmers[MAXLMERSIZE];
+	ll kmer;
+	int lsize;
+	FILE* outFile = fopen(outputFile.c_str(), "w");
+	int count = 0;
+
+	while (1) {
+		count++;
+		ok = fscanf(inFile, "%lld %d", &kmer, &lsize);
+		if (ok != 2) {
+			if (ok != 0)
+				cerr<< "error in reads.";
+			else
+				cerr << "Finished!!";
+			break;
+		}
+		if (lsize > MAXLMERSIZE) {
+			cerr << "TOO BIIIIG";
+			return -2;
+		}
+
+		forn(i, lsize) {
+			if (fscanf(inFile, "%lld", &lmers[i]) != 1) {
+				cerr << "Error in pairsToSequences reading l-mers";
 				return -1;
 			}
 		}
