@@ -8,12 +8,12 @@ using namespace std;
 
 namespace gvis {
 
-void startGraphRecord(ostream &out, string &name);
+void startGraphRecord(ostream &out, const string &name);
 
 void endGraphRecord(ostream &out);
 
 template<typename tVertex>
-void recordVertex(ostream &out, tVertex vertexId, string &vertexLabel) {
+void recordVertex(ostream &out, tVertex vertexId, const string &vertexLabel) {
 	if (vertexLabel.length() != 0)
 		out << vertexId << " [label" << "=" << vertexLabel << "]" << endl;
 	else
@@ -21,10 +21,10 @@ void recordVertex(ostream &out, tVertex vertexId, string &vertexLabel) {
 }
 
 template<typename tVertex>
-void recordEdge(ostream &out, tVertex fromId, tVertex toId, string &edgeLabel) {
+void recordEdge(ostream &out, tVertex fromId, tVertex toId, const string &edgeLabel) {
 	out << fromId << "->" << toId;
 	if (edgeLabel.length() != 0)
-		out << "[label=" << edgeLabel << "]";
+		out << " [label=" << edgeLabel << "]";
 	out << endl;
 }
 
@@ -48,7 +48,7 @@ void recordEdges(ostream &out,
 }
 
 template<typename tVertex>
-void outputGraph(ostream &out, string &graphName,
+void outputGraph(ostream &out, const string &graphName,
 		vector<pair<tVertex, string> > &vertices,
 		vector<pair<pair<tVertex, tVertex> , string> > &edges) {
 	startGraphRecord(out, graphName);
@@ -69,26 +69,27 @@ public:
 
 template<typename tVertex>
 class OnlineGraphPrinter: public IGraphPrinter<tVertex> {
-	OnlineGraphPrinter(string name, ostream &out) {
+public:
+	OnlineGraphPrinter(const string name, ostream &out) {
 		IGraphPrinter<tVertex>::_out = &out;
-		startGraphRecord(IGraphPrinter<tVertex>::_out, name);
+		startGraphRecord(*IGraphPrinter<tVertex>::_out, name);
 	}
 
-	OnlineGraphPrinter(string name) {
+	OnlineGraphPrinter(const string name) {
 		IGraphPrinter<tVertex>::_out = &cout;
-		startGraphRecord(IGraphPrinter<tVertex>::_out, name);
+		startGraphRecord(*IGraphPrinter<tVertex>::_out, name);
 	}
 
 	void addVertex(tVertex vertexId, const string &label) {
-		recordVertex(IGraphPrinter<tVertex>::_out, vertexId, label);
+		recordVertex<tVertex>(*IGraphPrinter<tVertex>::_out, vertexId, label);
 	}
 
 	void addEdge(tVertex fromId, tVertex toId, const string &label) {
-		recordEdge(IGraphPrinter<tVertex>::_out, fromId, toId, label);
+		recordEdge<tVertex>(*IGraphPrinter<tVertex>::_out, fromId, toId, label);
 	}
 
 	void output() {
-		endGraphRecord(IGraphPrinter<tVertex>::_out);
+		endGraphRecord(*IGraphPrinter<tVertex>::_out);
 	}
 };
 
