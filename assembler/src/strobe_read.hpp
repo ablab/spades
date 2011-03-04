@@ -30,7 +30,7 @@ public:
 		data_[i] = Seq<size,T>(s);
 	}
 
-	Seq<size,T> get(int i) {
+	Seq<size,T> operator[](size_t i) {
 		return data_[i];
 	}
 

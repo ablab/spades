@@ -64,8 +64,8 @@ CGraph GraphBuilder::build() {
 	mate_read<MPSIZE>::type mp;
 	while (!irs.eof()) {
 		irs >> mp;
-		processRead(mp.get(1));
-		processRead(mp.get(2));
+		processRead(mp[0]);
+		processRead(mp[1]);
 		if (cnt++ == 10) {
 			break;
 		}
