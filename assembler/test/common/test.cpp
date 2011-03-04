@@ -6,6 +6,8 @@
 #include "nuclTest.hpp"
 #include "ifaststreamTest.hpp"
 #include "qualTest.hpp"
+#include "onlineGraphVisualizerTest.hpp"
+#include "offlineGraphVisualizerTest.hpp"
 
 void runSuite() {
 	 cute::suite s;
@@ -15,6 +17,8 @@ void runSuite() {
 	 s += NuclSuite();
 	 s += IFastaStreamSuite();
 	 s += IReadStreamSuite();
+	 s += onlineGraphVisualizerSuite();
+	 s += offlineGraphVisualizerSuite();
 	 cute::ide_listener lis;
 	 cute::makeRunner(lis)(s, "The Suite");
  }
