@@ -25,4 +25,5 @@ void runSuite() {
 
  int main() {
      runSuite();
+     return 0;
  }

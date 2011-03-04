@@ -59,7 +59,7 @@ bool Sequence::operator==(const Sequence &that) const {
 	}
 
 	for (size_t i = 0; i < size_; ++i) {
-		if (operator [](i) != that[i]) {
+		if (operator[](i) != that[i]) {
 			return false;
 
 		}
@@ -84,7 +84,6 @@ Sequence Sequence::Subseq(size_t from, size_t to) const {
 	}
 }
 //TODO: must be KMP or hashing instead of this shit
-
 int Sequence::find (const Sequence &t, int from) const{
 	for(size_t i = from; i <= size()- t.size(); i++) {
 		if (Subseq(i, i + t.size()) == t) {
@@ -165,9 +164,9 @@ Sequence Sequence::operator+(const Sequence &s) const {
 }
 
 std::string Sequence::Str() const {
-	std::string res = "";
+	std::string res(size_, '-');
 	for (size_t i = 0; i < size_; ++i) {
-		res += nucl(operator [](i));
+		res[i] = nucl(operator[](i));
 	}
 	return res;
 }
