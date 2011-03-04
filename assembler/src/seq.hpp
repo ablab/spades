@@ -38,6 +38,7 @@ private:
 		size_t cnt = 0;
 		int cur = 0;
 		for (size_t pos = 0; pos < size_ && *s != 0; ++pos, ++s) { // unsafe!
+			assert(is_nucl(*s));
 			data |= (denucl(*s) << cnt);
 			cnt += 2;
 			if (cnt == Tbits) {
@@ -82,6 +83,8 @@ public:
 	}
 
 	char operator[] (const size_t index) const { // 0123
+		assert(index >= 0);
+		assert(index < size_);
 		int ind = index >> Tnucl_bits;
 		return (data_[ind] >> ((index % Tnucl)*2)) & 3;
 	}
@@ -102,6 +105,7 @@ public:
 	 * add one nucl to the right, shifting seq to the left
 	 */
 	Seq<size_,T> operator<<(char c) const {
+		assert(is_nucl(c));
 		Seq<size_, T> res(data_);
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
@@ -127,6 +131,7 @@ public:
 	 * add one nucl to the left, shifting seq to the right
 	 */
 	Seq<size_> operator>>(char c) {	// TODO: optimize, better name
+		assert(is_nucl(c));
 		std::string s = c + this->str().substr(0, size_ - 1);
 		return Seq<size_>(s.c_str());
 	}
