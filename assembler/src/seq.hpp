@@ -47,6 +47,12 @@ private:
 
 	Seq(std::array<T,data_size_> data): data_(data) {};
 
+	void set(const size_t index, char c) {
+		data_[index >> Tnucl_bits] = ( data_[index >> Tnucl_bits]
+								   & ~((T)3 << ((index % Tnucl) << 1)) )
+								   | ((T)c << ((index % Tnucl) << 1));
+	}
+
 public:
 	Seq() {
 		std::fill(data_.begin(), data_.end(), 0); // fill with A-s
@@ -88,12 +94,18 @@ public:
 	 * reverse complement from the Seq
 	 */
 	Seq<size_,T> operator!() const { // TODO: optimize
-		std::string s = this->str();
-		std::reverse(s.begin(), s.end());
-		std::transform(s.begin(), s.end(), s.begin(), denucl);
-		std::transform(s.begin(), s.end(), s.begin(), complement);
-		std::transform(s.begin(), s.end(), s.begin(), nucl);
-		return Seq<size_,T>(s.c_str());
+		Seq<size_, T> res(data_);
+		for(size_t i = 0; i < (size_ >> 1); ++i) {
+			T front = complement(res[i]);
+			T end = complement(res[size_ - 1 - i]);
+			res.set(i, end);
+			res.set(size_ - 1 - i, front);
+		}
+		if ((size_ & 1) == 1) {
+			res.set(size_ >> 1, complement(res[size_ >> 1]));
+		}
+		// can be made without complement calls, but with xor on all bytes afterwards.
+		return res;
 	}
 
 	/**
