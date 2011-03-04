@@ -23,6 +23,7 @@ int main(int argc, char *argv[]) {
 
 	// read all 'read's
 
+
 	ireadstream<100,2,int> irs("./data/test/s_6_1.fastq.gz", "./data/test/s_6_2.fastq.gz");
 	vector<mate_read<100,int>::type> *v = irs.readAll();
 	irs.close();
