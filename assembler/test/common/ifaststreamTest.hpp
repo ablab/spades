@@ -14,7 +14,7 @@ void TestIFastaStreamNoFile() {
 }
 
 void TestIFastaStreamSingleRead() {
-	ifaststream ifs("./data/test/s_6_1.fastq.gz");
+	ifaststream ifs("./test/data/s_6_1.fastq.gz");
 	string name, seq, qual;
 	ifs >> name >> seq >> qual;
 	ASSERT_EQUAL("EAS20_8_6_1_2_768/1", name);
@@ -27,7 +27,7 @@ void TestIFastaStreamSingleRead() {
 }
 
 void TestIFastaStreamFull() {
-	ifaststream ifs("./data/test/s_6_1.fastq.gz");
+	ifaststream ifs("./test/data/s_6_1.fastq.gz");
 	string name, seq, qual;
 	while (!ifs.eof()) {
 		ifs >> name >> seq >> qual;
