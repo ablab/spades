@@ -68,14 +68,20 @@ public:
 		init(s);
 	}
 
-	Seq(const Seq<size_,T> &seq): data_(seq.data_) {
-	 //does memcpy faster?
+	Seq(std::string s) {
+		init(s.c_str());
 	}
 
-	template <typename S> Seq(const S& s, size_t offset = 0) { // TODO: optimize
+	Seq(const Seq<size_,T> &seq): data_(seq.data_) {
+		//does memcpy faster?
+	}
+
+	template <typename S>
+	Seq(const S& s, size_t offset = 0) { // gets any ACGT sequence // TODO: optimize
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
-			a[i] = nucl(s[offset + i]);
+			assert(is_nucl(s[offset + i]));
+			a[i] = s[offset + i];
 		}
 		a[size_] = 0;
 		init(a);
@@ -117,7 +123,7 @@ public:
 	 */
 	Seq<size_, T> operator<<(char c) const {
 		//todo talk with vyahhi about this
-		assert(is_nucl(c) || c < 4);
+		assert(is_nucl(c));
 		Seq<size_, T> res(data_);
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;

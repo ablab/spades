@@ -27,7 +27,6 @@ int main(int argc, char *argv[]) {
 
 	// read all 'read's
 
-
 	ireadstream<100,2,int> irs(filename1, filename2);
 	vector<mate_read<100,int>::type> *v = irs.readAll();
 	irs.close();
