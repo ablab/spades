@@ -63,6 +63,13 @@ void TestSeqFromType() {
 	ASSERT_EQUAL("GTACG", Seq<5>(s, 2).str());
 }
 
+void TestComplex() {
+	Sequence s1("ACAAA");
+	Sequence s2("CAAAC");
+	ASSERT_EQUAL((!(Seq<4>(!s1))).str(), Seq<4>(s2).str());
+	ASSERT_EQUAL(!(Seq<4>(!s1)), Seq<4>(s2));
+}
+
 void TestSeqFromCharArray() {
 	std::string s = "ACGTACGTAC";
 	ASSERT_EQUAL(Seq<10>(s.c_str()).str(), "ACGTACGTAC");
@@ -88,6 +95,7 @@ cute::suite SeqSuite(){
 	s.push_back(CUTE(TestSeqShiftRight));
 	s.push_back(CUTE(TestSeqHeadAndTail));
 	s.push_back(CUTE(TestSeqReverseComplement));
+	s.push_back(CUTE(TestComplex));
 	return s;
 }
 

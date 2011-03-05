@@ -73,7 +73,7 @@ public:
 	}
 
 	template <typename S> Seq(const S& s, size_t offset = 0) { // TODO: optimize
-		char a[size_];
+		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
 			a[i] = nucl(s[offset + i]);
 		}

@@ -206,7 +206,7 @@ void Graph::DeleteVertex(Vertex* v) {
 
 bool Graph::AreLinkable(Vertex* v1, Vertex* v2) {
 	return KMinusOneMer(v2 -> nucls()) == !KMinusOneMer(
-			v1 -> complement() -> nucls());
+			!(v1 -> nucls()));
 }
 
 void Graph::LinkVertices(Vertex* anc, Vertex* desc) {
