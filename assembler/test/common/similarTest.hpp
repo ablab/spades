@@ -30,8 +30,9 @@ void TestRSimilarInclude() {
 	ASSERT_EQUAL(false, s[1]->rightSimilar(sA5C, 1));
 	ASSERT_EQUAL(true, sG5T.rightSimilar(*s[3], 1));
 	ASSERT_EQUAL(false, s[3]->rightSimilar(sG5T, 1));
-	for (int i = 0; i < s.size(); i++)
+	for (size_t i = 0; i < s.size(); i++) {
 		delete s[i];
+	}
 }
 
 void TestRShortIntersection() {
@@ -59,9 +60,11 @@ void TestLSimilarInclude() {
 	s.push_back(new Sequence("TTTTTT"));
 	Sequence sA5C("AAAAAACCCCCC");
 	Sequence sG5T("GGGGGGTTTTTT");
-	for (int i = 0; i < 4; i++)
-		for (int j = 0; j < 4; j++)
+	for (size_t i = 0; i < 4; i++) {
+		for (size_t j = 0; j < 4; j++) {
 			ASSERT_EQUAL(i == j, s[i]->leftSimilar(*s[j], 1));
+		}
+	}
 	ASSERT_EQUAL(true, sA5C.leftSimilar(*s[0], 1));
 	ASSERT_EQUAL(false, s[0]->leftSimilar(sA5C, 1));
 	ASSERT_EQUAL(true, sG5T.leftSimilar(*s[2], 1));
@@ -70,14 +73,15 @@ void TestLSimilarInclude() {
 	ASSERT_EQUAL(true, s[1]->leftSimilar(sA5C, 1));
 	ASSERT_EQUAL(false, sG5T.leftSimilar(*s[3], 1));
 	ASSERT_EQUAL(true, s[3]->leftSimilar(sG5T, 1));
-	for (int i = 0; i < s.size(); i++)
+	for (size_t i = 0; i < s.size(); i++) {
 		delete s[i];
+	}
 }
 
 void TestLShortIntersection() {
 	Sequence sGA3("GGGGGGAAA");
 	Sequence sA3C("AAACCCCCC");
-	for (int i = 1; i < 7; i++) {
+	for (size_t i = 1; i < 7; i++) {
 		ASSERT_EQUAL(i <= 3, sA3C.leftSimilar(sGA3, i));
 	}
 }

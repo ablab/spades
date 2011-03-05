@@ -1,5 +1,5 @@
 /*
- * Sequence class with compile-time size (immutable)
+ *
  *
  *  Created on: 20.02.2011
  *      Author: vyahhi
@@ -15,18 +15,46 @@
 #include "nucl.hpp"
 #include "log.hpp"
 
+using namespace std;
+
+/**
+ * Immutable ACGT-sequence with compile-time size.
+ * It compress sequence to array of Ts (default: char).
+ */
 template<size_t size_, typename T = char> // max number of nucleotides, type for storage
 class Seq {
 private:
-	// compile-time static constants.
+	/**
+	 * Number of bits in type T (e.g. 8 for char)
+	 */
 	const static size_t Tbits = sizeof(T) << 3; // ex. 8: 2^8 = 256 or 16
-	const static size_t Tnucl = Tbits >> 1; // ex. 4: 8/2 = 4 or 16/2 = 8
-	const static size_t Tnucl_bits = log_<Tnucl,2>::value; // ex. 2: 2^2 = 4 or 3: 2^3 = 8
-	const static size_t data_size_ = (size_ + Tnucl - 1) >> Tnucl_bits;
-	std::array<T,data_size_> data_; // invariant: all nucleotides >= size_ are 'A's
 
-	/*
-	 * gets ACGT-string and initialize data_ array on the object
+	/**
+	 * Number of nucleotides that can be stored in one type T (e.g. 4 for char)
+	 */
+	const static size_t Tnucl = Tbits >> 1; // ex. 4: 8/2 = 4 or 16/2 = 8
+
+	/**
+	 * Number of bits in Tnucl (e.g. 2 for char). Useful for shifts instead of divisions.
+	 */
+	const static size_t Tnucl_bits = log_<Tnucl,2>::value;
+
+	/**
+	 * Number of Ts which required to store all sequence.
+	 */
+	const static size_t data_size_ = (size_ + Tnucl - 1) >> Tnucl_bits;
+
+	/**
+	 * Inner representation of sequence: array of Ts with length = data_size_.
+	 *
+	 * Invariant: all nucleotides >= size_ are 'A's (useful for comparison)
+	 */
+	std::array<T,data_size_> data_;
+
+	/**
+	 * Initialize data_ array of this object with C-string
+	 *
+	 * @param s C-string (ACGT chars only), strlen(s) = size_
 	 */
 	void init(const char* s) {
 		T data = 0;
@@ -34,7 +62,7 @@ private:
 		int cur = 0;
 		for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
 			assert(is_nucl(*s));
-			data = data | ((T)denucl(*s) << cnt);
+			data = data | ((T)dignucl(*s) << cnt);
 			cnt += 2;
 			if (cnt == Tbits) {
 				this->data_[cur++] = data;
@@ -42,68 +70,83 @@ private:
 				data = 0;
 			}
 		}
-		assert(*s == 0);//c string always ends on 0
 		if (cnt != 0) {
 			this->data_[cur++] = data;
 		}
+		assert(*s == 0); // C-string always ends on 0
 	}
 
-	Seq(std::array<T, data_size_> data) :
-		data_(data) {
+	/**
+	 * Constructor from std::array
+	 */
+	Seq(std::array<T, data_size_> data) : data_(data) {
+		;
 	}
-	;
 
-	void set(const size_t index, char c) {
-		data_[index >> Tnucl_bits] = ( data_[index >> Tnucl_bits]
-								   & ~((T)3 << ((index % Tnucl) << 1)) )
-								   | ((T)c << ((index % Tnucl) << 1));
+	/**
+	 * Sets i-th symbol of Seq with 0123-char
+	 */
+	void set(const size_t i, char c) {
+		data_[i >> Tnucl_bits] = ( data_[i >> Tnucl_bits]
+							   & ~((T)3 << ((i % Tnucl) << 1)) )
+							   | ((T)c << ((i % Tnucl) << 1));
 	}
 
 public:
+
+	/*
+	 * Default constructor, fills Seq with A's
+	 */
 	Seq() {
-		std::fill(data_.begin(), data_.end(), 0); // fill with A-s
+		std::fill(data_.begin(), data_.end(), 0);
 	}
 
-	Seq(const char* s) {
-		init(s);
-	}
-
-	Seq(std::string s) {
-		init(s.c_str());
-	}
-
+	/*
+	 * Copy constructor
+	 */
 	Seq(const Seq<size_,T> &seq): data_(seq.data_) {
-		//does memcpy faster?
+		;
 	}
 
+	/**
+	 * Ultimate constructor from ACGT0123-string.
+	 *
+	 * @param s Any object with operator[], which returns 0123 chars
+	 * @param offset Offset when this sequence starts
+	 */
 	template <typename S>
-	Seq(const S& s, size_t offset = 0) { // gets any ACGT sequence // TODO: optimize
+	Seq(const S& s, size_t offset = 0) {
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
-			assert(is_nucl(s[offset + i]));
-			a[i] = s[offset + i];
+			char c = s[offset + i];
+			assert(is_nucl(c) || is_dignucl(c));
+			if (is_dignucl(c)) {
+				c = nucl(c);
+			}
+			a[i] = c;
 		}
 		a[size_] = 0;
 		init(a);
 	}
 
-	template<size_t _bigger_size, T>
-	Seq(const Seq<_bigger_size, T>& seq) {// TODO: optimize (Kolya)
-		assert(_bigger_size > size_);
-		init(seq.str().substr(0, size_).c_str());
-	}
-
-	char operator[](const size_t index) const { // 0123
-		assert(index >= 0);
-		assert(index < size_);
-		T ind = index;
-		return (data_[ind >> Tnucl_bits] >> ((ind % Tnucl) << 1)) & 3;
-	}
-
-	/*
-	 * reverse complement from the Seq
+	/**
+	 * Get i-th symbol of Seq.
+	 *
+	 * @param i Index of the symbol (0 <= i < size_)
+	 * @return 0123-char on position i
 	 */
-	Seq<size_,T> operator!() const { // TODO: optimize
+	char operator[](const size_t i) const {
+		assert(i >= 0);
+		assert(i < size_);
+		return (data_[i >> Tnucl_bits] >> ((i % Tnucl) << 1)) & 3;
+	}
+
+	/**
+	 * Reverse complement.
+	 *
+	 * @return Reverse complement Seq.
+	 */
+	Seq<size_,T> operator!() const {
 		Seq<size_, T> res(data_);
 		for(size_t i = 0; i < (size_ >> 1); ++i) {
 			T front = complement(res[i]);
@@ -119,16 +162,18 @@ public:
 	}
 
 	/**
-	 * add one nucl to the right, shifting seq to the left
+	 * Shift left
+	 *
+	 * @param c New 0123 char which should be added to the right.
+	 * @return Shifted (to the left) sequence with 'c' char on the right.
 	 */
 	Seq<size_, T> operator<<(char c) const {
-		//todo talk with vyahhi about this
-		assert(is_nucl(c));
+		assert(is_dignucl(c));
 		Seq<size_, T> res(data_);
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
 			T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
-			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2) | ((T)(is_nucl(c) ? denucl(c) : c) << lastnuclshift_);
+			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2) | ((T)(c) << lastnuclshift_);
 			if (data_size_ >= 2) { // if we have at least 2 elements in data
 				size_t i = data_size_ - 1;
 				do {
@@ -143,12 +188,15 @@ public:
 	}
 
 	/**
-	 * add one nucl to the left, shifting seq to the right
+	 * Shift right
+	 *
+	 * @param c New 0123 char which should be added to the left.
+	 * @return Shifted (to the right) sequence with 'c' char on the left.
 	 */
-	Seq<size_,T> operator>>(char c) {	// TODO: better name
-		assert(is_nucl(c));
+	Seq<size_,T> operator>>(char c) {
+		assert(is_dignucl(c));
         Seq<size_, T> res(data_);
-		T rm = denucl(c);
+		T rm = c;
 		for (size_t i = 0; i < data_size_; ++i) {
 			T new_rm = (res.data_[i] >> (Tbits - 2)) & 3;
 			res.data_[i] = (res.data_[i] << 2) | rm;
@@ -161,12 +209,16 @@ public:
         return res;
 	}
 
-	bool operator==(const Seq<size_, T> s) const {	// TODO: optimize
+	bool operator==(const Seq<size_, T> s) const {
 		return s.data_ == data_;
 		//return this->equal_to()(s);
 	}
 
-	// string representation of Seq - only for debug and output purposes
+	/**
+	 * String representation of this Seq
+	 *
+	 * @return ACGT-string of length size_
+	 */
 	std::string str() const {
 		std::string res(size_, '-');
 		for (size_t i = 0; i < size_; ++i) {
@@ -203,59 +255,46 @@ public:
 		}
 	};
 
-	template<int size2, typename T2 = char>
-	Seq<size2, T2> head() { // TODO: optimize (Kolya)
-		std::string s = str();
-		return Seq<size2, T2> (s.substr(0, size2).c_str());
-	}
 
-	template<int size2, typename T2 = char>
-	Seq<size2, T2> tail() const { // TODO: optimize (Kolya)
-		std::string s = str();
-		return Seq<size2, T2> (s.substr(size_ - size2, size2).c_str());
-	}
 
 };
 
 // *****************************************
 // LEGACY CODE
 
-/*template <typename T2>
- Seq(const T2& t, size_t offset = 0) {
- char a[size_];
- for (size_t i = 0; i < size_; ++i) {
- a[i] = t[offset + i];
- }
- init(a);
- }*/
+/*
+	template<size_t _bigger_size, T>
+	Seq(const Seq<_bigger_size, T>& seq) {
+		assert(_bigger_size > size_);
+		init(seq.str().substr(0, size_).c_str());
+	}
 
-//	// add nucleotide to the right
-//	Seq<_size> shift_right(char c) const { // char should be 0123
-//		assert(c <= 3);
-//		Seq<_size> res = *this; // copy constructor
-//		c <<= (((4-(_size%4))%4)*2); // omg >.<
-//		for (int i = _byteslen - 1; i >= 0; --i) { // don't make it size_t :)
-//			char rm = (res._bytes[i] >> 6) & 3;
-//			res._bytes[i] <<= 2;
-//			//res._bytes[i] &= 252;
-//			res._bytes[i] |= c;
-//			c = rm;
-//		}
-//		return res;
-//	}
-//
-//	// add nucleotide to the left
-//	Seq<_size> shift_left(char c) const { // char should be 0123
-//		Seq<_size> res = *this; // copy constructor
-//		// TODO: clear last nucleotide
-//		for (size_t i = 0; i < _byteslen; ++i) {
-//			char rm = res._bytes[i] & 3;
-//			res._bytes[i] >>= 2;
-//			//res._bytes[i] &= 63;
-//			res._bytes[i] |= (c << 6);
-//			c = rm;
-//		}
-//		return res;
-//	}
+	template<int size2, typename T2 = char>
+	Seq<size2, T2> head() {
+		std::string s = str();
+		return Seq<size2, T2> (s.substr(0, size2).c_str());
+	}
+
+	template<int size2, typename T2 = char>
+	Seq<size2, T2> tail() const {
+		std::string s = str();
+		return Seq<size2, T2> (s.substr(size_ - size2, size2).c_str());
+	}
+
+	*/
+
+/*
+ * Constructor from ACGT C-string
+ */
+/*Seq(const char* s) {
+	init(s);
+}*/
+
+/*
+ * Constructor from ACGT std::string
+ */
+/*Seq(std::string s) {
+	init(s.c_str());
+}*/
 
 #endif /* SEQ_HPP_ */

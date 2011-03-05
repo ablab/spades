@@ -19,7 +19,7 @@ void runSuite() {
 	 s += QualSuite();
 	 s += NuclSuite();
 	 s += IFastaStreamSuite();
-	 //s += IReadStreamSuite();
+	 s += IReadStreamSuite();
 	 s += onlineGraphVisualizerSuite();
 	 s += offlineGraphVisualizerSuite();
 	 s += similarSuite();

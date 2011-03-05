@@ -13,10 +13,10 @@ void TestNucl() {
 	ASSERT_EQUAL('C', nucl(1));
 	ASSERT_EQUAL('G', nucl(2));
 	ASSERT_EQUAL('T', nucl(3));
-	ASSERT_EQUAL(0, denucl('A'));
-	ASSERT_EQUAL(1, denucl('C'));
-	ASSERT_EQUAL(2, denucl('G'));
-	ASSERT_EQUAL(3, denucl('T'));
+	ASSERT_EQUAL(0, dignucl('A'));
+	ASSERT_EQUAL(1, dignucl('C'));
+	ASSERT_EQUAL(2, dignucl('G'));
+	ASSERT_EQUAL(3, dignucl('T'));
 	ASSERT_EQUAL(3, complement(0));
 	ASSERT_EQUAL(2, complement(1));
 	ASSERT_EQUAL(1, complement(2));
