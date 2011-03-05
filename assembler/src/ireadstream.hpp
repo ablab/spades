@@ -23,6 +23,8 @@ template <int size, int cnt = 1, typename T = char> // size of reads in base pai
 class ireadstream {
 private:
 	vector<ifaststream*> ifs_;
+	bool eof_;
+	bool is_open_;
 public:
 	ireadstream(const char *filename, ...) {
 		va_list ap;
@@ -32,6 +34,8 @@ public:
 			filename = va_arg(ap, const char *);
 		}
 		va_end(ap);
+		is_open_ = true;
+		eof_ = false;
 		read_ahead();
 	}
 
@@ -45,6 +49,7 @@ public:
 				delete ifs_[i];
 				ifs_[i] = NULL;
 			}
+			is_open_ = false;
 		}
 	}
 
@@ -57,28 +62,30 @@ public:
 		return *this;
 	}
 
-	bool is_open() const {
-		for (size_t i = 0; i < cnt; ++i) {
+	inline bool is_open() const {
+		/*for (size_t i = 0; i < cnt; ++i) {
 			if (ifs_[i] == NULL || !ifs_[i]->is_open()) {
 				return false;
 			}
 		}
-		return true;
+		return true;*/
+		return is_open_;
 	}
 
-	bool eof() const {
-		for (size_t i = 0; i < cnt; ++i) {
+	inline bool eof() const {
+		/*for (size_t i = 0; i < cnt; ++i) {
 			if (ifs_[i] == NULL || ifs_[i]->eof()) {
 				return true;
 			}
 		}
-		return false;
+		return false;*/
+		return eof_;
 	}
 
 	vector<strobe_read<size,cnt,T>>* readAll() {
 		vector<strobe_read<size,cnt,T> > *v = new vector<strobe_read<size,cnt,T> >();
 		strobe_read<size,cnt,T> sr;
-		while (!eof()) {
+		while (!eof_) {
 			this->operator>>(sr);
 			v->push_back(sr);
 		}
@@ -88,13 +95,16 @@ public:
 private:
 	strobe_read<size,cnt,T> next_sr_;
 
-	void read_ahead() {
-		while (is_open() && !eof() && !read(next_sr_)) {
+	inline void read_ahead() {
+		if (!is_open_) {
+			return;
+		}
+		while (!eof() && !read(next_sr_)) {
 			;
 		}
 	}
 
-	bool read(strobe_read<size,cnt,T> &sr) {
+	inline bool read(strobe_read<size,cnt,T> &sr) {
 		if (!is_open() || eof()) {
 			return false;
 		}
@@ -106,6 +116,9 @@ private:
 				if (!is_nucl(seq[j])) {
 					valid = false;
 				}
+			}
+			if (ifs_[i]->eof()) {
+				eof_ = true;
 			}
 			if (valid) {
 				sr.put(i, seq);
