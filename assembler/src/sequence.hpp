@@ -57,6 +57,8 @@ public:
 	int find(const Sequence& t, int from = 0) const;
 	int similar(const Sequence &t, int k, char directed = 0) const;
 	std::string str() const;
+	int leftSimilar(const Sequence &t, int k) const;
+	int rightSimilar(const Sequence &t, int k) const;
 	size_t size() const;
 private:
 	Data* data_;

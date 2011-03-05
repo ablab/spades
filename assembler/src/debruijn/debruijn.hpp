@@ -28,7 +28,7 @@ private:
 		int in_edges[4];
 	};
 	typedef Seq<_size> key;
-	typedef DeBruijn::data value;
+	typedef data value;
 	//typedef google::sparse_hash_map<key, value,	typename key::hash, typename key::equal_to> hash_map;
 	typedef std::map<key, value, typename key::less> hash_map;
 	//typedef std::tr1::unordered_map<key, value,	typename key::hash, typename key::equal_to> hash_map;

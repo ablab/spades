@@ -9,6 +9,7 @@
 #include "qualTest.hpp"
 #include "onlineGraphVisualizerTest.hpp"
 #include "offlineGraphVisualizerTest.hpp"
+#include "similarTest.hpp"
 
 void runSuite() {
 	 cute::suite s;
@@ -21,10 +22,12 @@ void runSuite() {
 	 //s += IReadStreamSuite();
 	 s += onlineGraphVisualizerSuite();
 	 s += offlineGraphVisualizerSuite();
+	 s += similarSuite();
 	 cute::ide_listener lis;
 	 cute::makeRunner(lis)(s, "The Suite");
  }
 
  int main() {
      runSuite();
+     return 0;
  }

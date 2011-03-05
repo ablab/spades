@@ -1,18 +1,11 @@
 /*
- * seq.hpp
- *
- *  Created on: 21.02.2011
- *      Author: vyahhi
- */
-
-#ifndef SEQ_HPP_
-/*
- * Sequence class with compile-time size
+ * Sequence class with compile-time size (immutable)
  *
  *  Created on: 20.02.2011
  *      Author: vyahhi
  */
 
+#ifndef SEQ_HPP_
 #define SEQ_HPP_
 
 #include <string>
@@ -27,18 +20,21 @@ class Seq {
 private:
 	// compile-time static constants.
 	const static size_t Tbits = sizeof(T) << 3; // ex. 8: 2^8 = 256 or 16
-	const static size_t Tnucl = sizeof(T) << 2; // ex. 4: 8/2 = 4 or 16/2 = 8
-	const static size_t Tnucl_bits = log_<sizeof(T), 2>::value + 2; // ex. 2: 2^2 = 4 or 3: 2^3 = 8
+	const static size_t Tnucl = Tbits >> 1; // ex. 4: 8/2 = 4 or 16/2 = 8
+	const static size_t Tnucl_bits = log_<Tnucl,2>::value; // ex. 2: 2^2 = 4 or 3: 2^3 = 8
 	const static size_t data_size_ = (size_ + Tnucl - 1) >> Tnucl_bits;
-	std::array<T, data_size_> data_; // 0 bits overhead
+	std::array<T,data_size_> data_; // invariant: all nucleotides >= size_ are 'A's
 
+	/*
+	 * gets ACGT-string and initialize data_ array on the object
+	 */
 	void init(const char* s) {
 		T data = 0;
 		size_t cnt = 0;
 		int cur = 0;
 		for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
 			assert(is_nucl(*s));
-			data |= (denucl(*s) << cnt);
+			data = data | ((T)denucl(*s) << cnt);
 			cnt += 2;
 			if (cnt == Tbits) {
 				this->data_[cur++] = data;
@@ -57,23 +53,27 @@ private:
 	}
 	;
 
+	void set(const size_t index, char c) {
+		data_[index >> Tnucl_bits] = ( data_[index >> Tnucl_bits]
+								   & ~((T)3 << ((index % Tnucl) << 1)) )
+								   | ((T)c << ((index % Tnucl) << 1));
+	}
+
 public:
 	Seq() {
-		std::fill(data_.begin(), data_.end(), 0);
+		std::fill(data_.begin(), data_.end(), 0); // fill with A-s
 	}
-	;
 
 	Seq(const char* s) {
 		init(s);
 	}
 
-	/*Seq(const Seq<size_,T> &seq): data_(seq.data_) {
+	Seq(const Seq<size_,T> &seq): data_(seq.data_) {
 	 //does memcpy faster?
-	 }*/
+	}
 
-	template<typename S>
-	Seq(const S& s, size_t offset = 0) {
-		char a[size_ + 1];
+	template <typename S> Seq(const S& s, size_t offset = 0) { // TODO: optimize
+		char a[size_];
 		for (size_t i = 0; i < size_; ++i) {
 			a[i] = nucl(s[offset + i]);
 		}
@@ -90,20 +90,26 @@ public:
 	char operator[](const size_t index) const { // 0123
 		assert(index >= 0);
 		assert(index < size_);
-		int ind = index >> Tnucl_bits;
-		return (data_[ind] >> ((index % Tnucl) * 2)) & 3;
+		T ind = index;
+		return (data_[ind >> Tnucl_bits] >> ((ind % Tnucl) << 1)) & 3;
 	}
 
 	/*
 	 * reverse complement from the Seq
 	 */
-	Seq<size_, T> operator!() const { // TODO: optimize
-		std::string s = this->str();
-		std::reverse(s.begin(), s.end());
-		std::transform(s.begin(), s.end(), s.begin(), denucl);
-		std::transform(s.begin(), s.end(), s.begin(), complement);
-		std::transform(s.begin(), s.end(), s.begin(), nucl);
-		return Seq<size_, T> (s.c_str());
+	Seq<size_,T> operator!() const { // TODO: optimize
+		Seq<size_, T> res(data_);
+		for(size_t i = 0; i < (size_ >> 1); ++i) {
+			T front = complement(res[i]);
+			T end = complement(res[size_ - 1 - i]);
+			res.set(i, end);
+			res.set(size_ - 1 - i, front);
+		}
+		if ((size_ & 1) == 1) {
+			res.set(size_ >> 1, complement(res[size_ >> 1]));
+		}
+		// can be made without complement calls, but with xor on all bytes afterwards.
+		return res;
 	}
 
 	/**
@@ -115,17 +121,14 @@ public:
 		Seq<size_, T> res(data_);
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
-			res.data_[data_size_ - 1] >>= 2;
 			T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
-			res.data_[data_size_ - 1] |= ((is_nucl(c) ? denucl(c) : c) << lastnuclshift_);
+			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2) | ((T)(is_nucl(c) ? denucl(c) : c) << lastnuclshift_);
 			if (data_size_ >= 2) { // if we have at least 2 elements in data
 				size_t i = data_size_ - 1;
 				do {
 					--i;
 					T new_rm = res.data_[i] & 3;
-					res.data_[i] >>= 2;
-					res.data_[i] &= (1 << (Tbits - 2)) - 1; // because if we shift negative, it fill with 1s :(
-					res.data_[i] |= rm << (Tbits - 2);
+					res.data_[i] = ( (res.data_[i] >> 2) & (((T)1 << (Tbits - 2)) - 1) ) | (rm << (Tbits - 2));	// we need & here because if we shift negative, it fill with ones :(
 					rm = new_rm;
 				} while (i != 0);
 			}
@@ -136,44 +139,37 @@ public:
 	/**
 	 * add one nucl to the left, shifting seq to the right
 	 */
-	Seq<size_> operator>>(char c) { // TODO: optimize, better name
-		std::string s = c + this->str().substr(0, size_ - 1);
-		return Seq<size_> (s.c_str());
+	Seq<size_,T> operator>>(char c) {	// TODO: better name
 		assert(is_nucl(c));
-		Seq<size_, T> res(data_);
-		if (data_size_ != 0) { // unless empty sequence
-			T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
-			T rm = res.data_[0] & (3 << lastnuclshift_);
-			res.data_[0] <<= 2;
-			res.data_[0] |= denucl(c);
-			if (data_size_ >= 2) { // if we have at least 2 elements in data
-				size_t i = 0;
-				do {
-					++i;
-					T new_rm = res.data_[i] & (3 << (Tbits - 2));
-					res.data_[i] <<= 2;
-					res.data_[i] |= rm >> (Tbits - 2);
-					rm = new_rm;
-				} while (i < data_size_);
-			}
+        Seq<size_, T> res(data_);
+		T rm = denucl(c);
+		for (size_t i = 0; i < data_size_; ++i) {
+			T new_rm = (res.data_[i] >> (Tbits - 2)) & 3;
+			res.data_[i] = (res.data_[i] << 2) | rm;
+			rm = new_rm;
 		}
-		return res;
+		if (size_ % Tnucl != 0) {
+			T lastnuclshift_ = ((size_  % Tnucl) + 1) << 1;
+			res.data_[data_size_ - 1] = res.data_[data_size_ - 1] & (((T)1 << lastnuclshift_) - 1);
+		}
+        return res;
 	}
 
-	bool operator==(Seq<size_, T> s) const { // TODO: optimize
-		return str() == s.str();
+	bool operator==(const Seq<size_, T> s) const {	// TODO: optimize
+		return s.data_ == data_;
+		//return this->equal_to()(s);
 	}
 
 	// string representation of Seq - only for debug and output purposes
 	std::string str() const {
 		std::string res(size_, '-');
 		for (size_t i = 0; i < size_; ++i) {
-			res[i] = nucl(this->operator[](i));
+			res[i] = nucl(operator[](i));
 		}
 		return res;
 	}
 
-	static int size() {
+	static size_t size() {
 		return size_;
 	}
 

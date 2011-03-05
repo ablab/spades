@@ -71,7 +71,7 @@ bool Sequence::operator==(const Sequence &that) const {
 	}
 
 	for (size_t i = 0; i < size_; ++i) {
-		if (operator [](i) != that[i]) {
+		if (operator[](i) != that[i]) {
 			return false;
 
 		}
@@ -117,52 +117,33 @@ int Sequence::find(const Sequence &t, int from) const {
  }*/
 //0 - undirected similarity, 1: t extends this to right, -1: this extends t
 int Sequence::similar(const Sequence &t, int k, char directed) const {
-	Sequence c(Subseq(0, k));
+	int result = 0;
+	if (directed != -1)
+		result |= rightSimilar(t, k);
+	if (directed != 1)
+		result |= leftSimilar(t, k);
+	return result;
+}
 
-	//	cerr << endl <<"trying 1" << endl;
+int Sequence::leftSimilar(const Sequence &t, int k) const {
+	return t.rightSimilar(*this, k);
+}
+
+int Sequence::rightSimilar(const Sequence &t, int k) const {
 	int tsz = t.size();
 	int sz = size();
-	int res;
-	int i;
-	int from = 0;
-	if (directed != -1) {
-		Sequence d(t.Subseq(0, k));
-		//	cerr << endl <<"trying 2" << endl;
-		while ((res = find(d, from)) != -1) {
-			//		cerr <<"Res=" << res <<endl;
-			from = res + 1;
-			for (i = k; i < sz - res; i++) {
-				if (i >= tsz)
-					break;
-				//			cerr << t[i] + '0'<< " ";
-				//			cerr << this->operator[](i + res) + '0' << endl;
-				if (t[i] != this->operator[](i + res)) {
-					break;
-				};
-			}
-			if (i == sz - res)
-				return 1;
+	Sequence d(t.Subseq(0, k));
+	for (int res = find(d, 0); res != -1; res = find(d, res + 1)) {
+		if (res + tsz < sz)
+			continue;
+		int i;
+		for (i = k; i + res < sz; i++) {
+			if (t[i] != this->operator[](i + res)) {
+				break;
+			};
 		}
-	}
-	from = 0;
-
-	if (directed != 1) {
-		while ((res = t.find(c, from)) != -1) {
-			//		cerr <<"Res=" << res <<endl;
-			from = res + 1;
-			for (i = k; i < tsz - res; i++) {
-				if (i >= sz)
-					break;
-				//			cerr << t[i +res]+'0'<< " ";
-				//			cerr << this->operator[](i) +'0'<< endl;
-				if (t[i + res] != this->operator[](i)) {
-					break;
-				}
-			}
-			if (i == tsz - res)
-				return 1;
-
-		}
+		if (i == sz - res)
+			return 1;
 	}
 	return 0;
 }
@@ -183,9 +164,9 @@ Sequence Sequence::operator+(const Sequence &s) const {
 }
 
 std::string Sequence::str() const {
-	std::string res = "";
+	std::string res(size_, '-');
 	for (size_t i = 0; i < size_; ++i) {
-		res += nucl(operator [](i));
+		res[i] = nucl(operator[](i));
 	}
 	return res;
 }
