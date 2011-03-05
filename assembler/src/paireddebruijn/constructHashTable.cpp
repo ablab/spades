@@ -64,6 +64,135 @@ void codeRead(char *read, char *code) {
 }
 
 //toDo
+downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
+	downSeqs res;
+	res.clear();
+	assert (max_shift <= 20);
+	int right[MAXLMERSIZE];
+	int left[MAXLMERSIZE];
+	int used[MAXLMERSIZE];
+	int shift_left[MAXLMERSIZE];
+	int shift_right[MAXLMERSIZE];
+	//-1 = no neighbor;
+	//-2 = more than 1 neighbor
+	forn(i, size) {
+		right[i] = -1;
+		left[i] = -1;
+		used[i] = 0;
+		shift_left[i] = 0;
+		shift_right[i] = 0;
+	}
+	ll diff;
+	forn(i, size) {
+		ll right_tmp = a[i];
+		ll left_tmp = a[i];
+		ll p2 = 0;
+		ll upper_bound;
+		forn(shift, max_shift) {
+		    right_tmp = ((right_tmp << 2) & lowerMask);
+		    p2 += 2;
+		    int cright = 0;
+		    forn(ii, (1<<p2)) {
+		    	if (lset.find(ii + right_tmp) != lset.end()) {
+		    		cright ++;
+		    	}
+		    	if (cright > 1) {
+					shift_right[i] = -2;
+					break;
+		    	}
+		    }
+		    upper_bound = ((ll) 1) << p2;
+		    if (cright == 0 || shift_right[i] || cright > 1) {
+		    	continue;
+		    } else {
+				forn(j, size) {
+					diff = a[j] - right_tmp;
+					if ((diff >= 0) && (diff < upper_bound) && (i != j)){
+						shift_right[i] = p2/2;
+						if (right[i] == -1) {
+							right[i] = j;
+						}
+						else
+							right[i]  = -2;
+					}
+				}
+		    }
+			left_tmp >>= 2;
+			cright = 0;
+			forn(ii, (1<<p2)) {
+				if (lset.find(ii<<(2* l - p2) + left_tmp) != lset.end()) {
+					cright ++;
+				}
+				if (cright > 1) {
+					shift_left[i] = -2;
+					break;
+				}
+			}
+			if (cright == 0 || shift_left[i] || cright > 1) {
+				continue;
+			} else {
+				forn(j, size) {
+					diff = a[j] - left_tmp;
+					if ((i != j) && ((diff & (lowerMask >> p2)) == 0)){
+						shift_left[i] = p2/2;
+						if (left[i] == -1)
+							left[i] = j;
+						else
+							left[i]  = -2;
+					}
+				}
+			}
+		}
+	}
+	int color = 1;
+	forn(i, size) {
+		int seqlength = l;
+		if (used[i] == 0) {
+			int ii = i;
+			used[i] = color;
+			while ((left[ii] >= 0) && (right[left[ii]] == ii) && (left[ii] != i)){
+				seqlength += shift_left[ii];
+				ii = left[ii];
+				used[ii] = color;
+			}
+			int leftend = ii;
+
+			ii = i;
+			while ((right[ii] >= 0) && (left[right[ii]] == ii) && (right[ii] != i)){
+				seqlength += shift_right[ii];
+				ii = right[ii];
+				used[ii] = color;
+				seqlength++;
+			}
+			int rightend = ii;
+			ii = leftend;
+			string s = decompress(a[leftend], l);
+			while (ii != rightend) {
+		//		cerr << "clusterizing....";
+				int p = shift_right[ii];
+				ll maxsd = ((ll) 3) << (2 * (p-1));
+				ii = right[ii];
+				forn(j, p)
+					s += nucl((a[ii] & maxsd) >> (2*(p-j-1)));
+			}
+			Sequence* tmpSeq = new Sequence(s);
+			res.pb(tmpSeq);
+			color++;
+		}
+	}
+	/*{
+		forn(i, size) {
+			cerr << left[i] << " ";
+		}
+		cerr << endl;
+		forn(i, size) {
+			cerr << right[i] << " ";
+		}
+	}*/
+//	assert(0);
+	return res;
+}
+
 downSeqs clusterize(ll* a, int size, int max_shift) {
 	downSeqs res;
 	res.clear();
@@ -324,21 +453,25 @@ int pairsToLmers(string inputFile, string outputFile) {
 	return 0;
 }
 
-int pairsToSequences(string inputFile,string  lmerFile, string outputFile) {
-	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
-#ifdef OUTPUT_DECOMPRESSED
-	FILE* decompressed = fopen("data/decompressed.out", "w" );
-#endif
-	int ok = 1;
-	ll lmersize, tmp;
-	FILE* lFile = fopen(lmerFile.c_str(), "r");
-	fscanf(lFile, "%lld", &lmersize);
-	set<ll> lset;
-	forn(i, lmersize) {
-		fscanf(lFile, "%lld", &tmp);
+void readLmersSet(string lmerFile, set<long long > & lset)
+{
+    ll lmersize, tmp;
+    FILE *lFile = fopen(lmerFile.c_str(), "r");
+    int ok = fscanf(lFile, "%lld", &lmersize);
+    if (ok != 1) cerr << "Error in Lmers reading";
+    forn(i, lmersize) {
+		ok = fscanf(lFile, "%lld", &tmp);
+		if (ok != 1) cerr << "Error in Lmers reading";
 		lset.insert(tmp);
 	}
-	ll lmers[MAXLMERSIZE];
+}
+
+int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
+	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
+    int ok = 1;
+    set<ll> lset;
+    readLmersSet(lmerFile, lset);
+    ll lmers[MAXLMERSIZE];
 	ll kmer;
 	int lsize;
 	FILE* outFile = fopen(outputFile.c_str(), "w");
