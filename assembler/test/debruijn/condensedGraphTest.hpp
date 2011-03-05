@@ -34,7 +34,7 @@ void TestVertex() {
 void TestSimpleThread() {
 	Graph g;
 	Read r("ACAAACCACC");//"ATGCATATGC");
-	DEBUG("Read is " + r.str())
+	DEBUG("Read is " + r.str());
 	g.ThreadRead(r);
 	//repeat for complication
 	g.ThreadRead(r);
