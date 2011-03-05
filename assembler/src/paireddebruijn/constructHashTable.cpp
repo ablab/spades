@@ -327,7 +327,7 @@ int pairsToSequences(string inputFile, string outputFile) {
 		}
 #endif
 		forn(i, clsize) {
-			outstring = clusters[i]->Str();
+			outstring = clusters[i]->str();
 			fprintf(outFile, "%s ",outstring.c_str());
 		}
 		fprintf(outFile, "\n");

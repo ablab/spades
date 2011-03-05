@@ -18,7 +18,15 @@ Sequence::Sequence(const Sequence &s) :
 	data_->IncRef();
 }
 
-void Sequence::init(const std::string &s) { //accepts both 0123 and ACGT
+//function for not breaking contract of Seq todo remove or make inner of init
+std::string Sequence::APadding(std::string s, size_t count) {
+	for (size_t i = 0; i < count; ++i) {
+		s += "A";
+	}
+	return s;
+}
+
+void Sequence::init(const std::string &s) { //accepts ACGT only
 	from_ = 0;
 	size_ = s.size();
 	rtl_ = false;
@@ -27,8 +35,10 @@ void Sequence::init(const std::string &s) { //accepts both 0123 and ACGT
 		inner_data[i] = Seq<4> (s.substr(i * 4, 4).c_str());
 	}
 	if (size_ & 3) {
-		inner_data[size_ / 4] = Seq<4> (
-				s.substr((size_ / 4) * 4, size_ & 3).c_str());
+		inner_data[size_ / 4]
+				= Seq<4> (
+						APadding(s.substr((size_ / 4) * 4, size_ & 3),
+								4 - (size_ & 3)).c_str());
 	}
 	data_ = new Data(inner_data);
 }
@@ -38,12 +48,14 @@ Sequence::Sequence(const std::string &s) {
 }
 
 Sequence::~Sequence() {
-	if (--data_->ref_ == 0) {
+	data_->DecRef();
+	if (data_->ref_ == 0) {
 		delete data_;
 	}
 }
 
 char Sequence::operator[](const size_t index) const {
+	assert(index < size_);
 	if (rtl_) {
 		int i = from_ + size_ - 1 - index;
 		return complement(data_->bytes_[i / 4][i % 4]);
@@ -83,10 +95,15 @@ Sequence Sequence::Subseq(size_t from, size_t to) const {
 		return Sequence(data_, from_ + from, to - from, false);
 	}
 }
-//TODO: must be KMP or hashing instead of this shit
 
-int Sequence::find (const Sequence &t, int from) const{
-	for(size_t i = from; i <= size()- t.size(); i++) {
+//including from, excluding to
+Sequence Sequence::Subseq(size_t from) const {
+	return Subseq(from, size_);
+}
+
+//TODO: must be KMP or hashing instead of this shit
+int Sequence::find(const Sequence &t, int from) const {
+	for (size_t i = from; i <= size() - t.size(); i++) {
 		if (Subseq(i, i + t.size()) == t) {
 			return i;
 		}
@@ -153,18 +170,19 @@ int Sequence::similar(const Sequence &t, int k, char directed) const {
 // TODO optimize
 // TODO might be opposite to correct
 Sequence Sequence::operator+(const Sequence &s) const {
-	int total = size_ + s.size_;
-	std::vector<Seq<4> > bytes((total + 3) >> 2);
-	for (size_t i = 0; i < size_; ++i) {
-		bytes[i / 4] = (bytes[i / 4] << operator [](i)); // TODO :-) use <<=
-	}
-	for (size_t i = 0, j = size_; i < s.size_; ++i, ++j) {
-		bytes[j / 4] = (bytes[j / 4]) << s[i];
-	}
-	return Sequence(new Data(bytes), 0, total, false);
+	return Sequence(str() + s.str());
+	//	int total = size_ + s.size_;
+	//	std::vector<Seq<4> > bytes((total + 3) >> 2);
+	//	for (size_t i = 0; i < size_; ++i) {
+	//		bytes[i / 4] = (bytes[i / 4] << operator [](i)); // TODO :-) use <<=
+	//	}
+	//	for (size_t i = 0, j = size_; i < s.size_; ++i, ++j) {
+	//		bytes[j / 4] = (bytes[j / 4]) << s[i];
+	//	}
+	//	return Sequence(new Data(bytes), 0, total, false);
 }
 
-std::string Sequence::Str() const {
+std::string Sequence::str() const {
 	std::string res = "";
 	for (size_t i = 0; i < size_; ++i) {
 		res += nucl(operator [](i));

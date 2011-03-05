@@ -1,6 +1,8 @@
 #include "cute.h"
 #include "seq.hpp"
+#include "sequence.hpp"
 #include "nucl.hpp"
+#include <string>
 
 void TestSeqSelector() {
 	ASSERT_EQUAL('G', nucl(Seq<10>("ACGTACGTAC")[2]));
@@ -25,6 +27,21 @@ void TestSeqHeadAndTail() {
 	ASSERT_EQUAL("ACGTACGTA", s.head<9>().str());
 }
 
+void TestSeqFromBiggerSeq() {
+	Seq<10> s("ACGTACGTAC");
+	ASSERT_EQUAL("ACGTA", Seq<5>(s).str());
+}
+
+void TestSeqFromType() {
+	Sequence s("ACGTACGTAC");
+	ASSERT_EQUAL("ACGTA", Seq<5>(s).str());
+	ASSERT_EQUAL("GTACG", Seq<5>(s, 2).str());
+}
+
+void TestSeqFromCharArray() {
+	std::string s = "ACGTACGTAC";
+	ASSERT_EQUAL(Seq<10>(s.c_str()).str(), "ACGTACGTAC");
+}
 
 void TestSeqReverseComplement() {
 	Seq<10> s("ACGTACGTAC");
@@ -36,6 +53,9 @@ cute::suite SeqSuite(){
 	s.push_back(CUTE(TestSeqSelector));
 	s.push_back(CUTE(TestSeqStr));
 	s.push_back(CUTE(TestSeqShifts));
+	s.push_back(CUTE(TestSeqFromCharArray));
+	s.push_back(CUTE(TestSeqFromBiggerSeq));
+	s.push_back(CUTE(TestSeqFromType));
 	s.push_back(CUTE(TestSeqHeadAndTail));
 	s.push_back(CUTE(TestSeqReverseComplement));
 	return s;

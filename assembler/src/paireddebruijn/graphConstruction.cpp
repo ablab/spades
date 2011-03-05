@@ -88,7 +88,7 @@ void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 			if ((!(iter->se)[i]->used)) {
 				int length = 1;
 				(iter->se)[i]->used = 1;
-				cerr << "seq " << (iter->se)[i]->lower->Str() << endl;
+				cerr << "seq " << (iter->se)[i]->lower->str() << endl;
 				//	cerr<<(iter->se)[i]->lower->Str()<<" "<<(iter->se)[i]->lower->size();
 				ll finishKmer = kmer & (~((ll) 3 << (2 * (k - 1))));
 				Sequence *finishSeq = new Sequence(
@@ -99,7 +99,7 @@ void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 				Sequence *startSeq = new Sequence(
 						(iter->se)[i]->lower->Subseq(0,
 								(iter->se)[i]->lower->size() - 1));
-				cerr << "expandDown " << finishKmer << " " << finishSeq->Str()
+				cerr << "expandDown " << finishKmer << " " << finishSeq->str()
 						<< endl;
 				length += expandRight(edges, verts, finishKmer, finishSeq);
 				int toVert = storeVertex(g, verts, finishKmer, finishSeq);
@@ -107,7 +107,7 @@ void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 				//				if (toVert == VertexCount - 1)
 	//			g.addVertex(toVert, decompress(finishKmer, k - 1));
 
-				cerr << "expandUp " << startKmer << " " << startSeq->Str()
+				cerr << "expandUp " << startKmer << " " << startSeq->str()
 						<< endl;
 				length += expandLeft(edges, verts, startKmer, startSeq);
 				int fromVert = storeVertex(g, verts, startKmer, startSeq);
@@ -139,7 +139,7 @@ int expandRight(edgesMap &edges, vertecesMap &verts, ll &finishKmer,
 	vertecesMap::iterator iter;
 	while (1) {
 		cerr << "expandDown: process " << decompress(finishKmer, k - 1) << " "
-				<< finishSeq->Str() << endl;
+				<< finishSeq->str() << endl;
 		iter = verts.find(finishKmer);
 		if (iter != verts.end()) {
 
@@ -174,7 +174,7 @@ int expandLeft(edgesMap &edges, vertecesMap &verts, ll &startKmer,
 
 	while (1) {
 		cerr << "expandUp: process " << decompress(startKmer, k - 1) << " "
-				<< startSeq->Str() << endl;
+				<< startSeq->str() << endl;
 		vertecesMap::iterator iter = verts.find(startKmer);
 		if (iter != verts.end()) {
 			int size = iter->second.size();

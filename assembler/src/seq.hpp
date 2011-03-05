@@ -16,28 +16,27 @@
 #define SEQ_HPP_
 
 #include <string>
-#include <iostream> // for debug
 #include <cassert>
 #include <array>
 #include <algorithm>
 #include "nucl.hpp"
 #include "log.hpp"
 
-template <size_t size_, typename T = char> // max number of nucleotides, type for storage
+template<size_t size_, typename T = char> // max number of nucleotides, type for storage
 class Seq {
 private:
 	// compile-time static constants.
 	const static size_t Tbits = sizeof(T) << 3; // ex. 8: 2^8 = 256 or 16
 	const static size_t Tnucl = sizeof(T) << 2; // ex. 4: 8/2 = 4 or 16/2 = 8
-	const static size_t Tnucl_bits = log_<sizeof(T),2>::value + 2; // ex. 2: 2^2 = 4 or 3: 2^3 = 8
+	const static size_t Tnucl_bits = log_<sizeof(T), 2>::value + 2; // ex. 2: 2^2 = 4 or 3: 2^3 = 8
 	const static size_t data_size_ = (size_ + Tnucl - 1) >> Tnucl_bits;
-	std::array<T,data_size_> data_; // 0 bits overhead
+	std::array<T, data_size_> data_; // 0 bits overhead
 
 	void init(const char* s) {
 		T data = 0;
 		size_t cnt = 0;
 		int cur = 0;
-		for (size_t pos = 0; pos < size_ && *s != 0; ++pos, ++s) { // unsafe!
+		for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
 			assert(is_nucl(*s));
 			data |= (denucl(*s) << cnt);
 			cnt += 2;
@@ -47,71 +46,78 @@ private:
 				data = 0;
 			}
 		}
+		assert(*s == 0);//c string always ends on 0
 		if (cnt != 0) {
 			this->data_[cur++] = data;
 		}
 	}
 
-	Seq(std::array<T,data_size_> data): data_(data) {};
+	Seq(std::array<T, data_size_> data) :
+		data_(data) {
+	}
+	;
 
 public:
 	Seq() {
 		std::fill(data_.begin(), data_.end(), 0);
-	};
+	}
+	;
 
 	Seq(const char* s) {
 		init(s);
 	}
 
 	/*Seq(const Seq<size_,T> &seq): data_(seq.data_) {
-		//does memcpy faster?
-	}*/
+	 //does memcpy faster?
+	 }*/
 
-	template <typename S> Seq(const S& s, size_t offset = 0) {
-		char a[size_];
+	template<typename S>
+	Seq(const S& s, size_t offset = 0) {
+		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
-			a[i] = s[offset + i];
+			a[i] = nucl(s[offset + i]);
 		}
+		a[size_] = 0;
 		init(a);
 	}
 
-	template <size_t _bigger_size, T>
-	Seq(const Seq<_bigger_size, T>& seq) {
+	template<size_t _bigger_size, T>
+	Seq(const Seq<_bigger_size, T>& seq) {// TODO: optimize (Kolya)
 		assert(_bigger_size > size_);
-		std::copy(data_, seq.data_, size_);
-		//memcpy(data_, seq._bytes, data_size_); faster?
+		init(seq.str().substr(0, size_).c_str());
 	}
 
-	char operator[] (const size_t index) const { // 0123
+	char operator[](const size_t index) const { // 0123
 		assert(index >= 0);
 		assert(index < size_);
 		int ind = index >> Tnucl_bits;
-		return (data_[ind] >> ((index % Tnucl)*2)) & 3;
+		return (data_[ind] >> ((index % Tnucl) * 2)) & 3;
 	}
 
 	/*
 	 * reverse complement from the Seq
 	 */
-	Seq<size_,T> operator!() const { // TODO: optimize
+	Seq<size_, T> operator!() const { // TODO: optimize
 		std::string s = this->str();
 		std::reverse(s.begin(), s.end());
 		std::transform(s.begin(), s.end(), s.begin(), denucl);
 		std::transform(s.begin(), s.end(), s.begin(), complement);
 		std::transform(s.begin(), s.end(), s.begin(), nucl);
-		return Seq<size_,T>(s.c_str());
+		return Seq<size_, T> (s.c_str());
 	}
 
 	/**
 	 * add one nucl to the right, shifting seq to the left
 	 */
-	Seq<size_,T> operator<<(char c) const {
-		assert(is_nucl(c));
+	Seq<size_, T> operator<<(char c) const {
+		//todo talk with vyahhi about this
+		assert(is_nucl(c) || c < 4);
 		Seq<size_, T> res(data_);
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
 			res.data_[data_size_ - 1] >>= 2;
 			T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
-			res.data_[data_size_ - 1] |= (denucl(c) << lastnuclshift_);
+			res.data_[data_size_ - 1] |= ((is_nucl(c) ? denucl(c) : c) << lastnuclshift_);
 			if (data_size_ >= 2) { // if we have at least 2 elements in data
 				size_t i = data_size_ - 1;
 				do {
@@ -130,31 +136,31 @@ public:
 	/**
 	 * add one nucl to the left, shifting seq to the right
 	 */
-	Seq<size_> operator>>(char c) {	// TODO: optimize, better name
-        std::string s = c + this->str().substr(0, size_ - 1);
-		return Seq<size_>(s.c_str());
+	Seq<size_> operator>>(char c) { // TODO: optimize, better name
+		std::string s = c + this->str().substr(0, size_ - 1);
+		return Seq<size_> (s.c_str());
 		assert(is_nucl(c));
-        Seq<size_, T> res(data_);
-        if (data_size_ != 0) { // unless empty sequence
-                T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
-                T rm = res.data_[0] & (3 << lastnuclshift_);
-                res.data_[0] <<= 2;
-                res.data_[0] |= denucl(c);
-                if (data_size_ >= 2) { // if we have at least 2 elements in data
-                        size_t i = 0;
-                        do {
-                                ++i;
-                                T new_rm = res.data_[i] & (3 << (Tbits - 2));
-                                res.data_[i] <<= 2;
-                                res.data_[i] |= rm >> (Tbits - 2);
-                                rm = new_rm;
-                        } while (i < data_size_);
-                }
-        }
-        return res;
+		Seq<size_, T> res(data_);
+		if (data_size_ != 0) { // unless empty sequence
+			T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
+			T rm = res.data_[0] & (3 << lastnuclshift_);
+			res.data_[0] <<= 2;
+			res.data_[0] |= denucl(c);
+			if (data_size_ >= 2) { // if we have at least 2 elements in data
+				size_t i = 0;
+				do {
+					++i;
+					T new_rm = res.data_[i] & (3 << (Tbits - 2));
+					res.data_[i] <<= 2;
+					res.data_[i] |= rm >> (Tbits - 2);
+					rm = new_rm;
+				} while (i < data_size_);
+			}
+		}
+		return res;
 	}
 
-	bool operator==(Seq<size_, T> s) const {	// TODO: optimize
+	bool operator==(Seq<size_, T> s) const { // TODO: optimize
 		return str() == s.str();
 	}
 
@@ -172,7 +178,7 @@ public:
 	}
 
 	struct hash {
-		 size_t operator() (const Seq<size_> &seq) const {
+		size_t operator()(const Seq<size_> &seq) const {
 			size_t h = 0;
 			for (size_t i = 0; i < data_size_; ++i) {
 				h += seq.data_[i];
@@ -182,29 +188,29 @@ public:
 	};
 
 	struct equal_to {
-		bool operator() (const Seq<size_> &l, const Seq<size_> &r) const {
+		bool operator()(const Seq<size_> &l, const Seq<size_> &r) const {
 			return l.data_ == r.data_;
 			//return 0 == memcmp(l._bytes.data(), r._bytes.data(), _byteslen);
 		}
 	};
 
 	struct less {
-		int operator() (const Seq<size_> &l, const Seq<size_> &r) const {
+		int operator()(const Seq<size_> &l, const Seq<size_> &r) const {
 			return l.data_ < r.data_;
 			//return 0 > memcmp(l._bytes.data(), r._bytes.data(), _byteslen);
 		}
 	};
 
-	template <int size2, typename T2 = char>
-	Seq<size2,T2> head() { // TODO: optimize (Kolya)
+	template<int size2, typename T2 = char>
+	Seq<size2, T2> head() { // TODO: optimize (Kolya)
 		std::string s = str();
-		return Seq<size2,T2>(s.substr(0, size2).c_str());
+		return Seq<size2, T2> (s.substr(0, size2).c_str());
 	}
 
-	template <int size2, typename T2 = char>
-	Seq<size2,T2> tail() const { // TODO: optimize (Kolya)
+	template<int size2, typename T2 = char>
+	Seq<size2, T2> tail() const { // TODO: optimize (Kolya)
 		std::string s = str();
-		return Seq<size2,T2>(s.substr(size_ - size2, size2).c_str());
+		return Seq<size2, T2> (s.substr(size_ - size2, size2).c_str());
 	}
 
 };
@@ -213,13 +219,13 @@ public:
 // LEGACY CODE
 
 /*template <typename T2>
-Seq(const T2& t, size_t offset = 0) {
-	char a[size_];
-	for (size_t i = 0; i < size_; ++i) {
-		a[i] = t[offset + i];
-	}
-	init(a);
-}*/
+ Seq(const T2& t, size_t offset = 0) {
+ char a[size_];
+ for (size_t i = 0; i < size_; ++i) {
+ a[i] = t[offset + i];
+ }
+ init(a);
+ }*/
 
 //	// add nucleotide to the right
 //	Seq<_size> shift_right(char c) const { // char should be 0123

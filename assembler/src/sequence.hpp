@@ -11,6 +11,9 @@
 #include "seq.hpp"
 #include <vector>
 #include <string>
+#include "logging.hpp"
+
+LOGGER("common.sequence")
 
 //SEQUENCE IS IMMUTABLE!!!
 class Sequence { // immutable runtime length sequence (slow!!!)
@@ -25,6 +28,7 @@ class Sequence { // immutable runtime length sequence (slow!!!)
 		friend class Sequence;
 	};
 
+	std::string APadding(std::string s, size_t count);
 public:
 //	template <size_t _size> static Sequence constr(const Seq<_size> seq);
 
@@ -47,11 +51,12 @@ public:
 	 * @param to exclusive;
 	 */
 	Sequence Subseq(size_t from, size_t to) const;
+	Sequence Subseq(size_t from) const;
 	Sequence operator+ (const Sequence &s) const;
 	Sequence(const Sequence& s);
 	int find(const Sequence& t, int from = 0) const;
 	int similar(const Sequence &t, int k, char directed = 0) const;
-	std::string Str() const;
+	std::string str() const;
 	size_t size() const;
 private:
 	Data* data_;
@@ -64,7 +69,7 @@ private:
 //	Sequence(const Sequence *svl, bool reverse); // reverse
 	Sequence(Data* data, size_t from, size_t size, bool rtl);
 	Sequence& operator=(const Sequence& that) {
-		std::cerr << "Don't call operator= for Sequence" << std::endl;
+		ERROR("Don't call operator= for Sequence")
 		return *this;
 	};
 };

@@ -7,9 +7,9 @@
 
 int testFind() {
 	Sequence s("ACATACAGACATACA");
-	cerr<<s.Str()<<endl;
+	cerr<<s.str()<<endl;
 	Sequence ss = s.Subseq(5,10);
-	cerr<<s.Str()<<" "<<ss.Str()<<endl;
+	cerr<<s.str()<<" "<<ss.str()<<endl;
 	int t = s.find(ss);
 	cout << t;
 	return 0;

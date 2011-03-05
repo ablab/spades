@@ -2,6 +2,7 @@
 #include "ide_listener.h"
 #include "cute_runner.h"
 #include "seqTest.hpp"
+#include "sequenceTest.hpp"
 #include "ireadstreamTest.hpp"
 #include "nuclTest.hpp"
 #include "ifaststreamTest.hpp"
@@ -13,10 +14,11 @@ void runSuite() {
 	 cute::suite s;
 	 //TODO add your test here
 	 s += SeqSuite();
+	 s += SequenceSuite();
 	 s += QualSuite();
 	 s += NuclSuite();
 	 s += IFastaStreamSuite();
-	 s += IReadStreamSuite();
+	 //s += IReadStreamSuite();
 	 s += onlineGraphVisualizerSuite();
 	 s += offlineGraphVisualizerSuite();
 	 cute::ide_listener lis;
