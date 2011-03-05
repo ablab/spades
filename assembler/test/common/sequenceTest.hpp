@@ -64,13 +64,13 @@ void TestSequenceMemory() {
 		vs[i] = new Sequence(s);
 	}
 	process_mem_usage(vm2, rss2);
-	cout << "Memory after creation for " <<  N << " Sequences of size " << SIZE << ": "<< (vm2 - vm1) << " KB." << endl;
+	cout << "Memory after creation for " <<  N << " Sequences of size " << SIZE << ": VM = "<< (vm2 - vm1) << " KB., RSS = "<< (rss2 - rss1) << " KB." << endl;
 	for (int i = 0; i < N; ++i) {
 		delete vs[i];
 		vs[i] = NULL;
 	}
 	process_mem_usage(vm3, rss3);
-	cout << "Memory after deletion for " <<  N << " Sequences of size " << SIZE << ": "<< (vm3 - vm1) << " KB." << endl;
+	cout << "Memory after deletion for " <<  N << " Sequences of size " << SIZE << ": VM = "<< (vm3 - vm1) << " KB., RSS = "<< (rss3 - rss1) << " KB." << endl;
 }
 
 cute::suite SequenceSuite(){

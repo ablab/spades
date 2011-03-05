@@ -18,27 +18,20 @@ Sequence::Sequence(const Sequence &s) :
 	data_->IncRef();
 }
 
-//function for not breaking contract of Seq todo remove or make inner of init
-std::string Sequence::APadding(std::string s, size_t count) {
-	for (size_t i = 0; i < count; ++i) {
-		s += "A";
-	}
-	return s;
-}
-
 void Sequence::init(const std::string &s) { //accepts ACGT only
 	from_ = 0;
 	size_ = s.size();
 	rtl_ = false;
 	std::vector<Seq<4> > inner_data((size_ + 3) >> 2);
 	for (size_t i = 0; i < size_ / 4; ++i) {
-		inner_data[i] = Seq<4> (s.substr(i * 4, 4).c_str());
+		inner_data[i] = Seq<4>(s.substr(i * 4, 4).c_str());
 	}
 	if (size_ & 3) {
-		inner_data[size_ / 4]
-				= Seq<4> (
-						APadding(s.substr((size_ / 4) * 4, size_ & 3),
-								4 - (size_ & 3)).c_str());
+		// for not breaking contract of Seq
+		string s2 = s.substr((size_ / 4) * 4, size_ & 3);
+		size_t count = 4 - (size_ & 3);
+		s2.append(count, 'A');
+		inner_data[size_ / 4] = Seq<4> (s2.c_str());
 	}
 	data_ = new Data(inner_data);
 }
@@ -51,10 +44,12 @@ Sequence::~Sequence() {
 	data_->DecRef();
 	if (data_->ref_ == 0) {
 		delete data_;
+		data_ = NULL;
 	}
 }
 
 char Sequence::operator[](const size_t index) const {
+	assert(index >= 0);
 	assert(index < size_);
 	if (rtl_) {
 		int i = from_ + size_ - 1 - index;
@@ -88,7 +83,8 @@ const Sequence Sequence::operator!() const {
 Sequence Sequence::Subseq(size_t from, size_t to) const {
 	assert(to >= from);
 	assert(from >= 0);
-	assert(to - from <= size_);
+	assert(to <= size_);
+	//assert(to - from <= size_);
 	if (rtl_) {
 		return Sequence(data_, from_ + size_ - to, to - from, true);
 	} else {

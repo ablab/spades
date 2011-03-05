@@ -11,21 +11,32 @@
 #include "seq.hpp"
 #include <vector>
 #include <string>
+#include <iostream>
+using namespace std;
 
 //SEQUENCE IS IMMUTABLE!!!
 class Sequence { // immutable runtime length sequence (slow!!!)
+
+
+	/**
+	 * Data class for reference counting, contains sequence and ref count.
+	 */
+private:
 	class Data {
 	public:
-		std::vector <Seq<4> > bytes_;
-		void IncRef() {++ref_;}
-		void DecRef() {--ref_;}
-		Data(std::vector<Seq<4> > &bytes) : bytes_(bytes) , ref_(1) {}
-	private:
-		int ref_;
-		friend class Sequence;
+		Seq<4> *bytes_;
+		size_t ref_;
+		inline void IncRef() {++ref_;}
+		inline void DecRef() {--ref_;}
+		Data(const std::vector<Seq<4> > &bytes) : ref_(1) {
+			bytes_ = new Seq<4>[bytes.size()];
+			copy(bytes.begin(), bytes.end(), bytes_);
+		}
+		~Data() {
+			delete[] bytes_;
+		}
 	};
 
-	std::string APadding(std::string s, size_t count);
 public:
 //	template <size_t _size> static Sequence constr(const Seq<_size> seq);
 
