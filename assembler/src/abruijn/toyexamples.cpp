@@ -8,7 +8,7 @@
 #include <cassert>
 #include <fstream>
 
-//#include "../graphVisualizer.hpp"
+//#include "graphVisualizer.hpp"
 
 using namespace std;
 //using namespace gvis;

@@ -1,8 +1,8 @@
 #include "constructHashTable.hpp"
 #include "common.hpp"
 #include "graphConstruction.hpp"
-#include "../seq.hpp"
-#include "../graphVisualizer.hpp"
+#include "seq.hpp"
+#include "graphVisualizer.hpp"
 
 int VertexCount;
 char EdgeStr[1000000];

@@ -11,9 +11,6 @@
 #include "seq.hpp"
 #include <vector>
 #include <string>
-#include "logging.hpp"
-
-LOGGER("common.sequence")
 
 //SEQUENCE IS IMMUTABLE!!!
 class Sequence { // immutable runtime length sequence (slow!!!)
@@ -71,7 +68,7 @@ private:
 //	Sequence(const Sequence *svl, bool reverse); // reverse
 	Sequence(Data* data, size_t from, size_t size, bool rtl);
 	Sequence& operator=(const Sequence& that) {
-		ERROR("Don't call operator= for Sequence")
+		assert(false);
 		return *this;
 	};
 };

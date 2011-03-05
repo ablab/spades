@@ -1,6 +1,6 @@
 #include "constructHashTable.hpp"
 #include "graphConstruction.hpp"
-#include "../sequence.hpp"
+#include "sequence.hpp"
 #include "common.hpp"
 
 

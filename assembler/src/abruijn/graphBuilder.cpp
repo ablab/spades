@@ -4,9 +4,9 @@
 #include "hash.hpp"
 #include "graphBuilder.hpp"
 #include "parameters.hpp"
-#include "../ireadstream.hpp"
+#include "ireadstream.hpp"
 #include <ext/hash_map>
-#include "../logging.hpp"
+#include "logging.hpp"
 
 LOGGER("a.graphBuilder")
 
