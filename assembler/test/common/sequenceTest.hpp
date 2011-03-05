@@ -2,29 +2,41 @@
 #include "sequence.hpp"
 #include "nucl.hpp"
 #include <string>
+#include "../memory.hpp"
 
-void TestSelector() {
+void TestSequenceSelector() {
 	ASSERT_EQUAL('G', nucl(Sequence("ACGTACGTAC")[2]));
+	ASSERT_EQUAL('A', nucl(Sequence("A")[0]));
 }
 
-void TestSum() {
+void TestSequenceSum() {
+	ASSERT_EQUAL("ACG", (Sequence("A") + Sequence("CG")).str());
 	ASSERT_EQUAL("ACGTTGCA", (Sequence("ACGT") + Sequence("TGCA")).str());
+	ASSERT_EQUAL("ACGTACGTTGCATGCA", (Sequence("ACGTACGT") + Sequence("TGCATGCA")).str());
 }
 
-void TestStr() {
+void TestSequenceStr() {
 	ASSERT_EQUAL("ACGTACGTAC", Sequence("ACGTACGTAC").str());
+	ASSERT_EQUAL("ACG", Sequence("ACG").str());
 }
 
-void TestRefCount() {
+void TestSequenceReverseComplement() {
+	Sequence s = Sequence("AACCGGTTAA");
+	ASSERT_EQUAL("TTAACCGGTT", (!s).str());
+	Sequence s2 = Sequence("ACG");
+	ASSERT_EQUAL("CGT", (!s2).str());
+}
+
+void TestSequenceRefCount() {
 	Sequence s("AAAAAAA");
 	Sequence s2(s);
 	Sequence s3 = !s;
 	Sequence s4 = s;
 	Sequence ss = s.Subseq(3);
-	ASSERTM(s.str() + s2.str() + s3.str() + s4.str()  + ss.str(), true);
+	ASSERTM(s.str() + s2.str() + s3.str() + s4.str() + ss.str(), true);
 }
 
-void TestRefCount2() {
+void TestSequenceRefCount2() {
 	Sequence *s = new Sequence("AAAAAAA");
 	Sequence *s2 = new Sequence(*s);
 	Sequence *s3 = new Sequence(!(*s));
@@ -36,14 +48,40 @@ void TestRefCount2() {
 	delete ss;
 }
 
+void TestSequenceMemory() {
+	int N = 100000;
+	int SIZE = 100;
+	vector<Sequence*> vs(N);
+	double vm1, rss1;
+	double vm2, rss2;
+	double vm3, rss3;
+	process_mem_usage(vm1, rss1);
+	for (int i = 0; i < N; ++i) {
+		string s(SIZE,'-');
+		for (int j = 0; j < SIZE; ++j) {
+			s[j] = nucl(rand() % 4);
+		}
+		vs[i] = new Sequence(s);
+	}
+	process_mem_usage(vm2, rss2);
+	cout << "Memory after creation for " <<  N << " Sequences of size " << SIZE << ": "<< (vm2 - vm1) << " KB." << endl;
+	for (int i = 0; i < N; ++i) {
+		delete vs[i];
+		vs[i] = NULL;
+	}
+	process_mem_usage(vm3, rss3);
+	cout << "Memory after deletion for " <<  N << " Sequences of size " << SIZE << ": "<< (vm3 - vm1) << " KB." << endl;
+}
 
 cute::suite SequenceSuite(){
 	cute::suite s;
-	s.push_back(CUTE(TestSelector));
-	s.push_back(CUTE(TestSum));
-	s.push_back(CUTE(TestStr));
-	s.push_back(CUTE(TestRefCount));
-	s.push_back(CUTE(TestRefCount2));
+	s.push_back(CUTE(TestSequenceSelector));
+	s.push_back(CUTE(TestSequenceSum));
+	s.push_back(CUTE(TestSequenceStr));
+	s.push_back(CUTE(TestSequenceReverseComplement));
+	s.push_back(CUTE(TestSequenceRefCount));
+	s.push_back(CUTE(TestSequenceRefCount2));
+	s.push_back(CUTE(TestSequenceMemory));
 	return s;
 }
 
