@@ -33,9 +33,9 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 		char s[maxSeqLength];
 		int size, scanf_res;
 		ll kmer;
-		count ++;
-		if (!(count & ((1<<16) - 1))) {
-			cerr << count << "k-seq readed"<<endl;
+		count++;
+		if (!(count & ((1 << 16) - 1))) {
+			cerr << count << "k-seq readed" << endl;
 		}
 		scanf_res = fscanf(inFile, "%lld %d", &kmer, &size);
 		//		cerr<<scanf_res;
@@ -61,11 +61,7 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 				seq = new Sequence(s);
 			} else
 				seq = new Sequence(auxilary_lmer);
-			VertexPrototype *v = new VertexPrototype();
-			v->lower = seq;
-			v->start = 0;
-			//			v->finish = 0;
-			v->used = 0;
+			VertexPrototype *v = new VertexPrototype(seq, 0);
 			if (usePaired || !i)
 				prototypes.pb(v);
 		}
@@ -308,40 +304,40 @@ int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
 	}
 }
 
+verticesMap::iterator addKmerToMap(verticesMap &verts, ll kmer) {
+	verticesMap::iterator position = verts.find(kmer);
+	if (position == verts.end()) {
+		vector<VertexPrototype *> prototypes;
+		return verts.insert(make_pair(kmer, prototypes)).first;
+	} else {
+		return position;
+	}
+}
+
+/*First argument of result is id of the vertex. Second argument is true if new entry was created and false otherwise
+ *
+ */
+pair<int, bool> addVertexToMap(verticesMap &verts, ll newKmer, Sequence* newSeq) {
+	verticesMap::iterator position = addKmerToMap(verts, newKmer);
+	vector<VertexPrototype *> *sequences = &position->second;
+	for (vector<VertexPrototype *>::iterator it = sequences->begin(); it
+			!= sequences->end(); ++it) {
+		if (newSeq->similar(*((*it)->lower), minIntersect, 0)) {
+			return make_pair((*it)->start, false);
+		}
+	}
+	sequences->push_back(new VertexPrototype(newSeq, VertexCount));
+	VertexCount++;
+	return make_pair(VertexCount - 1, true);
+}
+
 int storeVertex(gvis::GraphScheme<int> &g, verticesMap &verts, ll newKmer,
 		Sequence* newSeq) {
-	verticesMap::iterator iter = verts.find(newKmer);
-	if (iter != verts.end()) {
-		int size = iter->second.size();
-		forn(i, size) {
-			if (newSeq->similar(*((iter->se)[i]->lower), minIntersect, 0)) {
-				return (iter->se)[i]->start;
-			}
-		}
-		VertexPrototype *v = new VertexPrototype();
-		v->lower = newSeq;
-		v->start = VertexCount;
-		//		v->finish = 0;
-		v->used = 0;
-		VertexCount++;
-
-		(iter->se).pb(v);
-		g.addVertex(VertexCount - 1, decompress(newKmer, k - 1));
-		return VertexCount - 1;
-	} else {
-		vector<VertexPrototype *> prototypes;
-		VertexPrototype *v = new VertexPrototype();
-		v->lower = newSeq;
-		v->start = VertexCount;
-		//		v->finish = 0;
-		v->used = 0;
-		VertexCount++;
-		prototypes.pb(v);
-		verts.insert(mp(newKmer, prototypes));
-		g.addVertex(VertexCount - 1, decompress(newKmer, k - 1));
-		return VertexCount - 1;
+	pair<int, bool> addResult = addVertexToMap(verts, newKmer, newSeq);
+	if (addResult.second) {
+		g.addVertex(addResult.first, decompress(newKmer, k - 1));
 	}
-
+	return addResult.first;
 }
 
 void resetVertexCount() {

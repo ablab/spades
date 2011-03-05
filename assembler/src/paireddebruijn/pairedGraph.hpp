@@ -27,6 +27,11 @@ class Vertex;
 //};
 class VertexPrototype {
 	public:
+	VertexPrototype(Sequence *lower_, int start_) {
+		lower = lower_;
+		start = start_;
+		used = false;
+	}
 	Sequence *lower;
 	int start;
 //	int finish;
