@@ -172,15 +172,15 @@ void TestBuldge() {
 void TestSimpleHashTable() {
 	SimpleHashTable h;
 	Kmer k1("AACCG");
-	Vertex* null_v = (Vertex*) NULL;
-	h.put(k1, make_pair(null_v, 1));
+	Vertex* v = new Vertex(Sequence("AAAA"));
+	h.put(k1, make_pair(v, 1));
 	ASSERT(h.contains(k1));
-	ASSERT_EQUAL(h.get(k1).first, null_v);
+	ASSERT_EQUAL(h.get(k1).first, v);
 	ASSERT_EQUAL(h.get(k1).second, 1);
-
-	h.put(k1, make_pair(null_v, 2));
-	ASSERT_EQUAL(h.get(k1).first, null_v);
+	h.put(k1, make_pair(v, 2));
+	ASSERT_EQUAL(h.get(k1).first, v);
 	ASSERT_EQUAL(h.get(k1).second, 2);
+	delete v;
 }
 
 void TestAddVertex() {

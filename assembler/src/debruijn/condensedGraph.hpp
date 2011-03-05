@@ -21,8 +21,8 @@ using namespace __gnu_cxx;
 #define CONDENSED_GRAPH_H_
 
 namespace condensed_graph {
-#define K 11//5//25
-#define N 100//11//100
+#define K 5//11//5//25
+#define N 11//100//11//100
 #define HASH_SEED 1845724623
 
 typedef Seq<K> Kmer;

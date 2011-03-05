@@ -7,7 +7,7 @@
 
 #include "ireadstream.hpp"
 #include "condensedGraph.hpp"
-#include "debruijn.hpp"
+//#include "debruijn.hpp"
 #include <cassert>
 #include <iostream>
 #include <cstdio>
@@ -49,8 +49,6 @@ int main(int argc, char *argv[]) {
 	for (size_t i = 0; i < v->size(); ++i) {
 		g.ThreadRead(v->operator [](i)[0]);
 		g.ThreadRead(v->operator [](i)[1]);
-//		cout << v->operator [](i)[0].str() << endl;
-//		cout << v->operator [](i)[1].str() << endl;
 	}
 
 	/*

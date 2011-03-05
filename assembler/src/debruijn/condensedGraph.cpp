@@ -303,20 +303,24 @@ void Graph::ThreadRead(Read r) {
 		DEBUG("Threading k-mer: " + k.str())
 		pair<Vertex*, int> curr_pos = GetPosMaybeMissing(k);
 
-		Vertex* v1 = prev_pos.first;
-		Vertex* v2 = curr_pos.first;
+		Vertex* prev_v = prev_pos.first;
+		Vertex* curr_v = curr_pos.first;
 		size_t prev_offset = prev_pos.second;
 		size_t curr_offset = curr_pos.second;
 
-		if (IsLastKmer(v1, prev_offset) && IsFirstKmer(v2, curr_offset)
-				&& IsMergePossible(v1, v2)) {
-			Merge(v1, v2);
-		} else if (v1 == v2 && prev_offset + 1 == curr_offset) {
+		if (IsLastKmer(prev_v, prev_offset) && IsFirstKmer(curr_v, curr_offset)
+				&& IsMergePossible(prev_v, curr_v)) {
+			Merge(prev_v, curr_v);
+		} else if (prev_v == curr_v && prev_offset + 1 == curr_offset) {
+			//todo check links here to optimize???
 			//do nothing
 		} else {
-			LinkVertices(
-					SplitVertex(v1, prev_offset + K),
-					SplitVertex(v2->complement(), v2->size() - curr_offset)->complement());
+			Vertex* v1 = SplitVertex(prev_v, prev_offset + K);
+			curr_pos = GetPosMaybeMissing(k);
+			Vertex* curr_v = curr_pos.first;
+			size_t curr_offset = curr_pos.second;
+			Vertex* v2 = SplitVertex(curr_v->complement(), curr_v->size() - curr_offset)->complement();
+			LinkVertices(v1, v2);
 		}
 	}
 }
