@@ -52,7 +52,7 @@ void TestSequenceRefCount2() {
 void TestSequenceMemory() {
 	time_t now = time(NULL);
 	int N = 100000;
-	int SIZE = 3000;
+	int SIZE = 300;
 	vector<Sequence*> vs(N);
 	double vm1, rss1;
 	double vm2, rss2;
