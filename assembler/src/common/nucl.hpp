@@ -15,15 +15,17 @@ inline bool is_nucl(char c) { // is ACGT
 	return (c == 'A' || c == 'C' || c == 'G' || c == 'T');
 }
 
+inline bool is_dignucl(char c) { // is 0123
+	return (c >= 0 && c < 4);
+}
+
 inline char complement(char c) { // 0123 -> 3210
-	assert(c >= 0);
-	assert(c < 4);
+	assert(is_dignucl(c));
 	return c ^ 3;
 }
 
-inline char nucl(char c) { // 01234 -> ACGT
-	assert(c >= 0);
-	assert(c < 4);
+inline char nucl(char c) { // 0123 -> ACGT
+	assert(is_dignucl(c));
 	switch(c) {
 		case 0: return 'A';
 		case 1: return 'C';
@@ -33,7 +35,7 @@ inline char nucl(char c) { // 01234 -> ACGT
 	}
 }
 
-inline char denucl(char c) { // ACGT -> 0123
+inline char dignucl(char c) { // ACGT -> 0123
 	assert(is_nucl(c));
 	switch(c) {
 		case 'A': return 0;

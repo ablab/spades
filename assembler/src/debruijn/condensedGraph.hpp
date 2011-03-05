@@ -21,8 +21,8 @@ using namespace __gnu_cxx;
 #define CONDENSED_GRAPH_H_
 
 namespace condensed_graph {
-#define K 5//25
-#define N 10//100
+#define K 11//5//25
+#define N 100//11//100
 #define HASH_SEED 1845724623
 
 typedef Seq<K> Kmer;
@@ -41,7 +41,9 @@ class Vertex {
 
 	int coverage_;
 	int arc_coverage_[4];
+
 public:
+	bool deleted;
 	Vertex(Sequence nucls);
 	Vertex(Sequence nucls, Vertex** desc);
 	~Vertex();
@@ -62,7 +64,7 @@ class SimpleHash {
 public:
 	unsigned int operator()(const Kmer& seq) const {
 		unsigned int h = HASH_SEED;
-		for (int i = 0; i < seq.size(); i++) {
+		for (size_t i = 0; i < seq.size(); i++) {
 			h = ((h << 5) - h) + seq[i];
 		}
 		return h;
@@ -86,7 +88,7 @@ public:
 	}
 	const pair<Vertex*, size_t> get(Kmer k) {
 		assert(contains(k));
-		//DEBUG("Getting position of k-mer '" + k.str() +  "' Position is " <<  h_[k].second)
+		DEBUG("Getting position of k-mer '" + k.str() +  "' Position is " <<  h_[k].second << " at vertex'"<< h_[k].first->nucls().str() << "'")
 		return h_[k];
 	}
 };
@@ -97,27 +99,32 @@ class Graph {
 
 	void RenewKmersHash(Vertex* v);
 
+	/**
+	 * deals with incoming links and their complement only!!!
+	 */
+	void FixIncomingOnSplit(Vertex* v, Vertex* v1, Vertex* v2);
+
+	void FixIncomingOnMerge(Vertex* v1, Vertex* v2, Vertex* v);
+
+	bool CanBeDeleted(Vertex* v) const;
+
 public:
-	const set<Vertex*>& component_roots();
+	const set<Vertex*>& component_roots() const;
 
-	vector<Vertex*> Anc(Vertex* v);
+	vector<Vertex*> Anc(Vertex* v) const;
 
-	vector<Vertex*> Desc(Vertex* v);
+	vector<Vertex*> Desc(Vertex* v) const;
 
-	bool IsLast(Vertex* v);
+	bool IsLast(Vertex* v) const;
 
-	bool IsFirst(Vertex* v);
-
-//	bool AddIfRoot(Vertex* v);
+	bool IsFirst(Vertex* v) const;
 
 	/**
 	 * adds vertex and its complement
 	 */
 	Vertex* AddVertex(Sequence nucls);
 
-	bool IsMergePossible(Vertex* v1, Vertex* v2);
-
-	bool CanBeDeleted(Vertex* v);
+	bool IsMergePossible(Vertex* v1, Vertex* v2) const;
 
 	Vertex* Merge(Vertex* v1, Vertex* v2);
 
@@ -126,14 +133,9 @@ public:
 	 */
 	void DeleteVertex(Vertex* v);
 
-	bool AreLinkable(Vertex* v1, Vertex* v2);
+	bool AreLinkable(Vertex* v1, Vertex* v2) const;
 
 	void LinkVertices(Vertex* anc, Vertex* desc);
-
-	/**
-	 * deals with incoming links and their complement only!!!
-	 */
-	void FixIncoming(Vertex* v, Vertex* new_v);
 
 	/**
 	 *	renews hash for vertex and complementary
@@ -150,8 +152,8 @@ public:
 
 	void ThreadRead(Read r);
 
-	bool IsLastKmer(Vertex* v, size_t pos);
-	bool IsFirstKmer(Vertex* v, size_t pos);
+	bool IsLastKmer(Vertex* v, size_t pos) const;
+	bool IsFirstKmer(Vertex* v, size_t pos) const;
 };
 
 /*class VertexPool {

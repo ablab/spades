@@ -6,6 +6,7 @@
 
 int VertexCount;
 char EdgeStr[1000000];
+const int minIntersect = l - 1;
 
 using namespace paired_assembler;
 
@@ -27,10 +28,15 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 	vector<VertexPrototype *> prototypes;
 	edgesMap res;
 	prototypes.reserve(maxSeqLength);
+	int count = 0;
 	while (1) {
 		char s[maxSeqLength];
 		int size, scanf_res;
 		ll kmer;
+		count++;
+		if (!(count & ((1 << 16) - 1))) {
+			cerr << count << "k-seq readed" << endl;
+		}
 		scanf_res = fscanf(inFile, "%lld %d", &kmer, &size);
 		//		cerr<<scanf_res;
 		if ((scanf_res) != 2) {
@@ -55,11 +61,7 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 				seq = new Sequence(s);
 			} else
 				seq = new Sequence(auxilary_lmer);
-			VertexPrototype *v = new VertexPrototype();
-			v->lower = seq;
-			v->start = 0;
-			v->finish = 0;
-			v->used = 0;
+			VertexPrototype *v = new VertexPrototype(seq, 0);
 			if (usePaired || !i)
 				prototypes.pb(v);
 		}
@@ -72,7 +74,7 @@ void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 	int inD[MAX_VERT_NUMBER], outD[MAX_VERT_NUMBER];
 	char Buffer[2000];
 	int EdgeId = 0;
-	vertecesMap verts;
+	verticesMap verts;
 	cerr << "Start createVertices " << edges.size() << endl;
 	forn(i,MAX_VERT_NUMBER) {
 		inD[i] = 0;
@@ -92,8 +94,9 @@ void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 						(iter->se)[i]->lower->Subseq(1,
 								(iter->se)[i]->lower->size()));
 				ll startKmer = kmer >> 2;
-				Sequence *startSeq = new Sequence((iter->se)[i]->lower->Subseq(
-						0, (iter->se)[i]->lower->size() - 1));
+				Sequence *startSeq = new Sequence(
+						(iter->se)[i]->lower->Subseq(0,
+								(iter->se)[i]->lower->size() - 1));
 				length += expandRight(edges, verts, finishKmer, finishSeq);
 				int toVert = storeVertex(g, verts, finishKmer, finishSeq);
 
@@ -102,10 +105,10 @@ void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 				int fromVert = storeVertex(g, verts, startKmer, startSeq);
 				cerr << EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
 						+ 500000 - toleft)) << endl;
-				if ((length < 300)&&(length>k-1)) {
-					EdgeStr[500000 - toleft+length]=0;
-					sprintf(Buffer, "\"%d: (%d) %s\"", EdgeId, length, EdgeStr
-							+ 500000 - toleft+k-1);
+				if ((length < 300) && (length > k - 1)) {
+					EdgeStr[500000 - toleft + length] = 0;
+					sprintf(Buffer, "\"%d: (%d) %s\"", EdgeId, length,
+							EdgeStr + 500000 - toleft + k - 1);
 				} else {
 					sprintf(Buffer, "\"%d: (%d)\"", EdgeId, length);
 				}
@@ -125,17 +128,17 @@ void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 	}
 }
 
-int expandRight(edgesMap &edges, vertecesMap &verts, ll &finishKmer,
+int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer,
 		Sequence* &finishSeq) {
 	int length = 0;
-	vertecesMap::iterator iter;
+	verticesMap::iterator iter;
 	while (1) {
 		iter = verts.find(finishKmer);
 		if (iter != verts.end()) {
 
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), l - 1, 0)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), minIntersect, 0)) {
 					return length;
 				}
 			}
@@ -155,16 +158,16 @@ int expandRight(edgesMap &edges, vertecesMap &verts, ll &finishKmer,
 	}
 }
 
-int expandLeft(edgesMap &edges, vertecesMap &verts, ll &startKmer,
+int expandLeft(edgesMap &edges, verticesMap &verts, ll &startKmer,
 		Sequence* &startSeq) {
 	int length = 0;
 
 	while (1) {
-		vertecesMap::iterator iter = verts.find(startKmer);
+		verticesMap::iterator iter = verts.find(startKmer);
 		if (iter != verts.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (startSeq->similar(*((iter->se)[i]->lower), l - 1, 0)) {
+				if (startSeq->similar(*((iter->se)[i]->lower), minIntersect, 0)) {
 
 					return length;
 				}
@@ -190,7 +193,7 @@ int checkUniqueWayLeft(edgesMap &edges, ll finishKmer, Sequence *finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*(iter->se)[i]->lower, l - 1, -1)) {
+				if (finishSeq->similar(*(iter->se)[i]->lower, minIntersect, -1)) {
 					count++;
 					if (count > 1) {
 						return 0;
@@ -214,7 +217,7 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), l - 1, -1)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), k, -1)) {
 					count++;
 					if (count > 1)
 						return 0;
@@ -229,8 +232,9 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	}
 	if (count == 1) {
 		finishKmer = PossibleKmer >> 2;
-		finishSeq = new Sequence((PossibleIter->se)[seqIndex]->lower->Subseq(0,
-				(PossibleIter->se)[seqIndex]->lower->size() - 1));//PossibleSequence;
+		finishSeq = new Sequence(
+				(PossibleIter->se)[seqIndex]->lower->Subseq(0,
+						(PossibleIter->se)[seqIndex]->lower->size() - 1));//PossibleSequence;
 		(PossibleIter->se)[seqIndex]->used = 1;
 		return 1;
 	}
@@ -249,7 +253,7 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), l - 1, 1)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), minIntersect, 1)) {
 					if ((iter->se)[i]->used)
 						return 0;
 					count++;
@@ -266,8 +270,9 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	}
 	if (count == 1) {
 		finishKmer = (PossibleKmer) & (~(((ll) 3) << (2 * (k - 1))));
-		finishSeq = new Sequence((PossibleIter->se)[seqIndex]->lower->Subseq(1,
-				(PossibleIter->se)[seqIndex]->lower->size()));//PossibleSequence;
+		finishSeq = new Sequence(
+				(PossibleIter->se)[seqIndex]->lower->Subseq(1,
+						(PossibleIter->se)[seqIndex]->lower->size()));//PossibleSequence;
 		(PossibleIter->se)[seqIndex]->used = 1;
 		return 1;
 	} else {
@@ -283,7 +288,7 @@ int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), l - 1, 1)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), minIntersect, 1)) {
 					count++;
 					if (count > 1) {
 						return 0;
@@ -298,38 +303,43 @@ int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
 		return 0;
 	}
 }
-int storeVertex(gvis::GraphScheme<int> &g, vertecesMap &verts, ll newKmer,
-		Sequence* newSeq) {
-	vertecesMap::iterator iter = verts.find(newKmer);
-	if (iter != verts.end()) {
-		int size = iter->second.size();
-		forn(i, size) {
-			if (newSeq->similar(*((iter->se)[i]->lower), l - 1, 0))
-				return (iter->se)[i]->start;
-		}
-		VertexPrototype *v = new VertexPrototype();
-		v->lower = newSeq;
-		v->start = VertexCount;
-		v->finish = 0;
-		v->used = 0;
-		VertexCount++;
 
-		(iter->se).pb(v);
-		g.addVertex(VertexCount - 1, decompress(newKmer, k - 1));
-		return VertexCount - 1;
-	} else {
+verticesMap::iterator addKmerToMap(verticesMap &verts, ll kmer) {
+	verticesMap::iterator position = verts.find(kmer);
+	if (position == verts.end()) {
 		vector<VertexPrototype *> prototypes;
-		VertexPrototype *v = new VertexPrototype();
-		v->lower = newSeq;
-		v->start = VertexCount;
-		v->finish = 0;
-		v->used = 0;
-		VertexCount++;
-		prototypes.pb(v);
-		verts.insert(mp(newKmer, prototypes));
-		g.addVertex(VertexCount - 1, decompress(newKmer, k - 1));
-		return VertexCount - 1;
+		return verts.insert(make_pair(kmer, prototypes)).first;
+	} else {
+		return position;
 	}
-
 }
 
+/*First argument of result is id of the vertex. Second argument is true if new entry was created and false otherwise
+ *
+ */
+pair<int, bool> addVertexToMap(verticesMap &verts, ll newKmer, Sequence* newSeq) {
+	verticesMap::iterator position = addKmerToMap(verts, newKmer);
+	vector<VertexPrototype *> *sequences = &position->second;
+	for (vector<VertexPrototype *>::iterator it = sequences->begin(); it
+			!= sequences->end(); ++it) {
+		if (newSeq->similar(*((*it)->lower), minIntersect, 0)) {
+			return make_pair((*it)->start, false);
+		}
+	}
+	sequences->push_back(new VertexPrototype(newSeq, VertexCount));
+	VertexCount++;
+	return make_pair(VertexCount - 1, true);
+}
+
+int storeVertex(gvis::GraphScheme<int> &g, verticesMap &verts, ll newKmer,
+		Sequence* newSeq) {
+	pair<int, bool> addResult = addVertexToMap(verts, newKmer, newSeq);
+	if (addResult.second) {
+		g.addVertex(addResult.first, decompress(newKmer, k - 1));
+	}
+	return addResult.first;
+}
+
+void resetVertexCount() {
+	VertexCount = 0;
+}

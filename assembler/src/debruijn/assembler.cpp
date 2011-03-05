@@ -7,6 +7,7 @@
 
 #include "ireadstream.hpp"
 #include "condensedGraph.hpp"
+#include "debruijn.hpp"
 #include <cassert>
 #include <iostream>
 #include <cstdio>
@@ -35,6 +36,7 @@ int main(int argc, char *argv[]) {
 
 	// read all 'read's
 
+	cerr << "Reading " << filename1 << " and " << filename2 << "..." << endl;
 	ireadstream<R,2,int> irs(filename1, filename2);
 	vector<mate_read<R,int>::type> *v = irs.readAll();
 	irs.close();
@@ -43,10 +45,6 @@ int main(int argc, char *argv[]) {
 
 	// construct graph
 
-	/*DeBruijn<K> *graph = new DeBruijn<K>();
-	for (int i = 0; i < v->size; ++i) {
-		for (int i = 0; )
-	}*/
 	condensed_graph::Graph g;
 	for (size_t i = 0; i < v->size(); ++i) {
 		g.ThreadRead(v->operator [](i)[0]);
@@ -55,8 +53,24 @@ int main(int argc, char *argv[]) {
 //		cout << v->operator [](i)[1].str() << endl;
 	}
 
+	/*
+	 * Simple de Bruijn graph construction:
+	 */
+	/*cerr << "Constructing de Bruijn graph..." << endl;
+	DeBruijn<K> *graph = new DeBruijn<K>();
+	for (size_t i = 0; i < v->size(); ++i) {
+		for (size_t r = 0; r < 2; ++r) {
+			Seq<R> read = v->operator[](i)[r];
+			Seq<K> head = Seq<K>(read);
+			for (size_t j = K; j < R; ++j) {
+				Seq<K> tail = head << read[j];
+				graph->addEdge(head, tail);
+				head = tail;
+			}
+		}
+	}
+	cerr << "Total nodes: " << graph->size() << endl;*/
 	cerr << "Current time: " << (time(NULL) - now) << " sec." << endl;
-
 
 	// simplify graph
 
