@@ -68,6 +68,7 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 	downSeqs res;
 	res.clear();
 	assert (max_shift <= 20);
+//	cerr << lset.size()<<endl;
 	int right[MAXLMERSIZE];
 	int left[MAXLMERSIZE];
 	int used[MAXLMERSIZE];
@@ -92,19 +93,20 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 		    right_tmp = ((right_tmp << 2) & lowerMask);
 		    p2 += 2;
 		    int cright = 0;
-		    forn(ii, (1<<p2)) {
-		    	if (lset.find(ii + right_tmp) != lset.end()) {
-		    		cright ++;
+		    if (!shift_right[i]) {
+		    	forn(ii, (1<<p2)) {
+		    		if (lset.find(ii + right_tmp) != lset.end()) {
+		    			cright ++;
+		    		}
+		    		if (cright > 1) {
+		    			shift_right[i] = -2;
+		    			break;
+		    		}
 		    	}
-		    	if (cright > 1) {
-					shift_right[i] = -2;
-					break;
-		    	}
-		    }
+			}
+		    //cerr <<"cright" <<cright << endl;
 		    upper_bound = ((ll) 1) << p2;
-		    if (cright == 0 || shift_right[i] || cright > 1) {
-		    	continue;
-		    } else {
+		    if (!(cright == 0 || shift_right[i] || cright > 1)) {
 				forn(j, size) {
 					diff = a[j] - right_tmp;
 					if ((diff >= 0) && (diff < upper_bound) && (i != j)){
@@ -119,18 +121,21 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 		    }
 			left_tmp >>= 2;
 			cright = 0;
-			forn(ii, (1<<p2)) {
-				if (lset.find(ii<<(2* l - p2) + left_tmp) != lset.end()) {
-					cright ++;
-				}
-				if (cright > 1) {
-					shift_left[i] = -2;
-					break;
+			if (!shift_left[i]) {
+				forn(ii, (1<<p2)) {
+					ll left_n = ((ll) ii) << (2*l - p2);
+	//				cerr<<a[i] << " "<< left_n + left_tmp <<endl;
+					if (lset.find(left_n + left_tmp) != lset.end()) {
+						cright ++;
+					}
+					if (cright > 1) {
+						shift_left[i] = -2;
+						break;
+					}
 				}
 			}
-			if (cright == 0 || shift_left[i] || cright > 1) {
-				continue;
-			} else {
+		//	cerr <<"cleft" <<cright << endl;
+			if (!(cright == 0 || shift_left[i] || cright > 1)) {
 				forn(j, size) {
 					diff = a[j] - left_tmp;
 					if ((i != j) && ((diff & (lowerMask >> p2)) == 0)){
@@ -172,27 +177,36 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 				int p = shift_right[ii];
 				ll maxsd = ((ll) 3) << (2 * (p-1));
 				ii = right[ii];
-				forn(j, p)
+				forn(j, p) {
+//					cerr << ((a[ii] & maxsd) >> (2*(p-j-1)));
 					s += nucl((a[ii] & maxsd) >> (2*(p-j-1)));
+					maxsd >>= 2;
+//					cerr << "OK" <<endl;
+				}
 			}
 			Sequence* tmpSeq = new Sequence(s);
 			res.pb(tmpSeq);
 			color++;
 		}
-	}
-	/*{
+	}/*
+	{
 		forn(i, size) {
 			cerr << left[i] << " ";
+			cerr << shift_left[i] << " ";
+
 		}
 		cerr << endl;
 		forn(i, size) {
 			cerr << right[i] << " ";
+			cerr << shift_right[i] << " ";
 		}
 	}*/
 //	assert(0);
 	return res;
 }
 
+//Obsolete. Use clusterizeLset instead
+/*
 downSeqs clusterize(ll* a, int size, int max_shift) {
 	downSeqs res;
 	res.clear();
@@ -285,7 +299,7 @@ downSeqs clusterize(ll* a, int size, int max_shift) {
 			color++;
 		}
 	}
-	/*{
+	{
 		forn(i, size) {
 			cerr << left[i] << " ";
 		}
@@ -293,10 +307,10 @@ downSeqs clusterize(ll* a, int size, int max_shift) {
 		forn(i, size) {
 			cerr << right[i] << " ";
 		}
-	}*/
+	}
 //	assert(0);
 	return res;
-}
+}*/
 
 inline bool nextReadPair(char * &read1, char * &read2) {
 	return scanf("%s %s", read1, read2) == 2;
@@ -499,7 +513,8 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 			}
 		}
 		sort(lmers, lmers + lsize);
-		downSeqs clusters =  clusterize(lmers, lsize, 0);
+		downSeqs clusters =  clusterizeLset(lmers, lsize, 0, lset);
+//		return 0;
 		int clsize = clusters.size();
 		string outstring;
 
