@@ -1,15 +1,15 @@
 #include "constructHashTable.hpp"
 #include "graphConstruction.hpp"
-#include "../sequence.hpp"
+#include "sequence.hpp"
 #include "common.hpp"
 
 
 
 int testFind() {
 	Sequence s("ACATACAGACATACA");
-	cerr<<s.Str()<<endl;
+	cerr<<s.str()<<endl;
 	Sequence ss = s.Subseq(5,10);
-	cerr<<s.Str()<<" "<<ss.Str()<<endl;
+	cerr<<s.str()<<" "<<ss.str()<<endl;
 	int t = s.find(ss);
 	cout << t;
 	return 0;
@@ -32,10 +32,10 @@ int main() {
 	freopen("data/graph.dot", "w",stdout);
 
 	//readsToPairs(parsed_reads, parsed_k_l_mers);
-	pairsToLmers(parsed_k_l_mers, parsed_l_mers);
+//	pairsToLmers(parsed_k_l_mers, parsed_l_mers);
 //	pairsToSequences(parsed_k_l_mers, parsed_k_sequence);
 //	map<>sequencesToMap(parsed_k_sequence);
-//	constructGraph();
+	constructGraph();
 //	testSimilar();
 //	testFind();
 	return 0;

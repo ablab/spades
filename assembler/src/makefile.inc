@@ -8,7 +8,7 @@ all:$(EXEC)
 	@echo "vvvvvvvvvv MAKE SUCCESSFUL vvvvvvvvvv"
 
 CC=g++
-CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -std=c++0x -I./..
+CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -std=c++0x -I./../common -I./..
 LDFLAGS=-L/usr/local/lib -lz -llog4cxx -lapr-1 -laprutil-1
 DEPSFL=-MM -MG
 
@@ -39,7 +39,7 @@ $(builddir)/%.o: %.cpp $(builddir)/.d
 	sed -e 's/^ *//' -e 's/$$/:/' >> $(builddir)/$*.d
 	@rm -f $(builddir)/$*.d.tmp
 
-$(builddir)/%.o: ../%.cpp $(builddir)/.d
+$(builddir)/%.o: ../common/%.cpp $(builddir)/.d
 	$(CC) $(CFLAGS) $< -o $@
 	@echo $(builddir) > $(builddir)/$*.d.tmp
 	@tr "\n" "/" <$(builddir)/$*.d.tmp >$(builddir)/$*.d

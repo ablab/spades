@@ -27,6 +27,8 @@ void TestNucl() {
 	ASSERT(is_nucl('T'));
 	ASSERT(!is_nucl(0));
 	ASSERT(!is_nucl(1));
+	ASSERT(!is_nucl(2));
+	ASSERT(!is_nucl(3));
 	ASSERT(!is_nucl('0'));
 	ASSERT(!is_nucl('1'));
 }

@@ -9,14 +9,13 @@
 #define SEQ_HPP_
 
 #include <string>
-#include <iostream> // for debug
 #include <cassert>
 #include <array>
 #include <algorithm>
 #include "nucl.hpp"
 #include "log.hpp"
 
-template <size_t size_, typename T = char> // max number of nucleotides, type for storage
+template<size_t size_, typename T = char> // max number of nucleotides, type for storage
 class Seq {
 private:
 	// compile-time static constants.
@@ -33,7 +32,7 @@ private:
 		T data = 0;
 		size_t cnt = 0;
 		int cur = 0;
-		for (size_t pos = 0; pos < size_ && *s != 0; ++pos, ++s) { // unsafe!
+		for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
 			assert(is_nucl(*s));
 			data = data | ((T)denucl(*s) << cnt);
 			cnt += 2;
@@ -43,12 +42,16 @@ private:
 				data = 0;
 			}
 		}
+		assert(*s == 0);//c string always ends on 0
 		if (cnt != 0) {
 			this->data_[cur++] = data;
 		}
 	}
 
-	Seq(std::array<T,data_size_> data): data_(data) {};
+	Seq(std::array<T, data_size_> data) :
+		data_(data) {
+	}
+	;
 
 	void set(const size_t index, char c) {
 		data_[index >> Tnucl_bits] = ( data_[index >> Tnucl_bits]
@@ -59,34 +62,38 @@ private:
 public:
 	Seq() {
 		std::fill(data_.begin(), data_.end(), 0); // fill with A-s
-	};
+	}
 
 	Seq(const char* s) {
 		init(s);
+	}
+
+	Seq(std::string s) {
+		init(s.c_str());
 	}
 
 	Seq(const Seq<size_,T> &seq): data_(seq.data_) {
 		//does memcpy faster?
 	}
 
-	template <typename S> Seq(const S& s, size_t offset = 0) { // TODO: optimize
-		char a[size_];
+	template <typename S>
+	Seq(const S& s, size_t offset = 0) { // gets any ACGT sequence // TODO: optimize
+		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
+			assert(is_nucl(s[offset + i]));
 			a[i] = s[offset + i];
 		}
+		a[size_] = 0;
 		init(a);
 	}
 
-
-	/* incorrect! size_ != data_size_
- 	template <size_t _bigger_size, T>
-	Seq(const Seq<_bigger_size, T>& seq) {
+	template<size_t _bigger_size, T>
+	Seq(const Seq<_bigger_size, T>& seq) {// TODO: optimize (Kolya)
 		assert(_bigger_size > size_);
-		std::copy(data_, seq.data_, size_);
-		//memcpy(data_, seq._bytes, data_size_); faster?
-	}*/
+		init(seq.str().substr(0, size_).c_str());
+	}
 
-	char operator[] (const size_t index) const { // 0123
+	char operator[](const size_t index) const { // 0123
 		assert(index >= 0);
 		assert(index < size_);
 		T ind = index;
@@ -114,13 +121,14 @@ public:
 	/**
 	 * add one nucl to the right, shifting seq to the left
 	 */
-	Seq<size_,T> operator<<(char c) const {
+	Seq<size_, T> operator<<(char c) const {
+		//todo talk with vyahhi about this
 		assert(is_nucl(c));
 		Seq<size_, T> res(data_);
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
 			T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
-			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2) | ((T)denucl(c) << lastnuclshift_);
+			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2) | ((T)(is_nucl(c) ? denucl(c) : c) << lastnuclshift_);
 			if (data_size_ >= 2) { // if we have at least 2 elements in data
 				size_t i = data_size_ - 1;
 				do {
@@ -172,7 +180,7 @@ public:
 	}
 
 	struct hash {
-		 size_t operator() (const Seq<size_> &seq) const {
+		size_t operator()(const Seq<size_> &seq) const {
 			size_t h = 0;
 			for (size_t i = 0; i < data_size_; ++i) {
 				h += seq.data_[i];
@@ -182,29 +190,29 @@ public:
 	};
 
 	struct equal_to {
-		bool operator() (const Seq<size_> &l, const Seq<size_> &r) const {
+		bool operator()(const Seq<size_> &l, const Seq<size_> &r) const {
 			return l.data_ == r.data_;
 			//return 0 == memcmp(l._bytes.data(), r._bytes.data(), _byteslen);
 		}
 	};
 
 	struct less {
-		int operator() (const Seq<size_> &l, const Seq<size_> &r) const {
+		int operator()(const Seq<size_> &l, const Seq<size_> &r) const {
 			return l.data_ < r.data_;
 			//return 0 > memcmp(l._bytes.data(), r._bytes.data(), _byteslen);
 		}
 	};
 
-	template <int size2, typename T2 = char>
-	Seq<size2,T2> head() { // TODO: optimize (Kolya)
+	template<int size2, typename T2 = char>
+	Seq<size2, T2> head() { // TODO: optimize (Kolya)
 		std::string s = str();
-		return Seq<size2,T2>(s.substr(0, size2).c_str());
+		return Seq<size2, T2> (s.substr(0, size2).c_str());
 	}
 
-	template <int size2, typename T2 = char>
-	Seq<size2,T2> tail() const { // TODO: optimize (Kolya)
+	template<int size2, typename T2 = char>
+	Seq<size2, T2> tail() const { // TODO: optimize (Kolya)
 		std::string s = str();
-		return Seq<size2,T2>(s.substr(size_ - size2, size2).c_str());
+		return Seq<size2, T2> (s.substr(size_ - size2, size2).c_str());
 	}
 
 };
@@ -213,13 +221,13 @@ public:
 // LEGACY CODE
 
 /*template <typename T2>
-Seq(const T2& t, size_t offset = 0) {
-	char a[size_];
-	for (size_t i = 0; i < size_; ++i) {
-		a[i] = t[offset + i];
-	}
-	init(a);
-}*/
+ Seq(const T2& t, size_t offset = 0) {
+ char a[size_];
+ for (size_t i = 0; i < size_; ++i) {
+ a[i] = t[offset + i];
+ }
+ init(a);
+ }*/
 
 //	// add nucleotide to the right
 //	Seq<_size> shift_right(char c) const { // char should be 0123

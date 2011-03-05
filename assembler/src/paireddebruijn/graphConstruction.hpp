@@ -3,7 +3,7 @@
 #include "simpleGraph.hpp"
 #include "pairedGraph.hpp"
 #include "common.hpp"
-#include "../graphVisualizer.hpp"
+#include "graphVisualizer.hpp"
 
 using namespace paired_assembler;
 
