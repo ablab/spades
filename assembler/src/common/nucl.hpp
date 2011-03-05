@@ -21,7 +21,7 @@ inline char complement(char c) { // 0123 -> 3210
 	return c ^ 3;
 }
 
-inline char nucl(char c) { // 01234 -> ACGT
+inline char nucl(char c) { // 0123 -> ACGT
 	assert(c >= 0);
 	assert(c < 4);
 	switch(c) {

@@ -6,6 +6,7 @@
 
 int VertexCount;
 char EdgeStr[1000000];
+int minIntersect = l - 1;
 
 using namespace paired_assembler;
 
@@ -27,10 +28,15 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 	vector<VertexPrototype *> prototypes;
 	edgesMap res;
 	prototypes.reserve(maxSeqLength);
+	int count = 0;
 	while (1) {
 		char s[maxSeqLength];
 		int size, scanf_res;
 		ll kmer;
+		count ++;
+		if (!(count & ((1<<16) - 1))) {
+			cerr << count << "k-seq readed"<<endl;
+		}
 		scanf_res = fscanf(inFile, "%lld %d", &kmer, &size);
 		//		cerr<<scanf_res;
 		if ((scanf_res) != 2) {
@@ -135,7 +141,7 @@ int expandRight(edgesMap &edges, vertecesMap &verts, ll &finishKmer,
 
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), l - 1, 0)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), minIntersect, 0)) {
 					return length;
 				}
 			}
@@ -164,7 +170,7 @@ int expandLeft(edgesMap &edges, vertecesMap &verts, ll &startKmer,
 		if (iter != verts.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (startSeq->similar(*((iter->se)[i]->lower), l - 1, 0)) {
+				if (startSeq->similar(*((iter->se)[i]->lower), minIntersect, 0)) {
 
 					return length;
 				}
@@ -190,7 +196,7 @@ int checkUniqueWayLeft(edgesMap &edges, ll finishKmer, Sequence *finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*(iter->se)[i]->lower, l - 1, -1)) {
+				if (finishSeq->similar(*(iter->se)[i]->lower, minIntersect, -1)) {
 					count++;
 					if (count > 1) {
 						return 0;
@@ -214,7 +220,7 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), l - 1, -1)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), k, -1)) {
 					count++;
 					if (count > 1)
 						return 0;
@@ -249,7 +255,7 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), l - 1, 1)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), minIntersect, 1)) {
 					if ((iter->se)[i]->used)
 						return 0;
 					count++;
@@ -283,7 +289,7 @@ int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), l - 1, 1)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), minIntersect, 1)) {
 					count++;
 					if (count > 1) {
 						return 0;
@@ -304,7 +310,7 @@ int storeVertex(gvis::GraphScheme<int> &g, vertecesMap &verts, ll newKmer,
 	if (iter != verts.end()) {
 		int size = iter->second.size();
 		forn(i, size) {
-			if (newSeq->similar(*((iter->se)[i]->lower), l - 1, 0))
+			if (newSeq->similar(*((iter->se)[i]->lower), minIntersect, 0))
 				return (iter->se)[i]->start;
 		}
 		VertexPrototype *v = new VertexPrototype();
