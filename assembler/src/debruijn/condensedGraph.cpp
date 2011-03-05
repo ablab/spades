@@ -15,14 +15,14 @@ Vertex::Vertex(Sequence nucls) :
 	nucls_(nucls) {
 	fill_n(desc_, 4, (Vertex*) NULL);
 	fill_n(arc_coverage_, 4, 0);
-	deleted = false;
+//	deleted = false;
 }
 
 Vertex::Vertex(Sequence nucls, Vertex** desc) :
 	nucls_(nucls) {
 	memcpy(desc, desc_, 4 * sizeof(Vertex*));
 	fill_n(arc_coverage_, 4, 0);
-	deleted = false;
+//	deleted = false;
 }
 
 Vertex::~Vertex() {
@@ -179,7 +179,7 @@ bool Graph::CanBeDeleted(Vertex* v) const {
 			}
 		}
 	}
-	return true && !v->deleted;
+	return true;// && !v->deleted;
 }
 
 /**
@@ -267,14 +267,14 @@ void Graph::DeleteVertex(Vertex* v) {
 	component_roots_.erase(v);
 	component_roots_.erase(complement);
 
-	v->deleted = true;
-	complement->deleted = true;
-//	delete v;
-//	delete complement;
+//	v->deleted = true;
+//	complement->deleted = true;
+	delete v;
+	delete complement;
 }
 
 bool Graph::AreLinkable(Vertex* v1, Vertex* v2) const {
-	return KMinusOneMer(v2 -> nucls()) == !KMinusOneMer(!(v1 -> nucls())) && !v1->deleted && !v2 -> deleted;
+	return KMinusOneMer(v2 -> nucls()) == !KMinusOneMer(!(v1 -> nucls()));// && !v1->deleted && !v2 -> deleted;
 }
 
 void Graph::LinkVertices(Vertex* anc, Vertex* desc) {
@@ -299,6 +299,7 @@ void Graph::ThreadRead(Read r) {
 	DEBUG("Threading k-mer: " + k.str())
 	for (size_t i = K; i < N; ++i) {
 		pair<Vertex*, int> prev_pos = GetPosMaybeMissing(k);
+		Kmer old_k = k;
 		k = k << r[i];
 		DEBUG("Threading k-mer: " + k.str())
 		pair<Vertex*, int> curr_pos = GetPosMaybeMissing(k);
@@ -315,11 +316,13 @@ void Graph::ThreadRead(Read r) {
 			//todo check links here to optimize???
 			//do nothing
 		} else {
-			Vertex* v1 = SplitVertex(prev_v, prev_offset + K);
+			SplitVertex(prev_v, prev_offset + K);
+			//need if k-mers were on same complementary vertices
 			curr_pos = GetPosMaybeMissing(k);
 			Vertex* curr_v = curr_pos.first;
 			size_t curr_offset = curr_pos.second;
 			Vertex* v2 = SplitVertex(curr_v->complement(), curr_v->size() - curr_offset)->complement();
+			Vertex* v1 = GetPosMaybeMissing(old_k).first;
 			LinkVertices(v1, v2);
 		}
 	}
