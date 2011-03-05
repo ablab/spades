@@ -48,8 +48,8 @@ void TestSeqStr() {
 
 void TestSeqHeadAndTail() {
 	Seq<10> s("ACGTACGTAC");
-	ASSERT_EQUAL("CGTACGTAC", s.tail<9>().str());
-	ASSERT_EQUAL("ACGTACGTA", s.head<9>().str());
+	ASSERT_EQUAL("CGTACGTAC", Seq<9>(s, 1).str()); // tail
+	ASSERT_EQUAL("ACGTACGTA", Seq<9>(s).str()); // head
 }
 
 void TestSeqFromBiggerSeq() {
