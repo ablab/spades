@@ -29,7 +29,7 @@ class VertexPrototype {
 	public:
 	Sequence *lower;
 	int start;
-	int finish;
+//	int finish;
 	bool used;
 };
 

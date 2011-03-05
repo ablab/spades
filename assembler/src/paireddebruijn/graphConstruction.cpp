@@ -58,7 +58,7 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 			VertexPrototype *v = new VertexPrototype();
 			v->lower = seq;
 			v->start = 0;
-			v->finish = 0;
+			//			v->finish = 0;
 			v->used = 0;
 			if (usePaired || !i)
 				prototypes.pb(v);
@@ -72,7 +72,7 @@ void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 	int inD[MAX_VERT_NUMBER], outD[MAX_VERT_NUMBER];
 	char Buffer[2000];
 	int EdgeId = 0;
-	vertecesMap verts;
+	verticesMap verts;
 	cerr << "Start createVertices " << edges.size() << endl;
 	forn(i,MAX_VERT_NUMBER) {
 		inD[i] = 0;
@@ -92,8 +92,9 @@ void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 						(iter->se)[i]->lower->Subseq(1,
 								(iter->se)[i]->lower->size()));
 				ll startKmer = kmer >> 2;
-				Sequence *startSeq = new Sequence((iter->se)[i]->lower->Subseq(
-						0, (iter->se)[i]->lower->size() - 1));
+				Sequence *startSeq = new Sequence(
+						(iter->se)[i]->lower->Subseq(0,
+								(iter->se)[i]->lower->size() - 1));
 				length += expandRight(edges, verts, finishKmer, finishSeq);
 				int toVert = storeVertex(g, verts, finishKmer, finishSeq);
 
@@ -102,10 +103,10 @@ void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 				int fromVert = storeVertex(g, verts, startKmer, startSeq);
 				cerr << EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
 						+ 500000 - toleft)) << endl;
-				if ((length < 300)&&(length>k-1)) {
-					EdgeStr[500000 - toleft+length]=0;
-					sprintf(Buffer, "\"%d: (%d) %s\"", EdgeId, length, EdgeStr
-							+ 500000 - toleft+k-1);
+				if ((length < 300) && (length > k - 1)) {
+					EdgeStr[500000 - toleft + length] = 0;
+					sprintf(Buffer, "\"%d: (%d) %s\"", EdgeId, length,
+							EdgeStr + 500000 - toleft + k - 1);
 				} else {
 					sprintf(Buffer, "\"%d: (%d)\"", EdgeId, length);
 				}
@@ -125,10 +126,10 @@ void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges) {
 	}
 }
 
-int expandRight(edgesMap &edges, vertecesMap &verts, ll &finishKmer,
+int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer,
 		Sequence* &finishSeq) {
 	int length = 0;
-	vertecesMap::iterator iter;
+	verticesMap::iterator iter;
 	while (1) {
 		iter = verts.find(finishKmer);
 		if (iter != verts.end()) {
@@ -155,12 +156,12 @@ int expandRight(edgesMap &edges, vertecesMap &verts, ll &finishKmer,
 	}
 }
 
-int expandLeft(edgesMap &edges, vertecesMap &verts, ll &startKmer,
+int expandLeft(edgesMap &edges, verticesMap &verts, ll &startKmer,
 		Sequence* &startSeq) {
 	int length = 0;
 
 	while (1) {
-		vertecesMap::iterator iter = verts.find(startKmer);
+		verticesMap::iterator iter = verts.find(startKmer);
 		if (iter != verts.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
@@ -229,8 +230,9 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	}
 	if (count == 1) {
 		finishKmer = PossibleKmer >> 2;
-		finishSeq = new Sequence((PossibleIter->se)[seqIndex]->lower->Subseq(0,
-				(PossibleIter->se)[seqIndex]->lower->size() - 1));//PossibleSequence;
+		finishSeq = new Sequence(
+				(PossibleIter->se)[seqIndex]->lower->Subseq(0,
+						(PossibleIter->se)[seqIndex]->lower->size() - 1));//PossibleSequence;
 		(PossibleIter->se)[seqIndex]->used = 1;
 		return 1;
 	}
@@ -266,8 +268,9 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	}
 	if (count == 1) {
 		finishKmer = (PossibleKmer) & (~(((ll) 3) << (2 * (k - 1))));
-		finishSeq = new Sequence((PossibleIter->se)[seqIndex]->lower->Subseq(1,
-				(PossibleIter->se)[seqIndex]->lower->size()));//PossibleSequence;
+		finishSeq = new Sequence(
+				(PossibleIter->se)[seqIndex]->lower->Subseq(1,
+						(PossibleIter->se)[seqIndex]->lower->size()));//PossibleSequence;
 		(PossibleIter->se)[seqIndex]->used = 1;
 		return 1;
 	} else {
@@ -298,19 +301,21 @@ int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
 		return 0;
 	}
 }
-int storeVertex(gvis::GraphScheme<int> &g, vertecesMap &verts, ll newKmer,
+
+int storeVertex(gvis::GraphScheme<int> &g, verticesMap &verts, ll newKmer,
 		Sequence* newSeq) {
-	vertecesMap::iterator iter = verts.find(newKmer);
+	verticesMap::iterator iter = verts.find(newKmer);
 	if (iter != verts.end()) {
 		int size = iter->second.size();
 		forn(i, size) {
-			if (newSeq->similar(*((iter->se)[i]->lower), l - 1, 0))
+			if (newSeq->similar(*((iter->se)[i]->lower), l - 1, 0)) {
 				return (iter->se)[i]->start;
+			}
 		}
 		VertexPrototype *v = new VertexPrototype();
 		v->lower = newSeq;
 		v->start = VertexCount;
-		v->finish = 0;
+		//		v->finish = 0;
 		v->used = 0;
 		VertexCount++;
 
@@ -322,7 +327,7 @@ int storeVertex(gvis::GraphScheme<int> &g, vertecesMap &verts, ll newKmer,
 		VertexPrototype *v = new VertexPrototype();
 		v->lower = newSeq;
 		v->start = VertexCount;
-		v->finish = 0;
+		//		v->finish = 0;
 		v->used = 0;
 		VertexCount++;
 		prototypes.pb(v);
@@ -333,3 +338,6 @@ int storeVertex(gvis::GraphScheme<int> &g, vertecesMap &verts, ll newKmer,
 
 }
 
+void resetVertexCount() {
+	VertexCount = 0;
+}

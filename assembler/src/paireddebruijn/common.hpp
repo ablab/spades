@@ -17,7 +17,7 @@
 #define fi first
 #define se second
 #define edgesMap  map<ll, vector<VertexPrototype *> >
-#define vertecesMap  map<ll, vector<VertexPrototype *> >
+#define verticesMap  map<ll, vector<VertexPrototype *> >
 
 #define MAX_VERT_NUMBER 100000
 
@@ -29,7 +29,7 @@ const string error_log = "data/error.log";
 const string parsed_l_mers = "data/lmers_const_d.txt";
 const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
-const int k = 31;
+const int k = 25;
 const int l = 31;
 const int readLength = 100;
 const int maxSeqLength = 200;

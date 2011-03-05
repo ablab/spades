@@ -136,7 +136,7 @@ void TestAddPairToTableCoinsidingEntries() {
 	myMap map;
 	for(int i = 0; i < 10; i++)
 		addPairToTable(map, 1, i);
-	ASSERT_EQUAL(10u, map.size());
+	ASSERT_EQUAL(1u, map.size());
 	for(int i = 0; i < 10; i++)
 		ASSERT_EQUAL(i, map[1][i]);
 }
