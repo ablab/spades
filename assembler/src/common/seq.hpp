@@ -62,7 +62,7 @@ private:
 		int cur = 0;
 		for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
 			assert(is_nucl(*s));
-			data = data | ((T)denucl(*s) << cnt);
+			data = data | ((T)dignucl(*s) << cnt);
 			cnt += 2;
 			if (cnt == Tbits) {
 				this->data_[cur++] = data;
@@ -102,20 +102,6 @@ public:
 	}
 
 	/*
-	 * Constructor from ACGT C-string
-	 */
-	Seq(const char* s) {
-		init(s);
-	}
-
-	/*
-	 * Constructor from ACGT std::string
-	 */
-	Seq(std::string s) {
-		init(s.c_str());
-	}
-
-	/*
 	 * Copy constructor
 	 */
 	Seq(const Seq<size_,T> &seq): data_(seq.data_) {
@@ -123,9 +109,9 @@ public:
 	}
 
 	/**
-	 * Ultimate constructor
+	 * Ultimate constructor from ACGT0123-string.
 	 *
-	 * @param s Any object with operator[], which returns ACGT0123 chars
+	 * @param s Any object with operator[], which returns 0123 chars
 	 * @param offset Offset when this sequence starts
 	 */
 	template <typename S>
@@ -133,12 +119,11 @@ public:
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
 			char c = s[offset + i];
-			assert(is_nucl(c) || c < 4);
-			if (is_nucl(c)) {
-				c = denucl(c);
+			assert(is_nucl(c) || is_dignucl(c));
+			if (is_dignucl(c)) {
+				c = nucl(c);
 			}
-			assert(c < 4);
-			a[i] = nucl(c);
+			a[i] = c;
 		}
 		a[size_] = 0;
 		init(a);
@@ -147,7 +132,7 @@ public:
 	/**
 	 * Get i-th symbol of Seq.
 	 *
-	 * @param i Index of the symbol.
+	 * @param i Index of the symbol (0 <= i < size_)
 	 * @return 0123-char on position i
 	 */
 	char operator[](const size_t i) const {
@@ -179,15 +164,11 @@ public:
 	/**
 	 * Shift left
 	 *
-	 * @param c New ACGT0123 char which should be added to the right.
+	 * @param c New 0123 char which should be added to the right.
 	 * @return Shifted (to the left) sequence with 'c' char on the right.
 	 */
 	Seq<size_, T> operator<<(char c) const {
-		assert(is_nucl(c) || c < 4);
-		if (is_nucl(c)) {
-			c = denucl(c);
-		}
-		assert(c < 4);
+		assert(is_dignucl(c));
 		Seq<size_, T> res(data_);
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
@@ -209,13 +190,13 @@ public:
 	/**
 	 * Shift right
 	 *
-	 * @param c New ACGT0123 char which should be added to the left.
+	 * @param c New 0123 char which should be added to the left.
 	 * @return Shifted (to the right) sequence with 'c' char on the left.
 	 */
 	Seq<size_,T> operator>>(char c) {
-		assert(is_nucl(c));
+		assert(is_dignucl(c));
         Seq<size_, T> res(data_);
-		T rm = denucl(c);
+		T rm = c;
 		for (size_t i = 0; i < data_size_; ++i) {
 			T new_rm = (res.data_[i] >> (Tbits - 2)) & 3;
 			res.data_[i] = (res.data_[i] << 2) | rm;
@@ -283,23 +264,37 @@ public:
 
 /*
 	template<size_t _bigger_size, T>
-	Seq(const Seq<_bigger_size, T>& seq) { // TODO: optimize (Kolya)
+	Seq(const Seq<_bigger_size, T>& seq) {
 		assert(_bigger_size > size_);
 		init(seq.str().substr(0, size_).c_str());
 	}
 
 	template<int size2, typename T2 = char>
-	Seq<size2, T2> head() { // TODO: optimize (Kolya)
+	Seq<size2, T2> head() {
 		std::string s = str();
 		return Seq<size2, T2> (s.substr(0, size2).c_str());
 	}
 
 	template<int size2, typename T2 = char>
-	Seq<size2, T2> tail() const { // TODO: optimize (Kolya)
+	Seq<size2, T2> tail() const {
 		std::string s = str();
 		return Seq<size2, T2> (s.substr(size_ - size2, size2).c_str());
 	}
 
 	*/
+
+/*
+ * Constructor from ACGT C-string
+ */
+/*Seq(const char* s) {
+	init(s);
+}*/
+
+/*
+ * Constructor from ACGT std::string
+ */
+/*Seq(std::string s) {
+	init(s.c_str());
+}*/
 
 #endif /* SEQ_HPP_ */
