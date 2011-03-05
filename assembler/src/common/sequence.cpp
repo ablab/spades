@@ -19,24 +19,21 @@ Sequence::Sequence(const Sequence &s) :
 }
 
 void Sequence::init(const std::string &s) { //accepts ACGT only
-	from_ = 0;
-	size_ = s.size();
-	rtl_ = false;
-	std::vector<Seq<4> > inner_data((size_ + 3) >> 2);
+	std::vector<Seq<4,SequenceT> > inner_data((size_ + 3) >> 2);
 	for (size_t i = 0; i < size_ / 4; ++i) {
-		inner_data[i] = Seq<4>(s.substr(i * 4, 4).c_str());
+		inner_data[i] = Seq<4,SequenceT>(s.substr(i * 4, 4).c_str());
 	}
 	if (size_ & 3) {
 		// for not breaking contract of Seq
 		string s2 = s.substr((size_ / 4) * 4, size_ & 3);
 		size_t count = 4 - (size_ & 3);
 		s2.append(count, 'A');
-		inner_data[size_ / 4] = Seq<4> (s2.c_str());
+		inner_data[size_ / 4] = Seq<4,SequenceT>(s2.c_str());
 	}
 	data_ = new Data(inner_data);
 }
 
-Sequence::Sequence(const std::string &s) {
+Sequence::Sequence(const std::string &s) : from_(0), size_(s.size()), rtl_(false) {
 	init(s);
 }
 
@@ -74,7 +71,7 @@ bool Sequence::operator==(const Sequence &that) const {
 	return true;
 }
 
-const Sequence Sequence::operator!() const {
+Sequence Sequence::operator!() const {
 	return Sequence(data_, from_, size_, !rtl_);
 }
 
@@ -169,4 +166,9 @@ std::string Sequence::str() const {
 
 size_t Sequence::size() const {
 	return size_;
+}
+
+Sequence& Sequence::operator=(const Sequence& that) {
+	assert(false);
+	return *this;
 }
