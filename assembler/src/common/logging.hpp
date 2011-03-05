@@ -9,6 +9,7 @@
 #define LOGGING_HPP_
 
 #include "log4cxx/logger.h"
+#include <string>
 
 using namespace log4cxx;
 
@@ -19,7 +20,7 @@ using namespace log4cxx;
 #define INFO(message)  LOG4CXX_INFO (_default_logger, message);
 #define WARN(message)  LOG4CXX_WARN (_default_logger, message);
 #define ERROR(message) LOG4CXX_ERROR(_default_logger, message);
-#define ASSERT(condition, message) LOG4CXX_ASSERT(_default_logger, condition, message);
+#define LOG_ASSERT(condition, message) LOG4CXX_ASSERT(_default_logger, condition, message);
 #define FATAL(message) LOG4CXX_FATAL(_default_logger, message);
 
 #endif /* LOGGING_HPP_ */

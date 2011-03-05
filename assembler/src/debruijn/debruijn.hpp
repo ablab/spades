@@ -8,7 +8,7 @@
 #ifndef DEBRUIJN_HPP_
 #define DEBRUIJN_HPP_
 
-#include "../seq.hpp"
+#include "seq.hpp"
 #include <google/sparse_hash_map> // ./configure, make and sudo make install from libs/sparsehash-1.10
 #include <iostream> // for debug
 #include <map>

@@ -7,5 +7,4 @@
 
 #include "nucl.hpp"
 
-
-
+// everything is inline now, see nucl.hpp :)

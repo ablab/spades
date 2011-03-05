@@ -10,7 +10,9 @@
 #include <cstring>
 #include "seq.hpp"
 #include "sequence.hpp"
+#include "logging.hpp"
 #include "nucl.hpp"
+#include <iostream>
 
 using namespace std;
 using namespace __gnu_cxx;
@@ -19,14 +21,15 @@ using namespace __gnu_cxx;
 #define CONDENSED_GRAPH_H_
 
 namespace condensed_graph {
-
-#define K 25
-#define N 100
+#define K 5//25
+#define N 10//100
 #define HASH_SEED 1845724623
 
 typedef Seq<K> Kmer;
 typedef Seq<K - 1> KMinusOneMer;
 typedef Seq<N> Read;
+
+LOGGER("debruijn.condensed_graph")
 
 class Vertex;
 
@@ -66,26 +69,33 @@ public:
 	}
 };
 
-class MySimpleHashTable {
+class SimpleHashTable {
 	hash_map<const Kmer, pair<Vertex*, size_t> , SimpleHash, Kmer::equal_to> h_;
 public:
 	void put(Kmer k, pair<Vertex*, size_t> v) {
+		//DEBUG("Putting position for k-mer '" << k.str() <<  "' : position " << v.second)
+		if (contains(k)) {
+			h_.erase(k);
+		}
 		h_.insert(make_pair(k, v));
 	}
+
 	bool contains(Kmer k) {
+		assert(h_.count(k) <= 1);
 		return h_.count(k) == 1;
 	}
 	const pair<Vertex*, size_t> get(Kmer k) {
 		assert(contains(k));
+		//DEBUG("Getting position of k-mer '" + k.str() +  "' Position is " <<  h_[k].second)
 		return h_[k];
 	}
 };
 
 class Graph {
 	set<Vertex*> component_roots_;
-	MySimpleHashTable h_;
+	SimpleHashTable h_;
 
-	void RenewHashForSingleVertexKmers(Vertex* v);
+	void RenewKmersHash(Vertex* v);
 
 public:
 	const set<Vertex*>& component_roots();
@@ -98,7 +108,7 @@ public:
 
 	bool IsFirst(Vertex* v);
 
-	bool AddIfRoot(Vertex* v);
+//	bool AddIfRoot(Vertex* v);
 
 	/**
 	 * adds vertex and its complement
@@ -133,7 +143,8 @@ public:
 
 	//pos exclusive! (goes into second vertex)
 	//deletes vertex if actual split happens
-	Vertex* SplitVertex(Vertex* v, size_t pos, bool return_second);
+	//returns first of the new vertices
+	Vertex* SplitVertex(Vertex* v, size_t pos);
 
 	pair<Vertex*, int> GetPosMaybeMissing(Kmer k);
 

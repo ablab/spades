@@ -8,7 +8,7 @@
 #ifndef PARAMETERS_H_
 #define PARAMETERS_H_
 
-#include "../seq.hpp"
+#include "seq.hpp"
 
 #define MPSIZE 100
 #define K 25

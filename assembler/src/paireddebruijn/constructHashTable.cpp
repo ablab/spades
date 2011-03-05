@@ -1,5 +1,5 @@
 #include "common.hpp"
-#include "../sequence.hpp"
+#include "sequence.hpp"
 #include "constructHashTable.hpp"
 
 using namespace std;
@@ -379,7 +379,7 @@ int pairsToSequences(string inputFile,string  lmerFile, string outputFile) {
 		}
 #endif
 		forn(i, clsize) {
-			outstring = clusters[i]->Str();
+			outstring = clusters[i]->str();
 			fprintf(outFile, "%s ",outstring.c_str());
 		}
 		fprintf(outFile, "\n");

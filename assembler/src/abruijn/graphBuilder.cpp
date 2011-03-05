@@ -4,9 +4,9 @@
 #include "hash.hpp"
 #include "graphBuilder.hpp"
 #include "parameters.hpp"
-#include "../ireadstream.hpp"
+#include "ireadstream.hpp"
 #include <ext/hash_map>
-#include "../logging.hpp"
+#include "logging.hpp"
 
 LOGGER("a.graphBuilder")
 
@@ -74,7 +74,7 @@ CGraph GraphBuilder::build() {
 	DEBUG(kmers_map.size());
 	seq2ver::iterator p;
 	for (p = kmers_map.begin(); p != kmers_map.end(); ++p) {
-		DEBUG((p->first).Str());
+		DEBUG((p->first).str());
 		DEBUG((p->second).hits_);
 	}
 	return graph;

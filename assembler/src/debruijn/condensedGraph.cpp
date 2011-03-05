@@ -4,30 +4,26 @@
  *  Created on: Feb 21, 2011
  *      Author: sergey
  */
-#include "condensed_graph.hpp"
+#include "condensedGraph.hpp"
 #include "logging.hpp"
 
 using namespace std;
-
-LOGGER("debruijn.condensed_graph")
 
 namespace condensed_graph {
 
 Vertex::Vertex(Sequence nucls) :
 	nucls_(nucls) {
 	fill_n(desc_, 4, (Vertex*) NULL);
+	fill_n(arc_coverage_, 4, 0);
 }
 
-//todo talk with Kolya about problem with Sequence copying!!!
 Vertex::Vertex(Sequence nucls, Vertex** desc) :
 	nucls_(nucls) {
 	memcpy(desc, desc_, 4 * sizeof(Vertex*));
-	//		_arcs = arcs;
+	fill_n(arc_coverage_, 4, 0);
 }
 
 Vertex::~Vertex() {
-	delete[] desc_;
-	delete[] arc_coverage_;
 }
 
 int Vertex::DescCount() {
@@ -80,12 +76,16 @@ void Vertex::set_coverage(int coverage) {
 	coverage_ = coverage;
 }
 
-void Graph::RenewHashForSingleVertexKmers(Vertex* v) {
+/**
+ *	renews hash for vertex and complementary
+ *	todo renew not all hashes
+ */
+void Graph::RenewKmersHash(Vertex* v) {
 	Kmer k(v->nucls());
 	h_.put(k, make_pair(v, 0));
-	for (size_t i = K + 1, n = v->nucls().size(); i < n; ++i) {
+	for (size_t i = K, n = v->nucls().size(); i < n; ++i) {
 		k = k << v->nucls()[i];
-		h_.put(k, make_pair(v, i - K));
+		h_.put(k, make_pair(v, i - K + 1));
 	}
 }
 
@@ -123,6 +123,7 @@ bool Graph::IsFirst(Vertex* v) {
 	return IsLast(v->complement());
 }
 
+/*
 bool Graph::AddIfRoot(Vertex* v) {
 	bool f = false;
 	if (Anc(v).empty()) {
@@ -135,20 +136,32 @@ bool Graph::AddIfRoot(Vertex* v) {
 	}
 	return f;
 }
+*/
 
 /**
  * adds vertex and its complement
- */
+ *///std::string operator+(const std::string& s, int i) {
+//	std::stringstream out;
+//	out << s << i;
+//	return out.str();
+//}
+
 Vertex* Graph::AddVertex(Sequence nucls) {
+	DEBUG("Adding vertex for sequence '" << nucls.str() << "' and its complement '" << (!nucls).str() << "'")
 	Vertex* v1 = new Vertex(nucls);
 	Vertex* v2 = new Vertex(!nucls);
 	v1->set_complement(v2);
 	v2->set_complement(v1);
+	component_roots_.insert(v1);
+	component_roots_.insert(v2);
+	//	DEBUG("Renewing hash for k-mers of sequence " << v->nucls().str() << " and its complement")
+	RenewKmersHash(v1);
+	RenewKmersHash(v2);
 	return v1;
 }
 
 bool Graph::IsMergePossible(Vertex* v1, Vertex* v2) {
-	return IsLast(v1) && IsFirst(v2) && v1->complement() != v2 && v1 != v2;
+	return IsLast(v1) && IsFirst(v2) && v1->complement() != v2 && v1 != v2 && AreLinkable(v1, v2);
 }
 
 bool Graph::CanBeDeleted(Vertex* v) {
@@ -164,12 +177,15 @@ bool Graph::CanBeDeleted(Vertex* v) {
 }
 
 Vertex* Graph::Merge(Vertex* v1, Vertex* v2) {
+	DEBUG("Merging vertices with sequences: '" << v1->nucls().str() << "' and '" << v2->nucls().str() << "' and their complement")
 	assert(IsMergePossible(v1, v2));
 
-	Vertex* v = AddVertex(v1->nucls() + v2->nucls());
+	Vertex* v = AddVertex(v1->nucls() + v2->nucls().Subseq(K - 1));
 	FixIncoming(v1, v);
 	FixIncoming(v2->complement(), v->complement());
-	RenewHashForVertexKmers(v);
+
+	DeleteVertex(v1);
+	DeleteVertex(v2);
 	return v;
 }
 
@@ -177,6 +193,7 @@ Vertex* Graph::Merge(Vertex* v1, Vertex* v2) {
  * deletes vertex and its complement
  */
 void Graph::DeleteVertex(Vertex* v) {
+	DEBUG("Deleting vertex with sequence '" << v->nucls().str() << "' and its complement '" << v->complement()->nucls().str() << "'")
 	assert(CanBeDeleted(v));
 	assert(CanBeDeleted(v->complement()));
 
@@ -189,16 +206,17 @@ void Graph::DeleteVertex(Vertex* v) {
 
 bool Graph::AreLinkable(Vertex* v1, Vertex* v2) {
 	return KMinusOneMer(v2 -> nucls()) == !KMinusOneMer(
-			v1 -> complement() -> nucls());
+			!(v1 -> nucls()));
 }
 
 void Graph::LinkVertices(Vertex* anc, Vertex* desc) {
+	DEBUG("Linking vertices with sequences '" << anc->nucls().str() << "' and '"<< desc->nucls().str() <<"'")
 	assert(AreLinkable(anc, desc));
 
 	anc->AddDesc(desc);
-	component_roots_.erase(anc);
+	component_roots_.erase(desc);
 	desc->complement()->AddDesc(anc->complement());
-	component_roots_.erase(desc->complement());
+	component_roots_.erase(anc->complement());
 }
 
 /**
@@ -211,21 +229,13 @@ void Graph::FixIncoming(Vertex* v, Vertex* new_v) {
 	for (size_t i = 0; i < anc.size(); ++i) {
 		LinkVertices(anc[i], new_v);
 	}
-	AddIfRoot(new_v);
-}
-
-/**
- *	renews hash for vertex and complementary
- *	todo renew not all hashes
- */
-void Graph::RenewHashForVertexKmers(Vertex* v) {
-	RenewHashForSingleVertexKmers(v);
-	RenewHashForSingleVertexKmers(v->complement());
 }
 
 //pos exclusive! (goes into second vertex)
 //deletes vertex if actual split happens
-Vertex* Graph::SplitVertex(Vertex* v, size_t pos, bool return_second) {
+//returns first of the new vertices
+Vertex* Graph::SplitVertex(Vertex* v, size_t pos) {
+	DEBUG("Splitting vertex with sequence '" << v->nucls().str() <<"' of size " << v->size() << " at position "<< pos);
 	assert(pos <= v->size());
 
 	if (pos == v->size()) {
@@ -243,13 +253,9 @@ Vertex* Graph::SplitVertex(Vertex* v, size_t pos, bool return_second) {
 
 	FixIncoming(v->complement(), v2->complement());
 
-	RenewHashForVertexKmers(v1);
-
-	RenewHashForVertexKmers(v2);
-
 	DeleteVertex(v);
 
-	return return_second ? v2 : v1;
+	return v1;
 }
 
 pair<Vertex*, int> Graph::GetPosMaybeMissing(Kmer k) {
@@ -261,9 +267,11 @@ pair<Vertex*, int> Graph::GetPosMaybeMissing(Kmer k) {
 
 void Graph::ThreadRead(Read r) {
 	Kmer k(r);
-	pair<Vertex*, int> prev_pos = GetPosMaybeMissing(k);
-	for (size_t i = K + 1; i < N; ++i) {
+	DEBUG("Threading k-mer: " + k.str())
+	for (size_t i = K; i < N; ++i) {
+		pair<Vertex*, int> prev_pos = GetPosMaybeMissing(k);
 		k = k << r[i];
+		DEBUG("Threading k-mer: " + k.str())
 		pair<Vertex*, int> curr_pos = GetPosMaybeMissing(k);
 
 		Vertex* v1 = prev_pos.first;
@@ -278,10 +286,9 @@ void Graph::ThreadRead(Read r) {
 			//do nothing
 		} else {
 			LinkVertices(
-					SplitVertex(v1, prev_offset + K, true),
-					SplitVertex(v2->complement(), N - curr_offset, false)->complement());
+					SplitVertex(v1, prev_offset + K),
+					SplitVertex(v2->complement(), v2->size() - curr_offset)->complement());
 		}
-		prev_pos = curr_pos;
 	}
 }
 

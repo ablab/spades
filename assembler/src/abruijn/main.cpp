@@ -2,7 +2,7 @@
 #include "toyexamples.hpp"
 #include "graph.hpp"
 #include "graphBuilder.hpp"
-#include "../logging.hpp"
+#include "logging.hpp"
 
 LOGGER("a")
 
