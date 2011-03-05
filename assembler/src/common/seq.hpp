@@ -86,7 +86,7 @@ private:
 	/**
 	 * Sets i-th symbol of Seq with 0123-char
 	 */
-	void set(const size_t i, char c) {
+	inline void set(const size_t i, char c) {
 		data_[i >> Tnucl_bits] = ( data_[i >> Tnucl_bits]
 							   & ~((T)3 << ((i % Tnucl) << 1)) )
 							   | ((T)c << ((i % Tnucl) << 1));
@@ -105,7 +105,6 @@ public:
 	 * Copy constructor
 	 */
 	Seq(const Seq<size_,T> &seq): data_(seq.data_) {
-		;
 	}
 
 	/**
@@ -135,10 +134,10 @@ public:
 	 * @param i Index of the symbol (0 <= i < size_)
 	 * @return 0123-char on position i
 	 */
-	char operator[](const size_t i) const {
+	inline char operator[](const size_t i) const {
 		assert(i >= 0);
 		assert(i < size_);
-		return (data_[i >> Tnucl_bits] >> ((i % Tnucl) << 1)) & 3;
+		return (data_[i >> Tnucl_bits] >> ((i % Tnucl) << 1)) & 3; // btw (i % Tnucl) <=> (i & (Tnucl-1))
 	}
 
 	/**

@@ -42,7 +42,10 @@ int main(int argc, char *argv[]) {
 
 	// construct graph
 
-	cerr << "Constructing de Bruijn graph..." << endl;
+	/*
+	 * Simple de Bruijn graph construction:
+	 */
+	/*cerr << "Constructing de Bruijn graph..." << endl;
 	DeBruijn<K> *graph = new DeBruijn<K>();
 	for (size_t i = 0; i < v->size(); ++i) {
 		for (size_t r = 0; r < 2; ++r) {
@@ -55,7 +58,7 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
-	cerr << "Total nodes: " << graph->size() << endl;
+	cerr << "Total nodes: " << graph->size() << endl;*/
 	cerr << "Current time: " << (time(NULL) - now) << " sec." << endl;
 
 	// simplify graph

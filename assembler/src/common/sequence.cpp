@@ -19,16 +19,16 @@ Sequence::Sequence(const Sequence &s) :
 }
 
 void Sequence::init(const std::string &s) { //accepts ACGT only
-	std::vector<Seq<4,SequenceT> > inner_data((size_ + 3) >> 2);
-	for (size_t i = 0; i < size_ / 4; ++i) {
-		inner_data[i] = Seq<4,SequenceT>(s.substr(i * 4, 4).c_str());
+	std::vector<Seq<STN,ST> > inner_data((size_ + STN - 1) / STN);
+	for (size_t i = 0; i < size_ / STN; ++i) {
+		inner_data[i] = Seq<STN,ST>(s.substr(i * STN, STN).c_str());
 	}
-	if (size_ & 3) {
+	if (size_ % STN != 0) {
 		// for not breaking contract of Seq
-		string s2 = s.substr((size_ / 4) * 4, size_ & 3);
-		size_t count = 4 - (size_ & 3);
+		string s2 = s.substr((size_ / STN) * STN, size_ % STN);
+		size_t count = STN - (size_ % STN);
 		s2.append(count, 'A');
-		inner_data[size_ / 4] = Seq<4,SequenceT>(s2.c_str());
+		inner_data[size_ / STN] = Seq<STN,ST>(s2.c_str());
 	}
 	data_ = new Data(inner_data);
 }
@@ -38,8 +38,10 @@ Sequence::Sequence(const std::string &s) : from_(0), size_(s.size()), rtl_(false
 }
 
 Sequence::~Sequence() {
+	//cerr << "!" << endl;
 	data_->DecRef();
 	if (data_->ref_ == 0) {
+		//cerr << "?" << endl;
 		delete data_;
 		data_ = NULL;
 	}
@@ -50,10 +52,10 @@ char Sequence::operator[](const size_t index) const {
 	assert(index < size_);
 	if (rtl_) {
 		int i = from_ + size_ - 1 - index;
-		return complement(data_->bytes_[i / 4][i % 4]);
+		return complement(data_->bytes_[i / STN][i % STN]);
 	} else {
 		int i = from_ + index;
-		return data_->bytes_[i / 4][i % 4];
+		return data_->bytes_[i / STN][i % STN];
 	}
 }
 
@@ -103,11 +105,7 @@ int Sequence::find(const Sequence &t, int from) const {
 	}
 	return -1;
 }
-/*int Sequence::findAfter(const Sequence &t, int pos){
 
-
- return -1;
- }*/
 //0 - undirected similarity, 1: t extends this to right, -1: this extends t
 int Sequence::similar(const Sequence &t, int k, char directed) const {
 	int result = 0;

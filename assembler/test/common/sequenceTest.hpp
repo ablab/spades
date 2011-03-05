@@ -3,6 +3,7 @@
 #include "nucl.hpp"
 #include <string>
 #include "../memory.hpp"
+#include <ctime>
 
 void TestSequenceSelector() {
 	ASSERT_EQUAL('G', nucl(Sequence("ACGTACGTAC")[2]));
@@ -49,8 +50,9 @@ void TestSequenceRefCount2() {
 }
 
 void TestSequenceMemory() {
+	time_t now = time(NULL);
 	int N = 100000;
-	int SIZE = 100;
+	int SIZE = 3000;
 	vector<Sequence*> vs(N);
 	double vm1, rss1;
 	double vm2, rss2;
@@ -67,10 +69,11 @@ void TestSequenceMemory() {
 	cout << "Memory after creation for " <<  N << " Sequences of size " << SIZE << ": VM = "<< (vm2 - vm1) << " KB., RSS = "<< (rss2 - rss1) << " KB." << endl;
 	for (int i = 0; i < N; ++i) {
 		delete vs[i];
-		vs[i] = NULL;
+		vs[i] = 0;
 	}
 	process_mem_usage(vm3, rss3);
 	cout << "Memory after deletion for " <<  N << " Sequences of size " << SIZE << ": VM = "<< (vm3 - vm1) << " KB., RSS = "<< (rss3 - rss1) << " KB." << endl;
+	cout << "Time: " <<  time(NULL) - now << endl;
 }
 
 cute::suite SequenceSuite(){

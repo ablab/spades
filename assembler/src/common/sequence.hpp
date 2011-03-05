@@ -14,28 +14,33 @@
 #include <iostream>
 using namespace std;
 
-typedef char SequenceT;
-#define SequenceTnucl 4
-
 //SEQUENCE IS IMMUTABLE!!!
 class Sequence { // immutable runtime length sequence (slow!!!)
 
 private:
+	// type to store Seq in Sequences
+	typedef short ST;
+	// number of nucleotides in ST
+	static const int STN = (sizeof(ST) * 4);
+
 	/**
 	 * Data class for reference counting, contains sequence and ref count.
 	 */
 	class Data {
 	public:
-		Seq<4,SequenceT> *bytes_;
+		Seq<STN,ST> *bytes_;
 		size_t ref_;
 		inline void IncRef() {++ref_;}
 		inline void DecRef() {--ref_;}
-		Data(const std::vector<Seq<4,SequenceT> > &bytes) : ref_(1) {
-			bytes_ = new Seq<4,SequenceT>[bytes.size()];
+		Data(const std::vector<Seq<STN,ST> > &bytes) : ref_(1) {
+			bytes_ =  (Seq<STN,ST>*) malloc(sizeof(Seq<STN,ST>) * bytes.size()); // it's a bit faster than new
+			//bytes_ = new Seq<STN,ST>[bytes.size()];
 			copy(bytes.begin(), bytes.end(), bytes_);
 		}
 		~Data() {
-			delete[] bytes_;
+			free(bytes_);
+			//delete[] bytes_;
+			bytes_ = NULL;
 		}
 	};
 
@@ -48,8 +53,8 @@ private:
 	 * Right to left + complimentary?
 	 */
 	const bool rtl_; // should be const
-	Sequence(Data* data, size_t from, size_t size, bool rtl);
-	Sequence& operator=(const Sequence& that);
+	Sequence(Data *data, size_t from, size_t size, bool rtl);
+	Sequence& operator=(const Sequence &that);
 
 public:
 	template <size_t _size>
@@ -60,7 +65,7 @@ public:
 	Sequence(const std::string &s);
 	~Sequence();
 	char operator[](const size_t index) const;
-	bool operator==(const Sequence& that) const;
+	bool operator==(const Sequence &that) const;
 	Sequence operator!() const;
 
 	/**
@@ -71,8 +76,8 @@ public:
 
 	Sequence Subseq(size_t from) const; // up to size_ by default
 	Sequence operator+ (const Sequence &s) const;
-	Sequence(const Sequence& s);
-	int find(const Sequence& t, int from = 0) const;
+	Sequence(const Sequence &s);
+	int find(const Sequence &t, int from = 0) const;
 	int similar(const Sequence &t, int k, char directed = 0) const;
 	std::string str() const;
 	int leftSimilar(const Sequence &t, int k) const;
