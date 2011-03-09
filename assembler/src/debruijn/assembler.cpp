@@ -25,10 +25,10 @@ using namespace std;
 //#define K 11
 
 // input files:
-//#define filename1 "./data/MG1655-K12_emul1.fasta.gz"
-//#define filename2 "./data/MG1655-K12_emul2.fasta.gz"
-#define filename1 "./test/data/s_6_1.fastq.gz"
-#define filename2 "./test/data/s_6_2.fastq.gz"
+#define filename1 "./data/MG1655-K12_emul1.fasta.gz"
+#define filename2 "./data/MG1655-K12_emul2.fasta.gz"
+//#define filename1 "./test/data/s_6_1.fastq.gz"
+//#define filename2 "./test/data/s_6_2.fastq.gz"
 
 int main(int argc, char *argv[]) {
 	cerr << "Hello, I am assembler!" << endl;
@@ -47,6 +47,9 @@ int main(int argc, char *argv[]) {
 
 	condensed_graph::Graph g;
 	for (size_t i = 0; i < v->size(); ++i) {
+		if (i % 500 == 0) {
+			cout << i * 2 << " reads processed" << endl;
+		}
 		g.ThreadRead(v->operator [](i)[0]);
 		g.ThreadRead(v->operator [](i)[1]);
 	}
