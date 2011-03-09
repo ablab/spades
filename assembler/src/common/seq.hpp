@@ -21,7 +21,7 @@ using namespace std;
  * Immutable ACGT-sequence with compile-time size.
  * It compress sequence to array of Ts (default: char).
  */
-template<size_t size_, typename T = char> // max number of nucleotides, type for storage
+template<size_t size_, typename T = int> // max number of nucleotides, type for storage
 class Seq {
 private:
 	/**
@@ -114,7 +114,7 @@ public:
 	 * @param offset Offset when this sequence starts
 	 */
 	template <typename S>
-	Seq(const S& s, size_t offset = 0) {
+	Seq(const S &s, size_t offset = 0) {
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
 			char c = s[offset + i];
@@ -137,7 +137,7 @@ public:
 	inline char operator[](const size_t i) const {
 		assert(i >= 0);
 		assert(i < size_);
-		return (data_[i >> Tnucl_bits] >> ((i % Tnucl) << 1)) & 3; // btw (i % Tnucl) <=> (i & (Tnucl-1))
+		return (data_[i >> Tnucl_bits] >> ((i & (Tnucl-1)) << 1)) & 3; // btw (i % Tnucl) <=> (i & (Tnucl-1))
 	}
 
 	/**
@@ -230,11 +230,12 @@ public:
 		return size_;
 	}
 
+	template <int HASH_SEED>
 	struct hash {
 		size_t operator()(const Seq<size_> &seq) const {
-			size_t h = 0;
-			for (size_t i = 0; i < data_size_; ++i) {
-				h += seq.data_[i];
+			size_t h = HASH_SEED;
+			for (size_t i = 0; i < seq.data_size_; i++) {
+				h = ((h << 5) - h) + seq.data_[i];
 			}
 			return h;
 		}
