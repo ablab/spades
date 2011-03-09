@@ -3,10 +3,13 @@
 #include "graphConstruction.hpp"
 #include "seq.hpp"
 #include "graphVisualizer.hpp"
+#define RIGHT 1
+#define LEFT -1
 
 int VertexCount;
 char EdgeStr[1000000];
 const int minIntersect = l - 1;
+
 
 using namespace paired_assembler;
 
@@ -185,26 +188,6 @@ int expandLeft(edgesMap &edges, verticesMap &verts, ll &startKmer,
 	}
 }
 
-int checkUniqueWayLeft(edgesMap &edges, ll finishKmer, Sequence *finishSeq) {
-	int count = 0;
-	for (int Nucl = 0; Nucl < 4; Nucl++) {
-		ll tmpKmer = (ll) Nucl << (2 * (k - 1)) | finishKmer;
-		edgesMap::iterator iter = edges.find(tmpKmer);
-		if (iter != edges.end()) {
-			int size = iter->second.size();
-			forn(i, size) {
-				if (finishSeq->similar(*(iter->se)[i]->lower, minIntersect, -1)) {
-					count++;
-					if (count > 1) {
-						return 0;
-					}
-				}
-			}
-		}
-	}
-	return count;
-}
-
 int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	int count = 0;
 	Sequence *PossibleSequence;
@@ -280,28 +263,49 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	}
 }
 
-int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
+int countWays(vector<VertexPrototype *> &v, Sequence *finishSeq, int direction) {
 	int count = 0;
-	for (int Nucl = 0; Nucl < 4; Nucl++) {
-		ll tmpKmer = (ll) Nucl | (finishKmer << (2));
-		edgesMap::iterator iter = edges.find(tmpKmer);
-		if (iter != edges.end()) {
-			int size = iter->second.size();
-			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), minIntersect, 1)) {
-					count++;
-					if (count > 1) {
-						return 0;
-					}
-				}
+	for (vector<VertexPrototype *>::iterator it = v.begin(); it != v.end(); ++it)
+		if (finishSeq->similar(*((*it)->lower), minIntersect, direction)) {
+			count++;
+			if (count > 1) {
+				return count;
 			}
 		}
-	}
-	if (count == 1) {
-		return 1;
+	return count;
+}
+
+/*
+ * Method adds nucleotide to the side of kMer defined by direction
+ */
+ll pushNucleotide(ll kMer, int length, int direction, int nucl) {
+	if(direction == RIGHT) {
+		return (ll) nucl | (kMer << (2));
 	} else {
-		return 0;
+		return (ll) nucl << (2 * length) | kMer;
 	}
+}
+
+int checkUniqueWay(edgesMap &edges, ll finishKmer, Sequence *finishSeq, int direction) {
+	int count = 0;
+	for (int Nucl = 0; Nucl < 4; Nucl++) {
+		ll tmpKmer = pushNucleotide(finishKmer, k - 1, direction, Nucl);
+		edgesMap::iterator iter = edges.find(tmpKmer);
+		if (iter != edges.end()) {
+			count += countWays(iter->second, finishSeq, direction);
+			if (count > 1)
+				return 0;
+		}
+	}
+	return count == 1;
+}
+
+int checkUniqueWayLeft(edgesMap &edges, ll finishKmer, Sequence *finishSeq) {
+	return checkUniqueWay(edges, finishKmer, finishSeq, LEFT);
+}
+
+int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
+	return checkUniqueWay(edges, finishKmer, finishSeq, RIGHT);
 }
 
 verticesMap::iterator addKmerToMap(verticesMap &verts, ll kmer) {
@@ -314,7 +318,8 @@ verticesMap::iterator addKmerToMap(verticesMap &verts, ll kmer) {
 	}
 }
 
-/*First argument of result is id of the vertex. Second argument is true if new entry was created and false otherwise
+/*First argument of result is id of the vertex. Second argument is true if new entry
+ * was created and false otherwise
  *
  */
 pair<int, bool> addVertexToMap(verticesMap &verts, ll newKmer, Sequence* newSeq) {
@@ -322,7 +327,8 @@ pair<int, bool> addVertexToMap(verticesMap &verts, ll newKmer, Sequence* newSeq)
 	vector<VertexPrototype *> *sequences = &position->second;
 	for (vector<VertexPrototype *>::iterator it = sequences->begin(); it
 			!= sequences->end(); ++it) {
-		if (newSeq->similar(*((*it)->lower), minIntersect, 0)) {
+		Sequence *otherSequence = (*it)->lower;
+		if (newSeq->similar(*otherSequence, minIntersect, 0)) {
 			return make_pair((*it)->start, false);
 		}
 	}
