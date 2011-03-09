@@ -84,10 +84,10 @@ void Vertex::set_coverage(int coverage) {
  */
 void Graph::RenewKmersHash(Vertex* v) {
 	Kmer k(v->nucls());
-	h_.put(k, make_pair(v, 0));
+	h_.put(k, v, 0);
 	for (size_t i = K, n = v->nucls().size(); i < n; ++i) {
 		k = k << v->nucls()[i];
-		h_.put(k, make_pair(v, i - K + 1));
+		h_.put(k, v, i - K + 1);
 	}
 }
 
@@ -289,8 +289,7 @@ void Graph::LinkVertices(Vertex* anc, Vertex* desc) {
 
 pair<Vertex*, int> Graph::GetPosMaybeMissing(Kmer k) {
 	if (!h_.contains(k)) {
-		Sequence s(k);
-		AddVertex(s);
+		AddVertex(Sequence(k));
 	}
 	return h_.get(k);
 }

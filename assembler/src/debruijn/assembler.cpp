@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 
 	cerr << "Reading " << filename1 << " and " << filename2 << "..." << endl;
 	ireadstream<R,2,int> irs(filename1, filename2);
-	vector<mate_read<R,int>::type> *v = irs.readAll(100000);
+	vector<mate_read<R,int>::type> *v = irs.readAll(); // read not all `reads` (for faster debug)
 	irs.close();
 	cerr << "Total reads (mate, without Ns): " << v->size() << endl;
 	cerr << "Current time: " << (time(NULL) - now) << " sec." << endl;

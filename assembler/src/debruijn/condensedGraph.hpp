@@ -9,8 +9,8 @@
 
 #include <vector>
 #include <set>
-#include <ext/hash_map>
-//#include <tr1/unordered_map>
+//#include <ext/hash_map>
+#include <tr1/unordered_map>
 #include <cstring>
 #include "seq.hpp"
 #include "sequence.hpp"
@@ -34,7 +34,7 @@ LOGGER("debruijn.condensed_graph")
 class Vertex;
 
 class Vertex {
-
+private:
 	Sequence nucls_;
 	Vertex* desc_[4];
 	Vertex* complement_;
@@ -77,17 +77,18 @@ public:
 
 class SimpleHashTable { // To Sergey: it's C++, not Java Collections ;)
 private:
-	typedef __gnu_cxx::hash_map<const Kmer, pair<Vertex*, size_t> , Kmer::hash<HASH_SEED>, Kmer::equal_to> hmap;
+	//typedef __gnu_cxx::hash_map<const Kmer, pair<Vertex*, size_t> , Kmer::hash<HASH_SEED>, Kmer::equal_to> hmap;
+	typedef tr1::unordered_map<const Kmer, pair<Vertex*, size_t> , Kmer::hash<HASH_SEED>, Kmer::equal_to> hmap;
 	hmap h_;
 public:
-	void put(Kmer k, pair<Vertex*, size_t> v) {
+	void put(Kmer k, Vertex* v, size_t s) {
 		//DEBUG("Putting position for k-mer '" << k.str() <<  "' : position " << v.second)
 		hmap::iterator hi = h_.find(k);
 		if (hi == h_.end()) { // put new element
-			h_[k] = v;
+			h_[k] = make_pair(v,s);
 		}
 		else { // change existing element
-			hi->second = v;
+			hi->second = make_pair(v,s);
 		}
 		/*if (contains(k)) {
 			h_.erase(k);
@@ -98,10 +99,12 @@ public:
 	bool contains(Kmer k) {
 		return h_.find(k) != h_.end();
 	}
-	const pair<Vertex*, size_t> get(Kmer k) {
-		assert(contains(k));
-		DEBUG("Getting position of k-mer '" + k.str() +  "' Position is " <<  h_[k].second << " at vertex'"<< h_[k].first->nucls().str() << "'")
-		return h_[k];
+
+	const pair<Vertex*, size_t> get(const Kmer &k) {
+		hmap::iterator hi = h_.find(k);
+		assert(hi != h_.end()); // contains
+		DEBUG("Getting position of k-mer '" + k.str() +  "' Position is " <<  hi->second.second << " at vertex'"<< hi->second.first->nucls().str() << "'")
+		return hi->second;
 	}
 };
 
