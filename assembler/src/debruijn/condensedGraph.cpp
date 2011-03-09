@@ -83,6 +83,7 @@ void Vertex::set_coverage(int coverage) {
  *	todo renew not all hashes
  */
 void Graph::RenewKmersHash(Vertex* v) {
+	assert(v->nucls().size() >= K);
 	Kmer k(v->nucls());
 	h_.put(k, v, 0);
 	for (size_t i = K, n = v->nucls().size(); i < n; ++i) {
@@ -214,13 +215,13 @@ Vertex* Graph::SplitVertex(Vertex* v, size_t pos) {
 	Sequence nucls = v->nucls();
 
 	Vertex* v1 = AddVertex(nucls.Subseq(0, pos));
-	Vertex* v2 = AddVertex(nucls.Subseq(pos - (K - 1), nucls.size()));
+	Vertex* v2 = AddVertex(nucls.Subseq(pos - (K - 1), nucls.size())); // nucls.size() can be omitted here
 
 	LinkVertices(v1, v2);
 
 	FixIncomingOnSplit(v, v1, v2);
 
-	FixIncomingOnSplit(v->complement(), v2->complement(), v1 -> complement());
+	FixIncomingOnSplit(v->complement(), v2->complement(), v1->complement());
 
 	DeleteVertex(v);
 
