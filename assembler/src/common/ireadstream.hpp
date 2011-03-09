@@ -82,10 +82,10 @@ public:
 		return eof_;
 	}
 
-	vector<strobe_read<size,cnt,T>>* readAll() {
+	vector<strobe_read<size,cnt,T> >* readAll(int number = -1) { // read count `reads`, default: 2^32 - 1
 		vector<strobe_read<size,cnt,T> > *v = new vector<strobe_read<size,cnt,T> >();
 		strobe_read<size,cnt,T> sr;
-		while (!eof_) {
+		while (!eof_ && number--) {
 			this->operator>>(sr);
 			v->push_back(sr);
 		}

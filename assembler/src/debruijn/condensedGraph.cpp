@@ -11,18 +11,18 @@ using namespace std;
 
 namespace condensed_graph {
 
-Vertex::Vertex(Sequence nucls) :
+Vertex::Vertex(const Sequence &nucls) :
 	nucls_(nucls) {
 	fill_n(desc_, 4, (Vertex*) NULL);
 	fill_n(arc_coverage_, 4, 0);
-//	deleted = false;
+	//	deleted = false;
 }
 
-Vertex::Vertex(Sequence nucls, Vertex** desc) :
+Vertex::Vertex(const Sequence &nucls, Vertex** desc) :
 	nucls_(nucls) {
 	memcpy(desc, desc_, 4 * sizeof(Vertex*));
 	fill_n(arc_coverage_, 4, 0);
-//	deleted = false;
+	//	deleted = false;
 }
 
 Vertex::~Vertex() {
@@ -83,11 +83,12 @@ void Vertex::set_coverage(int coverage) {
  *	todo renew not all hashes
  */
 void Graph::RenewKmersHash(Vertex* v) {
+	assert(v->nucls().size() >= K);
 	Kmer k(v->nucls());
-	h_.put(k, make_pair(v, 0));
+	h_.put(k, v, 0);
 	for (size_t i = K, n = v->nucls().size(); i < n; ++i) {
 		k = k << v->nucls()[i];
-		h_.put(k, make_pair(v, i - K + 1));
+		h_.put(k, v, i - K + 1);
 	}
 }
 
@@ -148,7 +149,7 @@ bool Graph::IsFirst(Vertex* v) const {
 //	return out.str();
 //}
 
-Vertex* Graph::AddVertex(Sequence nucls) {
+Vertex* Graph::AddVertex(const Sequence &nucls) {
 	DEBUG("Adding vertex for sequence '" << nucls.str() << "' and its complement '" << (!nucls).str() << "'")
 	Vertex* v1 = new Vertex(nucls);
 	Vertex* v2 = new Vertex(!nucls);
@@ -214,13 +215,13 @@ Vertex* Graph::SplitVertex(Vertex* v, size_t pos) {
 	Sequence nucls = v->nucls();
 
 	Vertex* v1 = AddVertex(nucls.Subseq(0, pos));
-	Vertex* v2 = AddVertex(nucls.Subseq(pos - (K - 1), nucls.size()));
+	Vertex* v2 = AddVertex(nucls.Subseq(pos - (K - 1), nucls.size())); // nucls.size() can be omitted here
 
 	LinkVertices(v1, v2);
 
 	FixIncomingOnSplit(v, v1, v2);
 
-	FixIncomingOnSplit(v->complement(), v2->complement(), v1 -> complement());
+	FixIncomingOnSplit(v->complement(), v2->complement(), v1->complement());
 
 	DeleteVertex(v);
 
@@ -267,14 +268,17 @@ void Graph::DeleteVertex(Vertex* v) {
 	component_roots_.erase(v);
 	component_roots_.erase(complement);
 
-//	v->deleted = true;
-//	complement->deleted = true;
+	//	v->deleted = true;
+	//	complement->deleted = true;
 	delete v;
 	delete complement;
 }
 
 bool Graph::AreLinkable(Vertex* v1, Vertex* v2) const {
-	return KMinusOneMer(v2 -> nucls()) == !KMinusOneMer(!(v1 -> nucls()));// && !v1->deleted && !v2 -> deleted;
+	return KMinusOneMer(v2->nucls()) == KMinusOneMer(
+			v1->nucls(),
+			v1->size() - (K - 1));// && !v1->deleted && !v2 -> deleted;
+	//was: return KMinusOneMer(v2 -> nucls()) == !KMinusOneMer(!v1 -> nucls());// && !v1->deleted && !v2 -> deleted;
 }
 
 void Graph::LinkVertices(Vertex* anc, Vertex* desc) {
@@ -294,7 +298,7 @@ pair<Vertex*, int> Graph::GetPosMaybeMissing(Kmer k) {
 	return h_.get(k);
 }
 
-void Graph::ThreadRead(Read r) {
+void Graph::ThreadRead(const Read &r) {
 	Kmer k(r);
 	DEBUG("Threading k-mer: " + k.str())
 	for (size_t i = K; i < N; ++i) {
@@ -321,7 +325,8 @@ void Graph::ThreadRead(Read r) {
 			curr_pos = GetPosMaybeMissing(k);
 			Vertex* curr_v = curr_pos.first;
 			size_t curr_offset = curr_pos.second;
-			Vertex* v2 = SplitVertex(curr_v->complement(), curr_v->size() - curr_offset)->complement();
+			Vertex* v2 = SplitVertex(curr_v->complement(),
+					curr_v->size() - curr_offset)->complement();
 			Vertex* v1 = GetPosMaybeMissing(old_k).first;
 			LinkVertices(v1, v2);
 		}

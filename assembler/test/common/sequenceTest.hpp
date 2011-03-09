@@ -6,6 +6,7 @@
 #include <ctime>
 
 void TestSequenceSelector() {
+	Sequence s("TTATTAGGGAT");
 	ASSERT_EQUAL('G', nucl(Sequence("ACGTACGTAC")[2]));
 	ASSERT_EQUAL('A', nucl(Sequence("A")[0]));
 }

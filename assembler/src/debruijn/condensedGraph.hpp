@@ -4,9 +4,13 @@
  *  Created on: Feb 21, 2011
  *      Author: sergey
  */
+#ifndef CONDENSED_GRAPH_H_
+#define CONDENSED_GRAPH_H_
+
 #include <vector>
 #include <set>
-#include <ext/hash_map>
+//#include <ext/hash_map>
+#include <tr1/unordered_map>
 #include <cstring>
 #include "seq.hpp"
 #include "sequence.hpp"
@@ -15,10 +19,6 @@
 #include <iostream>
 
 using namespace std;
-using namespace __gnu_cxx;
-
-#ifndef CONDENSED_GRAPH_H_
-#define CONDENSED_GRAPH_H_
 
 namespace condensed_graph {
 #define K 11//5//25
@@ -34,7 +34,7 @@ LOGGER("debruijn.condensed_graph")
 class Vertex;
 
 class Vertex {
-
+private:
 	Sequence nucls_;
 	Vertex* desc_[4];
 	Vertex* complement_;
@@ -44,8 +44,8 @@ class Vertex {
 
 public:
 	//bool deleted;
-	Vertex(Sequence nucls);
-	Vertex(Sequence nucls, Vertex** desc);
+	Vertex(const Sequence &nucls);
+	Vertex(const Sequence &nucls, Vertex** desc);
 	~Vertex();
 	int DescCount();
 	bool IsDeadend();
@@ -60,7 +60,11 @@ public:
 	void set_coverage(int coverage);
 };
 
-class SimpleHash {
+
+/*
+ * To Sergey: please use Kmer::hash instead
+ */
+/*class SimpleHash {
 public:
 	unsigned int operator()(const Kmer& seq) const {
 		unsigned int h = HASH_SEED;
@@ -69,27 +73,38 @@ public:
 		}
 		return h;
 	}
-};
+};*/
 
-class SimpleHashTable {
-	hash_map<const Kmer, pair<Vertex*, size_t> , SimpleHash, Kmer::equal_to> h_;
+class SimpleHashTable { // To Sergey: it's C++, not Java Collections ;)
+private:
+	//typedef __gnu_cxx::hash_map<const Kmer, pair<Vertex*, size_t> , Kmer::hash<HASH_SEED>, Kmer::equal_to> hmap;
+	typedef tr1::unordered_map<const Kmer, pair<Vertex*, size_t> , Kmer::hash<HASH_SEED>, Kmer::equal_to> hmap;
+	hmap h_;
 public:
-	void put(Kmer k, pair<Vertex*, size_t> v) {
+	void put(Kmer k, Vertex* v, size_t s) {
 		//DEBUG("Putting position for k-mer '" << k.str() <<  "' : position " << v.second)
-		if (contains(k)) {
+		hmap::iterator hi = h_.find(k);
+		if (hi == h_.end()) { // put new element
+			h_[k] = make_pair(v,s);
+		}
+		else { // change existing element
+			hi->second = make_pair(v,s);
+		}
+		/*if (contains(k)) {
 			h_.erase(k);
 		}
-		h_.insert(make_pair(k, v));
+		h_.insert(make_pair(k, v));*/
 	}
 
 	bool contains(Kmer k) {
-		assert(h_.count(k) <= 1);
-		return h_.count(k) == 1;
+		return h_.find(k) != h_.end();
 	}
-	const pair<Vertex*, size_t> get(Kmer k) {
-		assert(contains(k));
-		DEBUG("Getting position of k-mer '" + k.str() +  "' Position is " <<  h_[k].second << " at vertex'"<< h_[k].first->nucls().str() << "'")
-		return h_[k];
+
+	const pair<Vertex*, size_t> get(const Kmer &k) {
+		hmap::iterator hi = h_.find(k);
+		assert(hi != h_.end()); // contains
+		DEBUG("Getting position of k-mer '" + k.str() +  "' Position is " <<  hi->second.second << " at vertex'"<< hi->second.first->nucls().str() << "'")
+		return hi->second;
 	}
 };
 
@@ -122,7 +137,7 @@ public:
 	/**
 	 * adds vertex and its complement
 	 */
-	Vertex* AddVertex(Sequence nucls);
+	Vertex* AddVertex(const Sequence &nucls);
 
 	bool IsMergePossible(Vertex* v1, Vertex* v2) const;
 
@@ -150,7 +165,7 @@ public:
 
 	pair<Vertex*, int> GetPosMaybeMissing(Kmer k);
 
-	void ThreadRead(Read r);
+	void ThreadRead(const Read &r);
 
 	bool IsLastKmer(Vertex* v, size_t pos) const;
 	bool IsFirstKmer(Vertex* v, size_t pos) const;

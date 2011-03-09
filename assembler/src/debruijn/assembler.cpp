@@ -38,20 +38,21 @@ int main(int argc, char *argv[]) {
 
 	cerr << "Reading " << filename1 << " and " << filename2 << "..." << endl;
 	ireadstream<R,2,int> irs(filename1, filename2);
-	vector<mate_read<R,int>::type> *v = irs.readAll();
+	vector<mate_read<R,int>::type> *v = irs.readAll(1000000); // read not all `reads` (for faster debug)
 	irs.close();
 	cerr << "Total reads (mate, without Ns): " << v->size() << endl;
 	cerr << "Current time: " << (time(NULL) - now) << " sec." << endl;
 
 	// construct graph
 
+	time_t now2 = time(NULL);
 	condensed_graph::Graph g;
 	for (size_t i = 0; i < v->size(); ++i) {
-		if (i % 500 == 0) {
-			cout << i * 2 << " reads processed" << endl;
+		if (i % 10000 == 0) {
+			cerr << "reads: " << i << ", time: " << (time(NULL) - now2) << endl;
 		}
-		g.ThreadRead(v->operator [](i)[0]);
-		g.ThreadRead(v->operator [](i)[1]);
+		g.ThreadRead((*v)[i][0]);
+		g.ThreadRead((*v)[i][1]);
 	}
 
 	/*
