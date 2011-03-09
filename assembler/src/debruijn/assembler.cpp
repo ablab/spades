@@ -25,10 +25,10 @@ using namespace std;
 //#define K 11
 
 // input files:
-//#define filename1 "./data/MG1655-K12_emul1.fasta.gz"
-//#define filename2 "./data/MG1655-K12_emul2.fasta.gz"
-#define filename1 "./test/data/s_6_1.fastq.gz"
-#define filename2 "./test/data/s_6_2.fastq.gz"
+#define filename1 "./data/MG1655-K12_emul1.fasta.gz"
+#define filename2 "./data/MG1655-K12_emul2.fasta.gz"
+//#define filename1 "./test/data/s_6_1.fastq.gz"
+//#define filename2 "./test/data/s_6_2.fastq.gz"
 
 int main(int argc, char *argv[]) {
 	cerr << "Hello, I am assembler!" << endl;
@@ -38,17 +38,18 @@ int main(int argc, char *argv[]) {
 
 	cerr << "Reading " << filename1 << " and " << filename2 << "..." << endl;
 	ireadstream<R,2,int> irs(filename1, filename2);
-	vector<mate_read<R,int>::type> *v = irs.readAll();
+	vector<mate_read<R,int>::type> *v = irs.readAll(100000);
 	irs.close();
 	cerr << "Total reads (mate, without Ns): " << v->size() << endl;
 	cerr << "Current time: " << (time(NULL) - now) << " sec." << endl;
 
 	// construct graph
 
+	time_t now2 = time(NULL);
 	condensed_graph::Graph g;
 	for (size_t i = 0; i < v->size(); ++i) {
-		if (i % 1000 == 0) {
-			cerr << i << endl;
+		if (i % 10000 == 0) {
+			cerr << "reads: " << i << ", time: " << (time(NULL) - now2) << endl;
 		}
 		g.ThreadRead((*v)[i][0]);
 		g.ThreadRead((*v)[i][1]);

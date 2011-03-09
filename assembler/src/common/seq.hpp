@@ -21,7 +21,7 @@ using namespace std;
  * Immutable ACGT-sequence with compile-time size.
  * It compress sequence to array of Ts (default: char).
  */
-template<size_t size_, typename T = char> // max number of nucleotides, type for storage
+template<size_t size_, typename T = short> // max number of nucleotides, type for storage
 class Seq {
 private:
 	/**
@@ -230,11 +230,12 @@ public:
 		return size_;
 	}
 
+	template <int HASH_SEED>
 	struct hash {
 		size_t operator()(const Seq<size_> &seq) const {
-			size_t h = 0;
-			for (size_t i = 0; i < data_size_; ++i) {
-				h += seq.data_[i];
+			size_t h = HASH_SEED;
+			for (size_t i = 0; i < seq.data_size_; i++) {
+				h = ((h << 5) - h) + seq.data_[i];
 			}
 			return h;
 		}

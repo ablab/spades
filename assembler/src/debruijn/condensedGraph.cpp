@@ -11,14 +11,14 @@ using namespace std;
 
 namespace condensed_graph {
 
-Vertex::Vertex(Sequence nucls) :
+Vertex::Vertex(const Sequence &nucls) :
 	nucls_(nucls) {
 	fill_n(desc_, 4, (Vertex*) NULL);
 	fill_n(arc_coverage_, 4, 0);
 //	deleted = false;
 }
 
-Vertex::Vertex(Sequence nucls, Vertex** desc) :
+Vertex::Vertex(const Sequence &nucls, Vertex** desc) :
 	nucls_(nucls) {
 	memcpy(desc, desc_, 4 * sizeof(Vertex*));
 	fill_n(arc_coverage_, 4, 0);
