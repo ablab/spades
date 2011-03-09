@@ -47,8 +47,11 @@ int main(int argc, char *argv[]) {
 
 	condensed_graph::Graph g;
 	for (size_t i = 0; i < v->size(); ++i) {
-		g.ThreadRead(v->operator [](i)[0]);
-		g.ThreadRead(v->operator [](i)[1]);
+		if (i % 1000 == 0) {
+			cerr << i << endl;
+		}
+		g.ThreadRead((*v)[i][0]);
+		g.ThreadRead((*v)[i][1]);
 	}
 
 	/*

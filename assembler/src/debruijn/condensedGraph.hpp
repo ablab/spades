@@ -122,7 +122,7 @@ public:
 	/**
 	 * adds vertex and its complement
 	 */
-	Vertex* AddVertex(Sequence nucls);
+	Vertex* AddVertex(const Sequence &nucls);
 
 	bool IsMergePossible(Vertex* v1, Vertex* v2) const;
 
@@ -150,7 +150,7 @@ public:
 
 	pair<Vertex*, int> GetPosMaybeMissing(Kmer k);
 
-	void ThreadRead(Read r);
+	void ThreadRead(const Read &r);
 
 	bool IsLastKmer(Vertex* v, size_t pos) const;
 	bool IsFirstKmer(Vertex* v, size_t pos) const;

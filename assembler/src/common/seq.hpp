@@ -114,7 +114,7 @@ public:
 	 * @param offset Offset when this sequence starts
 	 */
 	template <typename S>
-	Seq(const S& s, size_t offset = 0) {
+	Seq(const S &s, size_t offset = 0) {
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
 			char c = s[offset + i];

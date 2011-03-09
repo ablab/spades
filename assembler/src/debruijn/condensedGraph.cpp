@@ -148,7 +148,7 @@ bool Graph::IsFirst(Vertex* v) const {
 //	return out.str();
 //}
 
-Vertex* Graph::AddVertex(Sequence nucls) {
+Vertex* Graph::AddVertex(const Sequence &nucls) {
 	DEBUG("Adding vertex for sequence '" << nucls.str() << "' and its complement '" << (!nucls).str() << "'")
 	Vertex* v1 = new Vertex(nucls);
 	Vertex* v2 = new Vertex(!nucls);
@@ -289,12 +289,13 @@ void Graph::LinkVertices(Vertex* anc, Vertex* desc) {
 
 pair<Vertex*, int> Graph::GetPosMaybeMissing(Kmer k) {
 	if (!h_.contains(k)) {
-		AddVertex(Sequence(k));
+		Sequence s(k);
+		AddVertex(s);
 	}
 	return h_.get(k);
 }
 
-void Graph::ThreadRead(Read r) {
+void Graph::ThreadRead(const Read &r) {
 	Kmer k(r);
 	DEBUG("Threading k-mer: " + k.str())
 	for (size_t i = K; i < N; ++i) {
