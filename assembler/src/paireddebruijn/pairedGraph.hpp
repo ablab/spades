@@ -1,5 +1,6 @@
 #include "vector"
 #include "sequence.hpp"
+#include "common.hpp"
 //#include "hashTable.h"
 using namespace std;
 
@@ -29,14 +30,42 @@ class VertexPrototype {
 	public:
 	VertexPrototype(Sequence *lower_, int start_) {
 		lower = lower_;
-		start = start_;
+		VertexId = start_;
 		used = false;
 	}
 	Sequence *lower;
-	int start;
-//	int finish;
+	int VertexId;
 	bool used;
 };
+
+class Edge {
+	//	int _coverage;
+public:
+	Sequence *upper;
+	Sequence *lower;
+	int length;
+	int FromVertex;
+	int ToVertex;
+	//	Vertex(int coverage, int length, Sequence *kmer, Sequence *pair, bool direction, int delta_d);
+	void ExpandRight(Edge newRigth) {
+		ToVertex = newRigth.ToVertex;
+		length = length + newRigth.length - (k-1);
+		//TODO update both Seq...
+	}
+	void ExpandLeft(Edge newLeft) {
+		FromVertex = newLeft.FromVertex;
+		length = length + newLeft.length - (k-1);
+		//TODO update both Seq...
+	}
+	Edge(Sequence *up, Sequence *low, int from, int to, int len) {
+		upper = up;
+		lower = low;
+		FromVertex = from;
+		ToVertex = to;
+		length = len;
+	}
+};
+
 
 class Vertex {
 	//	int _coverage;
