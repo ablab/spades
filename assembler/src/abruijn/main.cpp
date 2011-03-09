@@ -4,7 +4,7 @@
 #include "graphBuilder.hpp"
 #include "logging.hpp"
 
-LOGGER("a")
+LOGGER("a");
 
 int main() {
 	INFO("Hello, A Bruijn!");

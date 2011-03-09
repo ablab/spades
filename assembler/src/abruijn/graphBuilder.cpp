@@ -10,7 +10,7 @@
 #include "iostream"
 #include "fstream"
 
-LOGGER("a.graphBuilder")
+LOGGER("a.graphBuilder");
 
 using namespace std;
 using namespace __gnu_cxx;

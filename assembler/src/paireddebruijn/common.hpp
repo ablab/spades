@@ -20,7 +20,7 @@
 #define edgesMap  map<ll, vector<VertexPrototype *> >
 #define verticesMap  map<ll, vector<VertexPrototype *> >
 
-LOGGER("paireddebruijn.common")
+LOGGER("paireddebruijn.common");
 
 #define MAX_VERT_NUMBER 100000
 
