@@ -171,13 +171,13 @@ void TestBuldge() {
 
 void TestSimpleHashTable() {
 	SimpleHashTable h;
-	Kmer k1("AACCG");
+	Kmer k1("AACCGAACCGA");
 	Vertex* v = new Vertex(Sequence("AAAA"));
-	h.put(k1, make_pair(v, 1));
+	h.put(k1, v, 1);
 	ASSERT(h.contains(k1));
 	ASSERT_EQUAL(h.get(k1).first, v);
 	ASSERT_EQUAL(h.get(k1).second, 1);
-	h.put(k1, make_pair(v, 2));
+	h.put(k1, v, 2);
 	ASSERT_EQUAL(h.get(k1).first, v);
 	ASSERT_EQUAL(h.get(k1).second, 2);
 	delete v;

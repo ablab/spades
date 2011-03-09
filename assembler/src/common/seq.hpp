@@ -21,7 +21,7 @@ using namespace std;
  * Immutable ACGT-sequence with compile-time size.
  * It compress sequence to array of Ts (default: char).
  */
-template<size_t size_, typename T = short> // max number of nucleotides, type for storage
+template<size_t size_, typename T = int> // max number of nucleotides, type for storage
 class Seq {
 private:
 	/**
@@ -137,7 +137,7 @@ public:
 	inline char operator[](const size_t i) const {
 		assert(i >= 0);
 		assert(i < size_);
-		return (data_[i >> Tnucl_bits] >> ((i % Tnucl) << 1)) & 3; // btw (i % Tnucl) <=> (i & (Tnucl-1))
+		return (data_[i >> Tnucl_bits] >> ((i & (Tnucl-1)) << 1)) & 3; // btw (i % Tnucl) <=> (i & (Tnucl-1))
 	}
 
 	/**

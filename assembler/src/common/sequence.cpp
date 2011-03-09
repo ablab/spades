@@ -44,10 +44,12 @@ bool Sequence::operator==(const Sequence &that) const {
 	if (size_ != that.size_) {
 		return false;
 	}
+	if (data_ == that.data_ && from_ == that.from_ && rtl_ == that.rtl_) {
+		return true;
+	}
 	for (size_t i = 0; i < size_; ++i) {
-		if (operator[](i) != that[i]) {
+		if (this->operator[](i) != that[i]) {
 			return false;
-
 		}
 	}
 	return true;
@@ -57,6 +59,7 @@ Sequence Sequence::operator!() const {
 	return Sequence(*this, from_, size_, !rtl_);
 }
 
+// O(1)
 //including from, excluding to
 //safe if not #DEFINE NDEBUG
 Sequence Sequence::Subseq(size_t from, size_t to) const {
@@ -137,7 +140,7 @@ Sequence Sequence::operator+(const Sequence &s) const {
 std::string Sequence::str() const {
 	std::string res(size_, '-');
 	for (size_t i = 0; i < size_; ++i) {
-		res[i] = nucl(operator[](i));
+		res[i] = nucl(this->operator[](i));
 	}
 	return res;
 }

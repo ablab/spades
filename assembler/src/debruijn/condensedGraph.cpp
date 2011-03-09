@@ -15,14 +15,14 @@ Vertex::Vertex(const Sequence &nucls) :
 	nucls_(nucls) {
 	fill_n(desc_, 4, (Vertex*) NULL);
 	fill_n(arc_coverage_, 4, 0);
-//	deleted = false;
+	//	deleted = false;
 }
 
 Vertex::Vertex(const Sequence &nucls, Vertex** desc) :
 	nucls_(nucls) {
 	memcpy(desc, desc_, 4 * sizeof(Vertex*));
 	fill_n(arc_coverage_, 4, 0);
-//	deleted = false;
+	//	deleted = false;
 }
 
 Vertex::~Vertex() {
@@ -267,14 +267,15 @@ void Graph::DeleteVertex(Vertex* v) {
 	component_roots_.erase(v);
 	component_roots_.erase(complement);
 
-//	v->deleted = true;
-//	complement->deleted = true;
+	//	v->deleted = true;
+	//	complement->deleted = true;
 	delete v;
 	delete complement;
 }
 
 bool Graph::AreLinkable(Vertex* v1, Vertex* v2) const {
-	return KMinusOneMer(v2 -> nucls()) == !KMinusOneMer(!(v1 -> nucls()));// && !v1->deleted && !v2 -> deleted;
+	return KMinusOneMer(v2->nucls()) == KMinusOneMer(v1->nucls(), v1->size() - (K - 1));// && !v1->deleted && !v2 -> deleted;
+	//was: return KMinusOneMer(v2 -> nucls()) == !KMinusOneMer(!v1 -> nucls());// && !v1->deleted && !v2 -> deleted;
 }
 
 void Graph::LinkVertices(Vertex* anc, Vertex* desc) {
@@ -321,7 +322,8 @@ void Graph::ThreadRead(const Read &r) {
 			curr_pos = GetPosMaybeMissing(k);
 			Vertex* curr_v = curr_pos.first;
 			size_t curr_offset = curr_pos.second;
-			Vertex* v2 = SplitVertex(curr_v->complement(), curr_v->size() - curr_offset)->complement();
+			Vertex* v2 = SplitVertex(curr_v->complement(),
+					curr_v->size() - curr_offset)->complement();
 			Vertex* v1 = GetPosMaybeMissing(old_k).first;
 			LinkVertices(v1, v2);
 		}
