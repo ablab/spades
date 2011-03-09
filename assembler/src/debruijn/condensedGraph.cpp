@@ -274,7 +274,9 @@ void Graph::DeleteVertex(Vertex* v) {
 }
 
 bool Graph::AreLinkable(Vertex* v1, Vertex* v2) const {
-	return KMinusOneMer(v2->nucls()) == KMinusOneMer(v1->nucls(), v1->size() - (K - 1));// && !v1->deleted && !v2 -> deleted;
+	return KMinusOneMer(v2->nucls()) == KMinusOneMer(
+			v1->nucls(),
+			v1->size() - (K - 1));// && !v1->deleted && !v2 -> deleted;
 	//was: return KMinusOneMer(v2 -> nucls()) == !KMinusOneMer(!v1 -> nucls());// && !v1->deleted && !v2 -> deleted;
 }
 
