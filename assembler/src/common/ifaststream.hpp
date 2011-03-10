@@ -21,15 +21,11 @@ KSEQ_INIT(gzFile, gzread)
  * Read name, seq and qual strings from FASTQ data (one by one)
  */
 class ifaststream {
+
 public:
 	ifaststream(const char* filename) {
+		filename_ = filename;
 		is_open_ = open(filename);
-		if (is_open_){
-			eof_ = false;
-			state_ = 2;
-			read_ahead();
-			state_ = 0;
-		}
 	}
 
 	virtual ~ifaststream() {
@@ -73,8 +69,13 @@ public:
 		}
 	}
 
+	void reset() {
+		close();
+		open(filename_);
+	}
 
 private:
+	const char* filename_;
 	gzFile fp_;
 	kseq_t* seq_;
 	bool is_open_;
@@ -90,7 +91,12 @@ private:
 		if (!fp_) {
 			return false;
 		}
+		is_open_ = true;
 		seq_ = kseq_init(fp_); // STEP 3: initialize seq
+		eof_ = false;
+		state_ = 2;
+		read_ahead();
+		state_ = 0;
 		return true;
 	}
 

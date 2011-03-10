@@ -39,6 +39,14 @@ public:
 		read_ahead();
 	}
 
+	void reset() {
+		for (int i = 0; i < cnt; ++i) {
+			ifs_[i]->reset();
+		}
+		is_open_ = true;
+		eof_ = false;
+		read_ahead();
+	}
 	virtual ~ireadstream() {
 		close();
 	}
