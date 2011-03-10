@@ -568,7 +568,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 
 	forn(curVertId,VertexCount){
 		if ((inD[curVertId]!=0)&&(outD[curVertId]!=0))
-//		if ((inD[curVertId]==outD[curVertId])&&(inD[curVertId]==EdgePairs[curVertId].size()))
+		if ((inD[curVertId]<=EdgePairs[curVertId].size())&&(outD[curVertId]<=EdgePairs[curVertId].size()))
 		{
 			cerr<<"Process vertex "<<curVertId<<" IN "<<inD[curVertId]<<" OUT "<<outD[curVertId]<<" unique ways "<<EdgePairs[curVertId].size()<<endl;
 			forn(i,(EdgePairs[curVertId]).size()){
