@@ -43,8 +43,10 @@ string generateParameterString(const string &name, const string &value);
 template<typename tVertex>
 void recordVertex(ostream &out, Vertex<tVertex> &vertex) {
 	out << vertex.id << " [" << generateParameterString("label", vertex.label)
-			<< "," << generateParameterString("fillcolor", vertex.fillColor)
-			<< "]" << endl;
+			<< "," << generateParameterString("style", "filled") << ","
+			<< generateParameterString("color", "black") << ","
+			<< generateParameterString("fillcolor", vertex.fillColor) << "]"
+			<< endl;
 }
 
 template<typename tVertex>
