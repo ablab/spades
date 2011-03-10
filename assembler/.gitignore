@@ -3,3 +3,4 @@ logs/
 output/
 .cproject
 .project
+gmon.out
