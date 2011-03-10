@@ -8,13 +8,13 @@
 #ifndef DEBRUIJN_HPP_
 #define DEBRUIJN_HPP_
 
-#include "../seq.hpp"
+#include "seq.hpp"
 #include <google/sparse_hash_map> // ./configure, make and sudo make install from libs/sparsehash-1.10
 #include <iostream> // for debug
 #include <map>
 #include <tr1/unordered_map>
 
-template <int _size>
+template <int size_>
 class DeBruijn {
 private:
 	class data {
@@ -27,22 +27,22 @@ private:
 		int out_edges[4];
 		int in_edges[4];
 	};
-	typedef Seq<_size> key;
-	typedef DeBruijn::data value;
+	typedef Seq<size_> key;
+	typedef data value;
 	//typedef google::sparse_hash_map<key, value,	typename key::hash, typename key::equal_to> hash_map;
 	typedef std::map<key, value, typename key::less> hash_map;
 	//typedef std::tr1::unordered_map<key, value,	typename key::hash, typename key::equal_to> hash_map;
 	hash_map _nodes;
 public:
-	data& addNode(const Seq<_size> &seq) {
+	data& addNode(const Seq<size_> &seq) {
 		std::pair<const key, value> p = make_pair(seq, data());
 		std::pair<typename hash_map::iterator, bool> node = _nodes.insert(p);
 		return node.first->second; // return node's data
 	}
-	void addEdge(const Seq<_size> &from, const Seq<_size> &to) {
+	void addEdge(const Seq<size_> &from, const Seq<size_> &to) {
 		data &d_from = addNode(from);
 		data &d_to = addNode(to);
-		d_from.out_edges[(size_t)to[_size-1]]++;
+		d_from.out_edges[(size_t)to[size_-1]]++;
 		d_to.in_edges[(size_t)from[0]]++;
 	}
 	size_t size() const {

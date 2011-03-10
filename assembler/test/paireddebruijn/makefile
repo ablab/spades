@@ -1,4 +1,5 @@
-SRC=test.cpp graphConstruction.cpp pairedGraph.cpp simpleGraph.cpp parser.cpp constructHashTable.cpp seq.cpp sequence.cpp nucl.cpp parser.cpp graphVisualizer.cpp #pairedGraph.cpp main.cpp 
+include ../../src/paireddebruijn/srclist.inc
+SRC=test.cpp $(SRC1) 
 
 DIR=paireddebruijn
 PROG=paireddebruijnTest

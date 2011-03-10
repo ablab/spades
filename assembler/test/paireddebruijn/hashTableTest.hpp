@@ -8,33 +8,33 @@ void TestEmptyDecompress() {
 }
 
 void TestSingleNucleotideDecompress() {
-	ASSERT_EQUAL(decompress(0, 1), "A");
-	ASSERT_EQUAL(decompress(1, 1), "C");
-	ASSERT_EQUAL(decompress(2, 1), "G");
-	ASSERT_EQUAL(decompress(3, 1), "T");
+	ASSERT_EQUAL("A", decompress(0, 1));
+	ASSERT_EQUAL("C", decompress(1, 1));
+	ASSERT_EQUAL("G", decompress(2, 1));
+	ASSERT_EQUAL("T", decompress(3, 1));
 }
 
 void TestDoubleNucleotideDecompress() {
-	ASSERT_EQUAL(decompress(0, 2), "AA");
-	ASSERT_EQUAL(decompress(1, 2), "AC");
-	ASSERT_EQUAL(decompress(2, 2), "AG");
-	ASSERT_EQUAL(decompress(3, 2), "AT");
-	ASSERT_EQUAL(decompress(4 + 0, 2), "CA");
-	ASSERT_EQUAL(decompress(4 + 1, 2), "CC");
-	ASSERT_EQUAL(decompress(4 + 2, 2), "CG");
-	ASSERT_EQUAL(decompress(4 + 3, 2), "CT");
-	ASSERT_EQUAL(decompress(8 + 0, 2), "GA");
-	ASSERT_EQUAL(decompress(8 + 1, 2), "GC");
-	ASSERT_EQUAL(decompress(8 + 2, 2), "GG");
-	ASSERT_EQUAL(decompress(8 + 3, 2), "GT");
-	ASSERT_EQUAL(decompress(12 + 0, 2), "TA");
-	ASSERT_EQUAL(decompress(12 + 1, 2), "TC");
-	ASSERT_EQUAL(decompress(12 + 2, 2), "TG");
-	ASSERT_EQUAL(decompress(12 + 3, 2), "TT");
+	ASSERT_EQUAL("AA", decompress(0, 2));
+	ASSERT_EQUAL("AC", decompress(1, 2));
+	ASSERT_EQUAL("AG", decompress(2, 2));
+	ASSERT_EQUAL("AT", decompress(3, 2));
+	ASSERT_EQUAL("CA", decompress(4 + 0, 2));
+	ASSERT_EQUAL("CC", decompress(4 + 1, 2));
+	ASSERT_EQUAL("CG", decompress(4 + 2, 2));
+	ASSERT_EQUAL("CT", decompress(4 + 3, 2));
+	ASSERT_EQUAL("GA", decompress(8 + 0, 2));
+	ASSERT_EQUAL("GC", decompress(8 + 1, 2));
+	ASSERT_EQUAL("GG", decompress(8 + 2, 2));
+	ASSERT_EQUAL("GT", decompress(8 + 3, 2));
+	ASSERT_EQUAL("TA", decompress(12 + 0, 2));
+	ASSERT_EQUAL("TC", decompress(12 + 1, 2));
+	ASSERT_EQUAL("TG", decompress(12 + 2, 2));
+	ASSERT_EQUAL("TT", decompress(12 + 3, 2));
 }
 
 void TestMultyNucleotideDecompress() {
-	ASSERT_EQUAL(decompress(124132, 6), "CATGCA");
+	ASSERT_EQUAL("CATGCA", decompress(124132, 6));
 }
 
 template<typename tType>
@@ -75,8 +75,6 @@ void TestCodeReadAllACGT() {
 			result[i] = 3;
 		}
 	codeRead(input, code);
-	for (int i = 0; i < readLength; i++)
-		ASSERT_EQUAL(result[0], code[0]);
 	checkArraysEqual<char> (result, code, readLength);
 	delete[] input;
 	delete[] code;
@@ -112,6 +110,37 @@ void TestExtractMerAllA() {
 	delete[] input;
 }
 
+void TestAddPairToTableSingleEntry() {
+	myMap map;
+	addPairToTable(map, 1, 2);
+	ASSERT_EQUAL(1u, map.size());
+	for (myMap::iterator it = map.begin(); it != map.end(); ++it) {
+		ASSERT_EQUAL(1, it->first);
+		ASSERT_EQUAL(1u, it->second.size());
+		ASSERT_EQUAL(2, it->second[0]);
+	}
+}
+
+void TestAddPairToTableTwoEntries() {
+	myMap map;
+	addPairToTable(map, 1, 2);
+	addPairToTable(map, 3, 4);
+	ASSERT_EQUAL(2u, map.size());
+	ASSERT_EQUAL(1u, map[1].size());
+	ASSERT_EQUAL(1u, map[3].size());
+	ASSERT_EQUAL(2, map[1][0]);
+	ASSERT_EQUAL(4, map[3][0]);
+}
+
+void TestAddPairToTableCoinsidingEntries() {
+	myMap map;
+	for(int i = 0; i < 10; i++)
+		addPairToTable(map, 1, i);
+	ASSERT_EQUAL(1u, map.size());
+	for(int i = 0; i < 10; i++)
+		ASSERT_EQUAL(i, map[1][i]);
+}
+
 cute::suite HashTableSuite() {
 	cute::suite s;
 	s.push_back(CUTE(TestEmptyDecompress));
@@ -123,6 +152,9 @@ cute::suite HashTableSuite() {
 	s.push_back(CUTE(TestExtractMerLen2));
 	s.push_back(CUTE(TestExtractMerLen3FromLen20));
 	s.push_back(CUTE(TestExtractMerAllA));
+	s.push_back(CUTE(TestAddPairToTableSingleEntry));
+	s.push_back(CUTE(TestAddPairToTableTwoEntries));
+	s.push_back(CUTE(TestAddPairToTableCoinsidingEntries));
 	return s;
 }
 
