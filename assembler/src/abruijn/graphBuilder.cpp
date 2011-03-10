@@ -25,7 +25,7 @@ SeqVertice seqVertice;
 map<long long, int> edges;
 //CGraph graph;
 ofstream os;
-OnlineGraphPrinter<int> printer("abruijn");
+GraphPrinter<int> printer("abruijn");
 
 LoggerPtr logger(Logger::getLogger("a.graphBuilder"));
 HashSym<Sequence> hashSym;
