@@ -29,7 +29,8 @@ namespace condensed_graph {
 typedef Seq<K> Kmer;
 typedef Seq<K - 1> KMinusOneMer;
 typedef Seq<N> Read;
-LOGGER("debruijn.condensed_graph")
+
+LOGGER("debruijn.condensed_graph");
 
 class Vertex;
 
