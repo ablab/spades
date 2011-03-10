@@ -6,10 +6,10 @@
 using namespace gvis;
 
 void testOfflineEmpty() {
-	string s;
-	stringstream ss(s);
-	GraphScheme<int> g("", ss);
-	g.output();
+	stringstream ss;
+	GraphScheme<int> g1("", ss);
+	IGraphPrinter<int> *g = &g1;
+	g->output();
 	string tmp;
 	tmp.assign((std::istreambuf_iterator<char>(ss)), std::istreambuf_iterator<
 					char>());
@@ -17,10 +17,10 @@ void testOfflineEmpty() {
 }
 
 void testOfflineEmptyWithName() {
-	string s;
-	stringstream ss(s);
-	GraphScheme<int> g("myName", ss);
-	g.output();
+	stringstream ss;
+	GraphScheme<int> g1("myName", ss);
+	IGraphPrinter<int> *g = &g1;
+	g->output();
 	string tmp;
 	tmp.assign((std::istreambuf_iterator<char>(ss)), std::istreambuf_iterator<
 					char>());
@@ -28,27 +28,27 @@ void testOfflineEmptyWithName() {
 }
 
 void testOfflineSingleVertex() {
-	string s;
-	stringstream ss(s);
-	GraphScheme<int> g("myName", ss);
-	g.addVertex(0, "oppa");
-	g.output();
+	stringstream ss;
+	GraphScheme<int> g1("myName", ss);
+	IGraphPrinter<int> *g = &g1;
+	g->addVertex(0, "oppa");
+	g->output();
 	string tmp;
 	tmp.assign((std::istreambuf_iterator<char>(ss)), std::istreambuf_iterator<
 					char>());
-	ASSERT_EQUAL("digraph myName {\n0 [label=oppa]\n}\n", tmp);
+	ASSERT_EQUAL("digraph myName {\n0 [label=\"oppa\",fillcolor=\"white\"]\n}\n", tmp);
 }
 
 void testOfflineSingleEdge() {
-	string s;
-	stringstream ss(s);
-	OnlineGraphPrinter<int> g("myName", ss);
-	g.addEdge(0, 1, "oppa");
-	g.output();
+	stringstream ss;
+	GraphScheme<int> g1("myName", ss);
+	IGraphPrinter<int> *g = &g1;
+	g->addEdge(0, 1, "oppa");
+	g->output();
 	string tmp;
 	tmp.assign((std::istreambuf_iterator<char>(ss)), std::istreambuf_iterator<
 					char>());
-	ASSERT_EQUAL("digraph myName {\n0->1 [label=oppa]\n}\n", tmp);
+	ASSERT_EQUAL("digraph myName {\n0->1[label=\"oppa\",color=\"black\"]\n}\n", tmp);
 }
 
 cute::suite offlineGraphVisualizerSuite() {

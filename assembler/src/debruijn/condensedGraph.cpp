@@ -300,7 +300,7 @@ public:
 	}
 
 	virtual void HandleEdge(Vertex* v1, Vertex* v2) {
-		pr_.addEdge(v1, v2);
+		pr_.addEdge(v1, v2, "");
 	}
 
 };

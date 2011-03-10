@@ -10,4 +10,8 @@ void endGraphRecord(ostream &out) {
 	out << "}" << endl;
 }
 
+string generateParameterString(const string &name, const string &value) {
+	return name + "=" + "\"" + value + "\"";
+}
+
 }

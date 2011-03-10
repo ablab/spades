@@ -1,10 +1,3 @@
-/*
- * parameters.h
- *
- *  Created on: 22.02.2011
- *      Author: misha
- */
-
 #ifndef PARAMETERS_H_
 #define PARAMETERS_H_
 
