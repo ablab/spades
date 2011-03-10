@@ -24,7 +24,7 @@ SeqVertice seqVertice;
 
 map<long long, int> edges;
 //CGraph graph;
-GraphPrinter<int> printer("", "output\x.dot");
+GraphPrinter<int> printer("", "output\\x.dot");
 
 LoggerPtr logger(Logger::getLogger("a.graphBuilder"));
 HashSym<Sequence> hashSym;
