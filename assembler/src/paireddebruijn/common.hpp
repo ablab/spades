@@ -21,13 +21,14 @@
 #define verticesMap  map<ll, vector<VertexPrototype *> >
 #define longEdgesMap  map<int, Edge*>
 
-LOGGER("paireddebruijn.common")
+LOGGER("paireddebruijn.common");
 
 #define MAX_VERT_NUMBER 100000
 #define MAX_DEGREE 30
 
 using namespace std;
-const string parsed_reads = "data/reads_var_d.txt";
+//const string parsed_reads = "data/reads_const_d.txt";
+const string parsed_reads = "data/filtered_reads";
 const string parsed_k_l_mers = "data/klmers_var_d.txt";
 const string parsed_k_sequence = "data/vertices_const_d.txt";
 const string error_log = "data/error.log";

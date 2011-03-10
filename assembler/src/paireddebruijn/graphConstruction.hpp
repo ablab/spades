@@ -20,6 +20,7 @@ int storeVertex(gvis::GraphScheme<int> &g, verticesMap &verts, ll newKmer, Seque
 void resetVertexCount();
 void expandDefinite(verticesMap &verts, longEdgesMap &longEdges);
 void outputLongEdges(longEdgesMap &longEdges);
+void traceReads(verticesMap &verts, longEdgesMap &longEdges);
 
 
 #endif /*GRAPHCONSTRUCTION_H_*/

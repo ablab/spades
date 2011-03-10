@@ -1,5 +1,6 @@
 build/
 logs/
+output/
 .cproject
 .project
 *.exe

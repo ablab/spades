@@ -14,7 +14,9 @@ class GraphBuilder
 {
 public:
 	GraphBuilder() {}
-	CGraph build();
+	void build();
+private:
+    void selectGood();
 };
 
 #endif /* GRAPHBUILDER_H_ */

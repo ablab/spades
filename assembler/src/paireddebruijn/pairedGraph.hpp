@@ -9,6 +9,7 @@ using namespace std;
 
 namespace paired_assembler {
 
+
 //typedef int Kmer;
 
 //class Sequence {
@@ -46,23 +47,29 @@ public:
 	int length;
 	int FromVertex;
 	int ToVertex;
+	int EdgeId;
 	//	Vertex(int coverage, int length, Sequence *kmer, Sequence *pair, bool direction, int delta_d);
 	void ExpandRight(Edge newRigth) {
 		ToVertex = newRigth.ToVertex;
-		length = length + newRigth.length - (k-1);
+		length = length + newRigth.length;
+		upper = new Sequence(upper->str()+newRigth.upper->Subseq(k-1).str());
+		lower = new Sequence(lower->str()+newRigth.lower->Subseq(l-1).str());
 		//TODO update both Seq...
 	}
 	void ExpandLeft(Edge newLeft) {
 		FromVertex = newLeft.FromVertex;
-		length = length + newLeft.length - (k-1);
+		length = length + newLeft.length;
+		upper = new Sequence(newLeft.upper->str()+upper->Subseq(k-1).str());
+		lower = new Sequence(newLeft.lower->str()+lower->Subseq(l-1).str());
 		//TODO update both Seq...
 	}
-	Edge(Sequence *up, Sequence *low, int from, int to, int len) {
+	Edge(Sequence *up, Sequence *low, int from, int to, int len, int id) {
 		upper = up;
 		lower = low;
 		FromVertex = from;
 		ToVertex = to;
 		length = len;
+		EdgeId = id;
 	}
 };
 
