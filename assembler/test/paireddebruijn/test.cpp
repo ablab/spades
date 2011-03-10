@@ -8,7 +8,10 @@ void runSuite() {
 	cute::suite s;
 	//TODO add your test here
 	s += HashTableSuite();
-	s += GraphConstructionSuite();
+	s += CheckStoreVertexSuite();
+	s += CheckUniqueWaySuite();
+	s += GoUniqueWaySuite();
+
 	cute::ide_listener lis;
 	cute::makeRunner(lis)(s, "The Suite");
 }
