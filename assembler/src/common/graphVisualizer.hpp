@@ -8,49 +8,73 @@ using namespace std;
 
 namespace gvis {
 
+template<typename tVertex>
+struct Vertex {
+	tVertex id;
+	string label;
+	string fillColor;
+	Vertex(tVertex _id, string _label, string _fillColor) {
+		id = _id;
+		label = _label;
+		fillColor = _fillColor;
+	}
+};
+
+template<typename tVertex>
+struct Edge {
+	tVertex from;
+	tVertex to;
+	string label;
+	string color;
+	Edge(tVertex _from, tVertex _to, string _label, string _color) {
+		from = _from;
+		to = _to;
+		label = _label;
+		color = _color;
+	}
+};
+
 void startGraphRecord(ostream &out, const string &name);
 
 void endGraphRecord(ostream &out);
 
+string generateParameterString(const string &name, const string &value);
+
 template<typename tVertex>
-void recordVertex(ostream &out, tVertex vertexId, const string &vertexLabel) {
-	if (vertexLabel.length() != 0)
-		out << vertexId << " [label" << "=" << vertexLabel << "]" << endl;
-	else
-		out << vertexId << ";" << endl;
+void recordVertex(ostream &out, Vertex<tVertex> &vertex) {
+	out << vertex.id << " [" << generateParameterString("label", vertex.label)
+			<< "," << generateParameterString("style", "filled") << ","
+			<< generateParameterString("color", "black") << ","
+			<< generateParameterString("fillcolor", vertex.fillColor) << "]"
+			<< endl;
 }
 
 template<typename tVertex>
-void recordEdge(ostream &out, tVertex fromId, tVertex toId, const string &edgeLabel) {
-	out << fromId << "->" << toId;
-	if (edgeLabel.length() != 0)
-		out << " [label=" << edgeLabel << "]";
-	out << endl;
+void recordEdge(ostream &out, Edge<tVertex> &edge) {
+	out << edge.from << "->" << edge.to << "[" << generateParameterString(
+			"label", edge.label) << "," << generateParameterString("color",
+			edge.color) << "]" << endl;
 }
 
 template<typename tVertex>
-void recordVertices(ostream &out, vector<pair<tVertex, string> > &vertices) {
-	for (typename vector<pair<tVertex, string> >::iterator it =
-			vertices.begin(); it != vertices.end(); it++) {
-		pair<tVertex, string> v = *it;
-		recordVertex(out, v.first, v.second);
+void recordVertices(ostream &out, vector<Vertex<tVertex> > &vertices) {
+	for (typename vector<Vertex<tVertex> >::iterator it = vertices.begin(); it
+			!= vertices.end(); it++) {
+		recordVertex(out, *it);
 	}
 }
 
 template<typename tVertex>
-void recordEdges(ostream &out,
-		vector<pair<pair<tVertex, tVertex> , string> > &edges) {
-	for (typename vector<pair<pair<tVertex, tVertex> , string> >::iterator it =
-			edges.begin(); it != edges.end(); it++) {
-		pair<pair<tVertex, tVertex> , string> e = *it;
-		recordEdge(out, e.first.first, e.first.second, e.second);
+void recordEdges(ostream &out, vector<Edge<tVertex> > &edges) {
+	for (typename vector<Edge<tVertex> >::iterator it = edges.begin(); it
+			!= edges.end(); it++) {
+		recordEdge(out, *it);
 	}
 }
 
 template<typename tVertex>
 void outputGraph(ostream &out, const string &graphName,
-		vector<pair<tVertex, string> > &vertices,
-		vector<pair<pair<tVertex, tVertex> , string> > &edges) {
+		vector<Vertex<tVertex> > &vertices, vector<Edge<tVertex> > &edges) {
 	startGraphRecord(out, graphName);
 	recordVertices<tVertex> (out, vertices);
 	recordEdges<tVertex> (out, edges);
@@ -62,30 +86,36 @@ class IGraphPrinter {
 protected:
 	ostream *_out;
 public:
-	void addVertex(tVertex vertexId, const string &label);
-	void addEdge(tVertex fromId, tVertex toId, const string &label);
-	void output();
+	virtual void addVertex(tVertex vertexId, const string &label,
+			const string &fillColor = "white") = 0;
+	virtual void addEdge(tVertex fromId, tVertex toId, const string &label,
+			const string &color = "black") = 0;
+	virtual void output() = 0;
 };
 
 template<typename tVertex>
-class OnlineGraphPrinter: public IGraphPrinter<tVertex> {
+class GraphPrinter: public IGraphPrinter<tVertex> {
 public:
-	OnlineGraphPrinter(const string name, ostream &out) {
+	GraphPrinter(const string &name, ostream &out) {
 		IGraphPrinter<tVertex>::_out = &out;
 		startGraphRecord(*IGraphPrinter<tVertex>::_out, name);
 	}
 
-	OnlineGraphPrinter(const string name) {
+	GraphPrinter(const string &name) {
 		IGraphPrinter<tVertex>::_out = &cout;
 		startGraphRecord(*IGraphPrinter<tVertex>::_out, name);
 	}
 
-	void addVertex(tVertex vertexId, const string &label) {
-		recordVertex<tVertex>(*IGraphPrinter<tVertex>::_out, vertexId, label);
+	virtual void addVertex(tVertex vertexId, const string &label,
+			const string &fillColor = "white") {
+		Vertex<tVertex> v(vertexId, label, fillColor);
+		recordVertex<tVertex> (*IGraphPrinter<tVertex>::_out, v);
 	}
 
-	void addEdge(tVertex fromId, tVertex toId, const string &label) {
-		recordEdge<tVertex>(*IGraphPrinter<tVertex>::_out, fromId, toId, label);
+	virtual void addEdge(tVertex fromId, tVertex toId, const string &label,
+			const string &color = "black") {
+		Edge<tVertex> e(fromId, toId, label, color);
+		recordEdge<tVertex> (*IGraphPrinter<tVertex>::_out, e);
 	}
 
 	void output() {
@@ -93,41 +123,45 @@ public:
 	}
 };
 
-template<typename tVertex>
-class GraphScheme: public IGraphPrinter<tVertex> {
-private:
-	string _name;
-	vector<pair<tVertex, string> > _vertices;
-	vector<pair<pair<tVertex, tVertex> , string> > _edges;
-public:
-
-	GraphScheme(string name) {
-		_name = name;
-		IGraphPrinter<tVertex>::_out = &cout;
-	}
-
-	GraphScheme(string name, ostream &out) {
-		_name = name;
-		IGraphPrinter<tVertex>::_out = &out;
-	}
-
-	void addVertex(tVertex vertexId, const string &label) {
-		_vertices.push_back(make_pair(vertexId, label));
-	}
-
-	void addEdge(tVertex fromId, tVertex toId, const string &label) {
-		_edges.push_back(make_pair(make_pair(fromId, toId), label));
-	}
-
-	void output() {
-		outputGraph<tVertex> (*IGraphPrinter<tVertex>::_out, _name, _vertices,
-				_edges);
-	}
-
-	void output(ostream out) {
-		outputGraph<tVertex> (out, _name, _vertices, _edges);
-	}
-};
+//template<typename tVertex>
+//class GraphScheme: public IGraphPrinter<tVertex> {
+//private:
+//	string _name;
+//	vector<Vertex<tVertex> > _vertices;
+//	vector<Edge<tVertex> > _edges;
+//public:
+//
+//	GraphScheme(string name) {
+//		_name = name;
+//		IGraphPrinter<tVertex>::_out = &cout;
+//	}
+//
+//	GraphScheme(string name, ostream &out) {
+//		_name = name;
+//		IGraphPrinter<tVertex>::_out = &out;
+//	}
+//
+//	virtual void addVertex(tVertex vertexId, const string &label,
+//			const string &fillColor = "white") {
+//		Vertex<tVertex> v(vertexId, label, fillColor);
+//		_vertices.push_back(v);
+//	}
+//
+//	virtual void addEdge(tVertex fromId, tVertex toId, const string &label,
+//			const string &color = "black") {
+//		Edge<tVertex> e(fromId, toId, label, color);
+//		_edges.push_back(e);
+//	}
+//
+//	virtual void output() {
+//		outputGraph<tVertex> (*IGraphPrinter<tVertex>::_out, _name, _vertices,
+//				_edges);
+//	}
+//
+//	void output(ostream out) {
+//		outputGraph<tVertex> (out, _name, _vertices, _edges);
+//	}
+//};
 }
 
 #endif //GRAPH_VIS_//

@@ -6,99 +6,22 @@
  */
 #include "condensedGraph.hpp"
 #include "logging.hpp"
+#include "graphVisualizer.hpp"
+#include <set>
+#include <iostream>
+#include <tr1/unordered_map>
 
 using namespace std;
 
 namespace condensed_graph {
 
-Vertex::Vertex(const Sequence &nucls) :
-	nucls_(nucls) {
-	fill_n(desc_, 4, (Vertex*) NULL);
-	fill_n(arc_coverage_, 4, 0);
-	//	deleted = false;
-}
-
-Vertex::Vertex(const Sequence &nucls, Vertex** desc) :
-	nucls_(nucls) {
-	memcpy(desc, desc_, 4 * sizeof(Vertex*));
-	fill_n(arc_coverage_, 4, 0);
-	//	deleted = false;
-}
-
-Vertex::~Vertex() {
-}
-
-int Vertex::DescCount() {
-	int c = 0;
-	for (int i = 0; i < 4; ++i)
-		if (desc_[i] != NULL)
-			c++;
-	return c;
-}
-
-bool Vertex::IsDeadend() {
-	return DescCount() == 0;
-}
-
-Vertex** Vertex::desc() {
-	return desc_;
-}
-
-Vertex* Vertex::desc(char nucl) {
-	return desc_[(int) nucl];
-}
-
-size_t Vertex::size() {
-	return nucls_.size();
-}
-
-Sequence Vertex::nucls() {
-	return nucls_;
-}
-
-void Vertex::AddDesc(Vertex* v) {
-	//check if k-1 mers differ
-	int k_th_nucl = v->nucls()[K - 1];
-	desc_[k_th_nucl] = v;
-}
-
-Vertex* Vertex::complement() {
-	return complement_;
-}
-
-void Vertex::set_complement(Vertex* complement) {
-	complement_ = complement;
-}
-
-int Vertex::coverage() {
-	return coverage_;
-}
-
-void Vertex::set_coverage(int coverage) {
-	coverage_ = coverage;
-}
-
-/**
- *	renews hash for vertex and complementary
- *	todo renew not all hashes
- */
-void Graph::RenewKmersHash(Vertex* v) {
-	assert(v->nucls().size() >= K);
-	Kmer k(v->nucls());
-	h_.put(k, v, 0);
-	for (size_t i = K, n = v->nucls().size(); i < n; ++i) {
-		k = k << v->nucls()[i];
-		h_.put(k, v, i - K + 1);
-	}
-}
-
 const set<Vertex*>& Graph::component_roots() const {
 	return component_roots_;
 }
 
-vector<Vertex*> Graph::Anc(Vertex* v) const {
+vector<Vertex*> Graph::Anc(const Vertex* v) const {
 	vector<Vertex*> ans;
-	Vertex** compl_desc = v->complement()->desc();
+	Vertex* const * compl_desc = v->complement()->desc();
 	for (int i = 3; i >= 0; --i) {
 		if (compl_desc[i] != NULL) {
 			ans.push_back(compl_desc[i]->complement());
@@ -107,23 +30,15 @@ vector<Vertex*> Graph::Anc(Vertex* v) const {
 	return ans;
 }
 
-vector<Vertex*> Graph::Desc(Vertex* v) const {
+vector<Vertex*> Graph::Desc(const Vertex* v) const {
 	vector<Vertex*> ans;
-	Vertex** desc = v->desc();
+	Vertex* const * desc = v->desc();
 	for (int i = 0; i < 4; ++i) {
 		if (desc[i] != NULL) {
 			ans.push_back(desc[i]);
 		}
 	}
 	return ans;
-}
-
-bool Graph::IsLast(Vertex* v) const {
-	return v->IsDeadend();
-}
-
-bool Graph::IsFirst(Vertex* v) const {
-	return IsLast(v->complement());
 }
 
 /*
@@ -180,7 +95,7 @@ bool Graph::CanBeDeleted(Vertex* v) const {
 			}
 		}
 	}
-	return true;// && !v->deleted;
+	return true;
 }
 
 /**
@@ -268,8 +183,6 @@ void Graph::DeleteVertex(Vertex* v) {
 	component_roots_.erase(v);
 	component_roots_.erase(complement);
 
-	//	v->deleted = true;
-	//	complement->deleted = true;
 	delete v;
 	delete complement;
 }
@@ -286,16 +199,9 @@ void Graph::LinkVertices(Vertex* anc, Vertex* desc) {
 	assert(AreLinkable(anc, desc));
 
 	anc->AddDesc(desc);
-	component_roots_.erase(desc);
+	//component_roots_.erase(desc);
 	desc->complement()->AddDesc(anc->complement());
-	component_roots_.erase(anc->complement());
-}
-
-pair<Vertex*, int> Graph::GetPosMaybeMissing(Kmer k) {
-	if (!h_.contains(k)) {
-		AddVertex(Sequence(k));
-	}
-	return h_.get(k);
+	//component_roots_.erase(anc->complement());
 }
 
 void Graph::ThreadRead(const Read &r) {
@@ -321,42 +227,89 @@ void Graph::ThreadRead(const Read &r) {
 			//do nothing
 		} else {
 			SplitVertex(prev_v, prev_offset + K);
-			//need if k-mers were on same complementary vertices
-			curr_pos = GetPosMaybeMissing(k);
+			//need if k-mers were on same or complementary vertices
+			curr_pos = GetPosition(k);
 			Vertex* curr_v = curr_pos.first;
 			size_t curr_offset = curr_pos.second;
 			Vertex* v2 = SplitVertex(curr_v->complement(),
 					curr_v->size() - curr_offset)->complement();
-			Vertex* v1 = GetPosMaybeMissing(old_k).first;
+			Vertex* v1 = GetPosition(old_k).first;
 			LinkVertices(v1, v2);
 		}
 	}
 }
 
-bool Graph::IsLastKmer(Vertex* v, size_t pos) const {
-	return pos + K == v->size();
+Traversal::Traversal(const Graph& g) :
+	g_(g) {
 }
 
-bool Graph::IsFirstKmer(Vertex* v, size_t pos) const {
-	return pos == 0;
+DFS::DFS(const Graph& g) :
+	Traversal(g) {
 }
 
-/*VertexPool::VertexPool(_v_idx size) : _size(size) {
- _max_idx = 0;
- _free = new bool[size];
- fill_n(_free, size, true);
- _vertices = new Vertex[size];
- }
+void DFS::Traverse(Handler& h) {
+	for (set<Vertex*>::iterator it = g_.component_roots().begin(); it != g_.component_roots().end(); it++) {
+		vector<Vertex*> stack;
+		stack.push_back(*it);
+		while (!stack.empty()) {
+			go(stack[stack.size() - 1], stack, h);
+			stack.pop_back();
+		}
+	}
+}
 
- VertexPool::~VertexPool() {
- delete [] _free;
- delete [] _vertices;
- }
+void DFS::go(Vertex* v, vector<Vertex*>& stack, Handler& h) {
+	if (visited_.count(v) == 0) {
+		h.HandleStartVertex(v);
+		visited_.insert(v);
+		vector<Vertex*> desc = g_.Desc(v);
+		for (size_t i = 0; i < desc.size(); ++i) {
+			Vertex* descendent = desc[i];
+			h.HandleEdge(v, descendent);
+			stack.push_back(descendent);
+		}
+	}
+}
 
- const Vertex& operator[](_v_idx index) const;
- bool IsFree(_v_idx index) const;
- void Free(_v_idx index);
- _v_idx AllocatePair();
- }*/
+class CountHandler: public Traversal::Handler {
+	tr1::unordered_map<const Vertex*, size_t>& map_;
+	size_t count_;
+public:
+
+	CountHandler(tr1::unordered_map<const Vertex*, size_t>& map) :
+		map_(map), count_(0) {
+	}
+
+	virtual void HandleStartVertex(const Vertex* v) {
+		map_.insert(make_pair(v, count_++));
+	}
+};
+
+class VisHandler: public Traversal::Handler {
+	gvis::IGraphPrinter<Vertex*>& pr_;
+public:
+
+	VisHandler(gvis::IGraphPrinter<Vertex*>& pr) :
+		pr_(pr) {
+	}
+
+	virtual void HandleStartVertex(Vertex* v) {
+		stringstream ss;
+		ss << v->nucls().size();
+		pr_.addVertex(v, ss.str());
+	}
+
+	virtual void HandleEdge(Vertex* v1, Vertex* v2) {
+		pr_.addEdge(v1, v2, "");
+	}
+
+};
+
+void SimpleGraphVisualizer::Visualize(const Graph& g) {
+	VisHandler h(gp_);
+	DFS(g).Traverse(h);
+	gp_.output();
+}
+
 }
 

@@ -12,4 +12,10 @@ void codeRead(char *read, char *code);
 ll extractMer(char *read, int shift, int length);
 void addPairToTable(myMap& table, ll upper, ll lower);
 int pairsToLmers(string inputFile, string outputFile);
+
+inline bool nextReadPair(char * &read1, char * &read2) {
+	return (scanf("%s %s", read1, read2)== 2);
+}
+
+
 #endif /* CONSTRUCTHASHTABLE_HPP_ */
