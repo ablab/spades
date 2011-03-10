@@ -1,0 +1,59 @@
+\documentclass[12pt]{article}
+
+\usepackage{amssymb, amsmath, amsthm}
+%\usepackage{fullpage}
+\usepackage[final,colorlinks,hyperindex,unicode=true]{hyperref}
+\usepackage{tikz}
+
+\begin{document}
+\title{A Bruijn Graph Approach}
+
+Choose a hash function $h$ defined on $k$-mers. 
+Preferably, make it stable with respect to reverse-complementary 
+strings, that is $h(s) = h(s^{RC})$. For example, 
+$h(s) = h_1(s) \oplus h_1(s^{RC})$, or $h(s) = \min\{h_1(s), h_1(s^{RC})\}$.
+
+
+%\end{document}
+
+Now, in each read from the input data, find (about) two $k$-mers 
+with the smallest value of $h$.
+
+This read now corresponds to an edge from $A$ to $B$. This edge 
+contains the information about its length and (possibly) its content.
+
+Consider the graph of all such vertices and edges.
+
+A contig corresponds to a path in this graph.
+
+1. $h(s)$ += frequency of $s$ in the reads;
+
+Motivation: consider a $k$-mer that is present in many 
+places (e.g. part of a repeat). Such $k$-mer is not a vertex 
+that's very pleasant to work with. If a read contains some more 
+unique $k$-mers, let's rather use them -- this might simplify 
+the resulting graph structure.
+
+1a. On the other hand a $k$-mer with an exceptionally low frequency 
+has high chances to be just erroneous. A penalty should be put upon 
+such $k$-mer as well.
+
+Pros
+
+    * Error-tolerance. If an error doesn't fall into the 
+    k-mers with small hash function values, it doesn't bring any wrong info.
+    * Mate pairs seem to fit naturally into this concept. 
+
+Contras
+
+    * Does this graph really represent the repeat structure of the genome? 
+
+To do
+
+    * Code this
+    * Run against a reference genome and sample read data. Research.
+    * N. B. Use GraphViz to explore the resulting graph. 
+
+
+
+\end{document}

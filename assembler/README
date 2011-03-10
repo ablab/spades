@@ -13,14 +13,11 @@ In Ubuntu it's simple:
 
 > sudo apt-get install liblog4cxx10-dev
 
-> sudo apt-get install sparsehash
-
-# or do the following:
-#> cd ./assembler/src/libs/sparsehash-1.10/
-#> ./configure
-#> make
-#> sudo make install
-#> make clean
+> cd ./assembler/src/libs/sparsehash-1.10/
+> ./configure
+> make
+> sudo make install
+> make clean
 
 === INSTALLATION ===
 

@@ -1,5 +1,10 @@
 #include "vector"
+<<<<<<< HEAD
+#include "../sequence.hpp"
+=======
 #include "sequence.hpp"
+#include "common.hpp"
+>>>>>>> c9e9a4c50cceaea6b9b70c96835b90cb2ee4055d
 //#include "hashTable.h"
 using namespace std;
 
@@ -7,6 +12,7 @@ using namespace std;
 #define CONDENSED_GRAPH_H_
 
 namespace paired_assembler {
+
 
 //typedef int Kmer;
 
@@ -27,16 +33,56 @@ class Vertex;
 //};
 class VertexPrototype {
 	public:
+<<<<<<< HEAD
+	Sequence *lower;
+	int start;
+	int finish;
+=======
 	VertexPrototype(Sequence *lower_, int start_) {
 		lower = lower_;
-		start = start_;
+		VertexId = start_;
 		used = false;
 	}
 	Sequence *lower;
-	int start;
-//	int finish;
+	int VertexId;
+>>>>>>> c9e9a4c50cceaea6b9b70c96835b90cb2ee4055d
 	bool used;
 };
+
+class Edge {
+	//	int _coverage;
+public:
+	Sequence *upper;
+	Sequence *lower;
+	int length;
+	int FromVertex;
+	int ToVertex;
+	int EdgeId;
+	//	Vertex(int coverage, int length, Sequence *kmer, Sequence *pair, bool direction, int delta_d);
+	void ExpandRight(Edge newRigth) {
+		ToVertex = newRigth.ToVertex;
+		length = length + newRigth.length;
+		upper = new Sequence(upper->str()+newRigth.upper->Subseq(k-1).str());
+		lower = new Sequence(lower->str()+newRigth.lower->Subseq(l-1).str());
+		//TODO update both Seq...
+	}
+	void ExpandLeft(Edge newLeft) {
+		FromVertex = newLeft.FromVertex;
+		length = length + newLeft.length;
+		upper = new Sequence(newLeft.upper->str()+upper->Subseq(k-1).str());
+		lower = new Sequence(newLeft.lower->str()+lower->Subseq(l-1).str());
+		//TODO update both Seq...
+	}
+	Edge(Sequence *up, Sequence *low, int from, int to, int len, int id) {
+		upper = up;
+		lower = low;
+		FromVertex = from;
+		ToVertex = to;
+		length = len;
+		EdgeId = id;
+	}
+};
+
 
 class Vertex {
 	//	int _coverage;

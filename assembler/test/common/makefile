@@ -1,4 +1,4 @@
-SRC=test.cpp nucl.cpp graphVisualizer.cpp sequence.cpp
+SRC=test.cpp seq.cpp nucl.cpp parser.cpp
 DIR=common
 PROG=commonTest
 

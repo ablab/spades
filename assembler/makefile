@@ -24,8 +24,7 @@ ct:
 clean:
 	rm -rf ./build/*
 
-test: ct at dt pt
+test: at dt pt ct
 
-#temporary fix
-all: a d p ct #test
+all: a d p test
 

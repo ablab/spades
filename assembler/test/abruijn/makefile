@@ -1,8 +1,5 @@
-include ../../src/abruijn/srclist.inc
-SRC=test.cpp $(SRC1)
-
+SRC=test.cpp hash.cpp graph.cpp graphBuilder.cpp seq.cpp toyexamples.cpp
 DIR=abruijn
 PROG=abruijnTest
 
 include ../makefile.inc
-

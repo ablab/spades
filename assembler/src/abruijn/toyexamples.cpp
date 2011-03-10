@@ -8,10 +8,12 @@
 #include <cassert>
 #include <fstream>
 
+//#include "../graphVisualizer.hpp"
+
 using namespace std;
+//using namespace gvis;
 
 typedef map < string, unsigned > CKMerSet;
-typedef map < pair < string, string >, unsigned > CWeightedEdgeSet;
 
 
 class CSubstringIterator
@@ -33,17 +35,17 @@ public:
     assert ( s.size () >= substr_size );
   }
 
-  void Reset   ()
-  {
-    cur_pos = 0;
-    Last = false;
+  void Reset   () 
+  { 
+    cur_pos = 0; 
+    Last = false; 
   }
 
-  void Advance () {
-    ++cur_pos;
-    if ( cycle_string && s.size () == cur_pos )
+  void Advance () { 
+    ++cur_pos; 
+    if ( cycle_string && s.size () == cur_pos ) 
       Last = true;
-    if ( ! cycle_string && cur_pos + substr_size - 1 == s.size () )
+    if ( ! cycle_string && cur_pos + substr_size - 1 == s.size () ) 
       Last = true;
   }
 
@@ -89,16 +91,13 @@ extern void ConstructDeBruijnGraph ( string genome, unsigned read_size, unsigned
   for ( CSubstringIterator kmer_it ( genome, k, true ); ! kmer_it.IsLast (); kmer_it.Advance () )
   {
     if ( ( S.insert ( make_pair ( *kmer_it, S.size () ) ) ).second )
-      f << ( S.size () - 1 ) << " [label" << "=" << *kmer_it << "-" << h ( *kmer_it ) << "]" << endl;
+      f << ( S.size () - 1 ) << " [label" << "=" << *kmer_it << "]" << endl;
   }
 
   // adding edges
   for ( CSubstringIterator edge_it ( genome, k + 1, true ); ! edge_it.IsLast (); edge_it.Advance () )
   {
     string const edge = *edge_it;
-    
-
-
     CKMerSet::const_iterator from = S.find ( edge.substr ( 0, k ) );
     CKMerSet::const_iterator to   = S.find ( edge.substr ( 1, k ) );
     assert ( from != S.end () && to != S.end () );
@@ -124,9 +123,25 @@ extern void ConstructDeBruijnGraph ( string genome, unsigned read_size, unsigned
     while ( tmp_it -> second == kmers_with_hash.begin () -> second )
       ++tmp_it;
     if ( tmp_it != kmers_with_hash.end () ) 
-    // this may happen if all the k-mers of the current read are equal
+    /// this may happen if all the k-mers of the current read are equal
     {
       CKMerSet::const_iterator to = S.find ( tmp_it -> second );
+
+      /// swap the found k-mers so that the resulting edge goes from left 
+      /// to right
+      for ( CSubstringIterator kmer_it1 ( read, k, false ); ! kmer_it1.IsLast (); kmer_it1.Advance () )
+      {
+        if ( ( * kmer_it1 ) == ( to -> first ) )
+        {
+          swap ( from, to );
+          break;
+        }
+
+        if ( ( * kmer_it1 ) == ( from -> first ) )
+          break;
+      }
+
+
       f << from -> second << "->" << to -> second << " [penwidth=5,color=red]" << endl;
     }
   }
@@ -137,66 +152,3 @@ extern void ConstructDeBruijnGraph ( string genome, unsigned read_size, unsigned
 
   return;
 }
-
-
-extern void ConstructDeBruijnGraphSimplified ( string genome, unsigned read_size, unsigned k )
-{
-  Hash < string > h;
-
-  ofstream f;
-  f.open ( ( genome + ".dot" ).c_str () );
-  f << "## genome=" << genome << " readsize=" << read_size << " k=" << k << endl;
-  f << "##dot -Tjpg " << genome << ".dot -o " << genome << ".jpg" << endl;
-  f << "digraph " << genome << " { rankdir=\"LR\"; node[shape=\"box\"] " << endl;
-
-  CWeightedEdgeSet E;
-
-  ///////////////////////////// DE BRUIJN GRAPH
-  for ( CSubstringIterator edge_it ( genome, k + 1, true ); ! edge_it.IsLast (); edge_it.Advance () )
-  {
-    string const edge = *edge_it;
-    string from = edge.substr ( 0, k );
-    string to = edge.substr ( 1, k );
-
-    pair < pair < string, string >, unsigned > e = make_pair ( make_pair ( from, to ), 1 );
-    pair < CWeightedEdgeSet::iterator, bool > res = E.insert ( e );
-    if ( ! res.second )
-      ++ (( res.first ) -> second );
-  }
-
-  for ( CWeightedEdgeSet::const_iterator eit = E.begin (); eit != E.end (); ++ eit )
-    f << eit -> first . first << "->" << eit -> first . second << "[color=grey,label=\"" << eit -> second << "\"]" << endl;    
-
-
-  ///////////////////////////// A BRUIJN GRAPH
-  E.clear ();
-
-  for ( CSubstringIterator read_it ( genome, read_size, true ); ! read_it.IsLast (); read_it.Advance () )
-  {
-    string const read = *read_it;
-    multimap < unsigned, string > kmers_with_hash;
-    for ( CSubstringIterator kmer_it ( read, k, false ); ! kmer_it.IsLast (); kmer_it.Advance () )
-      kmers_with_hash.insert ( make_pair ( h ( *kmer_it ), *kmer_it ) );
-    multimap < unsigned, string >::const_iterator from = kmers_with_hash.begin ();
-    multimap < unsigned, string >::const_iterator to = kmers_with_hash.begin ();
-    ++to;
-
-    pair < pair < string, string >, unsigned > e = make_pair ( make_pair ( from -> second, to -> second ), 1 );
-    pair < CWeightedEdgeSet::iterator, bool > res = E.insert ( e );
-    if ( ! res.second )
-      ++ (( res.first ) -> second );
-  }
-
-  for ( CWeightedEdgeSet::const_iterator eit = E.begin (); eit != E.end (); ++ eit )
-    f << eit -> first . first << "->" << eit -> first . second << "[color=red,penwidth=5,label=\"" << eit -> second << "\"]" << endl;    
-
-  f << "}" << endl;
-  f.close ();
-
-  return;
-}
-
-// ConstructDeBruijnGraphSimplified ( "ATTGGTACATTGTGGTACGTACTGACT", 11, 3 );
-// ConstructDeBruijnGraphSimplified ( "ATTGATTGACTCTAGATTG", 5, 3 );
-
-

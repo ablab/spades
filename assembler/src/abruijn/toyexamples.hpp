@@ -4,16 +4,12 @@
 #include <string>
 using namespace std;
 
-//typename std::string;
+//typename string;
 
 /// Given a genomic string and k, prints 
 /// the corresponding de Bruijn graph to a given file.
 /// The implementation is highly INEFFICIENT.
 extern void ConstructDeBruijnGraph ( string genome, unsigned read_size, unsigned k );
-
-extern void ConstructDeBruijnGraphSimplified ( string genome, unsigned read_size, unsigned k );
-
-//extern void ConstructDeBruijnGraphBoost ( string genome, unsigned read_size, unsigned k );
 
 #endif
 
