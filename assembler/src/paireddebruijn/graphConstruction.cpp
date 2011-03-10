@@ -8,7 +8,7 @@
 
 int VertexCount;
 char EdgeStr[1000000];
-const int minIntersect = l - 1;
+const int minIntersect = l - 3;
 
 
 using namespace paired_assembler;
@@ -179,11 +179,18 @@ int expandLeft(edgesMap &edges, verticesMap &verts, ll &startKmer,
 		if (!checkUniqueWayRight(edges, startKmer, startSeq)) {
 			return length;
 		}
-		if (!goUniqueWayLeft(edges, startKmer, startSeq)) {
+		int go_res;
+		if ( !(go_res = goUniqueWayLeft(edges, startKmer, startSeq))) {
 			return length;
 		} else {
-			length++;
-			EdgeStr[500000 - length] = nucl((startKmer >> ((k - 2) * 2)) & 3);
+
+			if (go_res != 2) {
+				length++;
+				EdgeStr[500000 - length] = nucl((startKmer >> ((k - 2) * 2)) & 3);
+			}
+			else {
+				cerr << endl<<"kmer_expanding"<<endl;
+			}
 		}
 	}
 }
@@ -213,6 +220,39 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 			}
 		}
 	}
+	bool sameK = false;
+	if (count == 2) {
+		edgesMap::iterator iter = edges.find(finishKmer);
+		if (iter != edges.end()) {
+			int size = iter->second.size();
+			forn(i, size) {
+				Sequence *Ps = (iter->se)[i]->lower;
+				if (finishSeq->similar(*Ps, minIntersect, -1)) {
+					if (*Ps == *finishSeq) {
+						cerr << endl << "sameSeq";
+						continue;
+					}
+					if ((iter->se)[i]->used)
+						return 0;
+					count++;
+					if (count > 1)
+						return 0;
+					PossibleKmer = finishKmer;
+					PossibleSequence = (iter->se)[i]->lower;
+					seqIndex = i;
+					PossibleIter = iter;
+
+				}
+			}
+		}
+//		assert(1 == 0);
+		sameK = true;
+		if (count == 1 && sameK) {
+			assert("1 == 0");
+			cerr << endl << "something" << endl;
+		}
+	}
+
 	if (count == 1) {
 		finishKmer = PossibleKmer >> 2;
 		finishSeq = new Sequence(
@@ -236,14 +276,15 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), minIntersect, 1)) {
+				Sequence *Ps = (iter->se)[i]->lower;
+				if (finishSeq->similar(*Ps, minIntersect, 1)) {
 					if ((iter->se)[i]->used)
 						return 0;
 					count++;
 					if (count > 1)
 						return 0;
 					PossibleKmer = tmpKmer;
-					PossibleSequence = (iter->se)[i]->lower;
+					PossibleSequence = Ps;
 					seqIndex = i;
 					PossibleIter = iter;
 
@@ -251,13 +292,40 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 			}
 		}
 	}
+	bool sameK = false;
+	if (count == 2) {
+		edgesMap::iterator iter = edges.find(finishKmer);
+		if (iter != edges.end()) {
+			int size = iter->second.size();
+			forn(i, size) {
+				Sequence *Ps = (iter->se)[i]->lower;
+				if (finishSeq->similar(*Ps, minIntersect, 1)) {
+					if ((iter->se)[i]->used)
+						return 0;
+					count++;
+					if (count > 1)
+						return 0;
+					PossibleKmer = finishKmer;
+					PossibleSequence = (iter->se)[i]->lower;
+					seqIndex = i;
+					PossibleIter = iter;
+
+				}
+			}
+		}
+//		assert(1 == 0);
+		sameK = true;
+	}
 	if (count == 1) {
 		finishKmer = (PossibleKmer) & (~(((ll) 3) << (2 * (k - 1))));
 		finishSeq = new Sequence(
 				(PossibleIter->se)[seqIndex]->lower->Subseq(1,
 						(PossibleIter->se)[seqIndex]->lower->size()));//PossibleSequence;
 		(PossibleIter->se)[seqIndex]->used = 1;
-		return 1;
+		if (sameK)
+			return 2;
+		else
+			return 1;
 	} else {
 		return 0;
 	}

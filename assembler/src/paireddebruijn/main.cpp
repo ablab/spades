@@ -6,8 +6,9 @@
 
 
 int main() {
-	//freopen(error_log.c_str(), "w",stderr);
-	freopen("data/graph.dot", "w",stdout);
+	freopen(error_log.c_str(), "w",stderr);
+//	assert( 1== 0);
+	freopen(graph.c_str(), "w",stdout);
 //	LOG_ASSERT(1 == 0, "Something wrong");
 //	readsToPairs(parsed_reads, parsed_k_l_mers);
 //	pairsToLmers(parsed_k_l_mers, parsed_l_mers);
