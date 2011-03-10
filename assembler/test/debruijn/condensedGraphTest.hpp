@@ -4,6 +4,8 @@
 #include "sequence.hpp"
 #include "nucl.hpp"
 #include "condensedGraph.hpp"
+#include "graphVisualizer.hpp"
+#include <fstream>
 
 namespace condensed_graph {
 
@@ -64,6 +66,27 @@ string print(const set<Vertex*>& vs) {
 void TestVertex() {
 	Vertex* v = new Vertex(Sequence("AAAA"));
 	delete v;
+}
+
+void VisTool() {
+	Graph g;
+	g.AddVertex(Sequence("AAAAT"));
+	g.AddVertex(Sequence("AAATA"));
+	g.AddVertex(Sequence("AAATC"));
+	g.LinkVertices(g.GetPosition(Kmer("AAAAT")).first,
+			g.GetPosition(Kmer("AAATA")).first);
+	g.LinkVertices(g.GetPosition(Kmer("AAAAT")).first,
+			g.GetPosition(Kmer("AAATC")).first);
+	fstream filestr;
+	filestr.open("test.txt", fstream::out);
+	gvis::OnlineGraphPrinter<Vertex*> gp("test graph", filestr);
+	SimpleGraphVisualizer gv(gp);
+	gv.Visualize(g);
+	filestr.close();
+	DFS dfs(g);
+	SimpleStatCounter h;
+	dfs.Traverse(h);
+	cerr<<h.v_count()<<" "<<h.e_count();
 }
 
 void TestSimpleThread() {
@@ -157,7 +180,7 @@ void TestBuldge() {
 	DEBUG("Read 2 is " + r2.str())
 	g.ThreadRead(r1);
 	g.ThreadRead(r2);
-	//repeat for complication
+	//repeat for complicationTraverse
 	g.ThreadRead(r1);
 	g.ThreadRead(r2);
 	DEBUG(print(g.component_roots()))
@@ -184,8 +207,8 @@ void TestSimpleHashTable() {
 }
 
 void TestAddVertex() {
-//	Graph g;
-//	g.AddVertex()
+	//	Graph g;
+	//	g.AddVertex()
 }
 
 }
@@ -200,5 +223,6 @@ cute::suite CondensedGraphSuite() {
 	s.push_back(CUTE(TestBuldge));
 	s.push_back(CUTE(TestSplitThread));
 	s.push_back(CUTE(TestSplitThread2));
+	s.push_back(CUTE(VisTool));
 	return s;
 }
