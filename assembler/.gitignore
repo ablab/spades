@@ -3,6 +3,4 @@ logs/
 output/
 .cproject
 .project
-*.exe
-*.exe.stackdump
-~*
+gmon.out

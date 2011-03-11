@@ -1,10 +1,3 @@
-/*
- * graphBuilder.h
- *
- *  Created on: 24.02.2011
- *      Author: misha
- */
-
 #ifndef GRAPHBUILDER_H_
 #define GRAPHBUILDER_H_
 

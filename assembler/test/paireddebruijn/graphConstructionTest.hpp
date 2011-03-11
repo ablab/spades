@@ -22,7 +22,7 @@ void TestStoreVertexEmpty() {
 	resetVertexCount();
 	string s;
 	stringstream ss(s);
-	GraphScheme<int> g("oppa", ss);
+	GraphPrinter<int> g("oppa", ss);
 	verticesMap map;
 	Sequence seq(repeatLetter('A', k));
 	ASSERT_EQUAL(0, storeVertex(g, map, 0, &seq));
@@ -34,7 +34,7 @@ void TestStoreVertexOneEntry() {
 	resetVertexCount();
 	string s;
 	stringstream ss(s);
-	GraphScheme<int> g("oppa", ss);
+	GraphPrinter<int> g("oppa", ss);
 	verticesMap map;
 	Sequence seq(repeatLetter('A', l));
 	ASSERT_EQUAL(0, storeVertex(g, map, 0, &seq));
@@ -49,7 +49,7 @@ void TestStoreVertexTwoEntries() {
 	resetVertexCount();
 	string s;
 	stringstream ss(s);
-	GraphScheme<int> g("oppa", ss);
+	GraphPrinter<int> g("oppa", ss);
 	verticesMap map;
 	Sequence seqA(repeatLetter('A', l));
 	Sequence seqB(repeatLetter('C', l));
@@ -65,7 +65,7 @@ void TestStoreVertexTwoEntriesWithSameKmer() {
 	resetVertexCount();
 	string s;
 	stringstream ss(s);
-	GraphScheme<int> g("oppa", ss);
+	GraphPrinter<int> g("oppa", ss);
 	verticesMap map;
 	Sequence seqA(repeatLetter('A', l));
 	Sequence seqB(repeatLetter('C', l));

@@ -79,7 +79,7 @@ void VisTool() {
 			g.GetPosition(Kmer("AAATC")).first);
 	fstream filestr;
 	filestr.open("test.txt", fstream::out);
-	gvis::OnlineGraphPrinter<Vertex*> gp("test graph", filestr);
+	gvis::GraphPrinter<Vertex*> gp("test graph", filestr);
 	SimpleGraphVisualizer gv(gp);
 	gv.Visualize(g);
 	filestr.close();

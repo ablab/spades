@@ -312,10 +312,6 @@ downSeqs clusterize(ll* a, int size, int max_shift) {
 	return res;
 }*/
 
-inline bool nextReadPair(char * &read1, char * &read2) {
-	return scanf("%s %s", read1, read2) == 2;
-}
-
 ll extractMer(char *read, int shift, int length) {
 	ll res = 0;
 	for (int i = 0; i < length; i++) {
