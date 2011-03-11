@@ -20,21 +20,24 @@
 #define se second
 #define edgesMap  map<ll, vector<VertexPrototype *> >
 #define verticesMap  map<ll, vector<VertexPrototype *> >
+#define longEdgesMap  map<int, Edge*>
 
 LOGGER("paireddebruijn.common");
 
 #define MAX_VERT_NUMBER 100000
+#define MAX_DEGREE 30
 
 using namespace std;
-const string parsed_reads = "data/reads_var_d.txt";
+//const string parsed_reads = "data/reads_const_d.txt";
+const string parsed_reads = "data/filtered_reads";
 const string parsed_k_l_mers = "data/klmers_var_d.txt";
-const string parsed_k_sequence = "data/vertices_var_d.txt";
+const string parsed_k_sequence = "data/vertices_const_d.txt";
 const string error_log = "data/error.log";
 const string parsed_l_mers = "data/lmers_var_d.txt";
 const string graph = "data/graph_var_d.dot";
 const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
-const int k = 25;
+const int k = 31;
 const int l = 31;
 const int readLength = 100;
 const int maxSeqLength = 200;

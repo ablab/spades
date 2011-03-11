@@ -10,6 +10,7 @@
 //#include "debruijn.hpp"
 #include <cassert>
 #include <iostream>
+#include <fstream>
 #include <cstdio>
 #include <vector>
 #include <ctime>
@@ -38,7 +39,7 @@ int main(int argc, char *argv[]) {
 
 	cerr << "Reading " << filename1 << " and " << filename2 << "..." << endl;
 	ireadstream<R,2,int> irs(filename1, filename2);
-	vector<mate_read<R,int>::type> *v = irs.readAll(1000000); // read not all `reads` (for faster debug)
+	vector<mate_read<R,int>::type> *v = irs.readAll(30000); // read not all `reads` (for faster debug)
 	irs.close();
 	cerr << "Total reads (mate, without Ns): " << v->size() << endl;
 	cerr << "Current time: " << (time(NULL) - now) << " sec." << endl;
@@ -49,11 +50,23 @@ int main(int argc, char *argv[]) {
 	condensed_graph::Graph g;
 	for (size_t i = 0; i < v->size(); ++i) {
 		if (i % 10000 == 0) {
-			cerr << "reads: " << i << ", time: " << (time(NULL) - now2) << endl;
+			cerr << "mate reads: " << i << ", time: " << (time(NULL) - now2) << endl;
 		}
 		g.ThreadRead((*v)[i][0]);
 		g.ThreadRead((*v)[i][1]);
 	}
+
+	fstream filestr;
+	filestr.open("graph.dot", fstream::out);
+	gvis::OnlineGraphPrinter<condensed_graph::Vertex*> gp("simulated data graph", filestr);
+	condensed_graph::SimpleGraphVisualizer gv(gp);
+	gv.Visualize(g);
+	filestr.close();
+
+	condensed_graph::DFS dfs(g);
+	condensed_graph::SimpleStatCounter h;
+	dfs.Traverse(h);
+	cerr<<"Vertex count="<<h.v_count()<<"; Edge count="<<h.e_count() << endl;
 
 	/*
 	 * Simple de Bruijn graph construction:

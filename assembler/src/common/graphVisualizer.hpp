@@ -62,33 +62,33 @@ class IGraphPrinter {
 protected:
 	ostream *_out;
 public:
-	void addVertex(tVertex vertexId, const string &label);
-	void addEdge(tVertex fromId, tVertex toId, const string &label);
-	void output();
+	virtual void addVertex(tVertex vertexId, const string &label = "") {};
+	virtual void addEdge(tVertex fromId, tVertex toId, const string &label = "") {};
+	virtual void output() = 0;
 };
 
 template<typename tVertex>
 class OnlineGraphPrinter: public IGraphPrinter<tVertex> {
 public:
-	OnlineGraphPrinter(const string name, ostream &out) {
+	OnlineGraphPrinter(const string &name, ostream &out) {
 		IGraphPrinter<tVertex>::_out = &out;
 		startGraphRecord(*IGraphPrinter<tVertex>::_out, name);
 	}
 
-	OnlineGraphPrinter(const string name) {
+	OnlineGraphPrinter(const string &name) {
 		IGraphPrinter<tVertex>::_out = &cout;
 		startGraphRecord(*IGraphPrinter<tVertex>::_out, name);
 	}
 
-	void addVertex(tVertex vertexId, const string &label) {
+	virtual void addVertex(tVertex vertexId, const string &label = "") {
 		recordVertex<tVertex>(*IGraphPrinter<tVertex>::_out, vertexId, label);
 	}
 
-	void addEdge(tVertex fromId, tVertex toId, const string &label) {
+	virtual void addEdge(tVertex fromId, tVertex toId, const string &label = "") {
 		recordEdge<tVertex>(*IGraphPrinter<tVertex>::_out, fromId, toId, label);
 	}
 
-	void output() {
+	virtual void output() {
 		endGraphRecord(*IGraphPrinter<tVertex>::_out);
 	}
 };
@@ -111,15 +111,15 @@ public:
 		IGraphPrinter<tVertex>::_out = &out;
 	}
 
-	void addVertex(tVertex vertexId, const string &label) {
+	virtual void addVertex(tVertex vertexId, const string &label = "") {
 		_vertices.push_back(make_pair(vertexId, label));
 	}
 
-	void addEdge(tVertex fromId, tVertex toId, const string &label) {
+	virtual void addEdge(tVertex fromId, tVertex toId, const string &label = "") {
 		_edges.push_back(make_pair(make_pair(fromId, toId), label));
 	}
 
-	void output() {
+	virtual void output() {
 		outputGraph<tVertex> (*IGraphPrinter<tVertex>::_out, _name, _vertices,
 				_edges);
 	}
