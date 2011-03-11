@@ -1,6 +1,6 @@
 ## genome=ACTGACTGTTGACACTG readsize=9 k=5
 ##dot -Tjpg ACTGACTGTTGACACTG.dot -o ACTGACTGTTGACACTG.jpg
-digraph ACTGACTGTTGACACTG { rankdir="LR"; node[shape="box"] 
+digraph ACTGACTGTTGACACTG { rankdir="TB"; node[shape="box"] 
 ACACT->CACTG[color=grey,label="1"]
 ACTGA->CTGAC[color=grey,label="2"]
 ACTGT->CTGTT[color=grey,label="1"]
