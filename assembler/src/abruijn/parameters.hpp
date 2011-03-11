@@ -1,19 +1,16 @@
 #ifndef PARAMETERS_H_
 #define PARAMETERS_H_
 
-#include "seq.hpp"
 #include "ireadstream.hpp"
 
 #define MPSIZE 100
 #define K 25
 #define HASH_SEED 1845724623
 
-typedef Seq<K> Kmer;
-typedef Seq<MPSIZE> Read;
+#define CUT 60
 
 using namespace std;
 
-#define CUT 600
 static pair<string,string> filenames = make_pair("./data/MG1655-K12_emul1.fasta.gz", "./data/MG1655-K12_emul2.fasta.gz");
 //static pair<string,string> filenames = make_pair("./data/s_6_1.fastq.gz", "./data/s_6_2.fastq.gz");
 

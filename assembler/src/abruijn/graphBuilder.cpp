@@ -1,30 +1,24 @@
 #include <iostream>
+#include <fstream>
 #include <algorithm>
-#include "graph.hpp"
+#include <vector>
+#include "abruijngraph.hpp"
 #include "hash.hpp"
 #include "graphBuilder.hpp"
 #include "parameters.hpp"
 #include <ext/hash_map>
 #include "logging.hpp"
-#include "graphVisualizer.hpp"
-#include "iostream"
-#include "fstream"
 
 LOGGER("a.graphBuilder");
 
 using namespace std;
 using namespace __gnu_cxx;
-using namespace gvis;
+using namespace abruijn;
 
 typedef hash_map< Sequence, int, HashSym<Sequence>, EqSym<Sequence> > SeqCount;
 SeqCount seqCount;
 
-typedef hash_map< Sequence, int, HashSym<Sequence>, EqSym<Sequence> > SeqVertice;
-SeqVertice seqVertice;
-
-map<long long, int> edges;
-//CGraph graph;
-GraphPrinter<int> printer("", "output\\x.dot");
+abruijn::Graph graph;
 
 LoggerPtr logger(Logger::getLogger("a.graphBuilder"));
 HashSym<Sequence> hashSym;
@@ -54,53 +48,33 @@ void processReadA(Seq<MPSIZE> r) {
 	}
 	seqCount[Sequence(r).Subseq(pos1, pos1 + K)]++;
 	seqCount[Sequence(r).Subseq(pos2, pos2 + K)]++;
-	//	if (kmers_map.count(k1)) {
-	//		CVertex v(&k1);
-	//	} else {
-	//
-	//	}
-	//	CVertex v1 = kmers_map[k1];
-	//	v1.hits_++;
-	//	graph.AddVertex(v1);
-	//	graph.AddVertex(v2);
-	//	CEdge e(&v2, &r, pos1, pos2);
-	//	v1.AddEdge(e);
 }
 
 void GraphBuilder::selectGood()
 {
-    int i = 1;
     for (SeqCount::iterator p = seqCount.begin(); p != seqCount.end(); ++p) {
-    	printer.addVertex(i, p->first.str());
-		seqVertice[p->first] = i;
-		i++;
-
+    	graph.addVertex(&(p->first));
 	}
-    INFO(seqVertice.size() << " vertices");
 }
 
 void processReadB(Seq<MPSIZE> r) {
-	vector<int> vs;
+	vector<abruijn::Vertex*> vs;
+	vector<int> index;
 	for (int i = 0; i + K <= MPSIZE; i++) {
-		Sequence s = Sequence(r).Subseq(i, i + K);
-		if (seqVertice.count(s) > 0) {
-			vs.push_back(seqVertice[s]);
+		Sequence s(Sequence(r).Subseq(i, i + K));
+		if (graph.hasVertex(&s)) {
+			vs.push_back(graph.getVertex(&s));
+			index.push_back(i);
 		}
-//		TODO WTF?!
-//		if (seqVertice.find(s) != seqVertice.end()) {
-//			DEBUG("bzz" << seqVertice.find(s).operator *().first.str())
-//		}
 	}
-	for (int i = 0; i < vs.size() - 1; i++) {
-//		DEBUG(vs[i] << " " << vs[i + 1])
-		long long id = vs[i] * ((long long) 1000000000) + vs[i + 1];
-		if (edges[id] > 0) {
-			continue;
-		}
-		printer.addEdge(vs[i], vs[i + 1], "");
-		edges[id] = 1;
+	DEBUG(vs.size());
+	for (size_t i = 0; i + 1 < vs.size(); i++) {
+		graph.addEdge(*vs[i], *vs[i + 1], index[i + 1] - index[i]);
 	}
-//	DEBUG(r.str() << " " << vs.size());
+}
+
+void condense() {
+
 }
 
 void GraphBuilder::build() {
@@ -111,13 +85,16 @@ void GraphBuilder::build() {
 		processReadA(mp[0]);
 		processReadA(mp[1]);
 	}
+	INFO("processReadA done: " << seqCount.size() << " vertices");
 	irs.reset();
     selectGood();
+	INFO("selectGood done: " << graph.vertexArray.size() << " vertices");
 	for (int i = 0; !irs.eof() && i < CUT; i++) {
 		irs >> mp;
 		processReadB(mp[0]);
 		processReadB(mp[1]);
 	}
 	irs.close();
-    printer.output();
+	condense();
+    graph.output("output\\z.dot");
 }

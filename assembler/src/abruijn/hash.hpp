@@ -8,7 +8,7 @@ struct Hash {
 public:
 	unsigned int operator() (const T &seq) const {
 	    unsigned int h = HASH_SEED;
-		for (int i = 0; i < seq.size(); i++) {
+		for (size_t i = 0; i < seq.size(); i++) {
 			h = ((h << 5) - h) + seq[i];
 		}
 		return h;
