@@ -181,6 +181,15 @@ extern void ConstructDeBruijnGraphSimplified ( string genome, unsigned read_size
     multimap < unsigned, string >::const_iterator to = kmers_with_hash.begin ();
     ++to;
 
+    for ( CSubstringIterator kmer_it ( read, k, false ); ! kmer_it.IsLast () && *kmer_it != from -> second; kmer_it.Advance () )
+      if ( *kmer_it != to -> second )
+      {
+        swap ( from, to );
+        //cout << "\nOooops!" << flush;
+        break;
+      }
+
+
     pair < pair < string, string >, unsigned > e = make_pair ( make_pair ( from -> second, to -> second ), 1 );
     pair < CWeightedEdgeSet::iterator, bool > res = E.insert ( e );
     if ( ! res.second )
@@ -188,7 +197,7 @@ extern void ConstructDeBruijnGraphSimplified ( string genome, unsigned read_size
   }
 
   for ( CWeightedEdgeSet::const_iterator eit = E.begin (); eit != E.end (); ++ eit )
-    f << eit -> first . first << "->" << eit -> first . second << "[color=red,penwidth=5,label=\"" << eit -> second << "\"]" << endl;    
+    f << eit -> first . first << "->" << eit -> first . second << "[color=black,penwidth=5,label=\"" << eit -> second << "\"]" << endl;    
 
   f << "}" << endl;
   f.close ();
