@@ -7,7 +7,7 @@
 #define K 25
 #define HASH_SEED 1845724623
 
-#define CUT 60
+#define CUT 600
 
 using namespace std;
 
