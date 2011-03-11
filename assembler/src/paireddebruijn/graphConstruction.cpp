@@ -13,7 +13,7 @@ int inD[MAX_VERT_NUMBER], outD[MAX_VERT_NUMBER];
 int outputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
 int inputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
 
-const int minIntersect = l - 1;
+const int minIntersect = l - 3;
 int EdgeId;
 
 
@@ -32,7 +32,7 @@ void constructGraph() {
 	longEdgesMap longEdges;
 	createVertices(g, edges, verts, longEdges);
 	expandDefinite(verts, longEdges);
-	freopen("data/graph2.dot", "w",stdout);
+	freopen(graph.c_str(), "w",stdout);
 	outputLongEdges(longEdges);
 	cerr << "TraceReads" << endl;
 
@@ -210,12 +210,18 @@ int expandLeft(edgesMap &edges, verticesMap &verts, ll &startKmer,
 		if (!checkUniqueWayRight(edges, startKmer, startSeq)) {
 			return length;
 		}
-		if (!goUniqueWayLeft(edges, startKmer, startSeq)) {
+		int go_res;
+		if ( !(go_res = goUniqueWayLeft(edges, startKmer, startSeq))) {
 			return length;
 		} else {
-			length++;
-			EdgeStr[500000 - length] = nucl((startKmer >> ((k - 2) * 2)) & 3);
-			EdgeStrLo[500000 - length] = nucl((*startSeq)[0]);
+			if (go_res != 2) {
+				length++;
+				EdgeStr[500000 - length] = nucl((startKmer >> ((k - 2) * 2)) & 3);
+				EdgeStrLo[500000 - length] = nucl((*startSeq)[0]);
+			}
+			else {
+				cerr << endl<<"kmer_expanding"<<endl;
+			}
 		}
 	}
 }
@@ -245,6 +251,39 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 			}
 		}
 	}
+	bool sameK = false;
+	if (count == 2) {
+		edgesMap::iterator iter = edges.find(finishKmer);
+		if (iter != edges.end()) {
+			int size = iter->second.size();
+			forn(i, size) {
+				Sequence *Ps = (iter->se)[i]->lower;
+				if (finishSeq->similar(*Ps, minIntersect, -1)) {
+					if (*Ps == *finishSeq) {
+						cerr << endl << "sameSeq";
+						continue;
+					}
+					if ((iter->se)[i]->used)
+						return 0;
+					count++;
+					if (count > 1)
+						return 0;
+					PossibleKmer = finishKmer;
+					PossibleSequence = (iter->se)[i]->lower;
+					seqIndex = i;
+					PossibleIter = iter;
+
+				}
+			}
+		}
+//		assert(1 == 0);
+		sameK = true;
+		if (count == 1 && sameK) {
+			assert("1 == 0");
+			cerr << endl << "something" << endl;
+		}
+	}
+
 	if (count == 1) {
 		finishKmer = PossibleKmer >> 2;
 		finishSeq = new Sequence(
@@ -268,14 +307,15 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), minIntersect, 1)) {
+				Sequence *Ps = (iter->se)[i]->lower;
+				if (finishSeq->similar(*Ps, minIntersect, 1)) {
 					if ((iter->se)[i]->used)
 						return 0;
 					count++;
 					if (count > 1)
 						return 0;
 					PossibleKmer = tmpKmer;
-					PossibleSequence = (iter->se)[i]->lower;
+					PossibleSequence = Ps;
 					seqIndex = i;
 					PossibleIter = iter;
 
@@ -283,13 +323,40 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 			}
 		}
 	}
+	bool sameK = false;
+	if (count == 2) {
+		edgesMap::iterator iter = edges.find(finishKmer);
+		if (iter != edges.end()) {
+			int size = iter->second.size();
+			forn(i, size) {
+				Sequence *Ps = (iter->se)[i]->lower;
+				if (finishSeq->similar(*Ps, minIntersect, 1)) {
+					if ((iter->se)[i]->used)
+						return 0;
+					count++;
+					if (count > 1)
+						return 0;
+					PossibleKmer = finishKmer;
+					PossibleSequence = (iter->se)[i]->lower;
+					seqIndex = i;
+					PossibleIter = iter;
+
+				}
+			}
+		}
+//		assert(1 == 0);
+		sameK = true;
+	}
 	if (count == 1) {
 		finishKmer = (PossibleKmer) & (~(((ll) 3) << (2 * (k - 1))));
 		finishSeq = new Sequence(
 				(PossibleIter->se)[seqIndex]->lower->Subseq(1,
 						(PossibleIter->se)[seqIndex]->lower->size()));//PossibleSequence;
 		(PossibleIter->se)[seqIndex]->used = 1;
-		return 1;
+		if (sameK)
+			return 2;
+		else
+			return 1;
 	} else {
 		return 0;
 	}
@@ -568,7 +635,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 
 	forn(curVertId,VertexCount){
 		if ((inD[curVertId]!=0)&&(outD[curVertId]!=0))
-//		if ((inD[curVertId]==outD[curVertId])&&(inD[curVertId]==EdgePairs[curVertId].size()))
+		if ((inD[curVertId]<=EdgePairs[curVertId].size())&&(outD[curVertId]<=EdgePairs[curVertId].size()))
 		{
 			cerr<<"Process vertex "<<curVertId<<" IN "<<inD[curVertId]<<" OUT "<<outD[curVertId]<<" unique ways "<<EdgePairs[curVertId].size()<<endl;
 			forn(i,(EdgePairs[curVertId]).size()){
@@ -603,11 +670,6 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 			}
 		}
 	}
-
-
-
-
-
 }
 
 

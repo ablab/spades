@@ -1,7 +1,8 @@
 #ifndef GRAPH_VIS_
 #define GRAPH_VIS_
 
-#include "iostream"
+#include <iostream>
+#include <fstream>
 #include "string"
 #include "vector"
 using namespace std;
@@ -98,6 +99,11 @@ class GraphPrinter: public IGraphPrinter<tVertex> {
 public:
 	GraphPrinter(const string &name, ostream &out) {
 		IGraphPrinter<tVertex>::_out = &out;
+		startGraphRecord(*IGraphPrinter<tVertex>::_out, name);
+	}
+
+	GraphPrinter(const string &name, const char* filename) {
+		IGraphPrinter<tVertex>::_out = new ofstream(filename, ios::out);
 		startGraphRecord(*IGraphPrinter<tVertex>::_out, name);
 	}
 

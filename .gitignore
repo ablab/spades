@@ -1,1 +1,5 @@
+.settings
 stats/*
+~*
+*.exe
+*.exe.stackdump

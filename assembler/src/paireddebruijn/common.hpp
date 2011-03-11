@@ -11,6 +11,7 @@
 #include <string>
 #include <set>
 #include "logging.hpp"
+
 #define forn(i, n) for(int i = 0; i < (int) n; i++)
 #define ll long long
 #define pb push_back
@@ -33,6 +34,7 @@ const string parsed_k_l_mers = "data/klmers_var_d.txt";
 const string parsed_k_sequence = "data/vertices_const_d.txt";
 const string error_log = "data/error.log";
 const string parsed_l_mers = "data/lmers_var_d.txt";
+const string graph = "data/graph_var_d.dot";
 const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
 const int k = 31;

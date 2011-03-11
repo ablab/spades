@@ -7,9 +7,10 @@ OBJS := $(addprefix $(builddir)/, $(notdir $(SRC:.cpp=.o)))
 all:$(EXEC)
 	@echo "vvvvvvvvvv MAKE SUCCESSFUL vvvvvvvvvv"
 
+#PG=-pg
 CC=g++
-CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -std=c++0x -pg -I./../common -I./.. #-DNDEBUG
-LDFLAGS=-L/usr/local/lib -lz -llog4cxx -lapr-1 -laprutil-1 -pg
+CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -std=c++0x $(PG) -I./../common -I./.. #-DNDEBUG
+LDFLAGS=-L/usr/local/lib -lz -llog4cxx -lapr-1 -laprutil-1 $(PG)
 DEPSFL=-MM -MG
 
 

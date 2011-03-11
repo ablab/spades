@@ -62,6 +62,14 @@ void testOnlineSingleEdge() {
 	ASSERT_EQUAL("digraph myName {\n0->1[label=\"oppa\",color=\"black\"]\n}\n", tmp);
 }
 
+void testOnlineFile() {
+	GraphPrinter<int> g1("", "oppa.txt");
+	IGraphPrinter<int> *g = &g1;
+	g->addVertex(0, "oppa");
+	g->addEdge(0, 1, "oppa");
+	g->output();
+}
+
 cute::suite onlineGraphVisualizerSuite() {
 	cute::suite s;
 	s.push_back(CUTE(testOnline));
@@ -69,5 +77,6 @@ cute::suite onlineGraphVisualizerSuite() {
 	s.push_back(CUTE(testOnlineEmptyWithName));
 	s.push_back(CUTE(testOnlineSingleVertex));
 	s.push_back(CUTE(testOnlineSingleEdge));
+	s.push_back(CUTE(testOnlineFile));
 	return s;
 }
