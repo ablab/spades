@@ -129,6 +129,10 @@ public:
 		init(a);
 	}
 
+	Seq(const char* s) {
+		init(s);
+	}
+
 	/**
 	 * Get i-th symbol of Seq.
 	 *

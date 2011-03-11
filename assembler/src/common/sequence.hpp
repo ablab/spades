@@ -29,12 +29,19 @@ private:
 	Sequence& operator=(const Sequence &); // forbidden
 public:
 	// constructors:
-//	template<size_t _size>
-//	Sequence(const Seq<_size> seq) :
-//		from_(0), size_(seq.size()), rtl_(false) { // TODO: optimize
-//		data_ = new SequenceData(seq);
-//		data_->Grab();
-//	}
+	//	template<size_t _size>
+	//	Sequence(const Seq<_size> seq) :
+	//		from_(0), size_(seq.size()), rtl_(false) { // TODO: optimize
+	//		data_ = new SequenceData(seq);
+	//		data_->Grab();
+	//	}
+
+	Sequence(const char* s) :
+		from_(0), size_(string(s).size()), rtl_(false) {
+		string ss = s;
+		data_ = new SequenceData(ss);
+		data_->Grab();
+	}
 
 	template<typename S>
 	Sequence(const S &s) :
