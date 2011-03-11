@@ -248,7 +248,8 @@ DFS::DFS(const Graph& g) :
 }
 
 void DFS::Traverse(Handler& h) {
-	for (set<Vertex*>::iterator it = g_.component_roots().begin(); it != g_.component_roots().end(); it++) {
+	for (set<Vertex*>::iterator it = g_.component_roots().begin(); it
+			!= g_.component_roots().end(); it++) {
 		vector<Vertex*> stack;
 		stack.push_back(*it);
 		while (!stack.empty()) {
@@ -309,6 +310,58 @@ void SimpleGraphVisualizer::Visualize(const Graph& g) {
 	VisHandler h(gp_);
 	DFS(g).Traverse(h);
 	gp_.output();
+}
+
+void CondenseGraph(DeBruijn<K>& origin, Graph& g) {
+	for (DeBruijn<K>::kmer_iterator it = origin.key_begin(), end =
+			origin.key_end(); it != end; it++) {
+		Seq<K> kmer = *it;
+		if (!g.Contains(kmer)) {
+			Seq<K> initial_kmer = kmer;
+			DeBruijn<K>::Data& d = origin.get(kmer);
+			//go left while can
+			while (d.PrevCount() == 1) {
+				Seq<K> prev_kmer = *(d.begin_prev(kmer));
+				DeBruijn<K>::Data& prev_d = origin.get(prev_kmer);
+				if (prev_d.NextCount() == 1 && kmer != !prev_kmer && prev_kmer
+						!= initial_kmer) {
+					kmer = prev_kmer;
+					d = prev_d;
+				} else {
+					break;
+				}
+			}
+			//go right, appending sequence
+			SequenceBuilder s;
+			initial_kmer = kmer;
+			s.append(kmer);
+			while (d.NextCount() == 1) {
+				Seq<K> next_kmer = *(d.begin_next(kmer));
+				DeBruijn<K>::Data& next_d = origin.get(next_kmer);
+				if (next_d.PrevCount() == 1 && kmer != !next_kmer && next_kmer
+						!= initial_kmer) {
+					kmer = next_kmer;
+					d = next_d;
+					s.append(kmer);
+				} else {
+					break;
+				}
+			}
+			g.AddVertex(s.BuildSequence());
+		}
+	}
+	for (set<Vertex*>::iterator it = g.component_roots().begin(), end =
+			g.component_roots().end(); it != end; it++) {
+		Vertex* v = *it;
+		Kmer kmer = v->nucls().end<K>();
+
+		DeBruijn<K>::Data& d = origin.get(kmer);
+		DeBruijn<K>::neighbour_iterator n_it = d.begin_next(kmer);
+		for (size_t i = 0; i < d.NextCount(); ++i,++n_it) {
+			g.LinkVertices(v, g.GetPosition(*n_it).first);
+		}
+		//todo now linking twice!!!
+	}
 }
 
 }

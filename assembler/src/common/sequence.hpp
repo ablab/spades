@@ -29,14 +29,28 @@ private:
 	Sequence& operator=(const Sequence &); // forbidden
 public:
 	// constructors:
-	template<size_t _size>
-	Sequence(const Seq<_size> seq) :
-		from_(0), size_(seq.size()), rtl_(false) { // TODO: optimize
-		data_ = new SequenceData(seq.str());
+	//	template<size_t _size>
+	//	Sequence(const Seq<_size> seq) :
+	//		from_(0), size_(seq.size()), rtl_(false) { // TODO: optimize
+	//		data_ = new SequenceData(seq);
+	//		data_->Grab();
+	//	}
+
+	Sequence(const char* s) :
+		from_(0), size_(string(s).size()), rtl_(false) {
+		string ss = s;
+		data_ = new SequenceData(ss);
 		data_->Grab();
 	}
+
+	template<typename S>
+	Sequence(const S &s) :
+		from_(0), size_(s.size()), rtl_(false) {
+		data_ = new SequenceData(s);
+		data_->Grab();
+	}
+
 	Sequence(const Sequence &s);
-	Sequence(const string &s);
 	~Sequence();
 
 	// other methods:
@@ -54,8 +68,61 @@ public:
 	int similar(const Sequence &t, int k, char directed = 0) const;
 	int leftSimilar(const Sequence &t, int k) const;
 	int rightSimilar(const Sequence &t, int k) const;
+
+	//	template<size_t size2_>
+	//	Seq<size2_> start() const;
+	//
+	//	template<size_t size2_>
+	//	Seq<size2_> end() const;
+
+	template<size_t size2_>
+	Seq<size2_> start() const;
+	template<size_t size2_>
+	Seq<size2_> end() const;
 	string str() const;
 	size_t size() const;
+};
+
+template<size_t size2_>
+inline Seq<size2_> Sequence::start() const {
+	assert(size2_ <= size_);
+	return Seq<size2_> (*this);
+}
+
+template<size_t size2_>
+inline Seq<size2_> Sequence::end() const {
+	assert(size2_ <= size_);
+	return Seq<size2_> (*this, size_ - size2_);
+}
+
+class SequenceBuilder {
+	vector<char> buf_;
+public:
+	template<typename S>
+	SequenceBuilder& append(const S &s) {
+		for (size_t i = 0; i < s.size(); ++i) {
+			buf_.push_back(s[i]);
+		}
+		return *this;
+	}
+
+	SequenceBuilder& append(char c) {
+		buf_.push_back(c);
+		return *this;
+	}
+
+	Sequence BuildSequence() {
+		return Sequence(buf_);
+	}
+
+	size_t size() const {
+		return buf_.size();
+	}
+
+	char operator[](const size_t index) const {
+		assert(index < buf_.size());
+		return buf_[index];
+	}
 };
 
 #endif /* SEQUENCE_HPP_ */

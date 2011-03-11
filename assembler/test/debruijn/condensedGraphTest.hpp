@@ -194,8 +194,8 @@ void TestBuldge() {
 
 void TestSimpleHashTable() {
 	SimpleHashTable h;
-	Kmer k1("AACCGAACCGA");
-	Vertex* v = new Vertex(Sequence("AAAA"));
+	Kmer k1("AACCG");
+	Vertex* v = new Vertex(Sequence("AAAAAAAAAAAAA"));
 	h.put(k1, v, 1);
 	ASSERT(h.contains(k1));
 	ASSERT_EQUAL(h.get(k1).first, v);
@@ -223,6 +223,6 @@ cute::suite CondensedGraphSuite() {
 	s.push_back(CUTE(TestBuldge));
 	s.push_back(CUTE(TestSplitThread));
 	s.push_back(CUTE(TestSplitThread2));
-	s.push_back(CUTE(VisTool));
+//	s.push_back(CUTE(VisTool));
 	return s;
 }
