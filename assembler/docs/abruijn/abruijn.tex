@@ -5,6 +5,7 @@
 %\usepackage{fullpage}
 %\usepackage[final,colorlinks,hyperindex,unicode=true]{hyperref}
 %\usepackage{tikz}
+\usepackage[shadow,colorinlistoftodos,textwidth=4cm]{todonotes}
 
 \newcommand{\jpgpic}[1]{\begin{center}\includegraphics[width=\textwidth]{#1.jpg}\end{center}}
 
@@ -29,7 +30,7 @@ The hope is that the resulting graph will be easier to handle
 and at the same time will have essentially the same structure 
 as the original de Bruijn graph.
 
-\section{Hash Functions}
+\subsection{Hash Functions}
 
 One of the possibilities to extract two such $k$-mers out of a given
 read is to take two $k$-mers with minimal value of some hash function $h$.
@@ -48,8 +49,7 @@ Some natural properties that $h$ should hold are listed below.
   reverse-complementary stable hash function $h$ out of any hash function 
   $h_0$ are the following:
   \[h(s) = h_0(s) \oplus h_0(s^{RC}) \textrm{ or } h(s) = \min\{h_0(s), h_0(s^{RC})\} .\]
-  \item $h(s)$ += frequency of $s$ in the reads;
-  % Misha, poyasni eto, pogaluista.
+  \item $h(s)$ += frequency of $s$ in the reads;\todo{Misha, poyasni eto, pogaluista.}
   %Motivation: consider a $k$-mer that is present in many 
   %places (e.g. part of a repeat). Such $k$-mer is not a vertex 
   %that's very pleasant to work with. If a read contains some more 
@@ -61,10 +61,32 @@ Some natural properties that $h$ should hold are listed below.
   %such $k$-mer as well.
 \end{enumerate}
 
+
+
 \section{Discussion}
+An example below shows de Bruijn (black edges) and A Bruijn (grey edges) graphs for a toy genome 
+{\tt ACTGACTGTTGACACTG}. Numbers on edges are their multiplicities. We assume that the genome is circular
+and that we are given the set of all its reads of length $9$. $k=5$.
+\jpgpic{fig2}
+
+
 The main question that still needs to be answered is:
 does this graph really represent the repeat structure of the genome?
 
-\section{Examples}
+\section{Some further ideas}
+\subsection{Reducing the number of vertices}
+As said in the beginning the main motivation for considering such graphs
+they contain fewer edges than the original de Bruijn graph. Clearly, the number of edges in
+A Bruijn graph is also reduced (the vertices with no bold adjacent edges actually do not belong
+to A Bruijn graph). In order to further reduce the number of vertices we one can do the following.
+First, mark just one $k$-mer in each read with the minimal possible hash value. If it turned out to be
+the first or the last $k$-mer of the current read, mark one more $k$-mer with the next smallest hash 
+value. This guarantess that in case each possible read is present in the set of reads
+at least two $k$-mers will be marked in each read. We then add edges between marked $k$-mers
+that are present in the same read. In practice, not all the reads may be present and 
+reads contain errors, so it makes sense to additionally check whether ta least two $k$-mers
+are marked in each read.
+
+
 
 \end{document}
