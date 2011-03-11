@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 
 	fstream filestr;
 	filestr.open("graph.dot", fstream::out);
-	gvis::OnlineGraphPrinter<condensed_graph::Vertex*> gp("simulated data graph", filestr);
+	gvis::GraphPrinter<condensed_graph::Vertex*> gp("simulated data graph", filestr);
 	condensed_graph::SimpleGraphVisualizer gv(gp);
 	gv.Visualize(g);
 	filestr.close();

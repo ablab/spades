@@ -25,7 +25,7 @@ void constructGraph() {
 	cerr << "Read edges" << endl;
 	edgesMap edges = sequencesToMap(parsed_k_sequence, true);
 	cerr << "go to graph" << endl;
-	gvis::GraphScheme<int> g("Paired");
+	gvis::GraphPrinter<int> g("Paired");
 	cerr << "Start vertices" << endl;
 	VertexCount = 0;
 	verticesMap verts;
@@ -90,7 +90,7 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 	return res;
 }
 
-void createVertices(gvis::GraphScheme<int> &g, edgesMap &edges, verticesMap &verts, longEdgesMap &longEdges) {
+void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges, verticesMap &verts, longEdgesMap &longEdges) {
 	char Buffer[2000];
 	EdgeId = 0;
 	cerr << "Start createVertices " << edges.size() << endl;
@@ -436,7 +436,7 @@ pair<int, bool> addVertexToMap(verticesMap &verts, ll newKmer, Sequence* newSeq)
 	return make_pair(VertexCount - 1, true);
 }
 
-int storeVertex(gvis::GraphScheme<int> &g, verticesMap &verts, ll newKmer,
+int storeVertex(gvis::GraphPrinter<int> &g, verticesMap &verts, ll newKmer,
 		Sequence* newSeq) {
 	pair<int, bool> addResult = addVertexToMap(verts, newKmer, newSeq);
 	if (addResult.second) {
@@ -503,7 +503,7 @@ void expandDefinite(verticesMap &verts, longEdgesMap &longEdges){
 
 void outputLongEdges(longEdgesMap &longEdges){
 	char Buffer[100];
-	gvis::GraphScheme<int> g("Paired_ext");
+	gvis::GraphPrinter<int> g("Paired_ext");
 	for (longEdgesMap::iterator it=longEdges.begin(); it!=longEdges.end();++it){
 		if (it->second->EdgeId == it->first)
 			{
@@ -635,7 +635,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 
 	forn(curVertId,VertexCount){
 		if ((inD[curVertId]!=0)&&(outD[curVertId]!=0))
-//		if ((inD[curVertId]==outD[curVertId])&&(inD[curVertId]==EdgePairs[curVertId].size()))
+		if ((inD[curVertId]<=EdgePairs[curVertId].size())&&(outD[curVertId]<=EdgePairs[curVertId].size()))
 		{
 			cerr<<"Process vertex "<<curVertId<<" IN "<<inD[curVertId]<<" OUT "<<outD[curVertId]<<" unique ways "<<EdgePairs[curVertId].size()<<endl;
 			forn(i,(EdgePairs[curVertId]).size()){

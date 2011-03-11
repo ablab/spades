@@ -24,8 +24,7 @@ SeqVertice seqVertice;
 
 map<long long, int> edges;
 //CGraph graph;
-ofstream os;
-OnlineGraphPrinter<int> printer("abruijn");
+GraphPrinter<int> printer("", "output\\x.dot");
 
 LoggerPtr logger(Logger::getLogger("a.graphBuilder"));
 HashSym<Sequence> hashSym;
@@ -84,9 +83,8 @@ void processReadB(Seq<MPSIZE> r) {
 	vector<int> vs;
 	for (int i = 0; i + K <= MPSIZE; i++) {
 		Sequence s = Sequence(r).Subseq(i, i + K);
-		int v = seqVertice[s];
-		if (v) {
-			vs.push_back(v);
+		if (seqVertice.count(s) > 0) {
+			vs.push_back(seqVertice[s]);
 		}
 //		TODO WTF?!
 //		if (seqVertice.find(s) != seqVertice.end()) {
@@ -107,58 +105,19 @@ void processReadB(Seq<MPSIZE> r) {
 
 void GraphBuilder::build() {
 	INFO("Building graph...");
-	int cut = 60000;
 	mate_read<MPSIZE>::type mp;
-	ireadstream<MPSIZE, 2> irs = datastream();
-	vector<Seq<MPSIZE>> reads;
-	for (int i = 0; !irs.eof() && i <= cut; i++) {
+	for (int i = 0; !irs.eof() && i < CUT; i++) {
 		irs >> mp;
-		reads.push_back(mp[0]);
-		reads.push_back(mp[1]);
-	}
-	irs.close();
-
-//	for (ireadstream<MPSIZE, 2> in = ireadstream<MPSIZE, 2>(filenames.first.c_str(), filenames.second.c_str()); !in.eof();) {
-//
-//	}
-
-	DEBUG("Read: " << reads.size())
-
-
-	for (vector<Seq<MPSIZE> >::iterator iter = reads.begin(); iter != reads.end(); iter++) {
-		Seq<MPSIZE> s = *iter;
-		processReadA(s);
-	}
-    selectGood();
-    for (vector<Seq<MPSIZE> >::iterator iter = reads.begin(); iter != reads.end(); iter++) {
-		Seq<MPSIZE> s = *iter;
-		processReadB(s);
-	}
-    printer.output();
-
-/*	for (int i = 0; !irs.eof(); i++) {
-		DEBUG("1")
-		irs >> mp;
-		DEBUG("2")
 		processReadA(mp[0]);
 		processReadA(mp[1]);
 	}
-	irs.close();
-
-
-	irs = ireadstream<MPSIZE, 2>(filenames.first.c_str(), filenames.second.c_str());
-	for (int i = 0; !irs.eof(); i++) {
-		DEBUG("1")
+	irs.reset();
+    selectGood();
+	for (int i = 0; !irs.eof() && i < CUT; i++) {
 		irs >> mp;
-		DEBUG("2")
 		processReadB(mp[0]);
 		processReadB(mp[1]);
-		if (i == cut) {
-			break;
-		}
-		DEBUG("4")
 	}
-	irs.close();*/
-
-//	return graph;
+	irs.close();
+    printer.output();
 }
