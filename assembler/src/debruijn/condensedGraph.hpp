@@ -17,6 +17,7 @@
 #include "sequence.hpp"
 #include "logging.hpp"
 #include "nucl.hpp"
+#include "debruijn.hpp"
 #include <iostream>
 
 using namespace std;
@@ -78,7 +79,7 @@ public:
 	size_t size() {
 		return nucls_.size();
 	}
-	Sequence nucls() {
+	const Sequence& nucls() {
 		return nucls_;
 	}
 	void AddDesc(Vertex* v) {
@@ -222,6 +223,10 @@ public:
 		return h_.get(k);
 	}
 
+	bool Contains(Kmer k) {
+		return h_.contains(k);
+	}
+
 	pair<Vertex*, int> GetPosMaybeMissing(Kmer k) {
 		if (!h_.contains(k)) {
 			AddVertex(Sequence(k));
@@ -304,6 +309,8 @@ public:
 		return e_count_;
 	}
 };
+
+void CondenseGraph(const DeBruijn<K>& origin, Graph& g);
 
 /*class VertexPool {
  _v_idx _size;

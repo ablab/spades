@@ -18,12 +18,6 @@ Sequence::Sequence(const Sequence &s) :
 	data_->Grab();
 }
 
-Sequence::Sequence(const std::string &s) :
-	from_(0), size_(s.size()), rtl_(false) {
-	data_ = new SequenceData(s);
-	data_->Grab();
-}
-
 Sequence::~Sequence() {
 	data_->Release();
 }
