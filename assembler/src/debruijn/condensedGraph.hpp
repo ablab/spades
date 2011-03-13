@@ -23,10 +23,7 @@
 using namespace std;
 
 namespace condensed_graph {
-#define K 5//25
-#define N 11//100//11//100
-#define HASH_SEED 1845724623
-
+#define HASH_SEED 128
 typedef Seq<K> Kmer;
 typedef Seq<K - 1> KMinusOneMer;
 typedef Seq<N> Read;
@@ -100,25 +97,10 @@ public:
 	}
 };
 
-/*
- * To Sergey: please use Kmer::hash instead
- */
-/*class SimpleHash {
- public:
- unsigned int operator()(const Kmer& seq) const {
- unsigned int h = HASH_SEED;
- for (size_t i = 0; i < seq.size(); i++) {
- h = ((h << 5) - h) + seq[i];
- }
- return h;
- }
- };*/
-
 class SimpleHashTable { // To Sergey: it's C++, not Java Collections ;)
 private:
 	//typedef __gnu_cxx::hash_map<const Kmer, pair<Vertex*, size_t> , Kmer::hash<HASH_SEED>, Kmer::equal_to> hmap;
-	typedef tr1::unordered_map<const Kmer, pair<Vertex*, size_t> , Kmer::hash<
-			HASH_SEED>, Kmer::equal_to> hmap;
+	typedef tr1::unordered_map<const Kmer, pair<Vertex*, size_t> , Kmer::hash<HASH_SEED>, Kmer::equal_to> hmap;
 	hmap h_;
 public:
 	void put(Kmer k, Vertex* v, size_t s) {
@@ -310,7 +292,7 @@ public:
 	}
 };
 
-void CondenseGraph(const DeBruijn<K>& origin, Graph& g);
+void CondenseGraph(DeBruijn<K>& origin, Graph& g);
 
 /*class VertexPool {
  _v_idx _size;

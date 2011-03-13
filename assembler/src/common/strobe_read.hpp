@@ -27,6 +27,12 @@ public:
 		// random sequences constructor
 	}
 
+	strobe_read(const string *ss) {
+		for (int i = 0; i < cnt; ++i) {
+			put(i, ss[i]);
+		}
+	}
+
 	void put(int i, const string &s) { // by value (probably faster)
 		data_[i] = Seq<size,T>(s);
 	}

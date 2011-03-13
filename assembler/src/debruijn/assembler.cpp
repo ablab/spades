@@ -7,7 +7,7 @@
 
 #include "ireadstream.hpp"
 #include "condensedGraph.hpp"
-//#include "debruijn.hpp"
+#include "debruijn.hpp"
 #include <cassert>
 #include <iostream>
 #include <fstream>
@@ -18,12 +18,6 @@
 #include <stdio.h>
 
 using namespace std;
-
-// read size:
-#define R 100
-
-// k-mer size:
-//#define K 11
 
 // input files:
 #define filename1 "./data/MG1655-K12_emul1.fasta.gz"

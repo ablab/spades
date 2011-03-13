@@ -9,11 +9,19 @@
 #define DEBRUIJN_HPP_
 
 #include "seq.hpp"
+#include "strobe_read.hpp"
 #include <google/sparse_hash_map> // ./configure, make and sudo make install from libs/sparsehash-1.10
 #include <iostream> // for debug
 #include <map>
+#include <vector>
 #include <tr1/unordered_map>
 
+//todo make separate class to construct graph and remove R from here!!!
+// read size:
+#define R 11//100
+#define N 11//100//11//100
+// k-mer size:
+#define K 5//25
 template<int size_>
 class DeBruijn {
 public:
@@ -56,6 +64,7 @@ public:
 	class Data {
 		size_t out_edges[4];
 		size_t in_edges[4];
+		friend class DeBruijn;
 
 		size_t CountPositive(size_t* a) {
 			size_t c = 0;
@@ -95,6 +104,11 @@ private:
 	//typedef std::tr1::unordered_map<key, value,	typename key::hash, typename key::equal_to> hash_map;
 	map_type nodes_;
 public:
+
+	DeBruijn() {
+
+	}
+
 	Data& addNode(const key &seq) {
 		std::pair<const key, value> p = make_pair(seq, Data());
 		std::pair<typename map_type::iterator, bool> node = nodes_.insert(p);
@@ -132,10 +146,35 @@ public:
 	kmer_iterator key_begin() {
 		return kmer_iterator(nodes_.begin());
 	}
+
 	kmer_iterator key_end() {
 		return kmer_iterator(nodes_.end());
 	}
+	template<class T>
+	void ConstructGraph(const vector<T> &v, size_t count) {
+		for (size_t i = 0; i < v.size(); ++i) {
+			for (size_t r = 0; r < count; ++r) {
+				T t = v[i];
+				Seq<R> read = t[r];
+	//			Seq<R> read = v[i][r];
+				Seq<K> head = Seq<K> (read);
+				for (size_t j = K; j < R; ++j) {
+					Seq<K> tail = head << read[j];
+					addEdge(head, tail);
+					head = tail;
+				}
+			}
+		}
+	}
+
+	void ConstructGraph(const vector<mate_read<R, int>::type> &v) {
+		ConstructGraph(v, 2);
+	}
 
 };
+
+//void ConstructGraph(const vector<single_read<R, int>::type> &v, DeBruijn<K> &g) {
+//	ConstructGraph(v, 1, g);
+//}
 
 #endif /* DEBRUIJN_HPP_ */

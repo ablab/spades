@@ -4,6 +4,7 @@
 #include "sequence.hpp"
 #include "nucl.hpp"
 #include "condensedGraph.hpp"
+#include "debruijn.hpp"
 #include "graphVisualizer.hpp"
 #include <fstream>
 
@@ -26,6 +27,8 @@ void go(const Graph& g, Vertex* v, set<Vertex*>& visited, string& log) {
 }
 
 string printDfs(const Graph g, Vertex* start) {
+	DFS dfs(g);
+
 	string log;
 	set<Vertex*> visited;
 	go(g, start, visited, log);
@@ -209,6 +212,16 @@ void TestSimpleHashTable() {
 void TestAddVertex() {
 	//	Graph g;
 	//	g.AddVertex()
+}
+
+void TestCondenseSimple() {
+	string ss[] = {"AAAACAACCAC", "AAAACAACCCC", "AACCACCCAAC", "AACCCCACAAC"};
+	vector<strobe_read<R, 4> > input;
+	input.push_back(strobe_read<R, 4>(ss));
+	DeBruijn<K> g;
+	g.ConstructGraph(input, 4);
+	condensed_graph::Graph condensed;
+	CondenseGraph(g, condensed);
 }
 
 }
