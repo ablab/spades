@@ -36,6 +36,13 @@ public:
 	//		data_->Grab();
 	//	}
 
+	Sequence(char* s) :
+		from_(0), size_(string(s).size()), rtl_(false) {
+		string ss = s;
+		data_ = new SequenceData(ss);
+		data_->Grab();
+	}
+
 	Sequence(const char* s) :
 		from_(0), size_(string(s).size()), rtl_(false) {
 		string ss = s;
