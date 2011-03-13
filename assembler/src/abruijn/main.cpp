@@ -7,9 +7,10 @@
 LOGGER("a");
 
 int main() {
-	INFO("Hello, A Bruijn!");
-	GraphBuilder().build();
+	//INFO("Hello, A Bruijn!");
+	//GraphBuilder().build();
 
 	//ConstructDeBruijnGraphSimplified ( "ACTGACTGTTGACACTG", 9, 5 );
+        ConstructDeBruijnGraphSimplified ( "ATTGGTACATTGTGGTACGTACTGACT", 11, 5 );
 	return 0;
 }
