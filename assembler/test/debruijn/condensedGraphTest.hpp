@@ -226,7 +226,6 @@ void TestCondenseSimple() {
 
 }
 
-/*
 using namespace condensed_graph;
 cute::suite CondensedGraphSuite() {
 	cute::suite s;
@@ -240,10 +239,11 @@ cute::suite CondensedGraphSuite() {
 //	s.push_back(CUTE(VisTool));
 	return s;
 }
-*/
+/*
 using namespace condensed_graph;
 cute::suite CondensedGraphSuite() {
 	cute::suite s;
 	s.push_back(CUTE(TestCondenseSimple));
 	return s;
 }
+*/
