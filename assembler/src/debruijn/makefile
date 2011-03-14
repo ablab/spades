@@ -1,4 +1,4 @@
-SRC=sequence.cpp assembler.cpp graph.cpp condensedGraph.cpp debruijn.cpp graphVisualizer.cpp nucl.cpp
+SRC=sequence.cpp assembler.cpp graph.cpp condensedGraph.cpp graphVisualizer.cpp nucl.cpp
 DIR=debruijn
 PROG=debruijn
 
