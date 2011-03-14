@@ -18,8 +18,8 @@
 
 //todo make separate class to construct graph and remove R from here!!!
 // read size:
-#define R 11//100
-#define N 11//100//11//100
+#define R 9//100
+#define N 9//100//11//100
 // k-mer size:
 #define K 5//25
 template<int size_>
@@ -32,9 +32,6 @@ public:
 		size_t* neighbours_;
 		bool right_neighbours_;
 		void ShiftPos() {
-			if (pos_ < 4) {
-				pos_++;
-			}
 			while (pos_ < 4 && neighbours_[(size_t) pos_] == 0) {
 				pos_++;
 			}
@@ -52,8 +49,12 @@ public:
 					!= it.neighbours_ || pos_ != it.pos_ || key_ != it.key_;
 		}
 
-		void operator++() {
+		neighbour_iterator& operator++() {
+			if (pos_ < 4) {
+				pos_++;
+			}
 			ShiftPos();
+			return *this;
 		}
 
 		key operator *() {
@@ -143,32 +144,26 @@ public:
 		}
 	};
 
-	kmer_iterator key_begin() {
+	kmer_iterator kmer_begin() {
 		return kmer_iterator(nodes_.begin());
 	}
 
-	kmer_iterator key_end() {
+	kmer_iterator kmer_end() {
 		return kmer_iterator(nodes_.end());
 	}
-	template<class T>
-	void ConstructGraph(const vector<T> &v, size_t count) {
+	template<size_t size2_, size_t count_>
+	void ConstructGraph(const vector<strobe_read<size2_, count_>> &v) {
 		for (size_t i = 0; i < v.size(); ++i) {
-			for (size_t r = 0; r < count; ++r) {
-				T t = v[i];
-				Seq<R> read = t[r];
-	//			Seq<R> read = v[i][r];
-				Seq<K> head = Seq<K> (read);
-				for (size_t j = K; j < R; ++j) {
-					Seq<K> tail = head << read[j];
+			for (size_t r = 0; r < count_; ++r) {
+				Seq<size2_> read = v[i][r];
+				Seq<size_> head = Seq<size_> (read);
+				for (size_t j = K; j < size2_; ++j) {
+					Seq<size_> tail = head << read[j];
 					addEdge(head, tail);
 					head = tail;
 				}
 			}
 		}
-	}
-
-	void ConstructGraph(const vector<mate_read<R, int>::type> &v) {
-		ConstructGraph(v, 2);
 	}
 
 };

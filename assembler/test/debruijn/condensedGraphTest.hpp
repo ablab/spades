@@ -99,11 +99,11 @@ void TestSimpleThread() {
 	g.ThreadRead(r);
 	//repeat for complication
 	g.ThreadRead(r);
-	DEBUG(print(g.component_roots()))
-	ASSERT(g.component_roots().size() == 2);
-	ASSERT(contains(g.component_roots(), r.str()));
-	ASSERT(contains(g.component_roots(), (!r).str()));
-	ASSERT_EQUAL(printDfs(g, find(g.component_roots(), "ACAAACCACCA"))
+	DEBUG(print(g.vertices()))
+	ASSERT(g.vertices().size() == 2);
+	ASSERT(contains(g.vertices(), r.str()));
+	ASSERT(contains(g.vertices(), (!r).str()));
+	ASSERT_EQUAL(printDfs(g, find(g.vertices(), "ACAAACCACCA"))
 			,"Entering vertex 'ACAAACCACCA'; Leaving vertex 'ACAAACCACCA'; "
 	);
 }
@@ -122,11 +122,11 @@ void TestSimpleThread2() {
 	//repeat for complication
 	g.ThreadRead(r2);
 
-	DEBUG(print(g.component_roots()))
-	ASSERT(g.component_roots().size() == 2);
-	ASSERT(contains(g.component_roots(), "ACAAACCACCCAC"));
-	ASSERT(contains(g.component_roots(), complement("ACAAACCACCCAC")));
-	ASSERT_EQUAL(printDfs(g, find(g.component_roots(), "ACAAACCACCCAC"))
+	DEBUG(print(g.vertices()))
+	ASSERT(g.vertices().size() == 2);
+	ASSERT(contains(g.vertices(), "ACAAACCACCCAC"));
+	ASSERT(contains(g.vertices(), complement("ACAAACCACCCAC")));
+	ASSERT_EQUAL(printDfs(g, find(g.vertices(), "ACAAACCACCCAC"))
 			,"Entering vertex 'ACAAACCACCCAC'; Leaving vertex 'ACAAACCACCCAC'; "
 	);
 }
@@ -143,12 +143,12 @@ void TestSplitThread() {
 	//repeat for complication
 	g.ThreadRead(r1);
 	g.ThreadRead(r2);
-	DEBUG(print(g.component_roots()))
-	ASSERT(g.component_roots().size() == 3);
-	ASSERT(contains(g.component_roots(), "ACAAAC"));
-	ASSERT(contains(g.component_roots(), complement("AAACCACCA")));
-	ASSERT(contains(g.component_roots(), complement("AAACAACCC")));
-	ASSERT_EQUAL(printDfs(g, find(g.component_roots(), "ACAAAC"))
+	DEBUG(print(g.vertices()));
+	ASSERT(g.vertices().size() == 6);
+	ASSERT(contains(g.vertices(), "ACAAAC"));
+	ASSERT(contains(g.vertices(), complement("AAACCACCA")));
+	ASSERT(contains(g.vertices(), complement("AAACAACCC")));
+	ASSERT_EQUAL(printDfs(g, find(g.vertices(), "ACAAAC"))
 			,"Entering vertex 'ACAAAC'; Entering vertex 'AAACAACCC'; Leaving vertex 'AAACAACCC'; Entering vertex 'AAACCACCA'; Leaving vertex 'AAACCACCA'; Leaving vertex 'ACAAAC'; "
 	);
 }
@@ -165,11 +165,11 @@ void TestSplitThread2() {
 	//repeat for complication
 	g.ThreadRead(r1);
 	g.ThreadRead(r2);
-	DEBUG(print(g.component_roots()))
-	ASSERT(g.component_roots().size() == 2);
-	ASSERT(contains(g.component_roots(), "ACAAAC"));
-	ASSERT(contains(g.component_roots(), complement("AACCACCA")));
-	ASSERT_EQUAL(printDfs(g, find(g.component_roots(), "ACAAAC"))
+	DEBUG(print(g.vertices()));
+	ASSERT(g.vertices().size() == 8);
+	ASSERT(contains(g.vertices(), "ACAAAC"));
+	ASSERT(contains(g.vertices(), complement("AACCACCA")));
+	ASSERT_EQUAL(printDfs(g, find(g.vertices(), "ACAAAC"))
 			, "Entering vertex 'ACAAAC'; Entering vertex 'AAACAACC'; Entering vertex 'AACCACCA'; Leaving vertex 'AACCACCA'; Leaving vertex 'AAACAACC'; Entering vertex 'AAACC'; Entering vertex 'AACCACCA'; Vertex 'AACCACCA' has been visited; Leaving vertex 'AACCACCA'; Leaving vertex 'AAACC'; Leaving vertex 'ACAAAC'; "
 	);
 }
@@ -186,11 +186,11 @@ void TestBuldge() {
 	//repeat for complicationTraverse
 	g.ThreadRead(r1);
 	g.ThreadRead(r2);
-	DEBUG(print(g.component_roots()))
-	ASSERT(g.component_roots().size() == 2);
-	ASSERT(contains(g.component_roots(), "ACAAA"));
-	ASSERT(contains(g.component_roots(), complement("CACCA")));
-	ASSERT_EQUAL(printDfs(g, find(g.component_roots(), "ACAAA"))
+	DEBUG(print(g.vertices()))
+	ASSERT(g.vertices().size() == 8);
+	ASSERT(contains(g.vertices(), "ACAAA"));
+	ASSERT(contains(g.vertices(), complement("CACCA")));
+	ASSERT_EQUAL(printDfs(g, find(g.vertices(), "ACAAA"))
 			, "Entering vertex 'ACAAA'; Entering vertex 'CAAAACACC'; Entering vertex 'CACCA'; Leaving vertex 'CACCA'; Leaving vertex 'CAAAACACC'; Entering vertex 'CAAACCACC'; Entering vertex 'CACCA'; Vertex 'CACCA' has been visited; Leaving vertex 'CACCA'; Leaving vertex 'CAAACCACC'; Leaving vertex 'ACAAA'; "
 	);
 }
@@ -215,17 +215,18 @@ void TestAddVertex() {
 }
 
 void TestCondenseSimple() {
-	string ss[] = {"AAAACAACCAC", "AAAACAACCCC", "AACCACCCAAC", "AACCCCACAAC"};
+	string ss[] = {"CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC"};
 	vector<strobe_read<R, 4> > input;
 	input.push_back(strobe_read<R, 4>(ss));
 	DeBruijn<K> g;
-	g.ConstructGraph(input, 4);
+	g.ConstructGraph(input);
 	condensed_graph::Graph condensed;
 	CondenseGraph(g, condensed);
 }
 
 }
 
+/*
 using namespace condensed_graph;
 cute::suite CondensedGraphSuite() {
 	cute::suite s;
@@ -237,5 +238,12 @@ cute::suite CondensedGraphSuite() {
 	s.push_back(CUTE(TestSplitThread));
 	s.push_back(CUTE(TestSplitThread2));
 //	s.push_back(CUTE(VisTool));
+	return s;
+}
+*/
+using namespace condensed_graph;
+cute::suite CondensedGraphSuite() {
+	cute::suite s;
+	s.push_back(CUTE(TestCondenseSimple));
 	return s;
 }

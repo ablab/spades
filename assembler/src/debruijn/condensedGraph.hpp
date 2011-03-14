@@ -28,7 +28,7 @@ typedef Seq<K> Kmer;
 typedef Seq<K - 1> KMinusOneMer;
 typedef Seq<N> Read;
 
-LOGGER("debruijn.condensed_graph");
+LOGGER("d.condensed_graph");
 
 class Vertex;
 
@@ -130,7 +130,7 @@ public:
 };
 
 class Graph {
-	set<Vertex*> component_roots_;
+	set<Vertex*> vertices_;
 	SimpleHashTable h_;
 
 	/**
@@ -157,7 +157,7 @@ class Graph {
 	bool CanBeDeleted(Vertex* v) const;
 
 public:
-	const set<Vertex*>& component_roots() const;
+	const set<Vertex*>& vertices() const;
 
 	vector<Vertex*> Anc(const Vertex* v) const;
 
@@ -293,20 +293,6 @@ public:
 };
 
 void CondenseGraph(DeBruijn<K>& origin, Graph& g);
-
-/*class VertexPool {
- _v_idx _size;
- bool* _free;
- Vertex* _vertices;
- _v_idx _max_idx;
- public:
- VertexPool(_v_idx size);
- ~VertexPool();
- Vertex& operator[](_v_idx index) const;
- bool IsFree(_v_idx index) const;
- void Free(_v_idx index);
- _v_idx AllocatePair();
- };*/
 
 }
 #endif /* CONDENSED_GRAPH_H_ */

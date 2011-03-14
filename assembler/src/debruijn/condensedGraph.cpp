@@ -15,8 +15,8 @@ using namespace std;
 
 namespace condensed_graph {
 
-const set<Vertex*>& Graph::component_roots() const {
-	return component_roots_;
+const set<Vertex*>& Graph::vertices() const {
+	return vertices_;
 }
 
 vector<Vertex*> Graph::Anc(const Vertex* v) const {
@@ -70,8 +70,8 @@ Vertex* Graph::AddVertex(const Sequence &nucls) {
 	Vertex* v2 = new Vertex(!nucls);
 	v1->set_complement(v2);
 	v2->set_complement(v1);
-	component_roots_.insert(v1);
-	component_roots_.insert(v2);
+	vertices_.insert(v1);
+	vertices_.insert(v2);
 	//	DEBUG("Renewing hash for k-mers of sequence " << v->nucls().str() << " and its complement")
 	RenewKmersHash(v1);
 	RenewKmersHash(v2);
@@ -180,8 +180,8 @@ void Graph::DeleteVertex(Vertex* v) {
 	assert(CanBeDeleted(v->complement()));
 
 	Vertex* complement = v->complement();
-	component_roots_.erase(v);
-	component_roots_.erase(complement);
+	vertices_.erase(v);
+	vertices_.erase(complement);
 
 	delete v;
 	delete complement;
@@ -248,8 +248,8 @@ DFS::DFS(const Graph& g) :
 }
 
 void DFS::Traverse(Handler& h) {
-	for (set<Vertex*>::iterator it = g_.component_roots().begin(); it
-			!= g_.component_roots().end(); it++) {
+	for (set<Vertex*>::iterator it = g_.vertices().begin(); it
+			!= g_.vertices().end(); it++) {
 		vector<Vertex*> stack;
 		stack.push_back(*it);
 		while (!stack.empty()) {
@@ -313,10 +313,11 @@ void SimpleGraphVisualizer::Visualize(const Graph& g) {
 }
 
 void CondenseGraph(DeBruijn<K>& origin, Graph& g) {
-	for (DeBruijn<K>::kmer_iterator it = origin.key_begin(), end =
-			origin.key_end(); it != end; it++) {
+	for (DeBruijn<K>::kmer_iterator it = origin.kmer_begin(), end =
+			origin.kmer_end(); it != end; it++) {
 		Seq<K> kmer = *it;
 		if (!g.Contains(kmer)) {
+			DEBUG("Starting proces for " << kmer);
 			Seq<K> initial_kmer = kmer;
 			DeBruijn<K>::Data& d = origin.get(kmer);
 			//go left while can
@@ -331,6 +332,7 @@ void CondenseGraph(DeBruijn<K>& origin, Graph& g) {
 					break;
 				}
 			}
+			DEBUG("Stopped going left at " << kmer);
 			//go right, appending sequence
 			SequenceBuilder s;
 			initial_kmer = kmer;
@@ -347,11 +349,12 @@ void CondenseGraph(DeBruijn<K>& origin, Graph& g) {
 					break;
 				}
 			}
+			DEBUG("Stopped going right at " << kmer);
 			g.AddVertex(s.BuildSequence());
 		}
 	}
-	for (set<Vertex*>::iterator it = g.component_roots().begin(), end =
-			g.component_roots().end(); it != end; it++) {
+	for (set<Vertex*>::iterator it = g.vertices().begin(), end =
+			g.vertices().end(); it != end; it++) {
 		Vertex* v = *it;
 		Kmer kmer = v->nucls().end<K>();
 
