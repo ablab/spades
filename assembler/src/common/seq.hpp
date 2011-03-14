@@ -216,9 +216,8 @@ public:
 			rm = new_rm;
 		}
 		if (size_ % Tnucl != 0) {
-			T lastnuclshift_ = ((size_ % Tnucl) + 1) << 1;
-			res.data_[data_size_ - 1] = res.data_[data_size_ - 1] & (((T) 1
-					<< lastnuclshift_) - 1);
+			T lastnuclshift_ = (size_  % Tnucl) << 1;
+			res.data_[data_size_ - 1] = res.data_[data_size_ - 1] & (((T)1 << lastnuclshift_) - 1);
 		}
 		return res;
 	}
