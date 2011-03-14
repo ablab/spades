@@ -20,7 +20,7 @@ using namespace std;
  * where size -- number of nucleotides in each read
  * (we don't store info about gaps' size here)
  */
-template <int size, int cnt = 1, typename T = char>
+template <size_t size, size_t cnt = 1, typename T = char>
 class strobe_read {
 public:
 	strobe_read() {
@@ -28,7 +28,7 @@ public:
 	}
 
 	strobe_read(const string *ss) {
-		for (int i = 0; i < cnt; ++i) {
+		for (size_t i = 0; i < cnt; ++i) {
 			put(i, ss[i]);
 		}
 	}
@@ -37,7 +37,7 @@ public:
 		data_[i] = Seq<size,T>(s);
 	}
 
-	Seq<size,T> operator[](size_t i) {
+	Seq<size,T> operator[](size_t i) const {
 		return data_[i];
 	}
 

@@ -90,6 +90,12 @@ public:
 	size_t size() const;
 };
 
+template<size_t size_, typename T = int>
+ostream& operator<<(ostream& os, Sequence s) {
+	os << s.str();
+	return os;
+}
+
 template<size_t size2_>
 inline Seq<size2_> Sequence::start() const {
 	assert(size2_ <= size_);
