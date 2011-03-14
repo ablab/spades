@@ -8,8 +8,6 @@ class GraphBuilder
 public:
 	GraphBuilder() {}
 	void build();
-private:
-    void selectGood();
 };
 
 #endif /* GRAPHBUILDER_H_ */

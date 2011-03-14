@@ -2,6 +2,7 @@
 #include <fstream>
 #include <algorithm>
 #include <vector>
+#include <list>
 #include "abruijngraph.hpp"
 #include "hash.hpp"
 #include "graphBuilder.hpp"
@@ -50,10 +51,9 @@ void processReadA(Seq<MPSIZE> r) {
 	seqCount[Sequence(r).Subseq(pos2, pos2 + K)]++;
 }
 
-void GraphBuilder::selectGood()
-{
+void selectGood() {
     for (SeqCount::iterator p = seqCount.begin(); p != seqCount.end(); ++p) {
-    	graph.addVertex(&(p->first));
+    	graph.createVertex(&(p->first));
 	}
 }
 
@@ -67,14 +67,27 @@ void processReadB(Seq<MPSIZE> r) {
 			index.push_back(i);
 		}
 	}
-	DEBUG(vs.size());
 	for (size_t i = 0; i + 1 < vs.size(); i++) {
-		graph.addEdge(*vs[i], *vs[i + 1], index[i + 1] - index[i]);
+		graph.addEdge(vs[i], vs[i + 1], index[i + 1] - index[i]);
 	}
 }
 
-void condense() {
-
+void condenseA() {
+	list<Vertex*> vect(graph.vertices.begin(), graph.vertices.end());
+	for (list<Vertex*>::iterator v = vect.begin(); v != vect.end(); ++v) {
+		if (graph.vertices.find(*v) == graph.vertices.end()) {
+			continue;
+		}
+		if ((*v)->degree() == 1) {
+			if ((*v)->edges_.begin()->first->complement_->degree() == 1) {
+				DEBUG("CondenseA " << (*v)->kmer_->str() << " " << (*v)->edges_.begin()->first->kmer_->str());
+				Vertex* u = graph.condense(*v);
+				if (u != NULL) {
+					vect.push_back(u);
+				}
+			}
+		}
+	}
 }
 
 void GraphBuilder::build() {
@@ -84,17 +97,23 @@ void GraphBuilder::build() {
 		irs >> mp;
 		processReadA(mp[0]);
 		processReadA(mp[1]);
+		if ((i & 1023) == 0) {
+			DEBUG(i << " reads");
+		}
 	}
-	INFO("processReadA done: " << seqCount.size() << " vertices");
+	INFO("processReadA done: " << seqCount.size() << " vertice-pairs");
 	irs.reset();
     selectGood();
-	INFO("selectGood done: " << graph.vertexArray.size() << " vertices");
+	INFO("selectGood done: " << graph.vertices.size() << " vertices");
 	for (int i = 0; !irs.eof() && i < CUT; i++) {
 		irs >> mp;
 		processReadB(mp[0]);
 		processReadB(mp[1]);
+		if ((i & 1023) == 0) {
+			DEBUG(i << " reads processed");
+		}
 	}
 	irs.close();
-	condense();
-    graph.output("output\\z.dot");
+	condenseA();
+    graph.output(outputFileName + ".dot");
 }

@@ -1,10 +1,13 @@
 #ifndef _abruijngraph_h_
 #define _abruijngraph_h_
 
-#include <vector>
-#include <ostream>
 #include <cassert>
+#include <ostream>
+#include <sstream>
 #include <algorithm>
+#include <vector>
+#include <map>
+#include <set>
 #include <ext/hash_map>
 #include "seq.hpp"
 #include "sequence.hpp"
@@ -17,25 +20,37 @@ using namespace __gnu_cxx;
 
 namespace abruijn {
 
-class Edge;
+class Edge {
+public:
+	map<int, int> lengths_;
+
+	void addLength(int len) {
+		lengths_[len]++;
+	}
+
+	string toString() {
+		stringstream ss;
+		for (map<int, int>::iterator it = lengths_.begin(); it != lengths_.end(); ++it) {
+			ss << " " << it->first << " {" << it->second << "};";
+		}
+		return ss.str();
+	}
+};
 
 class Vertex {
 public:
 	const Sequence* kmer_;
 	Vertex* complement_;
-	typedef vector<Edge> EdgeArray;
-	EdgeArray edges_;
+	typedef map<Vertex*, Edge> Edges;
+	Edges edges_;
 	Vertex(const Sequence* kmer) : kmer_(kmer) {};
-	void addEdge(Edge* e) {
-		edges_.push_back(*e);
-	}
-};
 
-class Edge {
-public:
-	Vertex* to_;
-	int len_;
-	Edge (Vertex* to, int len) : to_(to), len_(len) {};
+	void addEdge(Vertex* to, int len) {
+		edges_[to].addLength(len);
+	}
+	int degree() {
+		return edges_.size();
+	}
 };
 
 class Graph {
@@ -43,15 +58,21 @@ public:
 	typedef hash_map < Sequence, Vertex*, HashSym<Sequence>, EqSym<Sequence> > SeqVertice;
 	SeqVertice seqVertice;
 
-	typedef vector <Vertex*> VertexArray;
-	VertexArray vertexArray;
+	typedef set<Vertex*> Vertices;
+	Vertices vertices;
 
 	Graph() {}
-	void addVertex(const Sequence* kmer);
-	void addEdge(Vertex &from, Vertex &to, int len);
+	Vertex* createVertex(const Sequence* kmer);
+	void addEdge(Vertex* from, Vertex* to, int len);
+	void removeVertex(Vertex* v);
+	void removeVertex_single(Vertex* v);
 	bool hasVertex(const Sequence* kmer);
 	Vertex* getVertex(const Sequence* kmer);
-	void output(const char* filename);
+
+	Vertex* condense(Vertex* v);
+
+	void output(std::ofstream &out);
+	void output(string filename);
 };
 
 }
