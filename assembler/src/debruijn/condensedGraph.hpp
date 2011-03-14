@@ -260,9 +260,9 @@ public:
 };
 
 class SimpleGraphVisualizer: public GraphVisualizer {
-	gvis::IGraphPrinter<Vertex*>& gp_;
+	gvis::GraphPrinter<Vertex*>& gp_;
 public:
-	SimpleGraphVisualizer(gvis::IGraphPrinter<Vertex*>& gp) :
+	SimpleGraphVisualizer(gvis::GraphPrinter<Vertex*>& gp) :
 		gp_(gp) {
 	}
 	;

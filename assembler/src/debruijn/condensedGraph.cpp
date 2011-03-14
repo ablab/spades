@@ -287,10 +287,10 @@ public:
 };
 
 class VisHandler: public Traversal::Handler {
-	gvis::IGraphPrinter<Vertex*>& pr_;
+	gvis::GraphPrinter<Vertex*>& pr_;
 public:
 
-	VisHandler(gvis::IGraphPrinter<Vertex*>& pr) :
+	VisHandler(gvis::GraphPrinter<Vertex*>& pr) :
 		pr_(pr) {
 	}
 
