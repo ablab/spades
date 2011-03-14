@@ -7,10 +7,39 @@
 #include "debruijn.hpp"
 #include "graphVisualizer.hpp"
 #include <fstream>
+#include <tr1/unordered_set>
+#include <ext/functional>
 
 namespace condensed_graph {
 
 using namespace std;
+
+template <typename T>
+struct PairHash {
+	size_t operator() (pair<T, T> p) const {
+		return hash<T>()(p.first) + hash<T>()(p.second);
+	}
+};
+
+template <typename T>
+struct PairLess {
+	bool operator() (pair<T, T> p1, pair<T, T> p2) const {
+		return less<T>()(p1.first, p2.first) ? true : (less<T>()(p2.first, p1.first) ? false : less<T>()(p1.second, p2.second));
+	}
+};
+
+typedef tr1::unordered_set<pair<string, string>, PairHash<string> > edge_set;
+
+class EdgeStringHandler: public Traversal::Handler {
+	edge_set& set_;
+public:
+	EdgeStringHandler(edge_set& set) : set_(set) {
+
+	}
+	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
+		set_.insert(make_pair(v1->nucls().str(), v2->nucls().str()));
+	}
+};
 
 void go(const Graph& g, Vertex* v, set<Vertex*>& visited, string& log) {
 	log += "Entering vertex '" + v->nucls().str() + "'; ";
@@ -82,7 +111,7 @@ void VisTool() {
 			g.GetPosition(Kmer("AAATC")).first);
 	fstream filestr;
 	filestr.open("test.txt", fstream::out);
-	gvis::GraphPrinter<Vertex*> gp("test graph", filestr);
+	gvis::GraphPrinter<const Vertex*> gp("test graph", filestr);
 	SimpleGraphVisualizer gv(gp);
 	gv.Visualize(g);
 	filestr.close();
@@ -214,6 +243,18 @@ void TestAddVertex() {
 	//	g.AddVertex()
 }
 
+void MyEquals(edge_set e, string s[][2], size_t length) {
+	set<pair<string, string>, PairLess<string> > etalon_edges;
+	for (size_t i = 0; i < length; ++i) {
+		ASSERT(e.count(make_pair(s[i][0], s[i][1])) == 1);
+		ASSERT(e.count(make_pair(complement(s[i][1]), complement(s[i][0]))) == 1);
+		etalon_edges.insert(make_pair(s[i][0], s[i][1]));
+		etalon_edges.insert(make_pair(complement(s[i][1]), complement(s[i][0])));
+	}
+	cout << etalon_edges.size() << endl;
+	ASSERT_EQUAL(etalon_edges.size(), e.size());
+}
+
 void TestCondenseSimple() {
 	string ss[] = {"CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC"};
 	vector<strobe_read<R, 4> > input;
@@ -222,10 +263,21 @@ void TestCondenseSimple() {
 	g.ConstructGraph(input);
 	condensed_graph::Graph condensed;
 	CondenseGraph(g, condensed);
+	edge_set set;
+	EdgeStringHandler h(set);
+	DFS dfs(condensed);
+	dfs.Traverse(h);
+	string s[][2] = {{"CGAAA", "GAAAACACA"}, {"CGAAA", "GAAAACACA"}, {"GAAACCACA", "CACACC"}, {"GAAAACACA", "CACACC"}};
+	MyEquals(set, s, 4);
+
+	for (edge_set::iterator it = set.begin(); it != set.end(); it++) {
+		cout << (*it).first << "  " << (*it).second << endl;
+	}
+	cout << set.size() << endl;
 }
 
 }
-
+/*
 using namespace condensed_graph;
 cute::suite CondensedGraphSuite() {
 	cute::suite s;
@@ -238,12 +290,12 @@ cute::suite CondensedGraphSuite() {
 	s.push_back(CUTE(TestSplitThread2));
 //	s.push_back(CUTE(VisTool));
 	return s;
-}
-/*
+}*/
+
 using namespace condensed_graph;
 cute::suite CondensedGraphSuite() {
 	cute::suite s;
 	s.push_back(CUTE(TestCondenseSimple));
 	return s;
 }
-*/
+

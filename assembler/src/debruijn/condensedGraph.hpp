@@ -76,7 +76,7 @@ public:
 	size_t size() {
 		return nucls_.size();
 	}
-	const Sequence& nucls() {
+	const Sequence& nucls() const {
 		return nucls_;
 	}
 	void AddDesc(Vertex* v) {
@@ -231,11 +231,11 @@ class Traversal {
 public:
 	class Handler {
 	public:
-		virtual void HandleStartVertex(Vertex* v) {
+		virtual void HandleStartVertex(const Vertex* v) {
 		}
-		virtual void HandleEndVertex(Vertex* v) {
+		virtual void HandleEndVertex(const Vertex* v) {
 		}
-		virtual void HandleEdge(Vertex* v1, Vertex* v2) {
+		virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
 		}
 	};
 
@@ -260,12 +260,12 @@ public:
 };
 
 class SimpleGraphVisualizer: public GraphVisualizer {
-	gvis::IGraphPrinter<Vertex*>& gp_;
+	gvis::IGraphPrinter<const Vertex*>& gp_;
 public:
-	SimpleGraphVisualizer(gvis::IGraphPrinter<Vertex*>& gp) :
+	SimpleGraphVisualizer(gvis::IGraphPrinter<const Vertex*>& gp) :
 		gp_(gp) {
 	}
-	;
+
 	virtual void Visualize(const Graph& g);
 };
 
@@ -276,18 +276,18 @@ public:
 	SimpleStatCounter() :
 		v_count_(0), e_count_(0) {
 	}
-	virtual void HandleStartVertex(Vertex* v) {
+	virtual void HandleStartVertex(const Vertex* v) {
 		v_count_++;
 	}
-	virtual void HandleEdge(Vertex* v1, Vertex* v2) {
+	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
 		e_count_++;
 	}
 
-	size_t v_count() {
+	size_t v_count() const {
 		return v_count_;
 	}
 
-	size_t e_count() {
+	size_t e_count() const {
 		return e_count_;
 	}
 };

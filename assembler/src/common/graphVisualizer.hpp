@@ -87,7 +87,7 @@ class IGraphPrinter {
 protected:
 	ostream *_out;
 public:
-	virtual void addVertex(tVertex vertexId, const string &label,
+	virtual void addVertex(const tVertex vertexId, const string &label,
 			const string &fillColor = "white") = 0;
 	virtual void addEdge(tVertex fromId, tVertex toId, const string &label,
 			const string &color = "black") = 0;

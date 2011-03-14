@@ -199,9 +199,7 @@ void Graph::LinkVertices(Vertex* anc, Vertex* desc) {
 	assert(AreLinkable(anc, desc));
 
 	anc->AddDesc(desc);
-	//component_roots_.erase(desc);
 	desc->complement()->AddDesc(anc->complement());
-	//component_roots_.erase(anc->complement());
 }
 
 void Graph::ThreadRead(const Read &r) {
@@ -287,20 +285,20 @@ public:
 };
 
 class VisHandler: public Traversal::Handler {
-	gvis::IGraphPrinter<Vertex*>& pr_;
+	gvis::IGraphPrinter<const Vertex*>& pr_;
 public:
 
-	VisHandler(gvis::IGraphPrinter<Vertex*>& pr) :
+	VisHandler(gvis::IGraphPrinter<const Vertex*>& pr) :
 		pr_(pr) {
 	}
 
-	virtual void HandleStartVertex(Vertex* v) {
+	virtual void HandleStartVertex(const Vertex* v) {
 		stringstream ss;
 		ss << v->nucls().size();
 		pr_.addVertex(v, ss.str());
 	}
 
-	virtual void HandleEdge(Vertex* v1, Vertex* v2) {
+	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
 		pr_.addEdge(v1, v2, "");
 	}
 
@@ -317,50 +315,55 @@ void CondenseGraph(DeBruijn<K>& origin, Graph& g) {
 			origin.kmer_end(); it != end; it++) {
 		Seq<K> kmer = *it;
 		if (!g.Contains(kmer)) {
-			DEBUG("Starting proces for " << kmer);
+			//DEBUG("Starting proces for " << kmer);
 			Seq<K> initial_kmer = kmer;
-			DeBruijn<K>::Data& d = origin.get(kmer);
+//			DeBruijn<K>::Data d = origin.get(kmer);
+			//DEBUG("Prev Count " << d.PrevCount());
 			//go left while can
-			while (d.PrevCount() == 1) {
-				Seq<K> prev_kmer = *(d.begin_prev(kmer));
-				DeBruijn<K>::Data& prev_d = origin.get(prev_kmer);
-				if (prev_d.NextCount() == 1 && kmer != !prev_kmer && prev_kmer
+			while (origin.PrevCount(kmer) == 1) {
+				Seq<K> prev_kmer = *(origin.begin_prev(kmer));
+				//DEBUG("Prev kmer " << prev_kmer);
+//				DeBruijn<K>::Data prev_d = origin.get(prev_kmer);
+				//DEBUG("Next Count of prev " << prev_d.NextCount());
+				if (origin.NextCount(prev_kmer) == 1 && kmer != !prev_kmer && prev_kmer
 						!= initial_kmer) {
 					kmer = prev_kmer;
-					d = prev_d;
 				} else {
 					break;
 				}
 			}
-			DEBUG("Stopped going left at " << kmer);
+			//DEBUG("Stopped going left at " << kmer);
 			//go right, appending sequence
 			SequenceBuilder s;
 			initial_kmer = kmer;
 			s.append(kmer);
-			while (d.NextCount() == 1) {
-				Seq<K> next_kmer = *(d.begin_next(kmer));
-				DeBruijn<K>::Data& next_d = origin.get(next_kmer);
-				if (next_d.PrevCount() == 1 && kmer != !next_kmer && next_kmer
+
+			//DEBUG("Next Count " << d.NextCount());
+
+			while (origin.NextCount(kmer) == 1) {
+				Seq<K> next_kmer = *(origin.begin_next(kmer));
+				//DEBUG("Next kmer " << next_kmer);
+//				DeBruijn<K>::Data next_d = origin.get(next_kmer);
+				//DEBUG("Prev Count of next " << next_d.PrevCount());
+				if (origin.PrevCount(next_kmer) == 1 && kmer != !next_kmer && next_kmer
 						!= initial_kmer) {
 					kmer = next_kmer;
-					d = next_d;
-					s.append(kmer);
+					s.append(kmer[K - 1]);
 				} else {
 					break;
 				}
 			}
-			DEBUG("Stopped going right at " << kmer);
+			//DEBUG("Stopped going right at " << kmer);
 			g.AddVertex(s.BuildSequence());
 		}
 	}
 	for (set<Vertex*>::iterator it = g.vertices().begin(), end =
 			g.vertices().end(); it != end; it++) {
 		Vertex* v = *it;
-		Kmer kmer = v->nucls().end<K>();
+		Kmer kmer = v->nucls().end<K> ();
 
-		DeBruijn<K>::Data& d = origin.get(kmer);
-		DeBruijn<K>::neighbour_iterator n_it = d.begin_next(kmer);
-		for (size_t i = 0; i < d.NextCount(); ++i,++n_it) {
+		DeBruijn<K>::neighbour_iterator n_it = origin.begin_next(kmer);
+		for (size_t i = 0, n = origin.NextCount(kmer); i < n; ++i, ++n_it) {
 			g.LinkVertices(v, g.GetPosition(*n_it).first);
 		}
 		//todo now linking twice!!!

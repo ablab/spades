@@ -203,7 +203,7 @@ public:
 	 * @param c New 0123 char which should be added to the left.
 	 * @return Shifted (to the right) sequence with 'c' char on the left.
 	 */
-	Seq<size_, T> operator>>(char c) {
+	Seq<size_, T> operator>>(char c) const {
 		if (is_nucl(c)) {
 			c = dignucl(c);
 		}
