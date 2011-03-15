@@ -28,16 +28,17 @@ LOGGER("paireddebruijn.common");
 #define MAX_DEGREE 30
 
 using namespace std;
-//const string parsed_reads = "data/reads_const_d.txt";
-const string parsed_reads = "data/filtered_reads";
-const string parsed_k_l_mers = "data/klmers_var_d.txt";
+const string parsed_reads = "data/reads_var_d.txt";
+//const string parsed_reads = "data/filtered_reads";
+const string parsed_k_l_mers = "data/klmers_const_d.txt";
 const string parsed_k_sequence = "data/vertices_const_d.txt";
 const string error_log = "data/error.log";
-const string parsed_l_mers = "data/lmers_var_d.txt";
-const string graph = "data/graph_var_d.dot";
+const string parsed_l_mers = "data/lmers_var_d2.txt";
+const string graph = "data/graph_const_d.dot";
+const string threaded_graph = "data/threaded_graph_const_d.dot";
 const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
-const int k = 31;
+const int k = 25;
 const int l = 31;
 const int readLength = 100;
 const int maxSeqLength = 200;

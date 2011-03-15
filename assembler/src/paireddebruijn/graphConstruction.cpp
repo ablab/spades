@@ -13,15 +13,15 @@ int inD[MAX_VERT_NUMBER], outD[MAX_VERT_NUMBER];
 int outputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
 int inputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
 
-const int minIntersect = l - 3;
+const int minIntersect = l - 1;
 int EdgeId;
 
 
 using namespace paired_assembler;
 
 void constructGraph() {
-	//	readsToPairs(parsed_reads, parsed_k_l_mers);
-	//	pairsToSequences(parsed_k_l_mers, parsed_k_sequence);
+//		readsToPairs(parsed_reads, parsed_k_l_mers);
+//		pairsToSequences(parsed_k_l_mers, parsed_k_sequence);
 	cerr << "Read edges" << endl;
 	edgesMap edges = sequencesToMap(parsed_k_sequence, true);
 	cerr << "go to graph" << endl;
@@ -31,13 +31,15 @@ void constructGraph() {
 	verticesMap verts;
 	longEdgesMap longEdges;
 	createVertices(g, edges, verts, longEdges);
+	cerr << endl << "End vertices" <<endl;
+//	return;
 	expandDefinite(verts, longEdges);
 	freopen(graph.c_str(), "w",stdout);
 	outputLongEdges(longEdges);
 	cerr << "TraceReads" << endl;
 
 	traceReads(verts, longEdges);
-	freopen("data/graph3.dot", "w",stdout);
+	freopen(threaded_graph.c_str(), "w",stdout);
 	outputLongEdges(longEdges);
 
 }
@@ -98,13 +100,16 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges, verticesMap &ve
 		inD[i] = 0;
 		outD[i] = 0;
 	}
-
+	int count = 0;
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
 		int size = iter->second.size();
 		ll kmer = iter->fi;
 		forn(i, size) {
 			if ((!(iter->se)[i]->used)) {
 				int length = 1;
+				count ++;
+//				cerr << count << endl;
+				assert (((iter->se)[i])->lower->size() >= l);
 				sprintf(EdgeStr + 500000, "%s", decompress(kmer, k).c_str());
 				sprintf(EdgeStrLo + 500000, "%s", ((iter->se)[i])->lower->str().c_str());
 				(iter->se)[i]->used = 1;
@@ -118,27 +123,32 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges, verticesMap &ve
 								(iter->se)[i]->lower->size() - 1));
 				length += expandRight(edges, verts, finishKmer, finishSeq);
 				int toVert = storeVertex(g, verts, finishKmer, finishSeq);
-
 				int toleft = expandLeft(edges, verts, startKmer, startSeq);
+				//cerr<<endl << "TO LEFT" << toleft << endl;
 				length += toleft;
 				int fromVert = storeVertex(g, verts, startKmer, startSeq);
-
-				cerr << EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
+//				if (! (count && ((1<<14) -1 ))) {
+					cerr << EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
 						+ 500000 - toleft)) << endl;
-				cerr << ((char*) (EdgeStrLo
+					cerr << ((char*) (EdgeStrLo
 						+ 500000 - toleft)) << endl;
+	//			}
 				Sequence* UpperSeq = new Sequence(((char*) (EdgeStr
 						+ 500000 - toleft)));
 				Sequence* LowerSeq = new Sequence(((char*) (EdgeStrLo
 						+ 500000 - toleft)));
+				if (LowerSeq->size() < l) {
+					cerr<<endl<< LowerSeq->str()<<endl << UpperSeq->str()<<endl;
+					assert(0);
+				}
 				Edge* newEdge = new Edge(UpperSeq, LowerSeq, fromVert, toVert, length, EdgeId);
 				longEdges.insert(make_pair(EdgeId, newEdge));
 				if ((length < 300) && (length > k - 1)) {
 					EdgeStr[500000 - toleft + length] = 0;
-					sprintf(Buffer, "\"%d: (%d) %s\"", EdgeId, length,
+					sprintf(Buffer, "%d: (%d) %s", EdgeId, length,
 							EdgeStr + 500000 - toleft + k - 1);
 				} else {
-					sprintf(Buffer, "\"%d: (%d)\"", EdgeId, length);
+					sprintf(Buffer, "%d: (%d)", EdgeId, length);
 				}
 
 				g.addEdge(fromVert, toVert, Buffer);
@@ -180,14 +190,15 @@ int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer,
 			return length;
 		}
 
-		if (!goUniqueWayRight(edges, finishKmer, finishSeq)) {
+		if (goUniqueWayRight(edges, finishKmer, finishSeq) != 1) {
 			return length;
 		} else {
+//			cerr << "expanding right" << endl;
 			EdgeStr[500000 + k + length] = nucl(finishKmer & 3);
-			EdgeStrLo[500000 + k + length] = nucl((*finishSeq)[finishSeq->size()-1]);
+			EdgeStrLo[500000 + l + length] = nucl((*finishSeq)[finishSeq->size()-1]);
 			length++;
 			EdgeStr[500000 + k + length] = 0;
-			EdgeStrLo[500000 + k + length] = 0;
+			EdgeStrLo[500000 + l + length] = 0;
 		}
 	}
 }
@@ -211,17 +222,18 @@ int expandLeft(edgesMap &edges, verticesMap &verts, ll &startKmer,
 			return length;
 		}
 		int go_res;
-		if ( !(go_res = goUniqueWayLeft(edges, startKmer, startSeq))) {
+//		cerr << endl<<"trying to go left"<<endl;
+		if (1 != (go_res = goUniqueWayLeft(edges, startKmer, startSeq))) {
 			return length;
 		} else {
-			if (go_res != 2) {
+//			if (go_res != 2) {
 				length++;
 				EdgeStr[500000 - length] = nucl((startKmer >> ((k - 2) * 2)) & 3);
 				EdgeStrLo[500000 - length] = nucl((*startSeq)[0]);
-			}
-			else {
-				cerr << endl<<"kmer_expanding"<<endl;
-			}
+//			}
+//			else {
+//				cerr << endl<<"kmer_expanding left"<<endl;
+//			}
 		}
 	}
 }
@@ -233,38 +245,43 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	int seqIndex = 0;
 	edgesMap::iterator PossibleIter;
 	for (int Nucl = 0; Nucl < 4; Nucl++) {
-		ll tmpKmer = (ll) Nucl << (2 * (k - 1)) | finishKmer;
+		ll tmpKmer = (((ll) Nucl) << (2 * (k - 1))) | finishKmer;
 		edgesMap::iterator iter = edges.find(tmpKmer);
+//		cerr << endl << tmpKmer;
+//		assert(0);
 		if (iter != edges.end()) {
+
+//			cerr<< endl <<"found left kmer" <<endl;
 			int size = iter->second.size();
 			forn(i, size) {
 				if (finishSeq->similar(*((iter->se)[i]->lower), minIntersect, -1)) {
 					count++;
 					if (count > 1)
 						return 0;
+
+//					cerr<< endl <<"found something" <<endl;
 					PossibleKmer = tmpKmer;
 					PossibleSequence = (iter->se)[i]->lower;
 					seqIndex = i;
 					PossibleIter = iter;
-
 				}
 			}
 		}
 	}
 	bool sameK = false;
-	if (count == 2) {
+	if (count == -1) {
 		edgesMap::iterator iter = edges.find(finishKmer);
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
 				Sequence *Ps = (iter->se)[i]->lower;
 				if (finishSeq->similar(*Ps, minIntersect, -1)) {
+					/*if ((iter->se)[i]->used)
+						return 0;
 					if (*Ps == *finishSeq) {
 						cerr << endl << "sameSeq";
 						continue;
-					}
-					if ((iter->se)[i]->used)
-						return 0;
+					}*/
 					count++;
 					if (count > 1)
 						return 0;
@@ -279,8 +296,8 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 //		assert(1 == 0);
 		sameK = true;
 		if (count == 1 && sameK) {
-			assert("1 == 0");
-			cerr << endl << "something" << endl;
+//			assert("1 == 0");
+//			cerr << endl << "something" << endl;
 		}
 	}
 
@@ -324,7 +341,7 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 		}
 	}
 	bool sameK = false;
-	if (count == 2) {
+	if (count == -1) {
 		edgesMap::iterator iter = edges.find(finishKmer);
 		if (iter != edges.end()) {
 			int size = iter->second.size();
@@ -452,8 +469,10 @@ void resetVertexCount() {
 void expandDefinite(verticesMap &verts, longEdgesMap &longEdges){
 	longEdgesMap::iterator it;
 	int expandEdgeIndex;
+	cerr << "expandDefiniteStart"<<endl;
 	forn(i,VertexCount){
 		if ((outD[i]==1)&&(inD[i]>0)){
+			cerr << i << endl;
 			expandEdgeIndex=outputEdges[i][0];
 			int DestVertex = longEdges[expandEdgeIndex]->ToVertex;
 			int a=0;
@@ -478,6 +497,7 @@ void expandDefinite(verticesMap &verts, longEdgesMap &longEdges){
 
 	forn(i,VertexCount){
 		if ((inD[i]==1)&&(outD[i]>0)){
+			cerr << i << endl;
 			expandEdgeIndex=inputEdges[i][0];
 			int SourceVertex = longEdges[expandEdgeIndex]->FromVertex;
 			int a=0;
@@ -507,8 +527,8 @@ void outputLongEdges(longEdgesMap &longEdges){
 	for (longEdgesMap::iterator it=longEdges.begin(); it!=longEdges.end();++it){
 		if (it->second->EdgeId == it->first)
 			{
-			sprintf(Buffer,"\"%i (%i)\"",it->first, it->second->length);
-	//		else sprintf(Buffer,"\"%i (%i) FAKE now it is %d\"",it->first, it->second->length,it->second->EdgeId);
+			sprintf(Buffer,"%i (%i)",it->first, it->second->length);
+	//		else sprintf(Buffer,"%i (%i) FAKE now it is %d",it->first, it->second->length,it->second->EdgeId);
 
 			g.addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
 			cerr<<it->first<<" ("<<it->second->length<<"):"<<endl;
@@ -530,10 +550,10 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 	ll count=0;
 	ll upperMask = (((ll) 1) << (2 * (k - 1))) - 1;
 	ll lowerMask = (((ll) 1) << (2 * (l - 1))) - 1;
-//	FILE* fout = fopen("data/filtered_reads","w");
+	FILE* fout = fopen("data/filtered_reads","w");
 	while (nextReadPair(upperNuclRead, lowerNuclRead)) {
-//		if (!(count & (1024*128 - 1)))
-//			cerr<<"read number "<<count<<" processed"<<endl;
+		if (!(count & (1024*128 - 1)))
+			cerr<<"read number "<<count<<" processed"<<endl;
 		count++;
 		codeRead(upperNuclRead, upperRead);
 		codeRead(lowerNuclRead, lowerRead);
@@ -549,7 +569,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 							!= vertIter->second.end(); ++it) {
 					if ((*it)->lower->similar(loRead->Subseq(1+j, l+j),l-1)){
 		//				cerr<<"vertex found for lower "<<(*it)->lower->str()<<endl;
-	//					fprintf(fout,"%s %s\n",upperNuclRead,lowerNuclRead);
+						fprintf(fout,"%s %s\n",upperNuclRead,lowerNuclRead);
 						int VertId = (*it)->VertexId;
 						if ((inD[VertId]!=0)&&(outD[VertId]!=0)) {
 							int tmpIn = -1;
@@ -621,7 +641,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 		delete upRead;
 		delete loRead;
 	}
-//	fclose(fout);
+	fclose(fout);
 	forn(curVertId,VertexCount){
 		if ((inD[curVertId]!=0)&&(outD[curVertId]!=0)) {
 			cerr<<"Vertex "<<curVertId<<" connect edges:"<< endl;
