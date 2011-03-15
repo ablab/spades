@@ -7,7 +7,7 @@ using namespace gvis;
 
 void testOnline() {
 	stringstream ss;
-	GraphPrinter<int> g1("", ss);
+	PairedGraphPrinter<int> g1("", ss);
 	string tmp;
 	tmp.assign((std::istreambuf_iterator<char>(ss)),
 			std::istreambuf_iterator<char>());
@@ -16,7 +16,7 @@ void testOnline() {
 
 void testOnlineEmpty() {
 	stringstream ss;
-	GraphPrinter<int> *g = new GraphPrinter<int> ("", ss);
+	PairedGraphPrinter<int> *g = new PairedGraphPrinter<int> ("", ss);
 	g->output();
 	string tmp;
 	tmp.assign((std::istreambuf_iterator<char>(ss)),
@@ -26,7 +26,7 @@ void testOnlineEmpty() {
 
 void testOnlineEmptyWithName() {
 	stringstream ss;
-	GraphPrinter<int> *g = new GraphPrinter<int> ("myName", ss);
+	PairedGraphPrinter<int> *g = new PairedGraphPrinter<int> ("myName", ss);
 	g->output();
 	string tmp;
 	tmp.assign((std::istreambuf_iterator<char>(ss)),
@@ -36,7 +36,7 @@ void testOnlineEmptyWithName() {
 
 void testOnlineSingleVertex() {
 	stringstream ss;
-	GraphPrinter<int> *g = new GraphPrinter<int> ("myName", ss);
+	PairedGraphPrinter<int> *g = new PairedGraphPrinter<int> ("myName", ss);
 	g->addVertex(0, "oppa");
 	g->output();
 	string tmp;
@@ -48,7 +48,7 @@ void testOnlineSingleVertex() {
 
 void testOnlineSingleVertexPair() {
 	stringstream ss;
-	GraphPrinter<int> *g = new GraphPrinter<int> ("myName", ss);
+	PairedGraphPrinter<int> *g = new PairedGraphPrinter<int> ("myName", ss);
 	g->addVertex(1, "AAAAAAAAA", 2, "TTTTTTTTT");
 	g->output();
 	string tmp = ss.str();
@@ -57,7 +57,7 @@ void testOnlineSingleVertexPair() {
 
 void testOnlineSingleComplexEdge() {
 	stringstream ss;
-	GraphPrinter<int> *g = new GraphPrinter<int> ("myName", ss);
+	PairedGraphPrinter<int> *g = new PairedGraphPrinter<int> ("myName", ss);
 	g->addVertex(1, "AAAAAAAAA", 2, "TTTTTTTTT");
 	g->addVertex(3, "CCCCCCCCC", 4, "GGGGGGGGG");
 	g->addEdge(make_pair(2,1), make_pair(3,4), "oppa");
@@ -68,7 +68,7 @@ void testOnlineSingleComplexEdge() {
 
 void testOnlineSingleEdge() {
 	stringstream ss;
-	GraphPrinter<int> *g = new GraphPrinter<int> ("myName", ss);
+	PairedGraphPrinter<int> *g = new PairedGraphPrinter<int> ("myName", ss);
 	g->addEdge(0, 1, "oppa");
 	g->output();
 	string tmp;
@@ -78,7 +78,7 @@ void testOnlineSingleEdge() {
 }
 
 //void testOnlineFile() {
-//	GraphPrinter<int> *g = new GraphPrinter<int> ("", "test/data/oppa.txt");
+//	PairedGraphPrinter<int> *g = new PairedGraphPrinter<int> ("", "test/data/oppa.txt");
 //	g->addVertex(0, "oppa");
 //	g->addEdge(0, 1, "oppa");
 //	g->output();

@@ -23,4 +23,13 @@ void outputLongEdges(longEdgesMap &longEdges);
 void traceReads(verticesMap &verts, longEdgesMap &longEdges);
 
 
+
+inline int edgeRealId(int id, longEdgesMap &longEdges){
+	int res = id;
+	while (longEdges[res]->EdgeId !=res){
+		res = longEdges[res]->EdgeId;
+	}
+	return res;
+}
+
 #endif /*GRAPHCONSTRUCTION_H_*/

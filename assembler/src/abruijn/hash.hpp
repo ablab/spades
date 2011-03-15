@@ -6,30 +6,30 @@
 template< typename T >
 struct Hash {
 public:
-	unsigned int operator() (const T &seq) const {
-	    unsigned int h = HASH_SEED;
+	hash_t operator() (const T &seq) const {
+		hash_t h = 0;
 		for (size_t i = 0; i < seq.size(); i++) {
-			h = ((h << 5) - h) + seq[i];
+			h = HASH_X(h) + seq[i];
 		}
-		return h;
+		return h ^ HASH_XOR;
 	}
 };
 
 template< typename T >
 struct HashSym {
 public:
-	unsigned int operator() (const T &seq) const {
+	hash_t operator() (const T &seq) const {
 		Hash<T> h;
-		return h(seq) ^ h(!seq);
+		return h(seq) ^ h(!seq) ^ HASH_XOR;
 	};
 };
 
 template< typename T >
 struct HashSymWeighted {
-  unsigned int operator() (const T &seq) {
-    // Will use frequency of seq
-    return 0;
-  }
+	hash_t operator() (const T &seq) {
+		// Will use frequency of seq
+		return 0;
+	}
 };
 
 template< typename T >

@@ -11,6 +11,13 @@ void startGraphRecord(ostream &out, const string &name) {
 	out << "]" << endl;
 }
 
+void startSimpleGraphRecord(ostream &out, const string &name) {
+	out << "digraph " << name << " {" << endl;
+	out << "node" << "[";
+	recordParameter(out, "fontname", "Courier");
+	out << "]" << endl;
+}
+
 void endGraphRecord(ostream &out) {
 	out << "}" << endl;
 }

@@ -155,6 +155,7 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 		if (used[i] == 0) {
 			int ii = i;
 			used[i] = color;
+			//cerr <<"color = :"<< color << endl;
 			while ((left[ii] >= 0) && (right[left[ii]] == ii) && (left[ii] != i)){
 				seqlength += shift_left[ii];
 				ii = left[ii];
@@ -178,10 +179,10 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 				ll maxsd = ((ll) 3) << (2 * (p-1));
 				ii = right[ii];
 				forn(j, p) {
-//					cerr << ((a[ii] & maxsd) >> (2*(p-j-1)));
+				//	cerr << ((a[ii] & maxsd) >> (2*(p-j-1)));
 					s += nucl((a[ii] & maxsd) >> (2*(p-j-1)));
 					maxsd >>= 2;
-//					cerr << "OK" <<endl;
+			//		cerr << "OK" <<endl;
 				}
 			}
 			Sequence* tmpSeq = new Sequence(s);
@@ -200,8 +201,11 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 			cerr << right[i] << " ";
 			cerr << shift_right[i] << " ";
 		}
+		forn(i, res.size()) {
+			cerr<<res[i]->str() << endl;
+		}
 	}*/
-//	assert(0);
+	//assert(0);
 	return res;
 }
 
