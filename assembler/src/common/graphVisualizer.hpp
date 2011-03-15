@@ -5,6 +5,8 @@
 #include <fstream>
 #include "string"
 #include "vector"
+#include <map>
+#include <sstream>
 using namespace std;
 
 namespace gvis {
@@ -37,24 +39,57 @@ struct Edge {
 
 void startGraphRecord(ostream &out, const string &name);
 
+void startSimpleGraphRecord(ostream &out, const string &name);
+
 void endGraphRecord(ostream &out);
 
-string generateParameterString(const string &name, const string &value);
+void recordParameter(ostream &out, const string &name, const string &value);
+
+string constructCell(const string &label, int border, const string &port);
+
+template<typename tVertex>
+void recordVertexId(ostream &out, tVertex id) {
+	out << "vertex_" << id;
+}
 
 template<typename tVertex>
 void recordVertex(ostream &out, Vertex<tVertex> &vertex) {
-	out << vertex.id << " [" << generateParameterString("label", vertex.label)
-			<< "," << generateParameterString("style", "filled") << ","
-			<< generateParameterString("color", "black") << ","
-			<< generateParameterString("fillcolor", vertex.fillColor) << "]"
-			<< endl;
+	recordVertexId(out, vertex.id);
+	out << "[";
+	recordParameter(out, "label", vertex.label);
+	out << ",";
+	recordParameter(out, "style", "filled");
+	out << ",";
+	recordParameter(out, "color", "black");
+	out << ",";
+	recordParameter(out, "fillcolor", vertex.fillColor);
+	out << "]" << endl;
 }
 
 template<typename tVertex>
 void recordEdge(ostream &out, Edge<tVertex> &edge) {
-	out << edge.from << "->" << edge.to << "[" << generateParameterString(
-			"label", edge.label) << "," << generateParameterString("color",
-			edge.color) << "]" << endl;
+	recordVertexId(out, edge.from);
+	out << "_out";
+	out << "->";
+	recordVertexId(out, edge.to);
+	out << "_in";
+	out << "[";
+	recordParameter(out, "label", edge.label);
+	out << ",";
+	recordParameter(out, "color", edge.color);
+	out << "]" << endl;
+}
+
+template<typename tVertex>
+void recordSimpleEdge(ostream &out, Edge<tVertex> &edge) {
+	recordVertexId(out, edge.from);
+	out << "->";
+	recordVertexId(out, edge.to);
+	out << "[";
+	recordParameter(out, "label", edge.label);
+	out << ",";
+	recordParameter(out, "color", edge.color);
+	out << "]" << endl;
 }
 
 template<typename tVertex>
@@ -83,91 +118,155 @@ void outputGraph(ostream &out, const string &graphName,
 }
 
 template<typename tVertex>
-class IGraphPrinter {
-protected:
-	ostream *_out;
-public:
-	virtual void addVertex(tVertex vertexId, const string &label,
-			const string &fillColor = "white") = 0;
-	virtual void addEdge(tVertex fromId, tVertex toId, const string &label,
-			const string &color = "black") = 0;
-	virtual void output() = 0;
-};
+string constructNodePairId(tVertex u, tVertex v) {
+	stringstream ss;
+	if (u == v)
+		ss << u;
+	else if (u > v)
+		ss << v << "_" << u;
+	else
+		ss << u << "_" << v;
+	return ss.str();
+}
 
 template<typename tVertex>
-class GraphPrinter: public IGraphPrinter<tVertex> {
+string constructComplexNodeId(string pairId, tVertex v) {
+	stringstream ss;
+	ss << pairId << ":port_" << v;
+	return ss.str();
+}
+
+template<typename tVertex>
+string vertexIdToString(tVertex v) {
+	stringstream ss;
+	ss << v;
+	return ss.str();
+}
+
+
+template<typename tVertex>
+string constructTableEntry(tVertex v, const string &label) {
+	stringstream ss;
+	ss << "<TR>";
+	ss << constructCell("", 0, vertexIdToString(v) + "_in");
+	ss << constructCell(label, 0, "");
+	ss << constructCell("", 0, vertexIdToString(v) + "_out");
+	ss << "</TR>\n";
+	return ss.str();
+}
+
+template<typename tVertex>
+string constructReverceTableEntry(tVertex v, const string &label) {
+	stringstream ss;
+	ss << "<TR>";
+	ss << constructCell("", 0, vertexIdToString(v) + "_out");
+	ss << constructCell(label, 0 , "");
+	ss << constructCell("", 0, vertexIdToString(v) + "_in");
+	ss << "</TR>\n";
+	return ss.str();
+}
+
+template<typename tVertex>
+string constructComplexNodeLabel(tVertex v1, const string &label1, tVertex v2,
+		const string &label2) {
+	return "<TABLE>\n" + constructTableEntry(v1, label1)
+			+ constructReverceTableEntry(v2, label2) + "</TABLE>";
+}
+
+template<typename tVertex>
+string constructComplexNodeLabel(tVertex v, const string &label) {
+	return "<TABLE>\n" + constructTableEntry(v, label) + "</TABLE>";
+}
+
+template<typename tVertex>
+string constructVertexInPairId(tVertex v, tVertex rc) {
+	return constructComplexNodeId(constructNodePairId(v, rc), v);
+}
+
+template<typename tVertex>
+class GraphPrinter {
+private:
+	ostream *_out;
+	map<tVertex, tVertex> vertexMap;
 public:
-	GraphPrinter(const string &name, ostream &out) {
-		IGraphPrinter<tVertex>::_out = &out;
-		startGraphRecord(*IGraphPrinter<tVertex>::_out, name);
+	GraphPrinter(const string &name, ostream &out = cout) {
+		_out = &out;
+		startSimpleGraphRecord(*_out, name);
 	}
 
 	GraphPrinter(const string &name, const char* filename) {
-		IGraphPrinter<tVertex>::_out = new ofstream(filename, ios::out);
-		startGraphRecord(*IGraphPrinter<tVertex>::_out, name);
+		_out = new ofstream(filename, ios::out);
+		startSimpleGraphRecord(*_out, name);
 	}
 
-	GraphPrinter(const string &name) {
-		IGraphPrinter<tVertex>::_out = &cout;
-		startGraphRecord(*IGraphPrinter<tVertex>::_out, name);
-	}
-
-	virtual void addVertex(tVertex vertexId, const string &label,
+	void addVertex(tVertex vertexId, const string &label,
 			const string &fillColor = "white") {
 		Vertex<tVertex> v(vertexId, label, fillColor);
-		recordVertex<tVertex> (*IGraphPrinter<tVertex>::_out, v);
+		recordVertex<tVertex> (*_out, v);
 	}
 
-	virtual void addEdge(tVertex fromId, tVertex toId, const string &label,
+	void addEdge(tVertex fromId, tVertex toId, const string &label = " ",
 			const string &color = "black") {
 		Edge<tVertex> e(fromId, toId, label, color);
-		recordEdge<tVertex> (*IGraphPrinter<tVertex>::_out, e);
+		recordSimpleEdge<tVertex>(*_out, e);
 	}
 
 	void output() {
-		endGraphRecord(*IGraphPrinter<tVertex>::_out);
+		endGraphRecord(*_out);
 	}
 };
 
-//template<typename tVertex>
-//class GraphScheme: public IGraphPrinter<tVertex> {
-//private:
-//	string _name;
-//	vector<Vertex<tVertex> > _vertices;
-//	vector<Edge<tVertex> > _edges;
-//public:
-//
-//	GraphScheme(string name) {
-//		_name = name;
-//		IGraphPrinter<tVertex>::_out = &cout;
-//	}
-//
-//	GraphScheme(string name, ostream &out) {
-//		_name = name;
-//		IGraphPrinter<tVertex>::_out = &out;
-//	}
-//
-//	virtual void addVertex(tVertex vertexId, const string &label,
-//			const string &fillColor = "white") {
-//		Vertex<tVertex> v(vertexId, label, fillColor);
-//		_vertices.push_back(v);
-//	}
-//
-//	virtual void addEdge(tVertex fromId, tVertex toId, const string &label,
-//			const string &color = "black") {
-//		Edge<tVertex> e(fromId, toId, label, color);
-//		_edges.push_back(e);
-//	}
-//
-//	virtual void output() {
-//		outputGraph<tVertex> (*IGraphPrinter<tVertex>::_out, _name, _vertices,
-//				_edges);
-//	}
-//
-//	void output(ostream out) {
-//		outputGraph<tVertex> (out, _name, _vertices, _edges);
-//	}
-//};
+template<typename tVertex>
+class PairedGraphPrinter {
+private:
+	ostream *_out;
+	map<tVertex, tVertex> vertexMap;
+public:
+	PairedGraphPrinter(const string &name, ostream &out = cout) {
+		_out = &out;
+		startGraphRecord(*_out, name);
+	}
+
+	PairedGraphPrinter(const string &name, const char* filename) {
+		_out = new ofstream(filename, ios::out);
+		startGraphRecord(*_out, name);
+	}
+
+	void addVertex(tVertex vertexId, const string &label,
+			const string &fillColor = "white") {
+		string vertexLabel = constructComplexNodeLabel(vertexId, label);
+		Vertex<tVertex> v(vertexId, vertexLabel, fillColor);
+		recordVertex<tVertex> (*_out, v);
+	}
+
+	void addVertex(tVertex v1, string label1, tVertex v2, string label2,
+			const string &fillColor = "white") {
+		string pairId = constructNodePairId(v1, v2);
+		string pairLabel = constructComplexNodeLabel(v1, label1, v2, label2);
+		Vertex<string> v(pairId, pairLabel, fillColor);
+		recordVertex<string> (*_out, v);
+	}
+
+	void addEdge(tVertex fromId, tVertex toId, const string &label = " ",
+			const string &color = "black") {
+		string from = constructComplexNodeId(vertexIdToString(fromId), vertexIdToString(fromId));
+		string to = constructComplexNodeId(vertexIdToString(toId), vertexIdToString(toId));
+		Edge<string> e(from, to, label, color);
+		recordEdge<string> (*_out, e);
+	}
+
+	void addEdge(pair<tVertex, tVertex> v1, pair<tVertex, tVertex> v2,
+			const string label = " ", const string &color = "black") {
+		string v1Id = constructVertexInPairId(v1.first, v1.second);
+		string v2Id = constructVertexInPairId(v2.first, v2.second);
+		Edge<string> edge(v1Id, v2Id, label, color);
+		recordEdge(*_out, edge);
+	}
+
+	void output() {
+		endGraphRecord(*_out);
+	}
+};
 }
 
 #endif //GRAPH_VIS_//
