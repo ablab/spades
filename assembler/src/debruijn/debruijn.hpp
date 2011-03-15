@@ -21,7 +21,7 @@
 #define R 9//100
 #define N 9//100//11//100
 // k-mer size:
-#define K 5//25
+//#define K 5//25
 template<int size_>
 class DeBruijn {
 public:
@@ -56,7 +56,7 @@ private:
 	template<size_t size2_>
 	void CountRead(const Seq<size2_>& read) {
 		Seq<size_> head = Seq<size_> (read);
-		for (size_t j = K; j < size2_; ++j) {
+		for (size_t j = size_; j < size2_; ++j) {
 			Seq<size_> tail = head << read[j];
 			addEdge(head, tail);
 			head = tail;

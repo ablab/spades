@@ -14,26 +14,28 @@ namespace condensed_graph {
 
 using namespace std;
 
-template <typename T>
-struct PairHash {
-	size_t operator() (pair<T, T> p) const {
-		return hash<T>()(p.first) + hash<T>()(p.second);
-	}
-};
+/*template <typename T>
+ struct PairHash {
+ size_t operator() (pair<T, T> p) const {
+ return hash<T>()(p.first) + hash<T>()(p.second);
+ }
+ };
 
-template <typename T>
-struct PairLess {
-	bool operator() (pair<T, T> p1, pair<T, T> p2) const {
-		return less<T>()(p1.first, p2.first) ? true : (less<T>()(p2.first, p1.first) ? false : less<T>()(p1.second, p2.second));
-	}
-};
+ template <typename T>
+ struct PairLess {
+ bool operator() (pair<T, T> p1, pair<T, T> p2) const {
+ return less<T>()(p1.first, p2.first) ? true : (less<T>()(p2.first, p1.first) ? false : less<T>()(p1.second, p2.second));
+ }
+ };*/
 
-typedef tr1::unordered_set<pair<string, string>, PairHash<string> > edge_set;
+typedef tr1::unordered_set<pair<string, string> /*, PairHash<string> */>
+		edge_set;
 
-class EdgeStringHandler: public Traversal::Handler {
+class EdgeStringHandler: public Handler {
 	edge_set& set_;
 public:
-	EdgeStringHandler(edge_set& set) : set_(set) {
+	EdgeStringHandler(edge_set& set) :
+		set_(set) {
 
 	}
 	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
@@ -101,14 +103,13 @@ void TestVertex() {
 }
 
 void VisTool() {
-	Graph g;
-	g.AddVertex(Sequence("AAAAT"));
-	g.AddVertex(Sequence("AAATA"));
-	g.AddVertex(Sequence("AAATC"));
-	g.LinkVertices(g.GetPosition(Kmer("AAAAT")).first,
-			g.GetPosition(Kmer("AAATA")).first);
-	g.LinkVertices(g.GetPosition(Kmer("AAAAT")).first,
-			g.GetPosition(Kmer("AAATC")).first);
+	ActionHandler stub;
+	Graph g(5, stub);
+	Vertex* v1 = g.AddVertex(Sequence("AAAAT"));
+	Vertex* v2 = g.AddVertex(Sequence("AAATA"));
+	Vertex* v3 = g.AddVertex(Sequence("AAATC"));
+	g.LinkVertices(v1, v2);
+	g.LinkVertices(v1, v3);
 	fstream filestr;
 	filestr.open("test.txt", fstream::out);
 	gvis::GraphPrinter<const Vertex*> gp("test graph", filestr);
@@ -118,11 +119,16 @@ void VisTool() {
 	DFS dfs(g);
 	SimpleStatCounter h;
 	dfs.Traverse(h);
-	cerr<<h.v_count()<<" "<<h.e_count();
+	cerr << h.v_count() << " " << h.e_count();
 }
 
 void TestSimpleThread() {
-	Graph g;
+	SimpleHashTable<K> h;
+	HashRenewer<K> handler(h);
+	Graph g(5, handler);
+	GraphConstructor<5> g_c(g, h);
+
+	Graph g();
 	Read r("ACAAACCACCA");//"ATGCATATGC");
 	DEBUG("Read is " + r.str())
 	g.ThreadRead(r);
@@ -244,7 +250,7 @@ void TestAddVertex() {
 }
 
 void MyEquals(edge_set e, string s[][2], size_t length) {
-	set<pair<string, string>, PairLess<string> > etalon_edges;
+	set<pair<string, string> , PairLess<string> > etalon_edges;
 	for (size_t i = 0; i < length; ++i) {
 		ASSERT(e.count(make_pair(s[i][0], s[i][1])) == 1);
 		ASSERT(e.count(make_pair(complement(s[i][1]), complement(s[i][0]))) == 1);
@@ -256,9 +262,9 @@ void MyEquals(edge_set e, string s[][2], size_t length) {
 }
 
 void TestCondenseSimple() {
-	string ss[] = {"CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC"};
+	string ss[] = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
 	vector<strobe_read<R, 4> > input;
-	input.push_back(strobe_read<R, 4>(ss));
+	input.push_back(strobe_read<R, 4> (ss));
 	DeBruijn<K> g;
 	g.ConstructGraph(input);
 	condensed_graph::Graph condensed;
@@ -267,7 +273,8 @@ void TestCondenseSimple() {
 	EdgeStringHandler h(set);
 	DFS dfs(condensed);
 	dfs.Traverse(h);
-	string s[][2] = {{"CGAAA", "GAAAACACA"}, {"CGAAA", "GAAAACACA"}, {"GAAACCACA", "CACACC"}, {"GAAAACACA", "CACACC"}};
+	string s[][2] = { { "CGAAA", "GAAAACACA" }, { "CGAAA", "GAAAACACA" }, {
+			"GAAACCACA", "CACACC" }, { "GAAAACACA", "CACACC" } };
 	MyEquals(set, s, 4);
 
 	for (edge_set::iterator it = set.begin(); it != set.end(); it++) {
@@ -278,19 +285,19 @@ void TestCondenseSimple() {
 
 }
 /*
-using namespace condensed_graph;
-cute::suite CondensedGraphSuite() {
-	cute::suite s;
-	s.push_back(CUTE(TestVertex));
-	s.push_back(CUTE(TestSimpleHashTable));
-	s.push_back(CUTE(TestSimpleThread));
-	s.push_back(CUTE(TestSimpleThread2));
-	s.push_back(CUTE(TestBuldge));
-	s.push_back(CUTE(TestSplitThread));
-	s.push_back(CUTE(TestSplitThread2));
-//	s.push_back(CUTE(VisTool));
-	return s;
-}*/
+ using namespace condensed_graph;
+ cute::suite CondensedGraphSuite() {
+ cute::suite s;
+ s.push_back(CUTE(TestVertex));
+ s.push_back(CUTE(TestSimpleHashTable));
+ s.push_back(CUTE(TestSimpleThread));
+ s.push_back(CUTE(TestSimpleThread2));
+ s.push_back(CUTE(TestBuldge));
+ s.push_back(CUTE(TestSplitThread));
+ s.push_back(CUTE(TestSplitThread2));
+ //	s.push_back(CUTE(VisTool));
+ return s;
+ }*/
 
 using namespace condensed_graph;
 cute::suite CondensedGraphSuite() {
