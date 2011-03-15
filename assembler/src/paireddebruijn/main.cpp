@@ -6,7 +6,7 @@
 
 
 int main() {
-//	freopen(error_log.c_str(), "w",stderr);
+	freopen(error_log.c_str(), "w",stderr);
 //	assert( 1== 0);
 	freopen(graph.c_str(), "w",stdout);
 //	LOG_ASSERT(1 == 0, "Something wrong");

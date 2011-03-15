@@ -31,8 +31,9 @@ void constructGraph() {
 	verticesMap verts;
 	longEdgesMap longEdges;
 	createVertices(g, edges, verts, longEdges);
-	expandDefinite(verts, longEdges);
-	freopen(graph.c_str(), "w",stdout);
+	expandDefinite(longEdges);
+//	freopen(graph.c_str(), "w",stdout);
+	freopen("data/graph2.dot", "w",stdout);
 	outputLongEdges(longEdges);
 	cerr << "TraceReads" << endl;
 
@@ -449,7 +450,7 @@ void resetVertexCount() {
 	VertexCount = 0;
 }
 
-void expandDefinite(verticesMap &verts, longEdgesMap &longEdges){
+void expandDefinite(longEdgesMap &longEdges){
 	longEdgesMap::iterator it;
 	int expandEdgeIndex;
 	forn(i,VertexCount){
@@ -632,23 +633,27 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 		}
 	}
 
-
+//resolving simple case InD=OutD and all edge is unique
 	forn(curVertId,VertexCount){
 		if ((inD[curVertId]!=0)&&(outD[curVertId]!=0))
-		if ((inD[curVertId]<=EdgePairs[curVertId].size())&&(outD[curVertId]<=EdgePairs[curVertId].size()))
+		if ((inD[curVertId]==EdgePairs[curVertId].size())&&(outD[curVertId]==EdgePairs[curVertId].size()))
 		{
 			cerr<<"Process vertex "<<curVertId<<" IN "<<inD[curVertId]<<" OUT "<<outD[curVertId]<<" unique ways "<<EdgePairs[curVertId].size()<<endl;
+			bool allPairUnique = true;
 			forn(i,(EdgePairs[curVertId]).size()){
 				int CurIn = (EdgePairs[curVertId])[i].first;
 				int CurOut = (EdgePairs[curVertId])[i].second;
-				bool singlePair = true;
 				forn(j,(EdgePairs[curVertId]).size()){
 					if ((EdgePairs[curVertId])[j].first==CurIn)
-						if ((EdgePairs[curVertId])[j].second!=CurOut) singlePair = false;
+						if ((EdgePairs[curVertId])[j].second!=CurOut) allPairUnique = false;
 					if ((EdgePairs[curVertId])[j].second==CurOut)
-						if ((EdgePairs[curVertId])[j].first!=CurIn) singlePair = false;
+						if ((EdgePairs[curVertId])[j].first!=CurIn) allPairUnique = false;
 				}
-				if (singlePair){
+			}
+			forn(i,(EdgePairs[curVertId]).size()){
+				int CurIn = (EdgePairs[curVertId])[i].first;
+				int CurOut = (EdgePairs[curVertId])[i].second;
+				if (allPairUnique){
 					cerr<<"Search in edge "<<CurIn<<" position"<<endl;
 					while (longEdges[CurIn]->EdgeId !=CurIn) {
 						cerr<<"Edge "<<CurIn<<" included into "<<longEdges[CurIn]->EdgeId<<endl;
@@ -670,6 +675,18 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 			}
 		}
 	}
+
+
+	//resolve multi case;
+	int FictiveVertexCount;
+	forn(curVertId,VertexCount){
+		if ((inD[curVertId]!=0)&&(outD[curVertId]!=0)){
+			if ((inD[curVertId]<=EdgePairs[curVertId].size())&&(outD[curVertId]<=EdgePairs[curVertId].size())){
+
+			}
+		}
+	}
+
 }
 
 

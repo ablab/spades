@@ -18,7 +18,7 @@ int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence *finishSeq);
 int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq);
 int storeVertex(gvis::GraphPrinter<int> &g, verticesMap &verts, ll newKmer, Sequence* newSeq);
 void resetVertexCount();
-void expandDefinite(verticesMap &verts, longEdgesMap &longEdges);
+void expandDefinite(longEdgesMap &longEdges);
 void outputLongEdges(longEdgesMap &longEdges);
 void traceReads(verticesMap &verts, longEdgesMap &longEdges);
 
