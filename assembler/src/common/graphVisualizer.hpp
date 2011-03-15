@@ -81,6 +81,18 @@ void recordEdge(ostream &out, Edge<tVertex> &edge) {
 }
 
 template<typename tVertex>
+void recordSimpleEdge(ostream &out, Edge<tVertex> &edge) {
+	recordVertexId(out, edge.from);
+	out << "->";
+	recordVertexId(out, edge.to);
+	out << "[";
+	recordParameter(out, "label", edge.label);
+	out << ",";
+	recordParameter(out, "color", edge.color);
+	out << "]" << endl;
+}
+
+template<typename tVertex>
 void recordVertices(ostream &out, vector<Vertex<tVertex> > &vertices) {
 	for (typename vector<Vertex<tVertex> >::iterator it = vertices.begin(); it
 			!= vertices.end(); it++) {
@@ -196,7 +208,7 @@ public:
 	void addEdge(tVertex fromId, tVertex toId, const string &label = " ",
 			const string &color = "black") {
 		Edge<tVertex> e(fromId, toId, label, color);
-		recordEdge<tVertex>(*_out, e);
+		recordSimpleEdge<tVertex>(*_out, e);
 	}
 
 	void output() {
