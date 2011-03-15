@@ -10,29 +10,30 @@
 \newcommand{\jpgpic}[1]{\begin{center}\includegraphics[width=\textwidth]{#1.jpg}\end{center}}
 
 \begin{document}
+\author{M. Dvorkin, A. Kulikov}
 \title{A Bruijn Graph Approach}
 \maketitle
 
 \section{General Idea}
 
-The main goal of this approach is to simplify a de Bruijn graph
+The main goal of this approach is to simplify a \emph{de Bruijn} graph
 constructed on a given set of reads while still preserving 
 ``the structure'' of the graph. Namely, instead 
 of representing each read as a sequence of edges 
-between its consecutive $k$-mers (a read of length $r$ defines
+between its consecutive $k$-mers (in which case a read of length $r$ defines
 $r-k-1$ edges) we represent it as just one (or a few, in general)
-edges between some its two $k$-mers. For example, for 
+edge between some of its $k$-mers. For example, for 
 reads {\tt ACGTACT} and {\tt TACTAGC} and $k=3$
 instead of all gray edges in the figure below we will have 
 only two black edges.
 \jpgpic{fig1}
 The hope is that the resulting graph will be easier to handle 
-and at the same time will have essentially the same structure 
+and at the same time it will have essentially the same structure 
 as the original de Bruijn graph.
 
 \subsection{Hash Functions}
 
-One of the possibilities to extract two such $k$-mers out of a given
+One of the possibilities to extract two distinguished $k$-mers out of a given
 read is to take two $k$-mers with minimal value of some hash function $h$.
 Some natural properties that $h$ should hold are listed below.
 \begin{enumerate}
@@ -49,7 +50,7 @@ Some natural properties that $h$ should hold are listed below.
   reverse-complementary stable hash function $h$ out of any hash function 
   $h_0$ are the following:
   \[h(s) = h_0(s) \oplus h_0(s^{RC}) \textrm{ or } h(s) = \min\{h_0(s), h_0(s^{RC})\} .\]
-  \item $h(s)$ += frequency of $s$ in the reads;\todo{Misha, poyasni eto, pogaluista.}
+  \item $h(s)$ += frequency of $s$ in the reads;
   %Motivation: consider a $k$-mer that is present in many 
   %places (e.g. part of a repeat). Such $k$-mer is not a vertex 
   %that's very pleasant to work with. If a read contains some more 
@@ -82,20 +83,63 @@ We assume that the genome is circular and that we are given the set of all its r
 The main question that still needs to be answered is:
 does this graph really represent the repeat structure of the genome?
 
+\section{Practical results}
+
+We've implemented the suggested approach and are currently investigating the resulting A Bruijn graphs
+on emulated data sets.
+
+The technical issues pushed us towards a two-pass procedure:
+\begin{enumerate}
+  \item Each read undergoes a (linear-time) hashing procedure, and two least-valued $k$-mers are marked as
+  ``good''. (In fact, not themselves but their hash values are marked. Even if a few extra $k$-mers become
+  good due to hash collisions, it will not make much harm).
+  \item For each read, all of its $k$-mers are checked whether their hash values are good, and the good ones
+  are mapped to corresponding vertices in the future graph. The read is thus counted towards one or more edges.
+  The leavings (in the two ends of the read) are currently not considered.
+\end{enumerate}
+
+Below is the resulting A Bruijn graph for the first 10\% of the reference E. Coli genome; the ideal data set
+was used for this calculation.
+
+\jpgpic{fig4}
+
+This graph has only undergone a simple vertex-merging procedure; there are more
+yet-unimplemented simplifications applicable to this graph.
+
 \section{Some further ideas}
+
+\subsection{Making use of frequency}
+
+The task of selecting the $k$-mers that will become vertices in the A Bruijn graph can be reformulated
+as the task of selecting criteria that distinguish some $k$-mers among others that work the same way
+in different reads.
+
+Along with a hash function, an apt criterion is the frequency of the given $k$-mer among all reads
+(provided the corresponding hash-table is memory-feasible). This criterion might be fruitful considering
+the following.
+
+\begin{itemize}
+  \item The $k$-mers that are underrepresented in the reads (even those a with small value of hash function)
+  are (most probably) erroneous. Using frequency allows us to exclude them from the set of
+  vertex-forming $k$-mers.
+  \item The $k$-mers that are overrepresented correspond to high-degree vertices in the graph.
+  It might be helpful to exclude them as well in order to make to make the structure of the graph more feasible.
+  (Motivation: consider two reads, $axyb$ and $cxyd$. A hash function might suggest to select $k$-mers $x$ and
+  $y$ which would create a fork in the graph. Selecting $a$, $b$, $c$ and $d$ on the other hand leads to
+  two separate edges.)
+
 \subsection{Reducing the number of vertices}
 As said in the beginning the main motivation for considering such graphs
-they contain fewer edges than the original de Bruijn graph. Clearly, the number of edges in
+they contain fewer edges than the original de Bruijn graph. Clearly, the number of edges in the
 A Bruijn graph is also reduced (the vertices with no bold adjacent edges actually do not belong
-to A Bruijn graph). In order to further reduce the number of vertices we one can do the following.
+to A Bruijn graph). In order to further reduce the number of vertices we can do the following.
 First, mark just one $k$-mer in each read with the minimal possible hash value. If it turned out to be
 the first or the last $k$-mer of the current read, mark one more $k$-mer with the next smallest hash 
-value. This guarantess that in case each possible read is present in the set of reads
-at least two $k$-mers will be marked in each read. We then add edges between marked $k$-mers
-that are present in the same read. In practice, not all the reads may be present and 
-reads contain errors, so it makes sense to additionally check whether ta least two $k$-mers
-are marked in each read.
+value.
 
-
+In the ideal case when each possible read is present in the set of reads, this guarantess that
+at least two $k$-mers will be marked in each read.
+In real situations it would be reasonable to take the second $k$-mer if the first one
+falls into on of the leftmost or rightmost $\tau$ positions for some treshold $\tau$.
 
 \end{document}
