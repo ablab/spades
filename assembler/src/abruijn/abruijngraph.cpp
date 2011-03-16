@@ -117,8 +117,12 @@ void Graph::output(std::ofstream &out) {
 			printer.addVertex(*v, (*v)->toString());
 		#endif
 		for (Vertex::Edges::iterator it = (*v)->edges_.begin(); it != (*v)->edges_.end(); ++it) {
-			stringstream ss;
-			printer.addEdge(*v, it->first, it->second.toString());
+			#ifdef OUTPUT_PAIRED
+				printer.addEdge(make_pair(*v, (*v)->complement_), make_pair(it->first, it->first->complement_), it->second.toString());
+			#endif
+			#ifndef OUTPUT_PAIRED
+				printer.addEdge(*v, it->first, it->second.toString());
+			#endif
 		}
 	}
 	printer.output();
