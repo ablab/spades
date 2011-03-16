@@ -4,6 +4,7 @@
 #include "sequence.hpp"
 #include "nucl.hpp"
 #include "condensedGraph.hpp"
+#include "condensedGraphConstructor.hpp"
 #include "debruijn.hpp"
 #include "graphVisualizer.hpp"
 #include <fstream>
@@ -31,7 +32,7 @@ using namespace std;
 typedef tr1::unordered_set<pair<string, string> /*, PairHash<string> */>
 		edge_set;
 
-class EdgeStringHandler: public Handler {
+class EdgeStringHandler: public Traversal::Handler {
 	edge_set& set_;
 public:
 	EdgeStringHandler(edge_set& set) :
