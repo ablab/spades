@@ -51,27 +51,29 @@ public:
 	//	Vertex(int coverage, int length, Sequence *kmer, Sequence *pair, bool direction, int delta_d);
 	void ExpandRight(Edge newRigth) {
 		ToVertex = newRigth.ToVertex;
-		length = length + newRigth.length;
-		string toOut = newRigth.upper->str();
-//		cerr <<endl << "str:: "<< upper->str() <<" "<< toOut <<" "<< k <<endl;
+		if (newRigth.length > 0) {
+			length = length + newRigth.length;
+			string toOut = newRigth.upper->str();
+			//		cerr <<endl << "str:: "<< upper->str() <<" "<< toOut <<" "<< k <<endl;
 
-		assert(k-1 < toOut.length());
-		upper = new Sequence(upper->str()+newRigth.upper->Subseq(k-1).str());
+			assert(k-1 < toOut.length());
+			upper = new Sequence(upper->str()+newRigth.upper->Subseq(k-1).str());
 
-		toOut = newRigth.lower->str();
-//		cerr <<endl << l-1 <<" "<< toOut.length()<<" "<< toOut<< endl;
-		assert(l-1 < toOut.length());
-		cerr <<endl << "strL:: "<< lower->str() <<" "<< toOut <<" "<< l <<endl;
-		lower = new Sequence(lower->str()+newRigth.lower->Subseq(l-1).str());
-		cerr<< endl << "expanded" << endl;
-		//TODO update both Seq...
+			toOut = newRigth.lower->str();
+			//		cerr <<endl << l-1 <<" "<< toOut.length()<<" "<< toOut<< endl;
+			assert(l-1 < toOut.length());
+			//		cerr <<endl << "strL:: "<< lower->str() <<" "<< toOut <<" "<< l <<endl;
+			lower = new Sequence(lower->str()+newRigth.lower->Subseq(l-1).str());
+//		cerr<< endl << "expanded" << endl;
+		}
 	}
 	void ExpandLeft(Edge newLeft) {
 		FromVertex = newLeft.FromVertex;
-		length = length + newLeft.length;
-		upper = new Sequence(newLeft.upper->str()+upper->Subseq(k-1).str());
-		lower = new Sequence(newLeft.lower->str()+lower->Subseq(l-1).str());
-		//TODO update both Seq...
+		if (newLeft.length > 0) {
+			length = length + newLeft.length;
+			upper = new Sequence(newLeft.upper->Subseq(0, newLeft.length).str()+upper->str());
+			lower = new Sequence(newLeft.lower->Subseq(0, newLeft.length).str()+lower->str());
+		}
 	}
 	Edge(Sequence *up, Sequence *low, int from, int to, int len, int id) {
 		upper = up;

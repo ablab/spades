@@ -232,12 +232,12 @@ public:
 		startGraphRecord(*_out, name);
 	}
 
-	void addVertex(tVertex vertexId, const string &label,
-			const string &fillColor = "white") {
-		string vertexLabel = constructComplexNodeLabel(vertexId, label);
-		Vertex<tVertex> v(vertexId, vertexLabel, fillColor);
-		recordVertex<tVertex> (*_out, v);
-	}
+//	void addVertex(tVertex vertexId, const string &label,
+//			const string &fillColor = "white") {
+//		string vertexLabel = constructComplexNodeLabel(vertexId, label);
+//		Vertex<tVertex> v(vertexId, vertexLabel, fillColor);
+//		recordVertex<tVertex> (*_out, v);
+//	}
 
 	void addVertex(tVertex v1, string label1, tVertex v2, string label2,
 			const string &fillColor = "white") {
@@ -247,13 +247,13 @@ public:
 		recordVertex<string> (*_out, v);
 	}
 
-	void addEdge(tVertex fromId, tVertex toId, const string &label = " ",
-			const string &color = "black") {
-		string from = constructComplexNodeId(vertexIdToString(fromId), vertexIdToString(fromId));
-		string to = constructComplexNodeId(vertexIdToString(toId), vertexIdToString(toId));
-		Edge<string> e(from, to, label, color);
-		recordEdge<string> (*_out, e);
-	}
+//	void addEdge(tVertex fromId, tVertex toId, const string &label = " ",
+//			const string &color = "black") {
+//		string from = constructComplexNodeId(vertexIdToString(fromId), vertexIdToString(fromId));
+//		string to = constructComplexNodeId(vertexIdToString(toId), vertexIdToString(toId));
+//		Edge<string> e(from, to, label, color);
+//		recordEdge<string> (*_out, e);
+//	}
 
 	void addEdge(pair<tVertex, tVertex> v1, pair<tVertex, tVertex> v2,
 			const string label = " ", const string &color = "black") {
