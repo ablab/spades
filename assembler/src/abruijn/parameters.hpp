@@ -15,14 +15,21 @@
 // Mate-pair read size
 #define MPSIZE 100
 
-// ===== Output =====
-#define OUTPUT_FILE std::string("./output/") + inputFileNames.first[7] + itoa(K) + "_" + itoa(CUT)
-
 // ===== Visualization =====
 // Define OUTPUT_PAIRED if you want GraphViz to glue together complementary vertices
 //#define OUTPUT_PAIRED
 // How many nucleotides are put in the vertex label in GraphViz
 #define LABEL 5
+
+// ===== Output =====
+#define OUTPUT_FILE std::string("./output/") + LETTER + itoa(K) + "_" + itoa(CUT) + OUTPUT_FILE_SUFFIX
+#define LETTER inputFileNames.first[7]
+#ifdef OUTPUT_PAIRED
+	#define OUTPUT_FILE_SUFFIX ""
+#endif
+#ifndef OUTPUT_PAIRED
+	#define OUTPUT_FILE_SUFFIX "_s"
+#endif
 
 // ===== Hashing parameters =====
 #define HASH_XOR 1845724623
