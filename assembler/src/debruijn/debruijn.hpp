@@ -16,12 +16,6 @@
 #include <vector>
 #include <tr1/unordered_map>
 
-//todo make separate class to construct graph and remove R from here!!!
-// read size:
-#define R 9//100
-#define N 9//100//11//100
-// k-mer size:
-//#define K 5//25
 template<int size_>
 class DeBruijn {
 public:

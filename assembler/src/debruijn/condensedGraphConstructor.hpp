@@ -57,7 +57,7 @@ template<size_t kmer_size_>
 class HashRenewer: public ActionHandler {
 	typedef Seq<kmer_size_> Kmer;
 
-	SimpleHashTable<kmer_size_>& h_;
+	SimpleHashTable<kmer_size_> *h_;
 
 	/**
 	 *	renews hash for vertex and complementary
@@ -66,35 +66,37 @@ class HashRenewer: public ActionHandler {
 	void RenewKmersHash(Vertex* v) {
 		assert(v->nucls().size() >= kmer_size_);
 		Kmer k(v->nucls());
-		h_.put(k, v, 0);
+		h_->put(k, v, 0);
 		for (size_t i = kmer_size_, n = v->nucls().size(); i < n; ++i) {
 			k = k << v->nucls()[i];
-			h_.put(k, v, i - kmer_size_ + 1);
+			h_->put(k, v, i - kmer_size_ + 1);
 		}
 	}
 
 	void DeleteKmersHash(Vertex* v) {
 		assert(v->nucls().size() >= kmer_size_);
 		Kmer k(v->nucls());
-		h_.deleteIfVertex(k, v);
+		h_->deleteIfVertex(k, v);
 		for (size_t i = kmer_size_, n = v->nucls().size(); i < n; ++i) {
 			k = k << v->nucls()[i];
-			h_.deleteIfVertex(k, v);
+			h_->deleteIfVertex(k, v);
 		}
 	}
 
 public:
-	HashRenewer(SimpleHashTable<kmer_size_>& h) :
+	HashRenewer(SimpleHashTable<kmer_size_> *h) :
 		h_(h) {
 	}
-	;
 
 	virtual void HandleAdd(Vertex* v) {
+		DEBUG("Renewing hash for k-mers of sequence " << v->nucls().str() << " and its complement");
 		RenewKmersHash(v);
 		RenewKmersHash(v->complement());
 	}
 
 	virtual void HandleDelete(Vertex* v) {
+		DEBUG("Deleting hash for k-mers of sequence " << v->nucls().str() << " and its complement");
+
 		DeleteKmersHash(v);
 		DeleteKmersHash(v->complement());
 	}
@@ -106,7 +108,6 @@ protected:
 	typedef Seq<kmer_size_> Kmer;
 	Graph *g_;
 	SimpleHashTable<kmer_size_> *h_;
-	HashRenewer<kmer_size_> action_handler_;
 
 	pair<Vertex*, int> GetPosition(Kmer k) {
 		assert(h_->contains(k));
@@ -124,9 +125,11 @@ protected:
 		return h_->get(k);
 	}
 
-	GraphConstructor() :
-		h_(new SimpleHashTable<kmer_size_> ()), action_handler_(*h_),
-				g_(new Graph(kmer_size_, action_handler_)) {
+	GraphConstructor() {
+		h_ = new SimpleHashTable<kmer_size_> ();
+		g_ = new Graph(kmer_size_, new HashRenewer<kmer_size_>(h_));
+//		DEBUG("HERE0");
+//		GetPosMaybeMissing(Seq<5>("AAAAA"));
 	}
 
 public:
@@ -137,34 +140,36 @@ public:
 };
 
 //for tests!!!
-template<size_t kmer_size_, size_t read_size_>
+template<size_t kmer_size_, size_t read_size_, size_t cnt>
 class DirectConstructor: public GraphConstructor<kmer_size_> {
 	typedef Seq<kmer_size_> Kmer;
 	typedef GraphConstructor<kmer_size_> super;
 
-	vector<strobe_read<read_size_, 1>>& reads_;
+	vector<strobe_read<read_size_, cnt, int>>& reads_;
 
 	//todo extract from class definition!!!
 	void ThreadRead(const Seq<read_size_> &r);
 
 public:
-	DirectConstructor(vector<strobe_read<read_size_, 1>>& reads) : super(),
+	DirectConstructor(vector<strobe_read<read_size_, cnt, int>>& reads) : super(),
 		reads_(reads) {
 	}
 
 	virtual void ConstructGraph(Graph* &g, SimpleHashTable<kmer_size_>* &h) {
 		for (size_t i = 0; i < reads_.size(); ++i) {
-			ThreadRead(reads_[i][0]);
+			for (size_t r = 0; r < cnt; ++r) {
+				ThreadRead(reads_[i][r]);
+			}
 		}
 		super::ConstructGraph(g, h);
 	}
 };
 
-template<size_t kmer_size_, size_t read_size_>
-void DirectConstructor<kmer_size_, read_size_>::ThreadRead(const Seq<read_size_> &r) {
+template<size_t kmer_size_, size_t read_size_, size_t cnt>
+void DirectConstructor<kmer_size_, read_size_, cnt>::ThreadRead(const Seq<read_size_> &r) {
 	Kmer k(r);
 	DEBUG("Threading k-mer: " + k.str())
-	for (size_t i = kmer_size_; i < N; ++i) {
+	for (size_t i = kmer_size_; i < read_size_; ++i) {
 		pair<Vertex*, int> prev_pos = GetPosMaybeMissing(k);
 		Kmer old_k = k;
 		k = k << r[i];

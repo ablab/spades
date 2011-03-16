@@ -7,6 +7,7 @@
 
 #include "ireadstream.hpp"
 #include "condensedGraph.hpp"
+#include "condensedGraphConstructor.hpp"
 #include "debruijn.hpp"
 #include <cassert>
 #include <iostream>
@@ -18,6 +19,10 @@
 #include <stdio.h>
 
 #define K 5//25
+//todo make separate class to construct graph and remove R from here!!!
+// read size:
+#define R 9//100
+#define N 9//100//11//100
 
 using namespace std;
 
@@ -43,28 +48,27 @@ int main(int argc, char *argv[]) {
 	// construct graph
 
 	time_t now2 = time(NULL);
-	condensed_graph::SimpleHashTable<K> h;
-	condensed_graph::HashRenewer<K> handler(h);
-	condensed_graph::Graph g(K, handler);
-	condensed_graph::GraphConstructor<K> g_c(g, h);
-	for (size_t i = 0; i < v->size(); ++i) {
-		if (i % 10000 == 0) {
-			cerr << "mate reads: " << i << ", time: " << (time(NULL) - now2)
-					<< endl;
-		}
-		g_c.ThreadRead((*v)[i][0]);
-		g_c.ThreadRead((*v)[i][1]);
-	}
-
+	condensed_graph::DirectConstructor<K, R, 2> g_c(*v);
+//	for (size_t i = 0; i < v->size(); ++i) {
+//		if (i % 10000 == 0) {
+//			cerr << "mate reads: " << i << ", time: " << (time(NULL) - now2)
+//					<< endl;
+//		}
+//		g_c.ThreadRead((*v)[i][0]);
+//		g_c.ThreadRead((*v)[i][1]);
+//	}
+	condensed_graph::Graph *g;
+	condensed_graph::SimpleHashTable<K> *index;
+	g_c.ConstructGraph(g, index);
 	fstream filestr;
 	filestr.open("graph.dot", fstream::out);
 	gvis::GraphPrinter<const condensed_graph::Vertex*> gp(
 			"simulated data graph", filestr);
 	condensed_graph::SimpleGraphVisualizer gv(gp);
-	gv.Visualize(g);
+	gv.Visualize(*g);
 	filestr.close();
 
-	condensed_graph::DFS dfs(g);
+	condensed_graph::DFS dfs(*g);
 	condensed_graph::SimpleStatCounter stat_c;
 	dfs.Traverse(stat_c);
 	cerr << "Vertex count=" << stat_c.v_count() << "; Edge count="

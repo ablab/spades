@@ -83,7 +83,7 @@ vector<Vertex*> Graph::Desc(const Vertex* v) const {
 }
 
 Vertex* Graph::AddVertex(const Sequence &nucls) {
-	DEBUG("Adding vertex for sequence '" << nucls.str() << "' and its complement '" << (!nucls).str() << "'")
+	DEBUG("Adding vertex for sequence '" << nucls.str() << "' and its complement '" << (!nucls).str() << "'");
 	Vertex* v1 = new Vertex(nucls);
 	Vertex* v2 = new Vertex(!nucls);
 	v1->set_complement(v2);
@@ -91,8 +91,7 @@ Vertex* Graph::AddVertex(const Sequence &nucls) {
 	vertices_.insert(v1);
 	vertices_.insert(v2);
 
-	//	DEBUG("Renewing hash for k-mers of sequence " << v->nucls().str() << " and its complement")
-	action_handler_.HandleAdd(v1);
+	action_handler_->HandleAdd(v1);
 	return v1;
 }
 
@@ -105,7 +104,7 @@ void Graph::DeleteVertex(Vertex* v) {
 	vertices_.erase(v);
 	vertices_.erase(complement);
 
-	action_handler_.HandleDelete(v);
+	action_handler_->HandleDelete(v);
 
 	delete v;
 	delete complement;
@@ -131,7 +130,7 @@ Vertex* Graph::SplitVertex(Vertex* v, size_t pos) {
 	FixIncomingOnSplit(v->complement(), v2->complement(),
 			v1->complement());
 
-	action_handler_.HandleSplit(v, pos, v1, v2);
+	action_handler_->HandleSplit(v, pos, v1, v2);
 
 	DeleteVertex(v);
 
@@ -147,7 +146,7 @@ Vertex* Graph::Merge(Vertex* v1, Vertex* v2) {
 	FixIncomingOnMerge(v2->complement(), v1->complement(),
 			v->complement());
 
-	action_handler_.HandleMerge(v1, v2, v);
+	action_handler_->HandleMerge(v1, v2, v);
 
 	DeleteVertex(v1);
 	DeleteVertex(v2);

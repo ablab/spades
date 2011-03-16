@@ -126,19 +126,25 @@ class Graph {
 	void AddDesc(Vertex* anc, Vertex* desc);
 
 	size_t k_;
-	ActionHandler& action_handler_;
+	ActionHandler* action_handler_;
 	//	template<size_t kmer_size_> friend class GraphConstructor;
 public:
 
-	Graph(size_t k, ActionHandler& action_handler) :
+	Graph(size_t k, ActionHandler* action_handler) :
 		k_(k), action_handler_(action_handler) {
+	}
+
+	~Graph() {
+		delete action_handler_;
 	}
 
 	const set<Vertex*>& vertices() const {
 		return vertices_;
 	}
 
-	void set_action_handler(ActionHandler& action_handler) {
+	void set_action_handler(ActionHandler* action_handler) {
+		delete action_handler_;
+
 		action_handler_ = action_handler;
 	}
 
@@ -172,7 +178,7 @@ public:
 	void LinkVertices(Vertex* anc, Vertex* desc);
 
 	bool AreLinkable(Vertex* v1, Vertex* v2) const {
-		return v2->nucls().Subseq(0, k_) == v1->nucls().Subseq(
+		return v2->nucls().Subseq(0, k_ - 1) == v1->nucls().Subseq(
 				v1->size() - (k_ - 1));
 	}
 
