@@ -102,9 +102,11 @@ public:
 //		return sb.BuildSequence();
 	}
 
+
+
 	string toString() {
 		#ifdef OUTPUT_PAIRED
-			return data_->Subseq(0, 2 * LABEL).str() + "_" + itoa(size());
+			return data_->Subseq(0, LABEL).str() + "_" + itoa(size());
 		#endif
 		#ifndef OUTPUT_PAIRED
 			return data_->Subseq(0, LABEL).str() + "_" + itoa(size()) + "_"+ data_->Subseq(data_->size() - LABEL).str();
