@@ -3,27 +3,28 @@
 #include "graphConstruction.hpp"
 #include "seq.hpp"
 #include "graphVisualizer.hpp"
+#include "pairedGraph.hpp"
 #define RIGHT 1
 #define LEFT -1
 
 int VertexCount;
 char EdgeStr[1000000];
 char EdgeStrLo[1000000];
-int inD[MAX_VERT_NUMBER], outD[MAX_VERT_NUMBER];
-int outputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
-int inputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
+//int inD[MAX_VERT_NUMBER], outD[MAX_VERT_NUMBER];
+//int outputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
+//int inputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
 //int fakeOutputVertices[MAX_VERT_NUMBER][MAX_DEGREE];
 //int fakeInputVertices[MAX_VERT_NUMBER][MAX_DEGREE];
 
 const int minIntersect = l - 1;
 int EdgeId;
-
-
 using namespace paired_assembler;
+PairedGraph graph;
 
 void constructGraph() {
-//		readsToPairs(parsed_reads, parsed_k_l_mers);
-//		pairsToSequences(parsed_k_l_mers, parsed_k_sequence);
+
+	//		readsToPairs(parsed_reads, parsed_k_l_mers);
+	//		pairsToSequences(parsed_k_l_mers, parsed_k_sequence);
 	cerr << "Read edges" << endl;
 	edgesMap edges = sequencesToMap(parsed_k_sequence, true);
 	cerr << "go to graph" << endl;
@@ -32,17 +33,17 @@ void constructGraph() {
 	VertexCount = 0;
 	verticesMap verts;
 	longEdgesMap longEdges;
-	createVertices(g, edges, verts, longEdges);
-	expandDefinite(longEdges);
-//	freopen(graph.c_str(), "w",stdout);
-	freopen("data/graph2.dot", "w",stdout);
-	cerr << endl << "End vertices" <<endl;
-//	return;
+	createVertices(g, edges, verts, longEdges, graph);
+	expandDefinite(longEdges, graph);
+	//	freopen(graph.c_str(), "w",stdout);
+	freopen("data/graph2.dot", "w", stdout);
+	cerr << endl << "End vertices" << endl;
+	//	return;
 	outputLongEdges(longEdges);
 	cerr << "TraceReads" << endl;
 
-	traceReads(verts, longEdges);
-	freopen(threaded_graph.c_str(), "w",stdout);
+	traceReads(verts, longEdges, graph);
+	freopen(threaded_graph.c_str(), "w", stdout);
 	outputLongEdges(longEdges);
 
 }
@@ -95,13 +96,14 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 	return res;
 }
 
-void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges, verticesMap &verts, longEdgesMap &longEdges) {
+void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
+		verticesMap &verts, longEdgesMap &longEdges, PairedGraph &graph) {
 	char Buffer[2000];
 	EdgeId = 0;
 	cerr << "Start createVertices " << edges.size() << endl;
 	forn(i,MAX_VERT_NUMBER) {
-		inD[i] = 0;
-		outD[i] = 0;
+		graph.inD[i] = 0;
+		graph.outD[i] = 0;
 	}
 	int count = 0;
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
@@ -110,11 +112,12 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges, verticesMap &ve
 		forn(i, size) {
 			if ((!(iter->se)[i]->used)) {
 				int length = 1;
-				count ++;
-//				cerr << count << endl;
+				count++;
+				//				cerr << count << endl;
 				assert (((iter->se)[i])->lower->size() >= l);
 				sprintf(EdgeStr + 500000, "%s", decompress(kmer, k).c_str());
-				sprintf(EdgeStrLo + 500000, "%s", ((iter->se)[i])->lower->str().c_str());
+				sprintf(EdgeStrLo + 500000, "%s",
+						((iter->se)[i])->lower->str().c_str());
 				(iter->se)[i]->used = 1;
 				ll finishKmer = kmer & (~((ll) 3 << (2 * (k - 1))));
 				Sequence *finishSeq = new Sequence(
@@ -130,21 +133,22 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges, verticesMap &ve
 				//cerr<<endl << "TO LEFT" << toleft << endl;
 				length += toleft;
 				int fromVert = storeVertex(g, verts, startKmer, startSeq);
-//				if (! (count && ((1<<14) -1 ))) {
-					cerr << EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
+				//				if (! (count && ((1<<14) -1 ))) {
+				cerr << EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
 						+ 500000 - toleft)) << endl;
-					cerr << ((char*) (EdgeStrLo
-						+ 500000 - toleft)) << endl;
-	//			}
-				Sequence* UpperSeq = new Sequence(((char*) (EdgeStr
-						+ 500000 - toleft)));
-				Sequence* LowerSeq = new Sequence(((char*) (EdgeStrLo
-						+ 500000 - toleft)));
+				cerr << ((char*) (EdgeStrLo + 500000 - toleft)) << endl;
+				//			}
+				Sequence* UpperSeq = new Sequence(
+						((char*) (EdgeStr + 500000 - toleft)));
+				Sequence* LowerSeq = new Sequence(
+						((char*) (EdgeStrLo + 500000 - toleft)));
 				if (LowerSeq->size() < l) {
-					cerr<<endl<< LowerSeq->str()<<endl << UpperSeq->str()<<endl;
+					cerr << endl << LowerSeq->str() << endl << UpperSeq->str()
+							<< endl;
 					assert(0);
 				}
-				Edge* newEdge = new Edge(UpperSeq, LowerSeq, fromVert, toVert, length, EdgeId);
+				Edge* newEdge = new Edge(UpperSeq, LowerSeq, fromVert, toVert,
+						length, EdgeId);
 				longEdges.insert(make_pair(EdgeId, newEdge));
 				if ((length < 300) && (length > k - 1)) {
 					EdgeStr[500000 - toleft + length] = 0;
@@ -155,10 +159,10 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges, verticesMap &ve
 				}
 
 				g.addEdge(fromVert, toVert, Buffer);
-				outputEdges[fromVert][outD[fromVert]] = EdgeId;
-				inputEdges[toVert][inD[toVert]] = EdgeId;
-				outD[fromVert]++;
-				inD[toVert]++;
+				graph.outputEdges[fromVert][graph.outD[fromVert]] = EdgeId;
+				graph.inputEdges[toVert][graph.inD[toVert]] = EdgeId;
+				graph.outD[fromVert]++;
+				graph.inD[toVert]++;
 
 				EdgeId++;
 
@@ -169,7 +173,7 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges, verticesMap &ve
 	}
 	g.output();
 	forn(i, VertexCount) {
-		cerr << i << " +" << inD[i] << " -" << outD[i] << endl;
+		cerr << i << " +" << graph.inD[i] << " -" << graph.outD[i] << endl;
 	}
 }
 
@@ -196,9 +200,10 @@ int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer,
 		if (goUniqueWayRight(edges, finishKmer, finishSeq) != 1) {
 			return length;
 		} else {
-//			cerr << "expanding right" << endl;
+			//			cerr << "expanding right" << endl;
 			EdgeStr[500000 + k + length] = nucl(finishKmer & 3);
-			EdgeStrLo[500000 + l + length] = nucl((*finishSeq)[finishSeq->size()-1]);
+			EdgeStrLo[500000 + l + length] = nucl(
+					(*finishSeq)[finishSeq->size() - 1]);
 			length++;
 			EdgeStr[500000 + k + length] = 0;
 			EdgeStrLo[500000 + l + length] = 0;
@@ -225,18 +230,18 @@ int expandLeft(edgesMap &edges, verticesMap &verts, ll &startKmer,
 			return length;
 		}
 		int go_res;
-//		cerr << endl<<"trying to go left"<<endl;
+		//		cerr << endl<<"trying to go left"<<endl;
 		if (1 != (go_res = goUniqueWayLeft(edges, startKmer, startSeq))) {
 			return length;
 		} else {
-//			if (go_res != 2) {
-				length++;
-				EdgeStr[500000 - length] = nucl((startKmer >> ((k - 2) * 2)) & 3);
-				EdgeStrLo[500000 - length] = nucl((*startSeq)[0]);
-//			}
-//			else {
-//				cerr << endl<<"kmer_expanding left"<<endl;
-//			}
+			//			if (go_res != 2) {
+			length++;
+			EdgeStr[500000 - length] = nucl((startKmer >> ((k - 2) * 2)) & 3);
+			EdgeStrLo[500000 - length] = nucl((*startSeq)[0]);
+			//			}
+			//			else {
+			//				cerr << endl<<"kmer_expanding left"<<endl;
+			//			}
 		}
 	}
 }
@@ -250,19 +255,20 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	for (int Nucl = 0; Nucl < 4; Nucl++) {
 		ll tmpKmer = (((ll) Nucl) << (2 * (k - 1))) | finishKmer;
 		edgesMap::iterator iter = edges.find(tmpKmer);
-//		cerr << endl << tmpKmer;
-//		assert(0);
+		//		cerr << endl << tmpKmer;
+		//		assert(0);
 		if (iter != edges.end()) {
 
-//			cerr<< endl <<"found left kmer" <<endl;
+			//			cerr<< endl <<"found left kmer" <<endl;
 			int size = iter->second.size();
 			forn(i, size) {
-				if (finishSeq->similar(*((iter->se)[i]->lower), minIntersect, -1)) {
+				if (finishSeq->similar(*((iter->se)[i]->lower), minIntersect,
+						-1)) {
 					count++;
 					if (count > 1)
 						return 0;
 
-//					cerr<< endl <<"found something" <<endl;
+					//					cerr<< endl <<"found something" <<endl;
 					PossibleKmer = tmpKmer;
 					PossibleSequence = (iter->se)[i]->lower;
 					seqIndex = i;
@@ -280,11 +286,11 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 				Sequence *Ps = (iter->se)[i]->lower;
 				if (finishSeq->similar(*Ps, minIntersect, -1)) {
 					/*if ((iter->se)[i]->used)
-						return 0;
-					if (*Ps == *finishSeq) {
-						cerr << endl << "sameSeq";
-						continue;
-					}*/
+					 return 0;
+					 if (*Ps == *finishSeq) {
+					 cerr << endl << "sameSeq";
+					 continue;
+					 }*/
 					count++;
 					if (count > 1)
 						return 0;
@@ -296,11 +302,11 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 				}
 			}
 		}
-//		assert(1 == 0);
+		//		assert(1 == 0);
 		sameK = true;
 		if (count == 1 && sameK) {
-//			assert("1 == 0");
-//			cerr << endl << "something" << endl;
+			//			assert("1 == 0");
+			//			cerr << endl << "something" << endl;
 		}
 	}
 
@@ -364,7 +370,7 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 				}
 			}
 		}
-//		assert(1 == 0);
+		//		assert(1 == 0);
 		sameK = true;
 	}
 	if (count == 1) {
@@ -396,16 +402,16 @@ int countWays(vector<VertexPrototype *> &v, Sequence *finishSeq, int direction) 
 
 /*
  * Method adds nucleotide to the side of kMer defined by direction
- */
-ll pushNucleotide(ll kMer, int length, int direction, int nucl) {
-	if(direction == RIGHT) {
+ */ll pushNucleotide(ll kMer, int length, int direction, int nucl) {
+	if (direction == RIGHT) {
 		return (ll) nucl | (kMer << (2));
 	} else {
 		return (ll) nucl << (2 * length) | kMer;
 	}
 }
 
-int checkUniqueWay(edgesMap &edges, ll finishKmer, Sequence *finishSeq, int direction) {
+int checkUniqueWay(edgesMap &edges, ll finishKmer, Sequence *finishSeq,
+		int direction) {
 	int count = 0;
 	for (int Nucl = 0; Nucl < 4; Nucl++) {
 		ll tmpKmer = pushNucleotide(finishKmer, k - 1, direction, Nucl);
@@ -469,85 +475,88 @@ void resetVertexCount() {
 	VertexCount = 0;
 }
 
-void expandDefinite(longEdgesMap &longEdges){
+void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph) {
 	longEdgesMap::iterator it;
 	int expandEdgeIndex;
-	cerr << "expandDefiniteStart"<<endl;
-	forn(i,VertexCount){
-		if ((outD[i]==1)&&(inD[i]>0)){
+	cerr << "expandDefiniteStart" << endl;
+	forn(i,VertexCount) {
+		if ((graph.outD[i] == 1) && (graph.inD[i] > 0)) {
 			cerr << i << endl;
-			expandEdgeIndex=edgeRealId(outputEdges[i][0], longEdges);
+			expandEdgeIndex = edgeRealId(graph.outputEdges[i][0], longEdges);
 			int DestVertex = longEdges[expandEdgeIndex]->ToVertex;
-			int a=0;
-			while (( edgeRealId(inputEdges[DestVertex][a], longEdges)!=expandEdgeIndex)) a++;
-			assert(a<inD[DestVertex]);
-			while (a<inD[DestVertex]-1){
-				inputEdges[DestVertex][a]=inputEdges[DestVertex][a+1];
+			int a = 0;
+			while ((edgeRealId(graph.inputEdges[DestVertex][a], longEdges)
+					!= expandEdgeIndex))
+				a++;
+			assert(a<graph.inD[DestVertex]);
+			while (a < graph.inD[DestVertex] - 1) {
+				graph.inputEdges[DestVertex][a] = graph.inputEdges[DestVertex][a + 1];
 				a++;
 			}
-			inD[DestVertex]--;
-			forn(j,inD[i]){
-				longEdges[inputEdges[i][j]]->ExpandRight(*(longEdges[expandEdgeIndex]));
-				inputEdges[DestVertex][inD[DestVertex]] = inputEdges[i][j];
-				inD[DestVertex]++;
+			graph.inD[DestVertex]--;
+			forn(j,graph.inD[i]) {
+				longEdges[graph.inputEdges[i][j]]->ExpandRight(
+						*(longEdges[expandEdgeIndex]));
+				graph.inputEdges[DestVertex][graph.inD[DestVertex]] = graph.inputEdges[i][j];
+				graph.inD[DestVertex]++;
 			}
-			it=longEdges.find(expandEdgeIndex);
+			it = longEdges.find(expandEdgeIndex);
 			longEdges.erase(it);
-			outD[i]=0; inD[i]=0;
+			graph.outD[i] = 0;
+			graph.inD[i] = 0;
 		}
 	}
 
-
-	forn(i,VertexCount){
-		if ((inD[i]==1)&&(outD[i]>0)){
+	forn(i,VertexCount) {
+		if ((graph.inD[i] == 1) && (graph.outD[i] > 0)) {
 			cerr << i << endl;
-			expandEdgeIndex=edgeRealId(inputEdges[i][0],longEdges);
+			expandEdgeIndex = edgeRealId(graph.inputEdges[i][0], longEdges);
 			int SourceVertex = longEdges[expandEdgeIndex]->FromVertex;
-			int a=0;
-			while (edgeRealId(outputEdges[SourceVertex][a],longEdges) != expandEdgeIndex) a++;
-			assert(a<outD[SourceVertex]);
-			while (a<outD[SourceVertex]-1){
-				outputEdges[SourceVertex][a]=outputEdges[SourceVertex][a+1];
+			int a = 0;
+			while (edgeRealId(graph.outputEdges[SourceVertex][a], longEdges)
+					!= expandEdgeIndex)
+				a++;
+			assert(a<graph.outD[SourceVertex]);
+			while (a < graph.outD[SourceVertex] - 1) {
+				graph.outputEdges[SourceVertex][a] = graph.outputEdges[SourceVertex][a + 1];
 				a++;
 			}
-			outD[SourceVertex]--;
-			forn(j,outD[i]){
-				longEdges[outputEdges[i][j]]->ExpandLeft(*(longEdges[expandEdgeIndex]));
-				outputEdges[SourceVertex][outD[SourceVertex]] = outputEdges[i][j];
-				outD[SourceVertex]++;
+			graph.outD[SourceVertex]--;
+			forn(j,graph.outD[i]) {
+				longEdges[graph.outputEdges[i][j]]->ExpandLeft(
+						*(longEdges[expandEdgeIndex]));
+				graph.outputEdges[SourceVertex][graph.outD[SourceVertex]]
+						= graph.outputEdges[i][j];
+				graph.outD[SourceVertex]++;
 			}
-			it=longEdges.find(expandEdgeIndex);
+			it = longEdges.find(expandEdgeIndex);
 			longEdges.erase(it);
-			outD[i]=0; inD[i]=0;
+			graph.outD[i] = 0;
+			graph.inD[i] = 0;
 		}
 	}
 }
 
-
-void outputLongEdges(longEdgesMap &longEdges){
+void outputLongEdges(longEdgesMap &longEdges) {
 	char Buffer[100];
 	gvis::GraphPrinter<int> g("Paired_ext");
-	for (longEdgesMap::iterator it=longEdges.begin(); it!=longEdges.end();++it){
-		if (it->second->EdgeId == it->first)
-			{
-			sprintf(Buffer,"%i (%i)",it->first, it->second->length);
-	//		else sprintf(Buffer,"%i (%i) FAKE now it is %d",it->first, it->second->length,it->second->EdgeId);
+	for (longEdgesMap::iterator it = longEdges.begin(); it != longEdges.end(); ++it) {
+		if (it->second->EdgeId == it->first) {
+			sprintf(Buffer, "%i (%i)", it->first, it->second->length);
+			//		else sprintf(Buffer,"%i (%i) FAKE now it is %d",it->first, it->second->length,it->second->EdgeId);
 
 			g.addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
-			cerr<<it->first<<" ("<<it->second->length<<"):"<<endl;
-			cerr<<it->second->upper->str()<<endl;
-			cerr<<it->second->lower->str()<<endl;
+			cerr << it->first << " (" << it->second->length << "):" << endl;
+			cerr << it->second->upper->str() << endl;
+			cerr << it->second->lower->str() << endl;
 		}
 	}
 	g.output();
 }
 
+void traceReads(verticesMap &verts, longEdgesMap &longEdges, PairedGraph &graph) {
 
-
-
-void traceReads(verticesMap &verts, longEdgesMap &longEdges){
-
-	map<int, vector<pair<int,int>>> EdgePairs;
+	map<int, vector<pair<int, int>>> EdgePairs;
 	freopen(parsed_reads.c_str(), "r", stdin);
 	char *upperNuclRead = new char[readLength + 2];
 	char *lowerNuclRead = new char[readLength + 2];
@@ -556,10 +565,10 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 	ll count=0;
 	ll upperMask = (((ll) 1) << (2 * (k - 1))) - 1;
 	ll lowerMask = (((ll) 1) << (2 * (l - 1))) - 1;
-//	FILE* fout = fopen("data/filtered_reads","w");
+	//	FILE* fout = fopen("data/filtered_reads","w");
 	while (nextReadPair(upperNuclRead, lowerNuclRead)) {
 		if (!(count & (1024*128 - 1)))
-			cerr<<"read number "<<count<<" processed"<<endl;
+		cerr<<"read number "<<count<<" processed"<<endl;
 		count++;
 		codeRead(upperNuclRead, upperRead);
 		codeRead(lowerNuclRead, lowerRead);
@@ -570,17 +579,17 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 		for (int j = 0; j + l < readLength; j++) {
 			verticesMap::iterator vertIter = verts.find(upper);
 			if (vertIter!=verts.end()) {
-			//	cerr<<"kmer found for j="<<j<<endl;
+				//	cerr<<"kmer found for j="<<j<<endl;
 				for (vector<VertexPrototype *>::iterator it = vertIter->second.begin(); it
-							!= vertIter->second.end(); ++it) {
-					if ((*it)->lower->similar(loRead->Subseq(1+j, l+j),l-1)){
-		//				cerr<<"vertex found for lower "<<(*it)->lower->str()<<endl;
-//						fprintf(fout,"%s %s\n",upperNuclRead,lowerNuclRead);
+						!= vertIter->second.end(); ++it) {
+					if ((*it)->lower->similar(loRead->Subseq(1+j, l+j),l-1)) {
+						//				cerr<<"vertex found for lower "<<(*it)->lower->str()<<endl;
+						//						fprintf(fout,"%s %s\n",upperNuclRead,lowerNuclRead);
 						int VertId = (*it)->VertexId;
-						if ((inD[VertId]!=0)&&(outD[VertId]!=0)) {
+						if ((graph.inD[VertId]!=0)&&(graph.outD[VertId]!=0)) {
 							int tmpIn = -1;
-							forn(i,inD[VertId]){
-								int CurEdge=inputEdges[VertId][i];
+							forn(i,graph.inD[VertId]) {
+								int CurEdge=graph.inputEdges[VertId][i];
 								int subsizeup = longEdges[CurEdge]->upper->size();
 								int subsizelo = longEdges[CurEdge]->lower->size();
 								if (subsizeup>j+k+shift) subsizeup = j+k+shift;
@@ -588,8 +597,8 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 								//cerr<<"CheckUp "<<longEdges[CurEdge]->upper->str()<<" VS "<<upRead->Subseq(0,j+k+shift).str()<<" with "<<subsizeup<<endl;
 								//cerr<<"CheckLo "<<longEdges[CurEdge]->lower->str()<<" VS "<<loRead->Subseq(0,j+l).str()<<" with "<<subsizelo<<endl;
 								if ((longEdges[CurEdge]->upper->similar(upRead->Subseq(0,j+k+shift),subsizeup,RIGHT))&&
-									(longEdges[CurEdge]->lower->similar(loRead->Subseq(0,j+l),subsizelo,RIGHT))){
-									if (tmpIn ==-1){
+										(longEdges[CurEdge]->lower->similar(loRead->Subseq(0,j+l),subsizelo,RIGHT))) {
+									if (tmpIn ==-1) {
 										tmpIn = CurEdge;
 									}
 									else {
@@ -601,15 +610,15 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 							if (tmpIn == -1) break;
 							int tmpOut = -1;
 
-							forn(i,outD[VertId]){
-								int CurEdge=outputEdges[VertId][i];
+							forn(i,graph.outD[VertId]) {
+								int CurEdge=graph.outputEdges[VertId][i];
 								int subsizeup = longEdges[CurEdge]->upper->size();
 								int subsizelo = longEdges[CurEdge]->lower->size();
 								if (subsizeup>readLength-j-1-shift) subsizeup = readLength-j-1-shift;
 								if (subsizelo>readLength-j-l) subsizelo = readLength-j-l;
 								if ((longEdges[CurEdge]->upper->similar(upRead->Subseq(j+shift+1,readLength),subsizeup,LEFT))&&
-									(longEdges[CurEdge]->lower->similar(loRead->Subseq(j+1,readLength),subsizelo,LEFT))){
-									if (tmpOut ==-1){
+										(longEdges[CurEdge]->lower->similar(loRead->Subseq(j+1,readLength),subsizelo,LEFT))) {
+									if (tmpOut ==-1) {
 										tmpOut = CurEdge;
 									}
 									else {
@@ -618,9 +627,9 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 									}
 								}
 							}
-							if (tmpOut != -1){
+							if (tmpOut != -1) {
 								map<int, vector<pair<int,int>>>::iterator epIter = EdgePairs.find(VertId);
-								if (epIter == EdgePairs.end()){
+								if (epIter == EdgePairs.end()) {
 									vector<pair<int,int>> pairVect;
 									pairVect.pb(make_pair(tmpIn,tmpOut));
 									EdgePairs.insert(mp(VertId,pairVect));
@@ -628,7 +637,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 								}
 								else
 								{
-									if (find(epIter->second.begin(),epIter->second.end(),make_pair(tmpIn,tmpOut)) == epIter->second.end()){
+									if (find(epIter->second.begin(),epIter->second.end(),make_pair(tmpIn,tmpOut)) == epIter->second.end()) {
 										epIter->second.pb(make_pair(tmpIn,tmpOut));
 									}
 								}
@@ -647,44 +656,44 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 		delete upRead;
 		delete loRead;
 	}
-//	fclose(fout);
-	forn(curVertId,VertexCount){
-		if ((inD[curVertId]!=0)&&(outD[curVertId]!=0)) {
+	//	fclose(fout);
+	forn(curVertId,VertexCount) {
+		if ((graph.inD[curVertId]!=0)&&(graph.outD[curVertId]!=0)) {
 			cerr<<"Vertex "<<curVertId<<" connect edges:"<< endl;
-			forn(i,(EdgePairs[curVertId]).size()){
+			forn(i,(EdgePairs[curVertId]).size()) {
 				cerr<<(EdgePairs[curVertId])[i].first<<" ("<<longEdges[(EdgePairs[curVertId])[i].first]->FromVertex<<", "<<longEdges[(EdgePairs[curVertId])[i].first]->ToVertex<<")   ";
 				cerr<<(EdgePairs[curVertId])[i].second<<" ("<<longEdges[(EdgePairs[curVertId])[i].second]->FromVertex<<", "<<longEdges[(EdgePairs[curVertId])[i].second]->ToVertex<<")"<<endl;
 			}
 		}
 	}
 
-//resolving simple case InD=OutD and all edge is unique
-	forn(curVertId,VertexCount){
-		if ((inD[curVertId]!=0)&&(outD[curVertId]!=0))
-		if ((inD[curVertId]==EdgePairs[curVertId].size())&&(outD[curVertId]==EdgePairs[curVertId].size()))
+	//resolving simple case InD=OutD and all edge is unique
+	forn(curVertId,VertexCount) {
+		if ((graph.inD[curVertId]!=0)&&(graph.outD[curVertId]!=0))
+		if ((graph.inD[curVertId]==EdgePairs[curVertId].size())&&(graph.outD[curVertId]==EdgePairs[curVertId].size()))
 		{
-			cerr<<"Process vertex "<<curVertId<<" IN "<<inD[curVertId]<<" OUT "<<outD[curVertId]<<" unique ways "<<EdgePairs[curVertId].size()<<endl;
+			cerr<<"Process vertex "<<curVertId<<" IN "<<graph.inD[curVertId]<<" OUT "<<graph.outD[curVertId]<<" unique ways "<<EdgePairs[curVertId].size()<<endl;
 			bool allPairUnique = true;
-			forn(i,(EdgePairs[curVertId]).size()){
+			forn(i,(EdgePairs[curVertId]).size()) {
 				int CurIn = (EdgePairs[curVertId])[i].first;
 				int CurOut = (EdgePairs[curVertId])[i].second;
-				forn(j,(EdgePairs[curVertId]).size()){
+				forn(j,(EdgePairs[curVertId]).size()) {
 					if ((EdgePairs[curVertId])[j].first==CurIn)
-						if ((EdgePairs[curVertId])[j].second!=CurOut) allPairUnique = false;
+					if ((EdgePairs[curVertId])[j].second!=CurOut) allPairUnique = false;
 					if ((EdgePairs[curVertId])[j].second==CurOut)
-						if ((EdgePairs[curVertId])[j].first!=CurIn) allPairUnique = false;
+					if ((EdgePairs[curVertId])[j].first!=CurIn) allPairUnique = false;
 				}
 			}
-			forn(i,(EdgePairs[curVertId]).size()){
-				if (allPairUnique){
+			forn(i,(EdgePairs[curVertId]).size()) {
+				if (allPairUnique) {
 					int CurIn = edgeRealId((EdgePairs[curVertId])[i].first, longEdges);
 					int CurOut = edgeRealId((EdgePairs[curVertId])[i].second, longEdges);
 					cerr<<"New inclusion "<<CurIn<<"("<<longEdges[CurIn]->FromVertex<<","<<longEdges[CurIn]->ToVertex<<") <- "<<CurOut<<"("<<longEdges[CurOut]->FromVertex<<","<<longEdges[CurOut]->ToVertex<<")"<<endl;
 					longEdges[CurIn]->ExpandRight(*longEdges[CurOut]);
 					longEdges[CurOut] = longEdges[CurIn];
 					cerr<<"New edges "<<CurIn<<"("<<longEdges[CurIn]->FromVertex<<","<<longEdges[CurIn]->ToVertex<<") <- "<<CurOut<<"("<<longEdges[CurOut]->FromVertex<<","<<longEdges[CurOut]->ToVertex<<")"<<endl;
-					inD[curVertId]--;
-					outD[curVertId]--;
+					graph.inD[curVertId]--;
+					graph.outD[curVertId]--;
 				}
 			}
 		}
@@ -697,100 +706,97 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 	int FakeVertexCount = VertexCount;
 	int FakeVertexStart = VertexCount;
 	map<int, int> FakeVertexToReal;
-	forn(curVertId,VertexCount){
-		if ((inD[curVertId]!=0)&&(outD[curVertId]!=0)){
-			if ((inD[curVertId]<=EdgePairs[curVertId].size())&&(outD[curVertId]<=EdgePairs[curVertId].size())){
+	forn(curVertId,VertexCount) {
+		if ((graph.inD[curVertId]!=0)&&(graph.outD[curVertId]!=0)) {
+			if ((graph.inD[curVertId]<=EdgePairs[curVertId].size())&&(graph.outD[curVertId]<=EdgePairs[curVertId].size())) {
 				bool allIns = false;
 				bool allOuts = false;
-				forn(i,inD[curVertId]) {
+				forn(i,graph.inD[curVertId]) {
 					allIns = false;
-					forn (j,EdgePairs[curVertId].size()){
-						if ((EdgePairs[curVertId])[j].first ==inputEdges[curVertId][i]){
+					forn (j,EdgePairs[curVertId].size()) {
+						if ((EdgePairs[curVertId])[j].first ==graph.inputEdges[curVertId][i]) {
 							allIns = true;
 							break;
 						}
 					}
 					if (!allIns) break;
 				}
-				forn(i,outD[curVertId]) {
+				forn(i,graph.outD[curVertId]) {
 					allOuts = false;
-					forn (j,EdgePairs[curVertId].size()){
-						if ((EdgePairs[curVertId])[j].second ==outputEdges[curVertId][i]){
+					forn (j,EdgePairs[curVertId].size()) {
+						if ((EdgePairs[curVertId])[j].second ==graph.outputEdges[curVertId][i]) {
 							allOuts = true;
 							break;
 						}
 					}
 					if (!allOuts) break;
 				}
-				if (allIns&&allOuts){
-
-					int tmpCurOut = edgeRealId(outputEdges[curVertId][0],longEdges);
+				if (allIns&&allOuts) {
+					int tmpCurOut = edgeRealId(graph.outputEdges[curVertId][0],longEdges);
 					string tmpLoSeq = longEdges[tmpCurOut]->upper->Subseq(0,k-1).str();
 					string tmpUpSeq = longEdges[tmpCurOut]->upper->Subseq(0,l-1).str();
 
 					//create FakeVerices and Fake edges;
 					//create fake Vertices for in edges;
 					int tmpFictStartIn = FakeVertexCount;
-					forn(i,inD[curVertId]) {
-						int CurIn = edgeRealId(inputEdges[curVertId][i],longEdges);
-						inputEdges[curVertId][i] = CurIn;
+					forn(i,graph.inD[curVertId]) {
+						int CurIn = edgeRealId(graph.inputEdges[curVertId][i],longEdges);
+						graph.inputEdges[curVertId][i] = CurIn;
 						FakeVertexToReal.insert(make_pair(FakeVertexCount,curVertId));
 						longEdges[CurIn]->ToVertex = FakeVertexCount;
-						inD[FakeVertexCount]=1;
-						outD[FakeVertexCount]=0;
-						inputEdges[FakeVertexCount][0]=CurIn;
+						graph.inD[FakeVertexCount]=1;
+						graph.outD[FakeVertexCount]=0;
+						graph.inputEdges[FakeVertexCount][0]=CurIn;
 						FakeVertexCount++;
 					}
 					//create fake Vertices for out edges;
 					int tmpFictStartOut = FakeVertexCount;
-					forn(i,outD[curVertId]) {
-						int CurOut = edgeRealId(outputEdges[curVertId][i],longEdges);
-						outputEdges[curVertId][i] = CurOut;
+					forn(i,graph.outD[curVertId]) {
+						int CurOut = edgeRealId(graph.outputEdges[curVertId][i],longEdges);
+						graph.outputEdges[curVertId][i] = CurOut;
 						FakeVertexToReal.insert(make_pair(FakeVertexCount,curVertId));
 						longEdges[CurOut]->FromVertex = FakeVertexCount;
-						inD[FakeVertexCount]=0;
-						outD[FakeVertexCount]=1;
-						outputEdges[FakeVertexCount][0]=CurOut;
+						graph.inD[FakeVertexCount]=0;
+						graph.outD[FakeVertexCount]=1;
+						graph.outputEdges[FakeVertexCount][0]=CurOut;
 						FakeVertexCount++;
 					}
 					//create fake edges
 
-					forn (tmpEdgePair,EdgePairs[curVertId].size()){
+					forn (tmpEdgePair,EdgePairs[curVertId].size()) {
 						int tmpFrom = 0;
 						int tmpTo = 0;
-						while (edgeRealId(inputEdges[curVertId][tmpFrom], longEdges)!=edgeRealId((EdgePairs[curVertId])[tmpEdgePair].first,longEdges)){
+						while (edgeRealId(graph.inputEdges[curVertId][tmpFrom], longEdges)!=edgeRealId((EdgePairs[curVertId])[tmpEdgePair].first,longEdges)) {
 							tmpFrom++;
-							assert(tmpFrom<inD[curVertId]);
+							assert(tmpFrom<graph.inD[curVertId]);
 						}
-						while (edgeRealId(outputEdges[curVertId][tmpTo],longEdges)!=edgeRealId((EdgePairs[curVertId])[tmpEdgePair].second, longEdges)){
+						while (edgeRealId(graph.outputEdges[curVertId][tmpTo],longEdges)!=edgeRealId((EdgePairs[curVertId])[tmpEdgePair].second, longEdges)) {
 							tmpTo++;
-							assert(tmpTo<outD[curVertId]);
+							assert(tmpTo<graph.outD[curVertId]);
 						}
 						Sequence *UpSeq = new Sequence(tmpLoSeq);
 						Sequence *LoSeq = new Sequence(tmpUpSeq);
 
 						Edge *tmpEdge = new Edge(UpSeq, LoSeq, tmpFictStartIn + tmpFrom, tmpFictStartOut + tmpTo,0, EdgeId);
 						longEdges.insert(make_pair(EdgeId,tmpEdge));
-						outputEdges[tmpFictStartIn + tmpFrom][outD[tmpFictStartIn + tmpFrom]] = EdgeId;
-						outD[tmpFictStartIn + tmpFrom]++;
-						inputEdges[tmpFictStartOut + tmpTo][inD[tmpFictStartOut + tmpTo]] = EdgeId;
-						inD[tmpFictStartOut + tmpTo]++;
+						graph.outputEdges[tmpFictStartIn + tmpFrom][graph.outD[tmpFictStartIn + tmpFrom]] = EdgeId;
+						graph.outD[tmpFictStartIn + tmpFrom]++;
+						graph.inputEdges[tmpFictStartOut + tmpTo][graph.inD[tmpFictStartOut + tmpTo]] = EdgeId;
+						graph.inD[tmpFictStartOut + tmpTo]++;
 						EdgeId++;
 					}
 
-					inD[curVertId]=0;
-					outD[curVertId]=0;
+					graph.inD[curVertId]=0;
+					graph.outD[curVertId]=0;
 				}
-
 
 			}
 		}
 	}
 
-
 	VertexCount = FakeVertexCount;
-	expandDefinite(longEdges);
-	for(longEdgesMap::iterator it= longEdges.begin(); it !=longEdges.end(); ++it){
+	expandDefinite(longEdges, graph);
+	for(longEdgesMap::iterator it= longEdges.begin(); it !=longEdges.end(); ++it) {
 		if (it->second->FromVertex>=FakeVertexStart) it->second->FromVertex = FakeVertexToReal[it->second->FromVertex];
 		if (it->second->ToVertex>=FakeVertexStart) it->second->ToVertex = FakeVertexToReal[it->second->ToVertex];
 	}
@@ -798,13 +804,5 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges){
 	freopen("data/graph_after_fake.dot", "w", stdout);
 	outputLongEdges(longEdges);
 
-
-
-
 }
-
-
-
-
-
 
