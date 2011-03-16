@@ -1,6 +1,7 @@
 #include "common.hpp"
 #include "sequence.hpp"
 #include "constructHashTable.hpp"
+#include "graphio.hpp"
 
 using namespace std;
 
@@ -15,33 +16,6 @@ ll lowerMask = (((ll) 1) << (2 * l)) - 1;
 ll upperMax = ((ll) 1) << 46;
 const int MAXLMERSIZE = 10000;
 
-string decompress(ll a, int l) {
-
-	string res = "";
-	res.reserve(l);
-	forn(i,l)
-		res += " ";
-	forn(i, l) {
-		res[l - i - 1] = nucl((a & 3));
-		a >>= 2;
-	}
-	return res;
-}
-
-inline int codeNucleotide(char a) {
-	if (a == 'A')
-		return 0;
-	else if (a == 'C')
-		return 1;
-	else if (a == 'G')
-		return 2;
-	else if (a == 'T')
-		return 3;
-	else {
-		std::cerr << "oops!";
-		return -1;
-	}
-}
 /*void testSequence(){
 	srand(239);
 	forn(i, 1000) {
@@ -57,12 +31,6 @@ inline int codeNucleotide(char a) {
 
 	}
 }*/
-void codeRead(char *read, char *code) {
-	for (int i = 0; i < readLength; i++) {
-		code[i] = codeNucleotide(read[i]);
-	}
-}
-
 //toDo
 downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 	downSeqs res;
@@ -315,15 +283,6 @@ downSeqs clusterize(ll* a, int size, int max_shift) {
 //	assert(0);
 	return res;
 }*/
-
-ll extractMer(char *read, int shift, int length) {
-	ll res = 0;
-	for (int i = 0; i < length; i++) {
-		res = res << 2;
-		res += read[shift + i];
-	}
-	return res;
-}
 
 inline bool checkBoundsForUpper(ll upper) {
 	return true;

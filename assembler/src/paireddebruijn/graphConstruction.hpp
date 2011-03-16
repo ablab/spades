@@ -19,18 +19,10 @@ int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence *finishSeq);
 int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq);
 int storeVertex(gvis::GraphPrinter<int> &g, verticesMap &verts, ll newKmer, Sequence* newSeq);
 void resetVertexCount();
-void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph);
-void outputLongEdges(longEdgesMap &longEdges);
-void traceReads(verticesMap &verts, longEdgesMap &longEdges, PairedGraph &graph);
+//void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph);
+//void outputLongEdges(longEdgesMap &longEdges);
+//void traceReads(verticesMap &verts, longEdgesMap &longEdges, PairedGraph &graph);
 
 
-
-inline int edgeRealId(int id, longEdgesMap &longEdges){
-	int res = id;
-	while (longEdges[res]->EdgeId !=res){
-		res = longEdges[res]->EdgeId;
-	}
-	return res;
-}
 
 #endif /*GRAPHCONSTRUCTION_H_*/

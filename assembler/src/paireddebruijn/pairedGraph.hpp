@@ -89,6 +89,15 @@ public:
 	}
 };
 
+inline int edgeRealId(int id, longEdgesMap &longEdges){
+	int res = id;
+	while (longEdges[res]->EdgeId !=res){
+		res = longEdges[res]->EdgeId;
+	}
+	return res;
+}
+
+
 class PairedGraph {
 public:
 	int inD[MAX_VERT_NUMBER], outD[MAX_VERT_NUMBER];

@@ -6,6 +6,7 @@
 
 using namespace paired_assembler;
 
-void traceReads(verticesMap &verts, longEdgesMap &longEdges. PairedGraph &graph);
+void traceReads(verticesMap &verts, longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount, int &EdgeId);
+void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount);
 
 #endif /* READTRACING_HPP_ */

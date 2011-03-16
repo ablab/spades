@@ -21,6 +21,8 @@
 #define edgesMap  map<ll, vector<VertexPrototype *> >
 #define verticesMap  map<ll, vector<VertexPrototype *> >
 #define longEdgesMap  map<int, Edge*>
+#define RIGHT 1
+#define LEFT -1
 
 LOGGER("paireddebruijn.common");
 
