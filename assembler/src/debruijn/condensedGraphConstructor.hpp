@@ -96,7 +96,6 @@ public:
 
 	virtual void HandleDelete(Vertex* v) {
 		DEBUG("Deleting hash for k-mers of sequence " << v->nucls().str() << " and its complement");
-
 		DeleteKmersHash(v);
 		DeleteKmersHash(v->complement());
 	}
@@ -145,13 +144,13 @@ class DirectConstructor: public GraphConstructor<kmer_size_> {
 	typedef Seq<kmer_size_> Kmer;
 	typedef GraphConstructor<kmer_size_> super;
 
-	vector<strobe_read<read_size_, cnt, int>>& reads_;
+	const vector<strobe_read<read_size_, cnt, int>>& reads_;
 
 	//todo extract from class definition!!!
 	void ThreadRead(const Seq<read_size_> &r);
 
 public:
-	DirectConstructor(vector<strobe_read<read_size_, cnt, int>>& reads) : super(),
+	DirectConstructor(const vector<strobe_read<read_size_, cnt, int>>& reads) : super(),
 		reads_(reads) {
 	}
 
