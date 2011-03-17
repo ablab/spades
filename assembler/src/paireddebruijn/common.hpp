@@ -73,5 +73,6 @@ extern int k;
 extern int l;
 extern int readLength;
 extern int maxSeqLength;
+extern int insertLength;
 void initConstants(string ini_file);
 #endif /*COMMON_HPP_*/
