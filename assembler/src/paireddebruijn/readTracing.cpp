@@ -318,21 +318,9 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 		if (it->second->FromVertex>=FakeVertexStart) it->second->FromVertex = FakeVertexToReal[it->second->FromVertex];
 		if (it->second->ToVertex>=FakeVertexStart) it->second->ToVertex = FakeVertexToReal[it->second->ToVertex];
 	}
-
+	VertexCount = FakeVertexStart;
 	freopen("data/graph_after_fake.dot", "w", stdout);
 	outputLongEdges(longEdges);
 
 }
 
-bool isPath(Edge &e1, Edge &e2) {
-	if (e1.ToVertex != e2.FromVertex)
-		return false;
-	int sts = readLength + insertLength;
-	if (e1.upper->size() + e2.upper->size() >= sts)
-		return true;
-	int left1 = max(0, e1.length - sts);
-	int right1 = min(e1.upper->size(), e1.upper->size() - sts + e1.length);
-	int left2 = left1 + sts - e1.length;
-	int right2 = right1 + sts - e1.length;
-	return e1.lower->Subseq(left1, right1) == e2.upper->Subseq(left2, right2);
-}

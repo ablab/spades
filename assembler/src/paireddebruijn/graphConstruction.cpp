@@ -6,6 +6,7 @@
 #include "pairedGraph.hpp"
 #include "graphio.hpp"
 #include "readTracing.hpp"
+#include "graphSimplification.hpp"
 
 int VertexCount;
 char EdgeStr[1000000];
@@ -46,6 +47,11 @@ void constructGraph() {
 	traceReads(verts, longEdges, graph, VertexCount, EdgeId);
 	freopen(threaded_graph.c_str(), "w", stdout);
 	outputLongEdges(longEdges);
+
+	processLowerSequence(longEdges, graph, VertexCount);
+	freopen("LowerProcessed", "w", stdout);
+	outputLongEdges(longEdges);
+
 
 }
 
