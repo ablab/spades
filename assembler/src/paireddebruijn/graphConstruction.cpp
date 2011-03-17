@@ -16,7 +16,7 @@ char EdgeStrLo[1000000];
 //int fakeOutputVertices[MAX_VERT_NUMBER][MAX_DEGREE];
 //int fakeInputVertices[MAX_VERT_NUMBER][MAX_DEGREE];
 
-const int minIntersect = l - 1;
+int minIntersect ;
 int EdgeId;
 using namespace paired_assembler;
 PairedGraph graph;
@@ -25,6 +25,7 @@ void constructGraph() {
 
 	//		readsToPairs(parsed_reads, parsed_k_l_mers);
 	//		pairsToSequences(parsed_k_l_mers, parsed_k_sequence);
+	minIntersect = l - 1;
 	cerr << "Read edges" << endl;
 	edgesMap edges = sequencesToMap(parsed_k_sequence, true);
 	cerr << "go to graph" << endl;
@@ -114,7 +115,7 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 			if ((!(iter->se)[i]->used)) {
 				int length = 1;
 				count++;
-				//				cerr << count << endl;
+//				cerr << count << endl;
 				assert (((iter->se)[i])->lower->size() >= l);
 				sprintf(EdgeStr + 500000, "%s", decompress(kmer, k).c_str());
 				sprintf(EdgeStrLo + 500000, "%s",
@@ -185,6 +186,7 @@ int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer,
 		Sequence* &finishSeq) {
 	int length = 0;
 	verticesMap::iterator iter;
+//	cerr << "expand_right"<<endl;
 	while (1) {
 		iter = verts.find(finishKmer);
 		if (iter != verts.end()) {
@@ -196,10 +198,11 @@ int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer,
 				}
 			}
 		}
-
+//		cerr << "before checkUniqueWayLeft" << "<<" << finishKmer << " " << finishSeq->str();
 		if (!checkUniqueWayLeft(edges, finishKmer, finishSeq)) {
 			return length;
 		}
+//		cerr << "after checkUniqueWayLeft";
 		int go_res = 0;
 		if ((go_res = goUniqueWayRight(edges, finishKmer, finishSeq)) == 0) {
 			return length;
@@ -212,7 +215,7 @@ int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer,
 				EdgeStr[500000 + k + length] = 0;
 				EdgeStrLo[500000 + l + length] = 0;
 			} else {
-				cerr << endl << "expanded down_right" <<endl;
+//				cerr << endl << "expanded down_right" <<endl;
 			}
 		}
 	}
@@ -323,6 +326,7 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 		else
 			return 1;
 	}
+	cerr << " suspend";
 	return 0;
 }
 
@@ -331,6 +335,8 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	Sequence *PossibleSequence;
 	ll PossibleKmer = 0;
 	int seqIndex = 0;
+
+//	cerr << " goUniqueWayRight" << endl;
 	edgesMap::iterator PossibleIter;
 	for (int Nucl = 0; Nucl < 4; Nucl++) {
 		ll tmpKmer = (ll) Nucl | (finishKmer << (2));
@@ -402,13 +408,15 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 
 int countWays(vector<VertexPrototype *> &v, Sequence *finishSeq, int direction) {
 	int count = 0;
-	for (vector<VertexPrototype *>::iterator it = v.begin(); it != v.end(); ++it)
+//	cerr <<" countWays started"<< endl;
+	for (vector<VertexPrototype *>::iterator it = v.begin(); it != v.end(); ++it) {
 		if (finishSeq->similar(*((*it)->lower), minIntersect, direction)) {
 			count++;
 			if (count > 1) {
 				return count;
 			}
 		}
+	}
 	return count;
 }
 
@@ -425,6 +433,7 @@ int countWays(vector<VertexPrototype *> &v, Sequence *finishSeq, int direction) 
 int checkUniqueWay(edgesMap &edges, ll finishKmer, Sequence *finishSeq,
 		int direction) {
 	int count = 0;
+//	cerr << "checkUniqueWay" << endl;
 	for (int Nucl = 0; Nucl < 4; Nucl++) {
 		ll tmpKmer = pushNucleotide(finishKmer, k - 1, direction, Nucl);
 		edgesMap::iterator iter = edges.find(tmpKmer);

@@ -1,11 +1,12 @@
 #ifndef COMMON_HPP_
 #define COMMON_HPP_
 
-#include <math.h>
+#include <cmath>
 #include <cstdio>
 #include <iostream>
 #include <vector>
 #include <map>
+#include <cassert>
 #include <ext/hash_map>
 #include <algorithm>
 #include <string>
@@ -45,7 +46,9 @@ const string threaded_graph = "data/threaded_graph_const_d.dot";
 const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 */
 //const string parsed_reads = string("data/reads") + suffix + ".txt";
-const string parsed_reads = "data/filtered_reads";
+
+
+/*const string parsed_reads = "data/filtered_reads";
 const string parsed_k_l_mers = string("data/klmers") + suffix  + ".txt";
 const string parsed_k_sequence = string("data/vertices") + suffix  + ".txt";
 const string error_log = "data/error.log";
@@ -53,13 +56,22 @@ const string parsed_l_mers = string("data/lmers")  + suffix  + ".txt";
 const string graph_file = string("data/grapht")  + suffix  + ".dot";
 const string graph2 = string("data/graph2") + suffix  + ".dot";
 const string threaded_graph = string("data/threaded_graph") +  + ".dot";
+*/
 const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
+const string ini_file = "data/paired.ini";
+extern string parsed_reads;
+extern string parsed_k_l_mers;
+extern string parsed_k_sequence;
+extern string error_log;
+extern string parsed_l_mers;
+extern string graph_file;
+extern string graph2;
+extern string threaded_graph;
 
-
-const int k = 31;
-const int l = 31;
-const int readLength = 100;
-const int maxSeqLength = 200;
+extern int k;
+extern int l;
+extern int readLength;
+extern int maxSeqLength;
+void initConstants(string ini_file);
 #endif /*COMMON_HPP_*/
-string decompress(ll a, int l);
