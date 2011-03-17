@@ -157,6 +157,7 @@ public:
 	 * adds vertex and its complement
 	 */
 	Vertex* AddVertex(const Sequence &nucls);
+//	Vertex* AddVertex(Sequence nucls);
 
 	/**
 	 * deletes vertex and its complement

@@ -126,9 +126,9 @@ protected:
 
 	GraphConstructor() {
 		h_ = new SimpleHashTable<kmer_size_> ();
-		g_ = new Graph(kmer_size_, new HashRenewer<kmer_size_>(h_));
-//		DEBUG("HERE0");
-//		GetPosMaybeMissing(Seq<5>("AAAAA"));
+		g_ = new Graph(kmer_size_, new HashRenewer<kmer_size_> (h_));
+		//		DEBUG("HERE0");
+		//		GetPosMaybeMissing(Seq<5>("AAAAA"));
 	}
 
 public:
@@ -150,8 +150,8 @@ class DirectConstructor: public GraphConstructor<kmer_size_> {
 	void ThreadRead(const Seq<read_size_> &r);
 
 public:
-	DirectConstructor(const vector<strobe_read<read_size_, cnt, int>>& reads) : super(),
-		reads_(reads) {
+	DirectConstructor(const vector<strobe_read<read_size_, cnt, int>>& reads) :
+		super(), reads_(reads) {
 	}
 
 	virtual void ConstructGraph(Graph* &g, SimpleHashTable<kmer_size_>* &h) {
@@ -165,7 +165,8 @@ public:
 };
 
 template<size_t kmer_size_, size_t read_size_, size_t cnt>
-void DirectConstructor<kmer_size_, read_size_, cnt>::ThreadRead(const Seq<read_size_> &r) {
+void DirectConstructor<kmer_size_, read_size_, cnt>::ThreadRead(
+		const Seq<read_size_> &r) {
 	Kmer k(r);
 	DEBUG("Threading k-mer: " + k.str())
 	for (size_t i = kmer_size_; i < read_size_; ++i) {
@@ -208,8 +209,88 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 	typedef DeBruijn<kmer_size_> debruijn;
 
 	DeBruijn<kmer_size_>& origin_;
+
+	bool StepLeftIfPossible(Kmer &kmer, Kmer initial_kmer) {
+		if (origin_.PrevCount(kmer) == 1) {
+			Kmer prev_kmer = *(origin_.begin_prev(kmer));
+			DEBUG("Prev kmer " << prev_kmer);
+			DEBUG("Next Count of prev " << origin_.NextCount(prev_kmer));
+			if (origin_.NextCount(prev_kmer) == 1 && kmer != !prev_kmer
+					&& prev_kmer != initial_kmer) {
+				kmer = prev_kmer;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool StepRightIfPossible(Kmer &kmer, Kmer initial_kmer,
+			SequenceBuilder &s) {
+		if (origin_.NextCount(kmer) == 1) {
+			Kmer next_kmer = *(origin_.begin_next(kmer));
+			//			DEBUG("Next kmer " << next_kmer);
+			//			DEBUG("Prev Count of next " << origin_.PrevCount(next_kmer));
+			if (origin_.PrevCount(next_kmer) == 1 && kmer != !next_kmer
+					&& next_kmer != initial_kmer) {
+				kmer = next_kmer;
+				s.append(kmer[kmer_size_ - 1]);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	Kmer GoLeft(Kmer kmer) {
+		DEBUG("Starting process for " << kmer);
+		Kmer initial_kmer = kmer;
+
+		DEBUG("Prev Count " << origin_.PrevCount(kmer));
+		//go left while can
+		while (StepLeftIfPossible(kmer, initial_kmer)) {
+			//todo comment
+		}
+		DEBUG("Stopped going left at " << kmer);
+		return kmer;
+	}
+
+	//go right, appending sequence
+	Sequence ConstructSeqGoingRight(Kmer kmer) {
+		SequenceBuilder s;
+		Kmer initial_kmer = kmer;
+		s.append(kmer);
+
+		//		DEBUG("Next Count " << origin_.NextCount(kmer));
+		while (StepRightIfPossible(kmer, initial_kmer, s)) {
+			//todo comment
+		}
+		//		DEBUG("Stopped going right at " << kmer);
+		return s.BuildSequence();
+	}
+
+	Sequence ConstructSequenceWithKmer(Kmer kmer) {
+		return ConstructSeqGoingRight(GoLeft(kmer));
+	}
+
+	void MakeLinks() {
+		for (set<Vertex*>::iterator it = super::g_->vertices().begin(), end =
+				super::g_->vertices().end(); it != end; it++) {
+			Vertex* v = *it;
+			Kmer kmer = v->nucls().end<kmer_size_> ();
+
+			typename debruijn::neighbour_iterator n_it = origin_.begin_next(
+					kmer);
+			for (size_t i = 0, n = origin_.NextCount(kmer); i < n; ++i, ++n_it) {
+				pair<Vertex*, size_t> position = super::GetPosition(*n_it);
+				//				assert(position.second == 0);
+				super::g_->LinkVertices(v, position.first);
+			}
+			//todo now linking twice!!!
+		}
+	}
+
 public:
-	CondenseConstructor(DeBruijn<kmer_size_>& origin) : origin_(origin) {
+	CondenseConstructor(DeBruijn<kmer_size_>& origin) :
+		origin_(origin) {
 
 	}
 	virtual void ConstructGraph(Graph* &g, SimpleHashTable<kmer_size_>* &h) {
@@ -217,62 +298,12 @@ public:
 				origin_.kmer_end(); it != end; it++) {
 			Kmer kmer = *it;
 			if (!super::Contains(kmer)) {
-				//DEBUG("Starting proces for " << kmer);
-				Kmer initial_kmer = kmer;
-				//			DeBruijn<K>::Data d = origin.get(kmer);
-				//DEBUG("Prev Count " << d.PrevCount());
-				//go left while can
-				while (origin_.PrevCount(kmer) == 1) {
-					Kmer prev_kmer = *(origin_.begin_prev(kmer));
-					//DEBUG("Prev kmer " << prev_kmer);
-					//				DeBruijn<K>::Data prev_d = origin.get(prev_kmer);
-					//DEBUG("Next Count of prev " << prev_d.NextCount());
-					if (origin_.NextCount(prev_kmer) == 1 && kmer != !prev_kmer
-							&& prev_kmer != initial_kmer) {
-						kmer = prev_kmer;
-					} else {
-						break;
-					}
-				}
-				//DEBUG("Stopped going left at " << kmer);
-				//go right, appending sequence
-				SequenceBuilder s;
-				initial_kmer = kmer;
-				s.append(kmer);
-
-				//DEBUG("Next Count " << d.NextCount());
-
-				while (origin_.NextCount(kmer) == 1) {
-					Kmer next_kmer = *(origin_.begin_next(kmer));
-					//DEBUG("Next kmer " << next_kmer);
-					//				DeBruijn<K>::Data next_d = origin.get(next_kmer);
-					//DEBUG("Prev Count of next " << next_d.PrevCount());
-					if (origin_.PrevCount(next_kmer) == 1 && kmer != !next_kmer
-							&& next_kmer != initial_kmer) {
-						kmer = next_kmer;
-						s.append(kmer[kmer_size_ - 1]);
-					} else {
-						break;
-					}
-				}
-				//DEBUG("Stopped going right at " << kmer);
-				super::g_->AddVertex(s.BuildSequence());
+				super::g_->AddVertex(ConstructSequenceWithKmer(kmer));
 			}
 		}
 
-		for (set<Vertex*>::iterator it = super::g_->vertices().begin(), end =
-				super::g_->vertices().end(); it != end; it++) {
-			Vertex* v = *it;
-			Kmer kmer = v->nucls().end<kmer_size_> ();
+		MakeLinks();
 
-			typename debruijn::neighbour_iterator n_it = origin_.begin_next(kmer);
-			for (size_t i = 0, n = origin_.NextCount(kmer); i < n; ++i, ++n_it) {
-				pair<Vertex*, size_t> position = super::GetPosition(*n_it);
-				assert(position.second == 0);
-				super::g_->LinkVertices(v, position.first);
-			}
-			//todo now linking twice!!!
-		}
 		super::ConstructGraph(g, h);
 	}
 };
