@@ -331,7 +331,7 @@ bool isPath(Edge &e1, Edge &e2) {
 	if (e1.upper->size() + e2.upper->size() >= sts)
 		return true;
 	int left1 = max(0, e1.length - sts);
-	int right1 = min(e1.upper->size(), e1.upper->size() - sts + e1.length);
+	int right1 = min(e1.upper->size(), e1.upper->size() - sts + e2.length);
 	int left2 = left1 + sts - e1.length;
 	int right2 = right1 + sts - e1.length;
 	return e1.lower->Subseq(left1, right1) == e2.upper->Subseq(left2, right2);
