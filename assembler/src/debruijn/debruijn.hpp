@@ -16,7 +16,7 @@
 #include <vector>
 #include <tr1/unordered_map>
 
-template<int size_>
+template<size_t size_>
 class DeBruijn {
 public:
 	typedef Seq<size_> key;
@@ -159,7 +159,7 @@ public:
 	}
 
 	template<size_t size2_, size_t count_>
-	void ConstructGraph(const vector<strobe_read<size2_, count_>> &v) {
+	void ConstructGraph(const vector<strobe_read<size2_, count_> > &v) {
 		for (size_t i = 0; i < v.size(); ++i) {
 			for (size_t r = 0; r < count_; ++r) {
 				CountRead<size2_> (v[i][r]);

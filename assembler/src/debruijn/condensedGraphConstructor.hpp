@@ -259,6 +259,7 @@ public:
 				super::g_->AddVertex(s.BuildSequence());
 			}
 		}
+
 		for (set<Vertex*>::iterator it = super::g_->vertices().begin(), end =
 				super::g_->vertices().end(); it != end; it++) {
 			Vertex* v = *it;
@@ -266,10 +267,13 @@ public:
 
 			typename debruijn::neighbour_iterator n_it = origin_.begin_next(kmer);
 			for (size_t i = 0, n = origin_.NextCount(kmer); i < n; ++i, ++n_it) {
-				super::g_->LinkVertices(v, super::g_->GetPosition(*n_it).first);
+				pair<Vertex*, size_t> position = super::GetPosition(*n_it);
+				assert(position.second == 0);
+				super::g_->LinkVertices(v, position.first);
 			}
 			//todo now linking twice!!!
 		}
+		super::ConstructGraph(g, h);
 	}
 };
 

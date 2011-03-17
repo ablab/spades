@@ -169,7 +169,7 @@ void DFS::go(Vertex* v, vector<Vertex*>& stack, Handler& h) {
 	if (visited_.count(v) == 0) {
 		h.HandleStartVertex(v);
 		visited_.insert(v);
-		vector<Vertex*> desc = g_.Desc(v);
+		vector<Vertex*> desc = g_->Desc(v);
 		for (size_t i = 0; i < desc.size(); ++i) {
 			Vertex* descendent = desc[i];
 			h.HandleEdge(v, descendent);
@@ -179,20 +179,21 @@ void DFS::go(Vertex* v, vector<Vertex*>& stack, Handler& h) {
 }
 
 void DFS::Traverse(Handler& h) {
-	for (set<Vertex*>::iterator it = g_.vertices().begin(); it
-			!= g_.vertices().end(); it++) {
+	for (set<Vertex*>::iterator it = g_->vertices().begin(); it
+			!= g_->vertices().end(); it++) {
 		vector<Vertex*> stack;
 		stack.push_back(*it);
 		while (!stack.empty()) {
-			go(stack[stack.size() - 1], stack, h);
+			Vertex* v = stack[stack.size() - 1];
 			stack.pop_back();
+			go(v, stack, h);
 		}
 	}
 }
 
 void SimpleGraphVisualizer::Visualize(const Graph& g) {
 	VisHandler h(gp_);
-	DFS(g).Traverse(h);
+	DFS(&g).Traverse(h);
 	gp_.output();
 }
 

@@ -27,10 +27,10 @@
 using namespace std;
 
 // input files:
-#define filename1 "./data/MG1655-K12_emul1.fasta.gz"
-#define filename2 "./data/MG1655-K12_emul2.fasta.gz"
-//#define filename1 "./test/data/s_6_1.fastq.gz"
-//#define filename2 "./test/data/s_6_2.fastq.gz"
+//#define filename1 "./data/MG1655-K12_emul1.fasta.gz"
+//#define filename2 "./data/MG1655-K12_emul2.fasta.gz"
+#define filename1 "./test/data/s_6_1.fastq.gz"
+#define filename2 "./test/data/s_6_2.fastq.gz"
 
 int main(int argc, char *argv[]) {
 	cerr << "Hello, I am assembler!" << endl;
@@ -47,16 +47,10 @@ int main(int argc, char *argv[]) {
 
 	// construct graph
 
-	time_t now2 = time(NULL);
-	condensed_graph::DirectConstructor<K, R, 2> g_c(*v);
-//	for (size_t i = 0; i < v->size(); ++i) {
-//		if (i % 10000 == 0) {
-//			cerr << "mate reads: " << i << ", time: " << (time(NULL) - now2)
-//					<< endl;
-//		}
-//		g_c.ThreadRead((*v)[i][0]);
-//		g_c.ThreadRead((*v)[i][1]);
-//	}
+	DeBruijn<K> debruijn;
+	debruijn.ConstructGraph(*v);
+	condensed_graph::CondenseConstructor<K> g_c(debruijn);
+
 	condensed_graph::Graph *g;
 	condensed_graph::SimpleHashTable<K> *index;
 	g_c.ConstructGraph(g, index);
@@ -68,7 +62,7 @@ int main(int argc, char *argv[]) {
 	gv.Visualize(*g);
 	filestr.close();
 
-	condensed_graph::DFS dfs(*g);
+	condensed_graph::DFS dfs(g);
 	condensed_graph::SimpleStatCounter stat_c;
 	dfs.Traverse(stat_c);
 	cerr << "Vertex count=" << stat_c.v_count() << "; Edge count="

@@ -213,20 +213,20 @@ public:
 		}
 	};
 
-	Traversal(const Graph& g) :
+	Traversal(const Graph* g) :
 		g_(g) {
 	}
 	virtual void Traverse(Handler& h) {
 	}
 protected:
-	const Graph& g_;
+	const Graph* g_;
 };
 
 class DFS: public Traversal {
 	set<Vertex*> visited_;
 	void go(Vertex* v, vector<Vertex*>& stack, Handler& h);
 public:
-	DFS(const Graph& g) :
+	DFS(const Graph* g) :
 		Traversal(g) {
 
 	}
