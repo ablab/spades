@@ -32,7 +32,7 @@ LOGGER("paireddebruijn.common");
 
 
 using namespace std;
-const string parsed_reads = "data/reads_const_d.txt";
+//const string parsed_reads = "data/reads_const_d.txt";
 //const string parsed_reads = "data/filtered_reads";
 /*
 const string parsed_k_l_mers = "data/klmers_const_d.txt";
@@ -45,7 +45,7 @@ const string threaded_graph = "data/threaded_graph_const_d.dot";
 const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 */
 //const string parsed_reads = string("data/reads") + suffix + ".txt";
-//const string parsed_reads = "data/filtered_reads";
+const string parsed_reads = "data/filtered_reads";
 const string parsed_k_l_mers = string("data/klmers") + suffix  + ".txt";
 const string parsed_k_sequence = string("data/vertices") + suffix  + ".txt";
 const string error_log = "data/error.log";
@@ -57,7 +57,7 @@ const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
 
 
-const int k = 25;
+const int k = 31;
 const int l = 31;
 const int readLength = 100;
 const int maxSeqLength = 200;

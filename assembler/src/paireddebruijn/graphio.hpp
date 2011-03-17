@@ -1,6 +1,6 @@
 #ifndef IOPROCEDURES_HPP_
 #define IOPROCEDURES_HPP_
-#include "common.hpp";
+#include "common.hpp"
 #include "pairedGraph.hpp"
 using namespace paired_assembler;
 

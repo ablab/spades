@@ -33,4 +33,22 @@ string constructCell(const string &label, int border, const string &port) {
 	return ss.str();
 }
 
+double getColorParameter(int l, int r, double perc) {
+	return l * perc + r * (1 - perc);
+}
+
+string getColor(int currentLength, int approximateLength) {
+	int points[8][3] = { {0, 0, 0}, {0, 0, 1}, {0, 1, 1}, {1, 1, 1}, {0, 1, 0}, {1, 1, 0}, {1, 0, 1}};
+	stringstream ss;
+	int bound = approximateLength / 6;
+	int num = currentLength / bound;
+	double perc = (currentLength % bound) * 1. / bound;
+	for(int i = 0; i < 3; i++) {
+		ss << getColorParameter(points[num][i], points[num + 1][i], perc);
+		if(i != 2)
+			ss << ",";
+	}
+	return ss.str();
+}
+
 }

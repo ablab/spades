@@ -5,7 +5,7 @@
 #include "graphVisualizer.hpp"
 #include "pairedGraph.hpp"
 #include "graphio.hpp"
-#include "readTracing.hpp";
+#include "readTracing.hpp"
 
 int VertexCount;
 char EdgeStr[1000000];
@@ -286,7 +286,7 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	}
 	bool sameK = false;
 	int tcount = 0;
-
+/*
 	if (count <= 1) {
 		edgesMap::iterator iter = edges.find(finishKmer);
 		if (iter != edges.end()) {
@@ -294,12 +294,6 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 			forn(i, size) {
 				Sequence *Ps = (iter->se)[i]->lower;
 				if (finishSeq->similar(*Ps, minIntersect, -1)) {
-					/*if ((iter->se)[i]->used)
-						return 0;
-					if (*Ps == *finishSeq) {
-						cerr << endl << "sameSeq";
-						continue;
-					}*/
 					tcount++;
 					if (tcount > 1)
 						break;
@@ -317,7 +311,7 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 			//			cerr << endl << "something" << endl;
 		}
 	}
-
+*/
 	if (count == 1 || tcount == 1) {
 		finishKmer = PossibleKmer >> 2;
 		finishSeq = new Sequence(
@@ -360,16 +354,19 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 			}
 		}
 	}
+	int tcount = 0;
+
 	bool sameK = false;
 
-	int tcount = 0;
-	if (count <= 1) {
+	/*
+	 	if (count <= 1) {
 		edgesMap::iterator iter = edges.find(finishKmer);
 		if (iter != edges.end()) {
 			int size = iter->second.size();
 			forn(i, size) {
 				Sequence *Ps = (iter->se)[i]->lower;
-				if (finishSeq->similar(*Ps, minIntersect, 1)) {
+				if (finishSeq->similar(*Ps, minIntersect, 1))
+				{
 					if ((iter->se)[i]->used)
 						break;
 					tcount++;
@@ -386,6 +383,7 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 		//		assert(1 == 0);
 		sameK = true;
 	}
+*/
 	if (count == 1 || tcount == 1) {
 		int tcount = 0;
 		finishKmer = (PossibleKmer) & (~(((ll) 3) << (2 * (k - 1))));
