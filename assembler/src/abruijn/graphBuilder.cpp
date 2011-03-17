@@ -95,7 +95,7 @@ void processReadB(Seq<MPSIZE> r) {
 	countHashes(s);
 	for (int i = 0; i + K <= MPSIZE; i++) {
 		if (goodHashes.find(ha[i]) != goodHashes.end()) {
-//			Sequence* ss = new Sequence(s.Subseq(i, i + K));
+			//			Sequence* ss = new Sequence(s.Subseq(i, i + K));
 			vs.push_back(graph.getVertex(s.Subseq(i, i + K)));
 			index.push_back(i);
 		}
@@ -116,7 +116,6 @@ void condenseA() {
 		if ((*v)->degree() == 1) {
 			if ((*v)->edges_.begin()->first->complement_->degree() == 1) {
 				VERBOSE(condensations++, " condensations");
-//				if (condensations == -1) return;
 				TRACE("CondenseA " << (*v)->size() << " " << (*v)->edges_.begin()->first->size());
 				Vertex* u = graph.condense(*v);
 				if (u != NULL) {
@@ -129,8 +128,8 @@ void condenseA() {
 
 void GraphBuilder::build() {
 	initH();
-	INFO(OUTPUT_FILE);
-	INFO("Building graph...");
+
+	INFO("Processing-A...");
 	mate_read<MPSIZE>::type mp;
 	for (int i = 0; !irs.eof() && i < CUT; i++) {
 		irs >> mp;
@@ -140,7 +139,11 @@ void GraphBuilder::build() {
 	}
 	irs.reset();
 	INFO("processReadA done: " << goodHashes.size() << " vertex-pairs");
-    selectGood();
+
+	INFO("Selecting good kmers...");
+	selectGood();
+
+	INFO("Processing-B...");
 	for (int i = 0; !irs.eof() && i < CUT; i++) {
 		irs >> mp;
 		processReadB(mp[0]);
@@ -148,7 +151,10 @@ void GraphBuilder::build() {
 		VERBOSE(i, " reads processed");
 	}
 	irs.close();
+
 	INFO("Condensing graph...");
 	condenseA();
-    graph.output(OUTPUT_FILE + ".dot");
+
+	INFO("Outputting graph to " << OUTPUT_FILE);
+	graph.output(OUTPUT_FILE + ".dot");
 }

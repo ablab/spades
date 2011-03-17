@@ -323,4 +323,3 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	outputLongEdges(longEdges);
 
 }
-

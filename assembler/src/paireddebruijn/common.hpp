@@ -60,7 +60,7 @@ const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 const int k = 31;
 const int l = 31;
 const int readLength = 100;
-const int insertLength = 200;
+const int insertLength = 100;
 const int maxSeqLength = 200;
 #endif /*COMMON_HPP_*/
 string decompress(ll a, int l);

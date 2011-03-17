@@ -49,7 +49,7 @@ void constructGraph() {
 	outputLongEdges(longEdges);
 
 	processLowerSequence(longEdges, graph, VertexCount);
-	freopen("LowerProcessed", "w", stdout);
+	freopen("data/LowerProcessed.dot", "w", stdout);
 	outputLongEdges(longEdges);
 
 
