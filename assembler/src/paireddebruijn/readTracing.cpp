@@ -180,7 +180,8 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges, PairedGraph &graph,
 	}
 
 	//resolving simple case InD=OutD and all edge is unique
-	forn(curVertId,VertexCount) {
+	//included in next step :)
+	/*	forn(curVertId,VertexCount) {
 		if ((graph.inD[curVertId]!=0)&&(graph.outD[curVertId]!=0))
 		if ((graph.inD[curVertId]==EdgePairs[curVertId].size())&&(graph.outD[curVertId]==EdgePairs[curVertId].size()))
 		{
@@ -213,7 +214,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges, PairedGraph &graph,
 
 	freopen("data/graph_after_obvious.dot", "w", stdout);
 	outputLongEdges(longEdges);
-
+*/
 	//resolve multi case;
 	int FakeVertexCount = VertexCount;
 	int FakeVertexStart = VertexCount;
