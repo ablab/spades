@@ -183,11 +183,16 @@ string constructVertexInPairId(tVertex v, tVertex rc) {
 	return constructComplexNodeId(constructNodePairId(v, rc), v);
 }
 
+string getColor(int currentLength, int approximateLength);
+
 template<typename tVertex>
 class GraphPrinter {
 private:
 	ostream *_out;
 	map<tVertex, tVertex> vertexMap;
+	int approximateLength_;
+	int currentLength;
+	tVertex currentVertex;
 public:
 	GraphPrinter(const string &name, ostream &out = cout) {
 		_out = &out;
@@ -214,6 +219,18 @@ public:
 	void output() {
 		endGraphRecord(*_out);
 	}
+
+	void threadStart(tVertex v, int approximateLength) {
+		approximateLength_ = approximateLength;
+		currentLength = 0;
+		currentVertex = v;
+	}
+
+	void threadAdd(tVertex v) {
+		addEdge(currentVertex, v, " ", getColor(currentLength, approximateLength_));
+		currentVertex = v;
+		currentLength++;
+	}
 };
 
 template<typename tVertex>
@@ -221,8 +238,12 @@ class PairedGraphPrinter {
 private:
 	ostream *_out;
 	map<tVertex, tVertex> vertexMap;
+	int approximateLength_;
+	int currentLength;
+	pair<tVertex, tVertex> currentVertex;
 public:
 	PairedGraphPrinter(const string &name, ostream &out = cout) {
+		approximateLength_ = -1;
 		_out = &out;
 		startGraphRecord(*_out, name);
 	}
@@ -232,13 +253,6 @@ public:
 		startGraphRecord(*_out, name);
 	}
 
-//	void addVertex(tVertex vertexId, const string &label,
-//			const string &fillColor = "white") {
-//		string vertexLabel = constructComplexNodeLabel(vertexId, label);
-//		Vertex<tVertex> v(vertexId, vertexLabel, fillColor);
-//		recordVertex<tVertex> (*_out, v);
-//	}
-
 	void addVertex(tVertex v1, string label1, tVertex v2, string label2,
 			const string &fillColor = "white") {
 		string pairId = constructNodePairId(v1, v2);
@@ -246,14 +260,6 @@ public:
 		Vertex<string> v(pairId, pairLabel, fillColor);
 		recordVertex<string> (*_out, v);
 	}
-
-//	void addEdge(tVertex fromId, tVertex toId, const string &label = " ",
-//			const string &color = "black") {
-//		string from = constructComplexNodeId(vertexIdToString(fromId), vertexIdToString(fromId));
-//		string to = constructComplexNodeId(vertexIdToString(toId), vertexIdToString(toId));
-//		Edge<string> e(from, to, label, color);
-//		recordEdge<string> (*_out, e);
-//	}
 
 	void addEdge(pair<tVertex, tVertex> v1, pair<tVertex, tVertex> v2,
 			const string label = " ", const string &color = "black") {
@@ -265,6 +271,18 @@ public:
 
 	void output() {
 		endGraphRecord(*_out);
+	}
+
+	void threadStart(pair<tVertex, tVertex> v, int approximateLength) {
+		approximateLength_ = approximateLength;
+		currentLength = 0;
+		currentVertex = v;
+	}
+
+	void threadAdd(pair<tVertex, tVertex> v) {
+		addEdge(currentVertex, v, " ", getColor(currentLength, approximateLength_));
+		currentVertex = v;
+		currentLength++;
 	}
 };
 }

@@ -4,7 +4,8 @@
 
 using namespace paired_assembler;
 
-void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount) {
+void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
+		int &VertexCount) {
 	longEdgesMap::iterator it;
 	int expandEdgeIndex;
 	cerr << "expandDefiniteStart" << endl;
@@ -19,14 +20,16 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCoun
 				a++;
 			assert(a<graph.inD[DestVertex]);
 			while (a < graph.inD[DestVertex] - 1) {
-				graph.inputEdges[DestVertex][a] = graph.inputEdges[DestVertex][a + 1];
+				graph.inputEdges[DestVertex][a]
+						= graph.inputEdges[DestVertex][a + 1];
 				a++;
 			}
 			graph.inD[DestVertex]--;
 			forn(j,graph.inD[i]) {
 				longEdges[graph.inputEdges[i][j]]->ExpandRight(
 						*(longEdges[expandEdgeIndex]));
-				graph.inputEdges[DestVertex][graph.inD[DestVertex]] = graph.inputEdges[i][j];
+				graph.inputEdges[DestVertex][graph.inD[DestVertex]]
+						= graph.inputEdges[i][j];
 				graph.inD[DestVertex]++;
 			}
 			it = longEdges.find(expandEdgeIndex);
@@ -47,7 +50,8 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCoun
 				a++;
 			assert(a<graph.outD[SourceVertex]);
 			while (a < graph.outD[SourceVertex] - 1) {
-				graph.outputEdges[SourceVertex][a] = graph.outputEdges[SourceVertex][a + 1];
+				graph.outputEdges[SourceVertex][a]
+						= graph.outputEdges[SourceVertex][a + 1];
 				a++;
 			}
 			graph.outD[SourceVertex]--;
@@ -66,7 +70,8 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCoun
 	}
 }
 
-void traceReads(verticesMap &verts, longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount, int &EdgeId) {
+void traceReads(verticesMap &verts, longEdgesMap &longEdges,
+		PairedGraph &graph, int &VertexCount, int &EdgeId) {
 
 	map<int, vector<pair<int, int>>> EdgePairs;
 	freopen(parsed_reads.c_str(), "r", stdin);
@@ -182,39 +187,39 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges, PairedGraph &graph,
 	//resolving simple case InD=OutD and all edge is unique
 	//included in next step :)
 	/*	forn(curVertId,VertexCount) {
-		if ((graph.inD[curVertId]!=0)&&(graph.outD[curVertId]!=0))
-		if ((graph.inD[curVertId]==EdgePairs[curVertId].size())&&(graph.outD[curVertId]==EdgePairs[curVertId].size()))
-		{
-			cerr<<"Process vertex "<<curVertId<<" IN "<<graph.inD[curVertId]<<" OUT "<<graph.outD[curVertId]<<" unique ways "<<EdgePairs[curVertId].size()<<endl;
-			bool allPairUnique = true;
-			forn(i,(EdgePairs[curVertId]).size()) {
-				int CurIn = (EdgePairs[curVertId])[i].first;
-				int CurOut = (EdgePairs[curVertId])[i].second;
-				forn(j,(EdgePairs[curVertId]).size()) {
-					if ((EdgePairs[curVertId])[j].first==CurIn)
-					if ((EdgePairs[curVertId])[j].second!=CurOut) allPairUnique = false;
-					if ((EdgePairs[curVertId])[j].second==CurOut)
-					if ((EdgePairs[curVertId])[j].first!=CurIn) allPairUnique = false;
-				}
-			}
-			forn(i,(EdgePairs[curVertId]).size()) {
-				if (allPairUnique) {
-					int CurIn = edgeRealId((EdgePairs[curVertId])[i].first, longEdges);
-					int CurOut = edgeRealId((EdgePairs[curVertId])[i].second, longEdges);
-					cerr<<"New inclusion "<<CurIn<<"("<<longEdges[CurIn]->FromVertex<<","<<longEdges[CurIn]->ToVertex<<") <- "<<CurOut<<"("<<longEdges[CurOut]->FromVertex<<","<<longEdges[CurOut]->ToVertex<<")"<<endl;
-					longEdges[CurIn]->ExpandRight(*longEdges[CurOut]);
-					longEdges[CurOut] = longEdges[CurIn];
-					cerr<<"New edges "<<CurIn<<"("<<longEdges[CurIn]->FromVertex<<","<<longEdges[CurIn]->ToVertex<<") <- "<<CurOut<<"("<<longEdges[CurOut]->FromVertex<<","<<longEdges[CurOut]->ToVertex<<")"<<endl;
-					graph.inD[curVertId]--;
-					graph.outD[curVertId]--;
-				}
-			}
-		}
-	}
+	 if ((graph.inD[curVertId]!=0)&&(graph.outD[curVertId]!=0))
+	 if ((graph.inD[curVertId]==EdgePairs[curVertId].size())&&(graph.outD[curVertId]==EdgePairs[curVertId].size()))
+	 {
+	 cerr<<"Process vertex "<<curVertId<<" IN "<<graph.inD[curVertId]<<" OUT "<<graph.outD[curVertId]<<" unique ways "<<EdgePairs[curVertId].size()<<endl;
+	 bool allPairUnique = true;
+	 forn(i,(EdgePairs[curVertId]).size()) {
+	 int CurIn = (EdgePairs[curVertId])[i].first;
+	 int CurOut = (EdgePairs[curVertId])[i].second;
+	 forn(j,(EdgePairs[curVertId]).size()) {
+	 if ((EdgePairs[curVertId])[j].first==CurIn)
+	 if ((EdgePairs[curVertId])[j].second!=CurOut) allPairUnique = false;
+	 if ((EdgePairs[curVertId])[j].second==CurOut)
+	 if ((EdgePairs[curVertId])[j].first!=CurIn) allPairUnique = false;
+	 }
+	 }
+	 forn(i,(EdgePairs[curVertId]).size()) {
+	 if (allPairUnique) {
+	 int CurIn = edgeRealId((EdgePairs[curVertId])[i].first, longEdges);
+	 int CurOut = edgeRealId((EdgePairs[curVertId])[i].second, longEdges);
+	 cerr<<"New inclusion "<<CurIn<<"("<<longEdges[CurIn]->FromVertex<<","<<longEdges[CurIn]->ToVertex<<") <- "<<CurOut<<"("<<longEdges[CurOut]->FromVertex<<","<<longEdges[CurOut]->ToVertex<<")"<<endl;
+	 longEdges[CurIn]->ExpandRight(*longEdges[CurOut]);
+	 longEdges[CurOut] = longEdges[CurIn];
+	 cerr<<"New edges "<<CurIn<<"("<<longEdges[CurIn]->FromVertex<<","<<longEdges[CurIn]->ToVertex<<") <- "<<CurOut<<"("<<longEdges[CurOut]->FromVertex<<","<<longEdges[CurOut]->ToVertex<<")"<<endl;
+	 graph.inD[curVertId]--;
+	 graph.outD[curVertId]--;
+	 }
+	 }
+	 }
+	 }
 
-	freopen("data/graph_after_obvious.dot", "w", stdout);
-	outputLongEdges(longEdges);
-*/
+	 freopen("data/graph_after_obvious.dot", "w", stdout);
+	 outputLongEdges(longEdges);
+	 */
 	//resolve multi case;
 	int FakeVertexCount = VertexCount;
 	int FakeVertexStart = VertexCount;
@@ -313,9 +318,8 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges, PairedGraph &graph,
 		if (it->second->FromVertex>=FakeVertexStart) it->second->FromVertex = FakeVertexToReal[it->second->FromVertex];
 		if (it->second->ToVertex>=FakeVertexStart) it->second->ToVertex = FakeVertexToReal[it->second->ToVertex];
 	}
-
+	VertexCount = FakeVertexStart;
 	freopen("data/graph_after_fake.dot", "w", stdout);
 	outputLongEdges(longEdges);
 
 }
-
