@@ -72,7 +72,8 @@ extern string threaded_graph;
 extern int k;
 extern int l;
 extern int readLength;
-extern int maxSeqLength;
+const int maxSeqLength = 200;
 extern int insertLength;
+
 void initConstants(string ini_file);
 #endif /*COMMON_HPP_*/
