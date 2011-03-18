@@ -12,11 +12,15 @@ int main() {
 	cerr << l << " " << k;
 	freopen(graph_file.c_str(), "w",stdout);
 //	LOG_ASSERT(1 == 0, "Something wrong");
-//	readsToPairs(parsed_reads, parsed_k_l_mers);
-//	pairsToLmers(parsed_k_l_mers, parsed_l_mers);
-//	pairsToSequences(parsed_k_l_mers, parsed_l_mers, parsed_k_sequence);
+	if (needPairs)
+		readsToPairs(parsed_reads, parsed_k_l_mers);
+	if (needLmers)
+		pairsToLmers(parsed_k_l_mers, parsed_l_mers);
+	if (needSequences)
+		pairsToSequences(parsed_k_l_mers, parsed_l_mers, parsed_k_sequence);
 //	map<>sequencesToMap(parsed_k_sequence);
-	constructGraph();
+	if (needGraph)
+		constructGraph();
 //	testSimilar();
 //	testFind();
 	return 0;

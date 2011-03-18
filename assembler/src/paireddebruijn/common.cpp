@@ -8,10 +8,16 @@ string graph_file;
 string graph2;
 string threaded_graph;
 
-int k;
-int l;
-int readLength;
-int insertLength;
+int k = 0;
+int l = 0;
+int readLength = 0;
+int insertLength = 0;
+
+
+int needPairs = 1;
+int needLmers = 1;
+int needSequences = 1;
+int needGraph = 1;
 void initConstants(string ini_file) {
 	char tmp[200];
 //	string folder = string("data/");
@@ -31,12 +37,12 @@ void initConstants(string ini_file) {
 	suff += topr;
 	string d_desc = "_" + string(tmp);
 	assert(fscanf(ini, "parsed_reads = %s\n" , tmp) == 1);
-	parsed_reads = folder + string(tmp) + ".txt";
+	parsed_reads = folder + string(tmp) + d_desc + ".txt";
 	assert(fscanf(ini, "parsed_k_l_mers = %s\n" , tmp) == 1);
 	parsed_k_l_mers = folder + string(tmp) + suff + ".txt";
 	assert(fscanf(ini, "parsed_k_sequence = %s\n" , tmp) == 1);
 	parsed_k_sequence = folder + string(tmp) + suff + ".txt";
-	cerr << parsed_k_sequence;
+	cerr << parsed_reads;
 	assert(fscanf(ini, "compressed_graph = %s\n" , tmp) == 1);
 	graph_file = folder + string(tmp) + suff + ".dot";
 	assert(fscanf(ini, "intermediate_graph = %s\n" , tmp) == 1);
@@ -45,6 +51,14 @@ void initConstants(string ini_file) {
 	threaded_graph = folder + string(tmp) + suff + ".dot";
 	assert(fscanf(ini, "error_log = %s\n" , tmp) == 1);
 	error_log = folder + string(tmp);
+	assert(fscanf(ini, "Run:\n") == 0);
+
+	assert(fscanf(ini, "needPairs = %d\n", &needPairs) == 1);
+	assert(fscanf(ini, "needLmers = %d\n", &needLmers) == 1);
+	assert(fscanf(ini, "needSequences = %d\n", &needSequences) == 1);
+	assert(fscanf(ini, "needGraph = %d\n", &needGraph) == 1);
+
+	//assert()
 }
 
 
