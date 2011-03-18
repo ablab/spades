@@ -18,16 +18,14 @@
 #include "logging.hpp"
 #include "nucl.hpp"
 #include "debruijn.hpp"
-#include <iostream>
+#include "strobe_read.hpp"
 
 using namespace std;
 
 namespace condensed_graph {
-#define HASH_SEED 128
-typedef Seq<K> Kmer;
-typedef Seq<K - 1> KMinusOneMer;
-typedef Seq<N> Read;
-
+//typedef Seq<K> Kmer;
+//typedef Seq<K - 1> KMinusOneMer;
+//typedef Seq<N> Read;
 LOGGER("d.condensed_graph");
 
 class Vertex;
@@ -79,9 +77,8 @@ public:
 	const Sequence& nucls() const {
 		return nucls_;
 	}
-	void AddDesc(Vertex* v) {
-		int k_th_nucl = v->nucls()[K - 1];
-		desc_[k_th_nucl] = v;
+	void AddDesc(Vertex* v, char nucl) {
+		desc_[(int) nucl] = v;
 	}
 	Vertex* complement() const {
 		return complement_;
@@ -97,55 +94,24 @@ public:
 	}
 };
 
-class SimpleHashTable { // To Sergey: it's C++, not Java Collections ;)
-private:
-	//typedef __gnu_cxx::hash_map<const Kmer, pair<Vertex*, size_t> , Kmer::hash<HASH_SEED>, Kmer::equal_to> hmap;
-	typedef tr1::unordered_map<const Kmer, pair<Vertex*, size_t> , Kmer::hash<HASH_SEED>, Kmer::equal_to> hmap;
-	hmap h_;
+//template<size_t kmer_size_> class GraphConstructor;
+
+class ActionHandler {
 public:
-	void put(Kmer k, Vertex* v, size_t s) {
-		//DEBUG("Putting position for k-mer '" << k.str() <<  "' : position " << v.second)
-		hmap::iterator hi = h_.find(k);
-		if (hi == h_.end()) { // put new element
-			h_[k] = make_pair(v, s);
-		} else { // change existing element
-			hi->second = make_pair(v, s);
-		}
-		/*if (contains(k)) {
-		 h_.erase(k);
-		 }
-		 h_.insert(make_pair(k, v));*/
+	virtual void HandleAdd(Vertex* v) {
 	}
-
-	bool contains(Kmer k) {
-		return h_.find(k) != h_.end();
+	virtual void HandleDelete(Vertex* v) {
 	}
-
-	const pair<Vertex*, size_t> get(const Kmer &k) {
-		hmap::iterator hi = h_.find(k);
-		assert(hi != h_.end()); // contains
-		//DEBUG("Getting position of k-mer '" + k.str() + "' Position is " << hi->second.second << " at vertex'"<< hi->second.first->nucls().str() << "'")
-		return hi->second;
+	virtual void HandleMerge(Vertex* v1, Vertex* v2, Vertex* v) {
+	}
+	virtual void HandleSplit(Vertex* v, size_t pos, Vertex* v1, Vertex* v2) {
 	}
 };
 
+//////////////////////////////////////////////////
+
 class Graph {
 	set<Vertex*> vertices_;
-	SimpleHashTable h_;
-
-	/**
-	 *	renews hash for vertex and complementary
-	 *	todo renew not all hashes
-	 */
-	void RenewKmersHash(Vertex* v) {
-		assert(v->nucls().size() >= K);
-		Kmer k(v->nucls());
-		h_.put(k, v, 0);
-		for (size_t i = K, n = v->nucls().size(); i < n; ++i) {
-			k = k << v->nucls()[i];
-			h_.put(k, v, i - K + 1);
-		}
-	}
 
 	/**
 	 * deals with incoming links and their complement only!!!
@@ -156,12 +122,65 @@ class Graph {
 
 	bool CanBeDeleted(Vertex* v) const;
 
+	void AddDesc(Vertex* anc, Vertex* desc);
+
+	size_t k_;
+	ActionHandler* action_handler_;
+	//	template<size_t kmer_size_> friend class GraphConstructor;
 public:
-	const set<Vertex*>& vertices() const;
+
+	Graph(size_t k, ActionHandler* action_handler) :
+		k_(k), action_handler_(action_handler) {
+	}
+
+	~Graph() {
+		delete action_handler_;
+	}
+
+	const set<Vertex*>& vertices() const {
+		return vertices_;
+	}
+
+	void set_action_handler(ActionHandler* action_handler) {
+		delete action_handler_;
+
+		action_handler_ = action_handler;
+	}
 
 	vector<Vertex*> Anc(const Vertex* v) const;
 
 	vector<Vertex*> Desc(const Vertex* v) const;
+
+	//todo make private
+	/**
+	 * adds vertex and its complement
+	 */
+	Vertex* AddVertex(const Sequence &nucls);
+//	Vertex* AddVertex(Sequence nucls);
+
+	/**
+	 * deletes vertex and its complement
+	 */
+	void DeleteVertex(Vertex* v);
+
+	//pos exclusive! (goes into second vertex)
+	//deletes vertex if actual split happens
+	//returns first of the new vertices
+	Vertex* SplitVertex(Vertex* v, size_t pos);
+
+	Vertex* Merge(Vertex* v1, Vertex* v2);
+
+	bool IsMergePossible(Vertex* v1, Vertex* v2) const {
+		return IsLast(v1) && IsFirst(v2) && v1->complement() != v2 && v1 != v2
+				&& AreLinkable(v1, v2);
+	}
+
+	void LinkVertices(Vertex* anc, Vertex* desc);
+
+	bool AreLinkable(Vertex* v1, Vertex* v2) const {
+		return v2->nucls().Subseq(0, k_ - 1) == v1->nucls().Subseq(
+				v1->size() - (k_ - 1));
+	}
 
 	bool IsLast(Vertex* v) const {
 		return v->IsDeadend();
@@ -171,61 +190,16 @@ public:
 		return IsLast(v->complement());
 	}
 
-	/**
-	 * adds vertex and its complement
-	 */
-	Vertex* AddVertex(const Sequence &nucls);
-
-	bool IsMergePossible(Vertex* v1, Vertex* v2) const;
-
-	Vertex* Merge(Vertex* v1, Vertex* v2);
-
-	/**
-	 * deletes vertex and its complement
-	 */
-	void DeleteVertex(Vertex* v);
-
-	bool AreLinkable(Vertex* v1, Vertex* v2) const;
-
-	void LinkVertices(Vertex* anc, Vertex* desc);
-
-	/**
-	 *	renews hash for vertex and complementary
-	 *	todo renew not all hashes
-	 */
-	void RenewHashForVertexKmers(Vertex* v);
-
-	//pos exclusive! (goes into second vertex)
-	//deletes vertex if actual split happens
-	//returns first of the new vertices
-	Vertex* SplitVertex(Vertex* v, size_t pos);
-
-	pair<Vertex*, int> GetPosition(Kmer k) {
-		assert(h_.contains(k));
-		return h_.get(k);
-	}
-
-	bool Contains(Kmer k) {
-		return h_.contains(k);
-	}
-
-	pair<Vertex*, int> GetPosMaybeMissing(Kmer k) {
-		if (!h_.contains(k)) {
-			AddVertex(Sequence(k));
-		}
-		return h_.get(k);
-	}
-
-	void ThreadRead(const Read &r);
-
 	bool IsLastKmer(Vertex* v, size_t pos) const {
-		return pos + K == v->size();
+		return pos + k_ == v->size();
 	}
 
 	bool IsFirstKmer(Vertex* v, size_t pos) const {
 		return pos == 0;
 	}
 };
+
+//////////////////////////////////////////////////////////////////
 
 class Traversal {
 public:
@@ -239,18 +213,23 @@ public:
 		}
 	};
 
-	Traversal(const Graph& g);
+	Traversal(const Graph* g) :
+		g_(g) {
+	}
 	virtual void Traverse(Handler& h) {
 	}
 protected:
-	const Graph& g_;
+	const Graph* g_;
 };
 
 class DFS: public Traversal {
 	set<Vertex*> visited_;
 	void go(Vertex* v, vector<Vertex*>& stack, Handler& h);
 public:
-	DFS(const Graph& g);
+	DFS(const Graph* g) :
+		Traversal(g) {
+
+	}
 	virtual void Traverse(Handler& h);
 };
 
@@ -292,7 +271,39 @@ public:
 	}
 };
 
-void CondenseGraph(DeBruijn<K>& origin, Graph& g);
+class CountHandler: public Traversal::Handler {
+	tr1::unordered_map<const Vertex*, size_t>& map_;
+	size_t count_;
+public:
 
+	CountHandler(tr1::unordered_map<const Vertex*, size_t>& map) :
+		map_(map), count_(0) {
+	}
+
+	virtual void HandleStartVertex(const Vertex* v) {
+		map_.insert(make_pair(v, count_++));
+	}
+};
+
+class VisHandler: public Traversal::Handler {
+	gvis::GraphPrinter<const Vertex*>& pr_;
+public:
+
+	VisHandler(gvis::GraphPrinter<const Vertex*>& pr) :
+		pr_(pr) {
+	}
+
+	virtual void HandleStartVertex(const Vertex* v) {
+		stringstream ss;
+		ss << v->nucls().size();
+		pr_.addVertex(v, ss.str());
+	}
+
+	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
+		pr_.addEdge(v1, v2, "");
+	}
+
+};
 }
+
 #endif /* CONDENSED_GRAPH_H_ */

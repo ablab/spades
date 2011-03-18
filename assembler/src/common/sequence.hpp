@@ -12,7 +12,6 @@
 #include "sequence_data.hpp"
 #include <vector>
 #include <string>
-#include <iostream>
 using namespace std;
 
 /**

@@ -9,7 +9,6 @@
 #define STROBE_READ_HPP_
 
 #include "seq.hpp"
-#include <iostream>
 using namespace std;
 
 /*
@@ -20,7 +19,7 @@ using namespace std;
  * where size -- number of nucleotides in each read
  * (we don't store info about gaps' size here)
  */
-template <size_t size, size_t cnt = 1, typename T = char>
+template <size_t size, size_t cnt = 1, typename T = int>
 class strobe_read {
 public:
 	strobe_read() {

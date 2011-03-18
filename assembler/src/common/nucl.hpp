@@ -9,7 +9,6 @@
 #define NUCL_HPP_
 
 #include <cassert>
-#include <iostream>
 
 inline bool is_nucl(char c) { // is ACGT
 	return (c == 'A' || c == 'C' || c == 'G' || c == 'T');
