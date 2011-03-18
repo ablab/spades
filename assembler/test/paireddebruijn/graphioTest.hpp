@@ -1,4 +1,6 @@
 #include "graphio.hpp"
+#include "common.hpp"
+#include "pairedGraph.hpp"
 #include "cute.h"
 
 void TestIntOutput() {
@@ -116,6 +118,14 @@ void TestTwoSequenceOutput() {
 	dr.close();
 }
 
+void TestSave() {
+	PairedGraph *graph = new PairedGraph();
+	longEdgesMap *edges = new longEdgesMap() ;
+	int a;
+	int b;
+	save("test/data/oppa.txt", *graph, *edges, a, b);
+}
+
 cute::suite GraphioSuite() {
 	cute::suite s;
 	s.push_back(CUTE(TestIntOutput));
@@ -126,6 +136,7 @@ cute::suite GraphioSuite() {
 	s.push_back(CUTE(Test2DimentionIntArrayOutput));
 	s.push_back(CUTE(TestSequenceOutput));
 	s.push_back(CUTE(TestTwoSequenceOutput));
+	s.push_back(CUTE(TestSave));
 	return s;
 }
 
