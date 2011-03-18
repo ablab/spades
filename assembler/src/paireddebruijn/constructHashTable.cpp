@@ -1,6 +1,7 @@
 #include "common.hpp"
 #include "sequence.hpp"
 #include "constructHashTable.hpp"
+#include "graphio.hpp"
 
 using namespace std;
 
@@ -15,33 +16,6 @@ ll lowerMask = (((ll) 1) << (2 * l)) - 1;
 ll upperMax = ((ll) 1) << 46;
 const int MAXLMERSIZE = 10000;
 
-string decompress(ll a, int l) {
-
-	string res = "";
-	res.reserve(l);
-	forn(i,l)
-		res += " ";
-	forn(i, l) {
-		res[l - i - 1] = nucl((a & 3));
-		a >>= 2;
-	}
-	return res;
-}
-
-inline int codeNucleotide(char a) {
-	if (a == 'A')
-		return 0;
-	else if (a == 'C')
-		return 1;
-	else if (a == 'G')
-		return 2;
-	else if (a == 'T')
-		return 3;
-	else {
-		std::cerr << "oops!";
-		return -1;
-	}
-}
 /*void testSequence(){
 	srand(239);
 	forn(i, 1000) {
@@ -57,12 +31,6 @@ inline int codeNucleotide(char a) {
 
 	}
 }*/
-void codeRead(char *read, char *code) {
-	for (int i = 0; i < readLength; i++) {
-		code[i] = codeNucleotide(read[i]);
-	}
-}
-
 //toDo
 downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 	downSeqs res;
@@ -155,6 +123,7 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 		if (used[i] == 0) {
 			int ii = i;
 			used[i] = color;
+			//cerr <<"color = :"<< color << endl;
 			while ((left[ii] >= 0) && (right[left[ii]] == ii) && (left[ii] != i)){
 				seqlength += shift_left[ii];
 				ii = left[ii];
@@ -178,10 +147,10 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 				ll maxsd = ((ll) 3) << (2 * (p-1));
 				ii = right[ii];
 				forn(j, p) {
-//					cerr << ((a[ii] & maxsd) >> (2*(p-j-1)));
+				//	cerr << ((a[ii] & maxsd) >> (2*(p-j-1)));
 					s += nucl((a[ii] & maxsd) >> (2*(p-j-1)));
 					maxsd >>= 2;
-//					cerr << "OK" <<endl;
+			//		cerr << "OK" <<endl;
 				}
 			}
 			Sequence* tmpSeq = new Sequence(s);
@@ -200,8 +169,11 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 			cerr << right[i] << " ";
 			cerr << shift_right[i] << " ";
 		}
+		forn(i, res.size()) {
+			cerr<<res[i]->str() << endl;
+		}
 	}*/
-//	assert(0);
+	//assert(0);
 	return res;
 }
 
@@ -311,15 +283,6 @@ downSeqs clusterize(ll* a, int size, int max_shift) {
 //	assert(0);
 	return res;
 }*/
-
-ll extractMer(char *read, int shift, int length) {
-	ll res = 0;
-	for (int i = 0; i < length; i++) {
-		res = res << 2;
-		res += read[shift + i];
-	}
-	return res;
-}
 
 inline bool checkBoundsForUpper(ll upper) {
 	return true;

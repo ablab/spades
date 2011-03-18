@@ -39,6 +39,8 @@ struct Edge {
 
 void startGraphRecord(ostream &out, const string &name);
 
+void startSimpleGraphRecord(ostream &out, const string &name);
+
 void endGraphRecord(ostream &out);
 
 void recordParameter(ostream &out, const string &name, const string &value);
@@ -71,6 +73,18 @@ void recordEdge(ostream &out, Edge<tVertex> &edge) {
 	out << "->";
 	recordVertexId(out, edge.to);
 	out << "_in";
+	out << "[";
+	recordParameter(out, "label", edge.label);
+	out << ",";
+	recordParameter(out, "color", edge.color);
+	out << "]" << endl;
+}
+
+template<typename tVertex>
+void recordSimpleEdge(ostream &out, Edge<tVertex> &edge) {
+	recordVertexId(out, edge.from);
+	out << "->";
+	recordVertexId(out, edge.to);
 	out << "[";
 	recordParameter(out, "label", edge.label);
 	out << ",";
@@ -169,27 +183,74 @@ string constructVertexInPairId(tVertex v, tVertex rc) {
 	return constructComplexNodeId(constructNodePairId(v, rc), v);
 }
 
+string getColor(int currentLength, int approximateLength);
+
 template<typename tVertex>
 class GraphPrinter {
 private:
 	ostream *_out;
 	map<tVertex, tVertex> vertexMap;
+	int approximateLength_;
+	int currentLength;
+	tVertex currentVertex;
 public:
 	GraphPrinter(const string &name, ostream &out = cout) {
 		_out = &out;
-		startGraphRecord(*_out, name);
+		startSimpleGraphRecord(*_out, name);
 	}
 
 	GraphPrinter(const string &name, const char* filename) {
 		_out = new ofstream(filename, ios::out);
-		startGraphRecord(*_out, name);
+		startSimpleGraphRecord(*_out, name);
 	}
 
 	void addVertex(tVertex vertexId, const string &label,
 			const string &fillColor = "white") {
-		string vertexLabel = constructComplexNodeLabel(vertexId, label);
-		Vertex<tVertex> v(vertexId, vertexLabel, fillColor);
+		Vertex<tVertex> v(vertexId, label, fillColor);
 		recordVertex<tVertex> (*_out, v);
+	}
+
+	void addEdge(tVertex fromId, tVertex toId, const string &label = " ",
+			const string &color = "black") {
+		Edge<tVertex> e(fromId, toId, label, color);
+		recordSimpleEdge<tVertex>(*_out, e);
+	}
+
+	void output() {
+		endGraphRecord(*_out);
+	}
+
+	void threadStart(tVertex v, int approximateLength) {
+		approximateLength_ = approximateLength;
+		currentLength = 0;
+		currentVertex = v;
+	}
+
+	void threadAdd(tVertex v) {
+		addEdge(currentVertex, v, " ", getColor(currentLength, approximateLength_));
+		currentVertex = v;
+		currentLength++;
+	}
+};
+
+template<typename tVertex>
+class PairedGraphPrinter {
+private:
+	ostream *_out;
+	map<tVertex, tVertex> vertexMap;
+	int approximateLength_;
+	int currentLength;
+	pair<tVertex, tVertex> currentVertex;
+public:
+	PairedGraphPrinter(const string &name, ostream &out = cout) {
+		approximateLength_ = -1;
+		_out = &out;
+		startGraphRecord(*_out, name);
+	}
+
+	PairedGraphPrinter(const string &name, const char* filename) {
+		_out = new ofstream(filename, ios::out);
+		startGraphRecord(*_out, name);
 	}
 
 	void addVertex(tVertex v1, string label1, tVertex v2, string label2,
@@ -198,14 +259,6 @@ public:
 		string pairLabel = constructComplexNodeLabel(v1, label1, v2, label2);
 		Vertex<string> v(pairId, pairLabel, fillColor);
 		recordVertex<string> (*_out, v);
-	}
-
-	void addEdge(tVertex fromId, tVertex toId, const string &label = " ",
-			const string &color = "black") {
-		string from = constructComplexNodeId(vertexIdToString(fromId), vertexIdToString(fromId));
-		string to = constructComplexNodeId(vertexIdToString(toId), vertexIdToString(toId));
-		Edge<string> e(from, to, label, color);
-		recordEdge<string> (*_out, e);
 	}
 
 	void addEdge(pair<tVertex, tVertex> v1, pair<tVertex, tVertex> v2,
@@ -219,8 +272,19 @@ public:
 	void output() {
 		endGraphRecord(*_out);
 	}
-};
 
+	void threadStart(pair<tVertex, tVertex> v, int approximateLength) {
+		approximateLength_ = approximateLength;
+		currentLength = 0;
+		currentVertex = v;
+	}
+
+	void threadAdd(pair<tVertex, tVertex> v) {
+		addEdge(currentVertex, v, " ", getColor(currentLength, approximateLength_));
+		currentVertex = v;
+		currentLength++;
+	}
+};
 }
 
 #endif //GRAPH_VIS_//
