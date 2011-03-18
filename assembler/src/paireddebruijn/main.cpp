@@ -9,7 +9,7 @@ int main() {
 	initConstants(ini_file);
 	initGlobal();
 
-	//	freopen(error_log.c_str(), "w",stderr);
+	freopen(error_log.c_str(), "w",stderr);
 //	assert( 1== 0);
 	cerr << l << " " << k;
 	freopen(graph_file.c_str(), "w",stdout);

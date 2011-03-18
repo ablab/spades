@@ -17,7 +17,6 @@ ll extractMer(char *read, int shift, int length);
 
 string decompress(ll a, int l);
 
-void outputLongEdges(longEdgesMap &longEdges);
 
 class DataPrinter {
 	FILE *f_;
