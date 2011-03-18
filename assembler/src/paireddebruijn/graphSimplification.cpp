@@ -22,8 +22,9 @@ bool isPath(Edge &e1, Edge &e2) {
 }
 
 
-void processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount){
+bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount){
 	int countIn[MAX_DEGREE], possibleIn[MAX_DEGREE], countOut[MAX_DEGREE], possibleOut[MAX_DEGREE];
+	bool res = false;
 	forn(curVertId, VertexCount){
 		if ((graph.inD[curVertId]!=0)&&(graph.outD[curVertId]!=0)) {
 
@@ -56,11 +57,13 @@ void processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph, int &Vert
 						int OutEdge = edgeRealId(graph.outputEdges[curVertId][possibleOut[i]], longEdges);
 						longEdges[InEdge]->ExpandRight(*longEdges[OutEdge]);
 						longEdges[OutEdge] = longEdges[InEdge];
+						res = true;
 					}
 				}
 			}
-			//REMOVE VERTICES INFO!!!
+			//REMOVE VERTICES INFO!!! //I did it outside
 		}
 	}
+	return res;
 }
 

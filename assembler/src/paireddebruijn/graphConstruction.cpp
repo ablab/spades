@@ -35,22 +35,41 @@ void constructGraph() {
 	verticesMap verts;
 	longEdgesMap longEdges;
 	createVertices(g, edges, verts, longEdges, graph);
+
 	expandDefinite(longEdges , graph, VertexCount);
+	freopen("data/afterExpand.dot", "w",stdout);
+	outputLongEdges(longEdges);
+	freopen("data/afterExpand_g.dot", "w",stdout);
+	outputLongEdgesThroughGenome(longEdges,graph,VertexCount);
 //	freopen(graph.c_str(), "w",stdout);
 	cerr << endl << "End vertices" <<endl;
 //	return;
 
-	freopen(graph2.c_str(), "w",stdout);
-	outputLongEdges(longEdges);
-	cerr << "TraceReads" << endl;
+//	freopen(graph2.c_str(), "w",stdout);
+//	outputLongEdges(longEdges);
+//	cerr << "TraceReads" << endl;
 
 	traceReads(verts, longEdges, graph, VertexCount, EdgeId);
-	freopen(threaded_graph.c_str(), "w", stdout);
+	freopen("data/ReadsTraced", "w", stdout);
 	outputLongEdges(longEdges);
+	freopen("data/ReadsTraced_g", "w", stdout);
+	outputLongEdgesThroughGenome(longEdges,graph,VertexCount);
+	graph.recreateVerticesInfo(VertexCount, longEdges);
 
-	processLowerSequence(longEdges, graph, VertexCount);
-	freopen("data/LowerProcessed.dot", "w", stdout);
+	while (processLowerSequence(longEdges, graph, VertexCount))
+	{
+		graph.recreateVerticesInfo(VertexCount, longEdges);
+		expandDefinite(longEdges , graph, VertexCount);
+	}
+	freopen("data/afterLowers.dot", "w",stdout);
 	outputLongEdges(longEdges);
+	freopen("data/afterLowers_g.dot", "w",stdout);
+	outputLongEdgesThroughGenome(longEdges,graph,VertexCount);
+
+	//freopen("data/LowerProcessed.dot", "w", stdout);
+///	outputLongEdges(longEdges);
+
+
 
 
 }

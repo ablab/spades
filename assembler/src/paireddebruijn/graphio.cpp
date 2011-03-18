@@ -1,5 +1,6 @@
 #include "graphio.hpp"
 #include "graphVisualizer.hpp"
+#include <stdio.h>
 
 inline int codeNucleotide(char a) {
 	if (a == 'A')
@@ -38,6 +39,83 @@ void outputLongEdges(longEdgesMap &longEdges) {
 	}
 	g.output();
 }
+
+void outputLongEdgesThroughGenome(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount) {
+	char Buffer[100];
+	char* Genome;
+	int GenLength;
+	int GenPos;
+	int i,t;
+
+	int EdgeNum = 0;
+
+	int bigShift = insertLength+readLength;
+	assert(k==l);
+
+	cerr<<"Graph output through genome"<<endl;
+	gvis::GraphPrinter<int> g("Paired_ext");
+
+	FILE *infile;
+	Genome = (char *) malloc(6000000);
+	if ((infile = fopen("data/MG1655-K12_cut.fasta", "r"))
+	           == NULL) {
+		cerr<<"No such file"<<endl;
+		return;
+	}
+	i=0;
+	Genome[i] = fgetc(infile);
+	t=0;
+	while (t<5) {
+	  if (Genome[i]>20) {t=0;i++;}
+	  else t++;
+	  Genome[i] = fgetc(infile);
+	}
+	GenLength = i;
+	GenPos=0;
+	fclose(infile);
+	cerr<<"Try to process"<<endl;
+
+	int CurVert = 0;
+	while ((graph.inD[CurVert]!=0)||(graph.outD[CurVert]!=1)) CurVert++;
+	cerr<<"Start vertex "<<CurVert<<endl;
+	while (graph.outD[CurVert]!=0){
+
+		cerr<<"Try to found next edge"<<endl;
+		forn(v,graph.outD[CurVert])
+		{
+
+			int edgeId = edgeRealId(graph.outputEdges[CurVert][v], longEdges);
+			cerr<<"possible edge"<<edgeId<<endl;
+			bool goodEdge = true;
+			int h=0;
+			while(goodEdge&&(h<longEdges[edgeId]->upper->size())){
+				//cerr<<" "<<(*(longEdges[edgeId]->upper))[h]<<" =?= "<<Genome[GenPos+h]<<endl;
+				if ( nucl((*(longEdges[edgeId]->upper))[h])!=Genome[GenPos+h]) goodEdge=false;
+				h++;
+			}
+			h=0;
+			while(goodEdge&&(h<longEdges[edgeId]->lower->size())){
+				if (nucl((*(longEdges[edgeId]->lower))[h])!=Genome[GenPos+h+bigShift]) goodEdge=false;
+				h++;
+			}
+
+			if (goodEdge){
+				cerr<<"Edge found"<<endl;
+				EdgeNum++;
+				sprintf(Buffer, "%i: %i (%i)", EdgeNum, edgeId, longEdges[edgeId]->length);
+				g.addEdge(longEdges[edgeId]->FromVertex, longEdges[edgeId]->ToVertex, Buffer);
+				cerr << edgeId << " (" << longEdges[edgeId]->length << "):" << endl;
+				cerr << longEdges[edgeId]->upper->str() << endl;
+				cerr << longEdges[edgeId]->lower->str() << endl;
+				CurVert = longEdges[edgeId]->ToVertex;
+				GenPos += longEdges[edgeId]->length;
+				break;
+			}
+		}
+	}
+	g.output();
+}
+
 
 ll extractMer(char *read, int shift, int length) {
 	ll res = 0;

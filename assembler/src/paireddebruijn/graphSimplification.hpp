@@ -8,7 +8,7 @@
 
 using namespace paired_assembler;
 
-void processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount);
+bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount);
 bool isPath(Edge &e1, Edge &e2);
 
 #endif /* GRAPHSIMPLIFICATION_H_ */

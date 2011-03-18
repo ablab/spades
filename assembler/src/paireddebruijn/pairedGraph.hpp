@@ -103,6 +103,7 @@ public:
 	int inD[MAX_VERT_NUMBER], outD[MAX_VERT_NUMBER];
 	int outputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
 	int inputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
+	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
 };
 //
 //class Vertex {

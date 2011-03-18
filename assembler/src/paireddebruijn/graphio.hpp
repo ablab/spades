@@ -7,6 +7,7 @@ using namespace paired_assembler;
 void codeRead(char *read, char *code);
 
 void outputLongEdges(longEdgesMap &longEdges);
+void outputLongEdgesThroughGenome(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount);
 
 inline bool nextReadPair(char * &read1, char * &read2) {
 	return (scanf("%s %s", read1, read2)== 2);

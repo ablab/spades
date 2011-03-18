@@ -18,7 +18,7 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 			while ((edgeRealId(graph.inputEdges[DestVertex][a], longEdges)
 					!= expandEdgeIndex))
 				a++;
-			assert(a<graph.inD[DestVertex]);
+			assert(a < graph.inD[DestVertex]);
 			while (a < graph.inD[DestVertex] - 1) {
 				graph.inputEdges[DestVertex][a]
 						= graph.inputEdges[DestVertex][a + 1];
@@ -48,7 +48,7 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 			while (edgeRealId(graph.outputEdges[SourceVertex][a], longEdges)
 					!= expandEdgeIndex)
 				a++;
-			assert(a<graph.outD[SourceVertex]);
+			assert(a < graph.outD[SourceVertex]);
 			while (a < graph.outD[SourceVertex] - 1) {
 				graph.outputEdges[SourceVertex][a]
 						= graph.outputEdges[SourceVertex][a + 1];
@@ -83,21 +83,21 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	ll upperMask = (((ll) 1) << (2 * (k - 1))) - 1;
 	ll lowerMask = (((ll) 1) << (2 * (l - 1))) - 1;
 	//	FILE* fout = fopen("data/filtered_reads","w");
-	while (nextReadPair(upperNuclRead, lowerNuclRead)) {
-		if (!(count & (1024*128 - 1)))
-		cerr<<"read number "<<count<<" processed"<<endl;
-		count++;
-		codeRead(upperNuclRead, upperRead);
-		codeRead(lowerNuclRead, lowerRead);
-		Sequence* upRead = new Sequence(upperNuclRead);
-		Sequence* loRead = new Sequence(lowerNuclRead);
-		int shift = (l - k) / 2;
-		ll upper = extractMer(upperRead, shift+1, k-1);
-		for (int j = 0; j + l < readLength; j++) {
-			verticesMap::iterator vertIter = verts.find(upper);
-			if (vertIter!=verts.end()) {
-				//	cerr<<"kmer found for j="<<j<<endl;
-				for (vector<VertexPrototype *>::iterator it = vertIter->second.begin(); it
+			while (nextReadPair(upperNuclRead, lowerNuclRead)) {
+				if (!(count & (1024*128 - 1)))
+				cerr<<"read number "<<count<<" processed"<<endl;
+				count++;
+				codeRead(upperNuclRead, upperRead);
+				codeRead(lowerNuclRead, lowerRead);
+				Sequence* upRead = new Sequence(upperNuclRead);
+				Sequence* loRead = new Sequence(lowerNuclRead);
+				int shift = (l - k) / 2;
+				ll upper = extractMer(upperRead, shift+1, k-1);
+				for (int j = 0; j + l < readLength; j++) {
+					verticesMap::iterator vertIter = verts.find(upper);
+					if (vertIter!=verts.end()) {
+						//	cerr<<"kmer found for j="<<j<<endl;
+						for (vector<VertexPrototype *>::iterator it =vertIter->second.begin(); it
 						!= vertIter->second.end(); ++it) {
 					if ((*it)->lower->similar(loRead->Subseq(1+j, l+j),l-1)) {
 						//				cerr<<"vertex found for lower "<<(*it)->lower->str()<<endl;
@@ -186,7 +186,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 
 	//resolving simple case InD=OutD and all edge is unique
 	//included in next step :)
-	/*	forn(curVertId,VertexCount) {
+		forn(curVertId,VertexCount) {
 	 if ((graph.inD[curVertId]!=0)&&(graph.outD[curVertId]!=0))
 	 if ((graph.inD[curVertId]==EdgePairs[curVertId].size())&&(graph.outD[curVertId]==EdgePairs[curVertId].size()))
 	 {
@@ -217,9 +217,9 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	 }
 	 }
 
-	 freopen("data/graph_after_obvious.dot", "w", stdout);
+	/* freopen("data/graph_after_obvious.dot", "w", stdout);
 	 outputLongEdges(longEdges);
-	 */
+
 	//resolve multi case;
 	int FakeVertexCount = VertexCount;
 	int FakeVertexStart = VertexCount;
@@ -321,5 +321,5 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	VertexCount = FakeVertexStart;
 	freopen("data/graph_after_fake.dot", "w", stdout);
 	outputLongEdges(longEdges);
-
+*/
 }
