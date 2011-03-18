@@ -11,21 +11,14 @@
 #include "seq.hpp"
 #include "strobe_read.hpp"
 #include <google/sparse_hash_map> // ./configure, make and sudo make install from libs/sparsehash-1.10
-#include <iostream> // for debug
 #include <map>
 #include <vector>
 #include <tr1/unordered_map>
 
-//todo make separate class to construct graph and remove R from here!!!
-// read size:
-#define R 9//100
-#define N 9//100//11//100
-// k-mer size:
-#define K 5//25
-template<int size_>
+template<size_t size_>
 class DeBruijn {
-public:
 	typedef Seq<size_> key;
+
 	class Data {
 		size_t out_edges_[4];
 		size_t in_edges_[4];
@@ -36,10 +29,10 @@ public:
 			std::fill_n(in_edges_, 4, 0);
 		}
 	};
-private:
+
 	size_t CountPositive(size_t* a) {
 		size_t c = 0;
-		for (size_t i = 0; i < 3; ++i) {
+		for (size_t i = 0; i < 4; ++i) {
 			if (a[i] > 0) {
 				c++;
 			}
@@ -56,7 +49,7 @@ private:
 	template<size_t size2_>
 	void CountRead(const Seq<size2_>& read) {
 		Seq<size_> head = Seq<size_> (read);
-		for (size_t j = K; j < size2_; ++j) {
+		for (size_t j = size_; j < size2_; ++j) {
 			Seq<size_> tail = head << read[j];
 			addEdge(head, tail);
 			head = tail;
@@ -165,7 +158,7 @@ public:
 	}
 
 	template<size_t size2_, size_t count_>
-	void ConstructGraph(const vector<strobe_read<size2_, count_>> &v) {
+	void ConstructGraph(const vector<strobe_read<size2_, count_> > &v) {
 		for (size_t i = 0; i < v.size(); ++i) {
 			for (size_t r = 0; r < count_; ++r) {
 				CountRead<size2_> (v[i][r]);

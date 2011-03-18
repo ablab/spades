@@ -17,6 +17,8 @@
 
 using namespace std;
 
+#define HASH_SEED 239
+
 /**
  * Immutable ACGT-sequence with compile-time size.
  * It compress sequence to array of Ts (default: char).
@@ -249,7 +251,7 @@ public:
 		return size_;
 	}
 
-	template<int HASH_SEED>
+//	template<size_t HASH_SEED>
 	struct hash {
 		size_t operator()(const Seq<size_> &seq) const {
 			size_t h = HASH_SEED;

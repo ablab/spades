@@ -9,7 +9,6 @@
 #define LOGGING_HPP_
 
 #include "log4cxx/logger.h"
-#include <string>
 
 using namespace log4cxx;
 

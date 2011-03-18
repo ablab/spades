@@ -186,36 +186,36 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 
 	//resolving simple case InD=OutD and all edge is unique
 	//included in next step :)
-		forn(curVertId,VertexCount) {
-	 if ((graph.inD[curVertId]!=0)&&(graph.outD[curVertId]!=0))
-	 if ((graph.inD[curVertId]==EdgePairs[curVertId].size())&&(graph.outD[curVertId]==EdgePairs[curVertId].size()))
-	 {
-	 cerr<<"Process vertex "<<curVertId<<" IN "<<graph.inD[curVertId]<<" OUT "<<graph.outD[curVertId]<<" unique ways "<<EdgePairs[curVertId].size()<<endl;
-	 bool allPairUnique = true;
-	 forn(i,(EdgePairs[curVertId]).size()) {
-	 int CurIn = (EdgePairs[curVertId])[i].first;
-	 int CurOut = (EdgePairs[curVertId])[i].second;
-	 forn(j,(EdgePairs[curVertId]).size()) {
-	 if ((EdgePairs[curVertId])[j].first==CurIn)
-	 if ((EdgePairs[curVertId])[j].second!=CurOut) allPairUnique = false;
-	 if ((EdgePairs[curVertId])[j].second==CurOut)
-	 if ((EdgePairs[curVertId])[j].first!=CurIn) allPairUnique = false;
-	 }
-	 }
-	 forn(i,(EdgePairs[curVertId]).size()) {
-	 if (allPairUnique) {
-	 int CurIn = edgeRealId((EdgePairs[curVertId])[i].first, longEdges);
-	 int CurOut = edgeRealId((EdgePairs[curVertId])[i].second, longEdges);
-	 cerr<<"New inclusion "<<CurIn<<"("<<longEdges[CurIn]->FromVertex<<","<<longEdges[CurIn]->ToVertex<<") <- "<<CurOut<<"("<<longEdges[CurOut]->FromVertex<<","<<longEdges[CurOut]->ToVertex<<")"<<endl;
-	 longEdges[CurIn]->ExpandRight(*longEdges[CurOut]);
-	 longEdges[CurOut] = longEdges[CurIn];
-	 cerr<<"New edges "<<CurIn<<"("<<longEdges[CurIn]->FromVertex<<","<<longEdges[CurIn]->ToVertex<<") <- "<<CurOut<<"("<<longEdges[CurOut]->FromVertex<<","<<longEdges[CurOut]->ToVertex<<")"<<endl;
-	 graph.inD[curVertId]--;
-	 graph.outD[curVertId]--;
-	 }
-	 }
-	 }
-	 }
+	forn(curVertId,VertexCount) {
+	if ((graph.inD[curVertId]!=0)&&(graph.outD[curVertId]!=0))
+		if ((graph.inD[curVertId]==EdgePairs[curVertId].size())&&(graph.outD[curVertId]==EdgePairs[curVertId].size()))
+		{
+			cerr<<"Process vertex "<<curVertId<<" IN "<<graph.inD[curVertId]<<" OUT "<<graph.outD[curVertId]<<" unique ways "<<EdgePairs[curVertId].size()<<endl;
+			bool allPairUnique = true;
+			forn(i,(EdgePairs[curVertId]).size()) {
+				int CurIn = (EdgePairs[curVertId])[i].first;
+				int CurOut = (EdgePairs[curVertId])[i].second;
+				forn(j,(EdgePairs[curVertId]).size()) {
+					if ((EdgePairs[curVertId])[j].first==CurIn)
+						if ((EdgePairs[curVertId])[j].second!=CurOut) allPairUnique = false;
+					if ((EdgePairs[curVertId])[j].second==CurOut)
+						if ((EdgePairs[curVertId])[j].first!=CurIn) allPairUnique = false;
+				}
+			}
+			forn(i,(EdgePairs[curVertId]).size()) {
+				if (allPairUnique) {
+					int CurIn = edgeRealId((EdgePairs[curVertId])[i].first, longEdges);
+					int CurOut = edgeRealId((EdgePairs[curVertId])[i].second, longEdges);
+					cerr<<"New inclusion "<<CurIn<<"("<<longEdges[CurIn]->FromVertex<<","<<longEdges[CurIn]->ToVertex<<") <- "<<CurOut<<"("<<longEdges[CurOut]->FromVertex<<","<<longEdges[CurOut]->ToVertex<<")"<<endl;
+					longEdges[CurIn]->ExpandRight(*longEdges[CurOut]);
+					longEdges[CurOut] = longEdges[CurIn];
+					cerr<<"New edges "<<CurIn<<"("<<longEdges[CurIn]->FromVertex<<","<<longEdges[CurIn]->ToVertex<<") <- "<<CurOut<<"("<<longEdges[CurOut]->FromVertex<<","<<longEdges[CurOut]->ToVertex<<")"<<endl;
+					graph.inD[curVertId]--;
+					graph.outD[curVertId]--;
+				}
+			}
+		}
+	}
 
 	/* freopen("data/graph_after_obvious.dot", "w", stdout);
 	 outputLongEdges(longEdges);
