@@ -42,8 +42,8 @@ class DeBruijn {
 
 	typedef Data value;
 	//typedef google::sparse_hash_map<key, value,	typename key::hash, typename key::equal_to> hash_map;
-	typedef std::map<key, value, typename key::less> map_type;
-	//typedef std::tr1::unordered_map<key, value,	typename key::hash, typename key::equal_to> hash_map;
+//	typedef std::map<key, value, typename key::less> map_type;
+	typedef std::tr1::unordered_map<key, value,	typename key::hash, typename key::equal_to> map_type;
 	map_type nodes_;
 
 	template<size_t size2_>

@@ -197,5 +197,11 @@ void SimpleGraphVisualizer::Visualize(const Graph& g) {
 	gp_.output();
 }
 
+void ComplementGraphVisualizer::Visualize(const Graph& g) {
+	ComplementVisHandler h(gp_);
+	DFS(&g).Traverse(h);
+	gp_.output();
+}
+
 }
 
