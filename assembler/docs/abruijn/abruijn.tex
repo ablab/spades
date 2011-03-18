@@ -27,7 +27,9 @@ edge between some of its $k$-mers. For example, for
 reads {\tt ACGTACT} and {\tt TACTAGC} and $k=3$
 instead of all gray edges in the figure below we will have 
 only two black edges.
-\jpgpic{fig1}
+\begin{center}
+\includegraphics[width=\textwidth]{fig1.pdf}
+\end{center}
 The hope is that the resulting graph will be easier to handle 
 and at the same time it will have essentially the same structure 
 as the original de Bruijn graph.
@@ -56,11 +58,11 @@ Some natural properties that $h$ should hold are listed below.
 \subsection{Example}
 
 \begin{figure}
-\caption{De Bruijn (grey) and A Bruijn (black) graphs of a genome {\tt ACTGACTGTTGACACTG} ($readsize=9$, $k=5$).
+\caption{De Bruijn (grey) and A Bruijn (black) graphs of genomes {\tt ACTGACTGTTGACACTG} ($readsize=9$, $k=5$)
 and {\tt ATTGGTACATTGTGGTACGTACTGACT} ($readsize=11$, $k=5$).}\label{fig23}
-\begin{center}\includegraphics[height=0.5\textheight]{fig2.jpg}
+\begin{center}\includegraphics[height=0.5\textheight]{fig2.pdf}
 ~~~~~~~~~~~~~~
-\includegraphics[height=0.5\textheight]{fig3.jpg}\end{center}
+\includegraphics[height=0.5\textheight]{fig3.pdf}\end{center}
 \end{figure}
 
 Fig.~\ref{fig23} shows de Bruijn (black edges) and A Bruijn (grey edges) graphs for two toy genomes 
@@ -89,8 +91,8 @@ Fig.~\ref{fig4} shows the resulting A Bruijn graph for the first 10\% of the ref
 was used for this calculation.
 
 \begin{figure}
-\caption{10\% of E. Coli genome. K = 31. Two $k$-mers from each read.}\label{fig4}
-\begin{center}\includegraphics[height=0.9\textheight]{fig4.jpg}\end{center}
+\caption{10\% of E. Coli genome. $K$ = 31. Two $k$-mers from each read.}\label{fig4}
+\begin{center}\includegraphics[height=0.9\textheight]{fig4.pdf}\end{center}
 \end{figure}
 
 This graph has only undergone a simple vertex-merging procedure; there are more

@@ -12,7 +12,7 @@ string decompress(ll a, int l);
 ll extractMer(char *read, int shift, int length);
 void addPairToTable(myMap& table, ll upper, ll lower);
 int pairsToLmers(string inputFile, string outputFile);
-
+void initGlobal();
 
 
 #endif /* CONSTRUCTHASHTABLE_HPP_ */
