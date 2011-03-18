@@ -19,7 +19,6 @@
 #include "nucl.hpp"
 #include "debruijn.hpp"
 #include "strobe_read.hpp"
-#include <iostream>
 
 using namespace std;
 

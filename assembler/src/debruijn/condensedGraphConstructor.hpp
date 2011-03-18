@@ -210,13 +210,13 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 
 	DeBruijn<kmer_size_>& origin_;
 
-	bool StepLeftIfPossible(Kmer &kmer, Kmer initial_kmer) {
+	bool StepLeftIfPossible(Kmer &kmer) {
 		if (origin_.PrevCount(kmer) == 1) {
 			Kmer prev_kmer = *(origin_.begin_prev(kmer));
 			DEBUG("Prev kmer " << prev_kmer);
 			DEBUG("Next Count of prev " << origin_.NextCount(prev_kmer));
-			if (origin_.NextCount(prev_kmer) == 1 && kmer != !prev_kmer
-					&& prev_kmer != initial_kmer) {
+			assert(origin_.NextCount(prev_kmer) > 0);
+			if (origin_.NextCount(prev_kmer) == 1 && kmer != !prev_kmer) {
 				kmer = prev_kmer;
 				return true;
 			}
@@ -224,16 +224,14 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 		return false;
 	}
 
-	bool StepRightIfPossible(Kmer &kmer, Kmer initial_kmer,
-			SequenceBuilder &s) {
+	bool StepRightIfPossible(Kmer &kmer) {
 		if (origin_.NextCount(kmer) == 1) {
 			Kmer next_kmer = *(origin_.begin_next(kmer));
-			//			DEBUG("Next kmer " << next_kmer);
-			//			DEBUG("Prev Count of next " << origin_.PrevCount(next_kmer));
-			if (origin_.PrevCount(next_kmer) == 1 && kmer != !next_kmer
-					&& next_kmer != initial_kmer) {
+			DEBUG("Next kmer " << next_kmer);
+			DEBUG("Prev Count of next " << origin_.PrevCount(next_kmer));
+			assert(origin_.PrevCount(next_kmer) > 0);
+			if (origin_.PrevCount(next_kmer) == 1 && kmer != !next_kmer) {
 				kmer = next_kmer;
-				s.append(kmer[kmer_size_ - 1]);
 				return true;
 			}
 		}
@@ -246,7 +244,7 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 
 		DEBUG("Prev Count " << origin_.PrevCount(kmer));
 		//go left while can
-		while (StepLeftIfPossible(kmer, initial_kmer)) {
+		while (StepLeftIfPossible(kmer) && kmer != initial_kmer) {
 			//todo comment
 		}
 		DEBUG("Stopped going left at " << kmer);
@@ -256,14 +254,15 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 	//go right, appending sequence
 	Sequence ConstructSeqGoingRight(Kmer kmer) {
 		SequenceBuilder s;
-		Kmer initial_kmer = kmer;
 		s.append(kmer);
+		Kmer initial_kmer = kmer;
 
-		//		DEBUG("Next Count " << origin_.NextCount(kmer));
-		while (StepRightIfPossible(kmer, initial_kmer, s)) {
+		DEBUG("Next Count " << origin_.NextCount(kmer));
+		while (StepRightIfPossible(kmer) && kmer != initial_kmer) {
 			//todo comment
+			s.append(kmer[kmer_size_ - 1]);
 		}
-		//		DEBUG("Stopped going right at " << kmer);
+		DEBUG("Stopped going right at " << kmer);
 		return s.BuildSequence();
 	}
 
@@ -294,6 +293,7 @@ public:
 
 	}
 	virtual void ConstructGraph(Graph* &g, SimpleHashTable<kmer_size_>* &h) {
+
 		for (typename debruijn::kmer_iterator it = origin_.kmer_begin(), end =
 				origin_.kmer_end(); it != end; it++) {
 			Kmer kmer = *it;

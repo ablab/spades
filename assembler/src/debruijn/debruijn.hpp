@@ -11,15 +11,14 @@
 #include "seq.hpp"
 #include "strobe_read.hpp"
 #include <google/sparse_hash_map> // ./configure, make and sudo make install from libs/sparsehash-1.10
-#include <iostream> // for debug
 #include <map>
 #include <vector>
 #include <tr1/unordered_map>
 
 template<size_t size_>
 class DeBruijn {
-public:
 	typedef Seq<size_> key;
+
 	class Data {
 		size_t out_edges_[4];
 		size_t in_edges_[4];
@@ -30,10 +29,10 @@ public:
 			std::fill_n(in_edges_, 4, 0);
 		}
 	};
-private:
+
 	size_t CountPositive(size_t* a) {
 		size_t c = 0;
-		for (size_t i = 0; i < 3; ++i) {
+		for (size_t i = 0; i < 4; ++i) {
 			if (a[i] > 0) {
 				c++;
 			}

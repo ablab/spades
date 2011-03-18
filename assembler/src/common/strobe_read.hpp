@@ -9,7 +9,6 @@
 #define STROBE_READ_HPP_
 
 #include "seq.hpp"
-#include <iostream>
 using namespace std;
 
 /*
