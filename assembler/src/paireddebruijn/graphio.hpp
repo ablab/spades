@@ -4,6 +4,7 @@
 #include "pairedGraph.hpp"
 using namespace paired_assembler;
 
+
 void codeRead(char *read, char *code);
 
 void outputLongEdges(longEdgesMap &longEdges);
