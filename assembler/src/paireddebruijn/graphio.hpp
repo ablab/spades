@@ -44,8 +44,8 @@ public:
 	void close();
 };
 
-void save(FILE* f, PairedGraph &g, longEdgesMap &longEdges, int &VertexCount, int EdgeId);
+void save(char *fileName, PairedGraph &g, longEdgesMap &longEdges, int &VertexCount, int EdgeId);
 
-void load(FILE* f, PairedGraph &g, longEdgesMap &longEdges, int &VertexCount, int EdgeId);
+void load(char *fileName, PairedGraph &g, longEdgesMap &longEdges, int &VertexCount, int EdgeId);
 
 #endif /* IOPROCEDURES_HPP_ */

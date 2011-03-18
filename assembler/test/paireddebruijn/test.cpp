@@ -1,17 +1,18 @@
 #include "cute.h"
 #include "ide_listener.h"
 #include "cute_runner.h"
-#include "hashTableTest.hpp"
-#include "graphConstructionTest.hpp"
+//#include "hashTableTest.hpp"
+//#include "graphConstructionTest.hpp"
+#include "graphioTest.hpp"
 
 void runSuite() {
 	cute::suite s;
 	//TODO add your test here
-	s += HashTableSuite();
-	s += CheckStoreVertexSuite();
-	s += CheckUniqueWaySuite();
-	s += GoUniqueWaySuite();
-
+//	s += HashTableSuite();
+//	s += CheckStoreVertexSuite();
+//	s += CheckUniqueWaySuite();
+//	s += GoUniqueWaySuite();
+	s += GraphioSuite();
 	cute::ide_listener lis;
 	cute::makeRunner(lis)(s, "The Suite");
 }

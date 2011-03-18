@@ -248,6 +248,16 @@ public:
 	virtual void Visualize(const Graph& g);
 };
 
+class ComplementGraphVisualizer: public GraphVisualizer {
+	gvis::PairedGraphPrinter<const Vertex*>& gp_;
+public:
+	ComplementGraphVisualizer(gvis::PairedGraphPrinter<const Vertex*>& gp) :
+		gp_(gp) {
+	}
+
+	virtual void Visualize(const Graph& g);
+};
+
 class SimpleStatCounter: public Traversal::Handler {
 	size_t v_count_;
 	size_t e_count_;
@@ -301,6 +311,30 @@ public:
 
 	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
 		pr_.addEdge(v1, v2, "");
+	}
+
+};
+
+class ComplementVisHandler: public Traversal::Handler {
+	gvis::PairedGraphPrinter<const Vertex*>& pr_;
+public:
+
+	ComplementVisHandler(gvis::PairedGraphPrinter<const Vertex*>& pr) :
+		pr_(pr) {
+	}
+
+	virtual void HandleStartVertex(const Vertex* v) {
+		stringstream ss;
+		ss << v->nucls().size();
+
+		//todo delete after debug
+		stringstream ss2;
+		ss2 << v->complement()->nucls().size();
+		pr_.addVertex(v, ss.str(), v->complement(), ss2.str());
+	}
+
+	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
+		pr_.addEdge(make_pair(v1, v1->complement()), make_pair(v2, v2->complement()), "");
 	}
 
 };
