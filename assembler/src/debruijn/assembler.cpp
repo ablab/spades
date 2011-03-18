@@ -18,19 +18,18 @@
 #include <string>
 #include <stdio.h>
 
-#define K 5//25
+#define K 31//5//25
 //todo make separate class to construct graph and remove R from here!!!
 // read size:
-#define R 9//100
-#define N 9//100//11//100
+#define R 100//9//100
 
 using namespace std;
 
 // input files:
-//#define filename1 "./data/MG1655-K12_emul1.fasta.gz"
-//#define filename2 "./data/MG1655-K12_emul2.fasta.gz"
-#define filename1 "./test/data/s_6_1.fastq.gz"
-#define filename2 "./test/data/s_6_2.fastq.gz"
+#define filename1 "./data/MG1655-K12_emul1.fasta.gz"
+#define filename2 "./data/MG1655-K12_emul2.fasta.gz"
+//#define filename1 "./test/data/s_6_1.fastq.gz"
+//#define filename2 "./test/data/s_6_2.fastq.gz"
 
 int main(int argc, char *argv[]) {
 	cerr << "Hello, I am assembler!" << endl;
@@ -40,7 +39,7 @@ int main(int argc, char *argv[]) {
 
 	cerr << "Reading " << filename1 << " and " << filename2 << "..." << endl;
 	ireadstream<R, 2, int> irs(filename1, filename2);
-	vector<mate_read<R, int>::type> *v = irs.readAll(30000); // read not all `reads` (for faster debug)
+	vector<mate_read<R, int>::type> *v = irs.readAll(600000/*30000*/); // read not all `reads` (for faster debug)
 	irs.close();
 	cerr << "Total reads (mate, without Ns): " << v->size() << endl;
 	cerr << "Current time: " << (time(NULL) - now) << " sec." << endl;
@@ -56,9 +55,9 @@ int main(int argc, char *argv[]) {
 	g_c.ConstructGraph(g, index);
 	fstream filestr;
 	filestr.open("graph.dot", fstream::out);
-	gvis::GraphPrinter<const condensed_graph::Vertex*> gp(
-			"simulated data graph", filestr);
-	condensed_graph::SimpleGraphVisualizer gv(gp);
+	gvis::PairedGraphPrinter<const condensed_graph::Vertex*> gp(
+			"simulated_data_graph", filestr);
+	condensed_graph::ComplementGraphVisualizer gv(gp);
 	gv.Visualize(*g);
 	filestr.close();
 
