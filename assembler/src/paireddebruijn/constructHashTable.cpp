@@ -10,11 +10,12 @@ typedef vector<Sequence*> downSeqs;
 
 int totalKmers = 0;
 int uniqPairs = 0;
-ll upperMask = (((ll) 1) << (2 * k)) - 1;
-ll lowerMask = (((ll) 1) << (2 * l)) - 1;
-
-ll upperMax = ((ll) 1) << 46;
 const int MAXLMERSIZE = 10000;
+ll upperMask;
+ll lowerMask;
+
+ll upperMax;
+
 
 /*void testSequence(){
 	srand(239);
@@ -32,6 +33,13 @@ const int MAXLMERSIZE = 10000;
 	}
 }*/
 //toDo
+void initGlobal(){
+	upperMask = (((ll) 1) << (2 * k)) - 1;
+	lowerMask = (((ll) 1) << (2 * l)) - 1;
+
+	upperMax = ((ll) 1) << 46;
+
+}
 downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 	downSeqs res;
 	res.clear();
@@ -396,11 +404,12 @@ int pairsToLmers(string inputFile, string outputFile) {
 		count++;
 		ok = fscanf(inFile, "%lld %d", &kmer, &lsize);
 		if (ok != 2) {
-			if (ok != 0)
+			if (ok > 0) {
 				cerr<< "error in reads.";
+				break;
+			}
 			else
 				cerr << "Finished!!";
-			break;
 		}
 		if (lsize > MAXLMERSIZE) {
 			cerr << "TOO BIIIIG";
@@ -423,6 +432,7 @@ int pairsToLmers(string inputFile, string outputFile) {
 	for(set<ll>::iterator i = lset.begin(); i != lset.end(); i++ ) {
 		fprintf(outFile, "%lld ", *i);
 	}
+	fclose(outFile);
 	return 0;
 }
 
@@ -442,6 +452,7 @@ void readLmersSet(string lmerFile, set<long long > & lset)
 int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
     int ok = 1;
+    cerr << endl << inputFile << endl;
     set<ll> lset;
     readLmersSet(lmerFile, lset);
     ll lmers[MAXLMERSIZE];
