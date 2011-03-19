@@ -1,6 +1,7 @@
 #include "common.hpp"
 #include "sequence.hpp"
 #include "constructHashTable.hpp"
+#include "graphio.hpp"
 
 using namespace std;
 
@@ -9,39 +10,13 @@ typedef vector<Sequence*> downSeqs;
 
 int totalKmers = 0;
 int uniqPairs = 0;
-ll upperMask = (((ll) 1) << (2 * k)) - 1;
-ll lowerMask = (((ll) 1) << (2 * l)) - 1;
-
-ll upperMax = ((ll) 1) << 46;
 const int MAXLMERSIZE = 10000;
+ll upperMask;
+ll lowerMask;
 
-string decompress(ll a, int l) {
+ll upperMax;
 
-	string res = "";
-	res.reserve(l);
-	forn(i,l)
-		res += " ";
-	forn(i, l) {
-		res[l - i - 1] = nucl((a & 3));
-		a >>= 2;
-	}
-	return res;
-}
 
-inline int codeNucleotide(char a) {
-	if (a == 'A')
-		return 0;
-	else if (a == 'C')
-		return 1;
-	else if (a == 'G')
-		return 2;
-	else if (a == 'T')
-		return 3;
-	else {
-		std::cerr << "oops!";
-		return -1;
-	}
-}
 /*void testSequence(){
 	srand(239);
 	forn(i, 1000) {
@@ -57,13 +32,14 @@ inline int codeNucleotide(char a) {
 
 	}
 }*/
-void codeRead(char *read, char *code) {
-	for (int i = 0; i < readLength; i++) {
-		code[i] = codeNucleotide(read[i]);
-	}
-}
-
 //toDo
+void initGlobal(){
+	upperMask = (((ll) 1) << (2 * k)) - 1;
+	lowerMask = (((ll) 1) << (2 * l)) - 1;
+
+	upperMax = ((ll) 1) << 46;
+
+}
 downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 	downSeqs res;
 	res.clear();
@@ -316,15 +292,6 @@ downSeqs clusterize(ll* a, int size, int max_shift) {
 	return res;
 }*/
 
-ll extractMer(char *read, int shift, int length) {
-	ll res = 0;
-	for (int i = 0; i < length; i++) {
-		res = res << 2;
-		res += read[shift + i];
-	}
-	return res;
-}
-
 inline bool checkBoundsForUpper(ll upper) {
 	return true;
 	if ((upper >= 1<<20) && (upper < upperMax))
@@ -437,11 +404,12 @@ int pairsToLmers(string inputFile, string outputFile) {
 		count++;
 		ok = fscanf(inFile, "%lld %d", &kmer, &lsize);
 		if (ok != 2) {
-			if (ok != 0)
+			if (ok > 0) {
 				cerr<< "error in reads.";
+				break;
+			}
 			else
 				cerr << "Finished!!";
-			break;
 		}
 		if (lsize > MAXLMERSIZE) {
 			cerr << "TOO BIIIIG";
@@ -464,6 +432,7 @@ int pairsToLmers(string inputFile, string outputFile) {
 	for(set<ll>::iterator i = lset.begin(); i != lset.end(); i++ ) {
 		fprintf(outFile, "%lld ", *i);
 	}
+	fclose(outFile);
 	return 0;
 }
 
@@ -483,6 +452,7 @@ void readLmersSet(string lmerFile, set<long long > & lset)
 int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
     int ok = 1;
+    cerr << endl << inputFile << endl;
     set<ll> lset;
     readLmersSet(lmerFile, lset);
     ll lmers[MAXLMERSIZE];

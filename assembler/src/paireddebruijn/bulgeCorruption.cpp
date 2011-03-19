@@ -3,7 +3,7 @@
 #include "map"
 
 #define SIMILARITY_BOUND 2
-#define MAX_GLUE_LENGTH 100
+#define MAX_GLUE_LENGTH 500
 
 using namespace paired_assembler;
 
@@ -28,7 +28,7 @@ int hamming(Sequence &s1, Sequence &s2) {
 bool similar(Edge e1, Edge e2, int bound, int maxLength) {
 	return e1.upper->size() == e2.upper->size() && e1.upper->size()
 			<= maxLength && hamming(*(e1.upper), *(e2.upper)) + hamming(
-			*(e1.upper), *(e2.upper)) <= bound;
+			*(e1.lower), *(e2.lower)) <= bound;
 }
 
 void removeSimilarEdges(vector<pair<int, Edge *> > edges){

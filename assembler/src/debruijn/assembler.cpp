@@ -7,6 +7,7 @@
 
 #include "ireadstream.hpp"
 #include "condensedGraph.hpp"
+#include "condensedGraphConstructor.hpp"
 #include "debruijn.hpp"
 #include <cassert>
 #include <iostream>
@@ -16,6 +17,11 @@
 #include <ctime>
 #include <string>
 #include <stdio.h>
+
+#define K 31//5//25
+//todo make separate class to construct graph and remove R from here!!!
+// read size:
+#define R 100//9//100
 
 using namespace std;
 
@@ -32,53 +38,52 @@ int main(int argc, char *argv[]) {
 	// read all 'read's
 
 	cerr << "Reading " << filename1 << " and " << filename2 << "..." << endl;
-	ireadstream<R,2,int> irs(filename1, filename2);
-	vector<mate_read<R,int>::type> *v = irs.readAll(30000); // read not all `reads` (for faster debug)
+	ireadstream<R, 2, int> irs(filename1, filename2);
+	vector<mate_read<R, int>::type> *v = irs.readAll(600000/*30000*/); // read not all `reads` (for faster debug)
 	irs.close();
 	cerr << "Total reads (mate, without Ns): " << v->size() << endl;
 	cerr << "Current time: " << (time(NULL) - now) << " sec." << endl;
 
 	// construct graph
 
-	time_t now2 = time(NULL);
-	condensed_graph::Graph g;
-	for (size_t i = 0; i < v->size(); ++i) {
-		if (i % 10000 == 0) {
-			cerr << "mate reads: " << i << ", time: " << (time(NULL) - now2) << endl;
-		}
-		g.ThreadRead((*v)[i][0]);
-		g.ThreadRead((*v)[i][1]);
-	}
+	DeBruijn<K> debruijn;
+	debruijn.ConstructGraph(*v);
+	condensed_graph::CondenseConstructor<K> g_c(debruijn);
 
+	condensed_graph::Graph *g;
+	condensed_graph::SimpleHashTable<K> *index;
+	g_c.ConstructGraph(g, index);
 	fstream filestr;
 	filestr.open("graph.dot", fstream::out);
-	gvis::GraphPrinter<condensed_graph::Vertex*> gp("simulated data graph", filestr);
-	condensed_graph::SimpleGraphVisualizer gv(gp);
-	gv.Visualize(g);
+	gvis::PairedGraphPrinter<const condensed_graph::Vertex*> gp(
+			"simulated_data_graph", filestr);
+	condensed_graph::ComplementGraphVisualizer gv(gp);
+	gv.Visualize(*g);
 	filestr.close();
 
 	condensed_graph::DFS dfs(g);
-	condensed_graph::SimpleStatCounter h;
-	dfs.Traverse(h);
-	cerr<<"Vertex count="<<h.v_count()<<"; Edge count="<<h.e_count() << endl;
+	condensed_graph::SimpleStatCounter stat_c;
+	dfs.Traverse(stat_c);
+	cerr << "Vertex count=" << stat_c.v_count() << "; Edge count="
+			<< stat_c.e_count() << endl;
 
 	/*
 	 * Simple de Bruijn graph construction:
 	 */
 	/*cerr << "Constructing de Bruijn graph..." << endl;
-	DeBruijn<K> *graph = new DeBruijn<K>();
-	for (size_t i = 0; i < v->size(); ++i) {
-		for (size_t r = 0; r < 2; ++r) {
-			Seq<R> read = v->operator[](i)[r];
-			Seq<K> head = Seq<K>(read);
-			for (size_t j = K; j < R; ++j) {
-				Seq<K> tail = head << read[j];
-				graph->addEdge(head, tail);
-				head = tail;
-			}
-		}
-	}
-	cerr << "Total nodes: " << graph->size() << endl;*/
+	 DeBruijn<K> *graph = new DeBruijn<K>();
+	 for (size_t i = 0; i < v->size(); ++i) {
+	 for (size_t r = 0; r < 2; ++r) {
+	 Seq<R> read = v->operator[](i)[r];
+	 Seq<K> head = Seq<K>(read);
+	 for (size_t j = K; j < R; ++j) {
+	 Seq<K> tail = head << read[j];
+	 graph->addEdge(head, tail);
+	 head = tail;
+	 }
+	 }
+	 }
+	 cerr << "Total nodes: " << graph->size() << endl;*/
 	cerr << "Current time: " << (time(NULL) - now) << " sec." << endl;
 
 	// simplify graph

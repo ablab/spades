@@ -57,6 +57,7 @@ Sequence Sequence::operator!() const {
 //including from, excluding to
 //safe if not #DEFINE NDEBUG
 Sequence Sequence::Subseq(size_t from, size_t to) const {
+//	cerr << endl<<"subseq:" <<   from <<" " << to << " " <<  this->str() << endl;
 	assert(to >= from);
 	assert(from >= 0);
 	assert(to <= size_);
@@ -85,6 +86,7 @@ int Sequence::find(const Sequence &t, int from) const {
 
 // 0 - undirected similarity, 1: t extends this to right, -1: this extends t
 int Sequence::similar(const Sequence &t, int k, char directed) const {
+//	cerr << endl << t.str()<< "similar started" <<k << endl;
 	int result = 0;
 	if (directed != -1)
 		result |= rightSimilar(t, k);
