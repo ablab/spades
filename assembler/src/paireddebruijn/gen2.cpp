@@ -1,5 +1,6 @@
 //---------------------------------------------------------------------------
 #include <stdio.h>
+#include <stdlib.h>
 #pragma hdrstop
 
 //---------------------------------------------------------------------------
@@ -34,7 +35,8 @@ while (t<5) {
   Genome[i] = fgetc(in);
 }
 //i=1000;
-INSERT_LENGTH = 100;
+int genome_length =i;
+INSERT_LENGTH = 200;
 for(j=0; j<i-(2*READ_LENGTH+INSERT_LENGTH); j++) {
  // printf(out1, "%i ",INSERT_LENGTH);
   ch1 = Genome[j+READ_LENGTH];
@@ -46,7 +48,7 @@ for(j=0; j<i-(2*READ_LENGTH+INSERT_LENGTH); j++) {
   Genome[j+READ_LENGTH]=ch1;
   Genome[j+2*READ_LENGTH+INSERT_LENGTH]=ch2;
 
-  switch(rand()%11) { 
+/*  switch(rand()%11) {
     case 0:
     case 1:
     case 2: INSERT_LENGTH = 100; break;
@@ -59,6 +61,7 @@ for(j=0; j<i-(2*READ_LENGTH+INSERT_LENGTH); j++) {
     case 9: INSERT_LENGTH = 97; break;
     case 10:INSERT_LENGTH = 103; break;
   }
+*/
 }
 
 fclose(out1);

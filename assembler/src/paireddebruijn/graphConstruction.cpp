@@ -141,6 +141,9 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 				int length = 1;
 				count++;
 //				cerr << count << endl;
+				if (((iter->se)[i])->lower->size() < l) {
+					cerr<<"Bad edge: "<<((iter->se)[i])->lower->size()<<" "<<((iter->se)[i])->lower->str()<<endl;
+				}
 				assert (((iter->se)[i])->lower->size() >= l);
 				sprintf(EdgeStr + 500000, "%s", decompress(kmer, k).c_str());
 				sprintf(EdgeStrLo + 500000, "%s",

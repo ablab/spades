@@ -394,6 +394,7 @@ int pairsToLmers(string inputFile, string outputFile) {
 	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
 	FILE* outFile = fopen(outputFile.c_str(), "w");
 
+	cerr<<"pairsToLmers "<<inputFile.c_str()<<"->"<<outputFile.c_str()<<endl;
 	int ok = 1;
 	ll kmer; int lsize;
 	ll lmers[MAXLMERSIZE];
@@ -408,8 +409,10 @@ int pairsToLmers(string inputFile, string outputFile) {
 				cerr<< "error in reads.";
 				break;
 			}
-			else
+			else {
 				cerr << "Finished!!";
+				break;
+			}
 		}
 		if (lsize > MAXLMERSIZE) {
 			cerr << "TOO BIIIIG";

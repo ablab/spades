@@ -40,6 +40,8 @@ void initConstants(string ini_file) {
 	parsed_reads = folder + string(tmp) + d_desc + ".txt";
 	assert(fscanf(ini, "parsed_k_l_mers = %s\n" , tmp) == 1);
 	parsed_k_l_mers = folder + string(tmp) + suff + ".txt";
+	assert(fscanf(ini, "parsed_l_mers = %s\n" , tmp) == 1);
+	parsed_l_mers = folder + string(tmp) + suff + ".txt";
 	assert(fscanf(ini, "parsed_k_sequence = %s\n" , tmp) == 1);
 	parsed_k_sequence = folder + string(tmp) + suff + ".txt";
 	cerr << parsed_reads;
