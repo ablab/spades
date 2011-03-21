@@ -66,4 +66,10 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph, int &Vert
 	}
 	return res;
 }
-
+/* countEdgesDistintion
+ * @params:
+ *
+ */
+int vertexDist(){
+	return 0;
+}

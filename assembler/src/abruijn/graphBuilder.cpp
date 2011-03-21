@@ -84,7 +84,7 @@ void processReadA(Seq<MPSIZE> r) {
 
 void selectGood() {
 //    for (SeqCount::iterator p = seqCount.begin(); p != seqCount.end(); ++p) {
-//    	graph.createVertex(&(p->first));
+//    	graph.createVertex(&(p->finputStreamt));
 //	}
 }
 
@@ -131,30 +131,30 @@ void GraphBuilder::build() {
 
 	INFO("Processing-A...");
 	mate_read<MPSIZE>::type mp;
-	for (int i = 0; !irs.eof() && i < CUT; i++) {
-		irs >> mp;
+	for (int i = 0; !inputStream.eof() && i < CUT; i++) {
+		inputStream >> mp;
 		processReadA(mp[0]);
 		processReadA(mp[1]);
 		VERBOSE(i, " reads read");
 	}
-	irs.reset();
-	INFO("processReadA done: " << goodHashes.size() << " vertex-pairs");
+	inputStream.reset();
+	INFO("processReadA done: " << goodHashes.size() << " vertex-painputStream");
 
 	INFO("Selecting good kmers...");
 	selectGood();
 
 	INFO("Processing-B...");
-	for (int i = 0; !irs.eof() && i < CUT; i++) {
-		irs >> mp;
+	for (int i = 0; !inputStream.eof() && i < CUT; i++) {
+		inputStream >> mp;
 		processReadB(mp[0]);
 		processReadB(mp[1]);
 		VERBOSE(i, " reads processed");
 	}
-	irs.close();
+	inputStream.close();
 
 	INFO("Condensing graph...");
 	condenseA();
 
 	INFO("Outputting graph to " << OUTPUT_FILE);
-	graph.output(OUTPUT_FILE + ".dot");
+	graph.output(outputStream);
 }
