@@ -23,10 +23,14 @@ using namespace std;
 // Value size_t init_length is the initial length of the whole structure.
 // Value size_t max_loop determines the maximum number of kick cycles during 
 // insertion before rehash.
+// Value size_t increment determines the increment of length of the whole
+// structure. Actual increment may be a bit more than value determined. 
+// If it is equal to 0, increment on each rehash is equal to 1.2 of
+// the current length.
 // Example of use: 
-// cuckoo<int, int, Hasher, std::equal_to<int>, 4, 10, 100> Cuckoo; 
+// cuckoo<int, int, Hasher, std::equal_to<int>, 4, 10, 50, 20> Cuckoo; 
 template <class Key, class Value, class Hash, class Pred, size_t d = 3, 
-	  size_t init_length = 15, size_t max_loop = 100>
+	  size_t init_length = 15, size_t max_loop = 100, size_t increment = 0>
 class cuckoo {
 private:
   struct Data {
@@ -103,7 +107,11 @@ private:
   }
   
   void rehash() {
-    len_part_ = len_part_ * 6 / 5 + 1;
+    if (increment == 0) {
+      len_part_ = len_part_ * 6 / 5 + 1;
+    } else {
+      len_part_ = len_part_ + increment / d + 1;
+    }
     len_ = len_part_ * d;
     for (size_t i = 0; i < d; ++i) {
       (*(data_[i])).resize(len_part_);
