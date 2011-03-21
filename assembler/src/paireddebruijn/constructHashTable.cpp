@@ -447,6 +447,7 @@ void readLmersSet(string lmerFile, set<long long > & lset)
 		if (ok != 1) cerr << "Error in Lmers reading";
 		lset.insert(tmp);
 	}
+    fclose(lFile);
 }
 
 int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
@@ -497,6 +498,8 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 		}
 #endif
 		forn(i, clsize) {
+			assert(l == 31);
+			assert(outstring.size() >= 31);
 			outstring = clusters[i]->str();
 			fprintf(outFile, "%s ",outstring.c_str());
 		}
@@ -509,5 +512,7 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 			cerr<< "k-sequence pairs for k "<< count <<" generated" <<endl;
 	}
 	cerr<<"finished";
+	fclose(outFile);
+	fclose(inFile);
 	return 0;
 }
