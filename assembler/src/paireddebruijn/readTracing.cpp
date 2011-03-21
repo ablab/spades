@@ -1,5 +1,6 @@
 #include "common.hpp"
 #include "pairedGraph.hpp"
+#include "graphSimplification.hpp"
 #include "graphio.hpp"
 
 using namespace paired_assembler;
@@ -183,9 +184,10 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 			}
 		}
 	}
-
+/*
 	//resolving simple case InD=OutD and all edge is unique
 	//included in next step :)
+
 	forn(curVertId,VertexCount) {
 	if ((graph.inD[curVertId]!=0)&&(graph.outD[curVertId]!=0))
 		if ((graph.inD[curVertId]==EdgePairs[curVertId].size())&&(graph.outD[curVertId]==EdgePairs[curVertId].size()))
@@ -217,15 +219,17 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 		}
 	}
 
-	/* freopen("data/graph_after_obvious.dot", "w", stdout);
+	 freopen("data/graph_after_obvious.dot", "w", stdout);
 	 outputLongEdges(longEdges);
-
+*/
 	//resolve multi case;
 	int FakeVertexCount = VertexCount;
 	int FakeVertexStart = VertexCount;
 	map<int, int> FakeVertexToReal;
 	forn(curVertId,VertexCount) {
 		if ((graph.inD[curVertId]!=0)&&(graph.outD[curVertId]!=0)) {
+			pair<int, int> vDist = vertexDist(longEdges,graph,curVertId);
+			if (vDist.first+vDist.second-k+1<k)
 			if ((graph.inD[curVertId]<=EdgePairs[curVertId].size())&&(graph.outD[curVertId]<=EdgePairs[curVertId].size())) {
 				bool allIns = false;
 				bool allOuts = false;
@@ -321,5 +325,5 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	VertexCount = FakeVertexStart;
 	freopen("data/graph_after_fake.dot", "w", stdout);
 	outputLongEdges(longEdges);
-*/
+
 }

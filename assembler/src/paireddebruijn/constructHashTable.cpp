@@ -469,8 +469,10 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 		count++;
 		ok = fscanf(inFile, "%lld %d", &kmer, &lsize);
 		if (ok != 2) {
-			if (ok != 0)
+			if (ok > 0) {
 				cerr<< "error in reads.";
+				assert(0);
+			}
 			else
 				cerr << "Finished!!";
 			break;
