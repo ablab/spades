@@ -27,26 +27,21 @@ public:
 	void addLength(int len) {
 		lengths_[len]++;
 	}
-
-	string toString() {
-		stringstream ss;
-		for (map<size_t, int>::iterator it = lengths_.begin(); it != lengths_.end(); ++it) {
-			ss << " " << it->first << " {" << it->second << "};";
-		}
-		return ss.str();
-	}
 };
 
+ostream& operator<< (ostream& os, const Edge& e);
+
 class Vertex {
-	const Sequence* data_;
+	const Sequence data_;
 	int size_;
+	friend ostream& operator<<(ostream&, const Vertex&);
 public:
 	Vertex* complement_;
 	typedef map<Vertex*, Edge> Edges;
 	Edges edges_;
-	Vertex(const Sequence* kmer) : data_(kmer), size_(kmer->size()) {};
+	Vertex(const Sequence& kmer) : data_(kmer), size_(kmer.size()) {};
 
-	int size() {
+	int size() const {
 		return size_;
 	}
 	//TODO trash
@@ -62,15 +57,15 @@ public:
 		return edges_.size();
 	}
 
-	bool is(const Sequence* kmer) {
-		return (*data_) == (*kmer);
+	const Sequence data() {
+		return data_;
 	}
 
 	string str() {
-		return data_->str();
+		return data_.str();
 	}
 
-	Sequence* concat(Vertex* u) {
+	const Sequence concat(Vertex* u) {
 		SequenceBuilder sb;
 //		size_t sum = data_->size() + u->data_->size();
 //		sb.append(*(v->kmer_));
@@ -86,9 +81,9 @@ public:
 //		assert(sb.size() == len);
 //		return new Sequence(sb.BuildSequence());
 
-		sb.append(data_->Subseq(0, K / 2));
-		sb.append(u->data_->Subseq(u->data_->size() - K / 2));
-		return new Sequence(sb.BuildSequence());
+		sb.append(data_.Subseq(0, K / 2));
+		sb.append(u->data_.Subseq(u->data_.size() - K / 2));
+		return sb.BuildSequence();
 
 //		for (int i = 0; i < K / 2; i++) {
 //			sb.append(data_->operator [](i));
@@ -101,18 +96,9 @@ public:
 //		}
 //		return sb.BuildSequence();
 	}
-
-
-
-	string toString() {
-		#ifdef OUTPUT_PAIRED
-			return data_->Subseq(0, LABEL).str() + "_" + itoa(size());
-		#endif
-		#ifndef OUTPUT_PAIRED
-			return data_->Subseq(0, LABEL).str() + "_" + itoa(size()) + "_"+ data_->Subseq(data_->size() - LABEL).str();
-		#endif
-	}
 };
+
+ostream& operator<< (ostream& os, const Vertex& e);
 
 class Graph {
 public:
@@ -123,13 +109,13 @@ public:
 	Vertices vertices;
 
 	Graph() {}
-	Vertex* createVertex(const Sequence* kmer);
-	Vertex* createVertex(const Sequence* kmer, size_t size);
+	Vertex* createVertex(const Sequence& kmer);
+	Vertex* createVertex(const Sequence& kmer, size_t size);
 	void addEdge(Vertex* from, Vertex* to, int len);
 	void removeVertex(Vertex* v);
 	void removeVertex_single(Vertex* v);
-	bool hasVertex(const Sequence* kmer);
-	Vertex* getVertex(const Sequence kmer);
+	bool hasVertex(const Sequence& kmer);
+	Vertex* getVertex(const Sequence& kmer);
 
 	Vertex* condense(Vertex* v);
 

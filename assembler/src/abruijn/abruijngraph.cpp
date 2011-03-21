@@ -10,18 +10,37 @@ LOGGER("a.graph");
 
 using namespace abruijn;
 
-Vertex* Graph::createVertex(const Sequence* kmer) {
-	LOG_ASSERT(!hasVertex(kmer), "already contains " << kmer->str());
+namespace abruijn {
+
+ostream& operator<< (ostream& os, const Edge& e) {
+	for (map<size_t, int>::const_iterator it = e.lengths_.begin(); it != e.lengths_.end(); ++it) {
+		os << " " << it->first << " {" << it->second << "};";
+	}
+	return os;
+}
+
+ostream& operator<< (ostream& os, const Vertex& v) {
+	#ifdef OUTPUT_PAIRED
+		os << v.data_.Subseq(0, LABEL).str() << "_" << v.size();
+	#endif
+	#ifndef OUTPUT_PAIRED
+		os << v.data_.Subseq(0, LABEL).str() << "_" << v.size() << "_" << v.data_.Subseq(data_.size() - LABEL).str();
+	#endif
+	return os;
+}
+
+Vertex* Graph::createVertex(const Sequence& kmer) {
+	LOG_ASSERT(!hasVertex(kmer), "already contains " << kmer.str());
 	Vertex* v = new Vertex(kmer);
-	v->complement_ = new Vertex(new Sequence(!(*kmer)));
+	v->complement_ = new Vertex(!kmer);
 	v->complement_->complement_ = v;
-	seqVertice[*kmer] = v;
+	seqVertice[kmer] = v;
 	vertices.insert(v);
 	vertices.insert(v->complement_);
 	return v;
 }
 
-Vertex* Graph::createVertex(const Sequence* kmer, size_t size) {
+Vertex* Graph::createVertex(const Sequence& kmer, size_t size) {
 	Vertex* v = createVertex(kmer);
 	v->setSize(size);
 	v->complement_->setSize(size);
@@ -49,19 +68,19 @@ void Graph::removeVertex_single(Vertex* v) {
 	vertices.erase(v);
 }
 
-bool Graph::hasVertex(const Sequence* kmer) {
-	return seqVertice.count(*kmer);
+bool Graph::hasVertex(const Sequence& kmer) {
+	return seqVertice.count(kmer);
 }
 
-Vertex* Graph::getVertex(const Sequence kmer) {
+Vertex* Graph::getVertex(const Sequence& kmer) {
 	SeqVertice::iterator v = seqVertice.find(kmer);
 	if (v == seqVertice.end()) {
-		return createVertex(new Sequence(kmer.str()));
+		return createVertex(kmer);
 	}
-	if (v->second->is(&kmer)) {
+	if (v->second->data() == kmer) {
 		return v->second;
 	}
-	assert(v->second->complement_->is(&kmer));
+	assert(v->second->complement_->data() == kmer);
 	return v->second->complement_;
 }
 
@@ -72,7 +91,7 @@ Vertex* Graph::condense(Vertex* v) {
 	Edge e = v->edges_.begin()->second;
 	assert(u->complement_->edges_.begin()->first == v->complement_);
 	Edge f = u->complement_->edges_.begin()->second;
-	TRACE(e.toString() << " " << f.toString());
+	TRACE(e << " " << f);
 	if ((e.lengths_.size() != 1) || (e.lengths_.size() != 1)) {
 		ERROR("Unsure what to do");
 		return NULL;
@@ -103,25 +122,26 @@ Vertex* Graph::condense(Vertex* v) {
 }
 
 void Graph::output(std::ofstream &out) {
+	std::string name = OUTPUT_FILE_NAME;
 #ifdef OUTPUT_PAIRED
-	gvis::PairedGraphPrinter<Vertex*> printer("z", out);
+	gvis::PairedGraphPrinter<Vertex*> printer(name, out);
 #endif
 #ifndef OUTPUT_PAIRED
-	gvis::GraphPrinter<Vertex*> printer("z", out);
+	gvis::GraphPrinter<Vertex*> printer(name, out);
 #endif
 	for (Vertices::iterator v = vertices.begin(); v != vertices.end(); ++v) {
 		#ifdef OUTPUT_PAIRED
-			printer.addVertex(*v, (*v)->toString(), (*v)->complement_, (*v)->complement_->toString());
+			printer.addVertex(*v, toString(**v), (*v)->complement_, toString(*((*v)->complement_)));
 		#endif
 		#ifndef OUTPUT_PAIRED
-			printer.addVertex(*v, (*v)->toString());
+			printer.addVertex(*v, toString(**v));
 		#endif
 		for (Vertex::Edges::iterator it = (*v)->edges_.begin(); it != (*v)->edges_.end(); ++it) {
 			#ifdef OUTPUT_PAIRED
-				printer.addEdge(make_pair(*v, (*v)->complement_), make_pair(it->first, it->first->complement_), it->second.toString());
+				printer.addEdge(make_pair(*v, (*v)->complement_), make_pair(it->first, it->first->complement_), toString(it->second));
 			#endif
 			#ifndef OUTPUT_PAIRED
-				printer.addEdge(*v, it->first, it->second.toString());
+				printer.addEdge(*v, it->first, it->second);
 			#endif
 		}
 	}
@@ -134,3 +154,4 @@ void Graph::output(string filename) {
 	output(out);
 }
 
+}

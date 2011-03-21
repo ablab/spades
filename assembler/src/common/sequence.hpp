@@ -90,7 +90,7 @@ public:
 };
 
 template<size_t size_, typename T = int>
-ostream& operator<<(ostream& os, Sequence s) {
+ostream& operator<<(ostream& os, const Sequence& s) {
 	os << s.str();
 	return os;
 }
