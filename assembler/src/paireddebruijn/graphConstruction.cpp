@@ -51,9 +51,9 @@ void constructGraph() {
 //	cerr << "TraceReads" << endl;
 
 	traceReads(verts, longEdges, graph, VertexCount, EdgeId);
-	freopen("data/ReadsTraced", "w", stdout);
+	freopen("data/ReadsTraced.dot", "w", stdout);
 	outputLongEdges(longEdges);
-	freopen("data/ReadsTraced_g", "w", stdout);
+	freopen("data/ReadsTraced_g.dot", "w", stdout);
 	outputLongEdgesThroughGenome(longEdges,graph,VertexCount);
 	graph.recreateVerticesInfo(VertexCount, longEdges);
 

@@ -22,7 +22,7 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 			assert(a < graph.inD[DestVertex]);
 			while (a < graph.inD[DestVertex] - 1) {
 				graph.inputEdges[DestVertex][a]
-						= graph.inputEdges[DestVertex][a + 1];
+				                             = graph.inputEdges[DestVertex][a + 1];
 				a++;
 			}
 			graph.inD[DestVertex]--;
@@ -30,7 +30,7 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 				longEdges[graph.inputEdges[i][j]]->ExpandRight(
 						*(longEdges[expandEdgeIndex]));
 				graph.inputEdges[DestVertex][graph.inD[DestVertex]]
-						= graph.inputEdges[i][j];
+				                             = graph.inputEdges[i][j];
 				graph.inD[DestVertex]++;
 			}
 			it = longEdges.find(expandEdgeIndex);
@@ -52,7 +52,7 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 			assert(a < graph.outD[SourceVertex]);
 			while (a < graph.outD[SourceVertex] - 1) {
 				graph.outputEdges[SourceVertex][a]
-						= graph.outputEdges[SourceVertex][a + 1];
+				                                = graph.outputEdges[SourceVertex][a + 1];
 				a++;
 			}
 			graph.outD[SourceVertex]--;
@@ -60,7 +60,7 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 				longEdges[graph.outputEdges[i][j]]->ExpandLeft(
 						*(longEdges[expandEdgeIndex]));
 				graph.outputEdges[SourceVertex][graph.outD[SourceVertex]]
-						= graph.outputEdges[i][j];
+				                                = graph.outputEdges[i][j];
 				graph.outD[SourceVertex]++;
 			}
 			it = longEdges.find(expandEdgeIndex);
@@ -84,22 +84,22 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	ll upperMask = (((ll) 1) << (2 * (k - 1))) - 1;
 	ll lowerMask = (((ll) 1) << (2 * (l - 1))) - 1;
 	//	FILE* fout = fopen("data/filtered_reads","w");
-			while (nextReadPair(upperNuclRead, lowerNuclRead)) {
-				if (!(count & (1024*128 - 1)))
-				cerr<<"read number "<<count<<" processed"<<endl;
-				count++;
-				codeRead(upperNuclRead, upperRead);
-				codeRead(lowerNuclRead, lowerRead);
-				Sequence* upRead = new Sequence(upperNuclRead);
-				Sequence* loRead = new Sequence(lowerNuclRead);
-				int shift = (l - k) / 2;
-				ll upper = extractMer(upperRead, shift+1, k-1);
-				for (int j = 0; j + l < readLength; j++) {
-					verticesMap::iterator vertIter = verts.find(upper);
-					if (vertIter!=verts.end()) {
-						//	cerr<<"kmer found for j="<<j<<endl;
-						for (vector<VertexPrototype *>::iterator it =vertIter->second.begin(); it
-						!= vertIter->second.end(); ++it) {
+	while (nextReadPair(upperNuclRead, lowerNuclRead)) {
+		if (!(count & (1024*128 - 1)))
+			cerr<<"read number "<<count<<" processed"<<endl;
+		count++;
+		codeRead(upperNuclRead, upperRead);
+		codeRead(lowerNuclRead, lowerRead);
+		Sequence* upRead = new Sequence(upperNuclRead);
+		Sequence* loRead = new Sequence(lowerNuclRead);
+		int shift = (l - k) / 2;
+		ll upper = extractMer(upperRead, shift+1, k-1);
+		for (int j = 0; j + l < readLength; j++) {
+			verticesMap::iterator vertIter = verts.find(upper);
+			if (vertIter!=verts.end()) {
+				//	cerr<<"kmer found for j="<<j<<endl;
+				for (vector<VertexPrototype *>::iterator it =vertIter->second.begin(); it
+				!= vertIter->second.end(); ++it) {
 					if ((*it)->lower->similar(loRead->Subseq(1+j, l+j),l-1)) {
 						//				cerr<<"vertex found for lower "<<(*it)->lower->str()<<endl;
 						//						fprintf(fout,"%s %s\n",upperNuclRead,lowerNuclRead);
@@ -184,7 +184,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 			}
 		}
 	}
-/*
+	/*
 	//resolving simple case InD=OutD and all edge is unique
 	//included in next step :)
 
@@ -221,7 +221,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 
 	 freopen("data/graph_after_obvious.dot", "w", stdout);
 	 outputLongEdges(longEdges);
-*/
+	 */
 	//resolve multi case;
 	int FakeVertexCount = VertexCount;
 	int FakeVertexStart = VertexCount;
@@ -229,100 +229,111 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	forn(curVertId,VertexCount) {
 		if ((graph.inD[curVertId]!=0)&&(graph.outD[curVertId]!=0)) {
 			pair<int, int> vDist = vertexDist(longEdges,graph,curVertId);
-			if (vDist.first+vDist.second-k+1<k)
-			if ((graph.inD[curVertId]<=EdgePairs[curVertId].size())&&(graph.outD[curVertId]<=EdgePairs[curVertId].size())) {
-				bool allIns = false;
-				bool allOuts = false;
-				forn(i,graph.inD[curVertId]) {
-					allIns = false;
-					forn (j,EdgePairs[curVertId].size()) {
-						if ((EdgePairs[curVertId])[j].first ==graph.inputEdges[curVertId][i]) {
-							allIns = true;
-							break;
-						}
-					}
-					if (!allIns) break;
-				}
-				forn(i,graph.outD[curVertId]) {
-					allOuts = false;
-					forn (j,EdgePairs[curVertId].size()) {
-						if ((EdgePairs[curVertId])[j].second ==graph.outputEdges[curVertId][i]) {
-							allOuts = true;
-							break;
-						}
-					}
-					if (!allOuts) break;
-				}
-				if (allIns&&allOuts) {
-					int tmpCurOut = edgeRealId(graph.outputEdges[curVertId][0],longEdges);
-					string tmpLoSeq = longEdges[tmpCurOut]->upper->Subseq(0,k-1).str();
-					string tmpUpSeq = longEdges[tmpCurOut]->upper->Subseq(0,l-1).str();
-
-					//create FakeVerices and Fake edges;
-					//create fake Vertices for in edges;
-					int tmpFictStartIn = FakeVertexCount;
+//			if (vDist.first+vDist.second-k+1<=readLength)
+			{
+				cerr<<"vertex "<<curVertId<<" dist <"<<vDist.first<<", "<<vDist.second<<">"<<endl;
+				if ((graph.inD[curVertId]<=EdgePairs[curVertId].size())&&(graph.outD[curVertId]<=EdgePairs[curVertId].size())) {
+					bool allIns = false;
+					bool allOuts = false;
 					forn(i,graph.inD[curVertId]) {
-						int CurIn = edgeRealId(graph.inputEdges[curVertId][i],longEdges);
-						graph.inputEdges[curVertId][i] = CurIn;
-						FakeVertexToReal.insert(make_pair(FakeVertexCount,curVertId));
-						longEdges[CurIn]->ToVertex = FakeVertexCount;
-						graph.inD[FakeVertexCount]=1;
-						graph.outD[FakeVertexCount]=0;
-						graph.inputEdges[FakeVertexCount][0]=CurIn;
-						FakeVertexCount++;
+						allIns = false;
+						forn (j,EdgePairs[curVertId].size()) {
+							if ((EdgePairs[curVertId])[j].first ==graph.inputEdges[curVertId][i]) {
+								allIns = true;
+								break;
+							}
+						}
+						if (!allIns) break;
 					}
-					//create fake Vertices for out edges;
-					int tmpFictStartOut = FakeVertexCount;
 					forn(i,graph.outD[curVertId]) {
-						int CurOut = edgeRealId(graph.outputEdges[curVertId][i],longEdges);
-						graph.outputEdges[curVertId][i] = CurOut;
-						FakeVertexToReal.insert(make_pair(FakeVertexCount,curVertId));
-						longEdges[CurOut]->FromVertex = FakeVertexCount;
-						graph.inD[FakeVertexCount]=0;
-						graph.outD[FakeVertexCount]=1;
-						graph.outputEdges[FakeVertexCount][0]=CurOut;
-						FakeVertexCount++;
-					}
-					//create fake edges
-
-					forn (tmpEdgePair,EdgePairs[curVertId].size()) {
-						int tmpFrom = 0;
-						int tmpTo = 0;
-						while (edgeRealId(graph.inputEdges[curVertId][tmpFrom], longEdges)!=edgeRealId((EdgePairs[curVertId])[tmpEdgePair].first,longEdges)) {
-							tmpFrom++;
-							assert(tmpFrom<graph.inD[curVertId]);
+						allOuts = false;
+						forn (j,EdgePairs[curVertId].size()) {
+							if ((EdgePairs[curVertId])[j].second ==graph.outputEdges[curVertId][i]) {
+								allOuts = true;
+								break;
+							}
 						}
-						while (edgeRealId(graph.outputEdges[curVertId][tmpTo],longEdges)!=edgeRealId((EdgePairs[curVertId])[tmpEdgePair].second, longEdges)) {
-							tmpTo++;
-							assert(tmpTo<graph.outD[curVertId]);
-						}
-						Sequence *UpSeq = new Sequence(tmpLoSeq);
-						Sequence *LoSeq = new Sequence(tmpUpSeq);
-
-						Edge *tmpEdge = new Edge(UpSeq, LoSeq, tmpFictStartIn + tmpFrom, tmpFictStartOut + tmpTo,0, EdgeId);
-						longEdges.insert(make_pair(EdgeId,tmpEdge));
-						graph.outputEdges[tmpFictStartIn + tmpFrom][graph.outD[tmpFictStartIn + tmpFrom]] = EdgeId;
-						graph.outD[tmpFictStartIn + tmpFrom]++;
-						graph.inputEdges[tmpFictStartOut + tmpTo][graph.inD[tmpFictStartOut + tmpTo]] = EdgeId;
-						graph.inD[tmpFictStartOut + tmpTo]++;
-						EdgeId++;
+						if (!allOuts) break;
 					}
+					if (allIns&&allOuts) {
+						int tmpCurOut = edgeRealId(graph.outputEdges[curVertId][0],longEdges);
+						string tmpUpSeq = longEdges[tmpCurOut]->upper->Subseq(0,k-1).str();
+						string tmpLoSeq = longEdges[tmpCurOut]->lower->Subseq(0,l-1).str();
 
-					graph.inD[curVertId]=0;
-					graph.outD[curVertId]=0;
+						//create FakeVerices and Fake edges;
+						//create fake Vertices for in edges;
+						int tmpFictStartIn = FakeVertexCount;
+						forn(i,graph.inD[curVertId]) {
+							int CurIn = edgeRealId(graph.inputEdges[curVertId][i],longEdges);
+							graph.inputEdges[curVertId][i] = CurIn;
+							FakeVertexToReal.insert(make_pair(FakeVertexCount,curVertId));
+							cerr<<"Edge "<<CurIn<<" ("<<longEdges[CurIn]->FromVertex<<", "<<longEdges[CurIn]->ToVertex<<") maped to ";
+							longEdges[CurIn]->ToVertex = FakeVertexCount;
+							graph.inD[FakeVertexCount]=1;
+							graph.outD[FakeVertexCount]=0;
+							graph.inputEdges[FakeVertexCount][0]=CurIn;
+							cerr<<"edge "<<CurIn<<" ("<<longEdges[CurIn]->FromVertex<<", "<<longEdges[CurIn]->ToVertex<<")"<<endl;
+							FakeVertexCount++;
+						}
+						//create fake Vertices for out edges;
+						int tmpFictStartOut = FakeVertexCount;
+						forn(i,graph.outD[curVertId]) {
+							int CurOut = edgeRealId(graph.outputEdges[curVertId][i],longEdges);
+							graph.outputEdges[curVertId][i] = CurOut;
+							cerr<<"Edge "<<CurOut<<" ("<<longEdges[CurOut]->FromVertex<<", "<<longEdges[CurOut]->ToVertex<<") maped to ";
+							FakeVertexToReal.insert(make_pair(FakeVertexCount,curVertId));
+							longEdges[CurOut]->FromVertex = FakeVertexCount;
+							graph.inD[FakeVertexCount]=0;
+							graph.outD[FakeVertexCount]=1;
+							graph.outputEdges[FakeVertexCount][0]=CurOut;
+							cerr<<"edge "<<CurOut<<" ("<<longEdges[CurOut]->FromVertex<<", "<<longEdges[CurOut]->ToVertex<<")"<<endl;
+							FakeVertexCount++;
+						}
+						//create fake edges
+
+						forn (tmpEdgePair,EdgePairs[curVertId].size()) {
+							int tmpFrom = 0;
+							int tmpTo = 0;
+							while (edgeRealId(graph.inputEdges[curVertId][tmpFrom], longEdges)!=edgeRealId((EdgePairs[curVertId])[tmpEdgePair].first,longEdges)) {
+								tmpFrom++;
+								assert(tmpFrom<graph.inD[curVertId]);
+							}
+							while (edgeRealId(graph.outputEdges[curVertId][tmpTo],longEdges)!=edgeRealId((EdgePairs[curVertId])[tmpEdgePair].second, longEdges)) {
+								tmpTo++;
+								assert(tmpTo<graph.outD[curVertId]);
+							}
+							Sequence *UpSeq = new Sequence(tmpUpSeq);
+							Sequence *LoSeq = new Sequence(tmpLoSeq);
+
+							Edge *tmpEdge = new Edge(UpSeq, LoSeq, tmpFictStartIn + tmpFrom, tmpFictStartOut + tmpTo,0, EdgeId);
+							longEdges.insert(make_pair(EdgeId,tmpEdge));
+//							cerr<<"Virtual edge "<<EdgeId<<
+							cerr<<"Virtual edge "<<EdgeId<<" ("<<longEdges[EdgeId]->FromVertex<<", "<<longEdges[EdgeId]->ToVertex<<")"<<endl;
+							graph.outputEdges[tmpFictStartIn + tmpFrom][graph.outD[tmpFictStartIn + tmpFrom]] = EdgeId;
+							graph.outD[tmpFictStartIn + tmpFrom]++;
+							graph.inputEdges[tmpFictStartOut + tmpTo][graph.inD[tmpFictStartOut + tmpTo]] = EdgeId;
+							graph.inD[tmpFictStartOut + tmpTo]++;
+							EdgeId++;
+
+						}
+
+						graph.inD[curVertId]=0;
+						graph.outD[curVertId]=0;
+					}
 				}
-
 			}
 		}
 	}
 
 	VertexCount = FakeVertexCount;
+	graph.recreateVerticesInfo(VertexCount, longEdges);
 	expandDefinite(longEdges, graph, VertexCount);
 	for(longEdgesMap::iterator it= longEdges.begin(); it !=longEdges.end(); ++it) {
 		if (it->second->FromVertex>=FakeVertexStart) it->second->FromVertex = FakeVertexToReal[it->second->FromVertex];
 		if (it->second->ToVertex>=FakeVertexStart) it->second->ToVertex = FakeVertexToReal[it->second->ToVertex];
 	}
 	VertexCount = FakeVertexStart;
+	graph.recreateVerticesInfo(VertexCount, longEdges);
 	freopen("data/graph_after_fake.dot", "w", stdout);
 	outputLongEdges(longEdges);
 

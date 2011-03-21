@@ -59,8 +59,11 @@ void outputLongEdges(longEdgesMap &longEdges) {
 
 			g.addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
 			cerr << it->first << " (" << it->second->length << "):" << endl;
+			if (it->second->length < 500)
+			{
 			cerr << it->second->upper->str() << endl;
 			cerr << it->second->lower->str() << endl;
+			}
 		}
 	}
 	g.output();
@@ -106,7 +109,7 @@ void outputLongEdgesThroughGenome(longEdgesMap &longEdges, PairedGraph &graph, i
 	while ((graph.inD[CurVert]!=0)||(graph.outD[CurVert]!=1)) CurVert++;
 	cerr<<"Start vertex "<<CurVert<<endl;
 	while (graph.outD[CurVert]!=0){
-
+		bool NoEdge = true;
 		cerr<<"Try to found next edge"<<endl;
 		forn(v,graph.outD[CurVert])
 		{
@@ -132,13 +135,18 @@ void outputLongEdgesThroughGenome(longEdgesMap &longEdges, PairedGraph &graph, i
 				sprintf(Buffer, "%i: %i (%i)", EdgeNum, edgeId, longEdges[edgeId]->length);
 				g.addEdge(longEdges[edgeId]->FromVertex, longEdges[edgeId]->ToVertex, Buffer);
 				cerr << edgeId << " (" << longEdges[edgeId]->length << "):" << endl;
-				cerr << longEdges[edgeId]->upper->str() << endl;
-				cerr << longEdges[edgeId]->lower->str() << endl;
+				if (longEdges[edgeId]->length<500)
+				{
+					cerr << longEdges[edgeId]->upper->str() << endl;
+					cerr << longEdges[edgeId]->lower->str() << endl;
+				}
 				CurVert = longEdges[edgeId]->ToVertex;
 				GenPos += longEdges[edgeId]->length;
+				NoEdge = false;
 				break;
 			}
 		}
+		if (NoEdge) break;
 	}
 	g.output();
 }

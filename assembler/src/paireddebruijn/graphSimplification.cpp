@@ -88,8 +88,8 @@ bool commonSequencesExtraction(longEdgesMap &longEdges, PairedGraph &graph, int 
  *
  */
 pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &graph, int vertexId){
-	int res1 = 0;
-	int res2 = 0;
+	int res1 = k-1;
+	int res2 = k-1;
 	int max_res = insertLength + 2*readLength + 1;
 	//int colors[MAX_DEGREE];
 	forn(i, graph.inD[vertexId]) {
