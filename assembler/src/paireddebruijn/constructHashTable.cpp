@@ -466,8 +466,10 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 		count++;
 		ok = fscanf(inFile, "%lld %d", &kmer, &lsize);
 		if (ok != 2) {
-			if (ok != 0)
+			if (ok > 0) {
 				cerr<< "error in reads.";
+				assert(0);
+			}
 			else
 				cerr << "Finished!!";
 			break;
@@ -499,8 +501,9 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 #endif
 		forn(i, clsize) {
 			assert(l == 31);
-			assert(outstring.size() >= 31);
 			outstring = clusters[i]->str();
+			assert(outstring.size() >= 31);
+
 			fprintf(outFile, "%s ",outstring.c_str());
 		}
 		fprintf(outFile, "\n");

@@ -66,10 +66,78 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph, int &Vert
 	}
 	return res;
 }
-/* countEdgesDistintion
- * @params:
+/* countEdgesDistinction
+ * @param vertexId - index of vertex, distances we are interested in
+ * @param graph - pairedGraph
+ * @returns pair<int,int> - minimal intervals of nucleotids, such that they uniquely represent Inedges and outedges respectively.
+ * If one of results  is more than insertLength + 2 * readLength, returns insertLength + 2 * readLength + 1
  *
  */
-int vertexDist(){
-	return 0;
+pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &graph, int vertexId){
+	int res1 = 0;
+	int res2 = 0;
+	int max_res = insertLength + 2*readLength + 1;
+	//int colors[MAX_DEGREE];
+	forn(i, graph.inD[vertexId]) {
+		int e1 = graph.inputEdges[vertexId][i];
+		Sequence tmp = *longEdges[e1]->upper;
+		Sequence tmpl = *longEdges[e1]->lower;
+
+		cerr << endl << "1 " << tmp.str();
+		if (graph.inD[vertexId] == 1)
+			res1 = tmp.size();
+		forn(j, i) {
+			int e2 = graph.inputEdges[vertexId][j];
+			int count = 29;
+			while (count < max_res) {
+				Sequence tmp2 = *longEdges[e2]->upper;
+				Sequence tmp2l = *longEdges[e2]->lower;
+
+				cerr << endl <<"2 "<< tmp2.str();
+				cerr << endl <<count << " ";// << nucl(tmp[tmp.size() - 1 - count]) << " " << nucl (tmp2[tmp2.size() - 1 -count]);
+				if (count >= min(tmp.size(), tmp2.size()) || tmp[tmp.size() - 1 - count] != tmp2[tmp2.size() - 1 -count] )
+				//				if (*(longEdges[e1]->upper)[count] != *(longEdges[e2]->upper)[count])
+					break;
+				if (count >= min(tmpl.size(), tmp2l.size()) || tmpl[tmpl.size() - 1 - count] != tmp2l[tmp2l.size() - 1 -count] )
+				//				if (*(longEdges[e1]->upper)[count] != *(longEdges[e2]->upper)[count])
+					break;
+
+				count ++;
+			}
+			res1 = max(res1, count);
+		}
+	}
+	forn(i, graph.outD[vertexId]) {
+		int e1 = graph.outputEdges[vertexId][i];
+		Sequence tmp = *longEdges[e1]->upper;
+		Sequence tmpl = *longEdges[e1]->lower;
+
+		cerr << endl << "1 " << tmp.str();
+		if (graph.outD[vertexId] == 1)
+			res2 = tmp.size();
+		forn(j, i) {
+			int e2 = graph.outputEdges[vertexId][j];
+			int count = 29;
+			while (count < max_res) {
+				Sequence tmp2 = *longEdges[e2]->upper;
+				Sequence tmp2l = *longEdges[e2]->lower;
+
+				cerr << endl <<"2 "<< tmp2.str();
+				cerr << endl <<count << " ";// << nucl(tmp[tmp.size() - 1 - count]) << " " << nucl (tmp2[tmp2.size() - 1 -count]);
+				if (count >= min(tmp.size(), tmp2.size()) || tmp[tmp.size() - 1 - count] != tmp2[tmp2.size() - 1 -count] )
+				//				if (*(longEdges[e1]->upper)[count] != *(longEdges[e2]->upper)[count])
+					break;
+				if (count >= min(tmpl.size(), tmp2l.size()) || tmpl[tmpl.size() - 1 - count] != tmp2l[tmp2l.size() - 1 -count] )
+				//				if (*(longEdges[e1]->upper)[count] != *(longEdges[e2]->upper)[count])
+					break;
+
+				count ++;
+			}
+			res2 = max(res2, count);
+		}
+	}
+
+	cerr << endl << res1 << " " << res2;
+	//assert(0);
+	return make_pair(res1 + 2 - k, res2 + 2 - k);
 }

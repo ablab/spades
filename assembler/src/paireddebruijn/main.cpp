@@ -31,6 +31,7 @@ int main() {
 		cerr << endl << " constructing Graph" << endl;
 		constructGraph();
 	}
+
 //	testSimilar();
 //	testFind();
 	return 0;

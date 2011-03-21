@@ -36,7 +36,7 @@ void constructGraph() {
 	verticesMap verts;
 	longEdgesMap longEdges;
 	createVertices(g, edges, verts, longEdges, graph);
-
+	vertexDist(longEdges, graph, 172);
 	expandDefinite(longEdges , graph, VertexCount);
 	freopen("data/afterExpand.dot", "w",stdout);
 	outputLongEdges(longEdges);
@@ -165,8 +165,8 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 				length += toleft;
 				int fromVert = storeVertex(g, verts, startKmer, startSeq);
 				//				if (! (count && ((1<<14) -1 ))) {
-				cerr << EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
-						+ 500000 - toleft)) << endl;
+//				cerr << EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
+//						+ 500000 - toleft)) << endl;
 //				}
 				Sequence* UpperSeq = new Sequence(((char*) (EdgeStr
 						+ 500000 - toleft)));
