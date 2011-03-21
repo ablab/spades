@@ -66,6 +66,18 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph, int &Vert
 	}
 	return res;
 }
+
+
+/*
+bool commonSequencesExtraction(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount){
+	bool res = false;
+	forn(curVertexId, VertexCount){
+
+
+	}
+	return res;
+}
+*/
 /* countEdgesDistintion
  * @params:
  *
@@ -73,3 +85,6 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph, int &Vert
 int vertexDist(){
 	return 0;
 }
+
+
+
