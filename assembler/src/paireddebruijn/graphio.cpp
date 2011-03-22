@@ -175,17 +175,25 @@ void DataPrinter::close() {
 	fclose(f_);
 }
 
-void DataReader::readInt(int &a) {
+void DataReader::read(int &a) {
 	fscanf(f_, "%d\n", &a);
 }
 
-void DataPrinter::outputInt(int a) {
+void DataPrinter::output(int a) {
 	fprintf(f_, "%d\n", a);
 }
 
-void DataReader::readSequence(Sequence * &sequence) {
+void DataReader::read(long long &a) {
+	fscanf(f_, "%lld\n", &a);
+}
+
+void DataPrinter::output(long long a) {
+	fprintf(f_, "%lld\n", a);
+}
+
+void DataReader::read(Sequence * &sequence) {
 	int length;
-	readInt(length);
+	read(length);
 	if (length == 0) {
 		fscanf(f_, "\n");
 		sequence = new Sequence("");
@@ -196,47 +204,66 @@ void DataReader::readSequence(Sequence * &sequence) {
 	}
 }
 
-void DataPrinter::outputSequence(Sequence *sequence) {
-	outputInt(sequence->size());
+void DataPrinter::output(Sequence *sequence) {
+	output((int)sequence->size());
 	fprintf(f_, "%s\n", sequence->str().c_str());
 }
 
-void DataReader::readEdge(Edge * &edge) {
+void DataReader::read(VertexPrototype * &v) {
+	int id;
+	Sequence *lower;
+	bool b;
+	read(id);
+	read(lower);
+	int tmpInt;
+	read(tmpInt);
+	b = tmpInt;
+	v = new VertexPrototype(lower, id);
+	v->used = b;
+}
+
+void DataPrinter::output(VertexPrototype *v) {
+	output(v->VertexId);
+	output(v->lower);
+	output(v->used);
+}
+
+void DataReader::read(Edge * &edge) {
 	int from, to, len, id;
 	Sequence *up, *low;
-	readInt(id);
-	readInt(from);
-	readInt(to);
-	readInt(len);
-	readSequence(up);
-	readSequence(low);
+	read(id);
+	read(from);
+	read(to);
+	read(len);
+	read(up);
+	read(low);
 	edge = new Edge(up, low, from, to, len, id);
 }
 
-void DataPrinter::outputEdge(Edge *edge) {
-	outputInt(edge->EdgeId);
-	outputInt(edge->FromVertex);
-	outputInt(edge->ToVertex);
-	outputInt(edge->length);
-	outputSequence(edge->upper);
-	outputSequence(edge->lower);
+void DataPrinter::output(Edge *edge) {
+	output(edge->EdgeId);
+	output(edge->FromVertex);
+	output(edge->ToVertex);
+	output(edge->length);
+	output(edge->upper);
+	output(edge->lower);
 }
 
 void DataPrinter::outputLongEdgesMap(longEdgesMap &edges) {
-	outputInt(edges.size());
+	output((int)edges.size());
 	for (longEdgesMap::iterator it = edges.begin(); it != edges.end(); ++it) {
 		if (it->first == it->second->EdgeId) {
-			outputInt(it->first);
-			outputEdge(it->second);
+			output(it->first);
+			output(it->second);
 		}
 	}
 	Sequence *emptySequence = new Sequence("");
 	Edge *emptyEdge = new Edge(emptySequence, emptySequence, 0, 0, 0, 0);
 	for (longEdgesMap::iterator it = edges.begin(); it != edges.end(); ++it) {
 		if (it->first != it->second->EdgeId) {
-			outputInt(it->first);
+			output(it->first);
 			emptyEdge->EdgeId = it->second->EdgeId;
-			outputEdge(emptyEdge);
+			output(emptyEdge);
 		}
 	}
 	delete emptyEdge;
@@ -244,12 +271,12 @@ void DataPrinter::outputLongEdgesMap(longEdgesMap &edges) {
 
 void DataReader::readLongEdgesMap(longEdgesMap &edges) {
 	int size;
-	readInt(size);
+	read(size);
 	for (int i = 0; i < size; i++) {
 		int id;
-		readInt(id);
+		read(id);
 		Edge *edge;
-		readEdge(edge);
+		read(edge);
 		if (id == edge->EdgeId) {
 			edges.insert(make_pair(id, edge));
 		} else {
@@ -300,9 +327,9 @@ void DataPrinter::outputIntArray(int *array, int length, int width) {
 void save(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 		int &VertexCount, int EdgeId) {
 	DataPrinter dp(fileName);
-	dp.outputInt(VertexCount);
-	dp.outputInt(EdgeId);
-	dp.outputLongEdgesMap(longEdges);
+	dp.output(VertexCount);
+	dp.output(EdgeId);
+	dp.output(longEdges);
 	dp.outputIntArray(g.inD, MAX_VERT_NUMBER);
 	dp.outputIntArray(g.outD, MAX_VERT_NUMBER);
 	dp.outputIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
@@ -312,9 +339,9 @@ void save(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 void load(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 		int &VertexCount, int &EdgeId) {
 	DataReader dr(fileName);
-	dr.readInt(VertexCount);
-	dr.readInt(EdgeId);
-	dr.readLongEdgesMap(longEdges);
+	dr.read(VertexCount);
+	dr.read(EdgeId);
+	dr.read(longEdges);
 	dr.readIntArray(g.inD, MAX_VERT_NUMBER);
 	dr.readIntArray(g.outD, MAX_VERT_NUMBER);
 	dr.readIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
