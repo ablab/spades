@@ -394,6 +394,7 @@ int pairsToLmers(string inputFile, string outputFile) {
 	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
 	FILE* outFile = fopen(outputFile.c_str(), "w");
 
+	cerr<<"pairsToLmers "<<inputFile.c_str()<<"->"<<outputFile.c_str()<<endl;
 	int ok = 1;
 	ll kmer; int lsize;
 	ll lmers[MAXLMERSIZE];
@@ -408,8 +409,10 @@ int pairsToLmers(string inputFile, string outputFile) {
 				cerr<< "error in reads.";
 				break;
 			}
-			else
+			else {
 				cerr << "Finished!!";
+				break;
+			}
 		}
 		if (lsize > MAXLMERSIZE) {
 			cerr << "TOO BIIIIG";
@@ -447,6 +450,7 @@ void readLmersSet(string lmerFile, set<long long > & lset)
 		if (ok != 1) cerr << "Error in Lmers reading";
 		lset.insert(tmp);
 	}
+    fclose(lFile);
 }
 
 int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
@@ -465,8 +469,10 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 		count++;
 		ok = fscanf(inFile, "%lld %d", &kmer, &lsize);
 		if (ok != 2) {
-			if (ok != 0)
+			if (ok > 0) {
 				cerr<< "error in reads.";
+				assert(0);
+			}
 			else
 				cerr << "Finished!!";
 			break;
@@ -497,7 +503,9 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 		}
 #endif
 		forn(i, clsize) {
+			assert(l == 31);
 			outstring = clusters[i]->str();
+			assert(outstring.size() >= 31);
 			fprintf(outFile, "%s ",outstring.c_str());
 		}
 		fprintf(outFile, "\n");
@@ -509,5 +517,7 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 			cerr<< "k-sequence pairs for k "<< count <<" generated" <<endl;
 	}
 	cerr<<"finished";
+	fclose(outFile);
+	fclose(inFile);
 	return 0;
 }

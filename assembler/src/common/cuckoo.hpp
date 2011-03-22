@@ -23,10 +23,14 @@ using namespace std;
 // Value size_t init_length is the initial length of the whole structure.
 // Value size_t max_loop determines the maximum number of kick cycles during 
 // insertion before rehash.
+// Value size_t increment determines the increment of length of the whole
+// structure. Actual increment may be a bit more than value determined. 
+// If it is equal to 0, increment on each rehash is equal to 1.2 of
+// the current length.
 // Example of use: 
-// cuckoo<int, int, Hasher, std::equal_to<int>, 4, 10, 100> Cuckoo; 
+// cuckoo<int, int, Hasher, std::equal_to<int>, 4, 10, 50, 20> Cuckoo; 
 template <class Key, class Value, class Hash, class Pred, size_t d = 3, 
-	  size_t init_length = 15, size_t max_loop = 100>
+	  size_t init_length = 15, size_t max_loop = 100, size_t increment = 0>
 class cuckoo {
 private:
   struct Data {
@@ -42,6 +46,8 @@ private:
   size_t len_part_;
   // The actual number of elements in cuckoo hash
   size_t size_;
+  // The flag that anounces that rehash was made recently
+  bool is_rehashed_;
 public:
   class iterator {
   private:
@@ -50,13 +56,13 @@ public:
     iterator(size_t p, cuckoo *h) : pos(p), hash(h) {}
     friend class cuckoo;
   public:
-    iterator() : pos(0), hash(NULL) {
-      // nothing
-    }
+    iterator() : pos(0), hash(NULL) {}
+
     void operator=(const iterator &it) {
       pos = it.pos;
       hash = it.hash;
     }
+
     iterator& operator++() {
       assert(hash != NULL);
       assert(pos != hash->len_);
@@ -66,17 +72,21 @@ public:
       }
       return *this;
     }
+
     iterator operator++(int) {
       iterator res = *this;
       this->operator++();
       return res;
     }
+
     pair<Key, Value>& operator*() {
       return (*hash).data_from(pos).p;
     }
+
     bool operator==(const iterator &it) {
       return pos == it.pos && hash == it.hash;
     }
+
     bool operator!=(const iterator &it) {
       return !(*this == it);
     }
@@ -96,15 +106,12 @@ private:
     return Hash()(k, hash_num) % len_part_;
   }
   
-  /*pair<const Key,Value>& pair<const Key, Value>::operator=(const pair<const Key, Value> &p) {
-    }*/
-
-  // Works incorrectly, contain debug output.
-  // I will try to fix bug as soon as possible.
   void rehash() {
-    cerr << "Started rehashing with " << size () << 
-      " and " << size_ << endl;
-    len_part_ = len_part_ * 6 / 5 + 1;
+    if (increment == 0) {
+      len_part_ = len_part_ * 6 / 5 + 1;
+    } else {
+      len_part_ = len_part_ + increment / d + 1;
+    }
     len_ = len_part_ * d;
     for (size_t i = 0; i < d; ++i) {
       (*(data_[i])).resize(len_part_);
@@ -118,11 +125,15 @@ private:
 	pair<Key, Value> t = *it;
 	remove(it);
 	add_new(t);
+	if (is_rehashed_) {
+	  it = begin();
+	  if (!data_from(it.pos).exists) ++it;
+	}
       } else { 
 	++it;
       }
     }
-    cerr << "    and finished with " << size() << endl;
+    is_rehashed_ = true;
   }
 
   iterator add_new(pair<Key, Value> p) {
@@ -133,15 +144,22 @@ private:
 	bool exists = data_from(j * len_part_ + pos).exists;
 	data_from(j * len_part_ + pos).exists = true;
 	if (!exists) {
+	  is_rehashed_ = false;
+	  ++size_;
 	  return iterator(j * len_part_ + pos, this);
 	} 
       }
     }
     rehash();
-    add_new(p);
-    return end(); 
+    return add_new(p);
   }
-  
+
+  iterator remove(iterator& it) {
+    data_from(it.pos).exists = false;
+    --size_;    
+    return ++it;
+  }
+
 public:
   cuckoo() {
     len_part_ = init_length / d + 1;
@@ -150,12 +168,37 @@ public:
       data_[i] = new vector<Data>(len_part_);
     }
     size_ = 0;
+    is_rehashed_ = false;
   }
   
   ~cuckoo() {
     for (size_t i = 0; i < d; ++i) {
       delete data_[i];
     }
+  }
+
+  cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& operator=
+  (cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& Cuckoo) {
+    clear();
+    iterator it = Cuckoo.begin();
+    if (!(Cuckoo.data_from(it.pos).exists)) ++it;
+    iterator final = Cuckoo.end();
+    while (it != final) {
+      insert(*it);
+      ++it;
+    }
+    return *this;
+  }
+
+  cuckoo(cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& Cuckoo) {
+    len_part_ = init_length / d + 1;
+    len_ = len_part_ * d;
+    for (size_t i = 0; i < d; ++i) {
+      data_[i] = new vector<Data>(len_part_);
+    }
+    size_ = 0;
+    is_rehashed_ = false;
+    *this = Cuckoo;
   }
 
   iterator begin() {
@@ -165,13 +208,35 @@ public:
   iterator end() {
     return iterator(len_, this);
   }
-  
-  iterator remove(iterator & it) {
-    data_from(it.pos).exists = false;
-    return ++it;
+
+  Value& operator[](const Key& k) {
+    iterator it = find(k);
+    if (it == end()) {
+      it = insert(make_pair(k, Value())).first;
+    }
+    return (*it).second;
   }
 
-  iterator find(const Key &k) {
+  void erase(iterator& it) {
+    remove(it);
+  }
+
+  void erase(iterator& first, iterator& last) {
+    while (first != last) {
+      first = remove(first);
+    }
+  }
+
+  size_t erase(const Key& k) {
+    iterator it = find(k);
+    if (it != end()) {
+      remove(it);
+      return 1;
+    }
+    return 0;
+  }
+
+  iterator find(const Key& k) {
     for (size_t i = 0; i < d; ++i) {
       size_t pos = hash(k, i);
       if (is_here(k, i * len_part_ + pos)) {
@@ -191,18 +256,24 @@ public:
       } 
     assert(res == end());
     res = add_new(k);
-    ++size_;
     return make_pair(res, true);
   }
-  
-  // temporary variant of function - in debug it is
-  // possible to see that smth is wrong with size
-  size_t size() {
-    size_t k = 0;
-    for (size_t i = 0; i < len_; ++i) 
-      if (data_from(i).exists) ++k; 
-    return k;
-    //return size_;
+
+  void clear() {
+    for (size_t i = 0; i < d; ++i) {
+      for (size_t j = 0; j < len_part_; ++j) {
+	(*(data_[i]))[j].exists = false;
+      }
+    }
+    size_ = 0;
+  }
+
+  bool empty() {
+    return (size_ == 0);
+  }
+ 
+  size_t size() const {
+    return size_;
   }
 
   size_t length() const {

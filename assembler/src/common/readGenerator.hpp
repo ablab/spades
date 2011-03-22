@@ -22,6 +22,13 @@ private:
 	int insertLength;
 	int errorProbability; // Probability in percents
 	int errorDistribution[3];
+	int insertError_;
+	bool readingStarted_;
+	int noErrorProbability(int p, int length) {
+		return MAX_PROBABILITY - p * length + p * p * length * (length - 1) / 2
+				/ MAX_PROBABILITY;
+	}
+
 public:
 	ReadGenerator(const char *fileName, int coverage, int insert = 0) {
 		insertLength = insert;
@@ -30,10 +37,10 @@ public:
 		s >> genome;
 		maxPosition = genome.size() - size * cnt - insertLength * (cnt - 1);
 		readNumber = (maxPosition + 1) * coverage;
-		currentPosition = 0;
 		current = 0;
 		setErrorProbability(0);
-		read_ahead();
+		setMaxInsertLengthError(0);
+		readingStarted_ = false;
 	}
 
 	void close() {
@@ -43,12 +50,11 @@ public:
 		srand(randSeed);
 	}
 
-	int noErrorProbability(int p, int length) {
-		return MAX_PROBABILITY - p * length + p * p * length * (length - 1) / 2
-				/ MAX_PROBABILITY;
-	}
-
 	void setErrorProbability(int probability) {
+		if (readingStarted_) {
+			cerr << "can not change generator parameters while reading" << endl;
+			assert(1);
+		}
 		errorProbability = probability;
 		errorDistribution[0] = noErrorProbability(probability, size);
 		errorDistribution[1] = probability * size * noErrorProbability(
@@ -57,9 +63,22 @@ public:
 				- errorDistribution[1];
 	}
 
+	void setMaxInsertLengthError(int insertError) {
+		if (readingStarted_) {
+			cerr << "can not change generator parameters while reading" << endl;
+			assert(1);
+		}
+		insertError_ = insertError;
+		currentPosition = insertError_;
+	}
+
 	ReadGenerator& operator>>(strobe_read<size, cnt, T> &sr) {
 		if (eof()) {
 			return *this;
+		}
+		if (!readingStarted_) {
+			read_ahead();
+			readingStarted_ = true;
 		}
 		sr = next_sr_;
 		read_ahead();
@@ -117,15 +136,16 @@ private:
 		}
 		int p = currentPosition;
 		for (int i = 0; i < cnt; i++) {
-			string readString = genome.substr(p, size);
+			string readString = genome.substr(
+					p + rand() % (2 * insertError_ + 1) - insertError_, size);
 			introduceErrors(readString);
 			sr.put(i, readString);
 			p += size + insertLength;
 		}
 		current++;
 		currentPosition++;
-		if (currentPosition > maxPosition)
-			currentPosition = 0;
+		if (currentPosition > maxPosition - insertError_)
+			currentPosition = insertError_;
 		return true;
 	}
 };

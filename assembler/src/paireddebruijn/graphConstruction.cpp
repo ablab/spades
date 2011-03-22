@@ -36,22 +36,41 @@ void constructGraph() {
 	verticesMap verts;
 	longEdgesMap longEdges;
 	createVertices(g, edges, verts, longEdges, graph);
-	expandDefinite(longEdges , graph, VertexCount);
+//	vertexDist(longEdges, graph, 172);
+	expandDefinite(longEdges , graph, VertexCount, true);
+	freopen("data/afterExpand.dot", "w",stdout);
+	outputLongEdges(longEdges);
+	freopen("data/afterExpand_g.dot", "w",stdout);
+	outputLongEdgesThroughGenome(longEdges,graph,VertexCount);
 //	freopen(graph.c_str(), "w",stdout);
 	cerr << endl << "End vertices" <<endl;
 //	return;
 
-	freopen(graph2.c_str(), "w",stdout);
-	outputLongEdges(longEdges);
-	cerr << "TraceReads" << endl;
+//	freopen(graph2.c_str(), "w",stdout);
+//	outputLongEdges(longEdges);
+//	cerr << "TraceReads" << endl;
 
 	traceReads(verts, longEdges, graph, VertexCount, EdgeId);
-	freopen(threaded_graph.c_str(), "w", stdout);
+	freopen("data/ReadsTraced.dot", "w", stdout);
 	outputLongEdges(longEdges);
+	freopen("data/ReadsTraced_g.dot", "w", stdout);
+	outputLongEdgesThroughGenome(longEdges,graph,VertexCount);
+	graph.recreateVerticesInfo(VertexCount, longEdges);
 
-	processLowerSequence(longEdges, graph, VertexCount);
-	freopen("data/LowerProcessed.dot", "w", stdout);
+	while (processLowerSequence(longEdges, graph, VertexCount))
+	{
+		graph.recreateVerticesInfo(VertexCount, longEdges);
+		expandDefinite(longEdges , graph, VertexCount);
+	}
+	freopen("data/afterLowers.dot", "w",stdout);
 	outputLongEdges(longEdges);
+	freopen("data/afterLowers_g.dot", "w",stdout);
+	outputLongEdgesThroughGenome(longEdges,graph,VertexCount);
+
+	//freopen("data/LowerProcessed.dot", "w", stdout);
+///	outputLongEdges(longEdges);
+
+
 
 
 }
@@ -110,8 +129,8 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 	EdgeId = 0;
 	cerr << "Start createVertices " << edges.size() << endl;
 	forn(i,MAX_VERT_NUMBER) {
-		graph.inD[i] = 0;
-		graph.outD[i] = 0;
+		forn(j, 2)
+			graph.degrees[i][j] = 0;
 	}
 	int count = 0;
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
@@ -122,6 +141,9 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 				int length = 1;
 				count++;
 //				cerr << count << endl;
+				if (((iter->se)[i])->lower->size() < l) {
+					cerr<<"Bad edge: "<<((iter->se)[i])->lower->size()<<" "<<((iter->se)[i])->lower->str()<<endl;
+				}
 				assert (((iter->se)[i])->lower->size() >= l);
 				sprintf(EdgeStr + 500000, "%s", decompress(kmer, k).c_str());
 				sprintf(EdgeStrLo + 500000, "%s",
@@ -146,8 +168,8 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 				length += toleft;
 				int fromVert = storeVertex(g, verts, startKmer, startSeq);
 				//				if (! (count && ((1<<14) -1 ))) {
-				cerr << EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
-						+ 500000 - toleft)) << endl;
+//				cerr << EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
+//						+ 500000 - toleft)) << endl;
 //				}
 				Sequence* UpperSeq = new Sequence(((char*) (EdgeStr
 						+ 500000 - toleft)));
@@ -170,10 +192,10 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 				}
 
 				g.addEdge(fromVert, toVert, Buffer);
-				graph.outputEdges[fromVert][graph.outD[fromVert]] = EdgeId;
-				graph.inputEdges[toVert][graph.inD[toVert]] = EdgeId;
-				graph.outD[fromVert]++;
-				graph.inD[toVert]++;
+				graph.outputEdges[fromVert][graph.degrees[fromVert][1]] = EdgeId;
+				graph.inputEdges[toVert][graph.degrees[toVert][0]] = EdgeId;
+				graph.degrees[fromVert][1]++;
+				graph.degrees[toVert][0]++;
 
 				EdgeId++;
 
@@ -184,7 +206,7 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 	}
 	g.output();
 	forn(i, VertexCount) {
-		cerr << i << " +" << graph.inD[i] << " -" << graph.outD[i] << endl;
+		cerr << i << " +" << graph.degrees[i][0] << " -" << graph.degrees[i][1] << endl;
 	}
 }
 
@@ -501,4 +523,5 @@ int storeVertex(gvis::GraphPrinter<int> &g, verticesMap &verts, ll newKmer,
 void resetVertexCount() {
 	VertexCount = 0;
 }
+
 

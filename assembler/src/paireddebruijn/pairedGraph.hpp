@@ -87,11 +87,19 @@ public:
 		length = len;
 		EdgeId = id;
 	}
+
+	~Edge() {
+		if (upper != lower) {
+			delete upper;
+			delete lower;
+		} else
+			delete upper;
+	}
 };
 
-inline int edgeRealId(int id, longEdgesMap &longEdges){
+inline int edgeRealId(int id, longEdgesMap &longEdges) {
 	int res = id;
-	while (longEdges[res]->EdgeId !=res){
+	while (longEdges[res]->EdgeId != res) {
 		res = longEdges[res]->EdgeId;
 	}
 	return res;
@@ -99,10 +107,13 @@ inline int edgeRealId(int id, longEdgesMap &longEdges){
 
 class PairedGraph {
 public:
-	int inD[MAX_VERT_NUMBER], outD[MAX_VERT_NUMBER];
+	//0 - in-degrees
+	//1 -out-degrees
+	int degrees[MAX_VERT_NUMBER][2];//, outD[MAX_VERT_NUMBER][2];
 	int outputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
 	int inputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
-
+	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
+//	int firstDiff[Msv]
 };
 //
 //class Vertex {

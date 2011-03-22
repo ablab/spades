@@ -25,7 +25,7 @@
 #define RIGHT 1
 #define LEFT -1
 
-LOGGER("paireddebruijn.common");
+//LOGGER("paireddebruijn.common");
 
 #define MAX_VERT_NUMBER 100000
 #define MAX_DEGREE 30

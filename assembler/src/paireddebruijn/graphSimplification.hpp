@@ -8,7 +8,9 @@
 
 using namespace paired_assembler;
 
-void processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount);
+void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount, bool NotExpandBeyondDefinite = false);
+bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount);
+pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &Graph, int vertexId);
 bool isPath(Edge &e1, Edge &e2);
 
 #endif /* GRAPHSIMPLIFICATION_H_ */
