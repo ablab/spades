@@ -5,71 +5,6 @@
 
 using namespace paired_assembler;
 
-void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
-		int &VertexCount) {
-	longEdgesMap::iterator it;
-	int expandEdgeIndex;
-	cerr << "expandDefiniteStart" << endl;
-	forn(i,VertexCount) {
-		if ((graph.outD[i] == 1) && (graph.inD[i] > 0)) {
-			cerr << i << endl;
-			expandEdgeIndex = edgeRealId(graph.outputEdges[i][0], longEdges);
-			int DestVertex = longEdges[expandEdgeIndex]->ToVertex;
-			int a = 0;
-			while ((edgeRealId(graph.inputEdges[DestVertex][a], longEdges)
-					!= expandEdgeIndex))
-				a++;
-			assert(a < graph.inD[DestVertex]);
-			while (a < graph.inD[DestVertex] - 1) {
-				graph.inputEdges[DestVertex][a]
-				                             = graph.inputEdges[DestVertex][a + 1];
-				a++;
-			}
-			graph.inD[DestVertex]--;
-			forn(j,graph.inD[i]) {
-				longEdges[graph.inputEdges[i][j]]->ExpandRight(
-						*(longEdges[expandEdgeIndex]));
-				graph.inputEdges[DestVertex][graph.inD[DestVertex]]
-				                             = graph.inputEdges[i][j];
-				graph.inD[DestVertex]++;
-			}
-			it = longEdges.find(expandEdgeIndex);
-			longEdges.erase(it);
-			graph.outD[i] = 0;
-			graph.inD[i] = 0;
-		}
-	}
-
-	forn(i,VertexCount) {
-		if ((graph.inD[i] == 1) && (graph.outD[i] > 0)) {
-			cerr << i << endl;
-			expandEdgeIndex = edgeRealId(graph.inputEdges[i][0], longEdges);
-			int SourceVertex = longEdges[expandEdgeIndex]->FromVertex;
-			int a = 0;
-			while (edgeRealId(graph.outputEdges[SourceVertex][a], longEdges)
-					!= expandEdgeIndex)
-				a++;
-			assert(a < graph.outD[SourceVertex]);
-			while (a < graph.outD[SourceVertex] - 1) {
-				graph.outputEdges[SourceVertex][a]
-				                                = graph.outputEdges[SourceVertex][a + 1];
-				a++;
-			}
-			graph.outD[SourceVertex]--;
-			forn(j,graph.outD[i]) {
-				longEdges[graph.outputEdges[i][j]]->ExpandLeft(
-						*(longEdges[expandEdgeIndex]));
-				graph.outputEdges[SourceVertex][graph.outD[SourceVertex]]
-				                                = graph.outputEdges[i][j];
-				graph.outD[SourceVertex]++;
-			}
-			it = longEdges.find(expandEdgeIndex);
-			longEdges.erase(it);
-			graph.outD[i] = 0;
-			graph.inD[i] = 0;
-		}
-	}
-}
 
 void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 		PairedGraph &graph, int &VertexCount, int &EdgeId) {
@@ -116,19 +51,19 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 								if (subsizelo>j+l) subsizelo = j+l;
 								int startup;
 								int startlo;
-								if (vDist.first+vDist.second < readLength+k){
-									cerr<<"CheckUp "<<longEdges[CurEdge]->upper->Subseq(longEdges[CurEdge]->upper->size()-subsizeup,longEdges[CurEdge]->upper->size()).str()<<" VS "<<upRead->Subseq(j+k+shift-subsizeup,j+k+shift).str()<<" with "<<subsizeup<<endl;
-									cerr<<"CheckLo "<<longEdges[CurEdge]->lower->Subseq(longEdges[CurEdge]->lower->size()-subsizelo,longEdges[CurEdge]->lower->size()).str()<<" VS "<<loRead->Subseq(j+l-subsizelo,j+l).str()<<" with "<<subsizelo<<endl;
-								}
+//								if (vDist.first+vDist.second < readLength+k){
+//									cerr<<"CheckUp "<<longEdges[CurEdge]->upper->Subseq(longEdges[CurEdge]->upper->size()-subsizeup,longEdges[CurEdge]->upper->size()).str()<<" VS "<<upRead->Subseq(j+k+shift-subsizeup,j+k+shift).str()<<" with "<<subsizeup<<endl;
+//									cerr<<"CheckLo "<<longEdges[CurEdge]->lower->Subseq(longEdges[CurEdge]->lower->size()-subsizelo,longEdges[CurEdge]->lower->size()).str()<<" VS "<<loRead->Subseq(j+l-subsizelo,j+l).str()<<" with "<<subsizelo<<endl;
+//								}
 								if ((longEdges[CurEdge]->upper->Subseq(longEdges[CurEdge]->upper->size()-subsizeup,longEdges[CurEdge]->upper->size()).similar(upRead->Subseq(j+k+shift-subsizeup,j+k+shift),subsizeup,RIGHT))&&
 										(longEdges[CurEdge]->lower->Subseq(longEdges[CurEdge]->lower->size()-subsizelo,longEdges[CurEdge]->lower->size()).similar(loRead->Subseq(j+l-subsizelo,j+l),subsizelo,RIGHT))) {
-									cerr<<"in EQU ";
+//									cerr<<"in EQU ";
 									if (tmpIn ==-1) {
-										cerr<<"first time"<<endl;
+//										cerr<<"first time"<<endl;
 										tmpIn = CurEdge;
 									}
 									else {
-										cerr<<"second time"<<endl;
+										//cerr<<"second time"<<endl;
 										tmpIn = -1;
 										break;
 									}
@@ -143,19 +78,19 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 								int subsizelo = longEdges[CurEdge]->lower->size();
 								if (subsizeup>readLength-j-1-shift) subsizeup = readLength-j-1-shift;
 								if (subsizelo>readLength-j-1) subsizelo = readLength-j-1;
-								if (vDist.first+vDist.second < readLength+k){
-									cerr<<"CheckUp "<<longEdges[CurEdge]->upper->Subseq(0,subsizeup).str()<<" VS "<<upRead->Subseq(j+shift+1,j+shift+1+subsizeup).str()<<" with "<<subsizeup<<endl;
-									cerr<<"CheckLo "<<longEdges[CurEdge]->lower->Subseq(0,subsizelo).str()<<" VS "<<loRead->Subseq(j+1,j+1+subsizelo).str()<<" with "<<subsizelo<<endl;
-								}
+//								if (vDist.first+vDist.second < readLength+k){
+//									cerr<<"CheckUp "<<longEdges[CurEdge]->upper->Subseq(0,subsizeup).str()<<" VS "<<upRead->Subseq(j+shift+1,j+shift+1+subsizeup).str()<<" with "<<subsizeup<<endl;
+//									cerr<<"CheckLo "<<longEdges[CurEdge]->lower->Subseq(0,subsizelo).str()<<" VS "<<loRead->Subseq(j+1,j+1+subsizelo).str()<<" with "<<subsizelo<<endl;
+//								}
 								if ((longEdges[CurEdge]->upper->Subseq(0,subsizeup).similar(upRead->Subseq(j+shift+1,j+shift+1+subsizeup),subsizeup,LEFT))&&
 										(longEdges[CurEdge]->lower->Subseq(0,subsizelo).similar(loRead->Subseq(j+1,j+1+subsizelo),subsizelo,LEFT))) {
-									cerr<<"out EQU ";
+//									cerr<<"out EQU ";
 									if (tmpOut ==-1) {
-										cerr<<"first time"<<endl;
+//										cerr<<"first time"<<endl;
 										tmpOut = CurEdge;
 									}
 									else {
-										cerr<<"second time"<<endl;
+//										cerr<<"second time"<<endl;
 										tmpOut = -1;
 										break;
 									}

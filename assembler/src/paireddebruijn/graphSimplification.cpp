@@ -148,10 +148,95 @@ pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &graph, int verte
 		}
 	}
 
-	cerr << endl << res1 << " " << res2<<endl;
+//	cerr << endl << res1 << " " << res2<<endl;
 	//assert(0);
 	return make_pair(res1 + 1, res2 + 1);
 }
 
 
 
+void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
+		int &VertexCount, bool NotExpandBeyondDefinite) {
+	longEdgesMap::iterator it;
+	int expandEdgeIndex;
+	cerr << "expandDefiniteStart" << endl;
+	forn(i,VertexCount) {
+		if ((graph.outD[i] == 1) && (graph.inD[i] > 0)) {
+			cerr << i << endl;
+			expandEdgeIndex = edgeRealId(graph.outputEdges[i][0], longEdges);
+			int DestVertex = longEdges[expandEdgeIndex]->ToVertex;
+			pair<int, int> diffDistDest = make_pair(0,0);
+			pair<int, int> diffDistCur = make_pair(0,0);
+			if (NotExpandBeyondDefinite){
+				diffDistDest = vertexDist(longEdges, graph, DestVertex);
+				diffDistCur = vertexDist(longEdges, graph, i);
+			}
+			if	((!NotExpandBeyondDefinite)||(diffDistCur.first+diffDistDest.second+longEdges[expandEdgeIndex]->length<readLength+2*k-1))
+			{
+				int a = 0;
+				while ((edgeRealId(graph.inputEdges[DestVertex][a], longEdges)
+						!= expandEdgeIndex))
+					a++;
+				assert(a < graph.inD[DestVertex]);
+				while (a < graph.inD[DestVertex] - 1) {
+					graph.inputEdges[DestVertex][a] = graph.inputEdges[DestVertex][a + 1];
+					a++;
+				}
+				graph.inD[DestVertex]--;
+				forn(j,graph.inD[i]) {
+					longEdges[graph.inputEdges[i][j]]->ExpandRight(
+							*(longEdges[expandEdgeIndex]));
+					graph.inputEdges[DestVertex][graph.inD[DestVertex]]
+												 = graph.inputEdges[i][j];
+					graph.inD[DestVertex]++;
+				}
+
+				it = longEdges.find(expandEdgeIndex);
+				longEdges.erase(it);
+				graph.outD[i] = 0;
+				graph.inD[i] = 0;
+			}
+		}
+	}
+
+	forn(i,VertexCount) {
+		if ((graph.inD[i] == 1) && (graph.outD[i] > 0)) {
+			cerr << i << endl;
+			expandEdgeIndex = edgeRealId(graph.inputEdges[i][0], longEdges);
+			int SourceVertex = longEdges[expandEdgeIndex]->FromVertex;
+			pair<int, int> diffDistSource = make_pair(0,0);
+			pair<int, int> diffDistCur = make_pair(0,0);
+			if (NotExpandBeyondDefinite){
+				diffDistSource = vertexDist(longEdges, graph, SourceVertex);
+				diffDistCur = vertexDist(longEdges, graph, i);
+			}
+			if	((!NotExpandBeyondDefinite)||(diffDistCur.second+diffDistSource.first+longEdges[expandEdgeIndex]->length<readLength+2*k-1))
+			{
+
+				int a = 0;
+				while (edgeRealId(graph.outputEdges[SourceVertex][a], longEdges)
+						!= expandEdgeIndex)
+					a++;
+				assert(a < graph.outD[SourceVertex]);
+				while (a < graph.outD[SourceVertex] - 1) {
+					graph.outputEdges[SourceVertex][a]
+													= graph.outputEdges[SourceVertex][a + 1];
+					a++;
+				}
+				graph.outD[SourceVertex]--;
+				forn(j,graph.outD[i]) {
+					longEdges[graph.outputEdges[i][j]]->ExpandLeft(
+							*(longEdges[expandEdgeIndex]));
+					graph.outputEdges[SourceVertex][graph.outD[SourceVertex]]
+													= graph.outputEdges[i][j];
+					graph.outD[SourceVertex]++;
+				}
+				it = longEdges.find(expandEdgeIndex);
+				longEdges.erase(it);
+				graph.outD[i] = 0;
+				graph.inD[i] = 0;
+
+			}
+		}
+	}
+}
