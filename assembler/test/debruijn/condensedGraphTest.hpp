@@ -51,7 +51,7 @@ public:
 	}
 };
 
-void go(const Graph& g, Vertex* v, set<Vertex*>& visited, string& log) {
+void go(const CondensedGraph& g, Vertex* v, set<Vertex*>& visited, string& log) {
 	log += "Entering vertex '" + v->nucls().str() + "'; ";
 	if (visited.count(v) == 1) {
 		log += "Vertex '" + v->nucls().str() + "' has been visited; ";
@@ -65,7 +65,7 @@ void go(const Graph& g, Vertex* v, set<Vertex*>& visited, string& log) {
 	log += "Leaving vertex '" + v->nucls().str() + "'; ";
 }
 
-string printDfs(const Graph& g, Vertex* start) {
+string printDfs(const CondensedGraph& g, Vertex* start) {
 	DFS dfs(&g);
 
 	string log;
@@ -111,7 +111,7 @@ void TestVertex() {
 }
 
 void VisTool() {
-	Graph g(5, new ActionHandler());
+	CondensedGraph g(5, new GraphActionHandler());
 	Vertex* v1 = g.AddVertex(Sequence("AAAAT"));
 	Vertex* v2 = g.AddVertex(Sequence("AAATA"));
 	Vertex* v3 = g.AddVertex(Sequence("AAATC"));
@@ -166,7 +166,7 @@ template <size_t kmer_size_, size_t read_size_>
 void AssertGraph(size_t read_cnt, string reads[], size_t vertex_cnt, string et_vertices[], size_t edge_cnt, string et_edges[][2]) {
 	const vector<strobe_read<read_size_, 1>> strobe_reads = MakeReads<read_size_> (reads, read_cnt);
 	DirectConstructor<kmer_size_, read_size_, 1> g_c(strobe_reads);
-	Graph *g;
+	CondensedGraph *g;
 	SimpleHashTable<5> *index;
 	g_c.ConstructGraph(g, index);
 
@@ -202,7 +202,7 @@ void AssertCondense(size_t read_cnt, string reads[], size_t vertex_cnt, string e
 	DeBruijn<kmer_size_> debruijn;
 	debruijn.ConstructGraph(strobe_reads) ;
 	CondenseConstructor<kmer_size_> g_c(debruijn);
-	Graph *g;
+	CondensedGraph *g;
 	SimpleHashTable<5> *index;
 	g_c.ConstructGraph(g, index);
 

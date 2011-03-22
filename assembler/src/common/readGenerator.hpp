@@ -14,26 +14,42 @@ template<int size, int cnt = 1, typename T = char>
 class ReadGenerator {
 private:
 	//	vector<ifaststream*> ifs_;
-	string genome;
-	int currentPosition;
-	int maxPosition;
-	int readNumber;
-	int current;
-	int insertLength;
-	int errorProbability; // Probability in percents
-	int errorDistribution[3];
+	string genome_;
+	int currentPosition_;
+	int minPosition_;
+	int maxPosition_;
+	int coverage_;
+	int currentCoverage_;
+	int insertLength_;
+	int errorProbability_; // Probability in percents
+	int errorDistribution_[3];
+	int insertError_;
+	bool readingStarted_;
+	int noErrorProbability(int p, int length) {
+		return MAX_PROBABILITY - p * length + p * p * length * (length - 1) / 2
+				/ MAX_PROBABILITY;
+	}
+
 public:
-	ReadGenerator(const char *fileName, int coverage, int insert = 0) {
-		insertLength = insert;
+	ReadGenerator(istream is, int coverage, int insert = 0) {
+		insertLength_ = insert;
+		coverage_ = coverage;
 		ifstream s;
-		s.open(fileName);
-		s >> genome;
-		maxPosition = genome.size() - size * cnt - insertLength * (cnt - 1);
-		readNumber = (maxPosition + 1) * coverage;
-		currentPosition = 0;
-		current = 0;
+		is >> genome_;
+		currentCoverage_ = 0;
+		readingStarted_ = false;
 		setErrorProbability(0);
-		read_ahead();
+		setMaxInsertLengthError(0);
+	}
+
+	ReadGenerator(string genome, int coverage, int insert = 0) {
+		insertLength_ = insert;
+		coverage_ = coverage;
+		genome_ = genome;
+		currentCoverage_ = 0;
+		readingStarted_ = false;
+		setErrorProbability(0);
+		setMaxInsertLengthError(0);
 	}
 
 	void close() {
@@ -43,23 +59,38 @@ public:
 		srand(randSeed);
 	}
 
-	int noErrorProbability(int p, int length) {
-		return MAX_PROBABILITY - p * length + p * p * length * (length - 1) / 2
-				/ MAX_PROBABILITY;
+	void setErrorProbability(int probability) {
+		if (readingStarted_) {
+			cerr << "can not change generator parameters while reading" << endl;
+			assert(1);
+		}
+		errorProbability_ = probability;
+		errorDistribution_[0] = noErrorProbability(probability, size);
+		errorDistribution_[1] = probability * size * noErrorProbability(
+				probability, size) / MAX_PROBABILITY;
+		errorDistribution_[2] = MAX_PROBABILITY - errorDistribution_[0]
+				- errorDistribution_[1];
 	}
 
-	void setErrorProbability(int probability) {
-		errorProbability = probability;
-		errorDistribution[0] = noErrorProbability(probability, size);
-		errorDistribution[1] = probability * size * noErrorProbability(
-				probability, size) / MAX_PROBABILITY;
-		errorDistribution[2] = MAX_PROBABILITY - errorDistribution[0]
-				- errorDistribution[1];
+	void setMaxInsertLengthError(int insertError) {
+		if (readingStarted_) {
+			cerr << "can not change generator parameters while reading" << endl;
+			assert(1);
+		}
+		insertError_ = insertError;
+		maxPosition_ = genome_.size() - size * cnt - insertLength_ * (cnt - 1)
+				- insertError_;
+		minPosition_ = insertError_;
 	}
 
 	ReadGenerator& operator>>(strobe_read<size, cnt, T> &sr) {
 		if (eof()) {
 			return *this;
+		}
+		if (!readingStarted_) {
+			readingStarted_ = true;
+			currentPosition_ = minPosition_;
+			read_ahead();
 		}
 		sr = next_sr_;
 		read_ahead();
@@ -71,7 +102,7 @@ public:
 	}
 
 	inline bool eof() const {
-		return current >= readNumber;
+		return currentCoverage_ >= coverage_;
 	}
 
 	vector<strobe_read<size, cnt, T> >* readAll(int number = -1) {
@@ -96,9 +127,9 @@ private:
 
 	inline int numberOfErrors() {
 		int dice = rand() % MAX_PROBABILITY;
-		if (dice < errorDistribution[0])
+		if (dice < errorDistribution_[0])
 			return 0;
-		if (dice < errorDistribution[1] + errorDistribution[0])
+		if (dice < errorDistribution_[1] + errorDistribution_[0])
 			return 1;
 		return 2;
 	}
@@ -112,20 +143,23 @@ private:
 	}
 
 	bool read(strobe_read<size, cnt, T> &sr) {
+		//		cout << currentPosition << endl;
 		if (!is_open() || eof()) {
 			return false;
 		}
-		int p = currentPosition;
+		int p = currentPosition_;
 		for (int i = 0; i < cnt; i++) {
-			string readString = genome.substr(p, size);
+			int positionError = rand() % (2 * insertError_ + 1) - insertError_;
+			string readString = genome_.substr(p + positionError, size);
 			introduceErrors(readString);
 			sr.put(i, readString);
-			p += size + insertLength;
+			p += size + insertLength_;
 		}
-		current++;
-		currentPosition++;
-		if (currentPosition > maxPosition)
-			currentPosition = 0;
+		currentPosition_++;
+		if (currentPosition_ > maxPosition_) {
+			currentPosition_ = minPosition_;
+			currentCoverage_++;
+		}
 		return true;
 	}
 };
