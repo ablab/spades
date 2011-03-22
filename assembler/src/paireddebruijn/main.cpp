@@ -4,11 +4,13 @@
 #include "graphConstruction.hpp"
 #include "sequence.hpp"
 
+LOGGER("p.main");
+
 
 int main() {
 	initConstants(ini_file);
 	initGlobal();
-
+	INFO("Constants inited...");
 	freopen(error_log.c_str(), "w",stderr);
 //	assert( 1== 0);
 	cerr << l << " " << k;

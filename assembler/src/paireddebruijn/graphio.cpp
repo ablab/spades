@@ -106,12 +106,12 @@ void outputLongEdgesThroughGenome(longEdgesMap &longEdges, PairedGraph &graph, i
 	cerr<<"Try to process"<<endl;
 
 	int CurVert = 0;
-	while ((graph.inD[CurVert]!=0)||(graph.outD[CurVert]!=1)) CurVert++;
+	while ((graph.degrees[CurVert][0]!=0)||(graph.degrees[CurVert][1]!=1)) CurVert++;
 	cerr<<"Start vertex "<<CurVert<<endl;
-	while (graph.outD[CurVert]!=0){
+	while (graph.degrees[CurVert][1]!=0){
 		bool NoEdge = true;
 		cerr<<"Try to found next edge"<<endl;
-		forn(v,graph.outD[CurVert])
+		forn(v,graph.degrees[CurVert][1])
 		{
 
 			int edgeId = edgeRealId(graph.outputEdges[CurVert][v], longEdges);
@@ -276,8 +276,9 @@ void save(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 	dp.outputInt(VertexCount);
 	dp.outputInt(EdgeId);
 	dp.outputLongEdgesMap(longEdges);
-	dp.outputIntArray(g.inD, MAX_VERT_NUMBER);
-	dp.outputIntArray(g.outD, MAX_VERT_NUMBER);
+//TODO: FIX!!!
+//	dp.outputIntArray(g.inD, MAX_VERT_NUMBER);
+//	dp.outputIntArray(g.outD, MAX_VERT_NUMBER);
 	dp.outputIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 	dp.outputIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 	dp.close();
@@ -288,8 +289,9 @@ void load(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 	dr.readInt(VertexCount);
 	dr.readInt(EdgeId);
 	dr.readLongEdgesMap(longEdges);
-	dr.readIntArray(g.inD, MAX_VERT_NUMBER);
-	dr.readIntArray(g.outD, MAX_VERT_NUMBER);
+//TODO: fix;
+//	dr.readIntArray(g.inD, MAX_VERT_NUMBER);
+//	dr.readIntArray(g.outD, MAX_VERT_NUMBER);
 	dr.readIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 	dr.readIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 	dr.close();

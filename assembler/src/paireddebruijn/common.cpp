@@ -1,4 +1,7 @@
 #include "common.hpp"
+
+LOGGER("p.common");
+
 string parsed_reads;
 string parsed_k_l_mers;
 string parsed_k_sequence;
@@ -20,6 +23,8 @@ int needSequences = 1;
 int needGraph = 1;
 void initConstants(string ini_file) {
 	char tmp[200];
+	INFO("Trying to init constants...");
+
 //	string folder = string("data/");
 	FILE* ini = fopen(ini_file.c_str(), "r");
 	assert(fscanf(ini, "k = %d\n", &k) == 1);
