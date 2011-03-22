@@ -87,11 +87,19 @@ public:
 		length = len;
 		EdgeId = id;
 	}
+
+	~Edge() {
+		if (upper != lower) {
+			delete upper;
+			delete lower;
+		} else
+			delete upper;
+	}
 };
 
-inline int edgeRealId(int id, longEdgesMap &longEdges){
+inline int edgeRealId(int id, longEdgesMap &longEdges) {
 	int res = id;
-	while (longEdges[res]->EdgeId !=res){
+	while (longEdges[res]->EdgeId != res) {
 		res = longEdges[res]->EdgeId;
 	}
 	return res;
