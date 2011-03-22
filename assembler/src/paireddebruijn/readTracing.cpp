@@ -104,6 +104,8 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 						//				cerr<<"vertex found for lower "<<(*it)->lower->str()<<endl;
 						//						fprintf(fout,"%s %s\n",upperNuclRead,lowerNuclRead);
 						int VertId = (*it)->VertexId;
+						pair<int, int> vDist = vertexDist(longEdges,graph,VertId);
+
 						if ((graph.inD[VertId]!=0)&&(graph.outD[VertId]!=0)) {
 							int tmpIn = -1;
 							forn(i,graph.inD[VertId]) {
@@ -112,14 +114,21 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 								int subsizelo = longEdges[CurEdge]->lower->size();
 								if (subsizeup>j+k+shift) subsizeup = j+k+shift;
 								if (subsizelo>j+l) subsizelo = j+l;
-								//cerr<<"CheckUp "<<longEdges[CurEdge]->upper->str()<<" VS "<<upRead->Subseq(0,j+k+shift).str()<<" with "<<subsizeup<<endl;
-								//cerr<<"CheckLo "<<longEdges[CurEdge]->lower->str()<<" VS "<<loRead->Subseq(0,j+l).str()<<" with "<<subsizelo<<endl;
-								if ((longEdges[CurEdge]->upper->similar(upRead->Subseq(0,j+k+shift),subsizeup,RIGHT))&&
-										(longEdges[CurEdge]->lower->similar(loRead->Subseq(0,j+l),subsizelo,RIGHT))) {
+								int startup;
+								int startlo;
+								if (vDist.first+vDist.second < readLength+k){
+									cerr<<"CheckUp "<<longEdges[CurEdge]->upper->Subseq(longEdges[CurEdge]->upper->size()-subsizeup,longEdges[CurEdge]->upper->size()).str()<<" VS "<<upRead->Subseq(j+k+shift-subsizeup,j+k+shift).str()<<" with "<<subsizeup<<endl;
+									cerr<<"CheckLo "<<longEdges[CurEdge]->lower->Subseq(longEdges[CurEdge]->lower->size()-subsizelo,longEdges[CurEdge]->lower->size()).str()<<" VS "<<loRead->Subseq(j+l-subsizelo,j+l).str()<<" with "<<subsizelo<<endl;
+								}
+								if ((longEdges[CurEdge]->upper->Subseq(longEdges[CurEdge]->upper->size()-subsizeup,longEdges[CurEdge]->upper->size()).similar(upRead->Subseq(j+k+shift-subsizeup,j+k+shift),subsizeup,RIGHT))&&
+										(longEdges[CurEdge]->lower->Subseq(longEdges[CurEdge]->lower->size()-subsizelo,longEdges[CurEdge]->lower->size()).similar(loRead->Subseq(j+l-subsizelo,j+l),subsizelo,RIGHT))) {
+									cerr<<"in EQU ";
 									if (tmpIn ==-1) {
+										cerr<<"first time"<<endl;
 										tmpIn = CurEdge;
 									}
 									else {
+										cerr<<"second time"<<endl;
 										tmpIn = -1;
 										break;
 									}
@@ -133,13 +142,20 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 								int subsizeup = longEdges[CurEdge]->upper->size();
 								int subsizelo = longEdges[CurEdge]->lower->size();
 								if (subsizeup>readLength-j-1-shift) subsizeup = readLength-j-1-shift;
-								if (subsizelo>readLength-j-l) subsizelo = readLength-j-l;
-								if ((longEdges[CurEdge]->upper->similar(upRead->Subseq(j+shift+1,readLength),subsizeup,LEFT))&&
-										(longEdges[CurEdge]->lower->similar(loRead->Subseq(j+1,readLength),subsizelo,LEFT))) {
+								if (subsizelo>readLength-j-1) subsizelo = readLength-j-1;
+								if (vDist.first+vDist.second < readLength+k){
+									cerr<<"CheckUp "<<longEdges[CurEdge]->upper->Subseq(0,subsizeup).str()<<" VS "<<upRead->Subseq(j+shift+1,j+shift+1+subsizeup).str()<<" with "<<subsizeup<<endl;
+									cerr<<"CheckLo "<<longEdges[CurEdge]->lower->Subseq(0,subsizelo).str()<<" VS "<<loRead->Subseq(j+1,j+1+subsizelo).str()<<" with "<<subsizelo<<endl;
+								}
+								if ((longEdges[CurEdge]->upper->Subseq(0,subsizeup).similar(upRead->Subseq(j+shift+1,j+shift+1+subsizeup),subsizeup,LEFT))&&
+										(longEdges[CurEdge]->lower->Subseq(0,subsizelo).similar(loRead->Subseq(j+1,j+1+subsizelo),subsizelo,LEFT))) {
+									cerr<<"out EQU ";
 									if (tmpOut ==-1) {
+										cerr<<"first time"<<endl;
 										tmpOut = CurEdge;
 									}
 									else {
+										cerr<<"second time"<<endl;
 										tmpOut = -1;
 										break;
 									}

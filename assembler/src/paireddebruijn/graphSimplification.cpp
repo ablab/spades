@@ -135,10 +135,10 @@ pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &graph, int verte
 
 //				cerr << endl <<"2 "<< tmp2.str();
 //				cerr << endl <<count << " ";// << nucl(tmp[tmp.size() - 1 - count]) << " " << nucl (tmp2[tmp2.size() - 1 -count]);
-				if (count >= min(tmp.size(), tmp2.size()) || tmp[tmp.size() - 1 - count] != tmp2[tmp2.size() - 1 -count] )
+				if (count >= min(tmp.size(), tmp2.size()) || tmp[count] != tmp2[count] )
 				//				if (*(longEdges[e1]->upper)[count] != *(longEdges[e2]->upper)[count])
 					break;
-				if (count >= min(tmpl.size(), tmp2l.size()) || tmpl[tmpl.size() - 1 - count] != tmp2l[tmp2l.size() - 1 -count] )
+				if (count >= min(tmpl.size(), tmp2l.size()) || tmpl[count] != tmp2l[count] )
 				//				if (*(longEdges[e1]->upper)[count] != *(longEdges[e2]->upper)[count])
 					break;
 
