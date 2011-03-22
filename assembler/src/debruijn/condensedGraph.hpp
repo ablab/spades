@@ -28,57 +28,69 @@ namespace condensed_graph {
 //typedef Seq<N> Read;
 LOGGER("d.condensed_graph");
 
-class Vertex;
-
+/**
+ * @brief Vertex of a condensed graph.
+ *
+ * Class representing vertex of condensed graph.
+ * Contains the Sequence of nucleotides, average coverage of this sequence,
+ * pointers to children and coverage of corresponding edges.
+ *
+ */
 class Vertex {
 private:
 	Sequence nucls_;
-	Vertex* desc_[4];
+	Vertex* right_neighbours_[4];
 	Vertex* complement_;
 
 	int coverage_;
-	int arc_coverage_[4];
+	int edge_coverage_[4];
 
+	friend class CondensedGraph;
 public:
 	//bool deleted;
 	Vertex(const Sequence &nucls) :
 		nucls_(nucls) {
-		fill_n(desc_, 4, (Vertex*) NULL);
-		fill_n(arc_coverage_, 4, 0);
+		fill_n(right_neighbours_, 4, (Vertex*) NULL);
+		fill_n(edge_coverage_, 4, 0);
 
 	}
 
-	Vertex(const Sequence &nucls, Vertex** desc) :
-		nucls_(nucls) {
-		memcpy(desc, desc_, 4 * sizeof(Vertex*));
-		fill_n(arc_coverage_, 4, 0);
-	}
-	~Vertex() {
-	}
-	int DescCount() {
+	//	Vertex(const Sequence &nucls, Vertex** desc) :
+	//		nucls_(nucls) {
+	//		memcpy(desc, right_neighbours_, 4 * sizeof(Vertex*));
+	//		fill_n(edge_coverage_, 4, 0);
+	//	}
+
+	int RightNeighbourCount() {
 		int c = 0;
 		for (int i = 0; i < 4; ++i)
-			if (desc_[i] != NULL)
+			if (right_neighbours_[i] != NULL)
 				c++;
 		return c;
 	}
+
 	bool IsDeadend() {
-		return DescCount() == 0;
+		return RightNeighbourCount() == 0;
 	}
-	Vertex* const * desc() const {
-		return desc_;
+
+	//	Vertex* const * right_neighbours() const {
+	//		return right_neighbours_;
+	//	}
+
+	Vertex* right_neighbour(char nucl) {
+		return right_neighbours_[(int) nucl];
 	}
-	Vertex* desc(char nucl) {
-		return desc_[(int) nucl];
-	}
-	size_t size() {
+
+	size_t size() const {
 		return nucls_.size();
 	}
+
 	const Sequence& nucls() const {
 		return nucls_;
 	}
+
 	void AddDesc(Vertex* v, char nucl) {
-		desc_[(int) nucl] = v;
+		right_neighbours_[(int) nucl] = v;
 	}
 	Vertex* complement() const {
 		return complement_;
@@ -95,22 +107,60 @@ public:
 };
 
 //template<size_t kmer_size_> class GraphConstructor;
-
-class ActionHandler {
+/**
+ * @brief Condensed graph action listener.
+ *
+ * Listener of condensed graph public actions.
+ *
+ */
+class GraphActionHandler {
 public:
+
+	/**
+	 * Handle addition of vertex and complement.
+	 *
+	 * @see CondensedGraph::AddVertex()
+	 * @param v Pointer to vertex that has been added
+	 */
 	virtual void HandleAdd(Vertex* v) {
 	}
+
+	/**
+	 * Handle deletion of vertex and complement.
+	 *
+	 * @see CondensedGraph::DeleteVertex()
+	 * @param v Pointer to vertex that has been deleted
+	 */
 	virtual void HandleDelete(Vertex* v) {
 	}
+
+	/**
+	 * Handle merge of two vertices and complement.
+	 *
+	 * @see CondensedGraph::Merge()
+	 * @param v1 Pointer to left vertex that was merged
+	 * @param v2 Pointer to right vertex that was merged
+	 * @param v Pointer to vertex that is merge result
+	 */
 	virtual void HandleMerge(Vertex* v1, Vertex* v2, Vertex* v) {
 	}
+
+	/**
+	 * Handle split of vertex and its complement into two.
+	 *
+	 * @see CondensedGraph::SplitVertex()
+	 * @param v Pointer to vertex that was split
+	 * @param pos Position by which v was split (this position corresponds to the k-1 position of v2)
+	 * @param v1 Pointer to left vertex that is split result
+	 * @param v2 Pointer to right vertex that is split result
+	 */
 	virtual void HandleSplit(Vertex* v, size_t pos, Vertex* v1, Vertex* v2) {
 	}
 };
 
 //////////////////////////////////////////////////
 
-class Graph {
+class CondensedGraph {
 	set<Vertex*> vertices_;
 
 	/**
@@ -125,15 +175,15 @@ class Graph {
 	void AddDesc(Vertex* anc, Vertex* desc);
 
 	size_t k_;
-	ActionHandler* action_handler_;
+	GraphActionHandler* action_handler_;
 	//	template<size_t kmer_size_> friend class GraphConstructor;
 public:
 
-	Graph(size_t k, ActionHandler* action_handler) :
+	CondensedGraph(size_t k, GraphActionHandler* action_handler) :
 		k_(k), action_handler_(action_handler) {
 	}
 
-	~Graph() {
+	~CondensedGraph() {
 		delete action_handler_;
 	}
 
@@ -141,7 +191,7 @@ public:
 		return vertices_;
 	}
 
-	void set_action_handler(ActionHandler* action_handler) {
+	void set_action_handler(GraphActionHandler* action_handler) {
 		delete action_handler_;
 
 		action_handler_ = action_handler;
@@ -156,7 +206,7 @@ public:
 	 * adds vertex and its complement
 	 */
 	Vertex* AddVertex(const Sequence &nucls);
-//	Vertex* AddVertex(Sequence nucls);
+	//	Vertex* AddVertex(Sequence nucls);
 
 	/**
 	 * deletes vertex and its complement
@@ -201,8 +251,15 @@ public:
 
 //////////////////////////////////////////////////////////////////
 
+/**
+ * @brief Base class for condensed graph traversals.
+ */
 class Traversal {
 public:
+
+	/**
+	 * Stab base class for handling graph primitives during traversal.
+	 */
 	class Handler {
 	public:
 		virtual void HandleStartVertex(const Vertex* v) {
@@ -213,20 +270,24 @@ public:
 		}
 	};
 
-	Traversal(const Graph* g) :
+	Traversal(const CondensedGraph* g) :
 		g_(g) {
 	}
-	virtual void Traverse(Handler& h) {
-	}
+
+	/**
+	 *
+	 */
+	virtual void Traverse(Handler& h) =0;
+
 protected:
-	const Graph* g_;
+	const CondensedGraph* g_;
 };
 
 class DFS: public Traversal {
 	set<Vertex*> visited_;
 	void go(Vertex* v, vector<Vertex*>& stack, Handler& h);
 public:
-	DFS(const Graph* g) :
+	DFS(const CondensedGraph* g) :
 		Traversal(g) {
 
 	}
@@ -235,7 +296,7 @@ public:
 
 class GraphVisualizer {
 public:
-	virtual void Visualize(const Graph& g) = 0;
+	virtual void Visualize(const CondensedGraph& g) = 0;
 };
 
 class SimpleGraphVisualizer: public GraphVisualizer {
@@ -245,7 +306,7 @@ public:
 		gp_(gp) {
 	}
 
-	virtual void Visualize(const Graph& g);
+	virtual void Visualize(const CondensedGraph& g);
 };
 
 class ComplementGraphVisualizer: public GraphVisualizer {
@@ -255,7 +316,7 @@ public:
 		gp_(gp) {
 	}
 
-	virtual void Visualize(const Graph& g);
+	virtual void Visualize(const CondensedGraph& g);
 };
 
 class SimpleStatCounter: public Traversal::Handler {
@@ -334,7 +395,8 @@ public:
 	}
 
 	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
-		pr_.addEdge(make_pair(v1, v1->complement()), make_pair(v2, v2->complement()), "");
+		pr_.addEdge(make_pair(v1, v1->complement()),
+				make_pair(v2, v2->complement()), "");
 	}
 
 };

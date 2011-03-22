@@ -54,7 +54,7 @@ public:
 };
 
 template<size_t kmer_size_>
-class HashRenewer: public ActionHandler {
+class HashRenewer: public GraphActionHandler {
 	typedef Seq<kmer_size_> Kmer;
 
 	SimpleHashTable<kmer_size_> *h_;
@@ -105,7 +105,7 @@ template<size_t kmer_size_>
 class GraphConstructor {
 protected:
 	typedef Seq<kmer_size_> Kmer;
-	Graph *g_;
+	CondensedGraph *g_;
 	SimpleHashTable<kmer_size_> *h_;
 
 	pair<Vertex*, int> GetPosition(Kmer k) {
@@ -126,13 +126,13 @@ protected:
 
 	GraphConstructor() {
 		h_ = new SimpleHashTable<kmer_size_> ();
-		g_ = new Graph(kmer_size_, new HashRenewer<kmer_size_> (h_));
+		g_ = new CondensedGraph(kmer_size_, new HashRenewer<kmer_size_> (h_));
 		//		DEBUG("HERE0");
 		//		GetPosMaybeMissing(Seq<5>("AAAAA"));
 	}
 
 public:
-	virtual void ConstructGraph(Graph* &g, SimpleHashTable<kmer_size_>* &h) {
+	virtual void ConstructGraph(CondensedGraph* &g, SimpleHashTable<kmer_size_>* &h) {
 		g = g_;
 		h = h_;
 	}
@@ -154,7 +154,7 @@ public:
 		super(), reads_(reads) {
 	}
 
-	virtual void ConstructGraph(Graph* &g, SimpleHashTable<kmer_size_>* &h) {
+	virtual void ConstructGraph(CondensedGraph* &g, SimpleHashTable<kmer_size_>* &h) {
 		for (size_t i = 0; i < reads_.size(); ++i) {
 			for (size_t r = 0; r < cnt; ++r) {
 				ThreadRead(reads_[i][r]);
@@ -292,7 +292,7 @@ public:
 		origin_(origin) {
 
 	}
-	virtual void ConstructGraph(Graph* &g, SimpleHashTable<kmer_size_>* &h) {
+	virtual void ConstructGraph(CondensedGraph* &g, SimpleHashTable<kmer_size_>* &h) {
 
 		for (typename debruijn::kmer_iterator it = origin_.kmer_begin(), end =
 				origin_.kmer_end(); it != end; it++) {
