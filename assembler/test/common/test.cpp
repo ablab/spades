@@ -4,6 +4,7 @@
 #include "seqTest.hpp"
 #include "sequenceTest.hpp"
 #include "ireadstreamTest.hpp"
+#include "quality_read_stream.hpp"
 #include "nuclTest.hpp"
 #include "ifaststreamTest.hpp"
 #include "qualTest.hpp"

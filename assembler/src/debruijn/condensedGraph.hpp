@@ -106,7 +106,6 @@ public:
 	}
 };
 
-//template<size_t kmer_size_> class GraphConstructor;
 /**
  * @brief Condensed graph action listener.
  *
