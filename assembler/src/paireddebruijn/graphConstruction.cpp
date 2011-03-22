@@ -36,8 +36,8 @@ void constructGraph() {
 	verticesMap verts;
 	longEdgesMap longEdges;
 	createVertices(g, edges, verts, longEdges, graph);
-	vertexDist(longEdges, graph, 172);
-	expandDefinite(longEdges , graph, VertexCount);
+//	vertexDist(longEdges, graph, 172);
+	expandDefinite(longEdges , graph, VertexCount, true);
 	freopen("data/afterExpand.dot", "w",stdout);
 	outputLongEdges(longEdges);
 	freopen("data/afterExpand_g.dot", "w",stdout);
@@ -523,4 +523,5 @@ int storeVertex(gvis::GraphPrinter<int> &g, verticesMap &verts, ll newKmer,
 void resetVertexCount() {
 	VertexCount = 0;
 }
+
 
