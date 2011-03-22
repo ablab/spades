@@ -12,6 +12,7 @@
 //#include "offlineGraphVisualizerTest.hpp"
 #include "similarTest.hpp"
 #include "cuckooTest.hpp"
+#include "readGeneratorTest.hpp"
 
 void runSuite() {
 	 cute::suite s;
@@ -26,6 +27,7 @@ void runSuite() {
 //	 s += offlineGraphVisualizerSuite();
 	 s += similarSuite();
 	 s += CuckooSuite();
+	 s += ReadGeneratorSuite();
 	 cute::ide_listener lis;
 	 cute::makeRunner(lis)(s, "The Suite");
  }
