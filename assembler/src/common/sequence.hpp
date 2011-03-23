@@ -89,11 +89,7 @@ public:
 	size_t size() const;
 };
 
-template<size_t size_, typename T = int>
-ostream& operator<<(ostream& os, const Sequence& s) {
-	os << s.str();
-	return os;
-}
+ostream& operator<<(ostream& os, const Sequence& s);
 
 template<size_t size2_>
 inline Seq<size2_> Sequence::start() const {

@@ -12,9 +12,16 @@ using namespace std;
 using namespace condensed_graph;
 
 class CoverageCounter {
-	Graph *g_;
+	CondensedGraph *g_;
 	SimpleHashTable *h_t_;
+public:
+	CoverageCounter(CondensedGraph *g, SimpleHashTable *h_t) : g_(g), h_t_(h_t) {
 
+	}
+
+	void CountCoverage() {
+
+	}
 };
 
 #endif /* COVERAGECOUNTER_HPP_ */

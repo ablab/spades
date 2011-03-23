@@ -7,8 +7,9 @@
 
 #include "sequence.hpp"
 #include "nucl.hpp"
-#include <iostream>
-using namespace std;
+
+#include <ostream>
+
 Sequence::Sequence(const Sequence &seq, size_t from, size_t size, bool rtl) :
 	data_(seq.data_), from_(from), size_(size), rtl_(rtl) {
 	data_->Grab();
@@ -140,6 +141,11 @@ std::string Sequence::str() const {
 		res[i] = nucl(this->operator[](i));
 	}
 	return res;
+}
+
+ostream& operator<<(ostream& os, const Sequence& s) {
+	os << s.str();
+	return os;
 }
 
 size_t Sequence::size() const {
