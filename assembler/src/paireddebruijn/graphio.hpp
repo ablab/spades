@@ -6,7 +6,7 @@ using namespace paired_assembler;
 
 void outputLongEdges(longEdgesMap &longEdges, string fileName = "");
 void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, string fileName = "");
-void outputLongEdgesThroughGenome(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount);
+void outputLongEdgesThroughGenome(PairedGraph &graph, string fileName = "");
 
 void codeRead(char *read, char *code);
 
@@ -109,5 +109,8 @@ void save(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 
 void load(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 		int &VertexCount, int EdgeId);
+
+void save(char *fileName, PairedGraph &g);
+
 
 #endif /* IOPROCEDURES_HPP_ */

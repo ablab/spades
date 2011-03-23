@@ -169,7 +169,6 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	 }
 	 }
 
-	 freopen("data/graph_after_obvious.dot", "w", stdout);
 	 outputLongEdges(longEdges);
 	 */
 	//resolve multi case;
@@ -284,7 +283,4 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 //	}
 //	VertexCount = FakeVertexStart;
 	graph.recreateVerticesInfo(VertexCount, longEdges);
-	freopen("data/graph_after_fake.dot", "w", stdout);
-	outputLongEdges(longEdges);
-
 }

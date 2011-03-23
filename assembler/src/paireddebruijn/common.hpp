@@ -76,6 +76,8 @@ extern int l;
 extern int readLength;
 const int maxSeqLength = 200;
 extern int insertLength;
+extern int minIntersect;
+
 
 
 extern int needPairs;

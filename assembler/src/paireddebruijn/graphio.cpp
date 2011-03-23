@@ -53,13 +53,14 @@ string decompress(ll a, int l) {
 }
 
 void outputLongEdges(longEdgesMap &longEdges, string fileName) {
-	gvis::GraphPrinter<int> g("");
+	gvis::GraphPrinter<int> *g;
 	ofstream s;
 	if(fileName == "") {
-		g = gvis::GraphPrinter<int>("Paired_ext", cout);
+		g = new gvis::GraphPrinter<int>("Paired_ext", cout);
 	} else {
 		s.open(fileName.c_str());
-		g = gvis::GraphPrinter<int>("Paired_ext", s);
+		cerr<<"Open file "<<fileName<<endl;
+		g = new gvis::GraphPrinter<int>("Paired_ext", s) ;
 	}
 	char Buffer[100];
 	for (longEdgesMap::iterator it = longEdges.begin(); it != longEdges.end(); ++it) {
@@ -67,7 +68,7 @@ void outputLongEdges(longEdgesMap &longEdges, string fileName) {
 			sprintf(Buffer, "%i (%i)", it->first, it->second->length);
 			//		else sprintf(Buffer,"%i (%i) FAKE now it is %d",it->first, it->second->length,it->second->EdgeId);
 
-			g.addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
+			g->addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
 			cerr << it->first << " (" << it->second->length << "):" << endl;
 			if (it->second->length < 500) {
 				cerr << it->second->upper->str() << endl;
@@ -75,20 +76,21 @@ void outputLongEdges(longEdgesMap &longEdges, string fileName) {
 			}
 		}
 	}
-	g.output();
+	g->output();
 	if(fileName != "") {
 		s.close();
 	}
+	delete g;
 }
 
 void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, string fileName) {
-	gvis::GraphPrinter<int> g("");
+	gvis::GraphPrinter<int> *g;
 	ofstream s;
 	if(fileName == "") {
-		g = gvis::GraphPrinter<int>("Paired_ext", cout);
+		g = new gvis::GraphPrinter<int>("Paired_ext", cout);
 	} else {
 		s.open(fileName.c_str());
-		g = gvis::GraphPrinter<int>("Paired_ext", s);
+		g = new gvis::GraphPrinter<int>("Paired_ext", s) ;
 	}
 	char Buffer[100];
 	bool UsedV[20000];
@@ -97,21 +99,21 @@ void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, string fileNam
 	for (longEdgesMap::iterator it = longEdges.begin(); it != longEdges.end(); ++it) {
 		if (it->second->EdgeId == it->first) {
 			if (!UsedV[it->second->FromVertex]){
-				 vDist = vertexDist(longEdges, graph,it->second->FromVertex);
+				vDist = vertexDist(longEdges, graph,it->second->FromVertex);
 				sprintf(Buffer, "Vertex_%i (%i, %i)", it->second->FromVertex, vDist.first, vDist.second );
-				g.addVertex(it->second->FromVertex, Buffer);
+				g->addVertex(it->second->FromVertex, Buffer);
 				UsedV[it->second->FromVertex]=true;
 			}
 			if (!UsedV[it->second->ToVertex]){
 				vDist = vertexDist(longEdges, graph,it->second->ToVertex);
 				sprintf(Buffer, "Vertex_%i (%i, %i)", it->second->ToVertex, vDist.first, vDist.second );
-				g.addVertex(it->second->ToVertex, Buffer);
+				g->addVertex(it->second->ToVertex, Buffer);
 				UsedV[it->second->ToVertex]=true;
 			}
 
 			sprintf(Buffer, "%i (%i)", it->first, it->second->length);
 			//		else sprintf(Buffer,"%i (%i) FAKE now it is %d",it->first, it->second->length,it->second->EdgeId);
-			g.addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
+			g->addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
 			cerr << it->first << " (" << it->second->length << "):" << endl;
 			if (it->second->length < 500)
 			{
@@ -120,14 +122,24 @@ void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, string fileNam
 			}
 		}
 	}
-	g.output();
+	g->output();
 	if(fileName != "") {
 		s.close();
 	}
+	delete g;
+
 }
 
 
-void outputLongEdgesThroughGenome(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount) {
+void outputLongEdgesThroughGenome(PairedGraph &graph, string fileName) {
+	gvis::GraphPrinter<int> *g;
+	ofstream s;
+	if(fileName == "") {
+		g = new gvis::GraphPrinter<int>("Paired_ext", cout);
+	} else {
+		s.open(fileName.c_str());
+		g = new gvis::GraphPrinter<int>("Paired_ext", s) ;
+	}
 	char Buffer[100];
 	char* Genome;
 	int GenLength;
@@ -140,12 +152,11 @@ void outputLongEdgesThroughGenome(longEdgesMap &longEdges, PairedGraph &graph, i
 	assert(k==l);
 
 	cerr << "Graph output through genome" << endl;
-	gvis::GraphPrinter<int> g("Paired_ext");
 
 	FILE *infile;
 	Genome = (char *) malloc(6000000);
 	if ((infile = fopen("data/MG1655-K12_cut.fasta", "r")) == NULL) {
-		cerr << "No such file" << endl;
+		cerr << "Can not find genome file data/MG1655-K12_cut.fasta" << endl;
 		return;
 	}
 	i = 0;
@@ -172,20 +183,20 @@ void outputLongEdgesThroughGenome(longEdgesMap &longEdges, PairedGraph &graph, i
 		cerr<<"Try to found next edge"<<endl;
 		forn(v,graph.degrees[CurVert][1])
 		{
-			int edgeId = edgeRealId(graph.edgeIds[CurVert][v][OUT_EDGE], longEdges);
+			int edgeId = edgeRealId(graph.edgeIds[CurVert][v][OUT_EDGE], graph.longEdges);
 			cerr << "possible edge" << edgeId << endl;
 			bool goodEdge = true;
 			int h = 0;
-			while (goodEdge && (h < longEdges[edgeId]->upper->size())) {
-				//cerr<<" "<<(*(longEdges[edgeId]->upper))[h]<<" =?= "<<Genome[GenPos+h]<<endl;
-				if (nucl((*(longEdges[edgeId]->upper))[h])
+			while (goodEdge && (h < graph.longEdges[edgeId]->upper->size())) {
+				//cerr<<" "<<(*(graph.longEdges[edgeId]->upper))[h]<<" =?= "<<Genome[GenPos+h]<<endl;
+				if (nucl((*(graph.longEdges[edgeId]->upper))[h])
 						!= Genome[GenPos + h])
 					goodEdge = false;
 				h++;
 			}
 			h = 0;
-			while (goodEdge && (h < longEdges[edgeId]->lower->size())) {
-				if (nucl((*(longEdges[edgeId]->lower))[h]) != Genome[GenPos + h
+			while (goodEdge && (h < graph.longEdges[edgeId]->lower->size())) {
+				if (nucl((*(graph.longEdges[edgeId]->lower))[h]) != Genome[GenPos + h
 						+ bigShift])
 					goodEdge = false;
 				h++;
@@ -195,17 +206,17 @@ void outputLongEdgesThroughGenome(longEdgesMap &longEdges, PairedGraph &graph, i
 				cerr << "Edge found" << endl;
 				EdgeNum++;
 				sprintf(Buffer, "%i: %i (%i)", EdgeNum, edgeId,
-						longEdges[edgeId]->length);
-				g.addEdge(longEdges[edgeId]->FromVertex,
-						longEdges[edgeId]->ToVertex, Buffer);
-				cerr << edgeId << " (" << longEdges[edgeId]->length << "):"
+						graph.longEdges[edgeId]->length);
+				g->addEdge(graph.longEdges[edgeId]->FromVertex,
+						graph.longEdges[edgeId]->ToVertex, Buffer);
+				cerr << edgeId << " (" << graph.longEdges[edgeId]->length << "):"
 						<< endl;
-				if (longEdges[edgeId]->length < 500) {
-					cerr << longEdges[edgeId]->upper->str() << endl;
-					cerr << longEdges[edgeId]->lower->str() << endl;
+				if (graph.longEdges[edgeId]->length < 500) {
+					cerr << graph.longEdges[edgeId]->upper->str() << endl;
+					cerr << graph.longEdges[edgeId]->lower->str() << endl;
 				}
-				CurVert = longEdges[edgeId]->ToVertex;
-				GenPos += longEdges[edgeId]->length;
+				CurVert = graph.longEdges[edgeId]->ToVertex;
+				GenPos += graph.longEdges[edgeId]->length;
 				NoEdge = false;
 				break;
 			}
@@ -215,7 +226,12 @@ void outputLongEdgesThroughGenome(longEdgesMap &longEdges, PairedGraph &graph, i
 			break;
 		}
 	}
-	g.output();
+	g->output();
+	if(fileName != "") {
+		s.close();
+	}
+	delete g;
+
 }
 
 DataReader::DataReader(char *fileName) {
@@ -408,4 +424,17 @@ void load(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 //	dr.readIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 //	dr.readIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 	dr.close();
+}
+
+void save(char *fileName, PairedGraph &g) {
+	DataPrinter dp(fileName);
+	dp.output(g.VertexCount);
+	dp.output(g.EdgeId);
+	dp.outputLongEdgesMap(g.longEdges);
+//TODO: FIX!!!
+//	dp.outputIntArray(g.inD, MAX_VERT_NUMBER);
+//	dp.outputIntArray(g.outD, MAX_VERT_NUMBER);
+//	dp.outputIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
+//	dp.outputIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
+	dp.close();
 }
