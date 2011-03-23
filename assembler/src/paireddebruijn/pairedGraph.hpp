@@ -37,7 +37,13 @@ public:
 	int VertexId;
 	bool used;
 };
-
+/*
+ * length- including one vertex.
+ * upper and lower including both in and out vertex
+ *
+ *
+ *
+ */
 class Edge {
 	//	int _coverage;
 public:
@@ -62,6 +68,18 @@ public:
 			lower = new Sequence(
 					lower->str() + newRigth.lower->Subseq(l - 1).str());
 
+		}
+	}
+	void shortenEdge(int toCut, int direction){
+		if (toCut < length){
+			if (direction == OUT_EDGE) {
+				upper = new Sequence(upper->Subseq(toCut, length));
+				lower = new Sequence(lower->Subseq(toCut, length));
+			} else {
+				upper = new Sequence(upper->Subseq(length - toCut));
+				lower = new Sequence(lower->Subseq(length - toCut));
+			}
+			length -= toCut;
 		}
 	}
 	void ExpandLeft(Edge &newLeft) {
