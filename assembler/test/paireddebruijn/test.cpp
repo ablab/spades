@@ -4,6 +4,7 @@
 //#include "hashTableTest.hpp"
 //#include "graphConstructionTest.hpp"
 #include "graphioTest.hpp"
+#include "pairThreadingTest.hpp"
 
 void runSuite() {
 	cute::suite s;
@@ -13,6 +14,7 @@ void runSuite() {
 //	s += CheckUniqueWaySuite();
 //	s += GoUniqueWaySuite();
 	s += GraphioSuite();
+	s += PairThreadingSuite();
 	cute::ide_listener lis;
 	cute::makeRunner(lis)(s, "The Suite");
 }

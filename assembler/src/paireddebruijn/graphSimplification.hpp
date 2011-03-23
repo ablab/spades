@@ -14,4 +14,21 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph, int &Vert
 pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &Graph, int vertexId);
 bool isPath(Edge &e1, Edge &e2);
 
+class PairThreader {
+private:
+	longEdgesMap &edges_;
+	int minIntersection_;
+	PairedGraph &g_;
+public:
+	PairThreader(PairedGraph &g, longEdgesMap &edges, int minIntersection = 1) :
+		g_(g), edges_(edges), minIntersection_(minIntersection) {
+	}
+private:
+	void threadLower(vector<pair<int, Edge *> > &result, Edge *currentEdge,
+			int shift, Edge *start);
+public:
+	vector<pair<int, Edge *> > threadLower(Edge *start);
+};
+
+
 #endif /* GRAPHSIMPLIFICATION_H_ */
