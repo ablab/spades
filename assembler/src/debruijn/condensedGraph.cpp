@@ -15,7 +15,7 @@ using namespace std;
 
 namespace condensed_graph {
 
-void Graph::FixIncomingOnSplit(Vertex* v, Vertex* v1, Vertex* v2) {
+void CondensedGraph::FixIncomingOnSplit(Vertex* v, Vertex* v1, Vertex* v2) {
 	vector<Vertex*> anc = Anc(v);
 	for (size_t i = 0; i < anc.size(); ++i) {
 		Vertex* ancestor = anc[i];
@@ -30,7 +30,7 @@ void Graph::FixIncomingOnSplit(Vertex* v, Vertex* v1, Vertex* v2) {
 	}
 }
 
-void Graph::FixIncomingOnMerge(Vertex* v1, Vertex* v2, Vertex* v) {
+void CondensedGraph::FixIncomingOnMerge(Vertex* v1, Vertex* v2, Vertex* v) {
 	vector<Vertex*> anc = Anc(v1);
 	for (size_t i = 0; i < anc.size(); ++i) {
 		Vertex* ancestor = anc[i];
@@ -45,13 +45,13 @@ void Graph::FixIncomingOnMerge(Vertex* v1, Vertex* v2, Vertex* v) {
 	}
 }
 
-bool Graph::CanBeDeleted(Vertex* v) const {
+bool CondensedGraph::CanBeDeleted(Vertex* v) const {
 	vector<Vertex*> anc = Anc(v);
 	for (size_t i = 0; i < anc.size(); ++i) {
 		Vertex* ancestor = anc[i];
 		if (ancestor != v && ancestor != v->complement()) {
 			for (size_t j = 0; j < 4; ++j) {
-				if (ancestor->desc()[j] == v) {
+				if (ancestor->right_neighbour(j) == v) {
 					return false;
 				}
 			}
@@ -60,29 +60,29 @@ bool Graph::CanBeDeleted(Vertex* v) const {
 	return true;
 }
 
-vector<Vertex*> Graph::Anc(const Vertex* v) const {
+vector<Vertex*> CondensedGraph::Anc(const Vertex* v) const {
 	vector<Vertex*> ans;
-	Vertex* const * compl_desc = v->complement()->desc();
-	for (int i = 3; i >= 0; --i) {
-		if (compl_desc[i] != NULL) {
-			ans.push_back(compl_desc[i]->complement());
+	Vertex* complement = v->complement();
+	for (char i = 3; i >= 0; --i) {
+		if (complement->right_neighbour(i) != NULL) {
+			ans.push_back(complement->right_neighbour(i)->complement());
 		}
 	}
 	return ans;
 }
 
-vector<Vertex*> Graph::Desc(const Vertex* v) const {
+vector<Vertex*> CondensedGraph::Desc(const Vertex* v) const {
 	vector<Vertex*> ans;
-	Vertex* const * desc = v->desc();
-	for (int i = 0; i < 4; ++i) {
-		if (desc[i] != NULL) {
-			ans.push_back(desc[i]);
+	for (char i = 0; i < 4; ++i) {
+		Vertex* v = v->right_neighbour(i);
+		if (v != NULL) {
+			ans.push_back(v);
 		}
 	}
 	return ans;
 }
 
-Vertex* Graph::AddVertex(const Sequence &nucls) {
+Vertex* CondensedGraph::AddVertex(const Sequence &nucls) {
 	DEBUG("Adding vertex for sequence '" << nucls.str() << "' and its complement '" << (!nucls).str() << "'");
 
 	Vertex* v1 = new Vertex(nucls);
@@ -96,7 +96,7 @@ Vertex* Graph::AddVertex(const Sequence &nucls) {
 	return v1;
 }
 
-void Graph::DeleteVertex(Vertex* v) {
+void CondensedGraph::DeleteVertex(Vertex* v) {
 	DEBUG("Deleting vertex '" << v->nucls().str() << "' and its complement '" << v->complement()->nucls().str() << "'")
 
 	assert(CanBeDeleted(v));
@@ -112,7 +112,7 @@ void Graph::DeleteVertex(Vertex* v) {
 	delete complement;
 }
 
-Vertex* Graph::SplitVertex(Vertex* v, size_t pos) {
+Vertex* CondensedGraph::SplitVertex(Vertex* v, size_t pos) {
 	DEBUG("Splitting vertex '" << v->nucls().str() <<"' of size " << v->size() << " at position "<< pos);
 	assert(pos <= v->size());
 
@@ -138,7 +138,7 @@ Vertex* Graph::SplitVertex(Vertex* v, size_t pos) {
 	return v1;
 }
 
-Vertex* Graph::Merge(Vertex* v1, Vertex* v2) {
+Vertex* CondensedGraph::Merge(Vertex* v1, Vertex* v2) {
 	DEBUG("Merging vertices '" << v1->nucls().str() << "' and '" << v2->nucls().str() << "' and their complement")
 	assert(IsMergePossible(v1, v2));
 
@@ -153,11 +153,11 @@ Vertex* Graph::Merge(Vertex* v1, Vertex* v2) {
 	return v;
 }
 
-void Graph::AddDesc(Vertex* anc, Vertex* desc) {
+void CondensedGraph::AddDesc(Vertex* anc, Vertex* desc) {
 	anc->AddDesc(desc, desc->nucls()[k_ - 1]);
 }
 
-void Graph::LinkVertices(Vertex* anc, Vertex* desc) {
+void CondensedGraph::LinkVertices(Vertex* anc, Vertex* desc) {
 	DEBUG("Linking vertices '" << anc->nucls().str() << "' and '"<< desc->nucls().str() <<"' and their complement")
 	assert(AreLinkable(anc, desc));
 
@@ -191,13 +191,13 @@ void DFS::Traverse(Handler& h) {
 	}
 }
 
-void SimpleGraphVisualizer::Visualize(const Graph& g) {
+void SimpleGraphVisualizer::Visualize(const CondensedGraph& g) {
 	VisHandler h(gp_);
 	DFS(&g).Traverse(h);
 	gp_.output();
 }
 
-void ComplementGraphVisualizer::Visualize(const Graph& g) {
+void ComplementGraphVisualizer::Visualize(const CondensedGraph& g) {
 	ComplementVisHandler h(gp_);
 	DFS(&g).Traverse(h);
 	gp_.output();

@@ -21,6 +21,7 @@ int minIntersect ;
 int EdgeId;
 using namespace paired_assembler;
 PairedGraph graph;
+longEdgesMap longEdges;
 
 void constructGraph() {
 
@@ -34,13 +35,13 @@ void constructGraph() {
 	cerr << "Start vertices" << endl;
 	VertexCount = 0;
 	verticesMap verts;
-	longEdgesMap longEdges;
 	createVertices(g, edges, verts, longEdges, graph);
 //	vertexDist(longEdges, graph, 172);
 	freopen("data/beforeExpand.dot", "w",stdout);
 	outputLongEdges(longEdges, graph);
 
 	expandDefinite(longEdges , graph, VertexCount, true);
+
 	freopen("data/afterExpand.dot", "w",stdout);
 	outputLongEdges(longEdges, graph);
 	freopen("data/afterExpand_g.dot", "w",stdout);
@@ -77,7 +78,7 @@ void constructGraph() {
 	//freopen("data/LowerProcessed.dot", "w", stdout);
 ///	outputLongEdges(longEdges);
 
-
+	cerr << "\n Finished";
 
 
 }
@@ -135,9 +136,10 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 	char Buffer[2000];
 	EdgeId = 0;
 	cerr << "Start createVertices " << edges.size() << endl;
-	forn(i,MAX_VERT_NUMBER) {
-		graph.inD[i] = 0;
-		graph.outD[i] = 0;
+	forn(i, MAX_VERT_NUMBER) {
+		graph.degrees[i][0] = 0;
+		graph.degrees[i][1] = 0;
+
 	}
 	int count = 0;
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
@@ -199,10 +201,10 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 				}
 
 				g.addEdge(fromVert, toVert, Buffer);
-				graph.outputEdges[fromVert][graph.outD[fromVert]] = EdgeId;
-				graph.inputEdges[toVert][graph.inD[toVert]] = EdgeId;
-				graph.outD[fromVert]++;
-				graph.inD[toVert]++;
+				graph.edgeIds[fromVert][graph.degrees[fromVert][1]][OUT_EDGE] = EdgeId;
+				graph.edgeIds[toVert][graph.degrees[toVert][0]][IN_EDGE] = EdgeId;
+				graph.degrees[fromVert][1]++;
+				graph.degrees[toVert][0]++;
 
 				EdgeId++;
 
@@ -213,7 +215,7 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 	}
 	g.output();
 	forn(i, VertexCount) {
-		cerr << i << " +" << graph.inD[i] << " -" << graph.outD[i] << endl;
+		cerr << i << " +" << graph.degrees[i][0] << " -" << graph.degrees[i][1] << endl;
 	}
 }
 
