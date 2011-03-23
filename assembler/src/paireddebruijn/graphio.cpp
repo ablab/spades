@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include "common.hpp"
 #include "pairedGraph.hpp"
+#include "iostream"
+#include "fstream"
 
 using namespace paired_assembler;
 
@@ -50,9 +52,16 @@ string decompress(ll a, int l) {
 	return res;
 }
 
-void outputLongEdges(longEdgesMap &longEdges) {
+void outputLongEdges(longEdgesMap &longEdges, string fileName) {
+	gvis::GraphPrinter<int> g("");
+	ofstream s;
+	if(fileName == "") {
+		g = gvis::GraphPrinter<int>("Paired_ext", cout);
+	} else {
+		s.open(fileName.c_str());
+		g = gvis::GraphPrinter<int>("Paired_ext", s);
+	}
 	char Buffer[100];
-	gvis::GraphPrinter<int> g("Paired_ext");
 	for (longEdgesMap::iterator it = longEdges.begin(); it != longEdges.end(); ++it) {
 		if (it->second->EdgeId == it->first) {
 			sprintf(Buffer, "%i (%i)", it->first, it->second->length);
@@ -67,14 +76,24 @@ void outputLongEdges(longEdgesMap &longEdges) {
 		}
 	}
 	g.output();
+	if(fileName != "") {
+		s.close();
+	}
 }
 
-void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph) {
+void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, string fileName) {
+	gvis::GraphPrinter<int> g("");
+	ofstream s;
+	if(fileName == "") {
+		g = gvis::GraphPrinter<int>("Paired_ext", cout);
+	} else {
+		s.open(fileName.c_str());
+		g = gvis::GraphPrinter<int>("Paired_ext", s);
+	}
 	char Buffer[100];
 	bool UsedV[20000];
 	forn(i,20000) UsedV[i] = false;
 	pair<int,int> vDist;
-	gvis::GraphPrinter<int> g("Paired_ext");
 	for (longEdgesMap::iterator it = longEdges.begin(); it != longEdges.end(); ++it) {
 		if (it->second->EdgeId == it->first) {
 			if (!UsedV[it->second->FromVertex]){
@@ -102,6 +121,9 @@ void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph) {
 		}
 	}
 	g.output();
+	if(fileName != "") {
+		s.close();
+	}
 }
 
 
