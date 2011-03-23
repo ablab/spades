@@ -24,10 +24,12 @@
 #define longEdgesMap  map<int, Edge*>
 #define RIGHT 1
 #define LEFT -1
+#define IN_EDGE 0
+#define OUT_EDGE 1
 
 //LOGGER("paireddebruijn.common");
 
-#define MAX_VERT_NUMBER 100000
+#define MAX_VERT_NUMBER 10000
 #define MAX_DEGREE 30
 #define suffix "_const_d"
 

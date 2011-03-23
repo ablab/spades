@@ -48,26 +48,23 @@ public:
 	int ToVertex;
 	int EdgeId;
 	//	Vertex(int coverage, int length, Sequence *kmer, Sequence *pair, bool direction, int delta_d);
-	void ExpandRight(Edge newRigth) {
+	void ExpandRight(Edge &newRigth) {
 		ToVertex = newRigth.ToVertex;
 		if (newRigth.length > 0) {
 			length = length + newRigth.length;
 			string toOut = newRigth.upper->str();
-			//		cerr <<endl << "str:: "<< upper->str() <<" "<< toOut <<" "<< k <<endl;
 			assert(k-1 < toOut.length());
 			upper = new Sequence(
 					upper->str() + newRigth.upper->Subseq(k - 1).str());
 
 			toOut = newRigth.lower->str();
-			//		cerr <<endl << l-1 <<" "<< toOut.length()<<" "<< toOut<< endl;
 			assert(l-1 < toOut.length());
-			//		cerr <<endl << "strL:: "<< lower->str() <<" "<< toOut <<" "<< l <<endl;
 			lower = new Sequence(
 					lower->str() + newRigth.lower->Subseq(l - 1).str());
-			//		cerr<< endl << "expanded" << endl;
+
 		}
 	}
-	void ExpandLeft(Edge newLeft) {
+	void ExpandLeft(Edge &newLeft) {
 		FromVertex = newLeft.FromVertex;
 		if (newLeft.length > 0) {
 			length = length + newLeft.length;
@@ -89,6 +86,7 @@ public:
 	}
 
 	~Edge() {
+		cerr << "destructing" << upper->str() << endl;
 		if (upper != lower) {
 			delete upper;
 			delete lower;
@@ -110,8 +108,9 @@ public:
 	//0 - in-degrees
 	//1 -out-degrees
 	int degrees[MAX_VERT_NUMBER][2];//, outD[MAX_VERT_NUMBER][2];
-	int outputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
-	int inputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
+	int edgeIds[MAX_VERT_NUMBER][MAX_DEGREE][2];
+//	int outputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
+//	int inputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
 	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
 //	int firstDiff[Msv]
 };

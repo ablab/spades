@@ -7,7 +7,8 @@
 
 #include "sequence.hpp"
 #include "nucl.hpp"
-
+#include <iostream>
+using namespace std;
 Sequence::Sequence(const Sequence &seq, size_t from, size_t size, bool rtl) :
 	data_(seq.data_), from_(from), size_(size), rtl_(rtl) {
 	data_->Grab();

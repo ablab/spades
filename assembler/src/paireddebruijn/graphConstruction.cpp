@@ -21,6 +21,7 @@ int minIntersect ;
 int EdgeId;
 using namespace paired_assembler;
 PairedGraph graph;
+longEdgesMap longEdges;
 
 void constructGraph() {
 
@@ -34,10 +35,7 @@ void constructGraph() {
 	cerr << "Start vertices" << endl;
 	VertexCount = 0;
 	verticesMap verts;
-	longEdgesMap longEdges;
 	createVertices(g, edges, verts, longEdges, graph);
-//	vertexDist(longEdges, graph, 172);
-	expandDefinite(longEdges , graph, VertexCount, true);
 	freopen("data/afterExpand.dot", "w",stdout);
 	outputLongEdges(longEdges);
 	freopen("data/afterExpand_g.dot", "w",stdout);
@@ -70,7 +68,7 @@ void constructGraph() {
 	//freopen("data/LowerProcessed.dot", "w", stdout);
 ///	outputLongEdges(longEdges);
 
-
+	cerr << "\n Finished";
 
 
 }
@@ -128,9 +126,10 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 	char Buffer[2000];
 	EdgeId = 0;
 	cerr << "Start createVertices " << edges.size() << endl;
-	forn(i,MAX_VERT_NUMBER) {
-		forn(j, 2)
-			graph.degrees[i][j] = 0;
+	forn(i, MAX_VERT_NUMBER) {
+		graph.degrees[i][0] = 0;
+		graph.degrees[i][1] = 0;
+
 	}
 	int count = 0;
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
@@ -192,8 +191,8 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 				}
 
 				g.addEdge(fromVert, toVert, Buffer);
-				graph.outputEdges[fromVert][graph.degrees[fromVert][1]] = EdgeId;
-				graph.inputEdges[toVert][graph.degrees[toVert][0]] = EdgeId;
+				graph.edgeIds[fromVert][graph.degrees[fromVert][1]][OUT_EDGE] = EdgeId;
+				graph.edgeIds[toVert][graph.degrees[toVert][0]][IN_EDGE] = EdgeId;
 				graph.degrees[fromVert][1]++;
 				graph.degrees[toVert][0]++;
 

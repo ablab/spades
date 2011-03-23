@@ -15,8 +15,8 @@ void PairedGraph::recreateVerticesInfo(int vertCount, longEdgesMap &longEdges)
 	}
 	for(longEdgesMap::iterator it= longEdges.begin(); it !=longEdges.end(); ++it) {
 		if (it->second->EdgeId == it->first){
-			outputEdges[it->second->FromVertex][degrees[it->second->FromVertex][1]++]=it->first;
-			inputEdges[it->second->ToVertex][degrees[it->second->ToVertex][0]++]=it->first;
+			edgeIds[it->second->FromVertex][degrees[it->second->FromVertex][1]++][OUT_EDGE]=it->first;
+			edgeIds[it->second->ToVertex][degrees[it->second->ToVertex][0]++][IN_EDGE]=it->first;
 		}
 	}
 }

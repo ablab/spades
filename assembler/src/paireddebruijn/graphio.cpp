@@ -114,7 +114,7 @@ void outputLongEdgesThroughGenome(longEdgesMap &longEdges, PairedGraph &graph,
 		cerr<<"Try to found next edge"<<endl;
 		forn(v,graph.degrees[CurVert][1])
 		{
-			int edgeId = edgeRealId(graph.outputEdges[CurVert][v], longEdges);
+			int edgeId = edgeRealId(graph.edgeIds[CurVert][v][OUT_EDGE], longEdges);
 			cerr << "possible edge" << edgeId << endl;
 			bool goodEdge = true;
 			int h = 0;
@@ -305,8 +305,8 @@ void save(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 //TODO: FIX!!!
 //	dp.outputIntArray(g.inD, MAX_VERT_NUMBER);
 //	dp.outputIntArray(g.outD, MAX_VERT_NUMBER);
-	dp.outputIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
-	dp.outputIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
+//	dp.outputIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
+//	dp.outputIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 	dp.close();
 }
 void load(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
@@ -318,7 +318,7 @@ void load(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 //TODO: fix;
 //	dr.readIntArray(g.inD, MAX_VERT_NUMBER);
 //	dr.readIntArray(g.outD, MAX_VERT_NUMBER);
-	dr.readIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
-	dr.readIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
+//	dr.readIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
+//	dr.readIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 	dr.close();
 }
