@@ -278,11 +278,11 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	VertexCount = FakeVertexCount;
 	graph.recreateVerticesInfo(VertexCount, longEdges);
 	expandDefinite(longEdges, graph, VertexCount);
-	for(longEdgesMap::iterator it= longEdges.begin(); it !=longEdges.end(); ++it) {
-		if (it->second->FromVertex>=FakeVertexStart) it->second->FromVertex = FakeVertexToReal[it->second->FromVertex];
-		if (it->second->ToVertex>=FakeVertexStart) it->second->ToVertex = FakeVertexToReal[it->second->ToVertex];
-	}
-	VertexCount = FakeVertexStart;
+//	for(longEdgesMap::iterator it= longEdges.begin(); it !=longEdges.end(); ++it) {
+//		if (it->second->FromVertex>=FakeVertexStart) it->second->FromVertex = FakeVertexToReal[it->second->FromVertex];
+//		if (it->second->ToVertex>=FakeVertexStart) it->second->ToVertex = FakeVertexToReal[it->second->ToVertex];
+//	}
+//	VertexCount = FakeVertexStart;
 	graph.recreateVerticesInfo(VertexCount, longEdges);
 	freopen("data/graph_after_fake.dot", "w", stdout);
 	outputLongEdges(longEdges);

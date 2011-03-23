@@ -35,8 +35,14 @@ void constructGraph() {
 	VertexCount = 0;
 	verticesMap verts;
 	createVertices(g, edges, verts, longEdges, graph);
+//	vertexDist(longEdges, graph, 172);
+	freopen("data/beforeExpand.dot", "w",stdout);
+	outputLongEdges(longEdges, graph);
+
+	expandDefinite(longEdges , graph, VertexCount, true);
+
 	freopen("data/afterExpand.dot", "w",stdout);
-	outputLongEdges(longEdges);
+	outputLongEdges(longEdges, graph);
 	freopen("data/afterExpand_g.dot", "w",stdout);
 	outputLongEdgesThroughGenome(longEdges,graph,VertexCount);
 //	freopen(graph.c_str(), "w",stdout);
@@ -63,6 +69,10 @@ void constructGraph() {
 	outputLongEdges(longEdges);
 	freopen("data/afterLowers_g.dot", "w",stdout);
 	outputLongEdgesThroughGenome(longEdges,graph,VertexCount);
+
+	graph.recreateVerticesInfo(VertexCount, longEdges);
+	freopen("data/afterLowers_info.dot", "w",stdout);
+	outputLongEdges(longEdges, graph);
 
 	//freopen("data/LowerProcessed.dot", "w", stdout);
 ///	outputLongEdges(longEdges);

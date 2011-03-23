@@ -50,6 +50,28 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph, int &Vert
 					else cerr<<" IMPOSSIBLE"<<endl;
 				}
 			}
+
+			bool AllInHasDefiniteOut = true;
+			bool AllOutHasDefiniteIn = true;
+			forn(i,graph.degrees[curVertId][0]){
+				if (countOut[i]!=1) AllInHasDefiniteOut=false;
+			}
+
+			forn(i,graph.degrees[curVertId][1]){
+				if (countIn[i]!=1) AllOutHasDefiniteIn=false;
+			}
+
+			if (AllInHasDefiniteOut){
+//				res = true;
+				cerr<<"Vert "<<curVertId<<" resolvable: AllInHasDefiniteOut"<<endl;
+			}
+//			else
+
+			if (AllOutHasDefiniteIn){
+	//			res = true;
+				cerr<<"Vert "<<curVertId<<" resolvable: AllOutHasDefiniteIn"<<endl;
+			}
+//			else
 			forn(i,graph.degrees[curVertId][0]){
 				if (countOut[i]==1){
 					if (countIn[possibleOut[i]]==1){
@@ -170,8 +192,10 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 				diffDistDest = vertexDist(longEdges, graph, DestVertex);
 				diffDistCur = vertexDist(longEdges, graph, i);
 			}
-			if	((!NotExpandBeyondDefinite)||(diffDistCur.first+diffDistDest.second+longEdges[expandEdgeIndex]->length<readLength+2*k-1))
+			if	((!NotExpandBeyondDefinite)||(diffDistCur.first+diffDistDest.second+longEdges[expandEdgeIndex]->length<readLength+k))
 			{
+				if (NotExpandBeyondDefinite)
+					cerr<<"Check cur vert "<<i<<" dest vert "<<DestVertex<<"  "<<diffDistCur.first<<" + "<<diffDistDest.second<<" + "<<longEdges[expandEdgeIndex]->length<<" = "<<diffDistCur.first+diffDistDest.second+longEdges[expandEdgeIndex]->length<<" < "<<readLength+k<<endl;
 				int a = 0;
 //				cerr << "trying to expand";
 				while ((edgeRealId(graph.edgeIds[DestVertex][a][IN_EDGE], longEdges)
@@ -214,9 +238,13 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 //				cerr.flush();
 				it = longEdges.find(expandEdgeIndex);
 				longEdges.erase(it);
-//				cerr << "expanded";
+
 				graph.degrees[i][0] = 0;
 				graph.degrees[i][1] = 0;
+				diffDistDest = vertexDist(longEdges, graph, DestVertex);
+				if (NotExpandBeyondDefinite)
+				cerr<<"Must be: dest vert "<<DestVertex<<"  "<<diffDistDest.first<<" + "<<diffDistDest.second<<" = "<<diffDistDest.first+diffDistDest.second<<" < "<<readLength+k<<endl;
+
 			}
 		}
 	}
@@ -233,7 +261,7 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 				diffDistSource = vertexDist(longEdges, graph, SourceVertex);
 				diffDistCur = vertexDist(longEdges, graph, i);
 			}
-			if	((!NotExpandBeyondDefinite)||(diffDistCur.second+diffDistSource.first+longEdges[expandEdgeIndex]->length<readLength+2*k-1))
+			if	((!NotExpandBeyondDefinite)||(diffDistCur.second+diffDistSource.first+longEdges[expandEdgeIndex]->length<readLength+k))
 			{
 
 				int a = 0;
@@ -263,4 +291,13 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 		}
 	}
 	cerr << "expandDefinite finished\n";
+}
+
+
+
+void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount)
+{
+	forn(curVert, VertexCount){
+	}
+
 }
