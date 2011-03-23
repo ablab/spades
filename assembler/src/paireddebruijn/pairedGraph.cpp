@@ -28,11 +28,16 @@ void PairedGraph::RebuildVertexMap(void){
 	verts.clear();
 	for(longEdgesMap::iterator it= longEdges.begin(); it !=longEdges.end(); ++it) {
 		if (it->second->EdgeId == it->first){
-//			ll kmer =
-//			storeVertex(this*, kmer, seq, );
+			ll kmer=0;
+			forn(i,k-1) kmer = (kmer<<2)|(it->second->upper->operator[](i));
+			Sequence * seq = new Sequence(it->second->lower->Subseq( 0, l-1));
+			storeVertex(*this, kmer, seq, it->second->FromVertex);
+			kmer=0;
+			forn(i,k-1) kmer = (kmer<<2)|(it->second->upper->operator[](i+it->second->length));
+			seq = new Sequence(it->second->lower->Subseq( it->second->length, it->second->length+l-1));
+			storeVertex(*this, kmer, seq, it->second->ToVertex);
 		}
 	}
-
 }
 
 

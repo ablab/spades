@@ -84,6 +84,10 @@ extern int needPairs;
 extern int needLmers;
 extern int needSequences;
 extern int needGraph;
+extern int useExpandDefinite;
+extern int useTraceReads;
+extern int useProcessLower;
+
 
 void initConstants(string ini_file);
 #endif /*COMMON_HPP_*/

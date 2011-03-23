@@ -236,10 +236,12 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, string fileName) {
 
 DataReader::DataReader(char *fileName) {
 	f_ = fopen(fileName, "r");
+	assert(f_ != NULL);
 }
 
 DataPrinter::DataPrinter(char *fileName) {
 	f_ = fopen(fileName, "w");
+	assert(f_ != NULL);
 }
 
 void DataReader::close() {
@@ -251,7 +253,7 @@ void DataPrinter::close() {
 }
 
 void DataReader::read(int &a) {
-	fscanf(f_, "%d\n", &a);
+	assert(fscanf(f_, "%d\n", &a)==1);
 }
 
 void DataPrinter::output(int a) {
@@ -437,4 +439,16 @@ void save(char *fileName, PairedGraph &g) {
 //	dp.outputIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 //	dp.outputIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 	dp.close();
+}
+void load(char *fileName, PairedGraph &g) {
+	DataReader dr(fileName);
+	dr.read(g.VertexCount);
+	dr.read(g.EdgeId);
+	dr.readLongEdgesMap(g.longEdges);
+//TODO: fix;
+//	dr.readIntArray(g.inD, MAX_VERT_NUMBER);
+//	dr.readIntArray(g.outD, MAX_VERT_NUMBER);
+//	dr.readIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
+//	dr.readIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
+	dr.close();
 }

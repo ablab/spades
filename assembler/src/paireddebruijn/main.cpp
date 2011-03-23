@@ -14,6 +14,8 @@ LOGGER("p.main");
 PairedGraph graph;
 
 int main() {
+	char str[100];
+
 	initConstants(ini_file);
 	initGlobal();
 	freopen(error_log.c_str(), "w",stderr);
@@ -38,33 +40,71 @@ int main() {
 	if (needGraph) {
 		cerr << endl << " constructing Graph" << endl;
 		constructGraph(graph);
+		sprintf(str, "data/graph.txt");
+		save(str,graph);
+		outputLongEdges(graph.longEdges, graph, "data/beforeExpand.dot");
 	}
-	outputLongEdges(graph.longEdges, graph, "data/beforeExpand.dot");
 
-	expandDefinite(graph.longEdges, graph, graph.VertexCount, true);
-	outputLongEdges(graph.longEdges, graph, "data/afterExpand.dot");
-	outputLongEdgesThroughGenome(graph, "data/afterExpand_g.dot");
+	if (useExpandDefinite){
+		INFO("Expand definite...");
+		if (!needGraph){
+			sprintf(str, "data/graph.txt");
+			load(str,graph);
+			graph.RebuildVertexMap();
+			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 
-	char str[100];
-	sprintf(str, "data/graph.txt");
-	save(str,graph);
+		}
+		expandDefinite(graph.longEdges, graph, graph.VertexCount, true);
+		outputLongEdges(graph.longEdges, graph, "data/afterExpand.dot");
+		outputLongEdgesThroughGenome(graph, "data/afterExpand_g.dot");
+		sprintf(str, "data/expandedGraph.txt");
+		save(str,graph);
+	}
 
-	traceReads(graph.verts, graph.longEdges, graph, graph.VertexCount, graph.EdgeId);
-	outputLongEdges(graph.longEdges,"data/ReadsTraced.dot");
-	outputLongEdgesThroughGenome(graph, "data/ReadsTraced_g.dot");
+	if (useTraceReads){
+		INFO("Trace reads...");
+		if (!useExpandDefinite){
+			sprintf(str, "data/expandedGraph.txt");
+			load(str,graph);
+			graph.RebuildVertexMap();
+			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+		}
 
-	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
-	while (processLowerSequence(graph.longEdges, graph, graph.VertexCount))
-	{
+		traceReads(graph.verts, graph.longEdges, graph, graph.VertexCount, graph.EdgeId);
+		outputLongEdges(graph.longEdges,"data/ReadsTraced.dot");
+		outputLongEdgesThroughGenome(graph, "data/ReadsTraced_g.dot");
+		sprintf(str, "data/tracedGraph.txt");
+		save(str,graph);
+	}
+
+	if (useProcessLower){
+		INFO("Process lowers");
+
+		if (!useTraceReads){
+			sprintf(str, "data/tracedGraph.txt");
+			INFO("Load");
+			load(str,graph);
+			INFO("Rebuild");
+			graph.RebuildVertexMap();
+		}
+
 		graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
-		expandDefinite(graph.longEdges , graph, graph.VertexCount);
+		while (processLowerSequence(graph.longEdges, graph, graph.VertexCount))
+		{
+			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+			expandDefinite(graph.longEdges , graph, graph.VertexCount);
+			INFO("one more");
+		}
+		outputLongEdges(graph.longEdges,"data/afterLowers.dot");
+		outputLongEdgesThroughGenome(graph, "data/afterLowers_g.dot");
+
+		graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+		outputLongEdges(graph.longEdges, graph, "data/afterLowers_info.dot");
+		sprintf(str, "data/afterLowerGraph.txt");
+		save(str,graph);
 	}
-	outputLongEdges(graph.longEdges,"data/afterLowers.dot");
-	outputLongEdgesThroughGenome(graph, "data/afterLowers_g.dot");
-
-	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
-	outputLongEdges(graph.longEdges, graph, "data/afterLowers_info.dot");
-
 	cerr << "\n Finished";
+	INFO("Finished");
+
 	return 0;
 }

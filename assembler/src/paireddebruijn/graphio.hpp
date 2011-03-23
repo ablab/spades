@@ -111,6 +111,7 @@ void load(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 		int &VertexCount, int EdgeId);
 
 void save(char *fileName, PairedGraph &g);
+void load(char *fileName, PairedGraph &g);
 
 
 #endif /* IOPROCEDURES_HPP_ */
