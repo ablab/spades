@@ -1,4 +1,5 @@
 #include "graphio.hpp"
+#include "graphSimplification.hpp"
 #include "graphVisualizer.hpp"
 #include <stdio.h>
 #include "common.hpp"
@@ -57,6 +58,41 @@ void outputLongEdges(longEdgesMap &longEdges) {
 			sprintf(Buffer, "%i (%i)", it->first, it->second->length);
 			//		else sprintf(Buffer,"%i (%i) FAKE now it is %d",it->first, it->second->length,it->second->EdgeId);
 
+			g.addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
+			cerr << it->first << " (" << it->second->length << "):" << endl;
+			if (it->second->length < 500)
+			{
+			cerr << it->second->upper->str() << endl;
+			cerr << it->second->lower->str() << endl;
+			}
+		}
+	}
+	g.output();
+}
+
+void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph) {
+	char Buffer[100];
+	bool UsedV[20000];
+	forn(i,20000) UsedV[i] = false;
+	pair<int,int> vDist;
+	gvis::GraphPrinter<int> g("Paired_ext");
+	for (longEdgesMap::iterator it = longEdges.begin(); it != longEdges.end(); ++it) {
+		if (it->second->EdgeId == it->first) {
+			if (!UsedV[it->second->FromVertex]){
+				 vDist = vertexDist(longEdges, graph,it->second->FromVertex);
+				sprintf(Buffer, "Vertex_%i (%i, %i)", it->second->FromVertex, vDist.first, vDist.second );
+				g.addVertex(it->second->FromVertex, Buffer);
+				UsedV[it->second->FromVertex]=true;
+			}
+			if (!UsedV[it->second->ToVertex]){
+				vDist = vertexDist(longEdges, graph,it->second->ToVertex);
+				sprintf(Buffer, "Vertex_%i (%i, %i)", it->second->ToVertex, vDist.first, vDist.second );
+				g.addVertex(it->second->ToVertex, Buffer);
+				UsedV[it->second->ToVertex]=true;
+			}
+
+			sprintf(Buffer, "%i (%i)", it->first, it->second->length);
+			//		else sprintf(Buffer,"%i (%i) FAKE now it is %d",it->first, it->second->length,it->second->EdgeId);
 			g.addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
 			cerr << it->first << " (" << it->second->length << "):" << endl;
 			if (it->second->length < 500)
@@ -146,7 +182,10 @@ void outputLongEdgesThroughGenome(longEdgesMap &longEdges, PairedGraph &graph, i
 				break;
 			}
 		}
-		if (NoEdge) break;
+		if (NoEdge) {
+			cerr<<"BAD GRAPH. I can not cover all genome"<<endl;
+			break;
+		}
 	}
 	g.output();
 }

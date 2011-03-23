@@ -6,6 +6,7 @@ using namespace paired_assembler;
 
 
 void outputLongEdges(longEdgesMap &longEdges);
+void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph);
 void outputLongEdgesThroughGenome(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount);
 void codeRead(char *read, char *code);
 
