@@ -76,12 +76,12 @@ private:
 		}
 	}
 
-	char ToPhred(char c) {
-		return c - QUAL_SHIFT;
+	int ToPhred(char c) {
+		return (int)c - QUAL_SHIFT;
 	}
 
-	vector<char> ConvertToPhred(const string& qual) {
-		vector<char> answer;
+	vector<int> ConvertToPhred(const string& qual) {
+		vector<int> answer;
 		for (size_t i = 0; i < qual.size(); ++i) {
 			answer.push_back(ToPhred(qual[i]));
 		}
@@ -123,8 +123,8 @@ public:
 		}
 	}
 
-	pair<Sequence, vector<char> > Next() {
-		pair<Sequence, vector<char> > answer = make_pair(Sequence(read_), ConvertToPhred(qual_));
+	pair<Sequence, vector<int> > Next() {
+		pair<Sequence, vector<int> > answer = make_pair(Sequence(read_), ConvertToPhred(qual_));
 		read_ahead();
 		return answer;
 	}
