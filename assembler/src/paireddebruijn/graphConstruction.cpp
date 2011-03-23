@@ -8,6 +8,7 @@
 #include "readTracing.hpp"
 #include "graphSimplification.hpp"
 
+LOGGER("p.graphConstruction");
 int VertexCount;
 char EdgeStr[1000000];
 char EdgeStrLo[1000000];
@@ -25,14 +26,12 @@ longEdgesMap longEdges;
 
 void constructGraph() {
 
-	//		readsToPairs(parsed_reads, parsed_k_l_mers);
-	//		pairsToSequences(parsed_k_l_mers, parsed_k_sequence);
 	minIntersect = l - 1;
-	cerr << "Read edges" << endl;
+	INFO ("Read edges");
 	edgesMap edges = sequencesToMap(parsed_k_sequence, true);
-	cerr << "go to graph" << endl;
+	INFO ("go to graph");
 	gvis::GraphPrinter<int> g("Paired");
-	cerr << "Start vertices" << endl;
+	INFO ("Start vertices");
 	VertexCount = 0;
 	verticesMap verts;
 	createVertices(g, edges, verts, longEdges, graph);

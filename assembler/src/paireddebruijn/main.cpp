@@ -10,9 +10,10 @@ LOGGER("p.main");
 int main() {
 	initConstants(ini_file);
 	initGlobal();
-	INFO("Constants inited...");
 	freopen(error_log.c_str(), "w",stderr);
-//	assert( 1== 0);
+	INFO("Constants inited...");
+
+	//	assert( 1== 0);
 	cerr << l << " " << k;
 	freopen(graph_file.c_str(), "w",stdout);
 //	LOG_ASSERT(1 == 0, "Something wrong");
