@@ -6,6 +6,7 @@
 #include "graphSimplification.hpp"
 #include "common.hpp"
 
+LOGGER ("p.graphSimplification");
 bool isPath(Edge &e1, Edge &e2) {
 	cerr<<endl<<"("<<e1.FromVertex<<", "<<e1.ToVertex<<") "<<"("<<e2.FromVertex<<", "<<e2.ToVertex<<") ";
 	if (e1.ToVertex != e2.FromVertex)
@@ -212,30 +213,12 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 				graph.degrees[DestVertex][0]--;
 //				assert(graph.degrees[DestVertex][0] > 0);
 				forn(j, graph.degrees[i][0]) {
-//					cerr << j << endl;
-//					cerr <<"index: "<<j << expandEdgeIndex << longEdges[expandEdgeIndex] ->upper ->str() <<endl;
-//					cerr.flush();
-//					cerr << longEdges[graph.edgeIds[i][j][IN_EDGE]]->upper->str() << endl;
-//					//cerr << longEdges[expandEdgeIndex] ->upper ->str() << endl;
-//					cerr << endl;
-//					cerr <<"index: "<<j << expandEdgeIndex << longEdges[expandEdgeIndex] ->upper ->str() <<endl;
-
-					//cerr << i <<" " << j <<" " << IN_EDGE << graph.edgeIds[i][j][IN_EDGE] << endl;
 					longEdges[graph.edgeIds[i][j][IN_EDGE]]->ExpandRight(
 							*(longEdges[expandEdgeIndex]));
-//					cerr <<"index: "<<j << expandEdgeIndex;
-//					cerr.flush();
-//					cerr << longEdges[expandEdgeIndex] ->upper ->str() <<endl;
-//										cerr.flush();
 					graph.edgeIds[DestVertex][graph.degrees[DestVertex][0]][IN_EDGE]
 												 = graph.edgeIds[i][j][IN_EDGE];
 					graph.degrees[DestVertex][0]++;
-//					cerr <<"index: "<<j << expandEdgeIndex << longEdges[expandEdgeIndex] ->upper ->str() <<endl;
-//										cerr.flush();
-
 				}
-//				cerr << "DOSHLO";
-//				cerr.flush();
 				it = longEdges.find(expandEdgeIndex);
 				longEdges.erase(it);
 
@@ -297,7 +280,75 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 
 void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount)
 {
-	forn(curVert, VertexCount){
-	}
+	int edgeIds[MAX_DEGREE];
+	//TODO: constant?
+	int delta = 20;
+	int insertEdgeId = 10000;
+	INFO("extractDefinite started");
+	int maxV = VertexCount;
+	forn(curVert, maxV){
+		for (int direction = 1; direction < 2; direction ++) {
+//			INFO("Vertex number" << curVert);
+			int index = k;
+			int ended = -2;
+			forn (edge, graph.degrees[curVert][direction]) {
+				edgeIds[edge] = edgeRealId(graph.edgeIds[curVert][edge][direction], longEdges);
+			}
+			while (graph.degrees[curVert][direction] > 1) {
+				char upp0 = (*longEdges[edgeIds[0]]->upper)[index];
+				forn(edge, graph.degrees[curVert][direction]){
+					if (index >= longEdges[edgeIds[edge]]->length) {
+						ended = edge;
+						break;
+					}
+					char upp = (*longEdges[edgeIds[edge]]->upper)[index];
 
+		//			cerr<< upp.str();
+					//assert(0);
+					if (upp != upp0)
+					{
+						ended = -1;
+						break;
+					}
+				}
+				if (ended >= -1)
+					break;
+				if (!(index & ((1<<16) - 1)))
+					INFO("index: "<<curVert << " "<<  index);
+				index++;
+			}
+			index --;
+			if (ended != -1) {
+				// It seems to be impossible
+				DEBUG("Intermediate Vertex " << curVert << "edgeId " << edgeIds[ended]);
+			} else {
+				if (index > k -1 + delta){
+					DEBUG("Shortening edge");
+					int newVert = VertexCount;
+			//		DEBUG(index << " "<< longEdges[edgeIds[0]]->upper->str());
+
+					Sequence *UpperSeq = new Sequence(longEdges[edgeIds[0]]->upper->Subseq(index));
+					Sequence *LowerSeq = new Sequence(longEdges[edgeIds[0]]->lower->Subseq(index));
+					Edge* newEdge = new Edge(UpperSeq, LowerSeq, curVert, newVert, index - (k - 1), insertEdgeId);
+					longEdges.insert(make_pair(insertEdgeId, newEdge));
+
+					forn (tmpId, graph.degrees[curVert][direction]) {
+						longEdges[edgeIds[tmpId]]->shortenEdge(index-(k - 1), direction);
+						longEdges[edgeIds[tmpId]]->FromVertex = newVert;
+						graph.edgeIds[newVert][tmpId][direction] = graph.edgeIds[curVert][tmpId][direction];
+				//		DEBUG (longEdges[graph.edgeIds[newVert][tmpId][direction]]->upper->str());
+					}
+					graph.degrees[newVert][direction] = graph.degrees[curVert][direction];
+					graph.degrees[newVert][1 - direction] = 1;
+					graph.edgeIds[newVert][0][1 - direction] = insertEdgeId;
+					graph.degrees[curVert][direction] = 1;
+					graph.edgeIds[newVert][0][direction] = insertEdgeId;
+
+					insertEdgeId ++;
+					VertexCount ++;
+			//		assert(0);
+				}
+			}
+		}
+	}
 }
