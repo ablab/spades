@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 	debruijn.ConstructGraph(*v);
 	condensed_graph::CondenseConstructor<K> g_c(debruijn);
 
-	condensed_graph::Graph *g;
+	condensed_graph::CondensedGraph *g;
 	condensed_graph::SimpleHashTable<K> *index;
 	g_c.ConstructGraph(g, index);
 	fstream filestr;

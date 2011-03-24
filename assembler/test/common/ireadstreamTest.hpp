@@ -7,6 +7,7 @@
 
 #include "cute.h"
 #include "ireadstream.hpp"
+#include "quality_read_stream.hpp"
 
 void TestIReadStream() {
 	ireadstream<100,2,short> irs("./test/data/s_6_1.fastq.gz", "./test/data/s_6_2.fastq.gz");
@@ -45,10 +46,25 @@ void TestIReadStreamReset() {
 	ASSERT_EQUAL("GGCCAACGTTAATTTTGTTACCGACTAAAGTAGAAACTATTTCTTTTAGATGGTCGCATTTATATTTTGCATCGTCCACTTGAAAATCATATCTTATTGC", mr[1].str());
 }
 
+void TestQuality1() {
+	QualityReadStream qrs("./test/data/s_6_1.fastq.gz");
+	while (!qrs.eof()) {
+		pair<Sequence, vector<int> > pair = qrs.Next();
+		Sequence s = pair.first;
+		vector<int> q = pair.second;
+		cout << s.str() << endl;
+		for (size_t i = 0; i < q.size(); ++i) {
+			cout << q[i] << " ";
+		}
+		cout << endl;
+	}
+}
+
 cute::suite IReadStreamSuite(){
 	cute::suite s;
 	s.push_back(CUTE(TestIReadStream));
 	s.push_back(CUTE(TestIReadStreamFull));
 	s.push_back(CUTE(TestIReadStreamReset));
+	s.push_back(CUTE(TestQuality1));
 	return s;
 }

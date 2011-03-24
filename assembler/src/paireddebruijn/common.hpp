@@ -24,10 +24,12 @@
 #define longEdgesMap  map<int, Edge*>
 #define RIGHT 1
 #define LEFT -1
+#define IN_EDGE 0
+#define OUT_EDGE 1
 
-LOGGER("paireddebruijn.common");
+//LOGGER("paireddebruijn.common");
 
-#define MAX_VERT_NUMBER 100000
+#define MAX_VERT_NUMBER 10000
 #define MAX_DEGREE 30
 #define suffix "_const_d"
 
@@ -74,12 +76,18 @@ extern int l;
 extern int readLength;
 const int maxSeqLength = 200;
 extern int insertLength;
+extern int minIntersect;
+
 
 
 extern int needPairs;
 extern int needLmers;
 extern int needSequences;
 extern int needGraph;
+extern int useExpandDefinite;
+extern int useTraceReads;
+extern int useProcessLower;
+
 
 void initConstants(string ini_file);
 #endif /*COMMON_HPP_*/
