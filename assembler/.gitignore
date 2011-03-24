@@ -1,7 +1,6 @@
 build/
 logs/
 output/
-data/
 .cproject
 .project
 gmon.out

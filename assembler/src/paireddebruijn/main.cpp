@@ -70,7 +70,6 @@ void run() {
 			graph.RebuildVertexMap();
 			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 		}
-
 		traceReads(graph.verts, graph.longEdges, graph, graph.VertexCount, graph.EdgeId);
 		outputLongEdges(graph.longEdges,"data/ReadsTraced.dot");
 		outputLongEdgesThroughGenome(graph, "data/ReadsTraced_g.dot");

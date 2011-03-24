@@ -4,9 +4,12 @@
 #include "pairedGraph.hpp"
 using namespace paired_assembler;
 
-void outputLongEdges(longEdgesMap &longEdges, string fileName = "");
-void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, string fileName = "");
-void outputLongEdgesThroughGenome(PairedGraph &graph, string fileName = "");
+void outputLongEdges(longEdgesMap &longEdges);
+void outputLongEdges(longEdgesMap &longEdges, string fileName);
+void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph);
+void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, string fileName);
+void outputLongEdgesThroughGenome(PairedGraph &graph);
+void outputLongEdgesThroughGenome(PairedGraph &graph, string fileName);
 
 void codeRead(char *read, char *code);
 
