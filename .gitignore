@@ -3,4 +3,4 @@ stats/*
 ~*
 *.exe
 *.exe.stackdump
-.metadata
+.metadata/*
