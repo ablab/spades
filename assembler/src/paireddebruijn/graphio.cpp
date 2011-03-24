@@ -52,23 +52,15 @@ string decompress(ll a, int l) {
 	return res;
 }
 
-void outputLongEdges(longEdgesMap &longEdges, string fileName) {
-	gvis::GraphPrinter<int> *g;
-	ofstream s;
-	if(fileName == "") {
-		g = new gvis::GraphPrinter<int>("Paired_ext", cout);
-	} else {
-		s.open(fileName.c_str());
-		cerr<<"Open file "<<fileName<<endl;
-		g = new gvis::GraphPrinter<int>("Paired_ext", s) ;
-	}
+void outputLongEdges(longEdgesMap &longEdges, ostream &os) {
+	gvis::GraphPrinter<int> g("Paired_ext", os);
 	char Buffer[100];
 	for (longEdgesMap::iterator it = longEdges.begin(); it != longEdges.end(); ++it) {
 		if (it->second->EdgeId == it->first) {
 			sprintf(Buffer, "%i (%i)", it->first, it->second->length);
 			//		else sprintf(Buffer,"%i (%i) FAKE now it is %d",it->first, it->second->length,it->second->EdgeId);
 
-			g->addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
+			g.addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
 			cerr << it->first << " (" << it->second->length << "):" << endl;
 			if (it->second->length < 500) {
 				cerr << it->second->upper->str() << endl;
@@ -76,22 +68,24 @@ void outputLongEdges(longEdgesMap &longEdges, string fileName) {
 			}
 		}
 	}
-	g->output();
-	if(fileName != "") {
-		s.close();
-	}
-	delete g;
+	g.output();
 }
 
-void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, string fileName) {
+void outputLongEdges(longEdgesMap &longEdges) {
+	outputLongEdges(longEdges, cout);
+}
+
+void outputLongEdges(longEdgesMap &longEdges, string fileName) {
 	gvis::GraphPrinter<int> *g;
 	ofstream s;
-	if(fileName == "") {
-		g = new gvis::GraphPrinter<int>("Paired_ext", cout);
-	} else {
-		s.open(fileName.c_str());
-		g = new gvis::GraphPrinter<int>("Paired_ext", s) ;
-	}
+	s.open(fileName.c_str());
+	cerr<<"Open file "<<fileName<<endl;
+	outputLongEdges(longEdges, s);
+	s.close();
+}
+
+void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, ostream &os) {
+	gvis::GraphPrinter<int> g("Paired_ext", os);
 	char Buffer[100];
 	bool UsedV[20000];
 	forn(i,20000) UsedV[i] = false;
@@ -101,19 +95,19 @@ void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, string fileNam
 			if (!UsedV[it->second->FromVertex]){
 				vDist = vertexDist(longEdges, graph,it->second->FromVertex);
 				sprintf(Buffer, "Vertex_%i (%i, %i)", it->second->FromVertex, vDist.first, vDist.second );
-				g->addVertex(it->second->FromVertex, Buffer);
+				g.addVertex(it->second->FromVertex, Buffer);
 				UsedV[it->second->FromVertex]=true;
 			}
 			if (!UsedV[it->second->ToVertex]){
 				vDist = vertexDist(longEdges, graph,it->second->ToVertex);
 				sprintf(Buffer, "Vertex_%i (%i, %i)", it->second->ToVertex, vDist.first, vDist.second );
-				g->addVertex(it->second->ToVertex, Buffer);
+				g.addVertex(it->second->ToVertex, Buffer);
 				UsedV[it->second->ToVertex]=true;
 			}
 
 			sprintf(Buffer, "%i (%i)", it->first, it->second->length);
 			//		else sprintf(Buffer,"%i (%i) FAKE now it is %d",it->first, it->second->length,it->second->EdgeId);
-			g->addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
+			g.addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
 			cerr << it->first << " (" << it->second->length << "):" << endl;
 			if (it->second->length < 500)
 			{
@@ -122,12 +116,19 @@ void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, string fileNam
 			}
 		}
 	}
-	g->output();
-	if(fileName != "") {
-		s.close();
-	}
-	delete g;
+	g.output();
+}
 
+void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph) {
+	outputLongEdges(longEdges, graph, cout);
+}
+
+void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, string fileName) {
+	ofstream s;
+	s.open(fileName.c_str());
+	gvis::GraphPrinter<int> g("Paired_ext", s) ;
+	outputLongEdges(longEdges, graph, s);
+	s.close();
 }
 
 
