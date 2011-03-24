@@ -22,7 +22,7 @@ private:
 	PairedGraph &g_;
 public:
 	PairThreader(PairedGraph &g, int minIntersection = 1) :
-		g_(g), minIntersection_(minIntersection) {
+		minIntersection_(minIntersection), g_(g) {
 	}
 private:
 	void threadLower(vector<pair<int, Edge *> > &result, Edge *currentEdge,

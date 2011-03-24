@@ -169,7 +169,7 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph,
  */
 /* countEdgesDistintion
  * @params:
- /* countEdgesDistinction
+ * countEdgesDistinction
  * @param vertexId - index of vertex, distances we are interested in
  * @param graph - pairedGraph
  * @returns pair<int,int> - minimal intervals of nucleotids, such that they uniquely represent Inedges and outedges respectively.
