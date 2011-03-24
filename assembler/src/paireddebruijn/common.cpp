@@ -15,12 +15,16 @@ int k = 0;
 int l = 0;
 int readLength = 0;
 int insertLength = 0;
+int minIntersect;
 
 
 int needPairs = 1;
 int needLmers = 1;
 int needSequences = 1;
 int needGraph = 1;
+int useExpandDefinite = 1;
+int useTraceReads = 1;
+int useProcessLower = 1;
 void initConstants(string ini_file) {
 	char tmp[200];
 	INFO("Trying to init constants...");
@@ -64,6 +68,10 @@ void initConstants(string ini_file) {
 	assert(fscanf(ini, "needLmers = %d\n", &needLmers) == 1);
 	assert(fscanf(ini, "needSequences = %d\n", &needSequences) == 1);
 	assert(fscanf(ini, "needGraph = %d\n", &needGraph) == 1);
+	assert(fscanf(ini, "useExpandDefinite = %d\n", &useExpandDefinite) == 1);
+	assert(fscanf(ini, "useTraceReads = %d\n", &useTraceReads) == 1);
+	assert(fscanf(ini, "useProcessLower = %d\n", &useProcessLower) == 1);
+	minIntersect = l - 1;
 
 	//assert()
 }

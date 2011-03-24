@@ -387,6 +387,7 @@ void readsToPairs(string inputFile, string outputFile) {
 	cerr<< "outputFile opened";
 	outputTable(table);
 	fclose(stdout);
+	freopen(NULL, "w", stdout);
 	table.clear();
 }
 //#define OUTPUT_DECOMPRESSED
