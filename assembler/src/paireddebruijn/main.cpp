@@ -13,15 +13,16 @@ LOGGER("p.main");
 
 PairedGraph graph;
 
-int main() {
-	char str[100];
-
+void init() {
 	initConstants(ini_file);
 	initGlobal();
 	freopen(error_log.c_str(), "w",stderr);
 	INFO("Constants inited...");
-
 	cerr << l << " " << k;
+}
+
+void run() {
+	char str[100];
 //	LOG_ASSERT(1 == 0, "Something wrong");
 	if (needPairs) {
 		cerr << endl << " constructing pairs" << endl;
@@ -105,6 +106,11 @@ int main() {
 	}
 	cerr << "\n Finished";
 	INFO("Finished");
+}
 
+PairedGraph g;
+int main() {
+	init();
+	run();
 	return 0;
 }
