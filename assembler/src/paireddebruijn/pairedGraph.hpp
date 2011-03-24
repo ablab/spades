@@ -54,6 +54,14 @@ public:
 	int FromVertex;
 	int ToVertex;
 	int EdgeId;
+	Edge(Edge &e){
+		length = e.length;
+		FromVertex = e.FromVertex;
+		ToVertex = e.ToVertex;
+		EdgeId=e.EdgeId;
+		upper = new Sequence(const_cast<Sequence&> (*e.upper));
+		lower = new Sequence(const_cast<Sequence&> (*e.lower));
+	}
 	//	Vertex(int coverage, int length, Sequence *kmer, Sequence *pair, bool direction, int delta_d);
 	void ExpandRight(Edge &newRigth) {
 		ToVertex = newRigth.ToVertex;
@@ -105,7 +113,7 @@ public:
 	}
 
 	~Edge() {
-		cerr << "destructing" << upper->str() << endl;
+//		cerr << "destructing" << upper->str() << endl;
 		if (upper != lower) {
 			delete upper;
 			delete lower;
