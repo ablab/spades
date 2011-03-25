@@ -19,7 +19,7 @@
 #define mp make_pair
 #define fi first
 #define se second
-#define edgesMap  map<ll, vector<VertexPrototype *> >
+#define edgesMap  map<ll, vector<EdgePrototype *> >
 #define verticesMap  map<ll, vector<VertexPrototype *> >
 #define longEdgesMap  map<int, Edge*>
 #define RIGHT 1

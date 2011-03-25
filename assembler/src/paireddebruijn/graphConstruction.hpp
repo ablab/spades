@@ -12,12 +12,12 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired = true);
 void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 		verticesMap &verts, longEdgesMap &longEdges, PairedGraph &graph);
 void createVertices(edgesMap &edges, PairedGraph &graph);
-int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer, Sequence* &finishSeq);
-int expandLeft(edgesMap &edges, verticesMap &verts, ll &startKmer, Sequence* &startSeq);
+int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer, Sequence* &finishSeq, int &EdgeCoverage);
+int expandLeft(edgesMap &edges, verticesMap &verts, ll &startKmer, Sequence* &startSeq, int &EdgeCoverage);
 int checkUniqueWayLeft(edgesMap &edges, ll finishKmer, Sequence *finishSeq);
-int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq);
+int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq, int &EdgeCoverage);
 int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence *finishSeq);
-int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq);
+int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq, int &EdgeCoverage);
 //void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph);
 //void outputLongEdges(longEdgesMap &longEdges);
 //void traceReads(verticesMap &verts, longEdgesMap &longEdges, PairedGraph &graph);

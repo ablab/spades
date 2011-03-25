@@ -23,6 +23,33 @@ bool isPath(Edge &e1, Edge &e2) {
 	return e1.lower->Subseq(left1, right1) == e2.upper->Subseq(left2, right2);
 }
 
+bool isRealPossiblePath(PairedGraph &graph, int &EdgeId, int &FollowerId) {
+	int sts = readLength + insertLength;
+	bool res =isPath(*(graph.longEdges[EdgeId]), *(graph.longEdges[FollowerId]));
+	if (!res) return false;
+	if (graph.longEdges[EdgeId]->length>sts) {
+		return res;
+	}
+	else {
+		Edge* tmpEdge = new Edge(*(graph.longEdges[EdgeId]));
+		tmpEdge->ExpandRight(*(graph.longEdges[FollowerId]));
+
+		PairThreader pg(graph,1);
+		vector<pair<int, Edge *> > vp = pg.threadLower(tmpEdge);
+		cerr<<"Edge "<<EdgeId<<" + "<<FollowerId<<" extended by "<<vp.size()<<" edges:"<<endl;
+		forn(i, vp.size()) {
+			cerr<<vp[i].second->EdgeId<<" dist "<<vp[i].first<<endl;
+			isPath(*tmpEdge, *(graph.longEdges[vp[i].second->EdgeId]));
+		}
+		delete tmpEdge;
+		return (vp.size()>0);
+
+	}
+
+	return true;
+
+}
+
 pair<bool, int> isPath(Edge *e1, Edge *e2, int shift) {
 	int lowerLeft = max(0, shift);
 	int lowerRight = min((int) (e1->length), e2->length + shift) + k - 1;
@@ -81,7 +108,7 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph,
 	forn(curVertId, VertexCount) {
 		if ((graph.degrees[curVertId][0] != 0) && (graph.degrees[curVertId][1]
 				!= 0)) {
-
+			cerr<<"Process vertex "<<curVertId<<endl;
 			forn(i,MAX_DEGREE) {
 				countOut[i] = 0;
 				countIn[i] = 0;
@@ -94,10 +121,9 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph,
 					int curOutEdgeId = edgeRealId(
 							graph.edgeIds[curVertId][j][OUT_EDGE], longEdges);
 					graph.edgeIds[curVertId][j][OUT_EDGE] = curOutEdgeId;
-					cerr << "Check isPass for edge " << curInEdgeId << " vs "
-							<< curOutEdgeId;
-					if (isPath(*longEdges[curInEdgeId],
-							*longEdges[curOutEdgeId])) {
+					cerr << "Check isRealPossiblePass for edge " << curInEdgeId << " vs "
+							<< curOutEdgeId<<endl;
+					if (isRealPossiblePath(graph, curInEdgeId, curOutEdgeId)) {
 						countIn[j]++;
 						countOut[i]++;
 						possibleIn[j] = i;
