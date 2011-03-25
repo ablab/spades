@@ -1,11 +1,12 @@
 #include "vector"
 #include "sequence.hpp"
 #include "common.hpp"
+#include "graphVisualizer.hpp"
 //#include "hashTable.h"
 using namespace std;
 
-#ifndef CONDENSED_GRAPH_H_
-#define CONDENSED_GRAPH_H_
+#ifndef PAIREDGRAPH_H_
+#define PAIREDGRAPH_H_
 
 namespace paired_assembler {
 
@@ -37,7 +38,13 @@ public:
 	int VertexId;
 	bool used;
 };
-
+/*
+ * length- including one vertex.
+ * upper and lower including both in and out vertex
+ *
+ *
+ *
+ */
 class Edge {
 	//	int _coverage;
 public:
@@ -48,26 +55,35 @@ public:
 	int ToVertex;
 	int EdgeId;
 	//	Vertex(int coverage, int length, Sequence *kmer, Sequence *pair, bool direction, int delta_d);
-	void ExpandRight(Edge newRigth) {
+	void ExpandRight(Edge &newRigth) {
 		ToVertex = newRigth.ToVertex;
 		if (newRigth.length > 0) {
 			length = length + newRigth.length;
 			string toOut = newRigth.upper->str();
-			//		cerr <<endl << "str:: "<< upper->str() <<" "<< toOut <<" "<< k <<endl;
 			assert(k-1 < toOut.length());
 			upper = new Sequence(
 					upper->str() + newRigth.upper->Subseq(k - 1).str());
 
 			toOut = newRigth.lower->str();
-			//		cerr <<endl << l-1 <<" "<< toOut.length()<<" "<< toOut<< endl;
 			assert(l-1 < toOut.length());
-			//		cerr <<endl << "strL:: "<< lower->str() <<" "<< toOut <<" "<< l <<endl;
 			lower = new Sequence(
 					lower->str() + newRigth.lower->Subseq(l - 1).str());
-			//		cerr<< endl << "expanded" << endl;
+
 		}
 	}
-	void ExpandLeft(Edge newLeft) {
+	void shortenEdge(int toCut, int direction){
+		if (toCut < length){
+			if (direction == OUT_EDGE) {
+				upper = new Sequence(upper->Subseq(toCut, length));
+				lower = new Sequence(lower->Subseq(toCut, length));
+			} else {
+				upper = new Sequence(upper->Subseq(0, upper->size() - toCut));
+				lower = new Sequence(lower->Subseq(0, lower->size() - toCut));
+			}
+			length -= toCut;
+		}
+	}
+	void ExpandLeft(Edge &newLeft) {
 		FromVertex = newLeft.FromVertex;
 		if (newLeft.length > 0) {
 			length = length + newLeft.length;
@@ -89,6 +105,7 @@ public:
 	}
 
 	~Edge() {
+		cerr << "destructing" << upper->str() << endl;
 		if (upper != lower) {
 			delete upper;
 			delete lower;
@@ -110,65 +127,24 @@ public:
 	//0 - in-degrees
 	//1 -out-degrees
 	int degrees[MAX_VERT_NUMBER][2];//, outD[MAX_VERT_NUMBER][2];
-	int outputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
-	int inputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
+	int edgeIds[MAX_VERT_NUMBER][MAX_DEGREE][2];
 	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
-//	int firstDiff[Msv]
+	longEdgesMap longEdges;
+	verticesMap verts;
+	int VertexCount;
+	int EdgeId;
+	PairedGraph(){
+		cerr<<"VAH Paired created"<<endl;
+	}
+	void RebuildVertexMap(void);
+
 };
-//
-//class Vertex {
-//	//	int _coverage;
-//	Sequence *upper;
-//	Sequence *lower;
-//	vector<Vertex*> neighbours;
-//	//	Arc* _neighbours;
-//	//	int _neighbours_count;
-//	//	short _delta_d;
-//	//	Vertex *real_vertex;
-//public:
-//	//	Vertex(int coverage, int length, Sequence *kmer, Sequence *pair, bool direction, int delta_d);
-//	Vertex(Sequence *up, Sequence *low) {
-//		upper = up;
-//		lower = low;
-//	}
-//
-//	void glue(Sequence *up, Sequence *low, int glueDepth);
-//	//
-//	//	int coverage() {return _coverage;};
-//	//
-//	//	int neighbours_count() {return _neighbours_count;};
-//	//
-//	//	int addEdge(Vertex *neighbour, short coverage);
-//	//
-//	//	vector<Vertex*> getEdges();
-//	//
-//	//	Kmer getKmer(int position);
-//
-//};
-//
-//class Graph {
-//	//	HashTable map;
-//	//
-//	//	int merge(Vertex *u, Vertex* v);
-//	//
-//	//	int split(Vertex *u, Vertex* v, short position);
-//public:
-//	vector<Vertex *> vertices;
-//	int addVertex(Sequence *upper, Sequence *lower) {
-//		Vertex *newVertex = new Vertex(upper, lower);
-//		vertices.push_back(newVertex);
-//		return vertices.size()-1;
-//	}
-//};
-//
-////class GraphIterator {
-////public:
-////	GraphIterator(Graph *graph);
-////
-////	Vertex *nextVertex();
-////
-////	bool hasNext();
-////};
+
+int storeVertex(gvis::GraphPrinter<int> &g, PairedGraph &graph, ll newKmer, Sequence* newSeq);
+int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq);
+int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq, int VertNum);
+void resetVertexCount(PairedGraph &graph);
+
 
 }
-#endif /* CONDENSED_GRAPH_H_ */
+#endif /* PAIREDGRAPH_H_ */

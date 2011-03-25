@@ -9,6 +9,9 @@ d:
 p:
 	make -C src/paireddebruijn	
 
+b:
+	make -C src/bayes
+
 at: 
 	make -C test/abruijn
 	
@@ -27,5 +30,5 @@ clean:
 test: ct at dt pt
 
 #temporary fix
-all: a d p ct #test
+all: a b d p ct #test
 

@@ -199,11 +199,6 @@ public:
 		startSimpleGraphRecord(*_out, name);
 	}
 
-	GraphPrinter(const string &name, const char* filename) {
-		_out = new ofstream(filename, ios::out);
-		startSimpleGraphRecord(*_out, name);
-	}
-
 	void addVertex(tVertex vertexId, const string &label,
 			const string &fillColor = "white") {
 		Vertex<tVertex> v(vertexId, label, fillColor);

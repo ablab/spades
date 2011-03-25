@@ -5,10 +5,11 @@
 #include "graphVisualizer.hpp"
 #include "pairedGraph.hpp"
 #include "graphio.hpp"
-#include "readTracing.hpp"
-#include "graphSimplification.hpp"
+//#include "readTracing.hpp"
+//#include "graphSimplification.hpp"
 
-int VertexCount;
+LOGGER("p.graphConstruction");
+
 char EdgeStr[1000000];
 char EdgeStrLo[1000000];
 //int inD[MAX_VERT_NUMBER], outD[MAX_VERT_NUMBER];
@@ -17,61 +18,17 @@ char EdgeStrLo[1000000];
 //int fakeOutputVertices[MAX_VERT_NUMBER][MAX_DEGREE];
 //int fakeInputVertices[MAX_VERT_NUMBER][MAX_DEGREE];
 
-int minIntersect ;
-int EdgeId;
 using namespace paired_assembler;
-PairedGraph graph;
 
-void constructGraph() {
 
-	//		readsToPairs(parsed_reads, parsed_k_l_mers);
-	//		pairsToSequences(parsed_k_l_mers, parsed_k_sequence);
-	minIntersect = l - 1;
-	cerr << "Read edges" << endl;
+void constructGraph(PairedGraph &graph) {
+
+	INFO ("Read edges");
 	edgesMap edges = sequencesToMap(parsed_k_sequence, true);
-	cerr << "go to graph" << endl;
-	gvis::GraphPrinter<int> g("Paired");
-	cerr << "Start vertices" << endl;
-	VertexCount = 0;
-	verticesMap verts;
-	longEdgesMap longEdges;
-	createVertices(g, edges, verts, longEdges, graph);
-//	vertexDist(longEdges, graph, 172);
-	expandDefinite(longEdges , graph, VertexCount, true);
-	freopen("data/afterExpand.dot", "w",stdout);
-	outputLongEdges(longEdges);
-	freopen("data/afterExpand_g.dot", "w",stdout);
-	outputLongEdgesThroughGenome(longEdges,graph,VertexCount);
-//	freopen(graph.c_str(), "w",stdout);
+	INFO ("Start vertices");
+	graph.VertexCount = 0;
+	createVertices(edges, graph);
 	cerr << endl << "End vertices" <<endl;
-//	return;
-
-//	freopen(graph2.c_str(), "w",stdout);
-//	outputLongEdges(longEdges);
-//	cerr << "TraceReads" << endl;
-
-	traceReads(verts, longEdges, graph, VertexCount, EdgeId);
-	freopen("data/ReadsTraced.dot", "w", stdout);
-	outputLongEdges(longEdges);
-	freopen("data/ReadsTraced_g.dot", "w", stdout);
-	outputLongEdgesThroughGenome(longEdges,graph,VertexCount);
-	graph.recreateVerticesInfo(VertexCount, longEdges);
-
-	while (processLowerSequence(longEdges, graph, VertexCount))
-	{
-		graph.recreateVerticesInfo(VertexCount, longEdges);
-		expandDefinite(longEdges , graph, VertexCount);
-	}
-	freopen("data/afterLowers.dot", "w",stdout);
-	outputLongEdges(longEdges);
-	freopen("data/afterLowers_g.dot", "w",stdout);
-	outputLongEdgesThroughGenome(longEdges,graph,VertexCount);
-
-	//freopen("data/LowerProcessed.dot", "w", stdout);
-///	outputLongEdges(longEdges);
-
-
-
 
 }
 
@@ -126,11 +83,12 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 		verticesMap &verts, longEdgesMap &longEdges, PairedGraph &graph) {
 	char Buffer[2000];
-	EdgeId = 0;
+	graph.EdgeId = 0;
 	cerr << "Start createVertices " << edges.size() << endl;
-	forn(i,MAX_VERT_NUMBER) {
-		forn(j, 2)
-			graph.degrees[i][j] = 0;
+	forn(i, MAX_VERT_NUMBER) {
+		graph.degrees[i][0] = 0;
+		graph.degrees[i][1] = 0;
+
 	}
 	int count = 0;
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
@@ -157,18 +115,18 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 				Sequence *startSeq = new Sequence(
 						(iter->se)[i]->lower->Subseq(0,
 								(iter->se)[i]->lower->size() - 1));
-				length += expandRight(edges, verts, finishKmer, finishSeq);
-				int toVert = storeVertex(g, verts, finishKmer, finishSeq);
-				int toleft = expandLeft(edges, verts, startKmer, startSeq);
+				length += expandRight(edges, graph.verts, finishKmer, finishSeq);
+				int toVert = storeVertex(g, graph, finishKmer, finishSeq);
+				int toleft = expandLeft(edges, graph.verts, startKmer, startSeq);
 				//cerr<<endl << "TO LEFT" << toleft << endl;
-				if (verts.size() > 20000) {
+				if (graph.verts.size() > 20000) {
 					cerr << endl <<" Too much vertices";
 					assert(0);
 				}
 				length += toleft;
-				int fromVert = storeVertex(g, verts, startKmer, startSeq);
+				int fromVert = storeVertex(g, graph, startKmer, startSeq);
 				//				if (! (count && ((1<<14) -1 ))) {
-//				cerr << EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
+//				cerr << graph.EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
 //						+ 500000 - toleft)) << endl;
 //				}
 				Sequence* UpperSeq = new Sequence(((char*) (EdgeStr
@@ -181,23 +139,23 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 					assert(0);
 				}
 				Edge* newEdge = new Edge(UpperSeq, LowerSeq, fromVert, toVert,
-						length, EdgeId);
-				longEdges.insert(make_pair(EdgeId, newEdge));
+						length, graph.EdgeId);
+				graph.longEdges.insert(make_pair(graph.EdgeId, newEdge));
 				if ((length < 300) && (length > k - 1)) {
 					EdgeStr[500000 - toleft + length] = 0;
-					sprintf(Buffer, "%d: (%d) %s", EdgeId, length,
+					sprintf(Buffer, "%d: (%d) %s", graph.EdgeId, length,
 							EdgeStr + 500000 - toleft + k - 1);
 				} else {
-					sprintf(Buffer, "%d: (%d)", EdgeId, length);
+					sprintf(Buffer, "%d: (%d)", graph.EdgeId, length);
 				}
 
 				g.addEdge(fromVert, toVert, Buffer);
-				graph.outputEdges[fromVert][graph.degrees[fromVert][1]] = EdgeId;
-				graph.inputEdges[toVert][graph.degrees[toVert][0]] = EdgeId;
+				graph.edgeIds[fromVert][graph.degrees[fromVert][1]][OUT_EDGE] = graph.EdgeId;
+				graph.edgeIds[toVert][graph.degrees[toVert][0]][IN_EDGE] = graph.EdgeId;
 				graph.degrees[fromVert][1]++;
 				graph.degrees[toVert][0]++;
 
-				EdgeId++;
+				graph.EdgeId++;
 
 			}
 		}
@@ -205,10 +163,97 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 		edges.erase(iter++);
 	}
 	g.output();
-	forn(i, VertexCount) {
+	forn(i, graph.VertexCount) {
 		cerr << i << " +" << graph.degrees[i][0] << " -" << graph.degrees[i][1] << endl;
 	}
 }
+
+void createVertices(edgesMap &edges, PairedGraph &graph) {
+	char Buffer[2000];
+	graph.EdgeId = 0;
+	cerr << "Start createVertices " << edges.size() << endl;
+	forn(i, MAX_VERT_NUMBER) {
+		graph.degrees[i][0] = 0;
+		graph.degrees[i][1] = 0;
+
+	}
+	int count = 0;
+	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
+		int size = iter->second.size();
+		ll kmer = iter->fi;
+		forn(i, size) {
+			if ((!(iter->se)[i]->used)) {
+				int length = 1;
+				count++;
+//				cerr << count << endl;
+				if (((iter->se)[i])->lower->size() < l) {
+					cerr<<"Bad edge: "<<((iter->se)[i])->lower->size()<<" "<<((iter->se)[i])->lower->str()<<endl;
+				}
+				assert (((iter->se)[i])->lower->size() >= l);
+				sprintf(EdgeStr + 500000, "%s", decompress(kmer, k).c_str());
+				sprintf(EdgeStrLo + 500000, "%s",
+						((iter->se)[i])->lower->str().c_str());
+				(iter->se)[i]->used = 1;
+				ll finishKmer = kmer & (~((ll) 3 << (2 * (k - 1))));
+				Sequence *finishSeq = new Sequence(
+						(iter->se)[i]->lower->Subseq(1,
+								(iter->se)[i]->lower->size()));
+				ll startKmer = kmer >> 2;
+				Sequence *startSeq = new Sequence(
+						(iter->se)[i]->lower->Subseq(0,
+								(iter->se)[i]->lower->size() - 1));
+				length += expandRight(edges, graph.verts, finishKmer, finishSeq);
+				int toVert = storeVertex(graph, finishKmer, finishSeq);
+				int toleft = expandLeft(edges, graph.verts, startKmer, startSeq);
+				//cerr<<endl << "TO LEFT" << toleft << endl;
+				if (graph.verts.size() > 20000) {
+					cerr << endl <<" Too much vertices";
+					assert(0);
+				}
+				length += toleft;
+				int fromVert = storeVertex(graph, startKmer, startSeq);
+				//				if (! (count && ((1<<14) -1 ))) {
+//				cerr << graph.EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
+//						+ 500000 - toleft)) << endl;
+//				}
+				Sequence* UpperSeq = new Sequence(((char*) (EdgeStr
+						+ 500000 - toleft)));
+				Sequence* LowerSeq = new Sequence(((char*) (EdgeStrLo
+						+ 500000 - toleft)));
+				if (LowerSeq->size() < l) {
+					cerr << endl << LowerSeq->str() << endl << UpperSeq->str()
+							<< endl;
+					assert(0);
+				}
+				Edge* newEdge = new Edge(UpperSeq, LowerSeq, fromVert, toVert,
+						length, graph.EdgeId);
+				graph.longEdges.insert(make_pair(graph.EdgeId, newEdge));
+				if ((length < 300) && (length > k - 1)) {
+					EdgeStr[500000 - toleft + length] = 0;
+					sprintf(Buffer, "%d: (%d) %s", graph.EdgeId, length,
+							EdgeStr + 500000 - toleft + k - 1);
+				} else {
+					sprintf(Buffer, "%d: (%d)", graph.EdgeId, length);
+				}
+
+				graph.edgeIds[fromVert][graph.degrees[fromVert][1]][OUT_EDGE] = graph.EdgeId;
+				graph.edgeIds[toVert][graph.degrees[toVert][0]][IN_EDGE] = graph.EdgeId;
+				graph.degrees[fromVert][1]++;
+				graph.degrees[toVert][0]++;
+
+				graph.EdgeId++;
+
+			}
+		}
+		(iter->second).clear();
+		edges.erase(iter++);
+	}
+	forn(i, graph.VertexCount) {
+		cerr << i << " +" << graph.degrees[i][0] << " -" << graph.degrees[i][1] << endl;
+	}
+}
+
+
 
 int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer,
 		Sequence* &finishSeq) {
@@ -481,47 +526,4 @@ int checkUniqueWayLeft(edgesMap &edges, ll finishKmer, Sequence *finishSeq) {
 int checkUniqueWayRight(edgesMap &edges, ll finishKmer, Sequence* finishSeq) {
 	return checkUniqueWay(edges, finishKmer, finishSeq, RIGHT);
 }
-
-verticesMap::iterator addKmerToMap(verticesMap &verts, ll kmer) {
-	verticesMap::iterator position = verts.find(kmer);
-	if (position == verts.end()) {
-		vector<VertexPrototype *> prototypes;
-		return verts.insert(make_pair(kmer, prototypes)).first;
-	} else {
-		return position;
-	}
-}
-
-/*First argument of result is id of the vertex. Second argument is true if new entry
- * was created and false otherwise
- *
- */
-pair<int, bool> addVertexToMap(verticesMap &verts, ll newKmer, Sequence* newSeq) {
-	verticesMap::iterator position = addKmerToMap(verts, newKmer);
-	vector<VertexPrototype *> *sequences = &position->second;
-	for (vector<VertexPrototype *>::iterator it = sequences->begin(); it
-			!= sequences->end(); ++it) {
-		Sequence *otherSequence = (*it)->lower;
-		if (newSeq->similar(*otherSequence, minIntersect, 0)) {
-			return make_pair((*it)->VertexId, false);
-		}
-	}
-	sequences->push_back(new VertexPrototype(newSeq, VertexCount));
-	VertexCount++;
-	return make_pair(VertexCount - 1, true);
-}
-
-int storeVertex(gvis::GraphPrinter<int> &g, verticesMap &verts, ll newKmer,
-		Sequence* newSeq) {
-	pair<int, bool> addResult = addVertexToMap(verts, newKmer, newSeq);
-	if (addResult.second) {
-		g.addVertex(addResult.first, decompress(newKmer, k - 1));
-	}
-	return addResult.first;
-}
-
-void resetVertexCount() {
-	VertexCount = 0;
-}
-
 

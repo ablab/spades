@@ -43,7 +43,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 						if ((graph.degrees[VertId][0]!=0)&&(graph.degrees[VertId][1]!=0)) {
 							int tmpIn = -1;
 							forn(i,graph.degrees[VertId][0]) {
-								int CurEdge=graph.inputEdges[VertId][i];
+								int CurEdge=graph.edgeIds[VertId][i][IN_EDGE];
 								int subsizeup = longEdges[CurEdge]->upper->size();
 								int subsizelo = longEdges[CurEdge]->lower->size();
 								if (subsizeup>j+k+shift) subsizeup = j+k+shift;
@@ -72,7 +72,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 							int tmpOut = -1;
 
 							forn(i,graph.degrees[VertId][1]) {
-								int CurEdge=graph.outputEdges[VertId][i];
+								int CurEdge=graph.edgeIds[VertId][i][OUT_EDGE];
 								int subsizeup = longEdges[CurEdge]->upper->size();
 								int subsizelo = longEdges[CurEdge]->lower->size();
 								if (subsizeup>readLength-j-1-shift) subsizeup = readLength-j-1-shift;
@@ -169,7 +169,6 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	 }
 	 }
 
-	 freopen("data/graph_after_obvious.dot", "w", stdout);
 	 outputLongEdges(longEdges);
 	 */
 	//resolve multi case;
@@ -188,7 +187,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 					forn(i,graph.degrees[curVertId][0]) {
 						allIns = false;
 						forn (j,EdgePairs[curVertId].size()) {
-							if ((EdgePairs[curVertId])[j].first ==graph.inputEdges[curVertId][i]) {
+							if ((EdgePairs[curVertId])[j].first ==graph.edgeIds[curVertId][i][IN_EDGE]) {
 								allIns = true;
 								break;
 							}
@@ -198,7 +197,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 					forn(i,graph.degrees[curVertId][1]) {
 						allOuts = false;
 						forn (j,EdgePairs[curVertId].size()) {
-							if ((EdgePairs[curVertId])[j].second ==graph.outputEdges[curVertId][i]) {
+							if ((EdgePairs[curVertId])[j].second ==graph.edgeIds[curVertId][i][OUT_EDGE]) {
 								allOuts = true;
 								break;
 							}
@@ -206,7 +205,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 						if (!allOuts) break;
 					}
 					if (allIns&&allOuts) {
-						int tmpCurOut = edgeRealId(graph.outputEdges[curVertId][0],longEdges);
+						int tmpCurOut = edgeRealId(graph.edgeIds[curVertId][0][OUT_EDGE],longEdges);
 						string tmpUpSeq = longEdges[tmpCurOut]->upper->Subseq(0,k-1).str();
 						string tmpLoSeq = longEdges[tmpCurOut]->lower->Subseq(0,l-1).str();
 
@@ -214,28 +213,28 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 						//create fake Vertices for in edges;
 						int tmpFictStartIn = FakeVertexCount;
 						forn(i,graph.degrees[curVertId][0]) {
-							int CurIn = edgeRealId(graph.inputEdges[curVertId][i],longEdges);
-							graph.inputEdges[curVertId][i] = CurIn;
+							int CurIn = edgeRealId(graph.edgeIds[curVertId][i][IN_EDGE],longEdges);
+							graph.edgeIds[curVertId][i][IN_EDGE] = CurIn;
 							FakeVertexToReal.insert(make_pair(FakeVertexCount,curVertId));
 							cerr<<"Edge "<<CurIn<<" ("<<longEdges[CurIn]->FromVertex<<", "<<longEdges[CurIn]->ToVertex<<") maped to ";
 							longEdges[CurIn]->ToVertex = FakeVertexCount;
 							graph.degrees[FakeVertexCount][0]=1;
 							graph.degrees[FakeVertexCount][1]=0;
-							graph.inputEdges[FakeVertexCount][0]=CurIn;
+							graph.edgeIds[FakeVertexCount][0][IN_EDGE]=CurIn;
 							cerr<<"edge "<<CurIn<<" ("<<longEdges[CurIn]->FromVertex<<", "<<longEdges[CurIn]->ToVertex<<")"<<endl;
 							FakeVertexCount++;
 						}
 						//create fake Vertices for out edges;
 						int tmpFictStartOut = FakeVertexCount;
 						forn(i,graph.degrees[curVertId][1]) {
-							int CurOut = edgeRealId(graph.outputEdges[curVertId][i],longEdges);
-							graph.outputEdges[curVertId][i] = CurOut;
+							int CurOut = edgeRealId(graph.edgeIds[curVertId][i][OUT_EDGE],longEdges);
+							graph.edgeIds[curVertId][i][OUT_EDGE] = CurOut;
 							cerr<<"Edge "<<CurOut<<" ("<<longEdges[CurOut]->FromVertex<<", "<<longEdges[CurOut]->ToVertex<<") maped to ";
 							FakeVertexToReal.insert(make_pair(FakeVertexCount,curVertId));
 							longEdges[CurOut]->FromVertex = FakeVertexCount;
 							graph.degrees[FakeVertexCount][0]=0;
 							graph.degrees[FakeVertexCount][1]=1;
-							graph.outputEdges[FakeVertexCount][0]=CurOut;
+							graph.edgeIds[FakeVertexCount][0][OUT_EDGE]=CurOut;
 							cerr<<"edge "<<CurOut<<" ("<<longEdges[CurOut]->FromVertex<<", "<<longEdges[CurOut]->ToVertex<<")"<<endl;
 							FakeVertexCount++;
 						}
@@ -244,11 +243,11 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 						forn (tmpEdgePair,EdgePairs[curVertId].size()) {
 							int tmpFrom = 0;
 							int tmpTo = 0;
-							while (edgeRealId(graph.inputEdges[curVertId][tmpFrom], longEdges)!=edgeRealId((EdgePairs[curVertId])[tmpEdgePair].first,longEdges)) {
+							while (edgeRealId(graph.edgeIds[curVertId][tmpFrom][IN_EDGE], longEdges)!=edgeRealId((EdgePairs[curVertId])[tmpEdgePair].first,longEdges)) {
 								tmpFrom++;
 								assert(tmpFrom<graph.degrees[curVertId][0]);
 							}
-							while (edgeRealId(graph.outputEdges[curVertId][tmpTo],longEdges)!=edgeRealId((EdgePairs[curVertId])[tmpEdgePair].second, longEdges)) {
+							while (edgeRealId(graph.edgeIds[curVertId][tmpTo][OUT_EDGE],longEdges)!=edgeRealId((EdgePairs[curVertId])[tmpEdgePair].second, longEdges)) {
 								tmpTo++;
 								assert(tmpTo<graph.degrees[curVertId][1]);
 							}
@@ -259,16 +258,16 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 							longEdges.insert(make_pair(EdgeId,tmpEdge));
 							//							cerr<<"Virtual edge "<<EdgeId<<
 							cerr<<"Virtual edge "<<EdgeId<<" ("<<longEdges[EdgeId]->FromVertex<<", "<<longEdges[EdgeId]->ToVertex<<")"<<endl;
-							graph.outputEdges[tmpFictStartIn + tmpFrom][graph.degrees[tmpFictStartIn + tmpFrom][1]] = EdgeId;
+							graph.edgeIds[tmpFictStartIn + tmpFrom][graph.degrees[tmpFictStartIn + tmpFrom][1]][OUT_EDGE] = EdgeId;
 							graph.degrees[tmpFictStartIn + tmpFrom][1]++;
-							graph.inputEdges[tmpFictStartOut + tmpTo][graph.degrees[tmpFictStartOut + tmpTo][0]] = EdgeId;
+							graph.edgeIds[tmpFictStartOut + tmpTo][graph.degrees[tmpFictStartOut + tmpTo][0]][OUT_EDGE] = EdgeId;
 							graph.degrees[tmpFictStartOut + tmpTo][0]++;
 							EdgeId++;
 
 						}
 
-						graph.degrees[curVertId][0]=0;
-						graph.degrees[curVertId][1]=0;
+						graph.degrees[curVertId][0] = 0;
+						graph.degrees[curVertId][1] = 0;
 					}
 				}
 			}
@@ -278,13 +277,10 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	VertexCount = FakeVertexCount;
 	graph.recreateVerticesInfo(VertexCount, longEdges);
 	expandDefinite(longEdges, graph, VertexCount);
-	for(longEdgesMap::iterator it= longEdges.begin(); it !=longEdges.end(); ++it) {
-		if (it->second->FromVertex>=FakeVertexStart) it->second->FromVertex = FakeVertexToReal[it->second->FromVertex];
-		if (it->second->ToVertex>=FakeVertexStart) it->second->ToVertex = FakeVertexToReal[it->second->ToVertex];
-	}
-	VertexCount = FakeVertexStart;
+//	for(longEdgesMap::iterator it= longEdges.begin(); it !=longEdges.end(); ++it) {
+//		if (it->second->FromVertex>=FakeVertexStart) it->second->FromVertex = FakeVertexToReal[it->second->FromVertex];
+//		if (it->second->ToVertex>=FakeVertexStart) it->second->ToVertex = FakeVertexToReal[it->second->ToVertex];
+//	}
+//	VertexCount = FakeVertexStart;
 	graph.recreateVerticesInfo(VertexCount, longEdges);
-	freopen("data/graph_after_fake.dot", "w", stdout);
-	outputLongEdges(longEdges);
-
 }

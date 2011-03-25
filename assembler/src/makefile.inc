@@ -10,7 +10,7 @@ all:$(EXEC)
 #PG=-pg
 CC=g++
 CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=c++0x $(PG) -I./../common -I./.. #-DNDEBUG
-LDFLAGS=-L/usr/local/lib -O3 -lz -llog4cxx -lapr-1 -laprutil-1 $(PG)
+LDFLAGS=-O3 -L/usr/local/lib -L/usr/local/apr/lib -lz -llog4cxx -lapr-1 -laprutil-1 $(PG)
 DEPSFL=-MM -MG
 
 
