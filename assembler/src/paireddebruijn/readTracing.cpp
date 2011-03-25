@@ -254,7 +254,9 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 							Sequence *UpSeq = new Sequence(tmpUpSeq);
 							Sequence *LoSeq = new Sequence(tmpLoSeq);
 
-							Edge *tmpEdge = new Edge(UpSeq, LoSeq, tmpFictStartIn + tmpFrom, tmpFictStartOut + tmpTo,0, EdgeId);
+							int coverage = 0;//min(tmpcovin, tmpcovout);
+
+							Edge *tmpEdge = new Edge(UpSeq, LoSeq, tmpFictStartIn + tmpFrom, tmpFictStartOut + tmpTo,0, EdgeId, coverage);
 							longEdges.insert(make_pair(EdgeId,tmpEdge));
 							//							cerr<<"Virtual edge "<<EdgeId<<
 							cerr<<"Virtual edge "<<EdgeId<<" ("<<longEdges[EdgeId]->FromVertex<<", "<<longEdges[EdgeId]->ToVertex<<")"<<endl;
