@@ -389,10 +389,13 @@ inline bool equalsAtIndex(longEdgesMap &longEdges, int id1, int id2, int index, 
 	l2 = (*longEdges[id2]->lower)[indl2];
 	cerr <<">>\n";
 	cerr.flush();
+	return (u1 == u2);
 	return (u1 == u2 && l1 == l2);
 }
 void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount, int dir)
 {
+
+	LOGGER ("p.extractDefinite");
 	int edgeIds[MAX_DEGREE];
 	//TODO: constant?
 	int delta = 20;
@@ -459,16 +462,20 @@ void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCou
 					else
 						newEdge = new Edge(UpperSeq, LowerSeq, newVert, curVert, tl - index - (k - 1), insertEdgeId);
 					longEdges.insert(make_pair(insertEdgeId, newEdge));
-
+					DEBUG ("new edge " << newEdge->upper->str());
 					forn (tmpId, graph.degrees[curVert][direction]) {
+						DEBUG ("before "<< longEdges[edgeIds[tmpId]]->upper->str());
 						longEdges[edgeIds[tmpId]]->shortenEdge(index - (k - 1), direction);
 						if (direction)
 							longEdges[edgeIds[tmpId]]->FromVertex = newVert;
 						else
 							longEdges[edgeIds[tmpId]]->ToVertex = newVert;
+						DEBUG ("after "<< longEdges[edgeIds[tmpId]]->upper->str());
 						graph.edgeIds[newVert][tmpId][direction] = graph.edgeIds[curVert][tmpId][direction];
 				//		DEBUG (longEdges[graph.edgeIds[newVert][tmpId][direction]]->upper->str());
 					}
+					if (direction)
+						assert
 					graph.degrees[newVert][direction]
 							= graph.degrees[curVert][direction];
 					graph.degrees[newVert][1 - direction] = 1;
@@ -477,7 +484,8 @@ void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCou
 					graph.edgeIds[newVert][0][direction] = insertEdgeId;
 					insertEdgeId++;
 					VertexCount++;
-					//		assert(0);
+
+					assert(0);
 				}
 			}
 		}
