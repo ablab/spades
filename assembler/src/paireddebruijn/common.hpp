@@ -19,7 +19,7 @@
 #define mp make_pair
 #define fi first
 #define se second
-#define edgesMap  map<ll, vector<VertexPrototype *> >
+#define edgesMap  map<ll, vector<EdgePrototype *> >
 #define verticesMap  map<ll, vector<VertexPrototype *> >
 #define longEdgesMap  map<int, Edge*>
 #define RIGHT 1
@@ -61,7 +61,7 @@ const string threaded_graph = string("data/threaded_graph") +  + ".dot";
 */
 const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
-const string ini_file = "data/paired.ini";
+const string ini_file = "data/paireddebruijn/paired.ini";
 extern string parsed_reads;
 extern string parsed_k_l_mers;
 extern string parsed_k_sequence;

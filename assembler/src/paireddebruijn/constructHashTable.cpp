@@ -5,7 +5,7 @@
 
 using namespace std;
 
-typedef vector<Sequence*> downSeqs;
+typedef vector<pair<Sequence*,int>> downSeqs;
 
 
 int totalKmers = 0;
@@ -40,7 +40,7 @@ void initGlobal(){
 	upperMax = ((ll) 1) << 46;
 
 }
-downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
+downSeqs clusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &lset) {
 	downSeqs res;
 	res.clear();
 	assert (max_shift <= 20);
@@ -61,8 +61,8 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 	}
 	ll diff;
 	forn(i, size) {
-		ll right_tmp = a[i];
-		ll left_tmp = a[i];
+		ll right_tmp = a[i].first;
+		ll left_tmp = a[i].first;
 		ll p2 = 0;
 		ll upper_bound;
 		forn(shift, max_shift) {
@@ -84,7 +84,7 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 		    upper_bound = ((ll) 1) << p2;
 		    if (!(cright == 0 || shift_right[i] || cright > 1)) {
 				forn(j, size) {
-					diff = a[j] - right_tmp;
+					diff = a[j].first - right_tmp;
 					if ((diff >= 0) && (diff < upper_bound) && (i != j)){
 						shift_right[i] = p2/2;
 						if (right[i] == -1) {
@@ -113,7 +113,7 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 		//	cerr <<"cleft" <<cright << endl;
 			if (!(cright == 0 || shift_left[i] || cright > 1)) {
 				forn(j, size) {
-					diff = a[j] - left_tmp;
+					diff = a[j].first - left_tmp;
 					if ((i != j) && ((diff & (lowerMask >> p2)) == 0)){
 						shift_left[i] = p2/2;
 						if (left[i] == -1)
@@ -148,7 +148,8 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 			}
 			int rightend = ii;
 			ii = leftend;
-			string s = decompress(a[leftend], l);
+			string s = decompress(a[leftend].first, l);
+			int coverage = a[leftend].second;
 			while (ii != rightend) {
 		//		cerr << "clusterizing....";
 				int p = shift_right[ii];
@@ -156,13 +157,14 @@ downSeqs clusterizeLset(ll* a, int size, int max_shift, set<ll> &lset) {
 				ii = right[ii];
 				forn(j, p) {
 				//	cerr << ((a[ii] & maxsd) >> (2*(p-j-1)));
-					s += nucl((a[ii] & maxsd) >> (2*(p-j-1)));
+					s += nucl((a[ii].first & maxsd) >> (2*(p-j-1)));
 					maxsd >>= 2;
 			//		cerr << "OK" <<endl;
+					if (coverage < a[ii].second) coverage = a[ii].second;
 				}
 			}
 			Sequence* tmpSeq = new Sequence(s);
-			res.pb(tmpSeq);
+			res.pb(make_pair(tmpSeq,coverage));
 			color++;
 		}
 	}/*
@@ -301,18 +303,25 @@ inline bool checkBoundsForUpper(ll upper) {
 
 void addPairToTable(myMap& table, ll upper, ll lower) {
 	if (table.find(upper) != table.end()) {
-		if (find(table[upper].begin(), table[upper].end(), lower)
-				== table[upper].end()) {
-			table[upper].pb(lower);
+		vector<ll>::iterator it = find(table[upper].first.begin(), table[upper].first.end(), lower);
+		if (it == table[upper].first.end()) {
+			table[upper].first.pb(lower);
+			table[upper].second.pb(1);
 			++uniqPairs;
 		}
+		else {
+			int index = distance(table[upper].first.begin(), it);
+			table[upper].second[index]++;
+		}
 	} else {
-		vector<ll> tmp;
-		tmp.clear();
-		tmp.pb(lower);
+		pair<vector<ll>,vector<int>> tmp;
+		tmp.first.clear();
+		tmp.first.pb(lower);
+		tmp.second.clear();
+		tmp.second.pb(1);
 		table.insert(make_pair(upper, tmp));
 
-//		cerr<<"inserting"<<table.size();
+		//		cerr<<"inserting"<<table.size();
 		++uniqPairs;
 	}
 }
@@ -363,10 +372,11 @@ void constructTable(myMap &table) {
 void outputTable(myMap &pairedTable) {
 	int j = 0;
 	for (myMap::iterator iter = pairedTable.begin() ; iter != pairedTable.end(); iter++) {
-		pair<ll, vector<ll> > p = (*iter);
-		cout << p.fi << " " << p.se.size() << endl;
-		forn(i, p.se.size()) {
-			cout << p.se[i] << " ";
+		pair<ll, pair<vector<ll>, vector<int>>> p = (*iter);
+		cout << p.fi << " " << p.se.fi.size() << endl;
+		forn(i, p.se.fi.size()) {
+			cout << p.se.fi[i] << " ";
+			cout << p.se.se[i] << " ";
 		}
 		cout << endl << endl;
 		if (!(j & (1024*128-1)))
@@ -399,6 +409,7 @@ int pairsToLmers(string inputFile, string outputFile) {
 	int ok = 1;
 	ll kmer; int lsize;
 	ll lmers[MAXLMERSIZE];
+	int covers[MAXLMERSIZE];
 
 	set<ll> lset;
 	int count = 0;
@@ -421,7 +432,7 @@ int pairsToLmers(string inputFile, string outputFile) {
 		}
 
 		forn(i, lsize) {
-			if (fscanf(inFile, "%lld", &lmers[i]) != 1) {
+			if (fscanf(inFile, "%lld %d", &lmers[i], &covers[i]) != 2) {
 				cerr << "Error in pairsToSequences reading l-mers";
 				return -1;
 			}
@@ -460,7 +471,7 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
     cerr << endl << inputFile << endl;
     set<ll> lset;
     readLmersSet(lmerFile, lset);
-    ll lmers[MAXLMERSIZE];
+    pair <ll,int> lmers[MAXLMERSIZE];
 	ll kmer;
 	int lsize;
 	FILE* outFile = fopen(outputFile.c_str(), "w");
@@ -484,12 +495,12 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 		}
 
 		forn(i, lsize) {
-			if (fscanf(inFile, "%lld", &lmers[i]) != 1) {
+			if (fscanf(inFile, "%lld %d", &lmers[i].first, &lmers[i].second) != 2) {
 				cerr << "Error in pairsToSequences reading l-mers";
 				return -1;
 			}
 		}
-		sort(lmers, lmers + lsize);
+		sort(lmers, lmers + lsize, ComparePairByFirst);
 		downSeqs clusters =  clusterizeLset(lmers, lsize, 0, lset);
 //		return 0;
 		int clsize = clusters.size();
@@ -505,9 +516,9 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 #endif
 		forn(i, clsize) {
 			assert(l == 31);
-			outstring = clusters[i]->str();
+			outstring = clusters[i].first->str();
 			assert(outstring.size() >= 31);
-			fprintf(outFile, "%s ",outstring.c_str());
+			fprintf(outFile, "%s %d ",outstring.c_str(),clusters[i].second);
 		}
 		fprintf(outFile, "\n");
 #ifdef OUTPUT_DECOMPRESSED
