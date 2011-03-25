@@ -9,7 +9,7 @@ using namespace paired_assembler;
 void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 		int &VertexCount, bool NotExpandBeyondDefinite = false);
 void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph,
-		int &VertexCount);
+		int &VertexCount, int dir);
 bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph,
 		int &VertexCount);
 pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &Graph,

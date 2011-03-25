@@ -103,8 +103,8 @@ public:
 				upper = new Sequence(upper->Subseq(toCut, length));
 				lower = new Sequence(lower->Subseq(toCut, length));
 			} else {
-				upper = new Sequence(upper->Subseq(length - toCut));
-				lower = new Sequence(lower->Subseq(length - toCut));
+				upper = new Sequence(upper->Subseq(0, upper->size() - toCut));
+				lower = new Sequence(lower->Subseq(0, lower->size() - toCut));
 			}
 			length -= toCut;
 		}
