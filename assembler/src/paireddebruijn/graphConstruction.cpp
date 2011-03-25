@@ -35,12 +35,13 @@ void constructGraph(PairedGraph &graph) {
 edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 	FILE *inFile = fopen(parsed_k_sequence.c_str(), "r");
 
-	vector<VertexPrototype *> prototypes;
+	vector<EdgePrototype *> prototypes;
 	edgesMap res;
 	prototypes.reserve(maxSeqLength);
 	int count = 0;
 	while (1) {
 		char s[maxSeqLength];
+		int coverage;
 		int size, scanf_res;
 		ll kmer;
 		count++;
@@ -61,7 +62,7 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 		}
 		prototypes.clear();
 		forn(i, size) {
-			scanf_res = fscanf(inFile, "%s", s);
+			scanf_res = fscanf(inFile, "%s %d", s, &coverage);
 			if (!scanf_res) {
 				cerr << "sequencesToMap error in reading sequences";
 			}
@@ -71,7 +72,8 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 				seq = new Sequence(s);
 			} else
 				seq = new Sequence(auxilary_lmer);
-			VertexPrototype *v = new VertexPrototype(seq, 0);
+			EdgePrototype *v = new EdgePrototype(seq, 0);
+			v->coverage = coverage;
 			if (usePaired || !i)
 				prototypes.pb(v);
 		}
@@ -103,6 +105,7 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 					cerr<<"Bad edge: "<<((iter->se)[i])->lower->size()<<" "<<((iter->se)[i])->lower->str()<<endl;
 				}
 				assert (((iter->se)[i])->lower->size() >= l);
+				int EdgeCoverage = ((iter->se)[i])->coverage;
 				sprintf(EdgeStr + 500000, "%s", decompress(kmer, k).c_str());
 				sprintf(EdgeStrLo + 500000, "%s",
 						((iter->se)[i])->lower->str().c_str());
@@ -115,9 +118,9 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 				Sequence *startSeq = new Sequence(
 						(iter->se)[i]->lower->Subseq(0,
 								(iter->se)[i]->lower->size() - 1));
-				length += expandRight(edges, graph.verts, finishKmer, finishSeq);
+				length += expandRight(edges, graph.verts, finishKmer, finishSeq,EdgeCoverage);
 				int toVert = storeVertex(g, graph, finishKmer, finishSeq);
-				int toleft = expandLeft(edges, graph.verts, startKmer, startSeq);
+				int toleft = expandLeft(edges, graph.verts, startKmer, startSeq,EdgeCoverage);
 				//cerr<<endl << "TO LEFT" << toleft << endl;
 				if (graph.verts.size() > 20000) {
 					cerr << endl <<" Too much vertices";
@@ -184,12 +187,14 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 		forn(i, size) {
 			if ((!(iter->se)[i]->used)) {
 				int length = 1;
+				int EdgeCoverage;
 				count++;
 //				cerr << count << endl;
 				if (((iter->se)[i])->lower->size() < l) {
 					cerr<<"Bad edge: "<<((iter->se)[i])->lower->size()<<" "<<((iter->se)[i])->lower->str()<<endl;
 				}
 				assert (((iter->se)[i])->lower->size() >= l);
+				EdgeCoverage = (iter->se)[i]->coverage;
 				sprintf(EdgeStr + 500000, "%s", decompress(kmer, k).c_str());
 				sprintf(EdgeStrLo + 500000, "%s",
 						((iter->se)[i])->lower->str().c_str());
@@ -202,9 +207,9 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 				Sequence *startSeq = new Sequence(
 						(iter->se)[i]->lower->Subseq(0,
 								(iter->se)[i]->lower->size() - 1));
-				length += expandRight(edges, graph.verts, finishKmer, finishSeq);
+				length += expandRight(edges, graph.verts, finishKmer, finishSeq, EdgeCoverage);
 				int toVert = storeVertex(graph, finishKmer, finishSeq);
-				int toleft = expandLeft(edges, graph.verts, startKmer, startSeq);
+				int toleft = expandLeft(edges, graph.verts, startKmer, startSeq, EdgeCoverage);
 				//cerr<<endl << "TO LEFT" << toleft << endl;
 				if (graph.verts.size() > 20000) {
 					cerr << endl <<" Too much vertices";
@@ -226,7 +231,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 					assert(0);
 				}
 				Edge* newEdge = new Edge(UpperSeq, LowerSeq, fromVert, toVert,
-						length, graph.EdgeId);
+						length, graph.EdgeId, EdgeCoverage);
 				graph.longEdges.insert(make_pair(graph.EdgeId, newEdge));
 				if ((length < 300) && (length > k - 1)) {
 					EdgeStr[500000 - toleft + length] = 0;
@@ -256,7 +261,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 
 
 int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer,
-		Sequence* &finishSeq) {
+		Sequence* &finishSeq, int &EdgeCoverage) {
 	int length = 0;
 	verticesMap::iterator iter;
 //	cerr << "expand_right"<<endl;
@@ -277,7 +282,7 @@ int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer,
 		}
 //		cerr << "after checkUniqueWayLeft";
 		int go_res = 0;
-		if ((go_res = goUniqueWayRight(edges, finishKmer, finishSeq)) == 0) {
+		if ((go_res = goUniqueWayRight(edges, finishKmer, finishSeq, EdgeCoverage)) == 0) {
 			return length;
 		} else {
 //			cerr << "expanding right" << endl;
@@ -295,7 +300,7 @@ int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer,
 }
 
 int expandLeft(edgesMap &edges, verticesMap &verts, ll &startKmer,
-		Sequence* &startSeq) {
+		Sequence* &startSeq, int &EdgeCoverage) {
 	int length = 0;
 
 	while (1) {
@@ -314,7 +319,7 @@ int expandLeft(edgesMap &edges, verticesMap &verts, ll &startKmer,
 		}
 		int go_res;
 //		cerr << endl<<"trying to go left"<<endl;
-		if ( 0 == (go_res = goUniqueWayLeft(edges, startKmer, startSeq))) {
+		if ( 0 == (go_res = goUniqueWayLeft(edges, startKmer, startSeq, EdgeCoverage))) {
 			return length;
 		} else {
 			if (go_res != 2) {
@@ -329,7 +334,7 @@ int expandLeft(edgesMap &edges, verticesMap &verts, ll &startKmer,
 	}
 }
 
-int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
+int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq, int &EdgeCoverage) {
 	int count = 0;
 	Sequence *PossibleSequence;
 	ll PossibleKmer = 0;
@@ -389,6 +394,9 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	}
 */
 	if (count == 1 || tcount == 1) {
+
+		if (EdgeCoverage < (PossibleIter->se)[seqIndex]->coverage)
+			EdgeCoverage = (PossibleIter->se)[seqIndex]->coverage;
 		finishKmer = PossibleKmer >> 2;
 		finishSeq = new Sequence(
 				(PossibleIter->se)[seqIndex]->lower->Subseq(0,
@@ -403,7 +411,7 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	return 0;
 }
 
-int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
+int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq, int &EdgeCoverage) {
 	int count = 0;
 	Sequence *PossibleSequence;
 	ll PossibleKmer = 0;
@@ -464,6 +472,8 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	}
 */
 	if (count == 1 || tcount == 1) {
+		if (EdgeCoverage < (PossibleIter->se)[seqIndex]->coverage)
+			EdgeCoverage = (PossibleIter->se)[seqIndex]->coverage;
 		int tcount = 0;
 		finishKmer = (PossibleKmer) & (~(((ll) 3) << (2 * (k - 1))));
 		finishSeq = new Sequence(
@@ -479,10 +489,10 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq) {
 	}
 }
 
-int countWays(vector<VertexPrototype *> &v, Sequence *finishSeq, int direction) {
+int countWays(vector<EdgePrototype *> &v, Sequence *finishSeq, int direction) {
 	int count = 0;
 //	cerr <<" countWays started"<< endl;
-	for (vector<VertexPrototype *>::iterator it = v.begin(); it != v.end(); ++it) {
+	for (vector<EdgePrototype *>::iterator it = v.begin(); it != v.end(); ++it) {
 		if (finishSeq->similar(*((*it)->lower), minIntersect, direction)) {
 			count++;
 			if (count > 1) {

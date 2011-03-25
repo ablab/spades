@@ -20,12 +20,99 @@ using namespace __gnu_cxx;
 
 namespace abruijn {
 
-class Edge {
-public:
-	map<size_t, int> lengths_;
+//class Profile {
+//protected:
+//	size_t len_;
+//public:
+//	Profile(size_t len) : len_(len) {}
+//	virtual ~Profile() {}
+//	virtual void addSequence(const Sequence& seq);
+//};
 
-	void addLength(int len) {
-		lengths_[len]++;
+class FrequencyProfile {
+	vector<size_t> freq_;
+public:
+	FrequencyProfile(size_t len) {
+		assert(len > 0);
+		for (size_t i = 0; i < (len * 4); ++i) {
+			freq_.push_back(0);
+		}
+	}
+
+	size_t size() const {
+		return freq_.size() / 4;
+	}
+
+	void addSequence(const Sequence& seq) {
+		assert(seq.size() == size());
+		for (size_t i = 0; i < seq.size(); ++i) {
+			freq_[i * 4 + seq[i]]++;
+		}
+	}
+
+	void append(FrequencyProfile p) {
+		freq_.insert(freq_.end(), p.freq_.begin(), p.freq_.end());
+	}
+
+	ostream& output(ostream& os) const {
+		for (size_t i = 0; i < freq_.size() / 4; ++i) {
+			int num = 0;
+			int jj = -1;
+			for (int j = 0; j < 4; ++j) {
+				if (freq_[(i << 2) + j]) {
+					num++;
+					jj = j;
+				}
+			}
+			if (num == 1) {
+				os << nucl(jj);
+			} else {
+				os << "(";
+				for (int j = 0; j < 4; ++j) {
+					if (freq_[(i << 2) + j]) {
+						os << (nucl(j) - 'A' + 'a');
+					}
+				}
+				os << ")";
+			}
+		}
+		return os;
+	}
+};
+
+typedef FrequencyProfile Profile;
+
+ostream& operator<< (ostream& os, const Profile& p);
+
+class Edge {
+	map<size_t, Profile> long_;
+	// minus keys
+	map<size_t, size_t> short_;
+public:
+	ostream& output(ostream& os) const {
+		for (map<size_t, size_t>::const_iterator it = short_.begin(); it != short_.end(); it++) {
+			os << (int) -(it->first) << ";";
+		}
+		for (map<size_t, Profile>::const_iterator it = long_.begin(); it != long_.end(); it++) {
+			os << (it->second) << ";";
+		}
+		return os;
+	}
+
+	void addSequence(size_t fromSize, size_t toSize, const Sequence& seq) {
+		if (seq.size() > fromSize + toSize) {
+			size_t len = seq.size() - fromSize - toSize;
+			map<size_t, Profile>::iterator it = long_.find(len);
+			if (it == long_.end()) {
+				Profile p(len);
+				p.addSequence(seq.Subseq(fromSize, seq.size() - toSize));
+				long_.insert(make_pair(len, p));
+			} else {
+				it->second.addSequence(seq.Subseq(fromSize, seq.size() - toSize));
+			}
+		} else {
+			short_[fromSize + toSize - seq.size()]++;
+		}
 	}
 };
 
@@ -33,68 +120,36 @@ ostream& operator<< (ostream& os, const Edge& e);
 
 class Vertex {
 	const Sequence data_;
-	int size_;
 	friend ostream& operator<<(ostream&, const Vertex&);
 public:
 	Vertex* complement_;
 	typedef map<Vertex*, Edge> Edges;
 	Edges edges_;
-	Vertex(const Sequence& kmer) : data_(kmer), size_(kmer.size()) {};
+	Vertex(const Sequence& kmer) : data_(kmer) {};
 
 	int size() const {
-		return size_;
-	}
-	//TODO trash
-	void setSize(int size) {
-		size_ = size;
+		return data_.size();
 	}
 
-	void addEdge(Vertex* to, int len) {
-		edges_[to].addLength(len);
+	void addEdge(Vertex* to, const Sequence& seq) {
+		edges_[to].addSequence(size(), to->size(), seq);
 	}
 
 	int degree() {
 		return edges_.size();
 	}
 
-	const Sequence data() {
+	const Sequence data() const {
 		return data_;
 	}
 
-	string str() {
+	string str() const {
 		return data_.str();
 	}
 
-	const Sequence concat(Vertex* u) {
-		SequenceBuilder sb;
-//		size_t sum = data_->size() + u->data_->size();
-//		sb.append(*(v->kmer_));
-//		if (len > sum) {
-//			TRACE("Should've been filled correctly."); // TODO
-//			for (size_t i = sum; i < len; i++) {
-//				sb.append('A');
-//			}
-//			sb.append(*(u->kmer_));
-//		} else {
-//			sb.append(u->kmer_->Subseq(sum - len));
-//		}
-//		assert(sb.size() == len);
-//		return new Sequence(sb.BuildSequence());
-
-		sb.append(data_.Subseq(0, K / 2));
-		sb.append(u->data_.Subseq(u->data_.size() - K / 2));
-		return sb.BuildSequence();
-
-//		for (int i = 0; i < K / 2; i++) {
-//			sb.append(data_->operator [](i));
-//			DEBUG(i);
-//		}
-//		return sb.BuildSequence();
-//		size_t start = u->data_->size() - K / 2;
-//		for (int i = 0; i < K / 2; i++) {
-//			sb.append(u->data_[start + i]);
-//		}
-//		return sb.BuildSequence();
+	ostream& output(ostream& os) const {
+		os << str();
+		return os;
 	}
 };
 
@@ -107,17 +162,18 @@ public:
 
 	typedef set<Vertex*> Vertices;
 	Vertices vertices;
+	Vertices removedVertices;
 
 	Graph() {}
 	Vertex* createVertex(const Sequence& kmer);
-	Vertex* createVertex(const Sequence& kmer, size_t size);
-	void addEdge(Vertex* from, Vertex* to, int len);
+	void addEdge(Vertex* from, Vertex* to, const Sequence& seq);
 	void removeVertex(Vertex* v);
 	void removeVertex_single(Vertex* v);
 	bool hasVertex(const Sequence& kmer);
 	Vertex* getVertex(const Sequence& kmer);
 
-	Vertex* condense(Vertex* v);
+	bool tryCondenseA(Vertex* v);
+	void cleanup();
 
 	void output(std::ofstream &out);
 	void output(string filename);

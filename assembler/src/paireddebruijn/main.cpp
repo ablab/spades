@@ -41,39 +41,39 @@ void run() {
 	if (needGraph) {
 		cerr << endl << " constructing Graph" << endl;
 		constructGraph(graph);
-		sprintf(str, "data/graph.txt");
+		sprintf(str, "data/paireddebruijn/graph.txt");
 		save(str,graph);
-		outputLongEdges(graph.longEdges, graph, "data/beforeExpand.dot");
+		outputLongEdges(graph.longEdges, graph, "data/paireddebruijn/beforeExpand.dot");
 	}
 
 	if (useExpandDefinite){
 		INFO("Expand definite...");
 		if (!needGraph){
-			sprintf(str, "data/graph.txt");
+			sprintf(str, "data/paireddebruijn/graph.txt");
 			load(str,graph);
 			graph.RebuildVertexMap();
 			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 
 		}
 		expandDefinite(graph.longEdges, graph, graph.VertexCount, true);
-		outputLongEdges(graph.longEdges, graph, "data/afterExpand.dot");
-		outputLongEdgesThroughGenome(graph, "data/afterExpand_g.dot");
-		sprintf(str, "data/expandedGraph.txt");
+		outputLongEdges(graph.longEdges, graph, "data/paireddebruijn/afterExpand.dot");
+		outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExpand_g.dot");
+		sprintf(str, "data/paireddebruijn/expandedGraph.txt");
 		save(str,graph);
 	}
 
 	if (useTraceReads){
 		INFO("Trace reads...");
 		if (!useExpandDefinite){
-			sprintf(str, "data/expandedGraph.txt");
+			sprintf(str, "data/paireddebruijn/expandedGraph.txt");
 			load(str,graph);
 			graph.RebuildVertexMap();
 			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 		}
 		traceReads(graph.verts, graph.longEdges, graph, graph.VertexCount, graph.EdgeId);
-		outputLongEdges(graph.longEdges,"data/ReadsTraced.dot");
-		outputLongEdgesThroughGenome(graph, "data/ReadsTraced_g.dot");
-		sprintf(str, "data/tracedGraph.txt");
+		outputLongEdges(graph.longEdges,"data/paireddebruijn/ReadsTraced.dot");
+		outputLongEdgesThroughGenome(graph, "data/paireddebruijn/ReadsTraced_g.dot");
+		sprintf(str, "data/paireddebruijn/tracedGraph.txt");
 		save(str,graph);
 	}
 
@@ -81,7 +81,7 @@ void run() {
 		INFO("Process lowers");
 
 		if (!useTraceReads){
-			sprintf(str, "data/tracedGraph.txt");
+			sprintf(str, "data/paireddebruijn/tracedGraph.txt");
 			INFO("Load");
 			load(str,graph);
 			INFO("Rebuild");
@@ -95,12 +95,12 @@ void run() {
 			expandDefinite(graph.longEdges , graph, graph.VertexCount);
 			INFO("one more");
 		}
-		outputLongEdges(graph.longEdges,"data/afterLowers.dot");
-		outputLongEdgesThroughGenome(graph, "data/afterLowers_g.dot");
+		outputLongEdges(graph.longEdges,"data/paireddebruijn/afterLowers.dot");
+		outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterLowers_g.dot");
 
 		graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
-		outputLongEdges(graph.longEdges, graph, "data/afterLowers_info.dot");
-		sprintf(str, "data/afterLowerGraph.txt");
+		outputLongEdges(graph.longEdges, graph, "data/paireddebruijn/afterLowers_info.dot");
+		sprintf(str, "data/paireddebruijn/afterLowerGraph.txt");
 		save(str,graph);
 	}
 	extractDefinite(graph.longEdges , graph, graph.VertexCount, 1);
@@ -118,9 +118,27 @@ void run() {
 	INFO("Finished");
 }
 
-PairedGraph g;
+
+
 int main() {
 	init();
-	run();
+/*	freopen(error_log.c_str(), "w",stderr);
+	char str[100];
+	sprintf(str, "data/paireddebruijn/tracedGraph.txt");
+	load(str,graph);
+	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+	PairThreader pg(graph,1);
+	for (longEdgesMap::iterator it = graph.longEdges.begin(); it != graph.longEdges.end(); ++it) {
+		if (it->second->EdgeId == it->first) {
+			vector<pair<int, Edge *> > vp = pg.threadLower(it->second);
+			forn(i,vp.size())
+				cerr<<"edge "<<it->first<<" may jump into "<<vp[i].second->EdgeId<<" dist "<<vp[i].first<<endl;
+
+		}
+	}
+
+
+*/
+		run();
 	return 0;
 }

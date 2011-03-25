@@ -157,31 +157,76 @@ public:
 	}
 };
 
-//////////////////////////////////////////////////
-
+/**
+ * @brief Condensed DeBruijn Graph with empty edges and sequences in vertices
+ *
+ * Condensed DeBruijn Graph with empty edges and sequences in vertices.
+ *
+ * When some graph action happens (Add, Delete, Split, Merge),
+ * corresponding method of handler with proper arguments is called.
+ *
+ * Passing pointer on action handler to graph, forget about allocated memory,\
+ * cause graph will delete it when no longer needed.
+ */
 class CondensedGraph {
-	set<Vertex*> vertices_;
 
 	/**
-	 * deals with incoming links and their complement only!!!
+	 * Fixes incoming edges during split.
+	 *
+	 * After split of vertex v edges that was pointing to it should point to v1.
+	 *
+	 * @param v Vertex that was split.
+	 * @param v1 Left vertex that was obtained during split. Incoming target for new edges.
+	 * @param v2 Right vertex that was obtained during split. Need it to handle one of special cases.
 	 */
 	void FixIncomingOnSplit(Vertex* v, Vertex* v1, Vertex* v2);
 
+	/**
+	 * Fixes incoming edges during merge.
+	 *
+	 * After merge of vertices v1 and v2 edges that was pointing to v1 should point to merge result v.
+	 *
+	 * @param v1 Left vertex that was merged.
+	 * @param v2 Right vertex that was merged. Need it to handle one of special cases.
+	 * @param v Merge result. Incoming target for new edges.
+	 */
 	void FixIncomingOnMerge(Vertex* v1, Vertex* v2, Vertex* v);
 
+	bool CheckIfNoIncoming(Vertex* v) const;
+
+	/**
+	 * Checks that neighbours (its right neighbours and right neighbours of complement)
+	 * of the v don't have v as neighbour.
+	 *
+	 * @param v Vertex to check condition for.
+	 * @return Check result.
+	 */
 	bool CanBeDeleted(Vertex* v) const;
 
-	void AddDesc(Vertex* anc, Vertex* desc);
+	/**
+	 * Adds v2 as right neighbour to v1.
+	 */
+	void AddRightNeighbour(Vertex* v1, Vertex* v2);
 
 	size_t k_;
 	GraphActionHandler* action_handler_;
-	//	template<size_t kmer_size_> friend class GraphConstructor;
+	set<Vertex*> vertices_;
+
 public:
 
+	/**
+	 * Constructs empty graph to work with k-mers.
+	 *
+	 * @param k Main parameter that defines the size of k-mers
+	 * @param action_handler Graph actions handler
+	 */
 	CondensedGraph(size_t k, GraphActionHandler* action_handler) :
 		k_(k), action_handler_(action_handler) {
 	}
 
+	/**
+	 * Deletes action_handler.
+	 */
 	~CondensedGraph() {
 		delete action_handler_;
 	}
@@ -196,9 +241,9 @@ public:
 		action_handler_ = action_handler;
 	}
 
-	vector<Vertex*> Anc(const Vertex* v) const;
+	vector<Vertex*> LeftNeighbours(const Vertex* v) const;
 
-	vector<Vertex*> Desc(const Vertex* v) const;
+	vector<Vertex*> RightNeighbours(const Vertex* v) const;
 
 	//todo make private
 	/**

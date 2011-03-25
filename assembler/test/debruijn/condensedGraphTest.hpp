@@ -3,7 +3,7 @@
 #include "seq.hpp"
 #include "sequence.hpp"
 #include "nucl.hpp"
-#include "condensedGraph.hpp"
+#include "condensed_graph.hpp"
 #include "condensedGraphConstructor.hpp"
 #include "debruijn.hpp"
 #include "graphVisualizer.hpp"
@@ -57,7 +57,7 @@ void go(const CondensedGraph& g, Vertex* v, set<Vertex*>& visited, string& log) 
 		log += "Vertex '" + v->nucls().str() + "' has been visited; ";
 	} else {
 		visited.insert(v);
-		vector<Vertex*> desc = g.Desc(v);
+		vector<Vertex*> desc = g.RightNeighbours(v);
 		for (size_t i = 0; i < desc.size(); ++i) {
 			go(g, desc[i], visited, log);
 		}
@@ -167,7 +167,7 @@ void AssertGraph(size_t read_cnt, string reads[], size_t vertex_cnt, string et_v
 	const vector<strobe_read<read_size_, 1>> strobe_reads = MakeReads<read_size_> (reads, read_cnt);
 	DirectConstructor<kmer_size_, read_size_, 1> g_c(strobe_reads);
 	CondensedGraph *g;
-	SimpleHashTable<5> *index;
+	SimpleIndex<5> *index;
 	g_c.ConstructGraph(g, index);
 
 	edge_set edges;
@@ -203,7 +203,7 @@ void AssertCondense(size_t read_cnt, string reads[], size_t vertex_cnt, string e
 	debruijn.ConstructGraph(strobe_reads) ;
 	CondenseConstructor<kmer_size_> g_c(debruijn);
 	CondensedGraph *g;
-	SimpleHashTable<5> *index;
+	SimpleIndex<5> *index;
 	g_c.ConstructGraph(g, index);
 
 	edge_set edges;
@@ -273,7 +273,7 @@ void TestBuldge() {
 }
 
 void TestSimpleHashTable() {
-	SimpleHashTable<5> h;
+	SimpleIndex<5> h;
 	Seq<5> k1("AACCG");
 	Vertex* v = new Vertex(Sequence("AAAAAAAAAAAAA"));
 	h.put(k1, v, 1);
