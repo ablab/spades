@@ -149,7 +149,8 @@ void Graph::cleanup() {
 }
 
 void Graph::output(std::ofstream &out) {
-	std::string name = OUTPUT_FILE;
+	std::string name = "A Bruijn Graph";
+//	std::string name = OUTPUT_FILE;
 #ifdef OUTPUT_PAIRED
 	gvis::PairedGraphPrinter<Vertex*> printer(name, out);
 #endif
