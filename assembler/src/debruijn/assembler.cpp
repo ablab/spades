@@ -6,7 +6,7 @@
  */
 
 #include "ireadstream.hpp"
-#include "condensedGraph.hpp"
+#include "condensed_graph.hpp"
 #include "condensedGraphConstructor.hpp"
 #include "debruijn.hpp"
 #include <cassert>
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 	condensed_graph::CondenseConstructor<K> g_c(debruijn);
 
 	condensed_graph::CondensedGraph *g;
-	condensed_graph::SimpleHashTable<K> *index;
+	condensed_graph::SimpleIndex<K> *index;
 	g_c.ConstructGraph(g, index);
 	fstream filestr;
 	filestr.open("graph.dot", fstream::out);

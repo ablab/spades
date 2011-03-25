@@ -15,6 +15,7 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph,
 pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &Graph,
 		int vertexId);
 bool isPath(Edge &e1, Edge &e2);
+bool isRealPossiblePath(PairedGraph &graph, int &EdgeId, int &FollowerId);
 
 class PairThreader {
 private:

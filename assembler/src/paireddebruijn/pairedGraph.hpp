@@ -29,14 +29,30 @@ class Vertex;
 //};
 class VertexPrototype {
 public:
-	VertexPrototype(Sequence *lower_, int start_) {
+	VertexPrototype(Sequence *lower_, int start_, int coverage_=1) {
 		lower = lower_;
 		VertexId = start_;
 		used = false;
+		coverage = coverage_;
 	}
 	Sequence *lower;
 	int VertexId;
 	bool used;
+	int coverage;
+};
+
+class EdgePrototype {
+public:
+	EdgePrototype(Sequence *lower_, int start_, int coverage_=1) {
+		lower = lower_;
+		VertexId = start_;
+		used = false;
+		coverage = coverage_;
+	}
+	Sequence *lower;
+	int VertexId;
+	bool used;
+	int coverage;
 };
 /*
  * length- including one vertex.
@@ -54,6 +70,16 @@ public:
 	int FromVertex;
 	int ToVertex;
 	int EdgeId;
+	int coverage;
+	Edge(Edge &e){
+		length = e.length;
+		FromVertex = e.FromVertex;
+		ToVertex = e.ToVertex;
+		EdgeId=e.EdgeId;
+		coverage= e.coverage;
+		upper = new Sequence(const_cast<Sequence&> (*e.upper));
+		lower = new Sequence(const_cast<Sequence&> (*e.lower));
+	}
 	//	Vertex(int coverage, int length, Sequence *kmer, Sequence *pair, bool direction, int delta_d);
 	void ExpandRight(Edge &newRigth) {
 		ToVertex = newRigth.ToVertex;
@@ -95,17 +121,18 @@ public:
 							+ lower->str());
 		}
 	}
-	Edge(Sequence *up, Sequence *low, int from, int to, int len, int id) {
+	Edge(Sequence *up, Sequence *low, int from, int to, int len, int id, int cov = 1) {
 		upper = up;
 		lower = low;
 		FromVertex = from;
 		ToVertex = to;
 		length = len;
 		EdgeId = id;
+		coverage = cov;
 	}
 
 	~Edge() {
-		cerr << "destructing" << upper->str() << endl;
+//		cerr << "destructing" << upper->str() << endl;
 		if (upper != lower) {
 			delete upper;
 			delete lower;

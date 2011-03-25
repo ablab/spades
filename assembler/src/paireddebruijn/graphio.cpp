@@ -57,11 +57,11 @@ void outputLongEdges(longEdgesMap &longEdges, ostream &os) {
 	char Buffer[100];
 	for (longEdgesMap::iterator it = longEdges.begin(); it != longEdges.end(); ++it) {
 		if (it->second->EdgeId == it->first) {
-			sprintf(Buffer, "%i (%i)", it->first, it->second->length);
+			sprintf(Buffer, "%i (%i) cov %i", it->first, it->second->length, it->second->coverage);
 			//		else sprintf(Buffer,"%i (%i) FAKE now it is %d",it->first, it->second->length,it->second->EdgeId);
 
 			g.addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
-			cerr << it->first << " (" << it->second->length << "):" << endl;
+			cerr << it->first << " (" << it->second->length << ") cov "<< it->second->coverage<<":" << endl;
 			if (it->second->length < 500) {
 				cerr << it->second->upper->str() << endl;
 				cerr << it->second->lower->str() << endl;
@@ -107,10 +107,11 @@ void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, ostream &os) {
 				UsedV[it->second->ToVertex] = true;
 			}
 
-			sprintf(Buffer, "%i (%i)", it->first, it->second->length);
+			sprintf(Buffer, "%i (%i) cov %i", it->first, it->second->length, it->second->coverage);
 			//		else sprintf(Buffer,"%i (%i) FAKE now it is %d",it->first, it->second->length,it->second->EdgeId);
+
 			g.addEdge(it->second->FromVertex, it->second->ToVertex, Buffer);
-			cerr << it->first << " (" << it->second->length << "):" << endl;
+			cerr << it->first << " (" << it->second->length << ") cov "<< it->second->coverage<<":" << endl;
 			if (it->second->length < 500) {
 				cerr << it->second->upper->str() << endl;
 				cerr << it->second->lower->str() << endl;
@@ -128,7 +129,6 @@ void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph,
 		string fileName) {
 	ofstream s;
 	s.open(fileName.c_str());
-	gvis::GraphPrinter<int> g("Paired_ext", s);
 	outputLongEdges(longEdges, graph, s);
 	s.close();
 }
@@ -213,7 +213,7 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, ostream &os) {
 	assert(k==l);
 	cerr << "Graph output through genome" << endl;
 	gvis::GraphPrinter<int> g("Paired_ext", os);
-	Sequence genome(readGenomeFromFile("data/MG1655-K12_cut.fasta"));
+	Sequence genome(readGenomeFromFile("data/input/MG1655-K12_cut.fasta"));
 	cerr << "Try to process" << endl;
 	int edgeNum = 0;
 	int genPos = 0;
@@ -318,15 +318,16 @@ void DataPrinter::output(VertexPrototype *v) {
 }
 
 void DataReader::read(Edge * &edge) {
-	int from, to, len, id;
+	int from, to, len, id, cov;
 	Sequence *up, *low;
 	read(id);
 	read(from);
 	read(to);
 	read(len);
+	read(cov);
 	read(up);
 	read(low);
-	edge = new Edge(up, low, from, to, len, id);
+	edge = new Edge(up, low, from, to, len, id, cov);
 }
 
 void DataPrinter::output(Edge *edge) {
@@ -334,6 +335,7 @@ void DataPrinter::output(Edge *edge) {
 	output(edge->FromVertex);
 	output(edge->ToVertex);
 	output(edge->length);
+	output(edge->coverage);
 	output(edge->upper);
 	output(edge->lower);
 }

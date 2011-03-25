@@ -8,17 +8,18 @@
 #ifndef CONDENSEDGRAPHCONSTRUCTOR_HPP_
 #define CONDENSEDGRAPHCONSTRUCTOR_HPP_
 
-#include "condensedGraph.hpp"
+#include "condensed_graph.hpp"
 
 namespace condensed_graph {
 
 template<size_t kmer_size_>
-class SimpleHashTable {
+class SimpleIndex {
 private:
 	typedef Seq<kmer_size_> Kmer;
 	typedef tr1::unordered_map<Kmer, pair<Vertex*, size_t> ,
 			typename Kmer::hash, typename Kmer::equal_to> hmap;
 	typedef typename hmap::iterator map_iter;
+	typedef typename hmap::const_iterator const_map_iter;
 	//	typedef __gnu_cxx::hash_map<const Kmer, pair<Vertex*, size_t> , myhash, Kmer::equal_to> hmap;
 	hmap h_;
 public:
@@ -32,12 +33,12 @@ public:
 		}
 	}
 
-	bool contains(Kmer k) {
+	bool contains(Kmer k) const {
 		return h_.find(k) != h_.end();
 	}
 
-	const pair<Vertex*, size_t> get(const Kmer &k) {
-		map_iter hi = h_.find(k);
+	pair<Vertex*, size_t> get(const Kmer &k) const {
+		const_map_iter hi = h_.find(k);
 		assert(hi != h_.end()); // contains
 		//DEBUG("Getting position of k-mer '" + k.str() + "' Position is " << hi->second.second << " at vertex'"<< hi->second.first->nucls().str() << "'")
 		return hi->second;
@@ -57,7 +58,7 @@ template<size_t kmer_size_>
 class HashRenewer: public GraphActionHandler {
 	typedef Seq<kmer_size_> Kmer;
 
-	SimpleHashTable<kmer_size_> *h_;
+	SimpleIndex<kmer_size_> *h_;
 
 	/**
 	 *	renews hash for vertex and complementary
@@ -84,7 +85,7 @@ class HashRenewer: public GraphActionHandler {
 	}
 
 public:
-	HashRenewer(SimpleHashTable<kmer_size_> *h) :
+	HashRenewer(SimpleIndex<kmer_size_> *h) :
 		h_(h) {
 	}
 
@@ -106,7 +107,7 @@ class GraphConstructor {
 protected:
 	typedef Seq<kmer_size_> Kmer;
 	CondensedGraph *g_;
-	SimpleHashTable<kmer_size_> *h_;
+	SimpleIndex<kmer_size_> *h_;
 
 	pair<Vertex*, int> GetPosition(Kmer k) {
 		assert(h_->contains(k));
@@ -125,14 +126,14 @@ protected:
 	}
 
 	GraphConstructor() {
-		h_ = new SimpleHashTable<kmer_size_> ();
+		h_ = new SimpleIndex<kmer_size_> ();
 		g_ = new CondensedGraph(kmer_size_, new HashRenewer<kmer_size_> (h_));
 		//		DEBUG("HERE0");
 		//		GetPosMaybeMissing(Seq<5>("AAAAA"));
 	}
 
 public:
-	virtual void ConstructGraph(CondensedGraph* &g, SimpleHashTable<kmer_size_>* &h) {
+	virtual void ConstructGraph(CondensedGraph* &g, SimpleIndex<kmer_size_>* &h) {
 		g = g_;
 		h = h_;
 	}
@@ -154,7 +155,7 @@ public:
 		super(), reads_(reads) {
 	}
 
-	virtual void ConstructGraph(CondensedGraph* &g, SimpleHashTable<kmer_size_>* &h) {
+	virtual void ConstructGraph(CondensedGraph* &g, SimpleIndex<kmer_size_>* &h) {
 		for (size_t i = 0; i < reads_.size(); ++i) {
 			for (size_t r = 0; r < cnt; ++r) {
 				ThreadRead(reads_[i][r]);
@@ -292,7 +293,7 @@ public:
 		origin_(origin) {
 
 	}
-	virtual void ConstructGraph(CondensedGraph* &g, SimpleHashTable<kmer_size_>* &h) {
+	virtual void ConstructGraph(CondensedGraph* &g, SimpleIndex<kmer_size_>* &h) {
 
 		for (typename debruijn::kmer_iterator it = origin_.kmer_begin(), end =
 				origin_.kmer_end(); it != end; it++) {
