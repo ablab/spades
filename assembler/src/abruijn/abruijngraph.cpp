@@ -12,21 +12,22 @@ using namespace abruijn;
 
 namespace abruijn {
 
+ostream& operator<< (ostream& os, const Profile& p) {
+	return p.output(os);
+}
+
 ostream& operator<< (ostream& os, const Edge& e) {
-	for (map<size_t, int>::const_iterator it = e.lengths_.begin(); it != e.lengths_.end(); ++it) {
-		os << " " << it->first << " {" << it->second << "};";
-	}
-	return os;
+	return e.output(os);
 }
 
 ostream& operator<< (ostream& os, const Vertex& v) {
-	#ifdef OUTPUT_PAIRED
-		os << v.data_.Subseq(0, LABEL).str() << "_" << v.size();
-	#endif
-	#ifndef OUTPUT_PAIRED
-		os << v.data_.Subseq(0, LABEL).str() << "_" << v.size() << "_" << v.data_.Subseq(data_.size() - LABEL).str();
-	#endif
-	return os;
+	return v.output(os);
+//	#ifdef OUTPUT_PAIRED
+//		os << v.data_.Subseq(0, LABEL).str() << "_" << v.size();
+//	#endif
+//	#ifndef OUTPUT_PAIRED
+//		os << v.data_.Subseq(0, LABEL).str() << "_" << v.size() << "_" << v.data_.Subseq(data_.size() - LABEL).str();
+//	#endif
 }
 
 Vertex* Graph::createVertex(const Sequence& kmer) {
@@ -40,21 +41,17 @@ Vertex* Graph::createVertex(const Sequence& kmer) {
 	return v;
 }
 
-Vertex* Graph::createVertex(const Sequence& kmer, size_t size) {
-	Vertex* v = createVertex(kmer);
-	v->setSize(size);
-	v->complement_->setSize(size);
-	return v;
-}
+//Vertex* Graph::createVertex(const Sequence& kmer, size_t size) {
+//	Vertex* v = createVertex(kmer);
+//	v->setSize(size);
+//	v->complement_->setSize(size);
+//	return v;
+//}
 
 
-void Graph::addEdge(Vertex* from, Vertex* to, int len) {
-	from->addEdge(to, len);
-	to->complement_->addEdge(from->complement_, len);
-//	Edge* e = new Edge(&to, len);
-//	from.addEdge(e);
-//	e = new Edge(from.complement_, len);
-//	to.complement_->addEdge(e);
+void Graph::addEdge(Vertex* from, Vertex* to, const Sequence& seq) {
+	from->addEdge(to, seq);
+	to->complement_->addEdge(from->complement_, !seq);
 }
 
 void Graph::removeVertex(Vertex* v) {
@@ -65,7 +62,7 @@ void Graph::removeVertex_single(Vertex* v) {
 	for (Vertex::Edges::iterator it = v->edges_.begin(); it != v->edges_.end(); ++it) {
 		it->first->complement_->edges_.erase(v->complement_);
 	}
-	vertices.erase(v);
+	removedVertices.insert(v);
 }
 
 bool Graph::hasVertex(const Sequence& kmer) {
@@ -84,45 +81,75 @@ Vertex* Graph::getVertex(const Sequence& kmer) {
 	return v->second->complement_;
 }
 
-static int k = 0;
-
-Vertex* Graph::condense(Vertex* v) {
+bool Graph::tryCondenseA(Vertex* v) {
+	if (removedVertices.count(v)) {
+		return false;
+	}
+	if (v->degree() != 1 || v->complement_->degree() != 1) {
+		return false;
+	}
+//	for (;;) {
+//		Vertex* u = v->edges_.begin()->first;
+//		if (u->edges_.size() != 1 || u->complement_->edges_.size() != 1) {
+//			break;
+//		}
+//		v = u;
+//	}
+//	v = v->complement_;
+	Vertex* w = v->complement_->edges_.begin()->first->complement_;
 	Vertex* u = v->edges_.begin()->first;
-	Edge e = v->edges_.begin()->second;
-	assert(u->complement_->edges_.begin()->first == v->complement_);
-	Edge f = u->complement_->edges_.begin()->second;
-	TRACE(e << " " << f);
-	if ((e.lengths_.size() != 1) || (e.lengths_.size() != 1)) {
-		ERROR("Unsure what to do");
-		return NULL;
+	return true;
+//	for (;;) {
+//		if (v->edges_.size() != 1 || v->complement_->edges_.size() != 1) {
+//			break;
+//		}
+//		Vertex* u = v->edges_.begin()->first;
+//	}
+
+
+//	Edge e = v->edges_.begin()->second;
+//	assert(u->complement_->edges_.begin()->first == v->complement_);
+//	Edge f = u->complement_->edges_.begin()->second;
+//	TRACE(e << " " << f);
+//	if ((e.lengths_.size() != 1) || (e.lengths_.size() != 1)) {
+//		ERROR("Unsure what to do");
+//		return NULL;
+//	}
+//	size_t len = e.lengths_.begin()->first;
+//	assert(len == f.lengths_.begin()->first);
+//	Vertex* vu = createVertex(v->concat(u), len);
+//	for (Vertex::Edges::iterator it = u->edges_.begin(); it != u->edges_.end(); ++it) {
+//		Vertex* w = it->first;
+//		for (map<size_t, int>::iterator it2 = it->second.lengths_.begin(); it2 != it->second.lengths_.end(); ++it2) {
+//			size_t l = len + it2->first - u->size();
+//			vu->edges_[w].lengths_[l] += it2->second;
+//			w->complement_->edges_[vu->complement_].lengths_[l] += it2->second;
+//		}
+//	}
+//	for (Vertex::Edges::iterator it = v->complement_->edges_.begin(); it != v->complement_->edges_.end(); ++it) {
+//		Vertex* w = it->first;
+//		for (map<size_t, int>::iterator it2 = it->second.lengths_.begin(); it2 != it->second.lengths_.end(); ++it2) {
+//			size_t l = len + it2->first - v->size();
+//			vu->complement_->edges_[w].lengths_[l] += it2->second;
+//			w->complement_->edges_[vu].lengths_[l] += it2->second;
+//		}
+//	}
+//	k++;
+//	removeVertex(v);
+//	removeVertex(u);
+//	return vu;
+}
+
+void Graph::cleanup() {
+	for (Vertices::iterator v = removedVertices.begin(); v != removedVertices.end(); ++v) {
+		vertices.erase(*v);
+		delete *v;
 	}
-	size_t len = e.lengths_.begin()->first;
-	assert(len == f.lengths_.begin()->first);
-	Vertex* vu = createVertex(v->concat(u), len);
-	for (Vertex::Edges::iterator it = u->edges_.begin(); it != u->edges_.end(); ++it) {
-		Vertex* w = it->first;
-		for (map<size_t, int>::iterator it2 = it->second.lengths_.begin(); it2 != it->second.lengths_.end(); ++it2) {
-			size_t l = len + it2->first - u->size();
-			vu->edges_[w].lengths_[l] += it2->second;
-			w->complement_->edges_[vu->complement_].lengths_[l] += it2->second;
-		}
-	}
-	for (Vertex::Edges::iterator it = v->complement_->edges_.begin(); it != v->complement_->edges_.end(); ++it) {
-		Vertex* w = it->first;
-		for (map<size_t, int>::iterator it2 = it->second.lengths_.begin(); it2 != it->second.lengths_.end(); ++it2) {
-			size_t l = len + it2->first - v->size();
-			vu->complement_->edges_[w].lengths_[l] += it2->second;
-			w->complement_->edges_[vu].lengths_[l] += it2->second;
-		}
-	}
-	k++;
-	removeVertex(v);
-	removeVertex(u);
-	return vu;
+	removedVertices.clear();
 }
 
 void Graph::output(std::ofstream &out) {
-	std::string name = OUTPUT_FILE_NAME;
+	std::string name = OUTPUT_FILE;
 #ifdef OUTPUT_PAIRED
 	gvis::PairedGraphPrinter<Vertex*> printer(name, out);
 #endif
