@@ -38,7 +38,8 @@ int main(int argc, char *argv[]) {
 	// read all 'read's
 
 	cerr << "Reading " << filename1 << " and " << filename2 << "..." << endl;
-	ireadstream<R, 2, int> irs(filename1, filename2);
+	std::string filenames[2] = {filename1, filename2};
+	ireadstream<R, 2, int> irs(filenames);
 	vector<mate_read<R, int>::type> *v = irs.readAll(600000/*30000*/); // read not all `reads` (for faster debug)
 	irs.close();
 	cerr << "Total reads (mate, without Ns): " << v->size() << endl;
