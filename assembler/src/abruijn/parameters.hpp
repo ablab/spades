@@ -15,8 +15,7 @@
 #define OUTPUT_DIRECTORY std::string("./data/abruijn/")
 
 // ===== Input data ===== //
-#define INPUT_DATA_SET std::string("MG1655-K12_emul") /* "
-" */
+#define INPUT_DATA_SET std::string("MG1655-K12_emul")
 /**
  * Mate-pair read size
  */
