@@ -11,6 +11,6 @@ int main() {
 	GraphBuilder().build();
 
 //	ConstructDeBruijnGraphSimplified ( "ACTGACTGTTGACACTG", 9, 5 );
-//    ConstructDeBruijnGraphSimplified ( "ATTGGTACATTGTGGTACGTACTGACT", 11, 5 );
+//	ConstructDeBruijnGraphSimplified ( "ATTGGTACATTGTGGTACGTACTGACT", 11, 5 );
 	return 0;
 }
