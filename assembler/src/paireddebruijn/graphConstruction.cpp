@@ -77,8 +77,12 @@ void constructGraph() {
 	//freopen("data/LowerProcessed.dot", "w", stdout);
 ///	outputLongEdges(longEdges);
 
-	freopen("data/afterExtraxtDefinite.dot", "w",stdout);
-	extractDefinite(longEdges , graph, VertexCount);
+	freopen("data/afterExtraxtDefinite1.dot", "w",stdout);
+	extractDefinite(longEdges , graph, VertexCount,1);
+
+	outputLongEdges(longEdges, graph);
+	freopen("data/afterExtraxtDefinite2.dot", "w",stdout);
+	extractDefinite(longEdges , graph, VertexCount,0);
 
 	outputLongEdges(longEdges, graph);
 
