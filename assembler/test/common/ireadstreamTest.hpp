@@ -49,12 +49,12 @@ void TestIReadStreamReset() {
 void TestQuality1() {
 	QualityReadStream qrs("./test/data/s_6_1.fastq.gz");
 	while (!qrs.eof()) {
-		pair<Sequence, vector<char> > pair = qrs.Next();
+		pair<Sequence, vector<int> > pair = qrs.Next();
 		Sequence s = pair.first;
-		vector<char> q = pair.second;
+		vector<int> q = pair.second;
 		cout << s.str() << endl;
 		for (size_t i = 0; i < q.size(); ++i) {
-			cout << (int)q[i] << " ";
+			cout << q[i] << " ";
 		}
 		cout << endl;
 	}

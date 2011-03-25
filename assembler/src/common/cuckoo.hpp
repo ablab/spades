@@ -7,6 +7,8 @@
  *      Author: Mariya Fomkina
  */
 
+#include <cstring>
+
 #ifndef CUCKOO_HPP_
 #define CUCKOO_HPP_
 
@@ -39,7 +41,8 @@ private:
     Data() : exists(false) {}
   };
   // The array of vectors, each of which is hash array 
-  vector<Data> *data_[d];
+  //vector<Data> *data_[d];
+  Data** data_;
   // The total length of all the hash arrays
   size_t len_;
   // The length of every hash array
@@ -94,8 +97,8 @@ public:
 
 private:
 
-  Data& data_from(size_t pos) {
-    return (*(data_[pos / len_part_]))[pos % len_part_];
+  inline Data& data_from(size_t pos) {
+    return data_[pos / len_part_][pos % len_part_];
   }
   
   bool is_here(const Key &k, size_t pos) {
@@ -107,14 +110,21 @@ private:
   }
   
   void rehash() {
+    size_t len_temp_ = len_part_;
     if (increment == 0) {
       len_part_ = len_part_ * 6 / 5 + 1;
     } else {
       len_part_ = len_part_ + increment / d + 1;
     }
     len_ = len_part_ * d;
+    //The next cycle is under the question;
+    //as this is one of bottlenecks of program, it must be 
+    //optimized as muxh as possible
     for (size_t i = 0; i < d; ++i) {
-      (*(data_[i])).resize(len_part_);
+      Data* t = new Data[len_part_];
+      memcpy(t, data_[i], len_temp_*sizeof(Data));
+      swap(t, data_[i]);
+      delete [] t;
     } 
     iterator it = begin();
     if (!data_from(it.pos).exists) ++it;
@@ -164,8 +174,9 @@ public:
   cuckoo() {
     len_part_ = init_length / d + 1;
     len_ = len_part_ * d;
+    data_ = new Data*[d];
     for (size_t i = 0; i < d; ++i) {
-      data_[i] = new vector<Data>(len_part_);
+      data_[i] = new Data[len_part_];
     }
     size_ = 0;
     is_rehashed_ = false;
@@ -173,8 +184,9 @@ public:
   
   ~cuckoo() {
     for (size_t i = 0; i < d; ++i) {
-      delete data_[i];
+      delete [] data_[i];
     }
+    delete [] data_;
   }
 
   cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& operator=
@@ -193,8 +205,9 @@ public:
   cuckoo(cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& Cuckoo) {
     len_part_ = init_length / d + 1;
     len_ = len_part_ * d;
+    data_ = new Data*[d];
     for (size_t i = 0; i < d; ++i) {
-      data_[i] = new vector<Data>(len_part_);
+      data_[i] = new Data[len_part_];
     }
     size_ = 0;
     is_rehashed_ = false;

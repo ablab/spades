@@ -1,0 +1,6 @@
+SRC=main.cpp bayes_quality.cpp sequence.cpp logging.cpp
+DIR=bayes
+PROG=bayes
+
+include ../makefile.inc
+
