@@ -500,8 +500,8 @@ void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCou
 						graph.edgeIds[newVert][tmpId][direction] = graph.edgeIds[curVert][tmpId][direction];
 				//		DEBUG (longEdges[graph.edgeIds[newVert][tmpId][direction]]->upper->str());
 					}
-					if (direction)
-						assert
+//					if (direction)
+//						assert
 					graph.degrees[newVert][direction]
 							= graph.degrees[curVert][direction];
 					graph.degrees[newVert][1 - direction] = 1;

@@ -241,6 +241,24 @@ public:
 };
 
 class PairedGraph: public PairedGraphData, public IPairedGraph<int, Edge *> {
+private:
+	//direction is 1 or -1. index is 0 or 1.
+	inline int directionToIndex(int direction) {
+		assert(direction != 0);
+		return (direction + 1) >> 1;
+	}
+
+	void removeEdgeVertexAdjacency(int vertex, Edge *edge, int direction) {
+		int index = directionToIndex(direction);
+		int current = 0;
+		while(edgeIds[vertex][current][index] != edge->EdgeId) {
+			current++;
+		}
+		while(current + 1 < degrees[vertex][index]) {
+			edgeIds[vertex][current][index] = edgeIds[vertex][current + 1][index];
+			current++;
+		}
+	}
 public:
 	virtual int rightDegree(int vertex) {
 		return degrees[vertex][1];
@@ -258,8 +276,8 @@ public:
 	}
 
 	//This is very bad method!!!!
-	virtual VertexIterator *vertexIterator() {
-//		return new VertexIterator(this);
+	virtual IVertexIterator<int> *vertexIterator() {
+		return new VertexIterator(this);
 	}
 
 	virtual void addEdge(Edge *newEdge) {
@@ -273,7 +291,11 @@ public:
 	}
 
 	virtual void removeEdge(Edge *edge) {
-		assert(false);
+		if(edge = longEdges[edge->EdgeId]) {
+			removeEdgeVertexAdjacency(edge->FromVertex, edge, 1);
+			removeEdgeVertexAdjacency(edge->ToVertex, edge, -1);
+		}
+		delete edge;
 	}
 
 	virtual void addVertex(int vertex) {
