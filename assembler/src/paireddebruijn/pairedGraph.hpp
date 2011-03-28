@@ -186,16 +186,20 @@ public:
 	virtual void addEdge(tEdge newEdge) = 0;
 	virtual void removeEdge(tEdge edge) = 0;
 
-	virtual void addVertex(tVertex vertex) = 0;
+	//create ne vertex, adds it to graph and return
+	virtual tVertex addVertex() = 0;
 	//add adjecent edges should be removed as well
 	virtual void removeVertex(tVertex vertex) = 0;
-	virtual tEdge merge(tEdge edge1, tEdge edge2) = 0;
+	virtual tEdge merge(tEdge edge1, tEdge edge2, int direction = RIGHT) = 0;
 	virtual pair<tEdge, tEdge> splitEdge(tEdge edge, int position) = 0;
 
+	virtual tVertex glueVertices(tVertex vertex1, tVertex vertex2) = 0;
 	//glue edges, there start and end vertices
 	virtual tEdge glueEdges(tEdge edge1, tEdge edge2) = 0;
 	//seperate edges  adjecent to the vertex
-	virtual pair<tEdge, tEdge> unGlueEdgesLeft(tVertex vertex) = 0;
+	virtual void unGlueEdges(tVertex vertex) = 0;
+	virtual void unGlueEdgesLeft(tVertex vertex) = 0;
+	virtual void unGlueEdgesRight(tVertex vertex) = 0;
 };
 
 class PairedGraphData {
@@ -227,8 +231,7 @@ public:
 	virtual bool hasNext() {
 		while (currentVertex_ < graph_->VertexCount
 				&& graph_->degrees[currentVertex_][0]
-						+ graph_->degrees[currentVertex_][1]
-						== 0) {
+						+ graph_->degrees[currentVertex_][1] == 0) {
 			currentVertex_++;
 		}
 		return currentVertex_ < graph_->VertexCount;
@@ -241,6 +244,31 @@ public:
 };
 
 class PairedGraph: public PairedGraphData, public IPairedGraph<int, Edge *> {
+private:
+	//direction is 1 or -1. index is 0 or 1.
+	inline int directionToIndex(int direction) {
+		assert(direction != 0);
+		return (direction + 1) >> 1;
+	}
+
+	void removeEdgeVertexAdjacency(int vertex, Edge *edge, int direction) {
+		int index = directionToIndex(direction);
+		int current = 0;
+		while (edgeIds[vertex][current][index] != edge->EdgeId) {
+			current++;
+		}
+		while (current + 1 < degrees[vertex][index]) {
+			edgeIds[vertex][current][index]
+					= edgeIds[vertex][current + 1][index];
+			current++;
+		}
+	}
+
+	void addEdgeVertexAdjacency(int vertex, Edge *edge, int direction) {
+		int index = directionToIndex(direction);
+		edgeIds[vertex][degrees[vertex][index]][index] = edge->EdgeId;
+		degrees[vertex][index]++;
+	}
 public:
 	virtual int rightDegree(int vertex) {
 		return degrees[vertex][1];
@@ -258,11 +286,13 @@ public:
 	}
 
 	//This is very bad method!!!!
-	virtual VertexIterator *vertexIterator() {
-//		return new VertexIterator(this);
+	virtual IVertexIterator<int> *vertexIterator() {
+		return new VertexIterator(this);
 	}
 
 	virtual void addEdge(Edge *newEdge) {
+		newEdge->EdgeId = EdgeId;
+		EdgeId++;
 		longEdges.insert(make_pair(newEdge->EdgeId, newEdge));
 		edgeIds[newEdge->FromVertex][degrees[newEdge->FromVertex][1]][1]
 				= newEdge->EdgeId;
@@ -273,38 +303,124 @@ public:
 	}
 
 	virtual void removeEdge(Edge *edge) {
-		assert(false);
+		if (edge = longEdges[edge->EdgeId]) {
+			removeEdgeVertexAdjacency(edge->FromVertex, edge, 1);
+			removeEdgeVertexAdjacency(edge->ToVertex, edge, -1);
+		}
+		delete edge;
 	}
 
-	virtual void addVertex(int vertex) {
-		assert(false);
+	virtual int addVertex() {
+		degrees[VertexCount][0] = 0;
+		degrees[VertexCount][1] = 0;
+		VertexCount++;
 	}
 
 	virtual void removeVertex(int vertex) {
-		assert(false);
+		for (int index = 0; index <= 1; index++) {
+			while (degrees[VertexCount][0] > 0) {
+				removeEdge(longEdges[edgeIds[vertex][0][index]]);
+			}
+		}
 	}
 
-	virtual Edge * merge(Edge *edge1, Edge *edge2) {
-		assert(false);
+	virtual Edge *merge(Edge *edge1, Edge *edge2, int direction = RIGHT) {
+		Sequence *upper = new Sequence(
+				edge1->upper->Subseq(0, edge1->length) + *(edge2->upper));
+		Sequence *lower = new Sequence(
+				edge1->lower->Subseq(0, edge1->length) + *(edge2->lower));
+		Edge *edge = new Edge(upper, lower, edge1->FromVertex, edge2->ToVertex,
+				edge1->length + edge2->length, 0, 0);
+		addEdge(edge);
+		removeEdge(edge1);
+		removeEdge(edge2);
 	}
 
 	virtual pair<Edge *, Edge *> splitEdge(Edge *edge, int position) {
-		assert(false);
+		assert(position > 0 && position < edge->length);
+		int newVertex = addVertex();
+		Sequence *upper1 = new Sequence(
+				edge->upper->Subseq(0, position + k - 1));
+		Sequence *upper2 = new Sequence(
+				edge->upper->Subseq(position, edge->length + k - 1));
+		Sequence *lower1 = new Sequence(
+				edge->lower->Subseq(0, position + k - 1));
+		Sequence *lower2 = new Sequence(
+				edge->lower->Subseq(position, edge->length + k - 1));
+		Edge *edge1 = new Edge(upper1, lower1, edge->FromVertex, newVertex,
+				position, 0, 0);
+		Edge *edge2 = new Edge(upper2, lower2, newVertex, edge->ToVertex,
+				edge->length - position, 0, 0);
+		removeEdge(edge);
+		addEdge(edge1);
+		addEdge(edge2);
+		return make_pair(edge1, edge2);
+	}
+
+	virtual int glueVertices(int vertex1, int vertex2) {
+		if (vertex1 != vertex2) {
+			return vertex1;
+			for (int direction = -1; direction <= 1; direction += 2) {
+				int index = directionToIndex(direction);
+				for (int i = 0; i < degrees[vertex2][index]; i++) {
+					addEdgeVertexAdjacency(vertex1,
+							longEdges[edgeIds[vertex2][i][index]], direction);
+				}
+			}
+			degrees[vertex2][0] = 0;
+			degrees[vertex2][1] = 0;
+			removeVertex(vertex2);
+		}
+		return vertex1;
 	}
 
 	//glue edges, there start and end vertices
 	virtual Edge *glueEdges(Edge *edge1, Edge *edge2) {
-		assert(false);
+		int fromVertex = edge2->FromVertex;
+		int toVertex = edge2->ToVertex;
+		removeEdge(edge2);
+		glueVertices(edge1->FromVertex, fromVertex);
+		glueVertices(edge1->ToVertex, toVertex);
+		return edge1;
 	}
-	//seperate edges  adjecent to the vertex
-	virtual pair<Edge *, Edge *> unGlueEdgesLeft(int vertex) {
-		assert(false);
+
+	virtual void unGlueEdges(int vertex) {
+		if (degrees[vertex][0] == 1) {
+			unGlueEdgesLeft(vertex);
+		} else if (degrees[vertex][1] == 1) {
+			unGlueEdgesRight(vertex);
+		} else {
+			assert(false);
+		}
+	}
+
+	virtual void unGlueEdgesLeft(int vertex) {
+		assert(degrees[vertex][0] == 1);
+		Edge *leftEdge = longEdges[edgeIds[vertex][0][0]];
+		for (int i = 0; i < degrees[vertex][1]; i++) {
+			Edge *rightEdge = longEdges[edgeIds[vertex][i][1]];
+			rightEdge->ExpandLeft(*leftEdge);
+			addEdgeVertexAdjacency(rightEdge->FromVertex, rightEdge, RIGHT);
+			removeEdgeVertexAdjacency(vertex, rightEdge, RIGHT);
+		}
+		removeVertex(vertex);
+	}
+
+	virtual void unGlueEdgesRight(int vertex) {
+		assert(degrees[vertex][0] == 1);
+		Edge *rightEdge = longEdges[edgeIds[vertex][0][1]];
+		for (int i = 0; i < degrees[vertex][0]; i++) {
+			Edge *leftEdge = longEdges[edgeIds[vertex][i][0]];
+			leftEdge->ExpandLeft(*rightEdge);
+			addEdgeVertexAdjacency(leftEdge->ToVertex, rightEdge, LEFT);
+			removeEdgeVertexAdjacency(vertex, leftEdge, LEFT);
+		}
+		removeVertex(vertex);
 	}
 
 	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
 	void RebuildVertexMap(void);
 };
-
 
 int storeVertex(gvis::GraphPrinter<int> &g, PairedGraph &graph, ll newKmer,
 		Sequence* newSeq);

@@ -12,6 +12,7 @@ using namespace std;
 using namespace condensed_graph;
 
 #include "condensed_graph.hpp"
+#include <algorithm>
 
 namespace condensed_graph {
 
@@ -47,10 +48,10 @@ class SimpleReadThreader {
 public:
 	SimpleReadThreader(const CondensedGraph& g, const SimpleIndex<k>& index) :
 		g_(g), index_(index) {
-
 	}
 
-	Path ThreadRead(const Sequence& read) {
+	template <typename T>
+	Path ThreadRead(const T& read) {
 		vector<Vertex*> passed;
 		Seq<k> kmer = read.start();
 		assert(index_.contains(kmer));
@@ -78,16 +79,30 @@ public:
 
 template<size_t k>
 class CoverageCounter {
-	CondensedGraph *g_;
-	SimpleIndex<k> *index_;
+	const CondensedGraph& g_;
+	const SimpleIndex<k>& index_;
 public:
-	CoverageCounter(CondensedGraph *g, SimpleIndex<k> *index) :
+	CoverageCounter(const CondensedGraph& g, const SimpleIndex<k>& index) :
 		g_(g), index_(index) {
-
 	}
 
-	void CountCoverage() {
+	template <typename T, typename FwdIt_>
+	void CountCoverage(FwdIt_ begin, FwdIt_ end) {
+		SimpleReadThreader<k> threader(g_, index_);
 
+		for (FwdIt_ r_it = begin; r_it != end; ++r_it) {
+			Path path = threader.ThreadRead(*r_it);
+			vector<Vertex*>::const_iterator v_it = path.vertices().start();
+			Vertex* prev = *v_it;
+			++v_it;
+			while (v_it != path.vertices().end()) {
+				Vertex* curr = *v_it;
+				char kth_nucl = curr->nucls()[k];
+				prev -> inc_coverage(kth_nucl);
+				prev = curr;
+				++v_it;
+			}
+		}
 	}
 };
 

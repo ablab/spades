@@ -2,6 +2,7 @@
 #include "ide_listener.h"
 #include "cute_runner.h"
 #include "condensedGraphTest.hpp"
+#include "condensed_graph_tool.hpp"
 #include "debruijnGraphTest.hpp"
 
 void runSuite() {
