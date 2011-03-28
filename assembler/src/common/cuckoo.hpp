@@ -67,7 +67,7 @@ public:
       assert(hash != NULL);
       assert(pos != hash->len_);
       ++pos;
-      while (pos < hash->len_ && !hash->get_exists(pos)) {
+      while (!hash->exists_[pos] && pos < hash->len_) {
 	++pos;
       }
       return *this;
@@ -94,39 +94,31 @@ public:
 
 private:
 
+  void init() {
+    len_part_ = init_length / d + 1;
+    len_ = len_part_ * d;
+    data_ = new Data*[d];
+    for (size_t i = 0; i < d; ++i) {
+      data_[i] = new Data[len_part_];
+    }
+    exists_.assign(len_, false);
+    size_ = 0;
+    is_rehashed_ = false;
+  }
+
   inline Data& data_from(size_t pos) const {
     return data_[pos / len_part_][pos % len_part_];
   }
   
   inline bool is_here(const Key &k, size_t pos) const {
-    return get_exists(pos) && Pred()(data_from(pos).first, k);
+    return exists_[pos] && Pred()(data_from(pos).first, k);
   }
 
-  inline bool get_exists(size_t pos) const {
-    return exists_[pos];
-  }
-
-  inline void set_exists(size_t pos) {
-    exists_[pos] = true;
-  } 
-  
-  inline void unset_exists(size_t pos) {
-    exists_[pos] = false;
-  } 
-  
   inline size_t hash(const Key &k, size_t hash_num) {
     return Hash()(k, hash_num) % len_part_;
   }
   
-  void rehash() {
-    size_t len_temp_ = len_part_;
-    if (increment == 0) {
-      len_part_ = len_part_ * 6 / 5 + 1;
-    } else {
-      len_part_ = len_part_ + increment / d + 1;
-    }
-    len_ = len_part_ * d;
-    
+  void update_exists(size_t len_temp_) {
     // This looks a bit crasy and may be rewritten in more productive manner.
     // The fact is that you MUST be very careful with this array!
     vector<bool> t(len_);
@@ -136,7 +128,9 @@ private:
       }
     }
     swap(t, exists_);
+  }
 
+  void update_data(size_t len_temp_) {
     //The next cycle is under the question;
     //as this is one of bottlenecks of program, it must be 
     //optimized as muxh as possible
@@ -146,19 +140,32 @@ private:
       swap(t, data_[i]);
       delete [] t;
     } 
+  }
+
+  void rehash() {
+    size_t len_temp_ = len_part_;
+    if (increment == 0) {
+      len_part_ = len_part_ * 6 / 5 + 1;
+    } else {
+      len_part_ = len_part_ + increment / d + 1;
+    }
+    len_ = len_part_ * d;
+    
+    update_exists(len_temp_);
+    update_data(len_temp_);
 
     iterator it = begin();
-    if (!get_exists(it.pos)) ++it;
+    if (!exists_[it.pos]) ++it;
     while (it != end()) {
       size_t i = it.pos / len_part_;
       size_t j = it.pos % len_part_;
       if (j != hash((*it).first, i)) {
-	pair<Key, Value> t = *it;
+	Data t = *it;
 	remove(it);
 	add_new(t);
 	if (is_rehashed_) {
 	  it = begin();
-	  if (!get_exists(it.pos)) ++it;
+	  if (!exists_[it.pos]) ++it;
 	}
       } else { 
 	++it;
@@ -172,7 +179,7 @@ private:
       for (size_t j = 0; j < d; ++j) {
 	size_t pos = hash(p.first, j);
 	swap(p, data_from(j * len_part_ + pos));
-	bool exists = get_exists(j * len_part_ + pos);
+	bool exists = exists_[j * len_part_ + pos];
 	exists_[j * len_part_ + pos] = true;
 	if (!exists) {
 	  is_rehashed_ = false;
@@ -193,15 +200,7 @@ private:
 
 public:
   cuckoo() {
-    len_part_ = init_length / d + 1;
-    len_ = len_part_ * d;
-    data_ = new Data*[d];
-    for (size_t i = 0; i < d; ++i) {
-      data_[i] = new Data[len_part_];
-    }
-    exists_.assign(len_, false);
-    size_ = 0;
-    is_rehashed_ = false;
+    init();
   }
   
   ~cuckoo() {
@@ -215,7 +214,7 @@ public:
   (cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& Cuckoo) {
     clear();
     iterator it = Cuckoo.begin();
-    if (!(Cuckoo.get_exists(it.pos))) ++it;
+    if (!(Cuckoo.exists_[it.pos])) ++it;
     iterator final = Cuckoo.end();
     while (it != final) {
       insert(*it);
@@ -225,15 +224,7 @@ public:
   }
 
   cuckoo(cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& Cuckoo) {
-    len_part_ = init_length / d + 1;
-    len_ = len_part_ * d;
-    data_ = new Data*[d];
-    for (size_t i = 0; i < d; ++i) {
-      data_[i] = new Data[len_part_];
-    }
-    exists_.assign(len_, false);
-    size_ = 0;
-    is_rehashed_ = false;
+    init();
     *this = Cuckoo;
   }
 
