@@ -7,7 +7,7 @@
 
 #include "ireadstream.hpp"
 #include "condensed_graph.hpp"
-#include "condensedGraphConstructor.hpp"
+#include "condensed_graph_constructor.hpp"
 #include "debruijn.hpp"
 #include <cassert>
 #include <iostream>

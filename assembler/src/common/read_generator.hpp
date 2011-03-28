@@ -10,7 +10,7 @@
 #define MAX_PROBABILITY 100
 using namespace std;
 
-template<int size, int cnt = 1, typename T = char>
+template<int size, int cnt = 1, typename T = int>
 class ReadGenerator {
 private:
 	//	vector<ifaststream*> ifs_;

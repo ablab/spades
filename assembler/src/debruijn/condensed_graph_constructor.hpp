@@ -5,8 +5,8 @@
  *      Author: sergey
  */
 
-#ifndef CONDENSEDGRAPHCONSTRUCTOR_HPP_
-#define CONDENSEDGRAPHCONSTRUCTOR_HPP_
+#ifndef CONDENSED_GRAPH_CONSTRUCTOR_HPP_
+#define CONDENSED_GRAPH_CONSTRUCTOR_HPP_
 
 #include "condensed_graph.hpp"
 
@@ -310,4 +310,4 @@ public:
 };
 
 }
-#endif /* CONDENSEDGRAPHCONSTRUCTOR_HPP_ */
+#endif /* CONDENSED_GRAPH_CONSTRUCTOR_HPP_ */

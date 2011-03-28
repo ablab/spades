@@ -159,7 +159,7 @@ Vertex* CondensedGraph::Merge(Vertex* v1, Vertex* v2) {
 }
 
 void CondensedGraph::AddRightNeighbour(Vertex* v1, Vertex* v2) {
-	v1->AddDesc(v2, v2->nucls()[k_ - 1]);
+	v1->set_right_neigbour(v2, v2->nucls()[k_ - 1]);
 }
 
 void CondensedGraph::LinkVertices(Vertex* anc, Vertex* desc) {

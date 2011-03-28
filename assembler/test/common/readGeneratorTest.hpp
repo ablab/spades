@@ -1,6 +1,6 @@
 #ifndef READGENERATORTEST_HPP_
 #define READGENERATORTEST_HPP_
-#include "readGenerator.hpp"
+#include "read_generator.hpp"
 #include "cute.h"
 
 void TestAllA() {
