@@ -80,10 +80,10 @@ private:
 		return (int)c - QUAL_SHIFT;
 	}
 
-	vector<int> ConvertToPhred(const string& qual) {
-		vector<int> answer;
+	vector<float> ConvertToPhred(const string& qual) {
+		vector<float> answer;
 		for (size_t i = 0; i < qual.size(); ++i) {
-			answer.push_back(ToPhred(qual[i]));
+			answer.push_back((float)(ToPhred(qual[i])));
 		}
 		return answer;
 	}
@@ -123,8 +123,8 @@ public:
 		}
 	}
 
-	pair<Sequence, vector<int> > Next() {
-		pair<Sequence, vector<int> > answer = make_pair(Sequence(read_), ConvertToPhred(qual_));
+	pair<Sequence, vector<float> > Next() {
+		pair<Sequence, vector<float> > answer = make_pair(Sequence(read_), ConvertToPhred(qual_));
 		read_ahead();
 		return answer;
 	}

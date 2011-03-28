@@ -7,15 +7,31 @@
 LOGGER("b");
 
 #define SKIP_READS 6
+#define PROCESS_READS 5
 
 using namespace bayes_quality;
 
 void processQualityReads(const char *filename, BayesQualityGenome & bqg) {
 	QualityReadStream qrs(filename);
-	for (size_t i=0; i<SKIP_READS; ++i) qrs.Next();
+	
+	vector<QRead *> vec;
+	for (size_t i=0; i<PROCESS_READS; ++i) {
+		QRead *qr = new QRead(qrs.Next());
+		vec.push_back( qr );
+	}
+	
+	bqg.ProcessReads(vec);
+	
+	for (size_t i=0; i<PROCESS_READS; ++i) {
+		delete vec[i];
+	}
+	vec.clear();
+	
+	return;
+	
 	while (!qrs.eof()) {
 		QRead qr(qrs.Next());
-		double res = bqg.ReadBQInt(qr);
+		double res = bqg.ReadBQ(qr);
 		INFO(bqg.LastMatchReadString());
 		INFO(bqg.LastMatchPrettyString());
 		INFO(bqg.LastMatchString());
@@ -26,6 +42,7 @@ void processQualityReads(const char *filename, BayesQualityGenome & bqg) {
 
 int main() {
 	INFO("Hello, Bayes!");
+	
 
 	ifaststream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta");
 	// ifaststream ifs("/home/student/nikolenko/python/bayesQuality/genome.fasta");

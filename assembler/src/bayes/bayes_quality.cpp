@@ -18,54 +18,85 @@ LOGGER("b");
 
 namespace bayes_quality {
 
-double BayesQualityGenome::ReadBQInt(QRead r) {
+bool BayesQualityGenome::isAvailable(size_t readno, size_t j, const PSeq & curpseq) {
+	if (readno < 0) return true;
+	size_t mid = readMids[readno];
+	if (!(availableReadsHead_[curpseq][readno])) return false;
+	PSeq ps = PSeq(genome_.Subseq(j + mid - INS, j + mid - INS +PREPROCESS_SEQ_LENGTH));
+	for (size_t testj = j + mid - INS; testj < j + mid + DEL + 1; ++testj) {
+		if (availableReadsMid_[ps][readno]) return true;
+		ps = ps << genome_[testj+1];
+	}
+	return false;
+}
 
+double BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QVector & qvec, size_t readno) {
 	// compute total quality of the read
-	totalq_ = accumulate(r.second.begin(), r.second.end(), 0);
-
+	mr_.totalq_ = accumulate(qvec.begin(), qvec.end(), 0);
+	
+	size_t seqsize = seq.size();
+	
 	// initialize temporary vectors of possible start positions
-	qvsize_ = genome_.size() - r.first.size() + 1 + INS;
+	qvsize_ = gensize_ - seqsize + 1 + INS;
 	for (size_t i=0; i < INS+DEL+1; ++i) {
 		fill(qv[i]->begin(), qv[i]->end(), 0);
 	}
 	
-	INFO(r.first.str());
-	// INFO(genome_.str());
-	
+	INFO(readno << ": " << seq.str());
+
+	PSeq curpseq = PSeq(genome_.Subseq(0,PREPROCESS_SEQ_LENGTH));
+	char curgc, curgs;
+
 	// dynamic programming
-	for (size_t i = 0; i < r.first.size()+1; ++i) {
-		for (size_t j = 0; j < qvsize_; ++j) {
-			if ( i + j > genome_.size() ) { // genome is over
-				for (size_t s=0; s < r.first.size()-i+1; ++s) qv[s]->at(j) = VERYLARGEQ;
+	for (size_t j = 0; j < qvsize_; ++j) {
+		
+		// is the read already ruled out during preprocessing?
+		if (!isAvailable(readno, j, curpseq)) {
+			for (size_t s=0; s < INS+DEL+1; ++s) qv[s]->at(j) = VERYLARGEQ;
+			curpseq = curpseq << genome_[j+PREPROCESS_SEQ_LENGTH];
+			continue;
+		}
+		curpseq = curpseq << genome_[j+PREPROCESS_SEQ_LENGTH];
+
+		for (size_t i = 0; i < seqsize+1; ++i) {			
+			// genome is over
+			if ( i + j > gensize_ ) {
+				for (size_t s=0; s < seqsize-i+1; ++s) qv[s]->at(j) = VERYLARGEQ;
 				continue;
 			}
-			else if ( i == 0 ) qv[0]->at(j) = 0;
-			else if ( r.first[i-1] != genome_[i+j-1] ) qv[0]->at(j) += r.second[i-1];
+						
+			if ( i == 0 ) {  // first column
+				qv[0]->at(j) = 0;
+				for (size_t s=1; s <= INS; ++s)	qv[s]->at(j) = INSERT_Q*s;
+				for (size_t s=INS+1; s < INS+DEL+1; ++s) qv[s]->at(j) = DELETE_Q*(s-INS);
+				continue;
+			}
+
+			// now we are inside the matrix
+			curgs = seq[i-1];
+			curgc = genome_[i+j-1]; // just a hack to avoid extra Sequence::[]
+			if ( curgs != curgc ) qv[0]->at(j) += qvec[i-1];
 			
 			// processing inserts
 			for (size_t s=1; s <= INS; ++s) {
-				if (i == 0) { qv[s]->at(j) = INSERT_Q*s; continue; } // first column
-				if (i+s > r.first.size()) { continue; } // the read is over, too many inserts
+				if (i+s > seqsize) { continue; } // the read is over, too many inserts
 				
 				// case 1: quality value accumulated so far with s inserts + current mismatch value (down-right)
-				int curq = qv[s]->at(j) + (r.first[i-1+s] != genome_[i-1+j]) * r.second[i-1+s];
+				int curq = qv[s]->at(j) + (seq[i-1+s] != curgc) * qvec[i-1+s];
 				
 				// case 2: quality value accumulated for s-1 inserts + insert value (down)
 				int prevq = qv[s-1]->at(j) + INSERT_Q;
 				
-				//if ((s==1 || s==2) && j==13) cout << "i=" << i << "  " << j << " " << s << " "  << nucl(r.first[i-1+s]) << " " << curq << " " << prevq << " " << " " << " " << nucl(genome_[i-1+j]) << "\n";
-
 				// to get the result, we add up the corresponding values and take the logarithm
 				qv[s]->at(j) = AddTwoQualityValues(curq, prevq);
 			}
 			
 			// processing deletes
 			for (size_t s=INS+1; s < INS+DEL+1; ++s) {
-				if (i == 0) { qv[s]->at(j) = DELETE_Q*(s-INS); continue; } // first column
-				if (i+j+(s-INS) > genome_.size()) { qv[s]->at(j) = VERYLARGEQ; continue; } // the genome is over, too many deletes
+				if (i+j+(s-INS) > gensize_) { qv[s]->at(j) = VERYLARGEQ; continue; } // the genome is over, too many deletes
 
 				// case 1: quality value accumulated so far with s-INS deletes + current mismatch value (down-right)
-				int curq = qv[s]->at(j) + (r.first[i-1] != genome_[i-1+j+s-INS]) * r.second[i-1];
+				int curq = qv[s]->at(j) + (curgs != genome_[i-1+j+s-INS]) * qvec[i-1];
 
 				// case 2: quality value accumulated for s-INS-1 deletes + delete value (right)
 				int prevq = (s==INS+1) ? (qv[0]->at(j) +   DELETE_Q) 
@@ -85,55 +116,55 @@ double BayesQualityGenome::ReadBQInt(QRead r) {
 		}*/
 	}
 		
-	bestq_ = totalq_;
-	inserts_ = 0; deletes_ = 0;
-	index_ = 0;
+	mr_.bestq_ = mr_.totalq_;
+	mr_.inserts_ = 0; mr_.deletes_ = 0;
+	mr_.index_ = 0;
 
 	// now add them all up
 	double res = 0;
 	for (size_t i=0; i < INS+DEL+1; ++i) {
 		for (size_t j = 0; j < qvsize_; ++j) {
 			res += pow(10, -(qv[i]->at(j))/10.0);
-			if (qv[i]->at(j) < bestq_) {
-				bestq_ = (int)(qv[i]->at(j));
-				index_ = j;
-				if (i <= INS) { inserts_ = i; deletes_ = 0; }
-				else { inserts_ = 0; deletes_ = i-INS; }
+			if (qv[i]->at(j) < mr_.bestq_) {
+				mr_.bestq_ = (int)(qv[i]->at(j));
+				mr_.index_ = j;
+				if (i <= INS) { mr_.inserts_ = i; mr_.deletes_ = 0; }
+				else { mr_.inserts_ = 0; mr_.deletes_ = i-INS; }
 			}
 		}
 	}
 	
 	// find and pretty print the best match
 	// to do so, we run dynamic programming once again (since we haven't been storing the entire matrix)
-	vector<QVector *> m(r.first.size()+1);
-	for (size_t i = 0; i < r.first.size()+1; ++i) {
-		m[i] = new QVector(r.first.size() + deletes_ + 1);
+	vector<QVector *> m(seqsize+1);
+	for (size_t i = 0; i < seqsize+1; ++i) {
+		m[i] = new QVector(seqsize + mr_.deletes_ + 1);
 		fill(m[i]->begin(), m[i]->end(), 0);
 	}
 	// first row
-	for (size_t j = 0; j < r.first.size() + deletes_ + 1; ++j) {
-		if (j > deletes_) { m[0]->at(j) = VERYLARGEQ; }
+	for (size_t j = 0; j < seqsize + mr_.deletes_ + 1; ++j) {
+		if (j > mr_.deletes_) { m[0]->at(j) = VERYLARGEQ; }
 		else {
 			m[0]->at(j) = DELETE_Q*j;
 		}
 	}
 	// first column
-	for (size_t i = 1; i < r.first.size() + 1; ++i) {
-		if (i > inserts_) { m[i]->at(0) = VERYLARGEQ; }
+	for (size_t i = 1; i < seqsize + 1; ++i) {
+		if (i > mr_.inserts_) { m[i]->at(0) = VERYLARGEQ; }
 		else {
 			m[i]->at(0) = INSERT_Q*i;
 		}
 	}
 	// other elements
-	for (size_t i = 1; i < r.first.size() + 1; ++i) {
-		for (size_t j = 1; j < r.first.size() + deletes_ + 1; ++j) {
+	for (size_t i = 1; i < seqsize + 1; ++i) {
+		for (size_t j = 1; j < seqsize + mr_.deletes_ + 1; ++j) {
 			//cout << i << " " << j << " " << index_+j;
-			if (i > inserts_ + j) { m[i]->at(j) = VERYLARGEQ; continue; }
-			if (j > deletes_ + i) { m[i]->at(j) = VERYLARGEQ; continue; }
+			if (i > mr_.inserts_ + j) { m[i]->at(j) = VERYLARGEQ; continue; }
+			if (j > mr_.deletes_ + i) { m[i]->at(j) = VERYLARGEQ; continue; }
 			m[i]->at(j) = AddThreeQualityValues(
-				(index_+j <= genome_.size()) ? (m[i-1]->at(j-1) + (genome_[index_+j-1] != r.first[i-1])*r.second[i-1]) : VERYLARGEQ,
-				              (deletes_ > 0) ? (m[i]->at(j-1)   + DELETE_Q)                                            : VERYLARGEQ,
-				              (inserts_ > 0) ? (m[i-1]->at(j)   + INSERT_Q)                                            : VERYLARGEQ );
+				(mr_.index_+j <= gensize_) ? (m[i-1]->at(j-1) + (genome_[mr_.index_+j-1] != seq[i-1])*qvec[i-1]) : VERYLARGEQ,
+				              (mr_.deletes_ > 0) ? (m[i]->at(j-1)   + DELETE_Q)                                        : VERYLARGEQ,
+				              (mr_.inserts_ > 0) ? (m[i-1]->at(j)   + INSERT_Q)                                        : VERYLARGEQ );
 			//cout << " mat\n";
 		}
 	}
@@ -144,38 +175,144 @@ double BayesQualityGenome::ReadBQInt(QRead r) {
 		os << "\n";
 		cout << os.str();
 	}*/
-	match_.clear();
+	mr_.match_.clear();
 	ostringstream osm, osmr, osmp;
-	size_t ifirst_ = r.first.size();
+	size_t ifirst_ = seqsize;
 	size_t j = min_element(m[ifirst_]->begin(), m[ifirst_]->end()) - m[ifirst_]->begin();
 	for (size_t i = ifirst_; i >= 1; --i) {
 		// go up
-		if ((inserts_ > 0) && (j == 0 || (m[i-1]->at(j) < m[i-1]->at(j-1)) && (m[i-1]->at(j) < m[i]->at(j-1)) )) {
-			match_.push_back( 2 ); osm << '-'; osmp << ' '; osmr << nucl(r.first[i-1]); continue;
+		if ((mr_.inserts_ > 0) && ( j == 0 || ((m[i-1]->at(j) < m[i-1]->at(j-1)) && (m[i-1]->at(j) < m[i]->at(j-1))) )) {
+			mr_.match_.push_back( 2 ); osm << '-'; osmp << ' '; osmr << nucl(seq[i-1]); continue;
 		}
 		// or left
-		if ((deletes_ > 0) && ((m[i]->at(j-1) < m[i-1]->at(j) && m[i]->at(j-1) < m[i-1]->at(j-1)) )) {
-			match_.push_back( 3 ); osm << nucl(genome_[j-1+index_]); osmp << ' '; osmr << '-'; ++i; --j; continue;
+		if ((mr_.deletes_ > 0) && ((m[i]->at(j-1) < m[i-1]->at(j) && m[i]->at(j-1) < m[i-1]->at(j-1)) )) {
+			mr_.match_.push_back( 3 );
+			osm << nucl(genome_[j-1+mr_.index_]);
+			osmp << ' '; osmr << '-'; ++i; --j;
+			continue;
 		}
 		// or up-left
-		match_.push_back( (int)(genome_[j-1+index_] == r.first[i-1]) );
-		osm << nucl(genome_[j-1+index_]); osmr << nucl(r.first[i-1]);
-		if (genome_[j-1+index_] == r.first[i-1]) osmp << "|"; else osmp << " "; --j;
+		mr_.match_.push_back( (int)(genome_[j-1+mr_.index_] == seq[i-1]) );
+		osm << nucl(genome_[j-1+mr_.index_]); osmr << nucl(seq[i-1]);
+		if (genome_[j-1+mr_.index_] == seq[i-1]) osmp << "|"; else osmp << " "; --j;
 	}
 	// the first character is always here
 	
-	reverse(match_.begin(), match_.end());
-	matchreadstr_ = osmr.str(); reverse(matchreadstr_.begin(), matchreadstr_.end());
-	matchstr_ = osm.str(); reverse(matchstr_.begin(), matchstr_.end());
-	matchprettystr_ = osmp.str(); reverse(matchprettystr_.begin(), matchprettystr_.end());
+	reverse(mr_.match_.begin(), mr_.match_.end());
+	mr_.matchreadstr_ = osmr.str(); reverse(mr_.matchreadstr_.begin(), mr_.matchreadstr_.end());
+	mr_.matchstr_ = osm.str(); reverse(mr_.matchstr_.begin(), mr_.matchstr_.end());
+	mr_.matchprettystr_ = osmp.str(); reverse(mr_.matchprettystr_.begin(), mr_.matchprettystr_.end());
 	
-	for (size_t i = 0; i < r.first.size(); ++i) {
+	for (size_t i = 0; i < seqsize; ++i) {
 		m[i]->clear(); delete m[i];
 	}
 	// return the resulting likelihood
 	return res;
 }
 
+double BayesQualityGenome::ReadBQPreprocessed(const QRead & r, size_t readno, size_t readssize) {
+	double res1 = ProcessOneReadBQ(r.first, r.second, readno);
+
+	INFO(r.first);
+	INFO("Read as it is gives result " << res1);
+	if (mr_.bestq_ <= GOOD_ENOUGH_Q) return res1;
+	
+	MatchResults tmpmr = mr_;
+	INFO(!(r.first));
+	double res2 = ProcessOneReadBQ(!(r.first), r.second, readno + readssize);
+	INFO("Complementary read gives result " << res2);
+	if (res2 > res1) return res2;
+	else {
+		mr_ = tmpmr;
+		return res1;
+	}
+}
+
+void BayesQualityGenome::PreprocessOneMapOneReadWithShift(const PSeq &ps, PreprocReadsMap & rm, int mapno, PreprocMap & map, size_t readno, size_t reads_size, size_t shift) {	
+	// see if we can find the same
+	PreprocReadsMap::iterator itrm = rm.find(ps);
+	if (itrm != rm.end()) {  // found it!
+		if (itrm->second.second == 0) { // found from heads
+			for (PreprocMap::iterator it = map.begin(); it != map.end(); ++it) {
+				it->second[readno] = availableReadsHead_[ps][itrm->second.first];
+			}
+		}
+		else if (itrm->second.second == 1) { // found from mids
+			for (PreprocMap::iterator it = map.begin(); it != map.end(); ++it) {
+				it->second[readno] = availableReadsMid_[ps][itrm->second.first];
+			}
+		}
+	}
+
+	// if we cannot, we add ps to rm
+	rm.insert(make_pair(ps, make_pair(readno, mapno)));
+	
+	for (PreprocMap::iterator it = map.begin(); it != map.end(); ++it) {
+		int inters = 0;
+		for (size_t k = 0; k < PREPROCESS_SEQ_LENGTH; ++k) {
+			if (it->first[k] == ps[k]) {
+				++inters;
+				if (inters >= NEED_INTERSECTION) { it->second[readno] = true; break; }
+			}
+		}
+	}
+}
+
+void BayesQualityGenome::PreprocessReads(const vector<QRead *> &reads) {
+	availableReadsHead_.clear();
+	availableReadsMid_.clear();
+	fillAvailableReads(2*reads.size(), "");
+	readMids.clear(); for (size_t i = 0; i < 2*reads.size(); ++i) readMids.push_back(0);
+	
+	// this map serves as an example to make preprocessing more efficient
+	PreprocReadsMap rm;
+
+	for (size_t i = 0; i < reads.size(); ++i) {
+		size_t mid = reads[i]->first.size() / 2;
+		if (reads[i]->first.size() - mid < PREPROCESS_SEQ_LENGTH) mid = reads[i]->first.size() - PREPROCESS_SEQ_LENGTH;
+		readMids[i] = mid; readMids[i+reads.size()] = mid;
+		
+		PSeq  ps(     reads[i]->first.Subseq(0, PREPROCESS_SEQ_LENGTH));
+		PSeq cps((!(reads[i]->first)).Subseq(0, PREPROCESS_SEQ_LENGTH));
+
+		PreprocessOneMapOneReadWithShift( ps, rm, 0, availableReadsHead_, i, 			  reads.size(), 0);
+		PreprocessOneMapOneReadWithShift(cps, rm, 0, availableReadsHead_, i+reads.size(), reads.size(), 0);
+		
+		PSeq  psm(     reads[i]->first.Subseq(mid, mid+PREPROCESS_SEQ_LENGTH));
+		PSeq cpsm((!(reads[i]->first)).Subseq(mid, mid+PREPROCESS_SEQ_LENGTH));
+		
+		PreprocessOneMapOneReadWithShift( psm, rm, 1, availableReadsMid_, i, 			  reads.size(), mid);
+		PreprocessOneMapOneReadWithShift(cpsm, rm, 1, availableReadsMid_, i+reads.size(), reads.size(), mid);
+	}
+	// debug output
+	/*for (PreprocMap::iterator it = availableReadsHead_.begin(); it != availableReadsHead_.end(); ++it) {
+		if (it->first == Sequence("CCACCAA")) {
+		ostringstream os; for (size_t i = reads.size(); i < 2*reads.size(); ++i) os << (int)(it->second[i]);
+		INFO(it->first << ": " << os.str()); }
+	}
+	for (PreprocMap::iterator it = availableReadsMid_.begin(); it != availableReadsMid_.end(); ++it) {
+		if (it->first == Sequence("GTTTGAC")) {
+		ostringstream os; for (size_t i = reads.size(); i < 2*reads.size(); ++i) os << (int)(it->second[i]);
+		INFO(it->first << ": " << os.str()); }
+	}*/
+}
+
+void BayesQualityGenome::ProcessReads(const vector<QRead *> &reads) {
+	INFO("Preprocessing...");
+	PreprocessReads(reads);
+	INFO("  ...done.");
+
+	for (size_t i=0; i<reads.size(); ++i) {
+		// INFO(i << ": " << reads[i]->first);
+		double res = ReadBQPreprocessed(*reads[i], i, reads.size());
+
+		INFO(LastMatchReadString());
+		INFO(LastMatchPrettyString());
+		INFO(LastMatchString());
+		ostringstream m; for (size_t i=0; i< LastMatch().size(); ++i) m << LastMatch()[i]; INFO(m.str());
+		INFO(res << ", best: " << LastMatchQ() << "/" << LastTotalQ() << " at " << LastMatchIndex() << " with " << LastMatchInserts() << " inserts and " << LastMatchDeletes() << " deletes");
+	}
+}
 
 float BayesQualityGenome::AddTwoQualityValues(float curq, float prevq) {
 	// TODO: rewrite correctly
@@ -210,8 +347,25 @@ int BayesQualityGenome::AddThreeQualityValues(int diagq, int leftq, int rightq) 
 }
 
 
+
+void BayesQualityGenome::fillAvailableReads(size_t vecSize, const string & s) {
+	if (s.size() == PREPROCESS_SEQ_LENGTH) {
+		vector<bool> newVec(vecSize);
+		fill(newVec.begin(), newVec.end(), false);
+		availableReadsHead_.insert(make_pair(PSeq(s), newVec));
+		availableReadsMid_.insert(make_pair(PSeq(s), newVec));
+		return;
+	}
+	fillAvailableReads(vecSize, (s + 'A'));
+	fillAvailableReads(vecSize, (s + 'C'));
+	fillAvailableReads(vecSize, (s + 'G'));
+	fillAvailableReads(vecSize, (s + 'T'));	
 }
 
+
+
+
+}
 
 
 
@@ -229,3 +383,14 @@ int BayesQualityGenome::AddThreeQualityValues(int diagq, int leftq, int rightq) 
 		}
 	} */
 	
+	
+/* 
+void BayesQualityGenome::PrepareMask(vector<bool> & mask, const Sequence & seq) {
+	size_t masksize_ = gensize_ - PREPROCESS_SEQ_LENGTH + 1;
+	fill(mask.begin(), mask.end(), false);
+	for (size_t j = 0; j < masksize_; ++j) {
+		if (seq.intersects(genome_.Subseq(j, PREPROCESS_SEQ_LENGTH)))
+			mask[j] = true;
+	}
+}
+*/
