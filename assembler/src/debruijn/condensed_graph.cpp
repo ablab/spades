@@ -4,7 +4,7 @@
  *  Created on: Feb 21, 2011
  *      Author: sergey
  */
-#include "condensedGraph.hpp"
+#include "condensed_graph.hpp"
 #include "logging.hpp"
 #include "graphVisualizer.hpp"
 #include <set>
@@ -16,7 +16,7 @@ using namespace std;
 namespace condensed_graph {
 
 void CondensedGraph::FixIncomingOnSplit(Vertex* v, Vertex* v1, Vertex* v2) {
-	vector<Vertex*> anc = Anc(v);
+	vector<Vertex*> anc = LeftNeighbours(v);
 	for (size_t i = 0; i < anc.size(); ++i) {
 		Vertex* ancestor = anc[i];
 		if (ancestor == v->complement()) {
@@ -31,7 +31,7 @@ void CondensedGraph::FixIncomingOnSplit(Vertex* v, Vertex* v1, Vertex* v2) {
 }
 
 void CondensedGraph::FixIncomingOnMerge(Vertex* v1, Vertex* v2, Vertex* v) {
-	vector<Vertex*> anc = Anc(v1);
+	vector<Vertex*> anc = LeftNeighbours(v1);
 	for (size_t i = 0; i < anc.size(); ++i) {
 		Vertex* ancestor = anc[i];
 		if (ancestor == v1->complement()) {
@@ -45,8 +45,10 @@ void CondensedGraph::FixIncomingOnMerge(Vertex* v1, Vertex* v2, Vertex* v) {
 	}
 }
 
-bool CondensedGraph::CanBeDeleted(Vertex* v) const {
-	vector<Vertex*> anc = Anc(v);
+bool CondensedGraph::CheckIfNoIncoming(Vertex* v) const {
+	//this code executes while graph contract is temporarily broken
+	//vertex from Anc(v) doesn't necessarily have link to v
+	vector<Vertex*> anc = LeftNeighbours(v);
 	for (size_t i = 0; i < anc.size(); ++i) {
 		Vertex* ancestor = anc[i];
 		if (ancestor != v && ancestor != v->complement()) {
@@ -60,7 +62,11 @@ bool CondensedGraph::CanBeDeleted(Vertex* v) const {
 	return true;
 }
 
-vector<Vertex*> CondensedGraph::Anc(const Vertex* v) const {
+bool CondensedGraph::CanBeDeleted(Vertex* v) const {
+	return CheckIfNoIncoming(v) && CheckIfNoIncoming(v->complement());
+}
+
+vector<Vertex*> CondensedGraph::LeftNeighbours(const Vertex* v) const {
 	vector<Vertex*> ans;
 	Vertex* complement = v->complement();
 	for (char i = 3; i >= 0; --i) {
@@ -71,7 +77,7 @@ vector<Vertex*> CondensedGraph::Anc(const Vertex* v) const {
 	return ans;
 }
 
-vector<Vertex*> CondensedGraph::Desc(const Vertex* v) const {
+vector<Vertex*> CondensedGraph::RightNeighbours(const Vertex* v) const {
 	vector<Vertex*> ans;
 	for (char i = 0; i < 4; ++i) {
 		Vertex* v = v->right_neighbour(i);
@@ -100,7 +106,6 @@ void CondensedGraph::DeleteVertex(Vertex* v) {
 	DEBUG("Deleting vertex '" << v->nucls().str() << "' and its complement '" << v->complement()->nucls().str() << "'")
 
 	assert(CanBeDeleted(v));
-	assert(CanBeDeleted(v->complement()));
 
 	Vertex* complement = v->complement();
 	vertices_.erase(v);
@@ -153,23 +158,23 @@ Vertex* CondensedGraph::Merge(Vertex* v1, Vertex* v2) {
 	return v;
 }
 
-void CondensedGraph::AddDesc(Vertex* anc, Vertex* desc) {
-	anc->AddDesc(desc, desc->nucls()[k_ - 1]);
+void CondensedGraph::AddRightNeighbour(Vertex* v1, Vertex* v2) {
+	v1->AddDesc(v2, v2->nucls()[k_ - 1]);
 }
 
 void CondensedGraph::LinkVertices(Vertex* anc, Vertex* desc) {
 	DEBUG("Linking vertices '" << anc->nucls().str() << "' and '"<< desc->nucls().str() <<"' and their complement")
 	assert(AreLinkable(anc, desc));
 
-	AddDesc(anc, desc);
-	AddDesc(desc->complement(), anc->complement());
+	AddRightNeighbour(anc, desc);
+	AddRightNeighbour(desc->complement(), anc->complement());
 }
 
 void DFS::go(Vertex* v, vector<Vertex*>& stack, Handler& h) {
 	if (visited_.count(v) == 0) {
 		h.HandleStartVertex(v);
 		visited_.insert(v);
-		vector<Vertex*> desc = g_->Desc(v);
+		vector<Vertex*> desc = g_->RightNeighbours(v);
 		for (size_t i = 0; i < desc.size(); ++i) {
 			Vertex* descendent = desc[i];
 			h.HandleEdge(v, descendent);

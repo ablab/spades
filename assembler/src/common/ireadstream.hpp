@@ -5,9 +5,9 @@
 #include <string>
 #include <zlib.h>
 #include <cstdlib>
-#include <cstdarg>
 #include <iostream>
 #include <vector>
+#include <time.h>
 #include "ifaststream.hpp"
 #include "strobe_read.hpp"
 
@@ -26,18 +26,27 @@ private:
 	bool eof_;
 	bool is_open_;
 public:
-	ireadstream(const char *filename, ...) {
-		va_list ap;
-		va_start(ap, filename);
+	ireadstream(string filenames[]) {
 		for (size_t i = 0; i < cnt; ++i) {
-			ifs_.push_back(new ifaststream(filename));
-			filename = va_arg(ap, const char *);
+			ifs_.push_back(new ifaststream(filenames[i]));
 		}
-		va_end(ap);
 		is_open_ = true;
 		eof_ = false;
 		read_ahead();
 	}
+
+//	ireadstream(const char *filename, ...) {
+//		va_list ap;
+//		va_start(ap, filename);
+//		for (size_t i = 0; i < cnt; ++i) {
+//			ifs_.push_back(new ifaststream(filename));
+//			filename = va_arg(ap, const char *);
+//		}
+//		va_end(ap);
+//		is_open_ = true;
+//		eof_ = false;
+//		read_ahead();
+//	}
 
 	void reset() {
 		for (int i = 0; i < cnt; ++i) {
@@ -107,8 +116,12 @@ private:
 		if (!is_open_) {
 			return;
 		}
+		long time0 = time(0);
 		while (!eof() && !read(next_sr_)) {
-			;
+			if (time(0) > time0 + 3) {
+				std::cerr << "Unable to read data";
+				exit(0);
+			}
 		}
 	}
 

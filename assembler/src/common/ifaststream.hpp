@@ -23,9 +23,10 @@ KSEQ_INIT(gzFile, gzread)
 class ifaststream {
 
 public:
-	ifaststream(const char* filename) {
+	ifaststream(const string& filename) {
 		filename_ = filename;
 		is_open_ = open(filename);
+		assert(is_open_); // Fails if there is no such file
 	}
 
 	virtual ~ifaststream() {
@@ -75,7 +76,7 @@ public:
 	}
 
 private:
-	const char* filename_;
+	std::string filename_;
 	gzFile fp_;
 	kseq_t* seq_;
 	bool is_open_;
@@ -86,8 +87,8 @@ private:
 	 * open i's file with FASTQ reads,
 	 * return true if it opened file, false otherwise
 	 */
-	bool open(const char *filename) {
-		fp_ = gzopen(filename, "r"); // STEP 2: open the file handler
+	bool open(string filename) {
+		fp_ = gzopen(filename.c_str(), "r"); // STEP 2: open the file handler
 		if (!fp_) {
 			return false;
 		}

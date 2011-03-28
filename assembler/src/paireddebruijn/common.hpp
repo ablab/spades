@@ -19,7 +19,7 @@
 #define mp make_pair
 #define fi first
 #define se second
-#define edgesMap  map<ll, vector<VertexPrototype *> >
+#define edgesMap  map<ll, vector<EdgePrototype *> >
 #define verticesMap  map<ll, vector<VertexPrototype *> >
 #define longEdgesMap  map<int, Edge*>
 #define RIGHT 1
@@ -61,7 +61,7 @@ const string threaded_graph = string("data/threaded_graph") +  + ".dot";
 */
 const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
-const string ini_file = "data/paired.ini";
+const string ini_file = "data/paireddebruijn/paired.ini";
 extern string parsed_reads;
 extern string parsed_k_l_mers;
 extern string parsed_k_sequence;
@@ -76,12 +76,18 @@ extern int l;
 extern int readLength;
 const int maxSeqLength = 200;
 extern int insertLength;
+extern int minIntersect;
+
 
 
 extern int needPairs;
 extern int needLmers;
 extern int needSequences;
 extern int needGraph;
+extern int useExpandDefinite;
+extern int useTraceReads;
+extern int useProcessLower;
+
 
 void initConstants(string ini_file);
 #endif /*COMMON_HPP_*/

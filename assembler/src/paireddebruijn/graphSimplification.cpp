@@ -5,7 +5,6 @@
  */
 #include "graphSimplification.hpp"
 #include "common.hpp"
-
 LOGGER ("p.graphSimplification");
 bool isPath(Edge &e1, Edge &e2) {
 	cerr << endl << "(" << e1.FromVertex << ", " << e1.ToVertex << ") " << "("
@@ -24,6 +23,33 @@ bool isPath(Edge &e1, Edge &e2) {
 	return e1.lower->Subseq(left1, right1) == e2.upper->Subseq(left2, right2);
 }
 
+bool isRealPossiblePath(PairedGraph &graph, int &EdgeId, int &FollowerId) {
+	int sts = readLength + insertLength;
+	bool res =isPath(*(graph.longEdges[EdgeId]), *(graph.longEdges[FollowerId]));
+	if (!res) return false;
+	if (graph.longEdges[EdgeId]->length>sts) {
+		return res;
+	}
+	else {
+		Edge* tmpEdge = new Edge(*(graph.longEdges[EdgeId]));
+		tmpEdge->ExpandRight(*(graph.longEdges[FollowerId]));
+
+		PairThreader pg(graph,1);
+		vector<pair<int, Edge *> > vp = pg.threadLower(tmpEdge);
+		cerr<<"Edge "<<EdgeId<<" + "<<FollowerId<<" extended by "<<vp.size()<<" edges:"<<endl;
+		forn(i, vp.size()) {
+			cerr<<vp[i].second->EdgeId<<" dist "<<vp[i].first<<endl;
+			isPath(*tmpEdge, *(graph.longEdges[vp[i].second->EdgeId]));
+		}
+		delete tmpEdge;
+		return (vp.size()>0);
+
+	}
+
+	return true;
+
+}
+
 pair<bool, int> isPath(Edge *e1, Edge *e2, int shift) {
 	int lowerLeft = max(0, shift);
 	int lowerRight = min((int) (e1->length), e2->length + shift) + k - 1;
@@ -34,6 +60,21 @@ pair<bool, int> isPath(Edge *e1, Edge *e2, int shift) {
 	return make_pair(lowerSequence == upperSequence, lowerRight - lowerLeft);
 }
 
+bool addEntry(vector<pair<int, Edge *> > &result, int distance,
+		Edge *edgeToAdd) {
+	if (distance < 0) {
+		return false;
+	}
+	for (vector<pair<int, Edge*> >::iterator it = result.begin(); it
+			!= result.end(); ++it) {
+		if(it->first == distance && it->second == edgeToAdd) {
+			return false;
+		}
+	}
+	result.push_back(make_pair(distance, edgeToAdd));
+	return true;
+}
+
 void PairThreader::threadLower(vector<pair<int, Edge *> > &result,
 		Edge *currentEdge, int shift, Edge *start) {
 	if (shift >= start->length)
@@ -42,14 +83,13 @@ void PairThreader::threadLower(vector<pair<int, Edge *> > &result,
 		pair<bool, int> intersection = isPath(start, currentEdge, shift);
 		if (!intersection.first)
 			return;
-		if (intersection.second >= minIntersection_)
-			result.push_back(
-					make_pair(
-							shift + insertLength + readLength - start->length,
-							currentEdge));
+		if (intersection.second >= minIntersection_) {
+			int distance = shift + insertLength + readLength - start->length;
+			addEntry(result, distance, currentEdge);
+		}
 	}
 	for (int i = 0; i < g_.degrees[currentEdge->ToVertex][1]; i++) {
-		Edge *nextEdge = edges_[g_.edgeIds[currentEdge->ToVertex][i][1]];
+		Edge *nextEdge = g_.longEdges[g_.edgeIds[currentEdge->ToVertex][i][1]];
 		threadLower(result, nextEdge, shift + currentEdge->length, start);
 	}
 }
@@ -68,7 +108,7 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph,
 	forn(curVertId, VertexCount) {
 		if ((graph.degrees[curVertId][0] != 0) && (graph.degrees[curVertId][1]
 				!= 0)) {
-
+			cerr<<"Process vertex "<<curVertId<<endl;
 			forn(i,MAX_DEGREE) {
 				countOut[i] = 0;
 				countIn[i] = 0;
@@ -81,10 +121,9 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph,
 					int curOutEdgeId = edgeRealId(
 							graph.edgeIds[curVertId][j][OUT_EDGE], longEdges);
 					graph.edgeIds[curVertId][j][OUT_EDGE] = curOutEdgeId;
-					cerr << "Check isPass for edge " << curInEdgeId << " vs "
-							<< curOutEdgeId;
-					if (isPath(*longEdges[curInEdgeId],
-							*longEdges[curOutEdgeId])) {
+					cerr << "Check isRealPossiblePass for edge " << curInEdgeId << " vs "
+							<< curOutEdgeId<<endl;
+					if (isRealPossiblePath(graph, curInEdgeId, curOutEdgeId)) {
 						countIn[j]++;
 						countOut[i]++;
 						possibleIn[j] = i;
@@ -156,7 +195,7 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph,
  */
 /* countEdgesDistintion
  * @params:
- /* countEdgesDistinction
+ * countEdgesDistinction
  * @param vertexId - index of vertex, distances we are interested in
  * @param graph - pairedGraph
  * @returns pair<int,int> - minimal intervals of nucleotids, such that they uniquely represent Inedges and outedges respectively.
@@ -347,8 +386,42 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 	cerr << "expandDefinite finished\n";
 }
 
-void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount)
+
+inline bool equalsAtIndex(longEdgesMap &longEdges, int id1, int id2, int index, int direction) {
+	cerr << "<<";
+	cerr.flush();
+	char u1, l1, u2, l2;
+	int indu1, indu2, indl1, indl2;
+	if (direction){
+		indu1 = index;
+		indu2 = index;
+		indl1 = index;
+		indl2 = index;
+		cerr << index << " "<<id1  << longEdges[id1]->upper->size() << " " << longEdges[id1]->length;
+	}
+	else
+	{
+		cerr << " hm";
+		indu1 = longEdges[id1]->upper->size() - index - 1;
+		indl1 = longEdges[id1]->lower->size() - index - 1;
+		indu2 = longEdges[id2]->upper->size() - index - 1;
+		indl2 = longEdges[id2]->lower->size() - index - 1;
+		cerr << indu1<<" "<<indl1<<" "<<indu2<<" "<<indl2 << " "<< index;
+		cerr.flush();
+	}
+	u1 = (*longEdges[id1]->upper)[indu1];
+	l1 = (*longEdges[id1]->lower)[indl1];
+	u2 = (*longEdges[id2]->upper)[indu2];
+	l2 = (*longEdges[id2]->lower)[indl2];
+	cerr <<">>\n";
+	cerr.flush();
+	return (u1 == u2);
+	return (u1 == u2 && l1 == l2);
+}
+void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount, int dir)
 {
+
+	LOGGER ("p.extractDefinite");
 	int edgeIds[MAX_DEGREE];
 	//TODO: constant?
 	int delta = 20;
@@ -356,25 +429,26 @@ void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCou
 	INFO("extractDefinite started");
 	int maxV = VertexCount;
 	forn(curVert, maxV){
-		for (int direction = 1; direction < 2; direction ++) {
+	//	for (int direction = 0; direction < 2; direction ++)
+		int direction = dir;
+		{
 //			INFO("Vertex number" << curVert);
 			int index = k;
 			int ended = -2;
 			forn (edge, graph.degrees[curVert][direction]) {
-				edgeIds[edge] = edgeRealId(graph.edgeIds[curVert][edge][direction], longEdges);
+				edgeIds[edge] = edgeRealId(
+						graph.edgeIds[curVert][edge][direction], longEdges);
 			}
 			while (graph.degrees[curVert][direction] > 1) {
-				char upp0 = (*longEdges[edgeIds[0]]->upper)[index];
 				forn(edge, graph.degrees[curVert][direction]){
 					if (index >= longEdges[edgeIds[edge]]->length) {
 						ended = edge;
 						break;
 					}
-					char upp = (*longEdges[edgeIds[edge]]->upper)[index];
 
-		//			cerr<< upp.str();
+					//			cerr<< upp.str();
 					//assert(0);
-					if (upp != upp0)
+					if (!equalsAtIndex(longEdges, edgeIds[0], edgeIds[edge], index, direction))
 					{
 						ended = -1;
 						break;
@@ -382,40 +456,62 @@ void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCou
 				}
 				if (ended >= -1)
 					break;
-				if (!(index & ((1<<16) - 1)))
-					INFO("index: "<<curVert << " "<<  index);
+				if (!(index & ((1 << 16) - 1)))
+					INFO("index: "<<curVert << " "<< index);
 				index++;
 			}
-			index --;
+			//index --;
 			if (ended != -1) {
 				// It seems to be impossible
 				DEBUG("Intermediate Vertex " << curVert << "edgeId " << edgeIds[ended]);
 			} else {
-				if (index > k -1 + delta){
+				if (index > k - 1 + delta) {
 					DEBUG("Shortening edge");
 					int newVert = VertexCount;
 			//		DEBUG(index << " "<< longEdges[edgeIds[0]]->upper->str());
-
-					Sequence *UpperSeq = new Sequence(longEdges[edgeIds[0]]->upper->Subseq(index));
-					Sequence *LowerSeq = new Sequence(longEdges[edgeIds[0]]->lower->Subseq(index));
-					Edge* newEdge = new Edge(UpperSeq, LowerSeq, curVert, newVert, index - (k - 1), insertEdgeId);
+					Sequence *UpperSeq;
+					Sequence *LowerSeq;
+					int tl;
+					if (direction) {
+						UpperSeq = new Sequence(longEdges[edgeIds[0]]->upper->Subseq(0, index));
+						LowerSeq = new Sequence(longEdges[edgeIds[0]]->lower->Subseq(0, index));
+					}else{
+						tl = longEdges[edgeIds[0]]->upper->size();
+						cerr << "a";
+						UpperSeq = new Sequence(longEdges[edgeIds[0]]->upper->Subseq(tl - index, tl));
+						LowerSeq = new Sequence(longEdges[edgeIds[0]]->lower->Subseq(tl - index, tl));
+						cerr.flush();
+					}
+					Edge* newEdge;
+					if (direction)
+						newEdge = new Edge(UpperSeq, LowerSeq, curVert, newVert, index - (k - 1), insertEdgeId);
+					else
+						newEdge = new Edge(UpperSeq, LowerSeq, newVert, curVert, tl - index - (k - 1), insertEdgeId);
 					longEdges.insert(make_pair(insertEdgeId, newEdge));
-
+					DEBUG ("new edge " << newEdge->upper->str());
 					forn (tmpId, graph.degrees[curVert][direction]) {
-						longEdges[edgeIds[tmpId]]->shortenEdge(index-(k - 1), direction);
-						longEdges[edgeIds[tmpId]]->FromVertex = newVert;
+						DEBUG ("before "<< longEdges[edgeIds[tmpId]]->upper->str());
+						longEdges[edgeIds[tmpId]]->shortenEdge(index - (k - 1), direction);
+						if (direction)
+							longEdges[edgeIds[tmpId]]->FromVertex = newVert;
+						else
+							longEdges[edgeIds[tmpId]]->ToVertex = newVert;
+						DEBUG ("after "<< longEdges[edgeIds[tmpId]]->upper->str());
 						graph.edgeIds[newVert][tmpId][direction] = graph.edgeIds[curVert][tmpId][direction];
 				//		DEBUG (longEdges[graph.edgeIds[newVert][tmpId][direction]]->upper->str());
 					}
-					graph.degrees[newVert][direction] = graph.degrees[curVert][direction];
+					if (direction)
+						assert
+					graph.degrees[newVert][direction]
+							= graph.degrees[curVert][direction];
 					graph.degrees[newVert][1 - direction] = 1;
 					graph.edgeIds[newVert][0][1 - direction] = insertEdgeId;
 					graph.degrees[curVert][direction] = 1;
 					graph.edgeIds[newVert][0][direction] = insertEdgeId;
+					insertEdgeId++;
+					VertexCount++;
 
-					insertEdgeId ++;
-					VertexCount ++;
-			//		assert(0);
+					assert(0);
 				}
 			}
 		}
