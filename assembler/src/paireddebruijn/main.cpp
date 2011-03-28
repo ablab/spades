@@ -103,6 +103,17 @@ void run() {
 		sprintf(str, "data/paireddebruijn/afterLowerGraph.txt");
 		save(str,graph);
 	}
+	extractDefinite(graph.longEdges , graph, graph.VertexCount, 1);
+	outputLongEdges(graph.longEdges,  "data/afterExtractDefinite1.dot");
+	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+	outputLongEdges(graph.longEdges, graph, "data/afterExtractDefinite2.dot");
+
+	extractDefinite(graph.longEdges , graph, graph.VertexCount, 0);
+	outputLongEdges(graph.longEdges,  "data/afterExtractDefinite3.dot");
+	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+	outputLongEdges(graph.longEdges, graph, "data/afterExtractDefinite4.dot");
+
+
 	cerr << "\n Finished";
 	INFO("Finished");
 }
