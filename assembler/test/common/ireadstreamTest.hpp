@@ -9,8 +9,10 @@
 #include "ireadstream.hpp"
 #include "quality_read_stream.hpp"
 
+static string files[] = {"./test/data/s_6_1.fastq.gz", "./test/data/s_6_2.fastq.gz"};
+
 void TestIReadStream() {
-	ireadstream<100,2,short> irs("./test/data/s_6_1.fastq.gz", "./test/data/s_6_2.fastq.gz");
+	ireadstream<100,2,short> irs(files);
 	strobe_read<100,2,short> sr;
 	mate_read<100,short>::type mr;
 	irs >> sr >> mr;
@@ -21,7 +23,7 @@ void TestIReadStream() {
 }
 
 void TestIReadStreamFull() {
-	ireadstream<100,2,short> irs("./test/data/s_6_1.fastq.gz", "./test/data/s_6_2.fastq.gz");
+	ireadstream<100,2,short> irs(files);
 	mate_read<100,short>::type mr;
 	while (!irs.eof()) {
 		irs >> mr;
@@ -32,7 +34,7 @@ void TestIReadStreamFull() {
 }
 
 void TestIReadStreamReset() {
-	ireadstream<100,2,short> irs("./test/data/s_6_1.fastq.gz", "./test/data/s_6_2.fastq.gz");
+	ireadstream<100,2,short> irs(files);
 	strobe_read<100,2,short> sr;
 	mate_read<100,short>::type mr;
 	while (!irs.eof()) {
