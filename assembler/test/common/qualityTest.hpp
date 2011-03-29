@@ -8,10 +8,10 @@
 #ifndef QUALTEST_HPP_
 #define QUALTEST_HPP_
 
-#include "qual.hpp"
+#include "quality.hpp"
 
 void TestQual() {
-	Qual<10> q("0123456789");
+	Quality q("0123456789");
 	ASSERT_EQUAL('0', q[0]);
 	ASSERT_EQUAL('6', q[6]);
 	ASSERT_EQUAL('9', q[9]);

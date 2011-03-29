@@ -9,20 +9,18 @@
 #define QUAL_HPP_
 
 #include <array>
+#include <string>
+using namespace std;
 
-template <int size>
-class Qual {
+class Quality {
 public:
-	Qual(const string &s) {
-		for (size_t i = 0; i < size; ++i) {
-			quals[i] = s[i];
-		}
+	Quality(const string &s) : qual(s) {
 	}
 	int operator[](size_t i) {
-		return quals[i];
+		return qual[i];
 	}
 private:
-	std::array<char,size> quals;
+	string qual;
 };
 
 #endif /* QUAL_HPP_ */
