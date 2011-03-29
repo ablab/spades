@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 	gv.Visualize(*g);
 	filestr.close();
 
-	condensed_graph::DFS dfs(g);
+	condensed_graph::DFS dfs(*g);
 	condensed_graph::SimpleStatCounter stat_c;
 	dfs.Traverse(stat_c);
 	cerr << "Vertex count=" << stat_c.v_count() << "; Edge count="
