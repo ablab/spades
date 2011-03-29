@@ -79,6 +79,7 @@ public:
 		d_from.out_edges_[(size_t) to[size_ - 1]]++;
 		d_to.in_edges_[(size_t) from[0]]++;
 	}
+
 	size_t size() const {
 		return nodes_.size();
 	}

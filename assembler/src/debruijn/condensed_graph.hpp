@@ -68,7 +68,7 @@ public:
 	//		return right_neighbours_;
 	//	}
 
-	Vertex* right_neighbour(char nucl) {
+	Vertex* right_neighbour(char nucl) const {
 		return right_neighbours_[(int) nucl];
 	}
 
@@ -277,7 +277,11 @@ public:
 				&& AreLinkable(v1, v2);
 	}
 
-	void LinkVertices(Vertex* anc, Vertex* desc);
+	void LinkVertices(Vertex* v1, Vertex* v2);
+
+	void UnLinkVertices(Vertex* v1, Vertex* v2);
+
+	void UnLinkAll(Vertex* v);
 
 	bool AreLinkable(Vertex* v1, Vertex* v2) const {
 		return v2->nucls().Subseq(0, k_ - 1) == v1->nucls().Subseq(
@@ -310,7 +314,7 @@ class Traversal {
 public:
 
 	/**
-	 * Stab base class for handling graph primitives during traversal.
+	 * Stub base class for handling graph primitives during traversal.
 	 */
 	class Handler {
 	public:
@@ -322,7 +326,7 @@ public:
 		}
 	};
 
-	Traversal(const CondensedGraph* g) :
+	Traversal(const CondensedGraph& g) :
 		g_(g) {
 	}
 
@@ -332,14 +336,14 @@ public:
 	virtual void Traverse(Handler& h) =0;
 
 protected:
-	const CondensedGraph* g_;
+	const CondensedGraph& g_;
 };
 
 class DFS: public Traversal {
 	set<Vertex*> visited_;
-	void go(Vertex* v, vector<Vertex*>& stack, Handler& h);
+	void ProcessVertex(Vertex* v, vector<Vertex*>& stack, Handler& h);
 public:
-	DFS(const CondensedGraph* g) :
+	DFS(const CondensedGraph& g) :
 		Traversal(g) {
 
 	}
