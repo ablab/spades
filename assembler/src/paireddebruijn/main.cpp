@@ -57,7 +57,7 @@ void run() {
 		}
 		expandDefinite(graph.longEdges, graph, graph.VertexCount, true);
 		outputLongEdges(graph.longEdges, graph, "data/paireddebruijn/afterExpand.dot");
-		outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExpand_g.dot");
+//		outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExpand_g.dot");
 		sprintf(str, "data/paireddebruijn/expandedGraph.txt");
 		save(str,graph);
 	}
@@ -66,7 +66,9 @@ void run() {
 		INFO("Trace reads...");
 		if (!useExpandDefinite){
 			sprintf(str, "data/paireddebruijn/expandedGraph.txt");
+			INFO("Loading graph...");
 			load(str,graph);
+			INFO("Graph loaded!");
 			graph.RebuildVertexMap();
 			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 		}
