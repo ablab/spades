@@ -7,6 +7,8 @@
 #include <vector>
 #include <map>
 #include <cassert>
+#include <cstring>
+#include <cstdlib>
 #include <ext/hash_map>
 #include <algorithm>
 #include <string>
