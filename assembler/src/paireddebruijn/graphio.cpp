@@ -69,6 +69,7 @@ void outputLongEdges(longEdgesMap &longEdges, ostream &os) {
 		}
 	}
 	g.output();
+	cerr<<"Long edge output finished"<<endl;
 }
 
 void outputLongEdges(longEdgesMap &longEdges) {

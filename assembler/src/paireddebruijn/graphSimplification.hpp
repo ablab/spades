@@ -10,6 +10,13 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 		int &VertexCount, bool NotExpandBeyondDefinite = false);
 void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 		int &VertexCount, int dir);
+void extractDefinite(PairedGraph &graph, int dir);
+
+inline int fistDifferenceIndex(PairedGraph &graph, Edge* edge1, Edge* edge2, int direction);
+
+
+
+
 bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph,
 		int &VertexCount);
 pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &Graph,
