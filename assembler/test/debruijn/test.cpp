@@ -15,6 +15,7 @@ void runSuite() {
  }
 
  int main() {
-     runSuite();
+     //runSuite();
+	 SimulatedMistakesTool();
      return 0;
  }
