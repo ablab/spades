@@ -39,7 +39,8 @@ private:
   typedef pair<Key, Value> Data;
   Data** data_;
   // The array of flags indicating existence of the element in hash
-  vector<bool> exists_;
+  //vector<bool> exists_; /*EXISTS*/
+  char* exists_;
   // The total length of all the hash arrays
   size_t len_;
   // The length of every hash array
@@ -67,7 +68,8 @@ public:
       assert(hash != NULL);
       assert(pos != hash->len_);
       ++pos;
-      while (!hash->exists_[pos] && pos < hash->len_) {
+      //while (!hash->exists_[pos] && pos < hash->len_) { /*EXISTS*/
+      while (!hash->get_exists(pos) && pos < hash->len_) { /*EXISTS*/
 	++pos;
       }
       return *this;
@@ -94,14 +96,28 @@ public:
 
 private:
 
+  bool get_exists(size_t pos) const {
+    return (bool)(exists_[pos / 8] & (1 << (7 - (pos % 8))));  
+  }
+
+  void set_exists(size_t pos) {
+    exists_[pos / 8] = exists_[pos / 8] | (1 << (7 - (pos % 8)));
+  }
+
+  void unset_exists(size_t pos) {
+    exists_[pos / 8] = exists_[pos / 8] & (~(1 << (7 - (pos % 8))));
+  }
+
   void init() {
     len_part_ = init_length / d + 1;
+    len_part_ = ((len_part_ + 7) / 8) * 8;
     len_ = len_part_ * d;
     data_ = new Data*[d];
     for (size_t i = 0; i < d; ++i) {
       data_[i] = new Data[len_part_];
     }
-    exists_.assign(len_, false);
+    //exists_.assign(len_, false); /*EXISTS*/
+    exists_ = new char[len_ / 8]; /*EXISTS*/
     size_ = 0;
     is_rehashed_ = false;
   }
@@ -111,23 +127,39 @@ private:
   }
   
   inline bool is_here(const Key &k, size_t pos) const {
-    return exists_[pos] && Pred()(data_from(pos).first, k);
+    //return exists_[pos] && Pred()(data_from(pos).first, k); /*EXISTS*/
+    return get_exists(pos) && Pred()(data_from(pos).first, k); /*EXISTS*/
   }
 
   inline size_t hash(const Key &k, size_t hash_num) {
     return Hash()(k, hash_num) % len_part_;
   }
   
-  void update_exists(size_t len_temp_) {
+  void update_exists(size_t len_temp_) { /*EXISTS*/
     // This looks a bit crasy and may be rewritten in more productive manner.
     // The fact is that you MUST be very careful with this array!
-    vector<bool> t(len_);
+    /*vector<bool> t(len_);
     for (size_t i = 0; i < d; ++i) {
       for (size_t j = 0; j < len_temp_; ++j) {
 	t[i * len_part_ + j] = exists_[i * len_temp_ + j];
       }
+      }*/
+    //the number of elements in part MUST BE divided by 8!!!
+    //cerr << size() << " ";
+    char* t = new char[len_ / 8];
+    for (size_t i = 0; i < len_/8; ++i) {
+      t[i] = 0;
+    }
+    for (size_t i = 0; i < d; ++i) {
+      //      for (size_t j = 0; j < len_temp_ / 8; ++j) {
+      //	t[i * len_part_ / 8 + j] = exists_[i * len_temp_ / 8 + j];
+      //}
+      memcpy(t + (i * len_part_ / 8), exists_ + (i * len_temp_ / 8), (len_temp_ / 8));
     }
     swap(t, exists_);
+    delete [] t;
+    //cerr << "len = " << len_temp_ << " and " << len_part_ << endl;
+    //cerr << "size after update is " << size() << endl;
   }
 
   void update_data(size_t len_temp_) {
@@ -149,13 +181,15 @@ private:
     } else {
       len_part_ = len_part_ + increment / d + 1;
     }
+    len_part_ = ((len_part_ + 7) / 8) * 8;
     len_ = len_part_ * d;
     
     update_exists(len_temp_);
     update_data(len_temp_);
 
     iterator it = begin();
-    if (!exists_[it.pos]) ++it;
+    //if (!exists_[it.pos]) ++it; /*EXISTS*/
+    if (!get_exists(it.pos)) ++it; /*EXISTS*/
     while (it != end()) {
       size_t i = it.pos / len_part_;
       size_t j = it.pos % len_part_;
@@ -165,7 +199,8 @@ private:
 	add_new(t);
 	if (is_rehashed_) {
 	  it = begin();
-	  if (!exists_[it.pos]) ++it;
+	  //if (!exists_[it.pos]) ++it; /*EXISTS*/
+	  if (!get_exists(it.pos)) ++it; /*EXISTS*/
 	}
       } else { 
 	++it;
@@ -179,8 +214,10 @@ private:
       for (size_t j = 0; j < d; ++j) {
 	size_t pos = hash(p.first, j);
 	swap(p, data_from(j * len_part_ + pos));
-	bool exists = exists_[j * len_part_ + pos];
-	exists_[j * len_part_ + pos] = true;
+	//bool exists = exists_[j * len_part_ + pos]; /*EXISTS*/
+	//exists_[j * len_part_ + pos] = true; /*EXISTS*/
+	bool exists = get_exists(j * len_part_ + pos); /*EXISTS*/
+	set_exists(j * len_part_ + pos); /*EXISTS*/
 	if (!exists) {
 	  is_rehashed_ = false;
 	  ++size_;
@@ -188,12 +225,15 @@ private:
 	} 
       }
     }
+    //cerr << "size before rehash is " << size() << " and " << size_ << 
+    //  " and " << len_ << endl;
     rehash();
     return add_new(p);
   }
 
   iterator remove(iterator& it) {
-    exists_[it.pos] = false;
+    //exists_[it.pos] = false; /*EXISTS*/
+    unset_exists(it.pos); /*EXISTS*/
     --size_;    
     return ++it;
   }
@@ -208,13 +248,15 @@ public:
       delete [] data_[i];
     }
     delete [] data_;
+    delete [] exists_;
   }
 
   cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& operator=
   (cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& Cuckoo) {
     clear();
     iterator it = Cuckoo.begin();
-    if (!(Cuckoo.exists_[it.pos])) ++it;
+    //if (!(Cuckoo.exists_[it.pos])) ++it; /*EXISTS*/
+    if (!(Cuckoo.get_exists(it.pos))) ++it; /*EXISTS*/
     iterator final = Cuckoo.end();
     while (it != final) {
       insert(*it);
@@ -287,7 +329,9 @@ public:
   }
 
   void clear() {
-    exists_.clear();
+    //exists_.clear(); /*EXISTS*/
+    char* t = new char[len_ / 8 + 1];
+    swap(t, exists_);
     size_ = 0;
   }
 
@@ -296,7 +340,12 @@ public:
   }
  
   inline size_t size() const {
-    return size_;
+    int s = 0;    
+    for (int i = 0; i < len_; i++) {
+      if (get_exists(i)) ++s;
+    }
+    return s;
+    //return size_;
   }
 
   inline size_t length() const {
