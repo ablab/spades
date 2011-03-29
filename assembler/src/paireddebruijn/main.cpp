@@ -66,7 +66,9 @@ void run() {
 		INFO("Trace reads...");
 		if (!useExpandDefinite){
 			sprintf(str, "data/paireddebruijn/expandedGraph.txt");
+			INFO("Loading graph...");
 			load(str,graph);
+			INFO("Graph loaded!");
 			graph.RebuildVertexMap();
 			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 		}

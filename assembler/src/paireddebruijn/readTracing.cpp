@@ -3,12 +3,21 @@
 #include "graphSimplification.hpp"
 #include "graphio.hpp"
 
+LOGGER ("p.readTracing");
+
 using namespace paired_assembler;
 
 void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 		PairedGraph &graph, int &VertexCount, int &EdgeId) {
 
 	map<int, vector<pair<int, int>>> EdgePairs;
+	int table[MAX_DEGREE][MAX_DEGREE];
+	double fake_cov[MAX_DEGREE][MAX_DEGREE];
+	double in_cov[MAX_DEGREE];
+	double out_cov[MAX_DEGREE];
+	double eps_out_cov[MAX_DEGREE];
+	double eps = 0.001;
+	INFO(parsed_reads);
 	freopen(parsed_reads.c_str(), "r", stdin);
 	char *upperNuclRead = new char[readLength + 2];
 	char *lowerNuclRead = new char[readLength + 2];
@@ -38,7 +47,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 						//				cerr<<"vertex found for lower "<<(*it)->lower->str()<<endl;
 						//						fprintf(fout,"%s %s\n",upperNuclRead,lowerNuclRead);
 						int VertId = (*it)->VertexId;
-						pair<int, int> vDist = vertexDist(longEdges,graph,VertId);
+						pair<int, int> vDist = vertexDist(longEdges, graph,VertId);
 
 						if ((graph.degrees[VertId][0]!=0)&&(graph.degrees[VertId][1]!=0)) {
 							int tmpIn = -1;
@@ -125,6 +134,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 		delete loRead;
 	}
 	//	fclose(fout);
+
 	forn(curVertId,VertexCount) {
 		if ((graph.degrees[curVertId][0]!=0)&&(graph.degrees[curVertId][1]!=0)) {
 			cerr<<"Vertex "<<curVertId<<" connect edges:"<< endl;
@@ -220,12 +230,17 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 							longEdges[CurIn]->ToVertex = FakeVertexCount;
 							graph.degrees[FakeVertexCount][0]=1;
 							graph.degrees[FakeVertexCount][1]=0;
+							in_cov[i] = graph.longEdges[CurIn]->coverage;
 							graph.edgeIds[FakeVertexCount][0][IN_EDGE]=CurIn;
 							cerr<<"edge "<<CurIn<<" ("<<longEdges[CurIn]->FromVertex<<", "<<longEdges[CurIn]->ToVertex<<")"<<endl;
 							FakeVertexCount++;
 						}
+
+
+
 						//create fake Vertices for out edges;
 						int tmpFictStartOut = FakeVertexCount;
+
 						forn(i,graph.degrees[curVertId][1]) {
 							int CurOut = edgeRealId(graph.edgeIds[curVertId][i][OUT_EDGE],longEdges);
 							graph.edgeIds[curVertId][i][OUT_EDGE] = CurOut;
@@ -235,11 +250,62 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 							graph.degrees[FakeVertexCount][0]=0;
 							graph.degrees[FakeVertexCount][1]=1;
 							graph.edgeIds[FakeVertexCount][0][OUT_EDGE]=CurOut;
+
+							out_cov[i] = graph.longEdges[CurOut]->coverage;
 							cerr<<"edge "<<CurOut<<" ("<<longEdges[CurOut]->FromVertex<<", "<<longEdges[CurOut]->ToVertex<<")"<<endl;
 							FakeVertexCount++;
 						}
-						//create fake edges
 
+
+						//compute fake coverage
+						memset(table, 0, sizeof(table));
+						memset(fake_cov, 0, sizeof(fake_cov));
+						forn (tmp, EdgePairs[curVertId].size()){
+							table[EdgePairs[curVertId][tmp].first][EdgePairs[curVertId][tmp].second] = 1;
+							//fake_deg[tmp.second] ++;
+						}
+						INFO("in_cov:")
+						forn(i, MAX_DEGREE){
+							INFO(in_cov[i]);
+						}
+						INFO("out_cov:")
+						forn(i, MAX_DEGREE){
+							INFO(out_cov[i]);
+						}
+
+						INFO("FAKE_EDGES");
+						forn(i, MAX_DEGREE)
+							forn(j, MAX_DEGREE)
+								if (table[i][j] > eps)
+									INFO(i << " "<< j);
+						while (1) {
+							double sum = 0;
+							forn (i, MAX_DEGREE) {
+								sum += out_cov[i];
+							}
+							if (sum < eps) break;
+							INFO("SUM: "<<sum);
+							forn (i, MAX_DEGREE) {
+								eps_out_cov[i] = out_cov[i] * (eps / sum) * 0.1;
+								out_cov[i] -= eps_out_cov[i];
+							}
+							forn(j, MAX_DEGREE) {
+								double tdeg = 0;
+								forn(i, MAX_DEGREE)
+									tdeg += in_cov[i];
+								forn(i, MAX_DEGREE) {
+									double add = (in_cov[i]/tdeg) * out_cov[j];
+									fake_cov[i][j] +=add;
+									in_cov[i] -= add;
+								}
+							}
+						}
+						INFO("FAKE_COV");
+						forn(i, MAX_DEGREE)
+							forn(j, MAX_DEGREE)
+								if (fake_cov[i][j] > eps)
+									INFO(i << " "<< j << " " << fake_cov[i][j]);
+						//create fake edges
 						forn (tmpEdgePair,EdgePairs[curVertId].size()) {
 							int tmpFrom = 0;
 							int tmpTo = 0;
@@ -254,7 +320,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 							Sequence *UpSeq = new Sequence(tmpUpSeq);
 							Sequence *LoSeq = new Sequence(tmpLoSeq);
 
-							Edge *tmpEdge = new Edge(UpSeq, LoSeq, tmpFictStartIn + tmpFrom, tmpFictStartOut + tmpTo,0, EdgeId);
+							Edge *tmpEdge = new Edge(UpSeq, LoSeq, tmpFictStartIn + tmpFrom, tmpFictStartOut + tmpTo,0, EdgeId, fake_cov[EdgePairs[curVertId][tmpEdgePair].first][EdgePairs[curVertId][tmpEdgePair].second]);
 							longEdges.insert(make_pair(EdgeId,tmpEdge));
 							//							cerr<<"Virtual edge "<<EdgeId<<
 							cerr<<"Virtual edge "<<EdgeId<<" ("<<longEdges[EdgeId]->FromVertex<<", "<<longEdges[EdgeId]->ToVertex<<")"<<endl;
