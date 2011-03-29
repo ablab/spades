@@ -352,7 +352,8 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 }
 
 
-void constructTable(myMap &table) {
+void constructTable( myMap &table) {
+//	FILE* inFile = fopen(inputFile.c_str(), "r");
 	int count = 0;
 	char *upperNuclRead = new char[readLength + 2];
 	char *lowerNuclRead = new char[readLength + 2];
@@ -369,21 +370,26 @@ void constructTable(myMap &table) {
 	}
 }
 
-void outputTable(myMap &pairedTable) {
+void outputTable(string outputFile, myMap &pairedTable) {
+	FILE* outFile = fopen(outputFile.c_str(), "w");
 	int j = 0;
 	for (myMap::iterator iter = pairedTable.begin() ; iter != pairedTable.end(); iter++) {
 		pair<ll, pair<vector<ll>, vector<int>>> p = (*iter);
-		cout << p.fi << " " << p.se.fi.size() << endl;
+		fprintf(outFile,"%lld %d\n", p.fi, p.se.fi.size());
+	//	cout << p.fi << " " << p.se.fi.size() << endl;
 		forn(i, p.se.fi.size()) {
-			cout << p.se.fi[i] << " ";
-			cout << p.se.se[i] << " ";
+			fprintf(outFile,"%lld %d ", p.se.fi[i], p.se.se[i]);
+//			cout << p.se.fi[i] << " ";
+//			cout << p.se.se[i] << " ";
 		}
-		cout << endl << endl;
+		fprintf(outFile, "\n\n");
+//		cout << endl << endl;
 		if (!(j & (1024*128-1)))
 			cerr << j << endl;
 		j++;
 	}
 	pairedTable.clear();
+	fclose(outFile);
 }
 
 void readsToPairs(string inputFile, string outputFile) {
@@ -391,13 +397,13 @@ void readsToPairs(string inputFile, string outputFile) {
 	myMap table;
 	cerr << "generation of k-l pairs started"<<endl;
 	freopen(inputFile.c_str(), "r", stdin);
-	constructTable(table);
+	constructTable( table);
 	cerr << "generation of k-l pairs finished, dumping to disk."<<endl;
-	freopen(outputFile.c_str(), "w", stdout);
-	cerr<< "outputFile opened";
-	outputTable(table);
-	fclose(stdout);
-	freopen(NULL, "w", stdout);
+//	freopen(outputFile.c_str(), "w", stdout);
+//	cerr<< "outputFile opened";
+	outputTable(outputFile, table);
+//	fclose(stdout);
+//	freopen(NULL, "w", stdout);
 	table.clear();
 }
 //#define OUTPUT_DECOMPRESSED

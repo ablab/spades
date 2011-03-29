@@ -57,7 +57,7 @@ void run() {
 		}
 		expandDefinite(graph.longEdges, graph, graph.VertexCount, true);
 		outputLongEdges(graph.longEdges, graph, "data/paireddebruijn/afterExpand.dot");
-		outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExpand_g.dot");
+//		outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExpand_g.dot");
 		sprintf(str, "data/paireddebruijn/expandedGraph.txt");
 		save(str,graph);
 	}
