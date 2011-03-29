@@ -3,7 +3,7 @@
  *
  *  Created on: 25.02.2011
  *      Author: vyahhi
- *  Last modify: 14.02.2011 00:35
+ *  Last modify: 28.03.2011 21:09
  *      Author: Mariya Fomkina
  */
 
@@ -35,14 +35,11 @@ template <class Key, class Value, class Hash, class Pred, size_t d = 3,
 	  size_t init_length = 15, size_t max_loop = 100, size_t increment = 0>
 class cuckoo {
 private:
-  struct Data {
-    pair<Key, Value> p;
-    bool exists;
-    Data() : exists(false) {}
-  };
   // The array of vectors, each of which is hash array 
-  //vector<Data> *data_[d];
+  typedef pair<Key, Value> Data;
   Data** data_;
+  // The array of flags indicating existence of the element in hash
+  vector<bool> exists_;
   // The total length of all the hash arrays
   size_t len_;
   // The length of every hash array
@@ -70,7 +67,7 @@ public:
       assert(hash != NULL);
       assert(pos != hash->len_);
       ++pos;
-      while (pos < hash->len_ && !hash->data_from(pos).exists) {
+      while (pos < hash->len_ && !hash->get_exists(pos)) {
 	++pos;
       }
       return *this;
@@ -83,7 +80,7 @@ public:
     }
 
     pair<Key, Value>& operator*() {
-      return (*hash).data_from(pos).p;
+      return (*hash).data_from(pos);
     }
 
     bool operator==(const iterator &it) {
@@ -97,15 +94,27 @@ public:
 
 private:
 
-  inline Data& data_from(size_t pos) {
+  inline Data& data_from(size_t pos) const {
     return data_[pos / len_part_][pos % len_part_];
   }
   
-  bool is_here(const Key &k, size_t pos) {
-    return data_from(pos).exists && Pred()(data_from(pos).p.first, k);
+  inline bool is_here(const Key &k, size_t pos) const {
+    return get_exists(pos) && Pred()(data_from(pos).first, k);
   }
+
+  inline bool get_exists(size_t pos) const {
+    return exists_[pos];
+  }
+
+  inline void set_exists(size_t pos) {
+    exists_[pos] = true;
+  } 
   
-  size_t hash(const Key &k, size_t hash_num) {
+  inline void unset_exists(size_t pos) {
+    exists_[pos] = false;
+  } 
+  
+  inline size_t hash(const Key &k, size_t hash_num) {
     return Hash()(k, hash_num) % len_part_;
   }
   
@@ -117,6 +126,17 @@ private:
       len_part_ = len_part_ + increment / d + 1;
     }
     len_ = len_part_ * d;
+    
+    // This looks a bit crasy and may be rewritten in more productive manner.
+    // The fact is that you MUST be very careful with this array!
+    vector<bool> t(len_);
+    for (size_t i = 0; i < d; ++i) {
+      for (size_t j = 0; j < len_temp_; ++j) {
+	t[i * len_part_ + j] = exists_[i * len_temp_ + j];
+      }
+    }
+    swap(t, exists_);
+
     //The next cycle is under the question;
     //as this is one of bottlenecks of program, it must be 
     //optimized as muxh as possible
@@ -126,8 +146,9 @@ private:
       swap(t, data_[i]);
       delete [] t;
     } 
+
     iterator it = begin();
-    if (!data_from(it.pos).exists) ++it;
+    if (!get_exists(it.pos)) ++it;
     while (it != end()) {
       size_t i = it.pos / len_part_;
       size_t j = it.pos % len_part_;
@@ -137,7 +158,7 @@ private:
 	add_new(t);
 	if (is_rehashed_) {
 	  it = begin();
-	  if (!data_from(it.pos).exists) ++it;
+	  if (!get_exists(it.pos)) ++it;
 	}
       } else { 
 	++it;
@@ -150,9 +171,9 @@ private:
     for (size_t i = 0; i < max_loop; ++i) {
       for (size_t j = 0; j < d; ++j) {
 	size_t pos = hash(p.first, j);
-	swap(p, data_from(j * len_part_ + pos).p);
-	bool exists = data_from(j * len_part_ + pos).exists;
-	data_from(j * len_part_ + pos).exists = true;
+	swap(p, data_from(j * len_part_ + pos));
+	bool exists = get_exists(j * len_part_ + pos);
+	exists_[j * len_part_ + pos] = true;
 	if (!exists) {
 	  is_rehashed_ = false;
 	  ++size_;
@@ -165,7 +186,7 @@ private:
   }
 
   iterator remove(iterator& it) {
-    data_from(it.pos).exists = false;
+    exists_[it.pos] = false;
     --size_;    
     return ++it;
   }
@@ -178,6 +199,7 @@ public:
     for (size_t i = 0; i < d; ++i) {
       data_[i] = new Data[len_part_];
     }
+    exists_.assign(len_, false);
     size_ = 0;
     is_rehashed_ = false;
   }
@@ -193,7 +215,7 @@ public:
   (cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& Cuckoo) {
     clear();
     iterator it = Cuckoo.begin();
-    if (!(Cuckoo.data_from(it.pos).exists)) ++it;
+    if (!(Cuckoo.get_exists(it.pos))) ++it;
     iterator final = Cuckoo.end();
     while (it != final) {
       insert(*it);
@@ -209,16 +231,17 @@ public:
     for (size_t i = 0; i < d; ++i) {
       data_[i] = new Data[len_part_];
     }
+    exists_.assign(len_, false);
     size_ = 0;
     is_rehashed_ = false;
     *this = Cuckoo;
   }
 
-  iterator begin() {
+  inline iterator begin() {
     return iterator(0, this);
   }
   
-  iterator end() {
+  inline iterator end() {
     return iterator(len_, this);
   }
 
@@ -273,23 +296,19 @@ public:
   }
 
   void clear() {
-    for (size_t i = 0; i < d; ++i) {
-      for (size_t j = 0; j < len_part_; ++j) {
-	(*(data_[i]))[j].exists = false;
-      }
-    }
+    exists_.clear();
     size_ = 0;
   }
 
-  bool empty() {
+  inline bool empty() {
     return (size_ == 0);
   }
  
-  size_t size() const {
+  inline size_t size() const {
     return size_;
   }
 
-  size_t length() const {
+  inline size_t length() const {
     return len_;
   }
 };
