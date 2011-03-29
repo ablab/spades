@@ -80,9 +80,9 @@ vector<Vertex*> CondensedGraph::LeftNeighbours(const Vertex* v) const {
 vector<Vertex*> CondensedGraph::RightNeighbours(const Vertex* v) const {
 	vector<Vertex*> ans;
 	for (char i = 0; i < 4; ++i) {
-		Vertex* v = v->right_neighbour(i);
-		if (v != NULL) {
-			ans.push_back(v);
+		Vertex* right_neighbour = v->right_neighbour(i);
+		if (right_neighbour != NULL) {
+			ans.push_back(right_neighbour);
 		}
 	}
 	return ans;
@@ -162,19 +162,37 @@ void CondensedGraph::AddRightNeighbour(Vertex* v1, Vertex* v2) {
 	v1->set_right_neigbour(v2, v2->nucls()[k_ - 1]);
 }
 
-void CondensedGraph::LinkVertices(Vertex* anc, Vertex* desc) {
-	DEBUG("Linking vertices '" << anc->nucls().str() << "' and '"<< desc->nucls().str() <<"' and their complement")
-	assert(AreLinkable(anc, desc));
+void CondensedGraph::LinkVertices(Vertex* v1, Vertex* v2) {
+	DEBUG("Linking vertices '" << v1->nucls().str() << "' and '"<< v2->nucls().str() <<"' and their complement")
+	assert(AreLinkable(v1, v2));
 
-	AddRightNeighbour(anc, desc);
-	AddRightNeighbour(desc->complement(), anc->complement());
+	AddRightNeighbour(v1, v2);
+	AddRightNeighbour(v2->complement(), v1->complement());
 }
 
-void DFS::go(Vertex* v, vector<Vertex*>& stack, Handler& h) {
+void CondensedGraph::UnLinkVertices(Vertex* v1, Vertex* v2) {
+	v1->set_right_neigbour((Vertex*)NULL, v2->nucls()[k_ - 1]);
+	v2->complement()->set_right_neigbour((Vertex*)NULL, v1->complement()->nucls()[k_ - 1]);
+}
+
+void CondensedGraph::UnLinkAll(Vertex* v) {
+	vector<Vertex*> r_ns = RightNeighbours(v);
+	for (vector<Vertex*>::const_iterator it = r_ns.begin(); it != r_ns.end(); ++it) {
+		UnLinkVertices(v, *it);
+	}
+	vector<Vertex*> l_ns = LeftNeighbours(v);
+	for (vector<Vertex*>::const_iterator it = l_ns.begin(); it != l_ns.end(); ++it) {
+		UnLinkVertices(*it, v);
+	}
+}
+
+
+
+void DFS::ProcessVertex(Vertex* v, vector<Vertex*>& stack, Handler& h) {
 	if (visited_.count(v) == 0) {
 		h.HandleStartVertex(v);
 		visited_.insert(v);
-		vector<Vertex*> desc = g_->RightNeighbours(v);
+		vector<Vertex*> desc = g_.RightNeighbours(v);
 		for (size_t i = 0; i < desc.size(); ++i) {
 			Vertex* descendent = desc[i];
 			h.HandleEdge(v, descendent);
@@ -184,27 +202,27 @@ void DFS::go(Vertex* v, vector<Vertex*>& stack, Handler& h) {
 }
 
 void DFS::Traverse(Handler& h) {
-	for (set<Vertex*>::iterator it = g_->vertices().begin(); it
-			!= g_->vertices().end(); it++) {
+	for (set<Vertex*>::iterator it = g_.vertices().begin(); it
+			!= g_.vertices().end(); it++) {
 		vector<Vertex*> stack;
 		stack.push_back(*it);
 		while (!stack.empty()) {
 			Vertex* v = stack[stack.size() - 1];
 			stack.pop_back();
-			go(v, stack, h);
+			ProcessVertex(v, stack, h);
 		}
 	}
 }
 
 void SimpleGraphVisualizer::Visualize(const CondensedGraph& g) {
 	VisHandler h(gp_);
-	DFS(&g).Traverse(h);
+	DFS(g).Traverse(h);
 	gp_.output();
 }
 
 void ComplementGraphVisualizer::Visualize(const CondensedGraph& g) {
 	ComplementVisHandler h(gp_);
-	DFS(&g).Traverse(h);
+	DFS(g).Traverse(h);
 	gp_.output();
 }
 

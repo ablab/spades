@@ -66,7 +66,7 @@ void go(const CondensedGraph& g, Vertex* v, set<Vertex*>& visited, string& log) 
 }
 
 string printDfs(const CondensedGraph& g, Vertex* start) {
-	DFS dfs(&g);
+	DFS dfs(g);
 
 	string log;
 	set<Vertex*> visited;
@@ -123,7 +123,7 @@ void VisTool() {
 	SimpleGraphVisualizer gv(gp);
 	gv.Visualize(g);
 	filestr.close();
-	DFS dfs(&g);
+	DFS dfs(g);
 	SimpleStatCounter h;
 	dfs.Traverse(h);
 	cerr << h.v_count() << " " << h.e_count();
@@ -173,7 +173,7 @@ void AssertGraph(size_t read_cnt, string reads[], size_t vertex_cnt, string et_v
 	edge_set edges;
 	vertex_set vertices;
 	ToStringHandler h(vertices, edges);
-	DFS dfs(g);
+	DFS dfs(*g);
 	dfs.Traverse(h);
 	if (vertex_cnt != 0) {
 		MyEquals(vertices, et_vertices, vertex_cnt);
@@ -209,7 +209,7 @@ void AssertCondense(size_t read_cnt, string reads[], size_t vertex_cnt, string e
 	edge_set edges;
 	vertex_set vertices;
 	ToStringHandler h(vertices, edges);
-	DFS dfs(g);
+	DFS dfs(*g);
 	dfs.Traverse(h);
 	if (vertex_cnt != 0) {
 		MyEquals(vertices, et_vertices, vertex_cnt);
