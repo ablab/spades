@@ -131,4 +131,197 @@ void resetVertexCount(PairedGraph &graph) {
 	graph.VertexCount = 0;
 }
 
+inline int PairedGraph::directionToIndex(int direction) {
+	assert(direction != 0);
+	return (direction + 1) >> 1;
+}
+
+void PairedGraph::removeEdgeVertexAdjacency(VertexPrototype *vertex,
+		Edge *edge, int direction) {
+	int index = directionToIndex(direction);
+	int current = 0;
+	while (edgeIds[vertex->VertexId][current][index] != edge->EdgeId) {
+		current++;
+	}
+	while (current + 1 < degrees[vertex->VertexId][index]) {
+		edgeIds[vertex->VertexId][current][index]
+				= edgeIds[vertex->VertexId][current + 1][index];
+		current++;
+	}
+}
+
+void PairedGraph::addEdgeVertexAdjacency(VertexPrototype *vertex, Edge *edge,
+		int direction) {
+	int index = directionToIndex(direction);
+	edgeIds[vertex->VertexId][degrees[vertex->VertexId][index]][index]
+			= edge->EdgeId;
+	degrees[vertex->VertexId][index]++;
+	if(direction == RIGHT)
+		edge->FromVertex = vertex->VertexId;
+	else
+		edge->ToVertex = vertex->VertexId;
+}
+
+int PairedGraph::rightDegree(VertexPrototype *vertex) {
+	return degrees[vertex->VertexId][1];
+}
+
+int PairedGraph::leftDegree(VertexPrototype *vertex) {
+	return degrees[vertex->VertexId][0];
+}
+
+Edge *PairedGraph::rightEdge(VertexPrototype *vertex, int number) {
+	assert(number < degrees[vertex->VertexId][1]);
+	return longEdges[edgeRealId(edgeIds[vertex->VertexId][number][1], longEdges)];
+}
+Edge *PairedGraph::leftEdge(VertexPrototype *vertex, int number) {
+	assert(number >= degrees[vertex->VertexId][0]);
+	return longEdges[edgeRealId(edgeIds[vertex->VertexId][number][0], longEdges)];
+}
+
+//This is very bad method!!!!
+IVertexIterator<VertexPrototype *> *PairedGraph::vertexIterator() {
+	return new VertexIterator(this);
+}
+
+Edge *PairedGraph::addEdge(Edge *newEdge) {
+	newEdge->EdgeId = EdgeId;
+	EdgeId++;
+	longEdges.insert(make_pair(newEdge->EdgeId, newEdge));
+	edgeIds[newEdge->FromVertex][degrees[newEdge->FromVertex][1]][1]
+			= newEdge->EdgeId;
+	degrees[newEdge->FromVertex][1]++;
+	edgeIds[newEdge->FromVertex][degrees[newEdge->FromVertex][0]][0]
+			= newEdge->EdgeId;
+	degrees[newEdge->FromVertex][0]++;
+	return newEdge;
+}
+
+void PairedGraph::removeEdge(Edge *edge) {
+	if (edge = longEdges[edge->EdgeId]) {
+		removeEdgeVertexAdjacency(vertexList_[edge->FromVertex], edge, 1);
+		removeEdgeVertexAdjacency(vertexList_[edge->ToVertex], edge, -1);
+	}
+	delete edge;
+}
+
+VertexPrototype *PairedGraph::addVertex(VertexPrototype *vertex) {
+	int vertexIndex = VertexCount;
+	VertexCount++;
+	degrees[VertexCount][0] = 0;
+	degrees[VertexCount][1] = 0;
+	vertex->VertexId = vertexIndex;
+	vertexList_.push_back(vertex);
+	verts[vertex->upper].push_back(vertex);
+	return vertex;
+}
+
+void PairedGraph::removeVertex(VertexPrototype *vertex) {
+	for (int index = 0; index <= 1; index++) {
+		while (degrees[VertexCount][0] > 0) {
+			removeEdge(longEdges[edgeIds[vertex->VertexId][0][index]]);
+		}
+	}
+	vertexList_[vertex->VertexId] = NULL;
+	delete vertex;
+}
+
+Edge *PairedGraph::merge(Edge *edge1, Edge *edge2) {
+	Sequence *upper = new Sequence(
+			edge1->upper->Subseq(0, edge1->length) + *(edge2->upper));
+	Sequence *lower = new Sequence(
+			edge1->lower->Subseq(0, edge1->length) + *(edge2->lower));
+	Edge *edge = new Edge(upper, lower, edge1->FromVertex, edge2->ToVertex,
+			edge1->length + edge2->length, 0, 0);
+	addEdge(edge);
+	removeEdge(edge1);
+	removeEdge(edge2);
+}
+
+pair<Edge *, Edge *> PairedGraph::splitEdge(Edge *edge, int position) {
+	assert(position > 0 && position < edge->length);
+	Sequence *vertexUpper = new Sequence(
+			edge->upper->Subseq(position, position + k - 1));
+	Sequence *vertexLower = new Sequence(
+			edge->lower->Subseq(position, position + k - 1));
+	VertexPrototype *newVertex = addVertex(new VertexPrototype(vertexLower, 0));
+	Sequence *upper1 = new Sequence(edge->upper->Subseq(0, position + k - 1));
+	Sequence *upper2 = new Sequence(
+			edge->upper->Subseq(position, edge->length + k - 1));
+	Sequence *lower1 = new Sequence(edge->lower->Subseq(0, position + k - 1));
+	Sequence *lower2 = new Sequence(
+			edge->lower->Subseq(position, edge->length + k - 1));
+	Edge *edge1 = new Edge(upper1, lower1, edge->FromVertex,
+			newVertex->VertexId, position, 0, 0);
+	Edge *edge2 = new Edge(upper2, lower2, newVertex->VertexId, edge->ToVertex,
+			edge->length - position, 0, 0);
+	removeEdge(edge);
+	addEdge(edge1);
+	addEdge(edge2);
+	return make_pair(edge1, edge2);
+}
+
+VertexPrototype *PairedGraph::glueVertices(VertexPrototype *vertex1,
+		VertexPrototype *vertex2) {
+	if (vertex1 != vertex2) {
+		for (int direction = LEFT; direction <= RIGHT; direction += 2) {
+			int index = directionToIndex(direction);
+			for (int i = 0; i < degrees[vertex2->VertexId][index]; i++) {
+				addEdgeVertexAdjacency(vertex1,
+						longEdges[edgeIds[vertex2->VertexId][i][index]],
+						direction);
+			}
+		}
+		degrees[vertex2->VertexId][0] = 0;
+		degrees[vertex2->VertexId][1] = 0;
+		removeVertex(vertex2);
+	}
+	return vertex1;
+}
+
+//glue edges, there start and end vertices
+Edge *PairedGraph::glueEdges(Edge *edge1, Edge *edge2) {
+	int fromVertex = edge2->FromVertex;
+	int toVertex = edge2->ToVertex;
+	removeEdge(edge2);
+	glueVertices(vertexList_[edge1->FromVertex], vertexList_[fromVertex]);
+	glueVertices(vertexList_[edge1->ToVertex], vertexList_[toVertex]);
+	return edge1;
+}
+
+void PairedGraph::unGlueEdges(VertexPrototype *vertex) {
+	if (degrees[vertex->VertexId][0] == 1) {
+		unGlueEdgesLeft(vertex);
+	} else if (degrees[vertex->VertexId][1] == 1) {
+		unGlueEdgesRight(vertex);
+	} else {
+		assert(false);
+	}
+}
+
+void PairedGraph::unGlueEdgesLeft(VertexPrototype *vertex) {
+	assert(degrees[vertex->VertexId][0] == 1);
+	Edge *leftEdge = longEdges[edgeIds[vertex->VertexId][0][0]];
+	for (int i = 0; i < degrees[vertex->VertexId][1]; i++) {
+		Edge *rightEdge = longEdges[edgeIds[vertex->VertexId][i][1]];
+		rightEdge->ExpandLeft(*leftEdge);
+		addEdgeVertexAdjacency(vertexList_[rightEdge->FromVertex], rightEdge,
+				RIGHT);
+		removeEdgeVertexAdjacency(vertex, rightEdge, RIGHT);
+	}
+	removeVertex(vertex);
+}
+
+void PairedGraph::unGlueEdgesRight(VertexPrototype *vertex) {
+	assert(degrees[vertex->VertexId][0] == 1);
+	Edge *rightEdge = longEdges[edgeIds[vertex->VertexId][0][1]];
+	for (int i = 0; i < degrees[vertex->VertexId][0]; i++) {
+		Edge *leftEdge = longEdges[edgeIds[vertex->VertexId][i][0]];
+		leftEdge->ExpandLeft(*rightEdge);
+		addEdgeVertexAdjacency(vertexList_[leftEdge->ToVertex], rightEdge, LEFT);
+		removeEdgeVertexAdjacency(vertex, leftEdge, LEFT);
+	}
+	removeVertex(vertex);
+}
+
 }
