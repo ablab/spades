@@ -14,6 +14,8 @@
 #include <map>
 #include <vector>
 #include <tr1/unordered_map>
+#include "read.hpp"
+#include "sequence.hpp"
 
 template<size_t size_>
 class DeBruijn {
@@ -46,10 +48,9 @@ class DeBruijn {
 	typedef std::tr1::unordered_map<key, value,	typename key::hash, typename key::equal_to> map_type;
 	map_type nodes_;
 
-	template<size_t size2_>
-	void CountRead(const Seq<size2_>& read) {
-		Seq<size_> head = Seq<size_> (read);
-		for (size_t j = size_; j < size2_; ++j) {
+	void CountRead(const Sequence& read) {
+		Seq<size_> head = Seq<size_>(read);
+		for (size_t j = size_; j < read.size(); ++j) {
 			Seq<size_> tail = head << read[j];
 			addEdge(head, tail);
 			head = tail;
@@ -158,13 +159,17 @@ public:
 		return kmer_iterator(nodes_.end());
 	}
 
-	template<size_t size2_, size_t count_>
-	void ConstructGraph(const vector<strobe_read<size2_, count_> > &v) {
+	//template<size_t size2_, size_t count_>
+	void ConstructGraph(const vector<Read> &v) {
 		for (size_t i = 0; i < v.size(); ++i) {
-			for (size_t r = 0; r < count_; ++r) {
-				CountRead<size2_> (v[i][r]);
-				CountRead<size2_> (!v[i][r]);
+			if (v[i].isValid()) {
+				Sequence *s = v[i].createSequence();
+				CountRead(*s);
+				CountRead(!(*s));
+				delete s;
 			}
+			//for (size_t r = 0; r < count_; ++r) {
+			//}
 		}
 	}
 

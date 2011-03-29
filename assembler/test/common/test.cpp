@@ -4,9 +4,9 @@
 #include "seqTest.hpp"
 #include "sequenceTest.hpp"
 #include "ireadstreamTest.hpp"
-#include "quality_read_stream.hpp"
+//#include "quality_read_stream.hpp"
 #include "nuclTest.hpp"
-#include "ifaststreamTest.hpp"
+//#include "ifaststreamTest.hpp"
 #include "qualityTest.hpp"
 #include "onlineGraphVisualizerTest.hpp"
 //#include "offlineGraphVisualizerTest.hpp"
@@ -21,7 +21,7 @@ void runSuite() {
 	 s += SequenceSuite();
 	 s += QualitySuite();
 	 s += NuclSuite();
-	 s += IFastaStreamSuite();
+	 //s += IFastaStreamSuite();
 	 s += IReadStreamSuite();
 	 s += onlineGraphVisualizerSuite();
 //	 s += offlineGraphVisualizerSuite();
