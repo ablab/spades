@@ -517,3 +517,16 @@ void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCou
 		}
 	}
 }
+
+void unglueAll(PairedGraph &graph, int direction) {
+	VertexIterator *it = graph.vertexIterator();
+	while(it->hasNext()) {
+		VertexPrototype *v = it->next();
+		graph.unGlueEdges(v, direction);
+	}
+}
+
+void unglueAll(PairedGraph &graph) {
+	unglueAll(graph, RIGHT);
+	unglueAll(graph, LEFT);
+}

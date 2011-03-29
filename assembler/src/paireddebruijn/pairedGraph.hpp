@@ -157,6 +157,7 @@ class IVertexIterator {
 	virtual tVertex next() = 0;
 };
 
+//TODO Replace all Sequence * with just Sequence
 template<typename tVertex, typename tEdge>
 class IPairedGraph {
 public:
@@ -177,9 +178,9 @@ public:
 	virtual tEdge leftEdge(tVertex vertex, int number) = 0;
 	tEdge neighbour(tVertex vertex, int number, int direction) {
 		if (direction == RIGHT)//RIGHT = 1
-			return getRightNeighbour(vertex);
+			return this->rightEdge(vertex, number);
 		else if (direction == LEFT)//LEFT = -1
-			return getRightNeighbour(vertex);
+			return this->leftEdge(vertex, number);
 	}
 
 	virtual IVertexIterator<tVertex> *vertexIterator() = 0;
@@ -199,12 +200,25 @@ public:
 	//glue edges, there start and end vertices
 	virtual tEdge glueEdges(tEdge edge1, tEdge edge2) = 0;
 	//seperate edges  adjecent to the vertex
-	virtual void unGlueEdges(tVertex vertex) = 0;
-	virtual void unGlueEdgesLeft(tVertex vertex) = 0;
-	virtual void unGlueEdgesRight(tVertex vertex) = 0;
+	virtual bool unGlueEdgesIfPossible(tVertex vertex) = 0;
+	virtual bool unGlueEdgesLeft(tVertex vertex) = 0;
+	virtual bool unGlueEdgesRight(tVertex vertex) = 0;
+
+	void unGlueEdges(tVertex vertex, int direction) {
+		if(direction == RIGHT)
+			unGlueEdgesRight(vertex);
+		else if(direction == LEFT)
+			unGlueEdgesLeft(vertex);
+		else
+			assert(false);
+	}
+
+	//This method has bad parameters but still nothing to replace them
+	virtual tVertex findVertex(ll kmer, Sequence *s) = 0;
 };
 
 class PairedGraphData {
+	//TODO write destructor which would delete all VertexPrototypes * and all Edge *
 public:
 	//0 - in-degrees
 	//1 -out-degrees
@@ -230,30 +244,16 @@ private:
 	int currentVertex_;
 	PairedGraphData *graph_;
 public:
-	VertexIterator(PairedGraphData *graph) {
-		currentVertex_ = 0;
-	}
+	VertexIterator(PairedGraphData *graph);
 
-	virtual bool hasNext() {
-		while (currentVertex_ < graph_->VertexCount
-				&& graph_->degrees[currentVertex_][0]
-						+ graph_->degrees[currentVertex_][1] == 0) {
-			currentVertex_++;
-		}
-		return currentVertex_ < graph_->VertexCount;
-	}
+	virtual bool hasNext();
 
-	virtual VertexPrototype *next() {
-		if(!hasNext())
-			assert(false);
-		VertexPrototype *result = graph_->vertexList_[currentVertex_];
-		currentVertex_++;
-		return result;
-	}
+	virtual VertexPrototype *next();
 };
 
 class PairedGraph: public PairedGraphData, public IPairedGraph<VertexPrototype *, Edge *> {
 private:
+	//TODO add vertexNumber and edgeNumber fields and getters for them
 	/**Method takes direction as RIGHT or LEFT, which are +1 and -1 and returns corresponding index
 	 * for arrays in PairedGraphData which is 0 for LEFT and 1 for RIGHT
 	 * @param direction LEFT or RIGHT
@@ -372,24 +372,35 @@ public:
 	 * vertex from graph and creates new edges which are concatenations of incoming and outcoming edges of
 	 * the vertex.
 	 *@vertex vertex edges adjecent to which should be processed
+	 *@return true if either incoming or outcoming degree of the vertex is equal to 1 and false otherwise
 	 */
-	virtual void unGlueEdges(VertexPrototype *vertex);
+	virtual bool unGlueEdgesIfPossible(VertexPrototype *vertex);
 
 	/**
 	 * Method checks if given vertex has incoming degree equal to 1 and in this case removes this
 	 * vertex from graph and creates new edges which are concatenations of the incoming edge with all
 	 * outcoming edges of the vertex.
 	 *@vertex vertex edges adjecent to which should be processed
+	 *@return true if either incoming degree of the vertex is equal to 1 and false otherwise
 	 */
-	virtual void unGlueEdgesLeft(VertexPrototype *vertex);
+	virtual bool unGlueEdgesLeft(VertexPrototype *vertex);
 
 	/**
 	 * Method checks if given vertex has outcoming degree equal to 1 and in this case removes this
 	 * vertex from graph and creates new edges which are concatenations of the all incoming edges with the
 	 * outcoming edge of the vertex.
 	 *@vertex vertex edges adjecent to which should be processed
+	 *@return true if either outcoming degree of the vertex is equal to 1 and false otherwise
 	 */
-	virtual void unGlueEdgesRight(VertexPrototype *vertex);
+	virtual bool unGlueEdgesRight(VertexPrototype *vertex);
+
+	/**
+	 * This method finds vertex in graph with specific parameters.
+	 * @param kmer upper sequence
+	 * @param s lower sequence
+	 * @return vertex with given parameters if found and NULL otherwise
+	 */
+	virtual VertexPrototype *findVertex(ll kmer, Sequence *s);
 
 	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
 

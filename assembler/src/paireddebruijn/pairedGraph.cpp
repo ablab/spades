@@ -156,7 +156,7 @@ void PairedGraph::addEdgeVertexAdjacency(VertexPrototype *vertex, Edge *edge,
 	edgeIds[vertex->VertexId][degrees[vertex->VertexId][index]][index]
 			= edge->EdgeId;
 	degrees[vertex->VertexId][index]++;
-	if(direction == RIGHT)
+	if (direction == RIGHT)
 		edge->FromVertex = vertex->VertexId;
 	else
 		edge->ToVertex = vertex->VertexId;
@@ -175,7 +175,7 @@ Edge *PairedGraph::rightEdge(VertexPrototype *vertex, int number) {
 	return longEdges[edgeRealId(edgeIds[vertex->VertexId][number][1], longEdges)];
 }
 Edge *PairedGraph::leftEdge(VertexPrototype *vertex, int number) {
-	assert(number >= degrees[vertex->VertexId][0]);
+	assert(number < degrees[vertex->VertexId][0]);
 	return longEdges[edgeRealId(edgeIds[vertex->VertexId][number][0], longEdges)];
 }
 
@@ -191,9 +191,9 @@ Edge *PairedGraph::addEdge(Edge *newEdge) {
 	edgeIds[newEdge->FromVertex][degrees[newEdge->FromVertex][1]][1]
 			= newEdge->EdgeId;
 	degrees[newEdge->FromVertex][1]++;
-	edgeIds[newEdge->FromVertex][degrees[newEdge->FromVertex][0]][0]
+	edgeIds[newEdge->ToVertex][degrees[newEdge->ToVertex][0]][0]
 			= newEdge->EdgeId;
-	degrees[newEdge->FromVertex][0]++;
+	degrees[newEdge->ToVertex][0]++;
 	return newEdge;
 }
 
@@ -207,12 +207,12 @@ void PairedGraph::removeEdge(Edge *edge) {
 
 VertexPrototype *PairedGraph::addVertex(VertexPrototype *vertex) {
 	int vertexIndex = VertexCount;
-	VertexCount++;
-	degrees[VertexCount][0] = 0;
-	degrees[VertexCount][1] = 0;
+	degrees[vertexIndex][0] = 0;
+	degrees[vertexIndex][1] = 0;
 	vertex->VertexId = vertexIndex;
 	vertexList_.push_back(vertex);
 	verts[vertex->upper].push_back(vertex);
+	VertexCount++;
 	return vertex;
 }
 
@@ -289,7 +289,7 @@ Edge *PairedGraph::glueEdges(Edge *edge1, Edge *edge2) {
 	return edge1;
 }
 
-void PairedGraph::unGlueEdges(VertexPrototype *vertex) {
+bool PairedGraph::unGlueEdgesIfPossible(VertexPrototype *vertex) {
 	if (degrees[vertex->VertexId][0] == 1) {
 		unGlueEdgesLeft(vertex);
 	} else if (degrees[vertex->VertexId][1] == 1) {
@@ -299,8 +299,10 @@ void PairedGraph::unGlueEdges(VertexPrototype *vertex) {
 	}
 }
 
-void PairedGraph::unGlueEdgesLeft(VertexPrototype *vertex) {
-	assert(degrees[vertex->VertexId][0] == 1);
+bool PairedGraph::unGlueEdgesLeft(VertexPrototype *vertex) {
+	if (degrees[vertex->VertexId][0] != 1) {
+		return false;
+	}
 	Edge *leftEdge = longEdges[edgeIds[vertex->VertexId][0][0]];
 	for (int i = 0; i < degrees[vertex->VertexId][1]; i++) {
 		Edge *rightEdge = longEdges[edgeIds[vertex->VertexId][i][1]];
@@ -310,10 +312,12 @@ void PairedGraph::unGlueEdgesLeft(VertexPrototype *vertex) {
 		removeEdgeVertexAdjacency(vertex, rightEdge, RIGHT);
 	}
 	removeVertex(vertex);
+	return true;
 }
 
-void PairedGraph::unGlueEdgesRight(VertexPrototype *vertex) {
-	assert(degrees[vertex->VertexId][0] == 1);
+bool PairedGraph::unGlueEdgesRight(VertexPrototype *vertex) {
+	if (degrees[vertex->VertexId][0] != 1)
+		return false;
 	Edge *rightEdge = longEdges[edgeIds[vertex->VertexId][0][1]];
 	for (int i = 0; i < degrees[vertex->VertexId][0]; i++) {
 		Edge *leftEdge = longEdges[edgeIds[vertex->VertexId][i][0]];
@@ -322,6 +326,41 @@ void PairedGraph::unGlueEdgesRight(VertexPrototype *vertex) {
 		removeEdgeVertexAdjacency(vertex, leftEdge, LEFT);
 	}
 	removeVertex(vertex);
+	return true;
+}
+
+VertexPrototype *PairedGraph::findVertex(ll kmer, Sequence *s) {
+	verticesMap::iterator it = verts.find(kmer);
+	if (it == verts.end())
+		return NULL;
+	for (int i = 0; i < it->second.size(); i++) {
+		if (*s == *(it->second[i]->lower)) {
+			return it->second[i];
+		}
+	}
+	return NULL;
+}
+
+VertexIterator::VertexIterator(PairedGraphData *graph) {
+	graph_ = graph;
+	currentVertex_ = 0;
+}
+
+bool VertexIterator::hasNext() {
+	while (currentVertex_ < graph_->VertexCount
+			&& graph_->degrees[currentVertex_][0]
+					+ graph_->degrees[currentVertex_][1] == 0) {
+		currentVertex_++;
+	}
+	return currentVertex_ < graph_->VertexCount;
+}
+
+VertexPrototype *VertexIterator::next() {
+	if (!hasNext())
+		assert(false);
+	VertexPrototype *result = graph_->vertexList_[currentVertex_];
+	currentVertex_++;
+	return result;
 }
 
 }
