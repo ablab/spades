@@ -180,7 +180,7 @@ Edge *PairedGraph::leftEdge(VertexPrototype *vertex, int number) {
 }
 
 //This is very bad method!!!!
-IVertexIterator<VertexPrototype *> *PairedGraph::vertexIterator() {
+VertexIterator *PairedGraph::vertexIterator() {
 	return new VertexIterator(this);
 }
 

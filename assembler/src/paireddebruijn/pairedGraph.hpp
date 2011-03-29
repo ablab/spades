@@ -304,7 +304,7 @@ public:
 	//TODO Replace with C-stype iterator
 	//TODO Make it return iterator instead of iterator *.
 	//This is very bad method!!!!
-	virtual IVertexIterator<VertexPrototype *> *vertexIterator();
+	virtual VertexIterator *vertexIterator();
 
 	/**
 	 * Method adds edge to graph and updates all data stored in graph correspondingly.
