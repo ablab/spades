@@ -4,7 +4,7 @@
 #include "sequence.hpp"
 #include "nucl.hpp"
 #include "condensed_graph.hpp"
-#include "condensedGraphConstructor.hpp"
+#include "condensed_graph_constructor.hpp"
 #include "debruijn.hpp"
 #include "graphVisualizer.hpp"
 #include <fstream>

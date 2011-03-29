@@ -62,6 +62,7 @@ public:
 	// other methods:
 	char operator[](const size_t index) const;
 	bool operator==(const Sequence &that) const;
+	bool operator<(const Sequence &that) const;
 	Sequence operator!() const;
 	/**
 	 * @param from inclusive
@@ -74,6 +75,9 @@ public:
 	int similar(const Sequence &t, int k, char directed = 0) const;
 	int leftSimilar(const Sequence &t, int k) const;
 	int rightSimilar(const Sequence &t, int k) const;
+	
+	/// returns true if two sequences intersect
+	bool intersects(const Sequence &t) const;
 
 	//	template<size_t size2_>
 	//	Seq<size2_> start() const;
