@@ -7,6 +7,7 @@
 #include "iostream"
 #include "fstream"
 
+LOGGER("p.graphio");
 using namespace paired_assembler;
 
 inline int codeNucleotide(char a) {
@@ -249,7 +250,7 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, string fileName) {
 
 DataReader::DataReader(char *fileName) {
 	f_ = fopen(fileName, "r");
-	cerr << endl << fileName << endl;
+	DEBUG("DataReader " << fileName <<" created");
 	assert(f_ != NULL);
 }
 

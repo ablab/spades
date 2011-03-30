@@ -87,6 +87,7 @@ extern int needLmers;
 extern int needSequences;
 extern int needGraph;
 extern int useExpandDefinite;
+extern int useExtractDefinite;
 extern int useTraceReads;
 extern int useProcessLower;
 

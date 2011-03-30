@@ -23,6 +23,8 @@ int needLmers = 1;
 int needSequences = 1;
 int needGraph = 1;
 int useExpandDefinite = 1;
+int useExtractDefinite = 1;
+
 int useTraceReads = 1;
 int useProcessLower = 1;
 void initConstants(string ini_file) {
@@ -73,6 +75,8 @@ void initConstants(string ini_file) {
 	assert(fscanf(ini, "useExpandDefinite = %d\n", &useExpandDefinite) == 1);
 	assert(fscanf(ini, "useTraceReads = %d\n", &useTraceReads) == 1);
 	assert(fscanf(ini, "useProcessLower = %d\n", &useProcessLower) == 1);
+	assert(fscanf(ini, "useExtractDefinite = %d\n", &useExtractDefinite) == 1);
+
 	minIntersect = l - 1;
 
 	//assert()
