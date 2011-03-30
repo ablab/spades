@@ -69,6 +69,7 @@ private:
 	}
 	void setQuality(const char* s, bool rtl = false) {
 		qual_ = s;
+		// TODO: HAHA! NEXT TWO BRANCHES DO THE SAME :)
 		if (rtl) {
 			for (size_t i = 0; i < qual_.size(); ++i) {
 				qual_[qual_.size() - i - 1] -= PHRED_OFFSET;
@@ -102,12 +103,11 @@ private:
 						seq_[len - i - 1] = 'N';
 						break;
 					default:
-						std::cerr << " strange letteer in read. Exiting" << tmp;
+						std::cerr << " strange letteer in read. Exiting" << tmp; // TODO: wtf?
 						assert(0);
 				}
 			}
 		}
-
 	}
 };
 

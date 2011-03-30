@@ -29,9 +29,7 @@ public:
 	ireadstream(const string& filename, bool rtl = false) {
 		filename_ = filename;
 		is_open_ = open(filename);
-		rtl_ = rtl;
-
-		//assert(is_open_); // Fails if there is no such file -- don't do it!
+		rtl_ = rtl; // TODO: why the hell do we need rev-compl here?
 	}
 
 
@@ -65,6 +63,8 @@ public:
 	}
 
 	ireadstream& operator>>(Read &r) {
+		assert(is_open());
+		assert(!eof());
 		if (!is_open() || eof()) {
 			return *this;
 		}
