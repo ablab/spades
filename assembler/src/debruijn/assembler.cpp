@@ -49,6 +49,8 @@ int main(int argc, char *argv[]) {
 	DeBruijn<K> debruijn;
 	debruijn.ConstructGraph(*v1);
 	debruijn.ConstructGraph(*v2);
+	delete v1;
+	delete v2;
 	condensed_graph::CondenseConstructor<K> g_c(debruijn);
 
 	condensed_graph::CondensedGraph *g;

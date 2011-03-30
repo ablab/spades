@@ -10,6 +10,7 @@
 
 #include "quality.hpp"
 #include "sequence.hpp"
+#include "nucl.hpp"
 #include <string>
 using namespace std;
 
@@ -44,6 +45,14 @@ public:
 	const string& getName() const {
 		return name_;
 	}
+	size_t size() const {
+		return seq_.size();
+	}
+	char operator[](size_t i) const {
+		assert(is_nucl(seq_[i]));
+		return dignucl(seq_[i]);
+	}
+
 private:
 	string seq_;
 	string qual_;
