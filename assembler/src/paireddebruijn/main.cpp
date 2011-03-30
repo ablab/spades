@@ -24,7 +24,7 @@ void init() {
 
 void run() {
 	char str[100];
-	//forgetQualityPairedData("data/paireddebruijn/s_6_1.fastq.gz", "data/paireddebruijn/s_6_2.fastq.gz", "/media/605005E05005BDB2/data/realreads.txt" );
+	forgetQualityPairedData("data/paireddebruijn/s_6_1.fastq.gz", "data/paireddebruijn/s_6_2.fastq.gz", "/media/605005E05005BDB2/data/realreads.txt" );
 //	LOG_ASSERT(1 == 0, "Something wrong");
 	if (needPairs) {
 		cerr << endl << " constructing pairs" << endl;

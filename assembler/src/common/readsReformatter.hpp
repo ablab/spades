@@ -24,7 +24,7 @@ int forgetQualityPairedData(string file1, string file2, string outputFile) {
 			Sequence s1 = r1.getSequence();
 			Sequence s2 = r2.getSequence();
 
-			fprintf(outFile, "%s\n%s\n", s1.str().c_str(), s2.str().c_str());
+			fprintf(outFile, "%s %s\n", s1.str().c_str(), s2.str().c_str());
 		}
 	}
 	fclose(outFile);
