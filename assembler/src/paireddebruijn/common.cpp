@@ -45,11 +45,12 @@ void initConstants(string ini_file) {
 	string suff(topr);
 	suff+= "_";
 	suff += tmp;
+	string d_desc =  suff;
 	sprintf(topr, "_%d_%d",k, l);
 	suff += topr;
-	string d_desc = "_" + string(tmp);
 	assert(fscanf(ini, "parsed_reads = %s\n" , tmp) == 1);
 	parsed_reads = folder + string(tmp) + d_desc + ".txt";
+	ERROR(parsed_reads);
 	assert(fscanf(ini, "parsed_k_l_mers = %s\n" , tmp) == 1);
 	parsed_k_l_mers = folder + string(tmp) + suff + ".txt";
 	assert(fscanf(ini, "parsed_l_mers = %s\n" , tmp) == 1);
