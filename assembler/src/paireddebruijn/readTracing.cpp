@@ -31,7 +31,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	double in_cov[MAX_DEGREE];
 	double out_cov[MAX_DEGREE];
 	double eps_out_cov[MAX_DEGREE];
-	double eps = 10;
+	double eps = 1;
 	INFO("traceReads started");
 	INFO(parsed_reads);
 	freopen(parsed_reads.c_str(), "r", stdin);
@@ -349,7 +349,8 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 							Sequence *UpSeq = new Sequence(tmpUpSeq);
 							Sequence *LoSeq = new Sequence(tmpLoSeq);
 
-							Edge *tmpEdge = new Edge(UpSeq, LoSeq, tmpFictStartIn + tmpFrom, tmpFictStartOut + tmpTo,0, EdgeId, fake_cov[edgeIdToLocalId(0, graph, EdgePairs[curVertId][tmpEdgePair].first)][edgeIdToLocalId(1, graph, EdgePairs[curVertId][tmpEdgePair].second)]);
+//							Edge *tmpEdge = new Edge(UpSeq, LoSeq, tmpFictStartIn + tmpFrom, tmpFictStartOut + tmpTo,0, EdgeId, fake_cov[edgeIdToLocalId(0, graph, EdgePairs[curVertId][tmpEdgePair].first)][edgeIdToLocalId(1, graph, EdgePairs[curVertId][tmpEdgePair].second)]);
+							Edge *tmpEdge = new Edge(UpSeq, LoSeq, tmpFictStartIn + tmpFrom, tmpFictStartOut + tmpTo,0, EdgeId, fake_cov[tmpFrom][tmpTo]);
 							longEdges.insert(make_pair(EdgeId,tmpEdge));
 							//							cerr<<"Virtual edge "<<EdgeId<<
 							cerr<<"Virtual edge "<<EdgeId<<" ("<<longEdges[EdgeId]->FromVertex<<", "<<longEdges[EdgeId]->ToVertex<<")"<<endl;

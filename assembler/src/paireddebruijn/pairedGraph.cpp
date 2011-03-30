@@ -318,9 +318,9 @@ pair<Edge *, Edge *> PairedGraph::splitEdge(Edge *edge, int position) {
 	Sequence *lower2 = new Sequence(
 			edge->lower->Subseq(position, edge->length + k - 1));
 	Edge *edge1 = new Edge(upper1, lower1, edge->FromVertex,
-			newVertex->VertexId, position, 0, 0);
+			newVertex->VertexId, position, 0, edge->coverage);
 	Edge *edge2 = new Edge(upper2, lower2, newVertex->VertexId, edge->ToVertex,
-			edge->length - position, 0, 0);
+			edge->length - position, 0, edge->coverage);
 	removeEdge(edge);
 	addEdge(edge1);
 	addEdge(edge2);
@@ -379,6 +379,7 @@ int PairedGraph::glueVertices(int vertex1, int vertex2) {
 
 Edge *PairedGraph::glueEdges(Edge *edge1, Edge *edge2) {
 	cerr<<"Glue edge "<<edge1->EdgeId<<" "<<edge2->EdgeId<<endl;
+	edge1->coverage += edge2->coverage;
 	int fromVertex = edge2->FromVertex;
 	int toVertex = edge2->ToVertex;
 	removeEdge(edge2);
