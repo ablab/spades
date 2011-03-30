@@ -36,10 +36,10 @@ public:
 		return new Quality(qual_);
 	}
 
-	const string& getSequence() const {
+	const string& getSequenceString() const {
 		return seq_;
 	}
-	const string& getQuality() const{
+	const string& getQualityString() const{
 		return qual_;
 	}
 	const string& getName() const {

@@ -41,7 +41,7 @@ int main() {
 	Read r;
 	ifs >> r;
 	INFO(r.getName().data());
-	BayesQualityGenome bqg(r.getSequence().data());
+	BayesQualityGenome bqg(r.getSequenceString().data());
 
 	processQualityReads("/home/student/nikolenko/python/bayesQuality/s_6_1.fastq.gz", bqg);
 

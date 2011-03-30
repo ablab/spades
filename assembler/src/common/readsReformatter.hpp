@@ -21,8 +21,8 @@ int forgetQualityPairedData(string file1, string file2, string outputFile) {
 		stream1 >> r1;
 		stream2 >> r2;
 		if (r1.isValid() && r2.isValid()) {
-			Sequence s1 = r1.getSequence();
-			Sequence s2 = r2.getSequence();
+			Sequence s1 = r1.getSequenceString();
+			Sequence s2 = r2.getSequenceString();
 
 			fprintf(outFile, "%s %s\n", s1.str().c_str(), s2.str().c_str());
 		}
