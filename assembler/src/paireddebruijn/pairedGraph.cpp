@@ -171,7 +171,30 @@ void PairedGraph::removeEdgeVertexAdjacency(int vertex, Edge *edge, int directio
 //	//	cerr<<"new degree "<<degrees[vertex][index]<<endl;
 //}
 
-void PairedGraph::addEdgeVertexAdjacency(int vertex, Edge *edge,
+//void PairedGraph::removeEdgeVertexAdjacency(int vertex, Edge *edge, int direction) {
+//
+//	cerr<<"removeEdgeVertexAdjacency for vert "<<vertex<<endl;
+//	cerr<<"check vertexList "<<vertexList_[vertex]->VertexId<<endl;
+//	removeEdgeVertexAdjacency(vertexList_[vertex], edge, direction);
+////	cerr<<"removeEdgeVertexAjacency vert "<<vertex<<" edge "<<edge->EdgeId<<" dir "<<direction<<endl;
+////	int index = directionToIndex(direction);
+////	int current = 0;
+////	while (edgeIds[vertex][current][index] != edge->EdgeId) {
+////		cerr<<"index "<<current<<" edge "<<edgeIds[vertex][current][index]<<endl;
+////		current++;
+////		assert(current<degrees[vertex][index]);
+////	}
+////	while (current + 1 < degrees[vertex][index]) {
+////		edgeIds[vertex][current][index]
+////				= edgeIds[vertex][current + 1][index];
+////		current++;
+////	}
+////	degrees[vertex][index]--;
+////	cerr<<"new degree "<<degrees[vertex][index]<<endl;
+//}
+
+/*
+void PairedGraph::addEdgeVertexAdjacency(VertexPrototype *vertex, Edge *edge,
 		int direction) {
 	int index = directionToIndex(direction);
 	edgeIds[vertex][degrees[vertex][index]][index]
@@ -182,15 +205,18 @@ void PairedGraph::addEdgeVertexAdjacency(int vertex, Edge *edge,
 	else
 		edge->ToVertex = vertex;
 }
-
-//void PairedGraph::addEdgeVertexAdjacency(int vertex, Edge *edge, int direction) {
-//	addEdgeVertexAdjacency(vertexList_[vertex], edge, direction);
-//	//	int index = directionToIndex(direction);
-//	//	cerr<<"add vertex adjacency"<<endl;
-//	//	edgeIds[vertex][degrees[vertex][index]][index] = edge->EdgeId;
-//	//	degrees[vertex][index]++;
-//	//	cerr<<"new degree "<<degrees[vertex][index]<<"for dir "<<direction<<endl;
-//}
+*/
+void PairedGraph::addEdgeVertexAdjacency(int vertex, Edge *edge, int direction) {
+	int index = directionToIndex(direction);
+		cerr<<"add vertex adjacency"<<endl;
+		edgeIds[vertex][degrees[vertex][index]][index] = edge->EdgeId;
+		degrees[vertex][index]++;
+		cerr<<"new degree "<<degrees[vertex][index]<<"for dir "<<direction<<endl;
+		if (direction == RIGHT)
+			edge->FromVertex = vertex;
+		else
+			edge->ToVertex = vertex;
+}
 
 int PairedGraph::rightDegree(int vertex) {
 	return degrees[vertex][1];

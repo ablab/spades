@@ -29,7 +29,7 @@ void initConstants(string ini_file) {
 	char tmp[200];
 	INFO("Trying to init constants...");
 
-//	string folder = string("data/");
+	//	string folder = string("data/");
 	FILE* ini = fopen(ini_file.c_str(), "r");
 	assert(fscanf(ini, "k = %d\n", &k) == 1);
 	assert(fscanf(ini, "l = %d\n", &l) == 1);
