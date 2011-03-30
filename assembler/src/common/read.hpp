@@ -52,11 +52,17 @@ public:
 		assert(is_nucl(seq_[i]));
 		return dignucl(seq_[i]);
 	}
+	Read() {
+		;
+	}
+	Read(const string &name, const string &seq, const string &qual) : name_(name), seq_(seq), qual_(qual) { // for test only!
+		;
+	}
 private:
 	static const int PHRED_OFFSET = 33;
+	string name_;
 	string seq_;
 	string qual_;
-	string name_;
 	friend class ireadstream;
 	void setName(const char* s) {
 		name_ = s;
