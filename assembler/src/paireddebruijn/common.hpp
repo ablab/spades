@@ -15,7 +15,7 @@
 #include <set>
 #include "logging.hpp"
 
-#define forn(i, n) for(int i = 0; i < (int) n; i++)
+#define forn(i, n) for(size_t i = 0; i < (size_t) n; i++)
 #define ll long long
 #define pb push_back
 #define mp make_pair
