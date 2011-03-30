@@ -12,6 +12,7 @@
 #include <tr1/unordered_map>
 #include "sequence.hpp"
 #include "logging.hpp"
+#include "read.hpp"
 
 using namespace std;
 
@@ -121,24 +122,24 @@ public:
 	 * returns the minimum likelihood of a read and its complement
 	 * @return total likelihood
 	 */
-	double ReadBQ(const QRead &);
+	double ReadBQ(const Read &);
 
 	/**
 	 * computes the likelihood of a single read after preprocessing it in a set of reads
 	 * returns the minimum likelihood of a read and its complement
 	 * @return total likelihood
 	 */
-	double ReadBQPreprocessed(const QRead &, size_t readno, size_t readssize);
+	double ReadBQPreprocessed(const Read &, size_t readno, size_t readssize);
 
 	/**
 	 * preprocess a vector of reads, i.e., be prepared to compute their masks
 	 */
-	void PreprocessReads(const vector<QRead *> &);
+	void PreprocessReads(const vector<Read> &);
 	
 	/**
 	 * process a vector of reads and log the results
 	 */	
-	void ProcessReads(const vector<QRead *> &);
+	void ProcessReads(const vector<Read> &);
 	
 	/**
 	 * returns the last set of matches

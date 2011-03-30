@@ -51,6 +51,10 @@ public:
 		Read r;
 		while (cnt-- && irs.is_open() && !irs.eof()) {
 			irs >> r;
+			if (!r.isValid()) {
+				cnt++;
+				continue;
+			}
 			res->push_back(r);
 		}
 		irs.close();
@@ -63,9 +67,9 @@ public:
 		}
 
 		// if there is 'N' in sequence, then throw out this mate read
-		r.name_ = seq_->name.s;
-		r.qual_ = seq_->qual.s;
-		r.seq_ = seq_->seq.s;
+		r.setName(seq_->name.s);
+		r.setQuality(seq_->qual.s);
+		r.setSequence(seq_->seq.s);
 		/*for (size_t i = 0; i < seq_->seq.l; i++) { // Fix Ns to As so we can store ACGT in 2 bits (Sequence). Anyway we have a Quality values for filtering out Ns later
 			if (!is_nucl(seq_->seq.s[i])) {
 				seq_->seq.s[i] = 'A';
