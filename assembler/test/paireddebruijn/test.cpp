@@ -5,6 +5,7 @@
 //#include "graphConstructionTest.hpp"
 #include "graphioTest.hpp"
 #include "pairThreadingTest.hpp"
+#include "pairedGraphTest.hpp"
 
 void runSuite() {
 	cute::suite s;
@@ -13,8 +14,9 @@ void runSuite() {
 //	s += CheckStoreVertexSuite();
 //	s += CheckUniqueWaySuite();
 //	s += GoUniqueWaySuite();
-	s += GraphioSuite();
-	s += PairThreadingSuite();
+//	s += GraphioSuite();
+//	s += PairThreadingSuite();
+	s += PairedGraphSuite();
 	cute::ide_listener lis;
 	cute::makeRunner(lis)(s, "The Suite");
 }

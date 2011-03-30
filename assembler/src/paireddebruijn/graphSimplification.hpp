@@ -24,6 +24,9 @@ pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &Graph,
 bool isPath(Edge &e1, Edge &e2);
 bool isRealPossiblePath(PairedGraph &graph, int &EdgeId, int &FollowerId);
 
+void unglueAll(PairedGraph &graph, int direction);
+void unglueAll(PairedGraph &graph);
+
 class PairThreader {
 private:
 	int minIntersection_;
