@@ -132,22 +132,31 @@ public:
 		coverage = cov;
 	}
 
+	void clearData() {
+		delete upper;
+		delete lower;
+		upper = NULL;
+		lower = NULL;
+	}
+
 	~Edge() {
 		//		cerr << "destructing" << upper->str() << endl;
-		if (upper != lower) {
-			delete upper;
-			delete lower;
-		} else
-			delete upper;
+		if (upper != NULL) {
+			if (upper != lower) {
+				delete upper;
+				delete lower;
+			} else
+				delete upper;
+		}
 	}
 };
 
 inline int edgeRealId(int id, longEdgesMap &longEdges) {
 	int res = id;
-	cerr<<"realId for "<<id<<endl;
+	cerr << "realId for " << id << endl;
 	while (longEdges[res]->EdgeId != res) {
 		res = longEdges[res]->EdgeId;
-		cerr<<"possible "<<res<<endl;
+		cerr << "possible " << res << endl;
 	}
 	return res;
 }
@@ -190,6 +199,10 @@ public:
 	virtual tEdge addEdge(tEdge newEdge) = 0;
 	virtual void removeEdge(tEdge edge) = 0;
 
+	virtual tVertex leftEnd(tEdge edge) = 0;
+	virtual tVertex rightEnd(tEdge edge) = 0;
+	virtual tVertex end(tEdge edge, int direction) = 0;
+
 	//create ne vertex, adds it to graph and return
 	virtual tVertex addVertex(tVertex) = 0;
 	//add adjecent edges should be removed as well
@@ -206,9 +219,9 @@ public:
 	virtual bool unGlueEdgesRight(tVertex vertex) = 0;
 
 	void unGlueEdges(tVertex vertex, int direction) {
-		if(direction == RIGHT)
+		if (direction == RIGHT)
 			unGlueEdgesRight(vertex);
-		else if(direction == LEFT)
+		else if (direction == LEFT)
 			unGlueEdgesLeft(vertex);
 		else
 			assert(false);
@@ -228,7 +241,7 @@ public:
 	//	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
 	vector<VertexPrototype *> vertexList_;
 	longEdgesMap longEdges;
-	verticesMap verts;
+	verticesMap	verts;
 	int VertexCount;
 	int EdgeId;
 	PairedGraphData() {
@@ -247,25 +260,26 @@ private:
 public:
 	VertexIterator(PairedGraphData *graph);
 
-/*
- * commented while merge. Possible we need it.
- *
- 	virtual bool hasNext() {
-		cerr<<"hasNext "<<currentVertex_<<endl;
-		if (graph_==NULL) cerr<<"Iterator has not graph"<<endl;
-		while (currentVertex_ < graph_->VertexCount){
-			if (graph_->degrees[currentVertex_][0]+graph_->degrees[currentVertex_][1] > 0) break;
-			currentVertex_++;
-		}
-		return currentVertex_ < graph_->VertexCount;
-	}
-*/
+	/*
+	 * commented while merge. Possible we need it.
+	 *
+	 virtual bool hasNext() {
+	 cerr<<"hasNext "<<currentVertex_<<endl;
+	 if (graph_==NULL) cerr<<"Iterator has not graph"<<endl;
+	 while (currentVertex_ < graph_->VertexCount){
+	 if (graph_->degrees[currentVertex_][0]+graph_->degrees[currentVertex_][1] > 0) break;
+	 currentVertex_++;
+	 }
+	 return currentVertex_ < graph_->VertexCount;
+	 }
+	 */
 	virtual bool hasNext();
 
 	virtual VertexPrototype *next();
 };
 
-class PairedGraph: public PairedGraphData, public IPairedGraph<VertexPrototype *, Edge *> {
+class PairedGraph: public PairedGraphData, public IPairedGraph<
+		VertexPrototype *, Edge *> {
 private:
 	//TODO add vertexNumber and edgeNumber fields and getters for them
 	/**Method takes direction as RIGHT or LEFT, which are +1 and -1 and returns corresponding index
@@ -281,7 +295,8 @@ private:
 	 * @param edge Edge to delete
 	 * @direction Direction from which edge should be deleted. @direction can be LEFT or RIGHT.
 	 */
-	void removeEdgeVertexAdjacency(VertexPrototype *vertex, Edge *edge, int direction);
+	void removeEdgeVertexAdjacency(VertexPrototype *vertex, Edge *edge,
+			int direction);
 	void removeEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
 
 	/**
@@ -291,7 +306,8 @@ private:
 	 * @param edge Edge to add
 	 * @direction Direction from which edge is added to vertex. @direction can be LEFT or RIGHT.
 	 */
-	void addEdgeVertexAdjacency(VertexPrototype *vertex, Edge *edge, int direction);
+	void addEdgeVertexAdjacency(VertexPrototype *vertex, Edge *edge,
+			int direction);
 	void addEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
 public:
 
@@ -305,19 +321,18 @@ public:
 		return degrees[vertex][1];
 	}
 
-	virtual int degree(int vertexId, int direction){
+	virtual int degree(int vertexId, int direction) {
 		int index = directionToIndex(direction);
 		return degrees[vertexId][index];
 
 	}
-
 
 	/**
 	 *Method returns number of incoming edges for @vertex
 	 */
 	virtual int leftDegree(VertexPrototype *vertex);
 	virtual int leftDegree(int vertex) {
-			return degrees[vertex][0];
+		return degrees[vertex][0];
 	}
 
 	/**
@@ -338,7 +353,7 @@ public:
 		return longEdges[edgeRealId(edgeIds[vertex][number][0], longEdges)];
 	}
 
-	virtual Edge *neighbour(int vertex, int number, int direction){
+	virtual Edge *neighbour(int vertex, int number, int direction) {
 		int index = directionToIndex(direction);
 		assert(number < degrees[vertex][index]);
 		return longEdges[edgeRealId(edgeIds[vertex][number][index], longEdges)];
@@ -362,6 +377,23 @@ public:
 	 * @param edge edge to be deleted
 	 */
 	virtual void removeEdge(Edge *edge);
+
+	/**
+	 * Method returns start vertex of edge
+	 * @param edge to find start of
+	 */
+	virtual VertexPrototype *leftEnd(Edge *edge);
+
+	/**
+	 * Method returns end vertex of edge
+	 * @param edge to find end of
+	 */
+	virtual VertexPrototype *rightEnd(Edge *edge);
+
+	/**
+	 * Method returns start or finish of the edge depending on direction
+	 */
+	virtual VertexPrototype *end(Edge *edge, int direction);
 
 	/**
 	 * Method adds vertex to graph and updates all data stored in graph correspondingly. @newVertex is supposed
@@ -388,7 +420,6 @@ public:
 	 */
 	virtual Edge *concat(Edge *edge1, Edge *edge2);
 
-
 	/**
 	 * Method splits edge in two at given position
 	 * @param edge edge to be split
@@ -403,7 +434,8 @@ public:
 	 * @param vertex2 vertex to be removed
 	 * @return vertex which is @vertex1 glued to @vertex2. In this implementation it is @vertex1
 	 */
-	virtual VertexPrototype *glueVertices(VertexPrototype *vertex1, VertexPrototype *vertex2);
+	virtual VertexPrototype *glueVertices(VertexPrototype *vertex1,
+			VertexPrototype *vertex2);
 	virtual int glueVertices(int vertex1, int vertex2);
 
 	/**
