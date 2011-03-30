@@ -2,6 +2,7 @@
 #include "sequence.hpp"
 #include "constructHashTable.hpp"
 #include "graphio.hpp"
+LOGGER("p.constructHashTable");
 
 using namespace std;
 
@@ -17,29 +18,13 @@ ll lowerMask;
 ll upperMax;
 
 
-/*void testSequence(){
-	srand(239);
-	forn(i, 1000) {
-
-		ll ts = ((ll) rand()) * ((ll) rand());
-		//cerr << ts;
-		string s = decompress(ts, l);
-
-		Sequence* tst = new Sequence(s);
-		string ss = tst->Str();
-		assert (ss == s);
-		//cerr << s <<endl<< ss<<endl<<endl;
-
-	}
-}*/
 //toDo
 void initGlobal(){
 	upperMask = (((ll) 1) << (2 * k)) - 1;
 	lowerMask = (((ll) 1) << (2 * l)) - 1;
-
 	upperMax = ((ll) 1) << 46;
-
 }
+
 downSeqs clusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &lset) {
 	downSeqs res;
 	res.clear();
@@ -365,7 +350,7 @@ void constructTable( myMap &table) {
 		codeRead(lowerNuclRead, lowerRead);
 		processReadPair(table, upperRead, lowerRead);
 		if (!(count & (1024*128 - 1)))
-			cerr<<"read number "<<count<<" processed"<<endl;
+			INFO("read number "<<count<<" processed"<<endl);
 		count++;
 	}
 }
@@ -376,16 +361,12 @@ void outputTable(string outputFile, myMap &pairedTable) {
 	for (myMap::iterator iter = pairedTable.begin() ; iter != pairedTable.end(); iter++) {
 		pair<ll, pair<vector<ll>, vector<int>>> p = (*iter);
 		fprintf(outFile,"%lld %d\n", p.fi, p.se.fi.size());
-	//	cout << p.fi << " " << p.se.fi.size() << endl;
 		forn(i, p.se.fi.size()) {
 			fprintf(outFile,"%lld %d ", p.se.fi[i], p.se.se[i]);
-//			cout << p.se.fi[i] << " ";
-//			cout << p.se.se[i] << " ";
 		}
 		fprintf(outFile, "\n\n");
-//		cout << endl << endl;
 		if (!(j & (1024*128-1)))
-			cerr << j << endl;
+			DEBUG("Pair number" << j << endl);
 		j++;
 	}
 	pairedTable.clear();
@@ -424,22 +405,22 @@ int pairsToLmers(string inputFile, string outputFile) {
 		ok = fscanf(inFile, "%lld %d", &kmer, &lsize);
 		if (ok != 2) {
 			if (ok > 0) {
-				cerr<< "error in reads.";
+				ERROR("error in reads.");
 				break;
 			}
 			else {
-				cerr << "Finished!!";
+				INFO ("Lmers reading finished!!");
 				break;
 			}
 		}
 		if (lsize > MAXLMERSIZE) {
-			cerr << "TOO BIIIIG";
+			ERROR("TOO MUCH LMERS CORRESPONDING TO ONE k-mer");
 			return -2;
 		}
 
 		forn(i, lsize) {
 			if (fscanf(inFile, "%lld %d", &lmers[i], &covers[i]) != 2) {
-				cerr << "Error in pairsToSequences reading l-mers";
+				ERROR( "Error in pairsToSequences reading l-mers");
 				return -1;
 			}
 		}
@@ -474,7 +455,7 @@ void readLmersSet(string lmerFile, set<long long > & lset)
 int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
     int ok = 1;
-    cerr << endl << inputFile << endl;
+    INFO("PairsToSequences started");
     set<ll> lset;
     readLmersSet(lmerFile, lset);
     pair <ll,int> lmers[MAXLMERSIZE];
@@ -488,21 +469,21 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 		ok = fscanf(inFile, "%lld %d", &kmer, &lsize);
 		if (ok != 2) {
 			if (ok > 0) {
-				cerr<< "error in reads.";
+				ERROR ("error in reads");
 				assert(0);
 			}
 			else
-				cerr << "Finished!!";
+				INFO ( "Finished!!");
 			break;
 		}
 		if (lsize > MAXLMERSIZE) {
-			cerr << "TOO BIIIIG";
+			ERROR ("TO much lmers" ) ;
 			return -2;
 		}
 
 		forn(i, lsize) {
 			if (fscanf(inFile, "%lld %d", &lmers[i].first, &lmers[i].second) != 2) {
-				cerr << "Error in pairsToSequences reading l-mers";
+				ERROR("Error in pairsToSequences reading l-mers");
 				return -1;
 			}
 		}
@@ -521,9 +502,8 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 		}
 #endif
 		forn(i, clsize) {
-			assert(l == 31);
 			outstring = clusters[i].first->str();
-			assert(outstring.size() >= 31);
+			assert(outstring.size() >= l);
 			fprintf(outFile, "%s %d ",outstring.c_str(),clusters[i].second);
 		}
 		fprintf(outFile, "\n");
@@ -532,9 +512,9 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 #endif
 		//	return 0;
 		if (!(count & ((1 << 15) - 1) ))
-			cerr<< "k-sequence pairs for k "<< count <<" generated" <<endl;
+			DEBUG("k-sequence pairs for k "<< count <<" generated" <<endl);
 	}
-	cerr<<"finished";
+	INFO("finished");
 	fclose(outFile);
 	fclose(inFile);
 	return 0;

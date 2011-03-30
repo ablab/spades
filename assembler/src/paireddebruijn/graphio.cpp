@@ -249,6 +249,7 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, string fileName) {
 
 DataReader::DataReader(char *fileName) {
 	f_ = fopen(fileName, "r");
+	cerr << endl << fileName << endl;
 	assert(f_ != NULL);
 }
 
