@@ -254,7 +254,10 @@ void PairedGraph::removeEdge(Edge *edge) {
 
 	}
 	cerr << "delete ";
-	edge->clearData();
+	longEdges.erase(edge->EdgeId);
+	delete edge;
+//	edge->clearData();
+//	edge->EdgeId = -1;
 	cerr << " ok " << endl;
 }
 
@@ -341,8 +344,8 @@ pair<Edge *, Edge *> PairedGraph::splitEdge(Edge *edge, int position,
 	}
 //	Sequence *vertexUpper = new Sequence(
 //			edge->upper->Subseq(realPosition, realPosition + k - 1));
-	Sequence *vertexLower = new Sequence(
-			edge->lower->Subseq(position, realPosition + l - 1));
+//	Sequence *vertexLower = new Sequence(
+//			edge->lower->Subseq(position, realPosition + l - 1));
 	int newVertex = addVertex();
 //	Sequence *upper1 = new Sequence(
 //			edge->upper->Subseq(0, realPosition + k - 1));
@@ -353,7 +356,7 @@ pair<Edge *, Edge *> PairedGraph::splitEdge(Edge *edge, int position,
 //	Sequence *lower2 = new Sequence(
 //			edge->lower->Subseq(position, edge->lower->size()));
 	Edge *edge1 = subEdge(edge, 0, realPosition, edge->FromVertex, newVertex);
-	Edge *edge2 = subEdge(edge, realPosition, edge->length, edge->FromVertex, newVertex);
+	Edge *edge2 = subEdge(edge, realPosition, edge->length, newVertex, edge->ToVertex);
 	removeEdge(edge);
 	addEdge(edge1);
 	addEdge(edge2);
