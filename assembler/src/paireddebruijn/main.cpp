@@ -105,32 +105,18 @@ void run() {
 		sprintf(str, "data/paireddebruijn/afterLowerGraph.txt");
 		save(str,graph);
 	}
-	cerr << "\n extractDefinit RIGHT Start \n";
+	cerr << "\n extractDefinite RIGHT Start \n";
 	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 	extractDefinite(graph, RIGHT);
 	outputLongEdges(graph.longEdges, graph,  "data/paireddebruijn/afterExtractDefinite1.dot");
+//	outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExtractDefinite1_g.dot");
 
-	cerr << "\n extractDefinit LEFT Start \n";
+	cerr << "\n extractDefinite LEFT Start \n";
 		graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 		extractDefinite(graph, LEFT);
 		outputLongEdges(graph.longEdges, graph,  "data/paireddebruijn/afterExtractDefinite2.dot");
+		//outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExtractDefinite2_g.dot");
 
-	cerr << "\n extractDefinit LEFT Start \n";
-		graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
-		extractDefinite(graph, LEFT);
-		outputLongEdges(graph.longEdges, graph,  "data/paireddebruijn/afterExtractDefinite3.dot");
-
-	/*	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
-	extractDefinite(graph.longEdges , graph, graph.VertexCount, 1);
-	outputLongEdges(graph.longEdges,  "data/afterExtractDefinite1.dot");
-	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
-	outputLongEdges(graph.longEdges, graph, "data/afterExtractDefinite2.dot");
-
-	extractDefinite(graph.longEdges , graph, graph.VertexCount, 0);
-	outputLongEdges(graph.longEdges,  "data/afterExtractDefinite3.dot");
-	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
-	outputLongEdges(graph.longEdges, graph, "data/afterExtractDefinite4.dot");
-*/
 
 	cerr << "\n Finished";
 	INFO("Finished");
@@ -139,8 +125,7 @@ void run() {
 
 
 int main() {
-	init();
-/*	freopen(error_log.c_str(), "w",stderr);
+	/*	freopen(error_log.c_str(), "w",stderr);
 	char str[100];
 	sprintf(str, "data/paireddebruijn/tracedGraph.txt");
 	load(str,graph);

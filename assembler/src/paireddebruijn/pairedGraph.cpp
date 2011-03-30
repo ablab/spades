@@ -152,6 +152,9 @@ void PairedGraph::removeEdgeVertexAdjacency(VertexPrototype *vertex,
 }
 
 void PairedGraph::removeEdgeVertexAdjacency(int vertex, Edge *edge, int direction) {
+
+	cerr<<"removeEdgeVertexAdjacency for vert "<<vertex<<endl;
+	cerr<<"check vertexList "<<vertexList_[vertex]->VertexId<<endl;
 	removeEdgeVertexAdjacency(vertexList_[vertex], edge, direction);
 //	cerr<<"removeEdgeVertexAjacency vert "<<vertex<<" edge "<<edge->EdgeId<<" dir "<<direction<<endl;
 //	int index = directionToIndex(direction);
@@ -285,7 +288,11 @@ VertexPrototype *PairedGraph::addVertex(VertexPrototype *vertex) {
 	VertexCount++;
 	return vertex;
 }
+
 int PairedGraph::addVertex() {
+	ERROR("old addVertex used");
+	assert(0);
+//	VertexPrototype *vert = new VertexPrototype();
 	degrees[VertexCount][0] = 0;
 	degrees[VertexCount][1] = 0;
 	VertexCount++;
