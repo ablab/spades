@@ -1,6 +1,5 @@
 #ifndef GRAPHCONSTRUCTION_H_
 #define GRAPHCONSTRUCTION_H_
-#include "simpleGraph.hpp"
 #include "pairedGraph.hpp"
 #include "common.hpp"
 #include "graphVisualizer.hpp"
