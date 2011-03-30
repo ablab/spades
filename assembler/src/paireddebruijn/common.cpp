@@ -40,7 +40,12 @@ void initConstants(string ini_file) {
 	assert(fscanf(ini, "work_folder = %s\n" , tmp) == 1);
 	string folder = string(tmp) + '/';
 	assert(fscanf(ini, "distance_type = %s\n" , tmp) == 1);
-	string suff = ("_" + string(tmp));
+	string suff("_");
+	suff += readLength;
+	suff += "_" ;
+	suff += insertLength;
+	suff += "_";
+	suff += string(tmp);
 	char topr[20];
 	sprintf(topr, "_%d_%d",k, l);
 	suff += topr;
@@ -53,13 +58,10 @@ void initConstants(string ini_file) {
 	parsed_l_mers = folder + string(tmp) + suff + ".txt";
 	assert(fscanf(ini, "parsed_k_sequence = %s\n" , tmp) == 1);
 	parsed_k_sequence = folder + string(tmp) + suff + ".txt";
-	cerr << parsed_reads;
 	assert(fscanf(ini, "compressed_graph = %s\n" , tmp) == 1);
 	graph_file = folder + string(tmp) + suff + ".dot";
 	assert(fscanf(ini, "intermediate_graph = %s\n" , tmp) == 1);
 	graph2 = folder + string(tmp) + suff + ".dot";
-	assert(fscanf(ini, "threaded_graph = %s\n" , tmp) == 1);
-	threaded_graph = folder + string(tmp) + suff + ".dot";
 	assert(fscanf(ini, "error_log = %s\n" , tmp) == 1);
 	error_log = folder + string(tmp);
 	assert(fscanf(ini, "Run:\n") == 0);
