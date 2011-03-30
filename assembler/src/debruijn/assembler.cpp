@@ -26,8 +26,8 @@
 using namespace std;
 
 // input files:
-#define filename1 "./data/MG1655-K12_emul1.fasta.gz"
-#define filename2 "./data/MG1655-K12_emul2.fasta.gz"
+#define filename1 "./data/input/MG1655-K12_emul1.fastq.gz"
+#define filename2 "./data/input/MG1655-K12_emul2.fastq.gz"
 //#define filename1 "./test/data/s_6_1.fastq.gz"
 //#define filename2 "./test/data/s_6_2.fastq.gz"
 
@@ -38,17 +38,19 @@ int main(int argc, char *argv[]) {
 	// read all 'read's
 
 	cerr << "Reading " << filename1 << " and " << filename2 << "..." << endl;
-	std::string filenames[2] = {filename1, filename2};
-	ireadstream<R, 2, int> irs(filenames);
-	vector<mate_read<R, int>::type> *v = irs.readAll(600000/*30000*/); // read not all `reads` (for faster debug)
-	irs.close();
-	cerr << "Total reads (mate, without Ns): " << v->size() << endl;
+	vector<Read> *v1 = ireadstream::readAll(filename1, 10000);
+	vector<Read> *v2 = ireadstream::readAll(filename2, 10000);
+	assert(v1->size() == v2->size());
+	cerr << "Total reads (mate, with Ns): " << v1->size() << endl;
 	cerr << "Current time: " << (time(NULL) - now) << " sec." << endl;
 
 	// construct graph
 
 	DeBruijn<K> debruijn;
-	debruijn.ConstructGraph(*v);
+	debruijn.ConstructGraph(*v1);
+	debruijn.ConstructGraph(*v2);
+	delete v1;
+	delete v2;
 	condensed_graph::CondenseConstructor<K> g_c(debruijn);
 
 	condensed_graph::CondensedGraph *g;
@@ -62,7 +64,7 @@ int main(int argc, char *argv[]) {
 	gv.Visualize(*g);
 	filestr.close();
 
-	condensed_graph::DFS dfs(g);
+	condensed_graph::DFS dfs(*g);
 	condensed_graph::SimpleStatCounter stat_c;
 	dfs.Traverse(stat_c);
 	cerr << "Vertex count=" << stat_c.v_count() << "; Edge count="

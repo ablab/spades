@@ -4,10 +4,10 @@
 #include "seqTest.hpp"
 #include "sequenceTest.hpp"
 #include "ireadstreamTest.hpp"
-#include "quality_read_stream.hpp"
+//#include "quality_read_stream.hpp"
 #include "nuclTest.hpp"
-#include "ifaststreamTest.hpp"
-#include "qualTest.hpp"
+//#include "ifaststreamTest.hpp"
+#include "qualityTest.hpp"
 #include "onlineGraphVisualizerTest.hpp"
 //#include "offlineGraphVisualizerTest.hpp"
 #include "similarTest.hpp"
@@ -19,9 +19,9 @@ void runSuite() {
 	 //TODO add your test here
 	 s += SeqSuite();
 	 s += SequenceSuite();
-	 s += QualSuite();
+	 s += QualitySuite();
 	 s += NuclSuite();
-	 s += IFastaStreamSuite();
+	 //s += IFastaStreamSuite();
 	 s += IReadStreamSuite();
 	 s += onlineGraphVisualizerSuite();
 //	 s += offlineGraphVisualizerSuite();

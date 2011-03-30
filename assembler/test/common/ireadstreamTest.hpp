@@ -1,72 +1,49 @@
 /*
- * parserTest.hpp
+ * ifastqstreamTest.cpp
  *
- *  Created on: 02.03.2011
+ *  Created on: 03.03.2011
  *      Author: vyahhi
  */
 
 #include "cute.h"
 #include "ireadstream.hpp"
-#include "quality_read_stream.hpp"
 
-static string files[] = {"./test/data/s_6_1.fastq.gz", "./test/data/s_6_2.fastq.gz"};
+void TestIReadStreamNoFile() {
+	ireadstream ifs("./no-file");
+	ASSERT(!ifs.is_open());
+}
 
-void TestIReadStream() {
-	ireadstream<100,2,short> irs(files);
-	strobe_read<100,2,short> sr;
-	mate_read<100,short>::type mr;
-	irs >> sr >> mr;
-	ASSERT_EQUAL("CATTATTAGGGATGATTGTGACCCGCGTCAGACCAATCAAATTCGCCAGCGTTTCCACGGGTTTTAGATGACCATAGTGCACCGGATCAAAGGTGCCGCC", sr[0].str());
-	ASSERT_EQUAL("ATTACGGTCAGTCAGTGTGGGCAGAGCTGGAAGGGTTATCTCTTCTGTTGTGCCATAAACCCCTGGCGGACGTATTTATCGACGGTTGATATGTAATCTT", sr[1].str());
-	ASSERT_EQUAL("GCAGTAAAGCTATCATGGCAGAATCATTTGCAACTGGTTCCGATCATCAGGTTGTAAACGAGCTCAACGGGGAAAGACTGAGAGAACCAAACGACGTTTT", mr[0].str());
-	ASSERT_EQUAL("GGCCAACGTTAATTTTGTTACCGACTAAAGTAGAAACTATTTCTTTTAGATGGTCGCATTTATATTTTGCATCGTCCACTTGAAAATCATATCTTATTGC", mr[1].str());
+void TestIReadStreamSingleRead() {
+	ireadstream ifs("./test/data/s_6_1.fastq.gz");
+	ASSERT(ifs.is_open());
+	Read r;
+	ifs >> r;
+	ASSERT_EQUAL("EAS20_8_6_1_2_768/1", r.getName());
+	ASSERT_EQUAL("CAGCACAGAGGATATCGCTGTTACANNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN", r.getSequence());
+	//ASSERT_EQUAL("HGHIHHHGHECHHHHHHHGGHHHHH###########################################################################", r.getQuality());
+	ifs >> r;
+	ASSERT_EQUAL("EAS20_8_6_1_2_1700/1", r.getName());
+	ASSERT_EQUAL("CTTGGTGCGGAACTGAAAAGTGGTANNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN", r.getSequence());
+	//ASSERT_EQUAL("GGGGCGGGGEGGGGGBGAGF:CCCC###########################################################################", r.getQuality());
 }
 
 void TestIReadStreamFull() {
-	ireadstream<100,2,short> irs(files);
-	mate_read<100,short>::type mr;
-	while (!irs.eof()) {
-		irs >> mr;
+	ireadstream ifs("./test/data/s_6_1.fastq.gz");
+	ASSERT(ifs.is_open());
+	Read r;
+	while (!ifs.eof()) {
+		ifs >> r;
 	}
-	irs.close();
-	ASSERT_EQUAL("CATACGGGTTTCCGCCAGTTTTTCCATGCCGCGATGGACGTAGAACAGACGGTAGTCGGCGTCGATAATGTTTTCGCCATCGACGCACAGACGGAAGTGG", mr[0].str());
-	ASSERT_EQUAL("CGTCCGGCACCGACCACCGATGCTGAAACCTACGAGTTCATCAACGAACTGGGCGACAAGAAAAACAACGTCGTGCCGATTGGTCCGCTGCACGTCACTT", mr[1].str());
+	ifs.close();
+	ASSERT_EQUAL("TEST/1", r.getName());
+	ASSERT_EQUAL("CATACGGGTTTCCGCCAGTNTTTCCATGCCGCGATGGACGTAGAACAGACGGTAGTCGGCGTCGATAATGTTTTCGCCATCGACGCACAGACGGAAGTGG", r.getSequence());
+	//ASSERT_EQUAL("HHHGHHGIHIHHEHHHHHGHHHHHHHHGHEHHHHDHAHHHA?HFHEFHEHHHGHGGHGG@B2BEBEF=HHGEEA:C?CCD?B@EF/4=2<4188.?BA5=", r.getQuality());
 }
-
-void TestIReadStreamReset() {
-	ireadstream<100,2,short> irs(files);
-	strobe_read<100,2,short> sr;
-	mate_read<100,short>::type mr;
-	while (!irs.eof()) {
-		irs >> mr;
-	}
-	irs.reset();
-	irs >> sr >> mr;
-	ASSERT_EQUAL("CATTATTAGGGATGATTGTGACCCGCGTCAGACCAATCAAATTCGCCAGCGTTTCCACGGGTTTTAGATGACCATAGTGCACCGGATCAAAGGTGCCGCC", sr[0].str());
-	ASSERT_EQUAL("ATTACGGTCAGTCAGTGTGGGCAGAGCTGGAAGGGTTATCTCTTCTGTTGTGCCATAAACCCCTGGCGGACGTATTTATCGACGGTTGATATGTAATCTT", sr[1].str());
-	ASSERT_EQUAL("GCAGTAAAGCTATCATGGCAGAATCATTTGCAACTGGTTCCGATCATCAGGTTGTAAACGAGCTCAACGGGGAAAGACTGAGAGAACCAAACGACGTTTT", mr[0].str());
-	ASSERT_EQUAL("GGCCAACGTTAATTTTGTTACCGACTAAAGTAGAAACTATTTCTTTTAGATGGTCGCATTTATATTTTGCATCGTCCACTTGAAAATCATATCTTATTGC", mr[1].str());
-}
-
-//void TestQuality1() {
-//	QualityReadStream qrs("./test/data/s_6_1.fastq.gz");
-//	while (!qrs.eof()) {
-//		pair<Sequence, vector<int> > pair = qrs.Next();
-//		Sequence s = pair.first;
-//		vector<int> q = pair.second;
-//		cout << s.str() << endl;
-//		for (size_t i = 0; i < q.size(); ++i) {
-//			cout << q[i] << " ";
-//		}
-//		cout << endl;
-//	}
-//}
 
 cute::suite IReadStreamSuite(){
 	cute::suite s;
-	s.push_back(CUTE(TestIReadStream));
+	s.push_back(CUTE(TestIReadStreamNoFile));
+	s.push_back(CUTE(TestIReadStreamSingleRead));
 	s.push_back(CUTE(TestIReadStreamFull));
-	s.push_back(CUTE(TestIReadStreamReset));
-//	s.push_back(CUTE(TestQuality1));
 	return s;
 }

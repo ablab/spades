@@ -6,7 +6,7 @@
 #include <time.h>
 #include "cuckoo.hpp"
 
-void CuckooTest() {
+void TestCuckoo() {
 	struct Hasher {
 		size_t operator()(int value, int hash_num) {
 			long k = 1;
@@ -27,8 +27,6 @@ void CuckooTest() {
 
 cute::suite CuckooSuite() {
 	cute::suite s;
-	s.push_back(CUTE(TestIFastaStreamNoFile));
-	s.push_back(CUTE(TestIFastaStreamSingleRead));
-	s.push_back(CUTE(TestIFastaStreamFull));
+	s.push_back(CUTE(TestCuckoo));
 	return s;
 }

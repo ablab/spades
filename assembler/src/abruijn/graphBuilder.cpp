@@ -134,30 +134,42 @@ void condenseA() {
 void GraphBuilder::build() {
 	initH();
 	std::string file_names[2] = {INPUT_FILES};
-	ireadstream<MPSIZE, 2> inputStream(file_names);
+	vector<Read> *v1 = ireadstream::readAll(file_names[0]); // can be changes with ireadstream::operator>> to save some RAM :)
+	vector<Read> *v2 = ireadstream::readAll(file_names[1]);
+//	ireadstream<MPSIZE, 2> inputStream(file_names);
 
 	INFO("Processing-A...");
-	mate_read<MPSIZE>::type mp;
-	for (int i = 0; !inputStream.eof() && i < CUT; i++) {
-		inputStream >> mp;
-		processReadA(mp[0]);
-		processReadA(mp[1]);
+	//mate_read<MPSIZE>::type mp;
+	for (size_t i = 0; i < v1->size() && i < CUT; i++) {
+		//inputStream >> mp;
+		if (!(*v1)[i].isValid() || !(*v2)[i].isValid()) {
+			continue;
+		}
+		processReadA((*v1)[i]);
+		processReadA((*v2)[i]);
 		VERBOSE(i, " reads read");
 	}
-	inputStream.reset();
+	//inputStream.reset();
+	delete v1;
+	delete v2;
 	INFO("processReadA done: " << goodHashes.size() << " vertex-painputStream");
 
 	INFO("Selecting good kmers...");
 	selectGood();
 
 	INFO("Processing-B...");
-	for (int i = 0; !inputStream.eof() && i < CUT; i++) {
-		inputStream >> mp;
-		processReadB(mp[0]);
-		processReadB(mp[1]);
+	for (size_t i = 0; i < v1->size() && i < CUT; i++) {
+		//inputStream >> mp;
+		if (!(*v1)[i].isValid() || !(*v2)[i].isValid()) {
+			continue;
+		}
+		processReadB((*v1)[i]);
+		processReadB((*v2)[i]);
 		VERBOSE(i, " reads processed");
 	}
-	inputStream.close();
+	//inputStream.close();
+	delete v1;
+	delete v2;
 
 	INFO("Condensing-A graph...");
 	condenseA();

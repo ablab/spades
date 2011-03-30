@@ -10,7 +10,7 @@
 
 #include "read_generator.hpp"
 #include "condensed_graph_constructor.hpp"
-#include "ifaststream.hpp"
+#include "ireadstream.hpp"
 #include <algorithm>
 
 #define filename "./data/input/MG1655-K12.fasta.gz"
@@ -26,10 +26,9 @@ namespace condensed_graph {
 vector<strobe_read<R> > GenerateReadsWithMistakes() {
 	INFO("Reading " << filename);
 
-	ifaststream stream(filename);
-	string name;
-	string nucl_str;
-	stream >> name >> nucl_str;
+	ireadstream stream(filename);
+	Read r;
+	stream >> r;
 
 	INFO("Closing " << filename);
 	stream.close();
