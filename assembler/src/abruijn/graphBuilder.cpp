@@ -134,8 +134,8 @@ void condenseA() {
 void GraphBuilder::build() {
 	initH();
 	std::string file_names[2] = {INPUT_FILES};
-	vector<Read> *v1 = ireadstream::readFirstN(file_names[0]); // can be changes with ireadstream::operator>> to save some RAM :)
-	vector<Read> *v2 = ireadstream::readFirstN(file_names[1]);
+	vector<Read> *v1 = ireadstream::readAll(file_names[0]); // can be changes with ireadstream::operator>> to save some RAM :)
+	vector<Read> *v2 = ireadstream::readAll(file_names[1]);
 //	ireadstream<MPSIZE, 2> inputStream(file_names);
 
 	INFO("Processing-A...");

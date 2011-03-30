@@ -15,7 +15,7 @@ using namespace bayes_quality;
 
 void processQualityReads(const char *filename, BayesQualityGenome & bqg) {
 	
-	vector<Read> *vec = ireadstream::readFirstN(filename, PROCESS_READS);
+	vector<Read> *vec = ireadstream::readAll(filename, PROCESS_READS);
 	bqg.ProcessReads(*vec);
 	delete vec;
 	

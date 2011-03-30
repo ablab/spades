@@ -44,7 +44,7 @@ public:
 		return eof_;
 	}
 
-	static vector<Read>* readFirstN(string filename, int cnt = -1) {
+	static vector<Read>* readAll(string filename, int cnt = -1) {
 		ireadstream irs(filename);
 		assert(irs.is_open());
 		vector<Read>* res = new vector<Read>();

@@ -38,8 +38,8 @@ int main(int argc, char *argv[]) {
 	// read all 'read's
 
 	cerr << "Reading " << filename1 << " and " << filename2 << "..." << endl;
-	vector<Read> *v1 = ireadstream::readFirstN(filename1, 10000);
-	vector<Read> *v2 = ireadstream::readFirstN(filename2, 10000);
+	vector<Read> *v1 = ireadstream::readAll(filename1, 10000);
+	vector<Read> *v2 = ireadstream::readAll(filename2, 10000);
 	assert(v1->size() == v2->size());
 	cerr << "Total reads (mate, with Ns): " << v1->size() << endl;
 	cerr << "Current time: " << (time(NULL) - now) << " sec." << endl;
