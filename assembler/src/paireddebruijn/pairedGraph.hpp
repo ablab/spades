@@ -195,7 +195,7 @@ public:
 	//add adjecent edges should be removed as well
 	virtual void removeVertex(tVertex vertex) = 0;
 	virtual tEdge concat(tEdge edge1, tEdge edge2) = 0;
-	virtual pair<tEdge, tEdge> splitEdge(tEdge edge, int position) = 0;
+	virtual pair<tEdge, tEdge> splitEdge(tEdge edge, int position, int direction) = 0;
 
 	virtual tVertex glueVertices(tVertex vertex1, tVertex vertex2) = 0;
 	//glue edges, there start and end vertices
@@ -395,7 +395,7 @@ public:
 	 * @param position position to split edge. Can not be less or equal to 0 or larger or equal than length of
 	 * @return Two edges created
 	 */
-	virtual pair<Edge *, Edge *> splitEdge(Edge *edge, int position);
+	virtual pair<Edge *, Edge *> splitEdge(Edge *edge, int position, int direction = RIGHT);
 
 	/**
 	 * Method transfers all connections of @vertex2 to @vertex1 and removes @vertex2

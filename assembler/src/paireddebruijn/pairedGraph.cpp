@@ -304,27 +304,56 @@ Edge *PairedGraph::concat(Edge *edge1, Edge *edge2) {
 	return edge;
 }
 
-pair<Edge *, Edge *> PairedGraph::splitEdge(Edge *edge, int position) {
+pair<Edge *, Edge *> PairedGraph::splitEdge(Edge *edge, int position, int direction) {
 	assert(position > 0 && position < edge->length);
-	Sequence *vertexUpper = new Sequence(
-			edge->upper->Subseq(position, position + k - 1));
-	Sequence *vertexLower = new Sequence(
-			edge->lower->Subseq(position, position + k - 1));
-	VertexPrototype *newVertex = addVertex(new VertexPrototype(vertexLower, 0));
-	Sequence *upper1 = new Sequence(edge->upper->Subseq(0, position + k - 1));
-	Sequence *upper2 = new Sequence(
-			edge->upper->Subseq(position, edge->length + k - 1));
-	Sequence *lower1 = new Sequence(edge->lower->Subseq(0, position + k - 1));
-	Sequence *lower2 = new Sequence(
-			edge->lower->Subseq(position, edge->length + k - 1));
-	Edge *edge1 = new Edge(upper1, lower1, edge->FromVertex,
-			newVertex->VertexId, position, 0, edge->coverage);
-	Edge *edge2 = new Edge(upper2, lower2, newVertex->VertexId, edge->ToVertex,
-			edge->length - position, 0, edge->coverage);
-	removeEdge(edge);
-	addEdge(edge1);
-	addEdge(edge2);
-	return make_pair(edge1, edge2);
+//todo: Possible it can be simplified!
+
+	if (direction == RIGHT){
+		Sequence *vertexUpper = new Sequence(
+				edge->upper->Subseq(position, position + k - 1));
+		Sequence *vertexLower = new Sequence(
+				edge->lower->Subseq(position, position + l - 1));
+		VertexPrototype *newVertex = addVertex(new VertexPrototype(vertexLower, 0));
+		Sequence *upper1 = new Sequence(edge->upper->Subseq(0, position + k - 1));
+		Sequence *upper2 = new Sequence(
+				edge->upper->Subseq(position, edge->length + k - 1));
+		Sequence *lower1 = new Sequence(edge->lower->Subseq(0, position + l - 1));
+		Sequence *lower2 = new Sequence(
+				edge->lower->Subseq(position, edge->length + l - 1));
+		Edge *edge1 = new Edge(upper1, lower1, edge->FromVertex,
+				newVertex->VertexId, position, 0, edge->coverage);
+		Edge *edge2 = new Edge(upper2, lower2, newVertex->VertexId, edge->ToVertex,
+				edge->length - position, 0, edge->coverage);
+		removeEdge(edge);
+		addEdge(edge1);
+		addEdge(edge2);
+		return make_pair(edge1, edge2);
+	}
+	else if (direction == LEFT){
+		Sequence *vertexUpper = new Sequence(
+				edge->upper->Subseq(edge->upper->size() - k + 1));
+		Sequence *vertexLower = new Sequence(
+				edge->lower->Subseq(edge->lower->size() - l + 1));
+		VertexPrototype *newVertex = addVertex(new VertexPrototype(vertexLower, 0));
+		Sequence *upper1 = new Sequence(edge->upper->Subseq(edge->upper->size() - position - k + 1));
+		Sequence *upper2 = new Sequence(
+				edge->upper->Subseq(0, edge->upper->size() - position));
+		Sequence *lower1 = new Sequence(edge->lower->Subseq(edge->lower->size() - position - l + 1));
+		Sequence *lower2 = new Sequence(
+				edge->lower->Subseq(0, edge->lower->size() - position));
+		Edge *edge1 = new Edge(upper1, lower1, newVertex->VertexId, edge->ToVertex,
+				 position, 0, edge->coverage);
+		Edge *edge2 = new Edge(upper2, lower2, edge->FromVertex, newVertex->VertexId,
+				edge->length - position, 0, edge->coverage);
+		removeEdge(edge);
+		addEdge(edge1);
+		addEdge(edge2);
+		return make_pair(edge1, edge2);
+
+	}
+	else {ERROR("Incorrect direction in split edge!"); assert(0); };
+
+
 }
 
 VertexPrototype *PairedGraph::glueVertices(VertexPrototype *vertex1,

@@ -105,10 +105,20 @@ void run() {
 		sprintf(str, "data/paireddebruijn/afterLowerGraph.txt");
 		save(str,graph);
 	}
-	cerr << "\n extractDefinit Start \n";
+	cerr << "\n extractDefinit RIGHT Start \n";
 	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 	extractDefinite(graph, RIGHT);
-	outputLongEdges(graph.longEdges,  "data/paireddebruijn/afterExtractDefinite1.dot");
+	outputLongEdges(graph.longEdges, graph,  "data/paireddebruijn/afterExtractDefinite1.dot");
+
+	cerr << "\n extractDefinit LEFT Start \n";
+		graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+		extractDefinite(graph, LEFT);
+		outputLongEdges(graph.longEdges, graph,  "data/paireddebruijn/afterExtractDefinite2.dot");
+
+	cerr << "\n extractDefinit LEFT Start \n";
+		graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+		extractDefinite(graph, LEFT);
+		outputLongEdges(graph.longEdges, graph,  "data/paireddebruijn/afterExtractDefinite3.dot");
 
 	/*	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 	extractDefinite(graph.longEdges , graph, graph.VertexCount, 1);
