@@ -10,12 +10,12 @@
 LOGGER("b");
 
 #define SKIP_READS 6
-#define PROCESS_READS 5
+#define PROCESS_READS 25
 
 using namespace bayes_quality;
 
 void processQualityReads(const char *filename, BayesQualityGenome & bqg) {
-	
+		
 	vector<Read> *vec = ireadstream::readAll(filename, PROCESS_READS);
 	vector<Read> tmpvec; for (size_t i=0; i < PROCESS_READS; ++i) tmpvec.push_back(vec->at(i));
 	bqg.ProcessReads(tmpvec);

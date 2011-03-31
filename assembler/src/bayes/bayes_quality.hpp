@@ -25,6 +25,10 @@ typedef vector<float> QVector;
 typedef pair<Sequence, QVector> QRead;
 
 
+// write a file with statistics
+#define WRITE_STATSFILE
+#define STATSFILENAME "readstats.txt"
+
 // quality value of an insertion in the read
 #define INSERT_Q 32
 
@@ -64,7 +68,7 @@ typedef tr1::unordered_map<PSeq, pair<size_t, size_t>, PSeq::hash, PSeq::equal_t
 // if INS>1 or DEL>1, this approach may lead to errors
 #define USE_LOOKAHEAD
 #define LA_SIZE 25
-#define LA_ERRORS 10
+#define LA_ERRORS 7
 typedef Seq<LA_SIZE> LASeq;
 
 
@@ -112,7 +116,7 @@ private:
 	float AddThreeQualityValues(float diagq, float leftq, float rightq);
 
 	// simple match for the lookahead
-	int simpleMatch(const Sequence & seq, const LASeq & gen, size_t shift);
+	int simpleMatch(const LASeq & seq, const LASeq & gen);
 
 	/**
 	 * process one read, store all results in the corresponding fields, return total likelihood
