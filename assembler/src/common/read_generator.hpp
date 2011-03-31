@@ -10,7 +10,25 @@
 #define MAX_PROBABILITY 10000
 using namespace std;
 
-template<int size, int cnt = 1, typename T = int>
+class SmoothPositionChooser {
+public:
+	static int choosePosition(int currentReadNumber, int readNumber, int minPosition,
+			int maxPosition) {
+		return minPosition + (maxPosition - minPosition) * currentReadNumber
+				/ (readNumber - 1);
+	}
+};
+
+class RandomPositionChooser {
+public:
+	static int choosePosition(int currentReadNumber, int readNumber, int minPosition,
+			int maxPosition) {
+		return minPosition + rand() % (maxPosition - minPosition + 1);
+	}
+};
+
+template<int size, int cnt = 1, typename T = int,
+		typename PositionChooser = SmoothPositionChooser>
 class ReadGenerator {
 private:
 	//	vector<ifaststream*> ifs_;
@@ -35,6 +53,7 @@ public:
 		insertLength_ = insert;
 		coverage_ = coverage;
 		readNumber_ = coverage * genome_.size() / (size * cnt);
+		currentReadNumber_ = 0;
 		readingStarted_ = false;
 		setErrorProbability(0);
 		setMaxInsertLengthError(0);
@@ -58,7 +77,7 @@ public:
 	}
 
 	void setErrorProbability(double probability) {
-		setErrorProbability((int)(probability * MAX_PROBABILITY));
+		setErrorProbability((int) (probability * MAX_PROBABILITY));
 	}
 
 	void setErrorProbability(int probability) {
@@ -91,7 +110,6 @@ public:
 		}
 		if (!readingStarted_) {
 			readingStarted_ = true;
-			currentReadNumber_ = 0;
 			read_ahead();
 		}
 		sr = next_sr_;
@@ -145,11 +163,12 @@ private:
 	}
 
 	bool read(strobe_read<size, cnt, T> &sr) {
-		//		cout << currentPosition << endl;
+//				cout << currentReadNumber_ << " " << readNumber_ << endl;
 		if (!is_open() || eof()) {
 			return false;
 		}
-		int p = minPosition_ + (maxPosition_ - minPosition_) * currentReadNumber_ / (readNumber_ - 1);
+		int p = PositionChooser::choosePosition(currentReadNumber_,
+				readNumber_, minPosition_, maxPosition_);
 		for (int i = 0; i < cnt; i++) {
 			int positionError = rand() % (2 * insertError_ + 1) - insertError_;
 			string readString = genome_.substr(p + positionError, size);
