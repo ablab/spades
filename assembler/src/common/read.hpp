@@ -53,6 +53,13 @@ public:
 		assert(is_nucl(seq_[i]));
 		return dignucl(seq_[i]);
 	}
+	void trimNs() {
+		size_t index = seq_.find('N');
+		if (index != string::npos) {
+			seq_.erase(seq_.begin() + index, seq_.end());
+			qual_.erase(qual_.begin() + index, qual_.end());
+		}
+	}
 	Read() {
 		;
 	}
