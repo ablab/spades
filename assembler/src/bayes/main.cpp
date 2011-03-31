@@ -3,13 +3,14 @@
 #include "bayes_quality.hpp"
 //#include "quality_read_stream.hpp"
 #include "ireadstream.hpp"
+#include "ifaststream.hpp"
 #include "read.hpp"
 #include "quality.hpp"
 
 LOGGER("b");
 
 #define SKIP_READS 6
-#define PROCESS_READS 5000
+#define PROCESS_READS 5
 
 using namespace bayes_quality;
 
@@ -38,11 +39,11 @@ int main() {
 	
 
 	//ireadstream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta.gz");
-	ireadstream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta");
-	Read r;
-	ifs >> r;
-	INFO("hello");
-	BayesQualityGenome bqg(r.getSequenceString().data());
+	ifaststream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta");
+	string name, genome;
+	ifs >> name >> genome;
+	INFO("!" << name);
+	BayesQualityGenome bqg(genome.data());
 
 	processQualityReads("/home/student/nikolenko/python/bayesQuality/s_6_1.fastq.gz", bqg);
 	
