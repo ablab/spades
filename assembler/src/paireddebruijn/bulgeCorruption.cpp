@@ -25,7 +25,7 @@ int hamming(Sequence &s1, Sequence &s2) {
 	return result;
 }
 
-bool similar(Edge e1, Edge e2, int bound, int maxLength) {
+bool similar(Edge e1, Edge e2, int bound, size_t maxLength) {
 	return e1.upper->size() == e2.upper->size() && e1.upper->size()
 			<= maxLength && hamming(*(e1.upper), *(e2.upper)) + hamming(
 			*(e1.lower), *(e2.lower)) <= bound;

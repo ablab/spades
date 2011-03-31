@@ -86,12 +86,12 @@ public:
 		if (newRight.length > 0) {
 			length = length + newRight.length;
 			string toOut = newRight.upper->str();
-			assert(k-1 < toOut.length());
+			assert(k-1 < (int)toOut.length());
 			upper = new Sequence(
 					upper->str() + newRight.upper->Subseq(k - 1).str());
 
 			toOut = newRight.lower->str();
-			assert(l-1 < toOut.length());
+			assert(l-1 < (int)toOut.length());
 			lower = new Sequence(
 					lower->str() + newRight.lower->Subseq(l - 1).str());
 
@@ -185,13 +185,14 @@ public:
 			return leftDegree(vertex);
 	}
 
-	virtual tEdge rightEdge(tVertex vertex, int number) = 0;
-	virtual tEdge leftEdge(tVertex vertex, int number) = 0;
-	tEdge neighbourEdge(tVertex vertex, int number, int direction) {
-		if (direction == RIGHT)//RIGHT = 1
-			return this->rightEdge(vertex, number);
-		else if (direction == LEFT)//LEFT = -1
-			return this->leftEdge(vertex, number);
+	virtual tEdge neighbourEdge(tVertex vertex, int number, int direction) = 0;
+
+	tEdge rightEdge(tVertex vertex, int number) {
+		return this->neighbourEdge(vertex, number, RIGHT);
+	}
+
+	tEdge leftEdge(tVertex vertex, int number) {
+		return this->neighbourEdge(vertex, number, LEFT);
 	}
 
 	virtual tEdgeIterator beginEdge(tVertex vertex, int direction) = 0;
@@ -402,29 +403,9 @@ public:
 	//	}
 
 	/**
-	 * Method returns outcoming edge for given vertex with a given number
+	 * Method returns incoming edge for given vertex with a given number in the given direction
 	 */
-	virtual Edge *rightEdge(int vertex, int number);
-	virtual Edge *rightNeighbour(int vertex, int number) {
-		assert(number < degrees[vertex][1]);
-		return longEdges[edgeRealId(edgeIds[vertex][number][1], longEdges)];
-	}
-
-	/**
-	 * Method returns incoming edge for given vertex with a given number
-	 */
-	virtual Edge *leftEdge(int vertex, int number);
-	virtual Edge *leftNeighbour(int vertex, int number) {
-		assert(number < degrees[vertex][0]);
-		return longEdges[edgeRealId(edgeIds[vertex][number][0], longEdges)];
-	}
-
-	virtual Edge *neighbour(int vertex, int number, int direction) {
-		int index = directionToIndex(direction);
-		assert(number < degrees[vertex][index]);
-		return longEdges[edgeRealId(edgeIds[vertex][number][index], longEdges)];
-
-	}
+	virtual Edge *neighbourEdge(int vertex, int number, int direction);
 
 	//TODO Replace with C-stype iterator
 	//TODO Make it return iterator instead of iterator *.

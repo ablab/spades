@@ -227,14 +227,10 @@ int PairedGraph::leftDegree(int vertex) {
 	return degrees[vertex][0];
 }
 
-Edge *PairedGraph::rightEdge(int vertex, int number) {
-	assert(number < degrees[vertex][1]);
-	return longEdges[edgeRealId(edgeIds[vertex][number][1], longEdges)];
-}
-
-Edge *PairedGraph::leftEdge(int vertex, int number) {
-	assert(number < degrees[vertex][0]);
-	return longEdges[edgeRealId(edgeIds[vertex][number][0], longEdges)];
+Edge *PairedGraph::neighbourEdge(int vertex, int number, int direction) {
+	int index = directionToIndex(direction);
+	assert(number < degrees[vertex][index]);
+	return longEdges[edgeRealId(edgeIds[vertex][number][index], longEdges)];
 }
 
 //This is very bad method!!!!
