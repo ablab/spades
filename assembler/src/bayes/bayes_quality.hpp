@@ -25,6 +25,10 @@ typedef vector<float> QVector;
 typedef pair<Sequence, QVector> QRead;
 
 
+// write a file with statistics
+#define WRITE_STATSFILE
+#define STATSFILENAME "readstats.txt"
+
 // quality value of an insertion in the read
 #define INSERT_Q 32
 
@@ -48,11 +52,25 @@ typedef pair<Sequence, QVector> QRead;
 
 // in preprocessing, we construct a map of sequences of this size
 // to check which reads are worth pursuing at a given point
+// #define USE_PREPROCESSING
 #define PREPROCESS_SEQ_LENGTH 10
 #define NEED_INTERSECTION 6
 typedef Seq<PREPROCESS_SEQ_LENGTH> PSeq;
 typedef tr1::unordered_map<PSeq, vector<bool>, PSeq::hash, PSeq::equal_to> PreprocMap;
 typedef tr1::unordered_map<PSeq, pair<size_t, size_t>, PSeq::hash, PSeq::equal_to> PreprocReadsMap;
+
+
+// in look-ahead, we test genome positions in the following way:
+//   -- if nucleotides [0, LA_SIZE-1] of the read match the current genome position j with more than LA_ERRORS errors, it's good
+//   -- if nucleotides [mid, mid+LA_SIZE-1] of the read match one of positions j+mid-DEL, ..., j+mid+INS-1 with more than LA_ERRORS errors, it's good
+//   -- otherwise, it's bad, skip it
+// this works well if INS and DEL are small (e.g., INS=DEL=1)
+// if INS>1 or DEL>1, this approach may lead to errors
+#define USE_LOOKAHEAD
+#define LA_SIZE 25
+#define LA_ERRORS 7
+typedef Seq<LA_SIZE> LASeq;
+
 
 /// @typedef a structure for storing match results in BayesQualityGenome
 typedef struct {
@@ -77,6 +95,9 @@ private:
 	Sequence genome_;
 	size_t gensize_;
 	MatchResults mr_;
+
+	// for run statistics
+	size_t totalPos_, totalGood_;
 	
 	// for map-like preprocessing
 	PreprocMap availableReadsHead_;
@@ -94,6 +115,9 @@ private:
 	float AddTwoQualityValues(float curq, float prevq);
 	float AddThreeQualityValues(float diagq, float leftq, float rightq);
 
+	// simple match for the lookahead
+	int simpleMatch(const LASeq & seq, const LASeq & gen);
+
 	/**
 	 * process one read, store all results in the corresponding fields, return total likelihood
 	 * @param read_no number of this read in the preprocessed maps; if there was no preprocessing, put -1 here
@@ -104,7 +128,7 @@ private:
 	bool isAvailable(size_t readno, size_t j, const PSeq & curpseq);
 
 public:
-	BayesQualityGenome(const char *genome) : genome_(genome), qv(INS+DEL+1) {
+	BayesQualityGenome(const char *genome) : genome_(genome), totalPos_(0), totalGood_(0), qv(INS+DEL+1) {
 		for (size_t i=0; i < INS+DEL+1; ++i) {
 			qv[i] = new QVector(genome_.size());
 		}
@@ -185,6 +209,19 @@ public:
 	 * returns the last match prettyfying string
 	 */
 	const string & LastMatchPrettyString() const { return mr_.matchprettystr_; }
+
+
+
+	/**
+	 * returns the total number of possible matching positions processed
+	 */
+	size_t TotalPositions() const { return totalPos_; }
+	/**
+	 * returns the total number of ``good'' positions
+	 */
+	size_t TotalGoodPositions() const { return totalGood_; }
+
+
 };
 
 }
