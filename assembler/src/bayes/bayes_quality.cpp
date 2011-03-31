@@ -14,6 +14,7 @@
 #include <math.h>
 #include "quality.hpp"
 #include "read.hpp"
+#include "ireadstream.hpp"
 
 using namespace std;
 
@@ -332,17 +333,6 @@ void BayesQualityGenome::PreprocessReads(const vector<Read> &reads) {
 		PreprocessOneMapOneReadWithShift( psm, rm, 1, availableReadsMid_, i, 			  reads.size(), mid);
 		PreprocessOneMapOneReadWithShift(cpsm, rm, 1, availableReadsMid_, i+reads.size(), reads.size(), mid);
 	}
-	// debug output
-	/*for (PreprocMap::iterator it = availableReadsHead_.begin(); it != availableReadsHead_.end(); ++it) {
-		if (it->first == Sequence("CCACCAA")) {
-		ostringstream os; for (size_t i = reads.size(); i < 2*reads.size(); ++i) os << (int)(it->second[i]);
-		INFO(it->first << ": " << os.str()); }
-	}
-	for (PreprocMap::iterator it = availableReadsMid_.begin(); it != availableReadsMid_.end(); ++it) {
-		if (it->first == Sequence("GTTTGAC")) {
-		ostringstream os; for (size_t i = reads.size(); i < 2*reads.size(); ++i) os << (int)(it->second[i]);
-		INFO(it->first << ": " << os.str()); }
-	}*/
 }
 
 void BayesQualityGenome::ProcessReads(const vector<Read> &reads) {
@@ -375,6 +365,58 @@ void BayesQualityGenome::ProcessReads(const vector<Read> &reads) {
 		size_t replacements = 0; for (size_t i=0; i< LastMatch().size(); ++i) if (LastMatch()[i] == 0) ++replacements;
 		os << setw(15) << res << "\t" << LastMatchIndex() << "\t" << LastMatchQ() << "\t" << replacements << "\t" << LastMatchInserts() << "\t" << LastMatchDeletes() << "\t" << m.str().data() << endl;
 		#endif
+	}
+	
+	#ifdef WRITE_STATSFILE
+	os.close();
+	#endif
+}
+
+void BayesQualityGenome::ProcessReads(const char *filename) {
+	#ifdef USE_PREPROCESSING
+	INFO("Preprocessing...");
+	PreprocessReads(reads);
+	INFO("  ...done.");
+	#endif
+
+	#ifdef WRITE_STATSFILE
+	ofstream os(STATSFILENAME, ios::out);
+	if (os) {
+		os << "# The order of reads matches the input file" << endl;
+		os << "#          sumq  bestloc  bestq  replacements  inserts  dels  matchstring" << endl;
+	} else {
+		cerr << "Cannot write to statistics file\n";
+		abort();
+	}
+	#endif
+
+	ireadstream ifs(filename);
+	assert(ifs.is_open());
+	Read r;
+	size_t readno = 0;
+	while (!ifs.eof()) {
+		ifs >> r;
+		r.trimNs();
+		if (r.size() < MIN_READ_SIZE) {
+			#ifdef WRITE_STATSFILE
+			os << setw(7) << readno << " skipped: only " << setw(2) << r.size() << " known letters at the beginning" << endl;
+			#endif
+			++readno;
+			continue;
+		}
+		
+		double res = ReadBQPreprocessed(r, readno, BIGREADNO);
+
+		INFO(LastMatchReadString());
+		INFO(LastMatchPrettyString());
+		INFO(LastMatchString());
+		ostringstream m; for (size_t i=0; i< LastMatch().size(); ++i) m << LastMatch()[i]; INFO(m.str());
+		INFO(res << ", best: " << LastMatchQ() << "/" << LastTotalQ() << " at " << LastMatchIndex() << " with " << LastMatchInserts() << " inserts and " << LastMatchDeletes() << " deletes");
+		#ifdef WRITE_STATSFILE
+		size_t replacements = 0; for (size_t i=0; i< LastMatch().size(); ++i) if (LastMatch()[i] == 0) ++replacements;
+		os << setw(7) << readno << ":" << setw(15) << res << "\t" << LastMatchIndex() << "\t" << LastMatchQ() << "\t" << replacements << "\t" << LastMatchInserts() << "\t" << LastMatchDeletes() << "\t" << m.str().data() << endl;
+		#endif
+		++readno;
 	}
 	
 	#ifdef WRITE_STATSFILE

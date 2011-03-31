@@ -29,6 +29,12 @@ typedef pair<Sequence, QVector> QRead;
 #define WRITE_STATSFILE
 #define STATSFILENAME "readstats.txt"
 
+// minimum size for a read
+// if a read is shorter (has more N's), it will be skipped
+#define MIN_READ_SIZE 60
+
+#define BIGREADNO 1000000
+
 // quality value of an insertion in the read
 #define INSERT_Q 32
 
@@ -48,7 +54,7 @@ typedef pair<Sequence, QVector> QRead;
 
 // if the total quality value of the best match is this good,
 // we will skip the complementary read and assume this is the one
-#define GOOD_ENOUGH_Q 100
+#define GOOD_ENOUGH_Q 50
 
 // in preprocessing, we construct a map of sequences of this size
 // to check which reads are worth pursuing at a given point
@@ -165,6 +171,11 @@ public:
 	 */	
 	void ProcessReads(const vector<Read> &);
 	
+	/**
+	 * process all reads from a file and log the results
+	 */	
+	void ProcessReads(const char * filename);
+
 	/**
 	 * returns the last set of matches
 	 */
