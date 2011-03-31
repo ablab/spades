@@ -19,22 +19,17 @@ void TestEmptyGraph() {
 
 void TestOneVertexGraph() {
 	PairedGraph g;
-	VertexPrototype *v = new VertexPrototype(0,
-			new Sequence("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), 0);
-	g.addVertex(v);
+	g.addVertex();
 	ASSERT_EQUAL(1, g.VertexCount);
 	ASSERT_EQUAL(0, g.EdgeId);
 	VertexIterator *it = g.vertexIterator();
 	ASSERT_EQUAL(false, it->hasNext());
 }
 
-vector<VertexPrototype *> addVertices(PairedGraph &graph, int number) {
-	vector<VertexPrototype *> v;
+vector<int> addVertices(PairedGraph &graph, int number) {
+	vector<int> v;
 	for (int i = 0; i < number; i++) {
-		v.push_back(
-				new VertexPrototype(i,
-						new Sequence("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), 0));
-		graph.addVertex(v[i]);
+		v.push_back(graph.addVertex());
 		ASSERT_EQUAL(i + 1, graph.VertexCount);
 	}
 	ASSERT_EQUAL(0, graph.EdgeId);
@@ -44,14 +39,14 @@ vector<VertexPrototype *> addVertices(PairedGraph &graph, int number) {
 
 void TestNoEdgeGraph() {
 	PairedGraph g;
-	vector<VertexPrototype *> vertices = addVertices(g, 10);
+	vector<int> vertices = addVertices(g, 10);
 	VertexIterator *it = g.vertexIterator();
 	ASSERT_EQUAL(false, it->hasNext());
 }
 
 void TestOneEdgeGraph() {
 	PairedGraph g;
-	vector<VertexPrototype *> vertices = addVertices(g, 2);
+	vector<int> vertices = addVertices(g, 2);
 	string s = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 	Sequence *upper = new Sequence(s);
 	Sequence *lower = new Sequence(s);
@@ -73,15 +68,15 @@ void TestOneEdgeGraph() {
 	ASSERT_EQUAL(e, g.leftEdge(vertices[1], 0));
 }
 
-pair<vector<VertexPrototype *> , vector<Edge *> > createCycleGraph(
+pair<vector<int> , vector<Edge *> > createCycleGraph(
 		PairedGraph &graph, int length) {
-	vector<VertexPrototype *> v = addVertices(graph, length);
+	vector<int> v = addVertices(graph, length);
 	string s = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 	vector<Edge *> edges;
 	for (int i = 0; i < length; i++) {
 		Sequence *upper = new Sequence(s);
 		Sequence *lower = new Sequence(s);
-		Edge * e = new Edge(upper, lower, i, (i + 1) % length, 15, 0, 0);
+		Edge * e = new Edge(upper, lower, v[i], v[(i + 1) % length], 15, 0, 0);
 		edges.push_back(e);
 		graph.addEdge(e);
 	}
@@ -95,8 +90,8 @@ pair<vector<VertexPrototype *> , vector<Edge *> > createCycleGraph(
 
 void TestThreeEdgesGraph() {
 	PairedGraph g;
-	pair<vector<VertexPrototype *>, vector<Edge *> > data = createCycleGraph(g, 3);
-	vector<VertexPrototype *> vertices =  data.first;
+	pair<vector<int>, vector<Edge *> > data = createCycleGraph(g, 3);
+	vector<int> vertices =  data.first;
 	vector<Edge *> edges = data.second;
 	VertexIterator *it = g.vertexIterator();
 	for (int i = 0; i < 3; i++) {
@@ -104,12 +99,12 @@ void TestThreeEdgesGraph() {
 		ASSERT_EQUAL(vertices[i], it->next());
 		ASSERT_EQUAL(1, g.rightDegree(i));
 		ASSERT_EQUAL(1, g.leftDegree(i));
-		ASSERT_EQUAL(edges[i], g.rightEdge(g.vertexList_[i], 0));
-		ASSERT_EQUAL(edges[(i + 2) % 3], g.leftEdge(g.vertexList_[i], 0));
+		ASSERT_EQUAL(edges[i], g.rightEdge(vertices[i], 0));
+		ASSERT_EQUAL(edges[(i + 2) % 3], g.leftEdge(vertices[i], 0));
 	}
 }
 
-void checkVertices(PairedGraph &g, vector<VertexPrototype *> &vertices) {
+void checkVertices(PairedGraph &g, vector<int> &vertices) {
 	VertexIterator *it = g.vertexIterator();
 	for(int i = 0; i < vertices.size(); i++) {
 		ASSERT_EQUAL(true, it->hasNext());
@@ -120,8 +115,8 @@ void checkVertices(PairedGraph &g, vector<VertexPrototype *> &vertices) {
 
 void TestRemoveEdge() {
 	PairedGraph g;
-	pair<vector<VertexPrototype *>, vector<Edge *> > data = createCycleGraph(g, 3);
-	vector<VertexPrototype *> vertices =  data.first;
+	pair<vector<int>, vector<Edge *> > data = createCycleGraph(g, 3);
+	vector<int> vertices =  data.first;
 	vector<Edge *> edges = data.second;
 	g.removeEdge(edges[0]);
 	checkVertices(g, vertices);
@@ -135,8 +130,8 @@ void TestRemoveEdge() {
 
 void TestRemoveVertex() {
 	PairedGraph g;
-	pair<vector<VertexPrototype *>, vector<Edge *> > data = createCycleGraph(g, 3);
-	vector<VertexPrototype *> vertices =  data.first;
+	pair<vector<int>, vector<Edge *> > data = createCycleGraph(g, 3);
+	vector<int> vertices =  data.first;
 	vector<Edge *> edges = data.second;
 	g.removeVertex(vertices[0]);
 	VertexIterator *it = g.vertexIterator();

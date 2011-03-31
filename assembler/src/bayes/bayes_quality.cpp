@@ -245,8 +245,8 @@ double BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QVector 
 }
 
 double BayesQualityGenome::ReadBQPreprocessed(const Read & r, size_t readno, size_t readssize) {
-	QVector q(r.getQuality().size());
-	copy(r.getQuality().begin(), r.getQuality().end(), q.begin());
+	QVector q(r.getQualityString().size());
+	copy(r.getQualityString().begin(), r.getQualityString().end(), q.begin());
 	Sequence *s = r.createSequence();
 	double res1 = ProcessOneReadBQ(*s, q, readno);
 

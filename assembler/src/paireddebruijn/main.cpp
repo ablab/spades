@@ -6,6 +6,7 @@
 #include "graphio.hpp"
 #include "readTracing.hpp"
 #include "sequence.hpp"
+#include "readsReformatter.hpp"
 
 using namespace paired_assembler;
 
@@ -23,7 +24,10 @@ void init() {
 
 void run() {
 	char str[100];
+//	forgetQualityPairedData("g:/data/s_6_1.fastq.gz", "g:/data/s_6_2.fastq.gz", "g:/data/realreads.txt" );
+//	forgetQualityPairedData("data/paireddebruijn/s_6_1.fastq.gz", "data/paireddebruijn/s_6_2.fastq.gz", "/media/605005E05005BDB2/data/realreads.txt" );
 //	LOG_ASSERT(1 == 0, "Something wrong");
+
 	if (needPairs) {
 		cerr << endl << " constructing pairs" << endl;
 		readsToPairs(parsed_reads, parsed_k_l_mers);
@@ -105,48 +109,35 @@ void run() {
 		sprintf(str, "data/paireddebruijn/afterLowerGraph.txt");
 		save(str,graph);
 	}
-	cerr << "\n extractDefinit Start \n";
-	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
-	extractDefinite(graph, RIGHT);
-	outputLongEdges(graph.longEdges,  "data/paireddebruijn/afterExtractDefinite1.dot");
+	if (useExtractDefinite){
+		INFO("extractDefinite RIGHT Start");
+		if (!useProcessLower){
+			sprintf(str, "data/paireddebruijn/afterLowerGraph.txt");
+			load(str,graph);
+			graph.RebuildVertexMap();
+			DEBUG("loaded");
+		}
+		graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+		extractDefinite(graph, RIGHT);
+		outputLongEdges(graph.longEdges, graph,  "data/paireddebruijn/afterExtractDefinite1.dot");
+	//	outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExtractDefinite1_g.dot");
 
-	/*	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
-	extractDefinite(graph.longEdges , graph, graph.VertexCount, 1);
-	outputLongEdges(graph.longEdges,  "data/afterExtractDefinite1.dot");
-	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
-	outputLongEdges(graph.longEdges, graph, "data/afterExtractDefinite2.dot");
+		INFO ("extractDefinite LEFT Start");
+			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+			extractDefinite(graph, LEFT);
+			outputLongEdges(graph.longEdges, graph,  "data/paireddebruijn/afterExtractDefinite2.dot");
+			//outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExtractDefinite2_g.dot");
 
-	extractDefinite(graph.longEdges , graph, graph.VertexCount, 0);
-	outputLongEdges(graph.longEdges,  "data/afterExtractDefinite3.dot");
-	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
-	outputLongEdges(graph.longEdges, graph, "data/afterExtractDefinite4.dot");
-*/
 
-	cerr << "\n Finished";
-	INFO("Finished");
+		cerr << "\n Finished";
+		INFO("Finished");
+	}
 }
 
 
 
 int main() {
 	init();
-/*	freopen(error_log.c_str(), "w",stderr);
-	char str[100];
-	sprintf(str, "data/paireddebruijn/tracedGraph.txt");
-	load(str,graph);
-	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
-	PairThreader pg(graph,1);
-	for (longEdgesMap::iterator it = graph.longEdges.begin(); it != graph.longEdges.end(); ++it) {
-		if (it->second->EdgeId == it->first) {
-			vector<pair<int, Edge *> > vp = pg.threadLower(it->second);
-			forn(i,vp.size())
-				cerr<<"edge "<<it->first<<" may jump into "<<vp[i].second->EdgeId<<" dist "<<vp[i].first<<endl;
-
-		}
-	}
-
-
-*/
-		run();
+	run();
 	return 0;
 }

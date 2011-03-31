@@ -26,11 +26,12 @@ KSEQ_INIT(gzFile, gzread)
 class ireadstream {
 
 public:
-	ireadstream(const string& filename) {
+	ireadstream(const string& filename, bool rtl = false) {
 		filename_ = filename;
 		is_open_ = open(filename);
-		//assert(is_open_); // Fails if there is no such file -- don't do it!
+		rtl_ = rtl; // TODO: why the hell do we need rev-compl here?
 	}
+
 
 	virtual ~ireadstream() {
 		close();
@@ -62,14 +63,16 @@ public:
 	}
 
 	ireadstream& operator>>(Read &r) {
+		assert(is_open());
+		assert(!eof());
 		if (!is_open() || eof()) {
 			return *this;
 		}
 
 		// if there is 'N' in sequence, then throw out this mate read
 		r.setName(seq_->name.s);
-		r.setQuality(seq_->qual.s);
-		r.setSequence(seq_->seq.s);
+		r.setQuality(seq_->qual.s, rtl_);
+		r.setSequence(seq_->seq.s, rtl_);
 		/*for (size_t i = 0; i < seq_->seq.l; i++) { // Fix Ns to As so we can store ACGT in 2 bits (Sequence). Anyway we have a Quality values for filtering out Ns later
 			if (!is_nucl(seq_->seq.s[i])) {
 				seq_->seq.s[i] = 'A';
@@ -100,7 +103,7 @@ private:
 	kseq_t* seq_;
 	bool is_open_;
 	bool eof_;
-
+	bool rtl_;
 	/*
 	 * open i's file with FASTQ reads,
 	 * return true if it opened file, false otherwise

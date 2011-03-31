@@ -392,7 +392,7 @@ inline bool equalsAtIndex(longEdgesMap &longEdges, int id1, int id2, int index, 
 //	cerr.flush();
 	char u1, l1, u2, l2;
 	int indu1, indu2, indl1, indl2;
-	if (direction){
+	if (direction == RIGHT){
 		indu1 = index;
 		indu2 = index;
 		indl1 = index;
@@ -401,7 +401,7 @@ inline bool equalsAtIndex(longEdgesMap &longEdges, int id1, int id2, int index, 
 	}
 	else
 	{
-		cerr << " hm";
+//		cerr << " hm";
 		indu1 = longEdges[id1]->upper->size() - index - 1;
 		indl1 = longEdges[id1]->lower->size() - index - 1;
 		indu2 = longEdges[id2]->upper->size() - index - 1;
@@ -428,8 +428,14 @@ inline int fistDifferenceIndex(PairedGraph &graph, Edge* edge1, Edge* edge2, int
 		if (!equalsAtIndex(graph.longEdges, edge1->EdgeId, edge2->EdgeId, res, direction))
 			break;
 	}
-	res++;
-	cerr<<" Edge "<< edge1->EdgeId<<" vs "<< edge2->EdgeId<<" first diff on "<<res<<endl;
+	//res++;
+	cerr<<" Edge "<< edge1->EdgeId<<" vs "<< edge2->EdgeId<<" for direction "<<direction<<" first diff on "<<res<<endl;
+	if ((edge1->length<300)&&((edge2->length<300))){
+		cerr<<edge1->upper->str()<<endl;
+		cerr<<edge2->upper->str()<<endl;
+		cerr<<edge1->lower->str()<<endl;
+		cerr<<edge2->lower->str()<<endl;
+	}
 	return res;
 }
 
@@ -572,47 +578,36 @@ void extractDefinite(PairedGraph &graph, int dir){
 			secondEdge = graph.neighbour(CurVertex, SecondEdgeIndex, dir);
 			cerr<<"second edge Id "<<secondEdge->EdgeId<<endl;
 			int diffIndex = fistDifferenceIndex(graph, firstEdge, secondEdge, dir);
-			if (diffIndex <= k) continue;
+			if (diffIndex <= k-1) continue;
 			int splitIndex = diffIndex - k+1;
 			cerr<<"splitIndex "<<splitIndex<<endl;
-			if (dir == RIGHT){
+//			if (dir == RIGHT){
 				if (diffIndex>firstEdge->length){
 
 					if (diffIndex>secondEdge->length) continue;
 					else {
-						cerr<<"splitEdge "<<secondEdge->EdgeId<<endl;
-
-						secondEdgePair = graph.splitEdge(secondEdge, splitIndex);
-						cerr<<"new edges "<<secondEdgePair.first->EdgeId<< " "<<secondEdgePair.second->EdgeId<<endl;
-
-						graph.glueEdges(firstEdge, secondEdgePair.first);
+						secondEdgePair = graph.splitEdge(secondEdge, splitIndex, dir);
+						graph.glueEdges(secondEdgePair.first, firstEdge);
 						SecondEdgeIndex = FirstEdgeIndex;
 					}
 				}
 				else {
-					cerr<<"splitEdge "<<firstEdge->EdgeId<<endl;
-
-					firstEdgePair = graph.splitEdge(firstEdge, splitIndex);
-					cerr<<"new edges "<<firstEdgePair.first->EdgeId<< " "<<firstEdgePair.second->EdgeId<<endl;
+					firstEdgePair = graph.splitEdge(firstEdge, splitIndex, dir);
 					if (diffIndex>secondEdge->length) {
-						graph.glueEdges(secondEdge, firstEdgePair.first);
+						graph.glueEdges(firstEdgePair.first, secondEdge);
 						SecondEdgeIndex = FirstEdgeIndex;
 					}
 					else {
-						cerr<<"splitEdge "<<secondEdge->EdgeId<<endl;
-						secondEdgePair = graph.splitEdge(secondEdge, splitIndex);
-						cerr<<"new edges "<<secondEdgePair.first->EdgeId<< " "<<secondEdgePair.second->EdgeId<<endl;
-						cerr<<"glue "<<firstEdgePair.first->EdgeId<< " "<<secondEdgePair.first->EdgeId<<endl;
+						secondEdgePair = graph.splitEdge(secondEdge, splitIndex, dir);
 						graph.glueEdges(firstEdgePair.first, secondEdgePair.first);
-						cerr<<"glue OK"<<endl;
 						SecondEdgeIndex = FirstEdgeIndex;
 					}
 				}
-			}
-			else {
-				INFO("extractDefinite for LEFT not implemented yet");
-				assert(0);
-			}
+	//		}
+//			else {
+//				INFO("extractDefinite for LEFT not implemented yet");
+//				assert(0);
+//			}
 		}
 		CurVertex++;
 		while (CurVertex < graph.VertexCount){
@@ -621,17 +616,4 @@ void extractDefinite(PairedGraph &graph, int dir){
 		}
 
 	}
-}
-
-void unglueAll(PairedGraph &graph, int direction) {
-	VertexIterator *it = graph.vertexIterator();
-	while(it->hasNext()) {
-		VertexPrototype *v = it->next();
-		graph.unGlueEdges(v, direction);
-	}
-}
-
-void unglueAll(PairedGraph &graph) {
-	unglueAll(graph, RIGHT);
-	unglueAll(graph, LEFT);
 }

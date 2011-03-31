@@ -23,13 +23,15 @@ int needLmers = 1;
 int needSequences = 1;
 int needGraph = 1;
 int useExpandDefinite = 1;
+int useExtractDefinite = 1;
+
 int useTraceReads = 1;
 int useProcessLower = 1;
 void initConstants(string ini_file) {
 	char tmp[200];
 	INFO("Trying to init constants...");
 
-//	string folder = string("data/");
+	//	string folder = string("data/");
 	FILE* ini = fopen(ini_file.c_str(), "r");
 	assert(fscanf(ini, "k = %d\n", &k) == 1);
 	assert(fscanf(ini, "l = %d\n", &l) == 1);
@@ -40,26 +42,28 @@ void initConstants(string ini_file) {
 	assert(fscanf(ini, "work_folder = %s\n" , tmp) == 1);
 	string folder = string(tmp) + '/';
 	assert(fscanf(ini, "distance_type = %s\n" , tmp) == 1);
-	string suff = ("_" + string(tmp));
 	char topr[20];
+	sprintf(topr, "_%d_%d", readLength, insertLength);
+	string suff(topr);
+	suff+= "_";
+	suff += tmp;
+	string d_desc =  suff;
 	sprintf(topr, "_%d_%d",k, l);
 	suff += topr;
-	string d_desc = "_" + string(tmp);
 	assert(fscanf(ini, "parsed_reads = %s\n" , tmp) == 1);
 	parsed_reads = folder + string(tmp) + d_desc + ".txt";
+	ERROR(parsed_reads);
 	assert(fscanf(ini, "parsed_k_l_mers = %s\n" , tmp) == 1);
 	parsed_k_l_mers = folder + string(tmp) + suff + ".txt";
 	assert(fscanf(ini, "parsed_l_mers = %s\n" , tmp) == 1);
 	parsed_l_mers = folder + string(tmp) + suff + ".txt";
 	assert(fscanf(ini, "parsed_k_sequence = %s\n" , tmp) == 1);
 	parsed_k_sequence = folder + string(tmp) + suff + ".txt";
-	cerr << parsed_reads;
+	DEBUG(parsed_k_sequence);
 	assert(fscanf(ini, "compressed_graph = %s\n" , tmp) == 1);
 	graph_file = folder + string(tmp) + suff + ".dot";
 	assert(fscanf(ini, "intermediate_graph = %s\n" , tmp) == 1);
 	graph2 = folder + string(tmp) + suff + ".dot";
-	assert(fscanf(ini, "threaded_graph = %s\n" , tmp) == 1);
-	threaded_graph = folder + string(tmp) + suff + ".dot";
 	assert(fscanf(ini, "error_log = %s\n" , tmp) == 1);
 	error_log = folder + string(tmp);
 	assert(fscanf(ini, "Run:\n") == 0);
@@ -71,6 +75,8 @@ void initConstants(string ini_file) {
 	assert(fscanf(ini, "useExpandDefinite = %d\n", &useExpandDefinite) == 1);
 	assert(fscanf(ini, "useTraceReads = %d\n", &useTraceReads) == 1);
 	assert(fscanf(ini, "useProcessLower = %d\n", &useProcessLower) == 1);
+	assert(fscanf(ini, "useExtractDefinite = %d\n", &useExtractDefinite) == 1);
+
 	minIntersect = l - 1;
 
 	//assert()

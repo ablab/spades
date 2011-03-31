@@ -38,11 +38,11 @@ int main() {
 	
 
 	//ireadstream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta.gz");
-	ireadstream ifs("/home/student/nikolenko/python/bayesQuality/genome.fasta");
+	ireadstream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta");
 	Read r;
 	ifs >> r;
 	INFO("hello");
-	BayesQualityGenome bqg(r.getSequence().data());
+	BayesQualityGenome bqg(r.getSequenceString().data());
 
 	processQualityReads("/home/student/nikolenko/python/bayesQuality/s_6_1.fastq.gz", bqg);
 	
