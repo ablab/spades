@@ -32,6 +32,15 @@ bool BayesQualityGenome::isAvailable(size_t readno, size_t j, const PSeq & curps
 	return false;
 }
 
+int BayesQualityGenome::simpleMatch(const Sequence & seq, const LASeq & gen, size_t shift) {
+	int res = 0;
+	for (size_t i=0; i<LA_SIZE; ++i) {
+		if (seq[i+shift] != gen[i]) ++res;
+		if (res > LA_ERRORS) break;
+	}
+	return res;
+}
+
 double BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QVector & qvec, size_t readno) {
 	// compute total quality of the read
 	mr_.totalq_ = accumulate(qvec.begin(), qvec.end(), 0);
@@ -46,19 +55,49 @@ double BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QVector 
 	
 	INFO(readno << ": " << seq.str());
 
+	#ifdef USE_PREPROCESSING
 	PSeq curpseq = PSeq(genome_.Subseq(0,PREPROCESS_SEQ_LENGTH));
+	#endif
+	
+	#ifdef USE_LOOKAHEAD
+	LASeq laseq = LASeq(genome_.Subseq(0, LA_SIZE));
+	size_t mid = seqsize / 2;
+	if (seqsize - mid < LA_SIZE) mid = seqsize - LA_SIZE;
+	vector<LASeq> lavec;
+	for (size_t k=mid-DEL; k<=mid+INS; ++k) {
+		lavec.push_back(LASeq(genome_.Subseq(k, k+LA_SIZE)));
+	}
+	#endif
+	
 	char curgc, curgs;
+	bool badPreprocPosition = false; bool goodLAPosition = true;
 
 	// dynamic programming
 	for (size_t j = 0; j < qvsize_; ++j) {
 		
+		++totalPos_;
+		
+		#ifdef USE_PREPROCESSING
 		// is the read already ruled out during preprocessing?
-		if (!isAvailable(readno, j, curpseq)) {
+		badPreprocPosition = !isAvailable(readno, j, curpseq);
+		curpseq = curpseq << genome_[j+PREPROCESS_SEQ_LENGTH];
+		#endif
+		
+		#ifdef USE_LOOKAHEAD
+		goodLAPosition = (simpleMatch(seq, laseq, 0) <= LA_ERRORS);
+		laseq = laseq << genome_[j+LA_SIZE];
+		for (size_t k=0; k<=DEL+INS+1; ++k) {
+			goodLAPosition = goodLAPosition || (simpleMatch(seq, lavec[k], mid) <= LA_ERRORS);
+			lavec[k] = lavec[k] << genome_[j+mid-DEL+k+LA_SIZE];
+		}
+		#endif
+
+		if (badPreprocPosition || !goodLAPosition) {
 			for (size_t s=0; s < INS+DEL+1; ++s) qv[s]->at(j) = VERYLARGEQ;
-			curpseq = curpseq << genome_[j+PREPROCESS_SEQ_LENGTH];
 			continue;
 		}
-		curpseq = curpseq << genome_[j+PREPROCESS_SEQ_LENGTH];
+		
+		++totalGood_;
 
 		for (size_t i = 0; i < seqsize+1; ++i) {			
 			// genome is over
@@ -170,13 +209,6 @@ double BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QVector 
 			//cout << " mat\n";
 		}
 	}
-	// debug output
-	/*for (size_t i = 0; i < r.first.size()+1; ++i) {
-		ostringstream os; os.setf(ios::fixed, ios::floatfield); os.precision(0); os.width(4); os.fill(' ');
-		for (size_t j = 0; j < r.first.size() + deletes_+1; ++j) os << setw(4) << m[i]->at(j) << " ";
-		os << "\n";
-		cout << os.str();
-	}*/
 	mr_.match_.clear();
 	ostringstream osm, osmr, osmp;
 	size_t ifirst_ = seqsize;
@@ -240,6 +272,7 @@ double BayesQualityGenome::ReadBQPreprocessed(const Read & r, size_t readno, siz
 }
 
 void BayesQualityGenome::PreprocessOneMapOneReadWithShift(const PSeq &ps, PreprocReadsMap & rm, int mapno, PreprocMap & map, size_t readno, size_t reads_size, size_t shift) {	
+	
 	// see if we can find the same
 	PreprocReadsMap::iterator itrm = rm.find(ps);
 	if (itrm != rm.end()) {  // found it!
@@ -257,7 +290,7 @@ void BayesQualityGenome::PreprocessOneMapOneReadWithShift(const PSeq &ps, Prepro
 
 	// if we cannot, we add ps to rm
 	rm.insert(make_pair(ps, make_pair(readno, mapno)));
-	
+
 	for (PreprocMap::iterator it = map.begin(); it != map.end(); ++it) {
 		int inters = 0;
 		for (size_t k = 0; k < PREPROCESS_SEQ_LENGTH; ++k) {
@@ -284,16 +317,15 @@ void BayesQualityGenome::PreprocessReads(const vector<Read> &reads) {
 		if (s->size() - mid < PREPROCESS_SEQ_LENGTH) mid = s->size() - PREPROCESS_SEQ_LENGTH;
 		readMids[i] = mid; readMids[i+reads.size()] = mid;
 		
-		PSeq  ps( (*s).Subseq(0, PREPROCESS_SEQ_LENGTH));
-		PSeq cps(!(*s).Subseq(0, PREPROCESS_SEQ_LENGTH));
+		PSeq   ps(   (*s).Subseq(0, PREPROCESS_SEQ_LENGTH));
+		PSeq  cps((!(*s)).Subseq(0, PREPROCESS_SEQ_LENGTH));
+		PSeq  psm(   (*s).Subseq(mid, mid+PREPROCESS_SEQ_LENGTH));
+		PSeq cpsm((!(*s)).Subseq(mid, mid+PREPROCESS_SEQ_LENGTH));
 		delete s;
 
 		PreprocessOneMapOneReadWithShift( ps, rm, 0, availableReadsHead_, i, 			  reads.size(), 0);
 		PreprocessOneMapOneReadWithShift(cps, rm, 0, availableReadsHead_, i+reads.size(), reads.size(), 0);
-		
-		PSeq  psm( (*s).Subseq(mid, mid+PREPROCESS_SEQ_LENGTH));
-		PSeq cpsm(!(*s).Subseq(mid, mid+PREPROCESS_SEQ_LENGTH));
-		
+				
 		PreprocessOneMapOneReadWithShift( psm, rm, 1, availableReadsMid_, i, 			  reads.size(), mid);
 		PreprocessOneMapOneReadWithShift(cpsm, rm, 1, availableReadsMid_, i+reads.size(), reads.size(), mid);
 	}
@@ -311,12 +343,13 @@ void BayesQualityGenome::PreprocessReads(const vector<Read> &reads) {
 }
 
 void BayesQualityGenome::ProcessReads(const vector<Read> &reads) {
+	#ifdef USE_PREPROCESSING
 	INFO("Preprocessing...");
 	PreprocessReads(reads);
 	INFO("  ...done.");
+	#endif
 
 	for (size_t i=0; i<reads.size(); ++i) {
-		// INFO(i << ": " << reads[i]->first);
 		double res = ReadBQPreprocessed(reads[i], i, reads.size());
 
 		INFO(LastMatchReadString());
