@@ -5,18 +5,11 @@
 #include "graphVisualizer.hpp"
 #include "pairedGraph.hpp"
 #include "graphio.hpp"
-//#include "readTracing.hpp"
-//#include "graphSimplification.hpp"
 
 LOGGER("p.graphConstruction");
 
 char EdgeStr[1000000];
 char EdgeStrLo[1000000];
-//int inD[MAX_VERT_NUMBER], outD[MAX_VERT_NUMBER];
-//int outputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
-//int inputEdges[MAX_VERT_NUMBER][MAX_DEGREE];
-//int fakeOutputVertices[MAX_VERT_NUMBER][MAX_DEGREE];
-//int fakeInputVertices[MAX_VERT_NUMBER][MAX_DEGREE];
 
 using namespace paired_assembler;
 
@@ -25,10 +18,9 @@ void constructGraph(PairedGraph &graph) {
 
 	INFO ("Read edges");
 	edgesMap edges = sequencesToMap(parsed_k_sequence, true);
-	INFO ("Start vertices");
 	graph.VertexCount = 0;
 	createVertices(edges, graph);
-	cerr << endl << "End vertices" <<endl;
+	INFO ("End create vertices");
 
 }
 
@@ -86,11 +78,10 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 		verticesMap &verts, longEdgesMap &longEdges, PairedGraph &graph) {
 	char Buffer[2000];
 	graph.EdgeId = 0;
-	cerr << "Start createVertices " << edges.size() << endl;
+	INFO ("Start create vertices");
 	forn(i, MAX_VERT_NUMBER) {
 		graph.degrees[i][0] = 0;
 		graph.degrees[i][1] = 0;
-
 	}
 	int count = 0;
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
@@ -100,9 +91,9 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 			if ((!(iter->se)[i]->used)) {
 				int length = 1;
 				count++;
-//				cerr << count << endl;
+//				TRACE(count);
 				if (((iter->se)[i])->lower->size() < l) {
-					cerr<<"Bad edge: "<<((iter->se)[i])->lower->size()<<" "<<((iter->se)[i])->lower->str()<<endl;
+					DEBUG("Bad edge: "<<((iter->se)[i])->lower->size()<<" "<<((iter->se)[i])->lower->str());
 				}
 				assert (((iter->se)[i])->lower->size() >= l);
 				int EdgeCoverage = ((iter->se)[i])->coverage;
@@ -128,17 +119,12 @@ void createVertices(gvis::GraphPrinter<int> &g, edgesMap &edges,
 				}
 				length += toleft;
 				int fromVert = storeVertex(g, graph, startKmer, startSeq);
-				//				if (! (count && ((1<<14) -1 ))) {
-//				cerr << graph.EdgeId << ": (" << length << ") " << ((char*) (EdgeStr
-//						+ 500000 - toleft)) << endl;
-//				}
 				Sequence* UpperSeq = new Sequence(((char*) (EdgeStr
 						+ 500000 - toleft)));
 				Sequence* LowerSeq = new Sequence(((char*) (EdgeStrLo
 						+ 500000 - toleft)));
 				if (LowerSeq->size() < l) {
-					cerr << endl << LowerSeq->str() << endl << UpperSeq->str()
-							<< endl;
+					ERROR(LowerSeq->str() << " " << UpperSeq->str());
 					assert(0);
 				}
 				Edge* newEdge = new Edge(UpperSeq, LowerSeq, fromVert, toVert,
