@@ -13,8 +13,7 @@ void TestEmptyGraph() {
 	PairedGraph g;
 	ASSERT_EQUAL(0, g.VertexCount);
 	ASSERT_EQUAL(0, g.EdgeId);
-	VertexIterator *it = g.vertexIterator();
-	ASSERT_EQUAL(false, it->hasNext());
+	ASSERT(g.endVertex() == g.beginVertex());
 }
 
 void TestOneVertexGraph() {
@@ -22,8 +21,7 @@ void TestOneVertexGraph() {
 	g.addVertex();
 	ASSERT_EQUAL(1, g.VertexCount);
 	ASSERT_EQUAL(0, g.EdgeId);
-	VertexIterator *it = g.vertexIterator();
-	ASSERT_EQUAL(false, it->hasNext());
+	ASSERT(g.endVertex() == g.beginVertex());
 }
 
 vector<int> addVertices(PairedGraph &graph, int number) {
@@ -40,8 +38,7 @@ vector<int> addVertices(PairedGraph &graph, int number) {
 void TestNoEdgeGraph() {
 	PairedGraph g;
 	vector<int> vertices = addVertices(g, 10);
-	VertexIterator *it = g.vertexIterator();
-	ASSERT_EQUAL(false, it->hasNext());
+	ASSERT(g.endVertex() == g.beginVertex());
 }
 
 void TestOneEdgeGraph() {
@@ -55,11 +52,13 @@ void TestOneEdgeGraph() {
 	ASSERT_EQUAL(0, e->EdgeId);
 	ASSERT_EQUAL(2, g.VertexCount);
 	ASSERT_EQUAL(1, g.EdgeId);
-	VertexIterator *it = g.vertexIterator();
+	VertexIterator it = g.beginVertex();
 	for (int i = 0; i < 2; i++) {
-		ASSERT_EQUAL(true, it->hasNext());
-		ASSERT_EQUAL(vertices[i], it->next());
+		ASSERT(it != g.endVertex());
+		ASSERT_EQUAL(vertices[i], *it);
+		++it;
 	}
+	ASSERT(g.endVertex() == it);
 	ASSERT_EQUAL(1, g.rightDegree(vertices[0]));
 	ASSERT_EQUAL(1, g.leftDegree(vertices[1]));
 	ASSERT_EQUAL(0, g.rightDegree(vertices[1]));
@@ -93,10 +92,11 @@ void TestThreeEdgesGraph() {
 	pair<vector<int>, vector<Edge *> > data = createCycleGraph(g, 3);
 	vector<int> vertices =  data.first;
 	vector<Edge *> edges = data.second;
-	VertexIterator *it = g.vertexIterator();
+	VertexIterator it = g.beginVertex();
 	for (int i = 0; i < 3; i++) {
-		ASSERT_EQUAL(true, it->hasNext());
-		ASSERT_EQUAL(vertices[i], it->next());
+		ASSERT(it != g.endVertex());
+		ASSERT_EQUAL(vertices[i], *it);
+		++it;
 		ASSERT_EQUAL(1, g.rightDegree(i));
 		ASSERT_EQUAL(1, g.leftDegree(i));
 		ASSERT_EQUAL(edges[i], g.rightEdge(vertices[i], 0));
@@ -105,12 +105,13 @@ void TestThreeEdgesGraph() {
 }
 
 void checkVertices(PairedGraph &g, vector<int> &vertices) {
-	VertexIterator *it = g.vertexIterator();
+	VertexIterator it = g.beginVertex();
 	for(int i = 0; i < vertices.size(); i++) {
-		ASSERT_EQUAL(true, it->hasNext());
-		ASSERT_EQUAL(vertices[i], it->next());
+		ASSERT(it != g.endVertex());
+		ASSERT_EQUAL(vertices[i], *it);
+		++it;
 	}
-	ASSERT_EQUAL(false, it->hasNext());
+	ASSERT(g.endVertex() == it);
 }
 
 void TestRemoveEdge() {
@@ -134,12 +135,14 @@ void TestRemoveVertex() {
 	vector<int> vertices =  data.first;
 	vector<Edge *> edges = data.second;
 	g.removeVertex(vertices[0]);
-	VertexIterator *it = g.vertexIterator();
-	ASSERT_EQUAL(true, it->hasNext());
-	ASSERT_EQUAL(vertices[1], it->next());
-	ASSERT_EQUAL(true, it->hasNext());
-	ASSERT_EQUAL(vertices[2], it->next());
-	ASSERT_EQUAL(false, it->hasNext());
+	VertexIterator it = g.beginVertex();
+	ASSERT(it != g.endVertex());
+	ASSERT_EQUAL(vertices[1], *it);
+	++it;
+	ASSERT(it != g.endVertex());
+	ASSERT_EQUAL(vertices[2], *it);
+	++it;
+	ASSERT(it == g.endVertex());
 	ASSERT_EQUAL(0, g.leftDegree(vertices[1]));
 	ASSERT_EQUAL(0, g.rightDegree(vertices[2]));
 	ASSERT_EQUAL(1, g.rightDegree(vertices[1]));

@@ -12,6 +12,7 @@
 #include "sequence.hpp"
 #include "nucl.hpp"
 #include <string>
+#include <iostream>
 using namespace std;
 
 class Read {
@@ -36,10 +37,10 @@ public:
 		return new Quality(qual_);
 	}
 
-	const string& getSequence() const {
+	const string& getSequenceString() const {
 		return seq_;
 	}
-	const string& getQuality() const{
+	const string& getQualityString() const{
 		return qual_;
 	}
 	const string& getName() const {
@@ -51,6 +52,13 @@ public:
 	char operator[](size_t i) const {
 		assert(is_nucl(seq_[i]));
 		return dignucl(seq_[i]);
+	}
+	void trimNs() {
+		size_t index = seq_.find('N');
+		if (index != string::npos) {
+			seq_.erase(seq_.begin() + index, seq_.end());
+			qual_.erase(qual_.begin() + index, qual_.end());
+		}
 	}
 	Read() {
 		;
@@ -69,6 +77,7 @@ private:
 	}
 	void setQuality(const char* s, bool rtl = false) {
 		qual_ = s;
+		// TODO: HAHA! NEXT TWO BRANCHES DO THE SAME :)
 		if (rtl) {
 			for (size_t i = 0; i < qual_.size(); ++i) {
 				qual_[qual_.size() - i - 1] -= PHRED_OFFSET;
@@ -102,12 +111,11 @@ private:
 						seq_[len - i - 1] = 'N';
 						break;
 					default:
-						std::cerr << " strange letteer in read. Exiting" << tmp;
+						cerr << " strange letter in read. Exiting" << tmp; // TODO: wtf?
 						assert(0);
 				}
 			}
 		}
-
 	}
 };
 
