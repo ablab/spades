@@ -168,7 +168,8 @@ class IVertexIterator {
 };
 
 //TODO Replace all Sequence * with just Sequence
-template<typename tVertex, typename tEdge>
+template<typename tVertex, typename tEdge, typename tJVertexIterator,
+		typename tVertexIterator, typename tEdgeIterator>
 class IPairedGraph {
 public:
 	/*Better way to do it is to implement begin() and end() functions which would return pointers to start and
@@ -186,14 +187,36 @@ public:
 
 	virtual tEdge rightEdge(tVertex vertex, int number) = 0;
 	virtual tEdge leftEdge(tVertex vertex, int number) = 0;
-	tEdge neighbour(tVertex vertex, int number, int direction) {
+	tEdge neighbourEdge(tVertex vertex, int number, int direction) {
 		if (direction == RIGHT)//RIGHT = 1
 			return this->rightEdge(vertex, number);
 		else if (direction == LEFT)//LEFT = -1
 			return this->leftEdge(vertex, number);
 	}
 
-	virtual IVertexIterator<tVertex> *vertexIterator() = 0;
+	virtual tEdgeIterator beginEdge(tVertex vertex, int direction) = 0;
+	virtual tEdgeIterator endEdge(tVertex vertex, int direction) = 0;
+
+	virtual tEdgeIterator beginRightEdge(tVertex vertex) {
+		return this->beginEdge(vertex, RIGHT);
+	}
+
+	virtual tEdgeIterator endRightEdge(tVertex vertex) {
+		return this->endEdge(vertex, RIGHT);
+	}
+
+	virtual tEdgeIterator beginLeftEdge(tVertex vertex) {
+		return this->beginEdge(vertex, LEFT);
+	}
+
+	virtual tEdgeIterator endLeftEdge(tVertex vertex) {
+		return this->endEdge(vertex, LEFT);
+	}
+
+	//	virtual tJVertexIterator jVertexIterator() = 0;
+
+	virtual tVertexIterator beginVertex() = 0;
+	virtual tVertexIterator endVertex() = 0;
 
 	//In order to add edge to graph one should create this edge first!
 	virtual tEdge addEdge(tEdge newEdge) = 0;
@@ -241,9 +264,8 @@ public:
 	int degrees[MAX_VERT_NUMBER][2];//, outD[MAX_VERT_NUMBER][2];
 	int edgeIds[MAX_VERT_NUMBER][MAX_DEGREE][2];
 	//	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
-//	vector<VertexPrototype *> vertexList_;
-	longEdgesMap longEdges;
-	verticesMap	verts;
+	//	vector<VertexPrototype *> vertexList_;
+	longEdgesMap longEdges;verticesMap verts;
 	int VertexCount;
 	int EdgeId;
 	PairedGraphData() {
@@ -255,13 +277,14 @@ public:
 	//	void RebuildVertexMap(void);
 };
 
-class VertexIterator: public IVertexIterator<int> {
+class JVertexIterator {
 	friend class PairedGraphData;
 private:
 	int currentVertex_;
 	PairedGraphData *graph_;
 public:
-	VertexIterator(PairedGraphData *graph);
+	JVertexIterator(PairedGraphData *graph);
+	JVertexIterator(const JVertexIterator &iterator);
 
 	/*
 	 * commented while merge. Possible we need it.
@@ -276,12 +299,54 @@ public:
 	 return currentVertex_ < graph_->VertexCount;
 	 }
 	 */
-	virtual bool hasNext();
+	bool hasNext();
 
-	virtual int next();
+	int next();
 };
 
-class PairedGraph: public PairedGraphData, public IPairedGraph<int, Edge *> {
+class VertexIterator {
+	friend class PairedGraphData;
+private:
+	PairedGraphData *graph_;
+	int currentVertex_;
+	void findNext();
+public:
+	VertexIterator(PairedGraphData *graph, int current = 0);
+
+	VertexIterator(const VertexIterator &iterator);
+
+	VertexIterator &operator++();
+
+	int &operator*();
+
+	bool operator==(const VertexIterator &other);
+
+	bool operator!=(const VertexIterator &other);
+};
+
+class EdgeIterator {
+	friend class PairedGraphData;
+private:
+	PairedGraphData *graph_;
+	int vertex_;
+	int index_;
+	int current_;
+public:
+	EdgeIterator(PairedGraphData *graph, int vertex, int index, int current);
+
+	EdgeIterator(const EdgeIterator &iterator);
+
+	EdgeIterator &operator++();
+
+	Edge *&operator*();
+
+	bool operator==(const EdgeIterator &other);
+
+	bool operator!=(const EdgeIterator &other);
+};
+
+class PairedGraph: public PairedGraphData, public IPairedGraph<int, Edge *,
+		JVertexIterator, VertexIterator, EdgeIterator> {
 private:
 	//TODO add vertexNumber and edgeNumber fields and getters for them
 	/**Method takes direction as RIGHT or LEFT, which are +1 and -1 and returns corresponding index
@@ -297,9 +362,8 @@ private:
 	 * @param edge Edge to delete
 	 * @direction Direction from which edge should be deleted. @direction can be LEFT or RIGHT.
 	 */
-	void removeEdgeVertexAdjacency(int vertex, Edge *edge,
-			int direction);
-//	void removeEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
+	void removeEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
+	//	void removeEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
 
 	/**
 	 * Method adds @edge to the list of edges adjecent to @vertex. This method works in O(number of neighbours)
@@ -308,8 +372,8 @@ private:
 	 * @param edge Edge to add
 	 * @direction Direction from which edge is added to vertex. @direction can be LEFT or RIGHT.
 	 */
-	void addEdgeVertexAdjacency(int vertex, Edge *edge,	int direction);
-//	void addEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
+	void addEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
+	//	void addEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
 public:
 
 	//TODO C-style outcoming and incoming edge iterators should be added!!!
@@ -318,9 +382,9 @@ public:
 	 *Method returns number of outgoing edges for @vertex
 	 */
 	virtual int rightDegree(int vertex);
-//	virtual int rightDegree(int vertex) {
-//		return degrees[vertex][1];
-//	}
+	//	virtual int rightDegree(int vertex) {
+	//		return degrees[vertex][1];
+	//	}
 
 	virtual int degree(int vertexId, int direction) {
 		int index = directionToIndex(direction);
@@ -332,9 +396,9 @@ public:
 	 *Method returns number of incoming edges for @vertex
 	 */
 	virtual int leftDegree(int vertex);
-//	virtual int leftDegree(int vertex) {
-//		return degrees[vertex][0];
-//	}
+	//	virtual int leftDegree(int vertex) {
+	//		return degrees[vertex][0];
+	//	}
 
 	/**
 	 * Method returns outcoming edge for given vertex with a given number
@@ -363,8 +427,15 @@ public:
 
 	//TODO Replace with C-stype iterator
 	//TODO Make it return iterator instead of iterator *.
-	//This is very bad method!!!!
-	virtual VertexIterator *vertexIterator();
+	//This is java style iterator. Better use newly created c style iterator VertexIterator
+	//	virtual JVertexIterator jVertexIterator();
+
+	virtual VertexIterator beginVertex();
+	virtual VertexIterator endVertex();
+
+	virtual EdgeIterator beginEdge(int vertex, int direction);
+	virtual EdgeIterator endEdge(int vertex, int direction);
+
 
 	/**
 	 * Method adds edge to graph and updates all data stored in graph correspondingly.
@@ -411,7 +482,7 @@ public:
 	 * @param vertex vertex to be deleted
 	 */
 	virtual void removeVertex(int vertex);
-//	virtual void removeVertex(int vertex);
+	//	virtual void removeVertex(int vertex);
 
 	/**
 	 * Method concatenate two edges into new one and deletes old edges.
@@ -436,9 +507,8 @@ public:
 	 * @param vertex2 vertex to be removed
 	 * @return vertex which is @vertex1 glued to @vertex2. In this implementation it is @vertex1
 	 */
-	virtual int glueVertices(int vertex1,
-			int vertex2);
-//	virtual int glueVertices(int vertex1, int vertex2);
+	virtual int glueVertices(int vertex1, int vertex2);
+	//	virtual int glueVertices(int vertex1, int vertex2);
 
 	/**
 	 * Method glues edges, there start and end points. Currently implemented as gluing of start and end vertices
