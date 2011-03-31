@@ -527,6 +527,18 @@ int PairedGraph::findVertex(ll kmer, Sequence *s) {
 	return -1;
 }
 
+vector<int> PairedGraph::findVertices(ll kmer) {
+	if (!isUpToDate)
+		RebuildVertexMap();
+	verticesMap::iterator it = verts.find(kmer);
+	vector<int> result;
+	if (it != verts.end())
+		for (int i = 0; i < it->second.size(); i++) {
+			result.push_back(it->second[i]->VertexId);
+		}
+	return result;
+}
+
 JVertexIterator::JVertexIterator(PairedGraphData *graph) {
 	graph_ = graph;
 	currentVertex_ = 0;

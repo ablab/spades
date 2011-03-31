@@ -253,6 +253,7 @@ public:
 
 	//This method has bad parameters but still nothing to replace them
 	virtual tVertex findVertex(ll kmer, Sequence *s) = 0;
+	virtual vector<tVertex> findVertices(ll kmer) = 0;
 };
 
 class PairedGraphData {
@@ -550,9 +551,16 @@ public:
 	 * This method finds vertex in graph with specific parameters.
 	 * @param kmer upper sequence
 	 * @param s lower sequence
-	 * @return vertex with given parameters if found and NULL otherwise
+	 * @return vertex with given parameters if found and -1 otherwise.
 	 */
 	virtual int findVertex(ll kmer, Sequence *s);
+
+	/**
+	 * This method finds all vertices in graph with given k-mer as upper sequence.
+	 * @param kmer upper sequence
+	 * @return vector of vertices found
+	 */
+	virtual vector<int> findVertices(ll kmer);
 
 	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
 
