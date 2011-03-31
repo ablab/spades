@@ -22,16 +22,6 @@ void processQualityReads(const char *filename, BayesQualityGenome & bqg) {
 	delete vec;
 	
 	return;
-	
-	/*while (!qrs.eof()) {
-		QRead qr(qrs.Next());
-		double res = bqg.ReadBQ(qr);
-		INFO(bqg.LastMatchReadString());
-		INFO(bqg.LastMatchPrettyString());
-		INFO(bqg.LastMatchString());
-		ostringstream m; for (size_t i=0; i< bqg.LastMatch().size(); ++i) m << bqg.LastMatch()[i]; INFO(m.str());
-		INFO(res << ", best: " << bqg.LastMatchQ() << "/" << bqg.LastTotalQ() << " at " << bqg.LastMatchIndex() << " with " << bqg.LastMatchInserts() << " inserts and " << bqg.LastMatchDeletes() << " deletes");
-	}*/
 }
 
 int main() {
@@ -39,7 +29,7 @@ int main() {
 	
 
 	//ireadstream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta.gz");
-	ifaststream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta");
+	ifaststream ifs("./data/bayes/biggenome.fasta");
 	string name, genome;
 	ifs >> name >> genome;
 	INFO("!" << name);
