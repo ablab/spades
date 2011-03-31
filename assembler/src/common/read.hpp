@@ -12,6 +12,7 @@
 #include "sequence.hpp"
 #include "nucl.hpp"
 #include <string>
+#include <iostream>
 using namespace std;
 
 class Read {
@@ -103,7 +104,7 @@ private:
 						seq_[len - i - 1] = 'N';
 						break;
 					default:
-						std::cerr << " strange letteer in read. Exiting" << tmp; // TODO: wtf?
+						cerr << " strange letter in read. Exiting" << tmp; // TODO: wtf?
 						assert(0);
 				}
 			}

@@ -9,14 +9,15 @@
 LOGGER("b");
 
 #define SKIP_READS 6
-#define PROCESS_READS 5
+#define PROCESS_READS 5000
 
 using namespace bayes_quality;
 
 void processQualityReads(const char *filename, BayesQualityGenome & bqg) {
 	
 	vector<Read> *vec = ireadstream::readAll(filename, PROCESS_READS);
-	bqg.ProcessReads(*vec);
+	vector<Read> tmpvec; for (size_t i=0; i < PROCESS_READS; ++i) tmpvec.push_back(vec->at(i));
+	bqg.ProcessReads(tmpvec);
 	delete vec;
 	
 	return;
@@ -36,16 +37,16 @@ int main() {
 	INFO("Hello, Bayes!");
 	
 
+	//ireadstream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta.gz");
 	ireadstream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta");
-	// ifaststream ifs("/home/student/nikolenko/python/bayesQuality/genome.fasta");
 	Read r;
 	ifs >> r;
-	INFO(r.getName().data());
+	INFO("hello");
 	BayesQualityGenome bqg(r.getSequenceString().data());
 
 	processQualityReads("/home/student/nikolenko/python/bayesQuality/s_6_1.fastq.gz", bqg);
-
-	// processQualityReads("/home/student/nikolenko/python/bayesQuality/smalltest.fastq", bqg);
 	
+	INFO("total good positions: " << bqg.TotalGoodPositions() << "/" << bqg.TotalPositions());
+
 	return 0;
 }
