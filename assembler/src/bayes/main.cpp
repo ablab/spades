@@ -1,7 +1,6 @@
 #include <iostream>
 #include <numeric>
 #include "bayes_quality.hpp"
-//#include "quality_read_stream.hpp"
 #include "ireadstream.hpp"
 #include "ifaststream.hpp"
 #include "read.hpp"
@@ -11,6 +10,8 @@ LOGGER("b");
 
 #define SKIP_READS 6
 #define PROCESS_READS 25
+
+#define READ_FILENAME "/home/student/nikolenko/python/bayesQuality/s_6_1.fastq.gz"
 
 using namespace bayes_quality;
 
@@ -24,9 +25,12 @@ void processQualityReads(const char *filename, BayesQualityGenome & bqg) {
 	return;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
 	INFO("Hello, Bayes!");
 	
+	string readfilename = "";
+	if (argc > 1) readfilename = argv[1];
+	else readfilename = READ_FILENAME;
 
 	//ireadstream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta.gz");
 	ifaststream ifs("./data/bayes/biggenome.fasta");
@@ -35,7 +39,7 @@ int main() {
 	INFO("!" << name);
 	BayesQualityGenome bqg(genome.data());
 
-	processQualityReads("/home/student/nikolenko/python/bayesQuality/s_6_1.fastq.gz", bqg);
+	processQualityReads(readfilename.data(), bqg);
 	
 	INFO("total good positions: " << bqg.TotalGoodPositions() << "/" << bqg.TotalPositions());
 

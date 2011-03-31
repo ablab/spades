@@ -356,7 +356,7 @@ void BayesQualityGenome::ProcessReads(const vector<Read> &reads) {
 	ofstream os(STATSFILENAME, ios::out);
 	if (os) {
 		os << "# The order of reads matches the input file" << endl;
-		os << "# sumq  bestloc  bestq  replacements  inserts  dels  matchstring" << endl;
+		os << "#          sumq  bestloc  bestq  replacements  inserts  dels  matchstring" << endl;
 	} else {
 		cerr << "Cannot write to statistics file\n";
 		abort();
@@ -373,7 +373,7 @@ void BayesQualityGenome::ProcessReads(const vector<Read> &reads) {
 		INFO(res << ", best: " << LastMatchQ() << "/" << LastTotalQ() << " at " << LastMatchIndex() << " with " << LastMatchInserts() << " inserts and " << LastMatchDeletes() << " deletes");
 		#ifdef WRITE_STATSFILE
 		size_t replacements = 0; for (size_t i=0; i< LastMatch().size(); ++i) if (LastMatch()[i] == 0) ++replacements;
-		os << res << "\t" << LastMatchIndex() << "\t" << LastMatchQ() << "\t" << replacements << "\t" << LastMatchInserts() << "\t" << LastMatchDeletes() << "\t" << m.str().data() << endl;
+		os << setw(15) << res << "\t" << LastMatchIndex() << "\t" << LastMatchQ() << "\t" << replacements << "\t" << LastMatchInserts() << "\t" << LastMatchDeletes() << "\t" << m.str().data() << endl;
 		#endif
 	}
 	
