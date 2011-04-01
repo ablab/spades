@@ -34,7 +34,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	double eps = 1;
 	INFO("traceReads started");
 	INFO(parsed_reads);
-	freopen(parsed_reads.c_str(), "r", stdin);
+	FILE * inFile = fopen(parsed_reads.c_str(), "r");
 	char *upperNuclRead = new char[readLength + 2];
 	char *lowerNuclRead = new char[readLength + 2];
 	char *upperRead = new char[readLength + 2];
@@ -43,7 +43,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	ll upperMask = (((ll) 1) << (2 * (k - 1))) - 1;
 	ll lowerMask = (((ll) 1) << (2 * (l - 1))) - 1;
 	//	FILE* fout = fopen("data/filtered_reads","w");
-	while (nextReadPair(upperNuclRead, lowerNuclRead)) {
+	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
 		if (!(count & (1024*128 - 1)))
 		cerr<<"read number "<<count<<" processed"<<endl;
 		count++;

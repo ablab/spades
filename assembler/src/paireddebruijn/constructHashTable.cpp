@@ -231,14 +231,16 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 }
 
 
-void constructTable( myMap &table) {
-//	FILE* inFile = fopen(inputFile.c_str(), "r");
+void constructTable(string inputFile, myMap &table) {
+	FILE* inFile = fopen(inputFile.c_str(), "r");
+
+
 	int count = 0;
 	char *upperNuclRead = new char[readLength + 2];
 	char *lowerNuclRead = new char[readLength + 2];
 	char *upperRead = new char[readLength + 2];
 	char *lowerRead = new char[readLength + 2];
-	while (nextReadPair(upperNuclRead, lowerNuclRead)) {
+	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
 //		fprintf(stderr, "%s", upperNuclRead);
 		codeRead(upperNuclRead, upperRead);
 		codeRead(lowerNuclRead, lowerRead);
@@ -271,19 +273,14 @@ void readsToPairs(string inputFile, string outputFile) {
 
 	myMap table;
 	INFO("generation of k-l pairs started");
-	freopen(inputFile.c_str(), "r", stdin);
-	constructTable( table);
+	constructTable(inputFile, table);
 	INFO("generation of k-l pairs finished, dumping to disk");
-//	freopen(outputFile.c_str(), "w", stdout);
-//	cerr<< "outputFile opened";
 	outputTable(outputFile, table);
-//	fclose(stdout);
-//	freopen(NULL, "w", stdout);
 	table.clear();
 }
 //#define OUTPUT_DECOMPRESSED
 int pairsToLmers(string inputFile, string outputFile) {
-	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
+	FILE* inFile = fopen(inputFile.c_str(), "r");
 	FILE* outFile = fopen(outputFile.c_str(), "w");
 
 	cerr<<"pairsToLmers "<<inputFile.c_str()<<"->"<<outputFile.c_str()<<endl;
@@ -293,6 +290,7 @@ int pairsToLmers(string inputFile, string outputFile) {
 	int covers[MAXLMERSIZE];
 
 	set<ll> lset;
+//	set<ll> kset
 	int count = 0;
 	while (1) {
 		count++;
@@ -329,6 +327,7 @@ int pairsToLmers(string inputFile, string outputFile) {
 		fprintf(outFile, "%lld ", *i);
 	}
 	fclose(outFile);
+	fclose(inFile);
 	return 0;
 }
 
