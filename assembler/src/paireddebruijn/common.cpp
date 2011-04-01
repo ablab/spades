@@ -5,6 +5,9 @@ LOGGER("p.common");
 string parsed_reads;
 string parsed_k_l_mers;
 string parsed_k_sequence;
+string parsed_l_k_mers;
+string parsed_k_mers;
+string distance_type;
 string error_log;
 string parsed_l_mers;
 string graph_file;
@@ -25,7 +28,7 @@ int needSequences = 1;
 int needGraph = 1;
 int useExpandDefinite = 1;
 int useExtractDefinite = 1;
-
+int needRevertedPairs = 0;
 int useTraceReads = 1;
 int useProcessLower = 1;
 void initConstants(string ini_file) {
@@ -43,6 +46,7 @@ void initConstants(string ini_file) {
 	assert(fscanf(ini, "work_folder = %s\n" , tmp) == 1);
 	string folder = string(tmp) + '/';
 	assert(fscanf(ini, "distance_type = %s\n" , tmp) == 1);
+	distance_type = string(tmp);
 	char topr[20];
 	sprintf(topr, "_%d_%d", readLength, insertLength);
 	string suff(topr);
@@ -58,6 +62,12 @@ void initConstants(string ini_file) {
 	parsed_k_l_mers = folder + string(tmp) + suff + ".txt";
 	assert(fscanf(ini, "parsed_l_mers = %s\n" , tmp) == 1);
 	parsed_l_mers = folder + string(tmp) + suff + ".txt";
+
+	assert(fscanf(ini, "parsed_l_k_mers = %s\n" , tmp) == 1);
+	parsed_l_k_mers = folder + string(tmp) + suff + ".txt";
+	assert(fscanf(ini, "parsed_k_mers = %s\n" , tmp) == 1);
+	parsed_k_mers = folder + string(tmp) + suff + ".txt";
+
 	assert(fscanf(ini, "parsed_k_sequence = %s\n" , tmp) == 1);
 	parsed_k_sequence = folder + string(tmp) + suff + ".txt";
 	DEBUG(parsed_k_sequence);
@@ -71,6 +81,7 @@ void initConstants(string ini_file) {
 
 	assert(fscanf(ini, "needPairs = %d\n", &needPairs) == 1);
 	assert(fscanf(ini, "needLmers = %d\n", &needLmers) == 1);
+	assert(fscanf(ini, "needRevertedPairs = %d\n", &needRevertedPairs) == 1);
 	assert(fscanf(ini, "needSequences = %d\n", &needSequences) == 1);
 	assert(fscanf(ini, "needGraph = %d\n", &needGraph) == 1);
 	assert(fscanf(ini, "useExpandDefinite = %d\n", &useExpandDefinite) == 1);

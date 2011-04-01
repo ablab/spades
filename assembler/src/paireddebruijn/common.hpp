@@ -64,11 +64,15 @@ const string threaded_graph = string("data/threaded_graph") +  + ".dot";
 const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
 const string ini_file = "data/paireddebruijn/paired.ini";
+extern string distance_type;
 extern string parsed_reads;
 extern string parsed_k_l_mers;
+extern string parsed_l_mers;
+extern string parsed_l_k_mers;
+extern string parsed_k_mers;
+
 extern string parsed_k_sequence;
 extern string error_log;
-extern string parsed_l_mers;
 extern string graph_file;
 extern string graph2;
 extern string threaded_graph;
@@ -85,6 +89,7 @@ extern int minIntersect;
 extern int fictiveSecondReads;
 extern int needPairs;
 extern int needLmers;
+extern int needRevertedPairs;
 extern int needSequences;
 extern int needGraph;
 extern int useExpandDefinite;

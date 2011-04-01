@@ -5,7 +5,8 @@
 using namespace std;
 typedef map<ll, pair<vector<ll>, vector<int>>> myMap;
 
-void readsToPairs(string inputFile, string outputFile);
+//reverse- take l-mer from first read and k-mer- from second
+void readsToPairs(string inputFile, string outputFile, bool reverse = false);
 int pairsToSequences(string inputFile, string lmerFile, string outputFile);
 string decompress(ll a, int l);
 //void codeRead(char *read, char *code);

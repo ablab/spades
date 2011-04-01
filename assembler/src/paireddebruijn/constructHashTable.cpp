@@ -231,7 +231,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 }
 
 
-void constructTable(string inputFile, myMap &table) {
+void constructTable(string inputFile, myMap &table, bool reverse) {
 	FILE* inFile = fopen(inputFile.c_str(), "r");
 	int count = 0;
 	char *upperNuclRead = new char[readLength + 2];
@@ -241,8 +241,13 @@ void constructTable(string inputFile, myMap &table) {
 	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
 //		fprintf(stderr, "%s", upperNuclRead);
 		if ((strlen(upperNuclRead)<readLength)||(strlen(lowerNuclRead)<readLength)) continue;
-		codeRead(upperNuclRead, upperRead);
-		codeRead(lowerNuclRead, lowerRead);
+		if (reverse) {
+			codeRead(upperNuclRead, lowerRead);
+			codeRead(lowerNuclRead, upperRead);
+		} else {
+			codeRead(upperNuclRead, upperRead);
+			codeRead(lowerNuclRead, lowerRead);
+		}
 		processReadPair(table, upperRead, lowerRead);
 		if (!(count & (1024*64 - 1)))
 			INFO("read number "<<count<<" processed"<<endl);
@@ -268,11 +273,11 @@ void outputTable(string outputFile, myMap &pairedTable) {
 	fclose(outFile);
 }
 
-void readsToPairs(string inputFile, string outputFile) {
+void readsToPairs(string inputFile, string outputFile , bool reverse) {
 
 	myMap table;
 	INFO("generation of k-l pairs started");
-	constructTable(inputFile, table);
+	constructTable(inputFile, table, reverse);
 	INFO("generation of k-l pairs finished, dumping to disk");
 	outputTable(outputFile, table);
 	table.clear();

@@ -12,21 +12,10 @@ namespace paired_assembler {
 
 //typedef int Kmer;
 
-//class Sequence {
-//	char *_nucleotides;
-//	short _length;
-//public:
-//	Sequence(char *nucleotides, short length) : _nucleotides(nucleotides), _length(length)
-//	{}
-//	char operator[](const int &index);
-//};
+
 
 class Vertex;
 
-//struct Arc {
-//	short _coverage;
-//	Vertex* _head;
-//};
 class VertexPrototype {
 public:
 	ll upper;
@@ -71,6 +60,7 @@ public:
 	int ToVertex;
 	int EdgeId;
 	int coverage;
+	int deltaShift;
 	Edge(Edge &e) {
 		length = e.length;
 		FromVertex = e.FromVertex;
@@ -79,6 +69,7 @@ public:
 		coverage = e.coverage;
 		upper = new Sequence(const_cast<Sequence&> (*e.upper));
 		lower = new Sequence(const_cast<Sequence&> (*e.lower));
+		deltaShift = e.deltaShift;
 	}
 	//	Vertex(int coverage, int length, Sequence *kmer, Sequence *pair, bool direction, int delta_d);
 	void ExpandRight(Edge &newRight) {
@@ -109,6 +100,10 @@ public:
 			length -= toCut;
 		}
 	}
+
+	int computeInsertLength() {
+
+	}
 	void ExpandLeft(Edge &newLeft) {
 		FromVertex = newLeft.FromVertex;
 		if (newLeft.length > 0) {
@@ -122,7 +117,7 @@ public:
 		}
 	}
 	Edge(Sequence *up, Sequence *low, int from, int to, int len, int id,
-			int cov = 1) {
+			int cov = 1, int dShift = 0) {
 		upper = up;
 		lower = low;
 		FromVertex = from;
@@ -130,6 +125,7 @@ public:
 		length = len;
 		EdgeId = id;
 		coverage = cov;
+		deltaShift = dShift;
 	}
 
 	void clearData() {

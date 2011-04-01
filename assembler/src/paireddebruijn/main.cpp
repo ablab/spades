@@ -37,6 +37,13 @@ void run() {
 		cerr << endl << " constructing Lmers" << endl;
 		pairsToLmers(parsed_k_l_mers, parsed_l_mers);
 	}
+	if (needRevertedPairs) {
+		INFO ("constructing reverted");
+		cerr << endl << " constructing pairs" << endl;
+		readsToPairs(parsed_reads, parsed_l_k_mers, true);
+		cerr << endl << " constructing Lmers" << endl;
+		pairsToLmers(parsed_l_k_mers, parsed_l_mers);
+	}
 	if (needSequences) {
 		cerr << endl << " constructing Sequences" << endl;
 		pairsToSequences(parsed_k_l_mers, parsed_l_mers, parsed_k_sequence);
