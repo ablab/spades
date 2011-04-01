@@ -12,17 +12,17 @@ using namespace std;
 
 class SmoothPositionChooser {
 public:
-	static int choosePosition(int currentReadNumber, int readNumber, int minPosition,
-			int maxPosition) {
-		return minPosition + (maxPosition - minPosition) * currentReadNumber
-				/ (readNumber - 1);
+	static int choosePosition(int currentReadNumber, int readNumber,
+			int minPosition, int maxPosition) {
+		return minPosition + (maxPosition - minPosition)
+				* (ll) currentReadNumber / (readNumber - 1);
 	}
 };
 
 class RandomPositionChooser {
 public:
-	static int choosePosition(int currentReadNumber, int readNumber, int minPosition,
-			int maxPosition) {
+	static int choosePosition(int currentReadNumber, int readNumber,
+			int minPosition, int maxPosition) {
 		return minPosition + rand() % (maxPosition - minPosition + 1);
 	}
 };
@@ -52,7 +52,7 @@ public:
 	void initParameters(int coverage, int insert) {
 		insertLength_ = insert;
 		coverage_ = coverage;
-		readNumber_ = coverage * genome_.size() / (size * cnt);
+		readNumber_ = coverage_ * genome_.size() / (size * cnt);
 		currentReadNumber_ = 0;
 		readingStarted_ = false;
 		setErrorProbability(0);
@@ -98,7 +98,7 @@ public:
 			cerr << "can not change generator parameters while reading" << endl;
 			assert(1);
 		}
-		insertError_ = insertError;
+		insertError_ = insertError / 2;
 		maxPosition_ = genome_.size() - size * cnt - insertLength_ * (cnt - 1)
 				- insertError_;
 		minPosition_ = insertError_;
@@ -163,12 +163,13 @@ private:
 	}
 
 	bool read(strobe_read<size, cnt, T> &sr) {
-//				cout << currentReadNumber_ << " " << readNumber_ << endl;
+		//				cout << currentReadNumber_ << " " << readNumber_ << endl;
 		if (!is_open() || eof()) {
 			return false;
 		}
 		int p = PositionChooser::choosePosition(currentReadNumber_,
 				readNumber_, minPosition_, maxPosition_);
+		cout << p << endl;
 		for (int i = 0; i < cnt; i++) {
 			int positionError = rand() % (2 * insertError_ + 1) - insertError_;
 			string readString = genome_.substr(p + positionError, size);
@@ -180,5 +181,25 @@ private:
 		return true;
 	}
 };
+
+template<typename PositionChooser>
+void generateReads(string fileName, string genomeFileName, int insertLength,
+		int coverage, double errorProbability, int maxInsertLengthError) {
+	ofstream os;
+	os.open(fileName.c_str());
+	Sequence genome = readGenomeFromFile(genomeFileName);
+	stringstream ss;
+	ss << genome;
+	ReadGenerator<100, 2, int, PositionChooser> gen(ss.str(), coverage,
+			insertLength);
+	gen.setErrorProbability(0);
+	gen.setMaxInsertLengthError(0);
+	strobe_read<100, 2> readPair;
+	while (!gen.eof()) {
+		gen >> readPair;
+		os << readPair[0] << " " << readPair[1] << endl;
+	}
+	os.close();
+}
 
 #endif /* READGENERATOR_HPP_ */
