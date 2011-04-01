@@ -23,8 +23,9 @@ public:
 	int VertexId;
 	bool used;
 	int coverage;
+	int deltaShift;
 	VertexPrototype(Sequence *lower_, int id, int coverage_ = 1);
-	VertexPrototype(ll upper_, Sequence *lower_, int id, int coverage_ = 1);
+	VertexPrototype(ll upper_, Sequence *lower_, int id, int coverage_ = 1, int deltaShift_ = 0);
 	~VertexPrototype() {
 		delete lower;
 	}
@@ -544,8 +545,6 @@ public:
 	void RebuildVertexMap(void);
 };
 
-int storeVertex(gvis::GraphPrinter<int> &g, PairedGraph &graph, ll newKmer,
-		Sequence* newSeq);
 int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq);
 int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq, int VertNum);
 void resetVertexCount(PairedGraph &graph);
