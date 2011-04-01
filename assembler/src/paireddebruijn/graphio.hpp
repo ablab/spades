@@ -13,8 +13,16 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, string fileName);
 
 void codeRead(char *read, char *code);
 
+
 inline bool nextReadPair(FILE* f, char * &read1, char * &read2) {
-	return (fscanf(f, "%s %s", read1, read2) == 2);
+	if (!fictiveSecondReads) return (fscanf(f, "%s %s", read1, read2) == 2);
+	else {
+		if (fscanf(f, "%s %s", read1, read2) == 2){
+			forn(i,strlen(read2)) read2[i]='A';
+			return true;
+		}
+		return false;
+	}
 }
 
 Sequence readGenome(istream &is);

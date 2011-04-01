@@ -31,8 +31,8 @@
 
 //LOGGER("paireddebruijn.common");
 
-#define MAX_VERT_NUMBER 10000
-#define MAX_DEGREE 30
+#define MAX_VERT_NUMBER 50000
+#define MAX_DEGREE 50
 #define suffix "_const_d"
 
 
@@ -82,6 +82,7 @@ extern int minIntersect;
 
 
 
+extern int fictiveSecondReads;
 extern int needPairs;
 extern int needLmers;
 extern int needSequences;

@@ -214,7 +214,6 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 		if (checkBoundsForUpper(upper)) {
 			addPairToTable(table, upper, lower);
 			totalKmers++;
-
 		}
 
 		upper <<= 2;
@@ -224,6 +223,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 		lower <<= 2;
 		lower += lowerRead[j + l];
 		lower &= lowerMask;
+
 		//fprintf(stderr,"%d %d\n", upper, lower);
 
 	}
@@ -233,8 +233,6 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 
 void constructTable(string inputFile, myMap &table) {
 	FILE* inFile = fopen(inputFile.c_str(), "r");
-
-
 	int count = 0;
 	char *upperNuclRead = new char[readLength + 2];
 	char *lowerNuclRead = new char[readLength + 2];
@@ -242,10 +240,11 @@ void constructTable(string inputFile, myMap &table) {
 	char *lowerRead = new char[readLength + 2];
 	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
 //		fprintf(stderr, "%s", upperNuclRead);
+		if ((strlen(upperNuclRead)<readLength)||(strlen(lowerNuclRead)<readLength)) continue;
 		codeRead(upperNuclRead, upperRead);
 		codeRead(lowerNuclRead, lowerRead);
 		processReadPair(table, upperRead, lowerRead);
-		if (!(count & (1024*128 - 1)))
+		if (!(count & (1024*64 - 1)))
 			INFO("read number "<<count<<" processed"<<endl);
 		count++;
 	}

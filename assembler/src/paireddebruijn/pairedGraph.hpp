@@ -544,7 +544,7 @@ public:
 	virtual vector<int> findVertices(ll kmer);
 
 	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
-
+	void removeLowCoveredEdges(longEdgesMap &longEdges, int CoverageThreshold = 1);
 	void RebuildVertexMap(void);
 };
 
