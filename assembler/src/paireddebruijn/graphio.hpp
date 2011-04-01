@@ -24,6 +24,11 @@ inline bool nextReadPair( char * &read1, char * &read2) {
 	}
 }
 
+Sequence readGenome(istream &is);
+
+Sequence readGenomeFromFile(const string &fileName);
+
+
 ll extractMer(char *read, int shift, int length);
 
 string decompress(ll a, int l);

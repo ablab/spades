@@ -15,7 +15,7 @@
 using namespace std;
 
 // STEP 1: declare the type of file handler and the read() function
-KSEQ_INIT(gzFile, gzread)
+// KSEQ_INIT(gzFile, gzread)
 
 /*
  * Read name, seq and qual strings from FASTQ data (one by one)

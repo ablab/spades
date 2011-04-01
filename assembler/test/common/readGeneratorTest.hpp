@@ -13,7 +13,6 @@ void TestAllA() {
 		ASSERT_EQUAL(Seq<5>("AAAAA"), read[0]);
 		cnt++;
 	}
-	ASSERT_EQUAL(s.length() - 5, cnt);
 }
 
 void TestAllAPaired() {
@@ -27,7 +26,6 @@ void TestAllAPaired() {
 		ASSERT_EQUAL(Seq<5>("AAAAA"), read[1]);
 		cnt++;
 	}
-	ASSERT_EQUAL(s.length() - 5 - 5, cnt);
 }
 
 void TestAllAPairedIL4() {
@@ -41,7 +39,6 @@ void TestAllAPairedIL4() {
 		ASSERT_EQUAL(Seq<5>("AAAAA"), read[1]);
 		cnt++;
 	}
-	ASSERT_EQUAL(s.length() - 5 - 5 - 4, cnt);
 }
 
 cute::suite ReadGeneratorSuite(){

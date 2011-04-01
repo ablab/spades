@@ -7,6 +7,7 @@
 #include "readTracing.hpp"
 #include "sequence.hpp"
 #include "readsReformatter.hpp"
+#include "read_generator.hpp"
 
 using namespace paired_assembler;
 
@@ -130,14 +131,30 @@ void run() {
 			//outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExtractDefinite2_g.dot");
 
 
-		cerr << "\n Finished";
-		INFO("Finished");
 	}
+	cerr << "\n Finished";
+	INFO("Finished");
 }
 
-
+void generateReads(string fileName, string genomeFileName, int insertLength, int coverage) {
+	ofstream os;
+	os.open(fileName.c_str());
+	Sequence genome = readGenomeFromFile(genomeFileName);
+	stringstream ss;
+	ss << genome;
+	ReadGenerator<100, 2, int, RandomPositionChooser> gen(ss.str(), coverage, insertLength);
+	gen.setErrorProbability(0);
+	gen.setMaxInsertLengthError(10);
+	strobe_read<100, 2> readPair;
+	while(!gen.eof()) {
+		 gen >> readPair;
+		 os << readPair[0] << " " << readPair[1] << endl;
+	}
+	os.close();
+}
 
 int main() {
+//	generateReads("data/paireddebruijn/someFile.txt", "data/input/MG1655-K12_cut.fasta", 20, 20);
 	init();
 	run();
 	return 0;

@@ -204,9 +204,9 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph,
  */
 pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &graph,
 		int vertexId) {
-	int res1 = k - 1;
-	int res2 = k - 1;
-	int max_res = insertLength + 2 * readLength + 1;
+	size_t res1 = k - 1;
+	size_t res2 = k - 1;
+	size_t max_res = insertLength + 2 * readLength + 1;
 	//int colors[MAX_DEGREE];
 	forn(i, graph.degrees[vertexId][0]) {
 		int e1 = graph.edgeIds[vertexId][i][IN_EDGE];
@@ -215,7 +215,7 @@ pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &graph,
 
 		//		cerr << endl << "1 " << tmp.str();
 		forn(j, i) {
-			int count = 0;
+			size_t count = 0;
 
 			int e2 = graph.edgeIds[vertexId][j][IN_EDGE];
 			while (count < max_res) {
@@ -246,7 +246,7 @@ pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &graph,
 		//		cerr << endl << "1 " << tmp.str();
 		forn(j, i) {
 			int e2 = graph.edgeIds[vertexId][j][OUT_EDGE];
-			int count = 0;
+			size_t count = 0;
 			while (count < max_res) {
 				Sequence tmp2 = *longEdges[e2]->upper;
 				Sequence tmp2l = *longEdges[e2]->lower;
@@ -450,8 +450,8 @@ inline bool equalsAtIndex(longEdgesMap &longEdges, int id1, int id2, int index, 
 
 
 inline int fistDifferenceIndex(PairedGraph &graph, Edge* edge1, Edge* edge2, int direction) {
-	int res = 0;
-	int maxLength = edge1->upper->size();
+	size_t res = 0;
+	size_t maxLength = edge1->upper->size();
 	if (maxLength > edge2->upper->size()) maxLength = edge2->upper->size();
 	for(res=0; res < maxLength; res++){
 		if (!equalsAtIndex(graph.longEdges, edge1->EdgeId, edge2->EdgeId, res, direction))
@@ -602,9 +602,9 @@ void extractDefinite(PairedGraph &graph, int dir){
 			}
 			cerr<<"firstIndex "<<FirstEdgeIndex<<" secondIndex "<<SecondEdgeIndex<<" degree "<<graph.degree(CurVertex, dir)<<endl;
 			if (FirstEdgeIndex+1 >= graph.degree(CurVertex, dir)) break;
-			firstEdge = graph.neighbour(CurVertex, FirstEdgeIndex, dir);
+			firstEdge = graph.neighbourEdge(CurVertex, FirstEdgeIndex, dir);
 			cerr<<"first edge Id "<<firstEdge->EdgeId<<endl;
-			secondEdge = graph.neighbour(CurVertex, SecondEdgeIndex, dir);
+			secondEdge = graph.neighbourEdge(CurVertex, SecondEdgeIndex, dir);
 			cerr<<"second edge Id "<<secondEdge->EdgeId<<endl;
 			int diffIndex = fistDifferenceIndex(graph, firstEdge, secondEdge, dir);
 			if (diffIndex <= k-1) continue;
