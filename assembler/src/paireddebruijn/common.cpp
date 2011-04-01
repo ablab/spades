@@ -21,7 +21,7 @@ int insertLength = 0;
 int minIntersect;
 
 
-int fictiveSecondReads = 1;
+int fictiveSecondReads = 0;
 int needPairs = 1;
 int needLmers = 1;
 int needSequences = 1;
@@ -37,27 +37,43 @@ void initConstants(string ini_file) {
 
 	//	string folder = string("data/");
 	FILE* ini = fopen(ini_file.c_str(), "r");
+
+	assert(fscanf(ini, "Run:\n") == 0);
+
+	assert(fscanf(ini, "needPairs = %d\n", &needPairs) == 1);
+	assert(fscanf(ini, "needLmers = %d\n", &needLmers) == 1);
+	assert(fscanf(ini, "needRevertedPairs = %d\n", &needRevertedPairs) == 1);
+	assert(fscanf(ini, "needSequences = %d\n", &needSequences) == 1);
+	assert(fscanf(ini, "needGraph = %d\n", &needGraph) == 1);
+	assert(fscanf(ini, "useExpandDefinite = %d\n", &useExpandDefinite) == 1);
+	assert(fscanf(ini, "useTraceReads = %d\n", &useTraceReads) == 1);
+	assert(fscanf(ini, "useProcessLower = %d\n", &useProcessLower) == 1);
+	assert(fscanf(ini, "useExtractDefinite = %d\n", &useExtractDefinite) == 1);
+
+
+
+	assert(fscanf(ini, "Options:\n") == 0);
+
 	assert(fscanf(ini, "k = %d\n", &k) == 1);
 	assert(fscanf(ini, "l = %d\n", &l) == 1);
 	assert(fscanf(ini, "readLength = %d\n", &readLength) == 1);
 	assert(fscanf(ini, "insertLength = %d\n", &insertLength) == 1);
-//	assert(fscanf(ini, "maxSeqLength = %d\n", &maxSeqLength) == 1);
+	assert(fscanf(ini, "distance_type = %s\n" , tmp) == 1);
+	distance_type = string(tmp);
+	assert(fscanf(ini, "fictiveSecondReads = %d\n", &fictiveSecondReads) == 1);
+
+
 	assert(fscanf(ini, "Filenames:\n") == 0);
 	assert(fscanf(ini, "work_folder = %s\n" , tmp) == 1);
 	string folder = string(tmp) + '/';
-	assert(fscanf(ini, "distance_type = %s\n" , tmp) == 1);
-	distance_type = string(tmp);
 	char topr[20];
 	sprintf(topr, "_%d_%d", readLength, insertLength);
 	string suff(topr);
-	suff+= "_";
-	suff += tmp;
 	string d_desc =  suff;
 	sprintf(topr, "_%d_%d",k, l);
 	suff += topr;
 	assert(fscanf(ini, "parsed_reads = %s\n" , tmp) == 1);
 	parsed_reads = folder + string(tmp) + d_desc + ".txt";
-	ERROR(parsed_reads);
 	assert(fscanf(ini, "parsed_k_l_mers = %s\n" , tmp) == 1);
 	parsed_k_l_mers = folder + string(tmp) + suff + ".txt";
 	assert(fscanf(ini, "parsed_l_mers = %s\n" , tmp) == 1);
@@ -77,18 +93,6 @@ void initConstants(string ini_file) {
 	graph2 = folder + string(tmp) + suff + ".dot";
 	assert(fscanf(ini, "error_log = %s\n" , tmp) == 1);
 	error_log = folder + string(tmp);
-	assert(fscanf(ini, "Run:\n") == 0);
-
-	assert(fscanf(ini, "needPairs = %d\n", &needPairs) == 1);
-	assert(fscanf(ini, "needLmers = %d\n", &needLmers) == 1);
-	assert(fscanf(ini, "needRevertedPairs = %d\n", &needRevertedPairs) == 1);
-	assert(fscanf(ini, "needSequences = %d\n", &needSequences) == 1);
-	assert(fscanf(ini, "needGraph = %d\n", &needGraph) == 1);
-	assert(fscanf(ini, "useExpandDefinite = %d\n", &useExpandDefinite) == 1);
-	assert(fscanf(ini, "useTraceReads = %d\n", &useTraceReads) == 1);
-	assert(fscanf(ini, "useProcessLower = %d\n", &useProcessLower) == 1);
-	assert(fscanf(ini, "useExtractDefinite = %d\n", &useExtractDefinite) == 1);
-
 	minIntersect = l - 1;
 
 	//assert()
