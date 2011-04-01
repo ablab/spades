@@ -31,6 +31,7 @@ VertexPrototype::VertexPrototype(ll upper_, Sequence *lower_, int id,
 }
 
 void PairedGraph::recreateVerticesInfo(int vertCount, longEdgesMap &longEdges) {
+	INFO("recreateVerticesInfo");
 	forn(i, vertCount) {
 		forn(j, 2)
 			degrees[i][j] = 0;
@@ -44,9 +45,19 @@ void PairedGraph::recreateVerticesInfo(int vertCount, longEdgesMap &longEdges) {
 		}
 	}
 }
+void PairedGraph::removeLowCoveredEdges(longEdgesMap &longEdges, int CoverageThreshold){
+	for (longEdgesMap::iterator it = longEdges.begin(); it != longEdges.end(); ++it) {
+		if (it->second->EdgeId == it->first) {
+//			if ((degrees[it->second->FromVertex][1]>1)&&(degrees[it->second->ToVertex][0]>1))
+			if (it->second->coverage <= CoverageThreshold) longEdges.erase(it--);
+		}
+	}
+}
+
 
 //todo: Complete this
 void PairedGraph::RebuildVertexMap(void) {
+	INFO("RebuildVertexMap");
 	verts.clear();
 	for (longEdgesMap::iterator it = longEdges.begin(); it != longEdges.end(); ++it) {
 		if (it->second->EdgeId == it->first) {

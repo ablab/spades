@@ -279,10 +279,16 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 	int expandEdgeIndex;
 	cerr << "expandDefiniteStart" << endl;
 	forn(i,VertexCount) {
+		cerr << "expand definite right Vertex " <<i<< endl;
+
 		if ((graph.degrees[i][1] == 1) && (graph.degrees[i][0] > 0)) {
 			expandEdgeIndex = edgeRealId(graph.edgeIds[i][0][OUT_EDGE],
 					longEdges);
 			int DestVertex = longEdges[expandEdgeIndex]->ToVertex;
+			if (DestVertex == i) {
+				WARN("Expand definite right has bad loop");
+				continue;
+			}
 			pair<int, int> diffDistDest = make_pair(0, 0);
 			pair<int, int> diffDistCur = make_pair(0, 0);
 			if (NotExpandBeyondDefinite) {
@@ -291,7 +297,7 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 			}
 			if ((!NotExpandBeyondDefinite) || (diffDistCur.first
 					+ diffDistDest.second + longEdges[expandEdgeIndex]->length
-					< readLength + k)) {
+					< readLength + k) ||(graph.degrees[i][0]==1)) {
 				if (NotExpandBeyondDefinite)
 					cerr << "Check cur vert " << i << " dest vert "
 							<< DestVertex << "  " << diffDistCur.first << " + "
@@ -301,10 +307,14 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 									+ longEdges[expandEdgeIndex]->length
 							<< " < " << readLength + k << endl;
 				int a = 0;
-				//				cerr << "trying to expand";
+
 				while ((edgeRealId(graph.edgeIds[DestVertex][a][IN_EDGE],
-						longEdges) != expandEdgeIndex))
+						longEdges) != expandEdgeIndex)&&(a < graph.degrees[DestVertex][0])){
+					cerr<<"vertex "<<DestVertex<<" in edge "<<edgeRealId(graph.edgeIds[DestVertex][a][IN_EDGE],
+							longEdges)<<" on position "<<a<<endl;
 					a++;
+				}
+				cerr<<"Total in edges "<<graph.degrees[DestVertex][0]<<" but we want "<<a<<endl;
 				assert(a < graph.degrees[DestVertex][0]);
 				//				cerr << a;
 				while (a < graph.degrees[DestVertex][0] - 1) {
@@ -342,47 +352,66 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 
 	cerr << "expandDefinite second attempt\n" << endl;
 	forn(i,VertexCount) {
+		cerr << "expand definite left Vertex " <<i<< endl;
+
 		if ((graph.degrees[i][0] == 1) && (graph.degrees[i][1] > 0)) {
 			cerr << i << endl;
 			expandEdgeIndex = edgeRealId(graph.edgeIds[i][0][IN_EDGE],
 					longEdges);
 			int SourceVertex = longEdges[expandEdgeIndex]->FromVertex;
+			if (SourceVertex == i) {
+				WARN("Expand definite left has bad loop");
+				continue;
+			}
 			pair<int, int> diffDistSource = make_pair(0, 0);
 			pair<int, int> diffDistCur = make_pair(0, 0);
 			if (NotExpandBeyondDefinite) {
 				diffDistSource = vertexDist(longEdges, graph, SourceVertex);
 				diffDistCur = vertexDist(longEdges, graph, i);
 			}
+
 			if ((!NotExpandBeyondDefinite) || (diffDistCur.second
 					+ diffDistSource.first + longEdges[expandEdgeIndex]->length
-					< readLength + k)) {
+					< readLength + k)||(graph.degrees[i][1]==1)) {
 
 				int a = 0;
+
 				while (edgeRealId(graph.edgeIds[SourceVertex][a][OUT_EDGE],
-						longEdges) != expandEdgeIndex)
+						longEdges) != expandEdgeIndex){
+					cerr<<"vertex "<<SourceVertex<<" out edge "<<edgeRealId(graph.edgeIds[SourceVertex][a][OUT_EDGE],
+							longEdges)<<" on position "<<a<<endl;
 					a++;
-				assert(a < graph.degrees[SourceVertex][1]);
+					assert(a < graph.degrees[SourceVertex][1]);
+
+				}
+
 				while (a < graph.degrees[SourceVertex][1] - 1) {
 					graph.edgeIds[SourceVertex][a][OUT_EDGE]
 							= graph.edgeIds[SourceVertex][a + 1][OUT_EDGE];
 					a++;
+					cerr<<"shift"<<endl;
 				}
 				graph.degrees[SourceVertex][1]--;
+
 				forn(j,graph.degrees[i][1]) {
-					longEdges[graph.edgeIds[i][j][OUT_EDGE]]->ExpandLeft(
-							*(longEdges[expandEdgeIndex]));
+//					cerr<<"expand left "<<endl;
+					longEdges[graph.edgeIds[i][j][OUT_EDGE]]->ExpandLeft(*(longEdges[expandEdgeIndex]));
 					graph.edgeIds[SourceVertex][graph.degrees[SourceVertex][1]][OUT_EDGE]
 							= graph.edgeIds[i][j][OUT_EDGE];
 					graph.degrees[SourceVertex][1]++;
 				}
+
+
 				it = longEdges.find(expandEdgeIndex);
 				longEdges.erase(it);
 				graph.degrees[i][1] = 0;
 				graph.degrees[i][0] = 0;
-
 			}
+
 		}
+
 	}
+
 	cerr << "expandDefinite finished\n";
 }
 

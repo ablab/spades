@@ -24,7 +24,7 @@ void init() {
 
 void run() {
 	char str[100];
-//	forgetQualityPairedData("g:/data/s_6_1.fastq.gz", "g:/data/s_6_2.fastq.gz", "g:/data/realreads.txt" );
+//	forgetQualityPairedData("I:/bioinf/eas20_8/s_6_1.cor.fastq.gz", "I:/bioinf/eas20_8/s_6_2.cor.fastq.gz", "data/paireddebruijn/reads_100_200_corr.txt" );
 //	forgetQualityPairedData("data/paireddebruijn/s_6_1.fastq.gz", "data/paireddebruijn/s_6_2.fastq.gz", "/media/605005E05005BDB2/data/realreads.txt" );
 //	LOG_ASSERT(1 == 0, "Something wrong");
 
@@ -55,10 +55,11 @@ void run() {
 		if (!needGraph){
 			sprintf(str, "data/paireddebruijn/graph.txt");
 			load(str,graph);
+			graph.removeLowCoveredEdges(graph.longEdges, 3);
 			graph.RebuildVertexMap();
 			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
-
 		}
+//		expandDefinite(graph.longEdges, graph, graph.VertexCount, false);
 		expandDefinite(graph.longEdges, graph, graph.VertexCount, true);
 		outputLongEdges(graph.longEdges, graph, "data/paireddebruijn/afterExpand.dot");
 //		outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExpand_g.dot");
@@ -78,7 +79,7 @@ void run() {
 		}
 		traceReads(graph.verts, graph.longEdges, graph, graph.VertexCount, graph.EdgeId);
 		outputLongEdges(graph.longEdges,"data/paireddebruijn/ReadsTraced.dot");
-		outputLongEdgesThroughGenome(graph, "data/paireddebruijn/ReadsTraced_g.dot");
+	//	outputLongEdgesThroughGenome(graph, "data/paireddebruijn/ReadsTraced_g.dot");
 		sprintf(str, "data/paireddebruijn/tracedGraph.txt");
 		save(str,graph);
 	}

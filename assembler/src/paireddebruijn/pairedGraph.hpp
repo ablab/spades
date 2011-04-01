@@ -485,7 +485,7 @@ public:
 	virtual int findVertex(ll kmer, Sequence *s);
 
 	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
-
+	void removeLowCoveredEdges(longEdgesMap &longEdges, int CoverageThreshold = 1);
 	void RebuildVertexMap(void);
 };
 

@@ -18,6 +18,7 @@ int insertLength = 0;
 int minIntersect;
 
 
+int fictiveSecondReads = 1;
 int needPairs = 1;
 int needLmers = 1;
 int needSequences = 1;

@@ -56,12 +56,13 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 		for (int j = 0; j + l < readLength; j++) {
 			verticesMap::iterator vertIter = verts.find(upper);
 			if (vertIter!=verts.end()) {
-				//	cerr<<"kmer found for j="<<j<<endl;
+					cerr<<"kmer found for j="<<j<<endl;
 				for (vector<VertexPrototype *>::iterator it =vertIter->second.begin(); it
 						!= vertIter->second.end(); ++it) {
+
 					if ((*it)->lower->similar(loRead->Subseq(1+j, l+j),l-1)) {
-						//				cerr<<"vertex found for lower "<<(*it)->lower->str()<<endl;
-						//						fprintf(fout,"%s %s\n",upperNuclRead,lowerNuclRead);
+										cerr<<"vertex found for lower "<<(*it)->lower->str()<<endl;
+//												fprintf(fout,"%s %s\n",upperNuclRead,lowerNuclRead);
 						int VertId = (*it)->VertexId;
 						pair<int, int> vDist = vertexDist(longEdges, graph,VertId);
 

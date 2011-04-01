@@ -14,7 +14,14 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, string fileName);
 void codeRead(char *read, char *code);
 
 inline bool nextReadPair( char * &read1, char * &read2) {
-	return (scanf( "%s %s", read1, read2) == 2);
+	if (!fictiveSecondReads) return (scanf( "%s %s", read1, read2) == 2);
+	else {
+		if (scanf( "%s %s", read1, read2) == 2){
+			forn(i,strlen(read2)) read2[i]='A';
+			return true;
+		}
+		return false;
+	}
 }
 
 ll extractMer(char *read, int shift, int length);
