@@ -31,6 +31,18 @@ int useExtractDefinite = 1;
 int needRevertedPairs = 0;
 int useTraceReads = 1;
 int useProcessLower = 1;
+
+/*
+ * Method adds nucleotide to the side of kMer defined by direction
+ */
+ll pushNucleotide(ll kMer, int length, int direction, int nucl) {
+	if (direction == RIGHT) {
+		return (ll) nucl | (kMer << (2));
+	} else {
+		return (ll) nucl << (2 * length) | kMer;
+	}
+}
+
 void initConstants(string ini_file) {
 	char tmp[200];
 	INFO("Trying to init constants...");

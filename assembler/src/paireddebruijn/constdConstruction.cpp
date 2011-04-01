@@ -340,15 +340,6 @@ int countWays(vector<EdgePrototype *> &v, Sequence *finishSeq, int direction) {
 	return count;
 }
 
-/*
- * Method adds nucleotide to the side of kMer defined by direction
- */ll pushNucleotide(ll kMer, int length, int direction, int nucl) {
-	if (direction == RIGHT) {
-		return (ll) nucl | (kMer << (2));
-	} else {
-		return (ll) nucl << (2 * length) | kMer;
-	}
-}
 
 int checkUniqueWay(edgesMap &edges, ll finishKmer, Sequence *finishSeq,
 		int direction) {
