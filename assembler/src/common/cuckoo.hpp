@@ -118,7 +118,7 @@ private:
       data_[i] = new Data[len_part_];
     }
     exists_ = new char[len_ / 8]; 
-    for (int i = 0; i < len_ / 8; ++i) exists_[i] = 0;
+    for (size_t i = 0; i < len_ / 8; ++i) exists_[i] = 0;
     size_ = 0;
     is_rehashed_ = false;
   }
@@ -302,7 +302,7 @@ public:
 
   void clear() {
     char* t = new char[len_ / 8];
-    for (int i = 0; i < len_ / 8; ++i) t[i] = 0;
+    for (size_t i = 0; i < len_ / 8; ++i) t[i] = 0;
     swap(t, exists_);
     size_ = 0;
   }
