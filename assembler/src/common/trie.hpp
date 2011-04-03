@@ -16,16 +16,19 @@ private:
   struct Node {
     // can be one of two values - 0 or 1 (binary alphabet)
     char letter;
-    // these two are the numbers of cells with 0 and 1 next letters
-    unsigned long zero; 
-    unsigned long one;
+    // these are the numbers of cells with 0 and 1 next letters
+    size_t zero; 
+    size_t one;
+    // parent node
+    size_t parent;
     // the pointer to data stored
     Value* data; 
-    Node() : letter(0), zero(0), one(0), data(NULL) {}
+    Node(char l) : letter(l), zero(0), one(0), data(NULL) {}
   };
   vector<Node> tree_;
   vector<Value> data_;
   size_t size_;
+  size_t len_;
   // data storage should better be in arrays,
   // but it's possible to test on vectors
   //Node* tree_;
@@ -35,6 +38,7 @@ public:
   private: 
     size_t pos;
     trie* tree;
+    Key key;
     iterator(size_t p, trie* t) : pos(p), tree(t) {}
     friend class trie;
   public:
@@ -46,7 +50,10 @@ public:
     }
 
     iterator& operator++() {
-      //some code
+      while (((*tree).tree_[pos].data == NULL) && (pos < *tree.len_)) {
+        ++pos;
+      }
+      //update key - the most boring process here
       return *this;
     }
 
@@ -56,8 +63,8 @@ public:
       return res;
     }
 
-    pair<Key, Value>& operator*() {
-      
+    pair<Key, Value> operator*() {
+      return make_pair(key, *((*tree).tree_[pos].data));
     }
 
     bool operator==(const iterator &it) {
@@ -72,6 +79,8 @@ public:
 private:
   void init() {
     size_ = 0;
+    len_ = 1;
+    tree_.push_back(Node(255));
   }
  
 public:
@@ -81,7 +90,7 @@ public:
   }
 
   ~trie() {
-  
+
   }
 
   trie(trie<Key, Value>& Trie) {
@@ -103,27 +112,32 @@ public:
   }
 
   iterator begin() {
-
+    iterator it(0, *this);
+    return ++it;
   }
 
   iterator end() {
-
+    iterator it(len_, *this);
+    return it;
   }
 
   iterator find(const Key& k) {
-
+    //TEMP
+    return end();
   }
 
   pair<iterator, bool> insert(const pair<const Key, Value> &k) {
-
+    //TEMP
+    return make_pair(end(), true); 
   }
 
   size_t erase(const Key& k) {
-
+    //TEMP
+    return 0;
   }
 
   void clear() {
-
+    //TEMP
   }
 
   bool empty() {
@@ -132,6 +146,10 @@ public:
 
   size_t size() const {
     return size_;
+  }
+
+  size_t len() const {
+    return len_;
   }
 };
 #endif
