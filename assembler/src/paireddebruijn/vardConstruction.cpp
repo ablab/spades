@@ -5,54 +5,12 @@
 #include "graphVisualizer.hpp"
 #include "pairedGraph.hpp"
 #include "graphio.hpp"
+#include "vardConstruction.hpp"
 
 LOGGER("p.vardConstruction");
 
 using namespace paired_assembler;
 namespace vard {
-void createVertices(edgesMap &edges, PairedGraph &graph) {
-	int count = 0;
-	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
-		int size = iter->second.size();
-		ll kmer = iter->fi;
-		forn(i, size) {
-			if ((!(iter->se)[i]->used)) {
-				int length = 0;
-				int EdgeCoverage;
-				count++;
-				curEdgeType curEdge;
-				EdgePrototype* curEdgePrototype = (iter->se)[i];
-				curEdgePrototype->used = true;
-				Sequence * startSeq = curEdgePrototype->lower;
-				int curshift = 0;
-				ll startKmer = subkmer(kmer, LEFT);
-				expandDirected(edges, verts, startKmer,startSeq, LEFT)
-
-				curEdge.first = "";
-				curEdge.second = "";
-				startVertId = findPossibleVertex(startKmer, startSeq, PairedGraph &graph);
-
-				assert(startVertId != -2);
-				int finKmer = startKmer;
-				Sequence finSeq = new Sequence(&startSeq);
-				expandDirected(edges, verts, startKmer,startSeq, LEFT)
-				while(!checkUniqueWay(edges, finKmer, finSeq, LEFT)) {
-					if (! goUniqueWay(edges, finKmer, finSeq, EdgeCoverage, RIGHT))
-						break;
-				}
-				finVertId = findPossibleVertex(startKmer, startSeq, PairedGraph &graph);
-				assert(finVertId != -2);
-
-				if (startVertId < 0  && finVertId < 0) {
-					//TODO: in  fact, not 0 but ...
-					startVertId = storeVertex(graph, startKmer, startSeq, 0);
-					finVertId = storeVertex(graph, finKmer, finishSeq, 0);
-				}
-				//expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, EdgeCoverage, LEFT);
-			}
-		}
-	}
-}
 inline ll leftkmer(ll kmer) {
 	return kmer >> 2;
 }
@@ -75,23 +33,24 @@ inline ll subkmer(ll kmer, int direction) {
  * if no- returns -1
  */
 
-int findPossibleVertex(ll &kmer, Sequence &down, PairedGraph &graph, int direction){
+int findPossibleVertex(ll &kmer, Sequence &down, edgesMap &edges, verticesMap &verts){
 	return 0;
 }
 //go left until vertex or fork.
 // Go right until vertex or fork, adding nucleotides to curEdge strings.
-int expandDirected(edgesMap &edges, curEdgeType curEdge, verticesMap &verts, ll &finishKmer, Sequence* &finishSeq, int &EdgeCoverage, int direction){
+int expandDirected(edgesMap &edges, curEdgeType &curEdge, verticesMap &verts, ll &curKmer, Sequence* &curSeq, int &EdgeCoverage, int direction){
 	assert(direction == LEFT || direction == RIGHT );
+	int otherDirection;
 	if (direction == LEFT)
 		otherDirection = RIGHT;
 	else
 		otherDirection = LEFT;
-	while(!checkUniqueWay(edges, startKmer, startSeq, otherDirection)) {
-		if ((findPossibleVertex(startKmer, startSeq, direction) >= 0) || (!goUniqueWay(edges, startKmer, startSeq, EdgeCoverage, direction))) {
+	while(!checkUniqueWay(edges, curKmer, curSeq, otherDirection)) {
+		if ((findPossibleVertex(curKmer, *curSeq, edges, verts) >= 0) || (!goUniqueWay(edges, curKmer, curSeq, EdgeCoverage, direction))) {
 			break;
 		}
 		if (direction == RIGHT) {
-			//TODO: ВСТАВИТЬ отматченное.
+			//TODO: Р’РЎРўРђР’Р�РўР¬ РѕС‚РјР°С‚С‡РµРЅРЅРѕРµ.
 		}
 	}
 }
@@ -103,5 +62,54 @@ int checkUniqueWay(edgesMap &edges, ll finishKmer, Sequence *finishSeq , int dir
 int goUniqueWay(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq, int &EdgeCoverage, int direction){
 	assert(direction == LEFT || direction == RIGHT );
 }
+
+
+void createVertices(edgesMap &edges, PairedGraph &graph) {
+	int count = 0;
+	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
+		int size = iter->second.size();
+		ll kmer = iter->fi;
+		forn(i, size) {
+			if ((!(iter->se)[i]->used)) {
+				int length = 0;
+				int EdgeCoverage;
+				count++;
+				curEdgeType curEdge;
+				EdgePrototype* curEdgePrototype = (iter->se)[i];
+				curEdgePrototype->used = true;
+				Sequence * startSeq = curEdgePrototype->lower;
+				int curshift = 0;
+				ll startKmer = subkmer(kmer, LEFT);
+
+
+				expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, EdgeCoverage, LEFT);
+
+				curEdge.first = "";
+				curEdge.second = "";
+				int startVertId = findPossibleVertex(startKmer, *startSeq, edges, graph.verts);
+
+				assert(startVertId != -2);
+				ll finKmer = startKmer;
+				Sequence *finSeq = new Sequence(*startSeq);
+				expandDirected(edges, curEdge, graph.verts, finKmer,finSeq, EdgeCoverage, LEFT);
+				while(!checkUniqueWay(edges, finKmer, finSeq, LEFT)) {
+					if (! goUniqueWay(edges, finKmer, finSeq, EdgeCoverage, RIGHT));
+						break;
+				}
+				int finVertId = findPossibleVertex(startKmer, *startSeq, edges, graph.verts);
+				assert(finVertId != -2);
+
+				if (startVertId < 0  && finVertId < 0) {
+					//TODO: in  fact, not 0 but ...
+					startVertId = storeVertex(graph, startKmer, startSeq, 0);
+					finVertId = storeVertex(graph, finKmer, finSeq, 0);
+				}
+				//expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, EdgeCoverage, LEFT);
+			}
+		}
+	}
+}
+
+
 
 }

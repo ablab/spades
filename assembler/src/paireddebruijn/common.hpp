@@ -99,4 +99,6 @@ extern int useProcessLower;
 
 
 void initConstants(string ini_file);
+ll pushNucleotide(ll kMer, int length, int direction, int nucl);
+
 #endif /*COMMON_HPP_*/

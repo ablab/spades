@@ -5,12 +5,13 @@
 #include "graphVisualizer.hpp"
 
 using namespace paired_assembler;
-namespace vard{
 
+namespace vard{
 #define curEdgeType pair<string, string>
+
 void createVertices(edgesMap &edges, PairedGraph &graph);
 //int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer, Sequence* &finishSeq, int &EdgeCoverage);
-int expandDirected(edgesMap &edges, curEdgeType curEdge, verticesMap &verts, ll &startKmer, Sequence* &startSeq, int &EdgeCoverage, int direction);
+int expandDirected(edgesMap &edges, curEdgeType &curEdge, verticesMap &verts, ll &curKmer, Sequence* &curSeq, int &EdgeCoverage, int direction);
 int checkUniqueWay(edgesMap &edges, ll finishKmer, Sequence *finishSeq, int direction);
 int goUniqueWay(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq, int &EdgeCoverage, int direction);
 }

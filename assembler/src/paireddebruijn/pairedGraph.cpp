@@ -22,12 +22,13 @@ VertexPrototype::VertexPrototype(Sequence *lower_, int id, int coverage_) {
 }
 
 VertexPrototype::VertexPrototype(ll upper_, Sequence *lower_, int id,
-		int coverage_) {
+		int coverage_, int deltaShift_) {
 	upper = upper_;
 	lower = lower_;
 	VertexId = id;
 	used = false;
 	coverage = coverage_;
+	deltaShift = deltaShift_;
 }
 
 void PairedGraph::recreateVerticesInfo(int vertCount, longEdgesMap &longEdges) {
