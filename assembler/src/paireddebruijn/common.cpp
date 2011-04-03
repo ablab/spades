@@ -13,7 +13,7 @@ string parsed_l_mers;
 string graph_file;
 string graph2;
 string threaded_graph;
-
+string folder;
 int k = 0;
 int l = 0;
 int readLength = 0;
@@ -54,7 +54,6 @@ void initConstants(string ini_file) {
 
 	assert(fscanf(ini, "needPairs = %d\n", &needPairs) == 1);
 	assert(fscanf(ini, "needLmers = %d\n", &needLmers) == 1);
-	assert(fscanf(ini, "needRevertedPairs = %d\n", &needRevertedPairs) == 1);
 	assert(fscanf(ini, "needSequences = %d\n", &needSequences) == 1);
 	assert(fscanf(ini, "needGraph = %d\n", &needGraph) == 1);
 	assert(fscanf(ini, "useExpandDefinite = %d\n", &useExpandDefinite) == 1);
@@ -73,11 +72,12 @@ void initConstants(string ini_file) {
 	assert(fscanf(ini, "distance_type = %s\n" , tmp) == 1);
 	distance_type = string(tmp);
 	assert(fscanf(ini, "fictiveSecondReads = %d\n", &fictiveSecondReads) == 1);
+	assert(fscanf(ini, "needRevertedPairs = %d\n", &needRevertedPairs) == 1);
 
 
 	assert(fscanf(ini, "Filenames:\n") == 0);
 	assert(fscanf(ini, "work_folder = %s\n" , tmp) == 1);
-	string folder = string(tmp) + '/';
+	folder = string(tmp) + '/';
 	char topr[20];
 	sprintf(topr, "_%d_%d", readLength, insertLength);
 	string suff(topr);

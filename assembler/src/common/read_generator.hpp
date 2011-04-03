@@ -192,8 +192,8 @@ void generateReads(string fileName, string genomeFileName, int insertLength,
 	ss << genome;
 	ReadGenerator<100, 2, int, PositionChooser> gen(ss.str(), coverage,
 			insertLength);
-	gen.setErrorProbability(0);
-	gen.setMaxInsertLengthError(0);
+	gen.setErrorProbability(errorProbability);
+	gen.setMaxInsertLengthError(maxInsertLengthError);
 	strobe_read<100, 2> readPair;
 	while (!gen.eof()) {
 		gen >> readPair;
