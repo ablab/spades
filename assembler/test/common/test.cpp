@@ -12,7 +12,7 @@
 //#include "offlineGraphVisualizerTest.hpp"
 #include "similarTest.hpp"
 #include "cuckooTest.hpp"
-//#include "trieTest.hpp"
+#include "trieTest.hpp"
 //TODO function readGenomeFromFile is declared outside common directory
 //typedef long long ll; //???
 //#include "readGeneratorTest.hpp" 
@@ -31,7 +31,7 @@ void runSuite() {
   s += similarSuite(); 
   s += CuckooSuite();
   //s += ReadGeneratorSuite();
-  //s += TrieSuite();
+  s += TrieSuite();
   cute::ide_listener lis;
   cute::makeRunner(lis)(s, "The Suite");
 }

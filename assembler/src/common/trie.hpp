@@ -70,11 +70,12 @@ public:
   };
 
 private:
-  init() {
+  void init() {
     size_ = 0;
   }
  
 public:
+
   trie() { 
     init();
   }
@@ -101,6 +102,14 @@ public:
     return (*it).second;
   }
 
+  iterator begin() {
+
+  }
+
+  iterator end() {
+
+  }
+
   iterator find(const Key& k) {
 
   }
@@ -124,5 +133,5 @@ public:
   size_t size() const {
     return size_;
   }
-
+};
 #endif
