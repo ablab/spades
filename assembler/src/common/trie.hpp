@@ -17,13 +17,18 @@ private:
     // can be one of two values - 0 or 1 (binary alphabet)
     char letter;
     // these are the numbers of cells with 0 and 1 next letters
-    size_t zero; 
-    size_t one;
+    ///size_t zero; 
+    ///size_t one;
     // parent node
-    size_t parent;
+    ///size_t parent;
+    size_t nodes[3];
     // the pointer to data stored
     Value* data; 
-    Node(char l) : letter(l), zero(0), one(0), data(NULL) {}
+    Node(char l) : letter(l), data(NULL) {
+      nodes[0] = 0;
+      nodes[1] = 0;
+      nodes[3] = 0;
+    }
   };
   vector<Node> tree_;
   vector<Value> data_;
@@ -54,6 +59,24 @@ public:
         ++pos;
       }
       //update key - the most boring process here
+      char* temp = new char[sizeof(Key) * 8];
+      size_t p = pos;
+      for (size_t i = sizeof(Key) * 8 - 1; i >= 0; --i) {
+	temp[i] = tree_[pos].letter;
+	p = tree_[pos].nodes[2];
+      }
+      char* key_temp = new char[sizeof(Key)];
+      for (int i = 0; i < sizeof(Key); ++i) {
+	key_temp[i] = temp[i * 8];
+	for (size_t j = 1; j < 8; ++j) {
+	  key_temp[i] = (key_temp[i] << 1) + temp[i * 8 + j];
+	}
+      }
+      memcpy(&key, key_temp, sizeof(Key));
+      delete [] temp;
+      delete [] key_temp;
+      // the end of terrible block of code that 
+      // should be rewritten
       return *this;
     }
 
@@ -83,6 +106,23 @@ private:
     tree_.push_back(Node(255));
   }
  
+  void add_new(const pair<const Key, Value>& value) {
+    Key k = value.first;
+    size_t sok = sizeof(Key) * 8;
+    char* temp_key = new char[sok];
+    for (size_t i = 0; i < sok; ++i) {
+      temp_key[i] = (k & (1 << (sok - 1 - i))) >> (sok - 1  -i);
+    }
+    size_t pos = 0;
+    size_t i = 0;
+    while (tree_[pos].nodes[temp_key[i]] != 0) {
+      pos = tree_[pos].nodes[temp_key[i]];
+      ++i;
+    }
+    //add new Node elements to tree_ and Value to data_
+    //update size_ and len_
+  }
+
 public:
 
   trie() { 
@@ -128,6 +168,7 @@ public:
 
   pair<iterator, bool> insert(const pair<const Key, Value> &k) {
     //TEMP
+    add_new(k);
     return make_pair(end(), true); 
   }
 
