@@ -40,15 +40,16 @@ void TestCuckoo() {
   map.clear();
   map[1] = 4;
   map[4] = 1;
-//  hm map2;
-//  map2 = map;
-//  ASSERT_EQUAL(map2.size(), 3);
-//  hm map3(map);
-//  ASSERT_EQUAL(map3.size(), 3);
+  map[6];
+  hm map2;
+  map2 = map;
+  ASSERT_EQUAL(map2.size(), 3);
+  hm map3(map);
+  ASSERT_EQUAL(map3.size(), 3);
 }
 
 cute::suite CuckooSuite() {
-	cute::suite s;
-	s.push_back(CUTE(TestCuckoo));
-	return s;
+  cute::suite s;
+  s.push_back(CUTE(TestCuckoo));
+  return s;
 }

@@ -28,12 +28,12 @@ void runSuite() {
   s += IReadStreamSuite();
   s += onlineGraphVisualizerSuite();
   //s += offlineGraphVisualizerSuite();
-  s += similarSuite();
+  s += similarSuite(); 
   s += CuckooSuite();
-	//s += ReadGeneratorSuite();
+  //s += ReadGeneratorSuite();
   //s += TrieSuite();
-	cute::ide_listener lis;
-	cute::makeRunner(lis)(s, "The Suite");
+  cute::ide_listener lis;
+  cute::makeRunner(lis)(s, "The Suite");
 }
 
 int main() {
