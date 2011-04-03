@@ -90,7 +90,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 
 				assert(startVertId != -2);
 				ll finKmer = startKmer;
-				Sequence *finSeq = new Sequence(&startSeq);
+				Sequence *finSeq = new Sequence(*startSeq);
 				expandDirected(edges, curEdge, graph.verts, finKmer,finSeq, EdgeCoverage, LEFT);
 				while(!checkUniqueWay(edges, finKmer, finSeq, LEFT)) {
 					if (! goUniqueWay(edges, finKmer, finSeq, EdgeCoverage, RIGHT));
