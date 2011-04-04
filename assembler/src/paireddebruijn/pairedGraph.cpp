@@ -19,7 +19,8 @@ VertexPrototype::VertexPrototype(Sequence *lower_, int id, int coverage_,int pos
 	VertexId = id;
 	used = false;
 	coverage = coverage_;
-	position = position_;
+
+	position = (lower->size()- k + 1) /2 ;
 }
 
 VertexPrototype::VertexPrototype(ll upper_, Sequence *lower_, int id,

@@ -65,8 +65,8 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 	assert(direction == LEFT || direction == RIGHT );
 	TRACE("expanding" << direction << " kmer "<< curKmer);
 	while( (findPossibleVertex(subkmer(curKmer, direction), *curSeq, edges, verts) == -1) ){
-		pair <char, EdgePrototype*> otherdir_res = findUniqueWay(edges, curKmer, curSeq, otherDirection(direction));
-		pair <char, EdgePrototype*> dir_res = findUniqueWay(edges, curKmer, curSeq, direction);
+		pair <char, EdgePrototype*> otherdir_res = findUniqueWay(edges, curKmer, curSeq, otherDirection(direction), true);
+		pair <char, EdgePrototype*> dir_res = findUniqueWay(edges, curKmer, curSeq, direction , false);
 
 		if ((otherdir_res.second == NULL) || (dir_res.second == NULL)) {
 			break;
@@ -74,13 +74,14 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 		goUniqueWay(edges, curKmer, curSeq, dir_res, EdgeCoverage, direction);
 		if (direction == RIGHT) {
 			dir_res.second->used = true;
-
+			string tmp = decompress(curKmer, k);
+			curEdge.first+=(tmp[k-1]);
 			//TODO:: do it, save nucleo/
 		}
 	}
 	return 0;
 }
-pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *curSeq , int direction){
+pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *curSeq , int direction, bool replace){
 	assert(direction == LEFT || direction == RIGHT );
 	int count = 0;
 	TRACE("Find uniqueness" << direction);
@@ -88,7 +89,11 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
 	pair <char, EdgePrototype*> res = make_pair(0, (EdgePrototype *)NULL);
 
 	for (int Nucl = 0; Nucl < 4; Nucl++) {
-		ll tmpcurKmer = subkmer(curKmer, direction);
+		ll tmpcurKmer;
+		if (!replace)
+			tmpcurKmer = subkmer(curKmer, direction);
+		else
+			tmpcurKmer = subkmer(curKmer, otherDirection(direction));
 		ll tmpKmer = pushNucleotide(tmpcurKmer, k -1, direction, Nucl);
 
 		edgesMap::iterator iter = edges.find(tmpKmer);
@@ -115,10 +120,11 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
 //while going left we don't mark anything as used, we just find leftmost possible vert
 int goUniqueWay(edgesMap &edges, ll &curKmer, Sequence* &curSeq, pair<char, EdgePrototype*> findResult, int &EdgeCoverage, int direction) {
 	assert(direction == LEFT || direction == RIGHT );
-	TRACE ("going " << direction << " nucleo " << curKmer);
-	ll tmpKmer = popNucleotide(curKmer, k, otherDirection(direction));
-
-	curKmer = pushNucleotide(tmpKmer, k - 1, findResult.first, direction);
+	TRACE ("going " << direction << " from  " << curKmer << " ");
+	ll tmpKmer = subkmer(curKmer,direction);
+	TRACE(tmpKmer <<" " << (int)findResult.first);
+	curKmer = pushNucleotide(tmpKmer, k - 1,  direction, findResult.first);
+	TRACE (curKmer);
 	EdgeCoverage += findResult.second->coverage;
 	curSeq = new Sequence(*findResult.second->lower);//PossibleSequence;
 	findResult.second->used = 1;
@@ -147,6 +153,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
 		int size = iter->second.size();
 		ll kmer = iter->fi;
+		TRACE("Starting from k-mer" << kmer);
 		forn(i, size) {
 			if ((!(iter->se)[i]->used)) {
 				int length = 0;
@@ -167,32 +174,38 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 				curEdge.second = "";
 				int startVertId = findPossibleVertex(subkmer(startKmer, LEFT), *startSeq, edges, graph.verts);
 
-				assert(startVertId != -2);
-
+				LOG_ASSERT((startVertId != -2), " on " << subkmer(startKmer, LEFT));
+				DEBUG("LEFT EDGE K_MER:" <<startKmer);
 				ll finKmer = startKmer;
 				Sequence *finSeq = new Sequence(*startSeq);
+				curEdge.first = decompress(startKmer, k);
 				expandDirected(edges, curEdge, graph.verts, finKmer,finSeq, EdgeCoverage, RIGHT);
-
+				DEBUG("RIGHT VERTEX K_MER:" <<finKmer);
 				int finVertId = findPossibleVertex(subkmer(finKmer, RIGHT), *finSeq, edges, graph.verts);
 				assert(finVertId != -2);
 				//TODO: what about loops?
 				if (startVertId < 0) {
-					//TODO: in  fact, not 0 but ...
-					startVertId = storeVertex(graph, startKmer, startSeq, 0);
+					startVertId = storeVertex(graph, startKmer, startSeq);
 					TRACE("adding startVertId" << startKmer);
 				}
 				if (finVertId < 0) {
-					finVertId = storeVertex(graph, finKmer, finSeq, 0);
+					finVertId = storeVertex(graph, finKmer, finSeq);
 					TRACE("adding finVertId" << finKmer);
 
 				}
 
 				Edge* newEdge = new Edge(curEdge, startVertId, finVertId, graph.EdgeId, EdgeCoverage);
 				graph.addEdge(newEdge);
-				assert(0);
+				DEBUG("adding edge of length"<< curEdge.first.length()+1-k);
+				if (curEdge.first.length() <1000)
+					TRACE(curEdge.first);
+//				assert(0);
 				//expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, EdgeCoverage, LEFT);
 			}
 		}
+		(iter->second).clear();
+		//TODO: clear memory
+		edges.erase(iter++);
 	}
 }
 

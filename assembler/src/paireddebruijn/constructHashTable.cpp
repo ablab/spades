@@ -385,7 +385,7 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 			}
 		}
 		sort(lmers, lmers + lsize, ComparePairByFirst);
-		downSeqs clusters =  clusterizeLset(lmers, lsize, inClusterMaxSift, lset);
+		downSeqs clusters =  clusterizeLset(lmers, lsize, inClusterMaxShift, lset);
 //		return 0;
 		int clsize = clusters.size();
 		string outstring;
