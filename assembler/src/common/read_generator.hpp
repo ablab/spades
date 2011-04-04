@@ -4,7 +4,6 @@
 #include "fstream"
 #include "string"
 #include <cstdlib>
-#include "strobe_read.hpp"
 #include "vector"
 #include "nucl.hpp"
 #define MAX_PROBABILITY 10000
@@ -15,7 +14,7 @@ public:
 	static int choosePosition(int currentReadNumber, int readNumber,
 			int minPosition, int maxPosition) {
 		return minPosition + (maxPosition - minPosition)
-				* (ll) currentReadNumber / (readNumber - 1);
+				* (long long) currentReadNumber / (readNumber - 1);
 	}
 };
 
