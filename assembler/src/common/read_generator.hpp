@@ -3,6 +3,7 @@
 #include "iostream"
 #include "fstream"
 #include "string"
+#include "strobe_read.hpp"
 #include <cstdlib>
 #include "vector"
 #include "nucl.hpp"

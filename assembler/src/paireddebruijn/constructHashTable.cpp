@@ -54,7 +54,7 @@ downSeqs clusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &lset)
 		    right_tmp = ((right_tmp << 2) & lowerMask);
 		    p2 += 2;
 		    int cright = 0;
-		    if (!shift_right[i]) {
+		  /*  if (!shift_right[i]) {
 		    	forn(ii, (1<<p2)) {
 		    		if (lset.find(ii + right_tmp) != lset.end()) {
 		    			cright ++;
@@ -65,9 +65,15 @@ downSeqs clusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &lset)
 		    		}
 		    	}
 			}
+
 		    //cerr <<"cright" <<cright << endl;
-		    upper_bound = ((ll) 1) << p2;
+
 		    if (!(cright == 0 || shift_right[i] || cright > 1)) {
+			*/
+		    if (!( shift_right[i] )) {
+
+
+		    	upper_bound = ((ll) 1) << p2;
 				forn(j, size) {
 					diff = a[j].first - right_tmp;
 					if ((diff >= 0) && (diff < upper_bound) && (i != j)){
@@ -82,6 +88,7 @@ downSeqs clusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &lset)
 		    }
 			left_tmp >>= 2;
 			cright = 0;
+			/*
 			if (!shift_left[i]) {
 				forn(ii, (1<<p2)) {
 					ll left_n = ((ll) ii) << (2*l - p2);
@@ -97,6 +104,8 @@ downSeqs clusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &lset)
 			}
 		//	cerr <<"cleft" <<cright << endl;
 			if (!(cright == 0 || shift_left[i] || cright > 1)) {
+			*/
+			if ( !(shift_left[i] )) {
 				forn(j, size) {
 					diff = a[j].first - left_tmp;
 					if ((i != j) && ((diff & (lowerMask >> p2)) == 0)){
@@ -152,7 +161,8 @@ downSeqs clusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &lset)
 			res.pb(make_pair(tmpSeq,coverage));
 			color++;
 		}
-	}/*
+	}
+	/*
 	{
 		forn(i, size) {
 			cerr << left[i] << " ";
@@ -165,10 +175,10 @@ downSeqs clusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &lset)
 			cerr << shift_right[i] << " ";
 		}
 		forn(i, res.size()) {
-			cerr<<res[i]->str() << endl;
+			cerr<<(res[i].first)->str() << endl;
 		}
-	}*/
-	//assert(0);
+	}
+	assert(0);*/
 	return res;
 }
 
