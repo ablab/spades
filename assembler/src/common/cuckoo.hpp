@@ -52,11 +52,13 @@ private:
   // The flag that anounces that rehash was made recently
   bool is_rehashed_;
 public:
+  friend class iterator;
+
   class iterator {
   private:
     size_t pos;
-    cuckoo *hash;
-    iterator(size_t p, cuckoo *h) : pos(p), hash(h) {}
+    cuckoo* hash;
+    iterator(size_t p, cuckoo* h): pos(p), hash(h) {}
     friend class cuckoo;
   public:
     iterator() : pos(0), hash(NULL) {}
@@ -118,9 +120,17 @@ private:
       data_[i] = new Data[len_part_];
     }
     exists_ = new char[len_ / 8]; 
-    for (int i = 0; i < len_ / 8; ++i) exists_[i] = 0;
+    for (size_t i = 0; i < len_ / 8; ++i) exists_[i] = 0;
     size_ = 0;
     is_rehashed_ = false;
+  }
+
+  void clear_all() {
+    for (size_t i = 0; i < d; ++i) {
+      delete [] data_[i];
+    }
+    delete [] data_;
+    delete [] exists_;
   }
 
   inline Data& data_from(size_t pos) const {
@@ -217,27 +227,24 @@ public:
   }
   
   ~cuckoo() {
-    for (size_t i = 0; i < d; ++i) {
-      delete [] data_[i];
-    }
-    delete [] data_;
-    delete [] exists_;
+    clear_all();
   }
 
-  cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& operator=
-  (cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& Cuckoo) {
-    clear();
+  cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop, step_nom, step_denom>& operator=
+  (cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop, step_nom, step_denom>& Cuckoo) {
+    clear_all();
+    init();
     iterator it = Cuckoo.begin();
     if (!(Cuckoo.get_exists(it.pos))) ++it;
     iterator final = Cuckoo.end();
     while (it != final) {
       insert(*it);
       ++it;
-    }
+      }
     return *this;
   }
 
-  cuckoo(cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& Cuckoo) {
+  cuckoo(cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop, step_nom, step_denom>& Cuckoo) {
     init();
     *this = Cuckoo;
   }
@@ -302,7 +309,7 @@ public:
 
   void clear() {
     char* t = new char[len_ / 8];
-    for (int i = 0; i < len_ / 8; ++i) t[i] = 0;
+    for (size_t i = 0; i < len_ / 8; ++i) t[i] = 0;
     swap(t, exists_);
     size_ = 0;
   }

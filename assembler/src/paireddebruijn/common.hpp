@@ -21,18 +21,22 @@
 #define mp make_pair
 #define fi first
 #define se second
+#define protoEdgeType pair<string, string>
 #define edgesMap  map<ll, vector<EdgePrototype *> >
 #define verticesMap  map<ll, vector<VertexPrototype *> >
 #define longEdgesMap  map<int, Edge*>
+
+#define otherDirection(direction) (direction == LEFT ? RIGHT : LEFT)
 #define RIGHT 1
 #define LEFT -1
+
 #define IN_EDGE 0
 #define OUT_EDGE 1
 
 //LOGGER("paireddebruijn.common");
 
-#define MAX_VERT_NUMBER 10000
-#define MAX_DEGREE 30
+#define MAX_VERT_NUMBER 50000
+#define MAX_DEGREE 50
 #define suffix "_const_d"
 
 
@@ -64,14 +68,19 @@ const string threaded_graph = string("data/threaded_graph") +  + ".dot";
 const string auxilary_lmer = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
 const string ini_file = "data/paireddebruijn/paired.ini";
+extern string distance_type;
 extern string parsed_reads;
 extern string parsed_k_l_mers;
+extern string parsed_l_mers;
+extern string parsed_l_k_mers;
+extern string parsed_k_mers;
+
 extern string parsed_k_sequence;
 extern string error_log;
-extern string parsed_l_mers;
 extern string graph_file;
 extern string graph2;
 extern string threaded_graph;
+extern string folder;
 
 extern int k;
 extern int l;
@@ -82,14 +91,19 @@ extern int minIntersect;
 
 
 
+extern int fictiveSecondReads;
 extern int needPairs;
 extern int needLmers;
+extern int needRevertedPairs;
 extern int needSequences;
 extern int needGraph;
 extern int useExpandDefinite;
+extern int useExtractDefinite;
 extern int useTraceReads;
 extern int useProcessLower;
 
 
 void initConstants(string ini_file);
+ll pushNucleotide(ll kMer, int length, int direction, int nucl);
+ll popNucleotide(ll kMer, int length, int direction);
 #endif /*COMMON_HPP_*/

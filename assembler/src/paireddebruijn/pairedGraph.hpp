@@ -12,21 +12,10 @@ namespace paired_assembler {
 
 //typedef int Kmer;
 
-//class Sequence {
-//	char *_nucleotides;
-//	short _length;
-//public:
-//	Sequence(char *nucleotides, short length) : _nucleotides(nucleotides), _length(length)
-//	{}
-//	char operator[](const int &index);
-//};
+
 
 class Vertex;
 
-//struct Arc {
-//	short _coverage;
-//	Vertex* _head;
-//};
 class VertexPrototype {
 public:
 	ll upper;
@@ -34,8 +23,10 @@ public:
 	int VertexId;
 	bool used;
 	int coverage;
+	int position;
+	int deltaShift;
 	VertexPrototype(Sequence *lower_, int id, int coverage_ = 1);
-	VertexPrototype(ll upper_, Sequence *lower_, int id, int coverage_ = 1);
+	VertexPrototype(ll upper_, Sequence *lower_, int id, int coverage_ = 1, int deltaShift_ = 0);
 	~VertexPrototype() {
 		delete lower;
 	}
@@ -66,11 +57,13 @@ class Edge {
 public:
 	Sequence *upper;
 	Sequence *lower;
+	//length of upper part of edge, including one of adjacent vertex.
 	int length;
 	int FromVertex;
 	int ToVertex;
 	int EdgeId;
 	int coverage;
+	int deltaShift;
 	Edge(Edge &e) {
 		length = e.length;
 		FromVertex = e.FromVertex;
@@ -79,6 +72,7 @@ public:
 		coverage = e.coverage;
 		upper = new Sequence(const_cast<Sequence&> (*e.upper));
 		lower = new Sequence(const_cast<Sequence&> (*e.lower));
+		deltaShift = e.deltaShift;
 	}
 	//	Vertex(int coverage, int length, Sequence *kmer, Sequence *pair, bool direction, int delta_d);
 	void ExpandRight(Edge &newRight) {
@@ -86,12 +80,12 @@ public:
 		if (newRight.length > 0) {
 			length = length + newRight.length;
 			string toOut = newRight.upper->str();
-			assert(k-1 < toOut.length());
+			assert(k-1 < (int)toOut.length());
 			upper = new Sequence(
 					upper->str() + newRight.upper->Subseq(k - 1).str());
 
 			toOut = newRight.lower->str();
-			assert(l-1 < toOut.length());
+			assert(l-1 < (int)toOut.length());
 			lower = new Sequence(
 					lower->str() + newRight.lower->Subseq(l - 1).str());
 
@@ -109,6 +103,10 @@ public:
 			length -= toCut;
 		}
 	}
+
+	int computeInsertLength() {
+
+	}
 	void ExpandLeft(Edge &newLeft) {
 		FromVertex = newLeft.FromVertex;
 		if (newLeft.length > 0) {
@@ -122,7 +120,7 @@ public:
 		}
 	}
 	Edge(Sequence *up, Sequence *low, int from, int to, int len, int id,
-			int cov = 1) {
+			int cov = 1, int dShift = 0) {
 		upper = up;
 		lower = low;
 		FromVertex = from;
@@ -130,6 +128,22 @@ public:
 		length = len;
 		EdgeId = id;
 		coverage = cov;
+		deltaShift = dShift;
+	}
+	Edge(protoEdgeType protoEdge, int from, int to, int id,
+				int cov = 1, int dShift = 0) {
+		upper = new Sequence(protoEdge.first);
+		lower = new Sequence(protoEdge.second);
+		FromVertex = from;
+		ToVertex = to;
+		length = protoEdge.first.length() - (k - 1);
+		EdgeId = id;
+		coverage = cov;
+		if (length > insertLength + k) {
+			//TODO: recompute dShift
+
+		}
+		deltaShift = dShift;
 	}
 
 	void clearData() {
@@ -168,7 +182,8 @@ class IVertexIterator {
 };
 
 //TODO Replace all Sequence * with just Sequence
-template<typename tVertex, typename tEdge>
+template<typename tVertex, typename tEdge, typename tJVertexIterator,
+		typename tVertexIterator, typename tEdgeIterator>
 class IPairedGraph {
 public:
 	/*Better way to do it is to implement begin() and end() functions which would return pointers to start and
@@ -184,16 +199,39 @@ public:
 			return leftDegree(vertex);
 	}
 
-	virtual tEdge rightEdge(tVertex vertex, int number) = 0;
-	virtual tEdge leftEdge(tVertex vertex, int number) = 0;
-	tEdge neighbour(tVertex vertex, int number, int direction) {
-		if (direction == RIGHT)//RIGHT = 1
-			return this->rightEdge(vertex, number);
-		else if (direction == LEFT)//LEFT = -1
-			return this->leftEdge(vertex, number);
+	virtual tEdge neighbourEdge(tVertex vertex, int number, int direction) = 0;
+
+	tEdge rightEdge(tVertex vertex, int number) {
+		return this->neighbourEdge(vertex, number, RIGHT);
 	}
 
-	virtual IVertexIterator<tVertex> *vertexIterator() = 0;
+	tEdge leftEdge(tVertex vertex, int number) {
+		return this->neighbourEdge(vertex, number, LEFT);
+	}
+
+	virtual tEdgeIterator beginEdge(tVertex vertex, int direction) = 0;
+	virtual tEdgeIterator endEdge(tVertex vertex, int direction) = 0;
+
+	virtual tEdgeIterator beginRightEdge(tVertex vertex) {
+		return this->beginEdge(vertex, RIGHT);
+	}
+
+	virtual tEdgeIterator endRightEdge(tVertex vertex) {
+		return this->endEdge(vertex, RIGHT);
+	}
+
+	virtual tEdgeIterator beginLeftEdge(tVertex vertex) {
+		return this->beginEdge(vertex, LEFT);
+	}
+
+	virtual tEdgeIterator endLeftEdge(tVertex vertex) {
+		return this->endEdge(vertex, LEFT);
+	}
+
+	//	virtual tJVertexIterator jVertexIterator() = 0;
+
+	virtual tVertexIterator beginVertex() = 0;
+	virtual tVertexIterator endVertex() = 0;
 
 	//In order to add edge to graph one should create this edge first!
 	virtual tEdge addEdge(tEdge newEdge) = 0;
@@ -230,6 +268,7 @@ public:
 
 	//This method has bad parameters but still nothing to replace them
 	virtual tVertex findVertex(ll kmer, Sequence *s) = 0;
+	virtual vector<tVertex> findVertices(ll kmer) = 0;
 };
 
 class PairedGraphData {
@@ -241,9 +280,8 @@ public:
 	int degrees[MAX_VERT_NUMBER][2];//, outD[MAX_VERT_NUMBER][2];
 	int edgeIds[MAX_VERT_NUMBER][MAX_DEGREE][2];
 	//	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
-//	vector<VertexPrototype *> vertexList_;
-	longEdgesMap longEdges;
-	verticesMap	verts;
+	//	vector<VertexPrototype *> vertexList_;
+	longEdgesMap longEdges;verticesMap verts;
 	int VertexCount;
 	int EdgeId;
 	PairedGraphData() {
@@ -255,13 +293,14 @@ public:
 	//	void RebuildVertexMap(void);
 };
 
-class VertexIterator: public IVertexIterator<int> {
+class JVertexIterator {
 	friend class PairedGraphData;
 private:
 	int currentVertex_;
 	PairedGraphData *graph_;
 public:
-	VertexIterator(PairedGraphData *graph);
+	JVertexIterator(PairedGraphData *graph);
+	JVertexIterator(const JVertexIterator &iterator);
 
 	/*
 	 * commented while merge. Possible we need it.
@@ -276,12 +315,54 @@ public:
 	 return currentVertex_ < graph_->VertexCount;
 	 }
 	 */
-	virtual bool hasNext();
+	bool hasNext();
 
-	virtual int next();
+	int next();
 };
 
-class PairedGraph: public PairedGraphData, public IPairedGraph<int, Edge *> {
+class VertexIterator {
+	friend class PairedGraphData;
+private:
+	PairedGraphData *graph_;
+	int currentVertex_;
+	void findNext();
+public:
+	VertexIterator(PairedGraphData *graph, int current = 0);
+
+	VertexIterator(const VertexIterator &iterator);
+
+	VertexIterator &operator++();
+
+	int &operator*();
+
+	bool operator==(const VertexIterator &other);
+
+	bool operator!=(const VertexIterator &other);
+};
+
+class EdgeIterator {
+	friend class PairedGraphData;
+private:
+	PairedGraphData *graph_;
+	int vertex_;
+	int index_;
+	int current_;
+public:
+	EdgeIterator(PairedGraphData *graph, int vertex, int index, int current);
+
+	EdgeIterator(const EdgeIterator &iterator);
+
+	EdgeIterator &operator++();
+
+	Edge *&operator*();
+
+	bool operator==(const EdgeIterator &other);
+
+	bool operator!=(const EdgeIterator &other);
+};
+
+class PairedGraph: public PairedGraphData, public IPairedGraph<int, Edge *,
+		JVertexIterator, VertexIterator, EdgeIterator> {
 private:
 	//TODO add vertexNumber and edgeNumber fields and getters for them
 	/**Method takes direction as RIGHT or LEFT, which are +1 and -1 and returns corresponding index
@@ -297,9 +378,8 @@ private:
 	 * @param edge Edge to delete
 	 * @direction Direction from which edge should be deleted. @direction can be LEFT or RIGHT.
 	 */
-	void removeEdgeVertexAdjacency(int vertex, Edge *edge,
-			int direction);
-//	void removeEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
+	void removeEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
+	//	void removeEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
 
 	/**
 	 * Method adds @edge to the list of edges adjecent to @vertex. This method works in O(number of neighbours)
@@ -308,8 +388,8 @@ private:
 	 * @param edge Edge to add
 	 * @direction Direction from which edge is added to vertex. @direction can be LEFT or RIGHT.
 	 */
-	void addEdgeVertexAdjacency(int vertex, Edge *edge,	int direction);
-//	void addEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
+	void addEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
+	//	void addEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
 public:
 
 	//TODO C-style outcoming and incoming edge iterators should be added!!!
@@ -318,9 +398,9 @@ public:
 	 *Method returns number of outgoing edges for @vertex
 	 */
 	virtual int rightDegree(int vertex);
-//	virtual int rightDegree(int vertex) {
-//		return degrees[vertex][1];
-//	}
+	//	virtual int rightDegree(int vertex) {
+	//		return degrees[vertex][1];
+	//	}
 
 	virtual int degree(int vertexId, int direction) {
 		int index = directionToIndex(direction);
@@ -332,39 +412,26 @@ public:
 	 *Method returns number of incoming edges for @vertex
 	 */
 	virtual int leftDegree(int vertex);
-//	virtual int leftDegree(int vertex) {
-//		return degrees[vertex][0];
-//	}
+	//	virtual int leftDegree(int vertex) {
+	//		return degrees[vertex][0];
+	//	}
 
 	/**
-	 * Method returns outcoming edge for given vertex with a given number
+	 * Method returns incoming edge for given vertex with a given number in the given direction
 	 */
-	virtual Edge *rightEdge(int vertex, int number);
-	virtual Edge *rightNeighbour(int vertex, int number) {
-		assert(number < degrees[vertex][1]);
-		return longEdges[edgeRealId(edgeIds[vertex][number][1], longEdges)];
-	}
-
-	/**
-	 * Method returns incoming edge for given vertex with a given number
-	 */
-	virtual Edge *leftEdge(int vertex, int number);
-	virtual Edge *leftNeighbour(int vertex, int number) {
-		assert(number < degrees[vertex][0]);
-		return longEdges[edgeRealId(edgeIds[vertex][number][0], longEdges)];
-	}
-
-	virtual Edge *neighbour(int vertex, int number, int direction) {
-		int index = directionToIndex(direction);
-		assert(number < degrees[vertex][index]);
-		return longEdges[edgeRealId(edgeIds[vertex][number][index], longEdges)];
-
-	}
+	virtual Edge *neighbourEdge(int vertex, int number, int direction);
 
 	//TODO Replace with C-stype iterator
 	//TODO Make it return iterator instead of iterator *.
-	//This is very bad method!!!!
-	virtual VertexIterator *vertexIterator();
+	//This is java style iterator. Better use newly created c style iterator VertexIterator
+	//	virtual JVertexIterator jVertexIterator();
+
+	virtual VertexIterator beginVertex();
+	virtual VertexIterator endVertex();
+
+	virtual EdgeIterator beginEdge(int vertex, int direction);
+	virtual EdgeIterator endEdge(int vertex, int direction);
+
 
 	/**
 	 * Method adds edge to graph and updates all data stored in graph correspondingly.
@@ -411,7 +478,7 @@ public:
 	 * @param vertex vertex to be deleted
 	 */
 	virtual void removeVertex(int vertex);
-//	virtual void removeVertex(int vertex);
+	//	virtual void removeVertex(int vertex);
 
 	/**
 	 * Method concatenate two edges into new one and deletes old edges.
@@ -436,9 +503,8 @@ public:
 	 * @param vertex2 vertex to be removed
 	 * @return vertex which is @vertex1 glued to @vertex2. In this implementation it is @vertex1
 	 */
-	virtual int glueVertices(int vertex1,
-			int vertex2);
-//	virtual int glueVertices(int vertex1, int vertex2);
+	virtual int glueVertices(int vertex1, int vertex2);
+	//	virtual int glueVertices(int vertex1, int vertex2);
 
 	/**
 	 * Method glues edges, there start and end points. Currently implemented as gluing of start and end vertices
@@ -480,17 +546,22 @@ public:
 	 * This method finds vertex in graph with specific parameters.
 	 * @param kmer upper sequence
 	 * @param s lower sequence
-	 * @return vertex with given parameters if found and NULL otherwise
+	 * @return vertex with given parameters if found and -1 otherwise.
 	 */
 	virtual int findVertex(ll kmer, Sequence *s);
 
-	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
+	/**
+	 * This method finds all vertices in graph with given k-mer as upper sequence.
+	 * @param kmer upper sequence
+	 * @return vector of vertices found
+	 */
+	virtual vector<int> findVertices(ll kmer);
 
+	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
+	void removeLowCoveredEdges(longEdgesMap &longEdges, int CoverageThreshold = 1);
 	void RebuildVertexMap(void);
 };
 
-int storeVertex(gvis::GraphPrinter<int> &g, PairedGraph &graph, ll newKmer,
-		Sequence* newSeq);
 int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq);
 int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq, int VertNum);
 void resetVertexCount(PairedGraph &graph);

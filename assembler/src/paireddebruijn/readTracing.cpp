@@ -34,7 +34,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	double eps = 1;
 	INFO("traceReads started");
 	INFO(parsed_reads);
-	freopen(parsed_reads.c_str(), "r", stdin);
+	FILE * inFile = fopen(parsed_reads.c_str(), "r");
 	char *upperNuclRead = new char[readLength + 2];
 	char *lowerNuclRead = new char[readLength + 2];
 	char *upperRead = new char[readLength + 2];
@@ -43,7 +43,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	ll upperMask = (((ll) 1) << (2 * (k - 1))) - 1;
 	ll lowerMask = (((ll) 1) << (2 * (l - 1))) - 1;
 	//	FILE* fout = fopen("data/filtered_reads","w");
-	while (nextReadPair(upperNuclRead, lowerNuclRead)) {
+	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
 		if (!(count & (1024*128 - 1)))
 		cerr<<"read number "<<count<<" processed"<<endl;
 		count++;
@@ -56,12 +56,13 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 		for (int j = 0; j + l < readLength; j++) {
 			verticesMap::iterator vertIter = verts.find(upper);
 			if (vertIter!=verts.end()) {
-				//	cerr<<"kmer found for j="<<j<<endl;
+					cerr<<"kmer found for j="<<j<<endl;
 				for (vector<VertexPrototype *>::iterator it =vertIter->second.begin(); it
 						!= vertIter->second.end(); ++it) {
+
 					if ((*it)->lower->similar(loRead->Subseq(1+j, l+j),l-1)) {
-						//				cerr<<"vertex found for lower "<<(*it)->lower->str()<<endl;
-						//						fprintf(fout,"%s %s\n",upperNuclRead,lowerNuclRead);
+										cerr<<"vertex found for lower "<<(*it)->lower->str()<<endl;
+//												fprintf(fout,"%s %s\n",upperNuclRead,lowerNuclRead);
 						int VertId = (*it)->VertexId;
 						pair<int, int> vDist = vertexDist(longEdges, graph,VertId);
 

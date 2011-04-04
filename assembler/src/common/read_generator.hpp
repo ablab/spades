@@ -7,49 +7,66 @@
 #include "strobe_read.hpp"
 #include "vector"
 #include "nucl.hpp"
-#define MAX_PROBABILITY 100
+#define MAX_PROBABILITY 10000
 using namespace std;
 
-template<int size, int cnt = 1, typename T = int>
+class SmoothPositionChooser {
+public:
+	static int choosePosition(int currentReadNumber, int readNumber,
+			int minPosition, int maxPosition) {
+		return minPosition + (maxPosition - minPosition)
+				* (ll) currentReadNumber / (readNumber - 1);
+	}
+};
+
+class RandomPositionChooser {
+public:
+	static int choosePosition(int currentReadNumber, int readNumber,
+			int minPosition, int maxPosition) {
+		return minPosition + rand() % (maxPosition - minPosition + 1);
+	}
+};
+
+template<int size, int cnt = 1, typename T = int,
+		typename PositionChooser = SmoothPositionChooser>
 class ReadGenerator {
 private:
 	//	vector<ifaststream*> ifs_;
 	string genome_;
-	int currentPosition_;
 	int minPosition_;
 	int maxPosition_;
 	int coverage_;
-	int currentCoverage_;
+	int readNumber_;
+	int currentReadNumber_;
 	int insertLength_;
 	int errorProbability_; // Probability in percents
 	int errorDistribution_[3];
 	int insertError_;
 	bool readingStarted_;
-	int noErrorProbability(int p, int length) {
+	double noErrorProbability(int p, int length) {
 		return MAX_PROBABILITY - p * length + p * p * length * (length - 1) / 2
 				/ MAX_PROBABILITY;
 	}
 
 public:
-	ReadGenerator(istream is, int coverage, int insert = 0) {
+	void initParameters(int coverage, int insert) {
 		insertLength_ = insert;
 		coverage_ = coverage;
-		ifstream s;
-		is >> genome_;
-		currentCoverage_ = 0;
+		readNumber_ = coverage_ * genome_.size() / (size * cnt);
+		currentReadNumber_ = 0;
 		readingStarted_ = false;
 		setErrorProbability(0);
 		setMaxInsertLengthError(0);
 	}
 
+	ReadGenerator(istream is, int coverage, int insert = 0) {
+		is >> genome_;
+		initParameters(coverage, insert);
+	}
+
 	ReadGenerator(string genome, int coverage, int insert = 0) {
-		insertLength_ = insert;
-		coverage_ = coverage;
 		genome_ = genome;
-		currentCoverage_ = 0;
-		readingStarted_ = false;
-		setErrorProbability(0);
-		setMaxInsertLengthError(0);
+		initParameters(coverage, insert);
 	}
 
 	void close() {
@@ -57,6 +74,10 @@ public:
 
 	void setRandSeed(unsigned int randSeed) {
 		srand(randSeed);
+	}
+
+	void setErrorProbability(double probability) {
+		setErrorProbability((int) (probability * MAX_PROBABILITY));
 	}
 
 	void setErrorProbability(int probability) {
@@ -77,7 +98,7 @@ public:
 			cerr << "can not change generator parameters while reading" << endl;
 			assert(1);
 		}
-		insertError_ = insertError;
+		insertError_ = insertError / 2;
 		maxPosition_ = genome_.size() - size * cnt - insertLength_ * (cnt - 1)
 				- insertError_;
 		minPosition_ = insertError_;
@@ -89,7 +110,6 @@ public:
 		}
 		if (!readingStarted_) {
 			readingStarted_ = true;
-			currentPosition_ = minPosition_;
 			read_ahead();
 		}
 		sr = next_sr_;
@@ -102,7 +122,7 @@ public:
 	}
 
 	inline bool eof() const {
-		return currentCoverage_ >= coverage_;
+		return currentReadNumber_ >= readNumber_;
 	}
 
 	vector<strobe_read<size, cnt, T> >* readAll(int number = -1) {
@@ -143,11 +163,13 @@ private:
 	}
 
 	bool read(strobe_read<size, cnt, T> &sr) {
-		//		cout << currentPosition << endl;
+		//				cout << currentReadNumber_ << " " << readNumber_ << endl;
 		if (!is_open() || eof()) {
 			return false;
 		}
-		int p = currentPosition_;
+		int p = PositionChooser::choosePosition(currentReadNumber_,
+				readNumber_, minPosition_, maxPosition_);
+		cout << p << endl;
 		for (int i = 0; i < cnt; i++) {
 			int positionError = rand() % (2 * insertError_ + 1) - insertError_;
 			string readString = genome_.substr(p + positionError, size);
@@ -155,13 +177,29 @@ private:
 			sr.put(i, readString);
 			p += size + insertLength_;
 		}
-		currentPosition_++;
-		if (currentPosition_ > maxPosition_) {
-			currentPosition_ = minPosition_;
-			currentCoverage_++;
-		}
+		currentReadNumber_++;
 		return true;
 	}
 };
+
+template<typename PositionChooser>
+void generateReads(string fileName, string genomeFileName, int insertLength,
+		int coverage, double errorProbability, int maxInsertLengthError) {
+	ofstream os;
+	os.open(fileName.c_str());
+	Sequence genome = readGenomeFromFile(genomeFileName);
+	stringstream ss;
+	ss << genome;
+	ReadGenerator<100, 2, int, PositionChooser> gen(ss.str(), coverage,
+			insertLength);
+	gen.setErrorProbability(errorProbability);
+	gen.setMaxInsertLengthError(maxInsertLengthError);
+	strobe_read<100, 2> readPair;
+	while (!gen.eof()) {
+		gen >> readPair;
+		os << readPair[0] << " " << readPair[1] << endl;
+	}
+	os.close();
+}
 
 #endif /* READGENERATOR_HPP_ */
