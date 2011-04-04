@@ -21,11 +21,15 @@
 #define mp make_pair
 #define fi first
 #define se second
+#define protoEdgeType pair<string, string>
 #define edgesMap  map<ll, vector<EdgePrototype *> >
 #define verticesMap  map<ll, vector<VertexPrototype *> >
 #define longEdgesMap  map<int, Edge*>
+
+#define otherDirection(direction) (direction == LEFT ? RIGHT : LEFT)
 #define RIGHT 1
 #define LEFT -1
+
 #define IN_EDGE 0
 #define OUT_EDGE 1
 
@@ -101,5 +105,5 @@ extern int useProcessLower;
 
 void initConstants(string ini_file);
 ll pushNucleotide(ll kMer, int length, int direction, int nucl);
-
+ll popNucleotide(ll kMer, int length, int direction);
 #endif /*COMMON_HPP_*/
