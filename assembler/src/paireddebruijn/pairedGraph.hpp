@@ -25,8 +25,8 @@ public:
 	int coverage;
 	int position;
 	int deltaShift;
-	VertexPrototype(Sequence *lower_, int id, int coverage_ = 1);
-	VertexPrototype(ll upper_, Sequence *lower_, int id, int coverage_ = 1, int deltaShift_ = 0);
+	VertexPrototype(Sequence *lower_, int id, int coverage_ = 1, int position = 0);
+	VertexPrototype(ll upper_, Sequence *lower_, int id, int coverage_ = 1, int deltaShift_ = 0, int position_ = 0);
 	~VertexPrototype() {
 		delete lower;
 	}
@@ -288,7 +288,7 @@ public:
 		isUpToDate = false;
 		VertexCount = 0;
 		EdgeId = 0;
-		cerr << "VAH Paired created" << endl;
+		cerr<<"Paired created"<<endl;
 	}
 	//	void RebuildVertexMap(void);
 };

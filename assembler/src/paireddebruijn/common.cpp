@@ -18,7 +18,8 @@ int k = 0;
 int l = 0;
 int readLength = 0;
 int insertLength = 0;
-int minIntersect;
+int minIntersect = l - 5;
+int inClusterMaxShift = 1;
 
 
 int fictiveSecondReads = 0;
@@ -36,6 +37,7 @@ int useProcessLower = 1;
  * Method adds nucleotide to the side of kMer defined by direction
  */
 ll pushNucleotide(ll kMer, int length, int direction, int nucl) {
+	assert(direction == LEFT || direction == RIGHT );
 	if (direction == RIGHT) {
 		return (ll) nucl | (kMer << (2));
 	} else {
@@ -83,6 +85,7 @@ void initConstants(string ini_file) {
 	distance_type = string(tmp);
 	assert(fscanf(ini, "fictiveSecondReads = %d\n", &fictiveSecondReads) == 1);
 	assert(fscanf(ini, "needRevertedPairs = %d\n", &needRevertedPairs) == 1);
+	assert(fscanf(ini, "inClusterMaxShift = %d\n", &inClusterMaxShift) == 1);
 
 
 	assert(fscanf(ini, "Filenames:\n") == 0);
