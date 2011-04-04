@@ -81,7 +81,6 @@ private:
 			qual_[i] -= PHRED_OFFSET;
 		}
 	}
-
 	void setSequence(const char* s) {
 		seq_ = s;
 	}
