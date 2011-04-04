@@ -77,25 +77,31 @@ class Edge {
 	size_t coverage_;
 	size_t incoming_coverage_;
 	size_t outgoing_coverage_;
+	Edge *complement_;
 
 	friend class EdgeGraph;
 public:
 	Edge(const Sequence& nucls, Vertex* end) :
 		nucls_(nucls), end_(end), coverage_(0) {
-
 	}
 
-//	void set_coverage(size_t cov) {
-//		coverage_ = cov;
-//	}
-//
-//	size_t coverage() {
-//		return coverage_;
-//	}
+	void setComplement(Edge *complement) {
+		complement_ = complement;
+	}
+
+	//	void set_coverage(size_t cov) {
+	//		coverage_ = cov;
+	//	}
+	//
+	//	size_t coverage() {
+	//		return coverage_;
+	//	}
 
 	Vertex* end() {
 		return end_;
 	}
+
+	Vertex* start() const;
 
 	const Sequence& nucls() {
 		return nucls_;
@@ -109,12 +115,16 @@ public:
 	//		++edge_coverage_[(int) nucl];
 	//	}
 
+	Edge *complement() const {
+		return complement_;
+	}
 
 };
 
 class Vertex {
 private:
-	vector<Edge> outgoing_edges_;
+	vector<Edge *> outgoing_edges_;
+
 	Vertex* complement_;
 
 	friend class EdgeGraph;
@@ -123,19 +133,20 @@ private:
 		complement_ = complement;
 	}
 public:
-	typedef vector<Edge>::const_iterator EdgeIterator;
+	typedef vector<Edge *>::const_iterator EdgeIterator;
 
-	EdgeIterator begin() {
+	EdgeIterator begin() const {
 		return outgoing_edges_.begin();
 	}
 
-	EdgeIterator end() {
+	EdgeIterator end() const {
 		return outgoing_edges_.end();
 	}
 
-	Vertex() :
-		outgoing_edges_(4) {
+	Vertex() {
 	}
+
+	Sequence nucls() const;
 
 	size_t OutgoingEdgeCount() {
 		return outgoing_edges_.size();
@@ -145,18 +156,26 @@ public:
 		return outgoing_edges_.size() == 0;
 	}
 
-	Edge* OutgoingEdge(char nucl) const {
-		for (size_t i = 0; i < outgoing_edges_.size(); ++i) {
-			if (outgoing_edges_[i].nucls(k) == nucl) {
-				return &outgoing_edges_[i];
-			}
-		}
-		return (const Edge*) NULL;
-	}
-
-	void AddOutgoingEdge(const Edge& e) {
+	void AddOutgoingEdge(Edge* e) {
 		outgoing_edges_.push_back(e);
 	}
+
+	bool RemoveOutgoingEdge(const Edge* e) {
+		vector<Edge *>::iterator it = outgoing_edges_.begin();
+		while (it != outgoing_edges_.end() && *it != e) {
+			++it;
+		}
+		if (it == outgoing_edges_.end()) {
+			return false;
+		}
+		outgoing_edges_.erase(it);
+		return true;
+	}
+	//
+	//	void RemoveOutgoingEdge(vector<Edge *>::iterator iter) {
+	//		assert(iter != outgoing_edges_.end());
+	//		outgoing_edges_.erase(iter);
+	//	}
 
 	Vertex* complement() const {
 		return complement_;
@@ -182,16 +201,16 @@ public:
 };
 
 class EdgeGraph {
+	//Is there any other way to let Edge and Vertex class know value of k?
+	static size_t k_;
 
 	bool CheckIfNoIncoming(Vertex* v) const;
 
 	bool CanBeDeleted(Vertex* v) const;
 
-	const Edge& AddSingleEdge(Vertex* v1, Vertex* v2, const Sequence& s);
+	Edge* AddSingleEdge(Vertex* v1, Vertex* v2, const Sequence& s);
 
-	void UnLinkAll(Vertex* v);
-
-	size_t k_;
+	void DeleteSingleEdge(const Edge* edge);
 
 	GraphActionHandler* action_handler_;
 
@@ -208,33 +227,55 @@ public:
 	 * @param action_handler Graph actions handler
 	 */
 	EdgeGraph(size_t k, GraphActionHandler* action_handler) :
-		k_(k), action_handler_(action_handler) {
+		action_handler_(action_handler) {
+		k_ = k;
 	}
 
 	/**
 	 * Deletes action_handler.
 	 */
 	~EdgeGraph() {
-		delete action_handler_;
+		if (action_handler_ != NULL)
+			delete action_handler_;
 	}
 
 	const set<Vertex*>& vertices() const {
 		return vertices_;
 	}
 
-	size_t k() {
-		return k_;
+	static size_t k() {
+		k_ = 0;
+//		return k_;
 	}
 
 	void set_action_handler(GraphActionHandler* action_handler) {
-		delete action_handler_;
-
+		if (action_handler_ != NULL)
+			delete action_handler_;
 		action_handler_ = action_handler;
 	}
 
-	void OutgoingEdges(const Vertex* v, Vertex::EdgeIterator &begin, Vertex::EdgeIterator &end) const;
+	void OutgoingEdges(const Vertex* v, Vertex::EdgeIterator &begin,
+			Vertex::EdgeIterator &end) const;
 
-	void IncomingEdges(const Vertex* v, Vertex::EdgeIterator &begin, Vertex::EdgeIterator &end) const;
+	Edge* OutgoingEdge(const Vertex* v, char nucl) const {
+		for (Vertex::EdgeIterator iter = v->begin(); iter != v->end(); ++iter) {
+			char lastNucl = (*iter)->nucls()[k_];
+			if (lastNucl == nucl) {
+				return *iter;
+			}
+		}
+		return NULL;
+	}
+
+	/*
+	 * Can not return vector iterators for vector which does not exist
+	 * Possible solutions:
+	 * 1. return vector(and create it every time)
+	 * 2. store vector of incoming edges
+	 * 3. stop supporting incoming edges: incoming are outcoming for rc vertex
+	 */
+	//	void IncomingEdges(const Vertex* v, Vertex::EdgeIterator &begin,
+	//			Vertex::EdgeIterator &end) const;
 
 	/**
 	 * adds vertex and its complement
@@ -249,9 +290,9 @@ public:
 
 	void ForceDeleteVertex(Vertex* v);
 
-	const Edge& AddEdge(Vertex* v1, Vertex* v2, const Sequence &nucls);
+	const Edge* AddEdge(Vertex* v1, Vertex* v2, const Sequence &nucls);
 
-	void DeleteEdge(const Edge& edge);
+	void DeleteEdge(Edge* edge);
 
 	bool AreLinkable(Vertex* v1, Vertex* v2, const Sequence &nucls) const;
 
@@ -260,7 +301,7 @@ public:
 	}
 
 	bool IsDeadStart(Vertex* v) const {
-		return IsLast(v->complement());
+		return IsDeadStart(v->complement());
 	}
 };
 
@@ -285,24 +326,24 @@ public:
 		}
 	};
 
-	Traversal(const CondensedGraph& g) :
+	Traversal(const EdgeGraph& g) :
 		g_(g) {
 	}
 
 	/**
 	 *
 	 */
-	virtual void Traverse(Handler& h) =0;
+	virtual void Traverse(Handler& h) = 0;
 
 protected:
-	const CondensedGraph& g_;
+	const EdgeGraph& g_;
 };
 
 class DFS: public Traversal {
 	set<Vertex*> visited_;
 	void ProcessVertex(Vertex* v, vector<Vertex*>& stack, Handler& h);
 public:
-	DFS(const CondensedGraph& g) :
+	DFS(const EdgeGraph& g) :
 		Traversal(g) {
 
 	}
@@ -311,7 +352,7 @@ public:
 
 class GraphVisualizer {
 public:
-	virtual void Visualize(const CondensedGraph& g) = 0;
+	virtual void Visualize(const EdgeGraph& g) = 0;
 };
 
 class SimpleGraphVisualizer: public GraphVisualizer {
@@ -321,7 +362,7 @@ public:
 		gp_(gp) {
 	}
 
-	virtual void Visualize(const CondensedGraph& g);
+	virtual void Visualize(const EdgeGraph& g);
 };
 
 class ComplementGraphVisualizer: public GraphVisualizer {
@@ -331,7 +372,7 @@ public:
 		gp_(gp) {
 	}
 
-	virtual void Visualize(const CondensedGraph& g);
+	virtual void Visualize(const EdgeGraph& g);
 };
 
 class SimpleStatCounter: public Traversal::Handler {
@@ -371,50 +412,50 @@ public:
 	}
 };
 
-class VisHandler: public Traversal::Handler {
-	gvis::GraphPrinter<const Vertex*>& pr_;
-public:
-
-	VisHandler(gvis::GraphPrinter<const Vertex*>& pr) :
-		pr_(pr) {
-	}
-
-	virtual void HandleStartVertex(const Vertex* v) {
-		stringstream ss;
-		ss << v->nucls().size();
-		pr_.addVertex(v, ss.str());
-	}
-
-	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
-		pr_.addEdge(v1, v2, "");
-	}
-
-};
-
-class ComplementVisHandler: public Traversal::Handler {
-	gvis::PairedGraphPrinter<const Vertex*>& pr_;
-public:
-
-	ComplementVisHandler(gvis::PairedGraphPrinter<const Vertex*>& pr) :
-		pr_(pr) {
-	}
-
-	virtual void HandleStartVertex(const Vertex* v) {
-		stringstream ss;
-		ss << v->nucls().size();
-
-		//todo delete after debug
-		stringstream ss2;
-		ss2 << v->complement()->nucls().size();
-		pr_.addVertex(v, ss.str(), v->complement(), ss2.str());
-	}
-
-	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
-		pr_.addEdge(make_pair(v1, v1->complement()),
-				make_pair(v2, v2->complement()), "");
-	}
-
-};
+//class VisHandler: public Traversal::Handler {
+//	gvis::GraphPrinter<const Vertex*>& pr_;
+//public:
+//
+//	VisHandler(gvis::GraphPrinter<const Vertex*>& pr) :
+//		pr_(pr) {
+//	}
+//
+//	virtual void HandleStartVertex(const Vertex* v) {
+//		stringstream ss;
+//		ss << v->nucls().size();
+//		pr_.addVertex(v, ss.str());
+//	}
+//
+//	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
+//		pr_.addEdge(v1, v2, "");
+//	}
+//
+//};
+//
+//class ComplementVisHandler: public Traversal::Handler {
+//	gvis::PairedGraphPrinter<const Vertex*>& pr_;
+//public:
+//
+//	ComplementVisHandler(gvis::PairedGraphPrinter<const Vertex*>& pr) :
+//		pr_(pr) {
+//	}
+//
+//	virtual void HandleStartVertex(const Vertex* v) {
+//		stringstream ss;
+//		ss << v->nucls().size();
+//
+//		//todo delete after debug
+//		stringstream ss2;
+//		ss2 << v->complement()->nucls().size();
+//		pr_.addVertex(v, ss.str(), v->complement(), ss2.str());
+//	}
+//
+//	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
+//		pr_.addEdge(make_pair(v1, v1->complement()),
+//				make_pair(v2, v2->complement()), "");
+//	}
+//
+//};
 }
 #endif /* EDGE_GRAPH_HPP_ */
 
