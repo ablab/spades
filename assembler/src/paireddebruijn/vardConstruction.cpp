@@ -83,21 +83,22 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *curSeq , int direction){
 	assert(direction == LEFT || direction == RIGHT );
 	int count = 0;
+	TRACE("Find uniqueness" << direction);
 //	cerr << "findUniqueWay" << endl;
 	pair <char, EdgePrototype*> res = make_pair(0, (EdgePrototype *)NULL);
 
 	for (int Nucl = 0; Nucl < 4; Nucl++) {
-		curKmer = popNucleotide(curKmer, k, otherDirection(direction));
-		ll tmpKmer = pushNucleotide(curKmer, k -1, direction, Nucl);
+		ll tmpcurKmer = subkmer(curKmer, direction);
+		ll tmpKmer = pushNucleotide(tmpcurKmer, k -1, direction, Nucl);
 
 		edgesMap::iterator iter = edges.find(tmpKmer);
-		TRACE("Trying to find" << tmpKmer);
+		TRACE("FROM " << curKmer << " Trying to find" << tmpKmer);
 		if (iter != edges.end()) {
 			for (vector<EdgePrototype *>::iterator it = iter->second.begin(); it != iter->second.end(); ++it) {
 				//TODO: minIntersect?
 				if (curSeq->similar(*((*it)->lower), minIntersect, direction)) {
 					count++;
-					TRACE("FOUND");
+					TRACE("FOUND" << (*it)->lower->str());
 					if (count > 1) {
 						return make_pair(0, (EdgePrototype *)NULL);
 					} else {
@@ -188,6 +189,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 
 				Edge* newEdge = new Edge(curEdge, startVertId, finVertId, graph.EdgeId, EdgeCoverage);
 				graph.addEdge(newEdge);
+				assert(0);
 				//expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, EdgeCoverage, LEFT);
 			}
 		}

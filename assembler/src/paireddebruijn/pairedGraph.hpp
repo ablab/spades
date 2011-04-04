@@ -288,7 +288,7 @@ public:
 		isUpToDate = false;
 		VertexCount = 0;
 		EdgeId = 0;
-		cerr << "VAH Paired created" << endl;
+		cerr<<"Paired created"<<endl;
 	}
 	//	void RebuildVertexMap(void);
 };

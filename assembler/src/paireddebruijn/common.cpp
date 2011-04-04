@@ -19,6 +19,7 @@ int l = 0;
 int readLength = 0;
 int insertLength = 0;
 int minIntersect;
+int inClusterMaxSift = 1;
 
 
 int fictiveSecondReads = 0;
@@ -83,6 +84,7 @@ void initConstants(string ini_file) {
 	distance_type = string(tmp);
 	assert(fscanf(ini, "fictiveSecondReads = %d\n", &fictiveSecondReads) == 1);
 	assert(fscanf(ini, "needRevertedPairs = %d\n", &needRevertedPairs) == 1);
+	assert(fscanf(ini, "inClusterMaxSift = %d\n", &inClusterMaxSift) == 1);
 
 
 	assert(fscanf(ini, "Filenames:\n") == 0);

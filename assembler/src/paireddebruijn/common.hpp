@@ -88,7 +88,7 @@ extern int readLength;
 const int maxSeqLength = 200;
 extern int insertLength;
 extern int minIntersect;
-
+extern int inClusterMaxSift;
 
 
 extern int fictiveSecondReads;
