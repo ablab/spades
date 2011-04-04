@@ -102,7 +102,7 @@ private:
 						seq_[len - i - 1] = 'N';
 						break;
 					default:
-						std::cerr << " strange letteer in read. Exiting" << tmp;
+//						std::cerr << " strange letteer in read. Exiting" << tmp;
 						assert(0);
 				}
 			}
