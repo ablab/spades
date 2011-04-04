@@ -77,6 +77,9 @@ private:
 	}
 	void setQuality(const char* s) {
 		qual_ = s;
+		for (int i = 0; i < qual_.size(); ++i) {
+			qual_[i] -= PHRED_OFFSET;
+		}
 	}
 
 	void setSequence(const char* s) {
