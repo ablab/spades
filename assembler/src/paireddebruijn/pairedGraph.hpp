@@ -563,6 +563,7 @@ public:
 };
 
 int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq);
+int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq, bool ensureNew);
 int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq, int VertNum);
 void resetVertexCount(PairedGraph &graph);
 

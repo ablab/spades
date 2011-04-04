@@ -18,7 +18,7 @@ int k = 0;
 int l = 0;
 int readLength = 0;
 int insertLength = 0;
-int minIntersect = l - 5;
+int minIntersect = l - 1;
 int inClusterMaxShift = 1;
 
 

@@ -52,6 +52,7 @@ int findPossibleVertex(ll kmer, Sequence &down, edgesMap &edges, verticesMap &ve
 	}
 	if (count > 1) res = -2;
 	TRACE ("result :" <<res);
+	if (count == 1) DEBUG("vertex found");
 	return res;
 }
 //go left until vertex or fork.
@@ -68,7 +69,12 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 		pair <char, EdgePrototype*> otherdir_res = findUniqueWay(edges, curKmer, curSeq, otherDirection(direction), true);
 		pair <char, EdgePrototype*> dir_res = findUniqueWay(edges, curKmer, curSeq, direction , false);
 
-		if ((otherdir_res.second == NULL) || (dir_res.second == NULL)) {
+		if ((otherdir_res.second == NULL) ) {
+			DEBUG("Other dir NULL");
+			break;
+		}
+		if   (dir_res.second == NULL) {
+			DEBUG("This dir NULL");
 			break;
 		}
 		goUniqueWay(edges, curKmer, curSeq, dir_res, EdgeCoverage, direction);
@@ -97,13 +103,14 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
 		ll tmpKmer = pushNucleotide(tmpcurKmer, k -1, direction, Nucl);
 
 		edgesMap::iterator iter = edges.find(tmpKmer);
-		TRACE("FROM " << curKmer << " Trying to find" << tmpKmer);
+		TRACE("FROM " << curKmer << " Trying to find " << tmpKmer);
 		if (iter != edges.end()) {
 			for (vector<EdgePrototype *>::iterator it = iter->second.begin(); it != iter->second.end(); ++it) {
 				//TODO: minIntersect?
-				if (curSeq->similar(*((*it)->lower), minIntersect, direction)) {
+//				if (curSeq->similar(*((*it)->lower), minIntersect, direction)) {
+				if (curSeq->similar(*((*it)->lower), minIntersect, 0)) {
 					count++;
-					TRACE("FOUND" << (*it)->lower->str());
+					TRACE("FOUND " << (*it)->lower->str());
 					if (count > 1) {
 						return make_pair(0, (EdgePrototype *)NULL);
 					} else {
@@ -185,11 +192,15 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 				assert(finVertId != -2);
 				//TODO: what about loops?
 				if (startVertId < 0) {
-					startVertId = storeVertex(graph, startKmer, startSeq);
+					int sVbef = findPossibleVertex(subkmer(startKmer, LEFT), *startSeq, edges, graph.verts);
+					startVertId = storeVertex(graph, subkmer(startKmer, LEFT), startSeq, true);
+					int sVaft = findPossibleVertex(subkmer(startKmer, LEFT), *startSeq, edges, graph.verts);
+					cerr<<"bef "<<sVbef<<" move to "<<startVertId<<" and stand on "<<sVaft<<endl;
+					assert(startVertId==sVaft);
 					TRACE("adding startVertId" << startKmer);
 				}
 				if (finVertId < 0) {
-					finVertId = storeVertex(graph, finKmer, finSeq);
+					finVertId = storeVertex(graph, subkmer(finKmer, RIGHT), finSeq, true);
 					TRACE("adding finVertId" << finKmer);
 
 				}
