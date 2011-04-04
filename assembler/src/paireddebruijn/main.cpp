@@ -30,19 +30,16 @@ void run() {
 
 	if (needPairs) {
 		cerr << endl << " constructing pairs" << endl;
-		readsToPairs(parsed_reads, parsed_k_l_mers);
+		if (needRevertedPairs)
+			readsToPairs(parsed_reads, parsed_l_k_mers, true);
+		else
+			readsToPairs(parsed_reads, parsed_k_l_mers, false);
 	}
 	if (needLmers) {
 		cerr << endl << " constructing Lmers" << endl;
 		pairsToLmers(parsed_k_l_mers, parsed_l_mers);
 	}
-	if (needRevertedPairs) {
-		INFO ("constructing reverted");
-		cerr << endl << " constructing pairs" << endl;
-		readsToPairs(parsed_reads, parsed_l_k_mers, true);
-		cerr << endl << " constructing Lmers" << endl;
-		pairsToLmers(parsed_l_k_mers, parsed_l_mers);
-	}
+
 	if (needSequences) {
 		cerr << endl << " constructing Sequences" << endl;
 		pairsToSequences(parsed_k_l_mers, parsed_l_mers, parsed_k_sequence);
@@ -52,55 +49,48 @@ void run() {
 	if (needGraph) {
 		cerr << endl << " constructing Graph" << endl;
 		constructGraph(graph);
-		sprintf(str, "data/paireddebruijn/graph.txt");
-		save(str, graph);
+		save(folder+"graph.txt", graph);
 		outputLongEdges(graph.longEdges, graph,
-				"data/paireddebruijn/beforeExpand.dot");
+				folder+"beforeExpand.dot");
 	}
 
 	if (useExpandDefinite) {
 		INFO("Expand definite...");
 		if (!needGraph) {
-			sprintf(str, "data/paireddebruijn/graph.txt");
-			load(str, graph);
+			load(folder+"graph.txt", graph);
 			graph.removeLowCoveredEdges(graph.longEdges, 3);
 			graph.RebuildVertexMap();
 			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 		}
-		//		expandDefinite(graph.longEdges, graph, graph.VertexCount, false);
 		expandDefinite(graph.longEdges, graph, graph.VertexCount, true);
 		outputLongEdges(graph.longEdges, graph,
-				"data/paireddebruijn/afterExpand.dot");
+				folder+"afterExpand.dot");
 		//		outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExpand_g.dot");
-		sprintf(str, "data/paireddebruijn/expandedGraph.txt");
-		save(str, graph);
+		save(folder+"expandedGraph.txt", graph);
 	}
 
 	if (useTraceReads) {
 		INFO("Trace reads...");
 		if (!useExpandDefinite) {
-			sprintf(str, "data/paireddebruijn/expandedGraph.txt");
 			INFO("Loading graph...");
-			load(str, graph);
+			load(folder+"expandedGraph.txt", graph);
 			INFO("Graph loaded!");
 			graph.RebuildVertexMap();
 			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 		}
 		traceReads(graph.verts, graph.longEdges, graph, graph.VertexCount,
 				graph.EdgeId);
-		outputLongEdges(graph.longEdges, "data/paireddebruijn/ReadsTraced.dot");
+		outputLongEdges(graph.longEdges, folder+"ReadsTraced.dot");
 		//	outputLongEdgesThroughGenome(graph, "data/paireddebruijn/ReadsTraced_g.dot");
-		sprintf(str, "data/paireddebruijn/tracedGraph.txt");
-		save(str, graph);
+		save(folder+"tracedGraph.txt", graph);
 	}
 
 	if (useProcessLower) {
 		INFO("Process lowers");
 
 		if (!useTraceReads) {
-			sprintf(str, "data/paireddebruijn/tracedGraph.txt");
 			INFO("Load");
-			load(str, graph);
+			load(folder+"tracedGraph.txt", graph);
 			INFO("Rebuild");
 			graph.RebuildVertexMap();
 		}
@@ -111,47 +101,43 @@ void run() {
 			expandDefinite(graph.longEdges, graph, graph.VertexCount);
 			INFO("one more");
 		}
-		outputLongEdges(graph.longEdges, "data/paireddebruijn/afterLowers.dot");
+		outputLongEdges(graph.longEdges, folder+"afterLowers.dot");
 		outputLongEdgesThroughGenome(graph,
-				"data/paireddebruijn/afterLowers_g.dot");
+				folder+"afterLowers_g.dot");
 
 		graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 		outputLongEdges(graph.longEdges, graph,
-				"data/paireddebruijn/afterLowers_info.dot");
-		sprintf(str, "data/paireddebruijn/afterLowerGraph.txt");
-		save(str, graph);
+				folder+"afterLowers_info.dot");
+		save(folder+"afterLowerGraph.txt", graph);
 	}
+
 	if (useExtractDefinite) {
 		INFO("extractDefinite RIGHT Start");
 		if (!useProcessLower) {
-			sprintf(str, "data/paireddebruijn/afterLowerGraph.txt");
-			load(str, graph);
+			load(folder+"afterLowerGraph.txt", graph);
 			graph.RebuildVertexMap();
 			DEBUG("loaded");
 		}
 		graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 		extractDefinite(graph, RIGHT);
 		outputLongEdges(graph.longEdges, graph,
-				"data/paireddebruijn/afterExtractDefinite1.dot");
+				folder+"afterExtractDefinite1.dot");
 		//	outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExtractDefinite1_g.dot");
 		INFO ("extractDefinite LEFT Start");
 		graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 		extractDefinite(graph, LEFT);
 		outputLongEdges(graph.longEdges, graph,
-				"data/paireddebruijn/afterExtractDefinite2.dot");
-		//outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExtractDefinite2_g.dot");
-
-
+				folder+"afterExtractDefinite2.dot");
 	}
 	cerr << "\n Finished";
 	INFO("Finished");
 }
 
 void generate() {
-	generateReads<SmoothPositionChooser> ("data/paireddebruijn/generated1.txt",
-			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 0);
-	generateReads<RandomPositionChooser> ("data/paireddebruijn/generated2.txt",
-			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 0);
+//	generateReads<SmoothPositionChooser> ("data/paireddebruijn/generated1.txt",
+//			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 0);
+//	generateReads<RandomPositionChooser> ("data/paireddebruijn/generated2.txt",
+//			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 0);
 	generateReads<SmoothPositionChooser> ("data/paireddebruijn/generated3.txt",
 			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 6);
 	generateReads<RandomPositionChooser> ("data/paireddebruijn/generated4.txt",
@@ -159,7 +145,7 @@ void generate() {
 }
 
 int main() {
-//	generate();
+	//generate();
 	init();
 	run();
 	return 0;

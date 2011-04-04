@@ -76,6 +76,7 @@ extern string error_log;
 extern string graph_file;
 extern string graph2;
 extern string threaded_graph;
+extern string folder;
 
 extern int k;
 extern int l;

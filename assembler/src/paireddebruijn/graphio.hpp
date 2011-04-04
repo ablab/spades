@@ -38,6 +38,7 @@ class DataPrinter {
 	FILE *f_;
 public:
 	DataPrinter(char *fileName);
+	DataPrinter(const char *fileName);
 	void output(int a);
 	void output(long long a);
 	void output(Edge *edge);
@@ -57,6 +58,7 @@ class DataReader {
 	FILE *f_;
 public:
 	DataReader(char *fileName);
+	DataReader(const char *fileName);
 	void read(int &a);
 	void read(long long &a);
 	void read(Edge * &edge);
@@ -129,5 +131,7 @@ void load(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 void save(char *fileName, PairedGraph &g);
 void load(char *fileName, PairedGraph &g);
 
+void save(string fileName, PairedGraph &g);
+void load(string fileName, PairedGraph &g);
 
 #endif /* IOPROCEDURES_HPP_ */
