@@ -26,10 +26,9 @@ KSEQ_INIT(gzFile, gzread)
 class ireadstream {
 
 public:
-	ireadstream(const string& filename, bool rtl = false) {
+	ireadstream(const string& filename) {
 		filename_ = filename;
 		is_open_ = open(filename);
-		rtl_ = rtl; // TODO: why the hell do we need rev-compl here?
 	}
 
 
@@ -71,8 +70,8 @@ public:
 
 		// if there is 'N' in sequence, then throw out this mate read
 		r.setName(seq_->name.s);
-		r.setQuality(seq_->qual.s, rtl_);
-		r.setSequence(seq_->seq.s, rtl_);
+		r.setQuality(seq_->qual.s);
+		r.setSequence(seq_->seq.s);
 		/*for (size_t i = 0; i < seq_->seq.l; i++) { // Fix Ns to As so we can store ACGT in 2 bits (Sequence). Anyway we have a Quality values for filtering out Ns later
 			if (!is_nucl(seq_->seq.s[i])) {
 				seq_->seq.s[i] = 'A';

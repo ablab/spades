@@ -44,6 +44,16 @@ ll pushNucleotide(ll kMer, int length, int direction, int nucl) {
 	}
 }
 
+ll popNucleotide(ll kMer, int length, int direction) {
+	if (direction == RIGHT) {
+		return kMer >> 2;
+	} else {
+		return ((ll) 1 << (2 * length - 2) - 1) &&  kMer;
+	}
+}
+
+
+
 void initConstants(string ini_file) {
 	char tmp[200];
 	INFO("Trying to init constants...");

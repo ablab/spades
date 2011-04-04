@@ -56,6 +56,7 @@ class Edge {
 public:
 	Sequence *upper;
 	Sequence *lower;
+	//length of upper part of edge, including one of adjacent vertex.
 	int length;
 	int FromVertex;
 	int ToVertex;
@@ -126,6 +127,21 @@ public:
 		length = len;
 		EdgeId = id;
 		coverage = cov;
+		deltaShift = dShift;
+	}
+	Edge(protoEdgeType protoEdge, int from, int to, int id,
+				int cov = 1, int dShift = 0) {
+		upper = new Sequence(protoEdge.first);
+		lower = new Sequence(protoEdge.second);
+		FromVertex = from;
+		ToVertex = to;
+		length = protoEdge.first.length() - (k - 1);
+		EdgeId = id;
+		coverage = cov;
+		if (length > insertLength + k) {
+			//TODO: recompute dShift
+
+		}
 		deltaShift = dShift;
 	}
 
