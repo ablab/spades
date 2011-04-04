@@ -23,6 +23,7 @@ public:
 	int VertexId;
 	bool used;
 	int coverage;
+	int position;
 	int deltaShift;
 	VertexPrototype(Sequence *lower_, int id, int coverage_ = 1);
 	VertexPrototype(ll upper_, Sequence *lower_, int id, int coverage_ = 1, int deltaShift_ = 0);

@@ -34,6 +34,21 @@ inline ll subkmer(ll kmer, int direction) {
  */
 
 int findPossibleVertex(ll &kmer, Sequence &down, edgesMap &edges, verticesMap &verts){
+	verticesMap::iterator v = verts.find(kmer);
+	int count = 0;
+	int res = -1;
+	if (v != verts.end()) {
+		forn(i, v->second.size()) {
+			Sequence* cur_seq =  v->second[i]->lower;
+			int position = v->second[i]->position;
+			if (down.str().find(cur_seq->Subseq(position, position + k-1).str()) != string::npos){
+				res =  v->second[i]->VertexId;
+				count++;
+			}
+		}
+	}
+	if (count > 1) return -2;
+	else return res;
 	return 0;
 }
 //go left until vertex or fork.
@@ -91,7 +106,6 @@ int goUniqueWay(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq, pair<char
 	assert(direction == LEFT || direction == RIGHT );
 	ll tmpKmer = pushNucleotide(finishKmer, k, findResult.first, direction);
 	finishKmer = popNucleotide(tmpKmer, k + 1, otherDirection(direction));
-	bool sameK = false;
 	EdgeCoverage += findResult.second->coverage;
 	finishSeq = new Sequence(*findResult.second->lower);//PossibleSequence;
 	findResult.second->used = 1;
