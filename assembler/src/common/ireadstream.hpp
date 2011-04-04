@@ -67,17 +67,16 @@ public:
 		if (!is_open() || eof()) {
 			return *this;
 		}
-
-		// if there is 'N' in sequence, then throw out this mate read
 		r.setName(seq_->name.s);
 		r.setQuality(seq_->qual.s);
 		r.setSequence(seq_->seq.s);
+		// if there is 'N' in sequence, then throw out this mate read
 		/*for (size_t i = 0; i < seq_->seq.l; i++) { // Fix Ns to As so we can store ACGT in 2 bits (Sequence). Anyway we have a Quality values for filtering out Ns later
 			if (!is_nucl(seq_->seq.s[i])) {
 				seq_->seq.s[i] = 'A';
 			}
 		}
-		r.setSequence(new Sequence(seq_->seq.s)); // it's create and copy :(*/
+		*/
 
 		read_ahead(); // make actual read for the next result
 		return *this;
