@@ -12,23 +12,25 @@ LOGGER("p.pairedGraph");
 
 namespace paired_assembler {
 
-VertexPrototype::VertexPrototype(Sequence *lower_, int id, int coverage_) {
+VertexPrototype::VertexPrototype(Sequence *lower_, int id, int coverage_,int position_) {
 	upper = NULL;
 	TRACE("Upper sequence is not defined");
 	lower = lower_;
 	VertexId = id;
 	used = false;
 	coverage = coverage_;
+	position = position_;
 }
 
 VertexPrototype::VertexPrototype(ll upper_, Sequence *lower_, int id,
-		int coverage_, int deltaShift_) {
+		int coverage_, int deltaShift_, int position_) {
 	upper = upper_;
 	lower = lower_;
 	VertexId = id;
 	used = false;
 	coverage = coverage_;
 	deltaShift = deltaShift_;
+	position = position_;
 }
 
 void PairedGraph::recreateVerticesInfo(int vertCount, longEdgesMap &longEdges) {
