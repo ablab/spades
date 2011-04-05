@@ -192,7 +192,6 @@ public:
 };
 
 class EdgeGraph {
-	//Is there any other way to let Edge and Vertex class know value of k?
 	size_t k_;
 
 	bool CheckIfNoIncoming(Vertex* v) const;
@@ -311,6 +310,10 @@ public:
 
 	Vertex *ComplementVertex(const Vertex* v) const {
 		return v->complement();
+	}
+
+	const Edge& GetData(Edge* e) {
+		return *e;
 	}
 };
 
