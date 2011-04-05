@@ -90,11 +90,13 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 			dir_res.second->used = true;
 			string tmp = decompress(curKmer, k);
 			curEdge.first+=(tmp[k-1]);
+			curEdge.second.append(curSeq->Subseq(k-1,k).str());
 			//TODO:: do it, save nucleo/
 		}
 	}
 	return 0;
 }
+
 pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *curSeq , int direction, bool replace){
 	assert(direction == LEFT || direction == RIGHT );
 	int count = 0;
@@ -223,6 +225,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 				ll finKmer = startKmer;
 				Sequence *finSeq = new Sequence(*startSeq);
 				curEdge.first = decompress(startKmer, k);
+				curEdge.second = finSeq->str();
 				expandDirected(edges, curEdge, graph.verts, finKmer, finSeq, EdgeCoverage, RIGHT);
 				Sequence *finSubSeq = SubSeq(*finSeq, RIGHT);
 				DEBUG("RIGHT VERTEX K_MER:" <<finKmer<<" seq "<<finSeq->str());
