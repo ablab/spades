@@ -32,35 +32,34 @@ ostream& operator<< (ostream& os, const Vertex& v) {
 
 Vertex* Graph::createVertex(const Sequence& kmer) {
 	LOG_ASSERT(!hasVertex(kmer), "already contains " << kmer.str());
-	Vertex* v = new Vertex(kmer);
-	v->complement_ = new Vertex(!kmer);
-	v->complement_->complement_ = v;
+	Vertex* v = new Vertex(kmer, true);
 	seqVertice[kmer] = v;
+	seqVertice[!kmer] = v->complement();
 	vertices.insert(v);
-	vertices.insert(v->complement_);
+	vertices.insert(v->complement());
 	return v;
 }
 
 //Vertex* Graph::createVertex(const Sequence& kmer, size_t size) {
 //	Vertex* v = createVertex(kmer);
 //	v->setSize(size);
-//	v->complement_->setSize(size);
+//	v->complement()->setSize(size);
 //	return v;
 //}
 
 
 void Graph::addEdge(Vertex* from, Vertex* to, const Sequence& seq) {
 	from->addEdge(to, seq);
-	to->complement_->addEdge(from->complement_, !seq);
+	to->complement()->addEdge(from->complement(), !seq);
 }
 
 void Graph::removeVertex(Vertex* v) {
 	removeVertex_single(v);
-	removeVertex_single(v->complement_);
+	removeVertex_single(v->complement());
 }
 void Graph::removeVertex_single(Vertex* v) {
-	for (Vertex::Edges::iterator it = v->edges_.begin(); it != v->edges_.end(); ++it) {
-		it->first->complement_->edges_.erase(v->complement_);
+	for (Edges::iterator it = v->edges().begin(); it != v->edges().end(); ++it) {
+		it->first->complement()->edges().erase(v->complement());
 	}
 	removedVertices.insert(v);
 }
@@ -77,39 +76,25 @@ Vertex* Graph::getVertex(const Sequence& kmer) {
 	if (v->second->data() == kmer) {
 		return v->second;
 	}
-	assert(v->second->complement_->data() == kmer);
-	return v->second->complement_;
+	assert(v->second->complement()->data() == kmer);
+	return v->second->complement();
 }
 
 bool Graph::tryCondenseA(Vertex* v) {
-	if (removedVertices.count(v)) {
+	if (v->degree() != 1 || v->complement()->degree() != 1) {
 		return false;
 	}
-	if (v->degree() != 1 || v->complement_->degree() != 1) {
-		return false;
-	}
+//	Vertex* w = v->complement()->edges_.begin()->first->complement();
+//	Vertex* u = v->edges_.begin()->first;
 //	for (;;) {
-//		Vertex* u = v->edges_.begin()->first;
-//		if (u->edges_.size() != 1 || u->complement_->edges_.size() != 1) {
-//			break;
-//		}
-//		v = u;
+//
 //	}
-//	v = v->complement_;
-	Vertex* w = v->complement_->edges_.begin()->first->complement_;
-	Vertex* u = v->edges_.begin()->first;
 	return true;
-//	for (;;) {
-//		if (v->edges_.size() != 1 || v->complement_->edges_.size() != 1) {
-//			break;
-//		}
-//		Vertex* u = v->edges_.begin()->first;
-//	}
 
 
 //	Edge e = v->edges_.begin()->second;
-//	assert(u->complement_->edges_.begin()->first == v->complement_);
-//	Edge f = u->complement_->edges_.begin()->second;
+//	assert(u->complement()->edges_.begin()->first == v->complement());
+//	Edge f = u->complement()->edges_.begin()->second;
 //	TRACE(e << " " << f);
 //	if ((e.lengths_.size() != 1) || (e.lengths_.size() != 1)) {
 //		ERROR("Unsure what to do");
@@ -123,15 +108,15 @@ bool Graph::tryCondenseA(Vertex* v) {
 //		for (map<size_t, int>::iterator it2 = it->second.lengths_.begin(); it2 != it->second.lengths_.end(); ++it2) {
 //			size_t l = len + it2->first - u->size();
 //			vu->edges_[w].lengths_[l] += it2->second;
-//			w->complement_->edges_[vu->complement_].lengths_[l] += it2->second;
+//			w->complement()->edges_[vu->complement()].lengths_[l] += it2->second;
 //		}
 //	}
-//	for (Vertex::Edges::iterator it = v->complement_->edges_.begin(); it != v->complement_->edges_.end(); ++it) {
+//	for (Vertex::Edges::iterator it = v->complement()->edges_.begin(); it != v->complement()->edges_.end(); ++it) {
 //		Vertex* w = it->first;
 //		for (map<size_t, int>::iterator it2 = it->second.lengths_.begin(); it2 != it->second.lengths_.end(); ++it2) {
 //			size_t l = len + it2->first - v->size();
-//			vu->complement_->edges_[w].lengths_[l] += it2->second;
-//			w->complement_->edges_[vu].lengths_[l] += it2->second;
+//			vu->complement()->edges_[w].lengths_[l] += it2->second;
+//			w->complement()->edges_[vu].lengths_[l] += it2->second;
 //		}
 //	}
 //	k++;
@@ -149,7 +134,7 @@ void Graph::cleanup() {
 }
 
 void Graph::output(std::ofstream &out) {
-	std::string name = "A Bruijn Graph";
+	std::string name = "A_Bruijn_Graph";
 //	std::string name = OUTPUT_FILE;
 #ifdef OUTPUT_PAIRED
 	gvis::PairedGraphPrinter<Vertex*> printer(name, out);
@@ -159,14 +144,14 @@ void Graph::output(std::ofstream &out) {
 #endif
 	for (Vertices::iterator v = vertices.begin(); v != vertices.end(); ++v) {
 		#ifdef OUTPUT_PAIRED
-			printer.addVertex(*v, toString(**v), (*v)->complement_, toString(*((*v)->complement_)));
+			printer.addVertex(*v, toString(**v), (*v)->complement(), toString(*((*v)->complement())));
 		#endif
 		#ifndef OUTPUT_PAIRED
 			printer.addVertex(*v, toString(**v));
 		#endif
-		for (Vertex::Edges::iterator it = (*v)->edges_.begin(); it != (*v)->edges_.end(); ++it) {
+		for (Edges::iterator it = (*v)->edges().begin(); it != (*v)->edges().end(); ++it) {
 			#ifdef OUTPUT_PAIRED
-				printer.addEdge(make_pair(*v, (*v)->complement_), make_pair(it->first, it->first->complement_), toString(it->second));
+				printer.addEdge(make_pair(*v, (*v)->complement()), make_pair(it->first, it->first->complement()), toString(it->second));
 			#endif
 			#ifndef OUTPUT_PAIRED
 				printer.addEdge(*v, it->first, it->second);

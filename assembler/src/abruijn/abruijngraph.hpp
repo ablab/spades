@@ -14,6 +14,7 @@
 #include "parameters.hpp"
 #include "hash.hpp"
 #include "logging.hpp"
+#include "filter_iterator.hpp"
 
 using namespace std;
 using namespace __gnu_cxx;
@@ -32,6 +33,7 @@ namespace abruijn {
 class FrequencyProfile {
 	vector<size_t> freq_;
 public:
+	const static size_t SURE = -1;
 	FrequencyProfile(size_t len) {
 		assert(len > 0);
 		for (size_t i = 0; i < (len * 4); ++i) {
@@ -50,6 +52,15 @@ public:
 		}
 	}
 
+	void appendNucl(char nucl) {
+		for (int i = 0; i < 4; i++) {
+			if (i == nucl) {
+				freq_.push_back(SURE);
+			} else {
+				freq_.push_back(0);
+			}
+		}
+	}
 	void append(FrequencyProfile p) {
 		freq_.insert(freq_.end(), p.freq_.begin(), p.freq_.end());
 	}
@@ -118,24 +129,39 @@ public:
 
 ostream& operator<< (ostream& os, const Edge& e);
 
+class Vertex;
+
+typedef map<Vertex*, Edge> Edges;
+
 class Vertex {
+	Vertex* complement_;
 	const Sequence data_;
 	friend ostream& operator<<(ostream&, const Vertex&);
-public:
-	Vertex* complement_;
-	typedef map<Vertex*, Edge> Edges;
 	Edges edges_;
+public:
 	Vertex(const Sequence& kmer) : data_(kmer) {};
+	Vertex(const Sequence& kmer, bool withComplement) : data_(kmer) {
+		complement_ = new Vertex(!kmer);
+		complement_->complement_ = this;
+	};
+
+	Vertex* complement() const {
+		return complement_;
+	}
 
 	int size() const {
 		return data_.size();
+	}
+
+	Edges& edges() {
+		return edges_;
 	}
 
 	void addEdge(Vertex* to, const Sequence& seq) {
 		edges_[to].addSequence(size(), to->size(), seq);
 	}
 
-	int degree() {
+	int degree() const {
 		return edges_.size();
 	}
 
@@ -155,12 +181,23 @@ public:
 
 ostream& operator<< (ostream& os, const Vertex& e);
 
+typedef set<Vertex*> Vertices;
+
+//class GraphIterator {
+//	const Vertices& vertices_;
+//	Vertices::iterator it_;
+//public:
+//	GraphIterator(Vertices vertices) {
+//		vertices_ = vertices;
+//		it_ = vertices_.begin();
+//	}
+//};
+
 class Graph {
 public:
 	typedef hash_map < Sequence, Vertex*, HashSym<Sequence>, EqSym<Sequence> > SeqVertice;
 	SeqVertice seqVertice;
 
-	typedef set<Vertex*> Vertices;
 	Vertices vertices;
 	Vertices removedVertices;
 
@@ -177,6 +214,22 @@ public:
 
 	void output(std::ofstream &out);
 	void output(string filename);
+
+	class VertexIsAlive {
+		const Graph& graph_;
+	public:
+		VertexIsAlive(Graph& graph) : graph_(graph) {}
+		bool operator() (Vertex* v) const {
+			return (graph_.removedVertices.count(v) == 0) && (graph_.vertices.count(v) > 0);
+		}
+	};
+	typedef filter_iterator<Vertices::iterator, VertexIsAlive> iterator;
+	iterator begin() {
+		return iterator(vertices.begin(), vertices.end(), VertexIsAlive(*this));
+	}
+	iterator end() {
+		return iterator(vertices.end(), vertices.end(), VertexIsAlive(*this));
+	}
 };
 
 }
