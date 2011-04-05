@@ -44,8 +44,11 @@ int findPossibleVertex(ll kmer, Sequence &down, edgesMap &edges, verticesMap &ve
 		forn(i, v->second.size()) {
 			Sequence* cur_seq =  v->second[i]->lower;
 			int position = v->second[i]->position;
-			if (down.str().find(cur_seq->Subseq(position, position + k-1).str()) != string::npos){
+			int tmp_pos;
+			if ((tmp_pos = down.str().find(cur_seq->Subseq(position, position + k-1).str())) != string::npos){
 				res =  v->second[i]->VertexId;
+				DEBUG("vert found " << kmer << " " << cur_seq->str() << " " << tmp_pos<< " at position " << position);
+				DEBUG("For " << kmer << " " << down.str() );
 				count++;
 			}
 		}
