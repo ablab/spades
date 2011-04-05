@@ -41,7 +41,7 @@ ll pushNucleotide(ll kMer, int length, int direction, int nucl) {
 	if (direction == RIGHT) {
 		return (ll) nucl | (kMer << (2));
 	} else {
-		return (ll) nucl << (2 * length) | kMer;
+		return (ll) nucl << (2 * length) | (kMer &(((ll) 1<< (2 * length))-1));
 	}
 }
 

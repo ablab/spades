@@ -108,7 +108,7 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
 			tmpcurKmer = subkmer(curKmer, direction);
 		else
 			tmpcurKmer = subkmer(curKmer, otherDirection(direction));
-		ll tmpKmer = pushNucleotide(tmpcurKmer, k -1, direction, Nucl);
+		ll tmpKmer = pushNucleotide(tmpcurKmer, k - 1, direction, Nucl);
 
 		edgesMap::iterator iter = edges.find(tmpKmer);
 		TRACE("FROM " << curKmer << " Trying to find " << tmpKmer);
@@ -120,6 +120,9 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
 					count++;
 					TRACE("FOUND " << (*it)->lower->str());
 					if (count > 1) {
+						DEBUG("multiple: ");
+						DEBUG("Nucl "<<(int)Nucl<<" Seq "<< (*it)->lower->str());
+						DEBUG("Nucl "<<(int)res.first<<" Seq "<< res.second->lower->str());
 						return make_pair(0, (EdgePrototype *)NULL);
 					} else {
 						res = make_pair(Nucl, *it);
@@ -168,22 +171,48 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
 		int size = iter->second.size();
 		ll kmer = iter->fi;
-		TRACE("Starting from k-mer" << kmer);
+		DEBUG("Starting from k-mer " << kmer);
 		forn(i, size) {
 			if ((!(iter->se)[i]->used)) {
+				DEBUG("Starting seq " << kmer);
+
 				int length = 0;
 				int EdgeCoverage;
 				count++;
 				protoEdgeType curEdge;
 				EdgePrototype* curEdgePrototype = (iter->se)[i];
-				curEdgePrototype->used = true;
+				//curEdgePrototype->used = true;
 				Sequence * startSeq = curEdgePrototype->lower;
+				DEBUG("Starting seq " << startSeq->str());
 				int curshift = 0;
 				ll startKmer = kmer;
 	//					subkmer(kmer, LEFT);
 
 
 				expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, EdgeCoverage, LEFT);
+
+
+
+
+				//todo: rewrite
+
+				int findCnt = 0;
+				edgesMap::iterator iter = edges.find(startKmer);
+				if (iter != edges.end()) {
+					for (vector<EdgePrototype *>::iterator it = iter->second.begin(); it != iter->second.end(); ++it) {
+						//TODO: minIntersect?
+						if (startSeq->similar(*((*it)->lower), startSeq->size(), 0)) {
+							findCnt++;
+							assert(findCnt<2);
+							(*it)->used = true;
+						}
+					}
+				}
+
+
+
+
+
 				Sequence *startSubSeq = SubSeq(*startSeq, LEFT);
 				curEdge.first = "";
 				curEdge.second = "";
@@ -217,6 +246,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 					TRACE(curEdge.first);
 //				assert(0);
 				//expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, EdgeCoverage, LEFT);
+				if (!(iter->se)[i]->used) i--;
 			}
 		}
 		(iter->second).clear();
