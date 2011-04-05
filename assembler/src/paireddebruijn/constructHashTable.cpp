@@ -25,7 +25,7 @@ void initGlobal(){
 	upperMax = ((ll) 1) << 46;
 }
 
-downSeqs clusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &lset) {
+downSeqs oldclusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &lset) {
 	downSeqs res;
 	res.clear();
 	assert (max_shift <= 20);
@@ -157,6 +157,149 @@ downSeqs clusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &lset)
 					if (coverage < a[ii].second) coverage = a[ii].second;
 				}
 			}
+			Sequence* tmpSeq = new Sequence(s);
+			res.pb(make_pair(tmpSeq,coverage));
+			color++;
+		}
+	}
+	/*
+	{
+		forn(i, size) {
+			cerr << left[i] << " ";
+			cerr << shift_left[i] << " ";
+
+		}
+		cerr << endl;
+		forn(i, size) {
+			cerr << right[i] << " ";
+			cerr << shift_right[i] << " ";
+		}
+		forn(i, res.size()) {
+			cerr<<(res[i].first)->str() << endl;
+		}
+	}
+	assert(0);*/
+	return res;
+}
+
+
+
+
+downSeqs clusterize(pair<ll,int>* a, int size, int max_shift) {
+	downSeqs res;
+	res.clear();
+
+	assert (max_shift <= 20);
+//	cerr << lset.size()<<endl;
+	int right[MAXLMERSIZE];
+	int left[MAXLMERSIZE];
+	int used[MAXLMERSIZE];
+	int shift_left[MAXLMERSIZE];
+	int shift_right[MAXLMERSIZE];
+	//-1 = no neighbor;
+	//-2 = more than 1 neighbor
+	DEBUG("clusterizing");
+	forn(i, size) {
+		DEBUG(decompress(a[i].first, l)<< " "<< i);
+		right[i] = -1;
+		left[i] = -1;
+		used[i] = 0;
+		shift_left[i] = 0;
+		shift_right[i] = 0;
+	}
+	ll diff;
+	forn(i, size) {
+		ll right_tmp = a[i].first;
+		ll left_tmp = a[i].first;
+		ll p2 = 0;
+		ll upper_bound;
+		forn(shift, max_shift) {
+		    right_tmp = ((right_tmp << 2) & lowerMask);
+		    p2 += 2;
+		    int cright = 0;
+		    if (!( shift_right[i] )) {
+		    	upper_bound = ((ll) 1) << p2;
+				forn(j, size) {
+					diff = a[j].first - right_tmp;
+					if ((diff >= 0) && (diff < upper_bound) && (i != j)){
+						shift_right[i] = p2/2;
+						if (right[i] == -1) {
+							right[i] = j;
+						}
+						else
+							right[i]  = -2;
+					}
+				}
+		    }
+			left_tmp >>= 2;
+			cright = 0;
+			if ( !(shift_left[i] )) {
+				forn(j, size) {
+					diff = a[j].first - left_tmp;
+					if ((i != j) && ((diff & (lowerMask >> p2)) == 0)){
+						shift_left[i] = p2/2;
+						if (left[i] == -1)
+							left[i] = j;
+						else
+							left[i]  = -2;
+					}
+				}
+			}
+		}
+	}
+	int color = 1;
+	vector<int> leftway;
+	forn(i, size) {
+		int seqlength = l;
+		if (used[i] == 0) {
+			int ii = i;
+			leftway.clear();
+			DEBUG("COLOR: " << color << " from i: "<< i);
+			used[i] = color;
+			//cerr <<"color = :"<< color << endl;
+			while ((left[ii] >= 0) && (left[ii] != i)){
+				seqlength += shift_left[ii];
+				leftway.pb(ii);
+				ii = left[ii];
+				used[ii] = color;
+				DEBUG(ii);
+			}
+			int leftend = ii;
+				DEBUG("righrt");
+			ii = i;
+			while ((right[ii] >= 0) && (right[ii] != i)){
+				seqlength += shift_right[ii];
+				ii = right[ii];
+				used[ii] = color;
+				seqlength++;
+				DEBUG(ii);
+			}
+			int rightend = ii;
+			ii = leftend;
+			string s = decompress(a[leftend].first, l);
+			int coverage = a[leftend].second;
+			DEBUG("leftstirng "<< s);
+			int currInd = leftway.size()-1;
+			while (ii != rightend) {
+		//		cerr << "clusterizing....";
+				int p = shift_right[ii];
+				ll maxsd = ((ll) 3) << (2 * (p-1));
+				if (currInd >= 0) {
+					ii = leftway[currInd];
+					currInd --;
+				}
+				else
+					ii = right[ii];
+				DEBUG(ii << " " << p <<" " << maxsd);
+				forn(j, p) {
+				//	cerr << ((a[ii] & maxsd) >> (2*(p-j-1)));
+					s += nucl((a[ii].first & maxsd) >> (2*(p-j-1)));
+					maxsd >>= 2;
+			//		cerr << "OK" <<endl;
+					if (coverage < a[ii].second) coverage = a[ii].second;
+				}
+			}
+			DEBUG("seq: s" << s);
 			Sequence* tmpSeq = new Sequence(s);
 			res.pb(make_pair(tmpSeq,coverage));
 			color++;
@@ -394,8 +537,8 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 				return -1;
 			}
 		}
-		sort(lmers, lmers + lsize, ComparePairByFirst);
-		downSeqs clusters =  clusterizeLset(lmers, lsize, inClusterMaxShift, lset);
+		//sort(lmers, lmers + lsize, ComparePairByFirst);
+		downSeqs clusters =  clusterize(lmers, lsize, inClusterMaxShift);
 //		return 0;
 		int clsize = clusters.size();
 		string outstring;

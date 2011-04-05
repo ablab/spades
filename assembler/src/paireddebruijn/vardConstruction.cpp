@@ -53,7 +53,7 @@ int findPossibleVertex(ll kmer, Sequence &down, edgesMap &edges, verticesMap &ve
 			}
 		}
 	}
-	if (count > 1) res = -2;
+//	if (count > 1) res = -2;
 	TRACE ("result :" <<res);
 	if (count == 1) DEBUG("vertex found");
 	return res;
@@ -210,6 +210,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 						if (startSeq->similar(*((*it)->lower), startSeq->size(), 0)) {
 							findCnt++;
 							assert(findCnt<2);
+//							DEBUG("marking edge used");
 							(*it)->used = true;
 						}
 					}
