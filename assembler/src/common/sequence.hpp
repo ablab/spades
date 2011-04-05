@@ -70,6 +70,7 @@ public:
 	// other methods:
 	char operator[](const size_t index) const;
 	bool operator==(const Sequence &that) const;
+	bool operator!=(const Sequence &that) const;
 	bool operator<(const Sequence &that) const;
 	Sequence operator!() const;
 	/**

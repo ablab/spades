@@ -51,6 +51,10 @@ bool Sequence::operator==(const Sequence &that) const {
 	return true;
 }
 
+bool Sequence::operator!=(const Sequence &that) const {
+	return !(*this == that);
+}
+
 bool Sequence::intersects(const Sequence &t) const {
 	for (size_t i = 0; i < min(size_, t.size_); ++i) {
 		if (this->operator[](i) == t[i]) {

@@ -194,10 +194,6 @@ public:
 class EdgeGraph {
 	size_t k_;
 
-	bool CheckIfNoIncoming(Vertex* v) const;
-
-	bool CanBeDeleted(Vertex* v) const;
-
 	Edge* AddSingleEdge(Vertex* v1, Vertex* v2, const Sequence& s);
 
 //	void DeleteSingleEdge(const Edge* edge);
@@ -205,6 +201,8 @@ class EdgeGraph {
 	GraphActionHandler* action_handler_;
 
 	set<Vertex*> vertices_;
+
+	void DeleteAllOutgoing(Vertex *v);
 
 public:
 
@@ -217,6 +215,7 @@ public:
 	 * @param action_handler Graph actions handler
 	 */
 	EdgeGraph(size_t k, GraphActionHandler* action_handler = new GraphActionHandler()) {
+		assert(k % 2 == 1);
 		k_ = k;
 		assert(action_handler != NULL);
 		action_handler_ = action_handler;
@@ -249,6 +248,10 @@ public:
 	void OutgoingEdges(const Vertex* v, Vertex::EdgeIterator &begin,
 			Vertex::EdgeIterator &end) const;
 
+	const vector<Edge *> OutgoingEdges(const Vertex* v) const;
+
+	const vector<Edge *> IncomingEdges(const Vertex* v) const;
+
 	Edge* OutgoingEdge(const Vertex* v, char nucl) const;
 
 	size_t OutgoingEdgeCount(Vertex *v) const {
@@ -262,7 +265,7 @@ public:
 
 	Edge *ComplementEdge(const Edge* edge) const;
 
-	const Sequence &EdgeNucls(Edge *edge) const {
+	const Sequence &EdgeNucls(const Edge *edge) const {
 		return edge->nucls();
 	}
 
@@ -315,6 +318,10 @@ public:
 	const Edge& GetData(Edge* e) {
 		return *e;
 	}
+	bool CanCompressVertex(Vertex *v);
+
+	Edge *CompressVertex(Vertex *v);
+
 };
 
 //////////////////////////////////////////////////////////////////
