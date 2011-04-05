@@ -79,7 +79,6 @@ class Edge {
 	size_t outgoing_coverage_;
 
 	friend class EdgeGraph;
-public:
 	Edge(const Sequence& nucls, Vertex* end) :
 		nucls_(nucls), end_(end), coverage_(0) {
 	}
@@ -111,6 +110,8 @@ public:
 };
 
 class Vertex {
+public:
+	typedef vector<Edge *>::const_iterator EdgeIterator;
 private:
 	vector<Edge *> outgoing_edges_;
 
@@ -121,8 +122,6 @@ private:
 	void set_complement(Vertex* complement) {
 		complement_ = complement;
 	}
-public:
-	typedef vector<Edge *>::const_iterator EdgeIterator;
 
 	EdgeIterator begin() const {
 		return outgoing_edges_.begin();
@@ -135,7 +134,7 @@ public:
 	Vertex() {
 	}
 
-	size_t OutgoingEdgeCount() {
+	size_t OutgoingEdgeCount() const {
 		return outgoing_edges_.size();
 	}
 
@@ -193,20 +192,17 @@ public:
 };
 
 class EdgeGraph {
-	//Is there any other way to let Edge and Vertex class know value of k?
 	size_t k_;
-
-	bool CheckIfNoIncoming(Vertex* v) const;
-
-	bool CanBeDeleted(Vertex* v) const;
 
 	Edge* AddSingleEdge(Vertex* v1, Vertex* v2, const Sequence& s);
 
-	void DeleteSingleEdge(const Edge* edge);
+//	void DeleteSingleEdge(const Edge* edge);
 
 	GraphActionHandler* action_handler_;
 
 	set<Vertex*> vertices_;
+
+	void DeleteAllOutgoing(Vertex *v);
 
 public:
 
@@ -219,6 +215,7 @@ public:
 	 * @param action_handler Graph actions handler
 	 */
 	EdgeGraph(size_t k, GraphActionHandler* action_handler = new GraphActionHandler()) {
+		assert(k % 2 == 1);
 		k_ = k;
 		assert(action_handler != NULL);
 		action_handler_ = action_handler;
@@ -228,6 +225,9 @@ public:
 	 * Deletes action_handler.
 	 */
 	~EdgeGraph() {
+		while(!vertices().empty()) {
+			ForceDeleteVertex(*vertices().begin());
+		}
 		delete action_handler_;
 	}
 
@@ -248,9 +248,26 @@ public:
 	void OutgoingEdges(const Vertex* v, Vertex::EdgeIterator &begin,
 			Vertex::EdgeIterator &end) const;
 
+	const vector<Edge *> OutgoingEdges(const Vertex* v) const;
+
+	const vector<Edge *> IncomingEdges(const Vertex* v) const;
+
 	Edge* OutgoingEdge(const Vertex* v, char nucl) const;
 
-	Edge *complementEdge(const Edge* edge) const;
+	size_t OutgoingEdgeCount(Vertex *v) const {
+		return v->OutgoingEdgeCount();
+	}
+
+	Edge *GetUniqueEdge(const Vertex *v) const {
+		assert(v->OutgoingEdgeCount() == 1);
+		return *(v->begin());
+	}
+
+	Edge *ComplementEdge(const Edge* edge) const;
+
+	const Sequence &EdgeNucls(const Edge *edge) const {
+		return edge->nucls();
+	}
 
 	/*
 	 * Can not return vector iterators for vector which does not exist
@@ -287,12 +304,24 @@ public:
 	}
 
 	bool IsDeadStart(Vertex* v) const {
-		return IsDeadStart(v->complement());
+		return IsDeadEnd(v->complement());
 	}
 
 	Vertex *edgeStart(const Edge *edge) const;
 
 	Vertex *edgeEnd(const Edge *edge) const;
+
+	Vertex *ComplementVertex(const Vertex* v) const {
+		return v->complement();
+	}
+
+	const Edge& GetData(Edge* e) {
+		return *e;
+	}
+	bool CanCompressVertex(Vertex *v);
+
+	Edge *CompressVertex(Vertex *v);
+
 };
 
 //////////////////////////////////////////////////////////////////
