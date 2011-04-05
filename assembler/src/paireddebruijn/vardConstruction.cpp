@@ -195,11 +195,11 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 
 
 				//todo: rewrite
-
+				DEBUG("Start find edge");
 				int findCnt = 0;
-				edgesMap::iterator iter = edges.find(startKmer);
-				if (iter != edges.end()) {
-					for (vector<EdgePrototype *>::iterator it = iter->second.begin(); it != iter->second.end(); ++it) {
+				edgesMap::iterator cur_iter = edges.find(startKmer);
+				if (cur_iter != edges.end()) {
+					for (vector<EdgePrototype *>::iterator it = cur_iter->second.begin(); it != cur_iter->second.end(); ++it) {
 						//TODO: minIntersect?
 						if (startSeq->similar(*((*it)->lower), startSeq->size(), 0)) {
 							findCnt++;
@@ -208,6 +208,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 						}
 					}
 				}
+				DEBUG("Finish find edge");
 
 
 
@@ -242,8 +243,8 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 				Edge* newEdge = new Edge(curEdge, startVertId, finVertId, graph.EdgeId, EdgeCoverage);
 				graph.addEdge(newEdge);
 				DEBUG("adding edge of length"<< curEdge.first.length()+1-k);
-				if (curEdge.first.length() <1000)
-					TRACE(curEdge.first);
+//				if (curEdge.first.length() <1000)
+//					TRACE(curEdge.first);
 //				assert(0);
 				//expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, EdgeCoverage, LEFT);
 				if (!(iter->se)[i]->used) i--;
