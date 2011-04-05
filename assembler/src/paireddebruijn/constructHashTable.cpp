@@ -188,7 +188,9 @@ downSeqs oldclusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &ls
 downSeqs clusterize(pair<ll,int>* a, int size, int max_shift) {
 	downSeqs res;
 	res.clear();
+	vector<string> tmp_res;
 
+	vector<int> tmp_cov;
 	assert (max_shift <= 20);
 //	cerr << lset.size()<<endl;
 	int right[MAXLMERSIZE];
@@ -251,7 +253,7 @@ downSeqs clusterize(pair<ll,int>* a, int size, int max_shift) {
 	vector<int> leftway;
 	forn(i, size) {
 		int seqlength = l;
-		if (used[i] == 0 && (left[i] == -2 || right[i] == -2)) {
+		if (used[i] == 0 && (left[i] == -1 || right[i] == -1)) {
 			int ii = i;
 			leftway.clear();
 			DEBUG("COLOR: " << color << " from i: "<< i);
@@ -300,9 +302,26 @@ downSeqs clusterize(pair<ll,int>* a, int size, int max_shift) {
 				}
 			}
 			DEBUG("seq: s" << s);
-			Sequence* tmpSeq = new Sequence(s);
-			res.pb(make_pair(tmpSeq,coverage));
+			tmp_res.push_back(s);
+			tmp_cov.pb(coverage);
+//			Sequence* tmpSeq = new Sequence(s);
+//			res.pb(make_pair(tmpSeq,coverage));
 			color++;
+		}
+	}
+	forn(i,  tmp_res.size()) {
+		int good = 1;
+		for(int j = 0; j<tmp_res.size(); j++){
+			if (j != i && tmp_res[j].find(tmp_res[i]) != string::npos) {
+				good = 0;
+				break;
+				INFO("SUBSEQ" << tmp_res[i] << " " << tmp_res[j]);
+			}
+		}
+		if (good) {
+			Sequence* tmpSeq = new Sequence(tmp_res[i]);
+			res.pb(make_pair(tmpSeq,tmp_cov[i]));
+
 		}
 	}
 	/*
