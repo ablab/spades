@@ -62,10 +62,18 @@ int findPossibleVertex(ll kmer, Sequence &down, edgesMap &edges, verticesMap &ve
  *
  * @return coverage of resulting edge when expanding or 0.
  */
+Sequence* SubSeq(Sequence Seq, int direction){
+	if (direction == LEFT)
+		return new Sequence(Seq.Subseq(0, Seq.size()-1));
+	else if (direction == RIGHT)
+		return new Sequence(Seq.Subseq(1));
+	else {assert(0);}
+
+}
 int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, ll &curKmer, Sequence* &curSeq, int &EdgeCoverage, int direction){
 	assert(direction == LEFT || direction == RIGHT );
 	TRACE("expanding" << direction << " kmer "<< curKmer);
-	while( (findPossibleVertex(subkmer(curKmer, direction), *curSeq, edges, verts) == -1) ){
+	while( (findPossibleVertex(subkmer(curKmer, direction), *SubSeq(*curSeq, direction), edges, verts) == -1) ){
 		pair <char, EdgePrototype*> otherdir_res = findUniqueWay(edges, curKmer, curSeq, otherDirection(direction), true);
 		pair <char, EdgePrototype*> dir_res = findUniqueWay(edges, curKmer, curSeq, direction , false);
 
@@ -130,7 +138,7 @@ int goUniqueWay(edgesMap &edges, ll &curKmer, Sequence* &curSeq, pair<char, Edge
 	TRACE ("going " << direction << " from  " << curKmer << " ");
 	ll tmpKmer = subkmer(curKmer,direction);
 	TRACE(tmpKmer <<" " << (int)findResult.first);
-	curKmer = pushNucleotide(tmpKmer, k - 1,  direction, findResult.first);
+	curKmer = pushNucleotide(tmpKmer, k-1,  direction, findResult.first);
 	TRACE (curKmer);
 	EdgeCoverage += findResult.second->coverage;
 	curSeq = new Sequence(*findResult.second->lower);//PossibleSequence;
@@ -176,32 +184,29 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 
 
 				expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, EdgeCoverage, LEFT);
-
+				Sequence *startSubSeq = SubSeq(*startSeq, LEFT);
 				curEdge.first = "";
 				curEdge.second = "";
-				int startVertId = findPossibleVertex(subkmer(startKmer, LEFT), *startSeq, edges, graph.verts);
+				int startVertId = findPossibleVertex(subkmer(startKmer, LEFT), *startSubSeq, edges, graph.verts);
 
 				LOG_ASSERT((startVertId != -2), " on " << subkmer(startKmer, LEFT));
-				DEBUG("LEFT EDGE K_MER:" <<startKmer);
+				DEBUG("LEFT EDGE K_MER:" <<startKmer<< " seq "<<startSeq->str());
 				ll finKmer = startKmer;
 				Sequence *finSeq = new Sequence(*startSeq);
 				curEdge.first = decompress(startKmer, k);
-				expandDirected(edges, curEdge, graph.verts, finKmer,finSeq, EdgeCoverage, RIGHT);
-				DEBUG("RIGHT VERTEX K_MER:" <<finKmer);
-				int finVertId = findPossibleVertex(subkmer(finKmer, RIGHT), *finSeq, edges, graph.verts);
+				expandDirected(edges, curEdge, graph.verts, finKmer, finSeq, EdgeCoverage, RIGHT);
+				Sequence *finSubSeq = SubSeq(*finSeq, RIGHT);
+				DEBUG("RIGHT VERTEX K_MER:" <<finKmer<<" seq "<<finSeq->str());
+				int finVertId = findPossibleVertex(subkmer(finKmer, RIGHT), *finSubSeq, edges, graph.verts);
 				assert(finVertId != -2);
 				//TODO: what about loops?
 				if (startVertId < 0) {
-					int sVbef = findPossibleVertex(subkmer(startKmer, LEFT), *startSeq, edges, graph.verts);
-					startVertId = storeVertex(graph, subkmer(startKmer, LEFT), startSeq, true);
-					int sVaft = findPossibleVertex(subkmer(startKmer, LEFT), *startSeq, edges, graph.verts);
-					cerr<<"bef "<<sVbef<<" move to "<<startVertId<<" and stand on "<<sVaft<<endl;
-					assert(startVertId==sVaft);
-					TRACE("adding startVertId" << startKmer);
+					startVertId = storeVertex(graph, subkmer(startKmer, LEFT), startSubSeq, true);
+					TRACE("adding startVertId" <<  subkmer(startKmer, LEFT)<<" edge "<< startKmer);
 				}
 				if (finVertId < 0) {
-					finVertId = storeVertex(graph, subkmer(finKmer, RIGHT), finSeq, true);
-					TRACE("adding finVertId" << finKmer);
+					finVertId = storeVertex(graph, subkmer(finKmer, RIGHT), finSubSeq, true);
+					TRACE("adding finVertId " << subkmer(finKmer, RIGHT)<<" edge "<<finKmer);
 
 				}
 
