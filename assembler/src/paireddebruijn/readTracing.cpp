@@ -31,7 +31,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	double in_cov[MAX_DEGREE];
 	double out_cov[MAX_DEGREE];
 	double eps_out_cov[MAX_DEGREE];
-	double eps = 1;
+	double eps = 10000;
 	INFO("traceReads started");
 	INFO(parsed_reads);
 	FILE * inFile = fopen(parsed_reads.c_str(), "r");
