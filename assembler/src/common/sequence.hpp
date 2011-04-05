@@ -21,11 +21,10 @@ using namespace std;
 class Sequence {
 private:
 	SequenceData *data_;
-	const size_t from_;
-	const size_t size_;
-	const bool rtl_; // Right to left + complimentary (?)
+	size_t from_;
+	size_t size_;
+	bool rtl_; // Right to left + complimentary (?)
 	Sequence(const Sequence &seq, size_t from, size_t size, bool rtl);
-	Sequence& operator=(const Sequence &); // forbidden
 public:
 	// constructors:
 	//	template<size_t _size>
@@ -34,6 +33,15 @@ public:
 	//		data_ = new SequenceData(seq);
 	//		data_->Grab();
 	//	}
+	Sequence& operator=(const Sequence &s) {
+		data_->Release();
+		data_ = s.data_;
+		data_->Grab();
+		from_ = s.from_;
+		size_ = s.size_;
+		rtl_ = s.rtl_;
+		return *this;
+	}
 
 	Sequence(char* s) :
 		from_(0), size_(string(s).size()), rtl_(false) {

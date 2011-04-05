@@ -79,7 +79,6 @@ class Edge {
 	size_t outgoing_coverage_;
 
 	friend class EdgeGraph;
-public:
 	Edge(const Sequence& nucls, Vertex* end) :
 		nucls_(nucls), end_(end), coverage_(0) {
 	}
@@ -111,6 +110,8 @@ public:
 };
 
 class Vertex {
+public:
+	typedef vector<Edge *>::const_iterator EdgeIterator;
 private:
 	vector<Edge *> outgoing_edges_;
 
@@ -121,8 +122,6 @@ private:
 	void set_complement(Vertex* complement) {
 		complement_ = complement;
 	}
-public:
-	typedef vector<Edge *>::const_iterator EdgeIterator;
 
 	EdgeIterator begin() const {
 		return outgoing_edges_.begin();
@@ -135,7 +134,7 @@ public:
 	Vertex() {
 	}
 
-	size_t OutgoingEdgeCount() {
+	size_t OutgoingEdgeCount() const {
 		return outgoing_edges_.size();
 	}
 
@@ -202,7 +201,7 @@ class EdgeGraph {
 
 	Edge* AddSingleEdge(Vertex* v1, Vertex* v2, const Sequence& s);
 
-	void DeleteSingleEdge(const Edge* edge);
+//	void DeleteSingleEdge(const Edge* edge);
 
 	GraphActionHandler* action_handler_;
 
@@ -228,6 +227,9 @@ public:
 	 * Deletes action_handler.
 	 */
 	~EdgeGraph() {
+		while(!vertices().empty()) {
+			ForceDeleteVertex(*vertices().begin());
+		}
 		delete action_handler_;
 	}
 
@@ -250,7 +252,20 @@ public:
 
 	Edge* OutgoingEdge(const Vertex* v, char nucl) const;
 
-	Edge *complementEdge(const Edge* edge) const;
+	size_t OutgoingEdgeCount(Vertex *v) const {
+		return v->OutgoingEdgeCount();
+	}
+
+	Edge *GetUniqueEdge(const Vertex *v) const {
+		assert(v->OutgoingEdgeCount() == 1);
+		return *(v->begin());
+	}
+
+	Edge *ComplementEdge(const Edge* edge) const;
+
+	const Sequence &EdgeNucls(Edge *edge) const {
+		return edge->nucls();
+	}
 
 	/*
 	 * Can not return vector iterators for vector which does not exist
@@ -287,12 +302,16 @@ public:
 	}
 
 	bool IsDeadStart(Vertex* v) const {
-		return IsDeadStart(v->complement());
+		return IsDeadEnd(v->complement());
 	}
 
 	Vertex *edgeStart(const Edge *edge) const;
 
 	Vertex *edgeEnd(const Edge *edge) const;
+
+	Vertex *ComplementVertex(const Vertex* v) const {
+		return v->complement();
+	}
 };
 
 //////////////////////////////////////////////////////////////////

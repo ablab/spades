@@ -27,10 +27,10 @@ Edge* EdgeGraph::AddSingleEdge(Vertex* v1, Vertex* v2, const Sequence& s) {
 	return newEdge;
 }
 
-void EdgeGraph::DeleteSingleEdge(const Edge* edge) {
-	Vertex *v = edgeStart(edge);
-	v->RemoveOutgoingEdge(edge);
-}
+//void EdgeGraph::DeleteSingleEdge(const Edge* edge) {
+//	Vertex *v = edgeStart(edge);
+//	v->RemoveOutgoingEdge(edge);
+//}
 
 void EdgeGraph::OutgoingEdges(const Vertex* v, Vertex::EdgeIterator &begin,
 		Vertex::EdgeIterator &end) const {
@@ -54,20 +54,18 @@ void EdgeGraph::DeleteVertex(Vertex* v) {
 	Vertex* complement = v->complement();
 	vertices_.erase(v);
 	vertices_.erase(complement);
-
 	action_handler_->HandleDelete(v);
-
 	delete v;
 	delete complement;
 }
 
 //TODO Method needs a tiny bit of refactoring
 void EdgeGraph::ForceDeleteVertex(Vertex* v) {
-	Vertex* complement = v->complement();
 	vector<Edge *> toDelete;
 	Vertex::EdgeIterator begin, end;
 	OutgoingEdges(v, begin, end);
 	toDelete.insert(toDelete.end(), begin, end);
+	Vertex* complement = v->complement();
 	OutgoingEdges(complement, begin, end);
 	toDelete.insert(toDelete.end(), begin, end);
 	for (vector<Edge *>::iterator it = toDelete.begin(); it != toDelete.end(); ++it) {
@@ -77,17 +75,20 @@ void EdgeGraph::ForceDeleteVertex(Vertex* v) {
 }
 
 Edge* EdgeGraph::AddEdge(Vertex* v1, Vertex* v2, const Sequence &nucls) {
+	assert(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
 	assert(nucls.size() >= k_ + 1);
 	Edge *result = AddSingleEdge(v1, v2, nucls);
-	AddSingleEdge(v2, v1, !nucls);
+	AddSingleEdge(v2->complement(), v1->complement(), !nucls);
 	action_handler_->HandleAdd(result);
 	return result;
 }
 
 void EdgeGraph::DeleteEdge(Edge* edge) {
-	const Edge *rcEdge = complementEdge(edge);
-	DeleteSingleEdge(edge);
-	DeleteSingleEdge(rcEdge);
+	const Edge *rcEdge = ComplementEdge(edge);
+	Vertex *rcStart = ComplementVertex(edge->end());
+	Vertex *start = ComplementVertex(rcEdge->end());
+	rcStart->RemoveOutgoingEdge(rcEdge);
+	start->RemoveOutgoingEdge(edge);
 	action_handler_->HandleDelete(edge);
 	delete edge;
 	delete rcEdge;
@@ -108,16 +109,17 @@ Edge* EdgeGraph::OutgoingEdge(const Vertex* v, char nucl) const {
 	return NULL;
 }
 
-Edge *EdgeGraph::complementEdge(const Edge* edge) const {
+Edge *EdgeGraph::ComplementEdge(const Edge* edge) const {
 	Sequence s = !(edge->nucls());
 	char nucl = s[k_];
-	Edge *result = OutgoingEdge(edge->end(), nucl);
+	Vertex *v = edge->end();
+	Edge *result = OutgoingEdge(v->complement(), nucl);
 	assert(result != NULL);
 	return result;
 }
 
 Vertex *EdgeGraph::edgeStart(const Edge *edge) const {
-	return complementEdge(edge)->end()->complement();
+	return ComplementEdge(edge)->end()->complement();
 }
 
 Vertex *EdgeGraph::edgeEnd(const Edge *edge) const {
