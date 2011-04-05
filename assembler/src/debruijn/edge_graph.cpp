@@ -1,248 +1,20 @@
 #include "edge_graph.hpp"
 #include "logging.hpp"
-//#include "graphVisualizer.hpp"
-//#include <set>
-//#include <tr1/unordered_map>
-//
-//using namespace std;
-//
-//namespace edge_graph {
-//
-//void CondensedGraph::FixIncomingOnSplit(Vertex* v, Vertex* v1, Vertex* v2) {
-//	vector<Vertex*> anc = LeftNeighbours(v);
-//	for (size_t i = 0; i < anc.size(); ++i) {
-//		Vertex* ancestor = anc[i];
-//		if (ancestor == v->complement()) {
-//			LinkVertices(v1 -> complement(), v1);
-//		} else if (ancestor == v) {
-//			LinkVertices(v2, v1);
-//		} else {
-//			//trivial case
-//			LinkVertices(ancestor, v1);
-//		}
-//	}
-//}
-//
-//void CondensedGraph::FixIncomingOnMerge(Vertex* v1, Vertex* v2, Vertex* v) {
-//	vector<Vertex*> anc = LeftNeighbours(v1);
-//	for (size_t i = 0; i < anc.size(); ++i) {
-//		Vertex* ancestor = anc[i];
-//		if (ancestor == v1->complement()) {
-//			LinkVertices(v->complement(), v);
-//		} else if (ancestor == v2) {
-//			LinkVertices(v, v);
-//		} else {
-//			//trivial case
-//			LinkVertices(ancestor, v);
-//		}
-//	}
-//}
-//
-//bool CondensedGraph::CheckIfNoIncoming(Vertex* v) const {
-//	//this code executes while graph contract is temporarily broken
-//	//vertex from Anc(v) doesn't necessarily have link to v
-//	vector<Vertex*> anc = LeftNeighbours(v);
-//	for (size_t i = 0; i < anc.size(); ++i) {
-//		Vertex* ancestor = anc[i];
-//		if (ancestor != v && ancestor != v->complement()) {
-//			for (size_t j = 0; j < 4; ++j) {
-//				if (ancestor->right_neighbour(j) == v) {
-//					return false;
-//				}
-//			}
-//		}
-//	}
-//	return true;
-//}
-//
-//bool CondensedGraph::CanBeDeleted(Vertex* v) const {
-//	return CheckIfNoIncoming(v) && CheckIfNoIncoming(v->complement());
-//}
-//
-//vector<Vertex*> CondensedGraph::LeftNeighbours(const Vertex* v) const {
-//	vector<Vertex*> ans;
-//	Vertex* complement = v->complement();
-//	for (char i = 3; i >= 0; --i) {
-//		if (complement->right_neighbour(i) != NULL) {
-//			ans.push_back(complement->right_neighbour(i)->complement());
-//		}
-//	}
-//	return ans;
-//}
-//
-//vector<Vertex*> CondensedGraph::RightNeighbours(const Vertex* v) const {
-//	vector<Vertex*> ans;
-//	for (char i = 0; i < 4; ++i) {
-//		Vertex* right_neighbour = v->right_neighbour(i);
-//		if (right_neighbour != NULL) {
-//			ans.push_back(right_neighbour);
-//		}
-//	}
-//	return ans;
-//}
-//
-//Vertex* CondensedGraph::AddVertex(const Sequence &nucls) {
-//	DEBUG("Adding vertex for sequence '" << nucls.str() << "' and its complement '" << (!nucls).str() << "'");
-//
-//	Vertex* v1 = new Vertex(nucls);
-//	Vertex* v2 = new Vertex(!nucls);
-//	v1->set_complement(v2);
-//	v2->set_complement(v1);
-//	vertices_.insert(v1);
-//	vertices_.insert(v2);
-//
-//	action_handler_->HandleAdd(v1);
-//	return v1;
-//}
-//
-//void CondensedGraph::DeleteVertex(Vertex* v) {
-//	DEBUG("Deleting vertex '" << v->nucls().str() << "' and its complement '" << v->complement()->nucls().str() << "'")
-//
-//	assert(CanBeDeleted(v));
-//
-//	Vertex* complement = v->complement();
-//	vertices_.erase(v);
-//	vertices_.erase(complement);
-//
-//	action_handler_->HandleDelete(v);
-//
-//	delete v;
-//	delete complement;
-//}
-//
-//Vertex* CondensedGraph::SplitVertex(Vertex* v, size_t pos) {
-//	DEBUG("Splitting vertex '" << v->nucls().str() <<"' of size " << v->size() << " at position "<< pos);
-//	assert(pos <= v->size());
-//
-//	if (pos == v->size()) {
-//		return v;
-//	};
-//
-//	Sequence nucls = v->nucls();
-//
-//	Vertex* v1 = AddVertex(nucls.Subseq(0, pos));
-//	Vertex* v2 = AddVertex(nucls.Subseq(pos - (k_ - 1), nucls.size())); // nucls.size() can be omitted here
-//
-//	LinkVertices(v1, v2);
-//
-//	FixIncomingOnSplit(v, v1, v2);
-//
-//	FixIncomingOnSplit(v->complement(), v2->complement(), v1->complement());
-//
-//	action_handler_->HandleSplit(v, pos, v1, v2);
-//
-//	DeleteVertex(v);
-//
-//	return v1;
-//}
-//
-//Vertex* CondensedGraph::Merge(Vertex* v1, Vertex* v2) {
-//	DEBUG("Merging vertices '" << v1->nucls().str() << "' and '" << v2->nucls().str() << "' and their complement")
-//	assert(IsMergePossible(v1, v2));
-//
-//	Vertex* v = AddVertex(v1->nucls() + v2->nucls().Subseq(k_ - 1));
-//	FixIncomingOnMerge(v1, v2, v);
-//	FixIncomingOnMerge(v2->complement(), v1->complement(), v->complement());
-//
-//	action_handler_->HandleMerge(v1, v2, v);
-//
-//	DeleteVertex(v1);
-//	DeleteVertex(v2);
-//	return v;
-//}
-//
-//void CondensedGraph::AddRightNeighbour(Vertex* v1, Vertex* v2) {
-//	v1->set_right_neigbour(v2, v2->nucls()[k_ - 1]);
-//}
-//
-//void CondensedGraph::LinkVertices(Vertex* v1, Vertex* v2) {
-//	DEBUG("Linking vertices '" << v1->nucls().str() << "' and '"<< v2->nucls().str() <<"' and their complement")
-//	assert(AreLinkable(v1, v2));
-//
-//	AddRightNeighbour(v1, v2);
-//	AddRightNeighbour(v2->complement(), v1->complement());
-//}
-//
-//void CondensedGraph::UnLinkVertices(Vertex* v1, Vertex* v2) {
-//	v1->set_right_neigbour((Vertex*)NULL, v2->nucls()[k_ - 1]);
-//	v2->complement()->set_right_neigbour((Vertex*)NULL, v1->complement()->nucls()[k_ - 1]);
-//}
-//
-//void CondensedGraph::UnLinkAll(Vertex* v) {
-//	vector<Vertex*> r_ns = RightNeighbours(v);
-//	for (vector<Vertex*>::const_iterator it = r_ns.begin(); it != r_ns.end(); ++it) {
-//		UnLinkVertices(v, *it);
-//	}
-//	vector<Vertex*> l_ns = LeftNeighbours(v);
-//	for (vector<Vertex*>::const_iterator it = l_ns.begin(); it != l_ns.end(); ++it) {
-//		UnLinkVertices(*it, v);
-//	}
-//}
-//
-//
-//
-//void DFS::ProcessVertex(Vertex* v, vector<Vertex*>& stack, Handler& h) {
-//	if (visited_.count(v) == 0) {
-//		h.HandleStartVertex(v);
-//		visited_.insert(v);
-//		vector<Vertex*> desc = g_.RightNeighbours(v);
-//		for (size_t i = 0; i < desc.size(); ++i) {
-//			Vertex* descendent = desc[i];
-//			h.HandleEdge(v, descendent);
-//			stack.push_back(descendent);
-//		}
-//	}
-//}
-//
-//void DFS::Traverse(Handler& h) {
-//	for (set<Vertex*>::iterator it = g_.vertices().begin(); it
-//			!= g_.vertices().end(); it++) {
-//		vector<Vertex*> stack;
-//		stack.push_back(*it);
-//		while (!stack.empty()) {
-//			Vertex* v = stack[stack.size() - 1];
-//			stack.pop_back();
-//			ProcessVertex(v, stack, h);
-//		}
-//	}
-//}
-//
-//void SimpleGraphVisualizer::Visualize(const CondensedGraph& g) {
-//	VisHandler h(gp_);
-//	DFS(g).Traverse(h);
-//	gp_.output();
-//}
-//
-//void ComplementGraphVisualizer::Visualize(const CondensedGraph& g) {
-//	ComplementVisHandler h(gp_);
-//	DFS(g).Traverse(h);
-//	gp_.output();
-//}
-//
-//}
 
 namespace edge_graph {
 
-size_t EdgeGraph::k_;
-
-Vertex* Edge::start() const {
-	return complement_->end()->complement();
-}
-
-Sequence Vertex::nucls() const {
-	if (outgoing_edges_.size() > 0) {
-		return outgoing_edges_[0]->nucls().Subseq(0, EdgeGraph::k());
-	} else if(complement_->outgoing_edges_.size() > 0) {
-		return !complement_->nucls();
+Sequence EdgeGraph::vertexNucls(const Vertex *v) const {
+	if (v->outgoing_edges_.size() > 0) {
+		return v->outgoing_edges_[0]->nucls().Subseq(0, k_);
+	} else if (v->complement_->outgoing_edges_.size() > 0) {
+		return !vertexNucls(v->complement_);
 	}
 	assert(false);
-//	return new Sequence("");
+	//	return new Sequence("");
 }
 
 bool EdgeGraph::CheckIfNoIncoming(Vertex* v) const {
-	Vertex::EdgeIterator begin, end;
-	OutgoingEdges(v, begin, end);
-	return begin == end;
+	return v->begin() == v->end();
 }
 
 bool EdgeGraph::CanBeDeleted(Vertex* v) const {
@@ -252,10 +24,11 @@ bool EdgeGraph::CanBeDeleted(Vertex* v) const {
 Edge* EdgeGraph::AddSingleEdge(Vertex* v1, Vertex* v2, const Sequence& s) {
 	Edge *newEdge = new Edge(s, v2);
 	v1->AddOutgoingEdge(newEdge);
+	return newEdge;
 }
 
 void EdgeGraph::DeleteSingleEdge(const Edge* edge) {
-	Vertex *v = edge->start();
+	Vertex *v = edgeStart(edge);
 	v->RemoveOutgoingEdge(edge);
 }
 
@@ -288,6 +61,7 @@ void EdgeGraph::DeleteVertex(Vertex* v) {
 	delete complement;
 }
 
+//TODO Method needs a tiny bit of refactoring
 void EdgeGraph::ForceDeleteVertex(Vertex* v) {
 	Vertex* complement = v->complement();
 	vector<Edge *> toDelete;
@@ -302,17 +76,16 @@ void EdgeGraph::ForceDeleteVertex(Vertex* v) {
 	DeleteVertex(v);
 }
 
-const Edge* EdgeGraph::AddEdge(Vertex* v1, Vertex* v2, const Sequence &nucls) {
+Edge* EdgeGraph::AddEdge(Vertex* v1, Vertex* v2, const Sequence &nucls) {
+	assert(nucls.size() >= k_ + 1);
 	Edge *result = AddSingleEdge(v1, v2, nucls);
-	Edge *rcResult = AddSingleEdge(v2, v1, !nucls);
-	result->setComplement(rcResult);
-	rcResult->setComplement(result);
+	AddSingleEdge(v2, v1, !nucls);
 	action_handler_->HandleAdd(result);
 	return result;
 }
 
 void EdgeGraph::DeleteEdge(Edge* edge) {
-	const Edge *rcEdge = edge->complement();
+	const Edge *rcEdge = complementEdge(edge);
 	DeleteSingleEdge(edge);
 	DeleteSingleEdge(rcEdge);
 	action_handler_->HandleDelete(edge);
@@ -321,8 +94,34 @@ void EdgeGraph::DeleteEdge(Edge* edge) {
 }
 
 bool EdgeGraph::AreLinkable(Vertex* v1, Vertex* v2, const Sequence &nucls) const {
-	return v1->nucls() == nucls.Subseq(0, k_) && v2->complement()->nucls()
-			== (!nucls).Subseq(0, k_);
+	return vertexNucls(v1) == nucls.Subseq(0, k_) && vertexNucls(
+			v2->complement()) == (!nucls).Subseq(0, k_);
+}
+
+Edge* EdgeGraph::OutgoingEdge(const Vertex* v, char nucl) const {
+	for (Vertex::EdgeIterator iter = v->begin(); iter != v->end(); ++iter) {
+		char lastNucl = (*iter)->nucls()[k_];
+		if (lastNucl == nucl) {
+			return *iter;
+		}
+	}
+	return NULL;
+}
+
+Edge *EdgeGraph::complementEdge(const Edge* edge) const {
+	Sequence s = !(edge->nucls());
+	char nucl = s[k_];
+	Edge *result = OutgoingEdge(edge->end(), nucl);
+	assert(result != NULL);
+	return result;
+}
+
+Vertex *EdgeGraph::edgeStart(const Edge *edge) const {
+	return complementEdge(edge)->end()->complement();
+}
+
+Vertex *EdgeGraph::edgeEnd(const Edge *edge) const {
+	return edge->end();
 }
 
 }
