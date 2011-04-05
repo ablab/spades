@@ -122,8 +122,7 @@ void processReadB(Seq<MPSIZE> r) {
 
 void condenseA() {
 	int condensations = 0;
-	list<Vertex*> vect(graph.vertices.begin(), graph.vertices.end());
-	for (list<Vertex*>::iterator v = vect.begin(); v != vect.end(); ++v) {
+	for (abruijn::Graph::iterator v = graph.begin(); v != graph.end(); ++v) {
 		if (graph.tryCondenseA(*v)) {
 			condensations++;
 		}
