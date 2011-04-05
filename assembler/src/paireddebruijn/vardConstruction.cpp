@@ -203,6 +203,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 				if (cur_iter != edges.end()) {
 					for (vector<EdgePrototype *>::iterator it = cur_iter->second.begin(); it != cur_iter->second.end(); ++it) {
 						//TODO: minIntersect?
+						if ((*it)->lower->size()>=startSeq->size())
 						if (startSeq->similar(*((*it)->lower), startSeq->size(), 0)) {
 							findCnt++;
 							assert(findCnt<2);
