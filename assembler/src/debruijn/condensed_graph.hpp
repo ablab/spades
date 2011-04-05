@@ -23,9 +23,6 @@
 using namespace std;
 
 namespace condensed_graph {
-//typedef Seq<K> Kmer;
-//typedef Seq<K - 1> KMinusOneMer;
-//typedef Seq<N> Read;
 LOGGER("d.condensed_graph");
 
 /**
@@ -42,8 +39,8 @@ private:
 	Vertex* right_neighbours_[4];
 	Vertex* complement_;
 
-	int coverage_;
-	int edge_coverage_[4];
+//	int coverage_;
+	size_t edge_coverage_[4];
 
 	friend class CondensedGraph;
 public:
@@ -54,12 +51,6 @@ public:
 		fill_n(edge_coverage_, 4, 0);
 
 	}
-
-	//	Vertex(const Sequence &nucls, Vertex** desc) :
-	//		nucls_(nucls) {
-	//		memcpy(desc, right_neighbours_, 4 * sizeof(Vertex*));
-	//		fill_n(edge_coverage_, 4, 0);
-	//	}
 
 	int RightNeighbourCount() {
 		int c = 0;
@@ -77,8 +68,12 @@ public:
 	//		return right_neighbours_;
 	//	}
 
-	Vertex* right_neighbour(char nucl) {
+	Vertex* right_neighbour(char nucl) const {
 		return right_neighbours_[(int) nucl];
+	}
+
+	size_t coverage(char nucl) {
+		return edge_coverage_[(int) nucl];
 	}
 
 	size_t size() const {
@@ -89,21 +84,30 @@ public:
 		return nucls_;
 	}
 
-	void AddDesc(Vertex* v, char nucl) {
+	void set_right_neigbour(Vertex* v, char nucl) {
 		right_neighbours_[(int) nucl] = v;
 	}
+
+	void set_coverage(size_t coverage, char nucl) {
+		edge_coverage_[(int) nucl] = coverage;
+	}
+
+	void inc_coverage(char nucl) {
+		++edge_coverage_[(int) nucl];
+	}
+
 	Vertex* complement() const {
 		return complement_;
 	}
 	void set_complement(Vertex* complement) {
 		complement_ = complement;
 	}
-	int coverage() {
-		return coverage_;
-	}
-	void set_coverage(int coverage) {
-		coverage_ = coverage;
-	}
+//	int coverage() {
+//		return coverage_;
+//	}
+//	void set_coverage(int coverage) {
+//		coverage_ = coverage;
+//	}
 };
 
 /**
@@ -235,6 +239,10 @@ public:
 		return vertices_;
 	}
 
+	size_t k() {
+		return k_;
+	}
+
 	void set_action_handler(GraphActionHandler* action_handler) {
 		delete action_handler_;
 
@@ -269,7 +277,11 @@ public:
 				&& AreLinkable(v1, v2);
 	}
 
-	void LinkVertices(Vertex* anc, Vertex* desc);
+	void LinkVertices(Vertex* v1, Vertex* v2);
+
+	void UnLinkVertices(Vertex* v1, Vertex* v2);
+
+	void UnLinkAll(Vertex* v);
 
 	bool AreLinkable(Vertex* v1, Vertex* v2) const {
 		return v2->nucls().Subseq(0, k_ - 1) == v1->nucls().Subseq(
@@ -302,7 +314,7 @@ class Traversal {
 public:
 
 	/**
-	 * Stab base class for handling graph primitives during traversal.
+	 * Stub base class for handling graph primitives during traversal.
 	 */
 	class Handler {
 	public:
@@ -314,7 +326,7 @@ public:
 		}
 	};
 
-	Traversal(const CondensedGraph* g) :
+	Traversal(const CondensedGraph& g) :
 		g_(g) {
 	}
 
@@ -324,14 +336,14 @@ public:
 	virtual void Traverse(Handler& h) =0;
 
 protected:
-	const CondensedGraph* g_;
+	const CondensedGraph& g_;
 };
 
 class DFS: public Traversal {
 	set<Vertex*> visited_;
-	void go(Vertex* v, vector<Vertex*>& stack, Handler& h);
+	void ProcessVertex(Vertex* v, vector<Vertex*>& stack, Handler& h);
 public:
-	DFS(const CondensedGraph* g) :
+	DFS(const CondensedGraph& g) :
 		Traversal(g) {
 
 	}

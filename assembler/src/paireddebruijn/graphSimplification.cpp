@@ -204,9 +204,9 @@ bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph,
  */
 pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &graph,
 		int vertexId) {
-	int res1 = k - 1;
-	int res2 = k - 1;
-	int max_res = insertLength + 2 * readLength + 1;
+	size_t res1 = k - 1;
+	size_t res2 = k - 1;
+	size_t max_res = insertLength + 2 * readLength + 1;
 	//int colors[MAX_DEGREE];
 	forn(i, graph.degrees[vertexId][0]) {
 		int e1 = graph.edgeIds[vertexId][i][IN_EDGE];
@@ -215,7 +215,7 @@ pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &graph,
 
 		//		cerr << endl << "1 " << tmp.str();
 		forn(j, i) {
-			int count = 0;
+			size_t count = 0;
 
 			int e2 = graph.edgeIds[vertexId][j][IN_EDGE];
 			while (count < max_res) {
@@ -246,7 +246,7 @@ pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &graph,
 		//		cerr << endl << "1 " << tmp.str();
 		forn(j, i) {
 			int e2 = graph.edgeIds[vertexId][j][OUT_EDGE];
-			int count = 0;
+			size_t count = 0;
 			while (count < max_res) {
 				Sequence tmp2 = *longEdges[e2]->upper;
 				Sequence tmp2l = *longEdges[e2]->lower;
@@ -279,10 +279,16 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 	int expandEdgeIndex;
 	cerr << "expandDefiniteStart" << endl;
 	forn(i,VertexCount) {
+		cerr << "expand definite right Vertex " <<i<< endl;
+
 		if ((graph.degrees[i][1] == 1) && (graph.degrees[i][0] > 0)) {
 			expandEdgeIndex = edgeRealId(graph.edgeIds[i][0][OUT_EDGE],
 					longEdges);
 			int DestVertex = longEdges[expandEdgeIndex]->ToVertex;
+			if (DestVertex == i) {
+				WARN("Expand definite right has bad loop");
+				continue;
+			}
 			pair<int, int> diffDistDest = make_pair(0, 0);
 			pair<int, int> diffDistCur = make_pair(0, 0);
 			if (NotExpandBeyondDefinite) {
@@ -291,7 +297,7 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 			}
 			if ((!NotExpandBeyondDefinite) || (diffDistCur.first
 					+ diffDistDest.second + longEdges[expandEdgeIndex]->length
-					< readLength + k)) {
+					< readLength + k) ||(graph.degrees[i][0]==1)) {
 				if (NotExpandBeyondDefinite)
 					cerr << "Check cur vert " << i << " dest vert "
 							<< DestVertex << "  " << diffDistCur.first << " + "
@@ -301,10 +307,14 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 									+ longEdges[expandEdgeIndex]->length
 							<< " < " << readLength + k << endl;
 				int a = 0;
-				//				cerr << "trying to expand";
+
 				while ((edgeRealId(graph.edgeIds[DestVertex][a][IN_EDGE],
-						longEdges) != expandEdgeIndex))
+						longEdges) != expandEdgeIndex)&&(a < graph.degrees[DestVertex][0])){
+					cerr<<"vertex "<<DestVertex<<" in edge "<<edgeRealId(graph.edgeIds[DestVertex][a][IN_EDGE],
+							longEdges)<<" on position "<<a<<endl;
 					a++;
+				}
+				cerr<<"Total in edges "<<graph.degrees[DestVertex][0]<<" but we want "<<a<<endl;
 				assert(a < graph.degrees[DestVertex][0]);
 				//				cerr << a;
 				while (a < graph.degrees[DestVertex][0] - 1) {
@@ -342,82 +352,123 @@ void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 
 	cerr << "expandDefinite second attempt\n" << endl;
 	forn(i,VertexCount) {
+		cerr << "expand definite left Vertex " <<i<< endl;
+
 		if ((graph.degrees[i][0] == 1) && (graph.degrees[i][1] > 0)) {
 			cerr << i << endl;
 			expandEdgeIndex = edgeRealId(graph.edgeIds[i][0][IN_EDGE],
 					longEdges);
 			int SourceVertex = longEdges[expandEdgeIndex]->FromVertex;
+			if (SourceVertex == i) {
+				WARN("Expand definite left has bad loop");
+				continue;
+			}
 			pair<int, int> diffDistSource = make_pair(0, 0);
 			pair<int, int> diffDistCur = make_pair(0, 0);
 			if (NotExpandBeyondDefinite) {
 				diffDistSource = vertexDist(longEdges, graph, SourceVertex);
 				diffDistCur = vertexDist(longEdges, graph, i);
 			}
+
 			if ((!NotExpandBeyondDefinite) || (diffDistCur.second
 					+ diffDistSource.first + longEdges[expandEdgeIndex]->length
-					< readLength + k)) {
+					< readLength + k)||(graph.degrees[i][1]==1)) {
 
 				int a = 0;
+
 				while (edgeRealId(graph.edgeIds[SourceVertex][a][OUT_EDGE],
-						longEdges) != expandEdgeIndex)
+						longEdges) != expandEdgeIndex){
+					cerr<<"vertex "<<SourceVertex<<" out edge "<<edgeRealId(graph.edgeIds[SourceVertex][a][OUT_EDGE],
+							longEdges)<<" on position "<<a<<endl;
 					a++;
-				assert(a < graph.degrees[SourceVertex][1]);
+					assert(a < graph.degrees[SourceVertex][1]);
+
+				}
+
 				while (a < graph.degrees[SourceVertex][1] - 1) {
 					graph.edgeIds[SourceVertex][a][OUT_EDGE]
 							= graph.edgeIds[SourceVertex][a + 1][OUT_EDGE];
 					a++;
+					cerr<<"shift"<<endl;
 				}
 				graph.degrees[SourceVertex][1]--;
+
 				forn(j,graph.degrees[i][1]) {
-					longEdges[graph.edgeIds[i][j][OUT_EDGE]]->ExpandLeft(
-							*(longEdges[expandEdgeIndex]));
+//					cerr<<"expand left "<<endl;
+					longEdges[graph.edgeIds[i][j][OUT_EDGE]]->ExpandLeft(*(longEdges[expandEdgeIndex]));
 					graph.edgeIds[SourceVertex][graph.degrees[SourceVertex][1]][OUT_EDGE]
 							= graph.edgeIds[i][j][OUT_EDGE];
 					graph.degrees[SourceVertex][1]++;
 				}
+
+
 				it = longEdges.find(expandEdgeIndex);
 				longEdges.erase(it);
 				graph.degrees[i][1] = 0;
 				graph.degrees[i][0] = 0;
-
 			}
+
 		}
+
 	}
+
 	cerr << "expandDefinite finished\n";
 }
 
 
 inline bool equalsAtIndex(longEdgesMap &longEdges, int id1, int id2, int index, int direction) {
-	cerr << "<<";
-	cerr.flush();
+//	cerr << "<<";
+//	cerr.flush();
 	char u1, l1, u2, l2;
 	int indu1, indu2, indl1, indl2;
-	if (direction){
+	if (direction == RIGHT){
 		indu1 = index;
 		indu2 = index;
 		indl1 = index;
 		indl2 = index;
-		cerr << index << " "<<id1  << longEdges[id1]->upper->size() << " " << longEdges[id1]->length;
+	//	cerr << index << " "<<id1  << longEdges[id1]->upper->size() << " " << longEdges[id1]->length;
 	}
 	else
 	{
-		cerr << " hm";
+//		cerr << " hm";
 		indu1 = longEdges[id1]->upper->size() - index - 1;
 		indl1 = longEdges[id1]->lower->size() - index - 1;
 		indu2 = longEdges[id2]->upper->size() - index - 1;
 		indl2 = longEdges[id2]->lower->size() - index - 1;
-		cerr << indu1<<" "<<indl1<<" "<<indu2<<" "<<indl2 << " "<< index;
-		cerr.flush();
+//		cerr << indu1<<" "<<indl1<<" "<<indu2<<" "<<indl2 << " "<< index;
+//		cerr.flush();
 	}
 	u1 = (*longEdges[id1]->upper)[indu1];
 	l1 = (*longEdges[id1]->lower)[indl1];
 	u2 = (*longEdges[id2]->upper)[indu2];
 	l2 = (*longEdges[id2]->lower)[indl2];
-	cerr <<">>\n";
-	cerr.flush();
-	return (u1 == u2);
-	return (u1 == u2 && l1 == l2);
+//	cerr <<">>\n";
+//	cerr.flush();
+//	return (u1 == u2);
+	return ((u1 == u2) && (l1 == l2));
 }
+
+
+inline int fistDifferenceIndex(PairedGraph &graph, Edge* edge1, Edge* edge2, int direction) {
+	size_t res = 0;
+	size_t maxLength = edge1->upper->size();
+	if (maxLength > edge2->upper->size()) maxLength = edge2->upper->size();
+	for(res=0; res < maxLength; res++){
+		if (!equalsAtIndex(graph.longEdges, edge1->EdgeId, edge2->EdgeId, res, direction))
+			break;
+	}
+	//res++;
+	cerr<<" Edge "<< edge1->EdgeId<<" vs "<< edge2->EdgeId<<" for direction "<<direction<<" first diff on "<<res<<endl;
+	if ((edge1->length<300)&&((edge2->length<300))){
+		cerr<<edge1->upper->str()<<endl;
+		cerr<<edge2->upper->str()<<endl;
+		cerr<<edge1->lower->str()<<endl;
+		cerr<<edge2->lower->str()<<endl;
+	}
+	return res;
+}
+
+
 void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount, int dir)
 {
 
@@ -500,8 +551,8 @@ void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCou
 						graph.edgeIds[newVert][tmpId][direction] = graph.edgeIds[curVert][tmpId][direction];
 				//		DEBUG (longEdges[graph.edgeIds[newVert][tmpId][direction]]->upper->str());
 					}
-					if (direction)
-						assert
+//					if (direction)
+//						assert
 					graph.degrees[newVert][direction]
 							= graph.degrees[curVert][direction];
 					graph.degrees[newVert][1 - direction] = 1;
@@ -515,5 +566,83 @@ void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCou
 				}
 			}
 		}
+	}
+}
+
+void extractDefinite(PairedGraph &graph, int dir){
+	cerr<<"extractDefinite create iterator "<<endl;
+
+/*	int CurVertex = VIter->next();
+	VertexIterator *VIter = graph.vertexIterator();
+	cerr<<"extractDefinite create iterator OK"<<endl;
+	VIter->hasNext();
+	cerr<<"Has next OK"<<endl;
+	for(;VIter->hasNext();){
+	*/
+	int CurVertex =0;
+	while (CurVertex < graph.VertexCount){
+		if (graph.degrees[CurVertex][0]+graph.degrees[CurVertex][1] > 0) break;
+		CurVertex++;
+	}
+
+	while (CurVertex<graph.VertexCount){
+		cerr<<"extractDefinite get next"<<endl;
+		cerr<<"CurVertex "<<CurVertex<<endl;
+		int FirstEdgeIndex = 0;
+		int SecondEdgeIndex = 0;
+		Edge* firstEdge;
+		Edge* secondEdge;
+		pair<Edge*,Edge*> firstEdgePair;
+		pair<Edge*,Edge*> secondEdgePair;
+		while (1){
+			SecondEdgeIndex++;
+			if (SecondEdgeIndex >= graph.degree(CurVertex, dir)) {
+				FirstEdgeIndex++;
+				SecondEdgeIndex = FirstEdgeIndex+1;
+			}
+			cerr<<"firstIndex "<<FirstEdgeIndex<<" secondIndex "<<SecondEdgeIndex<<" degree "<<graph.degree(CurVertex, dir)<<endl;
+			if (FirstEdgeIndex+1 >= graph.degree(CurVertex, dir)) break;
+			firstEdge = graph.neighbourEdge(CurVertex, FirstEdgeIndex, dir);
+			cerr<<"first edge Id "<<firstEdge->EdgeId<<endl;
+			secondEdge = graph.neighbourEdge(CurVertex, SecondEdgeIndex, dir);
+			cerr<<"second edge Id "<<secondEdge->EdgeId<<endl;
+			int diffIndex = fistDifferenceIndex(graph, firstEdge, secondEdge, dir);
+			if (diffIndex <= k-1) continue;
+			int splitIndex = diffIndex - k+1;
+			cerr<<"splitIndex "<<splitIndex<<endl;
+//			if (dir == RIGHT){
+				if (diffIndex>firstEdge->length){
+
+					if (diffIndex>secondEdge->length) continue;
+					else {
+						secondEdgePair = graph.splitEdge(secondEdge, splitIndex, dir);
+						graph.glueEdges(secondEdgePair.first, firstEdge);
+						SecondEdgeIndex = FirstEdgeIndex;
+					}
+				}
+				else {
+					firstEdgePair = graph.splitEdge(firstEdge, splitIndex, dir);
+					if (diffIndex>secondEdge->length) {
+						graph.glueEdges(firstEdgePair.first, secondEdge);
+						SecondEdgeIndex = FirstEdgeIndex;
+					}
+					else {
+						secondEdgePair = graph.splitEdge(secondEdge, splitIndex, dir);
+						graph.glueEdges(firstEdgePair.first, secondEdgePair.first);
+						SecondEdgeIndex = FirstEdgeIndex;
+					}
+				}
+	//		}
+//			else {
+//				INFO("extractDefinite for LEFT not implemented yet");
+//				assert(0);
+//			}
+		}
+		CurVertex++;
+		while (CurVertex < graph.VertexCount){
+			if (graph.degrees[CurVertex][0]+graph.degrees[CurVertex][1] > 0) break;
+			CurVertex++;
+		}
+
 	}
 }

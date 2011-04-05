@@ -19,16 +19,16 @@ void TestThreadAllA() {
 	l = 6;
 	readLength = 10;
 	insertLength = 5;
-	longEdgesMap edges;
+	PairedGraph *g = new PairedGraph();
+//	longEdgesMap edges;
 	Sequence *s = new Sequence(sameLetterString(15, 'A'));
 	for (int i = 0; i < 10; i++) {
 		Edge * e = new Edge(s, s, i, i + 1, 15 - k + 1, i);
-		edges.insert(make_pair(i, e));
+		g->longEdges.insert(make_pair(i, e));
 	}
-	PairedGraph g;
-	g.recreateVerticesInfo(10, edges);
-	PairThreader pt(g, edges, 1);
-	vector<pair<int, Edge *> > v = pt.threadLower(edges[0]);
+	g->recreateVerticesInfo(g->VertexCount, g->longEdges);
+	PairThreader pt(*g);
+	vector<pair<int, Edge *> > v = pt.threadLower(g->longEdges[0]);
 	ASSERT_EQUAL(2u, v.size());
 	ASSERT_EQUAL(0, v[0].first);
 	ASSERT_EQUAL(1, v[0].second->EdgeId);

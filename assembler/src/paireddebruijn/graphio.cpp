@@ -7,6 +7,7 @@
 #include "iostream"
 #include "fstream"
 
+LOGGER("p.graphio");
 using namespace paired_assembler;
 
 inline int codeNucleotide(char a) {
@@ -69,6 +70,7 @@ void outputLongEdges(longEdgesMap &longEdges, ostream &os) {
 		}
 	}
 	g.output();
+	cerr<<"Long edge output finished"<<endl;
 }
 
 void outputLongEdges(longEdgesMap &longEdges) {
@@ -248,10 +250,22 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, string fileName) {
 
 DataReader::DataReader(char *fileName) {
 	f_ = fopen(fileName, "r");
+	DEBUG("DataReader " << fileName <<" created");
+	assert(f_ != NULL);
+}
+
+DataReader::DataReader(const char *fileName) {
+	f_ = fopen(fileName, "r");
+	DEBUG("DataReader " << fileName <<" created");
 	assert(f_ != NULL);
 }
 
 DataPrinter::DataPrinter(char *fileName) {
+	f_ = fopen(fileName, "w");
+	assert(f_ != NULL);
+}
+
+DataPrinter::DataPrinter(const char *fileName) {
 	f_ = fopen(fileName, "w");
 	assert(f_ != NULL);
 }
@@ -454,8 +468,32 @@ void save(char *fileName, PairedGraph &g) {
 	//	dp.outputIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 	dp.close();
 }
+void save(string fileName, PairedGraph &g) {
+	DataPrinter dp(fileName.c_str());
+	dp.output(g.VertexCount);
+	dp.output(g.EdgeId);
+	dp.outputLongEdgesMap(g.longEdges);
+	//TODO: FIX!!!
+	//	dp.outputIntArray(g.inD, MAX_VERT_NUMBER);
+	//	dp.outputIntArray(g.outD, MAX_VERT_NUMBER);
+	//	dp.outputIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
+	//	dp.outputIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
+	dp.close();
+}
 void load(char *fileName, PairedGraph &g) {
 	DataReader dr(fileName);
+	dr.read(g.VertexCount);
+	dr.read(g.EdgeId);
+	dr.readLongEdgesMap(g.longEdges);
+	//TODO: fix;
+	//	dr.readIntArray(g.inD, MAX_VERT_NUMBER);
+	//	dr.readIntArray(g.outD, MAX_VERT_NUMBER);
+	//	dr.readIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
+	//	dr.readIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
+	dr.close();
+}
+void load(string fileName, PairedGraph &g) {
+	DataReader dr(fileName.c_str());
 	dr.read(g.VertexCount);
 	dr.read(g.EdgeId);
 	dr.readLongEdgesMap(g.longEdges);

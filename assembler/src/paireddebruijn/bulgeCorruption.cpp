@@ -19,22 +19,22 @@ void generateEdgeTypes(longEdgesMap &edges,
 
 int hamming(Sequence &s1, Sequence &s2) {
 	int result = 0;
-	for (int i = 0; i < s1.size(); i++)
+	for (size_t i = 0; i < s1.size(); i++)
 		if (s1[i] != s2[i])
 			result++;
 	return result;
 }
 
-bool similar(Edge e1, Edge e2, int bound, int maxLength) {
+bool similar(Edge e1, Edge e2, int bound, size_t maxLength) {
 	return e1.upper->size() == e2.upper->size() && e1.upper->size()
 			<= maxLength && hamming(*(e1.upper), *(e2.upper)) + hamming(
 			*(e1.lower), *(e2.lower)) <= bound;
 }
 
 void removeSimilarEdges(vector<pair<int, Edge *> > edges){
-	for (int i = 0; i < edges.size(); i++)
+	for (size_t i = 0; i < edges.size(); i++)
 		if (edges[i].first == edges[i].second->EdgeId)
-			for (int j = i + 1; j < edges.size(); j++)
+			for (size_t j = i + 1; j < edges.size(); j++)
 				if (edges[j].first == edges[j].second->EdgeId)
 					if (similar(*edges[i].second, *edges[j].second,
 							SIMILARITY_BOUND, MAX_GLUE_LENGTH))

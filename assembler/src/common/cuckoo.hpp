@@ -3,7 +3,7 @@
  *
  *  Created on: 25.02.2011
  *      Author: vyahhi
- *  Last modify: 14.02.2011 00:35
+ *  Last modify: 28.03.2011 21:09
  *      Author: Mariya Fomkina
  */
 
@@ -23,26 +23,26 @@ using namespace std;
 // Value size_t d is the number of hash functions (thus arrays also) 
 // that will be used in the program (can be >= 2).
 // Value size_t init_length is the initial length of the whole structure.
+// When you know the approximate number of records to be used, 
+// it is a good idea to take this value in 1.05-1.1 times more and
+// small value of step.
 // Value size_t max_loop determines the maximum number of kick cycles during 
 // insertion before rehash.
-// Value size_t increment determines the increment of length of the whole
-// structure. Actual increment may be a bit more than value determined. 
-// If it is equal to 0, increment on each rehash is equal to 1.2 of
-// the current length.
+// Values size_t step_nom and step_denom determine the ratio of 
+// increasing the size of hash during rehash (step_nom/step_denom). 
+// The less it is the less memory will be used but the more time is needed. 
 // Example of use: 
-// cuckoo<int, int, Hasher, std::equal_to<int>, 4, 10, 50, 20> Cuckoo; 
-template <class Key, class Value, class Hash, class Pred, size_t d = 3, 
-	  size_t init_length = 15, size_t max_loop = 100, size_t increment = 0>
+// cuckoo<int, int, Hasher, std::equal_to<int>, 4, 10, 50, 6, 5> Cuckoo; 
+template <class Key, class Value, class Hash, class Pred, size_t d = 4, 
+	  size_t init_length = 100, size_t max_loop = 100, 
+	  size_t step_nom = 3, size_t step_denom = 2>
 class cuckoo {
 private:
-  struct Data {
-    pair<Key, Value> p;
-    bool exists;
-    Data() : exists(false) {}
-  };
   // The array of vectors, each of which is hash array 
-  //vector<Data> *data_[d];
+  typedef pair<Key, Value> Data;
   Data** data_;
+  // The array of flags indicating existence of the element in hash
+  char* exists_;
   // The total length of all the hash arrays
   size_t len_;
   // The length of every hash array
@@ -52,11 +52,13 @@ private:
   // The flag that anounces that rehash was made recently
   bool is_rehashed_;
 public:
+  friend class iterator;
+
   class iterator {
   private:
     size_t pos;
-    cuckoo *hash;
-    iterator(size_t p, cuckoo *h) : pos(p), hash(h) {}
+    cuckoo* hash;
+    iterator(size_t p, cuckoo* h): pos(p), hash(h) {}
     friend class cuckoo;
   public:
     iterator() : pos(0), hash(NULL) {}
@@ -70,7 +72,7 @@ public:
       assert(hash != NULL);
       assert(pos != hash->len_);
       ++pos;
-      while (pos < hash->len_ && !hash->data_from(pos).exists) {
+      while (!hash->get_exists(pos) && pos < hash->len_) {
 	++pos;
       }
       return *this;
@@ -83,7 +85,7 @@ public:
     }
 
     pair<Key, Value>& operator*() {
-      return (*hash).data_from(pos).p;
+      return (*hash).data_from(pos);
     }
 
     bool operator==(const iterator &it) {
@@ -97,47 +99,96 @@ public:
 
 private:
 
-  inline Data& data_from(size_t pos) {
+  bool get_exists(size_t pos) const {
+    return (bool)(exists_[pos / 8] & (1 << (7 - (pos % 8))));  
+  }
+
+  void set_exists(size_t pos) {
+    exists_[pos / 8] = exists_[pos / 8] | (1 << (7 - (pos % 8)));
+  }
+
+  void unset_exists(size_t pos) {
+    exists_[pos / 8] = exists_[pos / 8] & (~(1 << (7 - (pos % 8))));
+  }
+
+  void init() {
+    len_part_ = init_length / d + 1;
+    len_part_ = ((len_part_ + 7) / 8) * 8;
+    len_ = len_part_ * d;
+    data_ = new Data*[d];
+    for (size_t i = 0; i < d; ++i) {
+      data_[i] = new Data[len_part_];
+    }
+    exists_ = new char[len_ / 8]; 
+    for (size_t i = 0; i < len_ / 8; ++i) exists_[i] = 0;
+    size_ = 0;
+    is_rehashed_ = false;
+  }
+
+  void clear_all() {
+    for (size_t i = 0; i < d; ++i) {
+      delete [] data_[i];
+    }
+    delete [] data_;
+    delete [] exists_;
+  }
+
+  inline Data& data_from(size_t pos) const {
     return data_[pos / len_part_][pos % len_part_];
   }
   
-  bool is_here(const Key &k, size_t pos) {
-    return data_from(pos).exists && Pred()(data_from(pos).p.first, k);
+  inline bool is_here(const Key &k, size_t pos) const {
+    return get_exists(pos) && Pred()(data_from(pos).first, k); 
   }
-  
-  size_t hash(const Key &k, size_t hash_num) {
+
+  inline size_t hash(const Key &k, size_t hash_num) {
     return Hash()(k, hash_num) % len_part_;
   }
   
-  void rehash() {
-    size_t len_temp_ = len_part_;
-    if (increment == 0) {
-      len_part_ = len_part_ * 6 / 5 + 1;
-    } else {
-      len_part_ = len_part_ + increment / d + 1;
+  void update_exists(size_t len_temp_) { 
+    char* t = new char[len_ / 8];
+    char* s = t;
+    char* f = s + len_ / 8;
+    for (; s < f; ++s) {
+      *s = 0;
+    } 
+    for (size_t i = 0; i < d; ++i) {
+      memcpy(t + (i * len_part_ / 8), exists_ + (i * len_temp_ / 8), (len_temp_ / 8));
     }
-    len_ = len_part_ * d;
-    //The next cycle is under the question;
-    //as this is one of bottlenecks of program, it must be 
-    //optimized as muxh as possible
+    swap(t, exists_);
+    delete [] t;
+  }
+
+  void update_data(size_t len_temp_) {
     for (size_t i = 0; i < d; ++i) {
       Data* t = new Data[len_part_];
       memcpy(t, data_[i], len_temp_*sizeof(Data));
       swap(t, data_[i]);
       delete [] t;
     } 
+  }
+
+  void rehash() {
+    size_t len_temp_ = len_part_;
+    len_part_ = len_part_ * step_nom / step_denom;
+    len_part_ = ((len_part_ + 7) / 8) * 8;
+    len_ = len_part_ * d;
+    
+    update_exists(len_temp_);
+    update_data(len_temp_);
+
     iterator it = begin();
-    if (!data_from(it.pos).exists) ++it;
+    if (!get_exists(it.pos)) ++it;
     while (it != end()) {
       size_t i = it.pos / len_part_;
       size_t j = it.pos % len_part_;
       if (j != hash((*it).first, i)) {
-	pair<Key, Value> t = *it;
+	Data t = *it;
 	remove(it);
 	add_new(t);
 	if (is_rehashed_) {
 	  it = begin();
-	  if (!data_from(it.pos).exists) ++it;
+	  if (!get_exists(it.pos)) ++it; 
 	}
       } else { 
 	++it;
@@ -150,9 +201,9 @@ private:
     for (size_t i = 0; i < max_loop; ++i) {
       for (size_t j = 0; j < d; ++j) {
 	size_t pos = hash(p.first, j);
-	swap(p, data_from(j * len_part_ + pos).p);
-	bool exists = data_from(j * len_part_ + pos).exists;
-	data_from(j * len_part_ + pos).exists = true;
+	swap(p, data_from(j * len_part_ + pos));
+	bool exists = get_exists(j * len_part_ + pos); 
+	set_exists(j * len_part_ + pos);
 	if (!exists) {
 	  is_rehashed_ = false;
 	  ++size_;
@@ -165,60 +216,44 @@ private:
   }
 
   iterator remove(iterator& it) {
-    data_from(it.pos).exists = false;
+    unset_exists(it.pos);
     --size_;    
     return ++it;
   }
 
 public:
   cuckoo() {
-    len_part_ = init_length / d + 1;
-    len_ = len_part_ * d;
-    data_ = new Data*[d];
-    for (size_t i = 0; i < d; ++i) {
-      data_[i] = new Data[len_part_];
-    }
-    size_ = 0;
-    is_rehashed_ = false;
+    init();
   }
   
   ~cuckoo() {
-    for (size_t i = 0; i < d; ++i) {
-      delete [] data_[i];
-    }
-    delete [] data_;
+    clear_all();
   }
 
-  cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& operator=
-  (cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& Cuckoo) {
-    clear();
+  cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop, step_nom, step_denom>& operator=
+  (cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop, step_nom, step_denom>& Cuckoo) {
+    clear_all();
+    init();
     iterator it = Cuckoo.begin();
-    if (!(Cuckoo.data_from(it.pos).exists)) ++it;
+    if (!(Cuckoo.get_exists(it.pos))) ++it;
     iterator final = Cuckoo.end();
     while (it != final) {
       insert(*it);
       ++it;
-    }
+      }
     return *this;
   }
 
-  cuckoo(cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop>& Cuckoo) {
-    len_part_ = init_length / d + 1;
-    len_ = len_part_ * d;
-    data_ = new Data*[d];
-    for (size_t i = 0; i < d; ++i) {
-      data_[i] = new Data[len_part_];
-    }
-    size_ = 0;
-    is_rehashed_ = false;
+  cuckoo(cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop, step_nom, step_denom>& Cuckoo) {
+    init();
     *this = Cuckoo;
   }
 
-  iterator begin() {
+  inline iterator begin() {
     return iterator(0, this);
   }
   
-  iterator end() {
+  inline iterator end() {
     return iterator(len_, this);
   }
 
@@ -273,23 +308,21 @@ public:
   }
 
   void clear() {
-    for (size_t i = 0; i < d; ++i) {
-      for (size_t j = 0; j < len_part_; ++j) {
-	(*(data_[i]))[j].exists = false;
-      }
-    }
+    char* t = new char[len_ / 8];
+    for (size_t i = 0; i < len_ / 8; ++i) t[i] = 0;
+    swap(t, exists_);
     size_ = 0;
   }
 
-  bool empty() {
+  inline bool empty() {
     return (size_ == 0);
   }
  
-  size_t size() const {
+  inline size_t size() const {
     return size_;
   }
 
-  size_t length() const {
+  inline size_t length() const {
     return len_;
   }
 };

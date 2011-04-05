@@ -13,9 +13,22 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, string fileName);
 
 void codeRead(char *read, char *code);
 
-inline bool nextReadPair(char * &read1, char * &read2) {
-	return (scanf("%s %s", read1, read2) == 2);
+
+inline bool nextReadPair(FILE* f, char * &read1, char * &read2) {
+	if (!fictiveSecondReads) return (fscanf(f, "%s %s", read1, read2) == 2);
+	else {
+		if (fscanf(f, "%s %s", read1, read2) == 2){
+			forn(i,strlen(read2)) read2[i]='A';
+			return true;
+		}
+		return false;
+	}
 }
+
+Sequence readGenome(istream &is);
+
+Sequence readGenomeFromFile(const string &fileName);
+
 
 ll extractMer(char *read, int shift, int length);
 
@@ -25,6 +38,7 @@ class DataPrinter {
 	FILE *f_;
 public:
 	DataPrinter(char *fileName);
+	DataPrinter(const char *fileName);
 	void output(int a);
 	void output(long long a);
 	void output(Edge *edge);
@@ -44,6 +58,7 @@ class DataReader {
 	FILE *f_;
 public:
 	DataReader(char *fileName);
+	DataReader(const char *fileName);
 	void read(int &a);
 	void read(long long &a);
 	void read(Edge * &edge);
@@ -116,5 +131,7 @@ void load(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 void save(char *fileName, PairedGraph &g);
 void load(char *fileName, PairedGraph &g);
 
+void save(string fileName, PairedGraph &g);
+void load(string fileName, PairedGraph &g);
 
 #endif /* IOPROCEDURES_HPP_ */

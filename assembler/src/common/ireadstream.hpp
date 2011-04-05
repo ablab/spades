@@ -1,152 +1,130 @@
-#ifndef PARSER_HPP
-#define PARSER_HPP
+/*
+ * ifastqstream.hpp
+ *
+ *  Created on: 03.03.2011
+ *      Author: vyahhi
+ */
 
-#include <algorithm>
-#include <string>
+#ifndef IREADSTREAM_HPP_
+#define IREADSTREAM_HPP_
+
+#include "libs/kseq/kseq.h"
 #include <zlib.h>
-#include <cstdlib>
-#include <iostream>
-#include <vector>
-#include <time.h>
-#include "ifaststream.hpp"
-#include "strobe_read.hpp"
+#include <cassert>
+#include "read.hpp"
+#include "quality.hpp"
+#include "nucl.hpp"
 
 using namespace std;
 
+// STEP 1: declare the type of file handler and the read() function
+KSEQ_INIT(gzFile, gzread)
+
 /*
- * reads 'read's from multiple FASTQ files (simultaneously)
- *
- * skips any reads with Ns!
+ * Read name, seq and qual strings from FASTQ data (one by one)
  */
-
-template <int size, int cnt = 1, typename T = char> // size of reads in base pairs
 class ireadstream {
-private:
-	vector<ifaststream*> ifs_;
-	bool eof_;
-	bool is_open_;
+
 public:
-	ireadstream(string filenames[]) {
-		for (size_t i = 0; i < cnt; ++i) {
-			ifs_.push_back(new ifaststream(filenames[i]));
-		}
-		is_open_ = true;
-		eof_ = false;
-		read_ahead();
+	ireadstream(const string& filename) {
+		filename_ = filename;
+		is_open_ = open(filename);
 	}
 
-//	ireadstream(const char *filename, ...) {
-//		va_list ap;
-//		va_start(ap, filename);
-//		for (size_t i = 0; i < cnt; ++i) {
-//			ifs_.push_back(new ifaststream(filename));
-//			filename = va_arg(ap, const char *);
-//		}
-//		va_end(ap);
-//		is_open_ = true;
-//		eof_ = false;
-//		read_ahead();
-//	}
 
-	void reset() {
-		for (int i = 0; i < cnt; ++i) {
-			ifs_[i]->reset();
-		}
-		is_open_ = true;
-		eof_ = false;
-		read_ahead();
-	}
 	virtual ~ireadstream() {
 		close();
 	}
 
+	bool is_open() const {
+		return is_open_;
+	}
+
+	bool eof() const {
+		return eof_;
+	}
+
+	static vector<Read>* readAll(string filename, int cnt = -1) {
+		ireadstream irs(filename);
+		assert(irs.is_open());
+		vector<Read>* res = new vector<Read>();
+		Read r;
+		while (cnt-- && irs.is_open() && !irs.eof()) {
+			irs >> r;
+			if (!r.isValid()) {
+				cnt++;
+				continue;
+			}
+			res->push_back(r);
+		}
+		irs.close();
+		return res;
+	}
+
+	ireadstream& operator>>(Read &r) {
+		assert(is_open());
+		assert(!eof());
+		if (!is_open() || eof()) {
+			return *this;
+		}
+		r.setName(seq_->name.s);
+		r.setQuality(seq_->qual.s);
+		r.setSequence(seq_->seq.s);
+		// if there is 'N' in sequence, then throw out this mate read
+		/*for (size_t i = 0; i < seq_->seq.l; i++) { // Fix Ns to As so we can store ACGT in 2 bits (Sequence). Anyway we have a Quality values for filtering out Ns later
+			if (!is_nucl(seq_->seq.s[i])) {
+				seq_->seq.s[i] = 'A';
+			}
+		}
+		*/
+
+		read_ahead(); // make actual read for the next result
+		return *this;
+	}
+
 	void close() {
 		if (is_open()) {
-			for (size_t i = 0; i < cnt; ++i) {
-				delete ifs_[i];
-				ifs_[i] = NULL;
-			}
+			kseq_destroy(seq_); // STEP 5: destroy seq
+			gzclose(fp_); // STEP 6: close the file handler
 			is_open_ = false;
 		}
 	}
 
-	ireadstream& operator>>(strobe_read<size,cnt,T> &sr) {
-		if (!is_open() || eof()) {
-			return *this;
-		}
-		sr = next_sr_;
-		read_ahead();
-		return *this;
-	}
-
-	inline bool is_open() const {
-		/*for (size_t i = 0; i < cnt; ++i) {
-			if (ifs_[i] == NULL || !ifs_[i]->is_open()) {
-				return false;
-			}
-		}
-		return true;*/
-		return is_open_;
-	}
-
-	inline bool eof() const {
-		/*for (size_t i = 0; i < cnt; ++i) {
-			if (ifs_[i] == NULL || ifs_[i]->eof()) {
-				return true;
-			}
-		}
-		return false;*/
-		return eof_;
-	}
-
-	vector<strobe_read<size,cnt,T> >* readAll(int number = -1) { // read count `reads`, default: 2^32 - 1
-		vector<strobe_read<size,cnt,T> > *v = new vector<strobe_read<size,cnt,T> >();
-		strobe_read<size,cnt,T> sr;
-		while (!eof_ && number--) {
-			this->operator>>(sr);
-			v->push_back(sr);
-		}
-		return v;
+	void reset() {
+		close();
+		open(filename_);
 	}
 
 private:
-	strobe_read<size,cnt,T> next_sr_;
-
-	inline void read_ahead() {
-		if (!is_open_) {
-			return;
-		}
-		long time0 = time(0);
-		while (!eof() && !read(next_sr_)) {
-			if (time(0) > time0 + 3) {
-				std::cerr << "Unable to read data";
-				exit(0);
-			}
-		}
-	}
-
-	inline bool read(strobe_read<size,cnt,T> &sr) {
-		if (!is_open() || eof()) {
+	std::string filename_;
+	gzFile fp_;
+	kseq_t* seq_;
+	bool is_open_;
+	bool eof_;
+	bool rtl_;
+	/*
+	 * open i's file with FASTQ reads,
+	 * return true if it opened file, false otherwise
+	 */
+	bool open(string filename) {
+		fp_ = gzopen(filename.c_str(), "r"); // STEP 2: open the file handler
+		if (!fp_) {
 			return false;
 		}
-		bool valid = true;
-		string name, seq, qual;
-		for (size_t i = 0; i < cnt; ++i) {
-			*ifs_[i] >> name >> seq >> qual;
-			for (size_t j = 0; valid && j < size; ++j) { // if at least one letter isn't ACGT
-				if (!is_nucl(seq[j])) {
-					valid = false;
-				}
-			}
-			if (ifs_[i]->eof()) {
-				eof_ = true;
-			}
-			if (valid) {
-				sr.put(i, seq);
-			}
+		is_open_ = true;
+		seq_ = kseq_init(fp_); // STEP 3: initialize seq
+		eof_ = false;
+		read_ahead();
+		return true;
+	}
+
+	void read_ahead() {
+		assert(is_open());
+		assert(!eof());
+		if (kseq_read(seq_) < 0) {
+			eof_ = true;
 		}
-		return valid;
 	}
 };
 
-#endif
+#endif /* IREADSTREAM_HPP_ */

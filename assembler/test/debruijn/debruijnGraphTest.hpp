@@ -68,8 +68,10 @@ void TestAddEdge2() {
 
 void TestSimpleConstruction() {
 	string ss[] = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
-	vector<strobe_read<9, 4> > input;
-	input.push_back(strobe_read<9, 4> (ss));
+	vector<Read> input;
+	for (int i = 0; i < 4; ++i) {
+		input.push_back(Read("noname", ss[i], "noqual"));
+	}
 	DeBruijn<5> g;
 	g.ConstructGraph(input);
 	int c = 0;

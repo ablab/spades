@@ -1,35 +1,63 @@
 #include <iostream>
+#include <numeric>
 #include "bayes_quality.hpp"
-#include "quality_read_stream.hpp"
+#include "ireadstream.hpp"
 #include "ifaststream.hpp"
+#include "read.hpp"
+#include "quality.hpp"
 
 LOGGER("b");
 
+#define SKIP_READS 6
+#define PROCESS_READS 25
+#define READS_BATCH 1000
+
+#define READ_FILENAME "/home/student/nikolenko/python/bayesQuality/s_6_1.fastq.gz"
+
 using namespace bayes_quality;
 
-int main() {
+void processQualityReads(const char *filename, BayesQualityGenome & bqg) {
+	
+	ireadstream ifs(filename);
+	if (PROCESS_READS > 0) {
+		INFO("processing " << PROCESS_READS << " reads");
+		vector<Read> tmpvec;
+		Read r;
+		for (size_t i=0; i < PROCESS_READS; ++i) {
+			ifs >> r; r.trimNs();
+			if (r.size() < MIN_READ_SIZE) {
+				--i; continue;
+			}
+			INFO(r.getSequenceString());
+			tmpvec.push_back(r);
+		}
+		bqg.ProcessReads(tmpvec);
+	} else {
+		vector<Read> *vec = ireadstream::readAll(filename, PROCESS_READS);
+		delete vec;
+	}
+	
+	return;
+}
+
+int main(int argc, char* argv[]) {
 	INFO("Hello, Bayes!");
 	
-	QualityReadStream qrs("/home/student/nikolenko/python/bayesQuality/test.fastq");
-	std::vector<QRead *> qrv;
-	while (!qrs.eof()) {
-		QRead *qr = new QRead(qrs.Next());
-		qrv.push_back(qr);
-	}
-	
-	ifaststream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta");
-	string name, seq;
-	ifs >> name >> seq;
-	cout << name.data() << "\n";
+	string readfilename = "";
+	if (argc > 1) readfilename = argv[1];
+	else readfilename = READ_FILENAME;
 
-	BayesQualityGenome bqg(seq.data());
-	for (size_t i=0; i<qrv.size(); ++i) {
-		INFO(qrv[i]->first.str());
-		double result = bqg.ReadBQInt(*qrv[i]);
-		INFO(result);
-	}
+	//ireadstream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta.gz");
+	ifaststream ifs("./data/bayes/biggenome.fasta");
+	string name, genome;
+	ifs >> name >> genome;
+	INFO("!" << name);
+	BayesQualityGenome bqg(genome.data());
+
+	// processQualityReads(readfilename.data(), bqg);
+	bqg.ProcessReads(readfilename.data());
 	
-	for (size_t i=0; i<qrv.size(); ++i) delete qrv[i];
-	
+	INFO("total good positions: " << bqg.TotalGoodPositions() << "/" << bqg.TotalPositions());
+
 	return 0;
 }

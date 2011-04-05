@@ -20,6 +20,7 @@ using namespace log4cxx;
 #define WARN(message)  LOG4CXX_WARN (_default_logger, message)
 #define ERROR(message) LOG4CXX_ERROR(_default_logger, message)
 #define LOG_ASSERT(condition, message) LOG4CXX_ASSERT(_default_logger, condition, message)
-#define FATAL(message) LOG4CXX_FATAL(_default_logger, message)
+#define FATAL_ASSERT(condition, message) LOG4CXX_ASSERT(_default_logger, condition, message) std::cerr << "ASSERTION FAILED: " << message; exit(1)
+#define FATAL(message) LOG4CXX_FATAL(_default_logger, message) std::cerr << "FATAL ERROR: " << message; exit(1)
 
 #endif /* LOGGING_HPP_ */

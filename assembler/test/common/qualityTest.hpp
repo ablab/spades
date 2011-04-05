@@ -8,18 +8,18 @@
 #ifndef QUALTEST_HPP_
 #define QUALTEST_HPP_
 
-#include "qual.hpp"
+#include "quality.hpp"
 
-void TestQual() {
-	Qual<10> q("0123456789");
+void TestQuality() {
+	Quality q("0123456789");
 	ASSERT_EQUAL('0', q[0]);
 	ASSERT_EQUAL('6', q[6]);
 	ASSERT_EQUAL('9', q[9]);
 }
 
-cute::suite QualSuite(){
+cute::suite QualitySuite(){
 	cute::suite s;
-	s.push_back(CUTE(TestQual));
+	s.push_back(CUTE(TestQuality));
 	return s;
 }
 

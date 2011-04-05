@@ -142,7 +142,7 @@ public:
 	 * @param i Index of the symbol (0 <= i < size_)
 	 * @return 0123-char on position i
 	 */
-	inline char operator[](const size_t i) const {
+	char operator[](const size_t i) const {
 		assert(i >= 0);
 		assert(i < size_);
 		return (data_[i >> Tnucl_bits] >> ((i & (Tnucl - 1)) << 1)) & 3; // btw (i % Tnucl) <=> (i & (Tnucl-1))
@@ -218,8 +218,9 @@ public:
 			rm = new_rm;
 		}
 		if (size_ % Tnucl != 0) {
-			T lastnuclshift_ = (size_  % Tnucl) << 1;
-			res.data_[data_size_ - 1] = res.data_[data_size_ - 1] & (((T)1 << lastnuclshift_) - 1);
+			T lastnuclshift_ = (size_ % Tnucl) << 1;
+			res.data_[data_size_ - 1] = res.data_[data_size_ - 1] & (((T) 1
+					<< lastnuclshift_) - 1);
 		}
 		return res;
 	}
@@ -251,7 +252,19 @@ public:
 		return size_;
 	}
 
-//	template<size_t HASH_SEED>
+	template<size_t size2_>
+	Seq<size2_> start() const {
+		assert(size2_ <= size_);
+		return Seq<size2_> (*this);
+	}
+
+	template<size_t size2_>
+	Seq<size2_> end() const {
+		assert(size2_ <= size_);
+		return Seq<size2_> (*this, size_ - size2_);
+	}
+
+	//	template<size_t HASH_SEED>
 	struct hash {
 		size_t operator()(const Seq<size_> &seq) const {
 			size_t h = HASH_SEED;
