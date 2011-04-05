@@ -251,7 +251,7 @@ downSeqs clusterize(pair<ll,int>* a, int size, int max_shift) {
 	vector<int> leftway;
 	forn(i, size) {
 		int seqlength = l;
-		if (used[i] == 0) {
+		if (used[i] == 0 && (left[i] == -2 || right[i] == -2)) {
 			int ii = i;
 			leftway.clear();
 			DEBUG("COLOR: " << color << " from i: "<< i);
