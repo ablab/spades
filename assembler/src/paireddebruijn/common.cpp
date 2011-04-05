@@ -41,7 +41,7 @@ ll pushNucleotide(ll kMer, int length, int direction, int nucl) {
 	if (direction == RIGHT) {
 		return (ll) nucl | (kMer << (2));
 	} else {
-		return (ll) nucl << (2 * length) | kMer;
+		return (ll) nucl << (2 * length) | (kMer &(((ll) 1<< (2 * length))-1));
 	}
 }
 
@@ -49,7 +49,7 @@ ll popNucleotide(ll kMer, int length, int direction) {
 	if (direction == RIGHT) {
 		return kMer >> 2;
 	} else {
-		return ((ll) 1 << (2 * length - 2) - 1) &&  kMer;
+		return (((ll) 1 << (2 * length - 2)) - 1) &&  kMer;
 	}
 }
 
