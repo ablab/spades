@@ -159,6 +159,8 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
     	}
     	CutShift++;
     	if (count == 0) {
+    		//if (replace)
+ //   			break;
     		curSeq = SubSeq(*curSeq, otherDirection(direction));
     	}
     }
