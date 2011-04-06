@@ -302,7 +302,8 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
  */
 //TODO :KMP
 void appendLowerPath(string &edge, string toAppend){
-	forn(i, edge.size()) {
+	DEBUG("Appending");
+	for(int i = max(0, edge.size() - toAppend.size() - l ); i < edge.size(); i++) {
 		int j = 0;
 		int fl = 1;
 		while (j<toAppend.size() && j+i < edge.size() && edge[i+j] == toAppend[j]){
