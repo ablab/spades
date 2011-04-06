@@ -87,8 +87,8 @@ private:
 	}
 
 	void FindTips() {
-		for (EdgeGraph::VertexIterator it = graph_.vertices().begin(); it
-				!= graph_.vertices().begin(); ++it) {
+		for (EdgeGraph::VertexIterator it = graph_.begin(); it
+				!= graph_.begin(); ++it) {
 			if (isTip(*it)) {
 				tipQueue_.offer(graph_.GetUniqueIncomingEdge(*it));
 			}
@@ -115,20 +115,26 @@ private:
 				> coverageBound_)
 			return false;
 		Vertex *splitVertex = graph_.edgeStart(tip);
-		if(graph_.CheckUniqueOutgiongEdge(splitVertex))
+		if (graph_.CheckUniqueOutgiongEdge(splitVertex))
 			return false;
 		size_t maxCoverage = maxCompetotorCoverage(splitVertex, tip);
 		return graph_.coverage(tip) <= relativeCoverageBound_ * maxCoverage;
 	}
 
+	//	void compressSplitVertex(Vertex *splitVertex) {
+	//		if (graph_.CanCompressVertex(splitVertex)) {
+	//			Edge *edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
+	//			Edge *edge2 = graph_.GetUniqueOutgoingEdge(
+	//					graph_.ComplementVertex(splitVertex));
+	//			if (isTip(edge1) || isTip(edge2)) {
+	//				graph_.CompressVertex(splitVertex);
+	//			}
+	//		}
+	//	}
+
 	void compressSplitVertex(Vertex *splitVertex) {
 		if (graph_.CanCompressVertex(splitVertex)) {
-			Edge *edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
-			Edge *edge2 = graph_.GetUniqueOutgoingEdge(
-					graph_.ComplementVertex(splitVertex));
-			if (isTip(edge1) || isTip(edge2)) {
-				graph_.CompressVertex(splitVertex);
-			}
+			graph_.CompressVertex(splitVertex);
 		}
 	}
 
@@ -167,7 +173,7 @@ public:
 	void ClipTips() {
 		FindTips();
 		RemoveTips();
-//		graph_.CompressAllVertices();
+		//		graph_.CompressAllVertices();
 	}
 
 };
