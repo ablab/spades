@@ -65,11 +65,11 @@ int findPossibleVertex(ll kmer, Sequence &down, edgesMap &edges, verticesMap &ve
  *
  * @return coverage of resulting edge when expanding or 0.
  */
-Sequence* SubSeq(Sequence Seq, int direction){
+Sequence* SubSeq(Sequence Seq, int direction, int CutLen){
 	if (direction == LEFT)
-		return new Sequence(Seq.Subseq(0, Seq.size()-1));
+		return new Sequence(Seq.Subseq(0, Seq.size()-CutLen));
 	else if (direction == RIGHT)
-		return new Sequence(Seq.Subseq(1));
+		return new Sequence(Seq.Subseq(CutLen));
 	else {assert(0);}
 
 }
@@ -109,7 +109,9 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
 //	cerr << "findUniqueWay" << endl;
 	pair <char, EdgePrototype*> res = make_pair(0, (EdgePrototype *)NULL);
     int CutShift = 0;
-    Sequence *curSeq = curSeque;
+    Sequence *curSeq;
+    if (replace) curSeq = SubSeq(*curSeque, otherDirection(direction), ((curSeque->size()-l)/2));
+    else curSeq = curSeque;
     while (count == 0){
     	if (CutShift > 0) DEBUG("CutShift "<<CutShift);
     	if (curSeq->size() - CutShift< l){
@@ -159,6 +161,7 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
     	}
     	CutShift++;
     	if (count == 0) {
+    		if (replace) break;
     		curSeq = SubSeq(*curSeq, otherDirection(direction));
     	}
     }
