@@ -9,6 +9,9 @@ using namespace paired_assembler;
 namespace vard{
 
 
+Sequence* SubSeq(Sequence Seq, int direction, int CutLen = 1);
+int appendLowerPath(string &edge, string &toAppend);
+
 void createVertices(edgesMap &edges, PairedGraph &graph);
 //int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer, Sequence* &finishSeq, int &EdgeCoverage);
 int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, ll &curKmer, Sequence* &curSeq, int &EdgeCoverage, int direction);
