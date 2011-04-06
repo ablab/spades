@@ -93,8 +93,9 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 			dir_res.second->used = true;
 			string tmp = decompress(curKmer, k);
 			curEdge.first+=(tmp[k-1]);
-			curEdge.second.append(curSeq->Subseq(k-1,k).str());
+//			curEdge.second.append(curSeq->Subseq(k-1,k).str());
 			//TODO:: do it, save nucleo/
+			appendLowerPath(curEdge.second , curSeq->str());
 		}
 	}
 	if (findPossibleVertex(subkmer(curKmer, direction), *SubSeq(*curSeq, direction), edges, verts) > -1)
@@ -260,6 +261,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 				ll finKmer = startKmer;
 				Sequence *finSeq = new Sequence(*startSeq);
 				curEdge.first = decompress(startKmer, k);
+				//TODO: position instead of 0
 				curEdge.second = finSeq->str();
 				expandDirected(edges, curEdge, graph.verts, finKmer, finSeq, EdgeCoverage, RIGHT);
 				Sequence *finSubSeq = SubSeq(*finSeq, RIGHT);
@@ -293,7 +295,34 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 		++iter;
 	}
 }
+/*
+ * Appends string toAppend to string edge with maximal possible overlap For example, appendLowerPath(ACAT,ATT) will be ACATT
+ *
+ *
+ */
+//TODO :KMP
+void appendLowerPath(string &edge, string toAppend){
+	forn(i, edge.size()) {
+		int j = 0;
+		int fl = 1;
+		while (j<toAppend.size() && j+i < edge.size() && edge[i+j] == toAppend[j]){
+			j++;
+		}
+		if (j<toAppend.size() && j+i < edge.size()) {
+			continue;
+		} else {
+			if (j < 20){
+				ERROR("Problem    "<< edge << " " <<toAppend);
+				assert(0);
+			}
 
+			edge.append(toAppend.substr(j ));
+			return;
+		}
+
+	}
+
+}
 
 
 }
