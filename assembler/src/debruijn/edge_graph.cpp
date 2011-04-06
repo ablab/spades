@@ -82,7 +82,7 @@ Edge* EdgeGraph::AddEdge(Vertex* v1, Vertex* v2, const Sequence &nucls) {
 	assert(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
 	assert(nucls.size() >= k_ + 1);
 	Edge *result = AddSingleEdge(v1, v2, nucls);
-	if(nucls != !nucls)
+	if (nucls != !nucls)
 		AddSingleEdge(v2->complement(), v1->complement(), !nucls);
 	action_handler_->HandleAdd(result);
 	return result;
@@ -96,7 +96,7 @@ void EdgeGraph::DeleteEdge(Edge* edge) {
 	rcStart->RemoveOutgoingEdge(rcEdge);
 	action_handler_->HandleDelete(edge);
 	delete edge;
-	if(edge != rcEdge)
+	if (edge != rcEdge)
 		delete rcEdge;
 }
 
@@ -132,14 +132,15 @@ Vertex *EdgeGraph::edgeEnd(const Edge *edge) const {
 	return edge->end();
 }
 
-bool EdgeGraph::CanCompressVertex(Vertex *v) {
-	return v->OutgoingEdgeCount() == 1 && v->complement()->OutgoingEdgeCount() == 1;
+bool EdgeGraph::CanCompressVertex(Vertex *v) const {
+	return v->OutgoingEdgeCount() == 1 && v->complement()->OutgoingEdgeCount()
+			== 1;
 }
 
 Edge *EdgeGraph::CompressVertex(Vertex *v) {
 	assert(v->OutgoingEdgeCount() == 1 && v->complement()->OutgoingEdgeCount() == 1);
 	Edge *edge1 = GetUniqueIncomingEdge(v);
-	Edge *edge2 = GetUniqueOutgiongEdge(v);
+	Edge *edge2 = GetUniqueOutgoingEdge(v);
 	Sequence nucls = edge1->nucls() + edge2->nucls().Subseq(k_);
 	Vertex *v1 = edgeStart(edge1);
 	Vertex *v2 = edgeEnd(edge2);
@@ -147,6 +148,20 @@ Edge *EdgeGraph::CompressVertex(Vertex *v) {
 	DeleteEdge(edge2);
 	DeleteVertex(v);
 	return AddEdge(v1, v2, nucls);
+}
+
+Edge *EdgeGraph::CompressPath(const vector<Vertex *> path) {
+	assert(!path.empty());
+	SequenceBuilder sb;
+	assert(CheckUniqueIncomingEdge(path[0]));
+	sb.append(GetUniqueIncomingEdge(path[0])->nucls());
+	Vertex *v1 = edgeStart(GetUniqueIncomingEdge(path[0]));
+	Vertex *v2 = edgeEnd(GetUniqueOutgoingEdge(path[path.size() - 1]));
+	for (vector<Vertex *>::const_iterator it = path.begin(); it != path.end(); ++it) {
+		sb.append(GetUniqueOutgoingEdge(*it)->nucls().Subseq(k_));
+		ForceDeleteVertex(*it);
+	}
+	return AddEdge(v1, v2, sb.BuildSequence());
 }
 
 }

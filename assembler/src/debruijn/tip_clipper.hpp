@@ -123,8 +123,8 @@ private:
 
 	void compressSplitVertex(Vertex *splitVertex) {
 		if (graph_.CanCompressVertex(splitVertex)) {
-			Edge *edge1 = graph_.GetUniqueOutgiongEdge(splitVertex);
-			Edge *edge2 = graph_.GetUniqueOutgiongEdge(
+			Edge *edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
+			Edge *edge2 = graph_.GetUniqueOutgoingEdge(
 					graph_.ComplementVertex(splitVertex));
 			if (isTip(edge1) || isTip(edge2)) {
 				graph_.CompressVertex(splitVertex);

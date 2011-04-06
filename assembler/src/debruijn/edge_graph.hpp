@@ -254,7 +254,7 @@ public:
 		return v->OutgoingEdgeCount() == 1;
 	}
 
-	Edge *GetUniqueOutgiongEdge(const Vertex *v) const {
+	Edge *GetUniqueOutgoingEdge(const Vertex *v) const {
 		assert(CheckUniqueOutgiongEdge(v));
 		return *(v->begin());
 	}
@@ -264,7 +264,7 @@ public:
 	}
 
 	Edge *GetUniqueIncomingEdge(const Vertex *v) const {
-		return ComplementEdge(GetUniqueOutgiongEdge(v->complement()));
+		return ComplementEdge(GetUniqueOutgoingEdge(v->complement()));
 	}
 
 	Edge *ComplementEdge(const Edge* edge) const;
@@ -329,16 +329,16 @@ public:
 		return v->complement();
 	}
 
-	const Edge& GetData(Edge* e) {
+	const Edge& GetData(Edge* e) const {
 		return *e;
 	}
-	bool CanCompressVertex(Vertex *v);
+	bool CanCompressVertex(Vertex *v) const;
 
 	Edge *CompressVertex(Vertex *v);
 
-	Edge *CompressPath(vector<Vertex *> path);
+	Edge *CompressPath(const vector<Vertex *> path);
 
-//	void CompressAllVertices();
+	void CompressAllVertices();
 };
 
 //////////////////////////////////////////////////////////////////
