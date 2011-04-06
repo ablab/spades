@@ -10,7 +10,7 @@ namespace vard{
 
 
 Sequence* SubSeq(Sequence Seq, int direction, int CutLen = 1);
-void appendLowerPath(string &edge, string toAppend);
+int appendLowerPath(string &edge, string &toAppend);
 
 void createVertices(edgesMap &edges, PairedGraph &graph);
 //int expandRight(edgesMap &edges, verticesMap &verts, ll &finishKmer, Sequence* &finishSeq, int &EdgeCoverage);

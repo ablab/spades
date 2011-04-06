@@ -94,7 +94,16 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 			curEdge.first+=(tmp[k-1]);
 //			curEdge.second.append(curSeq->Subseq(k-1,k).str());
 			//TODO:: do it, save nucleo/
-			appendLowerPath(curEdge.second , curSeq->str());
+			string new_lower = curSeq->str();
+			int ap_res;
+			if ( !(appendLowerPath(curEdge.second , new_lower))) {
+				if ( !(appendLowerPath( new_lower, curEdge.second))) {
+					ERROR( curEdge.second << " "<< new_lower);
+					assert (0);
+				} else {
+					curEdge.second = new_lower;
+				}
+			}
 		}
 	}
 	if (findPossibleVertex(subkmer(curKmer, direction), *SubSeq(*curSeq, direction), edges, verts) > -1)
@@ -301,7 +310,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
  */
 //TODO :KMP
 
-void appendLowerPath(string &edge, string toAppend){
+int  appendLowerPath(string &edge, string &toAppend){
 	DEBUG("Appending");
 	for(int i = max(0, (int) (edge.size() - toAppend.size() - l) ); i < edge.size(); i++) {
 		int j = 0;
@@ -312,17 +321,13 @@ void appendLowerPath(string &edge, string toAppend){
 		if (j<toAppend.size() && j+i < edge.size()) {
 			continue;
 		} else {
-			if (j < 20){
-				ERROR("Problem    "<< edge << " " <<toAppend);
-				assert(0);
-			}
-
+			if (j < 20) return 0;
 			edge.append(toAppend.substr(j ));
-			return;
+			return j;
 		}
 
 	}
-
+	return 0;
 }
 
 
