@@ -27,8 +27,8 @@ void  OneEdgeGraphTest() {
 	Edge *e = g.AddEdge(v1, v2, Sequence("AAAAAAAAAAAAAAAAA"));
 	ASSERT_EQUAL(1u, g.OutgoingEdgeCount(v1));
 	ASSERT_EQUAL(0u, g.OutgoingEdgeCount(v2));
-	ASSERT_EQUAL(e, g.GetUniqueEdge(v1));
-	ASSERT_EQUAL(g.ComplementEdge(e), g.GetUniqueEdge(g.ComplementVertex(v2)));
+	ASSERT_EQUAL(e, g.GetUniqueOutgoingEdge(v1));
+	ASSERT_EQUAL(g.ComplementEdge(e), g.GetUniqueOutgoingEdge(g.ComplementVertex(v2)));
 	ASSERT_EQUAL(e, g.ComplementEdge(g.ComplementEdge(e)));
 	ASSERT_EQUAL(!(g.EdgeNucls(e)), g.EdgeNucls(g.ComplementEdge(e)));
 }

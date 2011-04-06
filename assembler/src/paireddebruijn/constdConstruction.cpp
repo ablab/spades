@@ -253,14 +253,12 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq, int 
 			}
 		}
 	}
-	int tcount = 0;
 
 	bool sameK = false;
 
 	if (count == 1 ) {
 		if (EdgeCoverage < (PossibleIter->se)[seqIndex]->coverage)
 			EdgeCoverage = (PossibleIter->se)[seqIndex]->coverage;
-		int tcount = 0;
 		finishKmer = (PossibleKmer) & (~(((ll) 3) << (2 * (k - 1))));
 		finishSeq = new Sequence(
 				(PossibleIter->se)[seqIndex]->lower->Subseq(1,
