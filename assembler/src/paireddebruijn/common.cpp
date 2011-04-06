@@ -20,6 +20,7 @@ int readLength = 0;
 int insertLength = 0;
 int minIntersect = l - 1;
 int inClusterMaxShift = 1;
+int useKmersVertices = 0;
 
 
 int fictiveSecondReads = 0;
@@ -86,7 +87,7 @@ void initConstants(string ini_file) {
 	assert(fscanf(ini, "fictiveSecondReads = %d\n", &fictiveSecondReads) == 1);
 	assert(fscanf(ini, "needRevertedPairs = %d\n", &needRevertedPairs) == 1);
 	assert(fscanf(ini, "inClusterMaxShift = %d\n", &inClusterMaxShift) == 1);
-
+	assert(fscanf(ini, "useKmersVertices = %d\n", &useKmersVertices) == 1);
 
 	assert(fscanf(ini, "Filenames:\n") == 0);
 	assert(fscanf(ini, "work_folder = %s\n" , tmp) == 1);
