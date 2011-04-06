@@ -6,7 +6,6 @@
 #include "pairedGraph.hpp"
 #include "graphio.hpp"
 #include "vardConstruction.hpp"
-
 LOGGER("p.vardConstruction");
 
 using namespace paired_assembler;
@@ -301,9 +300,10 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
  *
  */
 //TODO :KMP
+
 void appendLowerPath(string &edge, string toAppend){
 	DEBUG("Appending");
-	for(int i = max(0, edge.size() - toAppend.size() - l ); i < edge.size(); i++) {
+	for(int i = max(0, (int) (edge.size() - toAppend.size() - l) ); i < edge.size(); i++) {
 		int j = 0;
 		int fl = 1;
 		while (j<toAppend.size() && j+i < edge.size() && edge[i+j] == toAppend[j]){
