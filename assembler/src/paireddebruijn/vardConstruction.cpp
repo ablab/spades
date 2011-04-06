@@ -6,7 +6,6 @@
 #include "pairedGraph.hpp"
 #include "graphio.hpp"
 #include "vardConstruction.hpp"
-
 LOGGER("p.vardConstruction");
 
 using namespace paired_assembler;
@@ -40,20 +39,20 @@ int findPossibleVertex(ll kmer, Sequence &down, edgesMap &edges, verticesMap &ve
 	int res = -1;
 	if (v != verts.end()) {
 		TRACE(" kmer FOUND");
-
 		forn(i, v->second.size()) {
 			Sequence* cur_seq =  v->second[i]->lower;
 			int position = v->second[i]->position;
 			int tmp_pos;
-			if ((tmp_pos = down.str().find(cur_seq->Subseq(position, position + k-1).str())) != string::npos){
+			if ((useKmersVertices)||((tmp_pos = down.str().find(cur_seq->Subseq(position, position + k-1).str())) != string::npos)){
 				res =  v->second[i]->VertexId;
 				DEBUG("vert found " << kmer << " " << cur_seq->str() << " " << tmp_pos<< " at position " << position);
 				DEBUG("For " << kmer << " " << down.str() );
 				count++;
+				if (useKmersVertices) return res;
 			}
 		}
 	}
-	if (count > 1) res = -2;
+//	if (count > 1) res = -2;
 	TRACE ("result :" <<res);
 	if (count == 1) DEBUG("vertex found");
 	return res;
@@ -65,11 +64,11 @@ int findPossibleVertex(ll kmer, Sequence &down, edgesMap &edges, verticesMap &ve
  *
  * @return coverage of resulting edge when expanding or 0.
  */
-Sequence* SubSeq(Sequence Seq, int direction){
+Sequence* SubSeq(Sequence Seq, int direction, int CutLen){
 	if (direction == LEFT)
-		return new Sequence(Seq.Subseq(0, Seq.size()-1));
+		return new Sequence(Seq.Subseq(0, Seq.size()-CutLen));
 	else if (direction == RIGHT)
-		return new Sequence(Seq.Subseq(1));
+		return new Sequence(Seq.Subseq(CutLen));
 	else {assert(0);}
 
 }
@@ -81,11 +80,11 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 		pair <char, EdgePrototype*> dir_res = findUniqueWay(edges, curKmer, curSeq, direction , false);
 
 		if ((otherdir_res.second == NULL) ) {
-			DEBUG("Other dir NULL");
+			DEBUG("Multiple parallels");
 			break;
 		}
 		if   (dir_res.second == NULL) {
-			DEBUG("This dir NULL");
+			DEBUG("Troubles with going forward");
 			break;
 		}
 		goUniqueWay(edges, curKmer, curSeq, dir_res, EdgeCoverage, direction);
@@ -93,51 +92,90 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 			dir_res.second->used = true;
 			string tmp = decompress(curKmer, k);
 			curEdge.first+=(tmp[k-1]);
-			curEdge.second.append(curSeq->Subseq(k-1,k).str());
+//			curEdge.second.append(curSeq->Subseq(k-1,k).str());
 			//TODO:: do it, save nucleo/
+			string new_lower = curSeq->str();
+			int ap_res;
+			if ( !(appendLowerPath(curEdge.second , new_lower))) {
+				if ( !(appendLowerPath( new_lower, curEdge.second))) {
+					ERROR( curEdge.second << " "<< new_lower);
+					assert (0);
+				} else {
+					curEdge.second = new_lower;
+				}
+			}
 		}
 	}
+	if (findPossibleVertex(subkmer(curKmer, direction), *SubSeq(*curSeq, direction), edges, verts) > -1)
+		DEBUG("Finished on vertex");
 	return 0;
 }
 
-pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *curSeq , int direction, bool replace){
+pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *curSeque , int direction, bool replace){
 	assert(direction == LEFT || direction == RIGHT );
 	int count = 0;
 	TRACE("Find uniqueness" << direction);
 //	cerr << "findUniqueWay" << endl;
 	pair <char, EdgePrototype*> res = make_pair(0, (EdgePrototype *)NULL);
+    int CutShift = 0;
+    Sequence *curSeq;
+    if (replace) curSeq = SubSeq(*curSeque, otherDirection(direction), ((curSeque->size()-l)/2));
+    else curSeq = curSeque;
+    while (count == 0){
+    	if (CutShift > 0) DEBUG("CutShift "<<CutShift);
+    	if (curSeq->size() - CutShift< l){
+    		DEBUG("Impossible to go");
+    		break;
+    	}
+    	for (int Nucl = 0; Nucl < 4; Nucl++) {
+    		ll tmpcurKmer;
+    		if (!replace)
+    			tmpcurKmer = subkmer(curKmer, direction);
+    		else
+    			tmpcurKmer = subkmer(curKmer, otherDirection(direction));
+    		ll tmpKmer = pushNucleotide(tmpcurKmer, k - 1, direction, Nucl);
 
-	for (int Nucl = 0; Nucl < 4; Nucl++) {
-		ll tmpcurKmer;
-		if (!replace)
-			tmpcurKmer = subkmer(curKmer, direction);
-		else
-			tmpcurKmer = subkmer(curKmer, otherDirection(direction));
-		ll tmpKmer = pushNucleotide(tmpcurKmer, k - 1, direction, Nucl);
+    		edgesMap::iterator iter = edges.find(tmpKmer);
+    		TRACE("FROM " << curKmer << " Trying to find " << tmpKmer);
+    		if (iter != edges.end()) {
+    			for (vector<EdgePrototype *>::iterator it = iter->second.begin(); it != iter->second.end(); ++it) {
+    				//TODO: minIntersect?
+    				//				if (curSeq->similar(*((*it)->lower), minIntersect, direction)) {
+    				bool intersected = false;
+    				if (((*it)->lower)->size()>=l+CutShift)
+    				{
+    					if (direction == LEFT)
+    						if (curSeq->similar(((*it)->lower)->Subseq(0,((*it)->lower)->size()-CutShift), minIntersect, LEFT))
+    							intersected = true;
 
-		edgesMap::iterator iter = edges.find(tmpKmer);
-		TRACE("FROM " << curKmer << " Trying to find " << tmpKmer);
-		if (iter != edges.end()) {
-			for (vector<EdgePrototype *>::iterator it = iter->second.begin(); it != iter->second.end(); ++it) {
-				//TODO: minIntersect?
-//				if (curSeq->similar(*((*it)->lower), minIntersect, direction)) {
-				if (curSeq->similar(*((*it)->lower), minIntersect, 0)) {
-					count++;
-					TRACE("FOUND " << (*it)->lower->str());
-					if (count > 1) {
-						DEBUG("multiple: ");
-						DEBUG("Nucl "<<(int)Nucl<<" Seq "<< (*it)->lower->str());
-						DEBUG("Nucl "<<(int)res.first<<" Seq "<< res.second->lower->str());
-						return make_pair(0, (EdgePrototype *)NULL);
-					} else {
-						res = make_pair(Nucl, *it);
-					}
+    					if (direction == RIGHT)
+    						if (curSeq->similar(((*it)->lower)->Subseq(CutShift), minIntersect, RIGHT))
+    							intersected = true;
+    				}
+    				if (intersected){
+    					count++;
+    					TRACE("FOUND " << (*it)->lower->str());
+    					if (count > 1) {
+    						DEBUG("multiple: ");
+    						DEBUG("Nucl "<<(int)Nucl<<" Seq "<< (*it)->lower->str());
+    						DEBUG("Nucl "<<(int)res.first<<" Seq "<< res.second->lower->str());
+    						return make_pair(0, (EdgePrototype *)NULL);
+    					} else {
+    						res = make_pair(Nucl, *it);
+    					}
 
-				}
-			}
-		}
-	}
-	return res;
+    				}
+    			}
+    		}
+    	}
+    	CutShift++;
+    	if (count == 0) {
+    		if (replace) break;
+    		curSeq = SubSeq(*curSeq, otherDirection(direction));
+    	}
+    }
+//    if (count>0) DEBUG("Nucl "<<(int)res.first<<" Seq "<< res.second->lower->str());
+    return res;
 }
 
 //while going left we don't mark anything as used, we just find leftmost possible vert
@@ -210,6 +248,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 						if (startSeq->similar(*((*it)->lower), startSeq->size(), 0)) {
 							findCnt++;
 							assert(findCnt<2);
+//							DEBUG("marking edge used");
 							(*it)->used = true;
 						}
 					}
@@ -230,6 +269,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 				ll finKmer = startKmer;
 				Sequence *finSeq = new Sequence(*startSeq);
 				curEdge.first = decompress(startKmer, k);
+				//TODO: position instead of 0
 				curEdge.second = finSeq->str();
 				expandDirected(edges, curEdge, graph.verts, finKmer, finSeq, EdgeCoverage, RIGHT);
 				Sequence *finSubSeq = SubSeq(*finSeq, RIGHT);
@@ -257,12 +297,38 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 				if (!(iter->se)[i]->used) i--;
 			}
 		}
-		(iter->second).clear();
-		//TODO: clear memory
-		edges.erase(iter++);
+//		(iter->second).clear();
+		//TODO: clear memory, or not clear. This is the question!
+	//	edges.erase(iter++);
+		++iter;
 	}
 }
+/*
+ * Appends string toAppend to string edge with maximal possible overlap For example, appendLowerPath(ACAT,ATT) will be ACATT
+ *
+ *
+ */
+//TODO :KMP
 
+int  appendLowerPath(string &edge, string &toAppend){
+	DEBUG("Appending");
+	for(int i = max(0, (int) (edge.size() - toAppend.size() - l) ); i < edge.size(); i++) {
+		int j = 0;
+		int fl = 1;
+		while (j<toAppend.size() && j+i < edge.size() && edge[i+j] == toAppend[j]){
+			j++;
+		}
+		if (j<toAppend.size() && j+i < edge.size()) {
+			continue;
+		} else {
+			if (j < 20) return 0;
+			edge.append(toAppend.substr(j ));
+			return j;
+		}
+
+	}
+	return 0;
+}
 
 
 }
