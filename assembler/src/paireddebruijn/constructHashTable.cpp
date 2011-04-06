@@ -210,6 +210,10 @@ downSeqs clusterize(pair<ll,int>* a, int size, int max_shift) {
 		ll right_tmp = a[i].first;
 		ll left_tmp = a[i].first;
 		ll p2 = 0;
+		if (a[i].second < 5) {
+			used[i] = true;
+			continue;
+		}
 		ll upper_bound;
 		forn(shift, max_shift) {
 		    right_tmp = ((right_tmp << 2) & lowerMask);
