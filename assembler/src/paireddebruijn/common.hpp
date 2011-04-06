@@ -89,6 +89,7 @@ const int maxSeqLength = 200;
 extern int insertLength;
 extern int minIntersect;
 extern int inClusterMaxShift;
+extern int useKmersVertices;
 
 
 extern int fictiveSecondReads;

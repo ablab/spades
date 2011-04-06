@@ -25,6 +25,7 @@ void initGlobal(){
 	upperMax = ((ll) 1) << 46;
 }
 
+/*
 downSeqs oldclusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &lset) {
 	downSeqs res;
 	res.clear();
@@ -69,8 +70,6 @@ downSeqs oldclusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &ls
 		    //cerr <<"cright" <<cright << endl;
 
 		    if (!(cright == 0 || shift_right[i] || cright > 1)) {
-			*/
-		    if (!( shift_right[i] )) {
 
 
 		    	upper_bound = ((ll) 1) << p2;
@@ -88,7 +87,6 @@ downSeqs oldclusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &ls
 		    }
 			left_tmp >>= 2;
 			cright = 0;
-			/*
 			if (!shift_left[i]) {
 				forn(ii, (1<<p2)) {
 					ll left_n = ((ll) ii) << (2*l - p2);
@@ -104,8 +102,6 @@ downSeqs oldclusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &ls
 			}
 		//	cerr <<"cleft" <<cright << endl;
 			if (!(cright == 0 || shift_left[i] || cright > 1)) {
-			*/
-			if ( !(shift_left[i] )) {
 				forn(j, size) {
 					diff = a[j].first - left_tmp;
 					if ((i != j) && ((diff & (lowerMask >> p2)) == 0)){
@@ -178,10 +174,10 @@ downSeqs oldclusterizeLset(pair<ll,int>* a, int size, int max_shift, set<ll> &ls
 			cerr<<(res[i].first)->str() << endl;
 		}
 	}
-	assert(0);*/
+	assert(0);*//*
 	return res;
 }
-
+*/
 
 
 
@@ -253,7 +249,7 @@ downSeqs clusterize(pair<ll,int>* a, int size, int max_shift) {
 	vector<int> leftway;
 	forn(i, size) {
 		int seqlength = l;
-		if (used[i] == 0 && (left[i] == -1 || right[i] == -1)) {
+		if (used[i] == 0) {
 			int ii = i;
 			leftway.clear();
 			DEBUG("COLOR: " << color << " from i: "<< i);
