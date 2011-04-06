@@ -138,8 +138,8 @@ bool EdgeGraph::CanCompressVertex(Vertex *v) {
 
 Edge *EdgeGraph::CompressVertex(Vertex *v) {
 	assert(v->OutgoingEdgeCount() == 1 && v->complement()->OutgoingEdgeCount() == 1);
-	Edge *edge1 = ComplementEdge(GetUniqueEdge(v->complement()));
-	Edge *edge2 = GetUniqueEdge(v);
+	Edge *edge1 = GetUniqueIncomingEdge(v);
+	Edge *edge2 = GetUniqueOutgiongEdge(v);
 	Sequence nucls = edge1->nucls() + edge2->nucls().Subseq(k_);
 	Vertex *v1 = edgeStart(edge1);
 	Vertex *v2 = edgeEnd(edge2);

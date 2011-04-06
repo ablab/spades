@@ -83,14 +83,6 @@ class Edge {
 		nucls_(nucls), end_(end), coverage_(0) {
 	}
 
-	//	void set_coverage(size_t cov) {
-	//		coverage_ = cov;
-	//	}
-	//
-	//	size_t coverage() {
-	//		return coverage_;
-	//	}
-
 	Vertex* end() const {
 		return end_;
 	}
@@ -102,10 +94,6 @@ class Edge {
 	size_t size() const {
 		return nucls_.size();
 	}
-
-	//	void inc_coverage(char nucl) {
-	//		++edge_coverage_[(int) nucl];
-	//	}
 
 };
 
@@ -258,9 +246,25 @@ public:
 		return v->OutgoingEdgeCount();
 	}
 
-	Edge *GetUniqueEdge(const Vertex *v) const {
-		assert(v->OutgoingEdgeCount() == 1);
+	size_t IncomingEdgeCount(Vertex *v) const {
+		return v->complement()->OutgoingEdgeCount();
+	}
+
+	bool CheckUniqueOutgiongEdge(const Vertex *v) const {
+		return v->OutgoingEdgeCount() == 1;
+	}
+
+	Edge *GetUniqueOutgiongEdge(const Vertex *v) const {
+		assert(CheckUniqueOutgiongEdge(v));
 		return *(v->begin());
+	}
+
+	bool CheckUniqueIncomingEdge(const Vertex *v) const {
+		return CheckUniqueOutgiongEdge(v->complement());
+	}
+
+	Edge *GetUniqueIncomingEdge(const Vertex *v) const {
+		return ComplementEdge(GetUniqueOutgiongEdge(v->complement()));
 	}
 
 	Edge *ComplementEdge(const Edge* edge) const;
@@ -269,15 +273,21 @@ public:
 		return edge->nucls();
 	}
 
-	/*
-	 * Can not return vector iterators for vector which does not exist
-	 * Possible solutions:
-	 * 1. return vector(and create it every time)
-	 * 2. store vector of incoming edges
-	 * 3. stop supporting incoming edges: incoming are outcoming for rc vertex
-	 */
-	//	void IncomingEdges(const Vertex* v, Vertex::EdgeIterator &begin,
-	//			Vertex::EdgeIterator &end) const;
+	void set_coverage(Edge *edge, size_t cov) {
+		edge->coverage_ = cov;
+	}
+
+	size_t coverage(Edge *edge) {
+		return edge->coverage_;
+	}
+
+	void inc_coverage(Edge *edge, int toAdd) {
+		edge->coverage_ += toAdd;
+	}
+
+	void inc_coverage(Edge *edge) {
+		edge->coverage_++;
+	}
 
 	/**
 	 * adds vertex and its complement
@@ -296,6 +306,10 @@ public:
 	Edge* AddEdge(Vertex* v1, Vertex* v2, const Sequence &nucls);
 
 	void DeleteEdge(Edge* edge);
+
+	size_t length(Edge *edge) {
+		return edge->nucls_.size() - k_;
+	}
 
 	bool AreLinkable(Vertex* v1, Vertex* v2, const Sequence &nucls) const;
 
@@ -322,6 +336,9 @@ public:
 
 	Edge *CompressVertex(Vertex *v);
 
+	Edge *CompressPath(vector<Vertex *> path);
+
+//	void CompressAllVertices();
 };
 
 //////////////////////////////////////////////////////////////////
