@@ -107,7 +107,12 @@ int Sequence::find(const Sequence &t, int from) const {
 	}
 	return -1;
 }
-
+/*
+ *@param k  minimal intersection of sequences
+ *@param directed  LEFT means that after intersection t continues to left over _this and matches perfectly with _this on overlaping
+ *
+ *
+ */
 // 0 - undirected similarity, 1: t extends this to right, -1: this extends t
 int Sequence::similar(const Sequence &t, int k, char directed) const {
 //	cerr << endl << t.str()<< "similar started" <<k << endl;
