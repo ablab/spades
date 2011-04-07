@@ -176,4 +176,23 @@ Edge *EdgeGraph::CompressPath(const vector<Vertex *> path) {
 	return AddEdge(v1, v2, sb.BuildSequence());
 }
 
+void EdgeGraph::CompressAllVertices() {
+	SmartVertexIterator<EdgeGraph> end = this->SmartVertexEnd();
+	for (SmartVertexIterator<EdgeGraph> it = this->SmartVertexBegin(); it
+			!= end; ++it) {
+		Vertex *v = *it;
+		if(CheckUniqueOutgiongEdge(v) && CheckUniqueIncomingEdge(v)) {
+			while(CheckUniqueOutgiongEdge(v))
+				v = edgeEnd(GetUniqueOutgoingEdge(v));
+			vector<Vertex *> compressList;
+			v = ComplementVertex(v);
+			while(CheckUniqueOutgiongEdge(v)) {
+				compressList.push_back(v);
+				v = edgeEnd(GetUniqueOutgoingEdge(v));
+			}
+			CompressPath(compressList);
+		}
+	}
+}
+
 }

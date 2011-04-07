@@ -92,7 +92,9 @@ public:
 	virtual void HandleDelete(EdgeId e) {
 	}
 
-	virtual ~GraphActionHandler();
+	virtual ~GraphActionHandler() {
+
+	}
 };
 
 template<size_t kmer_size_, typename Graph, typename ElementId>
@@ -332,8 +334,7 @@ public:
 		storage_.erase(storage_.begin());
 		return key;
 	}
-
-	Key peek() {
+	Key peek() const {
 		return *(storage_.begin());
 	}
 
@@ -345,7 +346,7 @@ public:
 		return storage_.erase(key) > 0;
 	}
 
-	bool empty() {
+	bool empty() const {
 		return storage_.empty();
 	}
 };
@@ -382,7 +383,7 @@ public:
 		assert(false);
 	}
 
-	ElementId &operator*() {
+	ElementId operator*() const {
 		assert(!queue_.empty());
 		return queue_.peek();
 	}
@@ -401,11 +402,13 @@ class SmartVertexIterator: public GraphActionHandler<Graph>, public QueueIterato
 public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-private:
-	Graph *graph_;
 public:
-	SmartVertexIterator(Graph *graph) :graph_(graph) {
-		fillQueue(graph_.begin(), graph_.end());
+	SmartVertexIterator(Graph &graph) {
+		fillQueue(graph.begin(), graph.end());
+		graph.AddActionHandler(this);
+	}
+
+	SmartVertexIterator() {
 	}
 
 	virtual ~SmartVertexIterator() {
@@ -425,15 +428,16 @@ class SmartEdgeIterator: public GraphActionHandler<Graph>, public QueueIterator<
 public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-private:
-	Graph *graph_;
 public:
-	SmartEdgeIterator(Graph *graph) :graph_(graph) {
-		for(typename Graph::VertexIterator it = graph_.begin(); it != graph_.end(); ++it) {
-			typename VertexId::EdgeIterator begin, end;
-			graph.OutgoingEdges(*it, begin, end);
-			fillQueue(begin, end);
+	SmartEdgeIterator(Graph &graph) {
+		for(typename Graph::VertexIterator it = graph.begin(); it != graph.end(); ++it) {
+			const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
+			fillQueue(outgoing.begin(), outgoing.end());
 		}
+		graph.AddActionHandler(this);
+	}
+
+	SmartEdgeIterator() {
 	}
 
 	virtual ~SmartEdgeIterator() {

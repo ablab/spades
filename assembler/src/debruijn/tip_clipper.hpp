@@ -88,22 +88,22 @@ private:
 		return graph_.coverage(tip) <= relativeCoverageBound_ * maxCoverage;
 	}
 
-	//	void compressSplitVertex(Vertex *splitVertex) {
-	//		if (graph_.CanCompressVertex(splitVertex)) {
-	//			Edge *edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
-	//			Edge *edge2 = graph_.GetUniqueOutgoingEdge(
-	//					graph_.ComplementVertex(splitVertex));
-	//			if (isTip(edge1) || isTip(edge2)) {
-	//				graph_.CompressVertex(splitVertex);
-	//			}
-	//		}
-	//	}
-
 	void compressSplitVertex(Vertex *splitVertex) {
 		if (graph_.CanCompressVertex(splitVertex)) {
-			graph_.CompressVertex(splitVertex);
+			Edge *edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
+			Edge *edge2 = graph_.GetUniqueOutgoingEdge(
+					graph_.ComplementVertex(splitVertex));
+			if (isTip(edge1) || isTip(edge2)) {
+				graph_.CompressVertex(splitVertex);
+			}
 		}
 	}
+
+	//	void compressSplitVertex(Vertex *splitVertex) {
+	//		if (graph_.CanCompressVertex(splitVertex)) {
+	//			graph_.CompressVertex(splitVertex);
+	//		}
+	//	}
 
 	void removeTip(Edge *tip) {
 		Vertex *splitVertex = graph_.edgeStart(tip);
@@ -140,7 +140,7 @@ public:
 	void ClipTips() {
 		FindTips();
 		RemoveTips();
-		//		graph_.CompressAllVertices();
+		graph_.CompressAllVertices();
 	}
 
 };
