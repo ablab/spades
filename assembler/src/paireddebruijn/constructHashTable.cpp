@@ -775,8 +775,11 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 #endif
 		forn(i, clsize) {
 			outstring = clusters[i].first->str();
-			assert(outstring.size() >= l);
-			fprintf(outFile, "%s %d ",outstring.c_str(),clusters[i].second);
+//			assert(outstring.size() >= l);
+//			if (outstring.size() >l+2)
+//				fprintf(outFile, "%s %d ",outstring.substr(1,outstring.size()-2).c_str(),clusters[i].second);
+//			else
+				fprintf(outFile, "%s %d ",outstring.c_str(),clusters[i].second);
 		}
 		fprintf(outFile, "\n");
 #ifdef OUTPUT_DECOMPRESSED

@@ -105,8 +105,10 @@ public:
 	}
 
 	int computeInsertLength() {
-
+		assert(0);
+		return 0;
 	}
+
 	void ExpandLeft(Edge &newLeft) {
 		FromVertex = newLeft.FromVertex;
 		if (newLeft.length > 0) {
