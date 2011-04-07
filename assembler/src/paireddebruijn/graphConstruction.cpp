@@ -16,8 +16,12 @@ void constructGraph(PairedGraph &graph) {
 	graph.VertexCount = 0;
 	if (distance_type == "const")
 		constd::createVertices(edges, graph);
-	else
-		vard::createVertices(edges, graph);
+	else {
+		vard::createVertices(edges, graph, false);
+		vard::clearUseOfEdgePrototypes(edges);
+		vard::createVertices(edges, graph, true);
+
+	}
 		//assert(0);
 	INFO ("End create vertices");
 }

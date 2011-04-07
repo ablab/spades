@@ -24,6 +24,18 @@ inline ll subkmer(ll kmer, int direction) {
 	else assert(0);
 }
 
+void clearUseOfEdgePrototypes(edgesMap &edges){
+	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
+		int size = iter->second.size();
+		forn(i, size) {
+			(iter->se)[i]->used = false;
+		}
+		++iter;
+	}
+
+}
+
+
 /*
  * @param direction  LEFT if we look from leftmost end
  *
@@ -31,6 +43,7 @@ inline ll subkmer(ll kmer, int direction) {
  * If there are multiple, return -2,(we hope there will be no such situation:)
  * if no- returns -1
  */
+
 
 int findPossibleVertex(ll kmer, Sequence &down, edgesMap &edges, verticesMap &verts){
 	verticesMap::iterator v = verts.find(kmer);
@@ -42,7 +55,7 @@ int findPossibleVertex(ll kmer, Sequence &down, edgesMap &edges, verticesMap &ve
 		forn(i, v->second.size()) {
 			Sequence* cur_seq =  v->second[i]->lower;
 			int position = v->second[i]->position;
-			int tmp_pos;
+			size_t tmp_pos = 0;
 			if ((useKmersVertices)||((tmp_pos = down.str().find(cur_seq->Subseq(position, position + k-1).str())) != string::npos)){
 				res =  v->second[i]->VertexId;
 				DEBUG("vert found " << kmer << " " << cur_seq->str() << " " << tmp_pos<< " at position " << position);
@@ -78,6 +91,7 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 	while( (findPossibleVertex(subkmer(curKmer, direction), *SubSeq(*curSeq, direction), edges, verts) == -1) ){
 		pair <char, EdgePrototype*> otherdir_res = findUniqueWay(edges, curKmer, curSeq, otherDirection(direction), true);
 		pair <char, EdgePrototype*> dir_res = findUniqueWay(edges, curKmer, curSeq, direction , false);
+		if (curKmer == 646383972192173ll) DEBUG("going thought 646383972192173 dir "<<direction<< "seq "<<curSeq->str());
 
 		if ((otherdir_res.second == NULL) ) {
 			DEBUG("Multiple parallels");
@@ -88,6 +102,9 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 			break;
 		}
 		goUniqueWay(edges, curKmer, curSeq, dir_res, EdgeCoverage, direction);
+		if (dir_res.second->looped > 2)
+			break;
+		dir_res.second->looped ++;
 		if (direction == RIGHT) {
 			dir_res.second->used = true;
 			string tmp = decompress(curKmer, k);
@@ -117,12 +134,12 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
 	TRACE("Find uniqueness" << direction);
 //	cerr << "findUniqueWay" << endl;
 	pair <char, EdgePrototype*> res = make_pair(0, (EdgePrototype *)NULL);
-    int CutShift = 0;
+    size_t CutShift = 0;
     Sequence *curSeq;
     if (replace) curSeq = SubSeq(*curSeque, otherDirection(direction), ((curSeque->size()-l)/2));
     else curSeq = curSeque;
     while (count == 0){
-    	if (CutShift > 0) DEBUG("CutShift "<<CutShift);
+ //   	if (CutShift > 0) DEBUG("CutShift "<<CutShift);
     	if (curSeq->size() - CutShift< l){
     		DEBUG("Impossible to go");
     		break;
@@ -136,11 +153,15 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
     		ll tmpKmer = pushNucleotide(tmpcurKmer, k - 1, direction, Nucl);
 
     		edgesMap::iterator iter = edges.find(tmpKmer);
-    		TRACE("FROM " << curKmer << " Trying to find " << tmpKmer);
+    		if (tmpKmer == 646383972192173ll)
+    			DEBUG("FROM " << curKmer << " Trying to find " << tmpKmer);
     		if (iter != edges.end()) {
     			for (vector<EdgePrototype *>::iterator it = iter->second.begin(); it != iter->second.end(); ++it) {
     				//TODO: minIntersect?
     				//				if (curSeq->similar(*((*it)->lower), minIntersect, direction)) {
+    				if (tmpKmer == 646383972192173ll)
+    			    			DEBUG("try " << curSeq->str() << " VS " << ((*it)->lower)->str());
+
     				bool intersected = false;
     				if (((*it)->lower)->size()>=l+CutShift)
     				{
@@ -153,8 +174,10 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
     							intersected = true;
     				}
     				if (intersected){
+        				if (tmpKmer == 646383972192173ll)
+        					DEBUG("Possible");
     					count++;
-    					TRACE("FOUND " << (*it)->lower->str());
+    			//		TRACE("FOUND " << (*it)->lower->str());
     					if (count > 1) {
     						DEBUG("multiple: ");
     						DEBUG("Nucl "<<(int)Nucl<<" Seq "<< (*it)->lower->str());
@@ -209,7 +232,7 @@ int countWays(vector<EdgePrototype *> &v, Sequence *finishSeq, int direction) {
 
 
 
-void createVertices(edgesMap &edges, PairedGraph &graph) {
+void createVertices(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 	int count = 0;
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
 		int size = iter->second.size();
@@ -247,7 +270,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 						if ((*it)->lower->size()>=startSeq->size())
 						if (startSeq->similar(*((*it)->lower), startSeq->size(), 0)) {
 							findCnt++;
-							assert(findCnt<2);
+//							assert(findCnt<2);
 //							DEBUG("marking edge used");
 							(*it)->used = true;
 						}
@@ -287,10 +310,12 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 
 				}
 
-				Edge* newEdge = new Edge(curEdge, startVertId, finVertId, graph.EdgeId, EdgeCoverage);
-				graph.addEdge(newEdge);
-				DEBUG("adding edge of length"<< curEdge.first.length()+1-k);
-//				if (curEdge.first.length() <1000)
+				if (buildEdges){
+					Edge* newEdge = new Edge(curEdge, startVertId, finVertId, graph.EdgeId, EdgeCoverage);
+					graph.addEdge(newEdge);
+					DEBUG("adding edge "<< newEdge->EdgeId <<"of length "<< curEdge.first.length()+1-k);
+				}
+				//				if (curEdge.first.length() <1000)
 //					TRACE(curEdge.first);
 //				assert(0);
 				//expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, EdgeCoverage, LEFT);
@@ -311,7 +336,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 //TODO :KMP
 
 int  appendLowerPath(string &edge, string &toAppend){
-	DEBUG("Appending");
+	TRACE("Appending");
 	for(int i = max(0, (int) (edge.size() - toAppend.size() - l) ); i < edge.size(); i++) {
 		int j = 0;
 		int fl = 1;
