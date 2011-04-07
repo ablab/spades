@@ -116,7 +116,7 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 			if ( !(appendLowerPath(curEdge.second , new_lower))) {
 				if ( !(appendLowerPath( new_lower, curEdge.second))) {
 					ERROR( curEdge.second << " "<< new_lower);
-					assert (0);
+	//				assert (0);
 				} else {
 					curEdge.second = new_lower;
 				}

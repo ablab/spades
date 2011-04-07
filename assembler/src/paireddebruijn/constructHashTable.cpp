@@ -532,16 +532,16 @@ pair<int, pair<int,int>> maxCommonSubstring(string &s1,string &s2) {
 	int l2 = s2.length();
 	char table[200][200];
 	assert(l1 <200 && l2 <200);
-	forn(i, l1)
-		forn(j, l2)
+	forn(i, l1 +1)
+		forn(j, l2 +1)
 			table[i][j] = 0;
-	forn(i, l1)
-		forn(j, l2)
-			if (i> 0 && j > 0 && s1[i] == s2[j])
+	forn(i, l1 + 1)
+		forn(j, l2 + 1)
+			if (i> 0 && j > 0 && s1[i-1] == s2[j-1])
 				table[i][j] = table[i-1][j-1] + 1;
 	pair<int, pair<int,int> > res = make_pair(0, make_pair(0,0));
-	forn(i, l1)
-		forn(j, l2)
+	forn(i, l1 + 1)
+		forn(j, l2 + 1)
 			if (table[i][j] > res.fi) {
 				res.fi = table[i][j];
 				res.se.fi = i - table[i][j];
