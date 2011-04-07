@@ -6,7 +6,6 @@
 #include "pairedGraph.hpp"
 #include "graphio.hpp"
 #include "vardConstruction.hpp"
-
 LOGGER("p.vardConstruction");
 
 using namespace paired_assembler;
@@ -107,8 +106,18 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 			dir_res.second->used = true;
 			string tmp = decompress(curKmer, k);
 			curEdge.first+=(tmp[k-1]);
-			curEdge.second.append(curSeq->Subseq(k-1,k).str());
+//			curEdge.second.append(curSeq->Subseq(k-1,k).str());
 			//TODO:: do it, save nucleo/
+			string new_lower = curSeq->str();
+			int ap_res;
+			if ( !(appendLowerPath(curEdge.second , new_lower))) {
+				if ( !(appendLowerPath( new_lower, curEdge.second))) {
+					ERROR( curEdge.second << " "<< new_lower);
+					assert (0);
+				} else {
+					curEdge.second = new_lower;
+				}
+			}
 		}
 	}
 	if (findPossibleVertex(subkmer(curKmer, direction), *SubSeq(*curSeq, direction), edges, verts) > -1)
@@ -280,6 +289,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 				ll finKmer = startKmer;
 				Sequence *finSeq = new Sequence(*startSeq);
 				curEdge.first = decompress(startKmer, k);
+				//TODO: position instead of 0
 				curEdge.second = finSeq->str();
 				expandDirected(edges, curEdge, graph.verts, finKmer, finSeq, EdgeCoverage, RIGHT);
 				Sequence *finSubSeq = SubSeq(*finSeq, RIGHT);
@@ -315,7 +325,32 @@ void createVertices(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 		++iter;
 	}
 }
+/*
+ * Appends string toAppend to string edge with maximal possible overlap For example, appendLowerPath(ACAT,ATT) will be ACATT
+ *
+ *
+ */
+//TODO :KMP
 
+int  appendLowerPath(string &edge, string &toAppend){
+	DEBUG("Appending");
+	for(int i = max(0, (int) (edge.size() - toAppend.size() - l) ); i < edge.size(); i++) {
+		int j = 0;
+		int fl = 1;
+		while (j<toAppend.size() && j+i < edge.size() && edge[i+j] == toAppend[j]){
+			j++;
+		}
+		if (j<toAppend.size() && j+i < edge.size()) {
+			continue;
+		} else {
+			if (j < 20) return 0;
+			edge.append(toAppend.substr(j ));
+			return j;
+		}
+
+	}
+	return 0;
+}
 
 
 }

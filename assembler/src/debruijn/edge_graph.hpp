@@ -63,10 +63,14 @@
 #include "nucl.hpp"
 #include "debruijn.hpp"
 #include "strobe_read.hpp"
+#include "utils.hpp"
 
 using namespace std;
 
 namespace edge_graph {
+
+using de_bruijn::GraphActionHandler;
+
 LOGGER("d.edge_graph");
 
 class Vertex;
@@ -161,7 +165,7 @@ private:
 	}
 
 };
-
+/*
 class GraphActionHandler {
 public:
 
@@ -177,24 +181,44 @@ public:
 	virtual void HandleDelete(Edge* e) {
 	}
 
-};
+};*/
 
 class EdgeGraph {
+
 	size_t k_;
 
 	Edge* AddSingleEdge(Vertex* v1, Vertex* v2, const Sequence& s);
 
-//	void DeleteSingleEdge(const Edge* edge);
+	//	void DeleteSingleEdge(const Edge* edge);
 
-	GraphActionHandler* action_handler_;
+	vector<GraphActionHandler<EdgeGraph> *> action_handler_list_;
 
 	set<Vertex*> vertices_;
 
 	void DeleteAllOutgoing(Vertex *v);
 
+//	const set<Vertex*>& vertices() const {
+//		return vertices_;
+//	}
+
 public:
 
+	typedef Edge* EdgeId;
+	typedef Vertex* VertexId;
+
 	typedef set<Vertex *>::const_iterator VertexIterator;
+
+	VertexIterator begin() {
+		return vertices_.begin();
+	}
+
+	VertexIterator end() {
+		return vertices_.end();
+	}
+
+	size_t size() {
+		return vertices_.size();
+	}
 
 	/**
 	 * Constructs empty graph to work with k-mers.
@@ -202,35 +226,41 @@ public:
 	 * @param k Main parameter that defines the size of k-mers
 	 * @param action_handler Graph actions handler
 	 */
-	EdgeGraph(size_t k, GraphActionHandler* action_handler = new GraphActionHandler()) {
+	EdgeGraph(size_t k) {
 		assert(k % 2 == 1);
 		k_ = k;
-		assert(action_handler != NULL);
-		action_handler_ = action_handler;
 	}
 
 	/**
 	 * Deletes action_handler.
 	 */
 	~EdgeGraph() {
-		while(!vertices().empty()) {
-			ForceDeleteVertex(*vertices().begin());
+		while (!vertices_.empty()) {
+			ForceDeleteVertex(*vertices_.begin());
 		}
-		delete action_handler_;
-	}
-
-	const set<Vertex*>& vertices() const {
-		return vertices_;
 	}
 
 	size_t k() {
 		return k_;
 	}
 
-	void set_action_handler(GraphActionHandler* action_handler) {
-		delete action_handler_;
-		assert(action_handler != NULL);
-		action_handler_ = action_handler;
+	void add_action_handler(GraphActionHandler<EdgeGraph>* action_handler) {
+		action_handler_list_.push_back(action_handler);
+	}
+
+	bool remove_action_handler(GraphActionHandler<EdgeGraph>* action_handler) {
+		for (vector<GraphActionHandler<EdgeGraph> *>::iterator it =
+				action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+			if(*it == action_handler) {
+				action_handler_list_.erase(it);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	const vector<GraphActionHandler<EdgeGraph> *> GetHandlers() {
+		return action_handler_list_;
 	}
 
 	void OutgoingEdges(const Vertex* v, Vertex::EdgeIterator &begin,
@@ -332,6 +362,7 @@ public:
 	const Edge& GetData(Edge* e) const {
 		return *e;
 	}
+
 	bool CanCompressVertex(Vertex *v) const;
 
 	Edge *CompressVertex(Vertex *v);
@@ -342,49 +373,6 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////
-
-/**
- * @brief Base class for condensed graph traversals.
- */
-class Traversal {
-public:
-
-	/**
-	 * Stub base class for handling graph primitives during traversal.
-	 */
-	class Handler {
-	public:
-		virtual void HandleStartVertex(const Vertex* v) {
-		}
-		virtual void HandleEndVertex(const Vertex* v) {
-		}
-		virtual void HandleEdge(const Edge* e) {
-		}
-	};
-
-	Traversal(const EdgeGraph& g) :
-		g_(g) {
-	}
-
-	/**
-	 *
-	 */
-	virtual void Traverse(Handler& h) = 0;
-
-protected:
-	const EdgeGraph& g_;
-};
-
-class DFS: public Traversal {
-	set<Vertex*> visited_;
-	void ProcessVertex(Vertex* v, vector<Vertex*>& stack, Handler& h);
-public:
-	DFS(const EdgeGraph& g) :
-		Traversal(g) {
-
-	}
-	virtual void Traverse(Handler& h);
-};
 
 class GraphVisualizer {
 public:
@@ -411,87 +399,6 @@ public:
 	virtual void Visualize(const EdgeGraph& g);
 };
 
-class SimpleStatCounter: public Traversal::Handler {
-	size_t v_count_;
-	size_t e_count_;
-public:
-	SimpleStatCounter() :
-		v_count_(0), e_count_(0) {
-	}
-	virtual void HandleStartVertex(const Vertex* v) {
-		v_count_++;
-	}
-	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
-		e_count_++;
-	}
-
-	size_t v_count() const {
-		return v_count_;
-	}
-
-	size_t e_count() const {
-		return e_count_;
-	}
-};
-
-class CountHandler: public Traversal::Handler {
-	tr1::unordered_map<const Vertex*, size_t>& map_;
-	size_t count_;
-public:
-
-	CountHandler(tr1::unordered_map<const Vertex*, size_t>& map) :
-		map_(map), count_(0) {
-	}
-
-	virtual void HandleStartVertex(const Vertex* v) {
-		map_.insert(make_pair(v, count_++));
-	}
-};
-
-//class VisHandler: public Traversal::Handler {
-//	gvis::GraphPrinter<const Vertex*>& pr_;
-//public:
-//
-//	VisHandler(gvis::GraphPrinter<const Vertex*>& pr) :
-//		pr_(pr) {
-//	}
-//
-//	virtual void HandleStartVertex(const Vertex* v) {
-//		stringstream ss;
-//		ss << v->nucls().size();
-//		pr_.addVertex(v, ss.str());
-//	}
-//
-//	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
-//		pr_.addEdge(v1, v2, "");
-//	}
-//
-//};
-//
-//class ComplementVisHandler: public Traversal::Handler {
-//	gvis::PairedGraphPrinter<const Vertex*>& pr_;
-//public:
-//
-//	ComplementVisHandler(gvis::PairedGraphPrinter<const Vertex*>& pr) :
-//		pr_(pr) {
-//	}
-//
-//	virtual void HandleStartVertex(const Vertex* v) {
-//		stringstream ss;
-//		ss << v->nucls().size();
-//
-//		//todo delete after debug
-//		stringstream ss2;
-//		ss2 << v->complement()->nucls().size();
-//		pr_.addVertex(v, ss.str(), v->complement(), ss2.str());
-//	}
-//
-//	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
-//		pr_.addEdge(make_pair(v1, v1->complement()),
-//				make_pair(v2, v2->complement()), "");
-//	}
-//
-//};
 }
 #endif /* EDGE_GRAPH_HPP_ */
 

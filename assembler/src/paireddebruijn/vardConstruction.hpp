@@ -10,6 +10,7 @@ namespace vard{
 
 
 Sequence* SubSeq(Sequence Seq, int direction, int CutLen = 1);
+int appendLowerPath(string &edge, string &toAppend);
 
 void clearUseOfEdgePrototypes(edgesMap &edges);
 void createVertices(edgesMap &edges, PairedGraph &graph, bool buildEdges = true);

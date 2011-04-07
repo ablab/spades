@@ -7,14 +7,14 @@ using namespace edge_graph;
 void EmptyGraphTest() {
 	EdgeGraph g(11);
 	ASSERT_EQUAL(11, g.k());
-	ASSERT_EQUAL(0u, g.vertices().size());
+	ASSERT_EQUAL(0u, g.size());
 }
 
 void  OneVertexGraphTest() {
 	EdgeGraph g(11);
 	g.AddVertex();
-	ASSERT_EQUAL(2u, g.vertices().size());
-	Vertex *v = *(g.vertices().begin());
+	ASSERT_EQUAL(2u, g.size());
+	Vertex *v = *(g.begin());
 	Vertex *rcv = g.ComplementVertex(v);
 	ASSERT(v != rcv);
 	ASSERT_EQUAL(v, g.ComplementVertex(rcv));
