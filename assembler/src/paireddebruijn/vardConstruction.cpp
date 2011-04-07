@@ -25,6 +25,18 @@ inline ll subkmer(ll kmer, int direction) {
 	else assert(0);
 }
 
+void clearUseOfEdgePrototypes(edgesMap &edges){
+	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
+		int size = iter->second.size();
+		forn(i, size) {
+			(iter->se)[i]->used = false;
+		}
+		++iter;
+	}
+
+}
+
+
 /*
  * @param direction  LEFT if we look from leftmost end
  *
@@ -32,6 +44,7 @@ inline ll subkmer(ll kmer, int direction) {
  * If there are multiple, return -2,(we hope there will be no such situation:)
  * if no- returns -1
  */
+
 
 int findPossibleVertex(ll kmer, Sequence &down, edgesMap &edges, verticesMap &verts){
 	verticesMap::iterator v = verts.find(kmer);
@@ -79,6 +92,7 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 	while( (findPossibleVertex(subkmer(curKmer, direction), *SubSeq(*curSeq, direction), edges, verts) == -1) ){
 		pair <char, EdgePrototype*> otherdir_res = findUniqueWay(edges, curKmer, curSeq, otherDirection(direction), true);
 		pair <char, EdgePrototype*> dir_res = findUniqueWay(edges, curKmer, curSeq, direction , false);
+		if (curKmer == 646383972192173ll) DEBUG("going thought 646383972192173 dir "<<direction<< "seq "<<curSeq->str());
 
 		if ((otherdir_res.second == NULL) ) {
 			DEBUG("Multiple parallels");
@@ -113,7 +127,7 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
     if (replace) curSeq = SubSeq(*curSeque, otherDirection(direction), ((curSeque->size()-l)/2));
     else curSeq = curSeque;
     while (count == 0){
-    	if (CutShift > 0) DEBUG("CutShift "<<CutShift);
+ //   	if (CutShift > 0) DEBUG("CutShift "<<CutShift);
     	if (curSeq->size() - CutShift< l){
     		DEBUG("Impossible to go");
     		break;
@@ -127,11 +141,15 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
     		ll tmpKmer = pushNucleotide(tmpcurKmer, k - 1, direction, Nucl);
 
     		edgesMap::iterator iter = edges.find(tmpKmer);
-    		TRACE("FROM " << curKmer << " Trying to find " << tmpKmer);
+    		if (tmpKmer == 646383972192173ll)
+    			DEBUG("FROM " << curKmer << " Trying to find " << tmpKmer);
     		if (iter != edges.end()) {
     			for (vector<EdgePrototype *>::iterator it = iter->second.begin(); it != iter->second.end(); ++it) {
     				//TODO: minIntersect?
     				//				if (curSeq->similar(*((*it)->lower), minIntersect, direction)) {
+    				if (tmpKmer == 646383972192173ll)
+    			    			DEBUG("try " << curSeq->str() << " VS " << ((*it)->lower)->str());
+
     				bool intersected = false;
     				if (((*it)->lower)->size()>=l+CutShift)
     				{
@@ -144,6 +162,8 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
     							intersected = true;
     				}
     				if (intersected){
+        				if (tmpKmer == 646383972192173ll)
+        					DEBUG("Possible");
     					count++;
     					TRACE("FOUND " << (*it)->lower->str());
     					if (count > 1) {
@@ -200,7 +220,7 @@ int countWays(vector<EdgePrototype *> &v, Sequence *finishSeq, int direction) {
 
 
 
-void createVertices(edgesMap &edges, PairedGraph &graph) {
+void createVertices(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 	int count = 0;
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
 		int size = iter->second.size();
@@ -238,7 +258,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 						if ((*it)->lower->size()>=startSeq->size())
 						if (startSeq->similar(*((*it)->lower), startSeq->size(), 0)) {
 							findCnt++;
-							assert(findCnt<2);
+//							assert(findCnt<2);
 //							DEBUG("marking edge used");
 							(*it)->used = true;
 						}
@@ -277,10 +297,12 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 
 				}
 
-				Edge* newEdge = new Edge(curEdge, startVertId, finVertId, graph.EdgeId, EdgeCoverage);
-				graph.addEdge(newEdge);
-				DEBUG("adding edge of length"<< curEdge.first.length()+1-k);
-//				if (curEdge.first.length() <1000)
+				if (buildEdges){
+					Edge* newEdge = new Edge(curEdge, startVertId, finVertId, graph.EdgeId, EdgeCoverage);
+					graph.addEdge(newEdge);
+					DEBUG("adding edge "<< newEdge->EdgeId <<"of length "<< curEdge.first.length()+1-k);
+				}
+				//				if (curEdge.first.length() <1000)
 //					TRACE(curEdge.first);
 //				assert(0);
 				//expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, EdgeCoverage, LEFT);
