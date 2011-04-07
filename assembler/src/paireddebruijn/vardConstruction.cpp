@@ -229,10 +229,40 @@ int countWays(vector<EdgePrototype *> &v, Sequence *finishSeq, int direction) {
 	}
 	return count;
 }
+void createVertices(edgesMap &edges, PairedGraph &graph) {
+	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
+		int size = iter->second.size();
+		ll kmer = iter->fi;
+		DEBUG("Starting from k-mer " << kmer);
+		forn(i, size) {
+			int direction = LEFT;
+			EdgePrototype* curEdgePrototype = (iter->se)[i];
+			Sequence * curSeq = curEdgePrototype->lower;
+			ll curKmer = kmer;
+			while (1){
+				Sequence *curSubSeq = SubSeq(*curSeq, direction);
+				int curVertId = findPossibleVertex(subkmer(curKmer, direction), *curSubSeq, edges, graph.verts);
+
+				if (curVertId ==-1){
+					pair <char, EdgePrototype*> otherdir_res = findUniqueWay(edges, curKmer, curSeq, otherDirection(direction), true);
+					pair <char, EdgePrototype*> dir_res = findUniqueWay(edges, curKmer, curSeq, direction , false);
+
+					if ((otherdir_res.second == NULL)||(dir_res.second == NULL)) {
+						storeVertex(graph, subkmer(curKmer, direction), curSubSeq, true);
+					}
+				}
+				if (direction == LEFT) direction = RIGHT;
+				else break;
+			}
+		}
+		++iter;
+	}
+}
 
 
 
-void createVertices(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
+
+void createEdges(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 	int count = 0;
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
 		int size = iter->second.size();

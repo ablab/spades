@@ -17,9 +17,9 @@ void constructGraph(PairedGraph &graph) {
 	if (distance_type == "const")
 		constd::createVertices(edges, graph);
 	else {
-		vard::createVertices(edges, graph, false);
+		vard::createVertices(edges, graph);
 		vard::clearUseOfEdgePrototypes(edges);
-		vard::createVertices(edges, graph, true);
+		vard::createEdges(edges, graph, true);
 
 	}
 		//assert(0);
