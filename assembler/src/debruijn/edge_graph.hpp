@@ -66,6 +66,8 @@
 #include "utils.hpp"
 
 using namespace std;
+using de_bruijn::SmartEdgeIterator;
+using de_bruijn::SmartVertexIterator;
 
 namespace edge_graph {
 
@@ -215,6 +217,22 @@ public:
 
 	VertexIterator end() {
 		return vertices_.end();
+	}
+
+	SmartVertexIterator<EdgeGraph> SmartVertexBegin() {
+		return de_bruijn::SmartVertexIterator<EdgeGraph>(*this);
+	}
+
+	SmartVertexIterator<EdgeGraph> SmartVertexEnd() {
+		return de_bruijn::SmartVertexIterator<EdgeGraph>();
+	}
+
+	SmartEdgeIterator<EdgeGraph> SmartEdgeBegin() {
+		return de_bruijn::SmartEdgeIterator<EdgeGraph>(*this);
+	}
+
+	SmartEdgeIterator<EdgeGraph> SmartEdgeEnd() {
+		return de_bruijn::SmartEdgeIterator<EdgeGraph>();
 	}
 
 	size_t size() {
