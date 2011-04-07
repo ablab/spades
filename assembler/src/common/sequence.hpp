@@ -12,6 +12,7 @@
 #include "sequence_data.hpp"
 #include <vector>
 #include <string>
+#include <string.h>
 using namespace std;
 
 /**
@@ -44,23 +45,21 @@ public:
 	}
 
 	Sequence(char* s) :
-		from_(0), size_(string(s).size()), rtl_(false) {
-		string ss = s;
-		data_ = new SequenceData(ss);
+	        from_(0), size_(strlen(s)), rtl_(false) {
+	        data_ = new SequenceData(s, size_);
 		data_->Grab();
 	}
 
 	Sequence(const char* s) :
-		from_(0), size_(string(s).size()), rtl_(false) {
-		string ss = s;
-		data_ = new SequenceData(ss);
+		from_(0), size_(strlen(s)), rtl_(false) {
+	        data_ = new SequenceData(s, size_);
 		data_->Grab();
 	}
 
 	template<typename S>
 	Sequence(const S &s) :
 		from_(0), size_(s.size()), rtl_(false) {
-		data_ = new SequenceData(s);
+	        data_ = new SequenceData(s, size_);
 		data_->Grab();
 	}
 
@@ -70,6 +69,7 @@ public:
 	// other methods:
 	char operator[](const size_t index) const;
 	bool operator==(const Sequence &that) const;
+	bool operator!=(const Sequence &that) const;
 	bool operator<(const Sequence &that) const;
 	Sequence operator!() const;
 	/**

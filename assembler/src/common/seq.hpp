@@ -122,7 +122,7 @@ public:
 	 */
 	template<typename S>
 	Seq(const S &s, size_t offset = 0) {
-		assert(size_ + offset <= s.size());
+	  //		assert(size_ + offset <= s.size());
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
 			char c = s[offset + i];

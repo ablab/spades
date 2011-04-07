@@ -146,6 +146,17 @@ void generate() {
 
 int main() {
 //	generate();
+//	Sequence* a = new Sequence("TACA");
+//
+//	Sequence* b = new Sequence("ACAT");
+//	cerr << a->similar(*b, 4, LEFT);
+//	cerr << a->similar(*b, 4, RIGHT);
+//
+//	cerr << b->similar(*a, 4, LEFT);
+//	cerr << b->similar(*a, 4, RIGHT);
+//
+//	assert(0);
+
 	init();
 	run();
 	return 0;
