@@ -6,6 +6,7 @@ using namespace std;
 typedef map<ll, pair<vector<ll>, vector<int>>> myMap;
 
 //reverse- take l-mer from first read and k-mer- from second
+pair<int, pair<int,int>> maxCommonSubstring(string &s1,string &s2);
 void readsToPairs(string inputFile, string outputFile, bool reverse = false);
 int pairsToSequences(string inputFile, string lmerFile, string outputFile);
 string decompress(ll a, int l);
