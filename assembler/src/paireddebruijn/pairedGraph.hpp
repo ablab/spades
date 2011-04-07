@@ -38,12 +38,15 @@ public:
 		lower = lower_;
 		VertexId = start_;
 		used = false;
+		looped = 0;
 		coverage = coverage_;
 	}
 	Sequence *lower;
 	int VertexId;
 	bool used;
 	int coverage;
+	char looped;
+
 };
 /*
  * length- including one vertex.

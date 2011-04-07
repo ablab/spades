@@ -102,6 +102,9 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 			break;
 		}
 		goUniqueWay(edges, curKmer, curSeq, dir_res, EdgeCoverage, direction);
+		if (dir_res.second->looped > 2)
+			break;
+		dir_res.second->looped ++;
 		if (direction == RIGHT) {
 			dir_res.second->used = true;
 			string tmp = decompress(curKmer, k);
@@ -174,7 +177,7 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
         				if (tmpKmer == 646383972192173ll)
         					DEBUG("Possible");
     					count++;
-    					TRACE("FOUND " << (*it)->lower->str());
+    			//		TRACE("FOUND " << (*it)->lower->str());
     					if (count > 1) {
     						DEBUG("multiple: ");
     						DEBUG("Nucl "<<(int)Nucl<<" Seq "<< (*it)->lower->str());
