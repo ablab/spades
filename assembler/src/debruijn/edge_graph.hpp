@@ -91,12 +91,13 @@ class Edge {
 		return end_;
 	}
 
-	const Sequence& nucls() const {
-		return nucls_;
-	}
-
 	size_t size() const {
 		return nucls_.size();
+	}
+
+public:
+	const Sequence& nucls() const {
+		return nucls_;
 	}
 
 };
@@ -244,11 +245,11 @@ public:
 		return k_;
 	}
 
-	void add_action_handler(GraphActionHandler<EdgeGraph>* action_handler) {
+	void AddActionHandler(GraphActionHandler<EdgeGraph>* action_handler) {
 		action_handler_list_.push_back(action_handler);
 	}
 
-	bool remove_action_handler(GraphActionHandler<EdgeGraph>* action_handler) {
+	bool RemoveActionHandler(GraphActionHandler<EdgeGraph>* action_handler) {
 		for (vector<GraphActionHandler<EdgeGraph> *>::iterator it =
 				action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
 			if(*it == action_handler) {
