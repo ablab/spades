@@ -490,8 +490,9 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 		int good = 1;
 		for(int j = i + 1; j < tmp_res.size(); j++){
 			pair<int, pair<int, int> > comp_res = maxCommonSubstring(tmp_res[i], tmp_res[j]);
-			if (comp_res.fi > l) {
+			if (comp_res.fi > l - 1) {
 				good = 0;
+				INFO(" FOUND intersection length" << comp_res.fi << " on second position " << comp_res.se.se <<" " << tmp_res[i] <<" "<< tmp_res[j]);
 				tmp_res[j] = tmp_res[j].substr(comp_res.se.se, comp_res.fi);
 				break;
 
@@ -546,6 +547,11 @@ pair<int, pair<int,int>> maxCommonSubstring(string &s1,string &s2) {
 				res.se.fi = i - table[i][j];
 				res.se.se = j - table[i][j];
 			}
+/*	if (res.fi > 25) {
+		cerr << res.fi << s1 << " " << s2;
+		assert(0);
+	}*/
+	return res;
 }
 
 inline bool checkBoundsForUpper(ll upper) {
@@ -760,7 +766,7 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 			}
 		}
 		//sort(lmers, lmers + lsize, ComparePairByFirst);
-		downSeqs clusters =  clusterize(lmers, lsize, inClusterMaxShift);
+		downSeqs clusters =  clusterize0704(lmers, lsize, inClusterMaxShift);
 //		return 0;
 		int clsize = clusters.size();
 		string outstring;
