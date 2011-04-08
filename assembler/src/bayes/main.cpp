@@ -9,11 +9,9 @@
 
 LOGGER("b");
 
-#define SKIP_READS 6
 #define PROCESS_READS 25
-#define READS_BATCH 1000
-
 #define READ_FILENAME "/home/student/nikolenko/python/bayesQuality/s_6_1.fastq.gz"
+#define GENOME_FILENAME "./data/bayes/biggenome.fasta"
 
 using namespace bayes_quality;
 
@@ -48,11 +46,15 @@ int main(int argc, char* argv[]) {
 	INFO("Hello, Bayes!");
 	
 	string readfilename = "";
+	string genomefilename = "";
 	if (argc > 1) readfilename = argv[1];
 	else readfilename = READ_FILENAME;
+	if (argc > 2) genomefilename = argv[2];
+	else genomefilename = GENOME_FILENAME;
+
 
 	//ireadstream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta.gz");
-	ifaststream ifs("./data/bayes/biggenome.fasta");
+	ifaststream ifs(genomefilename.data());
 	string name, genome;
 	ifs >> name >> genome;
 	INFO("!" << name);

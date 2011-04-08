@@ -413,6 +413,13 @@ void BayesQualityGenome::ProcessReads(const char *filename) {
 	Read r;
 	int batch_no = 1;
 	size_t readno = 0;
+	// skip several reads -- needed to continue the runs
+	while (!ifs.eof()) {
+		if (readno > SKIP_READS) break;
+		ifs >> r;
+		++readno;
+	}
+	
 	while (!ifs.eof()) {
 		// fill up an array of reads
 		vector<Read> v;
