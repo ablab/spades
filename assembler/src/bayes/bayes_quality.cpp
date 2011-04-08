@@ -428,7 +428,7 @@ void BayesQualityGenome::ProcessReads(const char *filename) {
 		
 		vector<MatchResults> mrv(v.size());
 		
-		omp_set_num_threads(5);
+		omp_set_num_threads(THREADS_NUM);
 		#pragma omp parallel for shared(os, readno) private(r)
 		for (int i=0; i<v.size(); ++i) {
 			r = v[i];

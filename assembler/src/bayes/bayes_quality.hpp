@@ -28,6 +28,9 @@ typedef pair<Sequence, QVector> QRead;
 // size of read batch that we read from file
 #define READ_BATCH 100
 
+// number of threads
+#define THREADS_NUM 5
+
 // write a file with statistics
 #define WRITE_STATSFILE
 #define STATSFILENAME "readstats.txt"
