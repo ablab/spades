@@ -13,116 +13,115 @@
 namespace edge_graph {
 
 using de_bruijn::SimpleIndex;
+using de_bruijn::GraphActionHandler;
 using de_bruijn::EdgeHashRenewer;
 
 template<size_t kmer_size_>
 class GraphConstructor {
 protected:
 	typedef Seq<kmer_size_> Kmer;
-	EdgeGraph *g_;
-	SimpleIndex<kmer_size_, Edge*> *h_;
+	typedef Seq<kmer_size_+1> KPlusOneMer;
+	typedef SimpleIndex<kmer_size_ + 1, Edge*> Index;
 
-	pair<Vertex*, int> GetPosition(Kmer k) {
-		assert(h_->contains(k));
+	EdgeGraph *g_;
+	Index *h_;
+	GraphActionHandler<EdgeGraph> *renewer_;
+
+	pair<Vertex*, int> GetPosition(KPlusOneMer k) {
 		return h_->get(k);
 	}
 
-	bool Contains(Kmer k) {
+	bool Contains(KPlusOneMer k) {
 		return h_->contains(k);
 	}
 
-//	pair<Vertex*, int> GetPosMaybeMissing(Kmer k) {
-//		if (!h_->contains(k)) {
-//			g_->AddVertex(Sequence(k));
-//		}
-//		return h_->get(k);
-//	}
-
 	GraphConstructor() {
-		h_ = new SimpleIndex<kmer_size_, Edge*> ();
-		g_ = new EdgeGraph(kmer_size_, new EdgeHashRenewer<kmer_size_, EdgeGraph> (h_));
-		//		DEBUG("HERE0");
-		//		GetPosMaybeMissing(Seq<5>("AAAAA"));
+		h_ = new Index ();
+		g_ = new EdgeGraph(kmer_size_);
+		renewer_ = new EdgeHashRenewer<kmer_size_ + 1, EdgeGraph>(*g_, h_);
+		g_->add_action_handler(renewer_);
 	}
 
 public:
-	virtual void ConstructGraph(EdgeGraph* &g, SimpleIndex<kmer_size_, Edge*>* &h) {
+	virtual void ConstructGraph(EdgeGraph* &g, Index* &h) {
+		g_->remove_action_handler(renewer_);
 		g = g_;
 		h = h_;
 	}
+
+	virtual ~GraphConstructor() {
+	}
 };
 
-//template<size_t kmer_size_>
-//class CondenseConstructor: public GraphConstructor<kmer_size_> {
-//	typedef Seq<kmer_size_> Kmer;
-//	typedef GraphConstructor<kmer_size_> super;
-//	typedef DeBruijn<kmer_size_> debruijn;
-//
-//	DeBruijn<kmer_size_>& origin_;
-//
+template<size_t kmer_size_>
+class CondenseConstructor: public GraphConstructor<kmer_size_> {
+	typedef GraphConstructor<kmer_size_> super;
+	typedef typename super::Index Index;
+	typedef typename super::Kmer Kmer;
+	typedef typename super::KPlusOneMer KPlusOneMer;
+	typedef DeBruijn<kmer_size_> debruijn;
+
+	DeBruijn<kmer_size_>& origin_;
+
 //	bool StepLeftIfPossible(Kmer &kmer) {
-//		if (origin_.PrevCount(kmer) == 1) {
+//		if (origin_.PrevCount(kmer) == 1 && origin_.NextCount(kmer) == 1) {
 //			Kmer prev_kmer = *(origin_.begin_prev(kmer));
 //			DEBUG("Prev kmer " << prev_kmer);
 //			DEBUG("Next Count of prev " << origin_.NextCount(prev_kmer));
 //			assert(origin_.NextCount(prev_kmer) > 0);
-//			if (origin_.NextCount(prev_kmer) == 1 && kmer != !prev_kmer) {
+//			if (kmer != !prev_kmer) {
 //				kmer = prev_kmer;
 //				return true;
 //			}
 //		}
 //		return false;
 //	}
-//
-//	bool StepRightIfPossible(Kmer &kmer) {
-//		if (origin_.NextCount(kmer) == 1) {
-//			Kmer next_kmer = *(origin_.begin_next(kmer));
-//			DEBUG("Next kmer " << next_kmer);
-//			DEBUG("Prev Count of next " << origin_.PrevCount(next_kmer));
-//			assert(origin_.PrevCount(next_kmer) > 0);
-//			if (origin_.PrevCount(next_kmer) == 1 && kmer != !next_kmer) {
-//				kmer = next_kmer;
-//				return true;
-//			}
-//		}
-//		return false;
-//	}
-//
-//	Kmer GoLeft(Kmer kmer) {
-//		DEBUG("Starting process for " << kmer);
-//		Kmer initial_kmer = kmer;
-//
-//		DEBUG("Prev Count " << origin_.PrevCount(kmer));
-//		//go left while can
-//		while (StepLeftIfPossible(kmer) && kmer != initial_kmer) {
-//			//todo comment
-//		}
-//		DEBUG("Stopped going left at " << kmer);
-//		return kmer;
-//	}
-//
-//	//go right, appending sequence
-//	Sequence ConstructSeqGoingRight(Kmer kmer) {
-//		SequenceBuilder s;
-//		s.append(kmer);
-//		Kmer initial_kmer = kmer;
-//
-//		DEBUG("Next Count " << origin_.NextCount(kmer));
-//		while (StepRightIfPossible(kmer) && kmer != initial_kmer) {
-//			//todo comment
-//			s.append(kmer[kmer_size_ - 1]);
-//		}
-//		DEBUG("Stopped going right at " << kmer);
-//		return s.BuildSequence();
-//	}
-//
-//	Sequence ConstructSequenceWithKmer(Kmer kmer) {
-//		return ConstructSeqGoingRight(GoLeft(kmer));
-//	}
-//
+///////////////
+	bool StepRightIfPossible(KPlusOneMer &edge) {
+		//todo use Seq.end
+		Kmer end(edge, 1);
+		DEBUG("Next Count " << origin_.OutgoingEdgeCount(end));
+		if (origin_.PrevCount(end) == 1 && origin_.NextCount(end) == 1) {
+			KPlusOneMer next_edge = *(origin_.OutgoingEdges(end));
+			if (edge != !next_edge) {
+				edge = next_edge;
+				return true;
+			}
+		}
+		DEBUG("Stopped going right at " << end);
+		return false;
+	}
+
+	KPlusOneMer GoRight(KPlusOneMer edge) {
+		KPlusOneMer initial = edge;
+		while (StepRightIfPossible(edge) && edge != initial) {
+		}
+		return edge;
+	}
+
+	KPlusOneMer GoLeft(KPlusOneMer edge) {
+		return !GoRight(edge);
+	}
+
+	Sequence ConstructSeqGoingRight(KPlusOneMer edge) {
+		SequenceBuilder s;
+		s.append(edge);
+		KPlusOneMer initial = edge;
+
+		while (StepRightIfPossible(edge) && edge != initial) {
+			//todo comment
+			s.append(edge[kmer_size_]);
+		}
+		return s.BuildSequence();
+	}
+
+	Sequence ConstructSequenceWithEdge(KPlusOneMer edge) {
+		return ConstructSeqGoingRight(GoLeft(edge));
+	}
+
 //	void MakeLinks() {
-//		for (set<Vertex*>::iterator it = super::g_->vertices().begin(), end =
-//				super::g_->vertices().end(); it != end; it++) {
+//		for (EdgeGraph::VertexIterator it = super::g_->begin(), end =
+//				super::g_->end(); it != end; ++it) {
 //			Vertex* v = *it;
 //			Kmer kmer = v->nucls().end<kmer_size_> ();
 //
@@ -136,27 +135,25 @@ public:
 //			//todo now linking twice!!!
 //		}
 //	}
-//
-//public:
-//	CondenseConstructor(DeBruijn<kmer_size_>& origin) :
-//		origin_(origin) {
-//
-//	}
-//	virtual void ConstructGraph(EdgeGraph* &g, SimpleIndex<kmer_size_, Edge*>* &h) {
-//
-//		for (typename debruijn::kmer_iterator it = origin_.kmer_begin(), end =
-//				origin_.kmer_end(); it != end; it++) {
-//			Kmer kmer = *it;
-//			if (!super::Contains(kmer)) {
-//				super::g_->AddVertex(ConstructSequenceWithKmer(kmer));
-//			}
-//		}
-//
+
+public:
+	CondenseConstructor(DeBruijn<kmer_size_>& origin) :
+		origin_(origin) {
+	}
+
+	virtual void ConstructGraph(EdgeGraph* &g, Index* &h) {
+
+		for (typename debruijn::kmer_iterator it = origin_.begin(), end =
+				origin_.end(); it != end; it++) {
+			Kmer kmer = *it;
+
+		}
+
 //		MakeLinks();
-//
-//		super::ConstructGraph(g, h);
-//	}
-//};
+
+		super::ConstructGraph(g, h);
+	}
+};
 
 }
 #endif /* EDGE_GRAPH_CONSTRUCTOR_HPP_ */

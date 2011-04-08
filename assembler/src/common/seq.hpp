@@ -199,6 +199,28 @@ public:
 		return res;
 	}
 
+	//todo optimize!!!
+	Seq<size_ + 1, T> pushBack(char c) const {
+		if (is_nucl(c)) {
+			c = dignucl(c);
+		}
+		assert(is_dignucl(c));
+		//todo optimize!!!
+
+		return Seq<size_ + 1, T>(str() + nucl(c));
+	}
+
+	//todo optimize!!!
+	Seq<size_ + 1, T> pushFront(char c) const {
+		if (is_nucl(c)) {
+			c = dignucl(c);
+		}
+		assert(is_dignucl(c));
+		//todo optimize!!!
+
+		return Seq<size_ + 1, T>(nucl(c) + str());
+	}
+
 	/**
 	 * Shift right
 	 *
@@ -252,12 +274,14 @@ public:
 		return size_;
 	}
 
+	//todo optimize
 	template<size_t size2_>
 	Seq<size2_> start() const {
 		assert(size2_ <= size_);
 		return Seq<size2_> (*this);
 	}
 
+	//todo optimize
 	template<size_t size2_>
 	Seq<size2_> end() const {
 		assert(size2_ <= size_);

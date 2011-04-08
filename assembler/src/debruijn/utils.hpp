@@ -302,7 +302,6 @@ public:
 	}
 };
 
-
 }
 
 #endif /* UTILS_HPP_ */

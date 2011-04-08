@@ -359,6 +359,14 @@ public:
 		return v->complement();
 	}
 
+	Vertex *Complement(const Vertex* v) const {
+		return ComplementVertex(v);
+	}
+
+	Edge *Complement(const Edge* e) const {
+		return ComplementEdge(e);
+	}
+
 	const Edge& GetData(Edge* e) const {
 		return *e;
 	}
