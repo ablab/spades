@@ -158,5 +158,20 @@ paired reads is helpful when traversing an A Bruijn graph.
   \item 
 \end{description}
 
+\section{Plans for April 11--15}
+
+Iterative procedure for selecting the set of earmarked k-mers is the following:
+
+\begin{enumerate}
+\item From each read, select $t$ minimum hash values of its k-mers, add them to the global set of earmarked hash values.
+\item (if $t=1$) For each read that has only one k-mer with earmarked hash value, earmark one more k-mer from this read.
+\item In each read, select k-mers that have their hash values earmarked.
+For correcponding vertices in the resulting A Bruijn graph, add all pairwise edges, storing their lengths.
+For each k-mer, mark whether we've seen any k-mer to the left from it, and to the right.
+\item For each $k$-mer that has no left or right neighbours, find a neighbour on the corresponding side
+that has the smallest hash value and earmark it.
+\item Repeat the previous step to minimize the number of neighbourless k-mers.
+\end{enumerate}
+
 
 \end{document}
