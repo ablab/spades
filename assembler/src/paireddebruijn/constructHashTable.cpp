@@ -352,7 +352,9 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 
 	vector<int> tmp_cov;
 	assert (max_shift <= 20);
+
 //	cerr << lset.size()<<endl;
+	cerr << "Start clustering"<<endl;
 	int right[MAXLMERSIZE];
 	int left[MAXLMERSIZE];
 	int used[MAXLMERSIZE];
@@ -427,6 +429,7 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 			used[i] = color;
 			//cerr <<"color = :"<< color << endl;
 			while ((left[ii] >= 0) && (left[ii] != i)){
+				if (used[left[ii]] == color) break;
 				seqlength += shift_left[ii];
 				leftway.pb(ii);
 				ii = left[ii];
@@ -437,6 +440,7 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 				DEBUG("righrt");
 			ii = i;
 			while ((right[ii] >= 0) && (right[ii] != i)){
+				if (used[right[ii]] == color) break;
 				seqlength += shift_right[ii];
 				ii = right[ii];
 				used[ii] = color;
@@ -485,6 +489,8 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 			lmers[i].pb(extractMer(t_seq,l, j ));
 		sort(lmers[i].begin(), lmers[i].end());
 	}*/
+	cerr << "Start compressing"<<endl;
+
 	forn(i,  tmp_res.size()) {
 
 		int good = 1;
@@ -504,6 +510,8 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 
 		}
 	}
+	cerr << "Finish clustering"<<endl;
+
 	/*
 	{
 		forn(i, size) {
