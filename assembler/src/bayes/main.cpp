@@ -1,3 +1,4 @@
+#include <omp.h>
 #include <iostream>
 #include <numeric>
 #include "bayes_quality.hpp"
@@ -41,6 +42,9 @@ void processQualityReads(const char *filename, BayesQualityGenome & bqg) {
 }
 
 int main(int argc, char* argv[]) {
+
+	#pragma omp parallel
+	INFO("Hello from thread " << omp_get_thread_num() << " out of " << omp_get_num_threads());
 	INFO("Hello, Bayes!");
 	
 	string readfilename = "";
@@ -61,3 +65,25 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 }
+
+/*	INFO("Hello, MPI!");
+	MPI::Init(argc, argv);
+	MPI::COMM_WORLD.Set_errhandler(MPI::ERRORS_THROW_EXCEPTIONS);
+	try {
+		int rank = MPI::COMM_WORLD.Get_rank();
+		std::cout << "I am " << rank << std::endl;
+		if (rank == 0) {
+			MPI::COMM_WORLD.Recv (&rank, 1, MPI_INT, 1, 1);
+			std::cout << "Received: " << rank << "\n";
+		} else {
+			MPI::COMM_WORLD.Send (&rank, 1, MPI_INT, 0, 1);
+			std::cout << "Sent: " << rank << "\n";
+		}
+	}
+	catch (MPI::Exception e) {
+		std::cout << "MPI ERROR: " << e.Get_error_code() \
+				  << " - " << e.Get_error_string() \
+				  << std::endl;
+	}
+*/
+
