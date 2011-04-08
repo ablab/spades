@@ -16,6 +16,13 @@ namespace paired_assembler {
 
 class Vertex;
 
+struct constructingEdge {
+	string upper;
+	string lower;
+	int coverage;
+	short deltaShift;
+};
+
 class VertexPrototype {
 public:
 	ll upper;
@@ -135,15 +142,15 @@ public:
 		coverage = cov;
 		deltaShift = dShift;
 	}
-	Edge(protoEdgeType protoEdge, int from, int to, int id,
-				int cov = 1, int dShift = 0) {
-		upper = new Sequence(protoEdge.first);
-		lower = new Sequence(protoEdge.second);
+	Edge(constructingEdge protoEdge, int from, int to, int id,
+				 int dShift = 0) {
+		upper = new Sequence(protoEdge.upper);
+		lower = new Sequence(protoEdge.lower);
 		FromVertex = from;
 		ToVertex = to;
-		length = protoEdge.first.length() - (k - 1);
+		length = protoEdge.upper.length() - (k - 1);
 		EdgeId = id;
-		coverage = cov;
+		coverage = protoEdge.coverage;
 		if (length > insertLength + k) {
 			//TODO: recompute dShift
 
