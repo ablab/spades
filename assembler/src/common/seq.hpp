@@ -274,18 +274,16 @@ public:
 		return size_;
 	}
 
-	//todo optimize
-	template<size_t size2_>
-	Seq<size2_> start() const {
+	template<size_t size2_, typename T2 = T>
+	Seq<size2_,T2> start() const {
 		assert(size2_ <= size_);
-		return Seq<size2_> (*this);
+		return Seq<size2_,T2> (*this);
 	}
 
-	//todo optimize
-	template<size_t size2_>
-	Seq<size2_> end() const {
+	template<size_t size2_, typename T2 = T>
+	Seq<size2_,T2> end() const {
 		assert(size2_ <= size_);
-		return Seq<size2_> (*this, size_ - size2_);
+		return Seq<size2_,T2> (*this, size_ - size2_);
 	}
 
 	//	template<size_t HASH_SEED>

@@ -11,47 +11,14 @@
 #include <set>
 #include "edge_graph.hpp"
 #include "set"
+#include "utils.hpp"
 
 #define DEFAULT_COVERAGE_BOUND 5
 #define DEFAULT_RELATIVE_COVERAGE_BOUND 2.
 
 namespace edge_graph {
 
-template<typename Key, typename Comparator>
-class PriorityQueue {
-private:
-	set<Key, Comparator> storage_;
-public:
-	/*
-	 * Be careful! This constructor requires Comparator to have default constructor even if you call it with
-	 * specified comparator. In this case just create default constructor with assert(false) inside it.
-	 */
-	PriorityQueue(const Comparator& comparator = Comparator()) :
-		storage_(comparator) {
-	}
-
-	Key poll() {
-		Key key = *(storage_.begin());
-		storage_.erase(storage_.begin());
-		return key;
-	}
-
-	Key peek() {
-		return *(storage_.begin());
-	}
-
-	void offer(const Key key) {
-		storage_.insert(key);
-	}
-
-	bool remove(const Key key) {
-		return storage_.erase(key) > 0;
-	}
-
-	bool empty() {
-		return storage_.empty();
-	}
-};
+using de_bruijn::PriorityQueue;
 
 struct TipComparator {
 private:
@@ -121,22 +88,22 @@ private:
 		return graph_.coverage(tip) <= relativeCoverageBound_ * maxCoverage;
 	}
 
-	//	void compressSplitVertex(Vertex *splitVertex) {
-	//		if (graph_.CanCompressVertex(splitVertex)) {
-	//			Edge *edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
-	//			Edge *edge2 = graph_.GetUniqueOutgoingEdge(
-	//					graph_.ComplementVertex(splitVertex));
-	//			if (isTip(edge1) || isTip(edge2)) {
-	//				graph_.CompressVertex(splitVertex);
-	//			}
-	//		}
-	//	}
-
 	void compressSplitVertex(Vertex *splitVertex) {
 		if (graph_.CanCompressVertex(splitVertex)) {
-			graph_.CompressVertex(splitVertex);
+			Edge *edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
+			Edge *edge2 = graph_.GetUniqueOutgoingEdge(
+					graph_.ComplementVertex(splitVertex));
+			if (isTip(edge1) || isTip(edge2)) {
+				graph_.CompressVertex(splitVertex);
+			}
 		}
 	}
+
+	//	void compressSplitVertex(Vertex *splitVertex) {
+	//		if (graph_.CanCompressVertex(splitVertex)) {
+	//			graph_.CompressVertex(splitVertex);
+	//		}
+	//	}
 
 	void removeTip(Edge *tip) {
 		Vertex *splitVertex = graph_.edgeStart(tip);
@@ -173,7 +140,7 @@ public:
 	void ClipTips() {
 		FindTips();
 		RemoveTips();
-		//		graph_.CompressAllVertices();
+		graph_.CompressAllVertices();
 	}
 
 };
