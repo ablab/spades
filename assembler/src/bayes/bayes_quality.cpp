@@ -251,6 +251,7 @@ MatchResults BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QV
 	for (size_t i=0; i < INS+DEL+1; ++i) {
 		qv[i]->clear();  delete qv[i];
 	}
+	qv.clear();
 	mr_.prob_ = res;
 	return mr_;
 }
@@ -430,13 +431,12 @@ void BayesQualityGenome::ProcessReads(const char *filename) {
 			if (ifs.eof()) break;
 		}
 		INFO("Batch " << batch_no << " of size " << v.size() << " is ready.");
-		if (batch_no > 1) break;
 		++batch_no;
 		
 		vector<MatchResults> mrv(v.size());
 		
 		omp_set_num_threads(THREADS_NUM);
-		#pragma omp parallel for shared(os, readno) private(r)
+		#pragma omp parallel for shared(os, readno, mrv) private(r)
 		for (int i=0; i<v.size(); ++i) {
 			r = v[i];
 			if (r.size() < MIN_READ_SIZE) {
