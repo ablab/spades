@@ -25,6 +25,9 @@ typedef vector<float> QVector;
 typedef pair<Sequence, QVector> QRead;
 
 
+// size of read batch that we read from file
+#define READ_BATCH 100
+
 // write a file with statistics
 #define WRITE_STATSFILE
 #define STATSFILENAME "readstats.txt"
@@ -86,6 +89,7 @@ typedef struct {
 	int bestq_;
 	int totalq_;
 	vector<int> match_;
+	double prob_;
 } MatchResults;
 
 /**
@@ -100,7 +104,6 @@ class BayesQualityGenome {
 private:
 	Sequence genome_;
 	size_t gensize_;
-	MatchResults mr_;
 
 	// for run statistics
 	size_t totalPos_, totalGood_;
@@ -112,8 +115,8 @@ private:
 	void fillAvailableReads(size_t vecSize, const string & seq);
 	void PreprocessOneMapOneReadWithShift(const PSeq &ps, PreprocReadsMap & rm, int mapno, PreprocMap & map, size_t readno, size_t reads_size, size_t shift);
 
-	vector<QVector*> qv;
-	size_t qvsize_;
+	//vector<QVector*> qv;
+	//size_t qvsize_;
 
 	// these functions add up two/three logarithms; currently they do it in a very approximate fashion (by taking the min)
 	int AddTwoQualityValues(int curq, int prevq);
@@ -128,23 +131,27 @@ private:
 	 * process one read, store all results in the corresponding fields, return total likelihood
 	 * @param read_no number of this read in the preprocessed maps; if there was no preprocessing, put -1 here
 	 */
-	double ProcessOneReadBQ(const Sequence &, const QVector &, size_t readno = -1);
+	MatchResults ProcessOneReadBQ(const Sequence &, const QVector &, size_t readno = -1);
 	
 	// auxiliary function: check whether this read can be applied to this genome part
 	bool isAvailable(size_t readno, size_t j, const PSeq & curpseq);
 
 public:
-	BayesQualityGenome(const char *genome) : genome_(genome), totalPos_(0), totalGood_(0), qv(INS+DEL+1) {
+	/*BayesQualityGenome(const char *genome) : genome_(genome), totalPos_(0), totalGood_(0), qv(INS+DEL+1) {
 		for (size_t i=0; i < INS+DEL+1; ++i) {
 			qv[i] = new QVector(genome_.size());
 		}
 		gensize_ = genome_.size();
+	}*/
+
+	BayesQualityGenome(const char *genome) : genome_(genome), totalPos_(0), totalGood_(0) {
+		gensize_ = genome_.size();
 	}
 	
 	~BayesQualityGenome() {
-		for (size_t i=0; i < INS+DEL+1; ++i) {
+		/*for (size_t i=0; i < INS+DEL+1; ++i) {
 			qv[i]->clear();  delete qv[i];
-		}
+		}*/
 	}
 
 	/**
@@ -157,9 +164,9 @@ public:
 	/**
 	 * computes the likelihood of a single read after preprocessing it in a set of reads
 	 * returns the minimum likelihood of a read and its complement
-	 * @return total likelihood
+	 * @return complete match results
 	 */
-	double ReadBQPreprocessed(const Read &, size_t readno, size_t readssize);
+	MatchResults ReadBQPreprocessed(const Read &, size_t readno, size_t readssize);
 
 	/**
 	 * preprocess a vector of reads, i.e., be prepared to compute their masks
@@ -176,50 +183,51 @@ public:
 	 */	
 	void ProcessReads(const char * filename);
 
+
 	/**
 	 * returns the last set of matches
 	 */
-	const vector<int> & LastMatch() const { return mr_.match_; }
+//	const vector<int> & LastMatch() const { return mr_.match_; }
 	
 	/**
 	 * returns the best index of the last match
 	 */
-	size_t LastMatchIndex() const { return mr_.index_; }
+//	size_t LastMatchIndex() const { return mr_.index_; }
 
 	/**
 	 * returns the number of inserts in the best last match
 	 */
-	int LastMatchInserts() const { return mr_.inserts_; }
+//	int LastMatchInserts() const { return mr_.inserts_; }
 
 	/**
 	 * returns the number of inserts in the best last match
 	 */
-	int LastMatchDeletes() const { return mr_.deletes_; }
+//	int LastMatchDeletes() const { return mr_.deletes_; }
 
 	/**
 	 * returns the total quality score in the the best last match
 	 */
-	int LastMatchQ() const { return mr_.bestq_; }
+//	int LastMatchQ() const { return mr_.bestq_; }
 
 	/**
 	 * returns the total quality score of the last read
 	 */
-	int LastTotalQ() const { return mr_.totalq_; }
+//	int LastTotalQ() const { return mr_.totalq_; }
 	
 	/**
 	 * returns the last match genome string
 	 */
-	const string & LastMatchString() const { return mr_.matchstr_; }
+//	const string & LastMatchString() const { return mr_.matchstr_; }
 	
 	/**
 	 * returns the last match read string
 	 */
-	const string & LastMatchReadString() const { return mr_.matchreadstr_; }
+//	const string & LastMatchReadString() const { return mr_.matchreadstr_; }
 
 	/**
 	 * returns the last match prettyfying string
 	 */
-	const string & LastMatchPrettyString() const { return mr_.matchprettystr_; }
+//	const string & LastMatchPrettyString() const { return mr_.matchprettystr_; }
 
 
 

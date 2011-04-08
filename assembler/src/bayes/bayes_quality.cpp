@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iomanip>
 #include <math.h>
+#include <omp.h>
 #include "quality.hpp"
 #include "read.hpp"
 #include "ireadstream.hpp"
@@ -43,15 +44,18 @@ int BayesQualityGenome::simpleMatch(const LASeq & seq, const LASeq & gen) {
 	return res;
 }
 
-double BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QVector & qvec, size_t readno) {
+MatchResults BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QVector & qvec, size_t readno) {
+	MatchResults mr_;
 	// compute total quality of the read
 	mr_.totalq_ = accumulate(qvec.begin(), qvec.end(), 0);
 	
 	size_t seqsize = seq.size();
 	
 	// initialize temporary vectors of possible start positions
-	qvsize_ = gensize_ - seqsize + 1 + INS;
+	vector<QVector*> qv(INS+DEL+1);
+	size_t qvsize_ = gensize_ - seqsize + 1 + INS;
 	for (size_t i=0; i < INS+DEL+1; ++i) {
+		qv[i] = new QVector(qvsize_);
 		fill(qv[i]->begin(), qv[i]->end(), 0);
 	}
 	
@@ -244,35 +248,34 @@ double BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QVector 
 	for (size_t i = 0; i < seqsize; ++i) {
 		m[i]->clear(); delete m[i];
 	}
-	// return the resulting likelihood
-	return res;
+	for (size_t i=0; i < INS+DEL+1; ++i) {
+		qv[i]->clear();  delete qv[i];
+	}
+	mr_.prob_ = res;
+	return mr_;
 }
 
-double BayesQualityGenome::ReadBQPreprocessed(const Read & r, size_t readno, size_t readssize) {
+MatchResults BayesQualityGenome::ReadBQPreprocessed(const Read & r, size_t readno, size_t readssize) {
 	QVector q(r.getQualityString().size());
 	copy(r.getQualityString().begin(), r.getQualityString().end(), q.begin());
 	Sequence *s = r.createSequence();
-	double res1 = ProcessOneReadBQ(*s, q, readno);
+	MatchResults mr1 = ProcessOneReadBQ(*s, q, readno);
 
 	INFO(*s);
-	INFO("Read as it is gives result " << res1);
-	if (mr_.bestq_ <= GOOD_ENOUGH_Q) {
+	INFO("Read as it is gives result " << mr1.prob_);
+	if (mr1.bestq_ <= GOOD_ENOUGH_Q) {
 		delete s;
-		return res1;
+		return mr1;
 	}
 	
-	MatchResults tmpmr = mr_;
 	INFO(!(*s));
-	double res2 = ProcessOneReadBQ(!(*s), q, readno + readssize);
-	INFO("Complementary read gives result " << res2);
+	MatchResults mr2 = ProcessOneReadBQ(!(*s), q, readno + readssize);
+	INFO("Complementary read gives result " << mr2.prob_);
 	delete s;
-	if (res2 > res1) {
-		return res2;
+	if (mr2.prob_ > mr1.prob_) {
+		return mr2;
 	}
-	else {
-		mr_ = tmpmr;
-		return res1;
-	}
+	else return mr1;
 }
 
 void BayesQualityGenome::PreprocessOneMapOneReadWithShift(const PSeq &ps, PreprocReadsMap & rm, int mapno, PreprocMap & map, size_t readno, size_t reads_size, size_t shift) {	
@@ -354,7 +357,22 @@ void BayesQualityGenome::ProcessReads(const vector<Read> &reads) {
 	#endif
 
 	for (size_t i=0; i<reads.size(); ++i) {
-		double res = ReadBQPreprocessed(reads[i], i, reads.size());
+	
+		MatchResults mr = ReadBQPreprocessed(reads[i], i, BIGREADNO);
+		# pragma omp critical
+		{
+			INFO(mr.matchreadstr_);
+			INFO(mr.matchprettystr_);
+			INFO(mr.matchstr_);
+			ostringstream m; for (size_t j=0; j< mr.match_.size(); ++j) m << mr.match_[j]; INFO(m.str());
+			INFO(mr.prob_ << ", best: " << mr.bestq_ << "/" << mr.totalq_ << " at " << mr.index_ << " with " << mr.inserts_ << " inserts and " << mr.deletes_ << " deletes");
+			#ifdef WRITE_STATSFILE
+			size_t replacements = 0; for (size_t j=0; j< mr.match_.size(); ++j) if (mr.match_[j] == 0) ++replacements;
+			os << setw(7) << i << ":" << setw(15) << mr.prob_ << "\t" << mr.index_ << "\t" << mr.bestq_ << "\t" << replacements << "\t" << mr.inserts_ << "\t" << mr.deletes_ << "\t" << m.str().data() << endl;
+			#endif
+		}
+
+		/*double res = ReadBQPreprocessed(reads[i], i, reads.size());
 
 		INFO(LastMatchReadString());
 		INFO(LastMatchPrettyString());
@@ -364,7 +382,7 @@ void BayesQualityGenome::ProcessReads(const vector<Read> &reads) {
 		#ifdef WRITE_STATSFILE
 		size_t replacements = 0; for (size_t i=0; i< LastMatch().size(); ++i) if (LastMatch()[i] == 0) ++replacements;
 		os << setw(15) << res << "\t" << LastMatchIndex() << "\t" << LastMatchQ() << "\t" << replacements << "\t" << LastMatchInserts() << "\t" << LastMatchDeletes() << "\t" << m.str().data() << endl;
-		#endif
+		#endif*/
 	}
 	
 	#ifdef WRITE_STATSFILE
@@ -393,32 +411,57 @@ void BayesQualityGenome::ProcessReads(const char *filename) {
 	ireadstream ifs(filename);
 	assert(ifs.is_open());
 	Read r;
+	int batch_no = 1;
 	size_t readno = 0;
 	while (!ifs.eof()) {
-		ifs >> r;
-		r.trimNs();
-		if (r.size() < MIN_READ_SIZE) {
-			#ifdef WRITE_STATSFILE
-			os << setw(7) << readno << " skipped: only " << setw(2) << r.size() << " known letters at the beginning" << endl;
-			#endif
-			++readno;
-			continue;
+		// fill up an array of reads
+		vector<Read> v;
+		for (size_t i=0; i<READ_BATCH; ++i) {
+			ifs >> r;
+			r.trimNs();
+			v.push_back(r);
+			if (ifs.eof()) break;
+		}
+		INFO("Batch " << batch_no << " of size " << v.size() << " is ready.");
+		if (batch_no > 1) break;
+		++batch_no;
+		
+		vector<MatchResults> mrv(v.size());
+		
+		omp_set_num_threads(5);
+		#pragma omp parallel for shared(os, readno) private(r)
+		for (int i=0; i<v.size(); ++i) {
+			r = v[i];
+			if (r.size() < MIN_READ_SIZE) {
+				mrv[i].prob_ = -1;
+				continue;
+			}
+		
+			INFO("Hello from thread " << omp_get_thread_num() << " out of " << omp_get_num_threads() << " read no " << readno+i);
+			MatchResults mr = ReadBQPreprocessed(r, readno+i, BIGREADNO);
+			mrv[i] = mr;
+
+			INFO(mr.matchreadstr_);
+			INFO(mr.matchprettystr_);
+			INFO(mr.matchstr_);
+			ostringstream m; for (size_t j=0; j< mr.match_.size(); ++j) m << mr.match_[j]; INFO(m.str());
+			INFO(mr.prob_ << ", best: " << mr.bestq_ << "/" << mr.totalq_ << " at " << mr.index_ << " with " << mr.inserts_ << " inserts and " << mr.deletes_ << " deletes");
 		}
 		
-		double res = ReadBQPreprocessed(r, readno, BIGREADNO);
-
-		INFO(LastMatchReadString());
-		INFO(LastMatchPrettyString());
-		INFO(LastMatchString());
-		ostringstream m; for (size_t i=0; i< LastMatch().size(); ++i) m << LastMatch()[i]; INFO(m.str());
-		INFO(res << ", best: " << LastMatchQ() << "/" << LastTotalQ() << " at " << LastMatchIndex() << " with " << LastMatchInserts() << " inserts and " << LastMatchDeletes() << " deletes");
 		#ifdef WRITE_STATSFILE
-		size_t replacements = 0; for (size_t i=0; i< LastMatch().size(); ++i) if (LastMatch()[i] == 0) ++replacements;
-		os << setw(7) << readno << ":" << setw(15) << res << "\t" << LastMatchIndex() << "\t" << LastMatchQ() << "\t" << replacements << "\t" << LastMatchInserts() << "\t" << LastMatchDeletes() << "\t" << m.str().data() << endl;
+		for (int i=0; i<v.size(); ++i) {
+			if (mrv[i].prob_ < 0) {
+				os << setw(7) << readno+i << " skipped: only " << setw(2) << r.size() << " known letters at the beginning" << endl;
+				continue;
+			}
+			ostringstream m; for (size_t j=0; j< mrv[i].match_.size(); ++j) m << mrv[i].match_[j];
+			size_t replacements = 0; for (size_t j=0; j< mrv[i].match_.size(); ++j) if (mrv[i].match_[i] == 0) ++replacements;
+			os << setw(7) << readno+i << ":" << setw(15) << mrv[i].prob_ << "\t" << mrv[i].index_ << "\t" << mrv[i].bestq_ << "\t" << replacements << "\t" << mrv[i].inserts_ << "\t" << mrv[i].deletes_ << "\t" << m.str().data() << endl;	
+		}
 		#endif
-		++readno;
+		
+		readno += v.size();
 	}
-	
 	#ifdef WRITE_STATSFILE
 	os.close();
 	#endif
