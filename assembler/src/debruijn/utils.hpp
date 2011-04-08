@@ -92,6 +92,9 @@ public:
 	virtual void HandleDelete(EdgeId e) {
 	}
 
+	virtual ~GraphActionHandler() {
+
+	}
 };
 
 template<size_t kmer_size_, typename Graph, typename ElementId>
@@ -177,11 +180,13 @@ public:
 	}
 };
 
+class NoInfo {
+};
 /**
  * Stub base class for handling graph primitives during traversal.
  */
 //template<typename VertexId, typename EdgeId>
-template<class Graph>
+template<class Graph, class Info = NoInfo *>
 class TraversalHandler {
 public:
 
@@ -190,14 +195,18 @@ public:
 
 	virtual ~TraversalHandler();
 
-	virtual void VertexEntered(VertexId v) {
+	virtual void HandleVertex(VertexId v) {
 	}
-//	virtual void VertexLeft(VertexId v) {
-//	}
-	virtual void EdgePassed(EdgeId e) {
+	//	virtual void VertexLeft(VertexId v) {
+	//	}
+	virtual void HandleEdge(EdgeId e) {
 	}
-//	virtual void EdgeBacktracked(EdgeId e) {
-//	}
+	//	virtual void EdgeBacktracked(EdgeId e) {
+	//	}
+	virtual void HandleVertex(VertexId v, Info info) {
+	}
+	virtual void HandleEdge(EdgeId e, Info info) {
+	}
 };
 
 /**
@@ -213,7 +222,8 @@ public:
 		g_(g) {
 	}
 
-	virtual ~Traversal(){}
+	virtual ~Traversal() {
+	}
 
 	virtual void Traverse(TraversalHandler<Graph>* h) = 0;
 
@@ -237,21 +247,20 @@ public:
 };
 
 template<class Graph>
-void DFS<Graph>::ProcessVertex(
-		VertexId v, vector<VertexId>* stack,
+void DFS<Graph>::ProcessVertex(VertexId v, vector<VertexId>* stack,
 		TraversalHandler<Graph>* h) {
 	//todo how to get rid of this
 	typedef Traversal<Graph> super;
-//	typedef typename super::g_ g_;
+	//	typedef typename super::g_ g_;
 
 	if (visited_.count(v) == 0) {
-		h->VertexEntered(v);
+		h->HandleVertex(v);
 		visited_.insert(v);
 
-		vector<EdgeId> edges = super::g_->OutgoingEdges(v);
+		vector < EdgeId > edges = super::g_->OutgoingEdges(v);
 		for (size_t i = 0; i < edges.size(); ++i) {
 			EdgeId e = edges[i];
-			h->EdgePassed(e);
+			h->HandleEdge(e);
 			stack.push_back(super::g_->EdgeEnd(e));
 		}
 	}
@@ -263,9 +272,8 @@ void DFS<Graph>::Traverse(TraversalHandler<Graph>* h) {
 	typedef Traversal<Graph> super;
 	typedef typename Graph::VertexIterator VertexIt;
 
-	for (VertexIt it = super::g_->begin(); it
-			!= super::g_->end(); it++) {
-		vector<VertexId> stack;
+	for (VertexIt it = super::g_->begin(); it != super::g_->end(); it++) {
+		vector < VertexId > stack;
 		stack.push_back(*it);
 		while (!stack.empty()) {
 			VertexId v = stack[stack.size() - 1];
@@ -275,7 +283,7 @@ void DFS<Graph>::Traverse(TraversalHandler<Graph>* h) {
 	}
 }
 
-template <class Graph>
+template<class Graph>
 class SimpleStatCounter: public TraversalHandler<Graph> {
 	size_t v_count_;
 	size_t e_count_;
@@ -286,10 +294,10 @@ public:
 	SimpleStatCounter() :
 		v_count_(0), e_count_(0) {
 	}
-	virtual void VertexEntered(VertexId v) {
+	virtual void HandleVertex(VertexId v) {
 		v_count_++;
 	}
-	virtual void EdgePassed(EdgeId e) {
+	virtual void HandleEdge(EdgeId e) {
 		e_count_++;
 	}
 
@@ -302,7 +310,147 @@ public:
 	}
 };
 
+template<typename Key, typename Comparator = std::less<Key> >
+class PriorityQueue {
+private:
+	set<Key, Comparator> storage_;
+public:
+	/*
+	 * Be careful! This constructor requires Comparator to have default constructor even if you call it with
+	 * specified comparator. In this case just create default constructor with assert(false) inside it.
+	 */
+	PriorityQueue(const Comparator& comparator = Comparator()) :
+		storage_(comparator) {
+	}
 
+	template<typename InputIterator>
+	PriorityQueue(InputIterator begin, InputIterator end,
+			const Comparator& comparator = Comparator()) :
+		storage_(begin, end, comparator) {
+	}
+
+	Key poll() {
+		Key key = *(storage_.begin());
+		storage_.erase(storage_.begin());
+		return key;
+	}
+	Key peek() const {
+		return *(storage_.begin());
+	}
+
+	void offer(const Key key) {
+		storage_.insert(key);
+	}
+
+	bool remove(const Key key) {
+		return storage_.erase(key) > 0;
+	}
+
+	bool empty() const {
+		return storage_.empty();
+	}
+};
+
+template<typename ElementId>
+class QueueIterator {
+protected:
+	PriorityQueue<ElementId> queue_;
+	template<typename iterator>
+	void fillQueue(iterator begin, iterator end) {
+		for(iterator it = begin; it != end; ++it) {
+			queue_.offer(*it);
+		}
+	}
+
+	QueueIterator() {
+	}
+
+public:
+	//== is supported only in case this or other is end iterator
+	bool operator==(QueueIterator &other) {
+		if (this->queue_.empty() && other.queue_.empty())
+			return true;
+		if (this->queue_.empty() || other.queue_.empty())
+			return false;
+		assert(false);
+	}
+
+	bool operator!=(QueueIterator &other) {
+		if (this->queue_.empty() && other.queue_.empty())
+			return false;
+		if (this->queue_.empty() || other.queue_.empty())
+			return true;
+		assert(false);
+	}
+
+	ElementId operator*() const {
+		assert(!queue_.empty());
+		return queue_.peek();
+	}
+
+	void operator++() {
+		assert(!queue_.empty());
+		queue_.poll();
+	}
+
+	virtual ~QueueIterator() {
+	}
+};
+
+template<class Graph>
+class SmartVertexIterator: public GraphActionHandler<Graph>, public QueueIterator<typename Graph::VertexId> {
+public:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+public:
+	SmartVertexIterator(Graph &graph) {
+		fillQueue(graph.begin(), graph.end());
+		graph.AddActionHandler(this);
+	}
+
+	SmartVertexIterator() {
+	}
+
+	virtual ~SmartVertexIterator() {
+	}
+
+	virtual void HandleAdd(VertexId v) {
+		QueueIterator<VertexId>::queue_.offer(v);
+	}
+
+	virtual void HandleDelete(VertexId v) {
+		QueueIterator<VertexId>::queue_.remove(v);
+	}
+};
+
+template<class Graph>
+class SmartEdgeIterator: public GraphActionHandler<Graph>, public QueueIterator<typename Graph::EdgeId> {
+public:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+public:
+	SmartEdgeIterator(Graph &graph) {
+		for(typename Graph::VertexIterator it = graph.begin(); it != graph.end(); ++it) {
+			const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
+			fillQueue(outgoing.begin(), outgoing.end());
+		}
+		graph.AddActionHandler(this);
+	}
+
+	SmartEdgeIterator() {
+	}
+
+	virtual ~SmartEdgeIterator() {
+	}
+
+	virtual void HandleAdd(EdgeId v) {
+		QueueIterator<EdgeId>::queue_.offer(v);
+	}
+
+	virtual void HandleDelete(EdgeId v) {
+		QueueIterator<EdgeId>::queue_.remove(v);
+	}
+};
 }
 
 #endif /* UTILS_HPP_ */
