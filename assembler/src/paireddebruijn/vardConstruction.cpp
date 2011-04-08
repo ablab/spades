@@ -239,6 +239,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 			EdgePrototype* curEdgePrototype = (iter->se)[i];
 			Sequence * curSeq = curEdgePrototype->lower;
 			ll curKmer = kmer;
+			bool NeedToStore = false;
 			while (1){
 				Sequence *curSubSeq = SubSeq(*curSeq, direction);
 				int curVertId = findPossibleVertex(subkmer(curKmer, direction), *curSubSeq, edges, graph.verts);
@@ -246,14 +247,36 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 				if (curVertId ==-1){
 					pair <char, EdgePrototype*> otherdir_res = findUniqueWay(edges, curKmer, curSeq, otherDirection(direction), true);
 					pair <char, EdgePrototype*> dir_res = findUniqueWay(edges, curKmer, curSeq, direction , false);
-
-					if ((otherdir_res.second == NULL)||(dir_res.second == NULL)) {
+					pair <char, EdgePrototype*> back_way = make_pair((char)0, (EdgePrototype*)NULL);
+					if (dir_res.second!=NULL) { //if there are unique neighbor, check if thir EdgePrototype is unique neighbor for them.
+						ll tmpKmer = subkmer(curKmer,direction);
+						ll nextKmer = pushNucleotide(tmpKmer, k-1,  direction, dir_res.first);
+						back_way = findUniqueWay(edges, nextKmer, dir_res.second->lower, otherDirection(direction) , false);
+					}
+					if ((otherdir_res.second == NULL)||(dir_res.second == NULL)||(back_way.second != curEdgePrototype) ){
 						storeVertex(graph, subkmer(curKmer, direction), curSubSeq, true);
+//								NeedToStore = true;
 					}
 				}
 				if (direction == LEFT) direction = RIGHT;
 				else break;
 			}
+			direction = LEFT;
+
+			while (NeedToStore){
+				Sequence *curSubSeq = SubSeq(*curSeq, direction);
+				int curVertId = findPossibleVertex(subkmer(curKmer, direction), *curSubSeq, edges, graph.verts);
+				if (curVertId ==-1){
+					storeVertex(graph, subkmer(curKmer, direction), curSubSeq, true);
+				}
+				else {
+					cerr<<"vertex already presented "<<curVertId<<endl;
+				}
+				if (direction == LEFT) direction = RIGHT;
+				else break;
+			}
+
+
 		}
 		++iter;
 	}
@@ -286,9 +309,6 @@ void createEdges(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 
 
 				expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, EdgeCoverage, LEFT);
-
-
-
 
 				//todo: rewrite
 				DEBUG("Start find edge");
