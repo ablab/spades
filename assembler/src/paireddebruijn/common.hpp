@@ -21,7 +21,6 @@
 #define mp make_pair
 #define fi first
 #define se second
-#define protoEdgeType pair<string, string>
 #define edgesMap  map<ll, vector<EdgePrototype *> >
 #define verticesMap  map<ll, vector<VertexPrototype *> >
 #define longEdgesMap  map<int, Edge*>

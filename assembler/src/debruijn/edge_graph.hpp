@@ -223,7 +223,7 @@ public:
 		return de_bruijn::SmartVertexIterator<EdgeGraph>(*this);
 	}
 
-	SmartVertexIterator<EdgeGraph> SmartVertexEnd() {
+	SmartVertexIterator<EdgeGraph> SmartVertexEnd() const {
 		return de_bruijn::SmartVertexIterator<EdgeGraph>();
 	}
 
@@ -231,7 +231,7 @@ public:
 		return de_bruijn::SmartEdgeIterator<EdgeGraph>(*this);
 	}
 
-	SmartEdgeIterator<EdgeGraph> SmartEdgeEnd() {
+	SmartEdgeIterator<EdgeGraph> SmartEdgeEnd() const {
 		return de_bruijn::SmartEdgeIterator<EdgeGraph>();
 	}
 
