@@ -65,7 +65,7 @@ public:
 	void DeleteKmersHash(const Sequence& nucls, ElementId id) {
 		assert(nucls.size() >= kmer_size_);
 		Kmer k(nucls);
-		deleteIfVertex(k, id);
+		deleteIfEqual(k, id);
 		for (size_t i = kmer_size_, n = nucls.size(); i < n; ++i) {
 			k = k << nucls[i];
 			deleteIfEqual(k, id);

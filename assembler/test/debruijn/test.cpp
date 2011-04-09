@@ -27,6 +27,6 @@ void checkClipTippingCompilation() {
 int main() {
 	runSuite();
 	//	 SimulatedMistakesTool();
-	checkClipTippingCompilation();
+//	checkClipTippingCompilation();
 	return 0;
 }

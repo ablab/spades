@@ -57,7 +57,7 @@ public:
 	}
 
 	template<typename S>
-	Sequence(const S &s) :
+	explicit Sequence(const S &s) :
 		from_(0), size_(s.size()), rtl_(false) {
 	        data_ = new SequenceData(s, size_);
 		data_->Grab();

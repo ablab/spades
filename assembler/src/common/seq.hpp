@@ -110,7 +110,7 @@ public:
 		data_(seq.data_) {
 	}
 
-	Seq(const char* s) {
+	explicit Seq(const char* s) {
 		init(s);
 	}
 
@@ -121,7 +121,7 @@ public:
 	 * @param offset Offset when this sequence starts
 	 */
 	template<typename S>
-	Seq(const S &s, size_t offset = 0) {
+	explicit Seq(const S &s, size_t offset = 0) {
 	  //		assert(size_ + offset <= s.size());
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
@@ -253,7 +253,7 @@ public:
 	}
 
 	bool operator!=(const Seq<size_, T> s) const {
-		return s.data_ != data_;
+		return !(*this) == s;
 		//return this->equal_to()(s);
 	}
 
