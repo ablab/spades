@@ -2,7 +2,7 @@
 #define EDGEGRAPHTEST_HPP_
 #include "edge_graph.hpp"
 
-using namespace edge_graph;
+namespace edge_graph {
 
 void EmptyGraphTest() {
 	EdgeGraph g(11);
@@ -111,6 +111,9 @@ void SmartIteratorTest() {
 	}
 }
 
+}
+
+using namespace edge_graph ;
 cute::suite EdgeGraphSuite() {
 	cute::suite s;
 	s.push_back(CUTE(EmptyGraphTest));

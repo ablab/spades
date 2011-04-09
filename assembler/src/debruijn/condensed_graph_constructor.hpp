@@ -109,7 +109,7 @@ protected:
 	CondensedGraph *g_;
 	SimpleIndex<kmer_size_> *h_;
 
-	pair<Vertex*, int> GetPosition(Kmer k) {
+	pair<Vertex*, size_t> GetPosition(Kmer k) {
 		assert(h_->contains(k));
 		return h_->get(k);
 	}
@@ -143,37 +143,36 @@ public:
 };
 
 //for tests!!!
-template<size_t kmer_size_, size_t read_size_, size_t cnt>
+template<size_t kmer_size_>
 class DirectConstructor: public GraphConstructor<kmer_size_> {
 	typedef Seq<kmer_size_> Kmer;
 	typedef GraphConstructor<kmer_size_> super;
 
-	const vector<strobe_read<read_size_, cnt, int>>& reads_;
+	const vector<Read>& reads_;
 
 	//todo extract from class definition!!!
-	void ThreadRead(const Seq<read_size_> &r);
+	void ThreadRead(const Sequence &r);
 
 public:
-	DirectConstructor(const vector<strobe_read<read_size_, cnt, int>>& reads) :
+	DirectConstructor(const vector<Read>& reads) :
 		super(), reads_(reads) {
 	}
 
 	virtual void ConstructGraph(CondensedGraph* &g, SimpleIndex<kmer_size_>* &h) {
 		for (size_t i = 0; i < reads_.size(); ++i) {
-			for (size_t r = 0; r < cnt; ++r) {
-				ThreadRead(reads_[i][r]);
-			}
+			//implicit conversion used here
+			ThreadRead(Sequence(reads_[i].getSequenceString()));
 		}
 		super::ConstructGraph(g, h);
 	}
 };
 
-template<size_t kmer_size_, size_t read_size_, size_t cnt>
-void DirectConstructor<kmer_size_, read_size_, cnt>::ThreadRead(
-		const Seq<read_size_> &r) {
+template<size_t kmer_size_>
+void DirectConstructor<kmer_size_>::ThreadRead(
+		const Sequence &r) {
 	Kmer k(r);
 	DEBUG("Threading k-mer: " + k.str())
-	for (size_t i = kmer_size_; i < read_size_; ++i) {
+	for (size_t i = kmer_size_; i < r.size(); ++i) {
 		pair<Vertex*, int> prev_pos = GetPosMaybeMissing(k);
 		Kmer old_k = k;
 		k = k << r[i];
@@ -285,7 +284,7 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 		for (edge_iterator it = edges.first; it != edges.second; ++it) {
 			//todo use Kmer.end
 			Kmer neighbour(*it, 1);
-			pair<Vertex*, size_t> position = super::GetPosition(*it);
+			pair<Vertex*, size_t> position = super::GetPosition(neighbour);
 			assert(position.second == 0);
 			super::g_->LinkVertices(v, position.first);
 		}

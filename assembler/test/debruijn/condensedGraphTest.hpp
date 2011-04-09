@@ -3,6 +3,7 @@
 #include "seq.hpp"
 #include "sequence.hpp"
 #include "nucl.hpp"
+#include "read.hpp"
 #include "condensed_graph.hpp"
 #include "condensed_graph_constructor.hpp"
 #include "debruijn.hpp"
@@ -129,11 +130,12 @@ void VisTool() {
 	cerr << h.v_count() << " " << h.e_count();
 }
 
-template<size_t r_>
-vector<strobe_read<r_, 1> > MakeReads(string *ss, size_t count) {
-	vector<strobe_read<r_, 1> > ans;
+vector<Read> MakeReads(string *ss, size_t count) {
+	vector<Read> ans;
 	for (size_t i = 0; i < count; ++i) {
-		ans.push_back(strobe_read<r_, 1> (ss++));
+		Read r("", *ss, "");
+		ss++;
+		ans.push_back(r);
 	}
 	return ans;
 }
@@ -163,9 +165,9 @@ void MyEquals(vertex_set vs, string s[], size_t length) {
 }
 
 template <size_t kmer_size_, size_t read_size_>
-void AssertGraph(size_t read_cnt, string reads[], size_t vertex_cnt, string et_vertices[], size_t edge_cnt, string et_edges[][2]) {
-	const vector<strobe_read<read_size_, 1>> strobe_reads = MakeReads<read_size_> (reads, read_cnt);
-	DirectConstructor<kmer_size_, read_size_, 1> g_c(strobe_reads);
+void AssertGraph(size_t read_cnt, string reads_str[], size_t vertex_cnt, string et_vertices[], size_t edge_cnt, string et_edges[][2]) {
+	const vector<Read> reads = MakeReads(reads_str, read_cnt);
+	DirectConstructor<kmer_size_> g_c(reads);
 	CondensedGraph *g;
 	SimpleIndex<5> *index;
 	g_c.ConstructGraph(g, index);
@@ -197,10 +199,10 @@ void AssertGraph(size_t read_cnt, string reads[], size_t edge_cnt, string et_edg
 }
 
 template <size_t kmer_size_, size_t read_size_>
-void AssertCondense(size_t read_cnt, string reads[], size_t vertex_cnt, string et_vertices[], size_t edge_cnt, string et_edges[][2]) {
-	vector<strobe_read<read_size_, 1> > strobe_reads = MakeReads<read_size_> (reads, read_cnt);
+void AssertCondense(size_t read_cnt, string reads_str[], size_t vertex_cnt, string et_vertices[], size_t edge_cnt, string et_edges[][2]) {
+	vector<Read> reads = MakeReads(reads_str, read_cnt);
 	DeBruijn<kmer_size_> debruijn;
-	debruijn.ConstructGraph(strobe_reads) ;
+	debruijn.ConstructGraph(reads) ;
 	CondenseConstructor<kmer_size_> g_c(debruijn);
 	CondensedGraph *g;
 	SimpleIndex<5> *index;

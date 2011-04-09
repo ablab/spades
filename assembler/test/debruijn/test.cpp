@@ -1,7 +1,7 @@
 #include "cute.h"
 #include "ide_listener.h"
 #include "cute_runner.h"
-//#include "condensedGraphTest.hpp"
+#include "condensedGraphTest.hpp"
 //#include "condensed_graph_tool.hpp"
 #include "debruijnGraphTest.hpp"
 #include "edgeGraphTest.hpp"
