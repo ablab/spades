@@ -61,9 +61,6 @@ void TestAddEdge2() {
 	ASSERT_EQUAL(3, c);
 	ASSERT_EQUAL(2, g.IncomingEdgeCount(seq3));
 	DeBruijn<5>::edge_iterator n_it = g.IncomingEdges(seq3).first;
-	///че за херь???
-	cout << seq1 << endl;
-	cout << *n_it << endl;
 	ASSERT_EQUAL(seq1, (*n_it).start<5>());
 	++n_it;
 	ASSERT_EQUAL(seq2, (*n_it).start<5>());
