@@ -31,10 +31,6 @@ protected:
 		return h_->get(k);
 	}
 
-	bool Contains(KPlusOneMer k) {
-		return h_->contains(k);
-	}
-
 	GraphConstructor() {
 		h_ = new Index();
 		g_ = new EdgeGraph(kmer_size_);
@@ -178,13 +174,12 @@ public:
 			for (typename debruijn::edge_iterator it = edges.first; it
 					!= edges.second; ++it) {
 				KPlusOneMer edge = *it;
-				if (!super::Contains(edge)) {
-
+				if (!super::h_->contains(edge)) {
+					Sequence edge_sequence = ConstructSequenceWithEdge(edge);
+					Vertex* start = FindVertexMaybeMissing(edge_sequence.start<kmer_size_> ());
+					Vertex* end = FindVertexMaybeMissing(edge_sequence.end<kmer_size_> ());
+					super::g_->AddEdge(start, end, edge_sequence);
 				}
-				Sequence edge_sequence = ConstructSequenceWithEdge(edge);
-				Vertex* start = FindVertexMaybeMissing(edge_sequence.start<kmer_size_> ());
-				Vertex* end = FindVertexMaybeMissing(edge_sequence.end<kmer_size_> ());
-				super::g_->AddEdge(start, end, edge_sequence);
 			}
 		}
 
