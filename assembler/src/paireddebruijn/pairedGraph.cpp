@@ -12,23 +12,26 @@ LOGGER("p.pairedGraph");
 
 namespace paired_assembler {
 
-VertexPrototype::VertexPrototype(Sequence *lower_, int id, int coverage_) {
+VertexPrototype::VertexPrototype(Sequence *lower_, int id, int coverage_,int position_) {
 	upper = NULL;
 	TRACE("Upper sequence is not defined");
 	lower = lower_;
 	VertexId = id;
 	used = false;
 	coverage = coverage_;
+
+	position = (lower->size()- k + 1) /2 ;
 }
 
 VertexPrototype::VertexPrototype(ll upper_, Sequence *lower_, int id,
-		int coverage_, int deltaShift_) {
+		int coverage_, int deltaShift_, int position_) {
 	upper = upper_;
 	lower = lower_;
 	VertexId = id;
 	used = false;
 	coverage = coverage_;
 	deltaShift = deltaShift_;
+	position = position_;
 }
 
 void PairedGraph::recreateVerticesInfo(int vertCount, longEdgesMap &longEdges) {
@@ -94,6 +97,22 @@ verticesMap::iterator addKmerToMap(verticesMap &verts, ll kmer) {
  * was created and false otherwise
  *
  */
+pair<int, bool> addVertexToMap(PairedGraph &graph, ll newKmer, Sequence* newSeq, bool ensureNew) {
+	verticesMap::iterator position = addKmerToMap(graph.verts, newKmer);
+	vector<VertexPrototype *> *sequences = &position->second;
+	if(!ensureNew)
+	for (vector<VertexPrototype *>::iterator it = sequences->begin(); it
+			!= sequences->end(); ++it) {
+		Sequence *otherSequence = (*it)->lower;
+		if (newSeq->similar(*otherSequence, minIntersect, 0)) {
+			return make_pair((*it)->VertexId, false);
+		}
+	}
+	sequences->push_back(new VertexPrototype(newSeq, graph.VertexCount));
+	cerr<<"added vertex "<<graph.VertexCount<<" kmer "<<newKmer<<" seq "<<newSeq->str()<<endl;
+	graph.VertexCount++;
+	return make_pair(graph.VertexCount - 1, true);
+}
 pair<int, bool> addVertexToMap(PairedGraph &graph, ll newKmer, Sequence* newSeq) {
 	verticesMap::iterator position = addKmerToMap(graph.verts, newKmer);
 	vector<VertexPrototype *> *sequences = &position->second;
@@ -105,6 +124,7 @@ pair<int, bool> addVertexToMap(PairedGraph &graph, ll newKmer, Sequence* newSeq)
 		}
 	}
 	sequences->push_back(new VertexPrototype(newSeq, graph.VertexCount));
+	cerr<<"added vertex "<<graph.VertexCount<<" kmer "<<newKmer<<" seq "<<newSeq->str()<<endl;
 	graph.VertexCount++;
 	return make_pair(graph.VertexCount - 1, true);
 }
@@ -133,6 +153,10 @@ int storeVertex(gvis::GraphPrinter<int> &g, PairedGraph &graph, ll newKmer,
 }
 int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq) {
 	pair<int, bool> addResult = addVertexToMap(graph, newKmer, newSeq);
+	return addResult.first;
+}
+int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq, bool ensureNew) {
+	pair<int, bool> addResult = addVertexToMap(graph, newKmer, newSeq, ensureNew);
 	return addResult.first;
 }
 int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq, int VertNum) {

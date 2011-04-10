@@ -16,6 +16,13 @@ namespace paired_assembler {
 
 class Vertex;
 
+struct constructingEdge {
+	string upper;
+	string lower;
+	int coverage;
+	short deltaShift;
+};
+
 class VertexPrototype {
 public:
 	ll upper;
@@ -23,9 +30,10 @@ public:
 	int VertexId;
 	bool used;
 	int coverage;
+	int position;
 	int deltaShift;
-	VertexPrototype(Sequence *lower_, int id, int coverage_ = 1);
-	VertexPrototype(ll upper_, Sequence *lower_, int id, int coverage_ = 1, int deltaShift_ = 0);
+	VertexPrototype(Sequence *lower_, int id, int coverage_ = 1, int position = 0);
+	VertexPrototype(ll upper_, Sequence *lower_, int id, int coverage_ = 1, int deltaShift_ = 0, int position_ = 0);
 	~VertexPrototype() {
 		delete lower;
 	}
@@ -37,12 +45,15 @@ public:
 		lower = lower_;
 		VertexId = start_;
 		used = false;
+		looped = 0;
 		coverage = coverage_;
 	}
 	Sequence *lower;
 	int VertexId;
 	bool used;
 	int coverage;
+	char looped;
+
 };
 /*
  * length- including one vertex.
@@ -56,6 +67,7 @@ class Edge {
 public:
 	Sequence *upper;
 	Sequence *lower;
+	//length of upper part of edge, including one of adjacent vertex.
 	int length;
 	int FromVertex;
 	int ToVertex;
@@ -103,8 +115,10 @@ public:
 	}
 
 	int computeInsertLength() {
-
+		assert(0);
+		return 0;
 	}
+
 	void ExpandLeft(Edge &newLeft) {
 		FromVertex = newLeft.FromVertex;
 		if (newLeft.length > 0) {
@@ -126,6 +140,21 @@ public:
 		length = len;
 		EdgeId = id;
 		coverage = cov;
+		deltaShift = dShift;
+	}
+	Edge(constructingEdge protoEdge, int from, int to, int id,
+				 int dShift = 0) {
+		upper = new Sequence(protoEdge.upper);
+		lower = new Sequence(protoEdge.lower);
+		FromVertex = from;
+		ToVertex = to;
+		length = protoEdge.upper.length() - (k - 1);
+		EdgeId = id;
+		coverage = protoEdge.coverage;
+		if (length > insertLength + k) {
+			//TODO: recompute dShift
+
+		}
 		deltaShift = dShift;
 	}
 
@@ -271,7 +300,7 @@ public:
 		isUpToDate = false;
 		VertexCount = 0;
 		EdgeId = 0;
-		cerr << "VAH Paired created" << endl;
+		cerr<<"Paired created"<<endl;
 	}
 	//	void RebuildVertexMap(void);
 };
@@ -546,6 +575,7 @@ public:
 };
 
 int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq);
+int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq, bool ensureNew);
 int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq, int VertNum);
 void resetVertexCount(PairedGraph &graph);
 

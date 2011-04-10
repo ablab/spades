@@ -204,32 +204,7 @@ int goUniqueWayLeft(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq, int &
 	}
 	bool sameK = false;
 	int tcount = 0;
-/*
-	if (count <= 1) {
-		edgesMap::iterator iter = edges.find(finishKmer);
-		if (iter != edges.end()) {
-			int size = iter->second.size();
-			forn(i, size) {
-				Sequence *Ps = (iter->se)[i]->lower;
-				if (finishSeq->similar(*Ps, minIntersect, -1)) {
-					tcount++;
-					if (tcount > 1)
-						break;
-					PossibleKmer = finishKmer;
-					PossibleSequence = (iter->se)[i]->lower;
-					seqIndex = i;
-					PossibleIter = iter;
-					sameK = true;
-				}
-			}
-		}
-		sameK = true;
-		if (count == 1 && sameK) {
-			//			assert("1 == 0");
-			//			cerr << endl << "something" << endl;
-		}
-	}
-*/
+
 	if (count == 1 || tcount == 1) {
 
 		if (EdgeCoverage < (PossibleIter->se)[seqIndex]->coverage)
@@ -278,40 +253,12 @@ int goUniqueWayRight(edgesMap &edges, ll &finishKmer, Sequence* &finishSeq, int 
 			}
 		}
 	}
-	int tcount = 0;
 
 	bool sameK = false;
 
-	/*
-	 	if (count <= 1) {
-		edgesMap::iterator iter = edges.find(finishKmer);
-		if (iter != edges.end()) {
-			int size = iter->second.size();
-			forn(i, size) {
-				Sequence *Ps = (iter->se)[i]->lower;
-				if (finishSeq->similar(*Ps, minIntersect, 1))
-				{
-					if ((iter->se)[i]->used)
-						break;
-					tcount++;
-					if (tcount > 1)
-						break;
-					PossibleKmer = finishKmer;
-					PossibleSequence = (iter->se)[i]->lower;
-					seqIndex = i;
-					PossibleIter = iter;
-					sameK = true;
-				}
-			}
-		}
-		//		assert(1 == 0);
-		sameK = true;
-	}
-*/
-	if (count == 1 || tcount == 1) {
+	if (count == 1 ) {
 		if (EdgeCoverage < (PossibleIter->se)[seqIndex]->coverage)
 			EdgeCoverage = (PossibleIter->se)[seqIndex]->coverage;
-		int tcount = 0;
 		finishKmer = (PossibleKmer) & (~(((ll) 3) << (2 * (k - 1))));
 		finishSeq = new Sequence(
 				(PossibleIter->se)[seqIndex]->lower->Subseq(1,
@@ -344,7 +291,7 @@ int countWays(vector<EdgePrototype *> &v, Sequence *finishSeq, int direction) {
 int checkUniqueWay(edgesMap &edges, ll finishKmer, Sequence *finishSeq,
 		int direction) {
 	int count = 0;
-//	cerr << "checkUniqueWay" << endl;
+//	cerr << "findUniqueWay" << endl;
 	for (int Nucl = 0; Nucl < 4; Nucl++) {
 		ll tmpKmer = pushNucleotide(finishKmer, k - 1, direction, Nucl);
 		edgesMap::iterator iter = edges.find(tmpKmer);

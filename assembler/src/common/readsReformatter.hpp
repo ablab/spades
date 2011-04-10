@@ -10,9 +10,9 @@
  * outputFile: resulting file, with reads separated by \n, paired reads goes one after another
  *
  */
-int forgetQualityPairedData(string file1, string file2, string outputFile) {
-	ireadstream stream1(file1, false);
-	ireadstream stream2(file2, true);
+void forgetQualityPairedData(string file1, string file2, string outputFile) {
+	ireadstream stream1(file1);
+	ireadstream stream2(file2);
 
 	FILE* outFile = fopen(outputFile.c_str(), "w");
 	Read r1;
@@ -21,10 +21,9 @@ int forgetQualityPairedData(string file1, string file2, string outputFile) {
 		stream1 >> r1;
 		stream2 >> r2;
 		if (r1.isValid() && r2.isValid()) {
-			Sequence s1 = r1.getSequenceString();
-			Sequence s2 = r2.getSequenceString();
-
-			fprintf(outFile, "%s %s\n", s1.str().c_str(), s2.str().c_str());
+			Sequence s1(r1.getSequenceString());
+			Sequence s2(r2.getSequenceString());
+			fprintf(outFile, "%s %s\n", s1.str().c_str(), (!s2).str().c_str());
 		}
 	}
 	fclose(outFile);

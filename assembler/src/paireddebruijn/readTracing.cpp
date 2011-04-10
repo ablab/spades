@@ -31,7 +31,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	double in_cov[MAX_DEGREE];
 	double out_cov[MAX_DEGREE];
 	double eps_out_cov[MAX_DEGREE];
-	double eps = 1;
+	double eps = 10000;
 	INFO("traceReads started");
 	INFO(parsed_reads);
 	FILE * inFile = fopen(parsed_reads.c_str(), "r");
@@ -320,9 +320,12 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 								forn(i, MAX_DEGREE)
 									if (table[i][j])
 										tdeg += in_cov[i];
+								if (tdeg >eps/10)
 								forn(i, MAX_DEGREE) {
 									if (table[i][j]) {
+//										assert(tdeg>eps/10);
 										double add = (in_cov[i]/tdeg) * eps_out_cov[j];
+										if (add > in_cov[i]) add = in_cov[i];
 										fake_cov[i][j] +=add;
 										in_cov[i] -= add;
 									}
@@ -354,7 +357,7 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 							Edge *tmpEdge = new Edge(UpSeq, LoSeq, tmpFictStartIn + tmpFrom, tmpFictStartOut + tmpTo,0, EdgeId, fake_cov[tmpFrom][tmpTo]);
 							longEdges.insert(make_pair(EdgeId,tmpEdge));
 							//							cerr<<"Virtual edge "<<EdgeId<<
-							cerr<<"Virtual edge "<<EdgeId<<" ("<<longEdges[EdgeId]->FromVertex<<", "<<longEdges[EdgeId]->ToVertex<<")"<<endl;
+							cerr<<"Virtual edge "<<EdgeId<<" ("<<longEdges[EdgeId]->FromVertex<<", "<<longEdges[EdgeId]->ToVertex<<") ["<<tmpFrom<<", "<<tmpTo<<"] cov "<< fake_cov[tmpFrom][tmpTo]<<endl;
 							graph.edgeIds[tmpFictStartIn + tmpFrom][graph.degrees[tmpFictStartIn + tmpFrom][1]][OUT_EDGE] = EdgeId;
 							graph.degrees[tmpFictStartIn + tmpFrom][1]++;
 							graph.edgeIds[tmpFictStartOut + tmpTo][graph.degrees[tmpFictStartOut + tmpTo][0]][OUT_EDGE] = EdgeId;

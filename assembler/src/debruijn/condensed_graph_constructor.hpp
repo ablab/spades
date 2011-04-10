@@ -109,7 +109,7 @@ protected:
 	CondensedGraph *g_;
 	SimpleIndex<kmer_size_> *h_;
 
-	pair<Vertex*, int> GetPosition(Kmer k) {
+	pair<Vertex*, size_t> GetPosition(Kmer k) {
 		assert(h_->contains(k));
 		return h_->get(k);
 	}
@@ -128,8 +128,6 @@ protected:
 	GraphConstructor() {
 		h_ = new SimpleIndex<kmer_size_> ();
 		g_ = new CondensedGraph(kmer_size_, new HashRenewer<kmer_size_> (h_));
-		//		DEBUG("HERE0");
-		//		GetPosMaybeMissing(Seq<5>("AAAAA"));
 	}
 
 public:
@@ -137,40 +135,42 @@ public:
 		g = g_;
 		h = h_;
 	}
+	virtual ~GraphConstructor() {
+
+	}
 };
 
 //for tests!!!
-template<size_t kmer_size_, size_t read_size_, size_t cnt>
+template<size_t kmer_size_>
 class DirectConstructor: public GraphConstructor<kmer_size_> {
 	typedef Seq<kmer_size_> Kmer;
 	typedef GraphConstructor<kmer_size_> super;
 
-	const vector<strobe_read<read_size_, cnt, int>>& reads_;
+	const vector<Read>& reads_;
 
 	//todo extract from class definition!!!
-	void ThreadRead(const Seq<read_size_> &r);
+	void ThreadRead(const Sequence &r);
 
 public:
-	DirectConstructor(const vector<strobe_read<read_size_, cnt, int>>& reads) :
+	DirectConstructor(const vector<Read>& reads) :
 		super(), reads_(reads) {
 	}
 
 	virtual void ConstructGraph(CondensedGraph* &g, SimpleIndex<kmer_size_>* &h) {
 		for (size_t i = 0; i < reads_.size(); ++i) {
-			for (size_t r = 0; r < cnt; ++r) {
-				ThreadRead(reads_[i][r]);
-			}
+			//implicit conversion used here
+			ThreadRead(Sequence(reads_[i].getSequenceString()));
 		}
 		super::ConstructGraph(g, h);
 	}
 };
 
-template<size_t kmer_size_, size_t read_size_, size_t cnt>
-void DirectConstructor<kmer_size_, read_size_, cnt>::ThreadRead(
-		const Seq<read_size_> &r) {
+template<size_t kmer_size_>
+void DirectConstructor<kmer_size_>::ThreadRead(
+		const Sequence &r) {
 	Kmer k(r);
 	DEBUG("Threading k-mer: " + k.str())
-	for (size_t i = kmer_size_; i < read_size_; ++i) {
+	for (size_t i = kmer_size_; i < r.size(); ++i) {
 		pair<Vertex*, int> prev_pos = GetPosMaybeMissing(k);
 		Kmer old_k = k;
 		k = k << r[i];
@@ -208,16 +208,19 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 	typedef Seq<kmer_size_> Kmer;
 	typedef GraphConstructor<kmer_size_> super;
 	typedef DeBruijn<kmer_size_> debruijn;
+	typedef typename debruijn::edge_iterator edge_iterator;
 
 	DeBruijn<kmer_size_>& origin_;
 
 	bool StepLeftIfPossible(Kmer &kmer) {
-		if (origin_.PrevCount(kmer) == 1) {
-			Kmer prev_kmer = *(origin_.begin_prev(kmer));
+		if (origin_.IncomingEdgeCount(kmer) == 1) {
+			Seq<kmer_size_ + 1> edge = *(origin_.IncomingEdges(kmer).first);
+			//todo use start
+			Kmer prev_kmer(edge);
 			DEBUG("Prev kmer " << prev_kmer);
-			DEBUG("Next Count of prev " << origin_.NextCount(prev_kmer));
-			assert(origin_.NextCount(prev_kmer) > 0);
-			if (origin_.NextCount(prev_kmer) == 1 && kmer != !prev_kmer) {
+			DEBUG("Next Count of prev " << origin_.OutgoingEdgeCount(prev_kmer));
+			assert(origin_.OutgoingEdgeCount(prev_kmer) > 0);
+			if (origin_.OutgoingEdgeCount(prev_kmer) == 1 && kmer != !prev_kmer) {
 				kmer = prev_kmer;
 				return true;
 			}
@@ -226,12 +229,15 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 	}
 
 	bool StepRightIfPossible(Kmer &kmer) {
-		if (origin_.NextCount(kmer) == 1) {
-			Kmer next_kmer = *(origin_.begin_next(kmer));
+		if (origin_.OutgoingEdgeCount(kmer) == 1) {
+			Seq<kmer_size_ + 1> edge = *(origin_.OutgoingEdges(kmer).first);
+
+			//todo use end
+			Kmer next_kmer(edge, 1);
 			DEBUG("Next kmer " << next_kmer);
-			DEBUG("Prev Count of next " << origin_.PrevCount(next_kmer));
-			assert(origin_.PrevCount(next_kmer) > 0);
-			if (origin_.PrevCount(next_kmer) == 1 && kmer != !next_kmer) {
+			DEBUG("Prev Count of next " << origin_.IncomingEdgeCount(next_kmer));
+			assert(origin_.IncomingEdgeCount(next_kmer) > 0);
+			if (origin_.IncomingEdgeCount(next_kmer) == 1 && kmer != !next_kmer) {
 				kmer = next_kmer;
 				return true;
 			}
@@ -243,7 +249,7 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 		DEBUG("Starting process for " << kmer);
 		Kmer initial_kmer = kmer;
 
-		DEBUG("Prev Count " << origin_.PrevCount(kmer));
+		DEBUG("Prev Count " << origin_.IncomingEdgeCount(kmer));
 		//go left while can
 		while (StepLeftIfPossible(kmer) && kmer != initial_kmer) {
 			//todo comment
@@ -258,7 +264,7 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 		s.append(kmer);
 		Kmer initial_kmer = kmer;
 
-		DEBUG("Next Count " << origin_.NextCount(kmer));
+		DEBUG("Next Count " << origin_.OutgoingEdgeCount(kmer));
 		while (StepRightIfPossible(kmer) && kmer != initial_kmer) {
 			//todo comment
 			s.append(kmer[kmer_size_ - 1]);
@@ -271,19 +277,23 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 		return ConstructSeqGoingRight(GoLeft(kmer));
 	}
 
+	void LinkVertexWithRightNeighbours(Vertex* v,
+			pair<edge_iterator, edge_iterator> edges) {
+		for (edge_iterator it = edges.first; it != edges.second; ++it) {
+			//todo use Kmer.end
+			Kmer neighbour(*it, 1);
+			pair<Vertex*, size_t> position = super::GetPosition(neighbour);
+			assert(position.second == 0);
+			super::g_->LinkVertices(v, position.first);
+		}
+	}
+
 	void MakeLinks() {
 		for (set<Vertex*>::iterator it = super::g_->vertices().begin(), end =
 				super::g_->vertices().end(); it != end; it++) {
 			Vertex* v = *it;
 			Kmer kmer = v->nucls().end<kmer_size_> ();
-
-			typename debruijn::neighbour_iterator n_it = origin_.begin_next(
-					kmer);
-			for (size_t i = 0, n = origin_.NextCount(kmer); i < n; ++i, ++n_it) {
-				pair<Vertex*, size_t> position = super::GetPosition(*n_it);
-				//				assert(position.second == 0);
-				super::g_->LinkVertices(v, position.first);
-			}
+			LinkVertexWithRightNeighbours(v, origin_.OutgoingEdges(kmer));
 			//todo now linking twice!!!
 		}
 	}
@@ -295,8 +305,8 @@ public:
 	}
 	virtual void ConstructGraph(CondensedGraph* &g, SimpleIndex<kmer_size_>* &h) {
 
-		for (typename debruijn::kmer_iterator it = origin_.kmer_begin(), end =
-				origin_.kmer_end(); it != end; it++) {
+		for (typename debruijn::kmer_iterator it = origin_.begin(), end =
+				origin_.end(); it != end; it++) {
 			Kmer kmer = *it;
 			if (!super::Contains(kmer)) {
 				super::g_->AddVertex(ConstructSequenceWithKmer(kmer));

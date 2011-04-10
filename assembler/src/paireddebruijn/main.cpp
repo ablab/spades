@@ -134,10 +134,10 @@ void run() {
 }
 
 void generate() {
-//	generateReads<SmoothPositionChooser> ("data/paireddebruijn/generated1.txt",
-//			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 0);
-//	generateReads<RandomPositionChooser> ("data/paireddebruijn/generated2.txt",
-//			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 0);
+	generateReads<SmoothPositionChooser> ("data/paireddebruijn/generated1.txt",
+			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 0);
+	generateReads<RandomPositionChooser> ("data/paireddebruijn/generated2.txt",
+			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 0);
 	generateReads<SmoothPositionChooser> ("data/paireddebruijn/generated3.txt",
 			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 6);
 	generateReads<RandomPositionChooser> ("data/paireddebruijn/generated4.txt",
@@ -145,7 +145,18 @@ void generate() {
 }
 
 int main() {
-	//generate();
+//	generate();
+//	Sequence* a = new Sequence("TACA");
+//
+//	Sequence* b = new Sequence("ACAT");
+//	cerr << a->similar(*b, 4, LEFT);
+//	cerr << a->similar(*b, 4, RIGHT);
+//
+//	cerr << b->similar(*a, 4, LEFT);
+//	cerr << b->similar(*a, 4, RIGHT);
+//
+//	assert(0);
+
 	init();
 	run();
 	return 0;

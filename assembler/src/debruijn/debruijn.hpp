@@ -19,7 +19,8 @@
 
 template<size_t size_>
 class DeBruijn {
-	typedef Seq<size_> key;
+	typedef Seq<size_> Kmer;
+	typedef Seq<size_ + 1> KPlusOneMer;
 
 	class Data {
 		size_t out_edges_[4];
@@ -45,7 +46,7 @@ class DeBruijn {
 	typedef Data value;
 	//typedef google::sparse_hash_map<key, value,	typename key::hash, typename key::equal_to> hash_map;
 //	typedef std::map<key, value, typename key::less> map_type;
-	typedef std::tr1::unordered_map<key, value,	typename key::hash, typename key::equal_to> map_type;
+	typedef std::tr1::unordered_map<Kmer, value,	typename Kmer::hash, typename Kmer::equal_to> map_type;
 	map_type nodes_;
 
 	void CountRead(const Sequence& read) {
@@ -57,10 +58,16 @@ class DeBruijn {
 		}
 	}
 
-	Data& get(const key &seq) {
+	Data& get(const Kmer &kmer) {
 		//todo why public constructor is necessary???
-		assert(nodes_.count(seq) == 1);
-		return nodes_[seq];
+		assert(nodes_.count(kmer) == 1);
+		return nodes_[kmer];
+	}
+
+	Data& addNode(const Kmer &seq) {
+		std::pair<const Kmer, value> p = make_pair(seq, Data());
+		std::pair<typename map_type::iterator, bool> node = nodes_.insert(p);
+		return node.first->second; // return node's data
 	}
 
 public:
@@ -69,24 +76,23 @@ public:
 
 	}
 
-	Data& addNode(const key &seq) {
-		std::pair<const key, value> p = make_pair(seq, Data());
-		std::pair<typename map_type::iterator, bool> node = nodes_.insert(p);
-		return node.first->second; // return node's data
-	}
-	void addEdge(const Seq<size_> &from, const Seq<size_> &to) {
+	void addEdge(const Kmer &from, const Kmer &to) {
 		Data &d_from = addNode(from);
 		Data &d_to = addNode(to);
 		d_from.out_edges_[(size_t) to[size_ - 1]]++;
 		d_to.in_edges_[(size_t) from[0]]++;
 	}
 
-	size_t size() const {
-		return nodes_.size();
+	void addEdge(const KPlusOneMer &edge) {
+		addEdge(edge.start(), edge.end());
 	}
 
-	class neighbour_iterator {
-		key key_;
+//	size_t size() const {
+//		return nodes_.size();
+//	}
+
+	class edge_iterator {
+		Kmer kmer_;
 		char pos_;
 		const size_t* neighbours_;
 		bool right_neighbours_;
@@ -96,19 +102,20 @@ public:
 			}
 		}
 	public:
-		neighbour_iterator(key key, char pos, const size_t* neighbours,
+
+		edge_iterator(Kmer kmer, char pos, const size_t* neighbours,
 				bool right_neighbours) :
-			key_(key), pos_(pos), neighbours_(neighbours),
+			kmer_(kmer), pos_(pos), neighbours_(neighbours),
 					right_neighbours_(right_neighbours) {
 			ShiftPos();
 		}
 
-		bool operator!=(const neighbour_iterator it) const {
+		bool operator!=(const edge_iterator it) const {
 			return right_neighbours_ != it.right_neighbours_ || neighbours_
-					!= it.neighbours_ || pos_ != it.pos_ || key_ != it.key_;
+					!= it.neighbours_ || pos_ != it.pos_ || kmer_ != it.kmer_;
 		}
 
-		neighbour_iterator& operator++() {
+		edge_iterator& operator++() {
 			if (pos_ < 4) {
 				pos_++;
 			}
@@ -116,25 +123,27 @@ public:
 			return *this;
 		}
 
-		key operator *() const {
-			return right_neighbours_ ? key_ << pos_ : key_ >> pos_;
+		KPlusOneMer operator *() const {
+			return right_neighbours_ ? kmer_.pushBack(pos_) : kmer_.pushFront(pos_);
 		}
 	};
 
-	size_t NextCount(const key &seq) {
-		return CountPositive(get(seq).out_edges_);
+	size_t OutgoingEdgeCount(const Kmer &kmer) {
+		return CountPositive(get(kmer).out_edges_);
 	}
 
-	size_t PrevCount(const key &seq) {
-		return CountPositive(get(seq).in_edges_);
+	size_t IncomingEdgeCount(const Kmer &kmer) {
+		return CountPositive(get(kmer).in_edges_);
 	}
 
-	neighbour_iterator begin_next(const key &key) {
-		return neighbour_iterator(key, 0, get(key).out_edges_, true);
+	pair<edge_iterator, edge_iterator> OutgoingEdges(const Kmer &kmer) {
+		size_t* out_edges = get(kmer).out_edges_;
+		return make_pair(edge_iterator(kmer, 0, out_edges, true), edge_iterator(kmer, 4, out_edges, true));
 	}
 
-	neighbour_iterator begin_prev(const key &key) {
-		return neighbour_iterator(key, 0, get(key).in_edges_, false);
+	pair<edge_iterator, edge_iterator> IncomingEdges(const Kmer &kmer) {
+		size_t* in_edges = get(kmer).in_edges_;
+		return make_pair(edge_iterator(kmer, 0, in_edges, false), edge_iterator(kmer, 4, in_edges, false));
 	}
 
 	class kmer_iterator: public map_type::iterator {
@@ -146,18 +155,26 @@ public:
 		}
 		;
 
-		const key& operator *() {
+		const Kmer& operator *() const {
 			return map_type::iterator::operator*().first;
 		}
 	};
 
-	kmer_iterator kmer_begin() {
+	kmer_iterator begin() {
 		return kmer_iterator(nodes_.begin());
 	}
 
-	kmer_iterator kmer_end() {
+	kmer_iterator end() {
 		return kmer_iterator(nodes_.end());
 	}
+
+	typedef edge_iterator EdgeIterator;
+
+	typedef kmer_iterator VertexIterator;
+
+	typedef Seq<size_> VertexId;
+	typedef Seq<size_+1> EdgeId;
+
 
 	//template<size_t size2_, size_t count_>
 	void ConstructGraph(const vector<Read> &v) {

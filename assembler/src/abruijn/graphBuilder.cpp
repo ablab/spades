@@ -122,8 +122,7 @@ void processReadB(Seq<MPSIZE> r) {
 
 void condenseA() {
 	int condensations = 0;
-	list<Vertex*> vect(graph.vertices.begin(), graph.vertices.end());
-	for (list<Vertex*>::iterator v = vect.begin(); v != vect.end(); ++v) {
+	for (abruijn::Graph::iterator v = graph.begin(); v != graph.end(); ++v) {
 		if (graph.tryCondenseA(*v)) {
 			condensations++;
 		}
@@ -145,8 +144,8 @@ void GraphBuilder::build() {
 		if (!(*v1)[i].isValid() || !(*v2)[i].isValid()) {
 			continue;
 		}
-		processReadA((*v1)[i]);
-		processReadA((*v2)[i]);
+		processReadA(Seq<MPSIZE>((*v1)[i]));
+		processReadA(Seq<MPSIZE>((*v2)[i]));
 		VERBOSE(i, " reads read");
 	}
 	//inputStream.reset();
@@ -163,8 +162,8 @@ void GraphBuilder::build() {
 		if (!(*v1)[i].isValid() || !(*v2)[i].isValid()) {
 			continue;
 		}
-		processReadB((*v1)[i]);
-		processReadB((*v2)[i]);
+		processReadB(Seq<MPSIZE>((*v1)[i]));
+		processReadB(Seq<MPSIZE>((*v2)[i]));
 		VERBOSE(i, " reads processed");
 	}
 	//inputStream.close();

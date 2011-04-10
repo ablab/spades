@@ -7,8 +7,8 @@
  *      Author: vyahhi
  */
 
-#ifndef REFCOUNT_HPP_
-#define REFCOUNT_HPP_
+#ifndef SEQUENCE_DATA_HPP_
+#define SEQUENCE_DATA_HPP_
 
 #include <vector>
 #include <string>
@@ -32,20 +32,19 @@ private:
 	SequenceData(const SequenceData &sd); // forbidden
 	SequenceData& operator=(const SequenceData&); // forbidden
 	void Grab() {
-		count++;
+		++count;
 	}
 	void Release() {
-		if (count > 0) {
-			count--;
-		}
+		--count;
 		if (count == 0) {
 			delete this;
 		}
 	}
+  // ????
 	template<typename S>
-	string SubString(const S &s, size_t offset) {
+	string SubString(const S &s, size_t offset, size_t size) {
 		string str;
-		for (size_t i = offset; i < s.size(); ++i) {
+		for (size_t i = offset; i < size; ++i) {
 			str += s[i];
 		}
 		return str;
@@ -57,20 +56,20 @@ public:
 	 * @param s ACGT or 0123-string
 	 */
 	template<typename S>
-	SequenceData(const S &s) :
+	SequenceData(const S &s, size_t size_) :
 		count(0) {
-		size_t size = s.size();
+		size_t size = size_;
 		size_t bytes_size = (size + STN - 1) >> STNbits;
 		//bytes_ = NULL;
 		bytes_ = (Seq<STN, ST>*) malloc(bytes_size * sizeof(Seq<STN, ST> )); // it's a bit faster than new
 		//bytes_ = new Seq<STN,ST>[bytes_size];
 		for (size_t i = 0; i < (size >> STNbits); ++i) {
-			bytes_[i] = Seq<STN, ST> (s, i << STNbits);
+		  bytes_[i] = Seq<STN, ST> (s, i << STNbits);
 		}
 		if (size & (STN - 1)) {
 			// fill with As for not breaking contract of Seq
 			//todo think of something better than using string
-			string s2 = SubString(s, size & ~(STN - 1));
+		  string s2 = SubString(s, size & ~(STN - 1), size);
 			size_t count = STN - (size & (STN - 1));
 			s2.append(count, 'A');
 			bytes_[size >> STNbits] = Seq<STN, ST> (s2);
@@ -78,7 +77,7 @@ public:
 	}
 
 	~SequenceData() {
-		free(bytes_);
+	        free(bytes_);
 		//delete[] bytes_;
 	}
 
