@@ -50,7 +50,7 @@ private:
 	}
 
 	bool isTip(Edge *edge) {
-		return isTip(graph_.edgeEnd(edge));
+		return isTip(graph_.EdgeEnd(edge));
 	}
 
 	void FindTips() {
@@ -81,7 +81,7 @@ private:
 		if (graph_.length(tip) > maxTipLength_ || graph_.coverage(tip)
 				> coverageBound_)
 			return false;
-		Vertex *splitVertex = graph_.edgeStart(tip);
+		Vertex *splitVertex = graph_.EdgeStart(tip);
 		if (graph_.CheckUniqueOutgiongEdge(splitVertex))
 			return false;
 		size_t maxCoverage = maxCompetotorCoverage(splitVertex, tip);
@@ -106,8 +106,8 @@ private:
 	//	}
 
 	void removeTip(Edge *tip) {
-		Vertex *splitVertex = graph_.edgeStart(tip);
-		Vertex *tipVertex = graph_.edgeEnd(tip);
+		Vertex *splitVertex = graph_.EdgeStart(tip);
+		Vertex *tipVertex = graph_.EdgeEnd(tip);
 		graph_.DeleteEdge(tip);
 		graph_.DeleteVertex(tipVertex);
 		compressSplitVertex(splitVertex);

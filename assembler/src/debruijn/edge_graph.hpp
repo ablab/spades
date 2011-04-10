@@ -370,9 +370,9 @@ public:
 		return IsDeadEnd(v->complement());
 	}
 
-	Vertex *edgeStart(const Edge *edge) const;
+	Vertex *EdgeStart(const Edge *edge) const;
 
-	Vertex *edgeEnd(const Edge *edge) const;
+	Vertex *EdgeEnd(const Edge *edge) const;
 
 	Vertex *ComplementVertex(const Vertex* v) const {
 		return v->complement();

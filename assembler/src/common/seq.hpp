@@ -253,7 +253,7 @@ public:
 	}
 
 	bool operator!=(const Seq<size_, T> s) const {
-		return !(*this) == s;
+		return !((*this) == s);
 		//return this->equal_to()(s);
 	}
 

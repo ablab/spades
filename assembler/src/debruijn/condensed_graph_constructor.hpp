@@ -128,8 +128,6 @@ protected:
 	GraphConstructor() {
 		h_ = new SimpleIndex<kmer_size_> ();
 		g_ = new CondensedGraph(kmer_size_, new HashRenewer<kmer_size_> (h_));
-		//		DEBUG("HERE0");
-		//		GetPosMaybeMissing(Seq<5>("AAAAA"));
 	}
 
 public:

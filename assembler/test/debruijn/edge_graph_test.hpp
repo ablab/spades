@@ -1,8 +1,15 @@
 #ifndef EDGEGRAPHTEST_HPP_
 #define EDGEGRAPHTEST_HPP_
-#include "edge_graph.hpp"
+#include "edge_graph_constructor.hpp"
+#include "test_utils.hpp"
+#include "cute.h"
 
 namespace edge_graph {
+
+using de_bruijn::Traversal;
+using de_bruijn::TraversalHandler;
+using de_bruijn::DFS;
+using de_bruijn::SimpleIndex;
 
 void EmptyGraphTest() {
 	EdgeGraph g(11);
@@ -111,9 +118,117 @@ void SmartIteratorTest() {
 	}
 }
 
+typedef tr1::unordered_set<string> edge_set;
+
+string print(const edge_set& es) {
+	string s = "Edge set : {";
+	for (edge_set::const_iterator i = es.begin(); i != es.end(); ++i) {
+		s += "'" + *i + "'; ";
+	}
+	return s;
 }
 
-using namespace edge_graph ;
+class ToStringHandler: public TraversalHandler<EdgeGraph> {
+	edge_set& edges_;
+public:
+	ToStringHandler(edge_set& edges) :
+		edges_(edges) {
+	}
+
+	virtual void HandleEdge(Edge* e) {
+		//todo rewrite using graph object (maybe add g_ to superclass)
+		edges_.insert((*e).nucls().str());
+	}
+
+};
+
+//todo refactor
+void MyEquals(edge_set es, string s[], size_t length) {
+	edge_set etalon_edges;
+	for (size_t i = 0; i < length; ++i) {
+		ASSERT(es.count(s[i]) == 1);
+		ASSERT(es.count(complement(s[i])) == 1);
+		etalon_edges.insert(s[i]);
+		etalon_edges.insert(complement(s[i]));
+	}
+	ASSERT_EQUAL(etalon_edges.size(), es.size());
+}
+
+template <size_t kmer_size_>
+void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt, string etalon_edges[]) {
+	vector<Read> reads = MakeReads(reads_str, read_cnt);
+	DeBruijn<kmer_size_> debruijn;
+	debruijn.ConstructGraph(reads);
+	CondenseConstructor<kmer_size_> g_c(debruijn);
+	EdgeGraph *g;
+	SimpleIndex<6, Edge*> *index;
+	g_c.ConstructGraph(g, index);
+
+	edge_set edges;
+	ToStringHandler h(edges);
+	DFS<EdgeGraph> dfs(g);
+	dfs.Traverse(&h);
+
+	DEBUG(print(edges));
+
+	MyEquals(edges, etalon_edges, edge_cnt);
+
+	delete g;
+	delete index;
+}
+
+//todo rename tests
+
+void TestSimpleThread() {
+	static const size_t read_cnt = 1;
+	string reads[read_cnt] = {"ACAAACCACCA"};
+	static const size_t edge_cnt = 1;
+	string edges[edge_cnt] = {"ACAAACCACCA"};
+	AssertGraph<5>(read_cnt, reads, edge_cnt, edges);
+}
+
+void TestSimpleThread2() {
+	static const size_t read_cnt = 2;
+	string reads[read_cnt] = {"ACAAACCACCC", "AAACCACCCAC"};
+	static const size_t edge_cnt = 1;
+	string edges[edge_cnt] = {"ACAAACCACCCAC"};
+	AssertGraph<5>(read_cnt, reads, edge_cnt, edges);
+}
+
+void TestSplitThread() {
+	static const size_t read_cnt = 2;
+	string reads[read_cnt] = {"ACAAACCACCA", "ACAAACAACCC"};
+	static const size_t edge_cnt = 3;
+	string edges[edge_cnt] = {"ACAAAC", "CAAACCACCA", "CAAACAACCC"};
+	AssertGraph<5>(read_cnt, reads, edge_cnt, edges);
+}
+
+void TestSplitThread2() {
+	static const size_t read_cnt = 2;
+	string reads[read_cnt] = {"ACAAACCACCA", "ACAAACAACCA"};
+	static const size_t edge_cnt = 4;
+	string edges[edge_cnt] = {"AACCACCA", "ACAAAC", "CAAACCA", "CAAACAACCA"};
+	AssertGraph<5>(read_cnt, reads, edge_cnt, edges);
+}
+
+void TestBuldge() {
+	static const size_t read_cnt = 2;
+	string reads[read_cnt] = {"ACAAAACACCA", "ACAAACCACCA"};
+	static const size_t edge_cnt = 2;
+	string edges[edge_cnt] = {"ACAAAACACCA", "ACAAACCACCA"};
+	AssertGraph<5>(read_cnt, reads, edge_cnt, edges);
+}
+
+void TestCondenseSimple() {
+	static const size_t read_cnt = 4;
+
+	string reads[read_cnt] = {"CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC"};
+	static const size_t edge_cnt = 3;
+	string edges[edge_cnt] = {"CGAAAACACAC", "CACACC", "CGAAACCACAC"};
+
+	AssertGraph<5>(read_cnt, reads, edge_cnt, edges);
+}
+
 cute::suite EdgeGraphSuite() {
 	cute::suite s;
 	s.push_back(CUTE(EmptyGraphTest));
@@ -123,7 +238,15 @@ cute::suite EdgeGraphSuite() {
 	s.push_back(CUTE(VertexMethodsSimpleTest));
 	s.push_back(CUTE(GraphMethodsSimpleTest));
 	s.push_back(CUTE(SmartIteratorTest));
+	s.push_back(CUTE(TestSimpleThread));
+	s.push_back(CUTE(TestSimpleThread2));
+	s.push_back(CUTE(TestSplitThread));
+	s.push_back(CUTE(TestSplitThread2));
+	s.push_back(CUTE(TestBuldge));
+	s.push_back(CUTE(TestCondenseSimple));
+
 	return s;
+}
 }
 
 #endif /* EDGEGRAPHTEST_HPP_ */

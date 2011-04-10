@@ -75,8 +75,10 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 	///////////////
 	bool StepRightIfPossible(KPlusOneMer &edge) {
 		//todo use Seq.end
+		DEBUG("Considering edge " << edge);
 		Kmer end(edge, 1);
-		DEBUG("Next Count " << origin_.OutgoingEdgeCount(end));
+		DEBUG("Next Count of end " << origin_.OutgoingEdgeCount(end));
+		DEBUG("Prev Count of end " << origin_.IncomingEdgeCount(end));
 		if (origin_.IncomingEdgeCount(end) == 1 && origin_.OutgoingEdgeCount(
 				end) == 1) {
 			KPlusOneMer next_edge = *(origin_.OutgoingEdges(end).first);
@@ -90,6 +92,7 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 	}
 
 	KPlusOneMer GoRight(KPlusOneMer edge) {
+		DEBUG("Starting going right for edge " << edge);
 		KPlusOneMer initial = edge;
 		while (StepRightIfPossible(edge) && edge != initial) {
 		}
@@ -97,7 +100,8 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 	}
 
 	KPlusOneMer GoLeft(KPlusOneMer edge) {
-		return !GoRight(edge);
+		DEBUG("Starting going left for edge " << edge);
+		return !GoRight(!edge);
 	}
 
 	Sequence ConstructSeqGoingRight(KPlusOneMer edge) {
@@ -137,7 +141,7 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 		for (char c = 0; c < 4; ++c) {
 			KPlusOneMer edge = kmer.pushBack(c);
 			if (super::h_->contains(edge)) {
-				return super::g_->edgeStart(super::h_->get(edge).first);
+				return super::g_->EdgeStart(super::h_->get(edge).first);
 			}
 		}
 		return NULL;

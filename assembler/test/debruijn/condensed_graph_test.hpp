@@ -11,25 +11,11 @@
 #include <fstream>
 #include <tr1/unordered_set>
 #include <ext/functional>
+#include "test_utils.hpp"
 
 namespace condensed_graph {
 
 using namespace std;
-
-template<typename T>
-struct PairHash {
-	size_t operator()(pair<T, T> p) const {
-		return hash<T> ()(p.first) + hash<T> ()(p.second);
-	}
-};
-
-template<typename T>
-struct PairLess {
-	bool operator()(pair<T, T> p1, pair<T, T> p2) const {
-		return less<T> ()(p1.first, p2.first) ? true : (less<T> ()(p2.first,
-				p1.first) ? false : less<T> ()(p1.second, p2.second));
-	}
-};
 
 typedef tr1::unordered_set<pair<string, string> , PairHash<string> > edge_set;
 
@@ -52,56 +38,67 @@ public:
 	}
 };
 
-void go(const CondensedGraph& g, Vertex* v, set<Vertex*>& visited, string& log) {
-	log += "Entering vertex '" + v->nucls().str() + "'; ";
-	if (visited.count(v) == 1) {
-		log += "Vertex '" + v->nucls().str() + "' has been visited; ";
-	} else {
-		visited.insert(v);
-		vector<Vertex*> desc = g.RightNeighbours(v);
-		for (size_t i = 0; i < desc.size(); ++i) {
-			go(g, desc[i], visited, log);
-		}
+//void go(const CondensedGraph& g, Vertex* v, set<Vertex*>& visited, string& log) {
+//	log += "Entering vertex '" + v->nucls().str() + "'; ";
+//	if (visited.count(v) == 1) {
+//		log += "Vertex '" + v->nucls().str() + "' has been visited; ";
+//	} else {
+//		visited.insert(v);
+//		vector<Vertex*> desc = g.RightNeighbours(v);
+//		for (size_t i = 0; i < desc.size(); ++i) {
+//			go(g, desc[i], visited, log);
+//		}
+//	}
+//	log += "Leaving vertex '" + v->nucls().str() + "'; ";
+//}
+
+//string printDfs(const CondensedGraph& g, Vertex* start) {
+//	DFS dfs(g);
+//
+//	string log;
+//	set<Vertex*> visited;
+//	go(g, start, visited, log);
+//	return log;
+//}
+
+//Vertex* find(const set<Vertex*>& vs, string s) {
+//	for (set<Vertex*>::iterator i = vs.begin(); i != vs.end(); ++i) {
+//		if ((*i)->nucls().str() == s) {
+//			return *i;
+//		}
+//	}
+//	assert(false);
+//	return NULL;
+//}
+
+//bool contains(const set<Vertex*>& vs, string s) {
+//	for (set<Vertex*>::iterator i = vs.begin(); i != vs.end(); ++i) {
+//		if ((*i)->nucls().str() == s) {
+//			return true;
+//		}
+//	}
+//	return false;
+//}
+
+//string print(const set<Vertex*>& vs) {
+//	string s = "";
+//	for (set<Vertex*>::iterator i = vs.begin(); i != vs.end(); ++i) {
+//		s += "'" + (*i)->nucls().str() + "' ";
+//	}
+//	return s;
+//}
+
+string print(const vertex_set& vs) {
+	string s = "Vertex set : {";
+	for (vertex_set::const_iterator i = vs.begin(); i != vs.end(); ++i) {
+		s += "'" + *i + "'; ";
 	}
-	log += "Leaving vertex '" + v->nucls().str() + "'; ";
+	return s + "}";
 }
-
-string printDfs(const CondensedGraph& g, Vertex* start) {
-	DFS dfs(g);
-
-	string log;
-	set<Vertex*> visited;
-	go(g, start, visited, log);
-	return log;
-}
-
-Vertex* find(const set<Vertex*>& vs, string s) {
-	for (set<Vertex*>::iterator i = vs.begin(); i != vs.end(); ++i) {
-		if ((*i)->nucls().str() == s) {
-			return *i;
-		}
-	}
-	assert(false);
-	return NULL;
-}
-
-bool contains(const set<Vertex*>& vs, string s) {
-	for (set<Vertex*>::iterator i = vs.begin(); i != vs.end(); ++i) {
-		if ((*i)->nucls().str() == s) {
-			return true;
-		}
-	}
-	return false;
-}
-
-std::string complement(const std::string& s) {
-	return (!Sequence(s)).str();
-}
-
-string print(const set<Vertex*>& vs) {
-	string s = "";
-	for (set<Vertex*>::iterator i = vs.begin(); i != vs.end(); ++i) {
-		s += "'" + (*i)->nucls().str() + "' ";
+string print(const edge_set& es) {
+	string s = "Edge set : {";
+	for (edge_set::const_iterator i = es.begin(); i != es.end(); ++i) {
+		s += "'" + (*i).first + "'->'" + (*i).second + "'; ";
 	}
 	return s;
 }
@@ -130,16 +127,6 @@ void VisTool() {
 	cerr << h.v_count() << " " << h.e_count();
 }
 
-vector<Read> MakeReads(string *ss, size_t count) {
-	vector<Read> ans;
-	for (size_t i = 0; i < count; ++i) {
-		Read r("", *ss, "");
-		ss++;
-		ans.push_back(r);
-	}
-	return ans;
-}
-
 //todo refactor
 void MyEquals(edge_set es, string s[][2], size_t length) {
 	edge_set etalon_edges;
@@ -164,7 +151,7 @@ void MyEquals(vertex_set vs, string s[], size_t length) {
 	ASSERT_EQUAL(etalon_vertices.size(), vs.size());
 }
 
-template <size_t kmer_size_, size_t read_size_>
+template <size_t kmer_size_>
 void AssertGraph(size_t read_cnt, string reads_str[], size_t vertex_cnt, string et_vertices[], size_t edge_cnt, string et_edges[][2]) {
 	const vector<Read> reads = MakeReads(reads_str, read_cnt);
 	DirectConstructor<kmer_size_> g_c(reads);
@@ -188,17 +175,17 @@ void AssertGraph(size_t read_cnt, string reads_str[], size_t vertex_cnt, string 
 	delete index;
 }
 
-template <size_t kmer_size_, size_t read_size_>
+template <size_t kmer_size_>
 void AssertGraph(size_t read_cnt, string reads[], size_t vertex_cnt, string et_vertices[]) {
-	AssertGraph<kmer_size_, read_size_>(read_cnt, reads, vertex_cnt, et_vertices, 0, NULL);
+	AssertGraph<kmer_size_>(read_cnt, reads, vertex_cnt, et_vertices, 0, NULL);
 }
 
-template <size_t kmer_size_, size_t read_size_>
+template <size_t kmer_size_>
 void AssertGraph(size_t read_cnt, string reads[], size_t edge_cnt, string et_edges[][2]) {
-	AssertGraph<kmer_size_, read_size_>(read_cnt, reads, 0, NULL, edge_cnt, et_edges);
+	AssertGraph<kmer_size_>(read_cnt, reads, 0, NULL, edge_cnt, et_edges);
 }
 
-template <size_t kmer_size_, size_t read_size_>
+template <size_t kmer_size_>
 void AssertCondense(size_t read_cnt, string reads_str[], size_t vertex_cnt, string et_vertices[], size_t edge_cnt, string et_edges[][2]) {
 	vector<Read> reads = MakeReads(reads_str, read_cnt);
 	DeBruijn<kmer_size_> debruijn;
@@ -213,6 +200,10 @@ void AssertCondense(size_t read_cnt, string reads_str[], size_t vertex_cnt, stri
 	ToStringHandler h(vertices, edges);
 	DFS dfs(*g);
 	dfs.Traverse(h);
+
+	DEBUG(print(vertices));
+	DEBUG(print(edges));
+
 	if (vertex_cnt != 0) {
 		MyEquals(vertices, et_vertices, vertex_cnt);
 	}
@@ -224,14 +215,14 @@ void AssertCondense(size_t read_cnt, string reads_str[], size_t vertex_cnt, stri
 	delete index;
 }
 
-template <size_t kmer_size_, size_t read_size_>
+template <size_t kmer_size_>
 void AssertCondense(size_t read_cnt, string reads[], size_t vertex_cnt, string et_vertices[]) {
-	AssertCondense<kmer_size_, read_size_>(read_cnt, reads, vertex_cnt, et_vertices, 0, NULL);
+	AssertCondense<kmer_size_>(read_cnt, reads, vertex_cnt, et_vertices, 0, NULL);
 }
 
-template <size_t kmer_size_, size_t read_size_>
+template <size_t kmer_size_>
 void AssertCondense(size_t read_cnt, string reads[], size_t edge_cnt, string et_edges[][2]) {
-	AssertCondense<kmer_size_, read_size_>(read_cnt, reads, 0, NULL, edge_cnt, et_edges);
+	AssertCondense<kmer_size_>(read_cnt, reads, 0, NULL, edge_cnt, et_edges);
 }
 
 void TestSimpleThread() {
@@ -239,7 +230,7 @@ void TestSimpleThread() {
 	string reads[read_cnt] = {"ACAAACCACCA"};
 	static const size_t vertex_cnt = 1;
 	string vertices[vertex_cnt] = {"ACAAACCACCA"};
-	AssertGraph<5, 11>(read_cnt, reads, vertex_cnt, vertices);
+	AssertGraph<5>(read_cnt, reads, vertex_cnt, vertices);
 }
 
 void TestSimpleThread2() {
@@ -247,7 +238,7 @@ void TestSimpleThread2() {
 	string reads[read_cnt] = {"ACAAACCACCC", "AAACCACCCAC"};
 	static const size_t vertex_cnt = 1;
 	string vertices[vertex_cnt] = {"ACAAACCACCCAC"};
-	AssertGraph<5, 11>(read_cnt, reads, vertex_cnt, vertices);
+	AssertGraph<5>(read_cnt, reads, vertex_cnt, vertices);
 }
 
 void TestSplitThread() {
@@ -255,7 +246,7 @@ void TestSplitThread() {
 	string reads[read_cnt] = {"ACAAACCACCA", "ACAAACAACCC"};
 	static const size_t edge_cnt = 2;
 	string edges[edge_cnt][2] = {{"ACAAAC", "AAACAACCC"}, {"ACAAAC", "AAACCACCA"}};
-	AssertGraph<5, 11>(read_cnt, reads, edge_cnt, edges);
+	AssertGraph<5>(read_cnt, reads, edge_cnt, edges);
 }
 
 void TestSplitThread2() {
@@ -263,7 +254,7 @@ void TestSplitThread2() {
 	string reads[read_cnt] = {"ACAAACCACCA", "ACAAACAACCA"};
 	static const size_t edge_cnt = 4;
 	string edges[edge_cnt][2] = {{"ACAAAC", "AAACAACC"}, {"AAACAACC", "AACCACCA"}, {"ACAAAC", "AAACC"}, {"AAACC", "AACCACCA"}};
-	AssertGraph<5, 11>(read_cnt, reads, edge_cnt, edges);
+	AssertGraph<5>(read_cnt, reads, edge_cnt, edges);
 }
 
 void TestBuldge() {
@@ -271,7 +262,7 @@ void TestBuldge() {
 	string reads[read_cnt] = {"ACAAAACACCA", "ACAAACCACCA"};
 	static const size_t edge_cnt = 4;
 	string edges[edge_cnt][2] = {{"ACAAA", "CAAAACACC"}, {"CAAAACACC", "CACCA"}, {"ACAAA", "CAAACCACC"}, {"CAAACCACC", "CACCA"}};
-	AssertGraph<5, 11>(read_cnt, reads, edge_cnt, edges);
+	AssertGraph<5>(read_cnt, reads, edge_cnt, edges);
 }
 
 void TestSimpleHashTable() {
@@ -301,12 +292,9 @@ void TestCondenseSimple() {
 	static const size_t edge_cnt = 4;
 	string edges[edge_cnt][2] = {{"CGAAA", "GAAAACACA"}, {"CGAAA", "GAAACCACA"}, {"GAAACCACA", "CACACC"}, {"GAAAACACA", "CACACC"}};
 
-	AssertCondense<5, 9>(read_cnt, reads, edge_cnt, edges);
+	AssertCondense<5>(read_cnt, reads, edge_cnt, edges);
 }
 
-}
-
-using namespace condensed_graph;
 cute::suite CondensedGraphSuite() {
 	cute::suite s;
 	s.push_back(CUTE(TestVertex));
@@ -319,5 +307,7 @@ cute::suite CondensedGraphSuite() {
 	 s.push_back(CUTE(TestCondenseSimple));
 	 s.push_back(CUTE(VisTool));
 	return s;
+}
+
 }
 

@@ -136,11 +136,11 @@ Edge *EdgeGraph::ComplementEdge(const Edge* edge) const {
 	return result;
 }
 
-Vertex *EdgeGraph::edgeStart(const Edge *edge) const {
+Vertex *EdgeGraph::EdgeStart(const Edge *edge) const {
 	return ComplementEdge(edge)->end()->complement();
 }
 
-Vertex *EdgeGraph::edgeEnd(const Edge *edge) const {
+Vertex *EdgeGraph::EdgeEnd(const Edge *edge) const {
 	return edge->end();
 }
 
@@ -154,8 +154,8 @@ Edge *EdgeGraph::CompressVertex(Vertex *v) {
 	Edge *edge1 = GetUniqueIncomingEdge(v);
 	Edge *edge2 = GetUniqueOutgoingEdge(v);
 	Sequence nucls = edge1->nucls() + edge2->nucls().Subseq(k_);
-	Vertex *v1 = edgeStart(edge1);
-	Vertex *v2 = edgeEnd(edge2);
+	Vertex *v1 = EdgeStart(edge1);
+	Vertex *v2 = EdgeEnd(edge2);
 	DeleteEdge(edge1);
 	DeleteEdge(edge2);
 	DeleteVertex(v);
@@ -167,8 +167,8 @@ Edge *EdgeGraph::CompressPath(const vector<Vertex *> path) {
 	SequenceBuilder sb;
 	assert(CheckUniqueIncomingEdge(path[0]));
 	sb.append(GetUniqueIncomingEdge(path[0])->nucls());
-	Vertex *v1 = edgeStart(GetUniqueIncomingEdge(path[0]));
-	Vertex *v2 = edgeEnd(GetUniqueOutgoingEdge(path[path.size() - 1]));
+	Vertex *v1 = EdgeStart(GetUniqueIncomingEdge(path[0]));
+	Vertex *v2 = EdgeEnd(GetUniqueOutgoingEdge(path[path.size() - 1]));
 	for (vector<Vertex *>::const_iterator it = path.begin(); it != path.end(); ++it) {
 		sb.append(GetUniqueOutgoingEdge(*it)->nucls().Subseq(k_));
 		ForceDeleteVertex(*it);
@@ -183,12 +183,12 @@ void EdgeGraph::CompressAllVertices() {
 		Vertex *v = *it;
 		if(CheckUniqueOutgiongEdge(v) && CheckUniqueIncomingEdge(v)) {
 			while(CheckUniqueOutgiongEdge(v))
-				v = edgeEnd(GetUniqueOutgoingEdge(v));
+				v = EdgeEnd(GetUniqueOutgoingEdge(v));
 			vector<Vertex *> compressList;
 			v = ComplementVertex(v);
 			while(CheckUniqueOutgiongEdge(v)) {
 				compressList.push_back(v);
-				v = edgeEnd(GetUniqueOutgoingEdge(v));
+				v = EdgeEnd(GetUniqueOutgoingEdge(v));
 			}
 			CompressPath(compressList);
 		}
