@@ -56,23 +56,11 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 	typedef typename super::Kmer Kmer;
 	typedef typename super::KPlusOneMer KPlusOneMer;
 	typedef DeBruijn<kmer_size_> debruijn;
+	typedef typename debruijn::edge_iterator edge_iterator;
+	typedef typename debruijn::kmer_iterator kmer_iterator;
 
 	DeBruijn<kmer_size_>& origin_;
 
-	//	bool StepLeftIfPossible(Kmer &kmer) {
-	//		if (origin_.PrevCount(kmer) == 1 && origin_.NextCount(kmer) == 1) {
-	//			Kmer prev_kmer = *(origin_.begin_prev(kmer));
-	//			DEBUG("Prev kmer " << prev_kmer);
-	//			DEBUG("Next Count of prev " << origin_.NextCount(prev_kmer));
-	//			assert(origin_.NextCount(prev_kmer) > 0);
-	//			if (kmer != !prev_kmer) {
-	//				kmer = prev_kmer;
-	//				return true;
-	//			}
-	//		}
-	//		return false;
-	//	}
-	///////////////
 	bool StepRightIfPossible(KPlusOneMer &edge) {
 		//todo use Seq.end
 		DEBUG("Considering edge " << edge);
@@ -120,24 +108,7 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 		return ConstructSeqGoingRight(GoLeft(edge));
 	}
 
-	//	void MakeLinks() {
-	//		for (EdgeGraph::VertexIterator it = super::g_->begin(), end =
-	//				super::g_->end(); it != end; ++it) {
-	//			Vertex* v = *it;
-	//			Kmer kmer = v->nucls().end<kmer_size_> ();
-	//
-	//			typename debruijn::neighbour_iterator n_it = origin_.begin_next(
-	//					kmer);
-	//			for (size_t i = 0, n = origin_.NextCount(kmer); i < n; ++i, ++n_it) {
-	//				pair<Vertex*, size_t> position = super::GetPosition(*n_it);
-	//				//				assert(position.second == 0);
-	//				super::g_->LinkVertices(v, position.first);
-	//			}
-	//			//todo now linking twice!!!
-	//		}
-	//	}
-
-	Vertex* FindVertexByOutgoindEdges(Kmer kmer) {
+	VertexId FindVertexByOutgoindEdges(Kmer kmer) {
 		for (char c = 0; c < 4; ++c) {
 			KPlusOneMer edge = kmer.pushBack(c);
 			if (super::h_->contains(edge)) {
@@ -147,19 +118,19 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 		return NULL;
 	}
 
-	Vertex* FindVertexByIncomingEdges(Kmer kmer) {
-		Vertex* complement = FindVertexByOutgoindEdges(!kmer);
+	VertexId FindVertexByIncomingEdges(Kmer kmer) {
+		VertexId complement = FindVertexByOutgoindEdges(!kmer);
 		return complement != NULL ? super::g_ -> Complement(complement) : NULL;
 	}
 
-	Vertex* FindVertex(Kmer kmer) {
-		Vertex* v = FindVertexByOutgoindEdges(kmer);
+	VertexId FindVertex(Kmer kmer) {
+		VertexId v = FindVertexByOutgoindEdges(kmer);
 		return v == NULL ? FindVertexByIncomingEdges(kmer) : v;
 	}
 
-	Vertex* FindVertexMaybeMissing(Kmer kmer) {
-		Vertex* v = FindVertex(kmer);
-		return v !=NULL ? v : super::g_->AddVertex();
+	VertexId FindVertexMaybeMissing(Kmer kmer) {
+		VertexId v = FindVertex(kmer);
+		return v != NULL ? v : super::g_->AddVertex();
 	}
 
 public:
@@ -168,26 +139,22 @@ public:
 	}
 
 	virtual void ConstructGraph(EdgeGraph* &g, Index* &h) {
-
-		for (typename debruijn::kmer_iterator it = origin_.begin(), end =
-				origin_.end(); it != end; it++) {
+		for (kmer_iterator it = origin_.begin(), end = origin_.end(); it != end; it++) {
 			Kmer kmer = *it;
-			pair<typename debruijn::edge_iterator,
-					typename debruijn::edge_iterator> edges =
-					origin_.OutgoingEdges(kmer);
-			for (typename debruijn::edge_iterator it = edges.first; it
-					!= edges.second; ++it) {
+			pair<edge_iterator, edge_iterator> edges = origin_.OutgoingEdges(
+					kmer);
+			for (edge_iterator it = edges.first; it != edges.second; ++it) {
 				KPlusOneMer edge = *it;
 				if (!super::h_->contains(edge)) {
 					Sequence edge_sequence = ConstructSequenceWithEdge(edge);
-					Vertex* start = FindVertexMaybeMissing(edge_sequence.start<kmer_size_> ());
-					Vertex* end = FindVertexMaybeMissing(edge_sequence.end<kmer_size_> ());
+					VertexId start = FindVertexMaybeMissing(
+							edge_sequence.start<kmer_size_> ());
+					VertexId end = FindVertexMaybeMissing(
+							edge_sequence.end<kmer_size_> ());
 					super::g_->AddEdge(start, end, edge_sequence);
 				}
 			}
 		}
-
-		//		MakeLinks();
 
 		super::ConstructGraph(g, h);
 	}

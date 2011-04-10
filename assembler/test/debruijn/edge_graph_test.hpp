@@ -22,15 +22,15 @@ void OneVertexGraphTest() {
 	g.AddVertex();
 	ASSERT_EQUAL(2u, g.size());
 	Vertex *v = *(g.begin());
-	Vertex *rcv = g.ComplementVertex(v);
+	Vertex *rcv = g.Complement(v);
 	ASSERT(v != rcv);
-	ASSERT_EQUAL(v, g.ComplementVertex(rcv));
+	ASSERT_EQUAL(v, g.Complement(rcv));
 }
 
-pair<vector<Vertex *> , vector<Edge *> > createGraph(EdgeGraph &graph,
+pair<vector<VertexId> , vector<EdgeId> > createGraph(EdgeGraph &graph,
 		int edgeNumber) {
-	vector<Vertex *> v;
-	vector<Edge *> e;
+	vector<VertexId> v;
+	vector<EdgeId> e;
 	v.push_back(graph.AddVertex());
 	for (int i = 0; i < edgeNumber; i++) {
 		v.push_back(graph.AddVertex());
@@ -43,21 +43,21 @@ pair<vector<Vertex *> , vector<Edge *> > createGraph(EdgeGraph &graph,
 
 void OneEdgeGraphTest() {
 	EdgeGraph g(11);
-	pair<vector<Vertex *> , vector<Edge *> > data = createGraph(g, 1);
+	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 1);
 	ASSERT_EQUAL(1u, g.OutgoingEdgeCount(data.first[0]));
 	ASSERT_EQUAL(0u, g.OutgoingEdgeCount(data.first[1]));
 	ASSERT_EQUAL(data.second[0], g.GetUniqueOutgoingEdge(data.first[0]));
-	ASSERT_EQUAL(g.ComplementEdge(data.second[0]),
-			g.GetUniqueOutgoingEdge(g.ComplementVertex(data.first[1])));
+	ASSERT_EQUAL(g.Complement(data.second[0]),
+			g.GetUniqueOutgoingEdge(g.Complement(data.first[1])));
 	ASSERT_EQUAL(data.second[0],
-			g.ComplementEdge(g.ComplementEdge(data.second[0])));
+			g.Complement(g.Complement(data.second[0])));
 	ASSERT_EQUAL(!(g.EdgeNucls(data.second[0])),
-			g.EdgeNucls(g.ComplementEdge(data.second[0])));
+			g.EdgeNucls(g.Complement(data.second[0])));
 }
 
 void EdgeMethodsSimpleTest() {
 	EdgeGraph g(11);
-	pair<vector<Vertex *> , vector<Edge *> > data = createGraph(g, 2);
+	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 2);
 	ASSERT_EQUAL(data.second[0], &g.GetData(data.second[0]));
 	ASSERT_EQUAL(
 			true,
@@ -71,7 +71,7 @@ void EdgeMethodsSimpleTest() {
 
 void VertexMethodsSimpleTest() {
 	EdgeGraph g(11);
-	pair<vector<Vertex *> , vector<Edge *> > data = createGraph(g, 2);
+	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 2);
 	ASSERT_EQUAL(data.second[0], g.GetUniqueIncomingEdge(data.first[1]));
 	ASSERT_EQUAL(data.second[0], g.GetUniqueOutgoingEdge(data.first[0]));
 	ASSERT_EQUAL(false, g.CanCompressVertex(data.first[0]));
@@ -88,25 +88,25 @@ void VertexMethodsSimpleTest() {
 
 void GraphMethodsSimpleTest() {
 	EdgeGraph g(11);
-	pair<vector<Vertex *> , vector<Edge *> > data = createGraph(g, 2);
-	ASSERT_EQUAL(vector<GraphActionHandler<EdgeGraph> *> (), g.GetHandlers());
-	GraphActionHandler<EdgeGraph> *handler =
-			new GraphActionHandler<EdgeGraph> ();
+	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 2);
+	ASSERT_EQUAL(vector<ActionHandler*> (), g.GetHandlers());
+	ActionHandler* handler =
+			new ActionHandler();
 	g.AddActionHandler(handler);
-	vector<GraphActionHandler<EdgeGraph> *> handlers = g.GetHandlers();
+	vector<ActionHandler*> handlers = g.GetHandlers();
 	ASSERT_EQUAL(1u, handlers.size());
 	ASSERT_EQUAL(handler, handlers[0]);
 	g.RemoveActionHandler(handler);
-	ASSERT_EQUAL(vector<GraphActionHandler<EdgeGraph> *> (), g.GetHandlers());
+	ASSERT_EQUAL(vector<ActionHandler*> (), g.GetHandlers());
 }
 
 void SmartIteratorTest() {
 	EdgeGraph g(11);
-	pair<vector<Vertex *> , vector<Edge *> > data = createGraph(g, 4);
+	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 4);
 	size_t num = 0;
-	set<Vertex *> visited;
-	SmartVertexIterator<EdgeGraph> endIt = g.SmartVertexEnd();
-	for (SmartVertexIterator<EdgeGraph> it = g.SmartVertexBegin(); g.SmartVertexEnd()
+	set<VertexId> visited;
+	SmartVertexIterator endIt = g.SmartVertexEnd();
+	for (SmartVertexIterator it = g.SmartVertexBegin(); g.SmartVertexEnd()
 			!= it; ++it) {
 		num++;
 		visited.insert(*it);
@@ -114,7 +114,7 @@ void SmartIteratorTest() {
 	ASSERT_EQUAL(num, data.first.size() * 2);
 	for (size_t i = 0; i < data.first.size(); i++) {
 		ASSERT(visited.find(data.first[i]) != visited.end());
-		ASSERT(visited.find(g.ComplementVertex(data.first[i])) != visited.end());
+		ASSERT(visited.find(g.Complement(data.first[i])) != visited.end());
 	}
 }
 
@@ -135,7 +135,7 @@ public:
 		edges_(edges) {
 	}
 
-	virtual void HandleEdge(Edge* e) {
+	virtual void HandleEdge(EdgeId e) {
 		//todo rewrite using graph object (maybe add g_ to superclass)
 		edges_.insert((*e).nucls().str());
 	}

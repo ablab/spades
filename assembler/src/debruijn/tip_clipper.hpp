@@ -28,7 +28,7 @@ public:
 		graph_(graph) {
 	}
 
-	bool operator()(const Edge *edge1, const Edge *edge2) const {
+	bool operator()(Edge* edge1, Edge* edge2) const {
 		return graph_.EdgeNucls(edge1).size() < graph_.EdgeNucls(edge2).size();
 	}
 };
@@ -92,7 +92,7 @@ private:
 		if (graph_.CanCompressVertex(splitVertex)) {
 			Edge *edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
 			Edge *edge2 = graph_.GetUniqueOutgoingEdge(
-					graph_.ComplementVertex(splitVertex));
+					graph_.Complement(splitVertex));
 			if (isTip(edge1) || isTip(edge2)) {
 				graph_.CompressVertex(splitVertex);
 			}
