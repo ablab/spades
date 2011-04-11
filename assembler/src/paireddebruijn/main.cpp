@@ -7,7 +7,7 @@
 #include "readTracing.hpp"
 #include "sequence.hpp"
 #include "readsReformatter.hpp"
-#include "read_generator.hpp"
+//#include "read_generator.hpp"
 
 using namespace paired_assembler;
 LOGGER("p.main");
@@ -135,7 +135,7 @@ void run() {
 }
 
 void generate() {
-	generateReads<SmoothPositionChooser> ("data/paireddebruijn/generated1.txt",
+/*	generateReads<SmoothPositionChooser> ("data/paireddebruijn/generated1.txt",
 			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 0);
 	generateReads<RandomPositionChooser> ("data/paireddebruijn/generated2.txt",
 			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 0);
@@ -143,6 +143,7 @@ void generate() {
 			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 6);
 	generateReads<RandomPositionChooser> ("data/paireddebruijn/generated4.txt",
 			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 6);
+*/
 }
 
 int main() {
