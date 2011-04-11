@@ -24,6 +24,7 @@ int useKmersVertices = 0;
 
 
 int fictiveSecondReads = 0;
+int useRevertedPairs = 0;
 int needPairs = 1;
 int needLmers = 1;
 int needSequences = 1;
@@ -88,7 +89,7 @@ void initConstants(string ini_file) {
 	assert(fscanf(ini, "needRevertedPairs = %d\n", &needRevertedPairs) == 1);
 	assert(fscanf(ini, "inClusterMaxShift = %d\n", &inClusterMaxShift) == 1);
 	assert(fscanf(ini, "useKmersVertices = %d\n", &useKmersVertices) == 1);
-
+	assert(fscanf(ini, "useRevertedPairs = %d\n", &useRevertedPairs) == 1);
 	assert(fscanf(ini, "Filenames:\n") == 0);
 	assert(fscanf(ini, "work_folder = %s\n" , tmp) == 1);
 	folder = string(tmp) + '/';

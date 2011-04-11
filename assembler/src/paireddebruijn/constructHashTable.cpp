@@ -353,7 +353,7 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 	vector<int> tmp_cov;
 	assert (max_shift <= 20);
 
-	cerr << "Start clustering"<<endl;
+	//cerr << "Start clustering"<<endl;
 	int right[MAXLMERSIZE];
 	int left[MAXLMERSIZE];
 	int used[MAXLMERSIZE];
@@ -489,7 +489,7 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 			lmers[i].pb(extractMer(t_seq,l, j ));
 		sort(lmers[i].begin(), lmers[i].end());
 	}*/
-	cerr << "Start compressing"<<endl;
+//	cerr << "Start compressing"<<endl;
 
 	forn(i,  tmp_res.size()) {
 
@@ -510,7 +510,7 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 
 		}
 	}
-	cerr << "Finish clustering"<<endl;
+//	cerr << "Finish clustering"<<endl;
 
 	/*
 	{
@@ -619,7 +619,17 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 //	cerr << table.size()<<endl;
 }
 
-
+inline void reverseCompliment(char *upperRead, char* lowerRead, char* tmpRead){
+	forn(i, readLength) {
+		tmpRead[i] = 3 - upperRead[readLength - 1 - i];
+	}
+	forn(i, readLength) {
+		upperRead[i] = 3 - lowerRead[readLength - 1 - i];
+	}
+	forn(i, readLength) {
+		lowerRead[i] = tmpRead[i];
+	}
+}
 void constructTable(string inputFile, myMap &table, bool reverse) {
 	FILE* inFile = fopen(inputFile.c_str(), "r");
 	int count = 0;
@@ -627,9 +637,14 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 	char *lowerNuclRead = new char[readLength + 2];
 	char *upperRead = new char[readLength + 2];
 	char *lowerRead = new char[readLength + 2];
+	char* fictiveRead = new char[readLength + 2];
+	char* tmpRead = new char[readLength + 2];
+
+	forn(i, readLength)
+		fictiveRead[i] = 0;
 	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
 //		fprintf(stderr, "%s", upperNuclRead);
-		if ((strlen(upperNuclRead)<readLength)||(strlen(lowerNuclRead)<readLength)) continue;
+		if ((strlen(upperNuclRead)<readLength)||(strlen(lowerNuclRead)<readLength)) break;
 		if (reverse) {
 			codeRead(upperNuclRead, lowerRead);
 			codeRead(lowerNuclRead, upperRead);
@@ -637,7 +652,20 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 			codeRead(upperNuclRead, upperRead);
 			codeRead(lowerNuclRead, lowerRead);
 		}
-		processReadPair(table, upperRead, lowerRead);
+		forn(tmp, 2) {
+			if (fictiveSecondReads) {
+				processReadPair(table, upperRead, fictiveRead);
+				processReadPair(table, lowerRead, fictiveRead);
+			} else {
+				processReadPair(table, upperRead, lowerRead);
+			}
+			if (!useRevertedPairs)
+				break;
+			else {
+				reverseCompliment(upperRead, lowerRead , tmpRead);
+			}
+
+		}
 		if (!(count & (1024*64 - 1)))
 			INFO("read number "<<count<<" processed"<<endl);
 		count++;

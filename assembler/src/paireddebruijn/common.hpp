@@ -91,6 +91,7 @@ extern int insertLength;
 extern int minIntersect;
 extern int inClusterMaxShift;
 extern int useKmersVertices;
+extern int useRevertedPairs;
 
 
 extern int fictiveSecondReads;
