@@ -134,7 +134,6 @@ void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph,
 	outputLongEdges(longEdges, graph, s);
 	s.close();
 }
-
 Sequence readGenome(istream &is) {
 	SequenceBuilder sb;
 	string buffer;

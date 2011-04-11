@@ -171,11 +171,11 @@ public:
 	typedef de_bruijn::SmartVertexIterator<EdgeGraph> SmartVertexIterator;
 	typedef de_bruijn::SmartEdgeIterator<EdgeGraph> SmartEdgeIterator;
 
-	VertexIterator begin() {
+	VertexIterator begin() const {
 		return vertices_.begin();
 	}
 
-	VertexIterator end() {
+	VertexIterator end() const {
 		return vertices_.end();
 	}
 
@@ -376,32 +376,79 @@ typedef EdgeGraph::ActionHandler ActionHandler;
 typedef EdgeGraph::SmartVertexIterator SmartVertexIterator;
 typedef EdgeGraph::SmartEdgeIterator SmartEdgeIterator;
 
+typedef de_bruijn::TraversalHandler<EdgeGraph> TraversalHandler;
 //////////////////////////////////////////////////////////////////
 
-class GraphVisualizer {
-public:
-	virtual void Visualize(const EdgeGraph& g) = 0;
-};
-
-class SimpleGraphVisualizer: public GraphVisualizer {
-	gvis::GraphPrinter<const Vertex*>& gp_;
-public:
-	SimpleGraphVisualizer(gvis::GraphPrinter<const Vertex*>& gp) :
-		gp_(gp) {
-	}
-
-	virtual void Visualize(const EdgeGraph& g);
-};
-
-class ComplementGraphVisualizer: public GraphVisualizer {
-	gvis::PairedGraphPrinter<const Vertex*>& gp_;
-public:
-	ComplementGraphVisualizer(gvis::PairedGraphPrinter<const Vertex*>& gp) :
-		gp_(gp) {
-	}
-
-	virtual void Visualize(const EdgeGraph& g);
-};
+//class VisHandler: public TraversalHandler {
+//	gvis::GraphPrinter<VertexId>& pr_;
+//public:
+//
+//	VisHandler(gvis::GraphPrinter<VertexId>& pr) :
+//		pr_(pr) {
+//	}
+//
+//	virtual void HandleStartVertex(VertexId v) {
+//		stringstream ss;
+//		ss << v->nucls().size();
+//		pr_.addVertex(v, ss.str());
+//	}
+//
+//	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
+//		pr_.addEdge(v1, v2, "");
+//	}
+//
+//};
+//
+//class ComplementVisHandler: public TraversalHandler {
+//	gvis::PairedGraphPrinter<VertexId>& pr_;
+//public:
+//
+//	ComplementVisHandler(gvis::PairedGraphPrinter<VertexId>& pr) :
+//		pr_(pr) {
+//	}
+//
+//	virtual void HandleStartVertex(VertexId v) {
+//		stringstream ss;
+//		ss << v->nucls().size();
+//
+//		//todo delete after debug
+//		stringstream ss2;
+//		ss2 << v->complement()->nucls().size();
+//		pr_.addVertex(v, ss.str(), v->complement(), ss2.str());
+//	}
+//
+//	virtual void HandleEdge(const Vertex* v1, const Vertex* v2) {
+//		pr_.addEdge(make_pair(v1, v1->complement()),
+//				make_pair(v2, v2->complement()), "");
+//	}
+//
+//};
+//
+//
+//class GraphVisualizer {
+//public:
+//	virtual void Visualize(const EdgeGraph& g) = 0;
+//};
+//
+//class SimpleGraphVisualizer: public GraphVisualizer {
+//	gvis::GraphPrinter<VertexId>& gp_;
+//public:
+//	SimpleGraphVisualizer(gvis::GraphPrinter<VertexId>& gp) :
+//		gp_(gp) {
+//	}
+//
+//	virtual void Visualize(const EdgeGraph& g);
+//};
+//
+//class ComplementGraphVisualizer: public GraphVisualizer {
+//	gvis::PairedGraphPrinter<VertexId>& gp_;
+//public:
+//	ComplementGraphVisualizer(gvis::PairedGraphPrinter<VertexId>& gp) :
+//		gp_(gp) {
+//	}
+//
+//	virtual void Visualize(const EdgeGraph& g);
+//};
 
 }
 #endif /* EDGE_GRAPH_HPP_ */

@@ -8,6 +8,44 @@
 #ifndef TEST_UTILS_HPP_
 #define TEST_UTILS_HPP_
 
+#include "read.hpp"
+#include "ireadstream.hpp"
+#include "read_generator.hpp"
+
+#define SUBSTR_LENGTH 1000
+#define COVERAGE 1
+#define R 35
+#define K 15
+#define filename "./data/input/MG1655-K12.fasta.gz"
+
+vector<Read> GenerateReadsWithMistakes() {
+	LOGGER("d.test_utils");
+	INFO("Reading " << filename);
+
+	ireadstream stream(filename);
+	Read r;
+	stream >> r;
+
+	INFO("Closing " << filename);
+	stream.close();
+
+	INFO("Generating reads for substring of length " << SUBSTR_LENGTH << " and coverage " << COVERAGE);
+
+	ReadGenerator<R> gen(r.getSequenceString().substr(0, SUBSTR_LENGTH), COVERAGE);
+	gen.setErrorProbability(2);
+
+	vector<Read> reads;
+	while (!gen.eof()) {
+		Read read;
+		gen >> read;
+//		cout << read[0] << endl;
+		reads.push_back(read);
+	}
+
+	INFO("Reads generated");
+	return reads;
+}
+
 template<typename T>
 struct PairHash {
 	size_t operator()(pair<T, T> p) const {
