@@ -582,7 +582,7 @@ void addPairToTable(myMap& table, ll upper, ll lower) {
 			table[upper].second[index]++;
 		}
 	} else {
-		pair<vector<ll>,vector<int>> tmp;
+		pair<vector<ll>,vector<short>> tmp;
 		tmp.first.clear();
 		tmp.first.pb(lower);
 		tmp.second.clear();
