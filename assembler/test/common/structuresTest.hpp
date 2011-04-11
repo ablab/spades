@@ -13,18 +13,19 @@
 #include "trie.hpp"
 #include "../memory.hpp"
 
-template <class hm>
+template <class T>
 void TestStructure() {
   const long Number = 1000000;
 
   timeval tim;
   gettimeofday(&tim, NULL);
   double t1 = tim.tv_sec + ((float)tim.tv_usec/1000000);
-  double vm1, rss1;
+  double vm1 = 0;
+  double rss1 = 0;
   process_mem_usage(vm1, rss1);
-
+ 
   srand(42);
-  hm map;
+  T map;
 
   for (int i = 0; i < Number; ++i) {
     int t = rand();
@@ -33,22 +34,23 @@ void TestStructure() {
 
   gettimeofday(&tim, NULL);
   double t2 = tim.tv_sec + ((float)tim.tv_usec/1000000);
-  double vm2, rss2;
-  process_mem_usage(vm2, rss2);
 
   size_t size = map.size();
 
-  typename hm::iterator hmi;
+  typename T::iterator it;
   for (int i = 0; i < Number; ++i) {
     int t = rand();
-    hmi = map.find(t);
+    it = map.find(t);
   }
 
   gettimeofday(&tim, NULL);
   double t3 = tim.tv_sec + ((float)tim.tv_usec/1000000);
+  double vm2 = 0;
+  double rss2 = 0;
+  process_mem_usage(vm2, rss2);
 
   std::cout << "Memory after inserting " << size << " elements: VM = " << (vm2 - vm1) << " KB; RSS = " << (rss2 - rss1) << " KB.\n";
-  std::cout << "Time used for " << Number << " inserts = " << (t2 - t1) << "sec; for " << Number << " finds: " << (t3 - t2) << "sec.\n";
+  std::cout << "Time used for " << Number << " inserts = " << (t2 - t1) << " sec; for " << Number << " finds: " << (t3 - t2) << " sec.\n";
 }
 
 void TestStandartMap() {
