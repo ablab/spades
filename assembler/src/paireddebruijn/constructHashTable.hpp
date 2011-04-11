@@ -3,7 +3,7 @@
 #include "common.hpp"
 #include "string"
 using namespace std;
-typedef map<ll, pair<vector<ll>, vector<int>>> myMap;
+typedef map<ll, pair<vector<ll>, vector<short>>> myMap;
 
 //reverse- take l-mer from first read and k-mer- from second
 pair<int, pair<int,int>> maxCommonSubstring(string &s1,string &s2);
