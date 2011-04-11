@@ -82,10 +82,11 @@ Sequence* SubSeq(Sequence Seq, int direction, int CutLen){
 		return new Sequence(Seq.Subseq(0, Seq.size()-CutLen));
 	else if (direction == RIGHT)
 		return new Sequence(Seq.Subseq(CutLen));
-	else {assert(0);}
-
+	else {
+		assert(0);
+	}
 }
-int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, ll &curKmer, Sequence* &curSeq, int &EdgeCoverage, int direction){
+int expandDirected(edgesMap &edges, constructingEdge &curEdge, verticesMap &verts, ll &curKmer, Sequence* &curSeq, int direction){
 	assert(direction == LEFT || direction == RIGHT );
 	TRACE("expanding" << direction << " kmer "<< curKmer);
 	while( (findPossibleVertex(subkmer(curKmer, direction), *SubSeq(*curSeq, direction), edges, verts) == -1) ){
@@ -101,24 +102,23 @@ int expandDirected(edgesMap &edges, protoEdgeType &curEdge, verticesMap &verts, 
 			DEBUG("Troubles with going forward");
 			break;
 		}
-		goUniqueWay(edges, curKmer, curSeq, dir_res, EdgeCoverage, direction);
+		goUniqueWay(edges, curKmer, curSeq, dir_res, curEdge.coverage, direction);
 		if (dir_res.second->looped > 2)
 			break;
 		dir_res.second->looped ++;
 		if (direction == RIGHT) {
 			dir_res.second->used = true;
 			string tmp = decompress(curKmer, k);
-			curEdge.first+=(tmp[k-1]);
-//			curEdge.second.append(curSeq->Subseq(k-1,k).str());
+			curEdge.upper+=(tmp[k-1]);
+//			curEdge.lower.append(curSeq->Subseq(k-1,k).str());
 			//TODO:: do it, save nucleo/
 			string new_lower = curSeq->str();
-			int ap_res;
-			if ( !(appendLowerPath(curEdge.second , new_lower))) {
-				if ( !(appendLowerPath( new_lower, curEdge.second))) {
-					ERROR( curEdge.second << " "<< new_lower);
+			if ( !(appendLowerPath(curEdge.lower , new_lower))) {
+				if ( !(appendLowerPath( new_lower, curEdge.lower))) {
+					ERROR( curEdge.lower << " "<< new_lower);
 	//				assert (0);
 				} else {
-					curEdge.second = new_lower;
+					curEdge.lower = new_lower;
 				}
 			}
 		}
@@ -233,7 +233,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
 		int size = iter->second.size();
 		ll kmer = iter->fi;
-		DEBUG("Starting from k-mer " << kmer);
+		TRACE("Starting from k-mer " << kmer);
 		forn(i, size) {
 			int direction = LEFT;
 			EdgePrototype* curEdgePrototype = (iter->se)[i];
@@ -287,18 +287,19 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 
 void createEdges(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 	int count = 0;
+	string edgesFile = folder+ "graphEdges.txt";
+	DataPrinter dp(edgesFile.c_str());
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
 		int size = iter->second.size();
 		ll kmer = iter->fi;
-		DEBUG("Starting from k-mer " << kmer);
+		TRACE("Starting from k-mer " << kmer);
 		forn(i, size) {
 			if ((!(iter->se)[i]->used)) {
-				DEBUG("Starting seq " << kmer);
+				TRACE("Starting seq " << kmer);
 
 				int length = 0;
-				int EdgeCoverage;
 				count++;
-				protoEdgeType curEdge;
+				constructingEdge curEdge;
 				EdgePrototype* curEdgePrototype = (iter->se)[i];
 				//curEdgePrototype->used = true;
 				Sequence * startSeq = curEdgePrototype->lower;
@@ -308,7 +309,7 @@ void createEdges(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 	//					subkmer(kmer, LEFT);
 
 
-				expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, EdgeCoverage, LEFT);
+				expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, LEFT);
 
 				//todo: rewrite
 				DEBUG("Start find edge");
@@ -327,24 +328,35 @@ void createEdges(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 					}
 				}
 				DEBUG("Finish find edge");
-
-
-
-
-
 				Sequence *startSubSeq = SubSeq(*startSeq, LEFT);
-				curEdge.first = "";
-				curEdge.second = "";
+				curEdge.upper = "";
+				curEdge.lower = "";
 				int startVertId = findPossibleVertex(subkmer(startKmer, LEFT), *startSubSeq, edges, graph.verts);
 
 				LOG_ASSERT((startVertId != -2), " on " << subkmer(startKmer, LEFT));
 				DEBUG("LEFT EDGE K_MER:" <<startKmer<< " seq "<<startSeq->str());
 				ll finKmer = startKmer;
 				Sequence *finSeq = new Sequence(*startSeq);
-				curEdge.first = decompress(startKmer, k);
+				curEdge.upper = decompress(startKmer, k);
 				//TODO: position instead of 0
-				curEdge.second = finSeq->str();
-				expandDirected(edges, curEdge, graph.verts, finKmer, finSeq, EdgeCoverage, RIGHT);
+				curEdge.lower = finSeq->str();
+				curEdge.coverage = 0;
+				expandDirected(edges, curEdge, graph.verts, finKmer, finSeq, RIGHT);
+
+				cur_iter = edges.find(finKmer);
+				if (cur_iter != edges.end()) {
+					for (vector<EdgePrototype *>::iterator it = cur_iter->second.begin(); it != cur_iter->second.end(); ++it) {
+						//TODO: minIntersect?
+						if ((*it)->lower->size()>=finSeq->size())
+						if (finSeq->similar(*((*it)->lower), finSeq->size(), 0)) {
+							findCnt++;
+							DEBUG(" Adding last coverage" << (*it)->coverage);
+							curEdge.coverage+=(*it)->coverage;
+							break;
+						}
+					}
+				}
+
 				Sequence *finSubSeq = SubSeq(*finSeq, RIGHT);
 				DEBUG("RIGHT VERTEX K_MER:" <<finKmer<<" seq "<<finSeq->str());
 				int finVertId = findPossibleVertex(subkmer(finKmer, RIGHT), *finSubSeq, edges, graph.verts);
@@ -361,12 +373,18 @@ void createEdges(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 				}
 
 				if (buildEdges){
-					Edge* newEdge = new Edge(curEdge, startVertId, finVertId, graph.EdgeId, EdgeCoverage);
-					graph.addEdge(newEdge);
-					DEBUG("adding edge "<< newEdge->EdgeId <<"of length "<< curEdge.first.length()+1-k);
+					curEdge.coverage = curEdge.coverage / (curEdge.upper.length()- k + 1);
+					Edge* newEdge = new Edge(curEdge, startVertId, finVertId, graph.EdgeId);
+					save(dp, newEdge);
+
+					graph.addEdge(newEdge, false);
+				//	string outFile = folder+"graphEdges.txt";
+			//		char* outFile = outF.c_str();
+					delete newEdge;
+					DEBUG("adding edge "<< newEdge->EdgeId <<"of length "<< curEdge.upper.length()+1-k);
 				}
-				//				if (curEdge.first.length() <1000)
-//					TRACE(curEdge.first);
+				//				if (curEdge.upper.length() <1000)
+//					TRACE(curEdge.upper);
 //				assert(0);
 				//expandDirected(edges, curEdge, graph.verts, startKmer, startSeq, EdgeCoverage, LEFT);
 				if (!(iter->se)[i]->used) i--;
@@ -377,6 +395,11 @@ void createEdges(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 	//	edges.erase(iter++);
 		++iter;
 	}
+	dp.output(-1);
+	dp.output(graph.EdgeId);
+	dp.output(graph.VertexCount);
+	dp.output(graph.EdgeId);
+	dp.close();
 }
 /*
  * Appends string toAppend to string edge with maximal possible overlap For example, appendLowerPath(ACAT,ATT) will be ACATT

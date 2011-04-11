@@ -2,5 +2,7 @@ SRC=sequence.cpp assembler.cpp condensed_graph.cpp graphVisualizer.cpp edge_grap
 DIR=debruijn
 PROG=debruijn
 
+MYCFLAGS=
+
 include ../makefile.inc
 

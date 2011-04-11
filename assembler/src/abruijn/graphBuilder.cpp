@@ -145,8 +145,8 @@ void GraphBuilder::build() {
 		if (!(*v1)[i].isValid() || !(*v2)[i].isValid()) {
 			continue;
 		}
-		processReadA((*v1)[i]);
-		processReadA((*v2)[i]);
+		processReadA(Seq<MPSIZE>((*v1)[i]));
+		processReadA(Seq<MPSIZE>((*v2)[i]));
 		VERBOSE(i, " reads read");
 	}
 	//inputStream.reset();
@@ -163,8 +163,8 @@ void GraphBuilder::build() {
 		if (!(*v1)[i].isValid() || !(*v2)[i].isValid()) {
 			continue;
 		}
-		processReadB((*v1)[i]);
-		processReadB((*v2)[i]);
+		processReadB(Seq<MPSIZE>((*v1)[i]));
+		processReadB(Seq<MPSIZE>((*v2)[i]));
 		VERBOSE(i, " reads processed");
 	}
 	//inputStream.close();

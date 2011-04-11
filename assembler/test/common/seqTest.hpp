@@ -64,7 +64,19 @@ void TestSeqFromType() {
 	ASSERT_EQUAL("GTACG", Seq<5>(s, 2).str());
 }
 
-void TestComplex() {
+/*template <size_t k>
+Seq<k-1> TestAAA(const Seq<k> &s) {
+	return s.end<k-1>();
+}*/
+
+void TestSeqEnd() {
+	Seq<5> s1("ACGTA");
+	//Seq<4> s2 = TestAAA<5>(s1);
+	Seq<4> s2 = s1.end<4>();
+	ASSERT_EQUAL("ACGT", s2.str());
+}
+
+void TestSeqComplex() {
 	Sequence s1("ACAAA");
 	Sequence s2("CAAAC");
 	ASSERT_EQUAL((!(Seq<4>(!s1))).str(), Seq<4>(s2).str());
@@ -92,11 +104,12 @@ cute::suite SeqSuite(){
 	s.push_back(CUTE(TestSeqFromCharArray));
 	s.push_back(CUTE(TestSeqFromBiggerSeq));
 	s.push_back(CUTE(TestSeqFromType));
+	s.push_back(CUTE(TestSeqEnd));
 	s.push_back(CUTE(TestSeqShiftLeft));
 	s.push_back(CUTE(TestSeqShiftRight));
 	s.push_back(CUTE(TestSeqHeadAndTail));
 	s.push_back(CUTE(TestSeqReverseComplement));
-	s.push_back(CUTE(TestComplex));
+	s.push_back(CUTE(TestSeqComplex));
 	return s;
 }
 

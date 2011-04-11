@@ -1,3 +1,4 @@
+#include <omp.h>
 #include <iostream>
 #include <numeric>
 #include "bayes_quality.hpp"
@@ -8,11 +9,9 @@
 
 LOGGER("b");
 
-#define SKIP_READS 6
 #define PROCESS_READS 25
-#define READS_BATCH 1000
-
 #define READ_FILENAME "/home/student/nikolenko/python/bayesQuality/s_6_1.fastq.gz"
+#define GENOME_FILENAME "./data/bayes/biggenome.fasta"
 
 using namespace bayes_quality;
 
@@ -41,14 +40,21 @@ void processQualityReads(const char *filename, BayesQualityGenome & bqg) {
 }
 
 int main(int argc, char* argv[]) {
+
+	#pragma omp parallel
+	INFO("Hello from thread " << omp_get_thread_num() << " out of " << omp_get_num_threads());
 	INFO("Hello, Bayes!");
 	
 	string readfilename = "";
+	string genomefilename = "";
 	if (argc > 1) readfilename = argv[1];
 	else readfilename = READ_FILENAME;
+	if (argc > 2) genomefilename = argv[2];
+	else genomefilename = GENOME_FILENAME;
+
 
 	//ireadstream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta.gz");
-	ifaststream ifs("./data/bayes/biggenome.fasta");
+	ifaststream ifs(genomefilename.data());
 	string name, genome;
 	ifs >> name >> genome;
 	INFO("!" << name);
@@ -61,3 +67,25 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 }
+
+/*	INFO("Hello, MPI!");
+	MPI::Init(argc, argv);
+	MPI::COMM_WORLD.Set_errhandler(MPI::ERRORS_THROW_EXCEPTIONS);
+	try {
+		int rank = MPI::COMM_WORLD.Get_rank();
+		std::cout << "I am " << rank << std::endl;
+		if (rank == 0) {
+			MPI::COMM_WORLD.Recv (&rank, 1, MPI_INT, 1, 1);
+			std::cout << "Received: " << rank << "\n";
+		} else {
+			MPI::COMM_WORLD.Send (&rank, 1, MPI_INT, 0, 1);
+			std::cout << "Sent: " << rank << "\n";
+		}
+	}
+	catch (MPI::Exception e) {
+		std::cout << "MPI ERROR: " << e.Get_error_code() \
+				  << " - " << e.Get_error_string() \
+				  << std::endl;
+	}
+*/
+

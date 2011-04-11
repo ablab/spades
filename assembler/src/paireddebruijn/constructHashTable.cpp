@@ -352,7 +352,8 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 
 	vector<int> tmp_cov;
 	assert (max_shift <= 20);
-//	cerr << lset.size()<<endl;
+
+	//cerr << "Start clustering"<<endl;
 	int right[MAXLMERSIZE];
 	int left[MAXLMERSIZE];
 	int used[MAXLMERSIZE];
@@ -427,6 +428,7 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 			used[i] = color;
 			//cerr <<"color = :"<< color << endl;
 			while ((left[ii] >= 0) && (left[ii] != i)){
+				if (used[left[ii]] == color) break;
 				seqlength += shift_left[ii];
 				leftway.pb(ii);
 				ii = left[ii];
@@ -437,6 +439,7 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 				DEBUG("righrt");
 			ii = i;
 			while ((right[ii] >= 0) && (right[ii] != i)){
+				if (used[right[ii]] == color) break;
 				seqlength += shift_right[ii];
 				ii = right[ii];
 				used[ii] = color;
@@ -465,8 +468,9 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 					s += nucl((a[ii].first & maxsd) >> (2*(p-j-1)));
 					maxsd >>= 2;
 			//		cerr << "OK" <<endl;
-					if (coverage < a[ii].second) coverage = a[ii].second;
+
 				}
+				coverage += a[ii].second;
 			}
 			DEBUG("seq: s" << s);
 			tmp_res.push_back(s);
@@ -485,6 +489,8 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 			lmers[i].pb(extractMer(t_seq,l, j ));
 		sort(lmers[i].begin(), lmers[i].end());
 	}*/
+//	cerr << "Start compressing"<<endl;
+
 	forn(i,  tmp_res.size()) {
 
 		int good = 1;
@@ -504,6 +510,8 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 
 		}
 	}
+//	cerr << "Finish clustering"<<endl;
+
 	/*
 	{
 		forn(i, size) {
@@ -574,7 +582,7 @@ void addPairToTable(myMap& table, ll upper, ll lower) {
 			table[upper].second[index]++;
 		}
 	} else {
-		pair<vector<ll>,vector<int>> tmp;
+		pair<vector<ll>,vector<short>> tmp;
 		tmp.first.clear();
 		tmp.first.pb(lower);
 		tmp.second.clear();
@@ -598,7 +606,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 		}
 
 		upper <<= 2;
-		upper += upperRead[j + l - shift];
+		upper += upperRead[j + k + shift];
 		upper &= upperMask;
 
 		lower <<= 2;
@@ -611,7 +619,17 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 //	cerr << table.size()<<endl;
 }
 
-
+inline void reverseCompliment(char *upperRead, char* lowerRead, char* tmpRead){
+	forn(i, readLength) {
+		tmpRead[i] = 3 - upperRead[readLength - 1 - i];
+	}
+	forn(i, readLength) {
+		upperRead[i] = 3 - lowerRead[readLength - 1 - i];
+	}
+	forn(i, readLength) {
+		lowerRead[i] = tmpRead[i];
+	}
+}
 void constructTable(string inputFile, myMap &table, bool reverse) {
 	FILE* inFile = fopen(inputFile.c_str(), "r");
 	int count = 0;
@@ -619,9 +637,14 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 	char *lowerNuclRead = new char[readLength + 2];
 	char *upperRead = new char[readLength + 2];
 	char *lowerRead = new char[readLength + 2];
+	char* fictiveRead = new char[readLength + 2];
+	char* tmpRead = new char[readLength + 2];
+
+	forn(i, readLength)
+		fictiveRead[i] = 0;
 	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
 //		fprintf(stderr, "%s", upperNuclRead);
-		if ((strlen(upperNuclRead)<readLength)||(strlen(lowerNuclRead)<readLength)) continue;
+		if ((strlen(upperNuclRead)<readLength)||(strlen(lowerNuclRead)<readLength)) break;
 		if (reverse) {
 			codeRead(upperNuclRead, lowerRead);
 			codeRead(lowerNuclRead, upperRead);
@@ -629,7 +652,20 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 			codeRead(upperNuclRead, upperRead);
 			codeRead(lowerNuclRead, lowerRead);
 		}
-		processReadPair(table, upperRead, lowerRead);
+		forn(tmp, 2) {
+			if (fictiveSecondReads) {
+				processReadPair(table, upperRead, fictiveRead);
+				processReadPair(table, lowerRead, fictiveRead);
+			} else {
+				processReadPair(table, upperRead, lowerRead);
+			}
+			if (!useRevertedPairs)
+				break;
+			else {
+				reverseCompliment(upperRead, lowerRead , tmpRead);
+			}
+
+		}
 		if (!(count & (1024*64 - 1)))
 			INFO("read number "<<count<<" processed"<<endl);
 		count++;
@@ -640,7 +676,7 @@ void outputTable(string outputFile, myMap &pairedTable) {
 	FILE* outFile = fopen(outputFile.c_str(), "w");
 	int j = 0;
 	for (myMap::iterator iter = pairedTable.begin() ; iter != pairedTable.end(); iter++) {
-		pair<ll, pair<vector<ll>, vector<int>>> p = (*iter);
+		pair<ll, pair<vector<ll>, vector<short>>> p = (*iter);
 		fprintf(outFile,"%lld %d\n", p.fi, p.se.fi.size());
 		forn(i, p.se.fi.size()) {
 			fprintf(outFile,"%lld %d ", p.se.fi[i], p.se.se[i]);
@@ -734,8 +770,8 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
     int ok = 1;
     INFO("PairsToSequences started");
-    set<ll> lset;
-    readLmersSet(lmerFile, lset);
+  //  set<ll> lset;
+  //  readLmersSet(lmerFile, lset);
     pair <ll,int> lmers[MAXLMERSIZE];
 	ll kmer;
 	int lsize;
