@@ -15,7 +15,7 @@
 #define SUBSTR_LENGTH 1000
 #define COVERAGE 1
 #define R 35
-#define K 15
+//#define K 15
 #define filename "./data/input/MG1655-K12.fasta.gz"
 
 vector<Read> GenerateReadsWithMistakes() {
@@ -32,7 +32,7 @@ vector<Read> GenerateReadsWithMistakes() {
 	INFO("Generating reads for substring of length " << SUBSTR_LENGTH << " and coverage " << COVERAGE);
 
 	ReadGenerator<R> gen(r.getSequenceString().substr(0, SUBSTR_LENGTH), COVERAGE);
-	gen.setErrorProbability(2);
+//	gen.setErrorProbability(2);
 
 	while (!gen.eof()) {
 		Read read;
