@@ -62,6 +62,8 @@ void PairedGraph::removeLowCoveredEdges(longEdgesMap &longEdges, int CoverageThr
 //todo: Complete this
 void PairedGraph::RebuildVertexMap(void) {
 	INFO("RebuildVertexMap");
+	INFO("Do not rebuild");
+	return;
 	verts.clear();
 	for (longEdgesMap::iterator it = longEdges.begin(); it != longEdges.end(); ++it) {
 		if (it->second->EdgeId == it->first) {
@@ -81,6 +83,7 @@ void PairedGraph::RebuildVertexMap(void) {
 		}
 	}
 	isUpToDate = true;
+	INFO("RebuildVertexMap");
 }
 
 verticesMap::iterator addKmerToMap(verticesMap &verts, ll kmer) {
@@ -292,14 +295,20 @@ EdgeIterator PairedGraph::endEdge(int vertex, int direction) {
 	return EdgeIterator(this, vertex, index, -1);
 }
 
-Edge *PairedGraph::addEdge(Edge *newEdge) {
+Edge *PairedGraph::addEdge(Edge *newEdge, bool saveSequence = true) {
 	newEdge->EdgeId = EdgeId;
 	cerr << "addEdge: new id " << newEdge->EdgeId << "(" << newEdge->FromVertex
 			<< "->" << newEdge->ToVertex << ")" << endl;
 	EdgeId++;
-	longEdges.insert(make_pair(newEdge->EdgeId, newEdge));
-	addEdgeVertexAdjacency(newEdge->FromVertex, newEdge, RIGHT);
-	addEdgeVertexAdjacency(newEdge->ToVertex, newEdge, LEFT);
+	if (!saveSequence) {
+		newEdge->upper = new Sequence("");
+		newEdge->lower = new Sequence("");
+	} else {
+		longEdges.insert(make_pair(newEdge->EdgeId, newEdge));
+
+		addEdgeVertexAdjacency(newEdge->FromVertex, newEdge, RIGHT);
+		addEdgeVertexAdjacency(newEdge->ToVertex, newEdge, LEFT);
+	}
 	//	edgeIds[newEdge->FromVertex][degrees[newEdge->FromVertex][1]][1]
 	//			= newEdge->EdgeId;
 	//	degrees[newEdge->FromVertex][1]++;
