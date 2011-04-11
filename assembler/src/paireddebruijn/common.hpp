@@ -13,6 +13,8 @@
 #include <algorithm>
 #include <string>
 #include <set>
+
+#include <tr1/unordered_map>
 #include "logging.hpp"
 
 #define forn(i, n) for(size_t i = 0; i < (size_t) n; i++)
@@ -21,9 +23,9 @@
 #define mp make_pair
 #define fi first
 #define se second
-#define edgesMap  map<ll, vector<EdgePrototype *> >
-#define verticesMap  map<ll, vector<VertexPrototype *> >
-#define longEdgesMap  map<int, Edge*>
+#define edgesMap  std::tr1::unordered_map<ll, vector<EdgePrototype *> >
+#define verticesMap  std::tr1::unordered_map<ll, vector<VertexPrototype *> >
+#define longEdgesMap  std::tr1::unordered_map<int, Edge*>
 
 #define otherDirection(direction) (direction == LEFT ? RIGHT : LEFT)
 #define RIGHT 1
@@ -106,4 +108,34 @@ extern int useProcessLower;
 void initConstants(string ini_file);
 ll pushNucleotide(ll kMer, int length, int direction, int nucl);
 ll popNucleotide(ll kMer, int length, int direction);
+
+using namespace __gnu_cxx;
+
+namespace __gnu_cxx
+
+{
+
+	template<> struct hash< std::string > {
+
+		size_t operator()( const std::string& x ) const {
+
+         return hash< const char* >()( x.c_str() );
+
+		}
+
+	};
+
+	template<> struct hash< ll > {
+
+		size_t operator()( const ll& x ) const {
+
+         return (x >> 32L) ^ hash< int >()( x & 0xFFFFFFFF );
+
+		}
+
+	};
+
+}
+
+
 #endif /*COMMON_HPP_*/

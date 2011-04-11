@@ -53,7 +53,9 @@ void PairedGraph::removeLowCoveredEdges(longEdgesMap &longEdges, int CoverageThr
 	for (longEdgesMap::iterator it = longEdges.begin(); it != longEdges.end(); ++it) {
 		if (it->second->EdgeId == it->first) {
 //			if ((degrees[it->second->FromVertex][1]>1)&&(degrees[it->second->ToVertex][0]>1))
-			if (it->second->coverage <= CoverageThreshold) longEdges.erase(it--);
+			if (it->second->coverage <= CoverageThreshold) {
+				longEdges.erase(it);
+			}
 		}
 	}
 }
