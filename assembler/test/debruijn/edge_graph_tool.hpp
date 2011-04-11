@@ -16,8 +16,8 @@
 
 #define SUBSTR_LENGTH 1000
 #define COVERAGE 1
-#define R 35
-#define K 15
+//#define R 35
+#define K 11
 
 using namespace std;
 
@@ -52,18 +52,18 @@ void SimulatedMistakesTool() {
 	INFO("DeBruijn graph constructed");
 
 	INFO("Condensing graph");
-	condensed_graph::CondenseConstructor<K> g_c(debruijn);
+	CondenseConstructor<K> g_c(debruijn);
 
-	condensed_graph::CondensedGraph *g;
-	condensed_graph::SimpleIndex<K> *index;
+	EdgeGraph *g;
+	GraphConstructor<K>::Index *index;
 	g_c.ConstructGraph(g, index);
 	INFO("Graph condensed");
 
 	INFO("Writing to file");
-	condensed_graph::WriteToFile("simulated_mistakes.dot", "simulated_mistakes_graph", *g);
+	WriteToFile("simulated_mistakes.dot", "simulated_mistakes_graph", *g);
 
 	INFO("Counting stats");
-	condensed_graph::CountStats(*g);
+	CountStats(*g);
 	delete g;
 	delete index;
 }

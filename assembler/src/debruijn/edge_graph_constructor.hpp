@@ -18,10 +18,11 @@ using de_bruijn::EdgeHashRenewer;
 
 template<size_t kmer_size_>
 class GraphConstructor {
+public:
+	typedef SimpleIndex<kmer_size_ + 1, Edge*> Index;
 protected:
 	typedef Seq<kmer_size_> Kmer;
 	typedef Seq<kmer_size_ + 1> KPlusOneMer;
-	typedef SimpleIndex<kmer_size_ + 1, Edge*> Index;
 
 	EdgeGraph *g_;
 	Index *h_;

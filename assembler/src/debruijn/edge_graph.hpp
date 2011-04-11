@@ -389,7 +389,7 @@ public:
 		g_(g), pr_(pr) {
 	}
 
-	virtual void HandleStartVertex(VertexId v) {
+	virtual void HandleVertex(VertexId v) {
 		pr_.addVertex(v, "");
 	}
 
@@ -411,7 +411,7 @@ public:
 		g_(g), pr_(pr) {
 	}
 
-	virtual void HandleStartVertex(VertexId v) {
+	virtual void HandleVertex(VertexId v) {
 		pr_.addVertex(v, "", g_.Complement(v), "");
 	}
 

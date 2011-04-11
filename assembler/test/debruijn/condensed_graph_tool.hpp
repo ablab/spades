@@ -17,7 +17,7 @@
 #define SUBSTR_LENGTH 1000
 #define COVERAGE 1
 #define R 35
-#define K 15
+#define K 11
 
 using namespace std;
 
