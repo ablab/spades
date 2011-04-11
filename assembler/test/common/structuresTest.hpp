@@ -11,40 +11,44 @@
 #include <google/sparse_hash_map>
 #include "cuckoo.hpp"
 #include "trie.hpp"
+#include "../memory.hpp"
 
 template <class hm>
 void TestStructure() {
-  struct rusage ru1;
-  getrusage(RUSAGE_SELF, &ru1);
-  double t1 = ru1.ru_utime.tv_sec + ((float)ru1.ru_utime.tv_usec/1000000);
+  const long Number = 1000000;
+
+  timeval tim;
+  gettimeofday(&tim, NULL);
+  double t1 = tim.tv_sec + ((float)tim.tv_usec/1000000);
+  double vm1, rss1;
+  process_mem_usage(vm1, rss1);
 
   srand(42);
   hm map;
 
-  for (int i = 0; i < 100000; ++i) {
+  for (int i = 0; i < Number; ++i) {
     int t = rand();
     map.insert(std::make_pair(t, 42));
   }
 
-  struct rusage ru2;
-  getrusage(RUSAGE_SELF, &ru2);
-  double t2 = ru2.ru_utime.tv_sec + ((float)ru2.ru_utime.tv_usec/1000000);
+  gettimeofday(&tim, NULL);
+  double t2 = tim.tv_sec + ((float)tim.tv_usec/1000000);
+  double vm2, rss2;
+  process_mem_usage(vm2, rss2);
 
   size_t size = map.size();
 
   typename hm::iterator hmi;
-  for (int i = 0; i < 100000; ++i) {
+  for (int i = 0; i < Number; ++i) {
     int t = rand();
     hmi = map.find(t);
   }
 
-  struct rusage ru3;
-  getrusage(RUSAGE_SELF, &ru3);
-  double t3 = ru3.ru_utime.tv_sec + ((float)ru3.ru_utime.tv_usec/1000000);
+  gettimeofday(&tim, NULL);
+  double t3 = tim.tv_sec + ((float)tim.tv_usec/1000000);
 
-  std::cout << "Number of elements was " << size << std::endl;
-  std::cout << "Time for insert is " << (t2 - t1) << std::endl;
-  std::cout << "Time for find is " << (t3 - t2) << std::endl;
+  std::cout << "Memory after inserting " << size << " elements: VM = " << (vm2 - vm1) << " KB; RSS = " << (rss2 - rss1) << " KB.\n";
+  std::cout << "Time used for " << Number << " inserts = " << (t2 - t1) << "sec; for " << Number << " finds: " << (t3 - t2) << "sec.\n";
 }
 
 void TestStandartMap() {
