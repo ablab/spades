@@ -76,24 +76,25 @@ void countHashes(const Sequence& s) {
  */
 void processReadA(Seq<MPSIZE> r) {
 	countHashes(Sequence(r));
-	hash_t h1 = maxHash;
-//	int pos1 = -1;
-	hash_t h2 = maxHash;
-//	int pos2 = -1;
-	for (int i = 0; i + K <= MPSIZE; i++) {
-		if (ha[i] < h1) {
-			h2 = h1;
-//			pos2 = pos1;
-			h1 = ha[i];
-//			pos1 = i;
-		} else if (ha[i] < h2) {
-			h2 = ha[i];
-//			pos2 = i;
-		}
+	for (int i = 0; i < HTAKE; i++) {
+		hb[i] = maxHash;
 	}
-	assert(h2 != maxHash);
-	goodHashes.insert(h1);
-	goodHashes.insert(h2);
+	for (int i = 0; i + K <= MPSIZE; i++) {
+		int j = HTAKE;
+		while (j > 0 && ha[i] < hb[j - 1]) {
+			j++;
+		}
+		if (j == HTAKE || ha[i] == hb[j]) {
+			continue;
+		}
+		for (int k = HTAKE - 1; k > j; k--) {
+			hb[k] = hb[k - 1];
+		}
+		hb[j] = ha[i];
+	}
+	for (int i = 0; i < HTAKE && hb[i] < maxHash; i++) {
+		goodHashes.insert(hb[i]);
+	}
 }
 
 void selectGood() {
