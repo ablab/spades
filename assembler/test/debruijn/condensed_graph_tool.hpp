@@ -64,8 +64,8 @@ void SimulatedMistakesTool() {
 
 	INFO("Counting stats");
 	condensed_graph::CountStats(*g);
-//	delete g;
-//	delete index;
+	delete g;
+	delete index;
 }
 
 }

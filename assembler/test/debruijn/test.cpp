@@ -28,7 +28,8 @@ void checkClipTippingCompilation() {
 }
 
 int main() {
-	runSuite();
+//	runSuite();
+	edge_graph::SimulatedMistakesTool();
 	//	 SimulatedMistakesTool();
 //	checkClipTippingCompilation();
 	return 0;
