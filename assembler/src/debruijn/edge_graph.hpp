@@ -83,8 +83,6 @@ private:
 	Sequence nucls_;
 	Vertex* end_;
 	size_t coverage_;
-	size_t incoming_coverage_;
-	size_t outgoing_coverage_;
 
 	Edge(const Sequence& nucls, Vertex* end) :
 		nucls_(nucls), end_(end), coverage_(0) {
