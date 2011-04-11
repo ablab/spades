@@ -61,6 +61,7 @@ string toString(T t) {
 typedef unsigned int hash_t;
 // Maximum value of type hash_t
 const hash_t maxHash = -1;
+#define HTAKE 2
 
 // ===== Debug parameters ===== //
 #define VERBOSE(n, message) if ((n & 8191) == 8191) INFO(n << message)
