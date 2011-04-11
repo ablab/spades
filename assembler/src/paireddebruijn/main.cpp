@@ -147,6 +147,19 @@ void generate() {
 }
 
 int main() {
+	short My_short;
+	int My_int;
+	long My_long;
+	long long My_longlong;
+	ll My_ll;
+
+	cout<< "short "<<sizeof(My_short)<<endl;
+	cout<< "int "<<sizeof(My_int)<<endl;
+	cout<< "long "<<sizeof(My_long)<<endl;
+	cout<< "long long "<<sizeof(My_longlong)<<endl;
+	cout<< "ll "<<sizeof(My_ll)<<endl;
+			assert(0);
+
 //	generate();
 //	Sequence* a = new Sequence("TACA");
 //
