@@ -31,6 +31,9 @@ typedef pair<Sequence, QVector> QRead;
 // number of threads
 #define THREADS_NUM 5
 
+// number of reads to skip from the beginning of the file
+#define SKIP_READS 67513
+
 // write a file with statistics
 #define WRITE_STATSFILE
 #define STATSFILENAME "readstats.txt"

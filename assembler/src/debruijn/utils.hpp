@@ -65,7 +65,7 @@ public:
 	void DeleteKmersHash(const Sequence& nucls, ElementId id) {
 		assert(nucls.size() >= kmer_size_);
 		Kmer k(nucls);
-		deleteIfVertex(k, id);
+		deleteIfEqual(k, id);
 		for (size_t i = kmer_size_, n = nucls.size(); i < n; ++i) {
 			k = k << nucls[i];
 			deleteIfEqual(k, id);
@@ -186,6 +186,7 @@ class NoInfo {
  * Stub base class for handling graph primitives during traversal.
  */
 //template<typename VertexId, typename EdgeId>
+//todo talk with Anton
 template<class Graph, class Info = NoInfo *>
 class TraversalHandler {
 public:
@@ -193,7 +194,8 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
-	virtual ~TraversalHandler();
+	virtual ~TraversalHandler() {
+	}
 
 	virtual void HandleVertex(VertexId v) {
 	}
@@ -261,7 +263,7 @@ void DFS<Graph>::ProcessVertex(VertexId v, vector<VertexId>* stack,
 		for (size_t i = 0; i < edges.size(); ++i) {
 			EdgeId e = edges[i];
 			h->HandleEdge(e);
-			stack.push_back(super::g_->EdgeEnd(e));
+			stack->push_back(super::g_->EdgeEnd(e));
 		}
 	}
 }

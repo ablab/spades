@@ -32,12 +32,11 @@ private:
 	SequenceData(const SequenceData &sd); // forbidden
 	SequenceData& operator=(const SequenceData&); // forbidden
 	void Grab() {
-		count++;
+		++count;
 	}
 	void Release() {
-		if (count > 1) {
-			count--;
-		} else {
+		--count;
+		if (count == 0) {
 			delete this;
 		}
 	}
