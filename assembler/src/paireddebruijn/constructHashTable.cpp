@@ -582,7 +582,7 @@ void addPairToTable(myMap& table, ll upper, ll lower) {
 			table[upper].second[index]++;
 		}
 	} else {
-		pair<vector<ll>,vector<int>> tmp;
+		pair<vector<ll>,vector<short>> tmp;
 		tmp.first.clear();
 		tmp.first.pb(lower);
 		tmp.second.clear();
@@ -606,7 +606,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 		}
 
 		upper <<= 2;
-		upper += upperRead[j + l - shift];
+		upper += upperRead[j + k + shift];
 		upper &= upperMask;
 
 		lower <<= 2;
@@ -676,7 +676,7 @@ void outputTable(string outputFile, myMap &pairedTable) {
 	FILE* outFile = fopen(outputFile.c_str(), "w");
 	int j = 0;
 	for (myMap::iterator iter = pairedTable.begin() ; iter != pairedTable.end(); iter++) {
-		pair<ll, pair<vector<ll>, vector<int>>> p = (*iter);
+		pair<ll, pair<vector<ll>, vector<short>>> p = (*iter);
 		fprintf(outFile,"%lld %d\n", p.fi, p.se.fi.size());
 		forn(i, p.se.fi.size()) {
 			fprintf(outFile,"%lld %d ", p.se.fi[i], p.se.se[i]);

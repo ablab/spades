@@ -25,14 +25,6 @@ public:
 };
 
 template< typename T >
-struct HashSymWeighted {
-	hash_t operator() (const T &seq) {
-		// Will use frequency of seq
-		return 0;
-	}
-};
-
-template< typename T >
 struct EqSym {
 public:
 	unsigned int operator() (const T &s1, const T &s2) const {

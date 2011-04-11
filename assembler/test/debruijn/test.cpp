@@ -7,6 +7,7 @@
 #include "edge_graph_test.hpp"
 #include "edge_graph_tool.hpp"
 #include "tip_clipper.hpp"
+#include "coverage_counter.hpp"
 
 void runSuite() {
 	cute::suite s;
@@ -28,7 +29,8 @@ void checkClipTippingCompilation() {
 }
 
 int main() {
-	runSuite();
+//	runSuite();
+	edge_graph::SimulatedMistakesTool();
 	//	 SimulatedMistakesTool();
 //	checkClipTippingCompilation();
 	return 0;

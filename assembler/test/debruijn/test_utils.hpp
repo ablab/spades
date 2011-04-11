@@ -26,15 +26,14 @@ vector<Read> GenerateReadsWithMistakes() {
 	Read r;
 	stream >> r;
 
+	vector<Read> reads;
 	INFO("Closing " << filename);
 	stream.close();
-
 	INFO("Generating reads for substring of length " << SUBSTR_LENGTH << " and coverage " << COVERAGE);
 
 	ReadGenerator<R> gen(r.getSequenceString().substr(0, SUBSTR_LENGTH), COVERAGE);
 	gen.setErrorProbability(2);
 
-	vector<Read> reads;
 	while (!gen.eof()) {
 		Read read;
 		gen >> read;
