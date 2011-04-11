@@ -11,6 +11,7 @@ typedef vector<pair<Sequence*,int>> downSeqs;
 
 int totalKmers = 0;
 int uniqPairs = 0;
+int uniqKmers = 0;
 const int MAXLMERSIZE = 10000;
 ll upperMask;
 ll lowerMask;
@@ -576,6 +577,8 @@ void addPairToTable(myMap& table, ll upper, ll lower) {
 			table[upper].first.pb(lower);
 			table[upper].second.pb(1);
 			++uniqPairs;
+			if (!(uniqPairs&((1<<15)-1)))
+				INFO("unique pairs "<<uniqPairs);
 		}
 		else {
 			int index = distance(table[upper].first.begin(), it);
@@ -590,7 +593,12 @@ void addPairToTable(myMap& table, ll upper, ll lower) {
 		table.insert(make_pair(upper, tmp));
 
 		//		cerr<<"inserting"<<table.size();
+		++uniqKmers;
 		++uniqPairs;
+		if (!(uniqPairs&((1<<15)-1)))
+			INFO("unique pairs "<<uniqPairs);
+		if (!(uniqKmers&((1<<15)-1)))
+			INFO("unique Kmers "<<uniqKmers);
 	}
 }
 
