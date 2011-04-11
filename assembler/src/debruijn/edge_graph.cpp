@@ -195,4 +195,16 @@ void EdgeGraph::CompressAllVertices() {
 	}
 }
 
+//void SimpleGraphVisualizer::Visualize(const EdgeGraph& g) {
+//	VisHandler h(gp_);
+//	DFS(g).Traverse(h);
+//	gp_.output();
+//}
+//
+//void ComplementGraphVisualizer::Visualize(const EdgeGraph& g) {
+//	ComplementVisHandler h(gp_);
+//	DFS(g).Traverse(h);
+//	gp_.output();
+//}
+
 }

@@ -7,7 +7,6 @@
 namespace edge_graph {
 
 using de_bruijn::Traversal;
-using de_bruijn::TraversalHandler;
 using de_bruijn::DFS;
 using de_bruijn::SimpleIndex;
 
@@ -128,7 +127,7 @@ string print(const edge_set& es) {
 	return s;
 }
 
-class ToStringHandler: public TraversalHandler<EdgeGraph> {
+class ToStringHandler: public TraversalHandler {
 	edge_set& edges_;
 public:
 	ToStringHandler(edge_set& edges) :
@@ -166,7 +165,7 @@ void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt, string et
 
 	edge_set edges;
 	ToStringHandler h(edges);
-	DFS<EdgeGraph> dfs(g);
+	DFS<EdgeGraph> dfs(*g);
 	dfs.Traverse(&h);
 
 	DEBUG(print(edges));

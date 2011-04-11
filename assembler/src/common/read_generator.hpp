@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include "vector"
 #include "nucl.hpp"
+
 #define MAX_PROBABILITY 10000
 using namespace std;
 
@@ -117,6 +118,20 @@ public:
 		return *this;
 	}
 
+	//todo think about interface
+	ReadGenerator& operator>>(Read &r) {
+		if (eof()) {
+			return *this;
+		}
+		if (!readingStarted_) {
+			readingStarted_ = true;
+			read_ahead();
+		}
+		r = Read("", next_sr_[0].str(), "");
+		read_ahead();
+		return *this;
+	}
+
 	inline bool is_open() const {
 		return true;
 	}
@@ -182,12 +197,30 @@ private:
 	}
 };
 
+//todo reduce copy-paste (graphio.hpp)
+Sequence readGenome(istream &is) {
+	SequenceBuilder sb;
+	string buffer;
+	while(!is.eof()){
+		is >> buffer;
+		sb.append(Sequence(buffer));
+	}
+	return sb.BuildSequence();
+}
+
+Sequence readGenomeFromFile(const string &fileName) {
+	ifstream is;
+	is.open(fileName.c_str());
+	Sequence result(readGenome(is));
+	is.close();
+	return result;
+}
 template<typename PositionChooser>
 void generateReads(string fileName, string genomeFileName, int insertLength,
 		int coverage, double errorProbability, int maxInsertLengthError) {
 	ofstream os;
 	os.open(fileName.c_str());
-	Sequence genome = readGenomeFromFile(genomeFileName);
+	Sequence genome(readGenomeFromFile(genomeFileName));
 	stringstream ss;
 	ss << genome;
 	ReadGenerator<100, 2, int, PositionChooser> gen(ss.str(), coverage,

@@ -220,7 +220,7 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
-	Traversal(Graph* g) :
+	Traversal(const Graph& g) :
 		g_(g) {
 	}
 
@@ -230,7 +230,7 @@ public:
 	virtual void Traverse(TraversalHandler<Graph>* h) = 0;
 
 protected:
-	Graph* g_;
+	const Graph& g_;
 };
 
 template<class Graph>
@@ -242,7 +242,7 @@ class DFS: public Traversal<Graph> {
 	void ProcessVertex(VertexId v, vector<VertexId>* stack,
 			TraversalHandler<Graph>* h);
 public:
-	DFS(Graph* g) :
+	DFS(const Graph& g) :
 		Traversal<Graph> (g) {
 	}
 	virtual void Traverse(TraversalHandler<Graph>* h);
@@ -259,11 +259,11 @@ void DFS<Graph>::ProcessVertex(VertexId v, vector<VertexId>* stack,
 		h->HandleVertex(v);
 		visited_.insert(v);
 
-		vector < EdgeId > edges = super::g_->OutgoingEdges(v);
+		vector < EdgeId > edges = super::g_.OutgoingEdges(v);
 		for (size_t i = 0; i < edges.size(); ++i) {
 			EdgeId e = edges[i];
 			h->HandleEdge(e);
-			stack->push_back(super::g_->EdgeEnd(e));
+			stack->push_back(super::g_.EdgeEnd(e));
 		}
 	}
 }
@@ -274,7 +274,7 @@ void DFS<Graph>::Traverse(TraversalHandler<Graph>* h) {
 	typedef Traversal<Graph> super;
 	typedef typename Graph::VertexIterator VertexIt;
 
-	for (VertexIt it = super::g_->begin(); it != super::g_->end(); it++) {
+	for (VertexIt it = super::g_.begin(); it != super::g_.end(); it++) {
 		vector < VertexId > stack;
 		stack.push_back(*it);
 		while (!stack.empty()) {
@@ -353,18 +353,25 @@ public:
 	}
 };
 
-template<typename ElementId>
+template<typename ElementId, typename Comparator = std::less<ElementId> >
 class QueueIterator {
 protected:
-	PriorityQueue<ElementId> queue_;
+	PriorityQueue<ElementId, Comparator> queue_;
+
 	template<typename iterator>
 	void fillQueue(iterator begin, iterator end) {
-		for(iterator it = begin; it != end; ++it) {
+		for (iterator it = begin; it != end; ++it) {
 			queue_.offer(*it);
 		}
 	}
 
-	QueueIterator() {
+	QueueIterator(const Comparator& comparator = Comparator()) {
+	}
+
+	template<typename iterator>
+	QueueIterator(iterator begin, iterator end,
+			const Comparator& comparator = Comparator()) {
+		fillQueue(begin, end);
 	}
 
 public:
@@ -399,14 +406,18 @@ public:
 	}
 };
 
-template<class Graph>
-class SmartVertexIterator: public GraphActionHandler<Graph>, public QueueIterator<typename Graph::VertexId> {
+template<class Graph, typename Comparator = std::less<typename Graph::VertexId> >
+class SmartVertexIterator: public GraphActionHandler<Graph> ,
+		public QueueIterator<typename Graph::VertexId, Comparator> {
 public:
+	typedef QueueIterator<typename Graph::VertexId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartVertexIterator(Graph &graph) {
-		fillQueue(graph.begin(), graph.end());
+	SmartVertexIterator(Graph &graph,
+			const Comparator& comparator = Comparator()) :
+				QueueIterator<typename Graph::VertexId, Comparator> (
+						graph.begin(), graph.end(), comparator) {
 		graph.AddActionHandler(this);
 	}
 
@@ -417,22 +428,26 @@ public:
 	}
 
 	virtual void HandleAdd(VertexId v) {
-		QueueIterator<VertexId>::queue_.offer(v);
+		super::queue_.offer(v);
 	}
 
 	virtual void HandleDelete(VertexId v) {
-		QueueIterator<VertexId>::queue_.remove(v);
+		super::queue_.remove(v);
 	}
 };
 
-template<class Graph>
-class SmartEdgeIterator: public GraphActionHandler<Graph>, public QueueIterator<typename Graph::EdgeId> {
+template<class Graph, typename Comparator = std::less<typename Graph::EdgeId> >
+class SmartEdgeIterator: public GraphActionHandler<Graph> ,
+		public QueueIterator<typename Graph::EdgeId, Comparator> {
 public:
+	typedef QueueIterator<typename Graph::EdgeId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartEdgeIterator(Graph &graph) {
-		for(typename Graph::VertexIterator it = graph.begin(); it != graph.end(); ++it) {
+	SmartEdgeIterator(Graph &graph, Comparator comparator = Comparator()) :
+		QueueIterator<typename Graph::EdgeId, Comparator> (comparator) {
+		for (typename Graph::VertexIterator it = graph.begin(); it
+				!= graph.end(); ++it) {
 			const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
 			fillQueue(outgoing.begin(), outgoing.end());
 		}
@@ -446,13 +461,14 @@ public:
 	}
 
 	virtual void HandleAdd(EdgeId v) {
-		QueueIterator<EdgeId>::queue_.offer(v);
+		super::queue_.offer(v);
 	}
 
 	virtual void HandleDelete(EdgeId v) {
-		QueueIterator<EdgeId>::queue_.remove(v);
+		super::queue_.remove(v);
 	}
 };
+
 }
 
 #endif /* UTILS_HPP_ */

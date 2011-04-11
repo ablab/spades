@@ -23,33 +23,6 @@ using namespace std;
 
 namespace condensed_graph {
 
-vector<strobe_read<R> > GenerateReadsWithMistakes() {
-	INFO("Reading " << filename);
-
-	ireadstream stream(filename);
-	Read r;
-	stream >> r;
-
-	INFO("Closing " << filename);
-	stream.close();
-
-	INFO("Generating reads for substring of length " << SUBSTR_LENGTH << " and coverage " << COVERAGE);
-
-	ReadGenerator<R> gen(nucl_str.substr(0, SUBSTR_LENGTH), COVERAGE);
-	gen.setErrorProbability(2);
-
-	vector<strobe_read<R> > reads;
-	while (!gen.eof()) {
-		strobe_read<R> read;
-		gen >> read;
-//		cout << read[0] << endl;
-		reads.push_back(read);
-	}
-
-	INFO("Reads generated");
-	return reads;
-}
-
 void CountStats(const CondensedGraph& g) {
 	DFS dfs(g);
 	SimpleStatCounter stat_c;
@@ -69,11 +42,10 @@ void WriteToFile(const string& file_name, const string& graph_name,
 	filestr.close();
 
 }
-}
 
 void SimulatedMistakesTool() {
 	INFO("Tool started");
-	vector<strobe_read<R> > reads = GenerateReadsWithMistakes();
+	vector<Read> reads = GenerateReadsWithMistakes();
 	INFO("Constructing DeBruijn graph");
 	DeBruijn<K> debruijn;
 	debruijn.ConstructGraph(reads);
@@ -94,6 +66,8 @@ void SimulatedMistakesTool() {
 	condensed_graph::CountStats(*g);
 //	delete g;
 //	delete index;
+}
+
 }
 
 #endif /* CONDENSED_GRAPH_TOOL_HPP_ */

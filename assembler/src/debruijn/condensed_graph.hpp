@@ -398,20 +398,20 @@ public:
 	}
 };
 
-class CountHandler: public Traversal::Handler {
-	tr1::unordered_map<const Vertex*, size_t>& map_;
-	size_t count_;
-public:
-
-	CountHandler(tr1::unordered_map<const Vertex*, size_t>& map) :
-		map_(map), count_(0) {
-	}
-
-	virtual void HandleStartVertex(const Vertex* v) {
-		map_.insert(make_pair(v, count_++));
-	}
-};
-
+//class CountHandler: public Traversal::Handler {
+//	tr1::unordered_map<const Vertex*, size_t>& map_;
+//	size_t count_;
+//public:
+//
+//	CountHandler(tr1::unordered_map<const Vertex*, size_t>& map) :
+//		map_(map), count_(0) {
+//	}
+//
+//	virtual void HandleStartVertex(const Vertex* v) {
+//		map_.insert(make_pair(v, count_++));
+//	}
+//};
+//
 class VisHandler: public Traversal::Handler {
 	gvis::GraphPrinter<const Vertex*>& pr_;
 public:
