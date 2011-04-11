@@ -43,10 +43,10 @@ class TipClipper {
 private:
 //	EdgeGraph *graph_;
 //	PriorityQueue<Edge *, Comparator> tipQueue_;
+	Comparator comparator_;
 	const size_t maxTipLength_;
 	const size_t coverageBound_;
 	const double relativeCoverageBound_;
-	Comparator comparator_;
 
 	bool isTip(EdgeGraph &graph, Vertex *v) {
 		if (!graph.CheckUniqueIncomingEdge(v) || !graph.IsDeadEnd(v))

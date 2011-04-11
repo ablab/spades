@@ -1,6 +1,6 @@
 #include "common.hpp"
 
-LOGGER("p.common");
+//LOGGER("p.common");
 
 string parsed_reads;
 string parsed_k_l_mers;
@@ -59,7 +59,7 @@ ll popNucleotide(ll kMer, int length, int direction) {
 
 void initConstants(string ini_file) {
 	char tmp[200];
-	INFO("Trying to init constants...");
+//	INFO("Trying to init constants...");
 
 	//	string folder = string("data/");
 	FILE* ini = fopen(ini_file.c_str(), "r");
@@ -113,7 +113,7 @@ void initConstants(string ini_file) {
 
 	assert(fscanf(ini, "parsed_k_sequence = %s\n" , tmp) == 1);
 	parsed_k_sequence = folder + string(tmp) + suff + ".txt";
-	DEBUG(parsed_k_sequence);
+//	DEBUG(parsed_k_sequence);
 	assert(fscanf(ini, "compressed_graph = %s\n" , tmp) == 1);
 	graph_file = folder + string(tmp) + suff + ".dot";
 	assert(fscanf(ini, "intermediate_graph = %s\n" , tmp) == 1);
