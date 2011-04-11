@@ -469,8 +469,9 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 					s += nucl((a[ii].first & maxsd) >> (2*(p-j-1)));
 					maxsd >>= 2;
 			//		cerr << "OK" <<endl;
-					if (coverage < a[ii].second) coverage = a[ii].second;
+
 				}
+				coverage += a[ii].second;
 			}
 			DEBUG("seq: s" << s);
 			tmp_res.push_back(s);

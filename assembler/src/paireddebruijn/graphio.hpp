@@ -59,10 +59,10 @@ class DataReader {
 public:
 	DataReader(char *fileName);
 	DataReader(const char *fileName);
-	void read(int &a);
-	void read(long long &a);
-	void read(Edge * &edge);
-	void read(Sequence * &sequence);
+	int read(int &a);
+	int read(long long &a);
+	int read(Edge * &edge);
+	int read(Sequence * &sequence);
 	void read(VertexPrototype * &v);
 	void readLongEdgesMap(longEdgesMap &map);
 	void readIntArray(int *array, int length);
@@ -124,7 +124,7 @@ void DataReader::read(vector<valueType> &v) {
 
 void save(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 		int &VertexCount, int EdgeId);
-
+void save(DataPrinter dp, Edge *e);
 void load(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 		int &VertexCount, int EdgeId);
 

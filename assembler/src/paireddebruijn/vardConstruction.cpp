@@ -287,6 +287,8 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 
 void createEdges(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 	int count = 0;
+	string edgesFile = folder+ "graphEdges.txt";
+	DataPrinter dp(edgesFile.c_str());
 	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();) {
 		int size = iter->second.size();
 		ll kmer = iter->fi;
@@ -373,7 +375,12 @@ void createEdges(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 				if (buildEdges){
 					curEdge.coverage = curEdge.coverage / (curEdge.upper.length()- k + 1);
 					Edge* newEdge = new Edge(curEdge, startVertId, finVertId, graph.EdgeId);
-					graph.addEdge(newEdge);
+					save(dp, newEdge);
+
+					graph.addEdge(newEdge, false);
+				//	string outFile = folder+"graphEdges.txt";
+			//		char* outFile = outF.c_str();
+					delete newEdge;
 					DEBUG("adding edge "<< newEdge->EdgeId <<"of length "<< curEdge.upper.length()+1-k);
 				}
 				//				if (curEdge.upper.length() <1000)
@@ -388,6 +395,11 @@ void createEdges(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 	//	edges.erase(iter++);
 		++iter;
 	}
+	dp.output(-1);
+	dp.output(graph.EdgeId);
+	dp.output(graph.VertexCount);
+	dp.output(graph.EdgeId);
+	dp.close();
 }
 /*
  * Appends string toAppend to string edge with maximal possible overlap For example, appendLowerPath(ACAT,ATT) will be ACATT
