@@ -126,7 +126,7 @@ namespace __gnu_cxx
 
 	};
 
-	template<> struct hash< ll > {
+	template<> struct hash<long long > {
 
 		size_t operator()( const ll& x ) const {
 
