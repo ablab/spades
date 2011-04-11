@@ -49,7 +49,8 @@ void run() {
 	if (needGraph) {
 		cerr << endl << " constructing Graph" << endl;
 		constructGraph(graph);
-		save(folder+"graph.txt", graph);
+		//save(folder+"graph.txt", graph);
+		load(folder+"graphEdges.txt", graph);
 		outputLongEdges(graph.longEdges, graph,
 				folder+"beforeExpand.dot");
 	}

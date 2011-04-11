@@ -353,7 +353,6 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 	vector<int> tmp_cov;
 	assert (max_shift <= 20);
 
-//	cerr << lset.size()<<endl;
 	cerr << "Start clustering"<<endl;
 	int right[MAXLMERSIZE];
 	int left[MAXLMERSIZE];
@@ -469,8 +468,9 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 					s += nucl((a[ii].first & maxsd) >> (2*(p-j-1)));
 					maxsd >>= 2;
 			//		cerr << "OK" <<endl;
-					if (coverage < a[ii].second) coverage = a[ii].second;
+
 				}
+				coverage += a[ii].second;
 			}
 			DEBUG("seq: s" << s);
 			tmp_res.push_back(s);
@@ -742,8 +742,8 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
     int ok = 1;
     INFO("PairsToSequences started");
-    set<ll> lset;
-    readLmersSet(lmerFile, lset);
+  //  set<ll> lset;
+  //  readLmersSet(lmerFile, lset);
     pair <ll,int> lmers[MAXLMERSIZE];
 	ll kmer;
 	int lsize;

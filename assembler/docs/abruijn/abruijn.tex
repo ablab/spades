@@ -15,6 +15,8 @@
 \date{March 14, 2011}
 \maketitle
 
+\listoftodos
+
 \section{General Idea}
 
 The main goal of this approach is to simplify a \emph{de Bruijn} graph
@@ -111,11 +113,14 @@ Along with a hash function, an apt criterion is the frequency of the given $k$-m
 the following.
 
 \begin{itemize}
-  \item The $k$-mers that are underrepresented in the reads (even those a with small value of hash function)
-  are (most probably) erroneous. Using frequency allows us to exclude them from the set of
+  \item The $k$-mers that are underrepresented{\todo{what do we mean by ``underrepresented''?
+  is it true that most of the erroneous reads have frequency one?}} in the 
+  reads (even those a with small value of hash function)
+  are (most probably) erroneous. Using frequency allows us 
+  to exclude them from the set of
   vertex-forming $k$-mers.
   \item The $k$-mers that are overrepresented correspond to high-degree vertices in the graph.
-  It might be helpful to exclude them as well in order to make to make the structure of the graph more feasible.
+  It might be helpful to exclude them as well in order to make the structure of the graph more feasible.
   (Motivation: consider two reads, $axyb$ and $cxyd$. A hash function might suggest to select $k$-mers $x$ and
   $y$ which would create a fork in the graph. Selecting $a$, $b$, $c$ and $d$ on the other hand leads to
   two separate edges.)
@@ -123,7 +128,7 @@ the following.
 
 \subsection{Reducing the number of vertices}
 As said in the beginning the main motivation for considering such graphs
-they contain fewer edges than the original de Bruijn graph. Clearly, the number of edges in the
+is that they contain fewer edges than the original de Bruijn graph. Clearly, the number of edges in the
 A Bruijn graph is also reduced (the vertices with no bold adjacent edges actually do not belong
 to A Bruijn graph). In order to further reduce the number of vertices we can do the following.
 First, mark just one $k$-mer in each read with the minimal possible hash value. If it turned out to be

@@ -132,7 +132,7 @@ public:
 		}
 	}
 	Edge(Sequence *up, Sequence *low, int from, int to, int len, int id,
-			int cov = 1, int dShift = 0) {
+			int cov = -1, int dShift = 0) {
 		upper = up;
 		lower = low;
 		FromVertex = from;
@@ -246,7 +246,7 @@ public:
 	virtual tVertexIterator endVertex() = 0;
 
 	//In order to add edge to graph one should create this edge first!
-	virtual tEdge addEdge(tEdge newEdge) = 0;
+	virtual tEdge addEdge(tEdge newEdge, bool saveSequence) = 0;
 	virtual void removeEdge(tEdge edge) = 0;
 
 	virtual tVertex leftEnd(tEdge edge) = 0;
@@ -448,9 +448,11 @@ public:
 	/**
 	 * Method adds edge to graph and updates all data stored in graph correspondingly.
 	 *@param newEdge edge with any id value.
+	 *@param saveSequence false if we are not interested in adding edge sequence itself. By default true
 	 *@return the same Edge. After the edge is added to graph it is assigned with new id value
 	 */
-	virtual Edge *addEdge(Edge *newEdge);
+	virtual Edge *addEdge(Edge *newEdge, bool saveSequence);
+//	virtual Edge *addEdgeToFile(Edge *newEdge, string File);
 
 	/*
 	 * Method removes edge from graph, deletes @edge object and all its contents including Sequences stored in it.

@@ -277,32 +277,36 @@ void DataPrinter::close() {
 	fclose(f_);
 }
 
-void DataReader::read(int &a) {
-	assert(fscanf(f_, "%d\n", &a)==1);
+int DataReader::read(int &a) {
+	return fscanf(f_, "%d\n", &a);
 }
 
 void DataPrinter::output(int a) {
 	fprintf(f_, "%d\n", a);
 }
 
-void DataReader::read(long long &a) {
-	fscanf(f_, "%lld\n", &a);
+int DataReader::read(long long &a) {
+	return fscanf(f_, "%lld\n", &a);
 }
 
 void DataPrinter::output(long long a) {
 	fprintf(f_, "%lld\n", a);
 }
 
-void DataReader::read(Sequence * &sequence) {
+int DataReader::read(Sequence * &sequence) {
 	int length;
-	read(length);
-	if (length == 0) {
-		fscanf(f_, "\n");
-		sequence = new Sequence("");
+	if (!read(length)) {
+		return 0;
 	} else {
-		char *s = new char[length + 1];
-		fscanf(f_, "%s\n", s);
-		sequence = new Sequence(s);
+		if (length == 0) {
+			fscanf(f_, "\n");
+			sequence = new Sequence("");
+		} else {
+			char *s = new char[length + 1];
+			fscanf(f_, "%s\n", s);
+			sequence = new Sequence(s);
+		}
+		return 1;
 	}
 }
 
@@ -330,17 +334,22 @@ void DataPrinter::output(VertexPrototype *v) {
 	output(v->used);
 }
 
-void DataReader::read(Edge * &edge) {
+int DataReader::read(Edge * &edge) {
 	int from, to, len, id, cov;
 	Sequence *up, *low;
-	read(id);
-	read(from);
-	read(to);
-	read(len);
-	read(cov);
-	read(up);
-	read(low);
+	int read_res = 0;
+	read_res += read(id);
+	if (id == -1) return 0;
+	DEBUG(id);
+	read_res += read(from);
+	read_res += read(to);
+	read_res += read(len);
+	read_res += read(cov);
+	read_res += read(up);
+	read_res += read(low);
 	edge = new Edge(up, low, from, to, len, id, cov);
+	DEBUG("edge"<<id << "loaded");
+	return (read_res/7);
 }
 
 void DataPrinter::output(Edge *edge) {
@@ -354,13 +363,17 @@ void DataPrinter::output(Edge *edge) {
 }
 
 void DataPrinter::outputLongEdgesMap(longEdgesMap &edges) {
-	output((int) edges.size());
+	INFO("Saving long edges");
+	DEBUG(edges.size());
+	int size = edges.size();
 	for (longEdgesMap::iterator it = edges.begin(); it != edges.end(); ++it) {
 		if (it->first == it->second->EdgeId) {
 			output(it->first);
 			output(it->second);
+			DEBUG("Edge outputed" );
 		}
 	}
+	DEBUG("Normal edges outputed");
 	Sequence *emptySequence = new Sequence("");
 	Edge *emptyEdge = new Edge(emptySequence, emptySequence, 0, 0, 0, 0);
 	for (longEdgesMap::iterator it = edges.begin(); it != edges.end(); ++it) {
@@ -370,24 +383,34 @@ void DataPrinter::outputLongEdgesMap(longEdgesMap &edges) {
 			output(emptyEdge);
 		}
 	}
+	DEBUG("fakeEdges outputed");
 	delete emptyEdge;
+	output(-1);
+	output(size);
 }
 
 void DataReader::readLongEdgesMap(longEdgesMap &edges) {
-	int size;
-	read(size);
-	for (int i = 0; i < size; i++) {
-		int id;
-		read(id);
+	int size = 0;
+	int id;
+	while (1) {
+		assert(read(id));
 		Edge *edge;
-		read(edge);
-		if (id == edge->EdgeId) {
-			edges.insert(make_pair(id, edge));
-		} else {
-			edges.insert(make_pair(id, edges[edge->EdgeId]));
-			delete edge;
+		DEBUG(id);
+		if( id == -1 || !(read(edge)))
+			break;
+		else {
+			size++;
+			if (id == edge->EdgeId) {
+				edges.insert(make_pair(id, edge));
+			} else {
+				edges.insert(make_pair(id, edges[edge->EdgeId]));
+				delete edge;
+			}
 		}
 	}
+	read(id);
+	DEBUG(id);
+	assert(size == id);
 }
 
 void DataReader::readIntArray(int *array, int length) {
@@ -428,12 +451,17 @@ void DataPrinter::outputIntArray(int *array, int length, int width) {
 	fprintf(f_, "\n");
 }
 
+void save(DataPrinter dp, Edge *e){
+	dp.output(e->EdgeId);
+	dp.output(e);
+//	dp.close();
+}
 void save(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 		int &VertexCount, int EdgeId) {
 	DataPrinter dp(fileName);
+	dp.outputLongEdgesMap(longEdges);
 	dp.output(VertexCount);
 	dp.output(EdgeId);
-	dp.outputLongEdgesMap(longEdges);
 	//TODO: FIX!!!
 	//	dp.outputIntArray(g.inD, MAX_VERT_NUMBER);
 	//	dp.outputIntArray(g.outD, MAX_VERT_NUMBER);
@@ -444,9 +472,9 @@ void save(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 void load(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 		int &VertexCount, int &EdgeId) {
 	DataReader dr(fileName);
+	dr.readLongEdgesMap(longEdges);
 	dr.read(VertexCount);
 	dr.read(EdgeId);
-	dr.readLongEdgesMap(longEdges);
 	//TODO: fix;
 	//	dr.readIntArray(g.inD, MAX_VERT_NUMBER);
 	//	dr.readIntArray(g.outD, MAX_VERT_NUMBER);
@@ -456,6 +484,7 @@ void load(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 }
 
 void save(char *fileName, PairedGraph &g) {
+	INFO("Saving graph");
 	DataPrinter dp(fileName);
 	dp.output(g.VertexCount);
 	dp.output(g.EdgeId);
@@ -468,10 +497,11 @@ void save(char *fileName, PairedGraph &g) {
 	dp.close();
 }
 void save(string fileName, PairedGraph &g) {
+	INFO("Saving graph");
 	DataPrinter dp(fileName.c_str());
+	dp.outputLongEdgesMap(g.longEdges);
 	dp.output(g.VertexCount);
 	dp.output(g.EdgeId);
-	dp.outputLongEdgesMap(g.longEdges);
 	//TODO: FIX!!!
 	//	dp.outputIntArray(g.inD, MAX_VERT_NUMBER);
 	//	dp.outputIntArray(g.outD, MAX_VERT_NUMBER);
@@ -480,10 +510,11 @@ void save(string fileName, PairedGraph &g) {
 	dp.close();
 }
 void load(char *fileName, PairedGraph &g) {
+	INFO("Loading graph");
 	DataReader dr(fileName);
+	dr.readLongEdgesMap(g.longEdges);
 	dr.read(g.VertexCount);
 	dr.read(g.EdgeId);
-	dr.readLongEdgesMap(g.longEdges);
 	//TODO: fix;
 	//	dr.readIntArray(g.inD, MAX_VERT_NUMBER);
 	//	dr.readIntArray(g.outD, MAX_VERT_NUMBER);
@@ -492,10 +523,11 @@ void load(char *fileName, PairedGraph &g) {
 	dr.close();
 }
 void load(string fileName, PairedGraph &g) {
+	INFO("Loading graph");
 	DataReader dr(fileName.c_str());
+	dr.readLongEdgesMap(g.longEdges);
 	dr.read(g.VertexCount);
 	dr.read(g.EdgeId);
-	dr.readLongEdgesMap(g.longEdges);
 	//TODO: fix;
 	//	dr.readIntArray(g.inD, MAX_VERT_NUMBER);
 	//	dr.readIntArray(g.outD, MAX_VERT_NUMBER);
