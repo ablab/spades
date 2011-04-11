@@ -18,7 +18,8 @@
 #include "logging.hpp"
 
 #define forn(i, n) for(size_t i = 0; i < (size_t) n; i++)
-#define ll long long
+//#define ll long long
+#define ll int
 #define pb push_back
 #define mp make_pair
 #define fi first
@@ -126,7 +127,7 @@ namespace __gnu_cxx
 
 	};
 
-	template<> struct hash< ll > {
+	template<> struct hash<long long > {
 
 		size_t operator()( const ll& x ) const {
 
