@@ -505,7 +505,7 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 
 			}
 		}
-		if (good) {
+		if (good && (tmp_cov[i] > coverage_cutoff)) {
 			Sequence* tmpSeq = new Sequence(tmp_res[i]);
 			res.pb(make_pair(tmpSeq,tmp_cov[i]));
 
@@ -618,7 +618,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	//	fprintf(stderr,"%lld %lld\n", upper, lower);
 	for (int j = 0; j + l <= readLength; j++) {
 		if (checkBoundsForUpper(upper)) {
-			for (int jj = max(0, j -7); jj < min(readLength - l +1, j + 7); jj ++)
+			for (int jj = max(0, j - range_cutoff); jj < min(readLength - l +1, j + range_cutoff); jj ++)
 			addPairToTable(table, upper, lowers[jj]);
 			totalKmers++;
 		}

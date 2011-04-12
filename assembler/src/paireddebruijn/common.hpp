@@ -39,6 +39,8 @@
 
 #define MAX_VERT_NUMBER 50000
 #define MAX_DEGREE 50
+#define coverage_cutoff 9
+#define lrange_cutoff 10
 #define suffix "_const_d"
 
 
