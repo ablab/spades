@@ -15,8 +15,11 @@ class SmoothPositionChooser {
 public:
 	static int choosePosition(int currentReadNumber, int readNumber,
 			int minPosition, int maxPosition) {
-		return minPosition + (maxPosition - minPosition)
-				* (long long) currentReadNumber / (readNumber - 1);
+		if (readNumber == 1) {
+			return (minPosition + maxPosition) / 2;
+		} else
+			return minPosition + (maxPosition - minPosition)
+					* (long long) currentReadNumber / (readNumber - 1);
 	}
 };
 
@@ -178,13 +181,13 @@ private:
 	}
 
 	bool read(strobe_read<size, cnt, T> &sr) {
-		//				cout << currentReadNumber_ << " " << readNumber_ << endl;
+//		cout << currentReadNumber_ << " " << readNumber_ << endl;
 		if (!is_open() || eof()) {
 			return false;
 		}
 		int p = PositionChooser::choosePosition(currentReadNumber_,
 				readNumber_, minPosition_, maxPosition_);
-		cout << p << endl;
+		//		cout << p << endl;
 		for (int i = 0; i < cnt; i++) {
 			int positionError = rand() % (2 * insertError_ + 1) - insertError_;
 			string readString = genome_.substr(p + positionError, size);
@@ -201,7 +204,7 @@ private:
 Sequence readGenome(istream &is) {
 	SequenceBuilder sb;
 	string buffer;
-	while(!is.eof()){
+	while (!is.eof()) {
 		is >> buffer;
 		sb.append(Sequence(buffer));
 	}

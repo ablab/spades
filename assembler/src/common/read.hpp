@@ -29,8 +29,8 @@ public:
 		return true;
 	}
 
-	Sequence* createSequence() const {
-		return new Sequence(seq_);
+	Sequence getSequence() const {
+		return Sequence(seq_);
 	}
 
 	Quality* createQuality() const {
