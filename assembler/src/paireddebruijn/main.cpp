@@ -157,9 +157,9 @@ int main() {
 	cout<< "long "<<sizeof(My_long)<<endl;
 	cout<< "long long "<<sizeof(My_longlong)<<endl;
 	cout<< "ll "<<sizeof(My_ll)<<endl;
-	forgetQualityPairedData("/home/ftp/data/cropped/s_6.first400000_1.fastq.gz", "/home/ftp/data/cropped/s_6.first400000_2.fastq.gz", "data/paireddebruijn/corrected_400000/reads_100_20.txt" );
+//	forgetQualityPairedData("/home/ftp/data/cropped/s_6.first400000_1.fastq.gz", "/home/ftp/data/cropped/s_6.first400000_2.fastq.gz", "data/paireddebruijn/corrected_400000/reads_100_20.txt" );
 //	LOG_ASSERT(1 == 0, "Something wrong");
-assert(0);
+//assert(0);
 
 
 //	generate();
