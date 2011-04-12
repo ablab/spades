@@ -8,19 +8,6 @@
 #ifndef EDGE_GRAPH_TOOL_HPP_
 #define EDGE_GRAPH_TOOL_HPP_
 
-#include "read_generator.hpp"
-#include "condensed_graph_constructor.hpp"
-#include "ireadstream.hpp"
-#include "test_utils.hpp"
-#include <algorithm>
-
-//#define SUBSTR_LENGTH 1000
-//#define COVERAGE 1
-//#define R 35
-#define K 27
-
-using namespace std;
-
 namespace edge_graph {
 
 void CountStats(const EdgeGraph& g) {
@@ -40,10 +27,15 @@ void WriteToFile(const string& file_name, const string& graph_name,
 	ComplementGraphVisualizer gv(gp);
 	gv.Visualize(g);
 	filestr.close();
-
 }
 
-void CondenseTool(DeBruijn<K>& debruijn) {
+template <class ReadStream>
+void ConstructionTool(ReadStream& stream) {
+	INFO("Tool started");
+	INFO("Constructing DeBruijn graph");
+	DeBruijn<K> debruijn;
+	debruijn.ConstructGraphFromStream(stream);
+	INFO("DeBruijn graph constructed");
 	INFO("Condensing graph");
 	CondenseConstructor<K> g_c(debruijn);
 
@@ -60,26 +52,6 @@ void CondenseTool(DeBruijn<K>& debruijn) {
 	delete g;
 	delete index;
 }
-
-void ConstructGraphOnReads(vector<Read> reads) {
-	INFO("Tool started");
-	INFO("Constructing DeBruijn graph");
-	DeBruijn<K> debruijn;
-	debruijn.ConstructGraph(reads);
-	INFO("DeBruijn graph constructed");
-	CondenseTool(debruijn);
-}
-
-template <class ReadStream>
-void ConstructGraphFromStream(ReadStream& stream) {
-	INFO("Tool started");
-	INFO("Constructing DeBruijn graph");
-	DeBruijn<K> debruijn;
-	debruijn.ConstructGraphFromStream(stream);
-	INFO("DeBruijn graph constructed");
-	CondenseTool(debruijn);
-}
-
 
 }
 

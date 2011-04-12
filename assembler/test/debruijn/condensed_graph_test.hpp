@@ -108,24 +108,24 @@ void TestVertex() {
 	delete v;
 }
 
-void VisTool() {
-	CondensedGraph g(5, new GraphActionHandler());
-	Vertex* v1 = g.AddVertex(Sequence("AAAAT"));
-	Vertex* v2 = g.AddVertex(Sequence("AAATA"));
-	Vertex* v3 = g.AddVertex(Sequence("AAATC"));
-	g.LinkVertices(v1, v2);
-	g.LinkVertices(v1, v3);
-	fstream filestr;
-	filestr.open("test.txt", fstream::out);
-	gvis::GraphPrinter<const Vertex*> gp("test graph", filestr);
-	SimpleGraphVisualizer gv(gp);
-	gv.Visualize(g);
-	filestr.close();
-	DFS dfs(g);
-	SimpleStatCounter h;
-	dfs.Traverse(h);
-	cerr << h.v_count() << " " << h.e_count();
-}
+//void VisTool() {
+//	CondensedGraph g(5);
+//	Vertex* v1 = g.AddVertex(Sequence("AAAAT"));
+//	Vertex* v2 = g.AddVertex(Sequence("AAATA"));
+//	Vertex* v3 = g.AddVertex(Sequence("AAATC"));
+//	g.LinkVertices(v1, v2);
+//	g.LinkVertices(v1, v3);
+//	fstream filestr;
+//	filestr.open("test.txt", fstream::out);
+//	gvis::GraphPrinter<const Vertex*> gp("test graph", filestr);
+//	SimpleGraphVisualizer gv(gp);
+//	gv.Visualize(g);
+//	filestr.close();
+//	DFS dfs(g);
+//	SimpleStatCounter h;
+//	dfs.Traverse(h);
+//	cerr << h.v_count() << " " << h.e_count();
+//}
 
 //todo refactor
 void MyEquals(edge_set es, string s[][2], size_t length) {
@@ -151,39 +151,39 @@ void MyEquals(vertex_set vs, string s[], size_t length) {
 	ASSERT_EQUAL(etalon_vertices.size(), vs.size());
 }
 
-template <size_t kmer_size_>
-void AssertGraph(size_t read_cnt, string reads_str[], size_t vertex_cnt, string et_vertices[], size_t edge_cnt, string et_edges[][2]) {
-	const vector<Read> reads = MakeReads(reads_str, read_cnt);
-	DirectConstructor<kmer_size_> g_c(reads);
-	CondensedGraph *g;
-	SimpleIndex<5> *index;
-	g_c.ConstructGraph(g, index);
-
-	edge_set edges;
-	vertex_set vertices;
-	ToStringHandler h(vertices, edges);
-	DFS dfs(*g);
-	dfs.Traverse(h);
-	if (vertex_cnt != 0) {
-		MyEquals(vertices, et_vertices, vertex_cnt);
-	}
-	if (edge_cnt != 0) {
-		MyEquals(edges, et_edges, edge_cnt);
-	}
-
-	delete g;
-	delete index;
-}
-
-template <size_t kmer_size_>
-void AssertGraph(size_t read_cnt, string reads[], size_t vertex_cnt, string et_vertices[]) {
-	AssertGraph<kmer_size_>(read_cnt, reads, vertex_cnt, et_vertices, 0, NULL);
-}
-
-template <size_t kmer_size_>
-void AssertGraph(size_t read_cnt, string reads[], size_t edge_cnt, string et_edges[][2]) {
-	AssertGraph<kmer_size_>(read_cnt, reads, 0, NULL, edge_cnt, et_edges);
-}
+//template <size_t kmer_size_>
+//void AssertGraph(size_t read_cnt, string reads_str[], size_t vertex_cnt, string et_vertices[], size_t edge_cnt, string et_edges[][2]) {
+//	const vector<Read> reads = MakeReads(reads_str, read_cnt);
+//	DirectConstructor<kmer_size_> g_c(reads);
+//	CondensedGraph *g;
+//	typename DirectConstructor<kmer_size_>::Index *index;
+//	g_c.ConstructGraph(g, index);
+//
+//	edge_set edges;
+//	vertex_set vertices;
+//	ToStringHandler h(vertices, edges);
+//	DFS dfs(*g);
+//	dfs.Traverse(h);
+//	if (vertex_cnt != 0) {
+//		MyEquals(vertices, et_vertices, vertex_cnt);
+//	}
+//	if (edge_cnt != 0) {
+//		MyEquals(edges, et_edges, edge_cnt);
+//	}
+//
+//	delete g;
+//	delete index;
+//}
+//
+//template <size_t kmer_size_>
+//void AssertGraph(size_t read_cnt, string reads[], size_t vertex_cnt, string et_vertices[]) {
+//	AssertGraph<kmer_size_>(read_cnt, reads, vertex_cnt, et_vertices, 0, NULL);
+//}
+//
+//template <size_t kmer_size_>
+//void AssertGraph(size_t read_cnt, string reads[], size_t edge_cnt, string et_edges[][2]) {
+//	AssertGraph<kmer_size_>(read_cnt, reads, 0, NULL, edge_cnt, et_edges);
+//}
 
 template <size_t kmer_size_>
 void AssertCondense(size_t read_cnt, string reads_str[], size_t vertex_cnt, string et_vertices[], size_t edge_cnt, string et_edges[][2]) {
@@ -192,7 +192,7 @@ void AssertCondense(size_t read_cnt, string reads_str[], size_t vertex_cnt, stri
 	debruijn.ConstructGraph(reads) ;
 	CondenseConstructor<kmer_size_> g_c(debruijn);
 	CondensedGraph *g;
-	SimpleIndex<5> *index;
+	typename CondenseConstructor<kmer_size_>::Index *index;
 	g_c.ConstructGraph(g, index);
 
 	edge_set edges;
@@ -216,12 +216,12 @@ void AssertCondense(size_t read_cnt, string reads_str[], size_t vertex_cnt, stri
 }
 
 template <size_t kmer_size_>
-void AssertCondense(size_t read_cnt, string reads[], size_t vertex_cnt, string et_vertices[]) {
+void AssertGraph(size_t read_cnt, string reads[], size_t vertex_cnt, string et_vertices[]) {
 	AssertCondense<kmer_size_>(read_cnt, reads, vertex_cnt, et_vertices, 0, NULL);
 }
 
 template <size_t kmer_size_>
-void AssertCondense(size_t read_cnt, string reads[], size_t edge_cnt, string et_edges[][2]) {
+void AssertGraph(size_t read_cnt, string reads[], size_t edge_cnt, string et_edges[][2]) {
 	AssertCondense<kmer_size_>(read_cnt, reads, 0, NULL, edge_cnt, et_edges);
 }
 
@@ -265,19 +265,19 @@ void TestBuldge() {
 	AssertGraph<5>(read_cnt, reads, edge_cnt, edges);
 }
 
-void TestSimpleHashTable() {
-	SimpleIndex<5> h;
-	Seq<5> k1("AACCG");
-	Vertex* v = new Vertex(Sequence("AAAAAAAAAAAAA"));
-	h.put(k1, v, 1);
-	ASSERT(h.contains(k1));
-	ASSERT_EQUAL(h.get(k1).first, v);
-	ASSERT_EQUAL(h.get(k1).second, 1);
-	h.put(k1, v, 2);
-	ASSERT_EQUAL(h.get(k1).first, v);
-	ASSERT_EQUAL(h.get(k1).second, 2);
-	delete v;
-}
+//void TestSimpleHashTable() {
+//	SimpleIndex<5> h;
+//	Seq<5> k1("AACCG");
+//	Vertex* v = new Vertex(Sequence("AAAAAAAAAAAAA"));
+//	h.put(k1, v, 1);
+//	ASSERT(h.contains(k1));
+//	ASSERT_EQUAL(h.get(k1).first, v);
+//	ASSERT_EQUAL(h.get(k1).second, 1);
+//	h.put(k1, v, 2);
+//	ASSERT_EQUAL(h.get(k1).first, v);
+//	ASSERT_EQUAL(h.get(k1).second, 2);
+//	delete v;
+//}
 
 //void TestAddVertex() {
 //	//	Graph g;
@@ -292,7 +292,7 @@ void TestCondenseSimple() {
 	static const size_t edge_cnt = 4;
 	string edges[edge_cnt][2] = {{"CGAAA", "GAAAACACA"}, {"CGAAA", "GAAACCACA"}, {"GAAACCACA", "CACACC"}, {"GAAAACACA", "CACACC"}};
 
-	AssertCondense<5>(read_cnt, reads, edge_cnt, edges);
+	AssertGraph<5>(read_cnt, reads, edge_cnt, edges);
 }
 
 cute::suite CondensedGraphSuite() {
@@ -303,9 +303,9 @@ cute::suite CondensedGraphSuite() {
 	 s.push_back(CUTE(TestSplitThread));
 	 s.push_back(CUTE(TestSplitThread2));
 	 s.push_back(CUTE(TestBuldge));
-	 s.push_back(CUTE(TestSimpleHashTable));
+//	 s.push_back(CUTE(TestSimpleHashTable));
 	 s.push_back(CUTE(TestCondenseSimple));
-	 s.push_back(CUTE(VisTool));
+//	 s.push_back(CUTE(VisTool));
 	return s;
 }
 

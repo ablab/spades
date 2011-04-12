@@ -13,12 +13,6 @@
 #include "ireadstream.hpp"
 #include <algorithm>
 
-#define filename "./data/input/MG1655-K12.fasta.gz"
-#define SUBSTR_LENGTH 1000
-#define COVERAGE 1
-#define R 35
-#define K 27
-
 using namespace std;
 
 namespace condensed_graph {
@@ -45,17 +39,17 @@ void WriteToFile(const string& file_name, const string& graph_name,
 
 void SimulatedMistakesTool() {
 	INFO("Tool started");
-	vector<Read> reads = GenerateReadsWithMistakes();
+	vector<Read> reads = GenerateReadsWithMistakes(ECOLI_FILE);
 	INFO("Constructing DeBruijn graph");
 	DeBruijn<K> debruijn;
 	debruijn.ConstructGraph(reads);
 	INFO("DeBruijn graph constructed");
 
 	INFO("Condensing graph");
-	condensed_graph::CondenseConstructor<K> g_c(debruijn);
+	CondenseConstructor<K> g_c(debruijn);
 
-	condensed_graph::CondensedGraph *g;
-	condensed_graph::SimpleIndex<K> *index;
+	CondensedGraph *g;
+	CondenseConstructor<K>::Index *index;
 	g_c.ConstructGraph(g, index);
 	INFO("Graph condensed");
 
