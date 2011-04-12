@@ -652,7 +652,7 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 		fictiveRead[i] = 0;
 	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
 //		fprintf(stderr, "%s", upperNuclRead);
-		if ((strlen(upperNuclRead)<readLength)||(strlen(lowerNuclRead)<readLength)) break;
+		if ((strlen(upperNuclRead)<readLength)||(strlen(lowerNuclRead)<readLength)) continue;
 		if (reverse) {
 			codeRead(upperNuclRead, lowerRead);
 			codeRead(lowerNuclRead, upperRead);
