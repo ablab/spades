@@ -259,20 +259,18 @@ MatchResults BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QV
 MatchResults BayesQualityGenome::ReadBQPreprocessed(const Read & r, size_t readno, size_t readssize) {
 	QVector q(r.getQualityString().size());
 	copy(r.getQualityString().begin(), r.getQualityString().end(), q.begin());
-	Sequence *s = r.createSequence();
-	MatchResults mr1 = ProcessOneReadBQ(*s, q, readno);
+	Sequence s = r.getSequence();
+	MatchResults mr1 = ProcessOneReadBQ(s, q, readno);
 
-	INFO(*s);
+	INFO(s);
 	INFO("Read as it is gives result " << mr1.prob_);
 	if (mr1.bestq_ <= GOOD_ENOUGH_Q) {
-		delete s;
 		return mr1;
 	}
 	
-	INFO(!(*s));
-	MatchResults mr2 = ProcessOneReadBQ(!(*s), q, readno + readssize);
+	INFO(!s);
+	MatchResults mr2 = ProcessOneReadBQ(!s, q, readno + readssize);
 	INFO("Complementary read gives result " << mr2.prob_);
-	delete s;
 	if (mr2.prob_ > mr1.prob_) {
 		return mr2;
 	}
@@ -320,16 +318,15 @@ void BayesQualityGenome::PreprocessReads(const vector<Read> &reads) {
 	PreprocReadsMap rm;
 
 	for (size_t i = 0; i < reads.size(); ++i) {
-		Sequence *s = reads[i].createSequence();
-		size_t mid = s->size() / 2;
-		if (s->size() - mid < PREPROCESS_SEQ_LENGTH) mid = s->size() - PREPROCESS_SEQ_LENGTH;
+		Sequence s = reads[i].getSequence();
+		size_t mid = s.size() / 2;
+		if (s.size() - mid < PREPROCESS_SEQ_LENGTH) mid = s.size() - PREPROCESS_SEQ_LENGTH;
 		readMids[i] = mid; readMids[i+reads.size()] = mid;
 		
-		PSeq   ps(   (*s).Subseq(0, PREPROCESS_SEQ_LENGTH));
-		PSeq  cps((!(*s)).Subseq(0, PREPROCESS_SEQ_LENGTH));
-		PSeq  psm(   (*s).Subseq(mid, mid+PREPROCESS_SEQ_LENGTH));
-		PSeq cpsm((!(*s)).Subseq(mid, mid+PREPROCESS_SEQ_LENGTH));
-		delete s;
+		PSeq   ps(s.Subseq(0, PREPROCESS_SEQ_LENGTH));
+		PSeq  cps((!s).Subseq(0, PREPROCESS_SEQ_LENGTH));
+		PSeq  psm(s.Subseq(mid, mid+PREPROCESS_SEQ_LENGTH));
+		PSeq cpsm((!s).Subseq(mid, mid+PREPROCESS_SEQ_LENGTH));
 
 		PreprocessOneMapOneReadWithShift( ps, rm, 0, availableReadsHead_, i, 			  reads.size(), 0);
 		PreprocessOneMapOneReadWithShift(cps, rm, 0, availableReadsHead_, i+reads.size(), reads.size(), 0);
@@ -437,7 +434,7 @@ void BayesQualityGenome::ProcessReads(const char *filename) {
 		
 		omp_set_num_threads(THREADS_NUM);
 		#pragma omp parallel for shared(os, readno, mrv) private(r)
-		for (int i=0; i<v.size(); ++i) {
+		for (size_t i=0; i<v.size(); ++i) {
 			r = v[i];
 			if (r.size() < MIN_READ_SIZE) {
 				mrv[i].prob_ = -1;
@@ -456,7 +453,7 @@ void BayesQualityGenome::ProcessReads(const char *filename) {
 		}
 		
 		#ifdef WRITE_STATSFILE
-		for (int i=0; i<v.size(); ++i) {
+		for (size_t i=0; i<v.size(); ++i) {
 			if (mrv[i].prob_ < 0) {
 				os << setw(7) << readno+i << " skipped: only " << setw(2) << r.size() << " known letters at the beginning" << endl;
 				continue;
