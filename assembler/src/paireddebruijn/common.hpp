@@ -19,7 +19,7 @@
 
 #define forn(i, n) for(size_t i = 0; i < (size_t) n; i++)
 //#define ll long long
-#define ll int
+#define ll long long
 #define pb push_back
 #define mp make_pair
 #define fi first

@@ -606,10 +606,19 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	int shift = (l - k) / 2;
 	ll upper = extractMer(upperRead, shift, k);
 	ll lower = extractMer(lowerRead, 0, l);
-//	fprintf(stderr,"%lld %lld\n", upper, lower);
+	ll lowers[readLength + 2];
+	lowers[0] = lower;
+	forn(j, readLength - l + 1) {
+		lower <<= 2;
+		lower += lowerRead[j + l];
+		lower &= lowerMask;
+		lower[j + 1] = lowers;
+	}
+	//	fprintf(stderr,"%lld %lld\n", upper, lower);
 	for (int j = 0; j + l <= readLength; j++) {
 		if (checkBoundsForUpper(upper)) {
-			addPairToTable(table, upper, lower);
+			for (int jj = max(0, j -7); jj < min(readLength - l +1, j + 7); jj ++)
+			addPairToTable(table, upper, lower[jj]);
 			totalKmers++;
 		}
 
@@ -652,7 +661,9 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 		fictiveRead[i] = 0;
 	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
 //		fprintf(stderr, "%s", upperNuclRead);
-		if ((strlen(upperNuclRead)<readLength)||(strlen(lowerNuclRead)<readLength)) break;
+		if ((strlen(upperNuclRead)<readLength)||(strlen(lowerNuclRead)<readLength)){
+			continue;
+		}
 		if (reverse) {
 			codeRead(upperNuclRead, lowerRead);
 			codeRead(lowerNuclRead, upperRead);
