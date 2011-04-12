@@ -25,9 +25,8 @@ void init() {
 void run() {
 	char str[100];
 	//	forgetQualityPairedData("I:/bioinf/eas20_8/s_6_1.cor.fastq.gz", "I:/bioinf/eas20_8/s_6_2.cor.fastq.gz", "data/paireddebruijn/reads_100_200_corr.txt" );
-	//	forgetQualityPairedData("data/paireddebruijn/s_6_1.fastq.gz", "data/paireddebruijn/s_6_2.fastq.gz", "/media/605005E05005BDB2/data/realreads.txt" );
+//		forgetQualityPairedData("data/input/s_6.first400000_1.fastq.gz", "data/input/s_6.first400000_1.fastq.gz", "~/realreads400000.txt" );
 	//	LOG_ASSERT(1 == 0, "Something wrong");
-
 	if (needPairs) {
 		cerr << endl << " constructing pairs" << endl;
 		if (needRevertedPairs)
@@ -158,6 +157,9 @@ int main() {
 	cout<< "long "<<sizeof(My_long)<<endl;
 	cout<< "long long "<<sizeof(My_longlong)<<endl;
 	cout<< "ll "<<sizeof(My_ll)<<endl;
+//	forgetQualityPairedData("/home/ftp/data/cropped/s_6.first400000_1.fastq.gz", "/home/ftp/data/cropped/s_6.first400000_2.fastq.gz", "data/paireddebruijn/corrected_400000/reads_100_20.txt" );
+//	LOG_ASSERT(1 == 0, "Something wrong");
+//assert(0);
 
 
 //	generate();
