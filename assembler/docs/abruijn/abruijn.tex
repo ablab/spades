@@ -18,6 +18,8 @@
 \listoftodos
 \tableofcontents
 
+\newpage
+
 \section{General Idea}
 
 The main goal of this approach is to simplify a \emph{de Bruijn} graph
@@ -35,7 +37,21 @@ only two black edges.
 \end{center}
 The hope is that the resulting graph will be easier to handle 
 and at the same time it will have essentially the same structure 
-as the original de Bruijn graph.
+as the original de Bruijn graph.{\todo{we should probably cite the paper 
+on minimizers and use the word `minimizer' instead of `earmarked $k$-mer'?..}}
+
+\subsection{Advantages of A Bruijn graph over de Bruijn graph}
+\begin{itemize}
+\item Clearly, it requires less memory.
+\item In general, we expect that the resulting A Bruijn graph 
+will look like the corresponding condensed de Bruijn graph.
+If so, this would allow us to construct the condensed de Bruijn graph
+using less time and memory.
+\item If the used hash-function respects frequency of $k$-mers
+the resulting graph will contain a smaller fraction of erroneous $k$-mers.
+\item If the hash function does not mark $k$-mers that appear too often, then 
+some of the repeats may be already resolved in A Bruijn graph.\todo{what else?..}
+\end{itemize}
 
 \subsection{Hash Functions}
 
@@ -152,32 +168,35 @@ known approximately instead of exactly.
 It is a question of a separate investigation whether the approximate distances known from
 paired reads is helpful when traversing an A Bruijn graph.
 
-\section{Schedule}
 
-\begin{description}
-  \item[April 10] implement graph condensation
-  \item[April 17] test graph condensation on real data
-  \item[April 30] research into the effects of different hash functions 
-  used to take minimizers
-  \item[May 10] compare the resulting A Bruijn graph with the condensed de 
-  Bruijn graph
-  \item 
-\end{description}
+\section{Pseudocode of the assembler}
 
-\section{Plans for April 11--15}
+\todo[inline]{add high-level description of the assembler}
 
-Iterative procedure for selecting the set of earmarked k-mers is the following:
+Iterative procedure for selecting the set of earmarked $k$-mers is the following:
 
 \begin{enumerate}
-\item From each read, select $t$ minimum hash values of its k-mers, add them to the global set of earmarked hash values.
+\item From each read, select $t$ minimum hash values of its $k$-mers, add them to the global set of earmarked hash values.
 \item (if $t=1$) For each read that has only one k-mer with earmarked hash value, earmark one more k-mer from this read.
-\item In each read, select k-mers that have their hash values earmarked.
-For correcponding vertices in the resulting A Bruijn graph, add all pairwise edges, storing their lengths.
-For each k-mer, mark whether we've seen any k-mer to the left from it, and to the right.
+\item In each read, select $k$-mers that have their hash values earmarked.
+For corresponding vertices in the resulting A Bruijn graph, add all pairwise edges, storing their lengths.
+For each k-mer, mark whether we've seen any $k$-mer to the left from it, and to the right.
 \item For each $k$-mer that has no left or right neighbours, find a neighbour on the corresponding side
 that has the smallest hash value and earmark it.
-\item Repeat the previous step to minimize the number of neighbourless k-mers.
+\item Repeat the previous step to minimize the number of neighbourless $k$-mers.
 \end{enumerate}
+
+\section{Schedule}
+\begin{description}
+  \item[April 18] implement earmarking procedure
+%  \item[April 17] test graph condensation on real data
+%  \item[April 30] research into the effects of different hash functions 
+%  used to take minimizers
+%  \item[May 10] compare the resulting A Bruijn graph with the condensed de 
+%  Bruijn graph
+%  \item 
+\end{description}
+
 
 
 \end{document}
