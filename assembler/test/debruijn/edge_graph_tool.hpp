@@ -43,14 +43,7 @@ void WriteToFile(const string& file_name, const string& graph_name,
 
 }
 
-void SimulatedMistakesTool() {
-	INFO("Tool started");
-	vector<Read> reads = GenerateReadsWithMistakes();
-	INFO("Constructing DeBruijn graph");
-	DeBruijn<K> debruijn;
-	debruijn.ConstructGraph(reads);
-	INFO("DeBruijn graph constructed");
-
+void CondenseTool(DeBruijn<K>& debruijn) {
 	INFO("Condensing graph");
 	CondenseConstructor<K> g_c(debruijn);
 
@@ -67,6 +60,26 @@ void SimulatedMistakesTool() {
 	delete g;
 	delete index;
 }
+
+void ConstructGraphOnReads(vector<Read> reads) {
+	INFO("Tool started");
+	INFO("Constructing DeBruijn graph");
+	DeBruijn<K> debruijn;
+	debruijn.ConstructGraph(reads);
+	INFO("DeBruijn graph constructed");
+	CondenseTool(debruijn);
+}
+
+template <class ReadStream>
+void ConstructGraphFromStream(ReadStream& stream) {
+	INFO("Tool started");
+	INFO("Constructing DeBruijn graph");
+	DeBruijn<K> debruijn;
+	debruijn.ConstructGraphFromStream(stream);
+	INFO("DeBruijn graph constructed");
+	CondenseTool(debruijn);
+}
+
 
 }
 

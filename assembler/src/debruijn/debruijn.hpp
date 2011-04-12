@@ -45,12 +45,13 @@ class DeBruijn {
 
 	typedef Data value;
 	//typedef google::sparse_hash_map<key, value,	typename key::hash, typename key::equal_to> hash_map;
-//	typedef std::map<key, value, typename key::less> map_type;
-	typedef std::tr1::unordered_map<Kmer, value,	typename Kmer::hash, typename Kmer::equal_to> map_type;
+	//	typedef std::map<key, value, typename key::less> map_type;
+	typedef std::tr1::unordered_map<Kmer, value, typename Kmer::hash,
+			typename Kmer::equal_to> map_type;
 	map_type nodes_;
 
-	void CountRead(const Sequence& read) {
-		Seq<size_> head = Seq<size_>(read);
+	void CountSequence(const Sequence& read) {
+		Seq<size_> head = Seq<size_> (read);
 		for (size_t j = size_; j < read.size(); ++j) {
 			Seq<size_> tail = head << read[j];
 			addEdge(head, tail);
@@ -70,6 +71,14 @@ class DeBruijn {
 		return node.first->second; // return node's data
 	}
 
+	void CountRead(Read read) {
+		if (read.isValid()) {
+			Sequence s = read.getSequence();
+			CountSequence(s);
+			CountSequence(!s);
+		}
+	}
+
 public:
 
 	DeBruijn() {
@@ -87,9 +96,9 @@ public:
 		addEdge(edge.start(), edge.end());
 	}
 
-//	size_t size() const {
-//		return nodes_.size();
-//	}
+	//	size_t size() const {
+	//		return nodes_.size();
+	//	}
 
 	class edge_iterator {
 		Kmer kmer_;
@@ -124,7 +133,8 @@ public:
 		}
 
 		KPlusOneMer operator *() const {
-			return right_neighbours_ ? kmer_.pushBack(pos_) : kmer_.pushFront(pos_);
+			return right_neighbours_ ? kmer_.pushBack(pos_) : kmer_.pushFront(
+					pos_);
 		}
 	};
 
@@ -138,12 +148,14 @@ public:
 
 	pair<edge_iterator, edge_iterator> OutgoingEdges(const Kmer &kmer) {
 		size_t* out_edges = get(kmer).out_edges_;
-		return make_pair(edge_iterator(kmer, 0, out_edges, true), edge_iterator(kmer, 4, out_edges, true));
+		return make_pair(edge_iterator(kmer, 0, out_edges, true),
+				edge_iterator(kmer, 4, out_edges, true));
 	}
 
 	pair<edge_iterator, edge_iterator> IncomingEdges(const Kmer &kmer) {
 		size_t* in_edges = get(kmer).in_edges_;
-		return make_pair(edge_iterator(kmer, 0, in_edges, false), edge_iterator(kmer, 4, in_edges, false));
+		return make_pair(edge_iterator(kmer, 0, in_edges, false),
+				edge_iterator(kmer, 4, in_edges, false));
 	}
 
 	class kmer_iterator: public map_type::iterator {
@@ -173,19 +185,21 @@ public:
 	typedef kmer_iterator VertexIterator;
 
 	typedef Seq<size_> VertexId;
-	typedef Seq<size_+1> EdgeId;
-
+	typedef Seq<size_ + 1> EdgeId;
 
 	//template<size_t size2_, size_t count_>
 	void ConstructGraph(const vector<Read> &v) {
 		for (size_t i = 0; i < v.size(); ++i) {
-			if (v[i].isValid()) {
-				Sequence s = v[i].getSequence();
-				CountRead(s);
-				CountRead(!s);
-			}
-			//for (size_t r = 0; r < count_; ++r) {
-			//}
+			CountRead(v[i]);
+		}
+	}
+
+	template<class ReadStream>
+	void ConstructGraphFromStream(ReadStream& stream) {
+		while (!stream.eof()) {
+			Read r;
+			stream >> r;
+			CountRead(r);
 		}
 	}
 

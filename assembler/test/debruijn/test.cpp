@@ -30,7 +30,7 @@ void checkClipTippingCompilation() {
 
 int main() {
 //	runSuite();
-	edge_graph::SimulatedMistakesTool();
+	edge_graph::ConstructGraphOnReads(ReadFromFile());
 	//	 SimulatedMistakesTool();
 //	checkClipTippingCompilation();
 	return 0;
