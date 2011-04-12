@@ -14,10 +14,10 @@
 #include "test_utils.hpp"
 #include <algorithm>
 
-#define SUBSTR_LENGTH 1000
-#define COVERAGE 1
+//#define SUBSTR_LENGTH 1000
+//#define COVERAGE 1
 //#define R 35
-#define K 11
+#define K 27
 
 using namespace std;
 

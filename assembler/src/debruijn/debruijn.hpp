@@ -180,10 +180,9 @@ public:
 	void ConstructGraph(const vector<Read> &v) {
 		for (size_t i = 0; i < v.size(); ++i) {
 			if (v[i].isValid()) {
-				Sequence *s = v[i].createSequence();
-				CountRead(*s);
-				CountRead(!(*s));
-				delete s;
+				Sequence s = v[i].getSequence();
+				CountRead(s);
+				CountRead(!s);
 			}
 			//for (size_t r = 0; r < count_; ++r) {
 			//}

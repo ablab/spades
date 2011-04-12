@@ -12,8 +12,8 @@
 #include "ireadstream.hpp"
 #include "read_generator.hpp"
 
-#define SUBSTR_LENGTH 1000
-#define COVERAGE 1
+#define SUBSTR_LENGTH 10000
+#define COVERAGE 30
 #define R 35
 //#define K 15
 #define filename "./data/input/MG1655-K12.fasta.gz"
