@@ -1,3 +1,8 @@
+#define SUBSTR_LENGTH 10000
+#define COVERAGE 30
+#define R 35
+#define K 15
+
 #include "cute.h"
 #include "ide_listener.h"
 #include "cute_runner.h"
@@ -19,19 +24,19 @@ void runSuite() {
 	cute::makeRunner(lis)(s, "De Bruijn Project Test Suite");
 }
 
-void checkClipTippingCompilation() {
-	using namespace de_bruijn;
-	using namespace edge_graph;
-	EdgeGraph graph(11);
-	TipComparator comparator(graph);
-	TipClipper<TipComparator> clipper(comparator, 3, 2.);
-	clipper.ClipTips(graph);
-}
+//void checkClipTippingCompilation() {
+//	using namespace de_bruijn;
+//	using namespace edge_graph;
+//	EdgeGraph graph(11);
+//	TipComparator comparator(graph);
+//	TipClipper<TipComparator> clipper(comparator, 3, 2.);
+//	clipper.ClipTips(graph);
+//}
 
 int main() {
-//	runSuite();
-	edge_graph::ConstructGraphOnReads(ReadFromFile());
-	//	 SimulatedMistakesTool();
-//	checkClipTippingCompilation();
+	runSuite();
+	ireadstream stream(ECOLI_FILE);
+	edge_graph::ConstructionTool(stream);
+	stream.close();
 	return 0;
 }
