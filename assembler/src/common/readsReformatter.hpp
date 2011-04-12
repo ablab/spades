@@ -15,6 +15,7 @@ void forgetQualityPairedData(string file1, string file2, string outputFile) {
 	ireadstream stream2(file2);
 
 	FILE* outFile = fopen(outputFile.c_str(), "w");
+	cerr << outFile << endl;
 	Read r1;
 	Read r2;
 	while (!(stream1.eof()) && !(stream2.eof())) {
