@@ -13,7 +13,7 @@
 void forgetQualityPairedData(string file1, string file2, string outputFile) {
 	ireadstream stream1(file1);
 	ireadstream stream2(file2);
-
+	cerr<<stream1.is_open();
 	FILE* outFile = fopen(outputFile.c_str(), "w");
 	cerr << outFile << endl;
 	Read r1;
