@@ -44,13 +44,13 @@ on minimizers and use the word `minimizer' instead of `earmarked $k$-mer'?..}}
 \begin{itemize}
 \item Clearly, it requires less memory.
 \item In general, we expect that the resulting A Bruijn graph 
-will look like the corresponding condensed de Bruijn graph.
+will have the same structure as the corresponding condensed de Bruijn graph.
 If so, this would allow us to construct the condensed de Bruijn graph
 using less time and memory.
 \item If the used hash-function respects frequency of $k$-mers
 the resulting graph will contain a smaller fraction of erroneous $k$-mers.
 \item If the hash function does not mark $k$-mers that appear too often, then 
-some of the repeats may be already resolved in A Bruijn graph.\todo{what else?..}
+some of the repeats will be already resolved in A Bruijn graph.\todo{what else?..}
 \end{itemize}
 
 \subsection{Hash Functions}
@@ -188,7 +188,10 @@ that has the smallest hash value and earmark it.
 
 \section{Schedule}
 \begin{description}
-  \item[April 18] implement earmarking procedure
+  \item[April 15] implement earmarking procedure
+  \item[April 18] test earmarking procedure on real data, get general statistics
+  \item[April 20] test different hashing parameters on real data
+  \item[April 22] implement frequency-dependent heuristics
 %  \item[April 17] test graph condensation on real data
 %  \item[April 30] research into the effects of different hash functions 
 %  used to take minimizers
