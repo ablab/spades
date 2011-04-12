@@ -612,13 +612,14 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 		lower <<= 2;
 		lower += lowerRead[j + l];
 		lower &= lowerMask;
-		lower[j + 1] = lowers;
+		lowers[j + 1] = lower;
 	}
+	lower = lowers[0];
 	//	fprintf(stderr,"%lld %lld\n", upper, lower);
 	for (int j = 0; j + l <= readLength; j++) {
 		if (checkBoundsForUpper(upper)) {
 			for (int jj = max(0, j -7); jj < min(readLength - l +1, j + 7); jj ++)
-			addPairToTable(table, upper, lower[jj]);
+			addPairToTable(table, upper, lowers[jj]);
 			totalKmers++;
 		}
 
