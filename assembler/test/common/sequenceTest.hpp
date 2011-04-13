@@ -85,7 +85,7 @@ cute::suite SequenceSuite(){
 	s.push_back(CUTE(TestSequenceReverseComplement));
 	s.push_back(CUTE(TestSequenceRefCount));
 	s.push_back(CUTE(TestSequenceRefCount2));
-	s.push_back(CUTE(TestSequenceMemory));
+//	s.push_back(CUTE(TestSequenceMemory));
 	return s;
 }
 

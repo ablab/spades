@@ -183,8 +183,8 @@ public:
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
 			T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
-			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2)
-					| ((T) (c) << lastnuclshift_);
+			res.data_[data_size_ - 1] = ((res.data_[data_size_ - 1] >> 2) & (((T) 1
+					<< (Tbits - 2)) - 1)) | ((T) (c) << lastnuclshift_);
 			if (data_size_ >= 2) { // if we have at least 2 elements in data
 				size_t i = data_size_ - 1;
 				do {

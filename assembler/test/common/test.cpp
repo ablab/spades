@@ -33,7 +33,7 @@ void runSuite() {
   s += CuckooSuite();
   //s += ReadGeneratorSuite();
   s += TrieSuite();
-  s += StructuresSuite();
+//  s += StructuresSuite();
   cute::ide_listener lis;
   cute::makeRunner(lis)(s, "The Suite");
 }
