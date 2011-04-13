@@ -7,6 +7,7 @@
 
 #ifndef EDGE_GRAPH_TOOL_HPP_
 #define EDGE_GRAPH_TOOL_HPP_
+#include "tip_clipper.hpp"
 
 namespace edge_graph {
 
@@ -18,16 +19,16 @@ void CountStats(const EdgeGraph& g) {
 			<< stat_c.e_count());
 }
 
-void WriteToFile(const string& file_name, const string& graph_name,
-		const EdgeGraph& g) {
-	fstream filestr;
-	filestr.open(file_name.c_str(), fstream::out);
-	gvis::PairedGraphPrinter<VertexId> gp(
-			"simulated_data_graph", filestr);
-	ComplementGraphVisualizer gv(gp);
-	gv.Visualize(g);
-	filestr.close();
-}
+//void WriteToFile(const string& file_name, const string& graph_name,
+//		const EdgeGraph& g) {
+//	fstream filestr;
+//	filestr.open(file_name.c_str(), fstream::out);
+//	gvis::PairedGraphPrinter<VertexId> gp(
+//			"simulated_data_graph", filestr);
+//	ComplementGraphVisualizer gv(gp);
+//	gv.Visualize(g);
+//	filestr.close();
+//}
 
 template <class ReadStream>
 void ConstructionTool(ReadStream& stream) {
@@ -49,6 +50,15 @@ void ConstructionTool(ReadStream& stream) {
 
 	INFO("Counting stats");
 	CountStats(*g);
+
+	INFO("Clipping tips");
+	TipComparator comparator(*g);
+	TipClipper<TipComparator> tc(comparator);
+	cout << "create" << endl;
+	tc.ClipTips(*g);
+
+	INFO("Writing to file");
+	WriteToFile("tips_clipped.dot", "no_tips_graph", *g);
 	delete g;
 	delete index;
 }

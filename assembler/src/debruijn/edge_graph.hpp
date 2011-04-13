@@ -68,7 +68,6 @@
 using namespace std;
 
 namespace edge_graph {
-
 LOGGER("d.edge_graph");
 
 class Vertex;
@@ -160,6 +159,9 @@ private:
 
 };
 
+using de_bruijn::SmartVertexIterator;
+using de_bruijn::SmartEdgeIterator;
+
 class EdgeGraph {
 public:
 	typedef Edge* EdgeId;
@@ -169,8 +171,8 @@ public:
 	typedef set<Vertex*>::const_iterator VertexIterator;
 	typedef Vertex::EdgeIterator EdgeIterator;
 	typedef de_bruijn::GraphActionHandler<EdgeGraph> ActionHandler;
-	typedef de_bruijn::SmartVertexIterator<EdgeGraph> SmartVertexIterator;
-	typedef de_bruijn::SmartEdgeIterator<EdgeGraph> SmartEdgeIterator;
+	//	typedef de_bruijn::SmartVertexIterator<EdgeGraph> SmartVertexIterator;
+	//	typedef de_bruijn::SmartEdgeIterator<EdgeGraph> SmartEdgeIterator;
 
 	VertexIterator begin() const {
 		return vertices_.begin();
@@ -180,20 +182,31 @@ public:
 		return vertices_.end();
 	}
 
-	SmartVertexIterator SmartVertexBegin() {
-		return SmartVertexIterator(*this);
+	template<typename Comparator = std::less<VertexId> >
+	SmartVertexIterator<EdgeGraph, Comparator> SmartVertexBegin(
+			const Comparator& comparator = Comparator()) {
+		return SmartVertexIterator<EdgeGraph, Comparator> (*this, true,
+				comparator);
 	}
 
-	SmartVertexIterator SmartVertexEnd() const {
-		return SmartVertexIterator();
+	template<typename Comparator = std::less<VertexId> >
+	SmartVertexIterator<EdgeGraph, Comparator> SmartVertexEnd(
+			const Comparator& comparator = Comparator()) {
+		return SmartVertexIterator<EdgeGraph, Comparator> (*this, false,
+				comparator);
 	}
 
-	SmartEdgeIterator SmartEdgeBegin() {
-		return SmartEdgeIterator(*this);
+	template<typename Comparator = std::less<EdgeId> >
+	SmartEdgeIterator<EdgeGraph, Comparator> SmartEdgeBegin(
+			const Comparator& comparator = Comparator()) {
+		return SmartEdgeIterator<EdgeGraph, Comparator> (*this, true,
+				comparator);
 	}
 
-	SmartEdgeIterator SmartEdgeEnd() const {
-		return SmartEdgeIterator();
+	template<typename Comparator = std::less<EdgeId> >
+	SmartEdgeIterator<EdgeGraph, Comparator> SmartEdgeEnd(
+			const Comparator& comparator = Comparator()) {
+		return SmartEdgeIterator<EdgeGraph, Comparator> (*this, false, comparator);
 	}
 
 	size_t size() {
@@ -229,9 +242,9 @@ public:
 	}
 
 	bool RemoveActionHandler(ActionHandler* action_handler) {
-		for (vector<ActionHandler*>::iterator it =
-				action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
-			if(*it == action_handler) {
+		for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+				!= action_handler_list_.end(); ++it) {
+			if (*it == action_handler) {
 				action_handler_list_.erase(it);
 				return true;
 			}
@@ -245,8 +258,7 @@ public:
 		return action_handler_list_;
 	}
 
-	void OutgoingEdges(VertexId v, EdgeIterator& begin,
-			EdgeIterator& end) const;
+	void OutgoingEdges(VertexId v, EdgeIterator& begin, EdgeIterator& end) const;
 
 	const vector<EdgeId> OutgoingEdges(VertexId v) const;
 
@@ -279,7 +291,7 @@ public:
 		return Complement(GetUniqueOutgoingEdge(v->complement()));
 	}
 
-//	Edge* ComplementEdge(const Edge* edge) const;
+	//	Edge* ComplementEdge(const Edge* edge) const;
 
 	const Sequence& EdgeNucls(EdgeId edge) const {
 		return edge->nucls();
@@ -366,6 +378,7 @@ private:
 
 	void DeleteAllOutgoing(Vertex* v);
 
+	bool GoUniqueWay(VertexId &v);
 };
 
 typedef EdgeGraph::EdgeId EdgeId;
@@ -374,8 +387,8 @@ typedef EdgeGraph::VertexId VertexId;
 typedef EdgeGraph::VertexIterator VertexIterator;
 typedef EdgeGraph::EdgeIterator EdgeIterator;
 typedef EdgeGraph::ActionHandler ActionHandler;
-typedef EdgeGraph::SmartVertexIterator SmartVertexIterator;
-typedef EdgeGraph::SmartEdgeIterator SmartEdgeIterator;
+//typedef EdgeGraph::SmartVertexIterator SmartVertexIterator;
+//typedef EdgeGraph::SmartEdgeIterator SmartEdgeIterator;
 
 typedef de_bruijn::TraversalHandler<EdgeGraph> TraversalHandler;
 //////////////////////////////////////////////////////////////////
@@ -407,7 +420,8 @@ class ComplementVisHandler: public TraversalHandler {
 	gvis::PairedGraphPrinter<VertexId>& pr_;
 public:
 
-	ComplementVisHandler(const EdgeGraph& g, gvis::PairedGraphPrinter<VertexId>& pr) :
+	ComplementVisHandler(const EdgeGraph& g,
+			gvis::PairedGraphPrinter<VertexId>& pr) :
 		g_(g), pr_(pr) {
 	}
 
@@ -420,11 +434,11 @@ public:
 		ss << e->nucls().size();
 		VertexId v1 = g_.EdgeStart(e);
 		VertexId v2 = g_.EdgeEnd(e);
-		pr_.addEdge(make_pair(v1, g_.Complement(v1)), make_pair(v2, g_.Complement(v2)), ss.str());
+		pr_.addEdge(make_pair(v1, g_.Complement(v1)),
+				make_pair(v2, g_.Complement(v2)), ss.str());
 	}
 
 };
-
 
 class GraphVisualizer {
 public:
@@ -451,6 +465,8 @@ public:
 	virtual void Visualize(const EdgeGraph& g);
 };
 
+void WriteToFile(const string& file_name, const string& graph_name,
+		const EdgeGraph& g);
 }
 #endif /* EDGE_GRAPH_HPP_ */
 

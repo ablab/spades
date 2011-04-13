@@ -154,6 +154,8 @@ public:
 					VertexId end = FindVertexMaybeMissing(
 							edge_sequence.end<kmer_size_> ());
 					super::g_->AddEdge(start, end, edge_sequence);
+					assert(super::h_->contains(edge));
+//					assert(super::h_->edge.);
 				}
 			}
 		}
