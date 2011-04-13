@@ -249,7 +249,7 @@ public:
 				return true;
 			}
 		}
-		assert(false);
+//		assert(false);
 		return false;
 	}
 
@@ -431,7 +431,10 @@ public:
 
 	virtual void HandleEdge(EdgeId e) {
 		stringstream ss;
-		ss << e->nucls().size();
+		if(e->nucls().size() > 30)
+			ss << e->nucls().size();
+		else
+			ss << e->nucls();
 		VertexId v1 = g_.EdgeStart(e);
 		VertexId v2 = g_.EdgeEnd(e);
 		pr_.addEdge(make_pair(v1, g_.Complement(v1)),

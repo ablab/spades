@@ -34,6 +34,9 @@ public:
 	}
 
 	bool operator()(Edge* edge1, Edge* edge2) const {
+		if (graph_->EdgeNucls(edge1).size() == graph_->EdgeNucls(edge2).size()) {
+			return edge1 < edge2;
+		}
 		return graph_->EdgeNucls(edge1).size()
 				< graph_->EdgeNucls(edge2).size();
 	}
@@ -86,13 +89,16 @@ private:
 	}
 
 	bool tipShouldBeRemoved(EdgeGraph &graph, Edge *tip) {
-//		cout << graph.length(tip) << endl;
+		//		cout << graph.length(tip) << endl;
+//		cout << "oppa" << endl;
 		if (graph.length(tip) > maxTipLength_ || graph.coverage(tip)
 				> coverageBound_)
 			return false;
+//		cout << "oppa" << endl;
 		Vertex *splitVertex = graph.EdgeStart(tip);
 		if (graph.CheckUniqueOutgiongEdge(splitVertex))
 			return false;
+//		cout << "oppa" << endl;
 		size_t maxCoverage = maxCompetitorCoverage(graph, splitVertex, tip);
 		return graph.coverage(tip) <= relativeCoverageBound_ * maxCoverage;
 	}
@@ -147,33 +153,42 @@ public:
 	}
 
 	void ClipTips(EdgeGraph &graph) {
-//		cout << "oppa" << endl;
+		//		cout << "oppa" << endl;
 		de_bruijn::SmartEdgeIterator<EdgeGraph, Comparator> iterator =
 				graph.SmartEdgeBegin(comparator_);
-//		cout << "oppa" << endl;
+		//		cout << "oppa" << endl;
 		de_bruijn::SmartEdgeIterator<EdgeGraph, Comparator> end =
 				graph.SmartEdgeEnd(comparator_);
-//		cout << "oppa" << endl;
-		string s = "tips_clippeda";
-		WriteToFile(s + ".dot", "no_tips_graph", graph);
-//		cout << "oppa" << endl;
+		//		cout << "oppa" << endl;
+//		string s = "tips_clippeda";
+//		WriteToFile(s + ".dot", "no_tips_graph", graph);
+		//		cout << "oppa" << endl;
+//		int cnt = 0;
 		while (end != iterator) {
-//			cout << "oppa1" << endl;
+			//			cout << "oppa1" << endl;
 			EdgeId tip = *iterator;
-//			cout << graph.EdgeNucls(tip) << " " << graph.length(tip)<< " " << tipShouldBeRemoved(graph, tip) << endl;
-			if (tipShouldBeRemoved(graph, tip)) {
-				removeTip(graph, tip);
-				s = s + "a";
-				WriteToFile(s + ".dot", "no_tips_graph", graph);
+//			if(graph.length(tip) < 10) {
+//				cout << graph.EdgeNucls(tip) << endl;
+//			}
+			if (isTip(graph, tip)) {
+				bool tmp = tipShouldBeRemoved(graph, tip);
+//				cout << graph.EdgeNucls(tip) << " " << graph.length(tip) << " "
+//						<< tmp << endl;
+				if (tmp) {
+					removeTip(graph, tip);
+//					s = s + "a";
+//					WriteToFile(s + ".dot", "no_tips_graph", graph);
+				}
 			}
 			++iterator;
 		}
-//		cout << "oppa" << endl;
+//		cout << "cnt " << cnt << endl;
+		//		cout << "oppa" << endl;
 		//		FindTips(tipQueue);
 		//		RemoveTips();
-//		cout << "oppa" << endl;
+		//		cout << "oppa" << endl;
 		graph.CompressAllVertices();
-//		cout << "oppa" << endl;
+		//		cout << "oppa" << endl;
 	}
 
 };
