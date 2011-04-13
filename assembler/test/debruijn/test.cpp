@@ -14,14 +14,14 @@
 #include "tip_clipper.hpp"
 #include "coverage_counter.hpp"
 
-void runSuite() {
+void RunTestSuites() {
 	cute::suite s;
 	//TODO add your test here
 	s += DeBruijnGraphSuite();
 	s += condensed_graph::CondensedGraphSuite();
 	s += edge_graph::EdgeGraphSuite();
 	cute::ide_listener lis;
-	cute::makeRunner(lis)(s, "De Bruijn Project Test Suite");
+	cute::makeRunner(lis)(s, "De Bruijn Project Test Suites");
 }
 
 //void checkClipTippingCompilation() {
@@ -33,10 +33,14 @@ void runSuite() {
 //	clipper.ClipTips(graph);
 //}
 
-int main() {
-	runSuite();
+void RunEdgeGraphConstructionTool() {
 	ireadstream stream(ECOLI_FILE);
 	edge_graph::ConstructionTool(stream);
 	stream.close();
+}
+
+int main() {
+//	RunTestSuites();
+	RunEdgeGraphConstructionTool();
 	return 0;
 }
