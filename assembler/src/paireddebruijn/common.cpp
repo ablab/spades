@@ -21,7 +21,8 @@ int insertLength = 0;
 int minIntersect = l - 1;
 int inClusterMaxShift = 1;
 int useKmersVertices = 0;
-
+int coverage_cutoff = 0;
+int range_variating = 0;
 
 int fictiveSecondReads = 0;
 int useRevertedPairs = 0;
@@ -31,7 +32,7 @@ int needSequences = 1;
 int needGraph = 1;
 int useExpandDefinite = 1;
 int useExtractDefinite = 1;
-int needRevertedPairs = 0;
+int downUpClustering = 0;
 int useTraceReads = 1;
 int useProcessLower = 1;
 
@@ -86,7 +87,7 @@ void initConstants(string ini_file) {
 	assert(fscanf(ini, "distance_type = %s\n" , tmp) == 1);
 	distance_type = string(tmp);
 	assert(fscanf(ini, "fictiveSecondReads = %d\n", &fictiveSecondReads) == 1);
-	assert(fscanf(ini, "needRevertedPairs = %d\n", &needRevertedPairs) == 1);
+	assert(fscanf(ini, "downUpClustering = %d\n", &downUpClustering) == 1);
 	assert(fscanf(ini, "inClusterMaxShift = %d\n", &inClusterMaxShift) == 1);
 	assert(fscanf(ini, "useKmersVertices = %d\n", &useKmersVertices) == 1);
 	assert(fscanf(ini, "useRevertedPairs = %d\n", &useRevertedPairs) == 1);
@@ -121,10 +122,12 @@ void initConstants(string ini_file) {
 	assert(fscanf(ini, "error_log = %s\n" , tmp) == 1);
 	error_log = folder + string(tmp);
 	minIntersect = l - 1;
+	assert(fscanf(ini, "Magic:\n") == 0);
+	assert(fscanf(ini, "coverage_cutoff = %d\n", &coverage_cutoff) == 1);
+	assert(fscanf(ini, "range_variating = %d\n", &range_variating) == 1);
 
 	//assert()
 }
-
 
 
 /*const string parsed_reads = "data/filtered_reads";
