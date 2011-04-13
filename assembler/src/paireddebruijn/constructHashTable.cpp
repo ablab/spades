@@ -539,8 +539,8 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 pair<int, pair<int,int>> maxCommonSubstring(string &s1,string &s2) {
 	int l1 = s1.length();
 	int l2 = s2.length();
-	char table[200][200];
-	assert(l1 <200 && l2 <200);
+	char table[400][400];
+	assert(l1 < 400 && l2 < 400);
 	forn(i, l1 +1)
 		forn(j, l2 +1)
 			table[i][j] = 0;
