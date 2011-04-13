@@ -36,11 +36,11 @@
 #define OUT_EDGE 1
 
 //LOGGER("paireddebruijn.common");
-
+#define MAX_READ_LENGTH 100
 #define MAX_VERT_NUMBER 50000
 #define MAX_DEGREE 50
-#define coverage_cutoff 9
-#define lrange_cutoff 10
+#define coverage_cutoff 0
+#define range_cutoff 1
 #define suffix "_const_d"
 
 

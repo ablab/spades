@@ -71,9 +71,12 @@ Seq<k-1> TestAAA(const Seq<k> &s) {
 
 void TestSeqEnd() {
 	Seq<5> s1("ACGTA");
-	//Seq<4> s2 = TestAAA<5>(s1);
-	Seq<4> s2 = s1.end<4>();
-	ASSERT_EQUAL("ACGT", s2.str());
+	ASSERT_EQUAL("CGTA", s1.end<4>().str());
+}
+
+void TestSeqStart() {
+	Seq<5> s1("ACGTA");
+	ASSERT_EQUAL("ACGT", s1.start<4>().str());
 }
 
 void TestSeqComplex() {
@@ -99,13 +102,11 @@ void TestSeqReverseComplement() {
 
 void Test16() {
 	Seq<16> s("AAAAAAAAAAAAAAAA");
-	cout << (s<<2) << endl;
-	ASSERT_EQUAL(Seq<16>("AAAAAAAAAAAAAAAC"), s << 'C');
+	ASSERT_EQUAL(s << 'C', Seq<16>("AAAAAAAAAAAAAAAC"));
 }
 
 void Test16_2() {
 	Seq<16> s("TTTTTTTTTTTTTTTT");
-//	cout << (s<<0) << endl;
 	ASSERT_EQUAL(Seq<16>("TTTTTTTTTTTTTTTA"), s << 'A');
 }
 
@@ -116,6 +117,7 @@ cute::suite SeqSuite(){
 	s.push_back(CUTE(TestSeqFromCharArray));
 	s.push_back(CUTE(TestSeqFromBiggerSeq));
 	s.push_back(CUTE(TestSeqFromType));
+	s.push_back(CUTE(TestSeqStart));
 	s.push_back(CUTE(TestSeqEnd));
 	s.push_back(CUTE(TestSeqShiftLeft));
 	s.push_back(CUTE(TestSeqShiftRight));

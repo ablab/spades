@@ -247,12 +247,17 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 				if (curVertId ==-1){
 					pair <char, EdgePrototype*> otherdir_res = findUniqueWay(edges, curKmer, curSeq, otherDirection(direction), true);
 					pair <char, EdgePrototype*> dir_res = findUniqueWay(edges, curKmer, curSeq, direction , false);
-					pair <char, EdgePrototype*> back_way = make_pair((char)0, (EdgePrototype*)NULL);
+					pair <char, EdgePrototype*> back_way = make_pair((char)0, curEdgePrototype);
 					if (dir_res.second!=NULL) { //if there are unique neighbor, check if thir EdgePrototype is unique neighbor for them.
 						ll tmpKmer = subkmer(curKmer,direction);
 						ll nextKmer = pushNucleotide(tmpKmer, k-1,  direction, dir_res.first);
 						back_way = findUniqueWay(edges, nextKmer, dir_res.second->lower, otherDirection(direction) , false);
 					}
+					if (otherdir_res.second == NULL) cerr<<"Parallel edge. Dir "<<direction<<endl;
+					if (dir_res.second == NULL) cerr<<"Multiple edges. Dir "<<direction<<endl;
+					if (back_way.second != curEdgePrototype) cerr<<"Bad way back. Dir "<<direction<<endl;
+
+
 					if ((otherdir_res.second == NULL)||(dir_res.second == NULL)||(back_way.second != curEdgePrototype) ){
 						storeVertex(graph, subkmer(curKmer, direction), curSubSeq, true);
 //								NeedToStore = true;
@@ -261,7 +266,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 				if (direction == LEFT) direction = RIGHT;
 				else break;
 			}
-			direction = LEFT;
+/*			direction = LEFT;
 
 			while (NeedToStore){
 				Sequence *curSubSeq = SubSeq(*curSeq, direction);
@@ -275,7 +280,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 				if (direction == LEFT) direction = RIGHT;
 				else break;
 			}
-
+*/
 
 		}
 		++iter;
