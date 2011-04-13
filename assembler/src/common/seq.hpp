@@ -14,6 +14,7 @@
 #include <algorithm>
 #include "nucl.hpp"
 #include "log.hpp"
+#include "iostream"
 
 using namespace std;
 
@@ -23,7 +24,7 @@ using namespace std;
  * Immutable ACGT-sequence with compile-time size.
  * It compress sequence to array of Ts (default: char).
  */
-template<size_t size_, typename T = int> // max number of nucleotides, type for storage
+template<size_t size_, typename T = unsigned int> // max number of nucleotides, type for storage
 class Seq {
 private:
 	/**
@@ -100,6 +101,7 @@ public:
 	 * Default constructor, fills Seq with A's
 	 */
 	Seq() {
+		assert((T)(-1) >= (T)0);//be sure to use unsigned types
 		std::fill(data_.begin(), data_.end(), 0);
 	}
 
@@ -108,9 +110,11 @@ public:
 	 */
 	Seq(const Seq<size_, T> &seq) :
 		data_(seq.data_) {
+		assert((T)(-1) >= (T)0);//be sure to use unsigned types
 	}
 
 	explicit Seq(const char* s) {
+		assert((T)(-1) >= (T)0);//be sure to use unsigned types
 		init(s);
 	}
 
@@ -123,6 +127,7 @@ public:
 	template<typename S>
 	explicit Seq(const S &s, size_t offset = 0) {
 	  //		assert(size_ + offset <= s.size());
+		assert((T)(-1) >= (T)0);//be sure to use unsigned types
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
 			char c = s[offset + i];
@@ -183,15 +188,13 @@ public:
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
 			T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
-			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2)
-					| ((T) (c) << lastnuclshift_);
+			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2) | ((T) (c) << lastnuclshift_);
 			if (data_size_ >= 2) { // if we have at least 2 elements in data
 				size_t i = data_size_ - 1;
 				do {
 					--i;
 					T new_rm = res.data_[i] & 3;
-					res.data_[i] = ((res.data_[i] >> 2) & (((T) 1
-							<< (Tbits - 2)) - 1)) | (rm << (Tbits - 2)); // we need & here because if we shift negative, it fill with ones :(
+					res.data_[i] = (res.data_[i] >> 2) | (rm << (Tbits - 2)); // we need & here because if we shift negative, it fill with ones :(
 					rm = new_rm;
 				} while (i != 0);
 			}

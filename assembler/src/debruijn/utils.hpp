@@ -57,7 +57,9 @@ public:
 		Kmer k(nucls);
 		put(k, id, 0);
 		for (size_t i = kmer_size_, n = nucls.size(); i < n; ++i) {
+			cout << "Appending " << (int)nucls[i]<< " to kmer " << k << endl;;
 			k = k << nucls[i];
+			cout << "Result is " << k << endl;
 			put(k, id, i - kmer_size_ + 1);
 		}
 	}
@@ -353,10 +355,12 @@ public:
 	}
 };
 
-template<typename ElementId, typename Comparator = std::less<ElementId> >
+template<typename Graph, typename ElementId, typename Comparator = std::less<ElementId> >
 class QueueIterator {
 protected:
 	PriorityQueue<ElementId, Comparator> queue_;
+
+	Graph &graph_;
 
 	template<typename iterator>
 	void fillQueue(iterator begin, iterator end) {
@@ -365,12 +369,14 @@ protected:
 		}
 	}
 
-	QueueIterator(const Comparator& comparator = Comparator()) {
+	QueueIterator(Graph &graph, const Comparator& comparator = Comparator()) :
+		queue_(comparator), graph_(graph) {
 	}
 
 	template<typename iterator>
-	QueueIterator(iterator begin, iterator end,
-			const Comparator& comparator = Comparator()) {
+	QueueIterator(Graph &graph, iterator begin, iterator end,
+			const Comparator& comparator = Comparator()) :
+		queue_(comparator), graph_(graph) {
 		fillQueue(begin, end);
 	}
 
@@ -408,20 +414,19 @@ public:
 
 template<class Graph, typename Comparator = std::less<typename Graph::VertexId> >
 class SmartVertexIterator: public GraphActionHandler<Graph> ,
-		public QueueIterator<typename Graph::VertexId, Comparator> {
+		public QueueIterator<Graph, typename Graph::VertexId, Comparator> {
 public:
-	typedef QueueIterator<typename Graph::VertexId, Comparator> super;
+	typedef QueueIterator<Graph, typename Graph::VertexId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartVertexIterator(Graph &graph,
+	SmartVertexIterator(Graph &graph, bool fill,
 			const Comparator& comparator = Comparator()) :
-				QueueIterator<typename Graph::VertexId, Comparator> (
-						graph.begin(), graph.end(), comparator) {
-		graph.AddActionHandler(this);
-	}
-
-	SmartVertexIterator() {
+		QueueIterator<Graph, typename Graph::VertexId, Comparator> (graph, comparator) {
+		if (fill) {
+			super::fillQueue(graph.begin(), graph.end());
+			graph.AddActionHandler(this);
+		}
 	}
 
 	virtual ~SmartVertexIterator() {
@@ -438,26 +443,27 @@ public:
 
 template<class Graph, typename Comparator = std::less<typename Graph::EdgeId> >
 class SmartEdgeIterator: public GraphActionHandler<Graph> ,
-		public QueueIterator<typename Graph::EdgeId, Comparator> {
+		public QueueIterator<Graph, typename Graph::EdgeId, Comparator> {
 public:
-	typedef QueueIterator<typename Graph::EdgeId, Comparator> super;
+	typedef QueueIterator<Graph, typename Graph::EdgeId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartEdgeIterator(Graph &graph, Comparator comparator = Comparator()) :
-		QueueIterator<typename Graph::EdgeId, Comparator> (comparator) {
-		for (typename Graph::VertexIterator it = graph.begin(); it
-				!= graph.end(); ++it) {
-			const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
-			fillQueue(outgoing.begin(), outgoing.end());
+	SmartEdgeIterator(Graph &graph, bool fill,
+			Comparator comparator = Comparator()) :
+		super(graph, comparator) {
+		if (fill) {
+			for (typename Graph::VertexIterator it = graph.begin(); it
+					!= graph.end(); ++it) {
+				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
+				super::fillQueue(outgoing.begin(), outgoing.end());
+			}
+			super::graph_.AddActionHandler(this);
 		}
-		graph.AddActionHandler(this);
-	}
-
-	SmartEdgeIterator() {
 	}
 
 	virtual ~SmartEdgeIterator() {
+		super::graph_.RemoveActionHandler(this);
 	}
 
 	virtual void HandleAdd(EdgeId v) {

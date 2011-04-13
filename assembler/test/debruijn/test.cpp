@@ -17,8 +17,8 @@
 void RunTestSuites() {
 	cute::suite s;
 	//TODO add your test here
-	s += DeBruijnGraphSuite();
-	s += condensed_graph::CondensedGraphSuite();
+//	s += DeBruijnGraphSuite();
+//	s += condensed_graph::CondensedGraphSuite();
 	s += edge_graph::EdgeGraphSuite();
 	cute::ide_listener lis;
 	cute::makeRunner(lis)(s, "De Bruijn Project Test Suites");

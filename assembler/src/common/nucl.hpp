@@ -50,7 +50,7 @@ inline char dignucl(char c) { // ACGT -> 0123
 		case 'C': return 1;
 		case 'G': return 2;
 		case 'T': return 3;
-		default: return -1; // never happens
+		default: assert(false);//return -1; // never happens
 	}
 }
 

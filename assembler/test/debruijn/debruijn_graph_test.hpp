@@ -28,9 +28,9 @@ using namespace std;
 
 void TestAddEdge() {
 	DeBruijn<5> g;
-	Seq<5, int> seq1("ACAAA");
-	Seq<5, int> seq2("CAAAG");
-	Seq<5, int> seq3("CAAAA");
+	Seq<5> seq1("ACAAA");
+	Seq<5> seq2("CAAAG");
+	Seq<5> seq3("CAAAA");
 	g.addEdge(seq1, seq2);
 	g.addEdge(seq1, seq3);
 	int c = 0;
@@ -48,9 +48,9 @@ void TestAddEdge() {
 
 void TestAddEdge2() {
 	DeBruijn<5> g;
-	Seq<5, int> seq1("ACAAA");
-	Seq<5, int> seq2("CCAAA");
-	Seq<5, int> seq3("CAAAC");
+	Seq<5> seq1("ACAAA");
+	Seq<5> seq2("CCAAA");
+	Seq<5> seq3("CAAAC");
 	g.addEdge(seq1, seq3);
 	g.addEdge(seq2, seq3);
 	int c = 0;
