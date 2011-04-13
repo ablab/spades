@@ -209,8 +209,10 @@ public:
 	bool hasVertex(const Sequence& kmer);
 	Vertex* getVertex(const Sequence& kmer);
 
+	void condenseA();
 	bool tryCondenseA(Vertex* v);
 	void cleanup();
+	void stats();
 
 	void output(std::ofstream &out);
 	void output(string filename);
