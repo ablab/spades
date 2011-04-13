@@ -32,14 +32,6 @@ void RunTestSuites() {
 //	TipClipper<TipComparator> clipper(comparator, 3, 2.);
 //	clipper.ClipTips(graph);
 //}
-<<<<<<< HEAD:assembler/test/debruijn/test.cpp
-
-int main() {
-	runSuite();
-//	ireadstream stream(QUAKE_CROPPED_10_4_A);
-//	edge_graph::ConstructionTool(stream);
-//	stream.close();
-=======
 
 void RunEdgeGraphConstructionTool() {
 	ireadstream stream(ECOLI_FILE);
@@ -50,6 +42,5 @@ void RunEdgeGraphConstructionTool() {
 int main() {
 //	RunTestSuites();
 	RunEdgeGraphConstructionTool();
->>>>>>> 7fd1100e920f1d86fca7dcd79637eaa633e8973c:assembler/test/debruijn/test.cpp
 	return 0;
 }
