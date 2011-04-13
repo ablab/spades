@@ -144,11 +144,13 @@ void Graph::cleanup() {
 }
 
 void Graph::stats() {
+	size_t tips = 0;
 	for (iterator v = begin(); v != end(); ++v) {
 		if (v->degree() == 0) {
-			DEBUG(*v);
+			tips++;
 		}
 	}
+	INFO(tips << " tips");
 }
 
 void Graph::output(std::ofstream &out) {
