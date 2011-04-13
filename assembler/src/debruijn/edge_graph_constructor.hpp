@@ -19,7 +19,7 @@ using de_bruijn::EdgeHashRenewer;
 template<size_t kmer_size_>
 class GraphConstructor {
 public:
-	typedef SimpleIndex<kmer_size_ + 1, Edge*> Index;
+	typedef SimpleIndex<kmer_size_ + 1, EdgeId> Index;
 protected:
 	typedef Seq<kmer_size_> Kmer;
 	typedef Seq<kmer_size_ + 1> KPlusOneMer;
@@ -42,6 +42,7 @@ protected:
 public:
 	virtual void ConstructGraph(EdgeGraph* &g, Index* &h) {
 		g_->RemoveActionHandler(renewer_);
+		delete renewer_;
 		g = g_;
 		h = h_;
 	}

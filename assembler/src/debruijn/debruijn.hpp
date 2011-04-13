@@ -10,7 +10,7 @@
 
 #include "seq.hpp"
 #include "strobe_read.hpp"
-#include <google/sparse_hash_map> // ./configure, make and sudo make install from libs/sparsehash-1.10
+//#include <google/sparse_hash_map> // ./configure, make and sudo make install from libs/sparsehash-1.10
 #include <map>
 #include <vector>
 #include <tr1/unordered_map>

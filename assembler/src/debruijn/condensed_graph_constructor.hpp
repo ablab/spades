@@ -9,108 +9,33 @@
 #define CONDENSED_GRAPH_CONSTRUCTOR_HPP_
 
 #include "condensed_graph.hpp"
+#include "utils.hpp"
+
+using de_bruijn::SimpleIndex;
+using de_bruijn::GraphActionHandler;
+using de_bruijn::VertexHashRenewer;
 
 namespace condensed_graph {
 
 template<size_t kmer_size_>
-class SimpleIndex {
-private:
-	typedef Seq<kmer_size_> Kmer;
-	typedef tr1::unordered_map<Kmer, pair<Vertex*, size_t> ,
-			typename Kmer::hash, typename Kmer::equal_to> hmap;
-	typedef typename hmap::iterator map_iter;
-	typedef typename hmap::const_iterator const_map_iter;
-	//	typedef __gnu_cxx::hash_map<const Kmer, pair<Vertex*, size_t> , myhash, Kmer::equal_to> hmap;
-	hmap h_;
-public:
-	void put(Kmer k, Vertex* v, size_t s) {
-		//DEBUG("Putting position for k-mer '" << k.str() <<  "' : position " << v.second)
-		map_iter hi = h_.find(k);
-		if (hi == h_.end()) { // put new element
-			h_[k] = make_pair(v, s);
-		} else { // change existing element
-			hi->second = make_pair(v, s);
-		}
-	}
-
-	bool contains(Kmer k) const {
-		return h_.find(k) != h_.end();
-	}
-
-	pair<Vertex*, size_t> get(const Kmer &k) const {
-		const_map_iter hi = h_.find(k);
-		assert(hi != h_.end()); // contains
-		//DEBUG("Getting position of k-mer '" + k.str() + "' Position is " << hi->second.second << " at vertex'"<< hi->second.first->nucls().str() << "'")
-		return hi->second;
-	}
-
-	bool deleteIfVertex(const Kmer &k, Vertex* v) {
-		map_iter hi = h_.find(k);
-		if (hi != h_.end() && (*hi).second.first == v) {
-			h_.erase(k);
-			return true;
-		}
-		return false;
-	}
-};
-
-template<size_t kmer_size_>
-class HashRenewer: public GraphActionHandler {
-	typedef Seq<kmer_size_> Kmer;
-
-	SimpleIndex<kmer_size_> *h_;
-
-	/**
-	 *	renews hash for vertex and complementary
-	 *	todo renew not all hashes
-	 */
-	void RenewKmersHash(Vertex* v) {
-		assert(v->nucls().size() >= kmer_size_);
-		Kmer k(v->nucls());
-		h_->put(k, v, 0);
-		for (size_t i = kmer_size_, n = v->nucls().size(); i < n; ++i) {
-			k = k << v->nucls()[i];
-			h_->put(k, v, i - kmer_size_ + 1);
-		}
-	}
-
-	void DeleteKmersHash(Vertex* v) {
-		assert(v->nucls().size() >= kmer_size_);
-		Kmer k(v->nucls());
-		h_->deleteIfVertex(k, v);
-		for (size_t i = kmer_size_, n = v->nucls().size(); i < n; ++i) {
-			k = k << v->nucls()[i];
-			h_->deleteIfVertex(k, v);
-		}
-	}
-
-public:
-	HashRenewer(SimpleIndex<kmer_size_> *h) :
-		h_(h) {
-	}
-
-	virtual void HandleAdd(Vertex* v) {
-		DEBUG("Renewing hash for k-mers of sequence " << v->nucls().str() << " and its complement");
-		RenewKmersHash(v);
-		RenewKmersHash(v->complement());
-	}
-
-	virtual void HandleDelete(Vertex* v) {
-		DEBUG("Deleting hash for k-mers of sequence " << v->nucls().str() << " and its complement");
-		DeleteKmersHash(v);
-		DeleteKmersHash(v->complement());
-	}
-};
-
-template<size_t kmer_size_>
 class GraphConstructor {
+public:
+	typedef SimpleIndex<kmer_size_, VertexId> Index;
 protected:
 	typedef Seq<kmer_size_> Kmer;
-	CondensedGraph *g_;
-	SimpleIndex<kmer_size_> *h_;
 
-	pair<Vertex*, size_t> GetPosition(Kmer k) {
-		assert(h_->contains(k));
+	CondensedGraph *g_;
+	Index *h_;
+	ActionHandler *renewer_;
+
+	pair<VertexId, int> GetPosition(Kmer k) {
+		return h_->get(k);
+	}
+
+	pair<VertexId, int> GetPosMaybeMissing(Kmer k) {
+		if (!h_->contains(k)) {
+			g_->AddVertex(Sequence(k));
+		}
 		return h_->get(k);
 	}
 
@@ -118,95 +43,135 @@ protected:
 		return h_->contains(k);
 	}
 
-	pair<Vertex*, int> GetPosMaybeMissing(Kmer k) {
-		if (!h_->contains(k)) {
-			g_->AddVertex(Sequence(k));
-		}
-		return h_->get(k);
-	}
-
 	GraphConstructor() {
-		h_ = new SimpleIndex<kmer_size_> ();
-		g_ = new CondensedGraph(kmer_size_, new HashRenewer<kmer_size_> (h_));
+		h_ = new Index();
+		g_ = new CondensedGraph(kmer_size_);
+		renewer_ = new VertexHashRenewer<kmer_size_, CondensedGraph> (*g_, h_);
+		g_->AddActionHandler(renewer_);
 	}
 
 public:
-	virtual void ConstructGraph(CondensedGraph* &g, SimpleIndex<kmer_size_>* &h) {
+	virtual void ConstructGraph(CondensedGraph* &g, Index* &h) {
+		g_->RemoveActionHandler(renewer_);
+		delete renewer_;
 		g = g_;
 		h = h_;
 	}
+
 	virtual ~GraphConstructor() {
-
 	}
 };
 
-//for tests!!!
-template<size_t kmer_size_>
-class DirectConstructor: public GraphConstructor<kmer_size_> {
-	typedef Seq<kmer_size_> Kmer;
-	typedef GraphConstructor<kmer_size_> super;
+//template<size_t kmer_size_>
+//class GraphConstructor {
+//	typedef SimpleIndex<kmer_size_, Vertex*> Index;
+//protected:
+//	typedef Seq<kmer_size_> Kmer;
+//	CondensedGraph *g_;
+//	Index *h_;
+//
+//	pair<Vertex*, size_t> GetPosition(Kmer k) {
+//		assert(h_->contains(k));
+//		return h_->get(k);
+//	}
+//
+//	bool Contains(Kmer k) {
+//		return h_->contains(k);
+//	}
+//
+//	pair<Vertex*, int> GetPosMaybeMissing(Kmer k) {
+//		if (!h_->contains(k)) {
+//			g_->AddVertex(Sequence(k));
+//		}
+//		return h_->get(k);
+//	}
+//
+//	GraphConstructor() {
+//		h_ = new Index();
+//		g_ = new CondensedGraph(kmer_size_, new VertexHashRenewer<kmer_size_> (h_));
+//	}
+//
+//public:
+//	virtual void ConstructGraph(CondensedGraph* &g, SimpleIndex<kmer_size_>* &h) {
+//		g = g_;
+//		h = h_;
+//	}
+//	virtual ~GraphConstructor() {
+//
+//	}
+//};
 
-	const vector<Read>& reads_;
+/*
+ //for tests!!!
+ template<size_t kmer_size_>
+ class DirectConstructor: public GraphConstructor<kmer_size_> {
+ const vector<Read>& reads_;
 
-	//todo extract from class definition!!!
-	void ThreadRead(const Sequence &r);
+ //todo extract from class definition!!!
+ void ThreadRead(const Sequence &r);
 
-public:
-	DirectConstructor(const vector<Read>& reads) :
-		super(), reads_(reads) {
-	}
+ public:
+ typedef GraphConstructor<kmer_size_> super;
+ typedef typename super::Index Index;
+ typedef typename super::Kmer Kmer;
 
-	virtual void ConstructGraph(CondensedGraph* &g, SimpleIndex<kmer_size_>* &h) {
-		for (size_t i = 0; i < reads_.size(); ++i) {
-			//implicit conversion used here
-			ThreadRead(Sequence(reads_[i].getSequenceString()));
-		}
-		super::ConstructGraph(g, h);
-	}
-};
+ DirectConstructor(const vector<Read>& reads) :
+ super(), reads_(reads) {
+ }
 
-template<size_t kmer_size_>
-void DirectConstructor<kmer_size_>::ThreadRead(
-		const Sequence &r) {
-	Kmer k(r);
-	DEBUG("Threading k-mer: " + k.str())
-	for (size_t i = kmer_size_; i < r.size(); ++i) {
-		pair<Vertex*, int> prev_pos = GetPosMaybeMissing(k);
-		Kmer old_k = k;
-		k = k << r[i];
-		DEBUG("Threading k-mer: " + k.str())
-		pair<Vertex*, int> curr_pos = GetPosMaybeMissing(k);
+ virtual void ConstructGraph(CondensedGraph* &g, Index* &h) {
+ for (size_t i = 0; i < reads_.size(); ++i) {
+ //implicit conversion used here
+ ThreadRead(Sequence(reads_[i].getSequenceString()));
+ }
+ super::ConstructGraph(g, h);
+ }
+ };
 
-		Vertex* prev_v = prev_pos.first;
-		Vertex* curr_v = curr_pos.first;
-		size_t prev_offset = prev_pos.second;
-		size_t curr_offset = curr_pos.second;
+ template<size_t kmer_size_>
+ void DirectConstructor<kmer_size_>::ThreadRead(const Sequence &r) {
+ Kmer k(r);
+ DEBUG("Threading k-mer: " + k.str())
+ for (size_t i = kmer_size_; i < r.size(); ++i) {
+ pair<Vertex*, int> prev_pos = GetPosMaybeMissing(k);
+ Kmer old_k = k;
+ k = k << r[i];
+ DEBUG("Threading k-mer: " + k.str())
+ pair<Vertex*, int> curr_pos = GetPosMaybeMissing(k);
 
-		if (super::g_->IsLastKmer(prev_v, prev_offset)
-				&& super::g_->IsFirstKmer(curr_v, curr_offset)
-				&& super::g_->IsMergePossible(prev_v, curr_v)) {
-			super::g_->Merge(prev_v, curr_v);
-		} else if (prev_v == curr_v && prev_offset + 1 == curr_offset) {
-			//todo check links here to optimize???
-			//do nothing
-		} else {
-			super::g_->SplitVertex(prev_v, prev_offset + kmer_size_);
-			//need if k-mers were on same or complementary vertices
-			curr_pos = GetPosition(k);
-			Vertex* curr_v = curr_pos.first;
-			size_t curr_offset = curr_pos.second;
-			Vertex* v2 = super::g_->SplitVertex(curr_v->complement(),
-					curr_v->size() - curr_offset)->complement();
-			Vertex* v1 = GetPosition(old_k).first;
-			super::g_->LinkVertices(v1, v2);
-		}
-	}
-}
+ Vertex* prev_v = prev_pos.first;
+ Vertex* curr_v = curr_pos.first;
+ size_t prev_offset = prev_pos.second;
+ size_t curr_offset = curr_pos.second;
+
+ if (super::g_->IsLastKmer(prev_v, prev_offset)
+ && super::g_->IsFirstKmer(curr_v, curr_offset)
+ && super::g_->IsMergePossible(prev_v, curr_v)) {
+ super::g_->Merge(prev_v, curr_v);
+ } else if (prev_v == curr_v && prev_offset + 1 == curr_offset) {
+ //todo check links here to optimize???
+ //do nothing
+ } else {
+ super::g_->SplitVertex(prev_v, prev_offset + kmer_size_);
+ //need if k-mers were on same or complementary vertices
+ curr_pos = GetPosition(k);
+ Vertex* curr_v = curr_pos.first;
+ size_t curr_offset = curr_pos.second;
+ Vertex* v2 = super::g_->SplitVertex(curr_v->complement(),
+ curr_v->size() - curr_offset)->complement();
+ Vertex* v1 = GetPosition(old_k).first;
+ super::g_->LinkVertices(v1, v2);
+ }
+ }
+ }*/
 
 template<size_t kmer_size_>
 class CondenseConstructor: public GraphConstructor<kmer_size_> {
-	typedef Seq<kmer_size_> Kmer;
+public:
 	typedef GraphConstructor<kmer_size_> super;
+	typedef typename super::Index Index;
+	typedef typename super::Kmer Kmer;
+private:
 	typedef DeBruijn<kmer_size_> debruijn;
 	typedef typename debruijn::edge_iterator edge_iterator;
 
@@ -303,7 +268,7 @@ public:
 		origin_(origin) {
 
 	}
-	virtual void ConstructGraph(CondensedGraph* &g, SimpleIndex<kmer_size_>* &h) {
+	virtual void ConstructGraph(CondensedGraph* &g, Index* &h) {
 
 		for (typename debruijn::kmer_iterator it = origin_.begin(), end =
 				origin_.end(); it != end; it++) {
