@@ -685,7 +685,7 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
 	//	fprintf(stderr, "%s", upperNuclRead);
 		// cerr.flush();
-		if ((strlen(upperNuclRead)<l)||(strlen(lowerNuclRead)<l)){
+		if ((strlen(upperNuclRead) < readLength)||(strlen(lowerNuclRead) < readLength)){
 			continue;
 		}
 
