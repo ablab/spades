@@ -12,23 +12,27 @@
 #include "ireadstream.hpp"
 #include "read_generator.hpp"
 
-#define SUBSTR_LENGTH 10000
-#define COVERAGE 30
-#define R 35
-//#define K 15
-#define filename "./data/input/MG1655-K12.fasta.gz"
-#define readsfilename "./data/input/s_6.first10000_1.fastq.gz"
+#define ECOLI_FILE "./data/input/MG1655-K12.fasta.gz"
+#define QUAKE_CROPPED_10_4_A "./data/input/s_6.first10000_1.fastq.gz"
+#define QUAKE_CROPPED_10_4_B "./data/input/s_6.first10000_2.fastq.gz"
+#define QUAKE_CROPPED_10_5_A "./data/input/s_6.first100000_1.fastq.gz"
+#define QUAKE_CROPPED_10_5_B "./data/input/s_6.first100000_2.fastq.gz"
+#define QUAKE_CROPPED_4_10_5_A "./data/input/s_6.first400000_1.fastq.gz"
+#define QUAKE_CROPPED_4_10_5_B "./data/input/s_6.first400000_2.fastq.gz"
 
-vector<Read> GenerateReadsWithMistakes() {
+//#define filename "./data/input/MG1655-K12.fasta.gz"
+#define readsfilename "./data/input/s_6.first100000_1.fastq.gz"
+
+vector<Read> GenerateReadsWithMistakes(const string& file_name) {
 	LOGGER("d.test_utils");
-	INFO("Reading " << filename);
+	INFO("Reading " << file_name);
 
-	ireadstream stream(filename);
+	ireadstream stream(file_name);
 	Read r;
 	stream >> r;
 
 	vector<Read> reads;
-	INFO("Closing " << filename);
+	INFO("Closing " << file_name);
 	stream.close();
 	INFO("Generating reads for substring of length " << SUBSTR_LENGTH << " and coverage " << COVERAGE);
 

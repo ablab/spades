@@ -87,6 +87,7 @@ void EdgeGraph::ForceDeleteVertex(VertexId v) {
 EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls) {
 	assert(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
 	assert(nucls.size() >= k_ + 1);
+	assert(OutgoingEdge(v1, nucls[k_]) == NULL);
 	EdgeId result = AddSingleEdge(v1, v2, nucls);
 	if (nucls != !nucls)
 		AddSingleEdge(v2->complement(), v1->complement(), !nucls);
@@ -178,7 +179,7 @@ EdgeId EdgeGraph::CompressPath(const vector<VertexId>& path) {
 
 bool EdgeGraph::GoUniqueWay(VertexId &v) {
 	VertexId u = EdgeEnd(GetUniqueOutgoingEdge(v));
-	if(!CheckUniqueOutgiongEdge(u) || !CheckUniqueIncomingEdge(u))
+	if (!CheckUniqueOutgiongEdge(u) || !CheckUniqueIncomingEdge(u))
 		return false;
 	v = u;
 	return true;
@@ -189,8 +190,9 @@ void EdgeGraph::CompressAllVertices() {
 	for (SmartVertexIterator<EdgeGraph> it = SmartVertexBegin(); it != end; ++it) {
 		VertexId v = *it;
 		if (CheckUniqueOutgiongEdge(v) && CheckUniqueIncomingEdge(v)) {
-			while (GoUniqueWay(v));
-//				v = EdgeEnd(GetUniqueOutgoingEdge(v));
+			while (GoUniqueWay(v))
+				;
+			//				v = EdgeEnd(GetUniqueOutgoingEdge(v));
 			vector<VertexId> compressList;
 			v = Complement(v);
 			do
@@ -217,8 +219,7 @@ void WriteToFile(const string& file_name, const string& graph_name,
 		const EdgeGraph& g) {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
-	gvis::PairedGraphPrinter<VertexId> gp(
-			"simulated_data_graph", filestr);
+	gvis::PairedGraphPrinter<VertexId> gp("simulated_data_graph", filestr);
 	ComplementGraphVisualizer gv(gp);
 	gv.Visualize(g);
 	filestr.close();

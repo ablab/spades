@@ -105,25 +105,24 @@ void Test16() {
 
 void Test16_2() {
 	Seq<16> s("TTTTTTTTTTTTTTTT");
-	cout << (s<<0) << endl;
+//	cout << (s<<0) << endl;
 	ASSERT_EQUAL(Seq<16>("TTTTTTTTTTTTTTTA"), s << 'A');
 }
 
 cute::suite SeqSuite(){
 	cute::suite s;
-//	s.push_back(CUTE(TestSeqSelector));
-//	s.push_back(CUTE(TestSeqStr));
-//	s.push_back(CUTE(TestSeqFromCharArray));
-//	s.push_back(CUTE(TestSeqFromBiggerSeq));
-//	s.push_back(CUTE(TestSeqFromType));
-//	s.push_back(CUTE(TestSeqEnd));
-//	s.push_back(CUTE(TestSeqShiftLeft));
-//	s.push_back(CUTE(TestSeqShiftRight));
-//	s.push_back(CUTE(TestSeqHeadAndTail));
-//	s.push_back(CUTE(TestSeqReverseComplement));
-//	s.push_back(CUTE(TestSeqComplex));
-//	s.push_back(CUTE(Test16));
-	cout << "oppa";
+	s.push_back(CUTE(TestSeqSelector));
+	s.push_back(CUTE(TestSeqStr));
+	s.push_back(CUTE(TestSeqFromCharArray));
+	s.push_back(CUTE(TestSeqFromBiggerSeq));
+	s.push_back(CUTE(TestSeqFromType));
+	s.push_back(CUTE(TestSeqEnd));
+	s.push_back(CUTE(TestSeqShiftLeft));
+	s.push_back(CUTE(TestSeqShiftRight));
+	s.push_back(CUTE(TestSeqHeadAndTail));
+	s.push_back(CUTE(TestSeqReverseComplement));
+	s.push_back(CUTE(TestSeqComplex));
+	s.push_back(CUTE(Test16));
 	s.push_back(CUTE(Test16_2));
 	return s;
 }

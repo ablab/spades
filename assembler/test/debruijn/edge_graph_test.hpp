@@ -104,7 +104,11 @@ void SmartIteratorTest() {
 	size_t num = 0;
 	set<VertexId> visited;
 	std::less<VertexId> comp;
-	//	SmartVertexIterator<EdgeGraph> it = g.SmartVertexBegin(comp);
+	SmartVertexIterator<EdgeGraph> it = g.SmartVertexBegin(comp);
+	SmartVertexIterator<EdgeGraph> it1 = g.SmartVertexBegin(comp);
+	SmartVertexIterator<EdgeGraph> it2 = g.SmartVertexEnd(comp);
+	SmartVertexIterator<EdgeGraph> it3 = g.SmartVertexEnd(comp);
+	bool a = it2 != it1;
 	for (SmartVertexIterator<EdgeGraph> it = g.SmartVertexBegin(comp); g.SmartVertexEnd(
 			comp) != it; ++it) {
 		num++;
@@ -232,19 +236,19 @@ void TestCondenseSimple() {
 
 cute::suite EdgeGraphSuite() {
 	cute::suite s;
-	s.push_back(CUTE(EmptyGraphTest));
-	s.push_back(CUTE(OneVertexGraphTest));
-	s.push_back(CUTE(OneEdgeGraphTest));
-	s.push_back(CUTE(EdgeMethodsSimpleTest));
-	s.push_back(CUTE(VertexMethodsSimpleTest));
-	s.push_back(CUTE(GraphMethodsSimpleTest));
+	//	s.push_back(CUTE(EmptyGraphTest));
+	//	s.push_back(CUTE(OneVertexGraphTest));
+	//	s.push_back(CUTE(OneEdgeGraphTest));
+	//	s.push_back(CUTE(EdgeMethodsSimpleTest));
+	//	s.push_back(CUTE(VertexMethodsSimpleTest));
+	//	s.push_back(CUTE(GraphMethodsSimpleTest));
 	s.push_back(CUTE(SmartIteratorTest));
-	s.push_back(CUTE(TestSimpleThread));
-	s.push_back(CUTE(TestSimpleThread2));
-	s.push_back(CUTE(TestSplitThread));
-	s.push_back(CUTE(TestSplitThread2));
-	s.push_back(CUTE(TestBuldge));
-	s.push_back(CUTE(TestCondenseSimple));
+	//	s.push_back(CUTE(TestSimpleThread));
+	//	s.push_back(CUTE(TestSimpleThread2));
+	//	s.push_back(CUTE(TestSplitThread));
+	//	s.push_back(CUTE(TestSplitThread2));
+	//	s.push_back(CUTE(TestBuldge));
+	//	s.push_back(CUTE(TestCondenseSimple));
 
 	return s;
 }

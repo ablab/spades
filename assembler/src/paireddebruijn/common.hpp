@@ -18,8 +18,8 @@
 #include "logging.hpp"
 
 #define forn(i, n) for(size_t i = 0; i < (size_t) n; i++)
-//#define ll long long
-#define ll int
+#define ll long long
+//#define ll int
 #define pb push_back
 #define mp make_pair
 #define fi first
@@ -39,6 +39,8 @@
 
 #define MAX_VERT_NUMBER 50000
 #define MAX_DEGREE 50
+#define coverage_cutoff 9
+#define lrange_cutoff 10
 #define suffix "_const_d"
 
 

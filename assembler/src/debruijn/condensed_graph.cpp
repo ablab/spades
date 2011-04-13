@@ -97,8 +97,9 @@ Vertex* CondensedGraph::AddVertex(const Sequence &nucls) {
 	v2->set_complement(v1);
 	vertices_.insert(v1);
 	vertices_.insert(v2);
-
-	action_handler_->HandleAdd(v1);
+	for (size_t i = 0; i < action_handler_list_.size(); ++i) {
+		action_handler_list_[i]->HandleAdd(v1);
+	}
 	return v1;
 }
 
@@ -111,7 +112,9 @@ void CondensedGraph::DeleteVertex(Vertex* v) {
 	vertices_.erase(v);
 	vertices_.erase(complement);
 
-	action_handler_->HandleDelete(v);
+	for (size_t i = 0; i < action_handler_list_.size(); ++i) {
+		action_handler_list_[i]->HandleDelete(v);
+	}
 
 	delete v;
 	delete complement;
@@ -136,7 +139,7 @@ Vertex* CondensedGraph::SplitVertex(Vertex* v, size_t pos) {
 
 	FixIncomingOnSplit(v->complement(), v2->complement(), v1->complement());
 
-	action_handler_->HandleSplit(v, pos, v1, v2);
+//	action_handler_->HandleSplit(v, pos, v1, v2);
 
 	DeleteVertex(v);
 
@@ -151,7 +154,7 @@ Vertex* CondensedGraph::Merge(Vertex* v1, Vertex* v2) {
 	FixIncomingOnMerge(v1, v2, v);
 	FixIncomingOnMerge(v2->complement(), v1->complement(), v->complement());
 
-	action_handler_->HandleMerge(v1, v2, v);
+//	action_handler_->HandleMerge(v1, v2, v);
 
 	DeleteVertex(v1);
 	DeleteVertex(v2);
@@ -171,8 +174,9 @@ void CondensedGraph::LinkVertices(Vertex* v1, Vertex* v2) {
 }
 
 void CondensedGraph::UnLinkVertices(Vertex* v1, Vertex* v2) {
-	v1->set_right_neigbour((Vertex*)NULL, v2->nucls()[k_ - 1]);
-	v2->complement()->set_right_neigbour((Vertex*)NULL, v1->complement()->nucls()[k_ - 1]);
+	v1->set_right_neigbour((Vertex*) NULL, v2->nucls()[k_ - 1]);
+	v2->complement()->set_right_neigbour((Vertex*) NULL,
+			v1->complement()->nucls()[k_ - 1]);
 }
 
 void CondensedGraph::UnLinkAll(Vertex* v) {
@@ -185,8 +189,6 @@ void CondensedGraph::UnLinkAll(Vertex* v) {
 		UnLinkVertices(*it, v);
 	}
 }
-
-
 
 void DFS::ProcessVertex(Vertex* v, vector<Vertex*>& stack, Handler& h) {
 	if (visited_.count(v) == 0) {

@@ -57,7 +57,9 @@ public:
 		Kmer k(nucls);
 		put(k, id, 0);
 		for (size_t i = kmer_size_, n = nucls.size(); i < n; ++i) {
+			cout << "Appending " << (int)nucls[i]<< " to kmer " << k << endl;;
 			k = k << nucls[i];
+			cout << "Result is " << k << endl;
 			put(k, id, i - kmer_size_ + 1);
 		}
 	}
@@ -367,12 +369,12 @@ protected:
 		}
 	}
 
-	QueueIterator(Graph graph, const Comparator& comparator = Comparator()) :
+	QueueIterator(Graph &graph, const Comparator& comparator = Comparator()) :
 		queue_(comparator), graph_(graph) {
 	}
 
 	template<typename iterator>
-	QueueIterator(Graph graph, iterator begin, iterator end,
+	QueueIterator(Graph &graph, iterator begin, iterator end,
 			const Comparator& comparator = Comparator()) :
 		queue_(comparator), graph_(graph) {
 		fillQueue(begin, end);
@@ -421,9 +423,10 @@ public:
 	SmartVertexIterator(Graph &graph, bool fill,
 			const Comparator& comparator = Comparator()) :
 		QueueIterator<Graph, typename Graph::VertexId, Comparator> (graph, comparator) {
-		if (fill)
+		if (fill) {
 			super::fillQueue(graph.begin(), graph.end());
-		graph.AddActionHandler(this);
+			graph.AddActionHandler(this);
+		}
 	}
 
 	virtual ~SmartVertexIterator() {

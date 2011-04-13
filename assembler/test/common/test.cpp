@@ -29,7 +29,7 @@ void runSuite() {
   s += IReadStreamSuite();
   s += onlineGraphVisualizerSuite();
   //s += offlineGraphVisualizerSuite();
-  s += similarSuite(); 
+  s += similarSuite();
   s += CuckooSuite();
   //s += ReadGeneratorSuite();
   s += TrieSuite();

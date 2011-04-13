@@ -19,6 +19,7 @@
 #include "nucl.hpp"
 #include "debruijn.hpp"
 #include "strobe_read.hpp"
+#include "utils.hpp"
 
 using namespace std;
 
@@ -39,11 +40,44 @@ private:
 	Vertex* right_neighbours_[4];
 	Vertex* complement_;
 
-//	int coverage_;
+	//	int coverage_;
 	size_t edge_coverage_[4];
 
 	friend class CondensedGraph;
 public:
+	class EdgeIterator {
+		Vertex* v_;
+		Vertex** right_neighbours_;
+		char pos_;
+		void ShiftPos() {
+			while (pos_ < 4 && right_neighbours_[(size_t) pos_] == (Vertex*) NULL) {
+				pos_++;
+			}
+		}
+	public:
+		EdgeIterator(Vertex* v, Vertex** right_neighbours, char pos) :
+			v_(v), right_neighbours_(right_neighbours), pos_(pos) {
+			ShiftPos();
+		}
+
+		bool operator!=(const EdgeIterator& it) const {
+			return right_neighbours_ != it.right_neighbours_ || pos_ != it.pos_;
+		}
+
+		EdgeIterator& operator++() {
+			if (pos_ < 4) {
+				pos_++;
+			}
+			ShiftPos();
+			return *this;
+		}
+
+		pair<Vertex*, Vertex*> operator *() const {
+			return make_pair(v_, right_neighbours_[(size_t)pos_]);
+		}
+
+	};
+
 	//bool deleted;
 	Vertex(const Sequence &nucls) :
 		nucls_(nucls) {
@@ -102,64 +136,64 @@ public:
 	void set_complement(Vertex* complement) {
 		complement_ = complement;
 	}
-//	int coverage() {
-//		return coverage_;
-//	}
-//	void set_coverage(int coverage) {
-//		coverage_ = coverage;
-//	}
+	//	int coverage() {
+	//		return coverage_;
+	//	}
+	//	void set_coverage(int coverage) {
+	//		coverage_ = coverage;
+	//	}
 };
 
-/**
- * @brief Condensed graph action listener.
- *
- * Listener of condensed graph public actions.
- *
- */
-class GraphActionHandler {
-public:
-
-	/**
-	 * Handle addition of vertex and complement.
-	 *
-	 * @see CondensedGraph::AddVertex()
-	 * @param v Pointer to vertex that has been added
-	 */
-	virtual void HandleAdd(Vertex* v) {
-	}
-
-	/**
-	 * Handle deletion of vertex and complement.
-	 *
-	 * @see CondensedGraph::DeleteVertex()
-	 * @param v Pointer to vertex that has been deleted
-	 */
-	virtual void HandleDelete(Vertex* v) {
-	}
-
-	/**
-	 * Handle merge of two vertices and complement.
-	 *
-	 * @see CondensedGraph::Merge()
-	 * @param v1 Pointer to left vertex that was merged
-	 * @param v2 Pointer to right vertex that was merged
-	 * @param v Pointer to vertex that is merge result
-	 */
-	virtual void HandleMerge(Vertex* v1, Vertex* v2, Vertex* v) {
-	}
-
-	/**
-	 * Handle split of vertex and its complement into two.
-	 *
-	 * @see CondensedGraph::SplitVertex()
-	 * @param v Pointer to vertex that was split
-	 * @param pos Position by which v was split (this position corresponds to the k-1 position of v2)
-	 * @param v1 Pointer to left vertex that is split result
-	 * @param v2 Pointer to right vertex that is split result
-	 */
-	virtual void HandleSplit(Vertex* v, size_t pos, Vertex* v1, Vertex* v2) {
-	}
-};
+///**
+// * @brief Condensed graph action listener.
+// *
+// * Listener of condensed graph public actions.
+// *
+// */
+//class GraphActionHandler {
+//public:
+//
+//	/**
+//	 * Handle addition of vertex and complement.
+//	 *
+//	 * @see CondensedGraph::AddVertex()
+//	 * @param v Pointer to vertex that has been added
+//	 */
+//	virtual void HandleAdd(Vertex* v) {
+//	}
+//
+//	/**
+//	 * Handle deletion of vertex and complement.
+//	 *
+//	 * @see CondensedGraph::DeleteVertex()
+//	 * @param v Pointer to vertex that has been deleted
+//	 */
+//	virtual void HandleDelete(Vertex* v) {
+//	}
+//
+//	/**
+//	 * Handle merge of two vertices and complement.
+//	 *
+//	 * @see CondensedGraph::Merge()
+//	 * @param v1 Pointer to left vertex that was merged
+//	 * @param v2 Pointer to right vertex that was merged
+//	 * @param v Pointer to vertex that is merge result
+//	 */
+//	virtual void HandleMerge(Vertex* v1, Vertex* v2, Vertex* v) {
+//	}
+//
+//	/**
+//	 * Handle split of vertex and its complement into two.
+//	 *
+//	 * @see CondensedGraph::SplitVertex()
+//	 * @param v Pointer to vertex that was split
+//	 * @param pos Position by which v was split (this position corresponds to the k-1 position of v2)
+//	 * @param v1 Pointer to left vertex that is split result
+//	 * @param v2 Pointer to right vertex that is split result
+//	 */
+//	virtual void HandleSplit(Vertex* v, size_t pos, Vertex* v1, Vertex* v2) {
+//	}
+//};
 
 /**
  * @brief Condensed DeBruijn Graph with empty edges and sequences in vertices
@@ -173,7 +207,18 @@ public:
  * cause graph will delete it when no longer needed.
  */
 class CondensedGraph {
+public:
+	typedef Vertex* VertexId;
+	typedef pair<Vertex*, Vertex*> EdgeId;
+	typedef Vertex VertexData;
 
+	typedef set<Vertex*>::const_iterator VertexIterator;
+	typedef Vertex::EdgeIterator EdgeIterator;
+	typedef de_bruijn::GraphActionHandler<CondensedGraph> ActionHandler;
+	typedef de_bruijn::SmartVertexIterator<CondensedGraph> SmartVertexIterator;
+	typedef de_bruijn::SmartEdgeIterator<CondensedGraph> SmartEdgeIterator;
+
+private:
 	/**
 	 * Fixes incoming edges during split.
 	 *
@@ -213,7 +258,7 @@ class CondensedGraph {
 	void AddRightNeighbour(Vertex* v1, Vertex* v2);
 
 	size_t k_;
-	GraphActionHandler* action_handler_;
+	vector<ActionHandler*> action_handler_list_;
 	set<Vertex*> vertices_;
 
 public:
@@ -224,15 +269,15 @@ public:
 	 * @param k Main parameter that defines the size of k-mers
 	 * @param action_handler Graph actions handler
 	 */
-	CondensedGraph(size_t k, GraphActionHandler* action_handler) :
-		k_(k), action_handler_(action_handler) {
+	CondensedGraph(size_t k) :
+		k_(k) {
 	}
 
 	/**
 	 * Deletes action_handler.
 	 */
 	~CondensedGraph() {
-		delete action_handler_;
+		//todo Delete vertices!!!
 	}
 
 	const set<Vertex*>& vertices() const {
@@ -243,10 +288,25 @@ public:
 		return k_;
 	}
 
-	void set_action_handler(GraphActionHandler* action_handler) {
-		delete action_handler_;
+	void AddActionHandler(ActionHandler* action_handler) {
+		action_handler_list_.push_back(action_handler);
+	}
 
-		action_handler_ = action_handler;
+	bool RemoveActionHandler(ActionHandler* action_handler) {
+		for (vector<ActionHandler*>::iterator it =
+				action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+			if(*it == action_handler) {
+				action_handler_list_.erase(it);
+				return true;
+			}
+		}
+		assert(false);
+		return false;
+	}
+
+	//todo remove
+	const vector<ActionHandler*> GetHandlers() {
+		return action_handler_list_;
 	}
 
 	vector<Vertex*> LeftNeighbours(const Vertex* v) const;
@@ -303,7 +363,26 @@ public:
 	bool IsFirstKmer(Vertex* v, size_t pos) const {
 		return pos == 0;
 	}
+
+	VertexId Complement(VertexId v) const {
+		return v->complement();
+	}
+
+	VertexData GetData(VertexId v) const {
+		return *v;
+	}
 };
+
+typedef CondensedGraph::EdgeId EdgeId;
+typedef CondensedGraph::VertexData VertexData;
+typedef CondensedGraph::VertexId VertexId;
+typedef CondensedGraph::VertexIterator VertexIterator;
+typedef CondensedGraph::EdgeIterator EdgeIterator;
+typedef CondensedGraph::ActionHandler ActionHandler;
+typedef CondensedGraph::SmartVertexIterator SmartVertexIterator;
+typedef CondensedGraph::SmartEdgeIterator SmartEdgeIterator;
+
+typedef de_bruijn::TraversalHandler<CondensedGraph> TraversalHandler;
 
 //////////////////////////////////////////////////////////////////
 

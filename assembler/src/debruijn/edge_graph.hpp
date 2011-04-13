@@ -184,28 +184,28 @@ public:
 
 	template<typename Comparator = std::less<VertexId> >
 	SmartVertexIterator<EdgeGraph, Comparator> SmartVertexBegin(
-			Comparator comparator = Comparator()) {
+			const Comparator& comparator = Comparator()) {
 		return SmartVertexIterator<EdgeGraph, Comparator> (*this, true,
 				comparator);
 	}
 
 	template<typename Comparator = std::less<VertexId> >
 	SmartVertexIterator<EdgeGraph, Comparator> SmartVertexEnd(
-			Comparator comparator = Comparator()) {
+			const Comparator& comparator = Comparator()) {
 		return SmartVertexIterator<EdgeGraph, Comparator> (*this, false,
 				comparator);
 	}
 
 	template<typename Comparator = std::less<EdgeId> >
 	SmartEdgeIterator<EdgeGraph, Comparator> SmartEdgeBegin(
-			Comparator comparator = Comparator()) {
+			const Comparator& comparator = Comparator()) {
 		return SmartEdgeIterator<EdgeGraph, Comparator> (*this, true,
 				comparator);
 	}
 
 	template<typename Comparator = std::less<EdgeId> >
 	SmartEdgeIterator<EdgeGraph, Comparator> SmartEdgeEnd(
-			Comparator comparator = Comparator()) {
+			const Comparator& comparator = Comparator()) {
 		return SmartEdgeIterator<EdgeGraph, Comparator> (*this, false, comparator);
 	}
 

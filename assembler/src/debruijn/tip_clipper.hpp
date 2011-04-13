@@ -147,15 +147,20 @@ public:
 	}
 
 	void ClipTips(EdgeGraph &graph) {
+//		cout << "oppa" << endl;
 		de_bruijn::SmartEdgeIterator<EdgeGraph, Comparator> iterator =
 				graph.SmartEdgeBegin(comparator_);
+//		cout << "oppa" << endl;
 		de_bruijn::SmartEdgeIterator<EdgeGraph, Comparator> end =
 				graph.SmartEdgeEnd(comparator_);
+//		cout << "oppa" << endl;
 		string s = "tips_clippeda";
 		WriteToFile(s + ".dot", "no_tips_graph", graph);
+//		cout << "oppa" << endl;
 		while (end != iterator) {
+//			cout << "oppa1" << endl;
 			EdgeId tip = *iterator;
-			cout << graph.EdgeNucls(tip) << " " << graph.length(tip)<< " " << tipShouldBeRemoved(graph, tip) << endl;
+//			cout << graph.EdgeNucls(tip) << " " << graph.length(tip)<< " " << tipShouldBeRemoved(graph, tip) << endl;
 			if (tipShouldBeRemoved(graph, tip)) {
 				removeTip(graph, tip);
 				s = s + "a";
@@ -163,11 +168,12 @@ public:
 			}
 			++iterator;
 		}
+//		cout << "oppa" << endl;
 		//		FindTips(tipQueue);
 		//		RemoveTips();
-		cout << "oppa" << endl;
+//		cout << "oppa" << endl;
 		graph.CompressAllVertices();
-		cout << "oppa" << endl;
+//		cout << "oppa" << endl;
 	}
 
 };
