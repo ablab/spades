@@ -29,7 +29,7 @@ void run() {
 	//	LOG_ASSERT(1 == 0, "Something wrong");
 	if (needPairs) {
 		cerr << endl << " constructing pairs" << endl;
-		if (needRevertedPairs)
+		if (downUpClustering)
 			readsToPairs(parsed_reads, parsed_l_k_mers, true);
 		else
 			readsToPairs(parsed_reads, parsed_k_l_mers, false);

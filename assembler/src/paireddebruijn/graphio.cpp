@@ -10,23 +10,11 @@
 LOGGER("p.graphio");
 using namespace paired_assembler;
 
-inline int codeNucleotide(char a) {
-	if (a == 'A')
-		return 0;
-	else if (a == 'C')
-		return 1;
-	else if (a == 'G')
-		return 2;
-	else if (a == 'T')
-		return 3;
-	else {
-		std::cerr << "oops!";
-		return -1;
-	}
-}
+
 
 void codeRead(char *read, char *code) {
-	for (int i = 0; i < readLength; i++) {
+	int read_length = strlen(read);
+	for (int i = 0; i < read_length; i++) {
 		code[i] = codeNucleotide(read[i]);
 	}
 }
@@ -35,7 +23,7 @@ ll extractMer(char *read, int shift, int length) {
 	ll res = 0;
 	for (int i = 0; i < length; i++) {
 		res = res << 2;
-		res += read[shift + i];
+		res += codeNucleotide(read[shift + i]);
 	}
 	return res;
 }

@@ -2,6 +2,7 @@
 #include "sequence.hpp"
 #include "constructHashTable.hpp"
 #include "graphio.hpp"
+#include "nucl.hpp"
 LOGGER("p.constructHashTable");
 
 using namespace std;
@@ -499,7 +500,7 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 			pair<int, pair<int, int> > comp_res = maxCommonSubstring(tmp_res[i], tmp_res[j]);
 			if (comp_res.fi > l - 1) {
 				good = 0;
-				INFO(" FOUND intersection length" << comp_res.fi << " on second position " << comp_res.se.se <<" " << tmp_res[i] <<" "<< tmp_res[j]);
+				DEBUG(" FOUND intersection length" << comp_res.fi << " on second position " << comp_res.se.se <<" " << tmp_res[i] <<" "<< tmp_res[j]);
 				tmp_res[j] = tmp_res[j].substr(comp_res.se.se, comp_res.fi);
 				break;
 
@@ -604,49 +605,69 @@ void addPairToTable(myMap& table, ll upper, ll lower) {
 
 void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	int shift = (l - k) / 2;
+	int up_len = strlen(upperRead);
+	int low_len = strlen(lowerRead);
 	ll upper = extractMer(upperRead, shift, k);
 	ll lower = extractMer(lowerRead, 0, l);
+//	cerr <<"\n " <<up_len <<"\n" << low_len;
+//	cerr <<(string("\n" )+ upperRead) << (string("\n" )+ lowerRead);
+//	cerr.flush();
 	ll lowers[MAX_READ_LENGTH+2];
 	lowers[0] = lower;
-	forn(j, readLength - l + 1) {
+	forn(j, low_len - l) {
 		lower <<= 2;
-		lower += lowerRead[j + l];
+		lower += codeNucleotide( lowerRead[j + l]);
 		lower &= lowerMask;
 		lowers[j + 1] = lower;
 	}
+//	cerr << "lowers_coded";
 	lower = lowers[0];
 	//	fprintf(stderr,"%lld %lld\n", upper, lower);
-	for (int j = 0; j + l <= readLength; j++) {
+	int j = 0;
+	for (; j + k + shift < up_len; j++) {
 		if (checkBoundsForUpper(upper)) {
-			for (int jj = max(0, j - range_cutoff); jj < min(readLength - l +1, j + range_cutoff); jj ++)
+			for (int jj = max(0, j - range_variating); jj < min(low_len - l +1, j + range_variating + 1); jj ++)
 			addPairToTable(table, upper, lowers[jj]);
 			totalKmers++;
 		}
 
 		upper <<= 2;
-		upper += upperRead[j + k + shift];
+		upper += codeNucleotide(upperRead[j + k + shift]);
 		upper &= upperMask;
 
-		lower <<= 2;
-		lower += lowerRead[j + l];
-		lower &= lowerMask;
+//		lower <<= 2;
+//		lower += lowerRead[j + l];
+//		lower &= lowerMask;
 
 		//fprintf(stderr,"%d %d\n", upper, lower);
 
 	}
-//	cerr << table.size()<<endl;
+	if (checkBoundsForUpper(upper)) {
+		for (int jj = max(0, j - range_variating); jj < min(low_len - l +1, j + range_variating + 1); jj ++)
+		addPairToTable(table, upper, lowers[jj]);
+		totalKmers++;
+	}
+
+	//	cerr << table.size()<<endl;
 }
 
-inline void reverseCompliment(char *upperRead, char* lowerRead, char* tmpRead){
-	forn(i, readLength) {
-		tmpRead[i] = 3 - upperRead[readLength - 1 - i];
+inline void reverseCompliment(char *upperRead, char* lowerRead){
+	int up_len = strlen(upperRead);
+	int low_len = strlen(lowerRead);
+	char * tmpRead = new char[readLength + 2];
+	forn(i, up_len) {
+		tmpRead[i] = nucl_complement(upperRead[up_len - 1 - i]);
 	}
-	forn(i, readLength) {
-		upperRead[i] = 3 - lowerRead[readLength - 1 - i];
+
+	forn(i, low_len) {
+		upperRead[i] = nucl_complement(lowerRead[low_len - 1 - i]);
 	}
-	forn(i, readLength) {
+	upperRead[low_len] = 0;
+	forn(i, up_len) {
 		lowerRead[i] = tmpRead[i];
 	}
+	lowerRead[up_len] = 0;
+	// cerr << "\n\n" << strlen(upperRead) <<" " << strlen(lowerRead) << "\n";
 }
 void constructTable(string inputFile, myMap &table, bool reverse) {
 	FILE* inFile = fopen(inputFile.c_str(), "r");
@@ -656,15 +677,18 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 	char *upperRead = new char[readLength + 2];
 	char *lowerRead = new char[readLength + 2];
 	char* fictiveRead = new char[readLength + 2];
-	char* tmpRead = new char[readLength + 2];
+
 
 	forn(i, readLength)
-		fictiveRead[i] = 0;
+		fictiveRead[i] = 1;
+
 	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
-//		fprintf(stderr, "%s", upperNuclRead);
-		if ((strlen(upperNuclRead)<readLength)||(strlen(lowerNuclRead)<readLength)){
+	//	fprintf(stderr, "%s", upperNuclRead);
+		// cerr.flush();
+		if ((strlen(upperNuclRead) < readLength)||(strlen(lowerNuclRead) < readLength)){
 			continue;
 		}
+
 		if (reverse) {
 			codeRead(upperNuclRead, lowerRead);
 			codeRead(lowerNuclRead, upperRead);
@@ -672,17 +696,21 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 			codeRead(upperNuclRead, upperRead);
 			codeRead(lowerNuclRead, lowerRead);
 		}
+	//	cerr << "?";
+	//	cerr.flush();
 		forn(tmp, 2) {
 			if (fictiveSecondReads) {
-				processReadPair(table, upperRead, fictiveRead);
-				processReadPair(table, lowerRead, fictiveRead);
+				processReadPair(table, upperNuclRead, fictiveRead);
+				processReadPair(table, lowerNuclRead, fictiveRead);
 			} else {
-				processReadPair(table, upperRead, lowerRead);
+				processReadPair(table, upperNuclRead, lowerNuclRead);
 			}
 			if (!useRevertedPairs)
 				break;
 			else {
-				reverseCompliment(upperRead, lowerRead , tmpRead);
+				// cerr << "?";
+		//		cerr.flush();
+				reverseCompliment(upperNuclRead, lowerNuclRead);
 			}
 
 		}
