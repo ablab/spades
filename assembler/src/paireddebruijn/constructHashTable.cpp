@@ -606,7 +606,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	int shift = (l - k) / 2;
 	ll upper = extractMer(upperRead, shift, k);
 	ll lower = extractMer(lowerRead, 0, l);
-	ll lowers[readLength + 2];
+	ll lowers[MAX_READ_LENGTH+2];
 	lowers[0] = lower;
 	forn(j, readLength - l + 1) {
 		lower <<= 2;
