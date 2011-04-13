@@ -99,15 +99,15 @@ EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls) {
 }
 
 void EdgeGraph::DeleteEdge(EdgeId edge) {
+	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+			!= action_handler_list_.end(); ++it) {
+		(*it)->HandleDelete(edge);
+	}
 	EdgeId rcEdge = Complement(edge);
 	VertexId rcStart = Complement(edge->end());
 	VertexId start = Complement(rcEdge->end());
 	start->RemoveOutgoingEdge(edge);
 	rcStart->RemoveOutgoingEdge(rcEdge);
-	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
-			!= action_handler_list_.end(); ++it) {
-		(*it)->HandleDelete(edge);
-	}
 	delete edge;
 	if (edge != rcEdge)
 		delete rcEdge;

@@ -57,9 +57,7 @@ public:
 		Kmer k(nucls);
 		put(k, id, 0);
 		for (size_t i = kmer_size_, n = nucls.size(); i < n; ++i) {
-			cout << "Appending " << (int)nucls[i]<< " to kmer " << k << endl;;
 			k = k << nucls[i];
-			cout << "Result is " << k << endl;
 			put(k, id, i - kmer_size_ + 1);
 		}
 	}
@@ -353,10 +351,17 @@ public:
 	bool empty() const {
 		return storage_.empty();
 	}
+
+	size_t size() const {
+		return storage_.size();
+	}
 };
 
-template<typename Graph, typename ElementId, typename Comparator = std::less<ElementId> >
+template<typename Graph, typename ElementId, typename Comparator = std::less<
+		ElementId> >
 class QueueIterator {
+private:
+	bool ready;
 protected:
 	PriorityQueue<ElementId, Comparator> queue_;
 
@@ -370,14 +375,21 @@ protected:
 	}
 
 	QueueIterator(Graph &graph, const Comparator& comparator = Comparator()) :
-		queue_(comparator), graph_(graph) {
+		ready(true), queue_(comparator), graph_(graph) {
 	}
 
 	template<typename iterator>
 	QueueIterator(Graph &graph, iterator begin, iterator end,
 			const Comparator& comparator = Comparator()) :
-		queue_(comparator), graph_(graph) {
+		ready(true), queue_(comparator), graph_(graph) {
 		fillQueue(begin, end);
+	}
+
+	void remove(ElementId toRemove) {
+		if(ready && toRemove == queue_.peek()) {
+			ready = false;
+		}
+		queue_.remove(toRemove);
 	}
 
 public:
@@ -400,12 +412,17 @@ public:
 
 	ElementId operator*() const {
 		assert(!queue_.empty());
+		assert(ready);
 		return queue_.peek();
 	}
 
 	void operator++() {
 		assert(!queue_.empty());
-		queue_.poll();
+		if(ready)
+			queue_.poll();
+		else
+			ready = true;
+//		cout << "remove " << queue_.size() << endl;
 	}
 
 	virtual ~QueueIterator() {
@@ -422,7 +439,8 @@ public:
 public:
 	SmartVertexIterator(Graph &graph, bool fill,
 			const Comparator& comparator = Comparator()) :
-		QueueIterator<Graph, typename Graph::VertexId, Comparator> (graph, comparator) {
+				QueueIterator<Graph, typename Graph::VertexId, Comparator> (
+						graph, comparator) {
 		if (fill) {
 			super::fillQueue(graph.begin(), graph.end());
 			graph.AddActionHandler(this);
@@ -434,10 +452,12 @@ public:
 
 	virtual void HandleAdd(VertexId v) {
 		super::queue_.offer(v);
+		super::queue_.offer(super::graph_.Complement(v));
 	}
 
 	virtual void HandleDelete(VertexId v) {
-		super::queue_.remove(v);
+		super::remove(v);
+		super::remove(super::graph_.Complement(v));
 	}
 };
 
@@ -452,14 +472,19 @@ public:
 	SmartEdgeIterator(Graph &graph, bool fill,
 			Comparator comparator = Comparator()) :
 		super(graph, comparator) {
+		int cnt = 0;
+		int cnt2 = 0;
 		if (fill) {
 			for (typename Graph::VertexIterator it = graph.begin(); it
 					!= graph.end(); ++it) {
 				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
 				super::fillQueue(outgoing.begin(), outgoing.end());
+				cnt++;
+				cnt2 += outgoing.size();
 			}
 			super::graph_.AddActionHandler(this);
 		}
+//		cout << cnt << " " << cnt2 << " " << super::queue_.size() << endl;
 	}
 
 	virtual ~SmartEdgeIterator() {
@@ -468,10 +493,23 @@ public:
 
 	virtual void HandleAdd(EdgeId v) {
 		super::queue_.offer(v);
+		EdgeId rc = super::graph_.Complement(v);
+		if (v != rc)
+			super::queue_.offer(rc);
 	}
 
 	virtual void HandleDelete(EdgeId v) {
-		super::queue_.remove(v);
+//		cout << "remove " << super::graph_.EdgeNucls(v) << " "
+//				<< super::queue_.size() << endl;
+		super::remove(v);
+		//		cout << "oppa" << endl;
+		EdgeId rc = super::graph_.Complement(v);
+		//		cout << "oppa" << endl;
+		if (v != rc) {
+//			cout << "remove " << super::graph_.EdgeNucls(rc) << " "
+//					<< super::queue_.size() << endl;
+			super::remove(rc);
+		}
 	}
 };
 

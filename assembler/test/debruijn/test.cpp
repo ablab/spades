@@ -1,7 +1,7 @@
 #define SUBSTR_LENGTH 10000
 #define COVERAGE 30
 #define R 35
-#define K 15
+#define K 27
 
 #include "cute.h"
 #include "ide_listener.h"
@@ -33,7 +33,7 @@ void RunTestSuites() {
 //}
 
 void RunEdgeGraphConstructionTool() {
-	ireadstream stream(ECOLI_FILE);
+	ireadstream stream(QUAKE_CROPPED_4_10_5_A);
 	edge_graph::ConstructionTool(stream);
 	stream.close();
 }

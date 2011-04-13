@@ -125,12 +125,32 @@ bool Graph::tryCondenseA(Vertex* v) {
 //	return vu;
 }
 
+void Graph::condenseA() {
+	int condensations = 0;
+	for (iterator v = begin(); v != end(); ++v) {
+		if (tryCondenseA(*v)) {
+			condensations++;
+		}
+	}
+	cleanup();
+}
+
 void Graph::cleanup() {
 	for (Vertices::iterator v = removedVertices.begin(); v != removedVertices.end(); ++v) {
 		vertices.erase(*v);
 		delete *v;
 	}
 	removedVertices.clear();
+}
+
+void Graph::stats() {
+	size_t tips = 0;
+	for (iterator v = begin(); v != end(); ++v) {
+		if (v->degree() == 0) {
+			tips++;
+		}
+	}
+	INFO(tips << " tips");
 }
 
 void Graph::output(std::ofstream &out) {
