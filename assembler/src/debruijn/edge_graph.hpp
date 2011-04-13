@@ -331,7 +331,7 @@ public:
 
 	void DeleteEdge(EdgeId edge);
 
-	size_t length(EdgeId edge) {
+	size_t length(EdgeId edge) const {
 		return edge->nucls_.size() - k_;
 	}
 

@@ -8,6 +8,7 @@
 #ifndef EDGE_GRAPH_TOOL_HPP_
 #define EDGE_GRAPH_TOOL_HPP_
 #include "tip_clipper.hpp"
+#include "bulge_remover.hpp"
 
 namespace edge_graph {
 
@@ -32,14 +33,15 @@ void CountStats(const EdgeGraph& g) {
 
 template <class ReadStream>
 void ConstructionTool(ReadStream& stream) {
-	INFO("Tool started");
+	INFO("Edge graph construction tool started");
+
 	INFO("Constructing DeBruijn graph");
 	DeBruijn<K> debruijn;
 	debruijn.ConstructGraphFromStream(stream);
 	INFO("DeBruijn graph constructed");
+
 	INFO("Condensing graph");
 	CondenseConstructor<K> g_c(debruijn);
-
 	EdgeGraph *g;
 	GraphConstructor<K>::Index *index;
 	g_c.ConstructGraph(g, index);
@@ -50,17 +52,24 @@ void ConstructionTool(ReadStream& stream) {
 
 	INFO("Counting stats");
 	CountStats(*g);
+	INFO("Stats counted");
 
 	INFO("Clipping tips");
 	TipComparator comparator(*g);
 	TipClipper<TipComparator> tc(comparator);
-	cout << "create" << endl;
 	tc.ClipTips(*g);
+	INFO("Tips clipped");
+
+	INFO("Removing bulges");
+	de_bruijn::BulgeRemover<EdgeGraph> bulge_remover;
+	bulge_remover.RemoveBulges(*g);
+	INFO("Bulges removed");
 
 	INFO("Writing to file");
 	WriteToFile("tips_clipped.dot", "no_tips_graph", *g);
 	delete g;
 	delete index;
+	INFO("Tool finished")
 }
 
 }

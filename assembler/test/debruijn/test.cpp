@@ -11,7 +11,6 @@
 #include "debruijn_graph_test.hpp"
 #include "edge_graph_test.hpp"
 #include "edge_graph_tool.hpp"
-#include "tip_clipper.hpp"
 #include "coverage_counter.hpp"
 
 void RunTestSuites() {

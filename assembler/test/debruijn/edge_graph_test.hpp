@@ -108,7 +108,6 @@ void SmartIteratorTest() {
 	SmartVertexIterator<EdgeGraph> it1 = g.SmartVertexBegin(comp);
 	SmartVertexIterator<EdgeGraph> it2 = g.SmartVertexEnd(comp);
 	SmartVertexIterator<EdgeGraph> it3 = g.SmartVertexEnd(comp);
-	bool a = it2 != it1;
 	for (SmartVertexIterator<EdgeGraph> it = g.SmartVertexBegin(comp); g.SmartVertexEnd(
 			comp) != it; ++it) {
 		num++;
