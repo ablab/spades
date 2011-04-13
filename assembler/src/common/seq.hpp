@@ -188,15 +188,13 @@ public:
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
 			T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
-			res.data_[data_size_ - 1] = ((res.data_[data_size_ - 1] >> 2) & (((T) 1
-					<< (Tbits - 2)) - 1)) | ((T) (c) << lastnuclshift_);
+			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2) | ((T) (c) << lastnuclshift_);
 			if (data_size_ >= 2) { // if we have at least 2 elements in data
 				size_t i = data_size_ - 1;
 				do {
 					--i;
 					T new_rm = res.data_[i] & 3;
-					res.data_[i] = ((res.data_[i] >> 2) & (((T) 1
-							<< (Tbits - 2)) - 1)) | (rm << (Tbits - 2)); // we need & here because if we shift negative, it fill with ones :(
+					res.data_[i] = (res.data_[i] >> 2) | (rm << (Tbits - 2)); // we need & here because if we shift negative, it fill with ones :(
 					rm = new_rm;
 				} while (i != 0);
 			}
