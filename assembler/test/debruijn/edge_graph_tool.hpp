@@ -12,6 +12,7 @@
 #include "condensed_graph_constructor.hpp"
 #include "ireadstream.hpp"
 #include "test_utils.hpp"
+#include "tip_clipper.hpp"
 #include <algorithm>
 
 //#define SUBSTR_LENGTH 1000
@@ -31,18 +32,6 @@ void CountStats(const EdgeGraph& g) {
 			<< stat_c.e_count());
 }
 
-void WriteToFile(const string& file_name, const string& graph_name,
-		const EdgeGraph& g) {
-	fstream filestr;
-	filestr.open(file_name.c_str(), fstream::out);
-	gvis::PairedGraphPrinter<VertexId> gp(
-			"simulated_data_graph", filestr);
-	ComplementGraphVisualizer gv(gp);
-	gv.Visualize(g);
-	filestr.close();
-
-}
-
 void CondenseTool(DeBruijn<K>& debruijn) {
 	INFO("Condensing graph");
 	CondenseConstructor<K> g_c(debruijn);
@@ -57,6 +46,14 @@ void CondenseTool(DeBruijn<K>& debruijn) {
 
 	INFO("Counting stats");
 	CountStats(*g);
+
+	INFO("Clipping tips");
+	TipComparator comparator(*g);
+	TipClipper<TipComparator> tc(comparator);
+	tc.ClipTips(*g);
+
+	INFO("Writing to file");
+	WriteToFile("tips_clipped.dot", "no_tips_graph", *g);
 	delete g;
 	delete index;
 }

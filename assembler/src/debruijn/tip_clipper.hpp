@@ -34,15 +34,16 @@ public:
 	}
 
 	bool operator()(Edge* edge1, Edge* edge2) const {
-		return graph_->EdgeNucls(edge1).size() < graph_->EdgeNucls(edge2).size();
+		return graph_->EdgeNucls(edge1).size()
+				< graph_->EdgeNucls(edge2).size();
 	}
 };
 
 template<typename Comparator>
 class TipClipper {
 private:
-//	EdgeGraph *graph_;
-//	PriorityQueue<Edge *, Comparator> tipQueue_;
+	//	EdgeGraph *graph_;
+	//	PriorityQueue<Edge *, Comparator> tipQueue_;
 	Comparator comparator_;
 	const size_t maxTipLength_;
 	const size_t coverageBound_;
@@ -59,16 +60,17 @@ private:
 		return isTip(graph, graph.EdgeEnd(edge));
 	}
 
-//	void FindTips() {
-//		for (EdgeGraph::VertexIterator it = graph_.begin(); it
-//				!= graph_.begin(); ++it) {
-//			if (isTip(*it)) {
-//				tipQueue_.offer(graph_.GetUniqueIncomingEdge(*it));
-//			}
-//		}
-//	}
+	//	void FindTips() {
+	//		for (EdgeGraph::VertexIterator it = graph_.begin(); it
+	//				!= graph_.begin(); ++it) {
+	//			if (isTip(*it)) {
+	//				tipQueue_.offer(graph_.GetUniqueIncomingEdge(*it));
+	//			}
+	//		}
+	//	}
 
-	size_t maxCompetitorCoverage(EdgeGraph &graph, Vertex *splitVertex, Edge *tip) {
+	size_t maxCompetitorCoverage(EdgeGraph &graph, Vertex *splitVertex,
+			Edge *tip) {
 		assert(!graph.CheckUniqueOutgiongEdge(splitVertex));
 		if (graph.CheckUniqueOutgiongEdge(splitVertex)) {
 			assert(false);//such situation should never occur
@@ -84,6 +86,7 @@ private:
 	}
 
 	bool tipShouldBeRemoved(EdgeGraph &graph, Edge *tip) {
+//		cout << graph.length(tip) << endl;
 		if (graph.length(tip) > maxTipLength_ || graph.coverage(tip)
 				> coverageBound_)
 			return false;
@@ -107,7 +110,7 @@ private:
 
 	//	void compressSplitVertex(Vertex *splitVertex) {
 	//		if (graph_.CanCompressVertex(splitVertex)) {
-	//			graph_.CompressVertex(splitVertex);
+	//			graph_.CompressVertex(s	plitVertex);
 	//		}
 	//	}
 
@@ -119,42 +122,52 @@ private:
 		compressSplitVertex(graph, splitVertex);
 	}
 
-//	void RemoveTips() {
-//		while (!tipQueue_.empty()) {
-//			Edge * tip = tipQueue_.poll();
-//			if (tipShouldBeRemoved(tip)) {
-//				removeTip(tip);
-//			}
-//		}
-//	}
+	//	void RemoveTips() {
+	//		while (!tipQueue_.empty()) {
+	//			Edge * tip = tipQueue_.poll();
+	//			if (tipShouldBeRemoved(tip)) {
+	//				removeTip(tip);
+	//			}
+	//		}
+	//	}
 
 public:
 	TipClipper(Comparator comparator, size_t maxTipLength,
 			size_t coverageBound,
-			double relativeCoverageBound = DEFAULT_RELATIVE_COVERAGE_BOUND) : comparator_(comparator), maxTipLength_(maxTipLength),
+			double relativeCoverageBound = DEFAULT_RELATIVE_COVERAGE_BOUND) :
+		comparator_(comparator), maxTipLength_(maxTipLength),
 				coverageBound_(coverageBound),
 				relativeCoverageBound_(coverageBound) {
 	}
 
-	TipClipper(Comparator comparator) : comparator_(comparator), maxTipLength_(DEFAULT_MAX_TIP_LENGTH),
+	TipClipper(Comparator comparator) :
+		comparator_(comparator), maxTipLength_(DEFAULT_MAX_TIP_LENGTH),
 				coverageBound_(DEFAULT_COVERAGE_BOUND),
 				relativeCoverageBound_(DEFAULT_RELATIVE_COVERAGE_BOUND) {
 	}
 
 	void ClipTips(EdgeGraph &graph) {
-		PriorityQueue<Edge *, Comparator> tipQueue(comparator_);
-		de_bruijn::SmartEdgeIterator<EdgeGraph, Comparator> iterator(graph);
-		de_bruijn::SmartEdgeIterator<EdgeGraph, Comparator> end;
-		while(end != iterator) {
-			Edge * tip = *iterator;
+		de_bruijn::SmartEdgeIterator<EdgeGraph, Comparator> iterator =
+				graph.SmartEdgeBegin(comparator_);
+		de_bruijn::SmartEdgeIterator<EdgeGraph, Comparator> end =
+				graph.SmartEdgeEnd(comparator_);
+		string s = "tips_clippeda";
+		WriteToFile(s + ".dot", "no_tips_graph", graph);
+		while (end != iterator) {
+			EdgeId tip = *iterator;
+			cout << graph.EdgeNucls(tip) << " " << graph.length(tip)<< " " << tipShouldBeRemoved(graph, tip) << endl;
 			if (tipShouldBeRemoved(graph, tip)) {
 				removeTip(graph, tip);
+				s = s + "a";
+				WriteToFile(s + ".dot", "no_tips_graph", graph);
 			}
 			++iterator;
 		}
-//		FindTips(tipQueue);
-//		RemoveTips();
+		//		FindTips(tipQueue);
+		//		RemoveTips();
+		cout << "oppa" << endl;
 		graph.CompressAllVertices();
+		cout << "oppa" << endl;
 	}
 
 };

@@ -17,7 +17,7 @@
 #define R 35
 //#define K 15
 #define filename "./data/input/MG1655-K12.fasta.gz"
-#define readsfilename "./data/input/s_6.first100000_1.fastq.gz"
+#define readsfilename "./data/input/s_6.first10000_1.fastq.gz"
 
 vector<Read> GenerateReadsWithMistakes() {
 	LOGGER("d.test_utils");
