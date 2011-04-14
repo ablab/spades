@@ -56,6 +56,11 @@ edgesMap sequencesToMap(string parsed_k_sequence, bool usePaired) {
 			}
 		}
 		prototypes.clear();
+		if (size == 0) {
+			Sequence *seq;
+			seq = new Sequence("");
+		}
+		else
 		forn(i, size) {
 			scanf_res = fscanf(inFile, "%s %d", s, &coverage);
 			if (!scanf_res) {

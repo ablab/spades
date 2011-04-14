@@ -681,7 +681,7 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 
 	forn(i, readLength)
 		fictiveRead[i] = 1;
-
+    fictiveRead[readLength] = 0;
 	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
 	//	fprintf(stderr, "%s", upperNuclRead);
 		// cerr.flush();
@@ -689,19 +689,12 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 			continue;
 		}
 
-		if (reverse) {
-			codeRead(upperNuclRead, lowerRead);
-			codeRead(lowerNuclRead, upperRead);
-		} else {
-			codeRead(upperNuclRead, upperRead);
-			codeRead(lowerNuclRead, lowerRead);
-		}
 	//	cerr << "?";
 	//	cerr.flush();
 		forn(tmp, 2) {
 			if (fictiveSecondReads) {
 				processReadPair(table, upperNuclRead, fictiveRead);
-				processReadPair(table, lowerNuclRead, fictiveRead);
+	//			processReadPair(table, lowerNuclRead, fictiveRead);
 			} else {
 				processReadPair(table, upperNuclRead, lowerNuclRead);
 			}

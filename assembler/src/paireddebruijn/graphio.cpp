@@ -141,15 +141,18 @@ Sequence readGenomeFromFile(const string &fileName) {
 	return result;
 }
 
-int findStartVertex(PairedGraph &graph) {
+int findStartVertex(PairedGraph &graph, Sequence &genome) {
 	int result = -1;
 	for (int i = 0; i < graph.VertexCount; i++) {
 		if (graph.degrees[i][0] == 0 && graph.degrees[i][1] == 1) {
-			if (result >= 0) {
-				cerr << "Ambigious start point for threading!" << endl;
-				return result;
+			Sequence* tmp_seq = graph.longEdges[graph.edgeIds[i][0][OUT_EDGE]]->upper;
+			if (genome.Subseq(0,tmp_seq->size())== *tmp_seq){
+				if (result >= 0) {
+					cerr << "Ambigious start point for threading!" << endl;
+					return result;
+				}
+				result = i;
 			}
-			result = i;
 		}
 	}
 	return result;
@@ -158,8 +161,9 @@ int findStartVertex(PairedGraph &graph) {
 bool checkEdge(Edge *nextEdge, int genPos, Sequence &genome) {
 	for (size_t i = 0; i < nextEdge->upper->size(); i++)
 		if (nextEdge->upper->operator [](i) != genome[genPos + i]
-				|| nextEdge->lower->operator [](i) != genome[genPos + i
-						+ readLength + insertLength])
+//				|| nextEdge->lower->operator [](i) != genome[genPos + i
+//						+ readLength + insertLength]
+						)
 			return false;
 	return true;
 }
@@ -207,7 +211,7 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, ostream &os) {
 	cerr << "Try to process" << endl;
 	int edgeNum = 0;
 	int genPos = 0;
-	int currentVertex = findStartVertex(graph);
+	int currentVertex = findStartVertex(graph, genome);
 	cerr << "Start vertex " << currentVertex << endl;
 	while (graph.degrees[currentVertex][1] != 0) {
 		cerr << "Try to found next edge" << endl;

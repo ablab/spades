@@ -51,7 +51,10 @@ void run() {
 		//save(folder+"graph.txt", graph);
 		load(folder+"graphEdges.txt", graph);
 		outputLongEdges(graph.longEdges, graph,
-				folder+"beforeExpand.dot");
+						folder+"beforeExpand.dot");
+		outputLongEdgesThroughGenome(graph,
+						folder+"beforeExpand_g.dot");
+
 	}
 
 	if (useExpandDefinite) {
