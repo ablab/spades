@@ -47,9 +47,9 @@ int main(int argc, char *argv[]) {
 
 	// construct graph
 
-	DeBruijn<K> debruijn;
-	debruijn.ConstructGraph(*v1);
-	debruijn.ConstructGraph(*v2);
+	DeBruijn<K> DeBruijn;
+	DeBruijn.ConstructGraph(*v1);
+	DeBruijn.ConstructGraph(*v2);
 	delete v1;
 	delete v2;
 //	condensed_graph::CondenseConstructor<K> g_c(debruijn);
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
 //	cerr << "Vertex count=" << stat_c.v_count() << "; Edge count="
 //			<< stat_c.e_count() << endl;
 
-	edge_graph::CondenseConstructor<K> g_c(debruijn);
+	edge_graph::CondenseConstructor<K> g_c(DeBruijn);
 
 	edge_graph::EdgeGraph *g;
 	de_bruijn::SimpleIndex<K + 1, edge_graph::Edge*> *index;

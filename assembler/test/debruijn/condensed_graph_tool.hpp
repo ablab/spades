@@ -41,12 +41,12 @@ void SimulatedMistakesTool() {
 	INFO("Tool started");
 	vector<Read> reads = GenerateReadsWithMistakes(ECOLI_FILE);
 	INFO("Constructing DeBruijn graph");
-	DeBruijn<K> debruijn;
-	debruijn.ConstructGraph(reads);
+	DeBruijn<K> DeBruijn;
+	DeBruijn.ConstructGraph(reads);
 	INFO("DeBruijn graph constructed");
 
 	INFO("Condensing graph");
-	CondenseConstructor<K> g_c(debruijn);
+	CondenseConstructor<K> g_c(DeBruijn);
 
 	CondensedGraph *g;
 	CondenseConstructor<K>::Index *index;

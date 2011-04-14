@@ -188,9 +188,9 @@ void MyEquals(vertex_set vs, string s[], size_t length) {
 template <size_t kmer_size_>
 void AssertCondense(size_t read_cnt, string reads_str[], size_t vertex_cnt, string et_vertices[], size_t edge_cnt, string et_edges[][2]) {
 	vector<Read> reads = MakeReads(reads_str, read_cnt);
-	DeBruijn<kmer_size_> debruijn;
-	debruijn.ConstructGraph(reads) ;
-	CondenseConstructor<kmer_size_> g_c(debruijn);
+	DeBruijn<kmer_size_> DeBruijn;
+	DeBruijn.ConstructGraph(reads) ;
+	CondenseConstructor<kmer_size_> g_c(DeBruijn);
 	CondensedGraph *g;
 	typename CondenseConstructor<kmer_size_>::Index *index;
 	g_c.ConstructGraph(g, index);
