@@ -603,6 +603,7 @@ void addPairToTable(myMap& table, ll upper, ll lower) {
 	}
 }
 
+
 void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	int shift = (l - k) / 2;
 	int up_len = strlen(upperRead);
@@ -610,7 +611,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	ll upper = extractMer(upperRead, shift, k);
 	ll lower = extractMer(lowerRead, 0, l);
 //	cerr <<"\n " <<up_len <<"\n" << low_len;
-//	cerr <<(string("\n" )+ upperRead) << (string("\n" )+ lowerRead);
+//	cerr <<(string("\n" )+ upperRead) << (string("\n" )+ lowerRead + "\n");
 //	cerr.flush();
 	ll lowers[MAX_READ_LENGTH+2];
 	lowers[0] = lower;
@@ -647,8 +648,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 		addPairToTable(table, upper, lowers[jj]);
 		totalKmers++;
 	}
-
-	//	cerr << table.size()<<endl;
+	cerr << table.size()<<endl;
 }
 
 inline void reverseCompliment(char *upperRead, char* lowerRead){
@@ -667,6 +667,22 @@ inline void reverseCompliment(char *upperRead, char* lowerRead){
 		lowerRead[i] = tmpRead[i];
 	}
 	lowerRead[up_len] = 0;
+
+
+//
+//	forn(i, up_len) {
+//		tmpRead[i] = nucl_complement(upperRead[up_len - 1 - i]);
+//	}
+//	forn(i, up_len) {
+//		upperRead[i] = tmpRead[i];
+//	}
+//
+//	forn(i, low_len) {
+//		tmpRead[i] = nucl_complement(lowerRead[low_len - 1 - i]);
+//	}
+//	forn(i, low_len) {
+//		lowerRead[i] = tmpRead[i];
+//	}
 	// cerr << "\n\n" << strlen(upperRead) <<" " << strlen(lowerRead) << "\n";
 }
 void constructTable(string inputFile, myMap &table, bool reverse) {
@@ -680,8 +696,8 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 
 
 	forn(i, readLength)
-		fictiveRead[i] = 1;
-
+		fictiveRead[i] = 'G';
+	fictiveRead[readLength] = 0;
 	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
 	//	fprintf(stderr, "%s", upperNuclRead);
 		// cerr.flush();
@@ -710,7 +726,12 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 			else {
 				// cerr << "?";
 		//		cerr.flush();
-				reverseCompliment(upperNuclRead, lowerNuclRead);
+				if (fictiveSecondReads) {
+					reverseCompliment(upperNuclRead, upperNuclRead);
+				} else
+				{
+					reverseCompliment(upperNuclRead, lowerNuclRead);
+				}
 			}
 
 		}
