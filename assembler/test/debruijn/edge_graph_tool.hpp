@@ -9,10 +9,12 @@
 #define EDGE_GRAPH_TOOL_HPP_
 #include "tip_clipper.hpp"
 #include "bulge_remover.hpp"
+#include "coverage_counter.hpp"
 
 namespace edge_graph {
 
 typedef de_bruijn::DeBruijn<K> DeBruijn;
+typedef GraphConstructor<K>::Index Index;
 
 void CountStats(const EdgeGraph& g) {
 	INFO("Counting stats");
@@ -36,11 +38,17 @@ void ConstructUncondensedGraph(DeBruijn& debruijn, ReadStream& stream) {
 	INFO("DeBruijn graph constructed");
 }
 
-void CondenseGraph(DeBruijn& debruijn, EdgeGraph*& g, GraphConstructor<K>::Index*& index) {
+template <class ReadStream>
+void CondenseGraph(DeBruijn& debruijn, EdgeGraph*& g, Index*& index, ReadStream& stream) {
 	INFO("Condensing graph");
 	CondenseConstructor<K> g_c(debruijn);
 	g_c.ConstructGraph(g, index);
 	INFO("Graph condensed");
+
+	INFO("Counting coverage");
+	CoverageCounter<K, EdgeGraph> cc(*g, *index);
+	cc.CountCoverage(stream);
+	INFO("Coverage counted");
 
 	CountStats(*g);
 	WriteToDotFile(g, "edge_graph.dot", "edge_graph");
@@ -48,8 +56,8 @@ void CondenseGraph(DeBruijn& debruijn, EdgeGraph*& g, GraphConstructor<K>::Index
 
 void ClipTips(EdgeGraph* g) {
 	INFO("Clipping tips");
-	TipComparator comparator(*g);
-	TipClipper<TipComparator> tc(comparator);
+	TipComparator<EdgeGraph> comparator(*g);
+	TipClipper<EdgeGraph, TipComparator<EdgeGraph> > tc(comparator);
 	tc.ClipTips(*g);
 	INFO("Tips clipped");
 
@@ -78,7 +86,8 @@ void EdgeGraphTool(ReadStream& stream) {
 	EdgeGraph *g;
 	GraphConstructor<K>::Index *index;
 
-	CondenseGraph(debruijn, g, index);
+	stream.reset();
+	CondenseGraph<ReadStream>(debruijn, g, index, stream);
 
 	ClipTips(g);
 
