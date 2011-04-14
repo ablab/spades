@@ -648,7 +648,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 		addPairToTable(table, upper, lowers[jj]);
 		totalKmers++;
 	}
-	cerr << table.size()<<endl;
+//	cerr << table.size()<<endl;
 }
 
 inline void reverseCompliment(char *upperRead, char* lowerRead){
