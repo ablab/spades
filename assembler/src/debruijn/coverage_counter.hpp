@@ -50,13 +50,13 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 private:
 	const Graph& g_;
-	const SimpleIndex<k, EdgeId>& index_;
+	const SimpleIndex<k + 1, EdgeId>& index_;
 public:
-	SimpleReadThreader(const Graph& g, const SimpleIndex<k, EdgeId>& index) :
+	SimpleReadThreader(const Graph& g, const SimpleIndex<k + 1, EdgeId>& index) :
 		g_(g), index_(index) {
 	}
 
-	Path<EdgeId> ThreadRead(Sequence& read) {
+	Path<EdgeId> ThreadRead(const Sequence& read) const {
 		vector<EdgeId> passed;
 		Seq<k + 1> kmer = read.start<k + 1> ();
 		size_t startPosition = -1;
@@ -64,7 +64,7 @@ public:
 		for (size_t i = k; i < read.size(); ++i) {
 			kmer = kmer << read[i];
 			if (index_.contains(kmer)) {
-				pair<EdgeId*, size_t> position = index_.get(kmer);
+				pair<EdgeId, size_t> position = index_.get(kmer);
 				endPosition = position.second;
 				if (passed.empty()) {
 					startPosition = position.second;
@@ -83,9 +83,9 @@ class CoverageCounter {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 private:
-	const Graph& g_;
+	Graph& g_;
 	const SimpleReadThreader<k, Graph> threader_;
-	const SimpleIndex<k, EdgeId>& index_;
+	const SimpleIndex<k + 1, EdgeId>& index_;
 
 	void processRead(Read read) {
 		Path<EdgeId> path = threader_.ThreadRead(
@@ -102,7 +102,7 @@ private:
 		g_.inc_coverage(last, path.end_pos() - g_.length(last));
 	}
 public:
-	CoverageCounter(const Graph& g, const SimpleIndex<k, EdgeId>& index) :
+	CoverageCounter(Graph& g, const SimpleIndex<k + 1, EdgeId>& index) :
 		g_(g), threader_(g, index), index_(index) {
 	}
 
@@ -113,8 +113,8 @@ public:
 		}
 	}
 
-	template<typename Reader>
-	void CountCoverage(Reader reader) {
+	template<typename stream>
+	void CountCoverage(stream &reader) {
 		while (!reader.eof()) {
 			Read read;
 			reader >> read;

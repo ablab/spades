@@ -9,6 +9,7 @@
 #define EDGE_GRAPH_TOOL_HPP_
 #include "tip_clipper.hpp"
 #include "bulge_remover.hpp"
+#include "coverage_counter.hpp"
 
 namespace edge_graph {
 
@@ -47,6 +48,10 @@ void ConstructionTool(ReadStream& stream) {
 	g_c.ConstructGraph(g, index);
 	INFO("Graph condensed");
 
+	CoverageCounter<K, EdgeGraph> cc(*g, *index);
+	stream.reset();
+	cc.CountCoverage(stream);
+
 	INFO("Writing to file");
 	WriteToFile("simulated_mistakes.dot", "simulated_mistakes_graph", *g);
 
@@ -55,15 +60,17 @@ void ConstructionTool(ReadStream& stream) {
 	INFO("Stats counted");
 
 	INFO("Clipping tips");
-	TipComparator comparator(*g);
-	TipClipper<TipComparator> tc(comparator);
+	TipComparator<EdgeGraph> comparator(*g);
+	TipClipper<EdgeGraph, TipComparator<EdgeGraph> > tc(comparator);
 	tc.ClipTips(*g);
 	INFO("Tips clipped");
 
-	INFO("Removing bulges");
-	de_bruijn::BulgeRemover<EdgeGraph> bulge_remover;
-	bulge_remover.RemoveBulges(*g);
-	INFO("Bulges removed");
+
+
+//	INFO("Removing bulges");
+//	de_bruijn::BulgeRemover<EdgeGraph> bulge_remover;
+//	bulge_remover.RemoveBulges(*g);
+//	INFO("Bulges removed");
 
 	INFO("Writing to file");
 	WriteToFile("tips_clipped.dot", "no_tips_graph", *g);
