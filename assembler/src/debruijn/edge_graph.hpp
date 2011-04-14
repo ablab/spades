@@ -83,8 +83,8 @@ private:
 	Vertex* end_;
 	size_t coverage_;
 
-	Edge(const Sequence& nucls, Vertex* end) :
-		nucls_(nucls), end_(end), coverage_(0) {
+	Edge(const Sequence& nucls, Vertex* end, size_t coverage) :
+		nucls_(nucls), end_(end), coverage_(coverage) {
 	}
 
 	Vertex* end() const {
@@ -301,16 +301,24 @@ public:
 		edge->coverage_ = cov;
 	}
 
-	size_t coverage(EdgeId edge) const {
-		return edge->coverage_;
+	double coverage(EdgeId edge) const {
+		return (double)edge->coverage_ / length(edge);
 	}
 
 	void inc_coverage(EdgeId edge, int toAdd) {
 		edge->coverage_ += toAdd;
+		EdgeId rc = Complement(edge);
+		if(edge != rc){
+			rc->coverage_ += toAdd;
+		}
 	}
 
 	void inc_coverage(EdgeId edge) {
 		edge->coverage_++;
+		EdgeId rc = Complement(edge);
+		if(edge != rc){
+			rc->coverage_++;
+		}
 	}
 
 	/**
@@ -327,7 +335,7 @@ public:
 
 	void ForceDeleteVertex(VertexId v);
 
-	Edge* AddEdge(VertexId v1, VertexId v2, const Sequence &nucls);
+	Edge* AddEdge(VertexId v1, VertexId v2, const Sequence &nucls, size_t coverage = 0);
 
 	void DeleteEdge(EdgeId edge);
 
@@ -370,7 +378,7 @@ public:
 private:
 	size_t k_;
 
-	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s);
+	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s, size_t coverage);
 
 	vector<ActionHandler*> action_handler_list_;
 
@@ -435,6 +443,8 @@ public:
 			ss << e->nucls().size();
 		else
 			ss << e->nucls();
+		ss << " ";
+		ss << g_.coverage(e);
 		VertexId v1 = g_.EdgeStart(e);
 		VertexId v2 = g_.EdgeEnd(e);
 		pr_.addEdge(make_pair(v1, g_.Complement(v1)),

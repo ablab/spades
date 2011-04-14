@@ -13,7 +13,7 @@
 #include "set"
 #include "utils.hpp"
 
-#define DEFAULT_COVERAGE_BOUND 5
+#define DEFAULT_COVERAGE_BOUND 1000
 #define DEFAULT_RELATIVE_COVERAGE_BOUND 2.
 #define DEFAULT_MAX_TIP_LENGTH 50
 
@@ -21,15 +21,16 @@ namespace edge_graph {
 
 using de_bruijn::PriorityQueue;
 
+template<class Graph>
 struct TipComparator {
 private:
-	EdgeGraph *graph_;
+	Graph *graph_;
 public:
 	TipComparator() {
 		assert(false);
 	}
 
-	TipComparator(EdgeGraph &graph) :
+	TipComparator(Graph &graph) :
 		graph_(&graph) {
 	}
 
@@ -42,29 +43,29 @@ public:
 	}
 };
 
-template<typename Comparator>
+template<class Graph, typename Comparator>
 class TipClipper {
 private:
-	//	EdgeGraph *graph_;
+	//	Graph *graph_;
 	//	PriorityQueue<Edge *, Comparator> tipQueue_;
 	Comparator comparator_;
 	const size_t maxTipLength_;
 	const size_t coverageBound_;
 	const double relativeCoverageBound_;
 
-	bool isTip(EdgeGraph &graph, Vertex *v) {
+	bool isTip(Graph &graph, Vertex *v) {
 		if (!graph.CheckUniqueIncomingEdge(v) || !graph.IsDeadEnd(v))
 			return false;
 		Edge *edge = graph.GetUniqueIncomingEdge(v);
 		return graph.length(edge) <= maxTipLength_;
 	}
 
-	bool isTip(EdgeGraph &graph, Edge *edge) {
+	bool isTip(Graph &graph, Edge *edge) {
 		return isTip(graph, graph.EdgeEnd(edge));
 	}
 
 	//	void FindTips() {
-	//		for (EdgeGraph::VertexIterator it = graph_.begin(); it
+	//		for (Graph::VertexIterator it = graph_.begin(); it
 	//				!= graph_.begin(); ++it) {
 	//			if (isTip(*it)) {
 	//				tipQueue_.offer(graph_.GetUniqueIncomingEdge(*it));
@@ -72,14 +73,14 @@ private:
 	//		}
 	//	}
 
-	size_t maxCompetitorCoverage(EdgeGraph &graph, Vertex *splitVertex,
+	double maxCompetitorCoverage(Graph &graph, Vertex *splitVertex,
 			Edge *tip) {
 		assert(!graph.CheckUniqueOutgiongEdge(splitVertex));
 		if (graph.CheckUniqueOutgiongEdge(splitVertex)) {
 			assert(false);//such situation should never occur
 		}
 		const vector<Edge *> competitors = graph.OutgoingEdges(splitVertex);
-		size_t result = 0;
+		double result = 0;
 		for (vector<Edge *>::const_iterator it = competitors.begin(); it
 				!= competitors.end(); ++it) {
 			if (*it != tip)
@@ -88,7 +89,7 @@ private:
 		return result;
 	}
 
-	bool tipShouldBeRemoved(EdgeGraph &graph, Edge *tip) {
+	bool tipShouldBeRemoved(Graph &graph, Edge *tip) {
 		//		cout << graph.length(tip) << endl;
 //		cout << "oppa" << endl;
 		if (graph.length(tip) > maxTipLength_ || graph.coverage(tip)
@@ -99,11 +100,11 @@ private:
 		if (graph.CheckUniqueOutgiongEdge(splitVertex))
 			return false;
 //		cout << "oppa" << endl;
-		size_t maxCoverage = maxCompetitorCoverage(graph, splitVertex, tip);
+		double maxCoverage = maxCompetitorCoverage(graph, splitVertex, tip);
 		return graph.coverage(tip) <= relativeCoverageBound_ * maxCoverage;
 	}
 
-	void compressSplitVertex(EdgeGraph &graph, Vertex *splitVertex) {
+	void compressSplitVertex(Graph &graph, Vertex *splitVertex) {
 		if (graph.CanCompressVertex(splitVertex)) {
 			Edge *edge1 = graph.GetUniqueOutgoingEdge(splitVertex);
 			Edge *edge2 = graph.GetUniqueOutgoingEdge(
@@ -120,7 +121,7 @@ private:
 	//		}
 	//	}
 
-	void removeTip(EdgeGraph &graph, Edge *tip) {
+	void removeTip(Graph &graph, Edge *tip) {
 		Vertex *splitVertex = graph.EdgeStart(tip);
 		Vertex *tipVertex = graph.EdgeEnd(tip);
 		graph.DeleteEdge(tip);
@@ -152,12 +153,12 @@ public:
 				relativeCoverageBound_(DEFAULT_RELATIVE_COVERAGE_BOUND) {
 	}
 
-	void ClipTips(EdgeGraph &graph) {
+	void ClipTips(Graph &graph) {
 		//		cout << "oppa" << endl;
-		de_bruijn::SmartEdgeIterator<EdgeGraph, Comparator> iterator =
+		de_bruijn::SmartEdgeIterator<Graph, Comparator> iterator =
 				graph.SmartEdgeBegin(comparator_);
 		//		cout << "oppa" << endl;
-		de_bruijn::SmartEdgeIterator<EdgeGraph, Comparator> end =
+		de_bruijn::SmartEdgeIterator<Graph, Comparator> end =
 				graph.SmartEdgeEnd(comparator_);
 		//		cout << "oppa" << endl;
 //		string s = "tips_clippeda";
