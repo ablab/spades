@@ -779,7 +779,7 @@ int pairsToLmers(string inputFile, string outputFile) {
 	ll lmers[MAXLMERSIZE];
 	int covers[MAXLMERSIZE];
 
-	set<ll> lset;
+	map<ll, int> lset;
 //	set<ll> kset
 	int count = 0;
 	while (1) {
@@ -802,19 +802,21 @@ int pairsToLmers(string inputFile, string outputFile) {
 
 		forn(i, lsize) {
 			if (fscanf(inFile, "%lld %d", &lmers[i], &covers[i]) != 2) {
-				ERROR( "Error in pairsToSequences reading l-mers");
+				ERROR( "Error in pairsToLmers reading l-mers");
 				return -1;
 			}
 		}
-		sort(lmers, lmers + lsize);
 		forn(i, lsize) {
-			lset.insert(lmers[i]);
+			if (lset.find(lmers[i])!= lset.end())
+				lset.insert(mp(lmers[i], covers[i]));
+			else
+				lset[lmers[i]] +=covers[i];
 		}
 	}
 	int lsetsize = lset.size();
-	fprintf(outFile, "%d\n", lsetsize);
-	for(set<ll>::iterator i = lset.begin(); i != lset.end(); i++ ) {
-		fprintf(outFile, "%lld ", *i);
+//	fprintf(outFile, "%d\n", lsetsize);
+	for(map<ll, int>::iterator i = lset.begin(); i != lset.end(); i++ ) {
+		fprintf(outFile, "%lld %d\n", i->first, i->second);
 	}
 	fclose(outFile);
 	fclose(inFile);
