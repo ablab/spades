@@ -17,6 +17,8 @@
 #include "read.hpp"
 #include "sequence.hpp"
 
+namespace de_bruijn {
+
 template<size_t size_>
 class DeBruijn {
 	typedef Seq<size_> Kmer;
@@ -33,7 +35,7 @@ class DeBruijn {
 		}
 	};
 
-	size_t CountPositive(size_t* a) {
+	size_t CountPositive(const size_t* a) const {
 		size_t c = 0;
 		for (size_t i = 0; i < 4; ++i) {
 			if (a[i] > 0) {
@@ -59,10 +61,10 @@ class DeBruijn {
 		}
 	}
 
-	Data& get(const Kmer &kmer) {
+	const Data& get(const Kmer &kmer) const {
 		//todo why public constructor is necessary???
 		assert(nodes_.count(kmer) == 1);
-		return nodes_[kmer];
+		return nodes_.find(kmer)->second;
 	}
 
 	Data& addNode(const Kmer &seq) {
@@ -138,45 +140,45 @@ public:
 		}
 	};
 
-	size_t OutgoingEdgeCount(const Kmer &kmer) {
+	size_t OutgoingEdgeCount(const Kmer &kmer) const {
 		return CountPositive(get(kmer).out_edges_);
 	}
 
-	size_t IncomingEdgeCount(const Kmer &kmer) {
+	size_t IncomingEdgeCount(const Kmer &kmer) const {
 		return CountPositive(get(kmer).in_edges_);
 	}
 
-	pair<edge_iterator, edge_iterator> OutgoingEdges(const Kmer &kmer) {
-		size_t* out_edges = get(kmer).out_edges_;
+	pair<edge_iterator, edge_iterator> OutgoingEdges(const Kmer &kmer) const {
+		const size_t* out_edges = get(kmer).out_edges_;
 		return make_pair(edge_iterator(kmer, 0, out_edges, true),
 				edge_iterator(kmer, 4, out_edges, true));
 	}
 
-	pair<edge_iterator, edge_iterator> IncomingEdges(const Kmer &kmer) {
-		size_t* in_edges = get(kmer).in_edges_;
+	pair<edge_iterator, edge_iterator> IncomingEdges(const Kmer &kmer) const {
+		const size_t* in_edges = get(kmer).in_edges_;
 		return make_pair(edge_iterator(kmer, 0, in_edges, false),
 				edge_iterator(kmer, 4, in_edges, false));
 	}
 
-	class kmer_iterator: public map_type::iterator {
+	class kmer_iterator: public map_type::const_iterator {
 	public:
-		typedef typename map_type::iterator map_iterator;
+		typedef typename map_type::const_iterator map_iterator;
 
 		kmer_iterator(const map_iterator& other) :
-			map_type::iterator(other) {
+			map_type::const_iterator(other) {
 		}
 		;
 
 		const Kmer& operator *() const {
-			return map_type::iterator::operator*().first;
+			return map_iterator::operator*().first;
 		}
 	};
 
-	kmer_iterator begin() {
+	kmer_iterator begin() const {
 		return kmer_iterator(nodes_.begin());
 	}
 
-	kmer_iterator end() {
+	kmer_iterator end() const {
 		return kmer_iterator(nodes_.end());
 	}
 
@@ -205,8 +207,5 @@ public:
 
 };
 
-//void ConstructGraph(const vector<single_read<R, int>::type> &v, DeBruijn<K> &g) {
-//	ConstructGraph(v, 1, g);
-//}
-
+}
 #endif /* DEBRUIJN_HPP_ */

@@ -9,7 +9,6 @@
 #define COVERAGECOUNTER_HPP_
 
 using namespace std;
-using namespace condensed_graph;
 
 #include "condensed_graph.hpp"
 #include <algorithm>
