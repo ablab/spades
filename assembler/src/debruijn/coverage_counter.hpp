@@ -51,6 +51,19 @@ public:
 private:
 	const Graph& g_;
 	const SimpleIndex<k + 1, EdgeId>& index_;
+
+	void processKmer(Seq<k + 1> &kmer, vector<EdgeId> &passed,
+			size_t &startPosition, size_t &endPosition) const {
+		if (index_.contains(kmer)) {
+			pair<EdgeId, size_t> position = index_.get(kmer);
+			endPosition = position.second;
+			if (passed.empty()) {
+				startPosition = position.second;
+			}
+			if (passed.empty() || passed[passed.size() - 1] != position.first)
+				passed.push_back(position.first);
+		}
+	}
 public:
 	SimpleReadThreader(const Graph& g, const SimpleIndex<k + 1, EdgeId>& index) :
 		g_(g), index_(index) {
@@ -61,18 +74,10 @@ public:
 		Seq<k + 1> kmer = read.start<k + 1> ();
 		size_t startPosition = -1;
 		size_t endPosition = -1;
+		processKmer(kmer, passed, startPosition, endPosition);
 		for (size_t i = k; i < read.size(); ++i) {
+			processKmer(kmer, passed, startPosition, endPosition);
 			kmer = kmer << read[i];
-			if (index_.contains(kmer)) {
-				pair<EdgeId, size_t> position = index_.get(kmer);
-				endPosition = position.second;
-				if (passed.empty()) {
-					startPosition = position.second;
-				}
-				if (passed.empty() || passed[passed.size() - 1]
-						!= position.first)
-					passed.push_back(position.first);
-			}
 		}
 		return Path<EdgeId> (passed, startPosition, endPosition);
 	}
