@@ -33,7 +33,7 @@ void RunTestSuites() {
 //}
 
 void RunEdgeGraphConstructionTool() {
-	ireadstream stream(QUAKE_CROPPED_4_10_5_A);
+	ireadstream stream(QUAKE_CROPPED_10_5_A);
 	edge_graph::ConstructionTool(stream);
 	stream.close();
 }
