@@ -68,26 +68,26 @@ void TestSeqFromType() {
 	ASSERT_EQUAL("GTACG", Seq<5>(s, 2).str());
 }
 
-template <size_t k>
-Seq<k - 1> TemplateEnd(const Seq<k> &s)
-{
-	return s.end( );
+//template <size_t k>
+//Seq<k - 1> TemplateEnd(const Seq<k> &s)
+//{
+//	return s.end( );
 
 //	boost::function<Seq<k-1>()> foo = boost::bind(&Seq<k>::end<k-1>, s);
 //
 //return foo(); s.end<(k-1)>();
 	//return /*Seq<k-1>();  */s.size();//end<k-1, unsigned int>();
-}
+//}
 
 //template <size_t k>
 //Seq<k-1> TemplateEnd2(const Sequence &s) {
 //	return s.end<k-1>();
 //}
 
-void TestTemplateSeqEnd() {
-	Seq<5> s("ACGTA");
-	ASSERT_EQUAL("CGTA", TemplateEnd<5>(s).str());
-}
+//void TestTemplateSeqEnd() {
+//	Seq<5> s("ACGTA");
+//	ASSERT_EQUAL("CGTA", TemplateEnd<5>(s).str());
+//}
 
 //void TestTemplateSequenceEnd() {
 //	Sequence s("ACGTA");
@@ -171,7 +171,7 @@ cute::suite SeqSuite(){
 	s.push_back(CUTE(TestSeqStart));
 	s.push_back(CUTE(TestSeqEnd));
 
-	s.push_back(CUTE(TestTemplateSeqEnd));
+//	s.push_back(CUTE(TestTemplateSeqEnd));
 //	s.push_back(CUTE(TestTemplateSequenceEnd));
 
 	s.push_back(CUTE(TestSeqShiftLeft));
