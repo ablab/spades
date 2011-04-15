@@ -64,7 +64,7 @@ void CondenseGraph(DeBruijn& debruijn, EdgeGraph*& g, Index*& index,
 	WriteToDotFile(g, "edge_graph.dot", "edge_graph", path);
 }
 
-void ClipTips(EdgeGraph* g, SimpleIndex<K + 1, EdgeId> *index,
+void ClipTips(EdgeGraph* g, SimpleIndex<K + 1, EdgeId> *index1,
 		string genome = "") {
 	INFO("Clipping tips");
 	TipComparator<EdgeGraph> comparator(*g);
@@ -72,7 +72,11 @@ void ClipTips(EdgeGraph* g, SimpleIndex<K + 1, EdgeId> *index,
 	tc.ClipTips(*g);
 	INFO("Tips clipped");
 
-	de_bruijn::Path<EdgeId> path = findGenomePath(genome, *g, *index);
+//	for(SmartEdgeIterator<EdgeGraph> it = g->SmartEdgeBegin(); g->SmartEdgeEnd() != it; ++it) {
+//		cout << *it << endl;
+//	}
+	de_bruijn::Path<EdgeId> path = findGenomePath(genome, *g, *index1);
+//	cout << path.sequence().size() << endl;
 	WriteToDotFile(g, "tips_clipped.dot", "no_tip_graph", path);
 }
 
