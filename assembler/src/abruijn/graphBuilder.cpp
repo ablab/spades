@@ -9,6 +9,7 @@
 #include "graphBuilder.hpp"
 #include "parameters.hpp"
 #include <ext/hash_map>
+#include "strobe_reader.hpp"
 #include "logging.hpp"
 
 LOGGER("a.graphBuilder");
@@ -19,7 +20,7 @@ using namespace abruijn;
 
 //typedef hash_map< Sequence, int, HashSym<Sequence>, EqSym<Sequence> > SeqCount;
 //SeqCount seqCount;
-set<hash_t> goodHashes;
+set<hash_t> earmarkedHashes;
 
 abruijn::Graph graph;
 
@@ -28,43 +29,69 @@ HashSym<Sequence> hashSym;
 hash_t ha[MPSIZE - K + 1];
 hash_t hbest[HTAKE];
 
+bool isTrusted(hash_t hash) {
+	return true;
+}
+
 /**
  * Calculates two (distinct) minimal hash-values of all k-mers in this read,
  * and puts them into goodHashes
  */
-void processReadA(Seq<MPSIZE> r) {
-	hashSym.kmers(Sequence(r), ha);
+void processReadA(Sequence s) {
+	hashSym.kmers(s, ha);
 	for (int i = 0; i < HTAKE; i++) {
 		hbest[i] = maxHash;
 	}
 	for (int i = 0; i + K <= MPSIZE; i++) {
+		hash_t hi = ha[i];
+		if (!isTrusted(hi)) {
+			continue;
+		}
 		int j = HTAKE;
-		while (j > 0 && ha[i] < hbest[j - 1]) {
+		while (j > 0 && hi < hbest[j - 1]) {
 			j--;
 		}
-		if (j == HTAKE || ha[i] == hbest[j]) {
+		if (j == HTAKE || hi == hbest[j]) {
 			continue;
 		}
 		for (int k = HTAKE - 1; k > j; k--) {
 			hbest[k] = hbest[k - 1];
 		}
-		hbest[j] = ha[i];
+		hbest[j] = hi;
 	}
 	for (int i = 0; i < HTAKE && hbest[i] < maxHash; i++) {
-		goodHashes.insert(hbest[i]);
+		earmarkedHashes.insert(hbest[i]);
 	}
 }
 
-void selectGood() {
+void processReadAA(Sequence s) {
+	hashSym.kmers(s, ha);
+	hash_t he = maxHash;
+	hash_t hb = maxHash;
+	for (int i = 0; i + K <= MPSIZE; i++) {
+		hash_t hi = ha[i];
+		if (!isTrusted(hi)) {
+			continue;
+		}
+		if (earmarkedHashes.find(hi) != earmarkedHashes.end()) {
+			if (he == maxHash) {
+				he = hi;
+			} else {
+				return;
+			}
+		} else if (hi < hb) {
+			hb = hi;
+		}
+	}
+	earmarkedHashes.insert(hb);
 }
 
-void processReadB(Seq<MPSIZE> r) {
+void processReadE(Sequence s) {
 	vector<abruijn::Vertex*> vs;
 	vector<int> index;
-	Sequence s(r);
 	hashSym.kmers(s, ha);
 	for (int i = 0; i + K <= MPSIZE; i++) {
-		if (goodHashes.find(ha[i]) != goodHashes.end()) {
+		if (earmarkedHashes.find(ha[i]) != earmarkedHashes.end()) {
 			vs.push_back(graph.getVertex(s.Subseq(i, i + K)));
 			index.push_back(i);
 		}
@@ -76,37 +103,48 @@ void processReadB(Seq<MPSIZE> r) {
 
 void GraphBuilder::build() {
 	std::string file_names[2] = {INPUT_FILES};
-	vector<Read> *v1 = ireadstream::readAll(file_names[0], CUT);
-	vector<Read> *v2 = ireadstream::readAll(file_names[1], CUT);
-//	ireadstream<MPSIZE, 2> inputStream(file_names);
+//	vector<Read> *v1 = ireadstream::readAll(file_names[0], CUT);
 
+	StrobeReader<2, Read, ireadstream> sr(file_names);
 	INFO("Processing-A...");
-	//mate_read<MPSIZE>::type mp;
-	for (size_t i = 0; i < v1->size(); i++) {
-//		TODO:
-//		DEBUG(((*v1)[i]).isValid());
-		//inputStream >> mp;
-		processReadA(Seq<MPSIZE>((*v1)[i]));
-		processReadA(Seq<MPSIZE>((*v2)[i]));
-		VERBOSE(i, " reads read");
+	vector<Read> v;
+	for (size_t i = 0; !sr.eof() && i < CUT; i++ ) {
+		sr >> v;
+		processReadA(v[0].getSequence());
+		processReadA(v[1].getSequence());
+		VERBOSE(i, " reads");
 	}
-	//inputStream.reset();
-	INFO("processReadA done: " << goodHashes.size() << " earmarked hashes");
+	INFO("Done: " << earmarkedHashes.size() << " earmarked hashes");
 
-	INFO("Selecting good kmers...");
-	selectGood();
-
-	INFO("Processing-B...");
-	for (size_t i = 0; i < v1->size(); i++) {
-		//inputStream >> mp;
-		processReadB(Seq<MPSIZE>((*v1)[i]));
-		processReadB(Seq<MPSIZE>((*v2)[i]));
-		VERBOSE(i, " reads processed");
+	if (HTAKE == 1) {
+		sr.reset();
+		INFO("Processing-AA...");
+		for (size_t i = 0; !sr.eof() && i < CUT; i++ ) {
+			sr >> v;
+			processReadAA(v[0].getSequence());
+			processReadAA(v[1].getSequence());
+			VERBOSE(i, " reads");
+		}
+		INFO("Done: " << earmarkedHashes.size() << " earmarked hashes");
 	}
-	//inputStream.close();
-	delete v1;
-	delete v2;
-	INFO(graph.vertices.size() << " vertices");
+
+	sr.reset();
+	INFO("Processing-E...");
+	for (size_t i = 0; !sr.eof() && i < CUT; i++ ) {
+		sr >> v;
+		processReadE(v[0].getSequence());
+		processReadE(v[1].getSequence());
+		VERBOSE(i, " reads");
+	}
+	INFO("Done: " << graph.vertices.size() << " vertices");
+
+//	INFO("Processing-E...");
+//	for (size_t i = 0; i < v1->size(); i++) {
+//		processReadE(Seq<MPSIZE>((*v1)[i]));
+//		processReadE(Seq<MPSIZE>((*v2)[i]));
+//		VERBOSE(i, " reads processed");
+//	}
+//	INFO(graph.vertices.size() << " vertices");
 
 //	INFO("Condensing-A graph...");
 //	graph.condenseA();
