@@ -82,7 +82,7 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 }
 
 void appendLmers(string parsed_l_mers, edgesMap &edges) {
-	FILE *inFile = fopen(parsed_k_sequence.c_str(), "r");
+	FILE *inFile = fopen(parsed_l_mers.c_str(), "r");
 	vector<EdgePrototype *> prototypes;
 	prototypes.resize(1);
 	prototypes[0] = NULL;
@@ -98,6 +98,7 @@ void appendLmers(string parsed_l_mers, edgesMap &edges) {
 			cerr << count << "lmer - readed" << endl;
 		}
 		scanf_res = fscanf(inFile, "%lld %d", &kmer, &coverage);
+//		cerr << kmer << " readed "<< endl;
 		//		cerr<<scanf_res;
 		if ((scanf_res) != 2) {
 
@@ -114,6 +115,7 @@ void appendLmers(string parsed_l_mers, edgesMap &edges) {
 			EdgePrototype *v = new EdgePrototype(seq, 0);
 			v->coverage = 1 + coverage * range_variating * 1.5;
 			prototypes[0] = v;
+			cerr <<" kmer inserting: " << kmer << endl;
 			edges.insert(mp(kmer, prototypes));
 		}
 	}
