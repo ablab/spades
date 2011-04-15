@@ -11,6 +11,8 @@
 #include "debruijn_graph_test.hpp"
 #include "edge_graph_test.hpp"
 #include "edge_graph_tool.hpp"
+#include "visualization_utils.hpp"
+#include "ifaststream.hpp"
 
 void RunTestSuites() {
 	cute::suite s;
@@ -24,7 +26,10 @@ void RunTestSuites() {
 
 void RunEdgeGraphTool() {
 	ireadstream stream(QUAKE_CROPPED_10_4_A);
-	edge_graph::EdgeGraphTool(stream);
+	ifaststream genome_stream(ECOLI_FILE);
+	string genome;
+	genome_stream >> genome >> genome;
+	edge_graph::EdgeGraphTool(stream, genome);
 	stream.close();
 }
 

@@ -1,5 +1,6 @@
 #include "edge_graph.hpp"
 #include "logging.hpp"
+#include "visualization_utils.hpp"
 
 namespace edge_graph {
 
@@ -13,7 +14,8 @@ Sequence EdgeGraph::VertexNucls(VertexId v) const {
 	//	return new Sequence("");
 }
 
-EdgeId EdgeGraph::AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s, size_t coverage) {
+EdgeId EdgeGraph::AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s,
+		size_t coverage) {
 	EdgeId newEdge = new Edge(s, v2, coverage);
 	v1->AddOutgoingEdge(newEdge);
 	return newEdge;
@@ -84,7 +86,8 @@ void EdgeGraph::ForceDeleteVertex(VertexId v) {
 	DeleteVertex(v);
 }
 
-EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls, size_t coverage) {
+EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
+		size_t coverage) {
 	assert(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
 	assert(nucls.size() >= k_ + 1);
 	assert(OutgoingEdge(v1, nucls[k_]) == NULL);
@@ -218,14 +221,13 @@ void ComplementGraphVisualizer::Visualize(const EdgeGraph& g) {
 }
 
 void WriteToFile(const string& file_name, const string& graph_name,
-		const EdgeGraph& g) {
+		const EdgeGraph& g, de_bruijn::Path<EdgeId> path) {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
 	gvis::PairedGraphPrinter<VertexId> gp("simulated_data_graph", filestr);
-	ComplementGraphVisualizer gv(gp);
+	ColoredPathGraphVisualizer gv(gp, path);
 	gv.Visualize(g);
 	filestr.close();
-
 }
 
 }

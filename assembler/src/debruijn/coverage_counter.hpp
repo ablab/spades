@@ -17,39 +17,13 @@ using namespace std;
 
 namespace edge_graph {
 
-template<typename ElementId>
-class Path {
-	vector<ElementId> sequence_;
-	size_t start_pos_;
-	size_t end_pos_;
-
-public:
-
-	Path(vector<ElementId> sequence, size_t start_pos, size_t end_pos) :
-		sequence_(sequence), start_pos_(start_pos), end_pos_(end_pos) {
-
-	}
-
-	size_t start_pos() const {
-		return start_pos_;
-	}
-
-	size_t end_pos() const {
-		return end_pos_;
-	}
-
-	const vector<ElementId>& sequence() const {
-		return sequence_;
-	}
-};
-
 template<size_t k, class Graph>
 class SimpleReadThreader {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 private:
 	const Graph& g_;
-	const SimpleIndex<k + 1, EdgeId>& index_;
+	const de_bruijn::SimpleIndex<k + 1, EdgeId>& index_;
 
 	void processKmer(Seq<k + 1> &kmer, vector<EdgeId> &passed,
 			size_t &startPosition, size_t &endPosition) const {
@@ -64,12 +38,14 @@ private:
 		}
 	}
 public:
-	SimpleReadThreader(const Graph& g, const SimpleIndex<k + 1, EdgeId>& index) :
+	SimpleReadThreader(const Graph& g, const de_bruijn::SimpleIndex<k + 1, EdgeId>& index) :
 		g_(g), index_(index) {
 	}
 
-	Path<EdgeId> ThreadRead(const Sequence& read) const {
+	de_bruijn::Path<EdgeId> ThreadRead(const Sequence& read) const {
 		vector<EdgeId> passed;
+		if(read.size() <= k)
+			return de_bruijn::Path<EdgeId>();
 		Seq<k + 1> kmer = read.start<k + 1> ();
 		size_t startPosition = -1;
 		size_t endPosition = -1;
@@ -78,7 +54,7 @@ public:
 			processKmer(kmer, passed, startPosition, endPosition);
 			kmer = kmer << read[i];
 		}
-		return Path<EdgeId> (passed, startPosition, endPosition);
+		return de_bruijn::Path<EdgeId> (passed, startPosition, endPosition);
 	}
 };
 
@@ -89,10 +65,10 @@ public:
 private:
 	Graph& g_;
 	const SimpleReadThreader<k, Graph> threader_;
-	const SimpleIndex<k + 1, EdgeId>& index_;
+	const de_bruijn::SimpleIndex<k + 1, EdgeId>& index_;
 
 	void processRead(Read read) {
-		Path<EdgeId> path = threader_.ThreadRead(
+		de_bruijn::Path<EdgeId> path = threader_.ThreadRead(
 				Sequence(read.getSequenceString()));
 		if (path.sequence().size() == 0)
 			return;
@@ -106,7 +82,7 @@ private:
 		g_.inc_coverage(last, path.end_pos() - g_.length(last));
 	}
 public:
-	CoverageCounter(Graph& g, const SimpleIndex<k + 1, EdgeId>& index) :
+	CoverageCounter(Graph& g, const de_bruijn::SimpleIndex<k + 1, EdgeId>& index) :
 		g_(g), threader_(g, index), index_(index) {
 	}
 
