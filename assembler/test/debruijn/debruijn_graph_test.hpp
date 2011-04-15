@@ -103,4 +103,5 @@ cute::suite DeBruijnGraphSuite() {
 	s.push_back(CUTE(TestSimpleConstruction));
 	return s;
 }
+
 }

@@ -7,6 +7,7 @@
 #include "ide_listener.h"
 #include "cute_runner.h"
 #include "debruijn_graph_test.hpp"
+
 #include "edge_graph_test.hpp"
 #include "edge_graph_tool.hpp"
 #include "visualization_utils.hpp"
@@ -15,7 +16,7 @@
 void RunTestSuites() {
 	cute::suite s;
 	//TODO add your test here
-	s += de_bruijn::DeBruijnGraphSuite();
+//	s += de_bruijn::DeBruijnGraphSuite();
 	s += edge_graph::EdgeGraphSuite();
 	cute::ide_listener lis;
 	cute::makeRunner(lis)(s, "De Bruijn Project Test Suites");
