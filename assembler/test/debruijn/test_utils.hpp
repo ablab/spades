@@ -13,12 +13,12 @@
 //#include "read_generator.hpp"
 
 #define ECOLI_FILE "./data/input/MG1655-K12.fasta.gz"
-#define QUAKE_CROPPED_10_4_A "./data/input/s_6.first10000_1.fastq.gz"
-#define QUAKE_CROPPED_10_4_B "./data/input/s_6.first10000_2.fastq.gz"
-#define QUAKE_CROPPED_10_5_A "./data/input/s_6.first100000_1.fastq.gz"
-#define QUAKE_CROPPED_10_5_B "./data/input/s_6.first100000_2.fastq.gz"
-#define QUAKE_CROPPED_4_10_5_A "./data/input/s_6.first400000_1.fastq.gz"
-#define QUAKE_CROPPED_4_10_5_B "./data/input/s_6.first400000_2.fastq.gz"
+#define QUAKE_CROPPED_10_4_A make_pair("./data/input/s_6.first10000_1.fastq.gz", 10000)
+#define QUAKE_CROPPED_10_4_B make_pair("./data/input/s_6.first10000_2.fastq.gz", 10000)
+#define QUAKE_CROPPED_10_5_A make_pair("./data/input/s_6.first100000_1.fastq.gz", 100000)
+#define QUAKE_CROPPED_10_5_B make_pair("./data/input/s_6.first100000_2.fastq.gz", 100000)
+#define QUAKE_CROPPED_4_10_5_A make_pair("./data/input/s_6.first400000_1.fastq.gz", 400000)
+#define QUAKE_CROPPED_4_10_5_B make_pair("./data/input/s_6.first400000_2.fastq.gz", 400000)
 
 //#define filename "./data/input/MG1655-K12.fasta.gz"
 #define readsfilename "./data/input/s_6.first100000_1.fastq.gz"

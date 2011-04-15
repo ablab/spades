@@ -86,7 +86,7 @@ void RemoveBulges(EdgeGraph* g, Index* index,
 
 	CountStats(*g);
 	de_bruijn::Path<EdgeId> path = findGenomePath(genome, *g, *index);
-	WriteToDotFile(g, "bulges_removed.dot", "no_bulge_graph");
+	WriteToDotFile(g, "bulges_removed.dot", "no_bulge_graph", path);
 }
 
 template<class ReadStream>
