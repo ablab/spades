@@ -55,10 +55,10 @@ void BulgeRemover<Graph>::RemoveBulges(Graph& g) {
 
 	for (EdgeIter iterator = g.SmartEdgeBegin(), end = g.SmartEdgeEnd(); end != iterator; ++iterator) {
 		EdgeId edge = *iterator;
-		DEBUG("Considering edge of length " << g.length(edge) << " and coverage " << g.kplus_one_mer_coverage(edge));
+		DEBUG("Considering edge of length " << g.length(edge) << " and avg coverage " << g.coverage(edge));
 		DEBUG("Is possible bulge " << PossibleBulgeEdge(g, edge));
 		if (PossibleBulgeEdge(g, edge)) {
-			DEBUG("Processing edge " << g.EdgeNucls(edge));
+			DEBUG("Processing edge " << g.EdgeNucls(edge) << " and coverage " << g.kplus_one_mer_coverage(edge));
 
 			VertexId start = g.EdgeStart(edge);
 			DEBUG("Start " << g.VertexNucls(start));
