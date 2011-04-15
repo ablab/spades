@@ -64,7 +64,7 @@ void CondenseGraph(DeBruijn& debruijn, EdgeGraph*& g, Index*& index,
 	WriteToDotFile(g, "edge_graph.dot", "edge_graph", path);
 }
 
-void ClipTips(EdgeGraph* g, SimpleIndex<K + 1, EdgeId> *index1,
+void ClipTips(EdgeGraph* g, Index* index,
 		string genome = "") {
 	INFO("Clipping tips");
 	TipComparator<EdgeGraph> comparator(*g);
@@ -72,22 +72,21 @@ void ClipTips(EdgeGraph* g, SimpleIndex<K + 1, EdgeId> *index1,
 	tc.ClipTips(*g);
 	INFO("Tips clipped");
 
-//	for(SmartEdgeIterator<EdgeGraph> it = g->SmartEdgeBegin(); g->SmartEdgeEnd() != it; ++it) {
-//		cout << *it << endl;
-//	}
-	de_bruijn::Path<EdgeId> path = findGenomePath(genome, *g, *index1);
-//	cout << path.sequence().size() << endl;
+	CountStats(*g);
+	de_bruijn::Path<EdgeId> path = findGenomePath(genome, *g, *index);
 	WriteToDotFile(g, "tips_clipped.dot", "no_tip_graph", path);
 }
 
-void RemoveBulges(EdgeGraph* g) {
+void RemoveBulges(EdgeGraph* g, Index* index,
+		string genome = "") {
 	INFO("Removing bulges");
 	de_bruijn::BulgeRemover<EdgeGraph> bulge_remover;
 	bulge_remover.RemoveBulges(*g);
 	INFO("Bulges removed");
 
 	CountStats(*g);
-	WriteToDotFile(g, "bulges_removed.dot", "no_bulge_graph");
+	de_bruijn::Path<EdgeId> path = findGenomePath(genome, *g, *index);
+	WriteToDotFile(g, "bulges_removed.dot", "no_bulge_graph", path);
 }
 
 template<class ReadStream>
@@ -109,7 +108,7 @@ void EdgeGraphTool(ReadStream& stream, string genome = "") {
 	g->AddActionHandler(renewer);
 	ClipTips(g, index, genome);
 
-	//	RemoveBulges(g);
+	RemoveBulges(g, index, genome);
 
 	g->RemoveActionHandler(renewer);
 	delete renewer;

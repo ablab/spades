@@ -283,7 +283,7 @@ public:
 		return Seq<size2_,T2> (*this);
 	}
 
-	template<size_t size2_, typename T2 = T>
+	template<size_t size2_/* = size_ - 1*/, typename T2 = T>
 	Seq<size2_,T2> end() const {
 		assert(size2_ <= size_);
 		return Seq<size2_,T2> (*this, size_ - size2_);
