@@ -24,6 +24,9 @@ ll extractMer(char *read, int shift, int length) {
 	for (int i = 0; i < length; i++) {
 		res = res << 2;
 		res += codeNucleotide(read[shift + i]);
+		if (codeNucleotide( read[shift + i])==-1)
+				cerr<<"Extract fault on pos"<<i<<" shift "<<shift;
+
 	}
 	return res;
 }
