@@ -90,16 +90,12 @@ private:
 	}
 
 	bool tipShouldBeRemoved(Graph &graph, Edge *tip) {
-		//		cout << graph.length(tip) << endl;
-//		cout << "oppa" << endl;
 		if (graph.length(tip) > maxTipLength_ || graph.coverage(tip)
 				> coverageBound_)
 			return false;
-//		cout << "oppa" << endl;
 		Vertex *splitVertex = graph.EdgeStart(tip);
 		if (graph.CheckUniqueOutgiongEdge(splitVertex))
 			return false;
-//		cout << "oppa" << endl;
 		double maxCoverage = maxCompetitorCoverage(graph, splitVertex, tip);
 		return graph.coverage(tip) <= relativeCoverageBound_ * maxCoverage;
 	}
@@ -154,42 +150,22 @@ public:
 	}
 
 	void ClipTips(Graph &graph) {
-		//		cout << "oppa" << endl;
 		de_bruijn::SmartEdgeIterator<Graph, Comparator> iterator =
 				graph.SmartEdgeBegin(comparator_);
-		//		cout << "oppa" << endl;
 		de_bruijn::SmartEdgeIterator<Graph, Comparator> end =
 				graph.SmartEdgeEnd(comparator_);
-		//		cout << "oppa" << endl;
-//		string s = "tips_clippeda";
-//		WriteToFile(s + ".dot", "no_tips_graph", graph);
-		//		cout << "oppa" << endl;
-//		int cnt = 0;
 		while (end != iterator) {
-			//			cout << "oppa1" << endl;
 			EdgeId tip = *iterator;
-//			if(graph.length(tip) < 10) {
-//				cout << graph.EdgeNucls(tip) << endl;
-//			}
 			if (isTip(graph, tip)) {
 				bool tmp = tipShouldBeRemoved(graph, tip);
-//				cout << graph.EdgeNucls(tip) << " " << graph.length(tip) << " "
-//						<< tmp << endl;
 				if (tmp) {
+
 					removeTip(graph, tip);
-//					s = s + "a";
-//					WriteToFile(s + ".dot", "no_tips_graph", graph);
 				}
 			}
 			++iterator;
 		}
-//		cout << "cnt " << cnt << endl;
-		//		cout << "oppa" << endl;
-		//		FindTips(tipQueue);
-		//		RemoveTips();
-		//		cout << "oppa" << endl;
 		graph.CompressAllVertices();
-		//		cout << "oppa" << endl;
 	}
 
 };

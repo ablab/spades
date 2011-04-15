@@ -1,5 +1,6 @@
 #include "edge_graph.hpp"
 #include "logging.hpp"
+#include "visualization_utils.hpp"
 
 namespace edge_graph {
 
@@ -223,14 +224,13 @@ void ComplementGraphVisualizer::Visualize(const EdgeGraph& g) {
 }
 
 void WriteToFile(const string& file_name, const string& graph_name,
-		const EdgeGraph& g) {
+		const EdgeGraph& g, de_bruijn::Path<EdgeId> path) {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
 	gvis::PairedGraphPrinter<VertexId> gp("simulated_data_graph", filestr);
-	ComplementGraphVisualizer gv(gp);
+	ColoredPathGraphVisualizer gv(gp, path);
 	gv.Visualize(g);
 	filestr.close();
-
 }
 
 }
