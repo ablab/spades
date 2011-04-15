@@ -608,35 +608,44 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	int shift = (l - k) / 2;
 	int up_len = strlen(upperRead);
 	int low_len = strlen(lowerRead);
+	if ((up_len<k)||(low_len<l)) return;
 	ll upper = extractMer(upperRead, shift, k);
 	ll lower = extractMer(lowerRead, 0, l);
 //	cerr <<"\n " <<up_len <<"\n" << low_len;
 //	cerr <<(string("\n" )+ upperRead) << (string("\n" )+ lowerRead + "\n");
 //	cerr.flush();
-	cerr << "Up_len "<<up_len<<" low_len "<<low_len<<endl;
+//	cerr << "Up_len "<<up_len<<" low_len "<<low_len<<endl;
 	ll lowers[MAX_READ_LENGTH+2];
 	lowers[0] = lower;
 	if (low_len > l)
-	forn(j, low_len - l - 1) {
+	forn(j, low_len - l) {
 		lower <<= 2;
 		lower += codeNucleotide( lowerRead[j + l]);
+		if (codeNucleotide( lowerRead[j + l])==-1)
+			cerr<<"len "<<low_len<<" pos "<<j<<" in "<<lowerRead;
 		lower &= lowerMask;
 		lowers[j + 1] = lower;
+//		cerr << "lowers "<<j+1<<" "<<lowers[j+1]<<endl;
 	}
-	cerr << "lowers_coded"<<endl;
+//	cerr << "lowers_coded"<<endl;
 	lower = lowers[0];
 	//	fprintf(stderr,"%lld %lld\n", upper, lower);
 	int j = 0;
 	for (; j + k + shift < up_len; j++) {
 		if (checkBoundsForUpper(upper)) {
 			for (int jj = max(0, j - range_variating); jj < min(low_len - l +1, j + range_variating + 1); jj ++)
-			addPairToTable(table, upper, lowers[jj]);
+			{			assert(jj<=low_len-l);
+				addPairToTable(table, upper, lowers[jj]);
+//				if ((lowers[jj]&3)!=2) assert(0);
+			}
 			totalKmers++;
 		}
 
 		upper <<= 2;
 		upper += codeNucleotide(upperRead[j + k + shift]);
 		upper &= upperMask;
+		if (codeNucleotide( upperRead[j + k + shift])==-1)
+			cerr<<"up len "<<up_len<<" pos "<<j<<" in "<<lowerRead;
 
 //		lower <<= 2;
 //		lower += lowerRead[j + l];
