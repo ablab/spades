@@ -143,9 +143,16 @@ Sequence readGenomeFromFile(const string &fileName) {
 
 int findStartVertex(PairedGraph &graph, Sequence &genome) {
 	int result = -1;
+	cerr<<"findStartVertex"<<endl;
 	for (int i = 0; i < graph.VertexCount; i++) {
+		if (i == 299) { cerr<<"vertex 299"<<endl;
+		 cerr<<"In "<<graph.degrees[i][0]<<" out " <<graph.degrees[i][1]<<endl;
+		}
 		if (graph.degrees[i][0] == 0 && graph.degrees[i][1] == 1) {
+			cerr<<"SEQ VS GEN"<<endl;
 			Sequence* tmp_seq = graph.longEdges[graph.edgeIds[i][0][OUT_EDGE]]->upper;
+			cerr<<"Seq "<<tmp_seq->str()<<endl;
+			cerr<<"Gen "<<(genome.Subseq(0,tmp_seq->size())).str()<<endl;
 			if (genome.Subseq(0,tmp_seq->size())== *tmp_seq){
 				if (result >= 0) {
 					cerr << "Ambigious start point for threading!" << endl;
@@ -222,10 +229,11 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, ostream &os) {
 			edgeNum++;
 			genPos += nextEdge->length;
 		} else {
-			cerr << "BAD GRAPH. I can not cover all genome" << endl;
+			cerr << "BAD GRAPH. I can not cover all genome." << endl;
 			break;
 		}
 	}
+	cerr<<"Go trough the graph finished on position "<<genPos+k-1<<endl;
 	g.output();
 }
 

@@ -603,6 +603,7 @@ void addPairToTable(myMap& table, ll upper, ll lower) {
 	}
 }
 
+
 void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	int shift = (l - k) / 2;
 	int up_len = strlen(upperRead);
@@ -610,7 +611,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	ll upper = extractMer(upperRead, shift, k);
 	ll lower = extractMer(lowerRead, 0, l);
 //	cerr <<"\n " <<up_len <<"\n" << low_len;
-//	cerr <<(string("\n" )+ upperRead) << (string("\n" )+ lowerRead);
+//	cerr <<(string("\n" )+ upperRead) << (string("\n" )+ lowerRead + "\n");
 //	cerr.flush();
 	ll lowers[MAX_READ_LENGTH+2];
 	lowers[0] = lower;
@@ -647,8 +648,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 		addPairToTable(table, upper, lowers[jj]);
 		totalKmers++;
 	}
-
-	//	cerr << table.size()<<endl;
+//	cerr << table.size()<<endl;
 }
 
 inline void reverseCompliment(char *upperRead, char* lowerRead){
@@ -667,6 +667,22 @@ inline void reverseCompliment(char *upperRead, char* lowerRead){
 		lowerRead[i] = tmpRead[i];
 	}
 	lowerRead[up_len] = 0;
+
+
+//
+//	forn(i, up_len) {
+//		tmpRead[i] = nucl_complement(upperRead[up_len - 1 - i]);
+//	}
+//	forn(i, up_len) {
+//		upperRead[i] = tmpRead[i];
+//	}
+//
+//	forn(i, low_len) {
+//		tmpRead[i] = nucl_complement(lowerRead[low_len - 1 - i]);
+//	}
+//	forn(i, low_len) {
+//		lowerRead[i] = tmpRead[i];
+//	}
 	// cerr << "\n\n" << strlen(upperRead) <<" " << strlen(lowerRead) << "\n";
 }
 void constructTable(string inputFile, myMap &table, bool reverse) {
@@ -680,21 +696,23 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 
 
 	forn(i, readLength)
-		fictiveRead[i] = 1;
-    fictiveRead[readLength] = 0;
+
+		fictiveRead[i] = 'G';
+	fictiveRead[readLength] = 0;
+
 	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
 	//	fprintf(stderr, "%s", upperNuclRead);
 		// cerr.flush();
-		if ((strlen(upperNuclRead) < readLength)||(strlen(lowerNuclRead) < readLength)){
-			continue;
-		}
+//		if ((strlen(upperNuclRead) < readLength)||(strlen(lowerNuclRead) < readLength)){
+//			continue;
+//		}
 
 	//	cerr << "?";
 	//	cerr.flush();
 		forn(tmp, 2) {
 			if (fictiveSecondReads) {
 				processReadPair(table, upperNuclRead, fictiveRead);
-	//			processReadPair(table, lowerNuclRead, fictiveRead);
+				processReadPair(table, lowerNuclRead, fictiveRead);
 			} else {
 				processReadPair(table, upperNuclRead, lowerNuclRead);
 			}
@@ -703,7 +721,13 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 			else {
 				// cerr << "?";
 		//		cerr.flush();
-				reverseCompliment(upperNuclRead, lowerNuclRead);
+				if (fictiveSecondReads) {
+					reverseCompliment(upperNuclRead, upperNuclRead);
+					reverseCompliment(lowerNuclRead, lowerNuclRead);
+						} else
+				{
+					reverseCompliment(upperNuclRead, lowerNuclRead);
+				}
 			}
 
 		}
@@ -740,7 +764,7 @@ void readsToPairs(string inputFile, string outputFile , bool reverse) {
 	outputTable(outputFile, table);
 	table.clear();
 }
-//#define OUTPUT_DECOMPRESSED
+#define OUTPUT_DECOMPRESSED
 int pairsToLmers(string inputFile, string outputFile) {
 	FILE* inFile = fopen(inputFile.c_str(), "r");
 	FILE* outFile = fopen(outputFile.c_str(), "w");
@@ -817,6 +841,10 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 	ll kmer;
 	int lsize;
 	FILE* outFile = fopen(outputFile.c_str(), "w");
+#ifdef OUTPUT_DECOMPRESSED
+	FILE* decompressed = fopen((outputFile+"decompr").c_str(), "w");
+#endif
+
 	int count = 0;
 
 	while (1) {
@@ -849,11 +877,13 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 		string outstring;
 
 //		string s = decompress(kmer, k);
-//		fprintf(decompressed, "%s %d\n", s.c_str(), lsize);
+#ifdef OUTPUT_DECOMPRESSED
+		fprintf(decompressed, "%s %d\n", decompress(kmer, k).c_str(), lsize);
+#endif
 		fprintf(outFile, "%lld %d\n", kmer, clsize);
 #ifdef OUTPUT_DECOMPRESSED
 		forn(i, lsize) {
-			fprintf(decompressed, "%s ", decompress(lmers[i], l).c_str());
+			fprintf(decompressed, "%s ", decompress(lmers[i].first, l).c_str());
 		}
 #endif
 		forn(i, clsize) {
@@ -875,5 +905,8 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 	INFO("finished");
 	fclose(outFile);
 	fclose(inFile);
+#ifdef OUTPUT_DECOMPRESSED
+	fclose(decompressed);
+#endif
 	return 0;
 }

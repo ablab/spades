@@ -50,6 +50,8 @@ void run() {
 		constructGraph(graph);
 		//save(folder+"graph.txt", graph);
 		load(folder+"graphEdges.txt", graph);
+		graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+
 		outputLongEdges(graph.longEdges, graph,
 						folder+"beforeExpand.dot");
 		outputLongEdgesThroughGenome(graph,
