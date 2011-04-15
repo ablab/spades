@@ -111,7 +111,7 @@ void appendLmers(string parsed_l_mers, edgesMap &edges) {
 			}
 		}
 		if (edges.find(kmer) == edges.end()) {
-			Sequence *seq = new Sequence("");
+			Sequence *seq = new Sequence("A");
 			EdgePrototype *v = new EdgePrototype(seq, 0);
 			v->coverage = 1 + coverage * range_variating * 1.5;
 			prototypes[0] = v;
