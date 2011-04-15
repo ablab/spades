@@ -3,6 +3,7 @@
 #include "edge_graph_constructor.hpp"
 #include "test_utils.hpp"
 #include "cute.h"
+#include <tr1/unordered_set>
 
 namespace edge_graph {
 
@@ -160,7 +161,7 @@ template<size_t kmer_size_>
 void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 		string etalon_edges[]) {
 	vector<Read> reads = MakeReads(reads_str, read_cnt);
-	DeBruijn<kmer_size_> debruijn;
+	de_bruijn::DeBruijn<kmer_size_> debruijn;
 	debruijn.ConstructGraph(reads);
 	CondenseConstructor<kmer_size_> g_c(debruijn);
 	EdgeGraph *g;

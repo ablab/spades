@@ -172,10 +172,10 @@ public:
 	typedef typename super::Index Index;
 	typedef typename super::Kmer Kmer;
 private:
-	typedef DeBruijn<kmer_size_> debruijn;
-	typedef typename debruijn::edge_iterator edge_iterator;
+	typedef de_bruijn::DeBruijn<kmer_size_> DeBruijn;
+	typedef typename DeBruijn::edge_iterator edge_iterator;
 
-	DeBruijn<kmer_size_>& origin_;
+	DeBruijn& origin_;
 
 	bool StepLeftIfPossible(Kmer &kmer) {
 		if (origin_.IncomingEdgeCount(kmer) == 1) {
@@ -264,13 +264,13 @@ private:
 	}
 
 public:
-	CondenseConstructor(DeBruijn<kmer_size_>& origin) :
+	CondenseConstructor(DeBruijn& origin) :
 		origin_(origin) {
 
 	}
 	virtual void ConstructGraph(CondensedGraph* &g, Index* &h) {
 
-		for (typename debruijn::kmer_iterator it = origin_.begin(), end =
+		for (typename DeBruijn::kmer_iterator it = origin_.begin(), end =
 				origin_.end(); it != end; it++) {
 			Kmer kmer = *it;
 			if (!super::Contains(kmer)) {

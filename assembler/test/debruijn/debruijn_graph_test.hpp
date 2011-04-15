@@ -25,6 +25,7 @@ using namespace std;
 //	}
 //	ASSERT_EQUAL(3, c);
 //}
+namespace de_bruijn {
 
 void TestAddEdge() {
 	DeBruijn<5> g;
@@ -101,4 +102,5 @@ cute::suite DeBruijnGraphSuite() {
 	s.push_back(CUTE(TestAddEdge2));
 	s.push_back(CUTE(TestSimpleConstruction));
 	return s;
+}
 }
