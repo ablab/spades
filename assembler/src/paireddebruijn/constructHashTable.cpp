@@ -608,6 +608,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	int shift = (l - k) / 2;
 	int up_len = strlen(upperRead);
 	int low_len = strlen(lowerRead);
+	int low_shift = readLength - low_len;
 	if ((up_len<k)||(low_len<l)) return;
 	ll upper = extractMer(upperRead, shift, k);
 	ll lower = extractMer(lowerRead, 0, l);
@@ -633,7 +634,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	int j = 0;
 	for (; j + k + shift < up_len; j++) {
 		if (checkBoundsForUpper(upper)) {
-			for (int jj = max(0, j - range_variating); jj < min(low_len - l +1, j + range_variating + 1); jj ++)
+			for (int jj = max(0, j + low_shift - range_variating); jj < min(low_len - l +1, j + low_shift + range_variating + 1); jj ++)
 			{			assert(jj<=low_len-l);
 				addPairToTable(table, upper, lowers[jj]);
 //				if ((lowers[jj]&3)!=2) assert(0);
@@ -655,7 +656,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 
 	}
 	if (checkBoundsForUpper(upper)) {
-		for (int jj = max(0, j - range_variating); jj < min(low_len - l +1, j + range_variating + 1); jj ++)
+		for (int jj = max(0, j + low_shift - range_variating); jj < min(low_len - l +1, j + low_shift +range_variating + 1); jj ++)
 		addPairToTable(table, upper, lowers[jj]);
 		totalKmers++;
 	}
