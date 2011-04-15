@@ -13,7 +13,8 @@ Sequence EdgeGraph::VertexNucls(VertexId v) const {
 	//	return new Sequence("");
 }
 
-EdgeId EdgeGraph::AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s, size_t coverage) {
+EdgeId EdgeGraph::AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s,
+		size_t coverage) {
 	EdgeId newEdge = new Edge(s, v2, coverage);
 	v1->AddOutgoingEdge(newEdge);
 	return newEdge;
@@ -84,7 +85,8 @@ void EdgeGraph::ForceDeleteVertex(VertexId v) {
 	DeleteVertex(v);
 }
 
-EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls, size_t coverage) {
+EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
+		size_t coverage) {
 	assert(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
 	assert(nucls.size() >= k_ + 1);
 	assert(OutgoingEdge(v1, nucls[k_]) == NULL);
@@ -109,8 +111,9 @@ void EdgeGraph::DeleteEdge(EdgeId edge) {
 	start->RemoveOutgoingEdge(edge);
 	rcStart->RemoveOutgoingEdge(rcEdge);
 	delete edge;
-	if (edge != rcEdge)
+	if (edge != rcEdge) {
 		delete rcEdge;
+	}
 }
 
 bool EdgeGraph::AreLinkable(VertexId v1, VertexId v2, const Sequence &nucls) const {
@@ -150,18 +153,20 @@ bool EdgeGraph::CanCompressVertex(VertexId v) const {
 			== 1;
 }
 
-EdgeId EdgeGraph::CompressVertex(VertexId v) {
-	assert(v->OutgoingEdgeCount() == 1 && v->complement()->OutgoingEdgeCount() == 1);
-	EdgeId edge1 = GetUniqueIncomingEdge(v);
-	EdgeId edge2 = GetUniqueOutgoingEdge(v);
-	Sequence nucls = edge1->nucls() + edge2->nucls().Subseq(k_);
-	VertexId v1 = EdgeStart(edge1);
-	VertexId v2 = EdgeEnd(edge2);
-	size_t new_coverage = edge1->coverage_ + edge2->coverage_;
-	DeleteEdge(edge1);
-	DeleteEdge(edge2);
-	DeleteVertex(v);
-	return AddEdge(v1, v2, nucls, new_coverage);
+void EdgeGraph::CompressVertex(VertexId v) {
+	//assert(CanCompressVertex(v));
+	if (CanCompressVertex(v)) {
+		EdgeId edge1 = GetUniqueIncomingEdge(v);
+		EdgeId edge2 = GetUniqueOutgoingEdge(v);
+		Sequence nucls = edge1->nucls() + edge2->nucls().Subseq(k_);
+		VertexId v1 = EdgeStart(edge1);
+		VertexId v2 = EdgeEnd(edge2);
+		size_t new_coverage = edge1->coverage_ + edge2->coverage_;
+		DeleteEdge(edge1);
+		DeleteEdge(edge2);
+		DeleteVertex(v);
+		AddEdge(v1, v2, nucls, new_coverage);
+	}
 }
 
 EdgeId EdgeGraph::CompressPath(const vector<VertexId>& path) {

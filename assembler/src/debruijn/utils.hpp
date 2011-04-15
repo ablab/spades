@@ -448,6 +448,7 @@ public:
 	}
 
 	virtual ~SmartVertexIterator() {
+		super::graph_.RemoveActionHandler(this);
 	}
 
 	virtual void HandleAdd(VertexId v) {
