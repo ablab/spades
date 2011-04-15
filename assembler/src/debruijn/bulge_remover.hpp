@@ -49,6 +49,7 @@ void BulgeRemover<Graph>::RemoveBulges(Graph& g) {
 					end, g.length(edge) + delta);
 
 			//if edge was returned, this condition will fail
+			//it will not! coverage_gap > 1. And also g.coverage(edge) is average coverage while coverage_gap is coverage sum!
 			if (path_and_coverage.second  < coverage_gap * g.coverage(edge)) {
 				g.DeleteEdge(edge);
 				g.CompressVertex(start);
