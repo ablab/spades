@@ -20,7 +20,7 @@ using namespace abruijn;
 
 //typedef hash_map< Sequence, int, HashSym<Sequence>, EqSym<Sequence> > SeqCount;
 //SeqCount seqCount;
-set<hash_t> goodHashes;
+set<hash_t> earmarkedHashes;
 
 abruijn::Graph graph;
 
@@ -60,8 +60,30 @@ void processReadA(Sequence s) {
 		hbest[j] = hi;
 	}
 	for (int i = 0; i < HTAKE && hbest[i] < maxHash; i++) {
-		goodHashes.insert(hbest[i]);
+		earmarkedHashes.insert(hbest[i]);
 	}
+}
+
+void processReadAA(Sequence s) {
+	hashSym.kmers(s, ha);
+	hash_t he = maxHash;
+	hash_t hb = maxHash;
+	for (int i = 0; i + K <= MPSIZE; i++) {
+		hash_t hi = ha[i];
+		if (!isTrusted(hi)) {
+			continue;
+		}
+		if (earmarkedHashes.find(hi) != earmarkedHashes.end()) {
+			if (he == maxHash) {
+				he = hi;
+			} else {
+				return;
+			}
+		} else if (hi < hb) {
+			hb = hi;
+		}
+	}
+	earmarkedHashes.insert(hb);
 }
 
 void processReadE(Sequence s) {
@@ -69,7 +91,7 @@ void processReadE(Sequence s) {
 	vector<int> index;
 	hashSym.kmers(s, ha);
 	for (int i = 0; i + K <= MPSIZE; i++) {
-		if (goodHashes.find(ha[i]) != goodHashes.end()) {
+		if (earmarkedHashes.find(ha[i]) != earmarkedHashes.end()) {
 			vs.push_back(graph.getVertex(s.Subseq(i, i + K)));
 			index.push_back(i);
 		}
@@ -92,7 +114,19 @@ void GraphBuilder::build() {
 		processReadA(v[1].getSequence());
 		VERBOSE(i, " reads");
 	}
-	INFO("Done: " << goodHashes.size() << " earmarked hashes");
+	INFO("Done: " << earmarkedHashes.size() << " earmarked hashes");
+
+	if (HTAKE == 1) {
+		sr.reset();
+		INFO("Processing-AA...");
+		for (size_t i = 0; !sr.eof() && i < CUT; i++ ) {
+			sr >> v;
+			processReadAA(v[0].getSequence());
+			processReadAA(v[1].getSequence());
+			VERBOSE(i, " reads");
+		}
+		INFO("Done: " << earmarkedHashes.size() << " earmarked hashes");
+	}
 
 	sr.reset();
 	INFO("Processing-E...");
