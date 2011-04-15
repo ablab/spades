@@ -13,6 +13,7 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, string fileName);
 
 void codeRead(char *read, char *code);
 
+void outputVertexKmers(PairedGraph &graph);
 
 inline bool nextReadPair(FILE* f, char * &read1, char * &read2) {
 	//if (!fictiveSecondReads

@@ -539,3 +539,14 @@ void load(string fileName, PairedGraph &g) {
 	//	dr.readIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 	dr.close();
 }
+
+void outputVertexKmers(edgesMap &edges){
+
+	FILE *fkmers = fopen((folder+"kmers.txt").c_str(), "w");
+	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();++iter) {
+		ll kmer = iter->fi;
+		fprintf(fkmers,"%lld %s\n", kmer, decompress(kmer, k));
+	}
+	fclose(fkmers);
+
+}
