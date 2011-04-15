@@ -24,6 +24,9 @@ ll extractMer(char *read, int shift, int length) {
 	for (int i = 0; i < length; i++) {
 		res = res << 2;
 		res += codeNucleotide(read[shift + i]);
+		if (codeNucleotide( read[shift + i])==-1)
+				cerr<<"Extract fault on pos"<<i<<" shift "<<shift;
+
 	}
 	return res;
 }
@@ -535,4 +538,15 @@ void load(string fileName, PairedGraph &g) {
 	//	dr.readIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 	//	dr.readIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 	dr.close();
+}
+
+void outputVertexKmers(edgesMap &edges){
+
+	FILE *fkmers = fopen((folder+"kmers.txt").c_str(), "w");
+	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();++iter) {
+		ll kmer = iter->fi;
+		fprintf(fkmers,"%lld %s\n", kmer, decompress(kmer, k));
+	}
+	fclose(fkmers);
+
 }
