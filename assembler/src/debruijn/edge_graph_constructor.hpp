@@ -57,11 +57,11 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 	typedef typename super::Index Index;
 	typedef typename super::Kmer Kmer;
 	typedef typename super::KPlusOneMer KPlusOneMer;
-	typedef DeBruijn<kmer_size_> debruijn;
-	typedef typename debruijn::edge_iterator edge_iterator;
-	typedef typename debruijn::kmer_iterator kmer_iterator;
+	typedef de_bruijn::DeBruijn<kmer_size_> DeBruijn;
+	typedef typename DeBruijn::edge_iterator edge_iterator;
+	typedef typename DeBruijn::kmer_iterator kmer_iterator;
 
-	DeBruijn<kmer_size_>& origin_;
+	const DeBruijn& origin_;
 
 	bool StepRightIfPossible(KPlusOneMer &edge) {
 		//todo use Seq.end
@@ -136,15 +136,14 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 	}
 
 public:
-	CondenseConstructor(DeBruijn<kmer_size_>& origin) :
+	CondenseConstructor(const DeBruijn& origin) :
 		origin_(origin) {
 	}
 
 	virtual void ConstructGraph(EdgeGraph* &g, Index* &h) {
 		for (kmer_iterator it = origin_.begin(), end = origin_.end(); it != end; it++) {
 			Kmer kmer = *it;
-			pair<edge_iterator, edge_iterator> edges = origin_.OutgoingEdges(
-					kmer);
+			pair<edge_iterator, edge_iterator> edges = origin_.OutgoingEdges(kmer);
 			for (edge_iterator it = edges.first; it != edges.second; ++it) {
 				KPlusOneMer edge = *it;
 				if (!super::h_->contains(edge)) {

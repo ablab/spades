@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
 
 	// construct graph
 
-	DeBruijn<K> debruijn;
+	de_bruijn::DeBruijn<K> debruijn;
 	debruijn.ConstructGraph(*v1);
 	debruijn.ConstructGraph(*v2);
 	delete v1;

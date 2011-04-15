@@ -6,12 +6,11 @@
 #include "cute.h"
 #include "ide_listener.h"
 #include "cute_runner.h"
-#include "condensed_graph_test.hpp"
-#include "condensed_graph_tool.hpp"
+//#include "condensed_graph_test.hpp"
+//#include "condensed_graph_tool.hpp"
 #include "debruijn_graph_test.hpp"
 #include "edge_graph_test.hpp"
 #include "edge_graph_tool.hpp"
-#include "coverage_counter.hpp"
 
 void RunTestSuites() {
 	cute::suite s;
@@ -23,23 +22,14 @@ void RunTestSuites() {
 	cute::makeRunner(lis)(s, "De Bruijn Project Test Suites");
 }
 
-//void checkClipTippingCompilation() {
-//	using namespace de_bruijn;
-//	using namespace edge_graph;
-//	EdgeGraph graph(11);
-//	TipComparator comparator(graph);
-//	TipClipper<TipComparator> clipper(comparator, 3, 2.);
-//	clipper.ClipTips(graph);
-//}
-
-void RunEdgeGraphConstructionTool() {
-	ireadstream stream(QUAKE_CROPPED_4_10_5_A);
-	edge_graph::ConstructionTool(stream);
+void RunEdgeGraphTool() {
+	ireadstream stream(QUAKE_CROPPED_10_4_A);
+	edge_graph::EdgeGraphTool(stream);
 	stream.close();
 }
 
 int main() {
 //	RunTestSuites();
-	RunEdgeGraphConstructionTool();
+	RunEdgeGraphTool();
 	return 0;
 }

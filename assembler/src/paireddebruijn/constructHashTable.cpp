@@ -613,15 +613,17 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 //	cerr <<"\n " <<up_len <<"\n" << low_len;
 //	cerr <<(string("\n" )+ upperRead) << (string("\n" )+ lowerRead + "\n");
 //	cerr.flush();
+	cerr << "Up_len "<<up_len<<" low_len "<<low_len<<endl;
 	ll lowers[MAX_READ_LENGTH+2];
 	lowers[0] = lower;
-	forn(j, low_len - l) {
+	if (low_len > l)
+	forn(j, low_len - l - 1) {
 		lower <<= 2;
 		lower += codeNucleotide( lowerRead[j + l]);
 		lower &= lowerMask;
 		lowers[j + 1] = lower;
 	}
-//	cerr << "lowers_coded";
+	cerr << "lowers_coded"<<endl;
 	lower = lowers[0];
 	//	fprintf(stderr,"%lld %lld\n", upper, lower);
 	int j = 0;
@@ -667,6 +669,8 @@ inline void reverseCompliment(char *upperRead, char* lowerRead){
 		lowerRead[i] = tmpRead[i];
 	}
 	lowerRead[up_len] = 0;
+
+	delete[] tmpRead;
 
 
 //
@@ -722,8 +726,9 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 				// cerr << "?";
 		//		cerr.flush();
 				if (fictiveSecondReads) {
-					reverseCompliment(upperNuclRead, upperNuclRead);
-					reverseCompliment(lowerNuclRead, lowerNuclRead);
+	//				reverseCompliment(upperNuclRead, upperNuclRead);
+//					reverseCompliment(lowerNuclRead, lowerNuclRead);
+					reverseCompliment(upperNuclRead, lowerNuclRead);
 						} else
 				{
 					reverseCompliment(upperNuclRead, lowerNuclRead);
@@ -775,7 +780,7 @@ int pairsToLmers(string inputFile, string outputFile) {
 	ll lmers[MAXLMERSIZE];
 	int covers[MAXLMERSIZE];
 
-	set<ll> lset;
+	map<ll, int> lset;
 //	set<ll> kset
 	int count = 0;
 	while (1) {
@@ -798,19 +803,21 @@ int pairsToLmers(string inputFile, string outputFile) {
 
 		forn(i, lsize) {
 			if (fscanf(inFile, "%lld %d", &lmers[i], &covers[i]) != 2) {
-				ERROR( "Error in pairsToSequences reading l-mers");
+				ERROR( "Error in pairsToLmers reading l-mers");
 				return -1;
 			}
 		}
-		sort(lmers, lmers + lsize);
 		forn(i, lsize) {
-			lset.insert(lmers[i]);
+			if (lset.find(lmers[i])!= lset.end())
+				lset.insert(mp(lmers[i], covers[i]));
+			else
+				lset[lmers[i]] +=covers[i];
 		}
 	}
 	int lsetsize = lset.size();
-	fprintf(outFile, "%d\n", lsetsize);
-	for(set<ll>::iterator i = lset.begin(); i != lset.end(); i++ ) {
-		fprintf(outFile, "%lld ", *i);
+//	fprintf(outFile, "%d\n", lsetsize);
+	for(map<ll, int>::iterator i = lset.begin(); i != lset.end(); i++ ) {
+		fprintf(outFile, "%lld %d\n", i->first, i->second);
 	}
 	fclose(outFile);
 	fclose(inFile);
