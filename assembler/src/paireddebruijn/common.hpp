@@ -119,8 +119,7 @@ inline int codeNucleotide(char a) {
 	else if (a == 'T')
 		return 3;
 	else {
-		std::cerr << "oops!";
-//		std::cerr << a;
+		std::cerr << "oops! ";		std::cerr << (int)a<<endl;
 		return -1;
 	}
 }
