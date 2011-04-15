@@ -725,14 +725,14 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 			else {
 				// cerr << "?";
 		//		cerr.flush();
-				if (fictiveSecondReads) {
-	//				reverseCompliment(upperNuclRead, upperNuclRead);
-//					reverseCompliment(lowerNuclRead, lowerNuclRead);
+//				if (fictiveSecondReads) {
+//	//				reverseCompliment(upperNuclRead, upperNuclRead);
+////					reverseCompliment(lowerNuclRead, lowerNuclRead);
+//					reverseCompliment(upperNuclRead, lowerNuclRead);
+//						} else
+//				{
 					reverseCompliment(upperNuclRead, lowerNuclRead);
-						} else
-				{
-					reverseCompliment(upperNuclRead, lowerNuclRead);
-				}
+//				}
 			}
 
 		}
