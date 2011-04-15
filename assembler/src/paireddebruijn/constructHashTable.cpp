@@ -858,7 +858,7 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 	int lsize;
 	FILE* outFile = fopen(outputFile.c_str(), "w");
 #ifdef OUTPUT_DECOMPRESSED
-	FILE* decompressed = fopen((outputFile+"decompr").c_str(), "w");
+	FILE* decompressed = fopen((outputFile+".decompr").c_str(), "w");
 #endif
 
 	int count = 0;
@@ -898,9 +898,9 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 #endif
 		fprintf(outFile, "%lld %d\n", kmer, clsize);
 #ifdef OUTPUT_DECOMPRESSED
-		forn(i, lsize) {
-			fprintf(decompressed, "%s ", decompress(lmers[i].first, l).c_str());
-		}
+//		forn(i, lsize) {
+//			fprintf(decompressed, "%s ", decompress(lmers[i].first, l).c_str());
+//		}
 #endif
 		forn(i, clsize) {
 			outstring = clusters[i].first->str();
@@ -909,6 +909,9 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 //				fprintf(outFile, "%s %d ",outstring.substr(1,outstring.size()-2).c_str(),clusters[i].second);
 //			else
 				fprintf(outFile, "%s %d ",outstring.c_str(),clusters[i].second);
+#ifdef OUTPUT_DECOMPRESSED
+				fprintf(decompressed, "%s %d ",outstring.c_str(),clusters[i].second);
+#endif
 		}
 		fprintf(outFile, "\n");
 #ifdef OUTPUT_DECOMPRESSED

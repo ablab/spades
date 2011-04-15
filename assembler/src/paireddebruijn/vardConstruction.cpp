@@ -78,7 +78,7 @@ int findPossibleVertex(ll kmer, Sequence &down, edgesMap &edges, verticesMap &ve
  * @return coverage of resulting edge when expanding or 0.
  */
 Sequence* SubSeq(Sequence Seq, int direction, int CutLen){
-	if (CutLen>=Seq.size()) return new Sequence("");
+	if (CutLen>=Seq.size()) return new Sequence("A");
 	if (direction == LEFT)
 		return new Sequence(Seq.Subseq(0, Seq.size()-CutLen));
 	else if (direction == RIGHT)
@@ -139,7 +139,7 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
     if (replace) curSeq = SubSeq(*curSeque, otherDirection(direction), ((curSeque->size()-l)/2));
     else curSeq = curSeque;
     while (count == 0){
-    	if (curSeq->size()>0)
+    	if (curSeq->size()>1)
     	if (curSeq->size() - CutShift< l){
     		DEBUG("Impossible to go");
     		break;
@@ -159,7 +159,7 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
     				//				if (curSeq->similar(*((*it)->lower), minIntersect, direction)) {
 
     				bool intersected = false;
-    			  	if ((curSeq->size()==0)||(((*it)->lower)->size()==0)){
+    			  	if ((curSeq->size()<=1)||(((*it)->lower)->size()<=1)){
     			  		intersected = true;
     			  	}
     			  	else
@@ -175,6 +175,7 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
     				}
 
     				if (intersected){
+//    					cerr<<"intersection found";
     					count++;
     			//		TRACE("FOUND " << (*it)->lower->str());
     					if (count > 1) {
@@ -193,7 +194,9 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
     	CutShift++;
     	if (count == 0) {
     		if (replace) break;
-    		curSeq = SubSeq(*curSeq, otherDirection(direction));
+    		if (curSeq->size()>l)
+    			curSeq = SubSeq(*curSeq, otherDirection(direction));
+    		else break;
     	}
     }
 //    if (count>0) DEBUG("Nucl "<<(int)res.first<<" Seq "<< res.second->lower->str());
@@ -237,6 +240,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 			int direction = LEFT;
 			EdgePrototype* curEdgePrototype = (iter->se)[i];
 			Sequence * curSeq = curEdgePrototype->lower;
+//			cerr<<"seq "<<curSeq->str()<<endl;
 			ll curKmer = kmer;
 			bool NeedToStore = false;
 			while (1){
@@ -253,17 +257,19 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 						back_way = findUniqueWay(edges, nextKmer, dir_res.second->lower, otherDirection(direction) , false);
 					}
 					if (otherdir_res.second == NULL)
-						if (otherdir_res.first == 0) cerr<<" No Parallel edge. Dir "<<direction<<endl;
-						else cerr<<" Multi Parallel edge. Dir "<<direction<<endl;
+						if (otherdir_res.first == 2) cerr<<" Multi Parallel edge. Dir "<<direction<<endl;
+						else	cerr<<" No Parallel edge. Dir "<<direction<<endl;
+
 					if (dir_res.second == NULL)
-						if (dir_res.first == 0)
-							cerr<<"No edges. Dir "<<direction<<endl;
-						else
-							cerr<<"Multiple edges. Dir "<<direction<<endl;
+						if (dir_res.first == 2)
+								cerr<<"Multiple edges. Dir "<<direction<<endl;
+							else
+								cerr<<"No edges. Dir "<<direction<<endl;
 					if (back_way.second != curEdgePrototype) cerr<<"Bad way back. Dir "<<direction<<endl;
 
 
 					if ((otherdir_res.second == NULL)||(dir_res.second == NULL)||(back_way.second != curEdgePrototype) ){
+						cerr<<"vertex from edge "<<kmer<< "("<<decompress(kmer,k)<<") low "<< curEdgePrototype->lower->str()<<endl;
 						storeVertex(graph, subkmer(curKmer, direction), curSubSeq, true);
 //								NeedToStore = true;
 					}
