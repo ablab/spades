@@ -1,53 +1,3 @@
-/*
- ReadOnlyGraph -> Graph -> EdgeGraph/VertexGraph
- ComplementGraph
- PairedGraph/Debruijn
-
-
-
- interface ReadonlyGraph {
- NodeIt begin_node();
- NodeIt end_node();
-
- void outgoing_edges(const NodeId &n, EdgeIt &begin, EdgeIt &end);
-
- bool IsLast(const NodeId &n);
-
- bool IsFirst(const NodeId &n);
-
- NodeId start(const EdgeId &e);
- NodeId end(const EdgeId &e);
-
- };
-
- interface Graph {
-
- };
-
- interface EdgeGraph {
- //	const NodeId addNode(const NodeData& n_d);
-
- const NodeId addNode();
-
- const EdgeId addEdge(const EdgeData& e_d, const NodeId& n1, const NodeId& n2);
- const EdgeData& getEdgeData(const EdgeId &e);
- }
-
- interface ComplementGraph {
- const NodeId complement_node(const& NodeId);
- const EdgeId complement_edge(const& EdgeId);
- }
-
- interface NodeGraph {
- const NodeData& getNodeData(const NodeId &n);
- }
-
- interface DeBruijnGraph {
- const EdgeData* getNodeData(const NodeId &n, char c);
- }
-
- */
-
 #ifndef EDGE_GRAPH_HPP_
 #define EDGE_GRAPH_HPP_
 
@@ -239,14 +189,17 @@ public:
 	}
 
 	void AddActionHandler(ActionHandler* action_handler) {
+		DEBUG("Action handler added");
 		action_handler_list_.push_back(action_handler);
 	}
 
 	bool RemoveActionHandler(ActionHandler* action_handler) {
+		DEBUG("Trying to remove action handler");
 		for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
 			if (*it == action_handler) {
 				action_handler_list_.erase(it);
+				DEBUG("Action handler removed");
 				return true;
 			}
 		}
@@ -304,6 +257,10 @@ public:
 
 	double coverage(EdgeId edge) const {
 		return (double) edge->coverage_ / length(edge);
+	}
+
+	size_t kplus_one_mer_coverage(EdgeId edge) const {
+		return edge->coverage_;
 	}
 
 	void inc_coverage(EdgeId edge, int toAdd) {
@@ -371,7 +328,7 @@ public:
 
 	bool CanCompressVertex(VertexId v) const;
 
-	EdgeId CompressVertex(VertexId v);
+	void CompressVertex(VertexId v);
 
 	EdgeId CompressPath(const vector<VertexId>& path);
 
