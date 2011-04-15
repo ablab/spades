@@ -389,10 +389,10 @@ class ComplementVisHandler: public TraversalHandler {
 	const map<EdgeId, string> color_;
 	string ConstructLabel(EdgeId e) {
 		stringstream ss;
-		if (g_.length(e) > 10)
-			ss << g_.length(e);
-		else
-			ss << g_.length(e) << ":" << e->nucls();
+		//		if (g_.length(e) > 10)
+		ss << g_.length(e);
+		//		else
+		//	ss << g_.length(e) << ":" << e->nucls();
 		ss << "(";
 		ss << ((int) (g_.coverage(e) * 100)) * 0.01;
 		ss << ")";
@@ -455,7 +455,8 @@ public:
 };
 
 void WriteToFile(const string& file_name, const string& graph_name,
-		const EdgeGraph& g, de_bruijn::Path<EdgeId> path = de_bruijn::Path<EdgeId> ());
+		const EdgeGraph& g,
+		de_bruijn::Path<EdgeId> path = de_bruijn::Path<EdgeId>());
 }
 #endif /* EDGE_GRAPH_HPP_ */
 
