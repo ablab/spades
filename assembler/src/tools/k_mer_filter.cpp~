@@ -1,0 +1,24 @@
+#include "../common/seq.hpp"
+#include "../common/strobe_read.hpp"
+#include "../common/nucl.hpp"
+#include "../common/sequence.hpp"
+#include "../common/read.hpp"
+#include "../common/ireadstream.hpp"
+#include <iostream>
+#include "../common/cuckoo.hpp"
+
+int main() {
+  ireadstream ifs("../../test/data/s_6_1.fastq.gz");
+  std::vector<Read> reads;
+  Read r;
+  while (!ifs.eof()) {
+    ifs >> r;
+    reads.push_back(r);
+  }
+  ifs.close;
+
+  for (size_t i = 0; i < reads.size(); i++) {
+    cout << reads[i].getSequenceString();
+  }
+  return 0;
+}
