@@ -114,7 +114,7 @@ public:
 		assert((T)(-1) >= (T)0);//be sure to use unsigned types
 	}
 
-	explicit Seq(const char* s) {
+	Seq(const char* s) {
 		assert((T)(-1) >= (T)0);//be sure to use unsigned types
 		init(s);
 	}

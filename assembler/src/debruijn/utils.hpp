@@ -130,7 +130,7 @@ class DataHashRenewer {
 	}
 
 public:
-	DataHashRenewer(const Graph& g, SimpleIndex<kmer_size_, ElementId> &index) :
+	DataHashRenewer(const Graph& g, SimpleIndex<kmer_size_, ElementId>& index) :
 		g_(g), index_(index) {
 	}
 
@@ -153,7 +153,7 @@ class EdgeHashRenewer: public GraphActionHandler<Graph> {
 	DataHashRenewer<kmer_size_, Graph, EdgeId> renewer_;
 
 public:
-	EdgeHashRenewer(const Graph& g, SimpleIndex<kmer_size_, EdgeId> &index) :
+	EdgeHashRenewer(const Graph& g, SimpleIndex<kmer_size_, EdgeId>& index) :
 		renewer_(g, index) {
 	}
 
