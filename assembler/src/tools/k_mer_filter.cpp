@@ -1,32 +1,57 @@
-//#include "seq.hpp"
-#include "strobe_read.hpp"
-//#include "nucl.hpp"
-//#include "sequence.hpp"
-//#include "read.hpp"
 #include "ireadstream.hpp"
+#include "seq.hpp"
 #include <iostream>
 #include "cuckoo.hpp"
 
-std::string filename = "../../src/tools/s_6.first10000_1.fastq.gz";
+const std::string filename = "../../src/tools/s_6.first10000_1.fastq.gz";
+const size_t size_ = 5;
+
+/*struct Hasher {
+  size_t operator()(Seq<size_> seq, int hash_num) {
+    size_t h = 239;
+    for (size_t i = 0; i < seq.data_size_; i++) {
+      h = ((h << 5) - h) + seq.data_[i];
+    }
+    size_t h = Seq<size_>::hash(seq);
+    unsigned long l = 4 * hash_num + 1;
+    return (size_t)(l * h % 1000000007);
+  }
+  };*/
+
+typedef cuckoo<Seq<size_>, size_t, Seq<size_>::multiple_hash, Seq<size_>::equal_to, 4, 100, 100, 3, 2> hm; 
 
 int main() {
-  //ireadstream ifs(filename);
-  //std::vector<Read> reads;
-  //Read r;
-  //strobe_read<10> kmer;
-  //while (!ifs.eof()) {
-  //  ifs >> r;
-  //  reads.push_back(r);
-  //}
-  //ifs.close();
   vector<Read>* reads = ireadstream::readAll(filename, 10000);
-
-  for (size_t i = 0; i < reads->size(); i++) {
-    std::string s = (*reads)[i].getSequenceString();
-    strobe_read<5, 1> kmer(&s);
-    std::cout << s << " " << s.size() << " " << kmer[0] << std::endl;
+  hm map;
+  hm::iterator it; 
+  //size_t cnt = 5;
+  size_t cnt = reads->size();
+  for (size_t i = 0; i < cnt; i++) {
+    Sequence s = (*reads)[i].getSequence(); 
+    Seq<size_> kmer = s.start<size_>();
+    it = map.find(kmer);
+    if (it == map.end()) {
+      map.insert(std::make_pair(kmer, 1));
+    } else {
+      (*it).second++;
+    }
+    //std::cout << kmer.str() << " ";
+    for (size_t j = size_; j < s.size(); ++j) {
+      Seq<size_> next = kmer << s[j];
+      kmer = next; 
+      it = map.find(kmer);
+      if (it == map.end()) {
+	map.insert(std::make_pair(kmer, 1));
+      } else {
+	(*it).second++;
+      }
+      //std::cout << kmer.str() << " ";
+    }
   }
   std::cout << reads->size() << std::endl;
-
+  for (hm::iterator it = map.begin(); it != map.end(); ++it) {
+    std::cout << (*it).first.str() << "-" << (*it).second << " "; 
+  }
+	 std::cout << map.size() << " " << map.length() << std::endl;
   return 0;
 }

@@ -300,6 +300,18 @@ public:
 		}
 	};
 
+  struct multiple_hash {
+    size_t operator()(Seq<size_> seq, int hash_num) {
+      size_t h = HASH_SEED;
+      for (size_t i = 0; i < seq.data_size_; i++) {
+	h = ((h << 5) - h) + seq.data_[i];
+      }
+      unsigned long l = 4 * hash_num + 1;
+      return (size_t)(l * h % 1000000007);
+    }
+  };
+
+
 	struct equal_to {
 		bool operator()(const Seq<size_> &l, const Seq<size_> &r) const {
 			return l.data_ == r.data_;
