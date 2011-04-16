@@ -10,11 +10,13 @@
 #include "tip_clipper.hpp"
 #include "bulge_remover.hpp"
 #include "coverage_counter.hpp"
+#include "visualization_utils.hpp"
 
 namespace edge_graph {
 
 typedef de_bruijn::DeBruijn<K> DeBruijn;
-typedef GraphConstructor<K>::Index Index;
+typedef SimpleIndex<K + 1, EdgeId> Index;
+typedef de_bruijn::Path<EdgeId> Path;
 
 void CountStats(const EdgeGraph& g) {
 	INFO("Counting stats");
@@ -26,11 +28,24 @@ void CountStats(const EdgeGraph& g) {
 	INFO("Stats counted");
 }
 
-void WriteToDotFile(EdgeGraph* g, const string& file_name,
-		const string& graph_name,
+void WriteToDotFile(const EdgeGraph &g, const string& file_name,
+		string graph_name,
 		de_bruijn::Path<EdgeId> path = de_bruijn::Path<EdgeId>()) {
-	INFO("Writing to file");
-	WriteToFile(file_name, graph_name, *g, path);
+	INFO("Writing graph '" << graph_name << "' to file " << file_name);
+	WriteToFile(DE_BRUIJN_DATA_FOLDER + file_name, graph_name, g, path);
+	INFO("Graphraph '" << graph_name << "' written to file " << file_name);
+}
+
+Path FindGenomePath(const string &genome, const EdgeGraph& g, const Index& index) {
+	de_bruijn::SimpleReadThreader<K, EdgeGraph> srt(g, index);
+	return srt.ThreadRead(Sequence(genome));
+}
+
+void ProduceInfo(const EdgeGraph& g, const Index& index
+		, const string& genome, const string& file_name, const string& graph_name) {
+	CountStats(g);
+	Path path = FindGenomePath(genome, g, index);
+	WriteToDotFile(g, file_name, graph_name, path);
 }
 
 template<class ReadStream>
@@ -40,80 +55,63 @@ void ConstructUncondensedGraph(DeBruijn& debruijn, ReadStream& stream) {
 	INFO("DeBruijn graph constructed");
 }
 
-const de_bruijn::Path<EdgeId> findGenomePath(const string &genome,
-		const EdgeGraph& g, Index &index) {
-	SimpleReadThreader<K, EdgeGraph> srt(g, index);
-	return srt.ThreadRead(Sequence(genome));
-}
-
 template<class ReadStream>
-void CondenseGraph(DeBruijn& debruijn, EdgeGraph*& g, Index*& index,
-		ReadStream& stream, string genome = "") {
+void CondenseGraph(const DeBruijn& debruijn, EdgeGraph& g, Index& index,
+		ReadStream& stream, const string& genome) {
 	INFO("Condensing graph");
 	CondenseConstructor<K> g_c(debruijn);
 	g_c.ConstructGraph(g, index);
 	INFO("Graph condensed");
 
 	INFO("Counting coverage");
-	CoverageCounter<K, EdgeGraph> cc(*g, *index);
+	CoverageCounter<K, EdgeGraph> cc(g, index);
 	cc.CountCoverage(stream);
 	INFO("Coverage counted");
 
-	CountStats(*g);
-	de_bruijn::Path<EdgeId> path = findGenomePath(genome, *g, *index);
-	WriteToDotFile(g, "edge_graph.dot", "edge_graph", path);
+	ProduceInfo(g, index, genome, "edge_graph.dot", "edge_graph");
 }
 
-void ClipTips(EdgeGraph* g, Index* index,
-		string genome = "") {
+void ClipTips(EdgeGraph &g, Index &index, const string& genome) {
 	INFO("Clipping tips");
-	TipComparator<EdgeGraph> comparator(*g);
+	TipComparator<EdgeGraph> comparator(g);
 	TipClipper<EdgeGraph, TipComparator<EdgeGraph> > tc(comparator);
-	tc.ClipTips(*g);
+	tc.ClipTips(g);
 	INFO("Tips clipped");
 
-	CountStats(*g);
-	de_bruijn::Path<EdgeId> path = findGenomePath(genome, *g, *index);
-	WriteToDotFile(g, "tips_clipped.dot", "no_tip_graph", path);
+	ProduceInfo(g, index, genome, "tips_clipped.dot", "no_tip_graph");
 }
 
-void RemoveBulges(EdgeGraph* g, Index* index,
-		string genome = "") {
+void RemoveBulges(EdgeGraph &g, Index &index, const string& genome) {
 	INFO("Removing bulges");
 	de_bruijn::BulgeRemover<EdgeGraph> bulge_remover;
-	bulge_remover.RemoveBulges(*g);
+	bulge_remover.RemoveBulges(g);
 	INFO("Bulges removed");
 
-	CountStats(*g);
-	de_bruijn::Path<EdgeId> path = findGenomePath(genome, *g, *index);
-	WriteToDotFile(g, "bulges_removed.dot", "no_bulge_graph", path);
+	ProduceInfo(g, index, genome, "bulges_removed.dot", "no_bulge_graph");
 }
 
 template<class ReadStream>
-void EdgeGraphTool(ReadStream& stream, string genome = "") {
+void EdgeGraphTool(ReadStream& stream, const string& genome) {
 	INFO("Edge graph construction tool started");
 
 	DeBruijn debruijn;
 
 	ConstructUncondensedGraph<ReadStream> (debruijn, stream);
 
-	EdgeGraph *g;
-	GraphConstructor<K>::Index * index;
+	EdgeGraph g(K);
+	SimpleIndex<K + 1, EdgeId> index;
+	EdgeHashRenewer<K + 1, EdgeGraph> index_handler(g, index);
+	g.AddActionHandler(&index_handler);
 
 	stream.reset();
 	CondenseGraph<ReadStream> (debruijn, g, index, stream, genome);
 
-	EdgeHashRenewer<K + 1, EdgeGraph> *renewer = new EdgeHashRenewer<K + 1,
-			EdgeGraph> (*g, index);
-	g->AddActionHandler(renewer);
 	ClipTips(g, index, genome);
 
 	RemoveBulges(g, index, genome);
 
-	g->RemoveActionHandler(renewer);
-	delete renewer;
-	delete g;
-	delete index;
+	g.RemoveActionHandler(&index_handler);
+
 	INFO("Tool finished")
 }
 

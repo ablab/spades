@@ -1,7 +1,13 @@
-#define SUBSTR_LENGTH 10000
-#define COVERAGE 30
-#define R 35
 #define K 27
+#define DE_BRUIJN_DATA_FOLDER "./data/debruijn/"
+
+/////////////////
+//for read generator
+//#define SUBSTR_LENGTH 10000
+//#define COVERAGE 30
+//#define R 35
+/////////////////
+
 
 #include "cute.h"
 #include "ide_listener.h"
@@ -23,7 +29,7 @@ void RunTestSuites() {
 }
 
 void RunEdgeGraphTool() {
-	pair<string, int> input = QUAKE_CROPPED_4_10_5_A;
+	pair<string, int> input = QUAKE_CROPPED_10_5_A;
 	ireadstream stream(input.first);
 	ifaststream genome_stream(ECOLI_FILE);
 	string genome;
