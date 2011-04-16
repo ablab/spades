@@ -3,7 +3,9 @@
 #include <iostream>
 #include "cuckoo.hpp"
 
-const std::string filename = "../../src/tools/s_6.first10000_1.fastq.gz";
+//const std::string filename = "../../src/tools/s_6.first10000_1.fastq.gz";
+const std::string filename = "/dev/stdin";
+//const std::string output = "/dev/stdout";
 const size_t size_ = 5;
 
 /*struct Hasher {

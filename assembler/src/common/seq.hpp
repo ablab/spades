@@ -311,7 +311,6 @@ public:
     }
   };
 
-
 	struct equal_to {
 		bool operator()(const Seq<size_> &l, const Seq<size_> &r) const {
 			return l.data_ == r.data_;
