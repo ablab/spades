@@ -35,7 +35,7 @@ const string PrintPath(Graph& g, const vector<typename Graph::EdgeId>& edges) {
 	string delim = "";
 	stringstream ss;
 	for (size_t i = 0; i < edges.size(); ++i) {
-		ss << delim << g.EdgeNucls(edges[i]).str() << " (" + g.length(edges[i]) << ")";
+		ss << delim << g.EdgeNucls(edges[i]).str() << " (" << g.length(edges[i]) << ")";
 		delim = " -> ";
 	}
 	return ss.str();
@@ -108,7 +108,7 @@ pair<vector<typename Graph::EdgeId> , int> BulgeRemover<Graph>::BestPath(
 	DEBUG("Iterating through outgoing edges, finding best path");
 	for (size_t i = 0; i < outgoing_edges.size(); ++i) {
 		EdgeId edge = outgoing_edges[i];
-		DEBUG("Going along edge " << g.EdgeNucls(edge));
+		DEBUG("Going along edge of length " << g.length(edge));
 		size_t kplus_one_mer_coverage = g.kplus_one_mer_coverage(edge);
 		pair<vector<EdgeId> , int> path_and_coverage = BestPath(g,
 				g.EdgeEnd(edge), end, length_left - g.length(edge));

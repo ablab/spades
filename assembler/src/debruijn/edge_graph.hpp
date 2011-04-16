@@ -389,10 +389,10 @@ class ComplementVisHandler: public TraversalHandler {
 	const map<EdgeId, string> color_;
 	string ConstructLabel(EdgeId e) {
 		stringstream ss;
-		//		if (g_.length(e) > 10)
-		ss << g_.length(e);
-		//		else
-		//	ss << g_.length(e) << ":" << e->nucls();
+//		if (g_.length(e) > 10)
+			ss << g_.length(e);
+//		else
+//			ss << g_.length(e) << ":" << e->nucls();
 		ss << "(";
 		ss << ((int) (g_.coverage(e) * 100)) * 0.01;
 		ss << ")";

@@ -236,20 +236,19 @@ void TestCondenseSimple() {
 
 cute::suite EdgeGraphSuite() {
 	cute::suite s;
-	//	s.push_back(CUTE(EmptyGraphTest));
-	//	s.push_back(CUTE(OneVertexGraphTest));
-	//	s.push_back(CUTE(OneEdgeGraphTest));
-	//	s.push_back(CUTE(EdgeMethodsSimpleTest));
-	//	s.push_back(CUTE(VertexMethodsSimpleTest));
-	//	s.push_back(CUTE(GraphMethodsSimpleTest));
+	s.push_back(CUTE(EmptyGraphTest));
+	s.push_back(CUTE(OneVertexGraphTest));
+	s.push_back(CUTE(OneEdgeGraphTest));
+	s.push_back(CUTE(EdgeMethodsSimpleTest));
+	s.push_back(CUTE(VertexMethodsSimpleTest));
+	s.push_back(CUTE(GraphMethodsSimpleTest));
 	s.push_back(CUTE(SmartIteratorTest));
-	//	s.push_back(CUTE(TestSimpleThread));
-	//	s.push_back(CUTE(TestSimpleThread2));
-	//	s.push_back(CUTE(TestSplitThread));
-	//	s.push_back(CUTE(TestSplitThread2));
-	//	s.push_back(CUTE(TestBuldge));
-	//	s.push_back(CUTE(TestCondenseSimple));
-
+	s.push_back(CUTE(TestSimpleThread));
+	s.push_back(CUTE(TestSimpleThread2));
+	s.push_back(CUTE(TestSplitThread));
+	s.push_back(CUTE(TestSplitThread2));
+	s.push_back(CUTE(TestBuldge));
+	s.push_back(CUTE(TestCondenseSimple));
 	return s;
 }
 }
