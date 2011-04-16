@@ -69,9 +69,7 @@ void ClipTips(EdgeGraph &g, Index &index, string genome = "") {
 	INFO("Clipping tips");
 	TipComparator<EdgeGraph> comparator(g);
 	TipClipper<EdgeGraph, TipComparator<EdgeGraph> > tc(comparator);
-//	cout << "oppa" << endl;
 	tc.ClipTips(g);
-//	cout << "oppa" << endl;
 	INFO("Tips clipped");
 
 	CountStats(g);
@@ -99,8 +97,9 @@ void EdgeGraphTool(ReadStream& stream, string genome = "") {
 	ConstructUncondensedGraph<ReadStream> (debruijn, stream);
 
 	EdgeGraph *g = new EdgeGraph(K);
-	SimpleIndex<K + 1, EdgeId> *index = new SimpleIndex<K + 1, EdgeId>();
-	EdgeHashRenewer<K + 1, EdgeGraph> *indexHandler = new EdgeHashRenewer<K + 1, EdgeGraph>(*g, *index);
+	SimpleIndex < K + 1, EdgeId > *index = new SimpleIndex<K + 1, EdgeId> ();
+	EdgeHashRenewer<K + 1, EdgeGraph> *indexHandler = new EdgeHashRenewer<
+			K + 1, EdgeGraph> (*g, *index);
 	g->AddActionHandler(indexHandler);
 
 	stream.reset();
@@ -111,6 +110,13 @@ void EdgeGraphTool(ReadStream& stream, string genome = "") {
 	RemoveBulges(*g, *index, genome);
 
 	g->RemoveActionHandler(indexHandler);
+	for (SmartEdgeIterator<EdgeGraph> it = g->SmartEdgeBegin(); g->SmartEdgeEnd()
+			!= it; ++it) {
+		if (g->coverage(*it) == 0) {
+			cout << g->EdgeNucls(*it) << endl;
+		}
+	}
+
 	delete indexHandler;
 	delete g;
 	delete index;
