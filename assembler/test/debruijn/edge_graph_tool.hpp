@@ -111,6 +111,7 @@ void EdgeGraphTool(ReadStream& stream, const string& genome) {
 	RemoveBulges(g, index, genome);
 
 	g.RemoveActionHandler(&index_handler);
+
 	INFO("Tool finished")
 }
 

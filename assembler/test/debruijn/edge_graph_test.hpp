@@ -162,10 +162,13 @@ void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 		string etalon_edges[]) {
 	vector<Read> reads = MakeReads(reads_str, read_cnt);
 	de_bruijn::DeBruijn<kmer_size_> debruijn;
+	EdgeGraph *g = new EdgeGraph(5);
 	debruijn.ConstructGraph(reads);
 	CondenseConstructor<kmer_size_> g_c(debruijn);
-	EdgeGraph *g = new EdgeGraph(5);
-	SimpleIndex<6, Edge*> *index = new SimpleIndex<6, Edge*>();
+	SimpleIndex<6, Edge*> *index = new SimpleIndex<6, Edge*> ();
+	EdgeHashRenewer<6, EdgeGraph> *indexHandler = new EdgeHashRenewer<6, EdgeGraph>(*g, *index);
+	g->AddActionHandler(indexHandler);
+
 	g_c.ConstructGraph(*g, *index);
 
 	edge_set edges;
@@ -177,6 +180,8 @@ void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 
 	MyEquals(edges, etalon_edges, edge_cnt);
 
+	g->RemoveActionHandler(indexHandler);
+	delete indexHandler;
 	delete g;
 	delete index;
 }

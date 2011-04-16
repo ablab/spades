@@ -38,10 +38,11 @@ private:
 		}
 		g_.inc_coverage(sequence[0], -path.start_pos());
 		Edge *last = sequence[sequence.size() - 1];
-		g_.inc_coverage(last, path.end_pos() - g_.length(last));
+		g_.inc_coverage(last, path.end_pos() - g_.length(last) + 1);
 	}
 public:
-	CoverageCounter(Graph& g, const de_bruijn::SimpleIndex<k + 1, EdgeId>& index) :
+	CoverageCounter(Graph& g,
+			const de_bruijn::SimpleIndex<k + 1, EdgeId>& index) :
 		g_(g), threader_(g, index), index_(index) {
 	}
 

@@ -575,9 +575,9 @@ public:
 		size_t startPosition = -1;
 		size_t endPosition = -1;
 		processKmer(kmer, passed, startPosition, endPosition);
-		for (size_t i = k; i < read.size(); ++i) {
-			processKmer(kmer, passed, startPosition, endPosition);
+		for (size_t i = k + 1; i < read.size(); ++i) {
 			kmer = kmer << read[i];
+			processKmer(kmer, passed, startPosition, endPosition);
 		}
 		return de_bruijn::Path<EdgeId>(passed, startPosition, endPosition);
 	}
