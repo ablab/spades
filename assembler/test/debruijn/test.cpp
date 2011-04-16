@@ -23,7 +23,7 @@ void RunTestSuites() {
 }
 
 void RunEdgeGraphTool() {
-	pair<string, int> input = QUAKE_CROPPED_4_10_5_A;
+	pair<string, int> input = QUAKE_CROPPED_10_5_A;
 	ireadstream stream(input.first);
 	ifaststream genome_stream(ECOLI_FILE);
 	string genome;

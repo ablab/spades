@@ -164,9 +164,9 @@ void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 	de_bruijn::DeBruijn<kmer_size_> debruijn;
 	debruijn.ConstructGraph(reads);
 	CondenseConstructor<kmer_size_> g_c(debruijn);
-	EdgeGraph *g;
-	SimpleIndex<6, Edge*> *index;
-	g_c.ConstructGraph(g, index);
+	EdgeGraph *g = new EdgeGraph(5);
+	SimpleIndex<6, Edge*> *index = new SimpleIndex<6, Edge*>();
+	g_c.ConstructGraph(*g, *index);
 
 	edge_set edges;
 	ToStringHandler h(edges);
