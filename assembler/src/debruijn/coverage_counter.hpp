@@ -44,8 +44,9 @@ public:
 
 	de_bruijn::Path<EdgeId> ThreadRead(const Sequence& read) const {
 		vector<EdgeId> passed;
-		if(read.size() <= k)
+		if(read.size() <= k) {
 			return de_bruijn::Path<EdgeId>();
+		}
 		Seq<k + 1> kmer = read.start<k + 1> ();
 		size_t startPosition = -1;
 		size_t endPosition = -1;

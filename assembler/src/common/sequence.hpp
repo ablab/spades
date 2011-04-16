@@ -107,13 +107,13 @@ public:
 ostream& operator<<(ostream& os, const Sequence& s);
 
 template<size_t size2_>
-inline Seq<size2_> Sequence::start() const {
+Seq<size2_> Sequence::start() const {
 	assert(size2_ <= size_);
 	return Seq<size2_> (*this);
 }
 
 template<size_t size2_>
-inline Seq<size2_> Sequence::end() const {
+Seq<size2_> Sequence::end() const {
 	assert(size2_ <= size_);
 	return Seq<size2_> (*this, size_ - size2_);
 }

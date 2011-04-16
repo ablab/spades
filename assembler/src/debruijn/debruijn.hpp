@@ -198,8 +198,8 @@ public:
 
 	template<class ReadStream>
 	void ConstructGraphFromStream(ReadStream& stream) {
+		Read r;
 		while (!stream.eof()) {
-			Read r;
 			stream >> r;
 			CountRead(r);
 		}
