@@ -5,7 +5,7 @@ template<size_t size>
 class seq_filter {		
 public:
 	typedef cuckoo<Seq<size>, size_t, typename Seq<size>::multiple_hash, 
-								 typename Seq<size>::equal_to, 4, 100, 100, 3, 2> hm; 
+								 typename Seq<size>::equal_to, 4, 1000, 100, 6, 5> hm; 
 	
 	static void filter(const std::string& in, /*std::string& out,*/ 
 										 const size_t L = 1) {
@@ -16,7 +16,7 @@ public:
 	}
 
 	static std::vector<Seq<size> > filter(const std::vector<Read>& reads, 
-																				 const size_t L = 1) {
+																				const size_t L = 1) {
 		hm map;
 		add_seqs_from_reads_to_map(reads, map);
 		return get_seqs_from_map(map, L);
@@ -35,18 +35,20 @@ private:
 	}
 
 	static std::vector<Read> get_reads_from_file(const std::string& in) {
-		std::vector<Read>* reads = ireadstream::readAll(in, 10000);
+		std::vector<Read>* reads = ireadstream::readAll(in);//, 10000);
 		return *reads;
 	}
 
 	static void add_seqs_from_read_to_map(Read& read, hm& map) {
 		Sequence s = read.getSequence();
-		Seq<size> seq = s.start<size>();
-		add_seq_in_map(seq, map);
-		size_t s_size = s.size();
-		for (size_t i = size; i < s_size; ++i) {
-			Seq<size> next = seq << s[i];
-			seq = next;
+		if (s.size() >= size) {
+			Seq<size> seq = s.start<size>();
+			add_seq_in_map(seq, map);
+			size_t s_size = s.size();
+			for (size_t i = size; i < s_size; ++i) {
+				Seq<size> next = seq << s[i];
+				seq = next;
+			}
 		}
 	}
 
@@ -70,10 +72,14 @@ private:
 
 	static void write_seqs_from_map_to_stdout(hm& map, const size_t& L) {
 		typename hm::iterator end = map.end();
+		size_t cnt = 0;
 		for (typename hm::iterator it = map.begin(); it != end; ++it) {
-			if ((*it).second > L) 
-				std::cout << (*it).first << "-" << (*it).second << " "; //for test!
+			if ((*it).second > L) {
+				std::cout << (*it).first << std::endl;
+				++cnt;
+			}
 		}
-		std::cout << map.size() << " " << map.length() << std::endl; //for test!
+		std::cout << map.size() << " "  << cnt << " " << map.length() << " " 
+							<< ((float)map.size())/map.length() << std::endl; //for test!
 	}
 };

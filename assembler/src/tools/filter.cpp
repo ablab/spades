@@ -2,14 +2,16 @@
 #include <cstdlib>
 #include "seq_filter.hpp"
 
+#define K 31
+
 int main(int argc, char** argv) {
-	if (argc == 4) {
+	if (argc == 3) {
 		std::string filename(argv[1]);
-		const size_t size = 5; //atoi(argv[2]);
-		size_t L = atoi(argv[3]);
-		seq_filter<size>::filter(filename, L);
+		size_t L = atoi(argv[2]);
+		seq_filter<K>::filter(filename, L);
 	} else {
-		std::cout << "Usage: ./filter <filename> <size> <L>\n";
+		std::cout << "Usage: ./filter <filename> <L>\n";
+		std::cout << "Selects k-mer with amount > L";
 	}
   return 0;
 }
