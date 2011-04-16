@@ -18,54 +18,12 @@ using namespace std;
 namespace edge_graph {
 
 template<size_t k, class Graph>
-class SimpleReadThreader {
-public:
-	typedef typename Graph::EdgeId EdgeId;
-private:
-	const Graph& g_;
-	const de_bruijn::SimpleIndex<k + 1, EdgeId>& index_;
-
-	void processKmer(Seq<k + 1> &kmer, vector<EdgeId> &passed,
-			size_t &startPosition, size_t &endPosition) const {
-		if (index_.contains(kmer)) {
-			pair<EdgeId, size_t> position = index_.get(kmer);
-			endPosition = position.second;
-			if (passed.empty()) {
-				startPosition = position.second;
-			}
-			if (passed.empty() || passed[passed.size() - 1] != position.first)
-				passed.push_back(position.first);
-		}
-	}
-public:
-	SimpleReadThreader(const Graph& g, const de_bruijn::SimpleIndex<k + 1, EdgeId>& index) :
-		g_(g), index_(index) {
-	}
-
-	de_bruijn::Path<EdgeId> ThreadRead(const Sequence& read) const {
-		vector<EdgeId> passed;
-		if(read.size() <= k) {
-			return de_bruijn::Path<EdgeId>();
-		}
-		Seq<k + 1> kmer = read.start<k + 1> ();
-		size_t startPosition = -1;
-		size_t endPosition = -1;
-		processKmer(kmer, passed, startPosition, endPosition);
-		for (size_t i = k; i < read.size(); ++i) {
-			processKmer(kmer, passed, startPosition, endPosition);
-			kmer = kmer << read[i];
-		}
-		return de_bruijn::Path<EdgeId> (passed, startPosition, endPosition);
-	}
-};
-
-template<size_t k, class Graph>
 class CoverageCounter {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 private:
 	Graph& g_;
-	const SimpleReadThreader<k, Graph> threader_;
+	const de_bruijn::SimpleReadThreader<k, Graph> threader_;
 	const de_bruijn::SimpleIndex<k + 1, EdgeId>& index_;
 
 	void processRead(Read read) {

@@ -10,6 +10,7 @@
 #include "tip_clipper.hpp"
 #include "bulge_remover.hpp"
 #include "coverage_counter.hpp"
+#include "visualization_utils.hpp"
 
 namespace edge_graph {
 
@@ -42,7 +43,7 @@ void ConstructUncondensedGraph(DeBruijn& debruijn, ReadStream& stream) {
 
 const de_bruijn::Path<EdgeId> findGenomePath(const string &genome,
 		const EdgeGraph& g, Index &index) {
-	SimpleReadThreader<K, EdgeGraph> srt(g, index);
+	de_bruijn::SimpleReadThreader<K, EdgeGraph> srt(g, index);
 	return srt.ThreadRead(Sequence(genome));
 }
 
