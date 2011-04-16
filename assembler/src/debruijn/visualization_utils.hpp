@@ -6,6 +6,31 @@
 
 namespace edge_graph {
 
+class GraphVisualizer {
+public:
+	virtual void Visualize(const EdgeGraph& g) = 0;
+};
+
+class SimpleGraphVisualizer: public GraphVisualizer {
+	gvis::GraphPrinter<VertexId>& gp_;
+public:
+	SimpleGraphVisualizer(gvis::GraphPrinter<VertexId>& gp) :
+		gp_(gp) {
+	}
+
+	virtual void Visualize(const EdgeGraph& g);
+};
+
+class ComplementGraphVisualizer: public GraphVisualizer {
+	gvis::PairedGraphPrinter<VertexId>& gp_;
+public:
+	ComplementGraphVisualizer(gvis::PairedGraphPrinter<VertexId>& gp) :
+		gp_(gp) {
+	}
+
+	virtual void Visualize(const EdgeGraph& g);
+};
+
 class ColoredPathGraphVisualizer: public GraphVisualizer {
 	gvis::PairedGraphPrinter<VertexId>& gp_;
 	const de_bruijn::Path<EdgeId> path_;
@@ -42,6 +67,10 @@ public:
 		gp_.output();
 	}
 };
+
+void WriteToFile(const string& file_name, const string& graph_name,
+		const EdgeGraph& g,
+		de_bruijn::Path<EdgeId> path = de_bruijn::Path<EdgeId>());
 
 }
 

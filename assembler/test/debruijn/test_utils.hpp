@@ -13,6 +13,8 @@
 //#include "read_generator.hpp"
 
 #define ECOLI_FILE "./data/input/MG1655-K12.fasta.gz"
+#define QUAKE_CROPPED_10_3_A make_pair("./data/input/s_6.first1000_1.fastq.gz", 10000)
+#define QUAKE_CROPPED_10_3_B make_pair("./data/input/s_6.first1000_2.fastq.gz", 10000)
 #define QUAKE_CROPPED_10_4_A make_pair("./data/input/s_6.first10000_1.fastq.gz", 10000)
 #define QUAKE_CROPPED_10_4_B make_pair("./data/input/s_6.first10000_2.fastq.gz", 10000)
 #define QUAKE_CROPPED_10_5_A make_pair("./data/input/s_6.first100000_1.fastq.gz", 100000)
