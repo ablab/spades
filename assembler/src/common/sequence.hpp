@@ -106,12 +106,14 @@ public:
 
 ostream& operator<<(ostream& os, const Sequence& s);
 
+// TODO: optimize
 template<size_t size2_>
 Seq<size2_> Sequence::start() const {
 	assert(size2_ <= size_);
 	return Seq<size2_> (*this);
 }
 
+// TODO: optimize
 template<size_t size2_>
 Seq<size2_> Sequence::end() const {
 	assert(size2_ <= size_);
