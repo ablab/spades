@@ -1,6 +1,6 @@
 #include "common.hpp"
 
-LOGGER("p.common");
+//LOGGER("p.common");
 
 string parsed_reads;
 string parsed_k_l_mers;
@@ -21,16 +21,18 @@ int insertLength = 0;
 int minIntersect = l - 1;
 int inClusterMaxShift = 1;
 int useKmersVertices = 0;
-
+int coverage_cutoff = 0;
+int range_variating = 0;
 
 int fictiveSecondReads = 0;
+int useRevertedPairs = 0;
 int needPairs = 1;
 int needLmers = 1;
 int needSequences = 1;
 int needGraph = 1;
 int useExpandDefinite = 1;
 int useExtractDefinite = 1;
-int needRevertedPairs = 0;
+int downUpClustering = 0;
 int useTraceReads = 1;
 int useProcessLower = 1;
 
@@ -58,7 +60,7 @@ ll popNucleotide(ll kMer, int length, int direction) {
 
 void initConstants(string ini_file) {
 	char tmp[200];
-	INFO("Trying to init constants...");
+//	INFO("Trying to init constants...");
 
 	//	string folder = string("data/");
 	FILE* ini = fopen(ini_file.c_str(), "r");
@@ -85,10 +87,10 @@ void initConstants(string ini_file) {
 	assert(fscanf(ini, "distance_type = %s\n" , tmp) == 1);
 	distance_type = string(tmp);
 	assert(fscanf(ini, "fictiveSecondReads = %d\n", &fictiveSecondReads) == 1);
-	assert(fscanf(ini, "needRevertedPairs = %d\n", &needRevertedPairs) == 1);
+	assert(fscanf(ini, "downUpClustering = %d\n", &downUpClustering) == 1);
 	assert(fscanf(ini, "inClusterMaxShift = %d\n", &inClusterMaxShift) == 1);
 	assert(fscanf(ini, "useKmersVertices = %d\n", &useKmersVertices) == 1);
-
+	assert(fscanf(ini, "useRevertedPairs = %d\n", &useRevertedPairs) == 1);
 	assert(fscanf(ini, "Filenames:\n") == 0);
 	assert(fscanf(ini, "work_folder = %s\n" , tmp) == 1);
 	folder = string(tmp) + '/';
@@ -112,7 +114,7 @@ void initConstants(string ini_file) {
 
 	assert(fscanf(ini, "parsed_k_sequence = %s\n" , tmp) == 1);
 	parsed_k_sequence = folder + string(tmp) + suff + ".txt";
-	DEBUG(parsed_k_sequence);
+//	DEBUG(parsed_k_sequence);
 	assert(fscanf(ini, "compressed_graph = %s\n" , tmp) == 1);
 	graph_file = folder + string(tmp) + suff + ".dot";
 	assert(fscanf(ini, "intermediate_graph = %s\n" , tmp) == 1);
@@ -120,10 +122,12 @@ void initConstants(string ini_file) {
 	assert(fscanf(ini, "error_log = %s\n" , tmp) == 1);
 	error_log = folder + string(tmp);
 	minIntersect = l - 1;
+	assert(fscanf(ini, "Magic:\n") == 0);
+	assert(fscanf(ini, "coverage_cutoff = %d\n", &coverage_cutoff) == 1);
+	assert(fscanf(ini, "range_variating = %d\n", &range_variating) == 1);
 
 	//assert()
 }
-
 
 
 /*const string parsed_reads = "data/filtered_reads";

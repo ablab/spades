@@ -11,6 +11,10 @@ void TestSequenceSelector() {
 	ASSERT_EQUAL('A', nucl(Sequence("A")[0]));
 }
 
+void TestZeroLengthSequence() {
+	Sequence s("");
+	ASSERT_EQUAL(0, s.size());
+}
 void TestSequenceSum() {
 	ASSERT_EQUAL("ACG", (Sequence("A") + Sequence("CG")).str());
 	ASSERT_EQUAL("ACGTTGCA", (Sequence("ACGT") + Sequence("TGCA")).str());
@@ -80,12 +84,13 @@ void TestSequenceMemory() {
 cute::suite SequenceSuite(){
 	cute::suite s;
 	s.push_back(CUTE(TestSequenceSelector));
+	s.push_back(CUTE(TestZeroLengthSequence));
 	s.push_back(CUTE(TestSequenceSum));
 	s.push_back(CUTE(TestSequenceStr));
 	s.push_back(CUTE(TestSequenceReverseComplement));
 	s.push_back(CUTE(TestSequenceRefCount));
 	s.push_back(CUTE(TestSequenceRefCount2));
-	s.push_back(CUTE(TestSequenceMemory));
+//	s.push_back(CUTE(TestSequenceMemory));
 	return s;
 }
 

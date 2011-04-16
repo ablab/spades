@@ -1,5 +1,6 @@
 #include "edge_graph.hpp"
 #include "logging.hpp"
+#include "visualization_utils.hpp"
 
 namespace edge_graph {
 
@@ -13,8 +14,9 @@ Sequence EdgeGraph::VertexNucls(VertexId v) const {
 	//	return new Sequence("");
 }
 
-EdgeId EdgeGraph::AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s) {
-	EdgeId newEdge = new Edge(s, v2);
+EdgeId EdgeGraph::AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s,
+		size_t coverage) {
+	EdgeId newEdge = new Edge(s, v2, coverage);
 	v1->AddOutgoingEdge(newEdge);
 	return newEdge;
 }
@@ -57,8 +59,8 @@ VertexId EdgeGraph::AddVertex() {
 	v2->set_complement(v1);
 	vertices_.insert(v1);
 	vertices_.insert(v2);
-	for (vector<ActionHandler*>::iterator it =
-			action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+			!= action_handler_list_.end(); ++it) {
 		(*it)->HandleAdd(v1);
 	}
 	return v1;
@@ -67,8 +69,8 @@ VertexId EdgeGraph::AddVertex() {
 void EdgeGraph::DeleteVertex(VertexId v) {
 	assert(IsDeadEnd(v) && IsDeadStart(v));
 	assert(v != NULL);
-	for (vector<ActionHandler*>::iterator it =
-			action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+			!= action_handler_list_.end(); ++it) {
 		(*it)->HandleDelete(v);
 	}
 	VertexId complement = v->complement();
@@ -84,32 +86,35 @@ void EdgeGraph::ForceDeleteVertex(VertexId v) {
 	DeleteVertex(v);
 }
 
-EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls) {
+EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
+		size_t coverage) {
 	assert(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
 	assert(nucls.size() >= k_ + 1);
-	EdgeId result = AddSingleEdge(v1, v2, nucls);
+	assert(OutgoingEdge(v1, nucls[k_]) == NULL);
+	EdgeId result = AddSingleEdge(v1, v2, nucls, coverage);
 	if (nucls != !nucls)
-		AddSingleEdge(v2->complement(), v1->complement(), !nucls);
-	for (vector<ActionHandler*>::iterator it =
-			action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+		AddSingleEdge(v2->complement(), v1->complement(), !nucls, coverage);
+	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+			!= action_handler_list_.end(); ++it) {
 		(*it)->HandleAdd(result);
 	}
 	return result;
 }
 
 void EdgeGraph::DeleteEdge(EdgeId edge) {
+	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+			!= action_handler_list_.end(); ++it) {
+		(*it)->HandleDelete(edge);
+	}
 	EdgeId rcEdge = Complement(edge);
 	VertexId rcStart = Complement(edge->end());
 	VertexId start = Complement(rcEdge->end());
 	start->RemoveOutgoingEdge(edge);
 	rcStart->RemoveOutgoingEdge(rcEdge);
-	for (vector<ActionHandler*>::iterator it =
-			action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
-		(*it)->HandleDelete(edge);
-	}
 	delete edge;
-	if (edge != rcEdge)
+	if (edge != rcEdge) {
 		delete rcEdge;
+	}
 }
 
 bool EdgeGraph::AreLinkable(VertexId v1, VertexId v2, const Sequence &nucls) const {
@@ -149,17 +154,20 @@ bool EdgeGraph::CanCompressVertex(VertexId v) const {
 			== 1;
 }
 
-EdgeId EdgeGraph::CompressVertex(VertexId v) {
-	assert(v->OutgoingEdgeCount() == 1 && v->complement()->OutgoingEdgeCount() == 1);
-	EdgeId edge1 = GetUniqueIncomingEdge(v);
-	EdgeId edge2 = GetUniqueOutgoingEdge(v);
-	Sequence nucls = edge1->nucls() + edge2->nucls().Subseq(k_);
-	VertexId v1 = EdgeStart(edge1);
-	VertexId v2 = EdgeEnd(edge2);
-	DeleteEdge(edge1);
-	DeleteEdge(edge2);
-	DeleteVertex(v);
-	return AddEdge(v1, v2, nucls);
+void EdgeGraph::CompressVertex(VertexId v) {
+	//assert(CanCompressVertex(v));
+	if (CanCompressVertex(v)) {
+		EdgeId edge1 = GetUniqueIncomingEdge(v);
+		EdgeId edge2 = GetUniqueOutgoingEdge(v);
+		Sequence nucls = edge1->nucls() + edge2->nucls().Subseq(k_);
+		VertexId v1 = EdgeStart(edge1);
+		VertexId v2 = EdgeEnd(edge2);
+		size_t new_coverage = edge1->coverage_ + edge2->coverage_;
+		DeleteEdge(edge1);
+		DeleteEdge(edge2);
+		DeleteVertex(v);
+		AddEdge(v1, v2, nucls, new_coverage);
+	}
 }
 
 EdgeId EdgeGraph::CompressPath(const vector<VertexId>& path) {
@@ -169,30 +177,60 @@ EdgeId EdgeGraph::CompressPath(const vector<VertexId>& path) {
 	sb.append(GetUniqueIncomingEdge(path[0])->nucls());
 	VertexId v1 = EdgeStart(GetUniqueIncomingEdge(path[0]));
 	VertexId v2 = EdgeEnd(GetUniqueOutgoingEdge(path[path.size() - 1]));
-	for (vector<Vertex *>::const_iterator it = path.begin(); it != path.end(); ++it) {
+	size_t coverage = 0;
+	for (vector<VertexId>::const_iterator it = path.begin(); it != path.end(); ++it) {
 		sb.append(GetUniqueOutgoingEdge(*it)->nucls().Subseq(k_));
+		coverage += GetUniqueOutgoingEdge(*it)->coverage_;
 		ForceDeleteVertex(*it);
 	}
-	return AddEdge(v1, v2, sb.BuildSequence());
+	return AddEdge(v1, v2, sb.BuildSequence(), coverage);
+}
+
+bool EdgeGraph::GoUniqueWay(VertexId &v) {
+	VertexId u = EdgeEnd(GetUniqueOutgoingEdge(v));
+	if (!CheckUniqueOutgiongEdge(u) || !CheckUniqueIncomingEdge(u))
+		return false;
+	v = u;
+	return true;
 }
 
 void EdgeGraph::CompressAllVertices() {
-	SmartVertexIterator end = SmartVertexEnd();
-	for (SmartVertexIterator it = SmartVertexBegin(); it
-			!= end; ++it) {
+	SmartVertexIterator<EdgeGraph> end = SmartVertexEnd();
+	for (SmartVertexIterator<EdgeGraph> it = SmartVertexBegin(); it != end; ++it) {
 		VertexId v = *it;
-		if(CheckUniqueOutgiongEdge(v) && CheckUniqueIncomingEdge(v)) {
-			while(CheckUniqueOutgiongEdge(v))
-				v = EdgeEnd(GetUniqueOutgoingEdge(v));
+		if (CheckUniqueOutgiongEdge(v) && CheckUniqueIncomingEdge(v)) {
+			while (GoUniqueWay(v)) {
+			}
 			vector<VertexId> compressList;
 			v = Complement(v);
-			while(CheckUniqueOutgiongEdge(v)) {
+			do
 				compressList.push_back(v);
-				v = EdgeEnd(GetUniqueOutgoingEdge(v));
-			}
+			while (GoUniqueWay(v));
 			CompressPath(compressList);
 		}
 	}
+}
+
+void SimpleGraphVisualizer::Visualize(const EdgeGraph& g) {
+	VisHandler h(g, gp_);
+	de_bruijn::DFS<EdgeGraph>(g).Traverse(&h);
+	gp_.output();
+}
+
+void ComplementGraphVisualizer::Visualize(const EdgeGraph& g) {
+	ComplementVisHandler h(g, gp_);
+	de_bruijn::DFS<EdgeGraph>(g).Traverse(&h);
+	gp_.output();
+}
+
+void WriteToFile(const string& file_name, const string& graph_name,
+		const EdgeGraph& g, de_bruijn::Path<EdgeId> path) {
+	fstream filestr;
+	filestr.open(file_name.c_str(), fstream::out);
+	gvis::PairedGraphPrinter<VertexId> gp("simulated_data_graph", filestr);
+	ColoredPathGraphVisualizer gv(gp, path);
+	gv.Visualize(g);
+	filestr.close();
 }
 
 }

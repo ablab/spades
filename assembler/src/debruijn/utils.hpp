@@ -220,7 +220,7 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
-	Traversal(Graph* g) :
+	Traversal(const Graph& g) :
 		g_(g) {
 	}
 
@@ -230,7 +230,7 @@ public:
 	virtual void Traverse(TraversalHandler<Graph>* h) = 0;
 
 protected:
-	Graph* g_;
+	const Graph& g_;
 };
 
 template<class Graph>
@@ -242,7 +242,7 @@ class DFS: public Traversal<Graph> {
 	void ProcessVertex(VertexId v, vector<VertexId>* stack,
 			TraversalHandler<Graph>* h);
 public:
-	DFS(Graph* g) :
+	DFS(const Graph& g) :
 		Traversal<Graph> (g) {
 	}
 	virtual void Traverse(TraversalHandler<Graph>* h);
@@ -259,11 +259,11 @@ void DFS<Graph>::ProcessVertex(VertexId v, vector<VertexId>* stack,
 		h->HandleVertex(v);
 		visited_.insert(v);
 
-		vector < EdgeId > edges = super::g_->OutgoingEdges(v);
+		vector < EdgeId > edges = super::g_.OutgoingEdges(v);
 		for (size_t i = 0; i < edges.size(); ++i) {
 			EdgeId e = edges[i];
 			h->HandleEdge(e);
-			stack->push_back(super::g_->EdgeEnd(e));
+			stack->push_back(super::g_.EdgeEnd(e));
 		}
 	}
 }
@@ -274,7 +274,7 @@ void DFS<Graph>::Traverse(TraversalHandler<Graph>* h) {
 	typedef Traversal<Graph> super;
 	typedef typename Graph::VertexIterator VertexIt;
 
-	for (VertexIt it = super::g_->begin(); it != super::g_->end(); it++) {
+	for (VertexIt it = super::g_.begin(); it != super::g_.end(); it++) {
 		vector < VertexId > stack;
 		stack.push_back(*it);
 		while (!stack.empty()) {
@@ -351,20 +351,45 @@ public:
 	bool empty() const {
 		return storage_.empty();
 	}
+
+	size_t size() const {
+		return storage_.size();
+	}
 };
 
-template<typename ElementId>
+template<typename Graph, typename ElementId, typename Comparator = std::less<
+		ElementId> >
 class QueueIterator {
+private:
+	bool ready;
 protected:
-	PriorityQueue<ElementId> queue_;
+	PriorityQueue<ElementId, Comparator> queue_;
+
+	Graph &graph_;
+
 	template<typename iterator>
 	void fillQueue(iterator begin, iterator end) {
-		for(iterator it = begin; it != end; ++it) {
+		for (iterator it = begin; it != end; ++it) {
 			queue_.offer(*it);
 		}
 	}
 
-	QueueIterator() {
+	QueueIterator(Graph &graph, const Comparator& comparator = Comparator()) :
+		ready(true), queue_(comparator), graph_(graph) {
+	}
+
+	template<typename iterator>
+	QueueIterator(Graph &graph, iterator begin, iterator end,
+			const Comparator& comparator = Comparator()) :
+		ready(true), queue_(comparator), graph_(graph) {
+		fillQueue(begin, end);
+	}
+
+	void remove(ElementId toRemove) {
+		if(ready && toRemove == queue_.peek()) {
+			ready = false;
+		}
+		queue_.remove(toRemove);
 	}
 
 public:
@@ -387,72 +412,139 @@ public:
 
 	ElementId operator*() const {
 		assert(!queue_.empty());
+		assert(ready);
 		return queue_.peek();
 	}
 
 	void operator++() {
 		assert(!queue_.empty());
-		queue_.poll();
+		if(ready)
+			queue_.poll();
+		else
+			ready = true;
+//		cout << "remove " << queue_.size() << endl;
 	}
 
 	virtual ~QueueIterator() {
 	}
 };
 
-template<class Graph>
-class SmartVertexIterator: public GraphActionHandler<Graph>, public QueueIterator<typename Graph::VertexId> {
+template<class Graph, typename Comparator = std::less<typename Graph::VertexId> >
+class SmartVertexIterator: public GraphActionHandler<Graph> ,
+		public QueueIterator<Graph, typename Graph::VertexId, Comparator> {
 public:
+	typedef QueueIterator<Graph, typename Graph::VertexId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartVertexIterator(Graph &graph) {
-		fillQueue(graph.begin(), graph.end());
-		graph.AddActionHandler(this);
-	}
-
-	SmartVertexIterator() {
+	SmartVertexIterator(Graph &graph, bool fill,
+			const Comparator& comparator = Comparator()) :
+				QueueIterator<Graph, typename Graph::VertexId, Comparator> (
+						graph, comparator) {
+		if (fill) {
+			super::fillQueue(graph.begin(), graph.end());
+			graph.AddActionHandler(this);
+		}
 	}
 
 	virtual ~SmartVertexIterator() {
+		super::graph_.RemoveActionHandler(this);
 	}
 
 	virtual void HandleAdd(VertexId v) {
-		QueueIterator<VertexId>::queue_.offer(v);
+		super::queue_.offer(v);
+		super::queue_.offer(super::graph_.Complement(v));
 	}
 
 	virtual void HandleDelete(VertexId v) {
-		QueueIterator<VertexId>::queue_.remove(v);
+		super::remove(v);
+		super::remove(super::graph_.Complement(v));
 	}
 };
 
-template<class Graph>
-class SmartEdgeIterator: public GraphActionHandler<Graph>, public QueueIterator<typename Graph::EdgeId> {
+template<class Graph, typename Comparator = std::less<typename Graph::EdgeId> >
+class SmartEdgeIterator: public GraphActionHandler<Graph> ,
+		public QueueIterator<Graph, typename Graph::EdgeId, Comparator> {
 public:
+	typedef QueueIterator<Graph, typename Graph::EdgeId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartEdgeIterator(Graph &graph) {
-		for(typename Graph::VertexIterator it = graph.begin(); it != graph.end(); ++it) {
-			const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
-			fillQueue(outgoing.begin(), outgoing.end());
+	SmartEdgeIterator(Graph &graph, bool fill,
+			Comparator comparator = Comparator()) :
+		super(graph, comparator) {
+		int cnt = 0;
+		int cnt2 = 0;
+		if (fill) {
+			for (typename Graph::VertexIterator it = graph.begin(); it
+					!= graph.end(); ++it) {
+				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
+				super::fillQueue(outgoing.begin(), outgoing.end());
+				cnt++;
+				cnt2 += outgoing.size();
+			}
+			super::graph_.AddActionHandler(this);
 		}
-		graph.AddActionHandler(this);
-	}
-
-	SmartEdgeIterator() {
+//		cout << cnt << " " << cnt2 << " " << super::queue_.size() << endl;
 	}
 
 	virtual ~SmartEdgeIterator() {
+		super::graph_.RemoveActionHandler(this);
 	}
 
 	virtual void HandleAdd(EdgeId v) {
-		QueueIterator<EdgeId>::queue_.offer(v);
+		super::queue_.offer(v);
+		EdgeId rc = super::graph_.Complement(v);
+		if (v != rc)
+			super::queue_.offer(rc);
 	}
 
 	virtual void HandleDelete(EdgeId v) {
-		QueueIterator<EdgeId>::queue_.remove(v);
+//		cout << "remove " << super::graph_.EdgeNucls(v) << " "
+//				<< super::queue_.size() << endl;
+		super::remove(v);
+		//		cout << "oppa" << endl;
+		EdgeId rc = super::graph_.Complement(v);
+		//		cout << "oppa" << endl;
+		if (v != rc) {
+//			cout << "remove " << super::graph_.EdgeNucls(rc) << " "
+//					<< super::queue_.size() << endl;
+			super::remove(rc);
+		}
 	}
 };
+
+template<typename ElementId>
+class Path {
+	vector<ElementId> sequence_;
+	int start_pos_;
+	int end_pos_;
+
+public:
+	typedef typename vector<ElementId>::const_iterator iterator;
+
+	Path(vector<ElementId> sequence, size_t start_pos, size_t end_pos) :
+		sequence_(sequence), start_pos_(start_pos), end_pos_(end_pos) {
+	}
+
+	Path() :
+		sequence_(), start_pos_(-1), end_pos_(-1) {
+	}
+
+	size_t start_pos() const {
+		return start_pos_;
+	}
+
+	size_t end_pos() const {
+		return end_pos_;
+	}
+
+	const vector<ElementId>& sequence() const {
+		return sequence_;
+	}
+};
+
+
 }
 
 #endif /* UTILS_HPP_ */

@@ -22,7 +22,16 @@ inline char complement(char c) { // 0123 -> 3210
 	assert(is_dignucl(c));
 	return c ^ 3;
 }
-
+inline char nucl_complement(char c){
+	assert(is_nucl(c));
+	switch(c) {
+		case 'A': return 'T';
+		case 'C': return 'G';
+		case 'G': return 'C';
+		case 'T': return 'A';
+		default: return -1; // never happens
+	}
+}
 inline char nucl(char c) { // 0123 -> ACGT
 	assert(is_dignucl(c));
 	switch(c) {
@@ -41,7 +50,7 @@ inline char dignucl(char c) { // ACGT -> 0123
 		case 'C': return 1;
 		case 'G': return 2;
 		case 'T': return 3;
-		default: return -1; // never happens
+		default: assert(false);//return -1; // never happens
 	}
 }
 

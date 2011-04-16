@@ -5,12 +5,18 @@
 
 void TestIt() {
 	HashSym<Sequence> hh;
-	Sequence s("AACATGCTGCACTGGGT");
+	Sequence s("AACATGCTGCACTGGGTATGCATGACTGCAATTATACGCGCGCTACGATCATTACGGTATCATGACATTCATCGGATCATCGTACTGCATCGTATAGATCACATATGATCATATACCTTC");
+	s = s.Subseq(0, MPSIZE);
 	ASSERT_EQUAL(hh(s), hh(s));
-	Sequence t = s.Subseq(1, 6);
+	ASSERT_EQUAL(hh(s), hh(!s));
+	Sequence t = s.Subseq(K, 2 * K);
 	ASSERT_EQUAL(hh(t), hh(t));
 	ASSERT_EQUAL(hh(t), hh(!t));
-	ASSERT_EQUAL(hh(s), hh(!s));
+	hash_t ha[MPSIZE - K + 1];
+	hh.kmers(s, ha);
+	for (int i = 0; i <= MPSIZE - K; i++) {
+		ASSERT_EQUAL(ha[i], hh(s.Subseq(i, i + K)));
+	}
 }
 
 cute::suite HashSuite(){

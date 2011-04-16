@@ -19,6 +19,7 @@
 
 #define forn(i, n) for(size_t i = 0; i < (size_t) n; i++)
 #define ll long long
+//#define ll int
 #define pb push_back
 #define mp make_pair
 #define fi first
@@ -35,9 +36,10 @@
 #define OUT_EDGE 1
 
 //LOGGER("paireddebruijn.common");
-
+#define MAX_READ_LENGTH 120
 #define MAX_VERT_NUMBER 50000
 #define MAX_DEGREE 50
+
 #define suffix "_const_d"
 
 
@@ -87,16 +89,19 @@ extern int k;
 extern int l;
 extern int readLength;
 const int maxSeqLength = 200;
+extern int coverage_cutoff;
+extern int range_variating;
 extern int insertLength;
 extern int minIntersect;
 extern int inClusterMaxShift;
 extern int useKmersVertices;
+extern int useRevertedPairs;
 
 
 extern int fictiveSecondReads;
 extern int needPairs;
 extern int needLmers;
-extern int needRevertedPairs;
+extern int downUpClustering;
 extern int needSequences;
 extern int needGraph;
 extern int useExpandDefinite;
@@ -104,6 +109,20 @@ extern int useExtractDefinite;
 extern int useTraceReads;
 extern int useProcessLower;
 
+inline int codeNucleotide(char a) {
+	if (a == 'A')
+		return 0;
+	else if (a == 'C')
+		return 1;
+	else if (a == 'G')
+		return 2;
+	else if (a == 'T')
+		return 3;
+	else {
+		std::cerr << "oops! ";		std::cerr << (int)a<<endl;
+		return -1;
+	}
+}
 
 void initConstants(string ini_file);
 ll pushNucleotide(ll kMer, int length, int direction, int nucl);
@@ -125,7 +144,7 @@ namespace __gnu_cxx
 
 	};
 
-	template<> struct hash< ll > {
+	template<> struct hash<long long > {
 
 		size_t operator()( const ll& x ) const {
 

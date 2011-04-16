@@ -7,7 +7,7 @@
 #include "readTracing.hpp"
 #include "sequence.hpp"
 #include "readsReformatter.hpp"
-#include "read_generator.hpp"
+//#include "read_generator.hpp"
 
 using namespace paired_assembler;
 LOGGER("p.main");
@@ -25,12 +25,11 @@ void init() {
 void run() {
 	char str[100];
 	//	forgetQualityPairedData("I:/bioinf/eas20_8/s_6_1.cor.fastq.gz", "I:/bioinf/eas20_8/s_6_2.cor.fastq.gz", "data/paireddebruijn/reads_100_200_corr.txt" );
-	//	forgetQualityPairedData("data/paireddebruijn/s_6_1.fastq.gz", "data/paireddebruijn/s_6_2.fastq.gz", "/media/605005E05005BDB2/data/realreads.txt" );
+//		forgetQualityPairedData("data/input/s_6.first400000_1.fastq.gz", "data/input/s_6.first400000_1.fastq.gz", "~/realreads400000.txt" );
 	//	LOG_ASSERT(1 == 0, "Something wrong");
-
 	if (needPairs) {
 		cerr << endl << " constructing pairs" << endl;
-		if (needRevertedPairs)
+		if (downUpClustering)
 			readsToPairs(parsed_reads, parsed_l_k_mers, true);
 		else
 			readsToPairs(parsed_reads, parsed_k_l_mers, false);
@@ -51,8 +50,13 @@ void run() {
 		constructGraph(graph);
 		//save(folder+"graph.txt", graph);
 		load(folder+"graphEdges.txt", graph);
+		graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+
 		outputLongEdges(graph.longEdges, graph,
-				folder+"beforeExpand.dot");
+						folder+"beforeExpand.dot");
+		outputLongEdgesThroughGenome(graph,
+						folder+"beforeExpand_g.dot");
+
 	}
 
 	if (useExpandDefinite) {
@@ -135,7 +139,7 @@ void run() {
 }
 
 void generate() {
-	generateReads<SmoothPositionChooser> ("data/paireddebruijn/generated1.txt",
+/*	generateReads<SmoothPositionChooser> ("data/paireddebruijn/generated1.txt",
 			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 0);
 	generateReads<RandomPositionChooser> ("data/paireddebruijn/generated2.txt",
 			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 0);
@@ -143,9 +147,26 @@ void generate() {
 			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 6);
 	generateReads<RandomPositionChooser> ("data/paireddebruijn/generated4.txt",
 			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 6);
+*/
 }
 
 int main() {
+	short My_short;
+	int My_int;
+	long My_long;
+	long long My_longlong;
+	ll My_ll = 56;
+
+	cout<< "short "<<sizeof(My_short)<<endl;
+	cout<< "int "<<sizeof(My_int)<<endl;
+	cout<< "long "<<sizeof(My_long)<<endl;
+	cout<< "long long "<<sizeof(My_longlong)<<endl;
+	cout<< "ll "<<sizeof(My_ll)<<endl;
+//	forgetQualityPairedData("/home/ftp/data/cropped/s_6.first400000_1.fastq.gz", "/home/ftp/data/cropped/s_6.first400000_2.fastq.gz", "data/paireddebruijn/corrected_400000/reads_100_20.txt" );
+//	LOG_ASSERT(1 == 0, "Something wrong");
+//assert(0);
+
+
 //	generate();
 //	Sequence* a = new Sequence("TACA");
 //

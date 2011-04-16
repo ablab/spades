@@ -10,23 +10,11 @@
 LOGGER("p.graphio");
 using namespace paired_assembler;
 
-inline int codeNucleotide(char a) {
-	if (a == 'A')
-		return 0;
-	else if (a == 'C')
-		return 1;
-	else if (a == 'G')
-		return 2;
-	else if (a == 'T')
-		return 3;
-	else {
-		std::cerr << "oops!";
-		return -1;
-	}
-}
+
 
 void codeRead(char *read, char *code) {
-	for (int i = 0; i < readLength; i++) {
+	int read_length = strlen(read);
+	for (int i = 0; i < read_length; i++) {
 		code[i] = codeNucleotide(read[i]);
 	}
 }
@@ -35,7 +23,10 @@ ll extractMer(char *read, int shift, int length) {
 	ll res = 0;
 	for (int i = 0; i < length; i++) {
 		res = res << 2;
-		res += read[shift + i];
+		res += codeNucleotide(read[shift + i]);
+		if (codeNucleotide( read[shift + i])==-1)
+				cerr<<"Extract fault on pos"<<i<<" shift "<<shift;
+
 	}
 	return res;
 }
@@ -153,15 +144,25 @@ Sequence readGenomeFromFile(const string &fileName) {
 	return result;
 }
 
-int findStartVertex(PairedGraph &graph) {
+int findStartVertex(PairedGraph &graph, Sequence &genome) {
 	int result = -1;
+	cerr<<"findStartVertex"<<endl;
 	for (int i = 0; i < graph.VertexCount; i++) {
+		if (i == 299) { cerr<<"vertex 299"<<endl;
+		 cerr<<"In "<<graph.degrees[i][0]<<" out " <<graph.degrees[i][1]<<endl;
+		}
 		if (graph.degrees[i][0] == 0 && graph.degrees[i][1] == 1) {
-			if (result >= 0) {
-				cerr << "Ambigious start point for threading!" << endl;
-				return result;
+			cerr<<"SEQ VS GEN"<<endl;
+			Sequence* tmp_seq = graph.longEdges[graph.edgeIds[i][0][OUT_EDGE]]->upper;
+			cerr<<"Seq "<<tmp_seq->str()<<endl;
+			cerr<<"Gen "<<(genome.Subseq(0,tmp_seq->size())).str()<<endl;
+			if (genome.Subseq(0,tmp_seq->size())== *tmp_seq){
+				if (result >= 0) {
+					cerr << "Ambigious start point for threading!" << endl;
+					return result;
+				}
+				result = i;
 			}
-			result = i;
 		}
 	}
 	return result;
@@ -170,8 +171,9 @@ int findStartVertex(PairedGraph &graph) {
 bool checkEdge(Edge *nextEdge, int genPos, Sequence &genome) {
 	for (size_t i = 0; i < nextEdge->upper->size(); i++)
 		if (nextEdge->upper->operator [](i) != genome[genPos + i]
-				|| nextEdge->lower->operator [](i) != genome[genPos + i
-						+ readLength + insertLength])
+//				|| nextEdge->lower->operator [](i) != genome[genPos + i
+//						+ readLength + insertLength]
+						)
 			return false;
 	return true;
 }
@@ -219,7 +221,7 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, ostream &os) {
 	cerr << "Try to process" << endl;
 	int edgeNum = 0;
 	int genPos = 0;
-	int currentVertex = findStartVertex(graph);
+	int currentVertex = findStartVertex(graph, genome);
 	cerr << "Start vertex " << currentVertex << endl;
 	while (graph.degrees[currentVertex][1] != 0) {
 		cerr << "Try to found next edge" << endl;
@@ -230,10 +232,11 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, ostream &os) {
 			edgeNum++;
 			genPos += nextEdge->length;
 		} else {
-			cerr << "BAD GRAPH. I can not cover all genome" << endl;
+			cerr << "BAD GRAPH. I can not cover all genome." << endl;
 			break;
 		}
 	}
+	cerr<<"Go trough the graph finished on position "<<genPos+k-1<<endl;
 	g.output();
 }
 
@@ -535,4 +538,15 @@ void load(string fileName, PairedGraph &g) {
 	//	dr.readIntArray((int*) g.outputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 	//	dr.readIntArray((int*) g.inputEdges, MAX_VERT_NUMBER, MAX_DEGREE);
 	dr.close();
+}
+
+void outputVertexKmers(edgesMap &edges){
+
+	FILE *fkmers = fopen((folder+"kmers.txt").c_str(), "w");
+	for (edgesMap::iterator iter = edges.begin(); iter != edges.end();++iter) {
+		ll kmer = iter->fi;
+		fprintf(fkmers,"%lld %s\n", kmer, decompress(kmer, k));
+	}
+	fclose(fkmers);
+
 }
