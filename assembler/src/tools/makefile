@@ -1,6 +1,6 @@
-SRC=k_mer_filter.cpp sequence.cpp
-DIR=k_mer_filter
-PROG=k_mer_filter
+SRC=filter.cpp sequence.cpp
+DIR=tools
+PROG=filter
 
 MYCFLAGS=
 
