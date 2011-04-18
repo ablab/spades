@@ -1,0 +1,18 @@
+## genome=TAAACGAAAC readsize=6 k=3
+##dot -Tjpg TAAACGAAAC.dot -o TAAACGAAAC.jpg
+digraph TAAACGAAAC { rankdir="LR"; node[shape="box"] 
+AAA->AAC[color=grey,label="2"]
+AAC->ACG[color=grey,label="1"]
+AAC->ACT[color=grey,label="1"]
+ACG->CGA[color=grey,label="1"]
+ACT->CTA[color=grey,label="1"]
+CGA->GAA[color=grey,label="1"]
+CTA->TAA[color=grey,label="1"]
+GAA->AAA[color=grey,label="1"]
+TAA->AAA[color=grey,label="1"]
+AAA->AAC[color=black,penwidth=5,label="6"]
+AAC->ACG[color=black,penwidth=5,label="1"]
+AAC->ACT[color=black,penwidth=5,label="1"]
+ACG->AAA[color=black,penwidth=5,label="1"]
+ACT->AAA[color=black,penwidth=5,label="1"]
+}
