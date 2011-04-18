@@ -294,7 +294,7 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
     	}
     	CutShift++;
     	if (count == 0) {
-    		break;
+//    		break;
     		if (replace) break;
         		if (curSeq->size()>l)
     			curSeq = SubSeq(*curSeq, otherDirection(direction));
@@ -369,6 +369,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 								cerr<<"Multiple edges. Dir "<<direction<<endl;
 							else
 								cerr<<"No edges. Dir "<<direction<<endl;
+
 					if (back_way.second != curEdgePrototype) cerr<<"Bad way back. Dir "<<direction<<endl;
 
 
@@ -438,8 +439,9 @@ void createEdges(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 				if (cur_iter != edges.end()) {
 					for (vector<EdgePrototype *>::iterator it = cur_iter->second.begin(); it != cur_iter->second.end(); ++it) {
 						//TODO: minIntersect?
-						if ((*it)->lower->size()>=startSeq->size())
-						if (startSeq->similar(*((*it)->lower), startSeq->size(), 0)) {
+						if (*((*it)->lower)==*startSeq)
+						//	if (startSeq->similar(*((*it)->lower), startSeq->size(), 0))
+							{
 							findCnt++;
 //							assert(findCnt<2);
 //							DEBUG("marking edge used");
