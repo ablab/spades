@@ -169,7 +169,7 @@ public:
 	 * Constructs empty graph to work with k-mers.
 	 *
 	 * @param k Main parameter that defines the size of k-mers
-	 * @param action_handler Graph actions handler
+	 * //@param action_handler Graph actions handler
 	 */
 	EdgeGraph(size_t k) {
 		assert(k % 2 == 1);
