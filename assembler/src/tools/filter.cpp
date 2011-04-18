@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
 		seq_filter<K>::filter(filename, L);
 	} else {
 		std::cout << "Usage: ./filter <filename> <L>\n";
-		std::cout << "Selects k-mer with amount > L";
+		std::cout << "Selects k-mer with amount > L\n";
 	}
   return 0;
 }

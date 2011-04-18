@@ -42,6 +42,7 @@ int useProcessLower = 1;
 ll pushNucleotide(ll kMer, int length, int direction, int nucl) {
 	assert(direction == LEFT || direction == RIGHT );
 	if (direction == RIGHT) {
+		assert((kMer>>(2*length))==0);
 		return (ll) nucl | (kMer << (2));
 	} else {
 		return (ll) nucl << (2 * length) | (kMer &(((ll) 1<< (2 * length))-1));
