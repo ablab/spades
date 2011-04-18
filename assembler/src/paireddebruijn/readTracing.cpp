@@ -44,6 +44,11 @@ void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 	ll lowerMask = (((ll) 1) << (2 * (l - 1))) - 1;
 	//	FILE* fout = fopen("data/filtered_reads","w");
 	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
+		if (fictiveSecondReads) {
+			forn(i, readLength) {
+				lowerNuclRead[i] = 0;
+			}
+		}
 		if (!(count & (1024*128 - 1)))
 		cerr<<"read number "<<count<<" processed"<<endl;
 		count++;

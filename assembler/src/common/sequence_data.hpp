@@ -19,7 +19,7 @@ class SequenceData {
 private:
 	friend class Sequence;
 	// type to store Seq in Sequences
-	typedef int ST;
+	typedef unsigned int ST;
 	// number of nucleotides in ST
 	static const size_t STN = (sizeof(ST) * 4);
 	// number of bits in STN (for faster div and mod)
@@ -32,12 +32,11 @@ private:
 	SequenceData(const SequenceData &sd); // forbidden
 	SequenceData& operator=(const SequenceData&); // forbidden
 	void Grab() {
-		count++;
+		++count;
 	}
 	void Release() {
-		if (count > 1) {
-			count--;
-		} else {
+		--count;
+		if (count == 0) {
 			delete this;
 		}
 	}
@@ -82,7 +81,7 @@ public:
 		//delete[] bytes_;
 	}
 
-	inline char operator[](const size_t i) const {
+	char operator[](const size_t i) const {
 		return bytes_[i >> STNbits][i & (STN - 1)];
 	}
 

@@ -96,6 +96,22 @@ typedef FrequencyProfile Profile;
 ostream& operator<< (ostream& os, const Profile& p);
 
 class Edge {
+	map<size_t, size_t> lengths_;
+public:
+	ostream& output(ostream& os) const {
+		for (map<size_t, size_t>::const_iterator it = lengths_.begin(); it != lengths_.end(); it++) {
+//			os << (int) (it->first - K) << ";";
+			os << (int) (it->first - K) << "(*" << it->second << ");";
+		}
+		return os;
+	}
+
+	void addSequence(const Sequence& seq) {
+		lengths_[seq.size() - K]++;
+	}
+};
+
+class ProfileEdge {
 	map<size_t, Profile> long_;
 	// minus keys
 	map<size_t, size_t> short_;
@@ -158,7 +174,8 @@ public:
 	}
 
 	void addEdge(Vertex* to, const Sequence& seq) {
-		edges_[to].addSequence(size(), to->size(), seq);
+//		edges_[to].addSequence(size(), to->size(), seq);
+		edges_[to].addSequence(seq);
 	}
 
 	int degree() const {
@@ -209,8 +226,10 @@ public:
 	bool hasVertex(const Sequence& kmer);
 	Vertex* getVertex(const Sequence& kmer);
 
+	void condenseA();
 	bool tryCondenseA(Vertex* v);
 	void cleanup();
+	void stats();
 
 	void output(std::ofstream &out);
 	void output(string filename);

@@ -68,7 +68,9 @@ public:
 			return *this;
 		}
 		r.setName(seq_->name.s);
-		r.setQuality(seq_->qual.s);
+		if (seq_->qual.s) {
+			r.setQuality(seq_->qual.s);
+		}
 		r.setSequence(seq_->seq.s);
 		// if there is 'N' in sequence, then throw out this mate read
 		/*for (size_t i = 0; i < seq_->seq.l; i++) { // Fix Ns to As so we can store ACGT in 2 bits (Sequence). Anyway we have a Quality values for filtering out Ns later

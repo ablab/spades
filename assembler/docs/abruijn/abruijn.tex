@@ -1,9 +1,9 @@
 \documentclass[12pt]{article}
 
-\usepackage{amssymb, amsmath, amsthm}
+\usepackage{amssymb,amsmath,amsthm}
 \usepackage{graphicx}
 %\usepackage{fullpage}
-%\usepackage[final,colorlinks,hyperindex,unicode=true]{hyperref}
+\usepackage[final,colorlinks,hyperindex,unicode=true]{hyperref}
 %\usepackage{tikz}
 \usepackage[shadow,colorinlistoftodos,textwidth=4cm]{todonotes}
 
@@ -14,6 +14,11 @@
 \title{A Bruijn Graph Approach}
 \date{March 14, 2011}
 \maketitle
+
+\listoftodos
+\tableofcontents
+
+\newpage
 
 \section{General Idea}
 
@@ -32,7 +37,21 @@ only two black edges.
 \end{center}
 The hope is that the resulting graph will be easier to handle 
 and at the same time it will have essentially the same structure 
-as the original de Bruijn graph.
+as the original de Bruijn graph.{\todo{we should probably cite the paper 
+on minimizers and use the word `minimizer' instead of `earmarked $k$-mer'?..}}
+
+\subsection{Advantages of A Bruijn graph over de Bruijn graph}
+\begin{itemize}
+\item Clearly, it requires less memory.
+\item In general, we expect that the resulting A Bruijn graph 
+will have the same structure as the corresponding condensed de Bruijn graph.
+If so, this would allow us to construct the condensed de Bruijn graph
+using less time and memory.
+\item If the used hash-function respects frequency of $k$-mers
+the resulting graph will contain a smaller fraction of erroneous $k$-mers.
+\item If the hash function does not mark $k$-mers that appear too often, then 
+some of the repeats will be already resolved in A Bruijn graph.\todo{what else?..}
+\end{itemize}
 
 \subsection{Hash Functions}
 
@@ -111,11 +130,14 @@ Along with a hash function, an apt criterion is the frequency of the given $k$-m
 the following.
 
 \begin{itemize}
-  \item The $k$-mers that are underrepresented in the reads (even those a with small value of hash function)
-  are (most probably) erroneous. Using frequency allows us to exclude them from the set of
+  \item The $k$-mers that are underrepresented{\todo{what do we mean by ``underrepresented''?
+  is it true that most of the erroneous reads have frequency one?}} in the 
+  reads (even those a with small value of hash function)
+  are (most probably) erroneous. Using frequency allows us 
+  to exclude them from the set of
   vertex-forming $k$-mers.
   \item The $k$-mers that are overrepresented correspond to high-degree vertices in the graph.
-  It might be helpful to exclude them as well in order to make to make the structure of the graph more feasible.
+  It might be helpful to exclude them as well in order to make the structure of the graph more feasible.
   (Motivation: consider two reads, $axyb$ and $cxyd$. A hash function might suggest to select $k$-mers $x$ and
   $y$ which would create a fork in the graph. Selecting $a$, $b$, $c$ and $d$ on the other hand leads to
   two separate edges.)
@@ -123,7 +145,7 @@ the following.
 
 \subsection{Reducing the number of vertices}
 As said in the beginning the main motivation for considering such graphs
-they contain fewer edges than the original de Bruijn graph. Clearly, the number of edges in the
+is that they contain fewer edges than the original de Bruijn graph. Clearly, the number of edges in the
 A Bruijn graph is also reduced (the vertices with no bold adjacent edges actually do not belong
 to A Bruijn graph). In order to further reduce the number of vertices we can do the following.
 First, mark just one $k$-mer in each read with the minimal possible hash value. If it turned out to be
@@ -146,17 +168,38 @@ known approximately instead of exactly.
 It is a question of a separate investigation whether the approximate distances known from
 paired reads is helpful when traversing an A Bruijn graph.
 
-\section{Schedule}
 
+\section{Pseudocode of the assembler}
+
+\todo[inline]{add high-level description of the assembler}
+
+Iterative procedure for selecting the set of earmarked $k$-mers is the following:
+
+\begin{enumerate}
+\item From each read, select $t$ minimum hash values of its $k$-mers, add them to the global set of earmarked hash values.
+\item (if $t=1$) For each read that has only one k-mer with earmarked hash value, earmark one more k-mer from this read.
+\item In each read, select $k$-mers that have their hash values earmarked.
+For corresponding vertices in the resulting A Bruijn graph, add all pairwise edges, storing their lengths.
+For each k-mer, mark whether we've seen any $k$-mer to the left from it, and to the right.
+\item For each $k$-mer that has no left or right neighbours, find a neighbour on the corresponding side
+that has the smallest hash value and earmark it.
+\item Repeat the previous step to minimize the number of neighbourless $k$-mers.
+\end{enumerate}
+
+\section{Schedule}
 \begin{description}
-  \item[April 10] implement graph condensation
-  \item[April 17] test graph condensation on real data
-  \item[April 30] research into the effects of different hash functions 
-  used to take minimizers
-  \item[May 10] compare the resulting A Bruijn graph with the condensed de 
-  Bruijn graph
-  \item 
+  \item[April 15] implement earmarking procedure
+  \item[April 18] test earmarking procedure on real data, get general statistics
+  \item[April 20] test different hashing parameters on real data
+  \item[April 22] implement frequency-dependent heuristics
+%  \item[April 17] test graph condensation on real data
+%  \item[April 30] research into the effects of different hash functions 
+%  used to take minimizers
+%  \item[May 10] compare the resulting A Bruijn graph with the condensed de 
+%  Bruijn graph
+%  \item 
 \end{description}
+
 
 
 \end{document}

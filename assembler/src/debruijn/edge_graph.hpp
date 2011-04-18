@@ -1,53 +1,3 @@
-/*
- ReadOnlyGraph -> Graph -> EdgeGraph/VertexGraph
- ComplementGraph
- PairedGraph/Debruijn
-
-
-
- interface ReadonlyGraph {
- NodeIt begin_node();
- NodeIt end_node();
-
- void outgoing_edges(const NodeId &n, EdgeIt &begin, EdgeIt &end);
-
- bool IsLast(const NodeId &n);
-
- bool IsFirst(const NodeId &n);
-
- NodeId start(const EdgeId &e);
- NodeId end(const EdgeId &e);
-
- };
-
- interface Graph {
-
- };
-
- interface EdgeGraph {
- //	const NodeId addNode(const NodeData& n_d);
-
- const NodeId addNode();
-
- const EdgeId addEdge(const EdgeData& e_d, const NodeId& n1, const NodeId& n2);
- const EdgeData& getEdgeData(const EdgeId &e);
- }
-
- interface ComplementGraph {
- const NodeId complement_node(const& NodeId);
- const EdgeId complement_edge(const& EdgeId);
- }
-
- interface NodeGraph {
- const NodeData& getNodeData(const NodeId &n);
- }
-
- interface DeBruijnGraph {
- const EdgeData* getNodeData(const NodeId &n, char c);
- }
-
- */
-
 #ifndef EDGE_GRAPH_HPP_
 #define EDGE_GRAPH_HPP_
 
@@ -66,27 +16,25 @@
 #include "utils.hpp"
 
 using namespace std;
-using de_bruijn::SmartEdgeIterator;
-using de_bruijn::SmartVertexIterator;
 
 namespace edge_graph {
-
-using de_bruijn::GraphActionHandler;
-
 LOGGER("d.edge_graph");
 
 class Vertex;
 
 class Edge {
+public:
+	const Sequence& nucls() const {
+		return nucls_;
+	}
+private:
+	friend class EdgeGraph;
 	Sequence nucls_;
 	Vertex* end_;
 	size_t coverage_;
-	size_t incoming_coverage_;
-	size_t outgoing_coverage_;
 
-	friend class EdgeGraph;
-	Edge(const Sequence& nucls, Vertex* end) :
-		nucls_(nucls), end_(end), coverage_(0) {
+	Edge(const Sequence& nucls, Vertex* end, size_t coverage) :
+		nucls_(nucls), end_(end), coverage_(coverage) {
 	}
 
 	Vertex* end() const {
@@ -97,22 +45,20 @@ class Edge {
 		return nucls_.size();
 	}
 
-public:
-	const Sequence& nucls() const {
-		return nucls_;
+	~Edge() {
 	}
 
 };
 
 class Vertex {
 public:
-	typedef vector<Edge *>::const_iterator EdgeIterator;
+	typedef vector<Edge*>::const_iterator EdgeIterator;
 private:
-	vector<Edge *> outgoing_edges_;
+	friend class EdgeGraph;
+
+	vector<Edge*> outgoing_edges_;
 
 	Vertex* complement_;
-
-	friend class EdgeGraph;
 
 	void set_complement(Vertex* complement) {
 		complement_ = complement;
@@ -153,12 +99,6 @@ private:
 		return true;
 	}
 
-	//
-	//	void RemoveOutgoingEdge(vector<Edge *>::iterator iter) {
-	//		assert(iter != outgoing_edges_.end());
-	//		outgoing_edges_.erase(iter);
-	//	}
-
 	Vertex* complement() const {
 		return complement_;
 	}
@@ -168,71 +108,56 @@ private:
 	}
 
 };
-/*
-class GraphActionHandler {
-public:
 
-	virtual void HandleAdd(Vertex* v) {
-	}
-
-	virtual void HandleAdd(Edge* e) {
-	}
-
-	virtual void HandleDelete(Vertex* v) {
-	}
-
-	virtual void HandleDelete(Edge* e) {
-	}
-
-};*/
+using de_bruijn::SmartVertexIterator;
+using de_bruijn::SmartEdgeIterator;
 
 class EdgeGraph {
-
-	size_t k_;
-
-	Edge* AddSingleEdge(Vertex* v1, Vertex* v2, const Sequence& s);
-
-	//	void DeleteSingleEdge(const Edge* edge);
-
-	vector<GraphActionHandler<EdgeGraph> *> action_handler_list_;
-
-	set<Vertex*> vertices_;
-
-	void DeleteAllOutgoing(Vertex *v);
-
-//	const set<Vertex*>& vertices() const {
-//		return vertices_;
-//	}
-
 public:
-
 	typedef Edge* EdgeId;
+	typedef Edge EdgeData;
 	typedef Vertex* VertexId;
 
-	typedef set<Vertex *>::const_iterator VertexIterator;
+	typedef set<Vertex*>::const_iterator VertexIterator;
+	typedef Vertex::EdgeIterator EdgeIterator;
+	typedef de_bruijn::GraphActionHandler<EdgeGraph> ActionHandler;
+	//	typedef de_bruijn::SmartVertexIterator<EdgeGraph> SmartVertexIterator;
+	//	typedef de_bruijn::SmartEdgeIterator<EdgeGraph> SmartEdgeIterator;
 
-	VertexIterator begin() {
+	VertexIterator begin() const {
 		return vertices_.begin();
 	}
 
-	VertexIterator end() {
+	VertexIterator end() const {
 		return vertices_.end();
 	}
 
-	SmartVertexIterator<EdgeGraph> SmartVertexBegin() {
-		return de_bruijn::SmartVertexIterator<EdgeGraph>(*this);
+	template<typename Comparator = std::less<VertexId> >
+	SmartVertexIterator<EdgeGraph, Comparator> SmartVertexBegin(
+			const Comparator& comparator = Comparator()) {
+		return SmartVertexIterator<EdgeGraph, Comparator> (*this, true,
+				comparator);
 	}
 
-	SmartVertexIterator<EdgeGraph> SmartVertexEnd() const {
-		return de_bruijn::SmartVertexIterator<EdgeGraph>();
+	template<typename Comparator = std::less<VertexId> >
+	SmartVertexIterator<EdgeGraph, Comparator> SmartVertexEnd(
+			const Comparator& comparator = Comparator()) {
+		return SmartVertexIterator<EdgeGraph, Comparator> (*this, false,
+				comparator);
 	}
 
-	SmartEdgeIterator<EdgeGraph> SmartEdgeBegin() {
-		return de_bruijn::SmartEdgeIterator<EdgeGraph>(*this);
+	template<typename Comparator = std::less<EdgeId> >
+	SmartEdgeIterator<EdgeGraph, Comparator> SmartEdgeBegin(
+			const Comparator& comparator = Comparator()) {
+		return SmartEdgeIterator<EdgeGraph, Comparator> (*this, true,
+				comparator);
 	}
 
-	SmartEdgeIterator<EdgeGraph> SmartEdgeEnd() const {
-		return de_bruijn::SmartEdgeIterator<EdgeGraph>();
+	template<typename Comparator = std::less<EdgeId> >
+	SmartEdgeIterator<EdgeGraph, Comparator> SmartEdgeEnd(
+			const Comparator& comparator = Comparator()) {
+		return SmartEdgeIterator<EdgeGraph, Comparator> (*this, false,
+				comparator);
 	}
 
 	size_t size() {
@@ -263,160 +188,177 @@ public:
 		return k_;
 	}
 
-	void AddActionHandler(GraphActionHandler<EdgeGraph>* action_handler) {
+	void AddActionHandler(ActionHandler* action_handler) {
+		DEBUG("Action handler added");
 		action_handler_list_.push_back(action_handler);
 	}
 
-	bool RemoveActionHandler(GraphActionHandler<EdgeGraph>* action_handler) {
-		for (vector<GraphActionHandler<EdgeGraph> *>::iterator it =
-				action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
-			if(*it == action_handler) {
+	bool RemoveActionHandler(ActionHandler* action_handler) {
+		DEBUG("Trying to remove action handler");
+		for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+				!= action_handler_list_.end(); ++it) {
+			if (*it == action_handler) {
 				action_handler_list_.erase(it);
+				DEBUG("Action handler removed");
 				return true;
 			}
 		}
+		//		assert(false);
 		return false;
 	}
 
-	const vector<GraphActionHandler<EdgeGraph> *> GetHandlers() {
+	//todo remove
+	const vector<ActionHandler*> GetHandlers() {
 		return action_handler_list_;
 	}
 
-	void OutgoingEdges(const Vertex* v, Vertex::EdgeIterator &begin,
-			Vertex::EdgeIterator &end) const;
+	void OutgoingEdges(VertexId v, EdgeIterator& begin, EdgeIterator& end) const;
 
-	const vector<Edge *> OutgoingEdges(const Vertex* v) const;
+	const vector<EdgeId> OutgoingEdges(VertexId v) const;
 
-	const vector<Edge *> IncomingEdges(const Vertex* v) const;
+	const vector<EdgeId> IncomingEdges(VertexId v) const;
 
-	Edge* OutgoingEdge(const Vertex* v, char nucl) const;
+	EdgeId OutgoingEdge(VertexId v, char nucl) const;
 
-	size_t OutgoingEdgeCount(Vertex *v) const {
+	size_t OutgoingEdgeCount(VertexId v) const {
 		return v->OutgoingEdgeCount();
 	}
 
-	size_t IncomingEdgeCount(Vertex *v) const {
+	size_t IncomingEdgeCount(VertexId v) const {
 		return v->complement()->OutgoingEdgeCount();
 	}
 
-	bool CheckUniqueOutgiongEdge(const Vertex *v) const {
+	bool CheckUniqueOutgiongEdge(VertexId v) const {
 		return v->OutgoingEdgeCount() == 1;
 	}
 
-	Edge *GetUniqueOutgoingEdge(const Vertex *v) const {
+	EdgeId GetUniqueOutgoingEdge(VertexId v) const {
 		assert(CheckUniqueOutgiongEdge(v));
 		return *(v->begin());
 	}
 
-	bool CheckUniqueIncomingEdge(const Vertex *v) const {
+	bool CheckUniqueIncomingEdge(const VertexId v) const {
 		return CheckUniqueOutgiongEdge(v->complement());
 	}
 
-	Edge *GetUniqueIncomingEdge(const Vertex *v) const {
-		return ComplementEdge(GetUniqueOutgoingEdge(v->complement()));
+	EdgeId GetUniqueIncomingEdge(VertexId v) const {
+		return Complement(GetUniqueOutgoingEdge(v->complement()));
 	}
 
-	Edge *ComplementEdge(const Edge* edge) const;
+	//	Edge* ComplementEdge(const Edge* edge) const;
 
-	const Sequence &EdgeNucls(const Edge *edge) const {
+	const Sequence& EdgeNucls(EdgeId edge) const {
 		return edge->nucls();
 	}
 
-	void set_coverage(Edge *edge, size_t cov) {
+	void set_coverage(EdgeId edge, size_t cov) {
 		edge->coverage_ = cov;
 	}
 
-	size_t coverage(Edge *edge) {
+	double coverage(EdgeId edge) const {
+		return (double) edge->coverage_ / length(edge);
+	}
+
+	size_t kplus_one_mer_coverage(EdgeId edge) const {
 		return edge->coverage_;
 	}
 
-	void inc_coverage(Edge *edge, int toAdd) {
+	void inc_coverage(EdgeId edge, int toAdd) {
 		edge->coverage_ += toAdd;
+		EdgeId rc = Complement(edge);
+		if (edge != rc) {
+			rc->coverage_ += toAdd;
+		}
 	}
 
-	void inc_coverage(Edge *edge) {
+	void inc_coverage(EdgeId edge) {
 		edge->coverage_++;
+		EdgeId rc = Complement(edge);
+		if (edge != rc) {
+			rc->coverage_++;
+		}
 	}
 
 	/**
 	 * adds vertex and its complement
 	 */
-	Vertex* AddVertex();
+	VertexId AddVertex();
 
-	Sequence vertexNucls(const Vertex *v) const;
+	Sequence VertexNucls(VertexId v) const;
 
 	/**
 	 * deletes vertex and its complement
 	 */
-	void DeleteVertex(Vertex* v);
+	void DeleteVertex(VertexId v);
 
-	void ForceDeleteVertex(Vertex* v);
+	void ForceDeleteVertex(VertexId v);
 
-	Edge* AddEdge(Vertex* v1, Vertex* v2, const Sequence &nucls);
+	Edge* AddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
+			size_t coverage = 0);
 
-	void DeleteEdge(Edge* edge);
+	void DeleteEdge(EdgeId edge);
 
-	size_t length(Edge *edge) {
+	size_t length(EdgeId edge) const {
 		return edge->nucls_.size() - k_;
 	}
 
-	bool AreLinkable(Vertex* v1, Vertex* v2, const Sequence &nucls) const;
+	bool AreLinkable(VertexId v1, VertexId v2, const Sequence &nucls) const;
 
-	bool IsDeadEnd(Vertex* v) const {
+	bool IsDeadEnd(VertexId v) const {
 		return v->IsDeadend();
 	}
 
-	bool IsDeadStart(Vertex* v) const {
+	bool IsDeadStart(VertexId v) const {
 		return IsDeadEnd(v->complement());
 	}
 
-	Vertex *edgeStart(const Edge *edge) const;
+	VertexId EdgeStart(EdgeId edge) const;
 
-	Vertex *edgeEnd(const Edge *edge) const;
+	VertexId EdgeEnd(EdgeId edge) const;
 
-	Vertex *ComplementVertex(const Vertex* v) const {
+	VertexId Complement(VertexId v) const {
 		return v->complement();
 	}
 
-	const Edge& GetData(Edge* e) const {
+	EdgeId Complement(EdgeId e) const;
+
+	const EdgeData& GetData(EdgeId e) const {
 		return *e;
 	}
 
-	bool CanCompressVertex(Vertex *v) const;
+	bool CanCompressVertex(VertexId v) const;
 
-	Edge *CompressVertex(Vertex *v);
+	void CompressVertex(VertexId v);
 
-	Edge *CompressPath(const vector<Vertex *> path);
+	EdgeId CompressPath(const vector<VertexId>& path);
 
 	void CompressAllVertices();
+
+private:
+	size_t k_;
+
+	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s,
+			size_t coverage);
+
+	vector<ActionHandler*> action_handler_list_;
+
+	set<Vertex*> vertices_;
+
+	void DeleteAllOutgoing(Vertex* v);
+
+	bool GoUniqueWay(VertexId &v);
 };
 
-//////////////////////////////////////////////////////////////////
+typedef EdgeGraph::EdgeId EdgeId;
+typedef EdgeGraph::EdgeData EdgeData;
+typedef EdgeGraph::VertexId VertexId;
+typedef EdgeGraph::VertexIterator VertexIterator;
+typedef EdgeGraph::EdgeIterator EdgeIterator;
+typedef EdgeGraph::ActionHandler ActionHandler;
+//typedef EdgeGraph::SmartVertexIterator SmartVertexIterator;
+//typedef EdgeGraph::SmartEdgeIterator SmartEdgeIterator;
 
-class GraphVisualizer {
-public:
-	virtual void Visualize(const EdgeGraph& g) = 0;
-};
-
-class SimpleGraphVisualizer: public GraphVisualizer {
-	gvis::GraphPrinter<const Vertex*>& gp_;
-public:
-	SimpleGraphVisualizer(gvis::GraphPrinter<const Vertex*>& gp) :
-		gp_(gp) {
-	}
-
-	virtual void Visualize(const EdgeGraph& g);
-};
-
-class ComplementGraphVisualizer: public GraphVisualizer {
-	gvis::PairedGraphPrinter<const Vertex*>& gp_;
-public:
-	ComplementGraphVisualizer(gvis::PairedGraphPrinter<const Vertex*>& gp) :
-		gp_(gp) {
-	}
-
-	virtual void Visualize(const EdgeGraph& g);
-};
+typedef de_bruijn::TraversalHandler<EdgeGraph> TraversalHandler;
 
 }
 #endif /* EDGE_GRAPH_HPP_ */

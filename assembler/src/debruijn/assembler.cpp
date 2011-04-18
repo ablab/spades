@@ -47,29 +47,49 @@ int main(int argc, char *argv[]) {
 
 	// construct graph
 
-	DeBruijn<K> debruijn;
+	de_bruijn::DeBruijn<K> debruijn;
 	debruijn.ConstructGraph(*v1);
 	debruijn.ConstructGraph(*v2);
 	delete v1;
 	delete v2;
-	condensed_graph::CondenseConstructor<K> g_c(debruijn);
+//	condensed_graph::CondenseConstructor<K> g_c(debruijn);
 
-	condensed_graph::CondensedGraph *g;
-	condensed_graph::SimpleIndex<K> *index;
+//	condensed_graph::CondensedGraph *g;
+//	condensed_graph::SimpleIndex<K> *index;
+//	g_c.ConstructGraph(g, index);
+//	fstream filestr;
+//	filestr.open("graph.dot", fstream::out);
+//	gvis::PairedGraphPrinter<const condensed_graph::Vertex*> gp(
+//			"simulated_data_graph", filestr);
+//	condensed_graph::ComplementGraphVisualizer gv(gp);
+//	gv.Visualize(*g);
+//	filestr.close();
+//
+//	condensed_graph::DFS dfs(*g);
+//	condensed_graph::SimpleStatCounter stat_c;
+//	dfs.Traverse(stat_c);
+//	cerr << "Vertex count=" << stat_c.v_count() << "; Edge count="
+//			<< stat_c.e_count() << endl;
+
+	edge_graph::CondenseConstructor<K> g_c(debruijn);
+
+	edge_graph::EdgeGraph *g;
+	de_bruijn::SimpleIndex<K + 1, edge_graph::Edge*> *index;
 	g_c.ConstructGraph(g, index);
-	fstream filestr;
-	filestr.open("graph.dot", fstream::out);
-	gvis::PairedGraphPrinter<const condensed_graph::Vertex*> gp(
-			"simulated_data_graph", filestr);
-	condensed_graph::ComplementGraphVisualizer gv(gp);
-	gv.Visualize(*g);
-	filestr.close();
+//	fstream filestr;
+//	filestr.open("graph.dot", fstream::out);
+//	gvis::PairedGraphPrinter<const condensed_graph::Vertex*> gp(
+//			"simulated_data_graph", filestr);
+//	edge_graph::ComplementGraphVisualizer gv(gp);
+//	gv.Visualize(*g);
+//	filestr.close();
 
-	condensed_graph::DFS dfs(*g);
-	condensed_graph::SimpleStatCounter stat_c;
-	dfs.Traverse(stat_c);
-	cerr << "Vertex count=" << stat_c.v_count() << "; Edge count="
-			<< stat_c.e_count() << endl;
+//	condensed_graph::DFS dfs(*g);
+//	condensed_graph::SimpleStatCounter stat_c;
+//	dfs.Traverse(stat_c);
+//	cerr << "Vertex count=" << stat_c.v_count() << "; Edge count="
+//			<< stat_c.e_count() << endl;
+
 
 	/*
 	 * Simple de Bruijn graph construction:

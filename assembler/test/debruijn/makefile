@@ -1,4 +1,4 @@
-SRC=test.cpp sequence.cpp condensed_graph.cpp graphVisualizer.cpp edge_graph.cpp tip_clipper.cpp
+SRC=test.cpp sequence.cpp graphVisualizer.cpp edge_graph.cpp visualization_utils.cpp
 DIR=debruijn
 PROG=debruijnTest
 

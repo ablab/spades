@@ -2,6 +2,7 @@
 #include "sequence.hpp"
 #include "constructHashTable.hpp"
 #include "graphio.hpp"
+#include "nucl.hpp"
 LOGGER("p.constructHashTable");
 
 using namespace std;
@@ -11,7 +12,9 @@ typedef vector<pair<Sequence*,int>> downSeqs;
 
 int totalKmers = 0;
 int uniqPairs = 0;
+int uniqKmers = 0;
 const int MAXLMERSIZE = 10000;
+#define MAX_COVERAGE 10000000
 ll upperMask;
 ll lowerMask;
 
@@ -353,8 +356,7 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 	vector<int> tmp_cov;
 	assert (max_shift <= 20);
 
-//	cerr << lset.size()<<endl;
-	cerr << "Start clustering"<<endl;
+	//cerr << "Start clustering"<<endl;
 	int right[MAXLMERSIZE];
 	int left[MAXLMERSIZE];
 	int used[MAXLMERSIZE];
@@ -469,8 +471,9 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 					s += nucl((a[ii].first & maxsd) >> (2*(p-j-1)));
 					maxsd >>= 2;
 			//		cerr << "OK" <<endl;
-					if (coverage < a[ii].second) coverage = a[ii].second;
+
 				}
+				coverage += a[ii].second;
 			}
 			DEBUG("seq: s" << s);
 			tmp_res.push_back(s);
@@ -489,7 +492,7 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 			lmers[i].pb(extractMer(t_seq,l, j ));
 		sort(lmers[i].begin(), lmers[i].end());
 	}*/
-	cerr << "Start compressing"<<endl;
+//	cerr << "Start compressing"<<endl;
 
 	forn(i,  tmp_res.size()) {
 
@@ -498,19 +501,19 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 			pair<int, pair<int, int> > comp_res = maxCommonSubstring(tmp_res[i], tmp_res[j]);
 			if (comp_res.fi > l - 1) {
 				good = 0;
-				INFO(" FOUND intersection length" << comp_res.fi << " on second position " << comp_res.se.se <<" " << tmp_res[i] <<" "<< tmp_res[j]);
+				DEBUG(" FOUND intersection length" << comp_res.fi << " on second position " << comp_res.se.se <<" " << tmp_res[i] <<" "<< tmp_res[j]);
 				tmp_res[j] = tmp_res[j].substr(comp_res.se.se, comp_res.fi);
 				break;
 
 			}
 		}
-		if (good) {
+		if (good && (tmp_cov[i] > coverage_cutoff)) {
 			Sequence* tmpSeq = new Sequence(tmp_res[i]);
 			res.pb(make_pair(tmpSeq,tmp_cov[i]));
 
 		}
 	}
-	cerr << "Finish clustering"<<endl;
+//	cerr << "Finish clustering"<<endl;
 
 	/*
 	{
@@ -538,8 +541,8 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 pair<int, pair<int,int>> maxCommonSubstring(string &s1,string &s2) {
 	int l1 = s1.length();
 	int l2 = s2.length();
-	char table[200][200];
-	assert(l1 <200 && l2 <200);
+	char table[400][400];
+	assert(l1 < 400 && l2 < 400);
 	forn(i, l1 +1)
 		forn(j, l2 +1)
 			table[i][j] = 0;
@@ -576,13 +579,15 @@ void addPairToTable(myMap& table, ll upper, ll lower) {
 			table[upper].first.pb(lower);
 			table[upper].second.pb(1);
 			++uniqPairs;
+			if (!(uniqPairs&((1<<15)-1)))
+				INFO("unique pairs "<<uniqPairs);
 		}
 		else {
 			int index = distance(table[upper].first.begin(), it);
 			table[upper].second[index]++;
 		}
 	} else {
-		pair<vector<ll>,vector<int>> tmp;
+		pair<vector<ll>,vector<short>> tmp;
 		tmp.first.clear();
 		tmp.first.pb(lower);
 		tmp.second.clear();
@@ -590,36 +595,111 @@ void addPairToTable(myMap& table, ll upper, ll lower) {
 		table.insert(make_pair(upper, tmp));
 
 		//		cerr<<"inserting"<<table.size();
+		++uniqKmers;
 		++uniqPairs;
+		if (!(uniqPairs&((1<<15)-1)))
+			INFO("unique pairs "<<uniqPairs);
+		if (!(uniqKmers&((1<<15)-1)))
+			INFO("unique Kmers "<<uniqKmers);
 	}
 }
 
+
 void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	int shift = (l - k) / 2;
+	int up_len = strlen(upperRead);
+	int low_len = strlen(lowerRead);
+	int low_shift = readLength - low_len;
+	if ((up_len<k)||(low_len<l)) return;
 	ll upper = extractMer(upperRead, shift, k);
 	ll lower = extractMer(lowerRead, 0, l);
-//	fprintf(stderr,"%lld %lld\n", upper, lower);
-	for (int j = 0; j + l <= readLength; j++) {
+//	cerr <<"\n " <<up_len <<"\n" << low_len;
+//	cerr <<(string("\n" )+ upperRead) << (string("\n" )+ lowerRead + "\n");
+//	cerr.flush();
+//	cerr << "Up_len "<<up_len<<" low_len "<<low_len<<endl;
+	ll lowers[MAX_READ_LENGTH+2];
+	lowers[0] = lower;
+	if (low_len > l)
+	forn(j, low_len - l) {
+		lower <<= 2;
+		lower += codeNucleotide( lowerRead[j + l]);
+		if (codeNucleotide( lowerRead[j + l])==-1)
+			cerr<<"len "<<low_len<<" pos "<<j<<" in "<<lowerRead;
+		lower &= lowerMask;
+		lowers[j + 1] = lower;
+//		cerr << "lowers "<<j+1<<" "<<lowers[j+1]<<endl;
+	}
+//	cerr << "lowers_coded"<<endl;
+	lower = lowers[0];
+	//	fprintf(stderr,"%lld %lld\n", upper, lower);
+	int j = 0;
+	for (; j + k + shift < up_len; j++) {
 		if (checkBoundsForUpper(upper)) {
-			addPairToTable(table, upper, lower);
+			for (int jj = max(0, j + low_shift - range_variating); jj < min(low_len - l +1, j + low_shift + range_variating + 1); jj ++)
+			{			assert(jj<=low_len-l);
+				addPairToTable(table, upper, lowers[jj]);
+//				if ((lowers[jj]&3)!=2) assert(0);
+			}
 			totalKmers++;
 		}
 
 		upper <<= 2;
-		upper += upperRead[j + l - shift];
+		upper += codeNucleotide(upperRead[j + k + shift]);
 		upper &= upperMask;
+		if (codeNucleotide( upperRead[j + k + shift])==-1)
+			cerr<<"up len "<<up_len<<" pos "<<j<<" in "<<lowerRead;
 
-		lower <<= 2;
-		lower += lowerRead[j + l];
-		lower &= lowerMask;
+//		lower <<= 2;
+//		lower += lowerRead[j + l];
+//		lower &= lowerMask;
 
 		//fprintf(stderr,"%d %d\n", upper, lower);
 
 	}
+	if (checkBoundsForUpper(upper)) {
+		for (int jj = max(0, j + low_shift - range_variating); jj < min(low_len - l +1, j + low_shift +range_variating + 1); jj ++)
+		addPairToTable(table, upper, lowers[jj]);
+		totalKmers++;
+	}
 //	cerr << table.size()<<endl;
 }
 
+inline void reverseCompliment(char *upperRead, char* lowerRead){
+	int up_len = strlen(upperRead);
+	int low_len = strlen(lowerRead);
+	char * tmpRead = new char[readLength + 2];
+	forn(i, up_len) {
+		tmpRead[i] = nucl_complement(upperRead[up_len - 1 - i]);
+	}
 
+	forn(i, low_len) {
+		upperRead[i] = nucl_complement(lowerRead[low_len - 1 - i]);
+	}
+	upperRead[low_len] = 0;
+	forn(i, up_len) {
+		lowerRead[i] = tmpRead[i];
+	}
+	lowerRead[up_len] = 0;
+
+	delete[] tmpRead;
+
+
+//
+//	forn(i, up_len) {
+//		tmpRead[i] = nucl_complement(upperRead[up_len - 1 - i]);
+//	}
+//	forn(i, up_len) {
+//		upperRead[i] = tmpRead[i];
+//	}
+//
+//	forn(i, low_len) {
+//		tmpRead[i] = nucl_complement(lowerRead[low_len - 1 - i]);
+//	}
+//	forn(i, low_len) {
+//		lowerRead[i] = tmpRead[i];
+//	}
+	// cerr << "\n\n" << strlen(upperRead) <<" " << strlen(lowerRead) << "\n";
+}
 void constructTable(string inputFile, myMap &table, bool reverse) {
 	FILE* inFile = fopen(inputFile.c_str(), "r");
 	int count = 0;
@@ -627,17 +707,46 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 	char *lowerNuclRead = new char[readLength + 2];
 	char *upperRead = new char[readLength + 2];
 	char *lowerRead = new char[readLength + 2];
+	char* fictiveRead = new char[readLength + 2];
+
+
+	forn(i, readLength)
+
+		fictiveRead[i] = 'G';
+	fictiveRead[readLength] = 0;
+
 	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
-//		fprintf(stderr, "%s", upperNuclRead);
-		if ((strlen(upperNuclRead)<readLength)||(strlen(lowerNuclRead)<readLength)) continue;
-		if (reverse) {
-			codeRead(upperNuclRead, lowerRead);
-			codeRead(lowerNuclRead, upperRead);
-		} else {
-			codeRead(upperNuclRead, upperRead);
-			codeRead(lowerNuclRead, lowerRead);
+	//	fprintf(stderr, "%s", upperNuclRead);
+		// cerr.flush();
+//		if ((strlen(upperNuclRead) < readLength)||(strlen(lowerNuclRead) < readLength)){
+//			continue;
+//		}
+
+	//	cerr << "?";
+	//	cerr.flush();
+		forn(tmp, 2) {
+			if (fictiveSecondReads) {
+				processReadPair(table, upperNuclRead, fictiveRead);
+				processReadPair(table, lowerNuclRead, fictiveRead);
+			} else {
+				processReadPair(table, upperNuclRead, lowerNuclRead);
+			}
+			if (!useRevertedPairs)
+				break;
+			else {
+				// cerr << "?";
+		//		cerr.flush();
+//				if (fictiveSecondReads) {
+//	//				reverseCompliment(upperNuclRead, upperNuclRead);
+////					reverseCompliment(lowerNuclRead, lowerNuclRead);
+//					reverseCompliment(upperNuclRead, lowerNuclRead);
+//						} else
+//				{
+					reverseCompliment(upperNuclRead, lowerNuclRead);
+//				}
+			}
+
 		}
-		processReadPair(table, upperRead, lowerRead);
 		if (!(count & (1024*64 - 1)))
 			INFO("read number "<<count<<" processed"<<endl);
 		count++;
@@ -648,7 +757,7 @@ void outputTable(string outputFile, myMap &pairedTable) {
 	FILE* outFile = fopen(outputFile.c_str(), "w");
 	int j = 0;
 	for (myMap::iterator iter = pairedTable.begin() ; iter != pairedTable.end(); iter++) {
-		pair<ll, pair<vector<ll>, vector<int>>> p = (*iter);
+		pair<ll, pair<vector<ll>, vector<short>>> p = (*iter);
 		fprintf(outFile,"%lld %d\n", p.fi, p.se.fi.size());
 		forn(i, p.se.fi.size()) {
 			fprintf(outFile,"%lld %d ", p.se.fi[i], p.se.se[i]);
@@ -671,23 +780,24 @@ void readsToPairs(string inputFile, string outputFile , bool reverse) {
 	outputTable(outputFile, table);
 	table.clear();
 }
-//#define OUTPUT_DECOMPRESSED
+#define OUTPUT_DECOMPRESSED
 int pairsToLmers(string inputFile, string outputFile) {
 	FILE* inFile = fopen(inputFile.c_str(), "r");
 	FILE* outFile = fopen(outputFile.c_str(), "w");
 
 	cerr<<"pairsToLmers "<<inputFile.c_str()<<"->"<<outputFile.c_str()<<endl;
 	int ok = 1;
-	ll kmer; int lsize;
+	ll kmer; ll lsize;
 	ll lmers[MAXLMERSIZE];
 	int covers[MAXLMERSIZE];
+	ll cover;
 
-	set<ll> lset;
+	map<ll, int> lset;
 //	set<ll> kset
 	int count = 0;
 	while (1) {
 		count++;
-		ok = fscanf(inFile, "%lld %d", &kmer, &lsize);
+		ok = fscanf(inFile, "%lld %lld", &kmer, &lsize);
 		if (ok != 2) {
 			if (ok > 0) {
 				ERROR("error in reads.");
@@ -699,25 +809,30 @@ int pairsToLmers(string inputFile, string outputFile) {
 			}
 		}
 		if (lsize > MAXLMERSIZE) {
-			ERROR("TOO MUCH LMERS CORRESPONDING TO ONE k-mer");
+			ERROR("TOO MANY LMERS CORRESPONDING TO ONE k-mer");
+			cerr<<"kmer "<<kmer<<" size "<<lsize<<cerr;
 			return -2;
 		}
 
 		forn(i, lsize) {
-			if (fscanf(inFile, "%lld %d", &lmers[i], &covers[i]) != 2) {
-				ERROR( "Error in pairsToSequences reading l-mers");
+			if (fscanf(inFile, "%lld %lld", &lmers[i], &cover) != 2) {
+				ERROR( "Error in pairsToLmers reading l-mers");
 				return -1;
 			}
+			if (cover>MAX_COVERAGE) covers[i] = MAX_COVERAGE;
+			else (covers[i] = cover);
 		}
-		sort(lmers, lmers + lsize);
 		forn(i, lsize) {
-			lset.insert(lmers[i]);
+			if (lset.find(lmers[i])!= lset.end())
+				lset.insert(mp(lmers[i], covers[i]));
+			else
+				lset[lmers[i]] +=covers[i];
 		}
 	}
 	int lsetsize = lset.size();
-	fprintf(outFile, "%d\n", lsetsize);
-	for(set<ll>::iterator i = lset.begin(); i != lset.end(); i++ ) {
-		fprintf(outFile, "%lld ", *i);
+//	fprintf(outFile, "%d\n", lsetsize);
+	for(map<ll, int>::iterator i = lset.begin(); i != lset.end(); i++ ) {
+		fprintf(outFile, "%lld %d\n", i->first, i->second);
 	}
 	fclose(outFile);
 	fclose(inFile);
@@ -742,12 +857,16 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 	FILE* inFile = freopen(inputFile.c_str(), "r", stdin);
     int ok = 1;
     INFO("PairsToSequences started");
-    set<ll> lset;
-    readLmersSet(lmerFile, lset);
+  //  set<ll> lset;
+  //  readLmersSet(lmerFile, lset);
     pair <ll,int> lmers[MAXLMERSIZE];
 	ll kmer;
 	int lsize;
 	FILE* outFile = fopen(outputFile.c_str(), "w");
+#ifdef OUTPUT_DECOMPRESSED
+	FILE* decompressed = fopen((outputFile+".decompr").c_str(), "w");
+#endif
+
 	int count = 0;
 
 	while (1) {
@@ -780,12 +899,14 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 		string outstring;
 
 //		string s = decompress(kmer, k);
-//		fprintf(decompressed, "%s %d\n", s.c_str(), lsize);
+#ifdef OUTPUT_DECOMPRESSED
+		fprintf(decompressed, "%s %d\n", decompress(kmer, k).c_str(), lsize);
+#endif
 		fprintf(outFile, "%lld %d\n", kmer, clsize);
 #ifdef OUTPUT_DECOMPRESSED
-		forn(i, lsize) {
-			fprintf(decompressed, "%s ", decompress(lmers[i], l).c_str());
-		}
+//		forn(i, lsize) {
+//			fprintf(decompressed, "%s ", decompress(lmers[i].first, l).c_str());
+//		}
 #endif
 		forn(i, clsize) {
 			outstring = clusters[i].first->str();
@@ -794,6 +915,9 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 //				fprintf(outFile, "%s %d ",outstring.substr(1,outstring.size()-2).c_str(),clusters[i].second);
 //			else
 				fprintf(outFile, "%s %d ",outstring.c_str(),clusters[i].second);
+#ifdef OUTPUT_DECOMPRESSED
+				fprintf(decompressed, "%s %d ",outstring.c_str(),clusters[i].second);
+#endif
 		}
 		fprintf(outFile, "\n");
 #ifdef OUTPUT_DECOMPRESSED
@@ -806,5 +930,14 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 	INFO("finished");
 	fclose(outFile);
 	fclose(inFile);
+#ifdef OUTPUT_DECOMPRESSED
+	fclose(decompressed);
+#endif
 	return 0;
 }
+
+
+
+
+
+

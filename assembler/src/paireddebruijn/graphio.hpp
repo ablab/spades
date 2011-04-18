@@ -13,16 +13,19 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, string fileName);
 
 void codeRead(char *read, char *code);
 
+void outputVertexKmers(PairedGraph &graph);
 
 inline bool nextReadPair(FILE* f, char * &read1, char * &read2) {
-	if (!fictiveSecondReads) return (fscanf(f, "%s %s", read1, read2) == 2);
-	else {
+	//if (!fictiveSecondReads
+   return (fscanf(f, "%s %s", read1, read2) == 2);
+/*	else {
 		if (fscanf(f, "%s %s", read1, read2) == 2){
 			forn(i,strlen(read2)) read2[i]='A';
 			return true;
 		}
 		return false;
 	}
+	*/
 }
 
 Sequence readGenome(istream &is);
@@ -59,10 +62,10 @@ class DataReader {
 public:
 	DataReader(char *fileName);
 	DataReader(const char *fileName);
-	void read(int &a);
-	void read(long long &a);
-	void read(Edge * &edge);
-	void read(Sequence * &sequence);
+	int read(int &a);
+	int read(long long &a);
+	int read(Edge * &edge);
+	int read(Sequence * &sequence);
 	void read(VertexPrototype * &v);
 	void readLongEdgesMap(longEdgesMap &map);
 	void readIntArray(int *array, int length);
@@ -124,7 +127,7 @@ void DataReader::read(vector<valueType> &v) {
 
 void save(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 		int &VertexCount, int EdgeId);
-
+void save(DataPrinter dp, Edge *e);
 void load(char *fileName, PairedGraph &g, longEdgesMap &longEdges,
 		int &VertexCount, int EdgeId);
 

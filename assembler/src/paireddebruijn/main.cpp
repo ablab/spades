@@ -7,7 +7,7 @@
 #include "readTracing.hpp"
 #include "sequence.hpp"
 #include "readsReformatter.hpp"
-#include "read_generator.hpp"
+//#include "read_generator.hpp"
 
 using namespace paired_assembler;
 LOGGER("p.main");
@@ -25,12 +25,11 @@ void init() {
 void run() {
 	char str[100];
 	//	forgetQualityPairedData("I:/bioinf/eas20_8/s_6_1.cor.fastq.gz", "I:/bioinf/eas20_8/s_6_2.cor.fastq.gz", "data/paireddebruijn/reads_100_200_corr.txt" );
-	//	forgetQualityPairedData("data/paireddebruijn/s_6_1.fastq.gz", "data/paireddebruijn/s_6_2.fastq.gz", "/media/605005E05005BDB2/data/realreads.txt" );
+//		forgetQualityPairedData("data/input/s_6.first400000_1.fastq.gz", "data/input/s_6.first400000_1.fastq.gz", "~/realreads400000.txt" );
 	//	LOG_ASSERT(1 == 0, "Something wrong");
-
 	if (needPairs) {
 		cerr << endl << " constructing pairs" << endl;
-		if (needRevertedPairs)
+		if (downUpClustering)
 			readsToPairs(parsed_reads, parsed_l_k_mers, true);
 		else
 			readsToPairs(parsed_reads, parsed_k_l_mers, false);
@@ -49,24 +48,45 @@ void run() {
 	if (needGraph) {
 		cerr << endl << " constructing Graph" << endl;
 		constructGraph(graph);
-		save(folder+"graph.txt", graph);
+		//save(folder+"graph.txt", graph);
+		load(folder+"graphEdges.txt", graph);
+		graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+
 		outputLongEdges(graph.longEdges, graph,
-				folder+"beforeExpand.dot");
+						folder+"beforeExpand.dot");
+		outputLongEdgesThroughGenome(graph,
+						folder+"beforeExpand_g.dot");
+
 	}
 
 	if (useExpandDefinite) {
 		INFO("Expand definite...");
 		if (!needGraph) {
-			load(folder+"graph.txt", graph);
-			graph.removeLowCoveredEdges(graph.longEdges, 3);
+			load(folder+"graphEdges.txt", graph);
+//			graph.removeLowCoveredEdges(graph.longEdges, 3);
 			graph.RebuildVertexMap();
 			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 		}
-		expandDefinite(graph.longEdges, graph, graph.VertexCount, true);
+//		expandDefinite(graph.longEdges, graph, graph.VertexCount, false);
+		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
 		outputLongEdges(graph.longEdges, graph,
 				folder+"afterExpand.dot");
-		//		outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExpand_g.dot");
+		outputLongEdgesThroughGenome(graph,
+						folder+"afterExpand_g.dot");
 		save(folder+"expandedGraph.txt", graph);
+
+		cutShortTips(graph, 5);
+		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		cutShortTips(graph, 15);
+		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		cutShortTips(graph, 25);
+		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		cutShortTips(graph, 35);
+		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		outputLongEdges(graph.longEdges, graph,
+				folder+"afterTips.dot");
+		outputLongEdgesThroughGenome(graph,
+						folder+"afterTips_g.dot");
 	}
 
 	if (useTraceReads) {
@@ -134,7 +154,7 @@ void run() {
 }
 
 void generate() {
-	generateReads<SmoothPositionChooser> ("data/paireddebruijn/generated1.txt",
+/*	generateReads<SmoothPositionChooser> ("data/paireddebruijn/generated1.txt",
 			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 0);
 	generateReads<RandomPositionChooser> ("data/paireddebruijn/generated2.txt",
 			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 0);
@@ -142,14 +162,37 @@ void generate() {
 			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 6);
 	generateReads<RandomPositionChooser> ("data/paireddebruijn/generated4.txt",
 			"data/input/MG1655-K12_cut.fasta", 20, 200, 0, 6);
+*/
 }
 
 int main() {
+	short My_short;
+	int My_int;
+	long My_long;
+	long long My_longlong;
+	ll My_ll = 56;
+
+	cout<< "short "<<sizeof(My_short)<<endl;
+	cout<< "int "<<sizeof(My_int)<<endl;
+	cout<< "long "<<sizeof(My_long)<<endl;
+	cout<< "long long "<<sizeof(My_longlong)<<endl;
+	cout<< "ll "<<sizeof(My_ll)<<endl;
+//	forgetQualityPairedData("/home/ftp/data/cropped/s_6.first400000_1.fastq.gz", "/home/ftp/data/cropped/s_6.first400000_2.fastq.gz", "data/paireddebruijn/corrected_400000/reads_100_20.txt" );
+//	LOG_ASSERT(1 == 0, "Something wrong");
+//assert(0);
+
+
 //	generate();
-//	Sequence* a = new Sequence("TACA");
+//	Sequence* a = new Sequence("TACATA");
 //
 //	Sequence* b = new Sequence("ACAT");
 //	cerr << a->similar(*b, 4, LEFT);
+//	cerr << b->similar(*a, 4, RIGHT);
+//	cerr << a->similar(*b, 4, RIGHT);
+//	cerr << b->similar(*a, 4, LEFT);
+
+	//	cerr << a->similar(*b, 4, LEFT);
+	//	cerr << a->similar(*b, 4, LEFT);
 //	cerr << a->similar(*b, 4, RIGHT);
 //
 //	cerr << b->similar(*a, 4, LEFT);

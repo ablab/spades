@@ -34,32 +34,35 @@ public:
 	//		data_ = new SequenceData(seq);
 	//		data_->Grab();
 	//	}
-	Sequence& operator=(const Sequence &s) {
+	const Sequence& operator=(const Sequence &rhs) {
+		if (data_ == rhs.data_) {
+			return *this;
+		}
 		data_->Release();
-		data_ = s.data_;
+		data_ = rhs.data_;
 		data_->Grab();
-		from_ = s.from_;
-		size_ = s.size_;
-		rtl_ = s.rtl_;
+		from_ = rhs.from_;
+		size_ = rhs.size_;
+		rtl_ = rhs.rtl_;
 		return *this;
 	}
 
 	Sequence(char* s) :
-	        from_(0), size_(strlen(s)), rtl_(false) {
-	        data_ = new SequenceData(s, size_);
+		from_(0), size_(strlen(s)), rtl_(false) {
+		data_ = new SequenceData(s, size_);
 		data_->Grab();
 	}
 
 	Sequence(const char* s) :
 		from_(0), size_(strlen(s)), rtl_(false) {
-	        data_ = new SequenceData(s, size_);
+		data_ = new SequenceData(s, size_);
 		data_->Grab();
 	}
 
 	template<typename S>
-	Sequence(const S &s) :
+	explicit Sequence(const S &s) :
 		from_(0), size_(s.size()), rtl_(false) {
-	        data_ = new SequenceData(s, size_);
+		data_ = new SequenceData(s, size_);
 		data_->Grab();
 	}
 
@@ -83,7 +86,7 @@ public:
 	int similar(const Sequence &t, int k, char directed = 0) const;
 	int leftSimilar(const Sequence &t, int k) const;
 	int rightSimilar(const Sequence &t, int k) const;
-	
+
 	/// returns true if two sequences intersect
 	bool intersects(const Sequence &t) const;
 
@@ -103,14 +106,16 @@ public:
 
 ostream& operator<<(ostream& os, const Sequence& s);
 
+// TODO: optimize
 template<size_t size2_>
-inline Seq<size2_> Sequence::start() const {
+Seq<size2_> Sequence::start() const {
 	assert(size2_ <= size_);
 	return Seq<size2_> (*this);
 }
 
+// TODO: optimize
 template<size_t size2_>
-inline Seq<size2_> Sequence::end() const {
+Seq<size2_> Sequence::end() const {
 	assert(size2_ <= size_);
 	return Seq<size2_> (*this, size_ - size2_);
 }

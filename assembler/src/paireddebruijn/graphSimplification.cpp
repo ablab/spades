@@ -273,6 +273,99 @@ pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &graph,
 	return make_pair(res1 + 1, res2 + 1);
 }
 
+
+void cutShortTips(PairedGraph &graph, int MaxCutLength){
+	forn(i,graph.VertexCount) {
+		if ((graph.rightDegree(i) == 1) && (graph.leftDegree(i) == 0)){
+			Edge* curEdge = graph.neighbourEdge(i,0, RIGHT);
+			if (curEdge->length<=MaxCutLength) graph.removeEdge(curEdge);
+		}
+		if ((graph.rightDegree(i) == 0) && (graph.leftDegree(i) == 1)){
+			Edge* curEdge = graph.neighbourEdge(i,0, LEFT);
+			if (curEdge->length<=MaxCutLength) graph.removeEdge(curEdge);
+		}
+	}
+}
+
+
+void expandObvious(longEdgesMap &longEdges, PairedGraph &graph,
+		int &VertexCount, bool NotExpandBeyondDefinite) {
+	longEdgesMap::iterator it;
+	int expandEdgeIndex;
+	cerr << "expandDefiniteStart" << endl;
+	forn(i,VertexCount) {
+		cerr << "expand definite right Vertex " <<i<< endl;
+
+		if ((graph.degrees[i][1] == 1) && (graph.degrees[i][0] == 1)) {
+			expandEdgeIndex = edgeRealId(graph.edgeIds[i][0][OUT_EDGE],
+					longEdges);
+			int DestVertex = longEdges[expandEdgeIndex]->ToVertex;
+			if (DestVertex == i) {
+				WARN("Expand definite right has bad loop");
+				continue;
+			}
+			pair<int, int> diffDistDest = make_pair(0, 0);
+			pair<int, int> diffDistCur = make_pair(0, 0);
+			if (NotExpandBeyondDefinite) {
+				diffDistDest = vertexDist(longEdges, graph, DestVertex);
+				diffDistCur = vertexDist(longEdges, graph, i);
+			}
+			if ((!NotExpandBeyondDefinite) || (diffDistCur.first
+					+ diffDistDest.second + longEdges[expandEdgeIndex]->length
+					< readLength + k) ||(graph.degrees[i][0]==1)) {
+				if (NotExpandBeyondDefinite)
+					cerr << "Check cur vert " << i << " dest vert "
+							<< DestVertex << "  " << diffDistCur.first << " + "
+							<< diffDistDest.second << " + "
+							<< longEdges[expandEdgeIndex]->length << " = "
+							<< diffDistCur.first + diffDistDest.second
+									+ longEdges[expandEdgeIndex]->length
+							<< " < " << readLength + k << endl;
+				int a = 0;
+
+				while ((edgeRealId(graph.edgeIds[DestVertex][a][IN_EDGE],
+						longEdges) != expandEdgeIndex)&&(a < graph.degrees[DestVertex][0])){
+					cerr<<"vertex "<<DestVertex<<" in edge "<<edgeRealId(graph.edgeIds[DestVertex][a][IN_EDGE],
+							longEdges)<<" on position "<<a<<endl;
+					a++;
+				}
+				cerr<<"Total in edges "<<graph.degrees[DestVertex][0]<<" but we want "<<a<<endl;
+				assert(a < graph.degrees[DestVertex][0]);
+				//				cerr << a;
+				while (a < graph.degrees[DestVertex][0] - 1) {
+					graph.edgeIds[DestVertex][a][IN_EDGE]
+							= graph.edgeIds[DestVertex][a + 1][IN_EDGE];
+					a++;
+				}
+
+				//				cerr << "hm"<<" "<< a << endl << graph.degrees[i][0]<< endl;
+				graph.degrees[DestVertex][0]--;
+				//				assert(graph.degrees[DestVertex][0] > 0);
+				forn(j, graph.degrees[i][0]) {
+					longEdges[graph.edgeIds[i][j][IN_EDGE]]->ExpandRight(
+							*(longEdges[expandEdgeIndex]));
+					graph.edgeIds[DestVertex][graph.degrees[DestVertex][0]][IN_EDGE]
+							= graph.edgeIds[i][j][IN_EDGE];
+					graph.degrees[DestVertex][0]++;
+				}
+				it = longEdges.find(expandEdgeIndex);
+				longEdges.erase(it);
+
+				graph.degrees[i][0] = 0;
+				graph.degrees[i][1] = 0;
+				diffDistDest = vertexDist(longEdges, graph, DestVertex);
+				if (NotExpandBeyondDefinite)
+					cerr << "Must be: dest vert " << DestVertex << "  "
+							<< diffDistDest.first << " + "
+							<< diffDistDest.second << " = "
+							<< diffDistDest.first + diffDistDest.second
+							<< " < " << readLength + k << endl;
+
+			}
+		}
+	}
+
+}
 void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 		int &VertexCount, bool NotExpandBeyondDefinite) {
 	longEdgesMap::iterator it;

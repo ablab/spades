@@ -1,32 +1,46 @@
+#define K 27
+#define DE_BRUIJN_DATA_FOLDER "./data/debruijn/"
+
+/////////////////
+//for read generator
+//#define SUBSTR_LENGTH 10000
+//#define COVERAGE 30
+//#define R 35
+/////////////////
+
+
 #include "cute.h"
 #include "ide_listener.h"
 #include "cute_runner.h"
-//#include "condensedGraphTest.hpp"
-//#include "condensed_graph_tool.hpp"
-#include "debruijnGraphTest.hpp"
-#include "edgeGraphTest.hpp"
-#include "tip_clipper.hpp"
+#include "debruijn_graph_test.hpp"
 
-void runSuite() {
+#include "edge_graph_test.hpp"
+#include "edge_graph_tool.hpp"
+#include "visualization_utils.hpp"
+#include "ifaststream.hpp"
+
+void RunTestSuites() {
 	cute::suite s;
 	//TODO add your test here
-	s += DeBruijnGraphSuite();
-	//	 s += CondensedGraphSuite();
-	s += EdgeGraphSuite();
+//	s += de_bruijn::DeBruijnGraphSuite();
+	s += edge_graph::EdgeGraphSuite();
 	cute::ide_listener lis;
-	cute::makeRunner(lis)(s, "De Bruijn Project Test Suite");
+	cute::makeRunner(lis)(s, "De Bruijn Project Test Suites");
 }
 
-void checkClipTippingCompilation() {
-	EdgeGraph graph(11);
-	TipComparator comparator(graph);
-	TipClipper<TipComparator> clipper(graph, comparator, 3, 2.);
-	clipper.ClipTips();
+void RunEdgeGraphTool() {
+	pair<string, int> input = QUAKE_CROPPED_10_5_A;
+	ireadstream stream(input.first);
+	ifaststream genome_stream(ECOLI_FILE);
+	string genome;
+	genome_stream >> genome >> genome;
+	edge_graph::EdgeGraphTool(stream, genome.substr(0, input.second));
+	stream.close();
+	genome_stream.close();
 }
 
 int main() {
-	runSuite();
-	//	 SimulatedMistakesTool();
-	checkClipTippingCompilation();
+//	RunTestSuites();
+	RunEdgeGraphTool();
 	return 0;
 }
