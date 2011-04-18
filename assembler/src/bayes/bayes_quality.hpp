@@ -53,7 +53,7 @@ typedef vector< vector< vector<size_t> > > BowtieResults;
 // if a read is shorter (has more N's), it will be skipped
 #define MIN_READ_SIZE 60
 
-#define BIGREADNO 1000000
+#define BIGREADNO 100000
 
 // quality value of an insertion in the read
 #define INSERT_Q 32
