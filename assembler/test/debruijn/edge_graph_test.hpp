@@ -86,18 +86,18 @@ void VertexMethodsSimpleTest() {
 	ASSERT_EQUAL(false, g.IsDeadStart(data.first[1]));
 }
 
-void GraphMethodsSimpleTest() {
-	EdgeGraph g(11);
-	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 2);
-	ASSERT_EQUAL(vector<ActionHandler*> (), g.GetHandlers());
-	ActionHandler* handler = new ActionHandler();
-	g.AddActionHandler(handler);
-	vector<ActionHandler*> handlers = g.GetHandlers();
-	ASSERT_EQUAL(1u, handlers.size());
-	ASSERT_EQUAL(handler, handlers[0]);
-	g.RemoveActionHandler(handler);
-	ASSERT_EQUAL(vector<ActionHandler*> (), g.GetHandlers());
-}
+//void GraphMethodsSimpleTest() {
+//	EdgeGraph g(11);
+//	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 2);
+//	ASSERT_EQUAL(vector<ActionHandler*> (), g.GetHandlers());
+//	ActionHandler* handler = new ActionHandler();
+//	g.AddActionHandler(handler);
+//	vector<ActionHandler*> handlers = g.GetHandlers();
+//	ASSERT_EQUAL(1u, handlers.size());
+//	ASSERT_EQUAL(handler, handlers[0]);
+//	g.RemoveActionHandler(handler);
+//	ASSERT_EQUAL(vector<ActionHandler*> (), g.GetHandlers());
+//}
 
 void SmartIteratorTest() {
 	EdgeGraph g(11);
@@ -246,7 +246,7 @@ cute::suite EdgeGraphSuite() {
 	s.push_back(CUTE(OneEdgeGraphTest));
 	s.push_back(CUTE(EdgeMethodsSimpleTest));
 	s.push_back(CUTE(VertexMethodsSimpleTest));
-	s.push_back(CUTE(GraphMethodsSimpleTest));
+//	s.push_back(CUTE(GraphMethodsSimpleTest));
 	s.push_back(CUTE(SmartIteratorTest));
 	s.push_back(CUTE(TestSimpleThread));
 	s.push_back(CUTE(TestSimpleThread2));
