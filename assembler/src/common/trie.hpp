@@ -3,6 +3,7 @@
  *
  * Created on: 3.04.2011
  *     Author: Mariya Fomkina
+ *   Modified: 18.04.2011 by author
  */
 
 #ifndef _TRIE_HPP_
@@ -27,7 +28,7 @@ private:
     Node(char l) : letter(l), data(NULL) {
       nodes[0] = 0;
       nodes[1] = 0;
-      nodes[3] = 0;
+      nodes[2] = 0;
     }
   };
   vector<Node> tree_;
@@ -62,15 +63,15 @@ public:
       char* temp = new char[sizeof(Key) * 8];
       size_t p = pos;
       for (size_t i = sizeof(Key) * 8 - 1; i >= 0; --i) {
-	temp[i] = tree_[pos].letter;
-	p = tree_[pos].nodes[2];
+				temp[i] = tree_[pos].letter;
+				p = tree_[pos].nodes[2];
       }
       char* key_temp = new char[sizeof(Key)];
       for (int i = 0; i < sizeof(Key); ++i) {
-	key_temp[i] = temp[i * 8];
-	for (size_t j = 1; j < 8; ++j) {
-	  key_temp[i] = (key_temp[i] << 1) + temp[i * 8 + j];
-	}
+				key_temp[i] = temp[i * 8];
+				for (size_t j = 1; j < 8; ++j) {
+					key_temp[i] = (key_temp[i] << 1) + temp[i * 8 + j];
+				}
       }
       memcpy(&key, key_temp, sizeof(Key));
       delete [] temp;
@@ -86,8 +87,9 @@ public:
       return res;
     }
 
-    pair<Key, Value> operator*() {
-      return make_pair(key, *((*tree).tree_[pos].data));
+    pair<Key, Value>& operator*() {
+			std::pair<Key, Value> p = make_pair(key, *((*tree).tree_[pos].data));
+			return p;
     }
 
     bool operator==(const iterator &it) {
@@ -103,7 +105,7 @@ private:
   void init() {
     size_ = 0;
     len_ = 1;
-    tree_.push_back(Node(255));
+    tree_.push_back(Node(15));
   }
  
   void add_new(const pair<const Key, Value>& value) {
@@ -114,14 +116,42 @@ private:
       temp_key[i] = (k & (1 << (sok - 1 - i))) >> (sok - 1  -i);
     }
     size_t pos = 0;
-    size_t i = 0;
-    while (tree_[pos].nodes[temp_key[i]] != 0) {
-      pos = tree_[pos].nodes[temp_key[i]];
+    size_t i = -1;
+    while (tree_[pos].nodes[(size_t)temp_key[i + 1]] != 0) {
+      pos = tree_[pos].nodes[(size_t)temp_key[i + 1]];
       ++i;
     }
-    //add new Node elements to tree_ and Value to data_
-    //update size_ and len_
+		for (size_t j = i + 1; j < sok; ++j) {
+			Node node(temp_key[j]);
+			tree_[pos].nodes[(size_t)temp_key[j]] = tree_.size();
+			node.nodes[2] = pos;
+			tree_.push_back(node);
+			pos = tree_.size() - 1;
+		}
+		data_.push_back(value.second);
+		tree_[pos].data = &(data_[data_.size() - 1]);
+		++size_;
+		len_ = tree_.size();
   }
+
+	iterator search_for(const Key& k) {
+    size_t sok = sizeof(Key) * 8;
+    char* temp_key = new char[sok];
+    for (size_t i = 0; i < sok; ++i) {
+      temp_key[i] = (k & (1 << (sok - 1 - i))) >> (sok - 1  -i);
+    }
+    size_t pos = 0;
+    size_t i = -1;
+    while (tree_[pos].nodes[(size_t)temp_key[i + 1]] != 0) {
+      pos = tree_[pos].nodes[(size_t)temp_key[i + 1]];
+      ++i;
+    }
+		if (i == sok - 1) {
+			return iterator(pos, this);
+		} else {
+			return iterator(len_, this);
+		}
+	}
 
 public:
 
@@ -139,7 +169,13 @@ public:
   }
 
   trie<Key, Value>& operator=(const trie<Key, Value>& Trie) {
-    //some operations of copiing
+    size_ = Trie.size_;
+		len_ = Trie.len_;
+		//not safe, can cause memory leak
+		tree_.clear();
+		tree_ = Trie.tree_;
+		data_.clear();
+		data_ = Trie.data_;
     return *this;
   }
 
@@ -152,33 +188,49 @@ public:
   }
 
   iterator begin() {
-    iterator it(0, *this);
+    iterator it(0, this);
     return ++it;
   }
 
   iterator end() {
-    iterator it(len_, *this);
+    iterator it(len_, this);
     return it;
   }
 
   iterator find(const Key& k) {
     //TEMP
-    return end();
+		return search_for(k);
+    //return end();
   }
 
   pair<iterator, bool> insert(const pair<const Key, Value> &k) {
     //TEMP
-    add_new(k);
-    return make_pair(end(), true); 
+		iterator it = search_for(k.first);
+		if (it == end()) {
+			add_new(k);
+			return make_pair(end(), true);
+		} else {
+			return make_pair(it, false);
+		} 
   }
 
   size_t erase(const Key& k) {
     //TEMP
+		iterator it = search_for(k);
+		if (it != end()) {
+			//simple and not optimal
+			tree_[it.pos].data = NULL;
+		}
     return 0;
   }
 
   void clear() {
     //TEMP
+		tree_.clear();
+		data_.clear();
+		size_ = 0;
+    len_ = 1;
+    tree_.push_back(Node(15));
   }
 
   bool empty() {
@@ -192,5 +244,7 @@ public:
   size_t len() const {
     return len_;
   }
+
 };
+
 #endif
