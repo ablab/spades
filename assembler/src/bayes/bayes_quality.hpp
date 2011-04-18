@@ -23,13 +23,24 @@ namespace bayes_quality {
 typedef vector<float> QVector;
 // A read with quality values
 typedef pair<Sequence, QVector> QRead;
+// Bowtie search results
+typedef vector< vector< vector<size_t> > > BowtieResults;
+
+// parameters for bowtie interaction
+#define USE_BOWTIE
+#define BOWTIE_SEED_LENGTH 15
+#define BOWTIE_SEED_NUM 5
+#define BWMAP_IND_REVC 0
+#define BWMAP_IND_RDNO 1
+#define BWMAP_IND_RIND 2
+#define BWMAP_IND_GIND 3
 
 
 // size of read batch that we read from file
 #define READ_BATCH 1000
 
 // number of threads
-#define THREADS_NUM 5
+#define THREADS_NUM 2
 
 // number of reads to skip from the beginning of the file
 #define SKIP_READS 0
@@ -40,7 +51,7 @@ typedef pair<Sequence, QVector> QRead;
 
 // minimum size for a read
 // if a read is shorter (has more N's), it will be skipped
-#define MIN_READ_SIZE 0
+#define MIN_READ_SIZE 60
 
 #define BIGREADNO 1000000
 
@@ -81,7 +92,7 @@ typedef tr1::unordered_map<PSeq, pair<size_t, size_t>, PSeq::hash, PSeq::equal_t
 //   -- otherwise, it's bad, skip it
 // this works well if INS and DEL are small (e.g., INS=DEL=1)
 // if INS>1 or DEL>1, this approach may lead to errors
-#define USE_LOOKAHEAD
+// #define USE_LOOKAHEAD
 #define LA_SIZE 25
 #define LA_ERRORS 7
 typedef Seq<LA_SIZE> LASeq;
@@ -111,6 +122,12 @@ private:
 	Sequence genome_;
 	size_t gensize_;
 
+	// do we use external bowtie
+	bool bowtie_;
+	string bowtieCmd_;
+	string bowtieIndex_;
+	BowtieResults bwres_;
+
 	// for run statistics
 	size_t totalPos_, totalGood_;
 	
@@ -136,8 +153,9 @@ private:
 	/**
 	 * process one read, store all results in the corresponding fields, return total likelihood
 	 * @param read_no number of this read in the preprocessed maps; if there was no preprocessing, put -1 here
+	 * @param indices if we already have a list of indices to check, insert them here; if the input has size 0, we do full search
 	 */
-	MatchResults ProcessOneReadBQ(const Sequence &, const QVector &, size_t readno = -1);
+	MatchResults ProcessOneReadBQ(const Sequence &, const QVector &, size_t readno, const vector<size_t> & indices);
 	
 	// auxiliary function: check whether this read can be applied to this genome part
 	bool isAvailable(size_t readno, size_t j, const PSeq & curpseq);
@@ -172,7 +190,7 @@ public:
 	 * returns the minimum likelihood of a read and its complement
 	 * @return complete match results
 	 */
-	MatchResults ReadBQPreprocessed(const Read &, size_t readno, size_t readssize);
+	MatchResults ReadBQPreprocessed(const Read &, size_t readno, size_t readssize, const BowtieResults & bwres);
 
 	/**
 	 * preprocess a vector of reads, i.e., be prepared to compute their masks
@@ -247,6 +265,29 @@ public:
 	size_t TotalGoodPositions() const { return totalGood_; }
 
 
+	/// set bowtie parameters
+	void setBowtie(string cmd, string ind) {
+		bowtie_ = true;
+		bowtieCmd_ = cmd;
+		bowtieIndex_ = ind;
+	}
+	
+	
+	// Bowtie-related routines
+	
+	/// write down a batch of reads for Bowtie processing
+	void writeReadPartsForBowtie(const vector<Read> & v, int fd, size_t readno);
+	/// write down a batch of reads for Bowtie processing to a temporary file
+	/// return its name
+	string writeReadPartsForBowtie(const vector<Read> & v, size_t readno) {
+		char *tmpname = strdup("/tmp/tmpfileXXXXXX");
+		int fd = mkstemp(tmpname);
+		assert(fd >= 0);
+		writeReadPartsForBowtie(v, fd, readno);
+		return tmpname;
+	}
+	/// read Bowtie search results
+	BowtieResults readBowtieResults(int fd, size_t noofreads, size_t readno);
 };
 
 }
