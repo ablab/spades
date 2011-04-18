@@ -11,7 +11,8 @@ LOGGER("b");
 
 #define PROCESS_READS 25
 #define READ_FILENAME "/home/student/nikolenko/python/bayesQuality/s_6_1.fastq.gz"
-#define GENOME_FILENAME "./data/bayes/biggenome.fasta"
+#define GENOME_FILENAME "data/bayes/biggenome.fasta"
+#define BOWTIE_COMMAND "./src/libs/bowtie-0.12.7/bowtie -a -v 2 data/bayes/biggenome"
 
 using namespace bayes_quality;
 
@@ -49,10 +50,25 @@ int main(int argc, char* argv[]) {
 	
 	string readfilename = "";
 	string genomefilename = "";
-	if (argc > 1) readfilename = argv[1];
-	else readfilename = READ_FILENAME;
-	if (argc > 2) genomefilename = argv[2];
-	else genomefilename = GENOME_FILENAME;
+	string bowtieindex = "";
+	string bowtiecmd = "";
+	for (int i=1; i < argc; ++i) {
+		if (!strcmp(argv[i], "--bowtie") || !strcmp(argv[i], "-b")) {
+			bowtiecmd = argv[i+1];
+		}
+		if (!strcmp(argv[i], "--bindex") || !strcmp(argv[i], "-bi")) {
+			bowtieindex = argv[i+1];
+		}
+		if (!strcmp(argv[i], "--reads") || !strcmp(argv[i], "-r")) {
+			readfilename = argv[i+1];
+		}
+		if (!strcmp(argv[i], "--genome") || !strcmp(argv[i], "-g")) {
+			genomefilename = argv[i+1];
+		}
+	}
+	if (readfilename == "") readfilename = READ_FILENAME;
+	if (genomefilename == "") genomefilename = GENOME_FILENAME;
+	if (bowtiecmd == "") bowtiecmd = BOWTIE_COMMAND;
 
 
 	//ireadstream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta.gz");
@@ -61,6 +77,18 @@ int main(int argc, char* argv[]) {
 	ifs >> name >> genome;
 	INFO("!" << name);
 	BayesQualityGenome bqg(genome.data());
+	
+	#ifdef USE_BOWTIE
+		bqg.setBowtie(bowtiecmd, bowtieindex);
+	#endif
+
+	ireadstream irs(readfilename.data());
+	Read r;
+	irs >> r;
+	r.trimNs();
+	INFO(r.getSequence());
+	irs.close();
+
 
 	// processQualityReads(readfilename.data(), bqg);
 	bqg.ProcessReads(readfilename.data());
