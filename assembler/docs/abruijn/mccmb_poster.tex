@@ -1,24 +1,53 @@
-\documentclass[12pt]{article}
-
-\usepackage{amssymb,amsmath,amsthm}
+\documentclass[17pt]{extarticle}
+\usepackage{ifpdf}
+\ifpdf
+\usepackage{cmap}
+\fi
+\usepackage[english]{babel}
+\usepackage{palatino}
+\usepackage[x11names,svgnames]{xcolor}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{tikz}
+\usepackage{amsthm}
+\usepackage{pgf}
+\usepackage{multicol}
+\usepackage{xspace}
 \usepackage{graphicx}
-%\usepackage{fullpage}
-\usepackage[final,colorlinks,hyperindex,unicode=true]{hyperref}
-%\usepackage{tikz}
-\usepackage[shadow,colorinlistoftodos,textwidth=4cm]{todonotes}
+\usepackage{multicol}
+\usepackage[a1paper,left=4cm,right=3cm,top=2cm,bottom=1cm,foot=0cm]{geometry}
+\usepackage{poster}
 
-\newcommand{\jpgpic}[1]{\begin{center}\includegraphics[width=\textwidth]{#1.jpg}\end{center}}
-
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{theorem}{Theorem}[section]
+                             
 \begin{document}
-\author{M. Dvorkin, A. Kulikov}
-\title{A Bruijn Graph Approach}
-%\date{March 14, 2011}
-\maketitle
+\pagestyle{empty}
+\noindent\hspace{-2cm}\begin{tikzpicture}[rounded corners=2cm,x=1cm,y=1cm]
+  \draw (0,-1) [color=SteelBlue3,line width=2mm] rectangle (55.5,79);
+\end{tikzpicture}
+\vspace{-78.5cm}
+\begin{center}
+    {\color{OrangeRed} \fontsize{64pt}{1em} {\bf A-Bruijn Graph Approach to \emph{de novo} genome assembly}}
+    \vspace{1.5cm}
+    
+    \fontsize{32pt}{2.5em}\selectfont
+    \color{DodgerBlue3}
 
-\listoftodos
-\tableofcontents
+    {\bf Mikhail Dvorkin, Alexander S. Kulikov, Max Alekseyev}
 
-\newpage
+    {affiliations}
+
+    {\tt emails}
+
+\end{center}%
+\vspace{1cm}
+
+\begin{multicols}{2}
+\section{NB!}
+This is just a copypasted text.
 
 \section{General Idea}
 
@@ -33,26 +62,11 @@ reads {\tt ACGTACT} and {\tt TACTAGC} and $k=3$
 instead of all gray edges in the figure below we will have 
 only two black edges.
 \begin{center}
-\includegraphics[width=\textwidth]{fig1.pdf}
+\includegraphics[width=.45\textwidth]{fig1.pdf}
 \end{center}
 The hope is that the resulting graph will be easier to handle 
 and at the same time it will have essentially the same structure 
-as the original de Bruijn graph.{\todo{we should probably cite the paper 
-on minimizers and use the word `minimizer' instead of `earmarked $k$-mer'?..}}
-
-\subsection{Example}
-
-\begin{figure}
-\caption{De Bruijn (grey) and A Bruijn (black) graphs of genomes {\tt ACTGACTGTTGACACTG} ($readsize=9$, $k=5$)
-and {\tt ATTGGTACATTGTGGTACGTACTGACT} ($readsize=11$, $k=5$).}\label{fig23}
-\begin{center}\includegraphics[height=0.9\textheight]{fig2.pdf}
-~~~~~~~~~~~~~~
-\includegraphics[height=0.9\textheight]{fig3.pdf}\end{center}
-\end{figure}
-
-Fig.~\ref{fig23} shows de Bruijn (black edges) and A Bruijn (grey edges) graphs for two toy genomes 
-{\tt ACTGACTGTTGACACTG} and {\tt ATTGGTACATTGTGGTACGTACTGACT}. Numbers on edges are their multiplicities. 
-We assume that the genome is circular and that we are given the set of all its reads.
+as the original de Bruijn graph.
 
 
 \subsection{Advantages of A Bruijn graph over de Bruijn graph}
@@ -79,15 +93,15 @@ following:
 As figure shows, this ordering gives a graph consisting of just one cycle.
 
 
-\begin{figure}
-\caption{A Bruijn graphs of genome {\tt TAAACGAAAC} ($readsize=6$, $k=3$)
-for different orderings on $3$-mers.}\label{fig:different_orderings}
+%\begin{figure}
+%\caption{A Bruijn graphs of genome {\tt TAAACGAAAC} ($readsize=6$, $k=3$)
+%for different orderings on $3$-mers.}\label{fig:different_orderings}
 \begin{center}
-\includegraphics[width=0.9\textwidth]{TAAACGAAAC.pdf}
+\includegraphics[width=0.45\textwidth]{TAAACGAAAC.pdf}
 \end{center}
-\end{figure}
+%\end{figure}
 
-\item \dots \todo{what else?..}
+
 \end{enumerate}
 
 \subsection{Hash Functions}
@@ -133,10 +147,10 @@ The technical issues pushed us towards a two-pass procedure:
 Fig.~\ref{fig4} shows the resulting A Bruijn graph for the first 10\% of the reference E. Coli genome; the ideal data set
 was used for this calculation.
 
-\begin{figure}
-\caption{10\% of E. Coli genome. $K$ = 31. Two $k$-mers from each read.}\label{fig4}
-\begin{center}\includegraphics[height=0.9\textheight]{fig4.pdf}\end{center}
-\end{figure}
+%\begin{figure}
+%\caption{10\% of E. Coli genome. $K$ = 31. Two $k$-mers from each read.}\label{fig4}
+%\begin{center}\includegraphics[height=0.9\textheight]{fig4.pdf}\end{center}
+%\end{figure}
 
 This graph has only undergone a simple vertex-merging procedure; there are more
 yet-unimplemented simplifications applicable to this graph.
@@ -154,8 +168,8 @@ Along with a hash function, an apt criterion is the frequency of the given $k$-m
 the following.
 
 \begin{itemize}
-  \item The $k$-mers that are underrepresented{\todo{what do we mean by ``underrepresented''?
-  is it true that most of the erroneous reads have frequency one?}} in the 
+  \item The $k$-mers that are underrepresented
+  in the 
   reads (even those a with small value of hash function)
   are (most probably) erroneous. Using frequency allows us 
   to exclude them from the set of
@@ -195,7 +209,7 @@ paired reads is helpful when traversing an A Bruijn graph.
 
 \section{Pseudocode of the assembler}
 
-\todo[inline]{add high-level description of the assembler}
+
 
 Iterative procedure for selecting the set of earmarked $k$-mers is the following:
 
@@ -210,20 +224,6 @@ that has the smallest hash value and earmark it.
 \item Repeat the previous step to minimize the number of neighbourless $k$-mers.
 \end{enumerate}
 
-\section{Schedule}
-\begin{description}
-  \item[April 15] implement earmarking procedure
-  \item[April 18] test earmarking procedure on real data, get general statistics
-  \item[April 20] test different hashing parameters on real data
-  \item[April 22] implement frequency-dependent heuristics
-%  \item[April 17] test graph condensation on real data
-%  \item[April 30] research into the effects of different hash functions 
-%  used to take minimizers
-%  \item[May 10] compare the resulting A Bruijn graph with the condensed de 
-%  Bruijn graph
-%  \item 
-\end{description}
-
-
+\end{multicols}
 
 \end{document}

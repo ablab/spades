@@ -104,6 +104,55 @@ public:
 	}
 };
 
+template<class Graph>
+class PairedActionHandler : public GraphActionHandler<Graph> {
+private:
+	Graph &graph_;
+	GraphActionHandler<Graph> *handler_;
+public:
+	typedef GraphActionHandler<Graph> super;
+	typedef typename super::VertexId VertexId;
+	typedef typename super::EdgeId EdgeId;
+
+	PairedActionHandler(Graph &graph, GraphActionHandler<Graph> *handler) : graph_(graph), handler_(handler) {
+	}
+
+	super *GetInnerActionhandler() {
+		return handler_;
+	}
+
+	virtual void HandleAdd(VertexId v) {
+		VertexId rcv = graph_.Complement(v);
+		handler_->HandleAdd(v);
+		if(v != rcv)
+			handler_->HandleAdd(rcv);
+	}
+
+	virtual void HandleAdd(EdgeId e) {
+		EdgeId rce = graph_.Complement(e);
+		handler_->HandleAdd(e);
+		if(e != rce)
+			handler_->HandleAdd(rce);
+	}
+
+	virtual void HandleDelete(VertexId v) {
+		VertexId rcv = graph_.Complement(v);
+		handler_->HandleDelete(v);
+		if(v != rcv)
+			handler_->HandleDelete(rcv);
+	}
+
+	virtual void HandleDelete(EdgeId e) {
+		EdgeId rce = graph_.Complement(e);
+		handler_->HandleDelete(e);
+		if(e != rce)
+			handler_->HandleDelete(rce);
+	}
+
+	virtual ~PairedActionHandler() {
+	}
+};
+
 template<size_t kmer_size_, typename Graph, typename ElementId>
 class DataHashRenewer {
 
@@ -136,12 +185,12 @@ public:
 
 	void HandleAdd(ElementId id) {
 		RenewKmersHash(id);
-		RenewKmersHash(g_.Complement(id));
+//		RenewKmersHash(g_.Complement(id));
 	}
 
 	virtual void HandleDelete(ElementId id) {
 		DeleteKmersHash(id);
-		DeleteKmersHash(g_.Complement(id));
+//		DeleteKmersHash(g_.Complement(id));
 	}
 };
 
@@ -460,12 +509,12 @@ public:
 
 	virtual void HandleAdd(VertexId v) {
 		super::queue_.offer(v);
-		super::queue_.offer(super::graph_.Complement(v));
+//		super::queue_.offer(super::graph_.Complement(v));
 	}
 
 	virtual void HandleDelete(VertexId v) {
 		super::remove(v);
-		super::remove(super::graph_.Complement(v));
+//		super::remove(super::graph_.Complement(v));
 	}
 };
 
@@ -496,17 +545,17 @@ public:
 
 	virtual void HandleAdd(EdgeId v) {
 		super::queue_.offer(v);
-		EdgeId rc = super::graph_.Complement(v);
-		if (v != rc)
-			super::queue_.offer(rc);
+//		EdgeId rc = super::graph_.Complement(v);
+//		if (v != rc)
+//			super::queue_.offer(rc);
 	}
 
 	virtual void HandleDelete(EdgeId v) {
 		super::remove(v);
-		EdgeId rc = super::graph_.Complement(v);
-		if (v != rc) {
-			super::remove(rc);
-		}
+//		EdgeId rc = super::graph_.Complement(v);
+//		if (v != rc) {
+//			super::remove(rc);
+//		}
 	}
 };
 

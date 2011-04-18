@@ -121,6 +121,7 @@ public:
 	typedef set<Vertex*>::const_iterator VertexIterator;
 	typedef Vertex::EdgeIterator EdgeIterator;
 	typedef de_bruijn::GraphActionHandler<EdgeGraph> ActionHandler;
+	typedef de_bruijn::PairedActionHandler<EdgeGraph> PairedActionHandler;
 	//	typedef de_bruijn::SmartVertexIterator<EdgeGraph> SmartVertexIterator;
 	//	typedef de_bruijn::SmartEdgeIterator<EdgeGraph> SmartEdgeIterator;
 
@@ -168,7 +169,7 @@ public:
 	 * Constructs empty graph to work with k-mers.
 	 *
 	 * @param k Main parameter that defines the size of k-mers
-	 * @param action_handler Graph actions handler
+	 * //@param action_handler Graph actions handler
 	 */
 	EdgeGraph(size_t k) {
 		assert(k % 2 == 1);
@@ -190,14 +191,15 @@ public:
 
 	void AddActionHandler(ActionHandler* action_handler) {
 		DEBUG("Action handler added");
-		action_handler_list_.push_back(action_handler);
+		action_handler_list_.push_back(new PairedActionHandler(*this, action_handler));
 	}
 
 	bool RemoveActionHandler(ActionHandler* action_handler) {
 		DEBUG("Trying to remove action handler");
-		for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+		for (vector<PairedActionHandler *>::iterator it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
-			if (*it == action_handler) {
+			if ((*it)->GetInnerActionhandler() == action_handler) {
+				delete *it;
 				action_handler_list_.erase(it);
 				DEBUG("Action handler removed");
 				return true;
@@ -207,10 +209,10 @@ public:
 		return false;
 	}
 
-	//todo remove
-	const vector<ActionHandler*> GetHandlers() {
-		return action_handler_list_;
-	}
+//	//todo remove
+//	const vector<ActionHandler*> GetHandlers() {
+//		return action_handler_list_;
+//	}
 
 	void OutgoingEdges(VertexId v, EdgeIterator& begin, EdgeIterator& end) const;
 
@@ -340,7 +342,7 @@ private:
 	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s,
 			size_t coverage);
 
-	vector<ActionHandler*> action_handler_list_;
+	vector<PairedActionHandler *> action_handler_list_;
 
 	set<Vertex*> vertices_;
 
