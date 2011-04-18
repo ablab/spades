@@ -14,6 +14,7 @@ int totalKmers = 0;
 int uniqPairs = 0;
 int uniqKmers = 0;
 const int MAXLMERSIZE = 10000;
+#define MAX_COVERAGE 10000000
 ll upperMask;
 ll lowerMask;
 
@@ -786,16 +787,17 @@ int pairsToLmers(string inputFile, string outputFile) {
 
 	cerr<<"pairsToLmers "<<inputFile.c_str()<<"->"<<outputFile.c_str()<<endl;
 	int ok = 1;
-	ll kmer; int lsize;
+	ll kmer; ll lsize;
 	ll lmers[MAXLMERSIZE];
 	int covers[MAXLMERSIZE];
+	ll cover;
 
 	map<ll, int> lset;
 //	set<ll> kset
 	int count = 0;
 	while (1) {
 		count++;
-		ok = fscanf(inFile, "%lld %d", &kmer, &lsize);
+		ok = fscanf(inFile, "%lld %lld", &kmer, &lsize);
 		if (ok != 2) {
 			if (ok > 0) {
 				ERROR("error in reads.");
@@ -807,15 +809,18 @@ int pairsToLmers(string inputFile, string outputFile) {
 			}
 		}
 		if (lsize > MAXLMERSIZE) {
-			ERROR("TOO MUCH LMERS CORRESPONDING TO ONE k-mer");
+			ERROR("TOO MANY LMERS CORRESPONDING TO ONE k-mer");
+			cerr<<"kmer "<<kmer<<" size "<<lsize<<cerr;
 			return -2;
 		}
 
 		forn(i, lsize) {
-			if (fscanf(inFile, "%lld %d", &lmers[i], &covers[i]) != 2) {
+			if (fscanf(inFile, "%lld %lld", &lmers[i], &cover) != 2) {
 				ERROR( "Error in pairsToLmers reading l-mers");
 				return -1;
 			}
+			if (cover>MAX_COVERAGE) covers[i] = MAX_COVERAGE;
+			else (covers[i] = cover);
 		}
 		forn(i, lsize) {
 			if (lset.find(lmers[i])!= lset.end())
@@ -930,3 +935,9 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 #endif
 	return 0;
 }
+
+
+
+
+
+

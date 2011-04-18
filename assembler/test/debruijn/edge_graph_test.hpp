@@ -86,18 +86,18 @@ void VertexMethodsSimpleTest() {
 	ASSERT_EQUAL(false, g.IsDeadStart(data.first[1]));
 }
 
-void GraphMethodsSimpleTest() {
-	EdgeGraph g(11);
-	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 2);
-	ASSERT_EQUAL(vector<ActionHandler*> (), g.GetHandlers());
-	ActionHandler* handler = new ActionHandler();
-	g.AddActionHandler(handler);
-	vector<ActionHandler*> handlers = g.GetHandlers();
-	ASSERT_EQUAL(1u, handlers.size());
-	ASSERT_EQUAL(handler, handlers[0]);
-	g.RemoveActionHandler(handler);
-	ASSERT_EQUAL(vector<ActionHandler*> (), g.GetHandlers());
-}
+//void GraphMethodsSimpleTest() {
+//	EdgeGraph g(11);
+//	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 2);
+//	ASSERT_EQUAL(vector<ActionHandler*> (), g.GetHandlers());
+//	ActionHandler* handler = new ActionHandler();
+//	g.AddActionHandler(handler);
+//	vector<ActionHandler*> handlers = g.GetHandlers();
+//	ASSERT_EQUAL(1u, handlers.size());
+//	ASSERT_EQUAL(handler, handlers[0]);
+//	g.RemoveActionHandler(handler);
+//	ASSERT_EQUAL(vector<ActionHandler*> (), g.GetHandlers());
+//}
 
 void SmartIteratorTest() {
 	EdgeGraph g(11);
@@ -162,11 +162,14 @@ void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 		string etalon_edges[]) {
 	vector<Read> reads = MakeReads(reads_str, read_cnt);
 	de_bruijn::DeBruijn<kmer_size_> debruijn;
+	EdgeGraph *g = new EdgeGraph(5);
 	debruijn.ConstructGraph(reads);
 	CondenseConstructor<kmer_size_> g_c(debruijn);
-	EdgeGraph *g;
-	SimpleIndex<6, Edge*> *index;
-	g_c.ConstructGraph(g, index);
+	SimpleIndex<6, Edge*> *index = new SimpleIndex<6, Edge*> ();
+	EdgeHashRenewer<6, EdgeGraph> *indexHandler = new EdgeHashRenewer<6, EdgeGraph>(*g, *index);
+	g->AddActionHandler(indexHandler);
+
+	g_c.ConstructGraph(*g, *index);
 
 	edge_set edges;
 	ToStringHandler h(edges);
@@ -177,6 +180,8 @@ void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 
 	MyEquals(edges, etalon_edges, edge_cnt);
 
+	g->RemoveActionHandler(indexHandler);
+	delete indexHandler;
 	delete g;
 	delete index;
 }
@@ -236,20 +241,19 @@ void TestCondenseSimple() {
 
 cute::suite EdgeGraphSuite() {
 	cute::suite s;
-	//	s.push_back(CUTE(EmptyGraphTest));
-	//	s.push_back(CUTE(OneVertexGraphTest));
-	//	s.push_back(CUTE(OneEdgeGraphTest));
-	//	s.push_back(CUTE(EdgeMethodsSimpleTest));
-	//	s.push_back(CUTE(VertexMethodsSimpleTest));
-	//	s.push_back(CUTE(GraphMethodsSimpleTest));
+	s.push_back(CUTE(EmptyGraphTest));
+	s.push_back(CUTE(OneVertexGraphTest));
+	s.push_back(CUTE(OneEdgeGraphTest));
+	s.push_back(CUTE(EdgeMethodsSimpleTest));
+	s.push_back(CUTE(VertexMethodsSimpleTest));
+//	s.push_back(CUTE(GraphMethodsSimpleTest));
 	s.push_back(CUTE(SmartIteratorTest));
-	//	s.push_back(CUTE(TestSimpleThread));
-	//	s.push_back(CUTE(TestSimpleThread2));
-	//	s.push_back(CUTE(TestSplitThread));
-	//	s.push_back(CUTE(TestSplitThread2));
-	//	s.push_back(CUTE(TestBuldge));
-	//	s.push_back(CUTE(TestCondenseSimple));
-
+	s.push_back(CUTE(TestSimpleThread));
+	s.push_back(CUTE(TestSimpleThread2));
+	s.push_back(CUTE(TestSplitThread));
+	s.push_back(CUTE(TestSplitThread2));
+	s.push_back(CUTE(TestBuldge));
+	s.push_back(CUTE(TestCondenseSimple));
 	return s;
 }
 }

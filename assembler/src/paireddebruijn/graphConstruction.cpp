@@ -76,7 +76,8 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 			if (!i)
 				prototypes.pb(v);
 		}
-		res.insert(mp(kmer, prototypes));
+
+		if (size>0) res.insert(mp(kmer, prototypes));
 	}
 	return res;
 }

@@ -54,6 +54,7 @@ private:
 	 */
 	std::array<T, data_size_> data_;
 
+	friend class Seq<size_ - 1, T>;
 	/**
 	 * Initialize data_ array of this object with C-string
 	 *
@@ -113,7 +114,7 @@ public:
 		assert((T)(-1) >= (T)0);//be sure to use unsigned types
 	}
 
-	explicit Seq(const char* s) {
+	Seq(const char* s) {
 		assert((T)(-1) >= (T)0);//be sure to use unsigned types
 		init(s);
 	}
@@ -188,7 +189,7 @@ public:
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
 			T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
-			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2) | ((T) (c) << lastnuclshift_);
+			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2) | ((T)c << lastnuclshift_);
 			if (data_size_ >= 2) { // if we have at least 2 elements in data
 				size_t i = data_size_ - 1;
 				do {
@@ -202,15 +203,15 @@ public:
 		return res;
 	}
 
-	//todo optimize!!!
 	Seq<size_ + 1, T> pushBack(char c) const {
 		if (is_nucl(c)) {
 			c = dignucl(c);
 		}
 		assert(is_dignucl(c));
-		//todo optimize!!!
-
-		return Seq<size_ + 1, T>(str() + nucl(c));
+		Seq<size_ + 1, T> s;
+		copy(this->data_.begin(), this->data_.end(), s.data_.begin());
+		s.data_[s.data_size_ - 1] = s.data_[s.data_size_ - 1] | ((T)c << ((size_ & (Tnucl - 1)) << 1));
+		return s; //was: Seq<size_ + 1, T>(str() + nucl(c));
 	}
 
 	//todo optimize!!!
@@ -244,8 +245,7 @@ public:
 		}
 		if (size_ % Tnucl != 0) {
 			T lastnuclshift_ = (size_ % Tnucl) << 1;
-			res.data_[data_size_ - 1] = res.data_[data_size_ - 1] & (((T) 1
-					<< lastnuclshift_) - 1);
+			res.data_[data_size_ - 1] = res.data_[data_size_ - 1] & (((T) 1 << lastnuclshift_) - 1);
 		}
 		return res;
 	}
@@ -299,6 +299,17 @@ public:
 			return h;
 		}
 	};
+
+  struct multiple_hash {
+    size_t operator()(Seq<size_> seq, int hash_num) {
+      size_t h = HASH_SEED;
+      for (size_t i = 0; i < seq.data_size_; i++) {
+	h = ((h << 5) - h) + seq.data_[i];
+      }
+      unsigned long l = 4 * hash_num + 1;
+      return (size_t)(l * h % 1000000007);
+    }
+  };
 
 	struct equal_to {
 		bool operator()(const Seq<size_> &l, const Seq<size_> &r) const {

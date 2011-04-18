@@ -59,7 +59,7 @@ VertexId EdgeGraph::AddVertex() {
 	v2->set_complement(v1);
 	vertices_.insert(v1);
 	vertices_.insert(v2);
-	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+	for (vector<PairedActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
 		(*it)->HandleAdd(v1);
 	}
@@ -69,7 +69,7 @@ VertexId EdgeGraph::AddVertex() {
 void EdgeGraph::DeleteVertex(VertexId v) {
 	assert(IsDeadEnd(v) && IsDeadStart(v));
 	assert(v != NULL);
-	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+	for (vector<PairedActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
 		(*it)->HandleDelete(v);
 	}
@@ -94,7 +94,7 @@ EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
 	EdgeId result = AddSingleEdge(v1, v2, nucls, coverage);
 	if (nucls != !nucls)
 		AddSingleEdge(v2->complement(), v1->complement(), !nucls, coverage);
-	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+	for (vector<PairedActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
 		(*it)->HandleAdd(result);
 	}
@@ -102,7 +102,7 @@ EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
 }
 
 void EdgeGraph::DeleteEdge(EdgeId edge) {
-	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+	for (vector<PairedActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
 		(*it)->HandleDelete(edge);
 	}
@@ -209,28 +209,6 @@ void EdgeGraph::CompressAllVertices() {
 			CompressPath(compressList);
 		}
 	}
-}
-
-void SimpleGraphVisualizer::Visualize(const EdgeGraph& g) {
-	VisHandler h(g, gp_);
-	de_bruijn::DFS<EdgeGraph>(g).Traverse(&h);
-	gp_.output();
-}
-
-void ComplementGraphVisualizer::Visualize(const EdgeGraph& g) {
-	ComplementVisHandler h(g, gp_);
-	de_bruijn::DFS<EdgeGraph>(g).Traverse(&h);
-	gp_.output();
-}
-
-void WriteToFile(const string& file_name, const string& graph_name,
-		const EdgeGraph& g, de_bruijn::Path<EdgeId> path) {
-	fstream filestr;
-	filestr.open(file_name.c_str(), fstream::out);
-	gvis::PairedGraphPrinter<VertexId> gp("simulated_data_graph", filestr);
-	ColoredPathGraphVisualizer gv(gp, path);
-	gv.Visualize(g);
-	filestr.close();
 }
 
 }

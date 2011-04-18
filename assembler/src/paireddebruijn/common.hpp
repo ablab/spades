@@ -37,7 +37,7 @@
 
 //LOGGER("paireddebruijn.common");
 #define MAX_READ_LENGTH 120
-#define MAX_VERT_NUMBER 50000
+#define MAX_VERT_NUMBER 500000
 #define MAX_DEGREE 50
 
 #define suffix "_const_d"
@@ -88,7 +88,7 @@ extern string folder;
 extern int k;
 extern int l;
 extern int readLength;
-const int maxSeqLength = 200;
+const int maxSeqLength = 1200;
 extern int coverage_cutoff;
 extern int range_variating;
 extern int insertLength;

@@ -26,13 +26,13 @@ typedef pair<Sequence, QVector> QRead;
 
 
 // size of read batch that we read from file
-#define READ_BATCH 100
+#define READ_BATCH 1000
 
 // number of threads
 #define THREADS_NUM 5
 
 // number of reads to skip from the beginning of the file
-#define SKIP_READS 67513
+#define SKIP_READS 0
 
 // write a file with statistics
 #define WRITE_STATSFILE
@@ -40,7 +40,7 @@ typedef pair<Sequence, QVector> QRead;
 
 // minimum size for a read
 // if a read is shorter (has more N's), it will be skipped
-#define MIN_READ_SIZE 60
+#define MIN_READ_SIZE 0
 
 #define BIGREADNO 1000000
 

@@ -172,6 +172,14 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
     					if (direction == RIGHT)
     						if (curSeq->similar(((*it)->lower)->Subseq(CutShift), minIntersect, RIGHT))
     							intersected = true;
+    					if ((curSeq->size()>(*it)->lower->size())){
+    						if (curSeq->str().find((*it)->lower->str()) != string::npos)
+    							intersected = true;
+
+    					}else{
+    						if ((*it)->lower->str().find(curSeq->str()) != string::npos)
+    							intersected = true;
+    					}
     				}
 
     				if (intersected){

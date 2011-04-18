@@ -8,12 +8,15 @@ using namespace paired_assembler;
 
 void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 		int &VertexCount, bool NotExpandBeyondDefinite = false);
+void expandObvious(longEdgesMap &longEdges, PairedGraph &graph,
+		int &VertexCount, bool NotExpandBeyondDefinite = false);
 void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 		int &VertexCount, int dir);
 void extractDefinite(PairedGraph &graph, int dir);
 
 inline int fistDifferenceIndex(PairedGraph &graph, Edge* edge1, Edge* edge2, int direction);
 
+void cutShortTips(PairedGraph &graph, int MaxCutLength = 5);
 
 
 

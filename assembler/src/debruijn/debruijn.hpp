@@ -21,6 +21,7 @@ namespace de_bruijn {
 
 template<size_t size_>
 class DeBruijn {
+private:
 	typedef Seq<size_> Kmer;
 	typedef Seq<size_ + 1> KPlusOneMer;
 
@@ -52,10 +53,10 @@ class DeBruijn {
 			typename Kmer::equal_to> map_type;
 	map_type nodes_;
 
-	void CountSequence(const Sequence& read) {
-		Seq<size_> head = Seq<size_> (read);
-		for (size_t j = size_; j < read.size(); ++j) {
-			Seq<size_> tail = head << read[j];
+	void CountSequence(const Sequence& s) {
+		Seq<size_> head = s.start<size_>();
+		for (size_t j = size_; j < s.size(); ++j) {
+			Seq<size_> tail = head << s[j];
 			addEdge(head, tail);
 			head = tail;
 		}
@@ -73,7 +74,7 @@ class DeBruijn {
 		return node.first->second; // return node's data
 	}
 
-	void CountRead(Read read) {
+	void CountRead(const Read &read) {
 		if (read.isValid()) {
 			Sequence s = read.getSequence();
 			CountSequence(s);
@@ -198,8 +199,8 @@ public:
 
 	template<class ReadStream>
 	void ConstructGraphFromStream(ReadStream& stream) {
+		Read r;
 		while (!stream.eof()) {
-			Read r;
 			stream >> r;
 			CountRead(r);
 		}
