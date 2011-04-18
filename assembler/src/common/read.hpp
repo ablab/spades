@@ -17,6 +17,8 @@ using namespace std;
 
 class Read {
 public:
+	static const int PHRED_OFFSET = 33;
+
 	const bool isValid() const {
 		if (seq_.size() == 0) {
 			return false;
@@ -67,7 +69,6 @@ public:
 		;
 	}
 private:
-	static const int PHRED_OFFSET = 33;
 	string name_;
 	string seq_;
 	string qual_;

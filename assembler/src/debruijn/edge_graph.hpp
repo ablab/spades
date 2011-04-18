@@ -336,6 +336,10 @@ public:
 
 	void CompressAllVertices();
 
+	pair<EdgeId, EdgeId> SplitEdge(EdgeId edge, size_t position);
+
+	void GlueEdges(EdgeId edge1, EdgeId edge2);
+
 private:
 	size_t k_;
 

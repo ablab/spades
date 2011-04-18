@@ -6,6 +6,7 @@
 #include "pairedGraph.hpp"
 #include "graphio.hpp"
 #include "vardConstruction.hpp"
+#include "constructHashTable.hpp"
 LOGGER("p.vardConstruction");
 
 using namespace paired_assembler;
@@ -127,7 +128,7 @@ int expandDirected(edgesMap &edges, constructingEdge &curEdge, verticesMap &vert
 		DEBUG("Finished on vertex");
 	return 0;
 }
-
+/*
 pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *curSeque , int direction, bool replace){
 	assert(direction == LEFT || direction == RIGHT );
 	int count = 0;
@@ -166,11 +167,11 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
     				if (((*it)->lower)->size()>=l+CutShift)
     				{
     					if (direction == LEFT)
-    						if (curSeq->similar(((*it)->lower)->Subseq(0,((*it)->lower)->size()-CutShift), minIntersect, LEFT))
+    						if (curSeq->similar(((*it)->lower)->Subseq(0,((*it)->lower)->size()-CutShift), minIntersect, 0))
     							intersected = true;
 
     					if (direction == RIGHT)
-    						if (curSeq->similar(((*it)->lower)->Subseq(CutShift), minIntersect, RIGHT))
+    						if (curSeq->similar(((*it)->lower)->Subseq(CutShift), minIntersect, 0))
     							intersected = true;
     					if ((curSeq->size()>(*it)->lower->size())){
     						if (curSeq->str().find((*it)->lower->str()) != string::npos)
@@ -210,6 +211,101 @@ pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *
 //    if (count>0) DEBUG("Nucl "<<(int)res.first<<" Seq "<< res.second->lower->str());
     return res;
 }
+*/
+
+
+
+
+pair<char, EdgePrototype*> findUniqueWay(edgesMap &edges, ll curKmer, Sequence *curSeque , int direction, bool replace){
+	assert(direction == LEFT || direction == RIGHT );
+	int count = 0;
+	TRACE("Find uniqueness" << direction);
+//	cerr << "findUniqueWay" << endl;
+	pair <char, EdgePrototype*> res = make_pair(0, (EdgePrototype *)NULL);
+    size_t CutShift = 0;
+    Sequence *curSeq;
+    if (replace) curSeq = SubSeq(*curSeque, otherDirection(direction), ((curSeque->size()-l)/2));
+    else curSeq = curSeque;
+    while (count == 0){
+    	if (curSeq->size()>1)
+    	if (curSeq->size() - CutShift< l){
+    		DEBUG("Impossible to go");
+    		break;
+    	}
+    	for (int Nucl = 0; Nucl < 4; Nucl++) {
+    		ll tmpcurKmer;
+    		if (!replace)
+    			tmpcurKmer = subkmer(curKmer, direction);
+    		else
+    			tmpcurKmer = subkmer(curKmer, otherDirection(direction));
+    		ll tmpKmer = pushNucleotide(tmpcurKmer, k - 1, direction, Nucl);
+
+    		edgesMap::iterator iter = edges.find(tmpKmer);
+    		if (iter != edges.end()) {
+    			for (vector<EdgePrototype *>::iterator it = iter->second.begin(); it != iter->second.end(); ++it) {
+    				//TODO: minIntersect?
+    				//				if (curSeq->similar(*((*it)->lower), minIntersect, direction)) {
+
+    				bool intersected = false;
+    			  	if ((curSeq->size()<=1)||(((*it)->lower)->size()<=1)){
+    			  		intersected = true;
+    			  	}
+    			  	else
+    				if (((*it)->lower)->size()>=l+CutShift)
+    				{
+    				/*	string str1(curSeq->str());
+    					string str2(((*it)->lower)->str());
+						if (maxCommonSubstring(str1,str2).first > l-1)
+							intersected = true;
+*/
+    					if (direction == LEFT)
+    						if (curSeq->similar(((*it)->lower)->Subseq(0,((*it)->lower)->size()-CutShift), minIntersect, 0))
+    							intersected = true;
+
+    					if (direction == RIGHT)
+    						if (curSeq->similar(((*it)->lower)->Subseq(CutShift), minIntersect, 0))
+    							intersected = true;
+    					if ((curSeq->size()>(*it)->lower->size())){
+    						if (curSeq->str().find((*it)->lower->str()) != string::npos)
+    							intersected = true;
+
+    					}else{
+    						if ((*it)->lower->str().find(curSeq->str()) != string::npos)
+    							intersected = true;
+    					}
+    				}
+
+    				if (intersected){
+//    					cerr<<"intersection found";
+    					count++;
+    			//		TRACE("FOUND " << (*it)->lower->str());
+    					if (count > 1) {
+    						DEBUG("multiple: ");
+    						DEBUG("Nucl "<<(int)Nucl<<" Seq "<< (*it)->lower->str());
+    						DEBUG("Nucl "<<(int)res.first<<" Seq "<< res.second->lower->str());
+    						return make_pair(2, (EdgePrototype *)NULL);
+    					} else {
+    						res = make_pair(Nucl, *it);
+    					}
+
+    				}
+    			}
+    		}
+    	}
+    	CutShift++;
+    	if (count == 0) {
+//    		break;
+    		if (replace) break;
+        		if (curSeq->size()>l)
+    			curSeq = SubSeq(*curSeq, otherDirection(direction));
+    		else break;
+    	}
+    }
+//    if (count>0) DEBUG("Nucl "<<(int)res.first<<" Seq "<< res.second->lower->str());
+    return res;
+}
+
+
 
 //while going left we don't mark anything as used, we just find leftmost possible vert
 int goUniqueWay(edgesMap &edges, ll &curKmer, Sequence* &curSeq, pair<char, EdgePrototype*> findResult, int &EdgeCoverage, int direction) {
@@ -273,6 +369,7 @@ void createVertices(edgesMap &edges, PairedGraph &graph) {
 								cerr<<"Multiple edges. Dir "<<direction<<endl;
 							else
 								cerr<<"No edges. Dir "<<direction<<endl;
+
 					if (back_way.second != curEdgePrototype) cerr<<"Bad way back. Dir "<<direction<<endl;
 
 
@@ -342,8 +439,9 @@ void createEdges(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 				if (cur_iter != edges.end()) {
 					for (vector<EdgePrototype *>::iterator it = cur_iter->second.begin(); it != cur_iter->second.end(); ++it) {
 						//TODO: minIntersect?
-						if ((*it)->lower->size()>=startSeq->size())
-						if (startSeq->similar(*((*it)->lower), startSeq->size(), 0)) {
+						if (*((*it)->lower)==*startSeq)
+						//	if (startSeq->similar(*((*it)->lower), startSeq->size(), 0))
+							{
 							findCnt++;
 //							assert(findCnt<2);
 //							DEBUG("marking edge used");

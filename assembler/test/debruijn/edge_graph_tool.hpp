@@ -71,23 +71,23 @@ void CondenseGraph(const DeBruijn& debruijn, EdgeGraph& g, Index& index,
 	ProduceInfo(g, index, genome, "edge_graph.dot", "edge_graph");
 }
 
-void ClipTips(EdgeGraph &g, Index &index, const string& genome) {
+void ClipTips(EdgeGraph &g, Index &index, const string& genome, string dotFileName) {
 	INFO("Clipping tips");
 	TipComparator<EdgeGraph> comparator(g);
 	TipClipper<EdgeGraph, TipComparator<EdgeGraph> > tc(comparator);
 	tc.ClipTips(g);
 	INFO("Tips clipped");
 
-	ProduceInfo(g, index, genome, "tips_clipped.dot", "no_tip_graph");
+	ProduceInfo(g, index, genome, dotFileName, "no_tip_graph");
 }
 
-void RemoveBulges(EdgeGraph &g, Index &index, const string& genome) {
+void RemoveBulges(EdgeGraph &g, Index &index, const string& genome, string dotFileName) {
 	INFO("Removing bulges");
 	de_bruijn::BulgeRemover<EdgeGraph> bulge_remover;
 	bulge_remover.RemoveBulges(g);
 	INFO("Bulges removed");
 
-	ProduceInfo(g, index, genome, "bulges_removed.dot", "no_bulge_graph");
+	ProduceInfo(g, index, genome, dotFileName, "no_bulge_graph");
 }
 
 template<class ReadStream>
@@ -106,9 +106,9 @@ void EdgeGraphTool(ReadStream& stream, const string& genome) {
 	stream.reset();
 	CondenseGraph<ReadStream> (debruijn, g, index, stream, genome);
 
-	ClipTips(g, index, genome);
+	ClipTips(g, index, genome, "tips_clipped.dot");
 
-	RemoveBulges(g, index, genome);
+	RemoveBulges(g, index, genome, "bulges_removed.dot");
 
 	g.RemoveActionHandler(&index_handler);
 
