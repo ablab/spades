@@ -21,6 +21,7 @@ namespace de_bruijn {
 
 template<size_t size_>
 class DeBruijn {
+private:
 	typedef Seq<size_> Kmer;
 	typedef Seq<size_ + 1> KPlusOneMer;
 
