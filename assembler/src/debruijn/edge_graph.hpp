@@ -1,53 +1,3 @@
-/*
- ReadOnlyGraph -> Graph -> EdgeGraph/VertexGraph
- ComplementGraph
- PairedGraph/Debruijn
-
-
-
- interface ReadonlyGraph {
- NodeIt begin_node();
- NodeIt end_node();
-
- void outgoing_edges(const NodeId &n, EdgeIt &begin, EdgeIt &end);
-
- bool IsLast(const NodeId &n);
-
- bool IsFirst(const NodeId &n);
-
- NodeId start(const EdgeId &e);
- NodeId end(const EdgeId &e);
-
- };
-
- interface Graph {
-
- };
-
- interface EdgeGraph {
- //	const NodeId addNode(const NodeData& n_d);
-
- const NodeId addNode();
-
- const EdgeId addEdge(const EdgeData& e_d, const NodeId& n1, const NodeId& n2);
- const EdgeData& getEdgeData(const EdgeId &e);
- }
-
- interface ComplementGraph {
- const NodeId complement_node(const& NodeId);
- const EdgeId complement_edge(const& EdgeId);
- }
-
- interface NodeGraph {
- const NodeData& getNodeData(const NodeId &n);
- }
-
- interface DeBruijnGraph {
- const EdgeData* getNodeData(const NodeId &n, char c);
- }
-
- */
-
 #ifndef EDGE_GRAPH_HPP_
 #define EDGE_GRAPH_HPP_
 
@@ -206,7 +156,8 @@ public:
 	template<typename Comparator = std::less<EdgeId> >
 	SmartEdgeIterator<EdgeGraph, Comparator> SmartEdgeEnd(
 			const Comparator& comparator = Comparator()) {
-		return SmartEdgeIterator<EdgeGraph, Comparator> (*this, false, comparator);
+		return SmartEdgeIterator<EdgeGraph, Comparator> (*this, false,
+				comparator);
 	}
 
 	size_t size() {
@@ -238,18 +189,21 @@ public:
 	}
 
 	void AddActionHandler(ActionHandler* action_handler) {
+		DEBUG("Action handler added");
 		action_handler_list_.push_back(action_handler);
 	}
 
 	bool RemoveActionHandler(ActionHandler* action_handler) {
+		DEBUG("Trying to remove action handler");
 		for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
 			if (*it == action_handler) {
 				action_handler_list_.erase(it);
+				DEBUG("Action handler removed");
 				return true;
 			}
 		}
-//		assert(false);
+		//		assert(false);
 		return false;
 	}
 
@@ -302,13 +256,17 @@ public:
 	}
 
 	double coverage(EdgeId edge) const {
-		return (double)edge->coverage_ / length(edge);
+		return (double) edge->coverage_ / length(edge);
+	}
+
+	size_t kplus_one_mer_coverage(EdgeId edge) const {
+		return edge->coverage_;
 	}
 
 	void inc_coverage(EdgeId edge, int toAdd) {
 		edge->coverage_ += toAdd;
 		EdgeId rc = Complement(edge);
-		if(edge != rc){
+		if (edge != rc) {
 			rc->coverage_ += toAdd;
 		}
 	}
@@ -316,7 +274,7 @@ public:
 	void inc_coverage(EdgeId edge) {
 		edge->coverage_++;
 		EdgeId rc = Complement(edge);
-		if(edge != rc){
+		if (edge != rc) {
 			rc->coverage_++;
 		}
 	}
@@ -335,7 +293,8 @@ public:
 
 	void ForceDeleteVertex(VertexId v);
 
-	Edge* AddEdge(VertexId v1, VertexId v2, const Sequence &nucls, size_t coverage = 0);
+	Edge* AddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
+			size_t coverage = 0);
 
 	void DeleteEdge(EdgeId edge);
 
@@ -369,7 +328,7 @@ public:
 
 	bool CanCompressVertex(VertexId v) const;
 
-	EdgeId CompressVertex(VertexId v);
+	void CompressVertex(VertexId v);
 
 	EdgeId CompressPath(const vector<VertexId>& path);
 
@@ -378,7 +337,8 @@ public:
 private:
 	size_t k_;
 
-	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s, size_t coverage);
+	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s,
+			size_t coverage);
 
 	vector<ActionHandler*> action_handler_list_;
 
@@ -399,87 +359,7 @@ typedef EdgeGraph::ActionHandler ActionHandler;
 //typedef EdgeGraph::SmartEdgeIterator SmartEdgeIterator;
 
 typedef de_bruijn::TraversalHandler<EdgeGraph> TraversalHandler;
-//////////////////////////////////////////////////////////////////
 
-class VisHandler: public TraversalHandler {
-	const EdgeGraph& g_;
-	gvis::GraphPrinter<VertexId>& pr_;
-public:
-
-	VisHandler(const EdgeGraph& g, gvis::GraphPrinter<VertexId>& pr) :
-		g_(g), pr_(pr) {
-	}
-
-	virtual void HandleVertex(VertexId v) {
-		pr_.addVertex(v, "");
-	}
-
-	virtual void HandleEdge(EdgeId e) {
-		stringstream ss;
-		ss << e->nucls().size();
-
-		pr_.addEdge(g_.EdgeStart(e), g_.EdgeStart(e), ss.str());
-	}
-
-};
-
-class ComplementVisHandler: public TraversalHandler {
-	const EdgeGraph& g_;
-	gvis::PairedGraphPrinter<VertexId>& pr_;
-public:
-
-	ComplementVisHandler(const EdgeGraph& g,
-			gvis::PairedGraphPrinter<VertexId>& pr) :
-		g_(g), pr_(pr) {
-	}
-
-	virtual void HandleVertex(VertexId v) {
-		pr_.addVertex(v, "", g_.Complement(v), "");
-	}
-
-	virtual void HandleEdge(EdgeId e) {
-		stringstream ss;
-		if(e->nucls().size() > 30)
-			ss << e->nucls().size();
-		else
-			ss << e->nucls();
-		ss << " ";
-		ss << g_.coverage(e);
-		VertexId v1 = g_.EdgeStart(e);
-		VertexId v2 = g_.EdgeEnd(e);
-		pr_.addEdge(make_pair(v1, g_.Complement(v1)),
-				make_pair(v2, g_.Complement(v2)), ss.str());
-	}
-
-};
-
-class GraphVisualizer {
-public:
-	virtual void Visualize(const EdgeGraph& g) = 0;
-};
-
-class SimpleGraphVisualizer: public GraphVisualizer {
-	gvis::GraphPrinter<VertexId>& gp_;
-public:
-	SimpleGraphVisualizer(gvis::GraphPrinter<VertexId>& gp) :
-		gp_(gp) {
-	}
-
-	virtual void Visualize(const EdgeGraph& g);
-};
-
-class ComplementGraphVisualizer: public GraphVisualizer {
-	gvis::PairedGraphPrinter<VertexId>& gp_;
-public:
-	ComplementGraphVisualizer(gvis::PairedGraphPrinter<VertexId>& gp) :
-		gp_(gp) {
-	}
-
-	virtual void Visualize(const EdgeGraph& g);
-};
-
-void WriteToFile(const string& file_name, const string& graph_name,
-		const EdgeGraph& g);
 }
 #endif /* EDGE_GRAPH_HPP_ */
 

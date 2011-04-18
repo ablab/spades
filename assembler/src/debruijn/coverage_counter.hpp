@@ -17,77 +17,17 @@ using namespace std;
 
 namespace edge_graph {
 
-template<typename ElementId>
-class Path {
-	vector<ElementId> sequence_;
-	size_t start_pos_;
-	size_t end_pos_;
-
-public:
-
-	Path(vector<ElementId> sequence, size_t start_pos, size_t end_pos) :
-		sequence_(sequence), start_pos_(start_pos), end_pos_(end_pos) {
-
-	}
-
-	size_t start_pos() const {
-		return start_pos_;
-	}
-
-	size_t end_pos() const {
-		return end_pos_;
-	}
-
-	const vector<ElementId>& sequence() const {
-		return sequence_;
-	}
-};
-
-template<size_t k, class Graph>
-class SimpleReadThreader {
-public:
-	typedef typename Graph::EdgeId EdgeId;
-private:
-	const Graph& g_;
-	const SimpleIndex<k + 1, EdgeId>& index_;
-public:
-	SimpleReadThreader(const Graph& g, const SimpleIndex<k + 1, EdgeId>& index) :
-		g_(g), index_(index) {
-	}
-
-	Path<EdgeId> ThreadRead(const Sequence& read) const {
-		vector<EdgeId> passed;
-		Seq<k + 1> kmer = read.start<k + 1> ();
-		size_t startPosition = -1;
-		size_t endPosition = -1;
-		for (size_t i = k; i < read.size(); ++i) {
-			kmer = kmer << read[i];
-			if (index_.contains(kmer)) {
-				pair<EdgeId, size_t> position = index_.get(kmer);
-				endPosition = position.second;
-				if (passed.empty()) {
-					startPosition = position.second;
-				}
-				if (passed.empty() || passed[passed.size() - 1]
-						!= position.first)
-					passed.push_back(position.first);
-			}
-		}
-		return Path<EdgeId> (passed, startPosition, endPosition);
-	}
-};
-
 template<size_t k, class Graph>
 class CoverageCounter {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 private:
 	Graph& g_;
-	const SimpleReadThreader<k, Graph> threader_;
-	const SimpleIndex<k + 1, EdgeId>& index_;
+	const de_bruijn::SimpleReadThreader<k, Graph> threader_;
+	const de_bruijn::SimpleIndex<k + 1, EdgeId>& index_;
 
 	void processRead(Read read) {
-		Path<EdgeId> path = threader_.ThreadRead(
+		de_bruijn::Path<EdgeId> path = threader_.ThreadRead(
 				Sequence(read.getSequenceString()));
 		if (path.sequence().size() == 0)
 			return;
@@ -98,10 +38,11 @@ private:
 		}
 		g_.inc_coverage(sequence[0], -path.start_pos());
 		Edge *last = sequence[sequence.size() - 1];
-		g_.inc_coverage(last, path.end_pos() - g_.length(last));
+		g_.inc_coverage(last, path.end_pos() - g_.length(last) + 1);
 	}
 public:
-	CoverageCounter(Graph& g, const SimpleIndex<k + 1, EdgeId>& index) :
+	CoverageCounter(Graph& g,
+			const de_bruijn::SimpleIndex<k + 1, EdgeId>& index) :
 		g_(g), threader_(g, index), index_(index) {
 	}
 
