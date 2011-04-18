@@ -3,6 +3,7 @@
  *
  *  Created on: Mar 23, 2011
  *      Author: snikolenko
+ *
  */
 #ifndef BAYES_QUALITY_H_
 #define BAYES_QUALITY_H_
@@ -276,10 +277,10 @@ public:
 	// Bowtie-related routines
 	
 	/// write down a batch of reads for Bowtie processing
-	void writeReadPartsForBowtie(const vector<Read> & v, int fd, size_t readno);
+	void writeReadPartsForBowtie(const vector<Read> & v, int fd, unsigned int readno);
 	/// write down a batch of reads for Bowtie processing to a temporary file
 	/// return its name
-	string writeReadPartsForBowtie(const vector<Read> & v, size_t readno) {
+	string writeReadPartsForBowtie(const vector<Read> & v, unsigned int readno) {
 		char *tmpname = strdup("/tmp/tmpfileXXXXXX");
 		int fd = mkstemp(tmpname);
 		assert(fd >= 0);
@@ -287,7 +288,7 @@ public:
 		return tmpname;
 	}
 	/// read Bowtie search results
-	BowtieResults readBowtieResults(int fd, size_t noofreads, size_t readno);
+	BowtieResults readBowtieResults(int fd, size_t noofreads, unsigned int readno);
 };
 
 }

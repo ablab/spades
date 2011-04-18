@@ -601,13 +601,13 @@ void BayesQualityGenome::fillAvailableReads(size_t vecSize, const string & s) {
 	fillAvailableReads(vecSize, (s + 'T'));	
 }
 
-void BayesQualityGenome::writeReadPartsForBowtie(const vector<Read> & v, int fd, size_t readno) {
+void BayesQualityGenome::writeReadPartsForBowtie(const vector<Read> & v, int fd, unsigned int readno) {
 	// ofstream os; os.attach(fd);
 	FILE *f = fdopen(fd, "w");
-	for (size_t i = 0; i < v.size(); ++i) {
+	for (unsigned int i = 0; i < v.size(); ++i) {
 		if (v[i].size() < MIN_READ_SIZE) continue;
 		for (size_t j = 0; j < BOWTIE_SEED_NUM; ++j) {
-			size_t ind = (j * (v[i].size() - BOWTIE_SEED_LENGTH) ) / BOWTIE_SEED_NUM;
+			unsigned int ind = (j * (v[i].size() - BOWTIE_SEED_LENGTH) ) / BOWTIE_SEED_NUM;
 			if (ind + BOWTIE_SEED_LENGTH > v[i].size()) ind = v[i].size() - BOWTIE_SEED_LENGTH;
 			string qual = v[i].getQualityString().substr(ind, BOWTIE_SEED_LENGTH);
 			for (size_t k=0; k<qual.size(); ++k) {
@@ -621,13 +621,13 @@ void BayesQualityGenome::writeReadPartsForBowtie(const vector<Read> & v, int fd,
 	fclose(f);
 }
 
-BowtieResults BayesQualityGenome::readBowtieResults(int fd, size_t noofreads, size_t readno) {
+BowtieResults BayesQualityGenome::readBowtieResults(int fd, size_t noofreads, unsigned int readno) {
 	//ifstream is; is.attach(fd);
 	FILE *f = fdopen(fd, "r");
 	BowtieResults res(noofreads);
 	char buf[1024];
 	char rev;
-	size_t i, j, ind;
+	unsigned int i, j, ind;
 	while (!feof(f)) {
 		if ( fgets(buf, 1024, f) == NULL && feof(f) ) break; 
 		if (strlen(buf) == 0) break;
