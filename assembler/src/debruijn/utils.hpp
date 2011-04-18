@@ -99,6 +99,15 @@ public:
 	virtual void HandleDelete(EdgeId e) {
 	}
 
+	virtual void HandleMerge(vector<EdgeId> oldEdge, EdgeId newEdge) {
+	}
+
+	virtual void HandleGlue(EdgeId oldEdge, EdgeId newEdge) {
+	}
+
+	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
+	}
+
 	virtual ~GraphActionHandler() {
 
 	}
@@ -147,6 +156,36 @@ public:
 		handler_->HandleDelete(e);
 		if(e != rce)
 			handler_->HandleDelete(rce);
+	}
+
+	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
+		EdgeId rce = graph_.Complement(newEdge);
+		handler_->HandleMerge(oldEdges, newEdge);
+		vector<EdgeId> ecOldEdges;
+		for(int i = oldEdges.size() - 1; i >= 0; i--) {
+			ecOldEdges.push_back(graph_.Complement(oldEdges[i]));
+		}
+		if(newEdge != rce)
+			handler_->HandleMerge(ecOldEdges, rce);
+	}
+
+	virtual void HandleGlue(EdgeId oldEdge, EdgeId newEdge) {
+		EdgeId rcOldEdge = graph_.Complement(oldEdge);
+		EdgeId rcNewEdge = graph_.Complement(newEdge);
+		assert(oldEdge != newEdge);
+		assert(newEdge != rcNewEdge);
+		assert(graph_.EdgeStart(oldEdge) != graph_.EdgeEnd(oldEdge));
+		assert(graph_.EdgeStart(newEdge) != graph_.EdgeEnd(newEdge));
+		handler_->HandleGlue(oldEdge, newEdge);
+		if(oldEdge != rcOldEdge)
+			handler_->HandleGlue(rcOldEdge, rcNewEdge);
+	}
+
+	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
+		EdgeId rce = graph_.Complement(oldEdge);
+		handler_->HandleSplit(oldEdge, newEdge1, newEdge2);
+		if(oldEdge != rce)
+			handler_->HandleSplit(rce, graph_.Complement(newEdge2), graph_.Complement(newEdge1));
 	}
 
 	virtual ~PairedActionHandler() {
