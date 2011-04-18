@@ -35,8 +35,8 @@ void runSuite() {
   //s += ReadGeneratorSuite();
   s += TrieSuite();
 	s += SeqFilterSuite();
-	//The next test is correct but need time
-  //s += StructuresSuite();
+	//The next test is correct but needs time
+	//s += StructuresSuite();
   cute::ide_listener lis;
   cute::makeRunner(lis)(s, "The Suite");
 }
