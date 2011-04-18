@@ -42,8 +42,10 @@ void processQualityReads(const char *filename, BayesQualityGenome & bqg) {
 int main(int argc, char* argv[]) {
 
 	#pragma omp parallel
+	{
 	INFO("Hello from thread " << omp_get_thread_num() << " out of " << omp_get_num_threads());
 	INFO("Hello, Bayes!");
+	}
 	
 	string readfilename = "";
 	string genomefilename = "";

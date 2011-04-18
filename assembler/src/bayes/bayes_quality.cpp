@@ -59,7 +59,7 @@ MatchResults BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QV
 		fill(qv[i]->begin(), qv[i]->end(), 0);
 	}
 	
-	INFO(readno << ": " << seq.str());
+	INFO("thread " << omp_get_thread_num() << ": " << seq.str());
 
 	#ifdef USE_PREPROCESSING
 	PSeq curpseq = PSeq(genome_.Subseq(0,PREPROCESS_SEQ_LENGTH));
@@ -76,13 +76,12 @@ MatchResults BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QV
 		lavec.push_back(LASeq(genome_.Subseq(k, k+LA_SIZE)));
 	}
 	#endif
-	
 	char curgc, curgs;
 	bool badPreprocPosition = false; bool goodLAPosition = true;
 
 	// dynamic programming
 	for (size_t j = 0; j < qvsize_; ++j) {
-		
+		// INFO("thread " << omp_get_thread_num() << ": " << j << " size=" << genome_.size() << " indices " << j+mid+INS+1+LA_SIZE);
 		++totalPos_;
 		
 		#ifdef USE_PREPROCESSING
@@ -96,7 +95,8 @@ MatchResults BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QV
 		laseq = laseq << genome_[j+LA_SIZE];
 		for (size_t k=0; k<=DEL+INS+1; ++k) {
 			goodLAPosition = goodLAPosition || (simpleMatch(larmid, lavec[k]) <= LA_ERRORS);
-			lavec[k] = lavec[k] << genome_[j+mid-DEL+k+LA_SIZE];
+			if (j+mid-DEL+k+LA_SIZE < gensize_) lavec[k] = lavec[k] << genome_[j+mid-DEL+k+LA_SIZE];
+			else goodLAPosition = true; // if we are at the very end already, we should skip this check
 		}
 		#endif
 
@@ -164,7 +164,7 @@ MatchResults BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QV
 			cout << os.str();
 		}*/
 	}
-		
+	
 	mr_.bestq_ = mr_.totalq_;
 	mr_.inserts_ = 0; mr_.deletes_ = 0;
 	mr_.index_ = 0;
@@ -245,9 +245,10 @@ MatchResults BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QV
 	mr_.matchstr_ = osm.str(); reverse(mr_.matchstr_.begin(), mr_.matchstr_.end());
 	mr_.matchprettystr_ = osmp.str(); reverse(mr_.matchprettystr_.begin(), mr_.matchprettystr_.end());
 	
-	for (size_t i = 0; i < seqsize; ++i) {
+	for (size_t i = 0; i < seqsize+1; ++i) {
 		m[i]->clear(); delete m[i];
 	}
+	m.clear();
 	for (size_t i=0; i < INS+DEL+1; ++i) {
 		qv[i]->clear();  delete qv[i];
 	}
@@ -435,9 +436,11 @@ void BayesQualityGenome::ProcessReads(const char *filename) {
 		
 		vector<MatchResults> mrv(v.size());
 		
+		INFO("Entering parallel section");
 		omp_set_num_threads(THREADS_NUM);
 		#pragma omp parallel for shared(os, readno, mrv) private(r)
 		for (int i=0; i<v.size(); ++i) {
+			INFO("i=" << i);
 			r = v[i];
 			if (r.size() < MIN_READ_SIZE) {
 				mrv[i].prob_ = -1;
