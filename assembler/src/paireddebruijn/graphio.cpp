@@ -148,9 +148,6 @@ int findStartVertex(PairedGraph &graph, Sequence &genome) {
 	int result = -1;
 	cerr<<"findStartVertex"<<endl;
 	for (int i = 0; i < graph.VertexCount; i++) {
-		if (i == 299) { cerr<<"vertex 299"<<endl;
-		 cerr<<"In "<<graph.degrees[i][0]<<" out " <<graph.degrees[i][1]<<endl;
-		}
 		if (graph.degrees[i][0] == 0 && graph.degrees[i][1] == 1) {
 			cerr<<"SEQ VS GEN"<<endl;
 			Sequence* tmp_seq = graph.longEdges[graph.edgeIds[i][0][OUT_EDGE]]->upper;

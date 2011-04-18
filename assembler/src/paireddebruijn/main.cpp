@@ -62,16 +62,31 @@ void run() {
 	if (useExpandDefinite) {
 		INFO("Expand definite...");
 		if (!needGraph) {
-			load(folder+"graph.txt", graph);
-			graph.removeLowCoveredEdges(graph.longEdges, 3);
+			load(folder+"graphEdges.txt", graph);
+//			graph.removeLowCoveredEdges(graph.longEdges, 3);
 			graph.RebuildVertexMap();
 			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 		}
-		expandDefinite(graph.longEdges, graph, graph.VertexCount, true);
+//		expandDefinite(graph.longEdges, graph, graph.VertexCount, false);
+		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
 		outputLongEdges(graph.longEdges, graph,
 				folder+"afterExpand.dot");
-		//		outputLongEdgesThroughGenome(graph, "data/paireddebruijn/afterExpand_g.dot");
+		outputLongEdgesThroughGenome(graph,
+						folder+"afterExpand_g.dot");
 		save(folder+"expandedGraph.txt", graph);
+
+		cutShortTips(graph, 5);
+		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		cutShortTips(graph, 15);
+		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		cutShortTips(graph, 25);
+		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		cutShortTips(graph, 35);
+		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		outputLongEdges(graph.longEdges, graph,
+				folder+"afterTips.dot");
+		outputLongEdgesThroughGenome(graph,
+						folder+"afterTips_g.dot");
 	}
 
 	if (useTraceReads) {
@@ -168,10 +183,16 @@ int main() {
 
 
 //	generate();
-//	Sequence* a = new Sequence("TACA");
+//	Sequence* a = new Sequence("TACATA");
 //
 //	Sequence* b = new Sequence("ACAT");
 //	cerr << a->similar(*b, 4, LEFT);
+//	cerr << b->similar(*a, 4, RIGHT);
+//	cerr << a->similar(*b, 4, RIGHT);
+//	cerr << b->similar(*a, 4, LEFT);
+
+	//	cerr << a->similar(*b, 4, LEFT);
+	//	cerr << a->similar(*b, 4, LEFT);
 //	cerr << a->similar(*b, 4, RIGHT);
 //
 //	cerr << b->similar(*a, 4, LEFT);
