@@ -59,7 +59,7 @@ VertexId EdgeGraph::AddVertex() {
 	v2->set_complement(v1);
 	vertices_.insert(v1);
 	vertices_.insert(v2);
-	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+	for (vector<PairedActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
 		(*it)->HandleAdd(v1);
 	}
@@ -69,7 +69,7 @@ VertexId EdgeGraph::AddVertex() {
 void EdgeGraph::DeleteVertex(VertexId v) {
 	assert(IsDeadEnd(v) && IsDeadStart(v));
 	assert(v != NULL);
-	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+	for (vector<PairedActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
 		(*it)->HandleDelete(v);
 	}
@@ -94,7 +94,7 @@ EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
 	EdgeId result = AddSingleEdge(v1, v2, nucls, coverage);
 	if (nucls != !nucls)
 		AddSingleEdge(v2->complement(), v1->complement(), !nucls, coverage);
-	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+	for (vector<PairedActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
 		(*it)->HandleAdd(result);
 	}
@@ -102,7 +102,7 @@ EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
 }
 
 void EdgeGraph::DeleteEdge(EdgeId edge) {
-	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+	for (vector<PairedActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
 		(*it)->HandleDelete(edge);
 	}
