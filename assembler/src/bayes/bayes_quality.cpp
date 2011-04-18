@@ -627,7 +627,7 @@ BowtieResults BayesQualityGenome::readBowtieResults(int fd, size_t noofreads, si
 	BowtieResults res(noofreads);
 	char buf[1024];
 	char rev;
-	size_t i, j, ind;
+	unsigned int i, j, ind;
 	while (!feof(f)) {
 		if ( fgets(buf, 1024, f) == NULL && feof(f) ) break; 
 		if (strlen(buf) == 0) break;
