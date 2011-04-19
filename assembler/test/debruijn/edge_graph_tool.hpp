@@ -113,7 +113,7 @@ void EdgeGraphTool(StrobeReader<2, Read, ireadstream>& reader, const string& gen
 	CondenseGraph<SimpleReaderWrapper<2, Read, ireadstream> > (debruijn, g, index, stream, genome);
 
 	reader.reset();
-	de_bruijn::PairedInfoIndex<EdgeGraph>(g, index, reader);
+	de_bruijn::PairedInfoIndex<EdgeGraph> pairedInfoIndex(g, index, reader);
 
 	ClipTips(g, index, genome, "tips_clipped.dot");
 

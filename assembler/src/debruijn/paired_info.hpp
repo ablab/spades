@@ -3,6 +3,10 @@
 #include "utils.hpp"
 #include "strobe_reader.hpp"
 #include "sequence.hpp"
+
+#define MERGE_DATA_ABSOLUTE_DIFFERENCE 3
+#define MERGE_DATA_RELATIVE_DIFFERENCE 0.3
+
 namespace de_bruijn {
 
 template<class Graph>
@@ -31,13 +35,58 @@ private:
 		//TODO
 	}
 
-	void AddPairInfo(const EdgeId first, const EdgeId second, const int d_,
+	void UpdateInfo(PairInfo &info, const int d, const double weight) {
+		for (typename vector<PairInfo>::iterator it =
+				data_[info.second_].begin(); it != data_[info.second_].end(); ++it) {
+			if (it->second_ == info.first_ && it->d_ == info.d_ && it->weight_
+					== info.weight_) {
+				it->d_ = info.d_;
+				it->weight_ = info.weight_;
+				break;
+			}
+		}
+		info.d_ = d;
+		info.weight_ = weight;
+	}
+
+	bool MergeData(PairInfo info, const int d, const double weight) {
+		if (std::abs(d - info.d_) <= MERGE_DATA_ABSOLUTE_DIFFERENCE
+				&& std::abs(d - info.d_) <= info.d_
+						* MERGE_DATA_RELATIVE_DIFFERENCE) {
+			double newWeight_ = info.weight_ + weight;
+			int newD = std::floor(
+					(info.d_ * info.weight + d * weight) / weight + 0.5);
+			update(info, d, weight);
+			return true;
+		}
+		return false;
+	}
+
+	void AddPairInfoToData(const EdgeId first, const EdgeId second,
+			const int d, const double weight) {
+		data_[first].push_back(PairData(first, second, d, weight));
+		data_[second].push_back(PairData(second, first, -d, weight));
+	}
+
+	void AddPairInfo(const EdgeId first, const EdgeId second, const int d,
 			const double weight) {
-		//TODO
+		typename map<EdgeId, vector<PairInfo> >::iterator it =
+				data_.find(first);
+		if (it == data_.end()) {
+			AddPairInfoToData(first, second, d, weight);
+		} else {
+			vector<PairInfo> &edgeData = *it;
+			for (size_t i = 0; i < edgeData.size(); i++)
+				if (edgeData[i].second == second) {
+					if (MergeData(edgeData[i], d, weight)) {
+						break;
+					}
+				}
+		}
 	}
 
 	void RemoveEdgeInfo(const EdgeId edge) {
-		//TODO
+		data_.erase(edge);
 	}
 
 public:
@@ -50,11 +99,31 @@ public:
 	}
 
 	vector<const PairInfo> GetEdgeInfo(EdgeId edge) {
-		//TODO
+		typename map<EdgeId, vector<PairInfo> >::iterator it = data_.find(edge);
+		if (it == data_.end()) {
+			vector<const PairInfo> res;
+			return res;
+		} else {
+			return vector<const PairInfo> (it->begin(), it->end());
+		}
 	}
 
 	vector<const PairInfo> GetEdgePairInfo(EdgeId first, EdgeId second) {
-		//TODO
+		typename map<EdgeId, vector<PairInfo> >::iterator it =
+				data_.find(first);
+		vector<const PairInfo> res;
+		if (it == data_.end()) {
+			return res;
+		} else {
+			for (typename vector<PairInfo>::iterator dataIt = it->begin(); it
+					!= it->end(); ++it) {
+				assert(dataIt->first == first);
+				if (dataIt->second_ == second) {
+					res.push_back(*it);
+				}
+			}
+			return res;
+		}
 	}
 
 	virtual void HandleDelete(EdgeId e) {
