@@ -64,6 +64,7 @@ bool Sequence::intersects(const Sequence &t) const {
 	return false;
 }
 
+// TODO Might be optimized via int comparison (not so easy)
 bool Sequence::operator<(const Sequence &that) const {
 	size_t s = std::min(size_, that.size_);
 	for (size_t i = 0; i < s; ++i) {
