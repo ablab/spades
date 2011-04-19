@@ -71,11 +71,11 @@ int main(int argc, char *argv[]) {
 //	cerr << "Vertex count=" << stat_c.v_count() << "; Edge count="
 //			<< stat_c.e_count() << endl;
 
-	edge_graph::CondenseConstructor<K> g_c(debruijn);
+//	edge_graph::CondenseConstructor<K> g_c(debruijn);
 
-	edge_graph::EdgeGraph *g;
-	de_bruijn::SimpleIndex<K + 1, edge_graph::Edge*> *index;
-	g_c.ConstructGraph(g, index);
+//	edge_graph::EdgeGraph *g;
+//	de_bruijn::SimpleIndex<K + 1, edge_graph::Edge*> *index;
+//	g_c.ConstructGraph(g, index);
 //	fstream filestr;
 //	filestr.open("graph.dot", fstream::out);
 //	gvis::PairedGraphPrinter<const condensed_graph::Vertex*> gp(
