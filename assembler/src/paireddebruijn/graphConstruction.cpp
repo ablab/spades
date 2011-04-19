@@ -60,7 +60,7 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 		prototypes.clear();
 		if (size == 0) {
 			Sequence *seq;
-			seq = new Sequence("");
+			seq = new Sequence("A");
 		}
 		else
 		forn(i, size) {
@@ -73,8 +73,7 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 			seq = new Sequence(s);
 			EdgePrototype *v = new EdgePrototype(seq, 0);
 			v->coverage = coverage;
-			if (!i)
-				prototypes.pb(v);
+			prototypes.pb(v);
 		}
 
 		if (size>0) res.insert(mp(kmer, prototypes));
