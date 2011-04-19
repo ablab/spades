@@ -10,45 +10,47 @@
 
 #include "read.hpp"
 #include "ireadstream.hpp"
-#include "read_generator.hpp"
+//#include "read_generator.hpp"
 
 #define ECOLI_FILE "./data/input/MG1655-K12.fasta.gz"
-#define QUAKE_CROPPED_10_4_A "./data/input/s_6.first10000_1.fastq.gz"
-#define QUAKE_CROPPED_10_4_B "./data/input/s_6.first10000_2.fastq.gz"
-#define QUAKE_CROPPED_10_5_A "./data/input/s_6.first100000_1.fastq.gz"
-#define QUAKE_CROPPED_10_5_B "./data/input/s_6.first100000_2.fastq.gz"
-#define QUAKE_CROPPED_4_10_5_A "./data/input/s_6.first400000_1.fastq.gz"
-#define QUAKE_CROPPED_4_10_5_B "./data/input/s_6.first400000_2.fastq.gz"
+#define QUAKE_CROPPED_10_3_A make_pair("./data/input/s_6.first1000_1.fastq.gz", 10000)
+#define QUAKE_CROPPED_10_3_B make_pair("./data/input/s_6.first1000_2.fastq.gz", 10000)
+#define QUAKE_CROPPED_10_4_A make_pair("./data/input/s_6.first10000_1.fastq.gz", 10000)
+#define QUAKE_CROPPED_10_4_B make_pair("./data/input/s_6.first10000_2.fastq.gz", 10000)
+#define QUAKE_CROPPED_10_5_A make_pair("./data/input/s_6.first100000_1.fastq.gz", 100000)
+#define QUAKE_CROPPED_10_5_B make_pair("./data/input/s_6.first100000_2.fastq.gz", 100000)
+#define QUAKE_CROPPED_4_10_5_A make_pair("./data/input/s_6.first400000_1.fastq.gz", 400000)
+#define QUAKE_CROPPED_4_10_5_B make_pair("./data/input/s_6.first400000_2.fastq.gz", 400000)
 
 //#define filename "./data/input/MG1655-K12.fasta.gz"
 #define readsfilename "./data/input/s_6.first100000_1.fastq.gz"
 
-vector<Read> GenerateReadsWithMistakes(const string& file_name) {
-	LOGGER("d.test_utils");
-	INFO("Reading " << file_name);
-
-	ireadstream stream(file_name);
-	Read r;
-	stream >> r;
-
-	vector<Read> reads;
-	INFO("Closing " << file_name);
-	stream.close();
-	INFO("Generating reads for substring of length " << SUBSTR_LENGTH << " and coverage " << COVERAGE);
-
-	ReadGenerator<R> gen(r.getSequenceString().substr(0, SUBSTR_LENGTH), COVERAGE);
-//	gen.setErrorProbability(2);
-
-	while (!gen.eof()) {
-		Read read;
-		gen >> read;
-//		cout << read[0] << endl;
-		reads.push_back(read);
-	}
-
-	INFO("Reads generated");
-	return reads;
-}
+//vector<Read> GenerateReadsWithMistakes(const string& file_name) {
+//	LOGGER("d.test_utils");
+//	INFO("Reading " << file_name);
+//
+//	ireadstream stream(file_name);
+//	Read r;
+//	stream >> r;
+//
+//	vector<Read> reads;
+//	INFO("Closing " << file_name);
+//	stream.close();
+//	INFO("Generating reads for substring of length " << SUBSTR_LENGTH << " and coverage " << COVERAGE);
+//
+//	ReadGenerator<R> gen(r.getSequenceString().substr(0, SUBSTR_LENGTH), COVERAGE);
+////	gen.setErrorProbability(2);
+//
+//	while (!gen.eof()) {
+//		Read read;
+//		gen >> read;
+////		cout << read[0] << endl;
+//		reads.push_back(read);
+//	}
+//
+//	INFO("Reads generated");
+//	return reads;
+//}
 
 vector<Read> ReadFromFile() {
 	LOGGER("d.test_utils");

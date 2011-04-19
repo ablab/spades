@@ -81,7 +81,7 @@ public:
 		//delete[] bytes_;
 	}
 
-	inline char operator[](const size_t i) const {
+	char operator[](const size_t i) const {
 		return bytes_[i >> STNbits][i & (STN - 1)];
 	}
 

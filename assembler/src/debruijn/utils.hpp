@@ -22,7 +22,14 @@ private:
 	typedef typename hmap::const_iterator const_map_iter;
 	//	typedef __gnu_cxx::hash_map<const Kmer, pair<Vertex*, size_t> , myhash, Kmer::equal_to> hmap;
 	hmap h_;
+	//	const Graph &graph_;
+	//	const EdgeHashRenewer<kmer_size_, Graph> *renewer_;
+	//	const GraphActionHandler *
 public:
+	SimpleIndex() {
+		//		graph.AddActionHandler()
+	}
+
 	void put(Kmer k, ElementId id, size_t s) {
 		map_iter hi = h_.find(k);
 		if (hi == h_.end()) { // put new element
@@ -92,8 +99,96 @@ public:
 	virtual void HandleDelete(EdgeId e) {
 	}
 
+	virtual void HandleMerge(vector<EdgeId> oldEdge, EdgeId newEdge) {
+	}
+
+	virtual void HandleGlue(EdgeId oldEdge, EdgeId newEdge) {
+	}
+
+	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
+	}
+
 	virtual ~GraphActionHandler() {
 
+	}
+};
+
+template<class Graph>
+class PairedActionHandler : public GraphActionHandler<Graph> {
+private:
+	Graph &graph_;
+	GraphActionHandler<Graph> *handler_;
+public:
+	typedef GraphActionHandler<Graph> super;
+	typedef typename super::VertexId VertexId;
+	typedef typename super::EdgeId EdgeId;
+
+	PairedActionHandler(Graph &graph, GraphActionHandler<Graph> *handler) : graph_(graph), handler_(handler) {
+	}
+
+	super *GetInnerActionhandler() {
+		return handler_;
+	}
+
+	virtual void HandleAdd(VertexId v) {
+		VertexId rcv = graph_.Complement(v);
+		handler_->HandleAdd(v);
+		if(v != rcv)
+			handler_->HandleAdd(rcv);
+	}
+
+	virtual void HandleAdd(EdgeId e) {
+		EdgeId rce = graph_.Complement(e);
+		handler_->HandleAdd(e);
+		if(e != rce)
+			handler_->HandleAdd(rce);
+	}
+
+	virtual void HandleDelete(VertexId v) {
+		VertexId rcv = graph_.Complement(v);
+		handler_->HandleDelete(v);
+		if(v != rcv)
+			handler_->HandleDelete(rcv);
+	}
+
+	virtual void HandleDelete(EdgeId e) {
+		EdgeId rce = graph_.Complement(e);
+		handler_->HandleDelete(e);
+		if(e != rce)
+			handler_->HandleDelete(rce);
+	}
+
+	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
+		EdgeId rce = graph_.Complement(newEdge);
+		handler_->HandleMerge(oldEdges, newEdge);
+		vector<EdgeId> ecOldEdges;
+		for(int i = oldEdges.size() - 1; i >= 0; i--) {
+			ecOldEdges.push_back(graph_.Complement(oldEdges[i]));
+		}
+		if(newEdge != rce)
+			handler_->HandleMerge(ecOldEdges, rce);
+	}
+
+	virtual void HandleGlue(EdgeId oldEdge, EdgeId newEdge) {
+		EdgeId rcOldEdge = graph_.Complement(oldEdge);
+		EdgeId rcNewEdge = graph_.Complement(newEdge);
+		assert(oldEdge != newEdge);
+		assert(newEdge != rcNewEdge);
+		assert(graph_.EdgeStart(oldEdge) != graph_.EdgeEnd(oldEdge));
+		assert(graph_.EdgeStart(newEdge) != graph_.EdgeEnd(newEdge));
+		handler_->HandleGlue(oldEdge, newEdge);
+		if(oldEdge != rcOldEdge)
+			handler_->HandleGlue(rcOldEdge, rcNewEdge);
+	}
+
+	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
+		EdgeId rce = graph_.Complement(oldEdge);
+		handler_->HandleSplit(oldEdge, newEdge1, newEdge2);
+		if(oldEdge != rce)
+			handler_->HandleSplit(rce, graph_.Complement(newEdge2), graph_.Complement(newEdge1));
+	}
+
+	virtual ~PairedActionHandler() {
 	}
 };
 
@@ -104,7 +199,7 @@ class DataHashRenewer {
 
 	const Graph &g_;
 
-	SimpleIndex<kmer_size_, ElementId> *index_;
+	SimpleIndex<kmer_size_, ElementId> &index_;
 
 	/**
 	 *	renews hash for vertex and complementary
@@ -113,28 +208,28 @@ class DataHashRenewer {
 	void RenewKmersHash(ElementId id) {
 		Sequence nucls = g_.GetData(id).nucls();
 		DEBUG("Renewing hashes for k-mers of sequence " << nucls);
-		index_->RenewKmersHash(nucls, id);
+		index_.RenewKmersHash(nucls, id);
 	}
 
 	void DeleteKmersHash(ElementId id) {
 		Sequence nucls = g_.GetData(id).nucls();
 		DEBUG("Deleting hashes for k-mers of sequence " << nucls);
-		index_->DeleteKmersHash(nucls, id);
+		index_.DeleteKmersHash(nucls, id);
 	}
 
 public:
-	DataHashRenewer(const Graph& g, SimpleIndex<kmer_size_, ElementId> *index) :
+	DataHashRenewer(const Graph& g, SimpleIndex<kmer_size_, ElementId>& index) :
 		g_(g), index_(index) {
 	}
 
 	void HandleAdd(ElementId id) {
 		RenewKmersHash(id);
-		RenewKmersHash(g_.Complement(id));
+//		RenewKmersHash(g_.Complement(id));
 	}
 
 	virtual void HandleDelete(ElementId id) {
 		DeleteKmersHash(id);
-		DeleteKmersHash(g_.Complement(id));
+//		DeleteKmersHash(g_.Complement(id));
 	}
 };
 
@@ -146,7 +241,7 @@ class EdgeHashRenewer: public GraphActionHandler<Graph> {
 	DataHashRenewer<kmer_size_, Graph, EdgeId> renewer_;
 
 public:
-	EdgeHashRenewer(const Graph& g, SimpleIndex<kmer_size_, EdgeId> *index) :
+	EdgeHashRenewer(const Graph& g, SimpleIndex<kmer_size_, EdgeId>& index) :
 		renewer_(g, index) {
 	}
 
@@ -386,7 +481,7 @@ protected:
 	}
 
 	void remove(ElementId toRemove) {
-		if(ready && toRemove == queue_.peek()) {
+		if (ready && toRemove == queue_.peek()) {
 			ready = false;
 		}
 		queue_.remove(toRemove);
@@ -418,11 +513,11 @@ public:
 
 	void operator++() {
 		assert(!queue_.empty());
-		if(ready)
+		if (ready)
 			queue_.poll();
 		else
 			ready = true;
-//		cout << "remove " << queue_.size() << endl;
+		//		cout << "remove " << queue_.size() << endl;
 	}
 
 	virtual ~QueueIterator() {
@@ -453,12 +548,12 @@ public:
 
 	virtual void HandleAdd(VertexId v) {
 		super::queue_.offer(v);
-		super::queue_.offer(super::graph_.Complement(v));
+//		super::queue_.offer(super::graph_.Complement(v));
 	}
 
 	virtual void HandleDelete(VertexId v) {
 		super::remove(v);
-		super::remove(super::graph_.Complement(v));
+//		super::remove(super::graph_.Complement(v));
 	}
 };
 
@@ -473,19 +568,14 @@ public:
 	SmartEdgeIterator(Graph &graph, bool fill,
 			Comparator comparator = Comparator()) :
 		super(graph, comparator) {
-		int cnt = 0;
-		int cnt2 = 0;
 		if (fill) {
 			for (typename Graph::VertexIterator it = graph.begin(); it
 					!= graph.end(); ++it) {
 				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
 				super::fillQueue(outgoing.begin(), outgoing.end());
-				cnt++;
-				cnt2 += outgoing.size();
 			}
 			super::graph_.AddActionHandler(this);
 		}
-//		cout << cnt << " " << cnt2 << " " << super::queue_.size() << endl;
 	}
 
 	virtual ~SmartEdgeIterator() {
@@ -494,23 +584,17 @@ public:
 
 	virtual void HandleAdd(EdgeId v) {
 		super::queue_.offer(v);
-		EdgeId rc = super::graph_.Complement(v);
-		if (v != rc)
-			super::queue_.offer(rc);
+//		EdgeId rc = super::graph_.Complement(v);
+//		if (v != rc)
+//			super::queue_.offer(rc);
 	}
 
 	virtual void HandleDelete(EdgeId v) {
-//		cout << "remove " << super::graph_.EdgeNucls(v) << " "
-//				<< super::queue_.size() << endl;
 		super::remove(v);
-		//		cout << "oppa" << endl;
-		EdgeId rc = super::graph_.Complement(v);
-		//		cout << "oppa" << endl;
-		if (v != rc) {
-//			cout << "remove " << super::graph_.EdgeNucls(rc) << " "
-//					<< super::queue_.size() << endl;
-			super::remove(rc);
-		}
+//		EdgeId rc = super::graph_.Complement(v);
+//		if (v != rc) {
+//			super::remove(rc);
+//		}
 	}
 };
 
@@ -544,6 +628,48 @@ public:
 	}
 };
 
+template<size_t k, class Graph>
+class SimpleReadThreader {
+public:
+	typedef typename Graph::EdgeId EdgeId;
+private:
+	const Graph& g_;
+	const de_bruijn::SimpleIndex<k + 1, EdgeId>& index_;
+
+	void processKmer(Seq<k + 1> &kmer, vector<EdgeId> &passed,
+			size_t &startPosition, size_t &endPosition) const {
+		if (index_.contains(kmer)) {
+			pair<EdgeId, size_t> position = index_.get(kmer);
+			endPosition = position.second;
+			if (passed.empty()) {
+				startPosition = position.second;
+			}
+			if (passed.empty() || passed[passed.size() - 1] != position.first)
+				passed.push_back(position.first);
+		}
+	}
+public:
+	SimpleReadThreader(const Graph& g,
+			const de_bruijn::SimpleIndex<k + 1, EdgeId>& index) :
+		g_(g), index_(index) {
+	}
+
+	de_bruijn::Path<EdgeId> ThreadRead(const Sequence& read) const {
+		vector<EdgeId> passed;
+		if (read.size() <= k) {
+			return de_bruijn::Path<EdgeId>();
+		}
+		Seq<k + 1> kmer = read.start<k + 1> ();
+		size_t startPosition = -1;
+		size_t endPosition = -1;
+		processKmer(kmer, passed, startPosition, endPosition);
+		for (size_t i = k + 1; i < read.size(); ++i) {
+			kmer = kmer << read[i];
+			processKmer(kmer, passed, startPosition, endPosition);
+		}
+		return de_bruijn::Path<EdgeId>(passed, startPosition, endPosition);
+	}
+};
 
 }
 

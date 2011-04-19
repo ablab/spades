@@ -95,10 +95,10 @@ public:
 					upper->str() + newRight.upper->Subseq(k - 1).str());
 
 			toOut = newRight.lower->str();
-			assert(l-1 < (int)toOut.length());
+/*			assert(l-1 < (int)toOut.length());
 			lower = new Sequence(
 					lower->str() + newRight.lower->Subseq(l - 1).str());
-
+*/
 		}
 	}
 	void shortenEdge(int toCut, int direction) {
@@ -126,10 +126,10 @@ public:
 			upper = new Sequence(
 					newLeft.upper->Subseq(0, newLeft.length).str()
 							+ upper->str());
-			lower = new Sequence(
+/*			lower = new Sequence(
 					newLeft.lower->Subseq(0, newLeft.length).str()
 							+ lower->str());
-		}
+*/		}
 	}
 	Edge(Sequence *up, Sequence *low, int from, int to, int len, int id,
 			int cov = -1, int dShift = 0) {

@@ -13,6 +13,50 @@ using namespace std;
 typedef map < string, unsigned > CKMerSet;
 typedef map < pair < string, string >, unsigned > CWeightedEdgeSet;
 
+long special_lexicographic3 ( string const & s )
+{
+  assert ( s.size () == 3 );
+  if ( s == "TAA" ) return 1;
+  if ( s == "ACG" ) return 2;
+  if ( s == "CGA" ) return 3;
+  if ( s == "GAA" ) return 4;
+  if ( s == "CTA" ) return 5;
+  if ( s == "ACT" ) return 6;
+  if ( s == "AAA" ) return 7;
+  if ( s == "AAC" ) return 8;
+
+  assert ( false );
+
+  return 10;
+}
+
+long standard_lexicographic3 ( string const & s )
+{
+  //cout << endl << s;
+  assert ( s.length () == 3 );
+  if ( s == "AAA" ) return 1;
+  if ( s == "AAC" ) return 2;
+  if ( s == "ACG" ) return 3;
+  if ( s == "ACT" ) return 4;
+  if ( s == "CGA" ) return 5;
+  if ( s == "CTA" ) return 6;
+  if ( s == "GAA" ) return 7;
+  if ( s == "TAA" ) return 8;
+
+  assert ( false );
+
+  return 10;
+}
+
+Hash < string > h;
+
+long my_hash ( string const & s )
+{
+  //return h ( s );
+  return standard_lexicographic3 ( s );
+}
+
+
 
 class CSubstringIterator
 {
@@ -141,7 +185,7 @@ extern void ConstructDeBruijnGraph ( string genome, unsigned read_size, unsigned
 
 extern void ConstructDeBruijnGraphSimplified ( string genome, unsigned read_size, unsigned k )
 {
-  Hash < string > h;
+  //Hash < string > h;
 
   ofstream f;
   f.open ( ( genome + ".dot" ).c_str () );
@@ -176,7 +220,7 @@ extern void ConstructDeBruijnGraphSimplified ( string genome, unsigned read_size
     string const read = *read_it;
     multimap < unsigned, string > kmers_with_hash;
     for ( CSubstringIterator kmer_it ( read, k, false ); ! kmer_it.IsLast (); kmer_it.Advance () )
-      kmers_with_hash.insert ( make_pair ( h ( *kmer_it ), *kmer_it ) );
+      kmers_with_hash.insert ( make_pair ( my_hash ( *kmer_it ), *kmer_it ) );
     multimap < unsigned, string >::const_iterator from = kmers_with_hash.begin ();
     multimap < unsigned, string >::const_iterator to = kmers_with_hash.begin ();
     ++to;
@@ -188,8 +232,7 @@ extern void ConstructDeBruijnGraphSimplified ( string genome, unsigned read_size
       if ( *kmer_it == to_s )
       {
         swap ( from_s, to_s );
-        //cout << "\nOooops!" << flush;
-        break;
+         break;
       }
 
 

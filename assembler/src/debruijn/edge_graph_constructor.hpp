@@ -16,52 +16,58 @@ using de_bruijn::SimpleIndex;
 using de_bruijn::GraphActionHandler;
 using de_bruijn::EdgeHashRenewer;
 
+//template<size_t kmer_size_>
+//class GraphConstructor {
+//public:
+//	typedef SimpleIndex<kmer_size_ + 1, EdgeId> Index;
+//protected:
+//	typedef Seq<kmer_size_> Kmer;
+//	typedef Seq<kmer_size_ + 1> KPlusOneMer;
+//
+//	EdgeGraph &g_;
+//	Index &h_;
+////	GraphActionHandler<EdgeGraph> *renewer_;
+//
+//	pair<Vertex*, int> GetPosition(KPlusOneMer k) {
+//		return h_->get(k);
+//	}
+//
+//	GraphConstructor() {
+////		h_ = new Index();
+////		g_ = new EdgeGraph(kmer_size_);
+////		renewer_ = new EdgeHashRenewer<kmer_size_ + 1, EdgeGraph> (*g_, h_);
+////		g_->AddActionHandler(renewer_);
+//	}
+//
+//public:
+//	virtual void ConstructGraph(EdgeGraph &g, Index &h) {
+////		g_->RemoveActionHandler(renewer_);
+////		delete renewer_;
+//		g = g_;
+//		h = h_;
+//	}
+//
+//	virtual ~GraphConstructor() {
+//	}
+//};
+
 template<size_t kmer_size_>
-class GraphConstructor {
-public:
+class CondenseConstructor {
+private:
 	typedef SimpleIndex<kmer_size_ + 1, EdgeId> Index;
-protected:
 	typedef Seq<kmer_size_> Kmer;
 	typedef Seq<kmer_size_ + 1> KPlusOneMer;
-
-	EdgeGraph *g_;
-	Index *h_;
-	GraphActionHandler<EdgeGraph> *renewer_;
-
-	pair<Vertex*, int> GetPosition(KPlusOneMer k) {
-		return h_->get(k);
-	}
-
-	GraphConstructor() {
-		h_ = new Index();
-		g_ = new EdgeGraph(kmer_size_);
-		renewer_ = new EdgeHashRenewer<kmer_size_ + 1, EdgeGraph> (*g_, h_);
-		g_->AddActionHandler(renewer_);
-	}
-
-public:
-	virtual void ConstructGraph(EdgeGraph* &g, Index* &h) {
-		g_->RemoveActionHandler(renewer_);
-		delete renewer_;
-		g = g_;
-		h = h_;
-	}
-
-	virtual ~GraphConstructor() {
-	}
-};
-
-template<size_t kmer_size_>
-class CondenseConstructor: public GraphConstructor<kmer_size_> {
-	typedef GraphConstructor<kmer_size_> super;
-	typedef typename super::Index Index;
-	typedef typename super::Kmer Kmer;
-	typedef typename super::KPlusOneMer KPlusOneMer;
 	typedef de_bruijn::DeBruijn<kmer_size_> DeBruijn;
 	typedef typename DeBruijn::edge_iterator edge_iterator;
 	typedef typename DeBruijn::kmer_iterator kmer_iterator;
 
+	//	EdgeGraph &g_;
+	//	Index &h_;
 	const DeBruijn& origin_;
+
+	pair<Vertex*, int> GetPosition(Index &index, KPlusOneMer k) {
+		return index->get(k);
+	}
 
 	bool StepRightIfPossible(KPlusOneMer &edge) {
 		//todo use Seq.end
@@ -110,29 +116,31 @@ class CondenseConstructor: public GraphConstructor<kmer_size_> {
 		return ConstructSeqGoingRight(GoLeft(edge));
 	}
 
-	VertexId FindVertexByOutgoindEdges(Kmer kmer) {
+	VertexId FindVertexByOutgoingEdges(EdgeGraph &graph, Index &index,
+			Kmer kmer) {
 		for (char c = 0; c < 4; ++c) {
 			KPlusOneMer edge = kmer.pushBack(c);
-			if (super::h_->contains(edge)) {
-				return super::g_->EdgeStart(super::h_->get(edge).first);
+			if (index.contains(edge)) {
+				return graph.EdgeStart(index.get(edge).first);
 			}
 		}
 		return NULL;
 	}
 
-	VertexId FindVertexByIncomingEdges(Kmer kmer) {
-		VertexId complement = FindVertexByOutgoindEdges(!kmer);
-		return complement != NULL ? super::g_ -> Complement(complement) : NULL;
+	VertexId FindVertexByIncomingEdges(EdgeGraph &graph, Index &index,
+			Kmer kmer) {
+		VertexId complement = FindVertexByOutgoingEdges(graph, index, !kmer);
+		return complement != NULL ? graph.Complement(complement) : NULL;
 	}
 
-	VertexId FindVertex(Kmer kmer) {
-		VertexId v = FindVertexByOutgoindEdges(kmer);
-		return v == NULL ? FindVertexByIncomingEdges(kmer) : v;
+	VertexId FindVertex(EdgeGraph &graph, Index &index, Kmer kmer) {
+		VertexId v = FindVertexByOutgoingEdges(graph, index, kmer);
+		return v == NULL ? FindVertexByIncomingEdges(graph, index, kmer) : v;
 	}
 
-	VertexId FindVertexMaybeMissing(Kmer kmer) {
-		VertexId v = FindVertex(kmer);
-		return v != NULL ? v : super::g_->AddVertex();
+	VertexId FindVertexMaybeMissing(EdgeGraph &graph, Index &index, Kmer kmer) {
+		VertexId v = FindVertex(graph, index, kmer);
+		return v != NULL ? v : graph.AddVertex();
 	}
 
 public:
@@ -140,26 +148,27 @@ public:
 		origin_(origin) {
 	}
 
-	virtual void ConstructGraph(EdgeGraph* &g, Index* &h) {
+	virtual void ConstructGraph(EdgeGraph &graph, Index &index) {
 		for (kmer_iterator it = origin_.begin(), end = origin_.end(); it != end; it++) {
 			Kmer kmer = *it;
-			pair<edge_iterator, edge_iterator> edges = origin_.OutgoingEdges(kmer);
+			pair<edge_iterator, edge_iterator> edges = origin_.OutgoingEdges(
+					kmer);
 			for (edge_iterator it = edges.first; it != edges.second; ++it) {
 				KPlusOneMer edge = *it;
-				if (!super::h_->contains(edge)) {
+				if (!index.contains(edge)) {
 					Sequence edge_sequence = ConstructSequenceWithEdge(edge);
-					VertexId start = FindVertexMaybeMissing(
+					VertexId start = FindVertexMaybeMissing(graph, index,
 							edge_sequence.start<kmer_size_> ());
-					VertexId end = FindVertexMaybeMissing(
+					VertexId end = FindVertexMaybeMissing(graph, index,
 							edge_sequence.end<kmer_size_> ());
-					super::g_->AddEdge(start, end, edge_sequence);
-					assert(super::h_->contains(edge));
-//					assert(super::h_->edge.);
+					graph.AddEdge(start, end, edge_sequence);
+					assert(index.contains(edge));
+					//					assert(super::h_->edge.);
 				}
 			}
 		}
 
-		super::ConstructGraph(g, h);
+		//		super::ConstructGraph(g, h);
 	}
 };
 

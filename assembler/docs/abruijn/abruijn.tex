@@ -12,7 +12,7 @@
 \begin{document}
 \author{M. Dvorkin, A. Kulikov}
 \title{A Bruijn Graph Approach}
-\date{March 14, 2011}
+%\date{March 14, 2011}
 \maketitle
 
 \listoftodos
@@ -40,8 +40,23 @@ and at the same time it will have essentially the same structure
 as the original de Bruijn graph.{\todo{we should probably cite the paper 
 on minimizers and use the word `minimizer' instead of `earmarked $k$-mer'?..}}
 
+\subsection{Example}
+
+\begin{figure}
+\caption{De Bruijn (grey) and A Bruijn (black) graphs of genomes {\tt ACTGACTGTTGACACTG} ($readsize=9$, $k=5$)
+and {\tt ATTGGTACATTGTGGTACGTACTGACT} ($readsize=11$, $k=5$).}\label{fig23}
+\begin{center}\includegraphics[height=0.9\textheight]{fig2.pdf}
+~~~~~~~~~~~~~~
+\includegraphics[height=0.9\textheight]{fig3.pdf}\end{center}
+\end{figure}
+
+Fig.~\ref{fig23} shows de Bruijn (black edges) and A Bruijn (grey edges) graphs for two toy genomes 
+{\tt ACTGACTGTTGACACTG} and {\tt ATTGGTACATTGTGGTACGTACTGACT}. Numbers on edges are their multiplicities. 
+We assume that the genome is circular and that we are given the set of all its reads.
+
+
 \subsection{Advantages of A Bruijn graph over de Bruijn graph}
-\begin{itemize}
+\begin{enumerate}
 \item Clearly, it requires less memory.
 \item In general, we expect that the resulting A Bruijn graph 
 will have the same structure as the corresponding condensed de Bruijn graph.
@@ -50,8 +65,30 @@ using less time and memory.
 \item If the used hash-function respects frequency of $k$-mers
 the resulting graph will contain a smaller fraction of erroneous $k$-mers.
 \item If the hash function does not mark $k$-mers that appear too often, then 
-some of the repeats will be already resolved in A Bruijn graph.\todo{what else?..}
-\end{itemize}
+some of the repeats will be already resolved in A Bruijn graph.
+
+An example of this effect is given in Fig.~\ref{fig:different_orderings}
+where two A Bruijn graphs of a genome {\tt TAAACGAAAC} ($readsize=6$, $k=3$) 
+are shown. The difference is in the way $3$-mers are ordered. Green edges 
+correspond to the standard lexicographic ordering ({\tt AAA}$<${\tt 
+AAC}$<\dots<${\tt TTT}). Now note that the considered genome contains a 
+repeat {\tt AAAC}. Assume that the hash function treats $3$-mers {\tt AAA}
+and {\tt AAC} from this repeat as maximal. Namely, let the ordering be the 
+following:
+\[{\tt TAA}<{\tt ACG}<{\tt CGA}<{\tt GAA}<{\tt CTA}<{\tt ACT}<{\tt AAA}<{\tt AAC} \, .\]
+As figure shows, this ordering gives a graph consisting of just one cycle.
+
+
+\begin{figure}
+\caption{A Bruijn graphs of genome {\tt TAAACGAAAC} ($readsize=6$, $k=3$)
+for different orderings on $3$-mers.}\label{fig:different_orderings}
+\begin{center}
+\includegraphics[width=0.9\textwidth]{TAAACGAAAC.pdf}
+\end{center}
+\end{figure}
+
+\item \dots \todo{what else?..}
+\end{enumerate}
 
 \subsection{Hash Functions}
 
@@ -74,19 +111,6 @@ Some natural properties that $h$ should hold are listed below.
   \[h(s) = h_0(s) \oplus h_0(s^{RC}) \textrm{ or } h(s) = \min\{h_0(s), h_0(s^{RC})\} .\]
 \end{enumerate}
 
-\subsection{Example}
-
-\begin{figure}
-\caption{De Bruijn (grey) and A Bruijn (black) graphs of genomes {\tt ACTGACTGTTGACACTG} ($readsize=9$, $k=5$)
-and {\tt ATTGGTACATTGTGGTACGTACTGACT} ($readsize=11$, $k=5$).}\label{fig23}
-\begin{center}\includegraphics[height=0.5\textheight]{fig2.pdf}
-~~~~~~~~~~~~~~
-\includegraphics[height=0.5\textheight]{fig3.pdf}\end{center}
-\end{figure}
-
-Fig.~\ref{fig23} shows de Bruijn (black edges) and A Bruijn (grey edges) graphs for two toy genomes 
-{\tt ACTGACTGTTGACACTG} and {\tt ATTGGTACATTGTGGTACGTACTGACT}. Numbers on edges are their multiplicities. 
-We assume that the genome is circular and that we are given the set of all its reads.
 
 The main question that still needs to be answered is:
 does this graph really represent the repeat structure of the genome?

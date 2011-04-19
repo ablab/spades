@@ -2,6 +2,8 @@
 #include "seq.hpp"
 #include "sequence.hpp"
 #include "nucl.hpp"
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
 #include <string>
 
 typedef unsigned long long ull;
@@ -66,10 +68,46 @@ void TestSeqFromType() {
 	ASSERT_EQUAL("GTACG", Seq<5>(s, 2).str());
 }
 
-/*template <size_t k>
-Seq<k-1> TestAAA(const Seq<k> &s) {
-	return s.end<k-1>();
-}*/
+void TestSeqPushBack() {
+	{
+		Seq<4> s("ACGT");
+		ASSERT_EQUAL("ACGTC", s.pushBack('C').str());
+	}
+	{
+		Seq<4, unsigned char> s("ACGT");
+		ASSERT_EQUAL("ACGTC", s.pushBack('C').str());
+	}
+	{
+		Seq<3> s("ACG");
+		ASSERT_EQUAL("ACGC", s.pushBack('C').str());
+	}
+}
+
+//template <size_t k>
+//Seq<k - 1> TemplateEnd(const Seq<k> &s)
+//{
+//	return s.end( );
+
+//	boost::function<Seq<k-1>()> foo = boost::bind(&Seq<k>::end<k-1>, s);
+//
+//return foo(); s.end<(k-1)>();
+	//return /*Seq<k-1>();  */s.size();//end<k-1, unsigned int>();
+//}
+
+//template <size_t k>
+//Seq<k-1> TemplateEnd2(const Sequence &s) {
+//	return s.end<k-1>();
+//}
+
+//void TestTemplateSeqEnd() {
+//	Seq<5> s("ACGTA");
+//	ASSERT_EQUAL("CGTA", TemplateEnd<5>(s).str());
+//}
+
+//void TestTemplateSequenceEnd() {
+//	Sequence s("ACGTA");
+//	ASSERT_EQUAL("CGTA", TemplateEnd<5>(s).str());
+//}
 
 void TestSeqEnd() {
 	Seq<5> s1("ACGTA");
@@ -112,6 +150,28 @@ void Test16_2() {
 	ASSERT_EQUAL(Seq<16>("TTTTTTTTTTTTTTTA"), s << 'A');
 }
 
+template <int k>
+struct A
+{
+	A foo() const
+	{
+		return A<1>();
+	}
+
+	template<int j>
+	A<j> bar() const
+	{
+		return A<j>();
+	}
+
+};
+
+void foobar(A<4> const& a)
+{
+	A<3> aa = a.bar<3>();
+}
+
+
 cute::suite SeqSuite(){
 	cute::suite s;
 	s.push_back(CUTE(TestSeqSelector));
@@ -121,8 +181,13 @@ cute::suite SeqSuite(){
 	s.push_back(CUTE(TestSeqFromType));
 	s.push_back(CUTE(TestSeqStart));
 	s.push_back(CUTE(TestSeqEnd));
+
+//	s.push_back(CUTE(TestTemplateSeqEnd));
+//	s.push_back(CUTE(TestTemplateSequenceEnd));
+
 	s.push_back(CUTE(TestSeqShiftLeft));
 	s.push_back(CUTE(TestSeqShiftRight));
+	s.push_back(CUTE(TestSeqPushBack));
 	s.push_back(CUTE(TestSeqHeadAndTail));
 	s.push_back(CUTE(TestSeqReverseComplement));
 	s.push_back(CUTE(TestSeqComplex));

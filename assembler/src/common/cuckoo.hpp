@@ -183,15 +183,15 @@ private:
       size_t i = it.pos / len_part_;
       size_t j = it.pos % len_part_;
       if (j != hash((*it).first, i)) {
-	Data t = *it;
-	remove(it);
-	add_new(t);
-	if (is_rehashed_) {
-	  it = begin();
-	  if (!get_exists(it.pos)) ++it; 
-	}
+        Data t = *it;
+        remove(it);
+	      add_new(t);
+	      if (is_rehashed_) {
+	        it = begin();
+	        if (!get_exists(it.pos)) ++it; 
+	       }
       } else { 
-	++it;
+        ++it;
       }
     }
     is_rehashed_ = true;
@@ -250,7 +250,9 @@ public:
   }
 
   inline iterator begin() {
-    return iterator(0, this);
+    iterator it = iterator(0, this);
+    if (!get_exists(it.pos)) ++it;
+    return it;
   }
   
   inline iterator end() {
