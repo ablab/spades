@@ -46,10 +46,10 @@ private:
 		return c;
 	}
 
-	typedef Data value;
+//	typedef Data value;
 	//typedef google::sparse_hash_map<key, value,	typename key::hash, typename key::equal_to> hash_map;
 	//	typedef std::map<key, value, typename key::less> map_type;
-	typedef std::tr1::unordered_map<Kmer, value, typename Kmer::hash,
+	typedef std::tr1::unordered_map<Kmer, Data, typename Kmer::hash,
 			typename Kmer::equal_to> map_type;
 	map_type nodes_;
 
@@ -69,7 +69,7 @@ private:
 	}
 
 	Data& addNode(const Kmer &seq) {
-		std::pair<const Kmer, value> p = make_pair(seq, Data());
+		std::pair<const Kmer, Data> p = make_pair(seq, Data());
 		std::pair<typename map_type::iterator, bool> node = nodes_.insert(p);
 		return node.first->second; // return node's data
 	}

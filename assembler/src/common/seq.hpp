@@ -260,6 +260,15 @@ public:
 		//return this->equal_to()(s);
 	}
 
+	bool operator<(const Seq<size_, T> that) const {
+		for (size_t i = 0; i < size_; ++i) {
+			if (this->operator[](i) != that[i]) {
+				return (this->operator[](i) < that[i]);
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * String representation of this Seq
 	 *
@@ -318,13 +327,21 @@ public:
 		}
 	};
 
-	struct less {
+	/**
+	 * Denotes some (weird) order on k-mers. Works fast.
+	 */
+	struct order {
 		int operator()(const Seq<size_> &l, const Seq<size_> &r) const {
 			return l.data_ < r.data_;
 			//return 0 > memcmp(l._bytes.data(), r._bytes.data(), _byteslen);
 		}
 	};
 
+	struct less {
+		int operator()(const Seq<size_> &l, const Seq<size_> &r) const {
+			return l < r;
+		}
+	};
 };
 
 template<size_t size_, typename T = int>

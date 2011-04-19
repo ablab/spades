@@ -4,6 +4,6 @@
 #include "pairedGraph.hpp"
 
 using namespace paired_assembler;
-void removeBulges(longEdgesMap edges);
+void removeBulges(PairedGraph &graph);
 
 #endif /* ERRORCORRUPTION_HPP_ */
