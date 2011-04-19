@@ -29,13 +29,16 @@ void RunTestSuites() {
 }
 
 void RunEdgeGraphTool() {
-	pair<string, int> input = QUAKE_CROPPED_10_5_A;
-	ireadstream stream(input.first);
+	pair<pair<string, string>, int> input = QUAKE_CROPPED_4_10_5;
+//	ireadstream stream1(input.first.first);
+//	ireadstream stream2(input.first.second);
+	string reads[2] = {input.first.first, input.first.second};
+	StrobeReader<2, Read, ireadstream> reader((string *)reads);
 	ifaststream genome_stream(ECOLI_FILE);
 	string genome;
 	genome_stream >> genome >> genome;
-	edge_graph::EdgeGraphTool(stream, genome.substr(0, input.second));
-	stream.close();
+	edge_graph::EdgeGraphTool(reader, genome.substr(0, input.second));
+	reader.close();
 	genome_stream.close();
 }
 
