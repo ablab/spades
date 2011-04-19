@@ -243,11 +243,26 @@ pair<EdgeId, EdgeId> EdgeGraph::SplitEdge(EdgeId edge, size_t position) {
 	VertexId splitVertex = AddVertex();
 	EdgeId newEdge1 = AddEdge(this->EdgeStart(edge), splitVertex, s1);
 	EdgeId newEdge2 = AddEdge(splitVertex, this->EdgeEnd(edge), s2);
+	for (vector<PairedActionHandler*>::iterator it =
+			action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+		(*it)->HandleSplit(edge, newEdge1, newEdge2);
+	}
+	DeleteEdge(edge);
 	return make_pair(newEdge1, newEdge2);
 }
 
 void EdgeGraph::GlueEdges(EdgeId edge1, EdgeId edge2) {
-
+	for (vector<PairedActionHandler*>::iterator it =
+			action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+		(*it)->HandleGlue(edge1, edge2);
+	}
+	VertexId start = EdgeStart(edge1);
+	VertexId end = EdgeEnd(edge1);
+	DeleteEdge(edge1);
+	if(IsDeadStart(start) && IsDeadEnd(start))
+		DeleteVertex(start);
+	if(IsDeadStart(end) && IsDeadEnd(end))
+		DeleteVertex(end);
 }
 
 }
