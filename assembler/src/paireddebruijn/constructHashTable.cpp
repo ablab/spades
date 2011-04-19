@@ -503,11 +503,12 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 				good = 0;
 				DEBUG(" FOUND intersection length" << comp_res.fi << " on second position " << comp_res.se.se <<" " << tmp_res[i] <<" "<< tmp_res[j]);
 				tmp_res[j] = tmp_res[j].substr(comp_res.se.se, comp_res.fi);
+				tmp_cov[j] += tmp_cov[i];
 				break;
 
 			}
 		}
-		if (good && (tmp_cov[i] > coverage_cutoff)) {
+		if (good && (tmp_cov[i] * 1000 /(tmp_res[i].length() - l + 1) > coverage_cutoff)) {
 			Sequence* tmpSeq = new Sequence(tmp_res[i]);
 			res.pb(make_pair(tmpSeq,tmp_cov[i]));
 
