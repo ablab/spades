@@ -105,7 +105,7 @@ void EdgeGraphTool(StrobeReader<2, Read, ireadstream>& reader, const string& gen
 	//	debruijn.show(genome);
 
 	EdgeGraph g(K);
-	SimpleIndex < K + 1, EdgeId > index;
+	SimpleIndex<K + 1, EdgeId> index;
 	EdgeHashRenewer<K + 1, EdgeGraph> index_handler(g, index);
 	g.AddActionHandler(&index_handler);
 
@@ -113,7 +113,8 @@ void EdgeGraphTool(StrobeReader<2, Read, ireadstream>& reader, const string& gen
 	CondenseGraph<SimpleReaderWrapper<2, Read, ireadstream> > (debruijn, g, index, stream, genome);
 
 	reader.reset();
-	de_bruijn::PairedInfoIndex<EdgeGraph>(g, index, reader);
+
+	de_bruijn::PairedInfoIndex<K, EdgeGraph> paired_info_index(g, index, reader);
 
 	ClipTips(g, index, genome, "tips_clipped.dot");
 
