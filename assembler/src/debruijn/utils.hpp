@@ -99,13 +99,13 @@ public:
 	virtual void HandleDelete(EdgeId e) {
 	}
 
-	virtual void HandleMerge(vector<EdgeId> oldEdge, EdgeId newEdge) {
+	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
 	}
 
-	virtual void HandleGlue(EdgeId oldEdge, EdgeId newEdge) {
+	virtual void HandleGlue(EdgeId old_edge, EdgeId new_edge) {
 	}
 
-	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
+	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) {
 	}
 
 	virtual ~GraphActionHandler() {
