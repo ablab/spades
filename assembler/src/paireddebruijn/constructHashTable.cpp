@@ -197,6 +197,8 @@ downSeqs clusterize(pair<ll,int>* a, int size, int max_shift) {
 	int used[MAXLMERSIZE];
 	int shift_left[MAXLMERSIZE];
 	int shift_right[MAXLMERSIZE];
+	char cur_string[MAXLMERSIZE * 2];
+	memset(cur_string, 0, sizeof(cur_string));
 	//-1 = no neighbor;
 	//-2 = more than 1 neighbor
 	DEBUG("clusterizing");
@@ -321,7 +323,56 @@ downSeqs clusterize(pair<ll,int>* a, int size, int max_shift) {
 				INFO("SUBSEQ" << tmp_res[i] << " " << tmp_res[j]);
 			}
 		}
+
+
 		if (good) {
+/*
+			int s_len = tmp_res[i].length();
+			forn(ii, s_len)
+				cur_string[ii] = s[ii];
+			cur_string[s_len] = 0;
+			int sum_cov = 0;
+			ll tmpKmer = 0;
+			forn(ii, s_len - l) {
+				tmpKmer = extractMer(cur_string, ii, l);
+				forn(j, size) {
+					if (a[j].first == tmpKmer) {
+						sum_cov +=a[j].second;
+						break;
+					}
+				}
+			}
+			int ii = 0;
+			int cov = 0;
+			do {
+				cov = 0;
+				tmpKmer = extractMer(cur_string, ii, l);
+				ii++;
+				forn(j, size) {
+					if (a[j].first == tmpKmer) {
+						cov = a[j].second;
+						break;
+					}
+				}
+				assert(cov > 0);
+			} while ((ii < s_len - l) && (sum_cov > cov * 2 * (s_len - l + 1)));
+			int left_start = ii - 1;
+			ii = s_len - l + 1;
+			cov = 0;
+			do {
+				cov = 0;
+				tmpKmer = extractMer(cur_string, ii, l);
+				ii++;
+				forn(j, size) {
+					if (a[j].first == tmpKmer) {
+						cov = a[j].second;
+						break;
+					}
+				}
+				assert(cov > 0);
+
+			} while ((ii < s_len - l) && (sum_cov > cov * 2 * (s_len - l + 1)));
+*/
 			Sequence* tmpSeq = new Sequence(tmp_res[i]);
 			res.pb(make_pair(tmpSeq,tmp_cov[i]));
 
