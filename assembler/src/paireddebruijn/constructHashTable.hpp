@@ -16,6 +16,7 @@ ll extractMer(char *read, int shift, int length);
 void addPairToTable(myMap& table, ll upper, ll lower);
 int pairsToLmers(string inputFile, string outputFile);
 void initGlobal();
+void constructReversedReadPairs(string inputFile, string outputFile);
 
 inline bool ComparePairByFirst(pair<ll,int> i, pair<ll,int> j){
 	return i.first < j.first;

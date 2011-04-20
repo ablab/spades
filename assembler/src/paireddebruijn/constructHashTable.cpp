@@ -706,13 +706,9 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 	int count = 0;
 	char *upperNuclRead = new char[readLength + 2];
 	char *lowerNuclRead = new char[readLength + 2];
-	char *upperRead = new char[readLength + 2];
-	char *lowerRead = new char[readLength + 2];
 	char* fictiveRead = new char[readLength + 2];
 
-
 	forn(i, readLength)
-
 		fictiveRead[i] = 'G';
 	fictiveRead[readLength] = 0;
 
@@ -743,7 +739,7 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 //					reverseCompliment(upperNuclRead, lowerNuclRead);
 //						} else
 //				{
-					reverseCompliment(upperNuclRead, lowerNuclRead);
+				reverseCompliment(upperNuclRead, lowerNuclRead);
 //				}
 			}
 
@@ -937,6 +933,21 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 	return 0;
 }
 
+void constructReversedReadPairs(string inputFile, string outputFile) {
+	FILE* inFile = fopen(inputFile.c_str(), "r");
+	FILE* outFile = fopen(outputFile.c_str(), "w");
+	int count = 0;
+	char *upperNuclRead = new char[readLength + 2];
+	char *lowerNuclRead = new char[readLength + 2];
+	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
+		reverseCompliment(upperNuclRead, lowerNuclRead);
+		if (!(count & (1024*64 - 1)))
+			INFO("read number "<<count<<" reverted"<<endl);
+		count++;
+		fprintf(outFile, "%s %s\n", upperNuclRead, lowerNuclRead);
+	}
+
+}
 
 
 
