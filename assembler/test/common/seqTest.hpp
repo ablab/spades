@@ -83,31 +83,25 @@ void TestSeqPushBack() {
 	}
 }
 
-//template <size_t k>
-//Seq<k - 1> TemplateEnd(const Seq<k> &s)
-//{
-//	return s.end( );
+void TestSeqNull() {
+        Seq<0> s("");
+	ASSERT_EQUAL("", s.str());
+}
 
-//	boost::function<Seq<k-1>()> foo = boost::bind(&Seq<k>::end<k-1>, s);
-//
-//return foo(); s.end<(k-1)>();
-	//return /*Seq<k-1>();  */s.size();//end<k-1, unsigned int>();
-//}
+void TestSeqEndNull() {
+        Seq<0> s(""); 
+	ASSERT_EQUAL("", s.end<0>().str());
+}
 
-//template <size_t k>
-//Seq<k-1> TemplateEnd2(const Sequence &s) {
-//	return s.end<k-1>();
-//}
+void TestSeqStartNull() {
+        Seq<0> s("");
+	ASSERT_EQUAL("", s.start<0>().str());
+}
 
-//void TestTemplateSeqEnd() {
-//	Seq<5> s("ACGTA");
-//	ASSERT_EQUAL("CGTA", TemplateEnd<5>(s).str());
-//}
-
-//void TestTemplateSequenceEnd() {
-//	Sequence s("ACGTA");
-//	ASSERT_EQUAL("CGTA", TemplateEnd<5>(s).str());
-//}
+void TestSeqAddSymbolForNullValue() {
+        Seq<1> s("");
+	ASSERT_EQUAL(Seq<1>("A"), s << 'A');
+}
 
 void TestSeqEnd() {
 	Seq<5> s1("ACGTA");
@@ -150,28 +144,6 @@ void Test16_2() {
 	ASSERT_EQUAL(Seq<16>("TTTTTTTTTTTTTTTA"), s << 'A');
 }
 
-template <int k>
-struct A
-{
-	A foo() const
-	{
-		return A<1>();
-	}
-
-	template<int j>
-	A<j> bar() const
-	{
-		return A<j>();
-	}
-
-};
-
-void foobar(A<4> const& a)
-{
-	A<3> aa = a.bar<3>();
-}
-
-
 cute::suite SeqSuite(){
 	cute::suite s;
 	s.push_back(CUTE(TestSeqSelector));
@@ -193,6 +165,11 @@ cute::suite SeqSuite(){
 	s.push_back(CUTE(TestSeqComplex));
 	s.push_back(CUTE(Test16));
 	s.push_back(CUTE(Test16_2));
+	s.push_back(CUTE(TestSeqNull));
+	s.push_back(CUTE(TestSeqEndNull));
+	s.push_back(CUTE(TestSeqStartNull));
+	s.push_back(CUTE(TestSeqAddSymbolForNullValue));
+
 	return s;
 }
 

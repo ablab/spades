@@ -90,7 +90,7 @@ int findPossibleVertex(ll kmer, Sequence &down, edgesMap &edges, verticesMap &ve
  * @return coverage of resulting edge when expanding or 0.
  */
 Sequence* SubSeq(Sequence Seq, int direction, int CutLen){
-	if (CutLen>=Seq.size()) return new Sequence("A");
+	if (CutLen>=Seq.size()) return new Sequence("");
 	if (direction == LEFT)
 		return new Sequence(Seq.Subseq(0, Seq.size()-CutLen));
 	else if (direction == RIGHT)

@@ -54,7 +54,7 @@ private:
 	map_type nodes_;
 
 	void CountSequence(const Sequence& s) {
-		Seq<size_> head = s.start<size_>();
+		Seq<size_> head = s.start<size_> ();
 		for (size_t j = size_; j < s.size(); ++j) {
 			Seq<size_> tail = head << s[j];
 			addEdge(head, tail);
@@ -205,6 +205,39 @@ public:
 			CountRead(r);
 		}
 	}
+
+//	void show(string genome) {
+//		int arr[100];
+//		for (int i = 0; i < 100; i++)
+//			arr[i] = 0;
+//		Kmer oppa(genome);
+//		set<KPlusOneMer, typename KPlusOneMer::less> s;
+//		for (int i = size_; i < genome.length(); i++) {
+//			typename map_type::iterator it = nodes_.find(oppa);
+//			int c = dignucl(genome[i]);
+//			if (it == nodes_.end()) {
+//				cout << "gopa" << endl;
+//				if(s.find(oppa.pushBack(c)) == s.end()) {
+//					arr[0]++;
+//					s.insert(oppa.pushBack(c));
+//				}
+//			} else {
+//				Data& d = it->second;
+//				cout << d.out_edges_[(int) c] << endl;
+////				if (d.out_edges_[(int) c] > 0) {
+//					if (d.out_edges_[(int) c] < 100)
+//						if(s.find(oppa.pushBack(c)) == s.end()) {
+//							arr[d.out_edges_[(int) c]]++;
+//							s.insert(oppa.pushBack(c));
+//						}
+////				}
+//			}
+//			oppa = oppa << genome[i];
+//		}
+//		for (int i = 0; i < 100; i++) {
+//			cout << i << " " << arr[i] << endl;
+//		}
+//	}
 
 };
 
