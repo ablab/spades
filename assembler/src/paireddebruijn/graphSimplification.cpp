@@ -278,11 +278,11 @@ void cutShortTips(PairedGraph &graph, int MaxCutLength){
 	forn(i,graph.VertexCount) {
 		if ((graph.rightDegree(i) == 1) && (graph.leftDegree(i) == 0)){
 			Edge* curEdge = graph.neighbourEdge(i,0, RIGHT);
-			if (curEdge->length<=MaxCutLength) graph.removeEdge(curEdge);
+			if ((curEdge->length<=MaxCutLength)&&((curEdge->coverage<=100))) graph.removeEdge(curEdge);
 		}
 		if ((graph.rightDegree(i) == 0) && (graph.leftDegree(i) == 1)){
 			Edge* curEdge = graph.neighbourEdge(i,0, LEFT);
-			if (curEdge->length<=MaxCutLength) graph.removeEdge(curEdge);
+			if ((curEdge->length<=MaxCutLength)&&(((curEdge->coverage<=100)))) graph.removeEdge(curEdge);
 		}
 	}
 }

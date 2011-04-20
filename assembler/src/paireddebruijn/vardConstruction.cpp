@@ -53,16 +53,27 @@ int findPossibleVertex(ll kmer, Sequence &down, edgesMap &edges, verticesMap &ve
 	int res = -1;
 	if (v != verts.end()) {
 		TRACE(" kmer FOUND");
+		if (useKmersVertices){
+			if (v->second.size() == 1) {
+				return v->second[0]->VertexId ;
+			} else {
+				if (v->second.size() == 0){
+					return -1;
+				} else {
+					assert (0);
+				}
+			}
+
+		}
 		forn(i, v->second.size()) {
 			Sequence* cur_seq =  v->second[i]->lower;
 			int position = v->second[i]->position;
 			size_t tmp_pos = 0;
-			if ((useKmersVertices)||((tmp_pos = down.str().find(cur_seq->Subseq(position, position + k-1).str())) != string::npos)){
+			if (((tmp_pos = down.str().find(cur_seq->Subseq(position, position + k-1).str())) != string::npos)){
 				res =  v->second[i]->VertexId;
 				DEBUG("vert found " << kmer << " " << cur_seq->str() << " " << tmp_pos<< " at position " << position);
 				DEBUG("For " << kmer << " " << down.str() );
 				count++;
-				if (useKmersVertices) return res;
 			}
 		}
 	}
@@ -79,7 +90,7 @@ int findPossibleVertex(ll kmer, Sequence &down, edgesMap &edges, verticesMap &ve
  * @return coverage of resulting edge when expanding or 0.
  */
 Sequence* SubSeq(Sequence Seq, int direction, int CutLen){
-	if (CutLen>=Seq.size()) return new Sequence("A");
+	if (CutLen>=Seq.size()) return new Sequence("");
 	if (direction == LEFT)
 		return new Sequence(Seq.Subseq(0, Seq.size()-CutLen));
 	else if (direction == RIGHT)
@@ -441,7 +452,7 @@ void createEdges(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 						//TODO: minIntersect?
 						if (*((*it)->lower)==*startSeq)
 						//	if (startSeq->similar(*((*it)->lower), startSeq->size(), 0))
-							{
+						{
 							findCnt++;
 //							assert(findCnt<2);
 //							DEBUG("marking edge used");

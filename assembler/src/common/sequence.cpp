@@ -64,13 +64,15 @@ bool Sequence::intersects(const Sequence &t) const {
 	return false;
 }
 
+// TODO Might be optimized via int comparison (not so easy)
 bool Sequence::operator<(const Sequence &that) const {
-	for (size_t i = 0; i < size_; ++i) {
-		if (i > that.size_) return true;
-		if (this->operator[](i) < that[i]) return true;
+	size_t s = std::min(size_, that.size_);
+	for (size_t i = 0; i < s; ++i) {
+		if (this->operator[](i) != that[i]) {
+			return (this->operator[](i) < that[i]);
+		}
 	}
-	if (size_ == that.size_) return false;
-	return true;
+	return (size_ < that.size_);
 }
 
 Sequence Sequence::operator!() const {

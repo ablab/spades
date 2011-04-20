@@ -7,6 +7,7 @@
 #include "readTracing.hpp"
 #include "sequence.hpp"
 #include "readsReformatter.hpp"
+#include "bulgeCorruption.hpp"
 //#include "read_generator.hpp"
 
 using namespace paired_assembler;
@@ -87,6 +88,16 @@ void run() {
 				folder+"afterTips.dot");
 		outputLongEdgesThroughGenome(graph,
 						folder+"afterTips_g.dot");
+		removeBulges(graph);
+		outputLongEdges(graph.longEdges, graph,
+				folder+"afterBulge.dot");
+		outputLongEdgesThroughGenome(graph,
+						folder+"afterBulge_g.dot");
+		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		outputLongEdges(graph.longEdges, graph,
+				folder+"afterBulgeEx.dot");
+		outputLongEdgesThroughGenome(graph,
+						folder+"afterBulgeEx_g.dot");
 	}
 
 	if (useTraceReads) {
@@ -166,6 +177,7 @@ void generate() {
 }
 
 int main() {
+
 	short My_short;
 	int My_int;
 	long My_long;
@@ -201,6 +213,8 @@ int main() {
 //	assert(0);
 
 	init();
+	constructReversedReadPairs(parsed_reads, folder +"reverted_reads.txt");
+	assert(0);
 	run();
 	return 0;
 }

@@ -58,12 +58,12 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 			}
 		}
 		prototypes.clear();
-		if (size == 0) {
+/*		if (size == 0) {
 			Sequence *seq;
-			seq = new Sequence("");
+			seq = new Sequence("A");
 		}
 		else
-		forn(i, size) {
+	*/	forn(i, size) {
 			scanf_res = fscanf(inFile, "%s %d", s, &coverage);
 			if (!scanf_res) {
 				cerr << "sequencesToMap error in reading sequences";
@@ -73,8 +73,7 @@ edgesMap sequencesToMap(string parsed_k_sequence) {
 			seq = new Sequence(s);
 			EdgePrototype *v = new EdgePrototype(seq, 0);
 			v->coverage = coverage;
-			if (!i)
-				prototypes.pb(v);
+			prototypes.pb(v);
 		}
 
 		if (size>0) res.insert(mp(kmer, prototypes));
@@ -112,7 +111,8 @@ void appendLmers(string parsed_l_mers, edgesMap &edges) {
 			}
 		}
 		if (edges.find(kmer) == edges.end()) {
-			Sequence *seq = new Sequence("A");
+			Sequence *seq = new Sequence("");
+//			Sequence *seq = new Sequence("A");
 			EdgePrototype *v = new EdgePrototype(seq, 0);
 			v->coverage = 1 + coverage * range_variating * 1.5;
 			prototypes[0] = v;
