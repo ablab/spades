@@ -10,7 +10,7 @@
 
 namespace de_bruijn {
 
-template<size_t kmer_size, class Graph>
+template<size_t kmer_size, class Stream, class Graph>
 class PairedInfoIndex: public GraphActionHandler<Graph> {
 public:
 	typedef typename Graph::EdgeId EdgeId;
@@ -36,9 +36,9 @@ public:
 
 	//	template<size_t kmer_size>
 	PairedInfoIndex(Graph &g, const SimpleIndex<kmer_size + 1, EdgeId>& index,
-			StrobeReader<2, Read, ireadstream> &reader) :
+			Stream stream) :
 		graph_(g) {
-		CollectData/*<kmer_size> */(index, reader);
+		CollectData/*<kmer_size> */(index, stream);
 		g.AddActionHandler(this);
 	}
 
@@ -162,16 +162,16 @@ private:
 
 	//	template<size_t kmer_size>
 	void CollectData(const SimpleIndex<kmer_size + 1, EdgeId>& index,
-			StrobeReader<2, Read, ireadstream> &reader) {
+			Stream &stream) {
 		//todo
 		size_t d = 100;
 
 		typedef Seq<kmer_size + 1> KPOMer;
 		de_bruijn::SimpleReadThreader<kmer_size, Graph> read_threader(graph_,
 				index);
-		while (!reader.eof()) {
+		while (!stream.eof()) {
 			vector<Read> reads;
-			reader >> reads;
+			stream >> reads;
 			de_bruijn::Path<EdgeId> path1 = read_threader.ThreadRead(
 					reads[0].getSequence());
 			de_bruijn::Path<EdgeId> path2 = read_threader.ThreadRead(
