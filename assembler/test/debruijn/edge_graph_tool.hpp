@@ -67,7 +67,9 @@ void CondenseGraph(const DeBruijn& debruijn, EdgeGraph& g, Index& index,
 
 	INFO("Counting coverage");
 	CoverageCounter<K, EdgeGraph> cc(g, index);
-	cc.CountCoverage(stream);
+	typedef SimpleReaderWrapper<ReadStream> SimpleRCStream;
+	SimpleRCStream unitedStream(stream);
+	cc.CountCoverage(unitedStream);
 	INFO("Coverage counted");
 
 	ProduceInfo(g, index, genome, "edge_graph.dot", "edge_graph");
@@ -93,14 +95,18 @@ void RemoveBulges(EdgeGraph &g, Index &index, const string& genome,
 
 	ProduceInfo(g, index, genome, dotFileName, "no_bulge_graph");
 }
-
-void EdgeGraphTool(StrobeReader<2, Read, ireadstream>& reader, const string& genome) {
+typedef StrobeReader<2, Read, ireadstream> Reader;
+typedef RCReaderWrapper<Reader> RCStream;
+typedef SimpleReaderWrapper<RCStream> SimpleRCStream;
+void EdgeGraphTool(Reader& reader, const string& genome) {
 	INFO("Edge graph construction tool started");
+
+	RCStream rcStream(reader);
 
 	DeBruijn debruijn;
 
-	SimpleReaderWrapper<2, Read, ireadstream> stream(reader);
-	ConstructUncondensedGraph<SimpleReaderWrapper<2, Read, ireadstream> > (debruijn, stream);
+	SimpleRCStream unitedStream(rcStream);
+	ConstructUncondensedGraph<SimpleRCStream> (debruijn, unitedStream);
 
 	//	debruijn.show(genome);
 
@@ -109,12 +115,11 @@ void EdgeGraphTool(StrobeReader<2, Read, ireadstream>& reader, const string& gen
 	EdgeHashRenewer<K + 1, EdgeGraph> index_handler(g, index);
 	g.AddActionHandler(&index_handler);
 
-	stream.reset();
-	CondenseGraph<SimpleReaderWrapper<2, Read, ireadstream> > (debruijn, g, index, stream, genome);
-
 	reader.reset();
+	CondenseGraph<RCStream> (debruijn, g, index, rcStream, genome);
 
-	de_bruijn::PairedInfoIndex<K, EdgeGraph> paired_info_index(g, index, reader);
+//	reader.reset();
+//	de_bruijn::PairedInfoIndex<K, RCStream, EdgeGraph> paired_info_index(g, index, rcStream);
 
 	ClipTips(g, index, genome, "tips_clipped.dot");
 

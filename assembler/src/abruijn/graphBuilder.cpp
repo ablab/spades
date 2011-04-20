@@ -20,7 +20,15 @@ using namespace abruijn;
 
 //typedef hash_map< Sequence, int, HashSym<Sequence>, EqSym<Sequence> > SeqCount;
 //SeqCount seqCount;
-set<hash_t> earmarkedHashes;
+/**
+ * Stores bitmask:
+ * 1 = the lexicographically lesser k-mer has been seen as non-rightmost k-mer in read
+ * 2 = the greater k-mer ...
+ */
+map<hash_t, char> has_right;
+map<hash_t, char> tips;
+set<hash_t> earmarked_hashes;
+map<hash_t, set<hash_t> > tip_extensions;
 
 abruijn::Graph graph;
 
@@ -34,15 +42,15 @@ bool isTrusted(hash_t hash) {
 }
 
 /**
- * Calculates two (distinct) minimal hash-values of all k-mers in this read,
- * and puts them into goodHashes
+ * Calculates HTAKE (distinct) minimal hash-values of all k-mers in this read,
+ * and puts them into earmarked_hashes
  */
-void processReadA(Sequence s) {
+void findMinimizers(Sequence s) {
 	hashSym.kmers(s, ha);
-	for (int i = 0; i < HTAKE; i++) {
+	for (size_t i = 0; i < HTAKE; i++) {
 		hbest[i] = maxHash;
 	}
-	for (int i = 0; i + K <= MPSIZE; i++) {
+	for (size_t i = 0; i + K <= MPSIZE; i++) {
 		hash_t hi = ha[i];
 		if (!isTrusted(hi)) {
 			continue;
@@ -59,44 +67,147 @@ void processReadA(Sequence s) {
 		}
 		hbest[j] = hi;
 	}
-	for (int i = 0; i < HTAKE && hbest[i] < maxHash; i++) {
-		earmarkedHashes.insert(hbest[i]);
+	for (size_t i = 0; i < HTAKE && hbest[i] < maxHash; i++) {
+		earmarked_hashes.insert(hbest[i]);
 	}
 }
 
-void processReadAA(Sequence s) {
+/**
+ * If only one k-mer from s is earmarked,
+ * this method earmarks 1 more k-mer (with second minimal hash-value)
+ */
+void findSecondMinimizer(Sequence s) {
 	hashSym.kmers(s, ha);
 	hash_t he = maxHash;
 	hash_t hb = maxHash;
-	for (int i = 0; i + K <= MPSIZE; i++) {
+	for (size_t i = 0; i + K <= MPSIZE; i++) {
 		hash_t hi = ha[i];
-		if (!isTrusted(hi)) {
-			continue;
-		}
-		if (earmarkedHashes.find(hi) != earmarkedHashes.end()) {
+		if (earmarked_hashes.count(hi)) {
 			if (he == maxHash) {
 				he = hi;
 			} else {
 				return;
 			}
 		} else if (hi < hb) {
+			if (!isTrusted(hi)) {
+				continue;
+			}
 			hb = hi;
 		}
 	}
-	earmarkedHashes.insert(hb);
+	assert(hb < maxHash);
+	earmarked_hashes.insert(hb);
 }
 
-void processReadE(Sequence s) {
-	vector<abruijn::Vertex*> vs;
-	vector<int> index;
+bool Lesser(const Sequence& s) {
+	return s < !s;
+}
+
+bool LesserK(const Sequence& s, size_t i) {
+	return Lesser(s.Subseq(i, i + K));
+}
+
+void revealTips(Sequence s) {
 	hashSym.kmers(s, ha);
-	for (int i = 0; i + K <= MPSIZE; i++) {
-		if (earmarkedHashes.find(ha[i]) != earmarkedHashes.end()) {
+	vector<int> index;
+	for (size_t i = 0; i + K <= MPSIZE; i++) {
+		hash_t hi = ha[i];
+		if (earmarked_hashes.count(hi)) {
+			index.push_back(i);
+		}
+	}
+	for (size_t i = 0; i < index.size(); ++i) {
+		hash_t hi = ha[index[i]];
+		bool lesser = LesserK(s, index[i]);
+		if (i < index.size() - 1) {
+			has_right[hi] |= lesser ? 1 : 2;
+		}
+		if (i > 0) {
+			has_right[hi] |= lesser ? 2 : 1;
+		}
+	}
+}
+
+void findTipExtensions(Sequence s) {
+	hashSym.kmers(s, ha);
+	vector<int> index;
+	for (size_t i = 0; i + K <= MPSIZE; i++) {
+		hash_t hi = ha[i];
+		if (tips.count(hi)) {
+			index.push_back(i);
+		}
+	}
+	for (size_t i = 0; i < index.size(); i++) {
+		bool lesser = LesserK(s, index[i]);
+		int l = lesser ? 1 : 2;
+		hash_t hi = ha[index[i]];
+		TRACE(index[i] << " " << l << " " << (int) tips[hi]);
+		size_t low, high;
+		if (tips[hi] == l) {
+			low = 0;
+			high = index[i];
+		} else {
+			low = index[i] + 1;
+			high = MPSIZE + 1 - K;
+		}
+		int x = 0;
+		for (size_t j = low; j < high; j++) {
+			hash_t hj = ha[j];
+			if (!isTrusted(hj)) {
+				continue;
+			}
+			assert(!earmarked_hashes.count(hj));
+			has_right[hj] = 0;
+			tip_extensions[hi].insert(hj);
+			x++;
+		}
+		TRACE(x << " possible continuations");
+	}
+}
+
+void lookRight(Sequence s) {
+	hashSym.kmers(s, ha);
+	vector<size_t> index;
+	for (size_t i = 0; i + K <= MPSIZE; i++) {
+		hash_t hi = ha[i];
+		if (has_right.count(hi)) {
+			index.push_back(i);
+		}
+	}
+	if (index.size() == 0) {
+		return;
+	}
+	size_t low = 0;
+	size_t high = MPSIZE - K;
+	while (!earmarked_hashes.count(ha[low])) low++;
+	while (!earmarked_hashes.count(ha[high])) high--;
+	for (size_t i = 0; i < index.size(); ++i) {
+		hash_t hi = ha[index[i]];
+		bool lesser = LesserK(s, i);
+		if (index[i] < high) {
+			has_right[hi] |= lesser ? 1 : 2;
+		}
+		if (index[i] > low) {
+			has_right[hi] |= lesser ? 2 : 1;
+		}
+	}
+}
+
+//void extendTip(Sequence s) {
+//
+//}
+
+void addToGraph(Sequence s) {
+	vector<abruijn::Vertex*> vs;
+	vector<size_t> index;
+	hashSym.kmers(s, ha);
+	for (size_t i = 0; i + K <= MPSIZE; i++) {
+		if (earmarked_hashes.find(ha[i]) != earmarked_hashes.end()) {
 			vs.push_back(graph.getVertex(s.Subseq(i, i + K)));
 			index.push_back(i);
 		}
 	}
-	for (size_t i = 0; i + 1 < vs.size(); i++) {
+	for (size_t i = 0; i + 1 < vs.size(); ++i) {
 		graph.addEdge(vs[i], vs[i + 1], s.Subseq(index[i], index[i + 1] + K));
 	}
 }
@@ -106,45 +217,101 @@ void GraphBuilder::build() {
 //	vector<Read> *v1 = ireadstream::readAll(file_names[0], CUT);
 
 	StrobeReader<2, Read, ireadstream> sr(file_names);
-	INFO("Processing-A...");
+	SimpleReaderWrapper<2, Read, ireadstream> srw(sr);
 	vector<Read> v;
-	for (size_t i = 0; !sr.eof() && i < CUT; i++ ) {
-		sr >> v;
-		processReadA(v[0].getSequence());
-		processReadA(v[1].getSequence());
-		VERBOSE(i, " reads");
-	}
-	INFO("Done: " << earmarkedHashes.size() << " earmarked hashes");
+	Read r;
 
-	if (HTAKE == 1) {
-		sr.reset();
-		INFO("Processing-AA...");
-		for (size_t i = 0; !sr.eof() && i < CUT; i++ ) {
-			sr >> v;
-			processReadAA(v[0].getSequence());
-			processReadAA(v[1].getSequence());
-			VERBOSE(i, " reads");
+	INFO("===== Finding " << HTAKE << " minimizers in each read... =====");
+	srw.reset();
+	for (size_t i = 0; !srw.eof() && i < 2 * CUT; ++i) {
+		srw >> r;
+		findMinimizers(r.getSequence());
+		VERBOSE(i, " single reads");
+	}
+	INFO("Done: " << earmarked_hashes.size() << " earmarked hashes");
+
+//	if (HTAKE == 1) {
+//		INFO("===== Finding second minimizers... =====");
+//		srw.reset();
+//		for (size_t i = 0; !srw.eof() && i < 2 * CUT; ++i) {
+//			srw >> r;
+//			findSecondMinimizer(r.getSequence());
+//			VERBOSE(i, " single reads");
+//		}
+//		INFO("Done: " << earmarked_hashes.size() << " earmarked hashes");
+//	}
+
+for(;;) {
+	size_t eh = earmarked_hashes.size();
+	has_right.clear();
+	tips.clear();
+	tip_extensions.clear();
+
+	INFO("===== Revealing tips... =====");
+	srw.reset();
+	for (size_t i = 0; !srw.eof() && i < 2 * CUT; ++i) {
+		srw >> r;
+		revealTips(r.getSequence());
+		VERBOSE(i, " single reads");
+	}
+	for (map<hash_t, char>::iterator it = has_right.begin(); it != has_right.end(); ++it) {
+		if (it->second != 3) {
+			TRACE(it->first << " " << (int) it->second);
+			tips.insert(*it);
 		}
-		INFO("Done: " << earmarkedHashes.size() << " earmarked hashes");
 	}
+	has_right.clear();
+	INFO("Done: " << tips.size() << " tips.");
 
-	sr.reset();
-	INFO("Processing-E...");
-	for (size_t i = 0; !sr.eof() && i < CUT; i++ ) {
-		sr >> v;
-		processReadE(v[0].getSequence());
-		processReadE(v[1].getSequence());
-		VERBOSE(i, " reads");
+	INFO("===== Finding tip extensions... =====");
+	srw.reset();
+	for (size_t i = 0; !srw.eof() && i < 2 * CUT; ++i) {
+		srw >> r;
+		findTipExtensions(r.getSequence());
+		VERBOSE(i, " single reads");
+	}
+	INFO("Done: " << has_right.size() << " possible tip extensions");
+
+	INFO("===== Looking to the right... =====");
+	srw.reset();
+	for (size_t i = 0; !srw.eof() && i < 2 * CUT; ++i) {
+		srw >> r;
+		lookRight(r.getSequence());
+		VERBOSE(i, " single reads");
+	}
+	INFO("Done: " << has_right.size() << " TODO");
+
+	for (map<hash_t, set<hash_t> >::iterator it = tip_extensions.begin(); it != tip_extensions.end(); ++it) {
+		bool ok = false;
+		hash_t found = maxHash;
+		for (set<hash_t>::iterator ext = it->second.begin(); ext != it->second.end(); ext++) {
+			if (earmarked_hashes.count(*ext)) {
+				ok = true;
+				break;
+			}
+			if (has_right[*ext] == 3 && found == maxHash) {
+				found = *ext;
+			}
+		}
+		if (ok) {
+			continue;
+		}
+		earmarked_hashes.insert(found);
+	}
+	INFO("Done: " << eh << " -> " << earmarked_hashes.size() << " earmarked hashes");
+	if (eh == earmarked_hashes.size()) {
+		break;
+	}
+}
+
+	INFO("Adding reads to graph as paths...");
+	srw.reset();
+	for (size_t i = 0; !srw.eof() && i < 2 * CUT; ++i) {
+		srw >> r;
+		addToGraph(r.getSequence());
+		VERBOSE(i, " single reads");
 	}
 	INFO("Done: " << graph.vertices.size() << " vertices");
-
-//	INFO("Processing-E...");
-//	for (size_t i = 0; i < v1->size(); i++) {
-//		processReadE(Seq<MPSIZE>((*v1)[i]));
-//		processReadE(Seq<MPSIZE>((*v2)[i]));
-//		VERBOSE(i, " reads processed");
-//	}
-//	INFO(graph.vertices.size() << " vertices");
 
 //	INFO("Condensing-A graph...");
 //	graph.condenseA();

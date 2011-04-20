@@ -13,6 +13,7 @@
 #include "nucl.hpp"
 #include <string>
 #include <iostream>
+#include "simple_tools.hpp"
 using namespace std;
 
 class Read {
@@ -84,6 +85,15 @@ private:
 	}
 	void setSequence(const char* s) {
 		seq_ = s;
+	}
+public:
+	Read operator!() const {
+		string newName;
+		if(name_ == "" || name_[0] != '!')
+			newName = '!' + name_;
+		else
+			newName = name_.substr(1, name_.length());
+		return Read(newName, ReverseComplement(seq_), Reverse(qual_));
 	}
 };
 
