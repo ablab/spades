@@ -186,13 +186,13 @@ int moveThroughEdge(gvis::GraphPrinter<int> &g, PairedGraph &graph,
 	cerr << "Edge found" << endl;
 	edgeNum++;
 	string label(createEdgeLabel(edgeNum, nextEdge->EdgeId, nextEdge->length));
-	g.addEdge(nextEdge->FromVertex, nextEdge->ToVertex, label);
-	cerr << nextEdge->EdgeId << " (" << nextEdge->length << "):" << endl;
+	g.addEdge(nextEdge->FromVertex, nextEdge->ToVertex, label, "red");
+/*	cerr << nextEdge->EdgeId << " (" << nextEdge->length << "):" << endl;
 	if (graph.longEdges[nextEdge->EdgeId]->length < 500) {
 		cerr << nextEdge->upper->str() << endl;
 		cerr << nextEdge->lower->str() << endl;
 	}
-	genPos += nextEdge->length;
+*/	genPos += nextEdge->length;
 	return nextEdge->ToVertex;
 }
 
