@@ -177,6 +177,7 @@ void generate() {
 }
 
 int main() {
+
 	short My_short;
 	int My_int;
 	long My_long;
@@ -212,6 +213,8 @@ int main() {
 //	assert(0);
 
 	init();
+	constructReversedReadPairs(parsed_reads, folder +"reverted_reads.txt");
+	assert(0);
 	run();
 	return 0;
 }
