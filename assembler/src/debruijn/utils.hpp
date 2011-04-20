@@ -623,8 +623,16 @@ public:
 		return end_pos_;
 	}
 
+	size_t size() const {
+		return sequence_.size();
+	}
+
 	const vector<ElementId>& sequence() const {
 		return sequence_;
+	}
+
+	ElementId operator[] (size_t index) const {
+		return sequence_[index];
 	}
 };
 
@@ -667,7 +675,7 @@ public:
 			kmer = kmer << read[i];
 			processKmer(kmer, passed, startPosition, endPosition);
 		}
-		return de_bruijn::Path<EdgeId>(passed, startPosition, endPosition);
+		return de_bruijn::Path<EdgeId>(passed, startPosition, endPosition + 1);
 	}
 };
 

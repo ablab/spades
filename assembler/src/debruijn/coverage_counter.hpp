@@ -38,7 +38,7 @@ private:
 		}
 		g_.inc_coverage(sequence[0], -path.start_pos());
 		Edge *last = sequence[sequence.size() - 1];
-		g_.inc_coverage(last, path.end_pos() - g_.length(last) + 1);
+		g_.inc_coverage(last, path.end_pos() - g_.length(last));
 	}
 public:
 	CoverageCounter(Graph& g,

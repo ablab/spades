@@ -1,0 +1,188 @@
+
+#beginning The Suite 46
+
+#starting TestSeqSelector
+
+#success TestSeqSelector OK
+
+#starting TestSeqStr
+
+#success TestSeqStr OK
+
+#starting TestSeqFromCharArray
+
+#success TestSeqFromCharArray OK
+
+#starting TestSeqFromBiggerSeq
+
+#success TestSeqFromBiggerSeq OK
+
+#starting TestSeqFromType
+
+#success TestSeqFromType OK
+
+#starting TestSeqStart
+
+#success TestSeqStart OK
+
+#starting TestSeqEnd
+
+#success TestSeqEnd OK
+
+#starting TestSeqShiftLeft
+
+#success TestSeqShiftLeft OK
+
+#starting TestSeqShiftRight
+
+#success TestSeqShiftRight OK
+
+#starting TestSeqPushBack
+
+#success TestSeqPushBack OK
+
+#starting TestSeqHeadAndTail
+
+#success TestSeqHeadAndTail OK
+
+#starting TestSeqReverseComplement
+
+#success TestSeqReverseComplement OK
+
+#starting TestSeqComplex
+
+#success TestSeqComplex OK
+
+#starting Test16
+
+#success Test16 OK
+
+#starting Test16_2
+
+#success Test16_2 OK
+
+#starting TestSeqNull
+
+#success TestSeqNull OK
+
+#starting TestSeqEndNull
+
+#success TestSeqEndNull OK
+
+#starting TestSequenceSelector
+
+#success TestSequenceSelector OK
+
+#starting TestZeroLengthSequence
+
+#success TestZeroLengthSequence OK
+
+#starting TestSequenceSum
+
+#success TestSequenceSum OK
+
+#starting TestSequenceStr
+
+#success TestSequenceStr OK
+
+#starting TestSequenceReverseComplement
+
+#success TestSequenceReverseComplement OK
+
+#starting TestSequenceRefCount
+
+#success TestSequenceRefCount OK
+
+#starting TestSequenceRefCount2
+
+#success TestSequenceRefCount2 OK
+
+#starting TestSequenceNullValue
+
+#success TestSequenceNullValue OK
+
+#starting TestQuality
+
+#success TestQuality OK
+
+#starting TestNucl
+
+#success TestNucl OK
+
+#starting TestIReadStreamNoFile
+
+#success TestIReadStreamNoFile OK
+
+#starting TestIReadStreamSingleRead
+
+#success TestIReadStreamSingleRead OK
+
+#starting TestIReadStreamFull
+
+#success TestIReadStreamFull OK
+
+#starting testOnline
+
+#success testOnline OK
+
+#starting testOnlineEmpty
+
+#success testOnlineEmpty OK
+
+#starting testOnlineEmptyWithName
+
+#success testOnlineEmptyWithName OK
+
+#starting testOnlineSingleVertex
+
+#success testOnlineSingleVertex OK
+
+#starting testOnlineSingleEdge
+
+#success testOnlineSingleEdge OK
+
+#starting testOnlineSingleVertexPair
+
+#success testOnlineSingleVertexPair OK
+
+#starting testOnlineSingleComplexEdge
+
+#success testOnlineSingleComplexEdge OK
+
+#starting TestREqualSequences
+
+#success TestREqualSequences OK
+
+#starting TestRSimilarInclude
+
+#success TestRSimilarInclude OK
+
+#starting TestRShortIntersection
+
+#success TestRShortIntersection OK
+
+#starting TestLEqualSequences
+
+#success TestLEqualSequences OK
+
+#starting TestLSimilarInclude
+
+#success TestLSimilarInclude OK
+
+#starting TestLShortIntersection
+
+#success TestLShortIntersection OK
+
+#starting TestCuckoo
+
+#success TestCuckoo OK
+
+#starting TestTrie
+
+#failure TestTrie trieTest.hpp:24 map.size() == 99994 expected:	99995	but was:	99994	
+
+#starting TestSeqFilter
+
+#success TestSeqFilter OK
+
+#ending The Suite
