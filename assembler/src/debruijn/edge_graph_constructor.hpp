@@ -157,18 +157,17 @@ public:
 				KPlusOneMer edge = *it;
 				if (!index.contains(edge)) {
 					Sequence edge_sequence = ConstructSequenceWithEdge(edge);
+					cout << edge_sequence << endl;
 					VertexId start = FindVertexMaybeMissing(graph, index,
 							edge_sequence.start<kmer_size_> ());
 					VertexId end = FindVertexMaybeMissing(graph, index,
 							edge_sequence.end<kmer_size_> ());
 					graph.AddEdge(start, end, edge_sequence);
+					cout << edge << endl;
 					assert(index.contains(edge));
-					//					assert(super::h_->edge.);
 				}
 			}
 		}
-
-		//		super::ConstructGraph(g, h);
 	}
 };
 
