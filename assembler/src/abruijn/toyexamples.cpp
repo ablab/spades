@@ -9,6 +9,7 @@
 #include <fstream>
 
 using namespace std;
+using namespace hashing;
 
 typedef map < string, unsigned > CKMerSet;
 typedef map < pair < string, string >, unsigned > CWeightedEdgeSet;

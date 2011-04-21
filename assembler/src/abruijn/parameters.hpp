@@ -19,13 +19,9 @@
 //#define INPUT_DATA_SET std::string("s_6_")
 #define INPUT_DATA_SET std::string("s_6.first10000_")
 /**
- * Mate-pair read size
- */
-#define MPSIZE 100
-/**
  * How many reads we process
  */
-#define CUT 400
+//#define CUT 400
 
 // ===== Visualization ===== //
 /**
@@ -46,12 +42,18 @@ string toString(T t) {
 
 // ===== Naming conventions ===== //
 #define INPUT_FILES INPUT_DIRECTORY + INPUT_DATA_SET + "1.fastq.gz", INPUT_DIRECTORY + INPUT_DATA_SET + "2.fastq.gz"
-#define OUTPUT_FILE INPUT_DATA_SET + toString(K) + "_" + toString(CUT) + OUTPUT_FILE_SUFFIX
+#define OUTPUT_FILE INPUT_DATA_SET + toString(K) + OUTPUT_FILE_SUFFIX1 + OUTPUT_FILE_SUFFIX2
+#ifdef CUT
+	#define OUTPUT_FILE_SUFFIX1 "_" + toString(CUT)
+#endif
+#ifndef CUT
+	#define OUTPUT_FILE_SUFFIX1 ""
+#endif
 #ifdef OUTPUT_PAIRED
-	#define OUTPUT_FILE_SUFFIX ""
+	#define OUTPUT_FILE_SUFFIX2 ""
 #endif
 #ifndef OUTPUT_PAIRED
-	#define OUTPUT_FILE_SUFFIX "_s"
+	#define OUTPUT_FILE_SUFFIX2 "_s"
 #endif
 #define OUTPUT_FILES OUTPUT_DIRECTORY + OUTPUT_FILE
 
@@ -62,7 +64,7 @@ string toString(T t) {
 typedef unsigned int hash_t;
 // Maximum value of type hash_t
 const hash_t maxHash = -1;
-#define HTAKE 2
+#define HTAKE 1
 
 // ===== Debug parameters ===== //
 #define VERBOSE(n, message) if ((n & 8191) == 8191) INFO(n << message)

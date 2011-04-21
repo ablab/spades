@@ -4,6 +4,8 @@
 #include "graphBuilder.hpp"
 #include "logging.hpp"
 
+using namespace abruijn;
+
 LOGGER("a");
 
 int main() {

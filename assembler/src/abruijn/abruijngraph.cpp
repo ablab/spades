@@ -6,8 +6,6 @@
 #include "graphVisualizer.hpp"
 #include <ext/hash_map>
 
-LOGGER("a.graph");
-
 using namespace abruijn;
 
 namespace abruijn {
