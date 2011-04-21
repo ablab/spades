@@ -11,12 +11,13 @@
 #define K 25
 
 // ===== Directories ===== //
-#define INPUT_DIRECTORY std::string("./data/input/")
+#define INPUT_DIRECTORY std::string("./data/input/cropped/")
 #define OUTPUT_DIRECTORY std::string("./data/abruijn/")
 
 // ===== Input data ===== //
-#define INPUT_DATA_SET std::string("MG1655-K12_emul")
+//#define INPUT_DATA_SET std::string("MG1655-K12_emul")
 //#define INPUT_DATA_SET std::string("s_6_")
+#define INPUT_DATA_SET std::string("s_6.first10000_")
 /**
  * Mate-pair read size
  */

@@ -19,7 +19,7 @@
 #include "edge_graph_test.hpp"
 #include "edge_graph_tool.hpp"
 #include "visualization_utils.hpp"
-#include "ifaststream.hpp"
+#include "ireadstream.hpp"
 
 #include <tr1/tuple>
 

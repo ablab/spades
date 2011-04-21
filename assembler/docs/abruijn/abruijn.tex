@@ -5,6 +5,7 @@
 %\usepackage{fullpage}
 \usepackage[final,colorlinks,hyperindex,unicode=true]{hyperref}
 %\usepackage{tikz}
+\usepackage{pgfplots}
 \usepackage[shadow,colorinlistoftodos,textwidth=4cm]{todonotes}
 
 \newcommand{\jpgpic}[1]{\begin{center}\includegraphics[width=\textwidth]{#1.jpg}\end{center}}
@@ -140,6 +141,20 @@ was used for this calculation.
 
 This graph has only undergone a simple vertex-merging procedure; there are more
 yet-unimplemented simplifications applicable to this graph.
+
+\subsection{Statistics}
+The plot below show the dependence of the number of vertices in a graph from the 
+number of reads.
+
+\begin{tikzpicture}
+    \begin{axis}[xlabel={$\#$ of reads},ylabel={$\#$ of vertices in a graph}]
+    \addplot[smooth,mark=*,blue] plot coordinates { (4000,3567) (6000,6718) (10000,16786) };
+    \addlegendentry{de Bruijn}
+
+    \addplot[smooth,color=red,mark=x] plot coordinates { (4000,1267) (6000,2134) (10000,5134) };
+    \addlegendentry{A Bruijn}
+    \end{axis}
+\end{tikzpicture}
 
 \section{Further ideas}
 
