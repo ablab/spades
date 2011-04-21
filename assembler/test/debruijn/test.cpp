@@ -29,7 +29,7 @@ void RunTestSuites() {
 }
 
 void RunEdgeGraphTool() {
-	pair<pair<string, string>, int> input = QUAKE_CROPPED_10_4;
+	pair<pair<string, string>, int> input = QUAKE_CROPPED_10_5;
 //	ireadstream stream1(input.first.first);
 //	ireadstream stream2(input.first.second);
 	string reads[2] = {input.first.first, input.first.second};
