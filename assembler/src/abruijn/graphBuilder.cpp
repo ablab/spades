@@ -217,7 +217,7 @@ void GraphBuilder::build() {
 //	vector<Read> *v1 = ireadstream::readAll(file_names[0], CUT);
 
 	StrobeReader<2, Read, ireadstream> sr(file_names);
-	SimpleReaderWrapper<2, Read, ireadstream> srw(sr);
+	SimpleReaderWrapper<StrobeReader<2, Read, ireadstream> > srw(sr);
 	vector<Read> v;
 	Read r;
 

@@ -214,8 +214,8 @@ int main() {
 
 	init();
 //	computeGlobalStats(folder+"oftenkmers.txt", parsed_reads, folder + "kmersteststat.txt");
-	forgetQualityPairedData("/home/ftp/data/s_6_1.fastq.gz", "/home/ftp/data/s_6_2.fastq.gz", "data/paireddebruijn/real/reads_100_20.txt" );
-    assert(0);
+//	forgetQualityPairedData("/home/ftp/data/s_6_1.fastq.gz", "/home/ftp/data/s_6_2.fastq.gz", "data/paireddebruijn/real/reads_100_20.txt" );
+//    assert(0);
 //	constructReversedReadPairs(parsed_reads, folder +"reverted_reads.txt");
 //	assert(0);
 	run();

@@ -1,6 +1,6 @@
 #include "common.hpp"
 
-//LOGGER("p.common");
+LOGGER("p.common");
 
 string parsed_reads;
 string parsed_k_l_mers;
@@ -130,13 +130,32 @@ void initConstants(string ini_file) {
 	//assert()
 }
 
+/*
+ * Appends string toAppend to string edge with maximal possible overlap For example, appendLowerPath(ACAT,ATT) will be ACATT
+ *
+ *
+ */
+//TODO :KMP
+int  appendLowerPath(string &edge, string &toAppend){
 
-/*const string parsed_reads = "data/filtered_reads";
-const string parsed_k_l_mers = string("data/klmers") + suffix  + ".txt";
-const string parsed_k_sequence = string("data/vertices") + suffix  + ".txt";
-const string error_log = "data/error.log";
-const string parsed_l_mers = string("data/lmers")  + suffix  + ".txt";
-const string graph_file = string("data/grapht")  + suffix  + ".dot";
-const string graph2 = string("data/graph2") + suffix  + ".dot";
-const string threaded_graph = string("data/threaded_graph") +  + ".dot";
-*/
+	TRACE("Appending");
+	for(int i = max(0, (int) (edge.size() - toAppend.size() - l) ); i < edge.size(); i++) {
+		int j = 0;
+		int fl = 1;
+		while (j<toAppend.size() && j+i < edge.size() && edge[i+j] == toAppend[j]){
+			j++;
+		}
+		if (j<toAppend.size() && j+i < edge.size()) {
+			continue;
+		} else {
+			if (j < 20) {
+				ERROR("unable to append,  strings" << edge << " " << toAppend);
+	//			return 0;
+			}
+			edge.append(toAppend.substr(j ));
+			return j;
+		}
+
+	}
+	return 0;
+}
