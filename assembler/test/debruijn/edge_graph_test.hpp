@@ -168,7 +168,6 @@ void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 	SimpleIndex<6, Edge*> *index = new SimpleIndex<6, Edge*> ();
 	EdgeHashRenewer<6, EdgeGraph> *indexHandler = new EdgeHashRenewer<6, EdgeGraph>(*g, *index);
 	g->AddActionHandler(indexHandler);
-
 	g_c.ConstructGraph(*g, *index);
 
 	edge_set edges;

@@ -116,15 +116,14 @@ void EdgeGraphTool(Reader& reader, const string& genome) {
 	EdgeHashRenewer<K + 1, EdgeGraph> index_handler(g, index);
 	g.AddActionHandler(&index_handler);
 
+	reader.reset();
+	CondenseGraph<RCStream> (debruijn, g, index, rcStream, genome);
 	de_bruijn::CoverageHandler<EdgeGraph> coverageHandler(g);
 	g.AddActionHandler(&coverageHandler);
 
-	reader.reset();
-	CondenseGraph<RCStream> (debruijn, g, index, rcStream, genome);
-
-	reader.reset();
-	de_bruijn::PairedInfoIndex<EdgeGraph> paired_info_index(g, I);
-	paired_info_index.FillIndex<K, RCStream>(index, rcStream);
+//	reader.reset();
+//	de_bruijn::PairedInfoIndex<EdgeGraph> paired_info_index(g, I);
+//	paired_info_index.FillIndex<K, RCStream>(index, rcStream);
 
 	ClipTips(g, index, genome, "tips_clipped.dot");
 

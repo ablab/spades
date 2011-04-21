@@ -32,6 +32,7 @@ private:
 	Sequence nucls_;
 	Vertex* end_;
 	size_t coverage_;
+	Edge *complement_;
 
 	Edge(const Sequence& nucls, Vertex* end, size_t coverage) :
 		nucls_(nucls), end_(end), coverage_(coverage) {
@@ -43,6 +44,14 @@ private:
 
 	size_t size() const {
 		return nucls_.size();
+	}
+
+	Edge *Complement() {
+		return complement_;
+	}
+
+	void SetComplement(Edge* complement) {
+		complement_ = complement;
 	}
 
 	~Edge() {
@@ -60,7 +69,7 @@ private:
 
 	Vertex* complement_;
 
-	void set_complement(Vertex* complement) {
+	void SetComplement(Vertex* complement) {
 		complement_ = complement;
 	}
 
@@ -99,7 +108,7 @@ private:
 		return true;
 	}
 
-	Vertex* complement() const {
+	Vertex* Complement() const {
 		return complement_;
 	}
 
@@ -227,7 +236,7 @@ public:
 	}
 
 	size_t IncomingEdgeCount(VertexId v) const {
-		return v->complement()->OutgoingEdgeCount();
+		return v->Complement()->OutgoingEdgeCount();
 	}
 
 	bool CheckUniqueOutgiongEdge(VertexId v) const {
@@ -240,11 +249,11 @@ public:
 	}
 
 	bool CheckUniqueIncomingEdge(const VertexId v) const {
-		return CheckUniqueOutgiongEdge(v->complement());
+		return CheckUniqueOutgiongEdge(v->Complement());
 	}
 
 	EdgeId GetUniqueIncomingEdge(VertexId v) const {
-		return Complement(GetUniqueOutgoingEdge(v->complement()));
+		return Complement(GetUniqueOutgoingEdge(v->Complement()));
 	}
 
 	//	Edge* ComplementEdge(const Edge* edge) const;
@@ -311,7 +320,7 @@ public:
 	}
 
 	bool IsDeadStart(VertexId v) const {
-		return IsDeadEnd(v->complement());
+		return IsDeadEnd(v->Complement());
 	}
 
 	VertexId EdgeStart(EdgeId edge) const;
@@ -319,7 +328,7 @@ public:
 	VertexId EdgeEnd(EdgeId edge) const;
 
 	VertexId Complement(VertexId v) const {
-		return v->complement();
+		return v->Complement();
 	}
 
 	EdgeId Complement(EdgeId e) const;
