@@ -12,6 +12,7 @@
 #include "coverage_counter.hpp"
 #include "visualization_utils.hpp"
 #include "paired_info.hpp"
+#include "coverage_handler.hpp"
 
 namespace edge_graph {
 
@@ -115,17 +116,22 @@ void EdgeGraphTool(Reader& reader, const string& genome) {
 	EdgeHashRenewer<K + 1, EdgeGraph> index_handler(g, index);
 	g.AddActionHandler(&index_handler);
 
+	de_bruijn::CoverageHandler<EdgeGraph> coverageHandler(g);
+	g.AddActionHandler(&coverageHandler);
+
 	reader.reset();
 	CondenseGraph<RCStream> (debruijn, g, index, rcStream, genome);
 
 	reader.reset();
-	de_bruijn::PairedInfoIndex<K, RCStream, EdgeGraph> paired_info_index(g, index, rcStream);
+	de_bruijn::PairedInfoIndex<EdgeGraph> paired_info_index(g, I);
+	paired_info_index.FillIndex<K, RCStream>(index, rcStream);
 
 	ClipTips(g, index, genome, "tips_clipped.dot");
 
 	RemoveBulges(g, index, genome, "bulges_removed.dot");
 
 	g.RemoveActionHandler(&index_handler);
+	g.RemoveActionHandler(&coverageHandler);
 
 	INFO("Tool finished")
 }
