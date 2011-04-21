@@ -20,23 +20,17 @@ class Read {
 public:
 	static const int PHRED_OFFSET = 33;
 
-	const bool isValid() const {
-		if (seq_.size() == 0) {
-			return false;
-		}
-		for (size_t i = 0; i < seq_.size(); ++i) {
-			if (!is_nucl(seq_[i])) {
-				return false;
-			}
-		}
-		return true;
+	bool isValid() const {
+		return valid;
 	}
 
 	Sequence getSequence() const {
+		assert(valid);
 		return Sequence(seq_);
 	}
 
 	Quality* createQuality() const {
+		assert(valid);
 		return new Quality(qual_);
 	}
 
@@ -63,16 +57,17 @@ public:
 			qual_.erase(qual_.begin() + index, qual_.end());
 		}
 	}
-	Read() {
+	Read() : valid(false) {
 		;
 	}
 	Read(const string &name, const string &seq, const string &qual) : name_(name), seq_(seq), qual_(qual) { // for test only!
-		;
+		valid = updateValid();
 	}
 private:
 	string name_;
 	string seq_;
 	string qual_;
+	bool valid;
 	friend class ireadstream;
 	void setName(const char* s) {
 		name_ = s;
@@ -85,7 +80,21 @@ private:
 	}
 	void setSequence(const char* s) {
 		seq_ = s;
+		valid = updateValid();
 	}
+	const bool updateValid() const {
+		if (seq_.size() == 0) {
+			return false;
+		}
+		for (size_t i = 0; i < seq_.size(); ++i) {
+			if (!is_nucl(seq_[i])) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+
 public:
 	Read operator!() const {
 		string newName;

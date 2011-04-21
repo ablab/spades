@@ -253,7 +253,7 @@ public:
 		return edge->nucls();
 	}
 
-	void set_coverage(EdgeId edge, size_t cov) {
+	void SetCoverage(EdgeId edge, size_t cov) {
 		edge->coverage_ = cov;
 	}
 
@@ -261,11 +261,11 @@ public:
 		return (double) edge->coverage_ / length(edge);
 	}
 
-	size_t kplus_one_mer_coverage(EdgeId edge) const {
+	size_t KPlusOneMerCoverage(EdgeId edge) const {
 		return edge->coverage_;
 	}
 
-	void inc_coverage(EdgeId edge, int toAdd) {
+	void IncCoverage(EdgeId edge, int toAdd) {
 		edge->coverage_ += toAdd;
 		EdgeId rc = Complement(edge);
 		if (edge != rc) {
@@ -273,7 +273,7 @@ public:
 		}
 	}
 
-	void inc_coverage(EdgeId edge) {
+	void IncCoverage(EdgeId edge) {
 		edge->coverage_++;
 		EdgeId rc = Complement(edge);
 		if (edge != rc) {

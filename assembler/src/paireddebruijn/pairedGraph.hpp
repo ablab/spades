@@ -95,6 +95,9 @@ public:
 					upper->str() + newRight.upper->Subseq(k - 1).str());
 
 			toOut = newRight.lower->str();
+			string this_edge = lower->str();
+			appendLowerPath(this_edge, toOut);
+			lower = new Sequence(this_edge);
 /*			assert(l-1 < (int)toOut.length());
 			lower = new Sequence(
 					lower->str() + newRight.lower->Subseq(l - 1).str());
@@ -126,6 +129,10 @@ public:
 			upper = new Sequence(
 					newLeft.upper->Subseq(0, newLeft.length).str()
 							+ upper->str());
+			string toOut = newLeft.lower->str();
+			string this_edge = lower->str();
+			appendLowerPath(toOut, this_edge);
+			lower = new Sequence(toOut);
 /*			lower = new Sequence(
 					newLeft.lower->Subseq(0, newLeft.length).str()
 							+ lower->str());

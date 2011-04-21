@@ -34,11 +34,11 @@ private:
 		const vector<EdgeId> &sequence = path.sequence();
 		for (typename vector<EdgeId>::const_iterator it = sequence.begin(); it
 				!= path.sequence().end(); ++it) {
-			g_.inc_coverage(*it, g_.length(*it));
+			g_.IncCoverage(*it, g_.length(*it));
 		}
-		g_.inc_coverage(sequence[0], -path.start_pos());
+		g_.IncCoverage(sequence[0], -path.start_pos());
 		Edge *last = sequence[sequence.size() - 1];
-		g_.inc_coverage(last, path.end_pos() - g_.length(last));
+		g_.IncCoverage(last, path.end_pos() - g_.length(last));
 	}
 public:
 	CoverageCounter(Graph& g,
