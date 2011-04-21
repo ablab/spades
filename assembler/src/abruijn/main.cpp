@@ -10,6 +10,6 @@ int main() {
 	INFO("Hello, A Bruijn!");
 	GraphBuilder().build();
 
-//	ConstructDeBruijnGraphSimplified ( "TAAACGAAAC", 6, 3 );
+//	ConstructDeBruijnGraphSimplified ( "TAAACGAAACTGCAAAC", 6, 3 );
 	return 0;
 }
