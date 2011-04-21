@@ -122,8 +122,8 @@ void EdgeGraphTool(Reader& reader, const string& genome) {
 	reader.reset();
 	CondenseGraph<RCStream> (debruijn, g, index, rcStream, genome);
 
-//	reader.reset();
-//	de_bruijn::PairedInfoIndex<K, RCStream, EdgeGraph> paired_info_index(g, index, rcStream);
+	reader.reset();
+	de_bruijn::PairedInfoIndex<K, RCStream, EdgeGraph> paired_info_index(g, index, rcStream);
 
 	ClipTips(g, index, genome, "tips_clipped.dot");
 
