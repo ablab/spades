@@ -11,6 +11,7 @@
 #include "read.hpp"
 #include "ireadstream.hpp"
 #include <tr1/tuple>
+#include "simple_tools.hpp"
 //#include "read_generator.hpp"
 
 const std::string INPUT_DIR = "./data/input/";
@@ -97,8 +98,10 @@ vector<Read> MakeReads(string *ss, size_t count) {
 	vector<Read> ans;
 	for (size_t i = 0; i < count; ++i) {
 		Read r("", *ss, "");
-		ss++;
+		Read rcr("", ReverseComplement(*ss), "");
 		ans.push_back(r);
+		ans.push_back(rcr);
+		ss++;
 	}
 	return ans;
 }
