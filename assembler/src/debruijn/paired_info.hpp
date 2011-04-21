@@ -228,33 +228,10 @@ private:
 			}
 		}
 		data_.AddPairInfo(pair_info);
-/*		typename map<EdgeId, vector<PairInfo> >::iterator it =
-				data_.find(first);
-
-		if (it == data_.end()) {
-			AddPairInfoToData(first, second, d, weight);
-		} else {
-			vector<PairInfo> &edgeData = (*it).second;
-			for (size_t i = 0; i < edgeData.size(); i++)
-				if (edgeData[i].second_ == second) {
-					if (MergeData(edgeData[i], d, weight)) {
-						//todo what if wasn't merged!!!
-						break;
-					}
-				}
-		}*/
 	}
 
 	void RemoveEdgeInfo(EdgeId edge) {
 		data_.DeleteEdgeInfo(edge);
-//		data_iterator it = data_.find(edge);
-//		if (it != data_.end()) {
-//			const vector<PairInfo>& pair_infos = (*it).second;
-//			for (size_t i = 0; i < pair_infos.size(); ++i) {
-//				const PairInfo& pair_info = pair_infos[i];
-//			}
-//		}
-//		data_.erase(edge);
 	}
 
 public:
@@ -270,18 +247,19 @@ public:
 		this->RemoveEdgeInfo(e);
 	}
 
-//	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
-//		size_t shift = 0;
-//		for (size_t i = 0; i < old_edges.size(); ++i) {
-//			EdgeId old_edge = old_edges[i];
-//			vector<const PairInfo> pairs_info = GetEdgeInfo(old_edge);
-//			for (size_t j = 0; j < pairs_info.size(); ++j) {
-//				PairInfo pair_info = pairs_info[j];
-//
-//			}
-////			PassEdge(graph_.length(edge), shift);
-//		}
-//	}
+	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
+		size_t shift = 0;
+		for (size_t i = 0; i < old_edges.size(); ++i) {
+			EdgeId old_edge = old_edges[i];
+			PairInfos pair_infos = GetEdgeInfo(old_edge);
+			for (size_t j = 0; j < pair_infos.size(); ++j) {
+				PairInfo old_pair_info = pair_infos[j];
+				AddPairInfo(PairInfo(new_edge, old_pair_info.second_, old_pair_info.d_ - shift, old_pair_info.weight_));
+			}
+			RemoveEdgeInfo(old_edge);
+			PassEdge(graph_.length(old_edge), shift);
+		}
+	}
 
 	virtual void HandleGlue(EdgeId old_edge, EdgeId new_edge) {
 		//TODO
