@@ -804,7 +804,7 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 	cerr << "often kmers, rare lmers:\n";
 	for (map<ll, int>::iterator it = kmers.begin(); it !=kmers.end(); it++) {
 		if ((it->second > 30) && ((lmers.find(it->first) == lmers.end()) || lmers[it->first] < 5)) {
-	//		cerr << decompress(it->first, k) << " " <<it->second << " ";
+			cerr << decompress(it->first, k) << " " <<it->second << " ";
 			cerr << it->first << " " <<it->second << " ";
 			if ((lmers.find(it->first)) == lmers.end()) {
 				cerr << 0 << endl;
