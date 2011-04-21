@@ -190,6 +190,7 @@ EdgeId EdgeGraph::CompressPath(const vector<VertexId>& path) {
 	size_t coverage = 0;
 	vector<EdgeId> oldEdges;
 	oldEdges.push_back(GetUniqueIncomingEdge(path[0]));
+	coverage += GetUniqueIncomingEdge(path[0])->coverage_;
 	for (vector<VertexId>::const_iterator it = path.begin(); it != path.end(); ++it) {
 		sb.append(GetUniqueOutgoingEdge(*it)->nucls().Subseq(k_));
 		coverage += GetUniqueOutgoingEdge(*it)->coverage_;

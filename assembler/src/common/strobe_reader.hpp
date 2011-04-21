@@ -14,7 +14,7 @@ public:
 	//		}
 	//	}
 
-	StrobeReader(const string *filenames) {
+	StrobeReader(const string filenames[]) {
 		stringstream s;
 		for (size_t i = 0; i < cnt; ++i) {
 			readers_.push_back(new TR(filenames[i]));
