@@ -17,7 +17,8 @@ void addPairToTable(myMap& table, ll upper, ll lower);
 int pairsToLmers(string inputFile, string outputFile);
 void initGlobal();
 void constructReversedReadPairs(string inputFile, string outputFile);
-
+void statsReadPair(map<ll, int>& kmers,map<ll, int>& lmers, char *upperRead, char *lowerRead);
+void computeGlobalStats(string kmers_s, string reads, string statsOutputFile);
 inline bool ComparePairByFirst(pair<ll,int> i, pair<ll,int> j){
 	return i.first < j.first;
 }
