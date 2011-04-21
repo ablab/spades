@@ -18,8 +18,11 @@
 
 using namespace std;
 using namespace __gnu_cxx;
+using namespace hashing;
 
 namespace abruijn {
+
+LOGGER("a.graph");
 
 //class Profile {
 //protected:
