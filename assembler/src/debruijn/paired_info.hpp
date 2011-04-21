@@ -43,7 +43,7 @@ public:
 	}
 
 private:
-	//todo tru storing set<PairInfo>
+	//todo try storing set<PairInfo>
 	class PairInfoIndexData {
 		typedef multimap<pair<EdgeId, EdgeId> , pair<size_t, double>> Data;
 		typedef typename Data::iterator data_iterator;
