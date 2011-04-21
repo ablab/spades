@@ -10,11 +10,26 @@
 
 namespace de_bruijn {
 
-template<size_t kmer_size, class Stream, class Graph>
+template<class Graph>
 class PairedInfoIndex: public GraphActionHandler<Graph> {
-public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
+public:
+
+	//begin-end insert size supposed
+	PairedInfoIndex(Graph &g, size_t insert_size) :
+		graph_(g), insert_size_(insert_size) {
+		g.AddActionHandler(this);
+	}
+
+	virtual ~PairedInfoIndex() {
+		graph_.RemoveActionHandler(this);
+	}
+
+	template<size_t kmer_size, class Stream>
+	void FillIndex(const SimpleIndex<kmer_size + 1, EdgeId>& index, Stream stream) {
+		CollectData<kmer_size, Stream>(index, stream);
+	}
 
 	class PairInfo {
 		friend class PairedInfoIndex;
@@ -54,14 +69,6 @@ public:
 
 	typedef const vector<PairInfo> PairInfos;
 	typedef typename PairInfos::const_iterator infos_iterator;
-
-	//	template<size_t kmer_size>
-	PairedInfoIndex(Graph &g, const SimpleIndex<kmer_size + 1, EdgeId>& index,
-			Stream stream) :
-		graph_(g) {
-		CollectData/*<kmer_size> */(index, stream);
-		g.AddActionHandler(this);
-	}
 
 private:
 
@@ -165,6 +172,9 @@ private:
 	Graph& graph_;
 	PairInfoIndexData data_;
 
+	//begin-end insert size supposed
+	size_t insert_size_;
+
 	size_t CorrectLength(const de_bruijn::Path<EdgeId>& path, size_t index) {
 		if (index == 0) {
 			return graph_.length(path[index]) - path.start_pos();
@@ -177,33 +187,34 @@ private:
 
 	void PassEdge(size_t edge_length, size_t &path_nucls_passed) {
 		if (path_nucls_passed == 0) {
-			path_nucls_passed += kmer_size;
+			path_nucls_passed += graph_.k();
 		}
 		path_nucls_passed += edge_length;
 	}
 
-	//	template<size_t kmer_size>
+	size_t CountDistance(const Sequence& read1, const Sequence& read2) {
+		return insert_size_ - read2.size();
+	}
+
+	template<size_t kmer_size, class Stream>
 	void CollectData(const SimpleIndex<kmer_size + 1, EdgeId>& index,
 			Stream &stream) {
-		//todo
-		size_t d = 100;
-
 		typedef Seq<kmer_size + 1> KPOMer;
 		de_bruijn::SimpleReadThreader<kmer_size, Graph> read_threader(graph_,
 				index);
 		while (!stream.eof()) {
 			vector<Read> reads;
+			Sequence read1 = reads[0].getSequence();
+			Sequence read2 = reads[1].getSequence();
 			stream >> reads;
-			de_bruijn::Path<EdgeId> path1 = read_threader.ThreadRead(
-					reads[0].getSequence());
-			de_bruijn::Path<EdgeId> path2 = read_threader.ThreadRead(
-					reads[1].getSequence());
+			de_bruijn::Path<EdgeId> path1 = read_threader.ThreadRead(read1);
+			de_bruijn::Path<EdgeId> path2 = read_threader.ThreadRead(read2);
 			//walken path lengths
 			size_t length1 = 0;
 			size_t length2 = 0;
 			for (size_t i = 0; i < path1.size(); ++i) {
 				for (size_t j = 0; j < path2.size(); ++j) {
-					AddPairInfo(PairInfo(path1[i], path2[j], d + length2 - length1,
+					AddPairInfo(PairInfo(path1[i], path2[j], CountDistance(read1, read2) + length2 - length1,
 							CorrectLength(path1, i) * CorrectLength(path2, j)));
 					PassEdge(CorrectLength(path2, j), length2);
 				}
@@ -255,7 +266,15 @@ private:
 		data_.DeleteEdgeInfo(edge);
 	}
 
-public:
+	void TransferInfo(EdgeId old_edge, EdgeId new_edge, size_t shift = 0, double weight_scale = 1.0) {
+		PairInfos pair_infos = GetEdgeInfo(old_edge);
+		for (size_t j = 0; j < pair_infos.size(); ++j) {
+			PairInfo old_pair_info = pair_infos[j];
+			AddPairInfo(PairInfo(new_edge, old_pair_info.second_, old_pair_info.d_ - shift, weight_scale * old_pair_info.weight_));
+		}
+		RemoveEdgeInfo(old_edge);
+	}
+
 	PairInfos GetEdgeInfo(EdgeId edge) {
 		return data_.GetEdgeInfos(edge);
 	}
@@ -268,31 +287,27 @@ public:
 		this->RemoveEdgeInfo(e);
 	}
 
+
 	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
 		size_t shift = 0;
 		for (size_t i = 0; i < old_edges.size(); ++i) {
 			EdgeId old_edge = old_edges[i];
-			PairInfos pair_infos = GetEdgeInfo(old_edge);
-			for (size_t j = 0; j < pair_infos.size(); ++j) {
-				PairInfo old_pair_info = pair_infos[j];
-				AddPairInfo(PairInfo(new_edge, old_pair_info.second_, old_pair_info.d_ - shift, old_pair_info.weight_));
-			}
-			RemoveEdgeInfo(old_edge);
+			TransferInfo(old_edge, new_edge, shift);
 			PassEdge(graph_.length(old_edge), shift);
 		}
 	}
 
 	virtual void HandleGlue(EdgeId old_edge, EdgeId new_edge) {
-		//TODO
+		TransferInfo(old_edge, new_edge);
 	}
 
 	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
 			EdgeId new_edge2) {
-		//TODO
-	}
-
-	virtual ~PairedInfoIndex() {
-		graph_.RemoveActionHandler(this);
+		double prop = (double) graph_.length(new_edge1) / graph_.length(old_edge);
+		size_t shift = 0;
+		TransferInfo(old_edge, new_edge1, shift, prop);
+		PassEdge(graph_.length(new_edge1), shift);
+		TransferInfo(old_edge, new_edge1, shift, 1-prop);
 	}
 
 };
