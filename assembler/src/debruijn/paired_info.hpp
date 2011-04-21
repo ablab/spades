@@ -16,12 +16,33 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
-	struct PairInfo {
+	class PairInfo {
+		friend class PairedInfoIndex;
+		friend class PairedInfoIndexData;
+	private:
 		EdgeId first_;
 		EdgeId second_;
-		int d_;//distance between starts. Can be negative
+		double d_;//distance between starts. Can be negative
 		double weight_;
-		PairInfo(EdgeId first, EdgeId second, int d, double weight) :
+	public:
+		EdgeId first() {
+			return first_;
+		}
+		EdgeId second() {
+			return second_;
+		}
+		double d() {
+			int res = (int)(std::abs(d_) + 0.5 + 1e-9);
+			if (d_ < 0)
+				res = -res;
+			return res;
+		}
+
+		double weight() {
+			return weight_;
+		}
+
+		PairInfo(EdgeId first, EdgeId second, double d, double weight) :
 			first_(first), second_(second), d_(d), weight_(weight) {
 		}
 
@@ -43,9 +64,10 @@ public:
 	}
 
 private:
+
 	//todo try storing set<PairInfo>
 	class PairInfoIndexData {
-		typedef multimap<pair<EdgeId, EdgeId> , pair<size_t, double>> Data;
+		typedef multimap<pair<EdgeId, EdgeId> , pair<double, double>> Data;
 		typedef typename Data::iterator data_iterator;
 		typedef typename Data::const_iterator const_data_iterator;
 
@@ -65,7 +87,7 @@ private:
 		}
 
 		const PairInfo AsPairInfo(
-				const pair<pair<EdgeId, EdgeId> , pair<size_t, double>>& pair) {
+				const pair<pair<EdgeId, EdgeId> , pair<double, double>>& pair) {
 			return PairInfo(pair.first.first, pair.first.second,
 					pair.second.first, pair.second.second);
 		}
@@ -74,13 +96,13 @@ private:
 			return make_pair(pair_info.first_, pair_info.second_);
 		}
 
-		const pair<pair<EdgeId, EdgeId> , pair<size_t, double>> AsPairOfPairs(
+		const pair<pair<EdgeId, EdgeId> , pair<double, double>> AsPairOfPairs(
 				const PairInfo& pair_info) {
 			return make_pair(EdgePair(pair_info),
 					make_pair(pair_info.d_, pair_info.weight_));
 		}
 
-		void UpdateSingleInfo(const PairInfo& info, const int d,
+		void UpdateSingleInfo(const PairInfo& info, const double d,
 				const double weight) {
 			bool updated = false;
 			for (typename Data::iterator lower = data_.lower_bound(EdgePair(info)),
@@ -198,8 +220,7 @@ private:
 				&& std::abs(info2.d_ - info1.d_) <= info1.d_
 						* MERGE_DATA_RELATIVE_DIFFERENCE) {
 			double newWeight = info1.weight_ + info2.weight_;
-			int newD = std::floor(
-					(info1.d_ * info1.weight_ + info2.d_ * info2.weight_) / info2.weight_ + 0.5);
+			double newD = (info1.d_ * info1.weight_ + info2.d_ * info2.weight_) / info2.weight_;
 			data_.UpdateInfo(info1, newD, newWeight);
 			return true;
 		}
