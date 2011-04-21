@@ -115,8 +115,9 @@ void BulgeRemover<Graph>::RemoveBulges(Graph& g) {
 						<< " and avg coverage " << g.coverage(edge));
 		DEBUG("Is possible bulge " << PossibleBulgeEdge(g, edge));
 		if (PossibleBulgeEdge(g, edge)) {
+			size_t kplus_one_mer_coverage = std::floor(g.length(edge) * g.coverage(edge) + 0.5);
 			DEBUG("Processing edge " << g.EdgeNucls(edge) << " and coverage "
-							<< g.KPlusOneMerCoverage(edge));
+							<< kplus_one_mer_coverage);
 
 			VertexId start = g.EdgeStart(edge);
 			DEBUG("Start " << g.VertexNucls(start));
@@ -174,7 +175,7 @@ pair<vector<typename Graph::EdgeId> , int> BulgeRemover<Graph>::BestPath(
 	for (size_t i = 0; i < outgoing_edges.size(); ++i) {
 		EdgeId edge = outgoing_edges[i];
 		DEBUG("Going along edge of length " << g.length(edge));
-		size_t kplus_one_mer_coverage = g.KPlusOneMerCoverage(edge);
+		size_t kplus_one_mer_coverage = std::floor(g.length(edge) * g.coverage(edge) + 0.5);//kplus_one_mer_coverage(edge);
 		pair<vector<EdgeId> , int> path_and_coverage = BestPath(g,
 				g.EdgeEnd(edge), end, length_left - g.length(edge));
 		if (path_and_coverage.second >= 0 && path_and_coverage.second

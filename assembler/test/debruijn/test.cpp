@@ -1,4 +1,6 @@
 #define K 27
+#define R 100
+#define I 220
 #define DE_BRUIJN_DATA_FOLDER "./data/debruijn/"
 
 /////////////////
