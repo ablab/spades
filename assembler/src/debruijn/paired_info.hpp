@@ -234,6 +234,15 @@ private:
 		data_.DeleteEdgeInfo(edge);
 	}
 
+	void TransferInfo(EdgeId old_edge, EdgeId new_edge, size_t shift = 0, double weight_scale = 1.0) {
+		PairInfos pair_infos = GetEdgeInfo(old_edge);
+		for (size_t j = 0; j < pair_infos.size(); ++j) {
+			PairInfo old_pair_info = pair_infos[j];
+			AddPairInfo(PairInfo(new_edge, old_pair_info.second_, old_pair_info.d_ - shift, weight_scale * old_pair_info.weight_));
+		}
+		RemoveEdgeInfo(old_edge);
+	}
+
 public:
 	PairInfos GetEdgeInfo(EdgeId edge) {
 		return data_.GetEdgeInfos(edge);
@@ -247,27 +256,27 @@ public:
 		this->RemoveEdgeInfo(e);
 	}
 
+
 	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
 		size_t shift = 0;
 		for (size_t i = 0; i < old_edges.size(); ++i) {
 			EdgeId old_edge = old_edges[i];
-			PairInfos pair_infos = GetEdgeInfo(old_edge);
-			for (size_t j = 0; j < pair_infos.size(); ++j) {
-				PairInfo old_pair_info = pair_infos[j];
-				AddPairInfo(PairInfo(new_edge, old_pair_info.second_, old_pair_info.d_ - shift, old_pair_info.weight_));
-			}
-			RemoveEdgeInfo(old_edge);
+			TransferInfo(old_edge, new_edge, shift);
 			PassEdge(graph_.length(old_edge), shift);
 		}
 	}
 
 	virtual void HandleGlue(EdgeId old_edge, EdgeId new_edge) {
-		//TODO
+		TransferInfo(old_edge, new_edge);
 	}
 
 	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
 			EdgeId new_edge2) {
-		//TODO
+		double prop = (double) graph_.length(new_edge1) / graph_.length(old_edge);
+		size_t shift = 0;
+		TransferInfo(old_edge, new_edge1, shift, prop);
+		PassEdge(graph_.length(new_edge1), shift);
+		TransferInfo(old_edge, new_edge1, shift, 1-prop);
 	}
 
 	virtual ~PairedInfoIndex() {
