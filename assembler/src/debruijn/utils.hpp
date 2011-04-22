@@ -161,7 +161,6 @@ public:
 	}
 
 	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
-		cout << "pairedMerge" << endl;
 		EdgeId rce = graph_.Complement(newEdge);
 		handler_->HandleMerge(oldEdges, newEdge);
 		if (newEdge != rce) {

@@ -200,13 +200,14 @@ public:
 
 	void AddActionHandler(ActionHandler* action_handler) {
 		DEBUG("Action handler added");
-		action_handler_list_.push_back(new PairedActionHandler(*this, action_handler));
+		action_handler_list_.push_back(
+				new PairedActionHandler(*this, action_handler));
 	}
 
 	bool RemoveActionHandler(ActionHandler* action_handler) {
 		DEBUG("Trying to remove action handler");
-		for (vector<PairedActionHandler *>::iterator it = action_handler_list_.begin(); it
-				!= action_handler_list_.end(); ++it) {
+		for (vector<PairedActionHandler *>::iterator it =
+				action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
 			if ((*it)->GetInnerActionhandler() == action_handler) {
 				delete *it;
 				action_handler_list_.erase(it);
@@ -218,11 +219,21 @@ public:
 		return false;
 	}
 
-//	//todo remove
-//	const vector<ActionHandler*> GetHandlers() {
-//		return action_handler_list_;
-//	}
+private:
+	void FireAddVertex(VertexId v);
+	void FireAddEdge(EdgeId edge);
+	void FireDeleteVertex(VertexId v);
+	void FireDeleteEdge(EdgeId edge);
+	void FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge);
+	void FireGlue(EdgeId edge1, EdgeId edge2);
+	void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2);
 
+	//	//todo remove
+	//	const vector<ActionHandler*> GetHandlers() {
+	//		return action_handler_list_;
+	//	}
+
+public:
 	void OutgoingEdges(VertexId v, EdgeIterator& begin, EdgeIterator& end) const;
 
 	const vector<EdgeId> OutgoingEdges(VertexId v) const;
@@ -289,6 +300,13 @@ public:
 			rc->coverage_++;
 		}
 	}
+
+private:
+	VertexId HiddenAddVertex();
+
+	EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
+			size_t coverage = 0);
+public:
 
 	/**
 	 * adds vertex and its complement
