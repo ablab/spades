@@ -8,7 +8,32 @@ namespace hashing {
 
 LOGGER("a.hashing");
 
-extern hash_t H;
+// Type of hash values.
+typedef unsigned int hash_t;
+
+/**
+ * Maximum value of type hash_t
+ */
+const hash_t kMax = -1;
+
+const hash_t kXor = 1845724623;
+
+/**
+ * Multiplies by x, fast.
+ */
+inline hash_t mult(hash_t v) {
+	return (v << 5) - v;
+}
+
+/**
+ * Calculates x^n.
+ */
+hash_t power(size_t k);
+
+/**
+ * x^K
+ */
+const hash_t kXK = power(K);
 
 template< typename T >
 struct Hash {
@@ -16,9 +41,9 @@ public:
 	hash_t operator() (const T &seq) const {
 		hash_t h = 0;
 		for (size_t i = 0; i < seq.size(); i++) {
-			h = HASH_X(h) + seq[i];
+			h = mult(h) + seq[i];
 		}
-		return h ^ HASH_XOR;
+		return h ^ kXor;
 	}
 };
 
@@ -27,7 +52,7 @@ struct HashSym {
 	Hash<T> h;
 public:
 	hash_t operator() (const T &s) const {
-		return h(s) ^ h(!s) ^ HASH_XOR;
+		return h(s) ^ h(!s) ^ kXor;
 	};
 
 	/**
@@ -40,23 +65,23 @@ public:
 		size_t sz = s.size();
 		hash_t h = 0;
 		for (size_t i = 0; i < K; i++) {
-			h = HASH_X(h) + s[i];
+			h = mult(h) + s[i];
 		}
 		ha[0] = h;
 		for (size_t i = 0; i + K < sz; i++) {
-			ha[i + 1] = HASH_X(ha[i]) + s[i + K] - s[i] * H;
+			ha[i + 1] = mult(ha[i]) + s[i + K] - s[i] * kXK;
 		}
 		TRACE("forward pass - ok");
 		h = 0;
 		for (size_t i = sz - 1; i + K >= sz; i--) {
-			h = HASH_X(h) + (s[i] ^ 3);
+			h = mult(h) + (s[i] ^ 3);
 		}
 		for (size_t i = sz - K;; i--) {
-			ha[i] ^= h ^ HASH_XOR;
+			ha[i] ^= h ^ kXor;
 			if (i == 0) {
 				break;
 			}
-			h = HASH_X(h) + (s[i - 1] ^ 3) - (s[i + K - 1] ^ 3) * H;
+			h = mult(h) + (s[i - 1] ^ 3) - (s[i + K - 1] ^ 3) * kXK;
 		}
 		TRACE("hashing k-mers of " << s << " - done");
 	}

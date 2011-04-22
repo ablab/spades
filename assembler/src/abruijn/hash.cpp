@@ -2,14 +2,12 @@
 
 namespace hashing {
 
-hash_t initH() {
-	hash_t H = 1;
-	for (int i = 0; i < K; i++) {
-		H = HASH_X(H);
+hash_t power(size_t k) {
+	hash_t h = 1;
+	for (size_t i = 0; i < k; i++) {
+		h = mult(h);
 	}
-	return H;
+	return h;
 }
-
-hash_t H = initH();
 
 }
