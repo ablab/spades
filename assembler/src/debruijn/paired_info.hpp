@@ -29,15 +29,15 @@ public:
 	template<size_t kmer_size, class Stream>
 	void FillIndex(const SimpleIndex<kmer_size + 1, EdgeId>& index, Stream& stream) {
 		typedef Seq<kmer_size + 1> KPOMer;
-		de_bruijn::SimpleReadThreader<kmer_size, Graph> read_threader(graph_,
+		de_bruijn::SimpleSequenceMapper<kmer_size, Graph> read_threader(graph_,
 				index);
 		while (!stream.eof()) {
 			vector<Read> reads;
 			stream >> reads;
 			Sequence read1 = reads[0].getSequence();
 			Sequence read2 = reads[1].getSequence();
-			de_bruijn::Path<EdgeId> path1 = read_threader.ThreadRead(read1);
-			de_bruijn::Path<EdgeId> path2 = read_threader.ThreadRead(read2);
+			de_bruijn::Path<EdgeId> path1 = read_threader.MapSequence(read1);
+			de_bruijn::Path<EdgeId> path2 = read_threader.MapSequence(read2);
 			//walken path lengths
 			size_t length1 = 0;
 			size_t length2 = 0;

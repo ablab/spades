@@ -40,8 +40,8 @@ void WriteToDotFile(const EdgeGraph &g, const string& file_name,
 
 Path FindGenomePath(const string &genome, const EdgeGraph& g,
 		const Index& index) {
-	de_bruijn::SimpleReadThreader<K, EdgeGraph> srt(g, index);
-	return srt.ThreadRead(Sequence(genome));
+	de_bruijn::SimpleSequenceMapper<K, EdgeGraph> srt(g, index);
+	return srt.MapSequence(Sequence(genome));
 }
 
 void ProduceInfo(const EdgeGraph& g, const Index& index, const string& genome,

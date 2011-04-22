@@ -643,7 +643,7 @@ public:
 };
 
 template<size_t k, class Graph>
-class SimpleReadThreader {
+class SimpleSequenceMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 private:
@@ -663,12 +663,12 @@ private:
 		}
 	}
 public:
-	SimpleReadThreader(const Graph& g,
+	SimpleSequenceMapper(const Graph& g,
 			const de_bruijn::SimpleIndex<k + 1, EdgeId>& index) :
 		g_(g), index_(index) {
 	}
 
-	de_bruijn::Path<EdgeId> ThreadRead(const Sequence& read) const {
+	de_bruijn::Path<EdgeId> MapSequence(const Sequence& read) const {
 		vector<EdgeId> passed;
 		if (read.size() <= k) {
 			return de_bruijn::Path<EdgeId>();
