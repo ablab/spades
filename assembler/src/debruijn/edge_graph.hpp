@@ -120,6 +120,8 @@ private:
 
 using de_bruijn::SmartVertexIterator;
 using de_bruijn::SmartEdgeIterator;
+using de_bruijn::HandlerApplier;
+using de_bruijn::PairedHandlerApplier;
 
 class EdgeGraph {
 public:
@@ -134,6 +136,36 @@ public:
 	//	typedef de_bruijn::SmartVertexIterator<EdgeGraph> SmartVertexIterator;
 	//	typedef de_bruijn::SmartEdgeIterator<EdgeGraph> SmartEdgeIterator;
 
+private:
+	const size_t k_;
+
+	const HandlerApplier<EdgeGraph> *applier_;
+
+	vector<PairedActionHandler *> action_handler_list_;
+
+	set<Vertex*> vertices_;
+
+	VertexId HiddenAddVertex();
+
+	EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
+			size_t coverage = 0);
+
+	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s,
+			size_t coverage);
+
+	void DeleteAllOutgoing(Vertex* v);
+
+	bool GoUniqueWay(VertexId &v);
+
+	void FireAddVertex(VertexId v);
+	void FireAddEdge(EdgeId edge);
+	void FireDeleteVertex(VertexId v);
+	void FireDeleteEdge(EdgeId edge);
+	void FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge);
+	void FireGlue(EdgeId edge1, EdgeId edge2);
+	void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2);
+
+public:
 	VertexIterator begin() const {
 		return vertices_.begin();
 	}
@@ -180,9 +212,8 @@ public:
 	 * @param k Main parameter that defines the size of k-mers
 	 * //@param action_handler Graph actions handler
 	 */
-	EdgeGraph(size_t k) {
+	EdgeGraph(size_t k) : k_(k), applier_(new PairedHandlerApplier<EdgeGraph>(*this)) {
 		assert(k % 2 == 1);
-		k_ = k;
 	}
 
 	/**
@@ -218,15 +249,6 @@ public:
 		//		assert(false);
 		return false;
 	}
-
-private:
-	void FireAddVertex(VertexId v);
-	void FireAddEdge(EdgeId edge);
-	void FireDeleteVertex(VertexId v);
-	void FireDeleteEdge(EdgeId edge);
-	void FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge);
-	void FireGlue(EdgeId edge1, EdgeId edge2);
-	void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2);
 
 	//	//todo remove
 	//	const vector<ActionHandler*> GetHandlers() {
@@ -301,13 +323,6 @@ public:
 		}
 	}
 
-private:
-	VertexId HiddenAddVertex();
-
-	EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
-			size_t coverage = 0);
-public:
-
 	/**
 	 * adds vertex and its complement
 	 */
@@ -367,19 +382,6 @@ public:
 
 	void GlueEdges(EdgeId edge1, EdgeId edge2);
 
-private:
-	size_t k_;
-
-	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s,
-			size_t coverage);
-
-	vector<PairedActionHandler *> action_handler_list_;
-
-	set<Vertex*> vertices_;
-
-	void DeleteAllOutgoing(Vertex* v);
-
-	bool GoUniqueWay(VertexId &v);
 };
 
 typedef EdgeGraph::EdgeId EdgeId;

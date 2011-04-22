@@ -19,6 +19,7 @@ namespace edge_graph {
 typedef de_bruijn::DeBruijn<K> DeBruijn;
 typedef SimpleIndex<K + 1, EdgeId> Index;
 typedef de_bruijn::Path<EdgeId> Path;
+typedef de_bruijn::PairedInfoIndex<EdgeGraph> PairedIndex;
 
 void CountStats(const EdgeGraph& g) {
 	INFO("Counting stats");
@@ -98,6 +99,13 @@ void RemoveBulges(EdgeGraph &g, Index &index, const string& genome,
 }
 
 template <class ReadStream>
+void FillPairedIndex(PairedIndex& paired_info_index, ReadStream& stream, Index& index) {
+	INFO("Counting paired info");
+	paired_info_index.FillIndex<K, ReadStream>(index, stream);
+	INFO("Paired info counted");
+}
+
+template <class ReadStream>
 void EdgeGraphTool(ReadStream& stream, const string& genome) {
 	INFO("Edge graph construction tool started");
 
@@ -122,12 +130,13 @@ void EdgeGraphTool(ReadStream& stream, const string& genome) {
 	CondenseGraph<ReadStream> (debruijn, g, index, stream, genome);
 
 	stream.reset();
-	de_bruijn::PairedInfoIndex<EdgeGraph> paired_info_index(g, I);
-	paired_info_index.FillIndex<K, ReadStream>(index, stream);
+	PairedIndex paired_info_index(g, I);
 
-//	ClipTips(g, index, genome, "tips_clipped.dot");
-//
-//	RemoveBulges(g, index, genome, "bulges_removed.dot");
+	FillPairedIndex<ReadStream>(paired_info_index, stream, index);
+
+	ClipTips(g, index, genome, "tips_clipped.dot");
+
+	RemoveBulges(g, index, genome, "bulges_removed.dot");
 
 	g.RemoveActionHandler(&index_handler);
 	g.RemoveActionHandler(&coverageHandler);

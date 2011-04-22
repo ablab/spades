@@ -16,11 +16,10 @@
 #include "logging.hpp"
 #include "filter_iterator.hpp"
 
+namespace abruijn {
+
 using namespace std;
 using namespace __gnu_cxx;
-using namespace hashing;
-
-namespace abruijn {
 
 LOGGER("a.graph");
 
@@ -215,7 +214,7 @@ typedef set<Vertex*> Vertices;
 
 class Graph {
 public:
-	typedef hash_map < Sequence, Vertex*, HashSym<Sequence>, EqSym<Sequence> > SeqVertice;
+	typedef hash_map < Sequence, Vertex*, hashing::HashSym<Sequence>, hashing::EqSym<Sequence> > SeqVertice;
 	SeqVertice seqVertice;
 
 	Vertices vertices;

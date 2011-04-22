@@ -18,6 +18,9 @@ inline int fistDifferenceIndex(PairedGraph &graph, Edge* edge1, Edge* edge2, int
 
 void cutShortTips(PairedGraph &graph, int MaxCutLength = 5);
 
+void SplitVertecesByEdgeConnections(PairedGraph &graph, edgePairsMap &EdgePairs, bool Strongly1to1);
+void SplitByLowers(PairedGraph &graph);
+
 
 
 bool processLowerSequence(longEdgesMap &longEdges, PairedGraph &graph,
