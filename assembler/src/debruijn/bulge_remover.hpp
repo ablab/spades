@@ -103,6 +103,7 @@ const string PrintPath(Graph& g, const vector<typename Graph::EdgeId>& edges) {
 
 template<class Graph>
 void BulgeRemover<Graph>::RemoveBulges(Graph& g) {
+	//todo add right comparator
 	typedef de_bruijn::SmartEdgeIterator<Graph> EdgeIter;
 
 	DEBUG("Bulge remove process started");

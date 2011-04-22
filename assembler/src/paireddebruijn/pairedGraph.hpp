@@ -186,10 +186,10 @@ public:
 
 inline int edgeRealId(int id, longEdgesMap &longEdges) {
 	int res = id;
-	cerr << "realId for " << id << endl;
+//	cerr << "realId for " << id << endl;
 	while (longEdges[res]->EdgeId != res) {
 		res = longEdges[res]->EdgeId;
-		cerr << "possible " << res << endl;
+//		cerr << "possible " << res << endl;
 	}
 	return res;
 }

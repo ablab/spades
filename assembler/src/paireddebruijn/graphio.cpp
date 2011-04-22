@@ -24,9 +24,9 @@ ll extractMer(char *read, int shift, int length) {
 	for (int i = 0; i < length; i++) {
 		res = res << 2;
 		res += codeNucleotide(read[shift + i]);
-		if (codeNucleotide( read[shift + i])==-1)
-				cerr<<"Extract fault on pos"<<i<<" shift "<<shift;
-
+		if (codeNucleotide( read[shift + i])==-1) {
+				ERROR("Extraction fault on pos"<<i<<" shift "<<shift);
+		}
 	}
 	return res;
 }
@@ -79,11 +79,15 @@ void outputLongEdges(longEdgesMap &longEdges, string fileName) {
 void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, ostream &os) {
 	gvis::GraphPrinter<int> g("Paired_ext", os);
 	char Buffer[100];
-	bool UsedV[20000];
-	forn(i,20000)
+	bool UsedV[200000];
+	forn(i,200000)
 		UsedV[i] = false;
 	pair<int, int> vDist;
 	for (longEdgesMap::iterator it = longEdges.begin(); it != longEdges.end(); ++it) {
+		if (it->second == NULL) {
+			cerr<<"BAD EDGE!!! ID="<<it->first<<endl;
+			continue;
+		}
 		if (it->second->EdgeId == it->first) {
 			if (!UsedV[it->second->FromVertex]) {
 				vDist = vertexDist(longEdges, graph, it->second->FromVertex);
@@ -144,16 +148,17 @@ Sequence readGenomeFromFile(const string &fileName) {
 	return result;
 }
 
-int findStartVertex(PairedGraph &graph, Sequence &genome) {
+int findStartVertex(PairedGraph &graph, Sequence &genome, int position = 0) {
 	int result = -1;
-	cerr<<"findStartVertex"<<endl;
+//	cerr<<"findStartVertex"<<endl;
 	for (int i = 0; i < graph.VertexCount; i++) {
-		if (graph.degrees[i][0] == 0 && graph.degrees[i][1] == 1) {
-			cerr<<"SEQ VS GEN"<<endl;
-			Sequence* tmp_seq = graph.longEdges[graph.edgeIds[i][0][OUT_EDGE]]->upper;
-			cerr<<"Seq "<<tmp_seq->str()<<endl;
-			cerr<<"Gen "<<(genome.Subseq(0,tmp_seq->size())).str()<<endl;
-			if (genome.Subseq(0,tmp_seq->size())== *tmp_seq){
+//		if (graph.degrees[i][0] == 0 && graph.degrees[i][1] == 1) {
+		for (int edgeNum = 0; edgeNum<graph.degrees[i][1]; edgeNum++){
+	//			cerr<<"SEQ VS GEN"<<endl;
+			Sequence* tmp_seq = graph.longEdges[graph.edgeIds[i][edgeNum][OUT_EDGE]]->upper;
+//			cerr<<"Seq "<<tmp_seq->str()<<endl;
+//			cerr<<"Gen "<<(genome.Subseq(0,tmp_seq->size())).str()<<endl;
+			if (genome.Subseq(position,tmp_seq->size()+position)== *tmp_seq){
 				if (result >= 0) {
 					cerr << "Ambigious start point for threading!" << endl;
 					return result;
@@ -186,13 +191,13 @@ int moveThroughEdge(gvis::GraphPrinter<int> &g, PairedGraph &graph,
 	cerr << "Edge found" << endl;
 	edgeNum++;
 	string label(createEdgeLabel(edgeNum, nextEdge->EdgeId, nextEdge->length));
-	g.addEdge(nextEdge->FromVertex, nextEdge->ToVertex, label);
-	cerr << nextEdge->EdgeId << " (" << nextEdge->length << "):" << endl;
+	g.addEdge(nextEdge->FromVertex, nextEdge->ToVertex, label, "red");
+/*	cerr << nextEdge->EdgeId << " (" << nextEdge->length << "):" << endl;
 	if (graph.longEdges[nextEdge->EdgeId]->length < 500) {
 		cerr << nextEdge->upper->str() << endl;
 		cerr << nextEdge->lower->str() << endl;
 	}
-	genPos += nextEdge->length;
+*/	genPos += nextEdge->length;
 	return nextEdge->ToVertex;
 }
 
@@ -209,18 +214,20 @@ Edge *chooseNextEdge(int currentVertex, int genPos, Sequence &genome,
 	}
 	return NULL;
 }
-
+#define MAX_GAP 2000
 void outputLongEdgesThroughGenome(PairedGraph &graph, ostream &os) {
 	assert(k==l);
 	cerr << "Graph output through genome" << endl;
 	gvis::GraphPrinter<int> g("Paired_ext", os);
 	Sequence genome(readGenomeFromFile("data/input/MG1655-K12_cut.fasta"));
 	cerr << "Try to process" << endl;
+	int gap = 0;
 	int edgeNum = 0;
 	int genPos = 0;
 	int currentVertex = findStartVertex(graph, genome);
 	cerr << "Start vertex " << currentVertex << endl;
-	while (graph.degrees[currentVertex][1] != 0) {
+//	while (graph.degrees[currentVertex][1] != 0) {
+	while (1) {
 		cerr << "Try to found next edge" << endl;
 		Edge *nextEdge = chooseNextEdge(currentVertex, genPos, genome, graph);
 		if (nextEdge != NULL) {
@@ -229,8 +236,20 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, ostream &os) {
 			edgeNum++;
 			genPos += nextEdge->length;
 		} else {
-			cerr << "BAD GRAPH. I can not cover all genome." << endl;
-			break;
+			gap = 0;
+			cerr<<"Gap sequence from pos "<<genPos<<":"<<endl;
+			while (((currentVertex = findStartVertex(graph, genome, gap+genPos))==-1)&&(gap<MAX_GAP)){
+				cerr<<nucl(genome[gap+genPos]);
+				gap++;
+			}
+			cerr<<endl;
+			if (gap >= MAX_GAP) {
+				cerr << "BAD GRAPH. I can not cover all genome." << endl;
+				break;
+			}
+			else {
+				genPos+=gap;
+			}
 		}
 	}
 	cerr<<"Go trough the graph finished on position "<<genPos+k-1<<endl;
