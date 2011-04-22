@@ -51,6 +51,8 @@ private:
 	//	typedef std::map<key, value, typename key::less> map_type;
 	typedef std::tr1::unordered_map<Kmer, Data, typename Kmer::hash,
 			typename Kmer::equal_to> map_type;
+	typedef typename map_type::iterator map_iterator;
+	typedef typename map_type::const_iterator map_const_iterator;
 	map_type nodes_;
 
 	void CountSequence(const Sequence& s) {
@@ -63,9 +65,9 @@ private:
 	}
 
 	const Data& get(const Kmer &kmer) const {
-		//todo why public constructor is necessary???
-		assert(nodes_.count(kmer) == 1);
-		return nodes_.find(kmer)->second;
+		map_const_iterator mci = nodes_.find(kmer);
+		assert(mci != nodes_.end());
+		return mci->second;
 	}
 
 	Data& addNode(const Kmer &seq) {
