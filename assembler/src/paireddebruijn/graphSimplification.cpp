@@ -5,7 +5,28 @@
  */
 #include "graphSimplification.hpp"
 #include "common.hpp"
+#include "constructHashTable.hpp"
+
+
 LOGGER ("p.graphSimplification");
+
+
+int edgeIdToLocalId(int dir, PairedGraph &graph, int edgeId) {
+	int vertId;
+	edgeId = edgeRealId( edgeId , graph.longEdges);
+	if (dir == 0)
+		vertId = graph.longEdges[edgeId]->ToVertex;
+	else
+		vertId = graph.longEdges[edgeId]->FromVertex;
+//	TRACE("edge connects "<< graph.longEdges[edgeId]->ToVertex << " " << graph.longEdges[edgeId]->FromVertex);
+	forn(i, MAX_DEGREE) {
+//		TRACE("in edgeIdTo.." << graph.edgeIds[vertId][i][dir] << "  " << edgeId);
+		if (graph.edgeIds[vertId][i][dir] == edgeId)
+			return i;
+	}
+	return -1;
+}
+
 bool isPath(Edge &e1, Edge &e2) {
 	cerr << endl << "(" << e1.FromVertex << ", " << e1.ToVertex << ") " << "("
 			<< e2.FromVertex << ", " << e2.ToVertex << ") ";
@@ -278,11 +299,11 @@ void cutShortTips(PairedGraph &graph, int MaxCutLength){
 	forn(i,graph.VertexCount) {
 		if ((graph.rightDegree(i) == 1) && (graph.leftDegree(i) == 0)){
 			Edge* curEdge = graph.neighbourEdge(i,0, RIGHT);
-			if ((curEdge->length<=MaxCutLength)&&((curEdge->coverage<=100))) graph.removeEdge(curEdge);
+			if ((curEdge->length<=MaxCutLength)&&((curEdge->coverage<=200))) graph.removeEdge(curEdge);
 		}
 		if ((graph.rightDegree(i) == 0) && (graph.leftDegree(i) == 1)){
 			Edge* curEdge = graph.neighbourEdge(i,0, LEFT);
-			if ((curEdge->length<=MaxCutLength)&&(((curEdge->coverage<=100)))) graph.removeEdge(curEdge);
+			if ((curEdge->length<=MaxCutLength)&&(((curEdge->coverage<=200)))) graph.removeEdge(curEdge);
 		}
 	}
 }
@@ -738,4 +759,277 @@ void extractDefinite(PairedGraph &graph, int dir){
 		}
 
 	}
+}
+
+
+
+void SplitVertecesByEdgeConnections(PairedGraph &graph, edgePairsMap &EdgePairs, bool Strongly1to1){
+	//resolve multi case;
+	int table[MAX_DEGREE][MAX_DEGREE];
+	double fake_cov[MAX_DEGREE][MAX_DEGREE];
+	double in_cov[MAX_DEGREE];
+	double out_cov[MAX_DEGREE];
+	double eps_out_cov[MAX_DEGREE];
+	double eps = 10000;
+
+
+	int FakeVertexCount = graph.VertexCount;
+	int FakeVertexStart = graph.VertexCount;
+	map<int, int> FakeVertexToReal;
+	forn(curVertId,FakeVertexStart) {
+		if ((graph.degree(curVertId, LEFT)!=0)&&(graph.degree(curVertId, RIGHT)!=0)) {
+
+			pair<int, int> vDist = vertexDist(graph.longEdges,graph,curVertId);
+			//			if (vDist.first+vDist.second-k+1<=readLength)
+			{
+				cerr<<"vertex "<<curVertId<<" dist <"<<vDist.first<<", "<<vDist.second<<">"<<endl;
+				if (graph.degree(curVertId, LEFT)*graph.degree(curVertId, RIGHT) <= EdgePairs[curVertId].size()) continue;
+
+				if (((graph.degree(curVertId, LEFT)<=EdgePairs[curVertId].size())&&(graph.degrees[curVertId][1]<=EdgePairs[curVertId].size()))||(!Strongly1to1)) {
+					bool allIns = false;
+					bool allOuts = false;
+					forn(i,graph.degrees[curVertId][0]) {
+						allIns = false;
+						forn (j,EdgePairs[curVertId].size()) {
+							if ((EdgePairs[curVertId])[j].first ==graph.edgeIds[curVertId][i][IN_EDGE]) {
+								allIns = true;
+								break;
+							}
+						}
+						if (!allIns) break;
+					}
+					forn(i,graph.degrees[curVertId][1]) {
+						allOuts = false;
+						forn (j,EdgePairs[curVertId].size()) {
+							if ((EdgePairs[curVertId])[j].second ==graph.edgeIds[curVertId][i][OUT_EDGE]) {
+								allOuts = true;
+								break;
+							}
+						}
+						if (!allOuts) break;
+					}
+
+					if ((allIns&&allOuts)||(!Strongly1to1)) {
+
+						TRACE ("Faking vert " << curVertId);
+						cerr<<"Faking vert " << curVertId<<endl;
+						int tmpCurOut = edgeRealId(graph.neighbourEdge(curVertId,0,RIGHT)->EdgeId,graph.longEdges);
+						string tmpUpSeq = graph.longEdges[tmpCurOut]->upper->Subseq(0,k-1).str();
+//						string tmpLoSeq = graph.longEdges[tmpCurOut]->lower->Subseq(0,l-1).str();
+						string tmpLoSeq = "";
+
+						//create FakeVerices and Fake edges;
+
+						memset(table, 0, sizeof(table));
+						memset(fake_cov, 0, sizeof(fake_cov));
+						TRACE ("there are "<< EdgePairs[curVertId].size() << " pairs");
+						forn (tmp, EdgePairs[curVertId].size()){
+	//						TRACE((EdgePairs[curVertId])[tmp].first);
+	//						TRACE(edgeRealId((EdgePairs[curVertId])[tmp].first, graph.longEdges));
+							TRACE(edgeIdToLocalId(0, graph, (EdgePairs[curVertId])[tmp].first) <<" "<< edgeIdToLocalId(1, graph, (EdgePairs[curVertId])[tmp].second)<< " "<<EdgePairs[curVertId][tmp].first << " " << EdgePairs[curVertId][tmp].second);
+							table[edgeIdToLocalId(0, graph, (EdgePairs[curVertId])[tmp].first)][edgeIdToLocalId(1, graph, (EdgePairs[curVertId])[tmp].second)] = 1;
+							//fake_deg[tmp.second] ++;
+						}
+						//create fake Vertices for in edges;
+						int tmpFictStartIn = FakeVertexCount;
+						memset(in_cov, 0, sizeof(in_cov));
+						forn(i,graph.degrees[curVertId][0]) {
+							int CurIn = edgeRealId(graph.edgeIds[curVertId][i][IN_EDGE],graph.longEdges);
+							graph.edgeIds[curVertId][i][IN_EDGE] = CurIn;
+							FakeVertexToReal.insert(make_pair(FakeVertexCount,curVertId));
+
+							cerr<<"Edge "<<CurIn<<" ("<<graph.longEdges[CurIn]->FromVertex<<", "<<graph.longEdges[CurIn]->ToVertex<<") maped to ";
+							graph.longEdges[CurIn]->ToVertex = FakeVertexCount;
+							graph.degrees[FakeVertexCount][0]=1;
+							graph.degrees[FakeVertexCount][1]=0;
+							in_cov[i] = graph.longEdges[CurIn]->coverage;
+							graph.edgeIds[FakeVertexCount][0][IN_EDGE]=CurIn;
+							cerr<<"edge "<<CurIn<<" ("<<graph.longEdges[CurIn]->FromVertex<<", "<<graph.longEdges[CurIn]->ToVertex<<")"<<endl;
+							FakeVertexCount++;
+							graph.VertexCount++;
+						}
+
+
+
+						//create fake Vertices for out edges;
+						int tmpFictStartOut = FakeVertexCount;
+						memset(out_cov, 0, sizeof(out_cov));
+						forn(i,graph.degrees[curVertId][1]) {
+							int CurOut = edgeRealId(graph.edgeIds[curVertId][i][OUT_EDGE],graph.longEdges);
+							graph.edgeIds[curVertId][i][OUT_EDGE] = CurOut;
+							cerr<<"Edge "<<CurOut<<" ("<<graph.longEdges[CurOut]->FromVertex<<", "<<graph.longEdges[CurOut]->ToVertex<<") maped to ";
+							FakeVertexToReal.insert(make_pair(FakeVertexCount,curVertId));
+							graph.longEdges[CurOut]->FromVertex = FakeVertexCount;
+							graph.degrees[FakeVertexCount][0]=0;
+							graph.degrees[FakeVertexCount][1]=1;
+							graph.edgeIds[FakeVertexCount][0][OUT_EDGE]=CurOut;
+
+							out_cov[i] = graph.longEdges[CurOut]->coverage;
+							cerr<<"edge "<<CurOut<<" ("<<graph.longEdges[CurOut]->FromVertex<<", "<<graph.longEdges[CurOut]->ToVertex<<")"<<endl;
+							FakeVertexCount++;
+						}
+
+
+						//compute fake coverage
+
+						TRACE("in_cov:")
+						forn(i, MAX_DEGREE){
+							TRACE(in_cov[i]);
+						}
+						TRACE("out_cov:")
+						forn(i, MAX_DEGREE){
+							TRACE(out_cov[i]);
+						}
+
+						TRACE("FAKE_EDGES");
+						forn(i, MAX_DEGREE)
+							forn(j, MAX_DEGREE)
+								if (table[i][j] > eps)
+									TRACE(i << " "<< j);
+						while (1) {
+							double sum = 0;
+							forn (i, MAX_DEGREE) {
+								sum += out_cov[i];
+							}
+							if (sum < eps) break;
+							TRACE("SUM: "<<sum);
+							forn (i, MAX_DEGREE) {
+								eps_out_cov[i] = out_cov[i] * (eps / sum) ;
+								out_cov[i] -= eps_out_cov[i];
+							}
+							forn(j, MAX_DEGREE) {
+								double tdeg = 0;
+								forn(i, MAX_DEGREE)
+									if (table[i][j])
+										tdeg += in_cov[i];
+								if (tdeg >eps/10)
+								forn(i, MAX_DEGREE) {
+									if (table[i][j]) {
+//										assert(tdeg>eps/10);
+										double add = (in_cov[i]/tdeg) * eps_out_cov[j];
+										if (add > in_cov[i]) add = in_cov[i];
+										fake_cov[i][j] +=add;
+										in_cov[i] -= add;
+									}
+								}
+							}
+						}
+						TRACE("FAKE_COV");
+						forn(i, MAX_DEGREE)
+							forn(j, MAX_DEGREE)
+								if (fake_cov[i][j] > eps/10)
+									TRACE(i << " "<< j << " " << fake_cov[i][j]);
+						//create fake edges
+						TRACE("FAKE_COV traced");
+						forn (tmpEdgePair,EdgePairs[curVertId].size()) {
+							int tmpFrom = 0;
+							int tmpTo = 0;
+							while (edgeRealId(graph.edgeIds[curVertId][tmpFrom][IN_EDGE], graph.longEdges)!=edgeRealId((EdgePairs[curVertId])[tmpEdgePair].first,graph.longEdges)) {
+								tmpFrom++;
+								assert(tmpFrom<graph.degrees[curVertId][0]);
+							}
+							while (edgeRealId(graph.edgeIds[curVertId][tmpTo][OUT_EDGE], graph.longEdges)!=edgeRealId((EdgePairs[curVertId])[tmpEdgePair].second, graph.longEdges)) {
+								tmpTo++;
+								assert(tmpTo<graph.degrees[curVertId][1]);
+							}
+							Sequence *UpSeq = new Sequence(tmpUpSeq);
+							Sequence *LoSeq = new Sequence(tmpLoSeq);
+
+//							Edge *tmpEdge = new Edge(UpSeq, LoSeq, tmpFictStartIn + tmpFrom, tmpFictStartOut + tmpTo,0, EdgeId, fake_cov[edgeIdToLocalId(0, graph, EdgePairs[curVertId][tmpEdgePair].first)][edgeIdToLocalId(1, graph, EdgePairs[curVertId][tmpEdgePair].second)]);
+							Edge *tmpEdge = new Edge(UpSeq, LoSeq, tmpFictStartIn + tmpFrom, tmpFictStartOut + tmpTo,0, 0, fake_cov[tmpFrom][tmpTo]);
+							int tmpEdgeId = graph.addEdge(tmpEdge,true)->EdgeId;
+							//							longEdges.insert(make_pair(EdgeId,tmpEdge));
+							//							cerr<<"Virtual edge "<<EdgeId<<
+//							cerr<<"Virtual edge "<<graph.EdgeId-1<<" ("<<graph.longEdges[EdgeId]->FromVertex<<", "<<graph.longEdges[EdgeId]->ToVertex<<") ["<<tmpFrom<<", "<<tmpTo<<"] cov "<< fake_cov[tmpFrom][tmpTo]<<endl;
+					//		graph.edgeIds[tmpFictStartIn + tmpFrom][graph.degrees[tmpFictStartIn + tmpFrom][1]][OUT_EDGE] = tmpEdgeId;
+					//		graph.degrees[tmpFictStartIn + tmpFrom][1]++;
+					//		graph.edgeIds[tmpFictStartOut + tmpTo][graph.degrees[tmpFictStartOut + tmpTo][0]][OUT_EDGE] = tmpEdgeId;
+					//		graph.degrees[tmpFictStartOut + tmpTo][0]++;
+						//	graph.EdgeId++;
+
+						}
+
+						graph.degrees[curVertId][0] = 0;
+						graph.degrees[curVertId][1] = 0;
+					}
+				}
+			}
+		}
+	}
+
+	graph.VertexCount = FakeVertexCount;
+	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+	if (Strongly1to1){
+		expandDefinite(graph.longEdges, graph, graph.VertexCount, false);
+	}else {
+		cerr<<"Start expand obvious"<<endl;
+		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		cerr<<"End expand obvious"<<endl;
+		cerr<<"Clear fake edges"<<endl;
+
+		for(longEdgesMap::iterator it= graph.longEdges.begin(); it !=graph.longEdges.end();) {
+			if (it->second->length == 0) {
+				graph.glueVertices(it->second->FromVertex, it->second->ToVertex);
+				graph.removeEdge((it++)->second);
+//				++it;
+			}
+			else ++it;
+		}
+		cerr<<"Clear fake edges END"<<endl;
+
+	}
+	//	expandDefinite(longEdges, graph, VertexCount);
+//	for(longEdgesMap::iterator it= longEdges.begin(); it !=longEdges.end(); ++it) {
+//		if (it->second->FromVertex>=FakeVertexStart) it->second->FromVertex = FakeVertexToReal[it->second->FromVertex];
+//		if (it->second->ToVertex>=FakeVertexStart) it->second->ToVertex = FakeVertexToReal[it->second->ToVertex];
+//	}
+//	VertexCount = FakeVertexStart;
+//	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+}
+
+bool intersectible(Sequence *left, Sequence *right){
+	string leftStr;
+	string rightStr;
+//	cerr<<"Left "<<left->size()<<" VS Right"<<right->size()<<endl;
+	if (left->size()<=1) return true;
+	if (right->size()<=1) return true;
+	if (left->size()>350)
+		leftStr = left->Subseq(left->size()-350, left->size()).str();
+	else
+		leftStr = left->str();
+	if (right->size()>350)
+		rightStr = right->Subseq(0, 350).str();
+	else
+		rightStr = right->str();
+	pair<int, pair<int,int>> tmp = maxCommonSubstring(leftStr, rightStr);
+	int border = min(left->size()/2, right->size()/2);
+	if (border > 175) border = 175;
+	if (tmp.first > max(l, border)) return true;
+	else return false;
+
+}
+
+void SplitByLowers(PairedGraph &graph){
+	edgePairsMap EdgePairs;
+	forn(CurVert, graph.VertexCount){
+		vector<pair<int,int>> tmpVect;
+		forn (edgeI, graph.degree(CurVert, LEFT)){
+			Edge* leftEdge = graph.neighbourEdge(CurVert,edgeI,LEFT);
+			forn (edgeJ, graph.degree(CurVert, RIGHT)){
+				Edge* rightEdge = graph.neighbourEdge(CurVert,edgeJ,RIGHT);
+	//			cerr<<"Check: "<<CurVert<<" Edge pair "<<leftEdge->EdgeId<<" "<<rightEdge->EdgeId<<endl;
+
+				if (intersectible(leftEdge->lower, rightEdge->lower)){
+					tmpVect.push_back(make_pair(leftEdge->EdgeId, rightEdge->EdgeId));
+					cerr<<"Vert "<<CurVert<<" Edge pair "<<leftEdge->EdgeId<<" "<<rightEdge->EdgeId<<endl;
+				}
+			}
+		}
+	//	if (tmpVect.size()>0)
+			EdgePairs.insert(make_pair(CurVert,tmpVect));
+	}
+	cerr<<"Start Spliting"<<endl;
+	SplitVertecesByEdgeConnections(graph, EdgePairs, false);
+	cerr<<"End Spliting"<<endl;
+
 }
