@@ -143,16 +143,17 @@ This graph has only undergone a simple vertex-merging procedure; there are more
 yet-unimplemented simplifications applicable to this graph.
 
 \subsection{Statistics}
-The plot below show the dependence of the number of vertices in a graph from the 
-number of reads.
+The plot below shows the dependence of the number of vertices in a graph from the 
+number of reads for {\tt s\_6.first10000}.
 
 \begin{tikzpicture}
-    \begin{axis}[xlabel={$\#$ of reads},ylabel={$\#$ of vertices in a graph}]
-    \addplot[smooth,mark=*,blue] plot coordinates { (4000,3567) (6000,6718) (10000,16786) };
-    \addlegendentry{de Bruijn}
+    \begin{axis}[xlabel={HTAKE},ylabel={$\#$ of vertices}]
+    \addplot[smooth,mark=*,blue] plot coordinates { (1,1640) (2,2950) (3,4248) (4,5472) (5,6784)
+      (10, 12028) (20, 15432) (25, 18642) (40, 19890) (50, 20052) (60, 20102) (75,20140) };
+    %\addlegendentry{de Bruijn}
 
-    \addplot[smooth,color=red,mark=x] plot coordinates { (4000,1267) (6000,2134) (10000,5134) };
-    \addlegendentry{A Bruijn}
+    %\addplot[smooth,color=red,mark=x] plot coordinates { (4000,1267) (6000,2134) (10000,5134) };
+    %\addlegendentry{A Bruijn}
     \end{axis}
 \end{tikzpicture}
 
