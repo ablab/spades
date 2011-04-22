@@ -33,13 +33,6 @@
  */
 //#define LABEL 5
 
-template <typename T>
-string toString(T t) {
-	std::stringstream ss;
-	ss << t;
-	return ss.str();
-}
-
 // ===== Naming conventions ===== //
 #define INPUT_FILES INPUT_DIRECTORY + INPUT_DATA_SET + "1.fastq.gz", INPUT_DIRECTORY + INPUT_DATA_SET + "2.fastq.gz"
 #define OUTPUT_FILE INPUT_DATA_SET + toString(K) + OUTPUT_FILE_SUFFIX1 + OUTPUT_FILE_SUFFIX2
@@ -57,13 +50,6 @@ string toString(T t) {
 #endif
 #define OUTPUT_FILES OUTPUT_DIRECTORY + OUTPUT_FILE
 
-// ===== Hashing parameters ===== //
-#define HASH_XOR 1845724623
-#define HASH_X(v) ((v << 5) - v) // = v * 31
-// Type of hash values.
-typedef unsigned int hash_t;
-// Maximum value of type hash_t
-const hash_t maxHash = -1;
 #define HTAKE 1
 
 // ===== Debug parameters ===== //
