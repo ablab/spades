@@ -27,8 +27,30 @@ public:
 	}
 
 	template<size_t kmer_size, class Stream>
-	void FillIndex(const SimpleIndex<kmer_size + 1, EdgeId>& index, Stream stream) {
-		CollectData<kmer_size, Stream>(index, stream);
+	void FillIndex(const SimpleIndex<kmer_size + 1, EdgeId>& index, Stream& stream) {
+		typedef Seq<kmer_size + 1> KPOMer;
+		de_bruijn::SimpleReadThreader<kmer_size, Graph> read_threader(graph_,
+				index);
+		while (!stream.eof()) {
+			vector<Read> reads;
+			stream >> reads;
+			Sequence read1 = reads[0].getSequence();
+			Sequence read2 = reads[1].getSequence();
+			de_bruijn::Path<EdgeId> path1 = read_threader.ThreadRead(read1);
+			de_bruijn::Path<EdgeId> path2 = read_threader.ThreadRead(read2);
+			//walken path lengths
+			size_t length1 = 0;
+			size_t length2 = 0;
+			size_t distance = CountDistance(read1, read2);
+			for (size_t i = 0; i < path1.size(); ++i) {
+				for (size_t j = 0; j < path2.size(); ++j) {
+					AddPairInfo(PairInfo(path1[i], path2[j], distance + length2 - length1,
+							CorrectLength(path1, i) * CorrectLength(path2, j)));
+					PassEdge(CorrectLength(path2, j), length2);
+				}
+				PassEdge(CorrectLength(path1, i), length1);
+			}
+		}
 	}
 
 	class PairInfo {
@@ -194,33 +216,6 @@ private:
 
 	size_t CountDistance(const Sequence& read1, const Sequence& read2) {
 		return insert_size_ - read2.size();
-	}
-
-	template<size_t kmer_size, class Stream>
-	void CollectData(const SimpleIndex<kmer_size + 1, EdgeId>& index,
-			Stream &stream) {
-		typedef Seq<kmer_size + 1> KPOMer;
-		de_bruijn::SimpleReadThreader<kmer_size, Graph> read_threader(graph_,
-				index);
-		while (!stream.eof()) {
-			vector<Read> reads;
-			Sequence read1 = reads[0].getSequence();
-			Sequence read2 = reads[1].getSequence();
-			stream >> reads;
-			de_bruijn::Path<EdgeId> path1 = read_threader.ThreadRead(read1);
-			de_bruijn::Path<EdgeId> path2 = read_threader.ThreadRead(read2);
-			//walken path lengths
-			size_t length1 = 0;
-			size_t length2 = 0;
-			for (size_t i = 0; i < path1.size(); ++i) {
-				for (size_t j = 0; j < path2.size(); ++j) {
-					AddPairInfo(PairInfo(path1[i], path2[j], CountDistance(read1, read2) + length2 - length1,
-							CorrectLength(path1, i) * CorrectLength(path2, j)));
-					PassEdge(CorrectLength(path2, j), length2);
-				}
-				PassEdge(CorrectLength(path1, i), length1);
-			}
-		}
 	}
 
 	bool MergeData(const PairInfo& info1, const PairInfo& info2) {

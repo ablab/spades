@@ -35,7 +35,7 @@ void WriteToDotFile(const EdgeGraph &g, const string& file_name,
 		de_bruijn::Path<EdgeId> path = de_bruijn::Path<EdgeId>()) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
 	WriteToFile(DE_BRUIJN_DATA_FOLDER + file_name, graph_name, g, path);
-	INFO("Graphraph '" << graph_name << "' written to file " << file_name);
+	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
 
 Path FindGenomePath(const string &genome, const EdgeGraph& g,
@@ -96,18 +96,17 @@ void RemoveBulges(EdgeGraph &g, Index &index, const string& genome,
 
 	ProduceInfo(g, index, genome, dotFileName, "no_bulge_graph");
 }
-typedef StrobeReader<2, Read, ireadstream> Reader;
-typedef RCReaderWrapper<Reader> RCStream;
-typedef SimpleReaderWrapper<RCStream> SimpleRCStream;
-void EdgeGraphTool(Reader& reader, const string& genome) {
-	INFO("Edge graph construction tool started");
 
-	RCStream rcStream(reader);
+template <class ReadStream>
+void EdgeGraphTool(ReadStream& stream, const string& genome) {
+	INFO("Edge graph construction tool started");
 
 	DeBruijn debruijn;
 
-	SimpleRCStream unitedStream(rcStream);
-	ConstructUncondensedGraph<SimpleRCStream> (debruijn, unitedStream);
+	typedef SimpleReaderWrapper<ReadStream> SimpleWrapper;
+
+	SimpleWrapper unitedStream(stream);
+	ConstructUncondensedGraph<SimpleWrapper> (debruijn, unitedStream);
 
 	//	debruijn.show(genome);
 
@@ -116,18 +115,19 @@ void EdgeGraphTool(Reader& reader, const string& genome) {
 	EdgeHashRenewer<K + 1, EdgeGraph> index_handler(g, index);
 	g.AddActionHandler(&index_handler);
 
-	reader.reset();
-	CondenseGraph<RCStream> (debruijn, g, index, rcStream, genome);
 	de_bruijn::CoverageHandler<EdgeGraph> coverageHandler(g);
 	g.AddActionHandler(&coverageHandler);
 
-//	reader.reset();
-//	de_bruijn::PairedInfoIndex<EdgeGraph> paired_info_index(g, I);
-//	paired_info_index.FillIndex<K, RCStream>(index, rcStream);
+	stream.reset();
+	CondenseGraph<ReadStream> (debruijn, g, index, stream, genome);
 
-	ClipTips(g, index, genome, "tips_clipped.dot");
+	stream.reset();
+	de_bruijn::PairedInfoIndex<EdgeGraph> paired_info_index(g, I);
+	paired_info_index.FillIndex<K, ReadStream>(index, stream);
 
-	RemoveBulges(g, index, genome, "bulges_removed.dot");
+//	ClipTips(g, index, genome, "tips_clipped.dot");
+//
+//	RemoveBulges(g, index, genome, "bulges_removed.dot");
 
 	g.RemoveActionHandler(&index_handler);
 	g.RemoveActionHandler(&coverageHandler);
