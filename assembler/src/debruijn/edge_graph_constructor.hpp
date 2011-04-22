@@ -16,41 +16,6 @@ using de_bruijn::SimpleIndex;
 using de_bruijn::GraphActionHandler;
 using de_bruijn::EdgeHashRenewer;
 
-//template<size_t kmer_size_>
-//class GraphConstructor {
-//public:
-//	typedef SimpleIndex<kmer_size_ + 1, EdgeId> Index;
-//protected:
-//	typedef Seq<kmer_size_> Kmer;
-//	typedef Seq<kmer_size_ + 1> KPlusOneMer;
-//
-//	EdgeGraph &g_;
-//	Index &h_;
-////	GraphActionHandler<EdgeGraph> *renewer_;
-//
-//	pair<Vertex*, int> GetPosition(KPlusOneMer k) {
-//		return h_->get(k);
-//	}
-//
-//	GraphConstructor() {
-////		h_ = new Index();
-////		g_ = new EdgeGraph(kmer_size_);
-////		renewer_ = new EdgeHashRenewer<kmer_size_ + 1, EdgeGraph> (*g_, h_);
-////		g_->AddActionHandler(renewer_);
-//	}
-//
-//public:
-//	virtual void ConstructGraph(EdgeGraph &g, Index &h) {
-////		g_->RemoveActionHandler(renewer_);
-////		delete renewer_;
-//		g = g_;
-//		h = h_;
-//	}
-//
-//	virtual ~GraphConstructor() {
-//	}
-//};
-
 template<size_t kmer_size_>
 class CondenseConstructor {
 private:
