@@ -1001,12 +1001,44 @@ bool intersectible(Sequence *left, Sequence *right){
 		rightStr = right->Subseq(0, 350).str();
 	else
 		rightStr = right->str();
-	pair<int, pair<int,int>> tmp = maxCommonSubstring(leftStr, rightStr);
+	pair<int, pair<int,int> > tmp = maxCommonSubstring(leftStr, rightStr);
 	int border = min(left->size()/2, right->size()/2);
 	if (border > 175) border = 175;
 	if (tmp.first > max(l, border)) return true;
 	else return false;
 
+}
+void dfs (int **table, int color, int * leftcolor, int* rightcolor, int len, int pos) {
+	forn(j, len) {
+		if (table[pos][j] && !(rightcolor[j])) {
+			rightcolor[j] = color;
+			forn(i, len)
+				if (i != pos && !leftcolor[i]) {
+					leftcolor[i] = color;
+					dfs(table,color,leftcolor,rightcolor,len,pos);
+				}
+		}
+	}
+}
+void doSplit(PairedGraph &graph, edgePairsMap &EdgePairs) {
+	int table[MAX_DEGREE][MAX_DEGREE];
+	int leftcolor [MAX_DEGREE];
+	int rightcolor [MAX_DEGREE];
+	for(edgePairsMap::iterator iter = EdgePairs.begin(); iter != EdgePairs.end(); iter++) {
+		int curVId = iter->first;
+		int len = iter->second.size();
+		forn(i, len) {
+			forn(j, len)
+				table[i][j] = 0;
+			leftcolor[i] = 0;
+			rightcolor[i] = 0;
+		}
+		int color = 0;
+		forn(i, len) {
+			if(!leftcolor[i])
+				dfs(table, color, leftcolor, rightcolor, len, i);
+		}
+	}
 }
 
 void SplitByLowers(PairedGraph &graph){
@@ -1025,11 +1057,11 @@ void SplitByLowers(PairedGraph &graph){
 				}
 			}
 		}
-	//	if (tmpVect.size()>0)
+		if (tmpVect.size() > 1)
 			EdgePairs.insert(make_pair(CurVert,tmpVect));
 	}
 	cerr<<"Start Spliting"<<endl;
 	SplitVertecesByEdgeConnections(graph, EdgePairs, false);
 	cerr<<"End Spliting"<<endl;
-
 }
+
