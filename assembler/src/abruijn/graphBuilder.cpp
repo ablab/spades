@@ -12,11 +12,10 @@
 #include "strobe_reader.hpp"
 #include "logging.hpp"
 
-LOGGER("a.graphBuilder");
-
 using namespace std;
 using namespace __gnu_cxx;
-using namespace abruijn;
+
+namespace abruijn {
 
 //typedef hash_map< Sequence, int, HashSym<Sequence>, EqSym<Sequence> > SeqCount;
 //SeqCount seqCount;
@@ -32,9 +31,8 @@ map<hash_t, set<hash_t> > tip_extensions;
 
 abruijn::Graph graph;
 
-LoggerPtr logger(Logger::getLogger("a.graphBuilder"));
 HashSym<Sequence> hashSym;
-hash_t ha[MPSIZE - K + 1];
+vector<hash_t> ha;
 hash_t hbest[HTAKE];
 
 bool isTrusted(hash_t hash) {
@@ -46,11 +44,12 @@ bool isTrusted(hash_t hash) {
  * and puts them into earmarked_hashes
  */
 void findMinimizers(Sequence s) {
+	ha.reserve(s.size());
 	hashSym.kmers(s, ha);
 	for (size_t i = 0; i < HTAKE; i++) {
 		hbest[i] = maxHash;
 	}
-	for (size_t i = 0; i + K <= MPSIZE; i++) {
+	for (size_t i = 0; i + K <= s.size(); i++) {
 		hash_t hi = ha[i];
 		if (!isTrusted(hi)) {
 			continue;
@@ -80,7 +79,7 @@ void findSecondMinimizer(Sequence s) {
 	hashSym.kmers(s, ha);
 	hash_t he = maxHash;
 	hash_t hb = maxHash;
-	for (size_t i = 0; i + K <= MPSIZE; i++) {
+	for (size_t i = 0; i + K <= s.size(); i++) {
 		hash_t hi = ha[i];
 		if (earmarked_hashes.count(hi)) {
 			if (he == maxHash) {
@@ -110,7 +109,7 @@ bool LesserK(const Sequence& s, size_t i) {
 void revealTips(Sequence s) {
 	hashSym.kmers(s, ha);
 	vector<int> index;
-	for (size_t i = 0; i + K <= MPSIZE; i++) {
+	for (size_t i = 0; i + K <= s.size(); i++) {
 		hash_t hi = ha[i];
 		if (earmarked_hashes.count(hi)) {
 			index.push_back(i);
@@ -131,7 +130,7 @@ void revealTips(Sequence s) {
 void findTipExtensions(Sequence s) {
 	hashSym.kmers(s, ha);
 	vector<int> index;
-	for (size_t i = 0; i + K <= MPSIZE; i++) {
+	for (size_t i = 0; i + K <= s.size(); i++) {
 		hash_t hi = ha[i];
 		if (tips.count(hi)) {
 			index.push_back(i);
@@ -148,7 +147,7 @@ void findTipExtensions(Sequence s) {
 			high = index[i];
 		} else {
 			low = index[i] + 1;
-			high = MPSIZE + 1 - K;
+			high = s.size() + 1 - K;
 		}
 		int x = 0;
 		for (size_t j = low; j < high; j++) {
@@ -168,7 +167,7 @@ void findTipExtensions(Sequence s) {
 void lookRight(Sequence s) {
 	hashSym.kmers(s, ha);
 	vector<size_t> index;
-	for (size_t i = 0; i + K <= MPSIZE; i++) {
+	for (size_t i = 0; i + K <= s.size(); i++) {
 		hash_t hi = ha[i];
 		if (has_right.count(hi)) {
 			index.push_back(i);
@@ -178,7 +177,7 @@ void lookRight(Sequence s) {
 		return;
 	}
 	size_t low = 0;
-	size_t high = MPSIZE - K;
+	size_t high = s.size() - K;
 	while (!earmarked_hashes.count(ha[low])) low++;
 	while (!earmarked_hashes.count(ha[high])) high--;
 	for (size_t i = 0; i < index.size(); ++i) {
@@ -201,7 +200,7 @@ void addToGraph(Sequence s) {
 	vector<abruijn::Vertex*> vs;
 	vector<size_t> index;
 	hashSym.kmers(s, ha);
-	for (size_t i = 0; i + K <= MPSIZE; i++) {
+	for (size_t i = 0; i + K <= s.size(); i++) {
 		if (earmarked_hashes.find(ha[i]) != earmarked_hashes.end()) {
 			vs.push_back(graph.getVertex(s.Subseq(i, i + K)));
 			index.push_back(i);
@@ -217,13 +216,21 @@ void GraphBuilder::build() {
 //	vector<Read> *v1 = ireadstream::readAll(file_names[0], CUT);
 
 	StrobeReader<2, Read, ireadstream> sr(file_names);
-	SimpleReaderWrapper<2, Read, ireadstream> srw(sr);
+	SimpleReaderWrapper<StrobeReader<2, Read, ireadstream> > srw(sr);
 	vector<Read> v;
 	Read r;
+#ifdef CUT
+	size_t cut = CUT;
+	size_t cut2 = cut2;
+#endif
+#ifndef CUT
+	size_t cut = -1;
+	size_t cut2 = -1;
+#endif
 
 	INFO("===== Finding " << HTAKE << " minimizers in each read... =====");
 	srw.reset();
-	for (size_t i = 0; !srw.eof() && i < 2 * CUT; ++i) {
+	for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
 		srw >> r;
 		findMinimizers(r.getSequence());
 		VERBOSE(i, " single reads");
@@ -233,7 +240,7 @@ void GraphBuilder::build() {
 //	if (HTAKE == 1) {
 //		INFO("===== Finding second minimizers... =====");
 //		srw.reset();
-//		for (size_t i = 0; !srw.eof() && i < 2 * CUT; ++i) {
+//		for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
 //			srw >> r;
 //			findSecondMinimizer(r.getSequence());
 //			VERBOSE(i, " single reads");
@@ -249,7 +256,7 @@ for(;;) {
 
 	INFO("===== Revealing tips... =====");
 	srw.reset();
-	for (size_t i = 0; !srw.eof() && i < 2 * CUT; ++i) {
+	for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
 		srw >> r;
 		revealTips(r.getSequence());
 		VERBOSE(i, " single reads");
@@ -265,7 +272,7 @@ for(;;) {
 
 	INFO("===== Finding tip extensions... =====");
 	srw.reset();
-	for (size_t i = 0; !srw.eof() && i < 2 * CUT; ++i) {
+	for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
 		srw >> r;
 		findTipExtensions(r.getSequence());
 		VERBOSE(i, " single reads");
@@ -274,13 +281,11 @@ for(;;) {
 
 	INFO("===== Looking to the right... =====");
 	srw.reset();
-	for (size_t i = 0; !srw.eof() && i < 2 * CUT; ++i) {
+	for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
 		srw >> r;
 		lookRight(r.getSequence());
 		VERBOSE(i, " single reads");
 	}
-	INFO("Done: " << has_right.size() << " TODO");
-
 	for (map<hash_t, set<hash_t> >::iterator it = tip_extensions.begin(); it != tip_extensions.end(); ++it) {
 		bool ok = false;
 		hash_t found = maxHash;
@@ -306,7 +311,7 @@ for(;;) {
 
 	INFO("Adding reads to graph as paths...");
 	srw.reset();
-	for (size_t i = 0; !srw.eof() && i < 2 * CUT; ++i) {
+	for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
 		srw >> r;
 		addToGraph(r.getSequence());
 		VERBOSE(i, " single reads");
@@ -323,4 +328,6 @@ for(;;) {
 	ofstream outputStream((OUTPUT_FILES + ".dot").c_str(), ios::out);
 	graph.output(outputStream);
 	outputStream.close();
+}
+
 }

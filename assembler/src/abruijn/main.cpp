@@ -4,12 +4,14 @@
 #include "graphBuilder.hpp"
 #include "logging.hpp"
 
+using namespace abruijn;
+
 LOGGER("a");
 
 int main() {
 	INFO("Hello, A Bruijn!");
 	GraphBuilder().build();
 
-//	ConstructDeBruijnGraphSimplified ( "TAAACGAAAC", 6, 3 );
+//	ConstructDeBruijnGraphSimplified ( "ATGCATTGCACTGCA", 6, 3 );
 	return 0;
 }

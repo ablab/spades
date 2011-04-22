@@ -9,25 +9,43 @@
 #include <fstream>
 
 using namespace std;
+using namespace hashing;
 
 typedef map < string, unsigned > CKMerSet;
 typedef map < pair < string, string >, unsigned > CWeightedEdgeSet;
 
 long special_lexicographic3 ( string const & s )
 {
+  //cout << endl << s;
   assert ( s.size () == 3 );
-  if ( s == "TAA" ) return 1;
-  if ( s == "ACG" ) return 2;
-  if ( s == "CGA" ) return 3;
-  if ( s == "GAA" ) return 4;
-  if ( s == "CTA" ) return 5;
-  if ( s == "ACT" ) return 6;
-  if ( s == "AAA" ) return 7;
-  if ( s == "AAC" ) return 8;
+  if ( s == "ATG" ) return 1;
+  if ( s == "CAT" ) return 2;
+  if ( s == "TTG" ) return 3;
+  if ( s == "CAC" ) return 4;
+  if ( s == "CTG" ) return 5;
+  if ( s == "CAA" ) return 60;
+
+
+
+  if ( s == "CAG" ) return 25;
+  if ( s == "ACG" ) return 26;
+  if ( s == "ACT" ) return 27;
+  if ( s == "CGA" ) return 28;
+  if ( s == "GAA" ) return 29;
+  if ( s == "CTA" ) return 30;
+  if ( s == "ATT" ) return 33;
+  if ( s == "AAT" ) return 33;
+
+
+  if ( s == "AAA" ) return 40;
+  if ( s == "AAC" ) return 48;
+
+  if ( s == "TGC" ) return 100;
+  if ( s == "GCA" ) return 200;
 
   assert ( false );
 
-  return 10;
+  return 100;
 }
 
 long standard_lexicographic3 ( string const & s )
@@ -43,9 +61,9 @@ long standard_lexicographic3 ( string const & s )
   if ( s == "GAA" ) return 7;
   if ( s == "TAA" ) return 8;
 
-  assert ( false );
+  //assert ( false );
 
-  return 10;
+  return 100;
 }
 
 Hash < string > h;
@@ -53,7 +71,7 @@ Hash < string > h;
 long my_hash ( string const & s )
 {
   //return h ( s );
-  return standard_lexicographic3 ( s );
+  return special_lexicographic3 ( s );
 }
 
 

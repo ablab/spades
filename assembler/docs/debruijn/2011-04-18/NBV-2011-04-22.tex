@@ -65,7 +65,7 @@ Also old \texttt{DeBruijn} graph isn't waste of memory. From now it acts as the 
  
 \section{Sequences (Reads) Mapping}
 
-After graph construction and simplification all original reads are mapper to the edges (path) of resulting \texttt{EdgeGraph} using \texttt{SimpleReadThreader::ThreadRead()} (\texttt{src/debruijn/utils.hpp}). By that we calculate \texttt{Edge::coverage} for all edges in \texttt{EdgeGraph}.
+After graph construction and simplification all original reads are mapped to the edges (path) of resulting \texttt{EdgeGraph} using \texttt{SimpleSequenceMaper::MapSequence()} (\texttt{src/debruijn/utils.hpp}). By that we calculate \texttt{Edge::coverage} for all edges in \texttt{EdgeGraph}.
 
 \textit{Comment: Now this function uses \texttt{SimpleIndex} from \texttt{utils.hpp}, but it can be substituted by \texttt{DeBruijn} later.} 
 
@@ -78,6 +78,8 @@ After graph construction and simplification all original reads are mapper to the
 \end{itemize}
 They are used for all graph operation below (e.g. tips clipping and bulges removal). \\
 
+Comparator is a less-functor (class with \texttt{operator()}) for edges/vertices. It compares two objects $e_1$ and $e_2$ and returns true iff $e_1 < e_2$. E.g. \texttt{std::less<EdgeId>}. \\
+
 This iterators are smart not because they have such class-name, but because edges/vertices insert/delete operators don't invalidate them. Hence this iterators can be used to traverse the graph while dynamically change it (e.g. for tips clipping and bulges removal). \\
 
 Smart iterators are template-classes, so they work with any \texttt{Graph} that supports some operations (\textit{TODO: write which ones!}) and with any \texttt{Comparator} (\texttt{less} for edges/vertices for ordering traversal, e.g. from lower coverage to higher). \\
@@ -86,7 +88,7 @@ This iterators use standard \texttt{std::set} to store, order and update edges/v
 
 \section{Tips Clipping (TC)}
 
-Using \texttt{SmartEdgeIterator} we traverse graph from smaller edge-length to bigger (\texttt{src/debruijn/tip\_clipper.hpp}). We delete edge (tip) and his reverse-complementary edge if:
+Using \texttt{SmartEdgeIterator} we traverse graph from smaller edge-length to bigger (\texttt{src/debruijn/tip\_clipper.hpp}). We delete edge (tip) from the graph iff:
 \begin{itemize}
 \item It's end-vertex have no outgoing edges. We can skip check of start-vertex here since we traverse both straight edge and it's reverse-complementary edge during TC. 
 \item It has length $<$ \texttt{DEFAULT\_MAX\_TIP\_LENGTH} (50 now).
@@ -94,9 +96,11 @@ Using \texttt{SmartEdgeIterator} we traverse graph from smaller edge-length to b
 \item It has relative coverage $<$ \texttt{DEFAULT\_RELATIVE\_COVERAGE\_BOUND} (2.0 now). It means that tip's coverage is at most \texttt{DEFAULT\_RELATIVE\_COVERAGE\_BOUND} times (max coverage over all edges outgoing from the same vertex).
 \end{itemize} \vspace{0.5 cm}
 
-We condense (join) new simple path after the tip was clipped only if:
+To delete tip we ask graph to delete this edge. Default graph implementation additionally deletes its end-vertex and its reverse-complementary edge. \\
+
+We condense (join) new simple path after the tip was clipped only iff:
 \begin{itemize}
-\item There is only one more edge outgoing from the same start-vertex.
+\item There is only one more edge outgoing from the start-vertex of removed tip.
 \item This only edge is also a tip.
 \end{itemize}
 It's required for proper clipping of this another tip. \\
@@ -107,13 +111,14 @@ Any other case of condensing is not necessary to be handled on-line during the T
 
 \section{Bulges Removal (BR)}
 
-Method \texttt{BulgeRemover::RemoveBulges()} (from \texttt{src/debruijn/bulge\_remover.hpp}) walks through the graph and removes bulges. The edge is bulge if:
+Method \texttt{BulgeRemover::RemoveBulges()} (from \texttt{src/debruijn/bulge\_remover.hpp}) walks through the graph and removes bulges. The bulge is edge (not path!) with:
 \begin{itemize}
-\item It's edge (not path!).
 \item Difference between this edge's length and the length of other alternative path (between it's start-vertex and end-vertex) is less then $\delta$. Now $\delta = 3$ (hardcoded. oh... should be as parameter).
-\item It's coverage is less then $1.1$ * (alternative path's coverage). (hardcoded value too).
-\item It's coverage is some fixed coverage \textit{(TODO: isn't in code now)}.
+\item Coverage less then $1.1$ * (alternative path's coverage). (hardcoded value too).
+\item Coverage less then some fixed coverage \textit{(TODO: isn't in code now)}.
 \end{itemize} \vspace{0.5 cm}
+
+\textit{Comment: define alternative path.} \\
 
 After every bulge removal all new simple pathes are condensed (they can be formed only near start-vertex and end-vertex, not deeply inside alternative path). \\
 
@@ -127,7 +132,7 @@ After every bulge removal all new simple pathes are condensed (they can be forme
 
 \section{Evaluation}
 
-All Quake's filtered reads were filtered to first $100$ kilo-basepairs of E.Coli. I.e. we try to assemble only first $100$kbp of E.Coli (for simplicity). Also, for evaluation runs we use only 1st read from every mate pair. It's total of $306174$ error-corrected reads with $100$ or less basepairs each.
+All Quake-filtered reads were cropped to first $100$ kilo-basepairs of E.Coli. I.e. we try to assemble only first $100$kbp of E.Coli (for simplicity). Also, for evaluation runs we use only 1st read from every mate pair. It's total of $306174$ error-corrected reads with $100$ or less basepairs each.
 
 \subsection{Log 100k}
 (first column is milliseconds from the starting time, $\approx 5.6$ minutes total): \\
