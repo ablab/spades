@@ -499,7 +499,7 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 		int good = 1;
 		for(int j = i + 1; j < tmp_res.size(); j++){
 			pair<int, pair<int, int> > comp_res = maxCommonSubstring(tmp_res[i], tmp_res[j]);
-			if (comp_res.fi > l - 1) {
+			if (comp_res.fi > 2*l - 1) {
 				good = 0;
 				DEBUG(" FOUND intersection length" << comp_res.fi << " on second position " << comp_res.se.se <<" " << tmp_res[i] <<" "<< tmp_res[j]);
 				tmp_res[j] = tmp_res[j].substr(comp_res.se.se, comp_res.fi);
@@ -706,13 +706,9 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 	int count = 0;
 	char *upperNuclRead = new char[readLength + 2];
 	char *lowerNuclRead = new char[readLength + 2];
-	char *upperRead = new char[readLength + 2];
-	char *lowerRead = new char[readLength + 2];
 	char* fictiveRead = new char[readLength + 2];
 
-
 	forn(i, readLength)
-
 		fictiveRead[i] = 'G';
 	fictiveRead[readLength] = 0;
 
@@ -743,7 +739,7 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 //					reverseCompliment(upperNuclRead, lowerNuclRead);
 //						} else
 //				{
-					reverseCompliment(upperNuclRead, lowerNuclRead);
+				reverseCompliment(upperNuclRead, lowerNuclRead);
 //				}
 			}
 
@@ -937,6 +933,21 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 	return 0;
 }
 
+void constructReversedReadPairs(string inputFile, string outputFile) {
+	FILE* inFile = fopen(inputFile.c_str(), "r");
+	FILE* outFile = fopen(outputFile.c_str(), "w");
+	int count = 0;
+	char *upperNuclRead = new char[readLength + 2];
+	char *lowerNuclRead = new char[readLength + 2];
+	while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
+		reverseCompliment(upperNuclRead, lowerNuclRead);
+		if (!(count & (1024*64 - 1)))
+			INFO("read number "<<count<<" reverted"<<endl);
+		count++;
+		fprintf(outFile, "%s %s\n", upperNuclRead, lowerNuclRead);
+	}
+
+}
 
 
 

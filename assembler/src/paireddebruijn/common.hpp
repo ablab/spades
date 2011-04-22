@@ -28,6 +28,7 @@
 #define verticesMap  std::tr1::unordered_map<ll, vector<VertexPrototype *> >
 #define longEdgesMap  std::tr1::unordered_map<int, Edge*>
 
+
 #define otherDirection(direction) (direction == LEFT ? RIGHT : LEFT)
 #define RIGHT 1
 #define LEFT -1
@@ -37,13 +38,18 @@
 
 //LOGGER("paireddebruijn.common");
 #define MAX_READ_LENGTH 120
-#define MAX_VERT_NUMBER 500000
-#define MAX_DEGREE 50
+#define MAX_VERT_NUMBER 300000
+#define MAX_DEGREE 150
 
 #define suffix "_const_d"
 
 
 using namespace std;
+
+typedef map<int, vector<pair<int, int>>> edgePairsMap;
+
+
+
 //const string parsed_reads = "data/reads_const_d.txt";
 //const string parsed_reads = "data/filtered_reads";
 /*

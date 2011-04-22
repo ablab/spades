@@ -68,6 +68,12 @@ void run() {
 			graph.RebuildVertexMap();
 			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 		}
+		SplitByLowers(graph);
+		outputLongEdges(graph.longEdges, graph,
+				folder+"afterSplit.dot");
+		outputLongEdgesThroughGenome(graph,
+						folder+"afterSplit_g.dot");
+
 //		expandDefinite(graph.longEdges, graph, graph.VertexCount, false);
 		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
 		outputLongEdges(graph.longEdges, graph,
@@ -177,6 +183,7 @@ void generate() {
 }
 
 int main() {
+
 	short My_short;
 	int My_int;
 	long My_long;
@@ -212,6 +219,8 @@ int main() {
 //	assert(0);
 
 	init();
+//	constructReversedReadPairs(parsed_reads, folder +"reverted_reads.txt");
+//	assert(0);
 	run();
 	return 0;
 }

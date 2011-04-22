@@ -249,6 +249,15 @@ void PairedGraph::removeEdgeVertexAdjacency(int vertex, Edge *edge,
  */
 void PairedGraph::addEdgeVertexAdjacency(int vertex, Edge *edge, int direction) {
 	int index = directionToIndex(direction);
+	forn(checkId, degrees[vertex][index]){
+		if (edgeIds[vertex][checkId][index] == edge->EdgeId){
+			if (direction == RIGHT)
+				edge->FromVertex = vertex;
+			else
+				edge->ToVertex = vertex;
+			return;
+		}
+	}
 	cerr << "add vertex adjacency" << endl;
 	edgeIds[vertex][degrees[vertex][index]][index] = edge->EdgeId;
 	degrees[vertex][index]++;
@@ -701,3 +710,6 @@ bool EdgeIterator::operator!=(const EdgeIterator &other) {
 }
 
 }
+
+
+
