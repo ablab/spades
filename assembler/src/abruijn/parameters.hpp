@@ -53,6 +53,6 @@
 #define HTAKE 1
 
 // ===== Debug parameters ===== //
-#define VERBOSE(n, message) if ((n & 8191) == 8191) INFO(n << message)
+#define VERBOSE(n, message) if ((n + 1) % 20000 == 0) INFO(n << message)
 
 #endif /* PARAMETERS_H_ */
