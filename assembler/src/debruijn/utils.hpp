@@ -16,8 +16,9 @@ template<size_t kmer_size_, typename ElementId>
 class SimpleIndex {
 private:
 	typedef Seq<kmer_size_> Kmer;
-	typedef tr1::unordered_map<Kmer, pair<ElementId, size_t> ,
-			typename Kmer::hash, typename Kmer::equal_to> hmap;
+	typedef pair<ElementId, size_t> Value;
+	typedef tr1::unordered_map<Kmer, Value,
+			typename Kmer::hash, typename Kmer::equal_to> hmap; // size_t is offset in sequence
 	typedef typename hmap::iterator map_iter;
 	typedef typename hmap::const_iterator const_map_iter;
 	//	typedef __gnu_cxx::hash_map<const Kmer, pair<Vertex*, size_t> , myhash, Kmer::equal_to> hmap;
@@ -31,19 +32,20 @@ public:
 	}
 
 	void put(Kmer k, ElementId id, size_t s) {
-		map_iter hi = h_.find(k);
+		h_.insert(make_pair(k, make_pair(id,s)));
+		/*map_iter hi = h_.find(k);
 		if (hi == h_.end()) { // put new element
 			h_[k] = make_pair(id, s);
 		} else { // change existing element
 			hi->second = make_pair(id, s);
-		}
+		}*/
 	}
 
 	bool contains(Kmer k) const {
 		return h_.find(k) != h_.end();
 	}
 
-	pair<ElementId, size_t> get(const Kmer &k) const {
+	const pair<ElementId, size_t>& get(const Kmer &k) const {
 		const_map_iter hi = h_.find(k);
 		assert(hi != h_.end()); // contains
 		//DEBUG("Getting position of k-mer '" + k.str() + "' Position is " << hi->second.second << " at vertex'"<< hi->second.first->nucls().str() << "'")
@@ -52,8 +54,8 @@ public:
 
 	bool deleteIfEqual(const Kmer &k, ElementId id) {
 		map_iter hi = h_.find(k);
-		if (hi != h_.end() && (*hi).second.first == id) {
-			h_.erase(k);
+		if (hi != h_.end() && hi->second.first == id) {
+			h_.erase(hi);
 			return true;
 		}
 		return false;
@@ -161,7 +163,6 @@ public:
 	}
 
 	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
-		cout << "pairedMerge" << endl;
 		EdgeId rce = graph_.Complement(newEdge);
 		handler_->HandleMerge(oldEdges, newEdge);
 		if (newEdge != rce) {
