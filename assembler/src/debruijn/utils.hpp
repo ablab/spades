@@ -31,7 +31,7 @@ public:
 		//		graph.AddActionHandler()
 	}
 
-	void put(Kmer k, ElementId id, size_t s) {
+	void put(const Kmer &k, ElementId id, size_t s) {
 		h_.insert(make_pair(k, make_pair(id,s)));
 		/*map_iter hi = h_.find(k);
 		if (hi == h_.end()) { // put new element
@@ -41,7 +41,7 @@ public:
 		}*/
 	}
 
-	bool contains(Kmer k) const {
+	bool contains(const Kmer &k) const {
 		return h_.find(k) != h_.end();
 	}
 

@@ -77,7 +77,7 @@ private:
 		DEBUG("Prev Count of end " << origin_.IncomingEdgeCount(end));
 		if (origin_.IncomingEdgeCount(end) == 1 && origin_.OutgoingEdgeCount(
 				end) == 1) {
-			KPlusOneMer next_edge = *(origin_.OutgoingEdges(end).first);
+			KPlusOneMer next_edge = *(origin_.OutgoingEdges(end));
 			if (edge != !next_edge) {
 				edge = next_edge;
 				return true;
@@ -149,21 +149,15 @@ public:
 	}
 
 	virtual void ConstructGraph(EdgeGraph &graph, Index &index) {
-		for (kmer_iterator it = origin_.begin(), end = origin_.end(); it != end; it++) {
-			Kmer kmer = *it;
-			pair<edge_iterator, edge_iterator> edges = origin_.OutgoingEdges(
-					kmer);
-			for (edge_iterator it = edges.first; it != edges.second; ++it) {
+		for (kmer_iterator it0 = origin_.begin(), end = origin_.end(); it0 != end; it0++) {
+			Kmer kmer = *it0;
+			for (edge_iterator it = origin_.OutgoingEdges(kmer); !it.isEnd(); ++it) {
 				KPlusOneMer edge = *it;
 				if (!index.contains(edge)) {
 					Sequence edge_sequence = ConstructSequenceWithEdge(edge);
-					//cout << edge_sequence << endl;
-					VertexId start = FindVertexMaybeMissing(graph, index,
-							edge_sequence.start<kmer_size_> ());
-					VertexId end = FindVertexMaybeMissing(graph, index,
-							edge_sequence.end<kmer_size_> ());
+					VertexId start = FindVertexMaybeMissing(graph, index, edge_sequence.start<kmer_size_> ());
+					VertexId end = FindVertexMaybeMissing(graph, index, edge_sequence.end<kmer_size_> ());
 					graph.AddEdge(start, end, edge_sequence);
-					//cout << edge << endl;
 					assert(index.contains(edge));
 				}
 			}

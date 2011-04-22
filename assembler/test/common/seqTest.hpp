@@ -99,8 +99,10 @@ void TestSeqStartNull() {
 }
 
 void TestSeqAddSymbolForNullValue() {
-        Seq<1> s("");
-	ASSERT_EQUAL(Seq<1>("A"), s << 'A');
+    Seq<1> s1("G");
+    Seq<1> s2 = (s1 << 'A');
+    Seq<1> s3("A");
+	ASSERT_EQUAL(s3.str(), s2.str());
 }
 
 void TestSeqEnd() {
@@ -122,7 +124,7 @@ void TestSeqComplex() {
 
 void TestSeqFromCharArray() {
 	std::string s = "ACGTACGTAC";
-	ASSERT_EQUAL(Seq<10>(s.c_str()).str(), "ACGTACGTAC");
+	ASSERT_EQUAL("ACGTACGTAC", Seq<10>(s.c_str()).str());
 }
 
 void TestSeqReverseComplement() {
@@ -142,6 +144,15 @@ void Test16() {
 void Test16_2() {
 	Seq<16> s("TTTTTTTTTTTTTTTT");
 	ASSERT_EQUAL(Seq<16>("TTTTTTTTTTTTTTTA"), s << 'A');
+}
+
+void TestFirstLast() {
+	Seq<7> s1("ACGTACT");
+	ASSERT_EQUAL(0, s1.first());
+	ASSERT_EQUAL(3, s1.last());
+	Seq<7> s2("TTTTTTT");
+	ASSERT_EQUAL(3, s2.first());
+	ASSERT_EQUAL(3, s2.last());
 }
 
 cute::suite SeqSuite(){
@@ -165,6 +176,7 @@ cute::suite SeqSuite(){
 	s.push_back(CUTE(TestSeqComplex));
 	s.push_back(CUTE(Test16));
 	s.push_back(CUTE(Test16_2));
+	s.push_back(CUTE(TestFirstLast));
 	s.push_back(CUTE(TestSeqNull));
 	s.push_back(CUTE(TestSeqEndNull));
 	s.push_back(CUTE(TestSeqStartNull));

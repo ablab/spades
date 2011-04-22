@@ -221,7 +221,6 @@ public:
 		}
 		assert(is_dignucl(c));
 		//todo optimize!!!
-
 		return Seq<size_ + 1, T>(nucl(c) + str());
 	}
 
@@ -296,6 +295,14 @@ public:
 	Seq<size2_,T2> end() const {
 		assert(size2_ <= size_);
 		return Seq<size2_,T2> (*this, size_ - size2_);
+	}
+
+	char last() const {
+		return operator[](size_ - 1);
+	}
+
+	char first() const {
+		return operator[](0);
 	}
 
 	//	template<size_t HASH_SEED>

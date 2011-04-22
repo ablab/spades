@@ -41,7 +41,7 @@ void TestAddEdge() {
 	}
 	ASSERT_EQUAL(3, c);
 	ASSERT_EQUAL(2, g.OutgoingEdgeCount(seq1));
-	DeBruijn<5>::edge_iterator n_it = g.OutgoingEdges(seq1).first;
+	DeBruijn<5>::edge_iterator n_it = g.OutgoingEdges(seq1);
 	ASSERT_EQUAL(seq3, (*n_it).end<5>());
 	++n_it;
 	ASSERT_EQUAL(seq2, (*n_it).end<5>());
@@ -61,7 +61,7 @@ void TestAddEdge2() {
 	}
 	ASSERT_EQUAL(3, c);
 	ASSERT_EQUAL(2, g.IncomingEdgeCount(seq3));
-	DeBruijn<5>::edge_iterator n_it = g.IncomingEdges(seq3).first;
+	DeBruijn<5>::edge_iterator n_it = g.IncomingEdges(seq3);
 	ASSERT_EQUAL(seq1, (*n_it).start<5>());
 	++n_it;
 	ASSERT_EQUAL(seq2, (*n_it).start<5>());
@@ -83,13 +83,13 @@ void TestSimpleConstruction() {
 	}
 	ASSERT_EQUAL(26, c);
 	ASSERT_EQUAL(2, g.OutgoingEdgeCount(seq));
-	DeBruijn<5>::edge_iterator n_it = g.OutgoingEdges(seq).first;
+	DeBruijn<5>::edge_iterator n_it = g.OutgoingEdges(seq);
 	ASSERT_EQUAL(Seq<5>("GAAAA"), (*n_it).end<5>());
 	++n_it;
 	ASSERT_EQUAL(Seq<5>("GAAAC"), (*n_it).end<5>());
 
 	ASSERT_EQUAL(2, g.IncomingEdgeCount(seq2));
-	DeBruijn<5>::edge_iterator n_it2 = g.IncomingEdges(seq2).first;
+	DeBruijn<5>::edge_iterator n_it2 = g.IncomingEdges(seq2);
 	ASSERT(Seq<6>("ACACAC") == *n_it2);
 	++n_it2;
 	ASSERT_EQUAL(Seq<6>("CCACAC"), *n_it2);

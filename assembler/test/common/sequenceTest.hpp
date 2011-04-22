@@ -62,7 +62,7 @@ void TestSequenceRefCount2() {
 
 void TestSequenceMemory() {
 	time_t now = time(NULL);
-	int N = 100000;
+	int N = 1000;
 	int SIZE = 300;
 	vector<Sequence*> vs(N);
 	double vm1, rss1;
@@ -97,7 +97,7 @@ cute::suite SequenceSuite(){
 	s.push_back(CUTE(TestSequenceRefCount));
 	s.push_back(CUTE(TestSequenceRefCount2));
 	s.push_back(CUTE(TestSequenceNullValue));
-//	s.push_back(CUTE(TestSequenceMemory));
+	s.push_back(CUTE(TestSequenceMemory));
 	return s;
 }
 

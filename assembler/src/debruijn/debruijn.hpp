@@ -14,6 +14,8 @@
 #include <map>
 #include <vector>
 #include <tr1/unordered_map>
+#include <numeric>
+#include <bitset>
 #include "read.hpp"
 #include "sequence.hpp"
 
@@ -26,13 +28,34 @@ private:
 	typedef Seq<size_ + 1> KPlusOneMer;
 
 	class Data {
-		bool out_edges_[4];
-		bool in_edges_[4];
-		friend class DeBruijn;
+	private:
+		unsigned char edges_; // 0123 bits are outgoing acgt edges, 4567 bits are incoming acgt edges;
 	public:
-		Data() {
-			std::fill_n(out_edges_, 4, false);
-			std::fill_n(in_edges_, 4, false);
+		Data() : edges_(0) {
+		}
+		void addEdgeTo(const Kmer &kmer) {
+			edges_ |=  1 << kmer.last();
+		}
+		void addEdgeFrom(const Kmer &kmer) {
+			edges_ |= 16 << kmer.first();
+		}
+		bool hasEdgeTo(char nucl) const { // nucl = 0123
+			return edges_ & (1 << nucl);
+		}
+		bool hasEdgeFrom(char nucl) const { // nucl = 0123
+			return edges_ & (16 << nucl);
+		}
+		char outEdgesCount() const {
+			return __builtin_popcountl(edges_ & 15); // count number of bits = 1 on positions 0123
+		}
+		char inEdgesCount() const {
+			return __builtin_popcountl(edges_ & 240); // count number of bits = 1 on positions 4567
+		}
+		unsigned char getInEdges() const {
+			return edges_ >> 4;
+		}
+		unsigned char getOutEdges() const {
+			return edges_ & 15;
 		}
 	};
 
@@ -87,80 +110,80 @@ private:
 public:
 
 	DeBruijn() {
+		// empty debruijn graph
 	}
 
 	void addEdge(const Kmer &from, const Kmer &to) {
 		Data &d_from = addNode(from);
 		Data &d_to = addNode(to);
-		d_from.out_edges_[(size_t) to[size_ - 1]] = true; // was ++
-		d_to.in_edges_[(size_t) from[0]] = true; // was ++
+		d_from.addEdgeTo(to);
+		d_to.addEdgeFrom(from);
+		//d_from.out_edges_[(size_t) to[size_ - 1]] = true; // was ++
+		//d_to.in_edges_[(size_t) from[0]] = true; // was ++
 	}
 
-	void addEdge(const KPlusOneMer &edge) {
-		addEdge(edge.start(), edge.end());
-	}
+	//void addEdge(const KPlusOneMer &edge) {
+	//	addEdge(edge.start(), edge.end());
+	//}
 
 	//	size_t size() const {
 	//		return nodes_.size();
 	//	}
 
 	class edge_iterator {
+	private:
 		Kmer kmer_;
 		char pos_;
-		const bool* neighbours_;
+		unsigned char neighbours_;
 		bool right_neighbours_;
 
 		void ShiftPos() {
-			while (pos_ < 4 && !neighbours_[(size_t) pos_]) {
+			while (pos_ < 4 && !(neighbours_ & (1 << pos_)) ) {
 				pos_++;
 			}
 		}
 	public:
 
-		edge_iterator(Kmer kmer, char pos, const bool* neighbours,
+		bool isEnd() const {
+			return (pos_ >= 4);
+		}
+
+		edge_iterator(Kmer kmer, char pos, unsigned char neighbours,
 				bool right_neighbours) :
 			kmer_(kmer), pos_(pos), neighbours_(neighbours),
 					right_neighbours_(right_neighbours) {
 			ShiftPos();
 		}
 
-		bool operator!=(const edge_iterator it) const {
-			return right_neighbours_ != it.right_neighbours_ || neighbours_
-					!= it.neighbours_ || pos_ != it.pos_ || kmer_ != it.kmer_;
-		}
-
 		edge_iterator& operator++() {
 			if (pos_ < 4) {
 				pos_++;
+				ShiftPos();
 			}
-			ShiftPos();
 			return *this;
 		}
 
 		KPlusOneMer operator *() const {
-			return right_neighbours_ ? kmer_.pushBack(pos_) : kmer_.pushFront(
-					pos_);
+			return right_neighbours_ ? kmer_.pushBack(pos_) : kmer_.pushFront(pos_);
 		}
 	};
 
 	size_t OutgoingEdgeCount(const Kmer &kmer) const {
-		return CountPositive(get(kmer).out_edges_);
+		return get(kmer).outEdgesCount();
 	}
 
 	size_t IncomingEdgeCount(const Kmer &kmer) const {
-		return CountPositive(get(kmer).in_edges_);
+		return get(kmer).inEdgesCount();
 	}
 
-	pair<edge_iterator, edge_iterator> OutgoingEdges(const Kmer &kmer) const {
-		const bool* out_edges = get(kmer).out_edges_;
-		return make_pair(edge_iterator(kmer, 0, out_edges, true),
-				edge_iterator(kmer, 4, out_edges, true));
+	edge_iterator OutgoingEdges(const Kmer &kmer) const {
+		unsigned char out_edges = get(kmer).getOutEdges();
+		return edge_iterator(kmer, 0, out_edges, true);
 	}
 
-	pair<edge_iterator, edge_iterator> IncomingEdges(const Kmer &kmer) const {
-		const bool* in_edges = get(kmer).in_edges_;
-		return make_pair(edge_iterator(kmer, 0, in_edges, false),
-				edge_iterator(kmer, 4, in_edges, false));
+	edge_iterator IncomingEdges(const Kmer &kmer) const {
+		unsigned char in_edges = get(kmer).getInEdges();
+		return edge_iterator(kmer, 0, in_edges, false);
 	}
 
 	class kmer_iterator: public map_type::const_iterator {
