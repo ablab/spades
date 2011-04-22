@@ -23,11 +23,11 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 private:
 	Graph& g_;
-	const de_bruijn::SimpleReadThreader<k, Graph> threader_;
+	const de_bruijn::SimpleSequenceMapper<k, Graph> threader_;
 	const de_bruijn::SimpleIndex<k + 1, EdgeId>& index_;
 
 	void processRead(Read read) {
-		de_bruijn::Path<EdgeId> path = threader_.ThreadRead(
+		de_bruijn::Path<EdgeId> path = threader_.MapSequence(
 				Sequence(read.getSequenceString()));
 		if (path.sequence().size() == 0)
 			return;

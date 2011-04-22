@@ -15,10 +15,13 @@ fig4.pdf: fig4.dot
 TAAACGAAAC.pdf: TAAACGAAAC.dot
 	dot -Tpdf -o $@ $<
 
-clean:
-	rm *.log *.aux *.out *.toc *.tdo abruijn.pdf fig1.pdf fig2.pdf fig3.pdf fig4.pdf TAAACGAAAC.pdf mccmb_poster.pdf
+ATGCATTGCACTGCA.pdf: ATGCATTGCACTGCA.dot
+	dot -Tpdf -o $@ $<
 
-pics: fig1.pdf fig2.pdf fig3.pdf fig4.pdf TAAACGAAAC.pdf
+clean:
+	rm *.log *.aux *.out *.toc *.tdo abruijn.pdf fig1.pdf fig2.pdf fig3.pdf fig4.pdf TAAACGAAAC.pdf mccmb_poster.pdf ATGCATTGCACTGCA.pdf
+
+pics: fig1.pdf fig2.pdf fig3.pdf fig4.pdf TAAACGAAAC.pdf ATGCATTGCACTGCA.pdf
 
 abruijn: pics 
 	pdflatex abruijn
