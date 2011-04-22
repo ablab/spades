@@ -78,6 +78,10 @@ and {\tt AAC} from this repeat as maximal. Namely, let the ordering be the
 following:
 \[{\tt TAA}<{\tt ACG}<{\tt CGA}<{\tt GAA}<{\tt CTA}<{\tt ACT}<{\tt AAA}<{\tt AAC} \, .\]
 As figure shows, this ordering gives a graph consisting of just one cycle.
+A slightly more complicated example is given on Fig.~\ref{fig:different_orderings2}.
+There, the corresponding genome {\tt ATGCATTGCACTGCA} contains a repeat {\tt TGCA}
+three times. Hence de Bruijn graph spells at least two different genomes. 
+%By a careful choice of 
 
 
 \begin{figure}
@@ -87,6 +91,16 @@ for different orderings on $3$-mers.}\label{fig:different_orderings}
 \includegraphics[width=0.9\textwidth]{TAAACGAAAC.pdf}
 \end{center}
 \end{figure}
+
+\begin{figure}
+\caption{A Bruijn graphs of genome {\tt ATGCATTGCACTGCA} ($readsize=6$, $k=3$)
+for different orderings on $3$-mers.}\label{fig:different_orderings2}
+\begin{center}
+\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA.pdf}
+\end{center}
+\end{figure}
+
+
 
 \item \dots \todo{what else?..}
 \end{enumerate}
