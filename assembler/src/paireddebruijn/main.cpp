@@ -68,12 +68,13 @@ void run() {
 			graph.RebuildVertexMap();
 			graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 		}
-		SplitByLowers(graph);
-		outputLongEdges(graph.longEdges, graph,
-				folder+"afterSplit.dot");
-		outputLongEdgesThroughGenome(graph,
-						folder+"afterSplit_g.dot");
-
+		if (!fictiveSecondReads){
+			SplitByLowers(graph);
+			outputLongEdges(graph.longEdges, graph,
+					folder+"afterSplit.dot");
+			outputLongEdgesThroughGenome(graph,
+					folder+"afterSplit_g.dot");
+		}
 //		expandDefinite(graph.longEdges, graph, graph.VertexCount, false);
 		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
 		outputLongEdges(graph.longEdges, graph,
@@ -219,6 +220,9 @@ int main() {
 //	assert(0);
 
 	init();
+//	computeGlobalStats(folder+"oftenkmers.txt", parsed_reads, folder + "kmersteststat.txt");
+//	forgetQualityPairedData("/home/ftp/data/s_6_1.fastq.gz", "/home/ftp/data/s_6_2.fastq.gz", "data/paireddebruijn/real/reads_100_20.txt" );
+//    assert(0);
 //	constructReversedReadPairs(parsed_reads, folder +"reverted_reads.txt");
 //	assert(0);
 	run();

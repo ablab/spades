@@ -16,8 +16,9 @@ template<size_t kmer_size_, typename ElementId>
 class SimpleIndex {
 private:
 	typedef Seq<kmer_size_> Kmer;
-	typedef tr1::unordered_map<Kmer, pair<ElementId, size_t> ,
-			typename Kmer::hash, typename Kmer::equal_to> hmap;
+	typedef pair<ElementId, size_t> Value;
+	typedef tr1::unordered_map<Kmer, Value,
+			typename Kmer::hash, typename Kmer::equal_to> hmap; // size_t is offset in sequence
 	typedef typename hmap::iterator map_iter;
 	typedef typename hmap::const_iterator const_map_iter;
 	//	typedef __gnu_cxx::hash_map<const Kmer, pair<Vertex*, size_t> , myhash, Kmer::equal_to> hmap;
@@ -31,19 +32,20 @@ public:
 	}
 
 	void put(Kmer k, ElementId id, size_t s) {
-		map_iter hi = h_.find(k);
+		h_.insert(make_pair(k, make_pair(id,s)));
+		/*map_iter hi = h_.find(k);
 		if (hi == h_.end()) { // put new element
 			h_[k] = make_pair(id, s);
 		} else { // change existing element
 			hi->second = make_pair(id, s);
-		}
+		}*/
 	}
 
 	bool contains(Kmer k) const {
 		return h_.find(k) != h_.end();
 	}
 
-	pair<ElementId, size_t> get(const Kmer &k) const {
+	const pair<ElementId, size_t>& get(const Kmer &k) const {
 		const_map_iter hi = h_.find(k);
 		assert(hi != h_.end()); // contains
 		//DEBUG("Getting position of k-mer '" + k.str() + "' Position is " << hi->second.second << " at vertex'"<< hi->second.first->nucls().str() << "'")
@@ -52,8 +54,8 @@ public:
 
 	bool deleteIfEqual(const Kmer &k, ElementId id) {
 		map_iter hi = h_.find(k);
-		if (hi != h_.end() && (*hi).second.first == id) {
-			h_.erase(k);
+		if (hi != h_.end() && hi->second.first == id) {
+			h_.erase(hi);
 			return true;
 		}
 		return false;
@@ -99,13 +101,14 @@ public:
 	virtual void HandleDelete(EdgeId e) {
 	}
 
-	virtual void HandleMerge(vector<EdgeId> oldEdge, EdgeId newEdge) {
+	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
 	}
 
-	virtual void HandleGlue(EdgeId oldEdge, EdgeId newEdge) {
+	virtual void HandleGlue(EdgeId old_edge, EdgeId new_edge) {
 	}
 
-	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
+	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
+			EdgeId new_edge2) {
 	}
 
 	virtual ~GraphActionHandler() {
@@ -114,7 +117,7 @@ public:
 };
 
 template<class Graph>
-class PairedActionHandler : public GraphActionHandler<Graph> {
+class PairedActionHandler: public GraphActionHandler<Graph> {
 private:
 	Graph &graph_;
 	GraphActionHandler<Graph> *handler_;
@@ -123,7 +126,8 @@ public:
 	typedef typename super::VertexId VertexId;
 	typedef typename super::EdgeId EdgeId;
 
-	PairedActionHandler(Graph &graph, GraphActionHandler<Graph> *handler) : graph_(graph), handler_(handler) {
+	PairedActionHandler(Graph &graph, GraphActionHandler<Graph> *handler) :
+		graph_(graph), handler_(handler) {
 	}
 
 	super *GetInnerActionhandler() {
@@ -133,40 +137,41 @@ public:
 	virtual void HandleAdd(VertexId v) {
 		VertexId rcv = graph_.Complement(v);
 		handler_->HandleAdd(v);
-		if(v != rcv)
+		if (v != rcv)
 			handler_->HandleAdd(rcv);
 	}
 
 	virtual void HandleAdd(EdgeId e) {
 		EdgeId rce = graph_.Complement(e);
 		handler_->HandleAdd(e);
-		if(e != rce)
+		if (e != rce)
 			handler_->HandleAdd(rce);
 	}
 
 	virtual void HandleDelete(VertexId v) {
 		VertexId rcv = graph_.Complement(v);
 		handler_->HandleDelete(v);
-		if(v != rcv)
+		if (v != rcv)
 			handler_->HandleDelete(rcv);
 	}
 
 	virtual void HandleDelete(EdgeId e) {
 		EdgeId rce = graph_.Complement(e);
 		handler_->HandleDelete(e);
-		if(e != rce)
+		if (e != rce)
 			handler_->HandleDelete(rce);
 	}
 
 	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
 		EdgeId rce = graph_.Complement(newEdge);
 		handler_->HandleMerge(oldEdges, newEdge);
-		vector<EdgeId> ecOldEdges;
-		for(int i = oldEdges.size() - 1; i >= 0; i--) {
-			ecOldEdges.push_back(graph_.Complement(oldEdges[i]));
-		}
-		if(newEdge != rce)
+		if (newEdge != rce) {
+			vector < EdgeId > ecOldEdges;
+			for (int i = oldEdges.size() - 1; i >= 0; i--) {
+				ecOldEdges.push_back(graph_.Complement(oldEdges[i]));
+			}
 			handler_->HandleMerge(ecOldEdges, rce);
+		}
 	}
 
 	virtual void HandleGlue(EdgeId oldEdge, EdgeId newEdge) {
@@ -177,15 +182,16 @@ public:
 		assert(graph_.EdgeStart(oldEdge) != graph_.EdgeEnd(oldEdge));
 		assert(graph_.EdgeStart(newEdge) != graph_.EdgeEnd(newEdge));
 		handler_->HandleGlue(oldEdge, newEdge);
-		if(oldEdge != rcOldEdge)
+		if (oldEdge != rcOldEdge)
 			handler_->HandleGlue(rcOldEdge, rcNewEdge);
 	}
 
 	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
 		EdgeId rce = graph_.Complement(oldEdge);
 		handler_->HandleSplit(oldEdge, newEdge1, newEdge2);
-		if(oldEdge != rce)
-			handler_->HandleSplit(rce, graph_.Complement(newEdge2), graph_.Complement(newEdge1));
+		if (oldEdge != rce)
+			handler_->HandleSplit(rce, graph_.Complement(newEdge2),
+					graph_.Complement(newEdge1));
 	}
 
 	virtual ~PairedActionHandler() {
@@ -224,12 +230,12 @@ public:
 
 	void HandleAdd(ElementId id) {
 		RenewKmersHash(id);
-//		RenewKmersHash(g_.Complement(id));
+		//		RenewKmersHash(g_.Complement(id));
 	}
 
 	virtual void HandleDelete(ElementId id) {
 		DeleteKmersHash(id);
-//		DeleteKmersHash(g_.Complement(id));
+		//		DeleteKmersHash(g_.Complement(id));
 	}
 };
 
@@ -548,12 +554,12 @@ public:
 
 	virtual void HandleAdd(VertexId v) {
 		super::queue_.offer(v);
-//		super::queue_.offer(super::graph_.Complement(v));
+		//		super::queue_.offer(super::graph_.Complement(v));
 	}
 
 	virtual void HandleDelete(VertexId v) {
 		super::remove(v);
-//		super::remove(super::graph_.Complement(v));
+		//		super::remove(super::graph_.Complement(v));
 	}
 };
 
@@ -584,17 +590,17 @@ public:
 
 	virtual void HandleAdd(EdgeId v) {
 		super::queue_.offer(v);
-//		EdgeId rc = super::graph_.Complement(v);
-//		if (v != rc)
-//			super::queue_.offer(rc);
+		//		EdgeId rc = super::graph_.Complement(v);
+		//		if (v != rc)
+		//			super::queue_.offer(rc);
 	}
 
 	virtual void HandleDelete(EdgeId v) {
 		super::remove(v);
-//		EdgeId rc = super::graph_.Complement(v);
-//		if (v != rc) {
-//			super::remove(rc);
-//		}
+		//		EdgeId rc = super::graph_.Complement(v);
+		//		if (v != rc) {
+		//			super::remove(rc);
+		//		}
 	}
 };
 
@@ -631,7 +637,7 @@ public:
 		return sequence_;
 	}
 
-	ElementId operator[] (size_t index) const {
+	ElementId operator[](size_t index) const {
 		return sequence_[index];
 	}
 };

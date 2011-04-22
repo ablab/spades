@@ -8,6 +8,8 @@
 #ifndef IFASTSTREAM_HPP_
 #define IFASTSTREAM_HPP_
 
+/*
+
 #include "libs/kseq/kseq.h"
 #include <zlib.h>
 #include <cassert>
@@ -20,6 +22,9 @@ using namespace std;
 /*
  * Read name, seq and qual strings from FASTQ data (one by one)
  */
+
+/*
+
 class ifaststream {
 
 public:
@@ -87,6 +92,8 @@ private:
 	 * open i's file with FASTQ reads,
 	 * return true if it opened file, false otherwise
 	 */
+
+/*
 	bool open(string filename) {
 		fp_ = gzopen(filename.c_str(), "r"); // STEP 2: open the file handler
 		if (!fp_) {
@@ -110,5 +117,7 @@ private:
 		}
 	}
 };
+
+*/
 
 #endif /* IFASTSTREAM_HPP_ */

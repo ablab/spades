@@ -3,7 +3,7 @@
 #include <numeric>
 #include "bayes_quality.hpp"
 #include "ireadstream.hpp"
-#include "ifaststream.hpp"
+//#include "ifaststream.hpp"
 #include "read.hpp"
 #include "quality.hpp"
 
@@ -72,11 +72,11 @@ int main(int argc, char* argv[]) {
 
 
 	//ireadstream ifs("/home/student/nikolenko/python/bayesQuality/biggenome.fasta.gz");
-	ifaststream ifs(genomefilename.data());
-	string name, genome;
-	ifs >> name >> genome;
-	INFO("!" << name);
-	BayesQualityGenome bqg(genome.data());
+	ireadstream ifs(genomefilename.data());
+	Read r1;
+	ifs >> r1;
+	INFO("!" << r1.getName());
+	BayesQualityGenome bqg(r1.getSequenceString().data());
 	
 	#ifdef USE_BOWTIE
 		bqg.setBowtie(bowtiecmd, bowtieindex);

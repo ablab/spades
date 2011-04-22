@@ -7,13 +7,14 @@ template<size_t cnt, typename T, typename TR>
 class StrobeReader {
 	vector<TR*> readers_;
 public:
+	typedef T ReadType;
 	//	StrobeReader(const TR **readers) {
 	//		for (size_t i = 0; i < cnt; ++i) {
 	//			readers_[i] = readers[i];
 	//		}
 	//	}
 
-	StrobeReader(const string *filenames) {
+	StrobeReader(const string filenames[]) {
 		stringstream s;
 		for (size_t i = 0; i < cnt; ++i) {
 			readers_.push_back(new TR(filenames[i]));
@@ -69,14 +70,16 @@ struct SingleReader {
 	typedef StrobeReader<1, T, TR> type;
 };
 
-template<size_t count, typename T, typename TR>
+template<class Stream>
 class SimpleReaderWrapper {
-private:
-	StrobeReader<count, T, TR> &inner_reader_;
-	vector<T> result_;
-	int current_;
 public:
-	SimpleReaderWrapper(StrobeReader<count, T, TR> &reader) :
+	typedef typename Stream::ReadType ReadType;
+private:
+	Stream &inner_reader_;
+	vector<ReadType> result_;
+	size_t current_;
+public:
+	SimpleReaderWrapper(Stream &reader) :
 		inner_reader_(reader), current_(0) {
 	}
 
@@ -84,19 +87,60 @@ public:
 		return inner_reader_.eof();
 	}
 
-	SimpleReaderWrapper& operator>>(T& v) {
+	SimpleReaderWrapper& operator>>(ReadType& v) {
 		if (current_ == 0) {
 			inner_reader_ >> result_;
 		}
 		v = result_[current_];
 		current_++;
-		if (current_ == count)
+		if (current_ == result_.size())
 			current_ = 0;
 		return *this;
 	}
 
 	void reset() {
 		current_ = 0;
+		inner_reader_.reset();
+	}
+
+	void close() {
+		inner_reader_.close();
+	}
+};
+
+template<class Stream>
+class RCReaderWrapper {
+public:
+	typedef typename Stream::ReadType ReadType;
+private:
+	Stream &inner_reader_;
+	vector<ReadType> rc_result_;
+	bool was_rc_;
+public:
+	RCReaderWrapper(Stream &reader) :
+		inner_reader_(reader), was_rc_(false) {
+	}
+
+	bool eof() const {
+		return inner_reader_.eof() && !was_rc_;
+	}
+
+	RCReaderWrapper& operator>>(vector<ReadType>& v) {
+		if (!was_rc_) {
+			inner_reader_ >> v;
+			rc_result_.clear();
+			for (int i = v.size() - 1; i >= 0; i--) {
+				rc_result_.push_back(!(v[i]));
+			}
+		} else {
+			v = rc_result_;
+		}
+		was_rc_ = !was_rc_;
+		return *this;
+	}
+
+	void reset() {
+		was_rc_ = false;
 		inner_reader_.reset();
 	}
 

@@ -1,4 +1,6 @@
 #define K 27
+#define R 100
+#define I 220
 #define DE_BRUIJN_DATA_FOLDER "./data/debruijn/"
 
 /////////////////
@@ -17,7 +19,9 @@
 #include "edge_graph_test.hpp"
 #include "edge_graph_tool.hpp"
 #include "visualization_utils.hpp"
-#include "ifaststream.hpp"
+#include "ireadstream.hpp"
+
+#include <tr1/tuple>
 
 void RunTestSuites() {
 	cute::suite s;
@@ -29,15 +33,13 @@ void RunTestSuites() {
 }
 
 void RunEdgeGraphTool() {
-	pair<pair<string, string>, int> input = QUAKE_CROPPED_4_10_5;
-//	ireadstream stream1(input.first.first);
-//	ireadstream stream2(input.first.second);
-	string reads[2] = {input.first.first, input.first.second};
-	StrobeReader<2, Read, ireadstream> reader((string *)reads);
-	ifaststream genome_stream(ECOLI_FILE);
-	string genome;
-	genome_stream >> genome >> genome;
-	edge_graph::EdgeGraphTool(reader, genome.substr(0, input.second));
+	const tr1::tuple<string, string, int> input = QUAKE_CROPPED_10_5;
+	const string reads[2] = {tr1::get<0>(input), tr1::get<1>(input)};
+	StrobeReader<2, Read, ireadstream> reader(reads);
+	ireadstream genome_stream(ECOLI_FILE);
+	Read genome;
+	genome_stream >> genome;
+	edge_graph::EdgeGraphTool(reader,  genome.getSequenceString().substr(0, tr1::get<2>(input)));
 	reader.close();
 	genome_stream.close();
 }

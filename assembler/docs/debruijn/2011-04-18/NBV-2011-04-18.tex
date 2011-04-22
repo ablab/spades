@@ -63,9 +63,9 @@ Every \texttt{edge\_graph::Vertex} stores:
 
 Also old \texttt{DeBruijn} graph isn't waste of memory. From now it acts as the index for new \texttt{EdgeGraph}. It maps K-mers to edges which contains this K-mer. \textit{Comment: Is it already implemented or only in plans?}
  
-\section{Read Threading}
+\section{Sequences (Reads) Mapping}
 
-After graph construction and simplification all original reads are threaded over the resulting \texttt{EdgeGraph} using \texttt{SimpleReadThreader::ThreadRead()} (\texttt{src/debruijn/utils.hpp}). By that we calculate \texttt{Edge::coverage} for all edges in \texttt{EdgeGraph}.
+After graph construction and simplification all original reads are mapper to the edges (path) of resulting \texttt{EdgeGraph} using \texttt{SimpleReadThreader::ThreadRead()} (\texttt{src/debruijn/utils.hpp}). By that we calculate \texttt{Edge::coverage} for all edges in \texttt{EdgeGraph}.
 
 \textit{Comment: Now this function uses \texttt{SimpleIndex} from \texttt{utils.hpp}, but it can be substituted by \texttt{DeBruijn} later.} 
 
@@ -130,7 +130,7 @@ After every bulge removal all new simple pathes are condensed (they can be forme
 All Quake's filtered reads were filtered to first $100$ kilo-basepairs of E.Coli. I.e. we try to assemble only first $100$kbp of E.Coli (for simplicity). Also, for evaluation runs we use only 1st read from every mate pair. It's total of $306174$ error-corrected reads with $100$ or less basepairs each.
 
 \subsection{Log 100k}
-(first column is seconds from the starting time, $\approx 9$ minutes total): \\
+(first column is milliseconds from the starting time, $\approx 5.6$ minutes total): \\
 
 \noindent\scriptsize{\texttt{310  INFO d.edge\_graph (edge\_graph\_tool.hpp:95) - Edge graph construction tool started \\
     311  INFO d.edge\_graph (edge\_graph\_tool.hpp:53) - Constructing DeBruijn graph \\
@@ -161,30 +161,30 @@ All Quake's filtered reads were filtered to first $100$ kilo-basepairs of E.Coli
   33602  INFO d.edge\_graph (edge\_graph\_tool.hpp:115) - Tool finished \\
 }}
 
-%\newpage
-%\begin{figure}
-%\begin{center}
-%\includegraphics[width=0.2\textwidth]{edge_graph.pdf}
-%\end{center}
-%\caption{Edge Graph 100k}
-%\end{figure}
-
 \newpage
-
 \begin{figure}
 \begin{center}
-\includegraphics[width=0.35\textwidth]{tips_clipped.pdf}
+\includegraphics[width=0.7\textwidth]{edge_graph.pdf}
 \end{center}
-\caption{Edge Graph 100k after TC}
+\caption{Edge Graph 100k (790 vertices, 836 edges)}
 \end{figure}
 
 \newpage
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=0.45\textwidth]{buldes_removed.pdf}
+\includegraphics[width=0.7\textwidth]{tips_clipped.pdf}
 \end{center}
-\caption{Edge Graph 100k after TC+BR}
+\caption{Edge Graph 100k after TC (118 vertices, 164 edges)}
+\end{figure}
+
+\newpage
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.7\textwidth]{bulges_removed.pdf}
+\end{center}
+\caption{Edge Graph 100k after TC+BR (70 vertices, 92 edges)}
 \end{figure}
 
 \end{document}

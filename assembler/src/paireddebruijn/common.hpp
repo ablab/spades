@@ -162,5 +162,6 @@ namespace __gnu_cxx
 
 }
 
+int  appendLowerPath(string &edge, string &toAppend);
 
 #endif /*COMMON_HPP_*/

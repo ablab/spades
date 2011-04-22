@@ -20,7 +20,8 @@ ll lowerMask;
 
 ll upperMax;
 
-
+map<ll, int> kmers;
+map<ll, int> lmers;
 //toDo
 void initGlobal(){
 	upperMask = (((ll) 1) << (2 * k)) - 1;
@@ -197,6 +198,8 @@ downSeqs clusterize(pair<ll,int>* a, int size, int max_shift) {
 	int used[MAXLMERSIZE];
 	int shift_left[MAXLMERSIZE];
 	int shift_right[MAXLMERSIZE];
+	char cur_string[MAXLMERSIZE * 2];
+	memset(cur_string, 0, sizeof(cur_string));
 	//-1 = no neighbor;
 	//-2 = more than 1 neighbor
 	DEBUG("clusterizing");
@@ -321,7 +324,56 @@ downSeqs clusterize(pair<ll,int>* a, int size, int max_shift) {
 				INFO("SUBSEQ" << tmp_res[i] << " " << tmp_res[j]);
 			}
 		}
+
+
 		if (good) {
+/*
+			int s_len = tmp_res[i].length();
+			forn(ii, s_len)
+				cur_string[ii] = s[ii];
+			cur_string[s_len] = 0;
+			int sum_cov = 0;
+			ll tmpKmer = 0;
+			forn(ii, s_len - l) {
+				tmpKmer = extractMer(cur_string, ii, l);
+				forn(j, size) {
+					if (a[j].first == tmpKmer) {
+						sum_cov +=a[j].second;
+						break;
+					}
+				}
+			}
+			int ii = 0;
+			int cov = 0;
+			do {
+				cov = 0;
+				tmpKmer = extractMer(cur_string, ii, l);
+				ii++;
+				forn(j, size) {
+					if (a[j].first == tmpKmer) {
+						cov = a[j].second;
+						break;
+					}
+				}
+				assert(cov > 0);
+			} while ((ii < s_len - l) && (sum_cov > cov * 2 * (s_len - l + 1)));
+			int left_start = ii - 1;
+			ii = s_len - l + 1;
+			cov = 0;
+			do {
+				cov = 0;
+				tmpKmer = extractMer(cur_string, ii, l);
+				ii++;
+				forn(j, size) {
+					if (a[j].first == tmpKmer) {
+						cov = a[j].second;
+						break;
+					}
+				}
+				assert(cov > 0);
+
+			} while ((ii < s_len - l) && (sum_cov > cov * 2 * (s_len - l + 1)));
+*/
 			Sequence* tmpSeq = new Sequence(tmp_res[i]);
 			res.pb(make_pair(tmpSeq,tmp_cov[i]));
 
@@ -726,7 +778,8 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 				processReadPair(table, upperNuclRead, fictiveRead);
 				processReadPair(table, lowerNuclRead, fictiveRead);
 			} else {
-				processReadPair(table, upperNuclRead, lowerNuclRead);
+//				processReadPair(table, upperNuclRead, lowerNuclRead);
+				statsReadPair(kmers, lmers, upperNuclRead, lowerNuclRead);
 			}
 			if (!useRevertedPairs)
 				break;
@@ -748,6 +801,32 @@ void constructTable(string inputFile, myMap &table, bool reverse) {
 			INFO("read number "<<count<<" processed"<<endl);
 		count++;
 	}
+	cerr << "often kmers, rare lmers:\n";
+	for (map<ll, int>::iterator it = kmers.begin(); it !=kmers.end(); it++) {
+		if ((it->second > 30) && ((lmers.find(it->first) == lmers.end()) || lmers[it->first] < 5)) {
+			cerr << decompress(it->first, k) << " " <<it->second << " ";
+			cerr << it->first << " " <<it->second << " ";
+			if ((lmers.find(it->first)) == lmers.end()) {
+				cerr << 0 << endl;
+			} else {
+				cerr << lmers[it->first] << endl;
+			}
+        }
+	}
+/*
+	cerr << "often lmers, rare kmers:\n";
+	for (map<ll, int>::iterator it = lmers.begin(); it !=lmers.end(); it++) {
+				   if ((it->second > 30) && ((kmers.find(it->first) == kmers.end()) || kmers[it->first] < 5)) {
+						cerr << it->first << " " <<it->second << " ";
+   					   cerr << decompress(it->first, k) << " " <<it->second << " ";
+						   if ((kmers.find(it->first)) == kmers.end()) {
+								   cerr << 0 << endl;
+						   } else {
+								   cerr << kmers[it->first] << endl;
+						   }
+				   }
+		  }
+*/
 }
 
 void outputTable(string outputFile, myMap &pairedTable) {
@@ -933,6 +1012,64 @@ int pairsToSequences(string inputFile, string lmerFile, string outputFile) {
 	return 0;
 }
 
+
+void statsReadPair(map<ll, int>& kmers,map<ll, int>& lmers, char *upperRead, char *lowerRead) {
+		int shift = (l - k) / 2;
+        int up_len = strlen(upperRead);
+        int low_len = strlen(lowerRead);
+        int low_shift = readLength - low_len;
+        if ((up_len<k)||(low_len<l)) return;
+        ll upper = extractMer(upperRead, shift, k);
+        ll lower = extractMer(lowerRead, 0, l);
+        if (lmers.find(lower) != lmers.end()) {
+               lmers[lower] ++;
+		} else {
+                lmers.insert(mp(lower, 1));
+        }
+        if (kmers.find(upper) != kmers.end()) {
+        	kmers[upper] ++;
+        } else {
+            kmers.insert(mp(lower, 1));
+         }
+        //     cerr <<"\n " <<up_len <<"\n" << low_len;
+ //     cerr <<(string("\n" )+ upperRead) << (string("\n" )+ lowerRead + "\n");
+ //     cerr.flush();
+ //     cerr << "Up_len "<<up_len<<" low_len "<<low_len<<endl;
+        ll lowers[MAX_READ_LENGTH+2];
+        lowers[0] = lower;
+        if (low_len > l)
+        forn(j, low_len - l) {
+                lower <<= 2;
+                lower += codeNucleotide( lowerRead[j + l]);
+                if (codeNucleotide( lowerRead[j + l])==-1)
+                        cerr<<"len "<<low_len<<" pos "<<j<<" in "<<lowerRead;
+                lower &= lowerMask;
+                lowers[j + 1] = lower;
+                if (lmers.find(lowers[j]) != lmers.end()) {
+                       lmers[lowers[j]] ++;
+				} else {
+                        lmers.insert(mp(lowers[j], 1));
+                }
+ //             cerr << "lowers "<<j+1<<" "<<lowers[j+1]<<endl;
+        }
+        lower = upper;
+        lowers[0] = lower;
+        if (up_len > l)
+        forn(j, up_len - l) {
+                lower <<= 2;
+                lower += codeNucleotide( upperRead[j + l]);
+                lower &= lowerMask;
+                lowers[j + 1] = lower;
+                if (kmers.find(lowers[j]) != kmers.end()) {
+                        kmers[lowers[j]] ++;
+                } else {
+                        kmers.insert(mp(lowers[j], 1));
+                }
+ //             cerr << "lowers "<<j+1<<" "<<lowers[j+1]<<endl;
+        }
+
+}
+
 void constructReversedReadPairs(string inputFile, string outputFile) {
 	FILE* inFile = fopen(inputFile.c_str(), "r");
 	FILE* outFile = fopen(outputFile.c_str(), "w");
@@ -949,7 +1086,77 @@ void constructReversedReadPairs(string inputFile, string outputFile) {
 
 }
 
+void computeGlobalStats(string kmers_s, string reads, string statsOutputFile) {
+	FILE* kmerFile = fopen(kmers_s.c_str(), "r");
+	FILE* inFile = fopen(reads.c_str(), "r");
+	FILE* outFile = fopen(statsOutputFile.c_str(), "w");
+	map<ll, pair<int, int> > kmers;
+	ll kmer;
+	char * upperRead = new char[readLength +10];
+	char * lowerRead = new char[readLength +10];
+	int a, b;
+	while(fscanf(kmerFile, "%lld %d %d", &kmer, &a, &b) == 3) {
+		kmers.insert(mp(kmer, mp(0, 0)));
+	}
+	DEBUG(kmers.size());
+	int count = 0;
+	while (nextReadPair(inFile, upperRead, lowerRead)) {
+		DEBUG(count);
+		count ++;
+		forn(i, 2) {
+			int shift = (l - k) / 2;
+	        int up_len = strlen(upperRead);
+	        int low_len = strlen(lowerRead);
+	        int low_shift = readLength - low_len;
+	        if ((up_len<k)||(low_len<l)) continue;
+	        ll upper = extractMer(upperRead, shift, k);
+	        ll lower = extractMer(lowerRead, 0, l);
+	        if (kmers.find(lower) != kmers.end()) {
+	               kmers[lower].second ++;
+	        }
+	        if (kmers.find(upper) != kmers.end()) {
+	        	kmers[upper].first++;
+	        }
+	        //     cerr <<"\n " <<up_len <<"\n" << low_len;
+	 //     cerr <<(string("\n" )+ upperRead) << (string("\n" )+ lowerRead + "\n");
+	 //     cerr.flush();
+	 //     cerr << "Up_len "<<up_len<<" low_len "<<low_len<<endl;
+	        ll lowers[MAX_READ_LENGTH+2];
+	        lowers[0] = lower;
+	        if (low_len > l)
+	        forn(j, low_len - l) {
+	                lower <<= 2;
+	                lower += codeNucleotide( lowerRead[j + l]);
+	                if (codeNucleotide( lowerRead[j + l])==-1)
+	                        cerr<<"len "<<low_len<<" pos "<<j<<" in "<<lowerRead;
+	                lower &= lowerMask;
+	                lowers[j + 1] = lower;
+	                if (kmers.find(lowers[j]) != kmers.end()) {
+	                       kmers[lowers[j]].second ++;
+					}
+	 //             cerr << "lowers "<<j+1<<" "<<lowers[j+1]<<endl;
+	        }
+	        lower = upper;
+	        lowers[0] = lower;
+	        if (up_len > l)
+	        forn(j, up_len - l) {
+	                lower <<= 2;
+	                lower += codeNucleotide( upperRead[j + l]);
+	                lower &= lowerMask;
+	                lowers[j + 1] = lower;
+	                if (kmers.find(lowers[j]) != kmers.end()) {
+	                        kmers[lowers[j]].first ++;
+	                }
+	 //             cerr << "lowers "<<j+1<<" "<<lowers[j+1]<<endl;
+	        }
 
+			reverseCompliment(upperRead, lowerRead);
+		}
+	}
+	for(map<ll, pair<int, int> >::iterator it = kmers.begin(); it != kmers.end(); it ++) {
+		fprintf(outFile, "%lld %d %d\n", it->first, it->second.first, it->second.second);
+	}
+}
 
 
 

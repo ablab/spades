@@ -9,6 +9,7 @@
 #include <fstream>
 
 using namespace std;
+using namespace hashing;
 
 typedef map < string, unsigned > CKMerSet;
 typedef map < pair < string, string >, unsigned > CWeightedEdgeSet;
@@ -21,13 +22,18 @@ long special_lexicographic3 ( string const & s )
   if ( s == "CGA" ) return 3;
   if ( s == "GAA" ) return 4;
   if ( s == "CTA" ) return 5;
-  if ( s == "ACT" ) return 6;
-  if ( s == "AAA" ) return 7;
-  if ( s == "AAC" ) return 8;
+  if ( s == "TGC" ) return 6;
+  if ( s == "CTG" ) return 7;
+  if ( s == "GCA" ) return 6;
+  if ( s == "CAA" ) return 7;
 
-  assert ( false );
+  if ( s == "ACT" ) return 16;
+  if ( s == "AAA" ) return 17;
+  if ( s == "AAC" ) return 18;
 
-  return 10;
+  //assert ( false );
+
+  return 100;
 }
 
 long standard_lexicographic3 ( string const & s )
@@ -43,7 +49,7 @@ long standard_lexicographic3 ( string const & s )
   if ( s == "GAA" ) return 7;
   if ( s == "TAA" ) return 8;
 
-  assert ( false );
+  //assert ( false );
 
   return 10;
 }
@@ -53,7 +59,7 @@ Hash < string > h;
 long my_hash ( string const & s )
 {
   //return h ( s );
-  return standard_lexicographic3 ( s );
+  return special_lexicographic3 ( s );
 }
 
 

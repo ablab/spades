@@ -125,8 +125,8 @@ int expandDirected(edgesMap &edges, constructingEdge &curEdge, verticesMap &vert
 //			curEdge.lower.append(curSeq->Subseq(k-1,k).str());
 			//TODO:: do it, save nucleo/
 			string new_lower = curSeq->str();
-			if ( !(appendLowerPath(curEdge.lower , new_lower))) {
-				if ( !(appendLowerPath( new_lower, curEdge.lower))) {
+			if ( !(::appendLowerPath(curEdge.lower , new_lower))) {
+				if ( !(::appendLowerPath( new_lower, curEdge.lower))) {
 					ERROR( curEdge.lower << " "<< new_lower);
 	//				assert (0);
 				} else {
@@ -533,32 +533,6 @@ void createEdges(edgesMap &edges, PairedGraph &graph, bool buildEdges) {
 	dp.output(graph.VertexCount);
 	dp.output(graph.EdgeId);
 	dp.close();
-}
-/*
- * Appends string toAppend to string edge with maximal possible overlap For example, appendLowerPath(ACAT,ATT) will be ACATT
- *
- *
- */
-//TODO :KMP
-
-int  appendLowerPath(string &edge, string &toAppend){
-	TRACE("Appending");
-	for(int i = max(0, (int) (edge.size() - toAppend.size() - l) ); i < edge.size(); i++) {
-		int j = 0;
-		int fl = 1;
-		while (j<toAppend.size() && j+i < edge.size() && edge[i+j] == toAppend[j]){
-			j++;
-		}
-		if (j<toAppend.size() && j+i < edge.size()) {
-			continue;
-		} else {
-			if (j < 20) return 0;
-			edge.append(toAppend.substr(j ));
-			return j;
-		}
-
-	}
-	return 0;
 }
 
 
