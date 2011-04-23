@@ -1,4 +1,4 @@
-/*
+/**
  * @file    sequence_data.hpp
  * @author  vyahhi
  * @version 1.0

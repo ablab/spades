@@ -1,8 +1,19 @@
-/*
+/**
+ * @file    seq.hpp
+ * @author  vyahhi
+ * @version 1.0
  *
+ * @section LICENSE
  *
- *  Created on: 20.02.2011
- *      Author: vyahhi
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * @section DESCRIPTION
+ *
+ * Immutable ACGT-sequence with compile-time size.
+ * It compress sequence to array of Ts (default: char).
  */
 
 #ifndef SEQ_HPP_
@@ -21,43 +32,44 @@ using namespace std;
 #define HASH_SEED 239
 
 /**
- * Immutable ACGT-sequence with compile-time size.
- * It compress sequence to array of Ts (default: char).
- */
-template<size_t size_, typename T = unsigned int> // max number of nucleotides, type for storage
+  * @param T is max number of nucleotides, type for storage
+  */
+template<size_t size_, typename T = unsigned int>
 class Seq {
 private:
 	/**
-	 * Number of bits in type T (e.g. 8 for char)
+         * @variable Number of bits in type T (e.g. 8 for char)
+         * @example 8: 2^8 = 256 or 16
 	 */
-	const static size_t Tbits = sizeof(T) << 3; // ex. 8: 2^8 = 256 or 16
+        const static size_t Tbits = sizeof(T) << 3;
 
 	/**
-	 * Number of nucleotides that can be stored in one type T (e.g. 4 for char)
+         * @variable Number of nucleotides that can be stored in one type T (e.g. 4 for char)
+         * @example 4: 8/2 = 4 or 16/2 = 8
 	 */
-	const static size_t Tnucl = Tbits >> 1; // ex. 4: 8/2 = 4 or 16/2 = 8
+        const static size_t Tnucl = Tbits >> 1;
 
 	/**
-	 * Number of bits in Tnucl (e.g. 2 for char). Useful for shifts instead of divisions.
-	 */
+         * @variable Number of bits in Tnucl (e.g. 2 for char). Useful for shifts instead of divisions.
+         */
 	const static size_t Tnucl_bits = log_<Tnucl, 2>::value;
 
 	/**
-	 * Number of Ts which required to store all sequence.
+         * @variable Number of Ts which required to store all sequence.
 	 */
 	const static size_t data_size_ = (size_ + Tnucl - 1) >> Tnucl_bits;
 
 	/**
-	 * Inner representation of sequence: array of Ts with length = data_size_.
+         * @variable Inner representation of sequence: array of Ts with length = data_size_.
 	 *
-	 * Invariant: all nucleotides >= size_ are 'A's (useful for comparison)
+         * @invariant Invariant: all nucleotides >= size_ are 'A's (useful for comparison)
 	 */
 	std::array<T, data_size_> data_;
 
 	friend class Seq<size_ - 1, T>;
 	/**
-	 * Initialize data_ array of this object with C-string
-	 *
+         * Initialize data_ array of this object with C-string
+         *
 	 * @param s C-string (ACGT chars only), strlen(s) = size_
 	 */
 	void init(const char* s) {
@@ -81,8 +93,8 @@ private:
 	}
 
 	/**
-	 * Constructor from std::array
-	 */
+         * Constructor from std::array
+         */
 	Seq(std::array<T, data_size_> data) :
 		data_(data) {
 		;
@@ -98,15 +110,15 @@ private:
 
 public:
 
-	/*
+        /**
 	 * Default constructor, fills Seq with A's
-	 */
+         */
 	Seq() {
 		assert((T)(-1) >= (T)0);//be sure to use unsigned types
 		std::fill(data_.begin(), data_.end(), 0);
 	}
 
-	/*
+        /**
 	 * Copy constructor
 	 */
 	Seq(const Seq<size_, T> &seq) :
@@ -127,7 +139,6 @@ public:
 	 */
 	template<typename S>
 	explicit Seq(const S &s, size_t offset = 0) {
-	  //		assert(size_ + offset <= s.size());
 		assert((T)(-1) >= (T)0);//be sure to use unsigned types
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
@@ -214,14 +225,15 @@ public:
 		return s; //was: Seq<size_ + 1, T>(str() + nucl(c));
 	}
 
-	//todo optimize!!!
+        /**
+        * @todo optimize!!!
+        */
 	Seq<size_ + 1, T> pushFront(char c) const {
 		if (is_nucl(c)) {
 			c = dignucl(c);
 		}
 		assert(is_dignucl(c));
-		//todo optimize!!!
-		return Seq<size_ + 1, T>(nucl(c) + str());
+                return Seq<size_ + 1, T>(nucl(c) + str());
 	}
 
 	/**
@@ -249,10 +261,13 @@ public:
 		return res;
 	}
 
-	bool operator==(const Seq<size_, T> s) const {
+        bool operator==(const Seq<size_, T> s) const {
 		return s.data_ == data_;
-		//return this->equal_to()(s);
-	}
+        }
+
+        /**
+        * @see operator ==()
+        */
 
 	bool operator!=(const Seq<size_, T> s) const {
 		return !((*this) == s);
@@ -272,6 +287,7 @@ public:
 	 * String representation of this Seq
 	 *
 	 * @return ACGT-string of length size_
+         * @see nucl()
 	 */
 	std::string str() const {
 		std::string res(size_, '-');
@@ -285,6 +301,9 @@ public:
 		return size_;
 	}
 
+        /**
+        * @see Seq
+        */
 	template<size_t size2_, typename T2 = T>
 	Seq<size2_,T2> start() const {
 		assert(size2_ <= size_);

@@ -1,4 +1,3 @@
-
 /**
  * @file    sequence.cpp
  * @author  vyahhi
