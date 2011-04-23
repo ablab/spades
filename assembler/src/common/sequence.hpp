@@ -148,6 +148,14 @@ public:
 		assert(index < buf_.size());
 		return buf_[index];
 	}
+
+	string str() const {
+		string s(buf_.size(), '-');
+		for (size_t i = 0; i < s.size(); ++i) {
+			s[i] = nucl(buf_[i]);
+		}
+		return s;
+	}
 };
 
 #endif /* SEQUENCE_HPP_ */

@@ -13,10 +13,11 @@
 #include "visualization_utils.hpp"
 #include "paired_info.hpp"
 #include "coverage_handler.hpp"
+#include "debruijn_plus.hpp"
 
 namespace edge_graph {
 
-typedef de_bruijn::DeBruijn<K> DeBruijn;
+typedef DeBruijnPlus<K+1, EdgeId> DeBruijn;
 typedef SimpleIndex<K + 1, EdgeId> Index;
 typedef de_bruijn::Path<EdgeId> Path;
 typedef de_bruijn::PairedInfoIndex<EdgeGraph> PairedIndex;
@@ -60,10 +61,9 @@ void ConstructUncondensedGraph(DeBruijn& debruijn, ReadStream& stream) {
 }
 
 template<class ReadStream>
-void CondenseGraph(const DeBruijn& debruijn, EdgeGraph& g, Index& index,
-		ReadStream& stream, const string& genome) {
+void CondenseGraph(DeBruijn& debruijn, EdgeGraph& g, Index& index, ReadStream& stream, const string& genome) {
 	INFO("Condensing graph");
-	CondenseConstructor<K> g_c(debruijn);
+	EdgeGraphConstructor<K> g_c(debruijn);
 	g_c.ConstructGraph(g, index);
 	INFO("Graph condensed");
 
@@ -77,8 +77,7 @@ void CondenseGraph(const DeBruijn& debruijn, EdgeGraph& g, Index& index,
 	ProduceInfo(g, index, genome, "edge_graph.dot", "edge_graph");
 }
 
-void ClipTips(EdgeGraph &g, Index &index, const string& genome,
-		string dotFileName) {
+void ClipTips(EdgeGraph &g, Index &index, const string& genome, string dotFileName) {
 	INFO("Clipping tips");
 	TipComparator<EdgeGraph> comparator(g);
 	TipClipper<EdgeGraph, TipComparator<EdgeGraph> > tc(comparator);

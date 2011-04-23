@@ -5,6 +5,7 @@
 #include "cute.h"
 #include "strobe_reader.hpp"
 #include "paired_info.hpp"
+#include "debruijn_plus.hpp"
 #include <tr1/unordered_set>
 
 namespace edge_graph {
@@ -164,10 +165,10 @@ template<size_t kmer_size_>
 void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 		string etalon_edges[]) {
 	vector<Read> reads = MakeReads(reads_str, read_cnt);
-	de_bruijn::DeBruijn<kmer_size_> debruijn;
+	DeBruijnPlus<kmer_size_+1, EdgeId> debruijn;
 	EdgeGraph g(kmer_size_);
 	debruijn.ConstructGraph(reads);
-	CondenseConstructor<kmer_size_> g_c(debruijn);
+	EdgeGraphConstructor<kmer_size_> g_c(debruijn);
 	SimpleIndex<kmer_size_ + 1, Edge*> index;
 	EdgeHashRenewer<kmer_size_ + 1, EdgeGraph> index_handler(g, index);
 	g.AddActionHandler(&index_handler);
@@ -192,7 +193,7 @@ void ConstructGraphAndBothIndices(ReadStream& stream, EdgeGraph& g, SimpleIndex<
 	SimpleReaderWrapper<ReadStream> unitedStream(stream);
 	debruijn.ConstructGraph(unitedStream);
 
-	CondenseConstructor<kmer_size_> g_c(debruijn);
+	EdgeGraphConstructor<kmer_size_> g_c(debruijn);
 	EdgeHashRenewer<kmer_size_ + 1, EdgeGraph> index_handler(g, index);
 	g.AddActionHandler(&index_handler);
 	g_c.ConstructGraph(g, index);
