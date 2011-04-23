@@ -34,8 +34,8 @@ using namespace std;
 // Example of use: 
 // cuckoo<int, int, Hasher, std::equal_to<int>, 4, 10, 50, 6, 5> Cuckoo; 
 template <class Key, class Value, class Hash, class Pred, size_t d = 4, 
-	  size_t init_length = 100, size_t max_loop = 100, 
-	  size_t step_nom = 3, size_t step_denom = 2>
+    size_t init_length = 100, size_t max_loop = 100, 
+    size_t step_nom = 3, size_t step_denom = 2>
 class cuckoo {
 private:
   // The array of vectors, each of which is hash array 
@@ -73,7 +73,7 @@ public:
       assert(pos != hash->len_);
       ++pos;
       while (!hash->get_exists(pos) && pos < hash->len_) {
-	++pos;
+        ++pos;
       }
       return *this;
     }
@@ -185,11 +185,11 @@ private:
       if (j != hash((*it).first, i)) {
         Data t = *it;
         remove(it);
-	      add_new(t);
-	      if (is_rehashed_) {
-	        it = begin();
-	        if (!get_exists(it.pos)) ++it; 
-	       }
+        add_new(t);
+        if (is_rehashed_) {
+          it = begin();
+          if (!get_exists(it.pos)) ++it; 
+        }
       } else { 
         ++it;
       }
@@ -200,15 +200,15 @@ private:
   iterator add_new(pair<Key, Value> p) {
     for (size_t i = 0; i < max_loop; ++i) {
       for (size_t j = 0; j < d; ++j) {
-	size_t pos = hash(p.first, j);
-	swap(p, data_from(j * len_part_ + pos));
-	bool exists = get_exists(j * len_part_ + pos); 
-	set_exists(j * len_part_ + pos);
-	if (!exists) {
-	  is_rehashed_ = false;
-	  ++size_;
-	  return iterator(j * len_part_ + pos, this);
-	} 
+        size_t pos = hash(p.first, j);
+        swap(p, data_from(j * len_part_ + pos));
+        bool exists = get_exists(j * len_part_ + pos); 
+        set_exists(j * len_part_ + pos);
+        if (!exists) {
+          is_rehashed_ = false;
+          ++size_;
+          return iterator(j * len_part_ + pos, this);
+        } 
       }
     }
     rehash();
@@ -240,7 +240,7 @@ public:
     while (it != final) {
       insert(*it);
       ++it;
-      }
+    }
     return *this;
   }
 
@@ -290,7 +290,7 @@ public:
     for (size_t i = 0; i < d; ++i) {
       size_t pos = hash(k, i);
       if (is_here(k, i * len_part_ + pos)) {
-	return iterator(i * len_part_ + pos, this);
+        return iterator(i * len_part_ + pos, this);
       }
     }
     return end();
@@ -303,7 +303,7 @@ public:
     if (res != end()) {
       (*res).second = k.second;
       return make_pair(res, false);
-      } 
+    } 
     assert(res == end());
     res = add_new(k);
     return make_pair(res, true);

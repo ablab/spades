@@ -14,7 +14,7 @@ struct Hasher {
 };
 
 typedef cuckoo<int, int, Hasher, std::equal_to<int>, 
-	      5, 10000, 100, 8, 5> hm;
+        5, 10000, 100, 8, 5> hm;
 
 void TestCuckoo() {
   

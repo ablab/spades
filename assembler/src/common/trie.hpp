@@ -3,7 +3,7 @@
  *
  * Created on: 3.04.2011
  *     Author: Mariya Fomkina
- *   Modified: 18.04.2011 by author
+ *   Modified: 23.04.2011 by author
  */
 
 #ifndef _TRIE_HPP_
@@ -17,11 +17,8 @@ private:
   struct Node {
     // can be one of two values - 0 or 1 (binary alphabet)
     char letter;
-    // these are the numbers of cells with 0 and 1 next letters
-    ///size_t zero; 
-    ///size_t one;
+    // these are the numbers of cells with 0 and 1 next letters and
     // parent node
-    ///size_t parent;
     size_t nodes[3];
     // the pointer to data stored
     Value* data; 
@@ -35,16 +32,13 @@ private:
   vector<Value> data_;
   size_t size_;
   size_t len_;
-  // data storage should better be in arrays,
-  // but it's possible to test on vectors
-  //Node* tree_;
-  //Value* data_;
 public:
   class iterator {
   private: 
     size_t pos;
     trie* tree;
     Key key;
+    pair<Key, Value> cur_pair_;
     iterator(size_t p, trie* t) : pos(p), tree(t) {}
     friend class trie;
   public:
@@ -63,15 +57,15 @@ public:
       char* temp = new char[sizeof(Key) * 8];
       size_t p = pos;
       for (size_t i = sizeof(Key) * 8 - 1; i >= 0; --i) {
-				temp[i] = tree_[pos].letter;
-				p = tree_[pos].nodes[2];
+        temp[i] = tree_[pos].letter;
+        p = tree_[pos].nodes[2];
       }
       char* key_temp = new char[sizeof(Key)];
       for (int i = 0; i < sizeof(Key); ++i) {
-				key_temp[i] = temp[i * 8];
-				for (size_t j = 1; j < 8; ++j) {
-					key_temp[i] = (key_temp[i] << 1) + temp[i * 8 + j];
-				}
+        key_temp[i] = temp[i * 8];
+        for (size_t j = 1; j < 8; ++j) {
+          key_temp[i] = (key_temp[i] << 1) + temp[i * 8 + j];
+        }
       }
       memcpy(&key, key_temp, sizeof(Key));
       delete [] temp;
@@ -88,8 +82,8 @@ public:
     }
 
     pair<Key, Value>& operator*() {
-			std::pair<Key, Value> p = make_pair(key, *((*tree).tree_[pos].data));
-			return p;
+      cur_pair_ = make_pair(key, *((*tree).tree_[pos].data));
+      return cur_pair_;
     }
 
     bool operator==(const iterator &it) {
@@ -121,20 +115,20 @@ private:
       pos = tree_[pos].nodes[(size_t)temp_key[i + 1]];
       ++i;
     }
-		for (size_t j = i + 1; j < sok; ++j) {
-			Node node(temp_key[j]);
-			tree_[pos].nodes[(size_t)temp_key[j]] = tree_.size();
-			node.nodes[2] = pos;
-			tree_.push_back(node);
-			pos = tree_.size() - 1;
-		}
-		data_.push_back(value.second);
-		tree_[pos].data = &(data_[data_.size() - 1]);
-		++size_;
-		len_ = tree_.size();
+    for (size_t j = i + 1; j < sok; ++j) {
+      Node node(temp_key[j]);
+      tree_[pos].nodes[(size_t)temp_key[j]] = tree_.size();
+      node.nodes[2] = pos;
+      tree_.push_back(node);
+      pos = tree_.size() - 1;
+    }
+    data_.push_back(value.second);
+    tree_[pos].data = &(data_[data_.size() - 1]);
+    ++size_;
+    len_ = tree_.size();
   }
 
-	iterator search_for(const Key& k) {
+  iterator search_for(const Key& k) {
     size_t sok = sizeof(Key) * 8;
     char* temp_key = new char[sok];
     for (size_t i = 0; i < sok; ++i) {
@@ -146,12 +140,12 @@ private:
       pos = tree_[pos].nodes[(size_t)temp_key[i + 1]];
       ++i;
     }
-		if (i == sok - 1) {
-			return iterator(pos, this);
-		} else {
-			return iterator(len_, this);
-		}
-	}
+    if (i == sok - 1) {
+      return iterator(pos, this);
+    } else {
+      return iterator(len_, this);
+    }
+  }
 
 public:
 
@@ -170,12 +164,12 @@ public:
 
   trie<Key, Value>& operator=(const trie<Key, Value>& Trie) {
     size_ = Trie.size_;
-		len_ = Trie.len_;
-		//not safe, can cause memory leak
-		tree_.clear();
-		tree_ = Trie.tree_;
-		data_.clear();
-		data_ = Trie.data_;
+    len_ = Trie.len_;
+    //not safe, can cause memory leak
+    tree_.clear();
+    tree_ = Trie.tree_;
+    data_.clear();
+    data_ = Trie.data_;
     return *this;
   }
 
@@ -198,37 +192,32 @@ public:
   }
 
   iterator find(const Key& k) {
-    //TEMP
-		return search_for(k);
-    //return end();
+    return search_for(k);
   }
 
   pair<iterator, bool> insert(const pair<const Key, Value> &k) {
-    //TEMP
-		iterator it = search_for(k.first);
-		if (it == end()) {
-			add_new(k);
-			return make_pair(end(), true);
-		} else {
-			return make_pair(it, false);
-		} 
+    iterator it = search_for(k.first);
+    if (it == end()) {
+      add_new(k);
+      return make_pair(end(), true);
+    } else {
+      return make_pair(it, false);
+    } 
   }
 
   size_t erase(const Key& k) {
-    //TEMP
-		iterator it = search_for(k);
-		if (it != end()) {
-			//simple and not optimal
-			tree_[it.pos].data = NULL;
-		}
+    iterator it = search_for(k);
+    if (it != end()) {
+      //simple and not optimal
+      tree_[it.pos].data = NULL;
+    }
     return 0;
   }
 
   void clear() {
-    //TEMP
-		tree_.clear();
-		data_.clear();
-		size_ = 0;
+    tree_.clear();
+    data_.clear();
+    size_ = 0;
     len_ = 1;
     tree_.push_back(Node(15));
   }
