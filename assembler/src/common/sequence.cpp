@@ -1,9 +1,20 @@
-/*
- * sequence.cpp
+/**
+ * @file    sequence.cpp
+ * @author  vyahhi
+ * @version 1.0
  *
- *  Created on: 01.03.2011
- *      Author: vyahhi
+ * @section LICENSE
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * @section DESCRIPTION
+ *
+ * Immutable runtime length sequence (someway slow)
  */
+
 
 #include "sequence.hpp"
 #include "nucl.hpp"

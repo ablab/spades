@@ -7,7 +7,7 @@ De novo sequence assembler for short mate paired reads (70+ bp).
 
 You need zlib (dev), liblog4cxx and google-sparsehash installed in your system.
 
-In Ubuntu it's simple:
+In Ubuntu/Debian it's simple:
  
 > sudo apt-get install zlib1g-dev
 
@@ -21,6 +21,16 @@ In Ubuntu it's simple:
 #> make
 #> sudo make install
 #> make clean
+
+In Fedora:
+> su
+> yum search sparsehash-devel
+> yum install sparsehash-devel
+
+> yum install log4cxx-devel
+> yum install apr-util-devel
+
+
 
 === INSTALLATION ===
 
