@@ -25,8 +25,12 @@ class DeBruijnPlus {
 private:
 	typedef Seq<size_> Kmer;
 	typedef Seq<size_ - 1> KMinusOneMer;
-	typedef std::tr1::unordered_map<Kmer, pair<Value, size_t>, typename Kmer::hash, typename Kmer::equal_to> map_type;
+	typedef std::tr1::unordered_map<Kmer, pair<Value, size_t>, typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
 	map_type nodes_;
+
+	bool contains(const Kmer &k) const {
+		return nodes_.find(k) != nodes_.end();
+	}
 
 	// DE BRUIJN:
 
@@ -52,17 +56,20 @@ private:
 
 	// INDEX:
 
-	void put(const Kmer &k, Value id, size_t s) {
-		nodes_.insert(make_pair(k, make_pair(id,s)));
+	void putInIndex(const Kmer &k, Value id, size_t offset) {
+		map_iterator mi = nodes_.find(k);
+		if (mi == nodes_.end()) {
+			nodes_.insert(make_pair(k,make_pair(id, offset)));
+		}
+		else {
+			mi->second.first = id;
+			mi->second.second = offset;
+		}
 	}
 
 public:
 	typedef typename map_type::iterator map_iterator;
 	typedef typename map_type::const_iterator map_const_iterator;
-
-	bool contains(const Kmer &k) const {
-		return nodes_.find(k) != nodes_.end();
-	}
 
 	// DE BRUIJN:
 
@@ -128,10 +135,11 @@ public:
 
 	// INDEX:
 
-	/*bool contains(const Kmer &kmer) {
-		typename map_const_iterator mci = nodes_.find(kmer);
-		return mci != nodes_.end() && (mci->second.second + 1 == 0); // hack! todo: check
-	}*/
+	bool containsInIndex(const Kmer &k) const {
+		map_const_iterator mci = nodes_.find(k);
+		return ( mci != nodes_.end() ) && (mci->second.second != (size_t) -1);
+	}
+
 
 	const pair<Value, size_t>& get(const Kmer &k) const {
 		map_const_iterator mci = nodes_.find(k);
@@ -151,10 +159,10 @@ public:
 	void RenewKmersHash(const Sequence& nucls, Value id) {
 		assert(nucls.size() >= size_);
 		Kmer k(nucls);
-		put(k, id, 0);
+		putInIndex(k, id, 0);
 		for (size_t i = size_, n = nucls.size(); i < n; ++i) {
 			k = k << nucls[i];
-			put(k, id, i - size_ + 1);
+			putInIndex(k, id, i - size_ + 1);
 		}
 	}
 

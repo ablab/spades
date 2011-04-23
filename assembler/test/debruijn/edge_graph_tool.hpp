@@ -114,7 +114,7 @@ void EdgeGraphTool(ReadStream& stream, const string& genome) { // actually, it's
 	INFO("DeBruijn graph constructed");
 
 	EdgeGraph g(K);
-	de_bruijn::DeBruijnPlus<K + 1, EdgeId> index;
+	de_bruijn::DeBruijnPlus<K + 1, EdgeId> &index = debruijn;
 	EdgeHashRenewer<K + 1, EdgeGraph> index_handler(g, index);
 	g.AddActionHandler(&index_handler);
 

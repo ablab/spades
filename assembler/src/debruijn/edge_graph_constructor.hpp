@@ -83,7 +83,7 @@ private:
 	VertexId FindVertexByOutgoingEdges(EdgeGraph &graph, Index &index, Kmer kmer) {
 		for (char c = 0; c < 4; ++c) {
 			KPlusOneMer edge = kmer.pushBack(c);
-			if (index.contains(edge)) {
+			if (index.containsInIndex(edge)) {
 				return graph.EdgeStart(index.get(edge).first);
 			}
 		}
@@ -113,12 +113,12 @@ public:
 	virtual void ConstructGraph(EdgeGraph &graph, Index &index) {
 		for (typename DeBruijn::map_iterator it = origin_.begin(); it != origin_.end(); it++) {
 			KPlusOneMer edge = it->first;
-			if (!index.contains(edge)) {
+			if (!index.containsInIndex(edge)) {
 				Sequence edge_sequence = ConstructSequenceWithEdge(edge);
 				VertexId start = FindVertexMaybeMissing(graph, index, edge_sequence.start<kmer_size_> ());
 				VertexId end = FindVertexMaybeMissing(graph, index, edge_sequence.end<kmer_size_> ());
 				graph.AddEdge(start, end, edge_sequence);
-				assert(index.contains(edge));
+				assert(index.containsInIndex(edge));
 			}
 		}
 	}

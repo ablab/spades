@@ -736,7 +736,7 @@ private:
 	const de_bruijn::DeBruijnPlus<k+1,EdgeId> &index_;
 
 	void processKmer(Seq<k+1> &kmer, vector<EdgeId> &passed, size_t &startPosition, size_t &endPosition) const {
-		if (index_.contains(kmer)) {
+		if (index_.containsInIndex(kmer)) {
 			pair<EdgeId, size_t> position = index_.get(kmer);
 			endPosition = position.second;
 			if (passed.empty()) {
