@@ -1,8 +1,20 @@
-/*
- * graph.hpp
+/**
+ * @file graph.hpp
  *
- *  Created on: 02.03.2011
- *      Author: vyahhi
+ * @author vyahhi
+ * @version 1.0
+ *
+ * @section LICENSE
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * @section DESCRIPTION
+ *
+ * Simple graph interface and implementation
+ *
  */
 
 #ifndef GRAPH_HPP_
@@ -10,7 +22,6 @@
 
 #include <map>
 
-// Simple graph interface and implementation
 template<typename Node, typename Edge, typename NodeData, typename EdgeData>
 class Graph {
 public:
@@ -23,7 +34,6 @@ private:
 	std::map<Edge,EdgeData> edges_;
 };
 
-// Stupid Reference Implementation
 
 template<typename Node, typename Edge, typename NodeData, typename EdgeData>
 void Graph<Node,Edge,NodeData,EdgeData>::putNode(const Node &n, const NodeData &nd) {

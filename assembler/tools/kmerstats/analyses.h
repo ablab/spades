@@ -10,20 +10,20 @@
 
 class Analyses {
 private:
-	std::map <std::string, int> m_data;
-	int m_mer;
-	char *m_filename;	
+    std::map <std::string, int> m_data;
+    int m_mer;
+    char *m_filename;
 
-	void createDatFile();
-	
-	void paint() {
-		system("gnuplot ./file.gnu");
-	}
-	void init();
+    void createDatFile();
+
+    void paint() {
+        system("gnuplot ./file.gnu");
+    }
+    void init();
 public:
-	Analyses(char *argv[]) : m_filename(argv[1]), m_mer(atoi(argv[2])) {
-		init();	   
-	}
+    Analyses(char *argv, char *mer) : m_filename(argv), m_mer(atoi(mer)) {
+        init();
+    }
 };
 
 #endif

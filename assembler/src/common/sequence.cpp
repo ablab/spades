@@ -75,7 +75,9 @@ bool Sequence::intersects(const Sequence &t) const {
 	return false;
 }
 
-// TODO Might be optimized via int comparison (not so easy)
+/**
+  * @todo Might be optimized via int comparison (not so easy)
+  */
 bool Sequence::operator<(const Sequence &that) const {
 	size_t s = min(size_, that.size_);
 	for (size_t i = 0; i < s; ++i) {
@@ -111,7 +113,9 @@ Sequence Sequence::Subseq(size_t from) const {
 	return Subseq(from, size_);
 }
 
-//TODO: must be KMP or hashing instead of this shit
+/**
+* @todo : must be KMP or hashing instead of this shit
+*/
 int Sequence::find(const Sequence &t, int from) const {
 	for (size_t i = from; i <= size() - t.size(); i++) {
 		if (Subseq(i, i + t.size()) == t) {
@@ -120,13 +124,13 @@ int Sequence::find(const Sequence &t, int from) const {
 	}
 	return -1;
 }
-/*
+/**
+ *
  *@param k  minimal intersection of sequences
  *@param directed  LEFT means that after intersection t continues to left over _this and matches perfectly with _this on overlaping
- *
+ *@return 0 - undirected similarity, 1: t extends this to right, -1: this extends t
  *
  */
-// 0 - undirected similarity, 1: t extends this to right, -1: this extends t
 int Sequence::similar(const Sequence &t, int k, char directed) const {
 //	cerr << endl << t.str()<< "similar started" <<k << endl;
 	int result = 0;
@@ -160,7 +164,9 @@ int Sequence::rightSimilar(const Sequence &t, int k) const {
 	return 0;
 }
 
-// TODO optimize
+/**
+* @todo optimize
+  */
 Sequence Sequence::operator+(const Sequence &s) const {
 	return Sequence(str() + s.str());
 	// TODO might be opposite to correct
