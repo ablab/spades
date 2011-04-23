@@ -3,27 +3,23 @@
  * 
  * Created on: 17.04.2011
  *     Author: Mariya Fomkina
- *   Modified: 18.04.2011 by author
+ *   Modified: 23.04.2011 by author
  */
 
 #ifndef _SEQ_FILTER_HPP_
 #define _SEQ_FILTER_HPP_
  
 #include "ireadstream.hpp"
-#include "cuckoo.hpp"
 
-template<size_t size>
+template<size_t size, class hm>
 class seq_filter {		
 public:
-	typedef cuckoo<Seq<size>, size_t, typename Seq<size>::multiple_hash, 
-								 typename Seq<size>::equal_to, 4, 1000, 100, 6, 5> hm; 
-	
 	static void filter(const std::string& in, /*std::string& out,*/ 
-										 const size_t L = 1) {
+										 const size_t L = 1, bool stat = false) {
 		std::vector<Read> reads = get_reads_from_file(in);
 		hm map;
 		add_seqs_from_reads_to_map(reads, map);
-		write_seqs_from_map_to_stdout(map, L);
+		write_seqs_from_map_to_stdout(map, L, stat);
 	}
 
 	static std::vector<Seq<size> > filter(const std::vector<Read>& reads, 
@@ -35,7 +31,7 @@ public:
 
 private:
 	seq_filter();
-	seq_filter(const seq_filter<size>& sf);
+	seq_filter(const seq_filter<size, hm>& sf);
 
 private:
 	static void add_seqs_from_reads_to_map(const std::vector<Read>& reads, hm& map) {
@@ -82,18 +78,23 @@ private:
 		return seqs;
 	}
 
-	static void write_seqs_from_map_to_stdout(hm& map, const size_t& L) {
+	static void write_seqs_from_map_to_stdout(hm& map, const size_t& L, bool stat) {
 		typename hm::iterator end = map.end();
 		size_t cnt = 0;
 		for (typename hm::iterator it = map.begin(); it != end; ++it) {
 			if ((*it).second > L) {
-				std::cout << (*it).first << std::endl;
-				++cnt;
+        if (stat) {
+          ++cnt;
+        } else {
+          std::cout << (*it).first << std::endl;
+				}
 			}
 		}
-		std::cout << map.size() << " "  << cnt << " " << map.length() << " " 
-							<< ((float)map.size())/map.length() << " " 
-							<< ((float)map.size() - cnt)/map.size() << std::endl; //for test!
+    if (stat) {
+      std::cout << "Selected " << cnt << " k-mers from " << map.size() 
+                << ", removed "  << ((float)map.size() - cnt)/map.size()*100 
+                << "% of k-mers." << std::endl; 
+    }
 	}
 };
 
