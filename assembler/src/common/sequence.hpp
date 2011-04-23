@@ -27,13 +27,6 @@ private:
 	bool rtl_; // Right to left + complimentary (?)
 	Sequence(const Sequence &seq, size_t from, size_t size, bool rtl);
 public:
-	// constructors:
-	//	template<size_t _size>
-	//	Sequence(const Seq<_size> seq) :
-	//		from_(0), size_(seq.size()), rtl_(false) { // TODO: optimize
-	//		data_ = new SequenceData(seq);
-	//		data_->Grab();
-	//	}
 	const Sequence& operator=(const Sequence &rhs) {
 		if (data_ == rhs.data_) {
 			return *this;

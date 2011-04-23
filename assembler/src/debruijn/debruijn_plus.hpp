@@ -20,12 +20,13 @@
 
 namespace de_bruijn {
 
-template <size_t size_, typename Value>
+template<size_t size_, typename Value>
 class DeBruijnPlus {
 private:
 	typedef Seq<size_> Kmer;
 	typedef Seq<size_ - 1> KMinusOneMer;
-	typedef std::tr1::unordered_map<Kmer, pair<Value, size_t>, typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
+	typedef std::tr1::unordered_map<Kmer, pair<Value, size_t> ,
+			typename Kmer::hash> map_type; // size_t is offset
 	map_type nodes_;
 
 	bool contains(const Kmer &k) const {
@@ -35,16 +36,16 @@ private:
 	// DE BRUIJN:
 
 	void addEdge(const Kmer &k) {
-		nodes_.insert(make_pair(k,make_pair(Value(), -1)));
+		nodes_.insert(make_pair(k, make_pair(Value(), -1)));
 	}
 
 	void CountSequence(const Sequence& s) {
 		Seq<size_> kmer = s.start<size_> ();
-		for (size_t j = size_; j < s.size(); ++j) {
-			addEdge(kmer);
-			kmer = kmer << s[j];
-		}
 		addEdge(kmer);
+		for (size_t j = size_; j < s.size(); ++j) {
+			kmer = kmer << s[j];
+			addEdge(kmer);
+		}
 	}
 
 	void CountRead(const Read &read) {
@@ -59,9 +60,8 @@ private:
 	void putInIndex(const Kmer &k, Value id, size_t offset) {
 		map_iterator mi = nodes_.find(k);
 		if (mi == nodes_.end()) {
-			nodes_.insert(make_pair(k,make_pair(id, offset)));
-		}
-		else {
+			nodes_.insert(make_pair(k, make_pair(id, offset)));
+		} else {
 			mi->second.first = id;
 			mi->second.second = offset;
 		}
@@ -72,10 +72,6 @@ public:
 	typedef typename map_type::const_iterator map_const_iterator;
 
 	// DE BRUIJN:
-
-	/*DeBruijnPlus() { // redudant, delete at some time
-		;
-	}*/
 
 	DeBruijnPlus(const vector<Read> &v, bool) { // bool just for differentiating from template constructor :(
 		for (size_t i = 0; i < v.size(); ++i) {
@@ -137,9 +133,8 @@ public:
 
 	bool containsInIndex(const Kmer &k) const {
 		map_const_iterator mci = nodes_.find(k);
-		return ( mci != nodes_.end() ) && (mci->second.second != (size_t) -1);
+		return (mci != nodes_.end()) && (mci->second.second != (size_t) -1);
 	}
-
 
 	const pair<Value, size_t>& get(const Kmer &k) const {
 		map_const_iterator mci = nodes_.find(k);
@@ -175,7 +170,6 @@ public:
 			deleteIfEqual(k, id);
 		}
 	}
-
 
 };
 

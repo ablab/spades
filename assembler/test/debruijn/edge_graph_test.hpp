@@ -186,20 +186,20 @@ void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 
 template<size_t kmer_size_, class ReadStream>
 void ConstructGraphAndBothIndices(ReadStream& stream, EdgeGraph& g, de_bruijn::DeBruijnPlus<kmer_size_ + 1, EdgeId>& index, PairedInfoIndex<EdgeGraph>& paired_index) {
-	de_bruijn::DeBruijn<kmer_size_> debruijn;
-
-	SimpleReaderWrapper<ReadStream> unitedStream(stream);
-	debruijn.ConstructGraph(unitedStream);
-
-	EdgeGraphConstructor<kmer_size_> g_c(debruijn);
-	EdgeHashRenewer<kmer_size_ + 1, EdgeGraph> index_handler(g, index);
-	g.AddActionHandler(&index_handler);
-	g_c.ConstructGraph(g, index);
-
-	stream.reset();
-	paired_index.FillIndex<K, ReadStream>(index, stream);
-
-	g.RemoveActionHandler(&index_handler);
+//	de_bruijn::DeBruijn<kmer_size_> debruijn;
+//
+//	SimpleReaderWrapper<ReadStream> unitedStream(stream);
+//	debruijn.ConstructGraph(unitedStream);
+//
+//	EdgeGraphConstructor<kmer_size_> g_c(debruijn);
+//	EdgeHashRenewer<kmer_size_ + 1, EdgeGraph> index_handler(g, index);
+//	g.AddActionHandler(&index_handler);
+//	g_c.ConstructGraph(g, index);
+//
+//	stream.reset();
+//	paired_index.FillIndex<K, ReadStream>(index, stream);
+//
+//	g.RemoveActionHandler(&index_handler);
 }
 
 //todo rename tests
