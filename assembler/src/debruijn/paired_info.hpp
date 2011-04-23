@@ -27,7 +27,7 @@ public:
 	}
 
 	template<size_t kmer_size, class Stream>
-	void FillIndex(const SimpleIndex<kmer_size + 1, EdgeId>& index, Stream& stream) {
+	void FillIndex(const DeBruijnPlus<kmer_size + 1, EdgeId>& index, Stream& stream) {
 		typedef Seq<kmer_size + 1> KPOMer;
 		de_bruijn::SimpleSequenceMapper<kmer_size, Graph> read_threader(graph_,
 				index);

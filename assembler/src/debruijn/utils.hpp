@@ -8,6 +8,8 @@
 #ifndef UTILS_HPP_
 #define UTILS_HPP_
 
+#include "debruijn_plus.hpp"
+
 namespace de_bruijn {
 
 LOGGER("d.utils");
@@ -285,10 +287,10 @@ template<size_t kmer_size_, typename Graph, typename ElementId>
 class DataHashRenewer {
 
 	typedef Seq<kmer_size_> Kmer;
-
+	typedef de_bruijn::DeBruijnPlus<kmer_size_, ElementId> Index;
 	const Graph &g_;
 
-	SimpleIndex<kmer_size_, ElementId> &index_;
+	Index &index_;
 
 	/**
 	 *	renews hash for vertex and complementary
@@ -307,7 +309,7 @@ class DataHashRenewer {
 	}
 
 public:
-	DataHashRenewer(const Graph& g, SimpleIndex<kmer_size_, ElementId>& index) :
+	DataHashRenewer(const Graph& g, Index& index) :
 		g_(g), index_(index) {
 	}
 
@@ -326,11 +328,11 @@ template<size_t kmer_size_, class Graph>
 class EdgeHashRenewer: public GraphActionHandler<Graph> {
 
 	typedef typename Graph::EdgeId EdgeId;
-
+	typedef de_bruijn::DeBruijnPlus<kmer_size_, EdgeId> Index;
 	DataHashRenewer<kmer_size_, Graph, EdgeId> renewer_;
 
 public:
-	EdgeHashRenewer(const Graph& g, SimpleIndex<kmer_size_, EdgeId>& index) :
+	EdgeHashRenewer(const Graph& g, Index &index) :
 		renewer_(g, index) {
 	}
 
@@ -731,27 +733,26 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 private:
 	const Graph& g_;
-	const de_bruijn::SimpleIndex<k + 1, EdgeId>& index_;
+	const de_bruijn::DeBruijnPlus<k+1,EdgeId> &index_;
 
-	void processKmer(Seq<k + 1> &kmer, vector<EdgeId> &passed,
-			size_t &startPosition, size_t &endPosition) const {
+	void processKmer(Seq<k+1> &kmer, vector<EdgeId> &passed, size_t &startPosition, size_t &endPosition) const {
 		if (index_.contains(kmer)) {
 			pair<EdgeId, size_t> position = index_.get(kmer);
 			endPosition = position.second;
 			if (passed.empty()) {
 				startPosition = position.second;
 			}
-			if (passed.empty() || passed[passed.size() - 1] != position.first)
+			if (passed.empty() || passed[passed.size() - 1] != position.first) {
 				passed.push_back(position.first);
+			}
 		}
 	}
 public:
-	SimpleSequenceMapper(const Graph& g,
-			const de_bruijn::SimpleIndex<k + 1, EdgeId>& index) :
-		g_(g), index_(index) {
+	SimpleSequenceMapper(const Graph& g, const de_bruijn::DeBruijnPlus<k+1,EdgeId> &index) : g_(g), index_(index) {
+		;
 	}
 
-	de_bruijn::Path<EdgeId> MapSequence(const Sequence& read) const {
+	de_bruijn::Path<EdgeId> MapSequence(const Sequence &read) const {
 		vector<EdgeId> passed;
 		if (read.size() <= k) {
 			return de_bruijn::Path<EdgeId>();
@@ -766,6 +767,7 @@ public:
 		}
 		return de_bruijn::Path<EdgeId>(passed, startPosition, endPosition + 1);
 	}
+
 };
 
 }

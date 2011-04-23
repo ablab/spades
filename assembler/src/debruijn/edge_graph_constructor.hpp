@@ -13,17 +13,16 @@
 
 namespace edge_graph {
 
-using de_bruijn::SimpleIndex;
 using de_bruijn::GraphActionHandler;
 using de_bruijn::EdgeHashRenewer;
 
 template<size_t kmer_size_>
 class EdgeGraphConstructor {
 private:
-	typedef SimpleIndex<kmer_size_ + 1, EdgeId> Index;
+	typedef de_bruijn::DeBruijnPlus<kmer_size_ + 1, EdgeId> Index;
 	typedef Seq<kmer_size_> Kmer;
 	typedef Seq<kmer_size_ + 1> KPlusOneMer;
-	typedef DeBruijnPlus<kmer_size_ + 1, EdgeId> DeBruijn;
+	typedef de_bruijn::DeBruijnPlus<kmer_size_ + 1, EdgeId> DeBruijn;
 	//typedef typename DeBruijn::edge_iterator edge_iterator;
 	//typedef typename DeBruijn::kmer_iterator kmer_iterator;
 

@@ -15,8 +15,10 @@
 /*
  * act as DeBruijn graph and Index at the same time :)
  *
- * K here is as K+1 in other parts of code
+ * size_ here is as K+1 in other parts of code
  */
+
+namespace de_bruijn {
 
 template <size_t size_, typename Value>
 class DeBruijnPlus {
@@ -29,11 +31,7 @@ private:
 	// DE BRUIJN:
 
 	void addEdge(const Kmer &k) {
-		nodes_.insert(make_pair(k,make_pair(Value(),-1)));
-	}
-
-	bool contains(const Kmer &k) {
-		return nodes_.find(k) != nodes_.end();
+		nodes_.insert(make_pair(k,make_pair(Value(), -1)));
 	}
 
 	void CountSequence(const Sequence& s) {
@@ -62,6 +60,9 @@ public:
 	typedef typename map_type::iterator map_iterator;
 	typedef typename map_type::const_iterator map_const_iterator;
 
+	bool contains(const Kmer &k) const {
+		return nodes_.find(k) != nodes_.end();
+	}
 
 	// DE BRUIJN:
 
@@ -169,4 +170,7 @@ public:
 
 
 };
+
+}
+
 #endif /* DEBRUIJN_PLUS_HPP_ */

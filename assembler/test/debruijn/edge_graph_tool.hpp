@@ -17,8 +17,8 @@
 
 namespace edge_graph {
 
-typedef DeBruijnPlus<K+1, EdgeId> DeBruijn;
-typedef SimpleIndex<K + 1, EdgeId> Index;
+typedef de_bruijn::DeBruijnPlus<K+1, EdgeId> DeBruijn;
+typedef de_bruijn::DeBruijnPlus<K+1, EdgeId> Index;
 typedef de_bruijn::Path<EdgeId> Path;
 typedef de_bruijn::PairedInfoIndex<EdgeGraph> PairedIndex;
 
@@ -118,7 +118,7 @@ void EdgeGraphTool(ReadStream& stream, const string& genome) {
 	//	debruijn.show(genome);
 
 	EdgeGraph g(K);
-	SimpleIndex<K + 1, EdgeId> index;
+	de_bruijn::DeBruijnPlus<K + 1, EdgeId> index;
 	EdgeHashRenewer<K + 1, EdgeGraph> index_handler(g, index);
 	g.AddActionHandler(&index_handler);
 
