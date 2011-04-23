@@ -164,9 +164,8 @@ template<size_t kmer_size_>
 void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 		string etalon_edges[]) {
 	vector<Read> reads = MakeReads(reads_str, read_cnt);
-	de_bruijn::DeBruijnPlus<kmer_size_+1, EdgeId> debruijn;
+	de_bruijn::DeBruijnPlus<kmer_size_+1, EdgeId> debruijn(reads, true);
 	EdgeGraph g(kmer_size_);
-	debruijn.ConstructGraph(reads);
 	EdgeGraphConstructor<kmer_size_> g_c(debruijn);
 	de_bruijn::DeBruijnPlus<kmer_size_ + 1, EdgeId> &index = debruijn;
 	EdgeHashRenewer<kmer_size_ + 1, EdgeGraph> index_handler(g, index);

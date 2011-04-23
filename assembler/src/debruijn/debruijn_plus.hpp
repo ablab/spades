@@ -73,8 +73,14 @@ public:
 
 	// DE BRUIJN:
 
-	DeBruijnPlus() { // redudant, delete at some time
+	/*DeBruijnPlus() { // redudant, delete at some time
 		;
+	}*/
+
+	DeBruijnPlus(const vector<Read> &v, bool) { // bool just for differentiating from template constructor :(
+		for (size_t i = 0; i < v.size(); ++i) {
+			CountRead(v[i]);
+		}
 	}
 
 	template<class ReadStream>
@@ -83,12 +89,6 @@ public:
 		while (!stream.eof()) {
 			stream >> r;
 			CountRead(r);
-		}
-	}
-
-	void ConstructGraph(const vector<Read> &v) {
-		for (size_t i = 0; i < v.size(); ++i) {
-			CountRead(v[i]);
 		}
 	}
 
