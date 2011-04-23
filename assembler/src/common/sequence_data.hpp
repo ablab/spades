@@ -1,10 +1,18 @@
 /*
+ * @file    sequence_data.hpp
+ * @author  vyahhi
+ * @version 1.0
+ *
+ * @section LICENSE
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * @section DESCRIPTION
+ *
  * Sequence Data with ref counter
- *
- * Some of the source code was taken from the book "C++ for Real Programmers"
- *
- *  Created on: 09.03.2011
- *      Author: vyahhi
  */
 
 #ifndef SEQUENCE_DATA_HPP_
@@ -40,8 +48,8 @@ private:
 			delete this;
 		}
 	}
-  // ????
-	template<typename S>
+
+        template<typename S>
 	string SubString(const S &s, size_t offset, size_t size) {
 		string str;
 		for (size_t i = offset; i < size; ++i) {
@@ -78,8 +86,7 @@ public:
 
 	~SequenceData() {
 	        free(bytes_);
-		//delete[] bytes_;
-	}
+        }
 
 	char operator[](const size_t i) const {
 		return bytes_[i >> STNbits][i & (STN - 1)];
