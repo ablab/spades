@@ -8,6 +8,7 @@
 #ifndef SIMPLE_INDEX_HPP_
 #define SIMPLE_INDEX_HPP_
 
+/*
 template<size_t kmer_size_, typename ElementId>
 class SimpleIndex {
 private:
@@ -72,6 +73,6 @@ public:
 		}
 	}
 
-};
+};*/
 
 #endif /* SIMPLE_INDEX_HPP_ */

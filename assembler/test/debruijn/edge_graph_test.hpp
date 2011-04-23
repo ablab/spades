@@ -12,7 +12,6 @@ namespace edge_graph {
 
 using de_bruijn::Traversal;
 using de_bruijn::DFS;
-using de_bruijn::SimpleIndex;
 using de_bruijn::PairedInfoIndex;
 
 void EmptyGraphTest() {
@@ -187,7 +186,7 @@ void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 }
 
 template<size_t kmer_size_, class ReadStream>
-void ConstructGraphAndBothIndices(ReadStream& stream, EdgeGraph& g, SimpleIndex<kmer_size_ + 1, EdgeId>& index, PairedInfoIndex<EdgeGraph>& paired_index) {
+void ConstructGraphAndBothIndices(ReadStream& stream, EdgeGraph& g, de_bruijn::DeBruijnPlus<kmer_size_ + 1, EdgeId>& index, PairedInfoIndex<EdgeGraph>& paired_index) {
 	de_bruijn::DeBruijn<kmer_size_> debruijn;
 
 	SimpleReaderWrapper<ReadStream> unitedStream(stream);

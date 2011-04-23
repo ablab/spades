@@ -353,7 +353,7 @@ class VertexHashRenewer: public GraphActionHandler<Graph> {
 	DataHashRenewer<kmer_size_, Graph, VertexId> renewer_;
 
 public:
-	VertexHashRenewer(const Graph& g, SimpleIndex<kmer_size_, VertexId> *index) :
+	VertexHashRenewer(const Graph& g, de_bruijn::DeBruijnPlus<kmer_size_, VertexId> *index) :
 		renewer_(g, index) {
 	}
 
