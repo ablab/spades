@@ -53,12 +53,12 @@ void ProduceInfo(const EdgeGraph& g, const Index& index, const string& genome,
 	WriteToDotFile(g, file_name, graph_name, path);
 }
 
-template<class ReadStream>
+/*template<class ReadStream>
 void ConstructUncondensedGraph(DeBruijn& debruijn, ReadStream& stream) {
 	INFO("Constructing DeBruijn graph");
 	debruijn.ConstructGraphFromStream(stream);
 	INFO("DeBruijn graph constructed");
-}
+}*/
 
 template<class ReadStream>
 void CondenseGraph(DeBruijn& debruijn, EdgeGraph& g, Index& index, ReadStream& stream, const string& genome) {
@@ -105,17 +105,13 @@ void FillPairedIndex(PairedIndex& paired_info_index, ReadStream& stream, Index& 
 }
 
 template <class ReadStream>
-void EdgeGraphTool(ReadStream& stream, const string& genome) {
+void EdgeGraphTool(ReadStream& stream, const string& genome) { // actually, it's assembler :)
 	INFO("Edge graph construction tool started");
 
-	DeBruijn debruijn;
-
-	typedef SimpleReaderWrapper<ReadStream> SimpleWrapper;
-
-	SimpleWrapper unitedStream(stream);
-	ConstructUncondensedGraph<SimpleWrapper> (debruijn, unitedStream);
-
-	//	debruijn.show(genome);
+	INFO("Constructing DeBruijn graph");
+	SimpleReaderWrapper<ReadStream> unitedStream(stream);
+	DeBruijn debruijn(unitedStream);
+	INFO("DeBruijn graph constructed");
 
 	EdgeGraph g(K);
 	de_bruijn::DeBruijnPlus<K + 1, EdgeId> index;

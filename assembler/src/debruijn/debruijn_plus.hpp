@@ -66,12 +66,12 @@ public:
 
 	// DE BRUIJN:
 
-	DeBruijnPlus() {
+	DeBruijnPlus() { // redudant, delete at some time
 		;
 	}
 
 	template<class ReadStream>
-	void ConstructGraphFromStream(ReadStream& stream) {
+	DeBruijnPlus(ReadStream &stream) {
 		Read r;
 		while (!stream.eof()) {
 			stream >> r;
