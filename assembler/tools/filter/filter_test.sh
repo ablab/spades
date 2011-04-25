@@ -14,9 +14,10 @@ rm -rf temp.tmp time.tmp memory.tmp
  
 for f in $DATA_DIR/$FILE1 $DATA_DIR/$FILE2 $DATA_DIR/$FILE3; 
   do echo "File:" $f; 
+  echo " " > temp.tmp
   for n in 1 2 3 4 5; 
     do echo "Map type:" $n;
-    (time ./filter $f 1 $n --stat > temp.tmp) 2>>temp.tmp
+    (time ./filter $f 1 $n --stat >> temp.tmp) 2>>temp.tmp
   done
   cat temp.tmp | grep real | sed 's/[ms]/\t/g' >> time.tmp 
   echo " " >> time.tmp
