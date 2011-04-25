@@ -21,11 +21,11 @@ private:
         system("gnuplot ./file.gnu");
     }
     void init();
-    void initFastaTq();
+    void initFastTq();
 public:
     Analyses(char *argv, char *mer) : m_filename(argv), m_mer(atoi(mer)) {
         if ((strstr(argv, ".fastatq")) != NULL) {
-            initFastaTq();
+            initFastTq();
         } else {
             init();
         }
