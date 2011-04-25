@@ -223,7 +223,7 @@ private:
 			return false;
 
 		if (std::abs(info2.d_ - info1.d_) <= MERGE_DATA_ABSOLUTE_DIFFERENCE
-				&& std::abs(info2.d_ - info1.d_) <= info1.d_
+				|| std::abs(info2.d_ - info1.d_) <= info1.d_
 						* MERGE_DATA_RELATIVE_DIFFERENCE) {
 			double newWeight = info1.weight_ + info2.weight_;
 			double newD = (info1.d_ * info1.weight_ + info2.d_ * info2.weight_) / info2.weight_;
