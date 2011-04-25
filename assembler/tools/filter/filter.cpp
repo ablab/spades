@@ -9,7 +9,7 @@
 
 #define K 31
 
-typedef std::map<Seq<K>, size_t, Seq<K>::equal_to> hm1;
+typedef std::map<Seq<K>, size_t, Seq<K>::less> hm1;
 typedef __gnu_cxx::hash_map<Seq<K>, size_t, 
                             Seq<K>::hash, Seq<K>::equal_to> hm2;
 typedef std::tr1::unordered_map<Seq<K>, size_t, 
