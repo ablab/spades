@@ -12,10 +12,11 @@
 #include "strobe_reader.hpp"
 #include "logging.hpp"
 
+namespace abruijn {
+
 using namespace std;
 using namespace __gnu_cxx;
-
-namespace abruijn {
+using hashing::hash_t;
 
 //typedef hash_map< Sequence, int, HashSym<Sequence>, EqSym<Sequence> > SeqCount;
 //SeqCount seqCount;
@@ -29,9 +30,9 @@ map<hash_t, char> tips;
 set<hash_t> earmarked_hashes;
 map<hash_t, set<hash_t> > tip_extensions;
 
-abruijn::Graph graph;
+Graph graph;
 
-HashSym<Sequence> hashSym;
+hashing::HashSym<Sequence> hashSym;
 vector<hash_t> ha;
 hash_t hbest[HTAKE];
 
@@ -47,26 +48,26 @@ void findMinimizers(Sequence s) {
 	ha.reserve(s.size());
 	hashSym.kmers(s, ha);
 	for (size_t i = 0; i < HTAKE; i++) {
-		hbest[i] = maxHash;
+		hbest[i] = hashing::kMax;
 	}
-	for (size_t i = 0; i + K <= s.size(); i++) {
+	for (size_t i = 0; i + K <= s.size(); ++i) {
 		hash_t hi = ha[i];
 		if (!isTrusted(hi)) {
 			continue;
 		}
 		int j = HTAKE;
 		while (j > 0 && hi < hbest[j - 1]) {
-			j--;
+			--j;
 		}
 		if (j == HTAKE || hi == hbest[j]) {
 			continue;
 		}
-		for (int k = HTAKE - 1; k > j; k--) {
+		for (int k = HTAKE - 1; k > j; --k) {
 			hbest[k] = hbest[k - 1];
 		}
 		hbest[j] = hi;
 	}
-	for (size_t i = 0; i < HTAKE && hbest[i] < maxHash; i++) {
+	for (size_t i = 0; i < HTAKE && hbest[i] < hashing::kMax; i++) {
 		earmarked_hashes.insert(hbest[i]);
 	}
 }
@@ -77,12 +78,12 @@ void findMinimizers(Sequence s) {
  */
 void findSecondMinimizer(Sequence s) {
 	hashSym.kmers(s, ha);
-	hash_t he = maxHash;
-	hash_t hb = maxHash;
-	for (size_t i = 0; i + K <= s.size(); i++) {
+	hash_t he = hashing::kMax;
+	hash_t hb = hashing::kMax;
+	for (size_t i = 0; i + K <= s.size(); ++i) {
 		hash_t hi = ha[i];
 		if (earmarked_hashes.count(hi)) {
-			if (he == maxHash) {
+			if (he == hashing::kMax) {
 				he = hi;
 			} else {
 				return;
@@ -94,7 +95,7 @@ void findSecondMinimizer(Sequence s) {
 			hb = hi;
 		}
 	}
-	assert(hb < maxHash);
+	assert(hb < hashing::kMax);
 	earmarked_hashes.insert(hb);
 }
 
@@ -109,7 +110,7 @@ bool LesserK(const Sequence& s, size_t i) {
 void revealTips(Sequence s) {
 	hashSym.kmers(s, ha);
 	vector<int> index;
-	for (size_t i = 0; i + K <= s.size(); i++) {
+	for (size_t i = 0; i + K <= s.size(); ++i) {
 		hash_t hi = ha[i];
 		if (earmarked_hashes.count(hi)) {
 			index.push_back(i);
@@ -130,13 +131,13 @@ void revealTips(Sequence s) {
 void findTipExtensions(Sequence s) {
 	hashSym.kmers(s, ha);
 	vector<int> index;
-	for (size_t i = 0; i + K <= s.size(); i++) {
+	for (size_t i = 0; i + K <= s.size(); ++i) {
 		hash_t hi = ha[i];
 		if (tips.count(hi)) {
 			index.push_back(i);
 		}
 	}
-	for (size_t i = 0; i < index.size(); i++) {
+	for (size_t i = 0; i < index.size(); ++i) {
 		bool lesser = LesserK(s, index[i]);
 		int l = lesser ? 1 : 2;
 		hash_t hi = ha[index[i]];
@@ -221,12 +222,11 @@ void GraphBuilder::build() {
 	Read r;
 #ifdef CUT
 	size_t cut = CUT;
-	size_t cut2 = cut2;
 #endif
 #ifndef CUT
 	size_t cut = -1;
-	size_t cut2 = -1;
 #endif
+	size_t cut2 = 2 * cut;
 
 	INFO("===== Finding " << HTAKE << " minimizers in each read... =====");
 	srw.reset();
@@ -248,66 +248,66 @@ void GraphBuilder::build() {
 //		INFO("Done: " << earmarked_hashes.size() << " earmarked hashes");
 //	}
 
-for(;;) {
-	size_t eh = earmarked_hashes.size();
-	has_right.clear();
-	tips.clear();
-	tip_extensions.clear();
+	for(;;) {
+		size_t eh = earmarked_hashes.size();
+		has_right.clear();
+		tips.clear();
+		tip_extensions.clear();
 
-	INFO("===== Revealing tips... =====");
-	srw.reset();
-	for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
-		srw >> r;
-		revealTips(r.getSequence());
-		VERBOSE(i, " single reads");
-	}
-	for (map<hash_t, char>::iterator it = has_right.begin(); it != has_right.end(); ++it) {
-		if (it->second != 3) {
-			TRACE(it->first << " " << (int) it->second);
-			tips.insert(*it);
+		INFO("===== Revealing tips... =====");
+		srw.reset();
+		for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
+			srw >> r;
+			revealTips(r.getSequence());
+			VERBOSE(i, " single reads");
 		}
-	}
-	has_right.clear();
-	INFO("Done: " << tips.size() << " tips.");
-
-	INFO("===== Finding tip extensions... =====");
-	srw.reset();
-	for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
-		srw >> r;
-		findTipExtensions(r.getSequence());
-		VERBOSE(i, " single reads");
-	}
-	INFO("Done: " << has_right.size() << " possible tip extensions");
-
-	INFO("===== Looking to the right... =====");
-	srw.reset();
-	for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
-		srw >> r;
-		lookRight(r.getSequence());
-		VERBOSE(i, " single reads");
-	}
-	for (map<hash_t, set<hash_t> >::iterator it = tip_extensions.begin(); it != tip_extensions.end(); ++it) {
-		bool ok = false;
-		hash_t found = maxHash;
-		for (set<hash_t>::iterator ext = it->second.begin(); ext != it->second.end(); ext++) {
-			if (earmarked_hashes.count(*ext)) {
-				ok = true;
-				break;
-			}
-			if (has_right[*ext] == 3 && found == maxHash) {
-				found = *ext;
+		for (map<hash_t, char>::iterator it = has_right.begin(); it != has_right.end(); ++it) {
+			if (it->second != 3) {
+				TRACE(it->first << " " << (int) it->second);
+				tips.insert(*it);
 			}
 		}
-		if (ok) {
-			continue;
+		has_right.clear();
+		INFO("Done: " << tips.size() << " tips.");
+
+		INFO("===== Finding tip extensions... =====");
+		srw.reset();
+		for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
+			srw >> r;
+			findTipExtensions(r.getSequence());
+			VERBOSE(i, " single reads");
 		}
-		earmarked_hashes.insert(found);
+		INFO("Done: " << has_right.size() << " possible tip extensions");
+
+		INFO("===== Looking to the right... =====");
+		srw.reset();
+		for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
+			srw >> r;
+			lookRight(r.getSequence());
+			VERBOSE(i, " single reads");
+		}
+		for (map<hash_t, set<hash_t> >::iterator it = tip_extensions.begin(); it != tip_extensions.end(); ++it) {
+			bool ok = false;
+			hash_t found = hashing::kMax;
+			for (set<hash_t>::iterator ext = it->second.begin(); ext != it->second.end(); ext++) {
+				if (earmarked_hashes.count(*ext)) {
+					ok = true;
+					break;
+				}
+				if (has_right[*ext] == 3 && found == hashing::kMax) {
+					found = *ext;
+				}
+			}
+			if (ok) {
+				continue;
+			}
+			earmarked_hashes.insert(found);
+		}
+		INFO("Done: " << eh << " -> " << earmarked_hashes.size() << " earmarked hashes");
+		if (eh == earmarked_hashes.size()) {
+			break;
+		}
 	}
-	INFO("Done: " << eh << " -> " << earmarked_hashes.size() << " earmarked hashes");
-	if (eh == earmarked_hashes.size()) {
-		break;
-	}
-}
 
 	INFO("Adding reads to graph as paths...");
 	srw.reset();

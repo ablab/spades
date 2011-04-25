@@ -1,8 +1,19 @@
-/*
+/**
+ * @file    seq.hpp
+ * @author  vyahhi
+ * @version 1.0
  *
+ * @section LICENSE
  *
- *  Created on: 20.02.2011
- *      Author: vyahhi
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * @section DESCRIPTION
+ *
+ * Immutable ACGT-sequence with compile-time size.
+ * It compress sequence to array of Ts (default: char).
  */
 
 #ifndef SEQ_HPP_
@@ -18,46 +29,45 @@
 
 using namespace std;
 
-#define HASH_SEED 239
-
 /**
- * Immutable ACGT-sequence with compile-time size.
- * It compress sequence to array of Ts (default: char).
- */
-template<size_t size_, typename T = unsigned int> // max number of nucleotides, type for storage
+  * @param T is max number of nucleotides, type for storage
+  */
+template<size_t size_, typename T = unsigned int>
 class Seq {
 private:
 	/**
-	 * Number of bits in type T (e.g. 8 for char)
+         * @variable Number of bits in type T (e.g. 8 for char)
+         * @example 8: 2^8 = 256 or 16
 	 */
-	const static size_t Tbits = sizeof(T) << 3; // ex. 8: 2^8 = 256 or 16
+        const static size_t Tbits = sizeof(T) << 3;
 
 	/**
-	 * Number of nucleotides that can be stored in one type T (e.g. 4 for char)
+         * @variable Number of nucleotides that can be stored in one type T (e.g. 4 for char)
+         * @example 4: 8/2 = 4 or 16/2 = 8
 	 */
-	const static size_t Tnucl = Tbits >> 1; // ex. 4: 8/2 = 4 or 16/2 = 8
+        const static size_t Tnucl = Tbits >> 1;
 
 	/**
-	 * Number of bits in Tnucl (e.g. 2 for char). Useful for shifts instead of divisions.
-	 */
+         * @variable Number of bits in Tnucl (e.g. 2 for char). Useful for shifts instead of divisions.
+         */
 	const static size_t Tnucl_bits = log_<Tnucl, 2>::value;
 
 	/**
-	 * Number of Ts which required to store all sequence.
+         * @variable Number of Ts which required to store all sequence.
 	 */
 	const static size_t data_size_ = (size_ + Tnucl - 1) >> Tnucl_bits;
 
 	/**
-	 * Inner representation of sequence: array of Ts with length = data_size_.
+         * @variable Inner representation of sequence: array of Ts with length = data_size_.
 	 *
-	 * Invariant: all nucleotides >= size_ are 'A's (useful for comparison)
+         * @invariant Invariant: all nucleotides >= size_ are 'A's (useful for comparison)
 	 */
 	std::array<T, data_size_> data_;
 
-	friend class Seq<size_ - 1, T>;
+	friend class Seq<size_ - 1, T> ;
 	/**
-	 * Initialize data_ array of this object with C-string
-	 *
+         * Initialize data_ array of this object with C-string
+         *
 	 * @param s C-string (ACGT chars only), strlen(s) = size_
 	 */
 	void init(const char* s) {
@@ -81,8 +91,8 @@ private:
 	}
 
 	/**
-	 * Constructor from std::array
-	 */
+         * Constructor from std::array
+         */
 	Seq(std::array<T, data_size_> data) :
 		data_(data) {
 		;
@@ -98,15 +108,15 @@ private:
 
 public:
 
-	/*
+        /**
 	 * Default constructor, fills Seq with A's
-	 */
+         */
 	Seq() {
 		assert((T)(-1) >= (T)0);//be sure to use unsigned types
 		std::fill(data_.begin(), data_.end(), 0);
 	}
 
-	/*
+        /**
 	 * Copy constructor
 	 */
 	Seq(const Seq<size_, T> &seq) :
@@ -127,7 +137,6 @@ public:
 	 */
 	template<typename S>
 	explicit Seq(const S &s, size_t offset = 0) {
-	  //		assert(size_ + offset <= s.size());
 		assert((T)(-1) >= (T)0);//be sure to use unsigned types
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
@@ -189,7 +198,8 @@ public:
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
 			T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
-			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2) | ((T)c << lastnuclshift_);
+			res.data_[data_size_ - 1] = (res.data_[data_size_ - 1] >> 2)
+					| ((T) c << lastnuclshift_);
 			if (data_size_ >= 2) { // if we have at least 2 elements in data
 				size_t i = data_size_ - 1;
 				do {
@@ -210,19 +220,20 @@ public:
 		assert(is_dignucl(c));
 		Seq<size_ + 1, T> s;
 		copy(this->data_.begin(), this->data_.end(), s.data_.begin());
-		s.data_[s.data_size_ - 1] = s.data_[s.data_size_ - 1] | ((T)c << ((size_ & (Tnucl - 1)) << 1));
+		s.data_[s.data_size_ - 1] = s.data_[s.data_size_ - 1] | ((T) c
+				<< ((size_ & (Tnucl - 1)) << 1));
 		return s; //was: Seq<size_ + 1, T>(str() + nucl(c));
 	}
 
-	//todo optimize!!!
+        /**
+        * @todo optimize!!!
+        */
 	Seq<size_ + 1, T> pushFront(char c) const {
 		if (is_nucl(c)) {
 			c = dignucl(c);
 		}
 		assert(is_dignucl(c));
-		//todo optimize!!!
-
-		return Seq<size_ + 1, T>(nucl(c) + str());
+                return Seq<size_ + 1, T>(nucl(c) + str());
 	}
 
 	/**
@@ -245,34 +256,37 @@ public:
 		}
 		if (size_ % Tnucl != 0) {
 			T lastnuclshift_ = (size_ % Tnucl) << 1;
-			res.data_[data_size_ - 1] = res.data_[data_size_ - 1] & (((T) 1 << lastnuclshift_) - 1);
+			res.data_[data_size_ - 1] = res.data_[data_size_ - 1] & (((T) 1
+					<< lastnuclshift_) - 1);
 		}
 		return res;
 	}
 
-	bool operator==(const Seq<size_, T> s) const {
-		return s.data_ == data_;
-		//return this->equal_to()(s);
+        bool operator==(const Seq<size_, T> s) const {
+		return 0 == memcmp(data_.data(), s.data_.data(), sizeof(T) * data_size_);
 	}
+
+        /**
+        * @see operator ==()
+        */
 
 	bool operator!=(const Seq<size_, T> s) const {
-		return !((*this) == s);
-		//return this->equal_to()(s);
+		return 0 != memcmp(data_.data(), s.data_.data(), sizeof(T) * data_size_);
 	}
 
-	bool operator<(const Seq<size_, T> that) const {
-		for (size_t i = 0; i < size_; ++i) {
-			if (this->operator[](i) != that[i]) {
-				return (this->operator[](i) < that[i]);
-			}
-		}
-		return false;
-	}
+//	/*
+//	 * now usual order, but some linear order on Seq which works fast
+//	 */
+//	bool operator<(const Seq<size_, T> that) const {
+//		return 0 > memcmp(data_.data(), that.data_.data(), sizeof(T) * data_size_);
+//	}
+
 
 	/**
 	 * String representation of this Seq
 	 *
 	 * @return ACGT-string of length size_
+         * @see nucl()
 	 */
 	std::string str() const {
 		std::string res(size_, '-');
@@ -286,22 +300,33 @@ public:
 		return size_;
 	}
 
+        /**
+        * @see Seq
+        */
 	template<size_t size2_, typename T2 = T>
-	Seq<size2_,T2> start() const {
+	Seq<size2_, T2> start() const {
 		assert(size2_ <= size_);
-		return Seq<size2_,T2> (*this);
+		return Seq<size2_, T2> (*this);
 	}
 
 	template<size_t size2_/* = size_ - 1*/, typename T2 = T>
-	Seq<size2_,T2> end() const {
+	Seq<size2_, T2> end() const {
 		assert(size2_ <= size_);
-		return Seq<size2_,T2> (*this, size_ - size2_);
+		return Seq<size2_, T2> (*this, size_ - size2_);
+	}
+
+	char last() const {
+		return operator[](size_ - 1);
+	}
+
+	char first() const {
+		return operator[](0);
 	}
 
 	//	template<size_t HASH_SEED>
 	struct hash {
-		size_t operator()(const Seq<size_> &seq) const {
-			size_t h = HASH_SEED;
+		size_t operator()(const Seq<size_,T> &seq) const {
+			size_t h = 239;
 			for (size_t i = 0; i < seq.data_size_; i++) {
 				h = ((h << 5) - h) + seq.data_[i];
 			}
@@ -309,39 +334,43 @@ public:
 		}
 	};
 
-  struct multiple_hash {
-    size_t operator()(Seq<size_> seq, int hash_num) {
-      size_t h = HASH_SEED;
-      for (size_t i = 0; i < seq.data_size_; i++) {
-	h = ((h << 5) - h) + seq.data_[i];
-      }
-      unsigned long l = 4 * hash_num + 1;
-      return (size_t)(l * h % 1000000007);
-    }
-  };
+//	struct multiple_hash {
+//		size_t operator()(Seq<size_> seq, int hash_num) {
+//			size_t h = 239;
+//			for (size_t i = 0; i < seq.data_size_; i++) {
+//				h = ((h << 5) - h) + seq.data_[i];
+//			}
+//			unsigned long l = 4 * hash_num + 1;
+//			return (size_t) (l * h % 1000000007);
+//		}
+//	};
 
-	struct equal_to {
-		bool operator()(const Seq<size_> &l, const Seq<size_> &r) const {
-			return l.data_ == r.data_;
-			//return 0 == memcmp(l._bytes.data(), r._bytes.data(), _byteslen);
-		}
-	};
+//	struct equal_to {
+//		bool operator()(const Seq<size_,T> &l, const Seq<size_,T> &r) const {
+//			return 0 == memcmp(l.data_.data(), r.data_.data(), sizeof(T) * data_size_);
+//		}
+//	};
 
-	/**
-	 * Denotes some (weird) order on k-mers. Works fast.
-	 */
-	struct order {
-		int operator()(const Seq<size_> &l, const Seq<size_> &r) const {
-			return l.data_ < r.data_;
-			//return 0 > memcmp(l._bytes.data(), r._bytes.data(), _byteslen);
-		}
-	};
+//	struct less2 {
+//		int operator()(const Seq<size_,T> &l, const Seq<size_,T> &r) const {
+//			for (size_t i = 0; i < size_; ++i) {
+//				if (l[i] != r[i]) {
+//					return (l[i] < r[i]);
+//				}
+//		}
+//		return false;
+//		}
+//	};
 
-	struct less {
-		int operator()(const Seq<size_> &l, const Seq<size_> &r) const {
-			return l < r;
-		}
-	};
+//	/**
+//	 * Denotes some (weird) order on k-mers. Works fast.
+//	 */
+//	struct less {
+//		int operator()(const Seq<size_> &l, const Seq<size_> &r) const {
+//			return 0 > memcmp(data_.data(), that.data_.data(), sizeof(T) * data_size_);
+//		}
+//	};
+
 };
 
 template<size_t size_, typename T = int>
@@ -349,43 +378,5 @@ ostream& operator<<(ostream& os, Seq<size_, T> seq) {
 	os << seq.str();
 	return os;
 }
-
-// *****************************************
-// LEGACY CODE
-
-/*
- template<size_t _bigger_size, T>
- Seq(const Seq<_bigger_size, T>& seq) {
- assert(_bigger_size > size_);
- init(seq.str().substr(0, size_).c_str());
- }
-
- template<int size2, typename T2 = char>
- Seq<size2, T2> head() {
- std::string s = str();
- return Seq<size2, T2> (s.substr(0, size2).c_str());
- }
-
- template<int size2, typename T2 = char>
- Seq<size2, T2> tail() const {
- std::string s = str();
- return Seq<size2, T2> (s.substr(size_ - size2, size2).c_str());
- }
-
- */
-
-/*
- * Constructor from ACGT C-string
- */
-/*Seq(const char* s) {
- init(s);
- }*/
-
-/*
- * Constructor from ACGT std::string
- */
-/*Seq(std::string s) {
- init(s.c_str());
- }*/
 
 #endif /* SEQ_HPP_ */

@@ -10,4 +10,12 @@ string Complement(const string &s);
 
 string ReverseComplement(const string &s);
 
+template <typename T>
+string toString(T t) {
+	std::stringstream ss;
+	ss << t;
+	//return ss.str();
+	return "COMPILATION ERROR!";
+}
+
 #endif /* SIMPLE_TOOLS_HPP_ */

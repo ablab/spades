@@ -24,7 +24,7 @@ public:
 private:
 	Graph& g_;
 	const de_bruijn::SimpleSequenceMapper<k, Graph> threader_;
-	const de_bruijn::SimpleIndex<k + 1, EdgeId>& index_;
+	const de_bruijn::DeBruijnPlus<k + 1, EdgeId>& index_;
 
 	void processRead(Read read) {
 		de_bruijn::Path<EdgeId> path = threader_.MapSequence(
@@ -42,7 +42,7 @@ private:
 	}
 public:
 	CoverageCounter(Graph& g,
-			const de_bruijn::SimpleIndex<k + 1, EdgeId>& index) :
+			const de_bruijn::DeBruijnPlus<k + 1, EdgeId>& index) :
 		g_(g), threader_(g, index), index_(index) {
 	}
 

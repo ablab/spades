@@ -8,6 +8,10 @@
 #include "vector"
 #include "nucl.hpp"
 
+/**
+* @file read_generator.hpp
+*/
+
 #define MAX_PROBABILITY 10000
 using namespace std;
 
@@ -31,12 +35,12 @@ public:
 	}
 };
 
-template<int size, int cnt = 1, typename T = int,
-		typename PositionChooser = SmoothPositionChooser>
+template<int cnt = 1, typename PositionChooser = SmoothPositionChooser>
 class ReadGenerator {
 private:
 	//	vector<ifaststream*> ifs_;
 	string genome_;
+	size_t size_;
 	int minPosition_;
 	int maxPosition_;
 	int coverage_;
@@ -63,12 +67,12 @@ public:
 		setMaxInsertLengthError(0);
 	}
 
-	ReadGenerator(istream is, int coverage, int insert = 0) {
+	ReadGenerator(size_t size, istream is, int coverage, int insert = 0) : size_(size) {
 		is >> genome_;
 		initParameters(coverage, insert);
 	}
 
-	ReadGenerator(string genome, int coverage, int insert = 0) {
+	ReadGenerator(size_t size, string genome, int coverage, int insert = 0) : size_(size) {
 		genome_ = genome;
 		initParameters(coverage, insert);
 	}
@@ -108,7 +112,7 @@ public:
 		minPosition_ = insertError_;
 	}
 
-	ReadGenerator& operator>>(strobe_read<size, cnt, T> &sr) {
+	ReadGenerator& operator>>(vector<cnt, T>& strobe_read) {
 		if (eof()) {
 			return *this;
 		}

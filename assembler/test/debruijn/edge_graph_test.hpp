@@ -3,13 +3,16 @@
 #include "edge_graph_constructor.hpp"
 #include "test_utils.hpp"
 #include "cute.h"
+#include "strobe_reader.hpp"
+#include "paired_info.hpp"
+#include "debruijn_plus.hpp"
 #include <tr1/unordered_set>
 
 namespace edge_graph {
 
 using de_bruijn::Traversal;
 using de_bruijn::DFS;
-using de_bruijn::SimpleIndex;
+using de_bruijn::PairedInfoIndex;
 
 void EmptyGraphTest() {
 	EdgeGraph g(11);
@@ -161,28 +164,42 @@ template<size_t kmer_size_>
 void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 		string etalon_edges[]) {
 	vector<Read> reads = MakeReads(reads_str, read_cnt);
-	de_bruijn::DeBruijn<kmer_size_> debruijn;
-	EdgeGraph *g = new EdgeGraph(5);
-	debruijn.ConstructGraph(reads);
-	CondenseConstructor<kmer_size_> g_c(debruijn);
-	SimpleIndex<6, Edge*> *index = new SimpleIndex<6, Edge*> ();
-	EdgeHashRenewer<6, EdgeGraph> *indexHandler = new EdgeHashRenewer<6, EdgeGraph>(*g, *index);
-	g->AddActionHandler(indexHandler);
-	g_c.ConstructGraph(*g, *index);
+	de_bruijn::DeBruijnPlus<kmer_size_+1, EdgeId> debruijn(reads, true);
+	EdgeGraph g(kmer_size_);
+	EdgeGraphConstructor<kmer_size_> g_c(debruijn);
+	de_bruijn::DeBruijnPlus<kmer_size_ + 1, EdgeId> &index = debruijn;
+	EdgeHashRenewer<kmer_size_ + 1, EdgeGraph> index_handler(g, index);
+	g.AddActionHandler(&index_handler);
+	g_c.ConstructGraph(g, index);
 
 	edge_set edges;
 	ToStringHandler h(edges);
-	DFS<EdgeGraph> dfs(*g);
+	DFS<EdgeGraph> dfs(g);
 	dfs.Traverse(&h);
 
 	DEBUG(print(edges));
 
 	MyEquals(edges, etalon_edges, edge_cnt);
 
-	g->RemoveActionHandler(indexHandler);
-	delete indexHandler;
-	delete g;
-	delete index;
+	g.RemoveActionHandler(&index_handler);
+}
+
+template<size_t kmer_size_, class ReadStream>
+void ConstructGraphAndBothIndices(ReadStream& stream, EdgeGraph& g, de_bruijn::DeBruijnPlus<kmer_size_ + 1, EdgeId>& index, PairedInfoIndex<EdgeGraph>& paired_index) {
+//	de_bruijn::DeBruijn<kmer_size_> debruijn;
+//
+//	SimpleReaderWrapper<ReadStream> unitedStream(stream);
+//	debruijn.ConstructGraph(unitedStream);
+//
+//	EdgeGraphConstructor<kmer_size_> g_c(debruijn);
+//	EdgeHashRenewer<kmer_size_ + 1, EdgeGraph> index_handler(g, index);
+//	g.AddActionHandler(&index_handler);
+//	g_c.ConstructGraph(g, index);
+//
+//	stream.reset();
+//	paired_index.FillIndex<K, ReadStream>(index, stream);
+//
+//	g.RemoveActionHandler(&index_handler);
 }
 
 //todo rename tests
@@ -228,6 +245,17 @@ void TestBuldge() {
 }
 
 void TestCondenseSimple() {
+	static const size_t read_cnt = 4;
+
+	string reads[read_cnt] = { "CGAAACCAC", "CGAAAACAC", "AACCACACC",
+			"AAACACACC" };
+	static const size_t edge_cnt = 3;
+	string edges[edge_cnt] = { "CGAAAACACAC", "CACACC", "CGAAACCACAC" };
+
+	AssertGraph<5> (read_cnt, reads, edge_cnt, edges);
+}
+
+void TestPairedInfo() {
 	static const size_t read_cnt = 4;
 
 	string reads[read_cnt] = { "CGAAACCAC", "CGAAAACAC", "AACCACACC",

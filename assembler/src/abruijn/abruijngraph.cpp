@@ -6,8 +6,6 @@
 #include "graphVisualizer.hpp"
 #include <ext/hash_map>
 
-using namespace abruijn;
-
 namespace abruijn {
 
 ostream& operator<< (ostream& os, const Profile& p) {
@@ -151,6 +149,7 @@ void Graph::stats() {
 			tips++;
 		}
 	}
+	INFO(vertices.size() << " vertices");
 	INFO(tips << " tips");
 }
 

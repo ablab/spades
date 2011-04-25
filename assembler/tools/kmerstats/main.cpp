@@ -1,13 +1,8 @@
 #include <iostream>
 #include <stdio.h>
-#include "analyses.h"
+#include "commandline.h"
 
-int main (int argc,char *argv[])
-{
-	if  (argc <= 2) {
-		std::cerr << "Не задан аргумент в командной строке.";
-   		return 1;
- 	}
-	Analyses a(argv);
-	return 0;
+int main (int argc,char *argv[]) {
+        CommandLine c(argv, argc);
+        return 0;
 }

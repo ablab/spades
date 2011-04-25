@@ -106,4 +106,40 @@ public:
 	}
 };
 
+class PairedRead {
+	Read first_;
+	Read second_;
+	size_t distance_;
+public:
+
+	PairedRead(const Read& first, const Read& second, size_t distance) : first_(first), second_(second), distance_(distance) {
+
+	}
+
+	const Read& first() {
+		return first_;
+	}
+
+	const Read& second() {
+		return second_;
+	}
+
+	size_t distance() {
+		return distance_;
+	}
+
+	bool IsValid() {
+		return first_.isValid() && second_.isValid();
+	}
+
+	const Read& operator[] (size_t index) {
+		if (index == 0) {
+			return first_;
+		} else if (index == 1) {
+			return second_;
+		}
+		assert(false);
+	}
+};
+
 #endif /* READ_HPP_ */
