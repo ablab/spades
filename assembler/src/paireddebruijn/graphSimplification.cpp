@@ -1009,6 +1009,7 @@ bool intersectible(Sequence *left, Sequence *right){
 
 }
 void dfs (int **table, int color, int * leftcolor, int* rightcolor, int len, int pos) {
+	leftcolor[pos] = color;
 	forn(j, len) {
 		if (table[pos][j] && !(rightcolor[j])) {
 			rightcolor[j] = color;
@@ -1021,24 +1022,65 @@ void dfs (int **table, int color, int * leftcolor, int* rightcolor, int len, int
 	}
 }
 void doSplit(PairedGraph &graph, edgePairsMap &EdgePairs) {
-	int table[MAX_DEGREE][MAX_DEGREE];
+	int *table[MAX_DEGREE];
+	forn(i, MAX_DEGREE)
+		table[i] = new int[MAX_DEGREE];
 	int leftcolor [MAX_DEGREE];
 	int rightcolor [MAX_DEGREE];
+	map<int, int> edgeIds;
 	for(edgePairsMap::iterator iter = EdgePairs.begin(); iter != EdgePairs.end(); iter++) {
 		int curVId = iter->first;
 		int len = iter->second.size();
+
 		forn(i, len) {
 			forn(j, len)
 				table[i][j] = 0;
 			leftcolor[i] = 0;
 			rightcolor[i] = 0;
 		}
+		edgeIds.clear();
+		int leftId = 0;
+		int rightId = 0;
+		forn(i, len) {
+			if (edgeIds.find(iter->second[i].first) == edgeIds.end()){
+				leftId ++;
+				edgeIds[iter->second[i].first] = leftId;
+
+			}
+			if (edgeIds.find(iter->second[i].second) == edgeIds.end()){
+				rightId ++;
+				edgeIds[-iter->second[i].second] = rightId;
+			}
+		//	leftGlobalIds[leftId] = mp(iter->second[i].first,
+			table[edgeIds[iter->second[i].first]][edgeIds[-iter->second[i].second]] = 1;
+		}
 		int color = 0;
 		forn(i, len) {
-			if(!leftcolor[i])
+			if(!leftcolor[i]) {
+
+				color++;
 				dfs(table, color, leftcolor, rightcolor, len, i);
+			}
 		}
+		forn(i, len) {
+			if(!rightcolor[i]) {
+				color++;
+				rightcolor[i] = color;
+			}
+		}
+
+		for(int cur_color = 2;cur_color < color; cur_color++)
+			graph.addVertex(graph.VertexCount + cur_color - 2);
+		forn(i, len) {
+			if (leftcolor[i] >= 2)
+				graph.addEdgeVertexAdjacency(graph.VertexCount + leftcolor[i] - 1, graph.longEdges[EdgePairs[curVId][i].first], RIGHT);
+			if (rightcolor[i] >= 2)
+				graph.addEdgeVertexAdjacency(graph.VertexCount + rightcolor[i] - 1, graph.longEdges[EdgePairs[curVId][i].second], LEFT);
+		}
+		graph.VertexCount += color - 2;
 	}
+	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
+
 }
 
 void SplitByLowers(PairedGraph &graph){
@@ -1061,7 +1103,8 @@ void SplitByLowers(PairedGraph &graph){
 			EdgePairs.insert(make_pair(CurVert,tmpVect));
 	}
 	cerr<<"Start Spliting"<<endl;
-	SplitVertecesByEdgeConnections(graph, EdgePairs, false);
+//	SplitVertecesByEdgeConnections(graph, EdgePairs, false);
+	doSplit(graph, EdgePairs);
 	cerr<<"End Spliting"<<endl;
 }
 

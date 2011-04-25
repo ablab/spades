@@ -407,9 +407,9 @@ private:
 	 * @param edge Edge to add
 	 * @direction Direction from which edge is added to vertex. @direction can be LEFT or RIGHT.
 	 */
-	void addEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
 	//	void addEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
 public:
+	void addEdgeVertexAdjacency(int vertex, Edge *edge, int direction);
 
 	//TODO C-style outcoming and incoming edge iterators should be added!!!
 
