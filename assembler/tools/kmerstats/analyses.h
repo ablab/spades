@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <string>
+#include <string.h>
 #include <stdlib.h>
 #include <fstream> 
 #include <map>
@@ -20,9 +21,14 @@ private:
         system("gnuplot ./file.gnu");
     }
     void init();
+    void initFastaTq();
 public:
     Analyses(char *argv, char *mer) : m_filename(argv), m_mer(atoi(mer)) {
-        init();
+        if ((strstr(argv, ".fastatq")) != NULL) {
+            initFastaTq();
+        } else {
+            init();
+        }
     }
 };
 
