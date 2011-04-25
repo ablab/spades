@@ -6,6 +6,7 @@
 #include <tr1/unordered_map>
 #include <google/sparse_hash_map>
 #include "cuckoo.hpp"
+#include "../test/memory.hpp"
 
 #define K 31
 
@@ -24,6 +25,10 @@ int main(int argc, char** argv) {
   size_t L = 1;
   size_t m_num = 1;
   bool stat = false;
+  double vm1 = 0;
+  double rss1 = 0;
+  process_mem_usage(vm1, rss1);
+
   if ((argc < 4) || (argc > 5)) {
 		std::cout << "Usage: ./filter <filename> <L> <map number> [--stat]\n"
               << "<map number> is map type:\n"
@@ -64,6 +69,13 @@ int main(int argc, char** argv) {
     break;
   default:
     std::cout << "Map number is incorrect!\n";
+  }
+
+  double vm2 = 0;
+  double rss2 = 0;
+  process_mem_usage(vm2, rss2);
+  if (stat) {
+    std::cout << "Memory: " << (vm2 - vm1) << std::endl;
   }
   return 0;
 }
