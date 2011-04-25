@@ -65,7 +65,7 @@ bool Graph::hasVertex(const Sequence& kmer) {
 }
 
 /**
- * Find or create a vertex corresponding to this kmer
+ * @return Find or create a vertex corresponding to this kmer
  */
 Vertex* Graph::getVertex(const Sequence& kmer) {
 	SeqVertice::iterator v = seqVertice.find(kmer);
