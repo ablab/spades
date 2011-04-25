@@ -134,23 +134,21 @@ void EdgeGraph::ForceDeleteVertex(VertexId v) {
 	DeleteVertex(v);
 }
 
-EdgeId EdgeGraph::HiddenAddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
-		size_t coverage) {
+EdgeId EdgeGraph::HiddenAddEdge(VertexId v1, VertexId v2, const Sequence &nucls, size_t coverage) {
 	assert(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
 	assert(nucls.size() >= k_ + 1);
 	//	assert(OutgoingEdge(v1, nucls[k_]) == NULL);
 	EdgeId result = AddSingleEdge(v1, v2, nucls, coverage);
 	EdgeId rcEdge = result;
-	if (nucls != !nucls)
-		rcEdge = AddSingleEdge(v2->Complement(), v1->Complement(), !nucls,
-				coverage);
+	if (nucls != !nucls) {
+		rcEdge = AddSingleEdge(v2->Complement(), v1->Complement(), !nucls, coverage);
+	}
 	result->SetComplement(rcEdge);
 	rcEdge->SetComplement(result);
 	return result;
 }
 
-EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
-		size_t coverage) {
+EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls, size_t coverage) {
 	EdgeId result = HiddenAddEdge(v1, v2, nucls, coverage);
 	FireAddEdge(result);
 	return result;

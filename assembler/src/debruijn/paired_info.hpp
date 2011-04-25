@@ -27,7 +27,7 @@ public:
 	}
 
 	template<size_t kmer_size, class Stream>
-	void FillIndex(const SimpleIndex<kmer_size + 1, EdgeId>& index, Stream& stream) {
+	void FillIndex(const DeBruijnPlus<kmer_size + 1, EdgeId>& index, Stream& stream) {
 		typedef Seq<kmer_size + 1> KPOMer;
 		de_bruijn::SimpleSequenceMapper<kmer_size, Graph> read_threader(graph_,
 				index);
@@ -223,7 +223,7 @@ private:
 			return false;
 
 		if (std::abs(info2.d_ - info1.d_) <= MERGE_DATA_ABSOLUTE_DIFFERENCE
-				&& std::abs(info2.d_ - info1.d_) <= info1.d_
+				|| std::abs(info2.d_ - info1.d_) <= info1.d_
 						* MERGE_DATA_RELATIVE_DIFFERENCE) {
 			double newWeight = info1.weight_ + info2.weight_;
 			double newD = (info1.d_ * info1.weight_ + info2.d_ * info2.weight_) / info2.weight_;

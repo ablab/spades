@@ -165,11 +165,24 @@ number of reads for {\tt s\_6.first10000}.
     \addplot[smooth,mark=*,blue] plot coordinates { (1,1640) (2,2950) (3,4248) (4,5472) (5,6784)
       (10, 12028) (20, 15432) (25, 18642) (40, 19890) (50, 20052) (60, 20102) (75,20140) };
     %\addlegendentry{de Bruijn}
-
-    %\addplot[smooth,color=red,mark=x] plot coordinates { (4000,1267) (6000,2134) (10000,5134) };
-    %\addlegendentry{A Bruijn}
     \end{axis}
 \end{tikzpicture}
+
+The table below gives the number of vertices in a graph 
+for two extreme values of {\tt HTAKE} (1 and 76) for {\tt s\_6.first10000}
+(program version: Apr 25, 2011; $k=25$).
+
+
+\begin{center}
+\begin{tabular}{l|lll}
+& \#bp=10000 & \#bp=100000 & \#bp=400000\\
+\hline
+${\tt HTAKE}=1$ & 1640 & 15916 & 62550\\
+${\tt HTAKE}=76$ & 20144 & 202838 & 809730\\
+ratio & $\approx 12.2$ & $\approx 12.7$ & $\approx 12.9$
+\end{tabular}
+\end{center}
+
 
 \section{Further ideas}
 

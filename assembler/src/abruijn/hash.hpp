@@ -8,7 +8,9 @@ namespace hashing {
 
 LOGGER("a.hashing");
 
-// Type of hash values.
+/**
+* Type of hash values.
+*/
 typedef unsigned int hash_t;
 
 /**
@@ -19,19 +21,19 @@ const hash_t kMax = -1;
 const hash_t kXor = 1845724623;
 
 /**
- * Multiplies by x, fast.
+ * @return Multiplies by x, fast.
  */
 inline hash_t mult(hash_t v) {
 	return (v << 5) - v;
 }
 
 /**
- * Calculates x^n.
+ * @return x^n.
  */
 hash_t power(size_t k);
 
 /**
- * x^K
+ * @return x^K
  */
 const hash_t kXK = power(K);
 

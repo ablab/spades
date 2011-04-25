@@ -4,26 +4,32 @@
 #include <iostream>
 #include <stdio.h>
 #include <string>
+#include <string.h>
 #include <stdlib.h>
 #include <fstream> 
 #include <map>
 
 class Analyses {
 private:
-	std::map <std::string, int> m_data;
-	int m_mer;
-	char *m_filename;	
+    std::map <std::string, int> m_data;
+    int m_mer;
+    char *m_filename;
 
-	void createDatFile();
-	
-	void paint() {
-		system("gnuplot ./file.gnu");
-	}
-	void init();
+    void createDatFile();
+
+    void paint() {
+        system("gnuplot ./file.gnu");
+    }
+    void init();
+    void initFastTq();
 public:
-	Analyses(char *argv[]) : m_filename(argv[1]), m_mer(atoi(argv[2])) {
-		init();	   
-	}
+    Analyses(char *argv, char *mer) : m_filename(argv), m_mer(atoi(mer)) {
+        if ((strstr(argv, ".fastatq")) != NULL) {
+            initFastTq();
+        } else {
+            init();
+        }
+    }
 };
 
 #endif

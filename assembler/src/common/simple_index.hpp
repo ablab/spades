@@ -8,6 +8,7 @@
 #ifndef SIMPLE_INDEX_HPP_
 #define SIMPLE_INDEX_HPP_
 
+/*
 template<size_t kmer_size_, typename ElementId>
 class SimpleIndex {
 private:
@@ -22,13 +23,14 @@ private:
 	//	const Graph &graph_;
 	//	const EdgeHashRenewer<kmer_size_, Graph> *renewer_;
 	//	const GraphActionHandler *
+private:
+	void put(const Kmer &k, ElementId id, size_t s) {
+		h_.insert(make_pair(k, make_pair(id,s)));
+	}
+
 public:
 	SimpleIndex() {
 		//		graph.AddActionHandler()
-	}
-
-	void put(const Kmer &k, ElementId id, size_t s) {
-		h_.insert(make_pair(k, make_pair(id,s)));
 	}
 
 	bool contains(const Kmer &k) const {
@@ -71,6 +73,6 @@ public:
 		}
 	}
 
-};
+};*/
 
 #endif /* SIMPLE_INDEX_HPP_ */

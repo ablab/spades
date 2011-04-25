@@ -1,15 +1,31 @@
-/*
+/**
+ * @file    nucl.hpp
+ * @author  vyahhi
+ * @version 1.0
+ *
+ * @section LICENSE
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * @section DESCRIPTION
+ *
  * Simple operations and checks for nucleotide-letters
  *
- *  Created on: 01.03.2011
- *      Author: vyahhi
  */
+
 
 #ifndef NUCL_HPP_
 #define NUCL_HPP_
 
 #include <cassert>
 
+/**
+* @param char c
+* @return true if c is 'A', 'C', 'G', 'T'.
+*/
 inline bool is_nucl(char c) { // is ACGT
 	return (c == 'A' || c == 'C' || c == 'G' || c == 'T');
 }
@@ -18,10 +34,20 @@ inline bool is_dignucl(char c) { // is 0123
 	return (c >= 0 && c < 4);
 }
 
-inline char complement(char c) { // 0123 -> 3210
+/**
+* 0123 -> 3210
+* @param char c
+* @return c ^ 3
+*/
+inline char complement(char c) {
 	assert(is_dignucl(c));
 	return c ^ 3;
 }
+
+/**
+* @param char c
+* @return complement symbol
+*/
 inline char nucl_complement(char c){
 	assert(is_nucl(c));
 	switch(c) {
@@ -32,7 +58,13 @@ inline char nucl_complement(char c){
 		default: return -1; // never happens
 	}
 }
-inline char nucl(char c) { // 0123 -> ACGT
+
+/**
+* 0123 -> ACGT
+* @param char c
+* @return complement symbol
+*/
+inline char nucl(char c) {
 	assert(is_dignucl(c));
 	switch(c) {
 		case 0: return 'A';

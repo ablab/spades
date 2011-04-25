@@ -13,11 +13,12 @@
 #include "visualization_utils.hpp"
 #include "paired_info.hpp"
 #include "coverage_handler.hpp"
+#include "debruijn_plus.hpp"
 
 namespace edge_graph {
 
-typedef de_bruijn::DeBruijn<K> DeBruijn;
-typedef SimpleIndex<K + 1, EdgeId> Index;
+typedef de_bruijn::DeBruijnPlus<K+1, EdgeId> DeBruijn;
+typedef de_bruijn::DeBruijnPlus<K+1, EdgeId> Index;
 typedef de_bruijn::Path<EdgeId> Path;
 typedef de_bruijn::PairedInfoIndex<EdgeGraph> PairedIndex;
 
@@ -52,18 +53,17 @@ void ProduceInfo(const EdgeGraph& g, const Index& index, const string& genome,
 	WriteToDotFile(g, file_name, graph_name, path);
 }
 
-template<class ReadStream>
+/*template<class ReadStream>
 void ConstructUncondensedGraph(DeBruijn& debruijn, ReadStream& stream) {
 	INFO("Constructing DeBruijn graph");
 	debruijn.ConstructGraphFromStream(stream);
 	INFO("DeBruijn graph constructed");
-}
+}*/
 
 template<class ReadStream>
-void CondenseGraph(const DeBruijn& debruijn, EdgeGraph& g, Index& index,
-		ReadStream& stream, const string& genome) {
+void CondenseGraph(DeBruijn& debruijn, EdgeGraph& g, Index& index, ReadStream& stream, const string& genome) {
 	INFO("Condensing graph");
-	CondenseConstructor<K> g_c(debruijn);
+	EdgeGraphConstructor<K> g_c(debruijn);
 	g_c.ConstructGraph(g, index);
 	INFO("Graph condensed");
 
@@ -77,8 +77,7 @@ void CondenseGraph(const DeBruijn& debruijn, EdgeGraph& g, Index& index,
 	ProduceInfo(g, index, genome, "edge_graph.dot", "edge_graph");
 }
 
-void ClipTips(EdgeGraph &g, Index &index, const string& genome,
-		string dotFileName) {
+void ClipTips(EdgeGraph &g, Index &index, const string& genome, string dotFileName) {
 	INFO("Clipping tips");
 	TipComparator<EdgeGraph> comparator(g);
 	TipClipper<EdgeGraph, TipComparator<EdgeGraph> > tc(comparator);
@@ -106,20 +105,16 @@ void FillPairedIndex(PairedIndex& paired_info_index, ReadStream& stream, Index& 
 }
 
 template <class ReadStream>
-void EdgeGraphTool(ReadStream& stream, const string& genome) {
+void EdgeGraphTool(ReadStream& stream, const string& genome) { // actually, it's assembler :)
 	INFO("Edge graph construction tool started");
 
-	DeBruijn debruijn;
-
-	typedef SimpleReaderWrapper<ReadStream> SimpleWrapper;
-
-	SimpleWrapper unitedStream(stream);
-	ConstructUncondensedGraph<SimpleWrapper> (debruijn, unitedStream);
-
-	//	debruijn.show(genome);
+	INFO("Constructing DeBruijn graph");
+	SimpleReaderWrapper<ReadStream> unitedStream(stream);
+	DeBruijn debruijn(unitedStream);
+	INFO("DeBruijn graph constructed");
 
 	EdgeGraph g(K);
-	SimpleIndex<K + 1, EdgeId> index;
+	de_bruijn::DeBruijnPlus<K + 1, EdgeId> &index = debruijn;
 	EdgeHashRenewer<K + 1, EdgeGraph> index_handler(g, index);
 	g.AddActionHandler(&index_handler);
 

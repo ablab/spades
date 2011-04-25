@@ -8,6 +8,10 @@
 #include "vector"
 #include "nucl.hpp"
 
+/**
+* @file read_generator.hpp
+*/
+
 #define MAX_PROBABILITY 10000
 using namespace std;
 

@@ -1,0 +1,29 @@
+=== Tool Name ===
+Contributors: Kristina Kurian
+
+Here is a short description of the tool. 
+
+== Description ==
+
+This tool is developed for building kmer statistic.
+Now support different format file(fasta, fastq). During the work File 'daily.dat' is created.
+This file use for writing statics. Format of this file:
+'Kmer' 'number of times'
+
+== Installation ==
+
+1. Install gnuplot
+	for Ubuntu
+		sudo apt-get install gnuplot
+	for Debian
+		su
+		yum install gnuplot
+2. You must go to tools/kmerstat/
+3. make
+
+
+== Use ==
+./a.out 
+	--file|-f [file name]   - file
+	--kmer|-k [k mer]	- size of k mer
+	-- help 		- help  
