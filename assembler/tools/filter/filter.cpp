@@ -29,7 +29,8 @@ int main(int argc, char** argv) {
               << "<map number> is map type:\n"
               << "1 - map, 2 - ext/hash_map, 3 - tr1/unordered_map,\n"
               << "4 - google/sparse_hash_map, 5 - cuckoo\n"
-              << "Selects k-mer with amount > L" << std::endl;
+              << "Selects k-mer with amount > L\n" 
+              << "--stat output stat info without k-mers" << std::endl;
     return 0;
   }
 	if (argc >= 4) {

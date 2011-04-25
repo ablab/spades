@@ -3,7 +3,7 @@
  * 
  * Created on: 17.04.2011
  *     Author: Mariya Fomkina
- *   Modified: 23.04.2011 by author
+ *   Modified: 25.04.2011 by author
  */
 
 #ifndef _SEQ_FILTER_HPP_
@@ -11,22 +11,35 @@
  
 #include "ireadstream.hpp"
 
+// Class seq_filter is used for getting all k-mer from all read of a given file
+// and selecting k-mers which amount is more than a given number.
+// Template parameters are:
+// size_t size - the size of k-mer
+// hm - hash map class
+// The only public method filter takes 4 parameters:
+// const std::string& in - input file name
+// const size_t L - given number for filtration
+// const bool stat - if false, k-mers are printed to output, 
+// else stat info in printed
+// const bool console - if true, k-mers are printed to output, 
+// else k-mers are added to vector and stat option is ignored
+
 template<size_t size, class hm>
 class seq_filter {		
 public:
-	static void filter(const std::string& in, /*std::string& out,*/ 
-										 const size_t L = 1, bool stat = false) {
-		std::vector<Read> reads = get_reads_from_file(in);
+	static std::vector<Seq<size> > filter(const std::string& in, 
+                                        const size_t L = 1, 
+                                        const bool stat = false, 
+                                        const bool console = true) {
 		hm map;
-		add_seqs_from_reads_to_map(reads, map);
-		write_seqs_from_map_to_stdout(map, L, stat);
-	}
-
-	static std::vector<Seq<size> > filter(const std::vector<Read>& reads, 
-																				const size_t L = 1) {
-		hm map;
-		add_seqs_from_reads_to_map(reads, map);
-		return get_seqs_from_map(map, L);
+    std::vector<Seq<size> > seqs;
+		add_seqs_from_file_to_map(in, map);
+    if (console) {
+      write_seqs_from_map_to_stdout(map, L, stat);
+      return seqs; 
+    } else {
+      return get_seqs_from_map(map, L);
+    }
 	}
 
 private:
@@ -34,17 +47,14 @@ private:
 	seq_filter(const seq_filter<size, hm>& sf);
 
 private:
-	static void add_seqs_from_reads_to_map(const std::vector<Read>& reads, hm& map) {
-		size_t cnt = reads.size();
-		for (size_t i = 0; i < cnt; ++i) {
-			add_seqs_from_read_to_map(reads[i], map);
-		}
-	}
-
-	static std::vector<Read> get_reads_from_file(const std::string& in) {
-		std::vector<Read>* reads = ireadstream::readAll(in);//, 10000);
-		return *reads;
-	}
+  static void add_seqs_from_file_to_map(const std::string& in, hm& map) {
+    ireadstream irs(in);
+    while (!irs.eof()) {
+      Read r;
+      irs >> r;
+      add_seqs_from_read_to_map(r, map);
+    }
+  }
 
 	static void add_seqs_from_read_to_map(const Read& read, hm& map) {
 		Sequence s = read.getSequence();
