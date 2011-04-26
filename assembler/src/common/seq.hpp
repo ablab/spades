@@ -334,33 +334,33 @@ public:
 		}
 	};
 
-//	struct multiple_hash {
-//		size_t operator()(Seq<size_> seq, int hash_num) {
-//			size_t h = 239;
-//			for (size_t i = 0; i < seq.data_size_; i++) {
-//				h = ((h << 5) - h) + seq.data_[i];
-//			}
-//			unsigned long l = 4 * hash_num + 1;
-//			return (size_t) (l * h % 1000000007);
-//		}
-//	};
+	struct multiple_hash {
+		size_t operator()(Seq<size_> seq, int hash_num) {
+			size_t h = 239;
+			for (size_t i = 0; i < seq.data_size_; i++) {
+				h = ((h << 5) - h) + seq.data_[i];
+			}
+			unsigned long l = 4 * hash_num + 1;
+			return (size_t) (l * h % 1000000007);
+		}
+	};
 
-//	struct equal_to {
-//		bool operator()(const Seq<size_,T> &l, const Seq<size_,T> &r) const {
-//			return 0 == memcmp(l.data_.data(), r.data_.data(), sizeof(T) * data_size_);
-//		}
-//	};
+	struct equal_to {
+		bool operator()(const Seq<size_,T> &l, const Seq<size_,T> &r) const {
+			return 0 == memcmp(l.data_.data(), r.data_.data(), sizeof(T) * data_size_);
+		}
+	};
 
-//	struct less2 {
-//		int operator()(const Seq<size_,T> &l, const Seq<size_,T> &r) const {
-//			for (size_t i = 0; i < size_; ++i) {
-//				if (l[i] != r[i]) {
-//					return (l[i] < r[i]);
-//				}
-//		}
-//		return false;
-//		}
-//	};
+	struct less2 {
+		int operator()(const Seq<size_,T> &l, const Seq<size_,T> &r) const {
+			for (size_t i = 0; i < size_; ++i) {
+				if (l[i] != r[i]) {
+					return (l[i] < r[i]);
+				}
+		}
+		return false;
+		}
+	};
 
 //	/**
 //	 * Denotes some (weird) order on k-mers. Works fast.
