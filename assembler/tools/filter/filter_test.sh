@@ -7,7 +7,7 @@ FILE1=s_6.first10000_1.fastq.gz
 FILE2=s_6.first100000_1.fastq.gz 
 FILE3=s_6.first400000_1.fastq.gz 
 
-#make
+make
 cp diagrams.gnu $EXEC_DIR
 cd $EXEC_DIR
 rm -rf temp.tmp time.tmp memory.tmp
