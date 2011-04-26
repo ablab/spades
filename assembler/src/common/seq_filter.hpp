@@ -3,52 +3,70 @@
  * 
  * Created on: 17.04.2011
  *     Author: Mariya Fomkina
- *   Modified: 18.04.2011 by author
+ *   Modified: 25.04.2011 by author
  */
 
 #ifndef _SEQ_FILTER_HPP_
 #define _SEQ_FILTER_HPP_
  
 #include "ireadstream.hpp"
-#include "cuckoo.hpp"
+#include "../test/memory.hpp"
 
-template<size_t size>
+// Class seq_filter is used for getting all k-mer from all read of a given file
+// and selecting k-mers which amount is more than a given number.
+// Template parameters are:
+// size_t size - the size of k-mer
+// hm - hash map class
+// The only public method filter takes 4 parameters:
+// const std::string& in - input file name
+// const size_t L - given number for filtration
+// const bool stat - if false, k-mers are printed to output, 
+// else stat info in printed
+// const bool console - if true, k-mers are printed to output, 
+// else k-mers are added to vector and stat option is ignored
+
+template<size_t size, class hm>
 class seq_filter {		
 public:
-	typedef cuckoo<Seq<size>, size_t, typename Seq<size>::multiple_hash, 
-								 typename Seq<size>::equal_to, 4, 1000, 100, 6, 5> hm; 
-	
-	static void filter(const std::string& in, /*std::string& out,*/ 
-										 const size_t L = 1) {
-		std::vector<Read> reads = get_reads_from_file(in);
-		hm map;
-		add_seqs_from_reads_to_map(reads, map);
-		write_seqs_from_map_to_stdout(map, L);
-	}
+	static std::vector<Seq<size> > filter(const std::string& in, 
+                                        const size_t L = 1, 
+                                        const bool stat = false, 
+                                        const bool console = true) {
+    double vm1 = 0;
+    double rss1 = 0;
+    process_mem_usage(vm1, rss1);
 
-	static std::vector<Seq<size> > filter(const std::vector<Read>& reads, 
-																				const size_t L = 1) {
 		hm map;
-		add_seqs_from_reads_to_map(reads, map);
-		return get_seqs_from_map(map, L);
+    std::vector<Seq<size> > seqs;
+		add_seqs_from_file_to_map(in, map);
+    if (console) {
+      write_seqs_from_map_to_stdout(map, L, stat);
+    } else {
+      seqs = get_seqs_from_map(map, L);
+    }
+
+    double vm2 = 0;
+    double rss2 = 0;
+    process_mem_usage(vm2, rss2);
+    if ((stat) && (console)) {
+      std::cout << "Memory: " << (vm2 - vm1) << std::endl;
+    }
+    return seqs;
 	}
 
 private:
 	seq_filter();
-	seq_filter(const seq_filter<size>& sf);
+	seq_filter(const seq_filter<size, hm>& sf);
 
 private:
-	static void add_seqs_from_reads_to_map(const std::vector<Read>& reads, hm& map) {
-		size_t cnt = reads.size();
-		for (size_t i = 0; i < cnt; ++i) {
-			add_seqs_from_read_to_map(reads[i], map);
-		}
-	}
-
-	static std::vector<Read> get_reads_from_file(const std::string& in) {
-		std::vector<Read>* reads = ireadstream::readAll(in);//, 10000);
-		return *reads;
-	}
+  static void add_seqs_from_file_to_map(const std::string& in, hm& map) {
+    ireadstream irs(in);
+    while (!irs.eof()) {
+      Read r;
+      irs >> r;
+      add_seqs_from_read_to_map(r, map);
+    }
+  }
 
 	static void add_seqs_from_read_to_map(const Read& read, hm& map) {
 		Sequence s = read.getSequence();
@@ -82,18 +100,23 @@ private:
 		return seqs;
 	}
 
-	static void write_seqs_from_map_to_stdout(hm& map, const size_t& L) {
+	static void write_seqs_from_map_to_stdout(hm& map, const size_t& L, bool stat) {
 		typename hm::iterator end = map.end();
 		size_t cnt = 0;
 		for (typename hm::iterator it = map.begin(); it != end; ++it) {
 			if ((*it).second > L) {
-				std::cout << (*it).first << std::endl;
-				++cnt;
+        if (stat) {
+          ++cnt;
+        } else {
+          std::cout << (*it).first << std::endl;
+				}
 			}
 		}
-		std::cout << map.size() << " "  << cnt << " " << map.length() << " " 
-							<< ((float)map.size())/map.length() << " " 
-							<< ((float)map.size() - cnt)/map.size() << std::endl; //for test!
+    if (stat) {
+      std::cout << "Selected " << cnt << " k-mers from " << map.size() 
+                << ", removed "  << ((float)map.size() - cnt)/map.size()*100 
+                << "% of k-mers." << std::endl; 
+    }
 	}
 };
 

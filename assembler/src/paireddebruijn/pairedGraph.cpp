@@ -258,6 +258,7 @@ void PairedGraph::addEdgeVertexAdjacency(int vertex, Edge *edge, int direction) 
 			return;
 		}
 	}
+	INFO("added adjacency to vert " << vertex << " " << direction);
 	cerr << "add vertex adjacency" << endl;
 	edgeIds[vertex][degrees[vertex][index]][index] = edge->EdgeId;
 	degrees[vertex][index]++;

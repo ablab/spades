@@ -23,15 +23,9 @@ using namespace __gnu_cxx;
 
 LOGGER("a.graph");
 
-//class Profile {
-//protected:
-//	size_t len_;
-//public:
-//	Profile(size_t len) : len_(len) {}
-//	virtual ~Profile() {}
-//	virtual void addSequence(const Sequence& seq);
-//};
-
+/**
+* @name FrequencyProfile 
+*/
 class FrequencyProfile {
 	vector<size_t> freq_;
 public:
@@ -97,6 +91,9 @@ typedef FrequencyProfile Profile;
 
 ostream& operator<< (ostream& os, const Profile& p);
 
+/**
+* @see Sequence
+*/
 class Edge {
 	map<size_t, size_t> lengths_;
 public:
@@ -113,6 +110,10 @@ public:
 	}
 };
 
+/**
+* @see Profile
+* @see Sequence
+*/
 class ProfileEdge {
 	map<size_t, Profile> long_;
 	// minus keys
@@ -151,6 +152,9 @@ class Vertex;
 
 typedef map<Vertex*, Edge> Edges;
 
+/**
+* @see Edges
+*/
 class Vertex {
 	Vertex* complement_;
 	const Sequence data_;
@@ -176,7 +180,6 @@ public:
 	}
 
 	void addEdge(Vertex* to, const Sequence& seq) {
-//		edges_[to].addSequence(size(), to->size(), seq);
 		edges_[to].addSequence(seq);
 	}
 
@@ -212,6 +215,11 @@ typedef set<Vertex*> Vertices;
 //	}
 //};
 
+/**
+* @see Sequence
+* @see SeqVertice
+* @see Vertices
+*/
 class Graph {
 public:
 	typedef hash_map < Sequence, Vertex*, hashing::HashSym<Sequence>, hashing::EqSym<Sequence> > SeqVertice;
