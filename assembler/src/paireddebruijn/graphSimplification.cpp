@@ -1102,11 +1102,11 @@ void doSplit(PairedGraph &graph, edgePairsMap &EdgePairs) {
 		}
 		forn(i, leftId) {
 			if (i && leftcolor[i] >= 2)
-				graph.addEdgeVertexAdjacency(tmpVertCount + leftcolor[i] - 2, graph.longEdges[idEdges[i]], RIGHT);
+				graph.addEdgeVertexAdjacency(tmpVertCount + leftcolor[i] - 2, graph.longEdges[idEdges[i]], LEFT);
 		}
 		forn(i, rightId) {
 			if (i && rightcolor[i] >= 2)
-				graph.addEdgeVertexAdjacency(tmpVertCount + rightcolor[i] - 2, graph.longEdges[idEdges[-i]], LEFT);
+				graph.addEdgeVertexAdjacency(tmpVertCount + rightcolor[i] - 2, graph.longEdges[idEdges[-i]], RIGHT);
 		}
 		//graph.VertexCount += color - 2;
 	}

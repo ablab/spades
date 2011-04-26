@@ -589,7 +589,7 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 		int good = 1;
 		for(int j = i + 1; j < tmp_res.size(); j++){
 			pair<int, pair<int, int> > comp_res = maxCommonSubstring(tmp_res[i], tmp_res[j]);
-			if (comp_res.fi > l - 1) {
+			if (comp_res.fi > 3*l/2 - 1) {
 //			if (comp_res.fi == min(tmp_res[i].length(), tmp_res[j].length())) {
 				good = 0;
 				DEBUG(" FOUND intersection length" << comp_res.fi << " on second position " << comp_res.se.se <<" " << tmp_res[i] <<" "<< tmp_res[j]);
