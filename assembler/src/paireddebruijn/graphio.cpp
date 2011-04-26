@@ -88,6 +88,7 @@ void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph, ostream &os) {
 			cerr<<"BAD EDGE!!! ID="<<it->first<<endl;
 			continue;
 		}
+		cerr<<"Edge "<<it->first<<" ("<<it->second->EdgeId<<") "<<it->second->FromVertex<<"->"<<it->second->ToVertex<<endl;
 		if (it->second->EdgeId == it->first) {
 			if (!UsedV[it->second->FromVertex]) {
 				vDist = vertexDist(longEdges, graph, it->second->FromVertex);

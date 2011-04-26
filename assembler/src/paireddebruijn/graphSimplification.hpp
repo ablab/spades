@@ -8,8 +8,7 @@ using namespace paired_assembler;
 
 void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 		int &VertexCount, bool NotExpandBeyondDefinite = false);
-void expandObvious(longEdgesMap &longEdges, PairedGraph &graph,
-		int &VertexCount, bool NotExpandBeyondDefinite = false);
+void expandObvious(PairedGraph &graph);
 void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 		int &VertexCount, int dir);
 void extractDefinite(PairedGraph &graph, int dir);
