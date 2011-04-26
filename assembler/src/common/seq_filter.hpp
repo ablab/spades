@@ -10,6 +10,7 @@
 #define _SEQ_FILTER_HPP_
  
 #include "ireadstream.hpp"
+#include "../test/memory.hpp"
 
 // Class seq_filter is used for getting all k-mer from all read of a given file
 // and selecting k-mers which amount is more than a given number.
@@ -31,15 +32,26 @@ public:
                                         const size_t L = 1, 
                                         const bool stat = false, 
                                         const bool console = true) {
+    double vm1 = 0;
+    double rss1 = 0;
+    process_mem_usage(vm1, rss1);
+
 		hm map;
     std::vector<Seq<size> > seqs;
 		add_seqs_from_file_to_map(in, map);
     if (console) {
       write_seqs_from_map_to_stdout(map, L, stat);
-      return seqs; 
     } else {
-      return get_seqs_from_map(map, L);
+      seqs = get_seqs_from_map(map, L);
     }
+
+    double vm2 = 0;
+    double rss2 = 0;
+    process_mem_usage(vm2, rss2);
+    if ((stat) && (console)) {
+      std::cout << "Memory: " << (vm2 - vm1) << std::endl;
+    }
+    return seqs;
 	}
 
 private:
