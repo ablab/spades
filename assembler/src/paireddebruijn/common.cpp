@@ -139,23 +139,30 @@ void initConstants(string ini_file) {
 int  appendLowerPath(string &edge, string &toAppend){
 
 	TRACE("Appending");
-	for(int i = max(0, (int) (edge.size() - toAppend.size() - l) ); i < edge.size(); i++) {
-		int j = 0;
+//	DEBUG( max(-5, (int) (edge.size() - toAppend.size() - l) ));
+	for(int i = max(-5, (int) (edge.size() - toAppend.size() - l) ) ; i < (int )edge.size(); i++) {
+//		DEBUG("trying i  =" << i);
+		int j = max(-i, 0);
 		int fl = 1;
 		while (j<toAppend.size() && j+i < edge.size() && edge[i+j] == toAppend[j]){
 			j++;
 		}
 		if (j<toAppend.size() && j+i < edge.size()) {
+	//		DEBUG("failed on shift " << j);
 			continue;
 		} else {
 			if (j < 20) {
-				ERROR("unable to append,  strings" << edge << " " << toAppend);
+				continue;
 	//			return 0;
 			}
-			edge.append(toAppend.substr(j ));
-			return j;
+			else {
+				edge.append(toAppend.substr(j ));
+				return j;
+			}
 		}
 
 	}
+	ERROR("unable to append,  strings" << edge << " " << toAppend);
+	edge.append(toAppend);
 	return 0;
 }
