@@ -76,7 +76,7 @@ void run() {
 					folder+"afterSplit_g.dot");
 		}
 //		expandDefinite(graph.longEdges, graph, graph.VertexCount, false);
-		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		expandObvious(graph);
 		outputLongEdges(graph.longEdges, graph,
 				folder+"afterExpand.dot");
 		outputLongEdgesThroughGenome(graph,
@@ -88,19 +88,19 @@ void run() {
 				folder+"afterBulge.dot");
 		outputLongEdgesThroughGenome(graph,
 						folder+"afterBulge_g.dot");
-		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		expandObvious(graph);
 		outputLongEdges(graph.longEdges, graph,
 				folder+"afterBulgeEx.dot");
 		outputLongEdgesThroughGenome(graph,
 						folder+"afterBulgeEx_g.dot");
 		cutShortTips(graph, 5);
-		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		expandObvious(graph);
 		cutShortTips(graph, 15);
-		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		expandObvious(graph);
 		cutShortTips(graph, 25);
-		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		expandObvious(graph);
 		cutShortTips(graph, 35);
-		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		expandObvious(graph);
 		outputLongEdges(graph.longEdges, graph,
 				folder+"afterTips.dot");
 		outputLongEdgesThroughGenome(graph,

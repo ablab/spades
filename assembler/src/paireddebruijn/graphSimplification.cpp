@@ -296,96 +296,74 @@ pair<int, int> vertexDist(longEdgesMap &longEdges, PairedGraph &graph,
 
 
 void cutShortTips(PairedGraph &graph, int MaxCutLength){
+	cerr<<"Start clip tips: max vert"<<graph.VertexCount<<endl;
 	forn(i,graph.VertexCount) {
 		if ((graph.rightDegree(i) == 1) && (graph.leftDegree(i) == 0)){
 			Edge* curEdge = graph.neighbourEdge(i,0, RIGHT);
+			cerr<<"cut tips vert "<<i<<" edge "<< curEdge->EdgeId<<endl;
 			if ((curEdge->length<=MaxCutLength)&&((curEdge->coverage<=200))) graph.removeEdge(curEdge);
-		}
+		} else
 		if ((graph.rightDegree(i) == 0) && (graph.leftDegree(i) == 1)){
 			Edge* curEdge = graph.neighbourEdge(i,0, LEFT);
+			cerr<<"cut tips vert "<<i<<" edge "<< curEdge->EdgeId<<endl;
 			if ((curEdge->length<=MaxCutLength)&&(((curEdge->coverage<=200)))) graph.removeEdge(curEdge);
 		}
 	}
+	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 }
 
 
-void expandObvious(longEdgesMap &longEdges, PairedGraph &graph,
-		int &VertexCount, bool NotExpandBeyondDefinite) {
-	longEdgesMap::iterator it;
+void expandObvious(PairedGraph &graph) {
 	int expandEdgeIndex;
-	cerr << "expandDefiniteStart" << endl;
-	forn(i,VertexCount) {
-		cerr << "expand definite right Vertex " <<i<< endl;
+	longEdgesMap::iterator it;
+	cerr << "expandObviousStart" << endl;
+	forn(i,graph.VertexCount) {
 
 		if ((graph.degrees[i][1] == 1) && (graph.degrees[i][0] == 1)) {
-			expandEdgeIndex = edgeRealId(graph.edgeIds[i][0][OUT_EDGE],
-					longEdges);
-			int DestVertex = longEdges[expandEdgeIndex]->ToVertex;
+			cerr << "expand obvious Vertex " <<i<< endl;
+			expandEdgeIndex = edgeRealId(graph.edgeIds[i][0][OUT_EDGE],	graph.longEdges);
+			if (expandEdgeIndex != graph.edgeIds[i][0][OUT_EDGE]) {
+				cerr<<" BAD edge "<<graph.edgeIds[i][0][OUT_EDGE]<<" rId "<<expandEdgeIndex<<endl;
+			}
+			int DestVertex = graph.longEdges[expandEdgeIndex]->ToVertex;
 			if (DestVertex == i) {
-				WARN("Expand definite right has bad loop");
+				WARN("Expand obvious has bad loop");
 				continue;
 			}
-			pair<int, int> diffDistDest = make_pair(0, 0);
-			pair<int, int> diffDistCur = make_pair(0, 0);
-			if (NotExpandBeyondDefinite) {
-				diffDistDest = vertexDist(longEdges, graph, DestVertex);
-				diffDistCur = vertexDist(longEdges, graph, i);
+
+			int a = 0;
+
+			while ((edgeRealId(graph.edgeIds[DestVertex][a][IN_EDGE],
+					graph.longEdges) != expandEdgeIndex)&&(a < graph.degrees[DestVertex][0])){
+				cerr<<"vertex "<<DestVertex<<" in edge "<<edgeRealId(graph.edgeIds[DestVertex][a][IN_EDGE],
+						graph.longEdges)<<" on position "<<a<<endl;
+				a++;
 			}
-			if ((!NotExpandBeyondDefinite) || (diffDistCur.first
-					+ diffDistDest.second + longEdges[expandEdgeIndex]->length
-					< readLength + k) ||(graph.degrees[i][0]==1)) {
-				if (NotExpandBeyondDefinite)
-					cerr << "Check cur vert " << i << " dest vert "
-							<< DestVertex << "  " << diffDistCur.first << " + "
-							<< diffDistDest.second << " + "
-							<< longEdges[expandEdgeIndex]->length << " = "
-							<< diffDistCur.first + diffDistDest.second
-									+ longEdges[expandEdgeIndex]->length
-							<< " < " << readLength + k << endl;
-				int a = 0;
-
-				while ((edgeRealId(graph.edgeIds[DestVertex][a][IN_EDGE],
-						longEdges) != expandEdgeIndex)&&(a < graph.degrees[DestVertex][0])){
-					cerr<<"vertex "<<DestVertex<<" in edge "<<edgeRealId(graph.edgeIds[DestVertex][a][IN_EDGE],
-							longEdges)<<" on position "<<a<<endl;
-					a++;
-				}
-				cerr<<"Total in edges "<<graph.degrees[DestVertex][0]<<" but we want "<<a<<endl;
-				assert(a < graph.degrees[DestVertex][0]);
-				//				cerr << a;
-				while (a < graph.degrees[DestVertex][0] - 1) {
-					graph.edgeIds[DestVertex][a][IN_EDGE]
-							= graph.edgeIds[DestVertex][a + 1][IN_EDGE];
-					a++;
-				}
-
+			cerr<<"Total in edges "<<graph.degrees[DestVertex][0]<<" but we want "<<a<<endl;
+			assert(a < graph.degrees[DestVertex][0]);
+			//				cerr << a;
+			while (a < graph.degrees[DestVertex][0] - 1) {
+				graph.edgeIds[DestVertex][a][IN_EDGE]
+						= graph.edgeIds[DestVertex][a + 1][IN_EDGE];
+				a++;
+			}
 				//				cerr << "hm"<<" "<< a << endl << graph.degrees[i][0]<< endl;
-				graph.degrees[DestVertex][0]--;
-				//				assert(graph.degrees[DestVertex][0] > 0);
-				forn(j, graph.degrees[i][0]) {
-					longEdges[graph.edgeIds[i][j][IN_EDGE]]->ExpandRight(
-							*(longEdges[expandEdgeIndex]));
-					graph.edgeIds[DestVertex][graph.degrees[DestVertex][0]][IN_EDGE]
-							= graph.edgeIds[i][j][IN_EDGE];
-					graph.degrees[DestVertex][0]++;
-				}
-				it = longEdges.find(expandEdgeIndex);
-				longEdges.erase(it);
-
-				graph.degrees[i][0] = 0;
-				graph.degrees[i][1] = 0;
-				diffDistDest = vertexDist(longEdges, graph, DestVertex);
-				if (NotExpandBeyondDefinite)
-					cerr << "Must be: dest vert " << DestVertex << "  "
-							<< diffDistDest.first << " + "
-							<< diffDistDest.second << " = "
-							<< diffDistDest.first + diffDistDest.second
-							<< " < " << readLength + k << endl;
-
+			graph.degrees[DestVertex][0]--;
+			//				assert(graph.degrees[DestVertex][0] > 0);
+			forn(j, graph.degrees[i][0]) {
+				graph.longEdges[graph.edgeIds[i][j][IN_EDGE]]->ExpandRight(
+						*(graph.longEdges[expandEdgeIndex]));
+				graph.edgeIds[DestVertex][graph.degrees[DestVertex][0]][IN_EDGE]
+						= graph.edgeIds[i][j][IN_EDGE];
+				graph.degrees[DestVertex][0]++;
 			}
+			it = graph.longEdges.find(graph.edgeIds[i][0][OUT_EDGE]);
+			graph.longEdges.erase(it);
+			graph.degrees[i][0] = 0;
+			graph.degrees[i][1] = 0;
 		}
 	}
-
+	cerr << "expandObviousFinished" << endl;
 }
 void expandDefinite(longEdgesMap &longEdges, PairedGraph &graph,
 		int &VertexCount, bool NotExpandBeyondDefinite) {
@@ -963,7 +941,7 @@ void SplitVertecesByEdgeConnections(PairedGraph &graph, edgePairsMap &EdgePairs,
 		expandDefinite(graph.longEdges, graph, graph.VertexCount, false);
 	}else {
 		cerr<<"Start expand obvious"<<endl;
-		expandObvious(graph.longEdges, graph, graph.VertexCount, false);
+		expandObvious(graph);
 		cerr<<"End expand obvious"<<endl;
 		cerr<<"Clear fake edges"<<endl;
 
@@ -1008,15 +986,15 @@ bool intersectible(Sequence *left, Sequence *right){
 	else return false;
 
 }
-void dfs (int **table, int color, int * leftcolor, int* rightcolor, int len, int pos) {
+void dfs (int **table, int color, int * leftcolor, int* rightcolor,  int pos) {
 	leftcolor[pos] = color;
-	forn(j, len) {
+	forn(j, MAX_DEGREE) {
 		if (table[pos][j] && !(rightcolor[j])) {
 			rightcolor[j] = color;
-			forn(i, len)
-				if (i != pos && !leftcolor[i]) {
+			forn(i, MAX_DEGREE)
+				if (table[i][j] && i != pos && !leftcolor[i]) {
 					leftcolor[i] = color;
-					dfs(table,color,leftcolor,rightcolor,len,pos);
+					dfs(table,color,leftcolor,rightcolor,i);
 				}
 		}
 	}
@@ -1028,56 +1006,109 @@ void doSplit(PairedGraph &graph, edgePairsMap &EdgePairs) {
 	int leftcolor [MAX_DEGREE];
 	int rightcolor [MAX_DEGREE];
 	map<int, int> edgeIds;
+	map<int, int> idEdges;
 	for(edgePairsMap::iterator iter = EdgePairs.begin(); iter != EdgePairs.end(); iter++) {
 		int curVId = iter->first;
+		INFO(" splitting vertex" << curVId);
 		int len = iter->second.size();
-
-		forn(i, len) {
-			forn(j, len)
+		forn(i, MAX_DEGREE) {
+			forn(j, MAX_DEGREE)
 				table[i][j] = 0;
 			leftcolor[i] = 0;
 			rightcolor[i] = 0;
 		}
+		cerr<<"Vertex "<<curVId<<" in degree "<<graph.degree(curVId,LEFT)<<" out degree "<<graph.degree(curVId,RIGHT)<<" edge pairs:"<<endl;
+		forn(i, len){
+			cerr<<iter->second[i].first<<" "<<iter->second[i].second<<endl;
+		}
+
 		edgeIds.clear();
-		int leftId = 0;
-		int rightId = 0;
+		idEdges.clear();
+		int leftId = 1;
+		int rightId = 1;
 		forn(i, len) {
 			if (edgeIds.find(iter->second[i].first) == edgeIds.end()){
-				leftId ++;
 				edgeIds[iter->second[i].first] = leftId;
-
+				idEdges[leftId] = iter->second[i].first;
+				leftId ++;
 			}
-			if (edgeIds.find(iter->second[i].second) == edgeIds.end()){
-				rightId ++;
+			if (edgeIds.find(-iter->second[i].second) == edgeIds.end()){
 				edgeIds[-iter->second[i].second] = rightId;
+				idEdges[-rightId] = iter->second[i].second;
+				rightId ++;
 			}
 		//	leftGlobalIds[leftId] = mp(iter->second[i].first,
 			table[edgeIds[iter->second[i].first]][edgeIds[-iter->second[i].second]] = 1;
 		}
+		int in_degree = graph.degree(curVId, LEFT);
+		int out_degree = graph.degree(curVId, RIGHT);
+		forn(i, in_degree) {
+			if (edgeIds.find(graph.leftEdge(curVId, i)->EdgeId) == edgeIds.end()){
+				edgeIds[graph.leftEdge(curVId, i)->EdgeId] = leftId;
+				idEdges[leftId] = graph.leftEdge(curVId, i)->EdgeId;
+				leftId++;
+
+//				EdgePairs.push_back(mp(graph.leftEdge(curVId, i)->EdgeId,0));
+			}
+		}
+		forn(i, out_degree) {
+			if (edgeIds.find(-graph.rightEdge(curVId, i)->EdgeId) == edgeIds.end()){
+				edgeIds[-graph.rightEdge(curVId, i)->EdgeId] = rightId;
+				idEdges[-rightId] = graph.rightEdge(curVId, i)->EdgeId;
+				rightId++;
+			}
+		}
 		int color = 0;
-		forn(i, len) {
+		for(int i = 1; i < leftId; i++) {
 			if(!leftcolor[i]) {
 
 				color++;
-				dfs(table, color, leftcolor, rightcolor, len, i);
+				dfs(table, color, leftcolor, rightcolor, i);
 			}
 		}
-		forn(i, len) {
+		for(int i =1; i < rightId; i++) {
 			if(!rightcolor[i]) {
 				color++;
 				rightcolor[i] = color;
 			}
 		}
-
-		for(int cur_color = 2;cur_color < color; cur_color++)
-			graph.addVertex(graph.VertexCount + cur_color - 2);
-		forn(i, len) {
-			if (leftcolor[i] >= 2)
-				graph.addEdgeVertexAdjacency(graph.VertexCount + leftcolor[i] - 1, graph.longEdges[EdgePairs[curVId][i].first], RIGHT);
-			if (rightcolor[i] >= 2)
-				graph.addEdgeVertexAdjacency(graph.VertexCount + rightcolor[i] - 1, graph.longEdges[EdgePairs[curVId][i].second], LEFT);
+		cerr<<"left colors: "<<endl;
+		forn(i, leftId) {
+			cerr<<leftcolor[i]<<" ";
 		}
-		graph.VertexCount += color - 2;
+		cerr<<"\n right colors: "<<endl;
+		forn(i, rightId) {
+			cerr<<rightcolor[i]<<" ";
+		}
+		cerr<<"table: "<<endl;
+		forn(i, leftId) {
+			forn(j, rightId) {
+			cerr<<table[i][j]<<" ";
+			}
+
+			cerr<<endl;
+		}
+
+
+
+		int tmpVertCount = graph.VertexCount;
+		cerr << "idEdges" << endl;
+		for(map<int, int>::iterator it = idEdges.begin(); it != idEdges.end(); it++)
+			cerr<< it->first << " " << it->second << endl;
+		for(int cur_color = 2;cur_color <= color; cur_color++) {
+
+			int tmp = graph.addVertex(graph.VertexCount + cur_color - 2);
+			INFO("added vertex" << tmp);
+		}
+		forn(i, leftId) {
+			if (i && leftcolor[i] >= 2)
+				graph.addEdgeVertexAdjacency(tmpVertCount + leftcolor[i] - 2, graph.longEdges[idEdges[i]], RIGHT);
+		}
+		forn(i, rightId) {
+			if (i && rightcolor[i] >= 2)
+				graph.addEdgeVertexAdjacency(tmpVertCount + rightcolor[i] - 2, graph.longEdges[idEdges[-i]], LEFT);
+		}
+		//graph.VertexCount += color - 2;
 	}
 	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 
