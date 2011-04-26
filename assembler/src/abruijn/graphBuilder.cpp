@@ -33,7 +33,8 @@ map<hash_t, set<hash_t> > tip_extensions;
 Graph graph;
 
 hashing::HashSym<Sequence> hashSym;
-vector<hash_t> ha;
+typedef vector<hash_t> hash_vector;
+hash_vector ha;
 hash_t hbest[HTAKE];
 
 bool isTrusted(hash_t hash) {
@@ -71,6 +72,34 @@ void findMinimizers(Sequence s) {
 		earmarked_hashes.insert(hbest[i]);
 	}
 }
+
+/**
+ * Marks all k-mers in a given read that are locally minimal in
+ * a window of size window_size
+ */
+void findLocalMinimizers(Sequence s, size_t window_size) {
+	assert(window_size % 2 == 1);
+
+	/// compute hash-values of all the k-mers of a given read
+	ha.reserve(s.size());
+	hashSym.kmers(s, ha);
+
+	/// compute the minimum hash-value in the first window
+	assert(window_size <= ha.size());
+    hash_t current_min=*(std::min_element(ha.begin(), ha.begin()+window_size));
+
+	for (size_t i = 0; i + window_size < ha.size(); ++i) {
+		/// if the current min is (potentially) lost, update it
+		if ((i>0 && ha[i-1]==current_min))
+			current_min=*(std::min_element(ha.begin()+i, ha.begin()+i+window_size));
+
+		current_min=min(current_min,ha[i+window_size-1]);
+
+		if (ha[i+window_size/2]==current_min)
+			earmarked_hashes.insert(current_min);
+	}
+}
+
 
 /**
  * If only one k-mer from s is earmarked,
