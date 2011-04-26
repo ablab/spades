@@ -306,6 +306,7 @@ void cutShortTips(PairedGraph &graph, int MaxCutLength){
 			if ((curEdge->length<=MaxCutLength)&&(((curEdge->coverage<=200)))) graph.removeEdge(curEdge);
 		}
 	}
+	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 }
 
 
@@ -1008,15 +1009,15 @@ bool intersectible(Sequence *left, Sequence *right){
 	else return false;
 
 }
-void dfs (int **table, int color, int * leftcolor, int* rightcolor, int len, int pos) {
+void dfs (int **table, int color, int * leftcolor, int* rightcolor,  int pos) {
 	leftcolor[pos] = color;
-	forn(j, len) {
+	forn(j, MAX_DEGREE) {
 		if (table[pos][j] && !(rightcolor[j])) {
 			rightcolor[j] = color;
-			forn(i, len)
-				if (i != pos && !leftcolor[i]) {
+			forn(i, MAX_DEGREE)
+				if (table[i][j] && i != pos && !leftcolor[i]) {
 					leftcolor[i] = color;
-					dfs(table,color,leftcolor,rightcolor,len,pos);
+					dfs(table,color,leftcolor,rightcolor,pos);
 				}
 		}
 	}
@@ -1028,56 +1029,105 @@ void doSplit(PairedGraph &graph, edgePairsMap &EdgePairs) {
 	int leftcolor [MAX_DEGREE];
 	int rightcolor [MAX_DEGREE];
 	map<int, int> edgeIds;
+	map<int, int> idEdges;
 	for(edgePairsMap::iterator iter = EdgePairs.begin(); iter != EdgePairs.end(); iter++) {
 		int curVId = iter->first;
 		int len = iter->second.size();
-
-		forn(i, len) {
-			forn(j, len)
+		forn(i, MAX_DEGREE) {
+			forn(j, MAX_DEGREE)
 				table[i][j] = 0;
 			leftcolor[i] = 0;
 			rightcolor[i] = 0;
 		}
+		cerr<<"Vertex "<<curVId<<" in degree "<<graph.degree(curVId,LEFT)<<" out degree "<<graph.degree(curVId,RIGHT)<<" edge pairs:"<<endl;
+		forn(i, len){
+			cerr<<iter->second[i].first<<" "<<iter->second[i].second<<endl;
+		}
+
 		edgeIds.clear();
-		int leftId = 0;
-		int rightId = 0;
+		idEdges.clear();
+		int leftId = 1;
+		int rightId = 1;
 		forn(i, len) {
 			if (edgeIds.find(iter->second[i].first) == edgeIds.end()){
-				leftId ++;
 				edgeIds[iter->second[i].first] = leftId;
-
+				idEdges[leftId] = iter->second[i].first;
+				leftId ++;
 			}
-			if (edgeIds.find(iter->second[i].second) == edgeIds.end()){
-				rightId ++;
+			if (edgeIds.find(-iter->second[i].second) == edgeIds.end()){
 				edgeIds[-iter->second[i].second] = rightId;
+				idEdges[-rightId] = iter->second[i].second;
+				rightId ++;
 			}
 		//	leftGlobalIds[leftId] = mp(iter->second[i].first,
 			table[edgeIds[iter->second[i].first]][edgeIds[-iter->second[i].second]] = 1;
 		}
+		int in_degree = graph.degree(curVId, LEFT);
+		int out_degree = graph.degree(curVId, RIGHT);
+		forn(i, in_degree) {
+			if (edgeIds.find(graph.leftEdge(curVId, i)->EdgeId) == edgeIds.end()){
+				edgeIds[graph.leftEdge(curVId, i)->EdgeId] = leftId;
+				idEdges[leftId] = graph.leftEdge(curVId, i)->EdgeId;
+				leftId++;
+
+//				EdgePairs.push_back(mp(graph.leftEdge(curVId, i)->EdgeId,0));
+			}
+		}
+		forn(i, out_degree) {
+			if (edgeIds.find(-graph.rightEdge(curVId, i)->EdgeId) == edgeIds.end()){
+				edgeIds[-graph.rightEdge(curVId, i)->EdgeId] = rightId;
+				idEdges[-rightId] = graph.rightEdge(curVId, i)->EdgeId;
+				rightId++;
+			}
+		}
 		int color = 0;
-		forn(i, len) {
+		for(int i = 1; i < leftId; i++) {
 			if(!leftcolor[i]) {
 
 				color++;
-				dfs(table, color, leftcolor, rightcolor, len, i);
+				dfs(table, color, leftcolor, rightcolor, i);
 			}
 		}
-		forn(i, len) {
+		for(int i =1; i < rightId; i++) {
 			if(!rightcolor[i]) {
 				color++;
 				rightcolor[i] = color;
 			}
 		}
+		cerr<<"left colors: "<<endl;
+		forn(i, leftId) {
+			cerr<<leftcolor[i]<<" ";
+		}
+		cerr<<"\n right colors: "<<endl;
+		forn(i, rightId) {
+			cerr<<rightcolor[i]<<" ";
+		}
+		cerr<<"table: "<<endl;
+		forn(i, leftId) {
+			forn(j, rightId) {
+			cerr<<table[i][j]<<" ";
+			}
 
+			cerr<<endl;
+		}
+
+
+
+		int tmpVertCount = graph.VertexCount;
+		cerr << "idEdges" << endl;
+		for(map<int, int>::iterator it = idEdges.begin(); it != idEdges.end(); it++)
+			cerr<< it->first << " " << it->second << endl;
 		for(int cur_color = 2;cur_color < color; cur_color++)
 			graph.addVertex(graph.VertexCount + cur_color - 2);
-		forn(i, len) {
-			if (leftcolor[i] >= 2)
-				graph.addEdgeVertexAdjacency(graph.VertexCount + leftcolor[i] - 1, graph.longEdges[EdgePairs[curVId][i].first], RIGHT);
-			if (rightcolor[i] >= 2)
-				graph.addEdgeVertexAdjacency(graph.VertexCount + rightcolor[i] - 1, graph.longEdges[EdgePairs[curVId][i].second], LEFT);
+		forn(i, leftId) {
+			if (i && leftcolor[i] >= 2)
+				graph.addEdgeVertexAdjacency(tmpVertCount + leftcolor[i] - 1, graph.longEdges[idEdges[i]], RIGHT);
 		}
-		graph.VertexCount += color - 2;
+		forn(i, rightId) {
+			if (i && rightcolor[i] >= 2)
+				graph.addEdgeVertexAdjacency(tmpVertCount + rightcolor[i] - 1, graph.longEdges[idEdges[-i]], LEFT);
+		}
+		//graph.VertexCount += color - 2;
 	}
 	graph.recreateVerticesInfo(graph.VertexCount, graph.longEdges);
 

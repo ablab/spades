@@ -422,6 +422,7 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 			}
 		}
 	}
+
 	int color = 1;
 	vector<int> leftway;
 //	memset()
@@ -588,8 +589,8 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 		int good = 1;
 		for(int j = i + 1; j < tmp_res.size(); j++){
 			pair<int, pair<int, int> > comp_res = maxCommonSubstring(tmp_res[i], tmp_res[j]);
-//			if (comp_res.fi > l - 1) {
-			if (comp_res.fi == min(tmp_res[i].length(), tmp_res[j].length())) {
+			if (comp_res.fi > l - 1) {
+//			if (comp_res.fi == min(tmp_res[i].length(), tmp_res[j].length())) {
 				good = 0;
 				DEBUG(" FOUND intersection length" << comp_res.fi << " on second position " << comp_res.se.se <<" " << tmp_res[i] <<" "<< tmp_res[j]);
 				tmp_res[j] = tmp_res[j].substr(comp_res.se.se, comp_res.fi);
@@ -727,7 +728,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 	int j = 0;
 	for (; j + k + shift < up_len; j++) {
 		if (checkBoundsForUpper(upper)) {
-			for (int jj = max(0, j + low_shift - range_variating); jj < min(low_len - l +1, j + low_shift + range_variating + 1); jj ++)
+			for (int jj = max(0, j - low_shift - range_variating); jj < min(low_len - l +1, j - low_shift + range_variating + 1); jj ++)
 			{			assert(jj<=low_len-l);
 				addPairToTable(table, upper, lowers[jj]);
 //				if ((lowers[jj]&3)!=2) assert(0);
@@ -749,7 +750,7 @@ void processReadPair(myMap& table, char *upperRead, char *lowerRead) {
 
 	}
 	if (checkBoundsForUpper(upper)) {
-		for (int jj = max(0, j + low_shift - range_variating); jj < min(low_len - l +1, j + low_shift +range_variating + 1); jj ++)
+		for (int jj = max(0, j - low_shift - range_variating); jj < min(low_len - l +1, j - low_shift +range_variating + 1); jj ++)
 		addPairToTable(table, upper, lowers[jj]);
 		totalKmers++;
 	}
