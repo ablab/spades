@@ -149,4 +149,34 @@ public:
 	}
 };
 
+template<class Stream>
+class PairComplementerWrapper {
+public:
+	typedef typename Stream::ReadType ReadType;
+private:
+	Stream &inner_reader_;
+public:
+	PairComplementerWrapper(Stream &reader) :
+		inner_reader_(reader) {
+	}
+
+	bool eof() const {
+		return inner_reader_.eof();
+	}
+
+	PairComplementerWrapper& operator>>(vector<ReadType>& v) {
+		inner_reader_ >> v;
+		v[1] = !v[1];
+		return *this;
+	}
+
+	void reset() {
+		inner_reader_.reset();
+	}
+
+	void close() {
+		inner_reader_.close();
+	}
+};
+
 #endif /* STROBE_READER_HPP_ */
