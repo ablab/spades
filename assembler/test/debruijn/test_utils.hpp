@@ -16,10 +16,10 @@
 
 const std::string INPUT_DIR = "./data/input/";
 const std::string ECOLI_FILE = "./data/input/MG1655-K12.fasta.gz";
-const std::tr1::tuple<std::string, std::string, int> QUAKE_CROPPED_10_3   = std::tr1::make_tuple<std::string, std::string, int>(INPUT_DIR + "s_6.first1000_1.fastq.gz",   INPUT_DIR + "s_6.first1000_2.fastq.gz",   10000);
-const std::tr1::tuple<std::string, std::string, int> QUAKE_CROPPED_10_4   = std::tr1::make_tuple<std::string, std::string, int>(INPUT_DIR + "s_6.first10000_1.fastq.gz",  INPUT_DIR + "s_6.first10000_2.fastq.gz",  100000);
-const std::tr1::tuple<std::string, std::string, int> QUAKE_CROPPED_10_5   = std::tr1::make_tuple<std::string, std::string, int>(INPUT_DIR + "s_6.first100000_1.fastq.gz", INPUT_DIR + "s_6.first100000_2.fastq.gz", 100000);
-const std::tr1::tuple<std::string, std::string, int> QUAKE_CROPPED_4_10_5 = std::tr1::make_tuple<std::string, std::string, int>(INPUT_DIR + "s_6.first400000_1.fastq.gz", INPUT_DIR + "s_6.first400000_2.fastq.gz", 4000000);
+const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_CROPPED_10_3   = std::tr1::make_tuple<std::string, std::string, size_t, int>(INPUT_DIR + "s_6.first1000_1.fastq.gz",   INPUT_DIR + "s_6.first1000_2.fastq.gz", 220, 10000);
+const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_CROPPED_10_4   = std::tr1::make_tuple<std::string, std::string, size_t, int>(INPUT_DIR + "s_6.first10000_1.fastq.gz",  INPUT_DIR + "s_6.first10000_2.fastq.gz", 220, 100000);
+const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_CROPPED_10_5   = std::tr1::make_tuple<std::string, std::string, size_t, int>(INPUT_DIR + "s_6.first100000_1.fastq.gz", INPUT_DIR + "s_6.first100000_2.fastq.gz", 220, 100000);
+const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_CROPPED_4_10_5 = std::tr1::make_tuple<std::string, std::string, size_t, int>(INPUT_DIR + "s_6.first400000_1.fastq.gz", INPUT_DIR + "s_6.first400000_2.fastq.gz", 220, 4000000);
 /*#define QUAKE_CROPPED_10_3 make_pair(make_tuple("./data/input/s_6.first1000_1.fastq.gz", "./data/input/s_6.first1000_2.fastq.gz"), 10000)
 #define QUAKE_CROPPED_10_4 make_pair(make_pair("./data/input/s_6.first10000_1.fastq.gz","./data/input/s_6.first10000_2.fastq.gz"), 10000)
 #define QUAKE_CROPPED_10_5 make_pair(make_pair("./data/input/s_6.first100000_1.fastq.gz","./data/input/s_6.first100000_2.fastq.gz"), 100000)
