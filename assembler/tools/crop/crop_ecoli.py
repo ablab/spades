@@ -26,6 +26,7 @@ os.system('../../../tools/bowtie-0.12.7/bowtie-build ' + filename2 + ' bowtie/ec
 
 # align reads using bowtie
 os.system('../../../tools/bowtie-0.12.7/bowtie bowtie/ecoli.'+str(max) + ' -1 ../EAS20_8_Quake/s_6_1.cor.fastq -2 ../EAS20_8_Quake/s_6_2.cor.fastq --al s_6.first' + str(max) + '.fastq')
+# use -X for maxins length
 
 # gzip resulting files
 os.system('gzip s_6.first' + str(max) + '_1.fastq')
