@@ -38,7 +38,8 @@ double getColorParameter(int l, int r, double perc) {
 }
 
 string getColor(int currentLength, int approximateLength) {
-	int points[8][3] = { {0, 0, 0}, {0, 0, 1}, {0, 1, 1}, {1, 1, 1}, {0, 1, 0}, {1, 1, 0}, {1, 0, 1}};
+	currentLength %= approximateLength;
+	int points[8][3] = {{0, 0, 1}, {0, 1, 1}, {1, 1, 1}, {0, 1, 0}, {1, 1, 0}, {1, 0, 1}, {0, 0, 1}};
 	stringstream ss;
 	int bound = approximateLength / 6;
 	int num = currentLength / bound;
