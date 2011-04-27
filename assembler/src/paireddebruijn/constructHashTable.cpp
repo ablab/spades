@@ -500,90 +500,90 @@ downSeqs clusterize0704(pair<ll,int>* a, int size, int max_shift) {
 	}*/
 //	cerr << "Start compressing"<<endl;
 
-	forn(i,  tmp_res.size()) {
-
-		int good = 1;
-		/*for(int j = i + 1; j < tmp_res.size(); j++){
-			pair<int, pair<int, int> > comp_res = maxCommonSubstring(tmp_res[i], tmp_res[j]);
-			if (comp_res.fi > 2*l - 1) {
-				good = 0;
-				DEBUG(" FOUND intersection length" << comp_res.fi << " on second position " << comp_res.se.se <<" " << tmp_res[i] <<" "<< tmp_res[j]);
-				tmp_res[j] = tmp_res[j].substr(comp_res.se.se, comp_res.fi);
-				tmp_cov[j] += tmp_cov[i];
-				break;
-
-			}
-		}*/
-		int s_len = tmp_res[i].length();
-		forn(ii, s_len)
-			cur_string[ii] = tmp_res[i][ii];
-		cur_string[s_len] = 0;
-		int sum_cov = 0;
-		ll tmpKmer = 0;
-		forn(ii, s_len - l) {
-			tmpKmer = extractMer(cur_string, ii, l);
-			forn(j, size) {
-				if (a[j].first == tmpKmer) {
-					sum_cov +=a[j].second;
-					break;
-				}
-			}
-		}
-		DEBUG("sum_cov computed for string " << tmp_res[i] << "with s_len" << s_len);
-		int ii = 0;
-		int cov = 0;
-		do {
-			cov = 0;
-			tmpKmer = extractMer(cur_string, ii, l);
-			ii++;
-			forn(j, size) {
-				if (a[j].first == tmpKmer) {
-					cov = a[j].second;
-					break;
-				}
-			}
-			assert(cov > 0);
-		} while ((ii < s_len - l) && (sum_cov > cov * 2 * (s_len - l + 1)));
-		int left_start = ii - 1;
-		ii = s_len - l ;
-		cov = 0;
-		DEBUG("Left fixed");
-		do {
-			cov = 0;
-			tmpKmer = extractMer(cur_string, ii, l);
-			ii--;
-			forn(j, size) {
-				if (a[j].first == tmpKmer) {
-					cov = a[j].second;
-					break;
-				}
-			}
-			assert(cov > 0);
-
-		} while ((ii >left_start + l) && (sum_cov > cov * 2 * (s_len - l + 1)));
-		tmp_res[i] = tmp_res[i].substr(left_start, ii - left_start + 1 + l);
-		tmp_cov[i] = 0;
+//	forn(i,  tmp_res.size()) {
+//
+//		int good = 1;
+//		/*for(int j = i + 1; j < tmp_res.size(); j++){
+//			pair<int, pair<int, int> > comp_res = maxCommonSubstring(tmp_res[i], tmp_res[j]);
+//			if (comp_res.fi > 2*l - 1) {
+//				good = 0;
+//				DEBUG(" FOUND intersection length" << comp_res.fi << " on second position " << comp_res.se.se <<" " << tmp_res[i] <<" "<< tmp_res[j]);
+//				tmp_res[j] = tmp_res[j].substr(comp_res.se.se, comp_res.fi);
+//				tmp_cov[j] += tmp_cov[i];
+//				break;
+//
+//			}
+//		}*/
+//		int s_len = tmp_res[i].length();
+//		forn(ii, s_len)
+//			cur_string[ii] = tmp_res[i][ii];
+//		cur_string[s_len] = 0;
 //		int sum_cov = 0;
-		tmpKmer = 0;
-		s_len = tmp_res[i].length();
-
-		DEBUG("right fixed");
-		DEBUG("For string" <<tmp_res[i] << " "<< s_len);
-
-		forn(ii, s_len)
-			cur_string[ii] = tmp_res[i][ii];
-		cur_string[s_len] = 0;
-		forn(ii, s_len - l) {
-			tmpKmer = extractMer(cur_string, ii, l);
-			forn(j, size) {
-				if (a[j].first == tmpKmer) {
-					tmp_cov[i] +=a[j].second;
-					break;
-				}
-			}
-		}
-		DEBUG("cov computed");
-	}
+//		ll tmpKmer = 0;
+//		forn(ii, s_len - l) {
+//			tmpKmer = extractMer(cur_string, ii, l);
+//			forn(j, size) {
+//				if (a[j].first == tmpKmer) {
+//					sum_cov +=a[j].second;
+//					break;
+//				}
+//			}
+//		}
+//		DEBUG("sum_cov computed for string " << tmp_res[i] << "with s_len" << s_len);
+//		int ii = 0;
+//		int cov = 0;
+//		do {
+//			cov = 0;
+//			tmpKmer = extractMer(cur_string, ii, l);
+//			ii++;
+//			forn(j, size) {
+//				if (a[j].first == tmpKmer) {
+//					cov = a[j].second;
+//					break;
+//				}
+//			}
+//			assert(cov > 0);
+//		} while ((ii < s_len - l) && (sum_cov > cov * 2 * (s_len - l + 1)));
+//		int left_start = ii - 1;
+//		ii = s_len - l ;
+//		cov = 0;
+//		DEBUG("Left fixed");
+//		do {
+//			cov = 0;
+//			tmpKmer = extractMer(cur_string, ii, l);
+//			ii--;
+//			forn(j, size) {
+//				if (a[j].first == tmpKmer) {
+//					cov = a[j].second;
+//					break;
+//				}
+//			}
+//			assert(cov > 0);
+//
+//		} while ((ii >left_start + l) && (sum_cov > cov * 2 * (s_len - l + 1)));
+//		tmp_res[i] = tmp_res[i].substr(left_start, ii - left_start + 1 + l);
+//		tmp_cov[i] = 0;
+////		int sum_cov = 0;
+//		tmpKmer = 0;
+//		s_len = tmp_res[i].length();
+//
+//		DEBUG("right fixed");
+//		DEBUG("For string" <<tmp_res[i] << " "<< s_len);
+//
+//		forn(ii, s_len)
+//			cur_string[ii] = tmp_res[i][ii];
+//		cur_string[s_len] = 0;
+//		forn(ii, s_len - l) {
+//			tmpKmer = extractMer(cur_string, ii, l);
+//			forn(j, size) {
+//				if (a[j].first == tmpKmer) {
+//					tmp_cov[i] +=a[j].second;
+//					break;
+//				}
+//			}
+//		}
+//		DEBUG("cov computed");
+//	}
 	forn(i,  tmp_res.size()) {
 
 		int good = 1;
