@@ -70,4 +70,37 @@ struct SingleReader {
 	typedef StrobeReader<1, T, TR> type;
 };
 
+template<typename T, typename TR>
+class CuttingReader {
+	TR reader_;
+	size_t cut_;
+	size_t read_;
+
+	CuttingReader(TR reader, size_t cut = -1) : reader_(reader), cut_(cut), read_(0) {}
+
+	virtual ~CuttingReader() {
+		close();
+		delete reader_;
+	}
+
+	bool eof() const {
+		return read_ == cut_ || reader_.eof();
+	}
+
+	CuttingReader& operator>>(T& v) {
+		reader_ >> v;
+		++read_;
+		return *this;
+	}
+
+	void reset() {
+		read_ = 0;
+		reader_.reset();
+	}
+
+	void close() {
+		reader_.close();
+	}
+};
+
 #endif /* STROBE_READER_HPP_ */
