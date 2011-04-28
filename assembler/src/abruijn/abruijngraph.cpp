@@ -4,6 +4,7 @@
 #include "logging.hpp"
 #include "abruijngraph.hpp"
 #include "graphVisualizer.hpp"
+#include "simple_tools.hpp"
 #include <ext/hash_map>
 
 namespace abruijn {
@@ -18,12 +19,6 @@ ostream& operator<< (ostream& os, const Edge& e) {
 
 ostream& operator<< (ostream& os, const Vertex& v) {
 	return v.output(os);
-//	#ifdef OUTPUT_PAIRED
-//		os << v.data_.Subseq(0, LABEL).str() << "_" << v.size();
-//	#endif
-//	#ifndef OUTPUT_PAIRED
-//		os << v.data_.Subseq(0, LABEL).str() << "_" << v.size() << "_" << v.data_.Subseq(data_.size() - LABEL).str();
-//	#endif
 }
 
 Vertex* Graph::createVertex(const Sequence& kmer) {
@@ -153,38 +148,32 @@ void Graph::stats() {
 	INFO(tips << " tips");
 }
 
-void Graph::output(std::ofstream &out) {
+void Graph::output(std::ofstream &out, bool paired) {
 	std::string name = "A_Bruijn_Graph";
-//	std::string name = OUTPUT_FILE;
-#ifdef OUTPUT_PAIRED
-	gvis::PairedGraphPrinter<Vertex*> printer(name, out);
-#endif
-#ifndef OUTPUT_PAIRED
-	gvis::GraphPrinter<Vertex*> printer(name, out);
-#endif
-	for (Vertices::iterator v = vertices.begin(); v != vertices.end(); ++v) {
-		#ifdef OUTPUT_PAIRED
+	if (paired) {
+		gvis::PairedGraphPrinter<Vertex*> printer(name, out);
+		for (Vertices::iterator v = vertices.begin(); v != vertices.end(); ++v) {
 			printer.addVertex(*v, toString(**v), (*v)->complement(), toString(*((*v)->complement())));
-		#endif
-		#ifndef OUTPUT_PAIRED
-			printer.addVertex(*v, toString(**v));
-		#endif
-		for (Edges::iterator it = (*v)->edges().begin(); it != (*v)->edges().end(); ++it) {
-			#ifdef OUTPUT_PAIRED
+			for (Edges::iterator it = (*v)->edges().begin(); it != (*v)->edges().end(); ++it) {
 				printer.addEdge(make_pair(*v, (*v)->complement()), make_pair(it->first, it->first->complement()), toString(it->second));
-			#endif
-			#ifndef OUTPUT_PAIRED
-				printer.addEdge(*v, it->first, it->second);
-			#endif
+			}
+		}
+		printer.output();
+	} else {
+		gvis::GraphPrinter<Vertex*> printer(name, out);
+		for (Vertices::iterator v = vertices.begin(); v != vertices.end(); ++v) {
+			printer.addVertex(*v, toString(**v));
+			for (Edges::iterator it = (*v)->edges().begin(); it != (*v)->edges().end(); ++it) {
+				printer.addEdge(*v, it->first, toString(it->second));
+			}
 		}
 	}
-	printer.output();
-	out.close();
 }
 
-void Graph::output(string filename) {
+void Graph::output(string filename, bool paired) {
 	ofstream out(filename.c_str(), ios::out);
-	output(out);
+	output(out, paired);
+	out.close();
 }
 
 }

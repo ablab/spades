@@ -216,42 +216,32 @@ void GraphBuilder::addToGraph(Sequence s) {
 }
 
 Graph GraphBuilder::build() {
-	std::string file_names[2] = {INPUT_FILES};
-//	vector<Read> *v1 = ireadstream::readAll(file_names[0], CUT);
-
-	StrobeReader<2, Read, ireadstream> sr(file_names);
-	PairedReader<ireadstream> paired_stream(sr, 220);
-	SimpleReaderWrapper<PairedReader<ireadstream> > srw(paired_stream);
 	vector<Read> v;
 	Read r;
-#ifdef CUT
-	size_t cut = CUT;
-#endif
-#ifndef CUT
-	size_t cut = -1;
-#endif
-	size_t cut2 = 2 * cut;
 
 	INFO("===== Finding " << htake << " minimizers in each read... =====");
-	srw.reset();
-	for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
-		srw >> r;
-//		findMinimizers(r.getSequence());
-		findLocalMinimizers(r.getSequence(), 51);
+	srw_.reset();
+	for (size_t i = 0; !srw_.eof(); ++i) {
+		srw_ >> r;
+		if (mode_ & 1) {
+			findMinimizers(r.getSequence());
+		} else {
+			findLocalMinimizers(r.getSequence(), 51);
+		}
 		VERBOSE(i, " single reads");
 	}
 	INFO("Done: " << earmarked_hashes.size() << " earmarked hashes");
 
-//	if (HTAKE == 1) {
-//		INFO("===== Finding second minimizers... =====");
-//		srw.reset();
-//		for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
-//			srw >> r;
-//			findSecondMinimizer(r.getSequence());
-//			VERBOSE(i, " single reads");
-//		}
-//		INFO("Done: " << earmarked_hashes.size() << " earmarked hashes");
-//	}
+	if ((mode_ & 2) && (htake == 1)) {
+		INFO("===== Finding second minimizers... =====");
+		srw_.reset();
+		for (size_t i = 0; !srw_.eof(); ++i) {
+			srw_ >> r;
+			findSecondMinimizer(r.getSequence());
+			VERBOSE(i, " single reads");
+		}
+		INFO("Done: " << earmarked_hashes.size() << " earmarked hashes");
+	}
 
 	for(;;) {
 		size_t eh = earmarked_hashes.size();
@@ -260,9 +250,9 @@ Graph GraphBuilder::build() {
 		tip_extensions.clear();
 
 		INFO("===== Revealing tips... =====");
-		srw.reset();
-		for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
-			srw >> r;
+		srw_.reset();
+		for (size_t i = 0; !srw_.eof(); ++i) {
+			srw_ >> r;
 			revealTips(r.getSequence());
 			VERBOSE(i, " single reads");
 		}
@@ -276,18 +266,18 @@ Graph GraphBuilder::build() {
 		INFO("Done: " << tips.size() << " tips.");
 
 		INFO("===== Finding tip extensions... =====");
-		srw.reset();
-		for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
-			srw >> r;
+		srw_.reset();
+		for (size_t i = 0; !srw_.eof(); ++i) {
+			srw_ >> r;
 			findTipExtensions(r.getSequence());
 			VERBOSE(i, " single reads");
 		}
 		INFO("Done: " << has_right.size() << " possible tip extensions");
 
 		INFO("===== Looking to the right... =====");
-		srw.reset();
-		for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
-			srw >> r;
+		srw_.reset();
+		for (size_t i = 0; !srw_.eof(); ++i) {
+			srw_ >> r;
 			lookRight(r.getSequence());
 			VERBOSE(i, " single reads");
 		}
@@ -315,9 +305,9 @@ Graph GraphBuilder::build() {
 	}
 
 	INFO("Adding reads to graph as paths...");
-	srw.reset();
-	for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
-		srw >> r;
+	srw_.reset();
+	for (size_t i = 0; !srw_.eof(); ++i) {
+		srw_ >> r;
 		addToGraph(r.getSequence());
 		VERBOSE(i, " single reads");
 	}

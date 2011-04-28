@@ -11,6 +11,7 @@
 #include "parameters.hpp"
 #include "logging.hpp"
 #include "abruijngraph.hpp"
+#include "ireadstream.hpp"
 
 namespace abruijn {
 
@@ -32,6 +33,9 @@ class GraphBuilder
 	set<hash_t> earmarked_hashes;
 	map<hash_t, set<hash_t> > tip_extensions;
 
+	size_t htake;
+	SimpleReaderWrapper<PairedReader<ireadstream> > srw_;
+	int mode_;
 	Graph graph;
 
 	hashing::HashSym<Sequence> hashSym;
@@ -39,7 +43,6 @@ class GraphBuilder
 	hash_vector ha;
 	hash_vector hbest;
 
-	size_t htake;
 	void findMinimizers(Sequence s);
 	void findLocalMinimizers(Sequence s, size_t window_size);
 	void findSecondMinimizer(Sequence s);
@@ -49,7 +52,8 @@ class GraphBuilder
 	void addToGraph(Sequence s);
 
 public:
-	GraphBuilder(size_t htake) : htake(htake) {
+	GraphBuilder(SimpleReaderWrapper<PairedReader<ireadstream> > srw, size_t htake, int mode) :
+		htake(htake), srw_(srw), mode_(mode) {
 		hbest.reserve(htake);
 	};
 	Graph build();

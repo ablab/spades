@@ -241,8 +241,8 @@ public:
 	void cleanup();
 	void stats();
 
-	void output(std::ofstream &out);
-	void output(string filename);
+	void output(std::ofstream &out, bool paired);
+	void output(string filename, bool paired);
 
 	class VertexIsAlive {
 		const Graph& graph_;
