@@ -2,8 +2,10 @@
 #include "graphBuilder.hpp"
 #include "logging.hpp"
 #include "libs/getopt_pp/getopt_pp_standalone.h"
+#include <iostream>
 
 using namespace GetOpt;
+using namespace std;
 
 LOGGER("a");
 
@@ -37,6 +39,7 @@ int main(int argc, char* argv[]) {
 	graph.output(outputStream);
 	outputStream.close();
 
+	//ABruijnGraphWithGraphVisualizer ( "ATGTGTGACTTTGTATCGTATTGCGGGCGGCGCGCTTATTGTATGCGTAAATTTGGGTCATATTGATCGTAAAATGCGTATGATGCACTGCA", 6, 3 );
 	return 0;
 }
 

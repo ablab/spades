@@ -131,21 +131,9 @@ void EdgeGraphTool(ReadStream& stream, const string& genome) { // actually, it's
 	PairedIndex paired_info_index(g, I);
 
 	FillPairedIndex(paired_info_index, stream, index);
-
 	ClipTips(g, index, genome, "tips_clipped.dot");
+
 //	paired_info_index.OutputData();
-//	for (de_bruijn::SmartEdgeIterator<EdgeGraph> it = g.SmartEdgeBegin(); g.SmartEdgeEnd()
-//			!= it; ++it) {
-////		cout << *it << endl;
-//		PairedIndex::PairInfos vec = paired_info_index.GetEdgeInfo(*it);
-//		for (size_t i = 0; i < vec.size(); i++) {
-//			PairedIndex::PairInfo info = vec[i];
-//			cout << info.first() << " " << info.second() << " " << info.d()
-//					<< " " << info.weight() << endl;
-//		}
-//	}
-//	cout << endl;
-//	cout << endl;
 
 	RemoveBulges(g, index, genome, "bulges_removed.dot");
 
