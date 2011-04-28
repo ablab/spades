@@ -1,15 +1,19 @@
 #include "toyexamples.hpp"
 #include "hash.hpp"
 
+#include "common/graphVisualizer.hpp"
+
 #include <string>
 #include <set>
 #include <map>
 #include <iostream>
 #include <cassert>
 #include <fstream>
+#include <sstream>
 
 using namespace std;
 using namespace hashing;
+using namespace gvis;
 
 typedef map < string, unsigned > CKMerSet;
 typedef map < pair < string, string >, unsigned > CWeightedEdgeSet;
@@ -70,8 +74,8 @@ Hash < string > h;
 
 long my_hash ( string const & s )
 {
-  //return h ( s );
-  return special_lexicographic3 ( s );
+  return h ( s );
+  //return special_lexicographic3 ( s );
 }
 
 
@@ -273,3 +277,61 @@ extern void ConstructDeBruijnGraphSimplified ( string genome, unsigned read_size
 // ConstructDeBruijnGraphSimplified ( "ATTGATTGACTCTAGATTG", 5, 3 );
 
 
+template<class F>
+string toStr(F const& f)
+{
+	std::stringstream s;
+	s << f;
+	return s.str();
+}
+
+extern void ABruijnGraphWithGraphVisualizer ( string genome, unsigned read_size, unsigned k )
+{
+  ofstream f;
+  //f.open ( ( genome + ".dot" ).c_str () );
+  f.open("1.dot");
+
+  GraphPrinter<string> GP ( genome, f );
+
+  CWeightedEdgeSet E;
+
+  ///////////////////////////// DE BRUIJN GRAPH
+  for ( CSubstringIterator edge_it ( genome, k + 1, true ); ! edge_it.IsLast (); edge_it.Advance () )
+  {
+    string const edge = *edge_it;
+    string from = edge.substr ( 0, k );
+    string to = edge.substr ( 1, k );
+
+    pair < pair < string, string >, unsigned > e = make_pair ( make_pair ( from, to ), 1 );
+    pair < CWeightedEdgeSet::iterator, bool > res = E.insert ( e );
+    if ( ! res.second )
+      ++ (( res.first ) -> second );
+  }
+
+  for ( CWeightedEdgeSet::const_iterator eit = E.begin (); eit != E.end (); ++ eit )
+  {
+    //f << eit -> first . first << "->" << eit -> first . second << "[color=grey,label=\"" << eit -> second << "\"]" << endl;
+	GP.addVertex ( eit -> first . first, eit -> first . first );
+    GP.addVertex ( eit -> first . second, eit -> first . second );
+    string edge_label = toStr(eit -> second);
+	GP.addEdge ( eit -> first . first, eit -> first . second, "", "white");
+  }
+
+  /// printing Eulerian cycle
+  CSubstringIterator edge_it ( genome, k + 1, true );
+  string const edge = *edge_it;
+  string from = edge.substr ( 0, k );
+  GP.threadStart( from, 3*genome.size () );
+
+  for ( ; ! edge_it.IsLast (); edge_it.Advance () )
+  {
+    string const edge = *edge_it;
+    string to = edge.substr ( 1, k );
+    GP.threadAdd ( to );
+  }
+
+  GP.output();
+
+  f.close ();
+  return;
+}

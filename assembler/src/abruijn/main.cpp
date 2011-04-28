@@ -15,6 +15,6 @@ int main(int argc, char* argv[]) {
 	}
 
 	GraphBuilder().build();
-//	ConstructDeBruijnGraphSimplified ( "ATGCATTGCACTGCA", 6, 3 );
+	//ABruijnGraphWithGraphVisualizer ( "ATGTGTGACTTTGTATCGTATTGCGGGCGGCGCGCTTATTGTATGCGTAAATTTGGGTCATATTGATCGTAAAATGCGTATGATGCACTGCA", 6, 3 );
 	return 0;
 }

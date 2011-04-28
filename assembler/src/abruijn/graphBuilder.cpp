@@ -11,7 +11,7 @@
 #include <ext/hash_map>
 #include "strobe_reader.hpp"
 #include "logging.hpp"
-
+#include "read.hpp"
 namespace abruijn {
 
 using namespace std;
@@ -96,7 +96,10 @@ void findLocalMinimizers(Sequence s, size_t window_size) {
 		current_min=min(current_min,ha[i+window_size-1]);
 
 		if (ha[i+window_size/2]==current_min)
+		{
 			earmarked_hashes.insert(current_min);
+			INFO(current_min << " is marked");
+		}
 	}
 }
 
@@ -246,7 +249,8 @@ void GraphBuilder::build() {
 //	vector<Read> *v1 = ireadstream::readAll(file_names[0], CUT);
 
 	StrobeReader<2, Read, ireadstream> sr(file_names);
-	SimpleReaderWrapper<StrobeReader<2, Read, ireadstream> > srw(sr);
+	PairedReader<ireadstream> paired_stream(sr, 220);
+	SimpleReaderWrapper<PairedReader<ireadstream> > srw(paired_stream);
 	vector<Read> v;
 	Read r;
 #ifdef CUT
@@ -261,7 +265,8 @@ void GraphBuilder::build() {
 	srw.reset();
 	for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
 		srw >> r;
-		findMinimizers(r.getSequence());
+		//findMinimizers(r.getSequence());
+		findLocalMinimizers(r.getSequence(), 50);
 		VERBOSE(i, " single reads");
 	}
 	INFO("Done: " << earmarked_hashes.size() << " earmarked hashes");
