@@ -1,20 +1,48 @@
 #include "toyexamples.hpp"
 #include "graphBuilder.hpp"
 #include "logging.hpp"
+#include "libs/getopt_pp/getopt_pp_standalone.h"
 
-using namespace abruijn;
-using namespace std;
+using namespace GetOpt;
 
 LOGGER("a");
 
 int main(int argc, char* argv[]) {
-	INFO("Hello, A Bruijn!");
+	INFO("Hello, A Bruijn! Using parameters:");
+	GetOpt_pp options(argc, argv, Include_Environment);
 
-	for (int i = 1; i < argc; ++i) {
-		string s(argv[i]);
-	}
+	int htake;
+	options >> Option('h', "htake", htake, 1);
+	INFO("htake = " << htake);
 
-	GraphBuilder().build();
-//	ConstructDeBruijnGraphSimplified ( "ATGCATTGCACTGCA", 6, 3 );
+	bool output_single;
+	options >> OptionPresent('s', "single", output_single);
+	INFO("single = " << (output_single ? "true" : "false"));
+
+	int cut;
+	options >> Option('c', "cut", cut, -1);
+	INFO("cut = " << cut);
+
+	int label;
+	options >> Option('l', "label", label, -1);
+	INFO("label = " << label);
+
+	abruijn::Graph graph = abruijn::GraphBuilder(htake).build();
+
+	INFO("Getting statistics...");
+	graph.stats();
+
+	INFO("Outputting graph to " << OUTPUT_FILE);
+	ofstream outputStream((OUTPUT_FILES + ".dot").c_str(), ios::out);
+	graph.output(outputStream);
+	outputStream.close();
+
 	return 0;
 }
+
+/*
+Command line options:
+http://code.google.com/p/getoptpp/
+http://www.gnu.org/software/hello/manual/libc/Getopt.html
+http://sourceforge.net/projects/clp-parser/
+*/
