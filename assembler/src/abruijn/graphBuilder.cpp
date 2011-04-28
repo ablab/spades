@@ -1,41 +1,8 @@
-#include <iostream>
-#include <fstream>
-#include <algorithm>
-#include <vector>
-#include <list>
-#include <set>
-#include "abruijngraph.hpp"
-#include "hash.hpp"
 #include "graphBuilder.hpp"
-#include "parameters.hpp"
 #include <ext/hash_map>
 #include "strobe_reader.hpp"
-#include "logging.hpp"
 
 namespace abruijn {
-
-using namespace std;
-using namespace __gnu_cxx;
-using hashing::hash_t;
-
-//typedef hash_map< Sequence, int, HashSym<Sequence>, EqSym<Sequence> > SeqCount;
-//SeqCount seqCount;
-/**
- * Stores bitmask:
- * 1 = the lexicographically lesser k-mer has been seen as non-rightmost k-mer in read
- * 2 = the greater k-mer ...
- */
-map<hash_t, char> has_right;
-map<hash_t, char> tips;
-set<hash_t> earmarked_hashes;
-map<hash_t, set<hash_t> > tip_extensions;
-
-Graph graph;
-
-hashing::HashSym<Sequence> hashSym;
-typedef vector<hash_t> hash_vector;
-hash_vector ha;
-hash_t hbest[HTAKE];
 
 bool isTrusted(hash_t hash) {
 	return true;
@@ -45,10 +12,10 @@ bool isTrusted(hash_t hash) {
  * Calculates HTAKE (distinct) minimal hash-values of all k-mers in this read,
  * and puts them into earmarked_hashes
  */
-void findMinimizers(Sequence s) {
+void GraphBuilder::findMinimizers(Sequence s) {
 	ha.reserve(s.size());
 	hashSym.kmers(s, ha);
-	for (size_t i = 0; i < HTAKE; i++) {
+	for (size_t i = 0; i < htake; i++) {
 		hbest[i] = hashing::kMax;
 	}
 	for (size_t i = 0; i + K <= s.size(); ++i) {
@@ -56,19 +23,19 @@ void findMinimizers(Sequence s) {
 		if (!isTrusted(hi)) {
 			continue;
 		}
-		int j = HTAKE;
+		size_t j = htake;
 		while (j > 0 && hi < hbest[j - 1]) {
 			--j;
 		}
-		if (j == HTAKE || hi == hbest[j]) {
+		if (j == htake || hi == hbest[j]) {
 			continue;
 		}
-		for (int k = HTAKE - 1; k > j; --k) {
+		for (size_t k = htake - 1; k > j; --k) {
 			hbest[k] = hbest[k - 1];
 		}
 		hbest[j] = hi;
 	}
-	for (size_t i = 0; i < HTAKE && hbest[i] < hashing::kMax; i++) {
+	for (size_t i = 0; i < htake && hbest[i] < hashing::kMax; i++) {
 		earmarked_hashes.insert(hbest[i]);
 	}
 }
@@ -77,7 +44,7 @@ void findMinimizers(Sequence s) {
  * Marks all k-mers in a given read that are locally minimal in
  * a window of size window_size
  */
-void findLocalMinimizers(Sequence s, size_t window_size) {
+void GraphBuilder::findLocalMinimizers(Sequence s, size_t window_size) {
 	assert(window_size % 2 == 1);
 
 	/// compute hash-values of all the k-mers of a given read
@@ -105,7 +72,7 @@ void findLocalMinimizers(Sequence s, size_t window_size) {
  * If only one k-mer from s is earmarked,
  * this method earmarks 1 more k-mer (with second minimal hash-value)
  */
-void findSecondMinimizer(Sequence s) {
+void GraphBuilder::findSecondMinimizer(Sequence s) {
 	hashSym.kmers(s, ha);
 	hash_t he = hashing::kMax;
 	hash_t hb = hashing::kMax;
@@ -136,7 +103,7 @@ bool LesserK(const Sequence& s, size_t i) {
 	return Lesser(s.Subseq(i, i + K));
 }
 
-void revealTips(Sequence s) {
+void GraphBuilder::revealTips(Sequence s) {
 	hashSym.kmers(s, ha);
 	vector<int> index;
 	for (size_t i = 0; i + K <= s.size(); ++i) {
@@ -157,7 +124,7 @@ void revealTips(Sequence s) {
 	}
 }
 
-void findTipExtensions(Sequence s) {
+void GraphBuilder::findTipExtensions(Sequence s) {
 	hashSym.kmers(s, ha);
 	vector<int> index;
 	for (size_t i = 0; i + K <= s.size(); ++i) {
@@ -194,7 +161,7 @@ void findTipExtensions(Sequence s) {
 	}
 }
 
-void lookRight(Sequence s) {
+void GraphBuilder::lookRight(Sequence s) {
 	hashSym.kmers(s, ha);
 	vector<size_t> index;
 	for (size_t i = 0; i + K <= s.size(); i++) {
@@ -226,7 +193,7 @@ void lookRight(Sequence s) {
 //
 //}
 
-void addToGraph(Sequence s) {
+void GraphBuilder::addToGraph(Sequence s) {
 	vector<abruijn::Vertex*> vs;
 	vector<size_t> index;
 	hashSym.kmers(s, ha);
@@ -241,7 +208,7 @@ void addToGraph(Sequence s) {
 	}
 }
 
-void GraphBuilder::build() {
+Graph GraphBuilder::build() {
 	std::string file_names[2] = {INPUT_FILES};
 //	vector<Read> *v1 = ireadstream::readAll(file_names[0], CUT);
 
@@ -257,7 +224,7 @@ void GraphBuilder::build() {
 #endif
 	size_t cut2 = 2 * cut;
 
-	INFO("===== Finding " << HTAKE << " minimizers in each read... =====");
+	INFO("===== Finding " << htake << " minimizers in each read... =====");
 	srw.reset();
 	for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
 		srw >> r;
@@ -350,13 +317,7 @@ void GraphBuilder::build() {
 //	INFO("Condensing-A graph...");
 //	graph.condenseA();
 
-	INFO("Getting statistics...");
-	graph.stats();
-
-	INFO("Outputting graph to " << OUTPUT_FILE);
-	ofstream outputStream((OUTPUT_FILES + ".dot").c_str(), ios::out);
-	graph.output(outputStream);
-	outputStream.close();
+	return graph;
 }
 
 }
