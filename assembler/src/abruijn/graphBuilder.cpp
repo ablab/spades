@@ -11,7 +11,7 @@
 #include <ext/hash_map>
 #include "strobe_reader.hpp"
 #include "logging.hpp"
-
+#include "read.hpp"
 namespace abruijn {
 
 using namespace std;
@@ -46,8 +46,9 @@ bool isTrusted(hash_t hash) {
  * and puts them into earmarked_hashes
  */
 void findMinimizers(Sequence s) {
-	ha.reserve(s.size());
+	ha.resize(max(s.size(), ha.size()));
 	hashSym.kmers(s, ha);
+	INFO("ha.size: " << ha.size());
 	for (size_t i = 0; i < HTAKE; i++) {
 		hbest[i] = hashing::kMax;
 	}
@@ -78,11 +79,13 @@ void findMinimizers(Sequence s) {
  * a window of size window_size
  */
 void findLocalMinimizers(Sequence s, size_t window_size) {
+	INFO("seq: " << s << " s.size: " << s.size() << " window_size: " << window_size);
 	assert(window_size % 2 == 1);
 
 	/// compute hash-values of all the k-mers of a given read
-	ha.reserve(s.size());
+	ha.resize(max(s.size(), ha.size()));
 	hashSym.kmers(s, ha);
+	INFO("ha.size: " << ha.size());
 
 	/// compute the minimum hash-value in the first window
 	assert(window_size <= ha.size());
@@ -96,7 +99,10 @@ void findLocalMinimizers(Sequence s, size_t window_size) {
 		current_min=min(current_min,ha[i+window_size-1]);
 
 		if (ha[i+window_size/2]==current_min)
+		{
 			earmarked_hashes.insert(current_min);
+			INFO(current_min << " is marked");
+		}
 	}
 }
 
@@ -246,7 +252,8 @@ void GraphBuilder::build() {
 //	vector<Read> *v1 = ireadstream::readAll(file_names[0], CUT);
 
 	StrobeReader<2, Read, ireadstream> sr(file_names);
-	SimpleReaderWrapper<StrobeReader<2, Read, ireadstream> > srw(sr);
+	PairedReader<ireadstream> paired_stream(sr, 220);
+	SimpleReaderWrapper<PairedReader<ireadstream> > srw(paired_stream);
 	vector<Read> v;
 	Read r;
 #ifdef CUT
@@ -261,7 +268,8 @@ void GraphBuilder::build() {
 	srw.reset();
 	for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
 		srw >> r;
-		findMinimizers(r.getSequence());
+//		findMinimizers(r.getSequence());
+		findLocalMinimizers(r.getSequence(), 51);
 		VERBOSE(i, " single reads");
 	}
 	INFO("Done: " << earmarked_hashes.size() << " earmarked hashes");

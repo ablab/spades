@@ -2,6 +2,8 @@
 #include "graphBuilder.hpp"
 #include "logging.hpp"
 
+#include <iostream>
+
 using namespace abruijn;
 using namespace std;
 
@@ -15,6 +17,6 @@ int main(int argc, char* argv[]) {
 	}
 
 	GraphBuilder().build();
-//	ConstructDeBruijnGraphSimplified ( "ATGCATTGCACTGCA", 6, 3 );
+	//ABruijnGraphWithGraphVisualizer ( "ATGTGTGACTTTGTATCGTATTGCGGGCGGCGCGCTTATTGTATGCGTAAATTTGGGTCATATTGATCGTAAAATGCGTATGATGCACTGCA", 6, 3 );
 	return 0;
 }
