@@ -34,7 +34,7 @@ public:
 				!= it; ++it) {
 			AddPairInfo(PairInfo(*it, *it, 0, 1));
 		}
-//		assert(false);
+		//		assert(false);
 		typedef Seq<kmer_size + 1> KPOMer;
 		de_bruijn::SimpleSequenceMapper<kmer_size, Graph> read_threader(graph_,
 				index);
@@ -45,11 +45,7 @@ public:
 			Sequence read2 = p_r.second().getSequence();
 			de_bruijn::Path<EdgeId> path1 = read_threader.MapSequence(read1);
 			de_bruijn::Path<EdgeId> path2 = read_threader.MapSequence(read2);
-			//walken path lengths
-			//			size_t length1 = 0;
-			//			size_t length2 = 0;
 			size_t distance = CountDistance(read1, read2);
-			//			cerr << "oppa " << path1.start_pos() << " " << path2.start_pos() << endl;
 			int current_distance1 = distance + path1.start_pos()
 					- path2.start_pos();
 			for (size_t i = 0; i < path1.size(); ++i) {
@@ -62,10 +58,24 @@ public:
 					AddPairInfo(new_info);
 					current_distance2 += graph_.length(path2[j]);
 				}
-				//				PassEdge(CorrectLength(path1, i), length1);
 				current_distance1 -= graph_.length(path1[i]);
 			}
 		}
+	}
+
+	double sum() {
+		double res = 0;
+		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
+				!= it; ++it)
+			for (de_bruijn::SmartEdgeIterator<Graph> it1 =
+					graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it1; ++it1) {
+				PairInfos vec = GetEdgePairInfo(*it1, *it);
+				if (vec.size() != 0) {
+					for (size_t i = 0; i < vec.size(); i++)
+						res += vec[i].weight_;
+				}
+			}
+		return res;
 	}
 
 	class PairInfo {
@@ -102,7 +112,7 @@ public:
 			return first_ == rhs.first_ && second_ == rhs.second_ && d_
 					== rhs.d_/* && weight_ == rhs.weight_*/;
 		}
-};
+	};
 
 	typedef vector<PairInfo> PairInfos;
 	typedef typename PairInfos::const_iterator infos_iterator;
@@ -164,13 +174,9 @@ private:
 	public:
 
 		void AddPairInfo(const PairInfo& pair_info) {
-			if(pair_info.weight() > 0 && pair_info.weight() < 1) {
-				assert(false);
-			}
 			if (pair_info.first_ == pair_info.second_ && pair_info.d_ == 0) {
 				data_.insert(AsPairOfPairs(pair_info));
 			} else {
-				//				assert(pair_info.d_ != 0);
 				data_.insert(AsPairOfPairs(pair_info));
 				data_.insert(AsPairOfPairs(BackwardInfo(pair_info)));
 			}
@@ -264,38 +270,22 @@ private:
 		double newWeight = info1.weight_ + info2.weight_;
 		double newD = (info1.d_ * info1.weight_ + info2.d_ * info2.weight_)
 				/ newWeight;
-		if (info1.first_ == info1.second_ && (info1.d_ == 0 || info2.d_ == 0))
+		if (info1.first_ == info1.second_ && (info1.d_ == 0 || info2.d_ == 0)) {
 			newD = 0;
+			newWeight += info2.weight_;
+		}
 		data_.UpdateInfo(info1, newD, newWeight);
 	}
-
-	//	bool MergeData(PairInfo info, const int d, const double weight) {
-	//		if (std::abs(d - info.d_) <= MERGE_DATA_ABSOLUTE_DIFFERENCE
-	//				&& std::abs(d - info.d_) <= info.d_
-	//						* MERGE_DATA_RELATIVE_DIFFERENCE) {
-	//			double newWeight = info.weight_ + weight;
-	//			int newD = std::floor(
-	//					(info.d_ * info.weight_ + d * weight) / weight + 0.5);
-	//			data_.UpdateInfo(info, newD, newWeight);
-	//			return true;
-	//		}
-	//		return false;
-	//	}
 
 	void AddPairInfo(const PairInfo& pair_info) {
 		PairInfos pair_infos = data_.GetEdgePairInfos(pair_info.first_,
 				pair_info.second_);
-		if(pair_info.d() > 100000)
-			assert(false);
 		for (infos_iterator it = pair_infos.begin(); it != pair_infos.end(); ++it) {
 			if (CanMergeData(*it, pair_info)) {
 				MergeData(*it, pair_info);
 				return;
 			}
 		}
-//		cerr << "oppa20" << endl;
-//		if(pair_info.d() > 100000)
-//			assert(false);
 		data_.AddPairInfo(pair_info);
 	}
 
@@ -305,21 +295,22 @@ private:
 
 	void OutputEdgeData(EdgeId edge1, EdgeId edge2) {
 		PairInfos vec = GetEdgePairInfo(edge1, edge2);
-		if(vec.size() != 0) {
+		if (vec.size() != 0) {
 			cout << edge1 << " " << edge2 << endl;
 			int min = INT_MIN;
-			for(size_t i = 0; i < vec.size(); i++) {
+			for (size_t i = 0; i < vec.size(); i++) {
 				int next = -1;
-				for(size_t j = 0; j < vec.size(); j++) {
-					if(vec[j].d() > min && (next == -1 || vec[next].d() > vec[j].d())) {
+				for (size_t j = 0; j < vec.size(); j++) {
+					if (vec[j].d() > min && (next == -1 || vec[next].d()
+							> vec[j].d())) {
 						next = j;
 					}
 				}
 				cout << vec[next].d() << " " << vec[next].weight() << endl;
-				if(next == -1) {
+				if (next == -1) {
 					assert(false);
 				}
-				if(vec[next].d() > 100000) {
+				if (vec[next].d() > 100000) {
 					assert(false);
 				}
 				min = vec[next].d();
@@ -332,18 +323,15 @@ private:
 		PairInfos pair_infos = GetEdgeInfo(old_edge);
 		for (size_t j = 0; j < pair_infos.size(); ++j) {
 			PairInfo old_pair_info = pair_infos[j];
-//			cerr << "oppa3" << endl;
 			if (old_edge != old_pair_info.second()) {
-//				cerr << "oppa31 " << old_pair_info.d_ << " " << shift << endl;
 				AddPairInfo(
 						PairInfo(new_edge, old_pair_info.second_,
 								old_pair_info.d_ - shift,
 								weight_scale * old_pair_info.weight_));
 			} else {
-//				cerr << "oppa32" << endl;
 				AddPairInfo(
 						PairInfo(new_edge, new_edge, old_pair_info.d_,
-								weight_scale * old_pair_info.weight_));
+								weight_scale * 0.5 * old_pair_info.weight_));
 			}
 		}
 		RemoveEdgeInfo(old_edge);
@@ -354,20 +342,10 @@ public:
 	void OutputData() {
 		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
 				!= it; ++it)
-		for (de_bruijn::SmartEdgeIterator<Graph> it1 = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
-				!= it1; ++it1) {
-			//			cerr << *it << endl;
-			OutputEdgeData(*it, *it1);
-//			PairInfos vec = GetEdgeInfo(*it);
-//			for (size_t i = 0; i < vec.size(); i++) {
-//				PairInfo info = vec[i];
-//				if (info.first() == info.second())
-//				cerr << info.first() << " " << info.second() << " "
-//				<< info.d() << " " << info.weight() << endl;
-//			}
-		}
-//		cerr << endl;
-//		cerr << endl;
+			for (de_bruijn::SmartEdgeIterator<Graph> it1 =
+					graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it1; ++it1) {
+				OutputEdgeData(*it, *it1);
+			}
 	}
 
 	PairInfos GetEdgeInfo(EdgeId edge) {
@@ -387,19 +365,13 @@ public:
 	}
 
 	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
-		//		OutputData();
-//		cerr << "oppa5" << endl;
 		this->AddPairInfo(PairInfo(new_edge, new_edge, 0, 1));
 		int shift = 0;
 		for (size_t i = 0; i < old_edges.size(); ++i) {
 			EdgeId old_edge = old_edges[i];
-			//			cerr << old_edge << endl;
 			TransferInfo(old_edge, new_edge, shift);
 			shift -= graph_.length(old_edge);
-			//			PassEdge(graph_.length(old_edge), shift);
 		}
-		//		cerr << new_edge << endl;
-		//		OutputData();
 	}
 
 	virtual void HandleGlue(EdgeId old_edge, EdgeId new_edge) {

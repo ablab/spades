@@ -130,10 +130,10 @@ void EdgeGraphTool(ReadStream& stream, const string& genome) { // actually, it's
 	stream.reset();
 	PairedIndex paired_info_index(g, I);
 
-	ClipTips(g, index, genome, "tips_clipped.dot");
 	FillPairedIndex(paired_info_index, stream, index);
+	ClipTips(g, index, genome, "tips_clipped.dot");
 
-	paired_info_index.OutputData();
+//	paired_info_index.OutputData();
 
 	RemoveBulges(g, index, genome, "bulges_removed.dot");
 
