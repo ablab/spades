@@ -2,6 +2,8 @@
 #include "graphBuilder.hpp"
 #include "logging.hpp"
 
+#include <iostream>
+
 using namespace abruijn;
 using namespace std;
 

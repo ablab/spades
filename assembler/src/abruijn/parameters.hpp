@@ -35,19 +35,7 @@
 
 // ===== Naming conventions ===== //
 #define INPUT_FILES INPUT_DIRECTORY + INPUT_DATA_SET + "1.fastq.gz", INPUT_DIRECTORY + INPUT_DATA_SET + "2.fastq.gz"
-#define OUTPUT_FILE INPUT_DATA_SET + toString(K) + OUTPUT_FILE_SUFFIX1 + OUTPUT_FILE_SUFFIX2
-#ifdef CUT
-	#define OUTPUT_FILE_SUFFIX1 "_" + toString(CUT)
-#endif
-#ifndef CUT
-	#define OUTPUT_FILE_SUFFIX1 ""
-#endif
-#ifdef OUTPUT_PAIRED
-	#define OUTPUT_FILE_SUFFIX2 ""
-#endif
-#ifndef OUTPUT_PAIRED
-	#define OUTPUT_FILE_SUFFIX2 "_s"
-#endif
+#define OUTPUT_FILE INPUT_DATA_SET + toString(K)
 #define OUTPUT_FILES OUTPUT_DIRECTORY + OUTPUT_FILE
 
 #define HTAKE 1

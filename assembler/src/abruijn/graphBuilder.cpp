@@ -46,8 +46,9 @@ bool isTrusted(hash_t hash) {
  * and puts them into earmarked_hashes
  */
 void findMinimizers(Sequence s) {
-	ha.reserve(s.size());
+	ha.resize(max(s.size(), ha.size()));
 	hashSym.kmers(s, ha);
+	INFO("ha.size: " << ha.size());
 	for (size_t i = 0; i < HTAKE; i++) {
 		hbest[i] = hashing::kMax;
 	}
@@ -78,11 +79,13 @@ void findMinimizers(Sequence s) {
  * a window of size window_size
  */
 void findLocalMinimizers(Sequence s, size_t window_size) {
+	INFO("seq: " << s << " s.size: " << s.size() << " window_size: " << window_size);
 	assert(window_size % 2 == 1);
 
 	/// compute hash-values of all the k-mers of a given read
-	ha.reserve(s.size());
+	ha.resize(max(s.size(), ha.size()));
 	hashSym.kmers(s, ha);
+	INFO("ha.size: " << ha.size());
 
 	/// compute the minimum hash-value in the first window
 	assert(window_size <= ha.size());
@@ -265,8 +268,8 @@ void GraphBuilder::build() {
 	srw.reset();
 	for (size_t i = 0; !srw.eof() && i < cut2; ++i) {
 		srw >> r;
-		//findMinimizers(r.getSequence());
-		findLocalMinimizers(r.getSequence(), 50);
+//		findMinimizers(r.getSequence());
+		findLocalMinimizers(r.getSequence(), 51);
 		VERBOSE(i, " single reads");
 	}
 	INFO("Done: " << earmarked_hashes.size() << " earmarked hashes");
