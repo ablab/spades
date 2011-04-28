@@ -35,19 +35,19 @@ void RunTestSuites() {
 
 void RunEdgeGraphTool() {
 	typedef StrobeReader<2, Read, ireadstream> ReadStream;
-	typedef PairComplementerWrapper<ReadStream> PairComplementerStream;
-	typedef RCReaderWrapper<PairComplementerStream> RCStream;
+	typedef PairedReader<ireadstream> PairedStream;
+	typedef RCReaderWrapper<PairedStream> FinalStream;
 
 	//	const tr1::tuple<string, string, int> input = ;
 	const string reads[2] = {tr1::get<0>(INPUT), tr1::get<1>(INPUT)};
-	ReadStream reader(reads);
-	PairComplementerStream pairStream(reader);
-	RCStream rcStream(pairStream);
+	StrobeReader<2, Read, ireadstream> reader(reads);
+	PairedReader<ireadstream> paired_stream(reader, tr1::get<2>(INPUT));
+	FinalStream final_stream(paired_stream);
 
 	ireadstream genome_stream(ECOLI_FILE);
 	Read genome;
 	genome_stream >> genome;
-	edge_graph::EdgeGraphTool(rcStream,  genome.getSequenceString().substr(0, tr1::get<2>(INPUT)));
+	edge_graph::EdgeGraphTool(final_stream,  genome.getSequenceString().substr(0, tr1::get<3>(INPUT)));
 	reader.close();
 	genome_stream.close();
 }
