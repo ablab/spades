@@ -23,11 +23,11 @@ LOGGER("d.edge_graph");
 class Vertex;
 
 class Edge {
-public:
+//public:
+private:
 	const Sequence& nucls() const {
 		return nucls_;
 	}
-private:
 	friend class EdgeGraph;
 	Sequence nucls_;
 	Vertex* end_;

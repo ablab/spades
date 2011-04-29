@@ -33,25 +33,25 @@ using namespace std;
 //#define filename2 "./test/data/s_6_2.fastq.gz"
 
 int main(int argc, char *argv[]) {
-	cerr << "Hello, I am assembler!" << endl;
-	time_t now = time(NULL);
-
-	// read all 'read's
-
-	cerr << "Reading " << filename1 << " and " << filename2 << "..." << endl;
-	vector<Read> *v1 = ireadstream::readAll(filename1, 10000);
-	vector<Read> *v2 = ireadstream::readAll(filename2, 10000);
-	assert(v1->size() == v2->size());
-	cerr << "Total reads (mate, with Ns): " << v1->size() << endl;
-	cerr << "Current time: " << (time(NULL) - now) << " sec." << endl;
-
-	// construct graph
-
-	de_bruijn::DeBruijn<K> debruijn;
-	debruijn.ConstructGraph(*v1);
-	debruijn.ConstructGraph(*v2);
-	delete v1;
-	delete v2;
+//	cerr << "Hello, I am assembler!" << endl;
+//	time_t now = time(NULL);
+//
+//	// read all 'read's
+//
+//	cerr << "Reading " << filename1 << " and " << filename2 << "..." << endl;
+//	vector<Read> *v1 = ireadstream::readAll(filename1, 10000);
+//	vector<Read> *v2 = ireadstream::readAll(filename2, 10000);
+//	assert(v1->size() == v2->size());
+//	cerr << "Total reads (mate, with Ns): " << v1->size() << endl;
+//	cerr << "Current time: " << (time(NULL) - now) << " sec." << endl;
+//
+//	// construct graph
+//
+//	de_bruijn::DeBruijn<K> debruijn;
+//	debruijn.ConstructGraph(*v1);
+//	debruijn.ConstructGraph(*v2);
+//	delete v1;
+//	delete v2;
 //	condensed_graph::CondenseConstructor<K> g_c(debruijn);
 
 //	condensed_graph::CondensedGraph *g;

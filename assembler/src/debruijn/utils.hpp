@@ -297,13 +297,13 @@ class DataHashRenewer {
 	 *	todo renew not all hashes
 	 */
 	void RenewKmersHash(ElementId id) {
-		Sequence nucls = g_.GetData(id).nucls();
+		Sequence nucls = g_.EdgeNucls(id);
 		DEBUG("Renewing hashes for k-mers of sequence " << nucls);
 		index_.RenewKmersHash(nucls, id);
 	}
 
 	void DeleteKmersHash(ElementId id) {
-		Sequence nucls = g_.GetData(id).nucls();
+		Sequence nucls = g_.EdgeNucls(id);
 		DEBUG("Deleting hashes for k-mers of sequence " << nucls);
 		index_.DeleteKmersHash(nucls, id);
 	}

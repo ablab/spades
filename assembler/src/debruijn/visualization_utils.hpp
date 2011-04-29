@@ -21,7 +21,7 @@ public:
 
 	virtual void HandleEdge(EdgeId e) {
 		stringstream ss;
-		ss << e->nucls().size();
+		ss << g_.EdgeNucls(e).size();
 
 		pr_.addEdge(g_.EdgeStart(e), g_.EdgeStart(e), ss.str());
 	}
