@@ -5,7 +5,7 @@
 #include "sequence.hpp"
 #include <map>
 
-#define MERGE_DATA_ABSOLUTE_DIFFERENCE 0
+#define MERGE_DATA_ABSOLUTE_DIFFERENCE 1000
 //#define MERGE_DATA_RELATIVE_DIFFERENCE 0.3
 
 namespace de_bruijn {
@@ -183,7 +183,7 @@ private:
 		}
 
 		void DeleteEdgeInfo(EdgeId e) {
-			set<EdgeId> paired_edges;
+			set < EdgeId > paired_edges;
 			for (const_data_iterator lower = LowerBound(e), upper = UpperBound(
 					e); lower != upper; ++lower) {
 				paired_edges.insert((*lower).first.second);
@@ -196,7 +196,7 @@ private:
 		}
 
 		PairInfos GetEdgeInfos(EdgeId e) {
-			vector<PairInfo> answer;
+			vector < PairInfo > answer;
 			for (const_data_iterator lower = LowerBound(e), upper = UpperBound(
 					e); lower != upper; ++lower) {
 				answer.push_back(AsPairInfo(*lower));
@@ -205,7 +205,7 @@ private:
 		}
 
 		PairInfos GetEdgePairInfos(EdgeId e1, EdgeId e2) {
-			vector<PairInfo> answer;
+			vector < PairInfo > answer;
 			for (const_data_iterator lower = data_.lower_bound(
 					make_pair(e1, e2)), upper = data_.upper_bound(
 					make_pair(e1, e2)); lower != upper; ++lower) {
@@ -296,7 +296,12 @@ private:
 	void OutputEdgeData(EdgeId edge1, EdgeId edge2) {
 		PairInfos vec = GetEdgePairInfo(edge1, edge2);
 		if (vec.size() != 0) {
-			cout << edge1 << " " << edge2 << endl;
+			cout << edge1 << " " << graph_.length(edge1) << " " << edge2 << " "
+					<< graph_.length(edge2) << endl;
+			if(graph_.EdgeEnd(edge1) == graph_.EdgeStart(edge2))
+				cout << "+" << endl;
+			if(graph_.EdgeEnd(edge2) == graph_.EdgeStart(edge1))
+				cout << "-" << endl;
 			int min = INT_MIN;
 			for (size_t i = 0; i < vec.size(); i++) {
 				int next = -1;

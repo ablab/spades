@@ -2,7 +2,7 @@
 #define R 100
 #define I 220
 #define DE_BRUIJN_DATA_FOLDER "./data/debruijn/"
-#define INPUT QUAKE_CROPPED_10_4
+#define INPUT QUAKE_CROPPED_10_5
 
 /////////////////
 //for read generator
@@ -35,13 +35,13 @@ void RunTestSuites() {
 
 void RunEdgeGraphTool() {
 	typedef StrobeReader<2, Read, ireadstream> ReadStream;
-	typedef PairComplementerWrapper<ReadStream> PairComplementerStream;
-	typedef RCReaderWrapper<PairComplementerStream> RCStream;
+	typedef PairedReader<ireadstream> PairedStream;
+	typedef RCReaderWrapper<PairedStream> RCStream;
 
 	//	const tr1::tuple<string, string, int> input = ;
 	const string reads[2] = {tr1::get<0>(INPUT), tr1::get<1>(INPUT)};
 	ReadStream reader(reads);
-	PairComplementerStream pairStream(reader);
+	PairedStream pairStream(reader, tr1::get<2>(INPUT));
 	RCStream rcStream(pairStream);
 
 	ireadstream genome_stream(ECOLI_FILE);
