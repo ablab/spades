@@ -16,15 +16,15 @@ typedef std::tr1::unordered_map<Seq<K>, size_t,
                                 Seq<K>::hash, Seq<K>::equal_to> hm3;
 typedef google::sparse_hash_map<Seq<K>, size_t, 
                                 Seq<K>::hash, Seq<K>::equal_to> hm4;
-typedef cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
-               Seq<K>::equal_to, 4, 1000, 100, 6, 5> hm5; 
+typedef cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, Seq<K>::equal_to> hm5; 
 
 int main(int argc, char** argv) {
   std::string filename = "";
   size_t L = 1;
   size_t m_num = 1;
-  bool stat = false;
-  bool find = false;
+  bool stat_on = false;
+  bool console_on = true;
+  bool find_on = false;
 
   if ((argc < 4) || (argc > 6)) {
 		std::cout << "Usage: ./filter <filename> <L> <map number> [--stat [--find]]]\n"
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
   }
   if (argc >= 5) {
     if (std::string(argv[4]) == "--stat") {
-      stat = true;
+      stat_on = true;
     } else {
       std::cout << "Wrong option!\n";
       return 0;
@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
   }
   if (argc == 6) {
     if (std::string(argv[5]) == "--find") {
-      find = true;
+      find_on = true;
     } else {
       std::cout << "Wrong option!\n";
       return 0;
@@ -59,19 +59,19 @@ int main(int argc, char** argv) {
   }
   switch (m_num) {
   case 1: 
-    seq_filter<K, hm1>::filter(filename, L, stat, true, find);
+    seq_filter<K, hm1>::filter(filename, L, stat_on, console_on, find_on);
     break;
   case 2: 
-    seq_filter<K, hm2>::filter(filename, L, stat, true, find);
+    seq_filter<K, hm2>::filter(filename, L, stat_on, console_on, find_on);
     break;
   case 3: 
-    seq_filter<K, hm3>::filter(filename, L, stat, true, find);
+    seq_filter<K, hm3>::filter(filename, L, stat_on, console_on, find_on);
     break;
   case 4: 
-    seq_filter<K, hm4>::filter(filename, L, stat, true, find);
+    seq_filter<K, hm4>::filter(filename, L, stat_on, console_on, find_on);
     break;
   case 5: 
-    seq_filter<K, hm5>::filter(filename, L, stat, true, find);
+    seq_filter<K, hm5>::filter(filename, L, stat_on, console_on, find_on, 100);
     break;
   default:
     std::cout << "Map number is incorrect!\n";

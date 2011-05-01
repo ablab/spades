@@ -21,7 +21,6 @@ int main(int argc, char** argv) {
   bool stat_on = true;
   bool console_on = true;
   bool find_on = false;
-  bool cuckoo_on = true;
   size_t max_loop = 10;
   size_t max_loop_limit = 1000;
   size_t loop_step = 10;
@@ -34,9 +33,9 @@ int main(int argc, char** argv) {
   }
 
   for (; max_loop <= max_loop_limit; max_loop += loop_step) {
-    std::cout << "Max_loop: " << max_loop << std::endl;
     seq_filter<K, cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
-      Seq<K>::equal_to> >::filter(filename, L, stat_on, console_on, find_on, cuckoo_on, max_loop);
+      Seq<K>::equal_to> >::filter(filename, L, stat_on, console_on, 
+                                  find_on, max_loop);
   }
 
   return 0;
