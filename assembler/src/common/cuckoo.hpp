@@ -20,32 +20,15 @@ using namespace std;
 // (which is the number of appropriate hash function) and returns size_t 
 // (e.g. Hash(int, size_t)).
 // Class Pred is predicator that compares two Key values.
-// Value size_t d is the number of hash functions (thus arrays also) 
-// that will be used in the program (can be >= 2).
-// Value size_t init_length is the initial length of the whole structure.
-// When you know the approximate number of records to be used, 
-// it is a good idea to take this value in 1.05-1.1 times more and
-// small value of step.
-// Value size_t max_loop determines the maximum number of kick cycles during 
-// insertion before rehash.
-// Values size_t step_nom and step_denom determine the ratio of 
-// increasing the size of hash during rehash (step_nom/step_denom). 
-// The less it is the less memory will be used but the more time is needed. 
 // Example of use: 
-// cuckoo<int, int, Hasher, std::equal_to<int>, 4, 10, 50, 6, 5> Cuckoo; 
+// cuckoo<int, int, Hasher, std::equal_to<int> > Cuckoo; 
 template <class Key, class Value, class Hash, class Pred> 
-////, size_t d = 4, 
-////size_t init_length = 100, size_t max_loop = 100, 
-////size_t step_nom = 3, size_t step_denom = 2>
 class cuckoo {
 private:
-  // 
+  // Next 4 parameters described near constructor
   size_t d_;
-  //
   size_t init_length_;
-  //
   size_t max_loop_;
-  //
   double step_;
   // The array of vectors, each of which is hash array 
   typedef pair<Key, Value> Data;
@@ -274,6 +257,17 @@ private:
   }
 
 public:
+  // @parameter d the number of hash functions (thus arrays also) 
+  // that will be used in the program (can be >= 2).
+  // @parameter init_length the initial length of the whole structure.
+  // When you know the approximate number of records to be used, 
+  // it is a good idea to take this value in 1.05-1.1 times more and
+  // small value of step.
+  // @parameter max_loop determines the maximum number of kick cycles during 
+  // insertion before rehash.
+  // @parameter step determines the ratio of increasing the size of hash
+  // during rehash.   
+  // The less it is the less memory will be used but the more time is needed. 
   cuckoo(size_t d = 4, size_t init_length = 100, size_t max_loop = 100, double step = 1.5)
     : d_(d), init_length_(init_length), max_loop_(max_loop), step_(step) {
     init();
