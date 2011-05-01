@@ -106,6 +106,49 @@ public:
     }
   };
 
+  class const_iterator {
+  private:
+    size_t pos;
+    cuckoo* hash;
+    const_iterator(size_t p, cuckoo* h): pos(p), hash(h) {}
+    friend class cuckoo;
+  public:
+    const_iterator() : pos(0), hash(NULL) {}
+
+    /*void operator=(const iterator &it) {
+      pos = it.pos;
+      hash = it.hash;
+    }
+
+    iterator& operator++() {
+      assert(hash != NULL);
+      assert(pos != hash->len_);
+      ++pos;
+      while (!hash->get_exists(pos) && pos < hash->len_) {
+        ++pos;
+      }
+      return *this;
+    }
+
+    iterator operator++(int) {
+      iterator res = *this;
+      this->operator++();
+      return res;
+      } */
+
+    const pair<Key, Value> operator*() const {
+      return (*hash).data_from(pos);
+    }
+
+    bool operator==(const iterator &it) {
+      return pos == it.pos && hash == it.hash;
+    }
+
+    bool operator!=(const iterator &it) {
+      return !(*this == it);
+    }
+  };
+
 private:
 
   bool get_exists(size_t pos) const {
@@ -262,7 +305,8 @@ public:
   }
 
   // For test only!!!
-  void set_up(size_t d = 4, size_t init_length = 100, size_t max_loop = 100, double step = 1.5) {
+  void set_up(size_t d = 4, size_t init_length = 100, 
+              size_t max_loop = 100, double step = 1.5) {
     clear_all();
     d_ = d;
     init_length_ = init_length;
@@ -279,6 +323,16 @@ public:
   
   inline iterator end() {
     return iterator(len_, this);
+  }
+
+  inline const_iterator begin() const {
+    const_iterator it = const_iterator(0, this);
+    //if (!get_exists(it.pos)) ++it;
+    return it;
+  }
+  
+  inline const_iterator end() const {
+    return const_iterator(len_, this);
   }
 
   Value& operator[](const Key& k) {
@@ -313,6 +367,16 @@ public:
       size_t pos = hash(k, i);
       if (is_here(k, i * len_part_ + pos)) {
         return iterator(i * len_part_ + pos, this);
+      }
+    }
+    return end();
+  }
+  
+  const_iterator find(const Key& k) const {
+    for (size_t i = 0; i < d_; ++i) {
+      size_t pos = hash(k, i);
+      if (is_here(k, i * len_part_ + pos)) {
+        return const_iterator(i * len_part_ + pos, this);
       }
     }
     return end();
