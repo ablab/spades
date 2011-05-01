@@ -81,10 +81,9 @@ void TestAllStructures() {
   std::cout << "Testing cuckoo: \n";
   gettimeofday(&tim, NULL);
   process_mem_usage(vm, rss);
-  cuckoo<int, int, Hasher, std::equal_to<int>, 
-    5, 10000, 100, 8, 5> s5;
-  TestStructure<cuckoo<int, int, Hasher, std::equal_to<int>, 
-    5, 10000, 100, 8, 5> >(s5, tim, vm, rss);
+  cuckoo<int, int, Hasher, std::equal_to<int> > s5;
+  TestStructure<cuckoo<int, int, Hasher, std::equal_to<int> > >
+    (s5, tim, vm, rss);
 
   /*std::cout << "Testing trie: \n";
   gettimeofday(&tim, NULL);
