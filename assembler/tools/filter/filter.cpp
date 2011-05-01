@@ -24,14 +24,16 @@ int main(int argc, char** argv) {
   size_t L = 1;
   size_t m_num = 1;
   bool stat = false;
+  bool find = false;
 
-  if ((argc < 4) || (argc > 5)) {
-		std::cout << "Usage: ./filter <filename> <L> <map number> [--stat]\n"
+  if ((argc < 4) || (argc > 6)) {
+		std::cout << "Usage: ./filter <filename> <L> <map number> [--stat [--find]]]\n"
               << "<map number> is map type:\n"
               << "1 - map, 2 - ext/hash_map, 3 - tr1/unordered_map,\n"
               << "4 - google/sparse_hash_map, 5 - cuckoo\n"
               << "Selects k-mer with amount > L\n" 
-              << "--stat output stat info without k-mers" << std::endl;
+              << "--stat output stat info without k-mers" 
+              << "--find search for some k-mers in a map" << std::endl;
     return 0;
   }
 	if (argc >= 4) {
@@ -39,7 +41,7 @@ int main(int argc, char** argv) {
     L = atoi(argv[2]);
     m_num = atoi(argv[3]);
   }
-  if (argc == 5) {
+  if (argc >= 5) {
     if (std::string(argv[4]) == "--stat") {
       stat = true;
     } else {
@@ -47,21 +49,29 @@ int main(int argc, char** argv) {
       return 0;
     }
   }
+  if (argc == 6) {
+    if (std::string(argv[5]) == "--find") {
+      find = true;
+    } else {
+      std::cout << "Wrong option!\n";
+      return 0;
+    }
+  }
   switch (m_num) {
   case 1: 
-    seq_filter<K, hm1>::filter(filename, L, stat);
+    seq_filter<K, hm1>::filter(filename, L, stat, true, find);
     break;
   case 2: 
-    seq_filter<K, hm2>::filter(filename, L, stat);
+    seq_filter<K, hm2>::filter(filename, L, stat, true, find);
     break;
   case 3: 
-    seq_filter<K, hm3>::filter(filename, L, stat);
+    seq_filter<K, hm3>::filter(filename, L, stat, true, find);
     break;
   case 4: 
-    seq_filter<K, hm4>::filter(filename, L, stat);
+    seq_filter<K, hm4>::filter(filename, L, stat, true, find);
     break;
   case 5: 
-    seq_filter<K, hm5>::filter(filename, L, stat);
+    seq_filter<K, hm5>::filter(filename, L, stat, true, find);
     break;
   default:
     std::cout << "Map number is incorrect!\n";
