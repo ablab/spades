@@ -33,11 +33,20 @@ using namespace std;
 // The less it is the less memory will be used but the more time is needed. 
 // Example of use: 
 // cuckoo<int, int, Hasher, std::equal_to<int>, 4, 10, 50, 6, 5> Cuckoo; 
-template <class Key, class Value, class Hash, class Pred, size_t d = 4, 
-    size_t init_length = 100, size_t max_loop = 100, 
-    size_t step_nom = 3, size_t step_denom = 2>
+template <class Key, class Value, class Hash, class Pred> 
+////, size_t d = 4, 
+////size_t init_length = 100, size_t max_loop = 100, 
+////size_t step_nom = 3, size_t step_denom = 2>
 class cuckoo {
 private:
+  // 
+  size_t d_;
+  //
+  size_t init_length_;
+  //
+  size_t max_loop_;
+  //
+  double step_;
   // The array of vectors, each of which is hash array 
   typedef pair<Key, Value> Data;
   Data** data_;
@@ -112,11 +121,11 @@ private:
   }
 
   void init() {
-    len_part_ = init_length / d + 1;
+    len_part_ = init_length_ / d_ + 1;
     len_part_ = ((len_part_ + 7) / 8) * 8;
-    len_ = len_part_ * d;
-    data_ = new Data*[d];
-    for (size_t i = 0; i < d; ++i) {
+    len_ = len_part_ * d_;
+    data_ = new Data*[d_];
+    for (size_t i = 0; i < d_; ++i) {
       data_[i] = new Data[len_part_];
     }
     exists_ = new char[len_ / 8]; 
@@ -126,7 +135,7 @@ private:
   }
 
   void clear_all() {
-    for (size_t i = 0; i < d; ++i) {
+    for (size_t i = 0; i < d_; ++i) {
       delete [] data_[i];
     }
     delete [] data_;
@@ -152,7 +161,7 @@ private:
     for (; s < f; ++s) {
       *s = 0;
     } 
-    for (size_t i = 0; i < d; ++i) {
+    for (size_t i = 0; i < d_; ++i) {
       memcpy(t + (i * len_part_ / 8), exists_ + (i * len_temp_ / 8), (len_temp_ / 8));
     }
     swap(t, exists_);
@@ -160,7 +169,7 @@ private:
   }
 
   void update_data(size_t len_temp_) {
-    for (size_t i = 0; i < d; ++i) {
+    for (size_t i = 0; i < d_; ++i) {
       Data* t = new Data[len_part_];
       memcpy(t, data_[i], len_temp_*sizeof(Data));
       swap(t, data_[i]);
@@ -170,9 +179,9 @@ private:
 
   void rehash() {
     size_t len_temp_ = len_part_;
-    len_part_ = len_part_ * step_nom / step_denom;
+    len_part_ = (size_t)(len_part_ * step_);//step_nom / step_denom;
     len_part_ = ((len_part_ + 7) / 8) * 8;
-    len_ = len_part_ * d;
+    len_ = len_part_ * d_;
     
     update_exists(len_temp_);
     update_data(len_temp_);
@@ -198,8 +207,8 @@ private:
   }
 
   iterator add_new(pair<Key, Value> p) {
-    for (size_t i = 0; i < max_loop; ++i) {
-      for (size_t j = 0; j < d; ++j) {
+    for (size_t i = 0; i < max_loop_; ++i) {
+      for (size_t j = 0; j < d_; ++j) {
         size_t pos = hash(p.first, j);
         swap(p, data_from(j * len_part_ + pos));
         bool exists = get_exists(j * len_part_ + pos); 
@@ -222,7 +231,8 @@ private:
   }
 
 public:
-  cuckoo() {
+  cuckoo(size_t d = 4, size_t init_length = 100, size_t max_loop = 100, double step = 1.5)
+    : d_(d), init_length_(init_length), max_loop_(max_loop), step_(step) {
     init();
   }
   
@@ -230,12 +240,14 @@ public:
     clear_all();
   }
 
-  cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop, step_nom, step_denom>& operator=
-  (cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop, step_nom, step_denom>& Cuckoo) {
+  cuckoo<Key, Value, Hash, Pred>& operator=(cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
     clear_all();
+    d_ = Cuckoo.d_;
+    init_length_ = Cuckoo.init_length_;
+    max_loop_ = Cuckoo.max_loop_;
+    step_ = Cuckoo.step_;
     init();
     iterator it = Cuckoo.begin();
-    if (!(Cuckoo.get_exists(it.pos))) ++it;
     iterator final = Cuckoo.end();
     while (it != final) {
       insert(*it);
@@ -244,9 +256,19 @@ public:
     return *this;
   }
 
-  cuckoo(cuckoo<Key, Value, Hash, Pred, d, init_length, max_loop, step_nom, step_denom>& Cuckoo) {
+  cuckoo(cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
     init();
     *this = Cuckoo;
+  }
+
+  // For test only!!!
+  void set_up(size_t d = 4, size_t init_length = 100, size_t max_loop = 100, double step = 1.5) {
+    clear_all();
+    d_ = d;
+    init_length_ = init_length;
+    max_loop_ = max_loop;
+    step_ = step;
+    init();
   }
 
   inline iterator begin() {
@@ -287,7 +309,7 @@ public:
   }
 
   iterator find(const Key& k) {
-    for (size_t i = 0; i < d; ++i) {
+    for (size_t i = 0; i < d_; ++i) {
       size_t pos = hash(k, i);
       if (is_here(k, i * len_part_ + pos)) {
         return iterator(i * len_part_ + pos, this);

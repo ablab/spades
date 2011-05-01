@@ -11,23 +11,20 @@
 
 const size_t N = 10;
 const size_t ml0 = 100;
-const size_t ml1 = 200;
-const size_t ml2 = 300;
-const size_t ml3 = 400;
-const size_t ml4 = 500;
-const size_t ml5 = 600;
-const size_t ml6 = 700;
-const size_t ml7 = 800;
-const size_t ml8 = 900;
-const size_t ml9 = 1000;
 
-typedef cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
-               Seq<K>::equal_to, 4, 1000, 100, 6, 5> hm5; 
+//typedef cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
+//               Seq<K>::equal_to, 4, 1000, 100, 6, 5> hm5; 
 
 int main(int argc, char** argv) {
   std::string filename = "";
   size_t L = 1;
-  bool stat = true;
+  bool stat_on = true;
+  bool console_on = true;
+  bool find_on = false;
+  bool cuckoo_on = true;
+  size_t max_loop = 10;
+  size_t max_loop_limit = 1000;
+  size_t loop_step = 10;
 
 	if (argc == 2) {
 		filename = argv[1];
@@ -36,36 +33,11 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  seq_filter<K, cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
-    Seq<K>::equal_to, 4, 100, ml0, 6, 5> >::filter
-    (filename, L, stat);
-  seq_filter<K, cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
-    Seq<K>::equal_to, 4, 100, ml1, 6, 5> >::filter
-    (filename, L, stat);
-  seq_filter<K, cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
-    Seq<K>::equal_to, 4, 100, ml2, 6, 5> >::filter
-    (filename, L, stat);
-  seq_filter<K, cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
-    Seq<K>::equal_to, 4, 100, ml3, 6, 5> >::filter
-    (filename, L, stat);
-  seq_filter<K, cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
-    Seq<K>::equal_to, 4, 100, ml4, 6, 5> >::filter
-    (filename, L, stat);
-  seq_filter<K, cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
-    Seq<K>::equal_to, 4, 100, ml5, 6, 5> >::filter
-    (filename, L, stat);
-  seq_filter<K, cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
-    Seq<K>::equal_to, 4, 100, ml6, 6, 5> >::filter
-    (filename, L, stat);
-  seq_filter<K, cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
-    Seq<K>::equal_to, 4, 100, ml7, 6, 5> >::filter
-    (filename, L, stat);
-  seq_filter<K, cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
-    Seq<K>::equal_to, 4, 100, ml8, 6, 5> >::filter
-    (filename, L, stat);
-  seq_filter<K, cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
-    Seq<K>::equal_to, 4, 100, ml9, 6, 5> >::filter
-    (filename, L, stat);
+  for (; max_loop <= max_loop_limit; max_loop += loop_step) {
+    std::cout << "Max_loop: " << max_loop << std::endl;
+    seq_filter<K, cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
+      Seq<K>::equal_to> >::filter(filename, L, stat_on, console_on, find_on, cuckoo_on, max_loop);
+  }
 
   return 0;
 }

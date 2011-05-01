@@ -33,7 +33,9 @@ public:
                                         const size_t L = 1, 
                                         const bool stat = false, 
                                         const bool console = true,
-                                        const bool find = false) {
+                                        const bool find = false,
+                                        const bool cuckoo = false,
+                                        const size_t max_loop = 100) {
     double vm1 = 0;
     double rss1 = 0;
     process_mem_usage(vm1, rss1);
@@ -41,7 +43,11 @@ public:
     gettimeofday(&tim, NULL);
     double t1 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
-		hm map;
+    hm map;
+    if (cuckoo) {
+      map.set_up(4, 100, max_loop, 1.2);
+    }
+
     std::vector<Seq<size> > seqs;
 		add_seqs_from_file_to_map(in, map);
     if (console) {
