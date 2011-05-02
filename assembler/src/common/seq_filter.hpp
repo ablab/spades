@@ -11,6 +11,7 @@
  
 #include "ireadstream.hpp"
 #include "../test/memory.hpp"
+#include <sys/time.h>
 
 // Class seq_filter is used for getting all k-mer from all read of a given file
 // and selecting k-mers which amount is more than a given number.
@@ -31,12 +32,16 @@ public:
 	static std::vector<Seq<size> > filter(const std::string& in, 
                                         const size_t L = 1, 
                                         const bool stat = false, 
-                                        const bool console = true) {
+                                        const bool console = true,
+                                        const bool find = false) {
     double vm1 = 0;
     double rss1 = 0;
     process_mem_usage(vm1, rss1);
+    timeval tim;
+    gettimeofday(&tim, NULL);
+    double t1 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
-		hm map;
+    hm map;
     std::vector<Seq<size> > seqs;
 		add_seqs_from_file_to_map(in, map);
     if (console) {
@@ -48,8 +53,77 @@ public:
     double vm2 = 0;
     double rss2 = 0;
     process_mem_usage(vm2, rss2);
+    gettimeofday(&tim, NULL);
+    double t2 = tim.tv_sec + ((float)tim.tv_usec/1e6);
+
+    if (find) {
+      Seq<size> seq;
+      typename hm::iterator it;
+      for (it = map.begin(); it != map.end(); ++it) {
+        seq = (*it).first;
+        map.find(seq);
+      }
+    }
+
+    gettimeofday(&tim, NULL);
+    double t3 = tim.tv_sec + ((float)tim.tv_usec/1e6);
+
     if ((stat) && (console)) {
       std::cout << "Memory: " << (vm2 - vm1) << std::endl;
+      std::cout << "Insert: " << (t2 - t1) << std::endl;
+      std::cout << "Find: " << (t3 - t2) << std::endl;
+    }
+    return seqs;
+	}
+
+  // Only for cuckoo!!!
+  // Code is dublicated, needs refactoring
+	static std::vector<Seq<size> > filter(const std::string& in, 
+                                        const size_t L, 
+                                        const bool stat, 
+                                        const bool console,
+                                        const bool find,
+                                        const size_t max_loop) {
+    double vm1 = 0;
+    double rss1 = 0;
+    process_mem_usage(vm1, rss1);
+    timeval tim;
+    gettimeofday(&tim, NULL);
+    double t1 = tim.tv_sec + ((float)tim.tv_usec/1e6);
+
+    hm map;
+    map.set_up(4, 100, max_loop, 1.2);
+
+    std::vector<Seq<size> > seqs;
+		add_seqs_from_file_to_map(in, map);
+    if (console) {
+      write_seqs_from_map_to_stdout(map, L, stat);
+    } else {
+      seqs = get_seqs_from_map(map, L);
+    }
+
+    double vm2 = 0;
+    double rss2 = 0;
+    process_mem_usage(vm2, rss2);
+    gettimeofday(&tim, NULL);
+    double t2 = tim.tv_sec + ((float)tim.tv_usec/1e6);
+
+    if (find) {
+      Seq<size> seq;
+      typename hm::iterator it;
+      for (it = map.begin(); it != map.end(); ++it) {
+        seq = (*it).first;
+        map.find(seq);
+      }
+    }
+
+    gettimeofday(&tim, NULL);
+    double t3 = tim.tv_sec + ((float)tim.tv_usec/1e6);
+
+    if ((stat) && (console)) {
+      std::cout << "Memory: " << (vm2 - vm1) << std::endl;
+      std::cout << "Insert: " << (t2 - t1) << std::endl;
+      std::cout << "Find: " << (t3 - t2) << std::endl;
     }
     return seqs;
 	}
