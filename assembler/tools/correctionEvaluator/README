@@ -4,6 +4,6 @@ At the moment it consists of two parts: first one is bowtie output translator, a
 
 For using instructions just run any script with -h (or --help) parameter.
 
-You can use 
+You can use .gz archives as input files.
 
 It is written in python and requires following libraries: biopython, numpy, matplotlib.
