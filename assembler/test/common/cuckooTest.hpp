@@ -13,13 +13,13 @@ struct Hasher {
   }
 };
 
-typedef cuckoo<int, int, Hasher, std::equal_to<int>, 
-        5, 10000, 100, 8, 5> hm;
+typedef cuckoo<int, int, Hasher, std::equal_to<int> > hm; 
+//, 5, 10000, 100, 8, 5> hm;
 
 void TestCuckoo() {
   
   srand(42);
-  hm map; 
+  hm map(5, 10000, 100, 1.2); 
   for (int i = 0; i < 100000; ++i) {
     int t = rand();
     map.insert(std::make_pair(t, 42));
