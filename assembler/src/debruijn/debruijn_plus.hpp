@@ -11,7 +11,7 @@
 #include "read.hpp"
 #include "sequence.hpp"
 #include "seq.hpp"
-
+#include "cuckoo.hpp"
 /*
  * act as DeBruijn graph and Index at the same time :)
  *
@@ -27,6 +27,8 @@ private:
 	typedef Seq<size_ - 1> KMinusOneMer;
 	typedef std::tr1::unordered_map<Kmer, pair<Value, size_t> ,
 			typename Kmer::hash> map_type; // size_t is offset
+	//typedef cuckoo<Kmer, pair<Value, size_t> ,
+	//		typename Kmer::multiple_hash, typename Kmer::equal_to> map_type; // size_t is offset
 	map_type nodes_;
 
 	bool contains(const Kmer &k) const {
