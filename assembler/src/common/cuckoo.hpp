@@ -43,15 +43,18 @@ private:
   size_t size_;
   // The flag that anounces that rehash was made recently
   bool is_rehashed_;
+
 public:
   friend class iterator;
+  friend class const_iterator;
 
   class iterator {
   private:
     size_t pos;
     cuckoo* hash;
-    iterator(size_t p, cuckoo* h): pos(p), hash(h) {}
+    iterator(size_t p, cuckoo* h) : pos(p), hash(h) {}
     friend class cuckoo;
+
   public:
     iterator() : pos(0), hash(NULL) {}
 
@@ -80,6 +83,10 @@ public:
       return (*hash).data_from(pos);
     }
 
+    pair<Key, Value>* operator->() {
+      return &((*hash).data_from(pos));
+    }
+
     bool operator==(const iterator &it) {
       return pos == it.pos && hash == it.hash;
     }
@@ -92,17 +99,30 @@ public:
   class const_iterator {
   private:
     size_t pos;
-    cuckoo* hash;
-    const_iterator(size_t p, cuckoo* h): pos(p), hash(h) {}
+    const cuckoo* hash;
+    const_iterator(const size_t p, const cuckoo* h) : pos(p), hash(h) {}
     friend class cuckoo;
+
   public:
     const_iterator() : pos(0), hash(NULL) {}
 
-    /*void operator=(const iterator &it) {
-      pos = it.pos;
-      hash = it.hash;
+    const pair<Key, Value> operator*() const {
+      return (*hash).data_from(pos);
     }
 
+    pair<Key, Value>* operator->() {
+      return &((*hash).data_from(pos));
+    }
+
+    bool operator==(const const_iterator &it) {
+      return pos == it.pos && hash == it.hash;
+    }
+
+    bool operator!=(const const_iterator &it) {
+      return !(*this == it);
+    }
+
+  private:
     iterator& operator++() {
       assert(hash != NULL);
       assert(pos != hash->len_);
@@ -112,24 +132,12 @@ public:
       }
       return *this;
     }
-
+    
     iterator operator++(int) {
       iterator res = *this;
       this->operator++();
       return res;
-      } */
-
-    const pair<Key, Value> operator*() const {
-      return (*hash).data_from(pos);
-    }
-
-    bool operator==(const iterator &it) {
-      return pos == it.pos && hash == it.hash;
-    }
-
-    bool operator!=(const iterator &it) {
-      return !(*this == it);
-    }
+    } 
   };
 
 private:
@@ -176,7 +184,7 @@ private:
     return get_exists(pos) && Pred()(data_from(pos).first, k); 
   }
 
-  inline size_t hash(const Key &k, size_t hash_num) {
+  inline size_t hash(const Key &k, size_t hash_num) const {
     return Hash()(k, hash_num) % len_part_;
   }
   
@@ -321,7 +329,7 @@ public:
 
   inline const_iterator begin() const {
     const_iterator it = const_iterator(0, this);
-    //if (!get_exists(it.pos)) ++it;
+    if (!get_exists(it.pos)) ++it;
     return it;
   }
   
