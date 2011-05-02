@@ -106,23 +106,11 @@ public:
   public:
     const_iterator() : pos(0), hash(NULL) {}
 
-    const pair<Key, Value> operator*() const {
-      return (*hash).data_from(pos);
+    void operator=(const iterator &it) {
+      pos = it.pos;
+      hash = it.hash;
     }
 
-    pair<Key, Value>* operator->() {
-      return &((*hash).data_from(pos));
-    }
-
-    bool operator==(const const_iterator &it) {
-      return pos == it.pos && hash == it.hash;
-    }
-
-    bool operator!=(const const_iterator &it) {
-      return !(*this == it);
-    }
-
-  private:
     iterator& operator++() {
       assert(hash != NULL);
       assert(pos != hash->len_);
@@ -138,6 +126,22 @@ public:
       this->operator++();
       return res;
     } 
+
+    const pair<Key, Value> operator*() const {
+      return (*hash).data_from(pos);
+    }
+
+    pair<Key, Value>* operator->() {
+      return &((*hash).data_from(pos));
+    }
+
+    bool operator==(const const_iterator &it) {
+      return pos == it.pos && hash == it.hash;
+    }
+
+    bool operator!=(const const_iterator &it) {
+      return !(*this == it);
+    }
   };
 
 private:
