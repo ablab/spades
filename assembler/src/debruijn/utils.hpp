@@ -12,7 +12,7 @@
 
 namespace de_bruijn {
 
-LOGGER("d.utils");
+//LOGGER("d.utils");
 
 #include "simple_index.hpp"
 

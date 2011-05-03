@@ -19,6 +19,7 @@
  */
 
 namespace de_bruijn {
+LOGGER("d.utils");
 
 template<size_t size_, typename Value>
 class DeBruijnPlus {

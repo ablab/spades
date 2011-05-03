@@ -1,10 +1,6 @@
-
-/////////////////
-//for read generator
-//#define SUBSTR_LENGTH 10000
-//#define COVERAGE 30
-//#define R 35
-/////////////////
+/*
+ * Main of Assembler!
+ */
 
 #include "config.hpp"
 #include "visualization_utils.hpp"
