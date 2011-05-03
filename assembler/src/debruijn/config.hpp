@@ -13,6 +13,7 @@
 
 const std::string INPUT_DIR = "./data/input/";
 const std::string ECOLI_FILE = "./data/input/MG1655-K12.fasta.gz";
+//const std::string READS_FILE = "./data/input/s_6.first100000_1.fastq.gz";
 const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_CROPPED_10_3   = std::tr1::make_tuple<std::string, std::string, size_t, int>(INPUT_DIR + "s_6.first1000_1.fastq.gz",   INPUT_DIR + "s_6.first1000_2.fastq.gz", 220, 10000);
 const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_CROPPED_10_4   = std::tr1::make_tuple<std::string, std::string, size_t, int>(INPUT_DIR + "s_6.first10000_1.fastq.gz",  INPUT_DIR + "s_6.first10000_2.fastq.gz", 220, 100000);
 const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_CROPPED_10_5   = std::tr1::make_tuple<std::string, std::string, size_t, int>(INPUT_DIR + "s_6.first100000_1.fastq.gz", INPUT_DIR + "s_6.first100000_2.fastq.gz", 220, 100000);

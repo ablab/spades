@@ -3,6 +3,7 @@
 #include "utils.hpp"
 #include "strobe_reader.hpp"
 #include "sequence.hpp"
+#include <cmath>
 #include <map>
 
 #define MERGE_DATA_ABSOLUTE_DIFFERENCE 1000
@@ -12,6 +13,7 @@ namespace de_bruijn {
 
 template<class Graph>
 class PairedInfoIndex: public GraphActionHandler<Graph> {
+private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 

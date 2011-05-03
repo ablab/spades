@@ -11,7 +11,6 @@ Sequence EdgeGraph::VertexNucls(VertexId v) const {
 		return !VertexNucls(v->complement_);
 	}
 	assert(false);
-	//	return new Sequence("");
 }
 
 EdgeId EdgeGraph::AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s,
@@ -21,23 +20,12 @@ EdgeId EdgeGraph::AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s,
 	return newEdge;
 }
 
-//void EdgeGraph::DeleteSingleEdge(const Edge* edge) {
-//	Vertex *v = edgeStart(edge);
-//	v->RemoveOutgoingEdge(edge);
-//}
-
 void EdgeGraph::DeleteAllOutgoing(Vertex *v) {
 	vector<EdgeId> out = v->outgoing_edges_;
 	for (vector<EdgeId>::iterator it = out.begin(); it != out.end(); ++it) {
 		DeleteEdge(*it);
 	}
 }
-
-//void EdgeGraph::OutgoingEdges(VertexId v, EdgeIterator& begin,
-//		EdgeIterator& end) const {
-//	begin = v->begin();
-//	end = v->end();
-//}
 
 const vector<EdgeId> EdgeGraph::OutgoingEdges(VertexId v) const {
 	return v->outgoing_edges_;
@@ -53,50 +41,50 @@ const vector<EdgeId> EdgeGraph::IncomingEdges(VertexId v) const {
 }
 
 void EdgeGraph::FireAddVertex(VertexId v) {
-	for (vector<ActionHandler*>::iterator it =
-			action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+			!= action_handler_list_.end(); ++it) {
 		applier_->ApplyHandleAdd(*it, v);
 	}
 }
 
 void EdgeGraph::FireAddEdge(EdgeId edge) {
-	for (vector<ActionHandler*>::iterator it =
-			action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+			!= action_handler_list_.end(); ++it) {
 		applier_->ApplyHandleAdd(*it, edge);
 	}
 }
 
 void EdgeGraph::FireDeleteVertex(VertexId v) {
-	for (vector<ActionHandler*>::iterator it =
-			action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+			!= action_handler_list_.end(); ++it) {
 		applier_->ApplyHandleDelete(*it, v);
 	}
 }
 
 void EdgeGraph::FireDeleteEdge(EdgeId edge) {
-	for (vector<ActionHandler*>::iterator it =
-			action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+			!= action_handler_list_.end(); ++it) {
 		applier_->ApplyHandleDelete(*it, edge);
 	}
 }
 
 void EdgeGraph::FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
-	for (vector<ActionHandler*>::iterator it =
-			action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+			!= action_handler_list_.end(); ++it) {
 		applier_->ApplyHandleMerge(*it, oldEdges, newEdge);
 	}
 }
 
 void EdgeGraph::FireGlue(EdgeId edge1, EdgeId edge2) {
-	for (vector<ActionHandler*>::iterator it =
-			action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+			!= action_handler_list_.end(); ++it) {
 		applier_->ApplyHandleGlue(*it, edge1, edge2);
 	}
 }
 
 void EdgeGraph::FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2) {
-	for (vector<ActionHandler*>::iterator it =
-			action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+			!= action_handler_list_.end(); ++it) {
 		applier_->ApplyHandleSplit(*it, edge, newEdge1, newEdge2);
 	}
 }
@@ -134,21 +122,24 @@ void EdgeGraph::ForceDeleteVertex(VertexId v) {
 	DeleteVertex(v);
 }
 
-EdgeId EdgeGraph::HiddenAddEdge(VertexId v1, VertexId v2, const Sequence &nucls, size_t coverage) {
+EdgeId EdgeGraph::HiddenAddEdge(VertexId v1, VertexId v2,
+		const Sequence &nucls, size_t coverage) {
 	assert(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
 	assert(nucls.size() >= k_ + 1);
 	//	assert(OutgoingEdge(v1, nucls[k_]) == NULL);
 	EdgeId result = AddSingleEdge(v1, v2, nucls, coverage);
 	EdgeId rcEdge = result;
 	if (nucls != !nucls) {
-		rcEdge = AddSingleEdge(v2->Complement(), v1->Complement(), !nucls, coverage);
+		rcEdge = AddSingleEdge(v2->Complement(), v1->Complement(), !nucls,
+				coverage);
 	}
 	result->SetComplement(rcEdge);
 	rcEdge->SetComplement(result);
 	return result;
 }
 
-EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls, size_t coverage) {
+EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
+		size_t coverage) {
 	EdgeId result = HiddenAddEdge(v1, v2, nucls, coverage);
 	FireAddEdge(result);
 	return result;
@@ -217,7 +208,7 @@ void EdgeGraph::Merge(EdgeId edge1, EdgeId edge2) {
 EdgeId EdgeGraph::MergePath(const vector<EdgeId>& path) {
 	assert(!path.empty());
 	SequenceBuilder sb;
-//	sb.append(GetUniqueIncomingEdge(path[0])->nucls());
+	//	sb.append(GetUniqueIncomingEdge(path[0])->nucls());
 	VertexId v1 = EdgeStart(path[0]);
 	VertexId v2 = EdgeEnd(path[path.size() - 1]);
 	for (vector<EdgeId>::const_iterator it = path.begin(); it != path.end(); ++it) {
@@ -237,8 +228,9 @@ EdgeId EdgeGraph::MergePath(const vector<EdgeId>& path) {
 
 bool EdgeGraph::GoUniqueWay(EdgeId &e) {
 	VertexId u = EdgeEnd(e);
-	if (!CheckUniqueOutgiongEdge(u) || !CheckUniqueIncomingEdge(u))
+	if (!CheckUniqueOutgiongEdge(u) || !CheckUniqueIncomingEdge(u)) {
 		return false;
+	}
 	e = GetUniqueOutgoingEdge(u);
 	return true;
 }
@@ -253,9 +245,9 @@ void EdgeGraph::CompressAllVertices() {
 			}
 			vector<EdgeId> mergeList;
 			e = Complement(e);
-			do
+			do {
 				mergeList.push_back(e);
-			while (GoUniqueWay(e));
+			} while (GoUniqueWay(e));
 			MergePath(mergeList);
 		}
 	}
@@ -283,10 +275,12 @@ void EdgeGraph::GlueEdges(EdgeId edge1, EdgeId edge2) {
 	VertexId start = EdgeStart(edge1);
 	VertexId end = EdgeEnd(edge1);
 	DeleteEdge(edge1);
-	if (IsDeadStart(start) && IsDeadEnd(start))
+	if (IsDeadStart(start) && IsDeadEnd(start)) {
 		DeleteVertex(start);
-	if (IsDeadStart(end) && IsDeadEnd(end))
+	}
+	if (IsDeadStart(end) && IsDeadEnd(end)) {
 		DeleteVertex(end);
+	}
 }
 
 }

@@ -3,8 +3,6 @@
 
 #include <vector>
 #include <set>
-//#include <ext/hash_map>
-#include <tr1/unordered_map>
 #include <cstring>
 #include "seq.hpp"
 #include "graphVisualizer.hpp"
@@ -22,7 +20,6 @@ LOGGER("d.edge_graph");
 class Vertex;
 
 class Edge {
-//public:
 private:
 	friend class EdgeGraph;
 	const Sequence& nucls() const {
