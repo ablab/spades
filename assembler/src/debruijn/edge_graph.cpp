@@ -198,7 +198,7 @@ void EdgeGraph::CompressVertex(VertexId v) {
 }
 
 void EdgeGraph::Merge(EdgeId edge1, EdgeId edge2) {
-	assert(EdgeEnd(edge1) == EdgeEnd(edge2));
+	assert(EdgeEnd(edge1) == EdgeStart(edge2));
 	vector<EdgeId> toCompress;
 	toCompress.push_back(edge1);
 	toCompress.push_back(edge2);
