@@ -198,7 +198,7 @@ void EdgeGraph::CompressVertex(VertexId v) {
 }
 
 void EdgeGraph::Merge(EdgeId edge1, EdgeId edge2) {
-	assert(EdgeEnd(edge1) == EdgeEnd(edge2));
+	assert(EdgeEnd(edge1) == EdgeStart(edge2));
 	vector<EdgeId> toCompress;
 	toCompress.push_back(edge1);
 	toCompress.push_back(edge2);
@@ -216,11 +216,11 @@ EdgeId EdgeGraph::MergePath(const vector<EdgeId>& path) {
 	}
 	EdgeId newEdge = HiddenAddEdge(v1, v2, sb.BuildSequence());
 	FireMerge(path, newEdge);
-	for (vector<EdgeId>::const_iterator it = path.begin(); it != path.end(); ++it) {
-		DeleteEdge(*it);
-	}
+	DeleteEdge(path[0]);
 	for (size_t i = 0; i + 1 < path.size(); i++) {
-		DeleteVertex(EdgeEnd(path[i]));
+		VertexId v = EdgeEnd(path[i]);
+		DeleteEdge(path[i + 1]);
+		DeleteVertex(v);
 	}
 	FireAddEdge(newEdge);
 	return newEdge;
@@ -248,7 +248,6 @@ void EdgeGraph::CompressAllVertices() {
 			do {
 				mergeList.push_back(e);
 			} while (GoUniqueWay(e));
-			mergeList.push_back(e);
 			MergePath(mergeList);
 		}
 	}
