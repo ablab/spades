@@ -8,6 +8,8 @@
 #ifndef BULGE_REMOVER_HPP_
 #define BULGE_REMOVER_HPP_
 
+#include <cmath>
+
 namespace de_bruijn {
 template<class Graph>
 class BulgeRemover {

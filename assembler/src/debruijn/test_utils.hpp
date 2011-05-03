@@ -11,8 +11,6 @@
 #include "read.hpp"
 #include "ireadstream.hpp"
 #include <tr1/tuple>
-#include "simple_tools.hpp"
-//#include "read_generator.hpp"
 
 const std::string INPUT_DIR = "./data/input/";
 const std::string ECOLI_FILE = "./data/input/MG1655-K12.fasta.gz";
@@ -20,40 +18,7 @@ const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_CROPPED_10_3 
 const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_CROPPED_10_4   = std::tr1::make_tuple<std::string, std::string, size_t, int>(INPUT_DIR + "s_6.first10000_1.fastq.gz",  INPUT_DIR + "s_6.first10000_2.fastq.gz", 220, 100000);
 const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_CROPPED_10_5   = std::tr1::make_tuple<std::string, std::string, size_t, int>(INPUT_DIR + "s_6.first100000_1.fastq.gz", INPUT_DIR + "s_6.first100000_2.fastq.gz", 220, 100000);
 const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_CROPPED_4_10_5 = std::tr1::make_tuple<std::string, std::string, size_t, int>(INPUT_DIR + "s_6.first400000_1.fastq.gz", INPUT_DIR + "s_6.first400000_2.fastq.gz", 220, 4000000);
-/*#define QUAKE_CROPPED_10_3 make_pair(make_tuple("./data/input/s_6.first1000_1.fastq.gz", "./data/input/s_6.first1000_2.fastq.gz"), 10000)
-#define QUAKE_CROPPED_10_4 make_pair(make_pair("./data/input/s_6.first10000_1.fastq.gz","./data/input/s_6.first10000_2.fastq.gz"), 10000)
-#define QUAKE_CROPPED_10_5 make_pair(make_pair("./data/input/s_6.first100000_1.fastq.gz","./data/input/s_6.first100000_2.fastq.gz"), 100000)
-#define QUAKE_CROPPED_4_10_5 make_pair(make_pair("./data/input/s_6.first400000_1.fastq.gz","./data/input/s_6.first400000_2.fastq.gz"), 400000)*/
-
-//#define filename "./data/input/MG1655-K12.fasta.gz"
 const string readsfilename = "./data/input/s_6.first100000_1.fastq.gz";
-
-//vector<Read> GenerateReadsWithMistakes(const string& file_name) {
-//	LOGGER("d.test_utils");
-//	INFO("Reading " << file_name);
-//
-//	ireadstream stream(file_name);
-//	Read r;
-//	stream >> r;
-//
-//	vector<Read> reads;
-//	INFO("Closing " << file_name);
-//	stream.close();
-//	INFO("Generating reads for substring of length " << SUBSTR_LENGTH << " and coverage " << COVERAGE);
-//
-//	ReadGenerator<R> gen(r.getSequenceString().substr(0, SUBSTR_LENGTH), COVERAGE);
-////	gen.setErrorProbability(2);
-//
-//	while (!gen.eof()) {
-//		Read read;
-//		gen >> read;
-////		cout << read[0] << endl;
-//		reads.push_back(read);
-//	}
-//
-//	INFO("Reads generated");
-//	return reads;
-//}
 
 vector<Read> ReadFromFile() {
 	LOGGER("d.test_utils");
