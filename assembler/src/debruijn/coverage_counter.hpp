@@ -10,7 +10,6 @@
 
 using namespace std;
 
-#include "condensed_graph.hpp"
 #include <algorithm>
 #include "edge_graph.hpp"
 #include "utils.hpp"
