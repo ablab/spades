@@ -239,7 +239,6 @@ public:
 		for (vector<ActionHandler*>::iterator it =
 				action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
 			if (*it == action_handler) {
-				delete *it;
 				action_handler_list_.erase(it);
 				DEBUG("Action handler removed");
 				return true;
