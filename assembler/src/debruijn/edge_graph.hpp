@@ -132,7 +132,7 @@ public:
 	typedef set<Vertex*>::const_iterator VertexIterator;
 	typedef Vertex::EdgeIterator EdgeIterator;
 	typedef de_bruijn::GraphActionHandler<EdgeGraph> ActionHandler;
-	typedef de_bruijn::PairedActionHandler<EdgeGraph> PairedActionHandler;
+//	typedef de_bruijn::PairedActionHandler<EdgeGraph> PairedActionHandler;
 	//	typedef de_bruijn::SmartVertexIterator<EdgeGraph> SmartVertexIterator;
 	//	typedef de_bruijn::SmartEdgeIterator<EdgeGraph> SmartEdgeIterator;
 
@@ -141,7 +141,7 @@ private:
 
 	const HandlerApplier<EdgeGraph> *applier_;
 
-	vector<PairedActionHandler *> action_handler_list_;
+	vector<ActionHandler*> action_handler_list_;
 
 	set<Vertex*> vertices_;
 
@@ -223,6 +223,7 @@ public:
 		while (!vertices_.empty()) {
 			ForceDeleteVertex(*vertices_.begin());
 		}
+		delete applier_;
 	}
 
 	size_t k() {
@@ -231,15 +232,14 @@ public:
 
 	void AddActionHandler(ActionHandler* action_handler) {
 		DEBUG("Action handler added");
-		action_handler_list_.push_back(
-				new PairedActionHandler(*this, action_handler));
+		action_handler_list_.push_back(action_handler);
 	}
 
 	bool RemoveActionHandler(ActionHandler* action_handler) {
 		DEBUG("Trying to remove action handler");
-		for (vector<PairedActionHandler *>::iterator it =
+		for (vector<ActionHandler*>::iterator it =
 				action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
-			if ((*it)->GetInnerActionhandler() == action_handler) {
+			if (*it == action_handler) {
 				delete *it;
 				action_handler_list_.erase(it);
 				DEBUG("Action handler removed");
@@ -303,9 +303,9 @@ public:
 		return (double) edge->coverage_ / length(edge);
 	}
 
-	size_t KPlusOneMerCoverage(EdgeId edge) const {
-		return edge->coverage_;
-	}
+//	size_t KPlusOneMerCoverage(EdgeId edge) const {
+//		return edge->coverage_;
+//	}
 
 	void IncCoverage(EdgeId edge, int toAdd) {
 		edge->coverage_ += toAdd;

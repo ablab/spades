@@ -4,9 +4,9 @@
 #include "cuckoo.hpp"
 
 typedef cuckoo<Seq<4>, size_t, Seq<4>::multiple_hash, 
-               Seq<4>::equal_to, 4, 1000, 100, 6, 5> hm4; 
+               Seq<4>::equal_to> hm4; 
 typedef cuckoo<Seq<7>, size_t, Seq<7>::multiple_hash, 
-               Seq<7>::equal_to, 4, 1000, 100, 6, 5> hm7; 
+               Seq<7>::equal_to> hm7; 
 
 void TestSeqFilter() {
   std::string in = "../../test/data/s_test.fastq.gz";
