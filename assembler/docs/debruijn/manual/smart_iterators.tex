@@ -1,5 +1,15 @@
 \section{Smart Iterators}
 
-This section tells about how to create and use Smart iterators.
+This section tells about how to create and use Smart iterators. 
+
+Get iterator by SmartVertexBegin/SmartEdgeBegin methods of EdgeGraph.
+Iterate while iterator $!=$ SmartVertexEnd/SmartEdgeEnd.
+
+Smart iterators don't become invalidated after graph operations (addition/deletion). (This is implemented by making iterator graph action listener.)
+
+Comparator can be specified while creating iterator. It should give linear order on the vertices/edges (functor similar to std::less). Iterator will return By default special order is not specified.
+
+To better understand guarantees on the order that smart iterators give, it is useful to understand how it works. 
+
 
 
