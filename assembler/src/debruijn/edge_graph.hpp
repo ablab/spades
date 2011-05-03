@@ -303,9 +303,9 @@ public:
 		return (double) edge->coverage_ / length(edge);
 	}
 
-//	size_t KPlusOneMerCoverage(EdgeId edge) const {
-//		return edge->coverage_;
-//	}
+	size_t KPlusOneMerCoverage(EdgeId edge) const {
+		return edge->coverage_;
+	}
 
 	void IncCoverage(EdgeId edge, int toAdd) {
 		edge->coverage_ += toAdd;

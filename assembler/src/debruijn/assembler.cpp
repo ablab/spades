@@ -34,7 +34,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 //	cerr << "Hello, I am assembler!" << endl;
-//	time_t now = time(NULL);
+	time_t now = time(NULL);
 //
 //	// read all 'read's
 //
