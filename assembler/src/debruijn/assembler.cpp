@@ -120,7 +120,7 @@ void EdgeGraphTool(ReadStream& stream, const string& genome) { // actually, it's
 
 	EdgeGraph g(K);
 	de_bruijn::DeBruijnPlus<K + 1, EdgeId> &index = debruijn;
-	EdgeHashRenewer<K + 1, EdgeGraph> index_handler(g, index);
+	de_bruijn::EdgeHashRenewer<K + 1, EdgeGraph> index_handler(g, index);
 	g.AddActionHandler(&index_handler);
 
 	de_bruijn::CoverageHandler<EdgeGraph> coverageHandler(g);

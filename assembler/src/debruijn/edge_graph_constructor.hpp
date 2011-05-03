@@ -13,33 +13,21 @@
 
 namespace edge_graph {
 
-using de_bruijn::GraphActionHandler;
-using de_bruijn::EdgeHashRenewer;
-
+/*
+ * Constructs EdgeGraph from DeBruijn Graph using "new EdgeGraphConstructor(DeBruijn).ConstructGraph(EdgeGraph, Index)"
+ */
 template<size_t kmer_size_>
 class EdgeGraphConstructor {
 private:
 	typedef de_bruijn::DeBruijnPlus<kmer_size_ + 1, EdgeId> Index;
+	typedef de_bruijn::DeBruijnPlus<kmer_size_ + 1, EdgeId> DeBruijn;
 	typedef Seq<kmer_size_> Kmer;
 	typedef Seq<kmer_size_ + 1> KPlusOneMer;
-	typedef de_bruijn::DeBruijnPlus<kmer_size_ + 1, EdgeId> DeBruijn;
-	//typedef typename DeBruijn::edge_iterator edge_iterator;
-	//typedef typename DeBruijn::kmer_iterator kmer_iterator;
 
-	//	EdgeGraph &g_;
-	//	Index &h_;
 	DeBruijn& origin_;
 
-	pair<Vertex*, int> GetPosition(Index &index, KPlusOneMer k) {
-		return index->get(k);
-	}
-
 	bool StepRightIfPossible(KPlusOneMer &edge) {
-		//todo use Seq.end
 		DEBUG("Considering edge " << edge);
-		//Kmer end(edge, 1);
-		//DEBUG("Next Count of end " << origin_.OutgoingEdgeCount(end));
-		//DEBUG("Prev Count of end " << origin_.IncomingEdgeCount(end));
 		if (origin_.IncomingEdgeCount(edge) == 1 && origin_.OutgoingEdgeCount(edge) == 1) {
 			KPlusOneMer next_edge = origin_.NextEdge(edge);
 			if (edge != !next_edge) { // rev compl
@@ -110,7 +98,8 @@ public:
 		origin_(origin) {
 	}
 
-	virtual void ConstructGraph(EdgeGraph &graph, Index &index) {
+	void ConstructGraph(EdgeGraph &graph, Index &index) {
+		assert(&index == &origin_); // Index = DeBruijn
 		for (typename DeBruijn::map_iterator it = origin_.begin(); it != origin_.end(); it++) {
 			KPlusOneMer edge = it->first;
 			if (!index.containsInIndex(edge)) {
