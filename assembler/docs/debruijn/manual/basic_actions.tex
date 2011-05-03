@@ -1,0 +1,102 @@
+\documentclass[a4paper,10pt]{article}
+
+
+%opening
+\title{EdgeGraph manual}
+\author{Anton, Sergey, Nikoly}
+
+\begin{document}
+
+\maketitle
+
+\section*{What is EdgeGraph?}
+EdgeGraph is an implementation of DeBruijn graph with long sequences stored in its edges.
+Implementation includes methods to change graph structure, iterate through graph and store coverage information.
+EdgeGraph supports reverce-complement structure which means that each operation is performed simultaneously with 
+certain element(vertex or edge) and reverse-complement element.
+EdgeGraph was designed in such a way that it handles most of reverce-complement structure problems automatically.
+Some external tools like tip clipping and bulge removal are implemented to be used with EdgeGraph interface.
+
+In EdgeGraph each vertex corresponds to k-mer.
+Each edge represents sequence of k+1-mers.
+Thus length of edge is number of k+1-mers in it rather than number of nucleotides in sequence stored in the edge.
+In order to forbid vertices to be reverse-complement to itself k should be chosen to be odd.
+
+\section*{Classes Structure}
+EdgeGraph consists of three basic structures: class EdgeGraph itself, class Vertex and class Edge.
+Vertex and Edge classes have only private methods and one does not even need to know these classes exist.
+Instead one should use methods of EdgeGraph with arguments of types EdgeGraph::EdgeId and EdgeGraph::VertexId which actually are
+Edge* and Vertex*.
+
+\section*{Inner Structure Of EdgeGraph}
+EdgeGraph contains set of all VertexId.
+Each vertex contains list of ids of outgoing edges and pointer to reverse-complement vertex.
+Each edge contains Sequence of nucleotides it represents and pointer to reverse-complement edge.
+Thus memory usage of the whole structure is as fallows: for each vertex 3 pointers are stored(pointer to this vertex in set, pointer
+to reverse-complement vertex and pointer in vector of outgoing edges)
+
+\section*{Basic Interface To Get Information From EdgeGraph}
+\subsection*{Graph Methods}
+\begin{itemize}
+\item \texttt{EdgeGraph(size\_t k)} create empty graph with given value of k. Assertion of k being odd is performed.
+\item \texttt{~EdgeGraph()} destructor also deletes all vertices and edges in graph. Graph destructor does not delete Handlers! 
+The one responsible for Handler deletion is the one who added it.
+\item \texttt{size\_t size()} returns number of vertices in the graph.
+\item \texttt{EdgeGraph::VertexIterator begin()}
+
+\texttt{EdgeGraph::VertexIterator end()}
+
+These methods allow to iterate through all vertices of graph.
+\item \texttt {size\_t k()}
+
+\end{itemize}
+
+\subsection*{Methods For Vertices}
+\begin{itemize}
+\item \texttt{vector<EdgeId> OutgoingEdges(VertexId v)} returns list of all outgoing edges. Vector of outgoing edges stored 
+in v is returned as is
+\item \texttt{vector<EdgeId> IncomingEdges(VertexId v)} returns list of all incoming edges. Be careful: each time this method 
+is called resulting vector is created
+\item \texttt{EdgeId OutgoingEdge(VertexId v, char nucl)} returns outgoing edge with given nucleotide at k-th position in sequence of
+edge returned(which is the first position outgoing edges have different nucleotides in).
+If such edge was not found method returns NULL.
+\item \texttt{size\_t OutgoingEdgeCount(VertexId v)} returns the number of outgoing edges
+\item \texttt{size\_t IncomingEdgeCount(VertexId v)} returns the number of incoming edges
+
+\item \texttt{bool CheckUniqueOutgiongEdge(VertexId v)} returns true if vertex has only one outgoing edge and false otherwise
+\item \texttt{EdgeId GetUniqueOutgoingEdge(VertexId v)} returns unique outgoing edge
+If outgoing edge is not unique throws exception
+\item \texttt{bool CheckUniqueIncomingEdge(VertexId v)} returns true if vertex has only one incoming edge and false otherwise
+\item \texttt{EdgeId GetUniqueIncomingEdge(VertexId v)} returns unique incloming edge. 
+If incoming edge is not unique throws exception
+\item \texttt{VertexId Complement(VertexId v)} returns reverse-complement vertex id
+\item \texttt{bool IsDeadEnd(VertexId v)} returns true if the edge has no outgoing edges and false otherwise
+\item \texttt{bool IsDeadStart(VertexId v)} returns true if the edge has no incoming edges and false otherwise 
+\end{itemize}
+
+\subsection*{Methods For Edges}
+\begin{itemize}
+\item \texttt{const Sequence\& EdgeNucls(EdgeId edge)} returns Sequence stored in the edge
+\item \texttt{size\_t length(EdgeId edge)} returns length of the edge which is number of k+1-mers
+\item \texttt{EdgeId Complement(EdgeId e)} returns complement edge
+\item \texttt{VertexId EdgeStart(EdgeId edge)} returns start vertex of the edge
+\item \texttt{VertexId EdgeEnd(EdgeId edge)} returns end vertex of the edge
+\end{itemize}
+
+\subsection*{Coverage Methods}
+Coverage of edge in edgegraph is the number of times k+1-mers from the edge appeared in reads. Most methods deal with this 
+definition of coverage. This coverage has a very useful property that it is additive and also this value is always integer. 
+But the value that really represents quality of edge is average value of k+1-mer coverage over all k+1-mers in the edge.
+Thus when one computes coverege the first value should be used and when one measures quality of edge average value should be used.
+It is easy to distinguesh which coverage is meant in which of the methods: one of them is size\_t and the other is double.
+
+\begin{itemize}
+\item \texttt{void SetCoverage(EdgeId edge, size\_t cov)} sets coverage value of the edge.
+\item \texttt{double coverage(EdgeId edge)} returns average coverage of the edge
+\item \texttt{size\_t KPlusOneMerCoverage(EdgeId edge)} returns average coverage of the edge
+\item \texttt{void IncCoverage(EdgeId edge, int toAdd)} increases coverage by given value
+\item \texttt{void IncCoverage(EdgeId edge)} increases coverage by 1
+\end{itemize}
+
+\section{Graph Modification Methods}
+\end{document}
