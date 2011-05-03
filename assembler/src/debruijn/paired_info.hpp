@@ -13,6 +13,7 @@ namespace de_bruijn {
 
 template<class Graph>
 class PairedInfoIndex: public GraphActionHandler<Graph> {
+private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 public:
