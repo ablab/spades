@@ -14,6 +14,7 @@
 #include "paired_info.hpp"
 #include "coverage_handler.hpp"
 #include "debruijn_plus.hpp"
+#include "edge_graph_constructor.hpp"
 
 namespace edge_graph {
 

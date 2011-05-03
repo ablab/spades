@@ -14,8 +14,6 @@ namespace de_bruijn {
 
 //LOGGER("d.utils");
 
-#include "simple_index.hpp"
-
 template<class Graph>
 class GraphActionHandler {
 public:

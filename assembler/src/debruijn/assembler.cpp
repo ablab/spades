@@ -3,6 +3,7 @@
  */
 
 #include "config.hpp"
+#include "edge_graph_tool.hpp"
 #include "visualization_utils.hpp"
 #include "ireadstream.hpp"
 
