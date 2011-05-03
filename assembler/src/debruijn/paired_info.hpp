@@ -3,6 +3,7 @@
 #include "utils.hpp"
 #include "strobe_reader.hpp"
 #include "sequence.hpp"
+#include <cmath>
 #include <map>
 
 #define MERGE_DATA_ABSOLUTE_DIFFERENCE 1000
