@@ -24,10 +24,10 @@ class Vertex;
 class Edge {
 //public:
 private:
+	friend class EdgeGraph;
 	const Sequence& nucls() const {
 		return nucls_;
 	}
-	friend class EdgeGraph;
 	Sequence nucls_;
 	Vertex* end_;
 	size_t coverage_;
