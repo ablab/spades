@@ -3,6 +3,7 @@
 #include "utils.hpp"
 #include "strobe_reader.hpp"
 #include "sequence.hpp"
+#include <cmath>
 #include <map>
 
 #define MERGE_DATA_ABSOLUTE_DIFFERENCE 1000
@@ -12,8 +13,33 @@ namespace de_bruijn {
 
 template<class Graph>
 class PairedInfoIndex: public GraphActionHandler<Graph> {
+private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
+
+	template<size_t kmer_size>
+	void ProcessPairedRead(PairedRead &p_r,
+			de_bruijn::SimpleSequenceMapper<kmer_size, Graph> &read_threader) {
+		Sequence read1 = p_r.first().getSequence();
+		Sequence read2 = p_r.second().getSequence();
+		de_bruijn::Path<EdgeId> path1 = read_threader.MapSequence(read1);
+		de_bruijn::Path<EdgeId> path2 = read_threader.MapSequence(read2);
+		size_t distance = CountDistance(read1, read2);
+		int current_distance1 = distance + path1.start_pos()
+				- path2.start_pos();
+		for (size_t i = 0; i < path1.size(); ++i) {
+			int current_distance2 = current_distance1;
+			for (size_t j = 0; j < path2.size(); ++j) {
+				double weight = CorrectLength(path1, i) * CorrectLength(path2,
+						j);
+				PairInfo
+						new_info(path1[i], path2[j], current_distance2, weight);
+				AddPairInfo(new_info);
+				current_distance2 += graph_.length(path2[j]);
+			}
+			current_distance1 -= graph_.length(path1[i]);
+		}
+	}
 public:
 
 	//begin-end insert size supposed
@@ -30,36 +56,17 @@ public:
 	void FillIndex(const DeBruijnPlus<kmer_size + 1, EdgeId>& index,
 			Stream& stream) {
 		data_.clear();
-		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
-				!= it; ++it) {
+		de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin();
+		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it; ++it) {
 			AddPairInfo(PairInfo(*it, *it, 0, 1));
 		}
-		//		assert(false);
 		typedef Seq<kmer_size + 1> KPOMer;
 		de_bruijn::SimpleSequenceMapper<kmer_size, Graph> read_threader(graph_,
 				index);
 		while (!stream.eof()) {
 			PairedRead p_r;
 			stream >> p_r;
-			Sequence read1 = p_r.first().getSequence();
-			Sequence read2 = p_r.second().getSequence();
-			de_bruijn::Path<EdgeId> path1 = read_threader.MapSequence(read1);
-			de_bruijn::Path<EdgeId> path2 = read_threader.MapSequence(read2);
-			size_t distance = CountDistance(read1, read2);
-			int current_distance1 = distance + path1.start_pos()
-					- path2.start_pos();
-			for (size_t i = 0; i < path1.size(); ++i) {
-				int current_distance2 = current_distance1;
-				for (size_t j = 0; j < path2.size(); ++j) {
-					double weight = CorrectLength(path1, i) * CorrectLength(
-							path2, j);
-					PairInfo new_info(path1[i], path2[j], current_distance2,
-							weight);
-					AddPairInfo(new_info);
-					current_distance2 += graph_.length(path2[j]);
-				}
-				current_distance1 -= graph_.length(path1[i]);
-			}
+			ProcessPairedRead(p_r, read_threader);
 		}
 	}
 
@@ -183,7 +190,7 @@ private:
 		}
 
 		void DeleteEdgeInfo(EdgeId e) {
-			set < EdgeId > paired_edges;
+			set<EdgeId> paired_edges;
 			for (const_data_iterator lower = LowerBound(e), upper = UpperBound(
 					e); lower != upper; ++lower) {
 				paired_edges.insert((*lower).first.second);
@@ -196,7 +203,7 @@ private:
 		}
 
 		PairInfos GetEdgeInfos(EdgeId e) {
-			vector < PairInfo > answer;
+			vector<PairInfo> answer;
 			for (const_data_iterator lower = LowerBound(e), upper = UpperBound(
 					e); lower != upper; ++lower) {
 				answer.push_back(AsPairInfo(*lower));
@@ -205,7 +212,7 @@ private:
 		}
 
 		PairInfos GetEdgePairInfos(EdgeId e1, EdgeId e2) {
-			vector < PairInfo > answer;
+			vector<PairInfo> answer;
 			for (const_data_iterator lower = data_.lower_bound(
 					make_pair(e1, e2)), upper = data_.upper_bound(
 					make_pair(e1, e2)); lower != upper; ++lower) {
@@ -298,9 +305,9 @@ private:
 		if (vec.size() != 0) {
 			cout << edge1 << " " << graph_.length(edge1) << " " << edge2 << " "
 					<< graph_.length(edge2) << endl;
-			if(graph_.EdgeEnd(edge1) == graph_.EdgeStart(edge2))
+			if (graph_.EdgeEnd(edge1) == graph_.EdgeStart(edge2))
 				cout << "+" << endl;
-			if(graph_.EdgeEnd(edge2) == graph_.EdgeStart(edge1))
+			if (graph_.EdgeEnd(edge2) == graph_.EdgeStart(edge1))
 				cout << "-" << endl;
 			int min = INT_MIN;
 			for (size_t i = 0; i < vec.size(); i++) {

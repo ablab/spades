@@ -3,15 +3,12 @@
 
 #include <vector>
 #include <set>
-//#include <ext/hash_map>
-#include <tr1/unordered_map>
 #include <cstring>
 #include "seq.hpp"
 #include "graphVisualizer.hpp"
 #include "sequence.hpp"
 #include "logging.hpp"
 #include "nucl.hpp"
-#include "debruijn.hpp"
 #include "strobe_read.hpp"
 #include "utils.hpp"
 
@@ -23,12 +20,11 @@ LOGGER("d.edge_graph");
 class Vertex;
 
 class Edge {
-//public:
 private:
+	friend class EdgeGraph;
 	const Sequence& nucls() const {
 		return nucls_;
 	}
-	friend class EdgeGraph;
 	Sequence nucls_;
 	Vertex* end_;
 	size_t coverage_;
@@ -240,7 +236,6 @@ public:
 		for (vector<ActionHandler*>::iterator it =
 				action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
 			if (*it == action_handler) {
-				delete *it;
 				action_handler_list_.erase(it);
 				DEBUG("Action handler removed");
 				return true;
