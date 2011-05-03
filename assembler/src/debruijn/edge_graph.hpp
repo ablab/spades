@@ -155,7 +155,7 @@ private:
 
 	void DeleteAllOutgoing(Vertex* v);
 
-	bool GoUniqueWay(VertexId &v);
+	bool GoUniqueWay(EdgeId &e);
 
 	void FireAddVertex(VertexId v);
 	void FireAddEdge(EdgeId edge);
@@ -256,7 +256,7 @@ public:
 	//	}
 
 public:
-	void OutgoingEdges(VertexId v, EdgeIterator& begin, EdgeIterator& end) const;
+//	void OutgoingEdges(VertexId v, EdgeIterator& begin, EdgeIterator& end) const;
 
 	const vector<EdgeId> OutgoingEdges(VertexId v) const;
 
@@ -281,7 +281,7 @@ public:
 		return *(v->begin());
 	}
 
-	bool CheckUniqueIncomingEdge(const VertexId v) const {
+	bool CheckUniqueIncomingEdge(VertexId v) const {
 		return CheckUniqueOutgiongEdge(v->Complement());
 	}
 
@@ -374,7 +374,9 @@ public:
 
 	void CompressVertex(VertexId v);
 
-	EdgeId CompressPath(const vector<VertexId>& path);
+	void Merge(EdgeId edge1, EdgeId edg2);
+
+	EdgeId MergePath(const vector<EdgeId>& path);
 
 	void CompressAllVertices();
 

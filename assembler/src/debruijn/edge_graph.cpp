@@ -33,11 +33,11 @@ void EdgeGraph::DeleteAllOutgoing(Vertex *v) {
 	}
 }
 
-void EdgeGraph::OutgoingEdges(VertexId v, EdgeIterator& begin,
-		EdgeIterator& end) const {
-	begin = v->begin();
-	end = v->end();
-}
+//void EdgeGraph::OutgoingEdges(VertexId v, EdgeIterator& begin,
+//		EdgeIterator& end) const {
+//	begin = v->begin();
+//	end = v->end();
+//}
 
 const vector<EdgeId> EdgeGraph::OutgoingEdges(VertexId v) const {
 	return v->outgoing_edges_;
@@ -202,59 +202,44 @@ bool EdgeGraph::CanCompressVertex(VertexId v) const {
 void EdgeGraph::CompressVertex(VertexId v) {
 	//assert(CanCompressVertex(v));
 	if (CanCompressVertex(v)) {
-		vector<VertexId> toCompress;
-		toCompress.push_back(v);
-		CompressPath(toCompress);
-		//		EdgeId edge1 = GetUniqueIncomingEdge(v);
-		//		EdgeId edge2 = GetUniqueOutgoingEdge(v);
-		//		Sequence nucls = edge1->nucls() + edge2->nucls().Subseq(k_);
-		//		VertexId v1 = EdgeStart(edge1);
-		//		VertexId v2 = EdgeEnd(edge2);
-		//		size_t new_coverage = edge1->coverage_ + edge2->coverage_;
-		//		EdgeId newEdge = AddEdge(v1, v2, nucls, new_coverage);
-		//		vector<EdgeId> oldEdges;
-		//		oldEdges.push_back(edge1);
-		//		oldEdges.push_back(edge2);
-		//		for (vector<PairedActionHandler*>::iterator it =
-		//				action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
-		//			(*it)->HandleMerge(oldEdges, newEdge);
-		//		}
-		//		DeleteEdge(edge1);
-		//		DeleteEdge(edge2);
-		//		DeleteVertex(v);
+		Merge(GetUniqueIncomingEdge(v), GetUniqueOutgoingEdge(v));
 	}
 }
 
-EdgeId EdgeGraph::CompressPath(const vector<VertexId>& path) {
+void EdgeGraph::Merge(EdgeId edge1, EdgeId edge2) {
+	assert(EdgeEnd(edge1) == EdgeEnd(edge2));
+	vector<EdgeId> toCompress;
+	toCompress.push_back(edge1);
+	toCompress.push_back(edge2);
+	MergePath(toCompress);
+}
+
+EdgeId EdgeGraph::MergePath(const vector<EdgeId>& path) {
 	assert(!path.empty());
 	SequenceBuilder sb;
-	assert(CheckUniqueIncomingEdge(path[0]));
-	sb.append(GetUniqueIncomingEdge(path[0])->nucls());
-	VertexId v1 = EdgeStart(GetUniqueIncomingEdge(path[0]));
-	VertexId v2 = EdgeEnd(GetUniqueOutgoingEdge(path[path.size() - 1]));
-	vector<EdgeId> oldEdges;
-	oldEdges.push_back(GetUniqueIncomingEdge(path[0]));
-	for (vector<VertexId>::const_iterator it = path.begin(); it != path.end(); ++it) {
-		sb.append(GetUniqueOutgoingEdge(*it)->nucls().Subseq(k_));
-		oldEdges.push_back(GetUniqueOutgoingEdge(*it));
+//	sb.append(GetUniqueIncomingEdge(path[0])->nucls());
+	VertexId v1 = EdgeStart(path[0]);
+	VertexId v2 = EdgeEnd(path[path.size() - 1]);
+	for (vector<EdgeId>::const_iterator it = path.begin(); it != path.end(); ++it) {
+		sb.append(EdgeNucls(*it));
 	}
 	EdgeId newEdge = HiddenAddEdge(v1, v2, sb.BuildSequence());
-	FireMerge(oldEdges, newEdge);
-	FireAddEdge(newEdge);
-	for (vector<EdgeId>::iterator it = oldEdges.begin(); it != oldEdges.end(); ++it) {
+	FireMerge(path, newEdge);
+	for (vector<EdgeId>::const_iterator it = path.begin(); it != path.end(); ++it) {
 		DeleteEdge(*it);
 	}
-	for (vector<VertexId>::const_iterator it = path.begin(); it != path.end(); ++it) {
-		DeleteVertex(*it);
+	for (size_t i = 0; i + 1 < path.size(); i++) {
+		DeleteVertex(EdgeEnd(path[i]));
 	}
+	FireAddEdge(newEdge);
 	return newEdge;
 }
 
-bool EdgeGraph::GoUniqueWay(VertexId &v) {
-	VertexId u = EdgeEnd(GetUniqueOutgoingEdge(v));
+bool EdgeGraph::GoUniqueWay(EdgeId &e) {
+	VertexId u = EdgeEnd(e);
 	if (!CheckUniqueOutgiongEdge(u) || !CheckUniqueIncomingEdge(u))
 		return false;
-	v = u;
+	e = GetUniqueOutgoingEdge(u);
 	return true;
 }
 
@@ -263,14 +248,16 @@ void EdgeGraph::CompressAllVertices() {
 	for (SmartVertexIterator<EdgeGraph> it = SmartVertexBegin(); it != end; ++it) {
 		VertexId v = *it;
 		if (CheckUniqueOutgiongEdge(v) && CheckUniqueIncomingEdge(v)) {
-			while (GoUniqueWay(v)) {
+			EdgeId e = GetUniqueOutgoingEdge(v);
+			while (GoUniqueWay(e)) {
 			}
-			vector<VertexId> compressList;
-			v = Complement(v);
+			vector<EdgeId> mergeList;
+			e = Complement(e);
 			do
-				compressList.push_back(v);
-			while (GoUniqueWay(v));
-			CompressPath(compressList);
+				mergeList.push_back(e);
+			while (GoUniqueWay(e));
+			mergeList.push_back(e);
+			MergePath(mergeList);
 		}
 	}
 }
