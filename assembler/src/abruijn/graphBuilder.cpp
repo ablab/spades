@@ -56,6 +56,7 @@ void GraphBuilder::findLocalMinimizers(Sequence s, size_t window_size) {
 	INFO("ha.size: " << ha.size());
 
 	/// compute the minimum hash-value in the first window
+	window_size=min(window_size, ha.size());
 	assert(window_size <= ha.size());
     hash_t current_min=*(std::min_element(ha.begin(), ha.begin()+window_size));
 
