@@ -215,8 +215,7 @@ void GraphBuilder::addToGraph(Sequence s) {
 	}
 }
 
-Graph GraphBuilder::build() {
-	vector<Read> v;
+void GraphBuilder::build() {
 	Read r;
 
 	INFO("===== Finding " << htake << " minimizers in each read... =====");
@@ -304,7 +303,7 @@ Graph GraphBuilder::build() {
 		}
 	}
 
-	INFO("Adding reads to graph as paths...");
+	INFO("===== Adding reads to graph as paths... =====");
 	srw_.reset();
 	for (size_t i = 0; !srw_.eof(); ++i) {
 		srw_ >> r;
@@ -313,10 +312,11 @@ Graph GraphBuilder::build() {
 	}
 	INFO("Done: " << graph.vertices.size() << " vertices");
 
-//	INFO("Condensing-A graph...");
-//	graph.condenseA();
+	INFO("===== Condensing-A graph... =====");
+	graph.Condense();
+	INFO("Done: " << graph.vertices.size() << " vertices");
 
-	return graph;
+	return;
 }
 
 }
