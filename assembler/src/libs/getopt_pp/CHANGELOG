@@ -1,0 +1,86 @@
+Version 2.13
+============
+    * fix for Mac OS X
+
+
+Version 2.12
+============
+    * changed license from Affero to GPL3 (Non-affero). This was always the intention.
+
+
+Version 2.11
+============
+    * Added include of 'unistd.h' for old glibc headers (thanks grunertj)
+
+
+Version 2.1
+===========
+    * Added 'end_of_options' method, and added `TooManyOptionsEx' exception. Refer to documentation.
+    * Added method 'exceptions_all()'.
+    * Fixed behavior bug in OptionPresent when exceptions were activated.
+
+
+Version 2.01
+============
+    * Fixed syntax so it compiles in VStudio 2003
+
+
+Version 2.0
+===========
+    * Added command line iterators.
+    * Added ability to include environment variables as long options.
+
+
+Version 1.01
+============
+    * Optimized parser.
+    * Added EMPTY_OPTION support [Issue #6]
+    * Added multiple short options in a single entry support [Issue #9]
+    * Added 'standalone' header (getopt_pp_standalone.h)
+
+
+Version 1.0
+===========
+    * Added format flags support (i.e. std::hex)
+
+
+Version 0.91
+============
+    * Fixed syntact errors. Now is fully ANSI compliant, and compiles in Visual C++ 2003.
+    * Added example for extending types.
+ 
+
+Version 0.9
+===========
+    * Added validation for trailing garbage after numbers (i.e. '123x')  [Issue #7]
+    * Added 'option_remains()' method for validating if all the options were extracted. [Issue #8]
+    * String code removed [Issue #10]
+
+
+Version 0.8
+===========
+    * Added std::vector<> support. (see example general1)
+    * Added alternative method for retrieving options without manipulators: 'getopt()' method
+    * std::exception is now a public base class of GetOptEx exception.
+
+
+Version 0.7
+===========
+    * Added exception hierarchy, instead of throwing an integer.
+    
+
+Version 0.6
+===========
+    * fixed bug in OptionPresent.
+    * Now, OptionPresent receives optionally a target bool. If it's not present, returns the result
+	in the >> operator.
+
+
+Version 0.5
+===========
+    * Everything enclosed within GetOpt namespace.
+
+
+Version 0.4
+===========
+    * Added default values support.

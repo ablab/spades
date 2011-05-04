@@ -3,15 +3,12 @@
 
 #include <vector>
 #include <set>
-//#include <ext/hash_map>
-#include <tr1/unordered_map>
 #include <cstring>
 #include "seq.hpp"
 #include "graphVisualizer.hpp"
 #include "sequence.hpp"
 #include "logging.hpp"
 #include "nucl.hpp"
-#include "debruijn.hpp"
 #include "strobe_read.hpp"
 #include "utils.hpp"
 
@@ -23,12 +20,11 @@ LOGGER("d.edge_graph");
 class Vertex;
 
 class Edge {
-public:
+private:
+	friend class EdgeGraph;
 	const Sequence& nucls() const {
 		return nucls_;
 	}
-private:
-	friend class EdgeGraph;
 	Sequence nucls_;
 	Vertex* end_;
 	size_t coverage_;
@@ -132,7 +128,7 @@ public:
 	typedef set<Vertex*>::const_iterator VertexIterator;
 	typedef Vertex::EdgeIterator EdgeIterator;
 	typedef de_bruijn::GraphActionHandler<EdgeGraph> ActionHandler;
-	typedef de_bruijn::PairedActionHandler<EdgeGraph> PairedActionHandler;
+//	typedef de_bruijn::PairedActionHandler<EdgeGraph> PairedActionHandler;
 	//	typedef de_bruijn::SmartVertexIterator<EdgeGraph> SmartVertexIterator;
 	//	typedef de_bruijn::SmartEdgeIterator<EdgeGraph> SmartEdgeIterator;
 
@@ -141,7 +137,7 @@ private:
 
 	const HandlerApplier<EdgeGraph> *applier_;
 
-	vector<PairedActionHandler *> action_handler_list_;
+	vector<ActionHandler*> action_handler_list_;
 
 	set<Vertex*> vertices_;
 
@@ -155,7 +151,7 @@ private:
 
 	void DeleteAllOutgoing(Vertex* v);
 
-	bool GoUniqueWay(VertexId &v);
+	bool GoUniqueWay(EdgeId &e);
 
 	void FireAddVertex(VertexId v);
 	void FireAddEdge(EdgeId edge);
@@ -223,6 +219,7 @@ public:
 		while (!vertices_.empty()) {
 			ForceDeleteVertex(*vertices_.begin());
 		}
+		delete applier_;
 	}
 
 	size_t k() {
@@ -231,16 +228,14 @@ public:
 
 	void AddActionHandler(ActionHandler* action_handler) {
 		DEBUG("Action handler added");
-		action_handler_list_.push_back(
-				new PairedActionHandler(*this, action_handler));
+		action_handler_list_.push_back(action_handler);
 	}
 
 	bool RemoveActionHandler(ActionHandler* action_handler) {
 		DEBUG("Trying to remove action handler");
-		for (vector<PairedActionHandler *>::iterator it =
+		for (vector<ActionHandler*>::iterator it =
 				action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
-			if ((*it)->GetInnerActionhandler() == action_handler) {
-				delete *it;
+			if (*it == action_handler) {
 				action_handler_list_.erase(it);
 				DEBUG("Action handler removed");
 				return true;
@@ -256,7 +251,7 @@ public:
 	//	}
 
 public:
-	void OutgoingEdges(VertexId v, EdgeIterator& begin, EdgeIterator& end) const;
+//	void OutgoingEdges(VertexId v, EdgeIterator& begin, EdgeIterator& end) const;
 
 	const vector<EdgeId> OutgoingEdges(VertexId v) const;
 
@@ -281,7 +276,7 @@ public:
 		return *(v->begin());
 	}
 
-	bool CheckUniqueIncomingEdge(const VertexId v) const {
+	bool CheckUniqueIncomingEdge(VertexId v) const {
 		return CheckUniqueOutgiongEdge(v->Complement());
 	}
 
@@ -374,7 +369,9 @@ public:
 
 	void CompressVertex(VertexId v);
 
-	EdgeId CompressPath(const vector<VertexId>& path);
+	void Merge(EdgeId edge1, EdgeId edg2);
+
+	EdgeId MergePath(const vector<EdgeId>& path);
 
 	void CompressAllVertices();
 

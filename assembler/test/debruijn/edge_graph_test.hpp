@@ -136,14 +136,15 @@ string print(const edge_set& es) {
 
 class ToStringHandler: public TraversalHandler {
 	edge_set& edges_;
+	EdgeGraph g_;
 public:
-	ToStringHandler(edge_set& edges) :
-		edges_(edges) {
+	ToStringHandler(edge_set& edges, EdgeGraph &g) :
+		edges_(edges), g_(g) {
 	}
 
 	virtual void HandleEdge(EdgeId e) {
 		//todo rewrite using graph object (maybe add g_ to superclass)
-		edges_.insert((*e).nucls().str());
+		edges_.insert(g_.EdgeNucls(e).str());
 	}
 
 };
@@ -173,7 +174,7 @@ void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 	g_c.ConstructGraph(g, index);
 
 	edge_set edges;
-	ToStringHandler h(edges);
+	ToStringHandler h(edges, g);
 	DFS<EdgeGraph> dfs(g);
 	dfs.Traverse(&h);
 

@@ -63,7 +63,7 @@ public:
 	 */
 	template<typename S>
 	void kmers(const T &s, S &ha) {
-		TRACE("hashing k-mers of " << s);
+		//INFO("hashing k-mers of " << s);
 		size_t sz = s.size();
 		hash_t h = 0;
 		for (size_t i = 0; i < K; i++) {
@@ -73,7 +73,7 @@ public:
 		for (size_t i = 0; i + K < sz; i++) {
 			ha[i + 1] = mult(ha[i]) + s[i + K] - s[i] * kXK;
 		}
-		TRACE("forward pass - ok");
+		//INFO("forward pass - ok");
 		h = 0;
 		for (size_t i = sz - 1; i + K >= sz; i--) {
 			h = mult(h) + (s[i] ^ 3);
@@ -85,7 +85,8 @@ public:
 			}
 			h = mult(h) + (s[i - 1] ^ 3) - (s[i + K - 1] ^ 3) * kXK;
 		}
-		TRACE("hashing k-mers of " << s << " - done");
+		//INFO("hashing k-mers of " << s << " - done");
+		//INFO("ha.size: " << ha.size());
 	}
 };
 

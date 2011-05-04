@@ -10,7 +10,6 @@
 
 #include <set>
 #include "edge_graph.hpp"
-#include "set"
 #include "utils.hpp"
 
 #define DEFAULT_COVERAGE_BOUND 1000
