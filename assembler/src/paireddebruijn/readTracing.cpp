@@ -7,6 +7,35 @@ LOGGER ("p.readTracing");
 
 using namespace paired_assembler;
 
+//void tracePairedReads(PairedGraph &graph){
+//	edgePairsMap EdgePairs;
+//		INFO("traceReads started");
+//		INFO(parsed_reads);
+//		FILE * inFile = fopen(parsed_reads.c_str(), "r");
+//		char *upperNuclRead = new char[readLength + 2];
+//		char *lowerNuclRead = new char[readLength + 2];
+//		char *upperRead = new char[readLength + 2];
+//		char *lowerRead = new char[readLength + 2];
+//		ll count=0;
+//		ll upperMask = (((ll) 1) << (2 * (k - 1))) - 1;
+//		ll lowerMask = (((ll) 1) << (2 * (l - 1))) - 1;
+//		//	FILE* fout = fopen("data/filtered_reads","w");
+//		while (nextReadPair(inFile, upperNuclRead, lowerNuclRead)) {
+//			if (fictiveSecondReads) {
+//				forn(i, readLength) {
+//					lowerNuclRead[i] = 0;
+//				}
+//			}
+//			if (!(count & (1024*128 - 1)))
+//			cerr<<"read number "<<count<<" processed"<<endl;
+//			count++;
+//			codeRead(upperNuclRead, upperRead);
+//			codeRead(lowerNuclRead, lowerRead);
+//			Sequence* upRead = new Sequence(upperNuclRead);
+//			Sequence* loRead = new Sequence(lowerNuclRead);
+//			fo
+//
+//}
 void traceReads(verticesMap &verts, longEdgesMap &longEdges,
 		PairedGraph &graph, int &VertexCount, int &EdgeId) {
 
