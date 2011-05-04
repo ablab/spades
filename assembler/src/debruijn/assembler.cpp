@@ -158,7 +158,7 @@ void RunEdgeGraphTool() {
 	ireadstream genome_stream(ECOLI_FILE);
 	Read genome;
 	genome_stream >> genome;
-	edge_graph::EdgeGraphTool(rcStream,  genome.getSequenceString().substr(0, tr1::get<2>(INPUT)));
+	edge_graph::EdgeGraphTool(rcStream,  genome.getSequenceString().substr(0, tr1::get<3>(INPUT)));
 	reader.close();
 	genome_stream.close();
 }

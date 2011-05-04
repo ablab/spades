@@ -271,7 +271,9 @@ pair<EdgeId, EdgeId> EdgeGraph::SplitEdge(EdgeId edge, size_t position) {
 }
 
 void EdgeGraph::GlueEdges(EdgeId edge1, EdgeId edge2) {
+	FireDeleteEdge(edge2);
 	FireGlue(edge1, edge2);
+	FireAddEdge(edge2);
 	VertexId start = EdgeStart(edge1);
 	VertexId end = EdgeEnd(edge1);
 	DeleteEdge(edge1);

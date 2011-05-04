@@ -56,7 +56,8 @@ public:
 	virtual void
 	ApplyHandleAdd(GraphActionHandler<Graph> *handler, VertexId v) const = 0;
 
-	virtual void ApplyHandleAdd(GraphActionHandler<Graph> *handler, EdgeId e) const = 0;
+	virtual void
+	ApplyHandleAdd(GraphActionHandler<Graph> *handler, EdgeId e) const = 0;
 
 	virtual void ApplyHandleDelete(GraphActionHandler<Graph> *handler,
 			VertexId v) const = 0;
@@ -165,7 +166,7 @@ public:
 		EdgeId rce = graph_.Complement(new_edge);
 		handler->HandleMerge(old_edges, new_edge);
 		if (new_edge != rce) {
-			vector < EdgeId > ecOldEdges;
+			vector<EdgeId> ecOldEdges;
 			for (int i = old_edges.size() - 1; i >= 0; i--) {
 				ecOldEdges.push_back(graph_.Complement(old_edges[i]));
 			}
@@ -249,7 +250,7 @@ public:
 		EdgeId rce = graph_.Complement(newEdge);
 		handler_->HandleMerge(oldEdges, newEdge);
 		if (newEdge != rce) {
-			vector < EdgeId > ecOldEdges;
+			vector<EdgeId> ecOldEdges;
 			for (int i = oldEdges.size() - 1; i >= 0; i--) {
 				ecOldEdges.push_back(graph_.Complement(oldEdges[i]));
 			}
@@ -351,7 +352,8 @@ class VertexHashRenewer: public GraphActionHandler<Graph> {
 	DataHashRenewer<kmer_size_, Graph, VertexId> renewer_;
 
 public:
-	VertexHashRenewer(const Graph& g, de_bruijn::DeBruijnPlus<kmer_size_, VertexId> *index) :
+	VertexHashRenewer(const Graph& g,
+			de_bruijn::DeBruijnPlus<kmer_size_, VertexId> *index) :
 		renewer_(g, index) {
 	}
 
@@ -443,7 +445,7 @@ void DFS<Graph>::ProcessVertex(VertexId v, vector<VertexId>* stack,
 		h->HandleVertex(v);
 		visited_.insert(v);
 
-		vector < EdgeId > edges = super::g_.OutgoingEdges(v);
+		vector<EdgeId> edges = super::g_.OutgoingEdges(v);
 		for (size_t i = 0; i < edges.size(); ++i) {
 			EdgeId e = edges[i];
 			h->HandleEdge(e);
@@ -459,7 +461,7 @@ void DFS<Graph>::Traverse(TraversalHandler<Graph>* h) {
 	typedef typename Graph::VertexIterator VertexIt;
 
 	for (VertexIt it = super::g_.begin(); it != super::g_.end(); it++) {
-		vector < VertexId > stack;
+		vector<VertexId> stack;
 		stack.push_back(*it);
 		while (!stack.empty()) {
 			VertexId v = stack[stack.size() - 1];
@@ -731,9 +733,33 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 private:
 	const Graph& g_;
-	const de_bruijn::DeBruijnPlus<k+1,EdgeId> &index_;
+	const de_bruijn::DeBruijnPlus<k + 1, EdgeId> &index_;
 
-	void processKmer(Seq<k+1> &kmer, vector<EdgeId> &passed, size_t &startPosition, size_t &endPosition) const {
+	bool TryThread(Seq<k + 1> &kmer, vector<EdgeId> &passed,
+			size_t &endPosition) const {
+		EdgeId last = passed[passed.size() - 1];
+		if (endPosition + 1 < g_.length(last)) {
+			if (g_.EdgeNucls(last)[endPosition + k + 1] == kmer[k]) {
+				endPosition++;
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			vector<EdgeId> edges = g_.OutgoingEdges(g_.EdgeEnd(last));
+			for (size_t i = 0; i < edges.size(); i++) {
+				if (g_.EdgeNucls(edges[i])[k] == kmer[k]) {
+					passed.push_back(edges[i]);
+					endPosition = 0;
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
+	bool FindKmer(Seq<k + 1> &kmer, vector<EdgeId> &passed,
+			size_t &startPosition, size_t &endPosition) const {
 		if (index_.containsInIndex(kmer)) {
 			pair<EdgeId, size_t> position = index_.get(kmer);
 			endPosition = position.second;
@@ -743,11 +769,24 @@ private:
 			if (passed.empty() || passed[passed.size() - 1] != position.first) {
 				passed.push_back(position.first);
 			}
+			return true;
+		}
+		return false;
+	}
+
+	bool ProcessKmer(Seq<k + 1> &kmer, vector<EdgeId> &passed,
+			size_t &startPosition, size_t &endPosition, bool valid) const {
+		if (valid) {
+			return TryThread(kmer, passed, endPosition);
+		} else {
+			return FindKmer(kmer, passed, startPosition, endPosition);
 		}
 	}
+
 public:
-	SimpleSequenceMapper(const Graph& g, const de_bruijn::DeBruijnPlus<k+1,EdgeId> &index) : g_(g), index_(index) {
-		;
+	SimpleSequenceMapper(const Graph& g,
+			const de_bruijn::DeBruijnPlus<k + 1, EdgeId> &index) :
+		g_(g), index_(index) {
 	}
 
 	de_bruijn::Path<EdgeId> MapSequence(const Sequence &read) const {
@@ -758,10 +797,13 @@ public:
 		Seq<k + 1> kmer = read.start<k + 1> ();
 		size_t startPosition = -1;
 		size_t endPosition = -1;
-		processKmer(kmer, passed, startPosition, endPosition);
+		bool valid = false;
+		valid = ProcessKmer(kmer, passed, startPosition, endPosition, valid);
 		for (size_t i = k + 1; i < read.size(); ++i) {
 			kmer = kmer << read[i];
-			processKmer(kmer, passed, startPosition, endPosition);
+			valid
+					= ProcessKmer(kmer, passed, startPosition, endPosition,
+							valid);
 		}
 		return de_bruijn::Path<EdgeId>(passed, startPosition, endPosition + 1);
 	}
