@@ -36,7 +36,6 @@ class GraphBuilder
 	size_t htake;
 	SimpleReaderWrapper<PairedReader<ireadstream> > srw_;
 	int mode_;
-	Graph graph;
 
 	hashing::HashSym<Sequence> hashSym;
 	typedef vector<hash_t> hash_vector;
@@ -52,11 +51,12 @@ class GraphBuilder
 	void addToGraph(Sequence s);
 
 public:
+	Graph graph;
 	GraphBuilder(SimpleReaderWrapper<PairedReader<ireadstream> > srw, size_t htake, int mode) :
 		htake(htake), srw_(srw), mode_(mode) {
 		hbest.reserve(htake);
 	};
-	Graph build();
+	void build();
 };
 
 }

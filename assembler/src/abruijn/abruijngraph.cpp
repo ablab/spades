@@ -74,17 +74,36 @@ Vertex* Graph::getVertex(const Sequence& kmer) {
 	return v->second->complement();
 }
 
-bool Graph::tryCondenseA(Vertex* v) {
+void Graph::Condense_single(Vertex* v) {
+	Vertex* u = v->edges().begin()->first;
+	Vertex* w = v->complement()->edges().begin()->first->complement();
+	assert(u != NULL);
+	assert(w != NULL);
+//	DEBUG(w->edges().count(u));
+//	assert(w->edges().count(u) == 0);
+	Edge e1 = w->edges()[v];
+	Edge e2 = v->edges()[w];
+	Edge e3 = e1.concat(e2);
+
+//	(w->edges())[u] = Edge();
+//	(w->edges())[u] = (w->edges())[u];
+//	cout << ((w->edges())[u] = Edge()) <<endl;
+//	w->edges()[u] = v->edges()[w].add(w->edges()[u]);
+}
+
+bool Graph::Condense(Vertex* v) {
 	if (v->degree() != 1 || v->complement()->degree() != 1) {
 		return false;
 	}
+	Condense_single(v);
+	Condense_single(v->complement());
+	removeVertex(v);
+	return true;
 //	Vertex* w = v->complement()->edges_.begin()->first->complement();
 //	Vertex* u = v->edges_.begin()->first;
 //	for (;;) {
 //
 //	}
-	return true;
-
 
 //	Edge e = v->edges_.begin()->second;
 //	assert(u->complement()->edges_.begin()->first == v->complement());
@@ -119,14 +138,24 @@ bool Graph::tryCondenseA(Vertex* v) {
 //	return vu;
 }
 
-void Graph::condenseA() {
+void Graph::Condense() {
+	DEBUG(vertices.size() << " vertices");
 	int condensations = 0;
-	for (iterator v = begin(); v != end(); ++v) {
-		if (tryCondenseA(*v)) {
-			condensations++;
+	for (;;) {
+		bool change = false;
+		for (iterator v = begin(); v != end(); ++v) {
+			if (Condense(*v)) {
+				condensations++;
+				change = true;
+			}
+		}
+		cleanup();
+		INFO(condensations << " condensations");
+		if (!change) {
+			break;
 		}
 	}
-	cleanup();
+	DEBUG(vertices.size() << " vertices");
 }
 
 void Graph::cleanup() {
