@@ -11,45 +11,11 @@ LOGGER("a");
 
 int main(int argc, char* argv[]) {
 	GetOpt_pp options(argc, argv, Include_Environment);
-
 	bool help;
 	options >> OptionPresent('h', "help", help);
-	if (help) {
-		_default_logger->isInfoEnabled();
-		_default_logger->setLevel(log4cxx::Level::getError());
-		_default_logger->removeAllAppenders();
-		_default_logger->closeNestedAppenders();
-		_default_logger->warn("\n");
-		INFO("\n");
-	}
-	INFO("Hello, A Bruijn!");
-	DEBUG("Using parameters:");
-
 	stringstream usage;
 	usage << "\nSet option values like this: \"--key1 value1 --key2 value2 ...\".\n";
 	usage << "\nSupported options are:\n";
-
-	int take;
-	options >> Option('t', "take", take, 1);
-	DEBUG("take = " << take);
-	usage << "--take how many minimizers to take from each read (default = 1)\n";
-
-	bool output_single;
-	options >> OptionPresent('s', "single", output_single);
-	DEBUG("single = " << (output_single ? "true" : "false"));
-	usage << "--single (with no value!) whether to visualize vertices non-RC-paired\n";
-
-	int cut;
-	options >> Option('c', "cut", cut, -1);
-	DEBUG("cut = " << cut);
-	usage << "--cut how many first reads from the input file to use (default = -1 = use all reads)\n";
-
-	int mode;
-	options >> Option('m', "mode", mode, 0);
-	DEBUG("mode = " << mode);
-	usage << "--mode bit mask:\n";
-	usage << "       1 whether to find minimizers, not local minimizers\n";
-	usage << "       2 whether to ensure at least 2 minimizers in each read\n";
 
 	string input_file;
 	options >> Option('i', "input", input_file, "");
@@ -60,17 +26,43 @@ int main(int argc, char* argv[]) {
 			break;
 		}
 	}
-	DEBUG("input = " << input_file << " and " << input_file2);
-	usage << "--input first data file. Second file name is obtained by replacing last \"1\" with \"2\"\n";
-
-	string output_file;
-	options >> Option('o', "output", output_file, "");
-	DEBUG("output = " << output_file);
-	usage << "--output output file name";
-
 	if (input_file == "") {
 		help = true;
 	}
+	usage << "--input first data file. Second file name is obtained by replacing last \"1\" with \"2\"\n";
+	if (!help) {
+		INFO("Hello, A Bruijn!");
+		INFO("Using parameters:");
+		INFO("input = " << input_file << " and " << input_file2);
+	}
+
+	string output_file;
+	options >> Option('o', "output", output_file, "");
+	usage << "--output output file name\n";
+	if (!help) INFO("output = " << output_file);
+
+	int take;
+	options >> Option('t', "take", take, 1);
+	usage << "--take how many minimizers to take from each read (default = 1)\n";
+	if (!help) INFO("take = " << take);
+
+	bool output_single;
+	options >> OptionPresent('s', "single", output_single);
+	usage << "--single (with no value!) whether to visualize vertices non-RC-paired\n";
+	if (!help) INFO("single = " << (output_single ? "true" : "false"));
+
+	int cut;
+	options >> Option('c', "cut", cut, -1);
+	usage << "--cut how many first reads from the input file to use (default = -1 = use all reads)\n";
+	if (!help) INFO("cut = " << cut);
+
+	int mode;
+	options >> Option('m', "mode", mode, 0);
+	usage << "--mode bit mask (default = 0):\n";
+	usage << "       1 whether to find minimizers, not local minimizers\n";
+	usage << "       2 whether to ensure at least 2 minimizers in each read\n";
+	if (!help) INFO("mode = " << mode);
+
 	if (help) {
 		std::cout << usage.str();
 		return 0;
@@ -80,16 +72,17 @@ int main(int argc, char* argv[]) {
 	StrobeReader<2, Read, ireadstream> sr(file_names);
 	PairedReader<ireadstream> paired_stream(sr, 220);
 	SimpleReaderWrapper<PairedReader<ireadstream> > srw(paired_stream);
+	CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream> > > cr(srw, cut);
 
-	abruijn::GraphBuilder gb(srw, take, mode);
-	gb.build();
+	abruijn::GraphBuilderMaster<CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream>>>> gbm(cr, take, mode);
+	gbm.build();
 
 	INFO("Getting statistics...");
-	gb.graph.stats();
+	gbm.graph()->stats();
 
 	INFO("Outputting graph to " << output_file);
 	ofstream output_stream(output_file.c_str(), ios::out);
-	gb.graph.output(output_stream, !output_single);
+	gbm.graph()->output(output_stream, !output_single);
 	INFO("Done.");
 	output_stream.close();
 
