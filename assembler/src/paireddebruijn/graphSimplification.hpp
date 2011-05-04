@@ -19,6 +19,7 @@ void cutShortTips(PairedGraph &graph, int MaxCutLength = 5);
 
 void SplitVertecesByEdgeConnections(PairedGraph &graph, edgePairsMap &EdgePairs, bool Strongly1to1);
 void SplitByLowers(PairedGraph &graph);
+bool intersectible(Sequence *left, Sequence *right);
 
 
 
