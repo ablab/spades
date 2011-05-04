@@ -89,16 +89,28 @@ void Graph::Condense_single(Vertex* v) {
 //	(w->edges())[u] = (w->edges())[u];
 //	cout << ((w->edges())[u] = Edge()) <<endl;
 //	w->edges()[u] = v->edges()[w].add(w->edges()[u]);
+	w->edges()[u] += e3;
 }
 
 bool Graph::Condense(Vertex* v) {
 	if (v->degree() != 1 || v->complement()->degree() != 1) {
 		return false;
 	}
-	Condense_single(v);
-	Condense_single(v->complement());
-	removeVertex(v);
-	return true;
+//	if (v->backward()->edges().count(v->forward()) != 0) {
+//		return false;
+//	}
+//	if (v->forward()->complement()->edges().count(v->backward()->complement()) != 0) {
+//		return false;
+//	}
+	assert(v->backward()->edges().count(v->forward()) == 0);
+	assert(v->forward()->complement()->edges().count(v->backward()->complement()) == 0);
+//	v->backward()->edges()[v->forward()].touch();
+//	v->forward()->complement()->edges()[v->backward()->complement()].touch();
+//	DEBUG("touched");
+//	Condense_single(v);
+//	Condense_single(v->complement());
+//	removeVertex(v);
+	return false;
 //	Vertex* w = v->complement()->edges_.begin()->first->complement();
 //	Vertex* u = v->edges_.begin()->first;
 //	for (;;) {
@@ -182,7 +194,9 @@ void Graph::output(std::ofstream &out, bool paired) {
 	if (paired) {
 		gvis::PairedGraphPrinter<Vertex*> printer(name, out);
 		for (Vertices::iterator v = vertices.begin(); v != vertices.end(); ++v) {
-			printer.addVertex(*v, toString(**v), (*v)->complement(), toString(*((*v)->complement())));
+			if ((*v)->data() < (*v)->complement()->data()) {
+				printer.addVertex(*v, toString(**v), (*v)->complement(), toString(*((*v)->complement())));
+			}
 			for (Edges::iterator it = (*v)->edges().begin(); it != (*v)->edges().end(); ++it) {
 				printer.addEdge(make_pair(*v, (*v)->complement()), make_pair(it->first, it->first->complement()), toString(it->second));
 			}
