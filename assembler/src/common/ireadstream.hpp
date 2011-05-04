@@ -31,7 +31,6 @@ public:
 		is_open_ = open(filename);
 	}
 
-
 	virtual ~ireadstream() {
 		close();
 	}

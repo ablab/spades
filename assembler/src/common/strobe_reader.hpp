@@ -70,112 +70,34 @@ struct SingleReader {
 	typedef StrobeReader<1, T, TR> type;
 };
 
-template<class Stream>
-class SimpleReaderWrapper {
-public:
-	typedef typename Stream::ReadType ReadType;
-private:
-	Stream &inner_reader_;
-	vector<ReadType> result_;
-	size_t current_;
-public:
-	SimpleReaderWrapper(Stream &reader) :
-		inner_reader_(reader), current_(0) {
+template<typename T, typename TR>
+class CuttingReader {
+	TR reader_;
+	size_t cut_;
+	size_t read_;
+
+	CuttingReader(TR reader, size_t cut = -1) : reader_(reader), cut_(cut), read_(0) {}
+
+	virtual ~CuttingReader() {
 	}
 
 	bool eof() const {
-		return inner_reader_.eof();
+		return read_ == cut_ || reader_.eof();
 	}
 
-	SimpleReaderWrapper& operator>>(ReadType& v) {
-		if (current_ == 0) {
-			inner_reader_ >> result_;
-		}
-		v = result_[current_];
-		current_++;
-		if (current_ == result_.size())
-			current_ = 0;
+	CuttingReader& operator>>(T& v) {
+		reader_ >> v;
+		++read_;
 		return *this;
 	}
 
 	void reset() {
-		current_ = 0;
-		inner_reader_.reset();
+		read_ = 0;
+		reader_.reset();
 	}
 
 	void close() {
-		inner_reader_.close();
-	}
-};
-
-template<class Stream>
-class RCReaderWrapper {
-public:
-	typedef typename Stream::ReadType ReadType;
-private:
-	Stream &inner_reader_;
-	vector<ReadType> rc_result_;
-	bool was_rc_;
-public:
-	RCReaderWrapper(Stream &reader) :
-		inner_reader_(reader), was_rc_(false) {
-	}
-
-	bool eof() const {
-		return inner_reader_.eof() && !was_rc_;
-	}
-
-	RCReaderWrapper& operator>>(vector<ReadType>& v) {
-		if (!was_rc_) {
-			inner_reader_ >> v;
-			rc_result_.clear();
-			for (int i = v.size() - 1; i >= 0; i--) {
-				rc_result_.push_back(!(v[i]));
-			}
-		} else {
-			v = rc_result_;
-		}
-		was_rc_ = !was_rc_;
-		return *this;
-	}
-
-	void reset() {
-		was_rc_ = false;
-		inner_reader_.reset();
-	}
-
-	void close() {
-		inner_reader_.close();
-	}
-};
-
-template<class Stream>
-class PairComplementerWrapper {
-public:
-	typedef typename Stream::ReadType ReadType;
-private:
-	Stream &inner_reader_;
-public:
-	PairComplementerWrapper(Stream &reader) :
-		inner_reader_(reader) {
-	}
-
-	bool eof() const {
-		return inner_reader_.eof();
-	}
-
-	PairComplementerWrapper& operator>>(vector<ReadType>& v) {
-		inner_reader_ >> v;
-		v[1] = !v[1];
-		return *this;
-	}
-
-	void reset() {
-		inner_reader_.reset();
-	}
-
-	void close() {
-		inner_reader_.close();
+		reader_.close();
 	}
 };
 

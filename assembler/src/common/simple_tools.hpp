@@ -1,6 +1,7 @@
 #ifndef SIMPLE_TOOLS_HPP_
 #define SIMPLE_TOOLS_HPP_
 
+#include <sstream>
 #include <string>
 using std::string;
 
@@ -14,8 +15,7 @@ template <typename T>
 string toString(T t) {
 	std::stringstream ss;
 	ss << t;
-	//return ss.str();
-	return "COMPILATION ERROR!";
+	return ss.str();
 }
 
 #endif /* SIMPLE_TOOLS_HPP_ */
