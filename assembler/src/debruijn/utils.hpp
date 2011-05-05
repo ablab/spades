@@ -363,27 +363,6 @@ public:
 	}
 };
 
-//template<size_t kmer_size_, class Graph>
-//class EdgeHashRenewer: public GraphActionHandler<Graph> {
-//
-//	typedef typename Graph::EdgeId EdgeId;
-//	typedef de_bruijn::DeBruijnPlus<kmer_size_, EdgeId> Index;
-//	DataHashRenewer<kmer_size_, Graph, EdgeId> renewer_;
-//
-//public:
-//	EdgeHashRenewer(const Graph& g, Index &index) :
-//		renewer_(g, index) {
-//	}
-//
-//	virtual void HandleAdd(EdgeId e) {
-//		renewer_.HandleAdd(e);
-//	}
-//
-//	virtual void HandleDelete(EdgeId e) {
-//		renewer_.HandleDelete(e);
-//	}
-//};
-
 template<size_t kmer_size_, typename Graph>
 class VertexHashRenewer: public GraphActionHandler<Graph> {
 
@@ -411,8 +390,6 @@ class NoInfo {
 /**
  * Stub base class for handling graph primitives during traversal.
  */
-//template<typename VertexId, typename EdgeId>
-//todo talk with Anton
 template<class Graph, class Info = NoInfo *>
 class TraversalHandler {
 public:
