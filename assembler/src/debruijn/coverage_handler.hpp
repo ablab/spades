@@ -31,8 +31,6 @@ public:
 		for (typename vector<EdgeId>::iterator it = oldEdges.begin(); it != oldEdges.end(); ++it) {
 			coverage += KPlusOneMerCoverage(*it);
 		}
-//		cout << "single merge coverage" << endl;
-//		cout << graph_.EdgeNucls(newEdge) << " " << coverage << endl;
 		g_.SetCoverage(newEdge, coverage);
 	}
 
