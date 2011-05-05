@@ -119,10 +119,12 @@ void EdgeGraphTool(ReadStream& stream, const string& genome) { // actually, it's
 	INFO("DeBruijn graph constructed");
 
 	EdgeGraph g(K);
-	de_bruijn::EdgeIndex<K + 1, EdgeGraph> index(g, debruijn);
+
+	//necessary brackets (for proper destructor call)
+//	{
+	Index index(g, debruijn);
 
 	de_bruijn::CoverageHandler<EdgeGraph> coverageHandler(g);
-	g.AddActionHandler(&coverageHandler);
 
 	stream.reset();
 	CondenseGraph<ReadStream> (debruijn, g, index, stream, genome);
@@ -139,7 +141,7 @@ void EdgeGraphTool(ReadStream& stream, const string& genome) { // actually, it's
 
 	g.RemoveActionHandler(&index);
 	g.RemoveActionHandler(&coverageHandler);
-
+//	}
 	INFO("Tool finished")
 }
 

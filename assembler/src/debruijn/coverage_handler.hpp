@@ -7,18 +7,23 @@ namespace de_bruijn {
 template<class Graph>
 class CoverageHandler: public GraphActionHandler<Graph> {
 private:
-	Graph &graph_;
+	Graph &g_;
 
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
 	size_t KPlusOneMerCoverage(EdgeId edge) const {
-		return (size_t) (graph_.coverage(edge) * graph_.length(edge));
+		return (size_t) (g_.coverage(edge) * g_.length(edge));
 	}
 
 public:
-	CoverageHandler(Graph &graph) :
-		graph_(graph) {
+	CoverageHandler(Graph &g) :
+		g_(g) {
+		g_.AddActionHandler(this);
+	}
+
+	virtual ~CoverageHandler() {
+		g_.RemoveActionHandler(this);
 	}
 
 	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
@@ -28,16 +33,16 @@ public:
 		}
 //		cout << "single merge coverage" << endl;
 //		cout << graph_.EdgeNucls(newEdge) << " " << coverage << endl;
-		graph_.SetCoverage(newEdge, coverage);
+		g_.SetCoverage(newEdge, coverage);
 	}
 
 	virtual void HandleGlue(EdgeId oldEdge, EdgeId newEdge) {
-		graph_.IncCoverage(newEdge, KPlusOneMerCoverage(oldEdge));
+		g_.IncCoverage(newEdge, KPlusOneMerCoverage(oldEdge));
 	}
 
 	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
-		size_t length1 = graph_.length(newEdge1);
-		size_t length = graph_.length(oldEdge);
+		size_t length1 = g_.length(newEdge1);
+		size_t length = g_.length(oldEdge);
 		size_t coverage = KPlusOneMerCoverage(oldEdge);
 		size_t coverage1 = coverage * length1 / length;
 		if(coverage1 == 0)
@@ -45,13 +50,10 @@ public:
 		size_t coverage2 = coverage - coverage1;
 		if(coverage2 == 0)
 			coverage2 = 1;
-		graph_.SetCoverage(newEdge1, coverage1);
-		graph_.SetCoverage(newEdge2, coverage2);
+		g_.SetCoverage(newEdge1, coverage1);
+		g_.SetCoverage(newEdge2, coverage2);
 	}
 
-	virtual ~CoverageHandler() {
-
-	}
 };
 }
 
