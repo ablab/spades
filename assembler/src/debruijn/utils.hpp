@@ -323,16 +323,23 @@ public:
 	}
 };
 
-template<size_t kmer_size_, class Graph>
-class EdgeHashRenewer: public GraphActionHandler<Graph> {
-
+template<size_t k, class Graph>
+class EdgeIndex : public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
-	typedef de_bruijn::DeBruijnPlus<kmer_size_, EdgeId> Index;
-	DataHashRenewer<kmer_size_, Graph, EdgeId> renewer_;
-
+	typedef de_bruijn::DeBruijnPlus<k, EdgeId> Index;
+	typedef Seq<k> Kmer;
+	Graph& g_;
+	Index& index_;
+	DataHashRenewer<k, Graph, EdgeId> renewer_;
 public:
-	EdgeHashRenewer(const Graph& g, Index &index) :
-		renewer_(g, index) {
+
+	EdgeIndex(Graph& g, Index &index) :
+		g_(g), index_(index), renewer_(g, index) {
+		g_.AddActionHandler(this);
+	}
+
+	virtual ~EdgeIndex() {
+		g_.RemoveActionHandler(this);
 	}
 
 	virtual void HandleAdd(EdgeId e) {
@@ -342,7 +349,40 @@ public:
 	virtual void HandleDelete(EdgeId e) {
 		renewer_.HandleDelete(e);
 	}
+
+	bool containsInIndex(const Kmer& kmer) const {
+		return index_.containsInIndex(kmer);
+	}
+
+	const pair<EdgeId, size_t>& get(const Kmer& kmer) const {
+		return index_.get(kmer);
+	}
+
+	bool deleteIfEqual(const Kmer& kmer, EdgeId edge) {
+		return index_.deleteIfEqual(kmer, edge);
+	}
 };
+
+//template<size_t kmer_size_, class Graph>
+//class EdgeHashRenewer: public GraphActionHandler<Graph> {
+//
+//	typedef typename Graph::EdgeId EdgeId;
+//	typedef de_bruijn::DeBruijnPlus<kmer_size_, EdgeId> Index;
+//	DataHashRenewer<kmer_size_, Graph, EdgeId> renewer_;
+//
+//public:
+//	EdgeHashRenewer(const Graph& g, Index &index) :
+//		renewer_(g, index) {
+//	}
+//
+//	virtual void HandleAdd(EdgeId e) {
+//		renewer_.HandleAdd(e);
+//	}
+//
+//	virtual void HandleDelete(EdgeId e) {
+//		renewer_.HandleDelete(e);
+//	}
+//};
 
 template<size_t kmer_size_, typename Graph>
 class VertexHashRenewer: public GraphActionHandler<Graph> {
@@ -731,9 +771,10 @@ template<size_t k, class Graph>
 class SimpleSequenceMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
+	typedef typename de_bruijn::EdgeIndex<k + 1, Graph> Index;
 private:
 	const Graph& g_;
-	const de_bruijn::DeBruijnPlus<k + 1, EdgeId> &index_;
+	const Index &index_;
 
 	bool TryThread(Seq<k + 1> &kmer, vector<EdgeId> &passed,
 			size_t &endPosition) const {
@@ -785,7 +826,7 @@ private:
 
 public:
 	SimpleSequenceMapper(const Graph& g,
-			const de_bruijn::DeBruijnPlus<k + 1, EdgeId> &index) :
+			const Index& index) :
 		g_(g), index_(index) {
 	}
 

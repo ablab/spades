@@ -5,62 +5,36 @@
  *      Author: sergey
  */
 
-//#ifndef TEST_UTILS_HPP_
-//#define TEST_UTILS_HPP_
+#ifndef TEST_UTILS_HPP_
+#define TEST_UTILS_HPP_
+
+namespace de_bruijn_test {
+
+template <size_t k, class Stream>
+void ConstructGraph(EdgeGraph& graph, Stream& stream) {
+//	SimpleReaderWrapper<ReadStream> unitedStream(stream);
+//	DeBruijn debruijn(unitedStream);
+//	EdgeGraph g(k);
+//	de_bruijn::DeBruijnPlus<k + 1, EdgeId> &index = debruijn;
+//	de_bruijn::EdgeHashRenewer<k + 1, EdgeGraph> index_handler(g, index);
 //
-//#include "read.hpp"
-//#include "ireadstream.hpp"
-//#include <tr1/tuple>
+//	de_bruijn::CoverageHandler<EdgeGraph> coverageHandler(g);
+//	g.AddActionHandler(&coverageHandler);
 //
-//vector<Read> ReadFromFile() {
-//	LOGGER("d.test_utils");
-//	INFO("Reading " << readsfilename);
+//	stream.reset();
+//	CondenseGraph<ReadStream> (debruijn, g, index, stream, genome);
 //
-//	vector<Read> reads;
-//	ireadstream stream(readsfilename);
+//	stream.reset();
+//	PairedIndex paired_info_index(g, I);
 //
-//	while (!stream.eof()) {
-//		Read r;
-//		stream >> r;
-//		reads.push_back(r);
-//	}
+//	FillPairedIndex(paired_info_index, stream, index);
+//	ClipTips(g, index, genome, "tips_clipped.dot");
 //
-//	INFO("Closing " << readsfilename);
-//	stream.close();
+//	RemoveBulges(g, index, genome, "bulges_removed.dot");
 //
-//	return reads;
-//
-//}
-//
-//template<typename T>
-//struct PairHash {
-//	size_t operator()(pair<T, T> p) const {
-//		return hash<T> ()(p.first) + hash<T> ()(p.second);
-//	}
-//};
-//
-//template<typename T>
-//struct PairLess {
-//	bool operator()(pair<T, T> p1, pair<T, T> p2) const {
-//		return less<T> ()(p1.first, p2.first) ? true : (less<T> ()(p2.first,
-//				p1.first) ? false : less<T> ()(p1.second, p2.second));
-//	}
-//};
-//
-//std::string complement(const std::string& s) {
-//	return (!Sequence(s)).str();
-//}
-//
-//vector<Read> MakeReads(string *ss, size_t count) {
-//	vector<Read> ans;
-//	for (size_t i = 0; i < count; ++i) {
-//		Read r("", *ss, "");
-//		Read rcr("", ReverseComplement(*ss), "");
-//		ans.push_back(r);
-//		ans.push_back(rcr);
-//		ss++;
-//	}
-//	return ans;
-//}
-//
-//#endif /* TEST_UTILS_HPP_ */
+//	g.RemoveActionHandler(&index_handler);
+//	g.RemoveActionHandler(&coverageHandler);
+}
+
+}
+#endif /* TEST_UTILS_HPP_ */

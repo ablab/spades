@@ -20,7 +20,7 @@
 namespace edge_graph {
 
 typedef de_bruijn::DeBruijnPlus<K + 1, EdgeId> DeBruijn;
-typedef de_bruijn::DeBruijnPlus<K + 1, EdgeId> Index;
+typedef de_bruijn::EdgeIndex<K + 1, EdgeGraph> Index;
 typedef de_bruijn::Path<EdgeId> Path;
 typedef de_bruijn::PairedInfoIndex<EdgeGraph> PairedIndex;
 
@@ -119,9 +119,7 @@ void EdgeGraphTool(ReadStream& stream, const string& genome) { // actually, it's
 	INFO("DeBruijn graph constructed");
 
 	EdgeGraph g(K);
-	de_bruijn::DeBruijnPlus<K + 1, EdgeId> &index = debruijn;
-	de_bruijn::EdgeHashRenewer<K + 1, EdgeGraph> index_handler(g, index);
-	g.AddActionHandler(&index_handler);
+	de_bruijn::EdgeIndex<K + 1, EdgeGraph> index(g, debruijn);
 
 	de_bruijn::CoverageHandler<EdgeGraph> coverageHandler(g);
 	g.AddActionHandler(&coverageHandler);
@@ -139,7 +137,7 @@ void EdgeGraphTool(ReadStream& stream, const string& genome) { // actually, it's
 
 	RemoveBulges(g, index, genome, "bulges_removed.dot");
 
-	g.RemoveActionHandler(&index_handler);
+	g.RemoveActionHandler(&index);
 	g.RemoveActionHandler(&coverageHandler);
 
 	INFO("Tool finished")

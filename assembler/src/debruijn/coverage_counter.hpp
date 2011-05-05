@@ -20,10 +20,11 @@ template<size_t k, class Graph>
 class CoverageCounter {
 public:
 	typedef typename Graph::EdgeId EdgeId;
+	typedef typename de_bruijn::EdgeIndex<k + 1, Graph> Index;
 private:
 	Graph& g_;
 	const de_bruijn::SimpleSequenceMapper<k, Graph> threader_;
-	const de_bruijn::DeBruijnPlus<k + 1, EdgeId>& index_;
+	const Index& index_;
 
 	void processRead(Read read) {
 		de_bruijn::Path<EdgeId> path = threader_.MapSequence(
@@ -41,7 +42,7 @@ private:
 	}
 public:
 	CoverageCounter(Graph& g,
-			const de_bruijn::DeBruijnPlus<k + 1, EdgeId>& index) :
+			const Index& index) :
 		g_(g), threader_(g, index), index_(index) {
 	}
 

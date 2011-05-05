@@ -19,7 +19,7 @@ namespace edge_graph {
 template<size_t kmer_size_>
 class EdgeGraphConstructor {
 private:
-	typedef de_bruijn::DeBruijnPlus<kmer_size_ + 1, EdgeId> Index;
+	typedef de_bruijn::EdgeIndex<kmer_size_ + 1, EdgeGraph> Index;
 	typedef de_bruijn::DeBruijnPlus<kmer_size_ + 1, EdgeId> DeBruijn;
 	typedef Seq<kmer_size_> Kmer;
 	typedef Seq<kmer_size_ + 1> KPlusOneMer;
@@ -99,7 +99,6 @@ public:
 	}
 
 	void ConstructGraph(EdgeGraph &graph, Index &index) {
-		assert(&index == &origin_); // Index = DeBruijn
 		for (typename DeBruijn::map_iterator it = origin_.begin(); it != origin_.end(); it++) {
 			KPlusOneMer edge = it->first;
 			if (!index.containsInIndex(edge)) {

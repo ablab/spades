@@ -53,7 +53,7 @@ public:
 	}
 
 	template<size_t kmer_size, class Stream>
-	void FillIndex(const DeBruijnPlus<kmer_size + 1, EdgeId>& index,
+	void FillIndex(const EdgeIndex<kmer_size + 1, Graph>& index,
 			Stream& stream) {
 		data_.clear();
 		de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin();
