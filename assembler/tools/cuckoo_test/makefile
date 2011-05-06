@@ -6,7 +6,7 @@ program: cuckoo_test.o sequence.o
 cuckoo_test.o:
 	rm -rf $(DIR)
 	mkdir $(DIR)
-	g++ -c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=c++0x   -I./../../src/common -I./../../src   cuckoo_test.cpp -o ../../build/tools/cuckoo_test/cuckoo_test.o
+	g++ -c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=c++0x   -I./../../src/common -I./../../src -I./..  cuckoo_test.cpp -o ../../build/tools/cuckoo_test/cuckoo_test.o
 
 sequence.o:
 	g++ -c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=c++0x   -I./../../src/common -I./../../src   ../../src/common/sequence.cpp -o ../../build/tools/cuckoo_test/sequence.o
