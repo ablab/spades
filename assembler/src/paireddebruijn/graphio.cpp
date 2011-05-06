@@ -131,7 +131,7 @@ void outputLongEdges(longEdgesMap &longEdges, PairedGraph &graph,
 	s.close();
 }
 
-Sequence readGenome(istream &is) {
+Sequence ReadGenome(istream &is) {
 	SequenceBuilder sb;
 	string buffer;
 	while(!is.eof()){
@@ -141,10 +141,10 @@ Sequence readGenome(istream &is) {
 	return sb.BuildSequence();
 }
 
-Sequence readGenomeFromFile(const string &fileName) {
+Sequence ReadGenomeFromFile(const string &fileName) {
 	ifstream is;
 	is.open(fileName.c_str());
-	Sequence result(readGenome(is));
+	Sequence result(ReadGenome(is));
 	is.close();
 	return result;
 }
@@ -220,7 +220,7 @@ void outputLongEdgesThroughGenome(PairedGraph &graph, ostream &os) {
 	assert(k==l);
 	cerr << "Graph output through genome" << endl;
 	gvis::GraphPrinter<int> g("Paired_ext", os);
-	Sequence genome(readGenomeFromFile("data/input/MG1655-K12_cut.fasta"));
+	Sequence genome(ReadGenomeFromFile("data/input/MG1655-K12_cut.fasta"));
 	cerr << "Try to process" << endl;
 	int gap = 0;
 	int edgeNum = 0;
