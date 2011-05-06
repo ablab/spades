@@ -41,28 +41,34 @@ void Analyses::init() {
         perror ("close");
         return;
     }
-
-    for (len = 0; len < sb.st_size; len++) {
-        if (p[len] == '\n') {
-            continue;
-        }
-        key += p[len];
-        if (key.length() == m_mer) {
-            if (m_data.count(key) > 0) {
-                m_data[key] += 1;
-            } else {
-                m_data[key] = 1;
+    if (m_algname == "") {
+        for (len = 0; len < sb.st_size; len++) {
+            if (p[len] == '\n') {
+                continue;
             }
-            key = key.substr(1);
+            key += p[len];
+            if (key.length() == m_mer) {
+                if (m_data.count(key) > 0) {
+                    m_data[key] += 1;
+                } else {
+                    m_data[key] = 1;
+                }
+                key = key.substr(1);
+            }
         }
     }
+    else {
+        std::map<std::string,  void (*)(char *, off_t, double, double)>::iterator it = m_algorithm.find(m_algname);
+        m_algorithm[m_algname](p, sb.st_size, 0.0, 0.0);
+    }
+
 
     if (munmap (p, sb.st_size) == -1) {
         perror ("munmap");
         return;
     }
     createDatFile();
-    paint();
+    //paint();
 }
 
 void Analyses::initFastTq() {
@@ -102,26 +108,31 @@ void Analyses::initFastTq() {
 
     int count = 1;
 
-    for (len = 0; len < sb.st_size; len++) {
-        if (p[len] == '\n') {
-            continue;
-        }
-        if (count == 2) {
-            key += p[len];
-            if (key.length() == m_mer) {
-                if (m_data.count(key) > 0) {
-                    m_data[key] += 1;
-                } else {
-                    m_data[key] = 1;
+    if (m_algname == "") {
+        for (len = 0; len < sb.st_size; len++) {
+            if (p[len] == '\n') {
+                continue;
+            }
+            if (count == 2) {
+                key += p[len];
+                if (key.length() == m_mer) {
+                    if (m_data.count(key) > 0) {
+                        m_data[key] += 1;
+                    } else {
+                        m_data[key] = 1;
+                    }
+                    key = key.substr(1);
                 }
-                key = key.substr(1);
+            }
+            if (count <= 3) {
+                ++count;
+            } else {
+                count = 1;
             }
         }
-        if (count <= 3) {
-            ++count;
-        } else {
-            count = 1;
-        }
+    } else {
+        std::map<std::string,  void (*)(char *, off_t, double, double)>::iterator it = m_algorithm.find(m_algname);
+        m_algorithm[m_algname](p, sb.st_size, 0.0, 0.0);
     }
 
     if (munmap (p, sb.st_size) == -1) {
@@ -129,7 +140,7 @@ void Analyses::initFastTq() {
         return;
     }
     createDatFile();
-    paint();
+    //paint();
 
 }
 
