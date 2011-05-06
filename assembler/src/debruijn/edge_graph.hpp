@@ -128,9 +128,6 @@ public:
 	typedef set<Vertex*>::const_iterator VertexIterator;
 	typedef Vertex::EdgeIterator EdgeIterator;
 	typedef de_bruijn::GraphActionHandler<EdgeGraph> ActionHandler;
-//	typedef de_bruijn::PairedActionHandler<EdgeGraph> PairedActionHandler;
-	//	typedef de_bruijn::SmartVertexIterator<EdgeGraph> SmartVertexIterator;
-	//	typedef de_bruijn::SmartEdgeIterator<EdgeGraph> SmartEdgeIterator;
 
 private:
 	const size_t k_;
@@ -297,10 +294,6 @@ public:
 	double coverage(EdgeId edge) const {
 		return (double) edge->coverage_ / length(edge);
 	}
-
-//	size_t KPlusOneMerCoverage(EdgeId edge) const {
-//		return edge->coverage_;
-//	}
 
 	void IncCoverage(EdgeId edge, int toAdd) {
 		edge->coverage_ += toAdd;
