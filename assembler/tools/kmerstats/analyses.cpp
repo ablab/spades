@@ -57,6 +57,8 @@ void Analyses::init() {
                 key = key.substr(1);
             }
         }
+        createDatFile();
+
     }
     else {
         m_algorithm[m_algname](p, sb.st_size, m_mer, 0.0, 0.0);
@@ -67,7 +69,6 @@ void Analyses::init() {
         perror ("munmap");
         return;
     }
-    createDatFile();
     paint();
 }
 
@@ -129,6 +130,8 @@ void Analyses::initFastTq() {
                 count = 1;
             }
         }
+        createDatFile();
+
     } else {
         m_algorithm[m_algname](p, sb.st_size, m_mer, 0.0, 0.0);
     }
@@ -137,7 +140,6 @@ void Analyses::initFastTq() {
         perror ("munmap");
         return;
     }
-    createDatFile();
     paint();
 }
 

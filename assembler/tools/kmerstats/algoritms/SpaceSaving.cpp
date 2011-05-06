@@ -1,4 +1,6 @@
 #include "SpaceSaving.h"
+#include "../AdditionalFunction.h"
+
 typedef std::pair<char, int> PairType;
 struct CompareSecond
 {
@@ -7,6 +9,10 @@ struct CompareSecond
         return left.second < right.second;
     }
 };
+
+void WrapperSpaceSaving(char *p, off_t size, int kmer, double k = 0.0, double l = 0.0) {
+    SpaceSaving(p, size, 30);
+}
 
 void SpaceSaving(char *p, off_t size, int k) {
     int n = 0;
@@ -26,15 +32,6 @@ void SpaceSaving(char *p, off_t size, int k) {
             m_count.erase(m_count.find(min.first));
         }
     }
-
-    std::cout << m_count.size() << std::endl;
-    std::map<char,int>::iterator it;
-    for ( it = m_count.begin() ; it != m_count.end(); ++it ) {
-        std::cout << (*it).first << " => " << (*it).second << std::endl;
-
-    }
+    createDatFile(m_count);
 }
 
-void WrapperSpaceSaving(char *p, off_t size, int kmer, double k = 0.0, double l = 0.0) {
-    SpaceSaving(p, size, 30);
-}
