@@ -14,6 +14,6 @@ void RunTestSuites() {
 
 int main() {
 //	RunTestSuites();
-//	de_bruijn_test::SimpleTool();
+//	string genome("AAAAAAAAA");
 	return 0;
 }

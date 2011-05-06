@@ -109,7 +109,7 @@ void FillCoverage(de_bruijn::CoverageHandler<EdgeGraph> coverage_handler, ReadSt
 }
 
 template<size_t k, class ReadStream>
-void EdgeGraphTool(ReadStream& stream, size_t insert_size, const string& genome) {
+void EdgeGraphTool(ReadStream& stream, const string& genome, const string& output_folder) {
 	typedef de_bruijn::DeBruijnPlus<k + 1, EdgeId> DeBruijn;
 	INFO("Edge graph construction tool started");
 
@@ -125,16 +125,16 @@ void EdgeGraphTool(ReadStream& stream, size_t insert_size, const string& genome)
 
 	de_bruijn::CoverageHandler<EdgeGraph> coverage_handler(g);
 	FillCoverage<k, UnitedStream> (coverage_handler, unitedStream, index);
-	ProduceInfo<k> (g, index, genome, "edge_graph.dot", "edge_graph");
+	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot", "edge_graph");
 
-	PairedIndex paired_index(g, insert_size);
+	PairedIndex paired_index(g);
 	FillPairedIndex<k, ReadStream> (paired_index, stream, index);
 
 	ClipTips(g);
-	ProduceInfo<k> (g, index, genome, "tips_clipped.dot", "no_tip_graph");
+	ProduceInfo<k> (g, index, genome, output_folder + "tips_clipped.dot", "no_tip_graph");
 
 	RemoveBulges(g);
-	ProduceInfo<k> (g, index, genome, "bulges_removed.dot", "no_bulge_graph");
+	ProduceInfo<k> (g, index, genome, output_folder + "bulges_removed.dot", "no_bulge_graph");
 
 	INFO("Tool finished")
 }

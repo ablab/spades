@@ -9,9 +9,7 @@
 //#define TEST_UTILS_HPP_
 //
 //#include "read_generator.hpp"
-//#include "edge_graph_constructor.hpp"
-//#include "coverage_handler.hpp"
-//#include "paired_info.hpp"
+//#include "launch.hpp"
 //
 //namespace de_bruijn_test {
 //
