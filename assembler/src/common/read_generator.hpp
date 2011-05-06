@@ -1,3 +1,6 @@
+/**
+ * @file read_generator.hpp
+ */
 #ifndef READGENERATOR_HPP_
 #define READGENERATOR_HPP_
 #include "iostream"
@@ -9,10 +12,7 @@
 #include "nucl.hpp"
 #include "read.hpp"
 
-/**
- * @file read_generator.hpp
- */
-
+namespace read_generator {
 #define MAX_PROBABILITY 10000
 using namespace std;
 
@@ -41,18 +41,18 @@ class ReadGenerator {
 private:
 	//	vector<ifaststream*> ifs_;
 	string genome_;
-	size_t size_;
 	size_t cnt_;
-	int minPosition_;
-	int maxPosition_;
+	size_t size_;
+	int min_position_;
+	int max_position_;
 	int coverage_;
-	int readNumber_;
-	int currentReadNumber_;
+	int read_count_;
+	int current_read_number_;
 	int insertLength_;
-	int errorProbability_; // Probability in percents
-	int errorDistribution_[3];
-	int insertError_;
-	bool readingStarted_;
+	int error_probability_; // Probability in percents
+	int error_distribution_[3];
+	int insert_error_;
+	bool reading_started_;
 	bool closed_;
 
 	double ErrorFreeProbability(int p, int length) {
@@ -61,41 +61,41 @@ private:
 	}
 
 	void inner_set_error_probability(int probability) {
-		if (readingStarted_) {
+		if (reading_started_) {
 			cerr << "can not change generator parameters while reading" << endl;
 			assert(1);
 		}
-		errorProbability_ = probability;
-		errorDistribution_[0] = ErrorFreeProbability(probability, size_);
-		errorDistribution_[1] = probability * size_ * ErrorFreeProbability(
+		error_probability_ = probability;
+		error_distribution_[0] = ErrorFreeProbability(probability, size_);
+		error_distribution_[1] = probability * size_ * ErrorFreeProbability(
 				probability, size_) / MAX_PROBABILITY;
-		errorDistribution_[2] = MAX_PROBABILITY - errorDistribution_[0]
-				- errorDistribution_[1];
+		error_distribution_[2] = MAX_PROBABILITY - error_distribution_[0]
+				- error_distribution_[1];
 	}
 
 	vector<Read> next_sr_;
 
 	void ReadAhead() {
 		if (is_open() && !eof()) {
-			int p = PositionChooser::choosePosition(currentReadNumber_,
-					readNumber_, minPosition_, maxPosition_);
-			for (int i = 0; i < cnt_; i++) {
-				int positionError = rand() % (2 * insertError_ + 1)
-						- insertError_;
-				string read = genome_.substr(p + positionError, size_);
+			int p = PositionChooser::choosePosition(current_read_number_,
+					read_count_, min_position_, max_position_);
+			for (size_t i = 0; i < cnt_; i++) {
+				int position_error = rand() % (2 * insert_error_ + 1)
+						- insert_error_;
+				string read = genome_.substr(p + position_error, size_);
 				IntroduceErrors(read);
 				next_sr_[i] = Read("", read, "");
 				p += size_ + insertLength_;
 			}
-			currentReadNumber_++;
+			current_read_number_++;
 		}
 	}
 
 	int NumberOfErrors() {
 		int dice = rand() % MAX_PROBABILITY;
-		if (dice < errorDistribution_[0])
+		if (dice < error_distribution_[0])
 			return 0;
-		if (dice < errorDistribution_[1] + errorDistribution_[0])
+		if (dice < error_distribution_[1] + error_distribution_[0])
 			return 1;
 		return 2;
 	}
@@ -111,9 +111,9 @@ private:
 	void InitParameters(int coverage, int insert) {
 		insertLength_ = insert;
 		coverage_ = coverage;
-		readNumber_ = coverage_ * genome_.size() / (size_ * cnt_);
-		currentReadNumber_ = 0;
-		readingStarted_ = false;
+		read_count_ = coverage_ * genome_.size() / (size_ * cnt_);
+		current_read_number_ = 0;
+		reading_started_ = false;
 		set_error_probability(0);
 		set_max_insert_length_error(0);
 	}
@@ -134,35 +134,40 @@ public:
 		InitParameters(coverage, insert);
 	}
 
+	void reset() {
+		reading_started_ = false;
+		current_read_number_ = 0;
+	}
+
 	void close() {
 		closed_ = true;
 	}
 
-	void set_rand_seed(unsigned int randSeed) {
-		srand(randSeed);
+	void set_rand_seed(unsigned int rand_seed) {
+		srand(rand_seed);
 	}
 
 	void set_error_probability(double probability) {
 		inner_set_error_probability((int) (probability * MAX_PROBABILITY));
 	}
 
-	void set_max_insert_length_error(int insertError) {
-		if (readingStarted_) {
+	void set_max_insert_length_error(int insert_error) {
+		if (reading_started_) {
 			cerr << "can not change generator parameters while reading" << endl;
 			assert(1);
 		}
-		insertError_ = insertError / 2;
-		maxPosition_ = genome_.size() - size_ * cnt_ - insertLength_ * (cnt_ - 1)
-				- insertError_;
-		minPosition_ = insertError_;
+		insert_error_ = insert_error / 2;
+		max_position_ = genome_.size() - size_ * cnt_ - insertLength_ * (cnt_ - 1)
+				- insert_error_;
+		min_position_ = insert_error_;
 	}
 
 	ReadGenerator& operator>>(vector<Read>& reads) {
 		if (eof()) {
 			return *this;
 		}
-		if (!readingStarted_) {
-			readingStarted_ = true;
+		if (!reading_started_) {
+			reading_started_ = true;
 			ReadAhead();
 		}
 		reads = next_sr_;
@@ -175,8 +180,8 @@ public:
 		if (eof()) {
 			return *this;
 		}
-		if (!readingStarted_) {
-			readingStarted_ = true;
+		if (!reading_started_) {
+			reading_started_ = true;
 			ReadAhead();
 		}
 		p_r = PairedRead(next_sr_[0], next_sr_[1], insertLength_ + 2 * size_);
@@ -191,8 +196,8 @@ public:
 		if (eof()) {
 			return *this;
 		}
-		if (!readingStarted_) {
-			readingStarted_ = true;
+		if (!reading_started_) {
+			reading_started_ = true;
 			ReadAhead();
 		}
 		r = next_sr_[0];
@@ -205,7 +210,7 @@ public:
 	}
 
 	bool eof() const {
-		return currentReadNumber_ >= readNumber_;
+		return current_read_number_ >= read_count_;
 	}
 
 //	vector<strobe_read<size, cnt, T> >* readAll(int number = -1) {
@@ -259,5 +264,5 @@ Sequence ReadGenomeFromFile(const string &fileName) {
 //	}
 //	os.close();
 //}
-
+}
 #endif /* READGENERATOR_HPP_ */

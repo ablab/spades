@@ -244,15 +244,15 @@ public:
 template<size_t k, class Graph>
 class EdgeIndex : public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
-	typedef de_bruijn::DeBruijnPlus<k, EdgeId> Index;
+	typedef de_bruijn::DeBruijnPlus<k, EdgeId> InnerIndex;
 	typedef Seq<k> Kmer;
 	Graph& g_;
-	Index& index_;
+	InnerIndex& inner_index_;
 	DataHashRenewer<k, Graph, EdgeId> renewer_;
 public:
 
-	EdgeIndex(Graph& g, Index &index) :
-		g_(g), index_(index), renewer_(g, index) {
+	EdgeIndex(Graph& g, InnerIndex& inner_index) :
+		g_(g), inner_index_(inner_index), renewer_(g, inner_index) {
 		g_.AddActionHandler(this);
 	}
 
@@ -269,15 +269,15 @@ public:
 	}
 
 	bool containsInIndex(const Kmer& kmer) const {
-		return index_.containsInIndex(kmer);
+		return inner_index_.containsInIndex(kmer);
 	}
 
 	const pair<EdgeId, size_t>& get(const Kmer& kmer) const {
-		return index_.get(kmer);
+		return inner_index_.get(kmer);
 	}
 
 	bool deleteIfEqual(const Kmer& kmer, EdgeId edge) {
-		return index_.deleteIfEqual(kmer, edge);
+		return inner_index_.deleteIfEqual(kmer, edge);
 	}
 };
 

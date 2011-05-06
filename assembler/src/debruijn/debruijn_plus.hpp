@@ -21,6 +21,7 @@
 namespace de_bruijn {
 LOGGER("d.utils");
 
+//todo return const modifiers to some methods (they are commented)
 template<size_t size_, typename Value>
 class DeBruijnPlus {
 private:
@@ -32,7 +33,7 @@ private:
                  typename KPlusOneMer::equal_to> map_type;
 	map_type nodes_;
 
-	bool contains(const KPlusOneMer &k) const {
+	bool contains(const KPlusOneMer &k) /*const*/ {
 		return nodes_.find(k) != nodes_.end();
 	}
 
@@ -134,13 +135,13 @@ public:
 
 	// INDEX:
 
-	bool containsInIndex(const KPlusOneMer &k) const {
-		map_const_iterator mci = nodes_.find(k);
+	bool containsInIndex(const KPlusOneMer &k) /*const*/ {
+		/*map_const_iterator */map_iterator mci = nodes_.find(k);
 		return (mci != nodes_.end()) && (mci->second.second != (size_t) -1);
 	}
 
-	const pair<Value, size_t>& get(const KPlusOneMer &k) const {
-		map_const_iterator mci = nodes_.find(k);
+	const pair<Value, size_t>& get(const KPlusOneMer &k) /*const*/ {
+		/*map_const_iterator*/map_iterator mci = nodes_.find(k);
 		assert(mci != nodes_.end()); // contains
 		return mci->second;
 	}
