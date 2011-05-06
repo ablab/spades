@@ -21,7 +21,7 @@ private:
     char *m_filename;
     char *m_algname;
 
-    std::map <std::string,  void (*)(char *, off_t, double, double) > m_algorithm;
+    std::map <std::string,  void (*)(char *, off_t, int, double, double) > m_algorithm;
     void createDatFile();
 
     void paint() {

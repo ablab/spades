@@ -14,7 +14,7 @@
 #include <algorithm>
 
 
-void WrapperDistinctElements(char *p, off_t size, double k, double l);
+void WrapperDistinctElements(char *p, off_t size, int kmer, double k, double l);
 
 void DistinctElements(char *p, off_t size);
 

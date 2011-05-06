@@ -1,7 +1,7 @@
 #include "CountMinSketch.h"
 #include <cmath>
 
-void WrapperCountMinSketch(char *p, off_t size, double k = 0.0, double l = 0.0) {
+void WrapperCountMinSketch(char *p, off_t size, int kmer, double k = 0.0, double l = 0.0) {
     CountMinSketch(p, size, 0.3, 0.2);
 }
 

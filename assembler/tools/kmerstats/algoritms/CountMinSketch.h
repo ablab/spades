@@ -13,7 +13,7 @@
 #include <algorithm>
 
 
-void WrapperCountMinSketch(char *p, off_t size, double k, double l);
+void WrapperCountMinSketch(char *p, off_t size, int kmer, double k, double l);
 
 void CountMinSketch(char *p, off_t size, double eps, double sigma);
 

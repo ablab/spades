@@ -58,8 +58,7 @@ void Analyses::init() {
         }
     }
     else {
-        std::map<std::string,  void (*)(char *, off_t, double, double)>::iterator it = m_algorithm.find(m_algname);
-        m_algorithm[m_algname](p, sb.st_size, 0.0, 0.0);
+        m_algorithm[m_algname](p, sb.st_size, m_mer, 0.0, 0.0);
     }
 
 
@@ -131,8 +130,7 @@ void Analyses::initFastTq() {
             }
         }
     } else {
-        std::map<std::string,  void (*)(char *, off_t, double, double)>::iterator it = m_algorithm.find(m_algname);
-        m_algorithm[m_algname](p, sb.st_size, 0.0, 0.0);
+        m_algorithm[m_algname](p, sb.st_size, m_mer, 0.0, 0.0);
     }
 
     if (munmap (p, sb.st_size) == -1) {

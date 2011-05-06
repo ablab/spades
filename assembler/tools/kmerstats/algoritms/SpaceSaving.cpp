@@ -35,6 +35,6 @@ void SpaceSaving(char *p, off_t size, int k) {
     }
 }
 
-void WrapperSpaceSaving(char *p, off_t size, double k = 0.0, double l = 0.0) {
+void WrapperSpaceSaving(char *p, off_t size, int kmer, double k = 0.0, double l = 0.0) {
     SpaceSaving(p, size, 30);
 }

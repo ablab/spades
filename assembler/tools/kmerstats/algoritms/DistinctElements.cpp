@@ -1,7 +1,7 @@
 #include "DistinctElements.h"
 #include <cmath>
 
-void WrapperDistinctElements(char *p, off_t size, double k, double l) {
+void WrapperDistinctElements(char *p, off_t size, int kmer, double k, double l) {
     DistinctElements(p, size);
 }
 

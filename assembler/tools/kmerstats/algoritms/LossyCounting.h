@@ -12,7 +12,7 @@
 #include <sys/mman.h>
 #include <algorithm>
 
-void WrapperLossyCounting(char *p, off_t size, double k = 0.0, double l = 0.0);
+void WrapperLossyCounting(char *p, off_t size, int kmer, double k = 0.0, double l = 0.0);
 
 void LossyCounting(char *p, off_t size, int k);
 

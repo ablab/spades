@@ -14,6 +14,6 @@
 
 void SpaceSaving(char *p, off_t size, int k);
 
-void WrapperSpaceSaving(char *p, off_t size, double k, double l);
+void WrapperSpaceSaving(char *p, off_t size, int kmer, double k, double l);
 
 #endif // SPACESAVING_H

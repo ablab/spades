@@ -50,7 +50,7 @@ CommandLine::CommandLine(char **argv, int argc) {
 
         case 'h':
         default:
-            std::cout << "Help: ./kmerstat -f <filename> -k <kmer>" << std::endl;
+            std::cout << "Help: ./kmerstat [-f|--file] <filename> [-k|--kmer] <kmer> [-a|--algoritm] <algoritm name>" << std::endl;
         }
     }
 

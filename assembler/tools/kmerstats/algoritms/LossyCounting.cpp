@@ -1,7 +1,7 @@
 #include "LossyCounting.h"
 
 
-void WrapperLossyCounting(char *p, off_t size, double k, double l) {
+void WrapperLossyCounting(char *p, off_t size, int kmer, double k, double l) {
     LossyCounting(p, size, 10);
 }
 

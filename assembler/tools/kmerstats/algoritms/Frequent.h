@@ -11,7 +11,7 @@
 #include <sys/mman.h>
 #include <algorithm>
 
-void WrapperFrequent(char *p, off_t size, double k, double l);
+void WrapperFrequent(char *p, off_t size, int kmer, double k, double l);
 
 void Frequent(char *p, off_t size, int k);
 
