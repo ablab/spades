@@ -1,8 +1,7 @@
 #include "visualization_utils.hpp"
 
-namespace edge_graph {
 
-void WriteToFile(const string& file_name, const string& graph_name,
+void edge_graph::WriteToFile(const string& file_name, const string& graph_name,
 		const EdgeGraph& g, de_bruijn::Path<EdgeId> path) {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
@@ -12,16 +11,14 @@ void WriteToFile(const string& file_name, const string& graph_name,
 	filestr.close();
 }
 
-void SimpleGraphVisualizer::Visualize(const EdgeGraph& g) {
+void edge_graph::SimpleGraphVisualizer::Visualize(const EdgeGraph& g) {
 	VisHandler h(g, gp_);
 	de_bruijn::DFS<EdgeGraph>(g).Traverse(&h);
 	gp_.output();
 }
 
-void ComplementGraphVisualizer::Visualize(const EdgeGraph& g) {
+void edge_graph::ComplementGraphVisualizer::Visualize(const EdgeGraph& g) {
 	ComplementVisHandler h(g, gp_);
 	de_bruijn::DFS<EdgeGraph>(g).Traverse(&h);
 	gp_.output();
-}
-
 }

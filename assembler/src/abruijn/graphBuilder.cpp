@@ -17,7 +17,7 @@ bool isTrusted(hash_t hash) {
 void GraphBuilder::findMinimizers(Sequence s) {
 	ha.resize(max(s.size(), ha.size()));
 	hashSym.kmers(s, ha);
-	for (size_t i = 0; i < htake; i++) {
+	for (size_t i = 0; i < htake_; i++) {
 		hbest[i] = hashing::kMax;
 	}
 	for (size_t i = 0; i + K <= s.size(); ++i) {
@@ -25,19 +25,19 @@ void GraphBuilder::findMinimizers(Sequence s) {
 		if (!isTrusted(hi)) {
 			continue;
 		}
-		size_t j = htake;
+		size_t j = htake_;
 		while (j > 0 && hi < hbest[j - 1]) {
 			--j;
 		}
-		if (j == htake || hi == hbest[j]) {
+		if (j == htake_ || hi == hbest[j]) {
 			continue;
 		}
-		for (size_t k = htake - 1; k > j; --k) {
+		for (size_t k = htake_ - 1; k > j; --k) {
 			hbest[k] = hbest[k - 1];
 		}
 		hbest[j] = hi;
 	}
-	for (size_t i = 0; i < htake && hbest[i] < hashing::kMax; i++) {
+	for (size_t i = 0; i < htake_ && hbest[i] < hashing::kMax; i++) {
 		earmarked_hashes.insert(hbest[i]);
 	}
 }
@@ -56,6 +56,7 @@ void GraphBuilder::findLocalMinimizers(Sequence s, size_t window_size) {
 	INFO("ha.size: " << ha.size());
 
 	/// compute the minimum hash-value in the first window
+	window_size=min(window_size, ha.size());
 	assert(window_size <= ha.size());
     hash_t current_min=*(std::min_element(ha.begin(), ha.begin()+window_size));
 
@@ -133,7 +134,7 @@ void GraphBuilder::revealTips(Sequence s) {
 
 void GraphBuilder::findTipExtensions(Sequence s) {
 	hashSym.kmers(s, ha);
-	vector<int> index;
+	vector<size_t> index;
 	for (size_t i = 0; i + K <= s.size(); ++i) {
 		hash_t hi = ha[i];
 		if (tips.count(hi)) {
@@ -144,7 +145,6 @@ void GraphBuilder::findTipExtensions(Sequence s) {
 		bool lesser = LesserK(s, index[i]);
 		int l = lesser ? 1 : 2;
 		hash_t hi = ha[index[i]];
-		TRACE(index[i] << " " << l << " " << (int) tips[hi]);
 		size_t low, high;
 		if (tips[hi] == l) {
 			low = 0;
@@ -161,7 +161,8 @@ void GraphBuilder::findTipExtensions(Sequence s) {
 			}
 			assert(!earmarked_hashes.count(hj));
 			has_right[hj] = 0;
-			tip_extensions[hi].insert(hj);
+			size_t dist = (j < index[i]) ? (index[i] - j) : (j - index[i]);
+			tip_extensions[hi].insert(make_pair(hj, dist));
 			x++;
 		}
 		TRACE(x << " possible continuations");
@@ -186,7 +187,7 @@ void GraphBuilder::lookRight(Sequence s) {
 	while (!earmarked_hashes.count(ha[high])) high--;
 	for (size_t i = 0; i < index.size(); ++i) {
 		hash_t hi = ha[index[i]];
-		bool lesser = LesserK(s, i);
+		bool lesser = LesserK(s, index[i]);
 		if (index[i] < high) {
 			has_right[hi] |= lesser ? 1 : 2;
 		}
@@ -206,117 +207,13 @@ void GraphBuilder::addToGraph(Sequence s) {
 	hashSym.kmers(s, ha);
 	for (size_t i = 0; i + K <= s.size(); i++) {
 		if (earmarked_hashes.find(ha[i]) != earmarked_hashes.end()) {
-			vs.push_back(graph.getVertex(s.Subseq(i, i + K)));
+			vs.push_back(graph_.getVertex(s.Subseq(i, i + K)));
 			index.push_back(i);
 		}
 	}
 	for (size_t i = 0; i + 1 < vs.size(); ++i) {
-		graph.addEdge(vs[i], vs[i + 1], s.Subseq(index[i], index[i + 1] + K));
+		graph_.addEdge(vs[i], vs[i + 1], s.Subseq(index[i], index[i + 1] + K));
 	}
-}
-
-Graph GraphBuilder::build() {
-	vector<Read> v;
-	Read r;
-
-	INFO("===== Finding " << htake << " minimizers in each read... =====");
-	srw_.reset();
-	for (size_t i = 0; !srw_.eof(); ++i) {
-		srw_ >> r;
-		if (mode_ & 1) {
-			findMinimizers(r.getSequence());
-		} else {
-			findLocalMinimizers(r.getSequence(), 51);
-		}
-		VERBOSE(i, " single reads");
-	}
-	INFO("Done: " << earmarked_hashes.size() << " earmarked hashes");
-
-	if ((mode_ & 2) && (htake == 1)) {
-		INFO("===== Finding second minimizers... =====");
-		srw_.reset();
-		for (size_t i = 0; !srw_.eof(); ++i) {
-			srw_ >> r;
-			findSecondMinimizer(r.getSequence());
-			VERBOSE(i, " single reads");
-		}
-		INFO("Done: " << earmarked_hashes.size() << " earmarked hashes");
-	}
-
-	for(;;) {
-		size_t eh = earmarked_hashes.size();
-		has_right.clear();
-		tips.clear();
-		tip_extensions.clear();
-
-		INFO("===== Revealing tips... =====");
-		srw_.reset();
-		for (size_t i = 0; !srw_.eof(); ++i) {
-			srw_ >> r;
-			revealTips(r.getSequence());
-			VERBOSE(i, " single reads");
-		}
-		for (map<hash_t, char>::iterator it = has_right.begin(); it != has_right.end(); ++it) {
-			if (it->second != 3) {
-				TRACE(it->first << " " << (int) it->second);
-				tips.insert(*it);
-			}
-		}
-		has_right.clear();
-		INFO("Done: " << tips.size() << " tips.");
-
-		INFO("===== Finding tip extensions... =====");
-		srw_.reset();
-		for (size_t i = 0; !srw_.eof(); ++i) {
-			srw_ >> r;
-			findTipExtensions(r.getSequence());
-			VERBOSE(i, " single reads");
-		}
-		INFO("Done: " << has_right.size() << " possible tip extensions");
-
-		INFO("===== Looking to the right... =====");
-		srw_.reset();
-		for (size_t i = 0; !srw_.eof(); ++i) {
-			srw_ >> r;
-			lookRight(r.getSequence());
-			VERBOSE(i, " single reads");
-		}
-		for (map<hash_t, set<hash_t> >::iterator it = tip_extensions.begin(); it != tip_extensions.end(); ++it) {
-			bool ok = false;
-			hash_t found = hashing::kMax;
-			for (set<hash_t>::iterator ext = it->second.begin(); ext != it->second.end(); ext++) {
-				if (earmarked_hashes.count(*ext)) {
-					ok = true;
-					break;
-				}
-				if (has_right[*ext] == 3 && found == hashing::kMax) {
-					found = *ext;
-				}
-			}
-			if (ok) {
-				continue;
-			}
-			earmarked_hashes.insert(found);
-		}
-		INFO("Done: " << eh << " -> " << earmarked_hashes.size() << " earmarked hashes");
-		if (eh == earmarked_hashes.size()) {
-			break;
-		}
-	}
-
-	INFO("Adding reads to graph as paths...");
-	srw_.reset();
-	for (size_t i = 0; !srw_.eof(); ++i) {
-		srw_ >> r;
-		addToGraph(r.getSequence());
-		VERBOSE(i, " single reads");
-	}
-	INFO("Done: " << graph.vertices.size() << " vertices");
-
-//	INFO("Condensing-A graph...");
-//	graph.condenseA();
-
-	return graph;
 }
 
 }

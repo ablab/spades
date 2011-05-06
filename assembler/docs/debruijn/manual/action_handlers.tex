@@ -1,0 +1,22 @@
+\section{Graph action handler}
+
+We widely use concept of listeners to provide consistency of different structures that contain graph info (coverage, paired info, smart iterators). Such structures are bind to graph with corresponding successor of de\_bruijn::GraphActionHandler<Graph> (in most of our implementations structure extends this class by itself).
+
+To register listener, use method AddActionHandler of EdgeGraph.
+
+To unbind listener, use method DeleteActionHandler.
+
+Graph fires 4 types of low-level and 3 types of high-level events. 
+
+Low-level events are vertex/edge addition/deletion. 
+
+High-level events are :
+\begin{itemize}
+\item compression (merge) of edge path into single edge
+\item split of single edge into two edges
+\item glue of two edges (edge contraction, when its info is transferred to another edge)
+\end{itemize}
+
+%Graph fires high-level events before corresponding low-level events.
+
+

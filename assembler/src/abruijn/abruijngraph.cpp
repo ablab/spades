@@ -74,17 +74,48 @@ Vertex* Graph::getVertex(const Sequence& kmer) {
 	return v->second->complement();
 }
 
-bool Graph::tryCondenseA(Vertex* v) {
+void Graph::Condense_single(Vertex* v) {
+	Vertex* u = v->edges().begin()->first;
+	Vertex* w = v->complement()->edges().begin()->first->complement();
+	assert(u != NULL);
+	assert(w != NULL);
+//	DEBUG(w->edges().count(u));
+//	assert(w->edges().count(u) == 0);
+	Edge e1 = w->edges()[v];
+	Edge e2 = v->edges()[w];
+	Edge e3 = e1.concat(e2);
+
+//	(w->edges())[u] = Edge();
+//	(w->edges())[u] = (w->edges())[u];
+//	cout << ((w->edges())[u] = Edge()) <<endl;
+//	w->edges()[u] = v->edges()[w].add(w->edges()[u]);
+	w->edges()[u] += e3;
+}
+
+bool Graph::Condense(Vertex* v) {
 	if (v->degree() != 1 || v->complement()->degree() != 1) {
 		return false;
 	}
+//	if (v->backward()->edges().count(v->forward()) != 0) {
+//		return false;
+//	}
+//	if (v->forward()->complement()->edges().count(v->backward()->complement()) != 0) {
+//		return false;
+//	}
+	assert(v->backward()->edges().count(v->forward()) == 0);
+	assert(v->forward()->complement()->edges().count(v->backward()->complement()) == 0);
+//	v->backward()->edges()[v->forward()].touch();
+//	v->forward()->complement()->edges()[v->backward()->complement()].touch();
+//	DEBUG("touched");
+//	Condense_single(v);
+//	Condense_single(v->complement());
+//	removeVertex(v);
+	return false;
 //	Vertex* w = v->complement()->edges_.begin()->first->complement();
 //	Vertex* u = v->edges_.begin()->first;
 //	for (;;) {
 //
 //	}
-	return true;
-
 
 //	Edge e = v->edges_.begin()->second;
 //	assert(u->complement()->edges_.begin()->first == v->complement());
@@ -119,14 +150,24 @@ bool Graph::tryCondenseA(Vertex* v) {
 //	return vu;
 }
 
-void Graph::condenseA() {
+void Graph::Condense() {
+	DEBUG(vertices.size() << " vertices");
 	int condensations = 0;
-	for (iterator v = begin(); v != end(); ++v) {
-		if (tryCondenseA(*v)) {
-			condensations++;
+	for (;;) {
+		bool change = false;
+		for (iterator v = begin(); v != end(); ++v) {
+			if (Condense(*v)) {
+				condensations++;
+				change = true;
+			}
+		}
+		cleanup();
+		INFO(condensations << " condensations");
+		if (!change) {
+			break;
 		}
 	}
-	cleanup();
+	DEBUG(vertices.size() << " vertices");
 }
 
 void Graph::cleanup() {
@@ -153,7 +194,9 @@ void Graph::output(std::ofstream &out, bool paired) {
 	if (paired) {
 		gvis::PairedGraphPrinter<Vertex*> printer(name, out);
 		for (Vertices::iterator v = vertices.begin(); v != vertices.end(); ++v) {
-			printer.addVertex(*v, toString(**v), (*v)->complement(), toString(*((*v)->complement())));
+			if ((*v)->data() < (*v)->complement()->data()) {
+				printer.addVertex(*v, toString(**v), (*v)->complement(), toString(*((*v)->complement())));
+			}
 			for (Edges::iterator it = (*v)->edges().begin(); it != (*v)->edges().end(); ++it) {
 				printer.addEdge(make_pair(*v, (*v)->complement()), make_pair(it->first, it->first->complement()), toString(it->second));
 			}

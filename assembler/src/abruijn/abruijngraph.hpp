@@ -92,28 +92,61 @@ typedef FrequencyProfile Profile;
 ostream& operator<< (ostream& os, const Profile& p);
 
 /**
-* @see Sequence
-*/
+ * @see Sequence
+ */
 class Edge {
-	map<size_t, size_t> lengths_;
+	typedef map<size_t, size_t> Lengths;
+	Lengths lengths_;
 public:
 	ostream& output(ostream& os) const {
 		for (map<size_t, size_t>::const_iterator it = lengths_.begin(); it != lengths_.end(); it++) {
-//			os << (int) (it->first - K) << ";";
-			os << (int) (it->first - K) << "(*" << it->second << ");";
+			os << (int) (it->first /*- K*/) << "(*" << it->second << ");";
 		}
 		return os;
 	}
 
-	void addSequence(const Sequence& seq) {
-		lengths_[seq.size() - K]++;
+	void addSequence(const Sequence& seq, size_t quantity = 1) {
+		size_t length = seq.size() - K;
+		lengths_[length] += length * quantity;
+	}
+
+//	void touch() {
+//		lengths_[7] += 7;
+//	}
+
+	Edge& operator+=(Edge& edge) {
+//		for (Lengths::const_iterator it = edge.lengths_.begin(); it != edge.lengths_.end(); ++it) {
+//			lengths_[it->first] += it->second;
+//		}
+		return *this;
+	}
+
+	Edge add(const Edge& edge) {
+		Edge r;
+		for (Lengths::const_iterator it = lengths_.begin(); it != lengths_.end(); ++it) {
+			r.lengths_[it->first] += it->second;
+		}
+		for (Lengths::const_iterator it = edge.lengths_.begin(); it != edge.lengths_.end(); ++it) {
+			r.lengths_[it->first] += it->second;
+		}
+		return r;
+	}
+
+	Edge concat(const Edge& edge) {
+		Edge r;
+		for (Lengths::const_iterator it = lengths_.begin(); it != lengths_.end(); ++it) {
+			for (Lengths::const_iterator it2 = edge.lengths_.begin(); it2 != edge.lengths_.end(); ++it2) {
+				r.lengths_[it->first + it2->first] += it->second + it2->second;
+			}
+		}
+		return r;
 	}
 };
 
 /**
-* @see Profile
-* @see Sequence
-*/
+ * @see Profile
+ * @see Sequence
+ */
 class ProfileEdge {
 	map<size_t, Profile> long_;
 	// minus keys
@@ -187,6 +220,20 @@ public:
 		return edges_.size();
 	}
 
+	/**
+	 * Returns ANY right neighbour
+	 */
+	Vertex* forward() const {
+		return edges_.begin()->first;
+	}
+
+	/**
+	 * Returns ANY left neighbour
+	 */
+	Vertex* backward() const {
+		return complement_->forward()->complement_;
+	}
+
 	const Sequence data() const {
 		return data_;
 	}
@@ -228,7 +275,7 @@ public:
 	Vertices vertices;
 	Vertices removedVertices;
 
-	Graph() {}
+	Graph() : vertex_is_alive(*this) {}
 	Vertex* createVertex(const Sequence& kmer);
 	void addEdge(Vertex* from, Vertex* to, const Sequence& seq);
 	void removeVertex(Vertex* v);
@@ -236,8 +283,9 @@ public:
 	bool hasVertex(const Sequence& kmer);
 	Vertex* getVertex(const Sequence& kmer);
 
-	void condenseA();
-	bool tryCondenseA(Vertex* v);
+	void Condense();
+	bool Condense(Vertex* v);
+	void Condense_single(Vertex* v);
 	void cleanup();
 	void stats();
 
@@ -252,12 +300,14 @@ public:
 			return (graph_.removedVertices.count(v) == 0) && (graph_.vertices.count(v) > 0);
 		}
 	};
+	VertexIsAlive vertex_is_alive;
+
 	typedef filter_iterator<Vertices::iterator, VertexIsAlive> iterator;
 	iterator begin() {
-		return iterator(vertices.begin(), vertices.end(), VertexIsAlive(*this));
+		return iterator(vertices.begin(), vertices.end(), vertex_is_alive);
 	}
 	iterator end() {
-		return iterator(vertices.end(), vertices.end(), VertexIsAlive(*this));
+		return iterator(vertices.end(), vertices.end(), vertex_is_alive);
 	}
 };
 

@@ -1,0 +1,9 @@
+This is a set of tools developed for reads correction evaluation.
+
+At the moment it consists of two parts: first one is bowtie output translator, and the second one is general comparator. Basically, translator converts files which were obtained from bowtie aligner to .fastq format (in order to make comparison possible, since bowtie provides original reads and their position in the genome, while we need reads, corrected according to reference genome). After that, comparator scans files containing corrected reads, original reads, and aligned reads (along with the reads that failed to align) , looking for the differences between them, and providing detailed description on what it finds.
+
+For using instructions just run any script with -h (or --help) parameter.
+
+You can use .gz archives as input files.
+
+It is written in python and requires following libraries: biopython, numpy, matplotlib.

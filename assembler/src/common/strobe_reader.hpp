@@ -70,23 +70,20 @@ struct SingleReader {
 	typedef StrobeReader<1, T, TR> type;
 };
 
-template<typename T, typename TR>
+template<typename TR>
 class CuttingReader {
 	TR reader_;
 	size_t cut_;
 	size_t read_;
-
+public:
 	CuttingReader(TR reader, size_t cut = -1) : reader_(reader), cut_(cut), read_(0) {}
-
-	virtual ~CuttingReader() {
-		close();
-		delete reader_;
-	}
+	virtual ~CuttingReader() {}
 
 	bool eof() const {
 		return read_ == cut_ || reader_.eof();
 	}
 
+	template<typename T>
 	CuttingReader& operator>>(T& v) {
 		reader_ >> v;
 		++read_;
