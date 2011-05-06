@@ -2,10 +2,10 @@
 #include <cmath>
 
 void WrapperCountMinSketch(char *p, off_t size, int kmer, double k = 0.0, double l = 0.0) {
-    CountMinSketch(p, size, 0.3, 0.2);
+    CountMinSketch(p, size, 0.3, 0.95, kmer);
 }
 
-void CountMinSketch(char *p, off_t size, double eps, double sigma) {
+void CountMinSketch(char *p, off_t size, double eps, double sigma, int kmer) {
     int w = 2.718281/eps + 1;
     int d = log(1 / sigma) + 1;
 
@@ -18,15 +18,19 @@ void CountMinSketch(char *p, off_t size, double eps, double sigma) {
             m_count[i][j] = 0;
         }
     }
-
+    int count = 0;
     for (off_t len = 0; len < size; ++len) {
-        for (int j = 0; j < d; j++) {
-            int r = p[len] % w;
-            m_count[j][r] += 1;
+        if (count == kmer) {
+            for (int j = 0; j < d; j++) {
+                int r = p[len] % w;
+                m_count[j][r] += 1;
+            }
+            --count;
         }
-    }
+        ++count;
+   }
 
-    int t = 's' % w;
+    int t = 'A' % w;
     int min = m_count[0][t];
     for (int i = 0; i < d; ++i) {
         if (min < m_count[i][t]) {
