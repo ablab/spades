@@ -43,49 +43,49 @@ const vector<EdgeId> EdgeGraph::IncomingEdges(VertexId v) const {
 void EdgeGraph::FireAddVertex(VertexId v) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyAdd(*it, v);
+		applier_.ApplyAdd(*it, v);
 	}
 }
 
 void EdgeGraph::FireAddEdge(EdgeId edge) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyAdd(*it, edge);
+		applier_.ApplyAdd(*it, edge);
 	}
 }
 
 void EdgeGraph::FireDeleteVertex(VertexId v) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyDelete(*it, v);
+		applier_.ApplyDelete(*it, v);
 	}
 }
 
 void EdgeGraph::FireDeleteEdge(EdgeId edge) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyDelete(*it, edge);
+		applier_.ApplyDelete(*it, edge);
 	}
 }
 
 void EdgeGraph::FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyMerge(*it, oldEdges, newEdge);
+		applier_.ApplyMerge(*it, oldEdges, newEdge);
 	}
 }
 
 void EdgeGraph::FireGlue(EdgeId edge1, EdgeId edge2) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyGlue(*it, edge1, edge2);
+		applier_.ApplyGlue(*it, edge1, edge2);
 	}
 }
 
 void EdgeGraph::FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplySplit(*it, edge, newEdge1, newEdge2);
+		applier_.ApplySplit(*it, edge, newEdge1, newEdge2);
 	}
 }
 

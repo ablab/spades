@@ -132,7 +132,7 @@ public:
 private:
 	const size_t k_;
 
-	const HandlerApplier<EdgeGraph> *applier_;
+	const PairedHandlerApplier<EdgeGraph> applier_;
 
 	vector<ActionHandler*> action_handler_list_;
 
@@ -205,7 +205,7 @@ public:
 	 * @param k Main parameter that defines the size of k-mers
 	 * //@param action_handler Graph actions handler
 	 */
-	EdgeGraph(size_t k) : k_(k), applier_(new PairedHandlerApplier<EdgeGraph>(*this)) {
+	EdgeGraph(size_t k) : k_(k) , applier_(*this) {
 		assert(k % 2 == 1);
 	}
 
@@ -216,7 +216,6 @@ public:
 		while (!vertices_.empty()) {
 			ForceDeleteVertex(*vertices_.begin());
 		}
-		delete applier_;
 	}
 
 	size_t k() {
