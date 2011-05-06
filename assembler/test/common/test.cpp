@@ -13,7 +13,6 @@
 #include "similarTest.hpp"
 #include "cuckooTest.hpp"
 #include "trieTest.hpp"
-#include "seq_filterTest.hpp"
 #include "structuresTest.hpp"
 //TODO function readGenomeFromFile is declared outside common directory
 //typedef long long ll; //???
@@ -35,7 +34,6 @@ void runSuite() {
   //s += ReadGeneratorSuite();
   //The next test causes segmentation fault
   //s += TrieSuite();
-  s += SeqFilterSuite();
   //The next test is correct but needs time
   //s += StructuresSuite();
   cute::ide_listener lis;

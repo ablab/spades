@@ -110,6 +110,10 @@ public:
 		lengths_[length] += length * quantity;
 	}
 
+//	void touch() {
+//		lengths_[7] += 7;
+//	}
+
 	Edge& operator+=(Edge& edge) {
 //		for (Lengths::const_iterator it = edge.lengths_.begin(); it != edge.lengths_.end(); ++it) {
 //			lengths_[it->first] += it->second;
@@ -214,6 +218,20 @@ public:
 
 	int degree() const {
 		return edges_.size();
+	}
+
+	/**
+	 * Returns ANY right neighbour
+	 */
+	Vertex* forward() const {
+		return edges_.begin()->first;
+	}
+
+	/**
+	 * Returns ANY left neighbour
+	 */
+	Vertex* backward() const {
+		return complement_->forward()->complement_;
 	}
 
 	const Sequence data() const {

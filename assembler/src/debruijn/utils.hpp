@@ -54,23 +54,24 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 
 	virtual void
-	ApplyHandleAdd(GraphActionHandler<Graph> *handler, VertexId v) const = 0;
+	ApplyAdd(GraphActionHandler<Graph> *handler, VertexId v) const = 0;
 
-	virtual void ApplyHandleAdd(GraphActionHandler<Graph> *handler, EdgeId e) const = 0;
+	virtual void
+	ApplyAdd(GraphActionHandler<Graph> *handler, EdgeId e) const = 0;
 
-	virtual void ApplyHandleDelete(GraphActionHandler<Graph> *handler,
+	virtual void ApplyDelete(GraphActionHandler<Graph> *handler,
 			VertexId v) const = 0;
 
 	virtual void
-	ApplyHandleDelete(GraphActionHandler<Graph> *handler, EdgeId e) const = 0;
+	ApplyDelete(GraphActionHandler<Graph> *handler, EdgeId e) const = 0;
 
-	virtual void ApplyHandleMerge(GraphActionHandler<Graph> *handler,
+	virtual void ApplyMerge(GraphActionHandler<Graph> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const = 0;
 
-	virtual void ApplyHandleGlue(GraphActionHandler<Graph> *handler,
+	virtual void ApplyGlue(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge) const = 0;
 
-	virtual void ApplyHandleSplit(GraphActionHandler<Graph> *handler,
+	virtual void ApplySplit(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const = 0;
 
 	virtual ~HandlerApplier() {
@@ -83,34 +84,34 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
-	virtual void ApplyHandleAdd(GraphActionHandler<Graph> *handler, VertexId v) const {
+	virtual void ApplyAdd(GraphActionHandler<Graph> *handler, VertexId v) const {
 		handler.HandleAdd(v);
 	}
 
-	virtual void ApplyHandleAdd(GraphActionHandler<Graph> *handler, EdgeId e) const {
+	virtual void ApplyAdd(GraphActionHandler<Graph> *handler, EdgeId e) const {
 		handler.HandleAdd(e);
 	}
 
-	virtual void ApplyHandleDelete(GraphActionHandler<Graph> *handler,
+	virtual void ApplyDelete(GraphActionHandler<Graph> *handler,
 			VertexId v) const {
 		handler.HandleDelete(v);
 	}
 
-	virtual void ApplyHandleDelete(GraphActionHandler<Graph> *handler, EdgeId e) const {
+	virtual void ApplyDelete(GraphActionHandler<Graph> *handler, EdgeId e) const {
 		handler.HandleDelete(e);
 	}
 
-	virtual void ApplyHandleMerge(GraphActionHandler<Graph> *handler,
+	virtual void ApplyMerge(GraphActionHandler<Graph> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const {
 		handler.HandleMerge(old_edges, new_edge);
 	}
 
-	virtual void ApplyHandleGlue(GraphActionHandler<Graph> *handler,
+	virtual void ApplyGlue(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge) const {
 		handler.HandleGlue(old_edge, new_edge);
 	}
 
-	virtual void ApplyHandleSplit(GraphActionHandler<Graph> *handler,
+	virtual void ApplySplit(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) const {
 		handler.HandleSplit(old_edge, new_edge1, new_edge2);
 	}
@@ -131,21 +132,21 @@ public:
 		graph_(graph) {
 	}
 
-	virtual void ApplyHandleAdd(GraphActionHandler<Graph> *handler, VertexId v) const {
+	virtual void ApplyAdd(GraphActionHandler<Graph> *handler, VertexId v) const {
 		VertexId rcv = graph_.Complement(v);
 		handler->HandleAdd(v);
 		if (v != rcv)
 			handler->HandleAdd(rcv);
 	}
 
-	virtual void ApplyHandleAdd(GraphActionHandler<Graph> *handler, EdgeId e) const {
+	virtual void ApplyAdd(GraphActionHandler<Graph> *handler, EdgeId e) const {
 		EdgeId rce = graph_.Complement(e);
 		handler->HandleAdd(e);
 		if (e != rce)
 			handler->HandleAdd(rce);
 	}
 
-	virtual void ApplyHandleDelete(GraphActionHandler<Graph> *handler,
+	virtual void ApplyDelete(GraphActionHandler<Graph> *handler,
 			VertexId v) const {
 		VertexId rcv = graph_.Complement(v);
 		handler->HandleDelete(v);
@@ -153,19 +154,19 @@ public:
 			handler->HandleDelete(rcv);
 	}
 
-	virtual void ApplyHandleDelete(GraphActionHandler<Graph> *handler, EdgeId e) const {
+	virtual void ApplyDelete(GraphActionHandler<Graph> *handler, EdgeId e) const {
 		EdgeId rce = graph_.Complement(e);
 		handler->HandleDelete(e);
 		if (e != rce)
 			handler->HandleDelete(rce);
 	}
 
-	virtual void ApplyHandleMerge(GraphActionHandler<Graph> *handler,
+	virtual void ApplyMerge(GraphActionHandler<Graph> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const {
 		EdgeId rce = graph_.Complement(new_edge);
 		handler->HandleMerge(old_edges, new_edge);
 		if (new_edge != rce) {
-			vector < EdgeId > ecOldEdges;
+			vector<EdgeId> ecOldEdges;
 			for (int i = old_edges.size() - 1; i >= 0; i--) {
 				ecOldEdges.push_back(graph_.Complement(old_edges[i]));
 			}
@@ -173,7 +174,7 @@ public:
 		}
 	}
 
-	virtual void ApplyHandleGlue(GraphActionHandler<Graph> *handler,
+	virtual void ApplyGlue(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge) const {
 		EdgeId rcOldEdge = graph_.Complement(old_edge);
 		EdgeId rcNewEdge = graph_.Complement(new_edge);
@@ -186,7 +187,7 @@ public:
 			handler->HandleGlue(rcOldEdge, rcNewEdge);
 	}
 
-	virtual void ApplyHandleSplit(GraphActionHandler<Graph> *handler,
+	virtual void ApplySplit(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const {
 		EdgeId rce = graph_.Complement(old_edge);
 		handler->HandleSplit(old_edge, new_edge_1, new_edge2);
@@ -196,88 +197,6 @@ public:
 	}
 
 	virtual ~PairedHandlerApplier() {
-	}
-};
-
-template<class Graph>
-class PairedActionHandler: public GraphActionHandler<Graph> {
-private:
-	Graph &graph_;
-	GraphActionHandler<Graph> *handler_;
-public:
-	typedef GraphActionHandler<Graph> super;
-	typedef typename super::VertexId VertexId;
-	typedef typename super::EdgeId EdgeId;
-
-	PairedActionHandler(Graph &graph, GraphActionHandler<Graph> *handler) :
-		graph_(graph), handler_(handler) {
-	}
-
-	super *GetInnerActionhandler() {
-		return handler_;
-	}
-
-	virtual void HandleAdd(VertexId v) {
-		VertexId rcv = graph_.Complement(v);
-		handler_->HandleAdd(v);
-		if (v != rcv)
-			handler_->HandleAdd(rcv);
-	}
-
-	virtual void HandleAdd(EdgeId e) {
-		EdgeId rce = graph_.Complement(e);
-		handler_->HandleAdd(e);
-		if (e != rce)
-			handler_->HandleAdd(rce);
-	}
-
-	virtual void HandleDelete(VertexId v) {
-		VertexId rcv = graph_.Complement(v);
-		handler_->HandleDelete(v);
-		if (v != rcv)
-			handler_->HandleDelete(rcv);
-	}
-
-	virtual void HandleDelete(EdgeId e) {
-		EdgeId rce = graph_.Complement(e);
-		handler_->HandleDelete(e);
-		if (e != rce)
-			handler_->HandleDelete(rce);
-	}
-
-	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
-		EdgeId rce = graph_.Complement(newEdge);
-		handler_->HandleMerge(oldEdges, newEdge);
-		if (newEdge != rce) {
-			vector < EdgeId > ecOldEdges;
-			for (int i = oldEdges.size() - 1; i >= 0; i--) {
-				ecOldEdges.push_back(graph_.Complement(oldEdges[i]));
-			}
-			handler_->HandleMerge(ecOldEdges, rce);
-		}
-	}
-
-	virtual void HandleGlue(EdgeId oldEdge, EdgeId newEdge) {
-		EdgeId rcOldEdge = graph_.Complement(oldEdge);
-		EdgeId rcNewEdge = graph_.Complement(newEdge);
-		assert(oldEdge != newEdge);
-		assert(newEdge != rcNewEdge);
-		assert(graph_.EdgeStart(oldEdge) != graph_.EdgeEnd(oldEdge));
-		assert(graph_.EdgeStart(newEdge) != graph_.EdgeEnd(newEdge));
-		handler_->HandleGlue(oldEdge, newEdge);
-		if (oldEdge != rcOldEdge)
-			handler_->HandleGlue(rcOldEdge, rcNewEdge);
-	}
-
-	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
-		EdgeId rce = graph_.Complement(oldEdge);
-		handler_->HandleSplit(oldEdge, newEdge1, newEdge2);
-		if (oldEdge != rce)
-			handler_->HandleSplit(rce, graph_.Complement(newEdge2),
-					graph_.Complement(newEdge1));
-	}
-
-	virtual ~PairedActionHandler() {
 	}
 };
 
@@ -322,16 +241,23 @@ public:
 	}
 };
 
-template<size_t kmer_size_, class Graph>
-class EdgeHashRenewer: public GraphActionHandler<Graph> {
-
+template<size_t k, class Graph>
+class EdgeIndex : public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
-	typedef de_bruijn::DeBruijnPlus<kmer_size_, EdgeId> Index;
-	DataHashRenewer<kmer_size_, Graph, EdgeId> renewer_;
-
+	typedef de_bruijn::DeBruijnPlus<k, EdgeId> Index;
+	typedef Seq<k> Kmer;
+	Graph& g_;
+	Index& index_;
+	DataHashRenewer<k, Graph, EdgeId> renewer_;
 public:
-	EdgeHashRenewer(const Graph& g, Index &index) :
-		renewer_(g, index) {
+
+	EdgeIndex(Graph& g, Index &index) :
+		g_(g), index_(index), renewer_(g, index) {
+		g_.AddActionHandler(this);
+	}
+
+	virtual ~EdgeIndex() {
+		g_.RemoveActionHandler(this);
 	}
 
 	virtual void HandleAdd(EdgeId e) {
@@ -340,6 +266,18 @@ public:
 
 	virtual void HandleDelete(EdgeId e) {
 		renewer_.HandleDelete(e);
+	}
+
+	bool containsInIndex(const Kmer& kmer) const {
+		return index_.containsInIndex(kmer);
+	}
+
+	const pair<EdgeId, size_t>& get(const Kmer& kmer) const {
+		return index_.get(kmer);
+	}
+
+	bool deleteIfEqual(const Kmer& kmer, EdgeId edge) {
+		return index_.deleteIfEqual(kmer, edge);
 	}
 };
 
@@ -351,7 +289,8 @@ class VertexHashRenewer: public GraphActionHandler<Graph> {
 	DataHashRenewer<kmer_size_, Graph, VertexId> renewer_;
 
 public:
-	VertexHashRenewer(const Graph& g, de_bruijn::DeBruijnPlus<kmer_size_, VertexId> *index) :
+	VertexHashRenewer(const Graph& g,
+			de_bruijn::DeBruijnPlus<kmer_size_, VertexId> *index) :
 		renewer_(g, index) {
 	}
 
@@ -369,8 +308,6 @@ class NoInfo {
 /**
  * Stub base class for handling graph primitives during traversal.
  */
-//template<typename VertexId, typename EdgeId>
-//todo talk with Anton
 template<class Graph, class Info = NoInfo *>
 class TraversalHandler {
 public:
@@ -443,7 +380,7 @@ void DFS<Graph>::ProcessVertex(VertexId v, vector<VertexId>* stack,
 		h->HandleVertex(v);
 		visited_.insert(v);
 
-		vector < EdgeId > edges = super::g_.OutgoingEdges(v);
+		vector<EdgeId> edges = super::g_.OutgoingEdges(v);
 		for (size_t i = 0; i < edges.size(); ++i) {
 			EdgeId e = edges[i];
 			h->HandleEdge(e);
@@ -459,7 +396,7 @@ void DFS<Graph>::Traverse(TraversalHandler<Graph>* h) {
 	typedef typename Graph::VertexIterator VertexIt;
 
 	for (VertexIt it = super::g_.begin(); it != super::g_.end(); it++) {
-		vector < VertexId > stack;
+		vector<VertexId> stack;
 		stack.push_back(*it);
 		while (!stack.empty()) {
 			VertexId v = stack[stack.size() - 1];
@@ -729,11 +666,36 @@ template<size_t k, class Graph>
 class SimpleSequenceMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
+	typedef typename de_bruijn::EdgeIndex<k + 1, Graph> Index;
 private:
 	const Graph& g_;
-	const de_bruijn::DeBruijnPlus<k+1,EdgeId> &index_;
+	const Index &index_;
 
-	void processKmer(Seq<k+1> &kmer, vector<EdgeId> &passed, size_t &startPosition, size_t &endPosition) const {
+	bool TryThread(Seq<k + 1> &kmer, vector<EdgeId> &passed,
+			size_t &endPosition) const {
+		EdgeId last = passed[passed.size() - 1];
+		if (endPosition + 1 < g_.length(last)) {
+			if (g_.EdgeNucls(last)[endPosition + k + 1] == kmer[k]) {
+				endPosition++;
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			vector<EdgeId> edges = g_.OutgoingEdges(g_.EdgeEnd(last));
+			for (size_t i = 0; i < edges.size(); i++) {
+				if (g_.EdgeNucls(edges[i])[k] == kmer[k]) {
+					passed.push_back(edges[i]);
+					endPosition = 0;
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
+	bool FindKmer(Seq<k + 1> &kmer, vector<EdgeId> &passed,
+			size_t &startPosition, size_t &endPosition) const {
 		if (index_.containsInIndex(kmer)) {
 			pair<EdgeId, size_t> position = index_.get(kmer);
 			endPosition = position.second;
@@ -743,11 +705,24 @@ private:
 			if (passed.empty() || passed[passed.size() - 1] != position.first) {
 				passed.push_back(position.first);
 			}
+			return true;
+		}
+		return false;
+	}
+
+	bool ProcessKmer(Seq<k + 1> &kmer, vector<EdgeId> &passed,
+			size_t &startPosition, size_t &endPosition, bool valid) const {
+		if (valid) {
+			return TryThread(kmer, passed, endPosition);
+		} else {
+			return FindKmer(kmer, passed, startPosition, endPosition);
 		}
 	}
+
 public:
-	SimpleSequenceMapper(const Graph& g, const de_bruijn::DeBruijnPlus<k+1,EdgeId> &index) : g_(g), index_(index) {
-		;
+	SimpleSequenceMapper(const Graph& g,
+			const Index& index) :
+		g_(g), index_(index) {
 	}
 
 	de_bruijn::Path<EdgeId> MapSequence(const Sequence &read) const {
@@ -758,10 +733,13 @@ public:
 		Seq<k + 1> kmer = read.start<k + 1> ();
 		size_t startPosition = -1;
 		size_t endPosition = -1;
-		processKmer(kmer, passed, startPosition, endPosition);
+		bool valid = false;
+		valid = ProcessKmer(kmer, passed, startPosition, endPosition, valid);
 		for (size_t i = k + 1; i < read.size(); ++i) {
 			kmer = kmer << read[i];
-			processKmer(kmer, passed, startPosition, endPosition);
+			valid
+					= ProcessKmer(kmer, passed, startPosition, endPosition,
+							valid);
 		}
 		return de_bruijn::Path<EdgeId>(passed, startPosition, endPosition + 1);
 	}

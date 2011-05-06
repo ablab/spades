@@ -1,66 +1,56 @@
-/*
- * test_utils.hpp
- *
- *  Created on: Apr 10, 2011
- *      Author: sergey
- */
-
+///*
+// * test_utils.hpp
+// *
+// *  Created on: Apr 10, 2011
+// *      Author: sergey
+// */
+//
 //#ifndef TEST_UTILS_HPP_
 //#define TEST_UTILS_HPP_
 //
-//#include "read.hpp"
-//#include "ireadstream.hpp"
-//#include <tr1/tuple>
+//#include "read_generator.hpp"
+//#include "launch.hpp"
 //
-//vector<Read> ReadFromFile() {
-//	LOGGER("d.test_utils");
-//	INFO("Reading " << readsfilename);
+//namespace de_bruijn_test {
 //
-//	vector<Read> reads;
-//	ireadstream stream(readsfilename);
+//using edge_graph::EdgeGraph;
 //
-//	while (!stream.eof()) {
-//		Read r;
-//		stream >> r;
-//		reads.push_back(r);
-//	}
+//template <size_t k, class Stream>
+//void ConstructGraph(EdgeGraph& graph, Stream& stream) {
+//	typedef EdgeGraph::EdgeId EdgeId;
+//	typedef de_bruijn::DeBruijnPlus<k + 1, EdgeId> DeBruijn;
+//	typedef de_bruijn::PairedInfoIndex<EdgeGraph> PairedIndex;
 //
-//	INFO("Closing " << readsfilename);
-//	stream.close();
+//	SimpleReaderWrapper<Stream> unitedStream(stream);
+//	DeBruijn debruijn(unitedStream);
+//	EdgeGraph g(k);
+//	de_bruijn::EdgeIndex<k+1, EdgeGraph> index(g, debruijn);
 //
-//	return reads;
 //
+//	stream.reset();
+//	edge_graph::EdgeGraphConstructor<k> g_c(debruijn);
+//	g_c.ConstructGraph(g, index);
+//
+//	de_bruijn::CoverageHandler<EdgeGraph> coverageHandler(g);
+//	coverageHandler.FillCoverage(unitedStream, index);
+//
+//	stream.reset();
+//	PairedIndex paired_info_index(g, I);
+//
+//	paired_info_index.FillIndex<K, ReadStream> (index, stream);
+//	ClipTips(g, index, genome, "tips_clipped.dot");
+//
+//	RemoveBulges(g, index, genome, "bulges_removed.dot");
 //}
 //
-//template<typename T>
-//struct PairHash {
-//	size_t operator()(pair<T, T> p) const {
-//		return hash<T> ()(p.first) + hash<T> ()(p.second);
-//	}
-//};
-//
-//template<typename T>
-//struct PairLess {
-//	bool operator()(pair<T, T> p1, pair<T, T> p2) const {
-//		return less<T> ()(p1.first, p2.first) ? true : (less<T> ()(p2.first,
-//				p1.first) ? false : less<T> ()(p1.second, p2.second));
-//	}
-//};
-//
-//std::string complement(const std::string& s) {
-//	return (!Sequence(s)).str();
+//void SimpleTool(istream& is) {
+//	size_t size = 100;
+//	size_t coverage = 10;
+//	size_t gap = 10;
+//	ReadGenerator generator(2, size, is, coverage, gap);
+//	EdgeGraph g(5);
+////	ConstructGraph<5, ReadGenerator>(g, generator);
 //}
 //
-//vector<Read> MakeReads(string *ss, size_t count) {
-//	vector<Read> ans;
-//	for (size_t i = 0; i < count; ++i) {
-//		Read r("", *ss, "");
-//		Read rcr("", ReverseComplement(*ss), "");
-//		ans.push_back(r);
-//		ans.push_back(rcr);
-//		ss++;
-//	}
-//	return ans;
 //}
-//
 //#endif /* TEST_UTILS_HPP_ */

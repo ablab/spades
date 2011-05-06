@@ -28,9 +28,9 @@ inline bool nextReadPair(FILE* f, char * &read1, char * &read2) {
 	*/
 }
 
-Sequence readGenome(istream &is);
+Sequence ReadGenome(istream &is);
 
-Sequence readGenomeFromFile(const string &fileName);
+Sequence ReadGenomeFromFile(const string &fileName);
 
 
 ll extractMer(char *read, int shift, int length);

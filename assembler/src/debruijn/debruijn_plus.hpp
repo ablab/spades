@@ -24,30 +24,30 @@ LOGGER("d.utils");
 template<size_t size_, typename Value>
 class DeBruijnPlus {
 private:
-	typedef Seq<size_> Kmer;
-	typedef Seq<size_ - 1> KMinusOneMer;
-	//typedef std::tr1::unordered_map<Kmer, pair<Value, size_t> ,
-	//		typename Kmer::hash> map_type; // size_t is offset
-    typedef cuckoo<Kmer, pair<Value, size_t>, typename Kmer::multiple_hash,
-                 typename Kmer::equal_to> map_type; 
+	typedef Seq<size_> KPlusOneMer;
+	typedef Seq<size_ - 1> KMer;
+	//typedef std::tr1::unordered_map<KPlusOneMer, pair<Value, size_t> ,
+	//		typename KPlusOneMer::hash> map_type; // size_t is offset
+    typedef cuckoo<KPlusOneMer, pair<Value, size_t>, typename KPlusOneMer::multiple_hash,
+                 typename KPlusOneMer::equal_to> map_type;
 	map_type nodes_;
 
-	bool contains(const Kmer &k) const {
+	bool contains(const KPlusOneMer &k) const {
 		return nodes_.find(k) != nodes_.end();
 	}
 
 	// DE BRUIJN:
 
-	void addEdge(const Kmer &k) {
+	void addEdge(const KPlusOneMer &k) {
 		nodes_.insert(make_pair(k, make_pair(Value(), -1)));
 	}
 
 	void CountSequence(const Sequence& s) {
-		Seq<size_> kmer = s.start<size_> ();
-		addEdge(kmer);
+		Seq<size_> KPlusOneMer = s.start<size_> ();
+		addEdge(KPlusOneMer);
 		for (size_t j = size_; j < s.size(); ++j) {
-			kmer = kmer << s[j];
-			addEdge(kmer);
+			KPlusOneMer = KPlusOneMer << s[j];
+			addEdge(KPlusOneMer);
 		}
 	}
 
@@ -60,7 +60,7 @@ private:
 
 	// INDEX:
 
-	void putInIndex(const Kmer &k, Value id, size_t offset) {
+	void putInIndex(const KPlusOneMer &k, Value id, size_t offset) {
 		map_iterator mi = nodes_.find(k);
 		if (mi == nodes_.end()) {
 			nodes_.insert(make_pair(k, make_pair(id, offset)));
@@ -99,32 +99,32 @@ public:
 		return nodes_.end();
 	}
 
-	// number of incoming edges for kmer[1:]
-	char IncomingEdgeCount(const Kmer &kmer) {
-		Kmer kmer2 = kmer << 'A';
+	// number of incoming edges for KPlusOneMer[1:]
+	char IncomingEdgeCount(const KPlusOneMer &kPlusOneMer) {
+		KPlusOneMer kPlusOneMer2 = kPlusOneMer << 'A';
 		char res = 0;
 		for (char c = 0; c < 4; ++c) {
-			if (contains(kmer2 >> c)) {
+			if (contains(kPlusOneMer2 >> c)) {
 				res++;
 			}
 		}
 		return res;
 	}
 
-	// number of outgoing edges for kmer[:-1]
-	char OutgoingEdgeCount(const Kmer &kmer) {
+	// number of outgoing edges for KPlusOneMer[:-1]
+	char OutgoingEdgeCount(const KPlusOneMer &KPlusOneMer) {
 		char res = 0;
 		for (char c = 0; c < 4; ++c) {
-			if (contains(kmer << c)) {
+			if (contains(KPlusOneMer << c)) {
 				res++;
 			}
 		}
 		return res;
 	}
 
-	Kmer NextEdge(const Kmer &kmer) { // returns any next edge
+	KPlusOneMer NextEdge(const KPlusOneMer &kPlusOneMer) { // returns any next edge
 		for (char c = 0; c < 4; ++c) {
-			Kmer s = kmer << c;
+			KPlusOneMer s = kPlusOneMer << c;
 			if (contains(s)) {
 				return s;
 			}
@@ -134,18 +134,18 @@ public:
 
 	// INDEX:
 
-	bool containsInIndex(const Kmer &k) const {
+	bool containsInIndex(const KPlusOneMer &k) const {
 		map_const_iterator mci = nodes_.find(k);
 		return (mci != nodes_.end()) && (mci->second.second != (size_t) -1);
 	}
 
-	const pair<Value, size_t>& get(const Kmer &k) const {
+	const pair<Value, size_t>& get(const KPlusOneMer &k) const {
 		map_const_iterator mci = nodes_.find(k);
 		assert(mci != nodes_.end()); // contains
 		return mci->second;
 	}
 
-	bool deleteIfEqual(const Kmer &k, Value id) {
+	bool deleteIfEqual(const KPlusOneMer &k, Value id) {
 		map_iterator mi = nodes_.find(k);
 		if (mi != nodes_.end() && mi->second.first == id) {
 			nodes_.erase(mi);
@@ -156,7 +156,7 @@ public:
 
 	void RenewKmersHash(const Sequence& nucls, Value id) {
 		assert(nucls.size() >= size_);
-		Kmer k(nucls);
+		KPlusOneMer k(nucls);
 		putInIndex(k, id, 0);
 		for (size_t i = size_, n = nucls.size(); i < n; ++i) {
 			k = k << nucls[i];
@@ -166,7 +166,7 @@ public:
 
 	void DeleteKmersHash(const Sequence& nucls, Value id) {
 		assert(nucls.size() >= size_);
-		Kmer k(nucls);
+		KPlusOneMer k(nucls);
 		deleteIfEqual(k, id);
 		for (size_t i = size_, n = nucls.size(); i < n; ++i) {
 			k = k << nucls[i];

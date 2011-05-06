@@ -43,49 +43,49 @@ const vector<EdgeId> EdgeGraph::IncomingEdges(VertexId v) const {
 void EdgeGraph::FireAddVertex(VertexId v) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyHandleAdd(*it, v);
+		applier_.ApplyAdd(*it, v);
 	}
 }
 
 void EdgeGraph::FireAddEdge(EdgeId edge) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyHandleAdd(*it, edge);
+		applier_.ApplyAdd(*it, edge);
 	}
 }
 
 void EdgeGraph::FireDeleteVertex(VertexId v) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyHandleDelete(*it, v);
+		applier_.ApplyDelete(*it, v);
 	}
 }
 
 void EdgeGraph::FireDeleteEdge(EdgeId edge) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyHandleDelete(*it, edge);
+		applier_.ApplyDelete(*it, edge);
 	}
 }
 
 void EdgeGraph::FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyHandleMerge(*it, oldEdges, newEdge);
+		applier_.ApplyMerge(*it, oldEdges, newEdge);
 	}
 }
 
 void EdgeGraph::FireGlue(EdgeId edge1, EdgeId edge2) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyHandleGlue(*it, edge1, edge2);
+		applier_.ApplyGlue(*it, edge1, edge2);
 	}
 }
 
 void EdgeGraph::FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyHandleSplit(*it, edge, newEdge1, newEdge2);
+		applier_.ApplySplit(*it, edge, newEdge1, newEdge2);
 	}
 }
 
@@ -271,7 +271,9 @@ pair<EdgeId, EdgeId> EdgeGraph::SplitEdge(EdgeId edge, size_t position) {
 }
 
 void EdgeGraph::GlueEdges(EdgeId edge1, EdgeId edge2) {
+	FireDeleteEdge(edge2);
 	FireGlue(edge1, edge2);
+	FireAddEdge(edge2);
 	VertexId start = EdgeStart(edge1);
 	VertexId end = EdgeEnd(edge1);
 	DeleteEdge(edge1);
