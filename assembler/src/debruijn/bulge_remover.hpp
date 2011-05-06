@@ -18,7 +18,7 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	void RemoveBulges(Graph& g);
 
-	BulgeRemover(size_t max_length = 5 * K, double coverage_threshold = 1000.,
+	BulgeRemover(size_t max_length, double coverage_threshold = 1000.,
 			double coverage_gap = 1.1, double delta_threshold = 4, double relative_delta = 0.1) :
 		max_length_(max_length), coverage_threshold_(coverage_threshold),
 				coverage_gap_(coverage_gap), delta_threshold_(delta_threshold), relative_delta_(relative_delta) {

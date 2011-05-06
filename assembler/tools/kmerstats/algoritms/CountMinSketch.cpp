@@ -1,16 +1,10 @@
-#ifndef COUNTMINSKETCHE_H
-#define COUNTMINSKETCHE_H
+#include "CountMinSketch.h"
+#include <cmath>
 
-#include <iostream>
-#include <vector>
-#include <map>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <algorithm>
+void WrapperCountMinSketch(char *p, off_t size, double k = 0.0, double l = 0.0) {
+    CountMinSketch(p, size, 0.3, 0.2);
+}
+
 void CountMinSketch(char *p, off_t size, double eps, double sigma) {
     int w = 2.718281/eps + 1;
     int d = log(1 / sigma) + 1;
@@ -48,5 +42,3 @@ void CountMinSketch(char *p, off_t size, double eps, double sigma) {
     delete[] m_count;
 }
 
-
-#endif // COUNTMINSKETCHE_H

@@ -11,32 +11,8 @@
 #include <sys/mman.h>
 #include <algorithm>
 
-void Frequent(char *p, off_t size, int k) {
-    int n = 0;
-    std::map<char, int> m_count;
-    for (off_t len = 0; len < size; ++len) {
-        n++;
-        if (m_count.find(p[len]) == m_items.end()) {
-            ++m_count[ p[len] ];
-        } else if (m_items.size() < k - 1) {
-            m_count[ p[len] ] = 1;
-        } else {
-            std::map<char,int>::iterator it;
-            for ( it = m_count.begin() ; it != m_count.end(); ++it ) {
-                --(*it).second;
-                if ((*it).second == 0) {
-                    m_count.erase(it);
-                }
-            }
-        }
-    }
+void WrapperFrequent(char *p, off_t size, double k, double l);
 
-    std::map<char,int>::iterator it;
-    for ( it = m_count.begin() ; it != m_count.end(); ++it ) {
-        std::cout << (*it).first << " => " << (*it).second << std::endl;
-
-    }
-}
-
+void Frequent(char *p, off_t size, int k);
 
 #endif // FREQUENT_H
