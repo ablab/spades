@@ -188,7 +188,7 @@ private:
     return get_exists(pos) && Pred()(data_from(pos).first, k); 
   }
 
-  inline size_t hash(const Key &k, size_t hash_num) {
+  inline size_t hash(const Key &k, size_t hash_num) const {
     return Hash()(k, hash_num) % len_part_;
   }
   
@@ -331,7 +331,7 @@ public:
     return iterator(len_, this);
   }
 
-  /*inline const_iterator begin() const {
+  inline const_iterator begin() const {
     const_iterator it = const_iterator(0, this);
     if (!get_exists(it.pos)) ++it;
     return it;
@@ -339,7 +339,7 @@ public:
   
   inline const_iterator end() const {
     return const_iterator(len_, this);
-    }*/
+  }
 
   Value& operator[](const Key& k) {
     iterator it = find(k);
@@ -378,7 +378,7 @@ public:
     return end();
   }
   
-  /*const_iterator find(const Key& k) const {
+  const_iterator find(const Key& k) const {
     for (size_t i = 0; i < d_; ++i) {
       size_t pos = hash(k, i);
       if (is_here(k, i * len_part_ + pos)) {
@@ -386,7 +386,7 @@ public:
       }
     }
     return end();
-    }*/
+  }
   
   // Returns iterator to the value and true if new value was inserted
   // and false otherwise.
