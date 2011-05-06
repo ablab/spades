@@ -152,10 +152,10 @@ void EdgeGraph::DeleteEdge(EdgeId edge) {
 	VertexId start = Complement(rcEdge->end());
 	start->RemoveOutgoingEdge(edge);
 	rcStart->RemoveOutgoingEdge(rcEdge);
-	delete edge;
 	if (edge != rcEdge) {
 		delete rcEdge;
 	}
+	delete edge;
 }
 
 bool EdgeGraph::AreLinkable(VertexId v1, VertexId v2, const Sequence &nucls) const {
@@ -218,7 +218,7 @@ EdgeId EdgeGraph::MergePath(const vector<EdgeId>& path) {
 	FireMerge(path, newEdge);
 	DeleteEdge(path[0]);
 	for (size_t i = 0; i + 1 < path.size(); i++) {
-		VertexId v = EdgeEnd(path[i]);
+		VertexId v = EdgeStart(path[i + 1]);
 		DeleteEdge(path[i + 1]);
 		DeleteVertex(v);
 	}
@@ -250,6 +250,7 @@ void EdgeGraph::CompressAllVertices() {
 			} while (GoUniqueWay(e));
 			MergePath(mergeList);
 		}
+
 	}
 }
 
