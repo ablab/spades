@@ -14,6 +14,7 @@ private:
     std::map <std::string, int> m_data;
     int m_mer;
     char *m_filename;
+    char *m_algname;
 
     void createDatFile();
 
@@ -23,7 +24,7 @@ private:
     void init();
     void initFastTq();
 public:
-    Analyses(char *argv, char *mer) : m_filename(argv), m_mer(atoi(mer)) {
+    Analyses(char *argv, char *mer, char *alg = "") : m_filename(argv), m_mer(atoi(mer)), m_algname(alg) {
         if ((strstr(argv, ".fastatq")) != NULL) {
             initFastTq();
         } else {
