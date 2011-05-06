@@ -177,9 +177,9 @@ public:
 		}
 		INFO("Done: " << gb_.graph_.vertices.size() << " vertices");
 
-		INFO("===== Condensing-A graph... =====");
-		gb_.graph_.Condense();
-		INFO("Done: " << gb_.graph_.vertices.size() << " vertices");
+//		INFO("===== Condensing-A graph... =====");
+//		gb_.graph_.Condense();
+//		INFO("Done: " << gb_.graph_.vertices.size() << " vertices");
 
 		return;
 	}
