@@ -1,5 +1,6 @@
-#ifndef LOSSYCOUNTING_H
-#define LOSSYCOUNTING_H
+#ifndef DISTINCTELEMENTS_H
+#define DISTINCTELEMENTS_H
+
 
 #include <iostream>
 #include <vector>
@@ -12,8 +13,9 @@
 #include <sys/mman.h>
 #include <algorithm>
 
-void WrapperLossyCounting(char *p, off_t size, double k = 0.0, double l = 0.0);
 
-void LossyCounting(char *p, off_t size, int k);
+void WrapperDistinctElements(char *p, off_t size, double k, double l);
 
-#endif // LOSSYCOUNTING_H
+void DistinctElements(char *p, off_t size);
+
+#endif // DISTINCTELEMENTS_H
