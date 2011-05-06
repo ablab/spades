@@ -4,9 +4,9 @@
 #include "utils.hpp"
 
 namespace de_bruijn {
+
 template<class Graph>
 class CoverageHandler: public GraphActionHandler<Graph> {
-	////////////////////////////////////
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
@@ -79,8 +79,8 @@ public:
 		g_.SetCoverage(newEdge1, coverage1);
 		g_.SetCoverage(newEdge2, coverage2);
 	}
-
 };
+
 }
 
 #endif /* COVERAGE_HANDLER_HPP_ */
