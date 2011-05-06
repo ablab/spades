@@ -15,6 +15,6 @@
 
 void WrapperCountMinSketch(char *p, off_t size, int kmer, double k, double l);
 
-void CountMinSketch(char *p, off_t size, double eps, double sigma);
+void CountMinSketch(char *p, off_t size, double eps, double sigma, int kmer);
 
 #endif // COUNTMINSKETCHE_H

@@ -6,7 +6,7 @@ program: filter.o sequence.o
 filter.o:
 	rm -rf $(DIR)
 	mkdir $(DIR)
-	g++ -c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=c++0x   -I./../../src/common -I./../../src   filter.cpp -o ../../build/tools/filter/filter.o
+	g++ -c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=c++0x   -I./../../src/common -I./../../src -I./..  filter.cpp -o ../../build/tools/filter/filter.o
 
 sequence.o:
 	g++ -c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=c++0x   -I./../../src/common -I./../../src   ../../src/common/sequence.cpp -o ../../build/tools/filter/sequence.o

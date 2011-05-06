@@ -41,7 +41,8 @@ void Analyses::init() {
         perror ("close");
         return;
     }
-    if (m_algname == "") {
+
+    if (!m_isAlg) {
         for (len = 0; len < sb.st_size; len++) {
             if (p[len] == '\n') {
                 continue;
@@ -56,6 +57,8 @@ void Analyses::init() {
                 key = key.substr(1);
             }
         }
+        createDatFile();
+
     }
     else {
         m_algorithm[m_algname](p, sb.st_size, m_mer, 0.0, 0.0);
@@ -66,8 +69,7 @@ void Analyses::init() {
         perror ("munmap");
         return;
     }
-    createDatFile();
-    //paint();
+    paint();
 }
 
 void Analyses::initFastTq() {
@@ -105,9 +107,8 @@ void Analyses::initFastTq() {
         return;
     }
 
-    int count = 1;
-
-    if (m_algname == "") {
+    if (!m_isAlg) {
+        int count = 1;
         for (len = 0; len < sb.st_size; len++) {
             if (p[len] == '\n') {
                 continue;
@@ -129,6 +130,8 @@ void Analyses::initFastTq() {
                 count = 1;
             }
         }
+        createDatFile();
+
     } else {
         m_algorithm[m_algname](p, sb.st_size, m_mer, 0.0, 0.0);
     }
@@ -137,9 +140,7 @@ void Analyses::initFastTq() {
         perror ("munmap");
         return;
     }
-    createDatFile();
-    //paint();
-
+    paint();
 }
 
 void Analyses::createDatFile() {
@@ -148,8 +149,19 @@ void Analyses::createDatFile() {
         std::cout << "Cannot open file.\n";
         return;
     }
+    std::map <int, int> dt;
+
     for (std::map<std::string,int>::iterator it=m_data.begin() ; it != m_data.end(); ++it) {
+        if (dt.find((*it).second) == dt.end()) {
+            dt[(*it).second] = 1;
+        } else {
+            ++dt[(*it).second];
+        }
+    }
+
+    for (std::map<int,int>::iterator it = dt.begin() ; it != dt.end(); ++it) {
         out << (*it).first << " " << (*it).second << "\n";
     }
+
     return;
 }

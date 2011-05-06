@@ -344,7 +344,7 @@ public:
 			}
 			//unsigned long l = 4 * hash_num + 1;
 			//return (size_t) (l * h % 1000000007);
-			return (4 * hash_num + 1) * h;
+			return (7 * hash_num + 1) * h;
 		}
 	};
 

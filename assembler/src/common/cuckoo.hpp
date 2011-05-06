@@ -106,23 +106,11 @@ public:
   public:
     const_iterator() : pos(0), hash(NULL) {}
 
-    const pair<Key, Value> operator*() const {
-      return (*hash).data_from(pos);
+    void operator=(const iterator &it) {
+      pos = it.pos;
+      hash = it.hash;
     }
 
-    pair<Key, Value>* operator->() {
-      return &((*hash).data_from(pos));
-    }
-
-    bool operator==(const const_iterator &it) {
-      return pos == it.pos && hash == it.hash;
-    }
-
-    bool operator!=(const const_iterator &it) {
-      return !(*this == it);
-    }
-
-  private:
     iterator& operator++() {
       assert(hash != NULL);
       assert(pos != hash->len_);
@@ -138,6 +126,22 @@ public:
       this->operator++();
       return res;
     } 
+
+    const pair<Key, Value>& operator*() const {
+      return (*hash).data_from(pos);
+    }
+
+    const pair<Key, Value>* operator->() const {
+      return &((*hash).data_from(pos));
+    }
+
+    bool operator==(const const_iterator &it) {
+      return pos == it.pos && hash == it.hash;
+    }
+
+    bool operator!=(const const_iterator &it) {
+      return !(*this == it);
+    }
   };
 
 private:
@@ -184,7 +188,7 @@ private:
     return get_exists(pos) && Pred()(data_from(pos).first, k); 
   }
 
-  inline size_t hash(const Key &k, size_t hash_num) const {
+  inline size_t hash(const Key &k, size_t hash_num) {
     return Hash()(k, hash_num) % len_part_;
   }
   
@@ -213,7 +217,7 @@ private:
 
   void rehash() {
     size_t len_temp_ = len_part_;
-    len_part_ = (size_t)(len_part_ * step_);//step_nom / step_denom;
+    len_part_ = (size_t)(len_part_ * step_);
     len_part_ = ((len_part_ + 7) / 8) * 8;
     len_ = len_part_ * d_;
     
@@ -276,7 +280,7 @@ public:
   // @parameter step determines the ratio of increasing the size of hash
   // during rehash.   
   // The less it is the less memory will be used but the more time is needed. 
-  cuckoo(size_t d = 4, size_t init_length = 100, size_t max_loop = 100, double step = 1.5)
+  cuckoo(size_t d = 4, size_t init_length = 100, size_t max_loop = 100, double step = 1.2)
     : d_(d), init_length_(init_length), max_loop_(max_loop), step_(step) {
     init();
   }
@@ -308,7 +312,7 @@ public:
 
   // For test only!!!
   void set_up(size_t d = 4, size_t init_length = 100, 
-              size_t max_loop = 100, double step = 1.5) {
+              size_t max_loop = 100, double step = 1.2) {
     clear_all();
     d_ = d;
     init_length_ = init_length;
@@ -327,7 +331,7 @@ public:
     return iterator(len_, this);
   }
 
-  inline const_iterator begin() const {
+  /*inline const_iterator begin() const {
     const_iterator it = const_iterator(0, this);
     if (!get_exists(it.pos)) ++it;
     return it;
@@ -335,7 +339,7 @@ public:
   
   inline const_iterator end() const {
     return const_iterator(len_, this);
-  }
+    }*/
 
   Value& operator[](const Key& k) {
     iterator it = find(k);
@@ -374,7 +378,7 @@ public:
     return end();
   }
   
-  const_iterator find(const Key& k) const {
+  /*const_iterator find(const Key& k) const {
     for (size_t i = 0; i < d_; ++i) {
       size_t pos = hash(k, i);
       if (is_here(k, i * len_part_ + pos)) {
@@ -382,7 +386,7 @@ public:
       }
     }
     return end();
-  }
+    }*/
   
   // Returns iterator to the value and true if new value was inserted
   // and false otherwise.
