@@ -6,7 +6,7 @@
 #include <cmath>
 #include <map>
 
-#define MERGE_DATA_ABSOLUTE_DIFFERENCE 1000
+#define MERGE_DATA_ABSOLUTE_DIFFERENCE 0
 //#define MERGE_DATA_RELATIVE_DIFFERENCE 0.3
 
 namespace de_bruijn {
@@ -228,8 +228,9 @@ private:
 		for (size_t i = 0; i < path1.size(); ++i) {
 			int current_distance2 = current_distance1;
 			for (size_t j = 0; j < path2.size(); ++j) {
-				double weight = CorrectLength(path1, i) * CorrectLength(path2,
-						j);
+//				double weight = CorrectLength(path1, i) * CorrectLength(path2,
+//						j);
+				double weight = 1;
 				PairInfo
 						new_info(path1[i], path2[j], current_distance2, weight);
 				AddPairInfo(new_info);
@@ -301,15 +302,15 @@ private:
 		data_.DeleteEdgeInfo(edge);
 	}
 
-	void OutputEdgeData(EdgeId edge1, EdgeId edge2) {
+	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os=cout) {
 		PairInfos vec = GetEdgePairInfo(edge1, edge2);
 		if (vec.size() != 0) {
-			cout << edge1 << " " << graph_.length(edge1) << " " << edge2 << " "
+			os << edge1 << " " << graph_.length(edge1) << " " << edge2 << " "
 					<< graph_.length(edge2) << endl;
 			if (graph_.EdgeEnd(edge1) == graph_.EdgeStart(edge2))
-				cout << "+" << endl;
+				os << "+" << endl;
 			if (graph_.EdgeEnd(edge2) == graph_.EdgeStart(edge1))
-				cout << "-" << endl;
+				os << "-" << endl;
 			int min = INT_MIN;
 			for (size_t i = 0; i < vec.size(); i++) {
 				int next = -1;
@@ -319,7 +320,7 @@ private:
 						next = j;
 					}
 				}
-				cout << vec[next].d() << " " << vec[next].weight() << endl;
+				os << vec[next].d() << " " << vec[next].weight() << endl;
 				if (next == -1) {
 					assert(false);
 				}
@@ -352,13 +353,19 @@ private:
 
 public:
 
-	void OutputData() {
+	void OutputData(ostream &os = cout) {
 		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
 				!= it; ++it)
 			for (de_bruijn::SmartEdgeIterator<Graph> it1 =
 					graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it1; ++it1) {
-				OutputEdgeData(*it, *it1);
+				OutputEdgeData(*it, *it1, os);
 			}
+	}
+	void OutputData(string fileName) {
+		ofstream s;
+		s.open(fileName.c_str());
+		OutputData(s);
+		s.close();
 	}
 
 	PairInfos GetEdgeInfo(EdgeId edge) {

@@ -80,7 +80,6 @@ void ClipTips(EdgeGraph &g) {
 	TipComparator<EdgeGraph> comparator(g);
 	TipClipper<EdgeGraph, TipComparator<EdgeGraph>> tc(comparator);
 	tc.ClipTips(g);
-	INFO("Tips clipped");
 }
 
 void RemoveBulges(EdgeGraph &g) {
@@ -129,6 +128,7 @@ void EdgeGraphTool(ReadStream& stream, const string& genome, const string& outpu
 
 	PairedIndex paired_index(g);
 	FillPairedIndex<k, ReadStream> (paired_index, stream, index);
+	paired_index.OutputData("edgesDist.txt");
 
 	ClipTips(g);
 	ProduceInfo<k> (g, index, genome, output_folder + "tips_clipped.dot", "no_tip_graph");
