@@ -134,7 +134,7 @@ void GraphBuilder::revealTips(Sequence s) {
 
 void GraphBuilder::findTipExtensions(Sequence s) {
 	hashSym.kmers(s, ha);
-	vector<int> index;
+	vector<size_t> index;
 	for (size_t i = 0; i + K <= s.size(); ++i) {
 		hash_t hi = ha[i];
 		if (tips.count(hi)) {
@@ -145,7 +145,6 @@ void GraphBuilder::findTipExtensions(Sequence s) {
 		bool lesser = LesserK(s, index[i]);
 		int l = lesser ? 1 : 2;
 		hash_t hi = ha[index[i]];
-		TRACE(index[i] << " " << l << " " << (int) tips[hi]);
 		size_t low, high;
 		if (tips[hi] == l) {
 			low = 0;
@@ -162,7 +161,8 @@ void GraphBuilder::findTipExtensions(Sequence s) {
 			}
 			assert(!earmarked_hashes.count(hj));
 			has_right[hj] = 0;
-			tip_extensions[hi].insert(hj);
+			size_t dist = (j < index[i]) ? (index[i] - j) : (j - index[i]);
+			tip_extensions[hi].insert(make_pair(hj, dist));
 			x++;
 		}
 		TRACE(x << " possible continuations");
@@ -187,7 +187,7 @@ void GraphBuilder::lookRight(Sequence s) {
 	while (!earmarked_hashes.count(ha[high])) high--;
 	for (size_t i = 0; i < index.size(); ++i) {
 		hash_t hi = ha[index[i]];
-		bool lesser = LesserK(s, i);
+		bool lesser = LesserK(s, index[i]);
 		if (index[i] < high) {
 			has_right[hi] |= lesser ? 1 : 2;
 		}

@@ -17,7 +17,7 @@ void RunEdgeGraphTool() {
 	ireadstream genome_stream(ECOLI_FILE);
 	Read genome;
 	genome_stream >> genome;
-	edge_graph::EdgeGraphTool<K, RCStream>(rcStream, I, genome.getSequenceString().substr(0, tr1::get<3>(INPUT)));
+	edge_graph::EdgeGraphTool<K, RCStream>(rcStream, genome.getSequenceString().substr(0, tr1::get<3>(INPUT)), DE_BRUIJN_DATA_FOLDER);
 	reader.close();
 	genome_stream.close();
 }
