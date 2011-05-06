@@ -7,6 +7,7 @@
 #include "ireadstream.hpp"
 
 #include "paired_info.hpp"
+#include "repeat_resolver.hpp"
 #include "edge_graph_constructor.hpp"
 #include "tip_clipper.hpp"
 #include "bulge_remover.hpp"
