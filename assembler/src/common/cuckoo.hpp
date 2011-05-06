@@ -127,11 +127,11 @@ public:
       return res;
     } 
 
-    const pair<Key, Value> operator*() const {
+    const pair<Key, Value>& operator*() const {
       return (*hash).data_from(pos);
     }
 
-    pair<Key, Value>* operator->() {
+    const pair<Key, Value>* operator->() const {
       return &((*hash).data_from(pos));
     }
 
