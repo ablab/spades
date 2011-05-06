@@ -59,9 +59,10 @@ public:
     if (find) {
       Seq<size> seq;
       typename hm::iterator it;
+      typename hm::iterator it2;
       for (it = map.begin(); it != map.end(); ++it) {
         seq = (*it).first;
-        map.find(seq);
+        /*it2 = */map.find(seq);
       }
     }
 
