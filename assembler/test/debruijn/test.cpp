@@ -18,7 +18,9 @@ int main() {
 //	RunTestSuites();
 	string genome = "AAAAAAAAAAAAAAAAAAAAA";
 	EdgeGraph g(5);
+	de_bruijn::EdgeIndex<5 + 1, EdgeGraph> index(g);
+	de_bruijn::CoverageHandler<EdgeGraph> coverage_handler(g);
 	de_bruijn::PairedInfoIndex<EdgeGraph> paired_index(g);
-	de_bruijn_test::ConstructGraphFromGenome<5>(g, paired_index, genome, 10);
+	edge_graph::ConstructGraphFromGenome<5>(g, index, coverage_handler, paired_index, genome, 10);
 	return 0;
 }
