@@ -20,7 +20,7 @@ typedef cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, Seq<K>::equal_to> hm5;
 
 int main(int argc, char** argv) {
   std::string filename = "";
-  size_t L = 1;
+  size_t L = 1; 
   size_t m_num = 1;
   bool stat_on = false;
   bool console_on = true;
@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
     seq_filter<K, hm4>::filter(filename, L, stat_on, console_on, find_on);
     break;
   case 5: 
-    seq_filter<K, hm5>::filter(filename, L, stat_on, console_on, find_on, 100);
+    seq_filter<K, hm5>::filter(filename, L, stat_on, console_on, find_on);
     break;
   default:
     std::cout << "Map number is incorrect!\n";
