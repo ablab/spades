@@ -49,8 +49,10 @@ public:
   friend class const_iterator;
 
   class iterator {
-  private:
+  public:
     size_t pos;
+  private:
+    //size_t pos;
     cuckoo* hash;
     iterator(size_t p, cuckoo* h) : pos(p), hash(h) {}
     friend class cuckoo;
@@ -67,7 +69,7 @@ public:
       assert(hash != NULL);
       assert(pos != hash->len_);
       ++pos;
-      while (!hash->get_exists(pos) && pos < hash->len_) {
+      while ((pos < hash->len_) && !(hash->get_exists(pos))) {
         ++pos;
       }
       return *this;
@@ -88,7 +90,7 @@ public:
     }
 
     bool operator==(const iterator &it) {
-      return pos == it.pos && hash == it.hash;
+      return pos == it.pos /*&& hash == it.hash*/;
     }
 
     bool operator!=(const iterator &it) {
@@ -115,7 +117,7 @@ public:
       assert(hash != NULL);
       assert(pos != hash->len_);
       ++pos;
-      while (!hash->get_exists(pos) && pos < hash->len_) {
+      while ((pos < hash->len_) && (!(hash->get_exists(pos)))) {
         ++pos;
       }
       return *this;
@@ -306,8 +308,20 @@ public:
   }
 
   cuckoo(cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
+    d_ = Cuckoo.d_;
+    init_length_ = Cuckoo.init_length_;
+    max_loop_ = Cuckoo.max_loop_;
+    step_ = Cuckoo.step_;
     init();
-    *this = Cuckoo;
+    iterator it = Cuckoo.begin();
+    iterator final = Cuckoo.end();
+    while (it != final) {
+      insert(*it);
+      ++it;
+    }
+    //the following short code causes std::bad_alloc
+    //init();
+    //*this = Cuckoo;
   }
 
   // For test only!!!
