@@ -75,7 +75,7 @@ void RemoveBulges(EdgeGraph &g) {
 
 void ResolveRepeats(EdgeGraph &g, PairedIndex &info) {
 	INFO("Resolving primitive repeats");
-	de_bruijn::RepeatResolver<EdgeGraph> repeat_resolver(0, g, info);
+	de_bruijn::RepeatResolver<EdgeGraph> repeat_resolver(0);
 	repeat_resolver.ResolveRepeats(g, info);
 	INFO("Primitive repeats resolved");
 }

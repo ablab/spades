@@ -42,11 +42,14 @@ const vector<EdgeId> EdgeGraph::IncomingEdges(VertexId v) const {
 }
 
 const vector<EdgeId> EdgeGraph::NeighbouringEdges(EdgeId e) const {
-	VertexId v_out = EdgeGraph::EdgeEnd(e);
-	VertexId v_in = EdgeGraph::EdgeStart(e);
+	VertexId v_out = EdgeEnd(e);
+	VertexId v_in = EdgeStart(e);
+	DEBUG(v_out);
+	DEBUG(v_in);
 	vector<EdgeId> result = v_out->outgoing_edges_;
 	VertexId rcv_in = Complement(v_in);
 // these vectors are small, and linear time is less than log in this case.
+	DEBUG(result.size());
 	for (EdgeIterator it = rcv_in->begin(); it != rcv_in->end(); ++it) {
 		int fl = 1;
 		for (int j = 0, sz = result.size(); j < sz; j++)
@@ -54,10 +57,12 @@ const vector<EdgeId> EdgeGraph::NeighbouringEdges(EdgeId e) const {
 			   fl = 0;
 			   break;
 		   }
+
 		if (fl)
 			result.push_back(*it);
 	}
-
+	DEBUG(result.size());
+	return result;
 }
 
 void EdgeGraph::FireAddVertex(VertexId v) {
