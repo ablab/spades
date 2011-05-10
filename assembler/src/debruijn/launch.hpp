@@ -103,7 +103,8 @@ void ConstructGraph(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index, ReadStream
 	typedef de_bruijn::DeBruijnPlus<k + 1, EdgeId> DeBruijn;
 
 	INFO("Constructing DeBruijn graph");
-	DeBruijn debruijn(stream);
+	DeBruijn& debruijn = index.inner_index();
+	debruijn.Fill(stream);
 	INFO("DeBruijn graph constructed");
 
 	INFO("Condensing graph");
