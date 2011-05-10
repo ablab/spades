@@ -8,6 +8,7 @@
 #include "simple_tools.hpp"
 #include "debruijn_plus.hpp"
 #include <tr1/unordered_set>
+//LOGGER("d.edge_graph_test");
 
 namespace edge_graph {
 
@@ -116,6 +117,7 @@ void SmartIteratorTest() {
 	for (SmartVertexIterator<EdgeGraph> it = g.SmartVertexBegin(comp); g.SmartVertexEnd(
 			comp) != it; ++it) {
 		num++;
+		DEBUG( "with seq in vert" << g.VertexNucls(*it).str());
 		visited.insert(*it);
 	}
 	ASSERT_EQUAL(num, data.first.size() * 2);
@@ -266,11 +268,12 @@ cute::suite EdgeGraphSuite() {
 	s.push_back(CUTE(VertexMethodsSimpleTest));
 //	s.push_back(CUTE(GraphMethodsSimpleTest));
 	s.push_back(CUTE(SmartIteratorTest));
+	s.push_back(CUTE(TestBuldge));
+
 	s.push_back(CUTE(TestSimpleThread));
 	s.push_back(CUTE(TestSimpleThread2));
 	s.push_back(CUTE(TestSplitThread));
 	s.push_back(CUTE(TestSplitThread2));
-	s.push_back(CUTE(TestBuldge));
 	s.push_back(CUTE(TestCondenseSimple));
 	return s;
 }

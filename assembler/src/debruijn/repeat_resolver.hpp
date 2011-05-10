@@ -37,11 +37,11 @@ public:
 
 		assert(leap >= 0 && leap < 100);
 	}
-	Graph ResolveRepeats(const Graph &g,const PairedInfoIndex &ind);
+	Graph ResolveRepeats(Graph &g, PairedInfoIndex &ind);
 
 private:
 	int leap_;
-	void ResolveVertex(VertexId vid);
+	void ResolveVertex(Graph &g, PairedInfoIndex &ind, VertexId vid);
 	void ResolveEdge(EdgeId eid);
 	VertexIdMap vid_map;
 	NewVertexMap new_map;
@@ -53,32 +53,35 @@ private:
 };
 
 template<class Graph>
-Graph RepeatResolver<Graph>::ResolveRepeats(const Graph &g, const PairedInfoIndex &ind){
+Graph RepeatResolver<Graph>::ResolveRepeats(Graph &g, PairedInfoIndex &ind){
 //	old_graph = g;
 //	old_index = ind;
 	INFO("resolve_repeats started");
-	for(VertexIter v_iter = old_graph.SmartVertexBegin(), end = old_graph.SmartVertexEnd(); v_iter != end; ++v_iter) {
+	for(VertexIter v_iter = g.SmartVertexBegin(), end = g.SmartVertexEnd(); v_iter != end; ++v_iter) {
 //		vector<typename PairedInfoIndex::PairInfo> tmp = old_index.getEdgeInfos(*e_iter);
 		INFO("smartiterators ");
 //		INFO("Parsing vertex "<< old_graph.VertexNucls(*v_iter));
 
-		ResolveVertex(*v_iter);
+		ResolveVertex(g, ind, *v_iter);
 	}
-	for(EdgeIter e_iter = old_graph.SmartEdgeBegin(), end = old_graph.SmartEdgeEnd(); e_iter != end; ++e_iter) {
+//	for(EdgeIter e_iter = old_graph.SmartEdgeBegin(), end = old_graph.SmartEdgeEnd(); e_iter != end; ++e_iter) {
 //		PairInfos tmp = old_index.GetEdgeInfo(*e_iter);
 		//		ResolveEdge(*e_iter);G
-	}
+//	}
 	return new_graph;
 }
 
 template<class Graph>
-void RepeatResolver<Graph>::ResolveVertex(VertexId vid){
+void RepeatResolver<Graph>::ResolveVertex( Graph &g, PairedInfoIndex &ind, VertexId vid){
 	INFO("Parsing vertex ");
+	INFO("with seq " <<g.VertexNucls(vid));
 	vector<EdgeId> edgeIds[2];
-	edgeIds[0] = old_graph.OutgoingEdges(vid);
-	edgeIds[1] = old_graph.IncomingEdges(vid);
+	DEBUG("before outgoing edges");
+	edgeIds[0] = g.OutgoingEdges(vid);
+	edgeIds[1] = g.IncomingEdges(vid);
 	vector<set<EdgeId> > paired_edges;
 	paired_edges.resize(edgeIds[0].size() + edgeIds[1].size());
+	DEBUG("std inited");
 	int i;
 	unsigned int j;
 	i = j;
@@ -88,7 +91,8 @@ void RepeatResolver<Graph>::ResolveVertex(VertexId vid){
 	int cur_id = 0;
 	for (int dir = 0; dir < 2; dir++) {
 		for (int i = 0, n = edgeIds[dir].size(); i < n; i ++) {
-			PairInfos tmp = old_index.GetEdgeInfo(edgeIds[dir][i]);
+			DEBUG("edge " << dir <<" "<<i);
+			PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
 			for (int j = 0, sz = tmp.size(); j < sz; j++) {
 				EdgeId right_id = tmp[j].second();
 				EdgeId left_id = tmp[j].first();
@@ -114,7 +118,7 @@ void RepeatResolver<Graph>::ResolveVertex(VertexId vid){
 		colors[i] = 0;
 	for(int i = 0; i < right_edge_count; i++) {
 //TODO Add option to "jump" - use not only direct neighbours(parameter leap in constructor)
-		vector<EdgeId> neighbours = old_graph.NeighbouringEdges(right_vector[i]);
+		vector<EdgeId> neighbours = g.NeighbouringEdges(right_vector[i]);
 		for(int j = 0, sz = neighbours.size(); j < sz; j++){
 			if (right_set.find(neighbours[j]) != right_set.end()) {
 				edge_list[i].push_back(neighbours[j]);
