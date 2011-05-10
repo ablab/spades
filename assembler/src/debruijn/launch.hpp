@@ -99,7 +99,7 @@ void FillCoverage(de_bruijn::CoverageHandler<EdgeGraph> coverage_handler, ReadSt
 }
 
 template <size_t k, class ReadStream>
-void ConstructGraph(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index, CoverageHandler<EdgeGraph>& coverage_handler, ReadStream& stream) {
+void ConstructGraph(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index, ReadStream& stream) {
 	typedef de_bruijn::DeBruijnPlus<k + 1, EdgeId> DeBruijn;
 
 	INFO("Constructing DeBruijn graph");
@@ -110,7 +110,11 @@ void ConstructGraph(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index, CoverageHa
 	EdgeGraphConstructor<k> g_c(debruijn);
 	g_c.ConstructGraph(g, index);
 	INFO("Graph condensed");
+}
 
+template <size_t k, class ReadStream>
+void ConstructGraphWithCoverage(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index, CoverageHandler<EdgeGraph>& coverage_handler, ReadStream& stream) {
+	ConstructGraph<k, ReadStream>(g, index, stream);
 	FillCoverage<k, ReadStream> (coverage_handler, stream, index);
 }
 
@@ -120,7 +124,7 @@ void ConstructGraphWithPairedInfo(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& ind
 		, PairedReadStream& stream) {
 	typedef SimpleReaderWrapper<PairedReadStream> UnitedStream;
 	UnitedStream united_stream(stream);
-	ConstructGraph<k, UnitedStream>(g, index, coverage_handler, united_stream);
+	ConstructGraphWithCoverage<k, UnitedStream>(g, index, coverage_handler, united_stream);
 	FillPairedIndex<k, PairedReadStream> (paired_index, stream, index);
 }
 
