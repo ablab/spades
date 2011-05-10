@@ -61,7 +61,16 @@ int main(int argc, char* argv[]) {
 	usage << "--mode bit mask (default = 0):\n";
 	usage << "       1 whether to find minimizers, not local minimizers\n";
 	usage << "       2 whether to ensure at least 2 minimizers in each read\n";
-	if (!help) INFO("mode = " << mode);
+	if (!help) {
+		if (mode & 1) {
+			INFO("mode = find minimizers");
+		}
+		else {
+			INFO("mode = find local minimizers");
+		}
+		if (mode & 2)
+			INFO("mode = ensure at least two minimizers in each read");
+	}
 
 	if (help) {
 		std::cout << usage.str();
@@ -85,6 +94,9 @@ int main(int argc, char* argv[]) {
 	gbm.graph()->output(output_stream, !output_single);
 	INFO("Done.");
 	output_stream.close();
+
+//	INFO("Spelling the reference genome");
+//	gbm.SpellGenomeThroughGraph();
 
 	//ABruijnGraphWithGraphVisualizer ( "ATGTGTGACTTTGTATCGTATTGCGGGCGGCGCGCTTATTGTATGCGTAAATTTGGGTCATATTGATCGTAAAATGCGTATGATGCACTGCA", 6, 3 );
 	return 0;

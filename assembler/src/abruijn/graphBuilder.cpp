@@ -47,13 +47,13 @@ void GraphBuilder::findMinimizers(Sequence s) {
  * a window of size window_size
  */
 void GraphBuilder::findLocalMinimizers(Sequence s, size_t window_size) {
-	INFO("seq: " << s << " s.size: " << s.size() << " window_size: " << window_size);
+	//INFO("seq: " << s << " s.size: " << s.size() << " window_size: " << window_size);
 	assert(window_size % 2 == 1);
 
 	/// compute hash-values of all the k-mers of a given read
 	ha.resize(max(s.size(), ha.size()));
 	hashSym.kmers(s, ha);
-	INFO("ha.size: " << ha.size());
+	//INFO("ha.size: " << ha.size());
 
 	/// compute the minimum hash-value in the first window
 	window_size=min(window_size, ha.size());
@@ -67,10 +67,10 @@ void GraphBuilder::findLocalMinimizers(Sequence s, size_t window_size) {
 
 		current_min=min(current_min,ha[i+window_size-1]);
 
-		if (ha[i+window_size/2]==current_min)
+		if (ha[i+window_size/2]==current_min && isTrusted(current_min))
 		{
 			earmarked_hashes.insert(current_min);
-			INFO(current_min << " is marked");
+			//INFO(current_min << " is marked");
 		}
 	}
 }
@@ -101,6 +101,9 @@ void GraphBuilder::findSecondMinimizer(Sequence s) {
 	}
 	assert(hb < hashing::kMax);
 	earmarked_hashes.insert(hb);
+	// SK: btw, what if a read contains no trusted k-mers?
+	// we should ensure that even in this (unlikely) case
+	// the code does not break
 }
 
 bool Lesser(const Sequence& s) {

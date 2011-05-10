@@ -15,7 +15,5 @@ extern void ConstructDeBruijnGraphSimplified ( string genome, unsigned read_size
 
 extern void ABruijnGraphWithGraphVisualizer ( string genome, unsigned read_size, unsigned k );
 
-
-
 #endif
 
