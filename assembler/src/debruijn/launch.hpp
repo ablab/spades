@@ -16,6 +16,7 @@
 #include "tip_clipper.hpp"
 #include "bulge_remover.hpp"
 #include "coverage_handler.hpp"
+#include "repeat_resolver.hpp"
 
 namespace edge_graph {
 //typedef de_bruijn::DeBruijnPlus<K + 1, EdgeId> DeBruijn;
@@ -90,6 +91,13 @@ void RemoveBulges(EdgeGraph &g) {
 	INFO("Bulges removed");
 }
 
+void ResolveRepeats(EdgeGraph &g, PairedIndex &info) {
+	INFO("Resolving primitive repeats");
+	de_bruijn::RepeatResolver<EdgeGraph> repeat_resolver(0, g, info);
+	repeat_resolver.ResolveRepeats(g, info);
+	INFO("Primitive repeats resolved");
+}
+
 template<size_t k, class ReadStream>
 void FillPairedIndex(PairedIndex& paired_info_index, ReadStream& stream,
 		EdgeIndex<k + 1, EdgeGraph>& index) {
@@ -136,6 +144,7 @@ void EdgeGraphTool(ReadStream& stream, const string& genome, const string& outpu
 	RemoveBulges(g);
 	ProduceInfo<k> (g, index, genome, output_folder + "bulges_removed.dot", "no_bulge_graph");
 
+	ResolveRepeats(g, paired_index);
 	INFO("Tool finished")
 }
 
