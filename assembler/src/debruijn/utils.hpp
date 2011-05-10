@@ -54,24 +54,24 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 
 	virtual void
-	ApplyHandleAdd(GraphActionHandler<Graph> *handler, VertexId v) const = 0;
+	ApplyAdd(GraphActionHandler<Graph> *handler, VertexId v) const = 0;
 
 	virtual void
-	ApplyHandleAdd(GraphActionHandler<Graph> *handler, EdgeId e) const = 0;
+	ApplyAdd(GraphActionHandler<Graph> *handler, EdgeId e) const = 0;
 
-	virtual void ApplyHandleDelete(GraphActionHandler<Graph> *handler,
+	virtual void ApplyDelete(GraphActionHandler<Graph> *handler,
 			VertexId v) const = 0;
 
 	virtual void
-	ApplyHandleDelete(GraphActionHandler<Graph> *handler, EdgeId e) const = 0;
+	ApplyDelete(GraphActionHandler<Graph> *handler, EdgeId e) const = 0;
 
-	virtual void ApplyHandleMerge(GraphActionHandler<Graph> *handler,
+	virtual void ApplyMerge(GraphActionHandler<Graph> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const = 0;
 
-	virtual void ApplyHandleGlue(GraphActionHandler<Graph> *handler,
+	virtual void ApplyGlue(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge) const = 0;
 
-	virtual void ApplyHandleSplit(GraphActionHandler<Graph> *handler,
+	virtual void ApplySplit(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const = 0;
 
 	virtual ~HandlerApplier() {
@@ -84,34 +84,34 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
-	virtual void ApplyHandleAdd(GraphActionHandler<Graph> *handler, VertexId v) const {
+	virtual void ApplyAdd(GraphActionHandler<Graph> *handler, VertexId v) const {
 		handler.HandleAdd(v);
 	}
 
-	virtual void ApplyHandleAdd(GraphActionHandler<Graph> *handler, EdgeId e) const {
+	virtual void ApplyAdd(GraphActionHandler<Graph> *handler, EdgeId e) const {
 		handler.HandleAdd(e);
 	}
 
-	virtual void ApplyHandleDelete(GraphActionHandler<Graph> *handler,
+	virtual void ApplyDelete(GraphActionHandler<Graph> *handler,
 			VertexId v) const {
 		handler.HandleDelete(v);
 	}
 
-	virtual void ApplyHandleDelete(GraphActionHandler<Graph> *handler, EdgeId e) const {
+	virtual void ApplyDelete(GraphActionHandler<Graph> *handler, EdgeId e) const {
 		handler.HandleDelete(e);
 	}
 
-	virtual void ApplyHandleMerge(GraphActionHandler<Graph> *handler,
+	virtual void ApplyMerge(GraphActionHandler<Graph> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const {
 		handler.HandleMerge(old_edges, new_edge);
 	}
 
-	virtual void ApplyHandleGlue(GraphActionHandler<Graph> *handler,
+	virtual void ApplyGlue(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge) const {
 		handler.HandleGlue(old_edge, new_edge);
 	}
 
-	virtual void ApplyHandleSplit(GraphActionHandler<Graph> *handler,
+	virtual void ApplySplit(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) const {
 		handler.HandleSplit(old_edge, new_edge1, new_edge2);
 	}
@@ -132,21 +132,21 @@ public:
 		graph_(graph) {
 	}
 
-	virtual void ApplyHandleAdd(GraphActionHandler<Graph> *handler, VertexId v) const {
+	virtual void ApplyAdd(GraphActionHandler<Graph> *handler, VertexId v) const {
 		VertexId rcv = graph_.Complement(v);
 		handler->HandleAdd(v);
 		if (v != rcv)
 			handler->HandleAdd(rcv);
 	}
 
-	virtual void ApplyHandleAdd(GraphActionHandler<Graph> *handler, EdgeId e) const {
+	virtual void ApplyAdd(GraphActionHandler<Graph> *handler, EdgeId e) const {
 		EdgeId rce = graph_.Complement(e);
 		handler->HandleAdd(e);
 		if (e != rce)
 			handler->HandleAdd(rce);
 	}
 
-	virtual void ApplyHandleDelete(GraphActionHandler<Graph> *handler,
+	virtual void ApplyDelete(GraphActionHandler<Graph> *handler,
 			VertexId v) const {
 		VertexId rcv = graph_.Complement(v);
 		handler->HandleDelete(v);
@@ -154,14 +154,14 @@ public:
 			handler->HandleDelete(rcv);
 	}
 
-	virtual void ApplyHandleDelete(GraphActionHandler<Graph> *handler, EdgeId e) const {
+	virtual void ApplyDelete(GraphActionHandler<Graph> *handler, EdgeId e) const {
 		EdgeId rce = graph_.Complement(e);
 		handler->HandleDelete(e);
 		if (e != rce)
 			handler->HandleDelete(rce);
 	}
 
-	virtual void ApplyHandleMerge(GraphActionHandler<Graph> *handler,
+	virtual void ApplyMerge(GraphActionHandler<Graph> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const {
 		EdgeId rce = graph_.Complement(new_edge);
 		handler->HandleMerge(old_edges, new_edge);
@@ -174,7 +174,7 @@ public:
 		}
 	}
 
-	virtual void ApplyHandleGlue(GraphActionHandler<Graph> *handler,
+	virtual void ApplyGlue(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge) const {
 		EdgeId rcOldEdge = graph_.Complement(old_edge);
 		EdgeId rcNewEdge = graph_.Complement(new_edge);
@@ -187,7 +187,7 @@ public:
 			handler->HandleGlue(rcOldEdge, rcNewEdge);
 	}
 
-	virtual void ApplyHandleSplit(GraphActionHandler<Graph> *handler,
+	virtual void ApplySplit(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const {
 		EdgeId rce = graph_.Complement(old_edge);
 		handler->HandleSplit(old_edge, new_edge_1, new_edge2);
@@ -197,88 +197,6 @@ public:
 	}
 
 	virtual ~PairedHandlerApplier() {
-	}
-};
-
-template<class Graph>
-class PairedActionHandler: public GraphActionHandler<Graph> {
-private:
-	Graph &graph_;
-	GraphActionHandler<Graph> *handler_;
-public:
-	typedef GraphActionHandler<Graph> super;
-	typedef typename super::VertexId VertexId;
-	typedef typename super::EdgeId EdgeId;
-
-	PairedActionHandler(Graph &graph, GraphActionHandler<Graph> *handler) :
-		graph_(graph), handler_(handler) {
-	}
-
-	super *GetInnerActionhandler() {
-		return handler_;
-	}
-
-	virtual void HandleAdd(VertexId v) {
-		VertexId rcv = graph_.Complement(v);
-		handler_->HandleAdd(v);
-		if (v != rcv)
-			handler_->HandleAdd(rcv);
-	}
-
-	virtual void HandleAdd(EdgeId e) {
-		EdgeId rce = graph_.Complement(e);
-		handler_->HandleAdd(e);
-		if (e != rce)
-			handler_->HandleAdd(rce);
-	}
-
-	virtual void HandleDelete(VertexId v) {
-		VertexId rcv = graph_.Complement(v);
-		handler_->HandleDelete(v);
-		if (v != rcv)
-			handler_->HandleDelete(rcv);
-	}
-
-	virtual void HandleDelete(EdgeId e) {
-		EdgeId rce = graph_.Complement(e);
-		handler_->HandleDelete(e);
-		if (e != rce)
-			handler_->HandleDelete(rce);
-	}
-
-	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
-		EdgeId rce = graph_.Complement(newEdge);
-		handler_->HandleMerge(oldEdges, newEdge);
-		if (newEdge != rce) {
-			vector<EdgeId> ecOldEdges;
-			for (int i = oldEdges.size() - 1; i >= 0; i--) {
-				ecOldEdges.push_back(graph_.Complement(oldEdges[i]));
-			}
-			handler_->HandleMerge(ecOldEdges, rce);
-		}
-	}
-
-	virtual void HandleGlue(EdgeId oldEdge, EdgeId newEdge) {
-		EdgeId rcOldEdge = graph_.Complement(oldEdge);
-		EdgeId rcNewEdge = graph_.Complement(newEdge);
-		assert(oldEdge != newEdge);
-		assert(newEdge != rcNewEdge);
-		assert(graph_.EdgeStart(oldEdge) != graph_.EdgeEnd(oldEdge));
-		assert(graph_.EdgeStart(newEdge) != graph_.EdgeEnd(newEdge));
-		handler_->HandleGlue(oldEdge, newEdge);
-		if (oldEdge != rcOldEdge)
-			handler_->HandleGlue(rcOldEdge, rcNewEdge);
-	}
-
-	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
-		EdgeId rce = graph_.Complement(oldEdge);
-		handler_->HandleSplit(oldEdge, newEdge1, newEdge2);
-		if (oldEdge != rce)
-			handler_->HandleSplit(rce, graph_.Complement(newEdge2),
-					graph_.Complement(newEdge1));
-	}
-
-	virtual ~PairedActionHandler() {
 	}
 };
 
@@ -326,20 +244,29 @@ public:
 template<size_t k, class Graph>
 class EdgeIndex : public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
-	typedef de_bruijn::DeBruijnPlus<k, EdgeId> Index;
+	typedef de_bruijn::DeBruijnPlus<k, EdgeId> InnerIndex;
 	typedef Seq<k> Kmer;
 	Graph& g_;
-	Index& index_;
+	InnerIndex* inner_index_;
 	DataHashRenewer<k, Graph, EdgeId> renewer_;
+	bool delete_index_;
 public:
 
-	EdgeIndex(Graph& g, Index &index) :
-		g_(g), index_(index), renewer_(g, index) {
+	EdgeIndex(Graph& g, InnerIndex& inner_index) :
+		g_(g), inner_index_(&inner_index), renewer_(g, *inner_index_), delete_index_(false) {
+		g_.AddActionHandler(this);
+	}
+
+	EdgeIndex(Graph& g) :
+		g_(g), inner_index_(new InnerIndex()), renewer_(g, *inner_index_), delete_index_(true) {
 		g_.AddActionHandler(this);
 	}
 
 	virtual ~EdgeIndex() {
 		g_.RemoveActionHandler(this);
+		if (delete_index_) {
+			delete inner_index_;
+		}
 	}
 
 	virtual void HandleAdd(EdgeId e) {
@@ -351,38 +278,14 @@ public:
 	}
 
 	bool containsInIndex(const Kmer& kmer) const {
-		return index_.containsInIndex(kmer);
+		return inner_index_->containsInIndex(kmer);
 	}
 
 	const pair<EdgeId, size_t>& get(const Kmer& kmer) const {
-		return index_.get(kmer);
+		return inner_index_->get(kmer);
 	}
 
-	bool deleteIfEqual(const Kmer& kmer, EdgeId edge) {
-		return index_.deleteIfEqual(kmer, edge);
-	}
 };
-
-//template<size_t kmer_size_, class Graph>
-//class EdgeHashRenewer: public GraphActionHandler<Graph> {
-//
-//	typedef typename Graph::EdgeId EdgeId;
-//	typedef de_bruijn::DeBruijnPlus<kmer_size_, EdgeId> Index;
-//	DataHashRenewer<kmer_size_, Graph, EdgeId> renewer_;
-//
-//public:
-//	EdgeHashRenewer(const Graph& g, Index &index) :
-//		renewer_(g, index) {
-//	}
-//
-//	virtual void HandleAdd(EdgeId e) {
-//		renewer_.HandleAdd(e);
-//	}
-//
-//	virtual void HandleDelete(EdgeId e) {
-//		renewer_.HandleDelete(e);
-//	}
-//};
 
 template<size_t kmer_size_, typename Graph>
 class VertexHashRenewer: public GraphActionHandler<Graph> {
@@ -411,8 +314,6 @@ class NoInfo {
 /**
  * Stub base class for handling graph primitives during traversal.
  */
-//template<typename VertexId, typename EdgeId>
-//todo talk with Anton
 template<class Graph, class Info = NoInfo *>
 class TraversalHandler {
 public:

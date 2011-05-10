@@ -1,6 +1,9 @@
 #ifndef FILTER_ITERATOR_H_
 #define FILTER_ITERATOR_H_
 
+/**
+ * Iterator with some predicate -- iterates only on elements with predicate(item) == true
+ */
 template<typename iterator_type, typename predicate_type>
 class filter_iterator {
 public:

@@ -8,32 +8,25 @@
 #ifndef TEST_UTILS_HPP_
 #define TEST_UTILS_HPP_
 
-namespace de_bruijn_test {
+#include "read_generator.hpp"
+#include "launch.hpp"
 
-template <size_t k, class Stream>
-void ConstructGraph(EdgeGraph& graph, Stream& stream) {
-//	SimpleReaderWrapper<ReadStream> unitedStream(stream);
-//	DeBruijn debruijn(unitedStream);
-//	EdgeGraph g(k);
-//	de_bruijn::DeBruijnPlus<k + 1, EdgeId> &index = debruijn;
-//	de_bruijn::EdgeHashRenewer<k + 1, EdgeGraph> index_handler(g, index);
-//
-//	de_bruijn::CoverageHandler<EdgeGraph> coverageHandler(g);
-//	g.AddActionHandler(&coverageHandler);
-//
-//	stream.reset();
-//	CondenseGraph<ReadStream> (debruijn, g, index, stream, genome);
-//
-//	stream.reset();
-//	PairedIndex paired_info_index(g, I);
-//
-//	FillPairedIndex(paired_info_index, stream, index);
-//	ClipTips(g, index, genome, "tips_clipped.dot");
-//
-//	RemoveBulges(g, index, genome, "bulges_removed.dot");
-//
-//	g.RemoveActionHandler(&index_handler);
-//	g.RemoveActionHandler(&coverageHandler);
+namespace edge_graph {
+
+//using edge_graph::EdgeGraph;
+using de_bruijn::EdgeIndex;
+using de_bruijn::CoverageHandler;
+using de_bruijn::PairedInfoIndex;
+
+template <size_t k>
+void ConstructGraphFromGenome(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index, CoverageHandler<EdgeGraph>& coverage_handler, PairedInfoIndex<EdgeGraph>& paired_index, const string& genome, size_t read_size) {
+	typedef read_generator::ReadGenerator<read_generator::SmoothPositionChooser> Stream;
+	size_t coverage = 2*read_size;
+	size_t gap = 0;
+	Stream raw_stream(2, read_size, genome, coverage, gap);
+	typedef RCReaderWrapper<Stream> RCStream;
+	RCStream read_stream(raw_stream);
+	ConstructGraphWithPairedInfo<k, RCStream>(g, index, coverage_handler, paired_index, read_stream);
 }
 
 }

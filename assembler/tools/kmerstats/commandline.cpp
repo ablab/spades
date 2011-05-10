@@ -6,7 +6,7 @@
 
 #include "analyses.h"
 
-CommandLine::CommandLine(char **argv, int argc) {
+CommandLine::CommandLine(char **argv, int argc): isAlg(false) {
     int c;
 
     while (1) {
@@ -15,11 +15,12 @@ CommandLine::CommandLine(char **argv, int argc) {
             {"file", 1, 0, 0},
             {"kmer", 1, 0, 0},
             {"help", 0, 0, 0},
+            {"algoritm", 1, 0, 0},
             {"merge", 0, 0, 0},
             {0, 0, 0, 0}
         };
 
-        c = getopt_long (argc, argv, "f:k:h",
+        c = getopt_long (argc, argv, "f:k:a:h",
                          long_options, &option_index);
         if (c == -1)
             break;
@@ -30,6 +31,9 @@ CommandLine::CommandLine(char **argv, int argc) {
                 m_line = optarg;
             } else if (long_options[option_index].name == "kmer") {
                 m_kmer = optarg;
+            } else if (long_options[option_index].name == "algoritm") {
+                m_nameAlg = optarg;
+                isAlg = true;
             }
             break;
 
@@ -41,12 +45,17 @@ CommandLine::CommandLine(char **argv, int argc) {
             m_kmer = optarg;
             break;
 
+        case 'a':
+            m_nameAlg = optarg;
+            isAlg = true;
+            break;
+
         case 'h':
         default:
-            std::cout << "Help: ./kmerstat -f <filename> -k <kmer>" << std::endl;
+            std::cout << "Help: ./kmerstat [-f|--file] <filename> [-k|--kmer] <kmer> [-a|--algoritm] <algoritm name>" << std::endl;
         }
     }
 
-    Analyses a(m_line, m_kmer);
+    Analyses a(m_line, m_kmer, m_nameAlg, isAlg);
 }
 

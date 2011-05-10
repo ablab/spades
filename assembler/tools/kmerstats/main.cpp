@@ -1,5 +1,4 @@
 #include <iostream>
-#include <stdio.h>
 #include "commandline.h"
 
 int main (int argc,char *argv[]) {

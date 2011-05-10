@@ -42,10 +42,13 @@ public:
 	void lookRight(Sequence s);
 	void addToGraph(Sequence s);
 
-	map<hash_t, char> has_right;
-	map<hash_t, char> tips;
 	set<hash_t> earmarked_hashes;
-	map<hash_t, set<hash_t> > tip_extensions;
+	typedef map<hash_t, char> RightExtensions;
+	RightExtensions has_right;
+	RightExtensions tips;
+	typedef map<hash_t, size_t> TipExtenstionTable;
+	typedef map<hash_t, TipExtenstionTable> TipExtensions;
+	TipExtensions tip_extensions;
 	hash_vector hbest;
 	abruijn::Graph graph_;
 	size_t htake_;
@@ -90,7 +93,7 @@ public:
 			INFO("Done: " << gb_.earmarked_hashes.size() << " earmarked hashes");
 		}
 
-		for(;;) {
+		for (int tip_iteration = 0;; tip_iteration++) {
 			size_t eh = gb_.earmarked_hashes.size();
 			gb_.has_right.clear();
 			gb_.tips.clear();
@@ -111,6 +114,10 @@ public:
 			}
 			gb_.has_right.clear();
 			INFO("Done: " << gb_.tips.size() << " tips.");
+			if (gb_.tips.size() == 0) {
+				INFO("Quitting tip extension procedure");
+				break;
+			}
 
 			INFO("===== Finding tip extensions... =====");
 			reader_.reset();
@@ -120,6 +127,10 @@ public:
 				VERBOSE(i, " single reads");
 			}
 			INFO("Done: " << gb_.has_right.size() << " possible tip extensions");
+			if (gb_.has_right.size() == 0) {
+				INFO("Quitting tip extension procedure");
+				break;
+			}
 
 			INFO("===== Looking to the right... =====");
 			reader_.reset();
@@ -128,25 +139,41 @@ public:
 				gb_.lookRight(r.getSequence());
 				VERBOSE(i, " single reads");
 			}
-			for (map<hash_t, set<hash_t> >::iterator it = gb_.tip_extensions.begin(); it != gb_.tip_extensions.end(); ++it) {
+			for (GraphBuilder::TipExtensions::iterator it = gb_.tip_extensions.begin(); it != gb_.tip_extensions.end(); ++it) {
+				TRACE("Trying to extend tip " << it->first);
 				bool ok = false;
 				hash_t found = hashing::kMax;
-				for (set<hash_t>::iterator ext = it->second.begin(); ext != it->second.end(); ext++) {
-					if (gb_.earmarked_hashes.count(*ext)) {
+				size_t best_dist = 0;
+				for (GraphBuilder::TipExtenstionTable::iterator ext = it->second.begin(); ext != it->second.end(); ext++) {
+					if (gb_.earmarked_hashes.count(ext->first)) {
 						ok = true;
+						TRACE("Wonderful hit!");
 						break;
 					}
-					if (gb_.has_right[*ext] == 3 && found == hashing::kMax) {
-						found = *ext;
+					if (gb_.has_right[ext->first] == 3) {
+						TRACE("Candidate at distance " << ext->second);
+						found = ext->first;
+						best_dist = -1;
+						continue;
+					}
+					if (gb_.has_right[ext->first] > 0) {
+						TRACE("Dubious candidate at distance " << ext->second);
+						if (ext->second > best_dist) {
+							found = ext->first;
+							best_dist = ext->second;
+						}
+						continue;
 					}
 				}
 				if (ok) {
 					continue;
 				}
+				TRACE("Selected candidate: " << best_dist);
 				gb_.earmarked_hashes.insert(found);
 			}
 			INFO("Done: " << eh << " -> " << gb_.earmarked_hashes.size() << " earmarked hashes");
 			if (eh == gb_.earmarked_hashes.size()) {
+				INFO("Quitting tip extension procedure");
 				break;
 			}
 		}
@@ -160,9 +187,9 @@ public:
 		}
 		INFO("Done: " << gb_.graph_.vertices.size() << " vertices");
 
-		INFO("===== Condensing-A graph... =====");
-		gb_.graph_.Condense();
-		INFO("Done: " << gb_.graph_.vertices.size() << " vertices");
+//		INFO("===== Condensing-A graph... =====");
+//		gb_.graph_.Condense();
+//		INFO("Done: " << gb_.graph_.vertices.size() << " vertices");
 
 		return;
 	}

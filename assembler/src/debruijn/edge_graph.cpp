@@ -31,6 +31,7 @@ const vector<EdgeId> EdgeGraph::OutgoingEdges(VertexId v) const {
 	return v->outgoing_edges_;
 }
 
+
 const vector<EdgeId> EdgeGraph::IncomingEdges(VertexId v) const {
 	vector<EdgeId> result;
 	VertexId rcv = Complement(v);
@@ -40,52 +41,71 @@ const vector<EdgeId> EdgeGraph::IncomingEdges(VertexId v) const {
 	return result;
 }
 
+const vector<EdgeId> EdgeGraph::NeighbouringEdges(EdgeId e) const {
+	VertexId v_out = EdgeGraph::EdgeEnd(e);
+	VertexId v_in = EdgeGraph::EdgeStart(e);
+	vector<EdgeId> result = v_out->outgoing_edges_;
+	VertexId rcv_in = Complement(v_in);
+// these vectors are small, and linear time is less than log in this case.
+	for (EdgeIterator it = rcv_in->begin(); it != rcv_in->end(); ++it) {
+		int fl = 1;
+		for (int j = 0, sz = result.size(); j < sz; j++)
+		   if (result[j] == *it){
+			   fl = 0;
+			   break;
+		   }
+		if (fl)
+			result.push_back(*it);
+	}
+
+}
+
 void EdgeGraph::FireAddVertex(VertexId v) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyHandleAdd(*it, v);
+		applier_.ApplyAdd(*it, v);
 	}
 }
 
 void EdgeGraph::FireAddEdge(EdgeId edge) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyHandleAdd(*it, edge);
+		applier_.ApplyAdd(*it, edge);
 	}
 }
 
 void EdgeGraph::FireDeleteVertex(VertexId v) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyHandleDelete(*it, v);
+		applier_.ApplyDelete(*it, v);
 	}
 }
 
 void EdgeGraph::FireDeleteEdge(EdgeId edge) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyHandleDelete(*it, edge);
+		applier_.ApplyDelete(*it, edge);
 	}
 }
 
 void EdgeGraph::FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyHandleMerge(*it, oldEdges, newEdge);
+		applier_.ApplyMerge(*it, oldEdges, newEdge);
 	}
 }
 
 void EdgeGraph::FireGlue(EdgeId edge1, EdgeId edge2) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyHandleGlue(*it, edge1, edge2);
+		applier_.ApplyGlue(*it, edge1, edge2);
 	}
 }
 
 void EdgeGraph::FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_->ApplyHandleSplit(*it, edge, newEdge1, newEdge2);
+		applier_.ApplySplit(*it, edge, newEdge1, newEdge2);
 	}
 }
 
@@ -152,10 +172,10 @@ void EdgeGraph::DeleteEdge(EdgeId edge) {
 	VertexId start = Complement(rcEdge->end());
 	start->RemoveOutgoingEdge(edge);
 	rcStart->RemoveOutgoingEdge(rcEdge);
-	delete edge;
 	if (edge != rcEdge) {
 		delete rcEdge;
 	}
+	delete edge;
 }
 
 bool EdgeGraph::AreLinkable(VertexId v1, VertexId v2, const Sequence &nucls) const {
@@ -218,7 +238,7 @@ EdgeId EdgeGraph::MergePath(const vector<EdgeId>& path) {
 	FireMerge(path, newEdge);
 	DeleteEdge(path[0]);
 	for (size_t i = 0; i + 1 < path.size(); i++) {
-		VertexId v = EdgeEnd(path[i]);
+		VertexId v = EdgeStart(path[i + 1]);
 		DeleteEdge(path[i + 1]);
 		DeleteVertex(v);
 	}
@@ -250,6 +270,7 @@ void EdgeGraph::CompressAllVertices() {
 			} while (GoUniqueWay(e));
 			MergePath(mergeList);
 		}
+
 	}
 }
 

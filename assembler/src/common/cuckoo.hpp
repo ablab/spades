@@ -49,8 +49,10 @@ public:
   friend class const_iterator;
 
   class iterator {
-  private:
+  public:
     size_t pos;
+  private:
+    //size_t pos;
     cuckoo* hash;
     iterator(size_t p, cuckoo* h) : pos(p), hash(h) {}
     friend class cuckoo;
@@ -67,7 +69,7 @@ public:
       assert(hash != NULL);
       assert(pos != hash->len_);
       ++pos;
-      while (!hash->get_exists(pos) && pos < hash->len_) {
+      while ((pos < hash->len_) && !(hash->get_exists(pos))) {
         ++pos;
       }
       return *this;
@@ -88,7 +90,7 @@ public:
     }
 
     bool operator==(const iterator &it) {
-      return pos == it.pos && hash == it.hash;
+      return pos == it.pos /*&& hash == it.hash*/;
     }
 
     bool operator!=(const iterator &it) {
@@ -106,28 +108,16 @@ public:
   public:
     const_iterator() : pos(0), hash(NULL) {}
 
-    const pair<Key, Value> operator*() const {
-      return (*hash).data_from(pos);
+    void operator=(const iterator &it) {
+      pos = it.pos;
+      hash = it.hash;
     }
 
-    pair<Key, Value>* operator->() {
-      return &((*hash).data_from(pos));
-    }
-
-    bool operator==(const const_iterator &it) {
-      return pos == it.pos && hash == it.hash;
-    }
-
-    bool operator!=(const const_iterator &it) {
-      return !(*this == it);
-    }
-
-  private:
     iterator& operator++() {
       assert(hash != NULL);
       assert(pos != hash->len_);
       ++pos;
-      while (!hash->get_exists(pos) && pos < hash->len_) {
+      while ((pos < hash->len_) && (!(hash->get_exists(pos)))) {
         ++pos;
       }
       return *this;
@@ -138,6 +128,22 @@ public:
       this->operator++();
       return res;
     } 
+
+    const pair<Key, Value>& operator*() const {
+      return (*hash).data_from(pos);
+    }
+
+    const pair<Key, Value>* operator->() const {
+      return &((*hash).data_from(pos));
+    }
+
+    bool operator==(const const_iterator &it) {
+      return pos == it.pos && hash == it.hash;
+    }
+
+    bool operator!=(const const_iterator &it) {
+      return !(*this == it);
+    }
   };
 
 private:
@@ -213,7 +219,7 @@ private:
 
   void rehash() {
     size_t len_temp_ = len_part_;
-    len_part_ = (size_t)(len_part_ * step_);//step_nom / step_denom;
+    len_part_ = (size_t)(len_part_ * step_);
     len_part_ = ((len_part_ + 7) / 8) * 8;
     len_ = len_part_ * d_;
     
@@ -276,7 +282,7 @@ public:
   // @parameter step determines the ratio of increasing the size of hash
   // during rehash.   
   // The less it is the less memory will be used but the more time is needed. 
-  cuckoo(size_t d = 4, size_t init_length = 100, size_t max_loop = 100, double step = 1.5)
+  cuckoo(size_t d = 4, size_t init_length = 100, size_t max_loop = 100, double step = 1.2)
     : d_(d), init_length_(init_length), max_loop_(max_loop), step_(step) {
     init();
   }
@@ -302,13 +308,25 @@ public:
   }
 
   cuckoo(cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
+    d_ = Cuckoo.d_;
+    init_length_ = Cuckoo.init_length_;
+    max_loop_ = Cuckoo.max_loop_;
+    step_ = Cuckoo.step_;
     init();
-    *this = Cuckoo;
+    iterator it = Cuckoo.begin();
+    iterator final = Cuckoo.end();
+    while (it != final) {
+      insert(*it);
+      ++it;
+    }
+    //the following short code causes std::bad_alloc
+    //init();
+    //*this = Cuckoo;
   }
 
   // For test only!!!
   void set_up(size_t d = 4, size_t init_length = 100, 
-              size_t max_loop = 100, double step = 1.5) {
+              size_t max_loop = 100, double step = 1.2) {
     clear_all();
     d_ = d;
     init_length_ = init_length;

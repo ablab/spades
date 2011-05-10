@@ -7,6 +7,8 @@
 class CommandLine {
     char *m_line;
     char *m_kmer;
+    char *m_nameAlg;
+    bool isAlg;
 public:
     CommandLine(char **line, int count);
 };

@@ -128,14 +128,11 @@ public:
 	typedef set<Vertex*>::const_iterator VertexIterator;
 	typedef Vertex::EdgeIterator EdgeIterator;
 	typedef de_bruijn::GraphActionHandler<EdgeGraph> ActionHandler;
-//	typedef de_bruijn::PairedActionHandler<EdgeGraph> PairedActionHandler;
-	//	typedef de_bruijn::SmartVertexIterator<EdgeGraph> SmartVertexIterator;
-	//	typedef de_bruijn::SmartEdgeIterator<EdgeGraph> SmartEdgeIterator;
 
 private:
 	const size_t k_;
 
-	const HandlerApplier<EdgeGraph> *applier_;
+	const PairedHandlerApplier<EdgeGraph> applier_;
 
 	vector<ActionHandler*> action_handler_list_;
 
@@ -208,7 +205,7 @@ public:
 	 * @param k Main parameter that defines the size of k-mers
 	 * //@param action_handler Graph actions handler
 	 */
-	EdgeGraph(size_t k) : k_(k), applier_(new PairedHandlerApplier<EdgeGraph>(*this)) {
+	EdgeGraph(size_t k) : k_(k) , applier_(*this) {
 		assert(k % 2 == 1);
 	}
 
@@ -219,7 +216,6 @@ public:
 		while (!vertices_.empty()) {
 			ForceDeleteVertex(*vertices_.begin());
 		}
-		delete applier_;
 	}
 
 	size_t k() {
@@ -256,6 +252,8 @@ public:
 	const vector<EdgeId> OutgoingEdges(VertexId v) const;
 
 	const vector<EdgeId> IncomingEdges(VertexId v) const;
+
+	const vector<EdgeId> NeighbouringEdges(EdgeId e) const;
 
 	EdgeId OutgoingEdge(VertexId v, char nucl) const;
 
@@ -297,10 +295,6 @@ public:
 	double coverage(EdgeId edge) const {
 		return (double) edge->coverage_ / length(edge);
 	}
-
-//	size_t KPlusOneMerCoverage(EdgeId edge) const {
-//		return edge->coverage_;
-//	}
 
 	void IncCoverage(EdgeId edge, int toAdd) {
 		edge->coverage_ += toAdd;

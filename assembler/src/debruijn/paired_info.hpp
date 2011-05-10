@@ -6,7 +6,7 @@
 #include <cmath>
 #include <map>
 
-#define MERGE_DATA_ABSOLUTE_DIFFERENCE 1000
+#define MERGE_DATA_ABSOLUTE_DIFFERENCE 0
 //#define MERGE_DATA_RELATIVE_DIFFERENCE 0.3
 
 namespace de_bruijn {
@@ -17,73 +17,7 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
-	template<size_t kmer_size>
-	void ProcessPairedRead(PairedRead &p_r,
-			de_bruijn::SimpleSequenceMapper<kmer_size, Graph> &read_threader) {
-		Sequence read1 = p_r.first().getSequence();
-		Sequence read2 = p_r.second().getSequence();
-		de_bruijn::Path<EdgeId> path1 = read_threader.MapSequence(read1);
-		de_bruijn::Path<EdgeId> path2 = read_threader.MapSequence(read2);
-		size_t distance = CountDistance(read1, read2);
-		int current_distance1 = distance + path1.start_pos()
-				- path2.start_pos();
-		for (size_t i = 0; i < path1.size(); ++i) {
-			int current_distance2 = current_distance1;
-			for (size_t j = 0; j < path2.size(); ++j) {
-				double weight = CorrectLength(path1, i) * CorrectLength(path2,
-						j);
-				PairInfo
-						new_info(path1[i], path2[j], current_distance2, weight);
-				AddPairInfo(new_info);
-				current_distance2 += graph_.length(path2[j]);
-			}
-			current_distance1 -= graph_.length(path1[i]);
-		}
-	}
 public:
-
-	//begin-end insert size supposed
-	PairedInfoIndex(Graph &g, size_t insert_size) :
-		graph_(g), insert_size_(insert_size) {
-		g.AddActionHandler(this);
-	}
-
-	virtual ~PairedInfoIndex() {
-		graph_.RemoveActionHandler(this);
-	}
-
-	template<size_t kmer_size, class Stream>
-	void FillIndex(const EdgeIndex<kmer_size + 1, Graph>& index,
-			Stream& stream) {
-		data_.clear();
-		de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin();
-		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it; ++it) {
-			AddPairInfo(PairInfo(*it, *it, 0, 1));
-		}
-		typedef Seq<kmer_size + 1> KPOMer;
-		de_bruijn::SimpleSequenceMapper<kmer_size, Graph> read_threader(graph_,
-				index);
-		while (!stream.eof()) {
-			PairedRead p_r;
-			stream >> p_r;
-			ProcessPairedRead(p_r, read_threader);
-		}
-	}
-
-	double sum() {
-		double res = 0;
-		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
-				!= it; ++it)
-			for (de_bruijn::SmartEdgeIterator<Graph> it1 =
-					graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it1; ++it1) {
-				PairInfos vec = GetEdgePairInfo(*it1, *it);
-				if (vec.size() != 0) {
-					for (size_t i = 0; i < vec.size(); i++)
-						res += vec[i].weight_;
-				}
-			}
-		return res;
-	}
 
 	class PairInfo {
 		friend class PairedInfoIndex;
@@ -125,7 +59,6 @@ public:
 	typedef typename PairInfos::const_iterator infos_iterator;
 
 private:
-
 	//todo try storing set<PairInfo>
 	class PairInfoIndexData {
 		typedef multimap<pair<EdgeId, EdgeId> , pair<double, double>> Data;
@@ -235,11 +168,80 @@ private:
 		}
 	};
 
-	Graph& graph_;
-	PairInfoIndexData data_;
+public:
 
 	//begin-end insert size supposed
-	size_t insert_size_;
+	PairedInfoIndex(Graph &g) :
+		graph_(g) {
+		g.AddActionHandler(this);
+	}
+
+	virtual ~PairedInfoIndex() {
+		graph_.RemoveActionHandler(this);
+	}
+
+	template<size_t kmer_size, class Stream>
+	void FillIndex(const EdgeIndex<kmer_size + 1, Graph>& index,
+			Stream& stream) {
+		data_.clear();
+		de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin();
+		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it; ++it) {
+			AddPairInfo(PairInfo(*it, *it, 0, 1));
+		}
+		typedef Seq<kmer_size + 1> KPOMer;
+		de_bruijn::SimpleSequenceMapper<kmer_size, Graph> read_threader(graph_,
+				index);
+		while (!stream.eof()) {
+			PairedRead p_r;
+			stream >> p_r;
+			ProcessPairedRead(p_r, read_threader);
+		}
+	}
+
+	double sum() {
+		double res = 0;
+		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
+				!= it; ++it)
+			for (de_bruijn::SmartEdgeIterator<Graph> it1 =
+					graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it1; ++it1) {
+				PairInfos vec = GetEdgePairInfo(*it1, *it);
+				if (vec.size() != 0) {
+					for (size_t i = 0; i < vec.size(); i++)
+						res += vec[i].weight_;
+				}
+			}
+		return res;
+	}
+
+private:
+
+	template<size_t kmer_size>
+	void ProcessPairedRead(const PairedRead& p_r,
+			de_bruijn::SimpleSequenceMapper<kmer_size, Graph> &read_threader) {
+		Sequence read1 = p_r.first().getSequence();
+		Sequence read2 = p_r.second().getSequence();
+		de_bruijn::Path<EdgeId> path1 = read_threader.MapSequence(read1);
+		de_bruijn::Path<EdgeId> path2 = read_threader.MapSequence(read2);
+		size_t distance = CountDistance(p_r);
+		int current_distance1 = distance + path1.start_pos()
+				- path2.start_pos();
+		for (size_t i = 0; i < path1.size(); ++i) {
+			int current_distance2 = current_distance1;
+			for (size_t j = 0; j < path2.size(); ++j) {
+//				double weight = CorrectLength(path1, i) * CorrectLength(path2,
+//						j);
+				double weight = 1;
+				PairInfo
+						new_info(path1[i], path2[j], current_distance2, weight);
+				AddPairInfo(new_info);
+				current_distance2 += graph_.length(path2[j]);
+			}
+			current_distance1 -= graph_.length(path1[i]);
+		}
+	}
+
+	Graph& graph_;
+	PairInfoIndexData data_;
 
 	size_t CorrectLength(const de_bruijn::Path<EdgeId>& path, size_t index) {
 		size_t result = graph_.length(path[index]);
@@ -259,8 +261,8 @@ private:
 		path_nucls_passed += edge_length;
 	}
 
-	size_t CountDistance(const Sequence& read1, const Sequence& read2) {
-		return insert_size_ - read2.size();
+	size_t CountDistance(const PairedRead& paired_read) {
+		return paired_read.distance() - paired_read.second().size();
 	}
 
 	bool CanMergeData(const PairInfo& info1, const PairInfo& info2) {
@@ -300,15 +302,15 @@ private:
 		data_.DeleteEdgeInfo(edge);
 	}
 
-	void OutputEdgeData(EdgeId edge1, EdgeId edge2) {
+	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os=cout) {
 		PairInfos vec = GetEdgePairInfo(edge1, edge2);
 		if (vec.size() != 0) {
-			cout << edge1 << " " << graph_.length(edge1) << " " << edge2 << " "
+			os << edge1 << " " << graph_.length(edge1) << " " << edge2 << " "
 					<< graph_.length(edge2) << endl;
 			if (graph_.EdgeEnd(edge1) == graph_.EdgeStart(edge2))
-				cout << "+" << endl;
+				os << "+" << endl;
 			if (graph_.EdgeEnd(edge2) == graph_.EdgeStart(edge1))
-				cout << "-" << endl;
+				os << "-" << endl;
 			int min = INT_MIN;
 			for (size_t i = 0; i < vec.size(); i++) {
 				int next = -1;
@@ -318,7 +320,7 @@ private:
 						next = j;
 					}
 				}
-				cout << vec[next].d() << " " << vec[next].weight() << endl;
+				os << vec[next].d() << " " << vec[next].weight() << endl;
 				if (next == -1) {
 					assert(false);
 				}
@@ -351,13 +353,19 @@ private:
 
 public:
 
-	void OutputData() {
+	void OutputData(ostream &os = cout) {
 		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
 				!= it; ++it)
 			for (de_bruijn::SmartEdgeIterator<Graph> it1 =
 					graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it1; ++it1) {
-				OutputEdgeData(*it, *it1);
+				OutputEdgeData(*it, *it1, os);
 			}
+	}
+	void OutputData(string fileName) {
+		ofstream s;
+		s.open(fileName.c_str());
+		OutputData(s);
+		s.close();
 	}
 
 	PairInfos GetEdgeInfo(EdgeId edge) {

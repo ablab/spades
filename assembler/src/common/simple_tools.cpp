@@ -1,5 +1,7 @@
+
 #include "simple_tools.hpp"
 #include "nucl.hpp"
+
 string Reverse(const string &s) {
 	size_t length = s.length();
 	string result(length, 0);
