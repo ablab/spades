@@ -342,9 +342,9 @@ public:
 			for (size_t i = 0; i < seq.data_size_; i++) {
 				h = ((h << 5) - h) + seq.data_[i];
 			}
-			//unsigned long l = 4 * hash_num + 1;
-			//return (size_t) (l * h % 1000000007);
-			return (7 * hash_num + 1) * h;
+			unsigned long l = 4 * hash_num + 1;
+			return (size_t) (l * h % 1000000007);
+			//return (7 * hash_num + 1) * h;
 		}
 	};
 

@@ -6,6 +6,7 @@
 #include <tr1/unordered_map>
 #include <google/sparse_hash_map>
 #include "cuckoo.hpp"
+//#include "mem.hpp"
 
 #define K 31
 

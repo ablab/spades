@@ -56,17 +56,16 @@ public:
     gettimeofday(&tim, NULL);
     double t2 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
+    //hm map2;
     size_t n = 0;
     if (find) {
       Seq<size> seq;
       typename hm::iterator it;
-      typename hm::const_iterator it2;
-      for (size_t j = 0; j < 100; ++j) {
-        for (it = map.begin(); it != map.end(); ++it) {
-          seq = (*it).first;
-          it2 = map.find(seq);
-          ++n;
-        }
+      for (it = map.begin(); it != map.end(); ++it) {
+        seq = (*it).first;
+        map.find(seq);
+        ++n;
+        //map2.insert(std::pair<Seq<31>, size_t>(seq, 0));
       }
     }
 
