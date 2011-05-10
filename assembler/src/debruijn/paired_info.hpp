@@ -35,11 +35,16 @@ public:
 		EdgeId second() const {
 			return second_;
 		}
+
 		int d() const {
 			int res = (int) (std::abs(d_) + 0.5 + 1e-9);
 			if (d_ < 0)
 				res = -res;
 			return res;
+		}
+
+		int exact_d() const {
+			return d_;
 		}
 
 		double weight() const {
@@ -106,6 +111,7 @@ private:
 			assert(updated);
 		}
 
+	public:
 		data_iterator begin() {
 			return data_.begin();
 		}
@@ -113,7 +119,6 @@ private:
 		data_iterator end() {
 			return data_.end();
 		}
-	public:
 
 		void AddPairInfo(const PairInfo& pair_info) {
 			if (pair_info.first_ == pair_info.second_ && pair_info.d_ == 0) {
@@ -189,38 +194,39 @@ private:
 public:
 	class EdgePairIterator {
 		typename PairInfoIndexData::data_iterator position_;
+		PairedInfoIndex<Graph> &index_;
 	public:
-		EdgePairIterator(typename PairInfoIndexData::data_iterator position) :
-			position_(position) {
+		EdgePairIterator(typename PairInfoIndexData::data_iterator position,
+				PairedInfoIndex<Graph> &index) :
+			position_(position), index_(index) {
 		}
 
-		bool operator==(EdgePairIterator &other) {
+		bool operator==(const EdgePairIterator &other) {
 			return this->position_ == other.position_;
 		}
 
-		bool operator!=(EdgePairIterator &other) {
+		bool operator!=(const EdgePairIterator &other) {
 			return this->position_ != other.position_;
 		}
 
 		PairInfos operator*() const {
-			pair<EdgeId, EdgeId> currentPair = position_.first;
-			return PairedInfoIndex::GetEdgePairInfo(currentPair.first,
-					currentPair.second);
+			pair<EdgeId, EdgeId> currentPair = position_->first;
+			return index_.GetEdgePairInfo(currentPair.first, currentPair.second);
 		}
 
 		void operator++() {
-			pair<EdgeId, EdgeId> currentPair = position_.first;
-			position_ = PairedInfoIndex::data_.UpperBound(currentPair.first,
+			pair<EdgeId, EdgeId> currentPair = position_->first;
+			position_ = index_.data_.UpperBound(currentPair.first,
 					currentPair.second);
 		}
 	};
 
 	EdgePairIterator begin() {
-		return EdgePairIterator(data_.begin());
+		return EdgePairIterator(data_.begin(), *this);
 	}
 
 	EdgePairIterator end() {
-		return EdgePairIterator(data_.end());
+		return EdgePairIterator(data_.end(), *this);
 	}
 
 	//begin-end insert size supposed
@@ -339,6 +345,7 @@ private:
 		data_.UpdateInfo(info1, newD, newWeight);
 	}
 
+public:
 	void AddPairInfo(const PairInfo& pair_info) {
 		PairInfos pair_infos = data_.GetEdgePairInfos(pair_info.first_,
 				pair_info.second_);
@@ -351,6 +358,7 @@ private:
 		data_.AddPairInfo(pair_info);
 	}
 
+private:
 	void RemoveEdgeInfo(EdgeId edge) {
 		data_.DeleteEdgeInfo(edge);
 	}
@@ -463,22 +471,49 @@ public:
 
 };
 
-//template<class Graph>
-//class SimpleOfflineClusterer {
-//	const PairedInfoIndex<Graph> &not_clustered_;
-//	const Graph &graph_;
-//
-//	SimpleOfflineClusterer(Graph &graph, PairedInfoIndex<Graph> &not_clustered) :
-//		not_clustered_(not_clustered), graph_(graph) {
-//	}
-//
-//	void cluster(PairedInfoIndex<Graph> &clustered) {
-//		assert(&not_clustered_ != &clustered);
-//		for (PairedInfoIndex<Graph>::EdgePairIterator it = not_clustered_) {
-//			//			PairedInfoIndex::PairInfos edgeInfo = not_clustered_.get
-//		}
-//	}
-//};
+template<class Graph>
+class SimpleOfflineClusterer {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename PairedInfoIndex<Graph>::PairInfo PairInfo;
+	typedef vector<PairInfo> PairInfos;
+
+public:
+	PairedInfoIndex<Graph> &not_clustered_;
+
+	SimpleOfflineClusterer(PairedInfoIndex<Graph> &not_clustered) :
+		not_clustered_(not_clustered) {
+	}
+
+	typename PairedInfoIndex<Graph>::PairInfos ProcessEdgePair(
+			const typename PairedInfoIndex<Graph>::PairInfos &infos) {
+		EdgeId edge1 = infos[0].first();
+		EdgeId edge2 = infos[0].second();
+		double d_sum = 0;
+		double weight_sum = 0;
+		for (size_t i = 0; i < infos.size(); i++) {
+			d_sum += infos[i].exact_d();
+			weight_sum += infos[i].weight();
+		}
+		PairInfo sum_info(edge1, edge2, d_sum / infos.size(), weight_sum);
+		PairInfos result;
+		result.push_back(sum_info);
+		return result;
+	}
+
+	void cluster(PairedInfoIndex<Graph> &clustered) {
+		assert(&not_clustered_ != &clustered);
+		for (typename PairedInfoIndex<Graph>::EdgePairIterator it =
+				not_clustered_.begin(); it != not_clustered_.end(); ++it) {
+			typename PairedInfoIndex<Graph>::PairInfos newInfos =
+					ProcessEdgePair(*it);
+			for (size_t i = 0; i < newInfos.size(); i++) {
+				clustered.AddPairInfo(newInfos[i]);
+			}
+		}
+	}
+};
 
 }
 

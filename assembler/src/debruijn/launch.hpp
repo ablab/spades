@@ -145,6 +145,10 @@ void EdgeGraphTool(ReadStream& stream, const string& genome, const string& outpu
 	RemoveBulges(g);
 	ProduceInfo<k> (g, index, genome, output_folder + "bulges_removed.dot", "no_bulge_graph");
 
+	de_bruijn::SimpleOfflineClusterer<EdgeGraph> clusterer(paired_index);
+	PairedIndex clustered_paired_index(g);
+	clusterer.cluster(clustered_paired_index);
+
 	ResolveRepeats(g, paired_index);
 	INFO("Tool finished")
 }
