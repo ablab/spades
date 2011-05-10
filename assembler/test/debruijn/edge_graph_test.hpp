@@ -179,10 +179,10 @@ void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 		string etalon_edges[]) {
 	VectorStream<Read> read_stream(MakeReads(reads_str, read_cnt));
 //todo reduce code duplication
-	de_bruijn::DeBruijnPlus<kmer_size_+1, EdgeId> debruijn(read_stream);
 	EdgeGraph g(kmer_size_);
+	de_bruijn::EdgeIndex<kmer_size_ + 1, EdgeGraph> index(g);
+	de_bruijn::DeBruijnPlus<kmer_size_+1, EdgeId> &debruijn = index.inner_index();
 	EdgeGraphConstructor<kmer_size_> g_c(debruijn);
-	de_bruijn::EdgeIndex<kmer_size_ + 1, EdgeGraph> index(g, debruijn);
 	g_c.ConstructGraph(g, index);
 
 	edge_set edges;
