@@ -32,7 +32,7 @@ class RepeatResolver {
 	typedef map<VertexId,set<EdgeId> > NewVertexMap;
 	typedef map <VertexId, set<VertexId> > VertexIdMap;
 public:
-	RepeatResolver(int leap = 0, Graph g = NULL, PairedInfoIndex old_index_ = NULL) : leap_(leap), new_graph(K), old_graph(g), new_index(new_graph), old_index(old_index_){
+	RepeatResolver(int leap = 0) : leap_(leap), new_graph(K), new_index(new_graph){
 
 
 		assert(leap >= 0 && leap < 100);
@@ -46,10 +46,10 @@ private:
 	VertexIdMap vid_map;
 	NewVertexMap new_map;
 	Graph new_graph;
-	PairedInfoIndex old_index;
+//	PairedInfoIndex old_index;
 	PairedInfoIndex new_index;
 
-	Graph old_graph;
+//	Graph old_graph;
 };
 
 template<class Graph>
@@ -91,9 +91,11 @@ void RepeatResolver<Graph>::ResolveVertex( Graph &g, PairedInfoIndex &ind, Verte
 	int cur_id = 0;
 	for (int dir = 0; dir < 2; dir++) {
 		for (int i = 0, n = edgeIds[dir].size(); i < n; i ++) {
-			DEBUG("edge " << dir <<" "<<i);
+			DEBUG("edge " << dir <<" "<<i << "  going to n: "<< n);
 			PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
+			DEBUG(tmp.size());
 			for (int j = 0, sz = tmp.size(); j < sz; j++) {
+				DEBUG("index info " << j);
 				EdgeId right_id = tmp[j].second();
 				EdgeId left_id = tmp[j].first();
 				if (right_to_left.find(right_id) != right_to_left.end())
@@ -107,18 +109,26 @@ void RepeatResolver<Graph>::ResolveVertex( Graph &g, PairedInfoIndex &ind, Verte
 					cur_id ++;
 				}
 			}
+			DEBUG("finished "<< dir << " " << i);
 	//		old_index.getEdgeInfos(inEdgeIds[i]);
 		}
 	}
+	INFO("clustering...");
+
 	int right_edge_count = right_set.size();
 	vector<vector<EdgeId> > edge_list(right_edge_count);
+	DEBUG("Total: " << right_edge_count << "edges");
 	LOG_ASSERT(right_edge_count == right_vector.size(), "Size mismatch");
 	vector<int> colors(right_edge_count);
 	for(int i = 0; i < right_edge_count; i++)
 		colors[i] = 0;
 	for(int i = 0; i < right_edge_count; i++) {
 //TODO Add option to "jump" - use not only direct neighbours(parameter leap in constructor)
+		DEBUG("Seq in edge:" <<g.EdgeNucls(right_vector[i]).str());
 		vector<EdgeId> neighbours = g.NeighbouringEdges(right_vector[i]);
+
+		DEBUG("neighbours" << neighbours.size())
+
 		for(int j = 0, sz = neighbours.size(); j < sz; j++){
 			if (right_set.find(neighbours[j]) != right_set.end()) {
 				edge_list[i].push_back(neighbours[j]);
