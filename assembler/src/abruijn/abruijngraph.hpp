@@ -280,7 +280,7 @@ public:
 	void addEdge(Vertex* from, Vertex* to, const Sequence& seq);
 	void removeVertex(Vertex* v);
 	void removeVertex_single(Vertex* v);
-	bool hasVertex(const Sequence& kmer);
+	bool hasVertex(const Sequence& kmer) const;
 	Vertex* getVertex(const Sequence& kmer);
 
 	void Condense();
