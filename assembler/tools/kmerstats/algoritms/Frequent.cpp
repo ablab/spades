@@ -1,5 +1,7 @@
 #include "Frequent.h"
+#include "../AdditionalFunction.h"
 #include <map>
+
 
 void WrapperFrequent(char *p, off_t size, int kmer, double k = 0.0, double l = 0.0) {
     Frequent(p, size, 40);
@@ -25,11 +27,7 @@ void Frequent(char *p, off_t size, int k) {
         }
     }
 
-    std::map<char,int>::iterator it;
-    for ( it = m_count.begin() ; it != m_count.end(); ++it ) {
-        std::cout << (*it).first << " => " << (*it).second << std::endl;
-
-    }
+    createDatFile(m_count);
 }
 
 

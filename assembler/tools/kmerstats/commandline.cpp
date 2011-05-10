@@ -6,7 +6,7 @@
 
 #include "analyses.h"
 
-CommandLine::CommandLine(char **argv, int argc) {
+CommandLine::CommandLine(char **argv, int argc): isAlg(false) {
     int c;
 
     while (1) {
@@ -33,6 +33,7 @@ CommandLine::CommandLine(char **argv, int argc) {
                 m_kmer = optarg;
             } else if (long_options[option_index].name == "algoritm") {
                 m_nameAlg = optarg;
+                isAlg = true;
             }
             break;
 
@@ -46,6 +47,7 @@ CommandLine::CommandLine(char **argv, int argc) {
 
         case 'a':
             m_nameAlg = optarg;
+            isAlg = true;
             break;
 
         case 'h':
@@ -54,6 +56,6 @@ CommandLine::CommandLine(char **argv, int argc) {
         }
     }
 
-    Analyses a(m_line, m_kmer, m_nameAlg);
+    Analyses a(m_line, m_kmer, m_nameAlg, isAlg);
 }
 

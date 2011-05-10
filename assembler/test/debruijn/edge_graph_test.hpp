@@ -175,8 +175,9 @@ vector<Read> MakeReads(string *ss, size_t count) {
 template<size_t kmer_size_>
 void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 		string etalon_edges[]) {
-	vector<Read> reads = MakeReads(reads_str, read_cnt);
-	de_bruijn::DeBruijnPlus<kmer_size_+1, EdgeId> debruijn(reads, true);
+	VectorStream<Read> read_stream(MakeReads(reads_str, read_cnt));
+//todo reduce code duplication
+	de_bruijn::DeBruijnPlus<kmer_size_+1, EdgeId> debruijn(read_stream);
 	EdgeGraph g(kmer_size_);
 	EdgeGraphConstructor<kmer_size_> g_c(debruijn);
 	de_bruijn::EdgeIndex<kmer_size_ + 1, EdgeGraph> index(g, debruijn);
@@ -190,24 +191,6 @@ void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
 	DEBUG(print(edges));
 
 	MyEquals(edges, etalon_edges, edge_cnt);
-}
-
-template<size_t kmer_size_, class ReadStream>
-void ConstructGraphAndBothIndices(ReadStream& stream, EdgeGraph& g, de_bruijn::DeBruijnPlus<kmer_size_ + 1, EdgeId>& index, PairedInfoIndex<EdgeGraph>& paired_index) {
-//	de_bruijn::DeBruijn<kmer_size_> debruijn;
-//
-//	SimpleReaderWrapper<ReadStream> unitedStream(stream);
-//	debruijn.ConstructGraph(unitedStream);
-//
-//	EdgeGraphConstructor<kmer_size_> g_c(debruijn);
-//	EdgeHashRenewer<kmer_size_ + 1, EdgeGraph> index_handler(g, index);
-//	g.AddActionHandler(&index_handler);
-//	g_c.ConstructGraph(g, index);
-//
-//	stream.reset();
-//	paired_index.FillIndex<K, ReadStream>(index, stream);
-//
-//	g.RemoveActionHandler(&index_handler);
 }
 
 //todo rename tests

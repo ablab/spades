@@ -40,7 +40,7 @@ class ComplementVisHandler: public TraversalHandler {
 //			ss << g_.length(e) << ":" << e->nucls();
 		ss << "(";
 		ss << ((int) (g_.coverage(e) * 100)) * 0.01;
-		ss << ")";
+		ss << ") id="<<e;
 		return ss.str();
 	}
 public:

@@ -158,7 +158,6 @@ public:
 			if (isTip(graph, tip)) {
 				bool tmp = tipShouldBeRemoved(graph, tip);
 				if (tmp) {
-
 					removeTip(graph, tip);
 				}
 			}

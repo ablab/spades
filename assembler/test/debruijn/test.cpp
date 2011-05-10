@@ -12,8 +12,15 @@ void RunTestSuites() {
 	cute::makeRunner(lis)(s, "De Bruijn Project Test Suites");
 }
 
+using edge_graph::EdgeGraph;
+
 int main() {
 //	RunTestSuites();
-//	string genome("AAAAAAAAA");
+	string genome = "AAAAAAAAAAAAAAAAAAAAA";
+	EdgeGraph g(5);
+	de_bruijn::EdgeIndex<5 + 1, EdgeGraph> index(g);
+	de_bruijn::CoverageHandler<EdgeGraph> coverage_handler(g);
+	de_bruijn::PairedInfoIndex<EdgeGraph> paired_index(g);
+	edge_graph::ConstructGraphFromGenome<5>(g, index, coverage_handler, paired_index, genome, 10);
 	return 0;
 }

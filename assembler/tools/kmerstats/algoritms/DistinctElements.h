@@ -16,6 +16,6 @@
 
 void WrapperDistinctElements(char *p, off_t size, int kmer, double k, double l);
 
-void DistinctElements(char *p, off_t size);
+void DistinctElements(char *p, off_t size, int kmer);
 
 #endif // DISTINCTELEMENTS_H

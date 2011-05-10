@@ -56,12 +56,17 @@ public:
     gettimeofday(&tim, NULL);
     double t2 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
+    size_t n = 0;
     if (find) {
       Seq<size> seq;
       typename hm::iterator it;
-      for (it = map.begin(); it != map.end(); ++it) {
-        seq = (*it).first;
-        map.find(seq);
+      typename hm::const_iterator it2;
+      for (size_t j = 0; j < 100; ++j) {
+        for (it = map.begin(); it != map.end(); ++it) {
+          seq = (*it).first;
+          it2 = map.find(seq);
+          ++n;
+        }
       }
     }
 
@@ -72,6 +77,7 @@ public:
       std::cout << "Memory: " << (vm2 - vm1) << std::endl;
       std::cout << "Insert: " << (t2 - t1) << std::endl;
       std::cout << "Find: " << (t3 - t2) << std::endl;
+      std::cout << "Elements to find: " << n << std::endl;
     }
     return seqs;
 	}

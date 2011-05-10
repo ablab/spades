@@ -113,6 +113,10 @@ public:
 			}
 			gb_.has_right.clear();
 			INFO("Done: " << gb_.tips.size() << " tips.");
+			if (gb_.tips.size() == 0) {
+				INFO("Quitting tip extension procedure");
+				break;
+			}
 
 			INFO("===== Finding tip extensions... =====");
 			reader_.reset();
@@ -122,6 +126,10 @@ public:
 				VERBOSE(i, " single reads");
 			}
 			INFO("Done: " << gb_.has_right.size() << " possible tip extensions");
+			if (gb_.has_right.size() == 0) {
+				INFO("Quitting tip extension procedure");
+				break;
+			}
 
 			INFO("===== Looking to the right... =====");
 			reader_.reset();
@@ -164,6 +172,7 @@ public:
 			}
 			INFO("Done: " << eh << " -> " << gb_.earmarked_hashes.size() << " earmarked hashes");
 			if (eh == gb_.earmarked_hashes.size()) {
+				INFO("Quitting tip extension procedure");
 				break;
 			}
 		}
@@ -177,9 +186,9 @@ public:
 		}
 		INFO("Done: " << gb_.graph_.vertices.size() << " vertices");
 
-		INFO("===== Condensing-A graph... =====");
-		gb_.graph_.Condense();
-		INFO("Done: " << gb_.graph_.vertices.size() << " vertices");
+//		INFO("===== Condensing-A graph... =====");
+//		gb_.graph_.Condense();
+//		INFO("Done: " << gb_.graph_.vertices.size() << " vertices");
 
 		return;
 	}
