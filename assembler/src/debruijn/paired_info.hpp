@@ -16,6 +16,7 @@ class PairedInfoIndex: public GraphActionHandler<Graph> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
+	const int max_difference_;
 
 public:
 
@@ -230,8 +231,9 @@ public:
 	}
 
 	//begin-end insert size supposed
-	PairedInfoIndex(Graph &g) :
-		graph_(g) {
+	PairedInfoIndex(Graph &g,
+			int max_difference = MERGE_DATA_ABSOLUTE_DIFFERENCE) :
+		max_difference_(max_difference), graph_(g) {
 		g.AddActionHandler(this);
 	}
 
@@ -327,7 +329,7 @@ private:
 	bool CanMergeData(const PairInfo& info1, const PairInfo& info2) {
 		if (info1.first_ != info2.first_ || info1.second_ != info2.second_)
 			return false;
-		if (std::abs(info2.d_ - info1.d_) <= MERGE_DATA_ABSOLUTE_DIFFERENCE) {
+		if (std::abs(info2.d_ - info1.d_) <= max_difference_) {
 			return true;
 		}
 		return false;
