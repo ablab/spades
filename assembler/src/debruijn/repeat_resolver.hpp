@@ -102,71 +102,104 @@ void RepeatResolver<Graph>::ResolveVertex( Graph &g, PairedInfoIndex &ind, Verte
 	edgeIds[1] = g.IncomingEdges(vid);
 	vector<set<EdgeId> > paired_edges;
 	paired_edges.resize(edgeIds[0].size() + edgeIds[1].size());
-	int i;
-	unsigned int j;
-	i = j;
-	map<EdgeId, set<EdgeId>> right_to_left;
-	map<EdgeId, int> right_set;
-	vector<EdgeId> right_vector;
-	int cur_id = 0;
-	for (int dir = 0; dir < 2; dir++) {
-		for (int i = 0, n = edgeIds[dir].size(); i < n; i ++) {
-			PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
-			for (int j = 0, sz = tmp.size(); j < sz; j++) {
-				EdgeId right_id = tmp[j].second();
-				EdgeId left_id = tmp[j].first();
-				if (tmp[j].d() > 0) {
-					if (right_to_left.find(right_id) != right_to_left.end())
-						right_to_left[right_id].insert(left_id);
-					else {
-						set<EdgeId> tmp_set;
-						tmp_set.insert(left_id);
-						right_to_left.insert(make_pair(right_id, tmp_set));
-						right_set.insert(make_pair(right_id, cur_id));
-						right_vector.push_back(right_id);
-						cur_id ++;
-					}
 
+	map<EdgeId, set<EdgeId>> right_to_left[2];
+	map<EdgeId, int> right_set[2];
+	vector<EdgeId> right_vector[2];
+	map<EdgeId, set<int> > left_colors[2];
+	vector<int> colors[2];
+	for (int mult = -1; mult < 3; mult += 2) {
+		int cur_ind = (mult + 1) / 2;
+		int cur_id = 0;
+
+		right_set[cur_ind].clear();
+		right_vector[cur_ind].clear();
+		right_to_left[cur_ind].clear();
+		for (int dir = 0; dir < 2; dir++) {
+			for (int i = 0, n = edgeIds[dir].size(); i < n; i ++) {
+				PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
+				for (int j = 0, sz = tmp.size(); j < sz; j++) {
+					EdgeId right_id = tmp[j].second();
+					EdgeId left_id = tmp[j].first();
+					if (tmp[j].d() * mult > 0) {
+						if (right_to_left[cur_ind].find(right_id) != right_to_left[cur_ind].end())
+							right_to_left[cur_ind][right_id].insert(left_id);
+						else {
+							set<EdgeId> tmp_set;
+							tmp_set.insert(left_id);
+							right_to_left[cur_ind].insert(make_pair(right_id, tmp_set));
+							right_set[cur_ind].insert(make_pair(right_id, cur_id));
+							right_vector[cur_ind].push_back(right_id);
+							cur_id ++;
+						}
+
+					}
+				}
+		//		old_index.getEdgeInfos(inEdgeIds[i]);
+			}
+		}
+
+
+
+		size_t right_edge_count = right_set[cur_ind].size();
+		vector<vector<int> > edge_list(right_edge_count);
+		DEBUG("Total: " << right_edge_count << "edges");
+		LOG_ASSERT(right_edge_count == right_vector[cur_ind].size(), "Size mismatch");
+		colors[cur_ind].resize(right_edge_count);
+		for(size_t i = 0; i < right_edge_count; i++)
+			colors[cur_ind][i] = 0;
+		for(size_t i = 0; i < right_edge_count; i++) {
+	//TODO Add option to "jump" - use not only direct neighbours(parameter leap in constructor)
+			vector<EdgeId> neighbours = g.NeighbouringEdges(right_vector[cur_ind][i]);
+			DEBUG("neighbours to "<<i<<"(" <<right_vector[cur_ind][i]<<  "): " << neighbours.size())
+
+
+			for(int j = 0, sz = neighbours.size(); j < sz; j++){
+				if (right_set[cur_ind].find(neighbours[j]) != right_set[cur_ind].end()) {
+					edge_list[i].push_back(right_set[cur_ind][neighbours[j]]);
+					DEBUG (right_set[cur_ind][neighbours[j]]<<"  "<<neighbours[j]);
 				}
 			}
-	//		old_index.getEdgeInfos(inEdgeIds[i]);
 		}
-	}
-
-
-	size_t right_edge_count = right_set.size();
-	vector<vector<int> > edge_list(right_edge_count);
-
-	DEBUG("Total: " << right_edge_count << "edges");
-	LOG_ASSERT(right_edge_count == right_vector.size(), "Size mismatch");
-	vector<int> colors(right_edge_count);
-	for(size_t i = 0; i < right_edge_count; i++)
-		colors[i] = 0;
-	for(size_t i = 0; i < right_edge_count; i++) {
-//TODO Add option to "jump" - use not only direct neighbours(parameter leap in constructor)
-		vector<EdgeId> neighbours = g.NeighbouringEdges(right_vector[i]);
-		DEBUG("neighbours to "<<i<<"(" <<right_vector[i]<<  "): " << neighbours.size())
-
-
-		for(int j = 0, sz = neighbours.size(); j < sz; j++){
-			if (right_set.find(neighbours[j]) != right_set.end()) {
-				edge_list[i].push_back(right_set[neighbours[j]]);
-				DEBUG (right_set[neighbours[j]]<<"  "<<neighbours[j]);
+		int cur_color = 0;
+		DEBUG("dfs started");
+		for(size_t i = 0; i < right_edge_count; i++) {
+			if (colors[cur_ind][i] == 0) {
+				cur_color++;
+				dfs(edge_list, colors[cur_ind], i, cur_color);
+			}
+		}
+		for(size_t i = 0; i < right_edge_count; i++) {
+			for(typename set<EdgeId>::iterator e_it = right_to_left[cur_ind][right_vector[cur_ind][i]].begin() , end_it = right_to_left[cur_ind][right_vector[cur_ind][i]].end(); e_it != end_it; e_it ++){
+				if (left_colors[cur_ind].find(*e_it) == left_colors[cur_ind].end()) {
+					set<int> tmp;
+					left_colors[cur_ind].insert(make_pair(*e_it, tmp));
+				}
+				left_colors[cur_ind][*e_it].insert(colors[cur_ind][i]);
 			}
 		}
 	}
-	int cur_color = 0;
-	DEBUG("dfs started");
-	for(int i = 0; i < right_edge_count; i++) {
-		if (colors[i] == 0) {
-			cur_color++;
-			dfs(edge_list, colors, i, cur_color);
+	set<pair<int, int> > color_pairs;
+	for(auto iter = left_colors[0].begin(), end_iter = left_colors[0].end();iter != end_iter; iter++ ) {
+		typename map<EdgeId, set<int> >::iterator sec_iter;
+		sec_iter = left_colors[1].find(iter->first);
+		if (sec_iter == left_colors[1].end()) {
+			WARN("an edge " << iter->first << " has paired info in only one direction");
+			continue;
+		}
+
+		for(auto first_c_iter = iter->second.begin(),first_c_end_iter = iter->second.end(); first_c_iter != first_c_end_iter; first_c_iter ++ ){
+			for(auto second_c_iter = sec_iter->second.begin(),second_c_end_iter = sec_iter->second.end(); second_c_iter != second_c_end_iter; second_c_iter ++ ){
+				color_pairs.insert(make_pair(*first_c_iter, *second_c_iter));
+			}
 		}
 	}
-	if (cur_color > 1) {
-		INFO("vertex "<<vid<< " splitted to " << cur_color);
+	if (color_pairs.size() > 1) {
+		INFO("vertex "<<vid<< " splitted to " << color_pairs.size());
 	}
-	sum_count += cur_color - 1;
+	sum_count += color_pairs.size();
+
+
 }
 
 }
