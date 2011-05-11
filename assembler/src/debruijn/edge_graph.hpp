@@ -253,6 +253,8 @@ public:
 
 	const vector<EdgeId> IncomingEdges(VertexId v) const;
 
+	const vector<EdgeId> NeighbouringEdges(EdgeId e) const;
+
 	EdgeId OutgoingEdge(VertexId v, char nucl) const;
 
 	size_t OutgoingEdgeCount(VertexId v) const {

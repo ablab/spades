@@ -31,12 +31,37 @@ const vector<EdgeId> EdgeGraph::OutgoingEdges(VertexId v) const {
 	return v->outgoing_edges_;
 }
 
+
 const vector<EdgeId> EdgeGraph::IncomingEdges(VertexId v) const {
 	vector<EdgeId> result;
 	VertexId rcv = Complement(v);
 	for (EdgeIterator it = rcv->begin(); it != rcv->end(); ++it) {
 		result.push_back(*it);
 	}
+	return result;
+}
+
+const vector<EdgeId> EdgeGraph::NeighbouringEdges(EdgeId e) const {
+	VertexId v_out = EdgeEnd(e);
+	VertexId v_in = EdgeStart(e);
+	DEBUG(v_out);
+	DEBUG(v_in);
+	vector<EdgeId> result = v_out->outgoing_edges_;
+	VertexId rcv_in = Complement(v_in);
+// these vectors are small, and linear time is less than log in this case.
+	DEBUG(result.size());
+	for (EdgeIterator it = rcv_in->begin(); it != rcv_in->end(); ++it) {
+		int fl = 1;
+		for (int j = 0, sz = result.size(); j < sz; j++)
+		   if (result[j] == *it){
+			   fl = 0;
+			   break;
+		   }
+
+		if (fl)
+			result.push_back(*it);
+	}
+	DEBUG(result.size());
 	return result;
 }
 
@@ -152,10 +177,10 @@ void EdgeGraph::DeleteEdge(EdgeId edge) {
 	VertexId start = Complement(rcEdge->end());
 	start->RemoveOutgoingEdge(edge);
 	rcStart->RemoveOutgoingEdge(rcEdge);
-	delete edge;
 	if (edge != rcEdge) {
 		delete rcEdge;
 	}
+	delete edge;
 }
 
 bool EdgeGraph::AreLinkable(VertexId v1, VertexId v2, const Sequence &nucls) const {
@@ -218,7 +243,7 @@ EdgeId EdgeGraph::MergePath(const vector<EdgeId>& path) {
 	FireMerge(path, newEdge);
 	DeleteEdge(path[0]);
 	for (size_t i = 0; i + 1 < path.size(); i++) {
-		VertexId v = EdgeEnd(path[i]);
+		VertexId v = EdgeStart(path[i + 1]);
 		DeleteEdge(path[i + 1]);
 		DeleteVertex(v);
 	}
@@ -250,6 +275,7 @@ void EdgeGraph::CompressAllVertices() {
 			} while (GoUniqueWay(e));
 			MergePath(mergeList);
 		}
+
 	}
 }
 

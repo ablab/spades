@@ -244,20 +244,33 @@ public:
 template<size_t k, class Graph>
 class EdgeIndex : public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
-	typedef de_bruijn::DeBruijnPlus<k, EdgeId> Index;
+	typedef de_bruijn::DeBruijnPlus<k, EdgeId> InnerIndex;
 	typedef Seq<k> Kmer;
 	Graph& g_;
-	Index& index_;
+	InnerIndex inner_index_;
 	DataHashRenewer<k, Graph, EdgeId> renewer_;
+	bool delete_index_;
 public:
 
-	EdgeIndex(Graph& g, Index &index) :
-		g_(g), index_(index), renewer_(g, index) {
+//	EdgeIndex(Graph& g, InnerIndex& inner_index) :
+//		g_(g), inner_index_(&inner_index), renewer_(g, *inner_index_), delete_index_(false) {
+//		g_.AddActionHandler(this);
+//	}
+
+	EdgeIndex(Graph& g) :
+		g_(g), inner_index_(), renewer_(g, inner_index_), delete_index_(true) {
 		g_.AddActionHandler(this);
 	}
 
 	virtual ~EdgeIndex() {
 		g_.RemoveActionHandler(this);
+//		if (delete_index_) {
+//			delete inner_index_;
+//		}
+	}
+
+	InnerIndex &inner_index() {
+		return inner_index_;
 	}
 
 	virtual void HandleAdd(EdgeId e) {
@@ -269,16 +282,13 @@ public:
 	}
 
 	bool containsInIndex(const Kmer& kmer) const {
-		return index_.containsInIndex(kmer);
+		return inner_index_.containsInIndex(kmer);
 	}
 
 	const pair<EdgeId, size_t>& get(const Kmer& kmer) const {
-		return index_.get(kmer);
+		return inner_index_.get(kmer);
 	}
 
-	bool deleteIfEqual(const Kmer& kmer, EdgeId edge) {
-		return index_.deleteIfEqual(kmer, edge);
-	}
 };
 
 template<size_t kmer_size_, typename Graph>
@@ -515,7 +525,7 @@ protected:
 
 public:
 	//== is supported only in case this or other is end iterator
-	bool operator==(QueueIterator &other) {
+	bool operator==(const QueueIterator& other) {
 		if (this->queue_.empty() && other.queue_.empty())
 			return true;
 		if (this->queue_.empty() || other.queue_.empty())
@@ -523,7 +533,7 @@ public:
 		assert(false);
 	}
 
-	bool operator!=(QueueIterator &other) {
+	bool operator!=(const QueueIterator& other) {
 		if (this->queue_.empty() && other.queue_.empty())
 			return false;
 		if (this->queue_.empty() || other.queue_.empty())

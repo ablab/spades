@@ -51,7 +51,7 @@ void Graph::removeVertex_single(Vertex* v) {
 	removedVertices.insert(v);
 }
 
-bool Graph::hasVertex(const Sequence& kmer) {
+bool Graph::hasVertex(const Sequence& kmer) const {
 	return seqVertice.count(kmer);
 }
 
@@ -71,6 +71,7 @@ Vertex* Graph::getVertex(const Sequence& kmer) {
 }
 
 void Graph::Condense_single(Vertex* v) {
+	assert(v->degree() == 1 && v->complement()->degree() == 1);
 	Vertex* u = v->edges().begin()->first;
 	Vertex* w = v->complement()->edges().begin()->first->complement();
 	assert(u != NULL);

@@ -1,5 +1,5 @@
 #include "LossyCounting.h"
-
+#include "../AdditionalFunction.h"
 
 void WrapperLossyCounting(char *p, off_t size, int kmer, double k, double l) {
     LossyCounting(p, size, 10);
@@ -31,12 +31,7 @@ void LossyCounting(char *p, off_t size, int k) {
         }
     }
 
-    std::cout << m_count.size() << std::endl;
-    std::map<char,int>::iterator it;
-    for ( it = m_count.begin() ; it != m_count.end(); ++it ) {
-        std::cout << (*it).first << " => " << (*it).second << std::endl;
-
-    }
+    createDatFile(m_count);
 }
 
 

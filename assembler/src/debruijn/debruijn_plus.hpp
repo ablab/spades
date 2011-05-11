@@ -37,7 +37,7 @@ private:
 	}
 
 	// DE BRUIJN:
-
+	//does it work for primitives???
 	void addEdge(const KPlusOneMer &k) {
 		nodes_.insert(make_pair(k, make_pair(Value(), -1)));
 	}
@@ -75,15 +75,24 @@ public:
 	typedef typename map_type::const_iterator map_const_iterator;
 
 	// DE BRUIJN:
+//	todo delete this constructor
+//	DeBruijnPlus(const vector<Read> &v, bool) { // bool just for differentiating from template constructor :(
+//		for (size_t i = 0; i < v.size(); ++i) {
+//			CountRead(v[i]);
+//		}
+//	}
 
-	DeBruijnPlus(const vector<Read> &v, bool) { // bool just for differentiating from template constructor :(
-		for (size_t i = 0; i < v.size(); ++i) {
-			CountRead(v[i]);
-		}
+	DeBruijnPlus() {
+
 	}
 
 	template<class ReadStream>
 	DeBruijnPlus(ReadStream &stream) {
+		Fill<ReadStream>(stream);
+	}
+
+	template<class ReadStream>
+	void Fill(ReadStream &stream) {
 		Read r;
 		while (!stream.eof()) {
 			stream >> r;

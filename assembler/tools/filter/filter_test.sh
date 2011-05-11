@@ -4,8 +4,10 @@ DATA_DIR=~/Assembler/data
 EXEC_DIR=../../build/tools/filter
 FILE_NUM=3
 FILE1=s_6.first10000_1.fastq.gz 
+#FILE2=s_6.first10000_1.fastq.gz 
+FILE3=s_6.first10000_1.fastq.gz 
 FILE2=s_6.first100000_1.fastq.gz 
-FILE3=s_6.first400000_1.fastq.gz 
+#FILE3=s_6.first400000_1.fastq.gz 
 
 make
 cp diagrams.gnu $EXEC_DIR
