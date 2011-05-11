@@ -132,7 +132,7 @@ typedef string MyRead;
 typedef pair<MyRead, MyRead> MyPairedRead;
 typedef string MyEdge;
 typedef pair<MyEdge, MyEdge> MyEdgePair;
-typedef map<MyEdgePair, pair<size_t, double>> EdgePairInfo;
+typedef multimap<MyEdgePair, pair<int, double>> EdgePairInfo;
 typedef map<MyEdge, double> CoverageInfo;
 typedef tr1::unordered_set<MyEdge> Edges;
 
@@ -173,6 +173,24 @@ const CoverageInfo AddComplement(const CoverageInfo& coverage_info) {
 	for (auto it = coverage_info.begin(); it != coverage_info.end(); ++it) {
 		ans.insert(*it);
 		ans.insert(make_pair(Complement((*it).first), (*it).second));
+	}
+	return ans;
+}
+
+const EdgePairInfo AddBackward(const EdgePairInfo& pair_info) {
+	EdgePairInfo ans;
+	for (auto it = pair_info.begin(); it != pair_info.end(); ++it) {
+		ans.insert(*it);
+		ans.insert(make_pair(make_pair((*it).first.second, (*it).first.first), make_pair(-(*it).second.first, (*it).second.second)));
+	}
+	return ans;
+}
+
+const EdgePairInfo AddComplement(const EdgePairInfo& pair_info) {
+	EdgePairInfo ans;
+	for (auto it = pair_info.begin(); it != pair_info.end(); ++it) {
+		ans.insert(*it);
+		ans.insert(make_pair(make_pair(Complement((*it).first.second), Complement((*it).first.first)), (*it).second));
 	}
 	return ans;
 }
@@ -231,8 +249,23 @@ void AssertCoverage(EdgeGraph& g, const CoverageInfo& etalon_coverage) {
 	}
 }
 
-void AssertPairInfo(const PairedIndex& paired_index, const EdgePairInfo& etalon_pair_info) {
-
+void AssertPairInfo(const EdgeGraph& g, /*todo const */PairedIndex& paired_index, const EdgePairInfo& etalon_pair_info) {
+	for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
+		PairedIndex::PairInfos infos = *it;
+		for (auto info_it = infos.begin(); info_it != infos.end(); ++info_it) {
+			PairedIndex::PairInfo pair_info = *info_it;
+			pair<EdgePairInfo::const_iterator, EdgePairInfo::const_iterator>
+				equal_range = etalon_pair_info.equal_range(make_pair(g.EdgeNucls(pair_info.first()).str(), g.EdgeNucls(pair_info.second()).str()));
+			ASSERT(equal_range.first != equal_range.second);
+			bool found = false;
+			for (auto range_it = equal_range.first; range_it != equal_range.second; ++range_it) {
+				if ((*range_it).second.first == pair_info.d() && EqualDouble((*range_it).second.second, pair_info.weight())) {
+					found = true;
+				}
+			}
+			ASSERT(found);
+		}
+	}
 }
 
 template<size_t k>
@@ -252,7 +285,7 @@ void AssertGraph(const vector<MyPairedRead>& paired_reads, size_t insert_size, c
 
 	AssertCoverage(g, etalon_coverage);
 
-	AssertPairInfo(paired_index, etalon_pair_info);
+	AssertPairInfo(g, paired_index, AddComplement(AddBackward(etalon_pair_info)));
 }
 
 //todo rename tests
@@ -293,11 +326,11 @@ void TestCondenseSimple() {
 	AssertGraph<5> (reads, edges);
 }
 
-void TestPairedInfo() {
-	vector<string> reads = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
-	vector<string> edges = { "CGAAAACACAC", "CACACC", "CGAAACCACAC" };
-	AssertGraph<5> (reads, edges);
-}
+//void TestPairedInfo() {
+//	vector<MyPairedRead> reads = {{"CGAAACCAC", "AACCACACC"}, {"CGAAAACAC", "AAACACACC"}};
+//	vector<string> edges = {"CGAAAACACAC", "CACACC", "CGAAACCACAC"};
+//	AssertGraph<5> (reads, edges);
+//}
 
 cute::suite EdgeGraphSuite() {
 	cute::suite s;
@@ -309,6 +342,7 @@ cute::suite EdgeGraphSuite() {
 //	s.push_back(CUTE(GraphMethodsSimpleTest));
 	s.push_back(CUTE(SmartIteratorTest));
 	s.push_back(CUTE(TestBuldge));
+//	s.push_back(CUTE(TestPairedInfo));
 
 	s.push_back(CUTE(TestSimpleThread));
 	s.push_back(CUTE(TestSimpleThread2));
