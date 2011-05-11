@@ -14,10 +14,11 @@
 #include "logging.hpp"
 #include "paired_info.hpp"
 #include "config.hpp"
+
 LOGGER("d.repeat_resolver");
-
-
 namespace de_bruijn {
+
+
 template<class Graph>
 class RepeatResolver {
 	typedef typename Graph::EdgeId EdgeId;
@@ -43,9 +44,11 @@ private:
 	int leap_;
 	void ResolveVertex(Graph &g, PairedInfoIndex &ind, VertexId vid);
 	void ResolveEdge(EdgeId eid);
+	void dfs(vector<vector<int> > &edge_list, vector<int> &colors, int cur_vert, int cur_color);
 	VertexIdMap vid_map;
 	NewVertexMap new_map;
 	Graph new_graph;
+	int sum_count;
 //	PairedInfoIndex old_index;
 	PairedInfoIndex new_index;
 
@@ -57,31 +60,48 @@ Graph RepeatResolver<Graph>::ResolveRepeats(Graph &g, PairedInfoIndex &ind){
 //	old_graph = g;
 //	old_index = ind;
 	INFO("resolve_repeats started");
-	for(VertexIter v_iter = g.SmartVertexBegin(), end = g.SmartVertexEnd(); v_iter != end; ++v_iter) {
+	INFO("size: " << g.size());
+	int count = 0;
+	sum_count = 0;
+	for(VertexIter v_iter = g.SmartVertexBegin(), end = g.SmartVertexEnd(); v_iter != end; ++v_iter, ++ count) {
 //		vector<typename PairedInfoIndex::PairInfo> tmp = old_index.getEdgeInfos(*e_iter);
 		INFO("smartiterators ");
 //		INFO("Parsing vertex "<< old_graph.VertexNucls(*v_iter));
 
 		ResolveVertex(g, ind, *v_iter);
+		INFO("Vertex "<< count << " resolved");
 	}
 //	for(EdgeIter e_iter = old_graph.SmartEdgeBegin(), end = old_graph.SmartEdgeEnd(); e_iter != end; ++e_iter) {
 //		PairInfos tmp = old_index.GetEdgeInfo(*e_iter);
 		//		ResolveEdge(*e_iter);G
 //	}
+	INFO("total vert" << sum_count);
+
 	return new_graph;
 }
 
 template<class Graph>
+void RepeatResolver<Graph>::dfs(vector<vector<int> > &edge_list, vector<int> &colors, int cur_vert, int cur_color){
+	colors[cur_vert] = cur_color;
+	DEBUG("dfs-ing, vert num" << cur_vert << " " << cur_color);
+	for(int i = 0, sz = edge_list[cur_vert].size(); i <sz; i ++) {
+		if (colors[edge_list[cur_vert][i]] > 0) {
+			if (colors[edge_list[cur_vert][i]] != cur_color) {
+				ERROR("error in dfs, neighbour to " << edge_list[cur_vert][i]);
+			}
+		} else {
+			dfs(edge_list, colors, edge_list[cur_vert][i], cur_color);
+		}
+	}
+}
+template<class Graph>
 void RepeatResolver<Graph>::ResolveVertex( Graph &g, PairedInfoIndex &ind, VertexId vid){
-	INFO("Parsing vertex ");
-	INFO("with seq " <<g.VertexNucls(vid));
+	INFO("Parsing vertex " << vid);
 	vector<EdgeId> edgeIds[2];
-	DEBUG("before outgoing edges");
 	edgeIds[0] = g.OutgoingEdges(vid);
 	edgeIds[1] = g.IncomingEdges(vid);
 	vector<set<EdgeId> > paired_edges;
 	paired_edges.resize(edgeIds[0].size() + edgeIds[1].size());
-	DEBUG("std inited");
 	int i;
 	unsigned int j;
 	i = j;
@@ -91,32 +111,31 @@ void RepeatResolver<Graph>::ResolveVertex( Graph &g, PairedInfoIndex &ind, Verte
 	int cur_id = 0;
 	for (int dir = 0; dir < 2; dir++) {
 		for (int i = 0, n = edgeIds[dir].size(); i < n; i ++) {
-			DEBUG("edge " << dir <<" "<<i << "  going to n: "<< n);
 			PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
-			DEBUG(tmp.size());
 			for (int j = 0, sz = tmp.size(); j < sz; j++) {
-				DEBUG("index info " << j);
 				EdgeId right_id = tmp[j].second();
 				EdgeId left_id = tmp[j].first();
-				if (right_to_left.find(right_id) != right_to_left.end())
-					right_to_left[right_id].insert(left_id);
-				else {
-					set<EdgeId> tmp_set;
-					tmp_set.insert(left_id);
-					right_to_left.insert(make_pair(right_id, tmp_set));
-					right_set.insert(make_pair(right_id, cur_id));
-					right_vector.push_back(right_id);
-					cur_id ++;
+				if (tmp[j].d() > 0) {
+					if (right_to_left.find(right_id) != right_to_left.end())
+						right_to_left[right_id].insert(left_id);
+					else {
+						set<EdgeId> tmp_set;
+						tmp_set.insert(left_id);
+						right_to_left.insert(make_pair(right_id, tmp_set));
+						right_set.insert(make_pair(right_id, cur_id));
+						right_vector.push_back(right_id);
+						cur_id ++;
+					}
+
 				}
 			}
-			DEBUG("finished "<< dir << " " << i);
 	//		old_index.getEdgeInfos(inEdgeIds[i]);
 		}
 	}
-	INFO("clustering...");
+
 
 	int right_edge_count = right_set.size();
-	vector<vector<EdgeId> > edge_list(right_edge_count);
+	vector<vector<int> > edge_list(right_edge_count);
 	DEBUG("Total: " << right_edge_count << "edges");
 	LOG_ASSERT(right_edge_count == right_vector.size(), "Size mismatch");
 	vector<int> colors(right_edge_count);
@@ -124,17 +143,29 @@ void RepeatResolver<Graph>::ResolveVertex( Graph &g, PairedInfoIndex &ind, Verte
 		colors[i] = 0;
 	for(int i = 0; i < right_edge_count; i++) {
 //TODO Add option to "jump" - use not only direct neighbours(parameter leap in constructor)
-		DEBUG("Seq in edge:" <<g.EdgeNucls(right_vector[i]).str());
 		vector<EdgeId> neighbours = g.NeighbouringEdges(right_vector[i]);
+		DEBUG("neighbours to "<<i<<"(" <<right_vector[i]<<  "): " << neighbours.size())
 
-		DEBUG("neighbours" << neighbours.size())
 
 		for(int j = 0, sz = neighbours.size(); j < sz; j++){
 			if (right_set.find(neighbours[j]) != right_set.end()) {
-				edge_list[i].push_back(neighbours[j]);
+				edge_list[i].push_back(right_set[neighbours[j]]);
+				DEBUG (right_set[neighbours[j]]<<"  "<<neighbours[j]);
 			}
 		}
 	}
+	int cur_color = 0;
+	DEBUG("dfs started");
+	for(int i = 0; i < right_edge_count; i++) {
+		if (colors[i] == 0) {
+			cur_color++;
+			dfs(edge_list, colors, i, cur_color);
+		}
+	}
+	if (cur_color > 1) {
+		INFO("vertex "<<vid<< " splitted to " << cur_color);
+	}
+	sum_count += cur_color - 1;
 }
 
 }

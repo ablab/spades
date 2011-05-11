@@ -22,6 +22,6 @@ const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_CROPPED_4_10_
 #define R 100
 #define I 220
 #define DE_BRUIJN_DATA_FOLDER "./data/debruijn/"
-#define INPUT QUAKE_CROPPED_10_4
+#define INPUT QUAKE_CROPPED_10_5
 
 #endif /* CONFIG_HPP_ */

@@ -36,7 +36,32 @@ const vector<EdgeId> EdgeGraph::IncomingEdges(VertexId v) const {
 	vector<EdgeId> result;
 	VertexId rcv = Complement(v);
 	for (EdgeIterator it = rcv->begin(); it != rcv->end(); ++it) {
+		result.push_back(Complement(*it));
+	}
+	return result;
+}
+
+const vector<EdgeId> EdgeGraph::IncidentEdges(VertexId v) const {
+	vector<EdgeId> result;
+	DEBUG("Incident for vert: "<< v);
+	for (EdgeIterator it = v->begin(); it != v->end(); ++it) {
+		DEBUG("out:"<< *it);
 		result.push_back(*it);
+	}
+	VertexId rcv = Complement(v);
+
+	for (EdgeIterator it = rcv->begin(); it != rcv->end(); ++it) {
+		int fl = 1;
+		for (int j = 0, sz = result.size(); j < sz; j++) {
+		   if (result[j] == *it){
+			   fl = 0;
+			   break;
+		   }
+		}
+		if (fl) {
+			DEBUG("in:"<< *it);
+			result.push_back(Complement(*it));
+		}
 	}
 	return result;
 }
@@ -44,13 +69,10 @@ const vector<EdgeId> EdgeGraph::IncomingEdges(VertexId v) const {
 const vector<EdgeId> EdgeGraph::NeighbouringEdges(EdgeId e) const {
 	VertexId v_out = EdgeEnd(e);
 	VertexId v_in = EdgeStart(e);
-	DEBUG(v_out);
-	DEBUG(v_in);
-	vector<EdgeId> result = v_out->outgoing_edges_;
-	VertexId rcv_in = Complement(v_in);
+	vector<EdgeId> result = EdgeGraph::IncidentEdges(v_in);
+	vector<EdgeId> out_res = EdgeGraph::IncidentEdges(v_out);
 // these vectors are small, and linear time is less than log in this case.
-	DEBUG(result.size());
-	for (EdgeIterator it = rcv_in->begin(); it != rcv_in->end(); ++it) {
+	for (vector<EdgeId>::iterator it = out_res.begin(); it != out_res.end(); ++it) {
 		int fl = 1;
 		for (int j = 0, sz = result.size(); j < sz; j++)
 		   if (result[j] == *it){
