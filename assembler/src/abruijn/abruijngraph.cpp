@@ -192,19 +192,19 @@ void Graph::output(std::ofstream &out, bool paired) {
 		gvis::PairedGraphPrinter<Vertex*> printer(name, out);
 		for (Vertices::iterator v = vertices.begin(); v != vertices.end(); ++v) {
 			if ((*v)->data() < (*v)->complement()->data()) {
-				printer.addVertex(*v, toString(**v), (*v)->complement(), toString(*((*v)->complement())));
+				printer.addVertex(*v, ToString(**v), (*v)->complement(), ToString(*((*v)->complement())));
 			}
 			for (Edges::iterator it = (*v)->edges().begin(); it != (*v)->edges().end(); ++it) {
-				printer.addEdge(make_pair(*v, (*v)->complement()), make_pair(it->first, it->first->complement()), toString(it->second));
+				printer.addEdge(make_pair(*v, (*v)->complement()), make_pair(it->first, it->first->complement()), ToString(it->second));
 			}
 		}
 		printer.output();
 	} else {
 		gvis::GraphPrinter<Vertex*> printer(name, out);
 		for (Vertices::iterator v = vertices.begin(); v != vertices.end(); ++v) {
-			printer.addVertex(*v, toString(**v));
+			printer.addVertex(*v, ToString(**v));
 			for (Edges::iterator it = (*v)->edges().begin(); it != (*v)->edges().end(); ++it) {
-				printer.addEdge(*v, it->first, toString(it->second));
+				printer.addEdge(*v, it->first, ToString(it->second));
 			}
 		}
 	}
