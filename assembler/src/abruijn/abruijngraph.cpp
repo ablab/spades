@@ -9,10 +9,6 @@
 
 namespace abruijn {
 
-ostream& operator<< (ostream& os, const Profile& p) {
-	return p.output(os);
-}
-
 ostream& operator<< (ostream& os, const Edge& e) {
 	return e.output(os);
 }
