@@ -88,6 +88,11 @@ public:
 
 	template<class ReadStream>
 	DeBruijnPlus(ReadStream &stream) {
+		Fill<ReadStream>(stream);
+	}
+
+	template<class ReadStream>
+	void Fill(ReadStream &stream) {
 		Read r;
 		while (!stream.eof()) {
 			stream >> r;

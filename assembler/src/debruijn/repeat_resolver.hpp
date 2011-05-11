@@ -134,14 +134,15 @@ void RepeatResolver<Graph>::ResolveVertex( Graph &g, PairedInfoIndex &ind, Verte
 	}
 
 
-	int right_edge_count = right_set.size();
+	size_t right_edge_count = right_set.size();
 	vector<vector<int> > edge_list(right_edge_count);
+
 	DEBUG("Total: " << right_edge_count << "edges");
 	LOG_ASSERT(right_edge_count == right_vector.size(), "Size mismatch");
 	vector<int> colors(right_edge_count);
-	for(int i = 0; i < right_edge_count; i++)
+	for(size_t i = 0; i < right_edge_count; i++)
 		colors[i] = 0;
-	for(int i = 0; i < right_edge_count; i++) {
+	for(size_t i = 0; i < right_edge_count; i++) {
 //TODO Add option to "jump" - use not only direct neighbours(parameter leap in constructor)
 		vector<EdgeId> neighbours = g.NeighbouringEdges(right_vector[i]);
 		DEBUG("neighbours to "<<i<<"(" <<right_vector[i]<<  "): " << neighbours.size())

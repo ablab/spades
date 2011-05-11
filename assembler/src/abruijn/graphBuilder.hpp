@@ -205,9 +205,9 @@ public:
 		ofstream outfile("./data/abruijn/abruijnspellgenome.dot", ios::out);
 		gvis::GraphPrinter<Vertex*> printer("abruijnspellgenome", outfile);
 		for (Vertices::iterator v = graph()->vertices.begin(); v != graph()->vertices.end(); ++v) {
-			printer.addVertex(*v, toString(**v));
+			printer.addVertex(*v, ToString(**v));
 			for (Edges::iterator it = (*v)->edges().begin(); it != (*v)->edges().end(); ++it) {
-				printer.addEdge(*v, it->first, toString(it->second));
+				printer.addEdge(*v, it->first, ToString(it->second));
 			}
 		}
 

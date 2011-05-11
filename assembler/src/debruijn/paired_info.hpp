@@ -16,12 +16,14 @@ class PairedInfoIndex: public GraphActionHandler<Graph> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
+	const int max_difference_;
 
 public:
 
 	class PairInfo {
 		friend class PairedInfoIndex;
 		friend class PairedInfoIndexData;
+		friend class EdgePairIterator;
 	private:
 		EdgeId first_;
 		EdgeId second_;
@@ -34,11 +36,16 @@ public:
 		EdgeId second() const {
 			return second_;
 		}
+
 		int d() const {
 			int res = (int) (std::abs(d_) + 0.5 + 1e-9);
 			if (d_ < 0)
 				res = -res;
 			return res;
+		}
+
+		int exact_d() const {
+			return d_;
 		}
 
 		double weight() const {
@@ -61,19 +68,12 @@ public:
 private:
 	//todo try storing set<PairInfo>
 	class PairInfoIndexData {
+	public:
 		typedef multimap<pair<EdgeId, EdgeId> , pair<double, double>> Data;
 		typedef typename Data::iterator data_iterator;
 		typedef typename Data::const_iterator const_data_iterator;
-
+	private:
 		Data data_;
-
-		data_iterator LowerBound(EdgeId e) {
-			return data_.lower_bound(make_pair(e, (EdgeId) 0));
-		}
-
-		data_iterator UpperBound(EdgeId e) {
-			return data_.upper_bound(make_pair(e, (EdgeId) ((size_t) -1)));
-		}
 
 		PairInfo BackwardInfo(const PairInfo& pair_info) {
 			return PairInfo(pair_info.second_, pair_info.first_, -pair_info.d_,
@@ -111,7 +111,15 @@ private:
 			}
 			assert(updated);
 		}
+
 	public:
+		data_iterator begin() {
+			return data_.begin();
+		}
+
+		data_iterator end() {
+			return data_.end();
+		}
 
 		void AddPairInfo(const PairInfo& pair_info) {
 			if (pair_info.first_ == pair_info.second_ && pair_info.d_ == 0) {
@@ -166,13 +174,66 @@ private:
 		void clear() {
 			data_.clear();
 		}
+
+		data_iterator LowerBound(EdgeId e) {
+			return data_.lower_bound(make_pair(e, (EdgeId) 0));
+		}
+
+		data_iterator UpperBound(EdgeId e) {
+			return data_.upper_bound(make_pair(e, (EdgeId) ((size_t) -1)));
+		}
+
+		data_iterator LowerBound(EdgeId e1, EdgeId e2) {
+			return data_.lower_bound(make_pair(e1, e2));
+		}
+
+		data_iterator UpperBound(EdgeId e1, EdgeId e2) {
+			return data_.upper_bound(make_pair(e1, e2));
+		}
 	};
 
 public:
+	class EdgePairIterator {
+		typename PairInfoIndexData::data_iterator position_;
+		PairedInfoIndex<Graph> &index_;
+	public:
+		EdgePairIterator(typename PairInfoIndexData::data_iterator position,
+				PairedInfoIndex<Graph> &index) :
+			position_(position), index_(index) {
+		}
+
+		bool operator==(const EdgePairIterator &other) {
+			return this->position_ == other.position_;
+		}
+
+		bool operator!=(const EdgePairIterator &other) {
+			return this->position_ != other.position_;
+		}
+
+		PairInfos operator*() const {
+			pair<EdgeId, EdgeId> currentPair = position_->first;
+			return index_.GetEdgePairInfo(currentPair.first, currentPair.second);
+		}
+
+		void operator++() {
+			pair<EdgeId, EdgeId> currentPair = position_->first;
+			position_ = index_.data_.UpperBound(currentPair.first,
+					currentPair.second);
+		}
+	};
+
+	EdgePairIterator begin() {
+		return EdgePairIterator(data_.begin(), *this);
+	}
+
+	EdgePairIterator end() {
+		return EdgePairIterator(data_.end(), *this);
+	}
 
 	//begin-end insert size supposed
-	PairedInfoIndex(Graph &g) :
-		graph_(g) {
+	PairedInfoIndex(Graph &g,
+			int max_difference = MERGE_DATA_ABSOLUTE_DIFFERENCE) :
+		max_difference_(max_difference), graph_(g) {
 		g.AddActionHandler(this);
 	}
 
@@ -181,11 +242,11 @@ public:
 	}
 
 	template<size_t kmer_size, class Stream>
-	void FillIndex(const EdgeIndex<kmer_size + 1, Graph>& index,
-			Stream& stream) {
+	void FillIndex(const EdgeIndex<kmer_size + 1, Graph>& index, Stream& stream) {
 		data_.clear();
 		de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin();
-		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it; ++it) {
+		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
+				!= it; ++it) {
 			AddPairInfo(PairInfo(*it, *it, 0, 1));
 		}
 		typedef Seq<kmer_size + 1> KPOMer;
@@ -228,8 +289,8 @@ private:
 		for (size_t i = 0; i < path1.size(); ++i) {
 			int current_distance2 = current_distance1;
 			for (size_t j = 0; j < path2.size(); ++j) {
-//				double weight = CorrectLength(path1, i) * CorrectLength(path2,
-//						j);
+				//				double weight = CorrectLength(path1, i) * CorrectLength(path2,
+				//						j);
 				double weight = 1;
 				PairInfo
 						new_info(path1[i], path2[j], current_distance2, weight);
@@ -268,7 +329,7 @@ private:
 	bool CanMergeData(const PairInfo& info1, const PairInfo& info2) {
 		if (info1.first_ != info2.first_ || info1.second_ != info2.second_)
 			return false;
-		if (std::abs(info2.d_ - info1.d_) <= MERGE_DATA_ABSOLUTE_DIFFERENCE) {
+		if (std::abs(info2.d_ - info1.d_) <= max_difference_) {
 			return true;
 		}
 		return false;
@@ -286,6 +347,7 @@ private:
 		data_.UpdateInfo(info1, newD, newWeight);
 	}
 
+public:
 	void AddPairInfo(const PairInfo& pair_info) {
 		PairInfos pair_infos = data_.GetEdgePairInfos(pair_info.first_,
 				pair_info.second_);
@@ -298,11 +360,12 @@ private:
 		data_.AddPairInfo(pair_info);
 	}
 
+private:
 	void RemoveEdgeInfo(EdgeId edge) {
 		data_.DeleteEdgeInfo(edge);
 	}
 
-	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os=cout) {
+	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os = cout) {
 		PairInfos vec = GetEdgePairInfo(edge1, edge2);
 		if (vec.size() != 0) {
 			os << edge1 << " " << graph_.length(edge1) << " " << edge2 << " "
@@ -409,6 +472,51 @@ public:
 	}
 
 };
+
+template<class Graph>
+class SimpleOfflineClusterer {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename PairedInfoIndex<Graph>::PairInfo PairInfo;
+	typedef vector<PairInfo> PairInfos;
+
+public:
+	PairedInfoIndex<Graph> &not_clustered_;
+
+	SimpleOfflineClusterer(PairedInfoIndex<Graph> &not_clustered) :
+		not_clustered_(not_clustered) {
+	}
+
+	typename PairedInfoIndex<Graph>::PairInfos ProcessEdgePair(
+			const typename PairedInfoIndex<Graph>::PairInfos &infos) {
+		EdgeId edge1 = infos[0].first();
+		EdgeId edge2 = infos[0].second();
+		double d_sum = 0;
+		double weight_sum = 0;
+		for (size_t i = 0; i < infos.size(); i++) {
+			d_sum += infos[i].exact_d();
+			weight_sum += infos[i].weight();
+		}
+		PairInfo sum_info(edge1, edge2, d_sum / infos.size(), weight_sum);
+		PairInfos result;
+		result.push_back(sum_info);
+		return result;
+	}
+
+	void cluster(PairedInfoIndex<Graph> &clustered) {
+		assert(&not_clustered_ != &clustered);
+		for (typename PairedInfoIndex<Graph>::EdgePairIterator it =
+				not_clustered_.begin(); it != not_clustered_.end(); ++it) {
+			typename PairedInfoIndex<Graph>::PairInfos newInfos =
+					ProcessEdgePair(*it);
+			for (size_t i = 0; i < newInfos.size(); i++) {
+				clustered.AddPairInfo(newInfos[i]);
+			}
+		}
+	}
+};
+
 }
 
 #endif /* PAIRED_INFO_HPP_ */

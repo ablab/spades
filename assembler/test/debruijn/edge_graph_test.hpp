@@ -127,21 +127,28 @@ void SmartIteratorTest() {
 	}
 }
 
-typedef tr1::unordered_set<string> edge_set;
+typedef de_bruijn::PairedInfoIndex<EdgeGraph>::PairInfo PairInfo;
+typedef string MyRead;
+typedef pair<MyRead, MyRead> MyPairedRead;
+typedef string MyEdge;
+typedef pair<MyEdge, MyEdge> MyEdgePair;
+typedef map<MyEdgePair, pair<size_t, double>> EdgePairInfo;
+typedef map<MyEdge, double> CoverageInfo;
+typedef tr1::unordered_set<MyEdge> Edges;
 
-string print(const edge_set& es) {
+string print(const Edges& es) {
 	string s = "Edge set : {";
-	for (edge_set::const_iterator i = es.begin(); i != es.end(); ++i) {
+	for (auto i = es.begin(); i != es.end(); ++i) {
 		s += "'" + *i + "'; ";
 	}
 	return s;
 }
 
 class ToStringHandler: public TraversalHandler {
-	edge_set& edges_;
+	Edges& edges_;
 	EdgeGraph g_;
 public:
-	ToStringHandler(edge_set& edges, EdgeGraph &g) :
+	ToStringHandler(Edges& edges, EdgeGraph &g) :
 		edges_(edges), g_(g) {
 	}
 
@@ -152,111 +159,144 @@ public:
 
 };
 
-//todo refactor
-void MyEquals(edge_set es, string s[], size_t length) {
-	edge_set etalon_edges;
-	for (size_t i = 0; i < length; ++i) {
-		ASSERT(es.count(s[i]) == 1);
-		ASSERT(es.count(Complement(s[i])) == 1);
-		etalon_edges.insert(s[i]);
-		etalon_edges.insert(Complement(s[i]));
-	}
-	ASSERT_EQUAL(etalon_edges.size(), es.size());
-}
-
-vector<Read> MakeReads(string *ss, size_t count) {
-	vector<Read> ans;
-	for (size_t i = 0; i < count; ++i) {
-		Read r("", *ss, "");
-		ss++;
-		ans.push_back(r);
+const Edges AddComplement(const Edges& edges) {
+	Edges ans;
+	for (auto it = edges.begin(); it != edges.end(); ++it) {
+		ans.insert(*it);
+		ans.insert(Complement(*it));
 	}
 	return ans;
 }
 
+const CoverageInfo AddComplement(const CoverageInfo& coverage_info) {
+	CoverageInfo ans;
+	for (auto it = coverage_info.begin(); it != coverage_info.end(); ++it) {
+		ans.insert(*it);
+		ans.insert(make_pair(Complement((*it).first), (*it).second));
+	}
+	return ans;
+}
+
+void EdgesEqual(const Edges& s1, const Edges& s2) {
+	ASSERT_EQUAL(s1.size(), s2.size());
+	for (auto it = s1.begin(); it != s1.end(); ++it) {
+		ASSERT(s2.count(*it) > 0);
+	}
+}
+
+const vector<Read> MakeReads(const vector<MyRead>& reads) {
+	vector<Read> ans;
+	for (size_t i = 0; i < reads.size(); ++i) {
+		ans.push_back(Read("", reads[i], ""));
+	}
+	return ans;
+}
+
+const vector<PairedRead> MakePairedReads(const vector<MyPairedRead>& paired_reads, size_t insert_size) {
+	vector<PairedRead> ans;
+	for (size_t i = 0; i < paired_reads.size(); ++i) {
+		ans.push_back(PairedRead(Read("", paired_reads[i].first, ""), Read("", paired_reads[i].second, ""), insert_size));
+	}
+	return ans;
+}
+
+void AssertEdges(EdgeGraph& g, const Edges& etalon_edges) {
+	Edges edges;
+	for (auto it = g.SmartEdgeBegin(); it != g.SmartEdgeEnd(); ++it) {
+		edges.insert(g.EdgeNucls(*it).str());
+	}
+	EdgesEqual(edges, etalon_edges);
+}
+
 template<size_t kmer_size_>
-void AssertGraph(size_t read_cnt, string reads_str[], size_t edge_cnt,
-		string etalon_edges[]) {
-	VectorStream<Read> read_stream(MakeReads(reads_str, read_cnt));
-//todo reduce code duplication
-	de_bruijn::DeBruijnPlus<kmer_size_+1, EdgeId> debruijn(read_stream);
+void AssertGraph(const vector<string>& reads, const vector<string>& etalon_edges) {
+	typedef VectorStream<Read> Stream;
+	Stream read_stream(MakeReads(reads));
 	EdgeGraph g(kmer_size_);
-	EdgeGraphConstructor<kmer_size_> g_c(debruijn);
-	de_bruijn::EdgeIndex<kmer_size_ + 1, EdgeGraph> index(g, debruijn);
-	g_c.ConstructGraph(g, index);
+	de_bruijn::EdgeIndex<kmer_size_ + 1, EdgeGraph> index(g);
 
-	edge_set edges;
-	ToStringHandler h(edges, g);
-	DFS<EdgeGraph> dfs(g);
-	dfs.Traverse(&h);
+	ConstructGraph<kmer_size_, Stream>(g, index, read_stream);
 
-	DEBUG(print(edges));
+	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
+}
 
-	MyEquals(edges, etalon_edges, edge_cnt);
+bool EqualDouble(double d1, double d2) {
+	return std::abs(d1 - d2) < 1e-5;
+}
+
+void AssertCoverage(EdgeGraph& g, const CoverageInfo& etalon_coverage) {
+	for (auto it = g.SmartEdgeBegin(); it != g.SmartEdgeEnd(); ++it) {
+		CoverageInfo::const_iterator cov_info_it = etalon_coverage.find(g.EdgeNucls(*it).str());
+		ASSERT(cov_info_it != etalon_coverage.end() && EqualDouble(g.coverage(*it), (*cov_info_it).second));
+	}
+}
+
+void AssertPairInfo(const PairedIndex& paired_index, const EdgePairInfo& etalon_pair_info) {
+
+}
+
+template<size_t k>
+void AssertGraph(const vector<MyPairedRead>& paired_reads, size_t insert_size, const vector<MyEdge>& etalon_edges
+		, const CoverageInfo& etalon_coverage, const EdgePairInfo& etalon_pair_info) {
+	typedef VectorStream<PairedRead> PairedReadStream;
+
+	PairedReadStream paired_read_stream(MakePairedReads(paired_reads, insert_size));
+	EdgeGraph g(k);
+	EdgeIndex<k + 1, EdgeGraph> index(g);
+	de_bruijn::CoverageHandler<EdgeGraph> coverage_handler(g);
+	PairedIndex paired_index(g);
+
+	ConstructGraphWithPairedInfo<k, PairedReadStream>(g, index, coverage_handler, paired_index, paired_read_stream);
+
+	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
+
+	AssertCoverage(g, etalon_coverage);
+
+	AssertPairInfo(paired_index, etalon_pair_info);
 }
 
 //todo rename tests
 
 void TestSimpleThread() {
-	static const size_t read_cnt = 1;
-	string reads[read_cnt] = { "ACAAACCACCA" };
-	static const size_t edge_cnt = 1;
-	string edges[edge_cnt] = { "ACAAACCACCA" };
-	AssertGraph<5> (read_cnt, reads, edge_cnt, edges);
+	vector<string> reads = { "ACAAACCACCA" };
+//	vector<string> edges = { "ACAAACCACCA" };
+	AssertGraph<5> (reads, reads);
 }
 
 void TestSimpleThread2() {
-	static const size_t read_cnt = 2;
-	string reads[read_cnt] = { "ACAAACCACCC", "AAACCACCCAC" };
-	static const size_t edge_cnt = 1;
-	string edges[edge_cnt] = { "ACAAACCACCCAC" };
-	AssertGraph<5> (read_cnt, reads, edge_cnt, edges);
+	vector<string> reads = { "ACAAACCACCC", "AAACCACCCAC" };
+	vector<string> edges = { "ACAAACCACCCAC" };
+	AssertGraph<5> (reads, edges);
 }
 
 void TestSplitThread() {
-	static const size_t read_cnt = 2;
-	string reads[read_cnt] = { "ACAAACCACCA", "ACAAACAACCC" };
-	static const size_t edge_cnt = 3;
-	string edges[edge_cnt] = { "ACAAAC", "CAAACCACCA", "CAAACAACCC" };
-	AssertGraph<5> (read_cnt, reads, edge_cnt, edges);
+	vector<string> reads = { "ACAAACCACCA", "ACAAACAACCC" };
+	vector<string> edges = { "ACAAAC", "CAAACCACCA", "CAAACAACCC" };
+	AssertGraph<5> (reads, edges);
 }
 
 void TestSplitThread2() {
-	static const size_t read_cnt = 2;
-	string reads[read_cnt] = { "ACAAACCACCA", "ACAAACAACCA" };
-	static const size_t edge_cnt = 4;
-	string edges[edge_cnt] = { "AACCACCA", "ACAAAC", "CAAACCA", "CAAACAACCA" };
-	AssertGraph<5> (read_cnt, reads, edge_cnt, edges);
+	vector<string> reads = { "ACAAACCACCA", "ACAAACAACCA" };
+	vector<string> edges = { "AACCACCA", "ACAAAC", "CAAACCA", "CAAACAACCA" };
+	AssertGraph<5> (reads, edges);
 }
 
 void TestBuldge() {
-	static const size_t read_cnt = 2;
-	string reads[read_cnt] = { "ACAAAACACCA", "ACAAACCACCA" };
-	static const size_t edge_cnt = 2;
-	string edges[edge_cnt] = { "ACAAAACACCA", "ACAAACCACCA" };
-	AssertGraph<5> (read_cnt, reads, edge_cnt, edges);
+	vector<string> reads = { "ACAAAACACCA", "ACAAACCACCA" };
+//	vector<string> edges = { "ACAAAACACCA", "ACAAACCACCA" };
+	AssertGraph<5> (reads, reads);
 }
 
 void TestCondenseSimple() {
-	static const size_t read_cnt = 4;
-
-	string reads[read_cnt] = { "CGAAACCAC", "CGAAAACAC", "AACCACACC",
-			"AAACACACC" };
-	static const size_t edge_cnt = 3;
-	string edges[edge_cnt] = { "CGAAAACACAC", "CACACC", "CGAAACCACAC" };
-
-	AssertGraph<5> (read_cnt, reads, edge_cnt, edges);
+	vector<string> reads = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
+	vector<string> edges = { "CGAAAACACAC", "CACACC", "CGAAACCACAC" };
+	AssertGraph<5> (reads, edges);
 }
 
 void TestPairedInfo() {
-	static const size_t read_cnt = 4;
-
-	string reads[read_cnt] = { "CGAAACCAC", "CGAAAACAC", "AACCACACC",
-			"AAACACACC" };
-	static const size_t edge_cnt = 3;
-	string edges[edge_cnt] = { "CGAAAACACAC", "CACACC", "CGAAACCACAC" };
-
-	AssertGraph<5> (read_cnt, reads, edge_cnt, edges);
+	vector<string> reads = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
+	vector<string> edges = { "CGAAAACACAC", "CACACC", "CGAAACCACAC" };
+	AssertGraph<5> (reads, edges);
 }
 
 cute::suite EdgeGraphSuite() {
