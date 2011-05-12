@@ -35,7 +35,8 @@ const vector<EdgeId> EdgeGraph::OutgoingEdges(VertexId v) const {
 const vector<EdgeId> EdgeGraph::IncomingEdges(VertexId v) const {
 	vector<EdgeId> result;
 	VertexId rcv = Complement(v);
-	for (EdgeIterator it = rcv->begin(); it != rcv->end(); ++it) {
+	vector<EdgeId> edges = rcv->OutgoingEdges();
+	for (EdgeIterator it = edges.begin(); it != edges.end(); ++it) {
 		result.push_back(Complement(*it));
 	}
 	return result;
@@ -211,7 +212,8 @@ bool EdgeGraph::AreLinkable(VertexId v1, VertexId v2, const Sequence &nucls) con
 }
 
 EdgeId EdgeGraph::OutgoingEdge(VertexId v, char nucl) const {
-	for (EdgeIterator iter = v->begin(); iter != v->end(); ++iter) {
+	vector<EdgeId> edges = v->OutgoingEdges();
+	for (EdgeIterator iter = edges.begin(); iter != edges.end(); ++iter) {
 		char lastNucl = (*iter)->nucls()[k_];
 		if (lastNucl == nucl) {
 			return *iter;
@@ -271,34 +273,6 @@ EdgeId EdgeGraph::MergePath(const vector<EdgeId>& path) {
 	}
 	FireAddEdge(newEdge);
 	return newEdge;
-}
-
-bool EdgeGraph::GoUniqueWay(EdgeId &e) {
-	VertexId u = EdgeEnd(e);
-	if (!CheckUniqueOutgiongEdge(u) || !CheckUniqueIncomingEdge(u)) {
-		return false;
-	}
-	e = GetUniqueOutgoingEdge(u);
-	return true;
-}
-
-void EdgeGraph::CompressAllVertices() {
-	SmartVertexIterator<EdgeGraph> end = SmartVertexEnd();
-	for (SmartVertexIterator<EdgeGraph> it = SmartVertexBegin(); it != end; ++it) {
-		VertexId v = *it;
-		if (CheckUniqueOutgiongEdge(v) && CheckUniqueIncomingEdge(v)) {
-			EdgeId e = GetUniqueOutgoingEdge(v);
-			while (GoUniqueWay(e)) {
-			}
-			vector<EdgeId> mergeList;
-			e = Complement(e);
-			do {
-				mergeList.push_back(e);
-			} while (GoUniqueWay(e));
-			MergePath(mergeList);
-		}
-
-	}
 }
 
 pair<EdgeId, EdgeId> EdgeGraph::SplitEdge(EdgeId edge, size_t position) {

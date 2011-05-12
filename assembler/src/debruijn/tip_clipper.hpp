@@ -11,6 +11,8 @@
 #include <set>
 #include "edge_graph.hpp"
 #include "utils.hpp"
+#include "omni_utils.hpp"
+#include "omni_tools.hpp"
 
 #define DEFAULT_COVERAGE_BOUND 1000
 #define DEFAULT_RELATIVE_COVERAGE_BOUND 2.
@@ -18,7 +20,8 @@
 
 namespace edge_graph {
 
-using de_bruijn::PriorityQueue;
+using omnigraph::PriorityQueue;
+using omnigraph::Compresser;
 
 template<class Graph>
 struct TipComparator {
@@ -149,9 +152,9 @@ public:
 	}
 
 	void ClipTips(Graph &graph) {
-		de_bruijn::SmartEdgeIterator<Graph, Comparator> iterator =
+		SmartEdgeIterator<Graph, Comparator> iterator =
 				graph.SmartEdgeBegin(comparator_);
-		de_bruijn::SmartEdgeIterator<Graph, Comparator> end =
+		SmartEdgeIterator<Graph, Comparator> end =
 				graph.SmartEdgeEnd(comparator_);
 		while (end != iterator) {
 			EdgeId tip = *iterator;
@@ -163,7 +166,8 @@ public:
 			}
 			++iterator;
 		}
-		graph.CompressAllVertices();
+		Compresser<Graph> compresser(graph);
+		compresser.CompressAllVertices();
 	}
 
 };

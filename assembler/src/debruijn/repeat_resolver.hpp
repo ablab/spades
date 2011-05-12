@@ -14,10 +14,11 @@
 #include "logging.hpp"
 #include "paired_info.hpp"
 #include "config.hpp"
+#include "omni_utils.hpp"
 
 LOGGER("d.repeat_resolver");
 namespace de_bruijn {
-
+using omnigraph::SmartVertexIterator;
 
 template<class Graph>
 class RepeatResolver {
@@ -25,7 +26,7 @@ class RepeatResolver {
 	typedef typename Graph::VertexId VertexId;
 
 	typedef de_bruijn::SmartVertexIterator<Graph> VertexIter;
-	typedef de_bruijn::SmartEdgeIterator<Graph> EdgeIter;
+	typedef omnigraph::SmartEdgeIterator<Graph> EdgeIter;
 	typedef de_bruijn::PairedInfoIndex<Graph> PairedInfoIndex;
 	typedef typename PairedInfoIndex::PairInfo PairedInfo;
 	typedef vector<PairedInfo> PairInfos;
