@@ -9,8 +9,12 @@
 #define BULGE_REMOVER_HPP_
 
 #include <cmath>
+#include "omni_utils.hpp"
 
 namespace de_bruijn {
+
+using omnigraph::SmartEdgeIterator;
+
 template<class Graph>
 class BulgeRemover {
 public:
@@ -106,7 +110,7 @@ const string PrintPath(Graph& g, const vector<typename Graph::EdgeId>& edges) {
 template<class Graph>
 void BulgeRemover<Graph>::RemoveBulges(Graph& g) {
 	//todo add right comparator
-	typedef de_bruijn::SmartEdgeIterator<Graph> EdgeIter;
+	typedef SmartEdgeIterator<Graph> EdgeIter;
 
 	DEBUG("Bulge remove process started");
 
