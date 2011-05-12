@@ -189,13 +189,13 @@ public:
 	}
 };
 
-template<class Stream>
+template<class Stream, typename ReadType>
 class RCReaderWrapper {
 public:
 //	typedef typename Stream::ReadType ReadType;
 private:
 	Stream &inner_reader_;
-	PairedRead rc_result_;
+	ReadType rc_result_;
 	bool was_rc_;
 public:
 	RCReaderWrapper(Stream &reader) :
@@ -206,7 +206,7 @@ public:
 		return inner_reader_.eof() && !was_rc_;
 	}
 
-	RCReaderWrapper& operator>>(PairedRead& p_r) {
+	RCReaderWrapper& operator>>(ReadType& p_r) {
 		if (!was_rc_) {
 			inner_reader_ >> p_r;
 			rc_result_ = !p_r;

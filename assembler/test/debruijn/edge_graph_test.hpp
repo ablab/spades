@@ -141,7 +141,7 @@ string print(const Edges& es) {
 	for (auto i = es.begin(); i != es.end(); ++i) {
 		s += "'" + *i + "'; ";
 	}
-	return s;
+	return s + "}";
 }
 
 class ToStringHandler: public TraversalHandler {
@@ -163,7 +163,7 @@ const Edges AddComplement(const Edges& edges) {
 	Edges ans;
 	for (auto it = edges.begin(); it != edges.end(); ++it) {
 		ans.insert(*it);
-		ans.insert(Complement(*it));
+		ans.insert(ReverseComplement(*it));
 	}
 	return ans;
 }
@@ -172,7 +172,7 @@ const CoverageInfo AddComplement(const CoverageInfo& coverage_info) {
 	CoverageInfo ans;
 	for (auto it = coverage_info.begin(); it != coverage_info.end(); ++it) {
 		ans.insert(*it);
-		ans.insert(make_pair(Complement((*it).first), (*it).second));
+		ans.insert(make_pair(ReverseComplement((*it).first), (*it).second));
 	}
 	return ans;
 }
@@ -190,7 +190,7 @@ const EdgePairInfo AddComplement(const EdgePairInfo& pair_info) {
 	EdgePairInfo ans;
 	for (auto it = pair_info.begin(); it != pair_info.end(); ++it) {
 		ans.insert(*it);
-		ans.insert(make_pair(make_pair(Complement((*it).first.second), Complement((*it).first.first)), (*it).second));
+		ans.insert(make_pair(make_pair(ReverseComplement((*it).first.second), ReverseComplement((*it).first.first)), (*it).second));
 	}
 	return ans;
 }
@@ -223,13 +223,23 @@ void AssertEdges(EdgeGraph& g, const Edges& etalon_edges) {
 	for (auto it = g.SmartEdgeBegin(); it != g.SmartEdgeEnd(); ++it) {
 		edges.insert(g.EdgeNucls(*it).str());
 	}
+
+	for (auto it = g.SmartVertexBegin(); it != g.SmartVertexEnd(); ++it) {
+		cout << g.VertexNucls(*it) << endl;
+	}
+
+	cout << print(edges) << endl;
+	cout << "Etalon " << print(etalon_edges) << endl;
+
 	EdgesEqual(edges, etalon_edges);
 }
 
 template<size_t kmer_size_>
 void AssertGraph(const vector<string>& reads, const vector<string>& etalon_edges) {
-	typedef VectorStream<Read> Stream;
-	Stream read_stream(MakeReads(reads));
+	typedef VectorStream<Read> RawStream;
+	typedef RCReaderWrapper<RawStream, Read> Stream;
+	RawStream raw_stream(MakeReads(reads));
+	Stream read_stream(raw_stream);
 	EdgeGraph g(kmer_size_);
 	de_bruijn::EdgeIndex<kmer_size_ + 1, EdgeGraph> index(g);
 
@@ -254,6 +264,9 @@ void AssertPairInfo(const EdgeGraph& g, /*todo const */PairedIndex& paired_index
 		PairedIndex::PairInfos infos = *it;
 		for (auto info_it = infos.begin(); info_it != infos.end(); ++info_it) {
 			PairedIndex::PairInfo pair_info = *info_it;
+			if (pair_info.first() == pair_info.second() && pair_info.d() == 0) {
+				continue;
+			}
 			pair<EdgePairInfo::const_iterator, EdgePairInfo::const_iterator>
 				equal_range = etalon_pair_info.equal_range(make_pair(g.EdgeNucls(pair_info.first()).str(), g.EdgeNucls(pair_info.second()).str()));
 			ASSERT(equal_range.first != equal_range.second);
@@ -271,15 +284,17 @@ void AssertPairInfo(const EdgeGraph& g, /*todo const */PairedIndex& paired_index
 template<size_t k>
 void AssertGraph(const vector<MyPairedRead>& paired_reads, size_t insert_size, const vector<MyEdge>& etalon_edges
 		, const CoverageInfo& etalon_coverage, const EdgePairInfo& etalon_pair_info) {
-	typedef VectorStream<PairedRead> PairedReadStream;
+	typedef VectorStream<PairedRead> RawStream;
+	typedef RCReaderWrapper<RawStream, PairedRead> Stream;
 
-	PairedReadStream paired_read_stream(MakePairedReads(paired_reads, insert_size));
+	RawStream raw_stream(MakePairedReads(paired_reads, insert_size));
+	Stream paired_read_stream(raw_stream);
 	EdgeGraph g(k);
 	EdgeIndex<k + 1, EdgeGraph> index(g);
 	de_bruijn::CoverageHandler<EdgeGraph> coverage_handler(g);
 	PairedIndex paired_index(g);
 
-	ConstructGraphWithPairedInfo<k, PairedReadStream>(g, index, coverage_handler, paired_index, paired_read_stream);
+	ConstructGraphWithPairedInfo<k, Stream>(g, index, coverage_handler, paired_index, paired_read_stream);
 
 	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 
@@ -326,11 +341,16 @@ void TestCondenseSimple() {
 	AssertGraph<5> (reads, edges);
 }
 
-//void TestPairedInfo() {
-//	vector<MyPairedRead> reads = {{"CGAAACCAC", "AACCACACC"}, {"CGAAAACAC", "AAACACACC"}};
-//	vector<string> edges = {"CGAAAACACAC", "CACACC", "CGAAACCACAC"};
-//	AssertGraph<5> (reads, edges);
-//}
+void TestPairedInfo() {
+	vector<MyPairedRead> paired_reads = {{"CCCAC", "CCACG"}, {"ACCAC", "CCACA"}};
+	vector<MyEdge> edges = {"CCCA", "ACCA", "CCAC", "CACG", "CACA"};
+	CoverageInfo coverage_info = {{"CCCA", 1}, {"ACCA", 1}, {"CCAC", 4}, {"CACG", 1}, {"CACA", 1}};
+	EdgePairInfo edge_pair_info = {{{"CCCA", "CACG"}, {2, 1.0}}, {{"ACCA", "CACA"}, {2, 1.0}}
+		, {{"CCCA", "CCAC"}, {1, 1.0}}, {{"ACCA", "CCAC"}, {1, 1.0}}
+		, {{"CCAC", "CACG"}, {1, 1.0}}, {{"CCAC", "CACA"}, {1, 1.0}}};
+
+	AssertGraph<3> (paired_reads, 6, edges, coverage_info, edge_pair_info);
+}
 
 cute::suite EdgeGraphSuite() {
 	cute::suite s;
@@ -342,13 +362,14 @@ cute::suite EdgeGraphSuite() {
 //	s.push_back(CUTE(GraphMethodsSimpleTest));
 	s.push_back(CUTE(SmartIteratorTest));
 	s.push_back(CUTE(TestBuldge));
-//	s.push_back(CUTE(TestPairedInfo));
 
 	s.push_back(CUTE(TestSimpleThread));
 	s.push_back(CUTE(TestSimpleThread2));
 	s.push_back(CUTE(TestSplitThread));
 	s.push_back(CUTE(TestSplitThread2));
 	s.push_back(CUTE(TestCondenseSimple));
+
+	s.push_back(CUTE(TestPairedInfo));
 	return s;
 }
 }

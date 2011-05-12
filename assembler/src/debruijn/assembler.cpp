@@ -7,7 +7,7 @@
 void RunEdgeGraphTool() {
 	typedef StrobeReader<2, Read, ireadstream> ReadStream;
 	typedef PairedReader<ireadstream> PairedStream;
-	typedef RCReaderWrapper<PairedStream> RCStream;
+	typedef RCReaderWrapper<PairedStream, PairedRead> RCStream;
 
 	const string reads[2] = {tr1::get<0>(INPUT), tr1::get<1>(INPUT)};
 	ReadStream reader(reads);
