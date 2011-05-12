@@ -8,7 +8,7 @@ all:$(EXEC)
 	@echo "vvvvvvvvvv MAKE SUCCESSFUL vvvvvvvvvv"
 
 CC=g++
-CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=c++0x -I../../src/libs/cute -I../../src/libs -I../../src/common -I../../src -I../../src/$(DIR) -I../../src/$(DIR)
+CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=c++0x -I../../src/libs/cute -I../../src/libs -I../../src/common -I../../src -I../../src/omni -I../../src/$(DIR) -I../../src/$(DIR)
 LDFLAGS=-O3 -L/usr/local/lib -L/usr/local/apr/lib -lz -llog4cxx -lapr-1 -laprutil-1
 DEPSFL=-MM -MG
 
