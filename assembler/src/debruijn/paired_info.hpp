@@ -244,9 +244,8 @@ public:
 	template<size_t kmer_size, class Stream>
 	void FillIndex(const EdgeIndex<kmer_size + 1, Graph>& index, Stream& stream) {
 		data_.clear();
-		de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin();
-		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
-				!= it; ++it) {
+		auto it = graph_.SmartEdgeBegin();
+		for (auto it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it; ++it) {
 			AddPairInfo(PairInfo(*it, *it, 0, 1));
 		}
 		typedef Seq<kmer_size + 1> KPOMer;
@@ -261,10 +260,9 @@ public:
 
 	double sum() {
 		double res = 0;
-		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
-				!= it; ++it)
-			for (de_bruijn::SmartEdgeIterator<Graph> it1 =
-					graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it1; ++it1) {
+		for (auto it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it; ++it)
+			for (auto it1 = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
+					!= it1; ++it1) {
 				PairInfos vec = GetEdgePairInfo(*it1, *it);
 				if (vec.size() != 0) {
 					for (size_t i = 0; i < vec.size(); i++)
@@ -417,10 +415,9 @@ private:
 public:
 
 	void OutputData(ostream &os = cout) {
-		for (de_bruijn::SmartEdgeIterator<Graph> it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
-				!= it; ++it)
-			for (de_bruijn::SmartEdgeIterator<Graph> it1 =
-					graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it1; ++it1) {
+		for (auto it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it; ++it)
+			for (auto it1 = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
+					!= it1; ++it1) {
 				OutputEdgeData(*it, *it1, os);
 			}
 	}

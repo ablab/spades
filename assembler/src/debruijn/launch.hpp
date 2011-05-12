@@ -17,6 +17,7 @@
 #include "bulge_remover.hpp"
 #include "coverage_handler.hpp"
 #include "repeat_resolver.hpp"
+#include "omni_tools.hpp"
 
 namespace edge_graph {
 

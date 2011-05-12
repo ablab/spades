@@ -11,11 +11,19 @@
 #include "nucl.hpp"
 #include "strobe_read.hpp"
 #include "utils.hpp"
+#include "omni_utils.hpp"
 
 using namespace std;
 
 namespace edge_graph {
 LOGGER("d.edge_graph");
+
+using omnigraph::GraphActionHandler;
+using omnigraph::HandlerApplier;
+using omnigraph::PairedHandlerApplier;
+using omnigraph::SmartVertexIterator;
+using omnigraph::SmartEdgeIterator;
+
 
 class Vertex;
 
@@ -80,6 +88,10 @@ private:
 	Vertex() {
 	}
 
+	const vector<Edge*> OutgoingEdges() const {
+		return outgoing_edges_;
+	}
+
 	size_t OutgoingEdgeCount() const {
 		return outgoing_edges_.size();
 	}
@@ -114,11 +126,6 @@ private:
 
 };
 
-using de_bruijn::SmartVertexIterator;
-using de_bruijn::SmartEdgeIterator;
-using de_bruijn::HandlerApplier;
-using de_bruijn::PairedHandlerApplier;
-
 class EdgeGraph {
 public:
 	typedef Edge* EdgeId;
@@ -138,6 +145,7 @@ private:
 
 	set<Vertex*> vertices_;
 
+
 	VertexId HiddenAddVertex();
 
 	EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
@@ -148,8 +156,6 @@ private:
 
 	void DeleteAllOutgoing(Vertex* v);
 
-	bool GoUniqueWay(EdgeId &e);
-
 	void FireAddVertex(VertexId v);
 	void FireAddEdge(EdgeId edge);
 	void FireDeleteVertex(VertexId v);
@@ -159,14 +165,25 @@ private:
 	void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2);
 
 public:
+
+	/**
+	 * @return const iterator pointing to the beginning of collection of vertices
+	 */
 	VertexIterator begin() const {
 		return vertices_.begin();
 	}
 
+	/**
+	 * @return const iterator pointing to the end of collection of vertices
+	 */
 	VertexIterator end() const {
 		return vertices_.end();
 	}
 
+	/**
+	 * Method returns smart iterator over vertices of graph pointing to the beginning of vertex collection
+	 * @param comparator comparator which defines order in which vertices would be iterated.
+	 */
 	template<typename Comparator = std::less<VertexId> >
 	SmartVertexIterator<EdgeGraph, Comparator> SmartVertexBegin(
 			const Comparator& comparator = Comparator()) {
@@ -174,6 +191,10 @@ public:
 				comparator);
 	}
 
+	/**
+	 * Method returns smart iterator over vertices of graph pointing to the end of vertex collection
+	 * @param comparator comparator which defines order in which vertices would be iterated.
+	 */
 	template<typename Comparator = std::less<VertexId> >
 	SmartVertexIterator<EdgeGraph, Comparator> SmartVertexEnd(
 			const Comparator& comparator = Comparator()) {
@@ -181,6 +202,10 @@ public:
 				comparator);
 	}
 
+	/**
+	 * Method returns smart iterator over vertices of graph pointing to the beginning of edge collection
+	 * @param comparator comparator which defines order in which edges would be iterated.
+	 */
 	template<typename Comparator = std::less<EdgeId> >
 	SmartEdgeIterator<EdgeGraph, Comparator> SmartEdgeBegin(
 			const Comparator& comparator = Comparator()) {
@@ -188,6 +213,10 @@ public:
 				comparator);
 	}
 
+	/**
+	 * Method returns smart iterator over vertices of graph pointing to the end of edge collection
+	 * @param comparator comparator which defines order in which edges would be iterated.
+	 */
 	template<typename Comparator = std::less<EdgeId> >
 	SmartEdgeIterator<EdgeGraph, Comparator> SmartEdgeEnd(
 			const Comparator& comparator = Comparator()) {
@@ -195,6 +224,9 @@ public:
 				comparator);
 	}
 
+	/**
+	 * @return number of vertices
+	 */
 	size_t size() {
 		return vertices_.size();
 	}
@@ -218,22 +250,35 @@ public:
 		}
 	}
 
+	/**
+	 *
+	 * @return value of k, which is number of nucleotides stored in vertices
+	 */
 	size_t k() {
 		return k_;
 	}
 
+	/**
+	 * Method adds new action handler to graph
+	 * @param action handler to add
+	 */
 	void AddActionHandler(ActionHandler* action_handler) {
-		DEBUG("Action handler added");
+		TRACE("Action handler added");
 		action_handler_list_.push_back(action_handler);
 	}
 
+	/**
+	 * Method removes action handler from graph
+	 * @param action handler to delete
+	 * @return true if given action handler was among graph handlers and false otherwise
+	 */
 	bool RemoveActionHandler(ActionHandler* action_handler) {
-		DEBUG("Trying to remove action handler");
+		TRACE("Trying to remove action handler");
 		for (vector<ActionHandler*>::iterator it =
 				action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
 			if (*it == action_handler) {
 				action_handler_list_.erase(it);
-				DEBUG("Action handler removed");
+				TRACE("Action handler removed");
 				return true;
 			}
 		}
@@ -246,58 +291,113 @@ public:
 	//		return action_handler_list_;
 	//	}
 
-public:
 //	void OutgoingEdges(VertexId v, EdgeIterator& begin, EdgeIterator& end) const;
 
+	/**
+	 * Method returnes vector of all outgoing edges of given vertex
+	 * @param v vertex to get outgoing edges from
+	 */
 	const vector<EdgeId> OutgoingEdges(VertexId v) const;
 
+	/**
+	 * Method returnes vector of all incoming edges of given vertex
+	 * @param v vertex to get incoming edges from
+	 */
 	const vector<EdgeId> IncomingEdges(VertexId v) const;
 
+	/**
+	 * @depricated
+	 */
 	const vector<EdgeId> IncidentEdges(VertexId v) const;
 
+	/**
+	 * @depricated
+	 */
 	const vector<EdgeId> NeighbouringEdges(EdgeId e) const;
 
+	/**
+	 * Method returns outgoing edge with given nucleotide at k-th position in sequence of
+	 * edge returned, which is the first position outgoing edges have different nucleotides in.
+	 * @param v vertex to find outgoing edge for
+	 * @param nucl nucleotide to be found at k-th position of edge
+	 */
 	EdgeId OutgoingEdge(VertexId v, char nucl) const;
 
+	/**
+	 * Method returns the number of outgoing edges.
+	 * @param v vertex to count outgoing edges for
+	 */
 	size_t OutgoingEdgeCount(VertexId v) const {
 		return v->OutgoingEdgeCount();
 	}
 
+	/**
+	 * Method returns the number of incoming edges.
+	 * @param v vertex to count incoming edges for
+	 */
 	size_t IncomingEdgeCount(VertexId v) const {
 		return v->Complement()->OutgoingEdgeCount();
 	}
 
+	/**
+	 * Method returns true if vertex has only one outgoing edge and false otherwise.
+	 * @param v vertex to check
+	 */
 	bool CheckUniqueOutgiongEdge(VertexId v) const {
 		return v->OutgoingEdgeCount() == 1;
 	}
 
+	/**
+	 * Method returns unique outgoing edge. Asserts if outgoing edge is not unique
+	 * @param v vertex to find unique outgoing edge for
+	 */
 	EdgeId GetUniqueOutgoingEdge(VertexId v) const {
 		assert(CheckUniqueOutgiongEdge(v));
-		return *(v->begin());
+		return (v->OutgoingEdges())[0];
 	}
 
+	/**
+	 * Method returns true if vertex has only one incoming edge and false otherwise.
+	 * @param v vertex to check
+	 */
 	bool CheckUniqueIncomingEdge(VertexId v) const {
 		return CheckUniqueOutgiongEdge(v->Complement());
 	}
 
+	/**
+	 * Method returns unique incoming edge. Asserts if incoming edge is not unique
+	 * @param v vertex to find unique incoming edge for
+	 */
 	EdgeId GetUniqueIncomingEdge(VertexId v) const {
 		return Complement(GetUniqueOutgoingEdge(v->Complement()));
 	}
 
 	//	Edge* ComplementEdge(const Edge* edge) const;
 
+	/**
+	 * Method returns Sequence stored in the edge
+	 */
 	const Sequence& EdgeNucls(EdgeId edge) const {
 		return edge->nucls();
 	}
 
+	/**
+	 * Method sets coverage value for the edge
+	 */
 	void SetCoverage(EdgeId edge, size_t cov) {
 		edge->coverage_ = cov;
 	}
 
+	/**
+	 * Method returns average coverage of the edge
+	 */
 	double coverage(EdgeId edge) const {
 		return (double) edge->coverage_ / length(edge);
 	}
 
+	/**
+	 * Method increases coverage value
+	 */
 	void IncCoverage(EdgeId edge, int toAdd) {
 		edge->coverage_ += toAdd;
 		EdgeId rc = Complement(edge);
@@ -368,8 +468,6 @@ public:
 	void Merge(EdgeId edge1, EdgeId edg2);
 
 	EdgeId MergePath(const vector<EdgeId>& path);
-
-	void CompressAllVertices();
 
 	pair<EdgeId, EdgeId> SplitEdge(EdgeId edge, size_t position);
 
