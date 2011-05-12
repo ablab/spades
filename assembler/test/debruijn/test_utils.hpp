@@ -24,7 +24,7 @@ void ConstructGraphFromGenome(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index, 
 	size_t coverage = 2*read_size;
 	size_t gap = 0;
 	Stream raw_stream(2, read_size, genome, coverage, gap);
-	typedef RCReaderWrapper<Stream> RCStream;
+	typedef RCReaderWrapper<Stream, PairedRead> RCStream;
 	RCStream read_stream(raw_stream);
 	ConstructGraphWithPairedInfo<k, RCStream>(g, index, coverage_handler, paired_index, read_stream);
 }
