@@ -157,6 +157,8 @@ void EdgeGraphTool(ReadStream& stream, const string& genome, const string& outpu
 	clusterer.cluster(clustered_paired_index);
 
 	ResolveRepeats(g, paired_index);
+	ProduceInfo<k> (g, index, genome, output_folder + "repeats_resolved.dot", "no_repeat_graph");
+
 	INFO("Tool finished")
 }
 

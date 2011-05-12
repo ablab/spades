@@ -69,7 +69,8 @@ Graph RepeatResolver<Graph>::ResolveRepeats(Graph &g, PairedInfoIndex &ind){
 		changed = false;
 		vertices.clear();
 		for(VertexIter v_iter = g.SmartVertexBegin(), end = g.SmartVertexEnd(); v_iter != end; ++v_iter) {
-			if (vertices.find(g.Complement(*v_iter)) == vertices.end()){
+			if (vertices.find(g.Complement(*v_iter)) == vertices.end())
+			{
 				vertices.insert(*v_iter);
 			}
 		}
@@ -192,25 +193,64 @@ size_t RepeatResolver<Graph>::ResolveVertex( Graph &g, PairedInfoIndex &ind, Ver
 			}
 		}
 	}
-	set<pair<int, int> > color_pairs;
+	map<pair<int, int> ,int> color_pairs;
+	int new_colors_count = 0;
 	for(auto iter = left_colors[0].begin(), end_iter = left_colors[0].end();iter != end_iter; iter++ ) {
 		typename map<EdgeId, set<int> >::iterator sec_iter;
 		sec_iter = left_colors[1].find(iter->first);
 		if (sec_iter == left_colors[1].end()) {
+//TODO:: accuratly csheck this boundary cases
 			WARN("an edge " << iter->first << " has paired info in only one direction");
 			continue;
 		}
 
 		for(auto first_c_iter = iter->second.begin(),first_c_end_iter = iter->second.end(); first_c_iter != first_c_end_iter; first_c_iter ++ ){
 			for(auto second_c_iter = sec_iter->second.begin(),second_c_end_iter = sec_iter->second.end(); second_c_iter != second_c_end_iter; second_c_iter ++ ){
-				color_pairs.insert(make_pair(*first_c_iter, *second_c_iter));
+				pair<int, int> tmp = make_pair(*first_c_iter, *second_c_iter);
+				if (color_pairs.find(tmp) == color_pairs.end()) {
+					color_pairs.insert(make_pair(tmp, new_colors_count));
+					new_colors_count ++;
+				}
 			}
 		}
 	}
 	if (color_pairs.size() > 1) {
 		TRACE("vertex "<<vid<< " splitted to " << color_pairs.size());
 	}
-//	for()
+
+	if (new_colors_count > 1) {
+
+		vector<VertexId> new_verts;
+		new_verts.resize(new_colors_count);
+		for(int i = 0; i < new_colors_count ; i++){
+			new_verts[i] = g.AddVertex();
+		}
+		for (auto e_iter0 = left_colors[0].begin(), end_iter = left_colors[0].end(); e_iter0 != end_iter; e_iter0++) {
+			typename map<EdgeId, set<int> >::iterator e_iter1 = left_colors[1].find(e_iter0->first);
+//TODO: no left coverage must be resolved
+
+			if (e_iter1 != left_colors[1].end() ) {
+				for (auto color0_iter = e_iter0->second.begin(); color0_iter != e_iter0->second.end(); color0_iter++){
+					for (auto color1_iter = e_iter1->second.begin(); color1_iter != e_iter1->second.end(); color1_iter++){
+						VertexId new_f[2];
+						new_f[0] = g.EdgeStart(e_iter0->first);
+						new_f[1] = g.EdgeEnd(e_iter0->first);
+						for(int ii = 0; ii < 2; ii++) {
+							if (new_f[ii] == vid)
+								new_f[ii] = new_verts[color_pairs[make_pair(*color0_iter,*color1_iter)]];
+						}
+						g.AddEdge(new_f[0], new_f[1], g.EdgeNucls(e_iter0->first));
+					}
+
+				}
+			}
+		}
+		for(int ii = 0; ii < 2; ii++)
+			for(auto e_iter = edgeIds[ii].begin(), end_iter = edgeIds[ii].end(); e_iter != end_iter; e_iter++) {
+				g.DeleteEdge(*e_iter);
+			}
+		g.DeleteVertex(vid);
+	}
 	sum_count += color_pairs.size();
 	return color_pairs.size();
 
