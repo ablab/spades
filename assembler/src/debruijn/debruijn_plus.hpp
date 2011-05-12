@@ -12,6 +12,7 @@
 #include "sequence.hpp"
 #include "seq.hpp"
 #include "cuckoo.hpp"
+#include <tr1/unordered_map>
 /*
  * act as DeBruijn graph and Index at the same time :)
  *
@@ -26,10 +27,10 @@ class DeBruijnPlus {
 private:
 	typedef Seq<size_> KPlusOneMer;
 	typedef Seq<size_ - 1> KMer;
-	//typedef std::tr1::unordered_map<KPlusOneMer, pair<Value, size_t> ,
-	//		typename KPlusOneMer::hash> map_type; // size_t is offset
-    typedef cuckoo<KPlusOneMer, pair<Value, size_t>, typename KPlusOneMer::multiple_hash,
-                 typename KPlusOneMer::equal_to> map_type;
+	typedef std::tr1::unordered_map<KPlusOneMer, pair<Value, size_t> ,
+		typename KPlusOneMer::hash, typename KPlusOneMer::equal_to> map_type; // size_t is offset
+    //typedef cuckoo<KPlusOneMer, pair<Value, size_t>, typename KPlusOneMer::multiple_hash,
+      //           typename KPlusOneMer::equal_to> map_type;
 	map_type nodes_;
 
 	bool contains(const KPlusOneMer &k) const {
