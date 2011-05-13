@@ -404,14 +404,19 @@ public:
 		if (edge != rc) {
 			rc->coverage_ += toAdd;
 		}
+
+		if (EdgeNucls(edge) == "CCAC") {
+			cout << "here " << toAdd << endl;
+		}
 	}
 
 	void IncCoverage(EdgeId edge) {
-		edge->coverage_++;
-		EdgeId rc = Complement(edge);
-		if (edge != rc) {
-			rc->coverage_++;
-		}
+//		edge->coverage_++;
+//		EdgeId rc = Complement(edge);
+//		if (edge != rc) {
+//			rc->coverage_++;
+//		}
+		IncCoverage(edge, 1);
 	}
 
 	/**

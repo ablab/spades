@@ -224,13 +224,11 @@ void AssertEdges(EdgeGraph& g, const Edges& etalon_edges) {
 		edges.insert(g.EdgeNucls(*it).str());
 	}
 
-	for (auto it = g.SmartVertexBegin(); it != g.SmartVertexEnd(); ++it) {
-		cout << g.VertexNucls(*it) << endl;
-	}
-
-	cout << print(edges) << endl;
-	cout << "Etalon " << print(etalon_edges) << endl;
-
+//	for (auto it = g.SmartVertexBegin(); it != g.SmartVertexEnd(); ++it) {
+//		cout << g.VertexNucls(*it) << endl;
+//	}
+//	cout << print(edges) << endl;
+//	cout << "Etalon " << print(etalon_edges) << endl;
 	EdgesEqual(edges, etalon_edges);
 }
 
@@ -254,8 +252,9 @@ bool EqualDouble(double d1, double d2) {
 
 void AssertCoverage(EdgeGraph& g, const CoverageInfo& etalon_coverage) {
 	for (auto it = g.SmartEdgeBegin(); it != g.SmartEdgeEnd(); ++it) {
-		CoverageInfo::const_iterator cov_info_it = etalon_coverage.find(g.EdgeNucls(*it).str());
-		ASSERT(cov_info_it != etalon_coverage.end() && EqualDouble(g.coverage(*it), (*cov_info_it).second));
+		auto etalon_cov_it = etalon_coverage.find(g.EdgeNucls(*it).str());
+		ASSERTM("Etalon didn't contain edge '" << g.EdgeNucls(*it) << "'", etalon_cov_it != etalon_coverage.end());
+		ASSERTM("Coverage for edge '" << g.EdgeNucls(*it) << "' was " << g.coverage(*it) << " but etalon is " << (*etalon_cov_it).second, EqualDouble(g.coverage(*it), (*etalon_cov_it).second));
 	}
 }
 
@@ -267,8 +266,7 @@ void AssertPairInfo(const EdgeGraph& g, /*todo const */PairedIndex& paired_index
 			if (pair_info.first() == pair_info.second() && pair_info.d() == 0) {
 				continue;
 			}
-			pair<EdgePairInfo::const_iterator, EdgePairInfo::const_iterator>
-				equal_range = etalon_pair_info.equal_range(make_pair(g.EdgeNucls(pair_info.first()).str(), g.EdgeNucls(pair_info.second()).str()));
+			auto equal_range = etalon_pair_info.equal_range(make_pair(g.EdgeNucls(pair_info.first()).str(), g.EdgeNucls(pair_info.second()).str()));
 			ASSERT(equal_range.first != equal_range.second);
 			bool found = false;
 			for (auto range_it = equal_range.first; range_it != equal_range.second; ++range_it) {
@@ -298,7 +296,7 @@ void AssertGraph(const vector<MyPairedRead>& paired_reads, size_t insert_size, c
 
 	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 
-	AssertCoverage(g, etalon_coverage);
+	AssertCoverage(g, AddComplement(etalon_coverage));
 
 	AssertPairInfo(g, paired_index, AddComplement(AddBackward(etalon_pair_info)));
 }
@@ -341,6 +339,40 @@ void TestCondenseSimple() {
 	AssertGraph<5> (reads, edges);
 }
 
+void TestStrange() {
+	vector<string> reads = {"TTCTGCATGGTTATGCATAACCATGCAGAA", "ACACACACTGGGGGTCCCTTTTGGGGGGGGTTTTTTTTG"};
+	typedef VectorStream<Read> RawStream;
+	typedef RCReaderWrapper<RawStream, Read> Stream;
+	RawStream raw_stream(MakeReads(reads));
+	Stream read_stream(raw_stream);
+	EdgeGraph g(27);
+	de_bruijn::EdgeIndex<28, EdgeGraph> index(g);
+
+	ConstructGraph<27, Stream>(g, index, read_stream);
+	EdgeId e = index.get(Seq<28>("TTCTGCATGGTTATGCATAACCATGCAG")).first;
+	VertexId start = g.EdgeEnd(e);
+	vector<EdgeId> edgeIds[2];
+	edgeIds[0] = g.OutgoingEdges(start);
+	edgeIds[1] = g.IncomingEdges(start);
+	for(int ii = 0; ii < 2; ii++)
+		for(auto e_iter = edgeIds[ii].begin(), end_iter = edgeIds[ii].end(); e_iter != end_iter; e_iter++) {
+			g.DeleteEdge(*e_iter);
+		}
+	g.DeleteVertex(start);
+
+//		g.DeleteEdge(e);
+//
+//
+//
+//	g.DeleteEdge(r_e);
+//	g.DeleteVertex(start);
+
+	INFO("FINISH");
+
+//	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
+
+}
+
 void TestPairedInfo() {
 	vector<MyPairedRead> paired_reads = {{"CCCAC", "CCACG"}, {"ACCAC", "CCACA"}};
 	vector<MyEdge> edges = {"CCCA", "ACCA", "CCAC", "CACG", "CACA"};
@@ -370,6 +402,8 @@ cute::suite EdgeGraphSuite() {
 	s.push_back(CUTE(TestCondenseSimple));
 
 	s.push_back(CUTE(TestPairedInfo));
+//	s.push_back(CUTE(TestStrange));
+
 	return s;
 }
 }
