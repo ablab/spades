@@ -111,10 +111,12 @@ void RepeatResolver<Graph>::dfs(vector<vector<int> > &edge_list, vector<int> &co
 template<class Graph>
 size_t RepeatResolver<Graph>::ResolveVertex( Graph &g, PairedInfoIndex &ind, VertexId vid){
 	DEBUG("Parsing vertex " << vid);
+	DEBUG(g.Complement(vid));
 	vector<EdgeId> edgeIds[2];
 	edgeIds[0] = g.OutgoingEdges(vid);
 	edgeIds[1] = g.IncomingEdges(vid);
 	vector<set<EdgeId> > paired_edges;
+	DEBUG(edgeIds[0].size()<< "  " << edgeIds[1].size());
 	paired_edges.resize(edgeIds[0].size() + edgeIds[1].size());
 
 	map<EdgeId, set<EdgeId>> right_to_left;
