@@ -44,11 +44,13 @@ private:
 	}
 
 	void CountSequence(const Sequence& s) {
-		Seq<size_> KPlusOneMer = s.start<size_> ();
-		addEdge(KPlusOneMer);
-		for (size_t j = size_; j < s.size(); ++j) {
-			KPlusOneMer = KPlusOneMer << s[j];
+		if (s.size() >= size_) {
+			Seq<size_> KPlusOneMer = s.start<size_> ();
 			addEdge(KPlusOneMer);
+			for (size_t j = size_; j < s.size(); ++j) {
+				KPlusOneMer = KPlusOneMer << s[j];
+				addEdge(KPlusOneMer);
+			}
 		}
 	}
 

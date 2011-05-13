@@ -24,7 +24,7 @@ const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_FULL = std::t
 
 
 
-#define K 27
+#define K 35
 #define R 100
 #define I 220
 #define DE_BRUIJN_DATA_FOLDER "./data/debruijn/"
