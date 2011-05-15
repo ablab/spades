@@ -59,10 +59,6 @@ public:
 		}
 	}
 
-	ostream& operator<<(ostream& os) {
-		return os << seq_;
-	}
-
 	Read() : valid(false) {
 		;
 	}
@@ -155,10 +151,16 @@ public:
 		return PairedRead(!second_, !first_, distance_);
 	}
 
-	ostream& operator<<(ostream& os) {
-		return os << "[" << first_ << ", " << second_ << "]";
-	}
 };
+
+//todo introduce read.cpp and put these methods there
+//ostream& operator<<(ostream& os, const Read& read) {
+//	return os << read.getSequenceString();
+//}
+//
+//ostream& operator<<(ostream& os, const PairedRead& p_r) {
+//	return os << "[" << p_r.first() << ", " << p_r.second() << "]";
+//}
 
 template <class TR>
 class PairedReader {
