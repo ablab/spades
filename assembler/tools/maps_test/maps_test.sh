@@ -1,13 +1,13 @@
 #!/bin/bash
 
 DATA_DIR=~/Assembler/data
-EXEC_DIR=../../build/tools/filter
+EXEC_DIR=../../build/tools/maps_test
 FILE_NUM=3
 FILE1=s_6.first10000_1.fastq.gz 
-FILE2=s_6.first10000_1.fastq.gz 
-FILE3=s_6.first10000_1.fastq.gz 
-#FILE2=s_6.first100000_1.fastq.gz 
-#FILE3=s_6.first400000_1.fastq.gz 
+#FILE2=s_6.first10000_1.fastq.gz 
+FILE2=s_6.first100000_1.fastq.gz 
+#FILE3=s_6.first10000_1.fastq.gz 
+FILE3=s_6.first400000_1.fastq.gz 
 
 make
 cp diagrams.gnu $EXEC_DIR
@@ -19,7 +19,7 @@ for f in $DATA_DIR/$FILE1 $DATA_DIR/$FILE2 $DATA_DIR/$FILE3;
   echo " " > temp.tmp
   for n in 1 2 3 4 5; 
     do echo "Map type:" $n;
-    ./filter $f 1 $n --stat --find >> temp.tmp
+    ./filter $f $n >> temp.tmp
   done
   cat temp.tmp | grep Insert >> time_insert.tmp 
   echo " " >> time_insert.tmp

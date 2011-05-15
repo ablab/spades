@@ -3,7 +3,7 @@
  * 
  * Created on: 17.04.2011
  *     Author: Mariya Fomkina
- *   Modified: 25.04.2011 by author
+ *   Modified: 15.05.2011 by author
  */
 
 #ifndef _SEQ_FILTER_HPP_
@@ -13,28 +13,19 @@
 #include "../test/memory.hpp"
 #include <sys/time.h>
 
-// Class seq_filter is used for getting all k-mer from all read of a given file
-// and selecting k-mers which amount is more than a given number.
-// Template parameters are:
-// size_t size - the size of k-mer
-// hm - hash map class
-// The only public method filter takes 4 parameters:
-// const std::string& in - input file name
-// const size_t L - given number for filtration
-// const bool stat - if false, k-mers are printed to output, 
-// else stat info in printed
-// const bool console - if true, k-mers are printed to output, 
-// else k-mers are added to vector and stat option is ignored
+// @description Class seq_filter_stat is used for getting 
+// all k-mers from all reads of a given file
+// and selecting k-mers which amount is more than 1.
+// @parameter size the size of k-mer
+// @parameter hm hash map class
+// @parameter in input file name
+// @parameter name the name of hash map
 
 template<size_t size, class hm>
-class seq_filter {		
+class seq_filter_stat {		
 public:
-	static std::vector<Seq<size> > filter(const std::string& in, 
-                                        const size_t L = 1, 
-                                        const bool stat = false, 
-                                        const bool console = true,
-                                        const bool find = false, 
-                                        const std::string& name = "") {
+	static void filter(const std::string& in, 
+                     const std::string& name = "") {
     double vm1 = 0;
     double rss1 = 0;
     process_mem_usage(vm1, rss1);
@@ -43,13 +34,10 @@ public:
     double t1 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
     hm map;
+    size_t L = 1;
     std::vector<Seq<size> > seqs;
 		add_seqs_from_file_to_map(in, map);
-    if (console) {
-      write_seqs_from_map_to_stdout(map, L, stat);
-    } else {
-      seqs = get_seqs_from_map(map, L);
-    }
+    write_seqs_from_map_to_stdout(map, L);
 
     double vm2 = 0;
     double rss2 = 0;
@@ -57,29 +45,22 @@ public:
     gettimeofday(&tim, NULL);
     double t2 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
-    //hm map2;
     size_t n = 0;
-    if (find) {
-      Seq<size> seq;
-      typename hm::iterator it;
-      for (it = map.begin(); it != map.end(); ++it) {
-        seq = (*it).first;
-        map.find(seq);
-        ++n;
-        //map2.insert(std::pair<Seq<31>, size_t>(seq, 0));
-      }
+    Seq<size> seq;
+    typename hm::iterator it;
+    for (it = map.begin(); it != map.end(); ++it) {
+      seq = (*it).first;
+      map.find(seq);
+      ++n;
     }
 
     gettimeofday(&tim, NULL);
     double t3 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
-    if ((stat) && (console)) {
-      std::cout << "Memory: " << (vm2 - vm1) << " " << name << std::endl;
-      std::cout << "Insert: " << (t2 - t1) << " " << name << std::endl;
-      std::cout << "Find: " << (t3 - t2) << " " << name << std::endl;
-      std::cout << "Elements to find: " << n << std::endl;
-    }
-    return seqs;
+    std::cout << "Memory: " << (vm2 - vm1) << " " << name << std::endl;
+    std::cout << "Insert: " << (t2 - t1) << " " << name << std::endl;
+    std::cout << "Find: " << (t3 - t2) << " " << name << std::endl;
+    std::cout << "Elements to find: " << n << std::endl;
 	}
 
   // Only for cuckoo!!!
@@ -135,8 +116,8 @@ public:
 	}
 
 private:
-	seq_filter();
-	seq_filter(const seq_filter<size, hm>& sf);
+	seq_filter_stat();
+	seq_filter_stat(const seq_filter_stat<size, hm>& sf);
 
 private:
   static void add_seqs_from_file_to_map(const std::string& in, hm& map) {
@@ -180,24 +161,18 @@ private:
 		return seqs;
 	}
 
-	static void write_seqs_from_map_to_stdout(hm& map, const size_t& L, bool stat) {
+	static void write_seqs_from_map_to_stdout(hm& map, const size_t& L) {
 		typename hm::iterator end = map.end();
 		size_t cnt = 0;
 		for (typename hm::iterator it = map.begin(); it != end; ++it) {
 			if ((*it).second > L) {
-        if (stat) {
-          ++cnt;
-        } else {
-          std::cout << (*it).first << std::endl;
-				}
+        ++cnt;
 			}
 		}
-    if (stat) {
-      std::cout << "Selected " << cnt << " k-mers from " << map.size() 
-                << ", removed "  << ((float)map.size() - cnt)/map.size()*100 
-                << "% of k-mers." << std::endl; 
-    }
-	}
+    std::cout << "Selected " << cnt << " k-mers from " << map.size() 
+              << ", removed "  << ((float)map.size() - cnt)/map.size()*100 
+              << "% of k-mers." << std::endl; 
+  }
 };
 
 #endif
