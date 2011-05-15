@@ -266,15 +266,22 @@ void AssertPairInfo(const EdgeGraph& g, /*todo const */PairedIndex& paired_index
 			if (pair_info.first() == pair_info.second() && pair_info.d() == 0) {
 				continue;
 			}
-			auto equal_range = etalon_pair_info.equal_range(make_pair(g.EdgeNucls(pair_info.first()).str(), g.EdgeNucls(pair_info.second()).str()));
-			ASSERT(equal_range.first != equal_range.second);
-			bool found = false;
+			pair<MyEdge, MyEdge> my_edge_pair(g.EdgeNucls(pair_info.first()).str(), g.EdgeNucls(pair_info.second()).str());
+			auto equal_range = etalon_pair_info.equal_range(my_edge_pair);
+
+			string my_edge_pair_str = "[" + my_edge_pair.first + ", " + my_edge_pair.second + "]";
+			ASSERTM("Pair of edges " << my_edge_pair_str << " wasn't found in etalon",  equal_range.first != equal_range.second);
+
+			double etalon_weight = -1.0;
+
 			for (auto range_it = equal_range.first; range_it != equal_range.second; ++range_it) {
-				if ((*range_it).second.first == pair_info.d() && EqualDouble((*range_it).second.second, pair_info.weight())) {
-					found = true;
+				if ((*range_it).second.first == pair_info.d()) {
+					etalon_weight = (*range_it).second.second;
 				}
 			}
-			ASSERT(found);
+			ASSERTM("Etalon didn't contain distance=" << pair_info.d() << " for edge pair " << my_edge_pair_str, etalon_weight > 0);
+			ASSERTM("Actual weight for edge pair " << my_edge_pair_str << " on distance " << pair_info.d() << " was " << pair_info.weight() << " but etalon is " <<  etalon_weight
+					, EqualDouble(etalon_weight, pair_info.weight()));
 		}
 	}
 }

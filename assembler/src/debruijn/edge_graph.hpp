@@ -400,14 +400,12 @@ public:
 	 */
 	void IncCoverage(EdgeId edge, int toAdd) {
 		edge->coverage_ += toAdd;
-		EdgeId rc = Complement(edge);
-		if (edge != rc) {
-			rc->coverage_ += toAdd;
-		}
+//		todo talk with Anton about this code
+//		EdgeId rc = Complement(edge);
+//		if (edge != rc) {
+//			rc->coverage_ += toAdd;
+//		}
 
-		if (EdgeNucls(edge) == "CCAC") {
-			cout << "here " << toAdd << endl;
-		}
 	}
 
 	void IncCoverage(EdgeId edge) {
