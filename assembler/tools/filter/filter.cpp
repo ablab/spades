@@ -60,19 +60,24 @@ int main(int argc, char** argv) {
   }
   switch (m_num) {
   case 1: 
-    seq_filter<K, hm1>::filter(filename, L, stat_on, console_on, find_on);
+    seq_filter<K, hm1>::filter(filename, L, stat_on, console_on, 
+                               find_on, "map");
     break;
   case 2: 
-    seq_filter<K, hm2>::filter(filename, L, stat_on, console_on, find_on);
+    seq_filter<K, hm2>::filter(filename, L, stat_on, console_on, 
+                               find_on, "hash_map");
     break;
   case 3: 
-    seq_filter<K, hm3>::filter(filename, L, stat_on, console_on, find_on);
+    seq_filter<K, hm3>::filter(filename, L, stat_on, console_on, 
+                               find_on, "unordered_map");
     break;
   case 4: 
-    seq_filter<K, hm4>::filter(filename, L, stat_on, console_on, find_on);
+    seq_filter<K, hm4>::filter(filename, L, stat_on, console_on, 
+                               find_on, "sparse_hash_map");
     break;
   case 5: 
-    seq_filter<K, hm5>::filter(filename, L, stat_on, console_on, find_on);
+    seq_filter<K, hm5>::filter(filename, L, stat_on, console_on, 
+                               find_on, "cuckoo");
     break;
   default:
     std::cout << "Map number is incorrect!\n";

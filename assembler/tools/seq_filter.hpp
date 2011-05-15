@@ -33,7 +33,8 @@ public:
                                         const size_t L = 1, 
                                         const bool stat = false, 
                                         const bool console = true,
-                                        const bool find = false) {
+                                        const bool find = false, 
+                                        const std::string& name = "") {
     double vm1 = 0;
     double rss1 = 0;
     process_mem_usage(vm1, rss1);
@@ -73,9 +74,9 @@ public:
     double t3 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
     if ((stat) && (console)) {
-      std::cout << "Memory: " << (vm2 - vm1) << std::endl;
-      std::cout << "Insert: " << (t2 - t1) << std::endl;
-      std::cout << "Find: " << (t3 - t2) << std::endl;
+      std::cout << "Memory: " << (vm2 - vm1) << " " << name << std::endl;
+      std::cout << "Insert: " << (t2 - t1) << " " << name << std::endl;
+      std::cout << "Find: " << (t3 - t2) << " " << name << std::endl;
       std::cout << "Elements to find: " << n << std::endl;
     }
     return seqs;

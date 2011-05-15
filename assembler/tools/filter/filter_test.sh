@@ -4,9 +4,9 @@ DATA_DIR=~/Assembler/data
 EXEC_DIR=../../build/tools/filter
 FILE_NUM=3
 FILE1=s_6.first10000_1.fastq.gz 
-#FILE2=s_6.first10000_1.fastq.gz 
+FILE2=s_6.first10000_1.fastq.gz 
 FILE3=s_6.first10000_1.fastq.gz 
-FILE2=s_6.first100000_1.fastq.gz 
+#FILE2=s_6.first100000_1.fastq.gz 
 #FILE3=s_6.first400000_1.fastq.gz 
 
 make
@@ -32,6 +32,6 @@ for f in $DATA_DIR/$FILE1 $DATA_DIR/$FILE2 $DATA_DIR/$FILE3;
   echo " " >> memory.tmp
 done
 
-gnuplot 'diagrams.gnu'
+gnuplot -e "FILE1='10000 reads'; FILE2='100000 reads'; FILE3='400000 reads';" diagrams.gnu
 
 echo "Diagrams are done!"
