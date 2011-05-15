@@ -15,7 +15,7 @@ void RunTestSuites() {
 using edge_graph::EdgeGraph;
 
 int main() {
-//	RunTestSuites();
+	RunTestSuites();
 	string genome = "AAAAAAAAAAAAAAAAAAAAA";
 	EdgeGraph g(5);
 	de_bruijn::EdgeIndex<5 + 1, EdgeGraph> index(g);

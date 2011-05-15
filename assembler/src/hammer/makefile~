@@ -1,0 +1,7 @@
+SRC=sequence.cpp center.cpp
+DIR=hammer
+PROG=center
+MYCFLAGS=-fPIC -std=c++0x
+MYLDFLAGS=
+include ../makefile.inc
+

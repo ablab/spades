@@ -12,6 +12,7 @@
 #include "logging.hpp"
 #include "abruijngraph.hpp"
 #include "ireadstream.hpp"
+#include "graphVisualizer.hpp"
 
 namespace abruijn {
 
@@ -195,6 +196,77 @@ public:
 
 	abruijn::Graph* graph() {
 		return &gb_.graph_;
+	}
+
+	void SpellGenomeThroughGraph () {
+		/// we assume here that the graph is already built
+
+		/// outputting A Bruijn graph
+		ofstream outfile("./data/abruijn/abruijnspellgenome.dot", ios::out);
+		gvis::GraphPrinter<Vertex*> printer("abruijnspellgenome", outfile);
+		for (Vertices::iterator v = graph()->vertices.begin(); v != graph()->vertices.end(); ++v) {
+			printer.addVertex(*v, ToString(**v));
+			for (Edges::iterator it = (*v)->edges().begin(); it != (*v)->edges().end(); ++it) {
+				printer.addEdge(*v, it->first, ToString(it->second));
+			}
+		}
+
+
+		/// reading the reference genome
+		string const ref_genome_filename = "./data/input/MG1655-K12.fasta.gz";
+		Read ref_genome;
+
+		ireadstream genome_stream(ref_genome_filename);
+		genome_stream >> ref_genome;
+		genome_stream.close();
+
+		/// computing hash-values of all the K-mers of the reference genome
+		hashing::HashSym<Sequence> hashsym;
+		vector<hash_t> ha;
+		ha.resize(ref_genome.size()-K+1);
+		hashsym.kmers(ref_genome.getSequence(), ha);
+
+		int num_of_missing_kmers = 0;
+		int num_of_earmarked_kmers = 0;
+
+		int previous_index = -1, current_index = -1;
+		Sequence previous_kmer(""), current_kmer("");
+
+		for (unsigned int i = 0; i != ha.size (); ++i ) {
+			if (gb_.earmarked_hashes.count(ha[i])) {
+				INFO(i);
+				++num_of_earmarked_kmers;
+
+				current_index = i;
+				current_kmer  = ref_genome.getSequence().Subseq(i,i+K);
+
+				if (!graph()->hasVertex(current_kmer)) {
+					++num_of_missing_kmers;
+					INFO("k-mer " << current_kmer << " is present in the genome, but not in the graph");
+				}
+
+				if (-1 == previous_index) {
+					previous_index = i;
+					previous_kmer  = current_kmer;
+					printer.threadStart( graph()->getVertex( previous_kmer ), 4*graph()->vertices.size() );
+				}
+				else {
+					current_index = i;
+					current_kmer  = ref_genome.getSequence().Subseq( i,i+K );
+					printer.threadAdd( graph()->getVertex( current_kmer) );
+
+					//int edge_length = current_index - previous_index;
+
+
+
+					previous_index = current_index;
+					previous_kmer  = current_kmer;
+				}
+			} // if earmarked
+		} // for
+
+		printer.output();
+		outfile.close ();
 	}
 };
 

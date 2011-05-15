@@ -27,7 +27,7 @@ private:
 	DeBruijn& origin_;
 
 	bool StepRightIfPossible(KPlusOneMer &edge) {
-		DEBUG("Considering edge " << edge);
+//		DEBUG("Considering edge " << edge);
 		if (origin_.IncomingEdgeCount(edge) == 1 && origin_.OutgoingEdgeCount(edge) == 1) {
 			KPlusOneMer next_edge = origin_.NextEdge(edge);
 			if (edge != !next_edge) { // rev compl

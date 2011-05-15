@@ -1,7 +1,10 @@
 #include "toyexamples.hpp"
 #include "hash.hpp"
+//#include "abruijngraph.hpp"
+#include "graphBuilder.hpp"
 
 #include "common/graphVisualizer.hpp"
+#include "common/ireadstream.hpp"
 
 #include <string>
 #include <set>
@@ -335,3 +338,29 @@ extern void ABruijnGraphWithGraphVisualizer ( string genome, unsigned read_size,
   f.close ();
   return;
 }
+
+
+//void SpellGenomeThroughABruijnGraph ()
+//{
+//	// init parameters
+//
+//	string const filename1 = "./data/input/cropped/s_6.first10000_1.fastq.gz";
+//	string const filename2 = "./data/input/cropped/s_6.first10000_2.fastq.gz";
+//	int const cut = -1;
+//	int const take = 1;
+//	int const mode = 1;
+//
+//	std::string file_names[2] = {filename1, filename2};
+//	StrobeReader<2, Read, ireadstream> sr(file_names);
+//	PairedReader<ireadstream> paired_stream(sr, 220);
+//	SimpleReaderWrapper<PairedReader<ireadstream> > srw(paired_stream);
+//	CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream> > > cr(srw, cut);
+//
+//	abruijn::GraphBuilderMaster<CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream>>>> gbm(cr, take, mode);
+//	gbm.build();
+//
+//	/// OK, now A Bruijn graph is built
+//
+//
+//
+//}

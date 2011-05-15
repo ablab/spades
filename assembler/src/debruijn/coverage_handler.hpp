@@ -51,6 +51,8 @@ public:
 			stream >> read;
 			processRead(threader, read);
 		}
+
+		cout << "Here3 coverage:" << g_.coverage(index.get(Seq<k+1>("CCAC")).first) << "   length:"<< g_.length(index.get(Seq<k+1>("CCAC")).first)<< endl;
 	}
 
 	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
