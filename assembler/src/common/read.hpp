@@ -252,7 +252,7 @@ public:
 	}
 
 	bool eof() const {
-		return inner_reader_.eof() && current == 2;
+		return inner_reader_.eof() && current_ == 2;
 	}
 
 	SimpleReaderWrapper& operator>>(Read& r) {
