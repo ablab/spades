@@ -58,6 +58,11 @@ public:
 			qual_.erase(qual_.begin() + index, qual_.end());
 		}
 	}
+
+	ostream& operator<<(ostream& os) {
+		return os << seq_;
+	}
+
 	Read() : valid(false) {
 		;
 	}
@@ -148,6 +153,10 @@ public:
 
 	const PairedRead operator!() const{
 		return PairedRead(!second_, !first_, distance_);
+	}
+
+	ostream& operator<<(ostream& os) {
+		return os << "[" << first_ << ", " << second_ << "]";
 	}
 };
 
