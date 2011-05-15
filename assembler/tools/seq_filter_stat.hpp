@@ -35,7 +35,6 @@ public:
 
     hm map;
     size_t L = 1;
-    std::vector<Seq<size> > seqs;
 		add_seqs_from_file_to_map(in, map);
     write_seqs_from_map_to_stdout(map, L);
 
@@ -64,13 +63,7 @@ public:
 	}
 
   // Only for cuckoo!!!
-  // Code is dublicated, needs refactoring
-	static std::vector<Seq<size> > filter(const std::string& in, 
-                                        const size_t L, 
-                                        const bool stat, 
-                                        const bool console,
-                                        const bool find,
-                                        const size_t max_loop) {
+	static void filter(const std::string& in, const size_t max_loop) {
     double vm1 = 0;
     double rss1 = 0;
     process_mem_usage(vm1, rss1);
@@ -81,13 +74,9 @@ public:
     hm map;
     map.set_up(4, 100, max_loop, 1.2);
 
-    std::vector<Seq<size> > seqs;
-		add_seqs_from_file_to_map(in, map);
-    if (console) {
-      write_seqs_from_map_to_stdout(map, L, stat);
-    } else {
-      seqs = get_seqs_from_map(map, L);
-    }
+		size_t L = 1;
+    add_seqs_from_file_to_map(in, map);
+    write_seqs_from_map_to_stdout(map, L);
 
     double vm2 = 0;
     double rss2 = 0;
@@ -95,24 +84,8 @@ public:
     gettimeofday(&tim, NULL);
     double t2 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
-    if (find) {
-      Seq<size> seq;
-      typename hm::iterator it;
-      for (it = map.begin(); it != map.end(); ++it) {
-        seq = (*it).first;
-        map.find(seq);
-      }
-    }
-
-    gettimeofday(&tim, NULL);
-    double t3 = tim.tv_sec + ((float)tim.tv_usec/1e6);
-
-    if ((stat) && (console)) {
-      std::cout << "Memory: " << (vm2 - vm1) << std::endl;
-      std::cout << "Insert: " << (t2 - t1) << std::endl;
-      std::cout << "Find: " << (t3 - t2) << std::endl;
-    }
-    return seqs;
+    std::cout << "Memory: " << (vm2 - vm1) << std::endl;
+    std::cout << "Insert: " << (t2 - t1) << std::endl;
 	}
 
 private:
