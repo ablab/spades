@@ -3,7 +3,7 @@
  *
  *  Created on: 25.02.2011
  *      Author: vyahhi
- *  Last modify: 28.03.2011 21:09
+ *  Last modify: 15.05.2011
  *      Author: Mariya Fomkina
  */
 
@@ -219,6 +219,7 @@ private:
 
   void rehash() {
     size_t len_temp_ = len_part_;
+
     len_part_ = (size_t)(len_part_ * step_);
     len_part_ = ((len_part_ + 7) / 8) * 8;
     len_ = len_part_ * d_;
@@ -226,18 +227,19 @@ private:
     update_exists(len_temp_);
     update_data(len_temp_);
 
+    size_t n = 0;
     iterator it = begin();
-    if (!get_exists(it.pos)) ++it;
     while (it != end()) {
       size_t i = it.pos / len_part_;
       size_t j = it.pos % len_part_;
+      ++n;
       if (j != hash((*it).first, i)) {
         Data t = *it;
         remove(it);
         add_new(t);
         if (is_rehashed_) {
           it = begin();
-          if (!get_exists(it.pos)) ++it; 
+          is_rehashed_ = false;
         }
       } else { 
         ++it;
@@ -254,7 +256,6 @@ private:
         bool exists = get_exists(j * len_part_ + pos); 
         set_exists(j * len_part_ + pos);
         if (!exists) {
-          is_rehashed_ = false;
           ++size_;
           return iterator(j * len_part_ + pos, this);
         } 
@@ -282,8 +283,10 @@ public:
   // @parameter step determines the ratio of increasing the size of hash
   // during rehash.   
   // The less it is the less memory will be used but the more time is needed. 
-  cuckoo(size_t d = 4, size_t init_length = 100, size_t max_loop = 100, double step = 1.2)
-    : d_(d), init_length_(init_length), max_loop_(max_loop), step_(step) {
+  cuckoo(size_t d = 4, size_t init_length = 100, 
+         size_t max_loop = 100, double step = 1.2)
+    : d_(d), init_length_(init_length), 
+      max_loop_(max_loop), step_(step) {
     init();
   }
   
@@ -291,7 +294,8 @@ public:
     clear_all();
   }
 
-  cuckoo<Key, Value, Hash, Pred>& operator=(cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
+  cuckoo<Key, Value, Hash, Pred>& operator=
+  (cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
     clear_all();
     d_ = Cuckoo.d_;
     init_length_ = Cuckoo.init_length_;
