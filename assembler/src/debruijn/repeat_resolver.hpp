@@ -119,7 +119,7 @@ size_t RepeatResolver<Graph>::ResolveVertex( Graph &g, PairedInfoIndex &ind, Ver
 	DEBUG(edgeIds[0].size()<< "  " << edgeIds[1].size());
 	paired_edges.resize(edgeIds[0].size() + edgeIds[1].size());
 
-	map<EdgeId, set<EdgeId>> right_to_left;
+	map<EdgeId, set<EdgeId> > right_to_left;
 	map<EdgeId, int> right_set;
 	vector<EdgeId> right_vector[2];
 	map<EdgeId, set<int> > left_colors[2];
