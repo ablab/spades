@@ -17,6 +17,7 @@
 #include "bulge_remover.hpp"
 #include "coverage_handler.hpp"
 #include "repeat_resolver.hpp"
+#include "omni_tools.hpp"
 
 namespace edge_graph {
 
@@ -104,6 +105,7 @@ void ConstructGraph(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index, ReadStream
 
 	INFO("Constructing DeBruijn graph");
 	DeBruijn& debruijn = index.inner_index();
+	INFO("Filling DeBruijn graph");
 	debruijn.Fill(stream);
 	INFO("DeBruijn graph constructed");
 
@@ -155,6 +157,8 @@ void EdgeGraphTool(ReadStream& stream, const string& genome, const string& outpu
 	clusterer.cluster(clustered_paired_index);
 
 	ResolveRepeats(g, paired_index);
+	ProduceInfo<k> (g, index, genome, output_folder + "repeats_resolved.dot", "no_repeat_graph");
+
 	INFO("Tool finished")
 }
 

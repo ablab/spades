@@ -33,7 +33,7 @@ namespace cute{
 		char const * what() const { return reason.c_str(); }
 	};
 }
-#define ASSERTM(msg,cond) if (!(cond)) throw cute::test_failure((msg),__FILE__,__LINE__)
+#define ASSERTM(msg,cond) if (!(cond)) {stringstream ss; ss << msg; throw cute::test_failure((ss.str()),__FILE__,__LINE__);}
 #define ASSERT(cond) ASSERTM(#cond,cond)
 #define FAIL() ASSERTM("FAIL()",false)
 #define FAILM(msg) ASSERTM(msg,false)

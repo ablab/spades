@@ -16,14 +16,15 @@ public:
 	}
 
 	virtual void HandleVertex(VertexId v) {
-		pr_.addVertex(v, "");
+		stringstream ss;
+		ss << v<< " comp "<< g_.Complement(v)<<"   ";
+		pr_.addVertex(v, ss.str());
 	}
 
 	virtual void HandleEdge(EdgeId e) {
 		stringstream ss;
-		ss << g_.EdgeNucls(e).size();
-
-		pr_.addEdge(g_.EdgeStart(e), g_.EdgeStart(e), ss.str());
+		ss << e<<" comp "<<g_.Complement(e)<<" len "<<g_.EdgeNucls(e).size()<<"   ";
+		pr_.addEdge(g_.EdgeStart(e), g_.EdgeEnd(e), ss.str());
 	}
 
 };

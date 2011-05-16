@@ -58,6 +58,7 @@ public:
 			qual_.erase(qual_.begin() + index, qual_.end());
 		}
 	}
+
 	Read() : valid(false) {
 		;
 	}
@@ -149,7 +150,17 @@ public:
 	const PairedRead operator!() const{
 		return PairedRead(!second_, !first_, distance_);
 	}
+
 };
+
+//todo introduce read.cpp and put these methods there
+//ostream& operator<<(ostream& os, const Read& read) {
+//	return os << read.getSequenceString();
+//}
+//
+//ostream& operator<<(ostream& os, const PairedRead& p_r) {
+//	return os << "[" << p_r.first() << ", " << p_r.second() << "]";
+//}
 
 template <class TR>
 class PairedReader {
@@ -189,13 +200,13 @@ public:
 	}
 };
 
-template<class Stream>
+template<class Stream, typename ReadType>
 class RCReaderWrapper {
 public:
 //	typedef typename Stream::ReadType ReadType;
 private:
 	Stream &inner_reader_;
-	PairedRead rc_result_;
+	ReadType rc_result_;
 	bool was_rc_;
 public:
 	RCReaderWrapper(Stream &reader) :
@@ -206,7 +217,7 @@ public:
 		return inner_reader_.eof() && !was_rc_;
 	}
 
-	RCReaderWrapper& operator>>(PairedRead& p_r) {
+	RCReaderWrapper& operator>>(ReadType& p_r) {
 		if (!was_rc_) {
 			inner_reader_ >> p_r;
 			rc_result_ = !p_r;
@@ -241,7 +252,7 @@ public:
 	}
 
 	bool eof() const {
-		return inner_reader_.eof();
+		return inner_reader_.eof() && current_ == 0;
 	}
 
 	SimpleReaderWrapper& operator>>(Read& r) {
