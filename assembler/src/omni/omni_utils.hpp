@@ -1,8 +1,9 @@
 #ifndef OMNI_UTILS_HPP_
 #define OMNI_UTILS_HPP_
 
-namespace omnigraph {
+#include "structures.hpp"
 
+namespace omnigraph {
 template<class Graph>
 class GraphActionHandler {
 public:
@@ -48,8 +49,8 @@ public:
 	virtual void
 	ApplyAdd(GraphActionHandler<Graph> *handler, EdgeId e) const = 0;
 
-	virtual void ApplyDelete(GraphActionHandler<Graph> *handler,
-			VertexId v) const = 0;
+	virtual void
+	ApplyDelete(GraphActionHandler<Graph> *handler, VertexId v) const = 0;
 
 	virtual void
 	ApplyDelete(GraphActionHandler<Graph> *handler, EdgeId e) const = 0;
@@ -57,8 +58,8 @@ public:
 	virtual void ApplyMerge(GraphActionHandler<Graph> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const = 0;
 
-	virtual void ApplyGlue(GraphActionHandler<Graph> *handler,
-			EdgeId old_edge, EdgeId new_edge) const = 0;
+	virtual void ApplyGlue(GraphActionHandler<Graph> *handler, EdgeId old_edge,
+			EdgeId new_edge) const = 0;
 
 	virtual void ApplySplit(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const = 0;
@@ -81,8 +82,7 @@ public:
 		handler.HandleAdd(e);
 	}
 
-	virtual void ApplyDelete(GraphActionHandler<Graph> *handler,
-			VertexId v) const {
+	virtual void ApplyDelete(GraphActionHandler<Graph> *handler, VertexId v) const {
 		handler.HandleDelete(v);
 	}
 
@@ -95,8 +95,8 @@ public:
 		handler.HandleMerge(old_edges, new_edge);
 	}
 
-	virtual void ApplyGlue(GraphActionHandler<Graph> *handler,
-			EdgeId old_edge, EdgeId new_edge) const {
+	virtual void ApplyGlue(GraphActionHandler<Graph> *handler, EdgeId old_edge,
+			EdgeId new_edge) const {
 		handler.HandleGlue(old_edge, new_edge);
 	}
 
@@ -135,8 +135,7 @@ public:
 			handler->HandleAdd(rce);
 	}
 
-	virtual void ApplyDelete(GraphActionHandler<Graph> *handler,
-			VertexId v) const {
+	virtual void ApplyDelete(GraphActionHandler<Graph> *handler, VertexId v) const {
 		VertexId rcv = graph_.Complement(v);
 		handler->HandleDelete(v);
 		if (v != rcv)
@@ -155,7 +154,7 @@ public:
 		EdgeId rce = graph_.Complement(new_edge);
 		handler->HandleMerge(old_edges, new_edge);
 		if (new_edge != rce) {
-			vector<EdgeId> ecOldEdges;
+			vector < EdgeId > ecOldEdges;
 			for (int i = old_edges.size() - 1; i >= 0; i--) {
 				ecOldEdges.push_back(graph_.Complement(old_edges[i]));
 			}
@@ -163,8 +162,8 @@ public:
 		}
 	}
 
-	virtual void ApplyGlue(GraphActionHandler<Graph> *handler,
-			EdgeId old_edge, EdgeId new_edge) const {
+	virtual void ApplyGlue(GraphActionHandler<Graph> *handler, EdgeId old_edge,
+			EdgeId new_edge) const {
 		EdgeId rcOldEdge = graph_.Complement(old_edge);
 		EdgeId rcNewEdge = graph_.Complement(new_edge);
 		assert(old_edge != new_edge);
@@ -189,143 +188,45 @@ public:
 	}
 };
 
-template<typename Key, typename Comparator = std::less<Key> >
-class PriorityQueue {
-private:
-	set<Key, Comparator> storage_;
-public:
-	/*
-	 * Be careful! This constructor requires Comparator to have default constructor even if you call it with
-	 * specified comparator. In this case just create default constructor with assert(false) inside it.
-	 */
-	PriorityQueue(const Comparator& comparator = Comparator()) :
-		storage_(comparator) {
-	}
-
-	template<typename InputIterator>
-	PriorityQueue(InputIterator begin, InputIterator end,
-			const Comparator& comparator = Comparator()) :
-		storage_(begin, end, comparator) {
-	}
-
-	Key poll() {
-		Key key = *(storage_.begin());
-		storage_.erase(storage_.begin());
-		return key;
-	}
-	Key peek() const {
-		return *(storage_.begin());
-	}
-
-	void offer(const Key key) {
-		storage_.insert(key);
-	}
-
-	bool remove(const Key key) {
-		return storage_.erase(key) > 0;
-	}
-
-	bool empty() const {
-		return storage_.empty();
-	}
-
-	size_t size() const {
-		return storage_.size();
-	}
-};
-
-template<typename Graph, typename ElementId, typename Comparator = std::less<
+template<class Graph, typename ElementId, typename Comparator = std::less<
 		ElementId> >
-class QueueIterator {
+class SmartIterator: public GraphActionHandler<Graph> , public QueueIterator<
+		ElementId, Comparator> {
 private:
-	bool ready;
-protected:
-	PriorityQueue<ElementId, Comparator> queue_;
-
 	Graph &graph_;
-
-	template<typename iterator>
-	void fillQueue(iterator begin, iterator end) {
-		for (iterator it = begin; it != end; ++it) {
-			queue_.offer(*it);
-		}
-	}
-
-	QueueIterator(Graph &graph, const Comparator& comparator = Comparator()) :
-		ready(true), queue_(comparator), graph_(graph) {
-	}
-
-	template<typename iterator>
-	QueueIterator(Graph &graph, iterator begin, iterator end,
-			const Comparator& comparator = Comparator()) :
-		ready(true), queue_(comparator), graph_(graph) {
-		fillQueue(begin, end);
-	}
-
-	void remove(ElementId toRemove) {
-		if (ready && toRemove == queue_.peek()) {
-			ready = false;
-		}
-		queue_.remove(toRemove);
-	}
-
 public:
-	//== is supported only in case this or other is end iterator
-	bool operator==(const QueueIterator& other) {
-		if (this->queue_.empty() && other.queue_.empty())
-			return true;
-		if (this->queue_.empty() || other.queue_.empty())
-			return false;
-		assert(false);
+	typedef QueueIterator<ElementId, Comparator> super;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+public:
+	SmartIterator(Graph &graph, const Comparator& comparator = Comparator()) :
+		QueueIterator<ElementId, Comparator> (comparator),
+				graph_(graph) {
+		graph_.AddActionHandler(this);
 	}
 
-	bool operator!=(const QueueIterator& other) {
-		if (this->queue_.empty() && other.queue_.empty())
-			return false;
-		if (this->queue_.empty() || other.queue_.empty())
-			return true;
-		assert(false);
-	}
-
-	ElementId operator*() const {
-		assert(!queue_.empty());
-		assert(ready);
-		return queue_.peek();
-	}
-
-	void operator++() {
-		assert(!queue_.empty());
-		if (ready)
-			queue_.poll();
-		else
-			ready = true;
-		//		cout << "remove " << queue_.size() << endl;
-	}
-
-	virtual ~QueueIterator() {
+	virtual ~SmartIterator() {
+		graph_.RemoveActionHandler(this);
 	}
 };
 
 template<class Graph, typename Comparator = std::less<typename Graph::VertexId> >
-class SmartVertexIterator: public GraphActionHandler<Graph> ,
-		public QueueIterator<Graph, typename Graph::VertexId, Comparator> {
+class SmartVertexIterator: public SmartIterator<Graph,
+		typename Graph::VertexId, Comparator> {
 public:
-	typedef QueueIterator<Graph, typename Graph::VertexId, Comparator> super;
+	typedef QueueIterator<typename Graph::VertexId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
 	SmartVertexIterator(Graph &graph, bool fill,
 			const Comparator& comparator = Comparator()) :
-				QueueIterator<Graph, typename Graph::VertexId, Comparator> (
-						graph, comparator) {
+		SmartIterator<Graph, VertexId, Comparator> (graph, comparator) {
 		if (fill) {
-			super::fillQueue(graph.begin(), graph.end());
-			graph.AddActionHandler(this);
+			super::AddAll(graph.begin(), graph.end());
 		}
 	}
 
 	virtual ~SmartVertexIterator() {
-		super::graph_.RemoveActionHandler(this);
 	}
 
 	virtual void HandleAdd(VertexId v) {
@@ -340,28 +241,26 @@ public:
 };
 
 template<class Graph, typename Comparator = std::less<typename Graph::EdgeId> >
-class SmartEdgeIterator: public GraphActionHandler<Graph> ,
-		public QueueIterator<Graph, typename Graph::EdgeId, Comparator> {
+class SmartEdgeIterator: public SmartIterator<Graph, typename Graph::EdgeId,
+		Comparator> {
 public:
-	typedef QueueIterator<Graph, typename Graph::EdgeId, Comparator> super;
+	typedef QueueIterator<typename Graph::EdgeId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
 	SmartEdgeIterator(Graph &graph, bool fill,
 			Comparator comparator = Comparator()) :
-		super(graph, comparator) {
+		SmartIterator<Graph, EdgeId, Comparator> (graph, comparator) {
 		if (fill) {
 			for (typename Graph::VertexIterator it = graph.begin(); it
 					!= graph.end(); ++it) {
 				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
-				super::fillQueue(outgoing.begin(), outgoing.end());
+				this->super::AddAll(outgoing.begin(), outgoing.end());
 			}
-			super::graph_.AddActionHandler(this);
 		}
 	}
 
 	virtual ~SmartEdgeIterator() {
-		super::graph_.RemoveActionHandler(this);
 	}
 
 	virtual void HandleAdd(EdgeId v) {

@@ -20,7 +20,6 @@
 
 namespace edge_graph {
 
-using omnigraph::PriorityQueue;
 using omnigraph::Compresser;
 
 template<class Graph>
