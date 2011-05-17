@@ -13,7 +13,6 @@
 \begin{document}
 \author{M. Dvorkin, A. Kulikov}
 \title{A Bruijn Graph Approach}
-%\date{March 14, 2011}
 \maketitle
 
 \listoftodos
@@ -38,8 +37,8 @@ only two black edges.
 \end{center}
 The hope is that the resulting graph will be easier to handle 
 and at the same time it will have essentially the same structure 
-as the original de Bruijn graph.{\todo{we should probably cite the paper 
-on minimizers and use the word `minimizer' instead of `earmarked $k$-mer'?..}}
+as the original de Bruijn graph.
+{\todo{cite the paper on minimizers}}
 
 \subsection{Example}
 
@@ -99,8 +98,6 @@ for different orderings on $3$-mers.}\label{fig:different_orderings2}
 \includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA.pdf}
 \end{center}
 \end{figure}
-
-
 
 \item \dots \todo{what else?..}
 \end{enumerate}
@@ -197,9 +194,10 @@ Along with a hash function, an apt criterion is the frequency of the given $k$-m
 the following.
 
 \begin{itemize}
-  \item The $k$-mers that are underrepresented{\todo{what do we mean by ``underrepresented''?
-  is it true that most of the erroneous reads have frequency one?}} in the 
-  reads (even those a with small value of hash function)
+  \item The $k$-mers that are underrepresented
+%  {\todo{what do we mean by ``underrepresented''?
+%  is it true that most of the erroneous reads have frequency one?}}
+  in the reads (even those a with small value of hash function)
   are (most probably) erroneous. Using frequency allows us 
   to exclude them from the set of
   vertex-forming $k$-mers.
@@ -244,28 +242,71 @@ Iterative procedure for selecting the set of earmarked $k$-mers is the following
 
 \begin{enumerate}
 \item From each read, select $t$ minimum hash values of its $k$-mers, add them to the global set of earmarked hash values.
-\item (if $t=1$) For each read that has only one k-mer with earmarked hash value, earmark one more k-mer from this read.
+\item (optional, if $t=1$) For each read that has only one k-mer with earmarked hash value, earmark one more k-mer from this read.
 \item In each read, select $k$-mers that have their hash values earmarked.
 For corresponding vertices in the resulting A Bruijn graph, add all pairwise edges, storing their lengths.
-For each k-mer, mark whether we've seen any $k$-mer to the left from it, and to the right.
-\item For each $k$-mer that has no left or right neighbours, find a neighbour on the corresponding side
-that has the smallest hash value and earmark it.
-\item Repeat the previous step to minimize the number of neighbourless $k$-mers.
+%\item For each $k$-mer that has no left or right neighbours, find a neighbour on the corresponding side
+%that has the smallest hash value and earmark it.
+%\item Repeat the previous step to minimize the number of neighbourless $k$-mers.
 \end{enumerate}
 
-\section{Schedule}
-\begin{description}
-  \item[April 15] implement earmarking procedure
-  \item[April 18] test earmarking procedure on real data, get general statistics
-  \item[April 20] test different hashing parameters on real data
-  \item[April 22] implement frequency-dependent heuristics
+This procedure results with an A-Bruijn graph that is subject to further processing.
+
+\subsection{Tip extension procedure}
+
+Due to the fact that not all the k-mers are represented in the A-Bruijn graph,
+some extra gaps can be unwillingly created.
+Consider a genome substring $abcde$, where $b$ and $d$ a k-mers that have small hash values and are selected as minimizers.
+If none of the reads in the input data contain the whole substring $bcd$, then vertices corresponding to
+$b$ and $d$ will be tips in the A-Bruijn graph.
+Meanwhile reads containing $abc$ and $cde$ may be present in the input data, thus it is an error of the approach
+to call this vertices tips and to introduce a gap here.
+
+The tip extension procedure is suggested to handle this issue.
+It consists of three steps that are repeated consequently until no possible tip extensions are present.
+(Each steps demands reading the entire input data. It is possible to reduce the procedure to less than three
+steps, but much more memory will be used in that case).
+
+\begin{enumerate}
+\item By processing all the reads, find out for each earmarked k-mer, whether we've seen any
+earmarked $k$-mer to the left from it, and to the right of it.
+Those earmarked k-mers that don't have either left or right "neighbours" are called tips --
+(left tips and right tips correspondingly).
+\item By processing all the reads, find the collection of all the non-earmarked k-mers that
+are present (at least once) in a read to the left of a left tip, or to the right of the right tip.
+Call them possible tip extensions.
+\item By processing all the reads, for each possible tip extension, find whether there was
+any earmarked k-mers to the left from it, and to the right of it.
+\end{enumerate}
+
+Now that this information is collected, each tip is being extended with
+a possible tip extension of the following type (in the order preference):
+
+\begin{enumerate}
+\item A possible tip extension that was just earmarked (in this iteration) as an extension of another tip.
+In this case nothing is to be done, the tip already became a non-tip vertex.
+\item A possible tip extension that has both left and right neighbours. This extension becomes earmarked
+and "kills" one undesirable gap.
+\item Any possible tip extension. Among these, the most distant from the tip (in nucleotides) is selected,
+it becomes earmarked and extends the tip as far as possible. This doesn't resolve a gap, but allows
+not to lose information close to an actual gap (or the end of an actual scaffold).
+\end{enumerate}
+
+If no new earmarked k-mers were introduced after this procedure, stop, otherwise repeat the entire procedure.
+
+%\section{Schedule}
+%\begin{description}
+%  \item[April 15] implement earmarking procedure
+%  \item[April 18] test earmarking procedure on real data, get general statistics
+%  \item[April 20] test different hashing parameters on real data
+%  \item[April 22] implement frequency-dependent heuristics
 %  \item[April 17] test graph condensation on real data
 %  \item[April 30] research into the effects of different hash functions 
 %  used to take minimizers
 %  \item[May 10] compare the resulting A Bruijn graph with the condensed de 
 %  Bruijn graph
 %  \item 
-\end{description}
+%\end{description}
 
 
 
