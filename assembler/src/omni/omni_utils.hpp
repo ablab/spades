@@ -94,6 +94,8 @@ public:
  * structure was introduced. If certain implementation of graph requires special handler triggering scheme
  * one can store certain extension of HandlerApplier in graph and trigger HandlerApplier methods instead
  * of GraphHandler methods.
+ * HandlerApplier contains one method for each of graph events which define the exact way this event
+ * should be triggered.
  */
 template<class Graph>
 class HandlerApplier {
@@ -255,6 +257,12 @@ public:
 	}
 };
 
+/**
+ * SmartIterator is abstract class which acts both as QueueIterator and GraphActionHandler. As QueueIterator
+ * SmartIterator is able to iterate through collection content of which can be changed in process of
+ * iteration. And as GraphActionHandler SmartIterator can change collection contents with respect to the
+ * way graph is changed. Also one can define order of iteration by specifying Comparator.
+ */
 template<class Graph, typename ElementId, typename Comparator = std::less<
 		ElementId> >
 class SmartIterator: public GraphActionHandler<Graph> , public QueueIterator<
@@ -277,6 +285,13 @@ public:
 	}
 };
 
+/**
+ * SmartVertexIterator iterates through vertices of graph. It listens to AddVertex/DeleteVertex graph events
+ * and correspondingly edits the set of vertices to iterate through. Note: high level event handlers are
+ * triggered before low level event handlers like HandleAdd/HandleDelete. Thus if Comparator uses certain
+ * structure which is also updated with handlers make sure that all information is updated in high level
+ * event handlers.
+ */
 template<class Graph, typename Comparator = std::less<typename Graph::VertexId> >
 class SmartVertexIterator: public SmartIterator<Graph,
 		typename Graph::VertexId, Comparator> {
@@ -298,15 +313,20 @@ public:
 
 	virtual void HandleAdd(VertexId v) {
 		super::queue_.offer(v);
-		//		super::queue_.offer(super::graph_.Complement(v));
 	}
 
 	virtual void HandleDelete(VertexId v) {
 		super::remove(v);
-		//		super::remove(super::graph_.Complement(v));
 	}
 };
 
+/**
+ * SmartEdgeIterator iterates through edges of graph. It listens to AddEdge/DeleteEdge graph events
+ * and correspondingly edits the set of edges to iterate through. Note: high level event handlers are
+ * triggered before low level event handlers like HandleAdd/HandleDelete. Thus if Comparator uses certain
+ * structure which is also updated with handlers make sure that all information is updated in high level
+ * event handlers.
+ */
 template<class Graph, typename Comparator = std::less<typename Graph::EdgeId> >
 class SmartEdgeIterator: public SmartIterator<Graph, typename Graph::EdgeId,
 		Comparator> {
@@ -332,17 +352,10 @@ public:
 
 	virtual void HandleAdd(EdgeId v) {
 		super::queue_.offer(v);
-		//		EdgeId rc = super::graph_.Complement(v);
-		//		if (v != rc)
-		//			super::queue_.offer(rc);
 	}
 
 	virtual void HandleDelete(EdgeId v) {
 		super::remove(v);
-		//		EdgeId rc = super::graph_.Complement(v);
-		//		if (v != rc) {
-		//			super::remove(rc);
-		//		}
 	}
 };
 
