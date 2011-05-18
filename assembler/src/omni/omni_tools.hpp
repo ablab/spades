@@ -4,6 +4,9 @@
 #include "omni_utils.hpp"
 
 namespace omnigraph {
+
+LOGGER("omg.graph");
+
 template<class Graph>
 class Compresser {
 	typedef typename Graph::EdgeId EdgeId;

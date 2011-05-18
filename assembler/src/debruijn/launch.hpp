@@ -24,6 +24,7 @@ namespace edge_graph {
 using de_bruijn::EdgeIndex;
 using de_bruijn::DeBruijnPlus;
 using de_bruijn::CoverageHandler;
+using namespace omnigraph;
 typedef de_bruijn::Path<EdgeId> Path;
 typedef de_bruijn::PairedInfoIndex<EdgeGraph> PairedIndex;
 
@@ -63,13 +64,13 @@ void ProduceInfo(const EdgeGraph& g, const EdgeIndex<k + 1, EdgeGraph>& index,
 void ClipTips(EdgeGraph &g) {
 	INFO("Clipping tips");
 	TipComparator<EdgeGraph> comparator(g);
-	TipClipper<EdgeGraph, TipComparator<EdgeGraph>> tc(comparator);
-	tc.ClipTips(g);
+	TipClipper<EdgeGraph, TipComparator<EdgeGraph>> tc(g, comparator);
+	tc.ClipTips();
 }
 
 void RemoveBulges(EdgeGraph &g) {
 	INFO("Removing bulges");
-	de_bruijn::BulgeRemover<EdgeGraph> bulge_remover(5 * g.k());
+	BulgeRemover<EdgeGraph> bulge_remover(5 * g.k());
 	bulge_remover.RemoveBulges(g);
 	INFO("Bulges removed");
 }
