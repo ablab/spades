@@ -4,39 +4,97 @@
 #include "structures.hpp"
 
 namespace omnigraph {
+
+/**
+ * GraphActionHandler is base listening class for graph events. All structures and information storages
+ * which are meant to synchronize with graph should use this structure. In order to make handler listen
+ * to graph events one should add it to graph listeners.
+ * Normally structure itself extends GraphActionHandler and overrides several handling methods. In
+ * constructor it adds itself to graph handler list and removes itself form this list in destructor.
+ * All events are divided into two levels: low level events and high level events.
+ * Low level events are addition/deletion of vertices/edges. These events should be triggered only after
+ * high level events when all data was already transferred and graph structure is consistent.
+ * High level events should be used to keep external data synchronized with graph and keep internal data
+ * consistent. Now high level events are merge glue and split. This list can be extended in near future.
+ */
 template<class Graph>
 class GraphActionHandler {
 public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
+	/**
+	 * Low level event which is triggered when vertex is added to graph.
+	 * @param v new vertex
+	 */
 	virtual void HandleAdd(VertexId v) {
 	}
 
+	/**
+	 * Low level event which is triggered when edge is added to graph.
+	 * @param e new edge
+	 */
 	virtual void HandleAdd(EdgeId e) {
 	}
 
+	/**
+	 * Low level event which is triggered when vertex is deleted from graph.
+	 * @param v vertex to delete
+	 */
 	virtual void HandleDelete(VertexId v) {
 	}
 
+	/**
+	 * Low level event which is triggered when edge is deleted from graph.
+	 * @param e edge to delete
+	 */
 	virtual void HandleDelete(EdgeId e) {
 	}
 
+	/**
+	 * High level event which is triggered when merge operation is performed on graph, which is when
+	 * path of edges with all inner vertices having exactly one incoming and one outgoing edge is
+	 * replaced with a single edge. Since this is high level operation event of creation of new edge
+	 * and events of deletion of old edges should not have been triggered yet when this event was triggered.
+	 * @param old_edges path of edges to be replaced with single edge
+	 * @param new_edge new edge that was added to be a replacement of path
+	 */
 	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
 	}
 
+	/**
+	 * High level event which is triggered when glue operation is performed on graph, which is when
+	 * edge is completely replaced with other edge. This operation is widely used in bulge removal
+	 * when alternative path is glued to main path. Since this is high level operation event of deletion
+	 * of old edge should not have been triggered yet when this event was triggered.
+	 * @param old_edge edge to be glued to new edge
+	 * @param new_edge edge old edge should be glued to
+	 */
 	virtual void HandleGlue(EdgeId old_edge, EdgeId new_edge) {
 	}
 
+	/**
+	 * High level event which is triggered when split operation is performed on graph, which is when
+	 * edge is split into several shorter edges. Split operation is reverse to merge operation.
+	 * Since this is high level operation event of deletion of old edge and events of creation of new edges
+	 * should not have been triggered yet when this event was triggered.
+	 * @param old_edge edge to be split
+	 * @param new_edges edges which are results of split
+	 */
 	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
 			EdgeId new_edge2) {
 	}
 
 	virtual ~GraphActionHandler() {
-
 	}
 };
 
+/**
+ * In order to support various types of graphs and make handler structure more flexible HandlerApplier
+ * structure was introduced. If certain implementation of graph requires special handler triggering scheme
+ * one can store certain extension of HandlerApplier in graph and trigger HandlerApplier methods instead
+ * of GraphHandler methods.
+ */
 template<class Graph>
 class HandlerApplier {
 public:
@@ -68,6 +126,9 @@ public:
 	}
 };
 
+/**
+ * SimpleHandlerApplier is simple implementation of handler applier with no special filtering.
+ */
 template<class Graph>
 class SimpleHandlerApplier: public HandlerApplier<Graph> {
 public:
@@ -109,6 +170,12 @@ public:
 	}
 };
 
+/**
+ * PairedHandlerApplier is implementation of HandlerApplier for graph with synchronization of actions
+ * performed with vertices/edges and its reverse-complement analogues. Thus while corresponding
+ * method was called only once event should be triggered twice: for the parameters with which method
+ * was called and for reverse-complement parameters. Also certain assertions were added for bad cases.
+ */
 template<class Graph>
 class PairedHandlerApplier: public HandlerApplier<Graph> {
 private:
