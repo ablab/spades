@@ -1,7 +1,6 @@
 #ifndef PAIRED_INFO_HPP_
 #define PAIRED_INFO_HPP_
 #include "utils.hpp"
-#include "strobe_reader.hpp"
 #include "sequence.hpp"
 #include <cmath>
 #include <map>

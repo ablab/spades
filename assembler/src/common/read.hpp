@@ -14,7 +14,6 @@
 #include <string>
 #include <iostream>
 #include "simple_tools.hpp"
-#include "strobe_reader.hpp"
 using namespace std;
 
 class Read {
@@ -100,14 +99,13 @@ private:
 public:
 	Read operator!() const {
 		string newName;
-		if(name_ == "" || name_[0] != '!')
+		if (name_ == "" || name_[0] != '!') {
 			newName = '!' + name_;
-		else
+		} else {
 			newName = name_.substr(1, name_.length());
+		}
 		return Read(newName, ReverseComplement(seq_), Reverse(qual_));
 	}
 };
-
-
 
 #endif /* READ_HPP_ */

@@ -164,8 +164,8 @@ public:
 //////////////////////////////////////////////
 
 
-
 class PairedRead {
+private:
 	Read first_;
 	Read second_;
 	size_t distance_;
@@ -191,7 +191,7 @@ public:
 		return distance_;
 	}
 
-	bool IsValid() const {
+	bool isValid() const {
 		return first_.isValid() && second_.isValid();
 	}
 
