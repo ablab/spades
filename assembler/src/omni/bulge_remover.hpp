@@ -11,9 +11,7 @@
 #include <cmath>
 #include "omni_utils.hpp"
 
-namespace de_bruijn {
-
-using omnigraph::SmartEdgeIterator;
+namespace omnigraph {
 
 template<class Graph>
 class BulgeRemover {
