@@ -17,8 +17,9 @@ private:
 		return (size_t) (g_.coverage(edge) * g_.length(edge));
 	}
 
-	template <size_t k>
-	void processRead(const de_bruijn::SimpleSequenceMapper<k, Graph>& threader, Read read) {
+	template<size_t k>
+	void processRead(const de_bruijn::SimpleSequenceMapper<k, Graph>& threader,
+			Read read) {
 		de_bruijn::Path<EdgeId> path = threader.MapSequence(
 				Sequence(read.getSequenceString()));
 		if (path.sequence().size() == 0)
@@ -35,7 +36,7 @@ private:
 
 public:
 	CoverageHandler(Graph &g) :
-		g_(g) {
+		GraphActionHandler<Graph> ("CoverageHandler"), g_(g) {
 		g_.AddActionHandler(this);
 	}
 
@@ -44,7 +45,8 @@ public:
 	}
 
 	template<size_t k, typename Stream>
-	void FillCoverage(Stream& stream, const de_bruijn::EdgeIndex<k + 1, Graph>& index) {
+	void FillCoverage(Stream& stream,
+			const de_bruijn::EdgeIndex<k + 1, Graph>& index) {
 		de_bruijn::SimpleSequenceMapper<k, Graph> threader(g_, index);
 		while (!stream.eof()) {
 			Read read;

@@ -4,6 +4,7 @@
 #include "structures.hpp"
 
 namespace omnigraph {
+LOGGER("omg.graph");
 
 /**
  * GraphActionHandler is base listening class for graph events. All structures and information storages
@@ -22,6 +23,22 @@ class GraphActionHandler {
 public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
+
+	const string handler_name_;
+
+	/**
+	 * Create action handler with given name. With this name one can find out what tipe of handler is it.
+	 */
+	GraphActionHandler(const string &name) :
+		handler_name_(name) {
+	}
+
+	/**
+	 * Method returns name of this handler
+	 */
+	const string &name() const {
+		return handler_name_;
+	}
 
 	/**
 	 * Low level event which is triggered when vertex is added to graph.
@@ -192,47 +209,110 @@ public:
 
 	virtual void ApplyAdd(GraphActionHandler<Graph> *handler, VertexId v) const {
 		VertexId rcv = graph_.Complement(v);
+		TRACE(
+				"Triggering add event of handler " << handler->name()
+						<< " to vertex " << v);
 		handler->HandleAdd(v);
-		if (v != rcv)
+		if (v != rcv) {
+			TRACE(
+					"Triggering add event of handler " << handler->name()
+							<< " to vertex " << rcv
+							<< " which is conjugate to " << v);
 			handler->HandleAdd(rcv);
+		} else {
+			TRACE(
+					"Vertex " << v
+							<< "is self-conjugate thus handler is not applied the second time");
+		}
 	}
 
 	virtual void ApplyAdd(GraphActionHandler<Graph> *handler, EdgeId e) const {
 		EdgeId rce = graph_.Complement(e);
+		TRACE(
+				"Triggering add event of handler " << handler->name()
+						<< " to edge " << e << ". Event is Add");
 		handler->HandleAdd(e);
-		if (e != rce)
+		if (e != rce) {
+			TRACE(
+					"Triggering add event of handler " << handler->name()
+							<< " to edge " << rce << " which is conjugate to "
+							<< e);
 			handler->HandleAdd(rce);
+		} else {
+			TRACE(
+					"Edge " << e
+							<< "is self-conjugate thus handler is not applied the second time");
+		}
 	}
 
 	virtual void ApplyDelete(GraphActionHandler<Graph> *handler, VertexId v) const {
 		VertexId rcv = graph_.Complement(v);
+		TRACE(
+				"Triggering delete event of handler " << handler->name()
+						<< " to vertex " << v);
 		handler->HandleDelete(v);
-		if (v != rcv)
+		if (v != rcv) {
+			TRACE(
+					"Triggering delete event of handler " << handler->name()
+							<< " to vertex " << rcv
+							<< " which is conjugate to " << v);
 			handler->HandleDelete(rcv);
+		} else {
+			TRACE(
+					"Vertex " << v
+							<< "is self-conjugate thus handler is not applied the second time");
+		}
 	}
 
 	virtual void ApplyDelete(GraphActionHandler<Graph> *handler, EdgeId e) const {
 		EdgeId rce = graph_.Complement(e);
+		TRACE(
+				"Triggering delete event of handler " << handler->name()
+						<< " to edge " << e);
 		handler->HandleDelete(e);
-		if (e != rce)
+		if (e != rce) {
+			TRACE(
+					"Triggering delete event of handler " << handler->name()
+							<< " to edge " << rce << " which is conjugate to "
+							<< e);
 			handler->HandleDelete(rce);
+		} else {
+			TRACE(
+					"Edge " << e
+							<< "is self-conjugate thus handler is not applied the second time");
+		}
+
 	}
 
 	virtual void ApplyMerge(GraphActionHandler<Graph> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const {
+		TRACE(
+				"Triggering merge event of handler " << handler->name()
+						<< " with new edge " << new_edge);
 		EdgeId rce = graph_.Complement(new_edge);
 		handler->HandleMerge(old_edges, new_edge);
 		if (new_edge != rce) {
+			TRACE(
+					"Triggering merge event of handler " << handler->name()
+							<< " with new edge " << rce
+							<< " which is conjugate to " << new_edge);
 			vector < EdgeId > ecOldEdges;
 			for (int i = old_edges.size() - 1; i >= 0; i--) {
 				ecOldEdges.push_back(graph_.Complement(old_edges[i]));
 			}
 			handler->HandleMerge(ecOldEdges, rce);
+		} else {
+			TRACE(
+					"Edge " << new_edge
+							<< "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
 	virtual void ApplyGlue(GraphActionHandler<Graph> *handler, EdgeId old_edge,
 			EdgeId new_edge) const {
+		TRACE(
+				"Triggering glue event of handler " << handler->name()
+						<< " with old edge " << old_edge);
 		EdgeId rcOldEdge = graph_.Complement(old_edge);
 		EdgeId rcNewEdge = graph_.Complement(new_edge);
 		assert(old_edge != new_edge);
@@ -240,17 +320,38 @@ public:
 		assert(graph_.EdgeStart(old_edge) != graph_.EdgeEnd(old_edge));
 		assert(graph_.EdgeStart(new_edge) != graph_.EdgeEnd(new_edge));
 		handler->HandleGlue(old_edge, new_edge);
-		if (old_edge != rcOldEdge)
+		if (old_edge != rcOldEdge) {
+			TRACE(
+					"Triggering merge event of handler " << handler->name()
+							<< " with old edge " << old_edge
+							<< " which is conjugate to " << rcOldEdge);
 			handler->HandleGlue(rcOldEdge, rcNewEdge);
+		} else {
+			TRACE(
+					"Edge " << old_edge
+							<< "is self-conjugate thus handler is not applied the second time");
+		}
 	}
 
 	virtual void ApplySplit(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const {
 		EdgeId rce = graph_.Complement(old_edge);
+		TRACE(
+				"Triggering split event of handler " << handler->name()
+						<< " with old edge " << old_edge);
 		handler->HandleSplit(old_edge, new_edge_1, new_edge2);
-		if (old_edge != rce)
+		if (old_edge != rce) {
+			TRACE(
+					"Triggering split event of handler " << handler->name()
+							<< " with old edge " << old_edge
+							<< " which is conjugate to " << rce);
 			handler->HandleSplit(rce, graph_.Complement(new_edge2),
 					graph_.Complement(new_edge_1));
+		} else {
+			TRACE(
+					"Edge " << old_edge
+							<< "is self-conjugate thus handler is not applied the second time");
+		}
 	}
 
 	virtual ~PairedHandlerApplier() {
@@ -274,8 +375,10 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartIterator(Graph &graph, const Comparator& comparator = Comparator()) :
-		QueueIterator<ElementId, Comparator> (comparator),
+	SmartIterator(Graph &graph, const string &name,
+			const Comparator& comparator = Comparator()) :
+		GraphActionHandler<Graph> (name),
+				QueueIterator<ElementId, Comparator> (comparator),
 				graph_(graph) {
 		graph_.AddActionHandler(this);
 	}
@@ -302,7 +405,8 @@ public:
 public:
 	SmartVertexIterator(Graph &graph, bool fill,
 			const Comparator& comparator = Comparator()) :
-		SmartIterator<Graph, VertexId, Comparator> (graph, comparator) {
+				SmartIterator<Graph, VertexId, Comparator> (graph,
+						"SmartVertexIterator " + ToString(this), comparator) {
 		if (fill) {
 			super::AddAll(graph.begin(), graph.end());
 		}
@@ -337,7 +441,8 @@ public:
 public:
 	SmartEdgeIterator(Graph &graph, bool fill,
 			Comparator comparator = Comparator()) :
-		SmartIterator<Graph, EdgeId, Comparator> (graph, comparator) {
+				SmartIterator<Graph, EdgeId, Comparator> (graph,
+						"SmartEdgeIterator " + ToString(this), comparator) {
 		if (fill) {
 			for (typename Graph::VertexIterator it = graph.begin(); it
 					!= graph.end(); ++it) {

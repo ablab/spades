@@ -198,21 +198,30 @@ public:
 	 * Method clips tips of the graph.
 	 */
 	void ClipTips() {
+		TRACE("Tip clipping started");
 		for (auto iterator = graph_.SmartEdgeBegin(comparator_); iterator
 				!= graph_.SmartEdgeEnd(comparator_); ++iterator) {
 			EdgeId tip = *iterator;
+			TRACE("Checking edge for being tip " << tip);
 			if (IsTip(tip)) {
+				TRACE("Edge " << tip << " judged to look like tip topologically");
 				bool tmp = TipShouldBeRemoved(tip);
 				if (tmp) {
+					TRACE("Edge " << tip << " judged to be tip");
 					removeTip(tip);
+					TRACE("Edge " << tip << " removed as tip");
+				} else {
+					TRACE("Edge " << tip << " judged NOT to be tip");
 				}
+			} else {
+				TRACE("Edge " << tip << " judged NOT to look like tip topologically");
 			}
 			++iterator;
 		}
+		TRACE("Tip clipping finished");
 		Compresser<Graph> compresser(graph_);
 		compresser.CompressAllVertices();
 	}
-
 };
 
 }

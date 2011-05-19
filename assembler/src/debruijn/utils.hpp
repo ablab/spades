@@ -16,6 +16,10 @@ namespace de_bruijn {
 using omnigraph::GraphActionHandler;
 //LOGGER("d.utils");
 
+/**
+ * DataHashRenewer listens to add/delete events and updates index according to those events. This class
+ * can be used both with vertices and edges of graph.
+ */
 template<size_t kmer_size_, typename Graph, typename ElementId>
 class DataHashRenewer {
 
@@ -42,23 +46,33 @@ class DataHashRenewer {
 	}
 
 public:
+	/**
+	 * Creates DataHashRenewer for specified graph and index
+	 * @param g graph to be indexed
+	 * @param index index to be synchronized with graph
+	 */
 	DataHashRenewer(const Graph& g, Index& index) :
 		g_(g), index_(index) {
 	}
 
 	void HandleAdd(ElementId id) {
 		RenewKmersHash(id);
-		//		RenewKmersHash(g_.Complement(id));
 	}
 
 	virtual void HandleDelete(ElementId id) {
 		DeleteKmersHash(id);
-		//		DeleteKmersHash(g_.Complement(id));
 	}
 };
 
+/**
+ * EdgeIndex is a structure to store info about location of certain k-mers in graph. It delegates all
+ * container procedures to inner_index_ which is DeBruijnPlus and all handling procedures to
+ * renewer_ which is DataHashRenewer.
+ * @see DeBruijnPlus
+ * @see DataHashRenewer
+ */
 template<size_t k, class Graph>
-class EdgeIndex : public GraphActionHandler<Graph> {
+class EdgeIndex: public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef de_bruijn::DeBruijnPlus<k, EdgeId> InnerIndex;
 	typedef Seq<k> Kmer;
@@ -68,21 +82,14 @@ class EdgeIndex : public GraphActionHandler<Graph> {
 	bool delete_index_;
 public:
 
-//	EdgeIndex(Graph& g, InnerIndex& inner_index) :
-//		g_(g), inner_index_(&inner_index), renewer_(g, *inner_index_), delete_index_(false) {
-//		g_.AddActionHandler(this);
-//	}
-
 	EdgeIndex(Graph& g) :
-		g_(g), inner_index_(), renewer_(g, inner_index_), delete_index_(true) {
+		GraphActionHandler<Graph> ("EdgeIndex"), g_(g), inner_index_(),
+				renewer_(g, inner_index_), delete_index_(true) {
 		g_.AddActionHandler(this);
 	}
 
 	virtual ~EdgeIndex() {
 		g_.RemoveActionHandler(this);
-//		if (delete_index_) {
-//			delete inner_index_;
-//		}
 	}
 
 	InnerIndex &inner_index() {
@@ -131,6 +138,7 @@ public:
 
 class NoInfo {
 };
+
 /**
  * Stub base class for handling graph primitives during traversal.
  */
@@ -259,6 +267,9 @@ public:
 	}
 };
 
+/**
+ * This class is a representation of how certain sequence is mapped to genome. Needs further adjustment.
+ */
 template<typename ElementId>
 class Path {
 	vector<ElementId> sequence_;
@@ -297,6 +308,10 @@ public:
 	}
 };
 
+/**
+ * This class finds how certain sequence is mapped to genome. As it is now it works correct only if sequence
+ * is mapped to graph ideally and in unique way.
+ */
 template<size_t k, class Graph>
 class SimpleSequenceMapper {
 public:
@@ -355,11 +370,20 @@ private:
 	}
 
 public:
-	SimpleSequenceMapper(const Graph& g,
-			const Index& index) :
+	/**
+	 * Creates SimpleSequenceMapper for given graph. Also requires index_ which should be synchronized
+	 * with graph.
+	 * @param g graph sequences should be mapped to
+	 * @param index index syncronized with graph
+	 */
+	SimpleSequenceMapper(const Graph& g, const Index& index) :
 		g_(g), index_(index) {
 	}
 
+	/**
+	 * Finds a path in graph which corresponds to given sequence.
+	 * @read sequence to be mapped
+	 */
 	de_bruijn::Path<EdgeId> MapSequence(const Sequence &read) const {
 		vector<EdgeId> passed;
 		if (read.size() <= k) {

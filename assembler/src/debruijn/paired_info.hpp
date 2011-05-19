@@ -233,7 +233,8 @@ public:
 	//begin-end insert size supposed
 	PairedInfoIndex(Graph &g,
 			int max_difference = MERGE_DATA_ABSOLUTE_DIFFERENCE) :
-		max_difference_(max_difference), graph_(g) {
+		GraphActionHandler<Graph> ("PairedInfoIndex"),
+				max_difference_(max_difference), graph_(g) {
 		g.AddActionHandler(this);
 	}
 
