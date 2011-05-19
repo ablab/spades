@@ -25,8 +25,6 @@ namespace edge_graph {
 using de_bruijn::EdgeIndex;
 using de_bruijn::SeqMap;
 using de_bruijn::CoverageHandler;
-using de_bruijn::BulgeRemover;
-using edge_graph::TipClipper;
 using namespace omnigraph;
 typedef de_bruijn::Path<EdgeId> Path;
 typedef de_bruijn::PairedInfoIndex<EdgeGraph> PairedIndex;

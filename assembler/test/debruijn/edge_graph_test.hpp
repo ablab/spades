@@ -6,7 +6,7 @@
 #include "strobe_reader.hpp"
 #include "paired_info.hpp"
 #include "simple_tools.hpp"
-#include "debruijn_plus.hpp"
+#include "seq_map.hpp"
 #include <tr1/unordered_set>
 //LOGGER("d.edge_graph_test");
 
