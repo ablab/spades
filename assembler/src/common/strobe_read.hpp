@@ -24,11 +24,11 @@ using namespace std;
 template <size_t size, size_t cnt = 1, typename T = int>
 class strobe_read {
 public:
-	strobe_read() {
+	strobe_read() __attribute__ ((deprecated))  {
 		// random sequences constructor
 	}
 
-	strobe_read(const string *ss) {
+	strobe_read(const string *ss) __attribute__ ((deprecated)) {
 		for (size_t i = 0; i < cnt; ++i) {
 			put(i, ss[i]);
 		}
@@ -74,7 +74,7 @@ public:
 	//		}
 	//	}
 
-	StrobeReader(const string filenames[]) {
+	StrobeReader(const string filenames[]) __attribute__ ((deprecated)) {
 		stringstream s;
 		for (size_t i = 0; i < cnt; ++i) {
 			readers_.push_back(new TR(filenames[i]));
@@ -171,11 +171,11 @@ class PairedRead {
 	size_t distance_;
 public:
 
-	PairedRead() {
+	PairedRead() __attribute__ ((deprecated)) {
 
 	}
 
-	PairedRead(const Read& first, const Read& second, size_t distance) : first_(first), second_(second), distance_(distance) {
+	PairedRead(const Read& first, const Read& second, size_t distance) __attribute__ ((deprecated)) : first_(first), second_(second), distance_(distance) {
 
 	}
 
@@ -232,7 +232,7 @@ private:
 	size_t distance_;
 public:
 
-	PairedReader(InnerReader& reader, size_t distance) : reader_(reader), distance_(distance) {
+	PairedReader(InnerReader& reader, size_t distance)  __attribute__ ((deprecated)) : reader_(reader), distance_(distance) {
 
 	}
 
@@ -272,7 +272,7 @@ private:
 	ReadType rc_result_;
 	bool was_rc_;
 public:
-	RCReaderWrapper(Stream &reader) :
+	RCReaderWrapper(Stream &reader) __attribute__ ((deprecated)) :
 		inner_reader_(reader), was_rc_(false) {
 	}
 
@@ -313,7 +313,7 @@ private:
 	PairedRead result_;
 	size_t current_;
 public:
-	SimpleReaderWrapper(Stream &reader) :
+	SimpleReaderWrapper(Stream &reader) __attribute__ ((deprecated)) :
 		inner_reader_(reader), current_(0) {
 	}
 
