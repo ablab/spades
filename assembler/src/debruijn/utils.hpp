@@ -8,7 +8,7 @@
 #ifndef UTILS_HPP_
 #define UTILS_HPP_
 
-#include "debruijn_plus.hpp"
+#include "seq_map.hpp"
 #include "omni_utils.hpp"
 
 namespace de_bruijn {
@@ -20,7 +20,7 @@ template<size_t kmer_size_, typename Graph, typename ElementId>
 class DataHashRenewer {
 
 	typedef Seq<kmer_size_> Kmer;
-	typedef de_bruijn::DeBruijnPlus<kmer_size_, ElementId> Index;
+	typedef de_bruijn::SeqMap<kmer_size_, ElementId> Index;
 	const Graph &g_;
 
 	Index &index_;
@@ -60,7 +60,7 @@ public:
 template<size_t k, class Graph>
 class EdgeIndex : public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
-	typedef de_bruijn::DeBruijnPlus<k, EdgeId> InnerIndex;
+	typedef de_bruijn::SeqMap<k, EdgeId> InnerIndex;
 	typedef Seq<k> Kmer;
 	Graph& g_;
 	InnerIndex inner_index_;
@@ -116,7 +116,7 @@ class VertexHashRenewer: public GraphActionHandler<Graph> {
 
 public:
 	VertexHashRenewer(const Graph& g,
-			de_bruijn::DeBruijnPlus<kmer_size_, VertexId> *index) :
+			de_bruijn::SeqMap<kmer_size_, VertexId> *index) :
 		renewer_(g, index) {
 	}
 

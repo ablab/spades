@@ -9,7 +9,7 @@
 #define EDGE_GRAPH_CONSTRUCTOR_HPP_
 #include "edge_graph.hpp"
 #include "utils.hpp"
-#include "debruijn_plus.hpp"
+#include "seq_map.hpp"
 
 namespace edge_graph {
 
@@ -20,7 +20,7 @@ template<size_t kmer_size_>
 class EdgeGraphConstructor {
 private:
 	typedef de_bruijn::EdgeIndex<kmer_size_ + 1, EdgeGraph> Index;
-	typedef de_bruijn::DeBruijnPlus<kmer_size_ + 1, EdgeId> DeBruijn;
+	typedef de_bruijn::SeqMap<kmer_size_ + 1, EdgeId> DeBruijn;
 	typedef Seq<kmer_size_> Kmer;
 	typedef Seq<kmer_size_ + 1> KPlusOneMer;
 

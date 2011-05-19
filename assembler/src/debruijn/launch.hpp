@@ -18,12 +18,15 @@
 #include "coverage_handler.hpp"
 #include "repeat_resolver.hpp"
 #include "omni_tools.hpp"
+#include "seq_map.hpp"
 
 namespace edge_graph {
 
 using de_bruijn::EdgeIndex;
-using de_bruijn::DeBruijnPlus;
+using de_bruijn::SeqMap;
 using de_bruijn::CoverageHandler;
+using de_bruijn::BulgeRemover;
+using edge_graph::TipClipper;
 using namespace omnigraph;
 typedef de_bruijn::Path<EdgeId> Path;
 typedef de_bruijn::PairedInfoIndex<EdgeGraph> PairedIndex;
@@ -64,7 +67,7 @@ void ProduceInfo(const EdgeGraph& g, const EdgeIndex<k + 1, EdgeGraph>& index,
 void ClipTips(EdgeGraph &g) {
 	INFO("Clipping tips");
 	TipComparator<EdgeGraph> comparator(g);
-	TipClipper<EdgeGraph, TipComparator<EdgeGraph>> tc(g, comparator);
+	TipClipper<EdgeGraph, TipComparator<EdgeGraph> > tc(g, comparator);
 	tc.ClipTips();
 }
 
@@ -102,7 +105,7 @@ void FillCoverage(de_bruijn::CoverageHandler<EdgeGraph> coverage_handler, ReadSt
 
 template <size_t k, class ReadStream>
 void ConstructGraph(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index, ReadStream& stream) {
-	typedef de_bruijn::DeBruijnPlus<k + 1, EdgeId> DeBruijn;
+	typedef de_bruijn::SeqMap<k + 1, EdgeId> DeBruijn;
 
 	INFO("Constructing DeBruijn graph");
 	DeBruijn& debruijn = index.inner_index();
@@ -134,7 +137,7 @@ void ConstructGraphWithPairedInfo(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& ind
 
 template<size_t k, class ReadStream>
 void EdgeGraphTool(ReadStream& stream, const string& genome, const string& output_folder) {
-	typedef de_bruijn::DeBruijnPlus<k + 1, EdgeId> DeBruijn;
+	typedef de_bruijn::SeqMap<k + 1, EdgeId> DeBruijn;
 	INFO("Edge graph construction tool started");
 
 	EdgeGraph g(k);
