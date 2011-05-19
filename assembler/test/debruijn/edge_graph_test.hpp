@@ -3,7 +3,7 @@
 #include "edge_graph_constructor.hpp"
 #include "test_utils.hpp"
 #include "cute.h"
-#include "strobe_reader.hpp"
+#include "strobe_read.hpp"
 #include "paired_info.hpp"
 #include "simple_tools.hpp"
 #include "seq_map.hpp"
