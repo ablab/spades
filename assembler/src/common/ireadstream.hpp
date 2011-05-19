@@ -43,22 +43,22 @@ public:
 		return eof_;
 	}
 
-//	static vector<Read>* readAll(string filename, int cnt = -1) {
-//		ireadstream irs(filename);
-//		assert(irs.is_open());
-//		vector<Read>* res = new vector<Read>();
-//		Read r;
-//		while (cnt-- && irs.is_open() && !irs.eof()) {
-//			irs >> r;
-//			if (!r.isValid()) {
-//				cnt++;
-//				continue;
-//			}
-//			res->push_back(r);
-//		}
-//		irs.close();
-//		return res;
-//	}
+	static vector<Read>* readAll(string filename, int cnt = -1) __attribute__ ((deprecated)) {
+		ireadstream irs(filename);
+		assert(irs.is_open());
+		vector<Read>* res = new vector<Read>();
+		Read r;
+		while (cnt-- && irs.is_open() && !irs.eof()) {
+			irs >> r;
+			if (!r.isValid()) {
+				cnt++;
+				continue;
+			}
+			res->push_back(r);
+		}
+		irs.close();
+		return res;
+	}
 
 	ireadstream& operator>>(Read &r) {
 		assert(is_open());
