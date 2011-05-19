@@ -9,7 +9,7 @@ all:$(EXEC)
 
 PG=#-pg
 CC=g++
-CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x $(PG) $(OMP) -I./../common -I./../omni -I./.. $(MYCFLAGS) #-DNDEBUG
+CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x $(PG) $(OMP) -I./../common -I./../common/read -I./../common/sequence -I./../omni -I./.. $(MYCFLAGS) #-DNDEBUG
 LDFLAGS=-O3 -L/usr/local/lib -L/usr/local/apr/lib -lz -llog4cxx -lapr-1 -laprutil-1 $(PG) $(MYLDFLAGS)
 DEPSFL=-MM -MG
 
@@ -41,6 +41,26 @@ $(builddir)/%.o: %.cpp $(builddir)/.d
 	@rm -f $(builddir)/$*.d.tmp
 
 $(builddir)/%.o: ../common/%.cpp $(builddir)/.d
+	$(CC) $(CFLAGS) $< -o $@
+	@echo $(builddir) > $(builddir)/$*.d.tmp
+	@tr "\n" "/" <$(builddir)/$*.d.tmp >$(builddir)/$*.d
+	$(CC) $(DEPSFL) $(CFLAGS) $< >> $(builddir)/$*.d
+	@cp -f $(builddir)/$*.d $(builddir)/$*.d.tmp
+	@sed -e 's/.*://' -e 's/\\$$//' < $(builddir)/$*.d.tmp | fmt -1 | \
+	sed -e 's/^ *//' -e 's/$$/:/' >> $(builddir)/$*.d
+	@rm -f $(builddir)/$*.d.tmp
+
+$(builddir)/%.o: ../common/sequence/%.cpp $(builddir)/.d
+	$(CC) $(CFLAGS) $< -o $@
+	@echo $(builddir) > $(builddir)/$*.d.tmp
+	@tr "\n" "/" <$(builddir)/$*.d.tmp >$(builddir)/$*.d
+	$(CC) $(DEPSFL) $(CFLAGS) $< >> $(builddir)/$*.d
+	@cp -f $(builddir)/$*.d $(builddir)/$*.d.tmp
+	@sed -e 's/.*://' -e 's/\\$$//' < $(builddir)/$*.d.tmp | fmt -1 | \
+	sed -e 's/^ *//' -e 's/$$/:/' >> $(builddir)/$*.d
+	@rm -f $(builddir)/$*.d.tmp
+	
+$(builddir)/%.o: ../common/read/%.cpp $(builddir)/.d
 	$(CC) $(CFLAGS) $< -o $@
 	@echo $(builddir) > $(builddir)/$*.d.tmp
 	@tr "\n" "/" <$(builddir)/$*.d.tmp >$(builddir)/$*.d

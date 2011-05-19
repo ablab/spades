@@ -108,4 +108,9 @@ public:
 	}
 };
 
+// todo: put this to *.cpp
+//ostream& operator<<(ostream& os, const Read& read) {
+//	return os << read.getSequenceString();
+//}
+
 #endif /* READ_HPP_ */

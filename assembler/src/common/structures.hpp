@@ -1,6 +1,9 @@
 #ifndef STRUCTURES_HPP_
 #define STRUCTURES_HPP_
 
+// use std::priority_queue !!!
+// http://www.cplusplus.com/reference/stl/priority_queue/
+
 template<typename Key, typename Comparator = std::less<Key> >
 class PriorityQueue {
 private:
@@ -10,7 +13,7 @@ public:
 	 * Be careful! This constructor requires Comparator to have default constructor even if you call it with
 	 * specified comparator. In this case just create default constructor with assert(false) inside it.
 	 */
-	PriorityQueue(const Comparator& comparator = Comparator()) :
+	PriorityQueue(const Comparator& comparator = Comparator())  __attribute__ ((deprecated)) :
 		storage_(comparator) {
 	}
 
@@ -60,7 +63,7 @@ protected:
 		}
 	}
 
-	QueueIterator(const Comparator& comparator = Comparator()) :
+	QueueIterator(const Comparator& comparator = Comparator())  __attribute__ ((deprecated)) :
 		ready(true), queue_(comparator) {
 	}
 
