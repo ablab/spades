@@ -1,6 +1,8 @@
 #include "toyexamples.hpp"
 #include "graphBuilder.hpp"
 #include "logging.hpp"
+#include "strobe_reader.hpp"
+#include "strobe_read.hpp"
 #include "libs/getopt_pp/getopt_pp_standalone.h"
 #include <iostream>
 
