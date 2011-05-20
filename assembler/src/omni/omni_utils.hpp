@@ -15,7 +15,7 @@ namespace omnigraph {
  * Low level events are addition/deletion of vertices/edges. These events should be triggered only after
  * high level events when all data was already transferred and graph structure is consistent.
  * High level events should be used to keep external data synchronized with graph and keep internal data
- * consistent. Now high level events are merge glue and split. This list can be extended in near future.
+ * consistent. Now high level events are merge, glue and split. This list can be extended in near future.
  */
 template<class Graph>
 class GraphActionHandler {
@@ -189,28 +189,28 @@ public:
 	}
 
 	virtual void ApplyAdd(GraphActionHandler<Graph> *handler, VertexId v) const {
-		VertexId rcv = graph_.Complement(v);
+		VertexId rcv = graph_.conjugate(v);
 		handler->HandleAdd(v);
 		if (v != rcv)
 			handler->HandleAdd(rcv);
 	}
 
 	virtual void ApplyAdd(GraphActionHandler<Graph> *handler, EdgeId e) const {
-		EdgeId rce = graph_.Complement(e);
+		EdgeId rce = graph_.conjugate(e);
 		handler->HandleAdd(e);
 		if (e != rce)
 			handler->HandleAdd(rce);
 	}
 
 	virtual void ApplyDelete(GraphActionHandler<Graph> *handler, VertexId v) const {
-		VertexId rcv = graph_.Complement(v);
+		VertexId rcv = graph_.conjugate(v);
 		handler->HandleDelete(v);
 		if (v != rcv)
 			handler->HandleDelete(rcv);
 	}
 
 	virtual void ApplyDelete(GraphActionHandler<Graph> *handler, EdgeId e) const {
-		EdgeId rce = graph_.Complement(e);
+		EdgeId rce = graph_.conjugate(e);
 		handler->HandleDelete(e);
 		if (e != rce)
 			handler->HandleDelete(rce);
@@ -218,12 +218,12 @@ public:
 
 	virtual void ApplyMerge(GraphActionHandler<Graph> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const {
-		EdgeId rce = graph_.Complement(new_edge);
+		EdgeId rce = graph_.conjugate(new_edge);
 		handler->HandleMerge(old_edges, new_edge);
 		if (new_edge != rce) {
 			vector < EdgeId > ecOldEdges;
 			for (int i = old_edges.size() - 1; i >= 0; i--) {
-				ecOldEdges.push_back(graph_.Complement(old_edges[i]));
+				ecOldEdges.push_back(graph_.conjugate(old_edges[i]));
 			}
 			handler->HandleMerge(ecOldEdges, rce);
 		}
@@ -231,8 +231,8 @@ public:
 
 	virtual void ApplyGlue(GraphActionHandler<Graph> *handler, EdgeId old_edge,
 			EdgeId new_edge) const {
-		EdgeId rcOldEdge = graph_.Complement(old_edge);
-		EdgeId rcNewEdge = graph_.Complement(new_edge);
+		EdgeId rcOldEdge = graph_.conjugate(old_edge);
+		EdgeId rcNewEdge = graph_.conjugate(new_edge);
 		assert(old_edge != new_edge);
 		assert(new_edge != rcNewEdge);
 		assert(graph_.EdgeStart(old_edge) != graph_.EdgeEnd(old_edge));
@@ -244,11 +244,11 @@ public:
 
 	virtual void ApplySplit(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const {
-		EdgeId rce = graph_.Complement(old_edge);
+		EdgeId rce = graph_.conjugate(old_edge);
 		handler->HandleSplit(old_edge, new_edge_1, new_edge2);
 		if (old_edge != rce)
-			handler->HandleSplit(rce, graph_.Complement(new_edge2),
-					graph_.Complement(new_edge_1));
+			handler->HandleSplit(rce, graph_.conjugate(new_edge2),
+					graph_.conjugate(new_edge_1));
 	}
 
 	virtual ~PairedHandlerApplier() {
@@ -298,12 +298,12 @@ public:
 
 	virtual void HandleAdd(VertexId v) {
 		super::queue_.offer(v);
-		//		super::queue_.offer(super::graph_.Complement(v));
+		//		super::queue_.offer(super::graph_.conjugate(v));
 	}
 
 	virtual void HandleDelete(VertexId v) {
 		super::remove(v);
-		//		super::remove(super::graph_.Complement(v));
+		//		super::remove(super::graph_.conjugate(v));
 	}
 };
 
@@ -332,14 +332,14 @@ public:
 
 	virtual void HandleAdd(EdgeId v) {
 		super::queue_.offer(v);
-		//		EdgeId rc = super::graph_.Complement(v);
+		//		EdgeId rc = super::graph_.conjugate(v);
 		//		if (v != rc)
 		//			super::queue_.offer(rc);
 	}
 
 	virtual void HandleDelete(EdgeId v) {
 		super::remove(v);
-		//		EdgeId rc = super::graph_.Complement(v);
+		//		EdgeId rc = super::graph_.conjugate(v);
 		//		if (v != rc) {
 		//			super::remove(rc);
 		//		}
