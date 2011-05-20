@@ -48,7 +48,7 @@ public:
 		while (GoUniqueWay(e)) {
 		}
 		vector<EdgeId> mergeList;
-		e = graph_.Complement(e);
+		e = graph_.conjugate(e);
 		do {
 			mergeList.push_back(e);
 		} while (GoUniqueWay(e));

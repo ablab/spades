@@ -7,8 +7,8 @@ namespace edge_graph {
 Sequence EdgeGraph::VertexNucls(VertexId v) const {
 	if (v->outgoing_edges_.size() > 0) {
 		return v->outgoing_edges_[0]->nucls().Subseq(0, k_);
-	} else if (v->complement_->outgoing_edges_.size() > 0) {
-		return !VertexNucls(v->complement_);
+	} else if (v->conjugate_->outgoing_edges_.size() > 0) {
+		return !VertexNucls(v->conjugate_);
 	}
 	assert(false);
 }
@@ -34,10 +34,10 @@ const vector<EdgeId> EdgeGraph::OutgoingEdges(VertexId v) const {
 
 const vector<EdgeId> EdgeGraph::IncomingEdges(VertexId v) const {
 	vector<EdgeId> result;
-	VertexId rcv = Complement(v);
+	VertexId rcv = conjugate(v);
 	vector<EdgeId> edges = rcv->OutgoingEdges();
 	for (EdgeIterator it = edges.begin(); it != edges.end(); ++it) {
-		result.push_back(Complement(*it));
+		result.push_back(conjugate(*it));
 	}
 	return result;
 }
@@ -49,7 +49,7 @@ const vector<EdgeId> EdgeGraph::IncidentEdges(VertexId v) const {
 		DEBUG("out:"<< *it);
 		result.push_back(*it);
 	}
-	VertexId rcv = Complement(v);
+	VertexId rcv = conjugate(v);
 
 	for (EdgeIterator it = rcv->begin(); it != rcv->end(); ++it) {
 		int fl = 1;
@@ -61,7 +61,7 @@ const vector<EdgeId> EdgeGraph::IncidentEdges(VertexId v) const {
 		}
 		if (fl) {
 			DEBUG("in:"<< *it);
-			result.push_back(Complement(*it));
+			result.push_back(conjugate(*it));
 		}
 	}
 	return result;
@@ -140,8 +140,8 @@ void EdgeGraph::FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2) {
 VertexId EdgeGraph::HiddenAddVertex() {
 	VertexId v1 = new Vertex();
 	VertexId v2 = new Vertex();
-	v1->SetComplement(v2);
-	v2->SetComplement(v1);
+	v1->Setconjugate(v2);
+	v2->Setconjugate(v1);
 	vertices_.insert(v1);
 	vertices_.insert(v2);
 	return v1;
@@ -157,16 +157,16 @@ void EdgeGraph::DeleteVertex(VertexId v) {
 	assert(IsDeadEnd(v) && IsDeadStart(v));
 	assert(v != NULL);
 	FireDeleteVertex(v);
-	VertexId complement = v->Complement();
+	VertexId conjugate = v->conjugate();
 	vertices_.erase(v);
 	delete v;
-	vertices_.erase(complement);
-	delete complement;
+	vertices_.erase(conjugate);
+	delete conjugate;
 }
 
 void EdgeGraph::ForceDeleteVertex(VertexId v) {
 	DeleteAllOutgoing(v);
-	DeleteAllOutgoing(v->Complement());
+	DeleteAllOutgoing(v->conjugate());
 	DeleteVertex(v);
 }
 
@@ -178,11 +178,11 @@ EdgeId EdgeGraph::HiddenAddEdge(VertexId v1, VertexId v2,
 	EdgeId result = AddSingleEdge(v1, v2, nucls, coverage);
 	EdgeId rcEdge = result;
 	if (nucls != !nucls) {
-		rcEdge = AddSingleEdge(v2->Complement(), v1->Complement(), !nucls,
+		rcEdge = AddSingleEdge(v2->conjugate(), v1->conjugate(), !nucls,
 				coverage);
 	}
-	result->SetComplement(rcEdge);
-	rcEdge->SetComplement(result);
+	result->Setconjugate(rcEdge);
+	rcEdge->Setconjugate(result);
 	return result;
 }
 
@@ -195,9 +195,9 @@ EdgeId EdgeGraph::AddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
 
 void EdgeGraph::DeleteEdge(EdgeId edge) {
 	FireDeleteEdge(edge);
-	EdgeId rcEdge = Complement(edge);
-	VertexId rcStart = Complement(edge->end());
-	VertexId start = Complement(rcEdge->end());
+	EdgeId rcEdge = conjugate(edge);
+	VertexId rcStart = conjugate(edge->end());
+	VertexId start = conjugate(rcEdge->end());
 	start->RemoveOutgoingEdge(edge);
 	rcStart->RemoveOutgoingEdge(rcEdge);
 	if (edge != rcEdge) {
@@ -208,7 +208,7 @@ void EdgeGraph::DeleteEdge(EdgeId edge) {
 
 bool EdgeGraph::AreLinkable(VertexId v1, VertexId v2, const Sequence &nucls) const {
 	return VertexNucls(v1) == nucls.Subseq(0, k_) && VertexNucls(
-			v2->Complement()) == (!nucls).Subseq(0, k_);
+			v2->conjugate()) == (!nucls).Subseq(0, k_);
 }
 
 EdgeId EdgeGraph::OutgoingEdge(VertexId v, char nucl) const {
@@ -222,16 +222,16 @@ EdgeId EdgeGraph::OutgoingEdge(VertexId v, char nucl) const {
 	return NULL;
 }
 
-VertexId EdgeGraph::Complement(VertexId v) const {
-	return v->Complement();
+VertexId EdgeGraph::conjugate(VertexId v) const {
+	return v->conjugate();
 }
 
-EdgeId EdgeGraph::Complement(EdgeId edge) const {
-	return edge->Complement();
+EdgeId EdgeGraph::conjugate(EdgeId edge) const {
+	return edge->conjugate();
 }
 
 VertexId EdgeGraph::EdgeStart(EdgeId edge) const {
-	return Complement(edge)->end()->Complement();
+	return conjugate(edge)->end()->conjugate();
 }
 
 VertexId EdgeGraph::EdgeEnd(EdgeId edge) const {
@@ -239,7 +239,7 @@ VertexId EdgeGraph::EdgeEnd(EdgeId edge) const {
 }
 
 bool EdgeGraph::CanCompressVertex(VertexId v) const {
-	return v->OutgoingEdgeCount() == 1 && v->Complement()->OutgoingEdgeCount()
+	return v->OutgoingEdgeCount() == 1 && v->conjugate()->OutgoingEdgeCount()
 			== 1;
 }
 
@@ -281,7 +281,7 @@ EdgeId EdgeGraph::MergePath(const vector<EdgeId>& path) {
 
 pair<EdgeId, EdgeId> EdgeGraph::SplitEdge(EdgeId edge, size_t position) {
 	assert(position >= 1 && position < length(edge));
-	assert(edge != Complement(edge));
+	assert(edge != conjugate(edge));
 	Sequence s1 = EdgeNucls(edge).Subseq(0, position + k_);
 	Sequence s2 = EdgeNucls(edge).Subseq(position);
 	Sequence newSequence = s1 + s2.Subseq(k_);
