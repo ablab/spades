@@ -26,8 +26,9 @@
 using namespace std;
 ostringstream oMsg;
 string sbuf;
-#include "defs.h"
-#include "union.h"
+#include "defs.hpp"
+#include "union.hpp"
+#include "hammer_config.hpp"
 
 long get_filesize(string filename) {
 	int file=0;
@@ -42,8 +43,6 @@ long get_filesize(string filename) {
 	}
 	return fileStat.st_size;
 }
-
-
 
 long load_file_to_memory(const char *filename, char **result) 
 { 
@@ -70,7 +69,6 @@ int nthreads;
 long numDistinctKmers;
 string kmerFile;
 string splitsBase;
-int kmersize;
 int kmerfileLinelen;
 char * reads;
 
@@ -85,28 +83,30 @@ public:
 
 
 void get_full_kmer(entryClass & x) {
-	char s[kmersize+1];
+	char s[K+1];
 	long offset = x.id * long(kmerfileLinelen);
-	strncpy(s, &reads[offset], kmersize);
-	s[kmersize] = 0;
+	strncpy(s, &reads[offset], K);
+	s[K] = 0;
 	x.seq = s;
-	strncpy(s, &reads[offset + kmersize], 6);
+	strncpy(s, &reads[offset + K], 6);
 	s[6] = 0;
 	x.count = s;
-	strncpy(s, &reads[offset + kmersize + 6], 9);
+	strncpy(s, &reads[offset + K + 6], 9);
 	s[9] = 0;
 	x.freq = s;
-	//cout << x.seq << ":" << x.count << ":" << x.freq << endl;
+	// cout << offset << "  " << x.seq << ":" << x.count << ":" << x.freq << endl;
 	return;
 }
 
 void process_block(unionFindClass * uf, vector<entryClass> & block) {
+	//cout << "processing block of size " << block.size() << "\n";
 	for (int i = 0; i < block.size(); i++) {
 		get_full_kmer(block[i]);
 	}
 	for (int i = 0; i < block.size(); i++) {
 		uf->find_set(block[i].id);
 		for (int j = i + 1; j < block.size(); j++) {
+			//cout << "comparing " << block[i].seq << " and " << block[j].seq << "\n";
 			if (hamdist(block[i].seq, block[j].seq, SAME_STRAND, tau ) <= tau) {
 				uf->unionn(block[i].id, block[j].id);
 			}
@@ -125,6 +125,7 @@ void * onethread(void * params) {
 
 	cerr << "Processing split files (" << thread << ")...\n";
 	ifstream inf;
+	// cout << splitsBase + "." + threadLabel << "\n";
 	open_file(inf, splitsBase + "." + threadLabel);
 
 	string sbuf;
@@ -136,6 +137,7 @@ void * onethread(void * params) {
 		istringstream line(sbuf);
 		entryClass cur;
 		line >> cur.key >> cur.id;
+		//cout << cur.key << " " << cur.id << " " << cur.id * long(kmerfileLinelen) << "\n";
 		if (last.key == cur.key) { //add to current reads
 			block.push_back(cur);
 		} else {
@@ -151,9 +153,8 @@ void * onethread(void * params) {
 	pthread_exit(NULL);
 }
 
-void merge(paramType params[]) {
+void merge(vector<paramType> params, string prefix) {
 	cerr << "Merging union find files...\n";
-
 	unionFindClass * ufMaster = new unionFindClass(numDistinctKmers);
 	vector<string> row;
 	vector<vector<int> > classes;
@@ -177,7 +178,7 @@ void merge(paramType params[]) {
 	delete ufMaster;
 	entryClass x;
 	ofstream outf;
-	open_file(outf, "reads.uf");
+	open_file(outf, prefix + "reads.uf");
 	for (int i = 0; i < classes.size(); i++) {
 		for (int j = 0; j < classes[i].size(); j++) {
 			x.id = classes[i][j];
@@ -187,32 +188,31 @@ void merge(paramType params[]) {
 		outf << endl;
 	}
 	outf.close();
-
-
-
 }
+
 int main(int argc, char * argv[]) {
-
-
 	tau = atoi(argv[1]);
-	kmersize = atoi(argv[2]);
-	kmerFile = argv[3];
-	splitsBase = argv[4];
-	long memlim = atol(argv[5]);
-	string mergeOnly = argv[6];
-	kmerfileLinelen = kmersize + 16;
-	nthreads = atoi(argv[7]);
+	kmerFile = argv[2];
+	splitsBase = argv[3];
+	long memlim = atol(argv[4]);
+	string mergeOnly = argv[5];
+	kmerfileLinelen = K + 16;
+	nthreads = atoi(argv[6]);
+	string dirprefix = argv[7];
 	//int nthreads = tau + 1;
 
 	//this depends on the implementation of UnionFindClass
 	long l = get_filesize(kmerFile);
+	cout << l << " " << kmerfileLinelen << "\n";
 	assert (l % kmerfileLinelen == 0);
 	numDistinctKmers = l / kmerfileLinelen;
-	//cerr << "numDistnica = " << numDistinctKmers << endl;
+	cout << numDistinctKmers << "\n";
+	//cerr << "numDistinct = " << numDistinctKmers << endl;
 
 	//load reads
 	cerr << "Reading in kmers...\n";
 	load_file_to_memory(kmerFile.c_str(), &reads);
+	// cout << "\n\n" << reads << "\n\n";
 
 	if (mergeOnly == "1") {
 		cerr << argv[0] << ": mergeOnly mode not supported, exiting.\n";
@@ -227,17 +227,20 @@ int main(int argc, char * argv[]) {
 	}
 
 	//start threads
-	pthread_t thread[nthreads];
-	paramType params[nthreads];
+	vector<pthread_t> thread(nthreads);
+	vector<paramType> params(nthreads);
 	for (int i = 0; i < nthreads; i++) {
+		cout << i << " out of " << nthreads << "\n";
 		params[i].first = i;
 		pthread_create(&thread[i], NULL, onethread, (void *) &params[i]);
 	}
+	cout << "Initiated all threads.\n";
 	for (int i = 0; i < nthreads; i++) {
 		pthread_join(thread[i], NULL);
 	}
 
-	merge(params);
+	cout << "printing to " << dirprefix.data() << "/reads.uf\n";
+	merge(params, dirprefix + "/");
 
 	delete reads;
 	return 0;
