@@ -36,7 +36,7 @@ private:
 	Sequence nucls_;
 	Vertex* end_;
 	size_t coverage_;
-	Edge *complement_;
+	Edge *conjugate_;
 
 	Edge(const Sequence& nucls, Vertex* end, size_t coverage) :
 		nucls_(nucls), end_(end), coverage_(coverage) {
@@ -50,12 +50,12 @@ private:
 		return nucls_.size();
 	}
 
-	Edge *Complement() {
-		return complement_;
+	Edge *conjugate() {
+		return conjugate_;
 	}
 
-	void SetComplement(Edge* complement) {
-		complement_ = complement;
+	void Setconjugate(Edge* conjugate) {
+		conjugate_ = conjugate;
 	}
 
 	~Edge() {
@@ -71,10 +71,10 @@ private:
 
 	vector<Edge*> outgoing_edges_;
 
-	Vertex* complement_;
+	Vertex* conjugate_;
 
-	void SetComplement(Vertex* complement) {
-		complement_ = complement;
+	void Setconjugate(Vertex* conjugate) {
+		conjugate_ = conjugate;
 	}
 
 	EdgeIterator begin() const {
@@ -116,8 +116,8 @@ private:
 		return true;
 	}
 
-	Vertex* Complement() const {
-		return complement_;
+	Vertex* conjugate() const {
+		return conjugate_;
 	}
 
 	~Vertex() {
@@ -336,7 +336,7 @@ public:
 	 * @param v vertex to count incoming edges for
 	 */
 	size_t IncomingEdgeCount(VertexId v) const {
-		return v->Complement()->OutgoingEdgeCount();
+		return v->conjugate()->OutgoingEdgeCount();
 	}
 
 	/**
@@ -361,7 +361,7 @@ public:
 	 * @param v vertex to check
 	 */
 	bool CheckUniqueIncomingEdge(VertexId v) const {
-		return CheckUniqueOutgiongEdge(v->Complement());
+		return CheckUniqueOutgiongEdge(v->conjugate());
 	}
 
 	/**
@@ -369,7 +369,7 @@ public:
 	 * @param v vertex to find unique incoming edge for
 	 */
 	EdgeId GetUniqueIncomingEdge(VertexId v) const {
-		return Complement(GetUniqueOutgoingEdge(v->Complement()));
+		return conjugate(GetUniqueOutgoingEdge(v->conjugate()));
 	}
 
 	/**
@@ -399,7 +399,7 @@ public:
 	void IncCoverage(EdgeId edge, int toAdd) {
 		edge->coverage_ += toAdd;
 //		todo talk with Anton about this code
-//		EdgeId rc = Complement(edge);
+//		EdgeId rc = conjugate(edge);
 //		if (edge != rc) {
 //			rc->coverage_ += toAdd;
 //		}
@@ -411,7 +411,7 @@ public:
 	 */
 	void IncCoverage(EdgeId edge) {
 //		edge->coverage_++;
-//		EdgeId rc = Complement(edge);
+//		EdgeId rc = conjugate(edge);
 //		if (edge != rc) {
 //			rc->coverage_++;
 //		}
@@ -419,14 +419,14 @@ public:
 	}
 
 	/**
-	 * adds vertex and its complement
+	 * adds vertex and its conjugate
 	 */
 	VertexId AddVertex();
 
 	Sequence VertexNucls(VertexId v) const;
 
 	/**
-	 * Deletes vertex and its complement. Asserts in case there are edges adgecent to this vertex.
+	 * Deletes vertex and its conjugate. Asserts in case there are edges adgecent to this vertex.
 	 */
 	void DeleteVertex(VertexId v);
 
@@ -474,7 +474,7 @@ public:
 	 * Method checks if given vertex has no incoming edges
 	 */
 	bool IsDeadStart(VertexId v) const {
-		return IsDeadEnd(v->Complement());
+		return IsDeadEnd(v->conjugate());
 	}
 
 	/**
@@ -488,16 +488,16 @@ public:
 	VertexId EdgeEnd(EdgeId edge) const;
 
 	/**
-	 * Method returns vertex which corresponds to k-mer which is reverse-complement to the one written in v.
+	 * Method returns vertex which corresponds to k-mer which is reverse-conjugate to the one written in v.
 	 * Later this method is going to be renamed with Conjugate.
 	 */
-	VertexId Complement(VertexId v) const;
+	VertexId conjugate(VertexId v) const;
 
 	/**
-	 * Method returns edge which corresponds to sequence which is reverse-complement to the one written in e.
+	 * Method returns edge which corresponds to sequence which is reverse-conjugate to the one written in e.
 	 * Later this method is going to be renamed with Conjugate.
 	 */
-	EdgeId Complement(EdgeId e) const;
+	EdgeId conjugate(EdgeId e) const;
 
 	const EdgeData& GetData(EdgeId e) const {
 		return *e;

@@ -16,7 +16,7 @@ LOGGER("omg.graph");
  * Low level events are addition/deletion of vertices/edges. These events should be triggered only after
  * high level events when all data was already transferred and graph structure is consistent.
  * High level events should be used to keep external data synchronized with graph and keep internal data
- * consistent. Now high level events are merge glue and split. This list can be extended in near future.
+ * consistent. Now high level events are merge, glue and split. This list can be extended in near future.
  */
 template<class Graph>
 class GraphActionHandler {
@@ -208,7 +208,7 @@ public:
 	}
 
 	virtual void ApplyAdd(GraphActionHandler<Graph> *handler, VertexId v) const {
-		VertexId rcv = graph_.Complement(v);
+		VertexId rcv = graph_.conjugate(v);
 		TRACE(
 				"Triggering add event of handler " << handler->name()
 						<< " to vertex " << v);
@@ -227,7 +227,7 @@ public:
 	}
 
 	virtual void ApplyAdd(GraphActionHandler<Graph> *handler, EdgeId e) const {
-		EdgeId rce = graph_.Complement(e);
+		EdgeId rce = graph_.conjugate(e);
 		TRACE(
 				"Triggering add event of handler " << handler->name()
 						<< " to edge " << e << ". Event is Add");
@@ -246,7 +246,7 @@ public:
 	}
 
 	virtual void ApplyDelete(GraphActionHandler<Graph> *handler, VertexId v) const {
-		VertexId rcv = graph_.Complement(v);
+		VertexId rcv = graph_.conjugate(v);
 		TRACE(
 				"Triggering delete event of handler " << handler->name()
 						<< " to vertex " << v);
@@ -265,7 +265,7 @@ public:
 	}
 
 	virtual void ApplyDelete(GraphActionHandler<Graph> *handler, EdgeId e) const {
-		EdgeId rce = graph_.Complement(e);
+		EdgeId rce = graph_.conjugate(e);
 		TRACE(
 				"Triggering delete event of handler " << handler->name()
 						<< " to edge " << e);
@@ -289,7 +289,7 @@ public:
 		TRACE(
 				"Triggering merge event of handler " << handler->name()
 						<< " with new edge " << new_edge);
-		EdgeId rce = graph_.Complement(new_edge);
+		EdgeId rce = graph_.conjugate(new_edge);
 		handler->HandleMerge(old_edges, new_edge);
 		if (new_edge != rce) {
 			TRACE(
@@ -298,7 +298,7 @@ public:
 							<< " which is conjugate to " << new_edge);
 			vector < EdgeId > ecOldEdges;
 			for (int i = old_edges.size() - 1; i >= 0; i--) {
-				ecOldEdges.push_back(graph_.Complement(old_edges[i]));
+				ecOldEdges.push_back(graph_.conjugate(old_edges[i]));
 			}
 			handler->HandleMerge(ecOldEdges, rce);
 		} else {
@@ -313,8 +313,8 @@ public:
 		TRACE(
 				"Triggering glue event of handler " << handler->name()
 						<< " with old edge " << old_edge);
-		EdgeId rcOldEdge = graph_.Complement(old_edge);
-		EdgeId rcNewEdge = graph_.Complement(new_edge);
+		EdgeId rcOldEdge = graph_.conjugate(old_edge);
+		EdgeId rcNewEdge = graph_.conjugate(new_edge);
 		assert(old_edge != new_edge);
 		assert(new_edge != rcNewEdge);
 		assert(graph_.EdgeStart(old_edge) != graph_.EdgeEnd(old_edge));
@@ -335,7 +335,7 @@ public:
 
 	virtual void ApplySplit(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const {
-		EdgeId rce = graph_.Complement(old_edge);
+		EdgeId rce = graph_.conjugate(old_edge);
 		TRACE(
 				"Triggering split event of handler " << handler->name()
 						<< " with old edge " << old_edge);
@@ -345,8 +345,8 @@ public:
 					"Triggering split event of handler " << handler->name()
 							<< " with old edge " << old_edge
 							<< " which is conjugate to " << rce);
-			handler->HandleSplit(rce, graph_.Complement(new_edge2),
-					graph_.Complement(new_edge_1));
+			handler->HandleSplit(rce, graph_.conjugate(new_edge2),
+					graph_.conjugate(new_edge_1));
 		} else {
 			TRACE(
 					"Edge " << old_edge
@@ -416,7 +416,7 @@ public:
 	}
 
 	virtual void HandleAdd(VertexId v) {
-		super::queue_.offer(v);
+		super::queue_.push(v);
 	}
 
 	virtual void HandleDelete(VertexId v) {
@@ -456,7 +456,7 @@ public:
 	}
 
 	virtual void HandleAdd(EdgeId v) {
-		super::queue_.offer(v);
+		super::queue_.push(v);
 	}
 
 	virtual void HandleDelete(EdgeId v) {
