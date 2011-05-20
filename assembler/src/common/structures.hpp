@@ -12,14 +12,14 @@ public:
 	 * Be careful! This constructor requires Comparator to have default constructor even if you call it with
 	 * specified comparator. In this case just create default constructor with assert(false) inside it.
 	 */
-	erasable_priprity_queue(const Comparator& comparator = Comparator())  __attribute__ ((deprecated)) :
-		storage_(comparator) {
+	erasable_priprity_queue(const Comparator& comparator = Comparator())__attribute__ ((deprecated)) :
+	storage_(comparator) {
 	}
 
 	template<typename InputIterator>
 	erasable_priprity_queue(InputIterator begin, InputIterator end,
 			const Comparator& comparator = Comparator()) :
-		storage_(begin, end, comparator) {
+	storage_(begin, end, comparator) {
 	}
 
 	Key pop() {
@@ -35,7 +35,7 @@ public:
 		storage_.insert(key);
 	}
 
-	bool remove(const Key& key) {
+	bool erase(const Key& key) {
 		return storage_.erase(key) > 0;
 	}
 
@@ -66,14 +66,14 @@ protected:
 		}
 	}
 
-	QueueIterator(const Comparator& comparator = Comparator())  __attribute__ ((deprecated)) :
-		ready(true), queue_(comparator) {
+	QueueIterator(const Comparator& comparator = Comparator())__attribute__ ((deprecated)) :
+	ready(true), queue_(comparator) {
 	}
 
 	template<typename iterator>
 	QueueIterator(iterator begin, iterator end,
 			const Comparator& comparator = Comparator()) :
-		ready(true), queue_(comparator) {
+	ready(true), queue_(comparator) {
 		fillQueue(begin, end);
 	}
 
@@ -81,24 +81,24 @@ protected:
 		if (ready && toRemove == queue_.top()) {
 			ready = false;
 		}
-		queue_.remove(toRemove);
+		queue_.erase(toRemove);
 	}
 
 public:
 	//== is supported only in case this or other is end iterator
 	bool operator==(const QueueIterator& other) {
 		if (this->queue_.empty() && other.queue_.empty())
-			return true;
+		return true;
 		if (this->queue_.empty() || other.queue_.empty())
-			return false;
+		return false;
 		assert(false);
 	}
 
 	bool operator!=(const QueueIterator& other) {
 		if (this->queue_.empty() && other.queue_.empty())
-			return false;
+		return false;
 		if (this->queue_.empty() || other.queue_.empty())
-			return true;
+		return true;
 		assert(false);
 	}
 
@@ -122,6 +122,5 @@ public:
 	virtual ~QueueIterator() {
 	}
 };
-
 
 #endif /* STRUCTURES_HPP_ */
