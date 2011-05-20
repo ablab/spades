@@ -26,8 +26,8 @@ void edge_graph::SimpleGraphVisualizer::Visualize(const EdgeGraph& g) {
 	gp_.output();
 }
 
-void edge_graph::ComplementGraphVisualizer::Visualize(const EdgeGraph& g) {
-	ComplementVisHandler h(g, gp_);
+void edge_graph::ConjugateGraphVisualizer::Visualize(const EdgeGraph& g) {
+	ConjugateVisHandler h(g, gp_);
 	de_bruijn::DFS<EdgeGraph>(g).Traverse(&h);
 	gp_.output();
 }
