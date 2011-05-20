@@ -11,9 +11,7 @@
 #include <cmath>
 #include "omni_utils.hpp"
 
-namespace de_bruijn {
-
-using omnigraph::SmartEdgeIterator;
+namespace omnigraph {
 
 template<class Graph>
 class BulgeRemover {
@@ -23,9 +21,11 @@ public:
 	void RemoveBulges(Graph& g);
 
 	BulgeRemover(size_t max_length, double coverage_threshold = 1000.,
-			double coverage_gap = 1.1, double delta_threshold = 4, double relative_delta = 0.1) :
+			double coverage_gap = 1.1, double delta_threshold = 4,
+			double relative_delta = 0.1) :
 		max_length_(max_length), coverage_threshold_(coverage_threshold),
-				coverage_gap_(coverage_gap), delta_threshold_(delta_threshold), relative_delta_(relative_delta) {
+				coverage_gap_(coverage_gap), delta_threshold_(delta_threshold),
+				relative_delta_(relative_delta) {
 		assert(coverage_gap_ > 1.);
 	}
 
@@ -42,7 +42,8 @@ private:
 	bool PathCondition(const Graph& g, EdgeId edge, const vector<EdgeId>& path);
 
 	bool BulgeCondition(const Graph& g, EdgeId edge, const vector<EdgeId>& path) {
-		return PathAvgCoverage(g, path) > coverage_gap_ * g.coverage(edge) && PathCondition(g, edge, path);
+		return PathAvgCoverage(g, path) > coverage_gap_ * g.coverage(edge)
+				&& PathCondition(g, edge, path);
 		//		return path_and_coverage.second > coverage_gap * g.kplus_one_mer_coverage(edge);
 	}
 
@@ -61,7 +62,8 @@ bool BulgeRemover<Graph>::PossibleBulgeEdge(const Graph& g, EdgeId e) {
 }
 
 template<class Graph>
-size_t BulgeRemover<Graph>::PathLength(const Graph& g, const vector<EdgeId> path) {
+size_t BulgeRemover<Graph>::PathLength(const Graph& g,
+		const vector<EdgeId> path) {
 	size_t length = 0;
 	for (size_t i = 0; i < path.size(); ++i) {
 		length += g.length(path[i]);
@@ -70,7 +72,8 @@ size_t BulgeRemover<Graph>::PathLength(const Graph& g, const vector<EdgeId> path
 }
 
 template<class Graph>
-bool BulgeRemover<Graph>::PathCondition(const Graph& g, EdgeId edge, const vector<EdgeId>& path) {
+bool BulgeRemover<Graph>::PathCondition(const Graph& g, EdgeId edge,
+		const vector<EdgeId>& path) {
 	for (size_t i = 0; i < path.size(); ++i)
 		if (edge == path[i] || edge == g.Complement(path[i]))
 			return false;
@@ -82,7 +85,8 @@ bool BulgeRemover<Graph>::PathCondition(const Graph& g, EdgeId edge, const vecto
 }
 
 template<class Graph>
-double BulgeRemover<Graph>::PathAvgCoverage(const Graph& g, const vector<EdgeId> path) {
+double BulgeRemover<Graph>::PathAvgCoverage(const Graph& g,
+		const vector<EdgeId> path) {
 	double unnormalized_coverage = 0;
 	size_t path_length = 0;
 	for (size_t i = 0; i < path.size(); ++i) {
@@ -112,48 +116,57 @@ void BulgeRemover<Graph>::RemoveBulges(Graph& g) {
 	//todo add right comparator
 	typedef SmartEdgeIterator<Graph> EdgeIter;
 
-	DEBUG("Bulge remove process started");
+	TRACE("Bulge remove process started");
 
 	for (EdgeIter iterator = g.SmartEdgeBegin(), end = g.SmartEdgeEnd(); end
 			!= iterator; ++iterator) {
 		EdgeId edge = *iterator;
-		DEBUG(
+		TRACE(
 				"Considering edge of length " << g.length(edge)
 						<< " and avg coverage " << g.coverage(edge));
-		DEBUG("Is possible bulge " << PossibleBulgeEdge(g, edge));
+		TRACE("Is possible bulge " << PossibleBulgeEdge(g, edge));
 		if (PossibleBulgeEdge(g, edge)) {
-			size_t kplus_one_mer_coverage = std::floor(g.length(edge) * g.coverage(edge) + 0.5);
-			DEBUG("Processing edge " << g.EdgeNucls(edge) << " and coverage "
+			size_t kplus_one_mer_coverage = std::floor(
+					g.length(edge) * g.coverage(edge) + 0.5);
+			TRACE(
+					"Processing edge " << g.EdgeNucls(edge) << " and coverage "
 							<< kplus_one_mer_coverage);
 
 			VertexId start = g.EdgeStart(edge);
-			DEBUG("Start " << g.VertexNucls(start));
+			TRACE("Start " << g.VertexNucls(start));
 
 			VertexId end = g.EdgeEnd(edge);
-			DEBUG("End " << g.VertexNucls(end));
+			TRACE("End " << g.VertexNucls(end));
 
-			size_t length_threshold = g.length(edge) + std::max(relative_delta_ * g.length(edge), delta_threshold_);
-			DEBUG("Looking for best path between start and end shorter than " << length_threshold);
+			size_t length_threshold = g.length(edge) + std::max(
+					relative_delta_ * g.length(edge), delta_threshold_);
+			TRACE(
+					"Looking for best path between start and end shorter than "
+							<< length_threshold);
 
 			pair<vector<EdgeId> , int> path_and_coverage = BestPath(g, start,
 					end, length_threshold);
 			const vector<EdgeId>& path = path_and_coverage.first;
-			double path_coverage = (double)path_and_coverage.second / PathLength(g, path);
-			DEBUG("Best path with coverage " << path_coverage
-							<< " is " << PrintPath<Graph> (g, path));
+			double path_coverage = (double) path_and_coverage.second
+					/ PathLength(g, path);
+			TRACE(
+					"Best path with coverage " << path_coverage << " is "
+							<< PrintPath<Graph> (g, path));
 
 			//if edge was returned, this condition will fail
 			if (BulgeCondition(g, edge, path)) {
-				DEBUG("Satisfied condition");
-				DEBUG("Deleting edge " << g.EdgeNucls(edge) << " and compressing ends");
+				TRACE("Satisfied condition");
+				TRACE(
+						"Deleting edge " << g.EdgeNucls(edge)
+								<< " and compressing ends");
 				g.DeleteEdge(edge);
 				g.CompressVertex(start);
 				g.CompressVertex(end);
 			} else {
-				DEBUG("Didn't satisfy condition");
+				TRACE("Didn't satisfy condition");
 			}
 		}
-		DEBUG("-----------------------------------");
+		TRACE("-----------------------------------");
 	}
 }
 
@@ -164,25 +177,26 @@ pair<vector<typename Graph::EdgeId> , int> BulgeRemover<Graph>::BestPath(
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
-	DEBUG(
+	TRACE(
 			"Recursive call for vertex " << g.VertexNucls(start)
 					<< " path length left " << length_left);
 	if (length_left < 0) {
-		DEBUG("Length threshold was exceeded, returning no path");
+		TRACE("Length threshold was exceeded, returning no path");
 		return make_pair(vector<EdgeId> (0), -1);
 	}
 	if (start == end) {
-		DEBUG("Path found, backtracking");
+		TRACE("Path found, backtracking");
 		return make_pair(vector<EdgeId> (), 0);
 	}
 	vector<EdgeId> outgoing_edges = g.OutgoingEdges(start);
 	int best_path_coverage = -1;
 	vector<EdgeId> best_path(0);
-	DEBUG("Iterating through outgoing edges, finding best path");
+	TRACE("Iterating through outgoing edges, finding best path");
 	for (size_t i = 0; i < outgoing_edges.size(); ++i) {
 		EdgeId edge = outgoing_edges[i];
-		DEBUG("Going along edge of length " << g.length(edge));
-		size_t kplus_one_mer_coverage = std::floor(g.length(edge) * g.coverage(edge) + 0.5);//kplus_one_mer_coverage(edge);
+		TRACE("Going along edge of length " << g.length(edge));
+		size_t kplus_one_mer_coverage = std::floor(
+				g.length(edge) * g.coverage(edge) + 0.5);//kplus_one_mer_coverage(edge);
 		pair<vector<EdgeId> , int> path_and_coverage = BestPath(g,
 				g.EdgeEnd(edge), end, length_left - g.length(edge));
 		if (path_and_coverage.second >= 0 && path_and_coverage.second
@@ -193,7 +207,7 @@ pair<vector<typename Graph::EdgeId> , int> BulgeRemover<Graph>::BestPath(
 			best_path.push_back(edge);
 		}
 	}
-	DEBUG(
+	TRACE(
 			"Best path from vertex " << g.VertexNucls(start) << " is "
 					<< PrintPath(g, best_path) << " with coverage "
 					<< best_path_coverage);

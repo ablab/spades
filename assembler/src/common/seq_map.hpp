@@ -1,36 +1,40 @@
 /*
- * debruijn_plus.hpp
+ * seq_map.hpp
  *
  *  Created on: 22.04.2011
  *      Author: vyahhi
  */
 
-#ifndef DEBRUIJN_PLUS_HPP_
-#define DEBRUIJN_PLUS_HPP_
+#ifndef SEQ_MAP_HPP_
+#define SEQ_MAP_HPP_
 
 #include "read.hpp"
 #include "sequence.hpp"
 #include "seq.hpp"
 #include "cuckoo.hpp"
-#include <tr1/unordered_map>
+//#include <tr1/unordered_map>
+
 /*
  * act as DeBruijn graph and Index at the same time :)
  *
  * size_ here is as K+1 in other parts of code
+ *
+ * Map from Seq<size_> to (Value, size_t)
+ * where Value is usually EdgeId and size_t is offset where this Seq is in EdgeId
+ *
  */
-
 namespace de_bruijn {
 LOGGER("d.utils");
 
 template<size_t size_, typename Value>
-class DeBruijnPlus {
+class SeqMap {
 private:
 	typedef Seq<size_> KPlusOneMer;
 	typedef Seq<size_ - 1> KMer;
 	//typedef std::tr1::unordered_map<KPlusOneMer, pair<Value, size_t> ,
 	//	typename KPlusOneMer::hash, typename KPlusOneMer::equal_to> map_type; // size_t is offset
-        typedef cuckoo<KPlusOneMer, pair<Value, size_t>, typename KPlusOneMer::multiple_hash,
-                 typename KPlusOneMer::equal_to> map_type;
+	typedef cuckoo<KPlusOneMer, pair<Value, size_t>, typename KPlusOneMer::multiple_hash,
+			typename KPlusOneMer::equal_to> map_type;
 	map_type nodes_;
 
 	bool contains(const KPlusOneMer &k) const {
@@ -78,19 +82,13 @@ public:
 	typedef typename map_type::const_iterator map_const_iterator;
 
 	// DE BRUIJN:
-//	todo delete this constructor
-//	DeBruijnPlus(const vector<Read> &v, bool) { // bool just for differentiating from template constructor :(
-//		for (size_t i = 0; i < v.size(); ++i) {
-//			CountRead(v[i]);
-//		}
-//	}
 
-	DeBruijnPlus() {
+	SeqMap() {
 
 	}
 
 	template<class ReadStream>
-	DeBruijnPlus(ReadStream &stream) {
+	SeqMap(ReadStream &stream) {
 		Fill<ReadStream>(stream);
 	}
 
@@ -190,4 +188,4 @@ public:
 
 }
 
-#endif /* DEBRUIJN_PLUS_HPP_ */
+#endif /* SEQ_MAP_HPP_ */

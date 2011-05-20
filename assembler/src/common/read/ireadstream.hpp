@@ -43,7 +43,7 @@ public:
 		return eof_;
 	}
 
-	static vector<Read>* readAll(string filename, int cnt = -1) {
+	static vector<Read>* readAll(string filename, int cnt = -1) __attribute__ ((deprecated)) {
 		ireadstream irs(filename);
 		assert(irs.is_open());
 		vector<Read>* res = new vector<Read>();
@@ -71,14 +71,6 @@ public:
 			r.setQuality(seq_->qual.s);
 		}
 		r.setSequence(seq_->seq.s);
-		// if there is 'N' in sequence, then throw out this mate read
-		/*for (size_t i = 0; i < seq_->seq.l; i++) { // Fix Ns to As so we can store ACGT in 2 bits (Sequence). Anyway we have a Quality values for filtering out Ns later
-			if (!is_nucl(seq_->seq.s[i])) {
-				seq_->seq.s[i] = 'A';
-			}
-		}
-		*/
-
 		read_ahead(); // make actual read for the next result
 		return *this;
 	}

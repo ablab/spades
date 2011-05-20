@@ -222,6 +222,10 @@ EdgeId EdgeGraph::OutgoingEdge(VertexId v, char nucl) const {
 	return NULL;
 }
 
+VertexId EdgeGraph::Complement(VertexId v) const {
+	return v->Complement();
+}
+
 EdgeId EdgeGraph::Complement(EdgeId edge) const {
 	return edge->Complement();
 }

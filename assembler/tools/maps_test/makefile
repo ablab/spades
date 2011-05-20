@@ -6,10 +6,10 @@ program: filter.o sequence.o
 filter.o: 
 	mkdir -p $(DIR)
 	rm -rf $(DIR)/*
-	g++ -c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=c++0x   -I./../../src/common -I./../../src -I./..  filter.cpp -o $(DIR)/filter.o
+	g++ -c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=c++0x  -I./../../src/common -I./../../src/common/read -I./../../src/common/sequence -I./../../src -I./..  filter.cpp -o $(DIR)/filter.o
 
 sequence.o:
-	g++ -c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=c++0x   -I./../../src/common -I./../../src   ../../src/common/sequence.cpp -o $(DIR)/sequence.o
+	g++ -c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=c++0x   -I./../../src/common -I./../../src/common/read -I./../../src/common/sequence -I./../../src ../../src/common/sequence/sequence.cpp -o $(DIR)/sequence.o
 
 clean:
 	rm -rf $(DIR)/*
