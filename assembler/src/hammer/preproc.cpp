@@ -152,7 +152,7 @@ int main(int argc, char * argv[]) {
 				sub += nucl(it->first[i]);
 			}
 			// cout << it->first.str().data() << ", " << j << ": " << sub << "   " << encode3toabyte(sub) << "\n";
-			vs[j].push_back(encode3toabyte(sub), counter);
+			vs[j].push_back(make_pair(encode3toabyte(sub), counter));
 		}
 		++counter;
 	}
