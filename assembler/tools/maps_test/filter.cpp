@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
   case 5: { 
     seq_filter_stat<K, hm5>::filter(filename, "cuckoo");
     break;
-  }
+    }
   default:
     std::cout << "Map number is incorrect!\n";
   }
