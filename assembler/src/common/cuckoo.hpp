@@ -49,10 +49,8 @@ public:
   friend class const_iterator;
 
   class iterator {
-  public:
-    size_t pos;
   private:
-    //size_t pos;
+    size_t pos;
     cuckoo* hash;
     iterator(size_t p, cuckoo* h) : pos(p), hash(h) {}
     friend class cuckoo;
@@ -90,7 +88,7 @@ public:
     }
 
     bool operator==(const iterator &it) {
-      return pos == it.pos /*&& hash == it.hash*/;
+      return pos == it.pos && hash == it.hash;
     }
 
     bool operator!=(const iterator &it) {
@@ -402,7 +400,7 @@ public:
       if (is_here(k, i * len_part_ + pos)) {
         return const_iterator(i * len_part_ + pos, this);
       }
-    }
+      }
     return end();
   }
   

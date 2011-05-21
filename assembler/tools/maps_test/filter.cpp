@@ -7,9 +7,6 @@
 #include <google/sparse_hash_map>
 #include "cuckoo.hpp"
 
-#include <string>
-#include <fstream>
-
 #define K 31
 
 typedef std::map<Seq<K>, size_t, Seq<K>::less2> hm1;
@@ -57,22 +54,6 @@ int main(int argc, char** argv) {
     seq_filter_stat<K, hm5>::filter(filename, "cuckoo");
     break;
   }
-    /*case 6: { //for internal test only!!!
-    cuckoo<Seq<28>, size_t, Seq<28>::multiple_hash, Seq<28>::equal_to> map;
-    std::fstream f;
-    std::string s;
-    f.open("/home/mariya/test.utf8", std::fstream::out|std::fstream::in);
-    while (!f.eof()) {
-      f >> s;
-      if (s.length() == 28) {
-        Seq<28> seq(s);
-        map.insert(std::make_pair<Seq<28>, size_t>(seq, 0));
-      }
-    }
-    f.close();
-    std::cout << "OK! " << map.size() << std::endl;
-    break; 
-    }*/
   default:
     std::cout << "Map number is incorrect!\n";
   }

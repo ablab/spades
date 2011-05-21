@@ -56,8 +56,13 @@ public:
     gettimeofday(&tim, NULL);
     double t3 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
+    read_seqs_from_file(in);
+
+    gettimeofday(&tim, NULL);
+    double t4 = tim.tv_sec + ((float)tim.tv_usec/1e6);
+
     std::cout << "Memory: " << (vm2 - vm1) << " " << name << std::endl;
-    std::cout << "Insert: " << (t2 - t1) << " " << name << std::endl;
+    std::cout << "Insert: " << (t2 - t1) - (t4 - t3) << " " << name << std::endl;
     std::cout << "Find: " << (t3 - t2) << " " << name << std::endl;
     std::cout << "Elements to find: " << n << std::endl;
 	}
@@ -102,6 +107,14 @@ private:
     }
   }
 
+  static void read_seqs_from_file(const std::string& in) {
+    ireadstream irs(in);
+    while (!irs.eof()) {
+      Read r;
+      irs >> r;
+    }
+  }
+
 	static void add_seqs_from_read_to_map(const Read& read, hm& map) {
 		Sequence s = read.getSequence();
 		if (s.size() >= size) {
@@ -117,12 +130,12 @@ private:
 	}
 
 	static void add_seq_in_map(Seq<size>& seq, hm& map) {
-		typename hm::iterator it = map.find(seq);
+		typename hm::iterator it = map.end();//map.find(seq);
 		if (it == map.end()) {
 			map.insert(std::make_pair(seq, 1));
-		} else {
+    } else {
 			(*it).second++;
-		}
+    }
 	}
 
 	static std::vector<Seq<size> > get_seqs_from_map(hm& map, const size_t& L) {
