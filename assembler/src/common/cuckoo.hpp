@@ -106,12 +106,12 @@ public:
   public:
     const_iterator() : pos(0), hash(NULL) {}
 
-    void operator=(const iterator &it) {
+    void operator=(const const_iterator &it) {
       pos = it.pos;
       hash = it.hash;
     }
 
-    iterator& operator++() {
+    const_iterator& operator++() {
       assert(hash != NULL);
       assert(pos != hash->len_);
       ++pos;
@@ -121,8 +121,8 @@ public:
       return *this;
     }
     
-    iterator operator++(int) {
-      iterator res = *this;
+    const_iterator operator++(int) {
+      const_iterator res = *this;
       this->operator++();
       return res;
     } 
@@ -293,15 +293,15 @@ public:
   }
 
   cuckoo<Key, Value, Hash, Pred>& operator=
-  (cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
+  (const cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
     clear_all();
     d_ = Cuckoo.d_;
     init_length_ = Cuckoo.init_length_;
     max_loop_ = Cuckoo.max_loop_;
     step_ = Cuckoo.step_;
     init();
-    iterator it = Cuckoo.begin();
-    iterator final = Cuckoo.end();
+    const_iterator it = Cuckoo.begin();
+    const_iterator final = Cuckoo.end();
     while (it != final) {
       insert(*it);
       ++it;
@@ -309,21 +309,9 @@ public:
     return *this;
   }
 
-  cuckoo(cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
-    d_ = Cuckoo.d_;
-    init_length_ = Cuckoo.init_length_;
-    max_loop_ = Cuckoo.max_loop_;
-    step_ = Cuckoo.step_;
+  cuckoo(const cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
     init();
-    iterator it = Cuckoo.begin();
-    iterator final = Cuckoo.end();
-    while (it != final) {
-      insert(*it);
-      ++it;
-    }
-    //the following short code causes std::bad_alloc
-    //init();
-    //*this = Cuckoo;
+    *this = Cuckoo;
   }
 
   // For test only!!!
@@ -365,11 +353,11 @@ public:
     return (*it).second;
   }
 
-  void erase(iterator& it) {
+  void erase(iterator it) {
     remove(it);
   }
 
-  void erase(iterator& first, iterator& last) {
+  void erase(iterator first, iterator last) {
     while (first != last) {
       first = remove(first);
     }
@@ -418,10 +406,12 @@ public:
   }
 
   void clear() {
-    char* t = new char[len_ / 8];
-    for (size_t i = 0; i < len_ / 8; ++i) t[i] = 0;
-    swap(t, exists_);
-    size_ = 0;
+    //char* t = new char[len_ / 8];
+    //for (size_t i = 0; i < len_ / 8; ++i) t[i] = 0;
+    //swap(t, exists_);
+    //size_ = 0;
+    clear_all();
+    init();
   }
 
   inline bool empty() {
