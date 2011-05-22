@@ -1,0 +1,80 @@
+\documentclass[14pt]{article}
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{hyperref}
+
+\title{de Bruijn project}
+\author{Sergey Nurk, Anton Bankevich and Nikolay Vyahhi}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Graph Construction}
+\begin{itemize}
+\item Initial Graph Construction
+
+First usual de Bruijn graph with:
+\begin{itemize}
+\item K-mers as nodes,
+\item (K+1)-mers as edges.
+\end{itemize}
+is constructed for some compile-time fixed K. 
+
+\textit{Comment: Yes, it'll be better to make it runtime-length later.}
+
+DeBruijn graph is presented by class \texttt{SeqMap} which stores set of all edges(k+1-mers) of graph. Such structure allows to perform all simple operations on graph such as adding and removing edges and requesting for incoming or outgoing edges.
+
+SeqMap class uses Cuckoo hashmap(\url{http://en.wikipedia.org/wiki/Cuckoo_hashing}) to store k+1-mers. Cuckoo has higher load factor (90-95\%, hence very memory-effective), much slower \texttt{insert} but much faster \texttt{find}.
+
+\item Condensed Graph Construction
+
+After initial graph was constructed it is condensed. It's done by usual traversal and accumulating edge-sequence while we're on a simple path (path without branchings). The result is stored in \texttt{EdgeGraph} class which is much more complex structure than SeqMap, used to store initial graph. Since Condensed graph has smaller size time performance of graph operation becomes less critical thus cirtain operations are implemented less time-efficient while more usable.
+\end{itemize}
+
+\section{Edge Graph}
+\begin{itemize}
+\item Edge Graph Idea
+
+EdgeGraph was designed to have flexible structure such that without changing core of this structure one could easily use this graph, change it, create additional information storages and synchronize information while graph changes. Space and time efficiency did not have the first priority but where possible(or necessary) these parameters were also taken in consideration.
+
+\item Edge Graph Main Solution
+
+What makes EdgeGraph usable and extandible is GraphHandler structure. EdgeGraph has restrictid number of ways to change its contents like add vertex or split edge etc. Each of them is represented by cirtain public method of EdgeGraph class. Each time one of these methods is called corresponding event is triggered and all objects that listen to graph events are notified about what exactly happend to the graph and respond to the event as they like. Thus instead of storing all info in graph itself and overloading its structure with information and features which are not always needed at the moment one can create external tools which could be easily switched on and off dynamically.
+
+\item Smart Iterators
+
+Smart iterators are tools to iterate through vertices/edges of graph. These iterators were called smart because of two reasons:
+\begin{itemize}
+\item Smart Iterators do not become invalid after insertions/deletions of edges/vertices. Moreover Smart Iterators gaurantee that when iteration is finished all vertices/edges which currently belong to graph. This became possible because of Handler structure. Smart Iterators themselves are handlers and listen to add/delete edge/vertex events.
+\item Smart Iterators allow to choose order in which vertices/edges are iterated. This is done with comparator that defines which vertices/edges should go first.
+\end{itemize}
+
+\end{itemize}
+
+\section{Additional Information}
+The fallowing information can be counted and maintained for graph:
+
+\begin{itemize}
+\item Coverage
+
+Coverage of an edge here corresponds to the number of times (K+1)-mers from this edge were observed in original reads. It's additive, so when we merge edges coverage of result is equal to sum of coverages of edges merged. At the moment coverage is stored in edges of graph and maintained with Handler.
+
+\item Index
+
+In order to be able to map reads to graph index structure is maintained. Index contains map from k+1-mers to positions at edges where these k+1-mers are in graph.
+
+\item Unique ids.
+
+Currently id of vertex or edge is an addres of corresponding object. As the result ids are unique at any given moment of time but if one considers all vertices or edges which were in graph while program worked ids become not unique because memory where vertex/edge object was stored at some point could be reused later and thus it would have the same id. In order to deal with this problem UniqueIdStorage structure was suggested(not yet implemented). This structure allows to assign each vertex and edge globally unique id and then find vertex with given unique id or unique if of the given vertex.
+
+\item History?
+
+\item Paired Info
+
+\end{itemize}
+
+\end{document}

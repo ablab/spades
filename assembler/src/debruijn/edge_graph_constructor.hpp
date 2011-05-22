@@ -79,8 +79,8 @@ private:
 	}
 
 	VertexId FindVertexByIncomingEdges(EdgeGraph &graph, Index &index, Kmer kmer) {
-		VertexId complement = FindVertexByOutgoingEdges(graph, index, !kmer);
-		return complement != NULL ? graph.Complement(complement) : NULL;
+		VertexId conjugate = FindVertexByOutgoingEdges(graph, index, !kmer);
+		return conjugate != NULL ? graph.conjugate(conjugate) : NULL;
 	}
 
 	VertexId FindVertex(EdgeGraph &graph, Index &index, Kmer kmer) {

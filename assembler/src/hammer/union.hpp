@@ -1,9 +1,9 @@
-/*
- * union.h
- *
- *  Created on: 11.05.2011
- *      Author: snikolenko
- */
+/**
+  * union.hpp
+  *
+  *  Created on: 11.05.2011
+  *      Author: snikolenko
+  */
  
 #ifndef CPCOUNT_UNION_H
 #define CPCOUNT_UNION_H

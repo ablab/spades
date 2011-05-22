@@ -12,6 +12,7 @@
 #include<iostream>
 #include<fstream>
 #include<strstream>
+#include<string.h>
 #include<seq.hpp>
 
 #define READ_BUFFER 256
@@ -114,14 +115,13 @@ public:
 private:
 	std::string filename_;
 	ifstream ifs_;
-	kseq_t* seq_;
 	bool is_open_;
 	bool eof_;
 	bool rtl_;
 	UFCluster<size_> ufc_;
 	
 	/*
-	 * open i's file with FASTQ reads,
+	 * open a .uf file
 	 * return true if it opened file, false otherwise
 	 */
 	bool open(string filename) {

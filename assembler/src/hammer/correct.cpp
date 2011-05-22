@@ -14,6 +14,7 @@
 #include "ireadstream.hpp"
 #include "uf.hpp"
 #include "common/sequence.hpp"
+#include "hammer_config.hpp"
 
 using namespace std;
 using namespace __gnu_cxx;
@@ -21,16 +22,9 @@ using namespace __gnu_cxx;
 
 LOGGER("h");
 
-#define K 55
-
-typedef Seq<K> KMer;
-typedef iufstream<K> UFStream;
-typedef UFCluster<K> MyUFC;
-typedef unordered_map<KMer, KMer, KMer::hash> KMerHashMap;
-
-
 /**
  * correct one read
+ * can there be cycles and other dragons? who knows...
  */
 string correctSequence(const Sequence &s, const KMerHashMap & m) {
 	string res = s.str();

@@ -75,11 +75,11 @@ template<class Graph>
 bool BulgeRemover<Graph>::PathCondition(const Graph& g, EdgeId edge,
 		const vector<EdgeId>& path) {
 	for (size_t i = 0; i < path.size(); ++i)
-		if (edge == path[i] || edge == g.Complement(path[i]))
+		if (edge == path[i] || edge == g.conjugate(path[i]))
 			return false;
 	for (size_t i = 0; i < path.size(); ++i)
 		for (size_t j = i + 1; j < path.size(); ++j)
-			if (path[i] == path[j] || path[i] == g.Complement(path[j]))
+			if (path[i] == path[j] || path[i] == g.conjugate(path[j]))
 				return false;
 	return true;
 }

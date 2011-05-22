@@ -42,6 +42,19 @@ double lMultinomial(const vector<HammerRead> & x) {
 	return (lgamma(sum+1) - res);
 }
 
+/**
+  * @return log({a_1+...+a_n \choose a_1, ..., a_n}) for reads corresponding to the mask
+  */
+double lMultinomialWithMask(const vector<HammerRead> & x, const vector<int> & mask, int maskval) {
+	assert(x.size() == mask.size());
+	double res = 0.0, sum = 0.0;
+	for (size_t i=0; i<x.size(); ++i) {
+		if (mask[i] != maskval) continue;
+		res += lgamma(x[i].count+1);
+		sum += x[i].count;
+	}
+	return (lgamma(sum+1) - res);
+}
 
 /**
   * @return log(Beta(a_1+1, ..., a_n+1))
