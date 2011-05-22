@@ -408,7 +408,7 @@ public:
 				SmartIterator<Graph, VertexId, Comparator> (graph,
 						"SmartVertexIterator " + ToString(this), comparator) {
 		if (fill) {
-			super::AddAll(graph.begin(), graph.end());
+			super::insert(graph.begin(), graph.end());
 		}
 	}
 
@@ -420,7 +420,7 @@ public:
 	}
 
 	virtual void HandleDelete(VertexId v) {
-		super::remove(v);
+		super::erase(v);
 	}
 };
 
@@ -447,7 +447,7 @@ public:
 			for (typename Graph::VertexIterator it = graph.begin(); it
 					!= graph.end(); ++it) {
 				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
-				this->super::AddAll(outgoing.begin(), outgoing.end());
+				this->super::insert(outgoing.begin(), outgoing.end());
 			}
 		}
 	}
@@ -460,7 +460,7 @@ public:
 	}
 
 	virtual void HandleDelete(EdgeId v) {
-		super::remove(v);
+		super::erase(v);
 	}
 };
 

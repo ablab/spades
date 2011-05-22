@@ -47,6 +47,12 @@ public:
 	size_t size() const {
 		return storage_.size();
 	}
+
+	template <class InputIterator>
+	void insert ( InputIterator first, InputIterator last ) {
+		storage_.insert(first, last);
+	}
+
 };
 
 template<typename ElementId, typename Comparator = std::less<ElementId> >
@@ -56,11 +62,9 @@ private:
 	erasable_priority_queue<ElementId, Comparator> queue_;
 protected:
 
-	template<typename iterator>
-	void AddAll(iterator begin, iterator end) {
-		for (iterator it = begin; it != end; ++it) {
-			queue_.push(*it);
-		}
+	template<typename InputIterator>
+	void insert(InputIterator begin, InputIterator end) {
+		queue_.insert(begin, end);
 	}
 
 	QueueIterator(const Comparator& comparator = Comparator()) :
@@ -74,7 +78,7 @@ protected:
 		fillQueue(begin, end);
 	}
 
-	void remove(const ElementId& toRemove) {
+	void erase(const ElementId& toRemove) {
 		if (ready && toRemove == queue_.top()) {
 			ready = false;
 		}
