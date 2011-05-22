@@ -22,10 +22,8 @@ public:
 		storage_(begin, end, comparator) {
 	}
 
-	Key pop() {
-		Key key = top();
+	void pop() {
 		storage_.erase(storage_.begin());
-		return key;
 	}
 
 	const Key& top() const {
