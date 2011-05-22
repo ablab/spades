@@ -48,6 +48,54 @@ public:
   friend class iterator;
   friend class const_iterator;
 
+  class const_iterator {
+  private:
+    size_t pos;
+    const cuckoo* hash;
+    const_iterator(const size_t p, const cuckoo* h) : pos(p), hash(h) {}
+    friend class cuckoo;
+
+  public:
+    const_iterator() : pos(0), hash(NULL) {}
+    
+    void operator=(const const_iterator &it) {
+      pos = it.pos;
+      hash = it.hash;
+    }
+
+    const_iterator& operator++() {
+      assert(hash != NULL);
+      assert(pos != hash->len_);
+      ++pos;
+      while ((pos < hash->len_) && (!(hash->get_exists(pos)))) {
+        ++pos;
+      }
+      return *this;
+    }
+    
+    const_iterator operator++(int) {
+      const_iterator res = *this;
+      this->operator++();
+      return res;
+    } 
+
+    const pair<Key, Value>& operator*() const {
+      return (*hash).data_from(pos);
+    }
+
+    const pair<Key, Value>* operator->() const {
+      return &((*hash).data_from(pos));
+    }
+
+    bool operator==(const const_iterator &it) {
+      return pos == it.pos && hash == it.hash;
+    }
+
+    bool operator!=(const const_iterator &it) {
+      return !(*this == it);
+    }
+  };
+
   class iterator {
   private:
     size_t pos;
@@ -57,6 +105,10 @@ public:
 
   public:
     iterator() : pos(0), hash(NULL) {}
+
+    operator const_iterator() {
+      return const_iterator(pos, hash);
+    }
 
     void operator=(const iterator &it) {
       pos = it.pos;
@@ -96,53 +148,6 @@ public:
     }
   };
 
-  class const_iterator {
-  private:
-    size_t pos;
-    const cuckoo* hash;
-    const_iterator(const size_t p, const cuckoo* h) : pos(p), hash(h) {}
-    friend class cuckoo;
-
-  public:
-    const_iterator() : pos(0), hash(NULL) {}
-
-    void operator=(const const_iterator &it) {
-      pos = it.pos;
-      hash = it.hash;
-    }
-
-    const_iterator& operator++() {
-      assert(hash != NULL);
-      assert(pos != hash->len_);
-      ++pos;
-      while ((pos < hash->len_) && (!(hash->get_exists(pos)))) {
-        ++pos;
-      }
-      return *this;
-    }
-    
-    const_iterator operator++(int) {
-      const_iterator res = *this;
-      this->operator++();
-      return res;
-    } 
-
-    const pair<Key, Value>& operator*() const {
-      return (*hash).data_from(pos);
-    }
-
-    const pair<Key, Value>* operator->() const {
-      return &((*hash).data_from(pos));
-    }
-
-    bool operator==(const const_iterator &it) {
-      return pos == it.pos && hash == it.hash;
-    }
-
-    bool operator!=(const const_iterator &it) {
-      return !(*this == it);
-    }
-  };
 
 private:
 
@@ -309,6 +314,7 @@ public:
     return *this;
   }
 
+  //TODO: optimize!
   cuckoo(const cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
     init();
     *this = Cuckoo;
@@ -331,16 +337,16 @@ public:
     return it;
   }
   
-  inline iterator end() {
-    return iterator(len_, this);
-  }
-
   inline const_iterator begin() const {
     const_iterator it = const_iterator(0, this);
     if (!get_exists(it.pos)) ++it;
     return it;
   }
   
+  inline iterator end() {
+    return iterator(len_, this);
+  }
+
   inline const_iterator end() const {
     return const_iterator(len_, this);
   }
@@ -388,7 +394,7 @@ public:
       if (is_here(k, i * len_part_ + pos)) {
         return const_iterator(i * len_part_ + pos, this);
       }
-      }
+    }
     return end();
   }
   
