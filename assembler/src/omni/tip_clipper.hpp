@@ -205,8 +205,7 @@ public:
 			TRACE("Checking edge for being tip " << tip);
 			if (IsTip(tip)) {
 				TRACE("Edge " << tip << " judged to look like tip topologically");
-				bool tmp = TipShouldBeRemoved(tip);
-				if (tmp) {
+				if (TipShouldBeRemoved(tip)) {
 					TRACE("Edge " << tip << " judged to be tip");
 					removeTip(tip);
 					TRACE("Edge " << tip << " removed as tip");
@@ -216,7 +215,6 @@ public:
 			} else {
 				TRACE("Edge " << tip << " judged NOT to look like tip topologically");
 			}
-			++iterator;
 		}
 		TRACE("Tip clipping finished");
 		Compresser<Graph> compresser(graph_);
