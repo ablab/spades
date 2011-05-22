@@ -416,7 +416,7 @@ public:
 	}
 
 	virtual void HandleAdd(VertexId v) {
-		super::queue_.push(v);
+		super::queue_.offer(v);
 	}
 
 	virtual void HandleDelete(VertexId v) {
@@ -456,7 +456,7 @@ public:
 	}
 
 	virtual void HandleAdd(EdgeId v) {
-		super::queue_.push(v);
+		super::queue_.offer(v);
 	}
 
 	virtual void HandleDelete(EdgeId v) {

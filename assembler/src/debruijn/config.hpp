@@ -22,12 +22,10 @@ const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_CROPPED_4_10_
 
 const std::tr1::tuple<std::string, std::string, size_t, int> QUAKE_FULL = std::tr1::make_tuple<std::string, std::string, size_t, int>(INPUT_DIR + "s_6_1.cor.fastq.gz", INPUT_DIR + "s_6_2.cor.fastq.gz", 220, 4000000);
 
-
-
 #define K 35
 #define R 100
 #define I 220
 #define DE_BRUIJN_DATA_FOLDER "./data/debruijn/"
-#define INPUT QUAKE_CROPPED_10_5
+#define INPUT QUAKE_CROPPED_10_4
 
 #endif /* CONFIG_HPP_ */
