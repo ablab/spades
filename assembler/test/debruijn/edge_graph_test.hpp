@@ -10,11 +10,7 @@
 #include <tr1/unordered_set>
 //LOGGER("d.edge_graph_test");
 
-namespace edge_graph {
-
-using de_bruijn::Traversal;
-using de_bruijn::DFS;
-using de_bruijn::PairedInfoIndex;
+namespace debruijn_graph {
 
 void EmptyGraphTest() {
 	EdgeGraph g(11);
@@ -126,7 +122,7 @@ void SmartIteratorTest() {
 	}
 }
 
-typedef de_bruijn::PairedInfoIndex<EdgeGraph>::PairInfo PairInfo;
+typedef PairedInfoIndex<EdgeGraph>::PairInfo PairInfo;
 typedef string MyRead;
 typedef pair<MyRead, MyRead> MyPairedRead;
 typedef string MyEdge;
@@ -143,7 +139,7 @@ string print(const Edges& es) {
 	return s + "}";
 }
 
-class ToStringHandler: public TraversalHandler {
+class ToStringHandler: public TraversalHandler<EdgeGraph> {
 	Edges& edges_;
 	EdgeGraph g_;
 public:
@@ -238,7 +234,7 @@ void AssertGraph(const vector<string>& reads, const vector<string>& etalon_edges
 	RawStream raw_stream(MakeReads(reads));
 	Stream read_stream(raw_stream);
 	EdgeGraph g(kmer_size_);
-	de_bruijn::EdgeIndex<kmer_size_ + 1, EdgeGraph> index(g);
+	EdgeIndex<kmer_size_ + 1, EdgeGraph> index(g);
 
 	ConstructGraph<kmer_size_, Stream>(g, index, read_stream);
 
@@ -295,7 +291,7 @@ void AssertGraph(const vector<MyPairedRead>& paired_reads, size_t insert_size, c
 	Stream paired_read_stream(raw_stream);
 	EdgeGraph g(k);
 	EdgeIndex<k + 1, EdgeGraph> index(g);
-	de_bruijn::CoverageHandler<EdgeGraph> coverage_handler(g);
+	CoverageHandler<EdgeGraph> coverage_handler(g);
 	PairedIndex paired_index(g);
 
 	ConstructGraphWithPairedInfo<k, Stream>(g, index, coverage_handler, paired_index, paired_read_stream);
@@ -352,7 +348,7 @@ void TestStrange() {
 	RawStream raw_stream(MakeReads(reads));
 	Stream read_stream(raw_stream);
 	EdgeGraph g(27);
-	de_bruijn::EdgeIndex<28, EdgeGraph> index(g);
+	EdgeIndex<28, EdgeGraph> index(g);
 
 	ConstructGraph<27, Stream>(g, index, read_stream);
 	EdgeId e = index.get(Seq<28>("TTCTGCATGGTTATGCATAACCATGCAG")).first;

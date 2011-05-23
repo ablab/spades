@@ -7,12 +7,10 @@
 void RunTestSuites() {
 	cute::suite s;
 	//TODO add your test here
-	s += edge_graph::EdgeGraphSuite();
+	s += debruijn_graph::EdgeGraphSuite();
 	cute::ide_listener lis;
 	cute::makeRunner(lis)(s, "De Bruijn Project Test Suites");
 }
-
-using edge_graph::EdgeGraph;
 
 int main() {
 	RunTestSuites();
