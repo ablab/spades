@@ -67,7 +67,7 @@ Coverage of an edge here corresponds to the number of times (K+1)-mers from this
 
 In order to be able to map reads to graph index structure is maintained. Index contains map from k+1-mers to positions at edges where these k+1-mers are in graph.
 
-\item Unique ids.
+\item Unique ids
 
 Currently id of vertex or edge is an addres of corresponding object. As the result ids are unique at any given moment of time but if one considers all vertices or edges which were in graph while program worked ids become not unique because memory where vertex/edge object was stored at some point could be reused later and thus it would have the same id. In order to deal with this problem UniqueIdStorage structure was suggested(not yet implemented). This structure allows to assign each vertex and edge globally unique id and then find vertex with given unique id or unique if of the given vertex.
 
@@ -75,6 +75,38 @@ Currently id of vertex or edge is an addres of corresponding object. As the resu
 
 \item Paired Info
 
+Paired info structures store information about paired reads. For each pair of edges one can request list of all information paired reads give for this pair, Also one can request information about just one pair. Pair info storing is quite easy task while construction is much more sofisticated. Insert length has large dispersion value thus clustering of some sort is required. There are two tipes of clustering each of which should be implemented: online clustering and offline clustering.
+
+\begin{itemize}
+\item Offline Clustering
+
+Input data for offline clustering is collection of paired data with high dispercion value and output is meant to be carefully clasterised information which aims to be as precise as possible.
+
+\item Online Clustering
+
+If paired info is used to change graph one should synchronize paired info with these changes. Thus there should be methods to change and merge paired information.
 \end{itemize}
+
+There are several points concerning paired information that should be taken into consideration:
+
+\begin{itemize}
+\item The later reads are mapped to graph the easyer this procedure is. If reads are mapped to graph before tipclipping they map to graph perfectly. If reads are mapped to graph after tipclipping but before bulge removal ends of certain reads could have been removed from graph. If reads are mapped to graph after bulge removal read mapping becomes complicated task(and is actually called read threading).
+
+\item The earlyer reads are mapped to graph the larger amount of space is required to store this information. This is natural since number of edges significantly drops after graph simplification. And also edges become longer and thus lots of paired reads are have both reads from pair mapped to the same edge,
+
+\item The later clustering is performed the more precise result is. Longer edges contain more info. Thus average values are closer to real distancies.
+\end{itemize}
+
+Currently the following clusterization strategy is implemented: first even before tipclipping and bulge removal data is collected from paired read and as the result for each pair of edges we have collection of possible distances paired reads vote for. Each distance has weight defining level of certainity paired reads give for this distance. Then this information is carefully clusterized and result of this clusterization is the one actually used to resolve repeats, construct rectangle graph etc.
+
+\end{itemize}
+
+\section{Tip Clipping}
+
+The following algorithm is used for tip clipping: we iterate through all edges of graph in order of increasing length. If current edge topologically looks like tip and has alternative path with good enough coverage this edge is removed. If after removing this edge vertex that was adjecent with removed edge has unique incoming edge and unique outgoing edge those edges are concatenated and new edge is also checked as tip candidate.
+
+\section{Bulge Removal}
+
+Curremtly only simple buldges are removed. We call buldge simple if it consists of only one edge with low coverage. 
 
 \end{document}
