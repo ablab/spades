@@ -24,4 +24,13 @@ using namespace log4cxx;
 #define FATAL_ASSERT(condition, message) LOG4CXX_ASSERT(_default_logger, condition, message) std::cerr << "ASSERTION FAILED: " << message; exit(1)
 #define FATAL(message) LOG4CXX_FATAL(_default_logger, message) std::cerr << "FATAL ERROR: " << message; exit(1)
 
+namespace debruijn_graph {
+	LOGGER("d.debruijn_graph");
+}
+
+namespace common {
+	LOGGER("c.common");
+}
+
+
 #endif /* LOGGING_HPP_ */

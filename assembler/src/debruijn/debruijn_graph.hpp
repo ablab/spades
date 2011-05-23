@@ -1,5 +1,5 @@
-#ifndef EDGE_GRAPH_HPP_
-#define EDGE_GRAPH_HPP_
+#ifndef DEBRUIJN_GRAPH_HPP_
+#define DEBRUIJN_GRAPH_HPP_
 
 #include <vector>
 #include <set>
@@ -16,7 +16,6 @@
 using namespace std;
 
 namespace debruijn_graph {
-LOGGER("d.edge_graph");
 
 using omnigraph::GraphActionHandler;
 using omnigraph::HandlerApplier;
@@ -24,12 +23,11 @@ using omnigraph::PairedHandlerApplier;
 using omnigraph::SmartVertexIterator;
 using omnigraph::SmartEdgeIterator;
 
-
 class Vertex;
 
 class Edge {
 private:
-	friend class EdgeGraph;
+	friend class DeBruijnGraph;
 	const Sequence& nucls() const {
 		return nucls_;
 	}
@@ -67,7 +65,7 @@ class Vertex {
 public:
 	typedef vector<Edge*>::const_iterator EdgeIterator;
 private:
-	friend class EdgeGraph;
+	friend class DeBruijnGraph;
 
 	vector<Edge*> outgoing_edges_;
 
@@ -126,7 +124,7 @@ private:
 
 };
 
-class EdgeGraph {
+class DeBruijnGraph {
 public:
 	typedef Edge* EdgeId;
 	typedef Edge EdgeData;
@@ -134,12 +132,12 @@ public:
 
 	typedef set<Vertex*>::const_iterator VertexIterator;
 	typedef Vertex::EdgeIterator EdgeIterator;
-	typedef de_bruijn::GraphActionHandler<EdgeGraph> ActionHandler;
+	typedef debruijn_graph::GraphActionHandler<DeBruijnGraph> ActionHandler;
 
 private:
 	const size_t k_;
 
-	const PairedHandlerApplier<EdgeGraph> applier_;
+	const PairedHandlerApplier<DeBruijnGraph> applier_;
 
 	vector<ActionHandler*> action_handler_list_;
 
@@ -185,9 +183,9 @@ public:
 	 * @param comparator comparator which defines order in which vertices would be iterated.
 	 */
 	template<typename Comparator = std::less<VertexId> >
-	SmartVertexIterator<EdgeGraph, Comparator> SmartVertexBegin(
+	SmartVertexIterator<DeBruijnGraph, Comparator> SmartVertexBegin(
 			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<EdgeGraph, Comparator> (*this, true,
+		return SmartVertexIterator<DeBruijnGraph, Comparator> (*this, true,
 				comparator);
 	}
 
@@ -196,9 +194,9 @@ public:
 	 * @param comparator comparator which defines order in which vertices would be iterated.
 	 */
 	template<typename Comparator = std::less<VertexId> >
-	SmartVertexIterator<EdgeGraph, Comparator> SmartVertexEnd(
+	SmartVertexIterator<DeBruijnGraph, Comparator> SmartVertexEnd(
 			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<EdgeGraph, Comparator> (*this, false,
+		return SmartVertexIterator<DeBruijnGraph, Comparator> (*this, false,
 				comparator);
 	}
 
@@ -207,9 +205,9 @@ public:
 	 * @param comparator comparator which defines order in which edges would be iterated.
 	 */
 	template<typename Comparator = std::less<EdgeId> >
-	SmartEdgeIterator<EdgeGraph, Comparator> SmartEdgeBegin(
+	SmartEdgeIterator<DeBruijnGraph, Comparator> SmartEdgeBegin(
 			const Comparator& comparator = Comparator()) {
-		return SmartEdgeIterator<EdgeGraph, Comparator> (*this, true,
+		return SmartEdgeIterator<DeBruijnGraph, Comparator> (*this, true,
 				comparator);
 	}
 
@@ -218,9 +216,9 @@ public:
 	 * @param comparator comparator which defines order in which edges would be iterated.
 	 */
 	template<typename Comparator = std::less<EdgeId> >
-	SmartEdgeIterator<EdgeGraph, Comparator> SmartEdgeEnd(
+	SmartEdgeIterator<DeBruijnGraph, Comparator> SmartEdgeEnd(
 			const Comparator& comparator = Comparator()) {
-		return SmartEdgeIterator<EdgeGraph, Comparator> (*this, false,
+		return SmartEdgeIterator<DeBruijnGraph, Comparator> (*this, false,
 				comparator);
 	}
 
@@ -237,14 +235,14 @@ public:
 	 * @param k Main parameter that defines the size of k-mers
 	 * //@param action_handler Graph actions handler
 	 */
-	EdgeGraph(size_t k) : k_(k) , applier_(*this) {
+	DeBruijnGraph(size_t k) : k_(k) , applier_(*this) {
 		assert(k % 2 == 1);
 	}
 
 	/**
 	 * Deletes action_handler.
 	 */
-	~EdgeGraph() {
+	~DeBruijnGraph() {
 		while (!vertices_.empty()) {
 			ForceDeleteVertex(*vertices_.begin());
 		}
@@ -540,17 +538,13 @@ public:
 
 };
 
-typedef EdgeGraph::EdgeId EdgeId;
-typedef EdgeGraph::EdgeData EdgeData;
-typedef EdgeGraph::VertexId VertexId;
-typedef EdgeGraph::VertexIterator VertexIterator;
-typedef EdgeGraph::EdgeIterator EdgeIterator;
-typedef EdgeGraph::ActionHandler ActionHandler;
-//typedef EdgeGraph::SmartVertexIterator SmartVertexIterator;
-//typedef EdgeGraph::SmartEdgeIterator SmartEdgeIterator;
-
-typedef de_bruijn::TraversalHandler<EdgeGraph> TraversalHandler;
+typedef DeBruijnGraph::EdgeId EdgeId;
+typedef DeBruijnGraph::EdgeData EdgeData;
+typedef DeBruijnGraph::VertexId VertexId;
+typedef DeBruijnGraph::VertexIterator VertexIterator;
+typedef DeBruijnGraph::EdgeIterator EdgeIterator;
+typedef DeBruijnGraph::ActionHandler ActionHandler;
 
 }
-#endif /* EDGE_GRAPH_HPP_ */
+#endif /* DEBRUIJN_GRAPH_HPP_ */
 

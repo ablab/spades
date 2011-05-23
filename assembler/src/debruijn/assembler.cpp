@@ -3,9 +3,8 @@
  */
 #include "launch.hpp"
 #include "config.hpp"
-#include "libs/ConfigFile/ConfigFile.h"
 
-void RunEdgeGraphTool() {
+void RunDeBruijnGraphTool() {
 
 	// config parsing... dataset path etc.
 	ConfigFile config(CONFIG_FILE);
@@ -34,11 +33,11 @@ void RunEdgeGraphTool() {
 	Read genome;
 	genome_stream >> genome;
 	genome_stream.close();
-	debruijn_graph::EdgeGraphTool<K, RCStream>(rcStream, genome.getSequenceString().substr(0, dataset_len), debruijn_dir);
+	debruijn_graph::DeBruijnGraphTool<K, RCStream>(rcStream, genome.getSequenceString().substr(0, dataset_len), debruijn_dir);
 	reader.close();
 }
 
 int main() {
-	RunEdgeGraphTool();
+	RunDeBruijnGraphTool();
 	return 0;
 }

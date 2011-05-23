@@ -3,7 +3,7 @@
 
 #include "utils.hpp"
 
-namespace de_bruijn {
+namespace debruijn_graph {
 
 template<class Graph>
 class CoverageHandler: public GraphActionHandler<Graph> {
@@ -18,9 +18,8 @@ private:
 	}
 
 	template<size_t k>
-	void processRead(const de_bruijn::SimpleSequenceMapper<k, Graph>& threader,
-			Read read) {
-		de_bruijn::Path<EdgeId> path = threader.MapSequence(
+	void processRead(const SimpleSequenceMapper<k, Graph>& threader, Read read) {
+		Path<EdgeId> path = threader.MapSequence(
 				Sequence(read.getSequenceString()));
 		if (path.sequence().size() == 0)
 			return;
@@ -45,9 +44,8 @@ public:
 	}
 
 	template<size_t k, typename Stream>
-	void FillCoverage(Stream& stream,
-			const de_bruijn::EdgeIndex<k + 1, Graph>& index) {
-		de_bruijn::SimpleSequenceMapper<k, Graph> threader(g_, index);
+	void FillCoverage(Stream& stream, const EdgeIndex<k + 1, Graph>& index) {
+		SimpleSequenceMapper<k, Graph> threader(g_, index);
 		while (!stream.eof()) {
 			Read read;
 			stream >> read;
