@@ -48,17 +48,67 @@ public:
   friend class iterator;
   friend class const_iterator;
 
-  class iterator {
-  public:
-    size_t pos;
+  class const_iterator {
   private:
-    //size_t pos;
+    size_t pos;
+    const cuckoo* hash;
+    const_iterator(const size_t p, const cuckoo* h) : pos(p), hash(h) {}
+    friend class cuckoo;
+
+  public:
+    const_iterator() : pos(0), hash(NULL) {}
+    
+    void operator=(const const_iterator &it) {
+      pos = it.pos;
+      hash = it.hash;
+    }
+
+    const_iterator& operator++() {
+      assert(hash != NULL);
+      assert(pos != hash->len_);
+      ++pos;
+      while ((pos < hash->len_) && (!(hash->get_exists(pos)))) {
+        ++pos;
+      }
+      return *this;
+    }
+    
+    const_iterator operator++(int) {
+      const_iterator res = *this;
+      this->operator++();
+      return res;
+    } 
+
+    const pair<Key, Value>& operator*() const {
+      return (*hash).data_from(pos);
+    }
+
+    const pair<Key, Value>* operator->() const {
+      return &((*hash).data_from(pos));
+    }
+
+    bool operator==(const const_iterator &it) {
+      return pos == it.pos && hash == it.hash;
+    }
+
+    bool operator!=(const const_iterator &it) {
+      return !(*this == it);
+    }
+  };
+
+  class iterator {
+  private:
+    size_t pos;
     cuckoo* hash;
     iterator(size_t p, cuckoo* h) : pos(p), hash(h) {}
     friend class cuckoo;
 
   public:
     iterator() : pos(0), hash(NULL) {}
+
+    operator const_iterator() {
+      return const_iterator(pos, hash);
+    }
 
     void operator=(const iterator &it) {
       pos = it.pos;
@@ -90,7 +140,7 @@ public:
     }
 
     bool operator==(const iterator &it) {
-      return pos == it.pos /*&& hash == it.hash*/;
+      return pos == it.pos && hash == it.hash;
     }
 
     bool operator!=(const iterator &it) {
@@ -98,53 +148,6 @@ public:
     }
   };
 
-  class const_iterator {
-  private:
-    size_t pos;
-    const cuckoo* hash;
-    const_iterator(const size_t p, const cuckoo* h) : pos(p), hash(h) {}
-    friend class cuckoo;
-
-  public:
-    const_iterator() : pos(0), hash(NULL) {}
-
-    void operator=(const iterator &it) {
-      pos = it.pos;
-      hash = it.hash;
-    }
-
-    iterator& operator++() {
-      assert(hash != NULL);
-      assert(pos != hash->len_);
-      ++pos;
-      while ((pos < hash->len_) && (!(hash->get_exists(pos)))) {
-        ++pos;
-      }
-      return *this;
-    }
-    
-    iterator operator++(int) {
-      iterator res = *this;
-      this->operator++();
-      return res;
-    } 
-
-    const pair<Key, Value>& operator*() const {
-      return (*hash).data_from(pos);
-    }
-
-    const pair<Key, Value>* operator->() const {
-      return &((*hash).data_from(pos));
-    }
-
-    bool operator==(const const_iterator &it) {
-      return pos == it.pos && hash == it.hash;
-    }
-
-    bool operator!=(const const_iterator &it) {
-      return !(*this == it);
-    }
-  };
 
 private:
 
@@ -295,15 +298,15 @@ public:
   }
 
   cuckoo<Key, Value, Hash, Pred>& operator=
-  (cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
+  (const cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
     clear_all();
     d_ = Cuckoo.d_;
     init_length_ = Cuckoo.init_length_;
     max_loop_ = Cuckoo.max_loop_;
     step_ = Cuckoo.step_;
     init();
-    iterator it = Cuckoo.begin();
-    iterator final = Cuckoo.end();
+    const_iterator it = Cuckoo.begin();
+    const_iterator final = Cuckoo.end();
     while (it != final) {
       insert(*it);
       ++it;
@@ -311,21 +314,10 @@ public:
     return *this;
   }
 
-  cuckoo(cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
-    d_ = Cuckoo.d_;
-    init_length_ = Cuckoo.init_length_;
-    max_loop_ = Cuckoo.max_loop_;
-    step_ = Cuckoo.step_;
+  //TODO: optimize!
+  cuckoo(const cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
     init();
-    iterator it = Cuckoo.begin();
-    iterator final = Cuckoo.end();
-    while (it != final) {
-      insert(*it);
-      ++it;
-    }
-    //the following short code causes std::bad_alloc
-    //init();
-    //*this = Cuckoo;
+    *this = Cuckoo;
   }
 
   // For test only!!!
@@ -345,16 +337,16 @@ public:
     return it;
   }
   
-  inline iterator end() {
-    return iterator(len_, this);
-  }
-
   inline const_iterator begin() const {
     const_iterator it = const_iterator(0, this);
     if (!get_exists(it.pos)) ++it;
     return it;
   }
   
+  inline iterator end() {
+    return iterator(len_, this);
+  }
+
   inline const_iterator end() const {
     return const_iterator(len_, this);
   }
@@ -367,11 +359,11 @@ public:
     return (*it).second;
   }
 
-  void erase(iterator& it) {
+  void erase(iterator it) {
     remove(it);
   }
 
-  void erase(iterator& first, iterator& last) {
+  void erase(iterator first, iterator last) {
     while (first != last) {
       first = remove(first);
     }
@@ -420,10 +412,12 @@ public:
   }
 
   void clear() {
-    char* t = new char[len_ / 8];
-    for (size_t i = 0; i < len_ / 8; ++i) t[i] = 0;
-    swap(t, exists_);
-    size_ = 0;
+    //char* t = new char[len_ / 8];
+    //for (size_t i = 0; i < len_ / 8; ++i) t[i] = 0;
+    //swap(t, exists_);
+    //size_ = 0;
+    clear_all();
+    init();
   }
 
   inline bool empty() {

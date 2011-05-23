@@ -35,15 +35,14 @@ private:
     Sequence(const Sequence &seq, size_t from, size_t size, bool rtl);
 public:
     const Sequence& operator=(const Sequence &rhs) {
-        if (data_ == rhs.data_) {
-            return *this;
-        }
-        data_->Release();
-        data_ = rhs.data_;
-        data_->Grab();
         from_ = rhs.from_;
         size_ = rhs.size_;
         rtl_ = rhs.rtl_;
+        if (data_ != rhs.data_) {
+            data_->Release();
+            data_ = rhs.data_;
+            data_->Grab();
+        }
         return *this;
     }
 

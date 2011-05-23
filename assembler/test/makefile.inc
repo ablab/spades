@@ -8,7 +8,7 @@ all:$(EXEC)
 	@echo "vvvvvvvvvv MAKE SUCCESSFUL vvvvvvvvvv"
 
 CC=g++
-CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x -I../../src/libs/cute -I../../src/libs -I../../src/common -I../../src -I../../src/omni -I../../src/$(DIR) -I../../src/$(DIR)
+CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x -I../../src/libs/cute -I../../src/libs -I../../src/common -I../../src/common/read -I../../src/common/sequence -I../../src -I../../src/omni -I../../src/$(DIR) -I../../src/$(DIR)
 LDFLAGS=-O3 -L/usr/local/lib -L/usr/local/apr/lib -lz -llog4cxx -lapr-1 -laprutil-1
 DEPSFL=-MM -MG
 
@@ -59,6 +59,29 @@ $(builddir)/%.o: ../../src/common/%.cpp $(builddir)/.d
 	sed -e 's/^ *//' -e 's/$$/:/' >> $(builddir)/$*.d
 	@rm -f $(builddir)/$*.d.tmp
     
+    
+$(builddir)/%.o: ../../src/common/read/%.cpp $(builddir)/.d
+	$(CC) $(CFLAGS) $< -o $@
+	@echo $(builddir) > $(builddir)/$*.d.tmp
+	@tr "\n" "/" <$(builddir)/$*.d.tmp >$(builddir)/$*.d
+	$(CC) $(DEPSFL) $(CFLAGS) $< >> $(builddir)/$*.d
+	@cp -f $(builddir)/$*.d $(builddir)/$*.d.tmp
+	@sed -e 's/.*://' -e 's/\\$$//' < $(builddir)/$*.d.tmp | fmt -1 | \
+	sed -e 's/^ *//' -e 's/$$/:/' >> $(builddir)/$*.d
+	@rm -f $(builddir)/$*.d.tmp
+   
+   
+$(builddir)/%.o: ../../src/common/sequence/%.cpp $(builddir)/.d
+	$(CC) $(CFLAGS) $< -o $@
+	@echo $(builddir) > $(builddir)/$*.d.tmp
+	@tr "\n" "/" <$(builddir)/$*.d.tmp >$(builddir)/$*.d
+	$(CC) $(DEPSFL) $(CFLAGS) $< >> $(builddir)/$*.d
+	@cp -f $(builddir)/$*.d $(builddir)/$*.d.tmp
+	@sed -e 's/.*://' -e 's/\\$$//' < $(builddir)/$*.d.tmp | fmt -1 | \
+	sed -e 's/^ *//' -e 's/$$/:/' >> $(builddir)/$*.d
+	@rm -f $(builddir)/$*.d.tmp
+    
+     
 $(builddir)/.d:
 	mkdir -p $(builddir)
 	touch $@        

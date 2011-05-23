@@ -14,8 +14,9 @@
 #include <string>
 #include <iostream>
 #include "simple_tools.hpp"
-#include "strobe_reader.hpp"
 using namespace std;
+
+#define BAD_QUALITY_THRESHOLD 2
 
 class Read {
 public:
@@ -29,6 +30,10 @@ public:
 		assert(valid);
 		return Sequence(seq_);
 	}
+	Sequence getSubSequence(size_t start, size_t end) const {
+		assert(end >= start && start >= 0 && end <= seq_.size() && start < seq_.size() && end > 0);
+		return Sequence(seq_.substr(start, end));
+	}
 
 	Quality getQuality() const {
 		assert(valid);
@@ -40,6 +45,13 @@ public:
 	}
 	const string& getQualityString() const{
 		return qual_;
+	}
+	string getPhredQualityString(int offset = PHRED_OFFSET) const {
+		string res = qual_;
+		for (size_t i = 0; i < res.size(); ++i) {
+			res[i] += offset;
+		}
+		return res;
 	}
 	const string& getName() const {
 		return name_;
@@ -58,7 +70,45 @@ public:
 			qual_.erase(qual_.begin() + index, qual_.end());
 		}
 	}
-
+	/**
+	 * trim bad quality nucleotides from start and end of the read
+	 * @return size of the read left
+	 */
+	size_t trimBadQuality() {
+		size_t start = 0, end = seq_.size();
+		for (; start < seq_.size(); ++start) {
+			if (qual_[start] > BAD_QUALITY_THRESHOLD) break;
+		}
+		for (; end > 0; --end) {
+			if (qual_[end] > BAD_QUALITY_THRESHOLD) break;
+		}
+		if (end > start) {
+			seq_.erase(seq_.begin(), seq_.begin() + start);
+			seq_.erase(seq_.begin() + end, seq_.end());
+			qual_.erase(qual_.begin(), qual_.begin() + start);
+			qual_.erase(qual_.begin() + end, qual_.end());
+			return seq_.size();
+		} else {
+			seq_ = ""; qual_ = ""; return 0;
+		}
+	}
+	/**
+	 * @param k k as in k-mer
+	 * @param start start point
+	 * @return the first starting point of a valid k-mer >=start; return -1 if no such place exists
+	 */
+	size_t firstValidKmer(size_t start, int k) const {
+		size_t curHypothesis = start;
+		size_t i=start;
+		for (; i < seq_.size(); ++i) {
+			if (i - curHypothesis > (size_t)k) return curHypothesis;
+			if (!is_nucl(seq_[i])) {
+				curHypothesis = i+1;
+			}
+		}
+		if (i-curHypothesis > (size_t)k) return curHypothesis;
+		return seq_.size();
+	}
 	Read() : valid(false) {
 		;
 	}
@@ -74,10 +124,10 @@ private:
 	void setName(const char* s) {
 		name_ = s;
 	}
-	void setQuality(const char* s) {
+	void setQuality(const char* s, int offset = PHRED_OFFSET) {
 		qual_ = s;
 		for (size_t i = 0; i < qual_.size(); ++i) {
-			qual_[i] -= PHRED_OFFSET;
+			qual_[i] -= offset;
 		}
 	}
 	void setSequence(const char* s) {
@@ -100,14 +150,18 @@ private:
 public:
 	Read operator!() const {
 		string newName;
-		if(name_ == "" || name_[0] != '!')
+		if (name_ == "" || name_[0] != '!') {
 			newName = '!' + name_;
-		else
+		} else {
 			newName = name_.substr(1, name_.length());
+		}
 		return Read(newName, ReverseComplement(seq_), Reverse(qual_));
 	}
 };
 
-
+// todo: put this to *.cpp
+//ostream& operator<<(ostream& os, const Read& read) {
+//	return os << read.getSequenceString();
+//}
 
 #endif /* READ_HPP_ */

@@ -36,7 +36,7 @@ private:
 	Sequence nucls_;
 	Vertex* end_;
 	size_t coverage_;
-	Edge *complement_;
+	Edge *conjugate_;
 
 	Edge(const Sequence& nucls, Vertex* end, size_t coverage) :
 		nucls_(nucls), end_(end), coverage_(coverage) {
@@ -50,12 +50,12 @@ private:
 		return nucls_.size();
 	}
 
-	Edge *Complement() {
-		return complement_;
+	Edge *conjugate() {
+		return conjugate_;
 	}
 
-	void SetComplement(Edge* complement) {
-		complement_ = complement;
+	void Setconjugate(Edge* conjugate) {
+		conjugate_ = conjugate;
 	}
 
 	~Edge() {
@@ -71,10 +71,10 @@ private:
 
 	vector<Edge*> outgoing_edges_;
 
-	Vertex* complement_;
+	Vertex* conjugate_;
 
-	void SetComplement(Vertex* complement) {
-		complement_ = complement;
+	void Setconjugate(Vertex* conjugate) {
+		conjugate_ = conjugate;
 	}
 
 	EdgeIterator begin() const {
@@ -116,8 +116,8 @@ private:
 		return true;
 	}
 
-	Vertex* Complement() const {
-		return complement_;
+	Vertex* conjugate() const {
+		return conjugate_;
 	}
 
 	~Vertex() {
@@ -294,13 +294,13 @@ public:
 //	void OutgoingEdges(VertexId v, EdgeIterator& begin, EdgeIterator& end) const;
 
 	/**
-	 * Method returnes vector of all outgoing edges of given vertex
+	 * Method returns vector of all outgoing edges of given vertex
 	 * @param v vertex to get outgoing edges from
 	 */
 	const vector<EdgeId> OutgoingEdges(VertexId v) const;
 
 	/**
-	 * Method returnes vector of all incoming edges of given vertex
+	 * Method returns vector of all incoming edges of given vertex
 	 * @param v vertex to get incoming edges from
 	 */
 	const vector<EdgeId> IncomingEdges(VertexId v) const;
@@ -336,7 +336,7 @@ public:
 	 * @param v vertex to count incoming edges for
 	 */
 	size_t IncomingEdgeCount(VertexId v) const {
-		return v->Complement()->OutgoingEdgeCount();
+		return v->conjugate()->OutgoingEdgeCount();
 	}
 
 	/**
@@ -361,7 +361,7 @@ public:
 	 * @param v vertex to check
 	 */
 	bool CheckUniqueIncomingEdge(VertexId v) const {
-		return CheckUniqueOutgiongEdge(v->Complement());
+		return CheckUniqueOutgiongEdge(v->conjugate());
 	}
 
 	/**
@@ -369,10 +369,8 @@ public:
 	 * @param v vertex to find unique incoming edge for
 	 */
 	EdgeId GetUniqueIncomingEdge(VertexId v) const {
-		return Complement(GetUniqueOutgoingEdge(v->Complement()));
+		return conjugate(GetUniqueOutgoingEdge(v->conjugate()));
 	}
-
-	//	Edge* ComplementEdge(const Edge* edge) const;
 
 	/**
 	 * Method returns Sequence stored in the edge
@@ -401,16 +399,19 @@ public:
 	void IncCoverage(EdgeId edge, int toAdd) {
 		edge->coverage_ += toAdd;
 //		todo talk with Anton about this code
-//		EdgeId rc = Complement(edge);
+//		EdgeId rc = conjugate(edge);
 //		if (edge != rc) {
 //			rc->coverage_ += toAdd;
 //		}
 
 	}
 
+	/**
+	 * Method increases coverage value by 1
+	 */
 	void IncCoverage(EdgeId edge) {
 //		edge->coverage_++;
-//		EdgeId rc = Complement(edge);
+//		EdgeId rc = conjugate(edge);
 //		if (edge != rc) {
 //			rc->coverage_++;
 //		}
@@ -418,62 +419,123 @@ public:
 	}
 
 	/**
-	 * adds vertex and its complement
+	 * adds vertex and its conjugate
 	 */
 	VertexId AddVertex();
 
 	Sequence VertexNucls(VertexId v) const;
 
 	/**
-	 * deletes vertex and its complement
+	 * Deletes vertex and its conjugate. Asserts in case there are edges adgecent to this vertex.
 	 */
 	void DeleteVertex(VertexId v);
 
+	/**
+	 * Deletes vertex and all edges adgecent to it.
+	 */
 	void ForceDeleteVertex(VertexId v);
 
+	/**
+	 * Adds edge with specified data in it. Also adds conjugate edge.
+	 * @param v1 start vertex
+	 * @param v2 end vertex
+	 * @param nucls sequence of nucleotides to be written on new edge
+	 * @param coverage coverage of new edge
+	 */
 	Edge* AddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
 			size_t coverage = 0);
 
+	/**
+	 * Method removes edge and its conjugate.
+	 */
 	void DeleteEdge(EdgeId edge);
 
+	/**
+	 * Method returns length of the edge
+	 */
 	size_t length(EdgeId edge) const {
 		return edge->nucls_.size() - k_;
 	}
 
+	/**
+	 * Method checks whether given two vertices could be linked with edge which contains given sequence
+	 * of nucleotides i.e. sequence should start with k-mer written in v1 and end with k-mer written in v2.
+	 */
 	bool AreLinkable(VertexId v1, VertexId v2, const Sequence &nucls) const;
 
+	/**
+	 * Method checks if given vertex has no outgoing edges
+	 */
 	bool IsDeadEnd(VertexId v) const {
 		return v->IsDeadend();
 	}
 
+	/**
+	 * Method checks if given vertex has no incoming edges
+	 */
 	bool IsDeadStart(VertexId v) const {
-		return IsDeadEnd(v->Complement());
+		return IsDeadEnd(v->conjugate());
 	}
 
+	/**
+	 * Method returns start vertex of given edge
+	 */
 	VertexId EdgeStart(EdgeId edge) const;
 
+	/**
+	 * Method returns end vertex of given edge
+	 */
 	VertexId EdgeEnd(EdgeId edge) const;
 
-	VertexId Complement(VertexId v) const {
-		return v->Complement();
-	}
+	/**
+	 * Method returns vertex which corresponds to k-mer which is reverse-conjugate to the one written in v.
+	 * Later this method is going to be renamed with Conjugate.
+	 */
+	VertexId conjugate(VertexId v) const;
 
-	EdgeId Complement(EdgeId e) const;
+	/**
+	 * Method returns edge which corresponds to sequence which is reverse-conjugate to the one written in e.
+	 * Later this method is going to be renamed with Conjugate.
+	 */
+	EdgeId conjugate(EdgeId e) const;
 
 	const EdgeData& GetData(EdgeId e) const {
 		return *e;
 	}
 
+	/**
+	 * method checks whether vertex has unique incoming and unique outgoing edge and thus can be compressed.
+	 */
 	bool CanCompressVertex(VertexId v) const;
 
+	/**
+	 * Method replaces unique incoming and unique outgoing edges of given vertex with single long edge.
+	 */
 	void CompressVertex(VertexId v);
 
-	void Merge(EdgeId edge1, EdgeId edg2);
+	/**
+	 * Method replaces two edges with single long edge. Edge1 should end in the same vertex edge2 starts and
+	 * there should be no alternative path through this vertex otherwise method asserts.
+	 * @return new edge created after edge1 and edge2
+	 */
+	void Merge(EdgeId edge1, EdgeId edge2);
 
+	/**
+	 * Method replaces path in graph with single long edge. This method works in linear time while simple
+	 * one-by-one merging would take quadratic time.
+	 * @return new edge created after merging path
+	 */
 	EdgeId MergePath(const vector<EdgeId>& path);
 
+	/**
+	 * Method splits edge into 2 new edges at given position.
+	 * @return pair of new edges created
+	 */
 	pair<EdgeId, EdgeId> SplitEdge(EdgeId edge, size_t position);
 
+	/**
+	 * Glues edges and their endpoints together.
+	 */
 	void GlueEdges(EdgeId edge1, EdgeId edge2);
 
 };

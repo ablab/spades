@@ -1,39 +1,40 @@
 #ifndef STRUCTURES_HPP_
 #define STRUCTURES_HPP_
 
+#include <set>
+
 template<typename Key, typename Comparator = std::less<Key> >
-class PriorityQueue {
+class erasable_priority_queue {
 private:
-	set<Key, Comparator> storage_;
+	std::set<Key, Comparator> storage_;
 public:
 	/*
 	 * Be careful! This constructor requires Comparator to have default constructor even if you call it with
 	 * specified comparator. In this case just create default constructor with assert(false) inside it.
 	 */
-	PriorityQueue(const Comparator& comparator = Comparator()) :
+	erasable_priority_queue(const Comparator& comparator = Comparator()) :
 		storage_(comparator) {
 	}
 
 	template<typename InputIterator>
-	PriorityQueue(InputIterator begin, InputIterator end,
+	erasable_priority_queue(InputIterator begin, InputIterator end,
 			const Comparator& comparator = Comparator()) :
 		storage_(begin, end, comparator) {
 	}
 
-	Key poll() {
-		Key key = *(storage_.begin());
+	void pop() {
 		storage_.erase(storage_.begin());
-		return key;
 	}
-	Key peek() const {
+
+	const Key& top() const {
 		return *(storage_.begin());
 	}
 
-	void offer(const Key key) {
+	void push(const Key& key) {
 		storage_.insert(key);
 	}
 
-	bool remove(const Key key) {
+	bool erase(const Key& key) {
 		return storage_.erase(key) > 0;
 	}
 
@@ -44,20 +45,24 @@ public:
 	size_t size() const {
 		return storage_.size();
 	}
+
+	template <class InputIterator>
+	void insert ( InputIterator first, InputIterator last ) {
+		storage_.insert(first, last);
+	}
+
 };
 
 template<typename ElementId, typename Comparator = std::less<ElementId> >
 class QueueIterator {
 private:
 	bool ready;
+	erasable_priority_queue<ElementId, Comparator> queue_;
 protected:
-	PriorityQueue<ElementId, Comparator> queue_;
 
-	template<typename iterator>
-	void AddAll(iterator begin, iterator end) {
-		for (iterator it = begin; it != end; ++it) {
-			queue_.offer(*it);
-		}
+	template<typename InputIterator>
+	void insert(InputIterator begin, InputIterator end) {
+		queue_.insert(begin, end);
 	}
 
 	QueueIterator(const Comparator& comparator = Comparator()) :
@@ -71,44 +76,53 @@ protected:
 		fillQueue(begin, end);
 	}
 
-	void remove(ElementId toRemove) {
-		if (ready && toRemove == queue_.peek()) {
+	void erase(const ElementId& toRemove) {
+		if (ready && toRemove == queue_.top()) {
 			ready = false;
 		}
-		queue_.remove(toRemove);
+		queue_.erase(toRemove);
+	}
+
+	void push(const ElementId& toAdd) {
+		queue_.push(toAdd);
 	}
 
 public:
 	//== is supported only in case this or other is end iterator
-	bool operator==(const QueueIterator& other) {
-		if (this->queue_.empty() && other.queue_.empty())
-			return true;
-		if (this->queue_.empty() || other.queue_.empty())
-			return false;
-		assert(false);
-	}
+//	bool operator==(const QueueIterator& other) {
+//		if (this->queue_.empty() && other.queue_.empty())
+//			return true;
+//		if (this->queue_.empty() || other.queue_.empty())
+//			return false;
+//		assert(false);
+//	}
+//
+//	bool operator!=(const QueueIterator& other) {
+//		if (this->queue_.empty() && other.queue_.empty())
+//			return false;
+//		if (this->queue_.empty() || other.queue_.empty())
+//			return true;
+//		assert(false);
+//	}
 
-	bool operator!=(const QueueIterator& other) {
-		if (this->queue_.empty() && other.queue_.empty())
-			return false;
-		if (this->queue_.empty() || other.queue_.empty())
-			return true;
-		assert(false);
+	bool isEnd() const {
+		return queue_.empty();
 	}
 
 	ElementId operator*() const {
 		assert(!queue_.empty());
 		assert(ready);
-		return queue_.peek();
+		return queue_.top();
 	}
 
 	void operator++() {
 		assert(!queue_.empty());
-		if (ready)
-			queue_.poll();
-		else
+		if (ready) {
+			queue_.pop();
+		}
+		else {
 			ready = true;
-		//		cout << "remove " << queue_.size() << endl;
+		}
 	}
 
 	virtual ~QueueIterator() {

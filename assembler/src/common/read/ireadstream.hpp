@@ -26,7 +26,12 @@ KSEQ_INIT(gzFile, gzread)
 class ireadstream {
 
 public:
-	ireadstream(const string& filename) {
+	ireadstream(const string& filename) : offset_(Read::PHRED_OFFSET) {
+		filename_ = filename;
+		is_open_ = open(filename);
+	}
+
+	ireadstream(const string& filename, int offset) : offset_(offset) {
 		filename_ = filename;
 		is_open_ = open(filename);
 	}
@@ -68,7 +73,7 @@ public:
 		}
 		r.setName(seq_->name.s);
 		if (seq_->qual.s) {
-			r.setQuality(seq_->qual.s);
+			r.setQuality(seq_->qual.s, offset_);
 		}
 		r.setSequence(seq_->seq.s);
 		read_ahead(); // make actual read for the next result
@@ -95,6 +100,7 @@ private:
 	bool is_open_;
 	bool eof_;
 	bool rtl_;
+	int offset_;
 	/*
 	 * open i's file with FASTQ reads,
 	 * return true if it opened file, false otherwise

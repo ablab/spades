@@ -10,6 +10,7 @@
 
 #include "seq.hpp"
 #include "read.hpp"
+#include "paired_read.hpp"
 
 using namespace std;
 
@@ -160,67 +161,7 @@ public:
 	}
 };
 
-
-//////////////////////////////////////////////
-
-
-
-class PairedRead {
-	Read first_;
-	Read second_;
-	size_t distance_;
-public:
-
-	PairedRead() __attribute__ ((deprecated)) {
-
-	}
-
-	PairedRead(const Read& first, const Read& second, size_t distance) __attribute__ ((deprecated)) : first_(first), second_(second), distance_(distance) {
-
-	}
-
-	const Read& first() const {
-		return first_;
-	}
-
-	const Read& second() const {
-		return second_;
-	}
-
-	size_t distance() const {
-		return distance_;
-	}
-
-	bool IsValid() const {
-		return first_.isValid() && second_.isValid();
-	}
-
-	const Read& operator[] (size_t index) const {
-		if (index == 0) {
-			return first_;
-		} else if (index == 1) {
-			return second_;
-		}
-		assert(false);
-	}
-
-	const PairedRead operator!() const{
-		return PairedRead(!second_, !first_, distance_);
-	}
-
-};
-
-//todo introduce read.cpp and put these methods there
-//ostream& operator<<(ostream& os, const Read& read) {
-//	return os << read.getSequenceString();
-//}
-//
-//ostream& operator<<(ostream& os, const PairedRead& p_r) {
-//	return os << "[" << p_r.first() << ", " << p_r.second() << "]";
-//}
-
-/////////////////////////////////
-
+//////////////////
 
 template <class TR>
 class PairedReader {

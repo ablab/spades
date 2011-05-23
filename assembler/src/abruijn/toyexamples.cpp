@@ -4,7 +4,7 @@
 #include "graphBuilder.hpp"
 
 #include "common/graphVisualizer.hpp"
-#include "common/ireadstream.hpp"
+#include "common/read/ireadstream.hpp"
 
 #include <string>
 #include <set>

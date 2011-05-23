@@ -18,12 +18,14 @@
 #include<cstdarg>
 #include<algorithm>
 
-using namespace std;
-ostringstream oMsg;
-string sbuf;
-
 #include "defs.hpp"
 #include "union.hpp"
+#include "hammer_config.hpp"
+
+using namespace std;
+using namespace __gnu_cxx;
+ostringstream oMsg;
+string sbuf;
 
 int kmersize = 0;
 char * reads;
@@ -91,12 +93,38 @@ int comp (const void * k1, const void * k2) {
 
 int main(int argc, char * argv[]) {
 	kmersize = atoi(argv[1]);
-	long readslim = atol(argv[2]);
-	long totlim = atol(argv[3]);
+	unsigned long readslim = strtoul(argv[2], NULL, 0);
+	unsigned long totlim = strtoul(argv[3], NULL, 0);
+	string preproFilename = argv[4];
 
-	cerr << "Reading in prepro file...\n";
+	cerr << "Reading in prepro file...\n" << sizeof(Kmer) << "\n";
+	
+	ireadstream ifs(readsFilename.data());
+	ofstream ofs;
+	ofs.open(outFilename.data());
+	Read r;
+	while (!ifs.eof()) {
+		ifs >> r;
+		string corrs = correctSequence(r.getSequence(), ufc_map);
+		ofs << "@" << r.getName() << endl << corrs.data() << endl << "+" << endl << r.getPhredQualityString() << endl;
+	}
+
+	
+	KMerHashMap ufc_map;
+	UFStream ufs(ufFilename);
+	MyUFC cur_ufc;
+	while(!ufs.eof()) {
+		ufs >> cur_ufc;
+		for (size_t i=0; i<cur_ufc.size(); ++i) {
+			if (i != cur_ufc.center())
+				ufc_map.insert(make_pair(cur_ufc.seq(i), cur_ufc.seq(cur_ufc.center())));
+		}
+	}	
+	cout << ufc_map.size() << "\n";
+
+	
 	long maxKmers = (totlim - readslim) / sizeof(Kmer);
-	cerr << "maxKmers = " << add_commas(maxKmers) << endl;;
+	cerr << "maxKmers = " << totlim << " "<< readslim << " " << (maxKmers) << endl;
 	Kmer * indices = new Kmer[maxKmers];
 	reads = new char[readslim]; 
 	vector<string> row;
@@ -120,13 +148,7 @@ int main(int argc, char * argv[]) {
 		}
 		counter += row[0].length();
 	}
-	/*cerr << "Moving reads...\n";
-	char * readstmp = new char[counter];
-	memcpy(readstmp, reads, counter);
-	delete reads;
-	reads = readstmp;
-	*/
-
+	
 	cerr << "Sorting kmers...\n";
 	qsort(indices, indicesSize, sizeof(Kmer), comp);
 

@@ -68,8 +68,8 @@ Graph RepeatResolver<Graph>::ResolveRepeats(Graph &g, PairedInfoIndex &ind){
 	while (changed) {
 		changed = false;
 		vertices.clear();
-		for(VertexIter v_iter = g.SmartVertexBegin(), end = g.SmartVertexEnd(); v_iter != end; ++v_iter) {
-			if (vertices.find(g.Complement(*v_iter)) == vertices.end())
+		for(VertexIter v_iter = g.SmartVertexBegin(); !v_iter.isEnd(); ++v_iter) {
+			if (vertices.find(g.conjugate(*v_iter)) == vertices.end())
 			{
 				vertices.insert(*v_iter);
 			}
@@ -111,7 +111,7 @@ void RepeatResolver<Graph>::dfs(vector<vector<int> > &edge_list, vector<int> &co
 template<class Graph>
 size_t RepeatResolver<Graph>::ResolveVertex( Graph &g, PairedInfoIndex &ind, VertexId vid){
 	DEBUG("Parsing vertex " << vid);
-	DEBUG(g.Complement(vid));
+	DEBUG(g.conjugate(vid));
 	vector<EdgeId> edgeIds[2];
 	edgeIds[0] = g.OutgoingEdges(vid);
 	edgeIds[1] = g.IncomingEdges(vid);

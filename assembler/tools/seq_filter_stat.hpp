@@ -21,6 +21,7 @@
 // @parameter in input file name
 // @parameter name the name of hash map
 
+
 template<size_t size, class hm>
 class seq_filter_stat {		
 public:
@@ -34,9 +35,7 @@ public:
     double t1 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
     hm map;
-    size_t L = 1;
 		add_seqs_from_file_to_map(in, map);
-    write_seqs_from_map_to_stdout(map, L);
 
     double vm2 = 0;
     double rss2 = 0;
@@ -49,17 +48,25 @@ public:
     typename hm::iterator it;
     for (it = map.begin(); it != map.end(); ++it) {
       seq = (*it).first;
-      map.find(seq);
-      ++n;
+      std::string s = seq.str();
+      s[size / 2] = s[size / 2 + 1];
+      if (map.find(Seq<size>(s)) != map.end()) {
+        ++n;
+      }
     }
 
     gettimeofday(&tim, NULL);
     double t3 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
+    read_seqs_from_file(in);
+
+    gettimeofday(&tim, NULL);
+    double t4 = tim.tv_sec + ((float)tim.tv_usec/1e6);
+
     std::cout << "Memory: " << (vm2 - vm1) << " " << name << std::endl;
-    std::cout << "Insert: " << (t2 - t1) << " " << name << std::endl;
+    std::cout << "Insert: " << (t2 - t1) - (t4 - t3) << " " << name << std::endl;
     std::cout << "Find: " << (t3 - t2) << " " << name << std::endl;
-    std::cout << "Elements to find: " << n << std::endl;
+    std::cout << "Elements to find: " << n << std::endl; 
 	}
 
   // Only for cuckoo!!!
@@ -73,10 +80,7 @@ public:
 
     hm map;
     map.set_up(4, 100, max_loop, 1.2);
-
-		size_t L = 1;
     add_seqs_from_file_to_map(in, map);
-    write_seqs_from_map_to_stdout(map, L);
 
     double vm2 = 0;
     double rss2 = 0;
@@ -102,50 +106,27 @@ private:
     }
   }
 
+  static void read_seqs_from_file(const std::string& in) {
+    ireadstream irs(in);
+    while (!irs.eof()) {
+      Read r;
+      irs >> r;
+    }
+  }
+
 	static void add_seqs_from_read_to_map(const Read& read, hm& map) {
 		Sequence s = read.getSequence();
 		if (s.size() >= size) {
 			Seq<size> seq = s.start<size>();
-			add_seq_in_map(seq, map);
+			map.insert(std::make_pair(seq, 1));
 			size_t s_size = s.size();
 			for (size_t i = size; i < s_size; ++i) {
 				Seq<size> next = seq << s[i];
 				seq = next;
-				add_seq_in_map(seq, map);
+        map.insert(std::make_pair(seq, 1));
 			}
 		}
 	}
-
-	static void add_seq_in_map(Seq<size>& seq, hm& map) {
-		typename hm::iterator it = map.find(seq);
-		if (it == map.end()) {
-			map.insert(std::make_pair(seq, 1));
-		} else {
-			(*it).second++;
-		}
-	}
-
-	static std::vector<Seq<size> > get_seqs_from_map(hm& map, const size_t& L) {
-		std::vector<Seq<size> > seqs;
-		typename hm::iterator end = map.end();
-		for (typename hm::iterator it = map.begin(); it != end; ++it) {
-			if ((*it).second > L) seqs.push_back((*it).first);
-		}
-		return seqs;
-	}
-
-	static void write_seqs_from_map_to_stdout(hm& map, const size_t& L) {
-		typename hm::iterator end = map.end();
-		size_t cnt = 0;
-		for (typename hm::iterator it = map.begin(); it != end; ++it) {
-			if ((*it).second > L) {
-        ++cnt;
-			}
-		}
-    std::cout << "Selected " << cnt << " k-mers from " << map.size() 
-              << ", removed "  << ((float)map.size() - cnt)/map.size()*100 
-              << "% of k-mers." << std::endl; 
-  }
 };
 
 #endif
