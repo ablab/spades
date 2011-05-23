@@ -207,7 +207,7 @@ private:
     for (size_t i = 0; i < d_; ++i) {
       memcpy(t + (i * len_part_ / 8), exists_ + (i * len_temp_ / 8), (len_temp_ / 8));
     }
-    swap(t, exists_);
+    std::swap(t, exists_);
     delete [] t;
   }
 
@@ -215,7 +215,7 @@ private:
     for (size_t i = 0; i < d_; ++i) {
       Data* t = new Data[len_part_];
       memcpy(t, data_[i], len_temp_*sizeof(Data));
-      swap(t, data_[i]);
+      std::swap(t, data_[i]);
       delete [] t;
     } 
   }
@@ -255,7 +255,7 @@ private:
     for (size_t i = 0; i < max_loop_; ++i) {
       for (size_t j = 0; j < d_; ++j) {
         size_t pos = hash(p.first, j);
-        swap(p, data_from(j * len_part_ + pos));
+        std::swap(p, data_from(j * len_part_ + pos));
         bool exists = get_exists(j * len_part_ + pos); 
         set_exists(j * len_part_ + pos);
         if (!exists) {
@@ -320,6 +320,18 @@ public:
     *this = Cuckoo;
   }
 
+  template <class InputIterator>
+  cuckoo(InputIterator first, InputIterator last) {
+    d_ = 4;
+    init_length_ = 100;
+    max_loop_ = 100;
+    step_ = 1.2;
+    init();
+    for (iterator it = first; it != last; ++it) {
+      add_new(*it);
+    }
+  }
+
   // For test only!!!
   void set_up(size_t d = 4, size_t init_length = 100, 
               size_t max_loop = 100, double step = 1.2) {
@@ -329,6 +341,18 @@ public:
     max_loop_ = max_loop;
     step_ = step;
     init();
+  }
+
+  void swap(cuckoo<Key, Value, Hash, Pred> Cuckoo) {
+    std::swap(d_, Cuckoo.d_);
+    std::swap(init_length_, Cuckoo.init_length_);
+    std::swap(max_loop_, Cuckoo.max_loop_);
+    std::swap(step_, Cuckoo.step_);
+    std::swap(data_, Cuckoo.data_);
+    std::swap(exists_, Cuckoo.exists_);
+    std::swap(len_, Cuckoo.len_);
+    std::swap(len_part_, Cuckoo.len_part_);
+    std::swap(size_, Cuckoo.size_);
   }
 
   inline iterator begin() {
@@ -397,7 +421,33 @@ public:
     }
     return end();
   }
+
+  size_t count(const Key& k) const {
+    if (find(k) != end()) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
   
+  pair<iterator, iterator> equal_range(const Key& k) {
+    if (find(k) != end()) {
+      return std::make_pair<iterator, iterator>(find(k), find(k));
+    } else {
+      return std::make_pair<iterator, iterator>(end(), end());
+    }
+  }
+
+  pair<const_iterator, const_iterator> equal_range(const Key& k) const {
+    if (find(k) != end()) {
+      return std::make_pair<const_iterator, const_iterator>
+        (find(k), find(k));
+    } else {
+      return std::make_pair<const_iterator, const_iterator>
+        (end(), end());
+    }
+  }
+
   // Returns iterator to the value and true if new value was inserted
   // and false otherwise.
   pair<iterator, bool> insert(const pair<const Key, Value> &k) {
@@ -410,6 +460,13 @@ public:
     res = add_new(k);
     return make_pair(res, true);
   }
+
+  template <class InputIterator>
+  void insert(InputIterator first, InputIterator last) {
+    for (iterator it = first; it != last; ++it) {
+      insert(*it);
+    }
+  } 
 
   void clear() {
     //char* t = new char[len_ / 8];

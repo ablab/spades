@@ -58,6 +58,8 @@ void TestCuckoo() {
   map.insert(std::make_pair(t, 42));
   ASSERT_EQUAL(map.size(), 1);
   ASSERT_EQUAL(map.empty(), false);
+  ASSERT_EQUAL(map.count(t), 1);
+  ASSERT_EQUAL(map.count(t + 1), 0);
 }
 
 void TestCuckooCopiing() {
