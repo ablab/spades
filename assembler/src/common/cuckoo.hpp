@@ -21,8 +21,6 @@
 #ifndef CUCKOO_HPP_
 #define CUCKOO_HPP_
 
-using namespace std;
-
 /**
  * @param Key key type in hash
  * @param Value value type in hash
