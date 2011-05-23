@@ -3,22 +3,38 @@
  */
 #include "launch.hpp"
 #include "config.hpp"
+#include "libs/ConfigFile/ConfigFile.h"
 
 void RunEdgeGraphTool() {
+
+	// config parsing... dataset path etc.
+	ConfigFile config(CONFIG_FILE);
+	string input_dir = config.read<string>("input_dir");
+	string debruijn_dir = config.read<string>("debruijn_dir");
+	string dataset = config.read<string>("dataset");
+	string reference_genome = input_dir + "/" + config.read<string>("reference_genome");
+	string reads1 = input_dir + "/" + config.read<string>(dataset + "_1");
+	string reads2 = input_dir + "/" + config.read<string>(dataset + "_2");
+	int insert_size = config.read<int>(dataset + "_IS");
+	int dataset_len = config.read<int>(dataset + "_LEN");
+
+	// typedefs :)
 	typedef StrobeReader<2, Read, ireadstream> ReadStream;
 	typedef PairedReader<ireadstream> PairedStream;
 	typedef RCReaderWrapper<PairedStream, PairedRead> RCStream;
 
-	const string reads[2] = {tr1::get<0>(INPUT), tr1::get<1>(INPUT)};
+	// read data
+	const string reads[2] = {reads1, reads2};
 	ReadStream reader(reads);
-	PairedStream pairStream(reader, tr1::get<2>(INPUT));
+	PairedStream pairStream(reader, insert_size);
 	RCStream rcStream(pairStream);
 
-	ireadstream genome_stream(ECOLI_FILE);
+	// assemble
+	ireadstream genome_stream(reference_genome);
 	Read genome;
 	genome_stream >> genome;
 	genome_stream.close();
-	edge_graph::EdgeGraphTool<K, RCStream>(rcStream, genome.getSequenceString().substr(0, tr1::get<3>(INPUT)), DE_BRUIJN_DATA_FOLDER);
+	edge_graph::EdgeGraphTool<K, RCStream>(rcStream, genome.getSequenceString().substr(0, dataset_len), debruijn_dir);
 	reader.close();
 }
 
