@@ -13,13 +13,13 @@
 namespace debruijn_graph {
 
 void EmptyGraphTest() {
-	EdgeGraph g(11);
+	DeBruijnGraph g(11);
 	ASSERT_EQUAL(11, g.k());
 	ASSERT_EQUAL(0u, g.size());
 }
 
 void OneVertexGraphTest() {
-	EdgeGraph g(11);
+	DeBruijnGraph g(11);
 	g.AddVertex();
 	ASSERT_EQUAL(2u, g.size());
 	Vertex *v = *(g.begin());
@@ -28,7 +28,7 @@ void OneVertexGraphTest() {
 	ASSERT_EQUAL(v, g.conjugate(rcv));
 }
 
-pair<vector<VertexId> , vector<EdgeId> > createGraph(EdgeGraph &graph,
+pair<vector<VertexId> , vector<EdgeId> > createGraph(DeBruijnGraph &graph,
 		int edgeNumber) {
 	vector<VertexId> v;
 	vector<EdgeId> e;
@@ -43,7 +43,7 @@ pair<vector<VertexId> , vector<EdgeId> > createGraph(EdgeGraph &graph,
 }
 
 void OneEdgeGraphTest() {
-	EdgeGraph g(11);
+	DeBruijnGraph g(11);
 	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 1);
 	ASSERT_EQUAL(1u, g.OutgoingEdgeCount(data.first[0]));
 	ASSERT_EQUAL(0u, g.OutgoingEdgeCount(data.first[1]));
@@ -57,7 +57,7 @@ void OneEdgeGraphTest() {
 }
 
 void EdgeMethodsSimpleTest() {
-	EdgeGraph g(11);
+	DeBruijnGraph g(11);
 	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 2);
 	ASSERT_EQUAL(data.second[0], &g.GetData(data.second[0]));
 	ASSERT_EQUAL(
@@ -71,7 +71,7 @@ void EdgeMethodsSimpleTest() {
 }
 
 void VertexMethodsSimpleTest() {
-	EdgeGraph g(11);
+	DeBruijnGraph g(11);
 	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 2);
 	ASSERT_EQUAL(data.second[0], g.GetUniqueIncomingEdge(data.first[1]));
 	ASSERT_EQUAL(data.second[0], g.GetUniqueOutgoingEdge(data.first[0]));
@@ -101,16 +101,16 @@ void VertexMethodsSimpleTest() {
 //}
 
 void SmartIteratorTest() {
-	EdgeGraph g(11);
+	DeBruijnGraph g(11);
 	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 4);
 	size_t num = 0;
 	set<VertexId> visited;
 	std::less<VertexId> comp;
-	SmartVertexIterator<EdgeGraph> it = g.SmartVertexBegin(comp);
-	SmartVertexIterator<EdgeGraph> it1 = g.SmartVertexBegin(comp);
-	SmartVertexIterator<EdgeGraph> it2 = g.SmartVertexEnd(comp);
-	SmartVertexIterator<EdgeGraph> it3 = g.SmartVertexEnd(comp);
-	for (SmartVertexIterator<EdgeGraph> it = g.SmartVertexBegin(comp); !it.isEnd(); ++it) {
+	SmartVertexIterator<DeBruijnGraph> it = g.SmartVertexBegin(comp);
+	SmartVertexIterator<DeBruijnGraph> it1 = g.SmartVertexBegin(comp);
+	SmartVertexIterator<DeBruijnGraph> it2 = g.SmartVertexEnd(comp);
+	SmartVertexIterator<DeBruijnGraph> it3 = g.SmartVertexEnd(comp);
+	for (SmartVertexIterator<DeBruijnGraph> it = g.SmartVertexBegin(comp); !it.isEnd(); ++it) {
 		num++;
 		DEBUG( "with seq in vert" << g.VertexNucls(*it).str());
 		visited.insert(*it);
@@ -122,7 +122,7 @@ void SmartIteratorTest() {
 	}
 }
 
-typedef PairedInfoIndex<EdgeGraph>::PairInfo PairInfo;
+typedef PairedInfoIndex<DeBruijnGraph>::PairInfo PairInfo;
 typedef string MyRead;
 typedef pair<MyRead, MyRead> MyPairedRead;
 typedef string MyEdge;
@@ -139,11 +139,11 @@ string print(const Edges& es) {
 	return s + "}";
 }
 
-class ToStringHandler: public TraversalHandler<EdgeGraph> {
+class ToStringHandler: public TraversalHandler<DeBruijnGraph> {
 	Edges& edges_;
-	EdgeGraph g_;
+	DeBruijnGraph g_;
 public:
-	ToStringHandler(Edges& edges, EdgeGraph &g) :
+	ToStringHandler(Edges& edges, DeBruijnGraph &g) :
 		edges_(edges), g_(g) {
 	}
 
@@ -213,7 +213,7 @@ const vector<PairedRead> MakePairedReads(const vector<MyPairedRead>& paired_read
 	return ans;
 }
 
-void AssertEdges(EdgeGraph& g, const Edges& etalon_edges) {
+void AssertEdges(DeBruijnGraph& g, const Edges& etalon_edges) {
 	Edges edges;
 	for (auto it = g.SmartEdgeBegin(); !it.isEnd(); ++it) {
 		edges.insert(g.EdgeNucls(*it).str());
@@ -233,8 +233,8 @@ void AssertGraph(const vector<string>& reads, const vector<string>& etalon_edges
 	typedef RCReaderWrapper<RawStream, Read> Stream;
 	RawStream raw_stream(MakeReads(reads));
 	Stream read_stream(raw_stream);
-	EdgeGraph g(kmer_size_);
-	EdgeIndex<kmer_size_ + 1, EdgeGraph> index(g);
+	DeBruijnGraph g(kmer_size_);
+	EdgeIndex<kmer_size_ + 1, DeBruijnGraph> index(g);
 
 	ConstructGraph<kmer_size_, Stream>(g, index, read_stream);
 
@@ -245,7 +245,7 @@ bool EqualDouble(double d1, double d2) {
 	return std::abs(d1 - d2) < 1e-5;
 }
 
-void AssertCoverage(EdgeGraph& g, const CoverageInfo& etalon_coverage) {
+void AssertCoverage(DeBruijnGraph& g, const CoverageInfo& etalon_coverage) {
 	for (auto it = g.SmartEdgeBegin(); !it.isEnd(); ++it) {
 		auto etalon_cov_it = etalon_coverage.find(g.EdgeNucls(*it).str());
 		ASSERTM("Etalon didn't contain edge '" << g.EdgeNucls(*it) << "'", etalon_cov_it != etalon_coverage.end());
@@ -253,7 +253,7 @@ void AssertCoverage(EdgeGraph& g, const CoverageInfo& etalon_coverage) {
 	}
 }
 
-void AssertPairInfo(const EdgeGraph& g, /*todo const */PairedIndex& paired_index, const EdgePairInfo& etalon_pair_info) {
+void AssertPairInfo(const DeBruijnGraph& g, /*todo const */PairedIndex& paired_index, const EdgePairInfo& etalon_pair_info) {
 	for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
 		PairedIndex::PairInfos infos = *it;
 		for (auto info_it = infos.begin(); info_it != infos.end(); ++info_it) {
@@ -289,9 +289,9 @@ void AssertGraph(const vector<MyPairedRead>& paired_reads, size_t insert_size, c
 
 	RawStream raw_stream(MakePairedReads(paired_reads, insert_size));
 	Stream paired_read_stream(raw_stream);
-	EdgeGraph g(k);
-	EdgeIndex<k + 1, EdgeGraph> index(g);
-	CoverageHandler<EdgeGraph> coverage_handler(g);
+	DeBruijnGraph g(k);
+	EdgeIndex<k + 1, DeBruijnGraph> index(g);
+	CoverageHandler<DeBruijnGraph> coverage_handler(g);
 	PairedIndex paired_index(g);
 
 	ConstructGraphWithPairedInfo<k, Stream>(g, index, coverage_handler, paired_index, paired_read_stream);
@@ -347,8 +347,8 @@ void TestStrange() {
 	typedef RCReaderWrapper<RawStream, Read> Stream;
 	RawStream raw_stream(MakeReads(reads));
 	Stream read_stream(raw_stream);
-	EdgeGraph g(27);
-	EdgeIndex<28, EdgeGraph> index(g);
+	DeBruijnGraph g(27);
+	EdgeIndex<28, DeBruijnGraph> index(g);
 
 	ConstructGraph<27, Stream>(g, index, read_stream);
 	EdgeId e = index.get(Seq<28>("TTCTGCATGGTTATGCATAACCATGCAG")).first;

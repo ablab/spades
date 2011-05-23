@@ -14,12 +14,12 @@
 namespace debruijn_graph {
 
 /*
- * Constructs EdgeGraph from DeBruijn Graph using "new EdgeGraphConstructor(DeBruijn).ConstructGraph(EdgeGraph, Index)"
+ * Constructs DeBruijnGraph from DeBruijn Graph using "new DeBruijnGraphConstructor(DeBruijn).ConstructGraph(DeBruijnGraph, Index)"
  */
 template<size_t kmer_size_>
-class EdgeGraphConstructor {
+class DeBruijnGraphConstructor {
 private:
-	typedef debruijn_graph::EdgeIndex<kmer_size_ + 1, EdgeGraph> Index;
+	typedef debruijn_graph::EdgeIndex<kmer_size_ + 1, DeBruijnGraph> Index;
 	typedef common::SeqMap<kmer_size_ + 1, EdgeId> DeBruijn;
 	typedef Seq<kmer_size_> Kmer;
 	typedef Seq<kmer_size_ + 1> KPlusOneMer;
@@ -68,7 +68,7 @@ private:
 		return ConstructSeqGoingRight(GoLeft(edge));
 	}
 
-	VertexId FindVertexByOutgoingEdges(EdgeGraph &graph, Index &index, Kmer kmer) {
+	VertexId FindVertexByOutgoingEdges(DeBruijnGraph &graph, Index &index, Kmer kmer) {
 		for (char c = 0; c < 4; ++c) {
 			KPlusOneMer edge = kmer.pushBack(c);
 			if (index.containsInIndex(edge)) {
@@ -78,27 +78,27 @@ private:
 		return NULL;
 	}
 
-	VertexId FindVertexByIncomingEdges(EdgeGraph &graph, Index &index, Kmer kmer) {
+	VertexId FindVertexByIncomingEdges(DeBruijnGraph &graph, Index &index, Kmer kmer) {
 		VertexId conjugate = FindVertexByOutgoingEdges(graph, index, !kmer);
 		return conjugate != NULL ? graph.conjugate(conjugate) : NULL;
 	}
 
-	VertexId FindVertex(EdgeGraph &graph, Index &index, Kmer kmer) {
+	VertexId FindVertex(DeBruijnGraph &graph, Index &index, Kmer kmer) {
 		VertexId v = FindVertexByOutgoingEdges(graph, index, kmer);
 		return v == NULL ? FindVertexByIncomingEdges(graph, index, kmer) : v;
 	}
 
-	VertexId FindVertexMaybeMissing(EdgeGraph &graph, Index &index, Kmer kmer) {
+	VertexId FindVertexMaybeMissing(DeBruijnGraph &graph, Index &index, Kmer kmer) {
 		VertexId v = FindVertex(graph, index, kmer);
 		return v != NULL ? v : graph.AddVertex();
 	}
 
 public:
-	EdgeGraphConstructor(DeBruijn &origin) :
+	DeBruijnGraphConstructor(DeBruijn &origin) :
 		origin_(origin) {
 	}
 
-	void ConstructGraph(EdgeGraph &graph, Index &index) {
+	void ConstructGraph(DeBruijnGraph &graph, Index &index) {
 		for (typename DeBruijn::map_iterator it = origin_.begin(); it != origin_.end(); it++) {
 			KPlusOneMer edge = it->first;
 			if (!index.containsInIndex(edge)) {

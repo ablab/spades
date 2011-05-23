@@ -27,19 +27,19 @@ using common::SeqMap;
 using debruijn_graph::CoverageHandler;
 using namespace omnigraph;
 //typedef debruijn_graph::Path<EdgeId> Path;
-typedef debruijn_graph::PairedInfoIndex<EdgeGraph> PairedIndex;
+typedef debruijn_graph::PairedInfoIndex<DeBruijnGraph> PairedIndex;
 
-void CountStats(const EdgeGraph& g) {
+void CountStats(const DeBruijnGraph& g) {
 	INFO("Counting stats");
-	debruijn_graph::DFS<EdgeGraph> dfs(g);
-	debruijn_graph::SimpleStatCounter<EdgeGraph> stat_c;
+	debruijn_graph::DFS<DeBruijnGraph> dfs(g);
+	debruijn_graph::SimpleStatCounter<DeBruijnGraph> stat_c;
 	dfs.Traverse(&stat_c);
 	INFO("Vertex count=" << stat_c.v_count() << "; Edge count="
 			<< stat_c.e_count());
 	INFO("Stats counted");
 }
 
-void WriteToDotFile(const EdgeGraph &g, const string& file_name,
+void WriteToDotFile(const DeBruijnGraph &g, const string& file_name,
 		string graph_name,
 		Path<EdgeId> path = Path<EdgeId>()) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
@@ -48,44 +48,44 @@ void WriteToDotFile(const EdgeGraph &g, const string& file_name,
 }
 
 template<size_t k>
-Path<EdgeId> FindGenomePath(const string &genome, const EdgeGraph& g,
-		const EdgeIndex<k + 1, EdgeGraph>& index) {
-	debruijn_graph::SimpleSequenceMapper<k, EdgeGraph> srt(g, index);
+Path<EdgeId> FindGenomePath(const string &genome, const DeBruijnGraph& g,
+		const EdgeIndex<k + 1, DeBruijnGraph>& index) {
+	debruijn_graph::SimpleSequenceMapper<k, DeBruijnGraph> srt(g, index);
 	return srt.MapSequence(Sequence(genome));
 }
 
 template<size_t k>
-void ProduceInfo(const EdgeGraph& g, const EdgeIndex<k + 1, EdgeGraph>& index,
+void ProduceInfo(const DeBruijnGraph& g, const EdgeIndex<k + 1, DeBruijnGraph>& index,
 		const string& genome, const string& file_name, const string& graph_name) {
 	CountStats(g);
 	Path<EdgeId> path = FindGenomePath<k> (genome, g, index);
 	WriteToDotFile(g, file_name, graph_name, path);
 }
 
-void ClipTips(EdgeGraph &g) {
+void ClipTips(DeBruijnGraph &g) {
 	INFO("Clipping tips");
-	TipComparator<EdgeGraph> comparator(g);
-	TipClipper<EdgeGraph, TipComparator<EdgeGraph> > tc(g, comparator);
+	TipComparator<DeBruijnGraph> comparator(g);
+	TipClipper<DeBruijnGraph, TipComparator<DeBruijnGraph> > tc(g, comparator);
 	tc.ClipTips();
 }
 
-void RemoveBulges(EdgeGraph &g) {
+void RemoveBulges(DeBruijnGraph &g) {
 	INFO("Removing bulges");
-	BulgeRemover<EdgeGraph> bulge_remover(5 * g.k());
+	BulgeRemover<DeBruijnGraph> bulge_remover(5 * g.k());
 	bulge_remover.RemoveBulges(g);
 	INFO("Bulges removed");
 }
 
-void ResolveRepeats(EdgeGraph &g, PairedIndex &info) {
+void ResolveRepeats(DeBruijnGraph &g, PairedIndex &info) {
 	INFO("Resolving primitive repeats");
-	debruijn_graph::RepeatResolver<EdgeGraph> repeat_resolver(0);
+	debruijn_graph::RepeatResolver<DeBruijnGraph> repeat_resolver(0);
 	repeat_resolver.ResolveRepeats(g, info);
 	INFO("Primitive repeats resolved");
 }
 
 template<size_t k, class ReadStream>
 void FillPairedIndex(PairedIndex& paired_info_index, ReadStream& stream,
-		EdgeIndex<k + 1, EdgeGraph>& index) {
+		EdgeIndex<k + 1, DeBruijnGraph>& index) {
 	stream.reset();
 	INFO("Counting paired info");
 	paired_info_index.FillIndex<k, ReadStream> (index, stream);
@@ -93,8 +93,8 @@ void FillPairedIndex(PairedIndex& paired_info_index, ReadStream& stream,
 }
 
 template<size_t k, class ReadStream>
-void FillCoverage(debruijn_graph::CoverageHandler<EdgeGraph> coverage_handler, ReadStream& stream,
-		EdgeIndex<k + 1, EdgeGraph>& index) {
+void FillCoverage(debruijn_graph::CoverageHandler<DeBruijnGraph> coverage_handler, ReadStream& stream,
+		EdgeIndex<k + 1, DeBruijnGraph>& index) {
 	stream.reset();
 	INFO("Counting coverage");
 	coverage_handler.FillCoverage<k, ReadStream> (stream, index);
@@ -102,7 +102,7 @@ void FillCoverage(debruijn_graph::CoverageHandler<EdgeGraph> coverage_handler, R
 }
 
 template <size_t k, class ReadStream>
-void ConstructGraph(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index, ReadStream& stream) {
+void ConstructGraph(DeBruijnGraph& g, EdgeIndex<k + 1, DeBruijnGraph>& index, ReadStream& stream) {
 	typedef debruijn_graph::SeqMap<k + 1, EdgeId> DeBruijn;
 
 	INFO("Constructing DeBruijn graph");
@@ -112,20 +112,20 @@ void ConstructGraph(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index, ReadStream
 	INFO("DeBruijn graph constructed");
 
 	INFO("Condensing graph");
-	EdgeGraphConstructor<k> g_c(debruijn);
+	DeBruijnGraphConstructor<k> g_c(debruijn);
 	g_c.ConstructGraph(g, index);
 	INFO("Graph condensed");
 }
 
 template <size_t k, class ReadStream>
-void ConstructGraphWithCoverage(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index, CoverageHandler<EdgeGraph>& coverage_handler, ReadStream& stream) {
+void ConstructGraphWithCoverage(DeBruijnGraph& g, EdgeIndex<k + 1, DeBruijnGraph>& index, CoverageHandler<DeBruijnGraph>& coverage_handler, ReadStream& stream) {
 	ConstructGraph<k, ReadStream>(g, index, stream);
 	FillCoverage<k, ReadStream> (coverage_handler, stream, index);
 }
 
 template <size_t k, class PairedReadStream>
-void ConstructGraphWithPairedInfo(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index
-		, CoverageHandler<EdgeGraph>& coverage_handler, PairedIndex& paired_index
+void ConstructGraphWithPairedInfo(DeBruijnGraph& g, EdgeIndex<k + 1, DeBruijnGraph>& index
+		, CoverageHandler<DeBruijnGraph>& coverage_handler, PairedIndex& paired_index
 		, PairedReadStream& stream) {
 	typedef SimpleReaderWrapper<PairedReadStream> UnitedStream;
 	UnitedStream united_stream(stream);
@@ -134,13 +134,13 @@ void ConstructGraphWithPairedInfo(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& ind
 }
 
 template<size_t k, class ReadStream>
-void EdgeGraphTool(ReadStream& stream, const string& genome, const string& output_folder) {
-	typedef debruijn_graph::SeqMap<k + 1, EdgeId> DeBruijn;
+void DeBruijnGraphTool(ReadStream& stream, const string& genome, const string& output_folder) {
+	typedef common::SeqMap<k + 1, EdgeId> DeBruijn;
 	INFO("Edge graph construction tool started");
 
-	EdgeGraph g(k);
-	EdgeIndex<k + 1, EdgeGraph> index(g);
-	debruijn_graph::CoverageHandler<EdgeGraph> coverage_handler(g);
+	DeBruijnGraph g(k);
+	EdgeIndex<k + 1, DeBruijnGraph> index(g);
+	debruijn_graph::CoverageHandler<DeBruijnGraph> coverage_handler(g);
 	PairedIndex paired_index(g);
 
 	ConstructGraphWithPairedInfo<k, ReadStream>(g, index, coverage_handler, paired_index, stream);
@@ -154,7 +154,7 @@ void EdgeGraphTool(ReadStream& stream, const string& genome, const string& outpu
 	RemoveBulges(g);
 	ProduceInfo<k> (g, index, genome, output_folder + "bulges_removed.dot", "no_bulge_graph");
 
-	debruijn_graph::SimpleOfflineClusterer<EdgeGraph> clusterer(paired_index);
+	debruijn_graph::SimpleOfflineClusterer<DeBruijnGraph> clusterer(paired_index);
 	PairedIndex clustered_paired_index(g);
 	clusterer.cluster(clustered_paired_index);
 
