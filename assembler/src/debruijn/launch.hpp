@@ -20,7 +20,7 @@
 #include "omni_tools.hpp"
 #include "seq_map.hpp"
 
-namespace edge_graph {
+namespace debruijn_graph {
 
 using de_bruijn::EdgeIndex;
 using de_bruijn::SeqMap;

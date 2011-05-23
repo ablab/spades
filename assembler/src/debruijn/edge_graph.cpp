@@ -2,7 +2,7 @@
 #include "logging.hpp"
 #include "visualization_utils.hpp"
 
-namespace edge_graph {
+namespace debruijn_graph {
 
 Sequence EdgeGraph::VertexNucls(VertexId v) const {
 	if (v->outgoing_edges_.size() > 0) {

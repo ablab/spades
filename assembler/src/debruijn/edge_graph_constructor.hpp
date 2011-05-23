@@ -11,7 +11,7 @@
 #include "utils.hpp"
 #include "seq_map.hpp"
 
-namespace edge_graph {
+namespace debruijn_graph {
 
 /*
  * Constructs EdgeGraph from DeBruijn Graph using "new EdgeGraphConstructor(DeBruijn).ConstructGraph(EdgeGraph, Index)"

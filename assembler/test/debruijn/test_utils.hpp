@@ -11,7 +11,7 @@
 #include "read_generator.hpp"
 #include "launch.hpp"
 
-namespace edge_graph {
+namespace debruijn_graph {
 
 //using edge_graph::EdgeGraph;
 using de_bruijn::EdgeIndex;

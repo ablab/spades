@@ -34,7 +34,7 @@ void RunEdgeGraphTool() {
 	Read genome;
 	genome_stream >> genome;
 	genome_stream.close();
-	edge_graph::EdgeGraphTool<K, RCStream>(rcStream, genome.getSequenceString().substr(0, dataset_len), debruijn_dir);
+	debruijn_graph::EdgeGraphTool<K, RCStream>(rcStream, genome.getSequenceString().substr(0, dataset_len), debruijn_dir);
 	reader.close();
 }
 

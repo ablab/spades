@@ -1,7 +1,7 @@
 #include "visualization_utils.hpp"
 
 
-void edge_graph::WriteToFile(const string& file_name, const string& graph_name,
+void debruijn_graph::WriteToFile(const string& file_name, const string& graph_name,
 		const EdgeGraph& g, de_bruijn::Path<EdgeId> path) {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
@@ -20,13 +20,13 @@ void edge_graph::WriteToFile(const string& file_name, const string& graph_name,
 
 }
 
-void edge_graph::SimpleGraphVisualizer::Visualize(const EdgeGraph& g) {
+void debruijn_graph::SimpleGraphVisualizer::Visualize(const EdgeGraph& g) {
 	VisHandler h(g, gp_);
 	de_bruijn::DFS<EdgeGraph>(g).Traverse(&h);
 	gp_.output();
 }
 
-void edge_graph::ConjugateGraphVisualizer::Visualize(const EdgeGraph& g) {
+void debruijn_graph::ConjugateGraphVisualizer::Visualize(const EdgeGraph& g) {
 	ConjugateVisHandler h(g, gp_);
 	de_bruijn::DFS<EdgeGraph>(g).Traverse(&h);
 	gp_.output();

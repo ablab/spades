@@ -4,7 +4,7 @@
 #include "edge_graph.hpp"
 #include "coverage_counter.hpp"
 
-namespace edge_graph {
+namespace debruijn_graph {
 
 class VisHandler: public TraversalHandler {
 	const EdgeGraph& g_;

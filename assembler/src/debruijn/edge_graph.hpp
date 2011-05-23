@@ -15,7 +15,7 @@
 
 using namespace std;
 
-namespace edge_graph {
+namespace debruijn_graph {
 LOGGER("d.edge_graph");
 
 using omnigraph::GraphActionHandler;

@@ -14,7 +14,7 @@
 //#include "edge_graph.hpp"
 //#include "utils.hpp"
 //
-//namespace edge_graph {
+//namespace debruijn_graph {
 //
 //template<size_t k, class Graph>
 //class CoverageCounter {
