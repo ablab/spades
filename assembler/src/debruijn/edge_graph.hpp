@@ -16,7 +16,7 @@
 using namespace std;
 
 namespace debruijn_graph {
-LOGGER("d.edge_graph");
+//LOGGER("d.edge_graph");
 
 using omnigraph::GraphActionHandler;
 using omnigraph::HandlerApplier;
@@ -134,7 +134,7 @@ public:
 
 	typedef set<Vertex*>::const_iterator VertexIterator;
 	typedef Vertex::EdgeIterator EdgeIterator;
-	typedef de_bruijn::GraphActionHandler<EdgeGraph> ActionHandler;
+	typedef debruijn_graph::GraphActionHandler<EdgeGraph> ActionHandler;
 
 private:
 	const size_t k_;
@@ -549,7 +549,7 @@ typedef EdgeGraph::ActionHandler ActionHandler;
 //typedef EdgeGraph::SmartVertexIterator SmartVertexIterator;
 //typedef EdgeGraph::SmartEdgeIterator SmartEdgeIterator;
 
-typedef de_bruijn::TraversalHandler<EdgeGraph> TraversalHandler;
+//typedef debruijn_graph::TraversalHandler<EdgeGraph> TraversalHandler;
 
 }
 #endif /* EDGE_GRAPH_HPP_ */

@@ -8,9 +8,12 @@
 #ifndef CONFIG_HPP_
 #define CONFIG_HPP_
 
+#include "libs/ConfigFile/ConfigFile.h"
+
 /*
  * Most of run-time configurations is located in config.inp file (CONFIG_FILE below).
  */
+
 #define CONFIG_FILE "./src/debruijn/config.inp"
 
 #define K 35

@@ -14,6 +14,9 @@
 #include "cuckoo.hpp"
 //#include <tr1/unordered_map>
 
+
+namespace common {
+
 /*
  * act as DeBruijn graph and Index at the same time :)
  *
@@ -23,7 +26,6 @@
  * where Value is usually EdgeId and size_t is offset where this Seq is in EdgeId
  *
  */
-namespace de_bruijn {
 LOGGER("d.utils");
 
 template<size_t size_, typename Value>

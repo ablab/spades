@@ -3,12 +3,14 @@
 #include "seq.hpp"
 #include "sequence.hpp"
 #include "nucl.hpp"
-#include "debruijn.hpp"
 #include "graphVisualizer.hpp"
 #include <fstream>
 #include <iostream>
 
 using namespace std;
+
+namespace debruijn_graph {
+
 
 //void TestAddNode() {
 //	DeBruijn<5> g;
@@ -25,7 +27,6 @@ using namespace std;
 //	}
 //	ASSERT_EQUAL(3, c);
 //}
-namespace de_bruijn {
 
 void TestAddEdge() {
 //	DeBruijn<5> g;

@@ -3,7 +3,6 @@
  */
 #include "launch.hpp"
 #include "config.hpp"
-#include "libs/ConfigFile/ConfigFile.h"
 
 void RunEdgeGraphTool() {
 

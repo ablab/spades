@@ -6,7 +6,7 @@
 
 namespace debruijn_graph {
 
-class VisHandler: public TraversalHandler {
+class VisHandler: public TraversalHandler<EdgeGraph> {
 	const EdgeGraph& g_;
 	gvis::GraphPrinter<VertexId>& pr_;
 public:
@@ -29,7 +29,7 @@ public:
 
 };
 
-class ConjugateVisHandler: public TraversalHandler {
+class ConjugateVisHandler: public TraversalHandler<EdgeGraph> {
 	const EdgeGraph& g_;
 	gvis::PairedGraphPrinter<VertexId>& pr_;
 	const map<EdgeId, string> color_;
@@ -102,7 +102,7 @@ public:
 
 class ColoredPathGraphVisualizer: public GraphVisualizer {
 	gvis::PairedGraphPrinter<VertexId>& gp_;
-	const de_bruijn::Path<EdgeId> path_;
+	const debruijn_graph::Path<EdgeId> path_;
 
 	void SetColor(map<EdgeId, string> &color, Edge *edge, string col) {
 		map<EdgeId, string>::iterator it = color.find(edge);
@@ -112,8 +112,8 @@ class ColoredPathGraphVisualizer: public GraphVisualizer {
 			color[edge] = col;
 	}
 
-	void constructColorMap(map<EdgeId, string> &color, const EdgeGraph &g, const de_bruijn::Path<EdgeId> path) {
-		for (de_bruijn::Path<EdgeId>::iterator it = path.sequence().begin(); it
+	void constructColorMap(map<EdgeId, string> &color, const EdgeGraph &g, const Path<EdgeId> path) {
+		for (Path<EdgeId>::iterator it = path.sequence().begin(); it
 				!= path.sequence().end(); ++it) {
 			SetColor(color, *it, "red");
 			Edge* e = *it;
@@ -124,7 +124,7 @@ class ColoredPathGraphVisualizer: public GraphVisualizer {
 
 public:
 	ColoredPathGraphVisualizer(gvis::PairedGraphPrinter<VertexId>& gp,
-			const de_bruijn::Path<EdgeId> path) :
+			const debruijn_graph::Path<EdgeId> path) :
 		gp_(gp), path_(path) {
 	}
 
@@ -132,14 +132,14 @@ public:
 		map<EdgeId, string> color;
 		constructColorMap(color, g, path_);
 		ConjugateVisHandler h(g, gp_, color);
-		de_bruijn::DFS<EdgeGraph>(g).Traverse(&h);
+		debruijn_graph::DFS<EdgeGraph>(g).Traverse(&h);
 		gp_.output();
 	}
 };
 
 void WriteToFile(const string& file_name, const string& graph_name,
 		const EdgeGraph& g,
-		de_bruijn::Path<EdgeId> path = de_bruijn::Path<EdgeId>());
+		Path<EdgeId> path = Path<EdgeId>());
 
 }
 

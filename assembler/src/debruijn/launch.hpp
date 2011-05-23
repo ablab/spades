@@ -22,17 +22,17 @@
 
 namespace debruijn_graph {
 
-using de_bruijn::EdgeIndex;
-using de_bruijn::SeqMap;
-using de_bruijn::CoverageHandler;
+using debruijn_graph::EdgeIndex;
+using common::SeqMap;
+using debruijn_graph::CoverageHandler;
 using namespace omnigraph;
-typedef de_bruijn::Path<EdgeId> Path;
-typedef de_bruijn::PairedInfoIndex<EdgeGraph> PairedIndex;
+//typedef debruijn_graph::Path<EdgeId> Path;
+typedef debruijn_graph::PairedInfoIndex<EdgeGraph> PairedIndex;
 
 void CountStats(const EdgeGraph& g) {
 	INFO("Counting stats");
-	de_bruijn::DFS<EdgeGraph> dfs(g);
-	de_bruijn::SimpleStatCounter<EdgeGraph> stat_c;
+	debruijn_graph::DFS<EdgeGraph> dfs(g);
+	debruijn_graph::SimpleStatCounter<EdgeGraph> stat_c;
 	dfs.Traverse(&stat_c);
 	INFO("Vertex count=" << stat_c.v_count() << "; Edge count="
 			<< stat_c.e_count());
@@ -41,16 +41,16 @@ void CountStats(const EdgeGraph& g) {
 
 void WriteToDotFile(const EdgeGraph &g, const string& file_name,
 		string graph_name,
-		de_bruijn::Path<EdgeId> path = de_bruijn::Path<EdgeId>()) {
+		Path<EdgeId> path = Path<EdgeId>()) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
 	WriteToFile(/*DE_BRUIJN_DATA_FOLDER + */file_name, graph_name, g, path);
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
 
 template<size_t k>
-Path FindGenomePath(const string &genome, const EdgeGraph& g,
+Path<EdgeId> FindGenomePath(const string &genome, const EdgeGraph& g,
 		const EdgeIndex<k + 1, EdgeGraph>& index) {
-	de_bruijn::SimpleSequenceMapper<k, EdgeGraph> srt(g, index);
+	debruijn_graph::SimpleSequenceMapper<k, EdgeGraph> srt(g, index);
 	return srt.MapSequence(Sequence(genome));
 }
 
@@ -58,7 +58,7 @@ template<size_t k>
 void ProduceInfo(const EdgeGraph& g, const EdgeIndex<k + 1, EdgeGraph>& index,
 		const string& genome, const string& file_name, const string& graph_name) {
 	CountStats(g);
-	Path path = FindGenomePath<k> (genome, g, index);
+	Path<EdgeId> path = FindGenomePath<k> (genome, g, index);
 	WriteToDotFile(g, file_name, graph_name, path);
 }
 
@@ -78,7 +78,7 @@ void RemoveBulges(EdgeGraph &g) {
 
 void ResolveRepeats(EdgeGraph &g, PairedIndex &info) {
 	INFO("Resolving primitive repeats");
-	de_bruijn::RepeatResolver<EdgeGraph> repeat_resolver(0);
+	debruijn_graph::RepeatResolver<EdgeGraph> repeat_resolver(0);
 	repeat_resolver.ResolveRepeats(g, info);
 	INFO("Primitive repeats resolved");
 }
@@ -93,7 +93,7 @@ void FillPairedIndex(PairedIndex& paired_info_index, ReadStream& stream,
 }
 
 template<size_t k, class ReadStream>
-void FillCoverage(de_bruijn::CoverageHandler<EdgeGraph> coverage_handler, ReadStream& stream,
+void FillCoverage(debruijn_graph::CoverageHandler<EdgeGraph> coverage_handler, ReadStream& stream,
 		EdgeIndex<k + 1, EdgeGraph>& index) {
 	stream.reset();
 	INFO("Counting coverage");
@@ -103,7 +103,7 @@ void FillCoverage(de_bruijn::CoverageHandler<EdgeGraph> coverage_handler, ReadSt
 
 template <size_t k, class ReadStream>
 void ConstructGraph(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index, ReadStream& stream) {
-	typedef de_bruijn::SeqMap<k + 1, EdgeId> DeBruijn;
+	typedef debruijn_graph::SeqMap<k + 1, EdgeId> DeBruijn;
 
 	INFO("Constructing DeBruijn graph");
 	DeBruijn& debruijn = index.inner_index();
@@ -135,12 +135,12 @@ void ConstructGraphWithPairedInfo(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& ind
 
 template<size_t k, class ReadStream>
 void EdgeGraphTool(ReadStream& stream, const string& genome, const string& output_folder) {
-	typedef de_bruijn::SeqMap<k + 1, EdgeId> DeBruijn;
+	typedef debruijn_graph::SeqMap<k + 1, EdgeId> DeBruijn;
 	INFO("Edge graph construction tool started");
 
 	EdgeGraph g(k);
 	EdgeIndex<k + 1, EdgeGraph> index(g);
-	de_bruijn::CoverageHandler<EdgeGraph> coverage_handler(g);
+	debruijn_graph::CoverageHandler<EdgeGraph> coverage_handler(g);
 	PairedIndex paired_index(g);
 
 	ConstructGraphWithPairedInfo<k, ReadStream>(g, index, coverage_handler, paired_index, stream);
@@ -154,7 +154,7 @@ void EdgeGraphTool(ReadStream& stream, const string& genome, const string& outpu
 	RemoveBulges(g);
 	ProduceInfo<k> (g, index, genome, output_folder + "bulges_removed.dot", "no_bulge_graph");
 
-	de_bruijn::SimpleOfflineClusterer<EdgeGraph> clusterer(paired_index);
+	debruijn_graph::SimpleOfflineClusterer<EdgeGraph> clusterer(paired_index);
 	PairedIndex clustered_paired_index(g);
 	clusterer.cluster(clustered_paired_index);
 
