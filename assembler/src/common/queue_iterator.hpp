@@ -89,20 +89,24 @@ protected:
 
 public:
 	//== is supported only in case this or other is end iterator
-	bool operator==(const QueueIterator& other) {
-		if (this->queue_.empty() && other.queue_.empty())
-			return true;
-		if (this->queue_.empty() || other.queue_.empty())
-			return false;
-		assert(false);
-	}
+//	bool operator==(const QueueIterator& other) {
+//		if (this->queue_.empty() && other.queue_.empty())
+//			return true;
+//		if (this->queue_.empty() || other.queue_.empty())
+//			return false;
+//		assert(false);
+//	}
+//
+//	bool operator!=(const QueueIterator& other) {
+//		if (this->queue_.empty() && other.queue_.empty())
+//			return false;
+//		if (this->queue_.empty() || other.queue_.empty())
+//			return true;
+//		assert(false);
+//	}
 
-	bool operator!=(const QueueIterator& other) {
-		if (this->queue_.empty() && other.queue_.empty())
-			return false;
-		if (this->queue_.empty() || other.queue_.empty())
-			return true;
-		assert(false);
+	bool isEnd() const {
+		return queue_.empty();
 	}
 
 	ElementId operator*() const {

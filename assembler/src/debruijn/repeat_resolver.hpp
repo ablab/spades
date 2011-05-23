@@ -68,7 +68,7 @@ Graph RepeatResolver<Graph>::ResolveRepeats(Graph &g, PairedInfoIndex &ind){
 	while (changed) {
 		changed = false;
 		vertices.clear();
-		for(VertexIter v_iter = g.SmartVertexBegin(), end = g.SmartVertexEnd(); v_iter != end; ++v_iter) {
+		for(VertexIter v_iter = g.SmartVertexBegin(); !v_iter.isEnd(); ++v_iter) {
 			if (vertices.find(g.conjugate(*v_iter)) == vertices.end())
 			{
 				vertices.insert(*v_iter);

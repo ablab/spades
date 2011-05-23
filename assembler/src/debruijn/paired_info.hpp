@@ -282,8 +282,8 @@ public:
 	template<size_t kmer_size, class Stream>
 	void FillIndex(const EdgeIndex<kmer_size + 1, Graph>& index, Stream& stream) {
 		data_.clear();
-		auto it = graph_.SmartEdgeBegin();
-		for (auto it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it; ++it) {
+		//auto it = graph_.SmartEdgeBegin();
+		for (auto it = graph_.SmartEdgeBegin(); !it.isEnd(); ++it) {
 			AddPairInfo(PairInfo(*it, *it, 0, 1));
 		}
 		typedef Seq<kmer_size + 1> KPOMer;
@@ -456,9 +456,8 @@ private:
 public:
 
 	void OutputData(ostream &os = cout) {
-		for (auto it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it; ++it)
-			for (auto it1 = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
-					!= it1; ++it1) {
+		for (auto it = graph_.SmartEdgeBegin(); !it.isEnd(); ++it)
+			for (auto it1 = graph_.SmartEdgeBegin(); !it1.isEnd(); ++it1) {
 				OutputEdgeData(*it, *it1, os);
 			}
 	}
