@@ -27,9 +27,9 @@ void OneVertexGraphTest() {
 	g.AddVertex();
 	ASSERT_EQUAL(2u, g.size());
 	Vertex *v = *(g.begin());
-	Vertex *rcv = g.Complement(v);
+	Vertex *rcv = g.conjugate(v);
 	ASSERT(v != rcv);
-	ASSERT_EQUAL(v, g.Complement(rcv));
+	ASSERT_EQUAL(v, g.conjugate(rcv));
 }
 
 pair<vector<VertexId> , vector<EdgeId> > createGraph(EdgeGraph &graph,
@@ -52,12 +52,12 @@ void OneEdgeGraphTest() {
 	ASSERT_EQUAL(1u, g.OutgoingEdgeCount(data.first[0]));
 	ASSERT_EQUAL(0u, g.OutgoingEdgeCount(data.first[1]));
 	ASSERT_EQUAL(data.second[0], g.GetUniqueOutgoingEdge(data.first[0]));
-	ASSERT_EQUAL(g.Complement(data.second[0]),
-			g.GetUniqueOutgoingEdge(g.Complement(data.first[1])));
+	ASSERT_EQUAL(g.conjugate(data.second[0]),
+			g.GetUniqueOutgoingEdge(g.conjugate(data.first[1])));
 	ASSERT_EQUAL(data.second[0],
-			g.Complement(g.Complement(data.second[0])));
+			g.conjugate(g.conjugate(data.second[0])));
 	ASSERT_EQUAL(!(g.EdgeNucls(data.second[0])),
-			g.EdgeNucls(g.Complement(data.second[0])));
+			g.EdgeNucls(g.conjugate(data.second[0])));
 }
 
 void EdgeMethodsSimpleTest() {
@@ -114,8 +114,7 @@ void SmartIteratorTest() {
 	SmartVertexIterator<EdgeGraph> it1 = g.SmartVertexBegin(comp);
 	SmartVertexIterator<EdgeGraph> it2 = g.SmartVertexEnd(comp);
 	SmartVertexIterator<EdgeGraph> it3 = g.SmartVertexEnd(comp);
-	for (SmartVertexIterator<EdgeGraph> it = g.SmartVertexBegin(comp); g.SmartVertexEnd(
-			comp) != it; ++it) {
+	for (SmartVertexIterator<EdgeGraph> it = g.SmartVertexBegin(comp); !it.isEnd(); ++it) {
 		num++;
 		DEBUG( "with seq in vert" << g.VertexNucls(*it).str());
 		visited.insert(*it);
@@ -123,7 +122,7 @@ void SmartIteratorTest() {
 	ASSERT_EQUAL(num, data.first.size() * 2);
 	for (size_t i = 0; i < data.first.size(); i++) {
 		ASSERT(visited.find(data.first[i]) != visited.end());
-		ASSERT(visited.find(g.Complement(data.first[i])) != visited.end());
+		ASSERT(visited.find(g.conjugate(data.first[i])) != visited.end());
 	}
 }
 
@@ -220,7 +219,7 @@ const vector<PairedRead> MakePairedReads(const vector<MyPairedRead>& paired_read
 
 void AssertEdges(EdgeGraph& g, const Edges& etalon_edges) {
 	Edges edges;
-	for (auto it = g.SmartEdgeBegin(); it != g.SmartEdgeEnd(); ++it) {
+	for (auto it = g.SmartEdgeBegin(); !it.isEnd(); ++it) {
 		edges.insert(g.EdgeNucls(*it).str());
 	}
 
@@ -251,7 +250,7 @@ bool EqualDouble(double d1, double d2) {
 }
 
 void AssertCoverage(EdgeGraph& g, const CoverageInfo& etalon_coverage) {
-	for (auto it = g.SmartEdgeBegin(); it != g.SmartEdgeEnd(); ++it) {
+	for (auto it = g.SmartEdgeBegin(); !it.isEnd(); ++it) {
 		auto etalon_cov_it = etalon_coverage.find(g.EdgeNucls(*it).str());
 		ASSERTM("Etalon didn't contain edge '" << g.EdgeNucls(*it) << "'", etalon_cov_it != etalon_coverage.end());
 		ASSERTM("Coverage for edge '" << g.EdgeNucls(*it) << "' was " << g.coverage(*it) << " but etalon is " << (*etalon_cov_it).second, EqualDouble(g.coverage(*it), (*etalon_cov_it).second));
