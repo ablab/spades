@@ -2,6 +2,7 @@
 #define GRAPHBUILDER_H_
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <algorithm>
 #include <vector>
@@ -230,10 +231,10 @@ public:
 		ha.resize(ref_seq.size()-K+1);
 		hashsym.kmers(ref_seq, ha);
 
-		//int num_of_missing_kmers = 0;
+		size_t num_of_missing_kmers = 0;
 		size_t num_of_earmarked_kmers = 0;
-		//size_t num_of_missing_edges = 0;
-		//size_t num_of_missing_lengths = 0;
+		size_t num_of_missing_edges = 0;
+		size_t num_of_missing_lengths = 0;
 
 		int previous_index = -1, current_index = -1;
 		Sequence previous_kmer(""), current_kmer("");
@@ -245,10 +246,13 @@ public:
 
 				current_index = i;
 				current_kmer  = ref_genome.getSequence().Subseq(i,i+K);
-				assert ( graph()->hasVertex( current_kmer ) );
+				if ( ! graph()->hasVertex( current_kmer ) ) {
+					++num_of_missing_kmers;
+					continue;
+				}
+
 
 				if (!graph()->hasVertex(current_kmer)) {
-					//++num_of_missing_kmers;
 					INFO("k-mer " << current_kmer << " is present in the genome, but not in the graph");
 				}
 
@@ -268,6 +272,7 @@ public:
 					previous_index = current_index;
 					previous_kmer  = current_kmer;
 
+					assert ( graph()->hasVertex(previous_kmer) && graph()->hasVertex(current_kmer) );
 					Vertex * previous_vertex = graph()->getVertex(previous_kmer);
 					Vertex * current_vertex  = graph()->getVertex(current_kmer);
 					assert ( previous_vertex && current_vertex );
@@ -275,11 +280,14 @@ public:
 					Edges::const_iterator edge_it = previous_vertex->edges().find( current_vertex );
 					if ( edge_it == previous_vertex->edges().end () ) {
 						INFO ( "missing edge from " << previous_kmer << " to " << current_kmer );
+						++num_of_missing_edges;
 					}
 					else {
 						size_t const occ = edge_it->second.countLengthOccurrences (edge_length);
-						if ( occ == 0 )
+						if ( occ == 0 ) {
 							INFO ( "missing length" );
+							++num_of_missing_lengths;
+						}
 					}
 				}
 			} // if earmarked
@@ -287,6 +295,12 @@ public:
 
 //		printer.output();
 //		outfile.close ();
+
+		/// printing stats
+		INFO ( "number of earmarked k-mers: " << setw ( 20 ) << num_of_earmarked_kmers );
+		INFO ( "number of missing k-mers: " << setw ( 20 )   << num_of_missing_kmers );
+		INFO ( "number of missing edges: " << setw ( 20 )    << num_of_missing_edges );
+		INFO ( "number of missing lengths: " << setw ( 20 )  << num_of_missing_lengths );
 	}
 };
 

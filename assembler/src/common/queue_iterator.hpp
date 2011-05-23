@@ -1,5 +1,5 @@
-#ifndef STRUCTURES_HPP_
-#define STRUCTURES_HPP_
+#ifndef QUEUE_ITERATOR_HPP_
+#define QUEUE_ITERATOR_HPP_
 
 #include <set>
 
@@ -88,21 +88,8 @@ protected:
 	}
 
 public:
-	//== is supported only in case this or other is end iterator
-	bool operator==(const QueueIterator& other) {
-		if (this->queue_.empty() && other.queue_.empty())
-			return true;
-		if (this->queue_.empty() || other.queue_.empty())
-			return false;
-		assert(false);
-	}
-
-	bool operator!=(const QueueIterator& other) {
-		if (this->queue_.empty() && other.queue_.empty())
-			return false;
-		if (this->queue_.empty() || other.queue_.empty())
-			return true;
-		assert(false);
+	bool isEnd() const {
+		return queue_.empty();
 	}
 
 	ElementId operator*() const {
@@ -126,4 +113,4 @@ public:
 };
 
 
-#endif /* STRUCTURES_HPP_ */
+#endif /* QUEUE_ITERATOR_HPP_ */

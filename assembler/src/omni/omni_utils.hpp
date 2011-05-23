@@ -1,7 +1,7 @@
 #ifndef OMNI_UTILS_HPP_
 #define OMNI_UTILS_HPP_
 
-#include "structures.hpp"
+#include "queue_iterator.hpp"
 
 namespace omnigraph {
 LOGGER("omg.graph");

@@ -96,8 +96,8 @@ int main(int argc, char* argv[]) {
 	INFO("Done.");
 	output_stream.close();
 
-//	INFO("Spelling the reference genome");
-//	gbm.SpellGenomeThroughGraph();
+	//INFO("Spelling the reference genome");
+	//gbm.SpellGenomeThroughGraph();
 
 	//ABruijnGraphWithGraphVisualizer ( "ATGTGTGACTTTGTATCGTATTGCGGGCGGCGCGCTTATTGTATGCGTAAATTTGGGTCATATTGATCGTAAAATGCGTATGATGCACTGCA", 6, 3 );
 	return 0;
