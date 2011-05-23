@@ -1,4 +1,4 @@
-#include "edge_graph.hpp"
+#include "debruijn_graph.hpp"
 #include "logging.hpp"
 #include "visualization_utils.hpp"
 

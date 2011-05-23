@@ -1,5 +1,5 @@
-#ifndef EDGE_GRAPH_HPP_
-#define EDGE_GRAPH_HPP_
+#ifndef DEBRUIJN_GRAPH_HPP_
+#define DEBRUIJN_GRAPH_HPP_
 
 #include <vector>
 #include <set>
@@ -546,5 +546,5 @@ typedef DeBruijnGraph::EdgeIterator EdgeIterator;
 typedef DeBruijnGraph::ActionHandler ActionHandler;
 
 }
-#endif /* EDGE_GRAPH_HPP_ */
+#endif /* DEBRUIJN_GRAPH_HPP_ */
 

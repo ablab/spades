@@ -1,8 +1,7 @@
 #ifndef VISUALIZATIONUTILS_HPP_
 #define VISUALIZATIONUTILS_HPP_
 
-#include "edge_graph.hpp"
-#include "coverage_counter.hpp"
+#include "debruijn_graph.hpp"
 
 namespace debruijn_graph {
 

@@ -12,7 +12,7 @@
 #include "ireadstream.hpp"
 
 #include "paired_info.hpp"
-#include "edge_graph_constructor.hpp"
+#include "debruijn_graph_constructor.hpp"
 #include "tip_clipper.hpp"
 #include "bulge_remover.hpp"
 #include "coverage_handler.hpp"

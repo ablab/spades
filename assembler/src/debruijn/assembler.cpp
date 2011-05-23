@@ -4,7 +4,7 @@
 #include "launch.hpp"
 #include "config.hpp"
 
-void RunEdgeGraphTool() {
+void RunDeBruijnGraphTool() {
 
 	// config parsing... dataset path etc.
 	ConfigFile config(CONFIG_FILE);
@@ -38,6 +38,6 @@ void RunEdgeGraphTool() {
 }
 
 int main() {
-	RunEdgeGraphTool();
+	RunDeBruijnGraphTool();
 	return 0;
 }

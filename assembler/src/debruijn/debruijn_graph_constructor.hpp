@@ -1,13 +1,13 @@
 /*
- * edge_graph_constructor.hpp
+ * debruijn_graph_constructor.hpp
  *
  *  Created on: Apr 5, 2011
  *      Author: sergey
  */
 
-#ifndef EDGE_GRAPH_CONSTRUCTOR_HPP_
-#define EDGE_GRAPH_CONSTRUCTOR_HPP_
-#include "edge_graph.hpp"
+#ifndef DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_
+#define DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_
+#include "debruijn_graph.hpp"
 #include "utils.hpp"
 #include "seq_map.hpp"
 
@@ -113,4 +113,4 @@ public:
 };
 
 }
-#endif /* EDGE_GRAPH_CONSTRUCTOR_HPP_ */
+#endif /* DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_ */

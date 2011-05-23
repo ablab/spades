@@ -1,7 +1,7 @@
 #include "cute.h"
 #include "ide_listener.h"
 #include "cute_runner.h"
-#include "edge_graph_test.hpp"
+#include "debruijn_graph_test.hpp"
 #include "test_utils.hpp"
 
 void RunTestSuites() {
