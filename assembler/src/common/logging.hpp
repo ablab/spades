@@ -28,4 +28,9 @@ namespace debruijn_graph {
 	LOGGER("d.debruijn_graph");
 }
 
+namespace common {
+	LOGGER("c.common");
+}
+
+
 #endif /* LOGGING_HPP_ */

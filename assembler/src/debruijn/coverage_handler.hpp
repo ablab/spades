@@ -18,9 +18,8 @@ private:
 	}
 
 	template<size_t k>
-	void processRead(const debruijn_graph::SimpleSequenceMapper<k, Graph>& threader,
-			Read read) {
-		debruijn_graph::Path<EdgeId> path = threader.MapSequence(
+	void processRead(const SimpleSequenceMapper<k, Graph>& threader, Read read) {
+		Path<EdgeId> path = threader.MapSequence(
 				Sequence(read.getSequenceString()));
 		if (path.sequence().size() == 0)
 			return;
@@ -45,9 +44,8 @@ public:
 	}
 
 	template<size_t k, typename Stream>
-	void FillCoverage(Stream& stream,
-			const debruijn_graph::EdgeIndex<k + 1, Graph>& index) {
-		debruijn_graph::SimpleSequenceMapper<k, Graph> threader(g_, index);
+	void FillCoverage(Stream& stream, const EdgeIndex<k + 1, Graph>& index) {
+		SimpleSequenceMapper<k, Graph> threader(g_, index);
 		while (!stream.eof()) {
 			Read read;
 			stream >> read;

@@ -19,7 +19,7 @@ namespace debruijn_graph {
 template<size_t kmer_size_>
 class DeBruijnGraphConstructor {
 private:
-	typedef debruijn_graph::EdgeIndex<kmer_size_ + 1, DeBruijnGraph> Index;
+	typedef EdgeIndex<kmer_size_ + 1, DeBruijnGraph> Index;
 	typedef common::SeqMap<kmer_size_ + 1, EdgeId> DeBruijn;
 	typedef Seq<kmer_size_> Kmer;
 	typedef Seq<kmer_size_ + 1> KPlusOneMer;

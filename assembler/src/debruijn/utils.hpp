@@ -209,7 +209,6 @@ void DFS<Graph>::ProcessVertex(VertexId v, vector<VertexId>* stack,
 		TraversalHandler<Graph>* h) {
 	//todo how to get rid of this
 	typedef Traversal<Graph> super;
-	//	typedef typename super::g_ g_;
 
 	if (visited_.count(v) == 0) {
 		h->HandleVertex(v);
@@ -317,7 +316,7 @@ template<size_t k, class Graph>
 class SimpleSequenceMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef typename debruijn_graph::EdgeIndex<k + 1, Graph> Index;
+	typedef EdgeIndex<k + 1, Graph> Index;
 private:
 	const Graph& g_;
 	const Index &index_;

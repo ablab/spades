@@ -14,7 +14,6 @@
 #include "cuckoo.hpp"
 //#include <tr1/unordered_map>
 
-
 namespace common {
 
 /*
@@ -26,7 +25,6 @@ namespace common {
  * where Value is usually EdgeId and size_t is offset where this Seq is in EdgeId
  *
  */
-LOGGER("d.utils");
 
 template<size_t size_, typename Value>
 class SeqMap {
