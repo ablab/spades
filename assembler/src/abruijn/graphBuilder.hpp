@@ -199,7 +199,7 @@ public:
 		return &gb_.graph_;
 	}
 
-	bool SpellGenomeThroughGraph ( string filename, size_t cut = -1 ) {
+	bool SpellGenomeThroughGraph ( string filename, int cut ) {
 		/// we assume here that the graph is already built
 
 		/// outputting A Bruijn graph
@@ -244,7 +244,7 @@ public:
 
 		for (unsigned int i = 0; i != ha.size (); ++i ) {
 			if (gb_.earmarked_hashes.count(ha[i])) {
-				INFO(i);
+				INFO(i << " out of " << ha.size () << " (" << i*100 / ha.size () << "%)" );
 				++num_of_earmarked_kmers;
 
 				current_index = i;
