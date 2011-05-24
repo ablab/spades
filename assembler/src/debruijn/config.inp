@@ -30,3 +30,4 @@ QUAKE_CROPPED_400K_LEN = 400000 # total size
 QUAKE_FULL_1 = s_6_1.cor.fastq.gz
 QUAKE_FULL_2 = s_6_2.cor.fastq.gz
 QUAKE_FULL_IS = 220 # insert size
+QUAKE_FULL_LEN = 4639675 # total size

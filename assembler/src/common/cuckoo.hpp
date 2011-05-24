@@ -13,7 +13,10 @@
  * @section DESCRIPTION
  *
  * Cuckoo hashing implementation with the interface close to
- * standard std::map interface.
+ * standard std::map and std::unordered_map interface.
+ *
+ * See http://en.wikipedia.org/wiki/Cuckoo_hashing
+ *
  */
 
 #include <cstring>

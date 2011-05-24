@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DATA_DIR=~/Assembler/data
+DATA_DIR=../../data/input
 EXEC_DIR=../../build/tools/maps_test
 FILE_NUM=3
 FILE1=s_6.first10000_1.fastq.gz 
