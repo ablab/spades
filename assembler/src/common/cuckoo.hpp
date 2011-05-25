@@ -29,7 +29,7 @@
  * (e.g. Hash(int, size_t))
  * @param Pred predicator that compares two Key values
  * @example cuckoo<int, int, Hasher, std::equal_to<int> > Cuckoo; 
-*/
+ */
 template <class Key, class Value, class Hash, class Pred> 
 class cuckoo {
 private:
@@ -230,7 +230,7 @@ private:
    *
    * @param pos Position in hash arrays
    */
-  inline Data& data_from(size_t pos) const {
+  /*inline*/ Data& data_from(size_t pos) const {
     return data_[pos / len_part_][pos % len_part_];
   }
 
@@ -240,7 +240,7 @@ private:
    * @param k Key value
    * @param pos Position in hash arrays
    */
-  inline bool is_here(const Key &k, size_t pos) const {
+  /*inline*/ bool is_here(const Key &k, size_t pos) const {
     return get_exists(pos) && Pred()(data_from(pos).first, k); 
   }
 
@@ -250,7 +250,7 @@ private:
    * @param k Key value
    * @param hash_num The number of hash function from Hash family
    */
-  inline size_t hash(const Key &k, size_t hash_num) const {
+  /*inline*/ size_t hash(const Key &k, size_t hash_num) const {
     return Hash()(k, hash_num) % len_part_;
   }
   
@@ -564,6 +564,17 @@ public:
     }
     return end();
   }
+  
+  /*iterator find(const Key& k) {
+    for (size_t i = 0; i < d_; ++i) {
+      size_t pos = Hash()(k, i) % len_part_ + i * len_part_;
+      if (get_exists(pos) && Pred()((data_[pos / len_part_]
+                                     [pos % len_part_]).first, k)) {
+        return iterator(pos, this);
+      }
+    }
+    return iterator(len_, this);
+    }*/
   
   /**
    * Find element by key (for const objects).

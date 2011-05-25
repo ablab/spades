@@ -122,8 +122,11 @@ private:
 			size_t s_size = s.size();
 			for (size_t i = size; i < s_size; ++i) {
 				Seq<size> next = seq << s[i];
+        map.find(seq);
 				seq = next;
+        map.find(seq);
         map.insert(std::make_pair(seq, 1));
+        map.find(seq);
 			}
 		}
 	}
