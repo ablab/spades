@@ -385,6 +385,18 @@ void TestPairedInfo() {
 	AssertGraph<3> (paired_reads, 6, edges, coverage_info, edge_pair_info);
 }
 
+void TestSelfRCEdgeMerge() {
+	DeBruijnGraph g(5);
+	VertexId v1 = g.AddVertex();
+	VertexId v2 = g.AddVertex();
+	EdgeId edge1 = g.AddEdge(v1, v2, Sequence("AACGCTATT"));
+	EdgeId edge2 = g.AddEdge(v2, g.conjugate(v2), Sequence("CTATTCACGTGAATAG"));
+	g.Merge(edge1, edge2);
+	ASSERT_EQUAL(2u, g.size());
+	ASSERT_EQUAL(1u, g.OutgoingEdgeCount(v1));
+	ASSERT_EQUAL(Sequence("AACGCTATTCACGTGAATAGCGTT"), g.EdgeNucls(g.GetUniqueOutgoingEdge(v1)));
+}
+
 cute::suite EdgeGraphSuite() {
 	cute::suite s;
 	s.push_back(CUTE(EmptyGraphTest));
@@ -403,6 +415,7 @@ cute::suite EdgeGraphSuite() {
 	s.push_back(CUTE(TestCondenseSimple));
 
 	s.push_back(CUTE(TestPairedInfo));
+	s.push_back(CUTE(TestSelfRCEdgeMerge));
 //	s.push_back(CUTE(TestStrange));
 
 	return s;
