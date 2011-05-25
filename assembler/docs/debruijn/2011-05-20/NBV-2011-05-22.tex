@@ -143,7 +143,10 @@ The only solution we thought of is to make paired info support a job for repeat 
 The following algorithm is used for tip clipping: we iterate through all edges of graph in order of increasing length. If current edge topologically looks like tip and has alternative path with good enough coverage this edge is removed. If after removing this edge vertex that was adjecent with removed edge has unique incoming edge and unique outgoing edge those edges are concatenated and new edge is also checked as tip candidate.
 
 \section{Bulge Removal}
+\textit{Simple bulge} is the edge with low (absolute and relative) coverage such that there is an alternative path between its start and end of length $\approx$ edge length.
 
-Currently only simple buldges are removed. We call buldge simple if it consists of only one edge with low coverage. 
+We iterate through all edges, looking for simple bulges. If we find such edge, we remove it, condense neighbourhoods of its ends and add new edges to traversal.
+
+This strategy allows to iteratively delete pretty complex bulge structures.
 
 \end{document}
