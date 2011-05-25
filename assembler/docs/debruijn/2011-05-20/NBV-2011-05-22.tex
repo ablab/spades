@@ -3,9 +3,9 @@
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{hyperref}
-\usepackage{hyperref}
+\usepackage{cmap}
 
-\title{de Bruijn project}
+\title{De Bruijn project}
 \author{Sergey Nurk, Anton Bankevich and Nikolay Vyahhi}
 \date{\today}	
 
@@ -14,14 +14,15 @@
 \maketitle
 
 \section{Graph Construction}
-\subsection{Initial Graph Construction}
+
+\subsection{Original de Bruijn Graph}
 
 First usual de Bruijn graph with:
 \begin{itemize}
-\item K-mers as nodes,
-\item (K+1)-mers as edges.
+\item $k$-mers as nodes,
+\item $(k+1)$-mers as edges.
 \end{itemize}
-is constructed for some compile-time fixed K. 
+is constructed for some compile-time fixed k. 
 
 \textit{Comment: Yes, it'll be better to make it runtime-length later.}
 
@@ -31,10 +32,10 @@ SeqMap class uses Cuckoo hashmap(\url{http://en.wikipedia.org/wiki/Cuckoo_hashin
 
 \subsection{Condensed Graph Construction}
 
-After initial graph was constructed it is condensed. It's done by usual traversal and accumulating edge-sequence while we're on a simple path (path without branchings). The result is stored in \texttt{EdgeGraph} class which is much more complex structure than SeqMap, used to store initial graph. Since Condensed graph has smaller size time performance of graph operation becomes less critical thus cirtain operations are implemented less time-efficient while more usable.
+After initial graph was constructed it is condensed. It's done by usual traversal and accumulating edge-sequence while we're on a simple path (without branches). The result is stored in \texttt{EdgeGraph} class which is much more complex structure than SeqMap, used to store initial graph. Since Condensed graph has smaller size time performance of graph operation becomes less critical thus certain operations are implemented less time-efficient while more usable.
 
 \subsection{Problems}
-There are only minor problems in this section concerning time and space effisiency which are not of much significanse while applying these code to bacterial genomes. Even if these problems become bottleneck we could always switch to abruijn-style graph construction.
+There are only minor problems in this section concerning time and space efficiency which are not of much significance while applying these code to bacterial genomes. Even if these problems become bottleneck we could always switch to A-bruijn style graph construction.
 
 \subsection{Suggestions}
 
@@ -45,7 +46,7 @@ CondensedGraph was designed to have flexible structure such that without changin
 
 \subsection{Condensed Graph Main Solution}
 
-What makes EdgeGraph usable and extandible is GraphHandler structure. EdgeGraph has restrictid number of ways to change its contents like add vertex or split edge etc. Each of them is represented by cirtain public method of EdgeGraph class. Each time one of these methods is called corresponding event is triggered and all objects that listen to graph events are notified about what exactly happend to the graph and respond to the event as they like. Thus instead of storing all info in graph itself and overloading its structure with information and features which are not always needed at the moment one can create external tools which could be easily switched on and off dynamically.
+What makes CondensedGraph usable and extendible is GraphHandler structure. CondensedGraph has restricted number of ways to change its contents like add vertex or split edge etc. Each of them is represented by certain public method of CondensedGraph class. Each time one of these methods is called corresponding event is triggered and all objects that listen to graph events are notified about what exactly happened to the graph and respond to the event as they like. Thus instead of storing all info in graph itself and overloading its structure with information and features which are not always needed at the moment one can create external tools which could be easily switched on and off dynamically.
 
 \subsection{Smart Iterators}
 
@@ -58,8 +59,8 @@ Smart iterators are tools to iterate through vertices/edges of graph. These iter
 \subsection{Problems}
 \begin{itemize}
 \item Code is argued to be over-architectured. In particular all GraphHandler calls are virtual and it is not yet clear if there is performance bottleneck here.
-\item Graph still has different core from abruijn graph thus major refactoring is needed. It will be finished in the near future,
-\item Initially graph was meant to be used for error correction thus operations necessary for repeat resolving are still not supported and even interface needs further discussion. Also certain problems arise conserning support of additional information which would be discussed later.
+\item Graph still has different core from A-bruijn graph thus major refactoring is needed. It will be finished in the near future,
+\item Initially graph was meant to be used for error correction thus operations necessary for repeat resolving are still not supported and even interface needs further discussion. Also certain problems arise concerning support of additional information which would be discussed later.
 \end{itemize}
 
 %\section{Additional Information}
@@ -71,7 +72,7 @@ Coverage of an edge here corresponds to the number of times (K+1)-mers from this
 
 \subsection{Problems}
 
-Coverage structure itself seems to have no problems but it is not clear how to support coverage values in unglueing operations used in repeat resolving. When one edge is spread among several new edges one can not tell which part of edge coverage supports which edge. Actually this problem could be just ignored because when certain unglueing operation is performed one can rely on oll the new edges to be trusted thus actual value of coverage does not really matter while we do not try to estimate edge multiplicity by its coverage.
+Coverage structure itself seems to have no problems but it is not clear how to support coverage values in unglueing operations used in repeat resolving. When one edge is spread among several new edges one can not tell which part of edge coverage supports which edge. Actually this problem could be just ignored because when certain ungluing operation is performed one can rely on all the new edges to be trusted thus actual value of coverage does not really matter while we do not try to estimate edge multiplicity by its coverage.
 
 \subsection{Suggestions}
 
@@ -85,7 +86,7 @@ It is not clear if this whole heavy structure is actually necessary. Maybe only 
 
 
 \subsection{Suggestions}
-Memory needed can be decreased to half if storing info only for lexicographically mininal of  conjugate $k+1$-mers
+Memory needed can be decreased to half if storing info only for lexicographically min of conjugate $k+1$-mers
 
 \section{Unique ids}
 
@@ -98,19 +99,19 @@ Currently id of vertex or edge is an address of corresponding object in memory. 
 Paired info structures store information about paired reads. For each pair of edges one can request list of all information paired reads give for this pair, Also one can request information about just one pair.
 
 %about clustering
-Pair info storing itself is quite easy task while deciding on the form paired info should be stored in is much more sofisticated. Insert length has large dispersion value thus clustering of some sort is required. There are two tipes of clustering each of which should be implemented: online clustering and offline clustering.
+Pair info storing itself is quite easy task while deciding on the form paired info should be stored in is much more sophisticated. Insert length has large dispersion value thus clustering of some sort is required. There are two types of clustering each of which should be implemented: online clustering and offline clustering.
 
 There are several points concerning paired information that should be taken into consideration:
 
 \begin{itemize}
-\item The later reads are mapped to graph the easyer this procedure is. If reads are mapped to graph before tipclipping they map to graph perfectly. If reads are mapped to graph after tipclipping but before bulge removal ends of certain reads could have been removed from graph. If reads are mapped to graph after bulge removal read mapping becomes complicated task(and is actually called read threading).
+\item The earlier reads are mapped to graph the easier this procedure is. If reads are mapped to graph before tip clipping they map to graph perfectly. If reads are mapped to graph after tip clipping but before bulge removal ends of certain reads could have been removed from graph, but mapping is still straightforward. If reads are mapped to graph after bulge removal read mapping becomes complicated task (and is actually called read threading).
 
-\item The earlyer reads are mapped to graph the larger amount of space is required to store this information. This is natural since number of edges significantly drops after graph simplification. And also edges become longer and thus lots of paired reads are have both reads from pair mapped to the same edge,
+\item The earlier reads are mapped to graph the larger amount of space is required to store this information. This is natural since number of edges significantly drops after graph simplification. And also edges become longer and thus lots of paired reads are have both reads from pair mapped to the same edge,
 
-\item The later clustering is performed the more precise result is. Longer edges contain more info. Thus average values are closer to real distancies.
+\item The later clustering is performed the more precise result is. Longer edges contain more info. Thus average values are closer to real distances.
 \end{itemize}
 
-Currently the following clusterization strategy is implemented: first even before tipclipping and bulge removal data is collected from paired read and as the result for each pair of edges we have collection of possible distances paired reads vote for. Then this information is carefully clusterized and result of this clusterization is the one actually used to resolve repeats, construct rectangle graph etc.
+Currently the following clustering strategy is implemented: first even before tip clipping and bulge removal data is collected from paired read and as the result for each pair of edges we have collection of possible distances paired reads vote for. Then this information is carefully clustered and result of this clusterization is the one actually used to resolve repeats, construct rectangle graph etc.
 
 \subsection{Online Clustering}
 
@@ -118,20 +119,20 @@ If paired info is used to change graph one should synchronize paired info with t
 
 \subsection{Offline Clustering}
 
-Input data for offline clustering is collection of paired data with high dispercion value and output is meant to be carefully clasterised information which aims to be as precise as possible.
+Input data for offline clustering is collection of paired data with high variance value and output is meant to be carefully clustered information which aims to be as precise as possible.
 
 \subsection{Weights}
-In order to measure level of certainity paired reads give for this distance each information unit has weight value. Currently there are three ways to count weights being argued.
+In order to measure level of certainty paired reads give for this distance each information unit has weight value. Currently there are three ways to count weights being argued.
 
 \begin{itemize}
-\item Currently implemented is the following way: weight of pair is number of pairs of k+1-mers from paired reads that support this weight. For example if first read of pair intersects with sequence stored in edge by $a$ nucleotides and second read of pair intersects with sequence stored in the other edge by $b$ nucleotides than infromation contributed by this read pair for this pair of edges is $(a - k)(b - k)$. Advantage of this way to measure weight is that it can be easily updated since it is additive with respect to merge and glue operations.
+\item Currently implemented is the following way: weight of pair is number of pairs of $k+1$-mers from paired reads that support this weight. For example if first read of pair intersects with sequence stored in edge by $a$ nucleotides and second read of pair intersects with sequence stored in the other edge by $b$ nucleotides than information contributed by this read pair for this pair of edges is $(a - k)(b - k)$. Advantage of this way to measure weight is that it can be easily updated since it is additive with respect to merge and glue operations.
 \item First each read pair is split into sequence of pairs of k+1-mers in the following way: extract k+1-mers from both reads which start at position $i$ for all values of $i$ such that k+1-mers can be extracted. Then these pairs are mapped on graph. Weight of distance for pair of edges is the number of k+1-mer pairs that support this distance.
-\item Weight of paired information is a number of reads that support this information. This weight is very difficult to support but it may be better at reflecting level of certainity in this information.
+\item Weight of paired information is a number of reads that support this information. This weight is very difficult to support but it may be better at reflecting level of certainty in this information.
 \end{itemize}
 
 \subsection{Problems}
 
-The main problem here is how to distribute paired information among new edges when unglueing operations are performed on graph. This problem can not be ignored since we can nither copy information to all new edges because we then have lots of mistakes in paired info nor can we forget about this because lots of paired info would be wasted.
+The main problem here is how to distribute paired information among new edges when unglueing operations are performed on graph. This problem can not be ignored since we can neither copy information to all new edges because we then have lots of mistakes in paired info nor can we forget about this because lots of paired info would be wasted.
 
 \subsection{Suggestions}
 
@@ -140,7 +141,7 @@ The only solution we thought of is to make paired info support a job for repeat 
 
 \section{Tip Clipping}
 
-The following algorithm is used for tip clipping: we iterate through all edges of graph in order of increasing length. If current edge topologically looks like tip and has alternative path with good enough coverage this edge is removed. If after removing this edge vertex that was adjecent with removed edge has unique incoming edge and unique outgoing edge those edges are concatenated and new edge is also checked as tip candidate.
+The following algorithm is used for tip clipping: we iterate through all edges of graph in order of increasing length. If current edge topologically looks like tip and has alternative path with good enough coverage this edge is removed. If after removing this edge vertex that was adjacent with removed edge has unique incoming edge and unique outgoing edge those edges are concatenated and new edge is also checked as tip candidate.
 
 \section{Bulge Removal}
 \textit{Simple bulge} is the edge with low (absolute and relative) coverage such that there is an alternative path between its start and end of length $\approx$ edge length.
