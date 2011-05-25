@@ -16,7 +16,6 @@ namespace debruijn_graph {
 
 using omnigraph::GraphActionHandler;
 
-
 /**
  * DataHashRenewer listens to add/delete events and updates index according to those events. This class
  * can be used both with vertices and edges of graph.
@@ -25,7 +24,7 @@ template<size_t kmer_size_, typename Graph, typename ElementId>
 class DataHashRenewer {
 
 	typedef Seq<kmer_size_> Kmer;
-	typedef common::SeqMap<kmer_size_, ElementId> Index;
+	typedef SeqMap<kmer_size_, ElementId> Index;
 	const Graph &g_;
 
 	Index &index_;
@@ -75,7 +74,7 @@ public:
 template<size_t k, class Graph>
 class EdgeIndex: public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
-	typedef common::SeqMap<k, EdgeId> InnerIndex;
+	typedef SeqMap<k, EdgeId> InnerIndex;
 	typedef Seq<k> Kmer;
 	Graph& g_;
 	InnerIndex inner_index_;
@@ -123,8 +122,7 @@ class VertexHashRenewer: public GraphActionHandler<Graph> {
 	DataHashRenewer<kmer_size_, Graph, VertexId> renewer_;
 
 public:
-	VertexHashRenewer(const Graph& g,
-			common::SeqMap<kmer_size_, VertexId> *index) :
+	VertexHashRenewer(const Graph& g, SeqMap<kmer_size_, VertexId> *index) :
 		renewer_(g, index) {
 	}
 
@@ -387,7 +385,7 @@ public:
 	Path<EdgeId> MapSequence(const Sequence &read) const {
 		vector<EdgeId> passed;
 		if (read.size() <= k) {
-			return Path<EdgeId>();
+			return Path<EdgeId> ();
 		}
 		Seq<k + 1> kmer = read.start<k + 1> ();
 		size_t startPosition = -1;
@@ -400,7 +398,7 @@ public:
 					= ProcessKmer(kmer, passed, startPosition, endPosition,
 							valid);
 		}
-		return Path<EdgeId>(passed, startPosition, endPosition + 1);
+		return Path<EdgeId> (passed, startPosition, endPosition + 1);
 	}
 
 };

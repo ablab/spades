@@ -13,8 +13,8 @@ Sequence DeBruijnGraph::VertexNucls(VertexId v) const {
 	assert(false);
 }
 
-EdgeId DeBruijnGraph::AddSingleEdge(VertexId v1, VertexId v2, const Sequence& s,
-		size_t coverage) {
+EdgeId DeBruijnGraph::AddSingleEdge(VertexId v1, VertexId v2,
+		const Sequence& s, size_t coverage) {
 	EdgeId newEdge = new Edge(s, v2, coverage);
 	v1->AddOutgoingEdge(newEdge);
 	return newEdge;
@@ -30,7 +30,6 @@ void DeBruijnGraph::DeleteAllOutgoing(Vertex *v) {
 const vector<EdgeId> DeBruijnGraph::OutgoingEdges(VertexId v) const {
 	return v->outgoing_edges_;
 }
-
 
 const vector<EdgeId> DeBruijnGraph::IncomingEdges(VertexId v) const {
 	vector<EdgeId> result;
@@ -54,10 +53,10 @@ const vector<EdgeId> DeBruijnGraph::IncidentEdges(VertexId v) const {
 	for (EdgeIterator it = rcv->begin(); it != rcv->end(); ++it) {
 		int fl = 1;
 		for (int j = 0, sz = result.size(); j < sz; j++) {
-		   if (result[j] == *it){
-			   fl = 0;
-			   break;
-		   }
+			if (result[j] == *it) {
+				fl = 0;
+				break;
+			}
 		}
 		if (fl) {
 			DEBUG("in:"<< *it);
@@ -72,14 +71,14 @@ const vector<EdgeId> DeBruijnGraph::NeighbouringEdges(EdgeId e) const {
 	VertexId v_in = EdgeStart(e);
 	vector<EdgeId> result = DeBruijnGraph::IncidentEdges(v_in);
 	vector<EdgeId> out_res = DeBruijnGraph::IncidentEdges(v_out);
-// these vectors are small, and linear time is less than log in this case.
+	// these vectors are small, and linear time is less than log in this case.
 	for (vector<EdgeId>::iterator it = out_res.begin(); it != out_res.end(); ++it) {
 		int fl = 1;
 		for (int j = 0, sz = result.size(); j < sz; j++)
-		   if (result[j] == *it){
-			   fl = 0;
-			   break;
-		   }
+			if (result[j] == *it) {
+				fl = 0;
+				break;
+			}
 
 		if (fl)
 			result.push_back(*it);
@@ -258,25 +257,64 @@ void DeBruijnGraph::Merge(EdgeId edge1, EdgeId edge2) {
 	MergePath(toCompress);
 }
 
+vector<EdgeId> DeBruijnGraph::CorrectMergePath(const vector<EdgeId>& path) {
+	vector<EdgeId> result;
+	for (size_t i = 0; i < path.size(); i++) {
+		if (path[i] == conjugate(path[i])) {
+			if (i < path.size() - 1 - i) {
+				for (size_t j = 0; j < path.size(); j++)
+					result.push_back(conjugate(path[path.size() - 1 - j]));
+				i = path.size() - 1 - i;
+			} else {
+				result = path;
+			}
+			size_t size = 2 * i + 1;
+			for (size_t j = result.size(); j < size; j++) {
+				result.push_back(conjugate(result[size - 1 - j]));
+			}
+			return result;
+		}
+	}
+	return path;
+}
+
 EdgeId DeBruijnGraph::MergePath(const vector<EdgeId>& path) {
-	assert(!path.empty());
-	SequenceBuilder sb;
-	//	sb.append(GetUniqueIncomingEdge(path[0])->nucls());
-	VertexId v1 = EdgeStart(path[0]);
-	VertexId v2 = EdgeEnd(path[path.size() - 1]);
-	for (vector<EdgeId>::const_iterator it = path.begin(); it != path.end(); ++it) {
-		sb.append(EdgeNucls(*it));
-	}
-	EdgeId newEdge = HiddenAddEdge(v1, v2, sb.BuildSequence());
-	FireMerge(path, newEdge);
-	DeleteEdge(path[0]);
-	for (size_t i = 0; i + 1 < path.size(); i++) {
-		VertexId v = EdgeStart(path[i + 1]);
-		DeleteEdge(path[i + 1]);
-		DeleteVertex(v);
-	}
+	vector<EdgeId> correctedPath = CorrectMergePath(path);
+	assert(!correctedPath.empty());
+	EdgeId newEdge = AddMergedEdge(correctedPath);
+	FireMerge(correctedPath, newEdge);
+	DeletePath(correctedPath);
 	FireAddEdge(newEdge);
 	return newEdge;
+}
+
+EdgeId DeBruijnGraph::AddMergedEdge(const vector<EdgeId> &path) {
+	VertexId v1 = EdgeStart(path[0]);
+	VertexId v2 = EdgeEnd(path[path.size() - 1]);
+	SequenceBuilder sb;
+	sb.append(EdgeNucls(path[0]).Subseq(0, k_));
+	for (vector<EdgeId>::const_iterator it = path.begin(); it != path.end(); ++it) {
+		sb.append(EdgeNucls(*it).Subseq(k_));
+	}
+	return HiddenAddEdge(v1, v2, sb.BuildSequence());
+}
+
+void DeBruijnGraph::DeletePath(const vector<EdgeId> &path) {
+	set<EdgeId> edgesToDelete;
+	set<VertexId> verticesToDelete;
+	edgesToDelete.insert(path[0]);
+	for (size_t i = 0; i + 1 < path.size(); i++) {
+		EdgeId e = path[i + 1];
+		if (edgesToDelete.find(conjugate(e)) == edgesToDelete.end())
+			edgesToDelete.insert(e);
+		VertexId v = EdgeStart(e);
+		if (verticesToDelete.find(conjugate(v)) == verticesToDelete.end())
+			verticesToDelete.insert(v);
+	}
+	for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
+		DeleteEdge(*it);
+	for (auto it = verticesToDelete.begin(); it != verticesToDelete.end(); ++it)
+		DeleteVertex(*it);
 }
 
 pair<EdgeId, EdgeId> DeBruijnGraph::SplitEdge(EdgeId edge, size_t position) {

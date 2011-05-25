@@ -12,9 +12,7 @@
 #include "sequence.hpp"
 #include "seq.hpp"
 #include "cuckoo.hpp"
-//#include <tr1/unordered_map>
-
-namespace common {
+#include <tr1/unordered_map>
 
 /*
  * act as DeBruijn graph and Index at the same time :)
@@ -185,7 +183,5 @@ public:
 	}
 
 };
-
-}
 
 #endif /* SEQ_MAP_HPP_ */

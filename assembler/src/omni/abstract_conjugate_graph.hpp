@@ -13,7 +13,6 @@
 #include "omni_utils.hpp"
 
 namespace omnigraph {
-
 LOGGER("omnigraph");
 
 template<typename VertexData, typename EdgeData, class DataMaster>
@@ -31,7 +30,7 @@ public:
 
 	class Vertex {
 	private:
-		friend class AbstractConjugateGraph<VertexData, EdgeData, DataMaster>;
+		friend class AbstractConjugateGraph<VertexData, EdgeData, DataMaster> ;
 
 		vector<EdgeId> outgoing_edges_;
 
@@ -57,7 +56,7 @@ public:
 
 		const vector<EdgeId> IncomingEdges() const {
 			vector<EdgeId> result = conjugate_->OutgoingEdges();
-			for(size_t i = 0; i < result.size(); i++) {
+			for (size_t i = 0; i < result.size(); i++) {
 				result[i] = result[i].conjugate();
 			}
 			return result;
@@ -106,7 +105,7 @@ public:
 
 	class Edge {
 	private:
-		friend class AbstractConjugateGraph<VertexData, EdgeData, DataMaster>;
+		friend class AbstractConjugateGraph<VertexData, EdgeData, DataMaster> ;
 		VertexId end_;
 
 		EdgeData data_;
@@ -137,7 +136,8 @@ public:
 		}
 	};
 
-	const PairedHandlerApplier<AbstractConjugateGraph<VertexData, EdgeData, DataMaster> > applier_;
+	const PairedHandlerApplier<AbstractConjugateGraph<VertexData, EdgeData,
+			DataMaster> > applier_;
 
 	vector<ActionHandler*> action_handler_list_;
 
@@ -243,36 +243,37 @@ public:
 	template<typename Comparator = std::less<VertexId> >
 	SmartVertexIterator<AbstractConjugateGraph, Comparator> SmartVertexBegin(
 			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<AbstractConjugateGraph, Comparator> (*this, true,
-				comparator);
+		return SmartVertexIterator<AbstractConjugateGraph, Comparator> (*this,
+				true, comparator);
 	}
 
 	template<typename Comparator = std::less<VertexId> >
 	SmartVertexIterator<AbstractConjugateGraph, Comparator> SmartVertexEnd(
 			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<AbstractConjugateGraph, Comparator> (*this, false,
-				comparator);
+		return SmartVertexIterator<AbstractConjugateGraph, Comparator> (*this,
+				false, comparator);
 	}
 
 	template<typename Comparator = std::less<EdgeId> >
 	SmartEdgeIterator<AbstractConjugateGraph, Comparator> SmartEdgeBegin(
 			const Comparator& comparator = Comparator()) {
-		return SmartEdgeIterator<AbstractConjugateGraph, Comparator> (*this, true,
-				comparator);
+		return SmartEdgeIterator<AbstractConjugateGraph, Comparator> (*this,
+				true, comparator);
 	}
 
 	template<typename Comparator = std::less<EdgeId> >
 	SmartEdgeIterator<AbstractConjugateGraph, Comparator> SmartEdgeEnd(
 			const Comparator& comparator = Comparator()) {
-		return SmartEdgeIterator<AbstractConjugateGraph, Comparator> (*this, false,
-				comparator);
+		return SmartEdgeIterator<AbstractConjugateGraph, Comparator> (*this,
+				false, comparator);
 	}
 
 	size_t size() {
 		return vertices_.size();
 	}
 
-	AbstractConjugateGraph(DataMaster master) : applier_(*this), master_(master) {
+	AbstractConjugateGraph(DataMaster master) :
+		applier_(*this), master_(master) {
 	}
 
 	~AbstractConjugateGraph() {
@@ -288,7 +289,8 @@ public:
 
 	bool RemoveActionHandler(ActionHandler* action_handler) {
 		TRACE("Trying to remove action handler");
-		for (auto it = action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+		for (auto it = action_handler_list_.begin(); it
+				!= action_handler_list_.end(); ++it) {
 			if (*it == action_handler) {
 				action_handler_list_.erase(it);
 				TRACE("Action handler removed");
@@ -402,8 +404,8 @@ public:
 	}
 
 	bool CanCompressVertex(VertexId v) const {
-		return v->OutgoingEdgeCount() == 1 && v->conjugate()->OutgoingEdgeCount()
-				== 1;
+		return v->OutgoingEdgeCount() == 1
+				&& v->conjugate()->OutgoingEdgeCount() == 1;
 	}
 
 	void CompressVertex(VertexId v) {
@@ -413,33 +415,71 @@ public:
 		}
 	}
 
+	vector<EdgeId> CorrectMergePath(const vector<EdgeId>& path) {
+		vector<EdgeId> result;
+		for (size_t i = 0; i < path.size(); i++) {
+			if (path[i] == conjugate(path[i])) {
+				if (i < path.size() - 1 - i) {
+					for (size_t j = 0; j < path.size(); j++)
+						result.push_back(conjugate(path[path.size() - 1 - j]));
+					i = path.size() - 1 - i;
+				} else {
+					result = path;
+				}
+				size_t size = 2 * i + 1;
+				for (size_t j = result.size(); j < size; j++) {
+					result.push_back(conjugate(result[size - 1 - j]));
+				}
+				return result;
+			}
+		}
+		return path;
+	}
+
 	EdgeId MergePath(const vector<EdgeId>& path) {
 		assert(!path.empty());
+		vector<EdgeId> correctedPath = CorrectMergePath(path);
 		SequenceBuilder sb;
-		VertexId v1 = EdgeStart(path[0]);
-		VertexId v2 = EdgeEnd(path[path.size() - 1]);
+		VertexId v1 = EdgeStart(correctedPath[0]);
+		VertexId v2 = EdgeEnd(correctedPath[correctedPath.size() - 1]);
 		vector<EdgeData&> toMerge;
-		for (auto it = path.begin(); it != path.end(); ++it) {
+		for (auto it = correctedPath.begin(); it != correctedPath.end(); ++it) {
 			toMerge.push_back((*it)->data());
 		}
 		EdgeId newEdge = HiddenAddEdge(v1, v2, master_.MergeData(toMerge));
-		FireMerge(path, newEdge);
-		DeleteEdge(path[0]);
-		for (size_t i = 0; i + 1 < path.size(); i++) {
-			VertexId v = EdgeStart(path[i + 1]);
-			DeleteEdge(path[i + 1]);
-			DeleteVertex(v);
-		}
+		FireMerge(correctedPath, newEdge);
+		DeletePath(correctedPath);
 		FireAddEdge(newEdge);
 		return newEdge;
 	}
 
+	void DeletePath(const vector<EdgeId> &path) {
+		set<EdgeId> edgesToDelete;
+		set<VertexId> verticesToDelete;
+		edgesToDelete.insert(path[0]);
+		for (size_t i = 0; i + 1 < path.size(); i++) {
+			EdgeId e = path[i + 1];
+			if (edgesToDelete.find(conjugate(e)) == edgesToDelete.end())
+				edgesToDelete.insert(e);
+			VertexId v = EdgeStart(e);
+			if (verticesToDelete.find(conjugate(v)) == verticesToDelete.end())
+				verticesToDelete.insert(v);
+		}
+		for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
+			DeleteEdge(*it);
+		for (auto it = verticesToDelete.begin(); it != verticesToDelete.end(); ++it)
+			DeleteVertex(*it);
+	}
+
 	pair<EdgeId, EdgeId> SplitEdge(EdgeId edge, size_t position) {
 		assert(edge != conjugate(edge));
-		pair<VertexData, pair<EdgeData, EdgeData>> newData = master_.SplitData(edge->data(), position);
+		pair<VertexData, pair<EdgeData, EdgeData>> newData = master_.SplitData(
+				edge->data(), position);
 		VertexId splitVertex = HiddenAddVertex(newData.first);
-		EdgeId newEdge1 = HiddenAddEdge(this->EdgeStart(edge), splitVertex, newData.second.first);
-		EdgeId newEdge2 = HiddenAddEdge(splitVertex, this->EdgeEnd(edge), newData.second.second);
+		EdgeId newEdge1 = HiddenAddEdge(this->EdgeStart(edge), splitVertex,
+				newData.second.first);
+		EdgeId newEdge2 = HiddenAddEdge(splitVertex, this->EdgeEnd(edge),
+				newData.second.second);
 		FireSplit(edge, newEdge1, newEdge2);
 		FireAddVertex(splitVertex);
 		FireAddEdge(newEdge1);

@@ -154,6 +154,12 @@ private:
 
 	void DeleteAllOutgoing(Vertex* v);
 
+	vector<EdgeId> CorrectMergePath(const vector<EdgeId>& path);
+
+	EdgeId AddMergedEdge(const vector<EdgeId> &path);
+
+	void DeletePath(const vector<EdgeId> &path);
+
 	void FireAddVertex(VertexId v);
 	void FireAddEdge(EdgeId edge);
 	void FireDeleteVertex(VertexId v);

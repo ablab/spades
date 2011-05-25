@@ -22,8 +22,6 @@
 
 namespace debruijn_graph {
 
-using common::SeqMap;
-
 using namespace omnigraph;
 
 typedef PairedInfoIndex<DeBruijnGraph> PairedIndex;
@@ -103,7 +101,7 @@ void FillCoverage(CoverageHandler<DeBruijnGraph> coverage_handler,
 template<size_t k, class ReadStream>
 void ConstructGraph(DeBruijnGraph& g, EdgeIndex<k + 1, DeBruijnGraph>& index,
 		ReadStream& stream) {
-	typedef common::SeqMap<k + 1, EdgeId> DeBruijn;
+	typedef SeqMap<k + 1, EdgeId> DeBruijn;
 
 	INFO("Constructing DeBruijn graph");
 	DeBruijn& debruijn = index.inner_index();
@@ -140,7 +138,7 @@ void ConstructGraphWithPairedInfo(DeBruijnGraph& g,
 template<size_t k, class ReadStream>
 void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 		const string& output_folder) {
-	typedef common::SeqMap<k + 1, EdgeId> DeBruijn;
+	typedef SeqMap<k + 1, EdgeId> DeBruijn;
 	INFO("Edge graph construction tool started");
 
 	DeBruijnGraph g(k);
