@@ -13,7 +13,6 @@
 #include "omni_utils.hpp"
 
 namespace omnigraph {
-LOGGER("omnigraph");
 
 template<typename VertexData, typename EdgeData, class DataMaster>
 class AbstractConjugateGraph {
