@@ -28,12 +28,12 @@ private:
 
 	bool StepRightIfPossible(KPlusOneMer &edge) {
 //		DEBUG("Considering edge " << edge);
-		if (origin_.IncomingEdgeCount(edge) == 1 && origin_.OutgoingEdgeCount(edge) == 1) {
+		if (origin_.RivalEdgeCount(edge) == 1 && origin_.NextEdgeCount(edge) == 1) {
 			KPlusOneMer next_edge = origin_.NextEdge(edge);
-			if (edge != !next_edge) { // rev compl
-				edge = next_edge;
-				return true;
-			}
+			//if (edge != !next_edge) { // rev compl
+			edge = next_edge;
+			return true;
+			//}
 		}
 		DEBUG("Stopped going right at " << edge);
 		return false;
