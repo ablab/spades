@@ -7,7 +7,7 @@
 #include "cuckoo.hpp"
 
 struct Hasher {
-  size_t operator()(int value, int hash_num) {
+  size_t operator()(const int& value, size_t& hash_num) const {
     unsigned long l = 4 * hash_num + 1;
     return (size_t)(l * value % 1000000007);
   }

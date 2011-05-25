@@ -337,7 +337,7 @@ public:
 	};
 
 	struct multiple_hash {
-		size_t operator()(const Seq<size_, T> &seq, size_t hash_num) {
+		size_t operator()(const Seq<size_, T> &seq, size_t hash_num) const {
 			size_t h = 239;
 			for (size_t i = 0; i < seq.data_size_; i++) {
 				h = ((h << 5) - h) + seq.data_[i];
