@@ -14,8 +14,7 @@
 \maketitle
 
 \section{Graph Construction}
-\begin{itemize}
-\item Initial Graph Construction
+\subsection{Initial Graph Construction}
 
 First usual de Bruijn graph with:
 \begin{itemize}
@@ -30,25 +29,25 @@ DeBruijn graph is presented by class \texttt{SeqMap} which stores set of all edg
 
 SeqMap class uses Cuckoo hashmap(\url{http://en.wikipedia.org/wiki/Cuckoo_hashing}) to store k+1-mers. Cuckoo has higher load factor (90-95\%, hence very memory-effective), much slower \texttt{insert} but much faster \texttt{find}.
 
-\item Condensed Graph Construction
+\subsection{Condensed Graph Construction}
 
 After initial graph was constructed it is condensed. It's done by usual traversal and accumulating edge-sequence while we're on a simple path (path without branchings). The result is stored in \texttt{EdgeGraph} class which is much more complex structure than SeqMap, used to store initial graph. Since Condensed graph has smaller size time performance of graph operation becomes less critical thus cirtain operations are implemented less time-efficient while more usable.
-\end{itemize}
 
 \subsection{Problems}
 There are only minor problems in this section concerning time and space effisiency which are not of much significanse while applying these code to bacterial genomes. Even if these problems become bottleneck we could always switch to abruijn-style graph construction.
 
-\section{Edge Graph}
-\begin{itemize}
-\item Edge Graph Idea
+\subsection{Suggestions}
 
-EdgeGraph was designed to have flexible structure such that without changing core of this structure one could easily use this graph, change it, create additional information storages and synchronize information while graph changes. Space and time efficiency did not have the first priority but where possible(or necessary) these parameters were also taken in consideration.
+\section{Condensed Graph}
+\subsection{Condensed Graph Idea}
 
-\item Edge Graph Main Solution
+CondensedGraph was designed to have flexible structure such that without changing core of this structure one could easily use this graph, change it, create additional information storages and synchronize information while graph changes. Space and time efficiency did not have the first priority but where possible (or necessary) these parameters were also taken in consideration.
+
+\subsection{Condensed Graph Main Solution}
 
 What makes EdgeGraph usable and extandible is GraphHandler structure. EdgeGraph has restrictid number of ways to change its contents like add vertex or split edge etc. Each of them is represented by cirtain public method of EdgeGraph class. Each time one of these methods is called corresponding event is triggered and all objects that listen to graph events are notified about what exactly happend to the graph and respond to the event as they like. Thus instead of storing all info in graph itself and overloading its structure with information and features which are not always needed at the moment one can create external tools which could be easily switched on and off dynamically.
 
-\item Smart Iterators
+\subsection{Smart Iterators}
 
 Smart iterators are tools to iterate through vertices/edges of graph. These iterators were called smart because of two reasons:
 \begin{itemize}
@@ -56,72 +55,50 @@ Smart iterators are tools to iterate through vertices/edges of graph. These iter
 \item Smart Iterators allow to choose order in which vertices/edges are iterated. This is done with comparator that defines which vertices/edges should go first.
 \end{itemize}
 
-\end{itemize}
 \subsection{Problems}
 \begin{itemize}
-\item Code is argued to be overarchitectured. In particular all GraphHandler calls are virtual and it is not yet clear if there is performance bottleneck here.
+\item Code is argued to be over-architectured. In particular all GraphHandler calls are virtual and it is not yet clear if there is performance bottleneck here.
 \item Graph still has different core from abruijn graph thus major refactoring is needed. It will be finished in the near future,
 \item Initially graph was meant to be used for error correction thus operations necessary for repeat resolving are still not supported and even interface needs further discussion. Also certain problems arise conserning support of additional information which would be discussed later.
 \end{itemize}
 
-\section{Additional Information}
-The fallowing information can be counted and maintained for graph:
+%\section{Additional Information}
+%The following information can be counted and maintained for graph:
 
-\begin{itemize}
-\item Coverage
+\section{Coverage}
 
 Coverage of an edge here corresponds to the number of times (K+1)-mers from this edge were observed in original reads. It's additive, so when we merge edges coverage of result is equal to sum of coverages of edges merged. At the moment coverage is stored in edges of graph and maintained with Handler.
 
-\begin{itemize}
-\item Problems
+\subsection{Problems}
 
 Coverage structure itself seems to have no problems but it is not clear how to support coverage values in unglueing operations used in repeat resolving. When one edge is spread among several new edges one can not tell which part of edge coverage supports which edge. Actually this problem could be just ignored because when certain unglueing operation is performed one can rely on oll the new edges to be trusted thus actual value of coverage does not really matter while we do not try to estimate edge multiplicity by its coverage.
-\end{itemize}
 
-\item Index
+\subsection{Suggestions}
+
+\section{Index}
 
 In order to be able to map reads to graph index structure is maintained. Index contains map from k+1-mers to positions at edges where these k+1-mers are in graph.
 
-\begin{itemize}
-\item Problems
+\subsection{Problems}
 
-It is not clear if this whole heavy structure is actually necessary. Maybe only neighbouhoods of vertices should be indexed.
-\end{itemize}
+It is not clear if this whole heavy structure is actually necessary. Maybe only neighbourhoods of vertices should be indexed.
 
-\item Unique ids
 
-Currently id of vertex or edge is an addres of corresponding object. As the result ids are unique at any given moment of time but if one considers all vertices or edges which were in graph while program worked ids become not unique because memory where vertex/edge object was stored at some point could be reused later and thus it would have the same id. In order to deal with this problem UniqueIdStorage structure was suggested(not yet implemented). This structure allows to assign each vertex and edge globally unique id and then find vertex with given unique id or unique if of the given vertex.
+\subsection{Suggestions}
+Memory needed can be decreased to half if storing info only for lexicographically mininal of  conjugate $k+1$-mers
 
-\item History?
+\section{Unique ids}
 
-\end{itemize}
+Currently id of vertex or edge is an address of corresponding object in memory. As the result ids are unique at any given moment of time but if one considers all vertices or edges which were in graph while program worked ids become not unique because memory where vertex/edge object was stored at some point could be reused later and thus it would have the same id. In order to deal with this problem UniqueIdStorage structure was suggested(not yet implemented). This structure allows to assign each vertex and edge globally unique id and then find vertex with given unique id or unique if of the given vertex.
+
+\section{History}
 
 \section{Paired Info}
 
 Paired info structures store information about paired reads. For each pair of edges one can request list of all information paired reads give for this pair, Also one can request information about just one pair.
 
-\begin{itemize}
-\item Problems
-
-The main problem here is how to distribute paired information among new edges when unglueing operations are performed on graph. This problem can not be ignored since we can nither copy information to all new edges because we then have lots of mistakes in paired info nor can we forget about this because lots of paired info would be wasted.
-
-\item Suggestions
-
-The only solution we thought of is to make paired info support a job for repeat resolver itself. This solution breaks concept that information storages should be synchronized with by listening graph events.
-\end{itemize}
-
-\subsection{Clustering}
+%about clustering
 Pair info storing itself is quite easy task while deciding on the form paired info should be stored in is much more sofisticated. Insert length has large dispersion value thus clustering of some sort is required. There are two tipes of clustering each of which should be implemented: online clustering and offline clustering.
-
-\begin{itemize}
-\item Offline Clustering
-
-Input data for offline clustering is collection of paired data with high dispercion value and output is meant to be carefully clasterised information which aims to be as precise as possible.
-
-\item Online Clustering
-
-If paired info is used to change graph one should synchronize paired info with these changes. Thus there should be methods to change and merge paired information.
-\end{itemize}
 
 There are several points concerning paired information that should be taken into consideration:
 
@@ -135,6 +112,14 @@ There are several points concerning paired information that should be taken into
 
 Currently the following clusterization strategy is implemented: first even before tipclipping and bulge removal data is collected from paired read and as the result for each pair of edges we have collection of possible distances paired reads vote for. Then this information is carefully clusterized and result of this clusterization is the one actually used to resolve repeats, construct rectangle graph etc.
 
+\subsection{Online Clustering}
+
+If paired info is used to change graph one should synchronize paired info with these changes. Thus there should be methods to change and merge paired information.
+
+\subsection{Offline Clustering}
+
+Input data for offline clustering is collection of paired data with high dispercion value and output is meant to be carefully clasterised information which aims to be as precise as possible.
+
 \subsection{Weights}
 In order to measure level of certainity paired reads give for this distance each information unit has weight value. Currently there are three ways to count weights being argued.
 
@@ -144,6 +129,14 @@ In order to measure level of certainity paired reads give for this distance each
 \item Weight of paired information is a number of reads that support this information. This weight is very difficult to support but it may be better at reflecting level of certainity in this information.
 \end{itemize}
 
+\subsection{Problems}
+
+The main problem here is how to distribute paired information among new edges when unglueing operations are performed on graph. This problem can not be ignored since we can nither copy information to all new edges because we then have lots of mistakes in paired info nor can we forget about this because lots of paired info would be wasted.
+
+\subsection{Suggestions}
+
+The only solution we thought of is to make paired info support a job for repeat resolver itself. This solution breaks concept that information storages should be synchronized with by listening graph events.
+\end{itemize}
 
 \section{Tip Clipping}
 
