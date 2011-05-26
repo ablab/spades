@@ -140,18 +140,18 @@ void ConstructGraphWithPairedInfo(Graph& g,
 	FillPairedIndex<k, Graph, PairedReadStream> (paired_index, stream, index);
 }
 
-template<size_t k, class ReadStream>
+template<size_t k, class Graph, class ReadStream>
 void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 		const string& output_folder) {
 	typedef SeqMap<k + 1, EdgeId> DeBruijn;
 	INFO("Edge graph construction tool started");
 
-	DeBruijnGraph g(k);
-	EdgeIndex<k + 1, DeBruijnGraph> index(g);
-	CoverageHandler<DeBruijnGraph> coverage_handler(g);
+	Graph g(k);
+	EdgeIndex<k + 1, Graph> index(g);
+	CoverageHandler<Graph> coverage_handler(g);
 	PairedIndex paired_index(g);
 
-	ConstructGraphWithPairedInfo<k, ReadStream> (g, index, coverage_handler,
+	ConstructGraphWithPairedInfo<k, Graph, ReadStream> (g, index, coverage_handler,
 			paired_index, stream);
 
 	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
@@ -163,10 +163,10 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 			"no_tip_graph");
 
 	RemoveBulges(g);
-	ProduceInfo<k> (g, index, genome, output_folder + "bulges_removed.dot",
+	ProduceInfo<k>(g, index, genome, output_folder + "bulges_removed.dot",
 			"no_bulge_graph");
 
-	SimpleOfflineClusterer<DeBruijnGraph> clusterer(paired_index);
+	SimpleOfflineClusterer<Graph> clusterer(paired_index);
 	PairedIndex clustered_paired_index(g);
 	clusterer.cluster(clustered_paired_index);
 
