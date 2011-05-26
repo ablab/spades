@@ -202,7 +202,7 @@ For given vertex $Z \in V$ rectangle split operation consisting following steps:
 \item For each precursor $((a, b), y)$ of each vertex-edge pair info's $(A, b, x) \in C_i$, replace $((a, b), y)$ in $P$ with $((a_i, b), y)$
 \item Remove $Z$ with all it's incomming and outgoing edges.
 \end{enumerate} 
-\end{definition} i
+\end{definition} 
 \begin{theorem}
   After applying rectangle split operation to each vertex of initial graph $G$ in any order we'll receive a graph $G' = (V', E')$, such that there exists one-to-one mapping from $(V', E')$ to $(V_r, E_r)$ and this mapping respects labeling.
 \end{theorem}
@@ -230,9 +230,20 @@ While applying rectangle split operations to each vertex except $Z$, we can some
 
 
 \section{Our ideas}
+\subsection{Rectangle split modifications}
+First approach is modifing adjacency definition for vertex-edge pairs.
+\begin{definition}
+ Two vertex-edge pairs $(V,a,x)$ and $(V,b,y)$ are called \emph{adjacent} if $\exists A \in V: start (a) = end(b)\text{ or } start(b) = end (a)$ and distances from $V$ to common vertices of $a$ and $b$, obtained from $(V,a,x)$ and from $(V,b,y)$, are same. 
+\end{definition}
 
-We try to define some ``split'' operation. After every step of this split operation, started from $G_0$, we will have graph $G_m$, which is a honest ungluing of initial graph $G_0$. And measure of complexity of $G_m$ is less or equal than measure of complexity of $G_{m-1}$.   
+In case of inexact insert length we have to somehow weaken the condition on distances 
+Also, for highly nonuniform coverage, the request of sharing vertex for adjacent edges should be weakened- 
 
+\begin{definition}
+ Two vertex-edge pairs $(V,a,x)$ and $(V,b,y)$ are called \emph{l-eps adjacent} if there exists path $P$ from $a$ to $b$: $|P|$ < $|P|$ is similar to $y-x$. 
+\end{definition}
+
+  
 \subsection{Simple split operation}
 
 We start from graph $G_0$ and {$d$-set of edge pair info} $S$.
