@@ -11,15 +11,11 @@
 #include "read_generator.hpp"
 #include "launch.hpp"
 
-namespace edge_graph {
+namespace debruijn_graph {
 
 //using edge_graph::EdgeGraph;
-using de_bruijn::EdgeIndex;
-using de_bruijn::CoverageHandler;
-using de_bruijn::PairedInfoIndex;
-
 template <size_t k>
-void ConstructGraphFromGenome(EdgeGraph& g, EdgeIndex<k + 1, EdgeGraph>& index, CoverageHandler<EdgeGraph>& coverage_handler, PairedInfoIndex<EdgeGraph>& paired_index, const string& genome, size_t read_size) {
+void ConstructGraphFromGenome(DeBruijnGraph& g, EdgeIndex<k + 1, DeBruijnGraph>& index, CoverageHandler<DeBruijnGraph>& coverage_handler, PairedInfoIndex<DeBruijnGraph>& paired_index, const string& genome, size_t read_size) {
 	typedef read_generator::ReadGenerator<read_generator::SmoothPositionChooser> Stream;
 	size_t coverage = 2*read_size;
 	size_t gap = 0;

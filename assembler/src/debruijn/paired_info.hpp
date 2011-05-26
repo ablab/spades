@@ -8,7 +8,7 @@
 #define MERGE_DATA_ABSOLUTE_DIFFERENCE 0
 //#define MERGE_DATA_RELATIVE_DIFFERENCE 0.3
 
-namespace de_bruijn {
+namespace debruijn_graph {
 
 /**
  * PairedInfoIndex stores information about edges connected by paired reads and synchronizes this info with
@@ -287,7 +287,7 @@ public:
 			AddPairInfo(PairInfo(*it, *it, 0, 1));
 		}
 		typedef Seq<kmer_size + 1> KPOMer;
-		de_bruijn::SimpleSequenceMapper<kmer_size, Graph> read_threader(graph_,
+		debruijn_graph::SimpleSequenceMapper<kmer_size, Graph> read_threader(graph_,
 				index);
 		while (!stream.eof()) {
 			PairedRead p_r;
@@ -314,11 +314,11 @@ private:
 
 	template<size_t kmer_size>
 	void ProcessPairedRead(const PairedRead& p_r,
-			de_bruijn::SimpleSequenceMapper<kmer_size, Graph> &read_threader) {
+			debruijn_graph::SimpleSequenceMapper<kmer_size, Graph> &read_threader) {
 		Sequence read1 = p_r.first().getSequence();
 		Sequence read2 = p_r.second().getSequence();
-		de_bruijn::Path<EdgeId> path1 = read_threader.MapSequence(read1);
-		de_bruijn::Path<EdgeId> path2 = read_threader.MapSequence(read2);
+		debruijn_graph::Path<EdgeId> path1 = read_threader.MapSequence(read1);
+		debruijn_graph::Path<EdgeId> path2 = read_threader.MapSequence(read2);
 		size_t distance = CountDistance(p_r);
 		int current_distance1 = distance + path1.start_pos()
 				- path2.start_pos();
@@ -340,7 +340,7 @@ private:
 	Graph& graph_;
 	PairInfoIndexData data_;
 
-	size_t CorrectLength(const de_bruijn::Path<EdgeId>& path, size_t index) {
+	size_t CorrectLength(const Path<EdgeId>& path, size_t index) {
 		size_t result = graph_.length(path[index]);
 		if (index == 0) {
 			result -= path.start_pos();

@@ -199,7 +199,7 @@ public:
 		return &gb_.graph_;
 	}
 
-	void SpellGenomeThroughGraph () {
+	bool SpellGenomeThroughGraph ( string filename, int cut ) {
 		/// we assume here that the graph is already built
 
 		/// outputting A Bruijn graph
@@ -214,16 +214,19 @@ public:
 
 
 		/// reading the reference genome
-		string const ref_genome_filename = "./data/input/MG1655-K12.fasta.gz";
+		//string const ref_genome_filename = "./data/input/MG1655-K12.fasta.gz";
 		Read ref_genome;
 
-		ireadstream genome_stream(ref_genome_filename);
+		ireadstream genome_stream(filename);
 		genome_stream >> ref_genome;
 		genome_stream.close();
 
 		Sequence ref_seq = ref_genome.getSequence();
-		size_t const cut = 10000;
-		ref_seq = ref_seq.Subseq(0, cut);
+		//size_t const cut = 100000;
+		if ( cut > 0 )
+			ref_seq = ref_seq.Subseq(0, cut);
+
+		//INFO ( "ref_seq: " << ref_seq << " " << ref_seq.size() );
 
 		/// computing hash-values of all the K-mers of the reference genome
 		hashing::HashSym<Sequence> hashsym;
@@ -237,23 +240,19 @@ public:
 		size_t num_of_missing_lengths = 0;
 
 		int previous_index = -1, current_index = -1;
-		Sequence previous_kmer(""), current_kmer("");
+		Sequence previous_kmer ( "" ), current_kmer ( "" );
 
 		for (unsigned int i = 0; i != ha.size (); ++i ) {
 			if (gb_.earmarked_hashes.count(ha[i])) {
-				INFO(i);
+				INFO(i << " out of " << ha.size () << " (" << i*100 / ha.size () << "%)" );
 				++num_of_earmarked_kmers;
 
 				current_index = i;
 				current_kmer  = ref_genome.getSequence().Subseq(i,i+K);
 				if ( ! graph()->hasVertex( current_kmer ) ) {
 					++num_of_missing_kmers;
-					continue;
-				}
-
-
-				if (!graph()->hasVertex(current_kmer)) {
 					INFO("k-mer " << current_kmer << " is present in the genome, but not in the graph");
+					continue;
 				}
 
 				if (-1 == previous_index) {
@@ -268,9 +267,6 @@ public:
 
 					int edge_length = current_index - previous_index;
 					assert ( edge_length > 0 );
-
-					previous_index = current_index;
-					previous_kmer  = current_kmer;
 
 					assert ( graph()->hasVertex(previous_kmer) && graph()->hasVertex(current_kmer) );
 					Vertex * previous_vertex = graph()->getVertex(previous_kmer);
@@ -289,6 +285,9 @@ public:
 							++num_of_missing_lengths;
 						}
 					}
+
+					previous_index = current_index;
+					previous_kmer  = current_kmer;
 				}
 			} // if earmarked
 		} // for
@@ -297,13 +296,15 @@ public:
 //		outfile.close ();
 
 		/// printing stats
-		INFO ( "number of earmarked k-mers: " << setw ( 20 ) << num_of_earmarked_kmers );
-		INFO ( "number of missing k-mers: " << setw ( 20 )   << num_of_missing_kmers );
-		INFO ( "number of missing edges: " << setw ( 20 )    << num_of_missing_edges );
-		INFO ( "number of missing lengths: " << setw ( 20 )  << num_of_missing_lengths );
+		INFO ( "number of earmarked k-mers: " << num_of_earmarked_kmers );
+		INFO ( "number of missing k-mers: " << num_of_missing_kmers );
+		INFO ( "number of missing edges: " << num_of_missing_edges );
+		INFO ( "number of missing lengths: " << num_of_missing_lengths );
+
+		return ( num_of_missing_kmers + num_of_missing_edges + num_of_missing_lengths == 0 );
 	}
 };
 
-}
+} // namespace abruijn
 
 #endif /* GRAPHBUILDER_H_ */

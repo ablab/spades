@@ -10,11 +10,11 @@
 
 #include "seq_map.hpp"
 #include "omni_utils.hpp"
+#include "logging.hpp"
 
-namespace de_bruijn {
+namespace debruijn_graph {
 
 using omnigraph::GraphActionHandler;
-//LOGGER("d.utils");
 
 /**
  * DataHashRenewer listens to add/delete events and updates index according to those events. This class
@@ -24,7 +24,7 @@ template<size_t kmer_size_, typename Graph, typename ElementId>
 class DataHashRenewer {
 
 	typedef Seq<kmer_size_> Kmer;
-	typedef de_bruijn::SeqMap<kmer_size_, ElementId> Index;
+	typedef SeqMap<kmer_size_, ElementId> Index;
 	const Graph &g_;
 
 	Index &index_;
@@ -74,7 +74,7 @@ public:
 template<size_t k, class Graph>
 class EdgeIndex: public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
-	typedef de_bruijn::SeqMap<k, EdgeId> InnerIndex;
+	typedef SeqMap<k, EdgeId> InnerIndex;
 	typedef Seq<k> Kmer;
 	Graph& g_;
 	InnerIndex inner_index_;
@@ -122,8 +122,7 @@ class VertexHashRenewer: public GraphActionHandler<Graph> {
 	DataHashRenewer<kmer_size_, Graph, VertexId> renewer_;
 
 public:
-	VertexHashRenewer(const Graph& g,
-			de_bruijn::SeqMap<kmer_size_, VertexId> *index) :
+	VertexHashRenewer(const Graph& g, SeqMap<kmer_size_, VertexId> *index) :
 		renewer_(g, index) {
 	}
 
@@ -208,7 +207,6 @@ void DFS<Graph>::ProcessVertex(VertexId v, vector<VertexId>* stack,
 		TraversalHandler<Graph>* h) {
 	//todo how to get rid of this
 	typedef Traversal<Graph> super;
-	//	typedef typename super::g_ g_;
 
 	if (visited_.count(v) == 0) {
 		h->HandleVertex(v);
@@ -316,7 +314,7 @@ template<size_t k, class Graph>
 class SimpleSequenceMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef typename de_bruijn::EdgeIndex<k + 1, Graph> Index;
+	typedef EdgeIndex<k + 1, Graph> Index;
 private:
 	const Graph& g_;
 	const Index &index_;
@@ -384,10 +382,10 @@ public:
 	 * Finds a path in graph which corresponds to given sequence.
 	 * @read sequence to be mapped
 	 */
-	de_bruijn::Path<EdgeId> MapSequence(const Sequence &read) const {
+	Path<EdgeId> MapSequence(const Sequence &read) const {
 		vector<EdgeId> passed;
 		if (read.size() <= k) {
-			return de_bruijn::Path<EdgeId>();
+			return Path<EdgeId> ();
 		}
 		Seq<k + 1> kmer = read.start<k + 1> ();
 		size_t startPosition = -1;
@@ -400,7 +398,7 @@ public:
 					= ProcessKmer(kmer, passed, startPosition, endPosition,
 							valid);
 		}
-		return de_bruijn::Path<EdgeId>(passed, startPosition, endPosition + 1);
+		return Path<EdgeId> (passed, startPosition, endPosition + 1);
 	}
 
 };

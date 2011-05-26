@@ -12,7 +12,7 @@
 #include "sequence.hpp"
 #include "seq.hpp"
 #include "cuckoo.hpp"
-//#include <tr1/unordered_map>
+#include <tr1/unordered_map>
 
 /*
  * act as DeBruijn graph and Index at the same time :)
@@ -23,37 +23,34 @@
  * where Value is usually EdgeId and size_t is offset where this Seq is in EdgeId
  *
  */
-namespace de_bruijn {
-LOGGER("d.utils");
 
 template<size_t size_, typename Value>
 class SeqMap {
 private:
-	typedef Seq<size_> KPlusOneMer;
-	typedef Seq<size_ - 1> KMer;
+	typedef Seq<size_> Kmer;
 	//typedef std::tr1::unordered_map<KPlusOneMer, pair<Value, size_t> ,
 	//	typename KPlusOneMer::hash, typename KPlusOneMer::equal_to> map_type; // size_t is offset
-	typedef cuckoo<KPlusOneMer, pair<Value, size_t>, typename KPlusOneMer::multiple_hash,
-			typename KPlusOneMer::equal_to> map_type;
+	typedef cuckoo<Kmer, pair<Value, size_t>, typename Kmer::multiple_hash,
+			typename Kmer::equal_to> map_type;
 	map_type nodes_;
 
-	bool contains(const KPlusOneMer &k) const {
+	bool contains(const Kmer &k) const {
 		return nodes_.find(k) != nodes_.end();
 	}
 
 	// DE BRUIJN:
 	//does it work for primitives???
-	void addEdge(const KPlusOneMer &k) {
+	void addEdge(const Kmer &k) {
 		nodes_.insert(make_pair(k, make_pair(Value(), -1)));
 	}
 
 	void CountSequence(const Sequence& s) {
 		if (s.size() >= size_) {
-			Seq<size_> KPlusOneMer = s.start<size_> ();
-			addEdge(KPlusOneMer);
+			Seq<size_> kmer = s.start<size_> ();
+			addEdge(kmer);
 			for (size_t j = size_; j < s.size(); ++j) {
-				KPlusOneMer = KPlusOneMer << s[j];
-				addEdge(KPlusOneMer);
+				kmer = kmer << s[j];
+				addEdge(kmer);
 			}
 		}
 	}
@@ -67,10 +64,10 @@ private:
 
 	// INDEX:
 
-	void putInIndex(const KPlusOneMer &k, Value id, size_t offset) {
-		map_iterator mi = nodes_.find(k);
+	void putInIndex(const Kmer &kmer, Value id, size_t offset) {
+		map_iterator mi = nodes_.find(kmer);
 		if (mi == nodes_.end()) {
-			nodes_.insert(make_pair(k, make_pair(id, offset)));
+			nodes_.insert(make_pair(kmer, make_pair(id, offset)));
 		} else {
 			mi->second.first = id;
 			mi->second.second = offset;
@@ -109,32 +106,36 @@ public:
 		return nodes_.end();
 	}
 
-	// number of incoming edges for KPlusOneMer[1:]
-	char IncomingEdgeCount(const KPlusOneMer &kPlusOneMer) {
-		KPlusOneMer kPlusOneMer2 = kPlusOneMer << 'A';
+	/**
+	 * Number of edges coming into param edge end
+	 */
+	char RivalEdgeCount(const Kmer& kmer) {
+		Kmer kmer2 = kmer << 'A';
 		char res = 0;
 		for (char c = 0; c < 4; ++c) {
-			if (contains(kPlusOneMer2 >> c)) {
+			if (contains(kmer2 >> c)) {
 				res++;
 			}
 		}
 		return res;
 	}
 
-	// number of outgoing edges for KPlusOneMer[:-1]
-	char OutgoingEdgeCount(const KPlusOneMer &KPlusOneMer) {
+	/**
+	 * Number of edges going out of the param edge end
+	 */
+	char NextEdgeCount(const Kmer& kmer) {
 		char res = 0;
 		for (char c = 0; c < 4; ++c) {
-			if (contains(KPlusOneMer << c)) {
+			if (contains(kmer << c)) {
 				res++;
 			}
 		}
 		return res;
 	}
 
-	KPlusOneMer NextEdge(const KPlusOneMer &kPlusOneMer) { // returns any next edge
+	Kmer NextEdge(const Kmer& kmer) { // returns any next edge
 		for (char c = 0; c < 4; ++c) {
-			KPlusOneMer s = kPlusOneMer << c;
+			Kmer s = kmer << c;
 			if (contains(s)) {
 				return s;
 			}
@@ -144,19 +145,19 @@ public:
 
 	// INDEX:
 
-	bool containsInIndex(const KPlusOneMer &k) const {
-		map_const_iterator mci = nodes_.find(k);
+	bool containsInIndex(const Kmer& kmer) const {
+		map_const_iterator mci = nodes_.find(kmer);
 		return (mci != nodes_.end()) && (mci->second.second != (size_t) -1);
 	}
 
-	const pair<Value, size_t>& get(const KPlusOneMer &k) const {
-		map_const_iterator mci = nodes_.find(k);
+	const pair<Value, size_t>& get(const Kmer& kmer) const {
+		map_const_iterator mci = nodes_.find(kmer);
 		assert(mci != nodes_.end()); // contains
 		return mci->second;
 	}
 
-	bool deleteIfEqual(const KPlusOneMer &k, Value id) {
-		map_iterator mi = nodes_.find(k);
+	bool deleteIfEqual(const Kmer& kmer, Value id) {
+		map_iterator mi = nodes_.find(kmer);
 		if (mi != nodes_.end() && mi->second.first == id) {
 			nodes_.erase(mi);
 			return true;
@@ -166,26 +167,24 @@ public:
 
 	void RenewKmersHash(const Sequence& nucls, Value id) {
 		assert(nucls.size() >= size_);
-		KPlusOneMer k(nucls);
-		putInIndex(k, id, 0);
+		Kmer kmer(nucls);
+		putInIndex(kmer, id, 0);
 		for (size_t i = size_, n = nucls.size(); i < n; ++i) {
-			k = k << nucls[i];
-			putInIndex(k, id, i - size_ + 1);
+			kmer = kmer << nucls[i];
+			putInIndex(kmer, id, i - size_ + 1);
 		}
 	}
 
 	void DeleteKmersHash(const Sequence& nucls, Value id) {
 		assert(nucls.size() >= size_);
-		KPlusOneMer k(nucls);
-		deleteIfEqual(k, id);
+		Kmer kmer(nucls);
+		deleteIfEqual(kmer, id);
 		for (size_t i = size_, n = nucls.size(); i < n; ++i) {
-			k = k << nucls[i];
-			deleteIfEqual(k, id);
+			kmer = kmer << nucls[i];
+			deleteIfEqual(kmer, id);
 		}
 	}
 
 };
-
-}
 
 #endif /* SEQ_MAP_HPP_ */

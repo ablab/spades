@@ -3,6 +3,10 @@
 #include "seq.hpp"
 #include "sequence.hpp"
 
+using namespace hashing;
+
+int const MPSIZE = 100;
+
 void TestIt() {
 	HashSym<Sequence> hh;
 	Sequence s("AACATGCTGCACTGGGTATGCATGACTGCAATTATACGCGCGCTACGATCATTACGGTATCATGACATTCATCGGATCATCGTACTGCATCGTATAGATCACATATGATCATATACCTTC");
