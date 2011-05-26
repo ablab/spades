@@ -31,12 +31,17 @@
 \begin{document}
 \selectlanguage{english}
 
+
 \begin{center}
 Repeat resolving using paired data.
 \end{center}
-\section{motivation}
-  We need to resolve repeats using paired information. In fact, it should be as strong tool, as paired de Bruijn graph is, but without complexity and memory problems of paired de Bruijn graph approach.
-Simplification, provided by rectangle graph, can also be done in our terms.  
+\begin{abstract}
+ In this paper we give a general definition for repeat resolving methods, based on paired information usage. We prove that rectangle graph technic is a honest repeat resolving method in case of error-free data, and provide some ideas how to improve rectangle graph approach, and how can inexact mate-read gaps be overcame.
+\end{abstract}
+
+\section{Motivation}
+Actually, most of sequencing machines provides not single reads, but mate-reads. It seems that mate-pair information can be used in more efficient way than actual assemblers do. It seems that right place for mate-pair information usage is repeat resolving step.
+But to discuss different methods of repeat resolving, based on paired information usage, we need to define what the correct repeat resolving method is and understand how we can compare quality different repeat resolving methods. 
 
 \section{About paired info}
 
@@ -49,20 +54,22 @@ Given a directed path in graph, we define distance between two edges as directed
 \item
   -distance($B$,$A$) in other case.
 \end{itemize}
-For each edge $e$, we'll define $start(e)$ and $end(e)$ as start and end vertex of edge $e$ respectivly.
+For each edge $e$, we'll define $start(e)$ and $end(e)$ as start and end vertex of edge $e$ respectivly. Length of path $P$ is sum of length of it's edges(multiple occurences allowed). We'll denote it as $|P|$.
 For such graph we define \emph{edge pair} as ordered pair $(a, b)$ where $a \in E$ and $b \in E$.
 \emph{Edge pair info} is pair $((a,b), x)$ where $(a,b)$ is edge pair, and $x \in \mathbb{Z}$.
-For given constant $d$ and directed path $P$ (from graph $G$), pair info $((a,b), x)$ with positive $x$ is called $d$-edge pair consistent  if there exists directed subpath $P'$ of $P$, such that distance in $P'$ between $a$ and $b$ is $x$ and $x - l_a < d$, $x + l_b > d$.  
+For given constant $d$ and directed path $P$ (from graph $G$), pair info $((a,b), x)$ with positive $x$ is called $d$-edge pair consistent  if there exists directed subpath $P'$, such that $P'$ starts from $a$, ends in $start(b)$ and $|P'| - l_a < d$, $|P'| + l_b > d$.  
 
 \emph{$d$-set of edge pair info} is subset $S$ of set of all possible edge pair info such that there exists a Chinese postman cycle $C$ (possibly not unique), satisfying following conditions:
  $((a, b), x) \in S \Leftrightarrow  ((a, b), x)$ is $d$-consistent with respect to cycle $C$.
   
 \subsection{Receiving paired info from reads}
-We'll write another text about it.
-\section{Main goal}
-We want to define what is ``correct'' graph transformation due to paired information, and methods allowing to compare these graph transformations in terms of resulting graph complexity.
+It seems to be a subject of another paper...
+\section{Repeat resolving}
+We want to define what is ``correct'' graph transformation due to paired information and provide methods to compare these graph transformations in terms of resulting graph complexity.
 
-\subsection{Correct graph transformation}
+\subsection{Correct and honest graph transformations}
+\begin{definition}
+ 
 For given graph $G=(V, E)$, we'll say that graph $G' = (V', E')$  is \emph{correct ungluing} of $G$ if there exists mappings $f: V' \rightarrow V$ and $g: E' \rightarrow P$ where $P$ is set of all edge paths in $G$
 satisfying following conditions:
 \begin{enumerate}
@@ -76,31 +83,47 @@ satisfying following conditions:
 \item $\forall (v_1, v) = \mathop{start_e}((v_1', v_2')) \quad v_1 = f(v_1')$
 \item $\forall (v_1, v_2) = \mathop{end_e}((v_1', v_2')) \quad v_2 = f(v_2')$
 \end{enumerate}
+\end{definition}
+
+\begin{definition}
+ 
+
 For given directed path $P' = (e'_0, \ldots, e`_n)$ in $G' $ we'll define \emph{decoding} of this path as $(g(e'_0), \ldots, g(e'_n))$ and denote it as $dec(P')$.
+\end{definition}
+
+\begin{definition}
+
 For given $d$-set of edge pair info and Chinese postman cycle $C$, $C$ is \emph{valid} cycle iff $((a, b), x) \in S \leftrightarrow  ((a, b), x)$ is $d$-consistent in respect to cycle $C$.
 
 We say that cycle $C' \in G'$ is \emph{valid} if $dec(C')=C$, $C$ is valid cycle in $G$.
-  
+\end{definition}
+\begin{definition}  
 If $dec(P)$ is a bijection between valid cycles in $G$ and $G'$, we'll say that correct ungluing $G'$ is \emph{consistent} to $d$-set of paired info $S$.
 We'll call such ungluing \emph{honest}.
+\end{definition}
+\begin{remark}
+  Note that `correct ungluing' is a graph notion that knows nothing about pair info. On the contrary, some ungluing $G'$ can be honest with recpect to one $d$-set of paired info and not honest with respect to other.
+\end{remark}
 
+
+\begin{remark}
+ Above definitions can be simply reformulated for non-cyclic genome.
+\end{remark}
 \subsection{Informal reformulation}
 Every valid Chinese postman cycle in $G$ corresponds to consistent with graph and paired information variant of genome. So, our condition means that after our transformation, every possibility for genome must be preserved, and no possible genomic cycle will transform to two different ones.
 
-Also, it can be simply reformulated for non-cyclic genome.
 
-\subsection{Inexact distances}
-
-For given $\Delta$ we can slightly change our assuming about $d$-set of edge pair info.  We say that $\{(a_i, b_i), x_i\}$ is \emph{$(d, \Delta)$-set of edge pair info} if there exists $\{\delta_i\}$ where $\forall i \quad |\delta_i|\leq \Delta$ and $\{(a_i, b_i), x_i+\delta_i\}$ is $d$-set of edge pair info.
-
+%\begin{remark}
+%For given $\Delta$ we can slightly modify our condition about $d$-set of edge pair info.  We say that $\{(a_i, b_i), x_i\}$ is \emph{$(d, \Delta)$-set of edge pair info} if there exists $\{\delta_i\}$ where $\forall i \quad |\delta_i|\leq \Delta$ and $\{(a_i, b_i), x_i+\delta_i\}$ is $d$-set of edge pair info.
+%\end{remark}
 \subsection{Graph complexity estimation - still under discussion!}
 \begin{problem}
    Having two honest ungluings of one graph $G$ with the same $d$-set of paired info,we want to define which one is somehow``better''.
 \end{problem}
   For every vertex $v \in V'$, we'll define \emph{vertex incomming-outgoing set} (and denote it as $S_v$)  as $\{(a, b)| a\in E, b\in E\}$, $(a, b)$ satisfies following conditions:
 \begin{enumerate}
- \item $\exists v_1 \in V' : (v_1, v) \in E', \mathop{end}(v_1, v) = a$
- \item $\exists v_2 \in V' : (v, v_2) \in E', \mathop{start}(v, v_2) = b$
+ \item $\exists v_1 \in V' : (v_1, v) \in E', \mathop{end_e}(v_1, v) = a$
+ \item $\exists v_2 \in V' : (v, v_2) \in E', \mathop{start_e}(v, v_2) = b$
 \end{enumerate}
  
 \emph{Graph incomming-outgoing set} is $\bigcup_v S_v$
