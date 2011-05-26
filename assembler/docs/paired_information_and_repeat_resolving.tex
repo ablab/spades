@@ -15,6 +15,7 @@
 \usepackage{algorithmic}
 \usepackage{algorithm}
 %\usepackage{cmap}
+%\usepackage{tikz}
 
 %\usepackage[T2A]{fontenc}
 \usepackage[cp1251]{inputenc}
@@ -26,7 +27,7 @@
 
 %%-- \usepackage[14pt]{extsizes}
 
-
+\def\eps{\varepsilon}
 
 \begin{document}
 \selectlanguage{english}
@@ -226,50 +227,86 @@ If we take some edge from $G_{rb}$ than we can produce split operation like abov
 \begin{theorem}
   In terms of Son's paper, result of his gluing procedure and contracting blue edges is a honest ungluing of initial graph $G$. 
 \end{theorem}
-\begin{proof}(sketch)
+\begin{proof}[sketch]
 Each rectangle split operation for honest ungluing of $G$ produce honest ungluing of $G$, so if we apply them consequently, we'
 ll receive a honest ungluing of $G$.
+\end{proof}
 \begin{theorem}
   In terms of Son's paper, result of his gluing procedure and contracting blue edges has measure of complexity, which is less or equal to measure of complexity of initial graph $G$. 
 \end{theorem}
-Each rectangle split operation  doesn't increase incomming-outgoing set(due to function $g$) of $G$, so their combination's incomming-outgoing set is also a subset of incomming-outgoing set of $G$.
-
-
-
+Each rectangle split operation  doesn't increase incoming-outgoing set(due to function $g$) of $G$, so their combination's incoming-outgoing set is also a subset of incoming-outgoing set of $G$.
 
 
 \section{Our ideas}
 \subsection{Rectangle split modifications}
-First approach is modifing adjacency definition for vertex-edge pairs.
+First approach is modifying adjacency definition for vertex-edge pairs.
 \begin{definition}
- Two vertex-edge pairs $(V,a,x)$ and $(V,b,y)$ are called \emph{adjacent} if $\exists A \in V: start (a) = end(b)\text{ or } start(b) = end (a)$ and distances from $V$ to common vertices of $a$ and $b$, obtained from $(V,a,x)$ and from $(V,b,y)$, are same. 
+ Two vertex-edge pairs $(Z,a,x)$ and $(Z,b,y)$ are called \emph{adjacent} if $ start (a) = end(b)\text{ or } start(b) = end (a)$ and distances from $Z$ to common vertices of $a$ and $b$, obtained from $(Z,a,x)$ and from $(Z,b,y)$, are same. 
 \end{definition}
+This definition slightly different from previous adjacency definition. So terms in this definition we can split vertex by vertex-edge information even if there are two edges with common start or finish vertex.   
 
 In case of inexact insert length we have to somehow weaken the condition on distances 
-Also, for highly nonuniform coverage, the request of sharing vertex for adjacent edges should be weakened- 
+Also, for highly nonuniform coverage, the request of sharing vertex for adjacent edges should be weakened. 
 
 \begin{definition}
- Two vertex-edge pairs $(V,a,x)$ and $(V,b,y)$ are called \emph{$l-\eps$ adjacent} if there exists path $P$ from $a$ to $b$: $|P|$ < $|P|$ is similar to $y-x$. 
+ Two vertex-edge pairs $(Z,a,x)$ and $(Z,b,y)$ are called \emph{$l-\eps$ adjacent} if there exists path $P$ from $a$ to $b$: $|P|<l$ and $|P|$ is similar to $y-x$ (difference not exceed $\eps$).   
 \end{definition}
 
+\subsection{Milty split operation}
+
+After doing split for all possibilities we can recalculate pair information, and do split again. It is possible that after fist splitting some connected components of pair infos may break into few parts. In this case we can do split operation again. Some time it is possible to split by \emph{back} information. This splitting is rectangle graph operation for contracting red edge. In terms of splitting it is obvious if back splitting for vertex is still possible.  
+
+
+\subsection{Rectangle graph hard case}
+
+There are simple graph that unaffected by rectangle graph split operation.
+Vertices is ${A,B,C,E,F,G,H}$ with edges $\{(A,B),(B,C),(C,E),(E,F),(F,G),(G,A),(C,H),(H,F)\}$. Pair information is set of all edge pairs with real distance 2 i.e. $(A,B)$ and $(C,E)$.
+Using of slightly modified split operation for this graph, and after that using back split operation produce two loops $(A\rightarrow B\rightarrow C\rightarrow E\rightarrow F\rightarrow G\rightarrow A)$ and $(A\rightarrow B\rightarrow C\rightarrow H\rightarrow F\rightarrow G\rightarrow A)$. 
+
+%\begin{tikzpicture}
+%\Vertex[x=0,y=2.5]{A}
+%\Vertex[x=0,y=5]{B}
+%\Vertex[x=0,y=7.5]{C}
+%\Vertex[x=-2.5,y=10]{E}
+%\Vertex[x=0,y=12.5]{F}
+%\Vertex[x=0,y=15]{G}
+%\Vertex[x=2.5,y=10]{H}
+%\Edge[style=->](A)(B)
+%\Edge[style=->](B)(C)
+%\Edge[style=->](C)(E)
+%\Edge[style=->](E)(F)
+%\Edge[style=->](F)(G)
+%\Edge[style=->](G)(A)
+%\Edge[style=->](C)(H)
+%\Edge[style=->](H)(F)
+%\end{tikzpicture}
+
+
+
+
+ 
+
   
-\subsection{Simple split operation}
 
-We start from graph $G_0$ and {$d$-set of edge pair info} $S$.
-We say that edge \emph{$e=(v_1, v_2)$ followed by $e'=(v_1', v_2')$ with respect to $S$} iff $v_2 = v_1'$ and 
-\begin{itemize}
-\item[either ] there exist edge $t$, and $x \in \mathbb{N}  $ such that $((e,t),x) \in S$ and $((e',t),x-l_e)\in S$; 
-\item[either ] there exist two edge $t=(w_1,w_2)$ and $t'=(w_2, w_3)$, and $x \in \mathbb{N}$ such that $((e,t),x) \in S$ and $((e',t'),x-l_e+l_t) \in S$. 
-\end{itemize}
-We say that edge \emph{$e$ close to $e'$ with respect to $S$} iff either $e$ followed by $e'$ with respect to $S$, either $e'$ followed by $e$ with respect to $S$.
-For each vertex $A$ we consider vertex incomming-outgoing set $S_A$ (defined above). We can divide $S_A$ in clusters $C_j$ due to transitive closure of \emph{close with respect to $S$} relationship, i.e. we build maximum as possible $C_j$ disjoint subsets of $S_A$ such that $S_A=\bigcup C_j$ and if two edge from $S_A$ are close with respect to $S$ than they belongs to one $C_j$.  
+  
+%\subsection{Simple split operation}
 
-Now we can define split operation for vertex $A$. We delete vertex $A$ and add new vertices $(A, C_j)$. For every incoming or outgoing $e$ edge we reroute it into vertex $(A, C_j)$ if $e\in C_j$. 
+%We start from graph $G_0$ and {$d$-set of edge pair info} $S$.
+%We say that edge \emph{$e=(v_1, v_2)$ followed by $e'=(v_1', v_2')$ with respect to $S$} iff $v_2 = v_1'$ and 
+%\begin{itemize}
+%\item[either ] there exist edge $t$, and $x \in \mathbb{N}  $ such that $((e,t),x) \in S$ and $((e',t),x-l_e)\in S$; 
+%\item[either ] there exist two edge $t=(w_1,w_2)$ and $t'=(w_2, w_3)$, and $x \in \mathbb{N}$ such that $((e,t),x) \in S$ and $((e',t'),x-l_e+l_t) \in S$. 
+%\end{itemize}
+
+%We say that edge \emph{$e$ close to $e'$ with respect to $S$} iff either $e$ followed by $e'$ with respect to $S$, either $e'$ followed by $e$ with respect to $S$.
+%For each vertex $A$ we consider vertex incoming-outgoing set $S_A$ (defined above). We can divide $S_A$ in clusters $C_j$ due to transitive closure of \emph{close with respect to $S$} relationship, i.e. we build maximum as possible $C_j$ disjoint subsets of $S_A$ such that $S_A=\bigcup C_j$ and if two edge from $S_A$ are close with respect to $S$ than they belongs to one $C_j$.  
+
+%Now we can define split operation for vertex $A$. We delete vertex $A$ and add new vertices $(A, C_j)$. For every incoming or outgoing $e$ edge we reroute it into vertex $(A, C_j)$ if $e\in C_j$. 
 
 
 %Note, that we do not create ``new'' edges (there is evident bijection between edge sets in original and resulting graph), but split some vertices making graph simpler. 
 
-Such split operation not increase graph complexity measure defined above. 
+%Such split operation not increase graph complexity measure defined above. 
 
 \section{Details about real implementation}
 We'll have to ignore low confirmed information about distance between edges to avoid chimeric pairs. Also, it may turn out that after out resolving we'll need to do tip clipping again because of erroneous connections.
