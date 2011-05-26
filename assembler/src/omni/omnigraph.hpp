@@ -5,21 +5,29 @@
 
 namespace omnigraph {
 
-class OmniDataMaster {
-public:
-	OmniDataMaster();
-};
-
 class OmniVertex {
 	int length_;
 public:
-	OmniVertex(int length) : length_(length) {};
+	OmniVertex(int length) : length_(length) {}
 };
 
 class OmniEdge {
 	int length_;
 public:
 	OmniEdge(int length) : length_(length) {}
+};
+
+class OmniDataMaster {
+public:
+	OmniDataMaster() {}
+
+	bool isSelfConjugate(const OmniEdge &data) {
+		return false;
+	}
+
+	OmniEdge conjugate(const OmniEdge &data) {
+		return data;
+	}
 };
 
 class Omnigraph : public AbstractConjugateGraph<OmniVertex, OmniEdge, OmniDataMaster> {

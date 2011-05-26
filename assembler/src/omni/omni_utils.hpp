@@ -5,6 +5,7 @@
 #include "logging.hpp"
 
 namespace omnigraph {
+
 LOGGER("omg.graph");
 
 /**
