@@ -119,6 +119,10 @@ public:
 			return data_;
 		}
 
+		void set_data(EdgeData &data) {
+			data_ = data;
+		}
+
 		VertexId end() const {
 			return end_;
 		}
@@ -165,7 +169,8 @@ public:
 			result->set_conjugate(result);
 			return result;
 		}
-		EdgeId rcEdge = AddSingleEdge(v2->conjugate(), v1->conjugate(), master_.conjugate(data));
+		EdgeId rcEdge = AddSingleEdge(v2->conjugate(), v1->conjugate(),
+				master_.conjugate(data));
 		result->set_conjugate(rcEdge);
 		rcEdge->set_conjugate(result);
 		return result;
