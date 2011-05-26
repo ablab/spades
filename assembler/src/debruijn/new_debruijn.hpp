@@ -14,7 +14,7 @@ class VertexData {
 class EdgeData {
 	friend class NewDeBruijnGraph;
 	friend class DeBruinMaster;
-private:
+public:
 	const Sequence nucls_;
 	size_t coverage_;
 
@@ -36,22 +36,22 @@ public:
 		k_(k) {
 	}
 
-	const EdgeData MergeData(const vector<EdgeData&> &toMerge) const {
+	const EdgeData MergeData(const vector<EdgeData *> &toMerge) const {
 		SequenceBuilder sb;
 		size_t coverage = 0;
-		sb.append(toMerge[0].nucls_.Subseq(0, k_));
+		sb.append(toMerge[0]->nucls_.Subseq(0, k_));
 		for (size_t i = 0; i < toMerge.size(); i++) {
-			sb.append(toMerge[i].nucls_.Subseq(k_));
-			coverage += toMerge[i].coverage_;
+			sb.append(toMerge[i]->nucls_.Subseq(k_));
+			coverage += toMerge[i]->coverage_;
 		}
 		return EdgeData(sb.BuildSequence(), coverage);
 	}
 
 	pair<VertexData, pair<EdgeData, EdgeData> > SplitData(EdgeData &edge,
 			size_t position) {
-		size_t length = edge.nucls_.size_ - k_;
+		size_t length = edge.nucls_.size() - k_;
 		size_t coverage1 = edge.coverage_ * position / length;
-		size_t coverage2 = edge.coverage_ * (edge.length() - position) / length;
+		size_t coverage2 = edge.coverage_ * (length - position) / length;
 		if (coverage1 == 0)
 			coverage1 = 1;
 		if (coverage2 == 0)
@@ -95,7 +95,7 @@ public:
 	}
 
 	const size_t length(EdgeId edge) const {
-		return edge->nucls_.size_ - k;
+		return data(edge).nucls_.size() - k_;
 	}
 
 };

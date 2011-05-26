@@ -1,0 +1,45 @@
+## genome=ATGCATTGCACTGCA readsize=6 k=3
+##dot -Tjpg ATGCATTGCACTGCA.dot -o ATGCATTGCACTGCA.jpg
+digraph ATGCATTGCACTGCA { rankdir="LR"; node[shape="box"] edge[color="black"]
+AAT->ATG
+ACT->CTG
+ATG->TGC
+ATT->TTG
+CAA->AAT
+CAC->ACT
+CAT->ATT
+CTG->TGC
+GCA->CAA
+GCA->CAC
+GCA->CAT
+TGC->GCA
+TTG->TGC
+
+AAT->ATG[style="invis"]
+ACT->CTG[style="invis"]
+ATG->CAT[style="invis"]
+ATT->TTG[style="invis"]
+CAA->AAT[style="invis"]
+CAC->ACT[style="invis"]
+CAC->CTG[style="invis"]
+CAT->ATT[style="invis"]
+CAT->TTG[style="invis"]
+CTG->CAA[style="invis"]
+TTG->CAC[style="invis"]
+
+AAT->ATG[style="invis"]
+ACT->CTG[style="invis"]
+ATG->TGC[style="invis"]
+ATT->TTG[style="invis"]
+CAA->AAT[style="invis"]
+CAC->ACT[style="invis"]
+CAT->ATT[style="invis"]
+CTG->TGC[style="invis"]
+GCA->ACT[style="invis"]
+GCA->CAA[style="invis"]
+GCA->CAT[style="invis"]
+TGC->ACT[style="invis"]
+TGC->GCA[style="invis"]
+TTG->TGC[style="invis"]
+}
+

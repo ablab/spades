@@ -456,9 +456,9 @@ public:
 		SequenceBuilder sb;
 		VertexId v1 = EdgeStart(correctedPath[0]);
 		VertexId v2 = EdgeEnd(correctedPath[correctedPath.size() - 1]);
-		vector<EdgeData&> toMerge;
+		vector<EdgeData*> toMerge;
 		for (auto it = correctedPath.begin(); it != correctedPath.end(); ++it) {
-			toMerge.push_back((*it)->data());
+			toMerge.push_back(&((*it)->data()));
 		}
 		EdgeId newEdge = HiddenAddEdge(v1, v2, master_.MergeData(toMerge));
 		FireMerge(correctedPath, newEdge);
