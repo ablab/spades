@@ -2,6 +2,7 @@
 #define GRAPHBUILDER_H_
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <algorithm>
 #include <vector>
@@ -198,66 +199,92 @@ public:
 		return &gb_.graph_;
 	}
 
-	void SpellGenomeThroughGraph () {
+	bool SpellGenomeThroughGraph ( string filename, int cut ) {
 		/// we assume here that the graph is already built
 
 		/// outputting A Bruijn graph
-		ofstream outfile("./data/abruijn/abruijnspellgenome.dot", ios::out);
-		gvis::GraphPrinter<Vertex*> printer("abruijnspellgenome", outfile);
-		for (Vertices::iterator v = graph()->vertices.begin(); v != graph()->vertices.end(); ++v) {
-			printer.addVertex(*v, ToString(**v));
-			for (Edges::iterator it = (*v)->edges().begin(); it != (*v)->edges().end(); ++it) {
-				printer.addEdge(*v, it->first, ToString(it->second));
-			}
-		}
+//		ofstream outfile("./data/abruijn/abruijnspellgenome.dot", ios::out);
+//		gvis::GraphPrinter<Vertex*> printer("abruijnspellgenome", outfile);
+//		for (Vertices::iterator v = graph()->vertices.begin(); v != graph()->vertices.end(); ++v) {
+//			printer.addVertex(*v, ToString(**v));
+//			for (Edges::iterator it = (*v)->edges().begin(); it != (*v)->edges().end(); ++it) {
+//				printer.addEdge(*v, it->first, ToString(it->second));
+//			}
+//		}
 
 
 		/// reading the reference genome
-		string const ref_genome_filename = "./data/input/MG1655-K12.fasta.gz";
+		//string const ref_genome_filename = "./data/input/MG1655-K12.fasta.gz";
 		Read ref_genome;
 
-		ireadstream genome_stream(ref_genome_filename);
+		ireadstream genome_stream(filename);
 		genome_stream >> ref_genome;
 		genome_stream.close();
+
+		Sequence ref_seq = ref_genome.getSequence();
+		//size_t const cut = 100000;
+		if ( cut > 0 )
+			ref_seq = ref_seq.Subseq(0, cut);
+
+		//INFO ( "ref_seq: " << ref_seq << " " << ref_seq.size() );
 
 		/// computing hash-values of all the K-mers of the reference genome
 		hashing::HashSym<Sequence> hashsym;
 		vector<hash_t> ha;
-		ha.resize(ref_genome.size()-K+1);
-		hashsym.kmers(ref_genome.getSequence(), ha);
+		ha.resize(ref_seq.size()-K+1);
+		hashsym.kmers(ref_seq, ha);
 
-		int num_of_missing_kmers = 0;
-		int num_of_earmarked_kmers = 0;
+		size_t num_of_missing_kmers = 0;
+		size_t num_of_earmarked_kmers = 0;
+		size_t num_of_missing_edges = 0;
+		size_t num_of_missing_lengths = 0;
 
 		int previous_index = -1, current_index = -1;
-		Sequence previous_kmer(""), current_kmer("");
+		Sequence previous_kmer ( "" ), current_kmer ( "" );
 
 		for (unsigned int i = 0; i != ha.size (); ++i ) {
 			if (gb_.earmarked_hashes.count(ha[i])) {
-				INFO(i);
+				INFO(i << " out of " << ha.size () << " (" << i*100 / ha.size () << "%)" );
 				++num_of_earmarked_kmers;
 
 				current_index = i;
 				current_kmer  = ref_genome.getSequence().Subseq(i,i+K);
-
-				if (!graph()->hasVertex(current_kmer)) {
+				if ( ! graph()->hasVertex( current_kmer ) ) {
 					++num_of_missing_kmers;
 					INFO("k-mer " << current_kmer << " is present in the genome, but not in the graph");
+					continue;
 				}
 
 				if (-1 == previous_index) {
 					previous_index = i;
 					previous_kmer  = current_kmer;
-					printer.threadStart( graph()->getVertex( previous_kmer ), 4*graph()->vertices.size() );
+					//printer.threadStart( graph()->getVertex( previous_kmer ), 4*graph()->vertices.size() );
 				}
 				else {
 					current_index = i;
 					current_kmer  = ref_genome.getSequence().Subseq( i,i+K );
-					printer.threadAdd( graph()->getVertex( current_kmer) );
+					//printer.threadAdd( graph()->getVertex( current_kmer) );
 
-					//int edge_length = current_index - previous_index;
+					int edge_length = current_index - previous_index;
+					assert ( edge_length > 0 );
 
+					assert ( graph()->hasVertex(previous_kmer) && graph()->hasVertex(current_kmer) );
+					Vertex * previous_vertex = graph()->getVertex(previous_kmer);
+					Vertex * current_vertex  = graph()->getVertex(current_kmer);
+					assert ( previous_vertex && current_vertex );
 
+					Edges::const_iterator edge_it = previous_vertex->edges().find( current_vertex );
+					if ( edge_it == previous_vertex->edges().end () ) {
+						INFO ( "missing edge from " << previous_kmer << " to " << current_kmer );
+						++num_of_missing_edges;
+					}
+					else {
+						size_t const occ = edge_it->second.countLengthOccurrences (edge_length);
+						if ( occ == 0 ) {
+							INFO ( "missing length" );
+							++num_of_missing_lengths;
+						}
+					}
 
 					previous_index = current_index;
 					previous_kmer  = current_kmer;
@@ -265,11 +292,19 @@ public:
 			} // if earmarked
 		} // for
 
-		printer.output();
-		outfile.close ();
+//		printer.output();
+//		outfile.close ();
+
+		/// printing stats
+		INFO ( "number of earmarked k-mers: " << num_of_earmarked_kmers );
+		INFO ( "number of missing k-mers: " << num_of_missing_kmers );
+		INFO ( "number of missing edges: " << num_of_missing_edges );
+		INFO ( "number of missing lengths: " << num_of_missing_lengths );
+
+		return ( num_of_missing_kmers + num_of_missing_edges + num_of_missing_lengths == 0 );
 	}
 };
 
-}
+} // namespace abruijn
 
 #endif /* GRAPHBUILDER_H_ */

@@ -12,6 +12,9 @@ p:
 b:
 	make -C src/bayes
 
+h:
+	make -C src/hammer
+
 at: 
 	make -C test/abruijn
 	

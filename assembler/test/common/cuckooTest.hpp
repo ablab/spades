@@ -24,24 +24,42 @@ void TestCuckoo() {
   }
   size_t size = map.size();
   ASSERT_EQUAL(size, 99994);
-  hm::iterator hmi;
+  
+  hm::iterator it;
   for (int i = 0; i < 100000; ++i) {
     int t = rand();
-    hmi = map.find(t);
+    it = map.find(t);
   }
   ASSERT_EQUAL(size, map.size());
+  
   size_t n = 0;
   for (hm::iterator it = map.begin(); it != map.end(); ++it) {
     ++n;
   }
   ASSERT_EQUAL(size, n);
 
+  n = 0;
+  for (hm::const_iterator it = map.begin(); it != map.end(); ++it) {
+    ++n;
+  }
+  ASSERT_EQUAL(size, n); 
+
   for (int i = 0; i < 100000; ++i) {
     int t = rand();
-    map.erase(t);
+    n -= map.erase(t);
   }
+  ASSERT_EQUAL(map.size(), n);
+
   map.clear();
   ASSERT_EQUAL(map.size(), 0);
+  ASSERT_EQUAL(map.empty(), true);
+
+  int t = rand();
+  map.insert(std::make_pair(t, 42));
+  ASSERT_EQUAL(map.size(), 1);
+  ASSERT_EQUAL(map.empty(), false);
+  ASSERT_EQUAL(map.count(t), 1);
+  ASSERT_EQUAL(map.count(t + 1), 0);
 }
 
 void TestCuckooCopiing() {
@@ -50,11 +68,23 @@ void TestCuckooCopiing() {
   map[4] = 1;
   map[6];
   ASSERT_EQUAL(map.size(), 3);
+
   hm map2;
   map2 = map;
   ASSERT_EQUAL(map2.size(), 3);
+  ASSERT(map2.find(1) != map2.end());
+  ASSERT(map2.find(4) != map2.end());
+  ASSERT(map2.find(6) != map2.end());
+  ASSERT(map2.find(8) == map2.end());
+
   hm map3(map);
   ASSERT_EQUAL(map3.size(), 3); 
+  ASSERT(map3.find(1) != map3.end());
+  ASSERT(map3.find(4) != map3.end());
+  ASSERT(map3.find(6) != map3.end());
+  ASSERT(map3.find(8) == map3.end());
+
+  ASSERT(map2.end() != map3.end());
 }
 
 cute::suite CuckooSuite() {

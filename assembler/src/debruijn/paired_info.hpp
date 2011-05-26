@@ -1,7 +1,6 @@
 #ifndef PAIRED_INFO_HPP_
 #define PAIRED_INFO_HPP_
 #include "utils.hpp"
-#include "strobe_reader.hpp"
 #include "sequence.hpp"
 #include <cmath>
 #include <map>
@@ -9,8 +8,12 @@
 #define MERGE_DATA_ABSOLUTE_DIFFERENCE 0
 //#define MERGE_DATA_RELATIVE_DIFFERENCE 0.3
 
-namespace de_bruijn {
+namespace debruijn_graph {
 
+/**
+ * PairedInfoIndex stores information about edges connected by paired reads and synchronizes this info with
+ * graph.
+ */
 template<class Graph>
 class PairedInfoIndex: public GraphActionHandler<Graph> {
 private:
@@ -20,6 +23,10 @@ private:
 
 public:
 
+	/**
+	 * PairInfo class represents basic data unit for paired information: edges first_ and second_ appear
+	 * in genome at distance d_ and this information has weight weight_.
+	 */
 	class PairInfo {
 		friend class PairedInfoIndex;
 		friend class PairedInfoIndexData;
@@ -30,13 +37,26 @@ public:
 		double d_;//distance between starts. Can be negative
 		double weight_;
 	public:
+
+		/**
+		 * Method returns id of the first edge
+		 */
 		EdgeId first() const {
 			return first_;
 		}
+
+		/**
+		 * Method returns id of the second edge
+		 */
 		EdgeId second() const {
 			return second_;
 		}
 
+		/**
+		 * Method returns approximate distance between occurrences of edges in genome rounded to the nearest
+		 * integer. In case of a tie closest to 0 value is chosen thus one can assume that distance
+		 * is rounded the same way as opposite one.
+		 */
 		int d() const {
 			int res = (int) (std::abs(d_) + 0.5 + 1e-9);
 			if (d_ < 0)
@@ -44,10 +64,16 @@ public:
 			return res;
 		}
 
-		int exact_d() const {
+		/**
+		 * Method returns approximate between occurrences of edges in genome.
+		 */
+		double exact_d() const {
 			return d_;
 		}
 
+		/**
+		 * Method returns weight of this info.
+		 */
 		double weight() const {
 			return weight_;
 		}
@@ -56,6 +82,10 @@ public:
 			first_(first), second_(second), d_(d), weight_(weight) {
 		}
 
+		/**
+		 * Two paired infos are considered equal if they coinside in all parameters except for the weight of
+		 * info.
+		 */
 		bool operator==(const PairInfo& rhs) const {
 			return first_ == rhs.first_ && second_ == rhs.second_ && d_
 					== rhs.d_/* && weight_ == rhs.weight_*/;
@@ -193,6 +223,10 @@ private:
 	};
 
 public:
+	/**
+	 * Class EdgePairIterator is used to iterate through paires of edges which have information about distance
+	 * between them stored in PairedInfoIndex.
+	 */
 	class EdgePairIterator {
 		typename PairInfoIndexData::data_iterator position_;
 		PairedInfoIndex<Graph> &index_;
@@ -233,7 +267,8 @@ public:
 	//begin-end insert size supposed
 	PairedInfoIndex(Graph &g,
 			int max_difference = MERGE_DATA_ABSOLUTE_DIFFERENCE) :
-		max_difference_(max_difference), graph_(g) {
+		GraphActionHandler<Graph> ("PairedInfoIndex"),
+				max_difference_(max_difference), graph_(g) {
 		g.AddActionHandler(this);
 	}
 
@@ -241,15 +276,18 @@ public:
 		graph_.RemoveActionHandler(this);
 	}
 
+	/**
+	 * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
+	 */
 	template<size_t kmer_size, class Stream>
 	void FillIndex(const EdgeIndex<kmer_size + 1, Graph>& index, Stream& stream) {
 		data_.clear();
-		auto it = graph_.SmartEdgeBegin();
-		for (auto it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it; ++it) {
+		//auto it = graph_.SmartEdgeBegin();
+		for (auto it = graph_.SmartEdgeBegin(); !it.isEnd(); ++it) {
 			AddPairInfo(PairInfo(*it, *it, 0, 1));
 		}
 		typedef Seq<kmer_size + 1> KPOMer;
-		de_bruijn::SimpleSequenceMapper<kmer_size, Graph> read_threader(graph_,
+		debruijn_graph::SimpleSequenceMapper<kmer_size, Graph> read_threader(graph_,
 				index);
 		while (!stream.eof()) {
 			PairedRead p_r;
@@ -276,11 +314,11 @@ private:
 
 	template<size_t kmer_size>
 	void ProcessPairedRead(const PairedRead& p_r,
-			de_bruijn::SimpleSequenceMapper<kmer_size, Graph> &read_threader) {
+			debruijn_graph::SimpleSequenceMapper<kmer_size, Graph> &read_threader) {
 		Sequence read1 = p_r.first().getSequence();
 		Sequence read2 = p_r.second().getSequence();
-		de_bruijn::Path<EdgeId> path1 = read_threader.MapSequence(read1);
-		de_bruijn::Path<EdgeId> path2 = read_threader.MapSequence(read2);
+		debruijn_graph::Path<EdgeId> path1 = read_threader.MapSequence(read1);
+		debruijn_graph::Path<EdgeId> path2 = read_threader.MapSequence(read2);
 		size_t distance = CountDistance(p_r);
 		int current_distance1 = distance + path1.start_pos()
 				- path2.start_pos();
@@ -302,7 +340,7 @@ private:
 	Graph& graph_;
 	PairInfoIndexData data_;
 
-	size_t CorrectLength(const de_bruijn::Path<EdgeId>& path, size_t index) {
+	size_t CorrectLength(const Path<EdgeId>& path, size_t index) {
 		size_t result = graph_.length(path[index]);
 		if (index == 0) {
 			result -= path.start_pos();
@@ -346,6 +384,9 @@ private:
 	}
 
 public:
+	/**
+	 * Method allows to add pair info to index directly instead of filling it from stream.
+	 */
 	void AddPairInfo(const PairInfo& pair_info) {
 		PairInfos pair_infos = data_.GetEdgePairInfos(pair_info.first_,
 				pair_info.second_);
@@ -415,12 +456,12 @@ private:
 public:
 
 	void OutputData(ostream &os = cout) {
-		for (auto it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it; ++it)
-			for (auto it1 = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
-					!= it1; ++it1) {
+		for (auto it = graph_.SmartEdgeBegin(); !it.isEnd(); ++it)
+			for (auto it1 = graph_.SmartEdgeBegin(); !it1.isEnd(); ++it1) {
 				OutputEdgeData(*it, *it1, os);
 			}
 	}
+
 	void OutputData(string fileName) {
 		ofstream s;
 		s.open(fileName.c_str());
@@ -428,10 +469,16 @@ public:
 		s.close();
 	}
 
+	/**
+	 * Method returns all data about given edge
+	 */
 	PairInfos GetEdgeInfo(EdgeId edge) {
 		return data_.GetEdgeInfos(edge);
 	}
 
+	/**
+	 * Method returns all data about distance between two given edges
+	 */
 	PairInfos GetEdgePairInfo(EdgeId first, EdgeId second) {
 		return data_.GetEdgePairInfos(first, second);
 	}
@@ -470,6 +517,9 @@ public:
 
 };
 
+/**
+ * This class performs the most simple offline clustering of paired information.
+ */
 template<class Graph>
 class SimpleOfflineClusterer {
 private:

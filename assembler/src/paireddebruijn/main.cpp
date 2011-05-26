@@ -6,7 +6,7 @@
 #include "graphio.hpp"
 #include "readTracing.hpp"
 #include "sequence.hpp"
-#include "readsReformatter.hpp"
+//#include "readsReformatter.hpp"
 #include "bulgeCorruption.hpp"
 //#include "read_generator.hpp"
 

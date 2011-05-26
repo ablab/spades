@@ -1,8 +1,7 @@
 #include "visualization_utils.hpp"
 
-
-void edge_graph::WriteToFile(const string& file_name, const string& graph_name,
-		const EdgeGraph& g, de_bruijn::Path<EdgeId> path) {
+void debruijn_graph::WriteToFile(const string& file_name, const string& graph_name,
+		const DeBruijnGraph& g, Path<EdgeId> path) {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
 	gvis::PairedGraphPrinter<VertexId> gp("simulated_data_graph", filestr);
@@ -20,14 +19,14 @@ void edge_graph::WriteToFile(const string& file_name, const string& graph_name,
 
 }
 
-void edge_graph::SimpleGraphVisualizer::Visualize(const EdgeGraph& g) {
+void debruijn_graph::SimpleGraphVisualizer::Visualize(const DeBruijnGraph& g) {
 	VisHandler h(g, gp_);
-	de_bruijn::DFS<EdgeGraph>(g).Traverse(&h);
+	DFS<DeBruijnGraph>(g).Traverse(&h);
 	gp_.output();
 }
 
-void edge_graph::ComplementGraphVisualizer::Visualize(const EdgeGraph& g) {
-	ComplementVisHandler h(g, gp_);
-	de_bruijn::DFS<EdgeGraph>(g).Traverse(&h);
+void debruijn_graph::ConjugateGraphVisualizer::Visualize(const DeBruijnGraph& g) {
+	ConjugateVisHandler h(g, gp_);
+	DFS<DeBruijnGraph>(g).Traverse(&h);
 	gp_.output();
 }

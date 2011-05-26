@@ -2,3 +2,5 @@
 *.dvi
 *.log
 *.out
+*.tdo
+*.toc

@@ -10,32 +10,16 @@
 \maketitle
 
 \section*{What is EdgeGraph?}
-EdgeGraph is an implementation of DeBruijn graph with long sequences stored in its edges.
-Implementation includes methods to change graph structure, iterate through graph and store coverage information.
-EdgeGraph supports reverce-complement structure which means that each operation is performed simultaneously with 
-certain element(vertex or edge) and reverse-complement element.
-EdgeGraph was designed in such a way that it handles most of reverce-complement structure problems automatically.
-Some external tools like tip clipping and bulge removal are implemented to be used with EdgeGraph interface.
+EdgeGraph is an implementation of DeBruijn graph with long sequences stored in its edges. Implementation includes methods to change graph structure, iterate through graph and store coverage information. EdgeGraph supports reverce-complement structure which means that each operation is performed simultaneously with certain element(vertex or edge) and reverse-complement element. EdgeGraph was designed in such a way that it handles most of reverce-complement structure problems automatically. Some external tools like tip clipping and bulge removal are implemented to be used with EdgeGraph interface.
 
-In EdgeGraph each vertex corresponds to k-mer.
-Each edge represents sequence of k+1-mers.
-Thus length of edge is number of k+1-mers in it rather than number of nucleotides in sequence stored in the edge.
-In order to forbid vertices to be reverse-complement to itself k should be chosen to be odd.
+In EdgeGraph each vertex corresponds to k-mer. Each edge represents sequence of k+1-mers. Thus length of edge is number of k+1-mers in it rather than number of nucleotides in sequence stored in the edge. In order to forbid vertices to be reverse-complement to itself k should be chosen to be odd.
 
 \section*{Classes Structure}
-EdgeGraph consists of three basic structures: class EdgeGraph itself, class Vertex and class Edge.
-Vertex and Edge classes have only private methods and one does not even need to know these classes exist.
-Instead one should use methods of EdgeGraph with arguments of types EdgeGraph::EdgeId and EdgeGraph::VertexId which actually are
-Edge* and Vertex*.
+EdgeGraph consists of three basic structures: class EdgeGraph itself, class Vertex and class Edge. Vertex and Edge classes have only private methods and one does not even need to know these classes exist. Instead one should use methods of EdgeGraph with arguments of types EdgeGraph::EdgeId and EdgeGraph::VertexId which actually are Edge* and Vertex*.
 
 \section*{Inner Structure Of EdgeGraph}
-EdgeGraph contains set of all VertexId.
-Each vertex contains list of ids of outgoing edges and pointer to reverse-complement vertex.
-Each edge contains Sequence of nucleotides it represents, pointer to reverse-complement edge, coverage and pointer to end vertex.
-Thus memory usage of the whole structure is as fallows: for each vertex 2 pointers are stored(pointer to this vertex in set, pointer
-to reverse-complement vertex and pointer in vector of outgoing edges) plus overhead for vector stored in vertex(44 bytes in total).
-For each edge also 3 pointers(pointer from vertex, pointer to reverse-complement edge and pointer to end Vertex),
-Sequence(17 bytes) and coverage are stored(45 in total). 
+EdgeGraph contains set of all VertexId. Each vertex contains list of ids of outgoing edges and pointer to reverse-complement vertex.
+Each edge contains Sequence of nucleotides it represents, pointer to reverse-complement edge, coverage and pointer to end vertex. Thus memory usage of the whole structure is as fallows: for each vertex 2 pointers are stored(pointer to this vertex in set, pointer to reverse-complement vertex and pointer in vector of outgoing edges) plus overhead for vector stored in vertex(44 bytes in total). For each edge also 3 pointers(pointer from vertex, pointer to reverse-complement edge and pointer to end Vertex), Sequence(17 bytes) and coverage are stored(45 in total). 
 
 \section*{Basic Interface To Get Information From EdgeGraph}
 \subsection*{Graph Methods}

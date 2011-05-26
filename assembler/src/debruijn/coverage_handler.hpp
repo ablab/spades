@@ -3,7 +3,7 @@
 
 #include "utils.hpp"
 
-namespace de_bruijn {
+namespace debruijn_graph {
 
 template<class Graph>
 class CoverageHandler: public GraphActionHandler<Graph> {
@@ -17,9 +17,9 @@ private:
 		return (size_t) (g_.coverage(edge) * g_.length(edge));
 	}
 
-	template <size_t k>
-	void processRead(const de_bruijn::SimpleSequenceMapper<k, Graph>& threader, Read read) {
-		de_bruijn::Path<EdgeId> path = threader.MapSequence(
+	template<size_t k>
+	void processRead(const SimpleSequenceMapper<k, Graph>& threader, Read read) {
+		Path<EdgeId> path = threader.MapSequence(
 				Sequence(read.getSequenceString()));
 		if (path.sequence().size() == 0)
 			return;
@@ -35,7 +35,7 @@ private:
 
 public:
 	CoverageHandler(Graph &g) :
-		g_(g) {
+		GraphActionHandler<Graph> ("CoverageHandler"), g_(g) {
 		g_.AddActionHandler(this);
 	}
 
@@ -44,15 +44,13 @@ public:
 	}
 
 	template<size_t k, typename Stream>
-	void FillCoverage(Stream& stream, const de_bruijn::EdgeIndex<k + 1, Graph>& index) {
-		de_bruijn::SimpleSequenceMapper<k, Graph> threader(g_, index);
+	void FillCoverage(Stream& stream, const EdgeIndex<k + 1, Graph>& index) {
+		SimpleSequenceMapper<k, Graph> threader(g_, index);
 		while (!stream.eof()) {
 			Read read;
 			stream >> read;
 			processRead(threader, read);
 		}
-
-		cout << "Here3 coverage:" << g_.coverage(index.get(Seq<k+1>("CCAC")).first) << "   length:"<< g_.length(index.get(Seq<k+1>("CCAC")).first)<< endl;
 	}
 
 	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {

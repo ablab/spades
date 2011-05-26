@@ -28,6 +28,18 @@ using namespace std;
 ostringstream oMsg;
 string sbuf;
 
+class ThreadStatistics {
+  public:
+	int thread;
+	int old_clusters;
+	int new_clusters;
+	int old_singletons;
+	int new_singletons;
+	
+	ThreadStatistics(int i) : thread(i), old_clusters(0), new_clusters(0),
+		old_singletons(0), new_singletons(0) {}
+};
+
 class BadConversion : public std::runtime_error {
  public:
    BadConversion(std::string const& s)
@@ -57,15 +69,10 @@ double calcMultCoef(vector<int> & distances, vector<HammerRead> & kmers) {
 	int kmersize = kmers[0].seq.size();
 	double prob = 0;
 	double theta;
-	//cout << "calcMultCoef.  distances = " << distances << "\t\t\t"; for (int i = 0; i < kmers.size(); i++) cout << kmers[i].mult << "\t";
-	//cout << "\nadding:\t";
 	for (size_t i = 0; i < kmers.size(); i++) {
 		theta = kmers[i].count * -((kmersize - distances[i]) * log(1 - errorRate) + distances[i] * log(errorRate));
-		//cout << theta << "\t";
 		prob = prob + theta;
 	}
-	//cout << endl;
-
 	return prob;
 }
 
@@ -118,7 +125,7 @@ double clusterLogLikelihood(const vector<HammerRead> & block, const vector<Hamme
 		for (size_t i=0; i<block.size(); ++i) {
 			dist += hamdist(block[i].seq, centers[indices[i]].seq, ANY_STRAND);
 		}
-		return ( log(errorRate) * dist + log(1-errorRate) * (block[0].seq.size() * block.size() - dist) );
+		return ( lMultinomial(block) + log(errorRate) * dist + log(1-errorRate) * (block[0].seq.size() * block.size() - dist) );
 	}
 	
 	// compute sufficient statistics
@@ -133,7 +140,8 @@ double clusterLogLikelihood(const vector<HammerRead> & block, const vector<Hamme
 	double res = lBetaPlusOne(count);   // 1/B(count)
 	res += lMultinomial(centers); 		// {sum(centers.count) \choose centers.count}
 	for (size_t i=0; i<centers.size(); ++i) {
-		res += log(errorRate) * totaldist[i] + log(1-errorRate) * (block[0].seq.size() * count[i] - totaldist[i]);
+		res += lMultinomialWithMask(block, indices, i) + 
+			   log(errorRate) * totaldist[i] + log(1-errorRate) * (block[0].seq.size() * count[i] - totaldist[i]);
 	}
 	return res;
 }
@@ -155,7 +163,7 @@ double lMeansClustering(int l, vector< vector<int> > & distances, vector<HammerR
 		return clusterLogLikelihood(kmers, centers, indices);
 	}
 	
-	cout << "Running " << l << "-means clustering.\n";	
+	//cout << "Running " << l << "-means clustering.\n";
 	
 	int restartCount = 1;
 	
@@ -263,9 +271,13 @@ double lMeansClustering(int l, vector< vector<int> > & distances, vector<HammerR
   * @param newBlockNum current number of a new cluster; incremented inside
   * @return new value of newBlockNum
   */
-int process_block_SIN(vector<HammerRead> & block, int blockNum, double threshold, ofstream & outf, int newBlockNum) {
+int process_block_SIN(vector<HammerRead> & block, int blockNum, double threshold, ofstream & outf, int newBlockNum, ThreadStatistics *tstat) {
 	int origBlockSize = block.size();
 	if (origBlockSize == 0) return newBlockNum;
+	
+	tstat->old_clusters++; // we've got a cluster
+	if (origBlockSize == 1) tstat->old_singletons++; // a singleton
+
 	vector<double> multiCoef(origBlockSize,1000000);//add one for the consensus
 	vector<int> distance(origBlockSize, 0);
 	vector< vector<int> > distances(origBlockSize, distance);
@@ -281,17 +293,16 @@ int process_block_SIN(vector<HammerRead> & block, int blockNum, double threshold
 		}
 	}
 
+	/*for (size_t i = 0; i < block.size(); i++) {
+		for (size_t j = 0; j < block.size(); j++) {
+			cout << distances[i][j] << " ";
+		}
+		cout << "\n";
+	}*/
+
 	// Multinomial coefficients -- why? TODO: remove
 	for (int i = 0; i < origBlockSize; i++) multiCoef[i] = calcMultCoef(distances[i], block);
 
-	// try l-means clustering
-	if (origBlockSize > 1) {
-		cout << "\n=== Distances ===\n";
-		for (int i = 0; i < origBlockSize; i++) {
-			cout.width(3); cout.precision(2);
-			cout << " " << block[i].count << ":  "; for (int j = 0; j < origBlockSize; j++) cout << distances[i][j] << " "; cout << "\n";
-		}
-	}
 	vector<int> indices(origBlockSize);
 	double bestLikelihood = -1000000;
 	vector<HammerRead> bestCenters;
@@ -300,38 +311,39 @@ int process_block_SIN(vector<HammerRead> & block, int blockNum, double threshold
 	for (int l = 1; l <= origBlockSize; ++l) {
 		vector<HammerRead> centers(l);
 		double curLikelihood = lMeansClustering(l, distances, block, indices, centers);
-		if (centers.size() > 1) {
+		/*if (centers.size() > 1) {
 			cout << "Centers:\n"; for (int i=0; i<l; ++i) cout << "  " << centers[i].seq << "\n";
 			cout << "Indices: "; for (size_t i=0; i<block.size(); ++i) cout << indices[i]; cout << "\n";
 			cout.width(6); cout.precision(2);
 			printf("Likelihood: %f\n", curLikelihood);
 		} else if (block.size() > 1) {
 			printf("Single-center likelihood: %f\n", curLikelihood);
-		}
+		}*/
 		if (curLikelihood <= bestLikelihood) {
-			cout << "We've stopped improving. Exiting.\n";
+			//cout << "We've stopped improving. Exiting.\n";
 			break;
 		}
 		bestLikelihood = curLikelihood;
 		bestCenters = centers; bestIndices = indices;
-		if (centers.size() > 1) cout << "\n";
+		//if (centers.size() > 1) cout << "\n";
 	}
 	
 	for (size_t k=0; k<bestCenters.size(); ++k) {
 		if (bestCenters[k].count == 0) {
-			cout << "Cluster " << k << " has no elements. Strange.\n";
+			// cout << "Cluster " << k << " has no elements. Strange.\n";
 			continue; // superfluous cluster with zero elements
 		}
 		if (bestCenters[k].count == 1) { //singleton
-			if (block.size() > 1) cout << "Cluster " << k << " is a singleton. ";
+			// if (block.size() > 1) cout << "Cluster " << k << " is a singleton. ";
+			tstat->new_singletons++; // a singleton among the new clusters
 			for (int i = 0; i < origBlockSize; i++) {
 				if (indices[i] == (int)k) {
 					if (block[i].freq >= threshold) { //keep reads
-						if (block.size() > 1)  cout << "Frequency " << block[i].freq << " is good.\n";
+						//if (block.size() > 1)  cout << "Frequency " << block[i].freq << " is good.\n";
 						newkmer =  block[i].seq;
 						reason =  "goodSingleton";
 					} else {
-						if (block.size() > 1)  cout << "Frequency " << block[i].freq << " is bad.\n";
+						//if (block.size() > 1)  cout << "Frequency " << block[i].freq << " is bad.\n";
 						newkmer = "removed";
 						reason =  "badSingleton";
 					}
@@ -344,7 +356,7 @@ int process_block_SIN(vector<HammerRead> & block, int blockNum, double threshold
 			}
 			++newBlockNum;
 		} else { // there are several kmers in this cluster
-			cout << "Cluster " << k << " has " << bestCenters[k].count << " different kmers.\n";
+			// cout << "Cluster " << k << " has " << bestCenters[k].count << " different kmers.\n";
 			bool centerInCluster = false;
 			for (int i = 0; i < origBlockSize; i++) {
 				if (bestIndices[i] == (int)k) {
@@ -372,7 +384,9 @@ int process_block_SIN(vector<HammerRead> & block, int blockNum, double threshold
 }
 
 void * onethread(void * params) {
-	int thread = *((int *) params);
+	ThreadStatistics *tstat = (ThreadStatistics *)(params);
+	int thread = tstat->thread;
+	cout << thread << "\n";
 
 	ifstream inf;
 	open_file(inf, ufFilename);
@@ -401,22 +415,23 @@ void * onethread(void * params) {
 		if (lastBlockNum == curBlockNum) { //add to current reads
 			block.push_back(cur);
 		} else {
-			newBlockNum = process_block_SIN(block, lastBlockNum, threshold, outf, newBlockNum);
+			newBlockNum = process_block_SIN(block, lastBlockNum, threshold, outf, newBlockNum, tstat);
 			block.clear();
 			block.push_back(cur);
 		}
 		lastBlockNum = curBlockNum;
 	}
 	if (block.size() > 0)
-		process_block_SIN(block, lastBlockNum, threshold, outf, newBlockNum);
+		newBlockNum = process_block_SIN(block, lastBlockNum, threshold, outf, newBlockNum, tstat);
 	cerr << "Finished\n";
+	tstat->new_clusters = newBlockNum;
+	
 	inf.close();
 	outf.close();
 	pthread_exit(NULL);
 }
 
 int main(int argc, char * argv[]) {
-
 	ufFilename = argv[1];
 	threshold = atof(argv[2]);
 	nthreads = atoi(argv[3]);
@@ -425,15 +440,39 @@ int main(int argc, char * argv[]) {
 
 	//start threads
 	vector<pthread_t> thread(nthreads);
-	vector<int> params(nthreads);
+	vector<ThreadStatistics *> params(nthreads);
 	for (int i = 0; i < nthreads; i++) {
-		params[i] = i;
-		pthread_create(&thread[i], NULL, onethread, (void *) &params[i]);
+		params[i] = new ThreadStatistics(i);
+		pthread_create(&thread[i], NULL, onethread, (void *)params[i]);
 	}
 	for (int i = 0; i < nthreads; i++) {
 		pthread_join(thread[i], NULL);
 	}
 
+	cout << "Thread statistics:\n";
+	for (int i = 0; i < nthreads; i++) {
+		cout << "  thread " << params[i]->thread << ": split " << params[i]->old_clusters << " to " << params[i]->new_clusters;
+		cout << "; " << params[i]->old_singletons << " became " << params[i]->new_singletons << "\n";
+	}
+	
+	ThreadStatistics *total = new ThreadStatistics(-1);
+	for (int i = 0; i < nthreads; i++) {
+		total->old_clusters += params[i]->old_clusters;
+		total->new_clusters += params[i]->new_clusters;
+		total->old_singletons += params[i]->old_singletons;
+		total->new_singletons += params[i]->new_singletons;
+		
+		delete params[i];
+	}
+	
+	cout << "\nTotal statistics:\n";
+	cout << "  " << total->old_clusters << " clusters before.\n";
+	cout << "  " << total->new_clusters << " clusters after.\n";
+	cout << "  " << total->old_singletons << " singletons before.\n";
+	cout << "  " << total->new_singletons << " singletons after.\n";
+	
+	params.clear(); delete total;
+	
 	return 0;
 }
 

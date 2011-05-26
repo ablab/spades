@@ -26,7 +26,6 @@
 
 using namespace std;
 
-
 template<class T, class U>
 ostream & operator << (ostream &out, const map<T,U> & m) {
 	typename map<T,U>::const_iterator it;
@@ -156,24 +155,6 @@ string read_genome(string filename) {
 	inFile.close();
 	return genome;
 }
-
-/*
-//assumes each line is a separate contig
-string read_pseudo_genome(istream inFile) {
-	string genome;
-
-	//read the file into genome
-	char c;
-	while ((c = inFile.rdbuf()->sbumpc()) != EOF) {
-		if (c != '\n') {
-			genome.push_back(c);
-		} else {
-			genome.push_back('$');
-		}
-	}
-	return genome;
-}
-*/
 
 template<class T>
 int argmin(const vector<T> & data) {

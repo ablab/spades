@@ -69,6 +69,11 @@ public:
 		}
 		return r;
 	}
+
+	size_t countLengthOccurrences (size_t length) const {
+		Lengths::const_iterator it = lengths_.find (length);
+		return (it == lengths_.end() ? 0 : it -> second);
+	}
 };
 
 ostream& operator<< (ostream& os, const Edge& e);

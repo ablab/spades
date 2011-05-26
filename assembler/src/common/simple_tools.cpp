@@ -3,34 +3,19 @@
 #include "nucl.hpp"
 
 string Reverse(const string &s) {
-	size_t length = s.length();
-	string result(length, 0);
-	for (size_t i = 0; i < length; i++) {
-		result[length - 1 - i] = s[i];
-	}
-	return result;
+	return string(s.rbegin(), s.rend());
 }
 
 string Complement(const string &s) {
-	size_t length = s.length();
-	string result(length, 0);
-	for (size_t i = 0; i < length; i++) {
-		if (s[i] == 'N')
-			result[i] = s[i];
-		else
-			result[i] = nucl_complement(s[i]);
+	string res = s;
+	for (size_t i = 0; i < s.size(); i++) {
+		if (res[i] != 'N' && res[i] != 'n') {
+			res[i] = nucl_complement(res[i]);
+		}
 	}
-	return result;
+	return res;
 }
 
 string ReverseComplement(const string &s) {
-	size_t length = s.length();
-	string result(length, 0);
-	for (size_t i = 0; i < length; i++) {
-		if (s[i] == 'N')
-			result[length - 1 - i] = s[i];
-		else
-			result[length - 1 - i] = nucl_complement(s[i]);
-	}
-	return result;
+	return Complement(Reverse(s));
 }

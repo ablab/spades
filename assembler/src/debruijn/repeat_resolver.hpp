@@ -17,7 +17,8 @@
 #include "omni_utils.hpp"
 
 LOGGER("d.repeat_resolver");
-namespace de_bruijn {
+namespace debruijn_graph {
+
 using omnigraph::SmartVertexIterator;
 
 template<class Graph>
@@ -25,10 +26,10 @@ class RepeatResolver {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
-	typedef de_bruijn::SmartVertexIterator<Graph> VertexIter;
+	typedef SmartVertexIterator<Graph> VertexIter;
 	typedef omnigraph::SmartEdgeIterator<Graph> EdgeIter;
-	typedef de_bruijn::PairedInfoIndex<Graph> PairedInfoIndex;
-	typedef typename PairedInfoIndex::PairInfo PairedInfo;
+	typedef PairedInfoIndex<Graph> PIIndex;
+	typedef typename PIIndex::PairInfo PairedInfo;
 	typedef vector<PairedInfo> PairInfos;
 
 	typedef map<VertexId,set<EdgeId> > NewVertexMap;
@@ -39,25 +40,25 @@ public:
 
 		assert(leap >= 0 && leap < 100);
 	}
-	Graph ResolveRepeats(Graph &g, PairedInfoIndex &ind);
+	Graph ResolveRepeats(Graph &g, PIIndex &ind);
 
 private:
 	int leap_;
-	size_t ResolveVertex(Graph &g, PairedInfoIndex &ind, VertexId vid);
+	size_t ResolveVertex(Graph &g, PIIndex &ind, VertexId vid);
 	void ResolveEdge(EdgeId eid);
 	void dfs(vector<vector<int> > &edge_list, vector<int> &colors, int cur_vert, int cur_color);
 	VertexIdMap vid_map;
 	NewVertexMap new_map;
 	Graph new_graph;
 	int sum_count;
-//	PairedInfoIndex old_index;
-	PairedInfoIndex new_index;
+//	PIIndex old_index;
+	PIIndex new_index;
 
 //	Graph old_graph;
 };
 
 template<class Graph>
-Graph RepeatResolver<Graph>::ResolveRepeats(Graph &g, PairedInfoIndex &ind){
+Graph RepeatResolver<Graph>::ResolveRepeats(Graph &g, PIIndex &ind){
 //	old_graph = g;
 //	old_index = ind;
 	INFO("resolve_repeats started");
@@ -68,15 +69,15 @@ Graph RepeatResolver<Graph>::ResolveRepeats(Graph &g, PairedInfoIndex &ind){
 	while (changed) {
 		changed = false;
 		vertices.clear();
-		for(VertexIter v_iter = g.SmartVertexBegin(), end = g.SmartVertexEnd(); v_iter != end; ++v_iter) {
-			if (vertices.find(g.Complement(*v_iter)) == vertices.end())
+		for(VertexIter v_iter = g.SmartVertexBegin(); !v_iter.isEnd(); ++v_iter) {
+			if (vertices.find(g.conjugate(*v_iter)) == vertices.end())
 			{
 				vertices.insert(*v_iter);
 			}
 		}
 		INFO("Having "<< vertices.size() << "paired vertices, trying to split");
 		for(auto v_iter = vertices.begin(), v_end = vertices.end(); v_iter != v_end; ++v_iter) {
-//		vector<typename PairedInfoIndex::PairInfo> tmp = old_index.getEdgeInfos(*e_iter);
+//		vector<typename PIIndex::PairInfo> tmp = old_index.getEdgeInfos(*e_iter);
 //		INFO("Parsing vertex "<< old_graph.VertexNucls(*v_iter));
 			if (ResolveVertex(g, ind, *v_iter)  > 1) {
 // 				changed = true;
@@ -109,9 +110,9 @@ void RepeatResolver<Graph>::dfs(vector<vector<int> > &edge_list, vector<int> &co
 	}
 }
 template<class Graph>
-size_t RepeatResolver<Graph>::ResolveVertex( Graph &g, PairedInfoIndex &ind, VertexId vid){
+size_t RepeatResolver<Graph>::ResolveVertex( Graph &g, PIIndex &ind, VertexId vid){
 	DEBUG("Parsing vertex " << vid);
-	DEBUG(g.Complement(vid));
+	DEBUG(g.conjugate(vid));
 	vector<EdgeId> edgeIds[2];
 	edgeIds[0] = g.OutgoingEdges(vid);
 	edgeIds[1] = g.IncomingEdges(vid);
@@ -119,7 +120,7 @@ size_t RepeatResolver<Graph>::ResolveVertex( Graph &g, PairedInfoIndex &ind, Ver
 	DEBUG(edgeIds[0].size()<< "  " << edgeIds[1].size());
 	paired_edges.resize(edgeIds[0].size() + edgeIds[1].size());
 
-	map<EdgeId, set<EdgeId>> right_to_left;
+	map<EdgeId, set<EdgeId> > right_to_left;
 	map<EdgeId, int> right_set;
 	vector<EdgeId> right_vector[2];
 	map<EdgeId, set<int> > left_colors[2];

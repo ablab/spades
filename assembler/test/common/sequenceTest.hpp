@@ -53,7 +53,7 @@ void TestSequenceRefCount2() {
 	Sequence *s2 = new Sequence(*s);
 	Sequence *s3 = new Sequence(!(*s));
 	Sequence *ss = new Sequence(s->Subseq(3));
-	ASSERTM(s->str() + s2->str() + s3->str() + ss->str(), true);
+	ASSERTM( s->str() << s2->str() << s3->str() << ss->str(), true);
 	delete s;
 	delete s2;
 	delete s3;
