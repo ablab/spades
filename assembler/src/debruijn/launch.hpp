@@ -138,7 +138,7 @@ void ConstructGraphWithPairedInfo(Graph& g,
 	FillPairedIndex<k, PairedReadStream> (paired_index, stream, index);
 }
 
-template<size_t k, class Graph, class ReadStream>
+template<size_t k, class ReadStream>
 void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 		const string& output_folder) {
 	typedef SeqMap<k + 1, EdgeId> DeBruijn;
