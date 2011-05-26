@@ -238,30 +238,30 @@ Each rectangle split operation  doesn't increase incoming-outgoing set(due to fu
 
 
 \section{Our ideas}
+
+\subsection{Bad cases for rectangle graph}
+Rectangle graph is a powerfull tool, but it's simple to construct graph that can be resolved manually, but stays unchanged after applying of rectangle graph technics:
+Lets consider graph $G$ with vertex set $V = {A,B,C,E,F,G,H}$ and edges $\{(A,B),(B,C),(C,E),(E,F),(F,G),(G,A),(C,H),(H,F)\}$. Pair information is set of all edge pairs with distance(on some subpath of $G$) 2 i.e. $(A,B)$ and $(C,E)$.
+Both red and blue rectangle graph are isomorphic to $G$ but after using of slightly modified split operation for this graph we can receive a correct ungluing, consisting of two cycles: $(A\rightarrow B\rightarrow C\rightarrow E\rightarrow F\rightarrow G\rightarrow A)$ and $(A\rightarrow B\rightarrow C\rightarrow H\rightarrow F\rightarrow G\rightarrow A)$.
+
 \subsection{Rectangle split modifications}
-First approach is modifying adjacency definition for vertex-edge pairs.
+First aproach is to modify adjacency definition for vertex-edge pairs.
 \begin{definition}
  Two vertex-edge pairs $(Z,a,x)$ and $(Z,b,y)$ are called \emph{adjacent} if $ start (a) = end(b)\text{ or } start(b) = end (a)$ and distances from $Z$ to common vertices of $a$ and $b$, obtained from $(Z,a,x)$ and from $(Z,b,y)$, are same. 
 \end{definition}
-This definition slightly different from previous adjacency definition. So terms in this definition we can split vertex by vertex-edge information even if there are two edges with common start or finish vertex.   
+This definition  is slightly different from previous adjacency definition. Using this definition we can split vertex $V$ by vertex-edge information even if there two edges paired with $V$ has common start or end vertex.   
 
 In case of inexact insert length we have to somehow weaken the condition on distances 
 Also, for highly nonuniform coverage, the request of sharing vertex for adjacent edges should be weakened. 
 
 \begin{definition}
- Two vertex-edge pairs $(Z,a,x)$ and $(Z,b,y)$ are called \emph{$l-\eps$ adjacent} if there exists path $P$ from $a$ to $b$: $|P|<l$ and $|P|$ is similar to $y-x$ (difference not exceed $\eps$).   
+ Two vertex-edge pairs $(Z,a,x)$ and $(Z,b,y)$ are called \emph{$l-\eps$ adjacent} if there exists path $P$ from $a$ to $b$: $|P|<l$ and $||P| - |y-x|| < \eps$.   
 \end{definition}
 
 \subsection{Milty split operation}
 
-After doing split for all possibilities we can recalculate pair information, and do split again. It is possible that after fist splitting some connected components of pair infos may break into few parts. In this case we can do split operation again. Some time it is possible to split by \emph{back} information. This splitting is rectangle graph operation for contracting red edge. In terms of splitting it is obvious if back splitting for vertex is still possible.  
-
-
-\subsection{Rectangle graph hard case}
-
-There are simple graph that unaffected by rectangle graph split operation.
-Vertices is ${A,B,C,E,F,G,H}$ with edges $\{(A,B),(B,C),(C,E),(E,F),(F,G),(G,A),(C,H),(H,F)\}$. Pair information is set of all edge pairs with real distance 2 i.e. $(A,B)$ and $(C,E)$.
-Using of slightly modified split operation for this graph, and after that using back split operation produce two loops $(A\rightarrow B\rightarrow C\rightarrow E\rightarrow F\rightarrow G\rightarrow A)$ and $(A\rightarrow B\rightarrow C\rightarrow H\rightarrow F\rightarrow G\rightarrow A)$. 
+After performing rectangle split for all vertices of initial graph we can recalculate pair information and do split for new vertices.It can be useful if after splitting of all vertices from initial graph, some connected components of pair infos break into unconnected parts. 
+Also, for some vertices it is possible to split them by using paired information \emph{back} information. This splitting is equivalent(in terms of  rectangle graph) to contracting red edge. 
 
 %\begin{tikzpicture}
 %\Vertex[x=0,y=2.5]{A}
@@ -309,14 +309,13 @@ Using of slightly modified split operation for this graph, and after that using 
 %Such split operation not increase graph complexity measure defined above. 
 
 \section{Details about real implementation}
-We'll have to ignore low confirmed information about distance between edges to avoid chimeric pairs. Also, it may turn out that after out resolving we'll need to do tip clipping again because of erroneous connections.
-In case of low coverage of genome with right elements of mate-pairs we'll possibly have to consider set $T_i$ instead of $S_i$, where $T_i$ contains every edge, such that it distance to $S_i$ is less than some cutoff $d$.
+We have to ignore low confirmed information about distance between edges to cope with chimeric pairs. Also, it may turn out that after out resolving we'll need to do tip clipping again because of erroneous connections.
 
-\section{connected ideas}
-\subsection{insert-length distribution specifing}
+\section{Connected ideas}
+\subsection{Insert-length distribution specifing}
 We can use mate-pairs aligning the same edge to specify insert-length distribution.
-\subsection{complicated repeat resolving}
-Next step is to resolve repeats using distances distribution on neighbouring edge (to divide sum of two close normal distributions with one)w
+\subsection{Complicated repeat resolving}
+Next step is to resolve repeats using distances distributions on neighbouring edge (to divide sum of two close normal distributions with one).
 
 \end{document}
 
