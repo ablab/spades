@@ -75,7 +75,7 @@ public:
 	//		}
 	//	}
 
-	StrobeReader(const string filenames[]) __attribute__ ((deprecated)) {
+	StrobeReader(const string filenames[]) {
 		stringstream s;
 		for (size_t i = 0; i < cnt; ++i) {
 			readers_.push_back(new TR(filenames[i]));
@@ -173,7 +173,7 @@ private:
 	size_t distance_;
 public:
 
-	PairedReader(InnerReader& reader, size_t distance)  __attribute__ ((deprecated)) : reader_(reader), distance_(distance) {
+	PairedReader(InnerReader& reader, size_t distance) : reader_(reader), distance_(distance) {
 
 	}
 
@@ -213,7 +213,7 @@ private:
 	ReadType rc_result_;
 	bool was_rc_;
 public:
-	RCReaderWrapper(Stream &reader) __attribute__ ((deprecated)) :
+	RCReaderWrapper(Stream &reader):
 		inner_reader_(reader), was_rc_(false) {
 	}
 
@@ -254,7 +254,7 @@ private:
 	PairedRead result_;
 	size_t current_;
 public:
-	SimpleReaderWrapper(Stream &reader) __attribute__ ((deprecated)) :
+	SimpleReaderWrapper(Stream &reader) :
 		inner_reader_(reader), current_(0) {
 	}
 
