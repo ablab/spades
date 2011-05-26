@@ -226,10 +226,13 @@ If we take some edge from $G_{rb}$ than we can produce split operation like abov
 \begin{theorem}
   In terms of Son's paper, result of his gluing procedure and contracting blue edges is a honest ungluing of initial graph $G$. 
 \end{theorem}
+\begin{proof}(sketch)
+Each rectangle split operation for honest ungluing of $G$ produce honest ungluing of $G$, so if we apply them consequently, we'
+ll receive a honest ungluing of $G$.
 \begin{theorem}
   In terms of Son's paper, result of his gluing procedure and contracting blue edges has measure of complexity, which is less or equal to measure of complexity of initial graph $G$. 
 \end{theorem}
-
+Each rectangle split operation  doesn't increase incomming-outgoing set(due to function $g$) of $G$, so their combination's incomming-outgoing set is also a subset of incomming-outgoing set of $G$.
 
 
 
@@ -246,7 +249,7 @@ In case of inexact insert length we have to somehow weaken the condition on dist
 Also, for highly nonuniform coverage, the request of sharing vertex for adjacent edges should be weakened- 
 
 \begin{definition}
- Two vertex-edge pairs $(V,a,x)$ and $(V,b,y)$ are called \emph{l-eps adjacent} if there exists path $P$ from $a$ to $b$: $|P|$ < $|P|$ is similar to $y-x$. 
+ Two vertex-edge pairs $(V,a,x)$ and $(V,b,y)$ are called \emph{$l-\eps$ adjacent} if there exists path $P$ from $a$ to $b$: $|P|$ < $|P|$ is similar to $y-x$. 
 \end{definition}
 
   
