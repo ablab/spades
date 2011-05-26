@@ -235,7 +235,7 @@ void AssertGraph(const vector<string>& reads, const vector<string>& etalon_edges
 	DeBruijnGraph g(kmer_size_);
 	EdgeIndex<kmer_size_ + 1, DeBruijnGraph> index(g);
 
-	ConstructGraph<kmer_size_, Stream>(g, index, read_stream);
+	ConstructGraph<kmer_size_, DeBruijnGraph, Stream>(g, index, read_stream);
 
 	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 }
@@ -293,7 +293,7 @@ void AssertGraph(const vector<MyPairedRead>& paired_reads, size_t insert_size, c
 	CoverageHandler<DeBruijnGraph> coverage_handler(g);
 	PairedIndex paired_index(g);
 
-	ConstructGraphWithPairedInfo<k, Stream>(g, index, coverage_handler, paired_index, paired_read_stream);
+	ConstructGraphWithPairedInfo<k, DeBruijnGraph, Stream>(g, index, coverage_handler, paired_index, paired_read_stream);
 
 	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 
@@ -349,7 +349,7 @@ void TestStrange() {
 	DeBruijnGraph g(27);
 	EdgeIndex<28, DeBruijnGraph> index(g);
 
-	ConstructGraph<27, Stream>(g, index, read_stream);
+	ConstructGraph<27, DeBruijnGraph, Stream>(g, index, read_stream);
 	EdgeId e = index.get(Seq<28>("TTCTGCATGGTTATGCATAACCATGCAG")).first;
 	VertexId start = g.EdgeEnd(e);
 	vector<EdgeId> edgeIds[2];

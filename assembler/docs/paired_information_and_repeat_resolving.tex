@@ -1,5 +1,5 @@
 \documentclass[12pt,a4paper,oneside]{article}
-\usepackage{afterpage,fullpage,amsmath,amsfonts,amssymb}
+\usepackage{afterpage,fullpage,amsmath,amsfonts,amssymb,amsthm}
 \usepackage[cp1251]{inputenc}
 \usepackage[english]{babel}
 \usepackage{concrete}
@@ -198,24 +198,30 @@ For given vertex $Z \in V$ rectangle split operation consisting following steps:
 \begin{enumerate}
 \item Part $P_v(Z)$ into equivalence classes by transitive closure of adjacency relationship: $P_v(Z) = \bigcup C_i$. 
 \item For each such class crate vertex $Z_i$.
-\item For each precursor $((a, b), y)$ of each vertex-edge pair info's $(A, b, x) \in C_i$,  create a copy $a_i$ of edge $a$, replacing all occurences of $Z$ in $(start(a), end(a))$ to $Z_i$  
+\item For each precursor $((a, b), y)$ of each vertex-edge pair info's $(A, b, x) \in C_i$,  create a copy $a_i$ of edge $a$, replacing all occurrences of $Z$ in $(start(a), end(a))$ to $Z_i$  
 \item For each precursor $((a, b), y)$ of each vertex-edge pair info's $(A, b, x) \in C_i$, replace $((a, b), y)$ in $P$ with $((a_i, b), y)$
-\item Remove $Z$ with all it's incomming and outgoing edges.
+\item Remove $Z$ with all it's incoming and outgoing edges.
 \end{enumerate} 
 \end{definition} 
 \begin{theorem}
   After applying rectangle split operation to each vertex of initial graph $G$ in any order we'll receive a graph $G' = (V', E')$, such that there exists one-to-one mapping from $(V', E')$ to $(V_r, E_r)$ and this mapping respects labeling.
 \end{theorem}
 \begin{remark}
- Initial graph $G$ is also correct ungluing of itself, with identical $f$ and $g$. We'll iterativelly modify $f$ and $g$ in each rectange split operation:
+ Initial graph $G$ is also correct ungluing of itself, with identical $f$ and $g$. We'll iteratively modify $f$ and $g$ in each rectangle split operation:
 $f(Z_i):= f(Z)$, $g(a_i):= g(a)$
  It's evident, that after each rectangle split ungluing conditions (from definition of correct ungluing) on $f$ and $g$ are still satisfied.
-
 \end{remark}
+\begin{proof}
+Let's fix some order of rectangle split operations.
+While applying rectangle split operations to each vertex except $Z$, we can somehow modify $P$, but the set $P_v(Z)$ stays constant (because vertex-edge paired info, obtained from removed edge $e$ can be still obtained from an edge $e_i$ for some $i$). By construction of rectangle graph, there is a one-one mapping from $C_i$(and so from $Z_i$) to set of all blue-connected components, having $Z$ as first vertex in label. Let's consider union of this mappings for all vertices $Z \ in V$. 
 
-\subsection{Sketch of proof}
-Let's fix some order of rectangle split operations,
-While applying rectangle split operations to each vertex except $Z$, we can somehow modify $P$, but the set $P_v(Z)$ stays constant (because vertex-edge paired info, obtained from removed edge $e$ can be still obtained from an edge $e_i$ for some $i$). By construction of rectangle graph, there is a one-one mapping from $C_i$(and so from $Z_i$) to set of all blue-connected components, having $Z$ as first vertex in label. Let's consider union of this mappings for all vertices $Z \ in V$. It's also provides us a mapping on edges (SHURIK!!!). 
+Consider any edge $a_{ij}'=(Z_i, Y_j)$ with label $a$. 
+Without losing of generality we can assume that vertex $Z$ of original graph $G$ split before $Y$. In splitting of $Y$ we have precursor $((a_{i}, b), t)$ (that remmaped into $(a_{ij}, b, t)$ ) of vertex-edge pair info's $(Y_j, b, t-l_{a_i}) \in D_j$, such that $\mathop{end}(a_{i}) = Y$ where $P_v(Y) = \bigcup D_j$. In splitting of $Z$ we have precursor $((a, b), t)$ of vertex-edge pair info's $(Z, b, t) \in C_i$, such that $\mathop{start}(a) = Z$. The edge pair info $((a, b), t)$ belongs to $C_i$ and $D_j$, this means that edge pair info $((a, b), t)$ produce rectangle such that red edges of this rectangle connect two blue edges  components that mapped into $C_i$ and $D_j$, and this edges labeled by $a$. We shown that for each edge in our graph $G'$ there exist edge in $G_{rb}$.
+
+If we take some edge from $G_{rb}$ than we can produce split operation like above. But edge $b$ will be obtained from rectangle. And we produce sequence of precursor $(a,b,t)\rightarrow (a_i,b,t))\rightarrow (a_{ij},b,t)$. This sequence show as that in $G'$ exist edge connecting $Z_i$ and $Y_j$, and labeled with $a$. 
+\end{proof}
+
+
 
 \begin{theorem}
   In terms of Son's paper, result of his gluing procedure and contracting blue edges is a honest ungluing of initial graph $G$. 

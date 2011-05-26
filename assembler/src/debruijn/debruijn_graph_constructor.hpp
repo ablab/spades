@@ -7,7 +7,6 @@
 
 #ifndef DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_
 #define DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_
-#include "debruijn_graph.hpp"
 #include "utils.hpp"
 #include "seq_map.hpp"
 
@@ -16,18 +15,20 @@ namespace debruijn_graph {
 /*
  * Constructs DeBruijnGraph from DeBruijn Graph using "new DeBruijnGraphConstructor(DeBruijn).ConstructGraph(DeBruijnGraph, Index)"
  */
-template<size_t kmer_size_>
+template<size_t kmer_size_, class Graph>
 class DeBruijnGraphConstructor {
 private:
-	typedef EdgeIndex<kmer_size_ + 1, DeBruijnGraph> Index;
+	typedef typename Graph::EdgeId EdgeId;
 	typedef SeqMap<kmer_size_ + 1, EdgeId> DeBruijn;
+	typedef typename Graph::VertexId VertexId;
+	typedef EdgeIndex<kmer_size_ + 1, Graph> Index;
 	typedef Seq<kmer_size_> Kmer;
 	typedef Seq<kmer_size_ + 1> KPlusOneMer;
 
 	DeBruijn& origin_;
 
 	bool StepRightIfPossible(KPlusOneMer &edge) {
-//		DEBUG("Considering edge " << edge);
+		TRACE("Considering edge " << edge);
 		if (origin_.RivalEdgeCount(edge) == 1 && origin_.NextEdgeCount(edge) == 1) {
 			KPlusOneMer next_edge = origin_.NextEdge(edge);
 			//if (edge != !next_edge) { // rev compl
@@ -40,7 +41,7 @@ private:
 	}
 
 	KPlusOneMer GoRight(KPlusOneMer edge) {
-		DEBUG("Starting going right for edge " << edge);
+		TRACE("Starting going right for edge " << edge);
 		KPlusOneMer initial = edge;
 		while (StepRightIfPossible(edge) && edge != initial) {
 			;
@@ -49,7 +50,7 @@ private:
 	}
 
 	KPlusOneMer GoLeft(KPlusOneMer edge) {
-		DEBUG("Starting going left for edge " << edge);
+		TRACE("Starting going left for edge " << edge);
 		return !GoRight(!edge);
 	}
 
@@ -68,7 +69,7 @@ private:
 		return ConstructSeqGoingRight(GoLeft(edge));
 	}
 
-	VertexId FindVertexByOutgoingEdges(DeBruijnGraph &graph, Index &index, Kmer kmer) {
+	VertexId FindVertexByOutgoingEdges(Graph &graph, Index &index, Kmer kmer) {
 		for (char c = 0; c < 4; ++c) {
 			KPlusOneMer edge = kmer.pushBack(c);
 			if (index.containsInIndex(edge)) {
@@ -78,17 +79,17 @@ private:
 		return NULL;
 	}
 
-	VertexId FindVertexByIncomingEdges(DeBruijnGraph &graph, Index &index, Kmer kmer) {
+	VertexId FindVertexByIncomingEdges(Graph &graph, Index &index, Kmer kmer) {
 		VertexId conjugate = FindVertexByOutgoingEdges(graph, index, !kmer);
 		return conjugate != NULL ? graph.conjugate(conjugate) : NULL;
 	}
 
-	VertexId FindVertex(DeBruijnGraph &graph, Index &index, Kmer kmer) {
+	VertexId FindVertex(Graph &graph, Index &index, Kmer kmer) {
 		VertexId v = FindVertexByOutgoingEdges(graph, index, kmer);
 		return v == NULL ? FindVertexByIncomingEdges(graph, index, kmer) : v;
 	}
 
-	VertexId FindVertexMaybeMissing(DeBruijnGraph &graph, Index &index, Kmer kmer) {
+	VertexId FindVertexMaybeMissing(Graph &graph, Index &index, Kmer kmer) {
 		VertexId v = FindVertex(graph, index, kmer);
 		return v != NULL ? v : graph.AddVertex();
 	}
@@ -98,7 +99,7 @@ public:
 		origin_(origin) {
 	}
 
-	void ConstructGraph(DeBruijnGraph &graph, Index &index) {
+	void ConstructGraph(Graph &graph, Index &index) {
 		for (typename DeBruijn::map_iterator it = origin_.begin(); it != origin_.end(); it++) {
 			KPlusOneMer edge = it->first;
 			if (!index.containsInIndex(edge)) {
