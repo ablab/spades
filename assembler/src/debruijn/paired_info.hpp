@@ -2,6 +2,7 @@
 #define PAIRED_INFO_HPP_
 #include "utils.hpp"
 #include "sequence.hpp"
+#include "paired_read.hpp"
 #include <cmath>
 #include <map>
 

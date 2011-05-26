@@ -1,16 +1,20 @@
 #ifndef VISUALIZATIONUTILS_HPP_
 #define VISUALIZATIONUTILS_HPP_
 
-#include "debruijn_graph.hpp"
+#include "utils.hpp"
+#include "graphVisualizer.hpp"
 
 namespace debruijn_graph {
 
-class VisHandler: public TraversalHandler<DeBruijnGraph> {
-	const DeBruijnGraph& g_;
-	gvis::GraphPrinter<VertexId>& pr_;
+template <class Graph>
+class VisHandler: public TraversalHandler<Graph> {
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	const Graph& g_;
+	gvis::GraphPrinter<typename Graph::VertexId>& pr_;
 public:
 
-	VisHandler(const DeBruijnGraph& g, gvis::GraphPrinter<VertexId>& pr) :
+	VisHandler(const Graph& g, gvis::GraphPrinter<VertexId>& pr) :
 		g_(g), pr_(pr) {
 	}
 
@@ -28,8 +32,11 @@ public:
 
 };
 
-class ConjugateVisHandler: public TraversalHandler<DeBruijnGraph> {
-	const DeBruijnGraph& g_;
+template <class Graph>
+class ConjugateVisHandler: public TraversalHandler<Graph> {
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	const Graph& g_;
 	gvis::PairedGraphPrinter<VertexId>& pr_;
 	const map<EdgeId, string> color_;
 	string ConstructLabel(EdgeId e) {
@@ -45,12 +52,12 @@ class ConjugateVisHandler: public TraversalHandler<DeBruijnGraph> {
 	}
 public:
 
-	ConjugateVisHandler(const DeBruijnGraph& g,
+	ConjugateVisHandler(const Graph& g,
 			gvis::PairedGraphPrinter<VertexId>& pr, map<EdgeId, string> color) :
 		g_(g), pr_(pr), color_(color) {
 	}
 
-	ConjugateVisHandler(const DeBruijnGraph& g,
+	ConjugateVisHandler(const Graph& g,
 			gvis::PairedGraphPrinter<VertexId>& pr) :
 		g_(g), pr_(pr), color_() {
 	}
@@ -62,7 +69,7 @@ public:
 	virtual void HandleEdge(EdgeId e) {
 		VertexId v1 = g_.EdgeStart(e);
 		VertexId v2 = g_.EdgeEnd(e);
-		map<EdgeId, string>::const_iterator col = color_.find(e);
+		auto col = color_.find(e);
 		if (col == color_.end())
 			pr_.addEdge(make_pair(v1, g_.conjugate(v1)),
 					make_pair(v2, g_.conjugate(v2)), ConstructLabel(e));
@@ -74,48 +81,62 @@ public:
 
 };
 
+template <class Graph>
 class GraphVisualizer {
 public:
-	virtual void Visualize(const DeBruijnGraph& g) = 0;
+	virtual void Visualize(const Graph& g) = 0;
 };
 
-class SimpleGraphVisualizer: public GraphVisualizer {
-	gvis::GraphPrinter<VertexId>& gp_;
+template <class Graph>
+class SimpleGraphVisualizer: public GraphVisualizer<Graph> {
+	gvis::GraphPrinter<typename Graph::VertexId>& gp_;
 public:
-	SimpleGraphVisualizer(gvis::GraphPrinter<VertexId>& gp) :
+	SimpleGraphVisualizer(gvis::GraphPrinter<typename Graph::VertexId>& gp) :
 		gp_(gp) {
 	}
 
-	virtual void Visualize(const DeBruijnGraph& g);
+	virtual void Visualize(const Graph& g) {
+		VisHandler<Graph> h(g, gp_);
+		DFS<Graph>(g).Traverse(&h);
+		gp_.output();
+	}
 };
 
-class ConjugateGraphVisualizer: public GraphVisualizer {
-	gvis::PairedGraphPrinter<VertexId>& gp_;
+template <class Graph>
+class ConjugateGraphVisualizer: public GraphVisualizer<Graph> {
+	gvis::PairedGraphPrinter<typename Graph::VertexId>& gp_;
 public:
-	ConjugateGraphVisualizer(gvis::PairedGraphPrinter<VertexId>& gp) :
+	ConjugateGraphVisualizer(gvis::PairedGraphPrinter<typename Graph::VertexId>& gp) :
 		gp_(gp) {
 	}
 
-	virtual void Visualize(const DeBruijnGraph& g);
+	virtual void Visualize(const Graph& g) {
+		ConjugateVisHandler<Graph> h(g, gp_);
+		DFS<Graph>(g).Traverse(&h);
+		gp_.output();
+	}
 };
 
-class ColoredPathGraphVisualizer: public GraphVisualizer {
+template <class Graph>
+class ColoredPathGraphVisualizer: public GraphVisualizer<Graph> {
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
 	gvis::PairedGraphPrinter<VertexId>& gp_;
 	const debruijn_graph::Path<EdgeId> path_;
 
-	void SetColor(map<EdgeId, string> &color, Edge *edge, string col) {
-		map<EdgeId, string>::iterator it = color.find(edge);
+	void SetColor(map<EdgeId, string> &color, EdgeId edge, string col) {
+		auto it = color.find(edge);
 		if(it != color.end() && it->second != col) {
 			color[edge] = "purple";
 		} else
 			color[edge] = col;
 	}
 
-	void constructColorMap(map<EdgeId, string> &color, const DeBruijnGraph &g, const Path<EdgeId> path) {
-		for (Path<EdgeId>::iterator it = path.sequence().begin(); it
+	void constructColorMap(map<EdgeId, string> &color, const Graph &g, const Path<EdgeId> path) {
+		for (auto it = path.sequence().begin(); it
 				!= path.sequence().end(); ++it) {
 			SetColor(color, *it, "red");
-			Edge* e = *it;
+			EdgeId e = *it;
 			EdgeId edge = g.conjugate(e);
 			SetColor(color, edge, "blue");
 		}
@@ -127,18 +148,33 @@ public:
 		gp_(gp), path_(path) {
 	}
 
-	virtual void Visualize(const DeBruijnGraph& g) {
+	virtual void Visualize(const Graph& g) {
 		map<EdgeId, string> color;
 		constructColorMap(color, g, path_);
-		ConjugateVisHandler h(g, gp_, color);
-		debruijn_graph::DFS<DeBruijnGraph>(g).Traverse(&h);
+		ConjugateVisHandler<Graph> h(g, gp_, color);
+		debruijn_graph::DFS<Graph>(g).Traverse(&h);
 		gp_.output();
 	}
 };
 
+template <class Graph>
 void WriteToFile(const string& file_name, const string& graph_name,
-		const DeBruijnGraph& g,
-		Path<EdgeId> path = Path<EdgeId>());
+		const Graph& g,
+		Path<typename Graph::EdgeId> path = Path<typename Graph::EdgeId>()) {
+	fstream filestr;
+	filestr.open(file_name.c_str(), fstream::out);
+	gvis::PairedGraphPrinter<typename Graph::VertexId> gp("simulated_data_graph", filestr);
+	ColoredPathGraphVisualizer<Graph> gv(gp, path);
+	gv.Visualize(g);
+	filestr.close();
+	string simple_file_name(file_name);
+	simple_file_name.insert(simple_file_name.size()-4, "_simple");
+	filestr.open((simple_file_name).c_str(), fstream::out);
+	gvis::GraphPrinter<typename Graph::VertexId> gpr("simulated_data_graph", filestr);
+	SimpleGraphVisualizer<Graph> sgv(gpr);
+	sgv.Visualize(g);
+	filestr.close();
+}
 
 }
 
