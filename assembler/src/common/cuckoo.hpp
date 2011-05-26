@@ -257,6 +257,7 @@ private:
    */
   inline size_t hash(const Key &k, size_t hash_num) const {
     return hasher_(k, hash_num) % len_part_;
+    //return hasher_(k, hash_num, len_part_ - 1);
   }
   
   /**

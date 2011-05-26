@@ -47,10 +47,14 @@ public:
     Seq<size> seq;
     typename hm::iterator it;
     for (it = map.begin(); it != map.end(); ++it) {
-      seq = (*it).first;
-      std::string s = seq.str();
-      s[size / 2] = s[size / 2 + 1];
-      if (map.find(Seq<size>(s)) != map.end()) {
+      if (n % 2) {
+        seq = (*it).first;
+        std::string s = seq.str();
+        s[size / 2] = s[size / 2 + 1];
+        if (map.find(Seq<size>(s)) != map.end()) {
+          ++n;
+        }
+      } else {
         ++n;
       }
     }
@@ -122,11 +126,8 @@ private:
 			size_t s_size = s.size();
 			for (size_t i = size; i < s_size; ++i) {
 				Seq<size> next = seq << s[i];
-        map.find(seq);
 				seq = next;
-        map.find(seq);
         map.insert(std::make_pair(seq, 1));
-        map.find(seq);
 			}
 		}
 	}
