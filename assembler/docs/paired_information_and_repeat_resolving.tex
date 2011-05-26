@@ -199,11 +199,15 @@ For given vertex $Z \in V$ rectangle split operation consisting following steps:
 \begin{enumerate}
 \item Part $P_v(Z)$ into equivalence classes by transitive closure of adjacency relationship: $P_v(Z) = \bigcup C_i$. 
 \item For each such class crate vertex $Z_i$.
-\item For each precursor $((a, b), y)$ of each vertex-edge pair info's $(A, b, x) \in C_i$,  create a copy $a_i$ of edge $a$, replacing all occurrences of $Z$ in $(start(a), end(a))$ to $Z_i$  
-\item For each precursor $((a, b), y)$ of each vertex-edge pair info's $(A, b, x) \in C_i$, replace $((a, b), y)$ in $P$ with $((a_i, b), y)$
+\item For each precursor $((a, b), y)$ of each vertex-edge pair info's $(Z, b, x) \in C_i$,  create a copy $a_i$ of edge $a$, replacing $start(a)$ (and resp. $end(a)$) to $Z_i$ iff $start(a)$ (resp. $end(a)$) $=Z$ and vertex-edge pair $(start(a), b, y)$ (resp. $(end(a)$) obtained from $((a, b), y)$ belongs to $C_i$.
+\item For each precursor $((a, b), y)$ of each vertex-edge pair info's $(Z, b, x) \in C_i$, replace $((a, b), y)$ in $P$ with $((a_i, b), y)$
 \item Remove $Z$ with all it's incoming and outgoing edges.
 \end{enumerate} 
 \end{definition} 
+\begin{remark}
+   Step's 3 is so complicated in definition because of loops. We need to replace $Z$ as start/end vertex of outgoing/incoming edge $a$, and also choose correctly only one of copies of $Z$ in case $a$ is a loop . 
+\end{remark}
+
 \begin{theorem}
   After applying rectangle split operation to each vertex of initial graph $G$ in any order we'll receive a graph $G' = (V', E')$, such that there exists one-to-one mapping from $(V', E')$ to $(V_r, E_r)$ and this mapping respects labeling.
 \end{theorem}
@@ -242,7 +246,7 @@ Each rectangle split operation  doesn't increase incoming-outgoing set(due to fu
 \subsection{Bad cases for rectangle graph}
 Rectangle graph is a powerfull tool, but it's simple to construct graph that can be resolved manually, but stays unchanged after applying of rectangle graph technics:
 Lets consider graph $G$ with vertex set $V = {A,B,C,E,F,G,H}$ and edges $\{(A,B),(B,C),(C,E),(E,F),(F,G),(G,A),(C,H),(H,F)\}$. Pair information is set of all edge pairs with distance(on some subpath of $G$) 2 i.e. $(A,B)$ and $(C,E)$.
-Both red and blue rectangle graph are isomorphic to $G$ but after using of slightly modified split operation for this graph we can receive a correct ungluing, consisting of two cycles: $(A\rightarrow B\rightarrow C\rightarrow E\rightarrow F\rightarrow G\rightarrow A)$ and $(A\rightarrow B\rightarrow C\rightarrow H\rightarrow F\rightarrow G\rightarrow A)$.
+Both red and blue rectangle graph are isomorphic to $G$ but after using of slightly modified split operation for this graph we can receive a correct ungluing, consisting of two cycles: $(A\rightarrow B_1\rightarrow C_1\rightarrow E\rightarrow F_1\rightarrow G_1\rightarrow A)$ and $(A\rightarrow B_2\rightarrow C_2\rightarrow H\rightarrow F_2\rightarrow G_2\rightarrow A)$.
 
 \subsection{Rectangle split modifications}
 First aproach is to modify adjacency definition for vertex-edge pairs.
