@@ -4,6 +4,7 @@
 #include "queue_iterator.hpp"
 
 namespace omnigraph {
+
 LOGGER("omg.graph");
 
 /**
