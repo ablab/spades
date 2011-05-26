@@ -198,7 +198,7 @@ Now we can define \emph{rectangle split operation}:
 For given vertex $Z \in V$ rectangle split operation consisting following steps:
 \begin{enumerate}
 \item Part $P_v(Z)$ into equivalence classes by transitive closure of adjacency relationship: $P_v(Z) = \bigcup C_i$. 
-\item For each such class crate vertex $Z_i$.
+\item For each such class, create vertex $Z_i$.
 \item For each precursor $((a, b), y)$ of each vertex-edge pair info's $(Z, b, x) \in C_i$,  create a copy $a_i$ of edge $a$, replacing $start(a)$ (and resp. $end(a)$) to $Z_i$ iff $start(a)$ (resp. $end(a)$) $=Z$ and vertex-edge pair $(start(a), b, y)$ (resp. $(end(a)$) obtained from $((a, b), y)$ belongs to $C_i$.
 \item For each precursor $((a, b), y)$ of each vertex-edge pair info's $(Z, b, x) \in C_i$, replace $((a, b), y)$ in $P$ with $((a_i, b), y)$
 \item Remove $Z$ with all it's incoming and outgoing edges.
@@ -255,17 +255,17 @@ First aproach is to modify adjacency definition for vertex-edge pairs.
 \end{definition}
 This definition  is slightly different from previous adjacency definition. Using this definition we can split vertex $V$ by vertex-edge information even if there two edges paired with $V$ has common start or end vertex.   
 
-In case of inexact insert length we have to somehow weaken the condition on distances 
-Also, for highly nonuniform coverage, the request of sharing vertex for adjacent edges should be weakened. 
+In case of inexact insert length we have to somehow weaken the condition on distances.
+Also, for highly nonuniform coverage, the request of sharing vertex for adjacent edges should be weakened:
 
 \begin{definition}
  Two vertex-edge pairs $(Z,a,x)$ and $(Z,b,y)$ are called \emph{$l-\eps$ adjacent} if there exists path $P$ from $a$ to $b$: $|P|<l$ and $||P| - |y-x|| < \eps$.   
 \end{definition}
 
-\subsection{Milty split operation}
+\subsection{Usage of split operations}
 
 After performing rectangle split for all vertices of initial graph we can recalculate pair information and do split for new vertices.It can be useful if after splitting of all vertices from initial graph, some connected components of pair infos break into unconnected parts. 
-Also, for some vertices it is possible to split them by using paired information \emph{back} information. This splitting is equivalent(in terms of  rectangle graph) to contracting red edge. 
+Also, for some vertices it is possible to split them by using paired information in other direction - consider \emph{edge-vertex info} $(a, V, x)$ and look on adjacency(defined in same way as for vertex-edge infos) for such objects. This splitting is equivalent (in terms of rectangle graph) to contracting red edge. 
 
 %\begin{tikzpicture}
 %\Vertex[x=0,y=2.5]{A}
@@ -319,8 +319,9 @@ We have to ignore low confirmed information about distance between edges to cope
 \subsection{Insert-length distribution specifing}
 We can use mate-pairs aligning the same edge to specify insert-length distribution.
 \subsection{Complicated repeat resolving}
-Next step is to resolve repeats using distances distributions on neighbouring edge (to divide sum of two close normal distributions with one). If coverage is enough we can try to correct information. For example it is possible to obtain information about distance to vertex from distances to two edges. This two series of distances may be same. If not it is possible to find minimal correction to get same distances.    
-
+Next step is to resolve repeats using distances distributions on neighbouring edges (to divide sum of two close normal distributions with one).Also, in case of big coverage we can try to correct distance information. For example, we can obtain information about distances to vertex from distances to it's incoming and outgoing edges. This two series  of distances should be same. If they aren't, we can find minimal correction to get same distances and apply it to both of series.    
+\subsection{Extending the model}
+  In this paper we used only paired information. It seems that coverage can also be introduced to our model.
 \end{document}
 
 %Old stuff
