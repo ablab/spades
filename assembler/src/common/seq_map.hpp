@@ -116,7 +116,7 @@ public:
 	}
 
 	/**
-	 * Number of edges coming into param edge end
+	 * Number of edges coming into param edge's end
 	 */
 	char RivalEdgeCount(const Kmer& kmer) const {
 		Kmer kmer2 = kmer << 'A';
@@ -130,7 +130,7 @@ public:
 	}
 
 	/**
-	 * Number of edges going out of the param edge end
+	 * Number of edges going out of the param edge's end
 	 */
 	char NextEdgeCount(const Kmer& kmer) const {
 		char res = 0;
