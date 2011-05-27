@@ -49,6 +49,16 @@ public:
 			return outgoing_edges_;
 		}
 
+		const vector<EdgeId> OutgoingEdgesTo(VertexId v) const {
+			vector<EdgeId> result;
+			for (auto it = outgoing_edges_.begin(); it != outgoing_edges_.end(); ++it) {
+				if ((*it)->end() == v) {
+					result.push_back(*it);
+				}
+			}
+			return result;
+		}
+
 		size_t IncomingEdgeCount() const {
 			return conjugate_->OutgoingEdgeCount();
 		}
@@ -320,7 +330,7 @@ public:
 		return v->OutgoingEdgeCount();
 	}
 
-	bool CheckUniqueOutgiongEdge(VertexId v) const {
+	bool CheckUniqueOutgoingEdge(VertexId v) const {
 		return v->OutgoingEdgeCount() == 1;
 	}
 
@@ -335,6 +345,10 @@ public:
 
 	EdgeId GetUniqueIncomingEdge(VertexId v) const {
 		return conjugate(GetUniqueOutgoingEdge(v->conjugate()));
+	}
+
+	vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) {
+		return v->GetEdgesTo(u);
 	}
 
 	const EdgeData& data(EdgeId edge) const {
