@@ -252,6 +252,7 @@ void AssertCoverage(DeBruijnGraph& g, const CoverageInfo& etalon_coverage) {
 	}
 }
 
+typedef PairedInfoIndex<DeBruijnGraph> PairedIndex;
 void AssertPairInfo(const DeBruijnGraph& g, /*todo const */PairedIndex& paired_index, const EdgePairInfo& etalon_pair_info) {
 	for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
 		PairedIndex::PairInfos infos = *it;

@@ -2,6 +2,8 @@
 #define OMNI_UTILS_HPP_
 
 #include "queue_iterator.hpp"
+#include "logging.hpp"
+#include "simple_tools.hpp"
 
 namespace omnigraph {
 

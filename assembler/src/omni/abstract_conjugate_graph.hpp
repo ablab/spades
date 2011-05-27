@@ -119,6 +119,10 @@ public:
 			return data_;
 		}
 
+		void set_data(EdgeData &data) {
+			data_ = data;
+		}
+
 		VertexId end() const {
 			return end_;
 		}
@@ -165,7 +169,8 @@ public:
 			result->set_conjugate(result);
 			return result;
 		}
-		EdgeId rcEdge = AddSingleEdge(v2->conjugate(), v1->conjugate(), master_.conjugate(data));
+		EdgeId rcEdge = AddSingleEdge(v2->conjugate(), v1->conjugate(),
+				master_.conjugate(data));
 		result->set_conjugate(rcEdge);
 		rcEdge->set_conjugate(result);
 		return result;
@@ -451,9 +456,9 @@ public:
 		SequenceBuilder sb;
 		VertexId v1 = EdgeStart(correctedPath[0]);
 		VertexId v2 = EdgeEnd(correctedPath[correctedPath.size() - 1]);
-		vector<EdgeData&> toMerge;
+		vector<EdgeData*> toMerge;
 		for (auto it = correctedPath.begin(); it != correctedPath.end(); ++it) {
-			toMerge.push_back((*it)->data());
+			toMerge.push_back(&((*it)->data()));
 		}
 		EdgeId newEdge = HiddenAddEdge(v1, v2, master_.MergeData(toMerge));
 		FireMerge(correctedPath, newEdge);

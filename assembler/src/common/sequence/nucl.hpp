@@ -23,31 +23,38 @@
 #include <cassert>
 
 /**
-* @param char c
-* @return true if c is 'A', 'C', 'G', 'T'.
-*/
+ * ACGT -> true
+ * @param char c
+ * @return true if c is 'A', 'C', 'G' or 'T'.
+ */
 inline bool is_nucl(char c) { // is ACGT
 	return (c == 'A' || c == 'C' || c == 'G' || c == 'T');
 }
 
+/**
+ * 0123 -> true
+ * @param char c
+ * @return true if c is 0, 1, 2 or 3.
+ */
 inline bool is_dignucl(char c) { // is 0123
 	return (c >= 0 && c < 4);
 }
 
 /**
-* 0123 -> 3210
-* @param char c
-* @return c ^ 3
-*/
+ * 0123 -> 3210
+ * @param char c
+ * @return c ^ 3
+ */
 inline char complement(char c) {
 	assert(is_dignucl(c));
 	return c ^ 3;
 }
 
 /**
-* @param char c
-* @return complement symbol
-*/
+ * ACGT -> TGCA
+ * @param char c is 'A', 'C', 'G' or 'T'
+ * @return complement symbol, i.e. 'A' => 'T', 'C' => 'G', 'G' => 'C', 'T' => 'A'.
+ */
 inline char nucl_complement(char c){
 	assert(is_nucl(c));
 	switch(c) {
@@ -55,15 +62,16 @@ inline char nucl_complement(char c){
 		case 'C': return 'G';
 		case 'G': return 'C';
 		case 'T': return 'A';
-		default: return -1; // never happens
+		//case 'N': return 'N';
+		default: assert(false); return -1; // never happens
 	}
 }
 
 /**
-* 0123 -> ACGT
-* @param char c
-* @return complement symbol
-*/
+ * 0123 -> ACGT
+ * @param char c is 0, 1, 2 or 3
+ * @return 0 => 'A', 1 => 'C', 2 => 'G', 3 => 'T'
+ */
 inline char nucl(char c) {
 	assert(is_dignucl(c));
 	switch(c) {
@@ -75,14 +83,19 @@ inline char nucl(char c) {
 	}
 }
 
-inline char dignucl(char c) { // ACGT -> 0123
+/**
+ * ACGT -> 0123
+ * @param char c is 'A', 'C', 'G' or 'T'
+ * @return A => 0, C => 1, G => 2, T => 3
+ */
+inline char dignucl(char c) {
 	assert(is_nucl(c));
 	switch(c) {
 		case 'A': return 0;
 		case 'C': return 1;
 		case 'G': return 2;
 		case 'T': return 3;
-		default: assert(false);//return -1; // never happens
+		default: assert(false); return -1; // never happens
 	}
 }
 
