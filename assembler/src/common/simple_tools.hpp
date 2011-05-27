@@ -1,23 +1,18 @@
+/*
+ * simple_tools.hpp
+ *
+ *  Created on: 27.05.2011
+ *      Author: vyahhi
+ */
+
 #ifndef SIMPLE_TOOLS_HPP_
 #define SIMPLE_TOOLS_HPP_
 
-#include <sstream>
 #include <string>
-#include <vector>
-
-//namespace common {
-
-using std::string;
-using std::vector;
-
-string Reverse(const string &s);
-
-string Complement(const string &s);
-
-string ReverseComplement(const string &s);
+#include <sstream>
 
 template <typename T>
-string ToString(T t) {
+std::string ToString(T t) {
 	std::stringstream ss;
 	ss << t;
 	return ss.str();
@@ -55,5 +50,5 @@ public:
 	}
 
 };
-//}
+
 #endif /* SIMPLE_TOOLS_HPP_ */

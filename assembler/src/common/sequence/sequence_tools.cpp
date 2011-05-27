@@ -1,6 +1,8 @@
 
-#include "simple_tools.hpp"
+#include "sequence_tools.hpp"
 #include "nucl.hpp"
+
+using std::string;
 
 string Reverse(const string &s) {
 	return string(s.rbegin(), s.rend());

@@ -10,7 +10,6 @@
 #include <tr1/unordered_map>
 #include <google/sparse_hash_map>
 #include "cuckoo.hpp"
-#include "trie.hpp"
 #include "../memory.hpp"
 
 template <class T>

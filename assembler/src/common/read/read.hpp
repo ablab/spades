@@ -14,6 +14,7 @@
 #include <string>
 #include <iostream>
 #include "simple_tools.hpp"
+#include "sequence_tools.hpp"
 using namespace std;
 
 #define BAD_QUALITY_THRESHOLD 2
