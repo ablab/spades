@@ -16,7 +16,6 @@
  * standard std::map and std::unordered_map interface.
  *
  * See http://en.wikipedia.org/wiki/Cuckoo_hashing
- *
  */
 
 #include <cstring>
@@ -571,25 +570,16 @@ public:
    * doesn't exist
    */
   iterator find(const Key& k) {
+    size_t dist = 0;
     for (size_t i = 0; i < d_; ++i) {
-      size_t pos = hash(k, i);
-      if (is_here(k, i * len_part_ + pos)) {
-        return iterator(i * len_part_ + pos, this);
+      size_t pos = hash(k, i) + dist;
+      if (is_here(k, pos)) {
+        return iterator(pos, this);
       }
+      dist += len_part_;
     }
     return end();
   }
-  
-  /*iterator find(const Key& k) {
-    for (size_t i = 0; i < d_; ++i) {
-      size_t pos = Hash()(k, i) % len_part_ + i * len_part_;
-      if (get_exists(pos) && Pred()((data_[pos / len_part_]
-                                     [pos % len_part_]).first, k)) {
-        return iterator(pos, this);
-      }
-    }
-    return iterator(len_, this);
-    }*/
   
   /**
    * Find element by key (for const objects).
