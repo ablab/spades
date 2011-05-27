@@ -8,18 +8,24 @@
 #include <vector>
 #include <list>
 #include <set>
+//#include <map>
+#include <ext/hash_map>
 #include "hash.hpp"
 #include "parameters.hpp"
 #include "logging.hpp"
-#include "abruijngraph.hpp"
+#include "omnigraph.hpp"
 #include "ireadstream.hpp"
 #include "graphVisualizer.hpp"
 
 namespace abruijn {
 
+LOGGER("a.graph");
+
 using namespace std;
 using namespace __gnu_cxx;
 using hashing::hash_t;
+
+typedef omnigraph::Omnigraph Graph;
 
 class GraphBuilder
 {
@@ -35,14 +41,6 @@ class GraphBuilder
 	hash_vector ha;
 
 public:
-	void findMinimizers(Sequence s);
-	void findLocalMinimizers(Sequence s, size_t window_size);
-	void findSecondMinimizer(Sequence s);
-	void revealTips(Sequence s);
-	void findTipExtensions(Sequence s);
-	void lookRight(Sequence s);
-	void addToGraph(Sequence s);
-
 	set<hash_t> earmarked_hashes;
 	typedef map<hash_t, char> RightExtensions;
 	RightExtensions has_right;
@@ -51,8 +49,23 @@ public:
 	typedef map<hash_t, TipExtenstionTable> TipExtensions;
 	TipExtensions tip_extensions;
 	hash_vector hbest;
-	abruijn::Graph graph_;
+//	typedef abruijn::Graph Graph;
+	Graph graph_;
+//	typedef hash_map <Sequence, Graph::VertexId, hashing::HashSym<Sequence>, hashing::EqSym<Sequence> > SeqVertice;
+	typedef hash_map <Sequence, Graph::VertexId, hashing::Hash<Sequence> > SeqVertice;
+	SeqVertice seqVertice;
 	size_t htake_;
+
+	void findMinimizers(Sequence s);
+	void findLocalMinimizers(Sequence s, size_t window_size);
+	void findSecondMinimizer(Sequence s);
+	void revealTips(Sequence s);
+	void findTipExtensions(Sequence s);
+	void lookRight(Sequence s);
+	void addToGraph(Sequence s);
+	bool hasVertex(Sequence s);
+	Graph::VertexId getOrCreateVertex(Sequence s);
+	Graph::VertexId createVertex(Sequence s);
 };
 
 template <typename Reader>
@@ -186,7 +199,7 @@ public:
 			gb_.addToGraph(r.getSequence());
 			VERBOSE(i, " single reads");
 		}
-		INFO("Done: " << gb_.graph_.vertices.size() << " vertices");
+		INFO("Done: " << gb_.graph_.size() << " vertices");
 
 //		INFO("===== Condensing-A graph... =====");
 //		gb_.graph_.Condense();
@@ -195,11 +208,11 @@ public:
 		return;
 	}
 
-	abruijn::Graph* graph() {
+	omnigraph::Omnigraph* graph() {
 		return &gb_.graph_;
 	}
 
-	bool SpellGenomeThroughGraph ( string filename, int cut ) {
+	void SpellGenomeThroughGraph () {/*
 		/// we assume here that the graph is already built
 
 		/// outputting A Bruijn graph
@@ -302,7 +315,7 @@ public:
 		INFO ( "number of missing lengths: " << num_of_missing_lengths );
 
 		return ( num_of_missing_kmers + num_of_missing_edges + num_of_missing_lengths == 0 );
-	}
+	*/}
 };
 
 } // namespace abruijn

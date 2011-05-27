@@ -74,7 +74,6 @@ void GraphBuilder::findLocalMinimizers(Sequence s, size_t window_size) {
 	}
 }
 
-
 /**
  * If only one k-mer from s is earmarked,
  * this method earmarks 1 more k-mer (with second minimal hash-value)
@@ -203,18 +202,49 @@ void GraphBuilder::lookRight(Sequence s) {
 //
 //}
 
+bool GraphBuilder::hasVertex(Sequence kmer) {
+	return seqVertice.count(kmer);
+}
+
+Graph::VertexId GraphBuilder::createVertex(Sequence kmer) {
+	LOG_ASSERT(!hasVertex(kmer), "already contains " << kmer.str());
+	omnigraph::OmniVertex ov(kmer.size());
+	Graph::VertexId v = graph_.AddVertex(ov, ov);
+//	Vertex* v = new Vertex(kmer, true);
+	seqVertice[kmer] = v;
+	seqVertice[!kmer] = graph_.conjugate(v);
+	return v;
+}
+
+Graph::VertexId GraphBuilder::getOrCreateVertex(Sequence kmer) {
+	// TODO
+	SeqVertice::iterator it = seqVertice.find(kmer);
+	if (it == seqVertice.end()) {
+		return createVertex(kmer);
+	}
+	Graph::VertexId v = it -> second;
+	return v;
+//	if (v->second->data() == kmer) {
+//		return v->second;
+//	}
+//	assert(v->second->complement()->data() == kmer);
+//	return v->second->complement();
+}
+
 void GraphBuilder::addToGraph(Sequence s) {
-	vector<abruijn::Vertex*> vs;
+	vector<Graph::VertexId> vs;
 	vector<size_t> index;
 	hashSym.kmers(s, ha);
 	for (size_t i = 0; i + K <= s.size(); i++) {
 		if (earmarked_hashes.find(ha[i]) != earmarked_hashes.end()) {
-			vs.push_back(graph_.getVertex(s.Subseq(i, i + K)));
+			vs.push_back(getOrCreateVertex(s.Subseq(i, i + K)));
 			index.push_back(i);
 		}
 	}
 	for (size_t i = 0; i + 1 < vs.size(); ++i) {
-		graph_.addEdge(vs[i], vs[i + 1], s.Subseq(index[i], index[i + 1] + K));
+		omnigraph::OmniEdge oe(index[i + 1] - index[i]);
+		graph_.AddEdge(vs[i], vs[i + 1], oe);
+//		graph_.addEdge(vs[i], vs[i + 1], s.Subseq(index[i], index[i + 1] + K));
 	}
 }
 
