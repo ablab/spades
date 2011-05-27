@@ -204,6 +204,9 @@ public:
 /////////////////////////////////
 
 
+/**
+ * RC is reverse complement?
+ */
 template<class Stream, typename ReadType>
 class RCReaderWrapper {
 public:

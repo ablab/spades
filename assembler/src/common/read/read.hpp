@@ -17,11 +17,10 @@
 #include "sequence_tools.hpp"
 using namespace std;
 
-#define BAD_QUALITY_THRESHOLD 2
-
 class Read {
 public:
 	static const int PHRED_OFFSET = 33;
+	static const int BAD_QUALITY_THRESHOLD = 2;
 
 	bool isValid() const {
 		return valid;
@@ -44,9 +43,11 @@ public:
 	const string& getSequenceString() const {
 		return seq_;
 	}
-	const string& getQualityString() const{
+
+	const string& getQualityString() const {
 		return qual_;
 	}
+
 	string getPhredQualityString(int offset = PHRED_OFFSET) const {
 		string res = qual_;
 		for (size_t i = 0; i < res.size(); ++i) {
@@ -54,16 +55,24 @@ public:
 		}
 		return res;
 	}
+
 	const string& getName() const {
 		return name_;
 	}
+
 	size_t size() const {
 		return seq_.size();
 	}
+
 	char operator[](size_t i) const {
 		assert(is_nucl(seq_[i]));
 		return dignucl(seq_[i]);
 	}
+
+	/**
+	 * It's actually not trim Ns, but trim everything before first 'N'
+	 * P.S. wtf? (Kolya)
+	 */
 	void trimNs() {
 		size_t index = seq_.find('N');
 		if (index != string::npos) {
@@ -71,17 +80,21 @@ public:
 			qual_.erase(qual_.begin() + index, qual_.end());
 		}
 	}
+
 	/**
 	 * trim bad quality nucleotides from start and end of the read
 	 * @return size of the read left
 	 */
 	size_t trimBadQuality() {
-		size_t start = 0, end = seq_.size();
+		size_t start = 0;
 		for (; start < seq_.size(); ++start) {
-			if (qual_[start] > BAD_QUALITY_THRESHOLD) break;
+			if (qual_[start] > BAD_QUALITY_THRESHOLD)
+				break;
 		}
+		size_t end = seq_.size();
 		for (; end > 0; --end) {
-			if (qual_[end] > BAD_QUALITY_THRESHOLD) break;
+			if (qual_[end] > BAD_QUALITY_THRESHOLD)
+				break;
 		}
 		if (end > start) {
 			seq_.erase(seq_.begin(), seq_.begin() + start);
@@ -90,7 +103,9 @@ public:
 			qual_.erase(qual_.begin() + end, qual_.end());
 			return seq_.size();
 		} else {
-			seq_ = ""; qual_ = ""; return 0;
+			seq_ = "";
+			qual_ = "";
+			return 0;
 		}
 	}
 	/**
@@ -98,22 +113,29 @@ public:
 	 * @param start start point
 	 * @return the first starting point of a valid k-mer >=start; return -1 if no such place exists
 	 */
-	size_t firstValidKmer(size_t start, int k) const {
+	size_t firstValidKmer(size_t start, size_t k) const {
 		size_t curHypothesis = start;
-		size_t i=start;
+		size_t i = start;
 		for (; i < seq_.size(); ++i) {
-			if (i - curHypothesis > (size_t)k) return curHypothesis;
+			if (i > k + curHypothesis)
+				return curHypothesis;
 			if (!is_nucl(seq_[i])) {
-				curHypothesis = i+1;
+				curHypothesis = i + 1;
 			}
 		}
-		if (i-curHypothesis > (size_t)k) return curHypothesis;
+		if (i  > k + curHypothesis) {
+			return curHypothesis;
+		}
 		return seq_.size();
 	}
-	Read() : valid(false) {
+
+	Read() :
+		valid(false) {
 		;
 	}
-	Read(const string &name, const string &seq, const string &qual) : name_(name), seq_(seq), qual_(qual) { // for test only!
+
+	Read(const string &name, const string &seq, const string &qual) :
+		name_(name), seq_(seq), qual_(qual) { // for test only!
 		valid = updateValid();
 	}
 private:
@@ -146,7 +168,6 @@ private:
 		}
 		return true;
 	}
-
 
 public:
 	Read operator!() const {
