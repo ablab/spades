@@ -11,13 +11,19 @@
 #include <string>
 #include <sstream>
 
+/**
+ * Converts anything to string (using ostringstream).
+ */
 template <typename T>
-std::string ToString(T t) {
-	std::stringstream ss;
+std::string ToString(T& t) {
+	std::ostringstream ss;
 	ss << t;
 	return ss.str();
 }
 
+/**
+ * Use vector<T> as input-stream with operator>>(T& t)
+ */
 template <typename T>
 class VectorStream {
 	vector<T> data_;
@@ -28,7 +34,7 @@ public:
 
 	}
 
-	bool eof() {
+	bool eof() const {
 		return pos_ == data_.size();
 	}
 
@@ -41,7 +47,7 @@ public:
 		closed_ = true;
 	}
 
-	bool is_open() {
+	bool is_open() const {
 		return !closed_;
 	}
 
