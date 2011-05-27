@@ -6,15 +6,23 @@
 namespace omnigraph {
 
 class OmniVertex {
-	int length_;
+	size_t length_;
 public:
-	OmniVertex(int length) : length_(length) {}
+	OmniVertex(size_t length) : length_(length) {}
+
+	size_t length() {
+		return length_;
+	}
 };
 
 class OmniEdge {
-	int length_;
+	size_t length_;
 public:
-	OmniEdge(int length) : length_(length) {}
+	OmniEdge(size_t length) : length_(length) {}
+
+	size_t length() {
+		return length_;
+	}
 };
 
 class OmniDataMaster {
