@@ -212,7 +212,7 @@ public:
 		return &gb_.graph_;
 	}
 
-	void SpellGenomeThroughGraph () {/*
+	void SpellGenomeThroughGraph () {
 		/// we assume here that the graph is already built
 
 		/// outputting A Bruijn graph
@@ -227,15 +227,15 @@ public:
 
 
 		/// reading the reference genome
-		//string const ref_genome_filename = "./data/input/MG1655-K12.fasta.gz";
+		string const ref_genome_filename = "./data/input/MG1655-K12.fasta.gz";
 		Read ref_genome;
 
-		ireadstream genome_stream(filename);
+		ireadstream genome_stream(ref_genome_filename);
 		genome_stream >> ref_genome;
 		genome_stream.close();
 
 		Sequence ref_seq = ref_genome.getSequence();
-		//size_t const cut = 100000;
+		size_t const cut = 100000;
 		if ( cut > 0 )
 			ref_seq = ref_seq.Subseq(0, cut);
 
@@ -282,18 +282,21 @@ public:
 					assert ( edge_length > 0 );
 
 					assert ( graph()->hasVertex(previous_kmer) && graph()->hasVertex(current_kmer) );
-					Vertex * previous_vertex = graph()->getVertex(previous_kmer);
-					Vertex * current_vertex  = graph()->getVertex(current_kmer);
+					Graph::VertexId previous_vertex = graph()->getVertex(previous_kmer);
+					Graph::VertexId current_vertex  = graph()->getVertex(current_kmer);
 					assert ( previous_vertex && current_vertex );
 
-					Edges::const_iterator edge_it = previous_vertex->edges().find( current_vertex );
-					if ( edge_it == previous_vertex->edges().end () ) {
+					vector<Graph::EdgeId> edges = graph()->GetEdgesBetween(previous_vertex, current_vertex);
+					if (edges.size() == 0) {
 						INFO ( "missing edge from " << previous_kmer << " to " << current_kmer );
 						++num_of_missing_edges;
 					}
 					else {
-						size_t const occ = edge_it->second.countLengthOccurrences (edge_length);
-						if ( occ == 0 ) {
+						bool occ = false;
+						for (auto it = edges.begin(); it != edges.end(); ++it) {
+							occ |= (((omnigraph::OmniEdge) *it).length() == edge_length);
+						}
+						if (!occ) {
 							INFO ( "missing length" );
 							++num_of_missing_lengths;
 						}
@@ -314,8 +317,9 @@ public:
 		INFO ( "number of missing edges: " << num_of_missing_edges );
 		INFO ( "number of missing lengths: " << num_of_missing_lengths );
 
-		return ( num_of_missing_kmers + num_of_missing_edges + num_of_missing_lengths == 0 );
-	*/}
+//		return ( num_of_missing_kmers + num_of_missing_edges + num_of_missing_lengths == 0 );
+		return;
+	}
 };
 
 } // namespace abruijn
