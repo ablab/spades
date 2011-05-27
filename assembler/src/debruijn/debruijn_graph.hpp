@@ -127,7 +127,6 @@ private:
 class DeBruijnGraph {
 public:
 	typedef Edge* EdgeId;
-//	typedef Edge EdgeData;
 	typedef Vertex* VertexId;
 
 	typedef set<Vertex*>::const_iterator VertexIterator;
@@ -165,7 +164,7 @@ private:
 	void FireDeleteVertex(VertexId v);
 	void FireDeleteEdge(EdgeId edge);
 	void FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge);
-	void FireGlue(EdgeId edge1, EdgeId edge2);
+	void FireGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2);
 	void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2);
 
 public:
@@ -290,13 +289,6 @@ public:
 		return false;
 	}
 
-	//	//todo remove
-	//	const vector<ActionHandler*> GetHandlers() {
-	//		return action_handler_list_;
-	//	}
-
-//	void OutgoingEdges(VertexId v, EdgeIterator& begin, EdgeIterator& end) const;
-
 	/**
 	 * Method returns vector of all outgoing edges of given vertex
 	 * @param v vertex to get outgoing edges from
@@ -402,23 +394,12 @@ public:
 	 */
 	void IncCoverage(EdgeId edge, int toAdd) {
 		edge->coverage_ += toAdd;
-//		todo talk with Anton about this code
-//		EdgeId rc = conjugate(edge);
-//		if (edge != rc) {
-//			rc->coverage_ += toAdd;
-//		}
-
 	}
 
 	/**
 	 * Method increases coverage value by 1
 	 */
 	void IncCoverage(EdgeId edge) {
-//		edge->coverage_++;
-//		EdgeId rc = conjugate(edge);
-//		if (edge != rc) {
-//			rc->coverage_++;
-//		}
 		IncCoverage(edge, 1);
 	}
 
@@ -502,10 +483,6 @@ public:
 	 * Later this method is going to be renamed with Conjugate.
 	 */
 	EdgeId conjugate(EdgeId e) const;
-
-//	const EdgeData& GetData(EdgeId e) const {
-//		return *e;
-//	}
 
 	/**
 	 * method checks whether vertex has unique incoming and unique outgoing edge and thus can be compressed.

@@ -104,6 +104,8 @@ public:
 		renewer_.HandleDelete(e);
 	}
 
+	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2){}
+
 	bool containsInIndex(const Kmer& kmer) const {
 		return inner_index_.containsInIndex(kmer);
 	}

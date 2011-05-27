@@ -502,8 +502,9 @@ public:
 		}
 	}
 
-	virtual void HandleGlue(EdgeId old_edge, EdgeId new_edge) {
-		TransferInfo(old_edge, new_edge);
+	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+		TransferInfo(edge1, new_edge);
+		TransferInfo(edge2, new_edge);
 	}
 
 	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1,

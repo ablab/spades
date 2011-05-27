@@ -62,8 +62,9 @@ public:
 		g_.SetCoverage(newEdge, coverage);
 	}
 
-	virtual void HandleGlue(EdgeId oldEdge, EdgeId newEdge) {
-		g_.IncCoverage(newEdge, KPlusOneMerCoverage(oldEdge));
+	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+		g_.IncCoverage(new_edge, KPlusOneMerCoverage(edge1));
+		g_.IncCoverage(new_edge, KPlusOneMerCoverage(edge2));
 	}
 
 	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
