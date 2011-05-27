@@ -47,12 +47,13 @@ public:
     Seq<size> seq;
     typename hm::iterator it;
     for (it = map.begin(); it != map.end(); ++it) {
-      seq = (*it).first;
-      std::string s = seq.str();
-      s[size / 2] = s[size / 2 + 1];
-      if (map.find(Seq<size>(s)) != map.end()) {
-        ++n;
+      if (n % 2) {
+        seq = (*it).first;
+        std::string s = seq.str();
+        s[size / 2] = s[size / 2 + 1];
+        map.find(Seq<size>(s));
       }
+      ++n;
     }
 
     gettimeofday(&tim, NULL);
@@ -66,7 +67,6 @@ public:
     std::cout << "Memory: " << (vm2 - vm1) << " " << name << std::endl;
     std::cout << "Insert: " << (t2 - t1) - (t4 - t3) << " " << name << std::endl;
     std::cout << "Find: " << (t3 - t2) << " " << name << std::endl;
-    std::cout << "Elements to find: " << n << std::endl; 
 	}
 
   // Only for cuckoo!!!

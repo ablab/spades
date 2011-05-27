@@ -49,6 +49,16 @@ public:
 			return outgoing_edges_;
 		}
 
+		const vector<EdgeId> OutgoingEdgesTo(VertexId v) const {
+			vector<EdgeId> result;
+			for (auto it = outgoing_edges_.begin(); it != outgoing_edges_.end(); ++it) {
+				if ((*it)->end() == v) {
+					result.push_back(*it);
+				}
+			}
+			return result;
+		}
+
 		size_t IncomingEdgeCount() const {
 			return conjugate_->OutgoingEdgeCount();
 		}
@@ -320,7 +330,7 @@ public:
 		return v->OutgoingEdgeCount();
 	}
 
-	bool CheckUniqueOutgiongEdge(VertexId v) const {
+	bool CheckUniqueOutgoingEdge(VertexId v) const {
 		return v->OutgoingEdgeCount() == 1;
 	}
 
@@ -335,6 +345,10 @@ public:
 
 	EdgeId GetUniqueIncomingEdge(VertexId v) const {
 		return conjugate(GetUniqueOutgoingEdge(v->conjugate()));
+	}
+
+	vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) {
+		return v->GetEdgesTo(u);
 	}
 
 	const EdgeData& data(EdgeId edge) const {
@@ -456,9 +470,9 @@ public:
 		SequenceBuilder sb;
 		VertexId v1 = EdgeStart(correctedPath[0]);
 		VertexId v2 = EdgeEnd(correctedPath[correctedPath.size() - 1]);
-		vector<EdgeData&> toMerge;
+		vector<EdgeData*> toMerge;
 		for (auto it = correctedPath.begin(); it != correctedPath.end(); ++it) {
-			toMerge.push_back((*it)->data());
+			toMerge.push_back(&((*it)->data()));
 		}
 		EdgeId newEdge = HiddenAddEdge(v1, v2, master_.MergeData(toMerge));
 		FireMerge(correctedPath, newEdge);

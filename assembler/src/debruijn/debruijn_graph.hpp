@@ -131,7 +131,7 @@ public:
 
 	typedef set<Vertex*>::const_iterator VertexIterator;
 	typedef Vertex::EdgeIterator EdgeIterator;
-	typedef debruijn_graph::GraphActionHandler<DeBruijnGraph> ActionHandler;
+	typedef GraphActionHandler<DeBruijnGraph> ActionHandler;
 
 private:
 	const size_t k_;

@@ -7,24 +7,63 @@
 %\usepackage{tikz}
 \usepackage{pgfplots}
 \usepackage[shadow,colorinlistoftodos,textwidth=4cm]{todonotes}
+%\usepackage{fullpage}
 
-\newcommand{\jpgpic}[1]{\begin{center}\includegraphics[width=\textwidth]{#1.jpg}\end{center}}
+%\newcommand{\jpgpic}[1]{\begin{center}\includegraphics[width=\textwidth]{#1.jpg}\end{center}}
 
 \begin{document}
 \author{M. Dvorkin, A. Kulikov}
-\title{A Bruijn Graph Approach}
+%\title{A Bruijn Graph Approach}
+%\title{Seeded assembly graph approach to {\it de novo} genome assembly}
+\title{Earmark graph approach to {\it de novo} genome assembly}
 \maketitle
 
-\listoftodos
+\begin{abstract}
+A common approach to assembling a genome from short reads is constructing
+the de Bruijn graph on all $k$-mers from the given set of reads and finding a traversal of edges
+in this graph. We propose a new approach that allows to decrease
+the graph size without losing the essential information from the input data.
+Instead of using all the $k$-mers from a given read we take only a few of them
+(and call them ``earmarked''). Besides an obvious advantage of requiring less memory 
+and time for constructing, the resulting earmark graph has several other advantages over the
+de Bruijn graph. We discuss them in the paper and also present some experimental results.
+\end{abstract}
+
+%\listoftodos
 \tableofcontents
 
-\newpage
+%\newpage
 
-\section{General Idea}
+\section{Introduction}
+A common approach to assembling a genome from short reads is constructing
+the de Bruijn graph \cite{PW01} on all $k$-mers from the given set of 
+reads and finding a traversal of edges in this graph.{\todo{do we need a definition 
+of the de Bruijn graph here?}}
+%Namely, the set of all $k$-mers form the set of vertices of the graph
+%and two $k$-mers $A$ and $B$ are joined by a directed edge if there is a read
+%where the $k$-mer $B$ appears 
+An example of the de Bruijn graph for $k=3$ and a set of all reads of length $6$
+of a (circular) genome $g={\tt ATGCATTGCACTGCA}$ is given in Fig.~\ref{fig:debruijn}a
+(multiple edges are shown as just one edge). The genome corresponds to an Eulerian
+cycle in the de Bruijn graph.
 
-The main goal of this approach is to simplify a \emph{de Bruijn} graph
-constructed on a given set of reads while still preserving 
-``the structure'' of the graph. Namely, instead 
+\begin{figure}
+\caption{The de Bruijn graph (a) and earmark graph (b) built on $3$-mers 
+of all $6$-reads of a toy genome {\tt ATGCATTGCACTGCA}.}\label{fig:debruijn}
+\begin{center}
+a\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_debruijn.pdf}\\
+b\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_earmark.pdf}\\
+%\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_earmark2.pdf}\\
+\end{center}
+\end{figure}
+
+The size of the de Bruijn graph for most of the genomes is huge making
+it difficult to process. 
+We propose a new approach that allows to decrease
+the graph size without losing the essential information from the input data.
+Instead of using all the $k$-mers from a given read we take only a few of them
+(and call them \emph{earmarked}).
+Namely, instead 
 of representing each read as a sequence of edges 
 between its consecutive $k$-mers (in which case a read of length $r$ defines
 $r-k-1$ edges) we represent it as just one (or a few, in general)
@@ -33,12 +72,103 @@ reads {\tt ACGTACT} and {\tt TACTAGC} and $k=3$
 instead of all gray edges in the figure below we will have 
 only two black edges.
 \begin{center}
-\includegraphics[width=\textwidth]{fig1.pdf}
+\includegraphics[width=0.9\textwidth]{fig1.pdf}
 \end{center}
-The hope is that the resulting graph will be easier to handle 
-and at the same time it will have essentially the same structure 
-as the original de Bruijn graph.
-{\todo{cite the paper on minimizers}}
+We call the resulting graph built on earmarked $k$-mers \emph{an earmark graph}.
+It is a special case of A-Bruijn graph introduced by Pevzner, Tang, and Tesler \cite{PTG04}.
+Besides an obvious advantage of requiring less memory 
+and time for constructing, the resulting earmark graph has several other advantages over the
+de Bruijn graph. We discuss them after all the necessary definitions.
+
+Our approach is inspired by the work by Roberts et al. \cite{RW04} on sequence comparison.
+The problem they studied is a pairwise comparison of a set of strings. 
+One of the approaches to this problem is the seed-and-extend approach.
+One first stores the set of all possible $k$-mers from a given set of strings.
+Then, only pairs of strings that both have the same $k$-mer as a substring are compared.
+This allows to avoid comparing all pairs of input strings. However the database
+of all $k$-mers may be really huge. To reduce the storage requirements Roberts et al. propose
+to select not all the $k$-mers, but only those that a minimal in an input string w.r.t.
+to a certain order. Such $k$-mers are called \emph{minimizers}.
+
+
+
+\section{Earmark graph}
+
+%\subsection{Definition}
+
+\section{Pseudocode of the assembler}
+In this section, we give a high-level description of the main parts of the assembler.
+
+Iterative procedure for selecting the set of earmarked $k$-mers is the following:
+
+\begin{enumerate}
+\item From each read, select $t$ minimum hash values of its $k$-mers, add them to the global set of earmarked hash values.
+\item (optional, if $t=1$) For each read that has only one k-mer with earmarked hash value, earmark one more k-mer from this read.
+\item In each read, select $k$-mers that have their hash values earmarked.
+For corresponding vertices in the resulting A Bruijn graph, add all pairwise edges, storing their lengths.
+%\item For each $k$-mer that has no left or right neighbours, find a neighbour on the corresponding side
+%that has the smallest hash value and earmark it.
+%\item Repeat the previous step to minimize the number of neighbourless $k$-mers.
+\end{enumerate}
+
+This procedure results with an A-Bruijn graph that is subject to further processing.
+
+\subsection{Tip extension procedure}
+
+Due to the fact that not all the k-mers are represented in the A-Bruijn graph,
+some extra gaps can be unwillingly created.
+Consider a genome substring $abcde$, where $b$ and $d$ a k-mers that have small hash values and are selected as minimizers.
+If none of the reads in the input data contain the whole substring $bcd$, then vertices corresponding to
+$b$ and $d$ will be tips in the A-Bruijn graph.
+Meanwhile reads containing $abc$ and $cde$ may be present in the input data, thus it is an error of the approach
+to call this vertices tips and to introduce a gap here.
+
+The tip extension procedure is suggested to handle this issue.
+It consists of three steps that are repeated consequently until no possible tip extensions are present.
+(Each steps demands reading the entire input data. It is possible to reduce the procedure to less than three
+steps, but much more memory will be used in that case).
+
+\begin{enumerate}
+\item By processing all the reads, find out for each earmarked k-mer, whether we've seen any
+earmarked $k$-mer to the left from it, and to the right of it.
+Those earmarked k-mers that don't have either left or right "neighbours" are called tips --
+(left tips and right tips correspondingly).
+\item By processing all the reads, find the collection of all the non-earmarked k-mers that
+are present (at least once) in a read to the left of a left tip, or to the right of the right tip.
+Call them possible tip extensions.
+\item By processing all the reads, for each possible tip extension, record whether there was
+any earmarked k-mers to the left from it, and to the right of it.
+\end{enumerate}
+
+Now that this information is collected, each tip is being extended with
+a possible tip extension using the following rules (in the order preference):
+
+\begin{enumerate}
+\item Check if any of its possible tip extensions was already selected as an earmark
+(As a tip extension for some previously processed tip, using rules 2 and 3 below).
+If so, continue to the next tip.
+\item Check if any of its possible tip extensions has both left and right neighbours.
+We select this extension as an earmark and thus eliminate at least one undesirable tip.
+\item Select as an earmark the possible tip extension that is most distant (in base pairs)
+from the tip being proccesed. Doing this, we don't eliminate a tip but we extend in as far
+as possible. This helps us not to lose information near the actual gaps (or thes end of actual scaffolds).
+\end{enumerate}
+
+If no new earmarked k-mers were introduced after this procedure, stop, otherwise repeat the entire procedure.
+
+\section{Practical results}
+\todo[inline]{to be written}
+
+
+
+\section{Discussion and further ideas}
+
+
+\todo[inline]{clean up the references}
+\bibliographystyle{alpha}
+\bibliography{bib}
+
+\end{document}
 
 \subsection{Example}
 
@@ -238,62 +368,6 @@ paired reads is helpful when traversing an A Bruijn graph.
 
 \todo[inline]{add high-level description of the assembler}
 
-Iterative procedure for selecting the set of earmarked $k$-mers is the following:
-
-\begin{enumerate}
-\item From each read, select $t$ minimum hash values of its $k$-mers, add them to the global set of earmarked hash values.
-\item (optional, if $t=1$) For each read that has only one k-mer with earmarked hash value, earmark one more k-mer from this read.
-\item In each read, select $k$-mers that have their hash values earmarked.
-For corresponding vertices in the resulting A Bruijn graph, add all pairwise edges, storing their lengths.
-%\item For each $k$-mer that has no left or right neighbours, find a neighbour on the corresponding side
-%that has the smallest hash value and earmark it.
-%\item Repeat the previous step to minimize the number of neighbourless $k$-mers.
-\end{enumerate}
-
-This procedure results with an A-Bruijn graph that is subject to further processing.
-
-\subsection{Tip extension procedure}
-
-Due to the fact that not all the k-mers are represented in the A-Bruijn graph,
-some extra gaps can be unwillingly created.
-Consider a genome substring $abcde$, where $b$ and $d$ a k-mers that have small hash values and are selected as minimizers.
-If none of the reads in the input data contain the whole substring $bcd$, then vertices corresponding to
-$b$ and $d$ will be tips in the A-Bruijn graph.
-Meanwhile reads containing $abc$ and $cde$ may be present in the input data, thus it is an error of the approach
-to call this vertices tips and to introduce a gap here.
-
-The tip extension procedure is suggested to handle this issue.
-It consists of three steps that are repeated consequently until no possible tip extensions are present.
-(Each steps demands reading the entire input data. It is possible to reduce the procedure to less than three
-steps, but much more memory will be used in that case).
-
-\begin{enumerate}
-\item By processing all the reads, find out for each earmarked k-mer, whether we've seen any
-earmarked $k$-mer to the left from it, and to the right of it.
-Those earmarked k-mers that don't have either left or right "neighbours" are called tips --
-(left tips and right tips correspondingly).
-\item By processing all the reads, find the collection of all the non-earmarked k-mers that
-are present (at least once) in a read to the left of a left tip, or to the right of the right tip.
-Call them possible tip extensions.
-\item By processing all the reads, for each possible tip extension, record whether there was
-any earmarked k-mers to the left from it, and to the right of it.
-\end{enumerate}
-
-Now that this information is collected, each tip is being extended with
-a possible tip extension using the following rules (in the order preference):
-
-\begin{enumerate}
-\item Check if any of its possible tip extensions was already selected as an earmark
-(As a tip extension for some previously processed tip, using rules 2 and 3 below).
-If so, continue to the next tip.
-\item Check if any of its possible tip extensions has both left and right neighbours.
-We select this extension as an earmark and thus eliminate at least one undesirable tip.
-\item Select as an earmark the possible tip extension that is most distant (in base pairs)
-from the tip being proccesed. Doing this, we don't eliminate a tip but we extend in as far
-as possible. This helps us not to lose information near the actual gaps (or thes end of actual scaffolds).
-\end{enumerate}
-
-If no new earmarked k-mers were introduced after this procedure, stop, otherwise repeat the entire procedure.
 
 %\section{Schedule}
 %\begin{description}
@@ -309,6 +383,3 @@ If no new earmarked k-mers were introduced after this procedure, stop, otherwise
 %  \item 
 %\end{description}
 
-
-
-\end{document}

@@ -66,9 +66,9 @@ public:
 
 /**
  * EdgeIndex is a structure to store info about location of certain k-mers in graph. It delegates all
- * container procedures to inner_index_ which is DeBruijnPlus and all handling procedures to
+ * container procedures to inner_index_ which is SeqMap and all handling procedures to
  * renewer_ which is DataHashRenewer.
- * @see DeBruijnPlus
+ * @see SeqMap
  * @see DataHashRenewer
  */
 template<size_t k, class Graph>

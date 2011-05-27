@@ -88,11 +88,11 @@ int main(int argc, char* argv[]) {
 	gbm.build();
 
 	INFO("Getting statistics...");
-	gbm.graph()->stats();
+//	gbm.graph()->stats(); TODO
 
 	INFO("Outputting graph to " << output_file);
 	ofstream output_stream(output_file.c_str(), ios::out);
-	gbm.graph()->output(output_stream, !output_single);
+//	gbm.graph()->output(output_stream, !output_single); TODO
 	INFO("Done.");
 	output_stream.close();
 

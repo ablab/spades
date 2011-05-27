@@ -1,28 +1,29 @@
+/*
+ * simple_tools.hpp
+ *
+ *  Created on: 27.05.2011
+ *      Author: vyahhi
+ */
+
 #ifndef SIMPLE_TOOLS_HPP_
 #define SIMPLE_TOOLS_HPP_
 
-#include <sstream>
 #include <string>
-#include <vector>
+#include <sstream>
 
-//namespace common {
-
-using std::string;
-using std::vector;
-
-string Reverse(const string &s);
-
-string Complement(const string &s);
-
-string ReverseComplement(const string &s);
-
+/**
+ * Converts anything to string (using ostringstream).
+ */
 template <typename T>
-string ToString(T t) {
-	std::stringstream ss;
+std::string ToString(T& t) {
+	std::ostringstream ss;
 	ss << t;
 	return ss.str();
 }
 
+/**
+ * Use vector<T> as input-stream with operator>>(T& t)
+ */
 template <typename T>
 class VectorStream {
 	vector<T> data_;
@@ -33,7 +34,7 @@ public:
 
 	}
 
-	bool eof() {
+	bool eof() const {
 		return pos_ == data_.size();
 	}
 
@@ -46,7 +47,7 @@ public:
 		closed_ = true;
 	}
 
-	bool is_open() {
+	bool is_open() const {
 		return !closed_;
 	}
 
@@ -55,5 +56,5 @@ public:
 	}
 
 };
-//}
+
 #endif /* SIMPLE_TOOLS_HPP_ */

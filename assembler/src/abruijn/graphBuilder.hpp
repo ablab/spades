@@ -8,18 +8,24 @@
 #include <vector>
 #include <list>
 #include <set>
+//#include <map>
+#include <ext/hash_map>
 #include "hash.hpp"
 #include "parameters.hpp"
 #include "logging.hpp"
-#include "abruijngraph.hpp"
+#include "omnigraph.hpp"
 #include "ireadstream.hpp"
 #include "graphVisualizer.hpp"
 
 namespace abruijn {
 
+LOGGER("a.graph");
+
 using namespace std;
 using namespace __gnu_cxx;
 using hashing::hash_t;
+
+typedef omnigraph::Omnigraph Graph;
 
 class GraphBuilder
 {
@@ -35,14 +41,6 @@ class GraphBuilder
 	hash_vector ha;
 
 public:
-	void findMinimizers(Sequence s);
-	void findLocalMinimizers(Sequence s, size_t window_size);
-	void findSecondMinimizer(Sequence s);
-	void revealTips(Sequence s);
-	void findTipExtensions(Sequence s);
-	void lookRight(Sequence s);
-	void addToGraph(Sequence s);
-
 	set<hash_t> earmarked_hashes;
 	typedef map<hash_t, char> RightExtensions;
 	RightExtensions has_right;
@@ -51,8 +49,23 @@ public:
 	typedef map<hash_t, TipExtenstionTable> TipExtensions;
 	TipExtensions tip_extensions;
 	hash_vector hbest;
-	abruijn::Graph graph_;
+//	typedef abruijn::Graph Graph;
+	Graph graph_;
+//	typedef hash_map <Sequence, Graph::VertexId, hashing::HashSym<Sequence>, hashing::EqSym<Sequence> > SeqVertice;
+	typedef hash_map <Sequence, Graph::VertexId, hashing::Hash<Sequence> > SeqVertice;
+	SeqVertice seqVertice;
 	size_t htake_;
+
+	void findMinimizers(Sequence s);
+	void findLocalMinimizers(Sequence s, size_t window_size);
+	void findSecondMinimizer(Sequence s);
+	void revealTips(Sequence s);
+	void findTipExtensions(Sequence s);
+	void lookRight(Sequence s);
+	void addToGraph(Sequence s);
+	bool hasVertex(Sequence s);
+	Graph::VertexId getOrCreateVertex(Sequence s);
+	Graph::VertexId createVertex(Sequence s);
 };
 
 template <typename Reader>
@@ -186,7 +199,7 @@ public:
 			gb_.addToGraph(r.getSequence());
 			VERBOSE(i, " single reads");
 		}
-		INFO("Done: " << gb_.graph_.vertices.size() << " vertices");
+		INFO("Done: " << gb_.graph_.size() << " vertices");
 
 //		INFO("===== Condensing-A graph... =====");
 //		gb_.graph_.Condense();
@@ -195,11 +208,11 @@ public:
 		return;
 	}
 
-	abruijn::Graph* graph() {
+	omnigraph::Omnigraph* graph() {
 		return &gb_.graph_;
 	}
 
-	bool SpellGenomeThroughGraph ( string filename, int cut ) {
+	void SpellGenomeThroughGraph () {
 		/// we assume here that the graph is already built
 
 		/// outputting A Bruijn graph
@@ -214,15 +227,15 @@ public:
 
 
 		/// reading the reference genome
-		//string const ref_genome_filename = "./data/input/MG1655-K12.fasta.gz";
+		string const ref_genome_filename = "./data/input/MG1655-K12.fasta.gz";
 		Read ref_genome;
 
-		ireadstream genome_stream(filename);
+		ireadstream genome_stream(ref_genome_filename);
 		genome_stream >> ref_genome;
 		genome_stream.close();
 
 		Sequence ref_seq = ref_genome.getSequence();
-		//size_t const cut = 100000;
+		size_t const cut = 100000;
 		if ( cut > 0 )
 			ref_seq = ref_seq.Subseq(0, cut);
 
@@ -269,18 +282,21 @@ public:
 					assert ( edge_length > 0 );
 
 					assert ( graph()->hasVertex(previous_kmer) && graph()->hasVertex(current_kmer) );
-					Vertex * previous_vertex = graph()->getVertex(previous_kmer);
-					Vertex * current_vertex  = graph()->getVertex(current_kmer);
+					Graph::VertexId previous_vertex = graph()->getVertex(previous_kmer);
+					Graph::VertexId current_vertex  = graph()->getVertex(current_kmer);
 					assert ( previous_vertex && current_vertex );
 
-					Edges::const_iterator edge_it = previous_vertex->edges().find( current_vertex );
-					if ( edge_it == previous_vertex->edges().end () ) {
+					vector<Graph::EdgeId> edges = graph()->GetEdgesBetween(previous_vertex, current_vertex);
+					if (edges.size() == 0) {
 						INFO ( "missing edge from " << previous_kmer << " to " << current_kmer );
 						++num_of_missing_edges;
 					}
 					else {
-						size_t const occ = edge_it->second.countLengthOccurrences (edge_length);
-						if ( occ == 0 ) {
+						bool occ = false;
+						for (auto it = edges.begin(); it != edges.end(); ++it) {
+							occ |= (((omnigraph::OmniEdge) *it).length() == edge_length);
+						}
+						if (!occ) {
 							INFO ( "missing length" );
 							++num_of_missing_lengths;
 						}
@@ -301,7 +317,8 @@ public:
 		INFO ( "number of missing edges: " << num_of_missing_edges );
 		INFO ( "number of missing lengths: " << num_of_missing_lengths );
 
-		return ( num_of_missing_kmers + num_of_missing_edges + num_of_missing_lengths == 0 );
+//		return ( num_of_missing_kmers + num_of_missing_edges + num_of_missing_lengths == 0 );
+		return;
 	}
 };
 

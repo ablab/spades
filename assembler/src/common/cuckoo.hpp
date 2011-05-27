@@ -16,7 +16,6 @@
  * standard std::map and std::unordered_map interface.
  *
  * See http://en.wikipedia.org/wiki/Cuckoo_hashing
- *
  */
 
 #include <cstring>
@@ -30,10 +29,10 @@
  * @param Hash function that gets data of type Key and some number 
  * (which is the number of appropriate hash function) and returns size_t 
  * (e.g. Hash(int, size_t))
- * @param Pred predicator that compares two Key values
- * @example cuckoo<int, int, Hasher, std::equal_to<int> > Cuckoo; 
-*/
-template <class Key, class Value, class Hash, class Pred> 
+ * @param Equal predicator that compares two Key values
+ * @example cuckoo<int, int, Hasher, std::key_equal_to<int> > Cuckoo;
+ */
+template <class Key, class Value, class Hash, class Equal> 
 class cuckoo {
 private:
   typedef pair<Key, Value> Data;
@@ -42,26 +41,34 @@ private:
   size_t init_length_;
   size_t max_loop_;
   double step_;
+  Hash hasher_;
+  Equal key_equal_;
+
   /** 
    * @variable The array of vectors, each of which is hash array
    */ 
   Data** data_;
+
   /**
    * @variable The array of flags indicating existence of the element in hash
    */  
   char* exists_;
+
   /**
    * @variable The total length of all the hash arrays
    */
   size_t len_;
+
   /**
    * @variable The length of every hash array
    */
   size_t len_part_;
+
   /**
    * @variable The actual number of elements in cuckoo hash
    */  
   size_t size_;
+
   /**
    * @variable The flag that anounces that rehash was made recently
    */
@@ -179,7 +186,7 @@ private:
    * @param pos Position in hash arrays
    */
   bool get_exists(size_t pos) const {
-    return (bool)(exists_[pos / 8] & (1 << (7 - (pos % 8))));  
+    return (bool)(exists_[pos /  8] & (1 << (7 - (pos % 8))));
   }
 
   /**
@@ -244,7 +251,7 @@ private:
    * @param pos Position in hash arrays
    */
   inline bool is_here(const Key &k, size_t pos) const {
-    return get_exists(pos) && Pred()(data_from(pos).first, k); 
+    return get_exists(pos) && key_equal_(data_from(pos).first, k);
   }
 
   /**
@@ -254,7 +261,8 @@ private:
    * @param hash_num The number of hash function from Hash family
    */
   inline size_t hash(const Key &k, size_t hash_num) const {
-    return Hash()(k, hash_num) % len_part_;
+    return hasher_(k, hash_num) % len_part_;
+    //return hasher_(k, hash_num, len_part_ - 1);
   }
   
   /**
@@ -369,13 +377,18 @@ public:
    * small value of step.
    * @param max_loop The maximum number of kick cycles during 
    * insertion before rehash.
-   * @param step The ratio of increasing the size of hash during rehash.   
+   * @param step The ratio of increasing the size of hash during rehash. 
+   * @param hasher The hash function object (template parameter by default).
+   * @param equal The equal predicator object (template parameter by default).  
    * The less it is the less memory will be used but the more time is needed. 
    */  
   explicit cuckoo(size_t d = 4, size_t init_length = 100, 
-                  size_t max_loop = 100, double step = 1.2)
+                  size_t max_loop = 100, double step = 1.2, 
+                  const Hash& hasher = Hash(), 
+                  const Equal& equal = Equal())
     : d_(d), init_length_(init_length), 
-      max_loop_(max_loop), step_(step) {
+      max_loop_(max_loop), step_(step), 
+      hasher_(hasher), key_equal_(equal) {
     init();
   }
   
@@ -391,13 +404,15 @@ public:
    *
    * @param Cuckoo The source of data
    */
-  cuckoo<Key, Value, Hash, Pred>& operator=
-  (const cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
+  cuckoo<Key, Value, Hash, Equal>& operator=
+  (const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
     clear_all();
     d_ = Cuckoo.d_;
     init_length_ = Cuckoo.init_length_;
     max_loop_ = Cuckoo.max_loop_;
     step_ = Cuckoo.step_;
+    hasher_ = Cuckoo.hasher_;
+    key_equal_ = Cuckoo.key_equal_;
     init();
     const_iterator it = Cuckoo.begin();
     const_iterator final = Cuckoo.end();
@@ -412,10 +427,8 @@ public:
    * Copy constructor.
    *
    * @param Cuckoo The source of information
-   *
-   * @todo Optimize!!!
    */
-  cuckoo(const cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
+  cuckoo(const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
     init();
     *this = Cuckoo;
   }
@@ -427,11 +440,15 @@ public:
    * @param last The end of range iterator
    */
   template <class InputIterator>
-  cuckoo(InputIterator first, InputIterator last) {
+  cuckoo(InputIterator first, InputIterator last, 
+         const Hash& hasher = Hash(), 
+         const Equal& equal = Equal()) {
     d_ = 4;
     init_length_ = 100;
     max_loop_ = 100;
     step_ = 1.2;
+    hasher_ = hasher;
+    key_equal_ = equal;
     init();
     for (iterator it = first; it != last; ++it) {
       add_new(*it);
@@ -458,7 +475,7 @@ public:
    *
    * @param Cuckoo Cuckoo of the same type
    */
-  void swap(cuckoo<Key, Value, Hash, Pred>& Cuckoo) {
+  void swap(cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
     std::swap(d_, Cuckoo.d_);
     std::swap(init_length_, Cuckoo.init_length_);
     std::swap(max_loop_, Cuckoo.max_loop_);
@@ -559,11 +576,13 @@ public:
    * doesn't exist
    */
   iterator find(const Key& k) {
+    size_t dist = 0;
     for (size_t i = 0; i < d_; ++i) {
-      size_t pos = hash(k, i);
-      if (is_here(k, i * len_part_ + pos)) {
-        return iterator(i * len_part_ + pos, this);
+      size_t pos = hash(k, i) + dist;
+      if (is_here(k, pos)) {
+        return iterator(pos, this);
       }
+      dist += len_part_;
     }
     return end();
   }

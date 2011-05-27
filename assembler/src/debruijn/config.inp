@@ -1,7 +1,7 @@
 # input options:
 
-input_dir = ./data/input/
-debruijn_dir = ./data/debruijn/
+input_dir  = ./data/input/
+output_dir = ./data/debruijn/
 dataset = QUAKE_CROPPED_10K
 reference_genome = MG1655-K12.fasta.gz
 
