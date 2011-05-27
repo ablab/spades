@@ -9,7 +9,7 @@ int main() {
 	// read configuration file (dataset path etc.)
 	ConfigFile config(CONFIG_FILE);
 	string input_dir = config.read<string>("input_dir");
-	string debruijn_dir = config.read<string>("debruijn_dir");
+	string output_dir = config.read<string>("debruijn_dir");
 	string dataset = config.read<string>("dataset");
 	string genome_filename = input_dir + "/" + config.read<string>("reference_genome");
 	string reads_filename1 = input_dir + "/" + config.read<string>(dataset + "_1");
@@ -29,14 +29,16 @@ int main() {
 	RCStream rcStream(pairStream);
 
 	// read data ('genome')
-	Read genome;
+	std::string genome;
 	{
 		ireadstream genome_stream(genome_filename);
-		genome_stream >> genome;
+		Read full_genome;
+		genome_stream >> full_genome;
+		genome = full_genome.getSequenceString().substr(0, dataset_len); // cropped
 	}
 
 	// assemble
-	debruijn_graph::DeBruijnGraphTool<K, RCStream>(rcStream, genome.getSequenceString().substr(0, dataset_len), debruijn_dir);
+	debruijn_graph::DeBruijnGraphTool<K, RCStream>(rcStream, genome, output_dir);
 
 	// OK
 	return 0;
