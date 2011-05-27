@@ -31,7 +31,7 @@ private:
 	const Sequence& nucls() const {
 		return nucls_;
 	}
-	Sequence nucls_;
+	const Sequence nucls_;
 	Vertex* end_;
 	size_t coverage_;
 	Edge *conjugate_;
@@ -48,7 +48,7 @@ private:
 		return nucls_.size();
 	}
 
-	Edge *conjugate() {
+	Edge *conjugate() const {
 		return conjugate_;
 	}
 
@@ -127,7 +127,7 @@ private:
 class DeBruijnGraph {
 public:
 	typedef Edge* EdgeId;
-	typedef Edge EdgeData;
+//	typedef Edge EdgeData;
 	typedef Vertex* VertexId;
 
 	typedef set<Vertex*>::const_iterator VertexIterator;
@@ -503,9 +503,9 @@ public:
 	 */
 	EdgeId conjugate(EdgeId e) const;
 
-	const EdgeData& GetData(EdgeId e) const {
-		return *e;
-	}
+//	const EdgeData& GetData(EdgeId e) const {
+//		return *e;
+//	}
 
 	/**
 	 * method checks whether vertex has unique incoming and unique outgoing edge and thus can be compressed.
@@ -545,7 +545,7 @@ public:
 };
 
 typedef DeBruijnGraph::EdgeId EdgeId;
-typedef DeBruijnGraph::EdgeData EdgeData;
+//typedef DeBruijnGraph::EdgeData EdgeData;
 typedef DeBruijnGraph::VertexId VertexId;
 typedef DeBruijnGraph::VertexIterator VertexIterator;
 typedef DeBruijnGraph::EdgeIterator EdgeIterator;

@@ -13,7 +13,6 @@
 #include "omni_utils.hpp"
 
 namespace omnigraph {
-LOGGER("omnigraph");
 
 template<typename VertexData, typename EdgeData, class DataMaster>
 class AbstractConjugateGraph {
@@ -95,7 +94,7 @@ public:
 		}
 
 		VertexId conjugate() const {
-			return conjugate_;;
+			return conjugate_;
 		}
 
 		~Vertex() {
@@ -118,6 +117,10 @@ public:
 
 		EdgeData &data() {
 			return data_;
+		}
+
+		void set_data(EdgeData &data) {
+			data_ = data;
 		}
 
 		VertexId end() const {
@@ -145,9 +148,9 @@ public:
 
 	DataMaster master_;
 
-	VertexId HiddenAddVertex(VertexData &data) {
-		VertexId v1 = new Vertex(data);
-		VertexId v2 = new Vertex(!data);
+	VertexId HiddenAddVertex(const VertexData &data1, const VertexData &data2) {
+		VertexId v1 = new Vertex(data1);
+		VertexId v2 = new Vertex(data2);
 		v1->set_conjugate(v2);
 		v2->set_conjugate(v1);
 		vertices_.insert(v1);
@@ -155,14 +158,19 @@ public:
 		return v1;
 	}
 
+	VertexId HiddenAddVertex(const VertexData &data) {
+		return HiddenAddVertex(data, master_.conjugate(data));
+	}
+
 	EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
 		assert(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
-		//	assert(OutgoingEdge(v1, nucls[k_]) == NULL);
 		EdgeId result = AddSingleEdge(v1, v2, data);
-		EdgeId rcEdge = result;
-		if (data != !data) {
-			rcEdge = AddSingleEdge(v2->conjugate(), v1->conjugate(), !data);
+		if (master_.isSelfConjugate(data)) {
+			result->set_conjugate(result);
+			return result;
 		}
+		EdgeId rcEdge = AddSingleEdge(v2->conjugate(), v1->conjugate(),
+				master_.conjugate(data));
 		result->set_conjugate(rcEdge);
 		rcEdge->set_conjugate(result);
 		return result;
@@ -337,8 +345,14 @@ public:
 		return v->data();
 	}
 
-	VertexId AddVertex() {
-		VertexId result = HiddenAddVertex();
+	VertexId AddVertex(const VertexData& data) {
+		VertexId result = HiddenAddVertex(data);
+		FireAddVertex(result);
+		return result;
+	}
+
+	VertexId AddVertex(const VertexData& data1, const VertexData& data2) {
+		VertexId result = HiddenAddVertex(data1, data2);
 		FireAddVertex(result);
 		return result;
 	}
@@ -442,9 +456,9 @@ public:
 		SequenceBuilder sb;
 		VertexId v1 = EdgeStart(correctedPath[0]);
 		VertexId v2 = EdgeEnd(correctedPath[correctedPath.size() - 1]);
-		vector<EdgeData&> toMerge;
+		vector<EdgeData*> toMerge;
 		for (auto it = correctedPath.begin(); it != correctedPath.end(); ++it) {
-			toMerge.push_back((*it)->data());
+			toMerge.push_back(&((*it)->data()));
 		}
 		EdgeId newEdge = HiddenAddEdge(v1, v2, master_.MergeData(toMerge));
 		FireMerge(correctedPath, newEdge);
