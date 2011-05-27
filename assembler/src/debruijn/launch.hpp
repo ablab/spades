@@ -139,9 +139,7 @@ void ConstructGraphWithPairedInfo(Graph& g,
 }
 
 template<size_t k, class ReadStream>
-void DeBruijnGraphTool(ReadStream& stream, const string& genome,
-		const string& output_folder) {
-	typedef SeqMap<k + 1, EdgeId> DeBruijn;
+void DeBruijnGraphTool(ReadStream& stream, const string& genome, const string& output_folder) {
 	INFO("Edge graph construction tool started");
 
 	Graph g(k);

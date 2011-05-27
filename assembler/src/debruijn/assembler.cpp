@@ -4,40 +4,40 @@
 #include "launch.hpp"
 #include "config.hpp"
 
-void RunDeBruijnGraphTool() {
+int main() {
 
-	// config parsing... dataset path etc.
+	// read configuration file (dataset path etc.)
 	ConfigFile config(CONFIG_FILE);
 	string input_dir = config.read<string>("input_dir");
 	string debruijn_dir = config.read<string>("debruijn_dir");
 	string dataset = config.read<string>("dataset");
-	string reference_genome = input_dir + "/" + config.read<string>("reference_genome");
-	string reads1 = input_dir + "/" + config.read<string>(dataset + "_1");
-	string reads2 = input_dir + "/" + config.read<string>(dataset + "_2");
+	string genome_filename = input_dir + "/" + config.read<string>("reference_genome");
+	string reads_filename1 = input_dir + "/" + config.read<string>(dataset + "_1");
+	string reads_filename2 = input_dir + "/" + config.read<string>(dataset + "_2");
 	int insert_size = config.read<int>(dataset + "_IS");
 	int dataset_len = config.read<int>(dataset + "_LEN");
 
 	// typedefs :)
-	typedef StrobeReader<2, Read, ireadstream> ReadStream;
-	typedef PairedReader<ireadstream> PairedStream;
-	typedef RCReaderWrapper<PairedStream, PairedRead> RCStream;
+	typedef MateReader<Read, ireadstream>::type ReadStream;
+	typedef PairedReader<ireadstream> PairedReadStream;
+	typedef RCReaderWrapper<PairedReadStream, PairedRead> RCStream;
 
-	// read data
-	const string reads[2] = {reads1, reads2};
+	// read data ('reads')
+	const string reads[2] = {reads_filename1, reads_filename2};
 	ReadStream reader(reads);
-	PairedStream pairStream(reader, insert_size);
+	PairedReadStream pairStream(reader, insert_size);
 	RCStream rcStream(pairStream);
 
-	// assemble
-	ireadstream genome_stream(reference_genome);
+	// read data ('genome')
 	Read genome;
-	genome_stream >> genome;
-	genome_stream.close();
-	debruijn_graph::DeBruijnGraphTool<K, RCStream>(rcStream, genome.getSequenceString().substr(0, dataset_len), debruijn_dir);
-	reader.close();
-}
+	{
+		ireadstream genome_stream(genome_filename);
+		genome_stream >> genome;
+	}
 
-int main() {
-	RunDeBruijnGraphTool();
+	// assemble
+	debruijn_graph::DeBruijnGraphTool<K, RCStream>(rcStream, genome.getSequenceString().substr(0, dataset_len), debruijn_dir);
+
+	// OK
 	return 0;
 }
