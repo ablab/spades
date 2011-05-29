@@ -68,6 +68,9 @@ void TestCuckooCopiing() {
   map[4] = 1;
   map[6];
   ASSERT_EQUAL(map.size(), 3);
+  ASSERT_EQUAL(map[1], 4);
+  map[1] = 5;
+  ASSERT_EQUAL(map[1], 5);
 
   hm map2(map);
   ASSERT_EQUAL(map2.size(), 3);

@@ -20,8 +20,8 @@
 
 #include <cstring>
 
-#ifndef CUCKOO_HPP_
-#define CUCKOO_HPP_
+#ifndef _CUCKOO_HPP_
+#define _CUCKOO_HPP_
 
 /**
  * @param Key key type in hash
@@ -211,7 +211,6 @@ private:
    * @param pos Position in hash arrays
    */
   bool get_exists(size_t pos) const {
-    //return (bool)(exists_[pos /  8] & (1 << (7 - (pos % 8))));
     return (bool)(exists_[pos >> 3] & (1 << (pos - ((pos >> 3) << 3))));
   }
 
@@ -221,7 +220,6 @@ private:
    * @param pos Position in hash arrays
    */
   void set_exists(size_t pos) {
-    //exists_[pos / 8] = exists_[pos / 8] | (1 << (7 - (pos % 8)));
     exists_[pos >> 3] = exists_[pos >> 3] | (1 << (pos - ((pos >> 3) << 3)));
   }
 
@@ -231,7 +229,6 @@ private:
    * @param pos Position in hash arrays
    */
   void unset_exists(size_t pos) {
-    //exists_[pos / 8] = exists_[pos / 8] & (~(1 << (7 - (pos % 8))));
     exists_[pos >> 3] = exists_[pos >> 3] & (~(1 << (pos - ((pos >> 3) << 3))));
   }
 
@@ -242,13 +239,10 @@ private:
     len_part_ = init_length_ / d_ + 1;
     len_part_ = ((len_part_ + 7) >> 3) << 3;
     len_ = len_part_ * d_;
-    //data_ = new Data*[d_];
     data_ = (Data**)(malloc(d_ * sizeof(Data*)));
     for (size_t i = 0; i < d_; ++i) {
-      //data_[i] = new Data[len_part_];
       data_[i] = (Data*)(malloc(len_part_ * sizeof(Data)));
     }
-    //exists_ = new char[len_ >> 3]; 
     exists_ = (char*)(malloc((len_ >> 3) * sizeof(char)));
     for (size_t i = 0; i < len_ >> 3; ++i) exists_[i] = 0;
     size_ = 0;
@@ -256,16 +250,32 @@ private:
   }
 
   /**
+   * Copies information from Cuckoo to clean object.
+   */
+  void copy(const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
+    d_ = Cuckoo.d_;
+    init_length_ = Cuckoo.init_length_;
+    max_loop_ = Cuckoo.max_loop_;
+    step_ = Cuckoo.step_;
+    hasher_ = Cuckoo.hasher_;
+    key_equal_ = Cuckoo.key_equal_;
+    init();
+    const_iterator it = Cuckoo.begin();
+    size_t final_len = Cuckoo.length();
+    while (it.pos != final_len) {
+      insert(*it);
+      ++it;
+    }
+  }
+
+  /**
    * Clear all the data from cuckoo.
    */
   void clear_all() {
     for (size_t i = 0; i < d_; ++i) {
-      //delete [] data_[i];
       free(data_[i]);
     }
-    //delete [] data_;
     free(data_);
-    //delete [] exists_;
     free(exists_);
   }
 
@@ -296,7 +306,6 @@ private:
    */
   inline size_t hash(const Key &k, size_t hash_num) const {
     return hasher_(k, hash_num) % len_part_;
-    //return hasher_(k, hash_num, len_part_ - 1);
   }
   
   /**
@@ -305,7 +314,6 @@ private:
    * @param len_temp_ New size of exists_
    */
   void update_exists(size_t len_temp_) { 
-    //char* t = new char[len_ >> 3];
     char* t = (char*)(malloc((len_ >> 3) * sizeof(char)));
     char* s = t;
     char* f = s + (len_ >> 3);
@@ -316,7 +324,6 @@ private:
       memcpy(t + (i * (len_part_ >> 3)), exists_ + (i * (len_temp_ >> 3)), (len_temp_ >> 3));
     }
     std::swap(t, exists_);
-    //delete [] t;
     free(t);
   }
 
@@ -327,11 +334,9 @@ private:
    */
   void update_data(size_t len_temp_) {
     for (size_t i = 0; i < d_; ++i) {
-      //Data* t = new Data[len_part_];
       Data* t = (Data*)(malloc(len_part_ * sizeof(Data)));
       memcpy(t, data_[i], len_temp_*sizeof(Data));
       std::swap(t, data_[i]);
-      //delete [] t;
       free(t);
     } 
   }
@@ -437,23 +442,6 @@ public:
     clear_all();
   }
 
-  void copy(const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
-    d_ = Cuckoo.d_;
-    init_length_ = Cuckoo.init_length_;
-    max_loop_ = Cuckoo.max_loop_;
-    step_ = Cuckoo.step_;
-    hasher_ = Cuckoo.hasher_;
-    key_equal_ = Cuckoo.key_equal_;
-    init();
-    const_iterator it = Cuckoo.begin();
-    size_t final_len = Cuckoo.length();
-    //const_iterator final = Cuckoo.end();
-    while (it.pos != final_len) {
-      insert(*it);
-      ++it;
-    }
-  }
-
   /**
    * Copies information from cuckoo of the same type.
    *
@@ -462,26 +450,7 @@ public:
   cuckoo<Key, Value, Hash, Equal>& operator=
   (const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
     clear_all();
-    /*d_ = Cuckoo.d_;
-    init_length_ = Cuckoo.init_length_;
-    max_loop_ = Cuckoo.max_loop_;
-    step_ = Cuckoo.step_;
-    hasher_ = Cuckoo.hasher_;
-    key_equal_ = Cuckoo.key_equal_;
-    init();
-    const_iterator it = Cuckoo.begin();
-    size_t final_len = Cuckoo.length();
-    //const_iterator final = Cuckoo.end();
-    while (it.pos != final_len) {
-      insert(*it);
-      ++it;
-      }*/
     copy(Cuckoo);
-    //if (*this != Cuckoo) {
-    //  clear_all();
-    //  cuckoo t(Cuckoo);
-    //  t.swap(*this);
-    //}
     return *this;
   }
 
@@ -491,24 +460,7 @@ public:
    * @param Cuckoo The source of information
    */
   cuckoo(const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
-    /*d_ = Cuckoo.d_;
-    init_length_ = Cuckoo.init_length_;
-    max_loop_ = Cuckoo.max_loop_;
-    step_ = Cuckoo.step_;
-    hasher_ = Cuckoo.hasher_;
-    key_equal_ = Cuckoo.key_equal_;
-    init();
-    const_iterator it = Cuckoo.begin();
-    size_t final_len = Cuckoo.length();
-    //const_iterator final = Cuckoo.end();
-    while (it.pos != final_len) {
-      insert(*it);
-      ++it;
-      }*/
     copy(Cuckoo);
-    //return *this;
-    //    init();
-    //*this = Cuckoo;
   }
 
   /**
@@ -622,12 +574,6 @@ public:
    * @param k Key value
    */
   Value& operator[](const Key& k) {
-    /*iterator it = find(k);
-    //if (it == end()) {
-    if (it.pos == len_) {
-      it = insert(make_pair(k, Value())).first;
-    }
-    return (*it).second;*/
     return (*((this->insert(make_pair(k, Value()))).first)).second;
   }
 
@@ -660,7 +606,6 @@ public:
    */
   size_t erase(const Key& k) {
     iterator it = find(k);
-    //if (it != end()) {
     if (it.pos != len_) {
       remove(it);
       return 1;
@@ -711,11 +656,6 @@ public:
    * @return Returns 1 if element exists and 0 otherwise
    */
   size_t count(const Key& k) const {
-    /*if (find(k) != end()) {
-      return 1;
-    } else {
-      return 0;
-      }*/
     return (find(k)).pos != len_;
   }
   
@@ -727,11 +667,6 @@ public:
    * pair with both iterator pointing to the end of cuckoo.
    */ 
   pair<iterator, iterator> equal_range(const Key& k) {
-    /*if (find(k) != end()) {
-      return std::make_pair<iterator, iterator>(find(k), ++find(k));
-    } else {
-      return std::make_pair<iterator, iterator>(end(), end());
-      }*/
     iterator it = find(k);
     return std::make_pair<iterator, iterator>(it, ++it);
   }
@@ -744,13 +679,6 @@ public:
    * pair with both iterator pointing to the end of cuckoo.
    */ 
   pair<const_iterator, const_iterator> equal_range(const Key& k) const {
-    /*if (find(k) != end()) {
-      return std::make_pair<const_iterator, const_iterator>
-        (find(k), ++find(k));
-    } else {
-      return std::make_pair<const_iterator, const_iterator>
-        (end(), end());
-        }*/
     const_iterator it = find(k);
     return std::make_pair<const_iterator, const_iterator>(it, ++it);
   }
@@ -764,9 +692,7 @@ public:
    */
   pair<iterator, bool> insert(const Data& k) {
     iterator res = find(k.first);
-    //if (res != end()) {
     if (res.pos != len_) {
-      //(*res).second = k.second;
       return make_pair(res, false);
     } 
     assert(res == end());
@@ -824,4 +750,4 @@ public:
   }
 };
 
-#endif /* CUCKOO_HPP_ */
+#endif /* _CUCKOO_HPP_ */
