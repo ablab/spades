@@ -95,9 +95,13 @@ public:
      */
     const_iterator() : pos(0), hash(NULL) {}
 
-    void operator=(const const_iterator &it) {
+    void operator=(const const_iterator& it) {
       pos = it.pos; 
       hash = it.hash;
+    }
+
+    const_iterator(const const_iterator& it) {
+      *this = it;
     }
 
     const_iterator& operator++() {
@@ -160,6 +164,10 @@ public:
     void operator=(const iterator &it) {
       pos = it.pos;
       hash = it.hash;
+    }
+
+    iterator(const iterator &it) {
+      *this = it;
     }
 
     iterator& operator++() {
@@ -557,12 +565,13 @@ public:
    * @param k Key value
    */
   Value& operator[](const Key& k) {
-    iterator it = find(k);
+    /*iterator it = find(k);
     //if (it == end()) {
     if (it.pos == len_) {
       it = insert(make_pair(k, Value())).first;
     }
-    return (*it).second;
+    return (*it).second;*/
+    return (*((this->insert(make_pair(k, Value()))).first)).second;
   }
 
   /**
@@ -581,7 +590,7 @@ public:
    * @param last The end of range iterator
    */
   void erase(iterator first, iterator last) {
-    while (first != last) {
+    while (first.pos != last.pos) {
       first = remove(first);
     }
   }
@@ -645,11 +654,12 @@ public:
    * @return Returns 1 if element exists and 0 otherwise
    */
   size_t count(const Key& k) const {
-    if (find(k) != end()) {
+    /*if (find(k) != end()) {
       return 1;
     } else {
       return 0;
-    }
+      }*/
+    return (find(k)).pos != len_;
   }
   
   /**
@@ -699,7 +709,7 @@ public:
     iterator res = find(k.first);
     //if (res != end()) {
     if (res.pos != len_) {
-      (*res).second = k.second;
+      //(*res).second = k.second;
       return make_pair(res, false);
     } 
     assert(res == end());
