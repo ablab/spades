@@ -30,7 +30,7 @@
  * (which is the number of appropriate hash function) and returns size_t 
  * (e.g. Hash(int, size_t))
  * @param Equal predicator that compares two Key values
- * @example cuckoo<int, int, Hasher, std::equal_to<int> > Cuckoo; 
+ * @example cuckoo<int, int, Hasher, std::key_equal_to<int> > Cuckoo;
  */
 template <class Key, class Value, class Hash, class Equal> 
 class cuckoo {
@@ -42,27 +42,33 @@ private:
   size_t max_loop_;
   double step_;
   Hash hasher_;
-  Equal equal_;
+  Equal key_equal_;
+
   /** 
    * @variable The array of vectors, each of which is hash array
    */ 
   Data** data_;
+
   /**
    * @variable The array of flags indicating existence of the element in hash
    */  
   char* exists_;
+
   /**
    * @variable The total length of all the hash arrays
    */
   size_t len_;
+
   /**
    * @variable The length of every hash array
    */
   size_t len_part_;
+
   /**
    * @variable The actual number of elements in cuckoo hash
    */  
   size_t size_;
+
   /**
    * @variable The flag that anounces that rehash was made recently
    */
@@ -180,7 +186,7 @@ private:
    * @param pos Position in hash arrays
    */
   bool get_exists(size_t pos) const {
-    return (bool)(exists_[pos / 8] & (1 << (7 - (pos % 8))));  
+    return (bool)(exists_[pos /  8] & (1 << (7 - (pos % 8))));
   }
 
   /**
@@ -245,7 +251,7 @@ private:
    * @param pos Position in hash arrays
    */
   inline bool is_here(const Key &k, size_t pos) const {
-    return get_exists(pos) && equal_(data_from(pos).first, k); 
+    return get_exists(pos) && key_equal_(data_from(pos).first, k);
   }
 
   /**
@@ -382,7 +388,7 @@ public:
                   const Equal& equal = Equal())
     : d_(d), init_length_(init_length), 
       max_loop_(max_loop), step_(step), 
-      hasher_(hasher), equal_(equal) {
+      hasher_(hasher), key_equal_(equal) {
     init();
   }
   
@@ -406,7 +412,7 @@ public:
     max_loop_ = Cuckoo.max_loop_;
     step_ = Cuckoo.step_;
     hasher_ = Cuckoo.hasher_;
-    equal_ = Cuckoo.equal_;
+    key_equal_ = Cuckoo.key_equal_;
     init();
     const_iterator it = Cuckoo.begin();
     const_iterator final = Cuckoo.end();
@@ -442,7 +448,7 @@ public:
     max_loop_ = 100;
     step_ = 1.2;
     hasher_ = hasher;
-    equal_ = equal;
+    key_equal_ = equal;
     init();
     for (iterator it = first; it != last; ++it) {
       add_new(*it);

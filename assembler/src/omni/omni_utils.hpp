@@ -3,6 +3,7 @@
 
 #include "queue_iterator.hpp"
 #include "logging.hpp"
+#include "simple_tools.hpp"
 
 namespace omnigraph {
 
@@ -86,11 +87,13 @@ public:
 	 * edge is completely replaced with other edge. This operation is widely used in bulge removal
 	 * when alternative path is glued to main path. Since this is high level operation event of deletion
 	 * of old edge should not have been triggered yet when this event was triggered.
-	 * @param old_edge edge to be glued to new edge
-	 * @param new_edge edge old edge should be glued to
+	 * @param new_edge edge glue result
+	 * @param edge1 edge to be glued to edge2
+	 * @param edge2 edge edge1 should be glued with
 	 */
-	virtual void HandleGlue(EdgeId old_edge, EdgeId new_edge) {
+	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 	}
+
 
 	/**
 	 * High level event which is triggered when split operation is performed on graph, which is when
@@ -137,8 +140,8 @@ public:
 	virtual void ApplyMerge(GraphActionHandler<Graph> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const = 0;
 
-	virtual void ApplyGlue(GraphActionHandler<Graph> *handler, EdgeId old_edge,
-			EdgeId new_edge) const = 0;
+	virtual void ApplyGlue(GraphActionHandler<Graph> *handler, EdgeId new_edge, EdgeId edge1,
+			EdgeId edge2) const = 0;
 
 	virtual void ApplySplit(GraphActionHandler<Graph> *handler,
 			EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const = 0;
@@ -310,27 +313,27 @@ public:
 		}
 	}
 
-	virtual void ApplyGlue(GraphActionHandler<Graph> *handler, EdgeId old_edge,
-			EdgeId new_edge) const {
+	virtual void ApplyGlue(GraphActionHandler<Graph> *handler, EdgeId new_edge, EdgeId edge1,
+			EdgeId edge2) const {
 		TRACE(
 				"Triggering glue event of handler " << handler->name()
-						<< " with old edge " << old_edge);
-		EdgeId rcOldEdge = graph_.conjugate(old_edge);
-		EdgeId rcNewEdge = graph_.conjugate(new_edge);
-		assert(old_edge != new_edge);
-		assert(new_edge != rcNewEdge);
-		assert(graph_.EdgeStart(old_edge) != graph_.EdgeEnd(old_edge));
-		assert(graph_.EdgeStart(new_edge) != graph_.EdgeEnd(new_edge));
-		handler->HandleGlue(old_edge, new_edge);
-		if (old_edge != rcOldEdge) {
+						<< " with old edge " << edge1);
+		EdgeId rcOldEdge = graph_.conjugate(edge1);
+		EdgeId rcNewEdge = graph_.conjugate(edge2);
+		assert(edge1 != edge2);
+		assert(edge2 != rcNewEdge);
+		assert(graph_.EdgeStart(edge1) != graph_.EdgeEnd(edge1));
+		assert(graph_.EdgeStart(edge2) != graph_.EdgeEnd(edge2));
+		handler->HandleGlue(new_edge, edge1, edge2);
+		if (edge1 != rcOldEdge) {
 			TRACE(
 					"Triggering merge event of handler " << handler->name()
-							<< " with old edge " << old_edge
+							<< " with old edge " << edge1
 							<< " which is conjugate to " << rcOldEdge);
-			handler->HandleGlue(rcOldEdge, rcNewEdge);
+			handler->HandleGlue(graph_.conjugate(new_edge), rcOldEdge, rcNewEdge);
 		} else {
 			TRACE(
-					"Edge " << old_edge
+					"Edge " << edge1
 							<< "is self-conjugate thus handler is not applied the second time");
 		}
 	}

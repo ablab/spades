@@ -27,6 +27,7 @@
 template<size_t size_, typename Value>
 class SeqMap {
 private:
+	friend class SeqMapBuilder;
 	typedef Seq<size_> Kmer;
 	//typedef std::tr1::unordered_map<KPlusOneMer, pair<Value, size_t> ,
 	//	typename KPlusOneMer::hash, typename KPlusOneMer::equal_to> map_type; // size_t is offset
@@ -45,13 +46,12 @@ private:
 	}
 
 	void CountSequence(const Sequence& s) {
-		if (s.size() >= size_) {
-			Seq<size_> kmer = s.start<size_> ();
+		if (s.size() < size_) return;
+		Seq<size_> kmer = s.start<size_> ();
+		addEdge(kmer);
+		for (size_t j = size_; j < s.size(); ++j) {
+			kmer = kmer << s[j];
 			addEdge(kmer);
-			for (size_t j = size_; j < s.size(); ++j) {
-				kmer = kmer << s[j];
-				addEdge(kmer);
-			}
 		}
 	}
 
@@ -73,6 +73,7 @@ private:
 			mi->second.second = offset;
 		}
 	}
+
 
 public:
 	typedef typename map_type::iterator map_iterator;
@@ -106,10 +107,18 @@ public:
 		return nodes_.end();
 	}
 
+	map_const_iterator begin() const {
+		return nodes_.begin();
+	}
+
+	map_const_iterator end() const {
+		return nodes_.end();
+	}
+
 	/**
-	 * Number of edges coming into param edge end
+	 * Number of edges coming into param edge's end
 	 */
-	char RivalEdgeCount(const Kmer& kmer) {
+	char RivalEdgeCount(const Kmer& kmer) const {
 		Kmer kmer2 = kmer << 'A';
 		char res = 0;
 		for (char c = 0; c < 4; ++c) {
@@ -121,9 +130,9 @@ public:
 	}
 
 	/**
-	 * Number of edges going out of the param edge end
+	 * Number of edges going out of the param edge's end
 	 */
-	char NextEdgeCount(const Kmer& kmer) {
+	char NextEdgeCount(const Kmer& kmer) const {
 		char res = 0;
 		for (char c = 0; c < 4; ++c) {
 			if (contains(kmer << c)) {
@@ -133,7 +142,7 @@ public:
 		return res;
 	}
 
-	Kmer NextEdge(const Kmer& kmer) { // returns any next edge
+	Kmer NextEdge(const Kmer& kmer) const { // returns any next edge
 		for (char c = 0; c < 4; ++c) {
 			Kmer s = kmer << c;
 			if (contains(s)) {

@@ -122,10 +122,10 @@ void DeBruijnGraph::FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
 	}
 }
 
-void DeBruijnGraph::FireGlue(EdgeId edge1, EdgeId edge2) {
+void DeBruijnGraph::FireGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 	for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
 			!= action_handler_list_.end(); ++it) {
-		applier_.ApplyGlue(*it, edge1, edge2);
+		applier_.ApplyGlue(*it, new_edge, edge1, edge2);
 	}
 }
 
@@ -335,9 +335,11 @@ pair<EdgeId, EdgeId> DeBruijnGraph::SplitEdge(EdgeId edge, size_t position) {
 }
 
 void DeBruijnGraph::GlueEdges(EdgeId edge1, EdgeId edge2) {
+	EdgeId newEdge = HiddenAddEdge(EdgeStart(edge2), EdgeEnd(edge2), EdgeNucls(edge2));
+	FireGlue(newEdge, edge1, edge2);
+	FireDeleteEdge(edge1);
 	FireDeleteEdge(edge2);
-	FireGlue(edge1, edge2);
-	FireAddEdge(edge2);
+	FireAddEdge(newEdge);
 	VertexId start = EdgeStart(edge1);
 	VertexId end = EdgeEnd(edge1);
 	DeleteEdge(edge1);

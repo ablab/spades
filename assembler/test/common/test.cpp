@@ -12,7 +12,7 @@
 //#include "offlineGraphVisualizerTest.hpp"
 #include "similarTest.hpp"
 #include "cuckooTest.hpp"
-#include "trieTest.hpp"
+
 #include "structuresTest.hpp"
 //TODO function readGenomeFromFile is declared outside common directory
 //typedef long long ll; //???
