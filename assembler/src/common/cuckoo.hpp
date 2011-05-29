@@ -111,8 +111,7 @@ public:
 
     const_iterator& operator++() {
       assert(hash != NULL);
-      assert(pos != hash->len_);
-      ++pos;
+      if (pos != hash->len_) ++pos;
       while ((pos < hash->len_) && (!(hash->get_exists(pos)))) {
         ++pos;
       }
@@ -177,8 +176,7 @@ public:
 
     iterator& operator++() {
       assert(hash != NULL);
-      assert(pos != hash->len_);
-      ++pos;
+      if (pos != hash->len_) ++pos;
       while ((pos < hash->len_) && !(hash->get_exists(pos))) {
         ++pos;
       }
@@ -386,15 +384,16 @@ private:
    * @param p New element
    */
   iterator add_new(Data p) {
+    iterator it = iterator(hash(p.first, 0), this);
     for (size_t i = 0; i < max_loop_; ++i) {
       for (size_t j = 0; j < d_; ++j) {
         size_t pos = hash(p.first, j);
-        std::swap(p, data_from(j * len_part_ + pos));
+        std::swap(p, data_[j][pos]);
         bool exists = get_exists(j * len_part_ + pos); 
         set_exists(j * len_part_ + pos);
         if (!exists) {
           ++size_;
-          return iterator(j * len_part_ + pos, this);
+          return it;
         } 
       }
     }
@@ -673,8 +672,9 @@ public:
    * pair with both iterator pointing to the end of cuckoo.
    */ 
   pair<iterator, iterator> equal_range(const Key& k) {
-    iterator it = find(k);
-    return std::make_pair<iterator, iterator>(it, ++it);
+    iterator l = find(k);
+    iterator r = l;
+    return std::make_pair<iterator, iterator>(l, ++r);
   }
 
   /**
@@ -685,8 +685,9 @@ public:
    * pair with both iterator pointing to the end of cuckoo.
    */ 
   pair<const_iterator, const_iterator> equal_range(const Key& k) const {
-    const_iterator it = find(k);
-    return std::make_pair<const_iterator, const_iterator>(it, ++it);
+    const_iterator l = find(k);
+    const_iterator r = l;
+    return std::make_pair<const_iterator, const_iterator>(l, ++r);
   }
 
   /** 
@@ -701,7 +702,6 @@ public:
     if (res.pos != len_) {
       return make_pair(res, false);
     } 
-    assert(res == end());
     res = add_new(k);
     return make_pair(res, true);
   }
@@ -714,8 +714,8 @@ public:
    */
   template <class InputIterator>
   void insert(InputIterator first, InputIterator last) {
-    size_t last_len = last.len;
-    for (iterator it = first; it.pos != last_len; ++it) {
+    size_t last_pos = last.pos;
+    for (iterator it = first; it.pos != last_pos; ++it) {
       insert(*it);
     }
   } 

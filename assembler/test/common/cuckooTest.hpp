@@ -15,54 +15,16 @@ struct Hasher {
 
 typedef cuckoo<int, int, Hasher, std::equal_to<int> > hm; 
 
-void TestCuckoo() {
-  srand(42);
-  hm map(5, 10000, 100, 1.2); 
-  for (int i = 0; i < 100000; ++i) {
-    int t = rand();
-    map.insert(std::make_pair(t, 42));
-  }
-  size_t size = map.size();
-  ASSERT_EQUAL(size, 99994);
-  
-  hm::iterator it;
-  for (int i = 0; i < 100000; ++i) {
-    int t = rand();
-    it = map.find(t);
-  }
-  ASSERT_EQUAL(size, map.size());
-  
-  size_t n = 0;
-  for (hm::iterator it = map.begin(); it != map.end(); ++it) {
-    ++n;
-  }
-  ASSERT_EQUAL(size, n);
-
-  n = 0;
-  for (hm::const_iterator it = map.begin(); it != map.end(); ++it) {
-    ++n;
-  }
-  ASSERT_EQUAL(size, n); 
-
-  for (int i = 0; i < 100000; ++i) {
-    int t = rand();
-    n -= map.erase(t);
-  }
-  ASSERT_EQUAL(map.size(), n);
-
-  map.clear();
-  ASSERT_EQUAL(map.size(), 0);
-  ASSERT_EQUAL(map.empty(), true);
-
-  int t = rand();
-  map.insert(std::make_pair(t, 42));
-  ASSERT_EQUAL(map.size(), 1);
-  ASSERT_EQUAL(map.empty(), false);
-  ASSERT_EQUAL(map.count(t), 1);
-  ASSERT_EQUAL(map.count(t + 1), 0);
-}
-
-void TestCuckooCopiing() {
+// *** Test for: ***
+// cuckoo()
+// cuckoo(...)
+// operator=(...)
+// operator[](...)
+// find(...)
+// size()
+// begin()
+// end()
+void TestCuckooCreation() {
   hm map;
   map[1] = 4;
   map[4] = 1;
@@ -90,9 +52,135 @@ void TestCuckooCopiing() {
   ASSERT(map2.begin() != map3.begin());
 }
 
+// *** Test for: ***
+// cuckoo(...)
+// insert(const key&)
+// size()
+// find(...)
+// erase(const key&)
+// erase(iterator)
+// begin()
+// end()
+// iterator()
+// iterator::operator++
+// iterator::const_iterator(...)
+void TestCuckooOperations() {
+  srand(42);
+  hm map(5, 10000, 100, 1.2); 
+  for (int i = 0; i < 100000; ++i) {
+    int t = rand();
+    map.insert(std::make_pair(t, 42));
+  }
+  size_t size = map.size();
+  ASSERT_EQUAL(size, 99994);
+  
+  size_t n = 0;
+  for (hm::iterator it = map.begin(); it != map.end(); ++it) {
+    ++n;
+  }
+  ASSERT_EQUAL(size, n);
+
+  n = 0;
+  for (hm::const_iterator it = map.begin(); it != map.end(); ++it) {
+    ++n;
+  }
+  ASSERT_EQUAL(size, n); 
+
+  hm::iterator it;
+  for (int i = 0; i < 10000; ++i) {
+    int t = rand();
+    it = map.find(t);
+  }
+  ASSERT_EQUAL(size, map.size());
+  
+  for (int i = 0; i < 10000; ++i) {
+    int t = rand();
+    n -= map.erase(t);
+  }
+  ASSERT_EQUAL(map.size(), n);
+
+  for (int i = 0; i < 10000; ++i) {
+    int t = rand();
+    it = map.find(t);
+    map.erase(it);
+    --n;
+  }
+  ASSERT_EQUAL(map.size(), n);
+}
+
+// *** Test for: ***
+// cuckoo()
+// insert(const value&)
+// size()
+// empty()
+// count()
+// equal_range(...)
+// begin()
+// clear()
+// swap(...)
+void TestCuckooSize() {
+  hm map;
+  map.insert(std::make_pair(21, 42));
+  ASSERT_EQUAL(map.size(), 1);
+  ASSERT_EQUAL(map.empty(), false);
+  ASSERT_EQUAL(map.count(21), 1);
+  ASSERT_EQUAL(map.count(22), 0);
+
+  ASSERT_EQUAL(map[21], 42);
+  ASSERT(map.equal_range(21).first == map.begin());
+  ASSERT(map.equal_range(21).second == map.end());
+
+  hm map_new;
+  map.swap(map_new);
+  ASSERT_EQUAL(map.size(), 0);
+  ASSERT_EQUAL(map_new.size(), 1);
+
+  map_new.clear();
+  ASSERT_EQUAL(map_new.size(), 0);
+  ASSERT_EQUAL(map_new.empty(), true);
+}
+
+
+// *** Test for: ***
+// operator[]
+// size()
+// insert(<range>)
+// cuckoo(<range>)
+// erase(<range>)
+// swap(...)
+// size()
+// begin()
+// end()
+void TestCuckooRanges() {
+  size_t size = 30;
+  hm map1;
+  for (size_t i = 1; i <= size; ++i) {
+    map1[i * 2 - 1] = i * 2;
+  }
+  ASSERT_EQUAL(map1.size(), size);
+
+  hm map2;
+  map2.insert(map1.begin(), map1.end());
+  ASSERT_EQUAL(map2[11], 12);
+  ASSERT_EQUAL(map2.size(), size);
+
+  hm map3(map1.begin(), map1.end());
+  ASSERT_EQUAL(map3[11], 12);
+  ASSERT_EQUAL(map3.size(), size);
+
+  map3.erase(map3.begin(), map3.end());
+  ASSERT_EQUAL(map3.size(), 0);
+
+  map3.swap(map2);
+  ASSERT_EQUAL(map3.size(), size);
+  ASSERT_EQUAL(map2.size(), 0);
+}
+
 cute::suite CuckooSuite() {
   cute::suite s;
-  s.push_back(CUTE(TestCuckoo));
-  s.push_back(CUTE(TestCuckooCopiing));
+  s.push_back(CUTE(TestCuckooCreation));
+  s.push_back(CUTE(TestCuckooOperations));
+  s.push_back(CUTE(TestCuckooSize));
+  s.push_back(CUTE(TestCuckooRanges));
   return s;
 }
