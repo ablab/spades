@@ -5,8 +5,8 @@
 %\usepackage{fullpage}
 \usepackage[final,colorlinks,hyperindex,unicode=true]{hyperref}
 %\usepackage{tikz}
-\usepackage{pgfplots}
-\usepackage[shadow,colorinlistoftodos,textwidth=4cm]{todonotes}
+%\usepackage{pgfplots}
+\usepackage[shadow,colorinlistoftodos,textwidth=3cm]{todonotes}
 %\usepackage{fullpage}
 
 %\newcommand{\jpgpic}[1]{\begin{center}\includegraphics[width=\textwidth]{#1.jpg}\end{center}}
@@ -18,13 +18,14 @@
 \title{Earmark graph approach to {\it de novo} genome assembly}
 \maketitle
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
 A common approach to assembling a genome from short reads is constructing
 the de Bruijn graph on all $k$-mers from the given set of reads and finding a traversal of edges
 in this graph. We propose a new approach that allows to decrease
 the graph size without losing the essential information from the input data.
-Instead of using all the $k$-mers from a given read we take only a few of them
-(and call them ``earmarked''). Besides an obvious advantage of requiring less memory 
+Instead of using all the $k$-mers from a read we take only a few of them
+(and call them earmarked). Besides an obvious advantage of requiring less memory 
 and time for constructing, the resulting earmark graph has several other advantages over the
 de Bruijn graph. We discuss them in the paper and also present some experimental results.
 \end{abstract}
@@ -34,6 +35,7 @@ de Bruijn graph. We discuss them in the paper and also present some experimental
 
 %\newpage
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 A common approach to assembling a genome from short reads is constructing
 the de Bruijn graph \cite{PW01} on all $k$-mers from the given set of 
@@ -44,12 +46,14 @@ of the de Bruijn graph here?}}
 %where the $k$-mer $B$ appears 
 An example of the de Bruijn graph for $k=3$ and a set of all reads of length $6$
 of a (circular) genome $g={\tt ATGCATTGCACTGCA}$ is given in Fig.~\ref{fig:debruijn}a
-(multiple edges are shown as just one edge). The genome corresponds to an Eulerian
+(edges multiplicities are not shown). The genome spells an Eulerian
 cycle in the de Bruijn graph.
 
 \begin{figure}
-\caption{The de Bruijn graph (a) and earmark graph (b) built on $3$-mers 
-of all $6$-reads of a toy genome {\tt ATGCATTGCACTGCA}.}\label{fig:debruijn}
+\caption{(a) The de Bruijn graph built on $3$-mers 
+of all $6$-reads of a toy genome {\tt ATGCATTGCACTGCA}.
+(b) The earmark graph build on the same set of reads with all $3$-mers earmarked except for
+{\tt TGC} and {\tt GCA}.}\label{fig:debruijn}
 \begin{center}
 a\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_debruijn.pdf}\\
 b\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_earmark.pdf}\\
@@ -57,11 +61,13 @@ b\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_earmark.pdf}\\
 \end{center}
 \end{figure}
 
-The size of the de Bruijn graph for most of the genomes is huge making
+\todo[inline]{explain why do we mark hash-values but nor k-mers}
+
+The size of the de Bruijn graph for most genomes is huge making
 it difficult to process. 
 We propose a new approach that allows to decrease
 the graph size without losing the essential information from the input data.
-Instead of using all the $k$-mers from a given read we take only a few of them
+Instead of using all the $k$-mers from a read we take only a few of them
 (and call them \emph{earmarked}).
 Namely, instead 
 of representing each read as a sequence of edges 
@@ -70,12 +76,15 @@ $r-k-1$ edges) we represent it as just one (or a few, in general)
 edge between some of its $k$-mers. For example, for 
 reads {\tt ACGTACT} and {\tt TACTAGC} and $k=3$
 instead of all gray edges in the figure below we will have 
-only two black edges.
+only two black edges joining earmarked $k$-mers {\tt ACG}, {\tt ACT}, and {\tt AGC}.{\todo{redraw pictues in tikz
+in the final version}}
 \begin{center}
 \includegraphics[width=0.9\textwidth]{fig1.pdf}
 \end{center}
 We call the resulting graph built on earmarked $k$-mers \emph{an earmark graph}.
 It is a special case of A-Bruijn graph introduced by Pevzner, Tang, and Tesler \cite{PTG04}.
+An example of the earmark graph for the same genome $g={\tt ATGCATTGCACTGCA}$ is shown in Fig.~\ref{fig:debruijn}b.
+Here, all $3$-mers are earmarked except for {\tt TGC} and {\tt GCA}.
 Besides an obvious advantage of requiring less memory 
 and time for constructing, the resulting earmark graph has several other advantages over the
 de Bruijn graph. We discuss them after all the necessary definitions.
@@ -87,41 +96,116 @@ One first stores the set of all possible $k$-mers from a given set of strings.
 Then, only pairs of strings that both have the same $k$-mer as a substring are compared.
 This allows to avoid comparing all pairs of input strings. However the database
 of all $k$-mers may be really huge. To reduce the storage requirements Roberts et al. propose
-to select not all the $k$-mers, but only those that a minimal in an input string w.r.t.
-to a certain order. Such $k$-mers are called \emph{minimizers}.
+to select not all the $k$-mers, but only those that are minimal in an input string with respect
+to a certain order. Such $k$-mers are called \emph{minimizers}. Our earmarked $k$-mers are close in spirit 
+th these minimizers.
 
-
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Earmark graph}
 
-%\subsection{Definition}
+Let $0<k<r$ be integers and ${\cal R} \subseteq \{A,C,G,T\}^r$ be a set of reads
+of length $r$. For a read $R$ and indices $1 \le i < j \le r$,
+let $R[i,j]$ be a substring of $R$ starting at position $i$
+and ending at position $j$.
+A \emph{de Bruijn graph} $\textrm{DG}_k({\cal R})$ is defined as follows:
+\begin{itemize}
+\item the set of all substrings of length $k$ (or just $k$-mers) of the given reads is the 
+set of vertices; 
+\item two $k$-mers $A$ and $B$ are joined by a directed edge if there is a
+read $R \in {\cal R}$ and an index $1 \le i \le r-k-1$ such that
+%$A$ and $B$ are substrings of $R$ starting at positions $i$ and $i+1$, respectively 
+$A=R[i,i+k-1]$ and $B=R[i+1,i+k]$
+(this, in particular, implies that
+the suffix of $A$ of length $k-1$ equals the prefix of $B$ of the same length).{\todo{we should
+take care about edges multiplicity here if we would like to speak about an Eulerian cycle
+in this graph}}
+\end{itemize}
+Note that each read $R \in {\cal R}$ is represented by a path of length $r-k-1$
+on its $k$-mers in $\textrm{DG}_k({\cal R})$.{\todo{tell that a genome corresponds to a cycle in this graph?..}}
 
-\section{Pseudocode of the assembler}
-In this section, we give a high-level description of the main parts of the assembler.
+Let ${\cal E} \subseteq \{A,C,G,T\}^k$ be a set of $k$-mers.
+Below we refer to it as a \emph{set of earmarks} or as a \emph{set of earmarked $k$-mers}. 
+An \emph{earmark graph} $\textrm{EG}_k({\cal R}, {\cal E})$ is defined as follows:
+\begin{itemize}
+\item ${\cal E}$ is the set of vertices;
+\item two $k$-mers $A$ and $B$ are joined by a directed edge if there is a read $R \in {\cal R}$
+and indices $1 \le i < j \le r-k-1$ such that
+$A=R[i,i+k-1]$ and $B=R[j,j+k-1]$ and 
+for any $i < t < j$, $R[t,t+k-1] \not \in {\cal E}$
+(i.e., $B$ is the next earmarked $k$-mer after $A$ in $R$); the weight of this edge is set to
+$j-i$.
+\end{itemize}
+Hence, in the earmark graph each read is represented as a path (of length at most $r-k-1$) on its earmarked $k$-mers.
+When constructing an earmark graph it is reasonable to ensure that each read contains at least two 
+earmarked $k$-mers (so that the length of the corresponding path is at least one).
+It is easy to see that in the special case when we all the possible $k$-mers are earmarked
+the earmark graph coincides with the de Bruijn graph. The earmark graph can be viewed as the de Bruijn graph
+with some paths contracted into a single edge.
 
-Iterative procedure for selecting the set of earmarked $k$-mers is the following:
+Both de Bruijn and earmark graphs are built on a set of reads that can be viewed as a 
+set of reads from an unknown genome. A natural way to build these two graphs on a genome
+itself is to use the set of all its reads of a particular length. Namely, 
+for a genome $S \in \{A,C,G,T\}^*$, define $\Gamma_r(S) \subseteq \{A,C,G,T\}^r$
+as a set of all $r$-mers appearing in $S$. Then $\textrm{DG}_k(S)$ and $\textrm{EG}_k(S, {\cal E})$
+are just $\textrm{DG}_k(\Gamma_r(S))$ and $\textrm{EG}_k(\Gamma_r(S), {\cal E})$, respectively.
 
+%This defintion can be used in a natural way to build the de Bruijn graph not on a set of reads,
+%but on a genome. Namely, for a genome $S \in \{A,C,G,T\}^*$, define $\Gamma_r(S) \subseteq \{A,C,G,T\}^k$
+%as a set of all $r$-mers appearing in $S$. Then, $\textrm{DB}()$
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section{Selection of earmarks}
+%In this section, we discuss 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Earmark graph construction}
+%In this section, we give a high-level description of the main parts of the assembler.
+In this section, we give a high-level description of an earmark graph construction procedure.
+When the graph is constructed we simplify it using methods similar to the ones used in
+EULER and Velvet.{\todo{is it ok to give just one sentence about graph simplification here?}}
+
+We first construct an initial set of earmarks and then extend it to reduce the number of tips
+in the resulting graph. 
+
+\subsection{Earmarks selection procedure}
+To construct an initial set of earmarks ${\cal E}$, we select from each given read 
+several $k$-mers that are minimial with respect to some ordering. Namely, 
+let $h$ be a hash-function on the set of all possible $k$-mers and $t$ be a number.
+We then select initial earmarks as follows.
+%Iterative procedure for selecting the set of earmarked $k$-mers is the following:
 \begin{enumerate}
-\item From each read, select $t$ minimum hash values of its $k$-mers, add them to the global set of earmarked hash values.
-\item (optional, if $t=1$) For each read that has only one k-mer with earmarked hash value, earmark one more k-mer from this read.
-\item In each read, select $k$-mers that have their hash values earmarked.
-For corresponding vertices in the resulting A Bruijn graph, add all pairwise edges, storing their lengths.
+\item For each read, select $t$ minimum hash values of its 
+$k$-mers and add them to the global set of earmarked hash values.
+\item If $t=1$, earmark the second smallest hash value for each read
+with only one $k$-mer with earmarked hash value. This guarantees that each read has at least
+two $k$-mers with earmarked hash values.
+\item Add to ${\cal E}$ all $k$-mers that have their hash values earmarked.
+%In each read, select $k$-mers that have their hash values earmarked.
+%For corresponding vertices in the resulting A Bruijn graph, add all pairwise edges, storing their lengths.
 %\item For each $k$-mer that has no left or right neighbours, find a neighbour on the corresponding side
 %that has the smallest hash value and earmark it.
 %\item Repeat the previous step to minimize the number of neighbourless $k$-mers.
 \end{enumerate}
 
-This procedure results with an A-Bruijn graph that is subject to further processing.
+%This procedure results with an A-Bruijn graph that is subject to further processing.
 
 \subsection{Tip extension procedure}
-
-Due to the fact that not all the k-mers are represented in the A-Bruijn graph,
-some extra gaps can be unwillingly created.
-Consider a genome substring $abcde$, where $b$ and $d$ a k-mers that have small hash values and are selected as minimizers.
-If none of the reads in the input data contain the whole substring $bcd$, then vertices corresponding to
-$b$ and $d$ will be tips in the A-Bruijn graph.
-Meanwhile reads containing $abc$ and $cde$ may be present in the input data, thus it is an error of the approach
-to call this vertices tips and to introduce a gap here.
+Assume that we are given a set of reads ${\cal R}$ of an unknown genome $S$.
+It is easy to see that parts of the genome $S$ that are not covered by any read
+from ${\cal R}$ create vertices of in- or our-degree one in $\textrm{DG}_k({\cal R})$.
+Such vertices are called \emph{tips}. At the same time, the earmark graph may contain
+tips not only because of coverage gaps, but also tips resulting from a bad choice of the 
+set of earmarks. To give an example,
+%Due to the fact that not all the k-mers are represented in the A-Bruijn graph,
+%some extra gaps can be unwillingly created.
+consider a genome substring $ABCDE$, where $B$ and $D$ are earmarked $k$-mers.
+If none of the reads in the input data contain the whole substring $BCD$, then vertices corresponding to
+$B$ and $D$ will be tips in the earmark graph.
+Meanwhile reads containing $ABC$ and $CDE$ may be present in the input data (and hence the whole considered
+part is covered by reads), so these vertices must not be tips.
+%thus it is an error of the approach
+%to call this vertices tips and to introduce a gap here.
 
 The tip extension procedure is suggested to handle this issue.
 It consists of three steps that are repeated consequently until no possible tip extensions are present.
@@ -129,46 +213,65 @@ It consists of three steps that are repeated consequently until no possible tip 
 steps, but much more memory will be used in that case).
 
 \begin{enumerate}
-\item By processing all the reads, find out for each earmarked k-mer, whether we've seen any
-earmarked $k$-mer to the left from it, and to the right of it.
-Those earmarked k-mers that don't have either left or right "neighbours" are called tips --
-(left tips and right tips correspondingly).
-\item By processing all the reads, find the collection of all the non-earmarked k-mers that
+\item By processing all the reads, find out for each earmarked $k$-mer, whether we have seen any
+earmarked $k$-mer to the left of it and to the right from it.
+Those earmarked $k$-mers that do not have either left or right ``neighbours'' are called left and right tips,
+respectively.
+\item By processing all the reads, find the collection of all the non-earmarked $k$-mers that
 are present (at least once) in a read to the left of a left tip, or to the right of the right tip.
 Call them possible tip extensions.
 \item By processing all the reads, for each possible tip extension, record whether there was
-any earmarked k-mers to the left from it, and to the right of it.
+any earmarked $k$-mer to the left of it and to the right of it.
 \end{enumerate}
 
 Now that this information is collected, each tip is being extended with
-a possible tip extension using the following rules (in the order preference):
+a possible tip extension using the following rules (in the order preference).
 
 \begin{enumerate}
 \item Check if any of its possible tip extensions was already selected as an earmark
-(As a tip extension for some previously processed tip, using rules 2 and 3 below).
+(as a tip extension for some previously processed tip, using rules 2 and 3 below).
 If so, continue to the next tip.
 \item Check if any of its possible tip extensions has both left and right neighbours.
 We select this extension as an earmark and thus eliminate at least one undesirable tip.
 \item Select as an earmark the possible tip extension that is most distant (in base pairs)
-from the tip being proccesed. Doing this, we don't eliminate a tip but we extend in as far
-as possible. This helps us not to lose information near the actual gaps (or thes end of actual scaffolds).
+from the tip being proccesed. Doing this, we do not eliminate a tip but we extend it as far
+as possible. This helps us not to lose information near the actual gaps (or the ends of actual scaffolds).
+{\todo{probably it is reasonable to give an example here?}}
 \end{enumerate}
 
-If no new earmarked k-mers were introduced after this procedure, stop, otherwise repeat the entire procedure.
+If no new earmarked $k$-mers were introduced after this procedure, then stop, otherwise repeat the entire procedure.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Practical results}
 \todo[inline]{to be written}
 
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Discussion and further ideas}
+\todo[inline]{to be written}
 
+\subsection{Advantages of earmark graph over de Bruijn graph}
+\todo[inline]{should it be here?}
 
+\subsection{A more careful earmarks selection}
+
+\todo[inline]{paired read info?}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \todo[inline]{clean up the references}
 \bibliographystyle{alpha}
 \bibliography{bib}
 
 \end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 \subsection{Example}
 

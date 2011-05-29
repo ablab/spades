@@ -21,9 +21,9 @@ ATG->CAT
 ATT->TTG
 CAA->AAT
 CAC->ACT
-CAC->CTG
+CAC->CTG[style="invis"]
 CAT->ATT
-CAT->TTG
+CAT->TTG[style="invis"]
 CTG->CAA
 TTG->CAC
 
