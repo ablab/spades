@@ -186,7 +186,8 @@ private:
    * @param pos Position in hash arrays
    */
   bool get_exists(size_t pos) const {
-    return (bool)(exists_[pos /  8] & (1 << (7 - (pos % 8))));
+    //return (bool)(exists_[pos /  8] & (1 << (7 - (pos % 8))));
+    return (bool)(exists_[pos >> 3] & (1 << (pos - ((pos >> 3) << 3))));
   }
 
   /**
@@ -195,7 +196,8 @@ private:
    * @param pos Position in hash arrays
    */
   void set_exists(size_t pos) {
-    exists_[pos / 8] = exists_[pos / 8] | (1 << (7 - (pos % 8)));
+    //exists_[pos / 8] = exists_[pos / 8] | (1 << (7 - (pos % 8)));
+    exists_[pos >> 3] = exists_[pos >> 3] | (1 << (pos - ((pos >> 3) << 3)));
   }
 
   /**
@@ -204,7 +206,8 @@ private:
    * @param pos Position in hash arrays
    */
   void unset_exists(size_t pos) {
-    exists_[pos / 8] = exists_[pos / 8] & (~(1 << (7 - (pos % 8))));
+    //exists_[pos / 8] = exists_[pos / 8] & (~(1 << (7 - (pos % 8))));
+    exists_[pos >> 3] = exists_[pos >> 3] & (~(1 << (pos - ((pos >> 3) << 3))));
   }
 
   /**
@@ -212,14 +215,17 @@ private:
    */
   void init() {
     len_part_ = init_length_ / d_ + 1;
-    len_part_ = ((len_part_ + 7) / 8) * 8;
+    len_part_ = ((len_part_ + 7) >> 3) << 3;
     len_ = len_part_ * d_;
-    data_ = new Data*[d_];
+    //data_ = new Data*[d_];
+    data_ = (Data**)(malloc(d_ * sizeof(Data*)));
     for (size_t i = 0; i < d_; ++i) {
-      data_[i] = new Data[len_part_];
+      //data_[i] = new Data[len_part_];
+      data_[i] = (Data*)(malloc(len_part_ * sizeof(Data)));
     }
-    exists_ = new char[len_ / 8]; 
-    for (size_t i = 0; i < len_ / 8; ++i) exists_[i] = 0;
+    //exists_ = new char[len_ >> 3]; 
+    exists_ = (char*)(malloc((len_ >> 3) * sizeof(char)));
+    for (size_t i = 0; i < len_ >> 3; ++i) exists_[i] = 0;
     size_ = 0;
     is_rehashed_ = false;
   }
@@ -229,10 +235,13 @@ private:
    */
   void clear_all() {
     for (size_t i = 0; i < d_; ++i) {
-      delete [] data_[i];
+      //delete [] data_[i];
+      free(data_[i]);
     }
-    delete [] data_;
-    delete [] exists_;
+    //delete [] data_;
+    free(data_);
+    //delete [] exists_;
+    free(exists_);
   }
 
   /**
@@ -271,17 +280,19 @@ private:
    * @param len_temp_ New size of exists_
    */
   void update_exists(size_t len_temp_) { 
-    char* t = new char[len_ / 8];
+    //char* t = new char[len_ >> 3];
+    char* t = (char*)(malloc((len_ >> 3) * sizeof(char)));
     char* s = t;
-    char* f = s + len_ / 8;
+    char* f = s + (len_ >> 3);
     for (; s < f; ++s) {
       *s = 0;
     } 
     for (size_t i = 0; i < d_; ++i) {
-      memcpy(t + (i * len_part_ / 8), exists_ + (i * len_temp_ / 8), (len_temp_ / 8));
+      memcpy(t + (i * (len_part_ >> 3)), exists_ + (i * (len_temp_ >> 3)), (len_temp_ >> 3));
     }
     std::swap(t, exists_);
-    delete [] t;
+    //delete [] t;
+    free(t);
   }
 
   /**
@@ -291,10 +302,12 @@ private:
    */
   void update_data(size_t len_temp_) {
     for (size_t i = 0; i < d_; ++i) {
-      Data* t = new Data[len_part_];
+      //Data* t = new Data[len_part_];
+      Data* t = (Data*)(malloc(len_part_ * sizeof(Data)));
       memcpy(t, data_[i], len_temp_*sizeof(Data));
       std::swap(t, data_[i]);
-      delete [] t;
+      //delete [] t;
+      free(t);
     } 
   }
 
@@ -305,7 +318,7 @@ private:
     size_t len_temp_ = len_part_;
 
     len_part_ = (size_t)(len_part_ * step_);
-    len_part_ = ((len_part_ + 7) / 8) * 8;
+    len_part_ = ((len_part_ + 7) >> 3) << 3;
     len_ = len_part_ * d_;
     
     update_exists(len_temp_);
