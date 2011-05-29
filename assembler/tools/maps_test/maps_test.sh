@@ -9,6 +9,8 @@ FILE2=s_6.first10000_1.fastq.gz
 FILE3=s_6.first10000_1.fastq.gz 
 #FILE3=s_6.first400000_1.fastq.gz 
 
+COM="FILE1='"$FILE1"';FILE2='"$FILE2"';FILE3='"$FILE3"';"
+
 make
 cp diagrams.gnu $EXEC_DIR
 cd $EXEC_DIR
@@ -32,6 +34,6 @@ for f in $DATA_DIR/$FILE1 $DATA_DIR/$FILE2 $DATA_DIR/$FILE3;
   echo " " >> memory.tmp
 done
 
-gnuplot -e "FILE1='10000 reads'; FILE2='100000 reads'; FILE3='400000 reads';" diagrams.gnu
+gnuplot -e $COM diagrams.gnu
 
 echo "Diagrams are done!"
