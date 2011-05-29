@@ -78,16 +78,23 @@ public:
   friend class iterator;
   friend class const_iterator;
 
+  /**
+   * Used with const cuckoo objects.
+   */
   class const_iterator {
   private:
     size_t pos;
     const cuckoo* hash;
     const_iterator(const size_t p, const cuckoo* h) : pos(p), hash(h) {}
-    friend class cuckoo;
 
   public:
+    friend class cuckoo;
+
+    /**
+     * Default constructor.
+     */
     const_iterator() : pos(0), hash(NULL) {}
-    
+
     void operator=(const const_iterator &it) {
       pos = it.pos; 
       hash = it.hash;
@@ -126,16 +133,26 @@ public:
     }
   };
 
+  /**
+   * Used with non-const cuckoo objects.
+   */
   class iterator {
   private:
     size_t pos;
     cuckoo* hash;
     iterator(size_t p, cuckoo* h) : pos(p), hash(h) {}
-    friend class cuckoo;
 
   public:
+    friend class cuckoo;
+
+    /**
+     * Default constructor.
+     */
     iterator() : pos(0), hash(NULL) {}
 
+    /**
+     * Convertion to const_iterator.
+     */
     operator const_iterator() {
       return const_iterator(pos, hash);
     }
@@ -428,8 +445,9 @@ public:
     key_equal_ = Cuckoo.key_equal_;
     init();
     const_iterator it = Cuckoo.begin();
-    const_iterator final = Cuckoo.end();
-    while (it != final) {
+    size_t final_len = Cuckoo.length();
+    //const_iterator final = Cuckoo.end();
+    while (it.pos != final_len) {
       insert(*it);
       ++it;
     }
@@ -463,7 +481,8 @@ public:
     hasher_ = hasher;
     key_equal_ = equal;
     init();
-    for (iterator it = first; it != last; ++it) {
+    size_t last_pos = last.pos;
+    for (iterator it = first; it.pos != last_pos; ++it) {
       add_new(*it);
     }
   }
@@ -539,7 +558,8 @@ public:
    */
   Value& operator[](const Key& k) {
     iterator it = find(k);
-    if (it == end()) {
+    //if (it == end()) {
+    if (it.pos == len_) {
       it = insert(make_pair(k, Value())).first;
     }
     return (*it).second;
@@ -574,7 +594,8 @@ public:
    */
   size_t erase(const Key& k) {
     iterator it = find(k);
-    if (it != end()) {
+    //if (it != end()) {
+    if (it.pos != len_) {
       remove(it);
       return 1;
     }
@@ -639,11 +660,13 @@ public:
    * pair with both iterator pointing to the end of cuckoo.
    */ 
   pair<iterator, iterator> equal_range(const Key& k) {
-    if (find(k) != end()) {
+    /*if (find(k) != end()) {
       return std::make_pair<iterator, iterator>(find(k), ++find(k));
     } else {
       return std::make_pair<iterator, iterator>(end(), end());
-    }
+      }*/
+    iterator it = find(k);
+    return std::make_pair<iterator, iterator>(it, ++it);
   }
 
   /**
@@ -654,13 +677,15 @@ public:
    * pair with both iterator pointing to the end of cuckoo.
    */ 
   pair<const_iterator, const_iterator> equal_range(const Key& k) const {
-    if (find(k) != end()) {
+    /*if (find(k) != end()) {
       return std::make_pair<const_iterator, const_iterator>
-        (find(k), find(k));
+        (find(k), ++find(k));
     } else {
       return std::make_pair<const_iterator, const_iterator>
         (end(), end());
-    }
+        }*/
+    const_iterator it = find(k);
+    return std::make_pair<const_iterator, const_iterator>(it, ++it);
   }
 
   /** 
@@ -672,7 +697,8 @@ public:
    */
   pair<iterator, bool> insert(const Data& k) {
     iterator res = find(k.first);
-    if (res != end()) {
+    //if (res != end()) {
+    if (res.pos != len_) {
       (*res).second = k.second;
       return make_pair(res, false);
     } 
@@ -689,7 +715,8 @@ public:
    */
   template <class InputIterator>
   void insert(InputIterator first, InputIterator last) {
-    for (iterator it = first; it != last; ++it) {
+    size_t last_len = last.len;
+    for (iterator it = first; it.pos != last_len; ++it) {
       insert(*it);
     }
   } 
