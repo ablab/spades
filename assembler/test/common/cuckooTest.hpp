@@ -24,6 +24,8 @@ typedef cuckoo<int, int, Hasher, std::equal_to<int> > hm;
 // size()
 // begin()
 // end()
+// operator==
+// operator!=
 void TestCuckooCreation() {
   hm map;
   map[1] = 4;
@@ -50,6 +52,8 @@ void TestCuckooCreation() {
   ASSERT(map3.find(8) == map3.end());
 
   ASSERT(map2.begin() != map3.begin());
+  ASSERT(map == map);
+  ASSERT(map != map2);
 }
 
 // *** Test for: ***
@@ -176,11 +180,39 @@ void TestCuckooRanges() {
   ASSERT_EQUAL(map2.size(), 0);
 }
 
+// *** Test for: ***
+// begin() const
+// end() const
+// find(...) const
+// equal_range(...) const
+// count()
+// size()
+void const_tester(const hm& map) {
+  hm::const_iterator it;
+  for (it = map.begin(); it != map.end(); ++it) {
+    ASSERT_EQUAL((*it).second, (*it).first + 1);
+  }
+  it = map.find(11);
+  ASSERT_EQUAL((*it).second, 12);
+  ASSERT(++(map.equal_range(11).first) == map.equal_range(11).second);
+  ASSERT_EQUAL(map.count(11), 1);
+  ASSERT_EQUAL(map.size(), 30);
+}
+
+void TestCuckooConst() {
+  hm map;
+  for (size_t i = 1; i <= 30; ++i) {
+    map[i * 2 - 1] = i * 2;
+  }
+  const_tester(map);
+}
+
 cute::suite CuckooSuite() {
   cute::suite s;
   s.push_back(CUTE(TestCuckooCreation));
   s.push_back(CUTE(TestCuckooOperations));
   s.push_back(CUTE(TestCuckooSize));
   s.push_back(CUTE(TestCuckooRanges));
+  s.push_back(CUTE(TestCuckooConst));
   return s;
 }
