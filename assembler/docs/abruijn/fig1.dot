@@ -10,6 +10,6 @@ digraph G
   ACT->CTA[color=gray]
   CTA->TAG[color=gray]
   TAG->AGC[color=gray]
-  ACG->ACT[color=black,penwidth=5]
-  ACT->AGC[color=black,penwidth=5]
+  ACG->ACT[color=black]
+  ACT->AGC[color=black]
 }
