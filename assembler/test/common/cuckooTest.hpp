@@ -69,27 +69,22 @@ void TestCuckooCopiing() {
   map[6];
   ASSERT_EQUAL(map.size(), 3);
 
-  hm map2;
-  map2 = map;
+  hm map2(map);
   ASSERT_EQUAL(map2.size(), 3);
   ASSERT(map2.find(1) != map2.end());
   ASSERT(map2.find(4) != map2.end());
   ASSERT(map2.find(6) != map2.end());
   ASSERT(map2.find(8) == map2.end());
 
-  hm map3(map);
+  hm map3;
+  map3 = map;
   ASSERT_EQUAL(map3.size(), 3); 
   ASSERT(map3.find(1) != map3.end());
   ASSERT(map3.find(4) != map3.end());
   ASSERT(map3.find(6) != map3.end());
   ASSERT(map3.find(8) == map3.end());
 
-  /* this block kills my system!!!
-     if (true) { 
-    hm::iterator it1 = map2.end();
-    hm::iterator it2 = map3.end();
-    ASSERT(it1 != it2); 
-     } */
+  ASSERT(map2.begin() != map3.begin());
 }
 
 cute::suite CuckooSuite() {

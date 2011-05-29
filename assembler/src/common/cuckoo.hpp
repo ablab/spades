@@ -129,7 +129,7 @@ public:
     }
 
     bool operator==(const const_iterator &it) {
-      return pos == it.pos && hash == it.hash;
+      return (pos == it.pos) && (hash == it.hash);
     }
 
     bool operator!=(const const_iterator &it) {
@@ -195,7 +195,7 @@ public:
     }
 
     bool operator==(const iterator &it) {
-      return pos == it.pos && hash == it.hash;
+      return (pos == it.pos) && (hash == it.hash);
     }
 
     bool operator!=(const iterator &it) {
@@ -437,14 +437,7 @@ public:
     clear_all();
   }
 
-  /**
-   * Copies information from cuckoo of the same type.
-   *
-   * @param Cuckoo The source of data
-   */
-  cuckoo<Key, Value, Hash, Equal>& operator=
-  (const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
-    clear_all();
+  void copy(const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
     d_ = Cuckoo.d_;
     init_length_ = Cuckoo.init_length_;
     max_loop_ = Cuckoo.max_loop_;
@@ -459,6 +452,36 @@ public:
       insert(*it);
       ++it;
     }
+  }
+
+  /**
+   * Copies information from cuckoo of the same type.
+   *
+   * @param Cuckoo The source of data
+   */
+  cuckoo<Key, Value, Hash, Equal>& operator=
+  (const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
+    clear_all();
+    /*d_ = Cuckoo.d_;
+    init_length_ = Cuckoo.init_length_;
+    max_loop_ = Cuckoo.max_loop_;
+    step_ = Cuckoo.step_;
+    hasher_ = Cuckoo.hasher_;
+    key_equal_ = Cuckoo.key_equal_;
+    init();
+    const_iterator it = Cuckoo.begin();
+    size_t final_len = Cuckoo.length();
+    //const_iterator final = Cuckoo.end();
+    while (it.pos != final_len) {
+      insert(*it);
+      ++it;
+      }*/
+    copy(Cuckoo);
+    //if (*this != Cuckoo) {
+    //  clear_all();
+    //  cuckoo t(Cuckoo);
+    //  t.swap(*this);
+    //}
     return *this;
   }
 
@@ -468,8 +491,24 @@ public:
    * @param Cuckoo The source of information
    */
   cuckoo(const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
+    /*d_ = Cuckoo.d_;
+    init_length_ = Cuckoo.init_length_;
+    max_loop_ = Cuckoo.max_loop_;
+    step_ = Cuckoo.step_;
+    hasher_ = Cuckoo.hasher_;
+    key_equal_ = Cuckoo.key_equal_;
     init();
-    *this = Cuckoo;
+    const_iterator it = Cuckoo.begin();
+    size_t final_len = Cuckoo.length();
+    //const_iterator final = Cuckoo.end();
+    while (it.pos != final_len) {
+      insert(*it);
+      ++it;
+      }*/
+    copy(Cuckoo);
+    //return *this;
+    //    init();
+    //*this = Cuckoo;
   }
 
   /**
@@ -511,6 +550,22 @@ public:
   }
 
   /**
+   * Operator==
+   *
+   * @param Cuckoo Object to be compared with
+   */
+  bool operator==(const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
+    return (*this).data_ == Cuckoo.data_;
+  }
+
+  /**
+   * @see operator==
+   */
+  bool operator!=(const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
+    return !(*this == Cuckoo);
+  }
+
+  /**
    * Swap data with Cuckoo.
    *
    * @param Cuckoo Cuckoo of the same type
@@ -520,6 +575,8 @@ public:
     std::swap(init_length_, Cuckoo.init_length_);
     std::swap(max_loop_, Cuckoo.max_loop_);
     std::swap(step_, Cuckoo.step_);
+    std::swap(hasher_, Cuckoo.hasher_);
+    std::swap(key_equal_, Cuckoo.key_equal_);
     std::swap(data_, Cuckoo.data_);
     std::swap(exists_, Cuckoo.exists_);
     std::swap(len_, Cuckoo.len_);
