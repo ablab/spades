@@ -23,6 +23,11 @@
 #ifndef _CUCKOO_HPP_
 #define _CUCKOO_HPP_
 
+const static size_t D = 3;
+const static size_t INIT_LENGTH = 100;
+const static size_t MAX_LOOP = 100;
+const static double STEP = 1.2;
+
 /**
  * @param Key key type in hash
  * @param Value value type in hash
@@ -294,7 +299,7 @@ private:
    * @param k Key value
    * @param pos Position in hash arrays
    */
-  inline bool is_here(const Key &k, size_t pos) const {
+  inline bool is_here(const Key& k, size_t pos) const {
     return get_exists(pos) && key_equal_(data_from(pos).first, k);
   }
 
@@ -304,7 +309,7 @@ private:
    * @param k Key value
    * @param hash_num The number of hash function from Hash family
    */
-  inline size_t hash(const Key &k, size_t hash_num) const {
+  inline size_t hash(const Key& k, size_t hash_num) const {
     return hasher_(k, hash_num) % len_part_;
   }
   
@@ -425,8 +430,8 @@ public:
    * @param equal The equal predicator object (template parameter by default).  
    * The less it is the less memory will be used but the more time is needed. 
    */  
-  explicit cuckoo(size_t d = 4, size_t init_length = 100, 
-                  size_t max_loop = 100, double step = 1.2, 
+  explicit cuckoo(size_t d = D, size_t init_length = INIT_LENGTH, 
+                  size_t max_loop = MAX_LOOP, double step = STEP, 
                   const Hash& hasher = Hash(), 
                   const Equal& equal = Equal())
     : d_(d), init_length_(init_length), 
@@ -473,10 +478,10 @@ public:
   cuckoo(InputIterator first, InputIterator last, 
          const Hash& hasher = Hash(), 
          const Equal& equal = Equal()) {
-    d_ = 4;
-    init_length_ = 100;
-    max_loop_ = 100;
-    step_ = 1.2;
+    d_ = D;
+    init_length_ = INIT_LENGTH;
+    max_loop_ = MAX_LOOP;
+    step_ = STEP;
     hasher_ = hasher;
     key_equal_ = equal;
     init();
@@ -491,8 +496,8 @@ public:
    *
    * @warning For test only!!!
    */
-  void set_up(size_t d = 4, size_t init_length = 100, 
-              size_t max_loop = 100, double step = 1.2) {
+  void set_up(size_t d = D, size_t init_length = INIT_LENGTH, 
+              size_t max_loop = MAX_LOOP, double step = STEP) {
     clear_all();
     d_ = d;
     init_length_ = init_length;
@@ -623,9 +628,10 @@ public:
   iterator find(const Key& k) {
     size_t dist = 0;
     for (size_t i = 0; i < d_; ++i) {
-      size_t pos = hash(k, i) + dist;
-      if (is_here(k, pos)) {
-        return iterator(pos, this);
+      size_t pos = hash(k, i);
+      size_t position = pos + dist;
+      if (key_equal_(data_[i][pos].first, k) && (get_exists(position))) {    
+        return iterator(position, this);
       }
       dist += len_part_;
     }

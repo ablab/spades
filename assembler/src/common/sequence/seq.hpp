@@ -340,12 +340,9 @@ public:
 		size_t operator()(const Seq<size_, T>& seq, size_t hash_num) const {
 			size_t h = 239;
 			for (size_t i = 0; i < seq.data_size_; i++) {
-				h = ((h << 5) - h) + seq.data_[i];
+				h = (h << hash_num) + seq.data_[i];
 			}
-			unsigned long l = hash_num * 4 + 1;
-      //return (size_t) ((l * h) % len);
-			return (size_t) (l * h % 1000000007);
-			//return (hash_num + 1) * h;
+      return h;
 		}
 	};
 
