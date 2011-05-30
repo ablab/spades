@@ -124,11 +124,11 @@ public:
       return res;
     } 
 
-    const pair<Key, Value>& operator*() const {
+    const Data& operator*() const {
       return (*hash).data_from(pos);
     }
 
-    const pair<Key, Value>* operator->() const {
+    const Data* operator->() const {
       return &((*hash).data_from(pos));
     }
 
@@ -189,11 +189,11 @@ public:
       return res;
     }
 
-    pair<Key, Value>& operator*() {
+    Data& operator*() {
       return (*hash).data_from(pos);
     }
 
-    pair<Key, Value>* operator->() {
+    Data* operator->() {
       return &((*hash).data_from(pos));
     }
 
@@ -383,8 +383,7 @@ private:
    *
    * @param p New element
    */
-  iterator add_new(Data p) {
-    iterator it = iterator(hash(p.first, 0), this);
+  size_t add_new(Data p) {
     for (size_t i = 0; i < max_loop_; ++i) {
       for (size_t j = 0; j < d_; ++j) {
         size_t pos = hash(p.first, j);
@@ -393,7 +392,7 @@ private:
         set_exists(j * len_part_ + pos);
         if (!exists) {
           ++size_;
-          return it;
+          return 0;
         } 
       }
     }
@@ -645,11 +644,14 @@ public:
    * doesn't exist
    */
   const_iterator find(const Key& k) const {
+    size_t dist = 0;
     for (size_t i = 0; i < d_; ++i) {
       size_t pos = hash(k, i);
-      if (is_here(k, i * len_part_ + pos)) {
-        return const_iterator(i * len_part_ + pos, this);
+      size_t position = pos + dist;
+      if (key_equal_(data_[i][pos].first, k) && (get_exists(position))) {    
+        return const_iterator(position, this);
       }
+      dist += len_part_;
     }
     return end();
   }
@@ -702,8 +704,8 @@ public:
     if (res.pos != len_) {
       return make_pair(res, false);
     } 
-    res = add_new(k);
-    return make_pair(res, true);
+    add_new(k);
+    return make_pair(iterator(hash(k.first, 0), this), true);
   }
 
   /**
