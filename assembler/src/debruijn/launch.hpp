@@ -16,6 +16,7 @@
 #include "debruijn_graph_constructor.hpp"
 #include "tip_clipper.hpp"
 #include "bulge_remover.hpp"
+#include "erroneous_connection_remover.hpp"
 #include "coverage_handler.hpp"
 #include "repeat_resolver.hpp"
 #include "omni_tools.hpp"
@@ -72,6 +73,14 @@ void RemoveBulges(Graph &g) {
 	BulgeRemover<Graph> bulge_remover(5 * g.k());
 	bulge_remover.RemoveBulges(g);
 	INFO("Bulges removed");
+}
+
+void RemoveLowCoverageEdges(Graph &g) {
+	INFO("Removing low coverage edges");
+	double coverage_density = 20.0;
+	LowCoverageEdgeRemover<Graph> erroneous_edge_remover(5 * g.k(), coverage_density);
+	erroneous_edge_remover.RemoveEdges(g);
+	INFO("Low coverage edges removed");
 }
 
 void ResolveRepeats(Graph &g, PairedInfoIndex<Graph> &info) {
@@ -158,6 +167,10 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 	RemoveBulges(g);
 	ProduceInfo<k> (g, index, genome, output_folder + "bulges_removed.dot",
 			"no_bulge_graph");
+
+	RemoveLowCoverageEdges(g);
+	ProduceInfo<k> (g, index, genome, output_folder + "erroneous_edges_removed.dot",
+				"no_erroneous_edges_graph");
 
 	SimpleOfflineClusterer<Graph> clusterer(paired_index);
 	PairedInfoIndex<Graph> clustered_paired_index(g);
