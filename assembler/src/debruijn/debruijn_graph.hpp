@@ -230,7 +230,7 @@ public:
 	/**
 	 * @return number of vertices
 	 */
-	size_t size() {
+	size_t size() const {
 		return vertices_.size();
 	}
 
