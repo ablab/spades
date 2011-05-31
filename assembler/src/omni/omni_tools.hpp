@@ -10,7 +10,7 @@ namespace omnigraph {
  * simple one-by-one compressing has square complexity.
  */
 template<class Graph>
-class Compresser {
+class Compressor {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
@@ -27,7 +27,7 @@ class Compresser {
 	}
 
 public:
-	Compresser(Graph &graph) :
+	Compressor(Graph &graph) :
 		graph_(graph) {
 	}
 

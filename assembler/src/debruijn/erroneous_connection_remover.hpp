@@ -10,6 +10,8 @@
 
 namespace debruijn_graph {
 
+#include "omni_tools.hpp"
+
 template <class Graph>
 class LowCoverageEdgeRemover {
 	size_t length_density_;
@@ -27,6 +29,8 @@ public:
 				g.DeleteEdge(e);
 			}
 		}
+		omnigraph::Compressor<Graph> compressor(g);
+		compressor.CompressAllVertices();
 	}
 
 };

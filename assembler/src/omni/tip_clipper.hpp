@@ -216,7 +216,7 @@ public:
 			}
 		}
 		TRACE("Tip clipping finished");
-		Compresser<Graph> compresser(graph_);
+		Compressor<Graph> compresser(graph_);
 		compresser.CompressAllVertices();
 	}
 };

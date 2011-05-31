@@ -343,10 +343,10 @@ public:
 
 	void CountStatistics() {
 		CountVertexEdgeStat();
-		CountSelfComplement();
-		CheckGenomeMapping();
-		FindErrors();
-		OutputErrorRegions();
+//		CountSelfComplement();
+//		CheckGenomeMapping();
+//		FindErrors();
+//		OutputErrorRegions();
 	}
 };
 

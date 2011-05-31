@@ -160,25 +160,27 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 			"edge_graph");
 	paired_index.OutputData(output_folder + "edges_dist.txt");
 
-	ClipTips(g);
-	ProduceInfo<k> (g, index, genome, output_folder + "tips_clipped.dot",
-			"no_tip_graph");
+	for (size_t i = 0; i < 3; i++) {
+		ClipTips(g);
+		ProduceInfo<k> (g, index, genome, output_folder + "tips_clipped_" + ToString(i) + ".dot",
+				"no_tip_graph");
 
-	RemoveBulges(g);
-	ProduceInfo<k> (g, index, genome, output_folder + "bulges_removed.dot",
-			"no_bulge_graph");
+		RemoveBulges(g);
+		ProduceInfo<k> (g, index, genome, output_folder + "bulges_removed_" + ToString(i) + ".dot",
+				"no_bulge_graph");
 
-	RemoveLowCoverageEdges(g);
-	ProduceInfo<k> (g, index, genome, output_folder + "erroneous_edges_removed.dot",
-				"no_erroneous_edges_graph");
+		RemoveLowCoverageEdges(g);
+		ProduceInfo<k> (g, index, genome, output_folder + "erroneous_edges_removed_" + ToString(i) + ".dot",
+					"no_erroneous_edges_graph");
+	}
 
 	SimpleOfflineClusterer<Graph> clusterer(paired_index);
 	PairedInfoIndex<Graph> clustered_paired_index(g);
 	clusterer.cluster(clustered_paired_index);
 
-	ResolveRepeats(g, paired_index);
-	ProduceInfo<k> (g, index, genome, output_folder + "repeats_resolved.dot",
-			"no_repeat_graph");
+	//ResolveRepeats(g, paired_index);
+	//ProduceInfo<k> (g, index, genome, output_folder + "repeats_resolved.dot",
+	//		"no_repeat_graph");
 
 	INFO("Tool finished")
 }
