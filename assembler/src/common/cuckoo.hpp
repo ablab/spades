@@ -29,53 +29,70 @@ const static size_t MAX_LOOP = 100;
 const static double STEP = 1.2;
 
 /**
- * @param Key key type in hash
- * @param Value value type in hash
+ * @param Key key type in hash.
+ * @param Value value type in hash.
  * @param Hash function that gets data of type Key and some number 
  * (which is the number of appropriate hash function) and returns size_t 
- * (e.g. Hash(int, size_t))
- * @param Equal predicator that compares two Key values
+ * (e.g. Hash(int, size_t)).
+ * @param Equal predicator that compares two Key values.
  * @example cuckoo<int, int, Hasher, std::key_equal_to<int> > Cuckoo;
  */
 template <class Key, class Value, class Hash, class Equal> 
 class cuckoo {
 private:
   typedef pair<Key, Value> Data;
-
+  /**
+   * @variable The number of hash functions (thus arrays also) 
+   * that will be used in the program (can be >= 2).
+   */
   size_t d_;
+  /**
+   * @variable The initial length of the whole structure.
+   * When you know the approximate number of records to be used, 
+   * it is a good idea to take this value in 1.05-1.1 times more and
+   * small value of step.
+   */
   size_t init_length_;
+  /**
+   * @variable The maximum number of kick cycles during 
+   * insertion before rehash.
+   */
   size_t max_loop_;
+  /**
+   * @variable The ratio of increasing the size of hash during rehash. 
+   * The less it is the less memory will be used but the more time is needed. 
+   */
   double step_;
+  /**
+   * @variable The hash function object (template parameter by default).
+   */
   Hash hasher_;
+  /**
+   * @variable The equal predicator object (template parameter by default).  
+   */
   Equal key_equal_;
-
   /** 
-   * @variable The array of vectors, each of which is hash array
+   * @variable The array of vectors, each of which is hash array.
    */ 
   Data** data_;
-
   /**
-   * @variable The array of flags indicating existence of the element in hash
+   * @variable The array of flags indicating existence of the element in hash.
    */  
   char* exists_;
-
   /**
-   * @variable The total length of all the hash arrays
+   * @variable The total length of all the hash arrays.
    */
   size_t len_;
-
   /**
-   * @variable The length of every hash array
+   * @variable The length of every hash array.
    */
   size_t len_part_;
-
   /**
-   * @variable The actual number of elements in cuckoo hash
+   * @variable The actual number of elements in cuckoo hash.
    */  
   size_t size_;
-
   /**
-   * @variable The flag that anounces that rehash was made recently
+   * @variable The flag that anounces that rehash was made recently.
    */
   bool is_rehashed_;
 
@@ -124,11 +141,11 @@ public:
       return res;
     } 
 
-    const pair<Key, Value>& operator*() const {
+    const Data& operator*() const {
       return (*hash).data_from(pos);
     }
 
-    const pair<Key, Value>* operator->() const {
+    const Data* operator->() const {
       return &((*hash).data_from(pos));
     }
 
@@ -189,11 +206,11 @@ public:
       return res;
     }
 
-    pair<Key, Value>& operator*() {
+    Data& operator*() {
       return (*hash).data_from(pos);
     }
 
-    pair<Key, Value>* operator->() {
+    Data* operator->() {
       return &((*hash).data_from(pos));
     }
 
@@ -211,7 +228,8 @@ private:
   /**
    * Check whether there is a Data element at pos.
    *
-   * @param pos Position in hash arrays
+   * @param pos Position in hash arrays.
+   * @return true if some element presents on this position, false otherwise.
    */
   bool get_exists(size_t pos) const {
     return (bool)(exists_[pos >> 3] & (1 << (pos - ((pos >> 3) << 3))));
@@ -220,7 +238,7 @@ private:
   /**
    * Set flag of existence of Data element at pos.
    *
-   * @param pos Position in hash arrays
+   * @param pos Position in hash arrays.
    */
   void set_exists(size_t pos) {
     exists_[pos >> 3] = exists_[pos >> 3] | (1 << (pos - ((pos >> 3) << 3)));
@@ -229,7 +247,7 @@ private:
   /**
    * Unset flag of existence Data element at pos.
    *
-   * @param pos Position in hash arrays
+   * @param pos Position in hash arrays.
    */
   void unset_exists(size_t pos) {
     exists_[pos >> 3] = exists_[pos >> 3] & (~(1 << (pos - ((pos >> 3) << 3))));
@@ -253,7 +271,9 @@ private:
   }
 
   /**
-   * Copies information from Cuckoo to clean object.
+   * Copy information from Cuckoo to clean object.
+   *
+   * @param Object for information to be copied from.
    */
   void copy(const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
     d_ = Cuckoo.d_;
@@ -285,7 +305,8 @@ private:
   /**
    * Get Data element from pos.
    *
-   * @param pos Position in hash arrays
+   * @param pos Position in hash arrays.
+   * @return Reference to Data element.
    */
   inline Data& data_from(size_t pos) const {
     return data_[pos / len_part_][pos % len_part_];
@@ -294,8 +315,9 @@ private:
   /**
    * Check whether element at pos has key k.
    *
-   * @param k Key value
-   * @param pos Position in hash arrays
+   * @param k Key value.
+   * @param pos Position in hash arrays.
+   * @return true if element at pos is equal to k.
    */
   inline bool is_here(const Key& k, size_t pos) const {
     return get_exists(pos) && key_equal_(data_from(pos).first, k);
@@ -304,8 +326,9 @@ private:
   /**
    * Return hash function result for key k.
    *
-   * @param k Key value
-   * @param hash_num The number of hash function from Hash family
+   * @param k Key value.
+   * @param hash_num The number of hash function from Hash family.
+   * @return Hash value.
    */
   inline size_t hash(const Key& k, size_t hash_num) const {
     return hasher_(k, hash_num) % len_part_;
@@ -314,7 +337,7 @@ private:
   /**
    * Increase size of exists_ up to len_temp_.
    *
-   * @param len_temp_ New size of exists_
+   * @param len_temp_ New size of exists_.
    */
   void update_exists(size_t len_temp_) { 
     char* t = (char*)(malloc((len_ >> 3) * sizeof(char)));
@@ -333,7 +356,7 @@ private:
   /**
    * Increase size of data_ up to len_temp_.
    *
-   * @param len_temp_ New size of data_
+   * @param len_temp_ New size of data_.
    */
   void update_data(size_t len_temp_) {
     for (size_t i = 0; i < d_; ++i) {
@@ -381,10 +404,10 @@ private:
   /**
    * Add new Data element.
    *
-   * @param p New element
+   * @param p New element.
+   * @return 0 to finish a recursion if it was needed.
    */
-  iterator add_new(Data p) {
-    iterator it = iterator(hash(p.first, 0), this);
+  size_t add_new(Data p) {
     for (size_t i = 0; i < max_loop_; ++i) {
       for (size_t j = 0; j < d_; ++j) {
         size_t pos = hash(p.first, j);
@@ -393,7 +416,7 @@ private:
         set_exists(j * len_part_ + pos);
         if (!exists) {
           ++size_;
-          return it;
+          return 0;
         } 
       }
     }
@@ -404,7 +427,8 @@ private:
   /**
    * Remove element from cuckoo.
    *
-   * @param it Iterator to element to be removed
+   * @param it Iterator to element to be removed.
+   * @return Iterator to next element after removed.
    */
   iterator remove(iterator& it) {
     unset_exists(it.pos);
@@ -425,9 +449,9 @@ public:
    * @param max_loop The maximum number of kick cycles during 
    * insertion before rehash.
    * @param step The ratio of increasing the size of hash during rehash. 
+   * The less it is the less memory will be used but the more time is needed. 
    * @param hasher The hash function object (template parameter by default).
    * @param equal The equal predicator object (template parameter by default).  
-   * The less it is the less memory will be used but the more time is needed. 
    */  
   explicit cuckoo(size_t d = D, size_t init_length = INIT_LENGTH, 
                   size_t max_loop = MAX_LOOP, double step = STEP, 
@@ -447,7 +471,7 @@ public:
   }
 
   /**
-   * Copies information from cuckoo of the same type.
+   * Copy information from cuckoo of the same type.
    *
    * @param Cuckoo The source of data
    */
@@ -470,8 +494,8 @@ public:
   /**
    * Constructor from range [fisrt, last).
    * 
-   * @param first The begin of range iterator
-   * @param last The end of range iterator
+   * @param first The begin of range iterator.
+   * @param last The end of range iterator.
    */
   template <class InputIterator>
   cuckoo(InputIterator first, InputIterator last, 
@@ -508,7 +532,8 @@ public:
   /**
    * Operator==
    *
-   * @param Cuckoo Object to be compared with
+   * @param Cuckoo Object to be compared with.
+   * @return true if objects are equal (they are references to the same object).
    */
   bool operator==(const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
     return (*this).data_ == Cuckoo.data_;
@@ -542,6 +567,8 @@ public:
 
   /**
    * Get iterator to begin of cuckoo.
+   *
+   * @return Iterator to the first element of cuckoo.
    */
   inline iterator begin() {
     iterator it = iterator(0, this);
@@ -551,6 +578,8 @@ public:
   
   /**
    * Get const_iterator to begin of cuckoo (for const objects).
+   *
+   * @see begin()
    */
   inline const_iterator begin() const {
     const_iterator it = const_iterator(0, this);
@@ -560,6 +589,8 @@ public:
   
   /**
    * Get iterator to end of cuckoo.
+   *
+   * @return Iterator to the position AFTER last element of cuckoo.
    */
   inline iterator end() {
     return iterator(len_, this);
@@ -567,6 +598,8 @@ public:
 
   /**
    * Get const_iterator to begin of cuckoo (for const objects).
+   *
+   * @see end()
    */
   inline const_iterator end() const {
     return const_iterator(len_, this);
@@ -575,7 +608,8 @@ public:
   /**
    * Get value by key or created pair key-value.
    *
-   * @param k Key value
+   * @param k Key value.
+   * @return Reference to Value, associated with k.
    */
   Value& operator[](const Key& k) {
     return (*((this->insert(make_pair(k, Value()))).first)).second;
@@ -584,7 +618,7 @@ public:
   /**
    * Erase data at iterator.
    *
-   * @param it Iterator to Data element to be removed
+   * @param it Iterator to Data element to be removed.
    */
   void erase(iterator it) {
     remove(it);
@@ -593,8 +627,8 @@ public:
   /**
    * Erase range of Data elements.
    *
-   * @param first The begin of range iterator
-   * @param last The end of range iterator
+   * @param first The begin of range iterator.
+   * @param last The end of range iterator.
    */
   void erase(iterator first, iterator last) {
     while (first.pos != last.pos) {
@@ -605,8 +639,8 @@ public:
   /**
    * Erase element by key.
    *
-   * @param k Key value
-   * @return Returns 1 if element was erased and 0 if it didn't exist
+   * @param k Key value.
+   * @return 1 if element was erased and 0 if it didn't exist.
    */
   size_t erase(const Key& k) {
     iterator it = find(k);
@@ -621,8 +655,8 @@ public:
    * Find element by key.
    *
    * @param k Key value
-   * @return Returns iterator to element or to end of cuckoo, if element 
-   * doesn't exist
+   * @return Iterator to element or to end of cuckoo, if element 
+   * doesn't exist.
    */
   iterator find(const Key& k) {
     size_t dist = 0;
@@ -641,15 +675,18 @@ public:
    * Find element by key (for const objects).
    *
    * @param k Key value
-   * @return Returns const_iterator to element or to end of cuckoo, if element 
-   * doesn't exist
+   * @return Const_iterator to element or to end of cuckoo, if element 
+   * doesn't exist.
    */
   const_iterator find(const Key& k) const {
+    size_t dist = 0;
     for (size_t i = 0; i < d_; ++i) {
       size_t pos = hash(k, i);
-      if (is_here(k, i * len_part_ + pos)) {
-        return const_iterator(i * len_part_ + pos, this);
+      size_t position = pos + dist;
+      if (key_equal_(data_[i][pos].first, k) && (get_exists(position))) {    
+        return const_iterator(position, this);
       }
+      dist += len_part_;
     }
     return end();
   }
@@ -657,19 +694,19 @@ public:
   /**
    * Count number of elements with this key.
    *
-   * @param k Key value
-   * @return Returns 1 if element exists and 0 otherwise
+   * @param k Key value.
+   * @return 1 if element exists and 0 otherwise.
    */
   size_t count(const Key& k) const {
     return (find(k)).pos != len_;
   }
   
   /**
-   * Finds range of elements with key.
+   * Find range of elements with key.
    *
-   * @param k Key value
-   * @return Returns pair that determines the range [fisrt, last) or
-   * pair with both iterator pointing to the end of cuckoo.
+   * @param k Key value.
+   * @return Pair that determines the range [fisrt, last) or
+   * pair with both iterators pointing to the end of cuckoo.
    */ 
   pair<iterator, iterator> equal_range(const Key& k) {
     iterator l = find(k);
@@ -678,10 +715,10 @@ public:
   }
 
   /**
-   * Finds range of elements with key (for const objects).
+   * Find range of elements with key (for const objects).
    *
    * @param k Key value
-   * @return Returns pair that determines the range [fisrt, last) or
+   * @return Pair that determines the range [fisrt, last) or
    * pair with both iterator pointing to the end of cuckoo.
    */ 
   pair<const_iterator, const_iterator> equal_range(const Key& k) const {
@@ -691,10 +728,10 @@ public:
   }
 
   /** 
-   * Inserts Data element to cuckoo.
+   * Insert Data element to cuckoo.
    *
-   * @param k The new Data element
-   * @return Return pair with iterator to existing element and bool value,
+   * @param k The new Data element.
+   * @return Pair with iterator to existing element and bool value,
    * which is true if element was inserted or false if it existed before.
    */
   pair<iterator, bool> insert(const Data& k) {
@@ -702,15 +739,15 @@ public:
     if (res.pos != len_) {
       return make_pair(res, false);
     } 
-    res = add_new(k);
-    return make_pair(res, true);
+    add_new(k);
+    return make_pair(iterator(hash(k.first, 0), this), true);
   }
 
   /**
-   * Inserts range of Data elements.
+   * Insert range of Data elements.
    *
-   * @param first The begin of range iterator
-   * @param last The end of range iterator
+   * @param first The begin of range iterator.
+   * @param last The end of range iterator.
    */
   template <class InputIterator>
   void insert(InputIterator first, InputIterator last) {
@@ -731,25 +768,25 @@ public:
   /**
    * Check whether cuckoo is empty.
    * 
-   * @return Returns true of cuckoo is empty and false otherwise
+   * @return true of cuckoo is empty and false otherwise.
    */
   inline bool empty() const {
     return (size_ == 0);
   }
  
   /**
-   * Shows size of cuckoo.
+   * Show size of cuckoo.
    *
-   * @return Returns size of cuckoo
+   * @return Size of cuckoo.
    */ 
   inline size_t size() const {
     return size_;
   }
 
   /**
-   * Shows length of cuckoo (actual number of elements).
+   * Show length of cuckoo (actual number of elements).
    *
-   * @return Returns length of cuckoo
+   * @return Length of cuckoo.
    */ 
   inline size_t length() const {
     return len_;

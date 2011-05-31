@@ -32,7 +32,7 @@ SeqMap class uses Cuckoo hashmap(\url{http://en.wikipedia.org/wiki/Cuckoo_hashin
 
 \subsection{Condensed Graph Construction}
 
-After initial graph was constructed it is condensed. It's done by usual traversal and accumulating edge-sequence while we're on a simple path (without branches). The result is stored in \texttt{EdgeGraph} class which is much more complex structure than SeqMap, used to store initial graph. Since Condensed graph has smaller size time performance of graph operation becomes less critical thus certain operations are implemented less time-efficient while more usable.
+After initial graph was constructed it is condensed. It's done by usual traversal of the initial graph and accumulating edge-sequence while we're on a simple path (without branches). The result is stored in \texttt{DeBruijnGraph} class which is much more complex structure than SeqMap, used to store initial graph. Since condensed graph has smaller size time performance of graph operation becomes less critical thus certain operations are implemented less time-efficient while more usable.
 
 \subsection{Problems}
 There are only minor problems in this section concerning time and space efficiency which are not of much significance while applying these code to bacterial genomes. Even if these problems become bottleneck we could always switch to A-bruijn style graph construction.

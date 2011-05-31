@@ -2,6 +2,7 @@ set term png size 800,600
 FILE_NAME_T='time_insert.tmp'
 FILE_NAME_F='time_find.tmp'
 FILE_NAME_M='memory.tmp'
+set style fill solid
 set ylabel 'sec'
 set output 'time_insert.png'
 plot [-0.5:4.5] [0:] FILE_NAME_T index 0 using ($2):xticlabels(3) title FILE1 with histograms, FILE_NAME_T index 1 using ($2):xticlabels(3) title FILE2 with histograms, FILE_NAME_T index 2 using ($2):xticlabels(3) title FILE3 with histograms
