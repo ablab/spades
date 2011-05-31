@@ -29,35 +29,33 @@ typedef Graph::VertexId VertexId;
 
 using namespace omnigraph;
 
-void CountStats(const Graph& g) {
+template<size_t k>
+void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+		const string& genome) {
 	INFO("Counting stats");
-	DFS<Graph> dfs(g);
-	SimpleStatCounter<Graph> stat_c;
-	dfs.Traverse(&stat_c);
-	INFO("Vertex count=" << stat_c.v_count() << "; Edge count="
-			<< stat_c.e_count());
+	StatCounter<Graph, k> stat(g, index, genome);
+	stat.CountStatistics();
 	INFO("Stats counted");
 }
 
-void WriteToDotFile(const Graph &g, const string& file_name,
-		string graph_name, Path<EdgeId> path = Path<EdgeId> ()) {
+void WriteToDotFile(const Graph &g, const string& file_name, string graph_name,
+		Path<EdgeId> path = Path<EdgeId> ()) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
 	WriteToFile(/*DE_BRUIJN_DATA_FOLDER + */file_name, graph_name, g, path);
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
 
 template<size_t k>
-Path<typename Graph::EdgeId> FindGenomePath(const string &genome, const Graph& g,
-		const EdgeIndex<k + 1, Graph>& index) {
+Path<typename Graph::EdgeId> FindGenomePath(const string &genome,
+		const Graph& g, const EdgeIndex<k + 1, Graph>& index) {
 	SimpleSequenceMapper<k, Graph> srt(g, index);
 	return srt.MapSequence(Sequence(genome));
 }
 
 template<size_t k>
-void ProduceInfo(const Graph& g,
-		const EdgeIndex<k + 1, Graph>& index, const string& genome,
-		const string& file_name, const string& graph_name) {
-	CountStats(g);
+void ProduceInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+		const string& genome, const string& file_name, const string& graph_name) {
+	CountStats<k> (g, index, genome);
 	Path<typename Graph::EdgeId> path = FindGenomePath<k> (genome, g, index);
 	WriteToDotFile(g, file_name, graph_name, path);
 }
@@ -84,8 +82,8 @@ void ResolveRepeats(Graph &g, PairedInfoIndex<Graph> &info) {
 }
 
 template<size_t k, class ReadStream>
-void FillPairedIndex(PairedInfoIndex<Graph>& paired_info_index, ReadStream& stream,
-		EdgeIndex<k + 1, Graph>& index) {
+void FillPairedIndex(PairedInfoIndex<Graph>& paired_info_index,
+		ReadStream& stream, EdgeIndex<k + 1, Graph>& index) {
 	stream.reset();
 	INFO("Counting paired info");
 	paired_info_index.FillIndex<k, ReadStream> (index, stream);
@@ -93,8 +91,8 @@ void FillPairedIndex(PairedInfoIndex<Graph>& paired_info_index, ReadStream& stre
 }
 
 template<size_t k, class ReadStream>
-void FillCoverage(CoverageHandler<Graph> coverage_handler,
-		ReadStream& stream, EdgeIndex<k + 1, Graph>& index) {
+void FillCoverage(CoverageHandler<Graph> coverage_handler, ReadStream& stream,
+		EdgeIndex<k + 1, Graph>& index) {
 	stream.reset();
 	INFO("Counting coverage");
 	coverage_handler.FillCoverage<k, ReadStream> (stream, index);
@@ -119,16 +117,14 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 }
 
 template<size_t k, class ReadStream>
-void ConstructGraphWithCoverage(Graph& g,
-		EdgeIndex<k + 1, Graph>& index,
+void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		CoverageHandler<Graph>& coverage_handler, ReadStream& stream) {
 	ConstructGraph<k, ReadStream> (g, index, stream);
 	FillCoverage<k, ReadStream> (coverage_handler, stream, index);
 }
 
 template<size_t k, class PairedReadStream>
-void ConstructGraphWithPairedInfo(Graph& g,
-		EdgeIndex<k + 1, Graph>& index,
+void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		CoverageHandler<Graph>& coverage_handler,
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& stream) {
 	typedef SimpleReaderWrapper<PairedReadStream> UnitedStream;
@@ -139,7 +135,8 @@ void ConstructGraphWithPairedInfo(Graph& g,
 }
 
 template<size_t k, class ReadStream>
-void DeBruijnGraphTool(ReadStream& stream, const string& genome, const string& output_folder) {
+void DeBruijnGraphTool(ReadStream& stream, const string& genome,
+		const string& output_folder) {
 	INFO("Edge graph construction tool started");
 
 	Graph g(k);
@@ -159,7 +156,7 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome, const string& o
 			"no_tip_graph");
 
 	RemoveBulges(g);
-	ProduceInfo<k>(g, index, genome, output_folder + "bulges_removed.dot",
+	ProduceInfo<k> (g, index, genome, output_folder + "bulges_removed.dot",
 			"no_bulge_graph");
 
 	SimpleOfflineClusterer<Graph> clusterer(paired_index);
