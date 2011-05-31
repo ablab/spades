@@ -297,13 +297,22 @@ public:
 	void CheckGenomeMapping() {
 		DEBUG("Mapping genome");
 		size_t break_number = 0;
-		size_t covered_kp0mers = 0;
+		size_t covered_kp1mers = 0;
+		size_t fail = 0;
 		Seq<k + 1> cur = genome_.start<k + 1> () >> 0;
 		bool breaked = false;
+		pair<EdgeId, size_t> cur_position;
 		for (size_t cur_nucl = k; cur_nucl < genome_.size(); cur_nucl++) {
 			cur = cur << genome_[cur_nucl];
 			if (index_.containsInIndex(cur)) {
-				covered_kp0mers++;
+				pair<EdgeId, size_t> next = index_.get(cur);
+				if (cur_position.second < graph_.length(cur_position.first)) {
+					if (next.first != cur_position.first || cur_position.second
+							+ 1 != next.second) {
+						fail++;
+					}
+				}
+				covered_kp1mers++;
 				breaked = false;
 			} else {
 				if (!breaked) {
@@ -314,8 +323,9 @@ public:
 		}
 		DEBUG("Genome mapped");
 		DEBUG("Genome mapping results:");
-		DEBUG("Covered k+1-mers:" << covered_kp0mers << " of " << (genome_.size() - k) << "which is " << (100.0 * covered_kp0mers / (genome_.size() - k)) << "%");
+		DEBUG("Covered k+1-mers:" << covered_kp1mers << " of " << (genome_.size() - k) << "which is " << (100.0 * covered_kp1mers / (genome_.size() - k)) << "%");
 		DEBUG("Covered parts form " << break_number << " contigious parts");
+		DEBUG("Continuity failtures " << fail);
 	}
 
 	void FindErrors() {

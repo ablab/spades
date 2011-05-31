@@ -130,6 +130,11 @@ string constructNodePairId(tVertex u, tVertex v) {
 }
 
 template<typename tVertex>
+string constructNodeId(tVertex v) {
+	return constructNodePairId(v, v);
+}
+
+template<typename tVertex>
 string constructComplexNodeId(string pairId, tVertex v) {
 	stringstream ss;
 	ss << pairId << ":port_" << v;
@@ -142,7 +147,6 @@ string vertexIdToString(tVertex v) {
 	ss << v;
 	return ss.str();
 }
-
 
 template<typename tVertex>
 string constructTableEntry(tVertex v, const string &label) {
@@ -160,7 +164,7 @@ string constructReverceTableEntry(tVertex v, const string &label) {
 	stringstream ss;
 	ss << "<TR>";
 	ss << constructCell("", 0, vertexIdToString(v) + "_out");
-	ss << constructCell(label, 0 , "");
+	ss << constructCell(label, 0, "");
 	ss << constructCell("", 0, vertexIdToString(v) + "_in");
 	ss << "</TR>\n";
 	return ss.str();
@@ -208,7 +212,7 @@ public:
 	void addEdge(tVertex fromId, tVertex toId, const string &label = " ",
 			const string &color = "black") {
 		Edge<tVertex> e(fromId, toId, label, color);
-		recordSimpleEdge<tVertex>(*_out, e);
+		recordSimpleEdge<tVertex> (*_out, e);
 	}
 
 	void output() {
@@ -222,7 +226,8 @@ public:
 	}
 
 	void threadAdd(tVertex v) {
-		addEdge(currentVertex, v, " ", getColor(currentLength, approximateLength_));
+		addEdge(currentVertex, v, " ",
+				getColor(currentLength, approximateLength_));
 		currentVertex = v;
 		currentLength++;
 	}
@@ -256,10 +261,41 @@ public:
 		recordVertex<string> (*_out, v);
 	}
 
+	void addVertex(tVertex v1, string label1, const string &fillColor = "white") {
+		string vertexId = constructNodeId(v1);
+		string vertexLabel = constructComplexNodeLabel(v1, label1);
+		Vertex<string> v(vertexId, vertexLabel, fillColor);
+		recordVertex<string> (*_out, v);
+	}
+
 	void addEdge(pair<tVertex, tVertex> v1, pair<tVertex, tVertex> v2,
 			const string label = " ", const string &color = "black") {
 		string v1Id = constructVertexInPairId(v1.first, v1.second);
 		string v2Id = constructVertexInPairId(v2.first, v2.second);
+		Edge<string> edge(v1Id, v2Id, label, color);
+		recordEdge(*_out, edge);
+	}
+
+	void addEdge(pair<tVertex, tVertex> v1, tVertex v2,
+			const string label = " ", const string &color = "black") {
+		string v1Id = constructVertexInPairId(v1.first, v1.second);
+		string v2Id = constructVertexInPairId(v2, v2);
+		Edge<string> edge(v1Id, v2Id, label, color);
+		recordEdge(*_out, edge);
+	}
+
+	void addEdge(tVertex v1, pair<tVertex, tVertex> v2,
+			const string label = " ", const string &color = "black") {
+		string v1Id = constructVertexInPairId(v1, v1);
+		string v2Id = constructVertexInPairId(v2.first, v2.second);
+		Edge<string> edge(v1Id, v2Id, label, color);
+		recordEdge(*_out, edge);
+	}
+
+	void addEdge(tVertex v1, tVertex v2, const string label = " ",
+			const string &color = "black") {
+		string v1Id = constructVertexInPairId(v1, v1);
+		string v2Id = constructVertexInPairId(v2, v2);
 		Edge<string> edge(v1Id, v2Id, label, color);
 		recordEdge(*_out, edge);
 	}
@@ -275,7 +311,8 @@ public:
 	}
 
 	void threadAdd(pair<tVertex, tVertex> v) {
-		addEdge(currentVertex, v, " ", getColor(currentLength, approximateLength_));
+		addEdge(currentVertex, v, " ",
+				getColor(currentLength, approximateLength_));
 		currentVertex = v;
 		currentLength++;
 	}

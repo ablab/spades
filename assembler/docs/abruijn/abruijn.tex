@@ -39,8 +39,7 @@ de Bruijn graph. We discuss them in the paper and also present some experimental
 \section{Introduction}
 A common approach to assembling a genome from short reads is constructing
 the de Bruijn graph \cite{PW01} on all $k$-mers from the given set of 
-reads and finding a traversal of edges in this graph.{\todo{do we need a definition 
-of the de Bruijn graph here?}}
+reads and finding a traversal of edges in this graph.
 %Namely, the set of all $k$-mers form the set of vertices of the graph
 %and two $k$-mers $A$ and $B$ are joined by a directed edge if there is a read
 %where the $k$-mer $B$ appears 
@@ -67,7 +66,7 @@ The size of the de Bruijn graph for most genomes is huge making
 it difficult to process. 
 We propose a new approach that allows to decrease
 the graph size without losing the essential information from the input data.
-Instead of using all the $k$-mers from a read we take only a few of them
+Instead of using all the $k$-mers from a read we take only some fraction of them
 (and call them \emph{earmarked}).
 Namely, instead 
 of representing each read as a sequence of edges 
@@ -82,7 +81,7 @@ in the final version}}
 \includegraphics[width=0.9\textwidth]{fig1.pdf}
 \end{center}
 We call the resulting graph built on earmarked $k$-mers \emph{an earmark graph}.
-It is a special case of A-Bruijn graph introduced by Pevzner, Tang, and Tesler \cite{PTG04}.
+It is a special case of the A-Bruijn graph introduced by Pevzner, Tang, and Tesler \cite{PTG04}.
 An example of the earmark graph for the same genome $g={\tt ATGCATTGCACTGCA}$ is shown in Fig.~\ref{fig:debruijn}b.
 Here, all $3$-mers are earmarked except for {\tt TGC} and {\tt GCA}.
 Besides an obvious advantage of requiring less memory 
@@ -98,13 +97,13 @@ This allows to avoid comparing all pairs of input strings. However the database
 of all $k$-mers may be really huge. To reduce the storage requirements Roberts et al. propose
 to select not all the $k$-mers, but only those that are minimal in an input string with respect
 to a certain order. Such $k$-mers are called \emph{minimizers}. Our earmarked $k$-mers are close in spirit 
-th these minimizers.
+to these minimizers.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Earmark graph}
 
 Let $0<k<r$ be integers and ${\cal R} \subseteq \{A,C,G,T\}^r$ be a set of reads
-of length $r$. For a read $R$ and indices $1 \le i < j \le r$,
+of length $r$. For a read $R$ and indices $1 \le i \le j \le r$,
 let $R[i,j]$ be a substring of $R$ starting at position $i$
 and ending at position $j$.
 A \emph{de Bruijn graph} $\textrm{DG}_k({\cal R})$ is defined as follows:
@@ -123,6 +122,8 @@ in this graph}}
 Note that each read $R \in {\cal R}$ is represented by a path of length $r-k-1$
 on its $k$-mers in $\textrm{DG}_k({\cal R})$.{\todo{tell that a genome corresponds to a cycle in this graph?..}}
 
+An earmark graph can be viewed as the de Bruijn graph
+with some paths contracted into a single edge.
 Let ${\cal E} \subseteq \{A,C,G,T\}^k$ be a set of $k$-mers.
 Below we refer to it as a \emph{set of earmarks} or as a \emph{set of earmarked $k$-mers}. 
 An \emph{earmark graph} $\textrm{EG}_k({\cal R}, {\cal E})$ is defined as follows:
@@ -139,8 +140,7 @@ Hence, in the earmark graph each read is represented as a path (of length at mos
 When constructing an earmark graph it is reasonable to ensure that each read contains at least two 
 earmarked $k$-mers (so that the length of the corresponding path is at least one).
 It is easy to see that in the special case when we all the possible $k$-mers are earmarked
-the earmark graph coincides with the de Bruijn graph. The earmark graph can be viewed as the de Bruijn graph
-with some paths contracted into a single edge.
+the earmark graph coincides with the de Bruijn graph. 
 
 Both de Bruijn and earmark graphs are built on a set of reads that can be viewed as a 
 set of reads from an unknown genome. A natural way to build these two graphs on a genome
