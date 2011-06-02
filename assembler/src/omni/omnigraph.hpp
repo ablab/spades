@@ -40,7 +40,7 @@ public:
 
 class Omnigraph : public AbstractConjugateGraph<OmniVertex, OmniEdge, OmniDataMaster> {
 public:
-	Omnigraph() : AbstractConjugateGraph(OmniDataMaster()) {
+	Omnigraph() : AbstractConjugateGraph<OmniVertex, OmniEdge, OmniDataMaster>(OmniDataMaster()) {
 
 	}
 };

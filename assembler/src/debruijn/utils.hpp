@@ -291,27 +291,28 @@ public:
 		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.isEnd(); ++iterator)
 			if (graph_.conjugate(*iterator) == (*iterator))
 				sc_number++;
-		TRACE("Self-complement count="<< sc_number);
+		INFO("Self-complement count="<< sc_number);
 	}
 
 	void CheckGenomeMapping() {
-		DEBUG("Mapping genome");
+		INFO("Mapping genome");
 		size_t break_number = 0;
 		size_t covered_kp1mers = 0;
 		size_t fail = 0;
 		Seq<k + 1> cur = genome_.start<k + 1> () >> 0;
-		bool breaked = false;
+		bool breaked = true;
 		pair<EdgeId, size_t> cur_position;
 		for (size_t cur_nucl = k; cur_nucl < genome_.size(); cur_nucl++) {
 			cur = cur << genome_[cur_nucl];
 			if (index_.containsInIndex(cur)) {
 				pair<EdgeId, size_t> next = index_.get(cur);
-				if (cur_position.second < graph_.length(cur_position.first)) {
+				if (!breaked && cur_position.second  + 1 < graph_.length(cur_position.first)) {
 					if (next.first != cur_position.first || cur_position.second
 							+ 1 != next.second) {
 						fail++;
 					}
 				}
+				cur_position = next;
 				covered_kp1mers++;
 				breaked = false;
 			} else {
@@ -321,19 +322,11 @@ public:
 				}
 			}
 		}
-		DEBUG("Genome mapped");
-		DEBUG("Genome mapping results:");
-		DEBUG("Covered k+1-mers:" << covered_kp1mers << " of " << (genome_.size() - k) << "which is " << (100.0 * covered_kp1mers / (genome_.size() - k)) << "%");
-		DEBUG("Covered parts form " << break_number << " contigious parts");
-		DEBUG("Continuity failtures " << fail);
-	}
-
-	void FindErrors() {
-		//TODO
-	}
-
-	void OutputErrorRegions() {
-		//TODO
+		INFO("Genome mapped");
+		INFO("Genome mapping results:");
+		INFO("Covered k+1-mers:" << covered_kp1mers << " of " << (genome_.size() - k) << " which is " << (100.0 * covered_kp1mers / (genome_.size() - k)) << "%");
+		INFO("Covered parts form " << break_number + 1 << " contigious parts");
+		INFO("Continuity failtures " << fail);
 	}
 
 	StatCounter(Graph& g, const EdgeIndex<k + 1, Graph>& index,
@@ -343,10 +336,8 @@ public:
 
 	void CountStatistics() {
 		CountVertexEdgeStat();
-//		CountSelfComplement();
-//		CheckGenomeMapping();
-//		FindErrors();
-//		OutputErrorRegions();
+		CountSelfComplement();
+		CheckGenomeMapping();
 	}
 };
 
