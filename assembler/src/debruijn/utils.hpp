@@ -500,7 +500,7 @@ public:
 		INFO("Genome mapped");
 		INFO("Genome mapping results:");
 		INFO("Covered k+1-mers:" << covered_kp1mers << " of " << (genome_.size() - k) << " which is " << (100.0 * covered_kp1mers / (genome_.size() - k)) << "%");
-		INFO("Covered parts form " << break_number + 1 << " contigious parts");
+		INFO("Covered k+!-mers form " << break_number + 1 << " contigious parts");
 		INFO("Continuity failtures " << fail);
 	}
 

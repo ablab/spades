@@ -158,7 +158,7 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 
 	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 			"edge_graph");
-	paired_index.OutputData(output_folder + "edges_dist.txt");
+//	paired_index.OutputData(output_folder + "edges_dist.txt");
 
 	for (size_t i = 0; i < 3; i++) {
 		ClipTips(g);
