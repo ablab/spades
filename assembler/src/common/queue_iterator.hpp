@@ -23,10 +23,12 @@ public:
 	}
 
 	void pop() {
+		assert(!storage_.empty());
 		storage_.erase(storage_.begin());
 	}
 
 	const Key& top() const {
+		assert(!storage_.empty());
 		return *(storage_.begin());
 	}
 
@@ -99,13 +101,10 @@ public:
 	}
 
 	void operator++() {
-		assert(!queue_.empty());
 		if (ready) {
 			queue_.pop();
 		}
-		else {
-			ready = true;
-		}
+		ready = true;
 	}
 
 	virtual ~QueueIterator() {
