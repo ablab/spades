@@ -39,6 +39,14 @@ public:
 		g_(g), gp_(gp) {
 	}
 
+	void open() {
+		gp_.open();
+	}
+
+	void close() {
+		gp_.close();
+	}
+
 	virtual ~PartialGraphVisualizer() {
 
 	}
@@ -58,12 +66,14 @@ public:
 	{}
 
 	virtual void Visualize() {
+		gp_.open();
 		for (auto it = super::g_.SmartVertexBegin(); !it.isEnd(); ++it) {
 			gp_.AddVertex(*it);
 		}
 		for (auto it = super::g_.SmartEdgeBegin(); !it.isEnd(); ++it) {
 			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it));
 		}
+		gp_.close();
 	}
 };
 
@@ -79,7 +89,9 @@ public:
 	}
 
 	virtual void Visualize() {
+		partial_visualizer_.open();
 		partial_visualizer_.Visualize(vector<VertexId> (super::g_.begin(), super::g_.end()));
+		partial_visualizer_.close();
 	}
 };
 
@@ -122,7 +134,6 @@ public:
 	}
 
 	virtual void Visualize(const vector<VertexId>& vertices) {
-		using namespace std;
 		set<VertexId> vertex_set(vertices.begin(), vertices.end());
 
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
