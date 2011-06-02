@@ -142,105 +142,6 @@ class NoInfo {
 };
 
 /**
- * Stub base class for handling graph primitives during traversal.
- */
-template<class Graph, class Info = NoInfo *>
-class TraversalHandler {
-public:
-
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-
-	virtual ~TraversalHandler() {
-	}
-
-	virtual void HandleVertex(VertexId v) {
-	}
-	//	virtual void VertexLeft(VertexId v) {
-	//	}
-	virtual void HandleEdge(EdgeId e) {
-	}
-	//	virtual void EdgeBacktracked(EdgeId e) {
-	//	}
-	virtual void HandleVertex(VertexId v, Info info) {
-	}
-	virtual void HandleEdge(EdgeId e, Info info) {
-	}
-};
-
-/**
- * @brief Base class for condensed graph traversals.
- */
-template<class Graph>
-class Traversal {
-public:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-
-	Traversal(const Graph& g) :
-		g_(g) {
-	}
-
-	virtual ~Traversal() {
-	}
-
-	virtual void Traverse(TraversalHandler<Graph>* h) = 0;
-
-protected:
-	const Graph& g_;
-};
-
-//template<class Graph>
-//class DFS: public Traversal<Graph> {
-//	typedef typename Graph::VertexId VertexId;
-//	typedef typename Graph::EdgeId EdgeId;
-//
-//	set<VertexId> visited_;
-//	void ProcessVertex(VertexId v, vector<VertexId>* stack,
-//			TraversalHandler<Graph>* h);
-//public:
-//	DFS(const Graph& g) :
-//		Traversal<Graph> (g) {
-//	}
-//	virtual void Traverse(TraversalHandler<Graph>* h);
-//};
-//
-//template<class Graph>
-//void DFS<Graph>::ProcessVertex(VertexId v, vector<VertexId>* stack,
-//		TraversalHandler<Graph>* h) {
-//	//todo how to get rid of this
-//	typedef Traversal<Graph> super;
-//
-//	if (visited_.count(v) == 0) {
-//		h->HandleVertex(v);
-//		visited_.insert(v);
-//
-//		vector < EdgeId > edges = super::g_.OutgoingEdges(v);
-//		for (size_t i = 0; i < edges.size(); ++i) {
-//			EdgeId e = edges[i];
-//			h->HandleEdge(e);
-//			stack->push_back(super::g_.EdgeEnd(e));
-//		}
-//	}
-//}
-//template<class Graph>
-//void DFS<Graph>::Traverse(TraversalHandler<Graph>* h) {
-//	//todo how to get rid of this
-//	typedef Traversal<Graph> super;
-//	typedef typename Graph::VertexIterator VertexIt;
-//
-//	for (VertexIt it = super::g_.begin(); it != super::g_.end(); it++) {
-//		vector < VertexId > stack;
-//		stack.push_back(*it);
-//		while (!stack.empty()) {
-//			VertexId v = stack[stack.size() - 1];
-//			stack.pop_back();
-//			ProcessVertex(v, &stack, h);
-//		}
-//	}
-//}
-
-/**
  * This class is a representation of how certain sequence is mapped to genome. Needs further adjustment.
  */
 template<typename ElementId>
@@ -373,33 +274,6 @@ public:
 		return Path<EdgeId> (passed, startPosition, endPosition + 1);
 	}
 
-};
-
-template<class Graph>
-class SimpleStatCounter: public TraversalHandler<Graph> {
-	size_t v_count_;
-	size_t e_count_;
-public:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-
-	SimpleStatCounter() :
-		v_count_(0), e_count_(0) {
-	}
-	virtual void HandleVertex(VertexId v) {
-		v_count_++;
-	}
-	virtual void HandleEdge(EdgeId e) {
-		e_count_++;
-	}
-
-	size_t v_count() const {
-		return v_count_;
-	}
-
-	size_t e_count() const {
-		return e_count_;
-	}
 };
 
 template<class Graph, size_t k>
