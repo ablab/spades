@@ -163,14 +163,14 @@ void WriteToFile(const string& file_name, const string& graph_name,
 		Path<typename Graph::EdgeId> path = Path<typename Graph::EdgeId>()) {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
-	gvis::PairedGraphPrinter<typename Graph::VertexId> gp("simulated_data_graph", filestr);
+	gvis::PairedGraphPrinter<typename Graph::VertexId> gp(graph_name, filestr);
 	ColoredPathGraphVisualizer<Graph> gv(gp, path);
 	gv.Visualize(g);
 	filestr.close();
 	string simple_file_name(file_name);
 	simple_file_name.insert(simple_file_name.size()-4, "_simple");
 	filestr.open((simple_file_name).c_str(), fstream::out);
-	gvis::GraphPrinter<typename Graph::VertexId> gpr("simulated_data_graph", filestr);
+	gvis::GraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
 	SimpleGraphVisualizer<Graph> sgv(gpr);
 	sgv.Visualize(g);
 	filestr.close();
