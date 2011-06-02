@@ -331,6 +331,49 @@ Also, for some vertices it is possible to split them by using paired information
 
 %Such split operation not increase graph complexity measure defined above. 
 
+\subsection{Incorporation of mate-read transformation (still under discussion!!!)}
+Let's consider original rectangle split operation. 
+
+After applying rectangle split operation to every vertex of initial graph we'll receive
+graph $G'$ and a "hybrid" paired info- set of edge pairs, where first
+element is an edge from $G'$, and second- an edge from $G$.
+
+Let's translate it to terms of graph $G'$:
+\begin{definition}
+As \emph{paired multiedge info}
+we'll call $((e_1, S_{e_2}), x)$, $e_1\in E',
+S_{e_2}\subset E'$, saying that $\exists {e_2}_i \in S_{e_2}$ such that
+distance between $e_1$ and $S_{e_2}$ is equal to $x$.
+\end{definition}
+
+If there is no path of length $x$ between $e_1$ and ${e_2}_i$, it means
+that edge $e_1$ and ${e_2}_i$ are not in distance $x$, so in this case
+${e_2}_i$ can be removed from $S_{e_2}$ !
+
+We hope that such 'non-standart' mate-pair transformation
+can be useful in repeat resolving.
+
+
+So, now we forget about $G$ - every edge below  is edge from $G'$.
+Also, we can remove all one-one vertices, merging it's incoming and outgoing edges and corresponging paired multiedge info
+
+Then we can define vertex-multiedge pair info in similar way and
+define adjacency for vertex-mutiedge pair info as something like
+"There exists an edge $e_1$ from first edge-set and  $e_2$ from second
+edge- set such that they share a vertex and distances to this vertex
+provided from both pair infos are equal".
+
+Now we can do an analogue of rectangle split operation with
+vertex-multiedge pair info instead of vertex-edge pair info and
+receive a graph $G''$
+
+Again, it's easy to prove that it is honest ungluing.
+
+Then again we can do the same with graph $G''$, and repeat this until
+nothing is changed.
+\begin{remark}
+This method seems to be resistant to all  modifications of original rectangle split operation excluding ``back`` splitting.
+\end{remark}
 \section{Details about real implementation}
 We have to ignore low confirmed information about distance between edges to cope with chimeric pairs. Also, it may turn out that after out resolving we'll need to do tip clipping again because of erroneous connections.
 
@@ -376,7 +419,7 @@ same $$\{(C,c,0), (C,e,l_c), (C,g,l_c+l_e), (C,d,0), (C,f,l_d),
 But now edge $c$ and edge $f$ no more adjacent, because $c$ remapped into
 vertex $D_g$, but $f$ remapped into vertex $D_h$. The same happens with edges
 $d$ and $e$. Now we have TWO component $\{(C,c,0), (C,e,l_c),
-(C,g,l_c+l_e)\}$, and $\{(C,d,0), (C,f,l_d), (C,h,l_d+l_f)\}$. For first
+(C,g,l_c+l_e)\}$, and $\{(C,d,0), (C,f,l_d), (Cset of information,h,l_d+l_f)\}$. For first
 component we create vertex $C_g$. We obtain next remapping of edges: $a
 \rightarrow (A, C_g)$, $b \rightarrow (B, C_g)$, $c \rightarrow (C_g, D_g)$.
 For second component we create vertex $C_h$ and obtain remapping $a \rightarrow
