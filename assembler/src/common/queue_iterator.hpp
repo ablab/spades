@@ -28,6 +28,7 @@ public:
 	}
 
 	const Key& top() const {
+		assert(!storage_.empty());
 		return *(storage_.begin());
 	}
 
@@ -103,9 +104,7 @@ public:
 		if (ready) {
 			queue_.pop();
 		}
-		else {
-			ready = true;
-		}
+		ready = true;
 	}
 
 	virtual ~QueueIterator() {
