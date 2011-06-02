@@ -142,106 +142,6 @@ class NoInfo {
 };
 
 /**
- * Stub base class for handling graph primitives during traversal.
- */
-template<class Graph, class Info = NoInfo *>
-class TraversalHandler {
-public:
-
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-
-	virtual ~TraversalHandler() {
-	}
-
-	virtual void HandleVertex(VertexId v) {
-	}
-	//	virtual void VertexLeft(VertexId v) {
-	//	}
-	virtual void HandleEdge(EdgeId e) {
-	}
-	//	virtual void EdgeBacktracked(EdgeId e) {
-	//	}
-	virtual void HandleVertex(VertexId v, Info info) {
-	}
-	virtual void HandleEdge(EdgeId e, Info info) {
-	}
-};
-
-/**
- * @brief Base class for condensed graph traversals.
- */
-template<class Graph>
-class Traversal {
-public:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-
-	Traversal(const Graph& g) :
-		g_(g) {
-	}
-
-	virtual ~Traversal() {
-	}
-
-	virtual void Traverse(TraversalHandler<Graph>* h) = 0;
-
-protected:
-	const Graph& g_;
-};
-
-template<class Graph>
-class DFS: public Traversal<Graph> {
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-
-	set<VertexId> visited_;
-	void ProcessVertex(VertexId v, vector<VertexId>* stack,
-			TraversalHandler<Graph>* h);
-public:
-	DFS(const Graph& g) :
-		Traversal<Graph> (g) {
-	}
-	virtual void Traverse(TraversalHandler<Graph>* h);
-};
-
-template<class Graph>
-void DFS<Graph>::ProcessVertex(VertexId v, vector<VertexId>* stack,
-		TraversalHandler<Graph>* h) {
-	//todo how to get rid of this
-	typedef Traversal<Graph> super;
-
-	if (visited_.count(v) == 0) {
-		h->HandleVertex(v);
-		visited_.insert(v);
-
-		vector < EdgeId > edges = super::g_.OutgoingEdges(v);
-		for (size_t i = 0; i < edges.size(); ++i) {
-			EdgeId e = edges[i];
-			h->HandleEdge(e);
-			stack->push_back(super::g_.EdgeEnd(e));
-		}
-	}
-}
-
-template<class Graph>
-void DFS<Graph>::Traverse(TraversalHandler<Graph>* h) {
-	//todo how to get rid of this
-	typedef Traversal<Graph> super;
-	typedef typename Graph::VertexIterator VertexIt;
-
-	for (VertexIt it = super::g_.begin(); it != super::g_.end(); it++) {
-		vector < VertexId > stack;
-		stack.push_back(*it);
-		while (!stack.empty()) {
-			VertexId v = stack[stack.size() - 1];
-			stack.pop_back();
-			ProcessVertex(v, &stack, h);
-		}
-	}
-}
-
-/**
  * This class is a representation of how certain sequence is mapped to genome. Needs further adjustment.
  */
 template<typename ElementId>
@@ -302,8 +202,6 @@ private:
 			if (g_.EdgeNucls(last)[endPosition + k + 1] == kmer[k]) {
 				endPosition++;
 				return true;
-			} else {
-				return false;
 			}
 		} else {
 			vector<EdgeId> edges = g_.OutgoingEdges(g_.EdgeEnd(last));
@@ -314,8 +212,8 @@ private:
 					return true;
 				}
 			}
-			return false;
 		}
+		return false;
 	}
 
 	bool FindKmer(Seq<k + 1> &kmer, vector<EdgeId> &passed,
@@ -326,7 +224,7 @@ private:
 			if (passed.empty()) {
 				startPosition = position.second;
 			}
-			if (passed.empty() || passed[passed.size() - 1] != position.first) {
+			if (passed.empty() || passed.back() != position.first) {
 				passed.push_back(position.first);
 			}
 			return true;
@@ -366,8 +264,7 @@ public:
 		Seq<k + 1> kmer = read.start<k + 1> ();
 		size_t startPosition = -1;
 		size_t endPosition = -1;
-		bool valid = false;
-		valid = ProcessKmer(kmer, passed, startPosition, endPosition, valid);
+		bool valid = ProcessKmer(kmer, passed, startPosition, endPosition, false);
 		for (size_t i = k + 1; i < read.size(); ++i) {
 			kmer = kmer << read[i];
 			valid
@@ -377,33 +274,6 @@ public:
 		return Path<EdgeId> (passed, startPosition, endPosition + 1);
 	}
 
-};
-
-template<class Graph>
-class SimpleStatCounter: public TraversalHandler<Graph> {
-	size_t v_count_;
-	size_t e_count_;
-public:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-
-	SimpleStatCounter() :
-		v_count_(0), e_count_(0) {
-	}
-	virtual void HandleVertex(VertexId v) {
-		v_count_++;
-	}
-	virtual void HandleEdge(EdgeId e) {
-		e_count_++;
-	}
-
-	size_t v_count() const {
-		return v_count_;
-	}
-
-	size_t e_count() const {
-		return e_count_;
-	}
 };
 
 template<class Graph, size_t k>
@@ -433,7 +303,8 @@ public:
 		set<EdgeId> colored_edges(path_edges.begin(), path_edges.end());
 		for (auto it = graph_.SmartEdgeBegin(); !it.isEnd(); ++it) {
 			edge_count++;
-			if (colored_edges.count(*it) == 0 && colored_edges.count(graph_.conjugate(*it)) == 0) {
+			if (colored_edges.count(*it) == 0 && colored_edges.count(
+					graph_.conjugate(*it)) == 0) {
 				black_count++;
 			}
 		}
@@ -446,14 +317,14 @@ public:
 		const vector<EdgeId> path_edges = path.sequence();
 		vector<size_t> lengths;
 		size_t sum_all = 0;
-		for(size_t i = 0; i < path.size(); i++) {
+		for (size_t i = 0; i < path.size(); i++) {
 			lengths.push_back(graph_.length(path[i]));
 			sum_all += graph_.length(path[i]);
 		}
 		sort(lengths.begin(), lengths.end());
 		size_t sum = 0;
 		int current = lengths.size();
-		while(current > 0 && 2 * sum < sum_all) {
+		while (current > 0 && 2 * sum < sum_all) {
 			current--;
 			sum += lengths[current];
 		}
@@ -500,7 +371,7 @@ public:
 		INFO("Genome mapped");
 		INFO("Genome mapping results:");
 		INFO("Covered k+1-mers:" << covered_kp1mers << " of " << (genome_.size() - k) << " which is " << (100.0 * covered_kp1mers / (genome_.size() - k)) << "%");
-		INFO("Covered parts form " << break_number + 1 << " contigious parts");
+		INFO("Covered k+!-mers form " << break_number + 1 << " contigious parts");
 		INFO("Continuity failtures " << fail);
 	}
 

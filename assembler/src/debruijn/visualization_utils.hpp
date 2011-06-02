@@ -8,89 +8,15 @@ namespace debruijn_graph {
 
 using gvis::PairedGraphPrinter;
 
-//template<class Graph>
-//class VisHandler: public TraversalHandler<Graph> {
-//	typedef typename Graph::VertexId VertexId;
-//	typedef typename Graph::EdgeId EdgeId;
-//	const Graph& g_;
-//	gvis::GraphPrinter<typename Graph::VertexId>& pr_;
-//public:
-//
-//	VisHandler(const Graph& g, gvis::GraphPrinter<VertexId>& pr) :
-//		g_(g), pr_(pr) {
-//	}
-//
-//	virtual void HandleVertex(VertexId v) {
-//		stringstream ss;
-//		ss << v << " comp " << g_.conjugate(v) << "   ";
-//		pr_.addVertex(v, ss.str());
-//	}
-//
-//	virtual void HandleEdge(EdgeId e) {
-//		stringstream ss;
-//		ss << e << " comp " << g_.conjugate(e) << " len "
-//				<< g_.EdgeNucls(e).size() << "   ";
-//		pr_.addEdge(g_.EdgeStart(e), g_.EdgeEnd(e), ss.str());
-//	}
-//
-//};
-//
-//template<class Graph>
-//class ConjugateVisHandler: public TraversalHandler<Graph> {
-//	typedef typename Graph::VertexId VertexId;
-//	typedef typename Graph::EdgeId EdgeId;
-//	const Graph& g_;
-//	gvis::PairedGraphPrinter<VertexId>& pr_;
-//	const map<EdgeId, string> color_;
-//	string ConstructLabel(EdgeId e) {
-//		stringstream ss;
-//		//		if (g_.length(e) > 10)
-//		ss << g_.length(e);
-//		//		else
-//		//			ss << g_.length(e) << ":" << e->nucls();
-//		ss << "(";
-//		ss << ((int) (g_.coverage(e) * 100)) * 0.01;
-//		ss << ") id=" << e;
-//		return ss.str();
-//	}
-//public:
-//
-//	ConjugateVisHandler(const Graph& g, gvis::PairedGraphPrinter<VertexId>& pr,
-//			map<EdgeId, string> color) :
-//		g_(g), pr_(pr), color_(color) {
-//	}
-//
-//	ConjugateVisHandler(const Graph& g, gvis::PairedGraphPrinter<VertexId>& pr) :
-//		g_(g), pr_(pr), color_() {
-//	}
-//
-//	virtual void HandleVertex(VertexId v) {
-//		pr_.addVertex(v, "", g_.conjugate(v), "");
-//	}
-//
-//	virtual void HandleEdge(EdgeId e) {
-//		VertexId v1 = g_.EdgeStart(e);
-//		VertexId v2 = g_.EdgeEnd(e);
-//		auto col = color_.find(e);
-//		if (col == color_.end())
-//			pr_.addEdge(make_pair(v1, g_.conjugate(v1)),
-//					make_pair(v2, g_.conjugate(v2)), ConstructLabel(e));
-//		else
-//			pr_.addEdge(make_pair(v1, g_.conjugate(v1)),
-//					make_pair(v2, g_.conjugate(v2)), ConstructLabel(e),
-//					col->second);
-//	}
-//
-//};
-
 template<class Graph>
 class GraphVisualizer {
 	typedef typename Graph::VertexId VertexId;
-	const Graph& g_;
-	gvis::GraphPrinter<VertexId>& gp_;
+protected:
+	Graph& g_;
+//	gvis::GraphPrinter<VertexId>& gp_;
 public:
-	GraphVisualizer(const Graph& g, gvis::GraphPrinter<VertexId>& gp) :
-		g_(g), gp_(gp) {
+	GraphVisualizer(Graph& g/*, gvis::GraphPrinter<VertexId>& gp*/) :
+		g_(g)/*, gp_(gp)*/ {
 
 	}
 
@@ -105,10 +31,11 @@ public:
 template<class Graph>
 class PartialGraphVisualizer {
 	typedef typename Graph::VertexId VertexId;
-	const Graph& g_;
+protected:
+	Graph& g_;
 	gvis::GraphPrinter<VertexId>& gp_;
 public:
-	PartialGraphVisualizer(const Graph& g, gvis::GraphPrinter<VertexId>& gp) :
+	PartialGraphVisualizer(Graph& g, gvis::GraphPrinter<VertexId>& gp) :
 		g_(g), gp_(gp) {
 	}
 
@@ -120,74 +47,86 @@ public:
 
 };
 
-//template<class Graph>
-//class SimpleGraphVisualizer: public GraphVisualizer {
-//	gvis::GraphPrinter<typename Graph::VertexId>& gp_;
-//	Graph graph_;
-//public:
-//	SimpleGraphVisualizer(gvis::GraphPrinter<typename Graph::VertexId>& gp,
-//			Graph &graph) :
-//		gp_(gp), graph_(graph) {
-//	}
-//
-//	virtual void Visualize() {
-//		VisHandler < Graph > h(graph_, gp_);
-//		DFS<Graph> (graph_).Traverse(&h);
-//		//		gp_.output();
-//	}
-//};
-//
-//template<class Graph>
-//class ConjugateGraphVisualizer: public GraphVisualizer {
-//	gvis::PairedGraphPrinter<typename Graph::VertexId>& gp_;
-//	Graph &graph_;
-//public:
-//	ConjugateGraphVisualizer(
-//			gvis::PairedGraphPrinter<typename Graph::VertexId>& gp, Graph graph) :
-//		gp_(gp), graph_(graph) {
-//	}
-//
-//	virtual void Visualize() {
-//		ConjugateVisHandler < Graph > h(graph_, gp_);
-//		DFS<Graph> (graph_).Traverse(&h);
-//		gp_.output();
-//	}
-//};
-
 template<class Graph>
-class AdapterGraphVisualizer: GraphVisualizer<Graph> {
-	typedef typename Graph::VertexId VertexId;
+class SimpleGraphVisualizer: public GraphVisualizer<Graph> {
 	typedef GraphVisualizer<Graph> super;
-	PartialGraphVisualizer<Graph>& partial_visualizer_;
+	typedef typename Graph::VertexId VertexId;
+	gvis::GraphPrinter<VertexId>& gp_;
 public:
-	AdapterGraphVisualizer(PartialGraphVisualizer<Graph>& partial_visualizer) :
-		partial_visualizer_(partial_visualizer) {
-
-	}
+	SimpleGraphVisualizer(Graph& g, gvis::GraphPrinter<VertexId>& gp)
+	: super(g), gp_(gp)
+	{}
 
 	virtual void Visualize() {
-		partial_visualizer_.Visualize(
-				vector<VertexId> (super::g_.begin(), super::g_.end()));
+		for (auto it = super::g_.SmartVertexBegin(); !it.isEnd(); ++it) {
+			gp_.AddVertex(*it);
+		}
+		for (auto it = super::g_.SmartEdgeBegin(); !it.isEnd(); ++it) {
+			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it));
+		}
+
 	}
 };
 
 template<class Graph>
-class ColoredGraphVisualizer: GraphVisualizer<Graph> {
+class AdapterGraphVisualizer: public GraphVisualizer<Graph> {
+	typedef typename Graph::VertexId VertexId;
 	typedef GraphVisualizer<Graph> super;
+	PartialGraphVisualizer<Graph>& partial_visualizer_;
+public:
+	AdapterGraphVisualizer(Graph& g, PartialGraphVisualizer<Graph>& partial_visualizer) :
+		super(g), partial_visualizer_(partial_visualizer) {
+
+	}
+
+	virtual void Visualize() {
+		partial_visualizer_.Visualize(vector<VertexId> (super::g_.begin(), super::g_.end()));
+	}
+};
+
+template<class Graph>
+class ColoredGraphVisualizer: public PartialGraphVisualizer<Graph> {
+	typedef PartialGraphVisualizer<Graph> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	const map<EdgeId, size_t> &edge_color_;
-	//	Graph &graph_;
+	const map<EdgeId, string>& edge_colors_;
+	const string& default_color_;
+	const string& border_vertex_color_;
 
 public:
-	ColoredGraphVisualizer(gvis::PairedGraphPrinter<VertexId>& gp,
-			map<EdgeId, size_t> &edge_color, Graph &graph) :
-		super(graph, gp), edge_color_(edge_color) {
+	ColoredGraphVisualizer(Graph& g, gvis::GraphPrinter<VertexId>& gp,
+			const map<EdgeId, string>& edge_colors, const string& default_color = "", const string& border_vertex_color = "grey") :
+		super(g, gp), edge_colors_(edge_colors), default_color_(default_color), border_vertex_color_(border_vertex_color) {
 	}
 
 	virtual void Visualize(const vector<VertexId> &vertices) {
-		//TODO
-		//		gp_.output();
+		set<VertexId> vertex_set(vertices.begin(), vertices.end());
+		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
+			const vector<EdgeId> edges = super::g_.OutgoingEdges(*v_it);
+			bool border = false;
+			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
+				VertexId edge_end = super::g_.EdgeEnd(*e_it);
+				if (vertex_set.count(edge_end) == 0) {
+					border = true;
+				}
+			}
+			super::gp_.AddVertex(*v_it, "", border ? border_vertex_color_:"white");
+		}
+
+		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
+			const vector<EdgeId> edges = super::g_.OutgoingEdges(*v_it);
+			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
+				VertexId edge_end = super::g_.EdgeEnd(*e_it);
+				if (vertex_set.count(edge_end) > 0) {
+					string edge_color = default_color_;
+					auto edge_colors_it = edge_colors_.find(*e_it);
+					if (edge_colors_it != edge_colors_.end()) {
+						edge_color = (*edge_colors_it).second;
+					}
+					super::gp_.AddEdge(*v_it, edge_end, edge_color);
+				}
+			}
+		}
 	}
 
 };
@@ -229,46 +168,24 @@ public:
 	}
 };
 
-//template<class Graph>
-//class ColoredPathGraphVisualizer: ColoredGraphVisualizer<Graph> {
-//	typedef typename Graph::VertexId VertexId;
-//	typedef typename Graph::EdgeId EdgeId;
-//	gvis::PairedGraphPrinter<VertexId>& gp_;
-//	const map<EdgeId, size_t> &edge_color_;
-//	const Path<EdgeId> path_;
-//
-//public:
-//	ColoredPathGraphVisualizer(gvis::PairedGraphPrinter<VertexId>& gp,
-//			const Path<EdgeId> path, const Graph& g) : ColoredGraphVisualizer<Graph>(),
-//		gp_(gp), path_(path) {
-//
-//	}
-//
-//	virtual void Visualize(const vector<VertexId> vertices) {
-//		PathColorer colorer(g);
-//		map<EdgeId, size_t> colors = colorer.ColorPath(path);
-//		visualizer.Visualize(g, g.begin(), g.end());
-//	}
-//};
-
 template<class Graph>
 void WriteToFile(const string& file_name, const string& graph_name,
-		const Graph& g,
+		/*const */Graph& g,
 		Path<typename Graph::EdgeId> path = Path<typename Graph::EdgeId> ()) {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
-	gvis::PairedGraphPrinter<typename Graph::VertexId> gp(
-			"simulated_data_graph", filestr);
-//	ColoredPathGraphVisualizer<Graph> gv(gp, path);
-//	gv.Visualize(g);
-//	filestr.close();
-//	string simple_file_name(file_name);
-//	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
-//	filestr.open((simple_file_name).c_str(), fstream::out);
-//	gvis::GraphPrinter<typename Graph::VertexId> gpr("simulated_data_graph",
-//			filestr);
-//	SimpleGraphVisualizer<Graph> sgv(gpr);
-//	sgv.Visualize(g);
+	gvis::DotPairedGraphPrinter<Graph> gp(g, graph_name, filestr);
+	PathColorer<Graph> path_colorer(g);
+	ColoredGraphVisualizer<Graph> gv(g, gp, path_colorer.ColorPath(path));
+	AdapterGraphVisualizer<Graph> result_vis(g, gv);
+	result_vis.Visualize();
+	filestr.close();
+	string simple_file_name(file_name);
+	simple_file_name.insert(simple_file_name.size()-4, "_simple");
+	filestr.open((simple_file_name).c_str(), fstream::out);
+	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
+	SimpleGraphVisualizer<Graph> sgv(g, gpr);
+	sgv.Visualize();
 	filestr.close();
 }
 
