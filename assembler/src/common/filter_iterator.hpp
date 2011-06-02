@@ -12,7 +12,7 @@ public:
 	filter_iterator(const iterator_type& begin, const iterator_type& end, const predicate_type& pred):
 		current_(begin), end_(end), pred_(pred)
 	{
-		while((current_ != end_) && (!pred_(*current_)))
+		while((current_ != end_) && (!pred_(*current_))) // why do we need here? DRY, see method advance() below.
 			++current_;
 	} // filter_iterator
 
