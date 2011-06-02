@@ -24,14 +24,16 @@
 \newtheorem{definition}{Definition}
 \newtheorem{remark}{Remark}
 \newtheorem{lemma}{Lemma}
-
+\title{Repeat resolving using paired data}
+\author{Dmitry Antipov and Alexander Sirotkin}
 %%-- \usepackage[14pt]{extsizes}
 
 \def\eps{\varepsilon}
 
 \begin{document}
-\selectlanguage{english}
 
+\selectlanguage{english}
+\maketitle
 
 \begin{center}
 Repeat resolving using paired data.
@@ -46,10 +48,10 @@ But to discuss different methods of repeat resolving, based on paired informatio
 
 \section{About paired info}
 
-Assume that we have a graph $G=(V,E)$ with lengths of all edges. $G$ can be any abstract graph, but in case of genome assembling you may think that $G$ is compressed be Bruijn graph. 
-For given edge $a$ we'll denote it's length as $l_a$. 
+Assume that we have a graph $G=(V,E)$ with given lengths of all its edges. $G$ can be any abstract graph, but in case of genome assembling you may think that $G$ is compressed be Bruijn graph. 
+For given edge $a$ we denote it's length as $l_a$. 
 \begin{remark}
-In case of compressed de Bruijn graph length of edge is the number of nucleotides in this edge minus $k$. So, by construction of compressed de Bruijn graph the shortest possible edge marked by $k+1$ nucleotides and have length equal one. 
+In case of compressed de Bruijn graph with $k$-mers as vertices, length of edge is the number of nucleotides in this edge minus $k$. So the shortest possible edge is marked by $k+1$ nucleotides and it's length is one, by construction of compressed de Bruijn graph. 
 \end{remark}
 Given a directed path in graph, we define distance between two edges as directed distance from start vertex of first edge to start vertex of second edge.
 \begin{definition}
@@ -61,7 +63,7 @@ Given a directed path in graph, we define distance between two edges as directed
   -distance($B$,$A$) in other case.
 \end{itemize}
 \end{definition}
-In this approach we assume that vertices have not length.
+%In this approach we assume that vertices have not length.
 
 For each edge $e$, we'll define $\mathop{start}(e)$ and $\mathop{end}(e)$ as start and end vertex of edge $e$ respectively. Length of path $P$ is sum of length of it's edges (multiple occurrences allowed). We'll denote it as $|P|$.
 For such graph we define \emph{edge pair} as ordered pair $(a, b)$ where $a \in E$ and $b \in E$.
@@ -76,35 +78,36 @@ It seems to be a subject of another paper...
 \section{Repeat resolving}
 We want to define what is ``correct'' graph transformation due to paired information and provide methods to compare these graph transformations in terms of resulting graph complexity.
 
-\subsection{Correct and honest graph transformations}
+\subsection{Ungluing}
 \begin{definition}
-For given graph $G=(V, E)$, we say that graph $G' = (V', E')$  is a \emph{ungluing} of $G$ if there exists surjective mappings $f: V' \rightarrow V$ and $g: E' \rightarrow E$, $f$ and $g$
+For given graph $G=(V, E)$, we say that graph $G' = (V', E')$  is an \emph{ungluing} of $G$ if there exists surjective mappings $f: V' \rightarrow V$ and $g: E' \rightarrow E$, $f$ and $g$
 satisfy following conditions:
 \begin{enumerate}
 \item Edge length in $G'$ must be consistent with $g$ i.e. $\forall a\in E', l_a = l_{g(a)}$. 
 % If $e'\in E'$ we define $\mathop{start_e}(e')$ as first edge from path $g(e')$
 % and $\mathop{end_e}(e')$ as last edge from path $g(e')$.
-\item $\forall e'\in E'\quad f(\mathop{start}(e') = \mathop{start}(g(e'))$
-\item $\forall e'\in E'\quad f(\mathop{end}(e') = \mathop{end}(g(e'))$
+\item $\forall e'\in E'\quad f(\mathop{start}(e')) = \mathop{start}(g(e'))$
+\item $\forall e'\in E'\quad f(\mathop{end}(e')) = \mathop{end}(g(e'))$
 \end{enumerate}
 \end{definition}
 \begin{remark}
-For every \emph{ungluing} $G'$ of $G$ we can define gluing operation in terms of [Pevzner 2004] such that $G$ is glued $G'$.
+For every \emph{ungluing} $G'$ of $G$ we can define gluing operation in terms of [Pevzner 2004] such that $G$ can be obtained as the result of performing this gluing operation to $G'$.
 \end{remark}
 
 \begin{definition}
-\emph{Compress operation} for graph $G$ consist from:
+\emph{Compress operation} for graph $G$ consists of such steps:
 \begin{enumerate}
-\item Remove vertex $A$ wit indegree and outdegree both equal to one.
+\item Select a vertex $A$ with in-degree and out-degree both equal to one. 
 \item Remove edges $a$ and $b$, where $\mathop{end}(a) = A\quad \mathop{start}(b) = A$.
+\item Remove vertex $A$.
 \item Add edge $(\mathop{start}(a),\mathop{end}(b))$ labeled by $ab$.
 \end{enumerate} 
 \end{definition}
 \begin{definition}
-For given graph $G=(V, E)$, we say that graph $G'' = (V'', E'')$ is a \emph{compressing} of $G$ if $G''$ obtained by any number of compress operation from $G$.
+For given graph $G=(V, E)$, we say that graph $G'' = (V'', E'')$ is a \emph{compressing} of $G$ if $G''$ is obtained from $G$ by any number of compress operation.
 \end{definition}
 \begin{definition}
-For given graph $G=(V, E)$, we say that graph $G'' = (V'', E'')$ is a \emph{compressed ungluing} of $G$ if there exists ungluing $G'$ of $G$, and $G''$ is compressing of $G'$.
+For given graph $G=(V, E)$, we say that graph $G'' = (V'', E'')$ is a \emph{compressed ungluing} of $G$ if there exists an ungluing $G'$ of $G$, and $G''$ is compressing of $G'$.
 \end{definition}
 
 
@@ -114,27 +117,27 @@ For given directed path $P' = (e'_0, \ldots, e`_n)$ in $G' $ we define \emph{dec
 
 \begin{definition}
 
-For given $d$-set $S$ of edge pair info and cycle $C$, $C$ is \emph{valid} cycle iff $((a, b), x) \in S \leftrightarrow  ((a, b), x)$ is $d$-consistent with respect to cycle $C$.
+For given $d$-set $S$ of edge pair info and cycle $C$, $C$ is a \emph{valid} cycle iff $((a, b), x) \in S \leftrightarrow  ((a, b), x)$ is $d$-consistent with respect to cycle $C$.
 
 We say that cycle $C' \in G'$ is \emph{valid} if $dec(C')=C$, $C$ is valid cycle in $G$.
 \end{definition}
 \begin{definition}  
-If for given $d$-set $S$ of edge pair info $\mathop{dec}(\cdot)$ is a bijection between valid cycles in $G$ and $G'$, we'll say that ungluing $G'$ is \emph{$S$-consistent ungluing}.
+For given $d$-set $S$ of edge pair info, if $\mathop{dec}(\cdot)$ is a bijection between sets of valid cycles in $G$ and $G'$, we'll say that ungluing $G'$ is \emph{$S$-consistent ungluing}.
 %We'll call such ungluing \emph{honest}.
 \end{definition}
 
 \begin{definition}  
-If for given $d$-set $S$ of edge pair info $G''$ is a compressing of any $S$-consistent ungluing of $G$, we'll say that $G''$ is \emph{$S$-consistent compressed ungluing}.
+For given $d$-set $S$ of edge pair info, if $G''$ is a compressing of any $S$-consistent ungluing of $G$, we'll say that $G''$ is \emph{$S$-consistent compressed ungluing}.
 \end{definition}
 
 
 \begin{remark}
-  Note that ``ungluing'' is a graph notion that knows nothing about pair info. On the contrary, some ungluing $G'$ can be $S$-consistent with respect to one $d$-set $S$ of paired info and not $S$-consistent with respect to other.
+  Note that ``ungluing'' is a graph notion that knows nothing about pair info. On the contrary, some ungluing $G'$ can be $S$-consistent with respect to one $d$-set $S$ of paired info and not $S$-consistent with respect to other one.
 \end{remark}
 
 
 \begin{remark}
-Above definitions can be simply reformulated for non-cyclic genome.
+Above definitions can be simply reformulated for non-cyclic genomes.
 \end{remark}
 \subsection{Informal reformulation}
 Every valid cycle in $G$ corresponds to consistent with graph and paired information variant of genome. So, our condition means that after our transformation, every possibility for genome must be preserved, and no possible genomic cycle will transform to two different ones.
@@ -152,12 +155,12 @@ Every valid cycle in $G$ corresponds to consistent with graph and paired informa
  \item $\exists a' \in E' : \mathop{end}(a')=v', g(a') = a$
  \item $\exists b' \in E' : \mathop{start}(b')=v', g(b') = b$
 \end{enumerate}
- We call vertex \emph{simple} if indegree and outdegree of this vertex both equal one. Let's denote the set of simple vertices of graph $G'$ by $U_{G'}$. 
+ We call vertex \emph{simple} if both in-degree and out-degree of this vertex both equal to one. Let's denote the set of simple vertices of graph $G'$ by $U_{G'}$. 
 \emph{Graph incoming-outgoing set} is $\bigcup\limits_{v'\in E'\setminus U_{G'}}  O_{v'}$.
-\emph{Measure of complexity} for $G'$ is size of $G'$ graph incoming-outgoing set.
-The above complexity for graph $G$ is the same as the complexity of any compressing of $G$.
+\emph{Measure of complexity} for $G'$ is the size of $G'$ graph incoming-outgoing set.
+The complexity of any compressing of $G$ is equal to complexity of $G$.
 
-There are many other possible measure, for example, minus sum of all edges length.
+There are many other possible measures, for example, minus sum of all edges length.
 
 \section{Connection with rectangle graph}
 
@@ -176,9 +179,9 @@ There are three steps in it (without less of generality, we'll contract blue edg
 \item Gluing vertices with same labels.
 \item Contracting blue edges.
 \end{enumerate}
-Let's denote the resulting graph after all three steps as $G_r = (V_r,E_r)$ and result of first two steps as $G_{rb} = (V_{rb}, E_{rb})$. Each vertex $v_{rb}$ from $V_{rb}$ has a label that are vertex pair info $(A(v_{rb}), B(v_{rb}), x(v_{rb}))$. First element of such triple ($A(v_{rb})$) we call \emph{first mark} of vertex $v_{rb}$ and denote it $\mathop{fm}(v_{rb})$. 
+Let's denote the resulting graph after all three steps as $G_r = (V_r,E_r)$ and result of first two steps as $G_{rb} = (V_{rb}, E_{rb})$. Each vertex $v_{rb}$ from $V_{rb}$ has a label - vertex pair info $(A(v_{rb}), B(v_{rb}), x(v_{rb}))$.We call first element of such triple ($A(v_{rb})$) \emph{first mark} of vertex $v_{rb}$ and denote it $\mathop{fm}(v_{rb})$. 
 
-Since contracting of blue edges is gluing operation, there exists a partition of $V_{rb}$ into family of disjoint subsets $\{H_{rb}(v_r)\}_{v_r\in V_r}$ such that all vertex from $H_{rb}(v_r)$ glued into $v_r$. 
+Since contracting of blue edges is a gluing operation, there exists a partition of $V_{rb}$ into family of disjoint subsets $\{H_{rb}(v_r)\}_{v_r\in V_r}$ such that all vertex from $H_{rb}(v_r)$ glued into $v_r$. 
 For given vertex $v_r \in V_r$, let's consider $H_{rb}(v_r)$. Since two vertices from $G_{rb}$ connected by blue edge have same first mark, we can define mapping $f: V_r\rightarrow V$ by following equation:
 $$f(v_r)=\mathop{fm}(v_{rb}), \text{ where }v_{rb}\text{ any element of } H_{rb}(v_r).$$
 
@@ -207,8 +210,8 @@ we say that vertex pair info $(A, B, x)$ is \emph{obtained} from $P$ if there ex
 For given compressed de Bruijn graph $G=(V,E)$ and $d$-set of edge pair info $P$ 
 we say that vertex-edge pair info $(A, b, x)$ is \emph{obtained} from $P$ if there exists edge pair info $((a,b),y)$ such that:
 \begin{itemize}
-\item[either] $a$ incoming edge for $A$ and $x=y-l_a$, 
-\item[either] $a$ outgoing edge for $A$ and $x=y$. 
+\item[either] $a$ is an incoming edge for $A$ and $x=y-l_a$, 
+\item[either] $a$ is an outgoing edge for $A$ and $x=y$. 
 \end{itemize} 
 We'll denote such edge pair info $((a, b), y)$ (possibly not unique) as \emph{precursor} of vertex-edge pair info $(A, b, x)$.
 
@@ -220,7 +223,7 @@ For vertex $Z$, $P_v(Z) = \{(A, b, x)|(A, b, x) \in P_v; A = Z\}$.
  
 Now we can define \emph{rectangle split operation}:
 \begin{definition}
-For given vertex $Z \in V$ rectangle split operation consisting following steps:
+For given vertex $Z \in V$ rectangle split operation consists of following steps:
 \begin{enumerate}
 \item Part $P_v(Z)$ into equivalence classes by transitive closure of adjacency relationship: $P_v(Z) = \bigcup C_i$. 
 \item For each such class, create vertex $Z_i$.
@@ -246,11 +249,12 @@ Let's fix some order of rectangle split operations.
 While applying rectangle split operations to each vertex except $Z$, we can somehow modify $P$, but the set $P_v(Z)$ stays constant (because vertex-edge paired info, obtained from removed edge $e$ can be still obtained from an edge $e_i$ for some $i$). By construction of rectangle graph, there is a one-one mapping from $C_i$(and so from $Z_i$) to set of all blue-connected components, having $Z$ as first vertex in label. Let's consider union of this mappings for all vertices $Z \ in V$. 
 
 Consider any edge $a_{ij}'=(Z_i, Y_j)$ with label $a$. 
-Without losing of generality we can assume that vertex $Z$ of original graph $G$ split before $Y$. In splitting of $Y$ we have precursor $((a_{i}, b), t)$ (that remapped into $(a_{ij}, b, t)$ ) of vertex-edge pair info's $(Y_j, b, t-l_{a_i}) \in D_j$, such that $\mathop{end}(a_{i}) = Y$ where $P_v(Y) = \bigcup D_j$. In splitting of $Z$ we have precursor $((a, b), t)$ of vertex-edge pair info's $(Z, b, t) \in C_i$, such that $\mathop{start}(a) = Z$. The edge pair info $((a, b), t)$ belongs to $C_i$ and $D_j$, this means that edge pair info $((a, b), t)$ produce rectangle such that red edges of this rectangle connect two blue edges  components that mapped into $C_i$ and $D_j$, and this edges labeled by $a$. We shown that for each edge in our graph $G'$ there exist edge in $G_{rb}$.
+Without losing of generality we can assume that vertex $Z$ of original graph $G$ split before $Y$. While splitting  $Y$, we have a precursor $((a_{i}, b), t)$ (that remapped into $(a_{ij}, b, t)$ ) of vertex-edge pair info's $(Y_j, b, t-l_{a_i}) \in D_j$, such that $\mathop{end}(a_{i}) = Y$ where $P_v(Y) = \bigcup D_j$. While splitting $Z$, we have a precursor $((a, b), t)$ of vertex-edge pair info's $(Z, b, t) \in C_i$, such that $\mathop{start}(a) = Z$. The edge pair info $((a, b), t)$ belongs to $C_i$ and $D_j$, this means that edge pair info $((a, b), t)$ produce rectangle such that red edges of this rectangle connect two blue edges  components that mapped into $C_i$ and $D_j$, and this edges labeled by $a$. So, we shown that for each edge in our graph $G'$ there exist an edge in $G_{rb}$ which respects one-one mapping on vertices and has the same label.
 
-If we take some edge from $G_{rb}$ than we can produce split operation like above. But edge $b$ will be obtained from rectangle. And we produce sequence of precursor $(a,b,t)\rightarrow (a_i,b,t))\rightarrow (a_{ij},b,t)$. This sequence show as that in $G'$ exist edge connecting $Z_i$ and $Y_j$, and labeled with $a$. 
+If we take some edge from $G_{rb}$ then we can produce split operation like above. But edge $b$ will be obtained from rectangle. And we produce sequence of precursor $(a,b,t)\rightarrow (a_i,b,t))\rightarrow (a_{ij},b,t)$. This sequence show as that in $G'$ exist edge connecting $Z_i$ and $Y_j$, and labeled with $a$. 
 \end{proof}
 
+Let's take red edge from $G_{rb}$ with label $a$. It connects two blue-connected components. These components are mapped to $C_i$ and $D_j$ from $G'$. Without less of generality, $Z$ was splitted before $Y$. So, by construction of $G'$, there exists an edge $b \in E$: такое, что  $(Z, b, x)\in C_i$  
 
 
 \begin{theorem}

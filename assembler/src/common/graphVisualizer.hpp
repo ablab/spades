@@ -205,16 +205,16 @@ public:
 
 	virtual void close() = 0;
 
-	virtual void addVertex(VertexId vertexId, const string &label,
+	virtual void AddVertex(VertexId vertexId, const string &label = " ",
 			const string &fillColor = "white") = 0;
 
-	virtual void addEdge(VertexId fromId, VertexId toId, const string &label = " ",
+	virtual void AddEdge(VertexId fromId, VertexId toId, const string &label = " ",
 			const string &color = "black") = 0;
 
 };
 
 template<typename VertexId>
-class DotGraphPrinter : GraphPrinter<VertexId> {
+class DotGraphPrinter : public GraphPrinter<VertexId> {
 private:
 	typedef GraphPrinter<VertexId> super;
 public:
@@ -226,14 +226,14 @@ public:
 		startSimpleGraphRecord(super::out_, super::name_);
 	}
 
-	virtual void addVertex(VertexId vertexId, const string &label,
-			const string &fillColor = "white") {
+	virtual void AddVertex(VertexId vertexId, const string &label,
+			const string &fillColor) {
 		Vertex<VertexId> v(vertexId, label, fillColor);
 		recordVertex<VertexId> (super::out_, v);
 	}
 
-	virtual void addEdge(VertexId fromId, VertexId toId, const string &label = " ",
-			const string &color = "black") {
+	virtual void AddEdge(VertexId fromId, VertexId toId, const string &label,
+			const string &color) {
 		Edge<VertexId> e(fromId, toId, label, color);
 		recordSimpleEdge<VertexId> (super::out_, e);
 	}
@@ -253,12 +253,9 @@ class PairedGraphPrinter {
 private:
 	ostream *out_;
 	map<VertexId, VertexId> vertexMap;
-	int approximateLength_;
-	int currentLength;
 	pair<VertexId, VertexId> currenVertexId;
 public:
 	PairedGraphPrinter(const string &name, ostream &out = cout) {
-		approximateLength_ = -1;
 		out_ = &out;
 		startGraphRecord(*out_, name);
 	}
@@ -268,7 +265,7 @@ public:
 		startGraphRecord(*out_, name);
 	}
 
-	void addVertex(VertexId v1, string label1, VertexId v2, string label2,
+	void AddVertex(VertexId v1, string label1, VertexId v2, string label2,
 			const string &fillColor = "white") {
 		string pairId = constructNodePairId(v1, v2);
 		string pairLabel = constructComplexNodeLabel(v1, label1, v2, label2);
@@ -276,14 +273,14 @@ public:
 		recordVertex<string> (*out_, v);
 	}
 
-	void addVertex(VertexId v1, string label1, const string &fillColor = "white") {
+	void AddVertex(VertexId v1, string label1, const string &fillColor = "white") {
 		string vertexId = constructNodeId(v1);
 		string vertexLabel = constructComplexNodeLabel(v1, label1);
 		Vertex<string> v(vertexId, vertexLabel, fillColor);
 		recordVertex<string> (*out_, v);
 	}
 
-	void addEdge(pair<VertexId, VertexId> v1, pair<VertexId, VertexId> v2,
+	void AddEdge(pair<VertexId, VertexId> v1, pair<VertexId, VertexId> v2,
 			const string label = " ", const string &color = "black") {
 		string v1Id = constructVertexInPairId(v1.first, v1.second);
 		string v2Id = constructVertexInPairId(v2.first, v2.second);
@@ -291,7 +288,7 @@ public:
 		recordEdge(*out_, edge);
 	}
 
-	void addEdge(pair<VertexId, VertexId> v1, VertexId v2,
+	void AddEdge(pair<VertexId, VertexId> v1, VertexId v2,
 			const string label = " ", const string &color = "black") {
 		string v1Id = constructVertexInPairId(v1.first, v1.second);
 		string v2Id = constructVertexInPairId(v2, v2);
@@ -299,7 +296,7 @@ public:
 		recordEdge(*out_, edge);
 	}
 
-	void addEdge(VertexId v1, pair<VertexId, VertexId> v2,
+	void AddEdge(VertexId v1, pair<VertexId, VertexId> v2,
 			const string label = " ", const string &color = "black") {
 		string v1Id = constructVertexInPairId(v1, v1);
 		string v2Id = constructVertexInPairId(v2.first, v2.second);
@@ -307,7 +304,7 @@ public:
 		recordEdge(*out_, edge);
 	}
 
-	void addEdge(VertexId v1, VertexId v2, const string label = " ",
+	void AddEdge(VertexId v1, VertexId v2, const string label = " ",
 			const string &color = "black") {
 		string v1Id = constructVertexInPairId(v1, v1);
 		string v2Id = constructVertexInPairId(v2, v2);
@@ -319,33 +316,21 @@ public:
 		endGraphRecord(*out_);
 	}
 
-	void threadStart(pair<VertexId, VertexId> v, int approximateLength) {
-		approximateLength_ = approximateLength;
-		currentLength = 0;
-		currenVertexId = v;
-	}
-
-	void threadAdd(pair<VertexId, VertexId> v) {
-		addEdge(currenVertexId, v, " ",
-				getColor(currentLength, approximateLength_));
-		currenVertexId = v;
-		currentLength++;
-	}
 };
 
 
 template<class Graph, typename VertexId = typename Graph::VertexId>
-class PairedPrinterWrapper : GraphPrinter<VertexId> {
+class DotPairedGraphPrinter : public GraphPrinter<VertexId> {
 private:
 	typedef GraphPrinter<VertexId> super;
 	const Graph& g_;
 	PairedGraphPrinter<VertexId> paired_printer_;
 public:
-	PairedPrinterWrapper(const Graph& g, const string &name, ostream &out = cout) : super(name, out), g_(g), paired_printer_(name, out) {
+	DotPairedGraphPrinter(const Graph& g, const string &name, ostream &out = cout) : super(name, out), g_(g), paired_printer_(name, out) {
 
 	}
 
-	virtual ~PairedPrinterWrapper() {
+	virtual ~DotPairedGraphPrinter() {
 
 	}
 
@@ -357,14 +342,14 @@ public:
 		endGraphRecord(super::out_);
 	}
 
-	virtual void addVertex(VertexId v, const string &label,
-			const string &fillColor = "white") {
-		paired_printer_.addVertex(v, label, g_.conjugate(v), label);
+	virtual void AddVertex(VertexId v, const string &label,
+			const string& fillColor) {
+		paired_printer_.AddVertex(v, label, g_.conjugate(v), label);
 	}
 
-	virtual void addEdge(VertexId v1, VertexId v2, const string &label = " ",
-			const string &color = "black") {
-		paired_printer_.addEdge(make_pair(v1, g_.conjugate(v1)), make_pair(v2, g_.conjugate(v2)), label, color);
+	virtual void AddEdge(VertexId v1, VertexId v2, const string &label,
+			const string& color) {
+		paired_printer_.AddEdge(make_pair(v1, g_.conjugate(v1)), make_pair(v2, g_.conjugate(v2)), label, color);
 	}
 
 };

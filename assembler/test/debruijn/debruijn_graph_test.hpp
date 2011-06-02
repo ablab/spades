@@ -138,21 +138,6 @@ string print(const Edges& es) {
 	return s + "}";
 }
 
-class ToStringHandler: public TraversalHandler<DeBruijnGraph> {
-	Edges& edges_;
-	DeBruijnGraph g_;
-public:
-	ToStringHandler(Edges& edges, DeBruijnGraph &g) :
-		edges_(edges), g_(g) {
-	}
-
-	virtual void HandleEdge(EdgeId e) {
-		//todo rewrite using graph object (maybe add g_ to superclass)
-		edges_.insert(g_.EdgeNucls(e).str());
-	}
-
-};
-
 const Edges AddComplement(const Edges& edges) {
 	Edges ans;
 	for (auto it = edges.begin(); it != edges.end(); ++it) {

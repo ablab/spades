@@ -39,7 +39,7 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	INFO("Stats counted");
 }
 
-void WriteToDotFile(const Graph &g, const string& file_name, string graph_name,
+void WriteToDotFile(Graph &g, const string& file_name, string graph_name,
 		Path<EdgeId> path = Path<EdgeId> ()) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
 	WriteToFile(/*DE_BRUIJN_DATA_FOLDER + */file_name, graph_name, g, path);
