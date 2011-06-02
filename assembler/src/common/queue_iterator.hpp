@@ -23,6 +23,7 @@ public:
 	}
 
 	void pop() {
+		assert(!storage_.empty());
 		storage_.erase(storage_.begin());
 	}
 
@@ -99,7 +100,6 @@ public:
 	}
 
 	void operator++() {
-		assert(!queue_.empty());
 		if (ready) {
 			queue_.pop();
 		}
