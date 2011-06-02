@@ -241,115 +241,6 @@ void DFS<Graph>::Traverse(TraversalHandler<Graph>* h) {
 	}
 }
 
-template<class Graph>
-class SimpleStatCounter: public TraversalHandler<Graph> {
-	size_t v_count_;
-	size_t e_count_;
-public:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-
-	SimpleStatCounter() :
-		v_count_(0), e_count_(0) {
-	}
-	virtual void HandleVertex(VertexId v) {
-		v_count_++;
-	}
-	virtual void HandleEdge(EdgeId e) {
-		e_count_++;
-	}
-
-	size_t v_count() const {
-		return v_count_;
-	}
-
-	size_t e_count() const {
-		return e_count_;
-	}
-};
-
-template<class Graph, size_t k>
-class StatCounter {
-private:
-	Graph& graph_;
-	const EdgeIndex<k + 1, Graph>& index_;
-	const Sequence genome_;
-public:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-
-	void CountVertexEdgeStat() {
-		size_t edgeNumber = 0;
-		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.isEnd(); ++iterator)
-			edgeNumber++;
-		INFO("Vertex count=" << graph_.size() << "; Edge count="
-				<< edgeNumber);
-	}
-
-	void CountSelfComplement() {
-		size_t sc_number = 0;
-		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.isEnd(); ++iterator)
-			if (graph_.conjugate(*iterator) == (*iterator))
-				sc_number++;
-		TRACE("Self-complement count="<< sc_number);
-	}
-
-	void CheckGenomeMapping() {
-		DEBUG("Mapping genome");
-		size_t break_number = 0;
-		size_t covered_kp1mers = 0;
-		size_t fail = 0;
-		Seq<k + 1> cur = genome_.start<k + 1> () >> 0;
-		bool breaked = false;
-		pair<EdgeId, size_t> cur_position;
-		for (size_t cur_nucl = k; cur_nucl < genome_.size(); cur_nucl++) {
-			cur = cur << genome_[cur_nucl];
-			if (index_.containsInIndex(cur)) {
-				pair<EdgeId, size_t> next = index_.get(cur);
-				if (cur_position.second < graph_.length(cur_position.first)) {
-					if (next.first != cur_position.first || cur_position.second
-							+ 1 != next.second) {
-						fail++;
-					}
-				}
-				covered_kp1mers++;
-				breaked = false;
-			} else {
-				if (!breaked) {
-					breaked = true;
-					break_number++;
-				}
-			}
-		}
-		DEBUG("Genome mapped");
-		DEBUG("Genome mapping results:");
-		DEBUG("Covered k+1-mers:" << covered_kp1mers << " of " << (genome_.size() - k) << "which is " << (100.0 * covered_kp1mers / (genome_.size() - k)) << "%");
-		DEBUG("Covered parts form " << break_number << " contigious parts");
-		DEBUG("Continuity failtures " << fail);
-	}
-
-	void FindErrors() {
-		//TODO
-	}
-
-	void OutputErrorRegions() {
-		//TODO
-	}
-
-	StatCounter(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-			const string& genome) :
-		graph_(g), index_(index), genome_(genome) {
-	}
-
-	void CountStatistics() {
-		CountVertexEdgeStat();
-//		CountSelfComplement();
-//		CheckGenomeMapping();
-//		FindErrors();
-//		OutputErrorRegions();
-	}
-};
-
 /**
  * This class is a representation of how certain sequence is mapped to genome. Needs further adjustment.
  */
@@ -486,6 +377,145 @@ public:
 		return Path<EdgeId> (passed, startPosition, endPosition + 1);
 	}
 
+};
+
+template<class Graph>
+class SimpleStatCounter: public TraversalHandler<Graph> {
+	size_t v_count_;
+	size_t e_count_;
+public:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
+	SimpleStatCounter() :
+		v_count_(0), e_count_(0) {
+	}
+	virtual void HandleVertex(VertexId v) {
+		v_count_++;
+	}
+	virtual void HandleEdge(EdgeId e) {
+		e_count_++;
+	}
+
+	size_t v_count() const {
+		return v_count_;
+	}
+
+	size_t e_count() const {
+		return e_count_;
+	}
+};
+
+template<class Graph, size_t k>
+class StatCounter {
+private:
+	Graph& graph_;
+	const EdgeIndex<k + 1, Graph>& index_;
+	const Sequence genome_;
+public:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
+	void CountVertexEdgeStat() {
+		size_t edgeNumber = 0;
+		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.isEnd(); ++iterator)
+			edgeNumber++;
+		INFO("Vertex count=" << graph_.size() << "; Edge count="
+				<< edgeNumber);
+	}
+
+	void CountBlackEdges() {
+		size_t black_count = 0;
+		size_t edge_count = 0;
+		SimpleSequenceMapper<k, Graph> sequence_mapper(graph_, index_);
+		Path<EdgeId> path = sequence_mapper.MapSequence(Sequence(genome_));
+		const vector<EdgeId> path_edges = path.sequence();
+		set<EdgeId> colored_edges(path_edges.begin(), path_edges.end());
+		for (auto it = graph_.SmartEdgeBegin(); !it.isEnd(); ++it) {
+			edge_count++;
+			if (colored_edges.count(*it) == 0 && colored_edges.count(graph_.conjugate(*it)) == 0) {
+				black_count++;
+			}
+		}
+		INFO("Error edges count: " << black_count << " which is " << 100.0 * black_count / edge_count << "% of all edges");
+	}
+
+	void N50() {
+		SimpleSequenceMapper<k, Graph> sequence_mapper(graph_, index_);
+		Path<EdgeId> path = sequence_mapper.MapSequence(Sequence(genome_));
+		const vector<EdgeId> path_edges = path.sequence();
+		vector<size_t> lengths;
+		size_t sum_all = 0;
+		for(size_t i = 0; i < path.size(); i++) {
+			lengths.push_back(graph_.length(path[i]));
+			sum_all += graph_.length(path[i]);
+		}
+		sort(lengths.begin(), lengths.end());
+		size_t sum = 0;
+		int current = lengths.size();
+		while(current > 0 && 2 * sum < sum_all) {
+			current--;
+			sum += lengths[current];
+		}
+		INFO("N50: " << lengths[current]);
+	}
+
+	void CountSelfComplement() {
+		size_t sc_number = 0;
+		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.isEnd(); ++iterator)
+			if (graph_.conjugate(*iterator) == (*iterator))
+				sc_number++;
+		INFO("Self-complement count="<< sc_number);
+	}
+
+	void CheckGenomeMapping() {
+		INFO("Mapping genome");
+		size_t break_number = 0;
+		size_t covered_kp1mers = 0;
+		size_t fail = 0;
+		Seq<k + 1> cur = genome_.start<k + 1> () >> 0;
+		bool breaked = true;
+		pair<EdgeId, size_t> cur_position;
+		for (size_t cur_nucl = k; cur_nucl < genome_.size(); cur_nucl++) {
+			cur = cur << genome_[cur_nucl];
+			if (index_.containsInIndex(cur)) {
+				pair<EdgeId, size_t> next = index_.get(cur);
+				if (!breaked && cur_position.second + 1 < graph_.length(
+						cur_position.first)) {
+					if (next.first != cur_position.first || cur_position.second
+							+ 1 != next.second) {
+						fail++;
+					}
+				}
+				cur_position = next;
+				covered_kp1mers++;
+				breaked = false;
+			} else {
+				if (!breaked) {
+					breaked = true;
+					break_number++;
+				}
+			}
+		}
+		INFO("Genome mapped");
+		INFO("Genome mapping results:");
+		INFO("Covered k+1-mers:" << covered_kp1mers << " of " << (genome_.size() - k) << " which is " << (100.0 * covered_kp1mers / (genome_.size() - k)) << "%");
+		INFO("Covered parts form " << break_number + 1 << " contigious parts");
+		INFO("Continuity failtures " << fail);
+	}
+
+	StatCounter(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+			const string& genome) :
+		graph_(g), index_(index), genome_(genome) {
+	}
+
+	void CountStatistics() {
+		CountVertexEdgeStat();
+		CountSelfComplement();
+		CheckGenomeMapping();
+		CountBlackEdges();
+		N50();
+	}
 };
 
 }
