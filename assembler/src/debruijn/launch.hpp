@@ -64,21 +64,30 @@ void ProduceInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 void ClipTips(Graph &g) {
 	INFO("Clipping tips");
 	TipComparator<Graph> comparator(g);
-	TipClipper<Graph, TipComparator<Graph>> tc(g, comparator);
+	size_t max_tip_length = CONFIG.read<size_t>("tc_max_tip_length");
+	size_t max_coverage = CONFIG.read<size_t>("tc_max_coverage");
+	double max_relative_coverage = CONFIG.read<double>("tc_max_relative_coverage");
+	TipClipper<Graph, TipComparator<Graph>> tc(g, comparator, max_tip_length, max_coverage, max_relative_coverage);
 	tc.ClipTips();
 }
 
 void RemoveBulges(Graph &g) {
 	INFO("Removing bulges");
-	BulgeRemover<Graph> bulge_remover(5 * g.k());
+	double max_coverage = CONFIG.read<double>("br_max_coverage");
+	double max_relative_coverage = CONFIG.read<double>("br_max_relative_coverage");
+	double max_delta = CONFIG.read<double>("br_max_delta");
+	double max_relative_delta = CONFIG.read<double>("br_max_relative_delta");
+	size_t max_length_div_K = CONFIG.read<int>("br_max_length_div_K");
+	BulgeRemover<Graph> bulge_remover(max_length_div_K * g.k(), max_coverage, max_relative_coverage, max_delta, max_relative_delta);
 	bulge_remover.RemoveBulges(g);
 	INFO("Bulges removed");
 }
 
 void RemoveLowCoverageEdges(Graph &g) {
 	INFO("Removing low coverage edges");
-	double coverage_density = 20.0;
-	LowCoverageEdgeRemover<Graph> erroneous_edge_remover(5 * g.k(), coverage_density);
+	double max_coverage = CONFIG.read<double>("ec_max_coverage");
+	int max_length_div_K = CONFIG.read<int>("ec_max_length_div_K");
+	LowCoverageEdgeRemover<Graph> erroneous_edge_remover(max_length_div_K * g.k(), max_coverage);
 	erroneous_edge_remover.RemoveEdges(g);
 	INFO("Low coverage edges removed");
 }
@@ -158,7 +167,7 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 
 	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 			"edge_graph");
-	paired_index.OutputData(output_folder + "edges_dist.txt");
+//	paired_index.OutputData(output_folder + "edges_dist.txt");
 
 	for (size_t i = 0; i < 3; i++) {
 		ClipTips(g);

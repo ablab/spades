@@ -2,8 +2,27 @@
 
 input_dir  = ./data/input/
 output_dir = ./data/debruijn/
-dataset = QUAKE_CROPPED_400K
+dataset = QUAKE_CROPPED_10K
 reference_genome = MG1655-K12.fasta.gz
+
+# tip clipper:
+
+tc_max_tip_length = 50
+tc_max_coverage = 1000
+tc_max_relative_coverage = 2.0 # tip_cov < this * not_tip_cov
+
+# bulge remover:
+
+br_max_length_div_K = 5
+br_max_coverage = 1000.0
+br_max_relative_coverage = 1.1 # bulge_cov < this * not_bulge_cov
+br_max_delta = 4.0
+br_max_relative_delta = 0.1
+
+# erroneous connections remover:
+
+ec_max_coverage = 20.0 # erroneous_connection < this * not_erroneous_connection_cov
+ec_max_length_div_K = 5
 
 # different datasets:
  
