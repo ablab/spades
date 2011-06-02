@@ -64,7 +64,6 @@ public:
 		for (auto it = super::g_.SmartEdgeBegin(); !it.isEnd(); ++it) {
 			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it));
 		}
-
 	}
 };
 
@@ -93,24 +92,41 @@ class ColoredGraphVisualizer: public PartialGraphVisualizer<Graph> {
 	const string& default_color_;
 	const string& border_vertex_color_;
 
+	bool IsBorder(VertexId v, const set<VertexId>& vertices) {
+		const vector<EdgeId> outgoing_edges = super::g_.OutgoingEdges(v);
+		const vector<EdgeId> incoming_edges = super::g_.IncomingEdges(v);
+		set<EdgeId> adjacent_edges;
+		adjacent_edges.insert(outgoing_edges.begin(), outgoing_edges.end());
+		adjacent_edges.insert(incoming_edges.begin(), incoming_edges.end());
+		for (auto e_it = adjacent_edges.begin(); e_it != adjacent_edges.end(); ++e_it) {
+			if (vertices.count(super::g_.EdgeStart(*e_it)) == 0 || vertices.count(super::g_.EdgeEnd(*e_it)) == 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	string EdgeColor(EdgeId e) {
+		string edge_color = default_color_;
+		auto edge_colors_it = edge_colors_.find(e);
+		if (edge_colors_it != edge_colors_.end()) {
+			edge_color = (*edge_colors_it).second;
+		}
+		return edge_color;
+	}
+
 public:
 	ColoredGraphVisualizer(Graph& g, gvis::GraphPrinter<VertexId>& gp,
 			const map<EdgeId, string>& edge_colors, const string& default_color = "", const string& border_vertex_color = "grey") :
 		super(g, gp), edge_colors_(edge_colors), default_color_(default_color), border_vertex_color_(border_vertex_color) {
 	}
 
-	virtual void Visualize(const vector<VertexId> &vertices) {
+	virtual void Visualize(const vector<VertexId>& vertices) {
+		using namespace std;
 		set<VertexId> vertex_set(vertices.begin(), vertices.end());
+
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
-			const vector<EdgeId> edges = super::g_.OutgoingEdges(*v_it);
-			bool border = false;
-			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
-				VertexId edge_end = super::g_.EdgeEnd(*e_it);
-				if (vertex_set.count(edge_end) == 0) {
-					border = true;
-				}
-			}
-			super::gp_.AddVertex(*v_it, "", border ? border_vertex_color_:"white");
+			super::gp_.AddVertex(*v_it, "", IsBorder(*v_it, vertex_set) ? border_vertex_color_:"white");
 		}
 
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
@@ -118,12 +134,7 @@ public:
 			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
 				VertexId edge_end = super::g_.EdgeEnd(*e_it);
 				if (vertex_set.count(edge_end) > 0) {
-					string edge_color = default_color_;
-					auto edge_colors_it = edge_colors_.find(*e_it);
-					if (edge_colors_it != edge_colors_.end()) {
-						edge_color = (*edge_colors_it).second;
-					}
-					super::gp_.AddEdge(*v_it, edge_end, edge_color);
+					super::gp_.AddEdge(*v_it, edge_end, EdgeColor(*e_it));
 				}
 			}
 		}
@@ -176,7 +187,8 @@ void WriteToFile(const string& file_name, const string& graph_name,
 	filestr.open(file_name.c_str(), fstream::out);
 	gvis::DotPairedGraphPrinter<Graph> gp(g, graph_name, filestr);
 	PathColorer<Graph> path_colorer(g);
-	ColoredGraphVisualizer<Graph> gv(g, gp, path_colorer.ColorPath(path));
+	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath(path);
+	ColoredGraphVisualizer<Graph> gv(g, gp, coloring);
 	AdapterGraphVisualizer<Graph> result_vis(g, gv);
 	result_vis.Visualize();
 	filestr.close();
@@ -188,23 +200,6 @@ void WriteToFile(const string& file_name, const string& graph_name,
 	sgv.Visualize();
 	filestr.close();
 }
-
-template<class Graph>
-class SmartVisualizer {
-private:
-	Graph& graph_;
-	Sequence genome_;
-	const string name_;
-public:
-	SmartVisualizer(Graph &graph, Sequence genome, string name) :
-		graph_(graph), genome_(genome), name_(name) {
-	}
-
-	void Visualize(ostream &out = cout) {
-		PairedGraphPrinter<typename Graph::VertexId> printer(name_, &out);
-
-	}
-};
 
 }
 
