@@ -13,9 +13,11 @@
 /*
  * Most of run-time configurations is located in config.inp file (CONFIG_FILE below).
  */
-#define CONFIG_FILE "./src/debruijn/config.inp"
+#define CONFIG_FILENAME "./src/debruijn/config.inp"
 #define K 35
-#define R 100
-#define I 220
+//#define R 100
+//#define I 220
+
+ConfigFile CONFIG(CONFIG_FILENAME);
 
 #endif /* CONFIG_HPP_ */

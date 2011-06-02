@@ -5,17 +5,15 @@
 #include "config.hpp"
 
 int main() {
-
 	// read configuration file (dataset path etc.)
-	ConfigFile config(CONFIG_FILE);
-	string input_dir = config.read<string>("input_dir");
-	string output_dir = config.read<string>("output_dir");
-	string dataset = config.read<string>("dataset");
-	string genome_filename = input_dir + "/" + config.read<string>("reference_genome");
-	string reads_filename1 = input_dir + "/" + config.read<string>(dataset + "_1");
-	string reads_filename2 = input_dir + "/" + config.read<string>(dataset + "_2");
-	int insert_size = config.read<int>(dataset + "_IS");
-	int dataset_len = config.read<int>(dataset + "_LEN");
+	string input_dir = CONFIG.read<string>("input_dir");
+	string output_dir = CONFIG.read<string>("output_dir");
+	string dataset = CONFIG.read<string>("dataset");
+	string genome_filename = input_dir + "/" + CONFIG.read<string>("reference_genome");
+	string reads_filename1 = input_dir + "/" + CONFIG.read<string>(dataset + "_1");
+	string reads_filename2 = input_dir + "/" + CONFIG.read<string>(dataset + "_2");
+	int insert_size = CONFIG.read<int>(dataset + "_IS");
+	int dataset_len = CONFIG.read<int>(dataset + "_LEN");
 
 	// typedefs :)
 	typedef MateReader<Read, ireadstream>::type ReadStream;
