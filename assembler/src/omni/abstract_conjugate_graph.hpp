@@ -19,13 +19,13 @@ class AbstractConjugateGraph {
 public:
 	class Vertex;
 	typedef Vertex* VertexId;
-	typedef vector<VertexId> Vertices;
+	typedef set<VertexId> Vertices;
 	typedef typename Vertices::const_iterator VertexIterator;
 	class Edge;
 	typedef Edge* EdgeId;
 	typedef vector<EdgeId> Edges;
 	typedef typename Edges::const_iterator EdgeIterator;
-	typedef GraphActionHandler<AbstractConjugateGraph> ActionHandler;
+	typedef GraphActionHandler<VertexId, EdgeId> ActionHandler;
 
 	class Vertex {
 	private:
@@ -335,12 +335,12 @@ public:
 	}
 
 	EdgeId GetUniqueOutgoingEdge(VertexId v) const {
-		assert(CheckUniqueOutgiongEdge(v));
+		assert(CheckUniqueOutgoingEdge(v));
 		return (v->OutgoingEdges())[0];
 	}
 
 	bool CheckUniqueIncomingEdge(VertexId v) const {
-		return CheckUniqueOutgiongEdge(v->conjugate());
+		return CheckUniqueOutgoingEdge(v->conjugate());
 	}
 
 	EdgeId GetUniqueIncomingEdge(VertexId v) const {
@@ -348,7 +348,7 @@ public:
 	}
 
 	vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) {
-		return v->GetEdgesTo(u);
+		return v->OutgoingEdgesTo(u);
 	}
 
 	const EdgeData& data(EdgeId edge) const {
@@ -392,6 +392,24 @@ public:
 		EdgeId result = HiddenAddEdge(v1, v2, data);
 		FireAddEdge(result);
 		return result;
+	}
+
+	bool HasEdge(VertexId v1, VertexId v2, const EdgeData &data) {
+		for (auto it = v1->outgoing_edges_.begin(); it != v1->outgoing_edges_.end(); ++it) {
+			if (((*it)->end() == v2) && (master_.equals((*it)->data(), data))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	EdgeId GetEdge(VertexId v1, VertexId v2, const EdgeData &data) {
+		for (auto it = v1->outgoing_edges_.begin(); it != v1->outgoing_edges_.end(); ++it) {
+			if (((*it)->end() == v2) && (master_.equals((*it)->data(), data))) {
+				return *it;
+			}
+		}
+		return NULL;
 	}
 
 	void DeleteEdge(EdgeId edge) {
