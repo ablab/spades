@@ -1,7 +1,8 @@
 #include "toyexamples.hpp"
 #include "graphBuilder.hpp"
 #include "logging.hpp"
-#include "strobe_read.hpp"
+#include "omni_tools.hpp"
+#include "omnigraph.hpp"
 #include "libs/getopt_pp/getopt_pp_standalone.h"
 #include <iostream>
 
@@ -87,7 +88,15 @@ int main(int argc, char* argv[]) {
 	abruijn::GraphBuilderMaster<CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream>>>> gbm(cr, take, mode);
 	gbm.build();
 
-	INFO("Getting statistics...");
+	INFO("Spelling the reference genome");
+	gbm.SpellGenomeThroughGraph(cut + 219);
+
+	INFO("===== Condensing... =====");
+	omnigraph::Compressor<omnigraph::Omnigraph> compressor(*gbm.graph());
+	compressor.CompressAllVertices();
+	INFO(gbm.graph()->size() << " vertices");
+
+//	INFO("===== Getting statistics... =====");
 //	gbm.graph()->stats(); TODO
 
 	INFO("Outputting graph to " << output_file);
@@ -95,9 +104,6 @@ int main(int argc, char* argv[]) {
 //	gbm.graph()->output(output_stream, !output_single); TODO
 	INFO("Done.");
 	output_stream.close();
-
-	//INFO("Spelling the reference genome");
-	//gbm.SpellGenomeThroughGraph();
 
 	//ABruijnGraphWithGraphVisualizer ( "ATGTGTGACTTTGTATCGTATTGCGGGCGGCGCGCTTATTGTATGCGTAAATTTGGGTCATATTGATCGTAAAATGCGTATGATGCACTGCA", 6, 3 );
 	return 0;
