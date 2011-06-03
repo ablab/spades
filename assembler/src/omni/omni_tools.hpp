@@ -18,7 +18,7 @@ class Compressor {
 
 	bool GoUniqueWay(EdgeId &e) {
 		VertexId u = graph_.EdgeEnd(e);
-		if (!graph_.CheckUniqueOutgiongEdge(u)
+		if (!graph_.CheckUniqueOutgoingEdge(u)
 				|| !graph_.CheckUniqueIncomingEdge(u)) {
 			return false;
 		}
@@ -38,7 +38,7 @@ public:
 	 */
 	bool CompressVertex(VertexId v) {
 		TRACE("Processing vertex " << v << " started");
-		if (!graph_.CheckUniqueOutgiongEdge(v) || !graph_.CheckUniqueIncomingEdge(v)) {
+		if (!graph_.CheckUniqueOutgoingEdge(v) || !graph_.CheckUniqueIncomingEdge(v)) {
 			TRACE("Vertex " << v << " judged NOT compressible. Proceeding to the next vertex");
 			TRACE("Processing vertex " << v << " finished");
 			return false;
