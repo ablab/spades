@@ -294,7 +294,7 @@ extern void ABruijnGraphWithGraphVisualizer ( string genome, unsigned read_size,
   //f.open ( ( genome + ".dot" ).c_str () );
   f.open("1.dot");
 
-  GraphPrinter<string> GP ( genome, f );
+  DotGraphPrinter<string> GP ( genome, f );
 
   CWeightedEdgeSet E;
 
@@ -320,20 +320,20 @@ extern void ABruijnGraphWithGraphVisualizer ( string genome, unsigned read_size,
 	GP.addEdge ( eit -> first . first, eit -> first . second, "", "white");
   }
 
-  /// printing Eulerian cycle
-  CSubstringIterator edge_it ( genome, k + 1, true );
-  string const edge = *edge_it;
-  string from = edge.substr ( 0, k );
-  GP.threadStart( from, 3*genome.size () );
+//  /// printing Eulerian cycle
+//  CSubstringIterator edge_it ( genome, k + 1, true );
+//  string const edge = *edge_it;
+//  string from = edge.substr ( 0, k );
+//  GP.threadStart( from, 3*genome.size () );
+//
+//  for ( ; ! edge_it.IsLast (); edge_it.Advance () )
+//  {
+//    string const edge = *edge_it;
+//    string to = edge.substr ( 1, k );
+//    GP.threadAdd ( to );
+//  }
 
-  for ( ; ! edge_it.IsLast (); edge_it.Advance () )
-  {
-    string const edge = *edge_it;
-    string to = edge.substr ( 1, k );
-    GP.threadAdd ( to );
-  }
-
-  GP.output();
+//  GP.output();
 
   f.close ();
   return;

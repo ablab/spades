@@ -295,6 +295,7 @@ EdgeId DeBruijnGraph::AddMergedEdge(const vector<EdgeId> &path) {
 	sb.append(EdgeNucls(path[0]).Subseq(0, k_));
 	for (vector<EdgeId>::const_iterator it = path.begin(); it != path.end(); ++it) {
 		sb.append(EdgeNucls(*it).Subseq(k_));
+//		sb.append(EdgeNucls(*it));
 	}
 	return HiddenAddEdge(v1, v2, sb.BuildSequence());
 }
@@ -322,7 +323,8 @@ pair<EdgeId, EdgeId> DeBruijnGraph::SplitEdge(EdgeId edge, size_t position) {
 	assert(edge != conjugate(edge));
 	Sequence s1 = EdgeNucls(edge).Subseq(0, position + k_);
 	Sequence s2 = EdgeNucls(edge).Subseq(position);
-	Sequence newSequence = s1 + s2.Subseq(k_);
+	assert(s1 + s2.Subseq(k_) == EdgeNucls(edge));
+//	Sequence newSequence = s1 + s2.Subseq(k_);
 	VertexId splitVertex = HiddenAddVertex();
 	EdgeId newEdge1 = HiddenAddEdge(this->EdgeStart(edge), splitVertex, s1);
 	EdgeId newEdge2 = HiddenAddEdge(splitVertex, this->EdgeEnd(edge), s2);

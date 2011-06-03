@@ -13,10 +13,10 @@
 //#include "utils.hpp"
 #include "omni_utils.hpp"
 #include "omni_tools.hpp"
-
-#define DEFAULT_COVERAGE_BOUND 1000
-#define DEFAULT_RELATIVE_COVERAGE_BOUND 2.
-#define DEFAULT_MAX_TIP_LENGTH 50
+//
+//#define DEFAULT_COVERAGE_BOUND 1000
+//#define DEFAULT_RELATIVE_COVERAGE_BOUND 2.0
+//#define DEFAULT_MAX_TIP_LENGTH 50
 
 namespace omnigraph {
 
@@ -35,9 +35,9 @@ public:
 	 * TipComparator should never be created with default constructor but it is necessary on order for
 	 * code to compile.
 	 */
-	TipComparator() {
-		assert(false);
-	}
+	//	TipComparator() {
+	//		assert(false);
+	//	}
 
 	/**
 	 * Construct TipComparator for given graph
@@ -70,9 +70,9 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
-	const size_t maxTipLength_;
-	const size_t coverageBound_;
-	const double relativeCoverageBound_;
+	const size_t max_tip_length_;
+	const size_t max_coverage_;
+	const double max_relative_coverage_;
 
 	Graph &graph_;
 	Comparator comparator_;
@@ -86,7 +86,7 @@ private:
 		if (!graph_.CheckUniqueIncomingEdge(v) || !graph_.IsDeadEnd(v))
 			return false;
 		EdgeId edge = graph_.GetUniqueIncomingEdge(v);
-		return graph_.length(edge) <= maxTipLength_;
+		return graph_.length(edge) <= max_tip_length_;
 	}
 
 	/**
@@ -126,14 +126,14 @@ private:
 	 * @param tip edge to check
 	 */
 	bool TipShouldBeRemoved(EdgeId tip) {
-		if (graph_.length(tip) > maxTipLength_ || graph_.coverage(tip)
-				> coverageBound_)
+		if (graph_.length(tip) > max_tip_length_ || graph_.coverage(tip)
+				> max_coverage_)
 			return false;
 		VertexId splitVertex = graph_.EdgeStart(tip);
 		if (graph_.CheckUniqueOutgiongEdge(splitVertex))
 			return false;
-		double maxCoverage = MaxCompetitorCoverage(splitVertex, tip);
-		return graph_.coverage(tip) <= relativeCoverageBound_ * maxCoverage;
+		double max_coverage = MaxCompetitorCoverage(splitVertex, tip);
+		return graph_.coverage(tip) <= max_relative_coverage_ * max_coverage;
 	}
 
 	void compressSplitVertex(VertexId splitVertex) {
@@ -176,22 +176,11 @@ public:
 	 * Create TipClipper with specified parameters. Those parameters could probably be replaced later with
 	 * certain generic checker class.
 	 */
-	TipClipper(Graph &graph, Comparator comparator, size_t maxTipLength,
-			size_t coverageBound,
-			double relativeCoverageBound = DEFAULT_RELATIVE_COVERAGE_BOUND) :
-		maxTipLength_(maxTipLength), coverageBound_(coverageBound),
-				relativeCoverageBound_(coverageBound), graph_(graph),
+	TipClipper(Graph &graph, Comparator comparator, size_t max_tip_length,
+			size_t max_coverage, double max_relative_coverage) :
+		max_tip_length_(max_tip_length), max_coverage_(max_coverage),
+				max_relative_coverage_(max_relative_coverage), graph_(graph),
 				comparator_(comparator) {
-	}
-
-	/**
-	 * Create TipClipper with defaultparameters.
-	 */
-	TipClipper(Graph &graph, Comparator comparator) :
-		maxTipLength_(DEFAULT_MAX_TIP_LENGTH),
-				coverageBound_(DEFAULT_COVERAGE_BOUND),
-				relativeCoverageBound_(DEFAULT_RELATIVE_COVERAGE_BOUND),
-				graph_(graph), comparator_(comparator) {
 	}
 
 	/**

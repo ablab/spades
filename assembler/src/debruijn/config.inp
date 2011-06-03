@@ -5,29 +5,48 @@ output_dir = ./data/debruijn/
 dataset = QUAKE_CROPPED_10K
 reference_genome = MG1655-K12.fasta.gz
 
+# tip clipper:
+
+tc_max_tip_length = 50
+tc_max_coverage = 1000
+tc_max_relative_coverage = 2.0 # tip_cov < this * not_tip_cov
+
+# bulge remover:
+
+br_max_length_div_K = 5
+br_max_coverage = 1000.0
+br_max_relative_coverage = 1.1 # bulge_cov < this * not_bulge_cov
+br_max_delta = 4.0
+br_max_relative_delta = 0.1
+
+# erroneous connections remover:
+
+ec_max_coverage = 20.0 # erroneous_connection < this * not_erroneous_connection_cov
+ec_max_length_div_K = 5
+
 # different datasets:
  
-QUAKE_CROPPED_1K_1 = s_6.first1000_1.fastq.gz
-QUAKE_CROPPED_1K_2 = s_6.first1000_2.fastq.gz
+QUAKE_CROPPED_1K_1 = cropped/s_6.first1000_1.fastq.gz
+QUAKE_CROPPED_1K_2 = cropped/s_6.first1000_2.fastq.gz
 QUAKE_CROPPED_1K_IS = 220 # insert size
 QUAKE_CROPPED_1K_LEN = 1000 # total size
 
-QUAKE_CROPPED_10K_1 = s_6.first10000_1.fastq.gz
-QUAKE_CROPPED_10K_2 = s_6.first10000_2.fastq.gz
+QUAKE_CROPPED_10K_1 = cropped/s_6.first10000_1.fastq.gz
+QUAKE_CROPPED_10K_2 = cropped/s_6.first10000_2.fastq.gz
 QUAKE_CROPPED_10K_IS = 220 # insert size
 QUAKE_CROPPED_10K_LEN = 10000 # total size
 
-QUAKE_CROPPED_100K_1 = s_6.first100000_1.fastq.gz
-QUAKE_CROPPED_100K_2 = s_6.first100000_2.fastq.gz
+QUAKE_CROPPED_100K_1 = cropped/s_6.first100000_1.fastq.gz
+QUAKE_CROPPED_100K_2 = cropped/s_6.first100000_2.fastq.gz
 QUAKE_CROPPED_100K_IS = 220 # insert size
 QUAKE_CROPPED_100K_LEN = 100000 # total size
 
-QUAKE_CROPPED_400K_1 = s_6.first400000_1.fastq.gz
-QUAKE_CROPPED_400K_2 = s_6.first400000_2.fastq.gz
+QUAKE_CROPPED_400K_1 = cropped/s_6.first400000_1.fastq.gz
+QUAKE_CROPPED_400K_2 = cropped/s_6.first400000_2.fastq.gz
 QUAKE_CROPPED_400K_IS = 220 # insert size
 QUAKE_CROPPED_400K_LEN = 400000 # total size
 
-QUAKE_FULL_1 = s_6_1.cor.fastq.gz
-QUAKE_FULL_2 = s_6_2.cor.fastq.gz
+QUAKE_FULL_1 = EAS20_8_Quake/s_6_1.cor.fastq.gz
+QUAKE_FULL_2 = EAS20_8_Quake/s_6_2.cor.fastq.gz
 QUAKE_FULL_IS = 220 # insert size
 QUAKE_FULL_LEN = 4639675 # total size

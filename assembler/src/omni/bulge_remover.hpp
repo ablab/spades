@@ -20,31 +20,31 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	void RemoveBulges(Graph& g);
 
-	BulgeRemover(size_t max_length, double coverage_threshold = 1000.,
-			double coverage_gap = 1.1, double delta_threshold = 4,
-			double relative_delta = 0.1) :
-		max_length_(max_length), coverage_threshold_(coverage_threshold),
-				coverage_gap_(coverage_gap), delta_threshold_(delta_threshold),
-				relative_delta_(relative_delta) {
-		assert(coverage_gap_ > 1.);
+	BulgeRemover(size_t max_length, double max_coverage,
+			double max_relative_coverage, double max_delta,
+			double max_relative_delta) :
+		max_length_(max_length), max_coverage_(max_coverage),
+				max_relative_coverage_(max_relative_coverage),
+				max_delta_(max_delta), max_relative_delta_(max_relative_delta) {
+		assert(max_relative_coverage_ > 1.);
 	}
 
 private:
 
 	size_t max_length_;
-	double coverage_threshold_;
-	double coverage_gap_;
-	double delta_threshold_;
-	double relative_delta_;
+	double max_coverage_;
+	double max_relative_coverage_;
+	double max_delta_;
+	double max_relative_delta_;
 
 	bool PossibleBulgeEdge(const Graph& g, EdgeId e);
 
 	bool PathCondition(const Graph& g, EdgeId edge, const vector<EdgeId>& path);
 
 	bool BulgeCondition(const Graph& g, EdgeId edge, const vector<EdgeId>& path) {
-		return PathAvgCoverage(g, path) > coverage_gap_ * g.coverage(edge)
-				&& PathCondition(g, edge, path);
-		//		return path_and_coverage.second > coverage_gap * g.kplus_one_mer_coverage(edge);
+		return PathAvgCoverage(g, path) > max_relative_coverage_ * g.coverage(
+				edge) && PathCondition(g, edge, path);
+		//		return path_and_coverage.second > max_relative_coverage * g.kplus_one_mer_coverage(edge);
 	}
 
 	double PathAvgCoverage(const Graph& g, const vector<EdgeId> path);
@@ -58,7 +58,7 @@ private:
 
 template<class Graph>
 bool BulgeRemover<Graph>::PossibleBulgeEdge(const Graph& g, EdgeId e) {
-	return g.length(e) <= max_length_ && g.coverage(e) < coverage_threshold_;
+	return g.length(e) <= max_length_ && g.coverage(e) < max_coverage_;
 }
 
 template<class Graph>
@@ -122,14 +122,14 @@ void BulgeRemover<Graph>::RemoveBulges(Graph& g) {
 		EdgeId edge = *iterator;
 		TRACE(
 				"Considering edge of length " << g.length(edge)
-						<< " and avg coverage " << g.coverage(edge));
+				<< " and avg coverage " << g.coverage(edge));
 		TRACE("Is possible bulge " << PossibleBulgeEdge(g, edge));
 		if (PossibleBulgeEdge(g, edge)) {
 			size_t kplus_one_mer_coverage = std::floor(
 					g.length(edge) * g.coverage(edge) + 0.5);
 			TRACE(
 					"Processing edge " << g.EdgeNucls(edge) << " and coverage "
-							<< kplus_one_mer_coverage);
+					<< kplus_one_mer_coverage);
 
 			VertexId start = g.EdgeStart(edge);
 			TRACE("Start " << g.VertexNucls(start));
@@ -138,10 +138,10 @@ void BulgeRemover<Graph>::RemoveBulges(Graph& g) {
 			TRACE("End " << g.VertexNucls(end));
 
 			size_t length_threshold = g.length(edge) + std::max(
-					relative_delta_ * g.length(edge), delta_threshold_);
+					max_relative_delta_ * g.length(edge), max_delta_);
 			TRACE(
 					"Looking for best path between start and end shorter than "
-							<< length_threshold);
+					<< length_threshold);
 
 			pair<vector<EdgeId> , int> path_and_coverage = BestPath(g, start,
 					end, length_threshold);
@@ -150,14 +150,14 @@ void BulgeRemover<Graph>::RemoveBulges(Graph& g) {
 					/ PathLength(g, path);
 			TRACE(
 					"Best path with coverage " << path_coverage << " is "
-							<< PrintPath<Graph> (g, path));
+					<< PrintPath<Graph> (g, path));
 
 			//if edge was returned, this condition will fail
 			if (BulgeCondition(g, edge, path)) {
 				TRACE("Satisfied condition");
 				TRACE(
 						"Deleting edge " << g.EdgeNucls(edge)
-								<< " and compressing ends");
+						<< " and compressing ends");
 				g.DeleteEdge(edge);
 				g.CompressVertex(start);
 				g.CompressVertex(end);
@@ -178,7 +178,7 @@ pair<vector<typename Graph::EdgeId> , int> BulgeRemover<Graph>::BestPath(
 
 	TRACE(
 			"Recursive call for vertex " << g.VertexNucls(start)
-					<< " path length left " << length_left);
+			<< " path length left " << length_left);
 	if (length_left < 0) {
 		TRACE("Length threshold was exceeded, returning no path");
 		return make_pair(vector<EdgeId> (0), -1);
@@ -208,8 +208,8 @@ pair<vector<typename Graph::EdgeId> , int> BulgeRemover<Graph>::BestPath(
 	}
 	TRACE(
 			"Best path from vertex " << g.VertexNucls(start) << " is "
-					<< PrintPath(g, best_path) << " with coverage "
-					<< best_path_coverage);
+			<< PrintPath(g, best_path) << " with coverage "
+			<< best_path_coverage);
 	return make_pair(best_path, best_path_coverage);
 }
 
