@@ -243,8 +243,12 @@ void GraphBuilder::addToGraph(Sequence s) {
 	}
 	for (size_t i = 0; i + 1 < vs.size(); ++i) {
 		omnigraph::OmniEdge oe(index[i + 1] - index[i]);
-		graph_.AddEdge(vs[i], vs[i + 1], oe);
+//		graph_.AddEdge(vs[i], vs[i + 1], oe);
 //		graph_.addEdge(vs[i], vs[i + 1], s.Subseq(index[i], index[i + 1] + K));
+		Graph::EdgeId e = graph_.GetEdge(vs[i], vs[i + 1], oe);
+		if (e == NULL) {
+			graph_.AddEdge(vs[i], vs[i + 1], oe);
+		}
 	}
 }
 
