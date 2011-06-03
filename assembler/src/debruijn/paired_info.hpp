@@ -16,7 +16,7 @@ namespace debruijn_graph {
  * graph.
  */
 template<class Graph>
-class PairedInfoIndex: public GraphActionHandler<Graph> {
+class PairedInfoIndex: public GraphActionHandler<typename Graph::VertexId, typename Graph::EdgeId> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
@@ -268,7 +268,7 @@ public:
 	//begin-end insert size supposed
 	PairedInfoIndex(Graph &g,
 			int max_difference = MERGE_DATA_ABSOLUTE_DIFFERENCE) :
-		GraphActionHandler<Graph> ("PairedInfoIndex"),
+				GraphActionHandler<typename Graph::VertexId, typename Graph::EdgeId> ("PairedInfoIndex"),
 				max_difference_(max_difference), graph_(g) {
 		g.AddActionHandler(this);
 	}

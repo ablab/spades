@@ -6,7 +6,7 @@
 namespace debruijn_graph {
 
 template<class Graph>
-class CoverageHandler: public GraphActionHandler<Graph> {
+class CoverageHandler: public GraphActionHandler<typename Graph::VertexId, typename Graph::EdgeId> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
@@ -35,7 +35,7 @@ private:
 
 public:
 	CoverageHandler(Graph &g) :
-		GraphActionHandler<Graph> ("CoverageHandler"), g_(g) {
+		GraphActionHandler<VertexId, EdgeId> ("CoverageHandler"), g_(g) {
 		g_.AddActionHandler(this);
 	}
 
