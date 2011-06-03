@@ -21,6 +21,7 @@ namespace debruijn_graph {
 
 using omnigraph::SmartVertexIterator;
 
+
 template<class Graph>
 class RepeatResolver {
 	typedef typename Graph::EdgeId EdgeId;
@@ -35,6 +36,37 @@ class RepeatResolver {
 	typedef map<VertexId,set<EdgeId> > NewVertexMap;
 	typedef map <VertexId, set<VertexId> > VertexIdMap;
 public:
+
+	class EdgeInfo{
+
+	public:
+		EdgeInfo(EdgeId edge_, int d_) : edge(edge_), d(d_){
+
+		}
+		inline EdgeId getEdge(){
+			return edge;
+		}
+		bool isAdjacent(EdgeInfo other_info) {
+			VertexId v_s = EdgeStart(edge);
+			VertexId v_e = EdgeEnd(edge);
+			EdgeId other_edge = other_info.getEdge();
+			VertexId other_v_s = EdgeStart(other_edge);
+			VertexId other_v_e = EdgeEnd(other_edge);
+			if (v_e == other_v_s || v_s == other_v_e)
+				return true;
+			else
+				return false;
+		}
+
+		inline int getDistance(){
+			return d;
+		}
+	private:
+		EdgeId edge;
+		int d;
+	};
+
+
 	RepeatResolver(int leap = 0) : leap_(leap), new_graph(K), new_index(new_graph){
 
 
