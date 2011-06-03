@@ -227,13 +227,13 @@ public:
 	}
 
 	virtual void AddVertex(VertexId vertexId, const string &label,
-			const string &fillColor) {
+			const string &fillColor = "white") {
 		Vertex<VertexId> v(vertexId, label, fillColor);
 		recordVertex<VertexId> (super::out_, v);
 	}
 
 	virtual void AddEdge(VertexId fromId, VertexId toId, const string &label,
-			const string &color) {
+			const string &color = "black") {
 		Edge<VertexId> e(fromId, toId, label, color);
 		recordSimpleEdge<VertexId> (super::out_, e);
 	}
