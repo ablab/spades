@@ -108,8 +108,8 @@ private:
 	//	}
 
 	double MaxCompetitorCoverage(VertexId splitVertex, EdgeId tip) {
-		assert(!graph_.CheckUniqueOutgiongEdge(splitVertex));
-		if (graph_.CheckUniqueOutgiongEdge(splitVertex)) {
+		assert(!graph_.CheckUniqueOutgoingEdge(splitVertex));
+		if (graph_.CheckUniqueOutgoingEdge(splitVertex)) {
 			assert(false);//such situation should never occur
 		}
 		const vector<EdgeId> competitors = graph_.OutgoingEdges(splitVertex);
@@ -130,7 +130,7 @@ private:
 				> max_coverage_)
 			return false;
 		VertexId splitVertex = graph_.EdgeStart(tip);
-		if (graph_.CheckUniqueOutgiongEdge(splitVertex))
+		if (graph_.CheckUniqueOutgoingEdge(splitVertex))
 			return false;
 		double max_coverage = MaxCompetitorCoverage(splitVertex, tip);
 		return graph_.coverage(tip) <= max_relative_coverage_ * max_coverage;

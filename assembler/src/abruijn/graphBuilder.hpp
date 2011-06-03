@@ -212,7 +212,7 @@ public:
 		return &gb_.graph_;
 	}
 
-	void SpellGenomeThroughGraph () {
+	void SpellGenomeThroughGraph (size_t cut) {
 		/// we assume here that the graph is already built
 
 		/// outputting A Bruijn graph
@@ -235,7 +235,6 @@ public:
 		genome_stream.close();
 
 		Sequence ref_seq = ref_genome.getSequence();
-		size_t const cut = 100000;
 		if ( cut > 0 )
 			ref_seq = ref_seq.Subseq(0, cut);
 
@@ -262,7 +261,7 @@ public:
 
 				current_index = i;
 				current_kmer  = ref_genome.getSequence().Subseq(i,i+K);
-				if ( ! graph()->hasVertex( current_kmer ) ) {
+				if (!gb_.hasVertex( current_kmer)) {
 					++num_of_missing_kmers;
 					INFO("k-mer " << current_kmer << " is present in the genome, but not in the graph");
 					continue;
@@ -278,12 +277,12 @@ public:
 					current_kmer  = ref_genome.getSequence().Subseq( i,i+K );
 					//printer.threadAdd( graph()->getVertex( current_kmer) );
 
-					int edge_length = current_index - previous_index;
+					size_t edge_length = current_index - previous_index;
 					assert ( edge_length > 0 );
 
-					assert ( graph()->hasVertex(previous_kmer) && graph()->hasVertex(current_kmer) );
-					Graph::VertexId previous_vertex = graph()->getVertex(previous_kmer);
-					Graph::VertexId current_vertex  = graph()->getVertex(current_kmer);
+					assert (gb_.hasVertex(previous_kmer) && gb_.hasVertex(current_kmer));
+					Graph::VertexId previous_vertex = gb_.getOrCreateVertex(previous_kmer);
+					Graph::VertexId current_vertex  = gb_.getOrCreateVertex(current_kmer);
 					assert ( previous_vertex && current_vertex );
 
 					vector<Graph::EdgeId> edges = graph()->GetEdgesBetween(previous_vertex, current_vertex);
@@ -294,7 +293,7 @@ public:
 					else {
 						bool occ = false;
 						for (auto it = edges.begin(); it != edges.end(); ++it) {
-							occ |= (((omnigraph::OmniEdge) *it).length() == edge_length);
+							occ |= (graph()->data(*it).length() == edge_length);
 						}
 						if (!occ) {
 							INFO ( "missing length" );

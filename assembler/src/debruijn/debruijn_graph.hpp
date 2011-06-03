@@ -131,7 +131,7 @@ public:
 
 	typedef set<Vertex*>::const_iterator VertexIterator;
 	typedef Vertex::EdgeIterator EdgeIterator;
-	typedef GraphActionHandler<DeBruijnGraph> ActionHandler;
+	typedef GraphActionHandler<VertexId, EdgeId> ActionHandler;
 
 private:
 	const size_t k_;
@@ -339,7 +339,7 @@ public:
 	 * Method returns true if vertex has only one outgoing edge and false otherwise.
 	 * @param v vertex to check
 	 */
-	bool CheckUniqueOutgiongEdge(VertexId v) const {
+	bool CheckUniqueOutgoingEdge(VertexId v) const {
 		return v->OutgoingEdgeCount() == 1;
 	}
 
@@ -348,7 +348,7 @@ public:
 	 * @param v vertex to find unique outgoing edge for
 	 */
 	EdgeId GetUniqueOutgoingEdge(VertexId v) const {
-		assert(CheckUniqueOutgiongEdge(v));
+		assert(CheckUniqueOutgoingEdge(v));
 		return (v->OutgoingEdges())[0];
 	}
 
@@ -357,7 +357,7 @@ public:
 	 * @param v vertex to check
 	 */
 	bool CheckUniqueIncomingEdge(VertexId v) const {
-		return CheckUniqueOutgiongEdge(v->conjugate());
+		return CheckUniqueOutgoingEdge(v->conjugate());
 	}
 
 	/**

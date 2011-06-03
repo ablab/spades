@@ -314,10 +314,10 @@ extern void ABruijnGraphWithGraphVisualizer ( string genome, unsigned read_size,
   for ( CWeightedEdgeSet::const_iterator eit = E.begin (); eit != E.end (); ++ eit )
   {
     //f << eit -> first . first << "->" << eit -> first . second << "[color=grey,label=\"" << eit -> second << "\"]" << endl;
-	GP.addVertex ( eit -> first . first, eit -> first . first );
-    GP.addVertex ( eit -> first . second, eit -> first . second );
+	GP.AddVertex ( eit -> first . first, eit -> first . first );
+    GP.AddVertex ( eit -> first . second, eit -> first . second );
     string edge_label = toStr(eit -> second);
-	GP.addEdge ( eit -> first . first, eit -> first . second, "", "white");
+	GP.AddEdge ( eit -> first . first, eit -> first . second, "", "white");
   }
 
 //  /// printing Eulerian cycle
