@@ -33,5 +33,4 @@ clean:
 test: ct at dt #pt
 
 #temporary fix
-all: a b d p ct #test
-
+all: a b d ct #test p
