@@ -45,13 +45,15 @@ public:
 		}
 		TRACE("Vertex " << v << " judged compressible");
 		EdgeId e = graph_.GetUniqueOutgoingEdge(v);
-		while (GoUniqueWay(e)) {
+		EdgeId start_edge = e;
+		while (GoUniqueWay(e) && e != start_edge) {
 		}
 		vector<EdgeId> mergeList;
 		e = graph_.conjugate(e);
+		start_edge = graph_.conjugate(start_edge);
 		do {
 			mergeList.push_back(e);
-		} while (GoUniqueWay(e));
+		} while (GoUniqueWay(e) && e != start_edge);
 		EdgeId new_edge = graph_.MergePath(mergeList);
 		TRACE("Vertex " << v << " compressed and is now part of edge " << new_edge);
 		TRACE("Processing vertex " << v << " finished");
