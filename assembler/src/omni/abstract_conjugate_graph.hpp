@@ -25,7 +25,7 @@ public:
 	typedef Edge* EdgeId;
 	typedef vector<EdgeId> Edges;
 	typedef typename Edges::const_iterator EdgeIterator;
-	typedef GraphActionHandler<VertexId, EdgeId> ActionHandler;
+	typedef ActionHandler<VertexId, EdgeId> Handler;
 
 	class Vertex {
 	private:
@@ -152,7 +152,7 @@ public:
 	const PairedHandlerApplier<AbstractConjugateGraph<VertexData, EdgeData,
 			DataMaster> > applier_;
 
-	vector<ActionHandler*> action_handler_list_;
+	vector<Handler*> action_handler_list_;
 
 	set<Vertex*> vertices_;
 
@@ -300,12 +300,12 @@ public:
 		}
 	}
 
-	void AddActionHandler(ActionHandler* action_handler) {
+	void AddActionHandler(Handler* action_handler) {
 		TRACE("Action handler added");
 		action_handler_list_.push_back(action_handler);
 	}
 
-	bool RemoveActionHandler(ActionHandler* action_handler) {
+	bool RemoveActionHandler(Handler* action_handler) {
 		TRACE("Trying to remove action handler");
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
