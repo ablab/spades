@@ -1,10 +1,10 @@
 #ifndef VISUALIZATIONUTILS_HPP_
 #define VISUALIZATIONUTILS_HPP_
 
-#include "utils.hpp"
 #include "graphVisualizer.hpp"
+#include "omni_utils.hpp"
 
-namespace debruijn_graph {
+namespace omnigraph {
 
 using gvis::PairedGraphPrinter;
 
@@ -183,7 +183,7 @@ public:
 		graph_(graph) {
 	}
 
-	map<EdgeId, string> ColorPath(const debruijn_graph::Path<EdgeId> path) {
+	map<EdgeId, string> ColorPath(const Path<EdgeId> path) {
 		map<EdgeId, string> colors;
 		constructColorMap(colors, graph_, path);
 		return colors;
