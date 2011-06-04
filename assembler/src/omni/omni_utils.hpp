@@ -10,10 +10,10 @@ namespace omnigraph {
 LOGGER("omg.graph");
 
 /**
- * GraphActionHandler is base listening class for graph events. All structures and information storages
+ * ActionHandler is base listening class for graph events. All structures and information storages
  * which are meant to synchronize with graph should use this structure. In order to make handler listen
  * to graph events one should add it to graph listeners.
- * Normally structure itself extends GraphActionHandler and overrides several handling methods. In
+ * Normally structure itself extends ActionHandler and overrides several handling methods. In
  * constructor it adds itself to graph handler list and removes itself form this list in destructor.
  * All events are divided into two levels: low level events and high level events.
  * Low level events are addition/deletion of vertices/edges. These events should be triggered only after
@@ -117,7 +117,6 @@ public:
 	}
 
 	virtual ~GraphActionHandler() {
-
 	}
 };
 
