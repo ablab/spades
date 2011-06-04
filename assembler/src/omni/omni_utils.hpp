@@ -22,14 +22,14 @@ LOGGER("omg.graph");
  * consistent. Now high level events are merge, glue and split. This list can be extended in near future.
  */
 template<typename VertexId, typename EdgeId>
-class GraphActionHandler {
+class ActionHandler {
 public:
 	const string handler_name_;
 
 	/**
 	 * Create action handler with given name. With this name one can find out what tipe of handler is it.
 	 */
-	GraphActionHandler(const string &name) :
+	ActionHandler(const string &name) :
 		handler_name_(name) {
 	}
 
@@ -104,7 +104,20 @@ public:
 			EdgeId new_edge2) {
 	}
 
+	virtual ~ActionHandler() {
+	}
+};
+
+template<class Graph>
+class GraphActionHandler : public ActionHandler<typename Graph::VertexId, typename Graph::EdgeId> {
+	typedef ActionHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
+public:
+	GraphActionHandler(const string& name) : base(name) {
+
+	}
+
 	virtual ~GraphActionHandler() {
+
 	}
 };
 
@@ -123,24 +136,24 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 
 	virtual void
-	ApplyAdd(GraphActionHandler<VertexId, EdgeId> *handler, VertexId v) const = 0;
+	ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const = 0;
 
 	virtual void
-	ApplyAdd(GraphActionHandler<VertexId, EdgeId> *handler, EdgeId e) const = 0;
+	ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const = 0;
 
 	virtual void
-	ApplyDelete(GraphActionHandler<VertexId, EdgeId> *handler, VertexId v) const = 0;
+	ApplyDelete(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const = 0;
 
 	virtual void
-	ApplyDelete(GraphActionHandler<VertexId, EdgeId> *handler, EdgeId e) const = 0;
+	ApplyDelete(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const = 0;
 
-	virtual void ApplyMerge(GraphActionHandler<VertexId, EdgeId> *handler,
+	virtual void ApplyMerge(ActionHandler<VertexId, EdgeId> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const = 0;
 
-	virtual void ApplyGlue(GraphActionHandler<VertexId, EdgeId> *handler, EdgeId new_edge, EdgeId edge1,
+	virtual void ApplyGlue(ActionHandler<VertexId, EdgeId> *handler, EdgeId new_edge, EdgeId edge1,
 			EdgeId edge2) const = 0;
 
-	virtual void ApplySplit(GraphActionHandler<VertexId, EdgeId> *handler,
+	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
 			EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const = 0;
 
 	virtual ~HandlerApplier() {
@@ -156,33 +169,33 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
-	virtual void ApplyAdd(GraphActionHandler<VertexId, EdgeId> *handler, VertexId v) const {
+	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const {
 		handler.HandleAdd(v);
 	}
 
-	virtual void ApplyAdd(GraphActionHandler<VertexId, EdgeId> *handler, EdgeId e) const {
+	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const {
 		handler.HandleAdd(e);
 	}
 
-	virtual void ApplyDelete(GraphActionHandler<VertexId, EdgeId> *handler, VertexId v) const {
+	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const {
 		handler.HandleDelete(v);
 	}
 
-	virtual void ApplyDelete(GraphActionHandler<VertexId, EdgeId> *handler, EdgeId e) const {
+	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const {
 		handler.HandleDelete(e);
 	}
 
-	virtual void ApplyMerge(GraphActionHandler<VertexId, EdgeId> *handler,
+	virtual void ApplyMerge(ActionHandler<VertexId, EdgeId> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const {
 		handler.HandleMerge(old_edges, new_edge);
 	}
 
-	virtual void ApplyGlue(GraphActionHandler<VertexId, EdgeId> *handler, EdgeId old_edge,
+	virtual void ApplyGlue(ActionHandler<VertexId, EdgeId> *handler, EdgeId old_edge,
 			EdgeId new_edge) const {
 		handler.HandleGlue(old_edge, new_edge);
 	}
 
-	virtual void ApplySplit(GraphActionHandler<VertexId, EdgeId> *handler,
+	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
 			EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) const {
 		handler.HandleSplit(old_edge, new_edge1, new_edge2);
 	}
@@ -209,7 +222,7 @@ public:
 		graph_(graph) {
 	}
 
-	virtual void ApplyAdd(GraphActionHandler<VertexId, EdgeId> *handler, VertexId v) const {
+	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const {
 		VertexId rcv = graph_.conjugate(v);
 		TRACE(
 				"Triggering add event of handler " << handler->name()
@@ -228,7 +241,7 @@ public:
 		}
 	}
 
-	virtual void ApplyAdd(GraphActionHandler<VertexId, EdgeId> *handler, EdgeId e) const {
+	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const {
 		EdgeId rce = graph_.conjugate(e);
 		TRACE(
 				"Triggering add event of handler " << handler->name()
@@ -247,7 +260,7 @@ public:
 		}
 	}
 
-	virtual void ApplyDelete(GraphActionHandler<VertexId, EdgeId> *handler, VertexId v) const {
+	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const {
 		VertexId rcv = graph_.conjugate(v);
 		TRACE(
 				"Triggering delete event of handler " << handler->name()
@@ -266,7 +279,7 @@ public:
 		}
 	}
 
-	virtual void ApplyDelete(GraphActionHandler<VertexId, EdgeId> *handler, EdgeId e) const {
+	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const {
 		EdgeId rce = graph_.conjugate(e);
 		TRACE(
 				"Triggering delete event of handler " << handler->name()
@@ -286,7 +299,7 @@ public:
 
 	}
 
-	virtual void ApplyMerge(GraphActionHandler<VertexId, EdgeId> *handler,
+	virtual void ApplyMerge(ActionHandler<VertexId, EdgeId> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const {
 		TRACE(
 				"Triggering merge event of handler " << handler->name()
@@ -310,7 +323,7 @@ public:
 		}
 	}
 
-	virtual void ApplyGlue(GraphActionHandler<VertexId, EdgeId> *handler, EdgeId new_edge, EdgeId edge1,
+	virtual void ApplyGlue(ActionHandler<VertexId, EdgeId> *handler, EdgeId new_edge, EdgeId edge1,
 			EdgeId edge2) const {
 		TRACE(
 				"Triggering glue event of handler " << handler->name()
@@ -335,7 +348,7 @@ public:
 		}
 	}
 
-	virtual void ApplySplit(GraphActionHandler<VertexId, EdgeId> *handler,
+	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
 			EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const {
 		EdgeId rce = graph_.conjugate(old_edge);
 		TRACE(
@@ -368,7 +381,7 @@ public:
  */
 template<class Graph, typename ElementId, typename Comparator = std::less<
 		ElementId> >
-class SmartIterator: public GraphActionHandler<typename Graph::VertexId, typename Graph::EdgeId> , public QueueIterator<
+class SmartIterator: public GraphActionHandler<Graph> , public QueueIterator<
 		ElementId, Comparator> {
 private:
 	Graph &graph_;
@@ -379,7 +392,7 @@ public:
 public:
 	SmartIterator(Graph &graph, const string &name,
 			const Comparator& comparator = Comparator()) :
-		GraphActionHandler<VertexId, EdgeId> (name),
+		GraphActionHandler<Graph> (name),
 				QueueIterator<ElementId, Comparator> (comparator),
 				graph_(graph) {
 		graph_.AddActionHandler(this);
@@ -387,6 +400,14 @@ public:
 
 	virtual ~SmartIterator() {
 		graph_.RemoveActionHandler(this);
+	}
+
+	virtual void HandleAdd(ElementId v) {
+		super::push(v);
+	}
+
+	virtual void HandleDelete(ElementId v) {
+		super::erase(v);
 	}
 };
 
@@ -417,13 +438,6 @@ public:
 	virtual ~SmartVertexIterator() {
 	}
 
-	virtual void HandleAdd(VertexId v) {
-		super::push(v);
-	}
-
-	virtual void HandleDelete(VertexId v) {
-		super::erase(v);
-	}
 };
 
 /**
@@ -446,24 +460,19 @@ public:
 				SmartIterator<Graph, EdgeId, Comparator> (graph,
 						"SmartEdgeIterator " + ToString(this), comparator) {
 		if (fill) {
+			cout << "Filling iterator" << endl;
 			for (typename Graph::VertexIterator it = graph.begin(); it
 					!= graph.end(); ++it) {
 				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
 				this->super::insert(outgoing.begin(), outgoing.end());
 			}
+			cout << "Filling of iterator finished" << endl;
 		}
 	}
 
 	virtual ~SmartEdgeIterator() {
 	}
 
-	virtual void HandleAdd(EdgeId v) {
-		super::push(v);
-	}
-
-	virtual void HandleDelete(EdgeId v) {
-		super::erase(v);
-	}
 };
 
 }

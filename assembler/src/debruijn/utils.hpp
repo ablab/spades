@@ -72,7 +72,7 @@ public:
  * @see DataHashRenewer
  */
 template<size_t k, class Graph>
-class EdgeIndex: public GraphActionHandler<typename Graph::VertexId, typename Graph::EdgeId> {
+class EdgeIndex: public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef SeqMap<k, EdgeId> InnerIndex;
 	typedef Seq<k> Kmer;
@@ -83,7 +83,7 @@ class EdgeIndex: public GraphActionHandler<typename Graph::VertexId, typename Gr
 public:
 
 	EdgeIndex(Graph& g) :
-		GraphActionHandler<typename Graph::VertexId, typename Graph::EdgeId> ("EdgeIndex"), g_(g), inner_index_(),
+		GraphActionHandler<Graph> ("EdgeIndex"), g_(g), inner_index_(),
 				renewer_(g, inner_index_), delete_index_(true) {
 		g_.AddActionHandler(this);
 	}
@@ -118,7 +118,7 @@ public:
 };
 
 template<size_t kmer_size_, typename Graph>
-class VertexHashRenewer: public GraphActionHandler<typename Graph::VertexId, typename Graph::EdgeId> {
+class VertexHashRenewer: public GraphActionHandler<Graph> {
 
 	typedef typename Graph::VertexId VertexId;
 
