@@ -5,6 +5,7 @@
 #include "graphVisualizer.hpp"
 #include "omni_utils.hpp"
 #include "stack"
+#include "queue"
 
 namespace debruijn_graph {
 
@@ -238,7 +239,8 @@ private:
 
 	Graph &graph_;
 public:
-	Dijkstra(Graph &graph): graph_(graph) {
+	Dijkstra(Graph &graph) :
+		graph_(graph) {
 	}
 };
 
@@ -259,27 +261,59 @@ public:
 	}
 
 	virtual ~ErrorComponentSplitter() {
-		//TODO
 	}
 
-	void FindComponent(VertexId start_vertex, set<VertexId> &component) {
+	size_t FindComponent(VertexId start_vertex, set<VertexId> &component) {
 		std::stack<VertexId> st;
 		st.push(start_vertex);
-		while(!st.empty()) {
+		size_t result = 0;
+		while (!st.empty()) {
 			VertexId next = st.pop();
-			if(component.find(next) == component.end()) {
-				vector<EdgeId> outgoing = graph_.OutgoingEdges(next);
-				for(size_t i = 0; i < outgoing.size(); i++) {
-//TODO
-				}
+			if (component.find(next) == component.end()) {
 				component.insert(next);
+				vector < EdgeId > outgoing = graph_.OutgoingEdges(next);
+				for (size_t i = 0; i < outgoing.size(); i++) {
+					if (black_edges_.find(outgoing[i]) != black_edges_.end()) {
+						black_edges_.erase(outgoing[i]);
+						result += graph_.length(outgoing[i]);
+						st.push(graph_.EdgeEnd(outgoing[i]));
+					}
+				}
+				vector < EdgeId > incoming = graph_.OutgoingEdges(next);
+				for (size_t i = 0; i < incoming.size(); i++) {
+					if (black_edges_.find(incoming[i]) != black_edges_.end()) {
+						black_edges_.erase(incoming[i]);
+						result += graph_.length(incoming[i]);
+						st.push(graph_.EdgeStart(incoming[i]));
+					}
+				}
 			}
 		}
+		return result;
 	}
 
-
-	void Dijkstra(set<VertexId> &component) {
-
+	void Dijkstra(set<VertexId> &component, size_t bound) {
+		std::priority_queue < pair<size_t, VertexId> > q;
+		for (auto iterator = component.begin(); iterator != component.end(); ++iterator) {
+			q.push(make_pair(0, *iterator));
+		}
+		while (!q.empty()) {
+			auto next_pair = q.pop();
+			VertexId next = next_pair.second;
+			size_t next_length = next_pair.first;
+			vector < EdgeId > outgoing = graph_.OutgoingEdges(next);
+			for (size_t i = 0; i < outgoing.size(); i++) {
+				size_t size = next_length + graph_.length(outgoing[i]);
+				if (size <= bound)
+					q.push(make_pair(size, graph_.EdgeEnd(outgoing[i])));
+			}
+			vector < EdgeId > incoming = graph_.OutgoingEdges(next);
+			for (size_t i = 0; i < incoming.size(); i++) {
+				size_t size = next_length + graph_.length(incoming[i]);
+				if (size <= bound)
+					q.push(make_pair(size, graph_.EdgeStart(incoming[i])));
+			}
+		}
 	}
 
 	virtual vector<VertexId> NextComponent() {
@@ -287,9 +321,10 @@ public:
 			assert(false);
 			return vector<VertexId> ();
 		}
-		set<VertexId> component;
-		FindComponent(graph_.EdgeEnd(*iterator_), component);
-		Dijkstra(component);
+		set < VertexId > component;
+		size_t component_size = FindComponent(graph_.EdgeEnd(*iterator_),
+				component);
+		Dijkstra(component, component_size);
 		return vector<VertexId> (component.begin(), component.end());
 	}
 
