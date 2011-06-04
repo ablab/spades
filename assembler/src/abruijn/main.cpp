@@ -3,6 +3,7 @@
 #include "logging.hpp"
 #include "omni_tools.hpp"
 #include "omnigraph.hpp"
+#include "visualization_utils.hpp"
 #include "libs/getopt_pp/getopt_pp_standalone.h"
 #include <iostream>
 
@@ -102,6 +103,7 @@ int main(int argc, char* argv[]) {
 	INFO("Outputting graph to " << output_file);
 	ofstream output_stream(output_file.c_str(), ios::out);
 //	gbm.graph()->output(output_stream, !output_single); TODO
+//	SimpleGraphVisualizer sgv;
 	INFO("Done.");
 	output_stream.close();
 
