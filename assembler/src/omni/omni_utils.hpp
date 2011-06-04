@@ -472,5 +472,46 @@ public:
 
 };
 
+/**
+ * This class is a representation of how certain sequence is mapped to genome. Needs further adjustment.
+ */
+template<typename ElementId>
+class Path {
+	vector<ElementId> sequence_;
+	int start_pos_;
+	int end_pos_;
+
+public:
+	typedef typename vector<ElementId>::const_iterator iterator;
+
+	Path(vector<ElementId> sequence, size_t start_pos, size_t end_pos) :
+		sequence_(sequence), start_pos_(start_pos), end_pos_(end_pos) {
+	}
+
+	Path() :
+		sequence_(), start_pos_(-1), end_pos_(-1) {
+	}
+
+	size_t start_pos() const {
+		return start_pos_;
+	}
+
+	size_t end_pos() const {
+		return end_pos_;
+	}
+
+	size_t size() const {
+		return sequence_.size();
+	}
+
+	const vector<ElementId>& sequence() const {
+		return sequence_;
+	}
+
+	ElementId operator[](size_t index) const {
+		return sequence_[index];
+	}
+};
+
 }
 #endif /* OMNI_UTILS_HPP_ */

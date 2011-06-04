@@ -1,13 +1,12 @@
 #ifndef VISUALIZATIONUTILS_HPP_
 #define VISUALIZATIONUTILS_HPP_
 
-#include "utils.hpp"
 #include "graphVisualizer.hpp"
 #include "omni_utils.hpp"
 #include "stack"
 #include "queue"
 
-namespace debruijn_graph {
+namespace omnigraph {
 
 using gvis::PairedGraphPrinter;
 using omnigraph::SmartEdgeIterator;
@@ -173,7 +172,7 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	Graph &graph_;
-	debruijn_graph::Path<EdgeId> path_;
+	Path<EdgeId> path_;
 
 	void SetColor(map<EdgeId, string> &color, EdgeId edge, string col) {
 		auto it = color.find(edge);
@@ -202,7 +201,7 @@ private:
 	}
 
 public:
-	PathColorer(Graph &graph, debruijn_graph::Path<EdgeId> path) :
+	PathColorer(Graph &graph, Path<EdgeId> path) :
 		graph_(graph), path_(path) {
 	}
 
@@ -212,7 +211,7 @@ public:
 		return colors;
 	}
 
-	set<EdgeId> BlackEdges(const debruijn_graph::Path<EdgeId> path) {
+	set<EdgeId> BlackEdges(const Path<EdgeId> path) {
 		set<EdgeId> result;
 		ConstructBlackEdgesSet(result);
 		return result;
