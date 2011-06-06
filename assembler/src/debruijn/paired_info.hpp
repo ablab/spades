@@ -400,11 +400,11 @@ public:
 		data_.AddPairInfo(pair_info);
 	}
 
-private:
 	void RemoveEdgeInfo(EdgeId edge) {
 		data_.DeleteEdgeInfo(edge);
 	}
 
+private:
 	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os = cout) {
 		PairInfos vec = GetEdgePairInfo(edge1, edge2);
 		if (vec.size() != 0) {
