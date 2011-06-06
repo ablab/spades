@@ -13,13 +13,20 @@
 
 namespace omnigraph {
 
+/**
+ * This class removes simple bulges from given graph with the following algorithm: it iterates through all edges of
+ * the graph and for each edge checks if this edge is likely to be a simple bulge
+ * if edge is judged to be one it is removed.
+ */
 template<class Graph>
 class BulgeRemover {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	void RemoveBulges(Graph& g);
 
+	/**
+	 * Create BulgeRemover with specified parameters.
+	 */
 	BulgeRemover(size_t max_length, double max_coverage,
 			double max_relative_coverage, double max_delta,
 			double max_relative_delta) :
@@ -28,6 +35,8 @@ public:
 				max_delta_(max_delta), max_relative_delta_(max_relative_delta) {
 		assert(max_relative_coverage_ > 1.);
 	}
+
+	void RemoveBulges(Graph& g);
 
 private:
 
@@ -39,11 +48,15 @@ private:
 
 	bool PossibleBulgeEdge(const Graph& g, EdgeId e);
 
-	bool PathCondition(const Graph& g, EdgeId edge, const vector<EdgeId>& path);
+	bool SimplePathCondition(const Graph& g, EdgeId edge, const vector<EdgeId>& path);
 
-	bool BulgeCondition(const Graph& g, EdgeId edge, const vector<EdgeId>& path) {
+	/**
+	 * Checks if alternative path is simple (doesn't contain conjugate edges, edge e or conjugate(e))
+	 * and its average coverage is greater than max_relative_coverage_ * g.coverage(e)
+	 */
+	bool BulgeCondition(const Graph& g, EdgeId e, const vector<EdgeId>& path) {
 		return PathAvgCoverage(g, path) > max_relative_coverage_ * g.coverage(
-				edge) && PathCondition(g, edge, path);
+				e) && SimplePathCondition(g, e, path);
 		//		return path_and_coverage.second > max_relative_coverage * g.kplus_one_mer_coverage(edge);
 	}
 
@@ -51,7 +64,11 @@ private:
 
 	size_t PathLength(const Graph& g, const vector<EdgeId> path);
 
-	//returns reversed path!!!
+	/**
+	 * Returns most covered path from start to the end such that its length doesn't exceed length_left.
+	 * Returns pair of empty vector and -1 if no such path could be found.
+	 * Edges are returned in reverse order!
+	 */
 	pair<vector<EdgeId> , int> BestPath(const Graph& g, VertexId start,
 			VertexId end, int length_left);
 };
@@ -72,15 +89,19 @@ size_t BulgeRemover<Graph>::PathLength(const Graph& g,
 }
 
 template<class Graph>
-bool BulgeRemover<Graph>::PathCondition(const Graph& g, EdgeId edge,
+bool BulgeRemover<Graph>::SimplePathCondition(const Graph& g, EdgeId edge,
 		const vector<EdgeId>& path) {
 	for (size_t i = 0; i < path.size(); ++i)
 		if (edge == path[i] || edge == g.conjugate(path[i]))
 			return false;
-	for (size_t i = 0; i < path.size(); ++i)
+	for (size_t i = 0; i < path.size(); ++i) {
+		if (path[i] == g.conjugate(path[i])) {
+			return false;
+		}
 		for (size_t j = i + 1; j < path.size(); ++j)
 			if (path[i] == path[j] || path[i] == g.conjugate(path[j]))
 				return false;
+	}
 	return true;
 }
 
