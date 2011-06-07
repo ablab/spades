@@ -158,7 +158,7 @@ public:
 			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
 				VertexId edge_end = super::g_.EdgeEnd(*e_it);
 				if (vertex_set.count(edge_end) > 0) {
-					super::gp_.AddEdge(*v_it, edge_end, EdgeColor(*e_it));
+					super::gp_.AddEdge(*v_it, edge_end, " ", EdgeColor(*e_it));
 				}
 			}
 		}
