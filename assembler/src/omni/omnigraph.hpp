@@ -10,8 +10,12 @@ class OmniVertex {
 public:
 	OmniVertex(size_t length) : length_(length) {}
 
-	size_t length() {
+	size_t length() const {
 		return length_;
+	}
+
+	std::string str() const {
+		return ToString(length_);
 	}
 };
 
@@ -22,6 +26,10 @@ public:
 
 	size_t length() const {
 		return length_;
+	}
+
+	std::string str() const {
+		return ToString(length_);
 	}
 
 	bool operator==(const OmniEdge &data) const {
@@ -39,6 +47,14 @@ public:
 
 	OmniEdge conjugate(const OmniEdge &data) {
 		return data;
+	}
+
+	std::string str(const OmniEdge &edge) {
+		return edge.str();
+	}
+
+	std::string str(const OmniVertex &v) {
+		return v.str();
 	}
 
 	bool equals(const OmniEdge &data1, const OmniEdge &data2) {
