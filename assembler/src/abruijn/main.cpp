@@ -3,6 +3,7 @@
 #include "logging.hpp"
 #include "omni_tools.hpp"
 #include "omnigraph.hpp"
+#include "visualization_utils.hpp"
 #include "libs/getopt_pp/getopt_pp_standalone.h"
 #include <iostream>
 
@@ -88,13 +89,13 @@ int main(int argc, char* argv[]) {
 	abruijn::GraphBuilderMaster<CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream>>>> gbm(cr, take, mode);
 	gbm.build();
 
-	INFO("Spelling the reference genome");
-	gbm.SpellGenomeThroughGraph(cut + 219);
+//	INFO("Spelling the reference genome");
+//	gbm.SpellGenomeThroughGraph(cut + 219);
 
-	INFO("===== Condensing... =====");
-	omnigraph::Compressor<omnigraph::Omnigraph> compressor(*gbm.graph());
-	compressor.CompressAllVertices();
-	INFO(gbm.graph()->size() << " vertices");
+//	INFO("===== Condensing... =====");
+//	omnigraph::Compressor<omnigraph::Omnigraph> compressor(*gbm.graph());
+//	compressor.CompressAllVertices();
+//	INFO(gbm.graph()->size() << " vertices");
 
 //	INFO("===== Getting statistics... =====");
 //	gbm.graph()->stats(); TODO
@@ -102,6 +103,9 @@ int main(int argc, char* argv[]) {
 	INFO("Outputting graph to " << output_file);
 	ofstream output_stream(output_file.c_str(), ios::out);
 //	gbm.graph()->output(output_stream, !output_single); TODO
+	gvis::DotPairedGraphPrinter<omnigraph::Omnigraph> printer(*gbm.graph(), "earmarked", output_stream);
+	omnigraph::SimpleGraphVisualizer<omnigraph::Omnigraph> sgv(*gbm.graph(), printer);
+	sgv.Visualize();
 	INFO("Done.");
 	output_stream.close();
 

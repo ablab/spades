@@ -16,8 +16,9 @@ void testOnline() {
 
 void testOnlineEmpty() {
 	stringstream ss;
-	PairedGraphPrinter<int> *g = new PairedGraphPrinter<int> ("", ss);
-	g->output();
+	PairedGraphPrinter<int> g("", ss);
+	g.open();
+	g.close();
 	string tmp;
 	tmp.assign((std::istreambuf_iterator<char>(ss)),
 			std::istreambuf_iterator<char>());
@@ -26,8 +27,9 @@ void testOnlineEmpty() {
 
 void testOnlineEmptyWithName() {
 	stringstream ss;
-	PairedGraphPrinter<int> *g = new PairedGraphPrinter<int> ("myName", ss);
-	g->output();
+	PairedGraphPrinter<int> g("myName", ss);
+	g.open();
+	g.close();
 	string tmp;
 	tmp.assign((std::istreambuf_iterator<char>(ss)),
 			std::istreambuf_iterator<char>());
@@ -36,9 +38,10 @@ void testOnlineEmptyWithName() {
 
 void testOnlineSingleVertex() {
 	stringstream ss;
-	GraphPrinter<int> *g = new GraphPrinter<int> ("myName", ss);
-	g->addVertex(0, "oppa");
-	g->output();
+	DotGraphPrinter<int> g ("myName", ss);
+	g.open();
+	g.AddVertex(0, "oppa");
+	g.close();
 	string tmp;
 	//	cout <<
 	tmp.assign((std::istreambuf_iterator<char>(ss)),
@@ -48,29 +51,32 @@ void testOnlineSingleVertex() {
 
 void testOnlineSingleVertexPair() {
 	stringstream ss;
-	PairedGraphPrinter<int> *g = new PairedGraphPrinter<int> ("myName", ss);
-	g->addVertex(1, "AAAAAAAAA", 2, "TTTTTTTTT");
-	g->output();
+	PairedGraphPrinter<int> g("myName", ss);
+	g.open();
+	g.AddVertex(1, "AAAAAAAAA", 2, "TTTTTTTTT");
+	g.close();
 	string tmp = ss.str();
 	ASSERT_EQUAL("digraph myName {\nnode[fontname=<Courier>,shape=<plaintext>]\nvertex_1_2[label=<<TABLE>\n<TR><TD BORDER = \"0\" PORT = \"port_1_in\"></TD><TD BORDER = \"0\" PORT = \"port_\">AAAAAAAAA</TD><TD BORDER = \"0\" PORT = \"port_1_out\"></TD></TR>\n<TR><TD BORDER = \"0\" PORT = \"port_2_out\"></TD><TD BORDER = \"0\" PORT = \"port_\">TTTTTTTTT</TD><TD BORDER = \"0\" PORT = \"port_2_in\"></TD></TR>\n</TABLE>>,style=<filled>,color=<black>,fillcolor=<white>]\n}\n", tmp);
 }
 
 void testOnlineSingleComplexEdge() {
 	stringstream ss;
-	PairedGraphPrinter<int> *g = new PairedGraphPrinter<int> ("myName", ss);
-	g->addVertex(1, "AAAAAAAAA", 2, "TTTTTTTTT");
-	g->addVertex(3, "CCCCCCCCC", 4, "GGGGGGGGG");
-	g->addEdge(make_pair(2,1), make_pair(3,4), "oppa");
-	g->output();
+	PairedGraphPrinter<int> g("myName", ss);
+	g.open();
+	g.AddVertex(1, "AAAAAAAAA", 2, "TTTTTTTTT");
+	g.AddVertex(3, "CCCCCCCCC", 4, "GGGGGGGGG");
+	g.AddEdge(make_pair(2,1), make_pair(3,4), "oppa");
+	g.close();
 	string tmp = ss.str();
 	ASSERT_EQUAL("digraph myName {\nnode[fontname=<Courier>,shape=<plaintext>]\nvertex_1_2[label=<<TABLE>\n<TR><TD BORDER = \"0\" PORT = \"port_1_in\"></TD><TD BORDER = \"0\" PORT = \"port_\">AAAAAAAAA</TD><TD BORDER = \"0\" PORT = \"port_1_out\"></TD></TR>\n<TR><TD BORDER = \"0\" PORT = \"port_2_out\"></TD><TD BORDER = \"0\" PORT = \"port_\">TTTTTTTTT</TD><TD BORDER = \"0\" PORT = \"port_2_in\"></TD></TR>\n</TABLE>>,style=<filled>,color=<black>,fillcolor=<white>]\nvertex_3_4[label=<<TABLE>\n<TR><TD BORDER = \"0\" PORT = \"port_3_in\"></TD><TD BORDER = \"0\" PORT = \"port_\">CCCCCCCCC</TD><TD BORDER = \"0\" PORT = \"port_3_out\"></TD></TR>\n<TR><TD BORDER = \"0\" PORT = \"port_4_out\"></TD><TD BORDER = \"0\" PORT = \"port_\">GGGGGGGGG</TD><TD BORDER = \"0\" PORT = \"port_4_in\"></TD></TR>\n</TABLE>>,style=<filled>,color=<black>,fillcolor=<white>]\nvertex_1_2:port_2_out->vertex_3_4:port_3_in[label=<oppa>,color=<black>]\n}\n", tmp);
 }
 
 void testOnlineSingleEdge() {
 	stringstream ss;
-	GraphPrinter<int> *g = new GraphPrinter<int> ("myName", ss);
-	g->addEdge(0, 1, "oppa");
-	g->output();
+	DotGraphPrinter<int> g("myName", ss);
+	g.open();
+	g.AddEdge(0, 1, "oppa");
+	g.close();
 	string tmp;
 	tmp.assign((std::istreambuf_iterator<char>(ss)),
 			std::istreambuf_iterator<char>());

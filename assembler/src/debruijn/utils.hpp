@@ -14,6 +14,7 @@
 
 namespace debruijn_graph {
 
+using omnigraph::Path;
 using omnigraph::GraphActionHandler;
 
 /**
@@ -72,7 +73,7 @@ public:
  * @see DataHashRenewer
  */
 template<size_t k, class Graph>
-class EdgeIndex: public GraphActionHandler<typename Graph::VertexId, typename Graph::EdgeId> {
+class EdgeIndex: public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef SeqMap<k, EdgeId> InnerIndex;
 	typedef Seq<k> Kmer;
@@ -83,7 +84,7 @@ class EdgeIndex: public GraphActionHandler<typename Graph::VertexId, typename Gr
 public:
 
 	EdgeIndex(Graph& g) :
-		GraphActionHandler<typename Graph::VertexId, typename Graph::EdgeId> ("EdgeIndex"), g_(g), inner_index_(),
+		GraphActionHandler<Graph> ("EdgeIndex"), g_(g), inner_index_(),
 				renewer_(g, inner_index_), delete_index_(true) {
 		g_.AddActionHandler(this);
 	}
@@ -118,7 +119,7 @@ public:
 };
 
 template<size_t kmer_size_, typename Graph>
-class VertexHashRenewer: public GraphActionHandler<typename Graph::VertexId, typename Graph::EdgeId> {
+class VertexHashRenewer: public GraphActionHandler<Graph> {
 
 	typedef typename Graph::VertexId VertexId;
 
@@ -139,47 +140,6 @@ public:
 };
 
 class NoInfo {
-};
-
-/**
- * This class is a representation of how certain sequence is mapped to genome. Needs further adjustment.
- */
-template<typename ElementId>
-class Path {
-	vector<ElementId> sequence_;
-	int start_pos_;
-	int end_pos_;
-
-public:
-	typedef typename vector<ElementId>::const_iterator iterator;
-
-	Path(vector<ElementId> sequence, size_t start_pos, size_t end_pos) :
-		sequence_(sequence), start_pos_(start_pos), end_pos_(end_pos) {
-	}
-
-	Path() :
-		sequence_(), start_pos_(-1), end_pos_(-1) {
-	}
-
-	size_t start_pos() const {
-		return start_pos_;
-	}
-
-	size_t end_pos() const {
-		return end_pos_;
-	}
-
-	size_t size() const {
-		return sequence_.size();
-	}
-
-	const vector<ElementId>& sequence() const {
-		return sequence_;
-	}
-
-	ElementId operator[](size_t index) const {
-		return sequence_[index];
-	}
 };
 
 /**
@@ -288,7 +248,7 @@ public:
 
 	void CountVertexEdgeStat() {
 		size_t edgeNumber = 0;
-		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.isEnd(); ++iterator)
+		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator)
 			edgeNumber++;
 		INFO("Vertex count=" << graph_.size() << "; Edge count="
 				<< edgeNumber);
@@ -301,7 +261,7 @@ public:
 		Path<EdgeId> path = sequence_mapper.MapSequence(Sequence(genome_));
 		const vector<EdgeId> path_edges = path.sequence();
 		set<EdgeId> colored_edges(path_edges.begin(), path_edges.end());
-		for (auto it = graph_.SmartEdgeBegin(); !it.isEnd(); ++it) {
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			edge_count++;
 			if (colored_edges.count(*it) == 0 && colored_edges.count(
 					graph_.conjugate(*it)) == 0) {
@@ -333,7 +293,7 @@ public:
 
 	void CountSelfComplement() {
 		size_t sc_number = 0;
-		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.isEnd(); ++iterator)
+		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator)
 			if (graph_.conjugate(*iterator) == (*iterator))
 				sc_number++;
 		INFO("Self-complement count="<< sc_number);

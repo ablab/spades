@@ -1,6 +1,7 @@
 #ifndef QUEUE_ITERATOR_HPP_
 #define QUEUE_ITERATOR_HPP_
 
+#include <assert.h>
 #include <set>
 
 template<typename Key, typename Comparator = std::less<Key> >
@@ -90,7 +91,7 @@ protected:
 	}
 
 public:
-	bool isEnd() const {
+	bool IsEnd() const {
 		return queue_.empty();
 	}
 

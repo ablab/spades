@@ -16,7 +16,7 @@ namespace debruijn_graph {
  * graph.
  */
 template<class Graph>
-class PairedInfoIndex: public GraphActionHandler<typename Graph::VertexId, typename Graph::EdgeId> {
+class PairedInfoIndex: public GraphActionHandler<Graph> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
@@ -268,7 +268,7 @@ public:
 	//begin-end insert size supposed
 	PairedInfoIndex(Graph &g,
 			int max_difference = MERGE_DATA_ABSOLUTE_DIFFERENCE) :
-				GraphActionHandler<typename Graph::VertexId, typename Graph::EdgeId> ("PairedInfoIndex"),
+				GraphActionHandler<Graph> ("PairedInfoIndex"),
 				max_difference_(max_difference), graph_(g) {
 		g.AddActionHandler(this);
 	}
@@ -284,7 +284,7 @@ public:
 	void FillIndex(const EdgeIndex<kmer_size + 1, Graph>& index, Stream& stream) {
 		data_.clear();
 		//auto it = graph_.SmartEdgeBegin();
-		for (auto it = graph_.SmartEdgeBegin(); !it.isEnd(); ++it) {
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			AddPairInfo(PairInfo(*it, *it, 0, 1));
 		}
 		typedef Seq<kmer_size + 1> KPOMer;
@@ -400,11 +400,11 @@ public:
 		data_.AddPairInfo(pair_info);
 	}
 
-private:
 	void RemoveEdgeInfo(EdgeId edge) {
 		data_.DeleteEdgeInfo(edge);
 	}
 
+private:
 	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os = cout) {
 		PairInfos vec = GetEdgePairInfo(edge1, edge2);
 		if (vec.size() != 0) {

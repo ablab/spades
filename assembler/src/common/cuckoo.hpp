@@ -19,6 +19,7 @@
  */
 
 #include <cstring>
+#include <map>
 
 #ifndef _CUCKOO_HPP_
 #define _CUCKOO_HPP_
@@ -711,7 +712,7 @@ public:
   pair<iterator, iterator> equal_range(const Key& k) {
     iterator l = find(k);
     iterator r = l;
-    return std::make_pair<iterator, iterator>(l, ++r);
+    return std::make_pair(l, ++r);
   }
 
   /**
@@ -724,7 +725,7 @@ public:
   pair<const_iterator, const_iterator> equal_range(const Key& k) const {
     const_iterator l = find(k);
     const_iterator r = l;
-    return std::make_pair<const_iterator, const_iterator>(l, ++r);
+    return std::make_pair(l, ++r);
   }
 
   /** 
