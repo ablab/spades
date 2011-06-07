@@ -91,7 +91,7 @@ protected:
 	}
 
 public:
-	bool isEnd() const {
+	bool IsEnd() const {
 		return queue_.empty();
 	}
 

@@ -265,7 +265,7 @@ public:
 	}
 
 	void open() {
-		startSimpleGraphRecord(out_, name_);
+		startGraphRecord(out_, name_);
 	}
 
 	void close() {

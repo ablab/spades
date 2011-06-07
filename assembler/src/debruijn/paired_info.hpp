@@ -284,7 +284,7 @@ public:
 	void FillIndex(const EdgeIndex<kmer_size + 1, Graph>& index, Stream& stream) {
 		data_.clear();
 		//auto it = graph_.SmartEdgeBegin();
-		for (auto it = graph_.SmartEdgeBegin(); !it.isEnd(); ++it) {
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			AddPairInfo(PairInfo(*it, *it, 0, 1));
 		}
 		typedef Seq<kmer_size + 1> KPOMer;

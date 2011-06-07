@@ -188,7 +188,7 @@ public:
 	 */
 	void ClipTips() {
 		TRACE("Tip clipping started");
-		for (auto iterator = graph_.SmartEdgeBegin(comparator_); !iterator.isEnd(); ++iterator) {
+		for (auto iterator = graph_.SmartEdgeBegin(comparator_); !iterator.IsEnd(); ++iterator) {
 			EdgeId tip = *iterator;
 			TRACE("Checking edge for being tip " << tip);
 			if (IsTip(tip)) {
