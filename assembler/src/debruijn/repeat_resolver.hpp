@@ -101,7 +101,7 @@ Graph RepeatResolver<Graph>::ResolveRepeats(Graph &g, PIIndex &ind){
 	while (changed) {
 		changed = false;
 		vertices.clear();
-		for(VertexIter v_iter = g.SmartVertexBegin(); !v_iter.isEnd(); ++v_iter) {
+		for(VertexIter v_iter = g.SmartVertexBegin(); !v_iter.IsEnd(); ++v_iter) {
 			if (vertices.find(g.conjugate(*v_iter)) == vertices.end())
 			{
 				vertices.insert(*v_iter);

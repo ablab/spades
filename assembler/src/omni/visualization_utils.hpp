@@ -192,7 +192,7 @@ private:
 	}
 
 	void ConstructBlackEdgesSet(set<EdgeId> &result) {
-		for (auto iterator = graph_.SmartEdgeBegin(); iterator.IsEnd(); ++iterator) {
+		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator) {
 			result.insert(*iterator);
 		}
 		for (auto iterator = path_.sequence().begin(); iterator != path_.sequence().end(); ++iterator) {
