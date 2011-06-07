@@ -319,7 +319,7 @@ public:
 	}
 
 	const vector<EdgeId> OutgoingEdges(VertexId v) const {
-		return v->OutGoingEdges();
+		return v->OutgoingEdges();
 	}
 
 	const vector<EdgeId> IncomingEdges(VertexId v) const {
@@ -357,6 +357,14 @@ public:
 
 	const VertexData& data(VertexId v) const {
 		return v->data();
+	}
+
+	const std::string str(EdgeId edge) const {
+		return master_.str(edge);
+	}
+
+	const std::string str(VertexId v) const {
+		return master_.str(v);
 	}
 
 	VertexId AddVertex(const VertexData& data) {
