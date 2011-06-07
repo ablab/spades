@@ -66,7 +66,7 @@ public:
 	void CompressAllVertices() {
 		TRACE("Vertex compressing started");
 		//SmartVertexIterator<Graph> end = graph_.SmartVertexEnd();
-		for (auto it = graph_.SmartVertexBegin(); !it.isEnd(); ++it) {
+		for (auto it = graph_.SmartVertexBegin(); !it.IsEnd(); ++it) {
 			VertexId v = *it;
 			CompressVertex(v);
 		}
