@@ -35,12 +35,13 @@ class RepeatResolver {
 
 	typedef map<VertexId,set<EdgeId> > NewVertexMap;
 	typedef map <VertexId, set<VertexId> > VertexIdMap;
+	typedef PairedInfo LocalPairInfo;
 public:
 
 	class EdgeInfo{
 
 	public:
-		EdgeInfo(EdgeId edge_, int d_) : edge(edge_), d(d_){
+		EdgeInfo(EdgeId edge_, int d_, LocalPairInfo lp_) : edge(edge_), d(d_), lp(lp_){
 
 		}
 		inline EdgeId getEdge(){
@@ -64,6 +65,7 @@ public:
 	private:
 		EdgeId edge;
 		int d;
+		LocalPairInfo lp;
 	};
 
 
@@ -310,35 +312,35 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex( Graph &g, PIIndex &ind, Ve
 	vector<EdgeId> right_vector;
 	map<EdgeId, set<int> > left_colors;
 	vector<int> colors;
-		int cur_ind = 1;
-		int cur_id = 0;
-		int mult = 1;
-		right_set.clear();
-		right_vector.clear();
-		right_to_left.clear();
-		for (int dir = 0; dir < 2; dir++) {
-			for (int i = 0, n = edgeIds[dir].size(); i < n; i ++) {
-				PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
-				for (int j = 0, sz = tmp.size(); j < sz; j++) {
-					EdgeId right_id = tmp[j].second();
-					EdgeId left_id = tmp[j].first();
-					if (tmp[j].d() * mult > 0) {
-						if (right_to_left.find(right_id) != right_to_left.end())
-							right_to_left[right_id].insert(left_id);
-						else {
-							set<EdgeId> tmp_set;
-							tmp_set.insert(left_id);
-							right_to_left.insert(make_pair(right_id, tmp_set));
-							right_set.insert(make_pair(right_id, cur_id));
-							right_vector.push_back(right_id);
-							cur_id ++;
-						}
-
+	int cur_ind = 1;
+	int cur_id = 0;
+	int mult = 1;
+	right_set.clear();
+	right_vector.clear();
+	right_to_left.clear();
+	for (int dir = 0; dir < 2; dir++) {
+		for (int i = 0, n = edgeIds[dir].size(); i < n; i ++) {
+			PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
+			for (int j = 0, sz = tmp.size(); j < sz; j++) {
+				EdgeId right_id = tmp[j].second();
+				EdgeId left_id = tmp[j].first();
+				if (tmp[j].d() * mult > 0) {
+					if (right_to_left.find(right_id) != right_to_left.end())
+						right_to_left[right_id].insert(left_id);
+					else {
+						set<EdgeId> tmp_set;
+						tmp_set.insert(left_id);
+						right_to_left.insert(make_pair(right_id, tmp_set));
+						right_set.insert(make_pair(right_id, cur_id));
+						right_vector.push_back(right_id);
+						cur_id ++;
 					}
+
 				}
-		//		old_index.getEdgeInfos(inEdgeIds[i]);
 			}
+	//		old_index.getEdgeInfos(inEdgeIds[i]);
 		}
+	}
 
 /*
 
