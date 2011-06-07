@@ -78,8 +78,8 @@ void VertexMethodsSimpleTest() {
 	ASSERT_EQUAL(true, g.CanCompressVertex(data.first[1]));
 	ASSERT_EQUAL(false, g.CheckUniqueIncomingEdge(data.first[0]));
 	ASSERT_EQUAL(true, g.CheckUniqueIncomingEdge(data.first[1]));
-	ASSERT_EQUAL(false, g.CheckUniqueOutgiongEdge(data.first[2]));
-	ASSERT_EQUAL(true, g.CheckUniqueOutgiongEdge(data.first[1]));
+	ASSERT_EQUAL(false, g.CheckUniqueOutgoingEdge(data.first[2]));
+	ASSERT_EQUAL(true, g.CheckUniqueOutgoingEdge(data.first[1]));
 	ASSERT_EQUAL(true, g.IsDeadEnd(data.first[2]));
 	ASSERT_EQUAL(false, g.IsDeadEnd(data.first[1]));
 	ASSERT_EQUAL(true, g.IsDeadStart(data.first[0]));
@@ -109,7 +109,7 @@ void SmartIteratorTest() {
 	SmartVertexIterator<DeBruijnGraph> it1 = g.SmartVertexBegin(comp);
 	SmartVertexIterator<DeBruijnGraph> it2 = g.SmartVertexEnd(comp);
 	SmartVertexIterator<DeBruijnGraph> it3 = g.SmartVertexEnd(comp);
-	for (SmartVertexIterator<DeBruijnGraph> it = g.SmartVertexBegin(comp); !it.isEnd(); ++it) {
+	for (auto it = g.SmartVertexBegin(comp); !it.IsEnd(); ++it) {
 		num++;
 		DEBUG( "with seq in vert" << g.VertexNucls(*it).str());
 		visited.insert(*it);
@@ -199,7 +199,7 @@ const vector<PairedRead> MakePairedReads(const vector<MyPairedRead>& paired_read
 
 void AssertEdges(DeBruijnGraph& g, const Edges& etalon_edges) {
 	Edges edges;
-	for (auto it = g.SmartEdgeBegin(); !it.isEnd(); ++it) {
+	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		edges.insert(g.EdgeNucls(*it).str());
 	}
 
@@ -230,7 +230,7 @@ bool EqualDouble(double d1, double d2) {
 }
 
 void AssertCoverage(DeBruijnGraph& g, const CoverageInfo& etalon_coverage) {
-	for (auto it = g.SmartEdgeBegin(); !it.isEnd(); ++it) {
+	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		auto etalon_cov_it = etalon_coverage.find(g.EdgeNucls(*it).str());
 		ASSERTM("Etalon didn't contain edge '" << g.EdgeNucls(*it) << "'", etalon_cov_it != etalon_coverage.end());
 		ASSERTM("Coverage for edge '" << g.EdgeNucls(*it) << "' was " << g.coverage(*it) << " but etalon is " << (*etalon_cov_it).second, EqualDouble(g.coverage(*it), (*etalon_cov_it).second));
