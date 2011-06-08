@@ -2,10 +2,8 @@
 #include "hash.hpp"
 //#include "abruijngraph.hpp"
 #include "graphBuilder.hpp"
-
-#include "common/graphVisualizer.hpp"
-#include "common/read/ireadstream.hpp"
-
+#include "graph_printer.hpp"
+#include "ireadstream.hpp"
 #include <string>
 #include <set>
 #include <map>

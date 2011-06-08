@@ -49,11 +49,11 @@ public:
 		return data;
 	}
 
-	std::string str(const OmniEdge &edge) {
+	std::string str(const OmniEdge &edge) const {
 		return edge.str();
 	}
 
-	std::string str(const OmniVertex &v) {
+	std::string str(const OmniVertex &v) const {
 		return v.str();
 	}
 

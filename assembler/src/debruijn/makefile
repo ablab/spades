@@ -1,4 +1,4 @@
-SRC=sequence.cpp main.cpp graphVisualizer.cpp debruijn_graph.cpp sequence_tools.cpp
+SRC=sequence.cpp main.cpp graph_printer.cpp debruijn_graph.cpp sequence_tools.cpp
 DIR=debruijn
 PROG=debruijn
 

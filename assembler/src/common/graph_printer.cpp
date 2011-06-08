@@ -1,4 +1,4 @@
-#include "graphVisualizer.hpp"
+#include "graph_printer.hpp"
 
 namespace gvis {
 
