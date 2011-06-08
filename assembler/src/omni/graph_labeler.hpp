@@ -1,10 +1,3 @@
-/*
- * graph_labeler.hpp
- *
- *  Created on: 08.06.2011
- *      Author: misha
- */
-
 #ifndef GRAPH_LABELER_HPP_
 #define GRAPH_LABELER_HPP_
 
