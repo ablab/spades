@@ -54,7 +54,7 @@ In case of compressed de Bruijn graph with $k$-mers as vertices, length of edge 
 \end{remark}
 
 \begin{definition}
-Directed distance between two vertices $A$ and $B$ in directed path $P$, started in $A$ and finished in $B$, is the sum of the lengths of all edges in path $P$. 
+Directed distance between two vertices $A$ and $B$ in path $P$, started in $A$ and finished in $B$, is the sum of the lengths of all edges in path $P$. 
 %\begin{itemize}
 %\item sum of edge length's, for edges situated between these instances %vertices
 %in path, if $B$ is after $A$ in this directed path
@@ -63,7 +63,7 @@ Directed distance between two vertices $A$ and $B$ in directed path $P$, started
 \end{definition}
 
 \begin{definition}
-Directed distance between two edges $a$ and $b$ in directed path $P$ started from edge $a$ and finished by $b$ is sum of the lengths of all edges of $P$ with exception of $b$. 
+Directed distance between two edges $a$ and $b$ in path $P$ started from edge $a$ and finished by $b$ is sum of the lengths of all edges of $P$ with exception of $b$. 
 %Given a directed path in graph, we define distance between two edges in this path as directed distance from start vertex of first edge to start vertex of second edge in this path.
 \end{definition}
 
@@ -73,13 +73,13 @@ For each edge $e$, we define $\mathop{start}(e)$ and $\mathop{end}(e)$ as start 
 For such graph we define \emph{edge pair} as ordered pair $(a, b)$ where $a \in E$ and $b \in E$.
 \emph{Edge pair info} is a pair $((a, b), x)$ where $(a, b)$ is edge pair, and $x \in \mathbb{N}$.
 \begin{definition}
-For a given constant $d$ and path (or cycle) $P$ (from directed graph $G$), pair info $((a, b), x)$ is called \emph{$d$-consistent edge pair info with respect to $P$} if there exists directed subpath $P'$ of $P$, such that $P'$ starts from $a$, ends by $b$, $x$ is distance between $a$ and $b$ given by $P'$ and following inequalities hold\footnote{This condition guaranty us that in uncompressed graph there was a pair of edges with lengths one, with distance exactly $d$ between them, such that first edge was compressed into $a$ and second into $b$.
+For a given constant $d$ and path (or cycle) $P$ (from directed graph $G$), pair info $((a, b), x)$ is called \emph{$d$-consistent edge pair info with respect to $P$} if there exists directed subpath $P'$ of $P$, such that $P'$ starts from $a$, ends by $b$, $x$ is distance between $a$ and $b$ in $P'$ and following inequalities hold\footnote{This condition guaranty us that in uncompressed graph there was a pair of edges with lengths one, with distance exactly $d$ between them, such that first edge was compressed into $a$ and second into $b$.
 %первое ребро попало в ребро $a$ сжатого графа, а второе в $b$.
 }: $x - l_a \leq d$, $x + l_b \geq d$. 
 \end{definition}
 
 \begin{definition}
-\emph{$d$-set of edge pair info} is set $S$ of edge pair infos such that there exists a Chinese postman cycle $C$ (possibly not unique)such that
+\emph{$d$-set of edge pair info} is set $S$ of edge pair infos such that there exists a Chinese postman cycle $C$ (possibly not unique) such that
  $((a, b), x) \in S \Leftrightarrow  ((a, b), x)$ is $d$-consistent with respect to cycle $C$.
 \end{definition}
   
@@ -124,7 +124,7 @@ For any edge from compressing $G''$ of $G$ we can find path in $G$ that is compr
 For a given graph $G=(V, E)$, we say that a graph $G'' = (V'', E'')$ is a \emph{compressed ungluing} of $G$ if there exists an ungluing $G'$ of $G$, and $G''$ is compressing of $G'$.
 \end{definition}
 
-Till the end of this subsection, let $G=(V,E)$ be a graph, $G'=(V',E')$ - its ungluing and $G''=(V'', E'')$ -  compressed ungluing of $G$.  
+Till the end of this subsection, let $G=(V,E)$ be a graph, $G'=(V',E')$ --- its ungluing and $G''=(V'', E'')$ --- compressed ungluing of $G$.  
 
 \begin{definition}
 For a given directed path $P' = (e'_0, \ldots, e`_n)$ in $G'$ we define \emph{decoding} of this path as $(g(e'_0), \ldots, g(e'_n))$ and denote it as $\mathop{dec}(P')$.
@@ -165,7 +165,7 @@ The above definitions can be simply reformulated for linear genomes.
 %\end{remark}
 \subsection{Graph complexity estimation - still under discussion!}
 \begin{problem}
-  With given two $S$-consistent ungluings of a graph $G$, we want to define which one is somehow better.
+  With given two $S$-consistent ungluings of a graph $G$, we want to define which one is better.
 \end{problem}
 Let's consider an ungluing $G'= (V', E')$ of graph $G = (V, E)$. 
   For every vertex $v' \in V'$, we'll define \emph{vertex incoming-outgoing set} (and denote it as $O_{v'}$)  as $\{(a, b)| a\in E, b\in E\}$: $(a, b)$ satisfies following conditions:
@@ -180,7 +180,7 @@ The complexity of any compressing of $G$ is equal to complexity of $G$.
 
 There are many other possible measures, for example, minus sum of all edges length.
 
-\section{Connection with rectangle graph}\footnote{We assume that basic concept of rectangle graph is known by reader.}
+\section{Connection with rectangle graph}
 
 \begin{definition}
   \emph{Vertex pair info} is a triple $(A, B, x)$, where $A$ and $B$ are vertices and $x \in \mathbb{Z}$ 
@@ -188,18 +188,19 @@ There are many other possible measures, for example, minus sum of all edges leng
 \begin{definition}
   \emph{Vertex-edge pair info} is a triple $(A, b, x)$, where $A$ is vertex, $b$ is edge and $x \in \mathbb{Z}$ 
 \end{definition}
-\begin{remark}
-Labels of vertices in rectangle graph can be considered as vertex pair info.
-\end{remark}
 
-Let's consider rectangle graph approach to repeat resolving. 
+Let's consider rectangle graph\footnote{We assume that basic concept of rectangle graph is known by reader.} approach to repeat resolving. 
 There are three steps in it (without less of generality, we'll contract blue edges):
 \begin{enumerate}
 \item Building all possible rectangles.
 \item Gluing vertices with same labels.
 \item Contracting blue edges.
 \end{enumerate}
-Let's denote the resulting graph after all three steps as $G_r = (V_r,E_r)$ and result of first two steps as $G_{rb} = (V_{rb}, E_{rb})$. Each vertex $v_{rb}$ from $V_{rb}$ has a label - vertex pair info $(A(v_{rb}), B(v_{rb}), x(v_{rb}))$. We call first element of such triple \emph{first mark} of vertex $v_{rb}$ and denote it $\mathop{fm}(v_{rb})$. 
+Let's denote the resulting graph after all three steps as $G_r = (V_r,E_r)$ and result of first two steps as $G_{rb} = (V_{rb}, E_{rb})$. 
+\begin{remark}
+Labels of vertices in rectangle graph can be considered as vertex pair info.
+\end{remark}
+Each vertex $v_{rb}$ from $V_{rb}$ has a label --- vertex pair info $(A(v_{rb}), B(v_{rb}), x(v_{rb}))$. We call first element of such triple \emph{first mark} of vertex $v_{rb}$ and denote it $\mathop{fm}(v_{rb})$. 
 
 Since contracting of blue edges is a gluing operation, there exists a partition of $V_{rb}$ into family of disjoint subsets $\{H_{rb}(v_r)\}_{v_r\in V_r}$ such that all vertices from $H_{rb}(v_r)$ are glued into $v_r$. 
 For a given vertex $v_r \in V_r$, let's consider $H_{rb}(v_r)$. Since two vertices from $G_{rb}$ connected by blue edge have same first mark, we can define mapping $f: V_r\rightarrow V$ by following equation:
@@ -218,7 +219,7 @@ The conditions on $f$ and $g$ from definition of ungluing are satisfied by const
 \end{remark}
 
 \begin{definition}
-For given compressed de Bruijn graph $G=(V,E)$ and $d$-set of edge pair info $P$ 
+For given graph $G=(V,E)$ and $d$-set of edge pair info $P$ 
 we say that vertex pair info $(A, B, x)$ is \emph{obtained} from $P$ if there exists edge pair info $((a,b),y)$ such that:
 \begin{itemize}
 \item $a$ incoming edge for $A$, $b$ incoming edge for $B$ and $x=y-l_a+l_b$, 
@@ -228,7 +229,7 @@ we say that vertex pair info $(A, B, x)$ is \emph{obtained} from $P$ if there ex
 \end{itemize} 
 \end{definition}
 \begin{definition}
-For given compressed de Bruijn graph $G=(V,E)$ and $d$-set of edge pair info $P$ 
+For given graph $G=(V,E)$ and $d$-set of edge pair info $P$ 
 we say that vertex-edge pair info $(A, b, x)$ is \emph{obtained} from $P$ if there exists edge pair info $((a,b),y)$ such that:
 \begin{itemize}
 \item $a$ is an incoming edge for $A$ and $x=y-l_a$, 
@@ -241,7 +242,7 @@ We denote such edge pair info $((a, b), y)$ (possibly not unique) as a \emph{pre
 Two vertex-edge pairs $(V,a,x)$ and $(V,b,y)$ are called \emph{adjacent} if $a$ and $b$ have at least one common\footnote{There are four possibilities: either $\mathop{start}(a)=\mathop{start}(b)$, either $\mathop{end}(a)=\mathop{start}(b)$, either $\mathop{end}(a)=\mathop{end}(b)$, either $\mathop{start}(a)=\mathop{end}(b)$.} vertex in graph $G$ and distances from $V$ to common vertices of $a$ and $b$, obtained from $(V,a,x)$ and from $(V,b,y)$, are the same. 
 \end{definition}
 
-We denote set of all vertex-edge pair infos obtained from $P$ as $P_v$. $P_v=\{(A,b,x)|A\in E, \exists (a,b,y)\in P: (a,b,y)\text{ is precursor for } (A,b,x)\}$
+We denote set of all vertex-edge pair infos obtained from $P$ as $P_v$. $$P_v=\{(A,b,x)|A\in E, \exists (a,b,y)\in P: (a,b,y)\text{ is precursor for } (A,b,x)\}$$
 For vertex $Z\in E$, $P_v(Z) = \{(A, b, x)|(A, b, x) \in P_v; A = Z\}$.
  
 Now we can define \emph{rectangle split operation}. This operation split one vertex at time. If we start from any graph $G$, and apply this operation consecutively we will obtain $G'$ that is $S$-consistent ungluing of $G$.
@@ -276,7 +277,7 @@ $f(Z_i):= f(Z)$, $g(a_i):= g(a)$
 \end{remark}
 \begin{proof}
 Let's fix some order of rectangle split operations.
-While applying rectangle split operations to each vertex except $Z$, we can somehow modify $P$, but the set $P_v(Z)$ stays constant (because vertex-edge paired info, obtained from removed edge $e$ can be still obtained from an edge $e_i$ for some $i$). By construction of rectangle graph, there is a one-one mapping from $C_i$(and so from $Z_i$) to set of all blue-connected components, having $Z$ as first vertex in label. Let's consider union of this mappings for all vertices $Z \ in V$. 
+While applying rectangle split operations to each vertex except $Z$, we can somehow modify $P$, but the set $P_v(Z)$ stays constant (because vertex-edge paired info, obtained from removed edge $e$ can be still obtained from an edge $e_i$ for some $i$). By construction of rectangle graph, there is a one-one mapping from $C_i$(and so from $Z_i$) to set of all blue-connected components, having $Z$ as first vertex in label. Let's consider union of this mappings for all vertices $Z \in V$. 
 
 Consider any edge $a_{ij}'=(Z_i, Y_j)$ with label $a$. 
 Without losing of generality we can assume that vertex $Z$ of original graph $G$ split before $Y$. While splitting  $Y$, we have a precursor $((a_{i}, b), t)$ (that remapped into $(a_{ij}, b, t)$ ) of vertex-edge pair info's $(Y_j, b, t-l_{a_i}) \in D_j$, such that $\mathop{end}(a_{i}) = Y$ where $P_v(Y) = \bigcup D_j$. While splitting $Z$, we have a precursor $((a, b), t)$ of vertex-edge pair info's $(Z, b, t) \in C_i$, such that $\mathop{start}(a) = Z$. The edge pair info $((a, b), t)$ belongs to $C_i$ and $D_j$, this means that edge pair info $((a, b), t)$ produce rectangle such that red edges of this rectangle connect two blue edges  components that mapped into $C_i$ and $D_j$, and this edges labeled by $a$. So, we shown that for each edge in our graph $G'$ there exist an edge in $G_{rb}$ which respects one-one mapping on vertices and has the same label.
