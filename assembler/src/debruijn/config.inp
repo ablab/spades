@@ -25,6 +25,11 @@ ec_max_coverage = 20.0 # erroneous_connection < this * not_erroneous_connection_
 ec_max_length_div_K = 5
 
 # different datasets:
+
+ECOLI_EMUL_1 = MG1655-K12_emul1.fastq.gz
+ECOLI_EMUL_2 = MG1655-K12_emul2.fastq.gz
+ECOLI_EMUL_IS = 220 # insert size
+ECOLI_EMUL_LEN = 4639675 # total size
  
 QUAKE_CROPPED_1K_1 = cropped/s_6.first1000_1.fastq.gz
 QUAKE_CROPPED_1K_2 = cropped/s_6.first1000_2.fastq.gz
