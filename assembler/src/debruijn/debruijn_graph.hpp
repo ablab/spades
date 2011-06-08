@@ -523,7 +523,6 @@ public:
 	 *  @return vector of its copies
 	 *
 	 */
-	vector<VertexId> MultiSplit(VertexId v, size_t k, vector<vector<EdgeId> > ve);
 };
 
 typedef DeBruijnGraph::EdgeId EdgeId;
