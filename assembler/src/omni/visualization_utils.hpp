@@ -1,15 +1,19 @@
 #ifndef VISUALIZATIONUTILS_HPP_
 #define VISUALIZATIONUTILS_HPP_
 
-#include "graphVisualizer.hpp"
+#include "graph_printer.hpp"
+#include "graph_labeler.hpp"
 #include "omni_utils.hpp"
 #include "stack"
 #include "queue"
 
-namespace omnigraph {
+namespace gvis {
+
+LOGGER("omg.gvis");
 
 using gvis::PairedGraphPrinter;
 using omnigraph::SmartEdgeIterator;
+using omnigraph::Path;
 
 template<class Graph>
 class GraphVisualizer {
@@ -63,19 +67,24 @@ class SimpleGraphVisualizer: public GraphVisualizer<Graph> {
 	typedef GraphVisualizer<Graph> super;
 	typedef typename Graph::VertexId VertexId;
 	gvis::GraphPrinter<VertexId>& gp_;
+	gvis::GraphLabeler<Graph>& gl_;
 public:
-	SimpleGraphVisualizer(Graph& g, gvis::GraphPrinter<VertexId>& gp) :
-		super(g), gp_(gp) {
+	SimpleGraphVisualizer(Graph& g, gvis::GraphPrinter<VertexId>& gp, gvis::GraphLabeler<Graph>& gl) :
+		super(g), gp_(gp), gl_(gl) {
 	}
 
 	virtual void Visualize() {
 		gp_.open();
+		DEBUG("OPPA open");
 		for (auto it = super::g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
-			gp_.AddVertex(*it);
+			DEBUG("OPPA vertex");
+			gp_.AddVertex(*it, gl_.label(*it));
 		}
 		for (auto it = super::g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it));
+			DEBUG("OPPA edge");
+			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it), gl_.label(*it));
 		}
+		DEBUG("OPPA close");
 		gp_.close();
 	}
 };
@@ -335,7 +344,8 @@ void WriteSimple(const string& file_name, const string& graph_name, Graph& g) {
 	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
 	filestr.open((simple_file_name).c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
-	SimpleGraphVisualizer<Graph> sgv(g, gpr);
+	gvis::EmptyGraphLabeler<Graph> labeler;
+	SimpleGraphVisualizer<Graph> sgv(g, gpr, labeler);
 	sgv.Visualize();
 	filestr.close();
 }

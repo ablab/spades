@@ -104,7 +104,8 @@ int main(int argc, char* argv[]) {
 	ofstream output_stream(output_file.c_str(), ios::out);
 //	gbm.graph()->output(output_stream, !output_single); TODO
 	gvis::DotPairedGraphPrinter<omnigraph::Omnigraph> printer(*gbm.graph(), "earmarked", output_stream);
-	omnigraph::SimpleGraphVisualizer<omnigraph::Omnigraph> sgv(*gbm.graph(), printer);
+	gvis::StrGraphLabeler<omnigraph::Omnigraph> labeler(*gbm.graph());
+	gvis::SimpleGraphVisualizer<omnigraph::Omnigraph> sgv(*gbm.graph(), printer, labeler);
 	sgv.Visualize();
 	INFO("Done.");
 	output_stream.close();
