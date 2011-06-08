@@ -92,10 +92,10 @@ int main(int argc, char* argv[]) {
 //	INFO("Spelling the reference genome");
 //	gbm.SpellGenomeThroughGraph(cut + 219);
 
-//	INFO("===== Condensing... =====");
-//	omnigraph::Compressor<omnigraph::Omnigraph> compressor(*gbm.graph());
-//	compressor.CompressAllVertices();
-//	INFO(gbm.graph()->size() << " vertices");
+	INFO("===== Compressing... =====");
+	omnigraph::Compressor<omnigraph::Omnigraph> compressor(*gbm.graph());
+	compressor.CompressAllVertices();
+	INFO(gbm.graph()->size() << " vertices");
 
 //	INFO("===== Getting statistics... =====");
 //	gbm.graph()->stats(); TODO
