@@ -251,7 +251,12 @@ For a given vertex $Z \in V$ rectangle split operation consists of the following
 \begin{enumerate}
 \item Partition $P_v(Z)$ into equivalence classes $C_i$ by the transitive closure of the adjacency relationship so that: $P_v(Z) = \bigcup C_i$. 
 \item For each class $C_i$, create a vertex $Z_i$.
-\item For each precursor $((a, b), y)$ of each vertex-edge pair info $(Z, b, x) \in C_i$,  create a copy $a_i$ of the edge $a$, replacing $start(a)$ (and resp. $end(a)$) with $Z_i$ iff $start(a)$ (resp. $end(a)$) $=Z$ and vertex-edge pair $(start(a), b, y)$ (resp. $(end(a)$) obtained from $((a, b), y)$ belongs to $C_i$.
+\item For each precursor $((a, b), y)$ of each vertex-edge pair info $(Z, b, x) \in C_i$,  create a copy $a_i$ of the edge $a$
+  replacing 
+\begin{itemize}
+ \item $start(a)$ with $Z_i$ iff $start(a) = Z$ and vertex-edge pair $(Z, b, x)$, obtained from $((a, b), y)$, belongs to $C_i$.
+ \item $end(a)$ with $Z_i$ iff $end(a) = Z$ and vertex-edge pair $(Z, b, x)$, obtained from $((a, b), y)$, belongs to $C_i$.
+\end{itemize}
 \item For each precursor $((a, b), y)$ of each vertex-edge pair info $(Z, b, x) \in C_i$, replace $((a, b), y)$ in $P$ with $((a_i, b), y)$.
 \item Remove $Z$ with all its incoming and outgoing edges.
 \end{enumerate} 
