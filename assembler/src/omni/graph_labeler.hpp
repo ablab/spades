@@ -3,14 +3,17 @@
 
 namespace gvis {
 
+/**
+ * (Interface)
+ * Provides string labels for vertices and edges of some graph.
+ * Used with GraphPrinter to visualize graphs.
+ */
 template<class Graph>
 class GraphLabeler {
 protected:
 public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-//	GraphPrinter(const string &name, ostream &out = cout) : name_(name), out_(out) {
-//	}
 
 	virtual ~GraphLabeler() {
 	}
@@ -20,6 +23,10 @@ public:
 	virtual std::string label(EdgeId edgeId) = 0;
 };
 
+/**
+ * Trivial implementation of GraphLabeler.
+ * All labels are "".
+ */
 template<class Graph>
 class EmptyGraphLabeler : public GraphLabeler<Graph> {
 	typedef GraphLabeler<Graph> super;
@@ -37,6 +44,11 @@ public:
 	}
 };
 
+/**
+ * Implementation of GraphLabeler for Graphs that have methods
+ * str(VertexId) and str(EdgeId), such as AbstractConjugateGraph.
+
+ */
 template<class Graph>
 class StrGraphLabeler : public GraphLabeler<Graph> {
 protected:
