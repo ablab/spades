@@ -5,7 +5,7 @@
 #include <set>
 #include <cstring>
 #include "seq.hpp"
-#include "graphVisualizer.hpp"
+#include "graph_printer.hpp"
 #include "sequence.hpp"
 #include "logging.hpp"
 #include "nucl.hpp"

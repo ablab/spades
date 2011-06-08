@@ -1,4 +1,4 @@
-SRC=test.cpp graphVisualizer.cpp sequence.cpp
+SRC=test.cpp graph_printer.cpp sequence.cpp
 DIR=common
 PROG=commonTest
 

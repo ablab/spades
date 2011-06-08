@@ -5,17 +5,12 @@
 #include <iomanip>
 #include <fstream>
 #include <algorithm>
-#include <vector>
-#include <list>
-#include <set>
-//#include <map>
 #include <ext/hash_map>
 #include "hash.hpp"
 #include "parameters.hpp"
 #include "logging.hpp"
 #include "omnigraph.hpp"
 #include "ireadstream.hpp"
-#include "graphVisualizer.hpp"
 
 namespace abruijn {
 
