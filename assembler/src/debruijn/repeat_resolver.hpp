@@ -66,6 +66,7 @@ public:
 		EdgeId edge;
 		int d;
 		LocalPairInfo lp;
+
 	};
 
 
@@ -80,6 +81,7 @@ private:
 	int leap_;
 	size_t ResolveVertex(Graph &g, PIIndex &ind, VertexId vid);
 	size_t RectangleResolveVertex(Graph &g, PIIndex &ind, VertexId vid);
+	vector<typename Graph::VertexId> MultiSplit(Graph new_graph, VertexId v, size_t k, vector<vector<EdgeId> > ve);
 
 	void ResolveEdge(EdgeId eid);
 	void dfs(vector<vector<int> > &edge_list, vector<int> &colors, int cur_vert, int cur_color);
@@ -92,7 +94,28 @@ private:
 
 //	Graph old_graph;
 };
-
+template<class Graph>
+vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(Graph new_graph, VertexId v, size_t k, vector<vector<EdgeId> > ve){
+	assert(ve.size() == k);
+	vector<VertexId> res;
+	res.resize(k);
+	for(size_t i = 0; i < k ; i++) {
+		res[i] = new_graph.AddVertex();
+		for(size_t j = 0; j < ve[i].size(); j++) {
+			if (EdgeStart(ve[i][j]) == v && EdgeEnd(ve[i][j]) == v){
+				WARN("on vertex "<< v<< "there is a loop, which is currently not supported");
+			} else if (EdgeStart(ve[i][j]) == v){
+				AddEdge(res[i], EdgeEnd(ve[i][j]), EdgeNucls(ve[i][j]), 0);
+			} else if (EdgeEnd(ve[i][j]) == v){
+				AddEdge(EdgeEnd(ve[i][j]), res[i], EdgeNucls(ve[i][j]), 0);
+			}
+			else {
+				ERROR("While splitting vertex"<< v<<", non-incident edge "<<ve[i][j]<<"found!!!");
+			}
+		}
+	}
+	return res;
+}
 template<class Graph>
 Graph RepeatResolver<Graph>::ResolveRepeats(Graph &g, PIIndex &ind){
 //	old_graph = g;
@@ -341,6 +364,7 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex( Graph &g, PIIndex &ind, Ve
 	//		old_index.getEdgeInfos(inEdgeIds[i]);
 		}
 	}
+	return 0;
 
 /*
 
@@ -382,7 +406,7 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex( Graph &g, PIIndex &ind, Ve
 			}
 		}
 
-/*	map<pair<int, int> ,int> color_pairs;
+	map<pair<int, int> ,int> color_pairs;
 	int new_colors_count = 0;
 	for(auto iter = left_colors[0].begin(), end_iter = left_colors[0].end();iter != end_iter; iter++ ) {
 		typename map<EdgeId, set<int> >::iterator sec_iter;
