@@ -192,7 +192,7 @@ There are many other possible measures, for example, minus sum of all edges leng
 Labels of vertices in rectangle graph can be considered as vertex pair info.
 \end{remark}
 
-Let's consider using rectangle graph approach to simplifying our graph. 
+Let's consider rectangle graph approach to repeat resolving. 
 There are three steps in it (without less of generality, we'll contract blue edges):
 \begin{enumerate}
 \item Building all possible rectangles.
@@ -205,7 +205,7 @@ Since contracting of blue edges is a gluing operation, there exists a partition 
 For a given vertex $v_r \in V_r$, let's consider $H_{rb}(v_r)$. Since two vertices from $G_{rb}$ connected by blue edge have same first mark, we can define mapping $f: V_r\rightarrow V$ by following equation:
 $$f(v_r)=\mathop{fm}(v_{rb}), \text{ where }v_{rb}\text{ any element of } H_{rb}(v_r).$$
 
-Each edge of $G_{r}$ has label from $E$ by construction. So this labeling provides us mapping $g:E_{r}\rightarrow E$. 
+Each edge of $G_{r}$ has label from $E$ by construction. So this labeling provides us the mapping $g:E_{r}\rightarrow E$. 
 
 The conditions on $f$ and $g$ from definition of ungluing are satisfied by construction of rectangle graph.
 
