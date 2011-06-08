@@ -518,7 +518,11 @@ public:
 	 * Glues edges and their endpoints together.
 	 */
 	void GlueEdges(EdgeId edge1, EdgeId edge2);
-
+	/*
+	 *  Splits vertex v to k copies, splitting incident to v edges due to vector ve
+	 *  @return vector of its copies
+	 *
+	 */
 };
 
 typedef DeBruijnGraph::EdgeId EdgeId;
