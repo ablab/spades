@@ -10,6 +10,7 @@
 #include <cmath>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <algorithm>
 #include "logging.hpp"
 #include "paired_info.hpp"
@@ -69,10 +70,51 @@ public:
 
 	};
 
+	class PairNewInfo{
 
-	RepeatResolver(int leap = 0) : leap_(leap), new_graph(K), new_index(new_graph){
+	public:
+		PairNewInfo(EdgeId edge_, int d_, LocalPairInfo lp_) : edge(edge_), d(d_), lp(lp_){
+
+		}
+		inline EdgeId getEdge(){
+			return edge;
+		}
+		bool isAdjacent(EdgeInfo other_info) {
+			VertexId v_s = EdgeStart(edge);
+			VertexId v_e = EdgeEnd(edge);
+			EdgeId other_edge = other_info.getEdge();
+			VertexId other_v_s = EdgeStart(other_edge);
+			VertexId other_v_e = EdgeEnd(other_edge);
+			if (v_e == other_v_s || v_s == other_v_e)
+				return true;
+			else
+				return false;
+		}
+
+		inline int getDistance(){
+			return d;
+		}
+	private:
+		EdgeId edge;
+		int d;
+		LocalPairInfo lp;
+
+	};
 
 
+
+	RepeatResolver(Graph old_graph_, int leap ) : leap_(leap), new_graph(K), old_graph(old_graph_){
+		unordered_map<VertexId, VertexId> old_to_new;
+		for(VertexIter v_iter = old_graph.SmartVertexBegin(); !v_iter.IsEnd(); ++v_iter) {
+			VertexId new_vertex = new_graph.AddVertex();
+			vertex_labels[new_vertex] = *v_iter;
+			old_to_new[*v_iter] = new_vertex;
+		}
+		for(EdgeIter e_iter = old_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+			EdgeId new_edge = new_graph.AddEdge(old_to_new[old_graph.EdgeStart(*e_iter)], old_to_new[old_graph.EdgeEnd(*e_iter)], old_graph.EdgeNucls(*e_iter), 0);
+			edge_labels[new_edge] = *e_iter;
+		}
+		//TODO add edge labels
 		assert(leap >= 0 && leap < 100);
 	}
 	Graph ResolveRepeats(Graph &g, PIIndex &ind);
@@ -88,9 +130,12 @@ private:
 	VertexIdMap vid_map;
 	NewVertexMap new_map;
 	Graph new_graph;
+	Graph old_graph;
+	unordered_map<VertexId, VertexId> vertex_labels;
+	unordered_map<EdgeId, EdgeId> edge_labels;
+
 	int sum_count;
 //	PIIndex old_index;
-	PIIndex new_index;
 
 //	Graph old_graph;
 };
@@ -102,12 +147,12 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(Graph new_gra
 	for(size_t i = 0; i < k ; i++) {
 		res[i] = new_graph.AddVertex();
 		for(size_t j = 0; j < ve[i].size(); j++) {
-			if (EdgeStart(ve[i][j]) == v && EdgeEnd(ve[i][j]) == v){
+			if (new_graph.EdgeStart(ve[i][j]) == v && new_graph.EdgeEnd(ve[i][j]) == v){
 				WARN("on vertex "<< v<< "there is a loop, which is currently not supported");
-			} else if (EdgeStart(ve[i][j]) == v){
-				AddEdge(res[i], EdgeEnd(ve[i][j]), EdgeNucls(ve[i][j]), 0);
+			} else if (new_graph.EdgeStart(ve[i][j]) == v){
+				new_graph.AddEdge(res[i], new_graph.EdgeEnd(ve[i][j]), new_graph.EdgeNucls(ve[i][j]), 0);
 			} else if (EdgeEnd(ve[i][j]) == v){
-				AddEdge(EdgeEnd(ve[i][j]), res[i], EdgeNucls(ve[i][j]), 0);
+				new_graph.AddEdge(new_graph.EdgeEnd(ve[i][j]), res[i], new_graph.EdgeNucls(ve[i][j]), 0);
 			}
 			else {
 				ERROR("While splitting vertex"<< v<<", non-incident edge "<<ve[i][j]<<"found!!!");

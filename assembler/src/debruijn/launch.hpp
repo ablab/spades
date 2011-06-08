@@ -94,7 +94,7 @@ void RemoveLowCoverageEdges(Graph &g) {
 
 void ResolveRepeats(Graph &g, PairedInfoIndex<Graph> &info) {
 	INFO("Resolving primitive repeats");
-	RepeatResolver<Graph> repeat_resolver(0);
+	RepeatResolver<Graph> repeat_resolver(g, 0);
 	repeat_resolver.ResolveRepeats(g, info);
 	INFO("Primitive repeats resolved");
 }
