@@ -248,7 +248,7 @@ public:
 
 	void CountVertexEdgeStat() {
 		size_t edgeNumber = 0;
-		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.isEnd(); ++iterator)
+		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator)
 			edgeNumber++;
 		INFO("Vertex count=" << graph_.size() << "; Edge count="
 				<< edgeNumber);
@@ -261,7 +261,7 @@ public:
 		Path<EdgeId> path = sequence_mapper.MapSequence(Sequence(genome_));
 		const vector<EdgeId> path_edges = path.sequence();
 		set<EdgeId> colored_edges(path_edges.begin(), path_edges.end());
-		for (auto it = graph_.SmartEdgeBegin(); !it.isEnd(); ++it) {
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			edge_count++;
 			if (colored_edges.count(*it) == 0 && colored_edges.count(
 					graph_.conjugate(*it)) == 0) {
@@ -293,7 +293,7 @@ public:
 
 	void CountSelfComplement() {
 		size_t sc_number = 0;
-		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.isEnd(); ++iterator)
+		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator)
 			if (graph_.conjugate(*iterator) == (*iterator))
 				sc_number++;
 		INFO("Self-complement count="<< sc_number);
@@ -331,7 +331,7 @@ public:
 		INFO("Genome mapped");
 		INFO("Genome mapping results:");
 		INFO("Covered k+1-mers:" << covered_kp1mers << " of " << (genome_.size() - k) << " which is " << (100.0 * covered_kp1mers / (genome_.size() - k)) << "%");
-		INFO("Covered k+!-mers form " << break_number + 1 << " contigious parts");
+		INFO("Covered k+1-mers form " << break_number + 1 << " contigious parts");
 		INFO("Continuity failtures " << fail);
 	}
 

@@ -353,4 +353,27 @@ void DeBruijnGraph::GlueEdges(EdgeId edge1, EdgeId edge2) {
 	}
 }
 
+vector<VertexId> DeBruijnGraph::MultiSplit(VertexId v, size_t k, vector<vector<EdgeId> > ve){
+	assert(ve.size() == k);
+	vector<VertexId> res;
+	res.resize(k);
+	for(size_t i = 0; i < k ; i++) {
+		res[i] = AddVertex();
+		for(size_t j = 0; j < ve[i].size(); j++) {
+			if (EdgeStart(ve[i][j]) == v && EdgeEnd(ve[i][j]) == v){
+				WARN("on vertex "<< v<< "there is a loop, which is currently not supported");
+			} else if (EdgeStart(ve[i][j]) == v){
+				AddEdge(res[i], EdgeEnd(ve[i][j]), EdgeNucls(ve[i][j]), 0);
+			} else if (EdgeEnd(ve[i][j]) == v){
+				AddEdge(EdgeEnd(ve[i][j]), res[i], EdgeNucls(ve[i][j]), 0);
+			}
+			else {
+				ERROR("While splitting vertex"<< v<<", non-incident edge "<<ve[i][j]<<"found!!!");
+			}
+		}
+	}
+	return res;
+}
+
+
 }

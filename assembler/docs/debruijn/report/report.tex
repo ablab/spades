@@ -1,9 +1,12 @@
-\documentclass[14pt]{article}
+\documentclass[12pt]{article}
 
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{cmap}
+\newcommand{\remark}[1]{\textbf{Remark:} #1}
+\newcommand{\dbg}{de Bruijn graph}
+\newcommand{\ignore}[1]{}
 
 \title{De Bruijn project}
 \author{Sergey Nurk, Anton Bankevich and Nikolay Vyahhi}
@@ -13,88 +16,112 @@
 
 \maketitle
 
-\section{Graph Construction}
+\tableofcontents
 
-\subsection{Original de Bruijn Graph}
+\section{De Bruijn graph}
 
-First usual de Bruijn graph with:
+This section describes our approach to the condensed \dbg{} representation, construction and modification.
+
+Condensed graph architecture was designed to be convenient, flexible and easily extensible. 
+
+It has reach interface that in particular provides different kinds of modifying operations. 
+
+One can create additional information storages and automatically synchronize them with the graph's state without a need to change a graph core or processing algorithms!
+
+%structure such that without changing core of this structure one could easily use this graph, change it, create additional information storages and synchronize information while graph changes. Space and time efficiency did not have the first priority but where possible (or necessary) these parameters were also taken in consideration.
+
+It is assumed that $k$ is always chosen even so that no vertex can appear to be self-conjugate.
+
+\subsection{Condensed graph representation}
+
+We work with condensed graph \dbg{} with $(k-1)$-mers on vertices and nucleotide sequences of arbitrary length $\geq k$ on its edges.
+
+Our graph explicitly supports conjugate structure. It means in particular that by adding an element (vertex or edge) to the graph we instantly add its conjugate. After that we provide an easy way to acquire conjugate to some graph element.
+
+Usually in addition to the condensed \dbg{} structure we will need index on its $k$-mers ($k$-mer index). It is a mapping from each $k$-mer contained in the graph to a pair of an \emph{edge id} it belongs to and its \emph{offset from the start} of that edge. 
+
+\subsection{Condensed graph construction}
+The construction process consists of two phases:
 \begin{itemize}
-\item $k$-mers as nodes,
-\item $(k+1)$-mers as edges.
-\end{itemize}
-is constructed for some compile-time fixed k. 
-
-\textit{Comment: Yes, it'll be better to make it runtime-length later.}
-
-DeBruijn graph is presented by class \texttt{SeqMap} which stores set of all edges(k+1-mers) of graph. Such structure allows to perform all simple operations on graph such as adding and removing edges and requesting for incoming or outgoing edges.
-
-SeqMap class uses Cuckoo hashmap(\url{http://en.wikipedia.org/wiki/Cuckoo_hashing}) to store k+1-mers. Cuckoo has higher load factor (90-95\%, hence very memory-effective), much slower \texttt{insert} but much faster \texttt{find}.
-
-\subsection{Condensed Graph Construction}
-
-After initial graph was constructed it is condensed. It's done by usual traversal of the initial graph and accumulating edge-sequence while we're on a simple path (without branches). The result is stored in \texttt{DeBruijnGraph} class which is much more complex structure than SeqMap, used to store initial graph. Since condensed graph has smaller size time performance of graph operation becomes less critical thus certain operations are implemented less time-efficient while more usable.
-
-\subsection{Problems}
-There are only minor problems in this section concerning time and space efficiency which are not of much significance while applying these code to bacterial genomes. Even if these problems become bottleneck we could always switch to A-bruijn style graph construction.
-
-\subsection{Suggestions}
-
-\section{Condensed Graph}
-\subsection{Condensed Graph Idea}
-
-CondensedGraph was designed to have flexible structure such that without changing core of this structure one could easily use this graph, change it, create additional information storages and synchronize information while graph changes. Space and time efficiency did not have the first priority but where possible (or necessary) these parameters were also taken in consideration.
-
-\subsection{Condensed Graph Main Solution}
-
-What makes CondensedGraph usable and extendible is GraphHandler structure. CondensedGraph has restricted number of ways to change its contents like add vertex or split edge etc. Each of them is represented by certain public method of CondensedGraph class. Each time one of these methods is called corresponding event is triggered and all objects that listen to graph events are notified about what exactly happened to the graph and respond to the event as they like. Thus instead of storing all info in graph itself and overloading its structure with information and features which are not always needed at the moment one can create external tools which could be easily switched on and off dynamically.
-
-\subsection{Smart Iterators}
-
-Smart iterators are tools to iterate through vertices/edges of graph. These iterators were called smart because of two reasons:
-\begin{itemize}
-\item Smart Iterators do not become invalid after insertions/deletions of edges/vertices. Moreover Smart Iterators gaurantee that when iteration is finished all vertices/edges which currently belong to graph. This became possible because of Handler structure. Smart Iterators themselves are handlers and listen to add/delete edge/vertex events.
-\item Smart Iterators allow to choose order in which vertices/edges are iterated. This is done with comparator that defines which vertices/edges should go first.
+\item original (uncondensed) \dbg{} construction step
+\item condensation step
 \end{itemize}
 
-\subsection{Problems}
+We use straightforward \dbg{} implementation over the set of $k$-mers. 
+
+After some experiments we started using cuckoo hashset (\url{http://en.wikipedia.org/wiki/Cuckoo_hashing}) as an underlying set implementation.
+
+During condensation step we construct condensed \dbg{} and $k$-mer index at the same time.
+
+Condensation is done by the traversal of the \dbg{} graph edges and accumulating edge-sequence while we're on a simple path (without branches). Obtained sequences are added to the condensed graph as edges and are immediately indexed.
+
+%The result is stored in \texttt{DeBruijnGraph} class which is much more complex structure than SeqMap, used to store initial graph. Since condensed graph has smaller size time performance of graph operation becomes less critical thus certain operations are implemented less time-efficient while more usable.
+
+\subsubsection{Problems}
+There are only minor problems in this graph construction concerning time and space efficiency which are not of much significance while applying these code to bacterial genomes. %Even if these problems become bottleneck we could always switch to A-bruijn style graph construction.
+
+%\subsubsection{Suggestions}
+
+\subsection{Condensed graph interface and modification}
+
+Our condensed graph has restricted number of ways to change its contents like add vertex or split edge etc. Each of them is represented by certain public method of condensed graph class.
+
+All modifying operation can be nominally divided into low- and high-level operations.
+
+Low-level operations are addition/deletion of edge/vertex.
+
+High-level operations are:
+\begin{itemize}
+\item concatenation of edges
+\item split of an edge in a given proportion
+\item projection of one edge to another
+\end{itemize}
+
+todo: write about each of them
+
+During graph modification it is important not to break consistency of conjugate elements. To achieve this every time a modifying operation is performed, the symmetrical operation is performed on conjugate elements. Implementation of this approach appeared to be tricky at some moments, but after it was done it allowed us to think of conjugateness much more seldom. 
+
+todo: write about some details???
+
+What makes our condensed graph convenient and extendible is employment of callback technique. Each time a modifying operation is performed corresponding event is triggered and all objects that listen to graph events are notified about what exactly happened to the graph.% and respond to the event as they like.
+ Thus instead of overloading graph structure with information and features one can create external tools which could be easily switched on and off dynamically.
+
+\subsubsection{Problems}
 \begin{itemize}
 \item Code is argued to be over-architectured. In particular all GraphHandler calls are virtual and it is not yet clear if there is performance bottleneck here.
 \item Graph still has different core from A-bruijn graph thus major refactoring is needed. It will be finished in the near future,
 \item Initially graph was meant to be used for error correction thus operations necessary for repeat resolving are still not supported and even interface needs further discussion. Also certain problems arise concerning support of additional information which would be discussed later.
 \end{itemize}
 
-%\section{Additional Information}
-%The following information can be counted and maintained for graph:
-
-\section{Coverage}
+\subsection{Coverage}
 
 Coverage of an edge here corresponds to the number of times (K+1)-mers from this edge were observed in original reads. It's additive, so when we merge edges coverage of result is equal to sum of coverages of edges merged. At the moment coverage is stored in edges of graph and maintained with Handler.
 
-\subsection{Problems}
+\subsubsection{Problems}
 
 Coverage structure itself seems to have no problems but it is not clear how to support coverage values in unglueing operations used in repeat resolving. When one edge is spread among several new edges one can not tell which part of edge coverage supports which edge. Actually this problem could be just ignored because when certain ungluing operation is performed one can rely on all the new edges to be trusted thus actual value of coverage does not really matter while we do not try to estimate edge multiplicity by its coverage.
 
-\subsection{Suggestions}
+\subsubsection{Suggestions}
 
-\section{Index}
+\subsection{Index}
 
 In order to be able to map reads to graph index structure is maintained. Index contains map from k+1-mers to positions at edges where these k+1-mers are in graph.
 
-\subsection{Problems}
+\subsubsection{Problems}
 
 It is not clear if this whole heavy structure is actually necessary. Maybe only neighbourhoods of vertices should be indexed.
 
 
-\subsection{Suggestions}
+\subsubsection{Suggestions}
 Memory needed can be decreased to half if storing info only for lexicographically min of conjugate $k+1$-mers
 
-\section{Unique ids}
+\subsection{Unique ids}
 
 Currently id of vertex or edge is an address of corresponding object in memory. As the result ids are unique at any given moment of time but if one considers all vertices or edges which were in graph while program worked ids become not unique because memory where vertex/edge object was stored at some point could be reused later and thus it would have the same id. In order to deal with this problem UniqueIdStorage structure was suggested(not yet implemented). This structure allows to assign each vertex and edge globally unique id and then find vertex with given unique id or unique if of the given vertex.
 
-\section{History}
+\subsection{History}
 
-\section{Paired Info}
+\subsection{Paired Info}
 
 Paired info structures store information about paired reads. For each pair of edges one can request list of all information paired reads give for this pair, Also one can request information about just one pair.
 
@@ -113,15 +140,15 @@ There are several points concerning paired information that should be taken into
 
 Currently the following clustering strategy is implemented: first even before tip clipping and bulge removal data is collected from paired read and as the result for each pair of edges we have collection of possible distances paired reads vote for. Then this information is carefully clustered and result of this clusterization is the one actually used to resolve repeats, construct rectangle graph etc.
 
-\subsection{Online Clustering}
+\subsubsection{Online Clustering}
 
 If paired info is used to change graph one should synchronize paired info with these changes. Thus there should be methods to change and merge paired information.
 
-\subsection{Offline Clustering}
+\subsubsection{Offline Clustering}
 
 Input data for offline clustering is collection of paired data with high variance value and output is meant to be carefully clustered information which aims to be as precise as possible.
 
-\subsection{Weights}
+\subsubsection{Weights}
 In order to measure level of certainty paired reads give for this distance each information unit has weight value. Currently there are three ways to count weights being argued.
 
 \begin{itemize}
@@ -130,20 +157,30 @@ In order to measure level of certainty paired reads give for this distance each 
 \item Weight of paired information is a number of reads that support this information. This weight is very difficult to support but it may be better at reflecting level of certainty in this information.
 \end{itemize}
 
-\subsection{Problems}
+\subsubsection{Problems}
 
 The main problem here is how to distribute paired information among new edges when unglueing operations are performed on graph. This problem can not be ignored since we can neither copy information to all new edges because we then have lots of mistakes in paired info nor can we forget about this because lots of paired info would be wasted.
 
-\subsection{Suggestions}
+\subsubsection{Suggestions}
 
 The only solution we thought of is to make paired info support a job for repeat resolver itself. This solution breaks concept that information storages should be synchronized with by listening graph events.
+
+\section{Graph tools}
+\subsubsection{Smart Iterators}
+
+Smart iterators are tools to iterate through vertices/edges of graph. These iterators were called smart because of two reasons:
+\begin{itemize}
+\item Smart Iterators do not become invalid after insertions/deletions of edges/vertices. Moreover Smart Iterators gaurantee that when iteration is finished all vertices/edges which currently belong to graph. This became possible because of Handler structure. Smart Iterators themselves are handlers and listen to add/delete edge/vertex events.
+\item Smart Iterators allow to choose order in which vertices/edges are iterated. This is done with comparator that defines which vertices/edges should go first.
 \end{itemize}
 
-\section{Tip Clipping}
+\section{Simplification algorithms}
+
+\subsection{Tip Clipping}
 
 The following algorithm is used for tip clipping: we iterate through all edges of graph in order of increasing length. If current edge topologically looks like tip and has alternative path with good enough coverage this edge is removed. If after removing this edge vertex that was adjacent with removed edge has unique incoming edge and unique outgoing edge those edges are concatenated and new edge is also checked as tip candidate.
 
-\section{Bulge Removal}
+\subsection{Bulge Removal}
 \textit{Simple bulge} is the edge with low (absolute and relative) coverage such that there is an alternative path between its start and end of length $\approx$ edge length.
 
 We iterate through all edges, looking for simple bulges. If we find such edge, we remove it, condense neighbourhoods of its ends and add new edges to traversal.
