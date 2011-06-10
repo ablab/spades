@@ -556,6 +556,9 @@ public:
 			DeleteVertex(end);
 		}
 	}
+
+private:
+	DECL_LOGGER("AbstractConjugateGraph")
 };
 
 }

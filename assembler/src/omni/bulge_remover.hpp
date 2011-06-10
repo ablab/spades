@@ -71,6 +71,9 @@ private:
 	 */
 	pair<vector<EdgeId> , int> BestPath(const Graph& g, VertexId start,
 			VertexId end, int length_left);
+
+private:
+	DECL_LOGGER("BulgeRemover")
 };
 
 template<class Graph>

@@ -7,7 +7,7 @@
 #include "iostream"
 #include "fstream"
 
-LOGGER("p.graphio");
+DECL_MODULE_LOGGER("graphio");
 using namespace paired_assembler;
 
 

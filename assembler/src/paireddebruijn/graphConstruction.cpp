@@ -4,7 +4,7 @@
 #include "vardConstruction.hpp"
 #include "constdConstruction.hpp"
 
-LOGGER("p.graphConstruction");
+DECL_MODULE_LOGGER("graphConstruction");
 
 
 using namespace paired_assembler;

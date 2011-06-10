@@ -8,7 +8,7 @@
 
 namespace hashing {
 
-LOGGER("a.hashing");
+DECL_LOGGER("hashing")
 
 /**
 * Type of hash values.

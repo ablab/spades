@@ -1,6 +1,6 @@
 #include "common.hpp"
 
-LOGGER("p.common");
+DECL_MODULE_LOGGER("common");
 
 string parsed_reads;
 string parsed_k_l_mers;

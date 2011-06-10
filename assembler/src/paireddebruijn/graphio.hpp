@@ -55,6 +55,9 @@ public:
 	template<typename valueType>
 	void output(vector<valueType> v);
 	void close();
+
+private:
+	DECL_LOGGER("DataPrinter")
 };
 
 class DataReader {

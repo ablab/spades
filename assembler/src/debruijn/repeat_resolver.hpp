@@ -17,7 +17,6 @@
 #include "config.hpp"
 #include "omni_utils.hpp"
 
-LOGGER("d.repeat_resolver");
 namespace debruijn_graph {
 
 using omnigraph::SmartVertexIterator;
@@ -138,6 +137,9 @@ private:
 //	PIIndex old_index;
 
 //	Graph old_graph;
+
+private:
+	DECL_LOGGER("RepeatResolver")
 };
 template<class Graph>
 vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(Graph new_graph, VertexId v, size_t k, vector<vector<EdgeId> > ve){

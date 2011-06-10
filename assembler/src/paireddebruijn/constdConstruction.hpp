@@ -2,9 +2,9 @@
 #define CONSTDCONSTRUCTION_H_
 #include "pairedGraph.hpp"
 #include "common.hpp"
-#include "graphVisualizer.hpp"
+//#include "graphVisualizer.hpp"
 #include "seq.hpp"
-#include "graphVisualizer.hpp"
+//#include "graphVisualizer.hpp"
 #include "pairedGraph.hpp"
 #include "graphio.hpp"
 

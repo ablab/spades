@@ -1,6 +1,11 @@
 #include "toyexamples.hpp"
 #include "graphBuilder.hpp"
+
 #include "logging.hpp"
+DECL_PROJECT_LOGGER("a")
+DECL_MODULE_LOGGER("main")
+
+
 #include "omni_tools.hpp"
 #include "omnigraph.hpp"
 #include "visualization_utils.hpp"
@@ -10,7 +15,7 @@
 using namespace GetOpt;
 using namespace std;
 
-LOGGER("a");
+
 
 int main(int argc, char* argv[]) {
 	GetOpt_pp options(argc, argv, Include_Environment);
