@@ -5,7 +5,6 @@
 #include <set>
 #include <cstring>
 #include "seq.hpp"
-#include "graphVisualizer.hpp"
 #include "sequence.hpp"
 #include "logging.hpp"
 #include "nucl.hpp"
@@ -319,7 +318,7 @@ public:
 	}
 
 	const vector<EdgeId> OutgoingEdges(VertexId v) const {
-		return v->OutGoingEdges();
+		return v->OutgoingEdges();
 	}
 
 	const vector<EdgeId> IncomingEdges(VertexId v) const {
@@ -357,6 +356,14 @@ public:
 
 	const VertexData& data(VertexId v) const {
 		return v->data();
+	}
+
+	std::string str(const EdgeId edge) const {
+		return master_.str(data(edge));
+	}
+
+	std::string str(const VertexId v) const {
+		return master_.str(data(v));
 	}
 
 	VertexId AddVertex(const VertexData& data) {

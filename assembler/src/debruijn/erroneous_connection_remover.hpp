@@ -23,7 +23,7 @@ public:
 	}
 
 	void RemoveEdges(Graph& g) {
-		for (auto it = g.SmartEdgeBegin(); !it.isEnd(); ++it) {
+		for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			typename Graph::EdgeId e = *it;
 			if (g.length(e) < max_length_ && g.coverage(e) < max_coverage_) {
 				g.DeleteEdge(e);

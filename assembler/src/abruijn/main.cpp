@@ -89,10 +89,10 @@ int main(int argc, char* argv[]) {
 	abruijn::GraphBuilderMaster<CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream>>>> gbm(cr, take, mode);
 	gbm.build();
 
-	INFO("Spelling the reference genome");
-	gbm.SpellGenomeThroughGraph(cut + 219);
+//	INFO("Spelling the reference genome");
+//	gbm.SpellGenomeThroughGraph(cut + 219);
 
-	INFO("===== Condensing... =====");
+	INFO("===== Compressing... =====");
 	omnigraph::Compressor<omnigraph::Omnigraph> compressor(*gbm.graph());
 	compressor.CompressAllVertices();
 	INFO(gbm.graph()->size() << " vertices");
@@ -103,7 +103,10 @@ int main(int argc, char* argv[]) {
 	INFO("Outputting graph to " << output_file);
 	ofstream output_stream(output_file.c_str(), ios::out);
 //	gbm.graph()->output(output_stream, !output_single); TODO
-//	SimpleGraphVisualizer sgv;
+	gvis::DotPairedGraphPrinter<omnigraph::Omnigraph> printer(*gbm.graph(), "earmarked", output_stream);
+	gvis::StrGraphLabeler<omnigraph::Omnigraph> labeler(*gbm.graph());
+	gvis::SimpleGraphVisualizer<omnigraph::Omnigraph> sgv(*gbm.graph(), printer, labeler);
+	sgv.Visualize();
 	INFO("Done.");
 	output_stream.close();
 

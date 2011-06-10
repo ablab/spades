@@ -1,15 +1,19 @@
 #ifndef VISUALIZATIONUTILS_HPP_
 #define VISUALIZATIONUTILS_HPP_
 
-#include "graphVisualizer.hpp"
+#include "graph_printer.hpp"
+#include "graph_labeler.hpp"
 #include "omni_utils.hpp"
 #include "stack"
 #include "queue"
 
-namespace omnigraph {
+namespace gvis {
+
+LOGGER("omg.gvis");
 
 using gvis::PairedGraphPrinter;
 using omnigraph::SmartEdgeIterator;
+using omnigraph::Path;
 
 template<class Graph>
 class GraphVisualizer {
@@ -63,19 +67,24 @@ class SimpleGraphVisualizer: public GraphVisualizer<Graph> {
 	typedef GraphVisualizer<Graph> super;
 	typedef typename Graph::VertexId VertexId;
 	gvis::GraphPrinter<VertexId>& gp_;
+	gvis::GraphLabeler<Graph>& gl_;
 public:
-	SimpleGraphVisualizer(Graph& g, gvis::GraphPrinter<VertexId>& gp) :
-		super(g), gp_(gp) {
+	SimpleGraphVisualizer(Graph& g, gvis::GraphPrinter<VertexId>& gp, gvis::GraphLabeler<Graph>& gl) :
+		super(g), gp_(gp), gl_(gl) {
 	}
 
 	virtual void Visualize() {
 		gp_.open();
-		for (auto it = super::g_.SmartVertexBegin(); !it.isEnd(); ++it) {
-			gp_.AddVertex(*it);
+		DEBUG("OPPA open");
+		for (auto it = super::g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
+			DEBUG("OPPA vertex");
+			gp_.AddVertex(*it, gl_.label(*it));
 		}
-		for (auto it = super::g_.SmartEdgeBegin(); !it.isEnd(); ++it) {
-			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it));
+		for (auto it = super::g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			DEBUG("OPPA edge");
+			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it), gl_.label(*it));
 		}
+		DEBUG("OPPA close");
 		gp_.close();
 	}
 };
@@ -106,8 +115,8 @@ class ColoredGraphVisualizer: public PartialGraphVisualizer<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	const map<EdgeId, string>& edge_colors_;
-	const string& default_color_;
-	const string& border_vertex_color_;
+	const string default_color_;
+	const string border_vertex_color_;
 
 	bool IsBorder(VertexId v, const set<VertexId>& vertices) {
 		const vector<EdgeId> outgoing_edges = super::g_.OutgoingEdges(v);
@@ -144,21 +153,19 @@ public:
 
 	virtual void Visualize(const vector<VertexId>& vertices) {
 		set < VertexId > vertex_set(vertices.begin(), vertices.end());
-
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
 			super::gp_.AddVertex(
 					*v_it,
 					"",
 					IsBorder(*v_it, vertex_set) ? border_vertex_color_
-							: "white");
+							: "yellow");
 		}
-
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
 			const vector<EdgeId> edges = super::g_.OutgoingEdges(*v_it);
 			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
 				VertexId edge_end = super::g_.EdgeEnd(*e_it);
 				if (vertex_set.count(edge_end) > 0) {
-					super::gp_.AddEdge(*v_it, edge_end, EdgeColor(*e_it));
+					super::gp_.AddEdge(*v_it, edge_end, " ", EdgeColor(*e_it));
 				}
 			}
 		}
@@ -192,11 +199,13 @@ private:
 	}
 
 	void ConstructBlackEdgesSet(set<EdgeId> &result) {
-		for (auto iterator = graph_.SmartEdgeBegin(); iterator.IsEnd(); ++iterator) {
+		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator) {
 			result.insert(*iterator);
 		}
-		for (auto it = path_.sequence().begin(); it != path_.sequence().end(); ++it) {
-			result.erase(*it);
+		for (auto iterator = path_.sequence().begin(); iterator
+				!= path_.sequence().end(); ++iterator) {
+			result.erase(*iterator);
+			result.erase(graph_.conjugate(*iterator));
 		}
 	}
 
@@ -211,7 +220,7 @@ public:
 		return colors;
 	}
 
-	set<EdgeId> BlackEdges(const Path<EdgeId> path) {
+	set<EdgeId> BlackEdges() {
 		set<EdgeId> result;
 		ConstructBlackEdgesSet(result);
 		return result;
@@ -230,19 +239,6 @@ public:
 	}
 };
 
-template<class Graph, class Length>
-class Dijkstra {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-
-	Graph &graph_;
-public:
-	Dijkstra(Graph &graph) :
-		graph_(graph) {
-	}
-};
-
 template<class Graph>
 class ErrorComponentSplitter: public GraphSplitter<typename Graph::VertexId> {
 private:
@@ -250,8 +246,9 @@ private:
 	typedef typename Graph::VertexId VertexId;
 
 	Graph &graph_;
-	const set<EdgeId> black_edges_;
+	set<EdgeId> black_edges_;
 	SmartEdgeIterator<Graph> iterator_;
+	set<VertexId> visited_;
 
 public:
 	ErrorComponentSplitter(Graph &graph, const set<EdgeId> &black_edges) :
@@ -267,21 +264,25 @@ public:
 		st.push(start_vertex);
 		size_t result = 0;
 		while (!st.empty()) {
-			VertexId next = st.pop();
-			if (component.find(next) == component.end()) {
+			VertexId next = st.top();
+			st.pop();
+			if (visited_.find(next) == visited_.end()) {
 				component.insert(next);
+				visited_.insert(next);
 				vector < EdgeId > outgoing = graph_.OutgoingEdges(next);
 				for (size_t i = 0; i < outgoing.size(); i++) {
 					if (black_edges_.find(outgoing[i]) != black_edges_.end()) {
-						black_edges_.erase(outgoing[i]);
+						//						black_edges_.erase(outgoing[i]);
 						result += graph_.length(outgoing[i]);
 						st.push(graph_.EdgeEnd(outgoing[i]));
 					}
 				}
-				vector < EdgeId > incoming = graph_.OutgoingEdges(next);
+				vector < EdgeId > incoming = graph_.IncomingEdges(next);
+				//				cout << outgoing.size() << " " << incoming.size() << " "
+				//						<< next << endl;
 				for (size_t i = 0; i < incoming.size(); i++) {
 					if (black_edges_.find(incoming[i]) != black_edges_.end()) {
-						black_edges_.erase(incoming[i]);
+						//						black_edges_.erase(incoming[i]);
 						result += graph_.length(incoming[i]);
 						st.push(graph_.EdgeStart(incoming[i]));
 					}
@@ -291,26 +292,49 @@ public:
 		return result;
 	}
 
+	void ProcessOutgoing(std::priority_queue<pair<size_t, VertexId> > &q,
+			set<VertexId> &was, VertexId next, size_t next_length, size_t bound) {
+		vector < EdgeId > outgoing = graph_.OutgoingEdges(next);
+		for (size_t i = 0; i < outgoing.size(); i++) {
+			VertexId v = graph_.EdgeEnd(outgoing[i]);
+			if (was.find(v) == was.end()) {
+				size_t size = next_length + graph_.length(outgoing[i]);
+				q.push(make_pair(size, v));
+			}
+		}
+	}
+
+	void ProcessIncoming(std::priority_queue<pair<size_t, VertexId> > &q,
+			set<VertexId> &was, VertexId next, size_t next_length, size_t bound) {
+		vector < EdgeId > incoming = graph_.IncomingEdges(next);
+		for (size_t i = 0; i < incoming.size(); i++) {
+			VertexId v = graph_.EdgeStart(incoming[i]);
+			if (was.find(v) == was.end()) {
+				size_t size = next_length + graph_.length(incoming[i]);
+				q.push(make_pair(size, graph_.EdgeStart(incoming[i])));
+			}
+		}
+	}
+
 	void Dijkstra(set<VertexId> &component, size_t bound) {
+		set < VertexId > was;
 		std::priority_queue < pair<size_t, VertexId> > q;
 		for (auto iterator = component.begin(); iterator != component.end(); ++iterator) {
 			q.push(make_pair(0, *iterator));
 		}
 		while (!q.empty()) {
-			auto next_pair = q.pop();
+			auto next_pair = q.top();
+			q.pop();
 			VertexId next = next_pair.second;
 			size_t next_length = next_pair.first;
-			vector < EdgeId > outgoing = graph_.OutgoingEdges(next);
-			for (size_t i = 0; i < outgoing.size(); i++) {
-				size_t size = next_length + graph_.length(outgoing[i]);
-				if (size <= bound)
-					q.push(make_pair(size, graph_.EdgeEnd(outgoing[i])));
+			if (was.find(next) != was.end()) {
+				continue;
 			}
-			vector < EdgeId > incoming = graph_.OutgoingEdges(next);
-			for (size_t i = 0; i < incoming.size(); i++) {
-				size_t size = next_length + graph_.length(incoming[i]);
-				if (size <= bound)
-					q.push(make_pair(size, graph_.EdgeStart(incoming[i])));
+			component.insert(next_pair.second);
+			was.insert(next_pair.second);
+			if (next_length <= bound) {
+				ProcessOutgoing(q, was, next, next_length, bound);
+				ProcessIncoming(q, was, next, next_length, bound);
 			}
 		}
 	}
@@ -320,16 +344,22 @@ public:
 			assert(false);
 			return vector<VertexId> ();
 		}
+		EdgeId next = *iterator_;
+		++iterator_;
 		set < VertexId > component;
-		size_t component_size = FindComponent(graph_.EdgeEnd(*iterator_),
-				component);
+		//		cout << "oppa" << endl;
+		size_t component_size = FindComponent(graph_.EdgeEnd(next), component);
+		//		cout << component.size() << endl;
 		Dijkstra(component, component_size);
+		//		cout << component.size() << endl;
 		return vector<VertexId> (component.begin(), component.end());
 	}
 
 	virtual bool Finished() {
 		while (!iterator_.IsEnd()) {
-			if (black_edges_.find(*iterator_) != black_edges_.end()) {
+			if (black_edges_.find(*iterator_) != black_edges_.end()
+					&& visited_.find(graph_.EdgeEnd(*iterator_))
+							== visited_.end()) {
 				return false;
 			}
 			++iterator_;
@@ -340,8 +370,20 @@ public:
 };
 
 template<class Graph>
-void WriteToFile(const string& file_name, const string& graph_name,
-/*const */Graph& g,
+void WriteSimple(const string& file_name, const string& graph_name, Graph& g) {
+	fstream filestr;
+	string simple_file_name(file_name);
+	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
+	filestr.open((simple_file_name).c_str(), fstream::out);
+	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
+	gvis::EmptyGraphLabeler<Graph> labeler;
+	SimpleGraphVisualizer<Graph> sgv(g, gpr, labeler);
+	sgv.Visualize();
+	filestr.close();
+}
+
+template<class Graph>
+void WritePaired(const string& file_name, const string& graph_name, Graph& g,
 		Path<typename Graph::EdgeId> path = Path<typename Graph::EdgeId> ()) {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
@@ -352,13 +394,47 @@ void WriteToFile(const string& file_name, const string& graph_name,
 	AdapterGraphVisualizer<Graph> result_vis(g, gv);
 	result_vis.Visualize();
 	filestr.close();
-	string simple_file_name(file_name);
-	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
-	filestr.open((simple_file_name).c_str(), fstream::out);
-	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
-	SimpleGraphVisualizer<Graph> sgv(g, gpr);
-	sgv.Visualize();
-	filestr.close();
+}
+
+template<class Graph>
+string ConstructComponentName(string file_name, size_t cnt) {
+	stringstream ss;
+	ss << "_error_" << cnt;
+	string res = file_name;
+	res.insert(res.length() - 4, ss.str());
+	return res;
+}
+
+template<class Graph>
+void WriteErrors(const string& file_name, const string& graph_name, Graph& g,
+		Path<typename Graph::EdgeId> path = Path<typename Graph::EdgeId> ()) {
+	PathColorer<Graph> path_colorer(g, path);
+	set<typename Graph::EdgeId> black = path_colorer.BlackEdges();
+	ErrorComponentSplitter<Graph> splitter(g, black);
+	size_t cnt = 0;
+	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
+	//	cout << "oppa" << endl;
+	while (!splitter.Finished() && cnt < 100) {
+		fstream filestr;
+		filestr.open(ConstructComponentName<Graph> (file_name, cnt).c_str(),
+				fstream::out);
+		gvis::DotPairedGraphPrinter<Graph> gp(g, graph_name, filestr);
+		ColoredGraphVisualizer<Graph> gv(g, gp, coloring);
+		auto component = splitter.NextComponent();
+		gp.open();
+		gv.Visualize(component);
+		gp.close();
+		//		cout << cnt << endl;
+		cnt++;
+	}
+}
+
+template<class Graph>
+void WriteToFile(const string& file_name, const string& graph_name, Graph& g,
+		Path<typename Graph::EdgeId> path = Path<typename Graph::EdgeId> ()) {
+	WritePaired(file_name, graph_name, g, path);
+	WriteSimple(file_name, graph_name, g);
+	WriteErrors(file_name, graph_name, g, path);
 }
 
 }

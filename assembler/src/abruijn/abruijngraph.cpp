@@ -3,7 +3,7 @@
 #include <assert.h>
 #include "logging.hpp"
 #include "abruijngraph.hpp"
-#include "graphVisualizer.hpp"
+#include "graph_printer.hpp"
 #include "simple_tools.hpp"
 #include <ext/hash_map>
 

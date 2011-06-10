@@ -1,4 +1,4 @@
-#include "graphVisualizer.hpp"
+#include "graph_printer.hpp"
 #include "iostream"
 #include "string"
 #include "cute.h"

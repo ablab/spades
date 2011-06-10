@@ -1,5 +1,5 @@
-#ifndef GRAPH_VIS_
-#define GRAPH_VIS_
+#ifndef GRAPH_PRINTER_HPP_
+#define GRAPH_PRINTER_HPP_
 
 #include <iostream>
 #include <fstream>
@@ -265,7 +265,7 @@ public:
 	}
 
 	void open() {
-		startSimpleGraphRecord(out_, name_);
+		startGraphRecord(out_, name_);
 	}
 
 	void close() {
@@ -358,4 +358,4 @@ public:
 };
 
 }
-#endif //GRAPH_VIS_//
+#endif //GRAPH_PRINTER_HPP_//

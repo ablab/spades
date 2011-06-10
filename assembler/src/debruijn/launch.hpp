@@ -42,7 +42,7 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 void WriteToDotFile(Graph &g, const string& file_name, string graph_name,
 		Path<EdgeId> path = Path<EdgeId> ()) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
-	WriteToFile(/*DE_BRUIJN_DATA_FOLDER + */file_name, graph_name, g, path);
+	gvis::WriteToFile(/*DE_BRUIJN_DATA_FOLDER + */file_name, graph_name, g, path);
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
 
@@ -94,7 +94,7 @@ void RemoveLowCoverageEdges(Graph &g) {
 
 void ResolveRepeats(Graph &g, PairedInfoIndex<Graph> &info) {
 	INFO("Resolving primitive repeats");
-	RepeatResolver<Graph> repeat_resolver(0);
+	RepeatResolver<Graph> repeat_resolver(g, 0);
 	repeat_resolver.ResolveRepeats(g, info);
 	INFO("Primitive repeats resolved");
 }
