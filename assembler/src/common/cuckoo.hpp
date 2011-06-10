@@ -19,6 +19,7 @@
  */
 
 #include <cstring>
+#include <cmath>
 #include <map>
 
 #ifndef _CUCKOO_HPP_
@@ -377,6 +378,7 @@ private:
     len_part_ = (size_t)(len_part_ * step_);
     len_part_ = ((len_part_ + 7) >> 3) << 3;
     len_ = len_part_ * d_;
+    //max_loop_ = round(0.5 * log(len_part_) / log(1.1)) + 1;
     
     update_exists(len_temp_);
     update_data(len_temp_);
