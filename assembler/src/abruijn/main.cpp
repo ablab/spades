@@ -107,8 +107,8 @@ int main(int argc, char* argv[]) {
 	gvis::StrGraphLabeler<omnigraph::Omnigraph> labeler(*gbm.graph());
 	gvis::SimpleGraphVisualizer<omnigraph::Omnigraph> sgv(*gbm.graph(), printer, labeler);
 	sgv.Visualize();
-	INFO("Done.");
 	output_stream.close();
+	INFO("Done.");
 
 	//ABruijnGraphWithGraphVisualizer ( "ATGTGTGACTTTGTATCGTATTGCGGGCGGCGCGCTTATTGTATGCGTAAATTTGGGTCATATTGATCGTAAAATGCGTATGATGCACTGCA", 6, 3 );
 	return 0;
