@@ -7,7 +7,8 @@
 #include "read.hpp"
 #include "quality.hpp"
 
-LOGGER("b");
+#include "common/logging.hpp"
+DECL_PROJECT_LOGGER("b");
 
 #define PROCESS_READS 25
 #define READ_FILENAME "/home/student/nikolenko/python/bayesQuality/s_6_1.fastq.gz"

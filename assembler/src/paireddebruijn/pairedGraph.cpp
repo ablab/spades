@@ -8,7 +8,7 @@
 //int deleteNode(Node* A) {
 //	return A->upperSize = 0;
 //}
-LOGGER("p.pairedGraph");
+DECL_MODULE_LOGGER("pairedGraph");
 
 namespace paired_assembler {
 

@@ -1,6 +1,11 @@
 #include "toyexamples.hpp"
 #include "graphBuilder.hpp"
+
 #include "logging.hpp"
+DECL_PROJECT_LOGGER("a")
+DECL_MODULE_LOGGER("main")
+
+
 #include "omni_tools.hpp"
 #include "omnigraph.hpp"
 #include "visualization_utils.hpp"
@@ -10,7 +15,7 @@
 using namespace GetOpt;
 using namespace std;
 
-LOGGER("a");
+
 
 int main(int argc, char* argv[]) {
 	GetOpt_pp options(argc, argv, Include_Environment);
@@ -107,8 +112,8 @@ int main(int argc, char* argv[]) {
 	gvis::StrGraphLabeler<omnigraph::Omnigraph> labeler(*gbm.graph());
 	gvis::SimpleGraphVisualizer<omnigraph::Omnigraph> sgv(*gbm.graph(), printer, labeler);
 	sgv.Visualize();
-	INFO("Done.");
 	output_stream.close();
+	INFO("Done.");
 
 	//ABruijnGraphWithGraphVisualizer ( "ATGTGTGACTTTGTATCGTATTGCGGGCGGCGCGCTTATTGTATGCGTAAATTTGGGTCATATTGATCGTAAAATGCGTATGATGCACTGCA", 6, 3 );
 	return 0;

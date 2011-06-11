@@ -1,6 +1,6 @@
 #include "sequence.hpp"
 #include "common.hpp"
-#include "graphVisualizer.hpp"
+//#include "graphVisualizer.hpp"
 #include "logging.hpp"
 //#include "hashTable.h"
 using namespace std;
@@ -357,6 +357,9 @@ public:
 	bool operator==(const VertexIterator &other);
 
 	bool operator!=(const VertexIterator &other);
+
+private:
+	DECL_LOGGER("VertexIterator")
 };
 
 class EdgeIterator {
@@ -378,6 +381,9 @@ public:
 	bool operator==(const EdgeIterator &other);
 
 	bool operator!=(const EdgeIterator &other);
+
+private:
+	DECL_LOGGER("EdgeIterator")
 };
 
 class PairedGraph: public PairedGraphData, public IPairedGraph<int, Edge *,
@@ -581,6 +587,9 @@ public:
 	void recreateVerticesInfo(int vertCount, longEdgesMap &longEdges);
 	void removeLowCoveredEdges(longEdgesMap &longEdges, int CoverageThreshold = 1);
 	void RebuildVertexMap(void);
+
+private:
+	DECL_LOGGER("PairedGraph")
 };
 
 int storeVertex(PairedGraph &graph, ll newKmer, Sequence* newSeq);

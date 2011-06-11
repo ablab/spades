@@ -523,6 +523,9 @@ public:
 	 *  @return vector of its copies
 	 *
 	 */
+
+private:
+	DECL_LOGGER("DeBruijnGraph")
 };
 
 typedef DeBruijnGraph::EdgeId EdgeId;

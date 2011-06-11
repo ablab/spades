@@ -3,7 +3,8 @@
 #include "constructHashTable.hpp"
 #include "graphio.hpp"
 #include "nucl.hpp"
-LOGGER("p.constructHashTable");
+
+DECL_MODULE_LOGGER("constructHashTable");
 
 using namespace std;
 

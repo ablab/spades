@@ -7,8 +7,7 @@
 #include "common.hpp"
 #include "constructHashTable.hpp"
 
-
-LOGGER ("p.graphSimplification");
+DECL_MODULE_LOGGER("graphSimplification")
 
 
 int edgeIdToLocalId(int dir, PairedGraph &graph, int edgeId) {
@@ -560,11 +559,9 @@ inline int fistDifferenceIndex(PairedGraph &graph, Edge* edge1, Edge* edge2, int
 	return res;
 }
 
-
 void extractDefinite(longEdgesMap &longEdges, PairedGraph &graph, int &VertexCount, int dir)
 {
-
-	LOGGER ("p.extractDefinite");
+//	LOGGER ("p.extractDefinite");
 	int edgeIds[MAX_DEGREE];
 	//TODO: constant?
 	int delta = 20;

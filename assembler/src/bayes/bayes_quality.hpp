@@ -289,6 +289,9 @@ public:
 	}
 	/// read Bowtie search results
 	BowtieResults readBowtieResults(int fd, size_t noofreads, unsigned int readno);
+
+private:
+	DECL_LOGGER("BayesQualityGenome")
 };
 
 }

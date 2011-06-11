@@ -72,6 +72,9 @@ public:
 		}
 		TRACE("Vertex compressing finished")
 	}
+
+private:
+	DECL_LOGGER("Compressor")
 };
 
 }
