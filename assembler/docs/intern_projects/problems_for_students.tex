@@ -1,0 +1,102 @@
+\documentclass[a4paper,10pt]{article}
+
+
+%opening
+\title{Repeat resolving using unique edges}
+\author{Anton Bankevich}
+
+\begin{document}
+\newtheorem{defin}{Definition}
+\newtheorem{prop}{Proposition}
+
+\maketitle
+
+\section{Assembling problem formulation}
+
+\begin{itemize}
+\item[\bf Problem] Given set of read-pairs find genome string.
+\item[\bf Input] Set of read pairs
+\item[\bf Output] Genome string
+\end{itemize}
+
+Normally this problim can not be solved as is even if data is perfect. If genome contains repeat of length larger than insert length of read pairs there is no way one could resolve this repeat. But even if the whole genome can not be constructed partial solutions are still useful. Thus we get another problem.
+
+\begin{itemize}
+\item[\bf Problem] Given set of read-pairs find collection of contigs(sequences of nucleotides which we are sure to be present in genome) which describes genome the best.
+\item[\bf Input] Set of read pairs
+\item[\bf Output] Collection of contigs
+\end{itemize}
+
+In this problem it is not clear how to determine which set of contigs describes genome the best. Traditionally measure of quality of contig collection is N50(actually it does not really matter what type of quality measure is used).
+
+Most often collection of contigs is a collection of sequences written on edges/nodes of DeBruijn graph. In order to make N50 statistic as large as possible repeat resolving operation is performed on graph. In most strategies for repeat resolving graph itself is changed based on information about distances between pairs of edges. This approach has three major disadvantages:
+\begin{itemize}
+\item Multy-layered libraries can not be used effectively in case pair info is used to locally resolve repeats.
+\item It is in most cases not clear how to support information about distances between edges after graph was changed during the previous steps on repeat resolving.
+\item Such repeat resolving can only be effectively used if quite strong error corruption was used during which lots of information is lost. Actually this is an attempt to avoid the second problem, since in case error corruption was not performed repeat resolving should be done in many steps each of which has a chance to make error in pair info distribution between new edges.
+\end{itemize}
+
+The core of problems presented is search for a way to deal with these disadvantages.
+
+\section{Long paths and multy-layered libraries}
+
+One of the ways to use multy-layered libraries is starting with certain enough long path in graph which we are for certain reason sure to be present in genome(for example just a single long edge) try to continue this path by selecting the next edge of path to be unique edge that is supported by all libraries to be the next in path. From this simple idea several uneasy problems arise.
+
+Let $l$ be theh maximal insert length over all libraries.
+
+\begin{itemize}
+\item[\bf Problem 1] Find all paths in graph of length equal to $l$ which are gaurantied by read-pair info to be present in genome.
+\item[\bf Input] DeBruijn graph and collection of read pairs.
+\item[\bf Output] Collection of paths.
+\end{itemize}
+
+\smallskip
+
+\begin{itemize}
+\item[\bf Problem 2] Find path of maximal length which contains given path of length $l$ and is gaurantied by paired information to be present in genome.
+\item[\bf Input] DeBruijn graph, collection of read pairs and path of length $l$ which is present in genome.
+\item[\bf Output] Path in DeBruijn graph.
+\end{itemize}
+
+\smallskip
+\begin{itemize}
+\item[\bf Problem 3] How to interpret resulting contigs.
+\end{itemize}
+
+The third problem does not have enough exact formulation but actually is the most important one. Lots of questions arize: will those contigs cover all the genome, how much would they intersect, is it possible to scuffold them, what are their multiplicity in genome etc.
+
+\section{Unique paths}
+One of the ways to deal with the last problem in previous section is to use unique paths instead of long paths.
+
+\begin{defin}
+Unique path --- path in DeBruijn graph such that concatanation of edges of it path maps to unique position in genome
+\end{defin}
+
+\begin{prop}
+If path $P$ contains path $P'$ as substring and $P'$ is unique then $P$ is unique.
+\end{prop}
+
+Now we can reformulate the first two problems.
+
+\begin{itemize}
+\item[\bf Problem 1'] Find all paths in graph of length equal to $l$ which are gaurantied by read-pair info to be unique.
+\item[\bf Input] DeBruijn graph and collection of read pairs.
+\item[\bf Output] Collection of paths.
+\end{itemize}
+
+\smallskip
+\begin{itemize}
+\item[\bf Problem 2'] Find path of maximal length which contains given path of length $l$ and is gaurantied by paired information to be unique.
+\item[\bf Input] DeBruijn graph, collection of read pairs and unique path of length $l$.
+\item[\bf Output] Path in DeBruijn graph.
+\end{itemize}
+
+And since we know each path has unique position in genome we have the natural third problem.
+
+\begin{itemize}
+\item[\bf Problem 3'] Given collection of unique paths find their order in genome
+\item[\bf Input] Input read-pairs, DeBruijn graph and set of unique paths.
+\item[\bf Output] Order in which paths appear in genome and distances between consequitive paths.
+\end{itemize}
+
+\end{document}
