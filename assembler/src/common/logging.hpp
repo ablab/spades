@@ -10,13 +10,10 @@
 
 #include "log4cxx/logger.h"
 
-namespace logging
-{
 log4cxx::LoggerPtr __scope_logger();
-}
 
 #define DECL_PROJECT_LOGGER(category)						                \
-log4cxx::LoggerPtr logging::__scope_logger()								\
+log4cxx::LoggerPtr __scope_logger()								            \
 {															                \
 	static log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger(category);\
 	return logger;											                \
@@ -26,16 +23,9 @@ log4cxx::LoggerPtr logging::__scope_logger()								\
 static log4cxx::LoggerPtr __scope_logger()					          \
 {																      \
 	static log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger(    \
-	        logging::__scope_logger()->getName() + "." +	category);\
+	        ::__scope_logger()->getName() + "." +	category);        \
 	return logger;													  \
 }
-
-#define DECL_MODULE_LOGGER(category)    \
-namespace                               \
-{                                       \
-    DECL_LOGGER(category)               \
-}
-
 
 #define DEBUG(message)                      LOG4CXX_DEBUG(__scope_logger(), message)
 #define INFO(message)                       LOG4CXX_INFO (__scope_logger(), message)
