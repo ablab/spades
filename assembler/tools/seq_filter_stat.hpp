@@ -26,7 +26,7 @@ template<size_t size, class hm>
 class seq_filter_stat {		
 public:
 	static void filter(const std::string& in, 
-                     const std::string& name = "") {
+                     const std::string& label = "") {
     double vm1 = 0;
     double rss1 = 0;
     process_mem_usage(vm1, rss1);
@@ -64,9 +64,9 @@ public:
     gettimeofday(&tim, NULL);
     double t4 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
-    std::cout << "Memory: " << (vm2 - vm1) << " " << name << std::endl;
-    std::cout << "Insert: " << (t2 - t1) - (t4 - t3) << " " << name << std::endl;
-    std::cout << "Find: " << (t3 - t2) << " " << name << std::endl;
+    std::cout << "Memory: " << (vm2 - vm1) << " " << label << std::endl;
+    std::cout << "Insert: " << (t2 - t1) - (t4 - t3) << " " << label << std::endl;
+    std::cout << "Find: " << (t3 - t2) << " " << label << std::endl;
 	}
 
   // Only for cuckoo!!!
