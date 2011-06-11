@@ -4,6 +4,9 @@
 #include "hashTest.hpp"
 #include "spellgenometest.hpp"
 
+#include "common/logging.hpp"
+DECL_PROJECT_LOGGER("at")
+
 void runSuite() {
 	 cute::suite s;
 	 s += HashSuite();

@@ -4,6 +4,9 @@
 #include "debruijn_graph_test.hpp"
 #include "test_utils.hpp"
 
+#include "common/logging.hpp"
+DECL_PROJECT_LOGGER("dt")
+
 void RunTestSuites() {
 	cute::suite s;
 	//TODO add your test here
