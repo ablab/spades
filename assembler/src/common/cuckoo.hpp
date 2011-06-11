@@ -518,21 +518,6 @@ public:
   }
 
   /**
-   * Update parameter of cuckoo, deleting all the data from it.
-   *
-   * @warning For test only!!!
-   */
-  void set_up(size_t d = D, size_t init_length = INIT_LENGTH, 
-              size_t max_loop = MAX_LOOP, double step = STEP) {
-    clear_all();
-    d_ = d;
-    init_length_ = init_length;
-    max_loop_ = max_loop;
-    step_ = step;
-    init();
-  }
-
-  /**
    * Operator==
    *
    * @param Cuckoo Object to be compared with.
