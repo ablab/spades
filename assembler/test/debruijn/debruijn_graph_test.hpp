@@ -121,7 +121,6 @@ void SmartIteratorTest() {
 	}
 }
 
-typedef PairedInfoIndex<DeBruijnGraph>::PairInfo PairInfo;
 typedef string MyRead;
 typedef pair<MyRead, MyRead> MyPairedRead;
 typedef string MyEdge;
@@ -240,13 +239,13 @@ void AssertCoverage(DeBruijnGraph& g, const CoverageInfo& etalon_coverage) {
 typedef PairedInfoIndex<DeBruijnGraph> PairedIndex;
 void AssertPairInfo(const DeBruijnGraph& g, /*todo const */PairedIndex& paired_index, const EdgePairInfo& etalon_pair_info) {
 	for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
-		PairedIndex::PairInfos infos = *it;
+		PairInfos infos = *it;
 		for (auto info_it = infos.begin(); info_it != infos.end(); ++info_it) {
-			PairedIndex::PairInfo pair_info = *info_it;
-			if (pair_info.first() == pair_info.second() && pair_info.d() == 0) {
+			PairInfo pair_info = *info_it;
+			if (pair_info.first == pair_info.second && rounded_d(pair_info) == 0) {
 				continue;
 			}
-			pair<MyEdge, MyEdge> my_edge_pair(g.EdgeNucls(pair_info.first()).str(), g.EdgeNucls(pair_info.second()).str());
+			pair<MyEdge, MyEdge> my_edge_pair(g.EdgeNucls(pair_info.first).str(), g.EdgeNucls(pair_info.second).str());
 			auto equal_range = etalon_pair_info.equal_range(my_edge_pair);
 
 			string my_edge_pair_str = "[" + my_edge_pair.first + ", " + my_edge_pair.second + "]";
@@ -255,13 +254,13 @@ void AssertPairInfo(const DeBruijnGraph& g, /*todo const */PairedIndex& paired_i
 			double etalon_weight = -1.0;
 
 			for (auto range_it = equal_range.first; range_it != equal_range.second; ++range_it) {
-				if ((*range_it).second.first == pair_info.d()) {
+				if ((*range_it).second.first == rounded_d(pair_info)) {
 					etalon_weight = (*range_it).second.second;
 				}
 			}
-			ASSERTM("Etalon didn't contain distance=" << pair_info.d() << " for edge pair " << my_edge_pair_str, etalon_weight > 0);
-			ASSERTM("Actual weight for edge pair " << my_edge_pair_str << " on distance " << pair_info.d() << " was " << pair_info.weight() << " but etalon is " <<  etalon_weight
-					, EqualDouble(etalon_weight, pair_info.weight()));
+			ASSERTM("Etalon didn't contain distance=" << rounded_d(pair_info) << " for edge pair " << my_edge_pair_str, etalon_weight > 0);
+			ASSERTM("Actual weight for edge pair " << my_edge_pair_str << " on distance " << rounded_d(pair_info) << " was " << pair_info.weight << " but etalon is " <<  etalon_weight
+					, EqualDouble(etalon_weight, pair_info.weight));
 		}
 	}
 }

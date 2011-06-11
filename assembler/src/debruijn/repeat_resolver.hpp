@@ -30,7 +30,7 @@ class RepeatResolver {
 	typedef SmartVertexIterator<Graph> VertexIter;
 	typedef omnigraph::SmartEdgeIterator<Graph> EdgeIter;
 	typedef PairedInfoIndex<Graph> PIIndex;
-	typedef typename PIIndex::PairInfo PairedInfo;
+	typedef PairInfo PairedInfo;
 	typedef vector<PairedInfo> PairInfos;
 
 	typedef map<VertexId,set<EdgeId> > NewVertexMap;
@@ -242,9 +242,9 @@ size_t RepeatResolver<Graph>::ResolveVertex( Graph &g, PIIndex &ind, VertexId vi
 			for (int i = 0, n = edgeIds[dir].size(); i < n; i ++) {
 				PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
 				for (int j = 0, sz = tmp.size(); j < sz; j++) {
-					EdgeId right_id = tmp[j].second();
-					EdgeId left_id = tmp[j].first();
-					if (tmp[j].d() * mult > 0) {
+					EdgeId right_id = tmp[j].second;
+					EdgeId left_id = tmp[j].first;
+					if (rounded_d(tmp[j]) * mult > 0) {
 						if (right_to_left.find(right_id) != right_to_left.end())
 							right_to_left[right_id].insert(left_id);
 						else {
