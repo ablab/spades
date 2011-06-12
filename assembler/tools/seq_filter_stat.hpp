@@ -73,12 +73,13 @@ public:
 	static void filter(const std::string& in, 
                      const size_t d,
                      const double step,
+                     const size_t mld,
                      const std::string& label) {
     timeval tim;
     gettimeofday(&tim, NULL);
     double t1 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
-    hm map(d, 100, 100, step);
+    hm map(d, 100, mld, step);
     add_seqs_from_file_to_map(in, map);
 
     gettimeofday(&tim, NULL);
