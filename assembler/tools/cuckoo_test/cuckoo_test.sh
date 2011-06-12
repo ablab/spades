@@ -83,7 +83,7 @@ for mld in 1 2 5 10 20;
   echo " " >> memory.tmp
 done
 
-COM="MAP1='1';MAP2='2';MAP3='5';MAP4='10';MAP5='20';FN_INS='mld_t_ins.png';FN_FIND='mld_t_find.png';FN_MEM='mld_mem.png';"
+COM="MAP1='1';MAP2='2';MAP3='5';MAP4='10';MAP5='20';FN_INS='mlf_t_ins.png';FN_FIND='mlf_t_find.png';FN_MEM='mlf_mem.png';"
 gnuplot -e $COM diagrams.gnu
 
 echo "Diagrams are done!"

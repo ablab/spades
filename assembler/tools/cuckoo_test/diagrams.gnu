@@ -2,6 +2,7 @@ set term png size 800,600
 FILE_NAME_T='time_insert.tmp'
 FILE_NAME_F='time_find.tmp'
 FILE_NAME_M='memory.tmp'
+set key left
 set style fill solid
 set ylabel 'sec'
 set output FN_INS
