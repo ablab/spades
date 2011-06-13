@@ -709,12 +709,12 @@ public:
       size_t pos = hash(k, i) << log_bucket_size_;
       size_t position = pos + dist;
       for (size_t l = 0; l < bucket_size_; ++l) {
-        ++pos;
-        ++position;
         if (key_equal_(data_[i][pos].first, k) 
             && (get_exists(position))) {    
           return const_iterator(position, this);
         }
+        ++pos;
+        ++position;
       }
       dist += len_part_;
     }
@@ -770,7 +770,8 @@ public:
       return make_pair(res, false);
     } 
     add_new(k);
-    return make_pair(iterator(hash(k.first, 0), this), true);
+    res = find(k.first);
+    return make_pair(res, true);
   }
 
   /**
