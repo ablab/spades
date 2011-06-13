@@ -27,7 +27,7 @@
 #define _CUCKOO_HPP_
 
 const static size_t D = 3;
-const static size_t LOG_BUCKET_SIZE = 1;
+const static size_t LOG_BUCKET_SIZE = 0;
 const static size_t INIT_LENGTH = 100;
 const static size_t MAX_LOOP_FACTOR = 10;
 const static double STEP = 1.2;
