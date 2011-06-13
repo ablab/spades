@@ -96,7 +96,7 @@ public:
 	typedef vector<PairInfo> PairInfos;
 	typedef typename PairInfos::const_iterator infos_iterator;
 
-private:
+public:
 	//todo try storing set<PairInfo>
 	class PairInfoIndexData {
 	public:
