@@ -19,8 +19,7 @@
 using namespace std;
 using namespace __gnu_cxx;
 
-
-LOGGER("h");
+DECL_PROJECT_LOGGER("h")
 
 /**
  * correct one read

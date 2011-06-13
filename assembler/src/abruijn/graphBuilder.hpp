@@ -14,8 +14,6 @@
 
 namespace abruijn {
 
-LOGGER("a.graph");
-
 using namespace std;
 using namespace __gnu_cxx;
 using hashing::hash_t;
@@ -61,6 +59,9 @@ public:
 	bool hasVertex(Sequence s);
 	Graph::VertexId getOrCreateVertex(Sequence s);
 	Graph::VertexId createVertex(Sequence s);
+
+private:
+	DECL_LOGGER("GraphBuilder")
 };
 
 template <typename Reader>
@@ -314,6 +315,9 @@ public:
 //		return ( num_of_missing_kmers + num_of_missing_edges + num_of_missing_lengths == 0 );
 		return;
 	}
+
+private:
+	DECL_LOGGER("GraphBuildMaster")
 };
 
 } // namespace abruijn

@@ -7,7 +7,7 @@
 
 namespace omnigraph {
 
-LOGGER("omg.graph");
+//DECL_LOGGER("omg.graph")
 
 /**
  * ActionHandler is base listening class for graph events. All structures and information storages
@@ -370,6 +370,9 @@ public:
 
 	virtual ~PairedHandlerApplier() {
 	}
+
+private:
+	DECL_LOGGER("PairedHandlerApplier")
 };
 
 /**

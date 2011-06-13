@@ -63,6 +63,9 @@ public:
 	virtual void HandleDelete(ElementId id) {
 		DeleteKmersHash(id);
 	}
+
+private:
+	DECL_LOGGER("DataHashRenewer")
 };
 
 /**
@@ -347,6 +350,9 @@ public:
 		CountBlackEdges();
 		N50();
 	}
+
+private:
+	DECL_LOGGER("StatCounter")
 };
 
 }

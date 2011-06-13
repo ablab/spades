@@ -7,7 +7,8 @@
 #include "graphio.hpp"
 #include "vardConstruction.hpp"
 #include "constructHashTable.hpp"
-LOGGER("p.vardConstruction");
+
+DECL_MODULE_LOGGER("vardConstruction")
 
 using namespace paired_assembler;
 namespace vard {

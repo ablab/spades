@@ -1,8 +1,7 @@
 
 #include "constdConstruction.hpp"
 
-LOGGER("p.constdConstruction");
-
+DECL_MODULE_LOGGER("constdConstruction")
 
 namespace constd {
 

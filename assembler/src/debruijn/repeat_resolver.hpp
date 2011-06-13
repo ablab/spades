@@ -17,7 +17,6 @@
 #include "config.hpp"
 #include "omni_utils.hpp"
 
-LOGGER("d.repeat_resolver");
 namespace debruijn_graph {
 
 using omnigraph::SmartVertexIterator;
@@ -31,9 +30,8 @@ class RepeatResolver {
 	typedef SmartVertexIterator<Graph> VertexIter;
 	typedef omnigraph::SmartEdgeIterator<Graph> EdgeIter;
 	typedef PairedInfoIndex<Graph> PIIndex;
-	typedef typename PIIndex::PairInfo PairedInfo;
-	typedef typename PIIndex::PairInfoIndexData PIIData;
-//	typedef typename PIIData::PairInfo PairedInfo;
+
+	typedef PairInfo PairedInfo;
 	typedef vector<PairedInfo> PairInfos;
 
 	typedef map<VertexId,set<EdgeId> > NewVertexMap;
@@ -88,10 +86,11 @@ public:
 //			PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
 
 		}
-		paired_di_data = new PIIData();
 		//TODO: remove old paired info
 		for (auto p_iter = ind.begin(), p_end_iter = ind.end(); p_iter != p_end_iter; ++p_iter){
-			paired_di_data.AddPairInfo(*p_iter);
+			PairInfos pi = *p_iter;
+			for (size_t j = 0; j < pi.size(); j++)
+			paired_di_data.AddPairInfo(pi[j]);
 		}
 		//TODO add edge labels
 		assert(leap >= 0 && leap < 100);
@@ -101,7 +100,7 @@ public:
 private:
 	int leap_;
 	size_t ResolveVertex(Graph &g, PIIndex &ind, VertexId vid);
-	size_t RectangleResolveVertex(Graph &g, PIIndex &ind, VertexId vid);
+	size_t RectangleResolveVertex(Graph &g, PairInfoIndexData &ind, VertexId vid);
 	vector<typename Graph::VertexId> MultiSplit(Graph new_graph, VertexId v, size_t k, vector<vector<EdgeId> > ve);
 
 	void ResolveEdge(EdgeId eid);
@@ -112,7 +111,7 @@ private:
 	Graph old_graph;
 	map<EdgeInfo, int> edge_info_colors[2];
 	vector<EdgeInfo> edge_infos[2];
-	PIIData paired_di_data;
+	PairInfoIndexData paired_di_data;
 	unordered_map<VertexId, VertexId> vertex_labels;
 	unordered_map<EdgeId, EdgeId> edge_labels;
 
@@ -120,6 +119,9 @@ private:
 //	PIIndex old_index;
 
 //	Graph old_graph;
+
+private:
+	DECL_LOGGER("RepeatResolver")
 };
 template<class Graph>
 vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(Graph new_graph, VertexId v, size_t k, vector<vector<EdgeId> > ve){
@@ -133,7 +135,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(Graph new_gra
 	for(size_t i = 0; i < k ; i++) {
 		res[i] = new_graph.AddVertex();
 		for(size_t j = 0; j < ve[i].size(); j++) {
-			EdgeId new_edge = null;
+			EdgeId new_edge = NULL;
 			if (new_graph.EdgeStart(ve[i][j]) == v && new_graph.EdgeEnd(ve[i][j]) == v){
 				WARN("on vertex "<< v<< "there is a loop, which is currently not supported");
 			} else if (new_graph.EdgeStart(ve[i][j]) == v){
@@ -144,7 +146,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(Graph new_gra
 			else {
 				ERROR("While splitting vertex"<< v<<", non-incident edge "<<ve[i][j]<<"found!!!");
 			}
-			if (new_edge != null) {
+			if (new_edge != NULL) {
 				edge_labels[new_edge] = edge_labels[ve[i][j]];
 				edge_labels.remove(ve[i][j]);
 
@@ -234,9 +236,9 @@ size_t RepeatResolver<Graph>::ResolveVertex( Graph &g, PIIndex &ind, VertexId vi
 			for (int i = 0, n = edgeIds[dir].size(); i < n; i ++) {
 				PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
 				for (int j = 0, sz = tmp.size(); j < sz; j++) {
-					EdgeId right_id = tmp[j].second();
-					EdgeId left_id = tmp[j].first();
-					if (tmp[j].d() * mult > 0) {
+					EdgeId right_id = tmp[j].second;
+					EdgeId left_id = tmp[j].first;
+					if (rounded_d(tmp[j]) * mult > 0) {
 						if (right_to_left.find(right_id) != right_to_left.end())
 							right_to_left[right_id].insert(left_id);
 						else {
@@ -359,7 +361,7 @@ size_t RepeatResolver<Graph>::ResolveVertex( Graph &g, PIIndex &ind, VertexId vi
 
 
 template<class Graph>
-size_t RepeatResolver<Graph>::RectangleResolveVertex( Graph &new_graph, PIIData &paired_data, VertexId vid){
+size_t RepeatResolver<Graph>::RectangleResolveVertex( Graph &new_graph, PairInfoIndexData &paired_data, VertexId vid){
 	DEBUG("Parsing vertex " << vid);
 	DEBUG(new_graph.conjugate(vid));
 	edge_infos[0].clear();
@@ -386,12 +388,12 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex( Graph &new_graph, PIIData 
 	right_to_left.clear();
 	for (int dir = 0; dir < 2; dir++) {
 		for (int i = 0, n = edgeIds[dir].size(); i < n; i ++) {
-			PairInfos tmp = paired_data.GetEdgeInfo(edgeIds[dir][i]);
+			PairInfos tmp = paired_data.GetEdgeInfos(edgeIds[dir][i]);
 			for (int j = 0, sz = tmp.size(); j < sz; j++) {
 				EdgeId right_id = tmp[j].second();
 				EdgeId left_id = tmp[j].first();
-				int d = tmp[j].d();
-				int w = tmp[j].w();
+				int d = tmp[j].d;
+				int w = tmp[j].weight;
 				int new_d = d;
 				if (dir==1)
 					new_d -= new_graph.length(left_id);

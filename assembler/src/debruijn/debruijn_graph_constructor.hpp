@@ -111,6 +111,9 @@ public:
 			}
 		}
 	}
+
+private:
+	DECL_LOGGER("DeBruijnGraphConstructor")
 };
 
 }

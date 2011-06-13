@@ -11,7 +11,9 @@
 //#include "read_generator.hpp"
 
 using namespace paired_assembler;
-LOGGER("p.main");
+
+DECL_PROJECT_LOGGER("p")
+DECL_MODULE_LOGGER("main")
 
 PairedGraph graph;
 

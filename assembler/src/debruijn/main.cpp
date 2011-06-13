@@ -4,16 +4,21 @@
 #include "launch.hpp"
 #include "config.hpp"
 
-int main() {
+#include "common/logging.hpp"
+DECL_PROJECT_LOGGER("d")
+
+
+int main()
+{
 	// read configuration file (dataset path etc.)
-	string input_dir = CONFIG.read<string>("input_dir");
-	string output_dir = CONFIG.read<string>("output_dir");
-	string dataset = CONFIG.read<string>("dataset");
-	string genome_filename = input_dir + "/" + CONFIG.read<string>("reference_genome");
-	string reads_filename1 = input_dir + "/" + CONFIG.read<string>(dataset + "_1");
-	string reads_filename2 = input_dir + "/" + CONFIG.read<string>(dataset + "_2");
-	int insert_size = CONFIG.read<int>(dataset + "_IS");
-	int dataset_len = CONFIG.read<int>(dataset + "_LEN");
+	string input_dir = CONFIG.read<string> ("input_dir");
+	string output_dir = CONFIG.read<string> ("output_dir");
+	string dataset = CONFIG.read<string> ("dataset");
+	string genome_filename = input_dir + "/" + CONFIG.read<string> ("reference_genome");
+	string reads_filename1 = input_dir + "/" + CONFIG.read<string> (dataset + "_1");
+	string reads_filename2 = input_dir + "/" + CONFIG.read<string> (dataset + "_2");
+	int insert_size = CONFIG.read<int> (dataset + "_IS");
+	int dataset_len = CONFIG.read<int> (dataset + "_LEN");
 
 	// typedefs :)
 	typedef MateReader<Read, ireadstream>::type ReadStream;
@@ -21,7 +26,7 @@ int main() {
 	typedef RCReaderWrapper<PairedReadStream, PairedRead> RCStream;
 
 	// read data ('reads')
-	const string reads[2] = {reads_filename1, reads_filename2};
+	const string reads[2] = { reads_filename1, reads_filename2 };
 	ReadStream reader(reads);
 	PairedReadStream pairStream(reader, insert_size);
 	RCStream rcStream(pairStream);

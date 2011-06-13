@@ -1,7 +1,15 @@
-set term png
+set term png size 800,600
 FILE_NAME_T='time_insert.tmp'
+FILE_NAME_F='time_find.tmp'
 FILE_NAME_M='memory.tmp'
-set output 'time_insert.png'
-plot [0:] [0:] FILE_NAME_T using ($2) title 'FILE' with lines
-set output 'memory.png'
-plot [0:] [0:] FILE_NAME_M using ($2) title 'FILE' with lines
+set key left
+set style fill solid
+set ylabel 'sec'
+set output FN_INS
+plot [-0.5:2.5] [0:] FILE_NAME_T index 0 using ($2):xticlabels(3) title MAP1 with histograms, FILE_NAME_T index 1 using ($2):xticlabels(3) title MAP2 with histograms, FILE_NAME_T index 2 using ($2):xticlabels(3) title MAP3 with histograms, FILE_NAME_T index 3 using ($2):xticlabels(3) title MAP4 with histograms, FILE_NAME_T index 4 using ($2):xticlabels(3) title MAP5 with histograms
+set output FN_FIND
+plot [-0.5:2.5] [0:] FILE_NAME_F index 0 using ($2):xticlabels(3) title MAP1 with histograms, FILE_NAME_F index 1 using ($2):xticlabels(3) title MAP2 with histograms, FILE_NAME_F index 2 using ($2):xticlabels(3) title MAP3 with histograms, FILE_NAME_F index 3 using ($2):xticlabels(3) title MAP4 with histograms, FILE_NAME_F index 4 using ($2):xticlabels(3) title MAP5 with histograms
+set ylabel 'load_factor'
+set output FN_MEM
+plot [-0.5:2.5] [0:] FILE_NAME_M index 0 using ($2):xticlabels(3) title MAP1 with histograms, FILE_NAME_M index 1 using ($2):xticlabels(3) title MAP2 with histograms, FILE_NAME_M index 2 using ($2):xticlabels(3) title MAP3 with histograms, FILE_NAME_M index 3 using ($2):xticlabels(3) title MAP4 with histograms, FILE_NAME_M index 4 using ($2):xticlabels(3) title MAP5 with histograms
+

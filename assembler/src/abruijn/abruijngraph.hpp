@@ -21,8 +21,6 @@ namespace abruijn {
 using namespace std;
 using namespace __gnu_cxx;
 
-LOGGER("a.graph");
-
 /**
  * @see Sequence
  */
@@ -206,6 +204,9 @@ public:
 	iterator end() {
 		return iterator(vertices.end(), vertices.end(), vertex_is_alive);
 	}
+
+private:
+	DECL_LOGGER("Graph")
 };
 
 }

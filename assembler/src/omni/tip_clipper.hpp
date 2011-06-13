@@ -208,6 +208,9 @@ public:
 		Compressor<Graph> compresser(graph_);
 		compresser.CompressAllVertices();
 	}
+
+private:
+	DECL_LOGGER("TipClipper")
 };
 
 }

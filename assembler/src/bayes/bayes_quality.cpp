@@ -19,8 +19,6 @@
 
 using namespace std;
 
-LOGGER("b");
-
 namespace bayes_quality {
 
 bool BayesQualityGenome::isAvailable(size_t readno, size_t j, const PSeq & curpseq) {

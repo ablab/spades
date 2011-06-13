@@ -9,7 +9,7 @@
 
 namespace gvis {
 
-LOGGER("omg.gvis");
+//DECL_LOGGER("omg.gvis")
 
 using gvis::PairedGraphPrinter;
 using omnigraph::SmartEdgeIterator;
@@ -87,6 +87,9 @@ public:
 		DEBUG("OPPA close");
 		gp_.close();
 	}
+
+private:
+	DECL_LOGGER("SimpleGraphVisualizer")
 };
 
 template<class Graph>

@@ -192,7 +192,7 @@ string getColor(int currentLength, int approximateLength);
 template<typename VertexId>
 class GraphPrinter {
 protected:
-	const string& name_;
+	const string name_;
 	ostream& out_;
 public:
 	GraphPrinter(const string &name, ostream &out = cout) : name_(name), out_(out) {
@@ -252,16 +252,12 @@ template<typename VertexId>
 class PairedGraphPrinter {
 private:
 	ostream& out_;
-	const string& name_;
+	const string name_;
 	map<VertexId, VertexId> vertexMap;
 	pair<VertexId, VertexId> currenVertexId;
 public:
 	PairedGraphPrinter(const string &name, ostream &out = cout)
 	: out_(out), name_(name) {
-	}
-
-	PairedGraphPrinter(const string &name, const char* filename) {
-		out_ = new ofstream(filename, ios::out);
 	}
 
 	void open() {
@@ -330,7 +326,6 @@ private:
 	PairedGraphPrinter<VertexId> paired_printer_;
 public:
 	DotPairedGraphPrinter(const Graph& g, const string &name, ostream &out = cout) : super(name, out), g_(g), paired_printer_(name, out) {
-
 	}
 
 	virtual ~DotPairedGraphPrinter() {

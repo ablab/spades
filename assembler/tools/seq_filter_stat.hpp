@@ -26,7 +26,7 @@ template<size_t size, class hm>
 class seq_filter_stat {		
 public:
 	static void filter(const std::string& in, 
-                     const std::string& name = "") {
+                     const std::string& label = "") {
     double vm1 = 0;
     double rss1 = 0;
     process_mem_usage(vm1, rss1);
@@ -64,32 +64,51 @@ public:
     gettimeofday(&tim, NULL);
     double t4 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
-    std::cout << "Memory: " << (vm2 - vm1) << " " << name << std::endl;
-    std::cout << "Insert: " << (t2 - t1) - (t4 - t3) << " " << name << std::endl;
-    std::cout << "Find: " << (t3 - t2) << " " << name << std::endl;
+    std::cout << "Memory: " << (vm2 - vm1) << " " << label << std::endl;
+    std::cout << "Insert: " << (t2 - t1) - (t4 - t3) << " " << label << std::endl;
+    std::cout << "Find: " << (t3 - t2) << " " << label << std::endl;
 	}
 
   // Only for cuckoo!!!
-	static void filter(const std::string& in, const size_t max_loop) {
-    double vm1 = 0;
-    double rss1 = 0;
-    process_mem_usage(vm1, rss1);
+	static void filter(const std::string& in, 
+                     const size_t d,
+                     const double step,
+                     const size_t mld,
+                     const std::string& label) {
     timeval tim;
     gettimeofday(&tim, NULL);
     double t1 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
-    hm map;
-    map.set_up(4, 100, max_loop, 1.2);
+    hm map(d, 100, mld, step);
     add_seqs_from_file_to_map(in, map);
 
-    double vm2 = 0;
-    double rss2 = 0;
-    process_mem_usage(vm2, rss2);
     gettimeofday(&tim, NULL);
     double t2 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
-    std::cout << "Memory: " << (vm2 - vm1) << std::endl;
-    std::cout << "Insert: " << (t2 - t1) << std::endl;
+    size_t n = 0;
+    Seq<size> seq;
+    typename hm::iterator it;
+    for (it = map.begin(); it != map.end(); ++it) {
+      if (n % 2) {
+        seq = (*it).first;
+        std::string s = seq.str();
+        s[size / 2] = s[size / 2 + 1];
+        map.find(Seq<size>(s));
+      }
+      ++n;
+    } 
+
+    gettimeofday(&tim, NULL);
+    double t3 = tim.tv_sec + ((float)tim.tv_usec/1e6);
+
+    read_seqs_from_file(in);
+
+    gettimeofday(&tim, NULL);
+    double t4 = tim.tv_sec + ((float)tim.tv_usec/1e6);
+
+    std::cout << "Memory: " << 1. * map.size() / map.length()  << " " << label << std::endl;
+    std::cout << "Insert: " << (t2 - t1) - (t4 - t3) << " " << label << std::endl;
+    std::cout << "Find: " << (t3 - t2) << " " << label << std::endl;
 	}
 
 private:

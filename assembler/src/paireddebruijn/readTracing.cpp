@@ -3,7 +3,7 @@
 #include "graphSimplification.hpp"
 #include "graphio.hpp"
 
-LOGGER ("p.readTracing");
+DECL_MODULE_LOGGER("readTracing")
 
 using namespace paired_assembler;
 
