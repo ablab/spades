@@ -98,7 +98,7 @@ public:
 		DEBUG("paired info size: "<<paired_size);
 		assert(leap >= 0 && leap < 100);
 	}
-	Graph ResolveRepeats(Graph &g, PIIndex &ind);
+	Graph ResolveRepeats();
 
 private:
 	int leap_;
@@ -161,7 +161,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(Graph new_gra
 	return res;
 }
 template<class Graph>
-Graph RepeatResolver<Graph>::ResolveRepeats(Graph &g, PIIndex &ind){
+Graph RepeatResolver<Graph>::ResolveRepeats(){
 //	old_graph = g;
 //	old_index = ind;
 	INFO("resolve_repeats started");
