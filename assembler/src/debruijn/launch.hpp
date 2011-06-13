@@ -189,7 +189,7 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 	PairedInfoIndex<Graph> clustered_paired_index(g);
 	clusterer.cluster(clustered_paired_index);
 
-	//ResolveRepeats(g, paired_index);
+	ResolveRepeats(g, paired_index);
 	//ProduceInfo<k> (g, index, genome, output_folder + "repeats_resolved.dot",
 	//		"no_repeat_graph");
 
