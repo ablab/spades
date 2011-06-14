@@ -26,11 +26,11 @@
 #ifndef _CUCKOO_HPP_
 #define _CUCKOO_HPP_
 
-const static size_t D = 3;
-const static size_t LOG_BUCKET_SIZE = 0;
+const static size_t D = 2;
+const static size_t LOG_BUCKET_SIZE = 1;
 const static size_t INIT_LENGTH = 100;
-const static size_t MAX_LOOP_FACTOR = 10;
-const static double STEP = 1.2;
+const static size_t MAX_LOOP_FACTOR = 2;
+const static double STEP = 1.5;
 
 /**
  * @param Key key type in hash.
@@ -288,6 +288,7 @@ private:
     is_rehashed_ = false;
     max_loop_ = max_loop_factor_ * round(log(len_part_)) + 1;
     bucket_size_ = round(exp(log(2) * log_bucket_size_));
+    srand(time(NULL));
   }
 
   /**
