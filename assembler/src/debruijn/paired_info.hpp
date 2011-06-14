@@ -9,7 +9,7 @@
 
 #define MERGE_DATA_ABSOLUTE_DIFFERENCE 0
 //#define MERGE_DATA_RELATIVE_DIFFERENCE 0.3
-
+#define E 1e-6
 namespace debruijn_graph {
 
 
@@ -70,7 +70,7 @@ bool operator<(const PairInfo& lhs, const PairInfo& rhs)
 {
     return lhs.first  == rhs.first
                 ? lhs.second == rhs.second
-                    ? lhs.d < lhs.d
+                    ? lhs.d + E < rhs.d
                     : lhs.second < rhs.second
                 : lhs.first < rhs.first;
 }

@@ -142,7 +142,6 @@ private:
 
 	set<Vertex*> vertices_;
 
-
 	VertexId HiddenAddVertex();
 
 	EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
@@ -240,7 +239,8 @@ public:
 	 * @param k Main parameter that defines the size of k-mers
 	 * //@param action_handler Graph actions handler
 	 */
-	DeBruijnGraph(size_t k) : k_(k) , applier_(*this) {
+	DeBruijnGraph(size_t k) :
+		k_(k), applier_(*this) {
 		assert(k % 2 == 1);
 	}
 
@@ -277,8 +277,8 @@ public:
 	 */
 	bool RemoveActionHandler(ActionHandler* action_handler) {
 		TRACE("Trying to remove action handler");
-		for (vector<ActionHandler*>::iterator it =
-				action_handler_list_.begin(); it != action_handler_list_.end(); ++it) {
+		for (vector<ActionHandler*>::iterator it = action_handler_list_.begin(); it
+				!= action_handler_list_.end(); ++it) {
 			if (*it == action_handler) {
 				action_handler_list_.erase(it);
 				TRACE("Action handler removed");
@@ -429,6 +429,18 @@ public:
 	 */
 	Edge* AddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
 			size_t coverage = 0);
+
+	string str(VertexId v) {
+		return " ";
+	}
+
+	string str(EdgeId e) {
+		stringstream ss;
+		ss << length(e) << "(" << coverage(e) << ")";
+//		if(length(e) < 15)
+//			ss << " " << EdgeNucls(e);
+		return ss.str();
+	}
 
 	/**
 	 * Method removes edge and its conjugate.
