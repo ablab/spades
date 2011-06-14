@@ -75,24 +75,42 @@ public:
 
 	RepeatResolver(Graph old_graph_, int leap, PIIndex &ind ) : leap_(leap), new_graph(K), old_graph(old_graph_){
 		unordered_map<VertexId, VertexId> old_to_new;
+		unordered_map<EdgeId, EdgeId> old_to_new_edge;
 		size_t paired_size = 0;
 		for(VertexIter v_iter = old_graph_.SmartVertexBegin(); !v_iter.IsEnd(); ++v_iter) {
-			VertexId new_vertex = new_graph.AddVertex();
-			vertex_labels[new_vertex] = *v_iter;
-			old_to_new[*v_iter] = new_vertex;
+			size_t degree = old_graph_.IncomingEdgeCount(*v_iter) + old_graph_.OutgoingEdgeCount(*v_iter);
+			if (degree > 0) {
+				VertexId new_vertex = new_graph.AddVertex();
+				vertex_labels[new_vertex] = *v_iter;
+				old_to_new[*v_iter] = new_vertex;
+			}
 		}
 		for(EdgeIter e_iter = old_graph_.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
 			EdgeId new_edge = new_graph.AddEdge(old_to_new[old_graph_.EdgeStart(*e_iter)], old_to_new[old_graph_.EdgeEnd(*e_iter)], old_graph_.EdgeNucls(*e_iter), 0);
 			edge_labels[new_edge] = *e_iter;
+			DEBUG("Adding edge " << new_edge<< " from" << *e_iter);
+			old_to_new_edge[*e_iter] = new_edge;
 //			PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
 
 		}
+		old_to_new.clear();
 		//TODO: remove old paired info
 		for (auto p_iter = ind.begin(), p_end_iter = ind.end(); p_iter != p_end_iter; ++p_iter){
 			PairInfos pi = *p_iter;
 			paired_size += pi.size();
-			for (size_t j = 0; j < pi.size(); j++)
-				paired_di_data.AddPairInfo(pi[j]);
+			for (size_t j = 0; j < pi.size(); j++) {
+				if (old_to_new_edge.find(pi[j].first) != old_to_new_edge.end() && old_to_new_edge.find(pi[j].second) != old_to_new_edge.end()) {
+					DEBUG("Adding pair " << pi[j].first<<"  " <<old_to_new_edge[pi[j].first] << "  " <<pi[j].second);
+					PairInfo *tmp = new PairInfo(old_to_new_edge[pi[j].first], pi[j].second, pi[j].d, pi[j].weight);
+//				tmp.first = old_to_new_edge[pi[j].first];
+//				tmp.second = pi[j].second;
+//				tmp.d = pi[j].d;
+//				tmp.weight = pi[j].weight;
+					paired_di_data.AddPairInfo(*tmp);
+				} else {
+					DEBUG("Paired Info with deleted edge! " << pi[j].first<<"  "  <<pi[j].second);
+				}
+			}
 		}
 		//TODO add edge labels
 		DEBUG("paired info size: "<<paired_size);
@@ -134,7 +152,6 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(Graph new_gra
 	vector<EdgeId> edgeIds[2];
 	edgeIds[0] = new_graph.OutgoingEdges(v);
 	edgeIds[1] = new_graph.IncomingEdges(v);
-
 	for(size_t i = 0; i < k ; i++) {
 		res[i] = new_graph.AddVertex();
 		for(size_t j = 0; j < ve[i].size(); j++) {
@@ -160,6 +177,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(Graph new_gra
 	vertex_labels.remove(v);
 	return res;
 }
+
 template<class Graph>
 Graph RepeatResolver<Graph>::ResolveRepeats(){
 //	old_graph = g;
@@ -382,8 +400,6 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex( Graph &new_graph, PairInfo
 	vector<EdgeId> right_vector;
 	map<EdgeId, set<int> > left_colors;
 	vector<int> colors;
-	int cur_ind = 1;
-	int cur_id = 0;
 	int mult = 1;
 	right_set.clear();
 	right_vector.clear();
@@ -396,13 +412,13 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex( Graph &new_graph, PairInfo
 				EdgeId right_id = tmp[j].second;
 				EdgeId left_id = tmp[j].first;
 				int d = tmp[j].d;
-				int w = tmp[j].weight;
 				int new_d = d;
-				if (dir==1)
+				if (dir == 1)
 					new_d -= new_graph.length(left_id);
 				if (d * mult > 0) {
 					EdgeInfo *ei = new EdgeInfo(right_id, new_d, tmp[j]);
 					edge_infos[dir].push_back(*ei);
+					DEBUG(right_id);
 					neighbours.insert(right_id);
 //					if (right_to_left.find(right_id) != right_to_left.end())
 //						right_to_left[right_id].insert(left_id);

@@ -391,19 +391,19 @@ private:
 			for (size_t i = 0; i < vec.size(); i++) {
 				int next = -1;
 				for (size_t j = 0; j < vec.size(); j++) {
-					if (vec[j].d() > min && (next == -1 || vec[next].d()
-							> vec[j].d())) {
+					if (vec[j].d > min && (next == -1 || vec[next].d
+							> vec[j].d)) {
 						next = j;
 					}
 				}
-				os << vec[next].d() << " " << vec[next].weight() << endl;
+				os << vec[next].d << " " << vec[next].weight << endl;
 				if (next == -1) {
 					assert(false);
 				}
-				if (vec[next].d() > 100000) {
+				if (vec[next].d > 100000) {
 					assert(false);
 				}
-				min = vec[next].d();
+				min = vec[next].d;
 			}
 		}
 	}
@@ -430,8 +430,8 @@ private:
 public:
 
 	void OutputData(ostream &os = cout) {
-		for (auto it = graph_.SmartEdgeBegin(); !it.isEnd(); ++it)
-			for (auto it1 = graph_.SmartEdgeBegin(); !it1.isEnd(); ++it1) {
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it)
+			for (auto it1 = graph_.SmartEdgeBegin(); !it1.IsEnd(); ++it1) {
 				OutputEdgeData(*it, *it1, os);
 			}
 	}
