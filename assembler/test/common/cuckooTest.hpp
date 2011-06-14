@@ -70,7 +70,7 @@ void TestCuckooCreation() {
 // iterator::const_iterator(...)
 void TestCuckooOperations() {
   srand(42);
-  hm map(5, 10000, 100, 1.2); 
+  hm map(5, 0, 10000, 100, 1.2); 
   for (int i = 0; i < 100000; ++i) {
     int t = rand();
     map.insert(std::make_pair(t, 42));

@@ -72,6 +72,7 @@ public:
   // Only for cuckoo!!!
 	static void filter(const std::string& in, 
                      const size_t d,
+                     const size_t lbs,
                      const double step,
                      const size_t mld,
                      const std::string& label) {
@@ -79,7 +80,7 @@ public:
     gettimeofday(&tim, NULL);
     double t1 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
-    hm map(d, 100, mld, step);
+    hm map(d, lbs, 100, mld, step);
     add_seqs_from_file_to_map(in, map);
 
     gettimeofday(&tim, NULL);
