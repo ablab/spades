@@ -11,21 +11,27 @@
 
 int main(int argc, char** argv) {
   std::string filename = "";
-  size_t max_loop = 10;
-  size_t max_loop_limit = 1000;
-  size_t loop_step = 10;
+  size_t d = 0;
+  size_t lbs = 0;
+  double step = 0;
+  size_t mld = 1;
+  std::string label = "";
 
-	if (argc == 2) {
+	if (argc == 7) {
 		filename = argv[1];
+    d = atoi(argv[2]);
+    lbs = atoi(argv[3]);
+    step = atoi(argv[4]) / 10.;
+    mld = atoi(argv[5]);
+    label = argv[6];
   } else {
-		std::cout << "Usage: ./cuckoo_test <filename>" << std::endl;
+		std::cout << "Usage: ./cuckoo_test <filename> <d> " <<
+      "<log_2(bucket_size)> <step*10> <max_loop_denom> <label>" << std::endl;
     return 0;
   }
 
-  for (; max_loop <= max_loop_limit; max_loop += loop_step) {
-    seq_filter_stat<K, cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
-      Seq<K>::equal_to> >::filter(filename, max_loop);
-  }
+  seq_filter_stat<K, cuckoo<Seq<K>, size_t, Seq<K>::multiple_hash, 
+    Seq<K>::equal_to> >::filter(filename, d, lbs, step, mld, label);
 
   return 0;
 }

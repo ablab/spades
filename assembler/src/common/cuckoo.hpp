@@ -19,15 +19,18 @@
  */
 
 #include <cstring>
+#include <cmath>
 #include <map>
+#include <ctime>
 
 #ifndef _CUCKOO_HPP_
 #define _CUCKOO_HPP_
 
-const static size_t D = 3;
+const static size_t D = 2;
+const static size_t LOG_BUCKET_SIZE = 1;
 const static size_t INIT_LENGTH = 100;
-const static size_t MAX_LOOP = 100;
-const static double STEP = 1.2;
+const static size_t MAX_LOOP_FACTOR = 2;
+const static double STEP = 1.5;
 
 /**
  * @param Key key type in hash.
@@ -48,6 +51,15 @@ private:
    */
   size_t d_;
   /**
+   * @variable The bucket size - the number of elements in each
+   * table, that have the same value of hash function.
+   */
+  size_t bucket_size_;
+  /**
+   * @variable The log_2 from the bucket size.
+   */
+  size_t log_bucket_size_;
+  /**
    * @variable The initial length of the whole structure.
    * When you know the approximate number of records to be used, 
    * it is a good idea to take this value in 1.05-1.1 times more and
@@ -55,10 +67,23 @@ private:
    */
   size_t init_length_;
   /**
+   * @variable The total length of all the hash arrays.
+   */
+  size_t len_;
+  /**
+   * @variable The length of every hash array.
+   */
+  size_t len_part_;
+  /**
    * @variable The maximum number of kick cycles during 
    * insertion before rehash.
    */
   size_t max_loop_;
+  /**
+   * @variable The factor that denotes dependency of max_loop_
+   * from len_part_.
+   */
+  size_t max_loop_factor_;
   /**
    * @variable The ratio of increasing the size of hash during rehash. 
    * The less it is the less memory will be used but the more time is needed. 
@@ -80,14 +105,6 @@ private:
    * @variable The array of flags indicating existence of the element in hash.
    */  
   char* exists_;
-  /**
-   * @variable The total length of all the hash arrays.
-   */
-  size_t len_;
-  /**
-   * @variable The length of every hash array.
-   */
-  size_t len_part_;
   /**
    * @variable The actual number of elements in cuckoo hash.
    */  
@@ -269,6 +286,9 @@ private:
     for (size_t i = 0; i < len_ >> 3; ++i) exists_[i] = 0;
     size_ = 0;
     is_rehashed_ = false;
+    max_loop_ = max_loop_factor_ * round(log(len_part_)) + 1;
+    bucket_size_ = round(exp(log(2) * log_bucket_size_));
+    srand(time(NULL));
   }
 
   /**
@@ -278,8 +298,9 @@ private:
    */
   void copy(const cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
     d_ = Cuckoo.d_;
+    log_bucket_size_ = Cuckoo.log_bucket_size_;
     init_length_ = Cuckoo.init_length_;
-    max_loop_ = Cuckoo.max_loop_;
+    max_loop_factor_ = Cuckoo.max_loop_factor_;
     step_ = Cuckoo.step_;
     hasher_ = Cuckoo.hasher_;
     key_equal_ = Cuckoo.key_equal_;
@@ -332,7 +353,7 @@ private:
    * @return Hash value.
    */
   inline size_t hash(const Key& k, size_t hash_num) const {
-    return hasher_(k, hash_num) % len_part_;
+    return hasher_(k, hash_num) % (len_part_ >> log_bucket_size_);
   }
   
   /**
@@ -377,6 +398,7 @@ private:
     len_part_ = (size_t)(len_part_ * step_);
     len_part_ = ((len_part_ + 7) >> 3) << 3;
     len_ = len_part_ * d_;
+    max_loop_ = max_loop_factor_ * round(log(len_part_)) + 1;
     
     update_exists(len_temp_);
     update_data(len_temp_);
@@ -411,7 +433,13 @@ private:
   size_t add_new(Data p) {
     for (size_t i = 0; i < max_loop_; ++i) {
       for (size_t j = 0; j < d_; ++j) {
-        size_t pos = hash(p.first, j);
+        size_t pos = hash(p.first, j) << log_bucket_size_;
+        for (size_t l = 0; l < bucket_size_ - 1; ++l) {
+          if (get_exists(j * len_part_ + pos)) 
+            ++pos;
+          else 
+            break;
+        }
         std::swap(p, data_[j][pos]);
         bool exists = get_exists(j * len_part_ + pos); 
         set_exists(j * len_part_ + pos);
@@ -443,23 +471,28 @@ public:
    *
    * @param d The number of hash functions (thus arrays also) 
    * that will be used in the program (can be >= 2).
+   * @param log_bucket_size The log_2 from the bucket size.
    * @param init_length The initial length of the whole structure.
    * When you know the approximate number of records to be used, 
    * it is a good idea to take this value in 1.05-1.1 times more and
    * small value of step.
-   * @param max_loop The maximum number of kick cycles during 
-   * insertion before rehash.
+   * @param max_loop_factor The factor that denotes dependency of max_loop_
+   * from len_part_.
    * @param step The ratio of increasing the size of hash during rehash. 
    * The less it is the less memory will be used but the more time is needed. 
    * @param hasher The hash function object (template parameter by default).
    * @param equal The equal predicator object (template parameter by default).  
    */  
-  explicit cuckoo(size_t d = D, size_t init_length = INIT_LENGTH, 
-                  size_t max_loop = MAX_LOOP, double step = STEP, 
+  explicit cuckoo(size_t d = D, 
+                  size_t log_bucket_size = LOG_BUCKET_SIZE,
+                  size_t init_length = INIT_LENGTH, 
+                  size_t max_loop_factor = MAX_LOOP_FACTOR, 
+                  double step = STEP, 
                   const Hash& hasher = Hash(), 
                   const Equal& equal = Equal())
-    : d_(d), init_length_(init_length), 
-      max_loop_(max_loop), step_(step), 
+    : d_(d), log_bucket_size_(log_bucket_size),
+      init_length_(init_length), 
+      max_loop_factor_(max_loop_factor), step_(step),  
       hasher_(hasher), key_equal_(equal) {
     init();
   }
@@ -503,8 +536,9 @@ public:
          const Hash& hasher = Hash(), 
          const Equal& equal = Equal()) {
     d_ = D;
+    log_bucket_size_ = LOG_BUCKET_SIZE;
     init_length_ = INIT_LENGTH;
-    max_loop_ = MAX_LOOP;
+    max_loop_factor_ = MAX_LOOP_FACTOR;
     step_ = STEP;
     hasher_ = hasher;
     key_equal_ = equal;
@@ -513,21 +547,6 @@ public:
     for (iterator it = first; it.pos != last_pos; ++it) {
       add_new(*it);
     }
-  }
-
-  /**
-   * Update parameter of cuckoo, deleting all the data from it.
-   *
-   * @warning For test only!!!
-   */
-  void set_up(size_t d = D, size_t init_length = INIT_LENGTH, 
-              size_t max_loop = MAX_LOOP, double step = STEP) {
-    clear_all();
-    d_ = d;
-    init_length_ = init_length;
-    max_loop_ = max_loop;
-    step_ = step;
-    init();
   }
 
   /**
@@ -554,8 +573,9 @@ public:
    */
   void swap(cuckoo<Key, Value, Hash, Equal>& Cuckoo) {
     std::swap(d_, Cuckoo.d_);
+    std::swap(log_bucket_size_, Cuckoo.log_bucket_size_);
     std::swap(init_length_, Cuckoo.init_length_);
-    std::swap(max_loop_, Cuckoo.max_loop_);
+    std::swap(max_loop_factor_, Cuckoo.max_loop_factor_);
     std::swap(step_, Cuckoo.step_);
     std::swap(hasher_, Cuckoo.hasher_);
     std::swap(key_equal_, Cuckoo.key_equal_);
@@ -662,10 +682,15 @@ public:
   iterator find(const Key& k) {
     size_t dist = 0;
     for (size_t i = 0; i < d_; ++i) {
-      size_t pos = hash(k, i);
+      size_t pos = hash(k, i) << log_bucket_size_;
       size_t position = pos + dist;
-      if (key_equal_(data_[i][pos].first, k) && (get_exists(position))) {    
-        return iterator(position, this);
+      for (size_t l = 0; l < bucket_size_; ++l) {
+        if (key_equal_(data_[i][pos].first, k) 
+            && (get_exists(position))) {    
+          return iterator(position, this);
+        }
+        ++pos;
+        ++position;
       }
       dist += len_part_;
     }
@@ -682,10 +707,15 @@ public:
   const_iterator find(const Key& k) const {
     size_t dist = 0;
     for (size_t i = 0; i < d_; ++i) {
-      size_t pos = hash(k, i);
+      size_t pos = hash(k, i) << log_bucket_size_;
       size_t position = pos + dist;
-      if (key_equal_(data_[i][pos].first, k) && (get_exists(position))) {    
-        return const_iterator(position, this);
+      for (size_t l = 0; l < bucket_size_; ++l) {
+        if (key_equal_(data_[i][pos].first, k) 
+            && (get_exists(position))) {    
+          return const_iterator(position, this);
+        }
+        ++pos;
+        ++position;
       }
       dist += len_part_;
     }
@@ -741,7 +771,8 @@ public:
       return make_pair(res, false);
     } 
     add_new(k);
-    return make_pair(iterator(hash(k.first, 0), this), true);
+    res = find(k.first);
+    return make_pair(res, true);
   }
 
   /**

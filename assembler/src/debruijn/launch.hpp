@@ -44,7 +44,8 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 void WriteToDotFile(Graph &g, const string& file_name, string graph_name,
 		Path<EdgeId> path = Path<EdgeId> ()) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
-	gvis::WriteToFile(/*DE_BRUIJN_DATA_FOLDER + */file_name, graph_name, g, path);
+	gvis::WriteToFile(/*DE_BRUIJN_DATA_FOLDER + */file_name, graph_name, g,
+			path);
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
 
@@ -66,38 +67,43 @@ void ProduceInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 void ClipTips(Graph &g) {
 	INFO("Clipping tips");
 	TipComparator<Graph> comparator(g);
-	size_t max_tip_length = CONFIG.read<size_t>("tc_max_tip_length");
-	size_t max_coverage = CONFIG.read<size_t>("tc_max_coverage");
-	double max_relative_coverage = CONFIG.read<double>("tc_max_relative_coverage");
-	TipClipper<Graph, TipComparator<Graph>> tc(g, comparator, max_tip_length, max_coverage, max_relative_coverage);
+	size_t max_tip_length = CONFIG.read<size_t> ("tc_max_tip_length");
+	size_t max_coverage = CONFIG.read<size_t> ("tc_max_coverage");
+	double max_relative_coverage = CONFIG.read<double> (
+			"tc_max_relative_coverage");
+	TipClipper<Graph, TipComparator<Graph>> tc(g, comparator, max_tip_length,
+			max_coverage, max_relative_coverage);
 	tc.ClipTips();
 }
 
 void RemoveBulges(Graph &g) {
 	INFO("Removing bulges");
-	double max_coverage = CONFIG.read<double>("br_max_coverage");
-	double max_relative_coverage = CONFIG.read<double>("br_max_relative_coverage");
-	double max_delta = CONFIG.read<double>("br_max_delta");
-	double max_relative_delta = CONFIG.read<double>("br_max_relative_delta");
-	size_t max_length_div_K = CONFIG.read<int>("br_max_length_div_K");
-	BulgeRemover<Graph> bulge_remover(max_length_div_K * g.k(), max_coverage, max_relative_coverage, max_delta, max_relative_delta);
+	double max_coverage = CONFIG.read<double> ("br_max_coverage");
+	double max_relative_coverage = CONFIG.read<double> (
+			"br_max_relative_coverage");
+	double max_delta = CONFIG.read<double> ("br_max_delta");
+	double max_relative_delta = CONFIG.read<double> ("br_max_relative_delta");
+	size_t max_length_div_K = CONFIG.read<int> ("br_max_length_div_K");
+	BulgeRemover<Graph> bulge_remover(max_length_div_K * g.k(), max_coverage,
+			max_relative_coverage, max_delta, max_relative_delta);
 	bulge_remover.RemoveBulges(g);
 	INFO("Bulges removed");
 }
 
 void RemoveLowCoverageEdges(Graph &g) {
 	INFO("Removing low coverage edges");
-	double max_coverage = CONFIG.read<double>("ec_max_coverage");
-	int max_length_div_K = CONFIG.read<int>("ec_max_length_div_K");
-	LowCoverageEdgeRemover<Graph> erroneous_edge_remover(max_length_div_K * g.k(), max_coverage);
+	double max_coverage = CONFIG.read<double> ("ec_max_coverage");
+	int max_length_div_K = CONFIG.read<int> ("ec_max_length_div_K");
+	LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
+			max_length_div_K * g.k(), max_coverage);
 	erroneous_edge_remover.RemoveEdges(g);
 	INFO("Low coverage edges removed");
 }
 
 void ResolveRepeats(Graph &g, PairedInfoIndex<Graph> &info) {
 	INFO("Resolving primitive repeats");
-	RepeatResolver<Graph> repeat_resolver(g, 0);
-	repeat_resolver.ResolveRepeats(g, info);
+	RepeatResolver<Graph> repeat_resolver(g, 0, info);
+	repeat_resolver.ResolveRepeats();
 	INFO("Primitive repeats resolved");
 }
 
@@ -166,34 +172,44 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 
 	ConstructGraphWithPairedInfo<k, ReadStream> (g, index, coverage_handler,
 			paired_index, stream);
+	//	{
+	//		typedef SimpleReaderWrapper<ReadStream> UnitedStream;
+	//		UnitedStream united_stream(stream);
+	//		ConstructGraphWithCoverage<k, UnitedStream> (g, index, coverage_handler, united_stream);
+	//	}
 
 	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 			"edge_graph");
-//	paired_index.OutputData(output_folder + "edges_dist.txt");
+	//	paired_index.OutputData(output_folder + "edges_dist.txt");
 
 	for (size_t i = 0; i < 3; i++) {
 		ClipTips(g);
-		ProduceInfo<k> (g, index, genome, output_folder + "tips_clipped_" + ToString(i) + ".dot",
+		ProduceInfo<k> (g, index, genome,
+				output_folder + "tips_clipped_" + ToString(i) + ".dot",
 				"no_tip_graph");
 
 		RemoveBulges(g);
-		ProduceInfo<k> (g, index, genome, output_folder + "bulges_removed_" + ToString(i) + ".dot",
+		ProduceInfo<k> (g, index, genome,
+				output_folder + "bulges_removed_" + ToString(i) + ".dot",
 				"no_bulge_graph");
 
 		RemoveLowCoverageEdges(g);
-		ProduceInfo<k> (g, index, genome, output_folder + "erroneous_edges_removed_" + ToString(i) + ".dot",
-					"no_erroneous_edges_graph");
+		ProduceInfo<k> (
+				g,
+				index,
+				genome,
+				output_folder + "erroneous_edges_removed_" + ToString(i)
+						+ ".dot", "no_erroneous_edges_graph");
 	}
 
-	SimpleOfflineClusterer<Graph> clusterer(paired_index);
-	PairedInfoIndex<Graph> clustered_paired_index(g);
-	clusterer.cluster(clustered_paired_index);
-
-	//ResolveRepeats(g, paired_index);
-	//ProduceInfo<k> (g, index, genome, output_folder + "repeats_resolved.dot",
-	//		"no_repeat_graph");
-
-	INFO("Tool finished")
+//	SimpleOfflineClusterer<Graph> clusterer(paired_index);
+//	PairedInfoIndex<Graph> clustered_paired_index(g);
+//	clusterer.cluster(clustered_paired_index);
+	INFO("before ResolveRepeats");
+	ResolveRepeats(g, paired_index);
+	ProduceInfo<k> (g, index, genome, output_folder + "repeats_resolved.dot",
+			"no_repeat_graph");
+	INFO("Tool finished");
 }
 
 }

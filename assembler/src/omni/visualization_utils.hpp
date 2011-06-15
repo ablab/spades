@@ -20,10 +20,11 @@ class GraphVisualizer {
 	typedef typename Graph::VertexId VertexId;
 protected:
 	Graph& g_;
+	//	const GraphLabeler<Graph> &labeler_;
 	//	gvis::GraphPrinter<VertexId>& gp_;
 public:
 	GraphVisualizer(Graph& g/*, gvis::GraphPrinter<VertexId>& gp*/) :
-		g_(g)/*, gp_(gp)*/{
+		g_(g) {
 
 	}
 
@@ -67,9 +68,10 @@ class SimpleGraphVisualizer: public GraphVisualizer<Graph> {
 	typedef GraphVisualizer<Graph> super;
 	typedef typename Graph::VertexId VertexId;
 	gvis::GraphPrinter<VertexId>& gp_;
-	gvis::GraphLabeler<Graph>& gl_;
+	const omnigraph::GraphLabeler<Graph>& gl_;
 public:
-	SimpleGraphVisualizer(Graph& g, gvis::GraphPrinter<VertexId>& gp, gvis::GraphLabeler<Graph>& gl) :
+	SimpleGraphVisualizer(Graph& g, gvis::GraphPrinter<VertexId>& gp,
+			omnigraph::GraphLabeler<Graph>& gl) :
 		super(g), gp_(gp), gl_(gl) {
 	}
 
@@ -113,6 +115,7 @@ class ColoredGraphVisualizer: public PartialGraphVisualizer<Graph> {
 	typedef PartialGraphVisualizer<Graph> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
+	const omnigraph::GraphLabeler<Graph>& gl_;
 	const map<EdgeId, string>& edge_colors_;
 	const string default_color_;
 	const string border_vertex_color_;
@@ -143,28 +146,29 @@ class ColoredGraphVisualizer: public PartialGraphVisualizer<Graph> {
 
 public:
 	ColoredGraphVisualizer(Graph& g, gvis::GraphPrinter<VertexId>& gp,
+			const omnigraph::GraphLabeler<Graph>& gl,
 			const map<EdgeId, string>& edge_colors,
 			const string& default_color = "",
-			const string& border_vertex_color = "grey") :
-		super(g, gp), edge_colors_(edge_colors), default_color_(default_color),
+			const string& border_vertex_color = "yellow") :
+		super(g, gp), gl_(gl), edge_colors_(edge_colors),
+				default_color_(default_color),
 				border_vertex_color_(border_vertex_color) {
 	}
 
 	virtual void Visualize(const vector<VertexId>& vertices) {
 		set < VertexId > vertex_set(vertices.begin(), vertices.end());
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
-			super::gp_.AddVertex(
-					*v_it,
-					"",
+			string vertex_color =
 					IsBorder(*v_it, vertex_set) ? border_vertex_color_
-							: "yellow");
+							: "white";
+			super::gp_.AddVertex(*v_it, gl_.label(*v_it), vertex_color);
 		}
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
 			const vector<EdgeId> edges = super::g_.OutgoingEdges(*v_it);
 			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
 				VertexId edge_end = super::g_.EdgeEnd(*e_it);
 				if (vertex_set.count(edge_end) > 0) {
-					super::gp_.AddEdge(*v_it, edge_end, " ", EdgeColor(*e_it));
+					super::gp_.AddEdge(*v_it, edge_end, gl_.label(*e_it), EdgeColor(*e_it));
 				}
 			}
 		}
@@ -388,7 +392,8 @@ void WritePaired(const string& file_name, const string& graph_name, Graph& g,
 	gvis::DotPairedGraphPrinter<Graph> gp(g, graph_name, filestr);
 	PathColorer<Graph> path_colorer(g, path);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	ColoredGraphVisualizer<Graph> gv(g, gp, coloring);
+	omnigraph::StrGraphLabeler<Graph> gl(g);
+	ColoredGraphVisualizer<Graph> gv(g, gp, gl, coloring);
 	AdapterGraphVisualizer<Graph> result_vis(g, gv);
 	result_vis.Visualize();
 	filestr.close();
@@ -400,6 +405,7 @@ string ConstructComponentName(string file_name, size_t cnt) {
 	ss << "_error_" << cnt;
 	string res = file_name;
 	res.insert(res.length() - 4, ss.str());
+//	cout << res << endl;
 	return res;
 }
 
@@ -408,6 +414,7 @@ void WriteErrors(const string& file_name, const string& graph_name, Graph& g,
 		Path<typename Graph::EdgeId> path = Path<typename Graph::EdgeId> ()) {
 	PathColorer<Graph> path_colorer(g, path);
 	set<typename Graph::EdgeId> black = path_colorer.BlackEdges();
+	omnigraph::StrGraphLabeler<Graph> gl(g);
 	ErrorComponentSplitter<Graph> splitter(g, black);
 	size_t cnt = 0;
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
@@ -417,7 +424,7 @@ void WriteErrors(const string& file_name, const string& graph_name, Graph& g,
 		filestr.open(ConstructComponentName<Graph> (file_name, cnt).c_str(),
 				fstream::out);
 		gvis::DotPairedGraphPrinter<Graph> gp(g, graph_name, filestr);
-		ColoredGraphVisualizer<Graph> gv(g, gp, coloring);
+		ColoredGraphVisualizer<Graph> gv(g, gp, gl, coloring);
 		auto component = splitter.NextComponent();
 		gp.open();
 		gv.Visualize(component);

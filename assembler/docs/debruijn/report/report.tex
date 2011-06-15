@@ -40,6 +40,8 @@ Our graph explicitly supports conjugate structure. It means in particular that b
 
 Usually in addition to the condensed \dbg{} structure we will need index on its $k$-mers ($k$-mer index). It is a mapping from each $k$-mer contained in the graph to a pair of an \emph{edge id} it belongs to and its \emph{offset from the start} of that edge. 
 
+Each of graph edges contains full sequence of nucleotides corresponding to this edge. Actually conjugate edges contain single underlying sequence for saving memory.
+
 \subsection{Condensed graph construction}
 The construction process consists of two phases:
 \begin{itemize}
@@ -72,18 +74,28 @@ Low-level operations are addition/deletion of edge/vertex.
 
 High-level operations are:
 \begin{itemize}
-\item concatenation of edges
-\item split of an edge in a given proportion
-\item projection of one edge to another
+\item Concatenation of a path.
+\item Split of an edge in a given proportion. 
+\item Projection of one edge to another.
 \end{itemize}
 
-todo: write about each of them
+Two adjacent edges can be concatenated only if their common vertex is 1-in/1-out.
 
-During graph modification it is important not to break consistency of conjugate elements. To achieve this every time a modifying operation is performed, the symmetrical operation is performed on conjugate elements. Implementation of this approach appeared to be tricky at some moments, but after it was done it allowed us to think of conjugateness much more seldom. 
+Split of an edge $e$ with parameter $\alpha$ creates two new adjacent edges $e_1, e_2$ s.t. $length(e_1)/length(e_2) = \alpha$ along with their common vertex.
 
-todo: write about some details???
+Projection of edge $e_1$ to $e_2$ in terms of structural changes results only in the deletion of $e_1$, but we need this operation to move all associated information from edge $e_1$ to $e_2$.
+
+If during graph modification some vertex becomes isolated, it is deleted. Edges are concatenated immediately with each opportunity.
+
+During graph modification it is important not to break consistency of conjugate elements. 
+To achieve this every time a vertex/edge is added/deleted from the graph, conjugate element is added/deleted as well.
+Since high-level operations are implemented with low-level operations stated strategy appears to be sufficient for them to work correctly out of the box in most cases. \footnote{The only special case is concatenation of the path that contains self-conjugate edge and of course edge cannot be projected to its conjugate}
+
+%To achieve this every time a modifying operation is performed, the symmetrical operation is performed on conjugate elements. Implementation of this approach appeared to be tricky at some moments, but after it was done it allowed us to think of conjugateness much more seldom. 
 
 What makes our condensed graph convenient and extendible is employment of callback technique. Each time a modifying operation is performed corresponding event is triggered and all objects that listen to graph events are notified about what exactly happened to the graph.% and respond to the event as they like.
+
+
  Thus instead of overloading graph structure with information and features one can create external tools which could be easily switched on and off dynamically.
 
 \subsubsection{Problems}
@@ -175,16 +187,38 @@ Smart iterators are tools to iterate through vertices/edges of graph. These iter
 \end{itemize}
 
 \section{Simplification algorithms}
+Simplification algorithms that we are currently applying are:
+\begin{itemize}
+\item Tip Clipping
+\item Bulge Removal
+\item Removal of low-coverage edges
+\end{itemize}
 
 \subsection{Tip Clipping}
 
 The following algorithm is used for tip clipping: we iterate through all edges of graph in order of increasing length. If current edge topologically looks like tip and has alternative path with good enough coverage this edge is removed. If after removing this edge vertex that was adjacent with removed edge has unique incoming edge and unique outgoing edge those edges are concatenated and new edge is also checked as tip candidate.
 
 \subsection{Bulge Removal}
-\textit{Simple bulge} is the edge with low (absolute and relative) coverage such that there is an alternative path between its start and end of length $\approx$ edge length.
+\textit{Simple bulge} is a rather short edge $e$ with an alternative path $P$ between its start and end of length $\approx length(e)$.
 
-We iterate through all edges, looking for simple bulges. If we find such edge, we remove it, condense neighbourhoods of its ends and add new edges to traversal.
+Our current approach is iterative removal of simple bulges. This strategy allows to delete pretty complex bulge structures and appeared to work pretty well if we alternate it with low coverage edge removal.
 
-This strategy allows to iteratively delete pretty complex bulge structures.
+Search of simple bulges is pretty straightforward.
+We iterate through all edges with smart iterator. For every edge we look for alternative paths from its start to its end within a bounded length neighbourhood.
+Among all such paths we choose the most covered one (compared by weighted average coverage of edges in the path).  
 
+If the path $P=\{e_i\}_{i=0}^{p}$ was found then we should make a decision if edge $e$ should be removed from the graph. If we decided to delete $e$, then:
+\begin{itemize}
+\item split $e$ into $p$ edges $\{e'_i\}_{i=0}^{p}$ in the same proportions as $\{e_i\}_{i=0}^{p}$
+\item project every $e'_i$ onto $e_i$
+\item try to condense edges in the neighgourhood of start/end of $e$ (new edges are implicitly included into traversal by smart iterator)
+\end{itemize}
+
+As for now, we do NOT delete edge $e$ if any of these holds:
+\begin{itemize}
+\item $coverage(e)>max_{cov}$
+\item $coverage(e)>max_{gap}*coverage(P)$
+\end{itemize}
+
+Maximal bulge length, allowed variation of alternative path length, $max_{cov}$ and $max_{gap}$ are all user-defined, but some of them have reasonable default values.
 \end{document}
