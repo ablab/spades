@@ -93,10 +93,15 @@ Since high-level operations are implemented with low-level operations stated str
 
 %To achieve this every time a modifying operation is performed, the symmetrical operation is performed on conjugate elements. Implementation of this approach appeared to be tricky at some moments, but after it was done it allowed us to think of conjugateness much more seldom. 
 
-What makes our condensed graph convenient and extendible is employment of callback technique. Each time a modifying operation is performed corresponding event is triggered and all objects that listen to graph events are notified about what exactly happened to the graph.% and respond to the event as they like.
+What makes our condensed graph convenient and extendible is employment of callback technique. Each time a modifying operation is performed corresponding event is triggered and all objects that listen to graph events are notified about what exactly happened to the graph.
 
+There are two moments that were taken into consideration during implementation of this concept:
+\begin{itemize}
+\item we should immediately call handlers for conjugate operations too
+\item order of handler calls during high-level operations is not obvious from the first sight
+\end{itemize}
 
- Thus instead of overloading graph structure with information and features one can create external tools which could be easily switched on and off dynamically.
+This concept allows to implement any additional graph information as an external structure and hide its maintaining logic from the graph and from processing algorithms. 
 
 \subsubsection{Problems}
 \begin{itemize}
