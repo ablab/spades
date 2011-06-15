@@ -40,6 +40,8 @@ Our graph explicitly supports conjugate structure. It means in particular that b
 
 Usually in addition to the condensed \dbg{} structure we will need index on its $k$-mers ($k$-mer index). It is a mapping from each $k$-mer contained in the graph to a pair of an \emph{edge id} it belongs to and its \emph{offset from the start} of that edge. 
 
+Each of graph edges contains full sequence of nucleotides corresponding to this edge. Actually conjugate edges contain single underlying sequence for saving memory.
+
 \subsection{Condensed graph construction}
 The construction process consists of two phases:
 \begin{itemize}
@@ -72,18 +74,28 @@ Low-level operations are addition/deletion of edge/vertex.
 
 High-level operations are:
 \begin{itemize}
-\item concatenation of edges
-\item split of an edge in a given proportion
-\item projection of one edge to another
+\item Concatenation of a path.
+\item Split of an edge in a given proportion. 
+\item Projection of one edge to another.
 \end{itemize}
 
-todo: write about each of them
+Two adjacent edges can be concatenated only if their common vertex is 1-in/1-out.
 
-During graph modification it is important not to break consistency of conjugate elements. To achieve this every time a modifying operation is performed, the symmetrical operation is performed on conjugate elements. Implementation of this approach appeared to be tricky at some moments, but after it was done it allowed us to think of conjugateness much more seldom. 
+Split of an edge $e$ with parameter $\alpha$ creates two new adjacent edges $e_1, e_2$ s.t. $length(e_1)/length(e_2) = \alpha$ along with their common vertex.
 
-todo: write about some details???
+Projection of edge $e_1$ to $e_2$ in terms of structural changes results only in the deletion of $e_1$, but we need this operation to move all associated information from edge $e_1$ to $e_2$.
+
+If during graph modification some vertex becomes isolated, it is deleted. Edges are concatenated immediately with each opportunity.
+
+During graph modification it is important not to break consistency of conjugate elements. 
+To achieve this every time a vertex/edge is added/deleted from the graph, conjugate element is added/deleted as well.
+Since high-level operations are implemented with low-level operations stated strategy appears to be sufficient for them to work correctly out of the box in most cases. \footnote{The only special case is concatenation of the path that contains self-conjugate edge and of course edge cannot be projected to its conjugate}
+
+%To achieve this every time a modifying operation is performed, the symmetrical operation is performed on conjugate elements. Implementation of this approach appeared to be tricky at some moments, but after it was done it allowed us to think of conjugateness much more seldom. 
 
 What makes our condensed graph convenient and extendible is employment of callback technique. Each time a modifying operation is performed corresponding event is triggered and all objects that listen to graph events are notified about what exactly happened to the graph.% and respond to the event as they like.
+
+
  Thus instead of overloading graph structure with information and features one can create external tools which could be easily switched on and off dynamically.
 
 \subsubsection{Problems}
