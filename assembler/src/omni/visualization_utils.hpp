@@ -411,7 +411,7 @@ string ConstructComponentName(string file_name, size_t cnt) {
 	ss << "_error_" << cnt;
 	string res = file_name;
 	res.insert(res.length() - 4, ss.str());
-	cout << res << endl;
+//	cout << res << endl;
 	return res;
 }
 
