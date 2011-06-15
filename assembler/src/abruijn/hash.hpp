@@ -3,7 +3,6 @@
 
 #include "logging.hpp"
 #include "parameters.hpp"
-
 #include <cassert>
 
 namespace hashing {
@@ -65,8 +64,9 @@ public:
 	 */
 	template<typename S>
 	void kmers(const T &s, S &ha) {
-		//assert(ha.size() >= s.size()-K+1);
-		//INFO("hashing k-mers of " << s);
+		TRACE("hashing k-mers of a string of length " << s.size());
+//		TRACE("hashing k-mers of " << s);
+		assert(ha.size() >= s.size()-K+1);
 		size_t sz = s.size();
 		hash_t h = 0;
 		for (size_t i = 0; i < K; i++) {
