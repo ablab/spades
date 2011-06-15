@@ -1,7 +1,7 @@
 #ifndef GRAPH_LABELER_HPP_
 #define GRAPH_LABELER_HPP_
 
-namespace gvis {
+namespace omnigraph {
 
 /**
  * (Interface)
@@ -18,9 +18,9 @@ public:
 	virtual ~GraphLabeler() {
 	}
 
-	virtual std::string label(VertexId vertexId) = 0;
+	virtual std::string label(VertexId vertexId) const  = 0;
 
-	virtual std::string label(EdgeId edgeId) = 0;
+	virtual std::string label(EdgeId edgeId) const = 0;
 };
 
 /**
@@ -35,11 +35,11 @@ class EmptyGraphLabeler : public GraphLabeler<Graph> {
 public:
 	EmptyGraphLabeler() {}
 
-	std::string label(VertexId vertexId) {
+	std::string label(VertexId vertexId) const {
 		return "";
 	}
 
-	std::string label(EdgeId edgeId) {
+	std::string label(EdgeId edgeId) const {
 		return "";
 	}
 };
@@ -59,11 +59,11 @@ protected:
 public:
 	StrGraphLabeler(Graph& g) : g_(g) {}
 
-	std::string label(VertexId vertexId) {
+	virtual std::string label(VertexId vertexId) const {
 		return g_.str(vertexId);
 	}
 
-	std::string label(EdgeId edgeId) {
+	virtual std::string label(EdgeId edgeId) const {
 		return g_.str(edgeId);
 	}
 };

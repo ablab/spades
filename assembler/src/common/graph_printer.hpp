@@ -172,14 +172,14 @@ string constructReverceTableEntry(tVertex v, const string &label) {
 
 template<typename tVertex>
 string constructComplexNodeLabel(tVertex v1, const string &label1, tVertex v2,
-		const string &label2) {
-	return "<TABLE>\n" + constructTableEntry(v1, label1)
+		const string &label2, const string &fillColor) {
+	return "<TABLE bgcolor = \"" + fillColor + "\">\n" + constructTableEntry(v1, label1)
 			+ constructReverceTableEntry(v2, label2) + "</TABLE>";
 }
 
 template<typename tVertex>
-string constructComplexNodeLabel(tVertex v, const string &label) {
-	return "<TABLE>\n" + constructTableEntry(v, label) + "</TABLE>";
+string constructComplexNodeLabel(tVertex v, const string &label, const string &fillColor) {
+	return "<TABLE bgcolor = \"" + fillColor + "\">\n" + constructTableEntry(v, label) + "</TABLE>";
 }
 
 template<typename tVertex>
@@ -195,7 +195,8 @@ protected:
 	const string name_;
 	ostream& out_;
 public:
-	GraphPrinter(const string &name, ostream &out = cout) : name_(name), out_(out) {
+	GraphPrinter(const string &name, ostream &out = cout) :
+		name_(name), out_(out) {
 	}
 
 	virtual ~GraphPrinter() {
@@ -206,19 +207,20 @@ public:
 	virtual void close() = 0;
 
 	virtual void AddVertex(VertexId vertexId, const string &label = " ",
-			const string &fillColor = "white") = 0;
+			const string fillColor = "white") = 0;
 
-	virtual void AddEdge(VertexId fromId, VertexId toId, const string &label = " ",
-			const string &color = "black") = 0;
+	virtual void AddEdge(VertexId fromId, VertexId toId,
+			const string &label = " ", const string color = "black") = 0;
 
 };
 
 template<typename VertexId>
-class DotGraphPrinter : public GraphPrinter<VertexId> {
+class DotGraphPrinter: public GraphPrinter<VertexId> {
 private:
 	typedef GraphPrinter<VertexId> super;
 public:
-	DotGraphPrinter(const string &name, ostream &out = cout) : super(name, out) {
+	DotGraphPrinter(const string &name, ostream &out = cout) :
+		super(name, out) {
 
 	}
 
@@ -227,13 +229,13 @@ public:
 	}
 
 	virtual void AddVertex(VertexId vertexId, const string &label,
-			const string &fillColor = "white") {
+			const string fillColor = "white") {
 		Vertex<VertexId> v(vertexId, label, fillColor);
 		recordVertex<VertexId> (super::out_, v);
 	}
 
 	virtual void AddEdge(VertexId fromId, VertexId toId, const string &label,
-			const string &color = "black") {
+			const string color = "black") {
 		Edge<VertexId> e(fromId, toId, label, color);
 		recordSimpleEdge<VertexId> (super::out_, e);
 	}
@@ -256,8 +258,8 @@ private:
 	map<VertexId, VertexId> vertexMap;
 	pair<VertexId, VertexId> currenVertexId;
 public:
-	PairedGraphPrinter(const string &name, ostream &out = cout)
-	: out_(out), name_(name) {
+	PairedGraphPrinter(const string &name, ostream &out = cout) :
+		out_(out), name_(name) {
 	}
 
 	void open() {
@@ -269,14 +271,15 @@ public:
 	}
 
 	void AddVertex(VertexId v1, string label1, VertexId v2, string label2,
-			const string &fillColor = "white") {
+			const string fillColor = "white") {
 		string pairId = constructNodePairId(v1, v2);
-		string pairLabel = constructComplexNodeLabel(v1, label1, v2, label2);
+		string pairLabel = constructComplexNodeLabel(v1, label1, v2, label2, fillColor);
 		Vertex<string> v(pairId, pairLabel, fillColor);
 		recordVertex<string> (out_, v);
 	}
 
-	void AddVertex(VertexId v1, string label1, const string &fillColor = "white") {
+	void AddVertex(VertexId v1, string label1,
+			const string fillColor = "white") {
 		string vertexId = constructNodeId(v1);
 		string vertexLabel = constructComplexNodeLabel(v1, label1);
 		Vertex<string> v(vertexId, vertexLabel, fillColor);
@@ -284,7 +287,7 @@ public:
 	}
 
 	void AddEdge(pair<VertexId, VertexId> v1, pair<VertexId, VertexId> v2,
-			const string label = " ", const string &color = "black") {
+			const string label = " ", const string color = "black") {
 		string v1Id = constructVertexInPairId(v1.first, v1.second);
 		string v2Id = constructVertexInPairId(v2.first, v2.second);
 		Edge<string> edge(v1Id, v2Id, label, color);
@@ -292,7 +295,7 @@ public:
 	}
 
 	void AddEdge(pair<VertexId, VertexId> v1, VertexId v2,
-			const string label = " ", const string &color = "black") {
+			const string label = " ", const string color = "black") {
 		string v1Id = constructVertexInPairId(v1.first, v1.second);
 		string v2Id = constructVertexInPairId(v2, v2);
 		Edge<string> edge(v1Id, v2Id, label, color);
@@ -300,7 +303,7 @@ public:
 	}
 
 	void AddEdge(VertexId v1, pair<VertexId, VertexId> v2,
-			const string label = " ", const string &color = "black") {
+			const string label = " ", const string color = "black") {
 		string v1Id = constructVertexInPairId(v1, v1);
 		string v2Id = constructVertexInPairId(v2.first, v2.second);
 		Edge<string> edge(v1Id, v2Id, label, color);
@@ -308,7 +311,7 @@ public:
 	}
 
 	void AddEdge(VertexId v1, VertexId v2, const string label = " ",
-			const string &color = "black") {
+			const string color = "black") {
 		string v1Id = constructVertexInPairId(v1, v1);
 		string v2Id = constructVertexInPairId(v2, v2);
 		Edge<string> edge(v1Id, v2Id, label, color);
@@ -317,15 +320,16 @@ public:
 
 };
 
-
 template<class Graph, typename VertexId = typename Graph::VertexId>
-class DotPairedGraphPrinter : public GraphPrinter<VertexId> {
+class DotPairedGraphPrinter: public GraphPrinter<VertexId> {
 private:
 	typedef GraphPrinter<VertexId> super;
 	const Graph& g_;
 	PairedGraphPrinter<VertexId> paired_printer_;
 public:
-	DotPairedGraphPrinter(const Graph& g, const string &name, ostream &out = cout) : super(name, out), g_(g), paired_printer_(name, out) {
+	DotPairedGraphPrinter(const Graph& g, const string &name,
+			ostream &out = cout) :
+		super(name, out), g_(g), paired_printer_(name, out) {
 	}
 
 	virtual ~DotPairedGraphPrinter() {
@@ -341,13 +345,14 @@ public:
 	}
 
 	virtual void AddVertex(VertexId v, const string &label,
-			const string& fillColor) {
-		paired_printer_.AddVertex(v, label, g_.conjugate(v), label);
+			const string fillColor) {
+		paired_printer_.AddVertex(v, label, g_.conjugate(v), label, fillColor);
 	}
 
 	virtual void AddEdge(VertexId v1, VertexId v2, const string &label,
-			const string& color) {
-		paired_printer_.AddEdge(make_pair(v1, g_.conjugate(v1)), make_pair(v2, g_.conjugate(v2)), label, color);
+			const string color) {
+		paired_printer_.AddEdge(make_pair(v1, g_.conjugate(v1)),
+				make_pair(v2, g_.conjugate(v2)), label, color);
 	}
 
 };
