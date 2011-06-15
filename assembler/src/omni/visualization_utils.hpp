@@ -75,16 +75,12 @@ public:
 
 	virtual void Visualize() {
 		gp_.open();
-		DEBUG("OPPA open");
 		for (auto it = super::g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
-			DEBUG("OPPA vertex");
 			gp_.AddVertex(*it, gl_.label(*it));
 		}
 		for (auto it = super::g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			DEBUG("OPPA edge");
 			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it), gl_.label(*it));
 		}
-		DEBUG("OPPA close");
 		gp_.close();
 	}
 
@@ -373,13 +369,12 @@ public:
 };
 
 template<class Graph>
-void WriteSimple(const string& file_name, const string& graph_name, Graph& g) {
+void WriteSimple(const string& file_name, const string& graph_name, Graph& g, GraphLabeler<Graph> labeler) {
 	fstream filestr;
 	string simple_file_name(file_name);
 	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
 	filestr.open((simple_file_name).c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
-	gvis::EmptyGraphLabeler<Graph> labeler;
 	SimpleGraphVisualizer<Graph> sgv(g, gpr, labeler);
 	sgv.Visualize();
 	filestr.close();
