@@ -202,14 +202,14 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 						+ ".dot", "no_erroneous_edges_graph");
 	}
 
-	SimpleOfflineClusterer<Graph> clusterer(paired_index);
-	PairedInfoIndex<Graph> clustered_paired_index(g);
-	clusterer.cluster(clustered_paired_index);
-
+//	SimpleOfflineClusterer<Graph> clusterer(paired_index);
+//	PairedInfoIndex<Graph> clustered_paired_index(g);
+//	clusterer.cluster(clustered_paired_index);
+	INFO("before ResolveRepeats");
 	ResolveRepeats(g, paired_index);
 	ProduceInfo<k> (g, index, genome, output_folder + "repeats_resolved.dot",
 			"no_repeat_graph");
-	INFO("Tool finished")
+	INFO("Tool finished");
 }
 
 }
