@@ -11,7 +11,8 @@ namespace gvis {
 
 //DECL_LOGGER("omg.gvis")
 
-using gvis::PairedGraphPrinter;
+using omnigraph::GraphLabeler;
+using omnigraph::EmptyGraphLabeler;
 using omnigraph::SmartEdgeIterator;
 using omnigraph::Path;
 
@@ -71,7 +72,7 @@ class SimpleGraphVisualizer: public GraphVisualizer<Graph> {
 	const omnigraph::GraphLabeler<Graph>& gl_;
 public:
 	SimpleGraphVisualizer(Graph& g, gvis::GraphPrinter<VertexId>& gp,
-			omnigraph::GraphLabeler<Graph>& gl) :
+			const omnigraph::GraphLabeler<Graph>& gl) :
 		super(g), gp_(gp), gl_(gl) {
 	}
 
@@ -373,7 +374,8 @@ public:
 };
 
 template<class Graph>
-void WriteSimple(const string& file_name, const string& graph_name, Graph& g, GraphLabeler<Graph> labeler) {
+void WriteSimple(const string& file_name, const string& graph_name, Graph& g,
+		const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph>()) {
 	fstream filestr;
 	string simple_file_name(file_name);
 	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
