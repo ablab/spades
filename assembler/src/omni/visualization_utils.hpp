@@ -78,12 +78,15 @@ public:
 
 	virtual void Visualize() {
 		gp_.open();
+		DEBUG("Visualize started");
 		for (auto it = super::g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
 			gp_.AddVertex(*it, gl_.label(*it));
 		}
+		DEBUG("Vertices printed");
 		for (auto it = super::g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it), gl_.label(*it));
 		}
+		DEBUG("Edges printed");
 		gp_.close();
 	}
 
@@ -303,7 +306,7 @@ public:
 			VertexId v = graph_.EdgeEnd(outgoing[i]);
 			if (was.find(v) == was.end()) {
 				size_t size = next_length + graph_.length(outgoing[i]);
-				q.push(make_pair(size, v));
+				q.push(make_pair(-size, v));
 			}
 		}
 	}
@@ -315,7 +318,7 @@ public:
 			VertexId v = graph_.EdgeStart(incoming[i]);
 			if (was.find(v) == was.end()) {
 				size_t size = next_length + graph_.length(incoming[i]);
-				q.push(make_pair(size, graph_.EdgeStart(incoming[i])));
+				q.push(make_pair(-size, v));
 			}
 		}
 	}
@@ -330,7 +333,7 @@ public:
 			auto next_pair = q.top();
 			q.pop();
 			VertexId next = next_pair.second;
-			size_t next_length = next_pair.first;
+			size_t next_length = -next_pair.first;
 			if (was.find(next) != was.end()) {
 				continue;
 			}
@@ -354,7 +357,7 @@ public:
 		//		cout << "oppa" << endl;
 		size_t component_size = FindComponent(graph_.EdgeEnd(next), component);
 		//		cout << component.size() << endl;
-		Dijkstra(component, component_size);
+		Dijkstra(component, 2 * component_size);
 		//		cout << component.size() << endl;
 		return vector<VertexId> (component.begin(), component.end());
 	}
@@ -376,11 +379,13 @@ public:
 template<class Graph>
 void WriteSimple(const string& file_name, const string& graph_name, Graph& g,
 		const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph>()) {
+	DEBUG("Writing simple graph");
 	fstream filestr;
 	string simple_file_name(file_name);
 	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
 	filestr.open((simple_file_name).c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
+	DEBUG("Visualizer created");
 	SimpleGraphVisualizer<Graph> sgv(g, gpr, labeler);
 	sgv.Visualize();
 	filestr.close();

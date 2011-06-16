@@ -108,6 +108,11 @@ public:
 		data_.insert(PairInfo(info.first, info.second, d, weight));
 	}
 
+	void ReplaceFirstEdge(const PairInfo& info, EdgeId newId) {
+		size_t count = data_.erase(info);
+		assert(count != 0);
+		data_.insert(PairInfo(newId, info.second, info.d, info.weight));
+	}
 public:
 	data_iterator begin() {
 		auto itp = data_.begin();
@@ -130,10 +135,10 @@ public:
 		return data_.end();
 	}
 
-	void AddPairInfo(const PairInfo& pair_info) {
+	void AddPairInfo(const PairInfo& pair_info, bool addSymmetric = 1) {
 		data_.insert(pair_info);
 
-		if (!IsSymmetric(pair_info))
+		if (!IsSymmetric(pair_info) && addSymmetric)
 			data_.insert(BackwardInfo(pair_info));
 	}
 
