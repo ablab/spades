@@ -21,6 +21,14 @@
     </xsl:template>
 
     <xsl:template match="cell">
-        <td rowspan="{height}" colspan="{width}" align="center"><strong><xsl:value-of select="text"/></strong></td>
+        <td rowspan="{height}" colspan="{width}" align="center">
+            <xsl:apply-templates select="length"/>
+            <strong><xsl:value-of select="text"/></strong>
+        </td>
+    </xsl:template>
+
+    <xsl:template match="length">
+        <xsl:value-of select="."/>
+        <br/>
     </xsl:template>
 </xsl:stylesheet>
