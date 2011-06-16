@@ -34,13 +34,13 @@
         <java classname="ru.spbau.bioinf.mgra.TreeReader" failonerror="yes" fork="yes">
             <classpath>
                 <pathelement location="mgra.jar"/>
-                <pathelement location="${lib.dir}/jar/jdom.jar"/>
-                <pathelement location="${lib.dir}/jar/log4j-1.2.15.jar"/>
+                <pathelement location="${lib.dir}/jdom.jar"/>
+                <pathelement location="${lib.dir}/log4j-1.2.15.jar"/>
             </classpath>
         </java>
     </target>
 
-    <target name="xslt">
+    <target name="xslt" depends="run">
         <xslt basedir="." destdir="." includes="tree.xml" extension=".html"
               style="${xsl.dir}/tree.xsl">
         </xslt>
