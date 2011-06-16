@@ -11,7 +11,8 @@ namespace gvis {
 
 //DECL_LOGGER("omg.gvis")
 
-using gvis::PairedGraphPrinter;
+using omnigraph::GraphLabeler;
+using omnigraph::EmptyGraphLabeler;
 using omnigraph::SmartEdgeIterator;
 using omnigraph::Path;
 
@@ -71,23 +72,18 @@ class SimpleGraphVisualizer: public GraphVisualizer<Graph> {
 	const omnigraph::GraphLabeler<Graph>& gl_;
 public:
 	SimpleGraphVisualizer(Graph& g, gvis::GraphPrinter<VertexId>& gp,
-			omnigraph::GraphLabeler<Graph>& gl) :
+			const omnigraph::GraphLabeler<Graph>& gl) :
 		super(g), gp_(gp), gl_(gl) {
 	}
 
 	virtual void Visualize() {
 		gp_.open();
-		DEBUG("OPPA open");
 		for (auto it = super::g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
-			DEBUG("OPPA vertex");
 			gp_.AddVertex(*it, gl_.label(*it));
 		}
 		for (auto it = super::g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			DEBUG("OPPA edge");
-			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it),
-					gl_.label(*it));
+			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it), gl_.label(*it));
 		}
-		DEBUG("OPPA close");
 		gp_.close();
 	}
 
@@ -378,13 +374,13 @@ public:
 };
 
 template<class Graph>
-void WriteSimple(const string& file_name, const string& graph_name, Graph& g) {
+void WriteSimple(const string& file_name, const string& graph_name, Graph& g,
+		const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph>()) {
 	fstream filestr;
 	string simple_file_name(file_name);
 	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
 	filestr.open((simple_file_name).c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
-	omnigraph::EmptyGraphLabeler<Graph> labeler;
 	SimpleGraphVisualizer<Graph> sgv(g, gpr, labeler);
 	sgv.Visualize();
 	filestr.close();

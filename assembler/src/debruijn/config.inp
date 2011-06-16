@@ -2,7 +2,7 @@
 
 input_dir  = ./data/input/
 output_dir = ./data/debruijn/
-dataset = QUAKE_CROPPED_100K
+dataset = QUAKE_CROPPED_400K
 reference_genome = MG1655-K12.fasta.gz
 
 # tip clipper:
