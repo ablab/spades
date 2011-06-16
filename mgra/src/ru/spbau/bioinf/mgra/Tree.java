@@ -1,11 +1,18 @@
 package ru.spbau.bioinf.mgra;
 
+import org.apache.log4j.Logger;
 import org.jdom.Element;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Tree {
+
+    private static final Logger log = Logger.getLogger(Tree.class);
+
 
     private String root = "";
 
@@ -51,18 +58,18 @@ public class Tree {
         }
     }
 
-    public Element toXml() {
+    public Element toXml(File dataDir) {
         Element tree = new Element("tree");
         int maxDepth = getDepth();
         Element row = new Element("row");
-        addCell(row, this, 1);
+        addCell(row, this, 1, dataDir);
         tree.addContent(row);
 
 
         for (int level = 1; level < maxDepth; level++) {
             row = new Element("row");
             for (Tree child : children) {
-                child.addCells(row, level, maxDepth - level);
+                child.addCells(row, level, maxDepth - level, dataDir);
             }
             tree.addContent(row);
 
@@ -70,20 +77,32 @@ public class Tree {
         return tree;
     }
 
-    private void addCell(Element row, Tree t, int height) {
+    private void addCell(Element row, Tree t, int height, File dataDir) {
         Element cell = new Element("cell");
         XmlUtil.addElement(cell, "width", t.getWidth());
         XmlUtil.addElement(cell, "height", children.size() > 0 ? 1 : height);
         XmlUtil.addElement(cell, "text", t.root);
+        if (parent != null) {
+            try {
+                BufferedReader input = TreeReader.getBufferedInputReader(new File(dataDir, root + ".trs"));
+                int count = 0;
+                while (input.readLine()!=null) {
+                    count++;
+                }
+                XmlUtil.addElement(cell, "length", count);
+            } catch (Exception e) {
+                log.error("Problems with " + root + ".trs file.", e);
+            }
+        }
         row.addContent(cell);
     }
 
-    public void addCells(Element row, int level, int depth) {
+    public void addCells(Element row, int level, int depth, File dataDir) {
         if (level == 1) {
-            addCell(row, this, depth);
+            addCell(row, this, depth, dataDir);
         } else {
             for (Tree child : children) {
-                child.addCells(row, level - 1, depth);
+                child.addCells(row, level - 1, depth, dataDir);
             }
         }
     }
