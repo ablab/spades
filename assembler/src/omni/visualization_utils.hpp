@@ -306,7 +306,7 @@ public:
 			VertexId v = graph_.EdgeEnd(outgoing[i]);
 			if (was.find(v) == was.end()) {
 				size_t size = next_length + graph_.length(outgoing[i]);
-				q.push(make_pair(size, v));
+				q.push(make_pair(-size, v));
 			}
 		}
 	}
@@ -318,7 +318,7 @@ public:
 			VertexId v = graph_.EdgeStart(incoming[i]);
 			if (was.find(v) == was.end()) {
 				size_t size = next_length + graph_.length(incoming[i]);
-				q.push(make_pair(size, graph_.EdgeStart(incoming[i])));
+				q.push(make_pair(-size, v));
 			}
 		}
 	}
@@ -333,7 +333,7 @@ public:
 			auto next_pair = q.top();
 			q.pop();
 			VertexId next = next_pair.second;
-			size_t next_length = next_pair.first;
+			size_t next_length = -next_pair.first;
 			if (was.find(next) != was.end()) {
 				continue;
 			}
@@ -357,7 +357,7 @@ public:
 		//		cout << "oppa" << endl;
 		size_t component_size = FindComponent(graph_.EdgeEnd(next), component);
 		//		cout << component.size() << endl;
-		Dijkstra(component, component_size);
+		Dijkstra(component, 2 * component_size);
 		//		cout << component.size() << endl;
 		return vector<VertexId> (component.begin(), component.end());
 	}

@@ -30,15 +30,13 @@ One can create additional information storages and automatically synchronize the
 
 %structure such that without changing core of this structure one could easily use this graph, change it, create additional information storages and synchronize information while graph changes. Space and time efficiency did not have the first priority but where possible (or necessary) these parameters were also taken in consideration.
 
-It is assumed that $k$ is always chosen even so that no vertex can appear to be self-conjugate.
-
 \subsection{Condensed graph representation}
 
-We work with condensed graph \dbg{} with $(k-1)$-mers on vertices and nucleotide sequences of arbitrary length $\geq k$ on its edges.
+We work with condensed graph \dbg{} with $k$-mers on vertices and nucleotide sequences of arbitrary length $\geq k + 1$ on its edges. It is assumed that $k$ is always chosen odd so that no vertex can appear to be self-conjugate.
 
-Our graph explicitly supports conjugate structure. It means in particular that by adding an element (vertex or edge) to the graph we instantly add its conjugate. After that we provide an easy way to acquire conjugate to some graph element.
+Our graph explicitly supports conjugate structure. It means in particular that by adding an element (vertex or edge) to the graph we instantly add its conjugate. After that we provide an easy way to acquire conjugate to any graph element.
 
-Usually in addition to the condensed \dbg{} structure we will need index on its $k$-mers ($k$-mer index). It is a mapping from each $k$-mer contained in the graph to a pair of an \emph{edge id} it belongs to and its \emph{offset from the start} of that edge. 
+Usually in addition to the condensed \dbg{} structure we will need index on its $k+1$-mers ($k+1$-mer index). It is a mapping from each $k+1$-mer contained in the graph to a pair of an \emph{edge id} it belongs to and its \emph{offset from the start} of that edge. 
 
 Each of graph edges contains full sequence of nucleotides corresponding to this edge. Actually conjugate edges contain single underlying sequence for saving memory.
 
@@ -49,13 +47,13 @@ The construction process consists of two phases:
 \item condensation step
 \end{itemize}
 
-We use straightforward \dbg{} implementation over the set of $k$-mers. 
+We use implementation of original \dbg{} over the set of $k+1$-mers. 
 
 After some experiments we started using cuckoo hashset (\url{http://en.wikipedia.org/wiki/Cuckoo_hashing}) as an underlying set implementation.
 
 During condensation step we construct condensed \dbg{} and $k$-mer index at the same time.
 
-Condensation is done by the traversal of the \dbg{} graph edges and accumulating edge-sequence while we're on a simple path (without branches). Obtained sequences are added to the condensed graph as edges and are immediately indexed.
+Condensation is done by the traversal over the \dbg{} edges and accumulating edge-sequence while we are on a simple path (without branches). Obtained sequences are added to the condensed graph as edges and are immediately indexed.
 
 %The result is stored in \texttt{DeBruijnGraph} class which is much more complex structure than SeqMap, used to store initial graph. Since condensed graph has smaller size time performance of graph operation becomes less critical thus certain operations are implemented less time-efficient while more usable.
 
@@ -85,7 +83,7 @@ Split of an edge $e$ with parameter $\alpha$ creates two new adjacent edges $e_1
 
 Projection of edge $e_1$ to $e_2$ in terms of structural changes results only in the deletion of $e_1$, but we need this operation to move all associated information from edge $e_1$ to $e_2$.
 
-If during graph modification some vertex becomes isolated, it is deleted. Edges are concatenated immediately with each opportunity.
+% Edges are concatenated immediately with each opportunity.
 
 During graph modification it is important not to break consistency of conjugate elements. 
 To achieve this every time a vertex/edge is added/deleted from the graph, conjugate element is added/deleted as well.
@@ -118,7 +116,7 @@ Coverage of an edge here corresponds to the number of times (K+1)-mers from this
 
 Coverage structure itself seems to have no problems but it is not clear how to support coverage values in unglueing operations used in repeat resolving. When one edge is spread among several new edges one can not tell which part of edge coverage supports which edge. Actually this problem could be just ignored because when certain ungluing operation is performed one can rely on all the new edges to be trusted thus actual value of coverage does not really matter while we do not try to estimate edge multiplicity by its coverage.
 
-\subsubsection{Suggestions}
+% \subsubsection{Suggestions}
 
 \subsection{Index}
 
@@ -202,6 +200,18 @@ Simplification algorithms that we are currently applying are:
 \subsection{Tip Clipping}
 
 The following algorithm is used for tip clipping: we iterate through all edges of graph in order of increasing length. If current edge topologically looks like tip and has alternative path with good enough coverage this edge is removed. If after removing this edge vertex that was adjacent with removed edge has unique incoming edge and unique outgoing edge those edges are concatenated and new edge is also checked as tip candidate.
+
+In more precise words edge $e$ judged as tip if:
+\begin{itemize}
+\item End of the $e$ has no outgoing edges.
+\item $length(e) \le max_{len}$
+\item $coverage(e) \le max_{cov}$
+\item Start vertex of $e$ fas at least one outgoing edge except $e$.
+\item $coverage(e) <= max_{relcov} * max_{compcov}$ where $max_{compcov}$ is maximal coverage over all outgoing edges of start vertex of $e$.
+\end{itemize}
+
+\subsubsection{Problems}
+One of the most common type of error that is not currently corrected by error correction procedures presented is a situation with two tips having there ends glued. Common end of two tips is not removed since there is no alternative path for this edge. And even if this tip is deleted two tips with common end vertex can not be removed by the procedures described. Thus TipClipping procedure needs furether adjustment.
 
 \subsection{Bulge Removal}
 \textit{Simple bulge} is a rather short edge $e$ with an alternative path $P$ between its start and end of length $\approx length(e)$.
