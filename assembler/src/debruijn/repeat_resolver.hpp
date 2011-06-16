@@ -44,7 +44,7 @@ public:
 	class EdgeInfo{
 
 	public:
-		static const int MAXD = 2000;
+		static const int MAXD = 70;
 		int dir;
 
 
@@ -195,28 +195,42 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v){
 //TODO: fix labels
 	edgeIds[0] = new_graph.OutgoingEdges(v);
 	edgeIds[1] = new_graph.IncomingEdges(v);
+	vector<unordered_map<EdgeId, EdgeId> > new_edges(k);
 	//Remember-because of loops there can be same edges in edgeIds[0] and edgeIds[1]
 	for(int i = 0; i < k ; i++) {
 		res[i] = new_graph.AddVertex();
 	}
 	for(size_t i = 0; i < edge_info_colors.size(); i++) {
 		EdgeId le = edge_infos[i].lp.first;
+		DEBUG("replacing edge " << le<<" with label " << edge_labels[le] << " "<< (new_edges[edge_info_colors[i]].find(le) == new_edges[edge_info_colors[i]].end()));
+
 		EdgeId res_edge = NULL;
 		if (edge_infos[i].dir == 0 ) {
 			if (new_graph.EdgeStart(le) != v) {
 				ERROR("Non incident edge!!!" << new_graph.EdgeStart(le) <<" instead of "<< v);
 			} else {
-				res_edge = new_graph.AddEdge(res[edge_info_colors[i]], new_graph.EdgeEnd(le), new_graph.EdgeNucls(le), 0);
+
+				if (new_edges[edge_info_colors[i]].find(le) == new_edges[edge_info_colors[i]].end())
+					res_edge = new_graph.AddEdge(res[edge_info_colors[i]], new_graph.EdgeEnd(le), new_graph.EdgeNucls(le), 0);
 			}
 		} else {
 			if (new_graph.EdgeEnd(le) != v) {
 				ERROR("Non incident edge!!!" << new_graph.EdgeEnd(le) <<" instead of "<< v);
 			} else {
-				res_edge = new_graph.AddEdge( new_graph.EdgeStart(le),res[edge_info_colors[i]], new_graph.EdgeNucls(le), 0);
+				if (new_edges[edge_info_colors[i]].find(le) == new_edges[edge_info_colors[i]].end())
+					res_edge = new_graph.AddEdge( new_graph.EdgeStart(le),res[edge_info_colors[i]], new_graph.EdgeNucls(le), 0);
 			}
 		}
-		paired_di_data.ReplaceFirstEdge(edge_infos[i].lp, res_edge);
-
+		DEBUG("replaced");
+		if (res_edge != NULL) {
+			new_edges[edge_info_colors[i]].insert(make_pair(le, res_edge));
+			edge_labels[res_edge] = edge_labels[le];
+			DEBUG("before replace first Edge");
+			paired_di_data.ReplaceFirstEdge(edge_infos[i].lp, res_edge);
+		}
+		else {
+			paired_di_data.ReplaceFirstEdge(edge_infos[i].lp, new_edges[edge_info_colors[i]][le]);
+		}
 	}
 
 
@@ -251,9 +265,9 @@ void RepeatResolver<Graph>::ResolveRepeats(){
 		}
 	}
 	INFO("total vert" << sum_count);
-//	omnigraph::Compressor<Graph> compressor(new_graph);
-//	compressor.CompressAllVertices();
-	gvis::WriteSimple(  "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
+	omnigraph::Compressor<Graph> compressor(new_graph);
+	compressor.CompressAllVertices();
+//	gvis::WriteSimple(  "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
 }
 
 template<class Graph>
