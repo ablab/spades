@@ -1,7 +1,6 @@
 package ru.spbau.bioinf.mgra;
 
 import org.jdom.Document;
-import org.jdom.Element;
 
 import java.io.BufferedReader;
 import java.io.File;
