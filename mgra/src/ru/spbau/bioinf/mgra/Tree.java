@@ -5,7 +5,6 @@ import org.jdom.Element;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -86,12 +85,29 @@ public class Tree {
             try {
                 BufferedReader input = TreeReader.getBufferedInputReader(new File(dataDir, root + ".trs"));
                 int count = 0;
-                while (input.readLine()!=null) {
+                StringBuilder trs = new StringBuilder();
+                String s;
+                while ((s = input.readLine())!=null) {
+                    trs.append(s);
+                    trs.append("\n");
                     count++;
                 }
                 XmlUtil.addElement(cell, "length", count);
+                XmlUtil.addElement(cell, "trs", trs);
             } catch (Exception e) {
                 log.error("Problems with " + root + ".trs file.", e);
+            }
+            try {
+                BufferedReader input = TreeReader.getBufferedInputReader(new File(dataDir, root + ".gen"));
+                StringBuilder gen = new StringBuilder();
+                String s;
+                while ((s = input.readLine())!=null) {
+                    gen.append(s);
+                    gen.append("\n");
+                }
+                XmlUtil.addElement(cell, "gen", gen);
+            } catch (Exception e) {
+                log.error("Problems with " + root + ".gen file.", e);
             }
         }
         row.addContent(cell);
