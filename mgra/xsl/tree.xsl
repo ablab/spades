@@ -10,19 +10,18 @@
                     <xsl:apply-templates select="row/cell/text"/>
                 ]
 
-                function selectVertex(text) {
+                function showData(show) {
                     for (var i = 0; values.length > i; i++) {
                         var cur = values[i];
-                        var showStyle = text == cur ? "" : "none";
-                        changeStyle('trs'+cur, showStyle);
-                        changeStyle('gen'+cur, showStyle);
+                        changeStyle('trs'+cur, show);
+                        changeStyle('gen'+cur, show);
                     }
                 }
 
-                function changeStyle(id, showStyle){
+                function changeStyle(id, show){
                     var element = document.getElementById(id);
                     if (element != null) {
-                        element.style.display=showStyle;
+                        element.style.display= id == show ? "" : "none";;
                     }
                 }
             </script>
@@ -46,12 +45,12 @@
     <xsl:template match="cell">
         <td rowspan="{height}" colspan="{width}" align="center">
             <xsl:apply-templates select="length"/>
-            <strong><xsl:value-of select="text"/></strong>
+            <strong><a href="#" onclick="showData('gen{text}')"><xsl:value-of select="text"/></a></strong>
         </td>
     </xsl:template>
 
     <xsl:template match="length">
-        <a href="#" onclick="selectVertex('{../text}')"><xsl:value-of select="."/></a>
+        <a href="#" onclick="showData('trs{../text}')"><xsl:value-of select="."/></a>
         <br/>
     </xsl:template>
 
