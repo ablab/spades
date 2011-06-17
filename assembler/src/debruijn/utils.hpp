@@ -271,7 +271,12 @@ public:
 				black_count++;
 			}
 		}
-		INFO("Error edges count: " << black_count << " which is " << 100.0 * black_count / edge_count << "% of all edges");
+		if (edge_count > 0){
+			INFO("Error edges count: " << black_count << " which is " << 100.0 * black_count / edge_count << "% of all edges");
+		} else {
+			INFO("Error edges count: " << black_count << " which is 0% of all edges");
+		}
+
 	}
 
 	void N50() {
