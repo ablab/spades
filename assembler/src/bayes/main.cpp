@@ -28,6 +28,7 @@ int main(int argc, char* argv[]) {
 	string genomefilename = "";
 	string bowtieindex = "";
 	string bowtiecmd = "";
+	size_t toskip = 0;
 	for (int i=1; i < argc; ++i) {
 		if (!strcmp(argv[i], "--bowtie") || !strcmp(argv[i], "-b")) {
 			bowtiecmd = argv[i+1];
@@ -41,10 +42,14 @@ int main(int argc, char* argv[]) {
 		if (!strcmp(argv[i], "--genome") || !strcmp(argv[i], "-g")) {
 			genomefilename = argv[i+1];
 		}
+		if (!strcmp(argv[i], "--skip") || !strcmp(argv[i], "-s")) {
+			toskip = atoi(argv[i+1]);
+		}
 	}
 	if (readfilename == "") readfilename = READ_FILENAME;
 	if (genomefilename == "") genomefilename = GENOME_FILENAME;
 	if (bowtiecmd == "") bowtiecmd = BOWTIE_COMMAND;
+	if (toskip == 0) toskip = SKIP_READS;
 
 
 	ireadstream ifs(genomefilename.data());
@@ -64,7 +69,7 @@ int main(int argc, char* argv[]) {
 	INFO(r.getSequence());
 	irs.close();
 
-	bqg.ProcessReads(readfilename.data());
+	bqg.ProcessReads(readfilename.data(), toskip);
 	
 	INFO("total good positions: " << bqg.TotalGoodPositions() << "/" << bqg.TotalPositions());
 

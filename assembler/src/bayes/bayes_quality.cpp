@@ -58,7 +58,7 @@ MatchResults BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QV
 		fill(qv[i]->begin(), qv[i]->end(), VERYLARGEQ);
 	}
 	
-	INFO("thread " << omp_get_thread_num() << ": " << seq.str());
+	// INFO("thread " << omp_get_thread_num() << ": " << seq.str());
 	// { ostringstream os; for (size_t i=0; i<indices.size(); ++i) os << indices[i] << " "; INFO(os.str()); }
 
 	#ifdef USE_PREPROCESSING
@@ -438,7 +438,7 @@ void BayesQualityGenome::ProcessReads(const vector<Read> &reads) {
 	#endif
 }
 
-void BayesQualityGenome::ProcessReads(const char *filename) {
+void BayesQualityGenome::ProcessReads(const char *filename, size_t toskip) {
 	#ifdef USE_PREPROCESSING
 	INFO("Preprocessing...");
 	PreprocessReads(reads);
@@ -463,7 +463,7 @@ void BayesQualityGenome::ProcessReads(const char *filename) {
 	size_t readno = 0;
 	// skip several reads -- needed to continue the runs
 	while (!ifs.eof()) {
-		if (readno > SKIP_READS) break;
+		if (readno > toskip) break;
 		ifs >> r;
 		r.trimNs();
 		++readno;
@@ -529,7 +529,7 @@ void BayesQualityGenome::ProcessReads(const char *filename) {
 				continue;
 			}
 			ostringstream m; for (size_t j=0; j< mrv[i].match_.size(); ++j) m << mrv[i].match_[j];
-			size_t replacements = 0; for (size_t j=0; j< mrv[i].match_.size(); ++j) if (mrv[i].match_[i] == 0) ++replacements;
+			size_t replacements = 0; for (size_t j=0; j< mrv[i].match_.size(); ++j) if (mrv[i].match_[j] == 0) ++replacements;
 			os << setw(7) << readno+i << ":" << setw(15) << mrv[i].prob_ << "\t" << mrv[i].index_ << "\t" << mrv[i].bestq_ << "\t" << replacements << "\t" << mrv[i].inserts_ << "\t" << mrv[i].deletes_ << "\t" << m.str().data() << endl;	
 		}
 		#endif
@@ -586,7 +586,6 @@ void BayesQualityGenome::fillAvailableReads(size_t vecSize, const string & s) {
 }
 
 void BayesQualityGenome::writeReadPartsForBowtie(const vector<Read> & v, int fd, unsigned int readno) {
-	// ofstream os; os.attach(fd);
 	FILE *f = fdopen(fd, "w");
 	for (unsigned int i = 0; i < v.size(); ++i) {
 		if (v[i].size() < MIN_READ_SIZE) continue;
@@ -598,15 +597,12 @@ void BayesQualityGenome::writeReadPartsForBowtie(const vector<Read> & v, int fd,
 				qual[k] = (char)(qual[k]+Read::PHRED_OFFSET);
 			}
 			fprintf(f, "@%u %u\n%s\n+\n%s\n", i+readno, ind, v[i].getSequenceString().substr(ind, BOWTIE_SEED_LENGTH).data(), qual.data());
-			// os << "@" << i+readno << " " << ind << endl <<  << endl << "+" << endl;
-			// os << endl;
 		}
 	}
 	fclose(f);
 }
 
 BowtieResults BayesQualityGenome::readBowtieResults(int fd, size_t noofreads, unsigned int readno) {
-	//ifstream is; is.attach(fd);
 	FILE *f = fdopen(fd, "r");
 	BowtieResults res(noofreads);
 	char buf[1024];
