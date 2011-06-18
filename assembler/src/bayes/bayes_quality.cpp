@@ -319,7 +319,6 @@ MatchResults BayesQualityGenome::ReadBQPreprocessed(const Read & r, size_t readn
 	#ifdef USE_BOWTIE
 	if (cbwmatches.size() > 0 || bwmatches.size() == 0) {
 		mr2 = ProcessOneReadBQ(!s, q, readno + readssize, cbwmatches);
-		//INFO(!s);
 		INFO("Complementary read gives result " << mr2.prob_);
 		if (mr2.prob_ > mr1.prob_) {
 			return mr2;
@@ -331,7 +330,6 @@ MatchResults BayesQualityGenome::ReadBQPreprocessed(const Read & r, size_t readn
 	}
 	#else 
 	mr2 = ProcessOneReadBQ(!s, q, readno + readssize, cbwmatches);
-	//INFO(!s);
 	INFO("Complementary read gives result " << mr2.prob_);
 	if (mr2.prob_ > mr1.prob_) {
 		return mr2;
@@ -433,18 +431,6 @@ void BayesQualityGenome::ProcessReads(const vector<Read> &reads) {
 			os << setw(7) << i << ":" << setw(15) << mr.prob_ << "\t" << mr.index_ << "\t" << mr.bestq_ << "\t" << replacements << "\t" << mr.inserts_ << "\t" << mr.deletes_ << "\t" << m.str().data() << endl;
 			#endif
 		}
-
-		/*double res = ReadBQPreprocessed(reads[i], i, reads.size());
-
-		INFO(LastMatchReadString());
-		INFO(LastMatchPrettyString());
-		INFO(LastMatchString());
-		ostringstream m; for (size_t i=0; i< LastMatch().size(); ++i) m << LastMatch()[i]; INFO(m.str());
-		INFO(res << ", best: " << LastMatchQ() << "/" << LastTotalQ() << " at " << LastMatchIndex() << " with " << LastMatchInserts() << " inserts and " << LastMatchDeletes() << " deletes");
-		#ifdef WRITE_STATSFILE
-		size_t replacements = 0; for (size_t i=0; i< LastMatch().size(); ++i) if (LastMatch()[i] == 0) ++replacements;
-		os << setw(15) << res << "\t" << LastMatchIndex() << "\t" << LastMatchQ() << "\t" << replacements << "\t" << LastMatchInserts() << "\t" << LastMatchDeletes() << "\t" << m.str().data() << endl;
-		#endif*/
 	}
 	
 	#ifdef WRITE_STATSFILE

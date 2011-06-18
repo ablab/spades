@@ -38,10 +38,10 @@ typedef vector< vector< vector<size_t> > > BowtieResults;
 
 
 // size of read batch that we read from file
-#define READ_BATCH 1000
+#define READ_BATCH 10000
 
 // number of threads
-#define THREADS_NUM 2
+#define THREADS_NUM 3
 
 // number of reads to skip from the beginning of the file
 #define SKIP_READS 0
