@@ -21,6 +21,8 @@
 #include "repeat_resolver.hpp"
 #include "omni_tools.hpp"
 #include "seq_map.hpp"
+#include "ID_track_handler.hpp"
+
 
 namespace debruijn_graph {
 
@@ -100,9 +102,9 @@ void RemoveLowCoverageEdges(Graph &g) {
 	INFO("Low coverage edges removed");
 }
 
-void ResolveRepeats(Graph &g, PairedInfoIndex<Graph> &info) {
+void ResolveRepeats(Graph &g, PairedInfoIndex<Graph> &info, Graph &new_graph) {
 	INFO("Resolving primitive repeats");
-	RepeatResolver<Graph> repeat_resolver(g, 0, info);
+	RepeatResolver<Graph> repeat_resolver(g, 0, info, new_graph);
 	repeat_resolver.ResolveRepeats();
 	INFO("Primitive repeats resolved");
 }
@@ -169,6 +171,7 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 	EdgeIndex<k + 1, Graph> index(g);
 	CoverageHandler<Graph> coverage_handler(g);
 	PairedInfoIndex<Graph> paired_index(g);
+	IdTrackHandler<Graph> IntIds(g);
 
 	ConstructGraphWithPairedInfo<k, ReadStream> (g, index, coverage_handler,
 			paired_index, stream);
@@ -206,10 +209,15 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 //	PairedInfoIndex<Graph> clustered_paired_index(g);
 //	clusterer.cluster(clustered_paired_index);
 	INFO("before ResolveRepeats");
-	ResolveRepeats(g, paired_index);
-	ProduceInfo<k> (g, index, genome, output_folder + "repeats_resolved.dot",
+	Graph new_graph(k);
+	ResolveRepeats(g, paired_index, new_graph);
+	INFO("before graph writing");
+	gvis::WriteSimple( output_folder + "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
+	INFO("repeat resolved grpah written");
+	ProduceInfo<k> (new_graph, index, genome, output_folder + "repeats_resolved.dot",
 			"no_repeat_graph");
 	INFO("Tool finished");
+
 }
 
 }

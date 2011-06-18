@@ -1,11 +1,17 @@
 package ru.spbau.bioinf.mgra;
 
+import org.apache.log4j.Logger;
 import org.jdom.Element;
 
+import java.io.BufferedReader;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Tree {
+
+    private static final Logger log = Logger.getLogger(Tree.class);
+
 
     private String root = "";
 
@@ -51,18 +57,18 @@ public class Tree {
         }
     }
 
-    public Element toXml() {
+    public Element toXml(File dataDir) {
         Element tree = new Element("tree");
         int maxDepth = getDepth();
         Element row = new Element("row");
-        addCell(row, this, 1);
+        addCell(row, this, 1, dataDir);
         tree.addContent(row);
 
 
         for (int level = 1; level < maxDepth; level++) {
             row = new Element("row");
             for (Tree child : children) {
-                child.addCells(row, level, maxDepth - level);
+                child.addCells(row, level, maxDepth - level, dataDir);
             }
             tree.addContent(row);
 
@@ -70,20 +76,49 @@ public class Tree {
         return tree;
     }
 
-    private void addCell(Element row, Tree t, int height) {
+    private void addCell(Element row, Tree t, int height, File dataDir) {
         Element cell = new Element("cell");
         XmlUtil.addElement(cell, "width", t.getWidth());
         XmlUtil.addElement(cell, "height", children.size() > 0 ? 1 : height);
         XmlUtil.addElement(cell, "text", t.root);
+        if (parent != null) {
+            try {
+                BufferedReader input = TreeReader.getBufferedInputReader(new File(dataDir, root + ".trs"));
+                int count = 0;
+                StringBuilder trs = new StringBuilder();
+                String s;
+                while ((s = input.readLine())!=null) {
+                    trs.append(s);
+                    trs.append("\n");
+                    count++;
+                }
+                XmlUtil.addElement(cell, "length", count);
+                XmlUtil.addElement(cell, "trs", trs);
+            } catch (Exception e) {
+                log.error("Problems with " + root + ".trs file.", e);
+            }
+            try {
+                BufferedReader input = TreeReader.getBufferedInputReader(new File(dataDir, root + ".gen"));
+                StringBuilder gen = new StringBuilder();
+                String s;
+                while ((s = input.readLine())!=null) {
+                    gen.append(s);
+                    gen.append("\n");
+                }
+                XmlUtil.addElement(cell, "gen", gen);
+            } catch (Exception e) {
+                log.error("Problems with " + root + ".gen file.", e);
+            }
+        }
         row.addContent(cell);
     }
 
-    public void addCells(Element row, int level, int depth) {
+    public void addCells(Element row, int level, int depth, File dataDir) {
         if (level == 1) {
-            addCell(row, this, depth);
+            addCell(row, this, depth, dataDir);
         } else {
             for (Tree child : children) {
-                child.addCells(row, level - 1, depth);
+                child.addCells(row, level - 1, depth, dataDir);
             }
         }
     }
