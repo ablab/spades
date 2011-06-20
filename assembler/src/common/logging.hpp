@@ -8,6 +8,7 @@
 #ifndef LOGGING_HPP_
 #define LOGGING_HPP_
 
+#include <iostream>
 #include "log4cxx/logger.h"
 
 log4cxx::LoggerPtr __scope_logger();
