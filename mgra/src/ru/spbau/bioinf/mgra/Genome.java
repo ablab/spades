@@ -6,7 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Genome {
-    List<Chromosome> chromosomes = new ArrayList<Chromosome>();
+    private List<Chromosome> chromosomes = new ArrayList<Chromosome>();
+
+    public List<Chromosome> getChromosomes() {
+        return chromosomes;
+    }
 
     public void addChromosome(Chromosome chr) {
         chromosomes.add(chr);
