@@ -5,6 +5,7 @@
 #include "ireadstream.hpp"
 #include "read.hpp"
 #include "quality.hpp"
+#include "strobe_read.hpp"
 
 #include "common/logging.hpp"
 DECL_PROJECT_LOGGER("b")
@@ -15,6 +16,7 @@ DECL_PROJECT_LOGGER("b")
 #define BOWTIE_COMMAND "./src/libs/bowtie-0.12.7/bowtie -a -v 2 data/bayes/biggenome"
 
 using namespace bayes_quality;
+
 
 int main(int argc, char* argv[]) {
 
@@ -52,21 +54,30 @@ int main(int argc, char* argv[]) {
 	if (toskip == 0) toskip = SKIP_READS;
 
 
+	cout << genomefilename.data() << "\n";
+
 	ireadstream ifs(genomefilename.data());
 	Read r1;
 	ifs >> r1;
 	INFO("!" << r1.getName());
+	cout << r1.getName() << "\n";
+
 	BayesQualityGenome bqg(r1.getSequenceString().data());
 	
 	#ifdef USE_BOWTIE
 		bqg.setBowtie(bowtiecmd, bowtieindex);
 	#endif
 
-	ireadstream irs(readfilename.data());
-	Read r;
+	cout << readfilename.data() << "\n";
+	const string strings[1] = { readfilename };
+	typedef SingleReader<Read, ireadstream>::type SingleStream;
+	SingleStream irs( strings );
+	vector<Read> r(1);
 	irs >> r;
-	r.trimNs();
-	INFO(r.getSequence());
+	cout << r[0].getSequenceString() << "\n";
+	r[0].trimNs();
+	INFO(r[0].getSequenceString());
+	cout << r[0].getSequenceString() << "\n";
 	irs.close();
 
 	bqg.ProcessReads(readfilename.data(), toskip);

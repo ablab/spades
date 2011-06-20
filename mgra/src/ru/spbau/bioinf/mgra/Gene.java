@@ -12,6 +12,10 @@ public class Gene {
         this.direction = direction;
     }
 
+    public int getId() {
+        return id;
+    }
+
     public Element toXml() {
         Element gene = new Element("gene");
         XmlUtil.addElement(gene, "id", id);

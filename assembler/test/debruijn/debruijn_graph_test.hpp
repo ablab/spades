@@ -1,5 +1,6 @@
 #ifndef DEBRUIJN_GRAPH_TEST_HPP_
 #define DEBRUIJN_GRAPH_TEST_HPP_
+
 #include "debruijn_graph_constructor.hpp"
 #include "test_utils.hpp"
 #include "cute.h"

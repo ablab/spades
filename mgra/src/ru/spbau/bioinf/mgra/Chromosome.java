@@ -7,9 +7,12 @@ import java.util.List;
 
 public class Chromosome {
 
-    List<Gene> genes = new ArrayList<Gene>();
+    private int id;
 
-    public Chromosome(String s) {
+    private List<Gene> genes = new ArrayList<Gene>();
+
+    public Chromosome(int id, String s) {
+        this.id = id;
         String[] data = s.split(" ");
         for (String v : data) {
            if (!v.startsWith("$")) {
@@ -19,8 +22,18 @@ public class Chromosome {
         }
     }
 
+    public boolean contains(End end) {
+        for (Gene gene : genes) {
+            if (gene.getId() == end.getId()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public Element toXml() {
         Element chr = new Element("chromosome");
+        XmlUtil.addElement(chr, "id", id);
         for (Gene gene : genes) {
             chr.addContent(gene.toXml());
         }
