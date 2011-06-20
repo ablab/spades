@@ -82,34 +82,41 @@ public class Tree {
         XmlUtil.addElement(cell, "height", children.size() > 0 ? 1 : height);
         XmlUtil.addElement(cell, "text", t.root);
         if (parent != null) {
-            try {
-                BufferedReader input = TreeReader.getBufferedInputReader(new File(dataDir, root + ".trs"));
-                int count = 0;
-                StringBuilder trs = new StringBuilder();
-                String s;
-                while ((s = input.readLine())!=null) {
-                    trs.append(s);
-                    trs.append("\n");
-                    count++;
-                }
-                XmlUtil.addElement(cell, "length", count);
-                XmlUtil.addElement(cell, "trs", trs);
-            } catch (Exception e) {
-                log.error("Problems with " + root + ".trs file.", e);
-            }
+            Genome genome = new Genome();
             try {
                 BufferedReader input = TreeReader.getBufferedInputReader(new File(dataDir, root + ".gen"));
-                Genome genome = new Genome();
                 String s;
+                int count = 0;
                 while ((s = input.readLine())!=null) {
                      s = s.trim();
                      if (!s.startsWith("#") && s.length() > 0) {
-                         genome.addChromosome(new Chromosome(s));
+                         count++;
+                         genome.addChromosome(new Chromosome(count, s));
                     }
                 }
                 cell.addContent(genome.toXml());
             } catch (Exception e) {
                 log.error("Problems with " + root + ".gen file.", e);
+            }
+            try {
+                BufferedReader input = TreeReader.getBufferedInputReader(new File(dataDir, root + ".trs"));
+                List<Transformation> transformations = new ArrayList<Transformation>();
+                String s;
+                while ((s = input.readLine())!=null) {
+                    transformations.add(new Transformation(s));
+                }
+
+                for (Transformation transformation : transformations) {
+                    transformation.update(genome);
+                }
+                XmlUtil.addElement(cell, "length", transformations.size());
+                Element trs = new Element("transformations");
+                for (Transformation transformation : transformations) {
+                    trs.addContent(transformation.toXml());
+                }
+                cell.addContent(trs);
+            } catch (Exception e) {
+                log.error("Problems with " + root + ".trs file.", e);
             }
         }
         row.addContent(cell);

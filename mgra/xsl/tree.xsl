@@ -30,7 +30,7 @@
                 <table border="1" cellpadding="10">
                     <xsl:apply-templates select="row"/>
                 </table>
-                <xsl:apply-templates select="row/cell/trs"/>
+                <xsl:apply-templates select="row/cell/transformations"/>
                 <xsl:apply-templates select="row/cell/genome"/>
             </body>
         </html>
@@ -63,11 +63,25 @@
         '<xsl:value-of select="."/>',
     </xsl:template>
 
-    <xsl:template match="trs">
-        <pre id="trs{../text}" style="display:none;">
-            <xsl:value-of select="."/>
-        </pre>
+    <xsl:template match="transformations">
+        <div id="trs{../text}" style="display:none;">
+            <h3>Transformations for <xsl:value-of select="../text"/></h3>
+            <xsl:apply-templates select="transformation"/>
+        </div>
     </xsl:template>
+
+    <xsl:template match="transformation">
+        <xsl:apply-templates select="before/chromosome"/>
+        <xsl:apply-templates select="end"/>
+        <br/>
+        <xsl:apply-templates select="after/chromosome"/>
+        <br/>
+    </xsl:template>
+
+    <xsl:template match="end">
+        <xsl:value-of select="id"/><xsl:value-of select="type"/>&#160;
+    </xsl:template>
+
 
     <xsl:template match="genome">
         <div id="gen{../text}" style="display:none;">
@@ -77,8 +91,8 @@
     </xsl:template>
 
     <xsl:template match="chromosome">
-        <xsl:if test="10>position()">&#160;</xsl:if>
-        <xsl:value-of select="position()"/>.<xsl:apply-templates select="gene"/><br/>
+        <xsl:if test="10>id">&#160;</xsl:if>
+        <xsl:value-of select="id"/>.<xsl:apply-templates select="gene"/><br/>
     </xsl:template>
 
     <xsl:template match="gene">
