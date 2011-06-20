@@ -26,13 +26,16 @@
 #ifndef _CUCKOO_HPP_
 #define _CUCKOO_HPP_
 
-const static size_t D = 3;
-const static size_t LOG_BUCKET_SIZE = 0;
-const static size_t INIT_LENGTH = 100;
-const static size_t MAX_LOOP_FACTOR = 5;
-const static double STEP = 1.5;
-const static size_t SEEDS[] = 
-  {223,	227, 229, 233, 239, 241, 251, 257, 263, 269};
+namespace {
+  const static size_t D = 3;
+  const static size_t LOG_BUCKET_SIZE = 0;
+  const static size_t INIT_LENGTH = 100;
+  const static size_t MAX_LOOP_FACTOR = 5;
+  const static double STEP = 1.5;
+  const static size_t MAX_REHASH_CHAIN_LENGTH = 5;
+  const static size_t SEEDS[] = 
+    {223,	227, 229, 233, 239, 241, 251, 257, 263, 269};
+}
 
 /**
  * @param Key key type in hash.
@@ -414,16 +417,12 @@ private:
   void rehash() {
     load_factor_ = 1.0 * size_ / len_;
     seed_ = SEEDS[rand() % 10];
-
-    //rehash_chain_length_++;
-    //std::cout << load_factor_ << " " << 
-    //  rehash_chain_length_ << " " <<
-    //  size_ << " " << seed_ << std::endl; //!!!
+    rehash_chain_length_++;
 
     size_t len_temp_ = len_part_;
 
     len_part_ = (size_t)(len_part_ * step_);
-    len_part_ = ((len_part_ + 8) >> 3) << 3;
+    len_part_ = ((len_part_ + 7) >> 3) << 3;
     len_ = len_part_ * d_;
     max_loop_ = max_loop_factor_ * round(log(len_part_)) + 1;
     
@@ -476,7 +475,10 @@ private:
         } 
       }
     }
-    rehash();
+    if (rehash_chain_length_ != MAX_REHASH_CHAIN_LENGTH)
+      rehash();
+    else
+      return 1;
     return add_new(p);
   }
 
