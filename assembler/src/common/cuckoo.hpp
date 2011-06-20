@@ -26,11 +26,13 @@
 #ifndef _CUCKOO_HPP_
 #define _CUCKOO_HPP_
 
-const static size_t D = 2;
-const static size_t LOG_BUCKET_SIZE = 1;
+const static size_t D = 3;
+const static size_t LOG_BUCKET_SIZE = 0;
 const static size_t INIT_LENGTH = 100;
-const static size_t MAX_LOOP_FACTOR = 2;
+const static size_t MAX_LOOP_FACTOR = 5;
 const static double STEP = 1.5;
+const static size_t SEEDS[] = 
+  {223,	227, 229, 233, 239, 241, 251, 257, 263, 269};
 
 /**
  * @param Key key type in hash.
@@ -75,6 +77,11 @@ private:
    */
   size_t len_part_;
   /**
+   * @variable The load factor before the last rehash or
+   * at the moment is there were no rehashes.
+   */
+  double load_factor_;
+  /**
    * @variable The maximum number of kick cycles during 
    * insertion before rehash.
    */
@@ -89,6 +96,15 @@ private:
    * The less it is the less memory will be used but the more time is needed. 
    */
   double step_;
+  /**
+   * @variable The number of consecutive rehashes during the last insert.
+   */
+  size_t rehash_chain_length_;
+  /**
+   * @variable The prime number that is used as a base for hash 
+   * function. Should be changed every rehash.
+   */
+  size_t seed_; 
   /**
    * @variable The hash function object (template parameter by default).
    */
@@ -288,6 +304,8 @@ private:
     is_rehashed_ = false;
     max_loop_ = max_loop_factor_ * round(log(len_part_)) + 1;
     bucket_size_ = round(exp(log(2) * log_bucket_size_));
+    load_factor_ = 0;
+    seed_ = SEEDS[0];
     srand(time(NULL));
   }
 
@@ -353,7 +371,8 @@ private:
    * @return Hash value.
    */
   inline size_t hash(const Key& k, size_t hash_num) const {
-    return hasher_(k, hash_num) % (len_part_ >> log_bucket_size_);
+    return hasher_(k, hash_num, seed_) 
+      % (len_part_ >> log_bucket_size_);
   }
   
   /**
@@ -393,10 +412,18 @@ private:
    * Rehash all the cuckoo (i.e. change size and replace Data elements).
    */
   void rehash() {
+    load_factor_ = 1.0 * size_ / len_;
+    seed_ = SEEDS[rand() % 10];
+
+    //rehash_chain_length_++;
+    //std::cout << load_factor_ << " " << 
+    //  rehash_chain_length_ << " " <<
+    //  size_ << " " << seed_ << std::endl; //!!!
+
     size_t len_temp_ = len_part_;
 
     len_part_ = (size_t)(len_part_ * step_);
-    len_part_ = ((len_part_ + 7) >> 3) << 3;
+    len_part_ = ((len_part_ + 8) >> 3) << 3;
     len_ = len_part_ * d_;
     max_loop_ = max_loop_factor_ * round(log(len_part_)) + 1;
     
@@ -766,6 +793,7 @@ public:
    * which is true if element was inserted or false if it existed before.
    */
   pair<iterator, bool> insert(const Data& k) {
+    rehash_chain_length_ = 0;
     iterator res = find(k.first);
     if (res.pos != len_) {
       return make_pair(res, false);
@@ -823,6 +851,21 @@ public:
   inline size_t length() const {
     return len_;
   }
+
+  /**
+   * Show load factor before the last rehash or
+   * at the moment if there were no rehashes.
+   * Load factor = size / length.
+   *
+   * @return Load factor of cuckoo.
+   */
+  inline double load_factor() const {
+    if (load_factor_ == 0)
+      return 1.0 * size_ / len_;
+    else
+      return load_factor_;
+  }
+
 };
 
 #endif /* _CUCKOO_HPP_ */
