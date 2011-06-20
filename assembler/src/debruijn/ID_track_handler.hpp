@@ -2,6 +2,8 @@
 #define ID_TRACK_HANDLER_HPP_
 
 #include "utils.hpp"
+#include "graph_labeler.hpp"
+using namespace omnigraph;
 
 namespace debruijn_graph {
 
@@ -91,6 +93,29 @@ public:
 
 };
 
-}
 
+
+template<class Graph>
+class RealIdGraphLabeler : public GraphLabeler<Graph> {
+
+protected:
+	typedef GraphLabeler<Graph> super;
+	typedef typename super::EdgeId EdgeId;
+	typedef typename super::VertexId VertexId;
+	Graph& g_;
+	IdTrackHandler<Graph>& IDs;
+
+public:
+	RealIdGraphLabeler(Graph& g, IdTrackHandler<Graph> IdTrack) : g_(g), IDs(IdTrack) {}
+
+	virtual std::string label(VertexId vertexId) const {
+		return g_.str(vertexId);
+	}
+
+	virtual std::string label(EdgeId edgeId) const {
+		return g_.str(edgeId);
+	}
+};
+
+}
 #endif /* ID_TRACK_HANDLER_HPP_ */
