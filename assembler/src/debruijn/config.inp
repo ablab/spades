@@ -1,3 +1,6 @@
+#paired (1) or unpaired (0, for quick debug and algorithms testing) mode
+paired_mode = 1
+
 # input options:
 
 input_dir  = ./data/input/
