@@ -99,13 +99,15 @@ public class Tree {
             }
             try {
                 BufferedReader input = TreeReader.getBufferedInputReader(new File(dataDir, root + ".gen"));
-                StringBuilder gen = new StringBuilder();
+                Genome genome = new Genome();
                 String s;
                 while ((s = input.readLine())!=null) {
-                    gen.append(s);
-                    gen.append("\n");
+                     s = s.trim();
+                     if (!s.startsWith("#") && s.length() > 0) {
+                         genome.addChromosome(new Chromosome(s));
+                    }
                 }
-                XmlUtil.addElement(cell, "gen", gen);
+                cell.addContent(genome.toXml());
             } catch (Exception e) {
                 log.error("Problems with " + root + ".gen file.", e);
             }

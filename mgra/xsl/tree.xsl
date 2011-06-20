@@ -31,7 +31,7 @@
                     <xsl:apply-templates select="row"/>
                 </table>
                 <xsl:apply-templates select="row/cell/trs"/>
-                <xsl:apply-templates select="row/cell/gen"/>
+                <xsl:apply-templates select="row/cell/genome"/>
             </body>
         </html>
     </xsl:template>
@@ -64,9 +64,24 @@
         </pre>
     </xsl:template>
 
-    <xsl:template match="gen">
-        <pre id="gen{../text}" style="display:none;">
-            <xsl:value-of select="."/>
-        </pre>
+    <xsl:template match="genome">
+        <div id="gen{../text}" style="display:none;">
+            <h3>Chromosomes for <xsl:value-of select="../text"/></h3>
+            <xsl:apply-templates select="chromosome"/>
+        </div>
+    </xsl:template>
+
+    <xsl:template match="chromosome">
+        <xsl:if test="10>position()">&#160;</xsl:if>
+        <xsl:value-of select="position()"/>.<xsl:apply-templates select="gene"/><br/>
+    </xsl:template>
+
+    <xsl:template match="gene">
+        <a href="#{id}" title="{id}">
+            <xsl:choose>
+                <xsl:when test="direction='minus'">&lt;</xsl:when>
+                <xsl:otherwise>&gt;</xsl:otherwise>
+            </xsl:choose>
+        </a>
     </xsl:template>
 </xsl:stylesheet>
