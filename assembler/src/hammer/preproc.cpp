@@ -145,7 +145,7 @@ int main(int argc, char * argv[]) {
 	size_t counter = 0;
 	vector<StringCountVector> vs(tau+1);
 	for (KMerStatVector::const_iterator it = v.begin(); it != v.end(); ++it) {
-		fprintf(f, "%s %5i %8.2f\n", it->first.str().data(), it->second.count, it->second.freq);
+		fprintf(f, "%s %5u %8.2f\n", it->first.str().data(), it->second.count, it->second.freq);
 		for (int j=0; j<tau+1; ++j) {
 			string sub = "";
 			for (int i = j; i < K; i += tau+1) {
