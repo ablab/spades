@@ -44,7 +44,7 @@ public:
 	class EdgeInfo{
 
 	public:
-		static const int MAXD = 70;
+		static const int MAXD = 100;
 		int dir;
 
 
@@ -202,7 +202,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v){
 	}
 	for(size_t i = 0; i < edge_info_colors.size(); i++) {
 		EdgeId le = edge_infos[i].lp.first;
-		DEBUG("replacing edge " << le<<" with label " << edge_labels[le] << " "<< (new_edges[edge_info_colors[i]].find(le) == new_edges[edge_info_colors[i]].end()));
+		TRACE("replacing edge " << le<<" with label " << edge_labels[le] << " "<< (new_edges[edge_info_colors[i]].find(le) == new_edges[edge_info_colors[i]].end()));
 
 		EdgeId res_edge = NULL;
 		if (edge_infos[i].dir == 0 ) {
@@ -221,11 +221,11 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v){
 					res_edge = new_graph.AddEdge( new_graph.EdgeStart(le),res[edge_info_colors[i]], new_graph.EdgeNucls(le), 0);
 			}
 		}
-		DEBUG("replaced");
+		TRACE("replaced");
 		if (res_edge != NULL) {
 			new_edges[edge_info_colors[i]].insert(make_pair(le, res_edge));
 			edge_labels[res_edge] = edge_labels[le];
-			DEBUG("before replace first Edge");
+			TRACE("before replace first Edge");
 			paired_di_data.ReplaceFirstEdge(edge_infos[i].lp, res_edge);
 		}
 		else {
@@ -265,9 +265,7 @@ void RepeatResolver<Graph>::ResolveRepeats(){
 		}
 	}
 	INFO("total vert" << sum_count);
-	omnigraph::Compressor<Graph> compressor(new_graph);
-	compressor.CompressAllVertices();
-//	gvis::WriteSimple(  "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
+ //	gvis::WriteSimple(  "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
 }
 
 template<class Graph>
@@ -308,6 +306,8 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo( Graph &new_graph, PairIn
 				EdgeId right_id = tmp[j].second;
 				EdgeId left_id = tmp[j].first;
 				int d = tmp[j].d;
+				int w = tmp[j].weight;
+//				if (w < 10) continue;
 				int new_d = d;
 				if (dir == 1)
 					new_d -= new_graph.length(left_id);
