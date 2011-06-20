@@ -26,6 +26,11 @@ public class XmlUtil {
         return element;
     }
 
+    public static Element addElement(Element element, String tag, StringBuilder value) {
+        element.addContent(new Element(tag).addContent(value.toString()));
+        return element;
+    }
+
     public static Element addElement(Element element, String tag, char value) {
         element.addContent(new Element(tag).addContent(Character.toString(value)));
         return element;

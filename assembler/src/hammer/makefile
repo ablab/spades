@@ -1,4 +1,4 @@
-SRC=sequence/sequence.cpp simple_tools.cpp
+SRC=sequence/sequence.cpp sequence/sequence_tools.cpp
 DIR=hammer
 PROG=preproc
 MYCFLAGS=-fPIC -std=c++0x
@@ -14,16 +14,16 @@ DEPSFL=-MM -MG
 hammer: preproc cluster center
 	@echo "== MADE HAMMER =="
 
-center: sequence.o simple_tools.o center.o
-	$(CC) $(builddir)/sequence.o $(builddir)/simple_tools.o $(builddir)/center.o $(LDFLAGS) -o $(builddir)/$@
+center: sequence.o sequence_tools.o center.o
+	$(CC) $(builddir)/sequence.o $(builddir)/sequence_tools.o $(builddir)/center.o $(LDFLAGS) -o $(builddir)/$@
 	@echo "== made center =="
 
-cluster: sequence.o simple_tools.o cluster.o
-	$(CC) $(builddir)/sequence.o $(builddir)/simple_tools.o $(builddir)/cluster.o $(LDFLAGS) -o $(builddir)/$@
+cluster: sequence.o sequence_tools.o cluster.o
+	$(CC) $(builddir)/sequence.o $(builddir)/sequence_tools.o $(builddir)/cluster.o $(LDFLAGS) -o $(builddir)/$@
 	@echo "== made cluster =="
 
-preproc: sequence.o simple_tools.o preproc.o
-	$(CC) $(builddir)/sequence.o $(builddir)/simple_tools.o $(builddir)/preproc.o $(LDFLAGS) -o $(builddir)/$@
+preproc: sequence.o sequence_tools.o preproc.o
+	$(CC) $(builddir)/sequence.o $(builddir)/sequence_tools.o $(builddir)/preproc.o $(LDFLAGS) -o $(builddir)/$@
 	@echo "== made preproc =="
 
 cluster.o: cluster.cpp $(builddir)/.d
@@ -34,8 +34,8 @@ preproc.o: preproc.cpp $(builddir)/.d
 	$(CC) $(CFLAGS) -c preproc.cpp -o $(builddir)/$@
 sequence.o: ../common/sequence/sequence.cpp $(builddir)/.d
 	$(CC) $(CFLAGS) -c ../common/sequence/sequence.cpp -o $(builddir)/$@
-simple_tools.o: ../common/simple_tools.cpp $(builddir)/.d
-	$(CC) $(CFLAGS) -c ../common/simple_tools.cpp -o $(builddir)/$@
+sequence_tools.o: ../common/sequence/sequence_tools.cpp $(builddir)/.d
+	$(CC) $(CFLAGS) -c ../common/sequence/sequence_tools.cpp -o $(builddir)/$@
 
 	
 include ../makefile.inc
@@ -44,8 +44,8 @@ include ../makefile.inc
 	
 
 #$(builddir)/preproc.o: preproc.cpp
-#inner_preproc: preproc.o sequence.o simple_tools.o
-#	$(CC) preproc.o sequence.o simple_tools.o $(LDFLAGS) -o preproc
+#inner_preproc: preproc.o sequence.o sequence_tools.o
+#	$(CC) preproc.o sequence.o sequence_tools.o $(LDFLAGS) -o preproc
 #preproc.o : preproc.cpp
 #	$(CC) $(CFLAGS) -c preproc.cpp -o preproc.o
 

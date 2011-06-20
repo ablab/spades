@@ -21,6 +21,8 @@
 #include "repeat_resolver.hpp"
 #include "omni_tools.hpp"
 #include "seq_map.hpp"
+#include "ID_track_handler.hpp"
+
 
 namespace debruijn_graph {
 
@@ -169,6 +171,7 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 	EdgeIndex<k + 1, Graph> index(g);
 	CoverageHandler<Graph> coverage_handler(g);
 	PairedInfoIndex<Graph> paired_index(g);
+	IdTrackHandler<Graph> IntIds(g);
 
 	ConstructGraphWithPairedInfo<k, ReadStream> (g, index, coverage_handler,
 			paired_index, stream);
