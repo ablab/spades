@@ -422,7 +422,7 @@ private:
     size_t len_temp_ = len_part_;
 
     len_part_ = (size_t)(len_part_ * step_);
-    len_part_ = ((len_part_ + 7) >> 3) << 3;
+    len_part_ = ((len_part_ + 8) >> 3) << 3;
     len_ = len_part_ * d_;
     max_loop_ = max_loop_factor_ * round(log(len_part_)) + 1;
     
