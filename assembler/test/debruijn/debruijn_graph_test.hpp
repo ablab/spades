@@ -276,10 +276,10 @@ void AssertGraph(const vector<MyPairedRead>& paired_reads, size_t insert_size, c
 	Stream paired_read_stream(raw_stream);
 	DeBruijnGraph g(k);
 	EdgeIndex<k + 1, DeBruijnGraph> index(g);
-	CoverageHandler<DeBruijnGraph> coverage_handler(g);
+//	CoverageHandler<DeBruijnGraph> coverage_handler(g);
 	PairedIndex paired_index(g);
 
-	ConstructGraphWithPairedInfo<k, Stream>(g, index, coverage_handler, paired_index, paired_read_stream);
+	ConstructGraphWithPairedInfo<k, Stream>(g, index/*, coverage_handler*/, paired_index, paired_read_stream);
 
 	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 

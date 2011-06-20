@@ -119,11 +119,15 @@ void FillPairedIndex(PairedInfoIndex<Graph>& paired_info_index,
 }
 
 template<size_t k, class ReadStream>
-void FillCoverage(CoverageHandler<Graph> coverage_handler, ReadStream& stream,
+void FillCoverage(Graph& g/*CoverageHandler<Graph> coverage_handler*/, ReadStream& stream,
 		EdgeIndex<k + 1, Graph>& index) {
+	typedef SimpleSequenceMapper<k, Graph> ReadThreader;
 	stream.reset();
 	INFO("Counting coverage");
-	coverage_handler.FillCoverage<k, ReadStream> (stream, index);
+	ReadThreader read_threader(g, index);
+	//todo temporary solution!
+	g.FillCoverage<ReadStream, ReadThreader>(stream, read_threader);
+//	coverage_handler.FillCoverage<k, ReadStream> (stream, index);
 	INFO("Coverage counted");
 }
 
@@ -146,18 +150,18 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 
 template<size_t k, class ReadStream>
 void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		CoverageHandler<Graph>& coverage_handler, ReadStream& stream) {
+		/*CoverageHandler<Graph>& coverage_handler,*/ ReadStream& stream) {
 	ConstructGraph<k, ReadStream> (g, index, stream);
-	FillCoverage<k, ReadStream> (coverage_handler, stream, index);
+	FillCoverage<k, ReadStream> (g/*coverage_handler*/, stream, index);
 }
 
 template<size_t k, class PairedReadStream>
 void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		CoverageHandler<Graph>& coverage_handler,
+		/*CoverageHandler<Graph>& coverage_handler,*/
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& stream) {
 	typedef SimpleReaderWrapper<PairedReadStream> UnitedStream;
 	UnitedStream united_stream(stream);
-	ConstructGraphWithCoverage<k, UnitedStream> (g, index, coverage_handler,
+	ConstructGraphWithCoverage<k, UnitedStream> (g, index/*, coverage_handler*/,
 			united_stream);
 	FillPairedIndex<k, PairedReadStream> (paired_index, stream, index);
 }
@@ -169,11 +173,11 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 
 	Graph g(k);
 	EdgeIndex<k + 1, Graph> index(g);
-	CoverageHandler<Graph> coverage_handler(g);
+	/*CoverageHandler<Graph> coverage_handler(g);*/
 	PairedInfoIndex<Graph> paired_index(g);
 	IdTrackHandler<Graph> IntIds(g);
 
-	ConstructGraphWithPairedInfo<k, ReadStream> (g, index, coverage_handler,
+	ConstructGraphWithPairedInfo<k, ReadStream> (g, index, /*coverage_handler,*/
 			paired_index, stream);
 	//	{
 	//		typedef SimpleReaderWrapper<ReadStream> UnitedStream;
