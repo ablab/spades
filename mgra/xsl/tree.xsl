@@ -45,7 +45,12 @@
     <xsl:template match="cell">
         <td rowspan="{height}" colspan="{width}" align="center">
             <xsl:apply-templates select="length"/>
-            <strong><a href="#" onclick="showData('gen{text}')"><xsl:value-of select="text"/></a></strong>
+            <strong>
+                <xsl:choose>
+                    <xsl:when test="genome"><a href="#" onclick="showData('gen{text}')"><xsl:value-of select="text"/></a></xsl:when>
+                    <xsl:otherwise><xsl:value-of select="text"/></xsl:otherwise>
+                </xsl:choose>
+                </strong>
         </td>
     </xsl:template>
 
