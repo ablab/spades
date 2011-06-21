@@ -130,7 +130,8 @@ public:
 		}
 		for(auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			DEBUG("Adding edge from " << old_to_new[old_graph.EdgeStart(*e_iter)] <<" to " << old_to_new[old_graph.EdgeEnd(*e_iter)]);
-			EdgeId new_edge = new_graph.AddEdge(old_to_new[old_graph.EdgeStart(*e_iter)], old_to_new[old_graph.EdgeEnd(*e_iter)], old_graph.EdgeNucls(*e_iter), 0);
+//			DEBUG("Setting coverage to edge length " << old_graph.length(*e_iter) << "  cov: " << old_graph.coverage(*e_iter));
+			EdgeId new_edge = new_graph.AddEdge(old_to_new[old_graph.EdgeStart(*e_iter)], old_to_new[old_graph.EdgeEnd(*e_iter)], old_graph.EdgeNucls(*e_iter), old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
 			edge_labels[new_edge] = *e_iter;
 			DEBUG("Adding edge " << new_edge<< " from" << *e_iter);
 			old_to_new_edge[*e_iter] = new_edge;
@@ -196,12 +197,17 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v){
 	edgeIds[0] = new_graph.OutgoingEdges(v);
 	edgeIds[1] = new_graph.IncomingEdges(v);
 	vector<unordered_map<EdgeId, EdgeId> > new_edges(k);
+	unordered_map<EdgeId, int> old_paired_coverage;
+	unordered_map<EdgeId, int> new_paired_coverage;
 	//Remember-because of loops there can be same edges in edgeIds[0] and edgeIds[1]
 	for(int i = 0; i < k ; i++) {
 		res[i] = new_graph.AddVertex();
 	}
 	for(size_t i = 0; i < edge_info_colors.size(); i++) {
 		EdgeId le = edge_infos[i].lp.first;
+		if (old_paired_coverage.find(le) == old_paired_coverage.end())
+			old_paired_coverage[le] = 0;
+		old_paired_coverage[le]++;
 		TRACE("replacing edge " << le<<" with label " << edge_labels[le] << " "<< (new_edges[edge_info_colors[i]].find(le) == new_edges[edge_info_colors[i]].end()));
 
 		EdgeId res_edge = NULL;
@@ -227,12 +233,19 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v){
 			edge_labels[res_edge] = edge_labels[le];
 			TRACE("before replace first Edge");
 			paired_di_data.ReplaceFirstEdge(edge_infos[i].lp, res_edge);
+			new_paired_coverage[new_edges[edge_info_colors[i]][le]] = 0;
 		}
 		else {
 			paired_di_data.ReplaceFirstEdge(edge_infos[i].lp, new_edges[edge_info_colors[i]][le]);
 		}
+		new_paired_coverage[new_edges[edge_info_colors[i]][le]] ++;
 	}
-
+	for(int i = 0; i < k; i ++) {
+		for (auto edge_iter = new_edges[i].begin(); edge_iter != new_edges[i].end(); edge_iter ++) {
+			DEBUG("setting coverage, from edgeid "<< edge_iter->first<<" length "<<new_graph.length(edge_iter->first) <<"   "<< new_graph.coverage(edge_iter->first) <<" taking "<< new_paired_coverage[edge_iter->second] <<"/"<< old_paired_coverage[edge_iter->first]);
+			new_graph.SetCoverage(edge_iter->second, new_graph.length(edge_iter->first) * new_graph.coverage(edge_iter->first) * new_paired_coverage[edge_iter->second]/ old_paired_coverage[edge_iter->first]);
+		}
+	}
 
 	new_graph.ForceDeleteVertex(v);
 	return res;
