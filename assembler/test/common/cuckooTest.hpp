@@ -7,7 +7,7 @@
 #include "cuckoo.hpp"
 
 struct Hasher {
-  size_t operator()(const int& value, size_t& hash_num) const {
+  size_t operator()(const int& value, size_t& hash_num, size_t seed) const {
     unsigned long l = 4 * hash_num + 1;
     return (size_t)(l * value % 1000000007);
   }
@@ -69,8 +69,8 @@ void TestCuckooCreation() {
 // iterator::operator++
 // iterator::const_iterator(...)
 void TestCuckooOperations() {
-  srand(42);
   hm map(5, 0, 10000, 100, 1.2); 
+  srand(42);
   for (int i = 0; i < 100000; ++i) {
     int t = rand();
     map.insert(std::make_pair(t, 42));

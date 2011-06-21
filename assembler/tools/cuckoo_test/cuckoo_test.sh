@@ -69,7 +69,7 @@ d=3
 lbs=0
 step=15
 for mlf in 1 2 5 10 20; 
-  do echo "max_loop_denom:" $mld;
+  do echo "max_loop_factor:" $mlf;
   echo " " > temp.tmp
   for f in $DATA_DIR/$FILE1 $DATA_DIR/$FILE2 $DATA_DIR/$FILE3; 
     do echo "File:" $f; 

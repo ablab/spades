@@ -201,15 +201,12 @@ MatchResults BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QV
 	// other elements
 	for (size_t i = 1; i < seqsize + 1; ++i) {
 		for (size_t j = 1; j < seqsize + mr_.deletes_ + 1; ++j) {
-			//cout << i << " " << j << " " << index_+j;
 			if (i > mr_.inserts_ + j) { m[i]->at(j) = VERYLARGEQ; continue; }
 			if (j > mr_.deletes_ + i) { m[i]->at(j) = VERYLARGEQ; continue; }
-			// if (j > gensize_ - mr_.index_ + 1) { m[i]->at(j) = VERYLARGEQ; continue; }
 			m[i]->at(j) = AddThreeQualityValues(
 				(mr_.index_+j <= gensize_) ? (m[i-1]->at(j-1) + (genome_[mr_.index_+j-1] != seq[i-1])*qvec[i-1]) : VERYLARGEQ,
 				              (mr_.deletes_ > 0) ? (m[i]->at(j-1)   + DELETE_Q)                                        : VERYLARGEQ,
 				              (mr_.inserts_ > 0) ? (m[i-1]->at(j)   + INSERT_Q)                                        : VERYLARGEQ );
-			//cout << " mat\n";
 		}
 	}
 	mr_.match_.clear();
@@ -310,6 +307,7 @@ MatchResults BayesQualityGenome::ReadBQPreprocessed(const Read & r, size_t readn
 	mr1 = ProcessOneReadBQ(s, q, readno, bwmatches);
 	//INFO(s);
 	INFO("Read as it is gives result " << mr1.prob_);
+	cout << "Read as it is gives result " << mr1.prob_ << "\n";
 	if (mr1.bestq_ <= GOOD_ENOUGH_Q) {
 		return mr1;
 	}
