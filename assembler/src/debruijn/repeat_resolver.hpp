@@ -41,14 +41,13 @@ class RepeatResolver {
 
 public:
 
-	class EdgeInfo{
+	class EdgeInfo {
 
 	public:
 		static const int MAXD = 100;
-		int dir;
 
 
-		EdgeInfo(const EdgeId edge_, int d_, int dir_, PairInfo &lp_) : edge(edge_), d(d_), lp(lp_), dir(dir_){
+		EdgeInfo(const PairInfo &lp_, const int dir_ , const EdgeId edge_, const int d_) : lp(lp_), dir(dir_), edge(edge_), d(d_){
 
 		}
 		inline EdgeId getEdge(){
@@ -85,6 +84,7 @@ public:
 		}
 	public:
 		PairInfo lp;
+		int dir;
 	private:
 		EdgeId edge;
 		int d;
@@ -306,13 +306,13 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo( Graph &new_graph, PairIn
 				EdgeId right_id = tmp[j].second;
 				EdgeId left_id = tmp[j].first;
 				int d = tmp[j].d;
-				int w = tmp[j].weight;
+//				int w = tmp[j].weight;
 //				if (w < 10) continue;
 				int new_d = d;
 				if (dir == 1)
 					new_d -= new_graph.length(left_id);
 				if (d * mult > 0) {
-					EdgeInfo ei(right_id, new_d, dir, tmp[j]);
+					EdgeInfo ei(tmp[j], dir, right_id, new_d);
 					edge_infos.push_back(ei);
 //					DEBUG(right_id);
 					neighbours.insert(right_id);
