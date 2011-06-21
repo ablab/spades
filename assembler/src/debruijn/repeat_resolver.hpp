@@ -192,6 +192,11 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v){
 	DEBUG("splitting to "<< k <<" parts");
 	vector<VertexId> res;
 	res.resize(k);
+	if (k == 1) {
+		DEBUG("NOTHING TO SPLIT:( " );
+		res[0] = v;
+		return res;
+	}
 	vector<EdgeId> edgeIds[2];
 //TODO: fix labels
 	edgeIds[0] = new_graph.OutgoingEdges(v);
