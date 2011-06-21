@@ -3,9 +3,8 @@
  */
 #include "launch.hpp"
 #include "config.hpp"
-
 #include "common/logging.hpp"
-DECL_PROJECT_LOGGER("d")
+#include "common/simple_tools.hpp"
 
 namespace {
 
@@ -21,18 +20,29 @@ std::string MakeLaunchTimeDirName() {
 	return string(buffer);
 }
 }
-int main() {
+DECL_PROJECT_LOGGER("d")
+
+int main()
+{
+	// check config.hpp parameters
+	if (K % 2 == 0) {
+		FATAL("K in config.hpp must be odd!\n");
+	}
+	checkFileExistenceFATAL(CONFIG_FILENAME);
+
 	// read configuration file (dataset path etc.)
 	string input_dir = CONFIG.read<string> ("input_dir");
 	string output_dir = CONFIG.read<string> ("output_dir")
 			+ MakeLaunchTimeDirName() + "/";
 	string dataset = CONFIG.read<string> ("dataset");
-	string genome_filename = input_dir + "/" + CONFIG.read<string> (
-			"reference_genome");
-	string reads_filename1 = input_dir + "/" + CONFIG.read<string> (
-			dataset + "_1");
-	string reads_filename2 = input_dir + "/" + CONFIG.read<string> (
-			dataset + "_2");
+
+	string genome_filename = input_dir + "/" + CONFIG.read<string> ("reference_genome");
+	string reads_filename1 = input_dir + "/" + CONFIG.read<string> (dataset + "_1");
+	string reads_filename2 = input_dir + "/" + CONFIG.read<string> (dataset + "_2");
+	checkFileExistenceFATAL(genome_filename);
+	checkFileExistenceFATAL(reads_filename1);
+	checkFileExistenceFATAL(reads_filename2);
+
 	int insert_size = CONFIG.read<int> (dataset + "_IS");
 	int dataset_len = CONFIG.read<int> (dataset + "_LEN");
 	bool paired_mode = CONFIG.read<bool> ("paired_mode");

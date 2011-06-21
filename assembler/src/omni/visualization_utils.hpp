@@ -4,8 +4,8 @@
 #include "graph_printer.hpp"
 #include "graph_labeler.hpp"
 #include "omni_utils.hpp"
-#include "stack"
-#include "queue"
+#include <stack>
+#include <queue>
 
 namespace gvis {
 

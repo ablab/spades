@@ -14,9 +14,7 @@
  * Most of run-time configurations is located in config.inp file (CONFIG_FILE below).
  */
 #define CONFIG_FILENAME "./src/debruijn/config.inp"
-#define K 35
-//#define R 100
-//#define I 220
+#define K 35 // must be odd (so there is no k-mer which is equal to it's reverse-complimentary k-mer)
 
 ConfigFile CONFIG(CONFIG_FILENAME);
 
