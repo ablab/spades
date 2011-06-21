@@ -79,6 +79,7 @@ public:
 			seq_.erase(seq_.begin() + index, seq_.end());
 			qual_.erase(qual_.begin() + index, qual_.end());
 		}
+		valid = updateValid();
 	}
 
 	/**
@@ -107,6 +108,7 @@ public:
 			qual_ = "";
 			return 0;
 		}
+		valid = updateValid();
 	}
 	/**
 	 * @param k k as in k-mer

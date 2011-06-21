@@ -12,6 +12,7 @@
 #include "strobe_read.hpp"
 #include "utils.hpp"
 #include "omni_utils.hpp"
+#include "coverage.hpp"
 
 using namespace std;
 
@@ -22,12 +23,20 @@ using omnigraph::HandlerApplier;
 using omnigraph::PairedHandlerApplier;
 using omnigraph::SmartVertexIterator;
 using omnigraph::SmartEdgeIterator;
+using omnigraph::CoverageIndex;
 
 class Vertex;
+
+//todo remove
+class DeBruijnGraph;
 
 class Edge {
 private:
 	friend class DeBruijnGraph;
+
+	//todo temporary solution during refactoring!!!
+	friend class CoverageIndex<DeBruijnGraph>;
+
 	const Sequence& nucls() const {
 		return nucls_;
 	}
@@ -142,6 +151,8 @@ private:
 
 	set<Vertex*> vertices_;
 
+	CoverageIndex<DeBruijnGraph>* coverage_index;
+
 	VertexId HiddenAddVertex();
 
 	EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const Sequence &nucls,
@@ -167,6 +178,12 @@ private:
 	void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2);
 
 public:
+
+	//todo temporary method!!!
+	template<class Stream, class ReadThreader>
+	void FillCoverage(Stream& stream, const ReadThreader& threader) {
+		coverage_index->FillIndex(stream, threader);
+	}
 
 	/**
 	 * @return const iterator pointing to the beginning of collection of vertices
@@ -242,6 +259,7 @@ public:
 	DeBruijnGraph(size_t k) :
 		k_(k), applier_(*this) {
 		assert(k % 2 == 1);
+		coverage_index = new CoverageIndex<DeBruijnGraph>(*this);
 	}
 
 	/**
@@ -251,6 +269,7 @@ public:
 		while (!vertices_.empty()) {
 			ForceDeleteVertex(*vertices_.begin());
 		}
+		delete coverage_index;
 	}
 
 	/**
@@ -379,28 +398,28 @@ public:
 	 * Method sets coverage value for the edge
 	 */
 	void SetCoverage(EdgeId edge, size_t cov) {
-		edge->coverage_ = cov;
+		coverage_index->SetCoverage(edge, cov);
 	}
 
 	/**
 	 * Method returns average coverage of the edge
 	 */
 	double coverage(EdgeId edge) const {
-		return (double) edge->coverage_ / length(edge);
+		return coverage_index->coverage(edge);
 	}
 
 	/**
 	 * Method increases coverage value
 	 */
 	void IncCoverage(EdgeId edge, int toAdd) {
-		edge->coverage_ += toAdd;
+		coverage_index->IncCoverage(edge, toAdd);
 	}
 
 	/**
 	 * Method increases coverage value by 1
 	 */
 	void IncCoverage(EdgeId edge) {
-		IncCoverage(edge, 1);
+		coverage_index->IncCoverage(edge);
 	}
 
 	/**
