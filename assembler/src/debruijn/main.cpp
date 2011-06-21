@@ -36,9 +36,9 @@ int main()
 			+ MakeLaunchTimeDirName() + "/";
 	string dataset = CONFIG.read<string> ("dataset");
 
-	string genome_filename = input_dir + "/" + CONFIG.read<string> ("reference_genome");
-	string reads_filename1 = input_dir + "/" + CONFIG.read<string> (dataset + "_1");
-	string reads_filename2 = input_dir + "/" + CONFIG.read<string> (dataset + "_2");
+	string genome_filename = input_dir + CONFIG.read<string> ("reference_genome");
+	string reads_filename1 = input_dir + CONFIG.read<string> (dataset + "_1");
+	string reads_filename2 = input_dir + CONFIG.read<string> (dataset + "_2");
 	checkFileExistenceFATAL(genome_filename);
 	checkFileExistenceFATAL(reads_filename1);
 	checkFileExistenceFATAL(reads_filename2);

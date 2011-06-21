@@ -182,7 +182,7 @@ void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 }
 
 template<size_t k>
-void SimplifyGraph(Graph g, EdgeIndex<k + 1, Graph> index, size_t iteration_count, const string& genome, const string& output_folder) {
+void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index, size_t iteration_count, const string& genome, const string& output_folder) {
 	for (size_t i = 0; i < iteration_count; i++) {
 		ClipTips(g);
 		ProduceDetailedInfo<k> (g, index, genome,
@@ -250,12 +250,12 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 
 	Graph g(k);
 	EdgeIndex<k + 1, Graph> index(g);
-	CoverageHandler<Graph> coverage_handler(g);
+//	CoverageHandler<Graph> coverage_handler(g);
 	IdTrackHandler<Graph> IntIds(g);
 
 	typedef SimpleReaderWrapper<ReadStream> UnitedStream;
 	UnitedStream united_stream(stream);
-	ConstructGraphWithCoverage<k, UnitedStream> (g, index, coverage_handler, united_stream);
+	ConstructGraphWithCoverage<k, UnitedStream> (g, index/*, coverage_handler*/, united_stream);
 
 	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 			"edge_graph");
