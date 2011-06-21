@@ -24,7 +24,7 @@ using namespace bayes_quality;
   * splits a string by delimiter tracking char numbers
   * omits zero size 
   */
-vector<pair<string, pair<size_t, size_t> > > splitString(string s, char delim) {
+/*vector<pair<string, pair<size_t, size_t> > > splitString(string s, char delim) {
 	stringstream temp (stringstream::in | stringstream::out);
 	vector<pair<string, pair<size_t, size_t> > > elems(0);
 	if(s.size() == 0 || delim == 0) return elems;
@@ -48,7 +48,7 @@ vector<pair<string, pair<size_t, size_t> > > splitString(string s, char delim) {
 
 /**
   * splits a sequence (read) into subsequences by Ns
-  */
+  *
 vector<Read> splitReadByN(const Read r) {
 	vector<pair<string, pair<size_t, size_t> > > v = splitString(r.getSequenceString(), 'N');
 	vector<Read> res;
@@ -56,7 +56,7 @@ vector<Read> splitReadByN(const Read r) {
 		res.push_back(r.getName() + '.' + (char)((int)('a') + i), v[i].first);						//quality
 	}
 	return res;
-}
+}*/
 
 
 int main(int argc, char* argv[]) {
