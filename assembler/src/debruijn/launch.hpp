@@ -210,10 +210,13 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 //	clusterer.cluster(clustered_paired_index);
 	INFO("before ResolveRepeats");
 	Graph new_graph(k);
+	IdTrackHandler<Graph> NewIntIds(new_graph);
 	ResolveRepeats(g, paired_index, new_graph);
 	INFO("before graph writing");
+	RealIdGraphLabeler<Graph> IdTrackLabeler(new_graph, NewIntIds);
 	gvis::WriteSimple( output_folder + "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
-	INFO("repeat resolved grpah written");
+	gvis::WriteSimple( output_folder + "repeats_resolved_siiimple_int.dot", "no_repeat_graph", new_graph, IdTrackLabeler);
+		INFO("repeat resolved grpah written");
 	ProduceInfo<k> (new_graph, index, genome, output_folder + "repeats_resolved.dot",
 			"no_repeat_graph");
 	INFO("Tool finished");
