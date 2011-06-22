@@ -12,6 +12,7 @@
 #include <map>
 #include <unordered_map>
 #include <algorithm>
+
 #include "logging.hpp"
 #include "paired_info.hpp"
 #include "config.hpp"
@@ -45,7 +46,7 @@ public:
 	class EdgeInfo {
 
 	public:
-		static const int MAXD = 30;
+		static const int MAXD = 8;
 
 
 		EdgeInfo(const PairInfo &lp_, const int dir_ , const EdgeId edge_, const int d_) : lp(lp_), dir(dir_), edge(edge_), d(d_){
@@ -255,6 +256,8 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v){
 	for(int i = 0; i < k; i ++) {
 		for (auto edge_iter = new_edges[i].begin(); edge_iter != new_edges[i].end(); edge_iter ++) {
 			DEBUG("setting coverage to component "<< i << ", from edgeid "<< edge_iter->first<<" length "<<new_graph.length(edge_iter->first) <<"   "<< new_graph.coverage(edge_iter->first) <<" taking "<< new_paired_coverage[edge_iter->second] <<"/"<< old_paired_coverage[edge_iter->first]);
+			if ((1.0 * new_paired_coverage[edge_iter->second])/ old_paired_coverage[edge_iter->first] > 0.1 && (1.0 *new_paired_coverage[edge_iter->second])/ old_paired_coverage[edge_iter->first] < 0.9)
+				DEBUG("INTERESTING");
 			new_graph.SetCoverage(edge_iter->second, new_graph.length(edge_iter->first) * new_graph.coverage(edge_iter->first) * new_paired_coverage[edge_iter->second]/ old_paired_coverage[edge_iter->first]);
 		}
 	}
@@ -334,16 +337,17 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo( Graph &new_graph, PairIn
 //				int w = tmp[j].weight;
 //				if (w < 10) continue;
 				int new_d = d;
-				if ((d >=new_graph.length(left_id))||(edge_labels[left_id] == right_id ))
+//				if ((d >=new_graph.length(left_id))||(edge_labels[left_id] == right_id ))
 				{
 					if (dir == 1)
 						new_d -= new_graph.length(left_id);
-					if (d * mult > 0) {
+					if (d * mult > 0 && (new_d <= 500)) {
 						EdgeInfo ei(tmp[j], dir, right_id, new_d);
 						edge_infos.push_back(ei);
 						//					DEBUG(right_id);
 						neighbours.insert(right_id);
 					}
+
 				}
 			}
 		}

@@ -172,7 +172,7 @@ public:
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
 			const vector<EdgeId> edges = super::g_.OutgoingEdges(*v_it);
 			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
-				if (super::g_.coverage(*e_it) > 10) {
+				if (super::g_.coverage(*e_it) > 25) {
 					VertexId edge_end = super::g_.EdgeEnd(*e_it);
 					if (vertex_set.count(edge_end) > 0) {
 						super::gp_.AddEdge(*v_it, edge_end, gl_.label(*e_it), EdgeColor(*e_it));
@@ -434,6 +434,7 @@ string ConstructComponentName(string file_name, size_t cnt) {
 	stringstream ss;
 	ss << "_error_" << cnt;
 	string res = file_name;
+	//todo refactor
 	res.insert(res.length() - 4, ss.str());
 	//	cout << res << endl;
 	return res;
