@@ -20,6 +20,7 @@
 #include "omni_tools.hpp"
 #include "omnigraph.hpp"
 
+#include "ID_track_handler.hpp"
 namespace debruijn_graph {
 
 using omnigraph::SmartVertexIterator;
@@ -94,9 +95,10 @@ public:
 
 
 
-	RepeatResolver(Graph &old_graph_, int leap, PIIndex &ind, Graph &new_graph_ ) : leap_(leap), new_graph(new_graph_), old_graph(old_graph_){
+	RepeatResolver(Graph &old_graph_, IdTrackHandler<Graph> &old_IDs_, int leap, PIIndex &ind, Graph &new_graph_, IdTrackHandler<Graph> &new_IDs_) : leap_(leap), new_graph(new_graph_), old_graph(old_graph_), new_IDs(new_IDs_), old_IDs(old_IDs_){
 		unordered_map<VertexId, VertexId> old_to_new;
 		unordered_map<EdgeId, EdgeId> old_to_new_edge;
+
 		size_t paired_size = 0;
 		set<VertexId> vertices;
 		vertices.clear();
@@ -172,6 +174,8 @@ private:
 	NewVertexMap new_map;
 	Graph &new_graph;
 	Graph &old_graph;
+	IdTrackHandler<Graph> &new_IDs;
+	IdTrackHandler<Graph> &old_IDs;
 	vector<int> edge_info_colors;
 	vector<EdgeInfo> edge_infos;
 	PairInfoIndexData paired_di_data;
@@ -195,8 +199,8 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v){
 	res.resize(k);
 	if (k == 1) {
 		DEBUG("NOTHING TO SPLIT:( " );
-		res[0] = v;
-		return res;
+	//	res[0] = v;
+//		return res;
 	}
 	vector<EdgeId> edgeIds[2];
 //TODO: fix labels
@@ -209,11 +213,13 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v){
 	for(int i = 0; i < k ; i++) {
 		res[i] = new_graph.AddVertex();
 	}
+	DEBUG("Vertex = "<<new_IDs.ReturnIntId(v));
 	for(size_t i = 0; i < edge_info_colors.size(); i++) {
 		EdgeId le = edge_infos[i].lp.first;
 		if (old_paired_coverage.find(le) == old_paired_coverage.end())
 			old_paired_coverage[le] = 0;
 		old_paired_coverage[le]++;
+		DEBUG("EdgeID = "<<new_IDs.ReturnIntId(le)<<"("<<old_IDs.ReturnIntId(edge_labels[le])<<")"<<" PairEdgeId = "<<old_IDs.ReturnIntId(edge_infos[i].lp.second)<< " Distance = "<<edge_infos[i].lp.d<<" Provided dist = "<<edge_infos[i].getDistance()<<"Weight = "<<edge_infos[i].lp.weight<<" Color = "<<edge_info_colors[i]);
 		TRACE("replacing edge " << le<<" with label " << edge_labels[le] << " "<< (new_edges[edge_info_colors[i]].find(le) == new_edges[edge_info_colors[i]].end()));
 
 		EdgeId res_edge = NULL;
@@ -328,13 +334,16 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo( Graph &new_graph, PairIn
 //				int w = tmp[j].weight;
 //				if (w < 10) continue;
 				int new_d = d;
-				if (dir == 1)
-					new_d -= new_graph.length(left_id);
-				if (d * mult > 0) {
-					EdgeInfo ei(tmp[j], dir, right_id, new_d);
-					edge_infos.push_back(ei);
-//					DEBUG(right_id);
-					neighbours.insert(right_id);
+				if ((d >=new_graph.length(left_id))||(edge_labels[left_id] == right_id ))
+				{
+					if (dir == 1)
+						new_d -= new_graph.length(left_id);
+					if (d * mult > 0) {
+						EdgeInfo ei(tmp[j], dir, right_id, new_d);
+						edge_infos.push_back(ei);
+						//					DEBUG(right_id);
+						neighbours.insert(right_id);
+					}
 				}
 			}
 		}
