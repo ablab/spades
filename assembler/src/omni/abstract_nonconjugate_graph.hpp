@@ -1,5 +1,5 @@
-#ifndef ABSTRACT_CONJUGATE_GRAPH_HPP_
-#define ABSTRACT_CONJUGATE_GRAPH_HPP_
+#ifndef ABSTRACT_GRAPH_HPP_
+#define ABSTRACT_GRAPH_HPP_
 
 #include <vector>
 #include <set>
@@ -15,22 +15,22 @@
 namespace omnigraph {
 
 template<typename VertexData, typename EdgeData, class DataMaster>
-class AbstractConjugateGraph;
+class AbstractNonconjugateGraph;
 
 template<typename VertexData, typename EdgeData, class DataMaster>
-class PairedEdge;
+class SingleEdge;
 
 template<typename VertexData, typename EdgeData, class DataMaster>
-class PairedVertex {
+class SingleVertex {
 private:
-	typedef PairedVertex<VertexData, EdgeData, DataMaster>* VertexId;
-	typedef PairedEdge<VertexData, EdgeData, DataMaster>* EdgeId;
+	typedef SingleVertex<VertexData, EdgeData, DataMaster>* VertexId;
+	typedef SingleEdge<VertexData, EdgeData, DataMaster>* EdgeId;
 
-	friend class AbstractConjugateGraph<VertexData, EdgeData, DataMaster> ;
+	friend class AbstractNonconjugateGraph<VertexData, EdgeData, DataMaster> ;
 
 	vector<EdgeId> outgoing_edges_;
 
-	VertexId conjugate_;
+	vector<EdgeId> incoming_edges_;
 
 	VertexData data_;
 
@@ -46,29 +46,15 @@ private:
 		return outgoing_edges_;
 	}
 
-	const vector<EdgeId> OutgoingEdgesTo(VertexId v) const {
-		vector<EdgeId> result;
-		for (auto it = outgoing_edges_.begin(); it != outgoing_edges_.end(); ++it) {
-			if ((*it)->end() == v) {
-				result.push_back(*it);
-			}
-		}
-		return result;
-	}
-
 	size_t IncomingEdgeCount() const {
-		return conjugate_->OutgoingEdgeCount();
+		return incoming_edges_.size();
 	}
 
 	const vector<EdgeId> IncomingEdges() const {
-		vector<EdgeId> result = conjugate_->OutgoingEdges();
-		for (size_t i = 0; i < result.size(); i++) {
-			result[i] = result[i].conjugate();
-		}
-		return result;
+		return incoming_edges_;
 	}
 
-	PairedVertex(VertexData data) :
+	SingleVertex(VertexData data) :
 		data_(data) {
 	}
 
@@ -100,30 +86,46 @@ private:
 		return true;
 	}
 
-	VertexId conjugate() const {
-		return conjugate_;
+	bool IsDeadstart() {
+		return incoming_edges_.size() == 0;
 	}
 
-	~PairedVertex() {
+	void AddIncomingEdge(EdgeId e) {
+		incoming_edges_.push_back(e);
+	}
+
+	bool RemoveIncomingEdge(const EdgeId e) {
+		auto it = incoming_edges_.begin();
+		while (it != incoming_edges_.end() && *it != e) {
+			++it;
+		}
+		if (it == incoming_edges_.end()) {
+			return false;
+		}
+		incoming_edges_.erase(it);
+		return true;
+	}
+
+	~SingleVertex() {
 		assert(outgoing_edges_.size() == 0);
 	}
 };
 
 template<typename VertexData, typename EdgeData, class DataMaster>
-class PairedEdge {
+class SingleEdge {
 private:
-	typedef PairedVertex<VertexData, EdgeData, DataMaster>* VertexId;
-	typedef PairedEdge<VertexData, EdgeData, DataMaster>* EdgeId;
+	typedef SingleVertex<VertexData, EdgeData, DataMaster>* VertexId;
+	typedef SingleEdge<VertexData, EdgeData, DataMaster>* EdgeId;
 
-	friend class AbstractConjugateGraph<VertexData, EdgeData, DataMaster> ;
+	friend class AbstractNonconjugateGraph<VertexData, EdgeData, DataMaster> ;
+
+	VertexId start_;
 	VertexId end_;
 
 	EdgeData data_;
 
-	EdgeId conjugate_;
-
-	PairedEdge(VertexId end, const EdgeData &data) :
-		end_(end), data_(data) {
+	SingleEdge(VertexId start, VertexId end, const EdgeData &data) :
+		start_(start), end_(end), data_(data) {
 	}
 
 	EdgeData &data() {
@@ -134,30 +136,26 @@ private:
 		data_ = data;
 	}
 
+	VertexId start() const {
+		return start_;
+	}
+
 	VertexId end() const {
 		return end_;
 	}
 
-	EdgeId conjugate() {
-		return conjugate_;
-	}
-
-	void set_conjugate(EdgeId conjugate) {
-		conjugate_ = conjugate;
-	}
-
-	~PairedEdge() {
+	~SingleEdge() {
 	}
 };
 
 template<typename VertexData, typename EdgeData, class DataMaster>
-class AbstractConjugateGraph: public ObservableGraph<PairedVertex<VertexData,
-		EdgeData, DataMaster>*, PairedEdge<VertexData, EdgeData, DataMaster>*> {
+class AbstractNonconjugateGraph: public ObservableGraph<SingleVertex<VertexData,
+		EdgeData, DataMaster>*, SingleEdge<VertexData, EdgeData, DataMaster>*> {
 public:
-	typedef PairedVertex<VertexData, EdgeData, DataMaster>* VertexId;
+	typedef SingleVertex<VertexData, EdgeData, DataMaster>* VertexId;
 	typedef set<VertexId> Vertices;
 	typedef typename Vertices::const_iterator VertexIterator;
-	typedef PairedEdge<VertexData, EdgeData, DataMaster>* EdgeId;
+	typedef SingleEdge<VertexData, EdgeData, DataMaster>* EdgeId;
 	typedef vector<EdgeId> Edges;
 	typedef typename Edges::const_iterator EdgeIterator;
 
@@ -165,42 +163,29 @@ public:
 
 	DataMaster master_;
 
-	VertexId HiddenAddVertex(const VertexData &data1, const VertexData &data2) {
-		VertexId v1 = new PairedVertex<VertexData, EdgeData, DataMaster> (data1);
-		VertexId v2 = new PairedVertex<VertexData, EdgeData, DataMaster> (data2);
-		v1->set_conjugate(v2);
-		v2->set_conjugate(v1);
-		vertices_.insert(v1);
-		vertices_.insert(v2);
-		return v1;
-	}
-
-	VertexId HiddenAddVertex(const VertexData &data) {
-		return HiddenAddVertex(data, master_.conjugate(data));
+	VertexId HiddenAddVertex(const VertexData &data1) {
+		VertexId v = new SingleVertex<VertexData, EdgeData, DataMaster> (data1);
+		vertices_.insert(v);
+		return v;
 	}
 
 	EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
 		assert(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
-		EdgeId result = AddSingleEdge(v1, v2, data);
-		if (master_.isSelfConjugate(data)) {
-			result->set_conjugate(result);
-			return result;
-		}
-		EdgeId rcEdge = AddSingleEdge(v2->conjugate(), v1->conjugate(),
-				master_.conjugate(data));
-		result->set_conjugate(rcEdge);
-		rcEdge->set_conjugate(result);
-		return result;
-	}
-
-	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-		EdgeId newEdge = new PairedEdge<VertexData, EdgeData, DataMaster> (v2, data);
+		EdgeId newEdge = new SingleEdge<VertexData, EdgeData, DataMaster> (v1, v2, data);
 		v1->AddOutgoingEdge(newEdge);
+		v2->AddIncomingEdge(newEdge);
 		return newEdge;
 	}
 
 	void DeleteAllOutgoing(VertexId v) {
 		vector < EdgeId > out = v->outgoing_edges_;
+		for (auto it = out.begin(); it != out.end(); ++it) {
+			DeleteEdge(*it);
+		}
+	}
+
+	void DeleteAllIncoming(VertexId v) {
+		vector < EdgeId > out = v->incoming_edges_;
 		for (auto it = out.begin(); it != out.end(); ++it) {
 			DeleteEdge(*it);
 		}
@@ -217,30 +202,30 @@ public:
 	}
 
 	template<typename Comparator = std::less<VertexId> >
-	SmartVertexIterator<AbstractConjugateGraph, Comparator> SmartVertexBegin(
+	SmartVertexIterator<AbstractNonconjugateGraph, Comparator> SmartVertexBegin(
 			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<AbstractConjugateGraph, Comparator> (*this,
+		return SmartVertexIterator<AbstractNonconjugateGraph, Comparator> (*this,
 				true, comparator);
 	}
 
 	template<typename Comparator = std::less<VertexId> >
-	SmartVertexIterator<AbstractConjugateGraph, Comparator> SmartVertexEnd(
+	SmartVertexIterator<AbstractNonconjugateGraph, Comparator> SmartVertexEnd(
 			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<AbstractConjugateGraph, Comparator> (*this,
+		return SmartVertexIterator<AbstractNonconjugateGraph, Comparator> (*this,
 				false, comparator);
 	}
 
 	template<typename Comparator = std::less<EdgeId> >
-	SmartEdgeIterator<AbstractConjugateGraph, Comparator> SmartEdgeBegin(
+	SmartEdgeIterator<AbstractNonconjugateGraph, Comparator> SmartEdgeBegin(
 			const Comparator& comparator = Comparator()) {
-		return SmartEdgeIterator<AbstractConjugateGraph, Comparator> (*this,
+		return SmartEdgeIterator<AbstractNonconjugateGraph, Comparator> (*this,
 				true, comparator);
 	}
 
 	template<typename Comparator = std::less<EdgeId> >
-	SmartEdgeIterator<AbstractConjugateGraph, Comparator> SmartEdgeEnd(
+	SmartEdgeIterator<AbstractNonconjugateGraph, Comparator> SmartEdgeEnd(
 			const Comparator& comparator = Comparator()) {
-		return SmartEdgeIterator<AbstractConjugateGraph, Comparator> (*this,
+		return SmartEdgeIterator<AbstractNonconjugateGraph, Comparator> (*this,
 				false, comparator);
 	}
 
@@ -248,9 +233,9 @@ public:
 		return vertices_.size();
 	}
 
-	AbstractConjugateGraph(DataMaster master) :
+	AbstractNonconjugateGraph(DataMaster master) :
 				ObservableGraph<VertexId, EdgeId> (
-						new PairedHandlerApplier<AbstractConjugateGraph<
+						new SimpleHandlerApplier<AbstractConjugateGraph<
 								VertexData, EdgeData, DataMaster> > (*this)),
 				master_(master) {
 	}
@@ -282,12 +267,17 @@ public:
 		return (v->OutgoingEdges())[0];
 	}
 
+	size_t IncomingEdgeCount(VertexId v) const {
+		return v->OutgoingEdgeCount();
+	}
+
 	bool CheckUniqueIncomingEdge(VertexId v) const {
-		return CheckUniqueOutgoingEdge(v->conjugate());
+		return v->IncomingEdgeCount() == 1;
 	}
 
 	EdgeId GetUniqueIncomingEdge(VertexId v) const {
-		return conjugate(GetUniqueOutgoingEdge(v->conjugate()));
+		assert(CheckUniqueIncomingEdge(v));
+		return (v->IncomingEdges())[0];
 	}
 
 	vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) {
@@ -316,26 +306,17 @@ public:
 		return result;
 	}
 
-	VertexId AddVertex(const VertexData& data1, const VertexData& data2) {
-		VertexId result = HiddenAddVertex(data1, data2);
-		FireAddVertex(result);
-		return result;
-	}
-
 	void DeleteVertex(VertexId v) {
 		assert(IsDeadEnd(v) && IsDeadStart(v));
 		assert(v != NULL);
 		FireDeleteVertex(v);
-		VertexId conjugate = v->conjugate();
 		vertices_.erase(v);
 		delete v;
-		vertices_.erase(conjugate);
-		delete conjugate;
 	}
 
 	void ForceDeleteVertex(VertexId v) {
 		DeleteAllOutgoing(v);
-		DeleteAllOutgoing(v->conjugate());
+		DeleteAllIncoming(v);
 		DeleteVertex(v);
 	}
 
@@ -345,36 +326,12 @@ public:
 		return result;
 	}
 
-	bool HasEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-		for (auto it = v1->outgoing_edges_.begin(); it
-				!= v1->outgoing_edges_.end(); ++it) {
-			if (((*it)->end() == v2) && (master_.equals((*it)->data(), data))) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	EdgeId GetEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-		for (auto it = v1->outgoing_edges_.begin(); it
-				!= v1->outgoing_edges_.end(); ++it) {
-			if (((*it)->end() == v2) && (master_.equals((*it)->data(), data))) {
-				return *it;
-			}
-		}
-		return NULL;
-	}
-
 	void DeleteEdge(EdgeId edge) {
 		FireDeleteEdge(edge);
-		EdgeId rcEdge = conjugate(edge);
-		VertexId rcStart = conjugate(edge->end());
-		VertexId start = conjugate(rcEdge->end());
+		VertexId start = edge->start();
+		VertexId end = edge->end();
 		start->RemoveOutgoingEdge(edge);
-		rcStart->RemoveOutgoingEdge(rcEdge);
-		if (edge != rcEdge) {
-			delete rcEdge;
-		}
+		end->RemoveIncomingEdge(rcEdge);
 		delete edge;
 	}
 
@@ -383,28 +340,20 @@ public:
 	}
 
 	bool IsDeadStart(VertexId v) const {
-		return IsDeadEnd(v->conjugate());
+		return v->IsDeadstart();
 	}
 
 	VertexId EdgeStart(EdgeId edge) const {
-		return edge->conjugate()->end()->conjugate();
+		return start = edge->start();
 	}
 
 	VertexId EdgeEnd(EdgeId edge) const {
 		return edge->end();
 	}
 
-	VertexId conjugate(VertexId v) const {
-		return v->conjugate();
-	}
-
-	EdgeId conjugate(EdgeId edge) const {
-		return edge->conjugate();
-	}
-
 	bool CanCompressVertex(VertexId v) const {
 		return v->OutgoingEdgeCount() == 1
-				&& v->conjugate()->OutgoingEdgeCount() == 1;
+				&& v->IncomingEdgeCount() == 1;
 	}
 
 	void CompressVertex(VertexId v) {
@@ -414,40 +363,18 @@ public:
 		}
 	}
 
-	vector<EdgeId> CorrectMergePath(const vector<EdgeId>& path) {
-		vector < EdgeId > result;
-		for (size_t i = 0; i < path.size(); i++) {
-			if (path[i] == conjugate(path[i])) {
-				if (i < path.size() - 1 - i) {
-					for (size_t j = 0; j < path.size(); j++)
-						result.push_back(conjugate(path[path.size() - 1 - j]));
-					i = path.size() - 1 - i;
-				} else {
-					result = path;
-				}
-				size_t size = 2 * i + 1;
-				for (size_t j = result.size(); j < size; j++) {
-					result.push_back(conjugate(result[size - 1 - j]));
-				}
-				return result;
-			}
-		}
-		return path;
-	}
-
 	EdgeId MergePath(const vector<EdgeId>& path) {
 		assert(!path.empty());
-		vector < EdgeId > correctedPath = CorrectMergePath(path);
 		SequenceBuilder sb;
 		VertexId v1 = EdgeStart(correctedPath[0]);
-		VertexId v2 = EdgeEnd(correctedPath[correctedPath.size() - 1]);
+		VertexId v2 = EdgeEnd(path[correctedPath.size() - 1]);
 		vector<EdgeData*> toMerge;
-		for (auto it = correctedPath.begin(); it != correctedPath.end(); ++it) {
+		for (auto it = path.begin(); it != path.end(); ++it) {
 			toMerge.push_back(&((*it)->data()));
 		}
 		EdgeId newEdge = HiddenAddEdge(v1, v2, master_.MergeData(toMerge));
-		FireMerge(correctedPath, newEdge);
-		DeletePath(correctedPath);
+		FireMerge(path, newEdge);
+		DeletePath(path);
 		FireAddEdge(newEdge);
 		return newEdge;
 	}
@@ -456,13 +383,9 @@ public:
 		set < EdgeId > edgesToDelete;
 		set < VertexId > verticesToDelete;
 		edgesToDelete.insert(path[0]);
-		for (size_t i = 0; i + 1 < path.size(); i++) {
-			EdgeId e = path[i + 1];
-			if (edgesToDelete.find(conjugate(e)) == edgesToDelete.end())
-				edgesToDelete.insert(e);
-			VertexId v = EdgeStart(e);
-			if (verticesToDelete.find(conjugate(v)) == verticesToDelete.end())
-				verticesToDelete.insert(v);
+		for (size_t i = 1; i < path.size(); i++) {
+			edgesToDelete.insert(path[i]);
+			verticesToDelete.insert(EdgeStart(path[i]));
 		}
 		for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
 			DeleteEdge(*it);
@@ -504,8 +427,8 @@ public:
 	}
 
 private:
-	DECL_LOGGER("AbstractConjugateGraph")
+	DECL_LOGGER("AbstractNonconjugateGraph")
 };
 
 }
-#endif /* ABSTRUCT_CONJUGATE_GRAPH_HPP_ */
+#endif /* ABSTRACT_GRAPH_HPP_ */
