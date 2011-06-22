@@ -44,7 +44,7 @@ public:
 	class EdgeInfo {
 
 	public:
-		static const int MAXD = 100;
+		static const int MAXD = 30;
 
 
 		EdgeInfo(const PairInfo &lp_, const int dir_ , const EdgeId edge_, const int d_) : lp(lp_), dir(dir_), edge(edge_), d(d_){
@@ -131,7 +131,8 @@ public:
 		for(auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			DEBUG("Adding edge from " << old_to_new[old_graph.EdgeStart(*e_iter)] <<" to " << old_to_new[old_graph.EdgeEnd(*e_iter)]);
 //			DEBUG("Setting coverage to edge length " << old_graph.length(*e_iter) << "  cov: " << old_graph.coverage(*e_iter));
-			EdgeId new_edge = new_graph.AddEdge(old_to_new[old_graph.EdgeStart(*e_iter)], old_to_new[old_graph.EdgeEnd(*e_iter)], old_graph.EdgeNucls(*e_iter), old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
+			EdgeId new_edge = new_graph.AddEdge(old_to_new[old_graph.EdgeStart(*e_iter)], old_to_new[old_graph.EdgeEnd(*e_iter)], old_graph.EdgeNucls(*e_iter), 0);
+			new_graph.SetCoverage(new_edge, old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
 			edge_labels[new_edge] = *e_iter;
 			DEBUG("Adding edge " << new_edge<< " from" << *e_iter);
 			old_to_new_edge[*e_iter] = new_edge;
@@ -247,7 +248,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v){
 	}
 	for(int i = 0; i < k; i ++) {
 		for (auto edge_iter = new_edges[i].begin(); edge_iter != new_edges[i].end(); edge_iter ++) {
-			DEBUG("setting coverage, from edgeid "<< edge_iter->first<<" length "<<new_graph.length(edge_iter->first) <<"   "<< new_graph.coverage(edge_iter->first) <<" taking "<< new_paired_coverage[edge_iter->second] <<"/"<< old_paired_coverage[edge_iter->first]);
+			DEBUG("setting coverage to component "<< i << ", from edgeid "<< edge_iter->first<<" length "<<new_graph.length(edge_iter->first) <<"   "<< new_graph.coverage(edge_iter->first) <<" taking "<< new_paired_coverage[edge_iter->second] <<"/"<< old_paired_coverage[edge_iter->first]);
 			new_graph.SetCoverage(edge_iter->second, new_graph.length(edge_iter->first) * new_graph.coverage(edge_iter->first) * new_paired_coverage[edge_iter->second]/ old_paired_coverage[edge_iter->first]);
 		}
 	}
