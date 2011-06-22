@@ -22,7 +22,9 @@
 #include "omni_tools.hpp"
 #include "seq_map.hpp"
 #include "ID_track_handler.hpp"
-
+#include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 namespace debruijn_graph {
 
@@ -46,7 +48,14 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 void WriteToDotFile(Graph &g, const string& file_name, string graph_name,
 		Path<EdgeId> path = Path<EdgeId> ()) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
-	gvis::WriteToFile(/*DE_BRUIJN_DATA_FOLDER + */file_name, graph_name, g,
+	gvis::WritePaired(file_name, graph_name, g,	path);
+	INFO("Graph '" << graph_name << "' written to file " << file_name);
+}
+
+void DetailedWriteToDot(Graph &g, const string& file_name, string graph_name,
+		Path<EdgeId> path = Path<EdgeId> ()) {
+	INFO("Writing graph '" << graph_name << "' to file " << file_name);
+	gvis::WriteToFile(file_name, graph_name, g,
 			path);
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
@@ -64,6 +73,16 @@ void ProduceInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	CountStats<k> (g, index, genome);
 	Path<typename Graph::EdgeId> path = FindGenomePath<k> (genome, g, index);
 	WriteToDotFile(g, file_name, graph_name, path);
+}
+
+template<size_t k>
+void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+		const string& genome, const string& folder, const string& file_name, const string& graph_name) {
+	CountStats<k> (g, index, genome);
+	Path<typename Graph::EdgeId> path = FindGenomePath<k> (genome, g, index);
+
+	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH);
+	DetailedWriteToDot(g, folder + file_name, graph_name, path);
 }
 
 void ClipTips(Graph &g) {
@@ -166,8 +185,34 @@ void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 	FillPairedIndex<k, PairedReadStream> (paired_index, stream, index);
 }
 
+template<size_t k>
+void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index, size_t iteration_count, const string& genome, const string& output_folder) {
+	ProduceDetailedInfo<k> (g, index, genome,
+			output_folder + "/before_simplification/", "graph.dot",
+			"non_simplified_graph");
+	for (size_t i = 0; i < iteration_count; i++) {
+		ClipTips(g);
+		ProduceDetailedInfo<k> (g, index, genome,
+				output_folder + "/tips_clipped_" + ToString(i) + "/", "graph.dot",
+				"no_tip_graph");
+
+		RemoveBulges(g);
+		ProduceDetailedInfo<k> (g, index, genome,
+				output_folder + "/bulges_removed_" + ToString(i) + "/", "graph.dot",
+				"no_bulge_graph");
+
+		RemoveLowCoverageEdges(g);
+		ProduceDetailedInfo<k> (
+				g,
+				index,
+				genome,
+				output_folder + "/erroneous_edges_removed_" + ToString(i) + "/",
+						"graph.dot", "no_erroneous_edges_graph");
+	}
+}
+
 template<size_t k, class ReadStream>
-void DeBruijnGraphTool(ReadStream& stream, const string& genome,
+void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 		const string& output_folder) {
 	INFO("Edge graph construction tool started");
 
@@ -179,39 +224,21 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 
 	ConstructGraphWithPairedInfo<k, ReadStream> (g, index, /*coverage_handler,*/
 			paired_index, stream);
-	//	{
-	//		typedef SimpleReaderWrapper<ReadStream> UnitedStream;
-	//		UnitedStream united_stream(stream);
-	//		ConstructGraphWithCoverage<k, UnitedStream> (g, index, coverage_handler, united_stream);
-	//	}
 
 	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 			"edge_graph");
+
 	//	paired_index.OutputData(output_folder + "edges_dist.txt");
 
-	for (size_t i = 0; i < 3; i++) {
-		ClipTips(g);
-		ProduceInfo<k> (g, index, genome,
-				output_folder + "tips_clipped_" + ToString(i) + ".dot",
-				"no_tip_graph");
+	SimplifyGraph<k>(g, index, 3, genome, output_folder);
 
-		RemoveBulges(g);
-		ProduceInfo<k> (g, index, genome,
-				output_folder + "bulges_removed_" + ToString(i) + ".dot",
-				"no_bulge_graph");
-
-		RemoveLowCoverageEdges(g);
-		ProduceInfo<k> (
-				g,
-				index,
-				genome,
-				output_folder + "erroneous_edges_removed_" + ToString(i)
-						+ ".dot", "no_erroneous_edges_graph");
-	}
+	ProduceInfo<k> (g, index, genome, output_folder + "simplified_graph.dot",
+			"simplified_graph");
 
 //	SimpleOfflineClusterer<Graph> clusterer(paired_index);
 //	PairedInfoIndex<Graph> clustered_paired_index(g);
 //	clusterer.cluster(clustered_paired_index);
+
 	INFO("before ResolveRepeats");
 	Graph new_graph(k);
 	IdTrackHandler<Graph> NewIntIds(new_graph);
@@ -225,6 +252,30 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 			"no_repeat_graph");
 	INFO("Tool finished");
 
+}
+
+template<size_t k, class ReadStream>
+void DeBruijnGraphTool(ReadStream& stream, const string& genome,
+		const string& output_folder) {
+	INFO("Edge graph construction tool started");
+
+	Graph g(k);
+	EdgeIndex<k + 1, Graph> index(g);
+//	CoverageHandler<Graph> coverage_handler(g);
+	IdTrackHandler<Graph> IntIds(g);
+
+	typedef SimpleReaderWrapper<ReadStream> UnitedStream;
+	UnitedStream united_stream(stream);
+	ConstructGraphWithCoverage<k, UnitedStream> (g, index/*, coverage_handler*/, united_stream);
+
+	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
+			"edge_graph");
+
+	SimplifyGraph<k>(g, index, 3, genome, output_folder);
+
+	ProduceInfo<k> (g, index, genome, output_folder + "simplified_graph.dot",
+			"simplified_graph");
+	INFO("Tool finished");
 }
 
 }

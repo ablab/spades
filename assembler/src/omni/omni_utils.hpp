@@ -91,7 +91,6 @@ public:
 	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 	}
 
-
 	/**
 	 * High level event which is triggered when split operation is performed on graph, which is when
 	 * edge is split into several shorter edges. Split operation is reverse to merge operation.
@@ -109,10 +108,13 @@ public:
 };
 
 template<class Graph>
-class GraphActionHandler : public ActionHandler<typename Graph::VertexId, typename Graph::EdgeId> {
-	typedef ActionHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
+class GraphActionHandler: public ActionHandler<typename Graph::VertexId,
+		typename Graph::EdgeId> {
+	typedef ActionHandler<typename Graph::VertexId, typename Graph::EdgeId>
+			base;
 public:
-	GraphActionHandler(const string& name) : base(name) {
+	GraphActionHandler(const string& name) :
+		base(name) {
 
 	}
 
@@ -128,11 +130,9 @@ public:
  * HandlerApplier contains one method for each of graph events which define the exact way this event
  * should be triggered.
  */
-template<class Graph>
+template<typename VertexId, typename EdgeId>
 class HandlerApplier {
 public:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
 
 	virtual void
 	ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const = 0;
@@ -149,8 +149,8 @@ public:
 	virtual void ApplyMerge(ActionHandler<VertexId, EdgeId> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const = 0;
 
-	virtual void ApplyGlue(ActionHandler<VertexId, EdgeId> *handler, EdgeId new_edge, EdgeId edge1,
-			EdgeId edge2) const = 0;
+	virtual void ApplyGlue(ActionHandler<VertexId, EdgeId> *handler,
+			EdgeId new_edge, EdgeId edge1, EdgeId edge2) const = 0;
 
 	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
 			EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const = 0;
@@ -163,40 +163,42 @@ public:
  * SimpleHandlerApplier is simple implementation of handler applier with no special filtering.
  */
 template<class Graph>
-class SimpleHandlerApplier: public HandlerApplier<Graph> {
+class SimpleHandlerApplier: public HandlerApplier<typename Graph::VertexId,
+		typename Graph::EdgeId> {
 public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
 	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const {
-		handler.HandleAdd(v);
+		handler->HandleAdd(v);
 	}
 
 	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const {
-		handler.HandleAdd(e);
+		handler->HandleAdd(e);
 	}
 
-	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const {
-		handler.HandleDelete(v);
+	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler,
+			VertexId v) const {
+		handler->HandleDelete(v);
 	}
 
 	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const {
-		handler.HandleDelete(e);
+		handler->HandleDelete(e);
 	}
 
 	virtual void ApplyMerge(ActionHandler<VertexId, EdgeId> *handler,
 			vector<EdgeId> old_edges, EdgeId new_edge) const {
-		handler.HandleMerge(old_edges, new_edge);
+		handler->HandleMerge(old_edges, new_edge);
 	}
 
-	virtual void ApplyGlue(ActionHandler<VertexId, EdgeId> *handler, EdgeId old_edge,
-			EdgeId new_edge) const {
-		handler.HandleGlue(old_edge, new_edge);
+	virtual void ApplyGlue(ActionHandler<VertexId, EdgeId> *handler,
+			EdgeId new_edge, EdgeId edge1, EdgeId edge2) const {
+		handler->HandleGlue(new_edge, edge1, edge2);
 	}
 
 	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
 			EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) const {
-		handler.HandleSplit(old_edge, new_edge1, new_edge2);
+		handler->HandleSplit(old_edge, new_edge1, new_edge2);
 	}
 
 	virtual ~SimpleHandlerApplier() {
@@ -210,7 +212,8 @@ public:
  * was called and for reverse-complement parameters. Also certain assertions were added for bad cases.
  */
 template<class Graph>
-class PairedHandlerApplier: public HandlerApplier<Graph> {
+class PairedHandlerApplier: public HandlerApplier<typename Graph::VertexId,
+		typename Graph::EdgeId> {
 private:
 	Graph &graph_;
 public:
@@ -225,18 +228,18 @@ public:
 		VertexId rcv = graph_.conjugate(v);
 		TRACE(
 				"Triggering add event of handler " << handler->name()
-						<< " to vertex " << v);
+				<< " to vertex " << v);
 		handler->HandleAdd(v);
 		if (v != rcv) {
 			TRACE(
 					"Triggering add event of handler " << handler->name()
-							<< " to vertex " << rcv
-							<< " which is conjugate to " << v);
+					<< " to vertex " << rcv
+					<< " which is conjugate to " << v);
 			handler->HandleAdd(rcv);
 		} else {
 			TRACE(
 					"Vertex " << v
-							<< "is self-conjugate thus handler is not applied the second time");
+					<< "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
@@ -244,37 +247,38 @@ public:
 		EdgeId rce = graph_.conjugate(e);
 		TRACE(
 				"Triggering add event of handler " << handler->name()
-						<< " to edge " << e << ". Event is Add");
+				<< " to edge " << e << ". Event is Add");
 		handler->HandleAdd(e);
 		if (e != rce) {
 			TRACE(
 					"Triggering add event of handler " << handler->name()
-							<< " to edge " << rce << " which is conjugate to "
-							<< e);
+					<< " to edge " << rce << " which is conjugate to "
+					<< e);
 			handler->HandleAdd(rce);
 		} else {
 			TRACE(
 					"Edge " << e
-							<< "is self-conjugate thus handler is not applied the second time");
+					<< "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
-	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const {
+	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler,
+			VertexId v) const {
 		VertexId rcv = graph_.conjugate(v);
 		TRACE(
 				"Triggering delete event of handler " << handler->name()
-						<< " to vertex " << v);
+				<< " to vertex " << v);
 		handler->HandleDelete(v);
 		if (v != rcv) {
 			TRACE(
 					"Triggering delete event of handler " << handler->name()
-							<< " to vertex " << rcv
-							<< " which is conjugate to " << v);
+					<< " to vertex " << rcv
+					<< " which is conjugate to " << v);
 			handler->HandleDelete(rcv);
 		} else {
 			TRACE(
 					"Vertex " << v
-							<< "is self-conjugate thus handler is not applied the second time");
+					<< "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
@@ -282,18 +286,18 @@ public:
 		EdgeId rce = graph_.conjugate(e);
 		TRACE(
 				"Triggering delete event of handler " << handler->name()
-						<< " to edge " << e);
+				<< " to edge " << e);
 		handler->HandleDelete(e);
 		if (e != rce) {
 			TRACE(
 					"Triggering delete event of handler " << handler->name()
-							<< " to edge " << rce << " which is conjugate to "
-							<< e);
+					<< " to edge " << rce << " which is conjugate to "
+					<< e);
 			handler->HandleDelete(rce);
 		} else {
 			TRACE(
 					"Edge " << e
-							<< "is self-conjugate thus handler is not applied the second time");
+					<< "is self-conjugate thus handler is not applied the second time");
 		}
 
 	}
@@ -302,14 +306,14 @@ public:
 			vector<EdgeId> old_edges, EdgeId new_edge) const {
 		TRACE(
 				"Triggering merge event of handler " << handler->name()
-						<< " with new edge " << new_edge);
+				<< " with new edge " << new_edge);
 		EdgeId rce = graph_.conjugate(new_edge);
 		handler->HandleMerge(old_edges, new_edge);
 		if (new_edge != rce) {
 			TRACE(
 					"Triggering merge event of handler " << handler->name()
-							<< " with new edge " << rce
-							<< " which is conjugate to " << new_edge);
+					<< " with new edge " << rce
+					<< " which is conjugate to " << new_edge);
 			vector < EdgeId > ecOldEdges;
 			for (int i = old_edges.size() - 1; i >= 0; i--) {
 				ecOldEdges.push_back(graph_.conjugate(old_edges[i]));
@@ -318,15 +322,15 @@ public:
 		} else {
 			TRACE(
 					"Edge " << new_edge
-							<< "is self-conjugate thus handler is not applied the second time");
+					<< "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
-	virtual void ApplyGlue(ActionHandler<VertexId, EdgeId> *handler, EdgeId new_edge, EdgeId edge1,
-			EdgeId edge2) const {
+	virtual void ApplyGlue(ActionHandler<VertexId, EdgeId> *handler,
+			EdgeId new_edge, EdgeId edge1, EdgeId edge2) const {
 		TRACE(
 				"Triggering glue event of handler " << handler->name()
-						<< " with old edge " << edge1);
+				<< " with old edge " << edge1);
 		EdgeId rcOldEdge = graph_.conjugate(edge1);
 		EdgeId rcNewEdge = graph_.conjugate(edge2);
 		assert(edge1 != edge2);
@@ -337,13 +341,14 @@ public:
 		if (edge1 != rcOldEdge) {
 			TRACE(
 					"Triggering merge event of handler " << handler->name()
-							<< " with old edge " << edge1
-							<< " which is conjugate to " << rcOldEdge);
-			handler->HandleGlue(graph_.conjugate(new_edge), rcOldEdge, rcNewEdge);
+					<< " with old edge " << edge1
+					<< " which is conjugate to " << rcOldEdge);
+			handler->HandleGlue(graph_.conjugate(new_edge), rcOldEdge,
+					rcNewEdge);
 		} else {
 			TRACE(
 					"Edge " << edge1
-							<< "is self-conjugate thus handler is not applied the second time");
+					<< "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
@@ -352,19 +357,19 @@ public:
 		EdgeId rce = graph_.conjugate(old_edge);
 		TRACE(
 				"Triggering split event of handler " << handler->name()
-						<< " with old edge " << old_edge);
+				<< " with old edge " << old_edge);
 		handler->HandleSplit(old_edge, new_edge_1, new_edge2);
 		if (old_edge != rce) {
 			TRACE(
 					"Triggering split event of handler " << handler->name()
-							<< " with old edge " << old_edge
-							<< " which is conjugate to " << rce);
+					<< " with old edge " << old_edge
+					<< " which is conjugate to " << rce);
 			handler->HandleSplit(rce, graph_.conjugate(new_edge2),
 					graph_.conjugate(new_edge_1));
 		} else {
 			TRACE(
 					"Edge " << old_edge
-							<< "is self-conjugate thus handler is not applied the second time");
+					<< "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 

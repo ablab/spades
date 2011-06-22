@@ -177,6 +177,9 @@ private:
 	void FireGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2);
 	void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2);
 
+	DeBruijnGraph(const DeBruijnGraph&);
+	DeBruijnGraph& operator=(const DeBruijnGraph&);
+
 public:
 
 	//todo temporary method!!!
