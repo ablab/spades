@@ -4,8 +4,9 @@
 #include "graph_printer.hpp"
 #include "graph_labeler.hpp"
 #include "omni_utils.hpp"
-#include <stack>
-#include <queue>
+#include "stack"
+#include "queue"
+#include "dijkstra.hpp"
 
 namespace gvis {
 
@@ -84,7 +85,8 @@ public:
 		}
 		DEBUG("Vertices printed");
 		for (auto it = super::g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it), gl_.label(*it));
+			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it),
+					gl_.label(*it));
 		}
 		DEBUG("Edges printed");
 		gp_.close();
@@ -249,6 +251,79 @@ public:
 };
 
 template<class Graph>
+class ComponentFinder: public UnorientedDijkstra<Graph, size_t> {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef UnorientedDijkstra<Graph, size_t> super;
+	set<EdgeId> &edges_;
+
+public:
+	ComponentFinder(Graph &g, set<EdgeId> &edges) :
+		super(g), edges_(edges) {
+	}
+
+	virtual ~ComponentFinder() {
+	}
+
+	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, size_t length) {
+		return edges_.count(edge) != 0;
+	}
+};
+
+template<class Graph>
+class NeighbourhoodFinder: public UnorientedDijkstra<Graph, size_t> {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef UnorientedDijkstra<Graph, size_t> super;
+	set<EdgeId> &edges_;
+	const size_t bound_;
+
+public:
+	NeighbourhoodFinder(Graph &g, set<EdgeId> &edges, size_t bound) :
+		super(g), edges_(edges), bound_(bound) {
+	}
+
+	virtual ~NeighbourhoodFinder() {
+	}
+
+	virtual bool CheckProcessVertex(VertexId vertex, size_t distance) {
+		return distance <= bound_;
+	}
+
+	virtual size_t GetLength(EdgeId edge) {
+		if (edges_.count(edge) != 0)
+			return 0;
+		else
+			return this->GetGraph().length(edge);
+	}
+
+};
+
+template<class Graph>
+class SubgraphDijkstra: public UnorientedDijkstra<Graph, size_t> {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef UnorientedDijkstra<Graph, size_t> super;
+	const set<VertexId> &subgraph_;
+
+public:
+	SubgraphDijkstra(Graph &g, const set<VertexId> &subgraph) :
+		super(g), subgraph_(subgraph) {
+	}
+
+	virtual ~SubgraphDijkstra() {
+	}
+
+	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, size_t length) {
+		return subgraph_.count(vertex) != 0;
+	}
+
+};
+
+template<class Graph>
 class ErrorComponentSplitter: public GraphSplitter<typename Graph::VertexId> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
@@ -268,84 +343,31 @@ public:
 	virtual ~ErrorComponentSplitter() {
 	}
 
-	size_t FindComponent(VertexId start_vertex, set<VertexId> &component) {
-		std::stack<VertexId> st;
-		st.push(start_vertex);
+	set<VertexId> FindComponent(VertexId start_vertex) {
+		ComponentFinder<Graph> cf(graph_, black_edges_);
+		cf.run(start_vertex);
+		vector < VertexId > result = cf.VisitedVertices();
+		return set<VertexId> (result.begin(), result.end());
+	}
+
+	set<VertexId> FindNeighbourhood(VertexId start, size_t bound) {
+		NeighbourhoodFinder<Graph> nf(graph_, black_edges_, bound);
+		nf.run(start);
+		vector < VertexId > result = nf.VisitedVertices();
+		return set<VertexId> (result.begin(), result.end());
+	}
+
+	size_t FindDiameter(const set<VertexId> &component) {
 		size_t result = 0;
-		while (!st.empty()) {
-			VertexId next = st.top();
-			st.pop();
-			if (visited_.find(next) == visited_.end()) {
-				component.insert(next);
-				visited_.insert(next);
-				vector < EdgeId > outgoing = graph_.OutgoingEdges(next);
-				for (size_t i = 0; i < outgoing.size(); i++) {
-					if (black_edges_.find(outgoing[i]) != black_edges_.end()) {
-						//						black_edges_.erase(outgoing[i]);
-						result += graph_.length(outgoing[i]);
-						st.push(graph_.EdgeEnd(outgoing[i]));
-					}
-				}
-				vector < EdgeId > incoming = graph_.IncomingEdges(next);
-				//				cout << outgoing.size() << " " << incoming.size() << " "
-				//						<< next << endl;
-				for (size_t i = 0; i < incoming.size(); i++) {
-					if (black_edges_.find(incoming[i]) != black_edges_.end()) {
-						//						black_edges_.erase(incoming[i]);
-						result += graph_.length(incoming[i]);
-						st.push(graph_.EdgeStart(incoming[i]));
-					}
-				}
+		SubgraphDijkstra<Graph> sd(graph_, component);
+		for (auto it = component.begin(); it != component.end(); ++it) {
+			sd.run(*it);
+			auto bounds = sd.GetDistances();
+			for (auto it = bounds.first; it != bounds.second; ++it) {
+				result = std::max(result, it->second);
 			}
 		}
 		return result;
-	}
-
-	void ProcessOutgoing(std::priority_queue<pair<size_t, VertexId> > &q,
-			set<VertexId> &was, VertexId next, size_t next_length, size_t bound) {
-		vector < EdgeId > outgoing = graph_.OutgoingEdges(next);
-		for (size_t i = 0; i < outgoing.size(); i++) {
-			VertexId v = graph_.EdgeEnd(outgoing[i]);
-			if (was.find(v) == was.end()) {
-				size_t size = next_length + graph_.length(outgoing[i]);
-				q.push(make_pair(-size, v));
-			}
-		}
-	}
-
-	void ProcessIncoming(std::priority_queue<pair<size_t, VertexId> > &q,
-			set<VertexId> &was, VertexId next, size_t next_length, size_t bound) {
-		vector < EdgeId > incoming = graph_.IncomingEdges(next);
-		for (size_t i = 0; i < incoming.size(); i++) {
-			VertexId v = graph_.EdgeStart(incoming[i]);
-			if (was.find(v) == was.end()) {
-				size_t size = next_length + graph_.length(incoming[i]);
-				q.push(make_pair(-size, v));
-			}
-		}
-	}
-
-	void Dijkstra(set<VertexId> &component, size_t bound) {
-		set < VertexId > was;
-		std::priority_queue < pair<size_t, VertexId> > q;
-		for (auto iterator = component.begin(); iterator != component.end(); ++iterator) {
-			q.push(make_pair(0, *iterator));
-		}
-		while (!q.empty()) {
-			auto next_pair = q.top();
-			q.pop();
-			VertexId next = next_pair.second;
-			size_t next_length = -next_pair.first;
-			if (was.find(next) != was.end()) {
-				continue;
-			}
-			component.insert(next_pair.second);
-			was.insert(next_pair.second);
-			if (next_length <= bound) {
-				ProcessOutgoing(q, was, next, next_length, bound);
-				ProcessIncoming(q, was, next, next_length, bound);
-			}
-		}
 	}
 
 	virtual vector<VertexId> NextComponent() {
@@ -355,13 +377,12 @@ public:
 		}
 		EdgeId next = *iterator_;
 		++iterator_;
-		set < VertexId > component;
-		//		cout << "oppa" << endl;
-		size_t component_size = FindComponent(graph_.EdgeEnd(next), component);
-		//		cout << component.size() << endl;
-		Dijkstra(component, 2 * component_size);
-		//		cout << component.size() << endl;
-		return vector<VertexId> (component.begin(), component.end());
+		set < VertexId > component = FindComponent(graph_.EdgeEnd(next));
+		size_t component_size = FindDiameter(component);
+		set < VertexId > neighbourhood = FindNeighbourhood(
+				graph_.EdgeEnd(next), 1.5 * component_size);
+		visited_.insert(component.begin(), component.end());
+		return vector<VertexId> (neighbourhood.begin(), neighbourhood.end());
 	}
 
 	virtual bool Finished() {
@@ -414,7 +435,7 @@ string ConstructComponentName(string file_name, size_t cnt) {
 	ss << "_error_" << cnt;
 	string res = file_name;
 	res.insert(res.length() - 4, ss.str());
-//	cout << res << endl;
+	//	cout << res << endl;
 	return res;
 }
 
@@ -427,7 +448,6 @@ void WriteErrors(const string& file_name, const string& graph_name, Graph& g,
 	ErrorComponentSplitter<Graph> splitter(g, black);
 	size_t cnt = 0;
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	//	cout << "oppa" << endl;
 	while (!splitter.Finished() && cnt < 100) {
 		fstream filestr;
 		filestr.open(ConstructComponentName<Graph> (file_name, cnt).c_str(),
