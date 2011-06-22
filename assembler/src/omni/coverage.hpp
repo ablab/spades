@@ -22,7 +22,7 @@ private:
 
 	Graph &g_;
 
-//	map_type storage;
+	map_type storage_;
 
 	size_t KPlusOneMerCoverage(EdgeId edge) const {
 		return (size_t) (coverage(edge) * g_.length(edge));
@@ -55,21 +55,21 @@ public:
 	}
 
 	void SetCoverage(EdgeId edge, size_t cov) {
-		edge->coverage_ = cov;
+		storage_[edge] = cov;
 	}
 
 	/**
 	 * Method returns average coverage of the edge
 	 */
 	double coverage(EdgeId edge) const {
-		return (double) edge->coverage_ / g_.length(edge);
+		return (double) storage_.find(edge)->second / g_.length(edge);
 	}
 
 	/**
 	 * Method increases coverage value
 	 */
 	void IncCoverage(EdgeId edge, int toAdd) {
-		edge->coverage_ += toAdd;
+		storage_[edge] += toAdd;
 	}
 
 	/**
@@ -86,6 +86,10 @@ public:
 			stream >> read;
 			ProcessRead(threader, read);
 		}
+	}
+
+	virtual void HandleDelete(EdgeId edge) {
+		storage_.erase(edge);
 	}
 
 	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {

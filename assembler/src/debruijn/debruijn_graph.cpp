@@ -180,8 +180,8 @@ EdgeId DeBruijnGraph::HiddenAddEdge(VertexId v1, VertexId v2,
 		rcEdge = AddSingleEdge(v2->conjugate(), v1->conjugate(), !nucls,
 				coverage);
 	}
-	result->Setconjugate(rcEdge);
-	rcEdge->Setconjugate(result);
+	result->set_conjugate(rcEdge);
+	rcEdge->set_conjugate(result);
 	return result;
 }
 
