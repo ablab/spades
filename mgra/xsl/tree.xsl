@@ -5,6 +5,13 @@
     <xsl:template match="tree">
         <html>
             <title>MGRA tree</title>
+            <style type="text/css">
+                .end0{color:red}
+                .end1{color:green}
+                .end2{color:magenta}
+                .end3{color:orange}
+            </style>
+
             <script>
                 var values =  [
                     <xsl:apply-templates select="row/cell/text"/>
@@ -79,7 +86,9 @@
     </xsl:template>
 
     <xsl:template match="end">
-        <xsl:value-of select="id"/><xsl:value-of select="type"/>&#160;
+        <span class="end{color}">
+            <xsl:value-of select="id"/><xsl:value-of select="type"/>&#160;
+        </span>
     </xsl:template>
 
 
@@ -97,6 +106,9 @@
 
     <xsl:template match="gene">
         <a href="#{id}" title="{id}">
+            <xsl:if test="end">
+                <xsl:attribute name="class">end<xsl:value-of select="end/color"/></xsl:attribute>
+            </xsl:if>
             <xsl:choose>
                 <xsl:when test="direction='minus'">&lt;</xsl:when>
                 <xsl:otherwise>&gt;</xsl:otherwise>
