@@ -41,14 +41,13 @@ class RepeatResolver {
 
 public:
 
-	class EdgeInfo{
+	class EdgeInfo {
 
 	public:
-		static const int MAXD = 70;
-		int dir;
+		static const int MAXD = 100;
 
 
-		EdgeInfo(const EdgeId edge_, int d_, int dir_, PairInfo &lp_) : edge(edge_), d(d_), lp(lp_), dir(dir_){
+		EdgeInfo(const PairInfo &lp_, const int dir_ , const EdgeId edge_, const int d_) : lp(lp_), dir(dir_), edge(edge_), d(d_){
 
 		}
 		inline EdgeId getEdge(){
@@ -85,6 +84,7 @@ public:
 		}
 	public:
 		PairInfo lp;
+		int dir;
 	private:
 		EdgeId edge;
 		int d;
@@ -130,7 +130,8 @@ public:
 		}
 		for(auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			DEBUG("Adding edge from " << old_to_new[old_graph.EdgeStart(*e_iter)] <<" to " << old_to_new[old_graph.EdgeEnd(*e_iter)]);
-			EdgeId new_edge = new_graph.AddEdge(old_to_new[old_graph.EdgeStart(*e_iter)], old_to_new[old_graph.EdgeEnd(*e_iter)], old_graph.EdgeNucls(*e_iter), 0);
+//			DEBUG("Setting coverage to edge length " << old_graph.length(*e_iter) << "  cov: " << old_graph.coverage(*e_iter));
+			EdgeId new_edge = new_graph.AddEdge(old_to_new[old_graph.EdgeStart(*e_iter)], old_to_new[old_graph.EdgeEnd(*e_iter)], old_graph.EdgeNucls(*e_iter), old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
 			edge_labels[new_edge] = *e_iter;
 			DEBUG("Adding edge " << new_edge<< " from" << *e_iter);
 			old_to_new_edge[*e_iter] = new_edge;
@@ -191,18 +192,28 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v){
 	DEBUG("splitting to "<< k <<" parts");
 	vector<VertexId> res;
 	res.resize(k);
+	if (k == 1) {
+		DEBUG("NOTHING TO SPLIT:( " );
+		res[0] = v;
+		return res;
+	}
 	vector<EdgeId> edgeIds[2];
 //TODO: fix labels
 	edgeIds[0] = new_graph.OutgoingEdges(v);
 	edgeIds[1] = new_graph.IncomingEdges(v);
 	vector<unordered_map<EdgeId, EdgeId> > new_edges(k);
+	unordered_map<EdgeId, int> old_paired_coverage;
+	unordered_map<EdgeId, int> new_paired_coverage;
 	//Remember-because of loops there can be same edges in edgeIds[0] and edgeIds[1]
 	for(int i = 0; i < k ; i++) {
 		res[i] = new_graph.AddVertex();
 	}
 	for(size_t i = 0; i < edge_info_colors.size(); i++) {
 		EdgeId le = edge_infos[i].lp.first;
-		DEBUG("replacing edge " << le<<" with label " << edge_labels[le] << " "<< (new_edges[edge_info_colors[i]].find(le) == new_edges[edge_info_colors[i]].end()));
+		if (old_paired_coverage.find(le) == old_paired_coverage.end())
+			old_paired_coverage[le] = 0;
+		old_paired_coverage[le]++;
+		TRACE("replacing edge " << le<<" with label " << edge_labels[le] << " "<< (new_edges[edge_info_colors[i]].find(le) == new_edges[edge_info_colors[i]].end()));
 
 		EdgeId res_edge = NULL;
 		if (edge_infos[i].dir == 0 ) {
@@ -221,18 +232,25 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v){
 					res_edge = new_graph.AddEdge( new_graph.EdgeStart(le),res[edge_info_colors[i]], new_graph.EdgeNucls(le), 0);
 			}
 		}
-		DEBUG("replaced");
+		TRACE("replaced");
 		if (res_edge != NULL) {
 			new_edges[edge_info_colors[i]].insert(make_pair(le, res_edge));
 			edge_labels[res_edge] = edge_labels[le];
-			DEBUG("before replace first Edge");
+			TRACE("before replace first Edge");
 			paired_di_data.ReplaceFirstEdge(edge_infos[i].lp, res_edge);
+			new_paired_coverage[new_edges[edge_info_colors[i]][le]] = 0;
 		}
 		else {
 			paired_di_data.ReplaceFirstEdge(edge_infos[i].lp, new_edges[edge_info_colors[i]][le]);
 		}
+		new_paired_coverage[new_edges[edge_info_colors[i]][le]] ++;
 	}
-
+	for(int i = 0; i < k; i ++) {
+		for (auto edge_iter = new_edges[i].begin(); edge_iter != new_edges[i].end(); edge_iter ++) {
+			DEBUG("setting coverage, from edgeid "<< edge_iter->first<<" length "<<new_graph.length(edge_iter->first) <<"   "<< new_graph.coverage(edge_iter->first) <<" taking "<< new_paired_coverage[edge_iter->second] <<"/"<< old_paired_coverage[edge_iter->first]);
+			new_graph.SetCoverage(edge_iter->second, new_graph.length(edge_iter->first) * new_graph.coverage(edge_iter->first) * new_paired_coverage[edge_iter->second]/ old_paired_coverage[edge_iter->first]);
+		}
+	}
 
 	new_graph.ForceDeleteVertex(v);
 	return res;
@@ -265,9 +283,7 @@ void RepeatResolver<Graph>::ResolveRepeats(){
 		}
 	}
 	INFO("total vert" << sum_count);
-	omnigraph::Compressor<Graph> compressor(new_graph);
-	compressor.CompressAllVertices();
-//	gvis::WriteSimple(  "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
+ //	gvis::WriteSimple(  "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
 }
 
 template<class Graph>
@@ -308,11 +324,13 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo( Graph &new_graph, PairIn
 				EdgeId right_id = tmp[j].second;
 				EdgeId left_id = tmp[j].first;
 				int d = tmp[j].d;
+//				int w = tmp[j].weight;
+//				if (w < 10) continue;
 				int new_d = d;
 				if (dir == 1)
 					new_d -= new_graph.length(left_id);
 				if (d * mult > 0) {
-					EdgeInfo ei(right_id, new_d, dir, tmp[j]);
+					EdgeInfo ei(tmp[j], dir, right_id, new_d);
 					edge_infos.push_back(ei);
 //					DEBUG(right_id);
 					neighbours.insert(right_id);
