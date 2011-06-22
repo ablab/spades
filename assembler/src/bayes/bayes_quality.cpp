@@ -58,9 +58,6 @@ MatchResults BayesQualityGenome::ProcessOneReadBQ(const Sequence & seq, const QV
 		fill(qv[i]->begin(), qv[i]->end(), VERYLARGEQ);
 	}
 	
-	// INFO("thread " << omp_get_thread_num() << ": " << seq.str());
-	// { ostringstream os; for (size_t i=0; i<indices.size(); ++i) os << indices[i] << " "; INFO(os.str()); }
-
 	#ifdef USE_PREPROCESSING
 	PSeq curpseq = PSeq(genome_.Subseq(0,PREPROCESS_SEQ_LENGTH));
 	#endif
@@ -266,7 +263,6 @@ MatchResults BayesQualityGenome::ReadBQPreprocessed(const Read & r, size_t readn
 	}
 	if (rdind < bwres.size()) {
 		for (size_t j=0; j<bwres[rdind].size(); ++j) {
-			// INFO(bwres[rdind][j][BWMAP_IND_REVC] << " " << bwres[rdind][j][BWMAP_IND_GIND] << " " << bwres[rdind][j][BWMAP_IND_RIND]);
 			if (bwres[rdind][j][BWMAP_IND_REVC] == 0) {
 				for (size_t match = bwres[rdind][j][BWMAP_IND_GIND]-bwres[rdind][j][BWMAP_IND_RIND] - INS;
 						match < bwres[rdind][j][BWMAP_IND_GIND]-bwres[rdind][j][BWMAP_IND_RIND] + DEL + 1;
@@ -274,17 +270,11 @@ MatchResults BayesQualityGenome::ReadBQPreprocessed(const Read & r, size_t readn
 				bwmatches.push_back( match );
 
 				bwmatches.push_back(bwres[rdind][j][BWMAP_IND_GIND] - bwres[rdind][j][BWMAP_IND_RIND] );
-				// INFO(r.getSequence());
-				// INFO(genome_.Subseq(bwres[rdind][j][BWMAP_IND_GIND] - bwres[rdind][j][BWMAP_IND_RIND],
-				//				 	bwres[rdind][j][BWMAP_IND_GIND] - bwres[rdind][j][BWMAP_IND_RIND] + r.getSequence().size()));
 			} else {
 				for (size_t match = bwres[rdind][j][BWMAP_IND_GIND]-(s.size() - BOWTIE_SEED_LENGTH - bwres[rdind][j][BWMAP_IND_RIND]) - INS;
 							match < bwres[rdind][j][BWMAP_IND_GIND]-(s.size() - BOWTIE_SEED_LENGTH - bwres[rdind][j][BWMAP_IND_RIND]) + DEL + 1;
 							++match)
 					cbwmatches.push_back( match );
-				// INFO(!(r.getSequence()));
-				// INFO(genome_.Subseq( (bwres[rdind][j][BWMAP_IND_GIND] - (s.size() - BOWTIE_SEED_LENGTH - bwres[rdind][j][BWMAP_IND_RIND]) ),
-				//					  (bwres[rdind][j][BWMAP_IND_GIND] - (s.size() - BOWTIE_SEED_LENGTH - bwres[rdind][j][BWMAP_IND_RIND]) + r.getSequence().size())));
 			}
 		}
 	}
