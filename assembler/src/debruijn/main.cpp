@@ -5,6 +5,8 @@
 #include "config.hpp"
 #include "common/logging.hpp"
 #include "common/simple_tools.hpp"
+#include <sys/types.h>
+#include <sys/stat.h>
 
 namespace {
 
@@ -16,7 +18,7 @@ std::string MakeLaunchTimeDirName() {
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
 
-	strftime(buffer, 80, "%d.%m.%y %H:%M", timeinfo);
+	strftime(buffer, 80, "%d.%m_%H:%M", timeinfo);
 	return string(buffer);
 }
 }
@@ -34,6 +36,10 @@ int main()
 	string input_dir = CONFIG.read<string> ("input_dir");
 	string output_dir = CONFIG.read<string> ("output_dir")
 			+ MakeLaunchTimeDirName() + "/";
+
+//	std::cout << "here " << mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH) << std::endl;
+	mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH);
+
 	string dataset = CONFIG.read<string> ("dataset");
 
 	string genome_filename = input_dir + CONFIG.read<string> ("reference_genome");

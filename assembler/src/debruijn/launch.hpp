@@ -23,6 +23,8 @@
 #include "seq_map.hpp"
 #include "ID_track_handler.hpp"
 #include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 namespace debruijn_graph {
 
@@ -75,10 +77,12 @@ void ProduceInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 
 template<size_t k>
 void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const string& genome, const string& file_name, const string& graph_name) {
+		const string& genome, const string& folder, const string& file_name, const string& graph_name) {
 	CountStats<k> (g, index, genome);
 	Path<typename Graph::EdgeId> path = FindGenomePath<k> (genome, g, index);
-	DetailedWriteToDot(g, file_name, graph_name, path);
+
+	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH);
+	DetailedWriteToDot(g, folder + file_name, graph_name, path);
 }
 
 void ClipTips(Graph &g) {
@@ -183,15 +187,18 @@ void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 
 template<size_t k>
 void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index, size_t iteration_count, const string& genome, const string& output_folder) {
+	ProduceDetailedInfo<k> (g, index, genome,
+			output_folder + "/before_simplification/", "graph.dot",
+			"non_simplified_graph");
 	for (size_t i = 0; i < iteration_count; i++) {
 		ClipTips(g);
 		ProduceDetailedInfo<k> (g, index, genome,
-				output_folder + "/tips_clipped_" + ToString(i) + "/graph.dot",
+				output_folder + "/tips_clipped_" + ToString(i) + "/", "graph.dot",
 				"no_tip_graph");
 
 		RemoveBulges(g);
 		ProduceDetailedInfo<k> (g, index, genome,
-				output_folder + "/bulges_removed_" + ToString(i) + "/graph.dot",
+				output_folder + "/bulges_removed_" + ToString(i) + "/", "graph.dot",
 				"no_bulge_graph");
 
 		RemoveLowCoverageEdges(g);
@@ -199,8 +206,8 @@ void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index, size_t iteration_co
 				g,
 				index,
 				genome,
-				output_folder + "/erroneous_edges_removed_" + ToString(i)
-						+ "/graph.dot", "no_erroneous_edges_graph");
+				output_folder + "/erroneous_edges_removed_" + ToString(i) + "/",
+						"graph.dot", "no_erroneous_edges_graph");
 	}
 }
 
@@ -220,6 +227,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 
 	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 			"edge_graph");
+
 	//	paired_index.OutputData(output_folder + "edges_dist.txt");
 
 	SimplifyGraph<k>(g, index, 3, genome, output_folder);
