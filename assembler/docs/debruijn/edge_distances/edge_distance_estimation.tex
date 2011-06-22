@@ -43,8 +43,11 @@ Variants are:
 \textbf{Input:} \Dbg{}, collection of paired reads
 \textbf{Output:} mapping from triples $(a,b,D)$ to $w$, where $a,b$ are some edges, $D$ is probability distribution of distance between $a,b$ and $w$ is weight value that represent our certainty in existence of corresponding distance.
 
-\remark{Single pair of edges can appear in more than one triple, but then corresponding distributions should be somewhat divided from each other}
+\remark{Single pair of edges can appear in more than one triple, but then corresponding distributions should be somewhat divided from each other.}
 
+\remark{Triples containing information about distances between $(a,a)$ are ok.}
+
+\remark{Trivial information can be removed.}
 
 \section{Possible solutions}
 
