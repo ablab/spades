@@ -128,6 +128,35 @@ public:
 
 };
 
+template<class Graph>
+class DistanceCounter {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
+	Graph& graph_;
+	Dijkstra<Graph> dijkstra_;
+	EdgeId prev_;
+	bool ready_;
+public:
+	DistanceCounter(Graph &graph) :graph_(graph), dijkstra_(graph), ready_(false){
+	}
+
+	bool IsReachable(VertexId from, VertexId to) {
+		if(!ready_ || prev_ != from) {
+			dijkstra_.run(from);
+		}
+		return dijkstra_.DistanceCounted(to);
+	}
+
+	size_t Distance(VertexId from, VertexId to) {
+		if(!ready_ || prev_ != from) {
+			dijkstra_.run(from);
+		}
+		return dijkstra_.GetDistance(to);
+	}
+};
+
 template<class Graph, typename distance_t = size_t>
 class UnorientedDijkstra: public Dijkstra<Graph, distance_t> {
 private:

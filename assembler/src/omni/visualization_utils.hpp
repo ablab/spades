@@ -434,6 +434,7 @@ string ConstructComponentName(string file_name, size_t cnt) {
 	stringstream ss;
 	ss << "_error_" << cnt;
 	string res = file_name;
+	//todo refactor
 	res.insert(res.length() - 4, ss.str());
 	//	cout << res << endl;
 	return res;
