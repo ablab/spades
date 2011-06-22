@@ -46,4 +46,10 @@
         </xslt>
     </target>
 
+    <target name="xsltonly">
+        <xslt basedir="." destdir="." includes="tree.xml" extension=".html"
+              style="${xsl.dir}/tree.xsl">
+        </xslt>
+    </target>
+
 </project>
