@@ -15,7 +15,7 @@ public class Transformation {
     public Transformation(String text) {
         String[] data = text.split("[ \t]");
         for (int i = 0; i < ends.length; i++) {
-            ends[i] = new End(data[i]);
+            ends[i] = new End(i, data[i]);
         }
     }
 
@@ -25,10 +25,16 @@ public class Transformation {
             for (End end : ends) {
                 if (chromosome.contains(end)) {
                     this.chromosomes.add(chromosome);
-                    before.addContent(chromosome.toXml());
                     break;
                 }
             }
+        }
+        for (Chromosome chromosome : chromosomes) {
+            chromosome.clearEnds();
+            for (End end : ends) {
+                chromosome.mark(end);
+            }
+            before.addContent(chromosome.toXml());
         }
     }
 
