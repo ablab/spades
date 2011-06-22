@@ -11,5 +11,5 @@ set output FN_FIND
 plot [-0.5:2.5] [0:] FILE_NAME_F index 0 using ($2):xticlabels(3) title MAP1 with histograms, FILE_NAME_F index 1 using ($2):xticlabels(3) title MAP2 with histograms, FILE_NAME_F index 2 using ($2):xticlabels(3) title MAP3 with histograms, FILE_NAME_F index 3 using ($2):xticlabels(3) title MAP4 with histograms, FILE_NAME_F index 4 using ($2):xticlabels(3) title MAP5 with histograms
 set ylabel 'load_factor'
 set output FN_MEM
-plot [-0.5:2.5] [0:] FILE_NAME_M index 0 using ($2):xticlabels(3) title MAP1 with histograms, FILE_NAME_M index 1 using ($2):xticlabels(3) title MAP2 with histograms, FILE_NAME_M index 2 using ($2):xticlabels(3) title MAP3 with histograms, FILE_NAME_M index 3 using ($2):xticlabels(3) title MAP4 with histograms, FILE_NAME_M index 4 using ($2):xticlabels(3) title MAP5 with histograms
+plot [-0.5:2.5] [0:1] FILE_NAME_M index 0 using ($2):xticlabels(3) title MAP1 with histograms, FILE_NAME_M index 1 using ($2):xticlabels(3) title MAP2 with histograms, FILE_NAME_M index 2 using ($2):xticlabels(3) title MAP3 with histograms, FILE_NAME_M index 3 using ($2):xticlabels(3) title MAP4 with histograms, FILE_NAME_M index 4 using ($2):xticlabels(3) title MAP5 with histograms
 

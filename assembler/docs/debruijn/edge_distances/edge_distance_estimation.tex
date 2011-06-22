@@ -1,0 +1,53 @@
+\documentclass[12pt]{article}
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{cmap}
+
+\newcommand{\remark}[1]{\textbf{Remark:} #1}
+\newcommand{\dbg}{de Bruijn graph}
+\newcommand{\Dbg}{De Bruijn graph}
+\newcommand{\ignore}[1]{}
+
+\title{Edge distance estimation strategies}
+\author{Anton Bankevich, Sergey Nurk, Alexander Sirotkin}
+\date{\today}	
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section{Intro}
+
+\subsection{Motivation}
+Analysing paired reads we can obtain information about ``true'' distances between some edges of \dbg{} in genome.
+
+This information is very important for repeat resolving and for long contig generation.
+
+\subsection{How to represent distance variations}
+As we all know, the task is not trivial because of great variation in actual insert sizes of paired reads around the value that is suggested by the library.
+
+Before discussion of the strategies to overcome this problem, we should discuss how are we going to represent distance distribution in the estimation process. 
+Variants are:
+\begin{itemize}
+\item average value only
+\item average value and variance
+\item some trust interval
+\end{itemize}
+
+\subsection{Problem statement}
+
+\textbf{Input:} \Dbg{}, collection of paired reads
+\textbf{Output:} mapping from triples $(a,b,D)$ to $w$, where $a,b$ are some edges, $D$ is probability distribution of distance between $a,b$ and $w$ is weight value that represent our certainty in existence of corresponding distance.
+
+\remark{Single pair of edges can appear in more than one triple, but then corresponding distributions should be somewhat divided from each other}
+
+
+\section{Possible solutions}
+
+\section{Current progress}
+
+\end{document}

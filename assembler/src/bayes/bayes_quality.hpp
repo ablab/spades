@@ -38,10 +38,10 @@ typedef vector< vector< vector<size_t> > > BowtieResults;
 
 
 // size of read batch that we read from file
-#define READ_BATCH 1000
+#define READ_BATCH 10000
 
 // number of threads
-#define THREADS_NUM 2
+#define THREADS_NUM 3
 
 // number of reads to skip from the beginning of the file
 #define SKIP_READS 0
@@ -162,21 +162,12 @@ private:
 	bool isAvailable(size_t readno, size_t j, const PSeq & curpseq);
 
 public:
-	/*BayesQualityGenome(const char *genome) : genome_(genome), totalPos_(0), totalGood_(0), qv(INS+DEL+1) {
-		for (size_t i=0; i < INS+DEL+1; ++i) {
-			qv[i] = new QVector(genome_.size());
-		}
-		gensize_ = genome_.size();
-	}*/
 
 	BayesQualityGenome(const char *genome) : genome_(genome), totalPos_(0), totalGood_(0) {
 		gensize_ = genome_.size();
 	}
 	
 	~BayesQualityGenome() {
-		/*for (size_t i=0; i < INS+DEL+1; ++i) {
-			qv[i]->clear();  delete qv[i];
-		}*/
 	}
 
 	/**
@@ -205,8 +196,9 @@ public:
 	
 	/**
 	 * process all reads from a file and log the results
+	 * @param toskip skip that many reads in the file
 	 */	
-	void ProcessReads(const char * filename);
+	void ProcessReads(const char * filename, size_t toskip);
 
 
 	/**

@@ -21,7 +21,6 @@
 // @parameter in input file name
 // @parameter name the name of hash map
 
-
 template<size_t size, class hm>
 class seq_filter_stat {		
 public:
@@ -107,9 +106,14 @@ public:
     gettimeofday(&tim, NULL);
     double t4 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
-    std::cout << "Memory: " << 1. * map.size() / map.length()  << " " << label << std::endl;
-    std::cout << "Insert: " << (t2 - t1) - (t4 - t3) << " " << label << std::endl;
-    std::cout << "Find: " << (t3 - t2) << " " << label << std::endl;
+    std::cout << "Memory: " << map.load_factor() 
+              << " " << label << std::endl;
+    std::cout << "Raw load factor: " << 1.0 * map.size() / map.length() 
+              << " " << label << std::endl; 
+    std::cout << "Insert: " << (t2 - t1) - (t4 - t3) 
+              << " " << label << std::endl;
+    std::cout << "Find: " << (t3 - t2) 
+              << " " << label << std::endl;
 	}
 
 private:

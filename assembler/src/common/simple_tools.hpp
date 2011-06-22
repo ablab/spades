@@ -10,6 +10,7 @@
 
 #include <string>
 #include <sstream>
+#include <vector>
 
 /**
  * Converts anything to string (using ostringstream).
@@ -22,15 +23,26 @@ std::string ToString(T& t) {
 }
 
 /**
+ * Checks if file exists.
+ * Analogs: http://www.techbytes.ca/techbyte103.html , http://www.gamedev.net/topic/211918-determining-if-a-file-exists-c/
+ */
+bool fileExists(std::string filename);
+
+/**
+ * Exit(1) if file doesn't exists, writes FATAL log message.
+ */
+void checkFileExistenceFATAL(std::string filename);
+
+/**
  * Use vector<T> as input-stream with operator>>(T& t)
  */
 template <typename T>
 class VectorStream {
-	vector<T> data_;
+	std::vector<T> data_;
 	size_t pos_;
 	bool closed_;
 public:
-	VectorStream(const vector<T>& data) : data_(data), pos_(0), closed_(false) {
+	VectorStream(const std::vector<T>& data) : data_(data), pos_(0), closed_(false) {
 
 	}
 
