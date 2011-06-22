@@ -1,8 +1,11 @@
 #ifndef ID_TRACK_HANDLER_HPP_
 #define ID_TRACK_HANDLER_HPP_
 
+
+#include <unordered_map>
 #include "utils.hpp"
 #include "graph_labeler.hpp"
+#include "simple_tools.hpp"
 using namespace omnigraph;
 
 namespace debruijn_graph {
@@ -32,7 +35,6 @@ public:
 	int AddEdgeIntId(EdgeId NewEdgeId) {
 		MaxEdgeIntId++;
 		EdgeIntId[NewEdgeId] = MaxEdgeIntId;
-		DEBUG("new edge "<<MaxEdgeIntId);
 		return MaxVertexIntId;
 	}
 	int AddVertexIntId(EdgeId NewEdgeId, int NewIntId) {
@@ -47,13 +49,18 @@ public:
 		EdgeIntId.erase(OldEdgeId);
 	}
 	int ReturnIntId(EdgeId e){
-		typename map<EdgeId, int>::iterator it = EdgeIntId.find(e);
+		typename tr1::unordered_map<EdgeId, int>::iterator it = EdgeIntId.find(e);
 		if (it != EdgeIntId.end()) return it->second;
 		else return 0;
 	}
 	int ReturnIntId(VertexId v){
-		typename map<VertexId, int>::iterator it = VertexIntId.find(v);
-		if (it != VertexIntId.end()) return it->second;
+		typename tr1::unordered_map<VertexId, int>::iterator it;
+		it = VertexIntId.find(v);
+		if (it != VertexIntId.end()) {
+			DEBUG("Find finished successful");
+
+			return it->second;
+		}
 		else return 0;
 	}
 
@@ -106,14 +113,18 @@ protected:
 	IdTrackHandler<Graph>& IDs;
 
 public:
-	RealIdGraphLabeler(Graph& g, IdTrackHandler<Graph> IdTrack) : g_(g), IDs(IdTrack) {}
+	RealIdGraphLabeler(Graph& g, IdTrackHandler<Graph>& IdTrack) : g_(g), IDs(IdTrack) {}
 
 	virtual std::string label(VertexId vertexId) const {
-		return g_.str(vertexId);
+		DEBUG("Label for vertex "<<vertexId);
+		int x = IDs.ReturnIntId(vertexId);
+		DEBUG("is "<<x<<" "<<ToString(x));
+		return ToString(x);
 	}
 
 	virtual std::string label(EdgeId edgeId) const {
-		return g_.str(edgeId);
+		int x = IDs.ReturnIntId(edgeId);
+		return ToString(x);
 	}
 };
 

@@ -31,6 +31,20 @@ public class Chromosome {
         return false;
     }
 
+    public void mark(End end) {
+        for (Gene gene : genes) {
+            if (gene.getId() == end.getId()) {
+                gene.setEnd(end);
+            }
+        }
+    }
+
+    public void clearEnds() {
+        for (Gene gene : genes) {
+            gene.clearEnd();
+        }
+    }
+
     public Element toXml() {
         Element chr = new Element("chromosome");
         XmlUtil.addElement(chr, "id", id);
