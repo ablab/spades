@@ -128,11 +128,9 @@ public:
  * HandlerApplier contains one method for each of graph events which define the exact way this event
  * should be triggered.
  */
-template<class Graph>
+template<typename VertexId, typename EdgeId>
 class HandlerApplier {
 public:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
 
 	virtual void
 	ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const = 0;
@@ -163,7 +161,7 @@ public:
  * SimpleHandlerApplier is simple implementation of handler applier with no special filtering.
  */
 template<class Graph>
-class SimpleHandlerApplier: public HandlerApplier<Graph> {
+class SimpleHandlerApplier: public HandlerApplier<typename Graph::VertexId, typename Graph::EdgeId> {
 public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
@@ -210,7 +208,7 @@ public:
  * was called and for reverse-complement parameters. Also certain assertions were added for bad cases.
  */
 template<class Graph>
-class PairedHandlerApplier: public HandlerApplier<Graph> {
+class PairedHandlerApplier: public HandlerApplier<typename Graph::VertexId, typename Graph::EdgeId> {
 private:
 	Graph &graph_;
 public:
