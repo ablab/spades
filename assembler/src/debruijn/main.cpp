@@ -18,7 +18,7 @@ std::string MakeLaunchTimeDirName() {
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
 
-	strftime(buffer, 80, "%d.%m_%H:%M", timeinfo);
+	strftime(buffer, 80, "%d.%m_%H_%M", timeinfo);
 	return string(buffer);
 }
 }

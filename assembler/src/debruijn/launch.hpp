@@ -240,13 +240,14 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 //	clusterer.cluster(clustered_paired_index);
 
 	INFO("before ResolveRepeats");
+	RealIdGraphLabeler<Graph> IdTrackLabelerBefore(g, IntIds);
+	gvis::WriteSimple( output_folder + "repeats_resolved_simple_before.dot", "no_repeat_graph", g, IdTrackLabelerBefore);
+
 	Graph new_graph(k);
 	IdTrackHandler<Graph> NewIntIds(new_graph, IntIds.MaxVertexId(), IntIds.MaxEdgeId());
 	ResolveRepeats(g, IntIds, paired_index, new_graph, NewIntIds);
 	INFO("before graph writing");
-	RealIdGraphLabeler<Graph> IdTrackLabelerBefore(g, IntIds);
 	RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, NewIntIds);
-	gvis::WriteSimple( output_folder + "repeats_resolved_simple_before.dot", "no_repeat_graph", g, IdTrackLabelerBefore);
 	gvis::WriteSimple( output_folder + "repeats_resolved_simple_after.dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
 		INFO("repeat resolved grpah written");
 	ProduceInfo<k> (new_graph, index, genome, output_folder + "repeats_resolved.dot",
