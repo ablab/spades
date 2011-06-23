@@ -244,11 +244,11 @@ public:
 		}
 	}
 
-	const vector<EdgeId> OutgoingEdges(VertexId v) const {
+	vector<EdgeId> OutgoingEdges(VertexId v) const {
 		return v->OutgoingEdges();
 	}
 
-	const vector<EdgeId> IncomingEdges(VertexId v) const {
+	vector<EdgeId> IncomingEdges(VertexId v) const {
 		return v->IncomingEdges();
 	}
 

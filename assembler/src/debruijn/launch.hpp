@@ -11,7 +11,7 @@
 #include "visualization_utils.hpp"
 #include "ireadstream.hpp"
 
-#include "debruijn_graph.hpp"
+//#include "debruijn_graph.hpp"
 #include "paired_info.hpp"
 #include "debruijn_graph_constructor.hpp"
 #include "tip_clipper.hpp"
@@ -25,12 +25,13 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "new_debruijn.hpp"
 
 namespace debruijn_graph {
 
 DECL_LOGGER("debruijn_graph")
 
-typedef DeBruijnGraph Graph;
+typedef NewConjugateDeBruijnGraph Graph;
 typedef Graph::EdgeId EdgeId;
 typedef Graph::VertexId VertexId;
 
@@ -129,11 +130,12 @@ void ResolveRepeats(Graph &g, PairedInfoIndex<Graph> &info, Graph &new_graph) {
 }
 
 template<size_t k, class ReadStream>
-void FillPairedIndex(PairedInfoIndex<Graph>& paired_info_index,
+void FillPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
 		ReadStream& stream, EdgeIndex<k + 1, Graph>& index) {
 	stream.reset();
 	INFO("Counting paired info");
-	paired_info_index.FillIndex<k, ReadStream> (index, stream);
+	PairedIndexFiller<Graph, k, ReadStream> pif(g, index, stream);
+	pif.FillIndex(paired_info_index);
 	INFO("Paired info counted");
 }
 
@@ -182,7 +184,7 @@ void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 	UnitedStream united_stream(stream);
 	ConstructGraphWithCoverage<k, UnitedStream> (g, index/*, coverage_handler*/,
 			united_stream);
-	FillPairedIndex<k, PairedReadStream> (paired_index, stream, index);
+	FillPairedIndex<k, PairedReadStream> (g, paired_index, stream, index);
 }
 
 template<size_t k>
@@ -228,7 +230,6 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 			"edge_graph");
 
-	//	paired_index.OutputData(output_folder + "edges_dist.txt");
 
 	SimplifyGraph<k>(g, index, 3, genome, output_folder);
 
@@ -239,6 +240,8 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 //	PairedInfoIndex<Graph> clustered_paired_index(g);
 //	clusterer.cluster(clustered_paired_index);
 
+	paired_index.OutputData(output_folder + "edges_dist.txt");
+
 	INFO("before ResolveRepeats");
 	Graph new_graph(k);
 	IdTrackHandler<Graph> NewIntIds(new_graph);
@@ -247,7 +250,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 	RealIdGraphLabeler<Graph> IdTrackLabeler(new_graph, NewIntIds);
 	gvis::WriteSimple( output_folder + "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
 	gvis::WriteSimple( output_folder + "repeats_resolved_siiimple_int.dot", "no_repeat_graph", new_graph, IdTrackLabeler);
-		INFO("repeat resolved grpah written");
+		INFO("repeat resolved graph written");
 	ProduceInfo<k> (new_graph, index, genome, output_folder + "repeats_resolved.dot",
 			"no_repeat_graph");
 	INFO("Tool finished");

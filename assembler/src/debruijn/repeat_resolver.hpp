@@ -24,6 +24,8 @@ namespace debruijn_graph {
 
 using omnigraph::SmartVertexIterator;
 using omnigraph::Compressor;
+using omnigraph::PairedInfoIndex;
+using omnigraph::PairInfoIndexData;
 
 
 template<class Graph>
@@ -31,9 +33,10 @@ class RepeatResolver {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
-	typedef SmartVertexIterator<Graph> VertexIter;
-	typedef omnigraph::SmartEdgeIterator<Graph> EdgeIter;
-	typedef PairedInfoIndex<Graph> PIIndex;
+//	typedef SmartVertexIterator<Graph> VertexIter;
+//	typedef omnigraph::SmartEdgeIterator<Graph> EdgeIter;
+	typedef omnigraph::PairedInfoIndex<Graph> PIIndex;
+	typedef omnigraph::PairInfo<EdgeId> PairInfo;
 	typedef vector<PairInfo> PairInfos;
 
 	typedef map<VertexId,set<EdgeId> > NewVertexMap;
@@ -103,13 +106,13 @@ public:
 		real_vertices.clear();
 		set<EdgeId> edges;
 		edges.clear();
-		for(VertexIter v_iter = old_graph.SmartVertexBegin(); !v_iter.IsEnd(); ++v_iter) {
+		for(auto v_iter = old_graph.SmartVertexBegin(); !v_iter.IsEnd(); ++v_iter) {
 	//		if (vertices.find(old_graph.conjugate(*v_iter)) == vertices.end())
 			{
 				vertices.insert(*v_iter);
 			}
 		}
-		for(EdgeIter e_iter = old_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+		for(auto e_iter = old_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
 		//	if (edges.find(old_graph.conjugate(*e_iter)) == edges.end())
 			{
 				edges.insert(*e_iter);
@@ -131,7 +134,7 @@ public:
 		for(auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			DEBUG("Adding edge from " << old_to_new[old_graph.EdgeStart(*e_iter)] <<" to " << old_to_new[old_graph.EdgeEnd(*e_iter)]);
 //			DEBUG("Setting coverage to edge length " << old_graph.length(*e_iter) << "  cov: " << old_graph.coverage(*e_iter));
-			EdgeId new_edge = new_graph.AddEdge(old_to_new[old_graph.EdgeStart(*e_iter)], old_to_new[old_graph.EdgeEnd(*e_iter)], old_graph.EdgeNucls(*e_iter), 0);
+			EdgeId new_edge = new_graph.AddEdge(old_to_new[old_graph.EdgeStart(*e_iter)], old_to_new[old_graph.EdgeEnd(*e_iter)], old_graph.EdgeNucls(*e_iter));
 			new_graph.SetCoverage(new_edge, old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
 			edge_labels[new_edge] = *e_iter;
 			DEBUG("Adding edge " << new_edge<< " from" << *e_iter);
@@ -163,7 +166,7 @@ private:
 	int leap_;
 	size_t RectangleResolveVertex(VertexId vid);
 
-	size_t GenerateVertexPairedInfo(Graph &g, PairInfoIndexData &ind, VertexId vid);
+	size_t GenerateVertexPairedInfo(Graph &g, PairInfoIndexData<EdgeId> &ind, VertexId vid);
 	vector<typename Graph::VertexId> MultiSplit(VertexId v);
 
 	void ResolveEdge(EdgeId eid);
@@ -174,7 +177,7 @@ private:
 	Graph &old_graph;
 	vector<int> edge_info_colors;
 	vector<EdgeInfo> edge_infos;
-	PairInfoIndexData paired_di_data;
+	PairInfoIndexData<EdgeId> paired_di_data;
 	unordered_map<VertexId, VertexId> vertex_labels;
 	unordered_map<EdgeId, EdgeId> edge_labels;
 	set<VertexId> real_vertices;
@@ -223,14 +226,14 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v){
 			} else {
 
 				if (new_edges[edge_info_colors[i]].find(le) == new_edges[edge_info_colors[i]].end())
-					res_edge = new_graph.AddEdge(res[edge_info_colors[i]], new_graph.EdgeEnd(le), new_graph.EdgeNucls(le), 0);
+					res_edge = new_graph.AddEdge(res[edge_info_colors[i]], new_graph.EdgeEnd(le), new_graph.EdgeNucls(le));
 			}
 		} else {
 			if (new_graph.EdgeEnd(le) != v) {
 				ERROR("Non incident edge!!!" << new_graph.EdgeEnd(le) <<" instead of "<< v);
 			} else {
 				if (new_edges[edge_info_colors[i]].find(le) == new_edges[edge_info_colors[i]].end())
-					res_edge = new_graph.AddEdge( new_graph.EdgeStart(le),res[edge_info_colors[i]], new_graph.EdgeNucls(le), 0);
+					res_edge = new_graph.AddEdge( new_graph.EdgeStart(le),res[edge_info_colors[i]], new_graph.EdgeNucls(le));
 			}
 		}
 		TRACE("replaced");
@@ -269,7 +272,7 @@ void RepeatResolver<Graph>::ResolveRepeats(){
 	while (changed) {
 		changed = false;
 		vertices.clear();
-		for(VertexIter v_iter = new_graph.SmartVertexBegin(); !v_iter.IsEnd(); ++v_iter) {
+		for(auto v_iter = new_graph.SmartVertexBegin(); !v_iter.IsEnd(); ++v_iter) {
 			if (vertices.find(new_graph.conjugate(*v_iter)) == vertices.end())
 			{
 				vertices.insert(*v_iter);
@@ -305,7 +308,7 @@ void RepeatResolver<Graph>::dfs(vector<vector<int> > &edge_list, vector<int> &co
 }
 
 template<class Graph>
-size_t RepeatResolver<Graph>::GenerateVertexPairedInfo( Graph &new_graph, PairInfoIndexData &paired_data, VertexId vid){
+size_t RepeatResolver<Graph>::GenerateVertexPairedInfo( Graph &new_graph, PairInfoIndexData<EdgeId> &paired_data, VertexId vid){
 	DEBUG("Generate vertex paired info for:  " << vid);
 //	DEBUG(new_graph.conjugate(vid));
 	edge_infos.clear();
@@ -356,7 +359,7 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid){
 	set<EdgeId> edges;
 	edges.clear();
 
-	for(EdgeIter e_iter = old_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+	for(auto e_iter = old_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
 		{
 			edges.insert(*e_iter);
 		}

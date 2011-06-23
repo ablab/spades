@@ -11,10 +11,12 @@
 #include "seq_map.hpp"
 #include "omni_utils.hpp"
 #include "logging.hpp"
+#include "paired_info.hpp"
 
 namespace debruijn_graph {
 
 using omnigraph::Path;
+using omnigraph::PairInfo;
 using omnigraph::GraphActionHandler;
 
 /**
@@ -227,7 +229,8 @@ public:
 		Seq<k + 1> kmer = read.start<k + 1> ();
 		size_t startPosition = -1;
 		size_t endPosition = -1;
-		bool valid = ProcessKmer(kmer, passed, startPosition, endPosition, false);
+		bool valid = ProcessKmer(kmer, passed, startPosition, endPosition,
+				false);
 		for (size_t i = k + 1; i < read.size(); ++i) {
 			kmer = kmer << read[i];
 			valid
@@ -271,7 +274,7 @@ public:
 				black_count++;
 			}
 		}
-		if (edge_count > 0){
+		if (edge_count > 0) {
 			INFO("Error edges count: " << black_count << " which is " << 100.0 * black_count / edge_count << "% of all edges");
 		} else {
 			INFO("Error edges count: " << black_count << " which is 0% of all edges");
@@ -358,6 +361,71 @@ public:
 
 private:
 	DECL_LOGGER("StatCounter")
+};
+
+template<class Graph, size_t kmer_size, class Stream>
+class PairedIndexFiller {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	Graph &graph_;
+	const EdgeIndex<kmer_size + 1, Graph>& index_;
+	Stream& stream_;
+
+	size_t CountDistance(const PairedRead& paired_read) {
+		return paired_read.distance() - paired_read.second().size();
+	}
+
+	void ProcessPairedRead(
+			omnigraph::PairedInfoIndex<Graph> &paired_index,
+			const PairedRead& p_r,
+			debruijn_graph::SimpleSequenceMapper<kmer_size, Graph> &read_threader) {
+		Sequence read1 = p_r.first().getSequence();
+		Sequence read2 = p_r.second().getSequence();
+		Path<EdgeId> path1 = read_threader.MapSequence(read1);
+		Path<EdgeId> path2 = read_threader.MapSequence(read2);
+		size_t distance = CountDistance(p_r);
+		int current_distance1 = distance + path1.start_pos()
+				- path2.start_pos();
+		for (size_t i = 0; i < path1.size(); ++i) {
+			int current_distance2 = current_distance1;
+			for (size_t j = 0; j < path2.size(); ++j) {
+				//				double weight = CorrectLength(path1, i) * CorrectLength(path2,
+				//						j);
+				double weight = 1;
+				PairInfo<EdgeId> new_info(path1[i], path2[j], current_distance2, weight);
+				paired_index.AddPairInfo(new_info);
+				current_distance2 += graph_.length(path2[j]);
+			}
+			current_distance1 -= graph_.length(path1[i]);
+		}
+	}
+
+public:
+
+	PairedIndexFiller(Graph &graph, const EdgeIndex<kmer_size + 1, Graph>& index,
+			Stream& stream) :graph_(graph),
+		index_(index), stream_(stream) {
+
+	}
+
+	/**
+	 * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
+	 */
+	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 1));
+		}
+		typedef Seq<kmer_size + 1> KPOMer;
+		debruijn_graph::SimpleSequenceMapper<kmer_size, Graph> read_threader(
+				graph_, index_);
+		stream_.reset();
+		while (!stream_.eof()) {
+			PairedRead p_r;
+			stream_ >> p_r;
+			ProcessPairedRead(paired_index, p_r, read_threader);
+		}
+	}
+
 };
 
 }

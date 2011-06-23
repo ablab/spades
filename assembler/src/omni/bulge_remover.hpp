@@ -142,7 +142,7 @@ void BulgeRemover<Graph>::RemoveBulges(Graph& g) {
 
 	TRACE("Bulge remove process started");
 
-	for (EdgeIter iterator = g.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator) {
+	for (auto iterator = g.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator) {
 		EdgeId edge = *iterator;
 		TRACE(
 				"Considering edge of length " << g.length(edge)
