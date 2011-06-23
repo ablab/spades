@@ -22,6 +22,7 @@
 #include "omni_tools.hpp"
 #include "seq_map.hpp"
 #include "ID_track_handler.hpp"
+#include "read/osequencestream.hpp"
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -211,6 +212,16 @@ void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index, size_t iteration_co
 	}
 }
 
+void OutputContigs(Graph& g, const string& contigs_output_filename) {
+	INFO("Outputting contigs to " << contigs_output_filename);
+
+	osequencestream oss(contigs_output_filename);
+	TipComparator<Graph> compare(g); // wtf, don't we have usual less for edges?
+	for (auto it = g.SmartEdgeBegin(compare); !it.IsEnd(); ++it) {
+		oss << g.EdgeNucls(*it);
+	}
+}
+
 template<size_t k, class ReadStream>
 void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 		const string& output_folder) {
@@ -228,12 +239,12 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 			"edge_graph");
 
-	//	paired_index.OutputData(output_folder + "edges_dist.txt");
-
 	SimplifyGraph<k>(g, index, 3, genome, output_folder);
 
 	ProduceInfo<k> (g, index, genome, output_folder + "simplified_graph.dot",
 			"simplified_graph");
+
+	paired_index.OutputData(output_folder + "edges_dist.txt");
 
 //	SimpleOfflineClusterer<Graph> clusterer(paired_index);
 //	PairedInfoIndex<Graph> clustered_paired_index(g);
@@ -251,6 +262,8 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 		INFO("repeat resolved grpah written");
 	ProduceInfo<k> (new_graph, index, genome, output_folder + "repeats_resolved.dot",
 			"no_repeat_graph");
+
+	OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 
 }
@@ -276,6 +289,8 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 
 	ProduceInfo<k> (g, index, genome, output_folder + "simplified_graph.dot",
 			"simplified_graph");
+
+	OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 }
 

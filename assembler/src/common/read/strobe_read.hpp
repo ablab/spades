@@ -247,7 +247,6 @@ public:
 
 /////////////////////////////////
 
-
 template<class Stream>
 class SimpleReaderWrapper {
 public:

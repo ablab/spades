@@ -36,12 +36,9 @@ int main()
 	string input_dir = CONFIG.read<string> ("input_dir");
 	string output_dir = CONFIG.read<string> ("output_dir")
 			+ MakeLaunchTimeDirName() + "/";
-
 //	std::cout << "here " << mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH) << std::endl;
 	mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH);
-
 	string dataset = CONFIG.read<string> ("dataset");
-
 	string genome_filename = input_dir + CONFIG.read<string> ("reference_genome");
 	string reads_filename1 = input_dir + CONFIG.read<string> (dataset + "_1");
 	string reads_filename2 = input_dir + CONFIG.read<string> (dataset + "_2");
