@@ -1,6 +1,19 @@
 ## genome=ATGCATTGCACTGCA readsize=6 k=3
 ##dot -Tjpg ATGCATTGCACTGCA.dot -o ATGCATTGCACTGCA.jpg
 digraph ATGCATTGCACTGCA { rankdir="LR"; node[shape="box"] edge[color="black"]
+AAT [shape=box]
+ATG [shape=box]
+TGC [shape=box]
+GCA [shape=box]
+CAT [shape=box]
+ATT [shape=box]
+TTG [shape=box]
+CAC [shape=box]
+ACT [shape=box]
+CTG [shape=box]
+CAA [shape=box]
+
+
 AAT->ATG
 ACT->CTG
 ATG->TGC

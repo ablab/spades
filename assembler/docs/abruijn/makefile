@@ -12,6 +12,15 @@ fig3.pdf: fig3.dot
 fig4.pdf: fig4.dot
 	dot -Tpdf -o $@ $<
 
+fig5_de.pdf: fig5_de.dot
+	dot -Tpdf -o $@ $<
+
+fig5_ear.pdf: fig5_ear.dot
+	dot -Tpdf -o $@ $<
+
+fig5_earwotip.pdf: fig5_earwotip.dot
+	dot -Tpdf -o $@ $<
+
 TAAACGAAAC.pdf: TAAACGAAAC.dot
 	dot -Tpdf -o $@ $<
 
@@ -27,7 +36,7 @@ ATGCATTGCACTGCA_earmark.pdf: ATGCATTGCACTGCA_earmark.dot
 clean:
 	rm *.log *.aux *.out *.toc *.tdo abruijn.pdf fig1.pdf fig2.pdf fig3.pdf fig4.pdf TAAACGAAAC.pdf mccmb_poster.pdf ATGCATTGCACTGCA.pdf ATGCATTGCACTGCA_debruijn.pdf ATGCATTGCACTGCA_earmark.pdf ATGCATTGCACTGCA_earmark2.pdf
 
-pics: fig1.pdf fig2.pdf fig3.pdf fig4.pdf TAAACGAAAC.pdf ATGCATTGCACTGCA.pdf ATGCATTGCACTGCA_debruijn.pdf ATGCATTGCACTGCA_earmark.pdf 
+pics: fig1.pdf fig2.pdf fig3.pdf fig4.pdf fig5_de.pdf fig5_ear.pdf fig5_earwotip.pdf TAAACGAAAC.pdf ATGCATTGCACTGCA.pdf ATGCATTGCACTGCA_debruijn.pdf ATGCATTGCACTGCA_earmark.pdf 
 
 abruijn: pics 
 	pdflatex abruijn
