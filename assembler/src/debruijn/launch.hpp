@@ -216,8 +216,8 @@ void OutputContigs(Graph& g, const string& contigs_output_filename) {
 	INFO("Outputting contigs to " << contigs_output_filename);
 
 	osequencestream oss(contigs_output_filename);
-	TipComparator<Graph> compare(g); // wtf, don't we have usual less for edges?
-	for (auto it = g.SmartEdgeBegin(compare); !it.IsEnd(); ++it) {
+	//TipComparator<Graph> compare(g); // wtf, don't we have usual less for edges?
+	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		oss << g.EdgeNucls(*it);
 	}
 }
