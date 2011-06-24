@@ -11,7 +11,7 @@
 #include "visualization_utils.hpp"
 #include "ireadstream.hpp"
 
-#include "debruijn_graph.hpp"
+//#include "debruijn_graph.hpp"
 #include "paired_info.hpp"
 #include "debruijn_graph_constructor.hpp"
 #include "tip_clipper.hpp"
@@ -26,12 +26,13 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "new_debruijn.hpp"
 
 namespace debruijn_graph {
 
 DECL_LOGGER("debruijn_graph")
 
-typedef DeBruijnGraph Graph;
+typedef NewConjugateDeBruijnGraph Graph;
 typedef Graph::EdgeId EdgeId;
 typedef Graph::VertexId VertexId;
 
@@ -130,11 +131,12 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs, PairedInfoIndex<Gr
 }
 
 template<size_t k, class ReadStream>
-void FillPairedIndex(PairedInfoIndex<Graph>& paired_info_index,
+void FillPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
 		ReadStream& stream, EdgeIndex<k + 1, Graph>& index) {
 	stream.reset();
 	INFO("Counting paired info");
-	paired_info_index.FillIndex<k, ReadStream> (index, stream);
+	PairedIndexFiller<Graph, k, ReadStream> pif(g, index, stream);
+	pif.FillIndex(paired_info_index);
 	INFO("Paired info counted");
 }
 
@@ -183,7 +185,7 @@ void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 	UnitedStream united_stream(stream);
 	ConstructGraphWithCoverage<k, UnitedStream> (g, index/*, coverage_handler*/,
 			united_stream);
-	FillPairedIndex<k, PairedReadStream> (paired_index, stream, index);
+	FillPairedIndex<k, PairedReadStream> (g, paired_index, stream, index);
 }
 
 template<size_t k>
@@ -249,6 +251,8 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 //	SimpleOfflineClusterer<Graph> clusterer(paired_index);
 //	PairedInfoIndex<Graph> clustered_paired_index(g);
 //	clusterer.cluster(clustered_paired_index);
+
+	paired_index.OutputData(output_folder + "edges_dist.txt");
 
 	INFO("before ResolveRepeats");
 	RealIdGraphLabeler<Graph> IdTrackLabelerBefore(g, IntIds);

@@ -63,7 +63,7 @@ private:
 	const vector<EdgeId> IncomingEdges() const {
 		vector<EdgeId> result = conjugate_->OutgoingEdges();
 		for (size_t i = 0; i < result.size(); i++) {
-			result[i] = result[i].conjugate();
+			result[i] = result[i]->conjugate();
 		}
 		return result;
 	}
@@ -116,6 +116,7 @@ private:
 	typedef PairedEdge<VertexData, EdgeData, DataMaster>* EdgeId;
 
 	friend class AbstractConjugateGraph<VertexData, EdgeData, DataMaster> ;
+	friend class PairedVertex<VertexData, EdgeData, DataMaster> ;
 	VertexId end_;
 
 	EdgeData data_;
@@ -160,14 +161,21 @@ public:
 	typedef PairedEdge<VertexData, EdgeData, DataMaster>* EdgeId;
 	typedef vector<EdgeId> Edges;
 	typedef typename Edges::const_iterator EdgeIterator;
+	typedef ObservableGraph<VertexId, EdgeId> super;
+	typedef SmartVertexIterator<ObservableGraph<VertexId, EdgeId> >
+			SmartVertexItarator;
+	typedef SmartEdgeIterator<ObservableGraph<VertexId, EdgeId>>
+			SmartEdgeItarator;
 
 	set<VertexId> vertices_;
 
 	DataMaster master_;
 
 	VertexId HiddenAddVertex(const VertexData &data1, const VertexData &data2) {
-		VertexId v1 = new PairedVertex<VertexData, EdgeData, DataMaster> (data1);
-		VertexId v2 = new PairedVertex<VertexData, EdgeData, DataMaster> (data2);
+		VertexId v1 =
+				new PairedVertex<VertexData, EdgeData, DataMaster> (data1);
+		VertexId v2 =
+				new PairedVertex<VertexData, EdgeData, DataMaster> (data2);
 		v1->set_conjugate(v2);
 		v2->set_conjugate(v1);
 		vertices_.insert(v1);
@@ -194,13 +202,14 @@ public:
 	}
 
 	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-		EdgeId newEdge = new PairedEdge<VertexData, EdgeData, DataMaster> (v2, data);
+		EdgeId newEdge = new PairedEdge<VertexData, EdgeData, DataMaster> (v2,
+				data);
 		v1->AddOutgoingEdge(newEdge);
 		return newEdge;
 	}
 
 	void DeleteAllOutgoing(VertexId v) {
-		vector < EdgeId > out = v->outgoing_edges_;
+		vector<EdgeId> out = v->outgoing_edges_;
 		for (auto it = out.begin(); it != out.end(); ++it) {
 			DeleteEdge(*it);
 		}
@@ -214,34 +223,6 @@ public:
 
 	VertexIterator end() const {
 		return vertices_.end();
-	}
-
-	template<typename Comparator = std::less<VertexId> >
-	SmartVertexIterator<AbstractConjugateGraph, Comparator> SmartVertexBegin(
-			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<AbstractConjugateGraph, Comparator> (*this,
-				true, comparator);
-	}
-
-	template<typename Comparator = std::less<VertexId> >
-	SmartVertexIterator<AbstractConjugateGraph, Comparator> SmartVertexEnd(
-			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<AbstractConjugateGraph, Comparator> (*this,
-				false, comparator);
-	}
-
-	template<typename Comparator = std::less<EdgeId> >
-	SmartEdgeIterator<AbstractConjugateGraph, Comparator> SmartEdgeBegin(
-			const Comparator& comparator = Comparator()) {
-		return SmartEdgeIterator<AbstractConjugateGraph, Comparator> (*this,
-				true, comparator);
-	}
-
-	template<typename Comparator = std::less<EdgeId> >
-	SmartEdgeIterator<AbstractConjugateGraph, Comparator> SmartEdgeEnd(
-			const Comparator& comparator = Comparator()) {
-		return SmartEdgeIterator<AbstractConjugateGraph, Comparator> (*this,
-				false, comparator);
 	}
 
 	size_t size() {
@@ -261,7 +242,7 @@ public:
 		}
 	}
 
-	const vector<EdgeId> OutgoingEdges(VertexId v) const {
+	vector<EdgeId> OutgoingEdges(VertexId v) const {
 		return v->OutgoingEdges();
 	}
 
@@ -271,6 +252,10 @@ public:
 
 	size_t OutgoingEdgeCount(VertexId v) const {
 		return v->OutgoingEdgeCount();
+	}
+
+	size_t IncomingEdgeCount(VertexId v) const {
+		return v->conjugate()->OutgoingEdgeCount();
 	}
 
 	bool CheckUniqueOutgoingEdge(VertexId v) const {
@@ -410,12 +395,15 @@ public:
 	void CompressVertex(VertexId v) {
 		//assert(CanCompressVertex(v));
 		if (CanCompressVertex(v)) {
-			Merge(GetUniqueIncomingEdge(v), GetUniqueOutgoingEdge(v));
+			vector<EdgeId> toMerge;
+			toMerge.push_back(GetUniqueIncomingEdge(v));
+			toMerge.push_back(GetUniqueOutgoingEdge(v));
+			MergePath(toMerge);
 		}
 	}
 
 	vector<EdgeId> CorrectMergePath(const vector<EdgeId>& path) {
-		vector < EdgeId > result;
+		vector<EdgeId> result;
 		for (size_t i = 0; i < path.size(); i++) {
 			if (path[i] == conjugate(path[i])) {
 				if (i < path.size() - 1 - i) {
@@ -437,7 +425,7 @@ public:
 
 	EdgeId MergePath(const vector<EdgeId>& path) {
 		assert(!path.empty());
-		vector < EdgeId > correctedPath = CorrectMergePath(path);
+		vector<EdgeId> correctedPath = CorrectMergePath(path);
 		SequenceBuilder sb;
 		VertexId v1 = EdgeStart(correctedPath[0]);
 		VertexId v2 = EdgeEnd(correctedPath[correctedPath.size() - 1]);
@@ -453,8 +441,8 @@ public:
 	}
 
 	void DeletePath(const vector<EdgeId> &path) {
-		set < EdgeId > edgesToDelete;
-		set < VertexId > verticesToDelete;
+		set<EdgeId> edgesToDelete;
+		set<VertexId> verticesToDelete;
 		edgesToDelete.insert(path[0]);
 		for (size_t i = 0; i + 1 < path.size(); i++) {
 			EdgeId e = path[i + 1];

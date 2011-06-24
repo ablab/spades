@@ -7,6 +7,7 @@
 #include "stack"
 #include "queue"
 #include "dijkstra.hpp"
+#include "observable_graph.hpp"
 
 namespace gvis {
 
@@ -332,7 +333,7 @@ private:
 
 	Graph &graph_;
 	set<EdgeId> black_edges_;
-	SmartEdgeIterator<Graph> iterator_;
+	SmartEdgeIterator<omnigraph::ObservableGraph<VertexId, EdgeId> > iterator_;
 	set<VertexId> visited_;
 
 public:
@@ -460,7 +461,6 @@ void WriteErrors(const string& file_name, const string& graph_name, Graph& g,
 		gp.open();
 		gv.Visualize(component);
 		gp.close();
-		//		cout << cnt << endl;
 		cnt++;
 	}
 }
