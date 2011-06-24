@@ -11,7 +11,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
-
+#include "logging.hpp"
 /**
  * Converts anything to string (using ostringstream).
  */
@@ -19,6 +19,7 @@ template <typename T>
 std::string ToString(T& t) {
 	std::ostringstream ss;
 	ss << t;
+	DEBUG(ss.str());
 	return ss.str();
 }
 
