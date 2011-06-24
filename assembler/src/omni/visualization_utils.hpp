@@ -459,7 +459,6 @@ void WriteErrors(const string& file_name, const string& graph_name, Graph& g,
 		gp.open();
 		gv.Visualize(component);
 		gp.close();
-		//		cout << cnt << endl;
 		cnt++;
 	}
 }
