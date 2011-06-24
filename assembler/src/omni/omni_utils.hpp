@@ -467,7 +467,7 @@ public:
 				SmartIterator<Graph, EdgeId, Comparator> (graph,
 						"SmartEdgeIterator " + ToString(this), comparator) {
 		if (fill) {
-			for (typename Graph::VertexIterator it = graph.begin(); it
+			for (auto it = graph.begin(); it
 					!= graph.end(); ++it) {
 				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
 				this->super::insert(outgoing.begin(), outgoing.end());

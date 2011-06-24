@@ -42,11 +42,10 @@ private:
 	}
 	const Sequence nucls_;
 	Vertex* end_;
-	size_t coverage_;
 	Edge *conjugate_;
 
 	Edge(const Sequence& nucls, Vertex* end, size_t coverage) :
-		nucls_(nucls), end_(end), coverage_(coverage) {
+		nucls_(nucls), end_(end) {
 	}
 
 	Vertex* end() const {
@@ -57,11 +56,11 @@ private:
 		return nucls_.size();
 	}
 
-	Edge *conjugate() const {
+	Edge* conjugate() const {
 		return conjugate_;
 	}
 
-	void Setconjugate(Edge* conjugate) {
+	void set_conjugate(Edge* conjugate) {
 		conjugate_ = conjugate;
 	}
 
@@ -181,12 +180,6 @@ private:
 	DeBruijnGraph& operator=(const DeBruijnGraph&);
 
 public:
-
-	//todo temporary method!!!
-	template<class Stream, class ReadThreader>
-	void FillCoverage(Stream& stream, const ReadThreader& threader) {
-		coverage_index->FillIndex(stream, threader);
-	}
 
 	/**
 	 * @return const iterator pointing to the beginning of collection of vertices
@@ -395,6 +388,11 @@ public:
 	 */
 	const Sequence& EdgeNucls(EdgeId edge) const {
 		return edge->nucls();
+	}
+
+	template<class Stream, class ReadThreader>
+	void FillCoverage(Stream& stream, const ReadThreader& threader) {
+		coverage_index->FillIndex(stream, threader);
 	}
 
 	/**

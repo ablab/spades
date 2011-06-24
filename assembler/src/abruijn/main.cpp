@@ -121,7 +121,7 @@ void process(GetOpt::GetOpt_pp& options) {
     //  gbm.graph()->output(output_stream, !output_single); TODO
     gvis::DotPairedGraphPrinter<omnigraph::Omnigraph> printer(*gbm.graph(),
             "earmarked", output_stream);
-    gvis::StrGraphLabeler<omnigraph::Omnigraph> labeler(*gbm.graph());
+    omnigraph::StrGraphLabeler<omnigraph::Omnigraph> labeler(*gbm.graph());
     gvis::SimpleGraphVisualizer<omnigraph::Omnigraph> sgv(*gbm.graph(),
             printer, labeler);
     sgv.Visualize();

@@ -4,8 +4,13 @@
 #include "omni_utils.hpp"
 
 namespace omnigraph {
-template<typename VertexId, typename EdgeId>
+template<typename VertexIdT, typename EdgeIdT, typename VertexIterator = typename set<VertexIdT>::iterator>
 class ObservableGraph {
+public:
+	typedef VertexIdT VertexId;
+	typedef EdgeIdT EdgeId;
+	typedef SmartVertexIterator<ObservableGraph> SmartVertexItarator;
+	typedef SmartEdgeIterator<ObservableGraph> SmartEdgeItarator;
 private:
 	typedef ActionHandler<VertexId, EdgeId> Handler;
 
@@ -17,14 +22,14 @@ protected:
 	void FireAddVertex(VertexId v) {
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
-			applier_.ApplyAdd(*it, v);
+			applier_->ApplyAdd(*it, v);
 		}
 	}
 
 	void FireAddEdge(EdgeId edge) {
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
-			applier_.ApplyAdd(*it, edge);
+			applier_->ApplyAdd(*it, edge);
 		}
 	}
 
@@ -63,6 +68,9 @@ protected:
 		}
 	}
 
+
+public:
+
 	ObservableGraph(HandlerApplier<VertexId, EdgeId> *applier) :
 		applier_(applier) {
 	}
@@ -88,6 +96,41 @@ protected:
 		}
 		return false;
 	}
+
+	virtual VertexIterator begin() const = 0;
+
+	virtual VertexIterator end() const = 0;
+
+	virtual vector<EdgeId> OutgoingEdges(VertexId vertex) const = 0;
+
+	template<typename Comparator = std::less<VertexId> >
+	SmartVertexIterator<ObservableGraph, Comparator> SmartVertexBegin(
+			const Comparator& comparator = Comparator()) {
+		return SmartVertexIterator<ObservableGraph, Comparator> (*this,
+				true, comparator);
+	}
+
+	template<typename Comparator = std::less<VertexId> >
+	SmartVertexIterator<ObservableGraph, Comparator> SmartVertexEnd(
+			const Comparator& comparator = Comparator()) {
+		return SmartVertexIterator<ObservableGraph, Comparator> (*this,
+				false, comparator);
+	}
+
+	template<typename Comparator = std::less<EdgeId> >
+	SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeBegin(
+			const Comparator& comparator = Comparator()) {
+		return SmartEdgeIterator<ObservableGraph, Comparator> (*this,
+				true, comparator);
+	}
+
+	template<typename Comparator = std::less<EdgeId> >
+	SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeEnd(
+			const Comparator& comparator = Comparator()) {
+		return SmartEdgeIterator<ObservableGraph, Comparator> (*this,
+				false, comparator);
+	}
+
 
 private:
 	DECL_LOGGER("ObservableGraph")

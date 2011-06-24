@@ -138,21 +138,26 @@ private:
 	Dijkstra<Graph> dijkstra_;
 	EdgeId prev_;
 	bool ready_;
+private:
+	void EnsureFrom(VertexId from) {
+		if(!ready_ || prev_ != from) {
+			dijkstra_.run(from);
+			ready_ = true;
+			prev_ = from;
+		}
+	}
+
 public:
 	DistanceCounter(Graph &graph) :graph_(graph), dijkstra_(graph), ready_(false){
 	}
 
 	bool IsReachable(VertexId from, VertexId to) {
-		if(!ready_ || prev_ != from) {
-			dijkstra_.run(from);
-		}
+		EnsureFrom(from);
 		return dijkstra_.DistanceCounted(to);
 	}
 
 	size_t Distance(VertexId from, VertexId to) {
-		if(!ready_ || prev_ != from) {
-			dijkstra_.run(from);
-		}
+		EnsureFrom(from);
 		return dijkstra_.GetDistance(to);
 	}
 };
