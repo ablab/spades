@@ -277,7 +277,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	for (int i = 0; i < k; i++) {
 		for (auto edge_iter = new_edges[i].begin(); edge_iter
 				!= new_edges[i].end(); edge_iter++) {
-			DEBUG("setting coverage to component "<< i << ", from edgeid "<< edge_iter->first<<" length "<<new_graph.length(edge_iter->first) <<"   "<< new_graph.coverage(edge_iter->first) <<" taking "<< new_paired_coverage[edge_iter->second] <<"/"<< old_paired_coverage[edge_iter->first]);
+			DEBUG("setting coverage to component "<< i << ", from edgeid "<< edge_iter->first<<"("<< new_IDs.ReturnIntId(edge_iter->first)<<")"<<" length "<<new_graph.length(edge_iter->first) <<"   "<< new_graph.coverage(edge_iter->first) <<" taking "<< new_paired_coverage[edge_iter->second] <<"/"<< old_paired_coverage[edge_iter->first]<<" to edgeid "<< edge_iter->second<<"("<< new_IDs.ReturnIntId(edge_iter->second)<<")");
 			if ((1.0 * new_paired_coverage[edge_iter->second])
 					/ old_paired_coverage[edge_iter->first] > 0.1 && (1.0
 					* new_paired_coverage[edge_iter->second])
@@ -343,7 +343,7 @@ void RepeatResolver<Graph>::dfs(vector<vector<int> > &edge_list,
 		}
 	}
 }
-
+/*
 template<class Graph>
 size_t RepeatResolver<Graph>::StupidPairInfoCorrector(Graph &new_graph,
 		PairInfo &pair_info) {
@@ -397,7 +397,81 @@ size_t RepeatResolver<Graph>::StupidPairInfoCorrector(Graph &new_graph,
 	}
 	pair_info.d = best;
 	return 0;
+}*/
+template<class Graph>
+size_t RepeatResolver<Graph>::StupidPairInfoCorrector(Graph &new_graph,
+		PairInfo &pair_info) {
+	std::multimap<int, EdgeId> Map_queue;
+	EdgeId StartEdge = pair_info.first;
+	EdgeId EndEdge = pair_info.second;
+	int dist = pair_info.d;
+	int best = dist + 1000;
+//	DEBUG("Adjusting "<<old_IDs.ReturnIntId(edge_labels[StartEdge])<<" "<<old_IDs.ReturnIntId(EndEdge)<<" "<<dist);
+	VertexId v;
+	vector<EdgeId> edges;
+	int len;
+	pair<EdgeId, int> Prev_pair;
+	if (edge_labels[StartEdge] == EndEdge) {
+		if (abs(dist < 1000))
+			best = 0;
+	}
+	v = new_graph.EdgeEnd(StartEdge);
+	edges = new_graph.OutgoingEdges(v);
+	len = new_graph.length(StartEdge);
+	for (size_t i = 0; i < edges.size(); i++) {
+//		Prev_pair = make_pair(edges[i], len);
+		Map_queue.insert(make_pair(len,edges[i]));
+//		DEBUG("Push ("<<old_IDs.ReturnIntId(edge_labels[edges[i]])<<","<<len<<") ->"<<Map_queue.size());
+	}
+	while (Map_queue.size() > 0) {
+		pair<int, EdgeId> Cur_pair = *(Map_queue.begin());
+//		My_queue.pop();
+		Map_queue.erase(Map_queue.begin());
+		if (abs(Cur_pair.first - dist) < abs(best - dist)) {
+			if (edge_labels[Cur_pair.second] == EndEdge) {
+				best = Cur_pair.first;
+	//			DEBUG("New best "<<best);
+			}
+			v = new_graph.EdgeEnd(Cur_pair.second);
+			edges.clear();
+			edges = new_graph.OutgoingEdges(v);
+			len = new_graph.length(Cur_pair.second) + Cur_pair.first;
+			for (size_t i = 0; i < edges.size(); i++) {
+//				if ((edges[i] == Prev_pair.second) && (len == Prev_pair.first)) {
+//					DEBUG("SKIP "<<My_queue.size());
+//				} else
+				{
+//					Prev_pair = make_pair(edges[i], len);
+					typename std::multimap<int, EdgeId>::iterator Map_iter;
+
+					Map_iter = Map_queue.find(len);
+					while(Map_iter!=Map_queue.end()){
+						if (Map_iter->first != len){
+							Map_iter = Map_queue.end();
+							break;
+						}
+						if (Map_iter->second == edges[i]) break;
+						++Map_iter;
+					}
+
+					if (Map_iter == Map_queue.end())
+					{
+						Map_queue.insert(make_pair(len, edges[i]));
+//						DEBUG("Push ("<<edges[i]<<") "<<old_IDs.ReturnIntId(edge_labels[edges[i]])<<","<<len<<") ->"<<Map_queue.size());
+					}
+				}
+			}
+
+		}
+
+	}
+	pair_info.d = best;
+	return 0;
 }
+
+
+
+
 
 template<class Graph>
 size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
@@ -426,7 +500,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 				int dif_d = 0;
 				//				if ((d >=new_graph.length(left_id))||(edge_labels[left_id] == right_id ))
 				{
-					if ((dir == 1) && (edge_labels[left_id] != right_id)) {
+					if ((dir == 1) /*&& (edge_labels[left_id] != right_id)*/) {
 						dif_d = new_graph.length(left_id);
 
 					}
