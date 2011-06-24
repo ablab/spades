@@ -34,10 +34,6 @@ private:
 
 	VertexData data_;
 
-	void set_conjugate(VertexId conjugate) {
-		conjugate_ = conjugate;
-	}
-
 	size_t OutgoingEdgeCount() const {
 		return outgoing_edges_.size();
 	}
@@ -149,8 +145,9 @@ private:
 };
 
 template<typename VertexData, typename EdgeData, class DataMaster>
-class AbstractNonconjugateGraph: public ObservableGraph<SingleVertex<VertexData,
-		EdgeData, DataMaster>*, SingleEdge<VertexData, EdgeData, DataMaster>*> {
+class AbstractNonconjugateGraph: public ObservableGraph<SingleVertex<
+		VertexData, EdgeData, DataMaster>*, SingleEdge<VertexData, EdgeData,
+		DataMaster>*> {
 public:
 	typedef SingleVertex<VertexData, EdgeData, DataMaster>* VertexId;
 	typedef set<VertexId> Vertices;
@@ -171,7 +168,8 @@ public:
 
 	EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
 		assert(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
-		EdgeId newEdge = new SingleEdge<VertexData, EdgeData, DataMaster> (v1, v2, data);
+		EdgeId newEdge = new SingleEdge<VertexData, EdgeData, DataMaster> (v1,
+				v2, data);
 		v1->AddOutgoingEdge(newEdge);
 		v2->AddIncomingEdge(newEdge);
 		return newEdge;
@@ -204,15 +202,15 @@ public:
 	template<typename Comparator = std::less<VertexId> >
 	SmartVertexIterator<AbstractNonconjugateGraph, Comparator> SmartVertexBegin(
 			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<AbstractNonconjugateGraph, Comparator> (*this,
-				true, comparator);
+		return SmartVertexIterator<AbstractNonconjugateGraph, Comparator> (
+				*this, true, comparator);
 	}
 
 	template<typename Comparator = std::less<VertexId> >
 	SmartVertexIterator<AbstractNonconjugateGraph, Comparator> SmartVertexEnd(
 			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<AbstractNonconjugateGraph, Comparator> (*this,
-				false, comparator);
+		return SmartVertexIterator<AbstractNonconjugateGraph, Comparator> (
+				*this, false, comparator);
 	}
 
 	template<typename Comparator = std::less<EdgeId> >
@@ -235,12 +233,12 @@ public:
 
 	AbstractNonconjugateGraph(DataMaster master) :
 				ObservableGraph<VertexId, EdgeId> (
-						new SimpleHandlerApplier<AbstractConjugateGraph<
-								VertexData, EdgeData, DataMaster> > (*this)),
+						new SimpleHandlerApplier<AbstractNonconjugateGraph<
+								VertexData, EdgeData, DataMaster> > ()),
 				master_(master) {
 	}
 
-	virtual ~AbstractConjugateGraph() {
+	virtual ~AbstractNonconjugateGraph() {
 		while (!vertices_.empty()) {
 			ForceDeleteVertex(*vertices_.begin());
 		}
@@ -331,7 +329,7 @@ public:
 		VertexId start = edge->start();
 		VertexId end = edge->end();
 		start->RemoveOutgoingEdge(edge);
-		end->RemoveIncomingEdge(rcEdge);
+		end->RemoveIncomingEdge(edge);
 		delete edge;
 	}
 
@@ -344,7 +342,7 @@ public:
 	}
 
 	VertexId EdgeStart(EdgeId edge) const {
-		return start = edge->start();
+		return edge->start();
 	}
 
 	VertexId EdgeEnd(EdgeId edge) const {
@@ -352,8 +350,7 @@ public:
 	}
 
 	bool CanCompressVertex(VertexId v) const {
-		return v->OutgoingEdgeCount() == 1
-				&& v->IncomingEdgeCount() == 1;
+		return v->OutgoingEdgeCount() == 1 && v->IncomingEdgeCount() == 1;
 	}
 
 	void CompressVertex(VertexId v) {
@@ -366,8 +363,8 @@ public:
 	EdgeId MergePath(const vector<EdgeId>& path) {
 		assert(!path.empty());
 		SequenceBuilder sb;
-		VertexId v1 = EdgeStart(correctedPath[0]);
-		VertexId v2 = EdgeEnd(path[correctedPath.size() - 1]);
+		VertexId v1 = EdgeStart(path[0]);
+		VertexId v2 = EdgeEnd(path[path.size() - 1]);
 		vector<EdgeData*> toMerge;
 		for (auto it = path.begin(); it != path.end(); ++it) {
 			toMerge.push_back(&((*it)->data()));

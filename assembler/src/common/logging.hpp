@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include "log4cxx/logger.h"
+#include <stdlib.h>
 
 log4cxx::LoggerPtr __scope_logger();
 
