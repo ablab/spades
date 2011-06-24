@@ -42,6 +42,12 @@ public:
 		EdgeIntId[NewEdgeId] = NewIntId;
 		return NewIntId;
 	}
+	int MaxVertexId(){
+		return MaxVertexIntId;
+	}
+	int MaxEdgeId(){
+		return MaxEdgeIntId;
+	}
 	void ClearVertexId(VertexId OldVertexId){
 		VertexIntId.erase(OldVertexId);
 	}
@@ -57,7 +63,7 @@ public:
 		typename tr1::unordered_map<VertexId, int>::iterator it;
 		it = VertexIntId.find(v);
 		if (it != VertexIntId.end()) {
-			DEBUG("Find finished successful");
+//			DEBUG("Find finished successful");
 
 			return it->second;
 		}
@@ -70,6 +76,12 @@ public:
 		g_.AddActionHandler(this);
 		MaxVertexIntId = 0;
 		MaxEdgeIntId = 0;
+	}
+	IdTrackHandler(Graph &g, int VertexStartIndex, int EdgeStartIndex) :
+		GraphActionHandler<Graph> ("IdTrackHandler"), g_(g) {
+		g_.AddActionHandler(this);
+		MaxVertexIntId = VertexStartIndex;
+		MaxEdgeIntId = EdgeStartIndex;
 	}
 
 	virtual ~IdTrackHandler() {
@@ -116,15 +128,15 @@ public:
 	RealIdGraphLabeler(Graph& g, IdTrackHandler<Graph>& IdTrack) : g_(g), IDs(IdTrack) {}
 
 	virtual std::string label(VertexId vertexId) const {
-		DEBUG("Label for vertex "<<vertexId);
+//		DEBUG("Label for vertex "<<vertexId);
 		int x = IDs.ReturnIntId(vertexId);
-		DEBUG("is "<<x<<" "<<ToString(x));
-		return ToString(x);
+//		DEBUG("is "<<x<<" "<<ToString(x));
+		return ToString(x)+": "+g_.str(vertexId);
 	}
 
 	virtual std::string label(EdgeId edgeId) const {
 		int x = IDs.ReturnIntId(edgeId);
-		return ToString(x);
+		return ToString(x)+": "+g_.str(edgeId);
 	}
 };
 

@@ -149,8 +149,6 @@ private:
 
 	~PairedEdge() {
 	}
-public:
-	size_t coverage_;
 };
 
 template<typename VertexData, typename EdgeData, class DataMaster>

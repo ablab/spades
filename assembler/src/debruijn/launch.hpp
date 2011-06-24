@@ -22,6 +22,7 @@
 #include "omni_tools.hpp"
 #include "seq_map.hpp"
 #include "ID_track_handler.hpp"
+#include "read/osequencestream.hpp"
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -122,9 +123,9 @@ void RemoveLowCoverageEdges(Graph &g) {
 	INFO("Low coverage edges removed");
 }
 
-void ResolveRepeats(Graph &g, PairedInfoIndex<Graph> &info, Graph &new_graph) {
+void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs, PairedInfoIndex<Graph> &info, Graph &new_graph, IdTrackHandler<Graph> &new_IDs) {
 	INFO("Resolving primitive repeats");
-	RepeatResolver<Graph> repeat_resolver(g, 0, info, new_graph);
+	RepeatResolver<Graph> repeat_resolver(g, old_IDs, 0, info, new_graph, new_IDs);
 	repeat_resolver.ResolveRepeats();
 	INFO("Primitive repeats resolved");
 }
@@ -213,6 +214,16 @@ void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index, size_t iteration_co
 	}
 }
 
+void OutputContigs(Graph& g, const string& contigs_output_filename) {
+	INFO("Outputting contigs to " << contigs_output_filename);
+
+	osequencestream oss(contigs_output_filename);
+	//TipComparator<Graph> compare(g); // wtf, don't we have usual less for edges?
+	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		oss << g.EdgeNucls(*it);
+	}
+}
+
 template<size_t k, class ReadStream>
 void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 		const string& output_folder) {
@@ -230,11 +241,12 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 			"edge_graph");
 
-
 	SimplifyGraph<k>(g, index, 3, genome, output_folder);
 
 	ProduceInfo<k> (g, index, genome, output_folder + "simplified_graph.dot",
 			"simplified_graph");
+
+	paired_index.OutputData(output_folder + "edges_dist.txt");
 
 //	SimpleOfflineClusterer<Graph> clusterer(paired_index);
 //	PairedInfoIndex<Graph> clustered_paired_index(g);
@@ -243,16 +255,20 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 	paired_index.OutputData(output_folder + "edges_dist.txt");
 
 	INFO("before ResolveRepeats");
+	RealIdGraphLabeler<Graph> IdTrackLabelerBefore(g, IntIds);
+	gvis::WriteSimple( output_folder + "repeats_resolved_simple_before.dot", "no_repeat_graph", g, IdTrackLabelerBefore);
+
 	Graph new_graph(k);
-	IdTrackHandler<Graph> NewIntIds(new_graph);
-	ResolveRepeats(g, paired_index, new_graph);
+	IdTrackHandler<Graph> NewIntIds(new_graph, IntIds.MaxVertexId(), IntIds.MaxEdgeId());
+	ResolveRepeats(g, IntIds, paired_index, new_graph, NewIntIds);
 	INFO("before graph writing");
-	RealIdGraphLabeler<Graph> IdTrackLabeler(new_graph, NewIntIds);
-	gvis::WriteSimple( output_folder + "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
-	gvis::WriteSimple( output_folder + "repeats_resolved_siiimple_int.dot", "no_repeat_graph", new_graph, IdTrackLabeler);
-		INFO("repeat resolved graph written");
+	RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, NewIntIds);
+	gvis::WriteSimple( output_folder + "repeats_resolved_simple_after.dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
+		INFO("repeat resolved grpah written");
 	ProduceInfo<k> (new_graph, index, genome, output_folder + "repeats_resolved.dot",
 			"no_repeat_graph");
+
+	OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 
 }
@@ -278,6 +294,8 @@ void DeBruijnGraphTool(ReadStream& stream, const string& genome,
 
 	ProduceInfo<k> (g, index, genome, output_folder + "simplified_graph.dot",
 			"simplified_graph");
+
+	OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 }
 
