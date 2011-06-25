@@ -31,6 +31,8 @@ public:
 		}
 		omnigraph::Compressor<Graph> compressor(g);
 		compressor.CompressAllVertices();
+		omnigraph::Cleaner<Graph> cleaner(g);
+		cleaner.Clean();
 	}
 
 };

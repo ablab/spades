@@ -195,7 +195,8 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	Graph &graph_;
-	Path<EdgeId> path_;
+	Path<EdgeId> path1_;
+	Path<EdgeId> path2_;
 
 	void SetColor(map<EdgeId, string> &color, EdgeId edge, string col) {
 		auto it = color.find(edge);
@@ -206,11 +207,11 @@ private:
 	}
 
 	void ConstructColorMap(map<EdgeId, string> &color) {
-		for (auto it = path_.sequence().begin(); it != path_.sequence().end(); ++it) {
+		for (auto it = path1_.sequence().begin(); it != path1_.sequence().end(); ++it) {
 			SetColor(color, *it, "red");
-			EdgeId e = *it;
-			EdgeId edge = graph_.conjugate(e);
-			SetColor(color, edge, "blue");
+		}
+		for (auto it = path2_.sequence().begin(); it != path2_.sequence().end(); ++it) {
+			SetColor(color, *it, "blue");
 		}
 	}
 
@@ -218,16 +219,19 @@ private:
 		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator) {
 			result.insert(*iterator);
 		}
-		for (auto iterator = path_.sequence().begin(); iterator
-				!= path_.sequence().end(); ++iterator) {
+		for (auto iterator = path1_.sequence().begin(); iterator
+				!= path1_.sequence().end(); ++iterator) {
 			result.erase(*iterator);
-			result.erase(graph_.conjugate(*iterator));
+		}
+		for (auto iterator = path2_.sequence().begin(); iterator
+				!= path2_.sequence().end(); ++iterator) {
+			result.erase(*iterator);
 		}
 	}
 
 public:
-	PathColorer(Graph &graph, Path<EdgeId> path) :
-		graph_(graph), path_(path) {
+	PathColorer(Graph &graph, Path<EdgeId> path1, Path<EdgeId> path2) :
+		graph_(graph), path1_(path1), path2_(path2) {
 	}
 
 	map<EdgeId, string> ColorPath() {
@@ -421,11 +425,12 @@ void WriteSimple(const string& file_name, const string& graph_name, Graph& g,
 
 template<class Graph>
 void WritePaired(const string& file_name, const string& graph_name, Graph& g,
-		Path<typename Graph::EdgeId> path = Path<typename Graph::EdgeId> ()) {
+		Path<typename Graph::EdgeId> path1/* = Path<typename Graph::EdgeId> ()*/,
+		Path<typename Graph::EdgeId> path2/* = Path<typename Graph::EdgeId> ()*/) {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
 	gvis::DotPairedGraphPrinter<Graph> gp(g, graph_name, filestr);
-	PathColorer<Graph> path_colorer(g, path);
+	PathColorer<Graph> path_colorer(g, path1, path2);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
 	omnigraph::StrGraphLabeler<Graph> gl(g);
 	ColoredGraphVisualizer<Graph> gv(g, gp, gl, coloring);
@@ -447,8 +452,9 @@ string ConstructComponentName(string file_name, size_t cnt) {
 
 template<class Graph>
 void WriteErrors(const string& file_name, const string& graph_name, Graph& g,
-		Path<typename Graph::EdgeId> path = Path<typename Graph::EdgeId> ()) {
-	PathColorer<Graph> path_colorer(g, path);
+		Path<typename Graph::EdgeId> path1 = Path<typename Graph::EdgeId> (),
+		Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId> ()) {
+	PathColorer<Graph> path_colorer(g, path1, path2);
 	set<typename Graph::EdgeId> black = path_colorer.BlackEdges();
 	omnigraph::StrGraphLabeler<Graph> gl(g);
 	ErrorComponentSplitter<Graph> splitter(g, black);
@@ -470,10 +476,11 @@ void WriteErrors(const string& file_name, const string& graph_name, Graph& g,
 
 template<class Graph>
 void WriteToFile(const string& file_name, const string& graph_name, Graph& g,
-		Path<typename Graph::EdgeId> path = Path<typename Graph::EdgeId> ()) {
-	WritePaired(file_name, graph_name, g, path);
+		Path<typename Graph::EdgeId> path1/* = Path<typename Graph::EdgeId> ()*/,
+		Path<typename Graph::EdgeId> path2/* = Path<typename Graph::EdgeId> ()*/) {
+	WritePaired(file_name, graph_name, g, path1, path2);
 	WriteSimple(file_name, graph_name, g);
-	WriteErrors(file_name, graph_name, g, path);
+	WriteErrors(file_name, graph_name, g, path1, path2);
 }
 
 }

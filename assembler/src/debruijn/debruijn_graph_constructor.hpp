@@ -80,8 +80,13 @@ private:
 	}
 
 	VertexId FindVertexByIncomingEdges(Graph &graph, Index &index, Kmer kmer) {
-		VertexId conjugate = FindVertexByOutgoingEdges(graph, index, !kmer);
-		return conjugate != NULL ? graph.conjugate(conjugate) : NULL;
+		for (char c = 0; c < 4; ++c) {
+			KPlusOneMer edge = kmer.pushFront(c);
+			if (index.containsInIndex(edge)) {
+				return graph.EdgeEnd(index.get(edge).first);
+			}
+		}
+		return NULL;
 	}
 
 	VertexId FindVertex(Graph &graph, Index &index, Kmer kmer) {
