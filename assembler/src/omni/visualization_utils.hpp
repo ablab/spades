@@ -86,6 +86,7 @@ public:
 		}
 		DEBUG("Vertices printed");
 		for (auto it = super::g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			if (super::g_.coverage(*it)>=0.01)
 			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it),
 					gl_.label(*it));
 		}
@@ -410,7 +411,7 @@ public:
 template<class Graph>
 void WriteSimple(const string& file_name, const string& graph_name, Graph& g,
 		const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph>()) {
-	DEBUG("Writing simple graph");
+	DEBUG("Writing simple graph "<<file_name);
 	fstream filestr;
 	string simple_file_name(file_name);
 	simple_file_name.insert(simple_file_name.size() - 4, "_simple");

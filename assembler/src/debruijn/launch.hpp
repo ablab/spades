@@ -229,7 +229,7 @@ void OutputContigs(Graph& g, const string& contigs_output_filename) {
 
 template<size_t k, class ReadStream>
 void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
-		const string& output_folder) {
+		const string& output_folder, const string& work_tmp_dir) {
 	INFO("Edge graph construction tool started");
 
 	Graph g(k);
@@ -271,6 +271,8 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 	ProduceInfo<k> (new_graph, index, genome, output_folder + "repeats_resolved.dot",
 			"no_repeat_graph");
 
+	ProduceInfo<k> (new_graph, index, genome, work_tmp_dir + "repeats_resolved.dot",
+			"no_repeat_graph");
 	OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 

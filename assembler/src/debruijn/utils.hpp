@@ -254,10 +254,16 @@ public:
 
 	void CountVertexEdgeStat() {
 		size_t edgeNumber = 0;
-		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator)
+		size_t sum_edge_length = 0;
+		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator) {
 			edgeNumber++;
+			if (graph_.coverage(*iterator) > 30) {
+				sum_edge_length += graph_.length(*iterator);
+			}
+		}
 		INFO("Vertex count=" << graph_.size() << "; Edge count="
 				<< edgeNumber);
+		INFO("sum length of edges(coverage > 30, both strands)" << sum_edge_length);
 	}
 
 	void CountBlackEdges() {
