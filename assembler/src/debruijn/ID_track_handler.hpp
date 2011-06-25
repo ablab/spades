@@ -85,7 +85,9 @@ public:
 	}
 
 	virtual ~IdTrackHandler() {
+	TRACE("~IdTrackHandler");
 		g_.RemoveActionHandler(this);
+		TRACE("~IdTrackHandler ok");
 	}
 
 /*	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
@@ -138,6 +140,10 @@ public:
 		int x = IDs.ReturnIntId(edgeId);
 		return ToString(x)+": "+g_.str(edgeId);
 	}
+	~RealIdGraphLabeler() {
+		TRACE("~RealIdGraphLabeler");
+	}
+
 };
 
 }

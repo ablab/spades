@@ -76,10 +76,12 @@ int main()
 	if (paired_mode) {
 		debruijn_graph::DeBruijnGraphWithPairedInfoTool<K, RCStream>(rcStream,
 				genome, output_dir, work_tmp_dir);
+		INFO("Working with " << dataset << " dataset nearly to finish");
 	} else {
 		debruijn_graph::DeBruijnGraphTool<K, RCStream>(rcStream, genome,
 				output_dir);
 	}
+	INFO("Working with " << dataset << " dataset finished");
 
 	// OK
 	return 0;

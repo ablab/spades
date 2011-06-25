@@ -95,7 +95,9 @@ public:
 	}
 
 	virtual ~EdgeIndex() {
+		TRACE("~EdgeIndex")
 		g_.RemoveActionHandler(this);
+		TRACE("~EdgeIndex OK")
 	}
 
 	InnerIndex &inner_index() {

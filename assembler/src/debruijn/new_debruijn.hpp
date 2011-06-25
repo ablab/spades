@@ -93,6 +93,8 @@ private:
 	typedef AbstractConjugateGraph<VertexData, EdgeData, DeBruijnMaster> super;
 	const size_t k_;
 	CoverageIndex<NewConjugateDeBruijnGraph>* coverage_index_;
+	DECL_LOGGER("NewConjugateDeBruijnGraph")
+
 
 public:
 	NewConjugateDeBruijnGraph(size_t k) :
@@ -102,7 +104,9 @@ public:
 	}
 
 	virtual ~NewConjugateDeBruijnGraph() {
+		TRACE("NewConjugateDeBruijnGraph destructor");
 		delete coverage_index_;
+		TRACE("NewConjugateDeBruijnGraph destructor ok");
 	}
 
 	template<class Stream, class ReadThreader>

@@ -105,7 +105,9 @@ private:
 	}
 
 	~PairedVertex() {
+		TRACE("PairedVertex destructor");
 		assert(outgoing_edges_.size() == 0);
+		TRACE("PairedVertex destructor ok");
 	}
 };
 
@@ -308,14 +310,23 @@ public:
 	}
 
 	void DeleteVertex(VertexId v) {
+		TRACE("ab_conj DeleteVertex "<<v);
 		assert(IsDeadEnd(v) && IsDeadStart(v));
+		TRACE("ab_conj DeleteVertex "<<v);
 		assert(v != NULL);
+		TRACE("ab_conj DeleteVertex "<<v);
 		FireDeleteVertex(v);
+		TRACE("ab_conj DeleteVertex "<<v);
 		VertexId conjugate = v->conjugate();
+		TRACE("ab_conj DeleteVertex "<<v<<" and conj "<<conjugate);
 		vertices_.erase(v);
+		TRACE("ab_conj delete "<<v);
 		delete v;
+		TRACE("ab_conj erase "<<conjugate);
 		vertices_.erase(conjugate);
+		TRACE("ab_conj delete "<<conjugate);
 		delete conjugate;
+		TRACE("ab_conj delete FINISHED");
 	}
 
 	void ForceDeleteVertex(VertexId v) {

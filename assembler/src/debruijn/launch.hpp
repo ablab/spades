@@ -100,6 +100,7 @@ void ClipTips(Graph &g) {
 	TipClipper<Graph, TipComparator<Graph>> tc(g, comparator, max_tip_length,
 			max_coverage, max_relative_coverage);
 	tc.ClipTips();
+	INFO("Clipping tips finished");
 }
 
 void RemoveBulges(Graph &g) {

@@ -272,7 +272,9 @@ public:
 	}
 
 	virtual ~PairedInfoIndex() {
+		TRACE("~PairedInfoIndex");
 		graph_.RemoveActionHandler(this);
+		TRACE("~PairedInfoIndex ok");
 	}
 
 	double sum() {

@@ -153,14 +153,23 @@ VertexId DeBruijnGraph::AddVertex() {
 }
 
 void DeBruijnGraph::DeleteVertex(VertexId v) {
+	TRACE("DeBruijnGraph::DeleteVertex "<<v);
 	assert(IsDeadEnd(v) && IsDeadStart(v));
+	TRACE("DeBruijnGraph::DeleteVertex "<<v);
 	assert(v != NULL);
+	TRACE("DeBruijnGraph::DeleteVertex "<<v);
 	FireDeleteVertex(v);
+	TRACE("DeBruijnGraph::DeleteVertex "<<v);
 	VertexId conjugate = v->conjugate();
+	TRACE("DeBruijnGraph::DeleteVertex "<<v);
 	vertices_.erase(v);
+	TRACE("DeBruijnGraph::DeleteVertex "<<v);
 	delete v;
+	TRACE("DeBruijnGraph::DeleteVertex ");
 	vertices_.erase(conjugate);
+	TRACE("DeBruijnGraph::DeleteVertex ");
 	delete conjugate;
+	TRACE("DeBruijnGraph::DeleteVertex Ok");
 }
 
 void DeBruijnGraph::ForceDeleteVertex(VertexId v) {

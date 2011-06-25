@@ -143,6 +143,7 @@ private:
 			EdgeId edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
 			EdgeId edge2 = graph_.GetUniqueIncomingEdge(splitVertex);
 			if (IsTip(edge1) || IsTip(edge2)) {
+//				if (graph_.CanCompressVertex(splitVertex)
 				graph_.CompressVertex(splitVertex);
 			}
 		}
@@ -150,7 +151,9 @@ private:
 
 	void DeleteTipVertex(VertexId vertex) {
 		if (graph_.IsDeadEnd(vertex) && graph_.IsDeadStart(vertex)) {
+			TRACE("DELETE IT")
 			graph_.DeleteVertex(vertex);
+			TRACE("DELETE OK")
 		}
 	}
 
@@ -162,13 +165,22 @@ private:
 
 
 	void removeTip(EdgeId tip) {
+		TRACE("remove Tip 1")
 		VertexId start = graph_.EdgeStart(tip);
+		TRACE("remove Tip 2")
 		VertexId end = graph_.EdgeEnd(tip);
+		TRACE("remove Tip 3")
 		graph_.DeleteEdge(tip);
-		CompressSplitVertex(start);
-		CompressSplitVertex(end);
-		DeleteTipVertex(start);
-		DeleteTipVertex(end);
+		TRACE("remove Tip 4")
+		if (graph_.CanCompressVertex(start))
+				CompressSplitVertex(start);
+		else
+			DeleteTipVertex(start);
+		if (graph_.CanCompressVertex(end))
+				CompressSplitVertex(end);
+		else
+			DeleteTipVertex(end);
+		TRACE("remove Tip 8")
 	}
 
 	//	void RemoveTips() {
@@ -198,7 +210,7 @@ public:
 	 */
 	void ClipTips() {
 		TRACE("Tip clipping started");
-		for (auto iterator = graph_.SmartEdgeBegin(comparator_); !iterator.IsEnd(); ++iterator) {
+		for (auto iterator = graph_.SmartEdgeBegin(comparator_); !iterator.IsEnd(); ) {
 			EdgeId tip = *iterator;
 			TRACE("Checking edge for being tip " << tip);
 			if (IsTip(tip)) {
@@ -213,6 +225,9 @@ public:
 			} else {
 				TRACE("Edge " << tip << " judged NOT to look like tip topologically");
 			}
+			TRACE("Try to find next edge");
+			++iterator;
+			TRACE("Use next edge");
 		}
 		TRACE("Tip clipping finished");
 		Compressor<Graph> compresser(graph_);
