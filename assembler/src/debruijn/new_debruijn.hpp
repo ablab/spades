@@ -169,6 +169,23 @@ public:
 		assert(false);
 	}
 
+	std::string str(EdgeId edge)  {
+//		return " ";
+
+		stringstream ss;
+		ss << length(edge) << "(" << coverage(edge) << ")";
+		return ss.str();
+
+	}
+
+	std::string str(VertexId v)  {
+		return " ";
+//
+//		stringstream ss;
+//		ss << length(edge) << "(" << coverage(edge) << ")";
+//		return ss.str();
+
+	}
 };
 
 class NewNonconjugateDeBruijnGraph: public AbstractNonconjugateGraph<
