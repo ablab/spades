@@ -83,10 +83,7 @@ private:
 	 * @return true if vertex judged to be tip and false otherwise.
 	 */
 	bool IsTip(VertexId v) {
-		if (!graph_.CheckUniqueIncomingEdge(v) || !graph_.IsDeadEnd(v))
-			return false;
-		EdgeId edge = graph_.GetUniqueIncomingEdge(v);
-		return graph_.length(edge) <= max_tip_length_;
+		return graph_.IncomingEdgeCount(v) + graph_.OutgoingEdgeCount(v) == 1;
 	}
 
 	/**
@@ -95,7 +92,8 @@ private:
 	 * @return true if edge judged to be tip and false otherwise.
 	 */
 	bool IsTip(EdgeId edge) {
-		return IsTip(graph_.EdgeEnd(edge));
+		return graph_.length(edge) <= max_tip_length_ && (IsTip(
+				graph_.EdgeEnd(edge)) || IsTip(graph_.EdgeStart(edge)));
 	}
 
 	//	void FindTips() {
@@ -107,18 +105,21 @@ private:
 	//		}
 	//	}
 
-	double MaxCompetitorCoverage(VertexId splitVertex, EdgeId tip) {
-		assert(!graph_.CheckUniqueOutgoingEdge(splitVertex));
-		if (graph_.CheckUniqueOutgoingEdge(splitVertex)) {
-			assert(false);//such situation should never occur
-		}
-		const vector<EdgeId> competitors = graph_.OutgoingEdges(splitVertex);
+	double MaxCompetitorCoverage(EdgeId tip, vector<EdgeId> competitors) {
 		double result = 0;
 		for (auto it = competitors.begin(); it != competitors.end(); ++it) {
 			if (*it != tip)
 				result = max(result, graph_.coverage(*it));
 		}
 		return result;
+	}
+
+	double MaxCompetitorCoverage(EdgeId tip) {
+		return max(
+				MaxCompetitorCoverage(tip,
+						graph_.OutgoingEdges(graph_.EdgeStart(tip))),
+				MaxCompetitorCoverage(tip,
+						graph_.IncomingEdges(graph_.EdgeEnd(tip))));
 	}
 
 	/**
@@ -129,14 +130,15 @@ private:
 		if (graph_.length(tip) > max_tip_length_ || graph_.coverage(tip)
 				> max_coverage_)
 			return false;
-		VertexId splitVertex = graph_.EdgeStart(tip);
-		if (graph_.CheckUniqueOutgoingEdge(splitVertex))
+		//		VertexId splitVertex = graph_.EdgeStart(tip);
+		if (graph_.OutgoingEdgeCount(graph_.EdgeStart(tip))
+				+ graph_.IncomingEdgeCount(graph_.EdgeEnd(tip)) == 2)
 			return false;
-		double max_coverage = MaxCompetitorCoverage(splitVertex, tip);
+		double max_coverage = MaxCompetitorCoverage(tip);
 		return graph_.coverage(tip) <= max_relative_coverage_ * max_coverage;
 	}
 
-	void compressSplitVertex(VertexId splitVertex) {
+	void CompressSplitVertex(VertexId splitVertex) {
 		if (graph_.CanCompressVertex(splitVertex)) {
 			EdgeId edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
 			EdgeId edge2 = graph_.GetUniqueOutgoingEdge(
@@ -147,18 +149,27 @@ private:
 		}
 	}
 
+	void DeleteTipVertex(VertexId vertex) {
+		if (graph_.IsDeadEnd(vertex) && graph_.IsDeadStart(vertex)) {
+			graph_.DeleteVertex(vertex);
+		}
+	}
+
 	//	void compressSplitVertex(Vertex *splitVertex) {
 	//		if (graph_.CanCompressVertex(splitVertex)) {
 	//			graph_.CompressVertex(s	plitVertex);
 	//		}
 	//	}
 
+
 	void removeTip(EdgeId tip) {
-		VertexId splitVertex = graph_.EdgeStart(tip);
-		VertexId tipVertex = graph_.EdgeEnd(tip);
+		VertexId start = graph_.EdgeStart(tip);
+		VertexId end = graph_.EdgeEnd(tip);
 		graph_.DeleteEdge(tip);
-		graph_.DeleteVertex(tipVertex);
-		compressSplitVertex(splitVertex);
+		CompressSplitVertex(start);
+		CompressSplitVertex(end);
+		DeleteTipVertex(start);
+		DeleteTipVertex(end);
 	}
 
 	//	void RemoveTips() {
