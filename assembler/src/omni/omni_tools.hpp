@@ -48,7 +48,8 @@ public:
 	 */
 	bool CompressVertex(VertexId v) {
 		TRACE("Processing vertex " << v << " started");
-		if (!graph_.CheckUniqueOutgoingEdge(v) || !graph_.CheckUniqueIncomingEdge(v)) {
+		if (!graph_.CheckUniqueOutgoingEdge(v)
+				|| !graph_.CheckUniqueIncomingEdge(v)) {
 			TRACE("Vertex " << v << " judged NOT compressible. Proceeding to the next vertex");
 			TRACE("Processing vertex " << v << " finished");
 			return false;
@@ -59,7 +60,7 @@ public:
 		while (GoUniqueWayBackward(e) && e != start_edge) {
 		}
 		vector<EdgeId> mergeList;
-//		e = graph_.conjugate(e);
+		//		e = graph_.conjugate(e);
 		start_edge = e;
 		do {
 			mergeList.push_back(e);
@@ -100,8 +101,8 @@ public:
 	}
 
 	void Clean() {
-		for(auto iter = graph_.SmartVertexBegin(); !iter.IsEnd(); ++iter) {
-			if(graph_.IsDeadStart(*iter) && graph_.IsDeadEnd(*iter)) {
+		for (auto iter = graph_.SmartVertexBegin(); !iter.IsEnd(); ++iter) {
+			if (graph_.IsDeadStart(*iter) && graph_.IsDeadEnd(*iter)) {
 				graph_.DeleteVertex(*iter);
 			}
 		}
@@ -110,6 +111,72 @@ public:
 private:
 	DECL_LOGGER("Compressor")
 };
+
+template<class Graph>
+class GraphCopier {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	Graph &graph_;
+public:
+	GraphCopier(Graph &graph) :
+		graph_(graph) {
+	}
+	template<class CopyGraph>
+	void Copy(CopyGraph new_graph) {
+		typedef typename CopyGraph::EdgeId NewEdgeId;
+		typedef typename CopyGraph::VertexId NewVertexId;
+		map<VertexId, NewVertexId> copy;
+		for (auto iter = graph_.begin(); iter != graph_.end(); ++iter) {
+			NewVertexId new_vertex = new_graph.AddVertex(graph_.data(*iter));
+			copy.insert(make_pair(*iter, new_vertex));
+		}
+		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+			EdgeId edge = *iter;
+			new_graph.AddEdge(copy[graph_.EdgeStart(edge)],
+					copy[graph_.EdgeEnd(edge)], graph_.data(edge));
+		}
+	}
+};
+
+template<class Graph>
+class ConjugateGraphCopier {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	Graph &graph_;
+public:
+	ConjugateGraphCopier(Graph &graph) :
+		graph_(graph) {
+	}
+
+	template<class CopyGraph>
+	void Copy(CopyGraph new_graph) {
+		typedef typename CopyGraph::EdgeId NewEdgeId;
+		typedef typename CopyGraph::VertexId NewVertexId;
+		map<VertexId, NewVertexId> copy;
+		for (auto iter = graph_.begin(); iter != graph_.end(); ++iter) {
+			if (copy.count(*iter) == 0) {
+				NewVertexId new_vertex = new_graph.AddVertex(
+						graph_.data(*iter));
+				copy.insert(make_pair(*iter, new_vertex));
+				copy.insert(
+						make_pair(graph_.conjugate(*iter),
+								new_graph.conjugate(new_vertex)));
+			}
+		}
+		set<EdgeId> was;
+		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+			if (was.count(*iter) == 0) {
+				new_graph.AddEdge(copy[graph_.EdgeStart(*iter)], copy[graph_.EdgeEnd(*iter)],
+						graph_.data(*iter));
+				was.insert(*iter);
+				was.insert(graph_.conjugate(*iter));
+			}
+		}
+	}
+};
+
 }
 
 #endif /* OMNI_TOOLS_HPP_ */
