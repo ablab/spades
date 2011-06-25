@@ -48,7 +48,7 @@ public:
 	class EdgeInfo {
 
 	public:
-		static const int MAXD = 8;
+		static const int MAXD = 15;
 
 		EdgeInfo(const PairInfo &lp_, const int dir_, const EdgeId edge_,
 				const int d_) :
