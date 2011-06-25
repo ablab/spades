@@ -12,6 +12,10 @@ class DeBruijnMaster;
 class VertexData {
 	friend class NewDeBruijnGraph;
 	friend class DeBruinMaster;
+public:
+	VertexData() {
+
+	}
 };
 
 class EdgeData {
@@ -149,6 +153,9 @@ public:
 		return data(edge).nucls_.size() - k_;
 	}
 
+	using super::AddVertex;
+	using super::AddEdge;
+
 	VertexId AddVertex() {
 		return super::AddVertex(VertexData());
 	}
@@ -265,11 +272,14 @@ public:
 		coverage_index_->IncCoverage(edge);
 	}
 
-	VertexId AddVertex() {
+	using super::AddVertex;
+	using super::AddEdge;
+
+	virtual VertexId AddVertex() {
 		return super::AddVertex(VertexData());
 	}
 
-	EdgeId AddEdge(VertexId from, VertexId to, const Sequence &nucls) {
+	virtual EdgeId AddEdge(VertexId from, VertexId to, const Sequence &nucls) {
 		return super::AddEdge(from, to, EdgeData(nucls));
 	}
 

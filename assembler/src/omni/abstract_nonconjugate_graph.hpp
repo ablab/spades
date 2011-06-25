@@ -199,34 +199,6 @@ public:
 		return vertices_.end();
 	}
 
-	template<typename Comparator = std::less<VertexId> >
-	SmartVertexIterator<AbstractNonconjugateGraph, Comparator> SmartVertexBegin(
-			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<AbstractNonconjugateGraph, Comparator> (
-				*this, true, comparator);
-	}
-
-	template<typename Comparator = std::less<VertexId> >
-	SmartVertexIterator<AbstractNonconjugateGraph, Comparator> SmartVertexEnd(
-			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<AbstractNonconjugateGraph, Comparator> (
-				*this, false, comparator);
-	}
-
-	template<typename Comparator = std::less<EdgeId> >
-	SmartEdgeIterator<AbstractNonconjugateGraph, Comparator> SmartEdgeBegin(
-			const Comparator& comparator = Comparator()) {
-		return SmartEdgeIterator<AbstractNonconjugateGraph, Comparator> (*this,
-				true, comparator);
-	}
-
-	template<typename Comparator = std::less<EdgeId> >
-	SmartEdgeIterator<AbstractNonconjugateGraph, Comparator> SmartEdgeEnd(
-			const Comparator& comparator = Comparator()) {
-		return SmartEdgeIterator<AbstractNonconjugateGraph, Comparator> (*this,
-				false, comparator);
-	}
-
 	size_t size() {
 		return vertices_.size();
 	}
@@ -318,7 +290,7 @@ public:
 		DeleteVertex(v);
 	}
 
-	EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
+	virtual EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
 		EdgeId result = HiddenAddEdge(v1, v2, data);
 		FireAddEdge(result);
 		return result;
@@ -356,7 +328,10 @@ public:
 	void CompressVertex(VertexId v) {
 		//assert(CanCompressVertex(v));
 		if (CanCompressVertex(v)) {
-			Merge(GetUniqueIncomingEdge(v), GetUniqueOutgoingEdge(v));
+			vector<EdgeId> toMerge;
+			toMerge.push_back(GetUniqueIncomingEdge(v));
+			toMerge.push_back(GetUniqueOutgoingEdge(v));
+			MergePath(toMerge);
 		}
 	}
 
