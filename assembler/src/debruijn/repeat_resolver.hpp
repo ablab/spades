@@ -333,12 +333,18 @@ public:
 					}
 				}
 				INFO("Having "<< vertices.size() << "paired vertices, trying to split");
+				RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
+				int GraphCnt = 0;
+				gvis::WriteSimple("./resolve_"+ToString(GraphCnt)+ ".dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
+
 				for (auto v_iter = real_vertices.begin(), v_end =
 						real_vertices.end(); v_iter != v_end; ++v_iter) {
 					DEBUG(" resolving vertex"<<*v_iter<<" "<<GenerateVertexPairedInfo(new_graph, paired_di_data, *v_iter));
 					int tcount = RectangleResolveVertex(*v_iter);
 					DEBUG("Vertex "<< *v_iter<< " resolved to "<< tcount);
 					sum_count += tcount;
+					GraphCnt++;
+					gvis::WriteSimple( /*output_folder + */"./resolve_"+ToString(GraphCnt)+ ".dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
 				}
 			}
 			INFO("total vert" << sum_count);
@@ -523,7 +529,7 @@ public:
 								dif_d = new_graph.length(left_id);
 
 							}
-							if (d * mult > 0) {
+							if (d * mult >= 0) {
 								StupidPairInfoCorrector(new_graph, tmp[j]);
 								if (abs(tmp[j].d - d) > 5)
 									continue;
