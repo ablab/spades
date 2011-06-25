@@ -264,13 +264,16 @@ public:
 		size_t black_count = 0;
 		size_t edge_count = 0;
 		SimpleSequenceMapper<k, Graph> sequence_mapper(graph_, index_);
-		Path<EdgeId> path = sequence_mapper.MapSequence(Sequence(genome_));
-		const vector<EdgeId> path_edges = path.sequence();
-		set<EdgeId> colored_edges(path_edges.begin(), path_edges.end());
+		Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome_));
+		Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome_));
+		const vector<EdgeId> path_edges1 = path1.sequence();
+		const vector<EdgeId> path_edges2 = path2.sequence();
+		set<EdgeId> colored_edges;
+		colored_edges.insert(path_edges1.begin(), path_edges1.end());
+		colored_edges.insert(path_edges2.begin(), path_edges2.end());
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			edge_count++;
-			if (colored_edges.count(*it) == 0 && colored_edges.count(
-					graph_.conjugate(*it)) == 0) {
+			if (colored_edges.count(*it) == 0) {
 				black_count++;
 			}
 		}
@@ -392,7 +395,8 @@ private:
 				//				double weight = CorrectLength(path1, i) * CorrectLength(path2,
 				//						j);
 				double weight = 1;
-				PairInfo<EdgeId> new_info(path1[i], path2[j], current_distance2, weight);
+				PairInfo<EdgeId> new_info(path1[i], path2[j],
+						current_distance2, weight);
 				paired_index.AddPairInfo(new_info);
 				current_distance2 += graph_.length(path2[j]);
 			}
@@ -402,9 +406,9 @@ private:
 
 public:
 
-	PairedIndexFiller(Graph &graph, const EdgeIndex<kmer_size + 1, Graph>& index,
-			Stream& stream) :graph_(graph),
-		index_(index), stream_(stream) {
+	PairedIndexFiller(Graph &graph,
+			const EdgeIndex<kmer_size + 1, Graph>& index, Stream& stream) :
+		graph_(graph), index_(index), stream_(stream) {
 
 	}
 
@@ -413,7 +417,7 @@ public:
 	 */
 	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 1));
+			paired_index.AddPairInfo(PairInfo<EdgeId> (*it, *it, 0, 1));
 		}
 		typedef Seq<kmer_size + 1> KPOMer;
 		debruijn_graph::SimpleSequenceMapper<kmer_size, Graph> read_threader(

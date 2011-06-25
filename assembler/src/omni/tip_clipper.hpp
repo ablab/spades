@@ -141,8 +141,7 @@ private:
 	void CompressSplitVertex(VertexId splitVertex) {
 		if (graph_.CanCompressVertex(splitVertex)) {
 			EdgeId edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
-			EdgeId edge2 = graph_.GetUniqueOutgoingEdge(
-					graph_.conjugate(splitVertex));
+			EdgeId edge2 = graph_.GetUniqueIncomingEdge(splitVertex);
 			if (IsTip(edge1) || IsTip(edge2)) {
 				graph_.CompressVertex(splitVertex);
 			}
