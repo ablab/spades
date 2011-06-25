@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "new_debruijn.hpp"
+#include "config.hpp"
 
 namespace debruijn_graph {
 
@@ -48,17 +49,17 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 }
 
 void WriteToDotFile(Graph &g, const string& file_name, string graph_name,
-		Path<EdgeId> path = Path<EdgeId> ()) {
+		Path<EdgeId> path1/* = Path<EdgeId> ()*/, Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
-	gvis::WritePaired(file_name, graph_name, g,	path);
+	gvis::WritePaired(file_name, graph_name, g,	path1, path2);
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
 
 void DetailedWriteToDot(Graph &g, const string& file_name, string graph_name,
-		Path<EdgeId> path = Path<EdgeId> ()) {
+		Path<EdgeId> path1/* = Path<EdgeId> ()*/, Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
 	gvis::WriteToFile(file_name, graph_name, g,
-			path);
+			path1, path2);
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
 
@@ -73,18 +74,20 @@ template<size_t k>
 void ProduceInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		const string& genome, const string& file_name, const string& graph_name) {
 	CountStats<k> (g, index, genome);
-	Path<typename Graph::EdgeId> path = FindGenomePath<k> (genome, g, index);
-	WriteToDotFile(g, file_name, graph_name, path);
+	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
+	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (ReverseComplement(genome), g, index);
+	WriteToDotFile(g, file_name, graph_name, path1, path2);
 }
 
 template<size_t k>
 void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		const string& genome, const string& folder, const string& file_name, const string& graph_name) {
 	CountStats<k> (g, index, genome);
-	Path<typename Graph::EdgeId> path = FindGenomePath<k> (genome, g, index);
+	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
+	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (ReverseComplement(genome), g, index);
 
 	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH);
-	DetailedWriteToDot(g, folder + file_name, graph_name, path);
+	DetailedWriteToDot(g, folder + file_name, graph_name, path1, path2);
 }
 
 void ClipTips(Graph &g) {

@@ -98,6 +98,7 @@ public:
 	NewConjugateDeBruijnGraph(size_t k) :
 		super(DeBruijnMaster(k)), k_(k) {
 		coverage_index_ = new CoverageIndex<NewConjugateDeBruijnGraph> (*this);
+		AddActionHandler(coverage_index_);
 	}
 
 	virtual ~NewConjugateDeBruijnGraph() {
@@ -169,8 +170,8 @@ public:
 		assert(false);
 	}
 
-	std::string str(EdgeId edge)  {
-//		return " ";
+	std::string str(EdgeId edge) {
+		//		return " ";
 
 		stringstream ss;
 		ss << length(edge) << "(" << coverage(edge) << ")";
@@ -178,12 +179,12 @@ public:
 
 	}
 
-	std::string str(VertexId v)  {
+	std::string str(VertexId v) {
 		return " ";
-//
-//		stringstream ss;
-//		ss << length(edge) << "(" << coverage(edge) << ")";
-//		return ss.str();
+		//
+		//		stringstream ss;
+		//		ss << length(edge) << "(" << coverage(edge) << ")";
+		//		return ss.str();
 
 	}
 };
@@ -194,9 +195,13 @@ private:
 	typedef AbstractNonconjugateGraph<VertexData, EdgeData, DeBruijnMaster>
 			super;
 	const size_t k_;
+	CoverageIndex<NewNonconjugateDeBruijnGraph>* coverage_index_;
+
 public:
 	NewNonconjugateDeBruijnGraph(size_t k) :
 		super(DeBruijnMaster(k)), k_(k) {
+		coverage_index_ = new CoverageIndex<NewNonconjugateDeBruijnGraph> (*this);
+		AddActionHandler(coverage_index_);
 	}
 
 	virtual ~NewNonconjugateDeBruijnGraph() {
@@ -217,7 +222,59 @@ public:
 		return k_;
 	}
 
+	Sequence VertexNucls(VertexId v) const {
+		if (OutgoingEdges(v).size() > 0) {
+			return EdgeNucls(OutgoingEdges(v)[0]).Subseq(0, k_);
+		} else if (IncomingEdges(v).size() > 0) {
+			EdgeId inc = IncomingEdges(v)[0];
+			return EdgeNucls(inc).Subseq(length(inc) - k_, length(inc));
+		}
+		assert(false);
+	}
+
+	template<class Stream, class ReadThreader>
+	void FillCoverage(Stream& stream, const ReadThreader& threader) {
+		coverage_index_->FillIndex(stream, threader);
+	}
+
+	/**
+	 * Method sets coverage value for the edge
+	 */
+	void SetCoverage(EdgeId edge, size_t cov) {
+		coverage_index_->SetCoverage(edge, cov);
+	}
+
+	/**
+	 * Method returns average coverage of the edge
+	 */
+	double coverage(EdgeId edge) const {
+		return coverage_index_->coverage(edge);
+	}
+
+	/**
+	 * Method increases coverage value
+	 */
+	void IncCoverage(EdgeId edge, int toAdd) {
+		coverage_index_->IncCoverage(edge, toAdd);
+	}
+
+	/**
+	 * Method increases coverage value by 1
+	 */
+	void IncCoverage(EdgeId edge) {
+		coverage_index_->IncCoverage(edge);
+	}
+
+	VertexId AddVertex() {
+		return super::AddVertex(VertexData());
+	}
+
+	EdgeId AddEdge(VertexId from, VertexId to, const Sequence &nucls) {
+		return super::AddEdge(from, to, EdgeData(nucls));
+	}
+
 };
 }
 
 #endif /* NEW_DEBRUIJN_HPP_ */
+

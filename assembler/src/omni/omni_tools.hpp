@@ -16,13 +16,23 @@ class Compressor {
 
 	Graph &graph_;
 
-	bool GoUniqueWay(EdgeId &e) {
+	bool GoUniqueWayForward(EdgeId &e) {
 		VertexId u = graph_.EdgeEnd(e);
 		if (!graph_.CheckUniqueOutgoingEdge(u)
 				|| !graph_.CheckUniqueIncomingEdge(u)) {
 			return false;
 		}
 		e = graph_.GetUniqueOutgoingEdge(u);
+		return true;
+	}
+
+	bool GoUniqueWayBackward(EdgeId &e) {
+		VertexId u = graph_.EdgeStart(e);
+		if (!graph_.CheckUniqueOutgoingEdge(u)
+				|| !graph_.CheckUniqueIncomingEdge(u)) {
+			return false;
+		}
+		e = graph_.GetUniqueIncomingEdge(u);
 		return true;
 	}
 
@@ -46,14 +56,14 @@ public:
 		TRACE("Vertex " << v << " judged compressible");
 		EdgeId e = graph_.GetUniqueOutgoingEdge(v);
 		EdgeId start_edge = e;
-		while (GoUniqueWay(e) && e != start_edge) {
+		while (GoUniqueWayBackward(e) && e != start_edge) {
 		}
 		vector<EdgeId> mergeList;
-		e = graph_.conjugate(e);
-		start_edge = graph_.conjugate(start_edge);
+//		e = graph_.conjugate(e);
+		start_edge = e;
 		do {
 			mergeList.push_back(e);
-		} while (GoUniqueWay(e) && e != start_edge);
+		} while (GoUniqueWayForward(e) && e != start_edge);
 		EdgeId new_edge = graph_.MergePath(mergeList);
 		TRACE("Vertex " << v << " compressed and is now part of edge " << new_edge);
 		TRACE("Processing vertex " << v << " finished");
@@ -77,6 +87,29 @@ private:
 	DECL_LOGGER("Compressor")
 };
 
+template<class Graph>
+class Cleaner {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	Graph &graph_;
+
+public:
+	Cleaner(Graph &graph) :
+		graph_(graph) {
+	}
+
+	void Clean() {
+		for(auto iter = graph_.SmartVertexBegin(); !iter.IsEnd(); ++iter) {
+			if(graph_.IsDeadStart(*iter) && graph_.IsDeadEnd(*iter)) {
+				graph_.DeleteVertex(*iter);
+			}
+		}
+	}
+
+private:
+	DECL_LOGGER("Compressor")
+};
 }
 
 #endif /* OMNI_TOOLS_HPP_ */
