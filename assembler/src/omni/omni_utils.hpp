@@ -104,6 +104,7 @@ public:
 	}
 
 	virtual ~ActionHandler() {
+		TRACE("~ActionHandler");
 	}
 };
 
@@ -374,6 +375,8 @@ public:
 	}
 
 	virtual ~PairedHandlerApplier() {
+		TRACE("~PairedHandlerApplier");
+
 	}
 
 private:

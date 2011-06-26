@@ -41,10 +41,13 @@ protected:
 	}
 
 	void FireDeleteEdge(EdgeId edge) {
+		TRACE("FireDeleteEdge for "<<action_handler_list_.size()<<" handlers");
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
+			TRACE("FireDeleteEdge to handler "<<*it);
 			applier_->ApplyDelete(*it, edge);
 		}
+		TRACE("FireDeleteEdge OK");
 	}
 
 	void FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
@@ -76,11 +79,18 @@ public:
 	}
 
 	virtual ~ObservableGraph() {
+		TRACE("~ObservableGraph")
 		delete applier_;
+		TRACE("~ObservableGraph ok")
 	}
 
 	void AddActionHandler(Handler* action_handler) {
 		TRACE("Action handler added");
+		if (find(action_handler_list_.begin(),action_handler_list_.end(), action_handler) != action_handler_list_.end()){
+			TRACE("Action handler already presented");
+//			assert(0);
+		}
+		else
 		action_handler_list_.push_back(action_handler);
 	}
 
@@ -90,7 +100,7 @@ public:
 				!= action_handler_list_.end(); ++it) {
 			if (*it == action_handler) {
 				action_handler_list_.erase(it);
-				TRACE("Action handler removed");
+				TRACE("Action handler removed. Remain "<<action_handler_list_.size());
 				return true;
 			}
 		}

@@ -212,8 +212,11 @@ public:
 
 	void DeleteAllOutgoing(VertexId v) {
 		vector<EdgeId> out = v->outgoing_edges_;
+		TRACE("DeleteAllOutgoing "<<out.size());
 		for (auto it = out.begin(); it != out.end(); ++it) {
+			TRACE("DeleteOutgoing "<<*it);
 			DeleteEdge(*it);
+			TRACE("DeleteOutgoing ok");
 		}
 	}
 
@@ -330,9 +333,13 @@ public:
 	}
 
 	void ForceDeleteVertex(VertexId v) {
+		TRACE("ForceDeleteVertex "<<v);
 		DeleteAllOutgoing(v);
+		TRACE("DeleteAllOutgoing OK");
 		DeleteAllOutgoing(v->conjugate());
+		TRACE("DeleteAllOutgoing  conj OK");
 		DeleteVertex(v);
+		TRACE("ForceDeleteVertex OK");
 	}
 
 	EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
