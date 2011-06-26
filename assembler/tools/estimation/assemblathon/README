@@ -1,0 +1,15 @@
+http://www.plantagora.org/tools_downloads/assembly_evaluation.html
+
+assess_assembly.pl
+
+Download assess_assembly.pl
+
+Compare an assembly against its known reference or a similar reference.
+
+Assembly Evaluation
+
+assess_assembly.pl is a tool that will allow you to compare an assembly against its known reference or a similar reference. It will assess the territory covered by the assembly along with the number and size of gaps, amount of indels and snps, and the presence of misassembiles. Additionally you can specify to look for these attributes only in certain regions of the genome using an annotations file in gff format. First the tool will align the genome to the reference using nucmer. Then snps and indels will be identified using show-snps. If a gff file is specified, this file will be parsed for the regions of interest. Once this is complete the program will then parse the alignments for each contig and determine the best hit, or hits. After the best hits for each contig have been found the tool will step through the reference and record coverage, gap, and snp information.
+
+The final assemblies that are produced by the Plantagora Project are evaluated according to the metrics given in the Metrics section. The metrics are divided into 2 main categories. The first category consists of information recorded about the the assembly process itself and statistics about the resulting assemblies. The information recorded during the assembly process includes the processor time required, the kmer setting, and the memory required. The statistics about the assemblies include information about the size and number of contigs, and size and number of scaffolds.
+
+An important part of the evaluation of the assemblies requires comparing them to their source genome to determine various types of errors. Error can come in the form of wrong bases entered into portions of the sequence, but also can include sequences that are mistakenly inserted in the correct sequence or deletions of portions of the correct sequence. On a larger scale, misassemblies consist of whole reads or larger sections of the genome that are misplaced within the final scaffold, resulting in large discontinuities.

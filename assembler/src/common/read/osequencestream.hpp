@@ -24,8 +24,8 @@ public:
 	}
 
 	osequencestream& operator<<(const Sequence& seq) {
-		ofstream_ << "> contig #" << id_++ << endl;
 		string s = seq.str();
+		ofstream_ << "> contig #" << id_++ << " length=" << s.size() << endl;
 		size_t cur = 0;
 		while (cur < s.size()) {
 			ofstream_ << s.substr(cur, 70) << endl;
