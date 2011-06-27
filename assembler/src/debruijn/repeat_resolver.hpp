@@ -174,7 +174,7 @@ public:
 		INFO("paired info size: "<<paired_size);
 		assert(leap >= 0 && leap < 100);
 	}
-	void ResolveRepeats();
+	void ResolveRepeats(const string& output_folder);
 
 private:
 	int leap_;
@@ -303,7 +303,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 }
 
 template<class Graph>
-void RepeatResolver<Graph>::ResolveRepeats() {
+void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	//	old_graph = g;
 	//	old_index = ind;
 	INFO("resolve_repeats started");
@@ -321,7 +321,8 @@ void RepeatResolver<Graph>::ResolveRepeats() {
 		INFO("Having "<< vertices.size() << "paired vertices, trying to split");
 		RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
 		int GraphCnt = 0;
-		gvis::WriteSimple("./resolve_" + ToString(GraphCnt) + ".dot",
+
+		gvis::WriteSimple(output_folder+"resolve_" + ToString(GraphCnt) + ".dot",
 				"no_repeat_graph", new_graph, IdTrackLabelerAfter);
 
 		for (auto v_iter = real_vertices.begin(), v_end = real_vertices.end(); v_iter
@@ -332,7 +333,7 @@ void RepeatResolver<Graph>::ResolveRepeats() {
 			sum_count += tcount;
 			GraphCnt++;
 			gvis::WriteSimple(
-					/*output_folder + */"./resolve_" + ToString(GraphCnt)
+					output_folder+"resolve_" + ToString(GraphCnt)
 							+ ".dot", "no_repeat_graph", new_graph,
 					IdTrackLabelerAfter);
 		}
