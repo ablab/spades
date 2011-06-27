@@ -140,7 +140,7 @@ public:
 		int x = IDs.ReturnIntId(edgeId);
 		return ToString(x)+": "+g_.str(edgeId);
 	}
-	~RealIdGraphLabeler() {
+	virtual ~RealIdGraphLabeler() {
 		TRACE("~RealIdGraphLabeler");
 	}
 
