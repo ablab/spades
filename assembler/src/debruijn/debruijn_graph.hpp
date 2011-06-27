@@ -250,7 +250,7 @@ public:
 	 * Constructs empty graph to work with k-mers.
 	 *
 	 * @param k Main parameter that defines the size of k-mers
-	 * //@param action_handler Graph actions handler
+	 *
 	 */
 	DeBruijnGraph(size_t k) :
 		k_(k), applier_(*this) {

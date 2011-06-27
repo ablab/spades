@@ -114,6 +114,7 @@ private:
 		return result;
 	}
 
+	//todo strange semantics, discuss with Anton
 	double MaxCompetitorCoverage(EdgeId tip) {
 		return max(
 				MaxCompetitorCoverage(tip,
@@ -143,54 +144,32 @@ private:
 			EdgeId edge1 = graph_.GetUniqueOutgoingEdge(splitVertex);
 			EdgeId edge2 = graph_.GetUniqueIncomingEdge(splitVertex);
 			if (IsTip(edge1) || IsTip(edge2)) {
-//				if (graph_.CanCompressVertex(splitVertex)
 				graph_.CompressVertex(splitVertex);
 			}
 		}
 	}
 
-	void DeleteTipVertex(VertexId vertex) {
+	bool DeleteTipVertex(VertexId vertex) {
 		if (graph_.IsDeadEnd(vertex) && graph_.IsDeadStart(vertex)) {
-			TRACE("DELETE IT")
 			graph_.DeleteVertex(vertex);
-			TRACE("DELETE OK")
+			return true;
+		}
+		return false;
+	}
+
+	void ProcessVertex(VertexId v) {
+		if (!DeleteTipVertex(v)) {
+			CompressSplitVertex(v);
 		}
 	}
 
-	//	void compressSplitVertex(Vertex *splitVertex) {
-	//		if (graph_.CanCompressVertex(splitVertex)) {
-	//			graph_.CompressVertex(s	plitVertex);
-	//		}
-	//	}
-
-
-	void removeTip(EdgeId tip) {
-		TRACE("remove Tip 1")
+	void RemoveTip(EdgeId tip) {
 		VertexId start = graph_.EdgeStart(tip);
-		TRACE("remove Tip 2")
 		VertexId end = graph_.EdgeEnd(tip);
-		TRACE("remove Tip 3")
 		graph_.DeleteEdge(tip);
-		TRACE("remove Tip 4")
-		if (graph_.CanCompressVertex(start))
-				CompressSplitVertex(start);
-		else
-			DeleteTipVertex(start);
-		if (graph_.CanCompressVertex(end))
-				CompressSplitVertex(end);
-		else
-			DeleteTipVertex(end);
-		TRACE("remove Tip 8")
+		ProcessVertex(start);
+		ProcessVertex(end);
 	}
-
-	//	void RemoveTips() {
-	//		while (!tipQueue_.empty()) {
-	//			Edge * tip = tipQueue_.poll();
-	//			if (tipShouldBeRemoved(tip)) {
-	//				removeTip(tip);
-	//			}
-	//		}
-	//	}
 
 public:
 
@@ -217,7 +196,7 @@ public:
 				TRACE("Edge " << tip << " judged to look like tip topologically");
 				if (TipShouldBeRemoved(tip)) {
 					TRACE("Edge " << tip << " judged to be tip");
-					removeTip(tip);
+					RemoveTip(tip);
 					TRACE("Edge " << tip << " removed as tip");
 				} else {
 					TRACE("Edge " << tip << " judged NOT to be tip");
@@ -230,8 +209,8 @@ public:
 			TRACE("Use next edge");
 		}
 		TRACE("Tip clipping finished");
-		Compressor<Graph> compresser(graph_);
-		compresser.CompressAllVertices();
+		Compressor<Graph> compressor(graph_);
+		compressor.CompressAllVertices();
 	}
 
 private:

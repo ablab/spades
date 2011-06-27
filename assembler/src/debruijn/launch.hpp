@@ -86,7 +86,7 @@ void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
 	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (ReverseComplement(genome), g, index);
 
-	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH);
+	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	DetailedWriteToDot(g, folder + file_name, graph_name, path1, path2);
 }
 

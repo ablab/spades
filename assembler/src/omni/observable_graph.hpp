@@ -87,23 +87,23 @@ public:
 	void AddActionHandler(Handler* action_handler) {
 		TRACE("Action handler added");
 		if (find(action_handler_list_.begin(),action_handler_list_.end(), action_handler) != action_handler_list_.end()){
-			TRACE("Action handler already presented");
-//			assert(0);
+			FATAL_ASSERT(false, "Action handler " << action_handler->name() << " has already been added");
+		} else {
+			action_handler_list_.push_back(action_handler);
 		}
-		else
-		action_handler_list_.push_back(action_handler);
 	}
 
 	bool RemoveActionHandler(Handler* action_handler) {
-		TRACE("Trying to remove action handler");
+		TRACE("Trying to remove action handler " << action_handler->name());
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
 			if (*it == action_handler) {
 				action_handler_list_.erase(it);
-				TRACE("Action handler removed. Remain "<<action_handler_list_.size());
+				TRACE("Action handler " << action_handler->name() << " removed");
 				return true;
 			}
 		}
+		TRACE("Action handler " << action_handler->name() << " wasn't found among graph action handlers");
 		return false;
 	}
 
