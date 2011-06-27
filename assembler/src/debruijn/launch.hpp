@@ -127,10 +127,11 @@ void RemoveLowCoverageEdges(Graph &g) {
 	INFO("Low coverage edges removed");
 }
 
-void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs, PairedInfoIndex<Graph> &info, Graph &new_graph, IdTrackHandler<Graph> &new_IDs) {
+void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs, PairedInfoIndex<Graph> &info, Graph &new_graph, IdTrackHandler<Graph> &new_IDs, const string& output_folder) {
 	INFO("Resolving primitive repeats");
 	RepeatResolver<Graph> repeat_resolver(g, old_IDs, 0, info, new_graph, new_IDs);
-	repeat_resolver.ResolveRepeats();
+	mkdir((output_folder).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH);
+	repeat_resolver.ResolveRepeats(output_folder);
 	INFO("Primitive repeats resolved");
 }
 
@@ -250,7 +251,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 	ProduceInfo<k> (g, index, genome, output_folder + "simplified_graph.dot",
 			"simplified_graph");
 
-	paired_index.OutputData(output_folder + "edges_dist.txt");
+//	paired_index.OutputData(output_folder + "edges_dist.txt");
 
 //	SimpleOfflineClusterer<Graph> clusterer(paired_index);
 //	PairedInfoIndex<Graph> clustered_paired_index(g);
@@ -264,7 +265,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 
 	Graph new_graph(k);
 	IdTrackHandler<Graph> NewIntIds(new_graph, IntIds.MaxVertexId(), IntIds.MaxEdgeId());
-	ResolveRepeats(g, IntIds, paired_index, new_graph, NewIntIds);
+	ResolveRepeats(g, IntIds, paired_index, new_graph, NewIntIds, output_folder+"resolve/");
 	INFO("before graph writing");
 	RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, NewIntIds);
 	gvis::WriteSimple( output_folder + "repeats_resolved_simple_after.dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
