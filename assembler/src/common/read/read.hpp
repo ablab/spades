@@ -73,7 +73,7 @@ public:
 	 * It's actually not trim Ns, but trim everything before first 'N'
 	 * P.S. wtf? (Kolya)
 	 */
-	void trimNs() {
+	void trimNs() __attribute__ ((deprecated)) {
 		size_t index = seq_.find('N');
 		if (index != string::npos) {
 			seq_.erase(seq_.begin() + index, seq_.end());
@@ -86,7 +86,7 @@ public:
 	 * trim bad quality nucleotides from start and end of the read
 	 * @return size of the read left
 	 */
-	size_t trimBadQuality() {
+	size_t trimBadQuality() __attribute__ ((deprecated)) {
 		size_t start = 0;
 		for (; start < seq_.size(); ++start) {
 			if (qual_[start] > BAD_QUALITY_THRESHOLD)
@@ -115,7 +115,7 @@ public:
 	 * @param start start point
 	 * @return the first starting point of a valid k-mer >=start; return -1 if no such place exists
 	 */
-	size_t firstValidKmer(size_t start, size_t k) const {
+	size_t firstValidKmer(size_t start, size_t k) const __attribute__ ((deprecated)) {
 		size_t curHypothesis = start;
 		size_t i = start;
 		for (; i < seq_.size(); ++i) {

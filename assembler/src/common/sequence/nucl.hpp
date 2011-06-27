@@ -21,6 +21,7 @@
 #define NUCL_HPP_
 
 #include <cassert>
+#include <iostream>
 
 /**
  * ACGT -> true
@@ -56,6 +57,9 @@ inline char complement(char c) {
  * @return complement symbol, i.e. 'A' => 'T', 'C' => 'G', 'G' => 'C', 'T' => 'A'.
  */
 inline char nucl_complement(char c){
+	if (!is_nucl(c)) {
+		std::cerr << c << std::endl;
+	}
 	assert(is_nucl(c));
 	switch(c) {
 		case 'A': return 'T';
