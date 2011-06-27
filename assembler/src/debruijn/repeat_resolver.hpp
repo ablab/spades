@@ -321,6 +321,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 		INFO("Having "<< vertices.size() << "paired vertices, trying to split");
 		RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
 		int GraphCnt = 0;
+
 		gvis::WriteSimple(output_folder+"resolve_" + ToString(GraphCnt) + ".dot",
 				"no_repeat_graph", new_graph, IdTrackLabelerAfter);
 
@@ -332,7 +333,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 			sum_count += tcount;
 			GraphCnt++;
 			gvis::WriteSimple(
-					/*output_folder + */output_folder+"resolve_" + ToString(GraphCnt)
+					output_folder+"resolve_" + ToString(GraphCnt)
 							+ ".dot", "no_repeat_graph", new_graph,
 					IdTrackLabelerAfter);
 		}

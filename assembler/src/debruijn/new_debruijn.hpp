@@ -99,18 +99,14 @@ private:
 	CoverageIndex<NewConjugateDeBruijnGraph>* coverage_index_;
 	DECL_LOGGER("NewConjugateDeBruijnGraph")
 
-
 public:
 	NewConjugateDeBruijnGraph(size_t k) :
 		super(DeBruijnMaster(k)), k_(k) {
 		coverage_index_ = new CoverageIndex<NewConjugateDeBruijnGraph> (*this);
-		AddActionHandler(coverage_index_);
 	}
 
 	virtual ~NewConjugateDeBruijnGraph() {
-		TRACE("NewConjugateDeBruijnGraph destructor");
 		delete coverage_index_;
-		TRACE("NewConjugateDeBruijnGraph destructor ok");
 	}
 
 	template<class Stream, class ReadThreader>
@@ -212,7 +208,6 @@ public:
 	NewNonconjugateDeBruijnGraph(size_t k) :
 		super(DeBruijnMaster(k)), k_(k) {
 		coverage_index_ = new CoverageIndex<NewNonconjugateDeBruijnGraph> (*this);
-		AddActionHandler(coverage_index_);
 	}
 
 	virtual ~NewNonconjugateDeBruijnGraph() {
