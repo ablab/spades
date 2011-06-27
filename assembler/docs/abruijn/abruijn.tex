@@ -2,15 +2,16 @@
 
 \usepackage{amssymb,amsmath,amsthm}
 \usepackage{graphicx}
-%\usepackage{fullpage}
+\usepackage{fullpage}
 \usepackage[final,colorlinks,hyperindex,unicode=true]{hyperref}
 %\usepackage{tikz}
 %\usepackage{pgfplots}
 \usepackage[shadow,colorinlistoftodos,textwidth=3cm]{todonotes}
-%\usepackage{fullpage}
 
 \usepackage{booktabs}
 \usepackage{multirow,multicol}
+
+\usepackage{subfig}
 
 %\newcommand{\jpgpic}[1]{\begin{center}\includegraphics[width=\textwidth]{#1.jpg}\end{center}}
 
@@ -58,17 +59,25 @@ of a (circular) genome $g={\tt ATGCATTGCACTGCA}$ is given in Fig.~\ref{fig:debru
 (edges multiplicities are not shown). The genome spells a Chinese Postman
 cycle in the de Bruijn graph.
 
+%\begin{figure}
+%\begin{center}
+%a\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_debruijn.pdf}\\
+%b\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_earmark.pdf}\\
+%%\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_earmark2.pdf}\\
+%\end{center}
+%\end{figure}
+
 \begin{figure}
+\begin{center}
+\subfloat[]{\includegraphics[width=.9\textwidth]{ATGCATTGCACTGCA_debruijn.pdf}}\\
+\subfloat[]{\includegraphics[width=.9\textwidth]{ATGCATTGCACTGCA_earmark.pdf}}
+\end{center}
 \caption{(a) The de Bruijn graph built on $3$-mers 
 of all $6$-reads of a toy genome {\tt ATGCATTGCACTGCA}.
 (b) The earmark graph build on the same set of reads with all $3$-mers earmarked except for
 {\tt TGC} and {\tt GCA}.}\label{fig:debruijn}
-\begin{center}
-a\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_debruijn.pdf}\\
-b\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_earmark.pdf}\\
-%\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_earmark2.pdf}\\
-\end{center}
 \end{figure}
+
 
 The size of the de Bruijn graph for most genomes is huge making
 it difficult to process. 
@@ -251,7 +260,7 @@ set of earmarks.
 To give an example,
 consider two reads {\tt TATGCA} and {\tt GCATCC}.
 The corresponding path in the de Bruijn graph is shown in 
-Fig.~{fig:tipexample}(a). Assume now that only $3$-mers
+Fig.~\ref{fig:tipexample}(a). Assume now that only $3$-mers
 {\tt ATG}, {\tt TGC}, {\tt CAT}, and {\tt TCC} are earmarked.
 Then the corresponding part of the earmark graph contains two tips 
 (Fig.~{fig:tipexample}(b)). To avoid it we earmark also the $3$-mer
@@ -328,14 +337,25 @@ Note also that one can control the size of the earmark graph
 by varying the size of the set of earmarks (e.g., by varying the parameter $t$
 of Algorithm~\ref{alg:earmarksselection}).
 \item[Some of short repeats are already resolved.]
-To give an example, consider two reads {\tt TTGCAC} and {\tt ATGCAT}.
-\todo[inline]{complete}
+To give an example, consider two reads {\tt TTGCAC} and {\tt ATGCAT} 
+sharing a $4$-mer {\tt TGCA}. They are represented as two paths, shown 
+in Fig.~\ref{fig:repeatexample}(a), in the de Bruijn graph built on $3$-mers
+(this is a part of the de Bruijn graph from Fig.~\ref{fig:debruijn}).
+This is a typical repeat. The edge ${\tt TGC}\rightarrow{\tt GCA}$ has two
+incoming edges and two outgoing edges. While spelling a genome
+through this part of the graph it is not clear which incoming edge 
+corresponds to which outgoing edge. However in the earmarked graph
+this repeat may be already resolved if the $3$-mers {\tt TGC} and {\tt GCA}
+are not earmarked, see Fig.~\ref{fig:repeatexample}(b).
+
 
 \begin{figure}
-\caption{???}\label{fig:repeatexample}
+\caption{A small repeat in a de Bruijn graph (a) may be resolved
+in an earmarked graph (b) in case $k$-mers from the repeated region are
+not earmarked.}\label{fig:repeatexample}
 \begin{center}
-a\includegraphics[width=0.9\textwidth]{fig6_de.pdf}\\
-b\includegraphics[width=0.9\textwidth]{fig6_ear.pdf}\\
+\includegraphics[width=0.45\textwidth]{fig6_de.pdf}
+\includegraphics[width=0.45\textwidth]{fig6_ear.pdf}
 \end{center}
 \end{figure}
 

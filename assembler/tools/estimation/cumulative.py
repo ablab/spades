@@ -2,7 +2,7 @@ import sys
 
 # check command line arguments
 if len(sys.argv) < 2:
-	print "Draws Nx plot (from N01 through N50 to N100)"
+	print "Draws cumulative contigs lengths plot"
 	print "Usage: ", sys.argv[0], " contigs_file.fasta"
 	exit(0)
 	
