@@ -29,10 +29,10 @@ class SeqMap {
 private:
 	friend class SeqMapBuilder;
 	typedef Seq<size_> Kmer;
-	//typedef std::tr1::unordered_map<Kmer, pair<Value, size_t> ,
-	//	typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
-	typedef cuckoo<Kmer, pair<Value, size_t>, typename Kmer::multiple_hash,
-			typename Kmer::equal_to> map_type;
+	typedef std::tr1::unordered_map<Kmer, pair<Value, size_t> ,
+		typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
+//	typedef cuckoo<Kmer, pair<Value, size_t>, typename Kmer::multiple_hash,
+//			typename Kmer::equal_to> map_type;
 	map_type nodes_;
 
 	bool contains(const Kmer &k) const {
