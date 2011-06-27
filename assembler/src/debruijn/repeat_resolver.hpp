@@ -48,7 +48,7 @@ public:
 	class EdgeInfo {
 
 	public:
-		static const int MAXD = 8;
+		static const int MAXD = 1;
 
 		EdgeInfo(const PairInfo &lp_, const int dir_, const EdgeId edge_,
 				const int d_) :
@@ -518,6 +518,8 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 					if (d * mult >= 0) {
 						StupidPairInfoCorrector(new_graph, tmp[j]);
 						if (abs(tmp[j].d - d) > 5)
+							continue;
+						if ((tmp[j].d == 0)&&(new_graph.length(left_id)<50))
 							continue;
 						DEBUG("PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<tmp[j].d)
 						EdgeInfo ei(tmp[j], dir, right_id, tmp[j].d - dif_d);
