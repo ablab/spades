@@ -11,6 +11,7 @@
 #include "strobe_read.hpp"
 #include "omni_utils.hpp"
 #include "observable_graph.hpp"
+#include "coverage.hpp"
 
 namespace omnigraph {
 
@@ -26,7 +27,7 @@ private:
 	typedef PairedVertex<VertexData, EdgeData, DataMaster>* VertexId;
 	typedef PairedEdge<VertexData, EdgeData, DataMaster>* EdgeId;
 
-	friend class AbstractConjugateGraph<VertexData, EdgeData, DataMaster> ;
+	friend class AbstractConjugateGraph<VertexData, EdgeData, DataMaster>;
 
 	vector<EdgeId> outgoing_edges_;
 
@@ -298,6 +299,14 @@ public:
 
 	std::string str(const VertexId v) const {
 		return master_.str(data(v));
+	}
+
+	size_t length(const EdgeId edge) const {
+		return master_.length(data(edge));
+	}
+
+	size_t length(const VertexId v) const {
+		return master_.length(data(v));
 	}
 
 	VertexId AddVertex(const VertexData& data) {
