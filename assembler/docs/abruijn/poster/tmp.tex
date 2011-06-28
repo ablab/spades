@@ -1,0 +1,52 @@
+\documentclass[12pt]{article}
+
+\usepackage{amssymb,amsmath,amsthm}
+\usepackage{graphicx}
+\usepackage{fullpage}
+\usepackage[final,colorlinks,hyperindex,unicode=true]{hyperref}
+%\usepackage{tikz}
+%\usepackage{pgfplots}
+\usepackage[shadow,colorinlistoftodos,textwidth=3cm]{todonotes}
+
+\usepackage{booktabs}
+\usepackage{multirow,multicol}
+
+\usepackage{subfig}
+
+\def\acgt{\{{\tt A,C,G,T}\}}
+
+%\newcommand{\jpgpic}[1]{\begin{center}\includegraphics[width=\textwidth]{#1.jpg}\end{center}}
+
+\usepackage[section]{algorithm} % [section] is use to define the numbering mode
+\usepackage{algorithmic} 
+%\newcommand{\theHalgorithm}{\thechapter.\arabic{algorithm}} % this command is used to solve a bug
+
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+
+\begin{document}
+\thispagestyle{empty}
+\begin{tikzpicture}
+  %\node[anchor=south west] at (0,0) {\includegraphics[scale=0.7]{tmp.jpg}};
+  %\draw[help lines,step=0.5] (0,0) grid (12,10);
+  %\foreach \x in {0,1,...,12} \foreach \y in {0,1,...,10} 
+  %{ 
+  % \node at (\x,\y) {\x \y}; 
+  %  %\node[circle,drawfill=black] at (\x,\y) {};
+  %  \fill[black] (\x,\y) circle (0.2mm);
+  %}
+
+  \foreach \x/\y/\t in {1.5/1/AAT, 2.5/2/ATG, 4/2/TGC, 4.5/3.5/GCA, 6/4/CAT, 
+                        7/4.5/ATT, 8/4/TTG, 9/3/CAC, 10.5/2.5/ACT, 12/2/CTG,
+                        13.5/1.5/CAA}
+    \node[draw,rectangle,scale=0.7] (\t) at (\x,\y) {{\tt \t}};
+  
+  \foreach \s/\t in {AAT/ATG, ATG/TGC, TGC/GCA, GCA/CAT, CAT/ATT, ATT/TTG, TTG/TGC, 
+                     GCA/CAC, CAC/ACT, ACT/CTG}
+    \draw [->] (\s) to (\t);
+  \draw [->] (GCA) to[bend left=70] (CAA);
+  \draw [->] (CAA) to[bend left=20] (AAT);
+  \draw [->] (CTG) to[bend left=20] (TGC);
+  %\path[->] (GCA) edge [out=90,in=90] (CAA);
+\end{tikzpicture}
+\end{document}
