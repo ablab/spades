@@ -44,7 +44,7 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		const string& genome) {
 	INFO("Counting stats");
 	StatCounter<Graph, k> stat(g, index, genome);
-	stat.CountStatistics();
+	stat.Count();
 	INFO("Stats counted");
 }
 
