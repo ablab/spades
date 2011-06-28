@@ -13,11 +13,16 @@
 
 \usepackage{subfig}
 
+\def\acgt{\{{\tt A,C,G,T}\}}
+
 %\newcommand{\jpgpic}[1]{\begin{center}\includegraphics[width=\textwidth]{#1.jpg}\end{center}}
 
 \usepackage[section]{algorithm} % [section] is use to define the numbering mode
 \usepackage{algorithmic} 
 %\newcommand{\theHalgorithm}{\thechapter.\arabic{algorithm}} % this command is used to solve a bug
+
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
 
 \begin{document}
 
@@ -51,30 +56,21 @@ de Bruijn graph. We discuss them in the paper and also present some experimental
 A common approach to assembling a genome from short reads is constructing
 the de Bruijn graph \cite{PW01} on all $k$-mers from the given set of 
 reads and finding a traversal of edges in this graph.
-%Namely, the set of all $k$-mers form the set of vertices of the graph
-%and two $k$-mers $A$ and $B$ are joined by a directed edge if there is a read
-%where the $k$-mer $B$ appears 
 An example of the de Bruijn graph for $k=3$ and a set of all reads of length $6$
-of a (circular) genome $g={\tt ATGCATTGCACTGCA}$ is given in Fig.~\ref{fig:debruijn}a
-(edges multiplicities are not shown). The genome spells a Chinese Postman
+of a (circular) genome $g={\tt ATGCATTGCACTGCA}$ is given in 
+%Fig.~\ref{fig:debruijn}a
+Fig.~\ref{fig:debruijna}
+(edge multiplicities are not shown). The genome spells a Chinese Postman
 cycle in the de Bruijn graph.
-
-%\begin{figure}
-%\begin{center}
-%a\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_debruijn.pdf}\\
-%b\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_earmark.pdf}\\
-%%\includegraphics[width=0.9\textwidth]{ATGCATTGCACTGCA_earmark2.pdf}\\
-%\end{center}
-%\end{figure}
 
 \begin{figure}
 \begin{center}
-\subfloat[]{\includegraphics[width=.9\textwidth]{ATGCATTGCACTGCA_debruijn.pdf}}\\
-\subfloat[]{\includegraphics[width=.9\textwidth]{ATGCATTGCACTGCA_earmark.pdf}}
+\subfloat[]{\includegraphics[width=.9\textwidth]{ATGCATTGCACTGCA_debruijn.pdf}\label{fig:debruijna}}\\
+\subfloat[]{\includegraphics[width=.9\textwidth]{ATGCATTGCACTGCA_earmark.pdf}\label{fig:debruijnb}}
 \end{center}
-\caption{(a) The de Bruijn graph built on $3$-mers 
+\caption{\subref{fig:debruijna} The de Bruijn graph built on $3$-mers 
 of all $6$-reads of a toy genome {\tt ATGCATTGCACTGCA}.
-(b) The earmark graph build on the same set of reads with all $3$-mers earmarked except for
+\subref{fig:debruijnb} The earmark graph build on the same set of reads with all $3$-mers earmarked except for
 {\tt TGC} and {\tt GCA}.}\label{fig:debruijn}
 \end{figure}
 
@@ -98,7 +94,8 @@ only two black edges joining earmarked $k$-mers {\tt ACG}, {\tt ACT}, and {\tt A
 \end{center}
 We call the resulting graph built on earmarked $k$-mers \emph{an earmark graph}.
 It is a special case of the A-Bruijn graph introduced by Pevzner, Tang, and Tesler \cite{PTG04}.
-An example of the earmark graph for the same genome $g={\tt ATGCATTGCACTGCA}$ is shown in Fig.~\ref{fig:debruijn}b.
+An example of the earmark graph for the same genome $g={\tt ATGCATTGCACTGCA}$ 
+is shown in Fig.~\ref{fig:debruijnb}.
 Here, all $3$-mers are earmarked except for {\tt TGC} and {\tt GCA}.
 Besides an obvious advantage of requiring less memory 
 and time for constructing, the resulting earmark graph has several other advantages over the
@@ -120,13 +117,13 @@ to minimizers.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Earmark graph}
 In a typical genome assembly setting, one is given a set 
-${\cal R} \subseteq \{A,C,G,T\}^r$ 
-of substrings of length $r$ of an unknown genome $S \in \{A,C,G,T\}^*$.
+${\cal R} \subseteq {\acgt}^r$ 
+of substrings of length $r$ of an unknown genome $S \in {\acgt}^*$.
 The elements of ${\cal R}$ are usually called reads or $r$-reads.
 For a read $R$ and indices $1 \le i \le j \le r$,
 let $R[i,j]$ be a substring of $R$ starting at position $i$
 and ending at position $j$. By a $k$-mer we mean any string from
-$\{A,C,G,T\}^k$. Throughout the rest of the paper $r$ and $k<r$
+${\acgt}^k$. Throughout the rest of the paper $r$ and $k<r$
 refer, respectively, to read and mer size.
 
 A \emph{de Bruijn graph} $\textrm{DG}_k({\cal R})$ is defined as follows:
@@ -146,7 +143,7 @@ on its $k$-mers in $\textrm{DG}_k({\cal R})$.
 
 An earmark graph can be viewed as the de Bruijn graph
 with some paths contracted into a single edge.
-Let ${\cal E} \subseteq \{A,C,G,T\}^k$ be a set of $k$-mers.
+Let ${\cal E} \subseteq {\acgt}^k$ be a set of $k$-mers.
 Below we refer to it as a \emph{set of earmarks} or as a \emph{set of earmarked $k$-mers}. 
 An \emph{earmark graph} $\textrm{EG}_k({\cal R}, {\cal E})$ is defined as follows:
 \begin{itemize}
@@ -167,24 +164,15 @@ the earmark graph coincides with the de Bruijn graph.
 Both de Bruijn and earmark graphs are built on a set of reads that can be viewed as a 
 set of reads from an unknown genome. A natural way to build these two graphs on a genome
 itself is to use the set of all its reads of a particular length. Namely, 
-for a genome $S \in \{A,C,G,T\}^*$, define $\Gamma_r(S) \subseteq \{A,C,G,T\}^r$
-as a set of all $r$-mers appearing in $S$. Then $\textrm{DG}_k(S)$ and $\textrm{EG}_k(S, {\cal E})$
+for a genome $S \in {\acgt}^*$, define $\Gamma_r(S) \subseteq {\acgt}^r$
+as a set of all $r$-mers appearing in $S$. Then $\textrm{DG}_k(S)$ 
+and $\textrm{EG}_k(S, {\cal E})$
 are just $\textrm{DG}_k(\Gamma_r(S))$ and $\textrm{EG}_k(\Gamma_r(S), {\cal E})$, respectively.
 It is easy to see that the genome $S$ spells a Chinese Postman cycle in 
 $\textrm{DG}_k(S)$.
 
-%This defintion can be used in a natural way to build the de Bruijn graph not on a set of reads,
-%but on a genome. Namely, for a genome $S \in \{A,C,G,T\}^*$, define $\Gamma_r(S) \subseteq \{A,C,G,T\}^k$
-%as a set of all $r$-mers appearing in $S$. Then, $\textrm{DB}()$
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\section{Selection of earmarks}
-%In this section, we discuss 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Earmark graph construction}
-%In this section, we give a high-level description of the main parts of the assembler.
 In this section, we give a high-level description of an earmark graph construction procedure.
 When the graph is constructed we simplify it using methods similar to the ones used in
 EULER \cite{PW01} and Velvet \cite{Z08}.
@@ -217,13 +205,17 @@ We then select initial earmarks as follows.
 %\end{enumerate}
 
 \begin{algorithm}
-\caption{EarmarksSelection(${\cal R}$, $h$, $t$)}
+\caption{EarmarksSelection}
 \label{alg:earmarksselection}
-\begin{algorithmic}[1] % line numbering every fifth line
+\begin{algorithmic}%[1] 
+  \REQUIRE a set of reads ${\cal R} \subseteq {\acgt}^r$ of length $r$, 
+    a hash function $h \colon {\acgt}^k \rightarrow \mathbb{N}$ on $k$-mers, 
+    an parameter $t \in \mathbb{N}$
+  \ENSURE a set of earmarks ${\cal E} \subseteq {\acgt}^k$
   \STATE ${\cal E} \gets \emptyset$ \COMMENT{set of earmarked $k$-mers}
   \STATE ${\cal H} \gets \emptyset$ \COMMENT{set of earmarked hash values}
   \FORALL{$R \in {\cal R}$}
-    \STATE find $t$ minimum hash values of all the $k$-mers of $R$ and 
+    \STATE find $t$ minimum hash values of all $(r-k+1)$ $k$-mers of $R$ and 
     add them to ${\cal H}$
   \ENDFOR
   \IF {$t=1$}
@@ -260,23 +252,23 @@ set of earmarks.
 To give an example,
 consider two reads {\tt TATGCA} and {\tt GCATCC}.
 The corresponding path in the de Bruijn graph is shown in 
-Fig.~\ref{fig:tipexample}(a). Assume now that only $3$-mers
+Fig.~\ref{fig:tipa}. Assume now that only $3$-mers
 {\tt ATG}, {\tt TGC}, {\tt CAT}, and {\tt TCC} are earmarked.
 Then the corresponding part of the earmark graph contains two tips 
-(Fig.~{fig:tipexample}(b)). To avoid it we earmark also the $3$-mer
-{\tt GCA}.
+(Fig.~\ref{fig:tipb}). To avoid it we earmark also the $3$-mer
+{\tt GCA} (Fig.~\ref{fig:tipc}).
 
 \begin{figure}
-\caption{(a) Part of the de Bruijn graph corresponding to reads 
-{\tt TATGCA} and {\tt GCATCC}. (b) The corresponding part 
-of the earmarked graph has a gap if the $3$-mer {\tt GCA} is not 
-earmarked. (c) The gap can be avoided by earmarking the $3$-mer 
-{\tt GCA}.}\label{fig:tipexample}
 \begin{center}
-a\includegraphics[width=0.9\textwidth]{fig5_de.pdf}\\
-b\includegraphics[width=0.9\textwidth]{fig5_ear.pdf}\\
-c\includegraphics[width=0.9\textwidth]{fig5_earwotip.pdf}\\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{fig5_de.pdf}\label{fig:tipa}}
+\subfloat[]{\includegraphics[width=0.45\textwidth]{fig5_ear.pdf}\label{fig:tipb}}\\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{fig5_earwotip.pdf}\label{fig:tipc}}
 \end{center}
+\caption{\subref{fig:tipa} Part of the de Bruijn graph corresponding to reads 
+{\tt TATGCA} and {\tt GCATCC}. \subref{fig:tipb} The corresponding part 
+of the earmarked graph has a gap if the $3$-mer {\tt GCA} is not 
+earmarked. \subref{fig:tipc} The gap can be avoided by earmarking the $3$-mer 
+{\tt GCA}.}\label{fig:tipexample}
 \end{figure}
 
 %To give an example,
@@ -290,13 +282,31 @@ c\includegraphics[width=0.9\textwidth]{fig5_earwotip.pdf}\\
 %%thus it is an error of the approach
 %%to call this vertices tips and to introduce a gap here.
 
-The tip extension procedure is suggested to handle this issue.
-It consists of three steps that are repeated consequently until 
-no possible tip extensions are present.
-(Each steps demands reading the entire input data. It is possible to reduce the procedure to less than three
-steps, but much more memory will be used in that case).
+The tip extension procedure is suggested to handle this issue,
+see Algorithm~\ref{alg:tipextension}.{\todo{complete}}
+%It consists of three steps that are repeated consequently until 
+%no possible tip extensions are present.
+%(Each steps demands reading the entire input data. It is possible to reduce the procedure to less than three
+%steps, but much more memory will be used in that case).
 
-\todo[inline]{write as a pseudocode}
+%\todo[inline]{write as a pseudocode}
+\begin{algorithm}
+\caption{TipExtension}
+\label{alg:tipextension}
+\begin{algorithmic}%[1] 
+  \REQUIRE a set of reads ${\cal R} \subseteq {\acgt}^r$ of length $r$, 
+    a set of earmarks ${\cal E} \subseteq {\acgt}^k$
+  \ENSURE an extended set of earmarks ${\cal E} \subseteq {\cal E'} \subseteq {\acgt}^k$
+  \STATE ${\cal L} \gets \emptyset$, ${\cal R} \gets \emptyset$ 
+    \COMMENT{sets of left and right tips, respectively}
+  \FORALL{$R \in {\cal R}$}
+    \STATE add the leftmost earmarked $k$-mer from $K$ to ${\cal L}$
+    \STATE add the rightmost earmarked $k$-mer from $K$ to ${\cal R}$
+  \ENDFOR
+  \RETURN ${\cal E}$
+\end{algorithmic}
+\end{algorithm}
+
 
 \begin{enumerate}
 \item By processing all the reads, find out for each earmarked $k$-mer, whether we have seen any
@@ -339,29 +349,28 @@ of Algorithm~\ref{alg:earmarksselection}).
 \item[Some of short repeats are already resolved.]
 To give an example, consider two reads {\tt TTGCAC} and {\tt ATGCAT} 
 sharing a $4$-mer {\tt TGCA}. They are represented as two paths, shown 
-in Fig.~\ref{fig:repeatexample}(a), in the de Bruijn graph built on $3$-mers
+in Fig.~\ref{fig:repa}, in the de Bruijn graph built on $3$-mers
 (this is a part of the de Bruijn graph from Fig.~\ref{fig:debruijn}).
 This is a typical repeat. The edge ${\tt TGC}\rightarrow{\tt GCA}$ has two
 incoming edges and two outgoing edges. While spelling a genome
 through this part of the graph it is not clear which incoming edge 
 corresponds to which outgoing edge. However in the earmarked graph
 this repeat may be already resolved if the $3$-mers {\tt TGC} and {\tt GCA}
-are not earmarked, see Fig.~\ref{fig:repeatexample}(b).
+are not earmarked, see Fig.~\ref{fig:repb}.
 
 
 \begin{figure}
-\caption{A small repeat in a de Bruijn graph (a) may be resolved
-in an earmarked graph (b) in case $k$-mers from the repeated region are
-not earmarked.}\label{fig:repeatexample}
 \begin{center}
-\includegraphics[width=0.45\textwidth]{fig6_de.pdf}
-\includegraphics[width=0.45\textwidth]{fig6_ear.pdf}
+\subfloat[]{\includegraphics[width=0.45\textwidth]{fig6_de.pdf}\label{fig:repa}}
+\subfloat[]{\includegraphics[width=0.45\textwidth]{fig6_ear.pdf}\label{fig:repb}}
 \end{center}
+\caption{A small repeat in the de Bruijn graph~\subref{fig:repa} may be resolved
+in the earmarked graph~\subref{fig:repb} in case $k$-mers from the repeated region are
+not earmarked.}\label{fig:repeatexample}
 \end{figure}
 
 \item[Less errors.] Erroneous $k$-mers can be excluded from the graph already on
-the construction stage.
-Blah-blah-blah
+the construction stage.{\todo{TBW}}
 \end{description}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
