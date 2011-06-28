@@ -52,6 +52,8 @@
 \end{center}%
 \vspace{1cm}
 
+%\fontsize{32pt}{2.5em}\selectfont
+
 \begin{center}
 \begin{tikzpicture}
 \draw[step=1cm,help lines] (0,0) grid (50,70);
@@ -60,11 +62,11 @@
 
 \draw[color=SteelBlue3,line width=2mm] (1,35) -- (49,35);
 
-\begin{scope}[xshift=14cm,yshift=50cm]
+\begin{scope}[xshift=14cm,yshift=50cm,scale=1.5]
   \foreach \x/\y/\t in {1.5/1/AAT, 2.5/2/ATG, 4/2/TGC, 4.5/3.5/GCA, 6/4/CAT, 
                         7/4.5/ATT, 8/4/TTG, 9/3/CAC, 10.5/2.5/ACT, 12/2/CTG,
                         13.5/1.5/CAA}
-    \node[draw,rectangle,scale=0.7] (\t) at (\x,\y) {{\tt \t}};
+    \node[draw,rectangle,scale=1.0] (\t) at (\x,\y) {{\tt \t}};
   
   \foreach \s/\t in {AAT/ATG, ATG/TGC, TGC/GCA, GCA/CAT, CAT/ATT, ATT/TTG, TTG/TGC, 
                      GCA/CAC, CAC/ACT, ACT/CTG}
