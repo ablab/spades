@@ -57,6 +57,14 @@ public:
 		return v.str();
 	}
 
+	size_t length(const OmniEdge &edge) const {
+		return edge.length();
+	}
+
+	size_t length(const OmniVertex &v) const {
+		return v.length();
+	}
+
 	bool equals(const OmniEdge &data1, const OmniEdge &data2) {
 		return data1 == data2;
 	}
@@ -72,6 +80,10 @@ public:
 
 class Omnigraph : public AbstractConjugateGraph<OmniVertex, OmniEdge, OmniDataMaster> {
 public:
+	double coverage(const EdgeId edge) const {
+		return 500; // TODO remove it
+	}
+
 	Omnigraph() : AbstractConjugateGraph<OmniVertex, OmniEdge, OmniDataMaster>(OmniDataMaster()) {
 
 	}

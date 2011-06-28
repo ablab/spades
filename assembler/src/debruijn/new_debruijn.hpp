@@ -177,7 +177,7 @@ public:
 		assert(false);
 	}
 
-	std::string str(EdgeId edge) {
+	std::string str(EdgeId edge) const {
 		//		return " ";
 
 		stringstream ss;
@@ -186,7 +186,7 @@ public:
 
 	}
 
-	std::string str(VertexId v) {
+	std::string str(VertexId v) const {
 		return " ";
 		//
 		//		stringstream ss;
