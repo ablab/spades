@@ -13,6 +13,13 @@
 
 namespace omnigraph {
 
+template<class Graph>
+class PathProcessor {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+};
+
 /**
  * This class removes simple bulges from given graph with the following algorithm: it iterates through all edges of
  * the graph and for each edge checks if this edge is likely to be a simple bulge

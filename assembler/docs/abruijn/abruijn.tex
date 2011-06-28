@@ -297,11 +297,11 @@ see Algorithm~\ref{alg:tipextension}.{\todo{complete}}
   \REQUIRE a set of reads ${\cal R} \subseteq {\acgt}^r$ of length $r$, 
     a set of earmarks ${\cal E} \subseteq {\acgt}^k$
   \ENSURE an extended set of earmarks ${\cal E} \subseteq {\cal E'} \subseteq {\acgt}^k$
-  \STATE ${\cal L} \gets \emptyset$, ${\cal R} \gets \emptyset$ 
+  \STATE ${\cal L} \gets {\cal E}$, ${\cal R} \gets {\cal E}$ 
     \COMMENT{sets of left and right tips, respectively}
   \FORALL{$R \in {\cal R}$}
-    \STATE add the leftmost earmarked $k$-mer from $K$ to ${\cal L}$
-    \STATE add the rightmost earmarked $k$-mer from $K$ to ${\cal R}$
+    \STATE remove all but the first earmarked $k$-mer of $R$ from ${\cal L}$
+    \STATE remove all but the last earmarked $k$-mer of $R$ from ${\cal R}$
   \ENDFOR
   \RETURN ${\cal E}$
 \end{algorithmic}
@@ -344,7 +344,7 @@ graph}\label{sec:advantages}
 \item[Smaller size.]
 The earmark graph requires less time and memory for construction.
 Note also that one can control the size of the earmark graph 
-by varying the size of the set of earmarks (e.g., by varying the parameter $t$
+by varying the size of the set of earmarks (e.g., by varying the value of the parameter $t$
 of Algorithm~\ref{alg:earmarksselection}).
 \item[Some of short repeats are already resolved.]
 To give an example, consider two reads {\tt TTGCAC} and {\tt ATGCAT} 
@@ -371,6 +371,8 @@ not earmarked.}\label{fig:repeatexample}
 
 \item[Less errors.] Erroneous $k$-mers can be excluded from the graph already on
 the construction stage.{\todo{TBW}}
+
+\todo[inline]{what else?}
 \end{description}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
