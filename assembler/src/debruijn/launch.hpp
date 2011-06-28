@@ -33,7 +33,7 @@ namespace debruijn_graph {
 
 DECL_LOGGER("debruijn_graph")
 
-typedef NewConjugateDeBruijnGraph Graph;
+typedef ConjugateDeBruijnGraph Graph;
 typedef Graph::EdgeId EdgeId;
 typedef Graph::VertexId VertexId;
 
@@ -44,7 +44,7 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		const string& genome) {
 	INFO("Counting stats");
 	StatCounter<Graph, k> stat(g, index, genome);
-	stat.CountStatistics();
+	stat.Count();
 	INFO("Stats counted");
 }
 

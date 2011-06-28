@@ -28,14 +28,14 @@ using omnigraph::CoverageIndex;
 class Vertex;
 
 //todo remove
-class DeBruijnGraph;
+class OldDeBruijnGraph;
 
 class Edge {
 private:
-	friend class DeBruijnGraph;
+	friend class OldDeBruijnGraph;
 
 	//todo temporary solution during refactoring!!!
-	friend class CoverageIndex<DeBruijnGraph>;
+	friend class CoverageIndex<OldDeBruijnGraph>;
 
 	const Sequence& nucls() const {
 		return nucls_;
@@ -73,7 +73,7 @@ class Vertex {
 public:
 	typedef vector<Edge*>::const_iterator EdgeIterator;
 private:
-	friend class DeBruijnGraph;
+	friend class OldDeBruijnGraph;
 
 	vector<Edge*> outgoing_edges_;
 
@@ -132,25 +132,25 @@ private:
 
 };
 
-class DeBruijnGraph {
+class OldDeBruijnGraph {
 public:
 	typedef Edge* EdgeId;
 	typedef Vertex* VertexId;
 
 	typedef set<Vertex*>::const_iterator VertexIterator;
 	typedef Vertex::EdgeIterator EdgeIterator;
-	typedef GraphActionHandler<DeBruijnGraph> ActionHandler;
+	typedef GraphActionHandler<OldDeBruijnGraph> ActionHandler;
 
 private:
 	const size_t k_;
 
-	const PairedHandlerApplier<DeBruijnGraph> applier_;
+	const PairedHandlerApplier<OldDeBruijnGraph> applier_;
 
 	vector<ActionHandler*> action_handler_list_;
 
 	set<Vertex*> vertices_;
 
-	CoverageIndex<DeBruijnGraph>* coverage_index;
+	CoverageIndex<OldDeBruijnGraph>* coverage_index;
 
 	VertexId HiddenAddVertex();
 
@@ -176,8 +176,8 @@ private:
 	void FireGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2);
 	void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2);
 
-	DeBruijnGraph(const DeBruijnGraph&);
-	DeBruijnGraph& operator=(const DeBruijnGraph&);
+	OldDeBruijnGraph(const OldDeBruijnGraph&);
+	OldDeBruijnGraph& operator=(const OldDeBruijnGraph&);
 
 public:
 
@@ -200,9 +200,9 @@ public:
 	 * @param comparator comparator which defines order in which vertices would be iterated.
 	 */
 	template<typename Comparator = std::less<VertexId> >
-	SmartVertexIterator<DeBruijnGraph, Comparator> SmartVertexBegin(
+	SmartVertexIterator<OldDeBruijnGraph, Comparator> SmartVertexBegin(
 			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<DeBruijnGraph, Comparator> (*this, true,
+		return SmartVertexIterator<OldDeBruijnGraph, Comparator> (*this, true,
 				comparator);
 	}
 
@@ -211,9 +211,9 @@ public:
 	 * @param comparator comparator which defines order in which vertices would be iterated.
 	 */
 	template<typename Comparator = std::less<VertexId> >
-	SmartVertexIterator<DeBruijnGraph, Comparator> SmartVertexEnd(
+	SmartVertexIterator<OldDeBruijnGraph, Comparator> SmartVertexEnd(
 			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<DeBruijnGraph, Comparator> (*this, false,
+		return SmartVertexIterator<OldDeBruijnGraph, Comparator> (*this, false,
 				comparator);
 	}
 
@@ -222,9 +222,9 @@ public:
 	 * @param comparator comparator which defines order in which edges would be iterated.
 	 */
 	template<typename Comparator = std::less<EdgeId> >
-	SmartEdgeIterator<DeBruijnGraph, Comparator> SmartEdgeBegin(
+	SmartEdgeIterator<OldDeBruijnGraph, Comparator> SmartEdgeBegin(
 			const Comparator& comparator = Comparator()) {
-		return SmartEdgeIterator<DeBruijnGraph, Comparator> (*this, true,
+		return SmartEdgeIterator<OldDeBruijnGraph, Comparator> (*this, true,
 				comparator);
 	}
 
@@ -233,9 +233,9 @@ public:
 	 * @param comparator comparator which defines order in which edges would be iterated.
 	 */
 	template<typename Comparator = std::less<EdgeId> >
-	SmartEdgeIterator<DeBruijnGraph, Comparator> SmartEdgeEnd(
+	SmartEdgeIterator<OldDeBruijnGraph, Comparator> SmartEdgeEnd(
 			const Comparator& comparator = Comparator()) {
-		return SmartEdgeIterator<DeBruijnGraph, Comparator> (*this, false,
+		return SmartEdgeIterator<OldDeBruijnGraph, Comparator> (*this, false,
 				comparator);
 	}
 
@@ -252,16 +252,16 @@ public:
 	 * @param k Main parameter that defines the size of k-mers
 	 *
 	 */
-	DeBruijnGraph(size_t k) :
+	OldDeBruijnGraph(size_t k) :
 		k_(k), applier_(*this) {
 		assert(k % 2 == 1);
-		coverage_index = new CoverageIndex<DeBruijnGraph>(*this);
+		coverage_index = new CoverageIndex<OldDeBruijnGraph>(*this);
 	}
 
 	/**
 	 * Deletes action_handler.
 	 */
-	~DeBruijnGraph() {
+	~OldDeBruijnGraph() {
 		while (!vertices_.empty()) {
 			ForceDeleteVertex(*vertices_.begin());
 		}
@@ -560,12 +560,11 @@ private:
 	DECL_LOGGER("DeBruijnGraph")
 };
 
-typedef DeBruijnGraph::EdgeId EdgeId;
-//typedef DeBruijnGraph::EdgeData EdgeData;
-typedef DeBruijnGraph::VertexId VertexId;
-typedef DeBruijnGraph::VertexIterator VertexIterator;
-typedef DeBruijnGraph::EdgeIterator EdgeIterator;
-typedef DeBruijnGraph::ActionHandler ActionHandler;
+//typedef DeBruijnGraph::EdgeId EdgeId;
+//typedef DeBruijnGraph::VertexId VertexId;
+//typedef DeBruijnGraph::VertexIterator VertexIterator;
+//typedef DeBruijnGraph::EdgeIterator EdgeIterator;
+//typedef DeBruijnGraph::ActionHandler ActionHandler;
 
 }
 #endif /* DEBRUIJN_GRAPH_HPP_ */
