@@ -33,7 +33,7 @@ namespace debruijn_graph {
 
 DECL_LOGGER("debruijn_graph")
 
-typedef NewConjugateDeBruijnGraph Graph;
+typedef ConjugateDeBruijnGraph Graph;
 typedef Graph::EdgeId EdgeId;
 typedef Graph::VertexId VertexId;
 
