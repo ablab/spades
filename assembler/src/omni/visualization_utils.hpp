@@ -86,7 +86,6 @@ public:
 		}
 		DEBUG("Vertices printed");
 		for (auto it = super::g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if (super::g_.coverage(*it)>=0.01)
 			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it),
 					gl_.label(*it));
 		}
