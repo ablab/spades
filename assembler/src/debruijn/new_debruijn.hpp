@@ -105,7 +105,9 @@ public:
 	}
 
 	virtual ~ConjugateDeBruijnGraph() {
+		DEBUG("~ConjugateDeBruijnGraph() start");
 		delete coverage_index_;
+		DEBUG("~ConjugateDeBruijnGraph() finished");
 	}
 
 	template<class Stream, class ReadThreader>
@@ -202,6 +204,7 @@ private:
 			super;
 	const size_t k_;
 	CoverageIndex<NonconjugateDeBruijnGraph>* coverage_index_;
+	DECL_LOGGER("NonconjugateDeBruijnGraph")
 
 public:
 	NonconjugateDeBruijnGraph(size_t k) :
@@ -210,6 +213,7 @@ public:
 	}
 
 	virtual ~NonconjugateDeBruijnGraph() {
+		DEBUG("~NonconjugateDeBruijnGraph()");
 	}
 
 	/**
