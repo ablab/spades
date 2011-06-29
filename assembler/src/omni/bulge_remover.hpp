@@ -13,12 +13,71 @@
 
 namespace omnigraph {
 
+/*
 template<class Graph>
 class PathProcessor {
+public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
+	class Callback {
+		virtual void HandlePath(const vector<EdgeId>& path) = 0;
+	};
+
+private:
+	const Graph& g_;
+	size_t min_length_;
+	size_t max_length_;
+	VertexId start_;
+	VertexId end_;
+	Callback& callback_;
+
+	void Process() {
+
+	}
+
+	void Go(VertexId v, size_t length, vector<EdgeId>& path) {
+		if (length > max_length_) {
+			return;
+		}
+		if (v == end_ && length >= min_length_) {
+			callback_.HandlePath(path);
+		}
+		vector<EdgeId> outgoing_edges = g.OutgoingEdges(v);
+		for (size_t i = 0; i < outgoing_edges.size(); ++i) {
+			EdgeId edge = outgoing_edges[i];
+			TRACE("Going along edge of length " << g.length(edge));
+			size_t kplus_one_mer_coverage = std::floor(
+					g.length(edge) * g.coverage(edge) + 0.5);//kplus_one_mer_coverage(edge);
+			pair<vector<EdgeId> , int> path_and_coverage = Go(g,
+					g.EdgeEnd(edge), end, length_left - g.length(edge));
+			if (path_and_coverage.second >= 0 && path_and_coverage.second
+					+ (int) kplus_one_mer_coverage > best_path_coverage) {
+				best_path_coverage = path_and_coverage.second
+						+ kplus_one_mer_coverage;
+				best_path = path_and_coverage.first;
+				best_path.push_back(edge);
+			}
+		}
+		TRACE(
+				"Best path from vertex " << g.str(start) << " is "
+				<< PrintPath(g, best_path) << " with coverage "
+				<< best_path_coverage);
+		return make_pair(best_path, best_path_coverage);
+	}
+
+public:
+	PathProcessor(const Graph& g, size_t min_length, size_t max_length
+			, VertexId start, VertexId end, Callback& callback)
+		: g_(g), min_length_(min_length), max_length_(max_length)
+		, start_(start), end_(end), callback_(callback) {
+	}
+
+
+private:
+	DECL_LOGGER("PathProcessor")
 };
+*/
 
 /**
  * This class removes simple bulges from given graph with the following algorithm: it iterates through all edges of
