@@ -80,16 +80,16 @@ public:
 
 	virtual void Visualize() {
 		gp_.open();
-		DEBUG("Visualize started");
+		TRACE("Visualize started");
 		for (auto it = super::g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
 			gp_.AddVertex(*it, gl_.label(*it));
 		}
-		DEBUG("Vertices printed");
+		TRACE("Vertices printed");
 		for (auto it = super::g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it),
 					gl_.label(*it));
 		}
-		DEBUG("Edges printed");
+		TRACE("Edges printed");
 		gp_.close();
 	}
 
@@ -408,18 +408,30 @@ public:
 };
 
 template<class Graph>
-void WriteSimple(const string& file_name, const string& graph_name, Graph& g,
-		const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph>()) {
+void WriteToDotFile(const string& file_name, const string& graph_name, Graph& g, const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph>()) {
+	fstream filestr;
+	filestr.open(file_name.c_str(), fstream::out);
+	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
+	SimpleGraphVisualizer<Graph> sgv(g, gpr, labeler);
+	sgv.Visualize();
+	filestr.close();
+}
+
+template<class Graph>
+void WriteSimple(const string& file_name, const string& graph_name, Graph& g, const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph>()) {
 	DEBUG("Writing simple graph "<<file_name);
 	fstream filestr;
 	string simple_file_name(file_name);
 	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
 	filestr.open((simple_file_name).c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
-	DEBUG("Visualizer created");
+	DEBUG("DotGraphPrinter created");
 	SimpleGraphVisualizer<Graph> sgv(g, gpr, labeler);
+	DEBUG("SimpleGraphVisualizer created");
 	sgv.Visualize();
+	DEBUG("sgv.Visualize() ok");
 	filestr.close();
+	DEBUG("WriteSimple ok");
 }
 
 template<class Graph>
