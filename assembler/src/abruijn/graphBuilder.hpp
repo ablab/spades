@@ -188,7 +188,7 @@ public:
 			}
 		}
 
-		INFO("===== Adding reads to graph as paths... =====");
+		INFO("===== Adding reads to graph as paths (and setting coverage)... =====");
 		reader_.reset();
 		for (size_t i = 0; !reader_.eof(); ++i) {
 			reader_ >> r;
