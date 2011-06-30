@@ -123,8 +123,7 @@ void process(GetOpt::GetOpt_pp& options) {
             cr(srw, cut);
 
     abruijn::GraphBuilderMaster<CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream>>>> gbm(cr, take, mode);
-    gbm.build();
-    omnigraph::Omnigraph* g = gbm.graph();
+    omnigraph::Omnigraph* g = gbm.build();
 
     //  INFO("Spelling the reference genome");
     //  gbm.SpellGenomeThroughGraph(cut + 219);
@@ -150,9 +149,9 @@ void process(GetOpt::GetOpt_pp& options) {
 	bulge_remover.RemoveBulges(*g);
 	INFO("Bulges removed");
 
-	INFO("Outputting graph to " << output_file);
-    omnigraph::StrGraphLabeler<omnigraph::Omnigraph> labeler(*gbm.graph());
-    gvis::WriteSimple(output_file, "earmarked", *gbm.graph(), labeler);
+	INFO("===== Outputting graph to " << output_file << " =====");
+    omnigraph::StrGraphLabeler<omnigraph::Omnigraph> labeler(*g);
+    gvis::WriteToDotFile(output_file, "earmarked", *g, labeler);
 
     //ABruijnGraphWithGraphVisualizer ( "ATGTGTGACTTTGTATCGTATTGCGGGCGGCGCGCTTATTGTATGCGTAAATTTGGGTCATATTGATCGTAAAATGCGTATGATGCACTGCA", 6, 3 );
 }

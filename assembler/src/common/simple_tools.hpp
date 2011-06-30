@@ -19,7 +19,6 @@ template <typename T>
 std::string ToString(T& t) {
 	std::ostringstream ss;
 	ss << t;
-	TRACE(ss.str());
 	return ss.str();
 }
 

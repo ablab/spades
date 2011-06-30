@@ -408,8 +408,17 @@ public:
 };
 
 template<class Graph>
-void WriteSimple(const string& file_name, const string& graph_name, Graph& g,
-		const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph>()) {
+void WriteToDotFile(const string& file_name, const string& graph_name, Graph& g, const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph>()) {
+	fstream filestr;
+	filestr.open(file_name.c_str(), fstream::out);
+	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
+	SimpleGraphVisualizer<Graph> sgv(g, gpr, labeler);
+	sgv.Visualize();
+	filestr.close();
+}
+
+template<class Graph>
+void WriteSimple(const string& file_name, const string& graph_name, Graph& g, const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph>()) {
 	DEBUG("Writing simple graph "<<file_name);
 	fstream filestr;
 	string simple_file_name(file_name);
