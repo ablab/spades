@@ -3,6 +3,7 @@
 #include "abstract_conjugate_graph.hpp"
 #include "abstract_nonconjugate_graph.hpp"
 #include "coverage.hpp"
+#include "ID_track_handler.hpp"
 
 using omnigraph::CoverageIndex;
 namespace debruijn_graph {
@@ -177,7 +178,8 @@ public:
 		}
 		assert(false);
 	}
-
+//TODO:
+/* It seems, that these two functions must be called  default_label, and str must sign lower two. */
 	std::string str(EdgeId edge) const {
 		//		return " ";
 
@@ -189,12 +191,21 @@ public:
 
 	std::string str(VertexId v) const {
 		return " ";
-		//
-		//		stringstream ss;
-		//		ss << length(edge) << "(" << coverage(edge) << ")";
-		//		return ss.str();
-
 	}
+
+	std::string toPrint(VertexId v, IdTrackHandler<ConjugateDeBruijnGraph> &id_handler) const {
+		stringstream ss;
+		ss << "Vertex " << id_handler.ReturnIntId(v) << " ~ " <<id_handler.ReturnIntId(conjugate(v)) << " .";
+		return ss.str();
+	}
+
+	std::string toPrint(EdgeId e, IdTrackHandler<ConjugateDeBruijnGraph> &id_handler) const {
+		stringstream ss;
+		ss << "Edge " << id_handler.ReturnIntId(e) <<" : " << id_handler.ReturnIntId(EdgeStart(e)) << " -> " << id_handler.ReturnIntId(EdgeEnd(e)) << " ~ " << id_handler.ReturnIntId(conjugate(e)) <<" .";
+		return ss.str();
+	}
+
+
 };
 
 class NonconjugateDeBruijnGraph: public AbstractNonconjugateGraph<
