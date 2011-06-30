@@ -28,10 +28,11 @@
 #include <sys/stat.h>
 #include "new_debruijn.hpp"
 #include "config.hpp"
+#include "graphio.hpp"
+//#include "dijkstra.hpp"
 
 namespace debruijn_graph {
 
-DECL_LOGGER("debruijn_graph")
 
 typedef ConjugateDeBruijnGraph Graph;
 typedef Graph::EdgeId EdgeId;
@@ -249,6 +250,7 @@ template<size_t k, class ReadStream>
 void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 		const string& output_folder, const string& work_tmp_dir) {
 	INFO("Edge graph construction tool started");
+	mkdir(work_tmp_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
 	Graph g(k);
 	EdgeIndex<k + 1, Graph> index(g);
@@ -278,7 +280,8 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 	Graph new_graph(k);
 //	Copier.Copy<NCGraph>(new_graph);
 //	gvis::WriteSimple<NCGraph>( output_folder + "repeats_resolved_simple_copy.dot", "no_repeat_graph", new_graph);
-
+	DataPrinter<Graph> dataPrinter(g, IntIds);
+	dataPrinter.saveGraph(work_tmp_dir+"saved_graph.grp");
 	IdTrackHandler<Graph> NewIntIds(new_graph, IntIds.MaxVertexId(), IntIds.MaxEdgeId());
 	ResolveRepeats(g, IntIds, paired_index, new_graph, NewIntIds, output_folder+"resolve/");
 	INFO("before graph writing");

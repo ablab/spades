@@ -8,7 +8,7 @@
 #ifndef ERRONEOUS_CONNECTION_REMOVER_HPP_
 #define ERRONEOUS_CONNECTION_REMOVER_HPP_
 
-namespace debruijn_graph {
+namespace omnigraph {
 
 #include "omni_tools.hpp"
 
