@@ -156,7 +156,7 @@ public:
 		gvis::WriteToDotFile(output_file_ + "_uncompressed", "earmarked", *g, labeler);
 
 		//  INFO("Spelling the reference genome");
-		//  gbm.SpellGenomeThroughGraph(cut + 219);
+		//  gbm.SpellGenomeThroughGraph(cut_ + 219);
 
 		INFO("===== Compressing... =====");
 		omnigraph::Compressor<omnigraph::Omnigraph> compressor(*g);
@@ -172,8 +172,9 @@ public:
 		gvis::WriteToDotFile(output_file_ + "_tc", "earmarked", *g, labeler);
 
 		INFO("===== Removing bulges... =====");
-		omnigraph::BulgeRemover<omnigraph::Omnigraph> bulge_remover(br_max_length_div_K_ * K, br_max_coverage_, br_max_relative_coverage_, br_max_delta_, br_max_relative_delta_);
-		bulge_remover.RemoveBulges(*g);
+		omnigraph::SimpleBulgeCondition<omnigraph::Omnigraph> simple_path_condition(*g);
+		omnigraph::BulgeRemover<omnigraph::Omnigraph, omnigraph::SimpleBulgeCondition<omnigraph::Omnigraph>> bulge_remover(*g, br_max_length_div_K_ * K, br_max_coverage_, br_max_relative_coverage_, br_max_delta_, br_max_relative_delta_, simple_path_condition);
+		bulge_remover.RemoveBulges();
 		INFO(g->size() << " vertices");
 		gvis::WriteToDotFile(output_file_ + "_tc_br", "earmarked", *g, labeler);
 
@@ -183,8 +184,8 @@ public:
 		INFO(g->size() << " vertices");
 		gvis::WriteToDotFile(output_file_ + "_tc_br_ecr", "earmarked", *g, labeler);
 
-		//    	INFO("===== Outputting graph to " << output_file_ << " =====");
-		//        gvis::WriteToDotFile(output_file_, "earmarked", *g, labeler);
+//		INFO("===== Outputting graph to " << output_file_ << " =====");
+//		gvis::WriteToDotFile(output_file_, "earmarked", *g, labeler);
 
 		//ABruijnGraphWithGraphVisualizer ( "ATGTGTGACTTTGTATCGTATTGCGGGCGGCGCGCTTATTGTATGCGTAAATTTGGGTCATATTGATCGTAAAATGCGTATGATGCACTGCA", 6, 3 );
 	}
