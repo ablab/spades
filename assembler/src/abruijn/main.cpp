@@ -20,8 +20,8 @@ namespace abruijn {
 
 DECL_LOGGER("main")
 
-		class Launch {
-		public:
+class Launch {
+public:
 	int take_;
 	bool output_single_;
 	size_t cut_;
@@ -40,7 +40,7 @@ DECL_LOGGER("main")
 	double ecr_max_coverage_;
 	int ecr_max_length_div_K_;
 
-		private:
+private:
 	GetOpt_pp& options_;
 	bool help_;
 	bool log_;
@@ -81,7 +81,7 @@ DECL_LOGGER("main")
 		return t;
 	}
 
-		public:
+public:
 	Launch(GetOpt::GetOpt_pp& options) : options_(options) {
 		log_ = false;
 		usage_ << "\nSet option values like this: \"--key1 value1 --key2 value2 ...\".\n";
