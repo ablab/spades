@@ -76,7 +76,7 @@ public:
 		gb_.htake_ = htake;
 	}
 
-	void build() {
+	omnigraph::Omnigraph* build() {
 		Read r;
 
 		INFO("===== Finding " << gb_.htake_ << " minimizers in each read... =====");
@@ -188,7 +188,7 @@ public:
 			}
 		}
 
-		INFO("===== Adding reads to graph as paths... =====");
+		INFO("===== Adding reads to graph as paths (and setting coverage)... =====");
 		reader_.reset();
 		for (size_t i = 0; !reader_.eof(); ++i) {
 			reader_ >> r;
@@ -201,10 +201,6 @@ public:
 //		gb_.graph_.Condense();
 //		INFO("Done: " << gb_.graph_.vertices.size() << " vertices");
 
-		return;
-	}
-
-	omnigraph::Omnigraph* graph() {
 		return &gb_.graph_;
 	}
 
@@ -281,7 +277,7 @@ public:
 					Graph::VertexId current_vertex  = gb_.getOrCreateVertex(current_kmer);
 					assert ( previous_vertex && current_vertex );
 
-					vector<Graph::EdgeId> edges = graph()->GetEdgesBetween(previous_vertex, current_vertex);
+					vector<Graph::EdgeId> edges = gb_.graph_.GetEdgesBetween(previous_vertex, current_vertex);
 					if (edges.size() == 0) {
 						INFO ( "missing edge from " << previous_kmer << " to " << current_kmer );
 						++num_of_missing_edges;
@@ -289,7 +285,7 @@ public:
 					else {
 						bool occ = false;
 						for (auto it = edges.begin(); it != edges.end(); ++it) {
-							occ |= (graph()->data(*it).length() == edge_length);
+							occ |= (gb_.graph_.data(*it).length() == edge_length);
 						}
 						if (!occ) {
 							INFO ( "missing length" );

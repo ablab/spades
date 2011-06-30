@@ -3,6 +3,7 @@
 #include "cute_runner.h"
 #include "debruijn_graph_test.hpp"
 #include "test_utils.hpp"
+#include <iostream>
 
 #include "common/logging.hpp"
 DECL_PROJECT_LOGGER("dt")

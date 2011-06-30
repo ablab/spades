@@ -85,9 +85,8 @@ public:
 
 };
 
-class NewConjugateDeBruijnGraph: public AbstractConjugateGraph<VertexData,
+class ConjugateDeBruijnGraph: public AbstractConjugateGraph<VertexData,
 		EdgeData, DeBruijnMaster> {
-	friend class CoverageIndex<NewConjugateDeBruijnGraph> ;
 public:
 	typedef SmartVertexIterator<ObservableGraph<VertexId, EdgeId> >
 			SmartVertexItarator;
@@ -96,17 +95,19 @@ public:
 private:
 	typedef AbstractConjugateGraph<VertexData, EdgeData, DeBruijnMaster> super;
 	const size_t k_;
-	CoverageIndex<NewConjugateDeBruijnGraph>* coverage_index_;
+	CoverageIndex<ConjugateDeBruijnGraph>* coverage_index_;
 	DECL_LOGGER("NewConjugateDeBruijnGraph")
 
 public:
-	NewConjugateDeBruijnGraph(size_t k) :
+	ConjugateDeBruijnGraph(size_t k) :
 		super(DeBruijnMaster(k)), k_(k) {
-		coverage_index_ = new CoverageIndex<NewConjugateDeBruijnGraph> (*this);
+		coverage_index_ = new CoverageIndex<ConjugateDeBruijnGraph> (*this);
 	}
 
-	virtual ~NewConjugateDeBruijnGraph() {
+	virtual ~ConjugateDeBruijnGraph() {
+		DEBUG("~ConjugateDeBruijnGraph() start");
 		delete coverage_index_;
+		DEBUG("~ConjugateDeBruijnGraph() finished");
 	}
 
 	template<class Stream, class ReadThreader>
@@ -177,7 +178,7 @@ public:
 		assert(false);
 	}
 
-	std::string str(EdgeId edge) {
+	std::string str(EdgeId edge) const {
 		//		return " ";
 
 		stringstream ss;
@@ -186,7 +187,7 @@ public:
 
 	}
 
-	std::string str(VertexId v) {
+	std::string str(VertexId v) const {
 		return " ";
 		//
 		//		stringstream ss;
@@ -196,21 +197,23 @@ public:
 	}
 };
 
-class NewNonconjugateDeBruijnGraph: public AbstractNonconjugateGraph<
+class NonconjugateDeBruijnGraph: public AbstractNonconjugateGraph<
 		VertexData, EdgeData, DeBruijnMaster> {
 private:
 	typedef AbstractNonconjugateGraph<VertexData, EdgeData, DeBruijnMaster>
 			super;
 	const size_t k_;
-	CoverageIndex<NewNonconjugateDeBruijnGraph>* coverage_index_;
+	CoverageIndex<NonconjugateDeBruijnGraph>* coverage_index_;
+	DECL_LOGGER("NonconjugateDeBruijnGraph")
 
 public:
-	NewNonconjugateDeBruijnGraph(size_t k) :
+	NonconjugateDeBruijnGraph(size_t k) :
 		super(DeBruijnMaster(k)), k_(k) {
-		coverage_index_ = new CoverageIndex<NewNonconjugateDeBruijnGraph> (*this);
+		coverage_index_ = new CoverageIndex<NonconjugateDeBruijnGraph> (*this);
 	}
 
-	virtual ~NewNonconjugateDeBruijnGraph() {
+	virtual ~NonconjugateDeBruijnGraph() {
+		DEBUG("~NonconjugateDeBruijnGraph()");
 	}
 
 	/**

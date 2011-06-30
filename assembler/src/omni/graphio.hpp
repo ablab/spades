@@ -1,0 +1,108 @@
+#ifndef IOPROCEDURES_HPP_
+#define IOPROCEDURES_HPP_
+#include "common.hpp"
+#include "pairedGraph.hpp"
+using namespace omni;
+
+class DataPrinter {
+	FILE *f_;
+public:
+	DataPrinter(char *fileName);
+	DataPrinter(const char *fileName);
+	void output(int a);
+	void output(long long a);
+	void output(Edge *edge);
+	void output(Sequence *sequence);
+	void output(VertexPrototype *v);
+	void outputLongEdgesMap(longEdgesMap &map);
+	void outputIntArray(int *array, int length);
+	void outputIntArray(int *array, int length, int width);
+	template<typename keyType, typename valueType>
+	void output(map<keyType, valueType> m);
+	template<typename valueType>
+	void output(vector<valueType> v);
+	void close();
+
+private:
+	DECL_LOGGER("DataPrinter")
+};
+
+class DataReader {
+	FILE *f_;
+public:
+	DataReader(char *fileName);
+	DataReader(const char *fileName);
+	int read(int &a);
+	int read(long long &a);
+	int read(Edge * &edge);
+	int read(Sequence * &sequence);
+	void read(VertexPrototype * &v);
+	void readLongEdgesMap(longEdgesMap &map);
+	void readIntArray(int *array, int length);
+	void readIntArray(int *array, int length, int width);
+	template<typename keyType, typename valueType>
+	void read(map<keyType, valueType> &m);
+	template<typename valueType>
+	void read(vector<valueType> &v);
+	void close();
+};
+
+template<typename keyType, typename valueType>
+void DataPrinter::output(map<keyType, valueType> m) {
+	output((int)m.size());
+	for(typename map<keyType, valueType>::iterator it = m.begin(); it != m.end(); ++it) {
+		output(it->first);
+		output(it->second);
+	}
+	fprintf(f_, "\n");
+}
+
+template<typename keyType, typename valueType>
+void DataReader::read(map<keyType, valueType> &m) {
+	m.clear();
+	int size;
+	read(size);
+	keyType key;
+	valueType value;
+	for(int i = 0; i < size; i++) {
+		read(key);
+		read(value);
+		m[key] = value;
+	}
+	fscanf(f_, "\n");
+}
+
+template<typename valueType>
+void DataPrinter::output(vector<valueType> v) {
+	output((int)v.size());
+	for(typename vector<valueType>::iterator it = v.begin(); it != v.end(); ++it) {
+		output(*it);
+	}
+	fprintf(f_, "\n");
+}
+
+template<typename valueType>
+void DataReader::read(vector<valueType> &v) {
+	v.clear();
+	int size;
+	read(size);
+	v.reserve(size);
+	valueType value;
+	for(int i = 0; i < size; i++) {
+		read(value);
+		v.push_back(value);
+	}
+	fscanf(f_, "\n");
+}
+
+template<class Graph>
+void save(char *fileName, Graph &g);
+template<class Graph>
+void load(char *fileName, Graph &g);
+
+template<class Graph>
+void save(string fileName, Graph &g);
+template<class Graph>
+void load(string fileName, Graph &g);
+
+#endif /* IOPROCEDURES_HPP_ */

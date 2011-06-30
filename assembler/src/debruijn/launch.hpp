@@ -33,10 +33,10 @@ namespace debruijn_graph {
 
 DECL_LOGGER("debruijn_graph")
 
-typedef NewConjugateDeBruijnGraph Graph;
+typedef ConjugateDeBruijnGraph Graph;
 typedef Graph::EdgeId EdgeId;
 typedef Graph::VertexId VertexId;
-
+typedef NonconjugateDeBruijnGraph NCGraph;
 using namespace omnigraph;
 
 template<size_t k>
@@ -44,7 +44,7 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		const string& genome) {
 	INFO("Counting stats");
 	StatCounter<Graph, k> stat(g, index, genome);
-	stat.CountStatistics();
+	stat.Count();
 	INFO("Stats counted");
 }
 
@@ -273,8 +273,11 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 	INFO("before ResolveRepeats");
 	RealIdGraphLabeler<Graph> IdTrackLabelerBefore(g, IntIds);
 	gvis::WriteSimple( output_folder + "repeats_resolved_simple_before.dot", "no_repeat_graph", g, IdTrackLabelerBefore);
-
+	GraphCopier<Graph> Copier(g);
 	Graph new_graph(k);
+//	Copier.Copy<NCGraph>(new_graph);
+//	gvis::WriteSimple<NCGraph>( output_folder + "repeats_resolved_simple_copy.dot", "no_repeat_graph", new_graph);
+
 	IdTrackHandler<Graph> NewIntIds(new_graph, IntIds.MaxVertexId(), IntIds.MaxEdgeId());
 	ResolveRepeats(g, IntIds, paired_index, new_graph, NewIntIds, output_folder+"resolve/");
 	INFO("before graph writing");
@@ -288,7 +291,6 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 			"no_repeat_graph");
 	OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
-
 }
 
 template<size_t k, class ReadStream>

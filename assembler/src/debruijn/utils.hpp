@@ -12,6 +12,7 @@
 #include "omni_utils.hpp"
 #include "logging.hpp"
 #include "paired_info.hpp"
+#include "statistics.hpp"
 
 namespace debruijn_graph {
 
@@ -245,83 +246,22 @@ public:
 };
 
 template<class Graph, size_t k>
-class StatCounter {
+class GenomeMappingStat: public omnigraph::AbstractStatCounter {
 private:
-	Graph& graph_;
-	const EdgeIndex<k + 1, Graph>& index_;
-	const Sequence genome_;
-public:
-	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-
-	void CountVertexEdgeStat() {
-		size_t edgeNumber = 0;
-		size_t sum_edge_length = 0;
-		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator) {
-			edgeNumber++;
-			if (graph_.coverage(*iterator) > 30) {
-				sum_edge_length += graph_.length(*iterator);
-			}
-		}
-		INFO("Vertex count=" << graph_.size() << "; Edge count="
-				<< edgeNumber);
-		INFO("sum length of edges(coverage > 30, both strands)" << sum_edge_length);
+	Graph &graph_;
+	const EdgeIndex<k + 1, Graph>& index_;
+	Sequence genome_;
+public:
+	GenomeMappingStat(Graph &graph, const EdgeIndex<k + 1, Graph> index,
+			Sequence genome) :
+		graph_(graph), index_(index), genome_(genome) {
 	}
 
-	void CountBlackEdges() {
-		size_t black_count = 0;
-		size_t edge_count = 0;
-		SimpleSequenceMapper<k, Graph> sequence_mapper(graph_, index_);
-		Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome_));
-		Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome_));
-		const vector<EdgeId> path_edges1 = path1.sequence();
-		const vector<EdgeId> path_edges2 = path2.sequence();
-		set<EdgeId> colored_edges;
-		colored_edges.insert(path_edges1.begin(), path_edges1.end());
-		colored_edges.insert(path_edges2.begin(), path_edges2.end());
-		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			edge_count++;
-			if (colored_edges.count(*it) == 0) {
-				black_count++;
-			}
-		}
-		if (edge_count > 0) {
-			INFO("Error edges count: " << black_count << " which is " << 100.0 * black_count / edge_count << "% of all edges");
-		} else {
-			INFO("Error edges count: " << black_count << " which is 0% of all edges");
-		}
-
+	virtual ~GenomeMappingStat(){
 	}
 
-	void N50() {
-		SimpleSequenceMapper<k, Graph> sequence_mapper(graph_, index_);
-		Path<EdgeId> path = sequence_mapper.MapSequence(Sequence(genome_));
-		const vector<EdgeId> path_edges = path.sequence();
-		vector<size_t> lengths;
-		size_t sum_all = 0;
-		for (size_t i = 0; i < path.size(); i++) {
-			lengths.push_back(graph_.length(path[i]));
-			sum_all += graph_.length(path[i]);
-		}
-		sort(lengths.begin(), lengths.end());
-		size_t sum = 0;
-		int current = lengths.size();
-		while (current > 0 && 2 * sum < sum_all) {
-			current--;
-			sum += lengths[current];
-		}
-		INFO("N50: " << lengths[current]);
-	}
-
-	void CountSelfComplement() {
-		size_t sc_number = 0;
-		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator)
-			if (graph_.conjugate(*iterator) == (*iterator))
-				sc_number++;
-		INFO("Self-complement count="<< sc_number);
-	}
-
-	void CheckGenomeMapping() {
+	virtual void Count() {
 		INFO("Mapping genome");
 		size_t break_number = 0;
 		size_t covered_kp1mers = 0;
@@ -356,18 +296,33 @@ public:
 		INFO("Covered k+1-mers form " << break_number + 1 << " contigious parts");
 		INFO("Continuity failtures " << fail);
 	}
+};
 
-	StatCounter(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-			const string& genome) :
-		graph_(g), index_(index), genome_(genome) {
+template<class Graph, size_t k>
+class StatCounter: public omnigraph::AbstractStatCounter {
+private:
+	omnigraph::StatList stats_;
+public:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
+	StatCounter(Graph& graph, const EdgeIndex<k + 1, Graph>& index,
+			const string& genome) {
+		SimpleSequenceMapper<k, Graph> sequence_mapper(graph, index);
+		Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
+		Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
+		stats_.AddStat(new omnigraph::VertexEdgeStat<Graph>(graph));
+		stats_.AddStat(new omnigraph::BlackEdgesStat<Graph>(graph, path1, path2));
+		stats_.AddStat(new omnigraph::NStat<Graph>(graph, path1, 50));
+		stats_.AddStat(new omnigraph::SelfComplementStat<Graph>(graph));
+		GenomeMappingStat<Graph, k> (graph, index, Sequence(genome)).Count();
 	}
 
-	void CountStatistics() {
-		CountVertexEdgeStat();
-		CountSelfComplement();
-		CheckGenomeMapping();
-		CountBlackEdges();
-		N50();
+	virtual ~StatCounter() {
+	}
+
+	virtual void Count() {
+		stats_.Count();
 	}
 
 private:

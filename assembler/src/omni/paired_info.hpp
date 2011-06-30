@@ -121,11 +121,9 @@ public:
 	}
 
 	void ReplaceFirstEdge(const PairInfo<EdgeId>& info, EdgeId newId) {
-		DEBUG("replacing edge to "<< newId);
 //		size_t count = data_.erase(info);
 	//	assert(count != 0);
 		data_.insert(PairInfo<EdgeId>(newId, info.second, info.d, info.weight));
-		DEBUG("replaced");
 	}
 public:
 	data_iterator begin() {
@@ -216,11 +214,12 @@ private:
 template<class Graph>
 class PairedInfoIndex: public GraphActionHandler<Graph> {
 
-private:
+public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef vector<PairInfo<EdgeId> > PairInfos;
+	typedef vector<PairInfo<EdgeId>> PairInfos;
 
+private:
 	const int max_difference_;
 
 public:
@@ -408,6 +407,7 @@ private:
 
 public:
 
+/*
 	void OutputData(ostream &os = cout) {
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it)
 			for (auto it1 = graph_.SmartEdgeBegin(); !it1.IsEnd(); ++it1) {
@@ -421,6 +421,7 @@ public:
 		OutputData(s);
 		s.close();
 	}
+*/
 
 	/**
 	 * Method returns all data about given edge

@@ -4,6 +4,8 @@
 #include "logging.hpp"
 DECL_PROJECT_LOGGER("a")
 
+#include "tip_clipper.hpp"
+#include "bulge_remover.hpp"
 #include "omni_tools.hpp"
 #include "omnigraph.hpp"
 #include "visualization_utils.hpp"
@@ -17,6 +19,11 @@ namespace main_processing {
 
 DECL_LOGGER("main")
 
+template<typename T>
+T read() {
+
+}
+
 void process(GetOpt::GetOpt_pp& options) {
 
     using namespace GetOpt;
@@ -24,8 +31,7 @@ void process(GetOpt::GetOpt_pp& options) {
     bool help;
     options >> OptionPresent('h', "help", help);
     stringstream usage;
-    usage
-            << "\nSet option values like this: \"--key1 value1 --key2 value2 ...\".\n";
+    usage << "\nSet option values like this: \"--key1 value1 --key2 value2 ...\".\n";
     usage << "\nSupported options are:\n";
 
     string input_file;
@@ -40,8 +46,7 @@ void process(GetOpt::GetOpt_pp& options) {
     if (input_file == "") {
         help = true;
     }
-    usage
-            << "--input first data file. Second file name is obtained by replacing last \"1\" with \"2\"\n";
+    usage << "--input first data file. Second file name is obtained by replacing last \"1\" with \"2\"\n";
     if (!help) {
         INFO("Hello, A Bruijn!");
         INFO("Using parameters:");
@@ -56,24 +61,38 @@ void process(GetOpt::GetOpt_pp& options) {
 
     int take;
     options >> Option('t', "take", take, 1);
-    usage
-            << "--take how many minimizers to take from each read (default = 1)\n";
+    usage << "--take how many minimizers to take from each read (default = 1)\n";
     if (!help)
         INFO("take = " << take);
 
     bool output_single;
     options >> OptionPresent('s', "single", output_single);
-    usage
-            << "--single (with no value!) whether to visualize vertices non-RC-paired\n";
+    usage << "--single (with no value!) whether to visualize vertices non-RC-paired\n";
     if (!help)
         INFO("single = " << (output_single ? "true" : "false"));
 
     int cut;
     options >> Option('c', "cut", cut, -1);
-    usage
-            << "--cut how many first reads from the input file to use (default = -1 = use all reads)\n";
+    usage << "--cut how many first reads from the input file to use (default = -1 = use all reads)\n";
     if (!help)
         INFO("cut = " << cut);
+
+    usage << "Tip clipping parameters:";
+
+    int tc_max_coverage;
+    options >> Option('z', "tc-max-coverage", tc_max_coverage, 1000);
+    usage << "--tc-max-coverage\n";
+    if (!help) INFO("tc-max-coverage = " << tc_max_coverage);
+
+    double tc_max_relative_coverage;
+    options >> Option('z', "tc-max-relative-coverage", tc_max_relative_coverage, 2.0);
+    usage << "--tc-max-relative-coverage\n";
+    if (!help) INFO("tc-max-relative-coverage = " << tc_max_relative_coverage);
+
+    int tc_max_tip_length;
+    options >> Option('z', "tc-max-tip-length", tc_max_tip_length, 50);
+    usage << "--tc-max-tip-length\n";
+    if (!help) INFO("tc-max-tip-length = " << tc_max_tip_length);
 
     int mode;
     options >> Option('m', "mode", mode, 0);
@@ -86,8 +105,9 @@ void process(GetOpt::GetOpt_pp& options) {
         } else {
             INFO("mode = find local minimizers");
         }
-        if (mode & 2)
+        if (mode & 2) {
             INFO("mode = ensure at least two minimizers in each read");
+        }
     }
 
     if (help) {
@@ -103,30 +123,35 @@ void process(GetOpt::GetOpt_pp& options) {
             cr(srw, cut);
 
     abruijn::GraphBuilderMaster<CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream>>>> gbm(cr, take, mode);
-    gbm.build();
+    omnigraph::Omnigraph* g = gbm.build();
 
     //  INFO("Spelling the reference genome");
     //  gbm.SpellGenomeThroughGraph(cut + 219);
 
     INFO("===== Compressing... =====");
-    omnigraph::Compressor<omnigraph::Omnigraph> compressor(*gbm.graph());
+    omnigraph::Compressor<omnigraph::Omnigraph> compressor(*g);
     compressor.CompressAllVertices();
-    INFO(gbm.graph()->size() << " vertices");
+    INFO(g->size() << " vertices");
 
-    //  INFO("===== Getting statistics... =====");
-    //  gbm.graph()->stats(); TODO
+	INFO("===== Clipping tips... =====");
+	omnigraph::TipComparator<omnigraph::Omnigraph> comparator(*g);
+	omnigraph::TipClipper<omnigraph::Omnigraph, omnigraph::TipComparator<omnigraph::Omnigraph>> tc(*g, comparator, tc_max_tip_length, tc_max_coverage, tc_max_relative_coverage);
+	tc.ClipTips();
+    INFO(g->size() << " vertices");
 
-    INFO("Outputting graph to " << output_file);
-    ofstream output_stream(output_file.c_str(), ios::out);
-    //  gbm.graph()->output(output_stream, !output_single); TODO
-    gvis::DotPairedGraphPrinter<omnigraph::Omnigraph> printer(*gbm.graph(),
-            "earmarked", output_stream);
-    omnigraph::StrGraphLabeler<omnigraph::Omnigraph> labeler(*gbm.graph());
-    gvis::SimpleGraphVisualizer<omnigraph::Omnigraph> sgv(*gbm.graph(),
-            printer, labeler);
-    sgv.Visualize();
-    output_stream.close();
-    INFO("Done.");
+	INFO("===== Removing bulges... =====");
+	double max_coverage = 1000;
+	double max_relative_coverage = 1.1;
+	double max_delta = 4.0;
+	double max_relative_delta = 0.1;
+	size_t max_length_div_K = 5;
+	omnigraph::BulgeRemover<omnigraph::Omnigraph> bulge_remover(max_length_div_K * K, max_coverage, max_relative_coverage, max_delta, max_relative_delta);
+	bulge_remover.RemoveBulges(*g);
+	INFO("Bulges removed");
+
+	INFO("===== Outputting graph to " << output_file << " =====");
+    omnigraph::StrGraphLabeler<omnigraph::Omnigraph> labeler(*g);
+    gvis::WriteToDotFile(output_file, "earmarked", *g, labeler);
 
     //ABruijnGraphWithGraphVisualizer ( "ATGTGTGACTTTGTATCGTATTGCGGGCGGCGCGCTTATTGTATGCGTAAATTTGGGTCATATTGATCGTAAAATGCGTATGATGCACTGCA", 6, 3 );
 }

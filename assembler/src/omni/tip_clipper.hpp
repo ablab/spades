@@ -51,11 +51,10 @@ public:
 	 * Standard comparator function as used in collections.
 	 */
 	bool operator()(EdgeId edge1, EdgeId edge2) const {
-		if (graph_->EdgeNucls(edge1).size() == graph_->EdgeNucls(edge2).size()) {
+		if (graph_->length(edge1) == graph_->length(edge2)) {
 			return edge1 < edge2;
 		}
-		return graph_->EdgeNucls(edge1).size()
-				< graph_->EdgeNucls(edge2).size();
+		return graph_->length(edge1) < graph_->length(edge2);
 	}
 };
 
