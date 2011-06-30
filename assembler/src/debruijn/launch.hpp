@@ -29,6 +29,7 @@
 #include "new_debruijn.hpp"
 #include "config.hpp"
 #include "graphio.hpp"
+//#include "dijkstra.hpp"
 
 namespace debruijn_graph {
 
@@ -248,6 +249,7 @@ template<size_t k, class ReadStream>
 void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 		const string& output_folder, const string& work_tmp_dir) {
 	INFO("Edge graph construction tool started");
+	mkdir(work_tmp_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
 	Graph g(k);
 	EdgeIndex<k + 1, Graph> index(g);

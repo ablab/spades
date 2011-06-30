@@ -86,7 +86,10 @@ void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
 	FILE* file = fopen(file_name.c_str(), "w");
 	DEBUG("Saving sequences " << file_name <<" created");
 	assert(file != NULL);
-
+	fprintf(file, "%d\n", edge_count_);
+	for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		fprintf(file, "%d ", IdHandler_.ReturnIntId(*iter));
+	}
 	fclose(file);
 }
 }
