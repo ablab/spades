@@ -114,8 +114,8 @@ void RemoveBulges(Graph &g) {
 	double max_delta = CONFIG.read<double> ("br_max_delta");
 	double max_relative_delta = CONFIG.read<double> ("br_max_relative_delta");
 	size_t max_length_div_K = CONFIG.read<int> ("br_max_length_div_K");
-	SimpleBulgeCondition<Graph> simple_path_condition(g);
-	BulgeRemover<Graph, SimpleBulgeCondition<Graph>> bulge_remover(g, max_length_div_K * g.k(), max_coverage,
+	SimplePathCondition<Graph> simple_path_condition(g);
+	BulgeRemover<Graph, SimplePathCondition<Graph>> bulge_remover(g, max_length_div_K * g.k(), max_coverage,
 			max_relative_coverage, max_delta, max_relative_delta, simple_path_condition);
 	bulge_remover.RemoveBulges();
 	INFO("Bulges removed");

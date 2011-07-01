@@ -172,8 +172,8 @@ public:
 		gvis::WriteToDotFile(output_file_ + "_tc", "earmarked", *g, labeler);
 
 		INFO("===== Removing bulges... =====");
-		omnigraph::SimpleBulgeCondition<omnigraph::Omnigraph> simple_path_condition(*g);
-		omnigraph::BulgeRemover<omnigraph::Omnigraph, omnigraph::SimpleBulgeCondition<omnigraph::Omnigraph>> bulge_remover(*g, br_max_length_div_K_ * K, br_max_coverage_, br_max_relative_coverage_, br_max_delta_, br_max_relative_delta_, simple_path_condition);
+		omnigraph::SimplePathCondition<omnigraph::Omnigraph> simple_path_condition(*g);
+		omnigraph::BulgeRemover<omnigraph::Omnigraph, omnigraph::SimplePathCondition<omnigraph::Omnigraph>> bulge_remover(*g, br_max_length_div_K_ * K, br_max_coverage_, br_max_relative_coverage_, br_max_delta_, br_max_relative_delta_, simple_path_condition);
 		bulge_remover.RemoveBulges();
 		INFO(g->size() << " vertices");
 		gvis::WriteToDotFile(output_file_ + "_tc_br", "earmarked", *g, labeler);

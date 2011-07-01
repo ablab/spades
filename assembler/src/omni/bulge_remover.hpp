@@ -21,6 +21,7 @@ public:
 	typedef typename Graph::VertexId VertexId;
 
 	class Callback {
+	public:
 		virtual void HandlePath(const vector<EdgeId>& path) = 0;
 	};
 
@@ -66,12 +67,12 @@ private:
 };
 
 template <class Graph>
-struct SimpleBulgeCondition {
+struct SimplePathCondition {
 	typedef typename Graph::EdgeId EdgeId;
 
 	Graph& g_;
 
-	SimpleBulgeCondition(Graph& g) : g_(g) {
+	SimplePathCondition(Graph& g) : g_(g) {
 
 	}
 
@@ -91,6 +92,77 @@ struct SimpleBulgeCondition {
 	}
 
 };
+
+template <class Graph>
+struct TrivialCondition {
+	typedef typename Graph::EdgeId EdgeId;
+
+	bool operator() (EdgeId edge, const vector<EdgeId>& path) const {
+		return true;
+	}
+};
+
+template <class Graph>
+class MostCoveredPathChooser : public PathProcessor<Graph>::Callback {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	Graph& g_;
+	double max_coverage_;
+	vector<EdgeId> most_covered_path_;
+
+	double PathAvgCoverage(const vector<EdgeId>& path) {
+		double unnormalized_coverage = 0;
+		size_t path_length = 0;
+		for (size_t i = 0; i < path.size(); ++i) {
+			EdgeId edge = path[i];
+			size_t length = g_.length(edge);
+			path_length += length;
+			unnormalized_coverage += g_.coverage(edge) * length;
+		}
+		return unnormalized_coverage / path_length;
+	}
+
+public:
+
+	MostCoveredPathChooser(Graph& g) : g_(g), max_coverage_(-1.0) {
+
+	}
+
+	virtual void HandlePath(const vector<EdgeId>& path) {
+		double path_cov = PathAvgCoverage(path);
+		if (path_cov > max_coverage_) {
+			max_coverage_ = path_cov;
+			most_covered_path_ = path;
+		}
+	}
+
+	double max_coverage() {
+		return max_coverage_;
+	}
+
+	const vector<EdgeId>& most_covered_path() {
+		return most_covered_path_;
+	}
+};
+
+template <class Graph>
+class PathCounter : public PathProcessor<Graph>::Callback {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	size_t count_;
+public:
+
+	virtual void HandlePath(const vector<EdgeId>& path) {
+		count_++;
+	}
+
+	size_t count() {
+		return count_;
+	}
+};
+
 /**
  * This class removes simple bulges from given graph with the following algorithm: it iterates through all edges of
  * the graph and for each edge checks if this edge is likely to be a simple bulge
@@ -102,47 +174,8 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
-	class MostCoveredPathChooser : public PathProcessor<Graph>::Callback {
-		Graph& g_;
-		double max_coverage_;
-		vector<EdgeId> most_covered_path_;
-
-		double PathAvgCoverage(const vector<EdgeId>& path) {
-			double unnormalized_coverage = 0;
-			size_t path_length = 0;
-			for (size_t i = 0; i < path.size(); ++i) {
-				EdgeId edge = path[i];
-				size_t length = g_.length(edge);
-				path_length += length;
-				unnormalized_coverage += g_.coverage(edge) * length;
-			}
-			return unnormalized_coverage / path_length;
-		}
-
-	public:
-
-		MostCoveredPathChooser(Graph& g) : g_(g), max_coverage_(-1.0) {
-
-		}
-
-		virtual void HandlePath(const vector<EdgeId>& path) {
-			double path_cov = PathAvgCoverage(path);
-			if (path_cov > max_coverage_) {
-				max_coverage_ = path_cov;
-				most_covered_path_ = path;
-			}
-		}
-
-		double max_coverage() {
-			return max_coverage_;
-		}
-
-		const vector<EdgeId>& most_covered_path() {
-			return most_covered_path_;
-		}
-	};
-
 public:
+
 	/**
 	 * Create BulgeRemover with specified parameters.
 	 */
@@ -241,18 +274,16 @@ void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
 
 			VertexId end = g_.EdgeEnd(edge);
 			TRACE("End " << g_.str(end));
+			size_t delta = std::floor(std::max(max_relative_delta_ * g_.length(edge), max_delta_));
+			MostCoveredPathChooser<Graph> path_chooser(g_);
 
-			size_t length_threshold = g_.length(edge) + std::max(
-					max_relative_delta_ * g_.length(edge), max_delta_);
-			TRACE(
-					"Looking for best path between start and end shorter than "
-					<< length_threshold);
+			PathProcessor<Graph> path_finder(g_, (g_.length(edge) > delta) ? g_.length(edge) - delta : 0,
+					g_.length(edge) + delta, start, end, path_chooser);
 
-			pair<vector<EdgeId> , int> path_and_coverage = BestPath(start,
-					end, length_threshold);
-			const vector<EdgeId>& path = path_and_coverage.first;
-			double path_coverage = (double) path_and_coverage.second
-					/ PathLength(path);
+			path_finder.Process();
+
+			const vector<EdgeId>& path = path_chooser.most_covered_path();
+			double path_coverage = path_chooser.max_coverage();
 			TRACE(
 					"Best path with coverage " << path_coverage << " is "
 					<< PrintPath<Graph> (g_, path));
