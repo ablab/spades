@@ -121,11 +121,9 @@ public:
 	}
 
 	void ReplaceFirstEdge(const PairInfo<EdgeId>& info, EdgeId newId) {
-		DEBUG("replacing edge to "<< newId);
 //		size_t count = data_.erase(info);
 	//	assert(count != 0);
 		data_.insert(PairInfo<EdgeId>(newId, info.second, info.d, info.weight));
-		DEBUG("replaced");
 	}
 public:
 	data_iterator begin() {

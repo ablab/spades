@@ -57,6 +57,14 @@ public:
 		return v.str();
 	}
 
+	size_t length(const OmniEdge &edge) const {
+		return edge.length();
+	}
+
+	size_t length(const OmniVertex &v) const {
+		return v.length();
+	}
+
 	bool equals(const OmniEdge &data1, const OmniEdge &data2) {
 		return data1 == data2;
 	}
@@ -71,9 +79,31 @@ public:
 };
 
 class Omnigraph : public AbstractConjugateGraph<OmniVertex, OmniEdge, OmniDataMaster> {
+	CoverageIndex<Omnigraph>* coverage_index_;
+
 public:
 	Omnigraph() : AbstractConjugateGraph<OmniVertex, OmniEdge, OmniDataMaster>(OmniDataMaster()) {
+		coverage_index_ = new CoverageIndex<Omnigraph>(*this);
+	}
 
+	virtual ~Omnigraph() {
+		delete coverage_index_;
+	}
+
+	void SetCoverage(EdgeId edge, size_t cov) {
+		coverage_index_->SetCoverage(edge, cov);
+	}
+
+	double coverage(EdgeId edge) const {
+		return coverage_index_->coverage(edge);
+	}
+
+	void IncCoverage(EdgeId edge, int toAdd) {
+		coverage_index_->IncCoverage(edge, toAdd);
+	}
+
+	void IncCoverage(EdgeId edge) {
+		coverage_index_->IncCoverage(edge);
 	}
 };
 

@@ -136,7 +136,7 @@ private:
 
 	Graph& graph_;
 	Dijkstra<Graph> dijkstra_;
-	EdgeId prev_;
+	VertexId prev_;
 	bool ready_;
 private:
 	void EnsureFrom(VertexId from) {

@@ -123,19 +123,36 @@ public:
 		graph_(graph) {
 	}
 	template<class CopyGraph>
-	void Copy(CopyGraph new_graph) {
+	void StructureCopy(CopyGraph &new_graph, map<VertexId, typename CopyGraph::VertexId> &VerticesCopies, map<EdgeId, typename CopyGraph::EdgeId> &EdgesCopies) {
 		typedef typename CopyGraph::EdgeId NewEdgeId;
 		typedef typename CopyGraph::VertexId NewVertexId;
-		map<VertexId, NewVertexId> copy;
 		for (auto iter = graph_.begin(); iter != graph_.end(); ++iter) {
 			NewVertexId new_vertex = new_graph.AddVertex(graph_.data(*iter));
-			copy.insert(make_pair(*iter, new_vertex));
+			DEBUG("Added vertex "<< new_vertex);
+			VerticesCopies.insert(make_pair(*iter, new_vertex));
 		}
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 			EdgeId edge = *iter;
-			new_graph.AddEdge(copy[graph_.EdgeStart(edge)],
-					copy[graph_.EdgeEnd(edge)], graph_.data(edge));
+			NewEdgeId new_edge = new_graph.AddEdge(VerticesCopies[graph_.EdgeStart(edge)],
+					VerticesCopies[graph_.EdgeEnd(edge)], graph_.data(edge));
+			EdgesCopies.insert(make_pair(*iter, new_edge));
 		}
+	}
+	template<class CopyGraph>
+	void Copy(CopyGraph &new_graph){
+		typedef typename CopyGraph::EdgeId NewEdgeId;
+		typedef typename CopyGraph::VertexId NewVertexId;
+		map<EdgeId, NewEdgeId> EdgesCopies;
+		map<VertexId, NewVertexId> VerticesCopies;
+		StructureCopy<CopyGraph>(new_graph, VerticesCopies, EdgesCopies);
+	}
+	template<class CopyGraph>
+	void TotalCopy(CopyGraph &new_graph){
+		typedef typename CopyGraph::EdgeId NewEdgeId;
+		typedef typename CopyGraph::VertexId NewVertexId;
+		map<EdgeId, NewEdgeId> EdgesCopies;
+		map<VertexId, NewVertexId> VerticesCopies;
+		StructureCopy<CopyGraph>(new_graph, VerticesCopies, EdgesCopies);
 	}
 };
 

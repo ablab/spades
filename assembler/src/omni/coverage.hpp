@@ -60,13 +60,14 @@ public:
 	}
 
 	/**
-	 * Method returns average coverage of the edge
+	 * Returns average coverage of the edge
 	 */
 	double coverage(EdgeId edge) const {
-//		assert(g_.length(edge) > 0);
-//		DEBUG("STORAGE size: "<< storage_.size());
-//		std::cerr<<storage_.size();
-		return (double) storage_.find(edge)->second / g_.length(edge);
+		auto it = storage_.find(edge);
+		if (it == storage_.end()) {
+			return 0;
+		}
+		return (double) it->second / g_.length(edge);
 	}
 
 	/**
@@ -127,7 +128,5 @@ public:
 };
 
 }
-
-
 
 #endif /* COVERAGE_HPP_ */

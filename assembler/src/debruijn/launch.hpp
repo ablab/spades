@@ -28,15 +28,16 @@
 #include <sys/stat.h>
 #include "new_debruijn.hpp"
 #include "config.hpp"
+#include "graphio.hpp"
+//#include "dijkstra.hpp"
 
 namespace debruijn_graph {
 
-DECL_LOGGER("debruijn_graph")
 
 typedef ConjugateDeBruijnGraph Graph;
 typedef Graph::EdgeId EdgeId;
 typedef Graph::VertexId VertexId;
-
+typedef NonconjugateDeBruijnGraph NCGraph;
 using namespace omnigraph;
 
 template<size_t k>
@@ -121,9 +122,10 @@ void RemoveBulges(Graph &g) {
 	double max_delta = CONFIG.read<double> ("br_max_delta");
 	double max_relative_delta = CONFIG.read<double> ("br_max_relative_delta");
 	size_t max_length_div_K = CONFIG.read<int> ("br_max_length_div_K");
-	BulgeRemover<Graph> bulge_remover(max_length_div_K * g.k(), max_coverage,
-			max_relative_coverage, max_delta, max_relative_delta);
-	bulge_remover.RemoveBulges(g);
+	SimplePathCondition<Graph> simple_path_condition(g);
+	BulgeRemover<Graph, SimplePathCondition<Graph>> bulge_remover(g, max_length_div_K * g.k(), max_coverage,
+			max_relative_coverage, max_delta, max_relative_delta, simple_path_condition);
+	bulge_remover.RemoveBulges();
 	INFO("Bulges removed");
 }
 
@@ -256,6 +258,7 @@ template<size_t k, class ReadStream>
 void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 		const string& output_folder, const string& work_tmp_dir) {
 	INFO("Edge graph construction tool started");
+	mkdir(work_tmp_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
 	Graph g(k);
 	EdgeIndex<k + 1, Graph> index(g);
@@ -282,8 +285,12 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 	INFO("before ResolveRepeats");
 	RealIdGraphLabeler<Graph> IdTrackLabelerBefore(g, IntIds);
 	gvis::WriteSimple( output_folder + "repeats_resolved_simple_before.dot", "no_repeat_graph", g, IdTrackLabelerBefore);
-
+	GraphCopier<Graph> Copier(g);
 	Graph new_graph(k);
+//	Copier.Copy<NCGraph>(new_graph);
+//	gvis::WriteSimple<NCGraph>( output_folder + "repeats_resolved_simple_copy.dot", "no_repeat_graph", new_graph);
+	DataPrinter<Graph> dataPrinter(g, IntIds);
+	dataPrinter.saveGraph(work_tmp_dir+"saved_graph.grp");
 	IdTrackHandler<Graph> NewIntIds(new_graph, IntIds.MaxVertexId(), IntIds.MaxEdgeId());
 	ResolveRepeats(g, IntIds, paired_index, new_graph, NewIntIds, output_folder+"resolve/");
 	INFO("before graph writing");
@@ -297,7 +304,6 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 	ProducePairedInfo(g, paired_index);
 	OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
-
 }
 
 template<size_t k, class ReadStream>

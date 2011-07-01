@@ -5,7 +5,7 @@ paired_mode = 1
 
 input_dir  = ./data/input/E.Coli.K12.MG1655/
 output_dir = ./data/debruijn/
-dataset = QUAKE_CROPPED_400K
+dataset = QUAKE_FULL
 reference_genome = MG1655-K12.fasta.gz
 
 # tip clipper:

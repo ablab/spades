@@ -8,12 +8,13 @@
 #include "simple_tools.hpp"
 using namespace omnigraph;
 
-namespace debruijn_graph {
+namespace omnigraph {
 
 template<class Graph>
 class IdTrackHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
+	typedef int realIdType;
 	tr1::unordered_map<VertexId, int> VertexIntId;
 	tr1::unordered_map<EdgeId, int> EdgeIntId;
 	int MaxVertexIntId;
@@ -22,30 +23,30 @@ private:
 	Graph &g_;
 
 public:
-	int AddVertexIntId(VertexId NewVertexId) {
+	realIdType AddVertexIntId(VertexId NewVertexId) {
 		MaxVertexIntId++;
 		VertexIntId[NewVertexId] = MaxVertexIntId;
 		return MaxVertexIntId;
 	}
-	int AddVertexIntId(VertexId NewVertexId, int NewIntId) {
+	realIdType AddVertexIntId(VertexId NewVertexId, int NewIntId) {
 		if (MaxVertexIntId<NewIntId) MaxVertexIntId = NewIntId;
 		VertexIntId[NewVertexId] = NewIntId;
 		return NewIntId;
 	}
-	int AddEdgeIntId(EdgeId NewEdgeId) {
+	realIdType AddEdgeIntId(EdgeId NewEdgeId) {
 		MaxEdgeIntId++;
 		EdgeIntId[NewEdgeId] = MaxEdgeIntId;
 		return MaxVertexIntId;
 	}
-	int AddVertexIntId(EdgeId NewEdgeId, int NewIntId) {
+	realIdType AddVertexIntId(EdgeId NewEdgeId, int NewIntId) {
 		if (MaxEdgeIntId<NewIntId) MaxEdgeIntId = NewIntId;
 		EdgeIntId[NewEdgeId] = NewIntId;
 		return NewIntId;
 	}
-	int MaxVertexId(){
+	realIdType MaxVertexId(){
 		return MaxVertexIntId;
 	}
-	int MaxEdgeId(){
+	realIdType MaxEdgeId(){
 		return MaxEdgeIntId;
 	}
 	void ClearVertexId(VertexId OldVertexId){
@@ -54,12 +55,12 @@ public:
 	void ClearEdgeId(EdgeId OldEdgeId){
 		EdgeIntId.erase(OldEdgeId);
 	}
-	int ReturnIntId(EdgeId e){
+	realIdType ReturnIntId(EdgeId e){
 		typename tr1::unordered_map<EdgeId, int>::iterator it = EdgeIntId.find(e);
 		if (it != EdgeIntId.end()) return it->second;
 		else return 0;
 	}
-	int ReturnIntId(VertexId v){
+	realIdType ReturnIntId(VertexId v){
 		typename tr1::unordered_map<VertexId, int>::iterator it;
 		it = VertexIntId.find(v);
 		if (it != VertexIntId.end()) {
