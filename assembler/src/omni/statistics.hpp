@@ -1,6 +1,8 @@
 #ifndef STATISTICS_HPP_
 #define STATISTICS_HPP_
 
+#include "omni_tools.hpp"
+#include <map>
 namespace omnigraph {
 
 class AbstractStatCounter {
@@ -12,8 +14,8 @@ public:
 	}
 
 	virtual void Count() = 0;
-//protected:
-//	DECL_LOGGER("StatCounter")
+	//protected:
+	//	DECL_LOGGER("StatCounter")
 };
 
 class StatList: AbstractStatCounter {
@@ -68,7 +70,7 @@ public:
 		INFO("Vertex count=" << graph_.size() << "; Edge count=" << edgeNumber);
 		INFO(
 				"sum length of edges(coverage > 30, both strands)"
-						<< sum_edge_length);
+				<< sum_edge_length);
 	}
 };
 
@@ -84,7 +86,7 @@ public:
 		graph_(graph), path1_(path1), path2_(path2) {
 	}
 
-	virtual ~BlackEdgesStat(){
+	virtual ~BlackEdgesStat() {
 	}
 
 	virtual void Count() {
@@ -104,12 +106,12 @@ public:
 		if (edge_count > 0) {
 			INFO(
 					"Error edges count: " << black_count << " which is "
-							<< 100.0 * black_count / edge_count
-							<< "% of all edges");
+					<< 100.0 * black_count / edge_count
+					<< "% of all edges");
 		} else {
 			INFO(
 					"Error edges count: " << black_count
-							<< " which is 0% of all edges");
+					<< " which is 0% of all edges");
 		}
 	}
 };
@@ -126,7 +128,7 @@ public:
 		graph_(graph), path_(path), perc_(perc) {
 	}
 
-	virtual ~NStat(){
+	virtual ~NStat() {
 	}
 
 	virtual void Count() {
@@ -165,7 +167,105 @@ public:
 		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator)
 			if (graph_.conjugate(*iterator) == (*iterator))
 				sc_number++;
-		INFO("Self-complement count="<< sc_number);
+		INFO("Self-complement count=" << sc_number);
+	}
+};
+
+template<class Graph>
+class EdgePairStat: public omnigraph::AbstractStatCounter {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	Graph &graph_;
+	PairedInfoIndex<Graph> &pair_info_;
+public:
+	EdgePairStat(Graph &graph, PairedInfoIndex<Graph> &pair_info) :
+		graph_(graph), pair_info_(pair_info) {
+	}
+
+	virtual ~EdgePairStat() {
+	}
+
+	void GetPairInfo(map<pair<EdgeId, EdgeId> , double> &edge_pairs) {
+		for (auto iterator = pair_info_.begin(); iterator != pair_info_.end(); ++iterator) {
+			vector<PairInfo<EdgeId>> v = *iterator;
+			size_t w = 0;
+			for (size_t i = 0; i < v.size(); i++) {
+				w += v[i].weight;
+			}
+			edge_pairs.insert(make_pair(make_pair(v[0].first, v[0].second), w));
+		}
+	}
+
+	double CountBound(map<pair<EdgeId, EdgeId> , double> &edge_pairs) {
+		double sum = 0;
+		vector<double> weights;
+		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
+			sum += iterator->second;
+			weights.push_back(iterator->second);
+		}
+		sort(weights.begin(), weights.end());
+		double sum_bound = sum * 0.0001;
+		size_t bound_pos = 0;
+		sum = 0;
+		while (bound_pos + 1 < weights.size() && sum < sum_bound)
+			bound_pos++;
+		return weights[bound_pos];
+	}
+
+	void CountEdgePairs(map<pair<EdgeId, EdgeId> , double> edge_pairs,
+			size_t bound) {
+		size_t result;
+		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
+//			cout << iterator->second << endl;
+			if (iterator->second >= bound) {
+				result++;
+			}
+		}
+		INFO("Number of edge pairs connected with paired info: " << result);
+	}
+
+	void CountTrivialEdgePairs(map<pair<EdgeId, EdgeId> , double> edge_pairs,
+			size_t bound) {
+		size_t result = 0;
+		TrivialEdgePairChecker<Graph> checker(graph_);
+		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
+			if (iterator->second >= bound && !checker.Check(
+					iterator->first.first, iterator->first.second)) {
+				result++;
+			}
+		}
+		INFO("Number of nontrivial edge pairs connected with paired info: " << result);
+	}
+
+	virtual void Count() {
+		map<pair<EdgeId, EdgeId> , double> edge_pairs;
+		GetPairInfo(edge_pairs);
+//		size_t bound = CountBound(edge_pairs);
+		size_t bound = 20;
+		CountEdgePairs(edge_pairs, bound);
+		CountTrivialEdgePairs(edge_pairs, bound);
+		//		double sum = 0;
+		//		vector<size_t> weights;
+		//		for(auto iterator = pair_info_.begin(); iterator != pair_info_.end(); ++iterator) {
+		//			vector<PairInfo<EdgeId>> v = *iterator;
+		//			size_t w = 0;
+		//			for(size_t i = 0; i < v.size(); i++) {
+		//				w += v[i].weight();
+		//			}
+		//			sum += w;
+		//			weights.push_back(w);
+		//		}
+		//		sort(weights.begin(), weights.end());
+		//		double bound = sum / 100;
+		//		sum = 0;
+		//		size_t result = 0;
+		//		TrivialEdgePairChecker<Graph> checker(graph_);
+		//		for(size_t i = 0; i < weights.size(); i++) {
+		//			sum += weights[i];
+		//			if(sum >= bound)
+		//				result++;
+		//		}
+		//		INFO("Number of edge-pairs: " << result);
 	}
 };
 

@@ -157,8 +157,8 @@ public:
 		map<VertexId, NewVertexId> copy;
 		for (auto iter = graph_.begin(); iter != graph_.end(); ++iter) {
 			if (copy.count(*iter) == 0) {
-				NewVertexId new_vertex = new_graph.AddVertex(
-						graph_.data(*iter));
+				NewVertexId new_vertex =
+						new_graph.AddVertex(graph_.data(*iter));
 				copy.insert(make_pair(*iter, new_vertex));
 				copy.insert(
 						make_pair(graph_.conjugate(*iter),
@@ -168,12 +168,77 @@ public:
 		set<EdgeId> was;
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 			if (was.count(*iter) == 0) {
-				new_graph.AddEdge(copy[graph_.EdgeStart(*iter)], copy[graph_.EdgeEnd(*iter)],
-						graph_.data(*iter));
+				new_graph.AddEdge(copy[graph_.EdgeStart(*iter)],
+						copy[graph_.EdgeEnd(*iter)], graph_.data(*iter));
 				was.insert(*iter);
 				was.insert(graph_.conjugate(*iter));
 			}
 		}
+	}
+};
+
+template<class Graph>
+class TrivialEdgePairChecker {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	Graph &graph_;
+	const size_t bound_;
+public:
+	TrivialEdgePairChecker(Graph &graph, size_t bound = (size_t) -1) :
+		graph_(graph), bound_(bound) {
+	}
+
+	/*
+	 * Very bad code. Shame on me.
+	 */
+	bool GoForward(EdgeId &edge) {
+		if (!graph_.CheckUniqueOutgoingEdge(graph_.EdgeEnd(edge))) {
+			return false;
+		}
+		edge = graph_.GetUniqueOutgoingEdge(graph_.EdgeEnd(edge));
+		return true;
+	}
+
+	bool GoBackward(EdgeId &edge) {
+		if (!graph_.CheckUniqueIncomingEdge(graph_.EdgeStart(edge))) {
+			return false;
+		}
+		edge = graph_.GetUniqueIncomingEdge(graph_.EdgeStart(edge));
+		return true;
+	}
+
+	bool CheckForward(EdgeId edge1, EdgeId edge2) {
+		set<EdgeId> was;
+		size_t length = 0;
+		do {
+			if (edge1 == edge2)
+				return true;
+			if (was.count(edge1) != 0)
+				return false;
+			was.insert(edge1);
+			length += graph_.length(edge1);
+		} while (length <= bound_ && GoForward(edge1));
+		return false;
+	}
+
+	bool CheckBackward(EdgeId edge1, EdgeId edge2) {
+		set<EdgeId> was;
+		size_t length = 0;
+		do {
+			if (edge1 == edge2)
+				return true;
+			if (was.count(edge1) != 0)
+				return false;
+			was.insert(edge1);
+			length += graph_.length(edge1);
+		} while (length <= bound_ && GoBackward(edge1));
+		return false;
+	}
+
+	bool Check(EdgeId edge1, EdgeId edge2) {
+		return CheckForward(edge1, edge2) || CheckBackward(edge2, edge1)
+				|| CheckForward(edge2, edge1) || CheckBackward(edge1, edge2);
 	}
 };
 
