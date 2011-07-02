@@ -1,0 +1,3 @@
+Prerequisites:
+
+  sudo apt-get install python python-matplotlib python-numpy
