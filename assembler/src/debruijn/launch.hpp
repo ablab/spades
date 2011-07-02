@@ -49,8 +49,8 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	INFO("Stats counted");
 }
 
-void CountPairedInfoStats(Graph &g, size_t insert_size, size_t max_read_length, PairedInfoIndex<Graph> &paired_index) {
-	EdgePairStat<Graph>(g, paired_index).Count();
+void CountPairedInfoStats(Graph &g, size_t insert_size, size_t max_read_length, PairedInfoIndex<Graph> &paired_index, const string &output_folder) {
+	EdgePairStat<Graph>(g, paired_index, output_folder).Count();
 	UniquePathStat<Graph>(g, paired_index, insert_size, max_read_length, 0.1, 40.0).Count();
 }
 
@@ -96,8 +96,8 @@ void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	DetailedWriteToDot(g, folder + file_name, graph_name, path1, path2);
 }
 
-void ProducePairedInfo(Graph& g, size_t insert_size, size_t max_read_length, PairedInfoIndex<Graph> &paired_index) {
-	CountPairedInfoStats(g, insert_size, max_read_length, paired_index);
+void ProducePairedInfo(Graph& g, size_t insert_size, size_t max_read_length, PairedInfoIndex<Graph> &paired_index, const string &output_folder) {
+	CountPairedInfoStats(g, insert_size, max_read_length, paired_index, output_folder);
 }
 
 void ClipTips(Graph &g) {
@@ -276,7 +276,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, size_t insert_size,
 
 	ProduceInfo<k> (g, index, genome, output_folder + "simplified_graph.dot",
 			"simplified_graph");
-	ProducePairedInfo(g, insert_size, max_read_length, paired_index);
+	ProducePairedInfo(g, insert_size, max_read_length, paired_index, output_folder);
 
 //	paired_index.OutputData(output_folder + "edges_dist.txt");
 
@@ -303,7 +303,6 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, size_t insert_size,
 			"no_repeat_graph");
 	ProduceInfo<k> (new_graph, index, genome, work_tmp_dir + "repeats_resolved.dot",
 			"no_repeat_graph");
-	ProducePairedInfo(g, insert_size, max_read_length,paired_index);
 	OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 }
