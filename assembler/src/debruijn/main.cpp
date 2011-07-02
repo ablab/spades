@@ -48,7 +48,8 @@ int main()
 	checkFileExistenceFATAL(reads_filename1);
 	checkFileExistenceFATAL(reads_filename2);
 
-	int insert_size = CONFIG.read<int> (dataset + "_IS");
+	size_t insert_size = CONFIG.read<size_t> (dataset + "_IS");
+	size_t max_read_length = 100;//CONFIG.read<size_t> (dataset + "_READ_LEN");
 	int dataset_len = CONFIG.read<int> (dataset + "_LEN");
 	bool paired_mode = CONFIG.read<bool> ("paired_mode");
 
@@ -74,8 +75,7 @@ int main()
 	INFO("Working with " << dataset << " dataset");
 	// assemble
 	if (paired_mode) {
-		debruijn_graph::DeBruijnGraphWithPairedInfoTool<K, RCStream>(rcStream,
-				genome, output_dir, work_tmp_dir);
+		debruijn_graph::DeBruijnGraphWithPairedInfoTool<K, RCStream>(rcStream, insert_size, max_read_length, genome, output_dir, work_tmp_dir);
 		INFO("Working with " << dataset << " dataset nearly to finish");
 	} else {
 		debruijn_graph::DeBruijnGraphTool<K, RCStream>(rcStream, genome,

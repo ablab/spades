@@ -14,58 +14,6 @@
 
 namespace omnigraph {
 
-template<class Graph>
-class PathProcessor {
-public:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-
-	class Callback {
-	public:
-		virtual void HandlePath(const vector<EdgeId>& path) = 0;
-	};
-
-private:
-	const Graph& g_;
-	size_t min_length_;
-	size_t max_length_;
-	VertexId start_;
-	VertexId end_;
-	Callback& callback_;
-
-	void Go(VertexId v, size_t length, vector<EdgeId>& path) {
-		if (length > max_length_) {
-			return;
-		}
-		if (v == end_ && length >= min_length_) {
-			callback_.HandlePath(path);
-		}
-		vector<EdgeId> outgoing_edges = g_.OutgoingEdges(v);
-		for (size_t i = 0; i < outgoing_edges.size(); ++i) {
-			EdgeId edge = outgoing_edges[i];
-			path.push_back(edge);
-			Go(g_.EdgeEnd(edge), length + g_.length(edge), path);
-			path.pop_back();
-		}
-
-	}
-
-public:
-	PathProcessor(const Graph& g, size_t min_length, size_t max_length
-			, VertexId start, VertexId end, Callback& callback)
-		: g_(g), min_length_(min_length), max_length_(max_length)
-		, start_(start), end_(end), callback_(callback) {
-	}
-
-	void Process() {
-		vector<EdgeId> path;
-		Go(start_, 0, path);
-	}
-
-private:
-	DECL_LOGGER("PathProcessor")
-};
-
 template <class Graph>
 struct SimplePathCondition {
 	typedef typename Graph::EdgeId EdgeId;
@@ -146,23 +94,6 @@ public:
 	}
 };
 
-template <class Graph>
-class PathCounter : public PathProcessor<Graph>::Callback {
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-
-	size_t count_;
-public:
-
-	virtual void HandlePath(const vector<EdgeId>& path) {
-		count_++;
-	}
-
-	size_t count() {
-		return count_;
-	}
-};
-
 /**
  * This class removes simple bulges from given graph with the following algorithm: it iterates through all edges of
  * the graph and for each edge checks if this edge is likely to be a simple bulge
@@ -209,8 +140,8 @@ private:
 	 * Returns pair of empty vector and -1 if no such path could be found.
 	 * Edges are returned in reverse order!
 	 */
-	pair<vector<EdgeId> , int> BestPath(VertexId start,
-			VertexId end, int length_left);
+//	pair<vector<EdgeId> , int> BestPath(VertexId start,
+//			VertexId end, int length_left);
 
 	/**
 	 * Checks if alternative path is simple (doesn't contain conjugate edges, edge e or conjugate(e))
@@ -303,6 +234,7 @@ void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
 	}
 }
 
+/*
 template<class Graph, class BulgeConditionF>
 pair<vector<typename Graph::EdgeId> , int> BulgeRemover<Graph, BulgeConditionF>::BestPath(
 		typename Graph::VertexId start,
@@ -343,6 +275,7 @@ pair<vector<typename Graph::EdgeId> , int> BulgeRemover<Graph, BulgeConditionF>:
 			<< best_path_coverage);
 	return make_pair(best_path, best_path_coverage);
 }
+*/
 
 }
 #endif /* BULGE_REMOVER_HPP_ */

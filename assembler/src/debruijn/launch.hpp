@@ -49,8 +49,9 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	INFO("Stats counted");
 }
 
-void CountPairedInfoStats(Graph &g, PairedInfoIndex<Graph> &paired_index) {
+void CountPairedInfoStats(Graph &g, size_t insert_size, size_t max_read_length, PairedInfoIndex<Graph> &paired_index) {
 	EdgePairStat<Graph>(g, paired_index).Count();
+	UniquePathStat<Graph>(g, paired_index, insert_size, max_read_length, 0.1, 40.0).Count();
 }
 
 void WriteToDotFile(Graph &g, const string& file_name, string graph_name,
@@ -95,12 +96,12 @@ void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	DetailedWriteToDot(g, folder + file_name, graph_name, path1, path2);
 }
 
-void ProducePairedInfo(Graph& g, PairedInfoIndex<Graph> &paired_index) {
-	CountPairedInfoStats(g, paired_index);
+void ProducePairedInfo(Graph& g, size_t insert_size, size_t max_read_length, PairedInfoIndex<Graph> &paired_index) {
+	CountPairedInfoStats(g, insert_size, max_read_length, paired_index);
 }
 
 void ClipTips(Graph &g) {
-	INFO("\n-----------------------------------------");
+	INFO("-----------------------------------------");
 	INFO("Clipping tips");
 	TipComparator<Graph> comparator(g);
 	size_t max_tip_length = CONFIG.read<size_t> ("tc_max_tip_length");
@@ -114,7 +115,7 @@ void ClipTips(Graph &g) {
 }
 
 void RemoveBulges(Graph &g) {
-	INFO("\n-----------------------------------------");
+	INFO("-----------------------------------------");
 	INFO("Removing bulges");
 	double max_coverage = CONFIG.read<double> ("br_max_coverage");
 	double max_relative_coverage = CONFIG.read<double> (
@@ -130,7 +131,7 @@ void RemoveBulges(Graph &g) {
 }
 
 void RemoveLowCoverageEdges(Graph &g) {
-	INFO("\n-----------------------------------------");
+	INFO("-----------------------------------------");
 	INFO("Removing low coverage edges");
 	double max_coverage = CONFIG.read<double> ("ec_max_coverage");
 	int max_length_div_K = CONFIG.read<int> ("ec_max_length_div_K");
@@ -141,7 +142,7 @@ void RemoveLowCoverageEdges(Graph &g) {
 }
 
 void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs, PairedInfoIndex<Graph> &info, Graph &new_graph, IdTrackHandler<Graph> &new_IDs, const string& output_folder) {
-	INFO("\n-----------------------------------------");
+	INFO("-----------------------------------------");
 	INFO("Resolving primitive repeats");
 	RepeatResolver<Graph> repeat_resolver(g, old_IDs, 0, info, new_graph, new_IDs);
 	mkdir((output_folder).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH);
@@ -152,7 +153,7 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs, PairedInfoIndex<Gr
 template<size_t k, class ReadStream>
 void FillPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
 		ReadStream& stream, EdgeIndex<k + 1, Graph>& index) {
-	INFO("\n-----------------------------------------");
+	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Counting paired info");
 	PairedIndexFiller<Graph, k, ReadStream> pif(g, index, stream);
@@ -164,7 +165,7 @@ template<size_t k, class ReadStream>
 void FillCoverage(Graph& g/*CoverageHandler<Graph> coverage_handler*/, ReadStream& stream,
 		EdgeIndex<k + 1, Graph>& index) {
 	typedef SimpleSequenceMapper<k, Graph> ReadThreader;
-	INFO("\n-----------------------------------------");
+	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Counting coverage");
 	ReadThreader read_threader(g, index);
@@ -178,7 +179,7 @@ template<size_t k, class ReadStream>
 void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		ReadStream& stream) {
 	typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;
-	INFO("\n-----------------------------------------");
+	INFO("-----------------------------------------");
 	INFO("Constructing DeBruijn graph");
 	DeBruijn& debruijn = index.inner_index();
 	INFO("Filling DeBruijn graph");
@@ -211,14 +212,14 @@ void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 
 template<size_t k>
 void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index, size_t iteration_count, const string& genome, const string& output_folder) {
-	INFO("\n-----------------------------------------");
+	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
 
 	ProduceDetailedInfo<k> (g, index, genome,
 			output_folder + "before_simplification/", "graph.dot",
 			"non_simplified_graph");
 	for (size_t i = 0; i < iteration_count; i++) {
-		INFO("\n-----------------------------------------");
+		INFO("-----------------------------------------");
 		INFO("Iteration " << i);
 
 		ClipTips(g);
@@ -243,7 +244,7 @@ void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index, size_t iteration_co
 }
 
 void OutputContigs(Graph& g, const string& contigs_output_filename) {
-	INFO("\n-----------------------------------------");
+	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_filename);
 
 	osequencestream oss(contigs_output_filename);
@@ -255,7 +256,8 @@ void OutputContigs(Graph& g, const string& contigs_output_filename) {
 }
 
 template<size_t k, class ReadStream>
-void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
+void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, size_t insert_size,
+		size_t max_read_length, const string& genome,
 		const string& output_folder, const string& work_tmp_dir) {
 	INFO("Edge graph construction tool started");
 	mkdir(work_tmp_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
@@ -274,7 +276,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 
 	ProduceInfo<k> (g, index, genome, output_folder + "simplified_graph.dot",
 			"simplified_graph");
-	ProducePairedInfo(g, paired_index);
+	ProducePairedInfo(g, insert_size, max_read_length, paired_index);
 
 //	paired_index.OutputData(output_folder + "edges_dist.txt");
 
@@ -301,7 +303,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 			"no_repeat_graph");
 	ProduceInfo<k> (new_graph, index, genome, work_tmp_dir + "repeats_resolved.dot",
 			"no_repeat_graph");
-	ProducePairedInfo(g, paired_index);
+	ProducePairedInfo(g, insert_size, max_read_length,paired_index);
 	OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 }

@@ -269,6 +269,102 @@ public:
 	}
 };
 
+template<class Graph>
+class UniquePathStat: public omnigraph::AbstractStatCounter {
+
+	typedef typename Graph::EdgeId EdgeId;
+	Graph& g_;
+	PairedInfoIndex<Graph>& pair_info_;
+	size_t insert_size_;
+	size_t max_read_length_;
+	double variance_delta_;
+
+	//todo get rid of this parameter
+	double weight_threshold_;
+
+	size_t considered_edge_pair_cnt_;
+	size_t unique_distance_cnt_;
+	size_t non_unique_distance_cnt_;
+
+
+	bool ContainsPositiveDistance(const vector<PairInfo<EdgeId>>& infos) {
+		double s = 0.0;
+		for (auto it = infos.begin(); it!=infos.end(); ++it) {
+			if ((*it).d > g_.length((*it).first)) {
+				s += (*it).weight;
+			}
+		}
+		return s > weight_threshold_;
+	}
+//	bool ContainsPositiveDistance(const vector<PairInfo<EdgeId>>& infos) {
+//		for (auto it = infos.begin(); it!=infos.end(); ++it) {
+//			if ((*it).d() > g_.length((*it).first())) {
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
+public:
+
+	UniquePathStat(Graph& g, PairedInfoIndex<Graph>& pair_info, size_t insert_size, size_t max_read_length
+			, double variance_delta, double weight_threshold)
+	: g_(g)
+	, pair_info_(pair_info)
+	, insert_size_(insert_size)
+	, max_read_length_(max_read_length)
+	, variance_delta_(variance_delta)
+	, weight_threshold_(weight_threshold)
+	, considered_edge_pair_cnt_(0)
+	, unique_distance_cnt_(0)
+	, non_unique_distance_cnt_(0) {
+
+	}
+
+	virtual void Count() {
+		for (auto it = pair_info_.begin(); it != pair_info_.end(); ++it) {
+			if (ContainsPositiveDistance(*it)) {
+				considered_edge_pair_cnt_++;
+				PairInfo<EdgeId> delegate = (*it)[0];
+				EdgeId e1 = delegate.first;
+				EdgeId e2 = delegate.second;
+				PathCounter<Graph> counter;
+				int lower_bound = insert_size_ - 2 * max_read_length_ - g_.length(e1) - g_.length(e2);
+//				cout << "IS " << insert_size_ << endl;
+//				cout << "MRL " << max_read_length_ << endl;
+//				cout << "Raw Lower bound " << lower_bound << endl;
+//				cout << "Var delta " << variance_delta_ << endl;
+//				cout << "Lower bound " << (1 - variance_delta_) * lower_bound << endl;
+				PathProcessor<Graph> path_processor(g_, (1 - variance_delta_) * lower_bound
+						, (1 + variance_delta_) * insert_size_, g_.EdgeEnd(e1), g_.EdgeStart(e2), counter);
+				path_processor.Process();
+				if (counter.count() == 1) {
+					unique_distance_cnt_++;
+				}
+				if (counter.count() > 1) {
+					non_unique_distance_cnt_++;
+				}
+			}
+		}
+		INFO("Considered " << considered_edge_pair_cnt_ << " edge pairs")
+		INFO(unique_distance_cnt_ << " edge pairs connected with unique path of appropriate length")
+		INFO(non_unique_distance_cnt_ << " edge pairs connected with non-unique path of appropriate length")
+	}
+
+	size_t considered_edge_pair_count() {
+		return considered_edge_pair_cnt_;
+	}
+
+	size_t unique_distance_count() {
+		return unique_distance_cnt_;
+	}
+
+	size_t non_unique_distance_count() {
+		return non_unique_distance_cnt_;
+	}
+private:
+	DECL_LOGGER("UniquePathStat")
+};
+
 }
 
 #endif /* STATISTICS_HPP_ */
