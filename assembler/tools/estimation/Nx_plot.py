@@ -1,49 +1,52 @@
+
+# N00-N50-N100 plotter
+# mailto: vyahhi@gmail.com
+
 import sys
+import pylab
+import matplotlib.ticker
+import fastaparser
 
 # check command line arguments
 if len(sys.argv) < 2:
-	print "Draws Nx plot (from N01 through N50 to N100)"
-	print "Usage: ", sys.argv[0], " contigs_file.fasta"
+	print "Draws Nx plot (from N00 through N50 to N100)"
+	print
+	print "Usage:", sys.argv[0], "FASTA1 [FASTA2 [FASTA3 ..."
+	print
+	print "Example:", sys.argv[0], "../../data/debruijn/we_contigs.fasta ../../data/debruijn/velvet_contigs.fa"
 	exit(0)
-	
-# get lengths of contigs from fasta-file
-lengths = []
-l = 0
-for line in open(sys.argv[1]):
-	if (line[0] == '>'):
-		if l != 0: # not first sequence in fasta
-			lengths.append(l)
-			l = 0
-	else:
-		l += len(line.strip())
-lengths.append(l)
 
-# prepare lengths
-lengths.sort()
-lsum = sum(lengths)
+for filename in sys.argv[1:]:
+	# parse
+	lengths = fastaparser.get_lengths_from_fastafile(filename)
+	lengths.sort()
+	# calculate values for the plot
+	vals_Nx = [0.0]
+	vals_l = [0]
+	lcur = 0
+	lsum = sum(lengths)
+	for l in lengths:
+		lcur += l
+		x = lcur * 100.0 / lsum
+		vals_Nx.append(vals_Nx[-1] + 1e-10) # eps
+		vals_l.append(l)
+		vals_Nx.append(x)
+		vals_l.append(l)
+	# add to plot
+	pylab.plot(vals_Nx, vals_l)
 
-# calculate Nx values
-vals_Nx = [0.0]
-vals_l = [0]
-lcur = 0
-for l in lengths:
-	lcur += l
-	x = lcur * 100.0 / lsum
-	vals_Nx.append(vals_Nx[-1] + 1e-10) # eps
-	vals_l.append(l)
-	vals_Nx.append(x)
-	vals_l.append(l)
-#print vals_Nx
-#print vals_l
-
-# plot vals
-import pylab
-pylab.plot(vals_Nx, vals_l)
-#pylab.yscale('log')
+# customize plot
 pylab.xlabel('Nx')
 pylab.ylabel('Contig length')
 pylab.title('Nx plot (N00 to N100)')
 pylab.grid(True)
-pylab.savefig('Nx_plot')
-print "Saved to ./Nx_plot.png"
+ax = pylab.gca()
+ax.legend(sys.argv[1:], loc='lower right')
+formatter = matplotlib.ticker.FormatStrFormatter('N%.f')
+ax.xaxis.set_major_formatter(formatter)
+
+# save and show
+filename = 'Nx_plot'
+pylab.savefig(filename)
+print "Saved to ./" + filename + ".png"
 pylab.show()
