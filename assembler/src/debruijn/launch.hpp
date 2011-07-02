@@ -49,8 +49,8 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	INFO("Stats counted");
 }
 
-void CountPairedInfoStats(Graph &g, PairedInfoIndex<Graph> &paired_index) {
-	EdgePairStat<Graph>(g, paired_index).Count();
+void CountPairedInfoStats(Graph &g, PairedInfoIndex<Graph> &paired_index, const string &output_folder) {
+	EdgePairStat<Graph>(g, paired_index, output_folder).Count();
 }
 
 void WriteToDotFile(Graph &g, const string& file_name, string graph_name,
@@ -95,8 +95,8 @@ void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	DetailedWriteToDot(g, folder + file_name, graph_name, path1, path2);
 }
 
-void ProducePairedInfo(Graph& g, PairedInfoIndex<Graph> &paired_index) {
-	CountPairedInfoStats(g, paired_index);
+void ProducePairedInfo(Graph& g, PairedInfoIndex<Graph> &paired_index, const string &output_folder) {
+	CountPairedInfoStats(g, paired_index, output_folder);
 }
 
 void ClipTips(Graph &g) {
@@ -274,7 +274,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 
 	ProduceInfo<k> (g, index, genome, output_folder + "simplified_graph.dot",
 			"simplified_graph");
-	ProducePairedInfo(g, paired_index);
+	ProducePairedInfo(g, paired_index, output_folder);
 
 //	paired_index.OutputData(output_folder + "edges_dist.txt");
 
@@ -301,7 +301,6 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome,
 			"no_repeat_graph");
 	ProduceInfo<k> (new_graph, index, genome, work_tmp_dir + "repeats_resolved.dot",
 			"no_repeat_graph");
-	ProducePairedInfo(g, paired_index);
 	OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 }

@@ -177,12 +177,22 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	Graph &graph_;
 	PairedInfoIndex<Graph> &pair_info_;
+	const string &output_folder_;
 public:
-	EdgePairStat(Graph &graph, PairedInfoIndex<Graph> &pair_info) :
-		graph_(graph), pair_info_(pair_info) {
+	EdgePairStat(Graph &graph, PairedInfoIndex<Graph> &pair_info, const string &output_folder) :
+		graph_(graph), pair_info_(pair_info), output_folder_(output_folder) {
 	}
 
 	virtual ~EdgePairStat() {
+	}
+
+	vector<double> GetWeights(map<pair<EdgeId, EdgeId> , double> &edge_pairs ) {
+		vector<double> weights;
+		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
+			weights.push_back(iterator->second);
+		}
+		sort(weights.begin(), weights.end());
+		return weights;
 	}
 
 	void GetPairInfo(map<pair<EdgeId, EdgeId> , double> &edge_pairs) {
@@ -196,54 +206,68 @@ public:
 		}
 	}
 
-	double CountBound(map<pair<EdgeId, EdgeId> , double> &edge_pairs) {
-		double sum = 0;
+	void RemoveTrivial(map<pair<EdgeId, EdgeId> , double> &edge_pairs) {
+		TrivialEdgePairChecker<Graph> checker(graph_);
+		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
+			if (!checker.Check(iterator->first.first, iterator->first.second)) {
+				edge_pairs.erase(iterator++);
+			} else {
+				++iterator;
+			}
+		}
+	}
+
+	void RemoveUntrustful(map<pair<EdgeId, EdgeId> , double> &edge_pairs, double bound) {
 		vector<double> weights;
 		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
-			sum += iterator->second;
 			weights.push_back(iterator->second);
 		}
 		sort(weights.begin(), weights.end());
-		double sum_bound = sum * 0.0001;
-		size_t bound_pos = 0;
-		sum = 0;
-		while (bound_pos + 1 < weights.size() && sum < sum_bound)
-			bound_pos++;
-		return weights[bound_pos];
-	}
+//		double bound_pos = (size_t)(0.01 * weights.size());
+//		while(bound_pos + 1 < weights.size() * 0.2) {
+//			cout << bound_pos << " " << weights[bound_pos];
+//			if(weights[bound_pos + 1]> 1.5 * weights[bound_pos / 2])
+//				break;
+//			bound_pos++;
+//		}
+//		double bound = weights[bound_pos];
 
-	void CountEdgePairs(map<pair<EdgeId, EdgeId> , double> edge_pairs,
-			size_t bound) {
-		size_t result;
-		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
-//			cout << iterator->second << endl;
-			if (iterator->second >= bound) {
-				result++;
+		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end();) {
+			if(iterator->second < bound) {
+				edge_pairs.erase(iterator++);
+			} else {
+				++iterator;
 			}
 		}
-		INFO("Number of edge pairs connected with paired info: " << result);
 	}
 
-	void CountTrivialEdgePairs(map<pair<EdgeId, EdgeId> , double> edge_pairs,
-			size_t bound) {
-		size_t result = 0;
-		TrivialEdgePairChecker<Graph> checker(graph_);
-		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
-			if (iterator->second >= bound && !checker.Check(
-					iterator->first.first, iterator->first.second)) {
-				result++;
+	void OutputWeights(vector<double> weights, string file_name) {
+		ofstream os(file_name);
+		size_t cur = weights.size() - 1;
+		size_t max = 1000;
+		vector<double> res(max);
+		for(int i = max - 1; i >= 0; i--) {
+			while(cur >= 0 && weights[cur] >= i + 1) {
+				cur--;
 			}
+			res[i] = weights.size() - 1 - cur;
 		}
-		INFO("Number of nontrivial edge pairs connected with paired info: " << result);
+		for(size_t i = 0; i < weights.size(); i++) {
+			os << i + 1 << " " << res[i];
+		}
+		os.close();
 	}
 
 	virtual void Count() {
 		map<pair<EdgeId, EdgeId> , double> edge_pairs;
 		GetPairInfo(edge_pairs);
-//		size_t bound = CountBound(edge_pairs);
-		size_t bound = 20;
-		CountEdgePairs(edge_pairs, bound);
-		CountTrivialEdgePairs(edge_pairs, bound);
+		OutputWeights(GetWeights(edge_pairs), output_folder_ + "pair_info_weights.txt");
+		RemoveUntrustful(edge_pairs, 20);
+		//		size_t bound = CountBound(edge_pairs);
+		//		size_t bound = 20;
+		INFO("Number of edge pairs connected with paired info: " << edge_pairs.size());
+		RemoveTrivial(edge_pairs);
+		INFO("Number of nontrivial edge pairs connected with paired info: " << edge_pairs.size());
 		//		double sum = 0;
 		//		vector<size_t> weights;
 		//		for(auto iterator = pair_info_.begin(); iterator != pair_info_.end(); ++iterator) {
