@@ -2,7 +2,9 @@
 #define STATISTICS_HPP_
 
 #include "omni_tools.hpp"
+#include "paired_info.hpp"
 #include <map>
+
 namespace omnigraph {
 
 class AbstractStatCounter {

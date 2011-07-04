@@ -7,6 +7,7 @@ DECL_PROJECT_LOGGER("a")
 #include "tip_clipper.hpp"
 #include "bulge_remover.hpp"
 #include "erroneous_connection_remover.hpp"
+#include "statistics.hpp"
 #include "omni_tools.hpp"
 #include "omnigraph.hpp"
 #include "visualization_utils.hpp"
@@ -19,6 +20,8 @@ using namespace GetOpt;
 namespace abruijn {
 
 DECL_LOGGER("main")
+
+typedef omnigraph::Omnigraph Graph;
 
 class Launch {
 public:
@@ -39,6 +42,8 @@ public:
 
 	double ecr_max_coverage_;
 	int ecr_max_length_div_K_;
+
+	Graph* g_;
 
 private:
 	GetOpt_pp& options_;
@@ -144,6 +149,14 @@ public:
 		}
 	}
 
+	void stats(string name) {
+		omnigraph::StrGraphLabeler<Graph> labeler(*g_);
+		gvis::WriteToDotFile(output_file_ + "_" + name, "earmarked", *g_, labeler);
+		INFO("Statistics of " << name << ":");
+		omnigraph::VertexEdgeStat<Graph> vertex_edge_stat(*g_);
+		vertex_edge_stat.Count();
+	}
+
 	void run() {
 		StrobeReader<2, Read, ireadstream> sr(input_files_);
 		PairedReader<ireadstream> paired_stream(sr, 220);
@@ -151,47 +164,50 @@ public:
 		CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream> > > cr(srw, cut_);
 
 		abruijn::GraphBuilderMaster<CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream>>>> gbm(cr, take_, mode_);
-		omnigraph::Omnigraph* g = gbm.build();
-		omnigraph::StrGraphLabeler<omnigraph::Omnigraph> labeler(*g);
-		gvis::WriteToDotFile(output_file_ + "_uncompressed", "earmarked", *g, labeler);
+		g_ = gbm.build();
+		stats("uncompressed");
 
 		//  INFO("Spelling the reference genome");
 		//  gbm.SpellGenomeThroughGraph(cut_ + 219);
 
 		INFO("===== Compressing... =====");
-		omnigraph::Compressor<omnigraph::Omnigraph> compressor(*g);
+		omnigraph::Compressor<Graph> compressor(*g_);
 		compressor.CompressAllVertices();
-		INFO(g->size() << " vertices");
-		gvis::WriteToDotFile(output_file_ + "_compressed", "earmarked", *g, labeler);
+		stats("compressed");
 
 		INFO("===== Clipping tips... =====");
-		omnigraph::TipComparator<omnigraph::Omnigraph> comparator(*g);
-		omnigraph::TipClipper<omnigraph::Omnigraph, omnigraph::TipComparator<omnigraph::Omnigraph>> tip_clipper(*g, comparator, tc_max_tip_length_, tc_max_coverage_, tc_max_relative_coverage_);
+		omnigraph::TipComparator<Graph> comparator(*g_);
+		omnigraph::TipClipper<Graph, omnigraph::TipComparator<Graph>> tip_clipper(*g_, comparator, tc_max_tip_length_, tc_max_coverage_, tc_max_relative_coverage_);
 		tip_clipper.ClipTips();
-		INFO(g->size() << " vertices");
-		gvis::WriteToDotFile(output_file_ + "_tc", "earmarked", *g, labeler);
+		stats("tc");
 
 		INFO("===== Removing bulges... =====");
-		omnigraph::SimplePathCondition<omnigraph::Omnigraph> simple_path_condition(*g);
-		omnigraph::BulgeRemover<omnigraph::Omnigraph, omnigraph::SimplePathCondition<omnigraph::Omnigraph>> bulge_remover(*g, br_max_length_div_K_ * K, br_max_coverage_, br_max_relative_coverage_, br_max_delta_, br_max_relative_delta_, simple_path_condition);
+		omnigraph::SimplePathCondition<Graph> simple_path_condition(*g_);
+		omnigraph::BulgeRemover<Graph, omnigraph::SimplePathCondition<Graph>> bulge_remover(*g_, br_max_length_div_K_ * K, br_max_coverage_, br_max_relative_coverage_, br_max_delta_, br_max_relative_delta_, simple_path_condition);
 		bulge_remover.RemoveBulges();
-		INFO(g->size() << " vertices");
-		gvis::WriteToDotFile(output_file_ + "_tc_br", "earmarked", *g, labeler);
+		stats("tc_br");
 
 		INFO("===== Removing erroneous connections... =====");
 		omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(ecr_max_length_div_K_ * K, ecr_max_coverage_);
-		erroneous_edge_remover.RemoveEdges(*g);
-		INFO(g->size() << " vertices");
-		gvis::WriteToDotFile(output_file_ + "_tc_br_ecr", "earmarked", *g, labeler);
+		erroneous_edge_remover.RemoveEdges(*g_);
+		stats("tc_br_ecr");
+
+		INFO("===== Clipping tips #2... =====");
+		tip_clipper.ClipTips();
+		stats("tc_br_ecr_tc");
+
+		INFO("===== Removing bulges #2... =====");
+		bulge_remover.RemoveBulges();
+		stats("tc_br_ecr_tc_br");
 
 //		INFO("===== Outputting graph to " << output_file_ << " =====");
-//		gvis::WriteToDotFile(output_file_, "earmarked", *g, labeler);
+//		gvis::WriteToDotFile(output_file_, "earmarked", g_, labeler);
 
 		//ABruijnGraphWithGraphVisualizer ( "ATGTGTGACTTTGTATCGTATTGCGGGCGGCGCGCTTATTGTATGCGTAAATTTGGGTCATATTGATCGTAAAATGCGTATGATGCACTGCA", 6, 3 );
 	}
 };
 
-} // namespace main_processing
+} // namespace abruijn
 
 
 int main(int argc, char* argv[]) {
