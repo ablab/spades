@@ -41,6 +41,18 @@ void GraphBuilder::findMinimizers(Sequence s) {
 	}
 }
 
+void GraphBuilder::takeAllKmers(Sequence s) {
+	ha.resize(max(s.size(), ha.size()));
+	hashSym.kmers(s, ha);
+	for (size_t i = 0; i + K <= s.size(); ++i) {
+		hash_t hi = ha[i];
+		if (!isTrusted(hi)) {
+			continue;
+		}
+		earmarked_hashes.insert(hi);
+	}
+}
+
 /**
  * Marks all k-mers in a given read that are locally minimal in
  * a window of size window_size

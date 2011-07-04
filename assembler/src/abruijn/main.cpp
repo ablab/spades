@@ -116,6 +116,7 @@ public:
 		usage_ << "--mode bit mask (default = 0):\n";
 		usage_ << "       1 whether to find minimizers, not local minimizers\n";
 		usage_ << "       2 whether to ensure at least 2 minimizers in each read\n";
+		usage_ << "       4 whether to earmark ALL k-mers (overrides other modes)\n";
 		if (log_) {
 			if (mode_ & 1) {
 				INFO("mode => find minimizers");
@@ -124,6 +125,9 @@ public:
 			}
 			if (mode_ & 2) {
 				INFO("mode => ensure at least two minimizers in each read");
+			}
+			if (mode_ & 4) {
+				INFO("mode => earmark ALL k-mers");
 			}
 		}
 
