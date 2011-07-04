@@ -236,7 +236,6 @@ public:
 			if(iterator->second < bound) {
 				edge_pairs.erase(iterator++);
 			} else {
-				cout << iterator->first.first << " " << iterator->first.second << endl;
 				++iterator;
 			}
 		}
@@ -262,7 +261,7 @@ public:
 	virtual void Count() {
 		map<pair<EdgeId, EdgeId> , double> edge_pairs;
 		GetPairInfo(edge_pairs);
-		OutputWeights(GetWeights(edge_pairs), output_folder_ + "pair_info_weights.txt");
+//		OutputWeights(GetWeights(edge_pairs), output_folder_ + "pair_info_weights.txt");
 		RemoveUntrustful(edge_pairs, 20);
 		INFO("Number of edge pairs connected with paired info: " << edge_pairs.size());
 		RemoveTrivial(edge_pairs);
