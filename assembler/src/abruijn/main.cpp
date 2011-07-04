@@ -40,6 +40,8 @@ public:
 	double ecr_max_coverage_;
 	int ecr_max_length_div_K_;
 
+	omnigraph::Omnigraph* g_;
+
 private:
 	GetOpt_pp& options_;
 	bool help_;
@@ -151,41 +153,41 @@ public:
 		CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream> > > cr(srw, cut_);
 
 		abruijn::GraphBuilderMaster<CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream>>>> gbm(cr, take_, mode_);
-		omnigraph::Omnigraph* g = gbm.build();
-		omnigraph::StrGraphLabeler<omnigraph::Omnigraph> labeler(*g);
-		gvis::WriteToDotFile(output_file_ + "_uncompressed", "earmarked", *g, labeler);
+		g_ = gbm.build();
+		omnigraph::StrGraphLabeler<omnigraph::Omnigraph> labeler(*g_);
+		gvis::WriteToDotFile(output_file_ + "_uncompressed", "earmarked", *g_, labeler);
 
 		//  INFO("Spelling the reference genome");
 		//  gbm.SpellGenomeThroughGraph(cut_ + 219);
 
 		INFO("===== Compressing... =====");
-		omnigraph::Compressor<omnigraph::Omnigraph> compressor(*g);
+		omnigraph::Compressor<omnigraph::Omnigraph> compressor(*g_);
 		compressor.CompressAllVertices();
-		INFO(g->size() << " vertices");
-		gvis::WriteToDotFile(output_file_ + "_compressed", "earmarked", *g, labeler);
+		INFO(g_->size() << " vertices");
+		gvis::WriteToDotFile(output_file_ + "_compressed", "earmarked", *g_, labeler);
 
 		INFO("===== Clipping tips... =====");
-		omnigraph::TipComparator<omnigraph::Omnigraph> comparator(*g);
-		omnigraph::TipClipper<omnigraph::Omnigraph, omnigraph::TipComparator<omnigraph::Omnigraph>> tip_clipper(*g, comparator, tc_max_tip_length_, tc_max_coverage_, tc_max_relative_coverage_);
+		omnigraph::TipComparator<omnigraph::Omnigraph> comparator(*g_);
+		omnigraph::TipClipper<omnigraph::Omnigraph, omnigraph::TipComparator<omnigraph::Omnigraph>> tip_clipper(*g_, comparator, tc_max_tip_length_, tc_max_coverage_, tc_max_relative_coverage_);
 		tip_clipper.ClipTips();
-		INFO(g->size() << " vertices");
-		gvis::WriteToDotFile(output_file_ + "_tc", "earmarked", *g, labeler);
+		INFO(g_->size() << " vertices");
+		gvis::WriteToDotFile(output_file_ + "_tc", "earmarked", *g_, labeler);
 
 		INFO("===== Removing bulges... =====");
-		omnigraph::SimplePathCondition<omnigraph::Omnigraph> simple_path_condition(*g);
-		omnigraph::BulgeRemover<omnigraph::Omnigraph, omnigraph::SimplePathCondition<omnigraph::Omnigraph>> bulge_remover(*g, br_max_length_div_K_ * K, br_max_coverage_, br_max_relative_coverage_, br_max_delta_, br_max_relative_delta_, simple_path_condition);
+		omnigraph::SimplePathCondition<omnigraph::Omnigraph> simple_path_condition(*g_);
+		omnigraph::BulgeRemover<omnigraph::Omnigraph, omnigraph::SimplePathCondition<omnigraph::Omnigraph>> bulge_remover(*g_, br_max_length_div_K_ * K, br_max_coverage_, br_max_relative_coverage_, br_max_delta_, br_max_relative_delta_, simple_path_condition);
 		bulge_remover.RemoveBulges();
-		INFO(g->size() << " vertices");
-		gvis::WriteToDotFile(output_file_ + "_tc_br", "earmarked", *g, labeler);
+		INFO(g_->size() << " vertices");
+		gvis::WriteToDotFile(output_file_ + "_tc_br", "earmarked", *g_, labeler);
 
 		INFO("===== Removing erroneous connections... =====");
 		omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(ecr_max_length_div_K_ * K, ecr_max_coverage_);
-		erroneous_edge_remover.RemoveEdges(*g);
-		INFO(g->size() << " vertices");
-		gvis::WriteToDotFile(output_file_ + "_tc_br_ecr", "earmarked", *g, labeler);
+		erroneous_edge_remover.RemoveEdges(*g_);
+		INFO(g_->size() << " vertices");
+		gvis::WriteToDotFile(output_file_ + "_tc_br_ecr", "earmarked", *g_, labeler);
 
 //		INFO("===== Outputting graph to " << output_file_ << " =====");
-//		gvis::WriteToDotFile(output_file_, "earmarked", *g, labeler);
+//		gvis::WriteToDotFile(output_file_, "earmarked", g_, labeler);
 
 		//ABruijnGraphWithGraphVisualizer ( "ATGTGTGACTTTGTATCGTATTGCGGGCGGCGCGCTTATTGTATGCGTAAATTTGGGTCATATTGATCGTAAAATGCGTATGATGCACTGCA", 6, 3 );
 	}
