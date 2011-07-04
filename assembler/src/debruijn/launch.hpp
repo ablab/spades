@@ -293,6 +293,9 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, size_t insert_size,
 //	gvis::WriteSimple<NCGraph>( output_folder + "repeats_resolved_simple_copy.dot", "no_repeat_graph", new_graph);
 	DataPrinter<Graph> dataPrinter(g, IntIds);
 	dataPrinter.saveGraph(work_tmp_dir+"saved_graph.grp");
+	dataPrinter.saveEdgeSequences(work_tmp_dir + "saved_sequences.sqn");
+	dataPrinter.saveCoverage(work_tmp_dir + "saved_coverage.cvr");
+	dataPrinter.savePaired(work_tmp_dir + "saved_paired.prd", paired_index);
 	IdTrackHandler<Graph> NewIntIds(new_graph, IntIds.MaxVertexId(), IntIds.MaxEdgeId());
 	ResolveRepeats(g, IntIds, paired_index, new_graph, NewIntIds, output_folder+"resolve/");
 	INFO("before graph writing");

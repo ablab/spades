@@ -147,6 +147,11 @@ public:
 		return data_.end();
 	}
 
+
+	size_t size(){
+		return data_.size();
+	}
+
 	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool addSymmetric = 1) {
 		data_.insert(pair_info);
 
@@ -422,6 +427,13 @@ public:
 		s.close();
 	}
 */
+
+	/*
+     * @return quantity of paired info
+	 */
+	size_t size(){
+		return data_.size();
+	}
 
 	/**
 	 * Method returns all data about given edge

@@ -28,6 +28,8 @@ public:
 //	DataPrinter(/*const string& file_name,*/ Graph &g, IdTrackHandler<Graph> &old_IDs);
 	void saveGraph(const string& file_name);
 	void saveEdgeSequences(const string& file_name);
+	void saveCoverage(const string& file_name);
+	void savePaired(const string& file_name, PairedInfoIndex<Graph>& PIIndex);
 	void close();
 
 private:
@@ -53,7 +55,7 @@ template<class Graph>
 void DataPrinter<Graph>::saveGraph(const string& file_name) {
 
 	FILE* file = fopen(file_name.c_str(), "w");
-	INFO("Graph saving to " << file_name << "started");
+	INFO("Graph saving to " << file_name << " started");
 	assert(file != NULL);
 	int vertex_count = graph_.size();
 	fprintf(file, "%d %d \n", vertex_count, edge_count_);
@@ -66,7 +68,7 @@ void DataPrinter<Graph>::saveGraph(const string& file_name) {
 	for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		save(file, *iter);
 	}
-	INFO("Graph saving to " << file_name << "finished");
+	INFO("Graph saving to " << file_name << " finished");
 
 	fclose(file);
 }
@@ -89,9 +91,42 @@ void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
 	fprintf(file, "%d\n", edge_count_);
 	for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		fprintf(file, "%d ", IdHandler_.ReturnIntId(*iter));
+		int len = graph_.EdgeNucls(*iter).size();
+		for(int i = 0; i < len; i++ )
+			fprintf(file, "%c",graph_.EdgeNucls(*iter)[i]);
+		fprintf(file, " .\n");
+//		fprintf(file, "%s .\n", graph_.EdgeNucls(*iter).str().c_str());
 	}
 	fclose(file);
 }
+
+template<class Graph>
+void DataPrinter<Graph>::saveCoverage(const string& file_name) {
+	FILE* file = fopen(file_name.c_str(), "w");
+	DEBUG("Saving coverage, " << file_name <<" created");
+	assert(file != NULL);
+	fprintf(file, "%d\n", edge_count_);
+	for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		fprintf(file, "%d ", IdHandler_.ReturnIntId(*iter));
+		fprintf(file, "%f .\n", graph_.coverage(*iter));
+	}
+	fclose(file);
+}
+
+template<class Graph>
+void DataPrinter<Graph>::savePaired(const string& file_name, PairedInfoIndex<Graph>& PIIndex) {
+	FILE* file = fopen(file_name.c_str(), "w");
+	DEBUG("Saving paired info, " << file_name <<" created");
+	assert(file != NULL);
+	fprintf(file, "%d\n", PIIndex.size());
+	for (auto iter = PIIndex.begin(); iter != PIIndex.end(); ++iter) {
+		vector<PairInfo<typename Graph::EdgeId> > pair_infos = *iter;
+		for(size_t i = 0; i < pair_infos.size(); i++)
+			fprintf(file, "%d %d %.0f %.0f .\n", IdHandler_.ReturnIntId(pair_infos[i].first), IdHandler_.ReturnIntId(pair_infos[i].second), pair_infos[i].d, pair_infos[i].weight);
+	}
+	fclose(file);
+}
+
 }
 /*
 class DataReader {
