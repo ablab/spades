@@ -256,7 +256,7 @@ void OutputContigs(Graph& g, const string& contigs_output_filename) {
 template<size_t k, class ReadStream>
 void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome, bool paired_mode, size_t insert_size, size_t max_read_length, const string& output_folder, const string& work_tmp_dir) {
 	INFO("Edge graph construction tool started");
-	INFO("Paired mode:" << paired_mode);
+	INFO("Paired mode: " << (paired_mode ? "Yes" : "No") );
 	mkdir(work_tmp_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
 	Graph g(k);
