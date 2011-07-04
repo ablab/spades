@@ -2,7 +2,9 @@
 #define STATISTICS_HPP_
 
 #include "omni_tools.hpp"
+#include "paired_info.hpp"
 #include <map>
+
 namespace omnigraph {
 
 class AbstractStatCounter {
@@ -43,6 +45,12 @@ public:
 		for (size_t i = 0; i < to_count_.size(); i++) {
 			to_count_[i]->Count();
 		}
+	}
+
+	void DeleteStats() {
+		for(size_t i = 0; i < to_count_.size(); i++)
+			delete to_count_[i];
+		to_count_.clear();
 	}
 };
 
@@ -208,8 +216,8 @@ public:
 
 	void RemoveTrivial(map<pair<EdgeId, EdgeId> , double> &edge_pairs) {
 		TrivialEdgePairChecker<Graph> checker(graph_);
-		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
-			if (!checker.Check(iterator->first.first, iterator->first.second)) {
+		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end();) {
+			if (checker.Check(iterator->first.first, iterator->first.second)) {
 				edge_pairs.erase(iterator++);
 			} else {
 				++iterator;
@@ -223,14 +231,6 @@ public:
 			weights.push_back(iterator->second);
 		}
 		sort(weights.begin(), weights.end());
-//		double bound_pos = (size_t)(0.01 * weights.size());
-//		while(bound_pos + 1 < weights.size() * 0.2) {
-//			cout << bound_pos << " " << weights[bound_pos];
-//			if(weights[bound_pos + 1]> 1.5 * weights[bound_pos / 2])
-//				break;
-//			bound_pos++;
-//		}
-//		double bound = weights[bound_pos];
 
 		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end();) {
 			if(iterator->second < bound) {
@@ -253,7 +253,7 @@ public:
 			res[i] = weights.size() - 1 - cur;
 		}
 		for(size_t i = 0; i < weights.size(); i++) {
-			os << i + 1 << " " << res[i];
+			os << i + 1 << " " << res[i] << endl;
 		}
 		os.close();
 	}
@@ -261,35 +261,11 @@ public:
 	virtual void Count() {
 		map<pair<EdgeId, EdgeId> , double> edge_pairs;
 		GetPairInfo(edge_pairs);
-		OutputWeights(GetWeights(edge_pairs), output_folder_ + "pair_info_weights.txt");
+//		OutputWeights(GetWeights(edge_pairs), output_folder_ + "pair_info_weights.txt");
 		RemoveUntrustful(edge_pairs, 20);
-		//		size_t bound = CountBound(edge_pairs);
-		//		size_t bound = 20;
 		INFO("Number of edge pairs connected with paired info: " << edge_pairs.size());
 		RemoveTrivial(edge_pairs);
 		INFO("Number of nontrivial edge pairs connected with paired info: " << edge_pairs.size());
-		//		double sum = 0;
-		//		vector<size_t> weights;
-		//		for(auto iterator = pair_info_.begin(); iterator != pair_info_.end(); ++iterator) {
-		//			vector<PairInfo<EdgeId>> v = *iterator;
-		//			size_t w = 0;
-		//			for(size_t i = 0; i < v.size(); i++) {
-		//				w += v[i].weight();
-		//			}
-		//			sum += w;
-		//			weights.push_back(w);
-		//		}
-		//		sort(weights.begin(), weights.end());
-		//		double bound = sum / 100;
-		//		sum = 0;
-		//		size_t result = 0;
-		//		TrivialEdgePairChecker<Graph> checker(graph_);
-		//		for(size_t i = 0; i < weights.size(); i++) {
-		//			sum += weights[i];
-		//			if(sum >= bound)
-		//				result++;
-		//		}
-		//		INFO("Number of edge-pairs: " << result);
 	}
 };
 
