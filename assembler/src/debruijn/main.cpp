@@ -73,9 +73,9 @@ int main() {
 		genome = full_genome.getSequenceString().substr(0, dataset_len); // cropped
 	}
 	// assemble it!
-	INFO("Working with " << dataset << " dataset");
+	INFO("Assembling " << dataset << " dataset");
 	debruijn_graph::DeBruijnGraphWithPairedInfoTool<K, RCStream>(rcStream, genome, paired_mode, insert_size, max_read_length, output_dir, work_tmp_dir);
-	INFO("Working with " << dataset << " dataset finished");
+	INFO("Assembling " << dataset << " dataset finished");
 
 	// OK
 	return 0;
