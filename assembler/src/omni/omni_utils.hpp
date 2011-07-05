@@ -548,7 +548,7 @@ private:
 
 	size_t call_cnt_;
 
-	static const size_t MAX_CALL_CNT = 200;
+	static const size_t MAX_CALL_CNT = 2000;
 
 	//todo rewrite without recursion
 	void Go(VertexId v, size_t length) {
