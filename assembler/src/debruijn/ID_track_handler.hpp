@@ -14,8 +14,10 @@ class IdTrackHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef int realIdType;
-	tr1::unordered_map<VertexId, int> VertexIntId;
-	tr1::unordered_map<EdgeId, int> EdgeIntId;
+	tr1::unordered_map<VertexId, realIdType> VertexIntId;
+	tr1::unordered_map<EdgeId, realIdType> EdgeIntId;
+	map<realIdType, VertexId> VertexOriginalId;
+	map<realIdType, EdgeId> EdgeOriginalId;
 	int MaxVertexIntId;
 	int MaxEdgeIntId;
 private:
@@ -23,25 +25,37 @@ private:
 
 public:
 	realIdType AddVertexIntId(VertexId NewVertexId) {
+		realIdType PreviousId = ReturnIntId(NewVertexId);
+		if (PreviousId != 0) VertexOriginalId.erase(PreviousId);
 		MaxVertexIntId++;
 		VertexIntId[NewVertexId] = MaxVertexIntId;
+		VertexOriginalId[MaxVertexIntId] = NewVertexId;
 		return MaxVertexIntId;
 	}
 	realIdType AddVertexIntId(VertexId NewVertexId, realIdType NewIntId) {
+		realIdType PreviousId = ReturnIntId(NewVertexId);
+		if (PreviousId != 0) VertexOriginalId.erase(PreviousId);
 		if (MaxVertexIntId < NewIntId)
 			MaxVertexIntId = NewIntId;
 		VertexIntId[NewVertexId] = NewIntId;
+		VertexOriginalId[NewIntId] = NewVertexId;
 		return NewIntId;
 	}
 	realIdType AddEdgeIntId(EdgeId NewEdgeId) {
+		realIdType PreviousId = ReturnIntId(NewEdgeId);
+		if (PreviousId != 0) EdgeOriginalId.erase(PreviousId);
 		MaxEdgeIntId++;
 		EdgeIntId[NewEdgeId] = MaxEdgeIntId;
+		EdgeOriginalId[MaxEdgeIntId] = NewEdgeId;
 		return MaxVertexIntId;
 	}
-	realIdType AddVertexIntId(EdgeId NewEdgeId, realIdType NewIntId) {
+	realIdType AddEdgeIntId(EdgeId NewEdgeId, realIdType NewIntId) {
+		realIdType PreviousId = ReturnIntId(NewEdgeId);
+		if (PreviousId != 0) EdgeOriginalId.erase(PreviousId);
 		if (MaxEdgeIntId < NewIntId)
 			MaxEdgeIntId = NewIntId;
 		EdgeIntId[NewEdgeId] = NewIntId;
+		EdgeOriginalId[NewIntId] = NewEdgeId;
 		return NewIntId;
 	}
 	realIdType MaxVertexId() {
@@ -51,9 +65,13 @@ public:
 		return MaxEdgeIntId;
 	}
 	void ClearVertexId(VertexId OldVertexId) {
+		realIdType PreviousId = ReturnIntId(OldVertexId);
+		if (PreviousId != 0) VertexOriginalId.erase(PreviousId);
 		VertexIntId.erase(OldVertexId);
 	}
 	void ClearEdgeId(EdgeId OldEdgeId) {
+		realIdType PreviousId = ReturnIntId(OldEdgeId);
+		if (PreviousId != 0) EdgeOriginalId.erase(PreviousId);
 		EdgeIntId.erase(OldEdgeId);
 	}
 	realIdType ReturnIntId(EdgeId e) {
@@ -73,6 +91,26 @@ public:
 			return it->second;
 		} else
 			return 0;
+	}
+
+	EdgeId ReturnEdgeId(realIdType id){
+		typename map<realIdType, EdgeId>::iterator it = EdgeOriginalId.find(
+				id);
+		if (it != EdgeOriginalId.end())
+			return it->second;
+		else
+			return NULL;
+
+	}
+
+	VertexId ReturnVertexId(realIdType id){
+		typename map<realIdType, VertexId>::iterator it = VertexOriginalId.find(
+				id);
+		if (it != VertexOriginalId.end())
+			return it->second;
+		else
+			return NULL;
+
 	}
 
 	IdTrackHandler(Graph &g) :
