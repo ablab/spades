@@ -171,8 +171,13 @@ void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name, bool wit
 		IdHandler_.AddVertexIntId(vid, vertex_real_id);
 	}
 	for (int i = 0; i < edge_count_; i++){
-		;
-
+		int e_real_id, start_id, fin_id;
+		assert(fscanf(file, "Edge %d : %d -> %d", &e_real_id, &start_id, &fin_id));
+		char c = 'a';
+		while (c != '.')
+			assert(fscanf(file, "%c", &c) == 1);
+		assert( fscanf(file, "\n") == 0);
+//		EdgeId eid = graph.AddEdge(IdHandler_. );
 	}
 
 
