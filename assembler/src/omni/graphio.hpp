@@ -157,6 +157,9 @@ void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name, bool wit
 
 	FILE* file = fopen((file_name + ".grp").c_str(), "r");
 	assert(file != NULL);
+	FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
+	assert(sequence_file != NULL);
+
 	INFO("Reading graph from " << file_name << " started");
 	int vertex_count;
 	assert(fscanf(file, "%d %d \n", &vertex_count, &edge_count_) == 2);
@@ -170,14 +173,21 @@ void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name, bool wit
 		VertexId vid = graph_.AddVertex();
 		IdHandler_.AddVertexIntId(vid, vertex_real_id);
 	}
+	int tmp_edge_count;
+	assert(fscanf(sequence_file, "%d", &tmp_edge_count) == 1);
+	assert(edge_count_ == tmp_edge_count);
+	char longstring[1000500];
 	for (int i = 0; i < edge_count_; i++){
-		int e_real_id, start_id, fin_id;
-		assert(fscanf(file, "Edge %d : %d -> %d", &e_real_id, &start_id, &fin_id));
+		int e_real_id, start_id, fin_id, length;
+		assert(fscanf(file, "Edge %d : %d -> %d, l = %d", &e_real_id, &start_id, &fin_id, &length) == 4);
+		assert(fscanf(sequence_file, "%d %s .", &e_real_id, longstring) == 2);
+
+		//does'nt matter, whether it was conjugate or not.
 		char c = 'a';
 		while (c != '.')
 			assert(fscanf(file, "%c", &c) == 1);
 		assert( fscanf(file, "\n") == 0);
-//		EdgeId eid = graph.AddEdge(IdHandler_. );
+	//	EdgeId eid = graph.AddEdge(IdHandler_. );
 	}
 
 
