@@ -1,6 +1,10 @@
 #ifndef STATISTICS_HPP_
 #define STATISTICS_HPP_
 
+#include "omni_tools.hpp"
+#include "paired_info.hpp"
+#include <map>
+
 namespace omnigraph {
 
 class AbstractStatCounter {
@@ -12,8 +16,8 @@ public:
 	}
 
 	virtual void Count() = 0;
-//protected:
-//	DECL_LOGGER("StatCounter")
+	//protected:
+	//	DECL_LOGGER("StatCounter")
 };
 
 class StatList: AbstractStatCounter {
@@ -42,6 +46,12 @@ public:
 			to_count_[i]->Count();
 		}
 	}
+
+	void DeleteStats() {
+		for(size_t i = 0; i < to_count_.size(); i++)
+			delete to_count_[i];
+		to_count_.clear();
+	}
 };
 
 template<class Graph>
@@ -68,7 +78,7 @@ public:
 		INFO("Vertex count=" << graph_.size() << "; Edge count=" << edgeNumber);
 		INFO(
 				"sum length of edges(coverage > 30, both strands)"
-						<< sum_edge_length);
+				<< sum_edge_length);
 	}
 };
 
@@ -84,7 +94,7 @@ public:
 		graph_(graph), path1_(path1), path2_(path2) {
 	}
 
-	virtual ~BlackEdgesStat(){
+	virtual ~BlackEdgesStat() {
 	}
 
 	virtual void Count() {
@@ -104,12 +114,12 @@ public:
 		if (edge_count > 0) {
 			INFO(
 					"Error edges count: " << black_count << " which is "
-							<< 100.0 * black_count / edge_count
-							<< "% of all edges");
+					<< 100.0 * black_count / edge_count
+					<< "% of all edges");
 		} else {
 			INFO(
 					"Error edges count: " << black_count
-							<< " which is 0% of all edges");
+					<< " which is 0% of all edges");
 		}
 	}
 };
@@ -126,7 +136,7 @@ public:
 		graph_(graph), path_(path), perc_(perc) {
 	}
 
-	virtual ~NStat(){
+	virtual ~NStat() {
 	}
 
 	virtual void Count() {
@@ -165,8 +175,239 @@ public:
 		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator)
 			if (graph_.conjugate(*iterator) == (*iterator))
 				sc_number++;
-		INFO("Self-complement count="<< sc_number);
+		INFO("Self-complement count=" << sc_number);
 	}
+};
+
+template<class Graph>
+class EdgePairStat: public omnigraph::AbstractStatCounter {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	Graph &graph_;
+	PairedInfoIndex<Graph> &pair_info_;
+	const string &output_folder_;
+public:
+	EdgePairStat(Graph &graph, PairedInfoIndex<Graph> &pair_info, const string &output_folder) :
+		graph_(graph), pair_info_(pair_info), output_folder_(output_folder) {
+	}
+
+	virtual ~EdgePairStat() {
+	}
+
+private:
+	vector<double> GetWeights(map<pair<EdgeId, EdgeId> , double> &edge_pairs ) {
+		vector<double> weights;
+		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
+			weights.push_back(iterator->second);
+		}
+		sort(weights.begin(), weights.end());
+		return weights;
+	}
+
+	void GetPairInfo(map<pair<EdgeId, EdgeId> , double> &edge_pairs, PairedInfoIndex<Graph> &index) {
+		for (auto iterator = index.begin(); iterator != index.end(); ++iterator) {
+			vector<PairInfo<EdgeId>> v = *iterator;
+			size_t w = 0;
+			for (size_t i = 0; i < v.size(); i++) {
+				w += v[i].weight;
+			}
+			edge_pairs.insert(make_pair(make_pair(v[0].first, v[0].second), w));
+		}
+	}
+
+	void RemoveTrivial(map<pair<EdgeId, EdgeId> , double> &edge_pairs) {
+		TrivialEdgePairChecker<Graph> checker(graph_);
+		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end();) {
+			if (checker.Check(iterator->first.first, iterator->first.second)) {
+				edge_pairs.erase(iterator++);
+			} else {
+				++iterator;
+			}
+		}
+	}
+
+//	void RemoveUntrustful(map<pair<EdgeId, EdgeId> , double> &edge_pairs, double bound) {
+//		vector<double> weights;
+//		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
+//			weights.push_back(iterator->second);
+//		}
+//		sort(weights.begin(), weights.end());
+//
+//		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end();) {
+//			if(iterator->second < bound) {
+//				edge_pairs.erase(iterator++);
+//			} else {
+//				++iterator;
+//			}
+//		}
+//	}
+
+public:
+	vector<pair<int, double>> ComulativeHistogram(vector<double> weights) {
+		vector<pair<int, double>> result;
+		size_t cur = weights.size() - 1;
+		size_t max = 1000;
+		vector<double> res(max);
+		for(int i = max - 1; i >= 0; i--) {
+			while(cur >= 0 && weights[cur] >= i + 1) {
+				cur--;
+			}
+			res[i] = weights.size() - 1 - cur;
+		}
+		for(size_t i = 0; i < weights.size(); i++) {
+			result.push_back(make_pair(i + 1, res[i]));
+		}
+		return result;
+	}
+
+//	void OutputWeights(vector<double> weights, string file_name) {
+//		ofstream os(file_name);
+//		size_t cur = weights.size() - 1;
+//		size_t max = 1000;
+//		vector<double> res(max);
+//		for(int i = max - 1; i >= 0; i--) {
+//			while(cur >= 0 && weights[cur] >= i + 1) {
+//				cur--;
+//			}
+//			res[i] = weights.size() - 1 - cur;
+//		}
+//		for(size_t i = 0; i < weights.size(); i++) {
+//			os << i + 1 << " " << res[i] << endl;
+//		}
+//		os.close();
+//	}
+
+	bool ContainsPositiveDistance(const vector<PairInfo<EdgeId>>& infos) {
+		for (auto it = infos.begin(); it!=infos.end(); ++it) {
+			if ((*it).d > graph_.length((*it).first)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	virtual void Count() {
+//		OutputWeights(GetWeights(edge_pairs), output_folder_ + "pair_info_weights.txt");
+		PairedInfoIndex<Graph> new_index(graph_);
+		PairInfoFilter<Graph>(graph_, 40).Filter(pair_info_, new_index);
+//		RemoveUntrustful(edge_pairs, 40);
+		map<pair<EdgeId, EdgeId> , double> edge_pairs;
+		TrivialEdgePairChecker<Graph> checker(graph_);
+		size_t nontrivial = 0;
+		size_t pair_number = 0;
+		for(auto iterator = new_index.begin(); iterator != new_index.end(); ++iterator) {
+			vector<PairInfo<EdgeId>> info = *iterator;
+			if(ContainsPositiveDistance(info)) {
+				pair_number++;
+				if(checker.Check(info[0].first, info[0].second)) {
+					nontrivial++;
+				}
+			}
+		}
+		GetPairInfo(edge_pairs, new_index);
+		INFO("Number of edge pairs connected with paired info: " << pair_number);
+		RemoveTrivial(edge_pairs);
+		INFO("Number of nontrivial edge pairs connected with paired info: " << nontrivial);
+	}
+};
+
+template<class Graph>
+class UniquePathStat: public omnigraph::AbstractStatCounter {
+
+	typedef typename Graph::EdgeId EdgeId;
+	Graph& g_;
+	PairedInfoIndex<Graph>& pair_info_;
+	size_t insert_size_;
+	size_t max_read_length_;
+	double variance_delta_;
+
+	//todo get rid of this parameter
+	double weight_threshold_;
+
+	size_t considered_edge_pair_cnt_;
+	size_t unique_distance_cnt_;
+	size_t non_unique_distance_cnt_;
+
+
+//	bool ContainsPositiveDistance(const vector<PairInfo<EdgeId>>& infos) {
+//		double s = 0.0;
+//		for (auto it = infos.begin(); it!=infos.end(); ++it) {
+//			if ((*it).d > g_.length((*it).first)) {
+//				s += (*it).weight;
+//			}
+//		}
+//		return s > weight_threshold_;
+//	}
+	bool ContainsPositiveDistance(const vector<PairInfo<EdgeId>>& infos) {
+		for (auto it = infos.begin(); it!=infos.end(); ++it) {
+			if ((*it).d > g_.length((*it).first)) {
+				return true;
+			}
+		}
+		return false;
+	}
+public:
+
+	UniquePathStat(Graph& g, PairedInfoIndex<Graph>& pair_info, size_t insert_size, size_t max_read_length
+			, double variance_delta, double weight_threshold)
+	: g_(g)
+	, pair_info_(pair_info)
+	, insert_size_(insert_size)
+	, max_read_length_(max_read_length)
+	, variance_delta_(variance_delta)
+	, weight_threshold_(weight_threshold)
+	, considered_edge_pair_cnt_(0)
+	, unique_distance_cnt_(0)
+	, non_unique_distance_cnt_(0) {
+
+	}
+
+	virtual void Count() {
+		PairedInfoIndex<Graph> filtered_index(g_);
+		PairInfoFilter<Graph>(g_, 40).Filter(pair_info_, filtered_index);
+
+		for (auto it = filtered_index.begin(); it != filtered_index.end(); ++it) {
+			if (ContainsPositiveDistance(*it)) {
+				considered_edge_pair_cnt_++;
+				PairInfo<EdgeId> delegate = (*it)[0];
+				EdgeId e1 = delegate.first;
+				EdgeId e2 = delegate.second;
+				PathCounter<Graph> counter;
+				int lower_bound = insert_size_ - 2 * max_read_length_ - g_.length(e1) - g_.length(e2);
+//				cout << "IS " << insert_size_ << endl;
+//				cout << "MRL " << max_read_length_ << endl;
+//				cout << "Raw Lower bound " << lower_bound << endl;
+//				cout << "Var delta " << variance_delta_ << endl;
+//				cout << "Lower bound " << (1 - variance_delta_) * lower_bound << endl;
+				PathProcessor<Graph> path_processor(g_, (1 - variance_delta_) * lower_bound
+						, (1 + variance_delta_) * insert_size_, g_.EdgeEnd(e1), g_.EdgeStart(e2), counter);
+				path_processor.Process();
+				if (counter.count() == 1) {
+					unique_distance_cnt_++;
+				}
+				if (counter.count() > 1) {
+					non_unique_distance_cnt_++;
+				}
+			}
+		}
+		INFO("Considered " << considered_edge_pair_cnt_ << " edge pairs")
+		INFO(unique_distance_cnt_ << " edge pairs connected with unique path of appropriate length")
+		INFO(non_unique_distance_cnt_ << " edge pairs connected with non-unique path of appropriate length")
+	}
+
+	size_t considered_edge_pair_count() {
+		return considered_edge_pair_cnt_;
+	}
+
+	size_t unique_distance_count() {
+		return unique_distance_cnt_;
+	}
+
+	size_t non_unique_distance_count() {
+		return non_unique_distance_cnt_;
+	}
+private:
+	DECL_LOGGER("UniquePathStat")
 };
 
 }

@@ -319,6 +319,7 @@ public:
 	}
 
 	virtual ~StatCounter() {
+		stats_.DeleteStats();
 	}
 
 	virtual void Count() {

@@ -22,10 +22,10 @@ std::string MakeLaunchTimeDirName() {
 	return string(buffer);
 }
 }
+
 DECL_PROJECT_LOGGER("d")
 
-int main()
-{
+int main() {
 	// check config.hpp parameters
 	if (K % 2 == 0) {
 		FATAL("K in config.hpp must be odd!\n");
@@ -33,24 +33,25 @@ int main()
 	checkFileExistenceFATAL(CONFIG_FILENAME);
 
 	// read configuration file (dataset path etc.)
-	string input_dir = CONFIG.read<string> ("input_dir");
-	string work_tmp_dir = CONFIG.read<string> ("output_dir");
-	string output_dir = work_tmp_dir
-			+ MakeLaunchTimeDirName() + "/";
+	string input_dir = CONFIG.read<string>("input_dir");
+	string work_tmp_dir = CONFIG.read<string>("output_dir");
+	string output_dir = work_tmp_dir + MakeLaunchTimeDirName() + "/";
 	work_tmp_dir += "tmp/";
 //	std::cout << "here " << mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH) << std::endl;
-	mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH);
-	string dataset = CONFIG.read<string> ("dataset");
-	string genome_filename = input_dir + CONFIG.read<string> ("reference_genome");
-	string reads_filename1 = input_dir + CONFIG.read<string> (dataset + "_1");
-	string reads_filename2 = input_dir + CONFIG.read<string> (dataset + "_2");
+	mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	string dataset = CONFIG.read<string>("dataset");
+	string genome_filename = input_dir
+			+ CONFIG.read<string>("reference_genome");
+	string reads_filename1 = input_dir + CONFIG.read<string>(dataset + "_1");
+	string reads_filename2 = input_dir + CONFIG.read<string>(dataset + "_2");
 	checkFileExistenceFATAL(genome_filename);
 	checkFileExistenceFATAL(reads_filename1);
 	checkFileExistenceFATAL(reads_filename2);
 
-	int insert_size = CONFIG.read<int> (dataset + "_IS");
-	int dataset_len = CONFIG.read<int> (dataset + "_LEN");
-	bool paired_mode = CONFIG.read<bool> ("paired_mode");
+	size_t insert_size = CONFIG.read<size_t>(dataset + "_IS");
+	size_t max_read_length = 100; //CONFIG.read<size_t> (dataset + "_READ_LEN");
+	int dataset_len = CONFIG.read<int>(dataset + "_LEN");
+	bool paired_mode = CONFIG.read<bool>("paired_mode");
 
 	// typedefs :)
 	typedef MateReader<Read, ireadstream>::type ReadStream;
@@ -71,17 +72,10 @@ int main()
 		genome_stream >> full_genome;
 		genome = full_genome.getSequenceString().substr(0, dataset_len); // cropped
 	}
-	INFO("Working with " << dataset << " dataset");
-	// assemble
-	if (paired_mode) {
-		debruijn_graph::DeBruijnGraphWithPairedInfoTool<K, RCStream>(rcStream,
-				genome, output_dir, work_tmp_dir);
-		INFO("Working with " << dataset << " dataset nearly to finish");
-	} else {
-		debruijn_graph::DeBruijnGraphTool<K, RCStream>(rcStream, genome,
-				output_dir);
-	}
-	INFO("Working with " << dataset << " dataset finished");
+	// assemble it!
+	INFO("Assembling " << dataset << " dataset");
+	debruijn_graph::DeBruijnGraphWithPairedInfoTool<K, RCStream>(rcStream, genome, paired_mode, insert_size, max_read_length, output_dir, work_tmp_dir);
+	INFO("Assembling " << dataset << " dataset finished");
 
 	// OK
 	return 0;

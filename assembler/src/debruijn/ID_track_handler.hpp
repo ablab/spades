@@ -1,7 +1,6 @@
 #ifndef ID_TRACK_HANDLER_HPP_
 #define ID_TRACK_HANDLER_HPP_
 
-
 #include <unordered_map>
 #include "utils.hpp"
 #include "graph_labeler.hpp"
@@ -28,8 +27,9 @@ public:
 		VertexIntId[NewVertexId] = MaxVertexIntId;
 		return MaxVertexIntId;
 	}
-	realIdType AddVertexIntId(VertexId NewVertexId, int NewIntId) {
-		if (MaxVertexIntId<NewIntId) MaxVertexIntId = NewIntId;
+	realIdType AddVertexIntId(VertexId NewVertexId, realIdType NewIntId) {
+		if (MaxVertexIntId < NewIntId)
+			MaxVertexIntId = NewIntId;
 		VertexIntId[NewVertexId] = NewIntId;
 		return NewIntId;
 	}
@@ -38,39 +38,42 @@ public:
 		EdgeIntId[NewEdgeId] = MaxEdgeIntId;
 		return MaxVertexIntId;
 	}
-	realIdType AddVertexIntId(EdgeId NewEdgeId, int NewIntId) {
-		if (MaxEdgeIntId<NewIntId) MaxEdgeIntId = NewIntId;
+	realIdType AddVertexIntId(EdgeId NewEdgeId, realIdType NewIntId) {
+		if (MaxEdgeIntId < NewIntId)
+			MaxEdgeIntId = NewIntId;
 		EdgeIntId[NewEdgeId] = NewIntId;
 		return NewIntId;
 	}
-	realIdType MaxVertexId(){
+	realIdType MaxVertexId() {
 		return MaxVertexIntId;
 	}
-	realIdType MaxEdgeId(){
+	realIdType MaxEdgeId() {
 		return MaxEdgeIntId;
 	}
-	void ClearVertexId(VertexId OldVertexId){
+	void ClearVertexId(VertexId OldVertexId) {
 		VertexIntId.erase(OldVertexId);
 	}
-	void ClearEdgeId(EdgeId OldEdgeId){
+	void ClearEdgeId(EdgeId OldEdgeId) {
 		EdgeIntId.erase(OldEdgeId);
 	}
-	realIdType ReturnIntId(EdgeId e){
-		typename tr1::unordered_map<EdgeId, int>::iterator it = EdgeIntId.find(e);
-		if (it != EdgeIntId.end()) return it->second;
-		else return 0;
+	realIdType ReturnIntId(EdgeId e) {
+		typename tr1::unordered_map<EdgeId, int>::iterator it = EdgeIntId.find(
+				e);
+		if (it != EdgeIntId.end())
+			return it->second;
+		else
+			return 0;
 	}
-	realIdType ReturnIntId(VertexId v){
+	realIdType ReturnIntId(VertexId v) {
 		typename tr1::unordered_map<VertexId, int>::iterator it;
 		it = VertexIntId.find(v);
 		if (it != VertexIntId.end()) {
-//			DEBUG("Find finished successful");
+			//			DEBUG("Find finished successful");
 
 			return it->second;
-		}
-		else return 0;
+		} else
+			return 0;
 	}
-
 
 	IdTrackHandler(Graph &g) :
 		GraphActionHandler<Graph> ("IdTrackHandler"), g_(g) {
@@ -86,20 +89,21 @@ public:
 	}
 
 	virtual ~IdTrackHandler() {
-	TRACE("~IdTrackHandler");
+		TRACE("~IdTrackHandler");
 		g_.RemoveActionHandler(this);
 		TRACE("~IdTrackHandler ok");
 	}
 
-/*	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
-	}
+	/*	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
+	 }
 
-	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-	}
+	 virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+	 }
 
-	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
-	}
-*/	virtual void HandleAdd(VertexId v) {
+	 virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
+	 }
+	 */
+	virtual void HandleAdd(VertexId v) {
 		AddVertexIntId(v);
 	}
 	virtual void HandleAdd(EdgeId e) {
@@ -115,10 +119,8 @@ public:
 
 };
 
-
-
 template<class Graph>
-class RealIdGraphLabeler : public GraphLabeler<Graph> {
+class RealIdGraphLabeler: public GraphLabeler<Graph> {
 
 protected:
 	typedef GraphLabeler<Graph> super;
@@ -128,18 +130,20 @@ protected:
 	IdTrackHandler<Graph>& IDs;
 
 public:
-	RealIdGraphLabeler(Graph& g, IdTrackHandler<Graph>& IdTrack) : g_(g), IDs(IdTrack) {}
+	RealIdGraphLabeler(Graph& g, IdTrackHandler<Graph>& IdTrack) :
+		g_(g), IDs(IdTrack) {
+	}
 
 	virtual std::string label(VertexId vertexId) const {
-//		DEBUG("Label for vertex "<<vertexId);
+		//		DEBUG("Label for vertex "<<vertexId);
 		int x = IDs.ReturnIntId(vertexId);
-//		DEBUG("is "<<x<<" "<<ToString(x));
-		return ToString(x)+": "+g_.str(vertexId);
+		//		DEBUG("is "<<x<<" "<<ToString(x));
+		return ToString(x) + ": " + g_.str(vertexId);
 	}
 
 	virtual std::string label(EdgeId edgeId) const {
 		int x = IDs.ReturnIntId(edgeId);
-		return ToString(x)+": "+g_.str(edgeId);
+		return ToString(x) + ": " + g_.str(edgeId);
 	}
 	virtual ~RealIdGraphLabeler() {
 		TRACE("~RealIdGraphLabeler");

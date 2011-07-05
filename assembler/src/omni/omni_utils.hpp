@@ -4,6 +4,7 @@
 #include "queue_iterator.hpp"
 #include "logging.hpp"
 #include "simple_tools.hpp"
+#include <cmath>
 
 namespace omnigraph {
 
@@ -521,6 +522,96 @@ public:
 
 	ElementId operator[](size_t index) const {
 		return sequence_[index];
+	}
+};
+
+template<class Graph>
+class PathProcessor {
+public:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	class Callback {
+	public:
+		virtual void HandlePath(const vector<EdgeId>& path) = 0;
+	};
+
+private:
+	const Graph& g_;
+	size_t min_length_;
+	size_t max_length_;
+	VertexId start_;
+	VertexId end_;
+	Callback& callback_;
+
+	vector<EdgeId> path_;
+
+	size_t call_cnt_;
+
+	static const size_t MAX_CALL_CNT = 2000;
+
+	//todo rewrite without recursion
+	void Go(VertexId v, size_t length) {
+		call_cnt_++;
+		if (call_cnt_ == MAX_CALL_CNT) {
+			WARN("Maximal count " << MAX_CALL_CNT << " of recursive calls was exceeded!");
+		}
+		if (call_cnt_ >= MAX_CALL_CNT)
+			return;
+
+		if (length > max_length_)
+			return;
+
+		if (v == end_ && length >= min_length_) {
+			callback_.HandlePath(path_);
+		}
+		vector<EdgeId> outgoing_edges = g_.OutgoingEdges(v);
+		for (size_t i = 0; i < outgoing_edges.size(); ++i) {
+			EdgeId edge = outgoing_edges[i];
+			path_.push_back(edge);
+			Go(g_.EdgeEnd(edge), length + g_.length(edge));
+			path_.pop_back();
+		}
+	}
+
+public:
+	PathProcessor(const Graph& g, double min_length, double max_length
+			, VertexId start, VertexId end, Callback& callback)
+		: g_(g), min_length_((min_length < 0) ? 0 : std::floor(min_length)), max_length_(std::floor(max_length + 0.5))
+		, start_(start), end_(end), callback_(callback), call_cnt_(0) {
+//		cout << "RawMin " << min_length << endl;
+//		cout << "Min " << min_length_ << endl;
+//		cout << "RawMax " << max_length << endl;
+//		cout << "Max " << max_length_ << endl;
+	}
+
+	void Process() {
+		Go(start_, 0);
+	}
+
+private:
+	DECL_LOGGER("PathProcessor")
+};
+
+
+template <class Graph>
+class PathCounter : public PathProcessor<Graph>::Callback {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	size_t count_;
+public:
+
+	PathCounter() : count_(0) {
+
+	}
+
+	virtual void HandlePath(const vector<EdgeId>& path) {
+		count_++;
+	}
+
+	size_t count() {
+		return count_;
 	}
 };
 
