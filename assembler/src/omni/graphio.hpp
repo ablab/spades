@@ -54,7 +54,7 @@ public:
 template<class Graph>
 void DataPrinter<Graph>::saveGraph(const string& file_name) {
 
-	FILE* file = fopen(file_name.c_str(), "w");
+	FILE* file = fopen((file_name + ".grp").c_str(), "w");
 	INFO("Graph saving to " << file_name << " started");
 	assert(file != NULL);
 	int vertex_count = graph_.size();
@@ -85,7 +85,7 @@ void DataPrinter<Graph>::save(FILE* file, EdgeId eid) {
 
 template<class Graph>
 void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
-	FILE* file = fopen(file_name.c_str(), "w");
+	FILE* file = fopen((file_name + ".sqn").c_str(), "w");
 	DEBUG("Saving sequences " << file_name <<" created");
 	assert(file != NULL);
 	fprintf(file, "%d\n", edge_count_);
@@ -93,7 +93,7 @@ void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
 		fprintf(file, "%d ", IdHandler_.ReturnIntId(*iter));
 		int len = graph_.EdgeNucls(*iter).size();
 		for(int i = 0; i < len; i++ )
-			fprintf(file, "%c",graph_.EdgeNucls(*iter)[i]);
+			fprintf(file, "%c",nucl(graph_.EdgeNucls(*iter)[i]));
 		fprintf(file, " .\n");
 //		fprintf(file, "%s .\n", graph_.EdgeNucls(*iter).str().c_str());
 	}
@@ -102,7 +102,7 @@ void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
 
 template<class Graph>
 void DataPrinter<Graph>::saveCoverage(const string& file_name) {
-	FILE* file = fopen(file_name.c_str(), "w");
+	FILE* file = fopen((file_name+".cvr").c_str(), "w");
 	DEBUG("Saving coverage, " << file_name <<" created");
 	assert(file != NULL);
 	fprintf(file, "%d\n", edge_count_);
@@ -115,7 +115,7 @@ void DataPrinter<Graph>::saveCoverage(const string& file_name) {
 
 template<class Graph>
 void DataPrinter<Graph>::savePaired(const string& file_name, PairedInfoIndex<Graph>& PIIndex) {
-	FILE* file = fopen(file_name.c_str(), "w");
+	FILE* file = fopen((file_name + ".prd").c_str(), "w");
 	DEBUG("Saving paired info, " << file_name <<" created");
 	assert(file != NULL);
 	fprintf(file, "%d\n", PIIndex.size());
@@ -127,84 +127,58 @@ void DataPrinter<Graph>::savePaired(const string& file_name, PairedInfoIndex<Gra
 	fclose(file);
 }
 
-}
-/*
-class DataReader {
-	FILE *f_;
+template <class Graph>
+class DataScanner {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
 public:
-	DataReader(char *fileName);
-	DataReader(const char *fileName);
-	int read(int &a);
-	int read(long long &a);
-	int read(Edge * &edge);
-	int read(Sequence * &sequence);
-	void read(VertexPrototype * &v);
-	void readLongEdgesMap(longEdgesMap &map);
-	void readIntArray(int *array, int length);
-	void readIntArray(int *array, int length, int width);
-	template<typename keyType, typename valueType>
-	void read(map<keyType, valueType> &m);
-	template<typename valueType>
-	void read(vector<valueType> &v);
+//	DataPrinter(/*const string& file_name,*/ Graph &g, IdTrackHandler<Graph> &old_IDs);
+	void loadNonConjugateGraph(const string& file_name, bool with_Sequence);
+//	void saveEdgeSequences(const string& file_name);
+	void loadCoverage(const string& file_name);
+	void loadPaired(const string& file_name, PairedInfoIndex<Graph>& PIIndex);
 	void close();
+
+private:
+//
+
+	Graph &graph_;
+	int edge_count_;
+//	map<EdgeId, typename IdTrackHandler<Graph>::realIdType> real_edge_ids_;
+	IdTrackHandler<Graph> &IdHandler_;
+public:
+	DataScanner(/*const string& file_name,*/ Graph &g, IdTrackHandler<Graph> &new_IDs) : graph_(g), IdHandler_(new_IDs) {
+		INFO("Creating of scanner started");
+		edge_count_ = 0;
+	}
 };
+template<class Graph>
+void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name, bool with_Sequence) {
 
-template<typename keyType, typename valueType>
-void DataPrinter::output(map<keyType, valueType> m) {
-	output((int)m.size());
-	for(typename map<keyType, valueType>::iterator it = m.begin(); it != m.end(); ++it) {
-		output(it->first);
-		output(it->second);
+	FILE* file = fopen((file_name + ".grp").c_str(), "r");
+	assert(file != NULL);
+	INFO("Reading graph from " << file_name << " started");
+	int vertex_count;
+	assert(fscanf(file, "%d %d \n", &vertex_count, &edge_count_) == 2);
+	for (int i = 0; i < vertex_count; i++) {
+		int vertex_real_id;
+		assert(fscanf(file, "Vertex %d", &vertex_real_id) == 1);
+		char c = 'a';
+		while (c != '.')
+			assert(fscanf(file, "%c", &c) == 1);
+		assert( fscanf(file, "\n") == 0);
+		VertexId vid = graph_.AddVertex();
+		IdHandler_.AddVertexIntId(vid, vertex_real_id);
 	}
-	fprintf(f_, "\n");
+	for (int i = 0; i < edge_count_; i++){
+		;
+
+	}
+
+
+	fclose(file);
 }
 
-template<typename keyType, typename valueType>
-void DataReader::read(map<keyType, valueType> &m) {
-	m.clear();
-	int size;
-	read(size);
-	keyType key;
-	valueType value;
-	for(int i = 0; i < size; i++) {
-		read(key);
-		read(value);
-		m[key] = value;
-	}
-	fscanf(f_, "\n");
+
 }
-
-template<typename valueType>
-void DataPrinter::output(vector<valueType> v) {
-	output((int)v.size());
-	for(typename vector<valueType>::iterator it = v.begin(); it != v.end(); ++it) {
-		output(*it);
-	}
-	fprintf(f_, "\n");
-}
-
-template<typename valueType>
-void DataReader::read(vector<valueType> &v) {
-	v.clear();
-	int size;
-	read(size);
-	v.reserve(size);
-	valueType value;
-	for(int i = 0; i < size; i++) {
-		read(value);
-		v.push_back(value);
-	}
-	fscanf(f_, "\n");
-}
-
-template<class Graph>
-void save(char *fileName, Graph &g);
-template<class Graph>
-void load(char *fileName, Graph &g);
-
-template<class Graph>
-void save(string fileName, Graph &g);
-template<class Graph>
-void load(string fileName, Graph &g);
-*/
 #endif /* IOPROCEDURES_HPP_ */
