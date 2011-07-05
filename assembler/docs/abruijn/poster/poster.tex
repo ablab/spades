@@ -74,7 +74,7 @@
 \draw (0,78) [color=SteelBlue3,line width=2mm,rounded corners=.5cm,fill=blue!10!white] rectangle (54,70);
 \node at (27,76) {\color{OrangeRed} \fontsize{60pt}{1em} \bf Earmark graph approach to de novo genome assembly};
 \node[rectangle,text width=25cm,text centered,anchor=north west] at (1,74) {
-  {\bf \color{DodgerBlue3} \fontsize{32pt}{1em}\selectfont Mikhail Dvorkin}\\
+  {\bf \color{DodgerBlue3} \fontsize{32pt}{1em}\selectfont Mikhail E. Dvorkin}\\
   Algorithmic Biology Lab, Academic University, RAS\\
   {\tt http://bioinf.spbau.ru/members/mikhail-dvorkin/}
 };
@@ -236,33 +236,7 @@ A,C,G,T}\}^r$ of a genome $S \in \{{\tt A,C,G,T}\}^*$, find the genome $S$.};
   \end{scope}
 
   \node[rectangle,text width=27cm,anchor=north west] at (1,17) {
-    \begin{tabular}{llcc}
-    \toprule
-    & & earmarked & de Bruijn\\
-
-    \midrule
-    \multirow{3}{*}{first 10\% of E.coli w/o simplification} & \# vertices & ??????? & ???????\\
-    \cmidrule(r){2-4}
-    & \# edges & ??????? & ???????\\
-    \cmidrule(r){2-4}
-    & \# tips (?) & ??????? & ???????\\
-
-    \midrule
-    \multirow{3}{*}{first 10\% of E.coli after simplification} & \# vertices & ??????? & ???????\\
-    \cmidrule(r){2-4}
-    & \# edges & ??????? & ???????\\
-    \cmidrule(r){2-4}
-    & \# tips (?) & ??????? & ???????\\
-
-    \midrule
-    \multirow{3}{*}{E.coli after simplification} & \# vertices & ??????? & ???????\\
-    \cmidrule(r){2-4}
-    & \# edges & ??????? & ???????\\
-    \cmidrule(r){2-4}
-    & \# tips (?) & ??????? & ???????\\
-
-    \bottomrule
-    \end{tabular}
+    \input{../data/stat400k.tex}
   };
 \end{scope}
 
