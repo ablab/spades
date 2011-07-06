@@ -17,6 +17,7 @@ using omnigraph::GraphLabeler;
 using omnigraph::EmptyGraphLabeler;
 using omnigraph::SmartEdgeIterator;
 using omnigraph::Path;
+using omnigraph::UnorientedDijkstra;
 
 template<class Graph>
 class GraphVisualizer {
@@ -304,7 +305,7 @@ public:
 		if (edges_.count(edge) != 0)
 			return 0;
 		else
-			return this->GetGraph().length(edge);
+			return this->graph().length(edge);
 	}
 
 };

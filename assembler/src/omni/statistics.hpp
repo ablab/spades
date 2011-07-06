@@ -310,6 +310,7 @@ class UniquePathStat: public omnigraph::AbstractStatCounter {
 	size_t unique_distance_cnt_;
 	size_t non_unique_distance_cnt_;
 
+	bool draw_pictures_;
 
 	bool ContainsPositiveDistance(const vector<PairInfo<EdgeId>>& infos) {
 		double s = 0.0;
@@ -331,7 +332,7 @@ class UniquePathStat: public omnigraph::AbstractStatCounter {
 public:
 
 	UniquePathStat(Graph& g, PairedInfoIndex<Graph>& pair_info, size_t insert_size, size_t max_read_length
-			, double variance_delta, double weight_threshold)
+			, double variance_delta, double weight_threshold, bool draw_pictures = false)
 	: g_(g)
 	, pair_info_(pair_info)
 	, insert_size_(insert_size)
@@ -340,7 +341,9 @@ public:
 	, weight_threshold_(weight_threshold)
 	, considered_edge_pair_cnt_(0)
 	, unique_distance_cnt_(0)
-	, non_unique_distance_cnt_(0) {
+	, non_unique_distance_cnt_(0)
+	, draw_pictures_(draw_pictures)
+	{
 
 	}
 
@@ -351,7 +354,13 @@ public:
 				PairInfo<EdgeId> delegate = (*it)[0];
 				EdgeId e1 = delegate.first;
 				EdgeId e2 = delegate.second;
-				PathCounter<Graph> counter;
+
+//				cout << "Finding paths between edges " << e1 << " and " << e2 << endl;
+				NonEmptyPathCounter<Graph> counter(g_);
+//				VertexLablerCallback<Graph> graph_labeler(g_);
+//				CompositeCallback<Graph> composite_callback;
+//				composite_callback.AddProcessor(counter);
+//				composite_callback.AddProcessor(graph_labeler);
 				int lower_bound = insert_size_ - 2 * max_read_length_ - g_.length(e1) - g_.length(e2);
 //				cout << "IS " << insert_size_ << endl;
 //				cout << "MRL " << max_read_length_ << endl;
@@ -366,6 +375,7 @@ public:
 				}
 				if (counter.count() > 1) {
 					non_unique_distance_cnt_++;
+
 				}
 			}
 		}
@@ -388,6 +398,7 @@ public:
 private:
 	DECL_LOGGER("UniquePathStat")
 };
+
 
 }
 

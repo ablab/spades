@@ -4,7 +4,9 @@
 #include "queue_iterator.hpp"
 #include "logging.hpp"
 #include "simple_tools.hpp"
+#include "dijkstra.hpp"
 #include <cmath>
+#include <iterator>
 
 namespace omnigraph {
 
@@ -31,7 +33,7 @@ public:
 	 * Create action handler with given name. With this name one can find out what tipe of handler is it.
 	 */
 	ActionHandler(const string &name) :
-		handler_name_(name) {
+			handler_name_(name) {
 	}
 
 	/**
@@ -112,11 +114,10 @@ public:
 template<class Graph>
 class GraphActionHandler: public ActionHandler<typename Graph::VertexId,
 		typename Graph::EdgeId> {
-	typedef ActionHandler<typename Graph::VertexId, typename Graph::EdgeId>
-			base;
+	typedef ActionHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
 public:
 	GraphActionHandler(const string& name) :
-		base(name) {
+			base(name) {
 
 	}
 
@@ -149,13 +150,13 @@ public:
 	ApplyDelete(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const = 0;
 
 	virtual void ApplyMerge(ActionHandler<VertexId, EdgeId> *handler,
-			vector<EdgeId> old_edges, EdgeId new_edge) const = 0;
+	vector<EdgeId> old_edges, EdgeId new_edge) const = 0;
 
 	virtual void ApplyGlue(ActionHandler<VertexId, EdgeId> *handler,
-			EdgeId new_edge, EdgeId edge1, EdgeId edge2) const = 0;
+	EdgeId new_edge, EdgeId edge1, EdgeId edge2) const = 0;
 
 	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
-			EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const = 0;
+	EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const = 0;
 
 	virtual ~HandlerApplier() {
 	}
@@ -171,35 +172,38 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
-	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const {
+	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler
+			, VertexId v) const {
 		handler->HandleAdd(v);
 	}
 
-	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const {
+	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler
+			, EdgeId e) const {
 		handler->HandleAdd(e);
 	}
 
 	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler,
-			VertexId v) const {
+	VertexId v) const {
 		handler->HandleDelete(v);
 	}
 
-	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const {
+	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler
+			, EdgeId e) const {
 		handler->HandleDelete(e);
 	}
 
 	virtual void ApplyMerge(ActionHandler<VertexId, EdgeId> *handler,
-			vector<EdgeId> old_edges, EdgeId new_edge) const {
+	vector<EdgeId> old_edges, EdgeId new_edge) const {
 		handler->HandleMerge(old_edges, new_edge);
 	}
 
 	virtual void ApplyGlue(ActionHandler<VertexId, EdgeId> *handler,
-			EdgeId new_edge, EdgeId edge1, EdgeId edge2) const {
+	EdgeId new_edge, EdgeId edge1, EdgeId edge2) const {
 		handler->HandleGlue(new_edge, edge1, edge2);
 	}
 
 	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
-			EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) const {
+	EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) const {
 		handler->HandleSplit(old_edge, new_edge1, new_edge2);
 	}
 
@@ -223,99 +227,83 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 
 	PairedHandlerApplier(Graph &graph) :
-		graph_(graph) {
+			graph_(graph) {
 	}
 
-	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, VertexId v) const {
+	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler
+			, VertexId v) const {
 		VertexId rcv = graph_.conjugate(v);
 		TRACE(
-				"Triggering add event of handler " << handler->name()
-				<< " to vertex " << v);
+				"Triggering add event of handler " << handler->name() << " to vertex " << v);
 		handler->HandleAdd(v);
 		if (v != rcv) {
 			TRACE(
-					"Triggering add event of handler " << handler->name()
-					<< " to vertex " << rcv
-					<< " which is conjugate to " << v);
+					"Triggering add event of handler " << handler->name() << " to vertex " << rcv << " which is conjugate to " << v);
 			handler->HandleAdd(rcv);
 		} else {
 			TRACE(
-					"Vertex " << v
-					<< "is self-conjugate thus handler is not applied the second time");
+					"Vertex " << v << "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
-	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const {
+	virtual void ApplyAdd(ActionHandler<VertexId, EdgeId> *handler
+			, EdgeId e) const {
 		EdgeId rce = graph_.conjugate(e);
 		TRACE(
-				"Triggering add event of handler " << handler->name()
-				<< " to edge " << e << ". Event is Add");
+				"Triggering add event of handler " << handler->name() << " to edge " << e << ". Event is Add");
 		handler->HandleAdd(e);
 		if (e != rce) {
 			TRACE(
-					"Triggering add event of handler " << handler->name()
-					<< " to edge " << rce << " which is conjugate to "
-					<< e);
+					"Triggering add event of handler " << handler->name() << " to edge " << rce << " which is conjugate to " << e);
 			handler->HandleAdd(rce);
 		} else {
 			TRACE(
-					"Edge " << e
-					<< "is self-conjugate thus handler is not applied the second time");
+					"Edge " << e << "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
 	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler,
-			VertexId v) const {
+	VertexId v) const {
 		VertexId rcv = graph_.conjugate(v);
 		TRACE(
-				"Triggering delete event of handler " << handler->name()
-				<< " to vertex " << v);
+				"Triggering delete event of handler " << handler->name() << " to vertex " << v);
 		handler->HandleDelete(v);
 		if (v != rcv) {
 			TRACE(
-					"Triggering delete event of handler " << handler->name()
-					<< " to vertex " << rcv
-					<< " which is conjugate to " << v);
+					"Triggering delete event of handler " << handler->name() << " to vertex " << rcv << " which is conjugate to " << v);
 			handler->HandleDelete(rcv);
 		} else {
 			TRACE(
-					"Vertex " << v
-					<< "is self-conjugate thus handler is not applied the second time");
+					"Vertex " << v << "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
-	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler, EdgeId e) const {
+	virtual void ApplyDelete(ActionHandler<VertexId, EdgeId> *handler
+			, EdgeId e) const {
 		EdgeId rce = graph_.conjugate(e);
 		TRACE(
-				"Triggering delete event of handler " << handler->name()
-				<< " to edge " << e);
+				"Triggering delete event of handler " << handler->name() << " to edge " << e);
 		handler->HandleDelete(e);
 		if (e != rce) {
 			TRACE(
-					"Triggering delete event of handler " << handler->name()
-					<< " to edge " << rce << " which is conjugate to "
-					<< e);
+					"Triggering delete event of handler " << handler->name() << " to edge " << rce << " which is conjugate to " << e);
 			handler->HandleDelete(rce);
 		} else {
 			TRACE(
-					"Edge " << e
-					<< "is self-conjugate thus handler is not applied the second time");
+					"Edge " << e << "is self-conjugate thus handler is not applied the second time");
 		}
 
 	}
 
 	virtual void ApplyMerge(ActionHandler<VertexId, EdgeId> *handler,
-			vector<EdgeId> old_edges, EdgeId new_edge) const {
+	vector<EdgeId> old_edges, EdgeId new_edge) const {
 		TRACE(
-				"Triggering merge event of handler " << handler->name()
-				<< " with new edge " << new_edge);
+				"Triggering merge event of handler " << handler->name() << " with new edge " << new_edge);
 		EdgeId rce = graph_.conjugate(new_edge);
 		handler->HandleMerge(old_edges, new_edge);
 		if (new_edge != rce) {
 			TRACE(
-					"Triggering merge event of handler " << handler->name()
-					<< " with new edge " << rce
-					<< " which is conjugate to " << new_edge);
+					"Triggering merge event of handler " << handler->name() << " with new edge " << rce << " which is conjugate to " << new_edge);
 			vector < EdgeId > ecOldEdges;
 			for (int i = old_edges.size() - 1; i >= 0; i--) {
 				ecOldEdges.push_back(graph_.conjugate(old_edges[i]));
@@ -323,16 +311,14 @@ public:
 			handler->HandleMerge(ecOldEdges, rce);
 		} else {
 			TRACE(
-					"Edge " << new_edge
-					<< "is self-conjugate thus handler is not applied the second time");
+					"Edge " << new_edge << "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
 	virtual void ApplyGlue(ActionHandler<VertexId, EdgeId> *handler,
-			EdgeId new_edge, EdgeId edge1, EdgeId edge2) const {
+	EdgeId new_edge, EdgeId edge1, EdgeId edge2) const {
 		TRACE(
-				"Triggering glue event of handler " << handler->name()
-				<< " with old edge " << edge1);
+				"Triggering glue event of handler " << handler->name() << " with old edge " << edge1);
 		EdgeId rcOldEdge = graph_.conjugate(edge1);
 		EdgeId rcNewEdge = graph_.conjugate(edge2);
 		assert(edge1 != edge2);
@@ -342,36 +328,29 @@ public:
 		handler->HandleGlue(new_edge, edge1, edge2);
 		if (edge1 != rcOldEdge) {
 			TRACE(
-					"Triggering merge event of handler " << handler->name()
-					<< " with old edge " << edge1
-					<< " which is conjugate to " << rcOldEdge);
+					"Triggering merge event of handler " << handler->name() << " with old edge " << edge1 << " which is conjugate to " << rcOldEdge);
 			handler->HandleGlue(graph_.conjugate(new_edge), rcOldEdge,
 					rcNewEdge);
 		} else {
 			TRACE(
-					"Edge " << edge1
-					<< "is self-conjugate thus handler is not applied the second time");
+					"Edge " << edge1 << "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
 	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
-			EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const {
+	EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const {
 		EdgeId rce = graph_.conjugate(old_edge);
 		TRACE(
-				"Triggering split event of handler " << handler->name()
-				<< " with old edge " << old_edge);
+				"Triggering split event of handler " << handler->name() << " with old edge " << old_edge);
 		handler->HandleSplit(old_edge, new_edge_1, new_edge2);
 		if (old_edge != rce) {
 			TRACE(
-					"Triggering split event of handler " << handler->name()
-					<< " with old edge " << old_edge
-					<< " which is conjugate to " << rce);
+					"Triggering split event of handler " << handler->name() << " with old edge " << old_edge << " which is conjugate to " << rce);
 			handler->HandleSplit(rce, graph_.conjugate(new_edge2),
 					graph_.conjugate(new_edge_1));
 		} else {
 			TRACE(
-					"Edge " << old_edge
-					<< "is self-conjugate thus handler is not applied the second time");
+					"Edge " << old_edge << "is self-conjugate thus handler is not applied the second time");
 		}
 	}
 
@@ -392,7 +371,7 @@ private:
  */
 template<class Graph, typename ElementId, typename Comparator = std::less<
 		ElementId> >
-class SmartIterator: public GraphActionHandler<Graph> , public QueueIterator<
+class SmartIterator: public GraphActionHandler<Graph>, public QueueIterator<
 		ElementId, Comparator> {
 private:
 	Graph &graph_;
@@ -403,9 +382,9 @@ public:
 public:
 	SmartIterator(Graph &graph, const string &name,
 			const Comparator& comparator = Comparator()) :
-		GraphActionHandler<Graph> (name),
-				QueueIterator<ElementId, Comparator> (comparator),
-				graph_(graph) {
+			GraphActionHandler<Graph>(name), QueueIterator<ElementId, Comparator>(
+					comparator),
+			graph_(graph) {
 		graph_.AddActionHandler(this);
 	}
 
@@ -430,17 +409,17 @@ public:
  * event handlers.
  */
 template<class Graph, typename Comparator = std::less<typename Graph::VertexId> >
-class SmartVertexIterator: public SmartIterator<Graph,
-		typename Graph::VertexId, Comparator> {
+class SmartVertexIterator: public SmartIterator<Graph, typename Graph::VertexId,
+		Comparator> {
 public:
 	typedef QueueIterator<typename Graph::VertexId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartVertexIterator(Graph &graph, bool fill,
-			const Comparator& comparator = Comparator()) :
-				SmartIterator<Graph, VertexId, Comparator> (graph,
-						"SmartVertexIterator " + ToString(this), comparator) {
+	SmartVertexIterator(Graph &graph, bool fill, const Comparator& comparator =
+			Comparator()) :
+			SmartIterator<Graph, VertexId, Comparator>(graph,
+					"SmartVertexIterator " + ToString(this), comparator) {
 		if (fill) {
 			super::insert(graph.begin(), graph.end());
 		}
@@ -466,13 +445,12 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartEdgeIterator(Graph &graph, bool fill,
-			Comparator comparator = Comparator()) :
-				SmartIterator<Graph, EdgeId, Comparator> (graph,
-						"SmartEdgeIterator " + ToString(this), comparator) {
+	SmartEdgeIterator(Graph &graph, bool fill, Comparator comparator =
+			Comparator()) :
+			SmartIterator<Graph, EdgeId, Comparator>(graph,
+					"SmartEdgeIterator " + ToString(this), comparator) {
 		if (fill) {
-			for (auto it = graph.begin(); it
-					!= graph.end(); ++it) {
+			for (auto it = graph.begin(); it != graph.end(); ++it) {
 				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
 				this->super::insert(outgoing.begin(), outgoing.end());
 			}
@@ -497,11 +475,11 @@ public:
 	typedef typename vector<ElementId>::const_iterator iterator;
 
 	Path(vector<ElementId> sequence, size_t start_pos, size_t end_pos) :
-		sequence_(sequence), start_pos_(start_pos), end_pos_(end_pos) {
+			sequence_(sequence), start_pos_(start_pos), end_pos_(end_pos) {
 	}
 
 	Path() :
-		sequence_(), start_pos_(-1), end_pos_(-1) {
+			sequence_(), start_pos_(-1), end_pos_(-1) {
 	}
 
 	size_t start_pos() const {
@@ -526,6 +504,28 @@ public:
 };
 
 template<class Graph>
+class BackwardBoundedDijkstra : public BackwardDijkstra<Graph> {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef BackwardDijkstra<Graph> super;
+	const size_t bound_;
+
+public:
+	BackwardBoundedDijkstra(Graph &g, size_t bound) :
+		super(g), bound_(bound) {
+	}
+
+	virtual ~BackwardBoundedDijkstra() {
+	}
+
+	virtual bool CheckProcessVertex(VertexId vertex, size_t distance) {
+		return distance <= bound_;
+	}
+
+};
+
+template<class Graph>
 class PathProcessor {
 public:
 	typedef typename Graph::EdgeId EdgeId;
@@ -537,7 +537,7 @@ public:
 	};
 
 private:
-	const Graph& g_;
+	Graph& g_;
 	size_t min_length_;
 	size_t max_length_;
 	VertexId start_;
@@ -548,36 +548,37 @@ private:
 
 	size_t call_cnt_;
 
-	static const size_t MAX_CALL_CNT = 200;
+	static const size_t MAX_CALL_CNT = 2000;
 
 	//todo rewrite without recursion
-	void Go(VertexId v, size_t length) {
+	void Go(VertexId v, size_t current_path_length, Dijkstra<Graph>& distances_to_end) {
 		call_cnt_++;
 		if (call_cnt_ == MAX_CALL_CNT) {
-			WARN("Maximal count " << MAX_CALL_CNT << " of recursive calls was exceeded!");
+			DEBUG(
+					"Maximal count " << MAX_CALL_CNT << " of recursive calls was exceeded!");
 		}
 		if (call_cnt_ >= MAX_CALL_CNT)
 			return;
 
-		if (length > max_length_)
+		if (!distances_to_end.DistanceCounted(v) || distances_to_end.GetDistance(v) + current_path_length > max_length_)
 			return;
 
-		if (v == end_ && length >= min_length_) {
+		if (v == end_ && current_path_length >= min_length_) {
 			callback_.HandlePath(path_);
 		}
 		vector<EdgeId> outgoing_edges = g_.OutgoingEdges(v);
 		for (size_t i = 0; i < outgoing_edges.size(); ++i) {
 			EdgeId edge = outgoing_edges[i];
 			path_.push_back(edge);
-			Go(g_.EdgeEnd(edge), length + g_.length(edge));
+			Go(g_.EdgeEnd(edge), current_path_length + g_.length(edge), distances_to_end);
 			path_.pop_back();
 		}
 	}
 
 public:
-	PathProcessor(const Graph& g, double min_length, double max_length
-			, VertexId start, VertexId end, Callback& callback)
-		: g_(g), min_length_((min_length < 0) ? 0 : std::floor(min_length)), max_length_(std::floor(max_length + 0.5))
+	PathProcessor(Graph& g, double min_length, double max_length,
+			VertexId start, VertexId end, Callback& callback) :
+			g_(g), min_length_((min_length < 0) ? 0 : std::floor(min_length)),max_length_(std::floor(max_length + 0.5))
 		, start_(start), end_(end), callback_(callback), call_cnt_(0) {
 //		cout << "RawMin " << min_length << endl;
 //		cout << "Min " << min_length_ << endl;
@@ -586,28 +587,105 @@ public:
 	}
 
 	void Process() {
-		Go(start_, 0);
+		BackwardBoundedDijkstra<Graph> backward_dijkstra(g_, max_length_);
+		backward_dijkstra.run(start_);
+		Go(start_, 0, backward_dijkstra);
 	}
 
 private:
 	DECL_LOGGER("PathProcessor")
 };
 
-
-template <class Graph>
-class PathCounter : public PathProcessor<Graph>::Callback {
+template<class Graph>
+class CompositeCallback : public PathProcessor<Graph>::Callback {
 	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
+
+	vector<typename PathProcessor<Graph>::Callback*> processors_;
+public:
+	CompositeCallback(/*vector<PathProcessor<Graph>*>*/) {
+
+	}
+
+	virtual ~CompositeCallback() {
+
+	}
+
+	void AddProcessor(typename PathProcessor<Graph>::Callback & processor) {
+		processors_.push_back(&processor);
+	}
+
+	virtual void HandlePath(const vector<EdgeId>& path) {
+		for (auto it = processors_.begin(); it != processors_.end(); ++it) {
+			(*it)->HandlePath(path);
+		}
+	}
+
+};
+
+template<class Graph>
+class NonEmptyPathCounter: public PathProcessor<Graph>::Callback {
+	typedef typename Graph::EdgeId EdgeId;
+
+	//todo temporary
+	Graph& g_;
 
 	size_t count_;
 public:
 
-	PathCounter() : count_(0) {
-
+	NonEmptyPathCounter(Graph& g) :
+			g_(g), count_(0) {
+//		cout << "........................" << endl;
 	}
 
 	virtual void HandlePath(const vector<EdgeId>& path) {
-		count_++;
+		if (path.size() > 0) {
+			/*
+			 size_t s = 0;
+			 for (auto it = path.begin(); it != path.end(); ++it) {
+			 s += g_.length(*it);
+			 cout << *it << "(" << g_.length(*it) << "), ";
+			 }
+
+			 cout << "Length " << s << endl;
+			 cout << "\n" << endl;
+			 */
+
+			count_++;
+		}
+	}
+
+	size_t count() {
+		return count_;
+	}
+}
+;
+
+template<class Graph>
+class VertexLablerCallback: public PathProcessor<Graph>::Callback {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	Graph& g_;
+	size_t count_;
+	set<VertexId> vertices_;
+public:
+
+	VertexLablerCallback(Graph& g) :
+			g_(g), count_(0) {
+	}
+
+	virtual void HandlePath(const vector<EdgeId>& path) {
+		for (auto it = path.begin(); it != path.end(); ++it) {
+			if (path.size() > 0) {
+				vertices_.insert(g_.EdgeStart(*it));
+				vertices_.insert(g_.EdgeEnd(*it));
+				count_++;
+			}
+		}
+	}
+
+	const set<VertexId>& vertices() {
+		return vertices_;
 	}
 
 	size_t count() {

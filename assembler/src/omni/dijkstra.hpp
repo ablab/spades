@@ -3,6 +3,8 @@
 
 #include <queue>
 
+namespace omnigraph {
+
 template<typename value_type>
 class ReverseComparator {
 public:
@@ -23,11 +25,12 @@ private:
 	Graph &graph_;
 	bool finished_;
 	map<VertexId, distance_t> distances_;
-public:
-
-	Graph &GetGraph() {
+protected:
+	Graph& graph() {
 		return graph_;
 	}
+
+public:
 
 	bool finished() {
 		return finished_;
@@ -178,7 +181,7 @@ public:
 
 	virtual vector<pair<VertexId, EdgeId>> Neighbours(VertexId vertex) {
 		vector < pair < VertexId, EdgeId >> result;
-		Graph &g = this->GetGraph();
+		Graph &g = this->graph();
 		vector < EdgeId > edges = g.OutgoingEdges(vertex);
 		for (size_t i = 0; i < edges.size(); i++) {
 			result.push_back(make_pair(g.EdgeEnd(edges[i]), edges[i]));
@@ -190,4 +193,32 @@ public:
 		return result;
 	}
 };
+
+template<class Graph, typename distance_t = size_t>
+class BackwardDijkstra: public Dijkstra<Graph, distance_t> {
+private:
+	typedef Dijkstra<Graph, distance_t> super;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+public:
+	BackwardDijkstra(Graph &graph) :
+		super(graph) {
+	}
+
+	virtual ~BackwardDijkstra() {
+	}
+
+	virtual vector<pair<VertexId, EdgeId>> Neighbours(VertexId vertex) {
+		vector <pair<VertexId, EdgeId>> result;
+		Graph &g = this->graph();
+		vector<EdgeId> edges = g.OutgoingEdges(vertex);
+		edges = g.IncomingEdges(vertex);
+		for (size_t i = 0; i < edges.size(); i++) {
+			result.push_back(make_pair(g.EdgeStart(edges[i]), edges[i]));
+		}
+		return result;
+	}
+};
+
+}
 #endif /* DIJKSTRA_HPP_ */

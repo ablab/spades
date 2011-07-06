@@ -184,7 +184,7 @@ public:
 		//		return " ";
 
 		stringstream ss;
-		ss << length(edge) << "(" << coverage(edge) << ")";
+		ss << edge << " " << length(edge) << "(" << coverage(edge) << ")";
 		return ss.str();
 
 	}
