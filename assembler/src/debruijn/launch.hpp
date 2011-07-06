@@ -76,7 +76,7 @@ Path<typename Graph::EdgeId> FindGenomePath(const string &genome,
 	return srt.MapSequence(Sequence(genome));
 }
 
-template<size_t k, class Graph >
+template<size_t k>
 void ProduceInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		const string& genome, const string& file_name, const string& graph_name) {
 	CountStats<k> (g, index, genome);
@@ -85,6 +85,13 @@ void ProduceInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	WriteToDotFile(g, file_name, graph_name, path1, path2);
 }
 
+/*template<size_t k>
+  void ProduceNonconjugateInfo(NCGraph& g, const EdgeIndex<k + 1, Graph>& index,
+		const string& genome, const string& file_name, const string& graph_name, IdTrackHandler<NCGraph> &IdTrackLabelerResolved) {
+	CountStats<k> (g, index, genome);
+	gvis::WriteSimple( file_name, graph_name, g, IdTrackLabelerResolved);
+}
+*/
 template<size_t k>
 void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		const string& genome, const string& folder, const string& file_name, const string& graph_name) {
@@ -257,7 +264,7 @@ void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index, size_t iteration_co
 	}
 	INFO("Graph simplification finished");
 }
-
+template<class Graph>
 void OutputContigs(Graph& g, const string& contigs_output_filename) {
 	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_filename);
@@ -313,7 +320,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome, b
 		if (! from_saved) {
 			INFO("before ResolveRepeats");
 			RealIdGraphLabeler<Graph> IdTrackLabelerBefore(g, IntIds);
-			omnigraph::WriteSimple( output_folder + "repeats_resolved_simple_before.dot", "no_repeat_graph", g, IdTrackLabelerBefore);
+			omnigraph::WriteSimple( output_folder + "repeats_resolved_before.dot", "no_repeat_graph", g, IdTrackLabelerBefore);
 			printGraph(g, IntIds, work_tmp_dir + "graph", paired_index);
 		}
 
@@ -323,7 +330,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome, b
 		scanGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index);
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
-		omnigraph::WriteSimple( work_tmp_dir + "repeats_resolved_simple_nc_copy.dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
+		omnigraph::WriteSimple( work_tmp_dir + "repeats_resolved_nonconjugate_copy.dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
 		INFO("repeat resolved grpah written");
 
 		NCGraph resolved_graph(k);
@@ -332,17 +339,19 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome, b
 		ResolveRepeats(new_graph, NewIntIds, new_index, resolved_graph, Resolved_IntIds, output_folder+"resolve/");
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph, Resolved_IntIds);
 
-		omnigraph::WriteSimple( work_tmp_dir + "repeats_resolved_simple_after.dot", "no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
-				INFO("repeat resolved grpah written");
+		omnigraph::WriteSimple( work_tmp_dir + "repeats_resolved_after.dot", "no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+		INFO("repeat resolved grpah written");
 
 
-	//	ProduceInfo<k> (new_graph, index, genome, output_folder + "repeats_resolved.dot",
+//		ProduceNonconjugateInfo<k> (resolved_graph, index, genome, output_folder + "repeats_resolved.dot",
+//				"no_repeat_graph", IdTrackLabelerResolved);
+//		ProduceNonconjugateInfo<k> (resolved_graph, index, genome, work_tmp_dir + "repeats_resolved.dot",
 //				"no_repeat_graph");
-//		ProduceInfo<k> (new_graph, index, genome, work_tmp_dir + "repeats_resolved.dot",
-//				"no_repeat_graph");
+
+		OutputContigs(resolved_graph, output_folder + "contigs.fasta");
 	}
-
-	OutputContigs(g, output_folder + "contigs.fasta");
+	if (!paired_mode)
+		OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 }
 
