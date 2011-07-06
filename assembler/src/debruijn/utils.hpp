@@ -45,7 +45,7 @@ class DataHashRenewer {
 
 	void DeleteKmersHash(ElementId id) {
 		Sequence nucls = g_.EdgeNucls(id);
-		DEBUG("Deleting hashes for k-mers of sequence " << nucls);
+//		DEBUG("Deleting hashes for k-mers of sequence " << nucls);
 		index_.DeleteKmersHash(nucls, id);
 	}
 

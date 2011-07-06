@@ -53,7 +53,7 @@ public:
 	class EdgeInfo {
 
 	public:
-		static const int MAXD = 1;
+		static const int MAXD = 6;
 		static const int MAXSKIPDIST = 4;
 
 		EdgeInfo(const PairInfo &lp_, const int dir_, const EdgeId edge_,
@@ -137,6 +137,7 @@ public:
 			//		if (vertices.find(old_graph.conjugate(*v_iter)) == vertices.end())
 			{
 				vertices.insert(*v_iter);
+				DEBUG(*v_iter);
 			}
 		}
 		for (auto e_iter = old_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
@@ -148,10 +149,11 @@ public:
 		for (auto v_iter = vertices.begin(); v_iter != vertices.end(); ++v_iter) {
 			size_t degree = old_graph.IncomingEdgeCount(*v_iter)
 					+ old_graph.OutgoingEdgeCount(*v_iter);
-			if (degree > 0) {
+			if (degree > 0)
+			{
 				VertexId new_vertex = new_graph.AddVertex();
 				real_vertices.insert(new_vertex);
-				DEBUG("Added vertex" << new_vertex <<" " << new_graph.conjugate(new_vertex));
+				DEBUG("Added vertex" << new_vertex);// <<" " << new_graph.conjugate(new_vertex));
 				vertex_labels[new_vertex] = *v_iter;
 				old_to_new[*v_iter] = new_vertex;
 				//	old_to_new[old_graph.conjugate(*v_iter)] = new_graph.conjugate(new_vertex);
@@ -166,7 +168,7 @@ public:
 					old_graph.EdgeNucls(*e_iter));
 			new_graph.SetCoverage(new_edge, old_graph.coverage(*e_iter)
 					* old_graph.length(*e_iter));
-			new_graph.SetCoverage(new_graph.conjugate(new_edge), 0);
+//			new_graph.SetCoverage(new_graph.conjugate(new_edge), 0);
 			edge_labels[new_edge] = *e_iter;
 			DEBUG("Adding edge " << new_edge<< " from" << *e_iter);
 			old_to_new_edge[*e_iter] = new_edge;
@@ -183,7 +185,7 @@ public:
 				if (old_to_new_edge.find(pi[j].first) != old_to_new_edge.end()
 						&& old_to_new_edge.find(pi[j].second)
 								!= old_to_new_edge.end()) {
-					TRACE("Adding pair " << pi[j].first<<"  " <<old_to_new_edge[pi[j].first] << "  " <<pi[j].second);
+					DEBUG("Adding pair " << pi[j].first<<"  " <<old_to_new_edge[pi[j].first] << "  " <<pi[j].second);
 					PairInfo *tmp = new PairInfo(old_to_new_edge[pi[j].first],
 							pi[j].second, pi[j].d, pi[j].weight);
 					paired_di_data.AddPairInfo(*tmp, 0);
@@ -192,6 +194,7 @@ public:
 				}
 			}
 		}
+		DEBUG("May be size is " << ind.size());
 		INFO("paired info size: "<<paired_size);
 		assert(leap >= 0 && leap < 100);
 	}
@@ -314,7 +317,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 					edge_iter->first) * new_graph.coverage(edge_iter->first)
 					* new_paired_coverage[edge_iter->second]
 					/ old_paired_coverage[edge_iter->first]);
-			new_graph.SetCoverage(new_graph.conjugate(edge_iter->second), 0);
+//			new_graph.SetCoverage(new_graph.conjugate(edge_iter->second), 0);
 		}
 	}
 
@@ -335,9 +338,9 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 		changed = false;
 		vertices.clear();
 		for (auto v_iter = new_graph.SmartVertexBegin(); !v_iter.IsEnd(); ++v_iter) {
-			if (vertices.find(new_graph.conjugate(*v_iter)) == vertices.end()) {
+//			if (vertices.find(new_graph.conjugate(*v_iter)) == vertices.end()) {
 				vertices.insert(*v_iter);
-			}
+//			}
 		}
 		INFO("Having "<< vertices.size() << "paired vertices, trying to split");
 		RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
