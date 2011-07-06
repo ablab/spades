@@ -296,6 +296,31 @@ public:
 		return super::AddEdge(from, to, EdgeData(nucls));
 	}
 
+	std::string str(EdgeId edge) const {
+		//		return " ";
+
+		stringstream ss;
+		ss << length(edge) << "(" << coverage(edge) << ")";
+		return ss.str();
+
+	}
+
+	std::string str(VertexId v) const {
+		return " ";
+	}
+
+	std::string toPrint(VertexId v, IdTrackHandler<NonconjugateDeBruijnGraph> &id_handler) const {
+		stringstream ss;
+		ss << "Vertex " << id_handler.ReturnIntId(v) << " .";
+		return ss.str();
+	}
+
+	std::string toPrint(EdgeId e, IdTrackHandler<NonconjugateDeBruijnGraph> &id_handler) const {
+		stringstream ss;
+		ss << "Edge " << id_handler.ReturnIntId(e) <<" : " << id_handler.ReturnIntId(EdgeStart(e)) << " -> " << id_handler.ReturnIntId(EdgeEnd(e))<<", l = "<< length(e) <<" .";
+		return ss.str();
+	}
+
 };
 }
 

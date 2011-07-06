@@ -172,6 +172,7 @@ void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name, bool wit
 		assert( fscanf(file, "\n") == 0);
 		VertexId vid = graph_.AddVertex();
 		IdHandler_.AddVertexIntId(vid, vertex_real_id);
+		DEBUG(vid);
 	}
 	int tmp_edge_count;
 	assert(fscanf(sequence_file, "%d", &tmp_edge_count) == 1);
@@ -187,13 +188,58 @@ void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name, bool wit
 		while (c != '.')
 			assert(fscanf(file, "%c", &c) == 1);
 		assert( fscanf(file, "\n") == 0);
-	//	EdgeId eid = graph.AddEdge(IdHandler_. );
+		Sequence tmp(longstring);
+		DEBUG(start_id<<" "<<  fin_id <<" "<< IdHandler_.ReturnVertexId(start_id)<<" "<< IdHandler_.ReturnVertexId(fin_id));
+		EdgeId eid = graph_.AddEdge(IdHandler_.ReturnVertexId(start_id), IdHandler_.ReturnVertexId(fin_id), tmp);
+		IdHandler_.AddEdgeIntId(eid, e_real_id);
+
 	}
 
 
 	fclose(file);
+	fclose(sequence_file);
+
 }
 
+template<class Graph>
+void DataScanner<Graph>::loadCoverage(const string& file_name) {
+
+	FILE* file = fopen((file_name + ".cvr").c_str(), "r");
+	assert(file != NULL);
+	INFO("Reading coverage from " << file_name << " started");
+	int edge_count;
+	assert(fscanf(file, "%d \n", &edge_count) == 1);
+	assert(edge_count == edge_count_);
+	for (int i = 0; i < edge_count; i++) {
+		int edge_real_id;
+		double edge_coverage;
+		assert(fscanf(file, "%d %lf .\n", &edge_real_id, &edge_coverage) == 2);
+		EdgeId eid = IdHandler_.ReturnEdgeId(edge_real_id);
+		graph_.SetCoverage(eid, edge_coverage * graph_.length(eid));
+	}
+	fclose(file);
+}
+
+template<class Graph>
+void DataScanner<Graph>::loadPaired(const string& file_name, PairedInfoIndex<Graph>& PIIndex) {
+
+	FILE* file = fopen((file_name + ".prd").c_str(), "r");
+	assert(file != NULL);
+	INFO("Reading paired info from " << file_name << " started");
+	int paired_count;
+	assert(fscanf(file, "%d \n", &paired_count) == 1);
+	for (int i = 0; i < paired_count; i++) {
+		int first_real_id, second_real_id;
+		double w, d;
+		assert(fscanf(file, "%d %d %lf %lf .\n", &first_real_id, &second_real_id, &d, &w) == 4);
+		DEBUG(first_real_id<< " " << second_real_id << " " << d << " " << w);
+		DEBUG (IdHandler_.ReturnEdgeId(first_real_id)<<" "<< IdHandler_.ReturnEdgeId(second_real_id)<<" "<< d<<" "<< w);
+		PairInfo<typename Graph::EdgeId> *p_info = new PairInfo<typename Graph::EdgeId>(IdHandler_.ReturnEdgeId(first_real_id), IdHandler_.ReturnEdgeId(second_real_id), d, w);
+		PIIndex.AddPairInfo(*p_info, 0);
+	}
+	DEBUG("PII SIZE " << PIIndex.size());
+	fclose(file);
+}
 
 }
 #endif /* IOPROCEDURES_HPP_ */
