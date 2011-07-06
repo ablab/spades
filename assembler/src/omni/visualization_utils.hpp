@@ -178,7 +178,8 @@ public:
 					VertexId edge_end = super::g_.EdgeEnd(*e_it);
 					TRACE(super::g_.coverage(*e_it)<<" " << super::g_.length(*e_it));
 					if (vertex_set.count(edge_end) > 0) {
-						super::gp_.AddEdge(*v_it, edge_end, gl_.label(*e_it), EdgeColor(*e_it));
+						super::gp_.AddEdge(*v_it, edge_end, gl_.label(*e_it),
+								EdgeColor(*e_it));
 						TRACE("Edge added");
 					}
 				}
@@ -408,7 +409,9 @@ public:
 };
 
 template<class Graph>
-void WriteToDotFile(const string& file_name, const string& graph_name, Graph& g, const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph>()) {
+void WriteToDotFile(const string& file_name, const string& graph_name,
+		Graph& g,
+		const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph> ()) {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
@@ -418,7 +421,8 @@ void WriteToDotFile(const string& file_name, const string& graph_name, Graph& g,
 }
 
 template<class Graph>
-void WriteSimple(const string& file_name, const string& graph_name, Graph& g, const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph>()) {
+void WriteSimple(const string& file_name, const string& graph_name, Graph& g,
+		const GraphLabeler<Graph>& labeler) {
 	DEBUG("Writing simple graph "<<file_name);
 	fstream filestr;
 	string simple_file_name(file_name);
@@ -426,7 +430,8 @@ void WriteSimple(const string& file_name, const string& graph_name, Graph& g, co
 	filestr.open((simple_file_name).c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
 	DEBUG("DotGraphPrinter created");
-	SimpleGraphVisualizer<Graph> sgv(g, gpr, labeler);
+	omnigraph::StrGraphLabeler<Graph> gl(g);
+	SimpleGraphVisualizer<Graph> sgv(g, gpr, gl);
 	DEBUG("SimpleGraphVisualizer created");
 	sgv.Visualize();
 	DEBUG("sgv.Visualize() ok");
@@ -435,7 +440,27 @@ void WriteSimple(const string& file_name, const string& graph_name, Graph& g, co
 }
 
 template<class Graph>
-void WritePaired(const string& file_name, const string& graph_name, Graph& g,
+void WriteSimple(const string& file_name, const string& graph_name, Graph& g,
+		Path<typename Graph::EdgeId> path1, Path<typename Graph::EdgeId> path2) {
+	fstream filestr;
+	string simple_file_name(file_name);
+	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
+	filestr.open(simple_file_name.c_str(), fstream::out);
+	gvis::DotGraphPrinter<typename Graph::VertexId> gp(graph_name, filestr);
+	PathColorer<Graph> path_colorer(g, path1, path2);
+	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
+	omnigraph::StrGraphLabeler<Graph> gl(g);
+	ColoredGraphVisualizer<Graph> gv(g, gp, gl, coloring);
+	AdapterGraphVisualizer<Graph> result_vis(g, gv);
+	result_vis.Visualize();
+	filestr.close();
+}
+
+template<class Graph>
+void WritePaired(
+		const string& file_name,
+		const string& graph_name,
+		Graph& g,
 		Path<typename Graph::EdgeId> path1/* = Path<typename Graph::EdgeId> ()*/,
 		Path<typename Graph::EdgeId> path2/* = Path<typename Graph::EdgeId> ()*/) {
 	fstream filestr;
@@ -486,11 +511,14 @@ void WriteErrors(const string& file_name, const string& graph_name, Graph& g,
 }
 
 template<class Graph>
-void WriteToFile(const string& file_name, const string& graph_name, Graph& g,
+void WriteToFile(
+		const string& file_name,
+		const string& graph_name,
+		Graph& g,
 		Path<typename Graph::EdgeId> path1/* = Path<typename Graph::EdgeId> ()*/,
 		Path<typename Graph::EdgeId> path2/* = Path<typename Graph::EdgeId> ()*/) {
 	WritePaired(file_name, graph_name, g, path1, path2);
-	WriteSimple(file_name, graph_name, g);
+	WriteSimple(file_name, graph_name, g, path1, path2);
 	WriteErrors(file_name, graph_name, g, path1, path2);
 }
 
