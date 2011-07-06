@@ -279,7 +279,6 @@ int main(int argc, char * argv[]) {
 	
 	ofstream ofs;
 
-	#pragma omp parallel for shared(vs) num_threads(effective_threads)
 	for (int j=0; j<tau+1; ++j) {
 		stringstream fname;
 		fname << kmerFilename << "." << j;
