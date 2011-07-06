@@ -18,7 +18,7 @@ std::string MakeLaunchTimeDirName() {
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
 
-	strftime(buffer, 80, "%d.%m_%H_%M", timeinfo);
+	strftime(buffer, 80, "%m.%d_%H_%M", timeinfo);
 	return string(buffer);
 }
 }
@@ -35,11 +35,11 @@ int main() {
 	// read configuration file (dataset path etc.)
 	string input_dir = CONFIG.read<string>("input_dir");
 	string work_tmp_dir = CONFIG.read<string>("output_dir");
-	string output_dir = work_tmp_dir + MakeLaunchTimeDirName() + "/";
+	string dataset = CONFIG.read<string>("dataset");
+	string output_dir = work_tmp_dir + MakeLaunchTimeDirName()+ "." + dataset + "/";
 	work_tmp_dir += "tmp/";
 //	std::cout << "here " << mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH) << std::endl;
 	mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-	string dataset = CONFIG.read<string>("dataset");
 	string genome_filename = input_dir
 			+ CONFIG.read<string>("reference_genome");
 	string reads_filename1 = input_dir + CONFIG.read<string>(dataset + "_1");

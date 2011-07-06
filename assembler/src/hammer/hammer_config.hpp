@@ -28,7 +28,6 @@ struct KMerStat {
 	size_t count;
 	float freq;
 };
-typedef map<KMer, KMerStat, KMer::less2> KMerStatMap;
 typedef pair<KMer, KMerStat> KMerCount;
 typedef vector<KMerCount> KMerStatVector;
 typedef map<string, size_t> StringCountMap;
@@ -49,6 +48,16 @@ bool KCgreater ( const KMerCount & l, const KMerCount & r ) {
 	return false;
 }
 
+bool KMerLess(const KMer &l, const KMer &r) {
+	for (size_t i = 0; i < l.size(); ++i) {
+		if (l[i] != r[i]) {
+			return (l[i] < r[i]);
+		}
+	}
+	return false;
+}
+
+typedef map<KMer, KMerStat, KMer::less2> KMerStatMap;
 
 #endif
 

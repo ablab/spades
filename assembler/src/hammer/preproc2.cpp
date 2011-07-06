@@ -180,6 +180,8 @@ int main(int argc, char * argv[]) {
 	string kmerFilename = argv[5];
 	int nthreads = atoi(argv[6]);
 
+	/*
+	
 	vector<KMerStatMap> vv;
 	for (int i=0; i<nthreads; ++i) {
 		KMerStatMap v; v.clear();
@@ -228,10 +230,66 @@ int main(int argc, char * argv[]) {
 	FILE* f = fopen(kmerFilename.data(), "w");
 	size_t counter = 0;
 	vector<StringCountVector> vs(tau+1);
+	//for (KMerStatMap::const_iterator it = vv[0].begin(); it != vv[0].end(); ++it) {
 	for (pair<KMer, KMerStat> p = rsmc.next(); p.second.count < MAX_INT_64; p = rsmc.next()) {
 		fprintf(f, "%s %5u %8.2f\n", p.first.str().data(), p.second.count, p.second.freq);
+		for (int j=0; j<tau+1; ++j) {
+			string sub = "";
+			for (int i = j; i < K; i += tau+1) {
+				sub += nucl(p.first[i]);
+			}
+			vs[j].push_back(make_pair(encode3toabyte(sub), counter));
+		}
+		++counter;
+	}
+	fclose(f);  */
+	
+
+	int effective_threads = min(nthreads, tau+1);	
+
+	FILE* f = fopen(kmerFilename.data(), "r");
+	size_t counter = 0;
+	vector<StringCountVector> vs(tau+1);
+	char kmerstr[K], myline[K + 30];
+	int count; float freq;
+	while (!feof(f)) {
+		fgets(myline, K+30, f);
+		sscanf(myline, "%s %5u %8.2f", kmerstr, &count, &freq);
+		#pragma omp parallel for shared(vs, kmerstr, counter) num_threads(effective_threads)
+		for (int j=0; j<tau+1; ++j) {
+			string sub = "";
+			for (int i = j; i < K; i += tau+1) {
+				sub += kmerstr[i];
+			}
+			vs[j].push_back(make_pair(encode3toabyte(sub), counter));
+		}
+		++counter;
+		if (counter % 1000000 == 0) cout << "Read " << counter << " kmers.\n"; flush(cout); 
 	}
 	fclose(f);
+	cout << "Auxiliary vectors loaded from file " << kmerFilename.data() << ".\n"; flush(cout);
+
+		
+	#pragma omp parallel for shared(vs) num_threads(effective_threads)
+	for (int j=0; j<tau+1; ++j) {
+		sort(vs[j].begin(), vs[j].end(), SCgreater);
+	}
+	
+	cout << "Auxiliary vectors sorted.\n"; flush(cout);
+	
+	ofstream ofs;
+
+	for (int j=0; j<tau+1; ++j) {
+		stringstream fname;
+		fname << kmerFilename << "." << j;
+		ofs.open(fname.str().data());
+		for (StringCountVector::const_iterator it = vs[j].begin(); it != vs[j].end(); ++it) {		
+			ofs << it->first << "\t" << it->second << endl;
+		}
+		ofs.close();
+	}
+	
+	
 	
 	return 0;
 }
