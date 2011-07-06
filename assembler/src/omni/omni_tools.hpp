@@ -2,6 +2,7 @@
 #define OMNI_TOOLS_HPP_
 
 #include "omni_utils.hpp"
+#include "paired_info.hpp"
 
 namespace omnigraph {
 
@@ -123,7 +124,9 @@ public:
 		graph_(graph) {
 	}
 	template<class CopyGraph>
-	void StructureCopy(CopyGraph &new_graph, map<VertexId, typename CopyGraph::VertexId> &VerticesCopies, map<EdgeId, typename CopyGraph::EdgeId> &EdgesCopies) {
+	void StructureCopy(CopyGraph &new_graph,
+			map<VertexId, typename CopyGraph::VertexId> &VerticesCopies,
+			map<EdgeId, typename CopyGraph::EdgeId> &EdgesCopies) {
 		typedef typename CopyGraph::EdgeId NewEdgeId;
 		typedef typename CopyGraph::VertexId NewVertexId;
 		for (auto iter = graph_.begin(); iter != graph_.end(); ++iter) {
@@ -133,26 +136,27 @@ public:
 		}
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 			EdgeId edge = *iter;
-			NewEdgeId new_edge = new_graph.AddEdge(VerticesCopies[graph_.EdgeStart(edge)],
+			NewEdgeId new_edge = new_graph.AddEdge(
+					VerticesCopies[graph_.EdgeStart(edge)],
 					VerticesCopies[graph_.EdgeEnd(edge)], graph_.data(edge));
 			EdgesCopies.insert(make_pair(*iter, new_edge));
 		}
 	}
 	template<class CopyGraph>
-	void Copy(CopyGraph &new_graph){
+	void Copy(CopyGraph &new_graph) {
 		typedef typename CopyGraph::EdgeId NewEdgeId;
 		typedef typename CopyGraph::VertexId NewVertexId;
 		map<EdgeId, NewEdgeId> EdgesCopies;
 		map<VertexId, NewVertexId> VerticesCopies;
-		StructureCopy<CopyGraph>(new_graph, VerticesCopies, EdgesCopies);
+		StructureCopy<CopyGraph> (new_graph, VerticesCopies, EdgesCopies);
 	}
 	template<class CopyGraph>
-	void TotalCopy(CopyGraph &new_graph){
+	void TotalCopy(CopyGraph &new_graph) {
 		typedef typename CopyGraph::EdgeId NewEdgeId;
 		typedef typename CopyGraph::VertexId NewVertexId;
 		map<EdgeId, NewEdgeId> EdgesCopies;
 		map<VertexId, NewVertexId> VerticesCopies;
-		StructureCopy<CopyGraph>(new_graph, VerticesCopies, EdgesCopies);
+		StructureCopy<CopyGraph> (new_graph, VerticesCopies, EdgesCopies);
 	}
 };
 
@@ -255,7 +259,50 @@ public:
 
 	bool Check(EdgeId edge1, EdgeId edge2) {
 		return CheckForward(edge1, edge2) || CheckBackward(edge2, edge1)
-				|| CheckForward(edge2, edge1) || CheckBackward(edge1, edge2);
+		/*|| CheckForward(edge2, edge1) || CheckBackward(edge1, edge2)*/;
+	}
+};
+
+template<class Graph>
+class PairInfoFilter {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	Graph &graph_;
+	double weight_threshold_;
+
+	bool ContainsPositiveDistance(const vector<PairInfo<EdgeId>>& infos) {
+		double s = 0.0;
+		for (auto it = infos.begin(); it != infos.end(); ++it) {
+			if ((*it).d > graph_.length((*it).first)) {
+				s += (*it).weight;
+			}
+		}
+		return s > weight_threshold_;
+	}
+
+	void InsertData(const vector<PairInfo<EdgeId>>& infos,
+			PairedInfoIndex<Graph> &new_index) {
+		double s = 0.0;
+		for (auto it = infos.begin(); it != infos.end(); ++it) {
+			if ((*it).d > graph_.length((*it).first)) {
+				s += (*it).weight;
+				new_index.AddPairInfo(*it);
+			}
+		}
+	}
+
+public:
+	PairInfoFilter(Graph &graph, double weight_threshold) :
+		graph_(graph), weight_threshold_(weight_threshold) {
+
+	}
+
+	void Filter(PairedInfoIndex<Graph> &old_index,
+			PairedInfoIndex<Graph> &new_index) {
+		for (auto iterator = old_index.begin(); iterator != old_index.end(); ++iterator) {
+			auto data = *iterator;
+			InsertData(data, new_index);
+		}
 	}
 };
 

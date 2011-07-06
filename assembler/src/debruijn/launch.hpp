@@ -209,7 +209,22 @@ void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 			united_stream);
 	FillPairedIndex<k, PairedReadStream> (g, paired_index, stream, index);
 }
+template<class Graph>
+void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs, const string &file_name, PairedInfoIndex<Graph> paired_index){
+	DataPrinter<Graph> dataPrinter(g, old_IDs);
+	dataPrinter.saveGraph(file_name);
+	dataPrinter.saveEdgeSequences(file_name);
+	dataPrinter.saveCoverage(file_name);
+	dataPrinter.savePaired(file_name, paired_index);
+}
 
+template<class Graph>
+void scanGraph(Graph & g, IdTrackHandler<Graph> &new_IDs, const string &file_name, PairedInfoIndex<Graph> paired_index){
+	DataScanner<Graph> dataScanner(g, new_IDs);
+	dataScanner.loadNonConjugateGraph(file_name, true);
+//	dataScanner.saveCoverage(file_name);
+//	dataScanner.savePaired(file_name, paired_index);
+}
 template<size_t k>
 void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index, size_t iteration_count, const string& genome, const string& output_folder) {
 	INFO("-----------------------------------------");
@@ -301,12 +316,10 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome, b
 		Graph new_graph(k);
 	//	Copier.Copy<NCGraph>(new_graph);
 	//	gvis::WriteSimple<NCGraph>( output_folder + "repeats_resolved_simple_copy.dot", "no_repeat_graph", new_graph);
-		DataPrinter<Graph> dataPrinter(g, IntIds);
-		dataPrinter.saveGraph(work_tmp_dir+"saved_graph.grp");
-		dataPrinter.saveEdgeSequences(work_tmp_dir + "saved_sequences.sqn");
-		dataPrinter.saveCoverage(work_tmp_dir + "saved_coverage.cvr");
-		dataPrinter.savePaired(work_tmp_dir + "saved_paired.prd", paired_index);
 		IdTrackHandler<Graph> NewIntIds(new_graph, IntIds.MaxVertexId(), IntIds.MaxEdgeId());
+		printGraph(g, IntIds, work_tmp_dir + "graph", paired_index);
+//		scanGraph(new_graph, NewIntIds, work_tmp_dir + "graph", paired_index);
+//		assert(0);
 		ResolveRepeats(g, IntIds, paired_index, new_graph, NewIntIds, output_folder+"resolve/");
 		INFO("before graph writing");
 		RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, NewIntIds);

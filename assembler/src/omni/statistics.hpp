@@ -194,6 +194,7 @@ public:
 	virtual ~EdgePairStat() {
 	}
 
+private:
 	vector<double> GetWeights(map<pair<EdgeId, EdgeId> , double> &edge_pairs ) {
 		vector<double> weights;
 		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
@@ -203,8 +204,8 @@ public:
 		return weights;
 	}
 
-	void GetPairInfo(map<pair<EdgeId, EdgeId> , double> &edge_pairs) {
-		for (auto iterator = pair_info_.begin(); iterator != pair_info_.end(); ++iterator) {
+	void GetPairInfo(map<pair<EdgeId, EdgeId> , double> &edge_pairs, PairedInfoIndex<Graph> &index) {
+		for (auto iterator = index.begin(); iterator != index.end(); ++iterator) {
 			vector<PairInfo<EdgeId>> v = *iterator;
 			size_t w = 0;
 			for (size_t i = 0; i < v.size(); i++) {
@@ -225,24 +226,25 @@ public:
 		}
 	}
 
-	void RemoveUntrustful(map<pair<EdgeId, EdgeId> , double> &edge_pairs, double bound) {
-		vector<double> weights;
-		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
-			weights.push_back(iterator->second);
-		}
-		sort(weights.begin(), weights.end());
+//	void RemoveUntrustful(map<pair<EdgeId, EdgeId> , double> &edge_pairs, double bound) {
+//		vector<double> weights;
+//		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
+//			weights.push_back(iterator->second);
+//		}
+//		sort(weights.begin(), weights.end());
+//
+//		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end();) {
+//			if(iterator->second < bound) {
+//				edge_pairs.erase(iterator++);
+//			} else {
+//				++iterator;
+//			}
+//		}
+//	}
 
-		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end();) {
-			if(iterator->second < bound) {
-				edge_pairs.erase(iterator++);
-			} else {
-				++iterator;
-			}
-		}
-	}
-
-	void OutputWeights(vector<double> weights, string file_name) {
-		ofstream os(file_name);
+public:
+	vector<pair<int, double>> ComulativeHistogram(vector<double> weights) {
+		vector<pair<int, double>> result;
 		size_t cur = weights.size() - 1;
 		size_t max = 1000;
 		vector<double> res(max);
@@ -253,19 +255,59 @@ public:
 			res[i] = weights.size() - 1 - cur;
 		}
 		for(size_t i = 0; i < weights.size(); i++) {
-			os << i + 1 << " " << res[i] << endl;
+			result.push_back(make_pair(i + 1, res[i]));
 		}
-		os.close();
+		return result;
+	}
+
+//	void OutputWeights(vector<double> weights, string file_name) {
+//		ofstream os(file_name);
+//		size_t cur = weights.size() - 1;
+//		size_t max = 1000;
+//		vector<double> res(max);
+//		for(int i = max - 1; i >= 0; i--) {
+//			while(cur >= 0 && weights[cur] >= i + 1) {
+//				cur--;
+//			}
+//			res[i] = weights.size() - 1 - cur;
+//		}
+//		for(size_t i = 0; i < weights.size(); i++) {
+//			os << i + 1 << " " << res[i] << endl;
+//		}
+//		os.close();
+//	}
+
+	bool ContainsPositiveDistance(const vector<PairInfo<EdgeId>>& infos) {
+		for (auto it = infos.begin(); it!=infos.end(); ++it) {
+			if ((*it).d > graph_.length((*it).first)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	virtual void Count() {
-		map<pair<EdgeId, EdgeId> , double> edge_pairs;
-		GetPairInfo(edge_pairs);
 //		OutputWeights(GetWeights(edge_pairs), output_folder_ + "pair_info_weights.txt");
-		RemoveUntrustful(edge_pairs, 20);
-		INFO("Number of edge pairs connected with paired info: " << edge_pairs.size());
+		PairedInfoIndex<Graph> new_index(graph_);
+		PairInfoFilter<Graph>(graph_, 40).Filter(pair_info_, new_index);
+//		RemoveUntrustful(edge_pairs, 40);
+		map<pair<EdgeId, EdgeId> , double> edge_pairs;
+		TrivialEdgePairChecker<Graph> checker(graph_);
+		size_t nontrivial = 0;
+		size_t pair_number = 0;
+		for(auto iterator = new_index.begin(); iterator != new_index.end(); ++iterator) {
+			vector<PairInfo<EdgeId>> info = *iterator;
+			if(ContainsPositiveDistance(info)) {
+				pair_number++;
+				if(checker.Check(info[0].first, info[0].second)) {
+					nontrivial++;
+				}
+			}
+		}
+		GetPairInfo(edge_pairs, new_index);
+		INFO("Number of edge pairs connected with paired info: " << pair_number);
 		RemoveTrivial(edge_pairs);
-		INFO("Number of nontrivial edge pairs connected with paired info: " << edge_pairs.size());
+		INFO("Number of nontrivial edge pairs connected with paired info: " << nontrivial);
 	}
 };
 
@@ -287,23 +329,23 @@ class UniquePathStat: public omnigraph::AbstractStatCounter {
 	size_t non_unique_distance_cnt_;
 
 
-	bool ContainsPositiveDistance(const vector<PairInfo<EdgeId>>& infos) {
-		double s = 0.0;
-		for (auto it = infos.begin(); it!=infos.end(); ++it) {
-			if ((*it).d > g_.length((*it).first)) {
-				s += (*it).weight;
-			}
-		}
-		return s > weight_threshold_;
-	}
 //	bool ContainsPositiveDistance(const vector<PairInfo<EdgeId>>& infos) {
+//		double s = 0.0;
 //		for (auto it = infos.begin(); it!=infos.end(); ++it) {
-//			if ((*it).d() > g_.length((*it).first())) {
-//				return true;
+//			if ((*it).d > g_.length((*it).first)) {
+//				s += (*it).weight;
 //			}
 //		}
-//		return false;
+//		return s > weight_threshold_;
 //	}
+	bool ContainsPositiveDistance(const vector<PairInfo<EdgeId>>& infos) {
+		for (auto it = infos.begin(); it!=infos.end(); ++it) {
+			if ((*it).d > g_.length((*it).first)) {
+				return true;
+			}
+		}
+		return false;
+	}
 public:
 
 	UniquePathStat(Graph& g, PairedInfoIndex<Graph>& pair_info, size_t insert_size, size_t max_read_length
@@ -321,7 +363,10 @@ public:
 	}
 
 	virtual void Count() {
-		for (auto it = pair_info_.begin(); it != pair_info_.end(); ++it) {
+		PairedInfoIndex<Graph> filtered_index(g_);
+		PairInfoFilter<Graph>(g_, 40).Filter(pair_info_, filtered_index);
+
+		for (auto it = filtered_index.begin(); it != filtered_index.end(); ++it) {
 			if (ContainsPositiveDistance(*it)) {
 				considered_edge_pair_cnt_++;
 				PairInfo<EdgeId> delegate = (*it)[0];
