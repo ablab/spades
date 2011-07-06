@@ -18,6 +18,7 @@ using omnigraph::GraphLabeler;
 using omnigraph::EmptyGraphLabeler;
 using omnigraph::SmartEdgeIterator;
 using omnigraph::Path;
+using omnigraph::UnorientedDijkstra;
 
 template<class Graph>
 class GraphVisualizer {
@@ -270,8 +271,7 @@ void WriteSimple(const string& file_name, const string& graph_name, Graph& g,
 	filestr.open((simple_file_name).c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
 	DEBUG("DotGraphPrinter created");
-	omnigraph::StrGraphLabeler<Graph> gl(g);
-	SimpleGraphVisualizer<Graph> sgv(g, gpr, gl);
+	SimpleGraphVisualizer<Graph> sgv(g, gpr, labeler);
 	DEBUG("SimpleGraphVisualizer created");
 	sgv.Visualize();
 	DEBUG("sgv.Visualize() ok");
