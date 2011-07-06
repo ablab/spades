@@ -18,7 +18,7 @@ std::string MakeLaunchTimeDirName() {
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
 
-	strftime(buffer, 80, "%d.%m_%H_%M", timeinfo);
+	strftime(buffer, 80, "%m.%d_%H_%M", timeinfo);
 	return string(buffer);
 }
 }
@@ -35,11 +35,11 @@ int main() {
 	// read configuration file (dataset path etc.)
 	string input_dir = CONFIG.read<string>("input_dir");
 	string work_tmp_dir = CONFIG.read<string>("output_dir");
-	string output_dir = work_tmp_dir + MakeLaunchTimeDirName() + "/";
+	string dataset = CONFIG.read<string>("dataset");
+	string output_dir = work_tmp_dir + MakeLaunchTimeDirName()+ "." + dataset + "/";
 	work_tmp_dir += "tmp/";
 //	std::cout << "here " << mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH) << std::endl;
 	mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-	string dataset = CONFIG.read<string>("dataset");
 	string genome_filename = input_dir
 			+ CONFIG.read<string>("reference_genome");
 	string reads_filename1 = input_dir + CONFIG.read<string>(dataset + "_1");
@@ -52,7 +52,7 @@ int main() {
 	size_t max_read_length = 100; //CONFIG.read<size_t> (dataset + "_READ_LEN");
 	int dataset_len = CONFIG.read<int>(dataset + "_LEN");
 	bool paired_mode = CONFIG.read<bool>("paired_mode");
-
+	bool from_saved = CONFIG.read<bool>("from_saved_graph");
 	// typedefs :)
 	typedef MateReader<Read, ireadstream>::type ReadStream;
 	typedef PairedReader<ireadstream> PairedReadStream;
@@ -74,7 +74,7 @@ int main() {
 	}
 	// assemble it!
 	INFO("Assembling " << dataset << " dataset");
-	debruijn_graph::DeBruijnGraphWithPairedInfoTool<K, RCStream>(rcStream, genome, paired_mode, insert_size, max_read_length, output_dir, work_tmp_dir);
+	debruijn_graph::DeBruijnGraphWithPairedInfoTool<K, RCStream>(rcStream, genome, paired_mode, from_saved, insert_size, max_read_length, output_dir, work_tmp_dir);
 	INFO("Assembling " << dataset << " dataset finished");
 
 	// OK
