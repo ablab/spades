@@ -179,30 +179,31 @@ public:
 		compressor.CompressAllVertices();
 		stats("compressed");
 
-		INFO("===== Clipping tips... =====");
+	for (int t = 0; t < 10; t++) {
+		INFO("===== Clipping tips... ===== " << t);
 		omnigraph::TipComparator<Graph> comparator(*g_);
 		omnigraph::TipClipper<Graph, omnigraph::TipComparator<Graph>> tip_clipper(*g_, comparator, tc_max_tip_length_, tc_max_coverage_, tc_max_relative_coverage_);
 		tip_clipper.ClipTips();
 		stats("tc");
 
-		INFO("===== Removing bulges... =====");
+		INFO("===== Removing bulges... ===== " << t);
 		omnigraph::SimplePathCondition<Graph> simple_path_condition(*g_);
 		omnigraph::BulgeRemover<Graph, omnigraph::SimplePathCondition<Graph>> bulge_remover(*g_, br_max_length_div_K_ * K, br_max_coverage_, br_max_relative_coverage_, br_max_delta_, br_max_relative_delta_, simple_path_condition);
 		bulge_remover.RemoveBulges();
 		stats("tc_br");
 
-		INFO("===== Removing erroneous connections... =====");
+		INFO("===== Removing erroneous connections... ===== " << t);
 		omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(ecr_max_length_div_K_ * K, ecr_max_coverage_);
 		erroneous_edge_remover.RemoveEdges(*g_);
 		stats("tc_br_ecr");
-
-		INFO("===== Clipping tips #2... =====");
+	}
+		/*INFO("===== Clipping tips #2... =====");
 		tip_clipper.ClipTips();
 		stats("tc_br_ecr_tc");
 
 		INFO("===== Removing bulges #2... =====");
 		bulge_remover.RemoveBulges();
-		stats("tc_br_ecr_tc_br");
+		stats("tc_br_ecr_tc_br");*/
 
 //		INFO("===== Outputting graph to " << output_file_ << " =====");
 //		gvis::WriteToDotFile(output_file_, "earmarked", g_, labeler);
