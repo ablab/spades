@@ -405,7 +405,7 @@ void * onethread(void * params) {
 			continue;
 		}
 		if (atoi(row[1].c_str()) % nthreads != thread) continue;
-		if (++counter % 1000000 == 0) cerr << "Processed " << add_commas(counter) << ", ";
+		if (++counter % 1000000 == 0) cout << "Processed " << add_commas(counter) << ".\n";
 		HammerRead cur;
 		curBlockNum = convertToInt(row[1]);
 		cur.id = row[2];
@@ -423,7 +423,6 @@ void * onethread(void * params) {
 	}
 	if (block.size() > 0)
 		newBlockNum = process_block_SIN(block, lastBlockNum, threshold, outf, newBlockNum, tstat);
-	cerr << "Finished\n";
 	tstat->new_clusters = newBlockNum;
 	
 	inf.close();

@@ -201,7 +201,7 @@ public:
 
 	std::string toPrint(EdgeId e, IdTrackHandler<ConjugateDeBruijnGraph> &id_handler) const {
 		stringstream ss;
-		ss << "Edge " << id_handler.ReturnIntId(e) <<" : " << id_handler.ReturnIntId(EdgeStart(e)) << " -> " << id_handler.ReturnIntId(EdgeEnd(e)) << " ~ " << id_handler.ReturnIntId(conjugate(e)) <<" .";
+		ss << "Edge " << id_handler.ReturnIntId(e) <<" : " << id_handler.ReturnIntId(EdgeStart(e)) << " -> " << id_handler.ReturnIntId(EdgeEnd(e))<<", l = "<< length(e) << " ~ " << id_handler.ReturnIntId(conjugate(e)) <<" .";
 		return ss.str();
 	}
 

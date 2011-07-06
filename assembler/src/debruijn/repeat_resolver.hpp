@@ -22,7 +22,12 @@
 #include "omnigraph.hpp"
 
 #include "ID_track_handler.hpp"
+#include "dijkstra.hpp"
+
 namespace debruijn_graph {
+
+#define MAX_DISTANCE_CORRECTION 10
+
 
 using omnigraph::SmartVertexIterator;
 using omnigraph::Compressor;
@@ -49,6 +54,7 @@ public:
 
 	public:
 		static const int MAXD = 1;
+		static const int MAXSKIPDIST = 4;
 
 		EdgeInfo(const PairInfo &lp_, const int dir_, const EdgeId edge_,
 				const int d_) :
@@ -74,6 +80,20 @@ public:
 			int len = old_graph.length(edge);
 			int other_len = old_graph.length(other_edge);
 			int other_d = other_info.getDistance();
+
+			if (other_edge == edge && isClose(d, other_d))
+				return true;
+
+			BoundedDijkstra<Graph, int> dij(old_graph, MAXSKIPDIST);
+			dij.run(v_e);
+			if (dij.DistanceCounted(other_v_s))
+				if (isClose(d + len + dij.GetDistance(other_v_s), other_d))
+					return true;
+
+			dij.run(other_v_e);
+			if (dij.DistanceCounted(v_s))
+				if (isClose(other_d + other_len + dij.GetDistance(v_s), d))
+					return true;
 			if ((v_e == other_v_s && isClose(d + len, other_d)) || (v_s
 					== other_v_e && isClose(d, other_d + other_len))
 					|| (other_edge == edge && isClose(d, other_d))) {
@@ -83,6 +103,8 @@ public:
 				//			DEBUG("not adjacent");
 				return false;
 			}
+
+			return false;
 		}
 
 		inline int getDistance() {
@@ -100,8 +122,8 @@ public:
 	RepeatResolver(Graph &old_graph_, IdTrackHandler<Graph> &old_IDs_,
 			int leap, PIIndex &ind, Graph &new_graph_,
 			IdTrackHandler<Graph> &new_IDs_) :
-		leap_(leap), new_graph(new_graph_), old_graph(old_graph_),
-				new_IDs(new_IDs_), old_IDs(old_IDs_) {
+		leap_(leap), new_graph(new_graph_), old_graph(old_graph_), new_IDs(
+				new_IDs_), old_IDs(old_IDs_) {
 		unordered_map<VertexId, VertexId> old_to_new;
 		unordered_map<EdgeId, EdgeId> old_to_new_edge;
 
@@ -139,12 +161,11 @@ public:
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			DEBUG("Adding edge from " << old_to_new[old_graph.EdgeStart(*e_iter)] <<" to " << old_to_new[old_graph.EdgeEnd(*e_iter)]);
 			//			DEBUG("Setting coverage to edge length " << old_graph.length(*e_iter) << "  cov: " << old_graph.coverage(*e_iter));
-			EdgeId new_edge = new_graph.AddEdge(
-					old_to_new[old_graph.EdgeStart(*e_iter)],
-					old_to_new[old_graph.EdgeEnd(*e_iter)],
+			EdgeId new_edge = new_graph.AddEdge(old_to_new[old_graph.EdgeStart(
+					*e_iter)], old_to_new[old_graph.EdgeEnd(*e_iter)],
 					old_graph.EdgeNucls(*e_iter));
-			new_graph.SetCoverage(new_edge,
-					old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
+			new_graph.SetCoverage(new_edge, old_graph.coverage(*e_iter)
+					* old_graph.length(*e_iter));
 			new_graph.SetCoverage(new_graph.conjugate(new_edge), 0);
 			edge_labels[new_edge] = *e_iter;
 			DEBUG("Adding edge " << new_edge<< " from" << *e_iter);
@@ -184,6 +205,7 @@ private:
 			VertexId vid);
 	vector<typename Graph::VertexId> MultiSplit(VertexId v);
 	size_t StupidPairInfoCorrector(Graph &new_graph, PairInfo &pair_info);
+	bool CorrectedAndNotFiltered(Graph &new_graph, PairInfo &pair_inf);
 
 	void ResolveEdge(EdgeId eid);
 	void dfs(vector<vector<int> > &edge_list, vector<int> &colors,
@@ -287,12 +309,10 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 					* new_paired_coverage[edge_iter->second])
 					/ old_paired_coverage[edge_iter->first] < 0.9)
 				DEBUG("INTERESTING");
-			new_graph.SetCoverage(
-					edge_iter->second,
-					new_graph.length(edge_iter->first) * new_graph.coverage(
-							edge_iter->first)
-							* new_paired_coverage[edge_iter->second]
-							/ old_paired_coverage[edge_iter->first]);
+			new_graph.SetCoverage(edge_iter->second, new_graph.length(
+					edge_iter->first) * new_graph.coverage(edge_iter->first)
+					* new_paired_coverage[edge_iter->second]
+					/ old_paired_coverage[edge_iter->first]);
 			new_graph.SetCoverage(new_graph.conjugate(edge_iter->second), 0);
 		}
 	}
@@ -322,8 +342,8 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 		RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
 		int GraphCnt = 0;
 
-		gvis::WriteSimple(output_folder+"resolve_" + ToString(GraphCnt) + ".dot",
-				"no_repeat_graph", new_graph, IdTrackLabelerAfter);
+		gvis::WriteSimple(output_folder + "resolve_" + ToString(GraphCnt)
+				+ ".dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
 
 		for (auto v_iter = real_vertices.begin(), v_end = real_vertices.end(); v_iter
 				!= v_end; ++v_iter) {
@@ -332,10 +352,8 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 			DEBUG("Vertex "<< *v_iter<< " resolved to "<< tcount);
 			sum_count += tcount;
 			GraphCnt++;
-			gvis::WriteSimple(
-					output_folder+"resolve_" + ToString(GraphCnt)
-							+ ".dot", "no_repeat_graph", new_graph,
-					IdTrackLabelerAfter);
+			gvis::WriteSimple(output_folder + "resolve_" + ToString(GraphCnt)
+					+ ".dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
 		}
 	}
 	INFO("total vert" << sum_count);
@@ -421,14 +439,14 @@ size_t RepeatResolver<Graph>::StupidPairInfoCorrector(Graph &new_graph,
 	EdgeId StartEdge = pair_info.first;
 	EdgeId EndEdge = pair_info.second;
 	int dist = pair_info.d;
-	int best = dist + 1000;
+	int best = dist + MAX_DISTANCE_CORRECTION+3;
 	//	DEBUG("Adjusting "<<old_IDs.ReturnIntId(edge_labels[StartEdge])<<" "<<old_IDs.ReturnIntId(EndEdge)<<" "<<dist);
 	VertexId v;
 	vector<EdgeId> edges;
 	int len;
 	pair<EdgeId, int> Prev_pair;
 	if (edge_labels[StartEdge] == EndEdge) {
-		if (abs(dist < 1000))
+		if (abs(dist < MAX_DISTANCE_CORRECTION))
 			best = 0;
 	}
 	v = new_graph.EdgeEnd(StartEdge);
@@ -477,12 +495,36 @@ size_t RepeatResolver<Graph>::StupidPairInfoCorrector(Graph &new_graph,
 					}
 				}
 			}
-
 		}
-
 	}
 	pair_info.d = best;
 	return 0;
+}
+
+template<class Graph>
+bool RepeatResolver<Graph>::CorrectedAndNotFiltered(Graph &new_graph,
+		PairInfo &pair_inf) {
+	EdgeId right_id = pair_inf.second;
+	EdgeId left_id = pair_inf.first;
+	int d = pair_inf.d;
+	StupidPairInfoCorrector(new_graph, pair_inf);
+	DEBUG("PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<pair_inf.d)
+	if (abs(pair_inf.d - d) > MAX_DISTANCE_CORRECTION) {
+		DEBUG("big correction");
+		return false;
+	}
+	if (pair_inf.d - new_graph.length(left_id) > 130) {
+		DEBUG("too far");
+		return false;
+	}
+	//todo check correctness. right_id belongs to original graph, not to new_graph.
+	if (pair_inf.d + new_graph.length(right_id) < 110) {
+		DEBUG("too close");
+		return false;
+	}
+	DEBUG("good");
+	return true;
+
 }
 
 template<class Graph>
@@ -517,12 +559,9 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 
 					}
 					if (d * mult >= 0) {
-						StupidPairInfoCorrector(new_graph, tmp[j]);
-						if (abs(tmp[j].d - d) > 5)
+						if (!CorrectedAndNotFiltered(new_graph, tmp[j]))
 							continue;
-						if ((tmp[j].d == 0)&&(new_graph.length(left_id)<50))
-							continue;
-						DEBUG("PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<tmp[j].d)
+						//						DEBUG("PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<tmp[j].d)
 						EdgeInfo ei(tmp[j], dir, right_id, tmp[j].d - dif_d);
 						edge_infos.push_back(ei);
 						//					DEBUG(right_id);

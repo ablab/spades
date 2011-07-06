@@ -190,4 +190,31 @@ public:
 		return result;
 	}
 };
+
+template<class Graph, typename distance_t = size_t>
+class BoundedDijkstra: public Dijkstra<Graph, distance_t> {
+private:
+	distance_t bound_;
+	typedef Dijkstra<Graph, distance_t> super;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+public:
+	BoundedDijkstra(Graph &graph, distance_t bound) :
+		super(graph), bound_(bound) {
+	}
+
+	virtual ~BoundedDijkstra() {
+	}
+
+	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, distance_t length) {
+		if (length > bound_) return false;
+		return true;
+	}
+
+	virtual bool CheckProcessVertex(VertexId vertex, distance_t distance) {
+		if (distance > bound_) return false;
+		return true;
+	}
+
+};
 #endif /* DIJKSTRA_HPP_ */
