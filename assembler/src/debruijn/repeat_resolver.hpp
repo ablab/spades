@@ -94,6 +94,7 @@ public:
 			if (dij.DistanceCounted(v_s))
 				if (isClose(other_d + other_len + dij.GetDistance(v_s), d))
 					return true;
+
 			if ((v_e == other_v_s && isClose(d + len, other_d)) || (v_s
 					== other_v_e && isClose(d, other_d + other_len))
 					|| (other_edge == edge && isClose(d, other_d))) {
@@ -531,6 +532,12 @@ bool RepeatResolver<Graph>::CorrectedAndNotFiltered(Graph &new_graph,
 	EdgeId right_id = pair_inf.second;
 	EdgeId left_id = pair_inf.first;
 	int d = pair_inf.d;
+
+	if (pair_inf.d - new_graph.length(left_id) > 140) {
+		DEBUG("too far to correct");
+		return false;
+	}
+
 	StupidPairInfoCorrectorByOldGraph(new_graph, pair_inf);
 	DEBUG("PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<pair_inf.d)
 	if (abs(pair_inf.d - d) > MAX_DISTANCE_CORRECTION) {
