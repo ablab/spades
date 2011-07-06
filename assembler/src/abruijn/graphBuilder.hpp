@@ -52,6 +52,7 @@ public:
 	void findMinimizers(Sequence s);
 	void findLocalMinimizers(Sequence s, size_t window_size);
 	void findSecondMinimizer(Sequence s);
+	void takeAllKmers(Sequence s);
 	void revealTips(Sequence s);
 	void findTipExtensions(Sequence s);
 	void lookRight(Sequence s);
@@ -83,7 +84,9 @@ public:
 		reader_.reset();
 		for (size_t i = 0; !reader_.eof(); ++i) {
 			reader_ >> r;
-			if (mode_ & 1) {
+			if (mode_ & 4) {
+				gb_.takeAllKmers(r.getSequence());
+			} else if (mode_ & 1) {
 				gb_.findMinimizers(r.getSequence());
 			} else {
 				gb_.findLocalMinimizers(r.getSequence(), 51);

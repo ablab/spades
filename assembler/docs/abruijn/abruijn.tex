@@ -175,7 +175,7 @@ $\textrm{DG}_k(S)$.
 \section{Earmark graph construction}
 In this section, we give a high-level description of an earmark graph construction procedure.
 When the graph is constructed we simplify it using methods similar to the ones used in
-EULER \cite{PW01} and Velvet \cite{Z08}.
+EULER \cite{PPT04} and Velvet \cite{Z08}.
 
 We first construct an initial set of earmarks and then extend it to reduce 
 the number of tips
@@ -381,33 +381,9 @@ the construction stage.{\todo{TBW}}
 
 \begin{table}
 \begin{center}
-\begin{tabular}{llcc}
-\toprule
-& & earmarked & de Bruijn\\
 
-\midrule
-\multirow{3}{*}{first 10\% of E.coli w/o simplification} & \# vertices & ??????? & ???????\\
-\cmidrule(r){2-4}
-& \# edges & ??????? & ???????\\
-\cmidrule(r){2-4}
-& \# tips (?) & ??????? & ???????\\
+\input{data/stat400k.tex}
 
-\midrule
-\multirow{3}{*}{first 10\% of E.coli after simplification} & \# vertices & ??????? & ???????\\
-\cmidrule(r){2-4}
-& \# edges & ??????? & ???????\\
-\cmidrule(r){2-4}
-& \# tips (?) & ??????? & ???????\\
-
-\midrule
-\multirow{3}{*}{E.coli after simplification} & \# vertices & ??????? & ???????\\
-\cmidrule(r){2-4}
-& \# edges & ??????? & ???????\\
-\cmidrule(r){2-4}
-& \# tips (?) & ??????? & ???????\\
-
-\bottomrule
-\end{tabular}
 \caption{Practical results}\label{table:practical}
 \end{center}
 \end{table}
