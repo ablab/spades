@@ -61,7 +61,7 @@ public:
 		if (edges_.count(edge) != 0)
 			return 0;
 		else
-			return this->GetGraph().length(edge);
+			return this->graph().length(edge);
 	}
 
 };
