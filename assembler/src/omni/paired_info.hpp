@@ -7,7 +7,7 @@
 #include <map>
 #include <limits>
 
-#define MERGE_DATA_ABSOLUTE_DIFFERENCE 0
+
 //#define MERGE_DATA_RELATIVE_DIFFERENCE 0.3
 #define E 1e-6
 namespace omnigraph {
@@ -271,7 +271,7 @@ public:
 
 	//begin-end insert size supposed
 	PairedInfoIndex(Graph &g,
-			int max_difference = MERGE_DATA_ABSOLUTE_DIFFERENCE) :
+			int max_difference = 0) :
 		GraphActionHandler<Graph> ("PairedInfoIndex"),
 				max_difference_(max_difference), graph_(g) {
 		g.AddActionHandler(this);

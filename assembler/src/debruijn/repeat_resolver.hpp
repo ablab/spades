@@ -346,7 +346,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 		RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
 		int GraphCnt = 0;
 
-		gvis::WriteSimple(output_folder + "resolve_" + ToString(GraphCnt)
+		omnigraph::WriteSimple(output_folder + "resolve_" + ToString(GraphCnt)
 				+ ".dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
 
 		for (auto v_iter = real_vertices.begin(), v_end = real_vertices.end(); v_iter
@@ -356,7 +356,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 			DEBUG("Vertex "<< *v_iter<< " resolved to "<< tcount);
 			sum_count += tcount;
 			GraphCnt++;
-			gvis::WriteSimple(output_folder + "resolve_" + ToString(GraphCnt)
+			omnigraph::WriteSimple(output_folder + "resolve_" + ToString(GraphCnt)
 					+ ".dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
 		}
 	}

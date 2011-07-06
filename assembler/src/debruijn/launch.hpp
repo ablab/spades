@@ -57,14 +57,14 @@ void CountPairedInfoStats(Graph &g, size_t insert_size, size_t max_read_length, 
 void WriteToDotFile(Graph &g, const string& file_name, string graph_name,
 		Path<EdgeId> path1/* = Path<EdgeId> ()*/, Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
-	gvis::WritePaired(file_name, graph_name, g,	path1, path2);
+	omnigraph::WritePaired(file_name, graph_name, g,	path1, path2);
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
 
 void DetailedWriteToDot(Graph &g, const string& file_name, string graph_name,
 		Path<EdgeId> path1/* = Path<EdgeId> ()*/, Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
-	gvis::WriteToFile(file_name, graph_name, g,
+	omnigraph::WriteToFile(file_name, graph_name, g,
 			path1, path2);
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
@@ -320,7 +320,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome, b
 		if (! from_saved) {
 			INFO("before ResolveRepeats");
 			RealIdGraphLabeler<Graph> IdTrackLabelerBefore(g, IntIds);
-			gvis::WriteSimple( work_tmp_dir + "repeats_resolved_before_save.dot", "graph", g, IdTrackLabelerBefore);
+			omnigraph::WriteSimple( output_folder + "repeats_resolved_before.dot", "no_repeat_graph", g, IdTrackLabelerBefore);
 			printGraph(g, IntIds, work_tmp_dir + "graph", paired_index);
 		}
 
@@ -330,7 +330,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome, b
 		scanGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index);
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
-		gvis::WriteSimple( work_tmp_dir + "repeats_resolved_simple_nonconj_copy.dot", "nc_copy_graph", new_graph, IdTrackLabelerAfter);
+		omnigraph::WriteSimple( work_tmp_dir + "repeats_resolved_nonconjugate_copy.dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
 		INFO("repeat resolved grpah written");
 
 		NCGraph resolved_graph(k);
@@ -339,8 +339,8 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome, b
 		ResolveRepeats(new_graph, NewIntIds, new_index, resolved_graph, Resolved_IntIds, output_folder+"resolve/");
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph, Resolved_IntIds);
 
-		gvis::WriteSimple( work_tmp_dir + "repeats_resolved_after.dot", "no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
-				INFO("repeat resolved grpah written");
+		omnigraph::WriteSimple( work_tmp_dir + "repeats_resolved_after.dot", "no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+		INFO("repeat resolved grpah written");
 
 
 //		ProduceNonconjugateInfo<k> (resolved_graph, index, genome, output_folder + "repeats_resolved.dot",
