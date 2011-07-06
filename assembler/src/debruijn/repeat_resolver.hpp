@@ -185,7 +185,7 @@ public:
 				if (old_to_new_edge.find(pi[j].first) != old_to_new_edge.end()
 						&& old_to_new_edge.find(pi[j].second)
 								!= old_to_new_edge.end()) {
-					DEBUG("Adding pair " << pi[j].first<<"  " <<old_to_new_edge[pi[j].first] << "  " <<pi[j].second);
+					TRACE("Adding pair " << pi[j].first<<"  " <<old_to_new_edge[pi[j].first] << "  " <<pi[j].second);
 					PairInfo *tmp = new PairInfo(old_to_new_edge[pi[j].first],
 							pi[j].second, pi[j].d, pi[j].weight);
 					paired_di_data.AddPairInfo(*tmp, 0);

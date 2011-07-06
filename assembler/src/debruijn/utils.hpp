@@ -39,7 +39,7 @@ class DataHashRenewer {
 	 */
 	void RenewKmersHash(ElementId id) {
 		Sequence nucls = g_.EdgeNucls(id);
-		DEBUG("Renewing hashes for k-mers of sequence " << nucls);
+//		DEBUG("Renewing hashes for k-mers of sequence " << nucls);
 		index_.RenewKmersHash(nucls, id);
 	}
 

@@ -232,8 +232,8 @@ void DataScanner<Graph>::loadPaired(const string& file_name, PairedInfoIndex<Gra
 		int first_real_id, second_real_id;
 		double w, d;
 		assert(fscanf(file, "%d %d %lf %lf .\n", &first_real_id, &second_real_id, &d, &w) == 4);
-		DEBUG(first_real_id<< " " << second_real_id << " " << d << " " << w);
-		DEBUG (IdHandler_.ReturnEdgeId(first_real_id)<<" "<< IdHandler_.ReturnEdgeId(second_real_id)<<" "<< d<<" "<< w);
+		TRACE(first_real_id<< " " << second_real_id << " " << d << " " << w);
+		TRACE (IdHandler_.ReturnEdgeId(first_real_id)<<" "<< IdHandler_.ReturnEdgeId(second_real_id)<<" "<< d<<" "<< w);
 		PairInfo<typename Graph::EdgeId> *p_info = new PairInfo<typename Graph::EdgeId>(IdHandler_.ReturnEdgeId(first_real_id), IdHandler_.ReturnEdgeId(second_real_id), d, w);
 		PIIndex.AddPairInfo(*p_info, 0);
 	}
