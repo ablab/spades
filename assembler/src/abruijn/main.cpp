@@ -184,18 +184,18 @@ public:
 		omnigraph::TipComparator<Graph> comparator(*g_);
 		omnigraph::TipClipper<Graph, omnigraph::TipComparator<Graph>> tip_clipper(*g_, comparator, tc_max_tip_length_, tc_max_coverage_, tc_max_relative_coverage_);
 		tip_clipper.ClipTips();
-		stats("tc");
+		stats("tc" + ToString(t));
 
 		INFO("===== Removing bulges... ===== " << t);
 		omnigraph::SimplePathCondition<Graph> simple_path_condition(*g_);
 		omnigraph::BulgeRemover<Graph, omnigraph::SimplePathCondition<Graph>> bulge_remover(*g_, br_max_length_div_K_ * K, br_max_coverage_, br_max_relative_coverage_, br_max_delta_, br_max_relative_delta_, simple_path_condition);
 		bulge_remover.RemoveBulges();
-		stats("tc_br");
+		stats("tc_br" + ToString(t));
 
 		INFO("===== Removing erroneous connections... ===== " << t);
 		omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(ecr_max_length_div_K_ * K, ecr_max_coverage_);
 		erroneous_edge_remover.RemoveEdges(*g_);
-		stats("tc_br_ecr");
+		stats("tc_br_ecr" + ToString(t));
 	}
 		/*INFO("===== Clipping tips #2... =====");
 		tip_clipper.ClipTips();
