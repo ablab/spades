@@ -26,6 +26,9 @@
 
 namespace debruijn_graph {
 
+#define MAX_DISTANCE_CORRECTION 10
+
+
 using omnigraph::SmartVertexIterator;
 using omnigraph::Compressor;
 using omnigraph::PairedInfoIndex;
@@ -436,14 +439,14 @@ size_t RepeatResolver<Graph>::StupidPairInfoCorrector(Graph &new_graph,
 	EdgeId StartEdge = pair_info.first;
 	EdgeId EndEdge = pair_info.second;
 	int dist = pair_info.d;
-	int best = dist + 1000;
+	int best = dist + MAX_DISTANCE_CORRECTION+3;
 	//	DEBUG("Adjusting "<<old_IDs.ReturnIntId(edge_labels[StartEdge])<<" "<<old_IDs.ReturnIntId(EndEdge)<<" "<<dist);
 	VertexId v;
 	vector<EdgeId> edges;
 	int len;
 	pair<EdgeId, int> Prev_pair;
 	if (edge_labels[StartEdge] == EndEdge) {
-		if (abs(dist < 1000))
+		if (abs(dist < MAX_DISTANCE_CORRECTION))
 			best = 0;
 	}
 	v = new_graph.EdgeEnd(StartEdge);
@@ -506,7 +509,7 @@ bool RepeatResolver<Graph>::CorrectedAndNotFiltered(Graph &new_graph,
 	int d = pair_inf.d;
 	StupidPairInfoCorrector(new_graph, pair_inf);
 	DEBUG("PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<pair_inf.d)
-	if (abs(pair_inf.d - d) > 5) {
+	if (abs(pair_inf.d - d) > MAX_DISTANCE_CORRECTION) {
 		DEBUG("big correction");
 		return false;
 	}
