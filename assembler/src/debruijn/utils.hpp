@@ -249,7 +249,7 @@ template<size_t k, class Graph>
 class EtalonPairedInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;
 
-	Graph g_;
+	Graph& g_;
 	const EdgeIndex<k + 1, Graph>& index_;
 	size_t insert_size_;
 	size_t read_length_;
