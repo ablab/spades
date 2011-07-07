@@ -68,7 +68,7 @@ public:
 		bool isClose(int a, int b) {
 			return (abs(a - b) < MAXD);
 		}
-		bool isAdjacent(EdgeInfo other_info, Graph &old_graph) {
+		bool isAdjacent(EdgeInfo other_info, Graph &old_graph, Graph &new_graph) {
 			//			DEBUG("comparation started: " << edge);
 			VertexId v_s = old_graph.EdgeStart(edge);
 			VertexId v_e = old_graph.EdgeEnd(edge);
@@ -83,7 +83,11 @@ public:
 
 			if (other_edge == edge && isClose(d, other_d))
 				return true;
-
+//ToDo: Understand if it is very dirty hack.
+			if (   (new_graph.EdgeStart(lp.first) != new_graph.EdgeStart(other_info.lp.first) )
+				&& (new_graph.EdgeEnd(lp.first) == new_graph.EdgeEnd(other_info.lp.first)))
+				return false;
+//TODO:: SHURIK! UBERI ZA SOBOJ !!!
 			BoundedDijkstra<Graph, int> dij(old_graph, MAXSKIPDIST);
 			dij.run(v_e);
 			if (dij.DistanceCounted(other_v_s))
@@ -94,6 +98,7 @@ public:
 			if (dij.DistanceCounted(v_s))
 				if (isClose(other_d + other_len + dij.GetDistance(v_s), d))
 					return true;
+
 			if ((v_e == other_v_s && isClose(d + len, other_d)) || (v_s
 					== other_v_e && isClose(d, other_d + other_len))
 					|| (other_edge == edge && isClose(d, other_d))) {
@@ -185,7 +190,7 @@ public:
 				if (old_to_new_edge.find(pi[j].first) != old_to_new_edge.end()
 						&& old_to_new_edge.find(pi[j].second)
 								!= old_to_new_edge.end()) {
-					DEBUG("Adding pair " << pi[j].first<<"  " <<old_to_new_edge[pi[j].first] << "  " <<pi[j].second);
+					TRACE("Adding pair " << pi[j].first<<"  " <<old_to_new_edge[pi[j].first] << "  " <<pi[j].second);
 					PairInfo *tmp = new PairInfo(old_to_new_edge[pi[j].first],
 							pi[j].second, pi[j].d, pi[j].weight);
 					paired_di_data.AddPairInfo(*tmp, 0);
@@ -372,7 +377,7 @@ void RepeatResolver<Graph>::dfs(vector<vector<int> > &edge_list,
 	for (int i = 0, sz = edge_list[cur_vert].size(); i < sz; i++) {
 		if (colors[edge_list[cur_vert][i]] > -1) {
 			if (colors[edge_list[cur_vert][i]] != cur_color) {
-				ERROR("error in dfs, neighbour to " << edge_list[cur_vert][i]);
+				ERROR("error in dfs, neighbour to " << edge_list[cur_vert][i] << " cur_color: "<< cur_color);
 			}
 		} else {
 			if (i != cur_vert) {
@@ -531,6 +536,13 @@ bool RepeatResolver<Graph>::CorrectedAndNotFiltered(Graph &new_graph,
 	EdgeId right_id = pair_inf.second;
 	EdgeId left_id = pair_inf.first;
 	int d = pair_inf.d;
+
+	if (pair_inf.d - new_graph.length(left_id) > 140) {
+		DEBUG("PairInfo "<<edge_labels[left_id]<<"("<<new_graph.length(left_id)<<")"<<" "<<right_id<<"("<<old_graph.length(right_id)<<")"<<" "<<d)
+		DEBUG("too far to correct");
+		return false;
+	}
+
 	StupidPairInfoCorrectorByOldGraph(new_graph, pair_inf);
 	DEBUG("PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<pair_inf.d)
 	if (abs(pair_inf.d - d) > MAX_DISTANCE_CORRECTION) {
@@ -624,16 +636,19 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 			ERROR("fake edge: "<< edge_infos[i].getEdge());
 		}
 	}
+	for (int i = 0; i < size; i++)
+		neighbours[i].resize(0);
 	for (int i = 0; i < size; i++) {
 		//		DEBUG("Filling " << i << " element");
 		if (edges.find(edge_infos[i].getEdge()) == edges.end()) {
 			ERROR("fake edge");
 		}
-		neighbours[i].resize(0);
 		for (int j = 0; j < size; j++) {
-
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph)) {
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph) && ! edge_infos[j].isAdjacent(edge_infos[i], old_graph, new_graph))
+				WARN("ASSYMETRIC: " << new_IDs.ReturnIntId(edge_infos[i].getEdge()) << " " << new_IDs.ReturnIntId(edge_infos[j].getEdge()));
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph)) {
 				neighbours[i].push_back(j);
+				neighbours[j].push_back(i);
 			}
 		}
 	}

@@ -52,6 +52,7 @@ int main() {
 	size_t max_read_length = 100; //CONFIG.read<size_t> (dataset + "_READ_LEN");
 	int dataset_len = CONFIG.read<int>(dataset + "_LEN");
 	bool paired_mode = CONFIG.read<bool>("paired_mode");
+	bool etalon_info_mode = CONFIG.read<bool>("etalon_info_mode");
 	bool from_saved = CONFIG.read<bool>("from_saved_graph");
 	// typedefs :)
 	typedef MateReader<Read, ireadstream>::type ReadStream;
@@ -74,7 +75,7 @@ int main() {
 	}
 	// assemble it!
 	INFO("Assembling " << dataset << " dataset");
-	debruijn_graph::DeBruijnGraphWithPairedInfoTool<K, RCStream>(rcStream, genome, paired_mode, from_saved, insert_size, max_read_length, output_dir, work_tmp_dir);
+	debruijn_graph::DeBruijnGraphWithPairedInfoTool<K, RCStream>(rcStream, Sequence(genome), paired_mode, etalon_info_mode, from_saved, insert_size, max_read_length, output_dir, work_tmp_dir);
 	INFO("Assembling " << dataset << " dataset finished");
 
 	// OK

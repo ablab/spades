@@ -175,6 +175,7 @@ public:
 		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator)
 			if (graph_.conjugate(*iterator) == (*iterator))
 				sc_number++;
+//		INFO("Self-complement count failed!!! ");
 		INFO("Self-complement count=" << sc_number);
 	}
 };

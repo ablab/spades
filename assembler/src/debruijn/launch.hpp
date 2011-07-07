@@ -40,9 +40,9 @@ typedef Graph::VertexId VertexId;
 typedef NonconjugateDeBruijnGraph NCGraph;
 using namespace omnigraph;
 
-template<size_t k>
+template<size_t k, class Graph>
 void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const string& genome) {
+		const Sequence& genome) {
 	INFO("Counting stats");
 	StatCounter<Graph, k> stat(g, index, genome);
 	stat.Count();
@@ -70,27 +70,36 @@ void DetailedWriteToDot(Graph &g, const string& file_name, string graph_name,
 }
 
 template<size_t k>
-Path<typename Graph::EdgeId> FindGenomePath(const string &genome,
+Path<typename Graph::EdgeId> FindGenomePath(const Sequence& genome,
 		const Graph& g, const EdgeIndex<k + 1, Graph>& index) {
 	SimpleSequenceMapper<k, Graph> srt(g, index);
-	return srt.MapSequence(Sequence(genome));
+	return srt.MapSequence(genome);
 }
 
-template<size_t k, class Graph >
+template<size_t k>
 void ProduceInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const string& genome, const string& file_name, const string& graph_name) {
+		const Sequence& genome, const string& file_name, const string& graph_name) {
 	CountStats<k> (g, index, genome);
 	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
-	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (ReverseComplement(genome), g, index);
+	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
 	WriteToDotFile(g, file_name, graph_name, path1, path2);
 }
 
 template<size_t k>
+ void ProduceNonconjugateInfo(NCGraph& g, const EdgeIndex<k + 1, NCGraph>& index,
+		const string& genome, const string& work_tmp_dir, const string& graph_name,const IdTrackHandler<NCGraph> &IdTrackLabelerResolved) {
+	CountStats<k> (g, index, genome);
+//	omnigraph::WriteSimple( file_name, graph_name, g, IdTrackLabelerResolved);
+//	omnigraph::WriteSimple( work_tmp_dir, graph_name, g, IdTrackLabelerResolved);
+
+}
+
+template<size_t k>
 void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const string& genome, const string& folder, const string& file_name, const string& graph_name) {
+		const Sequence& genome, const string& folder, const string& file_name, const string& graph_name) {
 	CountStats<k> (g, index, genome);
 	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
-	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (ReverseComplement(genome), g, index);
+	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
 
 	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	DetailedWriteToDot(g, folder + file_name, graph_name, path1, path2);
@@ -99,7 +108,7 @@ void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 void ProducePairedInfo(Graph& g, size_t insert_size, size_t max_read_length, PairedInfoIndex<Graph> &paired_index, const string &output_folder) {
 	CountPairedInfoStats(g, insert_size, max_read_length, paired_index, output_folder);
 }
-
+template <class Graph>
 void ClipTips(Graph &g) {
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
@@ -129,7 +138,7 @@ void RemoveBulges(Graph &g) {
 	bulge_remover.RemoveBulges();
 	INFO("Bulges removed");
 }
-
+template <class Graph>
 void RemoveLowCoverageEdges(Graph &g) {
 	INFO("-----------------------------------------");
 	INFO("Removing low coverage edges");
@@ -158,6 +167,16 @@ void FillPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
 	INFO("Counting paired info");
 	PairedIndexFiller<Graph, k, ReadStream> pif(g, index, stream);
 	pif.FillIndex(paired_info_index);
+	INFO("Paired info counted");
+}
+
+template<size_t k>
+void FillEtalonPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
+		EdgeIndex<k + 1, Graph>& index, size_t insert_size, size_t read_length, const Sequence& genome) {
+	INFO("-----------------------------------------");
+	INFO("Counting etalon paired info");
+	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index, insert_size, read_length, insert_size * 0.1);
+	etalon_paired_info_counter.FillEtalonPairedInfo(genome, paired_info_index);
 	INFO("Paired info counted");
 }
 
@@ -200,8 +219,8 @@ void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index,
 }
 
 template<size_t k, class PairedReadStream>
-void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		/*CoverageHandler<Graph>& coverage_handler,*/
+void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& stream) {
 	typedef SimpleReaderWrapper<PairedReadStream> UnitedStream;
 	UnitedStream united_stream(stream);
@@ -209,6 +228,17 @@ void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 			united_stream);
 	FillPairedIndex<k, PairedReadStream> (g, paired_index, stream, index);
 }
+
+template<size_t k, class PairedReadStream>
+void ConstructGraphWithEtalonPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index
+		, PairedInfoIndex<Graph>& paired_index, PairedReadStream stream, size_t insert_size, size_t read_length, const Sequence& genome) {
+	typedef SimpleReaderWrapper<PairedReadStream> UnitedStream;
+	UnitedStream united_stream(stream);
+	ConstructGraphWithCoverage<k, UnitedStream> (g, index/*, coverage_handler*/,
+			united_stream);
+	FillEtalonPairedIndex<k> (g, paired_index, index, insert_size, read_length, genome);
+}
+
 template<class Graph>
 void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs, const string &file_name, PairedInfoIndex<Graph> paired_index){
 	DataPrinter<Graph> dataPrinter(g, old_IDs);
@@ -226,7 +256,7 @@ void scanGraph(Graph & g, IdTrackHandler<Graph> &new_IDs, const string &file_nam
 	dataScanner.loadPaired(file_name, paired_index);
 }
 template<size_t k>
-void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index, size_t iteration_count, const string& genome, const string& output_folder) {
+void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index, size_t iteration_count, const Sequence& genome, const string& output_folder) {
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
 
@@ -257,7 +287,7 @@ void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index, size_t iteration_co
 	}
 	INFO("Graph simplification finished");
 }
-
+template<class Graph>
 void OutputContigs(Graph& g, const string& contigs_output_filename) {
 	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_filename);
@@ -269,9 +299,12 @@ void OutputContigs(Graph& g, const string& contigs_output_filename) {
 }
 
 template<size_t k, class ReadStream>
-void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome, bool paired_mode,bool from_saved, size_t insert_size, size_t max_read_length, const string& output_folder, const string& work_tmp_dir) {
+void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const Sequence& genome
+		, bool paired_mode, bool etalon_info_mode, bool from_saved, size_t insert_size
+		, size_t max_read_length, const string& output_folder, const string& work_tmp_dir) {
 	INFO("Edge graph construction tool started");
 	INFO("Paired mode: " << (paired_mode ? "Yes" : "No") );
+	INFO("From file: " << (from_saved ? "Yes" : "No"))
 	mkdir(work_tmp_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	Graph g(k);
 	EdgeIndex<k + 1, Graph> index(g);
@@ -281,9 +314,12 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome, b
 	if (!from_saved) {
 
 		if (paired_mode) {
-			ConstructGraphWithPairedInfo<k, ReadStream> (g, index, paired_index, stream);
-		}
-		else {
+			if (etalon_info_mode) {
+				ConstructGraphWithEtalonPairedInfo<k, ReadStream> (g, index, paired_index, stream, insert_size, max_read_length, genome);
+			} else {
+				ConstructGraphWithPairedInfo<k, ReadStream> (g, index, paired_index, stream);
+			}
+		} else {
 			typedef SimpleReaderWrapper<ReadStream> UnitedStream;
 			UnitedStream united_stream(stream);
 			ConstructGraphWithCoverage<k, UnitedStream> (g, index, united_stream);
@@ -313,7 +349,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome, b
 		if (! from_saved) {
 			INFO("before ResolveRepeats");
 			RealIdGraphLabeler<Graph> IdTrackLabelerBefore(g, IntIds);
-			omnigraph::WriteSimple( output_folder + "repeats_resolved_simple_before.dot", "no_repeat_graph", g, IdTrackLabelerBefore);
+			omnigraph::WriteSimple( output_folder + "repeats_resolved_before.dot", "no_repeat_graph", g, IdTrackLabelerBefore);
 			printGraph(g, IntIds, work_tmp_dir + "graph", paired_index);
 		}
 
@@ -323,26 +359,33 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const string& genome, b
 		scanGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index);
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
-		omnigraph::WriteSimple( work_tmp_dir + "repeats_resolved_simple_nc_copy.dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
+		omnigraph::WriteSimple( work_tmp_dir + "repeats_resolved_nonconjugate_copy.dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
 		INFO("repeat resolved grpah written");
 
-		NCGraph resolved_graph(k);
+		NonconjugateDeBruijnGraph resolved_graph(k);
 		IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
 		DEBUG("New index size: "<< new_index.size());
 		ResolveRepeats(new_graph, NewIntIds, new_index, resolved_graph, Resolved_IntIds, output_folder+"resolve/");
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph, Resolved_IntIds);
+		ClipTips(resolved_graph);
+		RemoveLowCoverageEdges(resolved_graph);
+		omnigraph::WriteSimple( work_tmp_dir + "repeats_resolved_after.dot", "no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+		INFO("repeat resolved grpah written");
+		EdgeIndex<k + 1, NCGraph> aux_index(resolved_graph);
+//		SimplifyGraph<k>(resolved_graph, aux_index, 3, genome, output_folder);
 
-		omnigraph::WriteSimple( work_tmp_dir + "repeats_resolved_simple_after.dot", "no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
-				INFO("repeat resolved grpah written");
-
-
-	//	ProduceInfo<k> (new_graph, index, genome, output_folder + "repeats_resolved.dot",
+//CountStats<k, NCGraph> (resolved_graph, aux_index, genome);
+//		ProduceNonconjugateInfo<k> (resolved_graph, aux_index, genome, output_folder + "repeats_resolved.dot",
 //				"no_repeat_graph");
-//		ProduceInfo<k> (new_graph, index, genome, work_tmp_dir + "repeats_resolved.dot",
-//				"no_repeat_graph");
+//		ProduceNonconjugateInfo<k> (resolved_graph, aux_index, genome, work_tmp_dir + "repeats_resolved.dot",
+//				"no_repeat_graph");sss
+
+		OutputContigs(resolved_graph, output_folder + "contigs.fasta");
+		OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
+
 	}
-
-	OutputContigs(g, output_folder + "contigs.fasta");
+	if (!paired_mode)
+		OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 }
 

@@ -153,7 +153,7 @@ public:
 	}
 
 	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool addSymmetric = 1) {
-		DEBUG("REALLY ADD:" << pair_info.first << pair_info.second);
+		TRACE("REALLY ADD:" << pair_info.first << pair_info.second);
 
 		data_.insert(pair_info);
 
@@ -347,7 +347,7 @@ public:
 	 * Method allows to add pair info to index directly instead of filling it from stream.
 	 */
 	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool add_reversed = 1) {
-		DEBUG("IN ADD:" << pair_info.first << pair_info.second << " "<< data_.size());
+		TRACE("IN ADD:" << pair_info.first << pair_info.second << " "<< data_.size());
 		PairInfos pair_infos = data_.GetEdgePairInfos(pair_info.first,
 				pair_info.second);
 		for (auto it = pair_infos.begin(); it != pair_infos.end(); ++it) {
