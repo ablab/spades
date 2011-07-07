@@ -534,6 +534,7 @@ bool RepeatResolver<Graph>::CorrectedAndNotFiltered(Graph &new_graph,
 	int d = pair_inf.d;
 
 	if (pair_inf.d - new_graph.length(left_id) > 140) {
+		DEBUG("PairInfo "<<edge_labels[left_id]<<"("<<new_graph.length(left_id)<<")"<<" "<<right_id<<"("<<old_graph.length(right_id)<<")"<<" "<<d)
 		DEBUG("too far to correct");
 		return false;
 	}
