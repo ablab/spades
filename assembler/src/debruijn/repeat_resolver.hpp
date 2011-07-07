@@ -83,7 +83,7 @@ public:
 
 			if (other_edge == edge && isClose(d, other_d))
 				return true;
-
+//TODO:: SHURIK! UBERI ZA SOBOJ !!!
 			BoundedDijkstra<Graph, int> dij(old_graph, MAXSKIPDIST);
 			dij.run(v_e);
 			if (dij.DistanceCounted(other_v_s))
@@ -373,7 +373,7 @@ void RepeatResolver<Graph>::dfs(vector<vector<int> > &edge_list,
 	for (int i = 0, sz = edge_list[cur_vert].size(); i < sz; i++) {
 		if (colors[edge_list[cur_vert][i]] > -1) {
 			if (colors[edge_list[cur_vert][i]] != cur_color) {
-				ERROR("error in dfs, neighbour to " << edge_list[cur_vert][i]);
+				ERROR("error in dfs, neighbour to " << edge_list[cur_vert][i] << " cur_color: "<< cur_color);
 			}
 		} else {
 			if (i != cur_vert) {
@@ -632,16 +632,19 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 			ERROR("fake edge: "<< edge_infos[i].getEdge());
 		}
 	}
+	for (int i = 0; i < size; i++)
+		neighbours[i].resize(0);
 	for (int i = 0; i < size; i++) {
 		//		DEBUG("Filling " << i << " element");
 		if (edges.find(edge_infos[i].getEdge()) == edges.end()) {
 			ERROR("fake edge");
 		}
-		neighbours[i].resize(0);
 		for (int j = 0; j < size; j++) {
-
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph) && ! edge_infos[j].isAdjacent(edge_infos[i], old_graph))
+				WARN("ASSYMETRIC: " << new_IDs.ReturnIntId(edge_infos[i].getEdge()) << " " << new_IDs.ReturnIntId(edge_infos[j].getEdge()));
 			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph)) {
 				neighbours[i].push_back(j);
+				neighbours[j].push_back(i);
 			}
 		}
 	}
