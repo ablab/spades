@@ -244,7 +244,7 @@ public:
 
 };
 
-/*
+
 template<size_t k, class Graph>
 class EtalonPairedInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;
@@ -253,13 +253,24 @@ class EtalonPairedInfoCounter {
 	const EdgeIndex<k + 1, Graph>& index_;
 	size_t insert_size_;
 	size_t read_length_;
+	int gap_;
+	size_t delta_;
+
+
+	void AddEtalonInfo(omnigraph::PairedInfoIndex<Graph>& paired_info, EdgeId e1, EdgeId e2, double d) {
+		PairInfo<EdgeId> pair_info(e1, e2, d, 1000.0);
+		paired_info.AddPairInfo(pair_info);
+	}
+
 public:
 
-	EtalonPairedInfoCounter(Graph& g, const EdgeIndex<k + 1, Graph>& index, size_t insert_size, size_t read_length) :
+	EtalonPairedInfoCounter(Graph& g, const EdgeIndex<k + 1, Graph>& index, size_t insert_size, size_t read_length, size_t delta) :
 	g_(g),
 	index_(index),
 	insert_size_(insert_size),
-	read_length_(read_length) {
+	read_length_(read_length),
+	gap_(insert_size_ - 2 * read_length_)
+	, delta_(delta) {
 
 	}
 
@@ -268,11 +279,23 @@ public:
 		SimpleSequenceMapper<k, Graph> sequence_mapper(g_, index_);
 		Path<EdgeId> path = sequence_mapper.MapSequence(genome);
 		for (size_t i = 0; i < path.size(); ++i) {
-			size_t
+			EdgeId e = path[i];
+			if (g_.length(e) > gap_ - delta_) {
+				AddEtalonInfo(paired_info, e, e, 0);
+			}
+			size_t j = i;
+			size_t length = 0;
+
+			while (j < path.size() && length < (insert_size_ + delta_)) {
+				if (length >= gap_ - g_.length(e) - g_.length(path[j]) - delta_) {
+					AddEtalonInfo(paired_info, e, path[j], g_.length(e) + length);
+				}
+				j++;
+			}
 		}
 	}
 };
-*/
+
 
 template<class Graph, size_t k>
 class GenomeMappingStat: public omnigraph::AbstractStatCounter {
@@ -338,7 +361,7 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 
 	StatCounter(Graph& graph, const EdgeIndex<k + 1, Graph>& index,
-	const string& genome) {
+	const Sequence& genome) {
 		SimpleSequenceMapper<k, Graph> sequence_mapper(graph, index);
 		Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
 		Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
