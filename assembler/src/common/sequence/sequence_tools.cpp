@@ -22,6 +22,3 @@ string ReverseComplement(const string &s) {
 	return Complement(Reverse(s));
 }
 
-const Sequence ReverseComplement(const Sequence& s) {
-	return Sequence(ReverseComplement(s.str()));
-}

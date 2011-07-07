@@ -40,7 +40,7 @@ typedef Graph::VertexId VertexId;
 typedef NonconjugateDeBruijnGraph NCGraph;
 using namespace omnigraph;
 
-template<size_t k>
+template<size_t k, class Graph>
 void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		const Sequence& genome) {
 	INFO("Counting stats");
@@ -85,13 +85,15 @@ void ProduceInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	WriteToDotFile(g, file_name, graph_name, path1, path2);
 }
 
-/*template<size_t k>
-  void ProduceNonconjugateInfo(NCGraph& g, const EdgeIndex<k + 1, Graph>& index,
-		const string& genome, const string& file_name, const string& graph_name, IdTrackHandler<NCGraph> &IdTrackLabelerResolved) {
+template<size_t k>
+ void ProduceNonconjugateInfo(NCGraph& g, const EdgeIndex<k + 1, NCGraph>& index,
+		const string& genome, const string& work_tmp_dir, const string& graph_name,const IdTrackHandler<NCGraph> &IdTrackLabelerResolved) {
 	CountStats<k> (g, index, genome);
-	gvis::WriteSimple( file_name, graph_name, g, IdTrackLabelerResolved);
+//	omnigraph::WriteSimple( file_name, graph_name, g, IdTrackLabelerResolved);
+//	omnigraph::WriteSimple( work_tmp_dir, graph_name, g, IdTrackLabelerResolved);
+
 }
-*/
+
 template<size_t k>
 void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		const Sequence& genome, const string& folder, const string& file_name, const string& graph_name) {
@@ -106,7 +108,7 @@ void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 void ProducePairedInfo(Graph& g, size_t insert_size, size_t max_read_length, PairedInfoIndex<Graph> &paired_index, const string &output_folder) {
 	CountPairedInfoStats(g, insert_size, max_read_length, paired_index, output_folder);
 }
-
+template <class Graph>
 void ClipTips(Graph &g) {
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
@@ -136,7 +138,7 @@ void RemoveBulges(Graph &g) {
 	bulge_remover.RemoveBulges();
 	INFO("Bulges removed");
 }
-
+template <class Graph>
 void RemoveLowCoverageEdges(Graph &g) {
 	INFO("-----------------------------------------");
 	INFO("Removing low coverage edges");
@@ -302,6 +304,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const Sequence& genome
 		, size_t max_read_length, const string& output_folder, const string& work_tmp_dir) {
 	INFO("Edge graph construction tool started");
 	INFO("Paired mode: " << (paired_mode ? "Yes" : "No") );
+	INFO("From file: " << (from_saved ? "Yes" : "No"))
 	mkdir(work_tmp_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	Graph g(k);
 	EdgeIndex<k + 1, Graph> index(g);
@@ -359,22 +362,27 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const Sequence& genome
 		omnigraph::WriteSimple( work_tmp_dir + "repeats_resolved_nonconjugate_copy.dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
 		INFO("repeat resolved grpah written");
 
-		NCGraph resolved_graph(k);
+		NonconjugateDeBruijnGraph resolved_graph(k);
 		IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
 		DEBUG("New index size: "<< new_index.size());
 		ResolveRepeats(new_graph, NewIntIds, new_index, resolved_graph, Resolved_IntIds, output_folder+"resolve/");
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph, Resolved_IntIds);
-
+		ClipTips(resolved_graph);
+		RemoveLowCoverageEdges(resolved_graph);
 		omnigraph::WriteSimple( work_tmp_dir + "repeats_resolved_after.dot", "no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		INFO("repeat resolved grpah written");
+		EdgeIndex<k + 1, NCGraph> aux_index(resolved_graph);
+//		SimplifyGraph<k>(resolved_graph, aux_index, 3, genome, output_folder);
 
-
-//		ProduceNonconjugateInfo<k> (resolved_graph, index, genome, output_folder + "repeats_resolved.dot",
-//				"no_repeat_graph", IdTrackLabelerResolved);
-//		ProduceNonconjugateInfo<k> (resolved_graph, index, genome, work_tmp_dir + "repeats_resolved.dot",
+//CountStats<k, NCGraph> (resolved_graph, aux_index, genome);
+//		ProduceNonconjugateInfo<k> (resolved_graph, aux_index, genome, output_folder + "repeats_resolved.dot",
 //				"no_repeat_graph");
+//		ProduceNonconjugateInfo<k> (resolved_graph, aux_index, genome, work_tmp_dir + "repeats_resolved.dot",
+//				"no_repeat_graph");sss
 
 		OutputContigs(resolved_graph, output_folder + "contigs.fasta");
+		OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
+
 	}
 	if (!paired_mode)
 		OutputContigs(g, output_folder + "contigs.fasta");
