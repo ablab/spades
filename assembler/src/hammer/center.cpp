@@ -333,9 +333,10 @@ int process_block_SIN(vector<HammerRead> & block, int blockNum, double threshold
 			// cout << "Cluster " << k << " has no elements. Strange.\n";
 			continue; // superfluous cluster with zero elements
 		}
-		if (bestCenters[k].count == 1) { //singleton
+		if (bestCenters[k].count == 1) { 
+			continue; //singleton
 			// if (block.size() > 1) cout << "Cluster " << k << " is a singleton. ";
-			tstat->new_singletons++; // a singleton among the new clusters
+			/*tstat->new_singletons++; // a singleton among the new clusters
 			for (int i = 0; i < origBlockSize; i++) {
 				if (indices[i] == (int)k) {
 					if (block[i].freq >= threshold) { //keep reads
@@ -354,7 +355,7 @@ int process_block_SIN(vector<HammerRead> & block, int blockNum, double threshold
 					break;
 				}
 			}
-			++newBlockNum;
+			++newBlockNum;*/
 		} else { // there are several kmers in this cluster
 			// cout << "Cluster " << k << " has " << bestCenters[k].count << " different kmers.\n";
 			bool centerInCluster = false;
@@ -434,7 +435,7 @@ int main(int argc, char * argv[]) {
 	ufFilename = argv[1];
 	threshold = atof(argv[2]);
 	nthreads = atoi(argv[3]);
-	cout << "Starting. Error rate = " << errorRate << ". Threshold = " << threshold << ".\n";
+	cout << "Starting. Error rate = " << errorRate << ". Threshold = " << threshold << ". " << nthreads << " threads.\n";
 	flush(cout);
 
 	//start threads

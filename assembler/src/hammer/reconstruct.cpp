@@ -19,6 +19,7 @@
 #include<cstdarg>
 #include<algorithm>
 #include<stdexcept>
+#include<unordered_set>
 
 #include "hammer_config.hpp"
 #include "defs.hpp"
@@ -63,6 +64,7 @@ int main(int argc, char * argv[]) {
 	open_file(inf, ufFilename);
 	// map of kmers
 	map<KMer, KMer, KMer::less2> changes;
+	unordered_set<KMer, KMer::hash> good;
 	int blockNum = 0;
 	int curBlockNum = 0;
 	KMer curCenter; bool hasCenter = false;
@@ -70,9 +72,14 @@ int main(int argc, char * argv[]) {
 	vector<string> row;
 	size_t count = 0;
 	while (get_row_whitespace(inf, row)) {
-		++count; if (count % 1000000 == 0) cout << count << "\n";
 		if (row.size() < 1) continue;
-		if (row[6] == "goodSingleton") continue;
+		++count; if (count % 1000000 == 0) { cout << count << "\n"; flush(cout); }
+		if (row[6] == "goodSingleton") { // we got a singleton
+			int multiplicity = convertToInt(row[2]);
+			if (multiplicity > 1) {
+				good.insert(KMer(row[1]));
+			}
+		}
 		curBlockNum = convertToInt(row[0]);
 		
 		if (curBlockNum != blockNum) { // a block is over
@@ -87,11 +94,14 @@ int main(int argc, char * argv[]) {
 		}
 		if (row[6] == "center") {
 			curCenter = KMer(row[1]); hasCenter = true;
+			good.insert(KMer(row[1]));
 		} else if (row[6] == "change") {
 			block.push_back(KMer(row[1]));
 		}
 	}
 	inf.close();
+
+	cout << "All blocks read into memory.\nProcessing reads...\n";
 
 	// now change the reads
 	ireadstream ifs(readsFilename.data(), qvoffset);
@@ -99,8 +109,12 @@ int main(int argc, char * argv[]) {
 	ofs.open(outFilename);
 	Read r;
 	map<KMer, KMer, KMer::less2>::iterator it;
+	unordered_set<KMer, KMer::hash>::iterator it_single;
+	count = 0;
+	
 	while (!ifs.eof()) {
 		ifs >> r;
+		++count; if (count % 1000000 == 0) { cout << count << "\n"; flush(cout); }
 		// trim the reads for bad quality and process only the ones with at least K "reasonable" elements
 		if (r.trimBadQuality() >= K) {
 			string seq = r.getSequenceString();
@@ -115,8 +129,17 @@ int main(int argc, char * argv[]) {
 				i = r.firstValidKmer(i, K);
 				if (i+K > r.size()) break;
 				KMer kmer = KMer(r.getSubSequence(i, K));
-				it = changes.find(kmer);
-				
+				it_single = good.find(kmer);
+				if (it_single != good.end()) { //it's a good singleton
+					for (size_t j=0; j<K; ++j) {
+						v[kmer[j]][i+j]++;
+						//cout << nucl(kmer[j]);
+					}
+					//for (size_t j=0; j<i; ++j) cout << " ";
+					//cout << kmer.str().data() << "\n";
+				} else {
+
+				it = changes.find(kmer);				
 				if (it != changes.end()) { // we've found that we have to change this kmer
 					// pretty print the k-mer
 					if (!changedRead) {
@@ -125,12 +148,10 @@ int main(int argc, char * argv[]) {
 					}
 					for (size_t j=0; j<i; ++j) cout << " ";
 					cout << it->second.str().data() << "\n";
-
 					for (size_t j=0; j<K; ++j) {
-						if (kmer[j] != it->second[j]) {
-							v[it->second[j]][i+j]++;
-						}
+						v[it->second[j]][i+j]++;
 					}
+				}
 				}
 				
 				// go to next kmer
