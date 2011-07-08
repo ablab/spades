@@ -220,8 +220,8 @@ bool GraphBuilder::hasVertex(Sequence kmer) {
 
 Graph::VertexId GraphBuilder::createVertex(Sequence kmer) {
 	LOG_ASSERT(!hasVertex(kmer), "already contains " << kmer.str());
-	omnigraph::OmniVertex ov(kmer.size());
-	Graph::VertexId v = graph_.AddVertex(ov, ov);
+	Graph::VertexDataType ov(kmer);
+	Graph::VertexId v = graph_.AddVertex(ov);
 //	Vertex* v = new Vertex(kmer, true);
 	seqVertice[kmer] = v;
 	seqVertice[!kmer] = graph_.conjugate(v);
@@ -255,7 +255,8 @@ void GraphBuilder::addToGraph(Sequence s) {
 	}
 	for (size_t i = 0; i + 1 < vs.size(); ++i) {
 		size_t len = index[i + 1] - index[i];
-		omnigraph::OmniEdge oe(len);
+		Graph::EdgeDataType oe(len, s.Subseq(index[i], index[i + 1] + K));
+//		omnigraph::OmniEdge oe(len);
 		Graph::EdgeId e = graph_.GetEdge(vs[i], vs[i + 1], oe);
 		if (e == NULL) {
 			e = graph_.AddEdge(vs[i], vs[i + 1], oe);
