@@ -10,6 +10,7 @@
 #include "parameters.hpp"
 #include "logging.hpp"
 #include "omnigraph.hpp"
+#include "omnigraph_nucls.hpp"
 #include "ireadstream.hpp"
 
 namespace abruijn {
@@ -18,7 +19,7 @@ using namespace std;
 using namespace __gnu_cxx;
 using hashing::hash_t;
 
-typedef omnigraph::Omnigraph Graph;
+typedef omnigraph::OmnigraphNucl Graph;
 
 class GraphBuilder
 {
@@ -77,7 +78,7 @@ public:
 		gb_.htake_ = htake;
 	}
 
-	omnigraph::Omnigraph* build() {
+	Graph* build() {
 		Read r;
 
 		INFO("===== Finding " << gb_.htake_ << " minimizers in each read... =====");
