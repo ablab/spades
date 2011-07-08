@@ -339,7 +339,8 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 	Graph g(k);
 	EdgeIndex<k + 1, Graph> index(g);
 	IdTrackHandler<Graph> IntIds(g);
-	PairedInfoIndex<Graph> paired_index(g); // if it's not paired_mode, then it'll be just unused variable -- takes O(1) to initialize from graph
+	// if it's not paired_mode, then it'll be just unused variable -- takes O(1) to initialize from graph
+	PairedInfoIndex<Graph> paired_index(g);
 
 	if (!from_saved) {
 
@@ -419,6 +420,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		INFO("repeat resolved grpah written");
 		EdgeIndex<k + 1, NCGraph> aux_index(resolved_graph);
+
 		//		SimplifyGraph<k>(resolved_graph, aux_index, 3, genome, output_folder);
 
 		//CountStats<k, NCGraph> (resolved_graph, aux_index, genome);
@@ -435,31 +437,6 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 }
-
-//template<size_t k, class ReadStream>
-//void DeBruijnGraphTool(ReadStream& stream, const string& genome,
-//		const string& output_folder) {
-//	INFO("Edge graph construction tool started");
-//
-//	Graph g(k);
-//	EdgeIndex<k + 1, Graph> index(g);
-//	IdTrackHandler<Graph> IntIds(g);
-//
-//	typedef SimpleReaderWrapper<ReadStream> UnitedStream;
-//	UnitedStream united_stream(stream);
-//	ConstructGraphWithCoverage<k, UnitedStream> (g, index, united_stream);
-//
-//	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
-//			"edge_graph");
-//
-//	SimplifyGraph<k>(g, index, 3, genome, output_folder);
-//
-//	ProduceInfo<k> (g, index, genome, output_folder + "simplified_graph.dot",
-//			"simplified_graph");
-//
-//	OutputContigs(g, output_folder + "contigs.fasta");
-//	INFO("Tool finished");
-//}
 
 }
 

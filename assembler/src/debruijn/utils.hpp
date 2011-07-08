@@ -265,26 +265,10 @@ class EtalonPairedInfoCounter {
 		paired_info.AddPairInfo(pair_info);
 	}
 
-public:
-
-	EtalonPairedInfoCounter(Graph& g, const EdgeIndex<k + 1, Graph>& index, size_t insert_size, size_t read_length, size_t delta) :
-	g_(g),
-	index_(index),
-	insert_size_(insert_size),
-	read_length_(read_length),
-	gap_(insert_size_ - 2 * read_length_),
-	delta_(delta) {
-		assert(insert_size_ >= 2 * read_length_);
-//		cout << "IS " << insert_size_ << endl;
-//		cout << "RL " << read_length_ << endl;
-//		cout << "GAP " << gap_ << endl;
-//		cout << "DELTA " << delta_ << endl;
-	}
-
-	void FillEtalonPairedInfo(const Sequence& genome,
+	void ProcessSequence(const Sequence& sequence,
 			omnigraph::PairedInfoIndex<Graph>& paired_info) {
 		SimpleSequenceMapper<k, Graph> sequence_mapper(g_, index_);
-		Path<EdgeId> path = sequence_mapper.MapSequence(genome);
+		Path<EdgeId> path = sequence_mapper.MapSequence(sequence);
 
 //		cout << "PATH SIZE " << path.size() << endl;
 
@@ -305,6 +289,29 @@ public:
 				length += g_.length(path[j++]);
 			}
 		}
+
+	}
+
+public:
+
+	EtalonPairedInfoCounter(Graph& g, const EdgeIndex<k + 1, Graph>& index, size_t insert_size, size_t read_length, size_t delta) :
+	g_(g),
+	index_(index),
+	insert_size_(insert_size),
+	read_length_(read_length),
+	gap_(insert_size_ - 2 * read_length_),
+	delta_(delta) {
+		assert(insert_size_ >= 2 * read_length_);
+//		cout << "IS " << insert_size_ << endl;
+//		cout << "RL " << read_length_ << endl;
+//		cout << "GAP " << gap_ << endl;
+//		cout << "DELTA " << delta_ << endl;
+	}
+
+	void FillEtalonPairedInfo(const Sequence& genome,
+			omnigraph::PairedInfoIndex<Graph>& paired_info) {
+		ProcessSequence(genome, paired_info);
+		ProcessSequence(!genome, paired_info);
 	}
 };
 
