@@ -365,11 +365,9 @@ private:
 
 	string ConstructComponentName(string file_name, size_t cnt) {
 		stringstream ss;
-		ss << "_error_" << cnt;
+		ss << cnt;
 		string res = file_name;
-		//todo refactor
 		res.insert(res.length() - 4, ss.str());
-		//	cout << res << endl;
 		return res;
 	}
 
@@ -410,6 +408,13 @@ public:
 };
 
 template<class Graph>
+string InsertComponentName(string file_name, string component) {
+	string res = file_name;
+	res.insert(res.length() - 4, "_" + component + "_");
+	return res;
+}
+
+template<class Graph>
 void WriteErrors(const string& file_name, const string& graph_name, Graph& g,
 		Path<typename Graph::EdgeId> path1 = Path<typename Graph::EdgeId> (),
 		Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId> ()) {
@@ -419,7 +424,8 @@ void WriteErrors(const string& file_name, const string& graph_name, Graph& g,
 	ErrorComponentSplitter<Graph> splitter(g, black);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
 	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
-	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, file_name,
+	string error_file_name = InsertComponentName<Graph>(file_name, "error");
+	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, error_file_name,
 			graph_name, 200);
 	gv.Visualize();
 	//	size_t cnt = 0;
@@ -435,6 +441,21 @@ void WriteErrors(const string& file_name, const string& graph_name, Graph& g,
 	//		gp.close();
 	//		cnt++;
 	//	}
+}
+
+template<class Graph>
+void WriteComponents(const string& file_name, const string& graph_name, Graph& g, size_t split_edge_length,
+		Path<typename Graph::EdgeId> path1 = Path<typename Graph::EdgeId> (),
+		Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId> ()) {
+	omnigraph::StrGraphLabeler<Graph> labeler(g);
+	PathColorer<Graph> path_colorer(g, path1, path2);
+	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
+	LongEdgesSplitter<Graph> splitter(g, split_edge_length);
+	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
+	cout << file_name << endl;
+	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, file_name,
+			graph_name, 200);
+	gv.Visualize();
 }
 
 template<class Graph>
