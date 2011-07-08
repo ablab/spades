@@ -68,7 +68,7 @@ public:
 		bool isClose(int a, int b) {
 			return (abs(a - b) < MAXD);
 		}
-		bool isAdjacent(EdgeInfo other_info, Graph &old_graph) {
+		bool isAdjacent(EdgeInfo other_info, Graph &old_graph, Graph &new_graph) {
 			//			DEBUG("comparation started: " << edge);
 			VertexId v_s = old_graph.EdgeStart(edge);
 			VertexId v_e = old_graph.EdgeEnd(edge);
@@ -83,6 +83,10 @@ public:
 
 			if (other_edge == edge && isClose(d, other_d))
 				return true;
+//ToDo: Understand if it is very dirty hack.
+			if (   (new_graph.EdgeStart(lp.first) != new_graph.EdgeStart(other_info.lp.first) )
+				&& (new_graph.EdgeEnd(lp.first) == new_graph.EdgeEnd(other_info.lp.first)))
+				return false;
 //TODO:: SHURIK! UBERI ZA SOBOJ !!!
 			BoundedDijkstra<Graph, int> dij(old_graph, MAXSKIPDIST);
 			dij.run(v_e);
@@ -534,6 +538,7 @@ bool RepeatResolver<Graph>::CorrectedAndNotFiltered(Graph &new_graph,
 	int d = pair_inf.d;
 
 	if (pair_inf.d - new_graph.length(left_id) > 140) {
+		DEBUG("PairInfo "<<edge_labels[left_id]<<"("<<new_graph.length(left_id)<<")"<<" "<<right_id<<"("<<old_graph.length(right_id)<<")"<<" "<<d)
 		DEBUG("too far to correct");
 		return false;
 	}
@@ -639,9 +644,9 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 			ERROR("fake edge");
 		}
 		for (int j = 0; j < size; j++) {
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph) && ! edge_infos[j].isAdjacent(edge_infos[i], old_graph))
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph) && ! edge_infos[j].isAdjacent(edge_infos[i], old_graph, new_graph))
 				WARN("ASSYMETRIC: " << new_IDs.ReturnIntId(edge_infos[i].getEdge()) << " " << new_IDs.ReturnIntId(edge_infos[j].getEdge()));
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph)) {
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph)) {
 				neighbours[i].push_back(j);
 				neighbours[j].push_back(i);
 			}

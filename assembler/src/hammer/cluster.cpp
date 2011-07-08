@@ -94,7 +94,6 @@ void get_full_kmer(entryClass & x) {
 	strncpy(s, &reads[offset + K + 6], 9);
 	s[9] = 0;
 	x.freq = s;
-	// cout << offset << "  " << x.seq << ":" << x.count << ":" << x.freq << endl;
 	return;
 }
 
@@ -102,6 +101,7 @@ void process_block(unionFindClass * uf, vector<entryClass> & block) {
 	//cout << "processing block of size " << block.size() << "\n";
 	for (int i = 0; i < block.size(); i++) {
 		get_full_kmer(block[i]);
+		//cout << "   offset=" << block[i].id * long(kmerfileLinelen) << "full[" << i << "] = " << block[i].seq << "\n";
 	}
 	for (int i = 0; i < block.size(); i++) {
 		uf->find_set(block[i].id);
@@ -125,14 +125,15 @@ void * onethread(void * params) {
 
 	cerr << "Processing split files (" << thread << ")...\n";
 	ifstream inf;
-	// cout << splitsBase + "." + threadLabel << "\n";
+	cout << splitsBase + "." + threadLabel << "\n";
 	open_file(inf, splitsBase + "." + threadLabel);
 
 	string sbuf;
 	entryClass last;
 	vector<entryClass> block;
 	int counter=0;
-	while (getline(inf, sbuf)) { 
+	while (getline(inf, sbuf)) {
+		//cout << sbuf << "\n"; 
 		if (++counter % 1000000 == 0) cerr << "Processed (" << thread << ") " << add_commas(counter) << ", ";
 		istringstream line(sbuf);
 		entryClass cur;
@@ -178,16 +179,25 @@ void merge(vector<paramType> params, string prefix) {
 	delete ufMaster;
 	entryClass x;
 	ofstream outf;
+	ofstream outf_single;
 	open_file(outf, prefix + "reads.uf");
+	open_file(outf_single, prefix + "reads.uf.single");
 	for (int i = 0; i < classes.size(); i++) {
-		for (int j = 0; j < classes[i].size(); j++) {
-			x.id = classes[i][j];
+		if (classes[i].size == 1) {   // we output singletons separately
+			x.id = classes[i][0];
 			get_full_kmer(x);
-			outf << "ITEM\t" << i << "\t" << x.id << "\t" << x.seq << "\t" << x.count << "\t" << x.freq <<  endl;
+			outf << "ITEM\t" << i << "\t" << x.id << "\t" << x.seq << "\t" << x.count << endl;
+		} else {
+			for (int j = 0; j < classes[i].size(); j++) {
+				x.id = classes[i][j];
+				get_full_kmer(x);
+				outf << "ITEM\t" << i << "\t" << x.id << "\t" << x.seq << "\t" << x.count <<  endl;
+			}
+			outf << endl;
 		}
-		outf << endl;
 	}
 	outf.close();
+	outf_single.close();
 }
 
 int main(int argc, char * argv[]) {
@@ -199,20 +209,20 @@ int main(int argc, char * argv[]) {
 	kmerfileLinelen = K + 16;
 	nthreads = atoi(argv[6]);
 	string dirprefix = argv[7];
+	//cout << "Expecting " << nthreads << " threads.\n";
 	//int nthreads = tau + 1;
-
 	//this depends on the implementation of UnionFindClass
 	long l = get_filesize(kmerFile);
 	cout << l << " " << kmerfileLinelen << "\n";
 	assert (l % kmerfileLinelen == 0);
 	numDistinctKmers = l / kmerfileLinelen;
-	cout << numDistinctKmers << "\n";
+	//cout << numDistinctKmers << "\n";
 	//cerr << "numDistinct = " << numDistinctKmers << endl;
 
 	//load reads
-	cerr << "Reading in kmers...\n";
+	cout << "Reading in kmers...\n";
 	load_file_to_memory(kmerFile.c_str(), &reads);
-	// cout << "\n\n" << reads << "\n\n";
+	//cout << "\n\n" << reads << "\n\n";
 
 	if (mergeOnly == "1") {
 		cerr << argv[0] << ": mergeOnly mode not supported, exiting.\n";
@@ -220,7 +230,7 @@ int main(int argc, char * argv[]) {
 	}
 
 	long maxKmers =  (memlim - l - 2*sizeof(int)) / (nthreads * 2*sizeof(int));  //accounting for union find 
-	cerr << argv[0] << ": maxKmers = " << add_commas(maxKmers) << ", numDistinctKmers = " << add_commas(numDistinctKmers) << endl;
+	cout << argv[0] << ": maxKmers = " << add_commas(maxKmers) << ", numDistinctKmers = " << add_commas(numDistinctKmers) << endl; flush(cout);
 	if (numDistinctKmers > maxKmers) {
 		cerr << "Won't fit into memory, don't even try fool.\n";
 		exit(1);

@@ -20,6 +20,7 @@
 \usepackage{poster}
 \usepackage{booktabs}
 \usepackage{multirow,multicol}
+\usepackage{simplewick}
 
 \usetikzlibrary{positioning,fadings}
 
@@ -35,6 +36,19 @@
 \def\nodeshadowed[#1]#2;{
 \node[scale=2,above,#1]{#2};
 \node[scale=2,above,#1,yscale=-1,opacity=0.4]{#2};}
+
+\def\myarc#1#2#3#4{
+  \draw[color=#1,line width=2pt,->] (360*#2/18:#4mm) arc (360*#2/18:360*#3/18:#4mm);
+}%#1 -- color, #2 -- from, #3 -- to, #4 -- radius (mm)
+
+\def\ra{red}
+\def\rb{green}
+\def\rc{cyan}
+\def\rd{magenta}
+\def\re{blue}
+\def\rf{orange}
+
+\newcommand{\myignore}[1]{}
 
 \begin{document}
 \pagestyle{empty}
@@ -73,59 +87,110 @@
 \begin{scope}
 \draw (0,78) [color=SteelBlue3,line width=2mm,rounded corners=.5cm,fill=blue!10!white] rectangle (54,70);
 \node at (27,76) {\color{OrangeRed} \fontsize{60pt}{1em} \bf Earmark graph approach to de novo genome assembly};
-\node[rectangle,text width=25cm,text centered,anchor=north west] at (1,74) {
+\node[rectangle,text width=16cm,text centered,anchor=north west] at (1,74) {
+  {\bf \color{DodgerBlue3} \fontsize{32pt}{1em}\selectfont Max Alekseyev}\\
+  %Algorithmic Biology Lab, Academic University, RAS\\
+  %{\tt http://bioinf.spbau.ru/members/mikhail-dvorkin/}
+};
+\node[rectangle,text width=16cm,text centered,anchor=north west] at (18,74) {
   {\bf \color{DodgerBlue3} \fontsize{32pt}{1em}\selectfont Mikhail E. Dvorkin}\\
-  Algorithmic Biology Lab, Academic University, RAS\\
-  {\tt http://bioinf.spbau.ru/members/mikhail-dvorkin/}
+  %Algorithmic Biology Lab, Academic University, RAS\\
+  %{\tt http://bioinf.spbau.ru/members/mikhail-dvorkin/}
 };
-\node[rectangle,text width=25cm,text centered,anchor=north west] at (28,74) {
+\node[rectangle,text width=16cm,text centered,anchor=north west] at (36,74) {
   {\bf \color{DodgerBlue3} \fontsize{32pt}{1em}\selectfont Alexander S. Kulikov}\\
-  Algorithmic Biology Lab, Academic University, RAS and\\
-  Steklov Mathematical Institute at St.~Petersburg, RAS\\
-  {\tt http://logic.pdmi.ras.ru/$\sim$kulikov/}
+  %Algorithmic Biology Lab, Academic University, RAS and\\
+  %Steklov Mathematical Institute at St.~Petersburg, RAS\\
+  %{\tt http://logic.pdmi.ras.ru/$\sim$kulikov/}
 };
-
+\node[rectangle,text width=52cm,text centered,anchor=north west] at (1,72.5) {
+  \fontsize{26pt}{1em}\selectfont
+  Algorithmic Biology Lab at St.~Petersburg Academic University of the 
+  Russian Academy of Sciences\\
+  {\tt http://bioinf.spbau.ru/en/}
+\\
 % We've got to include this:
-The presentation of this work was made possible by a Travel Fellowship awarded by ISCB
+\small{The presentation of this work was made possible by a Travel Fellowship awarded by ISCB
 with grant funds obtained from the Department of Energy Office of Science,
 the National Science Foundation Bio-Directorate,
-and the NIH National Institute of General Medical Sciences.
+and the NIH National Institute of General Medical Sciences.}
+};
 
 \end{scope}
 
-%%%%%%%%%%%%%%%PROBLEM STATEMENT
-\begin{scope}[yshift=-4cm]
-\draw (0,71) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,69);
-\node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,71) {\fontsize{32pt}{1em} 
+%%%%%%%%%%%%%%%PROBLEM STATEMENT AND ABSTRACT
+\begin{scope}
+\draw ( 0,67) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (26,60);
+\draw (28,67) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,60);
+\node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (28,67) {\fontsize{32pt}{1em} 
 \bf Typical genome assembly setting};
-\node at (27,70) {\fontsize{26pt}{1em} Given a set of reads ${\cal R} \subseteq \{{\tt 
-A,C,G,T}\}^r$ of a genome $S \in \{{\tt A,C,G,T}\}^*$, find the genome $S$.};
+\node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,67) {\fontsize{32pt}{1em} 
+\bf Abstract\phantom{y}};
+\node[rectangle,anchor=north west,text width=25cm,inner sep=5mm] at (0,67) {
+  A common approach to assembling a genome from short reads is constructing
+  the de Bruijn graph on all $k$-mers from the given set of reads and finding
+  a traversal of edges in this graph. We propose a new approach that allows
+  to decrease the graph size without losing the essential information from
+  the input data. Instead of using all the $k$-mers from a read we take only
+  a few of them (and call them earmarked). Besides an obvious advantage
+  of requiring less memory and time for constructing, the resulting earmark
+  graph has several other advantages over the de Bruijn graph. We discuss
+  them in the paper and also present some experimental results.
+};
+\node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (28,63.5) {
+  \fontsize{26pt}{2em}\selectfont
+  {\bf Input:} a set of substrings (called reads) 
+    ${\cal R} \subseteq \{{\tt A,C,G,T}\}^r$ of an unknown circular string 
+    $S \in \{{\tt A,C,G,T}\}^*$ (called genome).
+
+  {\bf Output:} the genome $S$.
+
+  {\bf Complications: } blah-blah-blah...
+};
+%at (27,64) {\fontsize{26pt}{1em} Given a set of reads ${\cal R} \subseteq \{{\tt 
+%A,C,G,T}\}^r$ of a genome $S \in \{{\tt A,C,G,T}\}^*$, find the genome $S$.};
 \end{scope}
 
 %%%%%%%%%%%%%%%EXAMPLE
-\begin{scope}%[yshift=-4cm]
+\begin{scope}[yshift=-5cm]
   \draw (0,62) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,35);
   \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,62) {\fontsize{32pt}{1em} \bf 
     Standard and new approach: example};
 
   %%% READS
-  \node[rectangle,line width=2pt,text width=5cm,text centered,anchor=west] (reads) at (1,53) {
-    {\bf set ${\cal R}$ of $6$-reads}\\
-    {\tt ATGCAT} {\tt TGCATT}\\
-    {\tt CATTGC} {\tt ATTGCA}\\
-    {\tt TTGCAC} {\tt TGCACT}\\
-    {\tt CAATGC} {\tt AATGCA}\\
-    {\tt TGCAAT} {\tt GCAATG}\\
-    {\tt GCACTG} {\tt CACTGC}\\
-    {\tt TGCATT} {\tt GCATTG}\\
-    {\tt ACTGCA} {\tt CTGCAA}\\
+  \node[rectangle,line width=2pt,text width=5cm,text centered,anchor=west] (reads) at (1,48.5) {
+    {\bf set ${\cal R}$ of $8$-reads}\\
+    {\color{\ra}  $R_1$: {\tt CATGTAGT}}\\
+    {\color{\rb}  $R_2$: {\tt GTAACATG}}\\
+    {\color{\rc}  $R_3$: {\tt AGTGTACA}}\\
+    {\color{\rd}  $R_4$: {\tt CATGTAGT}}\\
+    {\color{\re}  $R_5$: {\tt CATGTAAC}}\\
+    {\color{\rf}  $R_6$: {\tt TAACATGT}}\\
   };
+
+  \begin{scope}[xshift=50.5cm,yshift=48.5cm]
+    \node (genometop)  at (0,3.5) {};
+    \node (genomedown) at (0,-3.5) {};
+
+    \foreach \i/\a in {0/C,1/A,2/T,3/G,4/T,5/A,6/A,7/C,8/A,9/T,10/G,11/T,12/A,13/G,14/T,15/G,16/T,17/A} {
+      \node[fill=white] at (360*\i/18:2cm) {{\tt \a}};
+    }
+    \node at (0,0) {genome $S$};
+    %\draw[color=red,->] (360*5/18:2.2cm) arc (360*5/18:360*11/18:2.2cm);
+    \myarc{black}{1}{18}{16}
+    \myarc{\ra}{4}{11}{24}     %R1
+    \myarc{\rb}{3}{10}{26}    %R2
+    \myarc{\rc}{-5}{2}{28}    %R3
+    \myarc{\rd}{-3}{4}{30}   %R4
+    \myarc{\re}{1}{8}{32}   %R5
+    \myarc{\rf}{3}{10}{34}  %R6
+  \end{scope}
 
   %\draw [->,line width=2pt] (reads) to[out=90,in=180] node[sloped,fill=white] {de Bruijn graph} (23,53);
   %\draw [->,line width=2pt] (reads) to[out=-90,in=180] node[sloped,fill=white] {earmark graph} (23,44);
 
 
-
+\myignore{
   \begin{scope}[scale=1.3,transform shape,line width=2pt]
     \begin{scope}[xshift=20cm,yshift=40cm]
       \foreach \x/\y/\t in {1.5/1/AAT, 2.5/2/ATG, 4/2/TGC, 4.5/3.5/GCA, 6/4/CAT, 
@@ -155,50 +220,59 @@ A,C,G,T}\}^r$ of a genome $S \in \{{\tt A,C,G,T}\}^*$, find the genome $S$.};
       \draw [->] (ATG) to[bend left=50] (CAT);
     \end{scope}
   \end{scope}
+}
 
-  %\node at (47,59) {\includegraphics[width=7cm]{fu.jpg}};
-  %\node at (45,44) {\includegraphics[width=7cm]{troll.jpg}};
+  \node[anchor=south west,scale=0.5] (debruijngraph) at (30,51) {\includegraphics{de.pdf}};
+  \node[anchor=south west,scale=0.5] (earmarkgraph)  at (30,37) {\includegraphics{en.pdf}};
 
-  \begin{scope}[xshift=51cm,yshift=47cm]
-    \draw (0,0) circle (2cm);
-    \foreach \i/\a in {0/A,1/T,2/G,3/C,4/A,5/T,6/T,7/G,8/C,9/A,10/C,11/T,12/G,13/C,14/A} {
-      \node[fill=white] at (360*\i/15:2cm) {\a};
-    }
-    \node at (0,0) {genome $S$};
-  \end{scope}
-
-  \node[rectangle,line width=2pt,text width=5cm,text centered,anchor=west] (earmarks) at (11,44) {
+  \node[rectangle,line width=2pt,text width=5cm,text centered,anchor=west] (earmarks) at (9,40) {
     {\bf earmarks}\\
-    {\tt AAT} {\tt ATG} {\tt CAT}\\
-    {\tt ATT} {\tt TTG} {\tt CAC}\\
-    {\tt ACT} {\tt CTG} {\tt CAA}\\
+    {\tt CATG} {\tt TACA}\\
+    {\tt GTAA} {\tt ACAT}\\
+    {\tt AGTG} {\tt TAGT}
   };
 
+  \node[rectangle,line width=2pt,text width=5cm,text centered,anchor=west] (earmarkedreads) at (18,45) {
+    {\color{\ra} $R_1: \contraction{}{\tt C}{\tt AT}{\tt G}%
+    \contraction{\tt CATG}{\tt T}{\tt AG}{\tt T}%
+    {\tt CATGTAGT}$ }
+
+    {\color{\rb} $R_2: \contraction{}{\tt G}{\tt TA}{\tt A}%
+    \contraction{\tt GTA}{\tt A}{\tt CA}{\tt T}%
+    \bcontraction{\tt GTAA}{\tt C}{\tt AT}{\tt G}%
+    {\tt GTAACATG}$ }
+
+    {\dots}
+  };
 
   \begin{scope}[draw=SteelBlue3,line width=3pt,fill=white]
     \draw [->] (reads) to[out=90,in=180] node[fill=white,sloped,rectangle,text width=5cm] 
-      {\color{DodgerBlue3} represent each $6$-read as a path on its $4$ consecutive $3$-mers} (27,53);
+      {\color{DodgerBlue3} 1. represent each $8$-read as a path on its $5$ consecutive $4$-mers} (debruijngraph);
 
-    \draw [->] (45,54) to[out=0,in=90] node[fill=white,sloped,rectangle,text width=5cm] 
-      {\color{DodgerBlue3} find a Chinese Postman cycle} (51,50);
-
-    \draw [->] (45,39.5) to[out=0,in=-90] node[fill=white,sloped,rectangle,text width=5cm] 
-      {\color{DodgerBlue3} find a Chinese Postman cycle} (51,44);
+    \draw [->] (debruijngraph) to[out=45,in=90] node[fill=white,sloped,rectangle,text width=5cm] 
+      {\color{DodgerBlue3} 2. simplify the graph and find a cycle containing all the edges} (genometop);
 
     \draw [->] (reads) to[out=-90,in=180] node[fill=white,sloped,rectangle,text width=5cm] 
-      {\color{DodgerBlue3} construct a set ${\cal E} \subseteq \{{\tt A,C,G,T}\}^3$ of earmarked $3$-mers s.t. each read contains at least
-      two earmarked $3$-mers} (earmarks);
+      {\color{DodgerBlue3} 1. construct a set ${\cal E} \subseteq \{{\tt A,C,G,T}\}^3$ of earmarked $3$-mers s.t. each read contains at least
+      two earmarked $4$-mers} (earmarks);
 
-    \draw [->] (earmarks) to[out=-90,in=180] node[fill=white,sloped,rectangle,text width=5cm] 
-      {\color{DodgerBlue3} represent each $6$-read as a path on its consecutive earmarks} (27,39.5);
+    \draw [->] (earmarks) to[out=90,in=180] node[fill=white,sloped,rectangle,text width=5cm] 
+      {\color{DodgerBlue3} 2. find the earmarks in the reads} (earmarkedreads);
+
+    \draw [->] (earmarkedreads) to[out=0,in=180] node[fill=white,sloped,rectangle,text width=5cm] 
+      {\color{DodgerBlue3} 3. represent each $8$-read as a path on its consecutive earmarks} (earmarkgraph);
+
+    \draw [->] (earmarkgraph) to[out=-30,in=-90] node[fill=white,sloped,rectangle,text width=5cm] 
+      {\color{DodgerBlue3} 4. simplify the graph and find a cycle containing all the edges} (genomedown);
   \end{scope}
 
   \node at (36,60) {\fontsize{26pt}{1em} \color{OrangeRed} \bf de Bruijn graph};
   \node at (36,36) {\fontsize{26pt}{1em} \color{OrangeRed} \bf earmark graph};
+  \draw[color=OrangeRed,dashed,line width=5pt] (7,48) -- (46,48);
 \end{scope}
 
 %%%%%%%%%%%%%%%ADVANTAGES
-\begin{scope}%[yshift=-4cm]
+\begin{scope}[yshift=-5cm]
   \draw (0,32) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,22);
   \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,32) {\fontsize{32pt}{1em} \bf 
     Advantages of earmark graph over de Bruijn graph: to be rewritten};
