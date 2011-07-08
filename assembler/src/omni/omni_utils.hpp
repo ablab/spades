@@ -588,7 +588,7 @@ public:
 
 	void Process() {
 		BackwardBoundedDijkstra<Graph> backward_dijkstra(g_, max_length_);
-		backward_dijkstra.run(start_);
+		backward_dijkstra.run(end_);
 		Go(start_, 0, backward_dijkstra);
 	}
 
