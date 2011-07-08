@@ -21,3 +21,4 @@ string Complement(const string &s) {
 string ReverseComplement(const string &s) {
 	return Complement(Reverse(s));
 }
+

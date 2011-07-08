@@ -238,7 +238,7 @@ public:
 	}
 
 	size_t IncomingEdgeCount(VertexId v) const {
-		return v->OutgoingEdgeCount();
+		return v->IncomingEdgeCount();
 	}
 
 	bool CheckUniqueIncomingEdge(VertexId v) const {

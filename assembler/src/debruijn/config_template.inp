@@ -8,6 +8,11 @@ reference_genome = MG1655-K12.fasta.gz
 # paired (1) or unpaired (0, for quick debug and algorithms testing) mode
 paired_mode = true
 
+# set to true to obtain paired info from genome mapping rather than from paired reads
+etalon_info_mode = false
+
+from_saved_graph = 0
+
 # tip clipper:
 
 tc_max_tip_length = 50

@@ -8,8 +8,9 @@
 #include "queue"
 #include "dijkstra.hpp"
 #include "observable_graph.hpp"
+#include "splitters.hpp"
 
-namespace gvis {
+namespace omnigraph {
 
 //DECL_LOGGER("omg.gvis")
 
@@ -17,6 +18,7 @@ using omnigraph::GraphLabeler;
 using omnigraph::EmptyGraphLabeler;
 using omnigraph::SmartEdgeIterator;
 using omnigraph::Path;
+using omnigraph::UnorientedDijkstra;
 
 template<class Graph>
 class GraphVisualizer {
@@ -174,13 +176,12 @@ public:
 			const vector<EdgeId> edges = super::g_.OutgoingEdges(*v_it);
 			TRACE("working with vertex " << *v_it);
 			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
-				if (super::g_.coverage(*e_it) > 16) {
-					VertexId edge_end = super::g_.EdgeEnd(*e_it);
-					TRACE(super::g_.coverage(*e_it)<<" " << super::g_.length(*e_it));
-					if (vertex_set.count(edge_end) > 0) {
-						super::gp_.AddEdge(*v_it, edge_end, gl_.label(*e_it), EdgeColor(*e_it));
-						TRACE("Edge added");
-					}
+				VertexId edge_end = super::g_.EdgeEnd(*e_it);
+				TRACE(super::g_.coverage(*e_it)<<" " << super::g_.length(*e_it));
+				if (vertex_set.count(edge_end) > 0) {
+					super::gp_.AddEdge(*v_it, edge_end, gl_.label(*e_it),
+							EdgeColor(*e_it));
+					TRACE("Edge added");
 				}
 			}
 		}
@@ -246,169 +247,10 @@ public:
 	}
 };
 
-template<class Element>
-class GraphSplitter {
-public:
-	virtual vector<Element> NextComponent() = 0;
-
-	virtual bool Finished() = 0;
-
-	virtual ~GraphSplitter() {
-
-	}
-};
-
 template<class Graph>
-class ComponentFinder: public UnorientedDijkstra<Graph, size_t> {
-private:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef UnorientedDijkstra<Graph, size_t> super;
-	set<EdgeId> &edges_;
-
-public:
-	ComponentFinder(Graph &g, set<EdgeId> &edges) :
-		super(g), edges_(edges) {
-	}
-
-	virtual ~ComponentFinder() {
-	}
-
-	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, size_t length) {
-		return edges_.count(edge) != 0;
-	}
-};
-
-template<class Graph>
-class NeighbourhoodFinder: public UnorientedDijkstra<Graph, size_t> {
-private:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef UnorientedDijkstra<Graph, size_t> super;
-	set<EdgeId> &edges_;
-	const size_t bound_;
-
-public:
-	NeighbourhoodFinder(Graph &g, set<EdgeId> &edges, size_t bound) :
-		super(g), edges_(edges), bound_(bound) {
-	}
-
-	virtual ~NeighbourhoodFinder() {
-	}
-
-	virtual bool CheckProcessVertex(VertexId vertex, size_t distance) {
-		return distance <= bound_;
-	}
-
-	virtual size_t GetLength(EdgeId edge) {
-		if (edges_.count(edge) != 0)
-			return 0;
-		else
-			return this->GetGraph().length(edge);
-	}
-
-};
-
-template<class Graph>
-class SubgraphDijkstra: public UnorientedDijkstra<Graph, size_t> {
-private:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef UnorientedDijkstra<Graph, size_t> super;
-	const set<VertexId> &subgraph_;
-
-public:
-	SubgraphDijkstra(Graph &g, const set<VertexId> &subgraph) :
-		super(g), subgraph_(subgraph) {
-	}
-
-	virtual ~SubgraphDijkstra() {
-	}
-
-	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, size_t length) {
-		return subgraph_.count(vertex) != 0;
-	}
-
-};
-
-template<class Graph>
-class ErrorComponentSplitter: public GraphSplitter<typename Graph::VertexId> {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-
-	Graph &graph_;
-	set<EdgeId> black_edges_;
-	SmartEdgeIterator<omnigraph::ObservableGraph<VertexId, EdgeId> > iterator_;
-	set<VertexId> visited_;
-
-public:
-	ErrorComponentSplitter(Graph &graph, const set<EdgeId> &black_edges) :
-		graph_(graph), black_edges_(black_edges),
-				iterator_(graph.SmartEdgeBegin()) {
-	}
-
-	virtual ~ErrorComponentSplitter() {
-	}
-
-	set<VertexId> FindComponent(VertexId start_vertex) {
-		ComponentFinder<Graph> cf(graph_, black_edges_);
-		cf.run(start_vertex);
-		vector < VertexId > result = cf.VisitedVertices();
-		return set<VertexId> (result.begin(), result.end());
-	}
-
-	set<VertexId> FindNeighbourhood(VertexId start, size_t bound) {
-		NeighbourhoodFinder<Graph> nf(graph_, black_edges_, bound);
-		nf.run(start);
-		vector < VertexId > result = nf.VisitedVertices();
-		return set<VertexId> (result.begin(), result.end());
-	}
-
-	size_t FindDiameter(const set<VertexId> &component) {
-		size_t result = 0;
-		SubgraphDijkstra<Graph> sd(graph_, component);
-		for (auto it = component.begin(); it != component.end(); ++it) {
-			sd.run(*it);
-			auto bounds = sd.GetDistances();
-			for (auto it = bounds.first; it != bounds.second; ++it) {
-				result = std::max(result, it->second);
-			}
-		}
-		return result;
-	}
-
-	virtual vector<VertexId> NextComponent() {
-		if (Finished()) {
-			assert(false);
-			return vector<VertexId> ();
-		}
-		EdgeId next = *iterator_;
-		++iterator_;
-		set < VertexId > component = FindComponent(graph_.EdgeEnd(next));
-		size_t component_size = FindDiameter(component);
-		set < VertexId > neighbourhood = FindNeighbourhood(
-				graph_.EdgeEnd(next), 1.5 * component_size);
-		visited_.insert(component.begin(), component.end());
-		return vector<VertexId> (neighbourhood.begin(), neighbourhood.end());
-	}
-
-	virtual bool Finished() {
-		while (!iterator_.IsEnd()) {
-			if (black_edges_.find(*iterator_) != black_edges_.end()
-					&& visited_.find(graph_.EdgeEnd(*iterator_))
-							== visited_.end()) {
-				return false;
-			}
-			++iterator_;
-		}
-		return true;
-	}
-
-};
-
-template<class Graph>
-void WriteToDotFile(const string& file_name, const string& graph_name, Graph& g, const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph>()) {
+void WriteToDotFile(const string& file_name, const string& graph_name,
+		Graph& g,
+		const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph> ()) {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
@@ -418,7 +260,8 @@ void WriteToDotFile(const string& file_name, const string& graph_name, Graph& g,
 }
 
 template<class Graph>
-void WriteSimple(const string& file_name, const string& graph_name, Graph& g, const GraphLabeler<Graph>& labeler = EmptyGraphLabeler<Graph>()) {
+void WriteSimple(const string& file_name, const string& graph_name, Graph& g,
+		const GraphLabeler<Graph>& labeler) {
 	DEBUG("Writing simple graph "<<file_name);
 	fstream filestr;
 	string simple_file_name(file_name);
@@ -435,7 +278,27 @@ void WriteSimple(const string& file_name, const string& graph_name, Graph& g, co
 }
 
 template<class Graph>
-void WritePaired(const string& file_name, const string& graph_name, Graph& g,
+void WriteSimple(const string& file_name, const string& graph_name, Graph& g,
+		Path<typename Graph::EdgeId> path1, Path<typename Graph::EdgeId> path2) {
+	fstream filestr;
+	string simple_file_name(file_name);
+	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
+	filestr.open(simple_file_name.c_str(), fstream::out);
+	gvis::DotGraphPrinter<typename Graph::VertexId> gp(graph_name, filestr);
+	PathColorer<Graph> path_colorer(g, path1, path2);
+	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
+	omnigraph::StrGraphLabeler<Graph> gl(g);
+	ColoredGraphVisualizer<Graph> gv(g, gp, gl, coloring);
+	AdapterGraphVisualizer<Graph> result_vis(g, gv);
+	result_vis.Visualize();
+	filestr.close();
+}
+
+template<class Graph>
+void WritePaired(
+		const string& file_name,
+		const string& graph_name,
+		Graph& g,
 		Path<typename Graph::EdgeId> path1/* = Path<typename Graph::EdgeId> ()*/,
 		Path<typename Graph::EdgeId> path2/* = Path<typename Graph::EdgeId> ()*/) {
 	fstream filestr;
@@ -451,15 +314,100 @@ void WritePaired(const string& file_name, const string& graph_name, Graph& g,
 }
 
 template<class Graph>
-string ConstructComponentName(string file_name, size_t cnt) {
-	stringstream ss;
-	ss << "_error_" << cnt;
-	string res = file_name;
-	//todo refactor
-	res.insert(res.length() - 4, ss.str());
-	//	cout << res << endl;
-	return res;
-}
+class AbstractVisualizerFactory {
+public:
+	virtual PartialGraphVisualizer<Graph> *GetVisualizerInstance(
+			gvis::GraphPrinter<typename Graph::VertexId> &gp) = 0;
+	virtual gvis::GraphPrinter<typename Graph::VertexId> *GetPrinterInstance(
+			const string &graph_name, ostream &os) = 0;
+	virtual ~AbstractVisualizerFactory() {
+	}
+};
+
+template<class Graph>
+class ColoredVisualizerFactory: public AbstractVisualizerFactory<Graph> {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
+	Graph &graph_;
+	const GraphLabeler<Graph> &labeler_;
+	const map<EdgeId, string> &coloring_;
+public:
+	ColoredVisualizerFactory(Graph& graph, const GraphLabeler<Graph> &labeler,
+			const map<EdgeId, string> &coloring) :
+		graph_(graph), labeler_(labeler), coloring_(coloring) {
+	}
+
+	virtual gvis::GraphPrinter<typename Graph::VertexId> *GetPrinterInstance(
+			const string &graph_name, ostream &os) {
+		return new gvis::DotPairedGraphPrinter<Graph>(graph_, graph_name, os);
+	}
+
+	virtual PartialGraphVisualizer<Graph> *GetVisualizerInstance(
+			gvis::GraphPrinter<typename Graph::VertexId> &gp) {
+		return new ColoredGraphVisualizer<Graph> (graph_, gp, labeler_,
+				coloring_);
+	}
+
+	virtual ~ColoredVisualizerFactory() {
+	}
+};
+
+template<class Graph>
+class ComponentGraphVisualizer: public GraphVisualizer<Graph> {
+private:
+	AbstractVisualizerFactory<Graph> &factory_;
+	GraphSplitter<typename Graph::VertexId> &splitter_;
+	const string &file_name_;
+	const string &graph_name_;
+	size_t max_parts_number_;
+
+	string ConstructComponentName(string file_name, size_t cnt) {
+		stringstream ss;
+		ss << "_error_" << cnt;
+		string res = file_name;
+		//todo refactor
+		res.insert(res.length() - 4, ss.str());
+		//	cout << res << endl;
+		return res;
+	}
+
+public:
+	ComponentGraphVisualizer(Graph &graph,
+			AbstractVisualizerFactory<Graph> &factory,
+			GraphSplitter<typename Graph::VertexId> &splitter,
+			const string &file_name, const string &graph_name,
+			size_t max_parts_number = 100) :
+		GraphVisualizer<Graph> (graph), factory_(factory), splitter_(splitter),
+				file_name_(file_name), graph_name_(graph_name),
+				max_parts_number_(max_parts_number) {
+	}
+
+	virtual ~ComponentGraphVisualizer() {
+	}
+
+	virtual void Visualize() {
+		size_t cnt = 1;
+		while (!splitter_.Finished() && cnt <= max_parts_number_) {
+			string component_name =
+					ConstructComponentName(file_name_, cnt).c_str();
+			ofstream os;
+			os.open(component_name);
+			gvis::GraphPrinter<typename Graph::VertexId> * gp =
+					factory_.GetPrinterInstance(graph_name_, os);
+			auto visualizer = factory_.GetVisualizerInstance(*gp);
+			auto component = splitter_.NextComponent();
+			visualizer->open();
+			visualizer->Visualize(component);
+			visualizer->close();
+			os.close();
+			delete visualizer;
+			delete gp;
+			cnt++;
+		}
+	}
+};
 
 template<class Graph>
 void WriteErrors(const string& file_name, const string& graph_name, Graph& g,
@@ -467,30 +415,37 @@ void WriteErrors(const string& file_name, const string& graph_name, Graph& g,
 		Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId> ()) {
 	PathColorer<Graph> path_colorer(g, path1, path2);
 	set<typename Graph::EdgeId> black = path_colorer.BlackEdges();
-	omnigraph::StrGraphLabeler<Graph> gl(g);
+	omnigraph::StrGraphLabeler<Graph> labeler(g);
 	ErrorComponentSplitter<Graph> splitter(g, black);
-	size_t cnt = 0;
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	while (!splitter.Finished() && cnt < 100) {
-		fstream filestr;
-		filestr.open(ConstructComponentName<Graph> (file_name, cnt).c_str(),
-				fstream::out);
-		gvis::DotPairedGraphPrinter<Graph> gp(g, graph_name, filestr);
-		ColoredGraphVisualizer<Graph> gv(g, gp, gl, coloring);
-		auto component = splitter.NextComponent();
-		gp.open();
-		gv.Visualize(component);
-		gp.close();
-		cnt++;
-	}
+	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
+	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, file_name,
+			graph_name, 200);
+	gv.Visualize();
+	//	size_t cnt = 0;
+	//	while (!splitter.Finished() && cnt < 100) {
+	//		fstream filestr;
+	//		filestr.open(ConstructComponentName<Graph> (file_name, cnt).c_str(),
+	//				fstream::out);
+	//		gvis::DotPairedGraphPrinter<Graph> gp(g, graph_name, filestr);
+	//		ColoredGraphVisualizer<Graph> gv(g, gp, gl, coloring);
+	//		auto component = splitter.NextComponent();
+	//		gp.open();
+	//		gv.Visualize(component);
+	//		gp.close();
+	//		cnt++;
+	//	}
 }
 
 template<class Graph>
-void WriteToFile(const string& file_name, const string& graph_name, Graph& g,
+void WriteToFile(
+		const string& file_name,
+		const string& graph_name,
+		Graph& g,
 		Path<typename Graph::EdgeId> path1/* = Path<typename Graph::EdgeId> ()*/,
 		Path<typename Graph::EdgeId> path2/* = Path<typename Graph::EdgeId> ()*/) {
 	WritePaired(file_name, graph_name, g, path1, path2);
-	WriteSimple(file_name, graph_name, g);
+	WriteSimple(file_name, graph_name, g, path1, path2);
 	WriteErrors(file_name, graph_name, g, path1, path2);
 }
 
