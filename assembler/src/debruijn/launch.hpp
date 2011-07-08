@@ -304,6 +304,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const Sequence& genome
 		, size_t max_read_length, const string& output_folder, const string& work_tmp_dir) {
 	INFO("Edge graph construction tool started");
 	INFO("Paired mode: " << (paired_mode ? "Yes" : "No") );
+	INFO("Etalon paired info mode: " << (etalon_info_mode ? "Yes" : "No"))
 	INFO("From file: " << (from_saved ? "Yes" : "No"))
 	mkdir(work_tmp_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	Graph g(k);
@@ -360,7 +361,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const Sequence& genome
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 		omnigraph::WriteSimple( work_tmp_dir + "repeats_resolved_nonconjugate_copy.dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
-		INFO("repeat resolved grpah written");
+		INFO("repeat resolved graph written");
 
 		NonconjugateDeBruijnGraph resolved_graph(k);
 		IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);

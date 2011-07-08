@@ -60,7 +60,7 @@ int main() {
 	typedef RCReaderWrapper<PairedReadStream, PairedRead> RCStream;
 
 	// read data ('reads')
-	const string reads[2] = { reads_filename1, reads_filename2 };
+	const string reads[2] = {reads_filename1, reads_filename2};
 	ReadStream reader(reads);
 	PairedReadStream pairStream(reader, insert_size);
 	RCStream rcStream(pairStream);

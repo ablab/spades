@@ -59,6 +59,10 @@ public:
 			g_(g), index_(index) {
 	}
 
+	virtual ~DataHashRenewer() {
+
+	}
+
 	void HandleAdd(ElementId id) {
 		RenewKmersHash(id);
 	}
@@ -244,7 +248,6 @@ public:
 
 };
 
-
 template<size_t k, class Graph>
 class EtalonPairedInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;
@@ -253,7 +256,7 @@ class EtalonPairedInfoCounter {
 	const EdgeIndex<k + 1, Graph>& index_;
 	size_t insert_size_;
 	size_t read_length_;
-	int gap_;
+	size_t gap_;
 	size_t delta_;
 
 
@@ -269,33 +272,41 @@ public:
 	index_(index),
 	insert_size_(insert_size),
 	read_length_(read_length),
-	gap_(insert_size_ - 2 * read_length_)
-	, delta_(delta) {
-
+	gap_(insert_size_ - 2 * read_length_),
+	delta_(delta) {
+		assert(insert_size_ >= 2 * read_length_);
+//		cout << "IS " << insert_size_ << endl;
+//		cout << "RL " << read_length_ << endl;
+//		cout << "GAP " << gap_ << endl;
+//		cout << "DELTA " << delta_ << endl;
 	}
 
 	void FillEtalonPairedInfo(const Sequence& genome,
 			omnigraph::PairedInfoIndex<Graph>& paired_info) {
 		SimpleSequenceMapper<k, Graph> sequence_mapper(g_, index_);
 		Path<EdgeId> path = sequence_mapper.MapSequence(genome);
+
+//		cout << "PATH SIZE " << path.size() << endl;
+
 		for (size_t i = 0; i < path.size(); ++i) {
 			EdgeId e = path[i];
-			if (g_.length(e) > gap_ - delta_) {
+			if (g_.length(e) + delta_ > gap_) {
+//				cout << "HERE1 " << endl;
 				AddEtalonInfo(paired_info, e, e, 0);
 			}
-			size_t j = i;
+			size_t j = i + 1;
 			size_t length = 0;
 
 			while (j < path.size() && length < (insert_size_ + delta_)) {
-				if (length >= gap_ - g_.length(e) - g_.length(path[j]) - delta_) {
+				if (length + g_.length(e) + g_.length(path[j]) + delta_ >= gap_) {
+//					cout << "HERE2 " <<  /*g_.length(e) + */length << endl;
 					AddEtalonInfo(paired_info, e, path[j], g_.length(e) + length);
 				}
-				j++;
+				length += g_.length(path[j++]);
 			}
 		}
 	}
 };
-
 
 template<class Graph, size_t k>
 class GenomeMappingStat: public omnigraph::AbstractStatCounter {
