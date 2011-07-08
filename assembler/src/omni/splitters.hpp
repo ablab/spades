@@ -197,14 +197,15 @@ private:
 	typedef typename Graph::VertexId VertexId;
 
 	Graph &graph_;
-	SmartVertexIterator<omnigraph::ObservableGraph<VertexId, EdgeId> >
-			iterator_;
+	erasable_priority_queue<VertexId> queue_;
+//	SmartVertexIterator<omnigraph::ObservableGraph<VertexId, EdgeId> >
+//			iterator_;
 	set<VertexId> visited_;
 	size_t bound_;
 
 public:
 	LongEdgesSplitter(Graph &graph, size_t bound) :
-		graph_(graph), bound_(bound), iterator_(graph.SmartVertexBegin()) {
+		graph_(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */bound_(bound) {
 	}
 
 	virtual ~LongEdgesSplitter() {
@@ -215,21 +216,23 @@ public:
 			assert(false);
 			return vector<VertexId> ();
 		}
-		VertexId next = *iterator_;
+		VertexId next = queue_.top();
+		queue_.pop();
 		ShortEdgeComponentFinder<Graph> cf(graph_, bound_);
 		cf.run(next);
-		vector<VertexId> result;
-		for(auto it = cf.begin(); it != cf.end(); ++it) {
-			result.push_back(it->first);
-			if(it->second == 0) {
-				iterator_.erase(it->first);
+		vector<VertexId> result = cf.VisitedVertices();
+		for(auto it = result.begin(); it != result.end(); ++it) {
+			if(cf.GetDistance(*it) == 0) {
+//				iterator_.erase(*it);
+				queue_.erase(*it);
 			}
 		}
 		return result;
 	}
 
 	virtual bool Finished() {
-		return iterator_.IsEnd();
+//		return iterator_.IsEnd();
+		return queue_.empty();
 	}
 
 };
