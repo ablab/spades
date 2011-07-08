@@ -189,7 +189,7 @@ int main(int argc, char * argv[]) {
 	cout << "Starting preproc.\n";
 	ireadstream ifs(readsFilename.data(), qvoffset);
 	ofstream ofs;
-	ofs.open(outFilename.data());
+	//ofs.open(outFilename.data());
 	Read r;
 	size_t tmpc = 0;
 	size_t cur_maps = 0;
@@ -200,7 +200,7 @@ int main(int argc, char * argv[]) {
 			ifs >> r; 
 			if (r.trimBadQuality() >= K) {
 				rv.push_back(r);
-				ofs << "@" << r.getName() << endl << r.getSequenceString().data() << endl << "+" << endl << r.getPhredQualityString(qvoffset) << endl;
+			//	ofs << "@" << r.getName() << endl << r.getSequenceString().data() << endl << "+" << endl << r.getPhredQualityString(qvoffset) << endl;
 			}
 			if (ifs.eof()) break;
 		}
@@ -219,7 +219,7 @@ int main(int argc, char * argv[]) {
 		rv.clear();
 	}
 	ifs.close();
-	ofs.close();
+	//ofs.close();
 	cout << "All k-mers added to maps.\n"; flush(cout);
 
 	ReadStatMapContainer rsmc(vv);

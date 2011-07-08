@@ -7,20 +7,30 @@
 %\usepackage{tikz}
 %\usepackage{pgfplots}
 \usepackage[shadow,colorinlistoftodos,textwidth=3cm]{todonotes}
+\usepackage{simplewick}
 
-
+\def\myarc#1#2#3#4{
+  \draw[color=#1,line width=2pt] (360*#2/18:#4mm) arc (360*#2/18:360*#3/18:#4mm);
+}%#1 -- color, #2 -- from, #3 -- to, #4 -- radius (mm)
 
 \begin{document}
-\thispagestyle{empty}
-\begin{tikzpicture}
-  \draw (0,0) circle (2cm);
-  \foreach \i/\a in {0/A,1/T,2/G,3/C,4/A,5/T,6/T,7/G,8/C,9/A,10/C,11/T,12/G,13/C,14/A} {
-    \node[fill=white] at (360*\i/15:2cm) {\a};
-  }
-  \node at (0,0) {genome $S$};
+$R_1: \contraction{}{\tt C}{\tt AT}{\tt G}%
+\contraction{\tt CATG}{\tt T}{\tt AG}{\tt T}%
+{\tt CATGTAGT}$
 
+$R_2: \contraction{}{\tt G}{\tt TA}{\tt A}%
+\contraction{\tt GTA}{\tt A}{\tt CA}{\tt T}%
+\bcontraction{\tt GTAA}{\tt C}{\tt AT}{\tt G}%
+{\tt GTAACATG}$
 
-
-
-\end{tikzpicture}
+%\thispagestyle{empty}
+%\begin{tikzpicture}
+%  %\includegraphics[scale=0.1]{tmp.jpg}
+%  \node[anchor=south west] at (0,0) {\includegraphics[scale=0.4]{tmp.jpg}};
+%  \draw[help lines,step=.5cm] (0,0) grid (20,10);
+%  \foreach \x in {1,...,10} {
+%    \node at (-1,\x) {\x};
+%    \node at (\x,-1) {\x};
+%  }
+%\end{tikzpicture}
 \end{document}

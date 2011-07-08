@@ -253,9 +253,10 @@ int main(int argc, char * argv[]) {
 	char kmerstr[K], myline[K + 30];
 	int count; float freq;
 	while (!feof(f)) {
-		fgets(myline, K+30, f);
+		fgets(myline, K+30, f); if (feof(f)) break;
 		sscanf(myline, "%s %5u %8.2f", kmerstr, &count, &freq);
-		#pragma omp parallel for shared(vs, kmerstr, counter) num_threads(effective_threads)
+		
+		#pragma omp parallel for shared(vs) num_threads(effective_threads)
 		for (int j=0; j<tau+1; ++j) {
 			string sub = "";
 			for (int i = j; i < K; i += tau+1) {
