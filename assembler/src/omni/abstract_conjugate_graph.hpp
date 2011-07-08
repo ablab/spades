@@ -161,9 +161,11 @@ public:
 	typedef PairedVertex<VertexData, EdgeData, DataMaster>* VertexId;
 	typedef set<VertexId> Vertices;
 	typedef typename Vertices::const_iterator VertexIterator;
+	typedef VertexData VertexDataType;
 	typedef PairedEdge<VertexData, EdgeData, DataMaster>* EdgeId;
 	typedef vector<EdgeId> Edges;
 	typedef typename Edges::const_iterator EdgeIterator;
+	typedef EdgeData EdgeDataType;
 	typedef ObservableGraph<VertexId, EdgeId> super;
 	typedef SmartVertexIterator<ObservableGraph<VertexId, EdgeId> >
 			SmartVertexItarator;
