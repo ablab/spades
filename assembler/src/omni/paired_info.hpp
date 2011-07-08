@@ -453,7 +453,7 @@ public:
 	}
 
 	virtual void HandleAdd(EdgeId e) {
-		this->AddPairInfo(PairInfo<EdgeId>(e, e, 0, 1));
+		this->AddPairInfo(PairInfo<EdgeId>(e, e, 0, 0.0));
 	}
 
 	virtual void HandleDelete(EdgeId e) {
@@ -461,7 +461,7 @@ public:
 	}
 
 	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
-		this->AddPairInfo(PairInfo<EdgeId>(new_edge, new_edge, 0, 1));
+		this->AddPairInfo(PairInfo<EdgeId>(new_edge, new_edge, 0, 0.0));
 		int shift = 0;
 		for (size_t i = 0; i < old_edges.size(); ++i) {
 			EdgeId old_edge = old_edges[i];

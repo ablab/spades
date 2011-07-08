@@ -383,7 +383,8 @@ public:
 //				CompositeCallback<Graph> composite_callback;
 //				composite_callback.AddProcessor(counter);
 //				composite_callback.AddProcessor(graph_labeler);
-				int lower_bound = insert_size_ - 2 * max_read_length_ - g_.length(e1) - g_.length(e2);
+				//todo delete unnecessary parentheses and casts
+				int lower_bound = ((int) insert_size_) - 2 * ((int) max_read_length_) - ((int) g_.length(e1)) - ((int) g_.length(e2));
 //				cout << "IS " << insert_size_ << endl;
 //				cout << "MRL " << max_read_length_ << endl;
 //				cout << "Raw Lower bound " << lower_bound << endl;
