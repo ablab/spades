@@ -47,7 +47,6 @@ public:
 /**
  * Implementation of GraphLabeler for Graphs that have methods
  * str(VertexId) and str(EdgeId), such as AbstractConjugateGraph.
-
  */
 template<class Graph>
 class StrGraphLabeler : public GraphLabeler<Graph> {
@@ -65,6 +64,25 @@ public:
 
 	virtual std::string label(EdgeId edgeId) const {
 		return g_.str(edgeId);
+	}
+};
+
+template<class Graph>
+class StrCoverageGraphLabeler : public GraphLabeler<Graph> {
+protected:
+	typedef GraphLabeler<Graph> super;
+	typedef typename super::EdgeId EdgeId;
+	typedef typename super::VertexId VertexId;
+	Graph& g_;
+public:
+	StrCoverageGraphLabeler(Graph& g) : g_(g) {}
+
+	virtual std::string label(VertexId vertexId) const {
+		return g_.str(vertexId);
+	}
+
+	virtual std::string label(EdgeId edgeId) const {
+		return g_.str(edgeId + " {" + g_.coverage(edgeId) + "}");
 	}
 };
 

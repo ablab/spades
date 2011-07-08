@@ -9,7 +9,6 @@ DECL_PROJECT_LOGGER("a")
 #include "erroneous_connection_remover.hpp"
 #include "statistics.hpp"
 #include "omni_tools.hpp"
-#include "omnigraph.hpp"
 #include "visualization_utils.hpp"
 #include "libs/getopt_pp/getopt_pp_standalone.h"
 #include <iostream>
@@ -20,8 +19,6 @@ using namespace GetOpt;
 namespace abruijn {
 
 DECL_LOGGER("main")
-
-typedef omnigraph::Omnigraph Graph;
 
 class Launch {
 public:
@@ -157,7 +154,7 @@ public:
 
 	void stats(string name) {
 		omnigraph::StrGraphLabeler<Graph> labeler(*g_);
-		gvis::WriteToDotFile(output_file_ + "_" + name, "earmarked", *g_, labeler);
+		omnigraph::WriteToDotFile(output_file_ + "_" + name, "earmarked", *g_, labeler);
 		INFO("Statistics of " << name << ":");
 		omnigraph::VertexEdgeStat<Graph> vertex_edge_stat(*g_);
 		vertex_edge_stat.Count();
