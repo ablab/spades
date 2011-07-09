@@ -12,6 +12,8 @@
 #include <sstream>
 #include <vector>
 #include "logging.hpp"
+#include <fstream>
+
 /**
  * Converts anything to string (using ostringstream).
  */
@@ -68,5 +70,15 @@ public:
 	}
 
 };
+
+inline bool fileExists(std::string filename) {
+	return std::ifstream(filename);
+}
+
+inline void checkFileExistenceFATAL(std::string filename) {
+	if (!fileExists(filename)) {
+		FATAL("File " << filename << " doesn't exists or can't be read!\n");
+	}
+}
 
 #endif /* SIMPLE_TOOLS_HPP_ */

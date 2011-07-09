@@ -40,36 +40,7 @@ $(builddir)/%.o: %.cpp $(builddir)/.d
 	sed -e 's/^ *//' -e 's/$$/:/' >> $(builddir)/$*.d
 	@rm -f $(builddir)/$*.d.tmp
 
-$(builddir)/%.o: ../common/%.cpp $(builddir)/.d
-	$(CC) $(CFLAGS) $< -o $@
-	@echo $(builddir) > $(builddir)/$*.d.tmp
-	@tr "\n" "/" <$(builddir)/$*.d.tmp >$(builddir)/$*.d
-	$(CC) $(DEPSFL) $(CFLAGS) $< >> $(builddir)/$*.d
-	@cp -f $(builddir)/$*.d $(builddir)/$*.d.tmp
-	@sed -e 's/.*://' -e 's/\\$$//' < $(builddir)/$*.d.tmp | fmt -1 | \
-	sed -e 's/^ *//' -e 's/$$/:/' >> $(builddir)/$*.d
-	@rm -f $(builddir)/$*.d.tmp
-
-$(builddir)/%.o: ../common/sequence/%.cpp $(builddir)/.d
-	$(CC) $(CFLAGS) $< -o $@
-	@echo $(builddir) > $(builddir)/$*.d.tmp
-	@tr "\n" "/" <$(builddir)/$*.d.tmp >$(builddir)/$*.d
-	$(CC) $(DEPSFL) $(CFLAGS) $< >> $(builddir)/$*.d
-	@cp -f $(builddir)/$*.d $(builddir)/$*.d.tmp
-	@sed -e 's/.*://' -e 's/\\$$//' < $(builddir)/$*.d.tmp | fmt -1 | \
-	sed -e 's/^ *//' -e 's/$$/:/' >> $(builddir)/$*.d
-	@rm -f $(builddir)/$*.d.tmp
-	
-$(builddir)/%.o: ../common/read/%.cpp $(builddir)/.d
-	$(CC) $(CFLAGS) $< -o $@
-	@echo $(builddir) > $(builddir)/$*.d.tmp
-	@tr "\n" "/" <$(builddir)/$*.d.tmp >$(builddir)/$*.d
-	$(CC) $(DEPSFL) $(CFLAGS) $< >> $(builddir)/$*.d
-	@cp -f $(builddir)/$*.d $(builddir)/$*.d.tmp
-	@sed -e 's/.*://' -e 's/\\$$//' < $(builddir)/$*.d.tmp | fmt -1 | \
-	sed -e 's/^ *//' -e 's/$$/:/' >> $(builddir)/$*.d
-	@rm -f $(builddir)/$*.d.tmp
-    
+   
 $(builddir)/.d:
 	mkdir -p $(builddir)
 	touch $@        
