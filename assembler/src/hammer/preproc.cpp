@@ -33,13 +33,13 @@ int qvoffset;
 
 
 double oct2phred(string qoct)  {
-	float freq = 1;	
+	float freq = 1;
 	for (size_t i = 0; i < qoct.length(); i++) {
 		freq *= 1 - pow(10, -float(qoct[i] - qvoffset)/10.0);
 	}
 
 	return freq;
-}               
+}
 
 string encode3toabyte (const string & s)  {
 	string retval;
@@ -80,7 +80,8 @@ void addKMers(const Read & r, KMerStatMap & v) {
 			} else {
 				pair<KMer, KMerStat> p;
 				p.first = kmer;
-				p.second.count = 1; p.second.freq = freq;
+				p.second.count = 1;
+				p.second.freq = freq;
 				v.insert(p);
 			}
 			if (i+K < r.size() && is_nucl(s[i+K])) {
@@ -136,18 +137,13 @@ public:
 			return p;
 		}
 		p.first = imin->first; p.second.count = 0; p.second.freq = 0;
-		//cout << "Next. Min=" << imin->first.str().data() << "\n";
 		for (size_t i=0; i<v_.size(); ++i) {
-			/*if (i_[i] != v_[i].end())
-				cout << "   " << i << " = " << i_[i]->first.str().data() << "\n";*/
 			if (i_[i]->first == p.first) {
-				//cout << i << "=" << i_[i]->second.count << " ";
 				p.second.count += i_[i]->second.count;
 				p.second.freq  += i_[i]->second.freq;
 				++i_[i];
 			}
 		}
-		//cout << " = " << p.second.count << "\n\n";
 		return p;
 	}
 
@@ -174,7 +170,7 @@ int main(int argc, char * argv[]) {
 
 	int tau = atoi(argv[1]);
 	qvoffset = atoi(argv[2]);
-	
+
 	string readsFilename = argv[3];
 	string outFilename = argv[4];
 	string kmerFilename = argv[5];
@@ -188,8 +184,6 @@ int main(int argc, char * argv[]) {
 
 	cout << "Starting preproc.\n";
 	ireadstream ifs(readsFilename.data(), qvoffset);
-	ofstream ofs;
-	//ofs.open(outFilename.data());
 	Read r;
 	size_t tmpc = 0;
 	size_t cur_maps = 0;
@@ -197,10 +191,9 @@ int main(int argc, char * argv[]) {
 	while (!ifs.eof()) {
 		// reading a batch of reads
 		for (int thr = 0; thr < READ_BATCH_SIZE; ++thr) {
-			ifs >> r; 
+			ifs >> r;
 			if (r.trimBadQuality() >= K) {
 				rv.push_back(r);
-			//	ofs << "@" << r.getName() << endl << r.getSequenceString().data() << endl << "+" << endl << r.getPhredQualityString(qvoffset) << endl;
 			}
 			if (ifs.eof()) break;
 		}
@@ -219,7 +212,6 @@ int main(int argc, char * argv[]) {
 		rv.clear();
 	}
 	ifs.close();
-	//ofs.close();
 	cout << "All k-mers added to maps.\n"; flush(cout);
 
 	ReadStatMapContainer rsmc(vv);
@@ -231,8 +223,6 @@ int main(int argc, char * argv[]) {
 	  fprintf(f, "%s %5u %8.2f\n", p.first.str().data(), (unsigned int) p.second.count, p.second.freq);
 	}
 	fclose(f);
-	
+
 	return 0;
 }
-
-
