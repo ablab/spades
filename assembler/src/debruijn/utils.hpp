@@ -323,7 +323,7 @@ private:
 	const EdgeIndex<k + 1, Graph>& index_;
 	Sequence genome_;
 public:
-	GenomeMappingStat(Graph &graph, const EdgeIndex<k + 1, Graph> index,
+	GenomeMappingStat(Graph &graph, const EdgeIndex<k + 1, Graph> &index,
 	Sequence genome) :
 			graph_(graph), index_(index), genome_(genome) {
 	}
@@ -388,7 +388,7 @@ public:
 				new omnigraph::BlackEdgesStat<Graph>(graph, path1, path2));
 		stats_.AddStat(new omnigraph::NStat<Graph>(graph, path1, 50));
 		stats_.AddStat(new omnigraph::SelfComplementStat<Graph>(graph));
-		GenomeMappingStat<Graph, k>(graph, index, Sequence(genome)).Count();
+		stats_.AddStat(GenomeMappingStat<Graph, k>(graph, index, Sequence(genome));
 	}
 
 	virtual ~StatCounter() {
@@ -415,6 +415,15 @@ private:
 		return paired_read.distance() - paired_read.second().size();
 	}
 
+	size_t CorrectLength(Path<EdgeId> path, size_t idx) {
+		size_t answer = graph_.length(path[idx]);
+		if (idx == 0)
+			answer -= path.start_pos();
+		if (idx == path.size() - 1)
+			answer -= graph_.length(path[idx]) - path.end_pos();
+		return answer;
+	}
+
 	void ProcessPairedRead(
 			omnigraph::PairedInfoIndex<Graph> &paired_index,
 			const PairedRead& p_r,
@@ -429,9 +438,7 @@ private:
 		for (size_t i = 0; i < path1.size(); ++i) {
 			int current_distance2 = current_distance1;
 			for (size_t j = 0; j < path2.size(); ++j) {
-				//				double weight = CorrectLength(path1, i) * CorrectLength(path2,
-				//						j);
-				double weight = 1;
+				double weight = CorrectLength(path1, i) * CorrectLength(path2, j);
 				PairInfo<EdgeId> new_info(path1[i], path2[j], current_distance2,
 						weight);
 				paired_index.AddPairInfo(new_info);
@@ -454,7 +461,7 @@ public:
 	 */
 	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 1));
+			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0));
 		}
 		typedef Seq<kmer_size + 1> KPOMer;
 		debruijn_graph::SimpleSequenceMapper<kmer_size, Graph> read_threader(

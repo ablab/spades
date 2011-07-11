@@ -96,8 +96,12 @@ public:
 		size_t length = 0;
 		SequenceBuilder sb;
 		for (auto it = toMerge.begin(); it != toMerge.end(); ++it) {
+			if (length == 0) {
+				sb.append((*it)->nucls());
+			} else {
+				sb.append((*it)->nucls().Subseq((*it)->nucls().size() - (*it)->length()));
+			}
 			length += (*it)->length();
-			sb.append((*it)->nucls());
 		}
 		return OmniNuclEdge(length, sb.BuildSequence());
 	}
@@ -130,6 +134,15 @@ public:
 	void IncCoverage(EdgeId edge) {
 		coverage_index_->IncCoverage(edge);
 	}
+
+	Sequence nucls(const EdgeId edge) const {
+		return master_.nucls(data(edge));
+	}
+
+	Sequence nucls(const VertexId v) const {
+		return master_.nucls(data(v));
+	}
+
 };
 
 }

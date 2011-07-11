@@ -99,9 +99,9 @@ public:
 		}
 		if (end > start) {
 			seq_.erase(seq_.begin(), seq_.begin() + start);
-			seq_.erase(seq_.begin() + end, seq_.end());
+			seq_.erase(seq_.begin() + end + 1, seq_.end());
 			qual_.erase(qual_.begin(), qual_.begin() + start);
-			qual_.erase(qual_.begin() + end, qual_.end());
+			qual_.erase(qual_.begin() + end + 1, qual_.end());
 			return seq_.size();
 		} else {
 			seq_ = "";
@@ -125,10 +125,10 @@ public:
 				curHypothesis = i + 1;
 			}
 		}
-		if (i  > k + curHypothesis) {
+		if (i > k + curHypothesis) {
 			return curHypothesis;
 		}
-		return seq_.size();
+		return -1;
 	}
 
 	Read() :

@@ -276,13 +276,24 @@ void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
 }
 
 template<class Graph>
-void scanGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
+void scanNCGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
 		const string &file_name, PairedInfoIndex<Graph>& paired_index) {
 	DataScanner<Graph> dataScanner(g, new_IDs);
 	dataScanner.loadNonConjugateGraph(file_name, true);
 	dataScanner.loadCoverage(file_name);
 	dataScanner.loadPaired(file_name, paired_index);
 }
+
+template<class Graph>
+void scanConjugateGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
+		const string &file_name, PairedInfoIndex<Graph>& paired_index) {
+	DataScanner<Graph> dataScanner(g, new_IDs);
+	dataScanner.loadConjugateGraph(file_name, true);
+	dataScanner.loadCoverage(file_name);
+//	dataScanner.loadPaired(file_name, paired_index);
+}
+
+
 template<size_t k>
 void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		size_t iteration_count, const Sequence& genome,
@@ -391,14 +402,23 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 			omnigraph::WriteSimple(
 					output_folder + "repeats_resolved_before.dot",
 					"no_repeat_graph", g, IdTrackLabelerBefore);
-			printGraph(g, IntIds, work_tmp_dir + "graph", paired_index);
+			printGraph(g, IntIds, output_folder + "graph", paired_index);
 		}
 
 		NCGraph new_graph(k);
 		IdTrackHandler<NCGraph> NewIntIds(new_graph, IntIds.MaxVertexId(),
 				IntIds.MaxEdgeId());
 		PairedInfoIndex<NCGraph> new_index(new_graph);
-		scanGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index);
+
+		Graph conj_copy_graph(k);
+		IdTrackHandler<Graph> conj_IntIds(conj_copy_graph, IntIds.MaxVertexId(),
+				IntIds.MaxEdgeId());
+		PairedInfoIndex<Graph> conj_copy_index(conj_copy_graph);
+		scanConjugateGraph(conj_copy_graph, conj_IntIds, output_folder + "graph", conj_copy_index);
+		printGraph(conj_copy_graph, conj_IntIds, output_folder + "graph_copy", conj_copy_index);
+
+
+		scanNCGraph(new_graph, NewIntIds, output_folder + "graph", new_index);
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
@@ -414,9 +434,16 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 				Resolved_IntIds, output_folder + "resolve/");
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
 				Resolved_IntIds);
+
+
+		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_after.dot", "no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+		omnigraph::WriteSimple(output_folder + "repeats_resolved_after.dot", "no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+
 		ClipTips(resolved_graph);
 		RemoveLowCoverageEdges(resolved_graph);
-		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_after.dot",
+		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_und cleared.dot",
+				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+		omnigraph::WriteSimple(output_folder + "repeats_resolved_und cleared.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		INFO("repeat resolved grpah written");
 		EdgeIndex<k + 1, NCGraph> aux_index(resolved_graph);

@@ -134,6 +134,8 @@ class DataScanner {
 public:
 //	DataPrinter(/*const string& file_name,*/ Graph &g, IdTrackHandler<Graph> &old_IDs);
 	void loadNonConjugateGraph(const string& file_name, bool with_Sequence);
+	void loadConjugateGraph(const string& file_name, bool with_Sequence);
+
 //	void saveEdgeSequences(const string& file_name);
 	void loadCoverage(const string& file_name);
 	void loadPaired(const string& file_name, PairedInfoIndex<Graph>& PIIndex);
@@ -160,7 +162,7 @@ void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name, bool wit
 	FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
 	assert(sequence_file != NULL);
 
-	INFO("Reading graph from " << file_name << " started");
+	INFO("Reading NON conjugate de bruujn graph from " << file_name << " started");
 	int vertex_count;
 	assert(fscanf(file, "%d %d \n", &vertex_count, &edge_count_) == 2);
 	for (int i = 0; i < vertex_count; i++) {
@@ -194,11 +196,57 @@ void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name, bool wit
 		IdHandler_.AddEdgeIntId(eid, e_real_id);
 
 	}
-
-
 	fclose(file);
 	fclose(sequence_file);
+}
 
+template<class Graph>
+void DataScanner<Graph>::loadConjugateGraph(const string& file_name, bool with_Sequence) {
+	FILE* file = fopen((file_name + ".grp").c_str(), "r");
+	assert(file != NULL);
+	FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
+	assert(sequence_file != NULL);
+	set<int>  vertex_set;
+	set<int> edge_set;
+	INFO("Reading conjugate de bruijn  graph from " << file_name << " started");
+	int vertex_count;
+	assert(fscanf(file, "%d %d \n", &vertex_count, &edge_count_) == 2);
+	for (int i = 0; i < vertex_count; i++) {
+		int vertex_real_id, conjugate_id;
+		assert(fscanf(file, "Vertex %d ~ %d .\n", &vertex_real_id, &conjugate_id) == 2);
+		if (vertex_set.find(vertex_real_id) == vertex_set.end()){
+			VertexId vid = graph_.AddVertex();
+			VertexId conj_vid = graph_.conjugate(vid);
+
+			IdHandler_.AddVertexIntId(vid, vertex_real_id);
+			IdHandler_.AddVertexIntId(conj_vid, conjugate_id);
+			vertex_set.insert(conjugate_id);
+			TRACE(vid<<" "<< conj_vid << "added");
+		}
+	}
+	int tmp_edge_count;
+	assert(fscanf(sequence_file, "%d", &tmp_edge_count) == 1);
+	assert(edge_count_ == tmp_edge_count);
+	char longstring[1000500];
+	for (int i = 0; i < edge_count_; i++){
+		int e_real_id, start_id, fin_id, length, conjugate_edge_id;
+		assert(fscanf(file, "Edge %d : %d -> %d, l = %d ~ %d .\n", &e_real_id, &start_id, &fin_id, &length, &conjugate_edge_id) == 5);
+		assert(fscanf(sequence_file, "%d %s .", &e_real_id, longstring) == 2);
+
+		if (edge_set.find(e_real_id) == edge_set.end()) {
+			Sequence tmp(longstring);
+			DEBUG(start_id<<" "<<  fin_id <<" "<< IdHandler_.ReturnVertexId(start_id)<<" "<< IdHandler_.ReturnVertexId(fin_id));
+			EdgeId eid = graph_.AddEdge(IdHandler_.ReturnVertexId(start_id), IdHandler_.ReturnVertexId(fin_id), tmp);
+			IdHandler_.AddEdgeIntId(eid, e_real_id);
+			IdHandler_.AddEdgeIntId(graph_.conjugate(eid), conjugate_edge_id);
+			edge_set.insert(conjugate_edge_id);
+
+		}
+
+
+	}
+	fclose(file);
+	fclose(sequence_file);
 }
 
 template<class Graph>
