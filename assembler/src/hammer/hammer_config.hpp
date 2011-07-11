@@ -34,12 +34,22 @@ typedef map<string, size_t> StringCountMap;
 typedef pair<string, size_t> StringCount;
 typedef vector<StringCount> StringCountVector;
 
-bool SCgreater ( const StringCount & elem1, const StringCount & elem2 )
-{
+inline bool SCgreater ( const StringCount & elem1, const StringCount & elem2 ) {
    return lexicographical_compare(elem1.first.begin(), elem1.first.end(), elem2.first.begin(), elem2.first.end());
 }
 
-bool KCgreater ( const KMerCount & l, const KMerCount & r ) {
+struct StringKMer{
+	string sub;
+	size_t count;
+	KMer kmer;
+};
+typedef vector<StringKMer> StringKMerVector;
+
+inline bool SKgreater ( const StringKMer & elem1, const StringKMer & elem2 ) {
+   return lexicographical_compare(elem1.sub.begin(), elem1.sub.end(), elem2.sub.begin(), elem2.sub.end());
+}
+
+inline bool KCgreater ( const KMerCount & l, const KMerCount & r ) {
 	for (size_t i = 0; i < K; ++i) {
 		if (l.first[i] != r.first[i]) {
 			return (l.first[i] < r.first[i]);
@@ -48,7 +58,7 @@ bool KCgreater ( const KMerCount & l, const KMerCount & r ) {
 	return false;
 }
 
-bool KMerLess(const KMer &l, const KMer &r) {
+inline bool KMerLess(const KMer &l, const KMer &r) {
 	for (size_t i = 0; i < l.size(); ++i) {
 		if (l[i] != r[i]) {
 			return (l[i] < r[i]);

@@ -23,7 +23,10 @@
 #include<algorithm>
 
 using namespace std;
-bool pred1(const vector<int> & v) {return v.size() == 0;}
+
+inline bool zero_size(const vector<int> & v) {
+		return v.size() == 0;
+}
 
 //Straight out of Cormen
 class unionFindClass {
@@ -69,7 +72,7 @@ public:
 			if (data[i] != -1) 
 				otherWay.at(find_set(data[i])).push_back(i);
 		}
-		otherWay.erase(remove_if(otherWay.begin(), otherWay.end(), pred1), otherWay.end());
+		otherWay.erase(remove_if(otherWay.begin(), otherWay.end(), zero_size), otherWay.end());
 	}
 
 	void get_classes (vector<int> & consolidatedData, vector<vector<int > > & otherWay) {
@@ -78,7 +81,7 @@ public:
 			if (data[i] != -1) 
 				otherWay.at(find_set(data[i])).push_back(i);
 		}
-		otherWay.erase(remove_if(otherWay.begin(), otherWay.end(), pred1), otherWay.end());
+		otherWay.erase(remove_if(otherWay.begin(), otherWay.end(), zero_size), otherWay.end());
 
 		consolidatedData.resize(data.size(), -1);
 		for (size_t i = 0; i < otherWay.size(); i++) 
