@@ -154,7 +154,8 @@ public:
 	}
 
 	void stats(string name) {
-		omnigraph::StrGraphLabeler<Graph> labeler(*g_);
+//		omnigraph::StrGraphLabeler<Graph> labeler(*g_);
+		omnigraph::StrCoverageGraphLabeler<Graph> labeler(*g_);
 		omnigraph::WriteToDotFile(output_file_ + "_" + name, "earmarked", *g_, labeler);
 		INFO("Statistics of " << name << ":");
 		omnigraph::VertexEdgeStat<Graph> vertex_edge_stat(*g_);
