@@ -67,7 +67,7 @@ void addKMers(const Read & r, KMerStatMap & v) {
 	KMerStatMap::iterator it;
 	float freq = oct2phred(r.getPhredQualityString(qvoffset));
 	string s = r.getSequenceString();
-	size_t i = 0;
+	int i = 0;
 	while (true) {
 		i = r.firstValidKmer(i, K);
 		if (i == -1) break;
@@ -80,15 +80,14 @@ void addKMers(const Read & r, KMerStatMap & v) {
 			} else {
 				pair<KMer, KMerStat> p;
 				p.first = kmer;
-				p.second.count = 1;
+				p.second.count = 1; 
 				p.second.freq = freq;
 				v.insert(p);
 			}
-			if (i + K < r.size() && is_nucl(s[i+K])) {
+			if (is_nucl(s[i+K])) {
 				kmer = kmer << r[i+K];
 				++i;
 			} else {
-				i = i + K;
 				break;
 			}
 		}
@@ -114,7 +113,7 @@ void join_maps(KMerStatMap & v1, const KMerStatMap & v2) {
 
 const int READ_BATCH_SIZE = (int) 1e6;
 const int BATCHES_PER_MAP = 4;
-const unsigned long long MAX_INT_64 = 15e18;
+const unsigned long long MAX_INT_64 = (unsigned long long) 15e18;
 
 
 class ReadStatMapContainer {
@@ -184,6 +183,7 @@ int main(int argc, char * argv[]) {
 
 	cout << "Starting preproc.\n";
 	ireadstream ifs(readsFilename.data(), qvoffset);
+	ofstream ofs;
 	Read r;
 	size_t tmpc = 0;
 	size_t cur_maps = 0;
@@ -191,7 +191,7 @@ int main(int argc, char * argv[]) {
 	while (!ifs.eof()) {
 		// reading a batch of reads
 		for (int thr = 0; thr < READ_BATCH_SIZE; ++thr) {
-			ifs >> r;
+			ifs >> r; 
 			if (r.trimBadQuality() >= K) {
 				rv.push_back(r);
 			}
