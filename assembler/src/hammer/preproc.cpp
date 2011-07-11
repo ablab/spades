@@ -111,9 +111,9 @@ void join_maps(KMerStatMap & v1, const KMerStatMap & v2) {
 	}
 }
 
-#define READ_BATCH_SIZE 1000000
-#define BATCHES_PER_MAP 4
-#define MAX_INT_64 15000000000000000000
+const int READ_BATCH_SIZE = (int) 1e6;
+const int BATCHES_PER_MAP = 4;
+const unsigned long long MAX_INT_64 = 15e18;
 
 
 class ReadStatMapContainer {
@@ -211,7 +211,7 @@ int main(int argc, char * argv[]) {
 		++tmpc;
 		cout << "Batch " << tmpc << " read.\n"; flush(cout);
 		#pragma omp parallel for shared(rv, vv, ofs) num_threads(nthreads)
-		for(int i=0; i<rv.size(); ++i) {
+		for(int i=0; i<(int)rv.size(); ++i) {
 			addKMers(rv[i], vv[omp_get_thread_num() + cur_maps * nthreads]);
 			addKMers(!(rv[i]), vv[omp_get_thread_num() + cur_maps * nthreads]);
 		}
@@ -223,13 +223,12 @@ int main(int argc, char * argv[]) {
 	cout << "All k-mers added to maps.\n"; flush(cout);
 
 	ReadStatMapContainer rsmc(vv);
-	for (int i=0; i<vv.size(); ++i) cout << "size(" << i << ")=" << vv[i].size() << "\n"; flush(cout);
+	for (int i=0; i<(int)vv.size(); ++i) cout << "size(" << i << ")=" << vv[i].size() << "\n"; flush(cout);
 
 	FILE* f = fopen(kmerFilename.data(), "w");
-	size_t counter = 0;
 	vector<StringCountVector> vs(tau+1);
 	for (pair<KMer, KMerStat> p = rsmc.next(); p.second.count < MAX_INT_64; p = rsmc.next()) {
-		fprintf(f, "%s %5u %8.2f\n", p.first.str().data(), p.second.count, p.second.freq);
+	  fprintf(f, "%s %5u %8.2f\n", p.first.str().data(), (unsigned int) p.second.count, p.second.freq);
 	}
 	fclose(f);
 	
