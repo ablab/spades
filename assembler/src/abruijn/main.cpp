@@ -10,6 +10,7 @@ DECL_PROJECT_LOGGER("a")
 #include "statistics.hpp"
 #include "omni_tools.hpp"
 #include "visualization_utils.hpp"
+#include "osequencestream.hpp"
 #include "libs/getopt_pp/getopt_pp_standalone.h"
 #include <iostream>
 
@@ -202,6 +203,12 @@ public:
 			}
 			size = nsize;
 		}
+
+		osequencestream oss(output_file_ + "_" + "contigs");
+		for (auto edge_it = g_->SmartEdgeBegin(); !edge_it.IsEnd(); ++edge_it) {
+			oss << g_->nucls(*edge_it);
+		}
+
 		/*INFO("===== Clipping tips #2... =====");
 		tip_clipper.ClipTips();
 		stats("tc_br_ecr_tc");

@@ -130,6 +130,15 @@ public:
 	void IncCoverage(EdgeId edge) {
 		coverage_index_->IncCoverage(edge);
 	}
+
+	Sequence nucls(const EdgeId edge) const {
+		return master_.nucls(data(edge));
+	}
+
+	Sequence nucls(const VertexId v) const {
+		return master_.nucls(data(v));
+	}
+
 };
 
 }

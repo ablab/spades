@@ -311,26 +311,15 @@ int process_block_SIN(vector<HammerRead> & block, int blockNum, double threshold
 	for (int l = 1; l <= origBlockSize; ++l) {
 		vector<HammerRead> centers(l);
 		double curLikelihood = lMeansClustering(l, distances, block, indices, centers);
-		/*if (centers.size() > 1) {
-			cout << "Centers:\n"; for (int i=0; i<l; ++i) cout << "  " << centers[i].seq << "\n";
-			cout << "Indices: "; for (size_t i=0; i<block.size(); ++i) cout << indices[i]; cout << "\n";
-			cout.width(6); cout.precision(2);
-			printf("Likelihood: %f\n", curLikelihood);
-		} else if (block.size() > 1) {
-			printf("Single-center likelihood: %f\n", curLikelihood);
-		}*/
 		if (curLikelihood <= bestLikelihood) {
-			//cout << "We've stopped improving. Exiting.\n";
 			break;
 		}
 		bestLikelihood = curLikelihood;
 		bestCenters = centers; bestIndices = indices;
-		//if (centers.size() > 1) cout << "\n";
 	}
 	
 	for (size_t k=0; k<bestCenters.size(); ++k) {
 		if (bestCenters[k].count == 0) {
-			// cout << "Cluster " << k << " has no elements. Strange.\n";
 			continue; // superfluous cluster with zero elements
 		}
 		if (bestCenters[k].count == 1) { 
