@@ -67,10 +67,10 @@ void addKMers(const Read & r, KMerStatMap & v) {
 	KMerStatMap::iterator it;
 	float freq = oct2phred(r.getPhredQualityString(qvoffset));
 	string s = r.getSequenceString();
-	size_t i=0;
+	size_t i = 0;
 	while (true) {
 		i = r.firstValidKmer(i, K);
-		if (i+K > r.size()) break;
+		if (i == -1) break;
 		KMer kmer = KMer(r.getSubSequence(i, K));
 		while (true) {
 			it = v.find(kmer);
@@ -84,11 +84,11 @@ void addKMers(const Read & r, KMerStatMap & v) {
 				p.second.freq = freq;
 				v.insert(p);
 			}
-			if (i+K < r.size() && is_nucl(s[i+K])) {
+			if (i + K < r.size() && is_nucl(s[i+K])) {
 				kmer = kmer << r[i+K];
 				++i;
 			} else {
-				i = i+K;
+				i = i + K;
 				break;
 			}
 		}

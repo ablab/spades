@@ -125,10 +125,10 @@ public:
 				curHypothesis = i + 1;
 			}
 		}
-		if (i  > k + curHypothesis) {
+		if (i > k + curHypothesis) {
 			return curHypothesis;
 		}
-		return seq_.size();
+		return -1;
 	}
 
 	Read() :
