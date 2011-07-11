@@ -33,13 +33,13 @@ int qvoffset;
 
 
 double oct2phred(string qoct)  {
-	float freq = 1;	
+	float freq = 1;
 	for (size_t i = 0; i < qoct.length(); i++) {
 		freq *= 1 - pow(10, -float(qoct[i] - qvoffset)/10.0);
 	}
 
 	return freq;
-}               
+}
 
 string encode3toabyte (const string & s)  {
 	string retval;
@@ -70,7 +70,7 @@ void addKMers(const Read & r, KMerStatMap & v) {
 	size_t i=0;
 	while (true) {
 		i = r.firstValidKmer(i, K);
-		if (i+K > r.size()) break;
+		if (i == -1) break;
 		KMer kmer = KMer(r.getSubSequence(i, K));
 		while (true) {
 			it = v.find(kmer);
@@ -80,7 +80,8 @@ void addKMers(const Read & r, KMerStatMap & v) {
 			} else {
 				pair<KMer, KMerStat> p;
 				p.first = kmer;
-				p.second.count = 1; p.second.freq = freq;
+				p.second.count = 1; 
+				p.second.freq = freq;
 				v.insert(p);
 			}
 			if (i+K < r.size() && is_nucl(s[i+K])) {
@@ -111,9 +112,9 @@ void join_maps(KMerStatMap & v1, const KMerStatMap & v2) {
 	}
 }
 
-#define READ_BATCH_SIZE 1000000
-#define BATCHES_PER_MAP 4
-#define MAX_INT_64 15000000000000000000
+const int READ_BATCH_SIZE = (int) 1e6;
+const int BATCHES_PER_MAP = 4;
+const unsigned long long MAX_INT_64 = 15e18;
 
 
 class ReadStatMapContainer {
@@ -136,18 +137,13 @@ public:
 			return p;
 		}
 		p.first = imin->first; p.second.count = 0; p.second.freq = 0;
-		//cout << "Next. Min=" << imin->first.str().data() << "\n";
 		for (size_t i=0; i<v_.size(); ++i) {
-			/*if (i_[i] != v_[i].end())
-				cout << "   " << i << " = " << i_[i]->first.str().data() << "\n";*/
 			if (i_[i]->first == p.first) {
-				//cout << i << "=" << i_[i]->second.count << " ";
 				p.second.count += i_[i]->second.count;
 				p.second.freq  += i_[i]->second.freq;
 				++i_[i];
 			}
 		}
-		//cout << " = " << p.second.count << "\n\n";
 		return p;
 	}
 
@@ -174,7 +170,7 @@ int main(int argc, char * argv[]) {
 
 	int tau = atoi(argv[1]);
 	qvoffset = atoi(argv[2]);
-	
+
 	string readsFilename = argv[3];
 	string outFilename = argv[4];
 	string kmerFilename = argv[5];
@@ -189,7 +185,6 @@ int main(int argc, char * argv[]) {
 	cout << "Starting preproc.\n";
 	ireadstream ifs(readsFilename.data(), qvoffset);
 	ofstream ofs;
-	//ofs.open(outFilename.data());
 	Read r;
 	size_t tmpc = 0;
 	size_t cur_maps = 0;
@@ -200,7 +195,6 @@ int main(int argc, char * argv[]) {
 			ifs >> r; 
 			if (r.trimBadQuality() >= K) {
 				rv.push_back(r);
-			//	ofs << "@" << r.getName() << endl << r.getSequenceString().data() << endl << "+" << endl << r.getPhredQualityString(qvoffset) << endl;
 			}
 			if (ifs.eof()) break;
 		}
@@ -211,7 +205,7 @@ int main(int argc, char * argv[]) {
 		++tmpc;
 		cout << "Batch " << tmpc << " read.\n"; flush(cout);
 		#pragma omp parallel for shared(rv, vv, ofs) num_threads(nthreads)
-		for(int i=0; i<rv.size(); ++i) {
+		for(int i=0; i<(int)rv.size(); ++i) {
 			addKMers(rv[i], vv[omp_get_thread_num() + cur_maps * nthreads]);
 			addKMers(!(rv[i]), vv[omp_get_thread_num() + cur_maps * nthreads]);
 		}
@@ -219,20 +213,18 @@ int main(int argc, char * argv[]) {
 		rv.clear();
 	}
 	ifs.close();
-	//ofs.close();
 	cout << "All k-mers added to maps.\n"; flush(cout);
 
 	ReadStatMapContainer rsmc(vv);
-	for (int i=0; i<vv.size(); ++i) cout << "size(" << i << ")=" << vv[i].size() << "\n"; flush(cout);
+	for (int i=0; i<(int)vv.size(); ++i) cout << "size(" << i << ")=" << vv[i].size() << "\n"; flush(cout);
 
 	FILE* f = fopen(kmerFilename.data(), "w");
-	size_t counter = 0;
 	vector<StringCountVector> vs(tau+1);
 	for (pair<KMer, KMerStat> p = rsmc.next(); p.second.count < MAX_INT_64; p = rsmc.next()) {
-		fprintf(f, "%s %5u %8.2f\n", p.first.str().data(), p.second.count, p.second.freq);
+	  fprintf(f, "%s %5u %8.2f\n", p.first.str().data(), (unsigned int) p.second.count, p.second.freq);
 	}
 	fclose(f);
-	
+
 	return 0;
 }
 
