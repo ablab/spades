@@ -5,8 +5,12 @@ MYCFLAGS=-fPIC -std=c++0x
 MYLDFLAGS=-fopenmp
 builddir=../../build/$(DIR)
 
-hammer: preproc cluster center
+hammer: preproc main reconstruct
 	@echo "== MADE HAMMER =="
+
+main: sequence.o sequence_tools.o hammer_tools.o main.o
+	$(CC) $(LDFLAGS) $(builddir)/sequence.o $(builddir)/sequence_tools.o $(builddir)/hammer_tools.o $(builddir)/main.o $(LDFLAGS) -o $(builddir)/$@
+	@echo "== made main =="
 
 center: sequence.o sequence_tools.o center.o
 	$(CC) $(LDFLAGS) $(builddir)/sequence.o $(builddir)/sequence_tools.o $(builddir)/center.o $(LDFLAGS) -o $(builddir)/$@
@@ -20,12 +24,29 @@ preproc: sequence.o sequence_tools.o preproc.o
 	$(CC) $(LDFLAGS) $(builddir)/sequence.o $(builddir)/sequence_tools.o $(builddir)/preproc.o $(LDFLAGS) -o $(builddir)/$@
 	@echo "== made preproc =="
 
+preproc2: sequence.o sequence_tools.o preproc2.o
+	$(CC) $(LDFLAGS) $(builddir)/sequence.o $(builddir)/sequence_tools.o $(builddir)/preproc2.o $(LDFLAGS) -o $(builddir)/$@
+	@echo "== made preproc2 =="
+
+reconstruct: sequence.o sequence_tools.o reconstruct.o
+	$(CC) $(LDFLAGS) $(builddir)/sequence.o $(builddir)/sequence_tools.o $(builddir)/reconstruct.o $(LDFLAGS) -o $(builddir)/$@
+	@echo "== made reconstruct =="
+
+
+main.o: main.cpp $(builddir)/.d
+	$(CC) $(CFLAGS) -c main.cpp -o $(builddir)/$@
+hammer_tools.o: hammer_tools.cpp $(builddir)/.d
+	$(CC) $(CFLAGS) -c hammer_tools.cpp -o $(builddir)/$@
 cluster.o: cluster.cpp $(builddir)/.d
 	$(CC) $(CFLAGS) -c cluster.cpp -o $(builddir)/$@
 center.o: center.cpp $(builddir)/.d
 	$(CC) $(CFLAGS) -c center.cpp -o $(builddir)/$@
+reconstruct.o: reconstruct.cpp $(builddir)/.d
+	$(CC) $(CFLAGS) -c reconstruct.cpp -o $(builddir)/$@
 preproc.o: preproc.cpp $(builddir)/.d
 	$(CC) $(CFLAGS) -c preproc.cpp -o $(builddir)/$@
+preproc2.o: preproc2.cpp $(builddir)/.d
+	$(CC) $(CFLAGS) -c preproc2.cpp -o $(builddir)/$@
 sequence.o: ../common/sequence/sequence.cpp $(builddir)/.d
 	$(CC) $(CFLAGS) -c ../common/sequence/sequence.cpp -o $(builddir)/$@
 sequence_tools.o: ../common/sequence/sequence_tools.cpp $(builddir)/.d

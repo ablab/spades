@@ -198,14 +198,15 @@ private:
 
 	Graph &graph_;
 	erasable_priority_queue<VertexId> queue_;
-//	SmartVertexIterator<omnigraph::ObservableGraph<VertexId, EdgeId> >
-//			iterator_;
+	//	SmartVertexIterator<omnigraph::ObservableGraph<VertexId, EdgeId> >
+	//			iterator_;
 	set<VertexId> visited_;
 	size_t bound_;
 
 public:
 	LongEdgesSplitter(Graph &graph, size_t bound) :
-		graph_(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */bound_(bound) {
+		graph_(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */
+		bound_(bound) {
 	}
 
 	virtual ~LongEdgesSplitter() {
@@ -220,10 +221,10 @@ public:
 		queue_.pop();
 		ShortEdgeComponentFinder<Graph> cf(graph_, bound_);
 		cf.run(next);
-		vector<VertexId> result = cf.VisitedVertices();
-		for(auto it = result.begin(); it != result.end(); ++it) {
-			if(cf.GetDistance(*it) == 0) {
-//				iterator_.erase(*it);
+		vector < VertexId > result = cf.VisitedVertices();
+		for (auto it = result.begin(); it != result.end(); ++it) {
+			if (cf.GetDistance(*it) == 0) {
+				//				iterator_.erase(*it);
 				queue_.erase(*it);
 			}
 		}
@@ -231,10 +232,98 @@ public:
 	}
 
 	virtual bool Finished() {
-//		return iterator_.IsEnd();
+		//		return iterator_.IsEnd();
 		return queue_.empty();
 	}
 
+};
+
+template<class Element>
+class AbstractFilter {
+public:
+	virtual ~AbstractFilter() {
+	}
+
+	virtual bool Check(Element &element) = 0;
+};
+
+template<class Graph>
+class ComponentSizeFilter: public AbstractFilter<vector<
+		typename Graph::VertexId>> {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	Graph& graph_;
+	size_t max_length_;
+
+	//	bool CheckYellow() {
+	//
+	//	}
+	//
+public:
+	ComponentSizeFilter(Graph &graph, size_t max_length) :
+		graph_(graph), max_length_(max_length) {
+	}
+
+	virtual ~ComponentSizeFilter(){
+	}
+
+	virtual bool Check(vector<VertexId> &vertices) {
+		set<VertexId> component(vertices.begin(), vertices.end());
+		for (auto iterator = vertices.begin(); iterator != vertices.end(); ++iterator) {
+			vector<EdgeId> edges = graph_.OutgoingEdges(*iterator);
+			for (auto edge_iterator = edges.begin(); edge_iterator
+					!= edges.end(); edge_iterator++) {
+				if (component.count(graph_.EdgeEnd(*edge_iterator)) == 1
+						&& graph_.length(*edge_iterator) <= max_length_) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+};
+
+template<class Graph>
+class FilteringSplitterWrapper: public GraphSplitter<typename Graph::VertexId> {
+private:
+	typedef typename Graph::VertexId VertexId;
+	GraphSplitter<typename Graph::VertexId> &inner_splitter_;
+	vector<VertexId> next;
+	AbstractFilter<vector<VertexId>> &checker_;
+	bool ready;
+public:
+	FilteringSplitterWrapper(
+			GraphSplitter<typename Graph::VertexId> &inner_splitter,
+			AbstractFilter<vector<VertexId>> &checker) :
+		inner_splitter_(inner_splitter), checker_(checker), ready(false) {
+	}
+
+	virtual ~FilteringSplitterWrapper() {
+	}
+
+	virtual vector<VertexId> NextComponent() {
+		if (Finished()) {
+			assert(false);
+			return vector<VertexId> ();
+		}
+		ready = false;
+		return next;
+	}
+
+	virtual bool Finished() {
+		if (!ready) {
+			while (!inner_splitter_.Finished()) {
+				next = inner_splitter_.NextComponent();
+				if (checker_.Check(next)) {
+					ready = true;
+					return false;
+				}
+			}
+			return true;
+		}
+		return false;
+	}
 };
 
 }

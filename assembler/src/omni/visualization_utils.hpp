@@ -450,11 +450,12 @@ void WriteComponents(const string& file_name, const string& graph_name, Graph& g
 	omnigraph::StrGraphLabeler<Graph> labeler(g);
 	PathColorer<Graph> path_colorer(g, path1, path2);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	LongEdgesSplitter<Graph> splitter(g, split_edge_length);
+	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
+	ComponentSizeFilter<Graph> checker(g, split_edge_length);
+	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
-	cout << file_name << endl;
 	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, file_name,
-			graph_name, 200);
+			graph_name, 300);
 	gv.Visualize();
 }
 

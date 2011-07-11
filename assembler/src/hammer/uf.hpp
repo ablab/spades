@@ -14,6 +14,7 @@
 #include<strstream>
 #include<string.h>
 #include<seq.hpp>
+#include<vector>
 
 #define READ_BUFFER 256
 
