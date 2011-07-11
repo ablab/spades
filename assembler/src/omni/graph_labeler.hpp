@@ -83,7 +83,7 @@ public:
 
 	virtual std::string label(EdgeId edgeId) const {
 		double coverage = g_.coverage(edgeId);
-		return g_.str(edgeId) + " {" + ToString(coverage) + "}";
+		return g_.str(edgeId) + " {" + this->ToString(coverage) + "}";
 	}
 };
 
