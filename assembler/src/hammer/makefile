@@ -1,7 +1,7 @@
 SRC=sequence/sequence.hpp sequence/sequence_tools.hpp
 DIR=hammer
 PROG=preproc
-MYCFLAGS=-fPIC -std=c++0x
+MYCFLAGS=-fopenmp -fPIC -std=c++0x
 MYLDFLAGS=-fopenmp
 builddir=../../build/$(DIR)
 basedir=../
