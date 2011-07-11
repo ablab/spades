@@ -7,6 +7,7 @@
 #include "common/simple_tools.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 namespace {
 
@@ -34,10 +35,11 @@ int main() {
 
 	// read configuration file (dataset path etc.)
 	string input_dir = CONFIG.read<string>("input_dir");
-	string work_tmp_dir = CONFIG.read<string>("output_dir");
 	string dataset = CONFIG.read<string>("dataset");
-	string output_dir = work_tmp_dir + MakeLaunchTimeDirName()+ "." + dataset + "/";
-	work_tmp_dir += "tmp/";
+	string output_root = CONFIG.read<string>("output_dir");
+	string output_dir_suffix = MakeLaunchTimeDirName()+ "." + dataset + "/";
+	string output_dir = output_root + output_dir_suffix;
+	string work_tmp_dir = output_root + "tmp/";
 //	std::cout << "here " << mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH) << std::endl;
 	mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	string genome_filename = input_dir
@@ -60,7 +62,7 @@ int main() {
 	typedef RCReaderWrapper<PairedReadStream, PairedRead> RCStream;
 
 	// read data ('reads')
-	const string reads[2] = { reads_filename1, reads_filename2 };
+	const string reads[2] = {reads_filename1, reads_filename2};
 	ReadStream reader(reads);
 	PairedReadStream pairStream(reader, insert_size);
 	RCStream rcStream(pairStream);
@@ -77,6 +79,9 @@ int main() {
 	INFO("Assembling " << dataset << " dataset");
 	debruijn_graph::DeBruijnGraphWithPairedInfoTool<K, RCStream>(rcStream, Sequence(genome), paired_mode, etalon_info_mode, from_saved, insert_size, max_read_length, output_dir, work_tmp_dir);
 	INFO("Assembling " << dataset << " dataset finished");
+
+	unlink((output_root + "latest").c_str());
+	symlink(output_dir_suffix.c_str(), (output_root + "latest").c_str());
 
 	// OK
 	return 0;

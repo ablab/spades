@@ -9,6 +9,7 @@ class OmniVertex {
 	size_t length_;
 public:
 	OmniVertex(size_t length) : length_(length) {}
+	OmniVertex(Sequence sequence) : length_(sequence.size()) {}
 
 	size_t length() const {
 		return length_;
@@ -23,6 +24,7 @@ class OmniEdge {
 	size_t length_;
 public:
 	OmniEdge(size_t length) : length_(length) {}
+	OmniEdge(size_t length, Sequence sequence) : length_(length) {}
 
 	size_t length() const {
 		return length_;
@@ -43,6 +45,10 @@ public:
 
 	bool isSelfConjugate(const OmniEdge &data) {
 		return false;
+	}
+
+	OmniVertex conjugate(const OmniVertex &data) {
+		return data;
 	}
 
 	OmniEdge conjugate(const OmniEdge &data) {
@@ -108,4 +114,4 @@ public:
 };
 
 }
-#endif /* OMNI_GRAPH_HPP_ */
+#endif /* OMNIGRAPH_HPP_ */

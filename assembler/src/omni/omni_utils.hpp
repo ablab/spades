@@ -578,7 +578,7 @@ private:
 public:
 	PathProcessor(Graph& g, double min_length, double max_length,
 			VertexId start, VertexId end, Callback& callback) :
-			g_(g), min_length_((min_length < 0) ? 0 : std::floor(min_length)),max_length_(std::floor(max_length + 0.5))
+			g_(g), min_length_((min_length < 0) ? 0 : std::floor(min_length)), max_length_(std::floor(max_length + 0.5))
 		, start_(start), end_(end), callback_(callback), call_cnt_(0) {
 //		cout << "RawMin " << min_length << endl;
 //		cout << "Min " << min_length_ << endl;
@@ -588,7 +588,7 @@ public:
 
 	void Process() {
 		BackwardBoundedDijkstra<Graph> backward_dijkstra(g_, max_length_);
-		backward_dijkstra.run(start_);
+		backward_dijkstra.run(end_);
 		Go(start_, 0, backward_dijkstra);
 	}
 
