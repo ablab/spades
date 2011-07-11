@@ -10,27 +10,27 @@ hammer: preproc main reconstruct
 	@echo "== MADE HAMMER =="
 
 main:  hammer_tools.o main.o
-	$(CC) $(LDFLAGS) $(builddir)/sequence.o $(builddir)/sequence_tools.o $(builddir)/hammer_tools.o $(builddir)/main.o $(LDFLAGS) -o $(builddir)/$@
+	$(CC) $(LDFLAGS) $(builddir)/hammer_tools.o $(builddir)/main.o $(LDFLAGS) -o $(builddir)/$@
 	@echo "== made main =="
 
 center:  center.o
-	$(CC) $(LDFLAGS) $(builddir)/sequence.o $(builddir)/sequence_tools.o $(builddir)/center.o $(LDFLAGS) -o $(builddir)/$@
+	$(CC) $(LDFLAGS) $(builddir)/center.o $(LDFLAGS) -o $(builddir)/$@
 	@echo "== made center =="
 
 cluster: cluster.o
-	$(CC) $(LDFLAGS) $(builddir)/sequence.o $(builddir)/sequence_tools.o $(builddir)/cluster.o $(LDFLAGS) -o $(builddir)/$@
+	$(CC) $(LDFLAGS) $(builddir)/cluster.o $(LDFLAGS) -o $(builddir)/$@
 	@echo "== made cluster =="
 
 preproc: preproc.o
-	$(CC) $(LDFLAGS) $(builddir)/sequence.o $(builddir)/sequence_tools.o $(builddir)/preproc.o $(LDFLAGS) -o $(builddir)/$@
+	$(CC) $(LDFLAGS) $(builddir)/preproc.o $(LDFLAGS) -o $(builddir)/$@
 	@echo "== made preproc =="
 
 preproc2: preproc2.o
-	$(CC) $(LDFLAGS) $(builddir)/sequence.o $(builddir)/sequence_tools.o $(builddir)/preproc2.o $(LDFLAGS) -o $(builddir)/$@
+	$(CC) $(LDFLAGS) $(builddir)/preproc2.o $(LDFLAGS) -o $(builddir)/$@
 	@echo "== made preproc2 =="
 
 reconstruct: reconstruct.o
-	$(CC) $(LDFLAGS) $(builddir)/sequence.o $(builddir)/sequence_tools.o $(builddir)/reconstruct.o $(LDFLAGS) -o $(builddir)/$@
+	$(CC) $(LDFLAGS) $(builddir)/reconstruct.o $(LDFLAGS) -o $(builddir)/$@
 	@echo "== made reconstruct =="
 
 
