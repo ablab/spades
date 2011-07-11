@@ -323,7 +323,7 @@ private:
 	const EdgeIndex<k + 1, Graph>& index_;
 	Sequence genome_;
 public:
-	GenomeMappingStat(Graph &graph, const EdgeIndex<k + 1, Graph> index,
+	GenomeMappingStat(Graph &graph, const EdgeIndex<k + 1, Graph> &index,
 	Sequence genome) :
 			graph_(graph), index_(index), genome_(genome) {
 	}
@@ -388,7 +388,7 @@ public:
 				new omnigraph::BlackEdgesStat<Graph>(graph, path1, path2));
 		stats_.AddStat(new omnigraph::NStat<Graph>(graph, path1, 50));
 		stats_.AddStat(new omnigraph::SelfComplementStat<Graph>(graph));
-		GenomeMappingStat<Graph, k>(graph, index, Sequence(genome)).Count();
+		stats_.AddStat(GenomeMappingStat<Graph, k>(graph, index, Sequence(genome));
 	}
 
 	virtual ~StatCounter() {
