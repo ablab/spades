@@ -1,4 +1,3 @@
-SRC=sequence/sequence.hpp sequence/sequence_tools.hpp
 DIR=hammer
 PROG=preproc
 MYCFLAGS=-fopenmp -fPIC -std=c++0x
