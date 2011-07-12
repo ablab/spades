@@ -11,6 +11,7 @@
 \usepackage{amsthm}
 %\usepackage{pgf}
 %\usepackage{multicol}
+\usepackage{wrapfig}
 \usepackage{xspace}
 \usepackage{graphicx}
 %\usepackage{multicol}
@@ -21,7 +22,7 @@
 \usepackage{booktabs}
 \usepackage{multirow,multicol}
 \usepackage{simplewick}
-
+\DeclareGraphicsExtensions{.png}
 \usetikzlibrary{positioning,fadings,fit}
 
 %\usepackage{pgfplots}
@@ -75,9 +76,9 @@
 \begin{tikzpicture}
 
 %%%%%%%%%%%%%%%GRID
-%\draw[step=1cm,help lines] (0,0) grid (54,78);
-%\foreach \x in {0,...,54} { \node at (\x,-1) {$\x$}; \node at (\x,79) {$\x$}; }
-%\foreach \x in {0,...,78} { \node at (-1,\x) {$\x$}; \node at (55,\x) {$\x$}; }
+\draw[step=1cm,help lines] (0,0) grid (54,78);
+\foreach \x in {0,...,54} { \node at (\x,-1) {$\x$}; \node at (\x,79) {$\x$}; }
+\foreach \x in {0,...,78} { \node at (-1,\x) {$\x$}; \node at (55,\x) {$\x$}; }
 
 %%%%%%%%%%%%%%%TITLE
 \begin{scope}
@@ -117,23 +118,26 @@
 
 %%%%%%%%%%%%%%%PROBLEM STATEMENT AND ABSTRACT
 \begin{scope}
-\draw ( 0,65) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (26,58);
+\draw ( 0,65) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (26,54);
 \draw (28,65) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,58);
 %\node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (28,65) {\fontsize{32pt}{1em} 
 %\bf Typical genome assembly setting};
 \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,65) {\fontsize{32pt}{1em} 
 \bf Abstract\phantom{y}};
-\node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (0,61.5) {
+\node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (0,59.5) {
   De novo genome sequence assembly is the essential step to reveal genomic sequences of different species world-wide. Currently there exists various genome assemblers for short-read NGS data, such as Velvet, SOAPdenovo, ALLPATH, ABySS and others. We present new open-source de Bruijn graph-based assembler currently in development on C++, which uses novel algorithmic ideas such as context-free graph approach and also have agile and expandable software architecture. It requires affordable amount of memory and computations while giving high quality results. It provides solid basis for single-cell and mammalian assemblers in the near future.
+  \vspace{5mm}
+  \begin{wrapfigure}{r}{width=10mm}
+   \includegraphics[width=100mm]{logo_blue_white.jpg}
+  \end{wrapfigure}
 };
 \node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (28,61.5) {
-% \includegraphics[width=60mm]{logo_blue.png}
  };
 \end{scope}
 
 %%%%%%%%%%%%%%%EXAMPLE
 \begin{scope}[yshift=-7cm]
-  \draw (0,62) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,32);
+  \draw (0,52) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,32);
 %  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,62) {\fontsize{32pt}{1em} \bf 
 %    Standard and new approaches: an example};
 

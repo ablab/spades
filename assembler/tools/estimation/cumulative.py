@@ -24,7 +24,7 @@ if len(sys.argv) % 2 == 0: # last default mul = 1.0
 
 for filename, mul in itertools.izip(sys.argv[1::2], sys.argv[2::2]):
 	# parse
-	lengths = fastaparser.get_lengths_from_fastafile(filename))
+	lengths = fastaparser.get_lengths_from_fastafile(filename)
 	lengths.sort(reverse = True)
 	# calculate values for the plot
 	vals_percent = []

@@ -51,7 +51,7 @@ if ( !-e "$header.coords" ) {
 		system "rm ${header}.snps";
 	}
 	print "\tRunning nucmer...\n";
-	system "nucmer -o -p $header $RefFile $AssFile.clean";
+	system "nucmer --coords -p $header $RefFile $AssFile.clean";
 	if ( !-e "$header.coords") {
 		die "Nucmer failed. Exiting.";
 	}
