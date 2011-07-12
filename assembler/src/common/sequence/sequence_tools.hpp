@@ -7,7 +7,7 @@
 
 #include "nucl.hpp"
 
-inline std::string Reverse(const string &s) {
+inline std::string Reverse(const std::string &s) {
 	return std::string(s.rbegin(), s.rend());
 }
 
