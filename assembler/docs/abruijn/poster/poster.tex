@@ -112,7 +112,7 @@ and the NIH National Institute of General Medical Sciences.}
 \draw ( 0,65) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (26,58);
 \draw (28,65) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,58);
 \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (28,65) {\fontsize{32pt}{1em} 
-\bf Typical genome assembly setting};
+\bf Typical genome assembly setting\phantom{y}};
 \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,65) {\fontsize{32pt}{1em} 
 \bf Abstract\phantom{y}};
 \node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (0,61.5) {
@@ -127,13 +127,12 @@ and the NIH National Institute of General Medical Sciences.}
 };
 \node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (28,61.5) {
   \fontsize{26pt}{2em}\selectfont
-  {\bf Input:} a set of substrings (called reads) 
+  {\color{OrangeRed}\bf Input:} a set of substrings (called reads) 
     ${\cal R} \subseteq \{{\tt A,C,G,T}\}^r$ of an unknown circular string 
-    $S \in \{{\tt A,C,G,T}\}^*$ (called genome).
-
-  {\bf Output:} the genome $S$.
-
-  {\bf Complications: } reads may contain errors.
+    $S \in \{{\tt A,C,G,T}\}^*$ (called genome).\\
+  {\color{OrangeRed}\bf Output:} the genome $S$.\\
+  ~\\
+  {\color{OrangeRed}\bf Complications: } reads may contain errors.
 };
 %at (27,64) {\fontsize{26pt}{1em} Given a set of reads ${\cal R} \subseteq \{{\tt 
 %A,C,G,T}\}^r$ of a genome $S \in \{{\tt A,C,G,T}\}^*$, find the genome $S$.};
@@ -143,9 +142,9 @@ and the NIH National Institute of General Medical Sciences.}
 \begin{scope}[yshift=-7cm]
   \draw (0,62) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,32);
   \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,62) {\fontsize{32pt}{1em} \bf 
-    Standard and new approaches: an example};
+    Standard and new approaches: an example\phantom{y}};
 
-  \node[rectangle,draw=SteelBlue3,line width=3pt,fill=white,anchor=north west,text width=8cm,rounded corners=.5cm,inner sep=3mm] at (0.5,61.5) {\fontsize{26pt}{1em} \bf In this example:\\ $r=8$\\ $k=4$};
+  \node[rectangle,draw=SteelBlue3,line width=3pt,fill=white,anchor=north west,text width=8cm,rounded corners=.5cm,inner sep=3mm] at (0.5,61.5) {\fontsize{26pt}{1em} \bf In this example:\\ ~~$r=8$\\ ~~$k=4$};
 
   %%% READS
   \node[rectangle,line width=2pt,text width=5cm,text centered,anchor=west] (reads) at (1,48.5) {
@@ -268,20 +267,38 @@ and the NIH National Institute of General Medical Sciences.}
       {\color{DodgerBlue3} 4. simplify the graph (compress simple paths, clip tips, remove erroneous connections and bulges) and find a cycle containing all the edges} (genomedown);
   \end{scope}
 
-  \node at (30,60) {\fontsize{26pt}{1em} \color{OrangeRed} \bf (standard) de~Bruijn graph approach};
-  \node at (30,33) {\fontsize{26pt}{1em} \color{OrangeRed} \bf (new) earmark graph approach};
+  \node at (32,61) {\fontsize{26pt}{1em} \color{OrangeRed} \bf (standard) de~Bruijn graph approach};
+  \node at (33,33) {\fontsize{26pt}{1em} \color{OrangeRed} \bf (new) earmark graph approach};
   %\draw[color=OrangeRed,dashed,line width=5pt,->] (7,48) node[above] {genome assembly problem} -- (46,48);
   \path (reads) edge[color=OrangeRed,dashed,line width=5pt,->] node[above] {\fontsize{26pt}{1em} \color{OrangeRed} \bf \emph{de~novo} genome assembly problem} (genomeleft);
 \end{scope}
 
+%%%%%%%%%%%%%%%BENCHMARKING
+\begin{scope}
+  \draw (0,22) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (22,0);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,22) {\fontsize{32pt}{1em} \bf 
+    Benchmarking\phantom{y}};
+  
+  \node[rectangle,text width=22cm,text centered,anchor=west] at (0,11) {
+    \input{../data/stat.tex}
+    ~\\
+    ~\\
+    \begin{center}
+    E. coli genome,\\
+    reads of length $r = 100$,\\
+    filtered with Quake;\\
+    $k = 25$
+    \end{center}
+  };
+\end{scope}
+
 %%%%%%%%%%%%%%%ADVANTAGES
 \begin{scope}
-  \draw (0,22) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (30,0);
-  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,22) {\fontsize{32pt}{1em} \bf 
-    Advantages of earmark graph over de~Bruijn graph};
-  \node[rectangle,text width=28cm,anchor=west] at (1,11) {
+  \draw (24,22) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,8.5);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (24,22) {\fontsize{32pt}{1em} \bf 
+    Advantages of earmark graph over de~Bruijn graph\phantom{y}};
+  \node[rectangle,text width=28cm,anchor=north west] at (25,22) {
     \fontsize{24pt}{1em}\selectfont
-    %TO BE REWRITTEN
     \begin{description}
     \item[\color{OrangeRed} \bf Smaller size.]
     The earmark graph requires less time and memory for construction.
@@ -317,24 +334,17 @@ and the NIH National Institute of General Medical Sciences.}
   };
 \end{scope}
 
-%%%%%%%%%%%%%%%PRACTICAL RESULTS
+%%%%%%%%%%%%%%%REFERENCES
 \begin{scope}
-  \draw (32,22) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,0);
-  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (32,22) {\fontsize{32pt}{1em} \bf 
-    Practical results\phantom{y}};
-  
-  \node[rectangle,text width=22cm,text centered,anchor=west] at (32,11) {
-    \input{../data/stat.tex}
-    \\
-    \begin{center}
-    E. coli K-12 MG1655,\\
-    reads of length 100,\\
-    filtered with Quake,\\
-    $k = 25$.
-    \end{center}
+  \draw (24,6) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,0);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (24,6) {\fontsize{32pt}{1em} \bf References\phantom{y}};
+  \node[rectangle,text width=28cm,anchor=north west] at (24.5,5.5) {
+    \fontsize{24pt}{1em}\selectfont
+    1. A Bruijn\\
+    2. De Bruijn\\
+    3. Minimizers
   };
 \end{scope}
-
 
 \end{tikzpicture}
 \end{center}
