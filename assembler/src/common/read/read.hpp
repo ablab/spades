@@ -102,30 +102,31 @@ public:
 			}
 			seq_.erase(seq_.begin() + end + 1, seq_.end());			
 			qual_.erase(qual_.begin() + end + 1, qual_.end());
+			valid = updateValid();
 			return seq_.size();
 		} else {
 			seq_ = "";
 			qual_ = "";
+			valid = updateValid();
 			return 0;
 		}
-		valid = updateValid();
 	}
 	/**
 	 * @param k k as in k-mer
 	 * @param start start point
 	 * @return the first starting point of a valid k-mer >=start; return -1 if no such place exists
 	 */
-	size_t firstValidKmer(size_t start, size_t k) const __attribute__ ((deprecated)) {
+	int firstValidKmer(size_t start, size_t k) const __attribute__ ((deprecated)) {
 		size_t curHypothesis = start;
 		size_t i = start;
 		for (; i < seq_.size(); ++i) {
-			if (i > k + curHypothesis)
+			if (i >= k + curHypothesis)
 				return curHypothesis;
 			if (!is_nucl(seq_[i])) {
 				curHypothesis = i + 1;
 			}
 		}
-		if (i > k + curHypothesis) {
+		if (i >= k + curHypothesis) {
 			return curHypothesis;
 		}
 		return -1;
