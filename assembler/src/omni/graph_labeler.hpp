@@ -1,6 +1,6 @@
 #ifndef GRAPH_LABELER_HPP_
 #define GRAPH_LABELER_HPP_
-
+#include "simple_tools.hpp"
 namespace omnigraph {
 
 /**
@@ -66,6 +66,7 @@ public:
 		return g_.str(edgeId);
 	}
 };
+
 
 template<class Graph>
 class StrCoverageGraphLabeler : public GraphLabeler<Graph> {
