@@ -1,6 +1,6 @@
 #ifndef GRAPH_LABELER_HPP_
 #define GRAPH_LABELER_HPP_
-
+#include "simple_tools.hpp"
 namespace omnigraph {
 
 /**
@@ -67,6 +67,7 @@ public:
 	}
 };
 
+
 template<class Graph>
 class StrCoverageGraphLabeler : public GraphLabeler<Graph> {
 protected:
@@ -83,7 +84,7 @@ public:
 
 	virtual std::string label(EdgeId edgeId) const {
 		double coverage = g_.coverage(edgeId);
-		return g_.str(edgeId) + " {" + this->ToString(coverage) + "}";
+		return g_.str(edgeId) + " {" + ToString(coverage) + "}";
 	}
 };
 
