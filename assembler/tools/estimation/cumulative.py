@@ -24,7 +24,7 @@ if len(sys.argv) % 2 == 0: # last default mul = 1.0
 
 for filename, mul in itertools.izip(sys.argv[1::2], sys.argv[2::2]):
 	# parse
-	lengths = fastaparser.get_lengths_from_fastafile(filename))
+	lengths = fastaparser.get_lengths_from_fastafile(filename)
 	lengths.sort(reverse = True)
 	# calculate values for the plot
 	vals_percent = []
@@ -35,8 +35,10 @@ for filename, mul in itertools.izip(sys.argv[1::2], sys.argv[2::2]):
 	for l in lengths:
 		lcur += l
 		lind += 1
-		vals_percent.append(lind * 100.0 / ln)
-		vals_length.append(lcur * mul)
+		x = lind
+		vals_percent.append(x)
+		y = lcur * float(mul)
+		vals_length.append(y)
 	# add to plot
 	pylab.plot(vals_percent, vals_length)
 
