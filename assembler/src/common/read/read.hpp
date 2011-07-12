@@ -120,7 +120,7 @@ public:
 		size_t curHypothesis = start;
 		size_t i = start;
 		for (; i < seq_.size(); ++i) {
-			if (i > k + curHypothesis)
+			if (i >= k + curHypothesis)
 				return curHypothesis;
 			if (!is_nucl(seq_[i])) {
 				curHypothesis = i + 1;
