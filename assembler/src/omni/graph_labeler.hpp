@@ -1,6 +1,8 @@
 #ifndef GRAPH_LABELER_HPP_
 #define GRAPH_LABELER_HPP_
+
 #include "simple_tools.hpp"
+
 namespace omnigraph {
 
 /**
