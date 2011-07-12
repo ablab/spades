@@ -205,7 +205,7 @@ public:
 			size = nsize;
 		}
 
-		osequencestream oss(output_file_ + "_" + "contigs");
+		osequencestream oss(output_file_ + "_" + "contigs.fasta");
 		for (auto edge_it = g_->SmartEdgeBegin(); !edge_it.IsEnd(); ++edge_it) {
 			oss << g_->nucls(*edge_it);
 		}
