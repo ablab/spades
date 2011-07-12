@@ -67,7 +67,7 @@ void addKMers(const Read & r, KMerStatMap & v) {
 	KMerStatMap::iterator it;
 	float freq = oct2phred(r.getPhredQualityString(qvoffset));
 	string s = r.getSequenceString();
-	size_t i=0;
+	int i=0;
 	while (true) {
 		i = r.firstValidKmer(i, K);
 		if (i == -1) break;
@@ -84,11 +84,11 @@ void addKMers(const Read & r, KMerStatMap & v) {
 				p.second.freq = freq;
 				v.insert(p);
 			}
-			if (i+K < r.size() && is_nucl(s[i+K])) {
+			if (i+K < (int)r.size() && is_nucl(s[i+K])) {
 				kmer = kmer << r[i+K];
 				++i;
 			} else {
-				i = i+K;
+				i = i + K;
 				break;
 			}
 		}
@@ -184,7 +184,6 @@ int main(int argc, char * argv[]) {
 
 	cout << "Starting preproc.\n";
 	ireadstream ifs(readsFilename.data(), qvoffset);
-	ofstream ofs;
 	Read r;
 	size_t tmpc = 0;
 	size_t cur_maps = 0;
@@ -204,7 +203,7 @@ int main(int argc, char * argv[]) {
 
 		++tmpc;
 		cout << "Batch " << tmpc << " read.\n"; flush(cout);
-		#pragma omp parallel for shared(rv, vv, ofs) num_threads(nthreads)
+		#pragma omp parallel for shared(rv, vv) num_threads(nthreads)
 		for(int i=0; i<(int)rv.size(); ++i) {
 			addKMers(rv[i], vv[omp_get_thread_num() + cur_maps * nthreads]);
 			addKMers(!(rv[i]), vv[omp_get_thread_num() + cur_maps * nthreads]);

@@ -1,0 +1,61 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesClass{poster}[2010/05/30]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% define if \ifpdf
+\RequirePackage{ifpdf}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ifpdf
+    \RequirePackage[bookmarks=false, colorlinks, unicode, pdfstartview=FitH, pdftex]{hyperref}
+    \hypersetup{ 
+     plainpages=true,
+     urlcolor=blue,
+     linkcolor=blue,
+     pdfnewwindow=true
+    }
+\else
+    \RequirePackage[bookmarks=false, colorlinks, unicode, pdfstartview=FitH]{hyperref}
+\fi
+
+\DeclareGraphicsRule{.png}{eps}{.png.bb}{#1.eps}
+\def\secheadcol{DodgerBlue3}
+\def\colsepcolor{SteelBlue3}
+
+\columnsep=3cm
+\columnseprule=2mm
+\setlength{\textwidth}{52cm}
+
+\makeatletter
+\def\section{\@startsection {section}{1}{\z@}%
+                                   {-3.5ex \@plus -1ex \@minus -.2ex}%
+                                   {2.3ex \@plus.2ex}%
+                                   {\normalfont\LARGE\bfseries\color{\secheadcol}}}
+
+\def\subsection{\@startsection{subsection}{2}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\normalfont\large\bfseries\color{\secheadcol}}}
+
+\def\page@sofar{%
+   \process@cols\mult@rightbox
+       {\ifvoid\count@
+          \setbox\count@\hbox to\hsize{}%
+        \else
+          \wd\count@\hsize
+        \fi}%
+   \mult@info\z@
+    {Column spec:\MessageBreak
+       (\the\multicol@leftmargin\space -->
+        \the\full@width\space = \the\hsize
+        \space x \the\col@number)%
+     }%
+\ifvmode\else\errmessage{Multicol Error}\fi
+   \moveright\multicol@leftmargin
+    \hbox to\full@width{%
+     \process@cols\mult@gfirstbox{\box\count@
+       \hss{\color{\colsepcolor}\vrule\@width\columnseprule}\hss}%
+     \box\mult@rightbox
+      \rlap{\phantom p}%
+}}%
+\makeatother
+

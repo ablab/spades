@@ -30,9 +30,9 @@ public:
 		assert(valid);
 		return Sequence(seq_);
 	}
-	Sequence getSubSequence(size_t start, size_t end) const {
-		assert(end >= start && start >= 0 && end <= seq_.size() && start < seq_.size() && end > 0);
-		return Sequence(seq_.substr(start, end));
+	Sequence getSubSequence(size_t start, size_t length) const {
+		assert(length > 0 && start >= 0 && start + length <= seq_.size());
+		return Sequence(seq_.substr(start, length));
 	}
 
 	Quality getQuality() const {

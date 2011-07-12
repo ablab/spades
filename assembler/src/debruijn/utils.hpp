@@ -388,7 +388,7 @@ public:
 				new omnigraph::BlackEdgesStat<Graph>(graph, path1, path2));
 		stats_.AddStat(new omnigraph::NStat<Graph>(graph, path1, 50));
 		stats_.AddStat(new omnigraph::SelfComplementStat<Graph>(graph));
-		stats_.AddStat(GenomeMappingStat<Graph, k>(graph, index, Sequence(genome));
+		stats_.AddStat(new GenomeMappingStat<Graph, k>(graph, index, Sequence(genome)));
 	}
 
 	virtual ~StatCounter() {

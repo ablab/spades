@@ -69,6 +69,7 @@ public:
 	}
 };
 
+
 template<class Graph>
 class StrCoverageGraphLabeler : public GraphLabeler<Graph> {
 protected:
