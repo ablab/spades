@@ -12,6 +12,7 @@
 //#include "offlineGraphVisualizerTest.hpp"
 #include "similarTest.hpp"
 #include "cuckooTest.hpp"
+#include "readTest.hpp"
 
 #include "structuresTest.hpp"
 //TODO function readGenomeFromFile is declared outside common directory
@@ -31,6 +32,7 @@ void runSuite() {
   //s += offlineGraphVisualizerSuite();
   s += similarSuite();
   s += CuckooSuite();
+  s += ReadSuite();
   //s += ReadGeneratorSuite();
   //The next test causes segmentation fault
   //s += TrieSuite();
