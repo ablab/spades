@@ -9,9 +9,9 @@
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{tikz}
 \usepackage{amsthm}
+\usepackage{enumitem}
 %\usepackage{pgf}
 %\usepackage{multicol}
-\usepackage{wrapfig}
 \usepackage{xspace}
 \usepackage{graphicx}
 %\usepackage{multicol}
@@ -118,30 +118,61 @@
 
 %%%%%%%%%%%%%%%PROBLEM STATEMENT AND ABSTRACT
 \begin{scope}
-\draw ( 0,65) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (26,54);
+\draw ( 0,65) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (26,58);
 \draw (28,65) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,58);
-%\node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (28,65) {\fontsize{32pt}{1em} 
-%\bf Typical genome assembly setting};
+\node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (28,65) {\fontsize{32pt}{1em} 
+\bf In the Poster\phantom{y}};
 \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,65) {\fontsize{32pt}{1em} 
 \bf Abstract\phantom{y}};
-\node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (0,59.5) {
-  De novo genome sequence assembly is the essential step to reveal genomic sequences of different species world-wide. Currently there exists various genome assemblers for short-read NGS data, such as Velvet, SOAPdenovo, ALLPATH, ABySS and others. We present new open-source de Bruijn graph-based assembler currently in development on C++, which uses novel algorithmic ideas such as context-free graph approach and also have agile and expandable software architecture. It requires affordable amount of memory and computations while giving high quality results. It provides solid basis for single-cell and mammalian assemblers in the near future.
-  \vspace{5mm}
-  \begin{wrapfigure}{r}{width=10mm}
-   \includegraphics[width=100mm]{logo_blue_white.jpg}
-  \end{wrapfigure}
+\node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (0,61.5) {
+  De novo genome sequence assembly is the essential step to reveal genomic sequences of different species world-wide. Currently there exists various genome assemblers for short-read NGS data, such as Velvet, SOAPdenovo, ALLPATH, ABySS and others. \\
+ We present new open-source de Bruijn graph-based assembler currently in development on C++, which uses novel algorithmic ideas such as context-free graph approach and also have agile and expandable software architecture. It requires affordable amount of memory and computations while giving high quality results. It provides solid basis for single-cell and mammalian assemblers in the near future.
+%  \vspace{5mm}
+%  \begin{center}
+%   \includegraphics[width=100mm]{logo_blue_white.jpg}
+% \end{center}
 };
 \node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (28,61.5) {
+\begin{enumerate}
+\item De Bruijn graph construction and index of $K$-mers.
+\item Error correction and corruption based on topology of the de Bruijn graph (e.g. tip clipping, bulge removal).
+\item Efficient data structures for storing and handling of the additional information in the de Bruijn graph (e.g. coverage or distances between pairs of edges).
+\end{enumerate}
  };
 \end{scope}
 
-%%%%%%%%%%%%%%%EXAMPLE
-\begin{scope}[yshift=-7cm]
-  \draw (0,52) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,32);
-%  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,62) {\fontsize{32pt}{1em} \bf 
-%    Standard and new approaches: an example};
 
+%%%%%%%%%%%%%%%CONSTRUCTION
+\begin{scope}
+  \draw (0,55) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,47);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,55) {\fontsize{32pt}{1em} \bf 
+    Graph Construction\phantom{y}};
+    
+\end{scope}
+
+%%%%%%%%%%%%%%%ERRORS
+\begin{scope}
+  \draw (0,44) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,34);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,44) {\fontsize{32pt}{1em} \bf 
+    Errors Handling\phantom{y}};
+\end{scope}
+
+%%%%%%%%%%%%%%%INFO
+\begin{scope}
+  \draw (0,31) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,21);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,31) {\fontsize{32pt}{1em} \bf 
+    Additional Info\phantom{y}};
+\end{scope}
+
+%%%%%%%%%%%%%%%EXAMPLE
+%\begin{scope}[yshift=-7cm]
+%  \draw (0,60) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,32);
+%  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,62) {\fontsize{32pt}{1em} \bf 
+% Goals};
+%
 %  \node[rectangle,draw=SteelBlue3,line width=3pt,fill=white,anchor=north west,text width=8cm,rounded corners=.5cm,inner sep=3mm] at (0.5,61.5) {\fontsize{26pt}{1em} \bf In this example:\\ $r=8$\\ $k=4$};
+%  
+
 %
 %  %%% READS
 %  \node[rectangle,line width=2pt,text width=5cm,text centered,anchor=west] (reads) at (1,48.5) {
@@ -268,11 +299,11 @@
 %  \node at (30,33) {\fontsize{26pt}{1em} \color{OrangeRed} \bf (new) earmark graph approach};
 %  %\draw[color=OrangeRed,dashed,line width=5pt,->] (7,48) node[above] {genome assembly problem} -- (46,48);
 %  \path (reads) edge[color=OrangeRed,dashed,line width=5pt,->] node[above] {\fontsize{26pt}{1em} \color{OrangeRed} \bf \emph{de novo} genome assembly problem} (genomeleft);
-\end{scope}
+%\end{scope}
 
 %%%%%%%%%%%%%%%ADVANTAGES
-\begin{scope}
-  \draw (0,22) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (30,0);
+%\begin{scope}
+%  \draw (0,22) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (30,0);
 %  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,22) {\fontsize{32pt}{1em} \bf 
 %    Advantages of earmark graph over de Bruijn graph};
 %  \node[rectangle,text width=28cm,anchor=west] at (1,11) {
@@ -311,16 +342,52 @@
 %    sequencing errors in the reads.
 %    \end{description}
 %  };
-\end{scope}
+%\end{scope}
 
 %%%%%%%%%%%%%%%PRACTICAL RESULTS
 \begin{scope}
-  \draw (32,22) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,0);
-%  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (32,22) {\fontsize{32pt}{1em} \bf 
-%    Practical results\phantom{y}};
-%  
-%  \node[rectangle,text width=22cm,text centered,anchor=west] at (32,11) {TO BE UPDATED\\ % \input{../data/stat400k.tex}
-%  };
+  \draw (0,18) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (35,0);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,18) {\fontsize{32pt}{1em} \bf 
+    Practical results\phantom{y}};
+  
+\node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (0,9) {
+
+  E.Coli MG1655-K12.
+  
+  12M Illumina paired-end reads (length = 100, gap = 20).
+
+  Correction with Quake (Hammer for future).
+  
+  ...
+  
+  PROFIT!!!
+ };
+ 
+\end{scope}
+
+%%%%%%%%%%%%%%%CONCLUSION
+\begin{scope}
+  \draw (36,18) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,11);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (36,18) {\fontsize{32pt}{1em} \bf 
+    Conclusions\phantom{y}};
+\node[rectangle,anchor=west,text width=17cm,inner sep=5mm] at (36,14.5) {
+ Something was done.
+ };
+\end{scope}
+
+%%%%%%%%%%%%%%%FUTURE
+\begin{scope}
+  \draw (36,8) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,0);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (36,8) {\fontsize{32pt}{1em} \bf 
+    Future\phantom{y}};
+\node[rectangle,anchor=west,text width=17cm,inner sep=5mm] at (36,4) {
+\begin{enumerate}[start=0]
+\item Repeat resolving.
+\item Single Cell (Bacterial) Assembler.
+\item Mammalian Genomes Assembler (see the poster of \textit{Mikhail Dvorkin} and \textit{Alexander Kulikov}: Earmark graph approach to de novo genome assembly).
+\item Transcriptome Assembler, Cancer Genomes Assembler and other customizations...
+\end{enumerate}
+ };
 \end{scope}
 
 
