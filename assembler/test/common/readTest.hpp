@@ -1,7 +1,7 @@
 #ifndef READGTEST_HPP_
 #define READGTEST_HPP_
-#include "read.hpp"
-#include "cute.h"
+#include "cute/cute.h"
+#include "common/read/read.hpp"
 
 void TestGetSubsequence() {
   Read r("TestRead1", "ACGTACGT", "BBBBBBBB");
