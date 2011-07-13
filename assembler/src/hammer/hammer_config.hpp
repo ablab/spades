@@ -11,6 +11,7 @@
 
 #include <unordered_map>
 #include <algorithm>
+#include <map>
 #include "sequence/seq.hpp"
 #include "uf.hpp"
 
