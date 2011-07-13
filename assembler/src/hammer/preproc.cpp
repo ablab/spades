@@ -5,12 +5,12 @@
  *      Author: snikolenko
  */
 #include "hammer_config.hpp" 
-#include<omp.h>
-#include<cmath>
-#include<string>
-#include<cstdlib>
-#include<vector>
-#include<utility>
+#include <omp.h>
+#include <cmath>
+#include <string>
+#include <cstdlib>
+#include <vector>
+#include <utility>
 #include "hammer/defs.hpp"
 #include "common/read/read.hpp"
 #include "common/read/ireadstream.hpp"
@@ -24,20 +24,11 @@ using std::pair;
 
 int qvoffset;
 
-double oct2phred(string qoct)  {
-  float freq = 1;
-  for (size_t i = 0; i < qoct.length(); i++) {
-    freq *= 1 - pow(10, -float(qoct[i] - qvoffset)/10.0);
-  }
-  return freq;
-}
-
 /**
  * add k-mers from read to map
  */
 void AddKMers(const Read & r, KMerStatMap & v) {
   KMerStatMap::iterator it;
-  float freq = oct2phred(r.getPhredQualityString(qvoffset));
   string s = r.getSequenceString();
   int i = 0;
   while (true) {
@@ -48,12 +39,10 @@ void AddKMers(const Read & r, KMerStatMap & v) {
       it = v.find(kmer);
       if (it != v.end()) {
 	it->second.count++;
-	it->second.freq += freq;
       } else {
 	pair<KMer, KMerStat> p;
 	p.first = kmer;
 	p.second.count = 1; 
-	p.second.freq = freq;
 	v.insert(p);
       }
       if (i + K < (int)r.size() && is_nucl(s[i + K])) {
@@ -139,7 +128,7 @@ int main(int argc, char * argv[]) {
   
   FILE* f = fopen(kmer_filename.data(), "w");
   for (KMerStatMap::iterator it = vv[0].begin(); it != vv[0].end(); ++it) {
-    fprintf(f, "%s %5u %8.2f\n", it->first.str().data(), (unsigned int) it->second.count, it->second.freq);
+    fprintf(f, "%s %u\n", it->first.str().data(), (unsigned int) it->second.count);
   }
   fclose(f);
   return 0;
