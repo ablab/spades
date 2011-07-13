@@ -25,7 +25,7 @@ size_t FirstValidKmerPos(const Read &r, size_t start, size_t k);
 /**
  * add k-mers from read to map
  */
-void AddKMers(const Read &r, KMerStatMap &v);
+void AddKMers(const Read &r, KMerStatMap &v, int k = K);
 
 Sequence GetSubSequence(const Read &r, size_t start, size_t length);
 #endif // HAMMER_KMERFUNCTIONS_HPP_

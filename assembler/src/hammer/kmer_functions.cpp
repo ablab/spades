@@ -48,13 +48,15 @@ size_t TrimBadQuality(Read &r, int bad_quality_threshold) {
   }
   seq.erase(seq.begin(), seq.begin() + start);
   qual.erase(qual.begin(), qual.begin() + start);
-  size_t end = seq.size() - 1;
-  for (; end > 0; --end) {
-    if (qual[end] > bad_quality_threshold)
-      break;
+  if (seq.size() > 0) {
+    size_t end = seq.size() - 1;
+    for (; end > 0; --end) {
+      if (qual[end] > bad_quality_threshold)
+	break;
+    }
+    seq.erase(seq.begin() + end + 1, seq.end());
+    qual.erase(qual.begin() + end + 1, qual.end());
   }
-  seq.erase(seq.begin() + end + 1, seq.end());
-  qual.erase(qual.begin() + end + 1, qual.end());
   r.valid_ = r.updateValid();
   return seq.size();
 }
@@ -62,21 +64,21 @@ size_t TrimBadQuality(Read &r, int bad_quality_threshold) {
 /**
  * add k-mers from read to map
  */
-void AddKMers(const Read &r, KMerStatMap &v) {
+void AddKMers(const Read &r, KMerStatMap &v, int k) {
   KMerStatMap::iterator it;
   const std::string &seq = r.getSequenceString();
   size_t pos = 0;
   while (true) {
-    pos = FirstValidKmerPos(r, pos, K);
+    pos = FirstValidKmerPos(r, pos, k);
     if (pos >= seq.size()) break;
-    KMer kmer = KMer(GetSubSequence(r, pos, K));
+    KMer kmer = KMer(GetSubSequence(r, pos, k));
     while (true) {
       ++v[kmer].count;
-      if (pos + K < (int)r.size() && is_nucl(seq[pos + K])) {
-	kmer = kmer << r[pos + K];
+      if (pos + k < (int)r.size() && is_nucl(seq[pos + k])) {
+	kmer = kmer << r[pos + k];
 	++pos;
       } else {
-	pos += K;
+	pos += k;
 	break;
       }
     }
