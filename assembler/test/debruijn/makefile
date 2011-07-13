@@ -1,4 +1,4 @@
-SRC=test.cpp sequence.cpp graph_printer.cpp debruijn_graph.cpp sequence_tools.cpp
+SRC=test.cpp debruijn_graph.cpp
 DIR=debruijn
 PROG=debruijnTest
 
