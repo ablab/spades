@@ -76,9 +76,9 @@
 \begin{tikzpicture}
 
 %%%%%%%%%%%%%%%GRID
-\draw[step=1cm,help lines] (0,0) grid (54,78);
-\foreach \x in {0,...,54} { \node at (\x,-1) {$\x$}; \node at (\x,79) {$\x$}; }
-\foreach \x in {0,...,78} { \node at (-1,\x) {$\x$}; \node at (55,\x) {$\x$}; }
+%\draw[step=1cm,help lines] (0,0) grid (54,78);
+%\foreach \x in {0,...,54} { \node at (\x,-1) {$\x$}; \node at (\x,79) {$\x$}; }
+%\foreach \x in {0,...,78} { \node at (-1,\x) {$\x$}; \node at (55,\x) {$\x$}; }
 
 %%%%%%%%%%%%%%%TITLE
 \begin{scope}
@@ -104,7 +104,7 @@
   \vspace{7mm}
   Algorithmic Biology Lab, Academic University of the Russian Academy of Sciences, St.~Petersburg, Russia\\
   \vspace{5mm}
-  {\tt http://bioinf.spbau.ru/en/}
+  {\tt http://bioinf.spbau.ru/en/assembler}
 %  \\[+5mm]
 % We've got to include this:
 %\small{The presentation of this work was made possible by a Travel Fellowship awarded by ISCB
@@ -118,14 +118,14 @@
 
 %%%%%%%%%%%%%%%PROBLEM STATEMENT AND ABSTRACT
 \begin{scope}
-\draw ( 0,65) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (26,58);
+\draw ( 0,65) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (26,57);
 \draw (28,65) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,58);
 \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (28,65) {\fontsize{32pt}{1em} 
 \bf In the Poster\phantom{y}};
 \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,65) {\fontsize{32pt}{1em} 
 \bf Abstract\phantom{y}};
-\node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (0,61.5) {
-  De novo genome sequence assembly is the essential step to reveal genomic sequences of different species world-wide. Currently there exists various genome assemblers for short-read NGS data, such as Velvet, SOAPdenovo, ALLPATH, ABySS and others. \\
+\node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (0,61) {
+  De novo genome sequence assembly is the essential step to reveal genomic sequences of different species world-wide. Currently there exists various genome assemblers for short-read NGS data, such as Velvet, SOAPdenovo, ALLPATH, ABySS and others. \newline \newline
  We present new open-source de Bruijn graph-based assembler currently in development on C++, which uses novel algorithmic ideas such as context-free graph approach and also have agile and expandable software architecture. It requires affordable amount of memory and computations while giving high quality results. It provides solid basis for single-cell and mammalian assemblers in the near future.
 %  \vspace{5mm}
 %  \begin{center}
@@ -144,15 +144,15 @@
 
 %%%%%%%%%%%%%%%CONSTRUCTION
 \begin{scope}
-  \draw (0,55) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (26,47);
-  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,55) {\fontsize{32pt}{1em} \bf 
+  \draw (0,54) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (26,47);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,54) {\fontsize{32pt}{1em} \bf 
     Graph Construction\phantom{y}};
- \node[rectangle,anchor=west,text width=24cm,inner sep=5mm] at (0,51) {
+ \node[rectangle,anchor=west,text width=24cm,inner sep=5mm] at (0,50.5) {
 \begin{itemize}
 \item Vetexes: $K$-mers. Edges: $(K+1)$-mers.
 \item All simple pathes (i.e. without branchings) are condensed.
 \item Hash-index $(K+1)$-mer $\rightarrow (edge, offset)$.
-\item 2 bits per nucleotide in sequences. 0 bits overhead for sequences with compile-time lengths (i.e. $K$).
+\item 2 bits per nucleotide in sequences.
 \item Every edge/vertex knows it's reverse-complementary edge/vertex.
 \end{itemize}
  };    
@@ -170,44 +170,42 @@
 \item Split of an edge in a given position.
 \item Projection of one edge (with all additional info) to another edge.
 \end{itemize}
-Callback technique: each time a modifying operation is performed corresponding event is triggered and all objects that listen to graph events are notified about what exactly happened to the graph. It allows to implement any additional graph information as an external structure and hide its maintaining logic from the graph and from processing algorithms.
+Callback technique: each time a modifying operation is performed corresponding event is triggered and all objects that listen to graph events are notified about what exactly happened to the graph. It allows to implement any additional information as an external structure and hide its logic from the graph and from processing algorithms.
 
  };    
 \end{scope}
 
-%%%%%%%%%%%%%%%GRAPH PIC
-\begin{scope}
-%  \draw (36,44) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,21);
-%  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (36,44) {\fontsize{32pt}{1em} \bf 
-%    Errors Handling\phantom{y}};
- \node[rectangle,anchor=west,text width=18cm,inner sep=5mm] at (41,32.5) {
-\includegraphics[height=24cm]{graph_simple.pdf}
- };
-\end{scope}
-
 %%%%%%%%%%%%%%%ERRORS
 \begin{scope}
-  \draw (0,44) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (41,34);
+  \draw (0,44) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (35,35);
   \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,44) {\fontsize{32pt}{1em} \bf 
     Errors Handling\phantom{y}};
- \node[rectangle,anchor=west,text width=35cm,inner sep=5mm] at (0,39) {
+ \node[rectangle,anchor=west,text width=34cm,inner sep=5mm] at (0,39.5) {
 \begin{itemize}
-\item \textbf{Tip clipping}.
-\item \textbf{Bulge removal}.
-\item \textbf{Low-coverage edges removal}.
+\item \textbf{Tip Clipping}. \\
+We iterate through all edges of the de Bruijn graph in order of increasing length. \\
+If current edge topologically looks like tip and has alternative path with good enough $coverage$ this edge will be removed.
+\item \textbf{Simple Bulge Removal}. \\
+Simple bulge is a rather short edge $e$ with an alternative path $P$ between its start and end of length $\approx length(e)$ \\
+Our current approach is iterative removal of simple bulges. This strategy allows to delete pretty complex bulge structures and appeared to work pretty well if we alternate it with low coverage edge removal.
+\item \textbf{Removal of Low-Coverage Edges} with small length (as erroneous).
 \end{itemize}
  };
 \end{scope}
 
 %%%%%%%%%%%%%%%INFO
 \begin{scope}
-  \draw (0,31) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (41,21);
-  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,31) {\fontsize{32pt}{1em} \bf 
+  \draw (0,32) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (35,24);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,32) {\fontsize{32pt}{1em} \bf 
     Additional Info\phantom{y}};
- \node[rectangle,anchor=west,text width=35cm,inner sep=5mm] at (0,26) {
+ \node[rectangle,anchor=west,text width=34cm,inner sep=5mm] at (0,28) {
 \begin{itemize}
-\item Coverage.
-\item Distances between edges.
+\item \textbf{Coverage}. \\
+For edge it's the number of $(K+1)$-mers from this edge which was in initial genomic reads. \\
+Coverage is additive, means sum of coverages of two edges is the coverage of the concatenation of this two edges.
+\item \textbf{Distances between Edges} (usually takes from mate-reads or long reads).
+$$(edge, edge, distance) \rightarrow level~of~certainty~(weight)$$
+Insert length has large dispersion value thus clustering of some sort is required. There are two types of clustering each of which are implemented: online clustering and offline clustering.
 \end{itemize}
  };
 \end{scope}
@@ -393,42 +391,51 @@ Callback technique: each time a modifying operation is performed corresponding e
 %\end{scope}
 
 %%%%%%%%%%%%%%%PRACTICAL RESULTS
-\begin{scope}
-  \draw (0,18) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (35,0);
-  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,18) {\fontsize{32pt}{1em} \bf 
-    Practical results\phantom{y}};
-  
-\node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (0,9) {
+%\begin{scope}
+%  \draw (0,18) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (18,0);
+%  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,18) {\fontsize{32pt}{1em} \bf 
+%    Dataset\phantom{y}};
+%  
+%\node[rectangle,anchor=west,text width=18cm,inner sep=5mm] at (0,9) {
+%
+%};
+%\end{scope}
 
-  E.Coli MG1655-K12.
-  
-  12M Illumina paired-end reads (length = 100, gap = 20).
+%%%%%%%%%%%%%%%EVALUATIONS
 
-  Correction with Quake (Hammer for future).
-  
-  ...
-  
-  PROFIT!!!
+ \node[rectangle,anchor=west,text width=16cm,inner sep=5mm] at (17,16.5) {
+\includegraphics[height=13.75cm]{cumulative_plot.pdf}
  };
  
-\end{scope}
+  \node[rectangle,anchor=west,text width=16cm,inner sep=5mm] at (-1,6.5) {
+\includegraphics[height=13.75cm]{Nx_plot.pdf}
+ };
+ 
+ \node[rectangle,anchor=west,text width=18cm,inner sep=5mm] at (35,26) {
+\includegraphics[width=19cm]{graph_simple.pdf}
+ };
 
-%%%%%%%%%%%%%%%CONCLUSION
+%%%%%%%%%%%%%%%DATASET
 \begin{scope}
-  \draw (36,18) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,11);
-  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (36,18) {\fontsize{32pt}{1em} \bf 
-    Conclusions\phantom{y}};
-\node[rectangle,anchor=west,text width=17cm,inner sep=5mm] at (36,14.5) {
- Something was done.
+  \draw (0,21) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (16,14);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,21) {\fontsize{32pt}{1em} \bf 
+    Evaluations\phantom{y}};
+\node[rectangle,anchor=west,text width=15cm,inner sep=5mm] at (0,17.5) {
+\begin{itemize}
+\item E.Coli MG1655-K12 bacteria (4.6Mbp genome)
+\item 14M Illumina paired-end reads of \\ size = 100bp, gap $\approx$ 20bp (total: 6 Gb of FASTQ).
+\item Error Correction with Quake (before assembly).
+\item $\approx$ 1 hour on a laptop, 1 Gb RAM, no HDD.
+\end{itemize}
  };
 \end{scope}
 
 %%%%%%%%%%%%%%%FUTURE
 \begin{scope}
-  \draw (36,8) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,0);
-  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (36,8) {\fontsize{32pt}{1em} \bf 
+  \draw (17,8) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (35,0);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (17,8) {\fontsize{32pt}{1em} \bf 
     Future\phantom{y}};
-\node[rectangle,anchor=west,text width=17cm,inner sep=5mm] at (36,4) {
+\node[rectangle,anchor=west,text width=17cm,inner sep=5mm] at (17,4) {
 \begin{enumerate}[start=0]
 \item Repeat resolving.
 \item Single Cell (Bacterial) Assembler.
@@ -438,6 +445,17 @@ Callback technique: each time a modifying operation is performed corresponding e
  };
 \end{scope}
 
+
+%%%%%%%%%%%%%%%TEAM
+\begin{scope}
+  \draw (36,6) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,0);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (36,6) {\fontsize{32pt}{1em} \bf 
+    Team\phantom{y}};
+\node[rectangle,anchor=west,text width=17cm,inner sep=5mm] at (36,3) {
+Dmitrij Antipov, Anton Bankevich, Mikhail Dvorkin, \\ Alexander Kulikov, Sergey Nurk, Alexander Sirotkin, \\ Nikolay Vyahhi, Max Alekseyev, Pavel Pevzner. \newline \newline
+Supported by "megagrant"\\(Ministry of Science and Education, Russia).
+};
+\end{scope}
 
 \end{tikzpicture}
 \end{center}
