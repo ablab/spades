@@ -83,10 +83,10 @@ public:
 			if (other_edge == edge && isClose(d, other_d))
 				return true;
 //ToDo: Understand if it is very dirty hack.
-//			if ((new_graph.EdgeStart(lp.first) != new_graph.EdgeEnd(lp.first)) && (new_graph.EdgeStart(other_info.lp.first) != new_graph.EdgeEnd(other_info.lp.first))){
-//				if ((new_graph.EdgeStart(lp.first) == new_graph.EdgeStart(other_info.lp.first) ) || (new_graph.EdgeEnd(lp.first) == new_graph.EdgeEnd(other_info.lp.first)))
-//					return false;
-//			}
+			if ((lp.first != other_info.lp.first) && (new_graph.EdgeStart(lp.first) != new_graph.EdgeEnd(lp.first)) && (new_graph.EdgeStart(other_info.lp.first) != new_graph.EdgeEnd(other_info.lp.first))){
+				if ((new_graph.EdgeStart(lp.first) == new_graph.EdgeStart(other_info.lp.first) ) || (new_graph.EdgeEnd(lp.first) == new_graph.EdgeEnd(other_info.lp.first)))
+					return false;
+			}
 
 //TODO:: SHURIK! UBERI ZA SOBOJ !!!
 			BoundedDijkstra<Graph, int> dij(old_graph, MAXSKIPDIST);
