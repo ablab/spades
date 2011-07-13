@@ -21,33 +21,34 @@ class Read {
 public:
   static const int PHRED_OFFSET = 33;
   static const int BAD_QUALITY_THRESHOLD = 2;
-  
+
   bool isValid() const {
     return valid_;
   }
-  
+
   Sequence getSequence() const {
     assert(valid_);
     return Sequence(seq_);
   }
-  Sequence getSubSequence(size_t start, size_t length) const {
+
+  Sequence getSubSequence(size_t start, size_t length) const __attribute__ ((deprecated)) {
     assert(length > 0 && start >= 0 && start + length <= seq_.size());
     return Sequence(seq_.substr(start, length));
   }
-  
+
   Quality getQuality() const {
     assert(valid_);
     return Quality(qual_);
   }
-  
+
   const std::string& getSequenceString() const {
     return seq_;
   }
-  
+
   const std::string& getQualityString() const {
     return qual_;
   }
-  
+
   std::string getPhredQualityString(int offset = PHRED_OFFSET) const {
     std::string res = qual_;
     for (size_t i = 0; i < res.size(); ++i) {
@@ -55,20 +56,20 @@ public:
     }
     return res;
   }
-  
+
   const std::string& getName() const {
     return name_;
   }
-  
+
   size_t size() const {
     return seq_.size();
   }
-  
+
   char operator[](size_t i) const {
     assert(is_nucl(seq_[i]));
     return dignucl(seq_[i]);
   }
-  
+
   /**
    * It's actually not trim Ns, but trim everything before first 'N'
    * P.S. wtf? (Kolya)
@@ -81,7 +82,7 @@ public:
     }
     valid_ = updateValid();
   }
-  
+
   /**
    * trim bad quality nucleotides from start and end of the read
    * @return size of the read left
@@ -100,7 +101,7 @@ public:
 	if (qual_[end] > BAD_QUALITY_THRESHOLD)
 	  break;
       }
-      seq_.erase(seq_.begin() + end + 1, seq_.end());			
+      seq_.erase(seq_.begin() + end + 1, seq_.end());
       qual_.erase(qual_.begin() + end + 1, qual_.end());
       valid_ = updateValid();
       return seq_.size();
@@ -121,9 +122,9 @@ public:
     size_t i = start;
     for (; i < seq_.size(); ++i) {
       if (i >= k + curHypothesis)
-	return curHypothesis;
+        return curHypothesis;
       if (!is_nucl(seq_[i])) {
-	curHypothesis = i + 1;
+        curHypothesis = i + 1;
       }
     }
     if (i >= k + curHypothesis) {
@@ -131,12 +132,12 @@ public:
     }
     return -1;
   }
-  
+
   Read() :
     valid_(false) {
     ;
   }
-  
+
   Read(const std::string &name, const std::string &seq, const std::string &qual) :
     name_(name), seq_(seq), qual_(qual) { // for test only!
     valid_ = updateValid();
@@ -171,7 +172,7 @@ private:
     }
     return true;
   }
-  
+
 public:
   Read operator!() const {
     std::string newName;
