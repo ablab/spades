@@ -156,7 +156,7 @@ public:
 	void stats(string name) {
 //		omnigraph::StrGraphLabeler<Graph> labeler(*g_);
 		omnigraph::StrCoverageGraphLabeler<Graph> labeler(*g_);
-		omnigraph::WriteToDotFile(output_file_ + "_" + name, "earmarked", *g_, labeler);
+		omnigraph::WriteToDotFile(output_file_ + "_" + name + ".dot", "earmark_" + name, *g_, labeler);
 		INFO("Statistics of " << name << ":");
 		omnigraph::VertexEdgeStat<Graph> vertex_edge_stat(*g_);
 		vertex_edge_stat.Count();
@@ -205,7 +205,7 @@ public:
 			size = nsize;
 		}
 
-		osequencestream oss(output_file_ + "_" + "contigs");
+		osequencestream oss(output_file_ + "_" + "contigs.fasta");
 		for (auto edge_it = g_->SmartEdgeBegin(); !edge_it.IsEnd(); ++edge_it) {
 			oss << g_->nucls(*edge_it);
 		}

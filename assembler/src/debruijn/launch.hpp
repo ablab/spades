@@ -49,10 +49,13 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 }
 
 void CountPairedInfoStats(Graph &g, size_t insert_size, size_t max_read_length,
-		PairedInfoIndex<Graph> &paired_index, const string &output_folder) {
+		PairedInfoIndex<Graph> &paired_index, const string &output_folder, bool etalon_paired_info_mode) {
 	EdgePairStat<Graph> (g, paired_index, output_folder).Count();
 	UniquePathStat<Graph> (g, paired_index, insert_size, max_read_length, 0.1,
 			40.0).Count();
+	if (etalon_paired_info_mode) {
+		UniqueDistanceStat<Graph>(paired_index).Count();
+	}
 }
 
 void WriteToDotFile(Graph &g, const string& file_name, string graph_name,
@@ -120,9 +123,9 @@ void WriteGraphComponents(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 }
 
 void ProducePairedInfo(Graph& g, size_t insert_size, size_t max_read_length,
-		PairedInfoIndex<Graph> &paired_index, const string &output_folder) {
+		PairedInfoIndex<Graph> &paired_index, const string &output_folder, bool etalon_paired_info_mode) {
 	CountPairedInfoStats(g, insert_size, max_read_length, paired_index,
-			output_folder);
+			output_folder, etalon_paired_info_mode);
 }
 template<class Graph>
 void ClipTips(Graph &g) {
@@ -351,7 +354,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 	EdgeIndex<k + 1, Graph> index(g);
 	IdTrackHandler<Graph> IntIds(g);
 	// if it's not paired_mode, then it'll be just unused variable -- takes O(1) to initialize from graph
-	PairedInfoIndex<Graph> paired_index(g);
+	PairedInfoIndex<Graph> paired_index(g, 5);
 
 	if (!from_saved) {
 
@@ -384,7 +387,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 				"graph_component", insert_size);
 		if (paired_mode) {
 			ProducePairedInfo(g, insert_size, max_read_length, paired_index,
-					output_folder);
+					output_folder, etalon_info_mode);
 		}
 	}
 	//	if (paired_mode) {
@@ -402,6 +405,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 			omnigraph::WriteSimple(
 					output_folder + "repeats_resolved_before.dot",
 					"no_repeat_graph", g, IdTrackLabelerBefore);
+			printGraph(g, IntIds, work_tmp_dir + "graph", paired_index);
 			printGraph(g, IntIds, output_folder + "graph", paired_index);
 		}
 
@@ -414,11 +418,11 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		IdTrackHandler<Graph> conj_IntIds(conj_copy_graph, IntIds.MaxVertexId(),
 				IntIds.MaxEdgeId());
 		PairedInfoIndex<Graph> conj_copy_index(conj_copy_graph);
-		scanConjugateGraph(conj_copy_graph, conj_IntIds, output_folder + "graph", conj_copy_index);
-		printGraph(conj_copy_graph, conj_IntIds, output_folder + "graph_copy", conj_copy_index);
+		scanConjugateGraph(conj_copy_graph, conj_IntIds, work_tmp_dir + "graph", conj_copy_index);
+		printGraph(conj_copy_graph, conj_IntIds, work_tmp_dir + "graph_copy", conj_copy_index);
 
 
-		scanNCGraph(new_graph, NewIntIds, output_folder + "graph", new_index);
+		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index);
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
