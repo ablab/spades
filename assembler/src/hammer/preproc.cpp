@@ -47,7 +47,7 @@ Options ParseOptions(int argc, char * argv[]) {
     ret.good =  false;
   } else {
     ret.qvoffset = atoi(argv[1]);  
-    ret.good &= (ret.qvoffset < 0 || ret.qvoffset > 255);
+    ret.good &= (ret.qvoffset >= 0 && ret.qvoffset <= 255);
     ret.k = atoi(argv[2]);
     ret.good &= (ret.k > 0);
     ret.ifile = argv[3];
