@@ -134,7 +134,7 @@
 };
 \node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (28,61.5) {
 \begin{enumerate}
-\item De Bruijn graph construction and index of $K$-mers.
+\item De Bruijn graph construction, index and callbacks.
 \item Error correction and corruption based on topology of the de Bruijn graph (e.g. tip clipping, bulge removal).
 \item Efficient data structures for storing and handling of the additional information in the de Bruijn graph (e.g. coverage or distances between pairs of edges).
 \end{enumerate}
@@ -144,24 +144,72 @@
 
 %%%%%%%%%%%%%%%CONSTRUCTION
 \begin{scope}
-  \draw (0,55) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,47);
+  \draw (0,55) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (26,47);
   \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,55) {\fontsize{32pt}{1em} \bf 
     Graph Construction\phantom{y}};
-    
+ \node[rectangle,anchor=west,text width=24cm,inner sep=5mm] at (0,51) {
+\begin{itemize}
+\item Vetexes: $K$-mers. Edges: $(K+1)$-mers.
+\item All simple pathes (i.e. without branchings) are condensed.
+\item Hash-index $(K+1)$-mer $\rightarrow (edge, offset)$.
+\item 2 bits per nucleotide in sequences. 0 bits overhead for sequences with compile-time lengths (i.e. $K$).
+\item Every edge/vertex knows it's reverse-complementary edge/vertex.
+\end{itemize}
+ };    
+\end{scope}
+
+%%%%%%%%%%%%%%%OPERATIONS
+\begin{scope}
+  \draw (28,55) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,45);
+  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (28,55) {\fontsize{32pt}{1em} \bf 
+    Graph Operations\phantom{y}};
+ \node[rectangle,anchor=west,text width=24cm,inner sep=5mm] at (28,50) {
+\begin{itemize}
+\item Addition/deletion of edge/vertex.
+\item Concatenation of a path.
+\item Split of an edge in a given position.
+\item Projection of one edge (with all additional info) to another edge.
+\end{itemize}
+Callback technique: each time a modifying operation is performed corresponding event is triggered and all objects that listen to graph events are notified about what exactly happened to the graph. It allows to implement any additional graph information as an external structure and hide its maintaining logic from the graph and from processing algorithms.
+
+ };    
+\end{scope}
+
+%%%%%%%%%%%%%%%GRAPH PIC
+\begin{scope}
+%  \draw (36,44) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,21);
+%  \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (36,44) {\fontsize{32pt}{1em} \bf 
+%    Errors Handling\phantom{y}};
+ \node[rectangle,anchor=west,text width=18cm,inner sep=5mm] at (41,32.5) {
+\includegraphics[height=24cm]{graph_simple.pdf}
+ };
 \end{scope}
 
 %%%%%%%%%%%%%%%ERRORS
 \begin{scope}
-  \draw (0,44) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,34);
+  \draw (0,44) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (41,34);
   \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,44) {\fontsize{32pt}{1em} \bf 
     Errors Handling\phantom{y}};
+ \node[rectangle,anchor=west,text width=35cm,inner sep=5mm] at (0,39) {
+\begin{itemize}
+\item \textbf{Tip clipping}.
+\item \textbf{Bulge removal}.
+\item \textbf{Low-coverage edges removal}.
+\end{itemize}
+ };
 \end{scope}
 
 %%%%%%%%%%%%%%%INFO
 \begin{scope}
-  \draw (0,31) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,21);
+  \draw (0,31) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (41,21);
   \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (0,31) {\fontsize{32pt}{1em} \bf 
     Additional Info\phantom{y}};
+ \node[rectangle,anchor=west,text width=35cm,inner sep=5mm] at (0,26) {
+\begin{itemize}
+\item Coverage.
+\item Distances between edges.
+\end{itemize}
+ };
 \end{scope}
 
 %%%%%%%%%%%%%%%EXAMPLE
