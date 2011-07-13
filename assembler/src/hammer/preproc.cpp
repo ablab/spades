@@ -12,9 +12,9 @@
 #include <vector>
 #include <utility>
 #include "hammer/defs.hpp"
+#include "hammer/kmer_functions.hpp"
 #include "common/read/read.hpp"
 #include "common/read/ireadstream.hpp"
-#include "common/sequence/seq.hpp"
 
 using std::string;
 using std::vector;
@@ -22,38 +22,6 @@ using std::endl;
 using std::pair;
 
 int qvoffset;
-
-/**
- * add k-mers from read to map
- */
-void AddKMers(const Read & r, KMerStatMap & v) {
-  KMerStatMap::iterator it;
-  string s = r.getSequenceString();
-  int i = 0;
-  while (true) {
-    i = r.firstValidKmer(i, K);
-    if (i == -1) break;
-    KMer kmer = KMer(r.getSubSequence(i, K));
-    while (true) {
-      it = v.find(kmer);
-      if (it != v.end()) {
-	it->second.count++;
-      } else {
-	pair<KMer, KMerStat> p;
-	p.first = kmer;
-	p.second.count = 1; 
-	v.insert(p);
-      }
-      if (i + K < (int)r.size() && is_nucl(s[i + K])) {
-	kmer = kmer << r[i + K];
-	++i;
-      } else {
-	i += K;
-	break;
-      }
-    }
-  }
-}
 
 const int kReadBatchSize = 1e6;
 
@@ -103,7 +71,7 @@ int main(int argc, char * argv[]) {
       Read r;      
       ifs >> r; 
       // trim the reads for bad quality and process only the ones with at least K "reasonable" elements
-      if (r.trimBadQuality() >= K) {
+      if (TrimBadQuality(r) >= K) {
 	rv.push_back(r);
       }
       if (ifs.eof()) {
