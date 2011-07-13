@@ -49,28 +49,6 @@
 \begin{document}
 \pagestyle{empty}
 
-%%% RAMKA
-%\noindent\hspace{-2cm}
-%\begin{tikzpicture}[rounded corners=2cm,x=1cm,y=1cm]
-%  \draw (0,-1) [color=SteelBlue3,line width=2mm] rectangle (55.5,79);
-%\end{tikzpicture}
-%\vspace{-78.5cm}
-
-%%% TITLE
-%\begin{center}
-  %{\color{OrangeRed} \fontsize{48pt}{1em} {\bf Earmark graph approach to {\it de~novo} genome assembly}}
-  %\vspace{1.5cm}
-    
-  %\fontsize{32pt}{2.5em}\selectfont
-  %\color{DodgerBlue3}
-  %{\bf Mikhail Dvorkin, Alexander S. Kulikov, Max Alekseyev}
-  %{affiliations}
-  %{\tt emails}
-%\end{center}%
-%\vspace{1cm}
-
-%\fontsize{32pt}{2.5em}\selectfont
-
 \begin{center}
 \begin{tikzpicture}
 
@@ -126,12 +104,13 @@ and the NIH National Institute of General Medical Sciences.}
   graph has several other advantages over the de~Bruijn graph.
 };
 \node[rectangle,anchor=west,text width=25cm,inner sep=5mm] at (28,61.5) {
-  \fontsize{26pt}{2em}\selectfont
+  %\fontsize{26pt}{2em}\selectfont
+  \Large
   {\color{OrangeRed}\bf Input:} a set of substrings (called reads) 
     ${\cal R} \subseteq \{{\tt A,C,G,T}\}^r$ of an unknown circular string 
-    $S \in \{{\tt A,C,G,T}\}^*$ (called genome).\\
-  {\color{OrangeRed}\bf Output:} the genome $S$.\\
-  ~\\
+    $S \in \{{\tt A,C,G,T}\}^*$ (called genome).\\[+3mm]
+  {\color{OrangeRed}\bf Output:} the genome $S$.\\[+3mm]
+  %~\\
   {\color{OrangeRed}\bf Complications: } reads may contain errors.
 };
 %at (27,64) {\fontsize{26pt}{1em} Given a set of reads ${\cal R} \subseteq \{{\tt 
@@ -297,8 +276,9 @@ and the NIH National Institute of General Medical Sciences.}
   \draw (24,22) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,8.5);
   \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (24,22) {\fontsize{32pt}{1em} \bf 
     Advantages of earmark graph over de~Bruijn graph\phantom{y}};
-  \node[rectangle,text width=28cm,anchor=north west] at (25,22) {
-    \fontsize{24pt}{1em}\selectfont
+  \node[rectangle,text width=28cm,anchor=north west] at (25,21.5) {
+    %\fontsize{24pt}{2em}\selectfont
+    \large
     \begin{description}
     \item[\color{OrangeRed} \bf Smaller size.]
     The earmark graph requires less time and memory for construction.
