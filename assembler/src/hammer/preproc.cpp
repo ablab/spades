@@ -16,7 +16,6 @@
 #include "common/read/ireadstream.hpp"
 #include "common/sequence/seq.hpp"
 
-using std::cout;
 using std::string;
 using std::vector;
 using std::endl;
