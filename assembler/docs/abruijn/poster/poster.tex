@@ -338,10 +338,39 @@ and the NIH National Institute of General Medical Sciences.}
 \begin{scope}
   \draw (24,6) [color=SteelBlue3,line width=2mm,rounded corners=.5cm] rectangle (54,0);
   \node[draw=SteelBlue3,line width=2mm,rounded corners=.5cm,anchor=south west,fill=blue!10!white,inner sep=3mm] at (24,6) {\fontsize{32pt}{1em} \bf References\phantom{y}};
-  \node[rectangle,text width=28cm,anchor=north west] at (24.5,5.5) {
-    1. A Bruijn\\
-    2. De Bruijn\\
-    3. Minimizers
+  \node[rectangle,text width=28cm,anchor=north west] at (24.5,5.5) {\small
+%    1. A Bruijn\\
+%    2. De Bruijn\\
+%    3. Minimizers
+\newcommand{\etalchar}[1]{$^{#1}$}
+%\begin{thebibliography}{RHH{\etalchar{+}}04}
+\begin{itemize}
+\item 
+Pevzner, Tang, Tesler.
+\newblock De novo repeat classification and fragment assembly.
+\newblock {\em RECOMB}, 2004.%, pages 213--222.
+
+%\bibitem[PTW01]{PW01}
+\item 
+Pevzner, Tang, Waterman.
+\newblock An Eulerian path approach to DNA fragment assembly.
+\newblock {\em Proc Natl Acad Sci USA}, 2001. %98(17):9748--9753, 2001.
+
+%\bibitem[RHH{\etalchar{+}}04]{RW04}
+\item 
+Roberts, Hayes, Hunt, Mount, Yorke.
+\newblock Reducing storage requirements for biological sequence comparison.
+\newblock {\em Bioinformatics}, 2004. %20:3363--3369, December 2004.
+
+%\bibitem[ZB08]{Z08}
+\item 
+Zerbino, Birney.
+\newblock Velvet: algorithms for de novo short read assembly using de bruijn
+  graphs.
+\newblock {\em Genome Res.}, 2008. %18(5):821--9, 2008.
+\end{itemize}
+%\end{thebibliography}
+
   };
 \end{scope}
 
