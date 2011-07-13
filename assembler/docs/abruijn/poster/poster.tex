@@ -121,7 +121,7 @@ and the NIH National Institute of General Medical Sciences.}
   a traversal of edges in this graph. We propose a new approach that allows
   to decrease the graph size without losing the essential information from
   the input data. Instead of using all the $k$-mers from a read we take only
-  a few of them (and call them earmarked). Besides an obvious advantage
+  a few of them (call them {\it earmarks}). Besides an obvious advantage
   of requiring less memory and time for constructing, the resulting earmark
   graph has several other advantages over the de~Bruijn graph.
 };
@@ -247,7 +247,7 @@ and the NIH National Institute of General Medical Sciences.}
   };
 
   \begin{scope}[draw=SteelBlue3,line width=3pt,fill=white]
-    \draw [->] (reads) to[out=90,in=180] node[fill=white,rectangle,text width=5cm] 
+    \draw [->] (reads) to[out=90,in=180] node[fill=white,rectangle,text width=6cm] 
       {\color{DodgerBlue3} 1. represent each read as a path on its $r-k+1$ consecutive \mbox{$k$-mers}} (debruijngraph);
 
     \draw [->] (debruijngraph) to[out=15,in=90] node[fill=white,sloped,rectangle,text width=7cm] 
