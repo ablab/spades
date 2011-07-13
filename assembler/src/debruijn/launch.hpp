@@ -405,6 +405,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 			omnigraph::WriteSimple(
 					output_folder + "repeats_resolved_before.dot",
 					"no_repeat_graph", g, IdTrackLabelerBefore);
+			printGraph(g, IntIds, work_tmp_dir + "graph", paired_index);
 			printGraph(g, IntIds, output_folder + "graph", paired_index);
 		}
 
@@ -417,11 +418,11 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		IdTrackHandler<Graph> conj_IntIds(conj_copy_graph, IntIds.MaxVertexId(),
 				IntIds.MaxEdgeId());
 		PairedInfoIndex<Graph> conj_copy_index(conj_copy_graph);
-		scanConjugateGraph(conj_copy_graph, conj_IntIds, output_folder + "graph", conj_copy_index);
-		printGraph(conj_copy_graph, conj_IntIds, output_folder + "graph_copy", conj_copy_index);
+		scanConjugateGraph(conj_copy_graph, conj_IntIds, work_tmp_dir + "graph", conj_copy_index);
+		printGraph(conj_copy_graph, conj_IntIds, work_tmp_dir + "graph_copy", conj_copy_index);
 
 
-		scanNCGraph(new_graph, NewIntIds, output_folder + "graph", new_index);
+		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index);
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
