@@ -5,6 +5,7 @@
 #include <cassert>
 #include <array>
 #include <algorithm>
+#include <vector>
 #include "common/sequence/nucl.hpp"
 #include "log.hpp"
 #include "iostream"
