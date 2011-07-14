@@ -47,6 +47,7 @@ inline double convertToInt(std::string const& s) {
 }
 
 int main(int argc, char * argv[]) {
+        KMer::InitK(K);
 	if (argc < 5) {
 		cout << "Usage: ./reconstruct ufFilename readFilename nthreads qvoffset [outFilename=\"reads.processed\"]\n";
 		return 0;
