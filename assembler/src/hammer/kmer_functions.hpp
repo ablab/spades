@@ -6,6 +6,7 @@
 */
 #ifndef HAMMER_KMERFUNCTIONS_HPP_
 #define HAMMER_KMERFUNCTIONS_HPP_
+#include <vector>
 #include "hammer/hammer_config.hpp"
 #include "common/read/read.hpp"
 
@@ -26,6 +27,8 @@ size_t FirstValidKmerPos(const Read &r, size_t start, size_t k);
  * add k-mers from read to map
  */
 void AddKMers(const Read &r, KMerStatMap &v);
+
+std::vector<KMer> GetKMers(const Read &r);
 
 Sequence GetSubSequence(const Read &r, size_t start, size_t length);
 #endif // HAMMER_KMERFUNCTIONS_HPP_

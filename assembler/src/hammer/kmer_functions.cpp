@@ -61,19 +61,17 @@ size_t TrimBadQuality(Read &r, int bad_quality_threshold) {
   return seq.size();
 }
 
-/**
- * add k-mers from read to map
- */
-void AddKMers(const Read &r, KMerStatMap &v) {
-  KMerStatMap::iterator it;
+
+std::vector<KMer> GetKMers(const Read &r) {
   const std::string &seq = r.getSequenceString();
+  vector<KMer> ans;
   size_t pos = 0;
   while (true) {
     pos = FirstValidKmerPos(r, pos, K);
     if (pos >= seq.size()) break;
     KMer kmer = KMer(GetSubSequence(r, pos, K));
     while (true) {
-      ++v[kmer].count;
+      ans.push_back(kmer);
       if (pos + K < r.size() && is_nucl(seq[pos + K])) {
 	kmer = kmer << r[pos + K];
 	++pos;
@@ -82,6 +80,16 @@ void AddKMers(const Read &r, KMerStatMap &v) {
 	break;
       }
     }
+  }
+  return ans;
+}
+/**
+ * add k-mers from read to map
+ */
+void AddKMers(const Read &r, KMerStatMap &v) {
+  vector<KMer> kmers = GetKMers(r);
+  for (size_t i = 0; i <  kmers.size(); ++i) {
+    ++v[kmers[i]].count;
   }
 }
 

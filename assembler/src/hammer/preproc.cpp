@@ -19,14 +19,17 @@ using std::vector;
 
 namespace {
 
+const int kStep = 1e5;
+
 struct Options {
   int qvoffset;
   string ifile;
   string ofile;
   int nthreads;
   int read_batch_size;
+  int file_number;
   bool valid;
-  Options() : nthreads(1), read_batch_size(1e6), valid(true) {}
+  Options() : nthreads(1), read_batch_size(1e6), file_number(100), valid(true) {}
 };
 
 
@@ -68,45 +71,29 @@ int main(int argc, char * argv[]) {
   printf("Starting preproc: evaluating %s in %d threads.\n", opts.ifile.c_str(), opts.nthreads);
 
   ireadstream ifs(opts.ifile.c_str(), opts.qvoffset);
-  size_t batch_number = 0;
   vector<KMerStatMap> vv(opts.nthreads);     
+  vector<FILE*> files(opts.file_number);
+  for (int i = 0; i < opts.file_number; ++i) {
+    files[i] = fopen(((string)itoa(i)) +  ".kmer.part", "w");
+  }
+  size_t read_number = 0;
   while (!ifs.eof()) {
     // reading a batch of reads
-    ++batch_number;
-    printf("Reading batch %d.\n", (unsigned int)batch_number);
-    vector<Read> rv;
-    for (int read_number = 0; read_number < opts.read_batch_size; ++read_number) {
-      Read r;      
-      ifs >> r; 
-      // trim the reads for bad quality and process only the ones with at least K "reasonable" elements
-      if (TrimBadQuality(r) >= K) {
-	rv.push_back(r);
-      }
-      if (ifs.eof()) {
-	break;
-      }
-    }    
-
-    printf("Batch %u read.\n", (unsigned int)batch_number);
-    // ToDo: add multithreading (map and reduce)
-    for(int i = 0; i < (int)rv.size(); ++i) {
-      AddKMers(rv[i], vv[0]);
-      AddKMers(!(rv[i]), vv[0]);
+    ++read_number;
+    if (read_number % kStep == 0) {
+      printf("Reading read %d.\n", (unsigned int)read_number);
     }
-    printf("Batch %u added.\n", (unsigned int)batch_number);
+    Read r;      
+    ifs >> r; 
+    vector<KMer> kmers = GetKMers(r);
+    fprintf(files[r], "%s", r.str().c_str());
+  }    
+  printf("Reads wroten to separate files.\n");
+
+  for (int i = 0; i < opts.file_number; ++i) {
+    fclose(files[i]);
   }
 
-  ifs.close();
-  printf("All k-mers added to maps.\n");
-  for (int i = 0; i < (int)vv.size(); ++i) {
-    printf("size(%d) = %u\n", i, (unsigned int)vv[i].size());
-  }
-  
-  FILE* f = fopen(opts.ofile.c_str(), "w");
-  for (KMerStatMap::iterator it = vv[0].begin(); it != vv[0].end(); ++it) {
-    fprintf(f, "%s %u\n", it->first.str().data(), (unsigned int) it->second.count);
-  }
-  fclose(f);
   return 0;
 }
 
