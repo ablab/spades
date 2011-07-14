@@ -99,15 +99,15 @@ public:
   /**
    * Default constructor, fills Seq with A's
    */
-  KMerGeneric() :data_(size_) {
+  KMerGeneric() :data_(data_size_) {
     assert(size_ != 0);
     assert((T)(-1) >= (T)0);//be sure to use unsigned types
     std::fill(data_.begin(), data_.end(), 0);
   }
 
-  KMerGeneric(vector<T> data) :data_(data) {
+  KMerGeneric(const vector<T> &data) :data_(data) {
     assert(size_ != 0);
-    assert(size_ == data.size());
+    assert(data_size_ == data.size());
     assert((T)(-1) >= (T)0);//be sure to use unsigned types
   }
 
@@ -120,7 +120,7 @@ public:
     assert((T)(-1) >= (T)0);//be sure to use unsigned types
   }
   
-  KMerGeneric(const char* s)  :data_(size_) {
+  KMerGeneric(const char* s)  :data_(data_size_) {
     assert(size_ != 0);
     assert((T)(-1) >= (T)0);//be sure to use unsigned types
     init(s);
@@ -133,7 +133,7 @@ public:
    * @param offset Offset when this sequence starts
    */
   template<typename S>
-  explicit KMerGeneric(const S &s, size_t offset = 0) :data_(size_) {
+  explicit KMerGeneric(const S &s, size_t offset = 0) :data_(data_size_) {
     assert(size_ != 0);
     assert((T)(-1) >= (T)0);//be sure to use unsigned types
     char *a = new char[size_ + 1];
