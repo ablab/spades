@@ -26,8 +26,8 @@ struct Options {
   string ofile;
   int nthreads;
   int read_batch_size;
-  bool good;
-  Options() : nthreads(1), read_batch_size(1e6), good(true) {}
+  bool valid;
+  Options() : nthreads(1), read_batch_size(1e6), valid(true) {}
 };
 
 
@@ -44,18 +44,18 @@ void PrintHelp() {
 Options ParseOptions(int argc, char * argv[]) {
   Options ret;
   if (argc != 5 && argc != 6) {
-    ret.good =  false;
+    ret.valid =  false;
   } else {
     ret.qvoffset = atoi(argv[1]);  
-    ret.good &= (ret.qvoffset >= 0 && ret.qvoffset <= 255);
+    ret.valid &= (ret.qvoffset >= 0 && ret.qvoffset <= 255);
     ret.k = atoi(argv[2]);
-    ret.good &= (ret.k > 0);
+    ret.valid &= (ret.k > 0);
     ret.ifile = argv[3];
     ret.ofile = argv[4];
     if (argc == 6) {
       ret.nthreads = atoi(argv[5]);
     }
-    ret.good &= ret.nthreads > 0;
+    ret.valid &= ret.nthreads > 0;
   }
   return ret;
 }
@@ -65,7 +65,7 @@ Options ParseOptions(int argc, char * argv[]) {
 int main(int argc, char * argv[]) {
 
   Options opts = ParseOptions(argc, argv);
-  if (!opts.good) {
+  if (!opts.valid) {
     PrintHelp();
     return 1;
   }
