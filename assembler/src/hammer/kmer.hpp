@@ -14,7 +14,7 @@ using namespace std;
 /**
  * @param T is max number of nucleotides, type for storage
  */
-template<typename T = unsigned int>
+template<size_t id, typename T = unsigned int>
 class KMerGeneric {
 private:
   static size_t size_;
@@ -88,25 +88,38 @@ public:
     size_ = size;
     data_size_ = (size_ + Tnucl - 1) >> Tnucl_bits;
   }
+
+  // forTest only
+  static void DropK() {
+    size_ = 0;
+    data_size_ = 0;
+  }
+
   /**
    * Default constructor, fills Seq with A's
    */
-  KMerGeneric() {
+  KMerGeneric() :data_(size_) {
     assert(size_ != 0);
     assert((T)(-1) >= (T)0);//be sure to use unsigned types
     std::fill(data_.begin(), data_.end(), 0);
   }
 
+  KMerGeneric(vector<T> data) :data_(data) {
+    assert(size_ != 0);
+    assert(size_ == data.size());
+    assert((T)(-1) >= (T)0);//be sure to use unsigned types
+  }
+
   /**
    * Copy constructor
    */
-  KMerGeneric(const KMerGeneric<T> &seq) :
+  KMerGeneric(const KMerGeneric<id, T> &seq) :
     data_(seq.data_) {
     assert(size_ != 0);
     assert((T)(-1) >= (T)0);//be sure to use unsigned types
   }
   
-  KMerGeneric(const char* s) {
+  KMerGeneric(const char* s)  :data_(size_) {
     assert(size_ != 0);
     assert((T)(-1) >= (T)0);//be sure to use unsigned types
     init(s);
@@ -119,10 +132,10 @@ public:
    * @param offset Offset when this sequence starts
    */
   template<typename S>
-  explicit KMerGeneric(const S &s, size_t offset = 0) {
+  explicit KMerGeneric(const S &s, size_t offset = 0) :data_(size_) {
     assert(size_ != 0);
     assert((T)(-1) >= (T)0);//be sure to use unsigned types
-    char a[size_ + 1];
+    char *a = new char[size_ + 1];
     for (size_t i = 0; i < size_; ++i) {
       char c = s[offset + i];
       assert(is_nucl(c) || is_dignucl(c));
@@ -133,6 +146,7 @@ public:
     }
     a[size_] = 0;
     init(a);
+    delete[] a;
   }
   
   /**
@@ -152,8 +166,8 @@ public:
    *
    * @return Reverse complement Seq.
    */
-  KMerGeneric<T> operator!() const {
-    KMerGeneric<T> res(data_);
+  KMerGeneric<id, T> operator!() const {
+    KMerGeneric<id, T> res(data_);
     for (size_t i = 0; i < (size_ >> 1); ++i) {
       T front = complement(res[i]);
       T end = complement(res[size_ - 1 - i]);
@@ -173,12 +187,12 @@ public:
    * @param c New 0123 char which should be added to the right.
    * @return Shifted (to the left) sequence with 'c' char on the right.
    */
-  KMerGeneric<T> operator<<(char c) const {
+  KMerGeneric<id, T> operator<<(char c) const {
     if (is_nucl(c)) {
       c = dignucl(c);
     }
     assert(is_dignucl(c));
-    KMerGeneric<T> res(data_);
+    KMerGeneric<id, T> res(data_);
     if (data_size_ != 0) { // unless empty sequence
       T rm = res.data_[data_size_ - 1] & 3;
       T lastnuclshift_ = ((size_ + Tnucl - 1) % Tnucl) << 1;
@@ -203,12 +217,12 @@ public:
    * @param c New 0123 char which should be added to the left.
    * @return Shifted (to the right) sequence with 'c' char on the left.
    */
-  KMerGeneric<T> operator>>(char c) const {
+  KMerGeneric<id, T> operator>>(char c) const {
     if (is_nucl(c)) {
       c = dignucl(c);
     }
     assert(is_dignucl(c));
-    KMerGeneric<T> res(data_);
+    KMerGeneric<id, T> res(data_);
     T rm = c;
     for (size_t i = 0; i < data_size_; ++i) {
       T new_rm = (res.data_[i] >> (Tbits - 2)) & 3;
@@ -223,7 +237,7 @@ public:
     return res;
   }
   
-  bool operator==(const KMerGeneric<T> s) const {
+  bool operator==(const KMerGeneric<id, T> s) const {
     return 0
       == memcmp(data_.data(), s.data_.data(), sizeof(T) * data_size_);
   }
@@ -232,7 +246,7 @@ public:
    * @see operator ==()
    */
   
-  bool operator!=(const KMerGeneric<T> s) const {
+  bool operator!=(const KMerGeneric<id, T> s) const {
     return 0
       != memcmp(data_.data(), s.data_.data(), sizeof(T) * data_size_);
   }
@@ -288,7 +302,7 @@ public:
   
   //	template<size_t HASH_SEED>
   struct hash {
-    size_t operator()(const KMerGeneric<T> &seq) const {
+    size_t operator()(const KMerGeneric<id, T> &seq) const {
       size_t h = 239;
       for (size_t i = 0; i < seq.data_size_; i++) {
 	h = ((h << 5) - h) + seq.data_[i];
@@ -298,7 +312,7 @@ public:
   };
   
   struct multiple_hash {
-    size_t operator()(const KMerGeneric<T>& seq, size_t hash_num, 
+    size_t operator()(const KMerGeneric<id,T>& seq, size_t hash_num, 
                       size_t h) const {
       ++hash_num;
       for (size_t i = 0; i < seq.data_size_; i++) {
@@ -309,14 +323,14 @@ public:
   };
   
   struct equal_to {
-    bool operator()(const KMerGeneric<T> &l, const KMerGeneric<T> &r) const {
+    bool operator()(const KMerGeneric<id, T> &l, const KMerGeneric<id, T> &r) const {
       return 0 == memcmp(l.data_.data(), r.data_.data(),
 			 sizeof(T) * data_size_);
     }
   };
   
   struct less2 {
-    int operator()(const KMerGeneric<T> &l, const KMerGeneric<T> &r) const {
+    int operator()(const KMerGeneric<id, T> &l, const KMerGeneric<id, T> &r) const {
       for (size_t i = 0; i < size_; ++i) {
 	if (l[i] != r[i]) {
 	  return (l[i] < r[i]);
@@ -337,19 +351,19 @@ public:
   
 };
 
-template<typename T>
-size_t KMerGeneric<T>::size_ = 0;
+template<size_t id, typename T>
+size_t KMerGeneric<id, T>::size_ = 0;
 
-template<typename T>
-size_t KMerGeneric<T>::data_size_ = 0;
+template<size_t id, typename T>
+size_t KMerGeneric<id, T>::data_size_ = 0;
 
 
-template<size_t size_, typename T = int>
-ostream& operator<<(ostream& os, KMerGeneric<T> seq) {
+template<size_t id, typename T = int>
+ostream& operator<<(ostream& os, KMerGeneric<id, T> seq) {
   os << seq.str();
   return os;
 }
 
-typedef KMerGeneric<unsigned int> KMer;
+typedef KMerGeneric<(unsigned int)1e6, unsigned int> KMer;
 
 #endif /* HAMMER_KMER_HPP_ */

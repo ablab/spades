@@ -63,11 +63,13 @@ Options ParseOptions(int argc, char * argv[]) {
 }
 
 int main(int argc, char * argv[]) {
+
   Options opts = ParseOptions(argc, argv);
   if (!opts.good) {
     PrintHelp();
     return 1;
   }
+  KMer::InitK(opts.k);
   printf("Starting preproc: evaluating %s in %d threads.\n", opts.ifile.c_str(), opts.nthreads);
 
   ireadstream ifs(opts.ifile.c_str(), opts.qvoffset);
@@ -82,7 +84,7 @@ int main(int argc, char * argv[]) {
       Read r;      
       ifs >> r; 
       // trim the reads for bad quality and process only the ones with at least K "reasonable" elements
-      if (TrimBadQuality(r) >= K) {
+      if (TrimBadQuality(r) >= opts.k) {
 	rv.push_back(r);
       }
       if (ifs.eof()) {
