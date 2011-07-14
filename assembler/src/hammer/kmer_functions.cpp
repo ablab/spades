@@ -64,21 +64,21 @@ size_t TrimBadQuality(Read &r, int bad_quality_threshold) {
 /**
  * add k-mers from read to map
  */
-void AddKMers(const Read &r, KMerStatMap &v, int k) {
+void AddKMers(const Read &r, KMerStatMap &v) {
   KMerStatMap::iterator it;
   const std::string &seq = r.getSequenceString();
   size_t pos = 0;
   while (true) {
-    pos = FirstValidKmerPos(r, pos, k);
+    pos = FirstValidKmerPos(r, pos, K);
     if (pos >= seq.size()) break;
-    KMer kmer = KMer(GetSubSequence(r, pos, k));
+    KMer kmer = KMer(GetSubSequence(r, pos, K));
     while (true) {
       ++v[kmer].count;
-      if (pos + k < (int)r.size() && is_nucl(seq[pos + k])) {
-	kmer = kmer << r[pos + k];
+      if (pos + K < r.size() && is_nucl(seq[pos + K])) {
+	kmer = kmer << r[pos + K];
 	++pos;
       } else {
-	pos += k;
+	pos += K;
 	break;
       }
     }

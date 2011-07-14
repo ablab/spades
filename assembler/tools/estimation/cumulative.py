@@ -12,13 +12,13 @@ import fastaparser
 if len(sys.argv) < 2:
 	print "Draws cumulative contigs lengths plot"
 	print
-	print "Usage:", sys.argv[0], "(pr|num) FASTA1 [MUL1 [FASTA1 [MUL2 ...]"
+	print "Usage: python", sys.argv[0], "(pr|num) FASTA1 [MUL1 [FASTA1 [MUL2 ...]"
 	print "FASTA is path to .fasta file."
 	print "pr is percents (on X-axis)"
 	print "num is number of contigs (on X-axis)"
 	print "MUL is multiplicator for scaling. Default for last optional mul is 1.0."
 	print
-	print "Example: python", sys.argv[0], "../../data/debruijn/we_contigs.fasta 0.5 ../../data/debruijn/velvet_contigs.fa 1"
+	print "Example: python", sys.argv[0], "pr ../../data/debruijn/we_contigs.fasta 0.5 ../../data/debruijn/velvet_contigs.fa 1"
 	print
 	exit(0)
 if len(sys.argv) % 2 == 1: # last default mul = 1.0
@@ -56,12 +56,13 @@ pylab.ylabel('Cumulative length')
 pylab.title('Cumulative plot')
 pylab.grid(True)
 ax = pylab.gca()
+#ax.legend(["Our Assembler", "Velvet"], loc='lower right')
 ax.legend(sys.argv[2::2], loc='lower right')
 formatter = matplotlib.ticker.FormatStrFormatter('%.f')
 ax.yaxis.set_major_formatter(formatter)
 
 # save and show
-filename = 'cumulative_plot'
+filename = 'cumulative_plot.pdf'
 pylab.savefig(filename)
-print "Saved to ./" + filename + ".png"
+print "Saved to ./" + filename #+ ".png"
 pylab.show()

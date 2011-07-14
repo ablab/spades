@@ -21,7 +21,6 @@ namespace {
 
 struct Options {
   int qvoffset;
-  int k;
   string ifile;
   string ofile;
   int nthreads;
@@ -35,7 +34,6 @@ void PrintHelp() {
   printf("Usage: ./preproc qvoffset k ifile.fastq ofile.kmer [nthreads]\n");
   printf("Where:\n");
   printf("\tqvoffset\tan offset of fastq quality data\n");
-  printf("\tk\ta length of k-mer\n");
   printf("\tifile.fastq\tan input file with reads in fastq format\n");
   printf("\tofile.kmer\ta filename where k-mer statistics will be outputed\n");
   printf("\tnthreads\ta number of threads (one by default)\n");
@@ -43,17 +41,15 @@ void PrintHelp() {
   
 Options ParseOptions(int argc, char * argv[]) {
   Options ret;
-  if (argc != 5 && argc != 6) {
+  if (argc != 4 && argc != 5) {
     ret.valid =  false;
   } else {
     ret.qvoffset = atoi(argv[1]);  
     ret.valid &= (ret.qvoffset >= 0 && ret.qvoffset <= 255);
-    ret.k = atoi(argv[2]);
-    ret.valid &= (ret.k > 0);
-    ret.ifile = argv[3];
-    ret.ofile = argv[4];
-    if (argc == 6) {
-      ret.nthreads = atoi(argv[5]);
+    ret.ifile = argv[2];
+    ret.ofile = argv[3];
+    if (argc == 5) {
+      ret.nthreads = atoi(argv[4]);
     }
     ret.valid &= ret.nthreads > 0;
   }
@@ -69,7 +65,6 @@ int main(int argc, char * argv[]) {
     PrintHelp();
     return 1;
   }
-  KMer::InitK(opts.k);
   printf("Starting preproc: evaluating %s in %d threads.\n", opts.ifile.c_str(), opts.nthreads);
 
   ireadstream ifs(opts.ifile.c_str(), opts.qvoffset);
@@ -84,7 +79,7 @@ int main(int argc, char * argv[]) {
       Read r;      
       ifs >> r; 
       // trim the reads for bad quality and process only the ones with at least K "reasonable" elements
-      if (TrimBadQuality(r) >= (size_t)opts.k) {
+      if (TrimBadQuality(r) >= K) {
 	rv.push_back(r);
       }
       if (ifs.eof()) {
@@ -95,11 +90,12 @@ int main(int argc, char * argv[]) {
     printf("Batch %u read.\n", (unsigned int)batch_number);
     // ToDo: add multithreading (map and reduce)
     for(int i = 0; i < (int)rv.size(); ++i) {
-      AddKMers(rv[i], vv[0], opts.k);
-      AddKMers(!(rv[i]), vv[0], opts.k);
+      AddKMers(rv[i], vv[0]);
+      AddKMers(!(rv[i]), vv[0]);
     }
     printf("Batch %u added.\n", (unsigned int)batch_number);
   }
+
   ifs.close();
   printf("All k-mers added to maps.\n");
   for (int i = 0; i < (int)vv.size(); ++i) {

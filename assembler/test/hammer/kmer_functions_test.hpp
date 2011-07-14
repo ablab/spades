@@ -1,7 +1,24 @@
 #ifndef HAMMER_KMERFUNCTIONSTEST_HPP_
-#define HAMMER_KMERFUNCTIONSTEST_HPP_
+#define HAMMER_KMERFUNCTIONSTEST_HPP
+
+#include <map>
 #include "cute/cute.h"
+#include "common/sequence/seq.hpp"
+
+//Dirty hack to make tests independent from hammer_config
+#define HAMMER_CONFIG_HPP //To avoid config including. Test must be independent from cofiguration.
+
+//hammer config
+#define K 2
+struct KMerStat {
+	size_t count;
+	float freq;
+};
+typedef Seq<K> KMer;
+typedef map<KMer, KMerStat, KMer::less2> KMerStatMap;
+
 #include "hammer/kmer_functions.hpp"
+#include "hammer/kmer_functions.cpp"
 
 void TestGetSubsequence() {
   Read r("TestRead1", "ACGTACGT", "BBBBBBBB");
@@ -41,10 +58,9 @@ void TestFirstValidKmerPos() {
 }
 
 void TestAddKMers() {
-  KMer::InitK(2);
   Read r("TestRead1", "ACNTACGT", "\1\2\3\3\2\1\3\1");
   KMerStatMap m, m2;
-  AddKMers(r, m, 2);
+  AddKMers(r, m);
   m2[KMer("AC")].count = 2;
   m2[KMer("TA")].count = 1;
   m2[KMer("CG")].count = 1;
@@ -56,7 +72,6 @@ void TestAddKMers() {
   for (KMerStatMap::iterator it = m2.begin(); it != m2.end(); ++it) {
     ASSERT_EQUAL(m[it->first].count, it->second.count);
   }
-  KMer::DropK();
 }
 
 cute::suite KMerFunctionsSuite() {
