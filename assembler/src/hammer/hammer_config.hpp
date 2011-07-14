@@ -13,6 +13,8 @@
 #include <algorithm>
 #include <map>
 #include "sequence/seq.hpp"
+#include "kmer.hpp"
+
 #include "uf.hpp"
 
 using namespace std;
@@ -20,7 +22,7 @@ using namespace __gnu_cxx;
 
 #define K 55
 
-typedef Seq<K> KMer;
+//typedef Seq<K> KMer;
 typedef iufstream<K> UFStream;
 typedef UFCluster<K> MyUFC;
 typedef unordered_map<KMer, KMer, KMer::hash> KMerHashMap;
