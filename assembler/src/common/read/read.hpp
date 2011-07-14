@@ -148,6 +148,7 @@ private:
   std::string qual_;
   bool valid_;
   friend class ireadstream;
+  friend size_t TrimBadQuality(Read&, int);
   void setName(const char* s) {
     name_ = s;
   }
