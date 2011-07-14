@@ -27,14 +27,15 @@ struct Options {
   int nthreads;
   int read_batch_size;
   bool good;
-  Options() : k(K), nthreads(1), read_batch_size(1e6), good(true) {}
+  Options() : nthreads(1), read_batch_size(1e6), good(true) {}
 };
 
 
 void PrintHelp() {
-  printf("Usage: ./preproc qvoffset ifile.fastq ofile.kmer [nthreads]\n");
+  printf("Usage: ./preproc qvoffset k ifile.fastq ofile.kmer [nthreads]\n");
   printf("Where:\n");
   printf("\tqvoffset\tan offset of fastq quality data\n");
+  printf("\tk\ta length of k-mer\n");
   printf("\tifile.fastq\tan input file with reads in fastq format\n");
   printf("\tofile.kmer\ta filename where k-mer statistics will be outputed\n");
   printf("\tnthreads\ta number of threads (one by default)\n");
@@ -42,17 +43,17 @@ void PrintHelp() {
   
 Options ParseOptions(int argc, char * argv[]) {
   Options ret;
-  if (argc != 5 && argc != 4) {
+  if (argc != 5 && argc != 6) {
     ret.good =  false;
   } else {
     ret.qvoffset = atoi(argv[1]);  
     ret.good &= (ret.qvoffset >= 0 && ret.qvoffset <= 255);
-    //    ret.k = atoi(argv[2]);
-    //    ret.good &= (ret.k > 0);
-    ret.ifile = argv[2];
-    ret.ofile = argv[3];
-    if (argc == 5) {
-      ret.nthreads = atoi(argv[4]);
+    ret.k = atoi(argv[2]);
+    ret.good &= (ret.k > 0);
+    ret.ifile = argv[3];
+    ret.ofile = argv[4];
+    if (argc == 6) {
+      ret.nthreads = atoi(argv[5]);
     }
     ret.good &= ret.nthreads > 0;
   }
