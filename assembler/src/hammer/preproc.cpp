@@ -84,7 +84,7 @@ int main(int argc, char * argv[]) {
       Read r;      
       ifs >> r; 
       // trim the reads for bad quality and process only the ones with at least K "reasonable" elements
-      if (TrimBadQuality(r) >= opts.k) {
+      if (TrimBadQuality(r) >= (size_t)opts.k) {
 	rv.push_back(r);
       }
       if (ifs.eof()) {
