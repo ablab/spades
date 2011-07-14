@@ -1,7 +1,7 @@
 #ifndef HAMMER_KMERFUNCTIONSTEST_HPP_
 #define HAMMER_KMERFUNCTIONSTEST_HPP_
 #include "cute/cute.h"
-#include "hammer/kmer_functions.cpp"
+#include "hammer/kmer_functions.hpp"
 
 void TestGetSubsequence() {
   Read r("TestRead1", "ACGTACGT", "BBBBBBBB");
@@ -41,6 +41,22 @@ void TestFirstValidKmerPos() {
 }
 
 void TestAddKMers() {
+  KMer::InitK(2);
+  Read r("TestRead1", "ACNTACGT", "\1\2\3\3\2\1\3\1");
+  KMerStatMap m, m2;
+  AddKMers(r, m, 2);
+  m2[KMer("AC")].count = 2;
+  m2[KMer("TA")].count = 1;
+  m2[KMer("CG")].count = 1;
+  m2[KMer("GT")].count = 1;
+  for (KMerStatMap::iterator it = m.begin(); it != m.end(); ++it) {
+    ASSERT_EQUAL(m2[it->first].count, it->second.count);
+  }
+
+  for (KMerStatMap::iterator it = m2.begin(); it != m2.end(); ++it) {
+    ASSERT_EQUAL(m[it->first].count, it->second.count);
+  }
+  KMer::DropK();
 }
 
 cute::suite KMerFunctionsSuite() {
@@ -48,6 +64,7 @@ cute::suite KMerFunctionsSuite() {
   s.push_back(CUTE(TestGetSubsequence));
   s.push_back(CUTE(TestTrimBadQuality));
   s.push_back(CUTE(TestFirstValidKmerPos));
+  s.push_back(CUTE(TestAddKMers));
   return s;
 }
 
