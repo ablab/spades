@@ -1,4 +1,4 @@
-SRC=test.cpp hammer/kmer_functions.cpp
+SRC=test.cpp
 DIR=hammer
 PROG=hammerTest
 

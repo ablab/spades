@@ -25,7 +25,6 @@
 using namespace std;
 
 int main(int argc, char * argv[]) {
-        KMer::InitK(K);
 	if (argc < 6) {
 		cout << "Usage: ./main tau qvoffset readsFilename dirprefix nthreads\n";
 		return 0;
