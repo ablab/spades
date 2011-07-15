@@ -51,7 +51,6 @@ struct Options {
   Options() : nthreads(1), read_batch_size(1e6), file_number(2), valid(true) {}
 };
 
-
 void PrintHelp() {
   printf("Usage: ./preproc qvoffset ifile.fastq ofile.kmer [nthreads]\n");
   printf("Where:\n");
@@ -135,8 +134,6 @@ void EvalFile(FILE *ifile, FILE *ofile) {
   }
 }
 
-
-
 void MergeAndSort(const vector<FILE*> &ifiles, FILE *ofile) {
   KMerPartJoiner joiner(ifiles);
   while (!joiner.IsEmpty()) {
@@ -152,13 +149,11 @@ int main(int argc, char * argv[]) {
     PrintHelp();
     return 1;
   }
-
   snprintf(message,
            sizeof(message),
           "Starting preproc: evaluating %s in %d threads.\n",
           opts.ifile.c_str(), opts.nthreads);
   Log(message);
-
   SplitToFiles(opts.ifile, opts.qvoffset, opts.file_number);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     char ifile_name[50];
@@ -182,7 +177,6 @@ int main(int argc, char * argv[]) {
     fclose(ifile);
     fclose(ofile);
   }
-
   vector<FILE*> ifiles;
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     char ifile_name[50];
@@ -190,7 +184,6 @@ int main(int argc, char * argv[]) {
     FILE *ifile = fopen(ifile_name, "r");
     ifiles.push_back(ifile);
   }
-
   FILE *ofile = fopen(opts.ofile.c_str(), "w");
   Log("Starting merge.\n");
   MergeAndSort(ifiles, ofile);
@@ -208,3 +201,4 @@ int main(int argc, char * argv[]) {
   Log(message);
   return 0;
 }
+

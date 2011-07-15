@@ -1,3 +1,21 @@
+/**
+ * @file    kmer_part_joiner.cpp
+ * @author  Alex Davydow
+ * @version 1.0
+ *
+ * @section LICENSE
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * @section DESCRIPTION
+ *
+ * This class provides functionality which allows us to join
+ * several sorted files containing k-mer and its frequency to the one
+ * file, still sorted.
+ */
 #include "kmer_part_joiner.hpp"
 #include <utility>
 #include <string>

@@ -32,7 +32,6 @@ class KMerPartJoiner {
   std::pair<string, int> Next();
   bool IsEmpty();
  private:
-
   class KMerPartParser {
    public:
     explicit KMerPartParser(FILE *file);
@@ -48,7 +47,6 @@ class KMerPartJoiner {
     FILE *file_;
     bool eof_;
   };
-
   std::set<KMerPartParser> kmer_parsers_;
 };
 
