@@ -2,7 +2,7 @@
 #include <fstream>
 #include <assert.h>
 #include "logging.hpp"
-#include "abruijngraph.hpp"
+#include "abruijn_graph.hpp"
 #include "graph_printer.hpp"
 #include "simple_tools.hpp"
 #include <ext/hash_map>

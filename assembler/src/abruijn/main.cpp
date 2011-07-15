@@ -1,5 +1,5 @@
-#include "toyexamples.hpp"
-#include "graphBuilder.hpp"
+#include "toy_examples.hpp"
+#include "graph_builder.hpp"
 
 #include "logging.hpp"
 DECL_PROJECT_LOGGER("a")
