@@ -18,4 +18,4 @@ cute::suite SingleReadSuite() {
   s.push_back(CUTE(TestSingleRead));
   return s;
 }
-#endif /* READTEST_HPP_ */
+#endif /* TEST_SINGLEREADTEST_HPP_ */

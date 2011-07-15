@@ -35,7 +35,9 @@ public:
   
   SingleRead() : valid_(false) {}
   
-  SingleRead(const std::string &name, const std::string &seq, const std::string &qual) 
+  SingleRead(const std::string &name, 
+             const std::string &seq, 
+             const std::string &qual) 
     : name_(name), seq_(seq), qual_(qual) { // for test only!
     valid_ = UpdateValid();
   }
@@ -91,6 +93,10 @@ public:
       new_name = name_.substr(1, name_.length());
     }
     return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_));
+  }
+
+  bool operator==(const SingleRead& singleread) const {
+    return seq_ == singleread.seq_;
   }
 
 private:

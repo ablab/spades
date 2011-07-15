@@ -1,33 +1,43 @@
-/*
- * paired_read.hpp
+/**
+ * @file    paired_read.hpp
+ * @author  Mariya Fomkina
+ * @version 1.0
  *
- *  Created on: 19.05.2011
- *      Author: vyahhi
+ * @section LICENSE
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ * 
+ * @section DESCRIPTION
+ *
+ * PairedRead is a structure, where information from input files is stored.
+ * It includes 2 SingleRead elements and a distance between them.  
  */
 
-#ifndef PAIRED_READ_HPP_
-#define PAIRED_READ_HPP_
+#ifndef PAIREDREAD_HPP_
+#define PAIREDREAD_HPP_
+
+#include "common/io/single_read.hpp"
 
 class PairedRead {
 private:
-	Read first_;
-	Read second_;
+	SingleRead first_;
+	SingleRead second_;
 	size_t distance_;
 public:
 
-	PairedRead()  {
+	PairedRead() {}
 
-	}
+	PairedRead(const SingleRead& first, const SingleRead& second, size_t distance) 
+    : first_(first), second_(second), distance_(distance) {}
 
-	PairedRead(const Read& first, const Read& second, size_t distance) : first_(first), second_(second), distance_(distance) {
-
-	}
-
-	const Read& first() const {
+	const SingleRead& first() const {
 		return first_;
 	}
 
-	const Read& second() const {
+	const SingleRead& second() const {
 		return second_;
 	}
 
@@ -35,11 +45,11 @@ public:
 		return distance_;
 	}
 
-	bool isValid() const {
-		return first_.isValid() && second_.isValid();
+	bool IsValid() const {
+		return first_.IsValid() && second_.IsValid();
 	}
 
-	const Read& operator[] (size_t index) const {
+	const SingleRead& operator[] (size_t index) const {
 		if (index == 0) {
 			return first_;
 		} else if (index == 1) {
@@ -47,16 +57,16 @@ public:
 		}
 		assert(false);
 	}
-
-	const PairedRead operator!() const{
+  
+	const PairedRead operator!() const {
 		return PairedRead(!second_, !first_, distance_);
-	}
+  }
 
+  bool operator==(const PairedRead& pairedread) const {
+    return first_ == pairedread.first_ &&
+      second_ == pairedread.second_ &&
+      distance_ == pairedread.distance_;
+  }
 };
-
-// todo: put this to *.cpp
-//ostream& operator<<(ostream& os, const PairedRead& p_r) {
-//	return os << "[" << p_r.first() << ", " << p_r.second() << "]";
-//}
 
 #endif /* PAIRED_READ_HPP_ */

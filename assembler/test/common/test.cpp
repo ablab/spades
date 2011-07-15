@@ -10,6 +10,7 @@
 #include "similarTest.hpp"
 #include "cuckooTest.hpp"
 #include "single_read_test.hpp"
+#include "paired_read_test.hpp"
 
 void runSuite() {
   cute::suite s;
@@ -23,6 +24,7 @@ void runSuite() {
   s += similarSuite();
   s += CuckooSuite();
   s += SingleReadSuite();
+  s += PairedReadSuite();
   cute::ide_listener lis;
   cute::makeRunner(lis)(s, "The Suite");
 }
