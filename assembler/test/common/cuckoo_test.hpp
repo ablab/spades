@@ -1,4 +1,6 @@
-/* test for cuckoo.hpp */
+#ifndef TEST_CUCKOOTEST_HPP_
+#define TEST_CUCKOOTEST_HPP_
+
 #include <iostream>
 #include <vector>
 #include <stdlib.h>
@@ -216,3 +218,5 @@ cute::suite CuckooSuite() {
   s.push_back(CUTE(TestCuckooConst));
   return s;
 }
+
+#endif /* TEST_CUCKOOTEST_HPP_ */

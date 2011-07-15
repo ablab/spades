@@ -1,5 +1,6 @@
 #ifndef TEST_SINGLEREADTEST_HPP_
 #define TEST_SINGLEREADTEST_HPP_
+
 #include "cute/cute.h"
 #include "common/io/single_read.hpp"
 

@@ -1,5 +1,6 @@
 #ifndef TEST_PAIREDREADTEST_HPP_
 #define TEST_PAIREDREADTEST_HPP_
+
 #include "cute/cute.h"
 #include "common/io/paired_read.hpp"
 
