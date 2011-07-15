@@ -117,7 +117,7 @@ int main(int argc, char * argv[]) {
 		ifs >> r;
 		++count; if (count % 1000000 == 0) { cout << count << "\n"; flush(cout); }
 		// trim the reads for bad quality and process only the ones with at least K "reasonable" elements
-		if (TrimBadQuality(r) >= K) {
+		if (TrimBadQuality(&r) >= K) {
 			string seq = r.getSequenceString();
 			// create auxiliary structures for consensus
 			vector<int> vA(r.size(), 0), vC(r.size(), 0), vG(r.size(), 0), vT(r.size(), 0);
