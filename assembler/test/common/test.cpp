@@ -3,21 +3,13 @@
 #include "cute_runner.h"
 #include "seqTest.hpp"
 #include "sequenceTest.hpp"
-#include "ireadstreamTest.hpp"
-//#include "quality_read_stream.hpp"
-#include "nuclTest.hpp"
-//#include "ifaststreamTest.hpp"
 #include "qualityTest.hpp"
+#include "nuclTest.hpp"
+#include "ireadstreamTest.hpp"
 #include "onlineGraphVisualizerTest.hpp"
-//#include "offlineGraphVisualizerTest.hpp"
 #include "similarTest.hpp"
 #include "cuckooTest.hpp"
-#include "readTest.hpp"
-
-#include "structuresTest.hpp"
-//TODO function readGenomeFromFile is declared outside common directory
-//typedef long long ll; //???
-//#include "readGeneratorTest.hpp" 
+#include "single_read_test.hpp"
 
 void runSuite() {
   cute::suite s;
@@ -26,18 +18,11 @@ void runSuite() {
   s += SequenceSuite();
   s += QualitySuite();
   s += NuclSuite();
-  //s += IFastaStreamSuite();
   s += IReadStreamSuite();
   s += onlineGraphVisualizerSuite();
-  //s += offlineGraphVisualizerSuite();
   s += similarSuite();
   s += CuckooSuite();
-  s += ReadSuite();
-  //s += ReadGeneratorSuite();
-  //The next test causes segmentation fault
-  //s += TrieSuite();
-  //The next test is correct but needs time
-  //s += StructuresSuite();
+  s += SingleReadSuite();
   cute::ide_listener lis;
   cute::makeRunner(lis)(s, "The Suite");
 }

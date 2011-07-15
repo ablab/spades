@@ -16,8 +16,8 @@
  * It includes 3 strings: with id, sequence and quality of the input read.  
  */
 
-#ifndef _SINGLEREAD_HPP_
-#define _SINGLEREAD_HPP_
+#ifndef SINGLEREAD_HPP_
+#define SINGLEREAD_HPP_
 
 #include <string>
 #include <iostream>
@@ -37,7 +37,7 @@ public:
   
   SingleRead(const std::string &name, const std::string &seq, const std::string &qual) 
     : name_(name), seq_(seq), qual_(qual) { // for test only!
-    valid_ = updateValid();
+    valid_ = UpdateValid();
   }
 
   bool IsValid() const {
@@ -83,14 +83,14 @@ public:
     return dignucl(seq_[i]);
   }
 
-  Read operator!() const {
+  SingleRead operator!() const {
     std::string new_name;
     if (name_ == "" || name_[0] != '!') {
       new_name = '!' + name_;
     } else {
       new_name = name_.substr(1, name_.length());
     }
-    return Read(new_name, ReverseComplement(seq_), Reverse(qual_));
+    return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_));
   }
 
 private:
@@ -129,4 +129,4 @@ private:
   }
 };
 
-#endif /* _SINGLEREAD_HPP_ */
+#endif /* SINGLEREAD_HPP_ */
