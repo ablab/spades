@@ -98,11 +98,13 @@ void SplitToFiles(const string &ifile, size_t qvoffset, size_t file_number) {
     }
     Read r;
     ifs >> r;
-    vector<KMer> kmers = GetKMers(r);
-    KMer::hash hash_function;
-    for (size_t i = 0; i < kmers.size(); ++i) {
-      int file_id = hash_function(kmers[i]) % file_number;
-      fprintf(files[file_id], "%s\n", kmers[i].str().c_str());
+    if (r.trimBadQuality() >= K) {
+      vector<KMer> kmers = GetKMers(r);
+      KMer::hash hash_function;
+      for (size_t i = 0; i < kmers.size(); ++i) {
+        int file_id = hash_function(kmers[i]) % file_number;
+        fprintf(files[file_id], "%s\n", kmers[i].str().c_str());
+      }
     }
   }
   for (size_t i = 0; i < file_number; ++i) {
