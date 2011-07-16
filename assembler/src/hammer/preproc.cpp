@@ -162,6 +162,7 @@ int main(int argc, char * argv[]) {
   LOG4CXX_INFO(logger, "Starting preproc: evaluating " << opts.ifile <<
                " in " << opts.nthreads << " threads.");
   SplitToFiles(opts.ifile, opts.qvoffset, opts.file_number);
+
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     char ifile_name[50];
     char ofile_name[50];
@@ -185,6 +186,7 @@ int main(int argc, char * argv[]) {
     ifiles.push_back(ifile);
   }
   FILE *ofile = fopen(opts.ofile.c_str(), "w");
+
   LOG4CXX_INFO(logger, "Starting message.");
   MergeAndSort(ifiles, ofile);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
