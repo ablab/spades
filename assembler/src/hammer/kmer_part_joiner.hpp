@@ -28,14 +28,9 @@
 
 class KMerPartJoiner {
  public:
-  // Disallow copy and assign.
-  KMerPartJoiner(const KMerPartJoiner&);
-  void operator=(const KMerPartJoiner&);
   explicit KMerPartJoiner(const std::vector<FILE*> &ifiles);
   std::pair<string, int> Next();
-  bool IsEmpty() {
-    return kmer_parsers_.size() == 0;
-  }
+  bool IsEmpty() const { return kmer_parsers_.size() == 0; }
  private:
   class KMerPartParser {
    public:
@@ -50,21 +45,15 @@ class KMerPartJoiner {
     }
     explicit KMerPartParser(FILE *file)
         : last_string_(""),
-          last_count_(0),
+          last_count_(-1),
           file_(file),
           eof_(false) {
       Next();
     }
+    bool eof() const { return eof_; }
+    std::string last_string() const { return last_string_; }
+    int last_count() const { return last_count_; }
     void Next();
-    bool eof() {
-      return eof_;
-    }
-    std::string last_string() {
-      return last_string_;
-    }
-    int last_count() {
-      return last_count_;
-    }
     class Lesser {
     public:
       bool operator()(const KMerPartParser &a, const KMerPartParser &b) const {
@@ -72,13 +61,16 @@ class KMerPartJoiner {
       }
     };
    private:
-    void Swap(const KMerPartParser &other);
+    void Swap(KMerPartParser other);
     std::string last_string_;
     int last_count_;
     FILE *file_;
     bool eof_;
   };
   std::set<KMerPartParser, KMerPartParser::Lesser> kmer_parsers_;
+  // Disallow copy and assign.
+  KMerPartJoiner(const KMerPartJoiner&);
+  void operator=(const KMerPartJoiner&);
 };
 
 #endif  // HAMMER_KMERPARTJOINER_HPP_

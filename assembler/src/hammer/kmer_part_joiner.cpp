@@ -17,12 +17,14 @@
  * file, still sorted.
  */
 #include "kmer_part_joiner.hpp"
+#include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
 
 using std::pair;
 using std::string;
+using std::swap;
 using std::vector;
 
 KMerPartJoiner::KMerPartJoiner(const vector<FILE*> &ifiles)
@@ -46,11 +48,11 @@ pair<string, int> KMerPartJoiner ::Next() {
   return ret;
 }
 
-void KMerPartJoiner::KMerPartParser::Swap(const KMerPartParser &other) {
-  file_ = other.file_;
-  last_string_ = other.last_string_;
-  last_count_ = other.last_count_;
-  eof_ = other.eof_;
+void KMerPartJoiner::KMerPartParser::Swap(KMerPartParser other) {
+  swap(file_, other.file_);
+  swap(last_string_, other.last_string_);
+  swap(last_count_, other.last_count_);
+  swap(eof_, other.eof_);
 }
 
 void KMerPartJoiner::KMerPartParser::Next() {
