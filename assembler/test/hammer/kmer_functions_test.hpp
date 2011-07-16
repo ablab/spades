@@ -30,11 +30,11 @@ void TestGetSubsequence() {
 
 void TestTrimBadQuality() {
   Read r("TestRead1", "ACGTACGT", "\1\2\3\3\2\1\3\1");
-  ASSERT_EQUAL(5, TrimBadQuality(r));
+  ASSERT_EQUAL(5, TrimBadQuality(&r));
   ASSERT_EQUAL("GTACG", r.getSequenceString());
   ASSERT_EQUAL("\3\3\2\1\3", r.getQualityString());
   Read r2("TestRead2", "ACGTACGT", "\1\2\2\2\2\1\1\1");
-  ASSERT_EQUAL(0, TrimBadQuality(r2));
+  ASSERT_EQUAL(0, TrimBadQuality(&r2));
   ASSERT_EQUAL("", r2.getSequenceString());
   ASSERT_EQUAL("", r2.getQualityString());
 }
@@ -60,7 +60,7 @@ void TestFirstValidKmerPos() {
 void TestAddKMers() {
   Read r("TestRead1", "ACNTACGT", "\1\2\3\3\2\1\3\1");
   KMerStatMap m, m2;
-  AddKMers(r, m);
+  AddKMers(r, &m);
   m2[KMer("AC")].count = 2;
   m2[KMer("TA")].count = 1;
   m2[KMer("CG")].count = 1;
