@@ -57,6 +57,10 @@ void KMerPartJoiner::KMerPartParser::Swap(KMerPartParser other) {
 
 void KMerPartJoiner::KMerPartParser::Next() {
   char buf[K + 1];
-  eof_ = (fscanf(file_, "%s %d", buf, &last_count_) == EOF);
-  last_string_ = buf;
+  char format[10];
+  snprintf(format, sizeof(format), "%%%ds %%d", K);
+  eof_ = (fscanf(file_, format, buf, &last_count_) == EOF);
+  if (!eof_) {
+    last_string_ = buf;
+  }
 }
