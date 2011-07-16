@@ -1,3 +1,6 @@
+#ifndef TEST_SEQFILTERTEST_HPP_
+#define TEST_SEQFILTERTEST_HPP_
+
 #include "read.hpp"
 #include "seq.hpp"
 #include "seq_filter.hpp"
@@ -37,3 +40,5 @@ cute::suite SeqFilterSuite(){
   s.push_back(CUTE(TestSeqFilter));
   return s;
 }
+
+#endif /* TEST_SEQFILTERTEST_HPP_ */

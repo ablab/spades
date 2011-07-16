@@ -26,11 +26,14 @@ pt:
 
 ct:
 	make -C test/common
+
+ht:
+	make -C test/hammer
 	
 clean:
 	rm -rf ./build/*
 
-test: ct at dt #pt
+test: ct at dt ht
 
 #temporary fix
-all: a b d ct #test p
+all: a b d h test

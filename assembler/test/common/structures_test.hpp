@@ -1,3 +1,6 @@
+#ifndef TEST_STRUCTURESTEST_HPP_
+#define TEST_STRUCTURESTEST_HPP_
+
 #include <iostream>
 #include <vector>
 #include <stdlib.h>
@@ -96,3 +99,5 @@ cute::suite StructuresSuite(){
   s.push_back(CUTE(TestAllStructures));
   return s;
 }
+
+#endif /* TEST_STRUCTURESTEST_HPP_ */

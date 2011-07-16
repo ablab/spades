@@ -11,13 +11,15 @@
 
 #include <unordered_map>
 #include <algorithm>
+#include <map>
 #include "sequence/seq.hpp"
+
 #include "uf.hpp"
 
 using namespace std;
 using namespace __gnu_cxx;
 
-#define K 55
+#define K 15
 
 typedef Seq<K> KMer;
 typedef iufstream<K> UFStream;

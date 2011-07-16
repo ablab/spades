@@ -1,6 +1,6 @@
 #include "cute.h"
 #include "strobe_read.hpp"
-#include "graphBuilder.hpp"
+#include "graph_builder.hpp"
 
 using namespace abruijn;
 using namespace std;

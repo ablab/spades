@@ -1,1 +1,1 @@
-SRC1=hash.cpp abruijngraph.cpp graphBuilder.cpp toyexamples.cpp
+SRC1=hash.cpp abruijn_graph.cpp graph_builder.cpp toy_examples.cpp

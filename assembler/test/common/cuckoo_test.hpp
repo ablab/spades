@@ -1,4 +1,6 @@
-/* test for cuckoo.hpp */
+#ifndef TEST_CUCKOOTEST_HPP_
+#define TEST_CUCKOOTEST_HPP_
+
 #include <iostream>
 #include <vector>
 #include <stdlib.h>
@@ -31,13 +33,13 @@ void TestCuckooCreation() {
   map[1] = 4;
   map[4] = 1;
   map[6];
-  ASSERT_EQUAL(map.size(), 3);
-  ASSERT_EQUAL(map[1], 4);
+  ASSERT_EQUAL(3, map.size());
+  ASSERT_EQUAL(4, map[1]);
   map[1] = 5;
-  ASSERT_EQUAL(map[1], 5);
+  ASSERT_EQUAL(5, map[1]);
 
   hm map2(map);
-  ASSERT_EQUAL(map2.size(), 3);
+  ASSERT_EQUAL(3, map2.size());
   ASSERT(map2.find(1) != map2.end());
   ASSERT(map2.find(4) != map2.end());
   ASSERT(map2.find(6) != map2.end());
@@ -45,7 +47,7 @@ void TestCuckooCreation() {
 
   hm map3;
   map3 = map;
-  ASSERT_EQUAL(map3.size(), 3); 
+  ASSERT_EQUAL(3, map3.size()); 
   ASSERT(map3.find(1) != map3.end());
   ASSERT(map3.find(4) != map3.end());
   ASSERT(map3.find(6) != map3.end());
@@ -76,19 +78,19 @@ void TestCuckooOperations() {
     map.insert(std::make_pair(t, 42));
   }
   size_t size = map.size();
-  ASSERT_EQUAL(size, 99994);
+  ASSERT_EQUAL(99994, size);
   
   size_t n = 0;
   for (hm::iterator it = map.begin(); it != map.end(); ++it) {
     ++n;
   }
-  ASSERT_EQUAL(size, n);
+  ASSERT_EQUAL(n, size);
 
   n = 0;
   for (hm::const_iterator it = map.begin(); it != map.end(); ++it) {
     ++n;
   }
-  ASSERT_EQUAL(size, n); 
+  ASSERT_EQUAL(n, size); 
 
   hm::iterator it;
   for (int i = 0; i < 10000; ++i) {
@@ -101,7 +103,7 @@ void TestCuckooOperations() {
     int t = rand();
     n -= map.erase(t);
   }
-  ASSERT_EQUAL(map.size(), n);
+  ASSERT_EQUAL(n, map.size());
 
   for (int i = 0; i < 10000; ++i) {
     int t = rand();
@@ -109,7 +111,7 @@ void TestCuckooOperations() {
     map.erase(it);
     --n;
   }
-  ASSERT_EQUAL(map.size(), n);
+  ASSERT_EQUAL(n, map.size());
 }
 
 // *** Test for: ***
@@ -125,25 +127,24 @@ void TestCuckooOperations() {
 void TestCuckooSize() {
   hm map;
   map.insert(std::make_pair(21, 42));
-  ASSERT_EQUAL(map.size(), 1);
-  ASSERT_EQUAL(map.empty(), false);
-  ASSERT_EQUAL(map.count(21), 1);
-  ASSERT_EQUAL(map.count(22), 0);
+  ASSERT_EQUAL(1, map.size());
+  ASSERT_EQUAL(false, map.empty());
+  ASSERT_EQUAL(1, map.count(21));
+  ASSERT_EQUAL(0, map.count(22));
 
-  ASSERT_EQUAL(map[21], 42);
+  ASSERT_EQUAL(42, map[21]);
   ASSERT(map.equal_range(21).first == map.begin());
   ASSERT(map.equal_range(21).second == map.end());
 
   hm map_new;
   map.swap(map_new);
-  ASSERT_EQUAL(map.size(), 0);
-  ASSERT_EQUAL(map_new.size(), 1);
+  ASSERT_EQUAL(0, map.size());
+  ASSERT_EQUAL(1, map_new.size());
 
   map_new.clear();
-  ASSERT_EQUAL(map_new.size(), 0);
-  ASSERT_EQUAL(map_new.empty(), true);
+  ASSERT_EQUAL(0, map_new.size());
+  ASSERT_EQUAL(true, map_new.empty());
 }
-
 
 // *** Test for: ***
 // operator[]
@@ -161,23 +162,23 @@ void TestCuckooRanges() {
   for (size_t i = 1; i <= size; ++i) {
     map1[i * 2 - 1] = i * 2;
   }
-  ASSERT_EQUAL(map1.size(), size);
+  ASSERT_EQUAL(size, map1.size());
 
   hm map2;
   map2.insert(map1.begin(), map1.end());
-  ASSERT_EQUAL(map2[11], 12);
-  ASSERT_EQUAL(map2.size(), size);
+  ASSERT_EQUAL(12, map2[11]);
+  ASSERT_EQUAL(size, map2.size());
 
   hm map3(map1.begin(), map1.end());
-  ASSERT_EQUAL(map3[11], 12);
-  ASSERT_EQUAL(map3.size(), size);
+  ASSERT_EQUAL(12, map3[11]);
+  ASSERT_EQUAL(size, map3.size());
 
   map3.erase(map3.begin(), map3.end());
-  ASSERT_EQUAL(map3.size(), 0);
+  ASSERT_EQUAL(0, map3.size());
 
   map3.swap(map2);
-  ASSERT_EQUAL(map3.size(), size);
-  ASSERT_EQUAL(map2.size(), 0);
+  ASSERT_EQUAL(size, map3.size());
+  ASSERT_EQUAL(0, map2.size());
 }
 
 // *** Test for: ***
@@ -193,10 +194,10 @@ void const_tester(const hm& map) {
     ASSERT_EQUAL((*it).second, (*it).first + 1);
   }
   it = map.find(11);
-  ASSERT_EQUAL((*it).second, 12);
+  ASSERT_EQUAL(12, (*it).second);
   ASSERT(++(map.equal_range(11).first) == map.equal_range(11).second);
-  ASSERT_EQUAL(map.count(11), 1);
-  ASSERT_EQUAL(map.size(), 30);
+  ASSERT_EQUAL(1, map.count(11));
+  ASSERT_EQUAL(30, map.size());
 }
 
 void TestCuckooConst() {
@@ -216,3 +217,5 @@ cute::suite CuckooSuite() {
   s.push_back(CUTE(TestCuckooConst));
   return s;
 }
+
+#endif /* TEST_CUCKOOTEST_HPP_ */

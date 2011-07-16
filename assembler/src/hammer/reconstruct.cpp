@@ -29,6 +29,7 @@
 #include "read/read.hpp"
 #include "read/ireadstream.hpp"
 #include "sequence/seq.hpp"
+#include "hammer/kmer_functions.hpp"
 
 using namespace std;
 
@@ -116,7 +117,7 @@ int main(int argc, char * argv[]) {
 		ifs >> r;
 		++count; if (count % 1000000 == 0) { cout << count << "\n"; flush(cout); }
 		// trim the reads for bad quality and process only the ones with at least K "reasonable" elements
-		if (r.trimBadQuality() >= K) {
+		if (TrimBadQuality(r) >= K) {
 			string seq = r.getSequenceString();
 			// create auxiliary structures for consensus
 			vector<int> vA(r.size(), 0), vC(r.size(), 0), vG(r.size(), 0), vT(r.size(), 0);
@@ -126,9 +127,9 @@ int main(int argc, char * argv[]) {
 			size_t i = 0;
 			bool changedRead = false;
 			while (true) {
-				i = r.firstValidKmer(i, K);
+			  i = FirstValidKmerPos(r, i, K);
 				if (i+K > r.size()) break;
-				KMer kmer = KMer(r.getSubSequence(i, K));
+				KMer kmer = KMer(GetSubSequence(r, i, K));
 				it_single = good.find(kmer);
 				if (it_single != good.end()) { //it's a good singleton
 					for (size_t j=0; j<K; ++j) {
