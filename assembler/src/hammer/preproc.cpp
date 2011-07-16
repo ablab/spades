@@ -22,6 +22,8 @@
 #include <vector>
 #include <set>
 #include <utility>
+#include "log4cxx/logger.h"
+#include "log4cxx/basicconfigurator.h"
 #include "hammer_config.hpp"
 #include "hammer/defs.hpp"
 #include "hammer/kmer_functions.hpp"
@@ -34,10 +36,13 @@ using std::vector;
 using std::set;
 using std::pair;
 using std::make_pair;
+using log4cxx::LoggerPtr;
+using log4cxx::Logger;
+using log4cxx::BasicConfigurator;
 
 namespace {
 
-char message[100];
+LoggerPtr logger(Logger::getLogger("preproc"));
 const int kStep = 1e5;
 
 struct Options {
@@ -48,7 +53,14 @@ struct Options {
   uint32_t read_batch_size;
   uint32_t file_number;
   bool valid;
-  Options() : nthreads(1), read_batch_size(1e6), file_number(2), valid(true) {}
+  Options()
+      : qvoffset(0),
+        ifile(""),
+        ofile(""),
+        nthreads(1),
+        read_batch_size(1e6),
+        file_number(2),
+        valid(true) {}
 };
 
 void PrintHelp() {
@@ -76,10 +88,6 @@ Options ParseOptions(int argc, char * argv[]) {
   return ret;
 }
 
-void Log(const string &message) {
-  printf("%s", message.c_str());
-}
-
 void SplitToFiles(const string &ifile, size_t qvoffset, size_t file_number) {
   ireadstream ifs(ifile.c_str(), qvoffset);
   vector<FILE*> files(file_number);
@@ -93,12 +101,11 @@ void SplitToFiles(const string &ifile, size_t qvoffset, size_t file_number) {
     // reading a batch of reads
     ++read_number;
     if (read_number % kStep == 0) {
-      snprintf(message, sizeof(message), "Reading read %u.\n", read_number);
-      Log(message);
+      LOG4CXX_INFO(logger, "Reading read " << read_number << ".");
     }
     Read r;
     ifs >> r;
-    if (r.trimBadQuality() >= K) {
+    if (TrimBadQuality(&r) >= K) {
       vector<KMer> kmers = GetKMers(r);
       KMer::hash hash_function;
       for (size_t i = 0; i < kmers.size(); ++i) {
@@ -111,7 +118,7 @@ void SplitToFiles(const string &ifile, size_t qvoffset, size_t file_number) {
     fclose(files[i]);
   }
   ifs.close();
-  Log("Reads wroten to separate files.\n");
+  LOG4CXX_INFO(logger, "Reads wroten to separate files.");
 }
 
 void EvalFile(FILE *ifile, FILE *ofile) {
@@ -151,11 +158,9 @@ int main(int argc, char * argv[]) {
     PrintHelp();
     return 1;
   }
-  snprintf(message,
-           sizeof(message),
-          "Starting preproc: evaluating %s in %d threads.\n",
-          opts.ifile.c_str(), opts.nthreads);
-  Log(message);
+  BasicConfigurator::configure();
+  LOG4CXX_INFO(logger, "Starting preproc: evaluating " << opts.ifile <<
+               " in " << opts.nthreads << " threads.");
   SplitToFiles(opts.ifile, opts.qvoffset, opts.file_number);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     char ifile_name[50];
@@ -164,18 +169,11 @@ int main(int argc, char * argv[]) {
     snprintf(ofile_name, sizeof(ofile_name), "%u.result.part", i);
     FILE *ifile = fopen(ifile_name, "r");
     FILE *ofile = fopen(ofile_name, "w");
-    snprintf(message,
-             sizeof(message),
-             "Processing %s.\n",
-             ifile_name);
-    Log(message);
+    LOG4CXX_INFO(logger, "Processing " << ifile_name << ".");
     EvalFile(ifile, ofile);
-    snprintf(message,
-             sizeof(message),
-             "Processed %s. You can find results in %s\n",
-             ifile_name,
-             ofile_name);
-    Log(message);
+    LOG4CXX_INFO(logger, "Processed " << ifile_name << ". " <<
+                 "You can find the result in " << ofile_name <<
+                 ".");
     fclose(ifile);
     fclose(ofile);
   }
@@ -187,7 +185,7 @@ int main(int argc, char * argv[]) {
     ifiles.push_back(ifile);
   }
   FILE *ofile = fopen(opts.ofile.c_str(), "w");
-  Log("Starting merge.\n");
+  LOG4CXX_INFO(logger, "Starting message.");
   MergeAndSort(ifiles, ofile);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     char ifile_name[50];
@@ -196,11 +194,8 @@ int main(int argc, char * argv[]) {
     fclose(ifile);
   }
   fclose(ofile);
-  snprintf(message,
-           sizeof(message),
-          "Preprocessing done. You can find results in %s.\n",
-          opts.ofile.c_str());
-  Log(message);
+  LOG4CXX_INFO(logger,
+               "Preprocessing done. You can find results in " <<
+               opts.ofile << ".");
   return 0;
 }
-
