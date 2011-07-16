@@ -17,25 +17,25 @@
  * format.
  */
 #include <omp.h>
-#include <string>
 #include <cstdlib>
-#include <vector>
+#include <string>
 #include <set>
 #include <utility>
+#include <vector>
 #include "log4cxx/logger.h"
 #include "log4cxx/basicconfigurator.h"
-#include "hammer_config.hpp"
+#include "common/read/ireadstream.hpp"
+#include "common/read/read.hpp"
 #include "hammer/defs.hpp"
+#include "hammer/hammer_config.hpp"
 #include "hammer/kmer_functions.hpp"
 #include "hammer/kmer_part_joiner.hpp"
-#include "common/read/read.hpp"
-#include "common/read/ireadstream.hpp"
 
-using std::string;
-using std::vector;
-using std::set;
-using std::pair;
 using std::make_pair;
+using std::pair;
+using std::string;
+using std::set;
+using std::vector;
 using log4cxx::LoggerPtr;
 using log4cxx::Logger;
 using log4cxx::BasicConfigurator;

@@ -5,20 +5,20 @@
 #include "cute/cute.h"
 #include "common/sequence/seq.hpp"
 
-//Dirty hack to make tests independent from hammer_config
-#define HAMMER_CONFIG_HPP //To avoid config including. Test must be independent from cofiguration.
+// Dirty hack to make tests independent from hammer_config
+#define HAMMER_CONFIG_HPP
 
-//hammer config
+// hammer config
 #define K 2
 struct KMerStat {
-	size_t count;
-	float freq;
+  size_t count;
+  float freq;
 };
 typedef Seq<K> KMer;
 typedef map<KMer, KMerStat, KMer::less2> KMerStatMap;
 
 #include "hammer/kmer_functions.hpp"
-#include "hammer/kmer_functions.cpp"
+#include "hammer/kmer_functions.cpp"  // hack continue
 
 void TestGetSubsequence() {
   Read r("TestRead1", "ACGTACGT", "BBBBBBBB");
@@ -83,4 +83,4 @@ cute::suite KMerFunctionsSuite() {
   return s;
 }
 
-#endif //HAMMER_KMERFUNCTIONSTEST_HPP_
+#endif  // HAMMER_KMERFUNCTIONSTEST_HPP_

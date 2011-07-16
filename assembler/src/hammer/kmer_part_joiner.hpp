@@ -12,42 +12,73 @@
  *
  * @section DESCRIPTION
  *
- * This class provides functionality which allows us to join
- * several sorted files containing k-mer and its frequency to the one
- * file, still sorted.
+ * This class provides functionality which allows us to join several 
+ * sorted files containing k-mer and its frequency to the one file, 
+ * still sorted.
  */
 #ifndef HAMMER_KMERPARTJOINER_HPP_
 #define HAMMER_KMERPARTJOINER_HPP_
 
+#include <cstdio>
 #include <utility>
 #include <vector>
 #include <set>
 #include <string>
-#include <cstdio>
 #include "hammer/hammer_config.hpp"
 
 class KMerPartJoiner {
  public:
+  // Disallow copy and assign.
+  KMerPartJoiner(const KMerPartJoiner&);
+  void operator=(const KMerPartJoiner&);
   explicit KMerPartJoiner(const std::vector<FILE*> &ifiles);
   std::pair<string, int> Next();
-  bool IsEmpty();
+  bool IsEmpty() {
+    return kmer_parsers_.size() == 0;
+  }
  private:
   class KMerPartParser {
    public:
-    explicit KMerPartParser(FILE *file);
-    bool operator<(const KMerPartParser &other) const;
-    KMerPartParser(const KMerPartParser &other);
+    KMerPartParser(const KMerPartParser &other)
+        : last_string_(other.last_string_),
+          last_count_(other.last_count_),
+          file_(other.file_),
+          eof_(other.eof_) {}
+    KMerPartParser& operator=(const KMerPartJoiner::KMerPartParser other) {
+      Swap(other);
+      return *this;
+    }
+    explicit KMerPartParser(FILE *file)
+        : last_string_(""),
+          last_count_(0),
+          file_(file),
+          eof_(false) {
+      Next();
+    }
     void Next();
-    bool eof();
-    std::string last_string();
-    int last_count();
+    bool eof() {
+      return eof_;
+    }
+    std::string last_string() {
+      return last_string_;
+    }
+    int last_count() {
+      return last_count_;
+    }
+    class Lesser {
+    public:
+      bool operator()(const KMerPartParser &a, const KMerPartParser &b) const {
+        return a.last_string_ < b.last_string_;
+      }
+    };
    private:
+    void Swap(const KMerPartParser &other);
     std::string last_string_;
     int last_count_;
     FILE *file_;
     bool eof_;
   };
-  std::set<KMerPartParser> kmer_parsers_;
+  std::set<KMerPartParser, KMerPartParser::Lesser> kmer_parsers_;
 };
 
 #endif  // HAMMER_KMERPARTJOINER_HPP_

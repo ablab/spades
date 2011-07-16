@@ -7,6 +7,7 @@
 #include "kmer_functions.hpp"
 #include <string>
 #include <vector>
+#include "common/read/read.hpp"
 #include "common/sequence/nucl.hpp"
 
 using std::string;

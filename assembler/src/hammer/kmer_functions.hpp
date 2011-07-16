@@ -20,8 +20,9 @@
 #define HAMMER_KMERFUNCTIONS_HPP_
 #include <vector>
 #include "hammer/hammer_config.hpp"
-#include "common/read/read.hpp"
 
+class Read;
+class Sequence;
 /**
  * trim bad quality nucleotides from start and end of the read
  * @return size of the read left
@@ -31,7 +32,8 @@ uint32_t TrimBadQuality(Read *r, int bad_quality_threshold = 2);
 /**
  * @param k k as in k-mer
  * @param start start point
- * @return the first starting point of a valid k-mer >=start; return seq_.size() if no such place exists
+ * @return the first starting point of a valid k-mer >=start; return
+ * seq_.size() if no such place exists
  */
 uint32_t FirstValidKmerPos(const Read &r, uint32_t start, uint32_t k);
 
