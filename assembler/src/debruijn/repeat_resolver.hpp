@@ -52,7 +52,7 @@ public:
 
 	class EdgeInfo {
 	public:
-		static const int MAXD = 6;
+		static const int MAXD = 2;
 		static const int MAXSKIPDIST = 4;
 
 		EdgeInfo(const PairInfo &lp_, const int dir_, const EdgeId edge_,
@@ -80,13 +80,14 @@ public:
 			int other_len = old_graph.length(other_edge);
 			int other_d = other_info.getDistance();
 
-			if (other_edge == edge && isClose(d, other_d))
+			if ((other_edge == edge) && (isClose(d, other_d)))
 				return true;
 //ToDo: Understand if it is very dirty hack.
-//			if ((new_graph.EdgeStart(lp.first) != new_graph.EdgeEnd(lp.first)) && (new_graph.EdgeStart(other_info.lp.first) != new_graph.EdgeEnd(other_info.lp.first))){
-//				if ((new_graph.EdgeStart(lp.first) == new_graph.EdgeStart(other_info.lp.first) ) || (new_graph.EdgeEnd(lp.first) == new_graph.EdgeEnd(other_info.lp.first)))
-//					return false;
-//			}
+			if (lp.first!=other_info.lp.first)
+			if ((new_graph.EdgeStart(lp.first) != new_graph.EdgeEnd(lp.first)) && (new_graph.EdgeStart(other_info.lp.first) != new_graph.EdgeEnd(other_info.lp.first))){
+				if ((new_graph.EdgeStart(lp.first) == new_graph.EdgeStart(other_info.lp.first) ) || (new_graph.EdgeEnd(lp.first) == new_graph.EdgeEnd(other_info.lp.first)))
+					return false;
+			}
 
 //TODO:: SHURIK! UBERI ZA SOBOJ !!!
 			BoundedDijkstra<Graph, int> dij(old_graph, MAXSKIPDIST);
