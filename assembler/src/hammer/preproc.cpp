@@ -88,7 +88,7 @@ Options ParseOptions(int argc, char * argv[]) {
   return ret;
 }
 
-void SplitToFiles(const string &ifile, size_t qvoffset, size_t file_number) {
+void SplitToFiles(const string &ifile, uint32_t qvoffset, uint32_t file_number) {
   ireadstream ifs(ifile.c_str(), qvoffset);
   vector<FILE*> files(file_number);
   for (uint32_t i = 0; i < file_number; ++i) {
@@ -96,7 +96,7 @@ void SplitToFiles(const string &ifile, size_t qvoffset, size_t file_number) {
     snprintf(filename, sizeof(filename), "%u.kmer.part", i);
     files[i] = fopen(filename, "w");
   }
-  size_t read_number = 0;
+  uint32_t read_number = 0;
   while (!ifs.eof()) {
     // reading a batch of reads
     ++read_number;
@@ -110,13 +110,13 @@ void SplitToFiles(const string &ifile, size_t qvoffset, size_t file_number) {
       vector<KMer> compl_kmers = GetKMers(!r);
       kmers.insert(kmers.end(), compl_kmers.begin(), compl_kmers.end());
       KMer::hash hash_function;
-      for (size_t i = 0; i < kmers.size(); ++i) {
+      for (uint32_t i = 0; i < kmers.size(); ++i) {
         int file_id = hash_function(kmers[i]) % file_number;
         fprintf(files[file_id], "%s\n", kmers[i].str().c_str());
       }
     }
   }
-  for (size_t i = 0; i < file_number; ++i) {
+  for (uint32_t i = 0; i < file_number; ++i) {
     fclose(files[i]);
   }
   ifs.close();
