@@ -13,13 +13,14 @@
 #include <algorithm>
 #include <map>
 #include "sequence/seq.hpp"
+#include "hammer/kmer_functions.hpp"
 
 #include "uf.hpp"
 
 using namespace std;
 using namespace __gnu_cxx;
 
-#define K 15
+#define K 55
 
 typedef Seq<K> KMer;
 typedef iufstream<K> UFStream;
@@ -29,7 +30,11 @@ typedef unordered_map<KMer, KMer, KMer::hash> KMerHashMap;
 struct KMerStat {
 	size_t count;
 	float freq;
+	bool change;
+	uint64_t changeto;
+	vector< pair<uint64_t, uint32_t> > pos;  // positions in reads
 };
+
 typedef pair<KMer, KMerStat> KMerCount;
 typedef vector<KMerCount> KMerStatVector;
 typedef map<string, size_t> StringCountMap;

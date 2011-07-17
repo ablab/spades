@@ -8,8 +8,8 @@ basedir=../
 hammer: $(builddir)/preproc $(builddir)/main $(builddir)/reconstruct
 	@echo "== MADE HAMMER =="
 
-$(builddir)/main:  $(builddir)/hammer_tools.o $(builddir)/main.o $(builddir)/kmer_functions.o
-	$(CC) $(LDFLAGS) $(builddir)/hammer_tools.o $(builddir)/main.o $(builddir)/kmer_functions.o -o $(builddir)/$@
+$(builddir)/main:  $(builddir)/hammer_tools.o $(builddir)/main.o $(builddir)/kmer_functions.o $(builddir)/kmer_cluster.o
+	$(CC) $(LDFLAGS) $(builddir)/hammer_tools.o $(builddir)/main.o $(builddir)/kmer_functions.o $(builddir)/kmer_cluster.o -o $(builddir)/$@
 	@echo "== made main =="
 
 $(builddir)/center:  $(builddir)/center.o
@@ -32,6 +32,8 @@ $(builddir)/reconstruct: $(builddir)/reconstruct.o $(builddir)/kmer_functions.o
 	$(CC) $(LDFLAGS) $(builddir)/kmer_functions.o $(builddir)/reconstruct.o -o $(builddir)/$@
 	@echo "== made reconstruct =="
 
+$(builddir)/kmer_cluster.o: kmer_cluster.cpp $(builddir)/.d
+	$(CC) $(CFLAGS) kmer_cluster.cpp -o $(builddir)/$@
 $(builddir)/kmer_part_joiner.o: kmer_part_joiner.cpp $(builddir)/.d
 	$(CC) $(CFLAGS) kmer_part_joiner.cpp -o $(builddir)/$@
 $(builddir)/kmer_functions.o: kmer_functions.cpp  $(builddir)/.d

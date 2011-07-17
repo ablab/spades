@@ -4,21 +4,10 @@
 #include <map>
 #include "cute/cute.h"
 #include "common/sequence/seq.hpp"
-
-//Dirty hack to make tests independent from hammer_config
-#define HAMMER_CONFIG_HPP //To avoid config including. Test must be independent from cofiguration.
-
-//hammer config
-#define K 2
-struct KMerStat {
-	size_t count;
-	float freq;
-};
-typedef Seq<K> KMer;
-typedef map<KMer, KMerStat, KMer::less2> KMerStatMap;
-
 #include "hammer/kmer_functions.hpp"
-#include "hammer/kmer_functions.cpp"
+
+typedef Seq<2> KMer;
+typedef map<KMer, KMerStat, KMer::less2> KMerStatMap;
 
 void TestGetSubsequence() {
   Read r("TestRead1", "ACGTACGT", "BBBBBBBB");
@@ -30,11 +19,11 @@ void TestGetSubsequence() {
 
 void TestTrimBadQuality() {
   Read r("TestRead1", "ACGTACGT", "\1\2\3\3\2\1\3\1");
-  ASSERT_EQUAL(5, TrimBadQuality(r));
+  ASSERT_EQUAL(5, TrimBadQuality(&r));
   ASSERT_EQUAL("GTACG", r.getSequenceString());
   ASSERT_EQUAL("\3\3\2\1\3", r.getQualityString());
   Read r2("TestRead2", "ACGTACGT", "\1\2\2\2\2\1\1\1");
-  ASSERT_EQUAL(0, TrimBadQuality(r2));
+  ASSERT_EQUAL(0, TrimBadQuality(&r2));
   ASSERT_EQUAL("", r2.getSequenceString());
   ASSERT_EQUAL("", r2.getQualityString());
 }
@@ -60,7 +49,7 @@ void TestFirstValidKmerPos() {
 void TestAddKMers() {
   Read r("TestRead1", "ACNTACGT", "\1\2\3\3\2\1\3\1");
   KMerStatMap m, m2;
-  AddKMers(r, m);
+  AddKMers<2>(r, &m);
   m2[KMer("AC")].count = 2;
   m2[KMer("TA")].count = 1;
   m2[KMer("CG")].count = 1;
@@ -83,4 +72,4 @@ cute::suite KMerFunctionsSuite() {
   return s;
 }
 
-#endif //HAMMER_KMERFUNCTIONSTEST_HPP_
+#endif  // HAMMER_KMERFUNCTIONSTEST_HPP_

@@ -1,6 +1,6 @@
 /**
- * @file    preproc.cpp
- * @author  Alex Davydow
+ * @file    kmer_functions.hpp
+ * @author  adavydow, snikolenko
  * @version 1.0
  *
  * @section LICENSE
@@ -19,10 +19,10 @@
 #ifndef HAMMER_KMERFUNCTIONS_HPP_
 #define HAMMER_KMERFUNCTIONS_HPP_
 #include <vector>
-#include "common/read/read.hpp"
-#include "hammer_config.hpp"
+#include "hammer/hammer_config.hpp"
 
-
+class Read;
+class Sequence;
 /**
  * trim bad quality nucleotides from start and end of the read
  * @return size of the read left
@@ -37,42 +37,6 @@ uint32_t TrimBadQuality(Read *r, int bad_quality_threshold = 2);
  */
 uint32_t FirstValidKmerPos(const Read &r, uint32_t start, uint32_t k);
 
-Sequence GetSubSequence(const Read &r, uint32_t start, uint32_t length);
-
-template<uint32_t kK>
-vector< Seq<kK> > GetKMers(const Read &r) {
-  const string &seq = r.getSequenceString();
-  vector< Seq<kK> > ans;
-  uint32_t pos = 0;
-  while (true) {
-    pos = FirstValidKmerPos(r, pos, kK);
-    if (pos >= seq.size()) break;
-    Seq<kK> kmer = Seq<kK>(GetSubSequence(r, pos, kK));
-    while (true) {
-      ans.push_back(kmer);
-      if (pos + kK < r.size() && is_nucl(seq[pos + kK])) {
-        kmer = kmer << r[pos + kK];
-        ++pos;
-      } else {
-        pos += kK;
-        break;
-      }
-    }
-  }
-  return ans;
-}
-
-/**
- * add k-mers from read to map
- */
-template<uint32_t kK, typename KMerStatMap>
-void AddKMers(const Read &r, KMerStatMap *v) {
-  vector< Seq<kK> > kmers = GetKMers<kK>(r);
-  for (uint32_t i = 0; i < kmers.size(); ++i) {
-    ++(*v)[kmers[i]].count;
-  }
-}
-
 /**
  * @param kmer get next valid k-mer
  * @param pos starting point
@@ -82,16 +46,16 @@ void AddKMers(const Read &r, KMerStatMap *v) {
 int32_t NextValidKmer(const Read &r, int32_t pos, KMer & kmer);
 
 /**
- * get next valid kmer in a new position
- */
-int32_t getKmerAnew( const std::string & seq, int32_t pos, KMer & kmer );
-
-/**
  * add k-mers from read to map
  */
-void AddKMers(const Read &r, uint64_t readno, KMerStatMap *v);
+void AddKMers(const Read &r, KMerStatMap *v);
 
-vector<KMer> GetKMers(const Read &r);
+/**
+  * Finds next valid kmer in a read.
+  * @return position of the next valid kmer in a read; returns -1 if no more valid kmers
+  * @param pos should equal -1 if it's the first time and start pos of kmer otherwise
+  */
+size_t NextValidKmer(const Read &r, size_t pos, KMer & kmer);
 
-
+Sequence GetSubSequence(const Read &r, uint32_t start, uint32_t length);
 #endif  // HAMMER_KMERFUNCTIONS_HPP_

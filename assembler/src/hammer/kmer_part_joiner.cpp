@@ -17,24 +17,27 @@
  * file, still sorted.
  */
 #include "kmer_part_joiner.hpp"
-#include <utility>
+#include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
-using std::vector;
 using std::pair;
 using std::string;
+using std::swap;
+using std::vector;
 
-KMerPartJoiner::KMerPartJoiner(const vector<FILE*> &ifiles) {
+KMerPartJoiner::KMerPartJoiner(const vector<FILE*> &ifiles, int k)
+    : kmer_parsers_() {
   for (size_t i = 0; i < ifiles.size(); ++i) {
-    KMerPartParser kpp(ifiles[i]);
+    KMerPartParser kpp(ifiles[i], k_);
     if (!kpp.eof()) {
       kmer_parsers_.insert(kpp);
-      }
+    }
   }
 }
 
-pair<string, int> KMerPartJoiner ::Next() {
+pair<string, int> KMerPartJoiner::Next() {
   KMerPartParser kpp(*kmer_parsers_.begin());
   pair<string, int> ret = make_pair(kpp.last_string(), kpp.last_count());
   kmer_parsers_.erase(kpp);
@@ -45,42 +48,20 @@ pair<string, int> KMerPartJoiner ::Next() {
   return ret;
 }
 
-bool KMerPartJoiner::IsEmpty() {
-  return kmer_parsers_.size() == 0;
-}
-
-KMerPartJoiner::KMerPartParser::KMerPartParser(FILE *file) {
-  file_ = file;
-  eof_ = false;
-  Next();
-}
-
-bool KMerPartJoiner::KMerPartParser::operator<(
-                                     const KMerPartParser &other) const {
-  return last_string_ < other.last_string_;
-}
-
-KMerPartJoiner::KMerPartParser::KMerPartParser(const KMerPartParser &other) {
-  file_ = other.file_;
-  last_string_ = other.last_string_;
-  last_count_ = other.last_count_;
-  eof_ = other.eof_;
+void KMerPartJoiner::KMerPartParser::Swap(KMerPartParser other) {
+  swap(file_, other.file_);
+  swap(last_string_, other.last_string_);
+  swap(last_count_, other.last_count_);
+  swap(eof_, other.eof_);
 }
 
 void KMerPartJoiner::KMerPartParser::Next() {
-  char buf[K + 1];
-  eof_ = (fscanf(file_, "%s %d", buf, &last_count_) == EOF);
-  last_string_ = buf;
-}
-
-bool KMerPartJoiner::KMerPartParser::eof() {
-  return eof_;
-}
-
-string KMerPartJoiner::KMerPartParser::last_string() {
-  return last_string_;
-}
-
-int KMerPartJoiner::KMerPartParser::last_count() {
-  return last_count_;
+  char *buf = new char[k_ + 1];
+  char format[10];
+  snprintf(format, sizeof(format), "%%%ds %%d", k_);
+  eof_ = (fscanf(file_, format, buf, &last_count_) == EOF);
+  if (!eof_) {
+    last_string_ = buf;
+  }
+  delete[] buf;
 }

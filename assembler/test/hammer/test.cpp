@@ -1,7 +1,9 @@
 #include "cute/cute.h"
+#include "cute/cute_runner.h"
+#include "cute/ide_listener.h"
 #include "kmer_functions_test.hpp"
-#include "ide_listener.h"
-#include "cute_runner.h"
+
+
 
 void runSuite() {
   cute::suite s;

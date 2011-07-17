@@ -17,6 +17,7 @@
 #include "common/sequence/sequence_tools.hpp"
 #include "simple_tools.hpp"
 
+
 class Read {
 public:
   static const int PHRED_OFFSET = 33;
@@ -91,15 +92,15 @@ public:
     size_t start = 0;
     for (; start < seq_.size(); ++start) {
       if (qual_[start] > BAD_QUALITY_THRESHOLD)
-	break;
+        break;
     }
     if (start != seq_.size()) {
       seq_.erase(seq_.begin(), seq_.begin() + start);
       qual_.erase(qual_.begin(), qual_.begin() + start);
       size_t end = seq_.size();
       for (; end > 0; --end) {
-	if (qual_[end] > BAD_QUALITY_THRESHOLD)
-	  break;
+        if (qual_[end] > BAD_QUALITY_THRESHOLD)
+          break;
       }
       seq_.erase(seq_.begin() + end + 1, seq_.end());
       qual_.erase(qual_.begin() + end + 1, qual_.end());
@@ -133,6 +134,11 @@ public:
     return -1;
   }
 
+  void setSequence(const char* s) {
+    seq_ = s;
+    valid_ = updateValid();
+  }
+ 
   Read() :
     valid_(false) {
     ;
@@ -148,7 +154,7 @@ private:
   std::string qual_;
   bool valid_;
   friend class ireadstream;
-  friend size_t TrimBadQuality(Read&, int);
+  friend uint32_t TrimBadQuality(Read*, int);
   void setName(const char* s) {
     name_ = s;
   }
@@ -157,10 +163,6 @@ private:
     for (size_t i = 0; i < qual_.size(); ++i) {
       qual_[i] -= offset;
     }
-  }
-  void setSequence(const char* s) {
-    seq_ = s;
-    valid_ = updateValid();
   }
   const bool updateValid() const {
     if (seq_.size() == 0) {
