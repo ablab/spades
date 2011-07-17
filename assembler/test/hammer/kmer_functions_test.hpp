@@ -4,21 +4,10 @@
 #include <map>
 #include "cute/cute.h"
 #include "common/sequence/seq.hpp"
-
-// Dirty hack to make tests independent from hammer_config
-#define HAMMER_CONFIG_HPP
-
-// hammer config
-#define K 2
-struct KMerStat {
-  size_t count;
-  float freq;
-};
-typedef Seq<K> KMer;
-typedef map<KMer, KMerStat, KMer::less2> KMerStatMap;
-
 #include "hammer/kmer_functions.hpp"
-#include "hammer/kmer_functions.cpp"  // hack continue
+
+typedef Seq<2> KMer;
+typedef map<KMer, KMerStat, KMer::less2> KMerStatMap;
 
 void TestGetSubsequence() {
   Read r("TestRead1", "ACGTACGT", "BBBBBBBB");
@@ -60,7 +49,7 @@ void TestFirstValidKmerPos() {
 void TestAddKMers() {
   Read r("TestRead1", "ACNTACGT", "\1\2\3\3\2\1\3\1");
   KMerStatMap m, m2;
-  AddKMers(r, &m);
+  AddKMers<2>(r, &m);
   m2[KMer("AC")].count = 2;
   m2[KMer("TA")].count = 1;
   m2[KMer("CG")].count = 1;

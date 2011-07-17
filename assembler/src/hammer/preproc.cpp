@@ -106,8 +106,8 @@ void SplitToFiles(const string &ifile, uint32_t qvoffset, uint32_t file_number) 
     Read r;
     ifs >> r;
     if (TrimBadQuality(&r) >= K) {
-      vector<KMer> kmers = GetKMers(r);
-      vector<KMer> compl_kmers = GetKMers(!r);
+      vector<KMer> kmers = GetKMers<K>(r);
+      vector<KMer> compl_kmers = GetKMers<K>(!r);
       kmers.insert(kmers.end(), compl_kmers.begin(), compl_kmers.end());
       KMer::hash hash_function;
       for (uint32_t i = 0; i < kmers.size(); ++i) {
