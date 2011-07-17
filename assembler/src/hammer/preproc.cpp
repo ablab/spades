@@ -69,7 +69,7 @@ struct Options {
         ifile(""),
         ofile(""),
         nthreads(1),
-        file_number(2),
+        file_number(3),
         valid(true) {}
 };
 
@@ -98,8 +98,17 @@ Options ParseOptions(int argc, char * argv[]) {
   return ret;
 }
 
-void SplitToFiles(ireadstream ifs, const vector<FILE*> &files) {
-  uint32_t file_number = files.size();
+/**
+ * This function reads reads from the stream and splits them into
+ * k-mers. Then k-mers are written to several file almost
+ * uniformly. It is guaranteed that the same k-mers are written to the
+ * same files. 
+ * @param ifs Steam to read reads from.
+ * @param ofiles Files to write the result k-mers. They are written
+ * one per line.
+ */
+void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles) {
+  uint32_t file_number = ofiles.size();
   uint32_t read_number = 0;
   while (!ifs.eof()) {
     ++read_number;
@@ -115,12 +124,19 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &files) {
       KMer::hash hash_function;
       for (uint32_t i = 0; i < kmers.size(); ++i) {
         int file_id = hash_function(kmers[i]) % file_number;
-        fprintf(files[file_id], "%s\n", kmers[i].str().c_str());
+        fprintf(ofiles[file_id], "%s\n", kmers[i].str().c_str());
       }
     }
   }
 }
 
+/**
+ * This function reads k-mer and calculates number of occurrences for
+ * each of them. 
+ * @param ifile File with k-mer to process. One per line.
+ * @param ofile Output file. For each unique k-mer there will be a
+ * line with k-mer itself and number of its occurrences.
+ */
 void EvalFile(FILE *ifile, FILE *ofile) {
   char buffer[K + 1];
   KMerStatMap stat_map;
@@ -139,6 +155,12 @@ void EvalFile(FILE *ifile, FILE *ofile) {
   }
 }
 
+/**
+ * Given a set of sorted files with k-mers and their frequency this
+ * function merge them into one sorted file.
+ * @param ifiles Files to merge.
+ * @param ofile Output file.
+ */
 void MergeAndSort(const vector<FILE*> &ifiles, FILE *ofile) {
   KMerPartJoiner joiner(ifiles);
   while (!joiner.IsEmpty()) {
