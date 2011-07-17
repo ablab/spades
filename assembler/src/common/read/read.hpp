@@ -17,6 +17,7 @@
 #include "common/sequence/sequence_tools.hpp"
 #include "simple_tools.hpp"
 
+
 class Read {
 public:
   static const int PHRED_OFFSET = 33;
@@ -133,6 +134,11 @@ public:
     return -1;
   }
 
+  void setSequence(const char* s) {
+    seq_ = s;
+    valid_ = updateValid();
+  }
+ 
   Read() :
     valid_(false) {
     ;
@@ -157,10 +163,6 @@ private:
     for (size_t i = 0; i < qual_.size(); ++i) {
       qual_[i] -= offset;
     }
-  }
-  void setSequence(const char* s) {
-    seq_ = s;
-    valid_ = updateValid();
   }
   const bool updateValid() const {
     if (seq_.size() == 0) {
