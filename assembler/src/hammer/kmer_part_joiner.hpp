@@ -24,12 +24,11 @@
 #include <vector>
 #include <set>
 #include <string>
-#include "hammer/hammer_config.hpp"
 
 class KMerPartJoiner {
  public:
-  explicit KMerPartJoiner(const std::vector<FILE*> &ifiles);
-  std::pair<string, int> Next();
+  explicit KMerPartJoiner(const std::vector<FILE*> &ifiles, int k);
+  std::pair<std::string, int> Next();
   bool IsEmpty() const { return kmer_parsers_.size() == 0; }
  private:
   class KMerPartParser {
@@ -38,16 +37,18 @@ class KMerPartJoiner {
         : last_string_(other.last_string_),
           last_count_(other.last_count_),
           file_(other.file_),
-          eof_(other.eof_) {}
+          eof_(other.eof_),
+          k_(other.k_) {}
     KMerPartParser& operator=(const KMerPartJoiner::KMerPartParser other) {
       Swap(other);
       return *this;
     }
-    explicit KMerPartParser(FILE *file)
+    explicit KMerPartParser(FILE *file, int k)
         : last_string_(""),
           last_count_(-1),
           file_(file),
-          eof_(false) {
+          eof_(false),
+          k_(k){
       Next();
     }
     bool eof() const { return eof_; }
@@ -66,8 +67,10 @@ class KMerPartJoiner {
     int last_count_;
     FILE *file_;
     bool eof_;
+    int k_;
   };
   std::set<KMerPartParser, KMerPartParser::Lesser> kmer_parsers_;
+  int k_;
   // Disallow copy and assign.
   KMerPartJoiner(const KMerPartJoiner&);
   void operator=(const KMerPartJoiner&);

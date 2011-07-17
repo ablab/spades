@@ -27,10 +27,10 @@ using std::string;
 using std::swap;
 using std::vector;
 
-KMerPartJoiner::KMerPartJoiner(const vector<FILE*> &ifiles)
+KMerPartJoiner::KMerPartJoiner(const vector<FILE*> &ifiles, int k)
     : kmer_parsers_() {
   for (size_t i = 0; i < ifiles.size(); ++i) {
-    KMerPartParser kpp(ifiles[i]);
+    KMerPartParser kpp(ifiles[i], k_);
     if (!kpp.eof()) {
       kmer_parsers_.insert(kpp);
     }
@@ -56,11 +56,12 @@ void KMerPartJoiner::KMerPartParser::Swap(KMerPartParser other) {
 }
 
 void KMerPartJoiner::KMerPartParser::Next() {
-  char buf[K + 1];
+  char *buf = new char[k_ + 1];
   char format[10];
-  snprintf(format, sizeof(format), "%%%ds %%d", K);
+  snprintf(format, sizeof(format), "%%%ds %%d", k_);
   eof_ = (fscanf(file_, format, buf, &last_count_) == EOF);
   if (!eof_) {
     last_string_ = buf;
   }
+  delete[] buf;
 }

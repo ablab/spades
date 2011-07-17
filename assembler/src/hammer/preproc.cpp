@@ -22,12 +22,13 @@
 #include <set>
 #include <utility>
 #include <vector>
+#include <map>
+#include <unordered_map>
 #include "log4cxx/logger.h"
 #include "log4cxx/basicconfigurator.h"
 #include "common/read/ireadstream.hpp"
 #include "common/read/read.hpp"
 #include "hammer/defs.hpp"
-#include "hammer/hammer_config.hpp"
 #include "hammer/kmer_functions.hpp"
 #include "hammer/kmer_part_joiner.hpp"
 
@@ -36,9 +37,14 @@ using std::pair;
 using std::string;
 using std::set;
 using std::vector;
+using std::unordered_map;
+using std::map;
 using log4cxx::LoggerPtr;
 using log4cxx::Logger;
 using log4cxx::BasicConfigurator;
+
+const uint32_t K = 21;
+typedef Seq<K> KMer;
 
 namespace {
 
@@ -60,6 +66,7 @@ struct Options {
    * @variable How many files will be used when splitting k-mers.
    */
   uint32_t file_number;
+  bool sorted;
   /**
    * @variable If options provided are valid.
    */
@@ -70,30 +77,40 @@ struct Options {
         ofile(""),
         nthreads(1),
         file_number(3),
+        sorted(false),
         valid(true) {}
 };
 
 void PrintHelp() {
-  printf("Usage: ./preproc qvoffset ifile.fastq ofile.kmer [nthreads]\n");
+  printf("Usage: ./preproc qvoffset ifile.fastq ofile.kmer sorted nthreads\n");
   printf("Where:\n");
   printf("\tqvoffset\tan offset of fastq quality data\n");
   printf("\tifile.fastq\tan input file with reads in fastq format\n");
   printf("\tofile.kmer\ta filename where k-mer statistics will be outputted\n");
+  printf("\tfile_number\thow many files will be used when splitting k-mers\n");
+  printf("\tsorted\t\t'y' if you need sorting, 'n' otherwise\n");
   printf("\tnthreads\ta number of threads (one by default)\n");
 }
 
 Options ParseOptions(int argc, char * argv[]) {
   Options ret;
-  if (argc != 4 && argc != 5) {
+  if (argc != 7) {
     ret.valid =  false;
   } else {
     ret.qvoffset = atoi(argv[1]);
     ret.valid &= (ret.qvoffset >= 0 && ret.qvoffset <= 255);
     ret.ifile = argv[2];
     ret.ofile = argv[3];
-    if (argc == 5) {
-      ret.nthreads = atoi(argv[4]);
+    ret.file_number = atoi(argv[4]);
+    string sorted(argv[5]);
+    if (sorted == "y") {
+      ret.sorted = true;
+    } else if (sorted == "n") {
+      ret.sorted = false;
+    } else {
+      ret.valid = false;
     }
+    ret.nthreads = atoi(argv[6]);
   }
   return ret;
 }
@@ -137,6 +154,7 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles) {
  * @param ofile Output file. For each unique k-mer there will be a
  * line with k-mer itself and number of its occurrences.
  */
+template<typename KMerStatMap>
 void EvalFile(FILE *ifile, FILE *ofile) {
   char buffer[K + 1];
   KMerStatMap stat_map;
@@ -146,7 +164,7 @@ void EvalFile(FILE *ifile, FILE *ofile) {
     KMer kmer(buffer);
     ++stat_map[kmer].count;
   }
-  for (KMerStatMap::iterator it = stat_map.begin();
+  for (typename KMerStatMap::iterator it = stat_map.begin();
        it != stat_map.end();
        ++it) {
     fprintf(ofile,
@@ -162,7 +180,7 @@ void EvalFile(FILE *ifile, FILE *ofile) {
  * @param ofile Output file.
  */
 void MergeAndSort(const vector<FILE*> &ifiles, FILE *ofile) {
-  KMerPartJoiner joiner(ifiles);
+  KMerPartJoiner joiner(ifiles, K);
   while (!joiner.IsEmpty()) {
     pair<string, int> kmer_stat = joiner.Next();
     fprintf(ofile, "%s %d\n", kmer_stat.first.c_str(), kmer_stat.second);
@@ -191,38 +209,49 @@ int main(int argc, char * argv[]) {
       fclose(ofiles[i]);
     }
   }
-
-  LOG4CXX_INFO(logger, "Reads written to separate files.");
+  if (opts.sorted) {
+    LOG4CXX_INFO(logger, "Reads written to separate files.");
 #pragma omp parallel for num_threads(opts.nthreads)
-  for (uint32_t i = 0; i < opts.file_number; ++i) {
-    char ifile_name[50];
-    char ofile_name[50];
-    snprintf(ifile_name, sizeof(ifile_name), "%u.kmer.part", i);
-    snprintf(ofile_name, sizeof(ofile_name), "%u.result.part", i);
-    FILE *ifile = fopen(ifile_name, "r");
-    FILE *ofile = fopen(ofile_name, "w");
-    LOG4CXX_INFO(logger, "Processing " << ifile_name << ".");
-    EvalFile(ifile, ofile);
-    LOG4CXX_INFO(logger, "Processed " << ifile_name << ". " <<
-                 "You can find the result in " << ofile_name <<
-                 ".");
-    fclose(ifile);
-    fclose(ofile);
-  }
-
-  LOG4CXX_INFO(logger, "Starting message.");
-  {
-    vector<FILE*> ifiles;
     for (uint32_t i = 0; i < opts.file_number; ++i) {
       char ifile_name[50];
-      snprintf(ifile_name, sizeof(ifile_name), "%u.result.part", i);
+      char ofile_name[50];
+      snprintf(ifile_name, sizeof(ifile_name), "%u.kmer.part", i);
+      snprintf(ofile_name, sizeof(ofile_name), "%u.result.part", i);
       FILE *ifile = fopen(ifile_name, "r");
-      ifiles.push_back(ifile);
+      FILE *ofile = fopen(ofile_name, "w");
+      LOG4CXX_INFO(logger, "Processing " << ifile_name << ".");
+      EvalFile< map<KMer, KMerStat, KMer::less2> >(ifile, ofile);
+      LOG4CXX_INFO(logger, "Processed " << ifile_name << ". " <<
+                   "You can find the result in " << ofile_name <<
+                   ".");
+      fclose(ifile);
+      fclose(ofile);
     }
+
+    LOG4CXX_INFO(logger, "Starting merge.");
+      vector<FILE*> ifiles;
+      for (uint32_t i = 0; i < opts.file_number; ++i) {
+        char ifile_name[50];
+        snprintf(ifile_name, sizeof(ifile_name), "%u.result.part", i);
+        FILE *ifile = fopen(ifile_name, "r");
+      ifiles.push_back(ifile);
+      }
+      FILE *ofile = fopen(opts.ofile.c_str(), "w");
+      MergeAndSort(ifiles, ofile);
+      for (uint32_t i = 0; i < opts.file_number; ++i) {
+        fclose(ifiles[i]);
+      }
+      fclose(ofile);
+  } else {
     FILE *ofile = fopen(opts.ofile.c_str(), "w");
-    MergeAndSort(ifiles, ofile);
     for (uint32_t i = 0; i < opts.file_number; ++i) {
-      fclose(ifiles[i]);
+      char ifile_name[50];
+      snprintf(ifile_name, sizeof(ifile_name), "%u.kmer.part", i);
+      FILE *ifile = fopen(ifile_name, "r");
+      LOG4CXX_INFO(logger, "Processing " << ifile_name << ".");
+      EvalFile< unordered_map<KMer, KMerStat, KMer::hash> >(ifile, ofile);
+      LOG4CXX_INFO(logger, "Processed " << ifile_name << ".");
+      fclose(ifile);
     }
     fclose(ofile);
   }
