@@ -198,10 +198,7 @@ int main(int argc, char * argv[]) {
   LOG4CXX_INFO(logger, "Starting message.");
   MergeAndSort(ifiles, ofile);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
-    char ifile_name[50];
-    snprintf(ifile_name, sizeof(ifile_name), "%u.result.part", i);
-    FILE *ifile = fopen(ifile_name, "r");
-    fclose(ifile);
+    fclose(ifiles[i]);
   }
   fclose(ofile);
   LOG4CXX_INFO(logger,
