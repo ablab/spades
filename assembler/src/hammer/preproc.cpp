@@ -43,22 +43,32 @@ using log4cxx::BasicConfigurator;
 namespace {
 
 LoggerPtr logger(Logger::getLogger("preproc"));
+/**
+ * @variable Every kStep k-mer will appear in the log.
+ */
 const int kStep = 1e5;
 
 struct Options {
+  /**
+   * @variable An offset for quality in a fastq file.
+   */
   uint32_t qvoffset;
   string ifile;
   string ofile;
   uint32_t nthreads;
-  uint32_t read_batch_size;
+  /**
+   * @variable How many files will be used when splitting k-mers.
+   */
   uint32_t file_number;
+  /**
+   * @variable If options provided are valid.
+   */
   bool valid;
   Options()
       : qvoffset(0),
         ifile(""),
         ofile(""),
         nthreads(1),
-        read_batch_size(1e6),
         file_number(2),
         valid(true) {}
 };
