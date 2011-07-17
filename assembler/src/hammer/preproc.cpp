@@ -43,7 +43,7 @@ using log4cxx::LoggerPtr;
 using log4cxx::Logger;
 using log4cxx::BasicConfigurator;
 
-const uint32_t K = 21;
+//const uint32_t K = 21;
 typedef Seq<K> KMer;
 
 namespace {
