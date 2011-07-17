@@ -63,36 +63,3 @@ uint32_t TrimBadQuality(Read *r, int bad_quality_threshold) {
   r->valid_ = r->updateValid();
   return seq.size();
 }
-
-
-vector<KMer> GetKMers(const Read &r) {
-  const string &seq = r.getSequenceString();
-  vector<KMer> ans;
-  uint32_t pos = 0;
-  while (true) {
-    pos = FirstValidKmerPos(r, pos, K);
-    if (pos >= seq.size()) break;
-    KMer kmer = KMer(GetSubSequence(r, pos, K));
-    while (true) {
-      ans.push_back(kmer);
-      if (pos + K < r.size() && is_nucl(seq[pos + K])) {
-        kmer = kmer << r[pos + K];
-        ++pos;
-      } else {
-        pos += K;
-        break;
-      }
-    }
-  }
-  return ans;
-}
-/**
- * add k-mers from read to map
- */
-void AddKMers(const Read &r, KMerStatMap *v) {
-  vector<KMer> kmers = GetKMers(r);
-  for (uint32_t i = 0; i < kmers.size(); ++i) {
-    ++(*v)[kmers[i]].count;
-  }
-}
-
