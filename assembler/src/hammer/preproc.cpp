@@ -126,7 +126,9 @@ void SplitToFiles(const string &ifile, size_t qvoffset, size_t file_number) {
 void EvalFile(FILE *ifile, FILE *ofile) {
   char buffer[K + 1];
   KMerStatMap stat_map;
-  while (fscanf(ifile, "%s", buffer) != EOF) {
+  char format[10];
+  snprintf(format, sizeof(format), "%%%ds", K);
+  while (fscanf(ifile, format, buffer) != EOF) {
     KMer kmer(buffer);
     ++stat_map[kmer].count;
   }
