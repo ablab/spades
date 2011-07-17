@@ -98,17 +98,10 @@ Options ParseOptions(int argc, char * argv[]) {
   return ret;
 }
 
-void SplitToFiles(const string &ifile, uint32_t qvoffset, uint32_t file_number) {
-  ireadstream ifs(ifile.c_str(), qvoffset);
-  vector<FILE*> files(file_number);
-  for (uint32_t i = 0; i < file_number; ++i) {
-    char filename[50];
-    snprintf(filename, sizeof(filename), "%u.kmer.part", i);
-    files[i] = fopen(filename, "w");
-  }
+void SplitToFiles(ireadstream ifs, const vector<FILE*> &files) {
+  uint32_t file_number = files.size();
   uint32_t read_number = 0;
   while (!ifs.eof()) {
-    // reading a batch of reads
     ++read_number;
     if (read_number % kStep == 0) {
       LOG4CXX_INFO(logger, "Reading read " << read_number << ".");
@@ -126,11 +119,6 @@ void SplitToFiles(const string &ifile, uint32_t qvoffset, uint32_t file_number) 
       }
     }
   }
-  for (uint32_t i = 0; i < file_number; ++i) {
-    fclose(files[i]);
-  }
-  ifs.close();
-  LOG4CXX_INFO(logger, "Reads written to separate files.");
 }
 
 void EvalFile(FILE *ifile, FILE *ofile) {
@@ -169,8 +157,20 @@ int main(int argc, char * argv[]) {
   BasicConfigurator::configure();
   LOG4CXX_INFO(logger, "Starting preproc: evaluating " << opts.ifile <<
                " in " << opts.nthreads << " threads.");
-  SplitToFiles(opts.ifile, opts.qvoffset, opts.file_number);
+  {
+    vector<FILE*> ofiles(opts.file_number);
+    for (uint32_t i = 0; i < opts.file_number; ++i) {
+      char filename[50];
+      snprintf(filename, sizeof(filename), "%u.kmer.part", i);
+      ofiles[i] = fopen(filename, "w");
+    }
+    SplitToFiles(ireadstream(opts.ifile, opts.qvoffset), ofiles);
+    for (uint32_t i = 0; i < opts.file_number; ++i) {
+      fclose(ofiles[i]);
+    }
+  }
 
+  LOG4CXX_INFO(logger, "Reads written to separate files.");
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     char ifile_name[50];
     char ofile_name[50];
@@ -186,21 +186,23 @@ int main(int argc, char * argv[]) {
     fclose(ifile);
     fclose(ofile);
   }
-  vector<FILE*> ifiles;
-  for (uint32_t i = 0; i < opts.file_number; ++i) {
-    char ifile_name[50];
-    snprintf(ifile_name, sizeof(ifile_name), "%u.result.part", i);
-    FILE *ifile = fopen(ifile_name, "r");
-    ifiles.push_back(ifile);
-  }
-  FILE *ofile = fopen(opts.ofile.c_str(), "w");
 
   LOG4CXX_INFO(logger, "Starting message.");
-  MergeAndSort(ifiles, ofile);
-  for (uint32_t i = 0; i < opts.file_number; ++i) {
-    fclose(ifiles[i]);
+  {
+    vector<FILE*> ifiles;
+    for (uint32_t i = 0; i < opts.file_number; ++i) {
+      char ifile_name[50];
+      snprintf(ifile_name, sizeof(ifile_name), "%u.result.part", i);
+      FILE *ifile = fopen(ifile_name, "r");
+      ifiles.push_back(ifile);
+    }
+    FILE *ofile = fopen(opts.ofile.c_str(), "w");
+    MergeAndSort(ifiles, ofile);
+    for (uint32_t i = 0; i < opts.file_number; ++i) {
+      fclose(ifiles[i]);
+    }
+    fclose(ofile);
   }
-  fclose(ofile);
   LOG4CXX_INFO(logger,
                "Preprocessing done. You can find results in " <<
                opts.ofile << ".");
