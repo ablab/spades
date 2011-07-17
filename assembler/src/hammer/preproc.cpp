@@ -12,8 +12,8 @@
  *
  * @section DESCRIPTION
  *
- * For each k-mer this programm calculates number of occuring in
- * the reads provided. Reads file is supposed to be in fastq 
+ * For each k-mer this program calculates number of occurring in
+ * the reads provided. Reads file is supposed to be in fastq
  * format.
  */
 #include <omp.h>
@@ -68,7 +68,7 @@ void PrintHelp() {
   printf("Where:\n");
   printf("\tqvoffset\tan offset of fastq quality data\n");
   printf("\tifile.fastq\tan input file with reads in fastq format\n");
-  printf("\tofile.kmer\ta filename where k-mer statistics will be outputed\n");
+  printf("\tofile.kmer\ta filename where k-mer statistics will be outputted\n");
   printf("\tnthreads\ta number of threads (one by default)\n");
 }
 
@@ -107,6 +107,8 @@ void SplitToFiles(const string &ifile, size_t qvoffset, size_t file_number) {
     ifs >> r;
     if (TrimBadQuality(&r) >= K) {
       vector<KMer> kmers = GetKMers(r);
+      vector<KMer> compl_kmers = GetKMers(!r);
+      kmers.insert(kmers.end(), compl_kmers.begin(), compl_kmers.end());
       KMer::hash hash_function;
       for (size_t i = 0; i < kmers.size(); ++i) {
         int file_id = hash_function(kmers[i]) % file_number;
@@ -118,19 +120,13 @@ void SplitToFiles(const string &ifile, size_t qvoffset, size_t file_number) {
     fclose(files[i]);
   }
   ifs.close();
-  LOG4CXX_INFO(logger, "Reads wroten to separate files.");
+  LOG4CXX_INFO(logger, "Reads written to separate files.");
 }
 
 void EvalFile(FILE *ifile, FILE *ofile) {
   char buffer[K + 1];
   KMerStatMap stat_map;
   while (fscanf(ifile, "%s", buffer) != EOF) {
-#pragma message("Warning about uninitialized _M_instance looks like a fake")
-    // Next line produces a misterious warning saying that _M_instance is
-    // undeifileed
-    // Looks like it is in some way connected to the line
-    //       int file_id = hash_function(kmers[i]) % file_number;
-    // line in SplitToFiles
     KMer kmer(buffer);
     ++stat_map[kmer].count;
   }
