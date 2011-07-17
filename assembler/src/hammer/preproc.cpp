@@ -171,6 +171,7 @@ int main(int argc, char * argv[]) {
   }
 
   LOG4CXX_INFO(logger, "Reads written to separate files.");
+#pragma omp parallel for num_threads(opts.nthreads)
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     char ifile_name[50];
     char ofile_name[50];
