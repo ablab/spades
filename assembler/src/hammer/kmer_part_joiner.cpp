@@ -37,7 +37,7 @@ KMerPartJoiner::KMerPartJoiner(const vector<FILE*> &ifiles)
   }
 }
 
-pair<string, int> KMerPartJoiner ::Next() {
+pair<string, int> KMerPartJoiner::Next() {
   KMerPartParser kpp(*kmer_parsers_.begin());
   pair<string, int> ret = make_pair(kpp.last_string(), kpp.last_count());
   kmer_parsers_.erase(kpp);
