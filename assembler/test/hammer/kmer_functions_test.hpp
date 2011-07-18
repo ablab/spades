@@ -49,7 +49,7 @@ void TestFirstValidKmerPos() {
 void TestAddKMers() {
   Read r("TestRead1", "ACNTACGT", "\1\2\3\3\2\1\3\1");
   KMerStatMap m, m2;
-  AddKMers<2>(r, &m);
+  AddKMers<2>(r, 666, &m); //666 makes absolutely no sense here
   m2[KMer("AC")].count = 2;
   m2[KMer("TA")].count = 1;
   m2[KMer("CG")].count = 1;
