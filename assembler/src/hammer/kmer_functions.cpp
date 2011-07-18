@@ -63,3 +63,4 @@ uint32_t TrimBadQuality(Read *r, int bad_quality_threshold) {
   r->valid_ = r->updateValid();
   return seq.size();
 }
+
