@@ -43,18 +43,18 @@ int main(int argc, char * argv[]) {
 	
 	int iterno = 1; if (argc > 6) iterno = atoi(argv[6]);
 
-	cout << "Starting work on " << readsFilename << " with " << nthreads << " threads.\n"; flush(cout);
+	cout << "Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K << endl;
 
-	vector<KMerStatMap> vv;
 	vector<ReadStat> * rv = ireadstream::readAllNoValidation(readsFilename);
 	cout << "All reads read to memory." << endl;
-	/*for (uint64_t i = 0; i < rv->size(); ++i) {
+	for (uint64_t i = 0; i < rv->size(); ++i) {
 		cout << "@" << rv->at(i).read.getName() << endl << rv->at(i).read.getSequenceString().data() << endl;
-	}*/
+	}
 
 	
 	for (int iter_count = 0; iter_count < iterno; ++iter_count) {
 	
+	vector<KMerStatMap> vv;
 	DoPreprocessing(tau, qvoffset, readsFilename, nthreads, &vv, rv);
 	ReadStatMapContainer rmsc(vv);
 	cout << vv[0].size() << "\n";
@@ -80,9 +80,21 @@ int main(int argc, char * argv[]) {
 	cout << "Finished clustering." << endl;
 	
 	// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
-	#pragma omp parallel for shared(changes, good, rv) num_threads(nthreads)
+	vector<ofstream *> outfv; vector<bool> changed;
+	for (int i=0; i<nthreads; ++i) {
+		outfv.push_back(new ofstream(dirprefix + "/" + (char)((int)'0' + iter_count) + ".reconstruct." + (char)((int)'0' + i)));
+		changed.push_back(false);
+	}
+
+	#pragma omp parallel for shared(changes, good, rv, changed, outfv) num_threads(nthreads)
 	for (int i = 0; i < rv->size(); ++i) {
-		CorrectRead(changes, good, &(rv->at(i).read), false);
+		bool res = CorrectRead(changes, good, kmers, &(rv->at(i)), outfv[omp_get_thread_num()]);
+		changed[omp_get_thread_num()] = changed[omp_get_thread_num()] || res;
+	}
+	bool res = false;
+	for (int i=0; i<nthreads; ++i) {
+		outfv[i]->close(); delete outfv[i];
+		res = res || changed[i];
 	}
 
 	cout << "Correction done. Printing out reads." << endl;
@@ -90,10 +102,16 @@ int main(int argc, char * argv[]) {
 	ofstream outf; outf.open(dirprefix + "/" + (char)((int)'0' + iter_count) + ".reads.corrected");
 	for (uint64_t i = 0; i < rv->size(); ++i) {
 		outf << "@" << rv->at(i).read.getName() << endl << rv->at(i).read.getSequenceString().data() << endl << "+" << rv->at(i).read.getName() << endl << rv->at(i).read.getPhredQualityString(qvoffset) << endl;
+		// prepare the reads for next iteration
+		rv->at(i).kmers.clear(); rv->at(i).kmers_rev.clear();
 	}
 	outf.close();
 	
 	cout << "Iteration " << iter_count << " done." << endl;
+	if (!res) {
+		cout << "Nothing has changed in this iteration. Exiting." << endl;
+		break;
+	}
 
 	} // iterations
 	

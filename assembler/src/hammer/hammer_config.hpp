@@ -21,9 +21,8 @@ using namespace std;
 using namespace __gnu_cxx;
 
 #define K 55
-// The following constant was defined just to make compiler happy. I
-// have no sense what value is reasonable #adavydow.
-#define GOOD_SINGLETON_THRESHOLD 666 //  ATTENTION!!! 
+
+#define GOOD_SINGLETON_THRESHOLD 1 
 
 typedef Seq<K> KMer;
 typedef iufstream<K> UFStream;

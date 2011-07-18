@@ -39,12 +39,10 @@ void join_maps(KMerStatMap & v1, const KMerStatMap & v2) {
 		itf = v1.find(it->first);
 		if (itf != v1.end()) {
 			itf->second.count = itf->second.count + it->second.count;
-			itf->second.freq  = itf->second.freq  + it->second.freq;
 		} else {
 			pair<KMer, KMerStat> p;
 			p.first = it->first;
 			p.second.count = it->second.count;
-			p.second.freq = it->second.freq;
 			v1.insert(p);
 		}
 	}
@@ -72,11 +70,10 @@ KMerCount ReadStatMapContainer::next() {
 		p.second.count = MAX_INT_64;
 		return p;
 	}
-	p.first = imin->first; p.second.count = 0; p.second.freq = 0;
+	p.first = imin->first; p.second.count = 0;
 	for (size_t i=0; i<v_.size(); ++i) {
 		if (i_[i]->first == p.first) {
 			p.second.count += i_[i]->second.count;
-			p.second.freq  += i_[i]->second.freq;
 			p.second.pos.insert(p.second.pos.end(), i_[i]->second.pos.begin(), i_[i]->second.pos.end());
 			++i_[i];
 		}
@@ -105,15 +102,16 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 
 	cout << "Starting preproc.\n";
 	#pragma omp parallel for shared(rv, vv) num_threads(nthreads)
-	for(uint64_t i=0; i< (rv->size()); ++i) {
+	for(int64_t i=0; i< (rv->size()); ++i) {
 		if (TrimBadQuality(&(rv->at(i).read)) < K) continue;  /// maybe we should get the quality into AddKMers
-		AddKMers<K, KMerStatMap>(rv->at(i).read, i, &(vv->at(omp_get_thread_num())));
-		AddKMers<K, KMerStatMap>(!(rv->at(i).read), i, &(vv->at(omp_get_thread_num())));
+		// we have to enumerate reads from 1 rather than 0 because we need negative numbers for reverse complements
+		AddKMers<K, KMerStatMap>(rv->at(i).read, i+1, &(vv->at(omp_get_thread_num())));
+		AddKMers<K, KMerStatMap>(!(rv->at(i).read), -(i+1), &(vv->at(omp_get_thread_num())));
 	}
 	
 	cout << "All k-mers added to maps." << endl;
 
-	for (uint32_t i=0; i<vv->size(); ++i) {
+	/*for (uint32_t i=0; i<vv->size(); ++i) {
 		cout << "size(" << i << ")=" << vv->at(i).size() << endl;
 		#pragma omp critical
 		{
@@ -124,7 +122,7 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 			cout << endl;
 		}
 		}
-	}
+	}*/
 }
 
 void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rsmc, vector<StringKMerVector> * vs, vector<KMerCount> * kmers, vector<ReadStat> * rv) {
@@ -136,16 +134,20 @@ void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rsmc, vector<S
 	for (KMerCount p = rsmc.next(); p.second.count < MAX_INT_64; p = rsmc.next()) {
 		kmers->push_back(p);
 
-		#pragma omp critical
-		{
-		cout << kmerno << "   " << p.first.str() << " ";
 		for (uint32_t j=0; j<p.second.pos.size(); ++j) {
-			rv->at(p.second.pos[j].first).kmers.insert( make_pair(p.second.pos[j].second, kmerno) );
-			cout << p.second.pos[j].first << ":" << rv->at(p.second.pos[j].first).kmers[ p.second.pos[j].second ] << " ";
+			if (p.second.pos[j].first > 0) {
+				rv->at(p.second.pos[j].first-1).kmers.insert( make_pair(p.second.pos[j].second, kmerno) );
+				// cout << p.second.pos[j].first << ":" << p.second.pos[j].second << ":" << rv->at(p.second.pos[j].first-1).kmers[ p.second.pos[j].second ] << " ";
+			} else {
+				rv->at(-p.second.pos[j].first-1).kmers_rev.insert( make_pair(p.second.pos[j].second, kmerno) );
+				// cout << p.second.pos[j].first << ":" << p.second.pos[j].second << ":" << rv->at(-p.second.pos[j].first-1).kmers_rev[ p.second.pos[j].second ] << " ";
+			}
 		}
-		cout << endl;
-		}
+		//cout << endl;
+		// }
 		
+		//cout << kmerno << "   " << p.first.str() << " ";
+
 		#pragma omp parallel for shared(vs, p, kmerno, tau) num_threads(effective_threads)
 		for (int j=0; j<tau+1; ++j) {
 			string sub = "";
@@ -154,84 +156,129 @@ void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rsmc, vector<S
 			}
 			StringKMer skm; skm.sub = sub; skm.count = kmerno; skm.kmer = p.first;
 			vs->at(j).push_back(skm);
+			//for (int m=0; m< vs->at(j)[vs->at(j).size() - 1].sub.size(); ++m) cout << nucl(vs->at(j)[vs->at(j).size() - 1].sub[m]);
+			//cout << "  ";
 		}
+		//cout << endl;
 		++kmerno;
-		if (kmerno % 10000000 == 0) cout << "Split " << kmerno << " kmers." << endl; 
+		if (kmerno % 10000000 == 0) cout << "Split " << kmerno << " kmers." << endl;
 	}
 	cout << "Auxiliary vectors loaded." << endl;
 
 	#pragma omp parallel for shared(vs) num_threads(effective_threads)
 	for (int j=0; j<tau+1; ++j) {
 		sort(vs->at(j).begin(), vs->at(j).end(), SKgreater);
+		/*cout << "vs[" << j << "]:" << endl;
+		for (int l=0; l<vs->at(j).size(); ++l) {
+			cout << "    ";
+			for (int m=0; m< vs->at(j)[l].sub.size(); ++m) cout << nucl(vs->at(j)[l].sub[m]);
+			cout << "  " << vs->at(j)[l].count << endl;
+		}*/
 	}
 	cout << "Auxiliary vectors sorted." << endl;
 }
 
-void CorrectRead(const map<KMer, KMer, KMer::less2> & changes, const unordered_set<KMer, KMer::hash> & good, Read * r, bool print_debug) {
-	string seq = r->getSequenceString();
-	if (print_debug) cout << "Correcting " << r->getName() << "\n" << seq.data() << "\n";
+
+
+bool CorrectRead(const map<KMer, KMer, KMer::less2> & changes, const unordered_set<KMer, KMer::hash> & good, const vector<KMerCount> & km, ReadStat * r, ofstream * ofs) {
+	string seq = r->read.getSequenceString();
+	//if (print_debug) cout << "Correcting " << r->read.getName() << "\n" << seq.data() << "\n";
 	// create auxiliary structures for consensus
-	vector<int> vA(r->size(), 0), vC(r->size(), 0), vG(r->size(), 0), vT(r->size(), 0);
+	vector<int> vA(r->read.size(), 0), vC(r->read.size(), 0), vG(r->read.size(), 0), vT(r->read.size(), 0);
 	vector< vector<int> > v;  // A=0, C=1, G=2, T=3
 	v.push_back(vA); v.push_back(vC); v.push_back(vG); v.push_back(vT);
-			
-	int32_t pos = -1;
+
 	bool changedRead = false;
-	KMer kmer;
-	map<KMer, KMer, KMer::less2>::const_iterator it;
-	unordered_set<KMer, KMer::hash>::const_iterator it_single;
-	while ( (pos = NextValidKmer<K>(*r, pos, kmer)) >= 0 ) {
-		it_single = good.find(kmer);
-		if (it_single != good.end()) { //it's a good singleton
+	for (map<uint32_t, uint64_t>::const_iterator it = r->kmers.begin(); it != r->kmers.end(); ++it) {
+		const KMer & kmer = km[it->second].first;
+		const uint32_t pos = it->first;
+		const KMerStat & stat = km[it->second].second;
+		if (stat.good == true) {
 			for (size_t j=0; j<K; ++j) {
-				v[kmer[j]][(pos-1)+j]++;
-				//cout << nucl(kmer[j]);
+				v[kmer[j]][pos+j]++;
 			}
-			//for (size_t j=0; j<i; ++j) cout << " ";
-			//cout << kmer.str().data() << "\n";
+			/*if (print_debug) {
+				for (size_t j=0; j<pos; ++j) cout << " ";
+				cout << kmer.str().data() << "\n";
+			}*/
 		} else {
-			it = changes.find(kmer);				
-			if (it != changes.end()) { // we've found that we have to change this kmer
+			if (stat.change == true) {
+				const KMer & newkmer = km[ stat.changeto ].first;
 				for (size_t j=0; j<K; ++j) {
-					v[it->second[j]][(pos-1)+j]++;
+					v[newkmer[j]][pos+j]++;
 				}
 				// pretty print the k-mer
 				if (!changedRead) {
 					changedRead = true;
-					if (print_debug) cout << "\n " << r->getName() << "\n" << r->getSequenceString().data() << "\n";
+					if (ofs != NULL) *ofs << "\n " << r->read.getName() << "\n" << r->read.getSequenceString().data() << "\n";
 				}
-				if (print_debug) {
-					for (size_t j=0; j<(pos-1); ++j) cout << " ";
-					cout << it->second.str().data() << "\n";
+				if (ofs != NULL) {
+					for (size_t j=0; j<pos; ++j) *ofs << " ";
+					*ofs << newkmer.str().data() << "\n";
 				}
-			}		
+			}
 		}
 	}
+
+	for (map<uint32_t, uint64_t>::const_iterator it = r->kmers_rev.begin(); it != r->kmers_rev.end(); ++it) {
+		const KMer & kmer = km[it->second].first;
+		const uint32_t pos = it->first;
+		const KMerStat & stat = km[it->second].second;
+		if (stat.good == true) {
+			for (size_t j=0; j<K; ++j) {
+				v[complement(kmer[j])][r->read.size()-pos-j-1]++;
+			}
+			/*if (print_debug) {
+				for (size_t j=0; j<r->read.size()-pos-K; ++j) cout << " ";
+				cout << (!kmer).str().data() << "\n";
+			}*/
+		} else {
+			if (stat.change == true) {
+				const KMer & newkmer = km[ stat.changeto ].first;
+				for (size_t j=0; j<K; ++j) {
+					v[complement(newkmer[j])][r->read.size()-pos-j-1]++;
+				}
+				if (!changedRead) {
+					changedRead = true;
+					if (ofs != NULL) *ofs << "\n " << r->read.getName() << "\n" << r->read.getSequenceString().data() << "\n";
+				}
+				if (ofs != NULL) {
+					for (size_t j=0; j<r->read.size()-pos-K; ++j) *ofs << " ";
+					*ofs << (!newkmer).str().data() << "\n";
+				}
+			}
+		}
+	}
+
 					
 	// at this point the array v contains votes for consensus
-		
+
+	bool res = false; // has anything really changed?
 	// find max consensus element
-	for (size_t j=0; j<r->size(); ++j) {
+	for (size_t j=0; j<r->read.size(); ++j) {
 		char cmax = seq[j]; int nummax = 0;
 		for (size_t k=0; k<4; ++k) {
 			if (v[k][j] > nummax) {
 				cmax = nucl(k); nummax = v[k][j];
 			}
 		}
+		if (seq[j] != cmax) res = true;
 		seq[j] = cmax;
 	}
 	
 	// print consensus array
-	if (print_debug && changedRead) {
+	if (ofs != NULL && changedRead) {
 		for (size_t i=0; i<4; ++i) {
-			for (size_t j=0; j<r->size(); ++j) {
-				if (v[i][j] > 9) cout << "*"; else cout << v[i][j];
+			for (size_t j=0; j<r->read.size(); ++j) {
+				*ofs << (char)((int)'0' + v[i][j]);
 			}
-			cout << "\n";
+			*ofs << "\n";
 		}
-		cout << seq.data() << "\n";
+		*ofs << seq.data() << "\n";
 	}
 	
 	// change the read
-	r->setSequence(seq.data());
+	r->read.setSequence(seq.data());
+	return res;
 }
+

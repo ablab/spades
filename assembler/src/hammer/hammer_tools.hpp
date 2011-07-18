@@ -49,8 +49,11 @@ private:
 void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerStatMap> * vv, vector<ReadStat> * rv);
 void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rmsc, vector<StringKMerVector> * vs, vector<KMerCount> * kmers, vector<ReadStat> * rv);
 
-/// correct a read in place
-void CorrectRead(const map<KMer, KMer, KMer::less2> & changes, const unordered_set<KMer, KMer::hash> & good, Read * r, bool print_debug = false);
+/**
+  * correct a read in place
+  * @return whether the read has changed at all
+  */
+bool CorrectRead(const map<KMer, KMer, KMer::less2> & changes, const unordered_set<KMer, KMer::hash> & good, const vector<KMerCount> & kmers, ReadStat * r, ofstream * ofs = NULL);
 
 #endif
 

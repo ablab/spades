@@ -70,6 +70,7 @@ int32_t getKmerAnew(const Read &r, int32_t pos, Seq<kK> & kmer ) {
 template<uint32_t kK>
 int32_t NextValidKmer(const Read &r, int32_t prev_pos, Seq<kK> & kmer) {
   const std::string &seq = r.getSequenceString();
+  // cout << "  run NextValidKmer(" << seq.data() << ", " << prev_pos << ")" << endl;
   if (prev_pos == -1) { // need to get first valid kmer
     return getKmerAnew<kK>(r, 0, kmer);
   } else {
@@ -97,12 +98,13 @@ vector< Seq<kK> > GetKMers(const Read &r) {
  * add k-mers from read to map
  */
 template<uint32_t kK, typename KMerStatMap>
-void AddKMers(const Read &r, uint64_t readno, KMerStatMap *v) {
+void AddKMers(const Read &r, int64_t readno, KMerStatMap *v) {
   int32_t pos = -1;
   Seq<kK> kmer;
   while ( (pos = NextValidKmer<kK>(r, pos, kmer)) >= 0 ) {
+    // cout << pos << "  " << kmer.str().data() << endl;
     ++(*v)[kmer].count;
-    (*v)[kmer].pos.push_back( make_pair(readno, pos - 1) );
+    (*v)[kmer].pos.push_back( make_pair(readno, pos) );
   }  
 }
 #endif  // HAMMER_KMERFUNCTIONS_HPP_
