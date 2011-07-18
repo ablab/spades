@@ -20,8 +20,7 @@
 #define HAMMER_KMERFUNCTIONS_HPP_
 #include <vector>
 #include "common/read/read.hpp"
-#include "hammer_config.hpp"
-
+#include "hammer/kmer_stat.hpp"
 
 /**
  * trim bad quality nucleotides from start and end of the read
@@ -38,40 +37,6 @@ uint32_t TrimBadQuality(Read *r, int bad_quality_threshold = 2);
 uint32_t FirstValidKmerPos(const Read &r, uint32_t start, uint32_t k);
 
 Sequence GetSubSequence(const Read &r, uint32_t start, uint32_t length);
-
-template<uint32_t kK>
-vector< Seq<kK> > GetKMers(const Read &r) {
-  const string &seq = r.getSequenceString();
-  vector< Seq<kK> > ans;
-  uint32_t pos = 0;
-  while (true) {
-    pos = FirstValidKmerPos(r, pos, kK);
-    if (pos >= seq.size()) break;
-    Seq<kK> kmer = Seq<kK>(GetSubSequence(r, pos, kK));
-    while (true) {
-      ans.push_back(kmer);
-      if (pos + kK < r.size() && is_nucl(seq[pos + kK])) {
-        kmer = kmer << r[pos + kK];
-        ++pos;
-      } else {
-        pos += kK;
-        break;
-      }
-    }
-  }
-  return ans;
-}
-
-/**
- * add k-mers from read to map
- */
-template<uint32_t kK, typename KMerStatMap>
-void AddKMers(const Read &r, KMerStatMap *v) {
-  vector< Seq<kK> > kmers = GetKMers<kK>(r);
-  for (uint32_t i = 0; i < kmers.size(); ++i) {
-    ++(*v)[kmers[i]].count;
-  }
-}
 
 /**
  * get next valid kmer in a new position
@@ -106,15 +71,38 @@ template<uint32_t kK>
 int32_t NextValidKmer(const Read &r, int32_t pos, Seq<kK> & kmer) {
   const std::string &seq = r.getSequenceString();
   if (pos == -1) { // need to get first valid kmer
-    return getKmerAnew(seq, 0, kmer);
+    return getKmerAnew<kK>(seq, 0, kmer);
   } else {
     if (pos + kK < r.size() && is_nucl(seq[pos + kK])) {
       kmer = kmer << r[pos + kK];
       return (pos + 1);
     } else {
-      return getKmerAnew(seq, pos, kmer);
+      return getKmerAnew<kK>(seq, pos, kmer);
     }
   }
 }
 
+template<uint32_t kK>
+vector< Seq<kK> > GetKMers(const Read &r) {
+  vector< Seq<kK> > ret;
+  int32_t pos = -1;
+  Seq<kK> kmer;
+  while ((pos = NextValidKmer<kK>(r, pos, kmer)) >= 0) {
+    ret.push_back(kmer);
+  }  
+  return ret;
+}
+
+/**
+ * add k-mers from read to map
+ */
+template<uint32_t kK, typename KMerStatMap>
+void AddKMers(const Read &r, uint64_t readno, KMerStatMap *v) {
+  int32_t pos = -1;
+  Seq<kK> kmer;
+  while ( (pos = NextValidKmer<kK>(r, pos, kmer)) >= 0 ) {
+    ++(*v)[kmer].count;
+    (*v)[kmer].pos.push_back( make_pair(readno, pos - 1) );
+  }  
+}
 #endif  // HAMMER_KMERFUNCTIONS_HPP_

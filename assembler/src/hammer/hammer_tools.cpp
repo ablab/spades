@@ -107,8 +107,8 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 	#pragma omp parallel for shared(rv, vv) num_threads(nthreads)
 	for(uint64_t i=0; i< (rv->size()); ++i) {
 		if (TrimBadQuality(&(rv->at(i).read)) < K) continue;  /// maybe we should get the quality into AddKMers
-		AddKMers(rv->at(i).read, i, &(vv->at(omp_get_thread_num())));
-		AddKMers(!(rv->at(i).read), i, &(vv->at(omp_get_thread_num())));
+		AddKMers<K, KMerStatMap>(rv->at(i).read, i, &(vv->at(omp_get_thread_num())));
+		AddKMers<K, KMerStatMap>(!(rv->at(i).read), i, &(vv->at(omp_get_thread_num())));
 	}
 	
 	cout << "All k-mers added to maps." << endl;
@@ -180,7 +180,7 @@ void CorrectRead(const map<KMer, KMer, KMer::less2> & changes, const unordered_s
 	KMer kmer;
 	map<KMer, KMer, KMer::less2>::const_iterator it;
 	unordered_set<KMer, KMer::hash>::const_iterator it_single;
-	while ( (pos = NextValidKmer(*r, pos, kmer)) >= 0 ) {
+	while ( (pos = NextValidKmer<K>(*r, pos, kmer)) >= 0 ) {
 		it_single = good.find(kmer);
 		if (it_single != good.end()) { //it's a good singleton
 			for (size_t j=0; j<K; ++j) {

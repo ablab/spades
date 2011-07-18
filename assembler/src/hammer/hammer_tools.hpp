@@ -28,19 +28,6 @@ using namespace std;
 double oct2phred(string qoct, int qvoffset);
 string encode3toabyte (const string & s);
 
-class BadConversion : public std::runtime_error {
-  public:
-	BadConversion(std::string const& s) : std::runtime_error(s) { }
-};
-
-inline double convertToInt(std::string const& s) {
-   istringstream i(s);
-   int x;
-   if (!(i >> x))
-     throw BadConversion("convertToInt(\"" + s + "\")");
-   return x;
-}
-
 /// join two maps
 void join_maps(KMerStatMap & v1, const KMerStatMap & v2);
 
