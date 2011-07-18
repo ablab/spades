@@ -23,7 +23,7 @@ using namespace debruijn_graph;
 
 //Heuristic constants here
 
-static const int DISTANCE_DEV = 3;
+static const int DISTANCE_DEV = 20;
 static const double WEIGHT_TRESHOLD = 0;
 static const size_t READ_SIZE = 100;
 
@@ -597,7 +597,7 @@ size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Seque
 		int s = FindInGenomePath(*iter, path1);
 		if (s != -1) {
 			++pathCount;
-			INFO("Path of length " << PathLength(g, *iter) << " is found in genome path starting from edge " << s)
+			INFO("Path of length " << PathLength(g, *iter)  << " with " << iter->size() << " is found in genome path starting from edge " << s)
 		} else {
 			s = FindInGenomePath(*iter, path2);
 			if (s != -1) {

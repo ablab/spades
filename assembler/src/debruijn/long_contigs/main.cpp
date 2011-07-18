@@ -180,7 +180,7 @@ int main() {
 	}
 
 	size_t found = PathsInGenome<K>(g, index, sequence, paths);
-	INFO("Total paths found " << found);
+	INFO("Good paths found " << found << " in total " << paths.size());
 	return 0;
 }
 
