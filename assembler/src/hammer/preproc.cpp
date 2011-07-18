@@ -20,10 +20,10 @@
 #include <cstdlib>
 #include <string>
 #include <set>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 #include <map>
-#include <unordered_map>
 #include "log4cxx/logger.h"
 #include "log4cxx/basicconfigurator.h"
 #include "common/read/ireadstream.hpp"
@@ -122,7 +122,7 @@ Options ParseOptions(int argc, char * argv[]) {
  * This function reads reads from the stream and splits them into
  * k-mers. Then k-mers are written to several file almost
  * uniformly. It is guaranteed that the same k-mers are written to the
- * same files. 
+ * same files.
  * @param ifs Steam to read reads from.+
  * @param ofiles Files to write the result k-mers. They are written
  * one per line.
@@ -137,19 +137,19 @@ void SplitToFiles(ReadStream ifs, const vector<FILE*> &ofiles) {
     }
     Read r;
     ifs >> r;
-    ValidKMerGenerator<kK> gen(r);    
+    ValidKMerGenerator<kK> gen(r);
     KMer::hash hash_function;
     while (gen.HasMore()) {
       int file_id = hash_function(gen.kmer()) % file_number;
       fprintf(ofiles[file_id], "%s\n", gen.kmer().str().c_str());
       gen.Next();
-    }    
+    }
   }
 }
 
 /**
  * This function reads k-mer and calculates number of occurrences for
- * each of them. 
+ * each of them.
  * @param ifile File with k-mer to process. One per line.
  * @param ofile Output file. For each unique k-mer there will be a
  * line with k-mer itself and number of its occurrences.
