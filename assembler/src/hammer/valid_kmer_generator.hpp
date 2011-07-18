@@ -43,6 +43,9 @@ class ValidKMerGenerator {
   const Seq<kK>& kmer() {
     return kmer_;
   }
+  int pos() {
+    return pos_;
+  }
   /**
    * This functions reads next k-mer from the read and sets hasmore to
    * if succeeded. You can access k-mer read with kmer().
