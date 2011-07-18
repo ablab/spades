@@ -29,7 +29,7 @@
 template<typename ReadType>
 class Reader {
  public:
-  explicit Reader(const typename ReadType::FilenameType &filename) = 0;
+  Reader(const typename ReadType::FilenameType &filename, size_t distance = 0) = 0;
   virtual ~Reader() = 0;
   bool is_open() = 0;
   bool eof() = 0;
@@ -41,7 +41,7 @@ class Reader {
 template<>
 class Reader<SingleRead> {
  public:
-  explicit Reader(const typename SingleRead::FilenameType &filename) {
+  Reader(const typename SingleRead::FilenameType &filename, size_t distance = 0) {
     // TBD
   }
 
@@ -119,7 +119,7 @@ class Reader<PairedRead> {
   }
 
  private:
-  typename SingleRead::FilenameType filename_;
+  typename PairedRead::FilenameType filename_;
   Reader<SingleRead>* first_;
   Reader<SingleRead>* second_;
   size_t distance_;
