@@ -2,6 +2,7 @@
 #define HAMMER_VALIDKMERGENERATOR_HPP_
 #include <cmath>
 #include <string>
+#include <vector>
 /**
  * This class is designed to iterate through valid k-mers in read.
  * @example
@@ -21,7 +22,7 @@ class ValidKMerGenerator {
    * nucleotides with quality lower the threshold from the ends of the
    * read. 
    */
-  explicit ValidKMerGenerator(const Read &read, 
+  explicit ValidKMerGenerator(const Read &read,
                               uint32_t bad_quality_threshold = 2) :
       bad_quality_threshold_(bad_quality_threshold),
       pos_(-1),
