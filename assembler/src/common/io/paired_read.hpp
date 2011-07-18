@@ -9,11 +9,11 @@
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; either version 2 of
  * the License, or (at your option) any later version.
- * 
+ *
  * @section DESCRIPTION
  *
  * PairedRead is a structure, where information from input files is stored.
- * It includes 2 SingleRead elements and a distance between them.  
+ * It includes 2 SingleRead elements and a distance between them.
  */
 
 #ifndef PAIREDREAD_HPP_
@@ -22,25 +22,25 @@
 #include "common/io/single_read.hpp"
 
 class PairedRead {
-private:
+ private:
   /*
    * @variable First single read in the pair.
    */
-	SingleRead first_;
-	/*
+  SingleRead first_;
+  /*
    * @variable Second single read in the pair.
    */
   SingleRead second_;
-	/*
+  /*
    * @variable Distance between two single reads.
    */
   size_t distance_;
 
-public:
-  /* 
+ public:
+  /*
    * Default constructor.
    */
-	PairedRead() {}
+  PairedRead() {}
 
   /*
    * Conctructor from single reads.
@@ -49,7 +49,9 @@ public:
    * @param second Second single read in the pair.
    * @param distance Distance between two single reads.
    */
-	PairedRead(const SingleRead& first, const SingleRead& second, size_t distance) 
+  PairedRead(const SingleRead& first,
+             const SingleRead& second,
+             size_t distance)
     : first_(first), second_(second), distance_(distance) {}
 
   /*
@@ -57,70 +59,70 @@ public:
    *
    * @return First single read.
    */
-	const SingleRead& first() const {
-		return first_;
-	}
+  const SingleRead& first() const {
+    return first_;
+  }
 
   /*
    * Return second single read in the pair.
    *
    * @return Second single read.
    */
-	const SingleRead& second() const {
-		return second_;
-	}
+  const SingleRead& second() const {
+    return second_;
+  }
 
-  /* 
+  /*
    * Return distance of paired read.
    *
    * @return Distance.
    */
-	size_t distance() const {
-		return distance_;
-	}
+  size_t distance() const {
+    return distance_;
+  }
 
   /*
    * Check whether paired read is valid.
    *
-   * @return true if paired read is valid (both single reads are correct), 
+   * @return true if paired read is valid (both single reads are correct),
    * and false otherwise.
    */
-	bool IsValid() const {
-		return first_.IsValid() && second_.IsValid();
-	}
+  bool IsValid() const {
+    return first_.IsValid() && second_.IsValid();
+  }
 
-  /* 
-   * Return ith single read of pair (0th or 1st). If index 
+  /*
+   * Return ith single read of pair (0th or 1st). If index
    * is not 0 or 1, the assertion happens.
    *
    * @param i SingleRead index.
    * @return SingleRead on ith position of pair.
    */
-	const SingleRead& operator[] (size_t i) const {
-		if (i == 0) {
-			return first_;
-		} else if (i == 1) {
-			return second_;
-		}
-		assert(false);
-	}
-  
-  /* 
-   * Return reversed complimentary paired read (paired read with 
-   * reserve complimentary first and second single reads 
+  const SingleRead& operator[] (size_t i) const {
+    if (i == 0) {
+      return first_;
+    } else if (i == 1) {
+      return second_;
+    }
+    assert(false);
+  }
+
+  /*
+   * Return reversed complimentary paired read (paired read with
+   * reserve complimentary first and second single reads
    * and the same distance.
    *
    * @return Reversed complimentary paired read.
    */
-	const PairedRead operator!() const {
-		return PairedRead(!second_, !first_, distance_);
+  const PairedRead operator!() const {
+    return PairedRead(!second_, !first_, distance_);
   }
 
-  /* 
+  /*
    * Check whether two paired reads are equal.
    *
    * @param pairedread The paired read we want to compare ours with.
-   * @return true if these two paired reads have similar 
+   * @return true if these two paired reads have similar
    * first and second single reads and distance,
    * and false otherwise.
    */

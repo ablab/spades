@@ -22,36 +22,37 @@
 #include <cmath>
 #include <map>
 #include <ctime>
+#include <algorithm>
 
-#ifndef _CUCKOO_HPP_
-#define _CUCKOO_HPP_
+#ifndef CUCKOO_HPP_
+#define CUCKOO_HPP_
 
 namespace {
-  const static size_t D = 3;
-  const static size_t LOG_BUCKET_SIZE = 0;
-  const static size_t INIT_LENGTH = 100;
-  const static size_t MAX_LOOP_FACTOR = 5;
-  const static double STEP = 1.5;
-  const static size_t MAX_REHASH_CHAIN_LENGTH = 5;
-  const static size_t SEEDS[] = 
-    {223,	227, 229, 233, 239, 241, 251, 257, 263, 269};
+  static const size_t D = 3;
+  static const size_t LOG_BUCKET_SIZE = 0;
+  static const size_t INIT_LENGTH = 100;
+  static const size_t MAX_LOOP_FACTOR = 5;
+  static const double STEP = 1.5;
+  static const size_t MAX_REHASH_CHAIN_LENGTH = 5;
+  static const size_t SEEDS[] =
+    {223, 227, 229, 233, 239, 241, 251, 257, 263, 269};
 }
 
 /**
  * @param Key key type in hash.
  * @param Value value type in hash.
- * @param Hash function that gets data of type Key and some number 
- * (which is the number of appropriate hash function) and returns size_t 
+ * @param Hash function that gets data of type Key and some number
+ * (which is the number of appropriate hash function) and returns size_t
  * (e.g. Hash(int, size_t)).
  * @param Equal predicator that compares two Key values.
  * @example cuckoo<int, int, Hasher, std::key_equal_to<int> > Cuckoo;
  */
-template <class Key, class Value, class Hash, class Equal> 
+template <class Key, class Value, class Hash, class Equal>
 class cuckoo {
-private:
+ private:
   typedef pair<Key, Value> Data;
   /**
-   * @variable The number of hash functions (thus arrays also) 
+   * @variable The number of hash functions (thus arrays also)
    * that will be used in the program (can be >= 2).
    */
   size_t d_;
@@ -66,7 +67,7 @@ private:
   size_t log_bucket_size_;
   /**
    * @variable The initial length of the whole structure.
-   * When you know the approximate number of records to be used, 
+   * When you know the approximate number of records to be used,
    * it is a good idea to take this value in 1.05-1.1 times more and
    * small value of step.
    */
@@ -85,7 +86,7 @@ private:
    */
   double load_factor_;
   /**
-   * @variable The maximum number of kick cycles during 
+   * @variable The maximum number of kick cycles during
    * insertion before rehash.
    */
   size_t max_loop_;
@@ -95,8 +96,8 @@ private:
    */
   size_t max_loop_factor_;
   /**
-   * @variable The ratio of increasing the size of hash during rehash. 
-   * The less it is the less memory will be used but the more time is needed. 
+   * @variable The ratio of increasing the size of hash during rehash.
+   * The less it is the less memory will be used but the more time is needed.
    */
   double step_;
   /**
@@ -104,36 +105,36 @@ private:
    */
   size_t rehash_chain_length_;
   /**
-   * @variable The prime number that is used as a base for hash 
+   * @variable The prime number that is used as a base for hash
    * function. Should be changed every rehash.
    */
-  size_t seed_; 
+  size_t seed_;
   /**
    * @variable The hash function object (template parameter by default).
    */
   Hash hasher_;
   /**
-   * @variable The equal predicator object (template parameter by default).  
+   * @variable The equal predicator object (template parameter by default).
    */
   Equal key_equal_;
-  /** 
+  /**
    * @variable The array of vectors, each of which is hash array.
-   */ 
+   */
   Data** data_;
   /**
    * @variable The array of flags indicating existence of the element in hash.
-   */  
+   */
   char* exists_;
   /**
    * @variable The actual number of elements in cuckoo hash.
-   */  
+   */
   size_t size_;
   /**
    * @variable The flag that anounces that rehash was made recently.
    */
   bool is_rehashed_;
 
-public:
+ public:
   friend class iterator;
   friend class const_iterator;
 
@@ -155,7 +156,7 @@ public:
     const_iterator() : pos(0), hash(NULL) {}
 
     void operator=(const const_iterator& it) {
-      pos = it.pos; 
+      pos = it.pos;
       hash = it.hash;
     }
 
@@ -171,12 +172,12 @@ public:
       }
       return *this;
     }
-    
-    const_iterator operator++(int) {
+
+    const_iterator operator++(int i) {
       const_iterator res = *this;
       this->operator++();
       return res;
-    } 
+    }
 
     const Data& operator*() const {
       return (*hash).data_from(pos);
@@ -237,7 +238,7 @@ public:
       return *this;
     }
 
-    iterator operator++(int) {
+    iterator operator++(int i) {
       iterator res = *this;
       this->operator++();
       return res;
@@ -260,7 +261,7 @@ public:
     }
   };
 
-private:
+ private:
 
   /**
    * Check whether there is a Data element at pos.
@@ -269,7 +270,8 @@ private:
    * @return true if some element presents on this position, false otherwise.
    */
   bool get_exists(size_t pos) const {
-    return (bool)(exists_[pos >> 3] & (1 << (pos - ((pos >> 3) << 3))));
+    return static_cast<bool>(exists_[pos >> 3] &
+                             (1 << (pos - ((pos >> 3) << 3))));
   }
 
   /**
@@ -297,11 +299,11 @@ private:
     len_part_ = init_length_ / d_ + 1;
     len_part_ = ((len_part_ + 7) >> 3) << 3;
     len_ = len_part_ * d_;
-    data_ = (Data**)(malloc(d_ * sizeof(Data*)));
+    data_ = reinterpret_cast<Data**>(malloc(d_ * sizeof(Data*)));
     for (size_t i = 0; i < d_; ++i) {
-      data_[i] = (Data*)(malloc(len_part_ * sizeof(Data)));
+      data_[i] = reinterpret_cast<Data*>(malloc(len_part_ * sizeof(Data)));
     }
-    exists_ = (char*)(malloc((len_ >> 3) * sizeof(char)));
+    exists_ = reinterpret_cast<char*>(malloc(len_ >> 3));
     for (size_t i = 0; i < len_ >> 3; ++i) exists_[i] = 0;
     size_ = 0;
     is_rehashed_ = false;
@@ -374,24 +376,25 @@ private:
    * @return Hash value.
    */
   inline size_t hash(const Key& k, size_t hash_num) const {
-    return hasher_(k, hash_num, seed_) 
+    return hasher_(k, hash_num, seed_)
       % (len_part_ >> log_bucket_size_);
   }
-  
+
   /**
    * Increase size of exists_ up to len_temp_.
    *
    * @param len_temp_ New size of exists_.
    */
-  void update_exists(size_t len_temp_) { 
-    char* t = (char*)(malloc((len_ >> 3) * sizeof(char)));
+  void update_exists(size_t len_temp_) {
+    char* t = reinterpret_cast<char*>(malloc(len_ >> 3));
     char* s = t;
     char* f = s + (len_ >> 3);
     for (; s < f; ++s) {
       *s = 0;
-    } 
+    }
     for (size_t i = 0; i < d_; ++i) {
-      memcpy(t + (i * (len_part_ >> 3)), exists_ + (i * (len_temp_ >> 3)), (len_temp_ >> 3));
+      memcpy(t + (i * (len_part_ >> 3)), exists_ + (i * (len_temp_ >> 3)),
+             (len_temp_ >> 3));
     }
     std::swap(t, exists_);
     free(t);
@@ -404,11 +407,11 @@ private:
    */
   void update_data(size_t len_temp_) {
     for (size_t i = 0; i < d_; ++i) {
-      Data* t = (Data*)(malloc(len_part_ * sizeof(Data)));
+      Data* t = reinterpret_cast<Data*>(malloc(len_part_ * sizeof(Data)));
       memcpy(t, data_[i], len_temp_*sizeof(Data));
       std::swap(t, data_[i]);
       free(t);
-    } 
+    }
   }
 
   /**
@@ -425,7 +428,7 @@ private:
     len_part_ = ((len_part_ + 8) >> 3) << 3;
     len_ = len_part_ * d_;
     max_loop_ = max_loop_factor_ * round(log(len_part_)) + 1;
-    
+
     update_exists(len_temp_);
     update_data(len_temp_);
 
@@ -443,7 +446,7 @@ private:
           it = begin();
           is_rehashed_ = false;
         }
-      } else { 
+      } else {
         ++it;
       }
     }
@@ -461,18 +464,18 @@ private:
       for (size_t j = 0; j < d_; ++j) {
         size_t pos = hash(p.first, j) << log_bucket_size_;
         for (size_t l = 0; l < bucket_size_ - 1; ++l) {
-          if (get_exists(j * len_part_ + pos)) 
+          if (get_exists(j * len_part_ + pos))
             ++pos;
-          else 
+          else
             break;
         }
         std::swap(p, data_[j][pos]);
-        bool exists = get_exists(j * len_part_ + pos); 
+        bool exists = get_exists(j * len_part_ + pos);
         set_exists(j * len_part_ + pos);
         if (!exists) {
           ++size_;
           return 0;
-        } 
+        }
       }
     }
     if (rehash_chain_length_ != MAX_REHASH_CHAIN_LENGTH)
@@ -488,44 +491,44 @@ private:
    * @param it Iterator to element to be removed.
    * @return Iterator to next element after removed.
    */
-  iterator remove(iterator& it) {
+  iterator& remove(iterator& it) {
     unset_exists(it.pos);
-    --size_;    
+    --size_;
     return ++it;
   }
 
-public:
-  /** 
+ public:
+  /**
    * Default constructor.
    *
    * @param d The number of hash functions (thus arrays also) 
    * that will be used in the program (can be >= 2).
    * @param log_bucket_size The log_2 from the bucket size.
    * @param init_length The initial length of the whole structure.
-   * When you know the approximate number of records to be used, 
+   * When you know the approximate number of records to be used,
    * it is a good idea to take this value in 1.05-1.1 times more and
    * small value of step.
    * @param max_loop_factor The factor that denotes dependency of max_loop_
    * from len_part_.
-   * @param step The ratio of increasing the size of hash during rehash. 
-   * The less it is the less memory will be used but the more time is needed. 
+   * @param step The ratio of increasing the size of hash during rehash.
+   * The less it is the less memory will be used but the more time is needed.
    * @param hasher The hash function object (template parameter by default).
-   * @param equal The equal predicator object (template parameter by default).  
-   */  
-  explicit cuckoo(size_t d = D, 
+   * @param equal The equal predicator object (template parameter by default).
+   */
+  explicit cuckoo(size_t d = D,
                   size_t log_bucket_size = LOG_BUCKET_SIZE,
-                  size_t init_length = INIT_LENGTH, 
-                  size_t max_loop_factor = MAX_LOOP_FACTOR, 
-                  double step = STEP, 
-                  const Hash& hasher = Hash(), 
+                  size_t init_length = INIT_LENGTH,
+                  size_t max_loop_factor = MAX_LOOP_FACTOR,
+                  double step = STEP,
+                  const Hash& hasher = Hash(),
                   const Equal& equal = Equal())
     : d_(d), log_bucket_size_(log_bucket_size),
-      init_length_(init_length), 
-      max_loop_factor_(max_loop_factor), step_(step),  
+      init_length_(init_length),
+      max_loop_factor_(max_loop_factor), step_(step),
       hasher_(hasher), key_equal_(equal) {
     init();
   }
-  
+
   /**
    * Destructor.
    */
@@ -556,13 +559,13 @@ public:
 
   /**
    * Constructor from range [fisrt, last).
-   * 
+   *
    * @param first The begin of range iterator.
    * @param last The end of range iterator.
    */
   template <class InputIterator>
-  cuckoo(InputIterator first, InputIterator last, 
-         const Hash& hasher = Hash(), 
+  cuckoo(InputIterator first, InputIterator last,
+         const Hash& hasher = Hash(),
          const Equal& equal = Equal()) {
     d_ = D;
     log_bucket_size_ = LOG_BUCKET_SIZE;
@@ -625,7 +628,7 @@ public:
     if (!get_exists(it.pos)) ++it;
     return it;
   }
-  
+
   /**
    * Get const_iterator to begin of cuckoo (for const objects).
    *
@@ -636,7 +639,7 @@ public:
     if (!get_exists(it.pos)) ++it;
     return it;
   }
-  
+
   /**
    * Get iterator to end of cuckoo.
    *
@@ -714,8 +717,8 @@ public:
       size_t pos = hash(k, i) << log_bucket_size_;
       size_t position = pos + dist;
       for (size_t l = 0; l < bucket_size_; ++l) {
-        if (key_equal_(data_[i][pos].first, k) 
-            && (get_exists(position))) {    
+        if (key_equal_(data_[i][pos].first, k)
+            && (get_exists(position))) {
           return iterator(position, this);
         }
         ++pos;
@@ -725,12 +728,12 @@ public:
     }
     return end();
   }
-  
+
   /**
    * Find element by key (for const objects).
    *
    * @param k Key value
-   * @return Const_iterator to element or to end of cuckoo, if element 
+   * @return Const_iterator to element or to end of cuckoo, if element
    * doesn't exist.
    */
   const_iterator find(const Key& k) const {
@@ -739,8 +742,8 @@ public:
       size_t pos = hash(k, i) << log_bucket_size_;
       size_t position = pos + dist;
       for (size_t l = 0; l < bucket_size_; ++l) {
-        if (key_equal_(data_[i][pos].first, k) 
-            && (get_exists(position))) {    
+        if (key_equal_(data_[i][pos].first, k)
+            && (get_exists(position))) {
           return const_iterator(position, this);
         }
         ++pos;
@@ -760,14 +763,14 @@ public:
   size_t count(const Key& k) const {
     return (find(k)).pos != len_;
   }
-  
+
   /**
    * Find range of elements with key.
    *
    * @param k Key value.
    * @return Pair that determines the range [fisrt, last) or
    * pair with both iterators pointing to the end of cuckoo.
-   */ 
+   */
   pair<iterator, iterator> equal_range(const Key& k) {
     iterator l = find(k);
     iterator r = l;
@@ -780,14 +783,14 @@ public:
    * @param k Key value
    * @return Pair that determines the range [fisrt, last) or
    * pair with both iterator pointing to the end of cuckoo.
-   */ 
+   */
   pair<const_iterator, const_iterator> equal_range(const Key& k) const {
     const_iterator l = find(k);
     const_iterator r = l;
     return std::make_pair(l, ++r);
   }
 
-  /** 
+  /**
    * Insert Data element to cuckoo.
    *
    * @param k The new Data element.
@@ -799,7 +802,7 @@ public:
     iterator res = find(k.first);
     if (res.pos != len_) {
       return make_pair(res, false);
-    } 
+    }
     add_new(k);
     res = find(k.first);
     return make_pair(res, true);
@@ -817,9 +820,9 @@ public:
     for (iterator it = first; it.pos != last_pos; ++it) {
       insert(*it);
     }
-  } 
+  }
 
-  /** 
+  /**
    * Clear all data from cuckoo.
    */
   void clear() {
@@ -829,18 +832,18 @@ public:
 
   /**
    * Check whether cuckoo is empty.
-   * 
+   *
    * @return true of cuckoo is empty and false otherwise.
    */
   inline bool empty() const {
     return (size_ == 0);
   }
- 
+
   /**
    * Show size of cuckoo.
    *
    * @return Size of cuckoo.
-   */ 
+   */
   inline size_t size() const {
     return size_;
   }
@@ -849,7 +852,7 @@ public:
    * Show length of cuckoo (actual number of elements).
    *
    * @return Length of cuckoo.
-   */ 
+   */
   inline size_t length() const {
     return len_;
   }
@@ -867,7 +870,6 @@ public:
     else
       return load_factor_;
   }
-
 };
 
-#endif /* _CUCKOO_HPP_ */
+#endif /* CUCKOO_HPP_ */

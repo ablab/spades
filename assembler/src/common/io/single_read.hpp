@@ -9,28 +9,27 @@
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; either version 2 of
  * the License, or (at your option) any later version.
- * 
+ *
  * @section DESCRIPTION
  *
  * SingleRead is a structure, where information from input files is stored.
- * It includes 3 strings: with id, sequence and quality of the input read.  
+ * It includes 3 strings: with id, sequence and quality of the input read.
  */
 
 #ifndef SINGLEREAD_HPP_
 #define SINGLEREAD_HPP_
 
 #include <string>
-#include <iostream>
 #include <cassert>
 #include "common/sequence/quality.hpp"
 #include "common/sequence/sequence.hpp"
 #include "common/sequence/nucl.hpp"
 #include "common/sequence/sequence_tools.hpp"
-#include "simple_tools.hpp"
+#include "common/simple_tools.hpp"
 
 class SingleRead {
-private:
-  /* 
+ private:
+  /*
    * @variable The name of single read in input file.
    */
   std::string name_;
@@ -47,27 +46,27 @@ private:
    */
   bool valid_;
   friend class ireadstream;
-  
-  /* 
+
+  /*
    * Set name of single read.
-   * 
+   *
    * @param new_name New name.
    */
   void set_name(const char* new_name) {
     name_ = new_name;
   }
-  
-  /* 
+
+  /*
    * Set sequence of single read.
-   * 
+   *
    * @param new_sequence New sequence.
    */
   void set_sequence(const char* new_sequence) {
     seq_ = new_sequence;
     valid_ = UpdateValid();
   }
-  
-  /* 
+
+  /*
    * Set quality of single read.
    *
    * @param new_quality New quality of single read.
@@ -80,10 +79,10 @@ private:
       qual_[i] -= offset;
     }
   }
-  
-  /* 
+
+  /*
    * Update valid_ flag.
-   * 
+   *
    * @see IsValid()
    */
   const bool UpdateValid() const {
@@ -101,15 +100,15 @@ private:
     return true;
   }
 
-public:
+ public:
   static const int PHRED_OFFSET = 33;
   static const int BAD_QUALITY_THRESHOLD = 2;
-  
+
   /*
    * Default constructor.
    */
   SingleRead() : valid_(false) {}
-  
+
   /*
    * Test constructor.
    *
@@ -117,10 +116,10 @@ public:
    * @param seq The sequence of ATGC letters.
    * @param qual The quality of the single read sequence.
    */
-  SingleRead(const std::string& name, 
-             const std::string& seq, 
-             const std::string& qual) 
-    : name_(name), seq_(seq), qual_(qual) { 
+  SingleRead(const std::string& name,
+             const std::string& seq,
+             const std::string& qual)
+    : name_(name), seq_(seq), qual_(qual) {
     valid_ = UpdateValid();
   }
 
@@ -138,7 +137,7 @@ public:
    * Return Sequence object, got from sequence string.
    *
    * @return Single read sequence.
-   */ 
+   */
   Sequence sequence() const {
     assert(valid_);
     return Sequence(seq_);
@@ -148,13 +147,13 @@ public:
    * Return Quality object, got from quality string.
    *
    * @return Single read quality.
-   */ 
+   */
   Quality quality() const {
     assert(valid_);
     return Quality(qual_);
   }
 
-  /* 
+  /*
    * Return name of single read.
    *
    * @return Single read name.
@@ -168,31 +167,31 @@ public:
    *
    * @return The size of single read sequence.
    */
-  size_t size() const { 
+  size_t size() const {
     return seq_.size();
   }
 
-  /* 
+  /*
    * Return single read sequence string (in readable form with ATGC).
    *
    * @return Single read sequence string.
    */
-  const std::string& GetSequenceString() const { 
+  const std::string& GetSequenceString() const {
     return seq_;
   }
 
-  /* 
+  /*
    * Return single read quality string (in readable form).
    *
    * @return Single read quality string.
    */
-  const std::string& GetQualityString() const {  
+  const std::string& GetQualityString() const {
     return qual_;
   }
 
   /*
-   * Return single read quality string, where every quality value is 
-   * increased by offset (need for normalization of quality values). 
+   * Return single read quality string, where every quality value is
+   * increased by offset (need for normalization of quality values).
    * Do not modify original quality values.
    *
    * @param offset The offset of single read quality (PHRED_OFFSET by default).
@@ -207,7 +206,7 @@ public:
   }
 
   /*
-   * Return ith nucleotide of single read sequence in unreadable form 
+   * Return ith nucleotide of single read sequence in unreadable form
    * (0, 1, 2 or 3).
    *
    * @param i Nucleotide index.
@@ -218,8 +217,8 @@ public:
     return dignucl(seq_[i]);
   }
 
-  /* 
-   * Return reversed complimentary single read (single read with new name, 
+  /*
+   * Return reversed complimentary single read (single read with new name,
    * reversed complimentary sequence, and reversed quality).
    *
    * @return Reversed complimentary single read.
@@ -234,7 +233,7 @@ public:
     return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_));
   }
 
-  /* 
+  /*
    * Check whether two single reads are equal.
    *
    * @param singleread The single read we want to compare ours with.
