@@ -20,9 +20,12 @@
 #define HAMMER_KMERFUNCTIONS_HPP_
 #include <vector>
 #include "common/read/read.hpp"
-#include "hammer_config.hpp"
 
-
+// Strange structure. Looks like freq is never used.
+struct KMerStat {
+  size_t count;
+  float freq;
+};
 /**
  * trim bad quality nucleotides from start and end of the read
  * @return size of the read left
@@ -72,26 +75,5 @@ void AddKMers(const Read &r, KMerStatMap *v) {
     ++(*v)[kmers[i]].count;
   }
 }
-
-/**
- * @param kmer get next valid k-mer
- * @param pos starting point
- * @return the first starting point of a valid k-mer >=start; return
- * -1 if no such place exists
- */
-int32_t NextValidKmer(const Read &r, int32_t pos, KMer & kmer);
-
-/**
- * get next valid kmer in a new position
- */
-int32_t getKmerAnew( const std::string & seq, int32_t pos, KMer & kmer );
-
-/**
- * add k-mers from read to map
- */
-void AddKMers(const Read &r, uint64_t readno, KMerStatMap *v);
-
-vector<KMer> GetKMers(const Read &r);
-
 
 #endif  // HAMMER_KMERFUNCTIONS_HPP_
