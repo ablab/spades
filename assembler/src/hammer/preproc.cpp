@@ -45,10 +45,11 @@ using log4cxx::LoggerPtr;
 using log4cxx::Logger;
 using log4cxx::BasicConfigurator;
 
-const uint32_t K = 2;
-typedef Seq<K> KMer;
-typedef RCReaderWrapper<ireadstream, Read> ReadStream;
 namespace {
+
+const uint32_t kK = 2;
+typedef Seq<kK> KMer;
+typedef RCReaderWrapper<ireadstream, Read> ReadStream;
 
 LoggerPtr logger(Logger::getLogger("preproc"));
 /**
@@ -136,7 +137,7 @@ void SplitToFiles(ReadStream ifs, const vector<FILE*> &ofiles) {
     }
     Read r;
     ifs >> r;
-    ValidKMerGenerator<K> gen(r);    
+    ValidKMerGenerator<kK> gen(r);    
     KMer::hash hash_function;
     while (gen.HasMore()) {
       int file_id = hash_function(gen.kmer()) % file_number;
@@ -155,10 +156,10 @@ void SplitToFiles(ReadStream ifs, const vector<FILE*> &ofiles) {
  */
 template<typename KMerStatMap>
 void EvalFile(FILE *ifile, FILE *ofile) {
-  char buffer[K + 1];
+  char buffer[kK + 1];
   KMerStatMap stat_map;
   char format[10];
-  snprintf(format, sizeof(format), "%%%ds", K);
+  snprintf(format, sizeof(format), "%%%ds", kK);
   while (fscanf(ifile, format, buffer) != EOF) {
     KMer kmer(buffer);
     ++stat_map[kmer].count;
@@ -179,7 +180,7 @@ void EvalFile(FILE *ifile, FILE *ofile) {
  * @param ofile Output file.
  */
 void MergeAndSort(const vector<FILE*> &ifiles, FILE *ofile) {
-  KMerPartJoiner joiner(ifiles, K);
+  KMerPartJoiner joiner(ifiles, kK);
   while (!joiner.IsEmpty()) {
     pair<string, int> kmer_stat = joiner.Next();
     fprintf(ofile, "%s %d\n", kmer_stat.first.c_str(), kmer_stat.second);
