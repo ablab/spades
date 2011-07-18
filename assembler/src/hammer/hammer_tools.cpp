@@ -165,7 +165,7 @@ void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rsmc, vector<S
 			for (int i = j; i < K; i += tau+1) {
 				sub += p.first[i];
 			}
-			StringKMer skm; skm.sub = sub; skm.count = kmerno; skm.kmer = p.first;
+			StringKMer skm; skm.sub = sub; skm.kmerno = kmerno;
 			vs->at(j).push_back(skm);
 			//for (int m=0; m< vs->at(j)[vs->at(j).size() - 1].sub.size(); ++m) cout << nucl(vs->at(j)[vs->at(j).size() - 1].sub[m]);
 			//cout << "  ";
