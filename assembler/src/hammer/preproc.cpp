@@ -123,7 +123,7 @@ Options ParseOptions(int argc, char * argv[]) {
  * k-mers. Then k-mers are written to several file almost
  * uniformly. It is guaranteed that the same k-mers are written to the
  * same files.
- * @param ifs Steam to read reads from.+
+ * @param ifs Steam to read reads from.
  * @param ofiles Files to write the result k-mers. They are written
  * one per line.
  */
