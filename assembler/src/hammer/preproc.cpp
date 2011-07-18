@@ -29,8 +29,9 @@
 #include "common/read/ireadstream.hpp"
 #include "common/read/read.hpp"
 #include "hammer/defs.hpp"
-#include "hammer/kmer_functions.hpp"
 #include "hammer/kmer_part_joiner.hpp"
+#include "hammer/kmer_stat.hpp"
+#include "hammer/valid_kmer_generator.hpp"
 
 using std::make_pair;
 using std::pair;
@@ -43,7 +44,7 @@ using log4cxx::LoggerPtr;
 using log4cxx::Logger;
 using log4cxx::BasicConfigurator;
 
-const uint32_t K = 21;
+const uint32_t K = 2;
 typedef Seq<K> KMer;
 
 namespace {
@@ -120,7 +121,7 @@ Options ParseOptions(int argc, char * argv[]) {
  * k-mers. Then k-mers are written to several file almost
  * uniformly. It is guaranteed that the same k-mers are written to the
  * same files. 
- * @param ifs Steam to read reads from.
+ * @param ifs Steam to read reads from.+
  * @param ofiles Files to write the result k-mers. They are written
  * one per line.
  */
@@ -134,16 +135,15 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles) {
     }
     Read r;
     ifs >> r;
-    if (TrimBadQuality(&r) >= K) {
-      vector<KMer> kmers = GetKMers<K>(r);
-      vector<KMer> compl_kmers = GetKMers<K>(!r);
-      kmers.insert(kmers.end(), compl_kmers.begin(), compl_kmers.end());
-      KMer::hash hash_function;
-      for (uint32_t i = 0; i < kmers.size(); ++i) {
-        int file_id = hash_function(kmers[i]) % file_number;
-        fprintf(ofiles[file_id], "%s\n", kmers[i].str().c_str());
-      }
-    }
+    ValidKMerGenerator<K> gen(r);    
+    KMer::hash hash_function;
+    while (gen.HasMore()) {
+      int file_id = hash_function(gen.kmer()) % file_number;
+      fprintf(ofiles[file_id], "%s\n", gen.kmer().str().c_str());
+      file_id = hash_function(!gen.kmer()) % file_number;
+      fprintf(ofiles[file_id], "%s\n", (!gen.kmer()).str().c_str());
+      gen.Next();
+    }    
   }
 }
 
