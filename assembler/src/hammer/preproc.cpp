@@ -27,6 +27,7 @@
 #include "log4cxx/logger.h"
 #include "log4cxx/basicconfigurator.h"
 #include "common/read/ireadstream.hpp"
+#include "common/read/strobe_read.hpp"
 #include "common/read/read.hpp"
 #include "hammer/defs.hpp"
 #include "hammer/kmer_part_joiner.hpp"
@@ -44,10 +45,11 @@ using log4cxx::LoggerPtr;
 using log4cxx::Logger;
 using log4cxx::BasicConfigurator;
 
-const uint32_t K = 2;
-typedef Seq<K> KMer;
-
 namespace {
+
+const uint32_t kK = 2;
+typedef Seq<kK> KMer;
+typedef RCReaderWrapper<ireadstream, Read> ReadStream;
 
 LoggerPtr logger(Logger::getLogger("preproc"));
 /**
@@ -125,7 +127,7 @@ Options ParseOptions(int argc, char * argv[]) {
  * @param ofiles Files to write the result k-mers. They are written
  * one per line.
  */
-void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles) {
+void SplitToFiles(ReadStream ifs, const vector<FILE*> &ofiles) {
   uint32_t file_number = ofiles.size();
   uint32_t read_number = 0;
   while (!ifs.eof()) {
@@ -135,13 +137,11 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles) {
     }
     Read r;
     ifs >> r;
-    ValidKMerGenerator<K> gen(r);    
+    ValidKMerGenerator<kK> gen(r);    
     KMer::hash hash_function;
     while (gen.HasMore()) {
       int file_id = hash_function(gen.kmer()) % file_number;
       fprintf(ofiles[file_id], "%s\n", gen.kmer().str().c_str());
-      file_id = hash_function(!gen.kmer()) % file_number;
-      fprintf(ofiles[file_id], "%s\n", (!gen.kmer()).str().c_str());
       gen.Next();
     }    
   }
@@ -156,10 +156,10 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles) {
  */
 template<typename KMerStatMap>
 void EvalFile(FILE *ifile, FILE *ofile) {
-  char buffer[K + 1];
+  char buffer[kK + 1];
   KMerStatMap stat_map;
   char format[10];
-  snprintf(format, sizeof(format), "%%%ds", K);
+  snprintf(format, sizeof(format), "%%%ds", kK);
   while (fscanf(ifile, format, buffer) != EOF) {
     KMer kmer(buffer);
     ++stat_map[kmer].count;
@@ -180,7 +180,7 @@ void EvalFile(FILE *ifile, FILE *ofile) {
  * @param ofile Output file.
  */
 void MergeAndSort(const vector<FILE*> &ifiles, FILE *ofile) {
-  KMerPartJoiner joiner(ifiles, K);
+  KMerPartJoiner joiner(ifiles, kK);
   while (!joiner.IsEmpty()) {
     pair<string, int> kmer_stat = joiner.Next();
     fprintf(ofile, "%s %d\n", kmer_stat.first.c_str(), kmer_stat.second);
@@ -204,7 +204,8 @@ int main(int argc, char * argv[]) {
       snprintf(filename, sizeof(filename), "%u.kmer.part", i);
       ofiles[i] = fopen(filename, "w");
     }
-    SplitToFiles(ireadstream(opts.ifile, opts.qvoffset), ofiles);
+    ireadstream ir(opts.ifile, opts.qvoffset);
+    SplitToFiles(ReadStream(ir), ofiles);
     for (uint32_t i = 0; i < opts.file_number; ++i) {
       fclose(ofiles[i]);
     }
