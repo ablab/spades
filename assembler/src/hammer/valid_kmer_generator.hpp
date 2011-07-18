@@ -43,6 +43,9 @@ class ValidKMerGenerator {
   const Seq<kK>& kmer() {
     return kmer_;
   }
+  /**
+   * @result last k-mer position in initial read.
+   */
   int pos() {
     return pos_;
   }
