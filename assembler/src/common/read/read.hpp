@@ -91,15 +91,15 @@ public:
     size_t start = 0;
     for (; start < seq_.size(); ++start) {
       if (qual_[start] > BAD_QUALITY_THRESHOLD)
-	break;
+        break;
     }
     if (start != seq_.size()) {
       seq_.erase(seq_.begin(), seq_.begin() + start);
       qual_.erase(qual_.begin(), qual_.begin() + start);
       size_t end = seq_.size();
       for (; end > 0; --end) {
-	if (qual_[end] > BAD_QUALITY_THRESHOLD)
-	  break;
+        if (qual_[end] > BAD_QUALITY_THRESHOLD)
+          break;
       }
       seq_.erase(seq_.begin() + end + 1, seq_.end());
       qual_.erase(qual_.begin() + end + 1, qual_.end());
@@ -148,7 +148,7 @@ private:
   std::string qual_;
   bool valid_;
   friend class ireadstream;
-  friend size_t TrimBadQuality(Read&, int);
+  friend uint32_t TrimBadQuality(Read*, int);
   void setName(const char* s) {
     name_ = s;
   }

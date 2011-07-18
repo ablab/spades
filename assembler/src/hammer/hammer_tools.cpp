@@ -124,7 +124,7 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 		// reading a batch of reads
 		for (int thr = 0; thr < READ_BATCH_SIZE; ++thr) {
 			ifs >> r; 
-			if (TrimBadQuality(r) >= K) {
+			if (TrimBadQuality(&r) >= K) {
 				rv.push_back(r);
 			}
 			if (ifs.eof()) break;
@@ -137,8 +137,8 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 		cout << "Batch " << tmpc << " read.\n"; flush(cout);
 		#pragma omp parallel for shared(rv, vv, ofs) num_threads(nthreads)
 		for(int i=0; i<rv.size(); ++i) {
-			AddKMers(rv[i], vv[omp_get_thread_num() + cur_maps * nthreads]);
-			AddKMers(!(rv[i]), vv[omp_get_thread_num() + cur_maps * nthreads]);
+                  AddKMers<K>(rv[i], &vv[omp_get_thread_num() + cur_maps * nthreads]);
+                  AddKMers<K>(!(rv[i]), &vv[omp_get_thread_num() + cur_maps * nthreads]);
 		}
 		cout << "Batch " << tmpc << " added.\n"; flush(cout);
 		rv.clear();
