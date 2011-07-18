@@ -125,7 +125,7 @@ void ValidKMerGenerator<kK>::Next() {
       has_more_ = false;
     }
   } else {
-    // good case we can just cyclic shift our answer
+    // good case we can just shift our previous answer
     kmer_ = kmer_ << seq_[pos_ + kK - 1];
     error_probability_ *= Prob(qual_[pos_ + kK - 1]);
     ++pos_;
