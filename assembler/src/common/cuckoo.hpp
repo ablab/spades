@@ -440,7 +440,7 @@ class cuckoo {
       ++n;
       if (j != hash((*it).first, i)) {
         Data t = *it;
-        remove(it);
+        remove_and_increase_iterator(it);
         add_new(t);
         if (is_rehashed_) {
           it = begin();
@@ -486,22 +486,23 @@ class cuckoo {
   }
 
   /**
-   * Remove element from cuckoo.
+   * Remove element from cuckoo. After operation iterator is correct
+   * and it points to the next element after removed one.
    *
    * @param it Iterator to element to be removed.
    * @return Iterator to next element after removed.
    */
-  iterator& remove(iterator& it) {
+  void remove_and_increase_iterator(iterator& it) {
     unset_exists(it.pos);
     --size_;
-    return ++it;
+    ++it;
   }
 
  public:
   /**
    * Default constructor.
    *
-   * @param d The number of hash functions (thus arrays also) 
+   * @param d The number of hash functions (thus arrays also)
    * that will be used in the program (can be >= 2).
    * @param log_bucket_size The log_2 from the bucket size.
    * @param init_length The initial length of the whole structure.
@@ -674,7 +675,7 @@ class cuckoo {
    * @param it Iterator to Data element to be removed.
    */
   void erase(iterator it) {
-    remove(it);
+    remove_and_increase_iterator(it);
   }
 
   /**
@@ -685,7 +686,7 @@ class cuckoo {
    */
   void erase(iterator first, iterator last) {
     while (first.pos != last.pos) {
-      first = remove(first);
+      remove_and_increase_iterator(first);
     }
   }
 
@@ -698,7 +699,7 @@ class cuckoo {
   size_t erase(const Key& k) {
     iterator it = find(k);
     if (it.pos != len_) {
-      remove(it);
+      remove_and_increase_iterator(it);
       return 1;
     }
     return 0;
