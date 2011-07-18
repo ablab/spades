@@ -18,6 +18,8 @@
 #include "hammerread.hpp"
 #include "hammer_config.hpp"
 #include "sequence/seq.hpp"
+#include "kmer_stat.hpp"
+
 
 using namespace std;
 
@@ -30,6 +32,12 @@ string encode3toabyte (const string & s);
 
 /// join two maps
 void join_maps(KMerStatMap & v1, const KMerStatMap & v2);
+
+/**
+ * add k-mers from read to map
+ */
+template<uint32_t kK, typename KMerStatMap>
+void AddKMers(const Read &r, uint64_t readno, KMerStatMap *v);
 
 class ReadStatMapContainer {
 public:
@@ -49,8 +57,11 @@ private:
 void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerStatMap> * vv, vector<ReadStat> * rv);
 void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rmsc, vector<StringKMerVector> * vs, vector<KMerCount> * kmers, vector<ReadStat> * rv);
 
-/// correct a read in place
-void CorrectRead(const map<KMer, KMer, KMer::less2> & changes, const unordered_set<KMer, KMer::hash> & good, Read * r, bool print_debug = false);
+/**
+  * correct a read in place
+  * @return whether the read has changed at all
+  */
+bool CorrectRead(const map<KMer, KMer, KMer::less2> & changes, const unordered_set<KMer, KMer::hash> & good, const vector<KMerCount> & kmers, ReadStat * r, ofstream * ofs = NULL);
 
 #endif
 

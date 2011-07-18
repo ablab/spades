@@ -20,12 +20,13 @@ using namespace std;
 // STEP 1: declare the type of file handler and the read() function
 KSEQ_INIT(gzFile, gzread)
 
-
 struct ReadStat {
 	Read read;
+	// kmer indices
 	map<uint32_t, uint64_t> kmers;
+	// revcomp kmer indices
+	map<uint32_t, uint64_t> kmers_rev;
 };
-
 
 /*
  * Read name, seq and qual strings from FASTQ data (one by one)

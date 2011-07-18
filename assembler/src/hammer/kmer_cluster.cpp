@@ -93,6 +93,12 @@ void KMerClustering::clusterMerge(vector<unionFindClass *>uf, unionFindClass * u
 		classes.clear();
 		uf[i]->get_classes(classes);
 		delete uf[i];
+		/*cout << "classes[" << i << "]: ";
+		for (uint32_t j = 0; j < classes.size(); j++) {
+			for (uint32_t k = 0; k < classes[j].size(); k++) cout << classes[j][k] << " ";
+			cout << "|";
+		}
+		cout << endl;*/
 		for (uint32_t j = 0; j < classes.size(); j++) {
 			uint32_t first = classes[j][0];
 			ufMaster->find_set(first);
@@ -364,8 +370,8 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 				// cout << "  pushing consensus\n";
 				KMerCount consensus; 
 				consensus.first = bestCenters[k].first; 
-				consensus.second.count = 0; consensus.second.freq = 0.0;
-				
+				consensus.second.count = 0;
+
 				#pragma omp critical
 				{
 					k_.push_back(consensus);
@@ -382,10 +388,10 @@ void KMerClustering::process(string dirprefix, const vector<StringKMerVector> & 
 	map<KMer, KMer, KMer::less2> * changes, unordered_set<KMer, KMer::hash> * good) {
 	
 	int effective_threads = min(nthreads_, tau_+1);
-	vector<unionFindClass *> uf(effective_threads);
+	vector<unionFindClass *> uf(tau_ + 1);
 
 	#pragma omp parallel for shared(uf) num_threads(effective_threads)
-	for (int i = 0; i < effective_threads; i++) {
+	for (int i = 0; i < tau_ + 1; i++) {
 		uf[i] = new unionFindClass(k_.size()); 
 
 		cout << "Processing split kmers " << i << ", total " << vs[i].size() << "\n";
@@ -437,14 +443,23 @@ void KMerClustering::process(string dirprefix, const vector<StringKMerVector> & 
 		for (uint32_t i=0; i < blocks[n].size(); ++i) {
 			if (blocks[n][i].size() == 0) continue;
 			if (blocks[n][i].size() == 1) {
-				if (k_[blocks[n][i][0]].second.count > GOOD_SINGLETON_THRESHOLD) good->insert(k_[blocks[n][i][0]].first);
-				//outf << blockNum << "\t" << k_[blocks[n][i][0]].first.str() << "\t" << k_[blocks[n][i][0]].second.count << "\t" << k_[blocks[n][i][0]].second.freq << "\t" << blocks[n][i].size() << "\t0.0\tgoodSingleton\t0" << endl;
+				//cout << "  kmer " << blocks[n][i][0] << " is good with count " << k_[blocks[n][i][0]].second.count << endl;
+				if (k_[blocks[n][i][0]].second.count > GOOD_SINGLETON_THRESHOLD) {
+					good->insert(k_[blocks[n][i][0]].first);
+					k_[blocks[n][i][0]].second.change = false;
+					k_[blocks[n][i][0]].second.good = true;
+				}
+				//outf << blockNum << "\t" << k_[blocks[n][i][0]].first.str() << "\t" << k_[blocks[n][i][0]].second.count << "\t" << blocks[n][i].size() << "\t0.0\tgoodSingleton\t0" << endl;
 			} else {
 				good->insert(k_[blocks[n][i][0]].first);
-				// outf << blockNum << "\t" << k_[blocks[n][i][0]].first.str() << "\t" << k_[blocks[n][i][0]].second.count << "\t" << k_[blocks[n][i][0]].second.freq << "\t" << blocks[n][i].size() << "\t0.0\tcenter\t0" << endl;
+				k_[blocks[n][i][0]].second.change = false;
+				k_[blocks[n][i][0]].second.good = true;
+				//outf << blockNum << "\t" << k_[blocks[n][i][0]].first.str() << "\t" << k_[blocks[n][i][0]].second.count << "\t" << blocks[n][i].size() << "\t0.0\tcenter\t0" << endl;
 				for (uint32_t j=1; j < blocks[n][i].size(); ++j) {
 					changes->insert( make_pair(k_[blocks[n][i][j]].first, k_[blocks[n][i][0]].first) );
-					//outf << blockNum << "\t" << k_[blocks[n][i][j]].first.str() << "\t" << k_[blocks[n][i][j]].second.count << "\t" << k_[blocks[n][i][j]].second.freq << "\t" << blocks[n][i].size() << "\t0.0\tchange\t0" << endl;
+					//outf << blockNum << "\t" << k_[blocks[n][i][j]].first.str() << "\t" << k_[blocks[n][i][j]].second.count << "\t" << blocks[n][i].size() << "\t0.0\tchange\t0" << endl;
+					k_[blocks[n][i][j]].second.change = true;
+					k_[blocks[n][i][j]].second.changeto = blocks[n][i][0];
 				}
 			}
 			//++blockNum; outf << endl;

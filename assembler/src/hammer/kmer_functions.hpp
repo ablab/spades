@@ -61,4 +61,5 @@ template<uint32_t kK>
 int NextValidKmer(const Read &r, int prev_pos, Seq<kK> *kmer) __attribute__ ((deprecated));
 
 #include "kmer_functions.impl.hpp" //  Template function implementation
+
 #endif  // HAMMER_KMERFUNCTIONS_HPP_
