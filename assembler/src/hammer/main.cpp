@@ -109,7 +109,7 @@ int main(int argc, char * argv[]) {
 	}
 
 	} // iterations
-	
+	delete rv;
 	return 0;
 }
 
