@@ -1,6 +1,6 @@
 /**
  * @file    kmer_functions.hpp
- * @author  Alex Davydow
+ * @author  adavydow, snikolenko
  * @version 1.0
  *
  * @section LICENSE
@@ -21,12 +21,12 @@
 #include <vector>
 #include "common/read/read.hpp"
 #include "hammer/kmer_stat.hpp"
-
+#warning("This file is deprecated. For fast k-mer iteration use valid_kmer_generator.hpp")
 /**
  * trim bad quality nucleotides from start and end of the read
  * @return size of the read left
  */
-uint32_t TrimBadQuality(Read *r, int bad_quality_threshold = 2);
+uint32_t TrimBadQuality(Read *r, int bad_quality_threshold = 2) __attribute__ ((deprecated));
 
 /**
  * Deprecated: Will be replaced soon.

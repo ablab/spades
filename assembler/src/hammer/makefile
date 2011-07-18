@@ -20,8 +20,8 @@ $(builddir)/cluster: $(builddir)/cluster.o
 	$(CC) $(LDFLAGS) $(builddir)/cluster.o -o $(builddir)/$@
 	@echo "== made cluster =="
 
-$(builddir)/preproc: $(builddir)/preproc.o $(builddir)/kmer_functions.o $(builddir)/kmer_part_joiner.o
-	$(CC) $(LDFLAGS) $(builddir)/kmer_functions.o $(builddir)/preproc.o $(builddir)/kmer_part_joiner.o -o $(builddir)/$@
+$(builddir)/preproc: $(builddir)/preproc.o $(builddir)/kmer_part_joiner.o
+	$(CC) $(LDFLAGS) $(builddir)/preproc.o $(builddir)/kmer_part_joiner.o -o $(builddir)/$@
 	@echo "== made preproc =="
 
 $(builddir)/preproc2: $(builddir)/preproc2.o
