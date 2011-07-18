@@ -71,12 +71,12 @@ int KMerClustering::hamdistKMer(const KMer & x, const KMer & y, int tau) {
 
 void KMerClustering::processBlock(unionFindClass * uf, StringKMerVector & block) {
 	for (uint32_t i = 0; i < block.size(); i++) {
-		uf->find_set(block[i].count);
+		uf->find_set(block[i].kmerno);
 		for (uint32_t j = i + 1; j < block.size(); j++) {
 			//cout << "Comparing " << block[i].kmer.str() << "\n          " << block[j].kmer.str() << "\n";
-			if (hamdistKMer(block[i].kmer, block[j].kmer, tau_ ) <= tau_) {
+			if (hamdistKMer(k_[block[i].kmerno].first, k_[block[j].kmerno].first, tau_ ) <= tau_) {
 				//cout << "    ok!\n"; 
-				uf->unionn(block[i].count, block[j].count);
+				uf->unionn(block[i].kmerno, block[j].kmerno);
 			}
 		}
 	}

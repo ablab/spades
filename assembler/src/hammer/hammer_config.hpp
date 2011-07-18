@@ -42,8 +42,7 @@ inline bool SCgreater ( const StringCount & elem1, const StringCount & elem2 ) {
 
 struct StringKMer{
 	string sub;
-	size_t count;
-	KMer kmer;
+	uint64_t kmerno;
 };
 typedef vector<StringKMer> StringKMerVector;
 
