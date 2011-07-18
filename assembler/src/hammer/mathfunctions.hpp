@@ -10,7 +10,6 @@
 
 #include<cmath>
 #include<math.h>
-#include "hammerread.hpp"
 #include "hammer/hammer_tools.hpp"
 
 /**

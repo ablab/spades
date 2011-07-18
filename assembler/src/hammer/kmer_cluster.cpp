@@ -11,7 +11,6 @@
 #include "read/ireadstream.hpp"
 #include "hammer/kmer_functions.hpp"
 #include "defs.hpp"
-#include "hammerread.hpp"
 #include "mathfunctions.hpp"
 #include "hammer_tools.hpp"
 #include "kmer_cluster.hpp"

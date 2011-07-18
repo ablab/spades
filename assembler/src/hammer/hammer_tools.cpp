@@ -10,7 +10,6 @@
 #include <fstream>
 #include "read/ireadstream.hpp"
 #include "defs.hpp"
-#include "hammerread.hpp"
 #include "mathfunctions.hpp"
 #include "valid_kmer_generator.hpp"
 #include "hammer_tools.hpp"

@@ -15,7 +15,6 @@
 #include "read/read.hpp"
 #include "read/ireadstream.hpp"
 #include "union.hpp"
-#include "hammerread.hpp"
 #include "hammer_config.hpp"
 #include "sequence/seq.hpp"
 #include "kmer_stat.hpp"

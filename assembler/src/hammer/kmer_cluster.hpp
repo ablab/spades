@@ -15,7 +15,6 @@
 #include "sequence/seq.hpp"
 #include "read/read.hpp"
 #include "union.hpp"
-#include "hammerread.hpp"
 #include "hammer_config.hpp"
 #include "hammer_tools.hpp"
 
