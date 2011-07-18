@@ -9,7 +9,6 @@
 #include <iostream>
 #include <fstream>
 #include "read/ireadstream.hpp"
-#include "hammer/kmer_functions.hpp"
 #include "defs.hpp"
 #include "mathfunctions.hpp"
 #include "hammer_tools.hpp"
