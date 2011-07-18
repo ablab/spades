@@ -20,12 +20,8 @@
 #define HAMMER_KMERFUNCTIONS_HPP_
 #include <vector>
 #include "common/read/read.hpp"
+#include "hammer/kmer_stat.hpp"
 
-// Strange structure. Looks like freq is never used.
-struct KMerStat {
-  size_t count;
-  float freq;
-};
 /**
  * trim bad quality nucleotides from start and end of the read
  * @return size of the read left
@@ -42,38 +38,71 @@ uint32_t FirstValidKmerPos(const Read &r, uint32_t start, uint32_t k);
 
 Sequence GetSubSequence(const Read &r, uint32_t start, uint32_t length);
 
+/**
+ * get next valid kmer in a new position
+ */
 template<uint32_t kK>
-vector< Seq<kK> > GetKMers(const Read &r) {
-  const string &seq = r.getSequenceString();
-  vector< Seq<kK> > ans;
-  uint32_t pos = 0;
-  while (true) {
-    pos = FirstValidKmerPos(r, pos, kK);
-    if (pos >= seq.size()) break;
-    Seq<kK> kmer = Seq<kK>(GetSubSequence(r, pos, kK));
-    while (true) {
-      ans.push_back(kmer);
-      if (pos + kK < r.size() && is_nucl(seq[pos + kK])) {
-        kmer = kmer << r[pos + kK];
-        ++pos;
-      } else {
-        pos += kK;
-        break;
-      }
+int32_t getKmerAnew(const Read &r, int32_t pos, Seq<kK> & kmer ) {
+  const std::string &seq = r.getSequenceString();
+  int32_t curHypothesis = pos;
+  int32_t i = pos;
+  for (; i < seq.size(); ++i) {
+    if (i >= kK + curHypothesis) {
+      break;
+    }
+    if (!is_nucl(seq[i])) {
+      curHypothesis = i + 1;
     }
   }
-  return ans;
+  if (i >= kK + curHypothesis) {
+    kmer = Seq<kK>(seq.data() + curHypothesis, false);
+    return curHypothesis;
+  }
+  return -1;
+}
+
+/**
+ * @param kmer get next valid k-mer
+ * @param pos starting point
+ * @return the first starting point of a valid k-mer >=start; return
+ * -1 if no such place exists
+ */
+template<uint32_t kK>
+int32_t NextValidKmer(const Read &r, int32_t prev_pos, Seq<kK> & kmer) {
+  const std::string &seq = r.getSequenceString();
+  if (prev_pos == -1) { // need to get first valid kmer
+    return getKmerAnew<kK>(r, 0, kmer);
+  } else {
+    if (prev_pos + kK < r.size() && is_nucl(seq[prev_pos + kK])) {
+      kmer = kmer << r[prev_pos + kK];
+      return (prev_pos + 1);
+    } else {
+      return getKmerAnew<kK>(r, prev_pos + 1, kmer);
+    }
+  }
+}
+
+template<uint32_t kK>
+vector< Seq<kK> > GetKMers(const Read &r) {
+  vector< Seq<kK> > ret;
+  int32_t pos = -1;
+  Seq<kK> kmer;
+  while ((pos = NextValidKmer<kK>(r, pos, kmer)) >= 0) {
+    ret.push_back(kmer);
+  }  
+  return ret;
 }
 
 /**
  * add k-mers from read to map
  */
 template<uint32_t kK, typename KMerStatMap>
-void AddKMers(const Read &r, KMerStatMap *v) {
-  vector< Seq<kK> > kmers = GetKMers<kK>(r);
-  for (uint32_t i = 0; i < kmers.size(); ++i) {
-    ++(*v)[kmers[i]].count;
-  }
+void AddKMers(const Read &r, uint64_t readno, KMerStatMap *v) {
+  int32_t pos = -1;
+  Seq<kK> kmer;
+  while ( (pos = NextValidKmer<kK>(r, pos, kmer)) >= 0 ) {
+    ++(*v)[kmer].count;
+    (*v)[kmer].pos.push_back( make_pair(readno, pos - 1) );
+  }  
 }
-
 #endif  // HAMMER_KMERFUNCTIONS_HPP_

@@ -20,6 +20,13 @@ using namespace std;
 // STEP 1: declare the type of file handler and the read() function
 KSEQ_INIT(gzFile, gzread)
 
+
+struct ReadStat {
+	Read read;
+	map<uint32_t, uint64_t> kmers;
+};
+
+
 /*
  * Read name, seq and qual strings from FASTQ data (one by one)
  */
@@ -65,6 +72,19 @@ public:
 		return res;
 	}
 
+	static vector<ReadStat>* readAllNoValidation(string filename, int cnt = -1) __attribute__ ((deprecated)) {
+		ireadstream irs(filename);
+		assert(irs.is_open());
+		vector<ReadStat>* res = new vector<ReadStat>();
+		ReadStat rs;
+		while (cnt-- && irs.is_open() && !irs.eof()) {
+			irs >> rs.read;
+			res->push_back(rs);
+		}
+		irs.close();
+		return res;
+	}
+	
 	ireadstream& operator>>(Read &r) {
 		assert(is_open());
 		assert(!eof());

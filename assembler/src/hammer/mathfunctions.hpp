@@ -11,11 +11,12 @@
 #include<cmath>
 #include<math.h>
 #include "hammerread.hpp"
+#include "hammer/hammer_tools.hpp"
 
 /**
   * @return logarithm of {n choose k}
   */
-double logChooseNK(int n, int k) {
+inline double logChooseNK(int n, int k) {
 	double res = 0;
 	for (int i=1; i <= k; ++i) {
 		res += log(n-k+i) - log(i);
@@ -26,18 +27,30 @@ double logChooseNK(int n, int k) {
 /**
   * @return Beta(x,y)
   */
-double lBeta(int x, int y) {
+inline double lBeta(int x, int y) {
 	return (lgamma(x) + lgamma(y) - lgamma(x+y));
 }
 
 /**
   * @return log({a_1+...+a_n \choose a_1, ..., a_n})
   */
-double lMultinomial(const vector<HammerRead> & x) {
+inline double lMultinomial(const vector<int> & x, const vector<KMerCount> & k_) {
 	double res = 0.0, sum = 0.0;
 	for (size_t i=0; i<x.size(); ++i) {
-		res += lgamma(x[i].count+1);
-		sum += x[i].count;
+		res += lgamma(k_[x[i]].second.count+1);
+		sum += k_[x[i]].second.count;
+	}
+	return (lgamma(sum+1) - res);
+}
+
+/**
+  * @return log({a_1+...+a_n \choose a_1, ..., a_n})
+  */
+inline double lMultinomial(const vector<KMerCount> & x) {
+	double res = 0.0, sum = 0.0;
+	for (size_t i=0; i<x.size(); ++i) {
+		res += lgamma(x[i].second.count+1);
+		sum += x[i].second.count;
 	}
 	return (lgamma(sum+1) - res);
 }
@@ -45,13 +58,13 @@ double lMultinomial(const vector<HammerRead> & x) {
 /**
   * @return log({a_1+...+a_n \choose a_1, ..., a_n}) for reads corresponding to the mask
   */
-double lMultinomialWithMask(const vector<HammerRead> & x, const vector<int> & mask, int maskval) {
+inline double lMultinomialWithMask(const vector<int> & x, const vector<KMerCount> & k_, const vector<int> & mask, int maskval) {
 	assert(x.size() == mask.size());
 	double res = 0.0, sum = 0.0;
 	for (size_t i=0; i<x.size(); ++i) {
 		if (mask[i] != maskval) continue;
-		res += lgamma(x[i].count+1);
-		sum += x[i].count;
+		res += lgamma(k_[x[i]].second.count+1);
+		sum += k_[x[i]].second.count;
 	}
 	return (lgamma(sum+1) - res);
 }
@@ -59,7 +72,7 @@ double lMultinomialWithMask(const vector<HammerRead> & x, const vector<int> & ma
 /**
   * @return log(Beta(a_1+1, ..., a_n+1))
   */
-double lBetaPlusOne(const vector<int> & x) {
+inline double lBetaPlusOne(const vector<int> & x) {
 	double res = 0.0, sum = 0.0;
 	for (size_t i=0; i<x.size(); ++i) {
 		res += lgamma(x[i]+1);

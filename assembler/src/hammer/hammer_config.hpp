@@ -20,7 +20,10 @@
 using namespace std;
 using namespace __gnu_cxx;
 
-#define K 15
+#define K 55
+// The following constant was defined just to make compiler happy. I
+// have no sense what value is reasonable #adavydow.
+#define GOOD_SINGLETON_THRESHOLD 666 //  ATTENTION!!! 
 
 typedef Seq<K> KMer;
 typedef iufstream<K> UFStream;
