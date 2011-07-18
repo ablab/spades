@@ -28,7 +28,7 @@ using std::swap;
 using std::vector;
 
 KMerPartJoiner::KMerPartJoiner(const vector<FILE*> &ifiles, int k)
-    : kmer_parsers_() {
+    : kmer_parsers_(), k_(k) {
   for (size_t i = 0; i < ifiles.size(); ++i) {
     KMerPartParser kpp(ifiles[i], k_);
     if (!kpp.eof()) {
