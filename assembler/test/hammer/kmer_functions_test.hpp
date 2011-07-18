@@ -57,7 +57,6 @@ void TestAddKMers() {
   for (KMerStatMap::iterator it = m.begin(); it != m.end(); ++it) {
     ASSERT_EQUAL(m2[it->first].count, it->second.count);
   }
-
   for (KMerStatMap::iterator it = m2.begin(); it != m2.end(); ++it) {
     ASSERT_EQUAL(m[it->first].count, it->second.count);
   }

@@ -42,13 +42,13 @@ Sequence GetSubSequence(const Read &r, uint32_t start, uint32_t length);
  * get next valid kmer in a new position
  */
 template<uint32_t kK>
-int32_t getKmerAnew( const std::string & seq, int32_t pos, Seq<kK> & kmer ) {
+int32_t getKmerAnew(const Read &r, int32_t pos, Seq<kK> & kmer ) {
+  const std::string &seq = r.getSequenceString();
   int32_t curHypothesis = pos;
   int32_t i = pos;
   for (; i < seq.size(); ++i) {
     if (i >= kK + curHypothesis) {
-      kmer = Seq<kK>(seq.data() + curHypothesis, false);
-      return curHypothesis + 1;
+      break;
     }
     if (!is_nucl(seq[i])) {
       curHypothesis = i + 1;
@@ -56,7 +56,7 @@ int32_t getKmerAnew( const std::string & seq, int32_t pos, Seq<kK> & kmer ) {
   }
   if (i >= kK + curHypothesis) {
     kmer = Seq<kK>(seq.data() + curHypothesis, false);
-    return curHypothesis + 1;
+    return curHypothesis;
   }
   return -1;
 }
@@ -68,16 +68,16 @@ int32_t getKmerAnew( const std::string & seq, int32_t pos, Seq<kK> & kmer ) {
  * -1 if no such place exists
  */
 template<uint32_t kK>
-int32_t NextValidKmer(const Read &r, int32_t pos, Seq<kK> & kmer) {
+int32_t NextValidKmer(const Read &r, int32_t prev_pos, Seq<kK> & kmer) {
   const std::string &seq = r.getSequenceString();
-  if (pos == -1) { // need to get first valid kmer
-    return getKmerAnew<kK>(seq, 0, kmer);
+  if (prev_pos == -1) { // need to get first valid kmer
+    return getKmerAnew<kK>(r, 0, kmer);
   } else {
-    if (pos + kK < r.size() && is_nucl(seq[pos + kK])) {
-      kmer = kmer << r[pos + kK];
-      return (pos + 1);
+    if (prev_pos + kK < r.size() && is_nucl(seq[prev_pos + kK])) {
+      kmer = kmer << r[prev_pos + kK];
+      return (prev_pos + 1);
     } else {
-      return getKmerAnew<kK>(seq, pos, kmer);
+      return getKmerAnew<kK>(r, prev_pos + 1, kmer);
     }
   }
 }
