@@ -67,14 +67,9 @@ int main(int argc, char * argv[]) {
 	// free up memory
 	for (uint32_t i=0; i < vv.size(); ++i) vv[i].clear(); vv.clear();
 	
-	
-	// maps to be prepared for reconstruction
-	map<KMer, KMer, KMer::less2> changes;
-	unordered_set<KMer, KMer::hash> good;
-
 	KMerClustering kmc(kmers, nthreads, tau);
 	// prepare the maps
-	kmc.process(dirprefix, vs, &changes, &good);
+	kmc.process(dirprefix, vs);
 	// free up memory
 	kmc.clear();
 	cout << "Finished clustering." << endl;
@@ -86,9 +81,9 @@ int main(int argc, char * argv[]) {
 		changed.push_back(false);
 	}
 
-	#pragma omp parallel for shared(changes, good, rv, changed, outfv) num_threads(nthreads)
+	#pragma omp parallel for shared(rv, changed, outfv) num_threads(nthreads)
 	for (int i = 0; i < rv->size(); ++i) {
-		bool res = CorrectRead(changes, good, kmers, &(rv->at(i)), outfv[omp_get_thread_num()]);
+		bool res = CorrectRead(kmers, &(rv->at(i)), outfv[omp_get_thread_num()]);
 		changed[omp_get_thread_num()] = changed[omp_get_thread_num()] || res;
 	}
 	bool res = false;

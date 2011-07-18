@@ -60,7 +60,7 @@ void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rmsc, vector<S
   * correct a read in place
   * @return whether the read has changed at all
   */
-bool CorrectRead(const map<KMer, KMer, KMer::less2> & changes, const unordered_set<KMer, KMer::hash> & good, const vector<KMerCount> & kmers, ReadStat * r, ofstream * ofs = NULL);
+bool CorrectRead(const vector<KMerCount> & kmers, ReadStat * r, ofstream * ofs = NULL);
 
 #endif
 

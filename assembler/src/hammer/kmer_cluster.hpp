@@ -34,7 +34,7 @@ public:
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
-	void process(string dirprefix, const vector<StringKMerVector> & vs, map<KMer, KMer, KMer::less2> * changes, unordered_set<KMer, KMer::hash> * good);
+	void process(string dirprefix, const vector<StringKMerVector> & vs);
 	
 	/// free up memory
 	void clear() {
