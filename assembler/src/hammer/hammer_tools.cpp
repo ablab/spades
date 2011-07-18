@@ -180,7 +180,7 @@ void CorrectRead(const map<KMer, KMer, KMer::less2> & changes, const unordered_s
 	KMer kmer;
 	map<KMer, KMer, KMer::less2>::const_iterator it;
 	unordered_set<KMer, KMer::hash>::const_iterator it_single;
-	while ( (pos = NextValidKmer<K>(*r, pos, kmer)) >= 0 ) {
+	while ( (pos = NextValidKmer<K>(*r, pos, &kmer)) >= 0 ) {
 		it_single = good.find(kmer);
 		if (it_single != good.end()) { //it's a good singleton
 			for (size_t j=0; j<K; ++j) {
