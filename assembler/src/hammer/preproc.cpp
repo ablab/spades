@@ -27,6 +27,7 @@
 #include "log4cxx/logger.h"
 #include "log4cxx/basicconfigurator.h"
 #include "common/read/ireadstream.hpp"
+#include "common/read/strobe_read.hpp"
 #include "common/read/read.hpp"
 #include "hammer/defs.hpp"
 #include "hammer/kmer_part_joiner.hpp"
@@ -46,7 +47,7 @@ using log4cxx::BasicConfigurator;
 
 const uint32_t K = 2;
 typedef Seq<K> KMer;
-
+typedef RCReaderWrapper<ireadstream, Read> ReadStream;
 namespace {
 
 LoggerPtr logger(Logger::getLogger("preproc"));
@@ -125,7 +126,7 @@ Options ParseOptions(int argc, char * argv[]) {
  * @param ofiles Files to write the result k-mers. They are written
  * one per line.
  */
-void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles) {
+void SplitToFiles(ReadStream ifs, const vector<FILE*> &ofiles) {
   uint32_t file_number = ofiles.size();
   uint32_t read_number = 0;
   while (!ifs.eof()) {
@@ -140,8 +141,6 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles) {
     while (gen.HasMore()) {
       int file_id = hash_function(gen.kmer()) % file_number;
       fprintf(ofiles[file_id], "%s\n", gen.kmer().str().c_str());
-      file_id = hash_function(!gen.kmer()) % file_number;
-      fprintf(ofiles[file_id], "%s\n", (!gen.kmer()).str().c_str());
       gen.Next();
     }    
   }
@@ -204,7 +203,8 @@ int main(int argc, char * argv[]) {
       snprintf(filename, sizeof(filename), "%u.kmer.part", i);
       ofiles[i] = fopen(filename, "w");
     }
-    SplitToFiles(ireadstream(opts.ifile, opts.qvoffset), ofiles);
+    ireadstream ir(opts.ifile, opts.qvoffset);
+    SplitToFiles(ReadStream(ir), ofiles);
     for (uint32_t i = 0; i < opts.file_number; ++i) {
       fclose(ofiles[i]);
     }
