@@ -16,27 +16,20 @@
  * It includes 2 SingleRead elements and a distance between them.
  */
 
-#ifndef PAIREDREAD_HPP_
-#define PAIREDREAD_HPP_
+#ifndef COMMON_IO_PAIREDREAD_HPP_
+#define COMMON_IO_PAIREDREAD_HPP_
 
+#include <string>
 #include "common/io/single_read.hpp"
 
 class PairedRead {
- private:
-  /*
-   * @variable First single read in the pair.
-   */
-  SingleRead first_;
-  /*
-   * @variable Second single read in the pair.
-   */
-  SingleRead second_;
-  /*
-   * @variable Distance between two single reads.
-   */
-  size_t distance_;
-
  public:
+  /*
+   * Type of variables which will store file names for reading from
+   * Reader stream.
+   */ 
+  typedef std::pair<std::string, std::string> FilenameType;
+  
   /*
    * Default constructor.
    */
@@ -131,6 +124,20 @@ class PairedRead {
       second_ == pairedread.second_ &&
       distance_ == pairedread.distance_;
   }
+ 
+ private:
+  /*
+   * @variable First single read in the pair.
+   */
+  SingleRead first_;
+  /*
+   * @variable Second single read in the pair.
+   */
+  SingleRead second_;
+  /*
+   * @variable Distance between two single reads.
+   */
+  size_t distance_;
 };
 
-#endif /* PAIRED_READ_HPP_ */
+#endif /* COMMON_IO_PAIREDREAD_HPP_ */

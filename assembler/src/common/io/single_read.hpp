@@ -16,8 +16,8 @@
  * It includes 3 strings: with id, sequence and quality of the input read.
  */
 
-#ifndef SINGLEREAD_HPP_
-#define SINGLEREAD_HPP_
+#ifndef COMMON_IO_SINGLEREAD_HPP_
+#define COMMON_IO_SINGLEREAD_HPP_
 
 #include <string>
 #include <cassert>
@@ -28,81 +28,15 @@
 #include "common/simple_tools.hpp"
 
 class SingleRead {
- private:
-  /*
-   * @variable The name of single read in input file.
-   */
-  std::string name_;
-  /*
-   * @variable The sequence of nucleotides.
-   */
-  std::string seq_;
-  /*
-   * @variable The quality of single read.
-   */
-  std::string qual_;
-  /*
-   * @variable The flag of single read correctness.
-   */
-  bool valid_;
-  friend class ireadstream;
-
-  /*
-   * Set name of single read.
-   *
-   * @param new_name New name.
-   */
-  void set_name(const char* new_name) {
-    name_ = new_name;
-  }
-
-  /*
-   * Set sequence of single read.
-   *
-   * @param new_sequence New sequence.
-   */
-  void set_sequence(const char* new_sequence) {
-    seq_ = new_sequence;
-    valid_ = UpdateValid();
-  }
-
-  /*
-   * Set quality of single read.
-   *
-   * @param new_quality New quality of single read.
-   * @param offset The offset of single read quality 
-   * (PHRED_OFFSET by default).
-   */
-  void set_quality(const char* new_quality, int offset = PHRED_OFFSET) {
-    qual_ = new_quality;
-    for (size_t i = 0; i < qual_.size(); ++i) {
-      qual_[i] -= offset;
-    }
-  }
-
-  /*
-   * Update valid_ flag.
-   *
-   * @see IsValid()
-   */
-  const bool UpdateValid() const {
-    if (seq_.size() == 0) {
-      return false;
-    }
-    if (seq_.size() != qual_.size()) {
-      return false;
-    }
-    for (size_t i = 0; i < seq_.size(); ++i) {
-      if (!is_nucl(seq_[i])) {
-        return false;
-      }
-    }
-    return true;
-  }
-
  public:
   static const int PHRED_OFFSET = 33;
   static const int BAD_QUALITY_THRESHOLD = 2;
+
+  /*
+   * Type of variables which will store file names for reading from
+   * Reader stream.
+   */ 
+  typedef std::string FilenameType;
 
   /*
    * Default constructor.
@@ -243,6 +177,78 @@ class SingleRead {
   bool operator==(const SingleRead& singleread) const {
     return seq_ == singleread.seq_;
   }
+
+ private:
+  /*
+   * @variable The name of single read in input file.
+   */
+  std::string name_;
+  /*
+   * @variable The sequence of nucleotides.
+   */
+  std::string seq_;
+  /*
+   * @variable The quality of single read.
+   */
+  std::string qual_;
+  /*
+   * @variable The flag of single read correctness.
+   */
+  bool valid_;
+  friend class ireadstream;
+
+  /*
+   * Set name of single read.
+   *
+   * @param new_name New name.
+   */
+  void set_name(const char* new_name) {
+    name_ = new_name;
+  }
+
+  /*
+   * Set sequence of single read.
+   *
+   * @param new_sequence New sequence.
+   */
+  void set_sequence(const char* new_sequence) {
+    seq_ = new_sequence;
+    valid_ = UpdateValid();
+  }
+
+  /*
+   * Set quality of single read.
+   *
+   * @param new_quality New quality of single read.
+   * @param offset The offset of single read quality 
+   * (PHRED_OFFSET by default).
+   */
+  void set_quality(const char* new_quality, int offset = PHRED_OFFSET) {
+    qual_ = new_quality;
+    for (size_t i = 0; i < qual_.size(); ++i) {
+      qual_[i] -= offset;
+    }
+  }
+
+  /*
+   * Update valid_ flag.
+   *
+   * @see IsValid()
+   */
+  const bool UpdateValid() const {
+    if (seq_.size() == 0) {
+      return false;
+    }
+    if (seq_.size() != qual_.size()) {
+      return false;
+    }
+    for (size_t i = 0; i < seq_.size(); ++i) {
+      if (!is_nucl(seq_[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
 };
 
-#endif /* SINGLEREAD_HPP_ */
+#endif /* COMMON_IO_SINGLEREAD_HPP_ */
