@@ -191,7 +191,7 @@ void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rsmc, vector<S
 
 
 
-bool CorrectRead(const map<KMer, KMer, KMer::less2> & changes, const unordered_set<KMer, KMer::hash> & good, const vector<KMerCount> & km, ReadStat * r, ofstream * ofs) {
+bool CorrectRead(const vector<KMerCount> & km, ReadStat * r, ofstream * ofs) {
 	string seq = r->read.getSequenceString();
 	//if (print_debug) cout << "Correcting " << r->read.getName() << "\n" << seq.data() << "\n";
 	// create auxiliary structures for consensus

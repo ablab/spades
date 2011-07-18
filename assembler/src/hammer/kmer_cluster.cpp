@@ -382,8 +382,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	}
 }
 
-void KMerClustering::process(string dirprefix, const vector<StringKMerVector> & vs,
-	map<KMer, KMer, KMer::less2> * changes, unordered_set<KMer, KMer::hash> * good) {
+void KMerClustering::process(string dirprefix, const vector<StringKMerVector> & vs) {
 	
 	int effective_threads = min(nthreads_, tau_+1);
 	vector<unionFindClass *> uf(tau_ + 1);
@@ -443,18 +442,15 @@ void KMerClustering::process(string dirprefix, const vector<StringKMerVector> & 
 			if (blocks[n][i].size() == 1) {
 				//cout << "  kmer " << blocks[n][i][0] << " is good with count " << k_[blocks[n][i][0]].second.count << endl;
 				if (k_[blocks[n][i][0]].second.count > GOOD_SINGLETON_THRESHOLD) {
-					good->insert(k_[blocks[n][i][0]].first);
 					k_[blocks[n][i][0]].second.change = false;
 					k_[blocks[n][i][0]].second.good = true;
 				}
 				//outf << blockNum << "\t" << k_[blocks[n][i][0]].first.str() << "\t" << k_[blocks[n][i][0]].second.count << "\t" << blocks[n][i].size() << "\t0.0\tgoodSingleton\t0" << endl;
 			} else {
-				good->insert(k_[blocks[n][i][0]].first);
 				k_[blocks[n][i][0]].second.change = false;
 				k_[blocks[n][i][0]].second.good = true;
 				//outf << blockNum << "\t" << k_[blocks[n][i][0]].first.str() << "\t" << k_[blocks[n][i][0]].second.count << "\t" << blocks[n][i].size() << "\t0.0\tcenter\t0" << endl;
 				for (uint32_t j=1; j < blocks[n][i].size(); ++j) {
-					changes->insert( make_pair(k_[blocks[n][i][j]].first, k_[blocks[n][i][0]].first) );
 					//outf << blockNum << "\t" << k_[blocks[n][i][j]].first.str() << "\t" << k_[blocks[n][i][j]].second.count << "\t" << blocks[n][i].size() << "\t0.0\tchange\t0" << endl;
 					k_[blocks[n][i][j]].second.change = true;
 					k_[blocks[n][i][j]].second.changeto = blocks[n][i][0];
