@@ -12,8 +12,12 @@
  *
  * @section DESCRIPTION
  *
- * SingleRead is a structure, where information from input files is stored.
- * It includes 3 strings: with id, sequence and quality of the input read.
+ * Reader is the base class that gets single reads or paired reads
+ * from one or two input files respectively.
+ * Reader<SingleRead> is the very base class that reads from one file
+ * through Parser object.
+ * Reader<PairedRead> is the class that reads data from two input
+ * files and gets paired reads using this data and distance information.
  */
 
 #ifndef COMMON_IO_READER_HPP_
