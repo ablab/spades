@@ -137,12 +137,10 @@ void SplitToFiles(ReadStream ifs, const vector<FILE*> &ofiles) {
     }
     Read r;
     ifs >> r;
-    ValidKMerGenerator<kK> gen(r);
     KMer::hash hash_function;
-    while (gen.HasMore()) {
+    for (ValidKMerGenerator<kK> gen(r); gen.HasMore(); gen.Next()) {
       int file_id = hash_function(gen.kmer()) % file_number;
       fprintf(ofiles[file_id], "%s\n", gen.kmer().str().c_str());
-      gen.Next();
     }
   }
 }

@@ -11,6 +11,10 @@
  *     MyTrickyFunction(gen.kmer());
  *     gen.Next();
  *   }
+ *   or
+ *   for (ValidKMerGenerator<2> geb(read, 2); gen.HasMore; gen.Next() {
+ *     MyTrickyFunction(gen.kmer(), gen.pos(), gen.correct_probability());
+ *   }
  * @param kK k-mer length.
  */
 template<uint32_t kK>
