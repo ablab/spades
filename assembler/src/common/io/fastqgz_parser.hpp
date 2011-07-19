@@ -24,18 +24,21 @@
 #include <cassert>
 #include "libs/kseq/kseq.h"
 #include "common/io/single_read.hpp"
+#include "common/io/parser.hpp"
 #include "common/sequence/quality.hpp"
 #include "common/sequence/nucl.hpp"
 
+namespace fastqgz{
 // STEP 1: declare the type of file handler and the read() function
 KSEQ_INIT(gzFile, gzread)
+}
 
 class FastqgzParser : public Parser {
  public:
   FastqgzParser(const std::string& filename,
          int offset = SingleRead::PHRED_OFFSET)
-      : Parser(filename, offset) {
-    is_open_ = open(filename_);
+      :Parser(filename, offset) {
+    is_open_ = open();
   }
 
   /* virtual */ ~FastqgzParser() {
@@ -47,19 +50,19 @@ class FastqgzParser : public Parser {
     // should be rewritten
     assert(is_open_);
     assert(!eof_);
-    read.setName(seq_->name.s);
+    read.SetName(seq_->name.s);
     if (seq_->qual.s) {
-      read.setQuality(seq_->qual.s, offset_);
+      read.SetQuality(seq_->qual.s, offset_);
     }
-    read.setSequence(seq_->seq.s);
-    read_ahead();
+    read.SetSequence(seq_->seq.s);
+    ReadAhead();
     return *this;
   }
 
   /* virtual */ void close() {
     if (is_open_) {
       // STEP 5: destroy seq
-      kseq_destroy(seq_);
+      fastqgz::kseq_destroy(seq_);
       // STEP 6: close the file handler
       gzclose(fp_);
       is_open_ = false;
@@ -68,7 +71,7 @@ class FastqgzParser : public Parser {
 
  private:
   gzFile fp_;
-  kseq_t* seq_;
+  fastqgz::kseq_t* seq_;
 
   /* virtual */ bool open() {
     // STEP 2: open the file handler
@@ -76,18 +79,17 @@ class FastqgzParser : public Parser {
     if (!fp_) {
       return false;
     }
-    is_open_ = true;
     // STEP 3: initialize seq
-    seq_ = kseq_init(fp_);
+    seq_ = fastqgz::kseq_init(fp_);
     eof_ = false;
-    read_ahead();
+    ReadAhead(); 
     return true;
   }
 
-  void read_ahead() {
+  void ReadAhead() {
     assert(is_open_);
     assert(!eof_);
-    if (kseq_read(seq_) < 0) {
+    if (fastqgz::kseq_read(seq_) < 0) {
       eof_ = true;
     }
   }

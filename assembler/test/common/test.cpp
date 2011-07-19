@@ -11,6 +11,7 @@
 #include "cuckoo_test.hpp"
 #include "single_read_test.hpp"
 #include "paired_read_test.hpp"
+#include "fastqgz_parser_test.hpp"
 
 void runSuite() {
   cute::suite s;
@@ -25,6 +26,7 @@ void runSuite() {
   s += CuckooSuite();
   s += SingleReadSuite();
   s += PairedReadSuite();
+  s += FastqgzParserSuite();
   cute::ide_listener lis;
   cute::makeRunner(lis)(s, "The Suite");
 }

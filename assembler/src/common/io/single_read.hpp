@@ -183,7 +183,7 @@ class SingleRead {
    *
    * @param new_name New name.
    */
-  void set_name(const char* new_name) {
+  void SetName(const char* new_name) {
     name_ = new_name;
   }
 
@@ -192,7 +192,7 @@ class SingleRead {
    *
    * @param new_sequence New sequence.
    */
-  void set_sequence(const char* new_sequence) {
+  void SetSequence(const char* new_sequence) {
     seq_ = new_sequence;
     valid_ = UpdateValid();
   }
@@ -204,7 +204,7 @@ class SingleRead {
    * @param offset The offset of single read quality 
    * (PHRED_OFFSET by default).
    */
-  void set_quality(const char* new_quality, int offset = PHRED_OFFSET) {
+  void SetQuality(const char* new_quality, int offset = PHRED_OFFSET) {
     qual_ = new_quality;
     for (size_t i = 0; i < qual_.size(); ++i) {
       qual_[i] -= offset;

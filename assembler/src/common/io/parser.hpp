@@ -26,13 +26,11 @@ class Parser {
  public:
   Parser(const std::string& filename,
          int offset = SingleRead::PHRED_OFFSET)
-      : offset_(offset), filename_(filename) {}
+      : filename_(filename), offset_(offset) {}
 
-  virtual ~Parser() {
-    close();
-  }
+  virtual ~Parser() {}
 
-  bool is_open() const {
+  virtual bool is_open() const {
     return is_open_;
   }
 
@@ -46,15 +44,16 @@ class Parser {
 
   void reset() {
     close();
-    open(filename_);
+    open();
   }
 
- private:
+ protected:
   std::string filename_;
+  int offset_;
   bool is_open_;
   bool eof_;
-  int offset_;
 
+ private:
   virtual bool open() = 0;
 };
 
