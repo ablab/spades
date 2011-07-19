@@ -54,7 +54,7 @@ class Parser {
   bool eof_;
 
  private:
-  virtual bool open() = 0;
+  virtual void open() = 0;
 };
 
 Parser* SelectParser(const std::string filename_,

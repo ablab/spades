@@ -28,7 +28,7 @@
 #include "common/sequence/quality.hpp"
 #include "common/sequence/nucl.hpp"
 
-namespace fastqgz{
+namespace fastqgz {
 // STEP 1: declare the type of file handler and the read() function
 KSEQ_INIT(gzFile, gzread)
 }
@@ -38,7 +38,7 @@ class FastqgzParser : public Parser {
   FastqgzParser(const std::string& filename,
          int offset = SingleRead::PHRED_OFFSET)
       :Parser(filename, offset) {
-    is_open_ = open();
+    open();
   }
 
   /* virtual */ ~FastqgzParser() {
@@ -73,17 +73,18 @@ class FastqgzParser : public Parser {
   gzFile fp_;
   fastqgz::kseq_t* seq_;
 
-  /* virtual */ bool open() {
+  /* virtual */ void open() {
     // STEP 2: open the file handler
     fp_ = gzopen(filename_.c_str(), "r");
     if (!fp_) {
-      return false;
+      is_open_ = false;
+      return;
     }
     // STEP 3: initialize seq
     seq_ = fastqgz::kseq_init(fp_);
     eof_ = false;
-    ReadAhead(); 
-    return true;
+    is_open_ = true;
+    ReadAhead();
   }
 
   void ReadAhead() {

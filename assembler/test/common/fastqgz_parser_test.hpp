@@ -31,6 +31,8 @@ void TestFastqgzParserReading() {
 void TestFastqgzParserFull() {
   FastqgzParser parser("./test/data/s_test.fastq.gz", 33);
   ASSERT(parser.is_open());
+  parser.reset();
+  ASSERT(parser.is_open());
   SingleRead read;
   while (!parser.eof()) {
     parser >> read;
@@ -38,6 +40,8 @@ void TestFastqgzParserFull() {
   ASSERT_EQUAL("EAS20_8_6_1_2_468/1", read.name());
   ASSERT_EQUAL("TGTGTGTGTGTG", read.GetSequenceString());
   ASSERT_EQUAL("DADDA8<?>@HH", read.GetPhredQualityString());
+  parser.close();
+  ASSERT(!parser.is_open());
 }
 
 cute::suite FastqgzParserSuite(){
