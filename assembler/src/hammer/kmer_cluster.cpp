@@ -130,7 +130,7 @@ KMer KMerClustering::find_consensus_with_mask(const vector<int> & cl, const vect
 		int scores[4] = {0,0,0,0};
 		for (uint32_t j = 0; j < cl.size(); j++) {
 			if (mask[j] == maskVal)
-				scores[k_[cl[j]].first[i]] += k_[cl[j]].second.count;
+                          scores[static_cast<uint8_t>(k_[cl[j]].first[i])] += k_[cl[j]].second.count;
 		}
 		c.push_back(num2nt(argmax(scores, 4)));
 	}
@@ -143,7 +143,7 @@ KMer KMerClustering::find_consensus(const vector<int> & cl) {
 	for (size_t i = 0; i < K; i++) {
 		int scores[4] = {0,0,0,0};
 		for (size_t j = 0; j < cl.size(); j++) {
-			scores[k_[cl[j]].first[i]]+=k_[cl[j]].second.count;
+                  scores[static_cast<uint8_t>(k_[cl[j]].first[i])]+=k_[cl[j]].second.count;
 		}
 		c.push_back(num2nt(argmax(scores, 4)));
 	}
