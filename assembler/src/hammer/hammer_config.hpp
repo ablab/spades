@@ -51,19 +51,23 @@ typedef vector<StringKMer> StringKMerVector;
 }*/
 
 inline bool SKequal ( const StringKMer & elem1, const StringKMer & elem2, const vector<KMerCount> & km, const int tau) {
+	size_t j = elem2.start;
 	for (size_t i = elem1.start; i < K; i += tau+1) {
-		if (km[elem1.kmerno].first[i] != km[elem2.kmerno].first[elem2.start + i*(tau+1)]) {
+		if (km[elem1.kmerno].first[i] != km[elem2.kmerno].first[j]) {
 			return false;
 		}
+		j += tau+1;
 	}
 	return true;
 }
 
 inline bool SKgreater2 ( const StringKMer & elem1, const StringKMer & elem2, const vector<KMerCount> & km, const int tau ) {
+	size_t j = elem2.start;
 	for (size_t i = elem1.start; i < K; i += tau+1) {
-		if (km[elem1.kmerno].first[i] != km[elem2.kmerno].first[elem2.start + i*(tau+1)]) {
-			return (km[elem1.kmerno].first[i] < km[elem2.kmerno].first[elem2.start + i*(tau+1)]);
+		if (km[elem1.kmerno].first[i] != km[elem2.kmerno].first[j]) {
+			return (km[elem1.kmerno].first[i] < km[elem2.kmerno].first[j]);
 		}
+		j += tau+1;
 	}
 	return false;
 }
