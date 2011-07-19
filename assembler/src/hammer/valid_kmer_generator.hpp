@@ -12,7 +12,7 @@
  *     gen.Next();
  *   }
  *   or
- *   for (ValidKMerGenerator<2> geb(read, 2); gen.HasMore; gen.Next() {
+ *   for (ValidKMerGenerator<2> gen(read, 2); gen.HasMore; gen.Next() {
  *     MyTrickyFunction(gen.kmer(), gen.pos(), gen.correct_probability());
  *   }
  * @param kK k-mer length.
@@ -87,6 +87,9 @@ class ValidKMerGenerator {
   Seq<kK> kmer_;
   const std::string &seq_;
   const std::string &qual_;
+  // Disallow copy and assign
+  ValidKMerGenerator(const ValidKMerGenerator&);
+  void operator=(const ValidKMerGenerator&);
 };
 
 template<uint32_t kK>
