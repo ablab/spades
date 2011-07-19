@@ -178,25 +178,6 @@ class SingleRead {
     return seq_ == singleread.seq_;
   }
 
- private:
-  /*
-   * @variable The name of single read in input file.
-   */
-  std::string name_;
-  /*
-   * @variable The sequence of nucleotides.
-   */
-  std::string seq_;
-  /*
-   * @variable The quality of single read.
-   */
-  std::string qual_;
-  /*
-   * @variable The flag of single read correctness.
-   */
-  bool valid_;
-  friend class ireadstream;
-
   /*
    * Set name of single read.
    *
@@ -229,6 +210,24 @@ class SingleRead {
       qual_[i] -= offset;
     }
   }
+
+ private:
+  /*
+   * @variable The name of single read in input file.
+   */
+  std::string name_;
+  /*
+   * @variable The sequence of nucleotides.
+   */
+  std::string seq_;
+  /*
+   * @variable The quality of single read.
+   */
+  std::string qual_;
+  /*
+   * @variable The flag of single read correctness.
+   */
+  bool valid_;
 
   /*
    * Update valid_ flag.

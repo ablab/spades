@@ -40,7 +40,7 @@ class Parser {
     return eof_;
   }
 
-  virtual Parser& operator>>(SingleRead &read) = 0;
+  virtual Parser& operator>>(SingleRead& read) = 0;
 
   virtual void close() = 0;
 

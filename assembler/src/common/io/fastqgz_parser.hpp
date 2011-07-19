@@ -19,10 +19,10 @@
 #ifndef COMMON_IO_FASTQGZPARSER_HPP
 #define COMMON_IO_FASTQGZPARSER_HPP
 
+#include <zlib.h>
 #include <string>
 #include <cassert>
 #include "libs/kseq/kseq.h"
-#include <zlib.h>
 #include "common/io/single_read.hpp"
 #include "common/sequence/quality.hpp"
 #include "common/sequence/nucl.hpp"
@@ -52,7 +52,7 @@ class FastqgzParser : public Parser {
       read.setQuality(seq_->qual.s, offset_);
     }
     read.setSequence(seq_->seq.s);
-    read_ahead(); // make actual read for the next result
+    read_ahead();
     return *this;
   }
 
@@ -60,8 +60,8 @@ class FastqgzParser : public Parser {
     if (is_open_) {
       // STEP 5: destroy seq
       kseq_destroy(seq_);
-      // STEP 6: close the file handler 
-      gzclose(fp_); 
+      // STEP 6: close the file handler
+      gzclose(fp_);
       is_open_ = false;
     }
   }
@@ -72,13 +72,13 @@ class FastqgzParser : public Parser {
 
   /* virtual */ bool open() {
     // STEP 2: open the file handler
-    fp_ = gzopen(filename_.c_str(), "r"); 
+    fp_ = gzopen(filename_.c_str(), "r");
     if (!fp_) {
       return false;
     }
     is_open_ = true;
     // STEP 3: initialize seq
-    seq_ = kseq_init(fp_); 
+    seq_ = kseq_init(fp_);
     eof_ = false;
     read_ahead();
     return true;
