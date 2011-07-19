@@ -394,11 +394,11 @@ void KMerClustering::process(string dirprefix, const vector<StringKMerVector> & 
 		cout << "Processing split kmers " << i << ", total " << vs[i].size() << "\n";
 		
 		string sbuf;
-		StringKMer last;
+		StringKMer last = vs[i][0];
 		StringKMerVector block;
 		for (size_t j=0; j<vs[i].size(); ++j) {
 			if (j % 10000000 == 0) cout << "Processed (" << i << ") " << j << ", ";
-			if (last.sub == vs[i][j].sub) { //add to current reads
+			if ( SKequal(last, vs[i][j], k_, tau_) ) { //add to current reads
 				block.push_back(vs[i][j]);
 			} else {
 				processBlock(uf[i], block);

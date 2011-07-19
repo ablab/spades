@@ -24,18 +24,18 @@
 #include <vector>
 #include <set>
 #include <string>
+#include "hammer/kmer_freq_info.hpp"
 
 class KMerPartJoiner {
  public:
   explicit KMerPartJoiner(const std::vector<FILE*> &ifiles, int k);
-  std::pair<std::string, int> Next();
+  KMerFreqInfo Next();
   bool IsEmpty() const { return kmer_parsers_.size() == 0; }
  private:
   class KMerPartParser {
    public:
     KMerPartParser(const KMerPartParser &other)
-        : last_string_(other.last_string_),
-          last_count_(other.last_count_),
+        : last_(),
           file_(other.file_),
           eof_(other.eof_),
           k_(other.k_) {}
@@ -44,27 +44,26 @@ class KMerPartJoiner {
       return *this;
     }
     explicit KMerPartParser(FILE *file, int k)
-        : last_string_(""),
-          last_count_(-1),
+        : last_(),
           file_(file),
           eof_(false),
           k_(k){
       Next();
     }
     bool eof() const { return eof_; }
-    std::string last_string() const { return last_string_; }
-    int last_count() const { return last_count_; }
+    KMerFreqInfo last() {
+      return last_;
+    }
     void Next();
     class Lesser {
     public:
       bool operator()(const KMerPartParser &a, const KMerPartParser &b) const {
-        return a.last_string_ < b.last_string_;
+        return a.last_.kmer < b.last_.kmer;
       }
     };
    private:
     void Swap(KMerPartParser other);
-    std::string last_string_;
-    int last_count_;
+    KMerFreqInfo last_;
     FILE *file_;
     bool eof_;
     int k_;
