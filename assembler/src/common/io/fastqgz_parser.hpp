@@ -35,16 +35,32 @@ KSEQ_INIT(gzFile, gzread)
 
 class FastqgzParser : public Parser {
  public:
+  /*
+   * Default constructor.
+   * 
+   * @param filename The name of the file to be opened.
+   * @param offset The offset of the read quality.
+   */
   FastqgzParser(const std::string& filename,
          int offset = SingleRead::PHRED_OFFSET)
       :Parser(filename, offset) {
     open();
   }
 
+  /* 
+   * Default destructor.
+   */
   /* virtual */ ~FastqgzParser() {
     close();
   }
 
+  /*
+   * Read single read from stream.
+   *
+   * @param read The single read that will store read data.
+   *
+   * @return Reference to this stream.
+   */
   /* virtual */ FastqgzParser& operator>>(SingleRead& read) {
     // some strange reaction on the end of the stream
     // should be rewritten
@@ -59,6 +75,9 @@ class FastqgzParser : public Parser {
     return *this;
   }
 
+  /*
+   * Close the stream.
+   */
   /* virtual */ void close() {
     if (is_open_) {
       // STEP 5: destroy seq
@@ -70,9 +89,19 @@ class FastqgzParser : public Parser {
   }
 
  private:
+  /* 
+   * @variable File that is associated with gzipped data file.
+   */
   gzFile fp_;
+  /*
+   * @variable Data element that stores last single read got from
+   * stream.
+   */ 
   fastqgz::kseq_t* seq_;
 
+  /*
+   * Open a stream.
+   */
   /* virtual */ void open() {
     // STEP 2: open the file handler
     fp_ = gzopen(filename_.c_str(), "r");
@@ -87,6 +116,9 @@ class FastqgzParser : public Parser {
     ReadAhead();
   }
 
+  /* 
+   * Read next single read from file.
+   */
   void ReadAhead() {
     assert(is_open_);
     assert(!eof_);
