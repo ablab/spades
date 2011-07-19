@@ -142,13 +142,6 @@ void SplitToFiles(ReadStream ifs, const vector<FILE*> &ofiles) {
     KMer::hash hash_function;
     for (ValidKMerGenerator<kK> gen(r); gen.HasMore(); gen.Next()) {
       int file_id = hash_function(gen.kmer()) % file_number;
-      float p = gen.correct_probability();
-      if (p != p) {
-        for (int i = 0; i < kK; ++i) {
-          printf("%d ", (int)r.getQualityString()[i + gen.pos()]);
-        }
-        printf(": %d\n", gen.pos());
-      }
       fprintf(ofiles[file_id], "%s %f\n", gen.kmer().str().c_str(), 
               static_cast<float>(gen.correct_probability()));
     }
