@@ -28,7 +28,7 @@ class ValidKMerGenerator {
       pos_(-1),
       end_(-1),
       has_more_(true),
-      error_probability_(1),
+      correct_probability_(1),
       first(true),
       kmer_(),
       seq_(read.getSequenceString()),
@@ -57,8 +57,8 @@ class ValidKMerGenerator {
   /**
    * @result probability that last generated k-mer is correct.
    */
-  double error_probability() {
-    return error_probability_;
+  double correct_probability() {
+    return correct_probability_;
   }
   /**
    * This functions reads next k-mer from the read and sets hasmore to
@@ -69,8 +69,8 @@ class ValidKMerGenerator {
   void TrimBadQuality();
   double Prob(uint8_t qual) {
     static std::vector<double> prob(255, -1);
-    if (prob[qual] < 0) {
-      prob[qual] = pow(10.0, - qual / 10.0);
+    if (prob[qual] < -0.1) {
+      prob[qual] = 1 - pow(10.0, - qual / 10.0);
     }
     return prob[qual];
   }
@@ -78,7 +78,7 @@ class ValidKMerGenerator {
   uint32_t pos_;
   uint32_t end_;
   bool has_more_;
-  double error_probability_;
+  double correct_probability_;
   bool first;
   Seq<kK> kmer_;
   const std::string &seq_;
@@ -105,17 +105,17 @@ void ValidKMerGenerator<kK>::Next() {
     has_more_ = false;
   } else if (first || !is_nucl(seq_[pos_ + kK - 1])) {
     // in this case we have to look for new k-mer
-    error_probability_ = 1;
+    correct_probability_ = 1;
     uint32_t start_hypothesis = pos_;
     uint32_t i = pos_;
     for (; i < seq_.size(); ++i) {
       if (i == kK + start_hypothesis) {
         break;
       }
-      error_probability_ *= Prob(qual_[i]);
+      correct_probability_ *= Prob(qual_[i]);
       if (!is_nucl(seq_[i])) {
         start_hypothesis = i + 1;
-        error_probability_ = 1;
+        correct_probability_ = 1;
       }
     }
     if (i == kK + start_hypothesis) {
@@ -127,7 +127,8 @@ void ValidKMerGenerator<kK>::Next() {
   } else {
     // good case we can just shift our previous answer
     kmer_ = kmer_ << seq_[pos_ + kK - 1];
-    error_probability_ *= Prob(qual_[pos_ + kK - 1]);
+    correct_probability_ *= Prob(qual_[pos_ + kK - 1]);
+    correct_probability_ /= Prob(qual_[pos_ - 1]);
     ++pos_;
   }
   first = false;
