@@ -37,9 +37,9 @@ KMerPartJoiner::KMerPartJoiner(const vector<FILE*> &ifiles, int k)
   }
 }
 
-pair<string, int> KMerPartJoiner::Next() {
+KMerFreqInfo KMerPartJoiner::Next() {
   KMerPartParser kpp(*kmer_parsers_.begin());
-  pair<string, int> ret = make_pair(kpp.last_string(), kpp.last_count());
+  KMerFreqInfo ret = kpp.last();
   kmer_parsers_.erase(kpp);
   kpp.Next();
   if (!kpp.eof()) {
@@ -50,18 +50,17 @@ pair<string, int> KMerPartJoiner::Next() {
 
 void KMerPartJoiner::KMerPartParser::Swap(KMerPartParser other) {
   swap(file_, other.file_);
-  swap(last_string_, other.last_string_);
-  swap(last_count_, other.last_count_);
+  swap(last_, other.last_);
   swap(eof_, other.eof_);
 }
 
 void KMerPartJoiner::KMerPartParser::Next() {
   char *buf = new char[k_ + 1];
   char format[10];
-  snprintf(format, sizeof(format), "%%%ds %%d", k_);
-  eof_ = (fscanf(file_, format, buf, &last_count_) == EOF);
+  snprintf(format, sizeof(format), "%%%ds %%d %%f", k_);
+  eof_ = (fscanf(file_, format, buf, &last_.count, &last_.q_count) == EOF);
   if (!eof_) {
-    last_string_ = buf;
+    last_.kmer = buf;
   }
   delete[] buf;
 }
