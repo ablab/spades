@@ -30,8 +30,8 @@
 #include "common/read/strobe_read.hpp"
 #include "common/read/read.hpp"
 #include "hammer/defs.hpp"
+#include "hammer/kmer_freq_info.hpp"
 #include "hammer/kmer_part_joiner.hpp"
-#include "hammer/kmer_stat.hpp"
 #include "hammer/valid_kmer_generator.hpp"
 
 using std::make_pair;
@@ -50,6 +50,8 @@ namespace {
 const uint32_t kK = 2;
 typedef Seq<kK> KMer;
 typedef RCReaderWrapper<ireadstream, Read> ReadStream;
+typedef map<KMer, KMerFreqInfo, KMer::less2> OrderedMap;
+typedef unordered_map<KMer, KMerFreqInfo, KMer::hash> UnorderedMap;
 
 LoggerPtr logger(Logger::getLogger("preproc"));
 /**
@@ -140,7 +142,15 @@ void SplitToFiles(ReadStream ifs, const vector<FILE*> &ofiles) {
     KMer::hash hash_function;
     for (ValidKMerGenerator<kK> gen(r); gen.HasMore(); gen.Next()) {
       int file_id = hash_function(gen.kmer()) % file_number;
-      fprintf(ofiles[file_id], "%s\n", gen.kmer().str().c_str());
+      float p = gen.correct_probability();
+      if (p != p) {
+        for (int i = 0; i < kK; ++i) {
+          printf("%d ", (int)r.getQualityString()[i + gen.pos()]);
+        }
+        printf(": %d\n", gen.pos());
+      }
+      fprintf(ofiles[file_id], "%s %f\n", gen.kmer().str().c_str(), 
+              static_cast<float>(gen.correct_probability()));
     }
   }
 }
@@ -154,20 +164,23 @@ void SplitToFiles(ReadStream ifs, const vector<FILE*> &ofiles) {
  */
 template<typename KMerStatMap>
 void EvalFile(FILE *ifile, FILE *ofile) {
-  char buffer[kK + 1];
   KMerStatMap stat_map;
   char format[10];
-  snprintf(format, sizeof(format), "%%%ds", kK);
-  while (fscanf(ifile, format, buffer) != EOF) {
+  snprintf(format, sizeof(format), "%%%ds%%f", kK);
+  char buffer[kK + 1];
+  float correct_probability;
+  while (fscanf(ifile, format, buffer, &correct_probability) != EOF) {
     KMer kmer(buffer);
-    ++stat_map[kmer].count;
+    KMerFreqInfo &info = stat_map[kmer];
+    ++info.count;
+    info.q_count += correct_probability;
   }
   for (typename KMerStatMap::iterator it = stat_map.begin();
        it != stat_map.end();
        ++it) {
     fprintf(ofile,
-            "%s %u\n", it->first.str().c_str(),
-            (unsigned int)it->second.count);
+            "%s %u %f\n", it->first.str().c_str(),
+            it->second.count, it->second.q_count);
   }
 }
 
@@ -180,8 +193,8 @@ void EvalFile(FILE *ifile, FILE *ofile) {
 void MergeAndSort(const vector<FILE*> &ifiles, FILE *ofile) {
   KMerPartJoiner joiner(ifiles, kK);
   while (!joiner.IsEmpty()) {
-    pair<string, int> kmer_stat = joiner.Next();
-    fprintf(ofile, "%s %d\n", kmer_stat.first.c_str(), kmer_stat.second);
+    KMerFreqInfo info = joiner.Next();
+    fprintf(ofile, "%s %d %f\n", info.kmer.c_str(), info.count, info.q_count);
   }
 }
 }
@@ -219,7 +232,7 @@ int main(int argc, char * argv[]) {
       FILE *ifile = fopen(ifile_name, "r");
       FILE *ofile = fopen(ofile_name, "w");
       LOG4CXX_INFO(logger, "Processing " << ifile_name << ".");
-      EvalFile< map<KMer, KMerStat, KMer::less2> >(ifile, ofile);
+      EvalFile<OrderedMap>(ifile, ofile);
       LOG4CXX_INFO(logger, "Processed " << ifile_name << ". " <<
                    "You can find the result in " << ofile_name <<
                    ".");
@@ -248,7 +261,7 @@ int main(int argc, char * argv[]) {
       snprintf(ifile_name, sizeof(ifile_name), "%u.kmer.part", i);
       FILE *ifile = fopen(ifile_name, "r");
       LOG4CXX_INFO(logger, "Processing " << ifile_name << ".");
-      EvalFile< unordered_map<KMer, KMerStat, KMer::hash> >(ifile, ofile);
+      EvalFile<UnorderedMap>(ifile, ofile);
       LOG4CXX_INFO(logger, "Processed " << ifile_name << ".");
       fclose(ifile);
     }
