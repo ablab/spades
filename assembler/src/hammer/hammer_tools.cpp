@@ -8,6 +8,7 @@
 #include <omp.h>
 #include <iostream>
 #include <fstream>
+#include <boost/bind.hpp>
 #include "read/ireadstream.hpp"
 #include "defs.hpp"
 #include "mathfunctions.hpp"
@@ -161,11 +162,12 @@ void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rsmc, vector<S
 
 		#pragma omp parallel for shared(vs, p, kmerno, tau) num_threads(effective_threads)
 		for (int j=0; j<tau+1; ++j) {
-			string sub = "";
+			/*string sub = "";
 			for (int i = j; i < K; i += tau+1) {
 				sub += p.first[i];
 			}
-			StringKMer skm; skm.sub = sub; skm.kmerno = kmerno;
+			StringKMer skm; skm.sub = sub; skm.kmerno = kmerno;*/
+			StringKMer skm; skm.kmerno = kmerno; skm.start = j;
 			vs->at(j).push_back(skm);
 			//for (int m=0; m< vs->at(j)[vs->at(j).size() - 1].sub.size(); ++m) cout << nucl(vs->at(j)[vs->at(j).size() - 1].sub[m]);
 			//cout << "  ";
@@ -176,15 +178,9 @@ void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rsmc, vector<S
 	}
 	cout << "Auxiliary vectors loaded." << endl;
 
-	#pragma omp parallel for shared(vs) num_threads(effective_threads)
+	#pragma omp parallel for shared(vs, kmers, tau) num_threads(effective_threads)
 	for (int j=0; j<tau+1; ++j) {
-		sort(vs->at(j).begin(), vs->at(j).end(), SKgreater);
-		/*cout << "vs[" << j << "]:" << endl;
-		for (int l=0; l<vs->at(j).size(); ++l) {
-			cout << "    ";
-			for (int m=0; m< vs->at(j)[l].sub.size(); ++m) cout << nucl(vs->at(j)[l].sub[m]);
-			cout << "  " << vs->at(j)[l].count << endl;
-		}*/
+		sort(vs->at(j).begin(), vs->at(j).end(), boost::bind(SKgreater2, _1, _2, *kmers, tau));
 	}
 	cout << "Auxiliary vectors sorted." << endl;
 }
