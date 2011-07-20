@@ -8,56 +8,15 @@
 #include <omp.h>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 #include "read/ireadstream.hpp"
 #include "defs.hpp"
 #include "mathfunctions.hpp"
 #include "hammer_tools.hpp"
 #include "kmer_cluster.hpp"
 
-
-template<class T> int argmax(T data[], int size) {
-	if (size == 0) return -1;
-	T maxVal;
-	int maxPos = 0;
-	maxVal = data[0];
-	for (int i = 1; i < size; i++) {
-		if (data[i] > maxVal) {
-			maxVal = data[i];
-			maxPos = i;
-		}
-	}
-	return maxPos;
-}
-
-template<class T> int argmin(const vector<T> & data) {
-	if (data.size() == 0) return -1;
-	T maxVal;
-	int maxPos = 0;
-	maxVal = data[0];
-	for (size_t i = 1; i < data.size(); i++) {
-		if (data[i] < maxVal) {
-			maxVal = data[i];
-			maxPos = i;
-		}
-	}
-	return maxPos;
-}
-
-
-template<class T> int argmin(T data[], int size) {
-	if (size == 0) return -1;
-	T maxVal;
-	int maxPos = 0;
-	maxVal = data[0];
-	for (int i = 1; i < size; i++) {
-		if (data[i] < maxVal) {
-			maxVal = data[i];
-			maxPos = i;
-		}
-	}
-	return maxPos;
-}
-
+using std::max_element;
+using std::min_element;
 
 int KMerClustering::hamdistKMer(const KMer & x, const KMer & y, int tau) {
 	int dist = 0;
@@ -132,7 +91,7 @@ KMer KMerClustering::find_consensus_with_mask(const vector<int> & cl, const vect
 			if (mask[j] == maskVal)
                           scores[static_cast<uint8_t>(k_[cl[j]].first[i])] += k_[cl[j]].second.count;
 		}
-		c.push_back(num2nt(argmax(scores, 4)));
+		c.push_back(num2nt(max_element(scores, scores + 4) - scores));
 	}
 	return KMer(c);
 }
@@ -145,7 +104,7 @@ KMer KMerClustering::find_consensus(const vector<int> & cl) {
 		for (size_t j = 0; j < cl.size(); j++) {
                   scores[static_cast<uint8_t>(k_[cl[j]].first[i])]+=k_[cl[j]].second.count;
 		}
-		c.push_back(num2nt(argmax(scores, 4)));
+		c.push_back(num2nt(max_element(scores, scores + 4) - scores));
 	}
 	return KMer(c);
 }
@@ -260,7 +219,7 @@ double KMerClustering::lMeansClustering(int l, vector< vector<int> > & distances
 		for (size_t i=0; i < kmerinds.size(); ++i) {
 			for (int j=0; j < l; ++j)
 				dists[j] = hamdistKMer(k_[kmerinds[i]].first, centers[j].first);
-			int newInd = argmin(dists);
+			int newInd = min_element(dists.begin(), dists.end()) - dists.begin();
 			if (indices[i] != newInd) {
 				changed = true;
 				changedCenter[indices[i]] = true;
