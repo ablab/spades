@@ -45,10 +45,10 @@ class Reader {
 template<>
 class Reader<SingleRead> {
  public:
-  Reader(const typename SingleRead::FilenameType& filename,
+  Reader(const SingleRead::FilenameType& filename,
          int offset = SingleRead::PHRED_OFFSET,
          size_t distance = 0)
-      :filename_(filename), offset_(offset) {
+      : filename_(filename), offset_(offset) {
     parser_ = SelectParser(filename_, offset_);
   }
 
@@ -57,27 +57,42 @@ class Reader<SingleRead> {
   }
 
   virtual bool is_open() {
-    parser_->is_open();
+    if (parser_ != NULL) {
+      return parser_->is_open();
+    } else {
+      return false;
+    }
   }
 
   virtual bool eof() {
-    parser_->eof();
+    if (parser_ != NULL) {
+      return parser_->eof();
+    } else {
+      return true;
+    }
   }
 
   virtual Reader& operator>>(SingleRead& singleread) {
-    (*parser_) >> singleread;
+    if (parser_ != NULL) {
+      (*parser_) >> singleread;
+    }
+    return *this;
   }
 
   virtual void close() {
-    parser_->close();
+    if (parser_ != NULL) {
+      parser_->close();
+    }
   }
 
   virtual void reset() {
-    parser_->reset();
+    if (parser_ != NULL) {
+      parser_->reset();
+    }
   }
 
  private:
-  typename SingleRead::FilenameType filename_;
+  SingleRead::FilenameType filename_;
   int offset_;
   Parser* parser_;
 
@@ -88,11 +103,11 @@ class Reader<SingleRead> {
 template<>
 class Reader<PairedRead> {
  public:
-  Reader(const typename SingleRead::FilenameType& filename,
+  Reader(const PairedRead::FilenameType& filename,
          size_t distance,
          int offset = SingleRead::PHRED_OFFSET)
       : filename_(filename), distance_(distance), offset_(offset) {
-    first_ = new Reader<SingleRead>(filename_.fisrt, offset_);
+    first_ = new Reader<SingleRead>(filename_.first, offset_);
     second_ = new Reader<SingleRead>(filename_.second, offset_);
   }
 
@@ -101,33 +116,33 @@ class Reader<PairedRead> {
   }
 
   virtual bool is_open() {
-    return first_.is_open() && second_.is_open();
+    return first_->is_open() && second_->is_open();
   }
 
   virtual bool eof() {
-    return first_.eof() || second_.eof();
+    return first_->eof() || second_->eof();
   }
 
   virtual Reader& operator>>(PairedRead& pairedread) {
     SingleRead sr1, sr2;
-    first_ >> sr1;
-    second_ >> sr2;
+    (*first_) >> sr1;
+    (*second_) >> sr2;
     pairedread = PairedRead(sr1, sr2, distance_);  // is it correct?
     return *this;
   }
 
   virtual void close() {
-    first_.close();
-    second_.close();
+    first_->close();
+    second_->close();
   }
 
   virtual void reset() {
-    first_.reset();
-    second_.reset();
+    first_->reset();
+    second_->reset();
   }
 
  private:
-  typename PairedRead::FilenameType filename_;
+  PairedRead::FilenameType filename_;
   size_t distance_;
   int offset_;
   Reader<SingleRead>* first_;

@@ -13,6 +13,8 @@
 #include "paired_read_test.hpp"
 #include "parser_test.hpp"
 #include "fastqgz_parser_test.hpp"
+// TODO(mariyafomkina): Add tests for other parsers here.
+#include "reader_singleread_test.hpp"
 
 void runSuite() {
   cute::suite s;
@@ -29,6 +31,8 @@ void runSuite() {
   s += PairedReadSuite();
   s += ParserSuite();
   s += FastqgzParserSuite();
+// TODO(mariyafomkina): Add tests for other parsers here.
+  s += ReaderSingleReadSuite();
   cute::ide_listener lis;
   cute::makeRunner(lis)(s, "The Suite");
 }
