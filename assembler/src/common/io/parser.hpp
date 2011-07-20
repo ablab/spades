@@ -68,7 +68,7 @@ class Parser {
   virtual void close() = 0;
 
   /* 
-   * Close stream and open it again.
+   * Close the stream and open it again.
    */
   void reset() {
     close();

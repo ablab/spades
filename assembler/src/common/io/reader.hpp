@@ -51,18 +51,32 @@ class Reader {
 template<>
 class Reader<SingleRead> {
  public:
+  /*
+   * Default constructor.
+   * 
+   * @param filename The name of the file to be opened.
+   * @param distance Doesn't have any sense here, but necessary for
+   * wrappers.
+   * @param offset The offset of the read quality.
+   */
   Reader(const SingleRead::FilenameType& filename,
-         int offset = SingleRead::PHRED_OFFSET,
-         size_t distance = 0)
+         size_t distance = 0,
+         int offset = SingleRead::PHRED_OFFSET)
       : filename_(filename), offset_(offset) {
     parser_ = SelectParser(filename_, offset_);
   }
 
+  /* 
+   * Default destructor.
+   */
   virtual ~Reader() {
     close();
     delete parser_;
   }
 
+  /* 
+   * Check whether the stream is opened.
+   */
   virtual bool is_open() {
     if (parser_ != NULL) {
       return parser_->is_open();
@@ -71,6 +85,9 @@ class Reader<SingleRead> {
     }
   }
 
+  /* 
+   * Check whether we've reached the end of stream.
+   */
   virtual bool eof() {
     if (parser_ != NULL) {
       return parser_->eof();
@@ -79,6 +96,13 @@ class Reader<SingleRead> {
     }
   }
 
+  /*
+   * Read single read from stream.
+   *
+   * @param singleread The single read that will store read data.
+   *
+   * @return Reference to this stream.
+   */
   virtual Reader& operator>>(SingleRead& singleread) {
     if (parser_ != NULL) {
       (*parser_) >> singleread;
@@ -86,12 +110,18 @@ class Reader<SingleRead> {
     return *this;
   }
 
+  /*
+   * Close the stream.
+   */
   virtual void close() {
     if (parser_ != NULL) {
       parser_->close();
     }
   }
 
+  /* 
+   * Close the stream and open it again.
+   */
   virtual void reset() {
     if (parser_ != NULL) {
       parser_->reset();
@@ -99,37 +129,76 @@ class Reader<SingleRead> {
   }
 
  private:
+  /* 
+   * @variable The name of the file which stream reads from.
+   */
   SingleRead::FilenameType filename_;
+  /*
+   * @variable Quality offset.
+   */
   int offset_;
+  /*
+   * @variable Internal stream that reads from file.
+   */ 
   Parser* parser_;
 
+  /*
+   * Hidden copy constructor.
+   */
   explicit Reader(const Reader<SingleRead>& reader);
+  /*
+   * Hidden assign operator.
+   */
   void operator=(const Reader<SingleRead>& reader);
 };
 
 template<>
 class Reader<PairedRead> {
  public:
+  /*
+   * Default constructor.
+   * 
+   * @param filename The pair that containes the names of two files to
+   * be opened.
+   * @param distance Distance between parts of paired read.
+   * @param offset The offset of the read quality.
+   */
   Reader(const PairedRead::FilenameType& filename,
-         size_t distance,
+         size_t distance = 100,
          int offset = SingleRead::PHRED_OFFSET)
       : filename_(filename), distance_(distance), offset_(offset) {
     first_ = new Reader<SingleRead>(filename_.first, offset_);
     second_ = new Reader<SingleRead>(filename_.second, offset_);
   }
 
+  /* 
+   * Default destructor.
+   */
   virtual ~Reader() {
     close();
   }
 
+  /* 
+   * Check whether the stream is opened.
+   */
   virtual bool is_open() {
     return first_->is_open() && second_->is_open();
   }
 
+  /* 
+   * Check whether we've reached the end of stream.
+   */
   virtual bool eof() {
     return first_->eof() || second_->eof();
   }
 
+  /*
+   * Read paired read from stream.
+   *
+   * @param pairedread The paired read that will store read data.
+   *
+   * @return Reference to this stream.
+   */
   virtual Reader& operator>>(PairedRead& pairedread) {
     SingleRead sr1, sr2;
     (*first_) >> sr1;
@@ -138,24 +207,51 @@ class Reader<PairedRead> {
     return *this;
   }
 
+  /*
+   * Close the stream.
+   */
   virtual void close() {
     first_->close();
     second_->close();
   }
 
+  /* 
+   * Close the stream and open it again.
+   */
   virtual void reset() {
     first_->reset();
     second_->reset();
   }
 
  private:
+  /* 
+   * @variable The names of the files which stream reads from.
+   */
   PairedRead::FilenameType filename_;
+  /*
+   * @variable The distance between two parts of paired read.
+   */
   size_t distance_;
+  /*
+   * @variable Quality offset.
+   */
   int offset_;
+  /*
+   * @variable The first stream (reads from first file).
+   */
   Reader<SingleRead>* first_;
+  /*
+   * @variable The second stream (reads from second file).
+   */
   Reader<SingleRead>* second_;
 
+  /*
+   * Hidden copy constructor.
+   */
   explicit Reader(const Reader<PairedRead>& reader);
+  /*
+   * Hidden assign operator.
+   */
   void operator=(const Reader<PairedRead>& reader);
 };
 
