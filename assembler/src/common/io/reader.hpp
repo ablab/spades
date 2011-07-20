@@ -28,6 +28,12 @@
 #include "common/io/parser.hpp"
 #include "common/io/parser.cpp"  // TEMPORARY HACK!!!
 
+/*
+ * This class only represents Reader interface. All the functionality
+ * is implemented in specializations. Thus, it's impossible to use
+ * Reader<int> or Reader<std::string>. The only possible variants are
+ * Reader<SingleRead> and Reader<PairedRead>.
+ */
 template<typename ReadType>
 class Reader {
  public:
@@ -54,6 +60,7 @@ class Reader<SingleRead> {
 
   virtual ~Reader() {
     close();
+    delete parser_;
   }
 
   virtual bool is_open() {

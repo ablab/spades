@@ -4,7 +4,7 @@
 #include "cute/cute.h"
 #include "common/io/reader.hpp"
 
-void TestReaderSinglReadNoFile() {
+void TestReaderSingleReadNoFile() {
   Reader<SingleRead> reader("./no-file");
   ASSERT(!reader.is_open());
 }
@@ -46,7 +46,7 @@ void TestReaderSingleReadFull() {
 
 cute::suite ReaderSingleReadSuite(){
   cute::suite s;
-  s.push_back(CUTE(TestReaderSinglReadNoFile));
+  s.push_back(CUTE(TestReaderSingleReadNoFile));
   s.push_back(CUTE(TestReaderSingleReadReading));
   s.push_back(CUTE(TestReaderSingleReadFull));
   return s;

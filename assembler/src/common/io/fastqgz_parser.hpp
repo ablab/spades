@@ -84,6 +84,7 @@ class FastqgzParser : public Parser {
       // STEP 6: close the file handler
       gzclose(fp_);
       is_open_ = false;
+      eof_ = true;
     }
   }
 
