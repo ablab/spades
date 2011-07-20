@@ -9,7 +9,6 @@
 #define MATHFUNCTIONS_H
 
 #include<cmath>
-#include<math.h>
 #include "hammer/hammer_tools.hpp"
 
 /**
