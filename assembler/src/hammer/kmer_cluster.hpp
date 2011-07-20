@@ -14,13 +14,6 @@
 
 class unionFindClass;
 
-template<class T> int argmax(T data[], int size);
-template<class T> int argmin(T data[], int size);
-template<class T> int argmin(const vector<T> & data);
-
-
-
-
 class KMerClustering {
 public:
 	KMerClustering(std::vector<KMerCount> & kmers, int nthreads, int tau) : k_(kmers), nthreads_(nthreads), tau_(tau) { }
