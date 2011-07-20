@@ -15,10 +15,9 @@
 #include "read/read.hpp"
 #include "read/ireadstream.hpp"
 #include "union.hpp"
-#include "hammer_config.hpp"
 #include "sequence/seq.hpp"
 #include "kmer_stat.hpp"
-
+#include "position_kmer.hpp"
 
 using namespace std;
 
@@ -54,13 +53,13 @@ private:
 };
 
 void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerStatMap> * vv, vector<ReadStat> * rv);
-void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rmsc, vector<StringKMerVector> * vs, vector<KMerCount> * kmers, vector<ReadStat> * rv);
+void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rmsc, vector< vector<uint64_t> > * vs, vector<KMerCount> * kmers, vector<ReadStat> * rv);
 
 /**
   * correct a read in place
   * @return whether the read has changed at all
   */
-bool CorrectRead(const vector<KMerCount> & kmers, ReadStat * r, ofstream * ofs = NULL);
+bool CorrectRead(const vector<KMerCount> & kmers, ReadStat * r, ReadStat * r_rev, ofstream * ofs = NULL);
 
 #endif
 

@@ -24,8 +24,6 @@ struct ReadStat {
 	Read read;
 	// kmer indices
 	map<uint32_t, uint64_t> kmers;
-	// revcomp kmer indices
-	map<uint32_t, uint64_t> kmers_rev;
 };
 
 /*

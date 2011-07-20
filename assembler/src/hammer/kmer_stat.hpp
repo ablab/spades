@@ -1,6 +1,8 @@
 #ifndef HAMMER_KMERSTAT_HPP_
 #define HAMMER_KMERSTAT_HPP_
+
 #include <vector>
+
 struct KMerStat {
 	size_t count;
 	bool change;
@@ -10,3 +12,4 @@ struct KMerStat {
 };
 
 #endif //  HAMMER_KMERSTAT_HPP_
+

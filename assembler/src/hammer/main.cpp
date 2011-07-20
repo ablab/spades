@@ -25,8 +25,13 @@
 #include "hammer_config.hpp"
 #include "hammer_tools.hpp"
 #include "kmer_cluster.hpp"
+#include "position_kmer.hpp"
+
 
 using namespace std;
+
+std::vector<ReadStat> * PositionKMer::rv = NULL;
+uint64_t PositionKMer::revNo = 0;
 
 int main(int argc, char * argv[]) {
 	if (argc < 6 || argc > 7) {
@@ -47,68 +52,80 @@ int main(int argc, char * argv[]) {
 
 	vector<ReadStat> * rv = ireadstream::readAllNoValidation(readsFilename);
 	cout << "All reads read to memory." << endl;
-	/*for (uint64_t i = 0; i < rv->size(); ++i) {
-		cout << "@" << rv->at(i).read.getName() << endl << rv->at(i).read.getSequenceString().data() << endl;
-	}*/
-
+	
+	PositionKMer::rv = rv;
+	PositionKMer::revNo = rv->size();
+	for (uint64_t i = 0; i < PositionKMer::revNo; ++i) {
+		ReadStat rs; rs.read = !(rv->at(i).read);
+		rv->push_back( rs );
+	}
 	
 	for (int iter_count = 0; iter_count < iterno; ++iter_count) {
+		cout << "\n     === ITERATION " << iter_count << " ===" << endl;
 	
-	vector<KMerStatMap> vv;
-	DoPreprocessing(tau, qvoffset, readsFilename, nthreads, &vv, rv);
-	ReadStatMapContainer rmsc(vv);
-	cout << vv[0].size() << "\n";
-	cout << "Got RMSC of size " << rmsc.size() << "\n";
-	
-	vector<StringKMerVector> vs(tau+1);
-	vector<KMerCount> kmers;
-	DoSplitAndSort(tau, nthreads, rmsc, &vs, &kmers, rv);
-	cout << "Got " << kmers.size() << " kmers.\n";
-	// free up memory
-	for (uint32_t i=0; i < vv.size(); ++i) vv[i].clear(); vv.clear();
-	
-	KMerClustering kmc(kmers, nthreads, tau);
-	// prepare the maps
-	kmc.process(dirprefix, vs);
-	// free up memory
-	kmc.clear();
-	cout << "Finished clustering." << endl;
-	
-	// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
-	vector<ofstream *> outfv; vector<bool> changed;
-	for (int i=0; i<nthreads; ++i) {
-		outfv.push_back(new ofstream(dirprefix + "/" + (char)((int)'0' + iter_count) + ".reconstruct." + (char)((int)'0' + i)));
-		changed.push_back(false);
-	}
+		vector<KMerStatMap> vv;
+		DoPreprocessing(tau, qvoffset, readsFilename, nthreads, &vv, rv);
+		ReadStatMapContainer rmsc(vv);
+		cout << "Got RMSC of size " << rmsc.size() << "\n";
+		
+		vector< vector<uint64_t> > vs(tau+1);
+		vector<KMerCount> kmers;
+		DoSplitAndSort(tau, nthreads, rmsc, &vs, &kmers, rv);
+		cout << "Got " << kmers.size() << " kmers.\n";
+		// free up memory
+		for (uint32_t i=0; i < vv.size(); ++i) vv[i].clear(); vv.clear();
+		
+		KMerClustering kmc(kmers, nthreads, tau);
+		// prepare the maps
+		kmc.process(dirprefix, vs);
+		// free up memory
+		kmc.clear();
+		cout << "Finished clustering." << endl;
 
-	#pragma omp parallel for shared(rv, changed, outfv) num_threads(nthreads)
-	for (int i = 0; i < rv->size(); ++i) {
-		bool res = CorrectRead(kmers, &(rv->at(i)), outfv[omp_get_thread_num()]);
-		changed[omp_get_thread_num()] = changed[omp_get_thread_num()] || res;
-	}
-	bool res = false;
-	for (int i=0; i<nthreads; ++i) {
-		outfv[i]->close(); delete outfv[i];
-		res = res || changed[i];
-	}
+		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
+		vector<ofstream *> outfv; vector<bool> changed;
+		for (int i=0; i<nthreads; ++i) {
+			outfv.push_back(new ofstream(dirprefix + "/" + (char)((int)'0' + iter_count) + ".reconstruct." + (char)((int)'0' + i)));
+			changed.push_back(false);
+		}
 
-	cout << "Correction done. Printing out reads." << endl;
+		#pragma omp parallel for shared(rv, changed, outfv) num_threads(nthreads)
+		for (int i = 0; i < PositionKMer::revNo; ++i) {
+			bool res = CorrectRead(kmers, &(rv->at(i)), &(rv->at(i + PositionKMer::revNo)), outfv[omp_get_thread_num()]);
+			changed[omp_get_thread_num()] = changed[omp_get_thread_num()] || res;
+		}
+		bool res = false;
+		for (int i=0; i<nthreads; ++i) {
+			outfv[i]->close(); delete outfv[i];
+			res = res || changed[i];
+		}		
+
+		cout << "Correction done. Printing out reads." << endl;
 	
-	ofstream outf; outf.open(dirprefix + "/" + (char)((int)'0' + iter_count) + ".reads.corrected");
-	for (uint64_t i = 0; i < rv->size(); ++i) {
-		outf << "@" << rv->at(i).read.getName() << endl << rv->at(i).read.getSequenceString().data() << endl << "+" << rv->at(i).read.getName() << endl << rv->at(i).read.getPhredQualityString(qvoffset) << endl;
+		ofstream outf; outf.open(dirprefix + "/" + (char)((int)'0' + iter_count) + ".reads.corrected");	
+		for (uint64_t i = 0; i < PositionKMer::revNo; ++i) {
+			outf << "@" << rv->at(i).read.getName() << endl << rv->at(i).read.getSequenceString().data() << endl << "+" << rv->at(i).read.getName() << endl << rv->at(i).read.getPhredQualityString(qvoffset) << endl;		
+		}
+		outf.close();
+
 		// prepare the reads for next iteration
-		rv->at(i).kmers.clear(); rv->at(i).kmers_rev.clear();
-	}
-	outf.close();
+		// delete consensuses, clear kmer data, and restore correct revcomps
+		rv->resize( PositionKMer::revNo );
+		cout << rv->size() << "." << endl;
+		for (uint64_t i = 0; i < PositionKMer::revNo; ++i) {
+			rv->at(i).kmers.clear();
+			ReadStat rs; rs.read = !(rv->at(i).read);
+			rv->push_back( rs );
+		}
+		cout << "Reads restored." << endl;
 	
-	cout << "Iteration " << iter_count << " done." << endl;
-	if (!res) {
-		cout << "Nothing has changed in this iteration. Exiting." << endl;
-		break;
-	}
+		if (!res) {
+			cout << "Nothing has changed in this iteration. Exiting." << endl;
+			break;
+		}
 
 	} // iterations
+
 	delete rv;
 	return 0;
 }

@@ -10,7 +10,7 @@
 
 #include <string>
 #include <vector>
-#include "hammer_config.hpp"
+#include "position_kmer.hpp"
 
 class unionFindClass;
 
@@ -21,7 +21,7 @@ public:
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
-	void process(std::string dirprefix, const std::vector<StringKMerVector> & vs);
+	void process(std::string dirprefix, const std::vector< std::vector<uint64_t> > & vs);
 	
 	/// free up memory
 	void clear() {
@@ -32,23 +32,23 @@ private:
 	std::vector<KMerCount> & k_;
 	int nthreads_;
 	int tau_;
-	
-	
-	int hamdistKMer(const KMer & x, const KMer & y, int tau = K);
+		
+	int hamdistKMer(const PositionKMer & x, const PositionKMer & y, int tau = K);
+	int hamdistKMer(const PositionKMer & x, const string & y, int tau = K);
 	double calcMultCoef(std::vector<int> & distances, const std::vector<int> & cl);
-	KMer find_consensus(const std::vector<int> & block);
+	std::string find_consensus(const std::vector<int> & block);
 
 	/**
 	  * find consensus with mask
 	  * @param mask is a vector of integers of the same size as the block
 	  * @param maskVal is the integer that we use
 	  */
-	KMer find_consensus_with_mask(const std::vector<int> & block, const std::vector<int> & mask, int maskVal);
+	std::string find_consensus_with_mask(const std::vector<int> & block, const std::vector<int> & mask, int maskVal);
 	
 	/**
 	  * @return total log-likelihood of this particular clustering
 	  */
-	double clusterLogLikelihood(const vector<int> & cl, const vector<KMerCount> & centers, const vector<int> & indices);
+	double clusterLogLikelihood(const vector<int> & cl, const vector<StringCount> & centers, const vector<int> & indices);
 
 	/**
 	  * perform l-means clustering on the set of k-mers with initial centers being the l most frequent k-mers here
@@ -56,7 +56,7 @@ private:
 	  * @param centers fill array indices with ints from 0 to l that denote which kmers belong where
 	  * @return the resulting likelihood of this clustering
 	  */
-	double lMeansClustering(int l, std::vector< std::vector<int> > & distances, const std::vector<int> & kmerinds, std::vector<int> & indices, std::vector<KMerCount> & centers);
+	double lMeansClustering(int l, std::vector< std::vector<int> > & distances, const std::vector<int> & kmerinds, std::vector<int> & indices, std::vector<StringCount> & centers);
 
 	/**
 	  * SIN
@@ -66,7 +66,7 @@ private:
 	  */
 	void process_block_SIN(const std::vector<int> & block, std::vector< std::vector<int> > & vec);
 
-	void processBlock(unionFindClass * uf, StringKMerVector & block);
+	void processBlock(unionFindClass * uf, vector<uint64_t> & block);
 	void clusterMerge(std::vector<unionFindClass *> uf, unionFindClass * ufMaster);
 
 };
