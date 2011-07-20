@@ -62,10 +62,9 @@ class FastqgzParser : public Parser {
    * @return Reference to this stream.
    */
   /* virtual */ FastqgzParser& operator>>(SingleRead& read) {
-    // some strange reaction on the end of the stream
-    // should be rewritten
-    assert(is_open_);
-    assert(!eof_);
+    if (!is_open_ || eof_) {
+      return *this;
+    }
     read.SetName(seq_->name.s);
     if (seq_->qual.s) {
       read.SetQuality(seq_->qual.s, offset_);

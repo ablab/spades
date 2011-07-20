@@ -102,6 +102,15 @@ class Parser {
 };
 
 /*
+ * Get extension from filename.
+ *
+ * @param filename The name of the file to read from.
+ *
+ * @return File extension (e.g. "fastq", "fastq.gz").
+ */
+std::string GetExtension(const std::string& filename);
+
+/*
  * Select parser type according to file extension.
  *
  * @param filename The name of the file to be opened.
@@ -110,11 +119,7 @@ class Parser {
  * @return Pointer to the new parser object with these filename and
  * offset.
  */
-Parser* SelectParser(const std::string& filename_,
-                     int offset = SingleRead::PHRED_OFFSET) {
-  // get extension
-  // select one of parsers according to extension
-  // return parser*
-}
+Parser* SelectParser(const std::string& filename,
+                     int offset = SingleRead::PHRED_OFFSET);
 
 #endif /* COMMON_IO_PARSER_HPP */
