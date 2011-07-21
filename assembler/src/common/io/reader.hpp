@@ -53,7 +53,7 @@ class Reader<SingleRead> : public IReader<SingleRead> {
   explicit Reader(const SingleRead::FilenameType& filename,
          size_t distance = 0,
          int offset = SingleRead::PHRED_OFFSET)
-      : filename_(filename), offset_(offset) {
+      : filename_(filename), offset_(offset), parser_(NULL) {
     parser_ = SelectParser(filename_, offset_);
   }
 
@@ -157,16 +157,17 @@ class Reader<PairedRead> : public IReader<PairedRead> {
   explicit Reader(const PairedRead::FilenameType& filename,
          size_t distance = 100,
          int offset = SingleRead::PHRED_OFFSET)
-      : filename_(filename), distance_(distance), offset_(offset) {
-    first_ = new Reader<SingleRead>(filename_.first, offset_);
-    second_ = new Reader<SingleRead>(filename_.second, offset_);
-  }
+      : filename_(filename), distance_(distance), offset_(offset),
+        first_(new Reader<SingleRead>(filename_.first, offset_)),
+        second_(new Reader<SingleRead>(filename_.second, offset_)) {}
 
   /* 
    * Default destructor.
    */
   /* virtual */ ~Reader() {
     close();
+    delete first_;
+    delete second_;
   }
 
   /* 

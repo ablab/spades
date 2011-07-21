@@ -43,7 +43,7 @@ class FastqgzParser : public Parser {
    */
   FastqgzParser(const std::string& filename,
          int offset = SingleRead::PHRED_OFFSET)
-      :Parser(filename, offset) {
+      :Parser(filename, offset), fp_(), seq_(NULL) {
     open();
   }
 
@@ -126,6 +126,15 @@ class FastqgzParser : public Parser {
       eof_ = true;
     }
   }
+
+  /*
+   * Hidden copy constructor.
+   */
+  FastqgzParser(const FastqgzParser& parser);
+  /*
+   * Hidden assign operator.
+   */
+  void operator=(const FastqgzParser& parser);
 };
 
 #endif /* COMMON_IO_FASTQGZPARSER_HPP */

@@ -33,7 +33,7 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
    * IReader<PairedRead>). 
    */
   explicit ConvertingReaderWrapper(IReader<PairedRead>* reader)
-      : reader_(reader), index_(0) {
+      : reader_(reader), pairedread_(), index_(0) {
   }
 
   /* 
@@ -104,6 +104,16 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
    * @variable Index of current part of PairedRead.
    */
   size_t index_;
+
+  /*
+   * Hidden copy constructor.
+   */
+  explicit ConvertingReaderWrapper(const ConvertingReaderWrapper&
+                                   reader);
+  /*
+   * Hidden assign operator.
+   */
+  void operator=(const ConvertingReaderWrapper& reader);
 };
 
 #endif /* COMMON_IO_CONVERTINGREADERWRAPPER_HPP_ */

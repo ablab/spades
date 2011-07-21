@@ -30,7 +30,7 @@ class RCReaderWrapper : public IReader<ReadType> {
    * @param reader Pointer to any other reader (ancestor of IReader).
    */
   explicit RCReaderWrapper(IReader<ReadType>* reader)
-      : reader_(reader), was_rc_(true) {
+      : reader_(reader), rc_read_(), was_rc_(true) {
   }
 
   /* 
@@ -101,6 +101,15 @@ class RCReaderWrapper : public IReader<ReadType> {
    * last read read was already outputted.
    */
   bool was_rc_;
+
+  /*
+   * Hidden copy constructor.
+   */
+  explicit RCReaderWrapper(const RCReaderWrapper<ReadType>& reader);
+  /*
+   * Hidden assign operator.
+   */
+  void operator=(const RCReaderWrapper<ReadType>& reader);
 };
 
 #endif /* COMMON_IO_RCREADERWRAPPER_HPP_ */

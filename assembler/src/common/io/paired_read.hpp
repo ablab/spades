@@ -34,7 +34,7 @@ class PairedRead {
   /*
    * Default constructor.
    */
-  PairedRead() {}
+  PairedRead() : first_(), second_(), distance_(0) {}
 
   /*
    * Conctructor from single reads.

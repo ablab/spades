@@ -41,7 +41,7 @@ class SingleRead {
   /*
    * Default constructor.
    */
-  SingleRead() : valid_(false) {}
+  SingleRead() : name_(""), seq_(""), qual_(""), valid_(false) {}
 
   /*
    * Test constructor.
@@ -53,9 +53,8 @@ class SingleRead {
   SingleRead(const std::string& name,
              const std::string& seq,
              const std::string& qual)
-    : name_(name), seq_(seq), qual_(qual) {
-    valid_ = UpdateValid();
-  }
+      : name_(name), seq_(seq), qual_(qual),
+        valid_(UpdateValid()) {}
 
   /*
    * Check whether single read is valid.

@@ -100,6 +100,16 @@ class CuttingReaderWrapper : public IReader<ReadType> {
    * @variable Number of reads that are read till the moment.
    */
   size_t read_;
+
+  /*
+   * Hidden copy constructor.
+   */
+  explicit CuttingReaderWrapper(const CuttingReaderWrapper<ReadType>&
+                                reader);
+  /*
+   * Hidden assign operator.
+   */
+  void operator=(const CuttingReaderWrapper<ReadType>& reader);
 };
 
 #endif /* COMMON_IO_CUTTINGREADERWRAPPER_HPP_ */
