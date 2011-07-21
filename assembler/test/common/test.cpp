@@ -18,7 +18,7 @@
 #include "reader_pairedread_test.hpp"
 #include "multifile_reader_wrapper_test.hpp"
 #include "cutting_reader_wrapper_test.hpp"
-
+#include "rc_reader_wrapper_test.hpp"
 
 void runSuite() {
   cute::suite s;
@@ -39,6 +39,7 @@ void runSuite() {
   s += ReaderPairedReadSuite();
   s += MultifileReaderWrapperSuite();
   s += CuttingReaderWrapperSuite();
+  s += RCReaderWrapperSuite();
   cute::ide_listener lis;
   cute::makeRunner(lis)(s, "The Suite");
 }

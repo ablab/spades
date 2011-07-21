@@ -23,13 +23,13 @@
 
 template<typename ReadType>
 class CuttingReaderWrapper : public IReader<ReadType> {
+ public:
   /*
    * Default constructor.
    *
    * @param reader Pointer to any other reader (ancestor of IReader).
    * @param cut Number of reads to be read (-1 by default, i.e. all).
    */
- public:
   explicit CuttingReaderWrapper(IReader<ReadType>* reader,
                                 size_t cut = -1)
       : reader_(reader), cut_(cut), read_(0) {

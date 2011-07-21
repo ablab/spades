@@ -19,22 +19,50 @@
 #ifndef COMMON_IO_RCREADERWRAPPER_HPP_
 #define COMMON_IO_RCREADERWRAPPER_HPP_
 
-#include "common/io/reader.hpp"
+#include "common/io/ireader.hpp"
 
 template<typename ReadType>
-class RCReaderWrapper : public Reader<ReadType> {
+class RCReaderWrapper : public IReader<ReadType> {
  public:
-  explicit RCReaderWrapper(const Reader<ReadType>* reader)
+  /*
+   * Default constructor.
+   *
+   * @param reader Pointer to any other reader (ancestor of IReader).
+   */
+  explicit RCReaderWrapper(IReader<ReadType>* reader)
       : reader_(reader), was_rc_(true) {
-    is_open_ = (*reader_).is_open();
-    eof_ = (*reader_).eof();
   }
 
-  /*virtual*/~RCReaderWrapper() {
+  /* 
+   * Default destructor.
+   */
+  /* virtual */ ~RCReaderWrapper() {
     close();
   }
 
-  /*virtual*/RCReaderWrapper& operator>>(ReadType& read) {
+  /* 
+   * Check whether the stream is opened.
+   */
+  /* virtual */ bool is_open() {
+    return reader_->is_open();
+  }
+
+  /* 
+   * Check whether we've reached the end of stream.
+   */
+  /* virtual */ bool eof() {
+    return (was_rc_) && (reader_->eof());
+  }
+
+  /*
+   * Read single or paired read from stream (according to ReadType).
+   *
+   * @param singleread The single or paired read that will store read
+   * data.
+   *
+   * @return Reference to this stream.
+   */
+  /* virtual */ RCReaderWrapper& operator>>(ReadType& read) {
     if (was_rc_) {
       (*reader_) >> read;
       rc_read_ = read;
@@ -42,27 +70,37 @@ class RCReaderWrapper : public Reader<ReadType> {
       read = !rc_read_;
     }
     was_rc_ = !was_rc_;
-    if ((was_rc_) && ((*reader_).eof())) {
-      eof_ = true;
-    }
     return (*this);
   }
 
-  /*virtual*/void close() {
-    if (is_open_) {
-      (*reader_).close();
-      is_open_ = false;
-    }
+  /*
+   * Close the stream.
+   */
+  /* virtual */ void close() {
+    reader_->close();
   }
 
-  /*virtual*/void reset() {
-    was_rc_ = false;
-    (*reader_).reset();
+  /* 
+   * Close the stream and open it again.
+   */
+  /* virtual */ void reset() {
+    was_rc_ = true;
+    reader_->reset();
   }
 
  private:
-  Reader<ReadType>* reader_;
+  /*
+   * @variable Internal stream readers.
+   */
+  IReader<ReadType>* reader_;
+  /*
+   * @variable Last read got from the stream.
+   */ 
   ReadType rc_read_;
+  /*
+   * @variable Flag that shows where reverse complimentary copy of the
+   * last read read was already outputted.
+   */
   bool was_rc_;
 };
 
