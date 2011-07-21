@@ -31,7 +31,8 @@ class MultifileReaderWrapper : public IReader<ReadType> {
    * 
    * @param filenames The names of the files to be opened. Wrapper
    * tries to open all the files of this list and proceeds only those
-   * of them which present. The names of non-existing files are ignored. 
+   * of them which present. The names of non-existing files are
+   * ignored. 
    * @param distance Distance between parts of paired reads (or useless
    * parameter when we work with single reads).
    * @param offset The offset of the read quality.

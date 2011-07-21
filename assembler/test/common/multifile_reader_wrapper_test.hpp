@@ -5,7 +5,6 @@
 #include <string>
 #include "cute/cute.h"
 #include "common/io/single_read.hpp"
-#include "common/io/reader.hpp"
 #include "common/io/multifile_reader_wrapper.hpp"
 
 void TestMultifileReaderWrapperNoFile() {

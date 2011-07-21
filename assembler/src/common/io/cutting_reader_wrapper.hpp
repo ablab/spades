@@ -19,47 +19,88 @@
 #ifndef COMMON_IO_CUTTINGREADERWRAPPER_HPP_
 #define COMMON_IO_CUTTINGREADERWRAPPER_HPP_
 
-#include "common/io/reader.hpp"
+#include "common/io/ireader.hpp"
 
 template<typename ReadType>
-class CuttingReaderWrapper : public Reader<ReadType> {
+class CuttingReaderWrapper : public IReader<ReadType> {
+  /*
+   * Default constructor.
+   *
+   * @param reader Pointer to any other reader (ancestor of IReader).
+   * @param cut Number of reads to be read (-1 by default, i.e. all).
+   */
  public:
-  CuttingReaderWrapper(const Reader<ReadType>* reader,
-                       size_t cut = -1)
+  explicit CuttingReaderWrapper(IReader<ReadType>* reader,
+                                size_t cut = -1)
       : reader_(reader), cut_(cut), read_(0) {
-    is_open_ = (*reader_).is_open();
-    eof_ = (*reader_).eof();
   }
 
-  /*virtual*/~CuttingReaderWrapper() {
+  /* 
+   * Default destructor.
+   */
+  /* virtual */ ~CuttingReaderWrapper() {
     close();
   }
 
-  /*virtual*/CuttingReaderWrapper& operator>>(ReadType& read) {
-    (*reader_) >> read;
-    ++read_;
-    if ((read_ == cut_) || ((*reader_).eof())) {
-      eof_ = true;
+  /* 
+   * Check whether the stream is opened.
+   */
+  /* virtual */ bool is_open() {
+    return reader_->is_open();
+  }
+
+  /* 
+   * Check whether we've reached the end of stream.
+   */
+  /* virtual */ bool eof() {
+    return (read_ == cut_) || (reader_->eof());
+  }
+
+  /*
+   * Read single or paired read from stream (according to ReadType).
+   *
+   * @param singleread The single or paired read that will store read
+   * data.
+   *
+   * @return Reference to this stream.
+   */
+  /* virtual */ CuttingReaderWrapper& operator>>(ReadType& read) {
+    if (read_ < cut_) {
+      (*reader_) >> read;
+      ++read_;
     }
     return (*this);
   }
 
-  /*virtual*/void close() {
-    if (is_open_) {
-      (*reader_).close();
-      is_open_ = false;
-    }
+  /*
+   * Close the stream.
+   */
+  /* virtual */ void close() {
+    reader_->close();
   }
 
-  /*virtual*/void reset() {
+  /* 
+   * Close the stream and open it again.
+   */
+  /* virtual */ void reset() {
     read_ = 0;
-    (*reader_).reset();
+    reader_->reset();
   }
 
  private:
-  Reader<ReadType>* reader_;
-  size_t read_;
+  /*
+   * @variable Internal stream readers.
+   */
+  IReader<ReadType>* reader_;
+  /*
+   * @variable Number of reads that are allowed to read (if it is less
+   * than 0, all reads in stream are allowed to be read.
+   */
   size_t cut_;
+  /*
+   * @variable Number of reads that are read till the moment.
+   */
+  size_t read_;
 };
 
 #endif /* COMMON_IO_CUTTINGREADERWRAPPER_HPP_ */
