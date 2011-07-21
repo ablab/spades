@@ -5,7 +5,7 @@ MYLDFLAGS=-fopenmp
 builddir=../../build/$(DIR)
 basedir=../
 
-hammer: $(builddir)/preproc $(builddir)/main
+hammer: $(builddir)/preproc $(builddir)/main $(builddir)/prepare_graph
 	@echo "== MADE HAMMER =="
 
 $(builddir)/main:  $(builddir)/hammer_tools.o $(builddir)/main.o $(builddir)/kmer_cluster.o
@@ -15,6 +15,13 @@ $(builddir)/main:  $(builddir)/hammer_tools.o $(builddir)/main.o $(builddir)/kme
 $(builddir)/preproc: $(builddir)/preproc.o
 	$(CC) $(LDFLAGS) $(builddir)/preproc.o -o $(builddir)/$@
 	@echo "== made preproc =="
+
+$(builddir)/prepare_graph: $(builddir)/prepare_graph.o
+	$(CC) $(LDFLAGS) $(builddir)/prepare_graph.o -o $(builddir)/$@
+	@echo "== made prepare_graph =="
+
+$(builddir)/prepare_graph.o: prepare_graph.cpp	
+	$(CC) $(CFLAGS) prepare_graph.cpp -o $(builddir)/$@
 
 $(builddir)/kmer_cluster.o: kmer_cluster.cpp $(builddir)/.d
 	$(CC) $(CFLAGS) kmer_cluster.cpp -o $(builddir)/$@

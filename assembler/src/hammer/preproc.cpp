@@ -16,6 +16,8 @@
  * the reads provided. Reads file is supposed to be in fastq
  * format.
  */
+#include <stdint.h>
+#include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <set>
@@ -72,16 +74,16 @@ struct Options {
 };
 
 void PrintHelp() {
-  printf("Usage: ./preproc qvoffset ifile.fastq ofile.kmer file_number [q]\n");
+  printf("Usage: ./preproc qvoffset ifile.fastq ofile.[q]cst file_number [q]\n");
   printf("Where:\n");
   printf("\tqvoffset\tan offset of fastq quality data\n");
   printf("\tifile.fastq\tan input file with reads in fastq format\n");
-  printf("\tofile.kmer\ta filename where k-mer statistics will be outputted\n");
+  printf("\tofile.[q]cst\ta filename where k-mer statistics will be outputted\n");
   printf("\tfile_number\thow many files will be used when splitting k-mers\n");
   printf("\tq\t\tif you want to count q-mers instead of k-mers\n");
 }
 
-Options ParseOptions(int argc, char * argv[]) {
+Options ParseOptions(int argc, char *argv[]) {
   Options ret;
   if (argc != 6 && argc != 5) {
     ret.valid =  false;
@@ -172,7 +174,7 @@ void EvalFile(FILE *ifile, FILE *ofile, bool q_mers) {
 }
 }
 
-int main(int argc, char * argv[]) {
+int main(int argc, char *argv[]) {
   Options opts = ParseOptions(argc, argv);
   if (!opts.valid) {
     PrintHelp();
