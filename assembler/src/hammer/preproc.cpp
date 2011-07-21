@@ -172,7 +172,7 @@ void EvalFile(FILE *ifile, FILE *ofile, bool q_mers) {
 }
 }
 
-int main(int argc, char * argv[]) {
+int main(int argc, char *argv[]) {
   Options opts = ParseOptions(argc, argv);
   if (!opts.valid) {
     PrintHelp();
