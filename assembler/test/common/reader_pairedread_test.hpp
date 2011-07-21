@@ -1,12 +1,14 @@
 #ifndef TEST_READERPAIREDREAD_HPP_
 #define TEST_READERPAIREDREAD_HPP_
 
+#include <utility>
+#include <string>
 #include "cute/cute.h"
 #include "common/io/reader.hpp"
 
 void TestReaderPairedReadNoFile() {
   Reader<PairedRead> reader(std::pair<std::string, std::string>
-                            ("./no-file", "./test/data/s_test.fastq.gz"), 
+                            ("./no-file", "./test/data/s_test.fastq.gz"),
                             100, 33);
   ASSERT(!reader.is_open());
   Reader<PairedRead> reader2(std::pair<std::string, std::string>
@@ -16,7 +18,7 @@ void TestReaderPairedReadNoFile() {
 
 void TestReaderPairedReadReading() {
   Reader<PairedRead> reader(std::pair<std::string, std::string>
-                            ("./test/data/s_test.fastq.gz", 
+                            ("./test/data/s_test.fastq.gz",
                              "./test/data/s_test_2.fastq.gz"), 100, 33);
   ASSERT(reader.is_open());
   PairedRead read;
@@ -45,7 +47,7 @@ void TestReaderPairedReadReading() {
   ASSERT(!reader.is_open());
 }
 
-cute::suite ReaderPairedReadSuite(){
+cute::suite ReaderPairedReadSuite() {
   cute::suite s;
   s.push_back(CUTE(TestReaderPairedReadNoFile));
   s.push_back(CUTE(TestReaderPairedReadReading));

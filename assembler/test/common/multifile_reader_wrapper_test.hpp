@@ -69,7 +69,7 @@ void TestMultifileReaderWrapperReadingFrom2Files() {
   ASSERT(reader.eof());
 }
 
-cute::suite MultifileReaderWrapperSuite(){
+cute::suite MultifileReaderWrapperSuite() {
   cute::suite s;
   s.push_back(CUTE(TestMultifileReaderWrapperNoFile));
   s.push_back(CUTE(TestMultifileReaderWrapperReadingFrom1File));

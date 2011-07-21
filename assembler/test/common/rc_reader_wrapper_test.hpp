@@ -34,7 +34,7 @@ void TestRCReaderWrapperReading() {
   ASSERT_EQUAL(6, number);
 }
 
-cute::suite RCReaderWrapperSuite(){
+cute::suite RCReaderWrapperSuite() {
   cute::suite s;
   s.push_back(CUTE(TestRCReaderWrapperNoFile));
   s.push_back(CUTE(TestRCReaderWrapperReading));

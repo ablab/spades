@@ -40,12 +40,12 @@ class MultifileReaderWrapper : public IReader<ReadType> {
   MultifileReaderWrapper(const vector<typename ReadType::FilenameType>&
                          filenames, size_t distance = 0,
                          int offset = SingleRead::PHRED_OFFSET)
-      : filenames_(filenames), distance_(distance), offset_(offset), 
+      : filenames_(filenames), distance_(distance), offset_(offset),
         current_reader_index_(0) {
     for (size_t i = 0; i < filenames_.size(); ++i) {
       Reader<ReadType>* reader_ = new Reader<ReadType>(
           filenames_[i], distance_, offset_);
-      if (reader_->is_open()) { 
+      if (reader_->is_open()) {
         readers_.push_back(reader_);
       } else {
         delete reader_;
@@ -58,7 +58,7 @@ class MultifileReaderWrapper : public IReader<ReadType> {
    */
   /*virtual*/~MultifileReaderWrapper() {
     close();
-    for (size_t i = 0; i < readers_.size(); ++i) { 
+    for (size_t i = 0; i < readers_.size(); ++i) {
       delete readers_[i];
     }
   }

@@ -44,7 +44,7 @@ void TestReaderSingleReadFull() {
   ASSERT(!reader.is_open());
 }
 
-cute::suite ReaderSingleReadSuite(){
+cute::suite ReaderSingleReadSuite() {
   cute::suite s;
   s.push_back(CUTE(TestReaderSingleReadNoFile));
   s.push_back(CUTE(TestReaderSingleReadReading));

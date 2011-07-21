@@ -40,7 +40,7 @@ void TestCuttingReaderWrapperReading() {
   ASSERT(reader2.eof());
 }
 
-cute::suite CuttingReaderWrapperSuite(){
+cute::suite CuttingReaderWrapperSuite() {
   cute::suite s;
   s.push_back(CUTE(TestCuttingReaderWrapperNoFile));
   s.push_back(CUTE(TestCuttingReaderWrapperReading));
