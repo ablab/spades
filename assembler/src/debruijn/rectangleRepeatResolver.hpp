@@ -2,14 +2,10 @@
 
 #define RECTANGLEREPEATRESOLVER_H
 
-
-
-
 #include "weakerGluer.hpp"
 #include "graphCopy.hpp"
 #include "distanceEstimator.hpp"
 namespace debruijn_graph {
-
 
 
 template<class Graph>
@@ -32,26 +28,15 @@ public:
         SimpleDistanceEstimator<Graph>  simpleDistanceEstimator(graph_);
         SingleQuotientGraph<NonconjugateDeBruijnGraph> myquotientGraph(graph_);
         SimpleGraphFilter<Graph> simpleGraphFilter;
-        WeakerGluer<NonconjugateDeBruijnGraph> myweakerGluer(graph_, myquotientGraph, simpleGraphFilter, 
+        WeakerGluer<NonconjugateDeBruijnGraph> weakerGluer(graph_, myquotientGraph, simpleGraphFilter, 
                 simpleDistanceEstimator,  index_, errorDistance_, myRed, myBlue );
+        weakerGluer.WeakerGlueProcess();
 
         //TODO combine red and blue graph for better contigs.
         GraphCopy<Graph> resultCopy(myRed);
         resultCopy.Copy(resultGraph_);
     }
 };
-/*
-            unordered_map<VertexId, VertexId> old_to_new;
-            unordered_map<EdgeId, EdgeId> old_to_new_edge;
 
-
-            NonconjugateDeBruijnGraph mydeBruijn(graph_.k());
-           
-            PairInfoIndexData<typename NonconjugateDeBruijnGraph::EdgeId> myNewIndex;
-            GraphCopy<Graph> mycopy(graph_);
-            mycopy.Copy(mydeBruijn,piid, myNewIndex); 
-        
-
-*/
 }
 #endif /* end of include guard: RECTANGLEREPEATRESOLVER_H */

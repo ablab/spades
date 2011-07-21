@@ -17,7 +17,7 @@
 
 using namespace std;
 bool pred1(const vector<int> & v) {return v.size() == 0;}
-//TODO need refactoring. 
+//TODO this class seriously needs to be refactored . 
 class UnionFindClass {
     public:
         UnionFindClass(int size) : data(size, -1), rank(size, 0) {

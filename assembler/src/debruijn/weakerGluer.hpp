@@ -64,28 +64,16 @@ public:
         pairIndex_(index), errorDistance_(errorDistance), weakerRedGraph_(weakerRedGraph),
         weakerBlueGraph_(weakerBlueGraph) {
                 
-                //I want to see how the data looks like here
-                //1 Print all the node 
-        for(auto iter = debruijn.begin() ; iter != debruijn.end(); ++iter)
-            INFO("my nodes " << *iter<<"\n"); 
-		for (auto iter = debruijn.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-			EdgeId edge = *iter;
-            INFO("my edges " << debruijn.EdgeStart(edge) <<" : "<<debruijn.length(edge)<<":" << debruijn.EdgeEnd(edge)<< debruijn.str(edge) );
-		}
+            
 
 
         //Want to print all the pairinfos
        distanceEstimator_.MatePairFilter(pairIndex_);
-        for(auto iter = pairIndex_.begin(); iter != pairIndex_.end() ; ++iter)
-        {
-            INFO("my pair info "<< iter->first<<"-"<< debruijn_.EdgeStart(iter->first)<< ":"<< debruijn_.length(iter->first)<<":" << debruijn_.EdgeEnd(iter->first)
-                    << "--" << iter->second<<"-"<<debruijn_.EdgeStart(iter->second)<<":" << debruijn_.length(iter->second)<< ":"<<debruijn_.EdgeEnd(iter->second) << " : d " << iter->d << " weight : " << iter->weight );
-        }
-        WeakerGlueProcess();
     }
     WeakerGluer(){}
     bool WeakerGlueProcess()
     {
+        //TODO Iterate until converge
         Graph redGraph(debruijn_.k());
         Graph blueGraph(debruijn_.k());
         //Clear all intermediateData in the previous iteration
@@ -266,20 +254,8 @@ void WeakerGluer<Graph>::GenerateRedGraph(Graph &redGraph){
         vector<EdgeId> inComingEdges = debruijn_.IncomingEdges(*iter);
         vector<PairInfo> leftPairInfos ;
         GetPairInfos(inComingEdges, FORWARD, leftPairInfos);
-        INFO("my debug v "<< *iter); 
-        INFO("in coming : ");
-        for(auto it = inComingEdges.begin(); it != inComingEdges.end(); ++it)
-        {
-            INFO(debruijn_.EdgeStart(*it)<<":"<<debruijn_.EdgeEnd(*it));
-        }
         vector<PairInfo> rightPairInfos;
         GetPairInfos(outGoingEdges,FORWARD, rightPairInfos);
-        INFO("out coming : ");
-        for(auto it = outGoingEdges.begin(); it != outGoingEdges.end(); ++it)
-        {
-            INFO(debruijn_.EdgeStart(*it)<<":"<<debruijn_.EdgeEnd(*it));
-        }
-
         size_t currentMaxNodeId = Glue(leftPairInfos, rightPairInfos, FORWARD, leftPairInfosToNewNodesID, rightPairInfosToNewNodesID, maxNodeId);
         for(size_t currentNodeId = maxNodeId ; currentNodeId != currentMaxNodeId ; ++currentNodeId)
         {
@@ -298,7 +274,6 @@ void WeakerGluer<Graph>::GenerateRedGraph(Graph &redGraph){
         bool isAlreadyAdded = false;
         for(auto iter = range.first ; iter != range.second ; ++iter)
         {
-            INFO("my sequence " << iter->second );
             if(iter->second == debruijn_.str(pairInfo.first))
             {
                 isAlreadyAdded = true;
@@ -319,12 +294,6 @@ size_t WeakerGluer<Graph>::Glue(vector<PairInfo> &leftPairInfos, vector<PairInfo
         map<PairInfo, size_t>& leftPairInfosToNewNodesID,map<PairInfo, size_t>& rightPairInfosToNewNodesID, size_t maxNodeId)
 {
 
-//    INFO("come left pairs");
-//     for(auto iter = leftPairInfos.begin(); iter != leftPairInfos.end() ; ++iter)
-//         INFO("my pair in glue "<< iter->first <<":"<< debruijn_.length(iter->first)<<":" << iter->second <<":"<<debruijn_.length(iter->second)<< "d:" << iter->d<<"w:" <<iter->weight );
-//    INFO("come right pairs");
-//     for(auto iter = rightPairInfos.begin(); iter != rightPairInfos.end() ; ++iter)
-//         INFO("my pair in glue "<< iter->first <<":"<< debruijn_.length(iter->first)<<":" << iter->second <<":"<<debruijn_.length(iter->second)<< "d:" << iter->d<<"w:" <<iter->weight );
      vector<pair<int,int> > leftGluings; 
      OneSideGluing(leftPairInfos, leftGluings, direction); 
      vector<pair<int,int> > rightGluings ; 
@@ -334,29 +303,21 @@ size_t WeakerGluer<Graph>::Glue(vector<PairInfo> &leftPairInfos, vector<PairInfo
      size_t leftSize = leftPairInfos.size();
      size_t rightSize = rightPairInfos.size();
      UnionFindClass myunion(leftSize + rightSize);
-     INFO("left gluings: ");
      for(size_t  i =  0  ; i < leftGluings.size() ; ++i)
      {
          myunion.unionn(leftGluings[i].first, leftGluings[i].second);
-         INFO(leftGluings[i].first <<":" <<leftGluings[i].second);
      }
-     INFO("Right gluings:")
      for(size_t i = 0 ; i < rightGluings.size() ; ++i)
      {
          myunion.unionn(rightGluings[i].first  + leftSize, rightGluings[i].second + leftSize);
-         INFO(rightGluings[i].first<<":"<< rightGluings[i].second);
      }
-     INFO("Left to Right Gluings:");
      for(size_t i = 0 ; i < leftToRightGluings.size() ; ++i)
      {
          myunion.unionn(leftToRightGluings[i].first, leftToRightGluings[i].second);
-         INFO(leftToRightGluings[i].first<<":"<< leftToRightGluings[i].second);
      }
      vector<vector<int> > resultsGluing ;
      myunion.get_classes(resultsGluing);
      size_t nodeID= 0;
-     INFO("max nodeID "<< maxNodeId);
-     INFO("result Gluing "<< resultsGluing.size());
      for(size_t i = 0 ; i < resultsGluing.size() ; i++)
      {
          nodeID = i +  maxNodeId;
@@ -372,7 +333,6 @@ size_t WeakerGluer<Graph>::Glue(vector<PairInfo> &leftPairInfos, vector<PairInfo
              }
          }
      }
-     INFO("my nodeID "<<nodeID);
      return nodeID+1;
 }
 /*
@@ -412,23 +372,9 @@ void WeakerGluer<Graph>::GenerateBlueGraph(Graph &redGraph){}
 
 template <class Graph>
 void WeakerGluer<Graph>::GenerateResultGraphs(Graph& redGraph, Graph& blueGraph){
-    INFO("I'm coming here " ); 
-    for(auto iter = redGraph.begin() ; iter != redGraph.end(); ++iter)
-        INFO("my nodeS " << *iter<<"\n"); 
-    for (auto iter = redGraph.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-        EdgeId edge = *iter;
-        INFO("my edgeS " << redGraph.EdgeStart(edge) <<" : " << redGraph.EdgeEnd(edge) );
-    }
 
     GraphCopy<Graph> redCopier(redGraph);
     redCopier.Copy(weakerRedGraph_);
-    for(auto iter = weakerRedGraph_.begin() ; iter != weakerRedGraph_.end(); ++iter)
-        INFO("my result nodeS " << *iter<<"\n"); 
-    for (auto iter = weakerRedGraph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-        EdgeId edge = *iter;
-        INFO("my result edgeS " << weakerRedGraph_.EdgeStart(edge) <<" : " << weakerRedGraph_.EdgeEnd(edge) );
-    }
-
     GraphCopy<Graph> blueCopier(blueGraph);
     blueCopier.Copy(weakerBlueGraph_);
         return;

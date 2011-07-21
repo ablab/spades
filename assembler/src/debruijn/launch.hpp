@@ -29,6 +29,7 @@
 #include "new_debruijn.hpp"
 #include "config.hpp"
 #include "graphio.hpp"
+#include "rectangleRepeatResolver.hpp"
 //#include "dijkstra.hpp"
 
 namespace debruijn_graph {
@@ -342,7 +343,7 @@ void OutputContigs(Graph& g, const string& contigs_output_filename) {
 
 template<size_t k, class ReadStream>
 void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
-		const Sequence& genome, bool paired_mode, bool etalon_info_mode,
+		const Sequence& genome, bool paired_mode, bool rectangle_mode, bool etalon_info_mode,
 		bool from_saved, size_t insert_size, size_t max_read_length,
 		const string& output_folder, const string& work_tmp_dir) {
 	INFO("Edge graph construction tool started");
@@ -434,6 +435,11 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		NonconjugateDeBruijnGraph resolved_graph(k);
 		IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
 		DEBUG("New index size: "<< new_index.size());
+        if(rectangle_mode)
+        {
+             void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index, NonconjugateDeBruijnGraph& graph, const string& work_tmp_dir, const string& output_folder);                                                          
+             RectangleResolve(new_index, new_graph, work_tmp_dir, output_folder);                        
+        }
 		ResolveRepeats(new_graph, NewIntIds, new_index, resolved_graph,
 				Resolved_IntIds, output_folder + "resolve/");
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
@@ -468,6 +474,43 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 }
+
+void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index, NonconjugateDeBruijnGraph& graph, const string& work_tmp_dir, const string& output_folder){                                                                      
+
+    NonconjugateDeBruijnGraph resolvedGraph(graph.k());                                                                                                                                                                                   
+    typedef typename NonconjugateDeBruijnGraph::EdgeId NCEdgeId;                                                                                                                                                                          
+    PairInfoIndexData<NCEdgeId> piid;                                                                                                                                                                                                     
+    for( auto iter = index.begin() ; iter != index.end() ; ++iter)                                                                                                                                                                        
+    {                                                                                                                                                                                                                                     
+
+        vector<PairInfo<NCEdgeId> >  pi = *iter ;                                                                                                                                                                                         
+        for(size_t i = 0 ; i  < pi.size() ; ++i)                                                                                                                                                                                          
+        {                                                                                                                                                                                                                                 
+            if(pi[i].d >=0)                                                                                                                                                                                                               
+                piid.AddPairInfo(pi[i],1);                                                                                                                                                                                                
+        }                                                                                                                                                                                                                                 
+    }                                                                                                                                                                                                                                     
+    RectangleRepeatResolver<NonconjugateDeBruijnGraph> rectangleResolver(graph, piid, resolvedGraph, (size_t)30);                                                                                                                         
+    rectangleResolver.Process();                                                                                                                                                                                                          
+
+
+    ClipTips(resolvedGraph);                                                                                                                                                                                                              
+    RemoveLowCoverageEdges(resolvedGraph);                                                                                                                                                                                                
+    EmptyGraphLabeler<NonconjugateDeBruijnGraph> emptyLabeler;                                                                                                                                                                            
+
+
+    omnigraph::WriteSimple(work_tmp_dir + "rectgraph.dot",                                                                                                                                                                                
+            "rectgraph", resolvedGraph, emptyLabeler );                                                                                                                                                                                   
+    INFO("rect graph written: " + work_tmp_dir + "rectgraph.dot");                                                                                                                                                                        
+
+
+    omnigraph::WriteSimple( work_tmp_dir + "before-rectgraph.dot", "before-rectgraph", graph, emptyLabeler);                                                                                                                              
+    INFO("rect graph written: " + work_tmp_dir + "before-rectgraph.dot");                                                                                                                                                                 
+
+
+    OutputContigs(resolvedGraph, output_folder + "rectcontig.fasta");                                                                                                                                                                     
+    OutputContigs(graph, output_folder + "before-rectcontig.fasta");                                                                                                                                                                      
+}                                                                                                                                                                                                                                         
 
 }
 

@@ -2,7 +2,7 @@
 
 #define GRAPHFILTER_H
 
-//This graph will be a crutial component in multi-library
+//This graph will be a crucial component in multi-library
 //TODO tdd this in the next iteration
 template<class Graph>
 class IGraphFilter
