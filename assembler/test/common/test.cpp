@@ -16,6 +16,7 @@
 // TODO(mariyafomkina): Add tests for other parsers here.
 #include "reader_singleread_test.hpp"
 #include "reader_pairedread_test.hpp"
+#include "multifile_reader_wrapper_test.hpp"
 
 
 void runSuite() {
@@ -36,6 +37,7 @@ void runSuite() {
   // TODO(mariyafomkina): Add tests for other parsers here.
   s += ReaderSingleReadSuite();
   s += ReaderPairedReadSuite();
+  s += MultifileReaderWrapperSuite();
   cute::ide_listener lis;
   cute::makeRunner(lis)(s, "The Suite");
 }
