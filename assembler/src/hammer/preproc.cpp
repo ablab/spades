@@ -115,7 +115,7 @@ Options ParseOptions(int argc, char *argv[]) {
  */
 void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles, bool q_mers) {
   uint32_t file_number = ofiles.size();
-  uint32_t read_number = 0;
+  uint64_t read_number = 0;
   while (!ifs.eof()) {
     ++read_number;
     if (read_number % kStep == 0) {
