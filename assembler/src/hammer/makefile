@@ -12,14 +12,12 @@ $(builddir)/main:  $(builddir)/hammer_tools.o $(builddir)/main.o $(builddir)/kme
 	$(CC) $(LDFLAGS) $(builddir)/hammer_tools.o $(builddir)/main.o $(builddir)/kmer_cluster.o -o $(builddir)/$@
 	@echo "== made main =="
 
-$(builddir)/preproc: $(builddir)/preproc.o $(builddir)/kmer_part_joiner.o
-	$(CC) $(LDFLAGS) $(builddir)/preproc.o $(builddir)/kmer_part_joiner.o -o $(builddir)/$@
+$(builddir)/preproc: $(builddir)/preproc.o
+	$(CC) $(LDFLAGS) $(builddir)/preproc.o -o $(builddir)/$@
 	@echo "== made preproc =="
 
 $(builddir)/kmer_cluster.o: kmer_cluster.cpp $(builddir)/.d
 	$(CC) $(CFLAGS) kmer_cluster.cpp -o $(builddir)/$@
-$(builddir)/kmer_part_joiner.o: kmer_part_joiner.cpp $(builddir)/.d
-	$(CC) $(CFLAGS) kmer_part_joiner.cpp -o $(builddir)/$@
 $(builddir)/main.o: main.cpp $(builddir)/.d
 	$(CC) $(CFLAGS) main.cpp -o $(builddir)/$@
 $(builddir)/hammer_tools.o: hammer_tools.cpp $(builddir)/.d
