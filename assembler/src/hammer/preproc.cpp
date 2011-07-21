@@ -24,7 +24,6 @@
 #include "log4cxx/logger.h"
 #include "log4cxx/basicconfigurator.h"
 #include "common/read/ireadstream.hpp"
-#include "common/read/strobe_read.hpp"
 #include "common/read/read.hpp"
 #include "hammer/kmer_freq_info.hpp"
 #include "hammer/valid_kmer_generator.hpp"
@@ -42,7 +41,6 @@ namespace {
 
 const uint32_t kK = 2;
 typedef Seq<kK> KMer;
-typedef RCReaderWrapper<ireadstream, Read> ReadStream;
 typedef unordered_map<KMer, KMerFreqInfo, KMer::hash> UnorderedMap;
 
 LoggerPtr logger(Logger::getLogger("preproc"));
@@ -113,7 +111,7 @@ Options ParseOptions(int argc, char * argv[]) {
  * @param ofiles Files to write the result k-mers. They are written
  * one per line.
  */
-void SplitToFiles(ReadStream ifs, const vector<FILE*> &ofiles, bool q_mers) {
+void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles, bool q_mers) {
   uint32_t file_number = ofiles.size();
   uint32_t read_number = 0;
   while (!ifs.eof()) {
@@ -126,7 +124,11 @@ void SplitToFiles(ReadStream ifs, const vector<FILE*> &ofiles, bool q_mers) {
     KMer::hash hash_function;
     for (ValidKMerGenerator<kK> gen(r); gen.HasMore(); gen.Next()) {
       FILE *cur_file = ofiles[hash_function(gen.kmer()) % file_number];     
-      fwrite(gen.kmer().str().c_str(), 1, kK, cur_file);
+      KMer kmer = gen.kmer();
+      if (KMer::less2()(!kmer, kmer)) {
+        kmer = !kmer;
+      }
+      fwrite(kmer.str().c_str(), 1, kK, cur_file);
       if (q_mers) {
         double correct_probability = gen.correct_probability();
         fwrite(&correct_probability, sizeof(correct_probability), 1, cur_file);
@@ -185,8 +187,7 @@ int main(int argc, char * argv[]) {
     snprintf(filename, sizeof(filename), "%u.kmer.part", i);
     ofiles[i] = fopen(filename, "wb");
   }
-  ireadstream ir(opts.ifile, opts.qvoffset);
-  SplitToFiles(ReadStream(ir), ofiles, opts.q_mers);
+  SplitToFiles(ireadstream(opts.ifile, opts.qvoffset), ofiles, opts.q_mers);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     fclose(ofiles[i]);
   }
