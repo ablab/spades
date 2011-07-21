@@ -72,11 +72,11 @@ struct Options {
 };
 
 void PrintHelp() {
-  printf("Usage: ./preproc qvoffset ifile.fastq ofile.kmer file_number [q]\n");
+  printf("Usage: ./preproc qvoffset ifile.fastq ofile.[q]cst file_number [q]\n");
   printf("Where:\n");
   printf("\tqvoffset\tan offset of fastq quality data\n");
   printf("\tifile.fastq\tan input file with reads in fastq format\n");
-  printf("\tofile.kmer\ta filename where k-mer statistics will be outputted\n");
+  printf("\tofile.[q]cst\ta filename where k-mer statistics will be outputted\n");
   printf("\tfile_number\thow many files will be used when splitting k-mers\n");
   printf("\tq\t\tif you want to count q-mers instead of k-mers\n");
 }
