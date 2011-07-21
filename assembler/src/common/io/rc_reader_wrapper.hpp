@@ -57,8 +57,7 @@ class RCReaderWrapper : public IReader<ReadType> {
   /*
    * Read single or paired read from stream (according to ReadType).
    *
-   * @param singleread The single or paired read that will store read
-   * data.
+   * @param read The single or paired read that will store read data.
    *
    * @return Reference to this stream.
    */

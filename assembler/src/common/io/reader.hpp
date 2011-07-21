@@ -144,7 +144,7 @@ class Reader<SingleRead> : public IReader<SingleRead> {
 };
 
 template<>
-class Reader<PairedRead> : IReader<PairedRead> {
+class Reader<PairedRead> : public IReader<PairedRead> {
  public:
   /*
    * Default constructor.

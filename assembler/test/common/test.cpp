@@ -1,6 +1,6 @@
-#include "cute.h"
-#include "ide_listener.h"
-#include "cute_runner.h"
+#include "cute/cute.h"
+#include "cute/ide_listener.h"
+#include "cute/cute_runner.h"
 #include "seq_test.hpp"
 #include "sequence_test.hpp"
 #include "quality_test.hpp"
@@ -19,6 +19,7 @@
 #include "multifile_reader_wrapper_test.hpp"
 #include "cutting_reader_wrapper_test.hpp"
 #include "rc_reader_wrapper_test.hpp"
+#include "converting_reader_wrapper_test.hpp"
 
 void runSuite() {
   cute::suite s;
@@ -40,6 +41,7 @@ void runSuite() {
   s += MultifileReaderWrapperSuite();
   s += CuttingReaderWrapperSuite();
   s += RCReaderWrapperSuite();
+  s += ConvertingReaderWrapperSuite();
   cute::ide_listener lis;
   cute::makeRunner(lis)(s, "The Suite");
 }

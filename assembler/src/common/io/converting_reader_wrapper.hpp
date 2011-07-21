@@ -20,47 +20,89 @@
 #ifndef COMMON_IO_CONVERTINGREADERWRAPPER_HPP_
 #define COMMON_IO_CONVERTINGREADERWRAPPER_HPP_
 
-#include "common/io/reader.hpp"
+#include "common/io/single_read.hpp"
+#include "common/io/paired_read.hpp"
+#include "common/io/ireader.hpp"
 
-class ConvertingReaderWrapper : public Reader<SingleRead> {
+class ConvertingReaderWrapper : public IReader<SingleRead> {
  public:
-  explicit ConvertingReaderWrapper(const Reader<PairedRead>* reader)
+  /*
+   * Default constructor.
+   *
+   * @param reader Pointer to any other reader (ancestor of
+   * IReader<PairedRead>). 
+   */
+  explicit ConvertingReaderWrapper(IReader<PairedRead>* reader)
       : reader_(reader), index_(0) {
-    is_open_ = (*reader_).is_open();
-    eof_ = (*reader_).eof();
   }
 
-  /*virtual*/~ConvertingReaderWrapper() {
+  /* 
+   * Default destructor.
+   */
+  /* virtual */~ConvertingReaderWrapper() {
     close();
   }
 
-  /*virtual*/ConvertingReaderWrapper& operator>>(SingleRead& singleread) {
+  /* 
+   * Check whether the stream is opened.
+   */
+  /* virtual */ bool is_open() {
+    return reader_->is_open();
+  }
+
+  /* 
+   * Check whether we've reached the end of stream.
+   */
+  /* virtual */ bool eof() {
+    return (index_ == 0) && (reader_->eof());
+  }
+
+  /*
+   * Read single read from stream (which is actually the part of
+   * paired read from paired read stream).
+   *
+   * @param singleread The single read that will store read data.
+   *
+   * @return Reference to this stream.
+   */
+  /* virtual */ ConvertingReaderWrapper& operator>>(
+      SingleRead& singleread) {
     if (index_ == 0) {
-      reader_ >> pairedread_;
+      (*reader_) >> pairedread_;
     }
     singleread = pairedread_[index_];
     index_ = 1 - index_;
-    if ((*reader_).eof()) {
-      eof_ = true;
-    }
     return (*this);
   }
 
-  /*virtual*/void close() {
-    if (is_open_) {
-      (*reader_).close();
-      is_open_ = false;
-    }
+  /*
+   * Close the stream.
+   */
+  /* virtual */ void close() {
+    reader_->close();
   }
 
-  /*virtual*/void reset() {
+  /* 
+   * Close the stream and open it again.
+   */
+  /* virtual */ void reset() {
     index_ = 0;
-    (*reader_).reset();
+    reader_->reset();
   }
 
  private:
-  Reader<PairedRead>* reader_;
+  /*
+   * @variable Internal stream reader.
+   */
+  IReader<PairedRead>* reader_;
+  /*
+   * @variable Element that stores the last read PairedRead from
+   * stream.
+   */
   PairedRead pairedread_;
+  /*
+   * @variable Index of current part of PairedRead.
+   */
   size_t index_;
 };
 
