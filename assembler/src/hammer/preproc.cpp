@@ -16,6 +16,8 @@
  * the reads provided. Reads file is supposed to be in fastq
  * format.
  */
+#include <stdint.h>
+#include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <set>
@@ -81,7 +83,7 @@ void PrintHelp() {
   printf("\tq\t\tif you want to count q-mers instead of k-mers\n");
 }
 
-Options ParseOptions(int argc, char * argv[]) {
+Options ParseOptions(int argc, char *argv[]) {
   Options ret;
   if (argc != 6 && argc != 5) {
     ret.valid =  false;
