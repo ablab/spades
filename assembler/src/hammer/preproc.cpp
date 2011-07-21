@@ -16,24 +16,19 @@
  * the reads provided. Reads file is supposed to be in fastq
  * format.
  */
-#include <omp.h>
 #include <cstdlib>
 #include <string>
 #include <set>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 #include "log4cxx/logger.h"
 #include "log4cxx/basicconfigurator.h"
 #include "common/read/ireadstream.hpp"
 #include "common/read/strobe_read.hpp"
 #include "common/read/read.hpp"
-#include "hammer/defs.hpp"
 #include "hammer/kmer_freq_info.hpp"
 #include "hammer/valid_kmer_generator.hpp"
 
-using std::make_pair;
-using std::pair;
 using std::string;
 using std::set;
 using std::vector;
@@ -184,19 +179,18 @@ int main(int argc, char * argv[]) {
   BasicConfigurator::configure();
   LOG4CXX_INFO(logger, "Starting preproc: evaluating " 
                << opts.ifile << ".");
-  {
-    vector<FILE*> ofiles(opts.file_number);
-    for (uint32_t i = 0; i < opts.file_number; ++i) {
-      char filename[50];
-      snprintf(filename, sizeof(filename), "%u.kmer.part", i);
-      ofiles[i] = fopen(filename, "wb");
-    }
-    ireadstream ir(opts.ifile, opts.qvoffset);
-    SplitToFiles(ReadStream(ir), ofiles, opts.q_mers);
-    for (uint32_t i = 0; i < opts.file_number; ++i) {
-      fclose(ofiles[i]);
-    }
+  vector<FILE*> ofiles(opts.file_number);
+  for (uint32_t i = 0; i < opts.file_number; ++i) {
+    char filename[50];
+    snprintf(filename, sizeof(filename), "%u.kmer.part", i);
+    ofiles[i] = fopen(filename, "wb");
   }
+  ireadstream ir(opts.ifile, opts.qvoffset);
+  SplitToFiles(ReadStream(ir), ofiles, opts.q_mers);
+  for (uint32_t i = 0; i < opts.file_number; ++i) {
+    fclose(ofiles[i]);
+  }
+  
   FILE *ofile = fopen(opts.ofile.c_str(), "w");
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     char ifile_name[50];
