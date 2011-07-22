@@ -39,7 +39,7 @@ using log4cxx::BasicConfigurator;
 
 namespace {
 
-const uint32_t kK = 2;
+const uint32_t kK = 31;
 typedef Seq<kK> KMer;
 typedef unordered_map<KMer, KMerFreqInfo, KMer::hash> UnorderedMap;
 
@@ -128,7 +128,7 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles, bool q_mers) {
       if (KMer::less2()(!kmer, kmer)) {
         kmer = !kmer;
       }
-      fwrite(kmer.str().c_str(), 1, kK, cur_file);
+      KMer::BinWrite(cur_file, kmer);
       if (q_mers) {
         double correct_probability = gen.correct_probability();
         fwrite(&correct_probability, sizeof(correct_probability), 1, cur_file);
@@ -149,8 +149,8 @@ void EvalFile(FILE *ifile, FILE *ofile, bool q_mers) {
   KMerStatMap stat_map;
   char buffer[kK + 1];
   buffer[kK] = 0;
-  while (fread(buffer, 1, kK, ifile) == kK) {
-    KMer kmer(buffer);
+  KMer kmer;
+  while (KMer::BinRead(ifile, &kmer)) {
     KMerFreqInfo &info = stat_map[kmer];
     if (q_mers) {
       double correct_probability;
