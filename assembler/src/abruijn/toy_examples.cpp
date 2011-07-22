@@ -1,7 +1,7 @@
-#include "toyexamples.hpp"
+#include "toy_examples.hpp"
 #include "hash.hpp"
 //#include "abruijngraph.hpp"
-#include "graphBuilder.hpp"
+#include "graph_builder.hpp"
 #include "graph_printer.hpp"
 #include "ireadstream.hpp"
 #include <string>

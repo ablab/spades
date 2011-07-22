@@ -49,10 +49,13 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 }
 
 void CountPairedInfoStats(Graph &g, size_t insert_size, size_t max_read_length,
-		PairedInfoIndex<Graph> &paired_index, const string &output_folder) {
+		PairedInfoIndex<Graph> &paired_index, const string &output_folder, bool etalon_paired_info_mode) {
 	EdgePairStat<Graph> (g, paired_index, output_folder).Count();
 	UniquePathStat<Graph> (g, paired_index, insert_size, max_read_length, 0.1,
 			40.0).Count();
+	if (etalon_paired_info_mode) {
+		UniqueDistanceStat<Graph>(paired_index).Count();
+	}
 }
 
 void WriteToDotFile(Graph &g, const string& file_name, string graph_name,
@@ -120,9 +123,9 @@ void WriteGraphComponents(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 }
 
 void ProducePairedInfo(Graph& g, size_t insert_size, size_t max_read_length,
-		PairedInfoIndex<Graph> &paired_index, const string &output_folder) {
+		PairedInfoIndex<Graph> &paired_index, const string &output_folder, bool etalon_paired_info_mode) {
 	CountPairedInfoStats(g, insert_size, max_read_length, paired_index,
-			output_folder);
+			output_folder, etalon_paired_info_mode);
 }
 template<class Graph>
 void ClipTips(Graph &g) {
@@ -351,7 +354,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 	EdgeIndex<k + 1, Graph> index(g);
 	IdTrackHandler<Graph> IntIds(g);
 	// if it's not paired_mode, then it'll be just unused variable -- takes O(1) to initialize from graph
-	PairedInfoIndex<Graph> paired_index(g);
+	PairedInfoIndex<Graph> paired_index(g, 5);
 
 	if (!from_saved) {
 
@@ -384,7 +387,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 				"graph_component", insert_size);
 		if (paired_mode) {
 			ProducePairedInfo(g, insert_size, max_read_length, paired_index,
-					output_folder);
+					output_folder, etalon_info_mode);
 		}
 	}
 	//	if (paired_mode) {

@@ -9,19 +9,11 @@
 #include <iostream>
 #include <fstream>
 #include "read/ireadstream.hpp"
+#include "hammer/kmer_functions.hpp"
 #include "defs.hpp"
 #include "hammerread.hpp"
 #include "mathfunctions.hpp"
 #include "hammer_tools.hpp"
-
-double oct2phred(string qoct, int qvoffset) {
-	float freq = 1;	
-	for (size_t i = 0; i < qoct.length(); i++) {
-		freq *= 1 - pow(10, -float(qoct[i] - qvoffset)/10.0);
-	}
-
-	return freq;
-}               
 
 string encode3toabyte (const string & s)  {
 	string retval;
@@ -39,36 +31,6 @@ string encode3toabyte (const string & s)  {
 	}
 	if (i % 3 != 0) retval += c;
 	return retval;
-}
-
-
-void addKMers(const Read & r, KMerStatMap & v) {
-	KMerStatMap::iterator it;
-	string s = r.getSequenceString();
-	size_t i=0;
-	while (true) {
-		i = r.firstValidKmer(i, K);
-		if (i+K > r.size()) break;
-		KMer kmer = KMer(r.getSubSequence(i, K));
-		while (true) {
-			it = v.find(kmer);
-			if (it != v.end()) {
-				it->second.count++;
-			} else {
-				pair<KMer, KMerStat> p;
-				p.first = kmer;
-				p.second.count = 1; p.second.freq = 0;
-				v.insert(p);
-			}
-			if (i+K < r.size() && is_nucl(s[i+K])) {
-				kmer = kmer << r[i+K];
-				++i;
-			} else {
-				i = i+K;
-				break;
-			}
-		}
-	}
 }
 
 void join_maps(KMerStatMap & v1, const KMerStatMap & v2) {
@@ -162,7 +124,7 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 		// reading a batch of reads
 		for (int thr = 0; thr < READ_BATCH_SIZE; ++thr) {
 			ifs >> r; 
-			if (r.trimBadQuality() >= K) {
+			if (TrimBadQuality(&r) >= K) {
 				rv.push_back(r);
 			}
 			if (ifs.eof()) break;
@@ -175,8 +137,8 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 		cout << "Batch " << tmpc << " read.\n"; flush(cout);
 		#pragma omp parallel for shared(rv, vv, ofs) num_threads(nthreads)
 		for(int i=0; i<rv.size(); ++i) {
-			addKMers(rv[i], vv[omp_get_thread_num() + cur_maps * nthreads]);
-			addKMers(!(rv[i]), vv[omp_get_thread_num() + cur_maps * nthreads]);
+                  AddKMers<K>(rv[i], &vv[omp_get_thread_num() + cur_maps * nthreads]);
+                  AddKMers<K>(!(rv[i]), &vv[omp_get_thread_num() + cur_maps * nthreads]);
 		}
 		cout << "Batch " << tmpc << " added.\n"; flush(cout);
 		rv.clear();

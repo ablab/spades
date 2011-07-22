@@ -1,23 +1,16 @@
 #include "cute.h"
 #include "ide_listener.h"
 #include "cute_runner.h"
-#include "seqTest.hpp"
-#include "sequenceTest.hpp"
-#include "ireadstreamTest.hpp"
-//#include "quality_read_stream.hpp"
-#include "nuclTest.hpp"
-//#include "ifaststreamTest.hpp"
-#include "qualityTest.hpp"
-#include "onlineGraphVisualizerTest.hpp"
-//#include "offlineGraphVisualizerTest.hpp"
-#include "similarTest.hpp"
-#include "cuckooTest.hpp"
-#include "readTest.hpp"
-
-#include "structuresTest.hpp"
-//TODO function readGenomeFromFile is declared outside common directory
-//typedef long long ll; //???
-//#include "readGeneratorTest.hpp" 
+#include "seq_test.hpp"
+#include "sequence_test.hpp"
+#include "quality_test.hpp"
+#include "nucl_test.hpp"
+#include "ireadstream_test.hpp"
+#include "online_graph_visualizer_test.hpp"
+#include "similar_test.hpp"
+#include "cuckoo_test.hpp"
+#include "single_read_test.hpp"
+#include "paired_read_test.hpp"
 
 void runSuite() {
   cute::suite s;
@@ -26,18 +19,12 @@ void runSuite() {
   s += SequenceSuite();
   s += QualitySuite();
   s += NuclSuite();
-  //s += IFastaStreamSuite();
   s += IReadStreamSuite();
   s += onlineGraphVisualizerSuite();
-  //s += offlineGraphVisualizerSuite();
   s += similarSuite();
   s += CuckooSuite();
-  s += ReadSuite();
-  //s += ReadGeneratorSuite();
-  //The next test causes segmentation fault
-  //s += TrieSuite();
-  //The next test is correct but needs time
-  //s += StructuresSuite();
+  s += SingleReadSuite();
+  s += PairedReadSuite();
   cute::ide_listener lis;
   cute::makeRunner(lis)(s, "The Suite");
 }
