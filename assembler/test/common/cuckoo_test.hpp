@@ -1,6 +1,7 @@
 #ifndef TEST_CUCKOOTEST_HPP_
 #define TEST_CUCKOOTEST_HPP_
 
+#include "cute/cute.h"
 #include <cstdlib>
 #include <cassert>
 #include <ctime>
