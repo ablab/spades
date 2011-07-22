@@ -2,7 +2,7 @@
 
 a: 
 	make -C src/abruijn
-	
+
 d:
 	make -C src/debruijn
 
@@ -17,7 +17,7 @@ h:
 
 at: 
 	make -C test/abruijn
-	
+
 dt:
 	make -C test/debruijn
 
@@ -29,7 +29,7 @@ ct:
 
 ht:
 	make -C test/hammer
-	
+
 clean:
 	rm -rf ./build/*
 

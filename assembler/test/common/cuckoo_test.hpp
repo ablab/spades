@@ -1,21 +1,22 @@
 #ifndef TEST_CUCKOOTEST_HPP_
 #define TEST_CUCKOOTEST_HPP_
 
-#include <iostream>
+#include "cute/cute.h"
+#include <cstdlib>
+#include <cassert>
+#include <ctime>
 #include <vector>
-#include <stdlib.h>
-#include <assert.h>
-#include <time.h>
-#include "cuckoo.hpp"
+#include <functional>
+#include "common/cuckoo.hpp"
 
 struct Hasher {
   size_t operator()(const int& value, size_t& hash_num, size_t seed) const {
-    unsigned long l = 4 * hash_num + 1;
+    uint64_t l = 4 * hash_num + 1;
     return (size_t)(l * value % 1000000007);
   }
 };
 
-typedef cuckoo<int, int, Hasher, std::equal_to<int> > hm; 
+typedef cuckoo<int, int, Hasher, std::equal_to<int> > hm;
 
 // *** Test for: ***
 // cuckoo()
@@ -47,7 +48,7 @@ void TestCuckooCreation() {
 
   hm map3;
   map3 = map;
-  ASSERT_EQUAL(3, map3.size()); 
+  ASSERT_EQUAL(3, map3.size());
   ASSERT(map3.find(1) != map3.end());
   ASSERT(map3.find(4) != map3.end());
   ASSERT(map3.find(6) != map3.end());
@@ -71,15 +72,15 @@ void TestCuckooCreation() {
 // iterator::operator++
 // iterator::const_iterator(...)
 void TestCuckooOperations() {
-  hm map(5, 0, 10000, 100, 1.2); 
+  hm map(5, 0, 1000, 100, 1.2);
   srand(42);
-  for (int i = 0; i < 100000; ++i) {
+  for (int i = 0; i < 5000; ++i) {
     int t = rand();
     map.insert(std::make_pair(t, 42));
   }
   size_t size = map.size();
-  ASSERT_EQUAL(99994, size);
-  
+  ASSERT_EQUAL(5000, size);
+
   size_t n = 0;
   for (hm::iterator it = map.begin(); it != map.end(); ++it) {
     ++n;
@@ -90,26 +91,28 @@ void TestCuckooOperations() {
   for (hm::const_iterator it = map.begin(); it != map.end(); ++it) {
     ++n;
   }
-  ASSERT_EQUAL(n, size); 
+  ASSERT_EQUAL(n, size);
 
   hm::iterator it;
-  for (int i = 0; i < 10000; ++i) {
+  for (int i = 0; i < 1000; ++i) {
     int t = rand();
     it = map.find(t);
   }
   ASSERT_EQUAL(size, map.size());
-  
-  for (int i = 0; i < 10000; ++i) {
+
+  for (int i = 0; i < 1000; ++i) {
     int t = rand();
     n -= map.erase(t);
   }
   ASSERT_EQUAL(n, map.size());
 
-  for (int i = 0; i < 10000; ++i) {
+  for (int i = 0; i < 1000; ++i) {
     int t = rand();
     it = map.find(t);
-    map.erase(it);
-    --n;
+    if (it != map.end()) {
+      map.erase(it);
+      --n;
+    }
   }
   ASSERT_EQUAL(n, map.size());
 }

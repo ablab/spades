@@ -1,0 +1,119 @@
+/**
+ * @file    converting_reader_wrapper.hpp
+ * @author  Mariya Fomkina
+ * @version 1.0
+ *
+ * @section LICENSE
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * @section DESCRIPTION
+ *
+ * ConvertingReaderWrapper is the class-wrapper that reads single
+ * reads from paired reader (first and second single reads in a pair
+ * one by one.
+ */
+
+#ifndef COMMON_IO_CONVERTINGREADERWRAPPER_HPP_
+#define COMMON_IO_CONVERTINGREADERWRAPPER_HPP_
+
+#include "common/io/single_read.hpp"
+#include "common/io/paired_read.hpp"
+#include "common/io/ireader.hpp"
+
+class ConvertingReaderWrapper : public IReader<SingleRead> {
+ public:
+  /*
+   * Default constructor.
+   *
+   * @param reader Pointer to any other reader (ancestor of
+   * IReader<PairedRead>). 
+   */
+  explicit ConvertingReaderWrapper(IReader<PairedRead>* reader)
+      : reader_(reader), pairedread_(), index_(0) {
+  }
+
+  /* 
+   * Default destructor.
+   */
+  /* virtual */~ConvertingReaderWrapper() {
+    close();
+  }
+
+  /* 
+   * Check whether the stream is opened.
+   */
+  /* virtual */ bool is_open() {
+    return reader_->is_open();
+  }
+
+  /* 
+   * Check whether we've reached the end of stream.
+   */
+  /* virtual */ bool eof() {
+    return (index_ == 0) && (reader_->eof());
+  }
+
+  /*
+   * Read single read from stream (which is actually the part of
+   * paired read from paired read stream).
+   *
+   * @param singleread The single read that will store read data.
+   *
+   * @return Reference to this stream.
+   */
+  /* virtual */ ConvertingReaderWrapper& operator>>(
+      SingleRead& singleread) {
+    if (index_ == 0) {
+      (*reader_) >> pairedread_;
+    }
+    singleread = pairedread_[index_];
+    index_ = 1 - index_;
+    return (*this);
+  }
+
+  /*
+   * Close the stream.
+   */
+  /* virtual */ void close() {
+    reader_->close();
+  }
+
+  /* 
+   * Close the stream and open it again.
+   */
+  /* virtual */ void reset() {
+    index_ = 0;
+    reader_->reset();
+  }
+
+ private:
+  /*
+   * @variable Internal stream reader.
+   */
+  IReader<PairedRead>* reader_;
+  /*
+   * @variable Element that stores the last read PairedRead from
+   * stream.
+   */
+  PairedRead pairedread_;
+  /*
+   * @variable Index of current part of PairedRead.
+   */
+  size_t index_;
+
+  /*
+   * Hidden copy constructor.
+   */
+  explicit ConvertingReaderWrapper(const ConvertingReaderWrapper&
+                                   reader);
+  /*
+   * Hidden assign operator.
+   */
+  void operator=(const ConvertingReaderWrapper& reader);
+};
+
+#endif /* COMMON_IO_CONVERTINGREADERWRAPPER_HPP_ */
