@@ -23,25 +23,25 @@
 
 void runSuite() {
   cute::suite s;
-  s += SeqSuite();
-  s += SequenceSuite();
-  s += QualitySuite();
-  s += NuclSuite();
-  s += IReadStreamSuite();
-  s += onlineGraphVisualizerSuite();
-  s += similarSuite();
+  // s += SeqSuite();
+  // s += SequenceSuite();
+  // s += QualitySuite();
+  // s += NuclSuite();
+  // s += IReadStreamSuite();
+  // s += onlineGraphVisualizerSuite();
+  // s += similarSuite();
   s += CuckooSuite();
-  s += SingleReadSuite();
-  s += PairedReadSuite();
-  s += ParserSuite();
-  s += FastqgzParserSuite();
-  // TODO(mariyafomkina): Add tests for other parsers here.
-  s += ReaderSingleReadSuite();
-  s += ReaderPairedReadSuite();
-  s += MultifileReaderWrapperSuite();
-  s += CuttingReaderWrapperSuite();
-  s += RCReaderWrapperSuite();
-  s += ConvertingReaderWrapperSuite();
+  // s += SingleReadSuite();
+  // s += PairedReadSuite();
+  // s += ParserSuite();
+  // s += FastqgzParserSuite();
+  // // TODO(mariyafomkina): Add tests for other parsers here.
+  // s += ReaderSingleReadSuite();
+  // s += ReaderPairedReadSuite();
+  // s += MultifileReaderWrapperSuite();
+  // s += CuttingReaderWrapperSuite();
+  // s += RCReaderWrapperSuite();
+  // s += ConvertingReaderWrapperSuite();
   cute::ide_listener lis;
   cute::makeRunner(lis)(s, "The Suite");
 }

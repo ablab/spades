@@ -71,14 +71,14 @@ void TestCuckooCreation() {
 // iterator::operator++
 // iterator::const_iterator(...)
 void TestCuckooOperations() {
-  hm map(5, 0, 10000, 100, 1.2);
+  hm map(5, 0, 1000, 100, 1.2);
   srand(42);
-  for (int i = 0; i < 100000; ++i) {
+  for (int i = 0; i < 5000; ++i) {
     int t = rand();
     map.insert(std::make_pair(t, 42));
   }
   size_t size = map.size();
-  ASSERT_EQUAL(99994, size);
+  ASSERT_EQUAL(5000, size);
 
   size_t n = 0;
   for (hm::iterator it = map.begin(); it != map.end(); ++it) {
@@ -93,23 +93,25 @@ void TestCuckooOperations() {
   ASSERT_EQUAL(n, size);
 
   hm::iterator it;
-  for (int i = 0; i < 10000; ++i) {
+  for (int i = 0; i < 1000; ++i) {
     int t = rand();
     it = map.find(t);
   }
   ASSERT_EQUAL(size, map.size());
 
-  for (int i = 0; i < 10000; ++i) {
+  for (int i = 0; i < 1000; ++i) {
     int t = rand();
     n -= map.erase(t);
   }
   ASSERT_EQUAL(n, map.size());
 
-  for (int i = 0; i < 10000; ++i) {
+  for (int i = 0; i < 1000; ++i) {
     int t = rand();
     it = map.find(t);
-    map.erase(it);
-    --n;
+    if (it != map.end()) {
+      map.erase(it);
+      --n;
+    }
   }
   ASSERT_EQUAL(n, map.size());
 }

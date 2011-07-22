@@ -302,6 +302,9 @@ class cuckoo {
     data_ = reinterpret_cast<Data**>(malloc(d_ * sizeof(Data*)));
     for (size_t i = 0; i < d_; ++i) {
       data_[i] = reinterpret_cast<Data*>(malloc(len_part_ * sizeof(Data)));
+      for (size_t j = 0; j < len_part_; ++j) {
+        data_[i][j] = Data();
+      }
     }
     exists_ = reinterpret_cast<char*>(malloc(len_ >> 3));
     for (size_t i = 0; i < len_ >> 3; ++i) exists_[i] = 0;
@@ -387,6 +390,7 @@ class cuckoo {
    */
   void update_exists(size_t len_temp_) {
     char* t = reinterpret_cast<char*>(malloc(len_ >> 3));
+    for (size_t i = 0; i < len_ >> 3; ++i) t[i] = 0;
     char* s = t;
     char* f = s + (len_ >> 3);
     for (; s < f; ++s) {
@@ -411,6 +415,9 @@ class cuckoo {
       memcpy(t, data_[i], len_temp_*sizeof(Data));
       std::swap(t, data_[i]);
       free(t);
+      for (size_t j = len_temp_; j < len_part_; ++j) {
+        data_[i][j] = Data();
+      }
     }
   }
 
