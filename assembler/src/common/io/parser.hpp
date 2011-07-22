@@ -32,7 +32,8 @@ class Parser {
    */
   Parser(const std::string& filename,
          int offset = SingleRead::PHRED_OFFSET)
-      : filename_(filename), offset_(offset) {}
+      : filename_(filename), offset_(offset),
+        is_open_(false), eof_(true) {}
 
   /* 
    * Default destructor.

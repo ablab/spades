@@ -23,33 +23,24 @@
 #ifndef COMMON_IO_READER_HPP_
 #define COMMON_IO_READER_HPP_
 
+#include "common/io/ireader.hpp"
 #include "common/io/single_read.hpp"
 #include "common/io/paired_read.hpp"
 #include "common/io/parser.hpp"
 #include "common/io/parser.cpp"  // TEMPORARY HACK!!!
 
 /*
- * This class only represents Reader interface. All the functionality
+ * This class only represents Reader. All the functionality
  * is implemented in specializations. Thus, it's impossible to use
  * Reader<int> or Reader<std::string>. The only possible variants are
  * Reader<SingleRead> and Reader<PairedRead>.
  */
 template<typename ReadType>
-class Reader {
- public:
-  Reader(const typename ReadType::FilenameType& filename,
-         int offset = SingleRead::PHRED_OFFSET,
-         size_t distance = 0) = 0;
-  virtual ~Reader() = 0;
-  virtual bool is_open() = 0;
-  virtual bool eof() = 0;
-  virtual Reader& operator>>(ReadType& read) = 0;
-  virtual void close() = 0;
-  virtual void reset() = 0;
+class Reader : public IReader<ReadType> {
 };
 
 template<>
-class Reader<SingleRead> {
+class Reader<SingleRead> : public IReader<SingleRead> {
  public:
   /*
    * Default constructor.
@@ -59,17 +50,17 @@ class Reader<SingleRead> {
    * wrappers.
    * @param offset The offset of the read quality.
    */
-  Reader(const SingleRead::FilenameType& filename,
+  explicit Reader(const SingleRead::FilenameType& filename,
          size_t distance = 0,
          int offset = SingleRead::PHRED_OFFSET)
-      : filename_(filename), offset_(offset) {
+      : filename_(filename), offset_(offset), parser_(NULL) {
     parser_ = SelectParser(filename_, offset_);
   }
 
   /* 
    * Default destructor.
    */
-  virtual ~Reader() {
+  /* virtual */ ~Reader() {
     close();
     delete parser_;
   }
@@ -77,7 +68,7 @@ class Reader<SingleRead> {
   /* 
    * Check whether the stream is opened.
    */
-  virtual bool is_open() {
+  /* virtual */ bool is_open() {
     if (parser_ != NULL) {
       return parser_->is_open();
     } else {
@@ -88,7 +79,7 @@ class Reader<SingleRead> {
   /* 
    * Check whether we've reached the end of stream.
    */
-  virtual bool eof() {
+  /* virtual */ bool eof() {
     if (parser_ != NULL) {
       return parser_->eof();
     } else {
@@ -103,7 +94,7 @@ class Reader<SingleRead> {
    *
    * @return Reference to this stream.
    */
-  virtual Reader& operator>>(SingleRead& singleread) {
+  /* virtual */ Reader& operator>>(SingleRead& singleread) {
     if (parser_ != NULL) {
       (*parser_) >> singleread;
     }
@@ -113,7 +104,7 @@ class Reader<SingleRead> {
   /*
    * Close the stream.
    */
-  virtual void close() {
+  /* virtual */  void close() {
     if (parser_ != NULL) {
       parser_->close();
     }
@@ -122,7 +113,7 @@ class Reader<SingleRead> {
   /* 
    * Close the stream and open it again.
    */
-  virtual void reset() {
+  /* virtual */ void reset() {
     if (parser_ != NULL) {
       parser_->reset();
     }
@@ -153,42 +144,43 @@ class Reader<SingleRead> {
 };
 
 template<>
-class Reader<PairedRead> {
+class Reader<PairedRead> : public IReader<PairedRead> {
  public:
   /*
    * Default constructor.
    * 
    * @param filename The pair that containes the names of two files to
    * be opened.
-   * @param distance Distance between parts of paired read.
+   * @param distance Distance between parts of paired reads.
    * @param offset The offset of the read quality.
    */
-  Reader(const PairedRead::FilenameType& filename,
+  explicit Reader(const PairedRead::FilenameType& filename,
          size_t distance = 100,
          int offset = SingleRead::PHRED_OFFSET)
-      : filename_(filename), distance_(distance), offset_(offset) {
-    first_ = new Reader<SingleRead>(filename_.first, offset_);
-    second_ = new Reader<SingleRead>(filename_.second, offset_);
-  }
+      : filename_(filename), distance_(distance), offset_(offset),
+        first_(new Reader<SingleRead>(filename_.first, offset_)),
+        second_(new Reader<SingleRead>(filename_.second, offset_)) {}
 
   /* 
    * Default destructor.
    */
-  virtual ~Reader() {
+  /* virtual */ ~Reader() {
     close();
+    delete first_;
+    delete second_;
   }
 
   /* 
    * Check whether the stream is opened.
    */
-  virtual bool is_open() {
+  /* virtual */ bool is_open() {
     return first_->is_open() && second_->is_open();
   }
 
   /* 
    * Check whether we've reached the end of stream.
    */
-  virtual bool eof() {
+  /* virtual */ bool eof() {
     return first_->eof() || second_->eof();
   }
 
@@ -199,7 +191,7 @@ class Reader<PairedRead> {
    *
    * @return Reference to this stream.
    */
-  virtual Reader& operator>>(PairedRead& pairedread) {
+  /* virtual */ Reader& operator>>(PairedRead& pairedread) {
     SingleRead sr1, sr2;
     (*first_) >> sr1;
     (*second_) >> sr2;
@@ -210,7 +202,7 @@ class Reader<PairedRead> {
   /*
    * Close the stream.
    */
-  virtual void close() {
+  /* virtual */ void close() {
     first_->close();
     second_->close();
   }
@@ -218,7 +210,7 @@ class Reader<PairedRead> {
   /* 
    * Close the stream and open it again.
    */
-  virtual void reset() {
+  /* virtual */ void reset() {
     first_->reset();
     second_->reset();
   }

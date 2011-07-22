@@ -20,59 +20,128 @@
 #define COMMON_IO_MULTIFILEREADERWRAPPER_HPP_
 
 #include <vector>
+#include "common/io/ireader.hpp"
 #include "common/io/reader.hpp"
 
 template<typename ReadType>
-class MultifileReaderWrapper : public Reader<ReadType> {
+class MultifileReaderWrapper : public IReader<ReadType> {
  public:
+  /*
+   * Default constructor.
+   * 
+   * @param filenames The names of the files to be opened. Wrapper
+   * tries to open all the files of this list and proceeds only those
+   * of them which present. The names of non-existing files are
+   * ignored. 
+   * @param distance Distance between parts of paired reads (or useless
+   * parameter when we work with single reads).
+   * @param offset The offset of the read quality.
+   */
   MultifileReaderWrapper(const vector<typename ReadType::FilenameType>&
-                         filenames, size_t distance = 0)
-      : filenames_(filenames), distance_(distance) {
-    is_open_ = true;
-    eof_ = false;
+                         filenames, size_t distance = 0,
+                         int offset = SingleRead::PHRED_OFFSET)
+      : filenames_(filenames), readers_(), distance_(distance),
+        offset_(offset), current_reader_index_(0) {
     for (size_t i = 0; i < filenames_.size(); ++i) {
-      reader_.push_back(new Reader<ReadType>(filenames_[i], distance));
-      is_open_ = is_open_ && reader_[i].is_open();
-      eof_ = eof_ || reader_[i].eof();
+      Reader<ReadType>* reader_ = new Reader<ReadType>(
+          filenames_[i], distance_, offset_);
+      if (reader_->is_open()) {
+        readers_.push_back(reader_);
+      } else {
+        delete reader_;
+      }
     }
-    current_reader_index_ = 0;
   }
 
+  /* 
+   * Default destructor.
+   */
   /*virtual*/~MultifileReaderWrapper() {
     close();
+    for (size_t i = 0; i < readers_.size(); ++i) {
+      delete readers_[i];
+    }
   }
 
-  /*virtual*/MultifileReaderWrapper& operator>>(ReadType& read) {
-    if (readers_[current_reader_index_].eof()) {
-      ++current_reader_index_;
-    }
-    if (current_reader_index_ < readers_.size()) {
-      (*readers_[current_reader_index_]) >> read;
+  /* 
+   * Check whether the stream is opened.
+   */
+  /* virtual */ bool is_open() {
+    if (readers_.size() > 0) {
+      return readers_[0]->is_open();
     } else {
-      eof_ = true;
+      return false;
+    }
+  }
+
+  /* 
+   * Check whether we've reached the end of stream.
+   */
+  /* virtual */ bool eof() {
+    if (readers_.size() > 0) {
+      return readers_[readers_.size() - 1]->eof();
+    } else {
+      return true;
+    }
+  }
+
+  /*
+   * Read single or paired read from stream (according to ReadType).
+   *
+   * @param read The single or paired read that will store read data.
+   *
+   * @return Reference to this stream.
+   */
+  /* virtual */ MultifileReaderWrapper& operator>>(ReadType& read) {
+    if (readers_.size() > 0) {
+      if (readers_[current_reader_index_]->eof()) {
+        ++current_reader_index_;
+      }
+      if (current_reader_index_ < readers_.size()) {
+        (*readers_[current_reader_index_]) >> read;
+      }
     }
     return (*this);
   }
 
-  /*virtual*/void close() {
-    if (is_open_) {
-      for (size_t i = 0; i < readers_.size(); ++i) {
-        readers_[i].close();
-      }
-      is_open_ = false;
+  /*
+   * Close the stream.
+   */
+  /* virtual */ void close() {
+    for (size_t i = 0; i < readers_.size(); ++i) {
+      readers_[i]->close();
     }
   }
 
-  /*virtual*/void reset() {
+  /* 
+   * Close the stream and open it again.
+   */
+  /* virtual */ void reset() {
     for (size_t i = 0; i < readers_.size(); ++i) {
-      readers_[i].reset();
+      readers_[i]->reset();
     }
   }
 
  private:
+  /*
+   * @variable The names of the files which stream read from.
+   */
   vector<typename ReadType::FilenameType> filenames_;
-  vector<Reader<ReadType> > readers_;
+  /*
+   * @variable Internal stream readers.
+   */
+  vector<Reader<ReadType>*> readers_;
+  /*
+   * @variable The distance between two parts of paired read.
+   */
   size_t distance_;
+  /*
+   * @variable Quality offset.
+   */
+  int offset_;
+  /*
+   * @variable The index of the file that is currently read from.
+   */
   size_t current_reader_index_;
 };
 

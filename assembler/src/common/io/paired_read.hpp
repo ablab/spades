@@ -20,6 +20,7 @@
 #define COMMON_IO_PAIREDREAD_HPP_
 
 #include <string>
+#include <utility>
 #include "common/io/single_read.hpp"
 
 class PairedRead {
@@ -29,11 +30,11 @@ class PairedRead {
    * Reader stream.
    */ 
   typedef std::pair<std::string, std::string> FilenameType;
-  
+
   /*
    * Default constructor.
    */
-  PairedRead() {}
+  PairedRead() : first_(), second_(), distance_(0) {}
 
   /*
    * Conctructor from single reads.
@@ -124,7 +125,7 @@ class PairedRead {
       second_ == pairedread.second_ &&
       distance_ == pairedread.distance_;
   }
- 
+
  private:
   /*
    * @variable First single read in the pair.

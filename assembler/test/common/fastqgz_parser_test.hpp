@@ -44,7 +44,7 @@ void TestFastqgzParserFull() {
   ASSERT(!parser.is_open());
 }
 
-cute::suite FastqgzParserSuite(){
+cute::suite FastqgzParserSuite() {
   cute::suite s;
   s.push_back(CUTE(TestFastqgzParserNoFile));
   s.push_back(CUTE(TestFastqgzParserReading));
