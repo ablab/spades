@@ -108,6 +108,14 @@ private:
 
 public:
 
+  static bool BinRead(FILE *ifile, Seq<size_> *seq) {
+    return fread(seq->data_.data(), sizeof(T), data_size_, ifile) == data_size_;
+  }
+
+  static void BinWrite(FILE *ofile, const Seq<size_> &seq) {
+    fwrite(seq.data_.data(), sizeof(T), data_size_, ofile);
+  }
+
 	/**
 	 * Default constructor, fills Seq with A's
 	 */

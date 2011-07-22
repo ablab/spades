@@ -3,12 +3,27 @@
 #include <cstdio>
 #include <map>
 #include <string>
+#include "log4cxx/logger.h"
+#include "log4cxx/basicconfigurator.h"
+using log4cxx::LoggerPtr;
+using log4cxx::Logger;
+using log4cxx::BasicConfigurator;
 
 using std::map;
 using std::string;
 
 namespace {
+/**
+ * @variable Length of string buffer which will store k-mer.
+ */
 const uint32_t kMaxK = 100;
+/**
+ * @variable Every kStep k-mer will appear in the log.
+ */
+const int kStep = 1e5;
+
+LoggerPtr logger(Logger::getLogger("prepare_graph"));
+
 typedef map<uint64_t, uint32_t> Map;
 struct Options {
   string ifile;
@@ -65,6 +80,9 @@ int main(int argc, char *argv[]) {
     PrintHelp();
     return 1;
   }
+  BasicConfigurator::configure();
+  LOG4CXX_INFO(logger, "Starting prepare_graph: evaluating " 
+               << opts.ifile << ".");
   FILE *ifile = fopen(opts.ifile.c_str(), "r");
   FILE *ofile = fopen(opts.ofile.c_str(), "w");
   Map freq_to_num;
@@ -72,7 +90,12 @@ int main(int argc, char *argv[]) {
   char format[20];
   snprintf(format, sizeof(format), "%%%ds%%f", kMaxK);
   float freq = -1;
+  uint64_t read_number = 0;
   while (fscanf(ifile, format, kmer, &freq) != EOF) {
+    ++read_number;
+    if (read_number % kStep == 0) {
+      LOG4CXX_INFO(logger, "Reading k-mer " << read_number << ".");
+    }
     ++freq_to_num[
         static_cast<uint64_t>(freq * opts.ticks_per_step + 0.5)];
   }

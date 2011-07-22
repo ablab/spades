@@ -72,8 +72,8 @@ class ValidKMerGenerator {
  private:
   void TrimBadQuality();
   double Prob(uint8_t qual) {
-    if (qual == 0) {
-      return 1e-20;
+    if (qual < 7) {
+      return 0.25;
     }
     static std::vector<double> prob(255, -1);
     if (prob[qual] < -0.1) {
