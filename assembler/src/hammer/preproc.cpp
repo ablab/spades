@@ -28,6 +28,7 @@
 #include "log4cxx/basicconfigurator.h"
 #include "common/read/ireadstream.hpp"
 #include "common/read/read.hpp"
+#include "common/sequence/seq.hpp"
 #include "hammer/kmer_freq_info.hpp"
 #include "hammer/valid_kmer_generator.hpp"
 
@@ -97,7 +98,7 @@ Options ParseOptions(int argc, char *argv[]) {
     ret.ifile = argv[2];
     ret.ofile = argv[3];
     ret.error_threshold = atoi(argv[4]);
-    ret.valid &= (ret.error_threshold >= 0 && ret.error_threshold <= 255);    
+    ret.valid &= (ret.error_threshold >= 0 && ret.error_threshold <= 255);
     ret.file_number = atoi(argv[5]);
     if (argc == 7) {
       if (string(argv[6]) == "q") {
@@ -119,7 +120,8 @@ Options ParseOptions(int argc, char *argv[]) {
  * @param ofiles Files to write the result k-mers. They are written
  * one per line.
  */
-void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles, bool q_mers, uint8_t error_threshold) {
+void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
+                  bool q_mers, uint8_t error_threshold) {
   uint32_t file_number = ofiles.size();
   uint64_t read_number = 0;
   while (!ifs.eof()) {
@@ -131,7 +133,7 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles, bool q_mers, uin
     ifs >> r;
     KMer::hash hash_function;
     for (ValidKMerGenerator<kK> gen(r, error_threshold); gen.HasMore(); gen.Next()) {
-      FILE *cur_file = ofiles[hash_function(gen.kmer()) % file_number];     
+      FILE *cur_file = ofiles[hash_function(gen.kmer()) % file_number];
       KMer kmer = gen.kmer();
       if (KMer::less2()(!kmer, kmer)) {
         kmer = !kmer;
@@ -162,8 +164,8 @@ void EvalFile(FILE *ifile, FILE *ofile, bool q_mers) {
     KMerFreqInfo &info = stat_map[kmer];
     if (q_mers) {
       double correct_probability;
-      assert(fread(&correct_probability, sizeof(correct_probability), 
-                   1, ifile) 
+      assert(fread(&correct_probability, sizeof(correct_probability),
+                   1, ifile)
              == 1);
       info.q_count += correct_probability;
     } else {
@@ -189,7 +191,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   BasicConfigurator::configure();
-  LOG4CXX_INFO(logger, "Starting preproc: evaluating " 
+  LOG4CXX_INFO(logger, "Starting preproc: evaluating "
                << opts.ifile << ".");
   vector<FILE*> ofiles(opts.file_number);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
@@ -202,7 +204,6 @@ int main(int argc, char *argv[]) {
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     fclose(ofiles[i]);
   }
-  
   FILE *ofile = fopen(opts.ofile.c_str(), "w");
   assert(ofile != NULL && "Too many files to open");
   for (uint32_t i = 0; i < opts.file_number; ++i) {

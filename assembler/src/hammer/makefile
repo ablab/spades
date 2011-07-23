@@ -32,6 +32,9 @@ $(builddir)/hammer_tools.o: hammer_tools.cpp $(builddir)/.d
 $(builddir)/preproc.o: preproc.cpp $(builddir)/.d
 	$(CC) $(CFLAGS) preproc.cpp -o $(builddir)/$@
 
+test_headers: valid_kmer_generator.hpp
+	$(CC) $(CFLAGS) valid_kmer_generator.hpp -o valid_kmer_generator.gch
+	rm valid_kmer_generator.gch
 
 include ../makefile.inc
 
