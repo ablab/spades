@@ -350,7 +350,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 				{
 					PositionKMer::rv->push_back(rs);
 					PositionKMer pkm(PositionKMer::rv->size()-1, 0);
-					KMerStat kms; kms.count = 0;
+					KMerStat kms; kms.count = 0; kms.change = false; kms.good = true; kms.changeto = 0;
 					k_.push_back( make_pair( pkm, kms ) );
 				}
 				v.insert(v.begin(), k_.size() - 1);
