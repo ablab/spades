@@ -344,18 +344,22 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 				// cout << "Consensus: " << bestCenters[k].first;
 
 				Read consensus_read("Consensus", bestCenters[k].first, bestCenters[k].first);
-				ReadStat rs; rs.read = consensus_read;
-				PositionKMer pkm(PositionKMer::rv->size(), 0);
-				KMerStat kms; kms.count = 0;
-
+				
 				#pragma omp critical
 				{
+					ReadStat rs; rs.read = consensus_read; rs.blobpos = PositionKMer::blob_size;
+					for (uint32_t j = 0; j < rs.read.size(); ++j) {
+						PositionKMer::blob[PositionKMer::blob_size + j] = rs.read.getSequenceString()[j];
+					}
+					PositionKMer::blob_size += rs.read.size();
 					PositionKMer::rv->push_back(rs);
+
+					PositionKMer pkm(PositionKMer::rv->size()-1, 0);
+					KMerStat kms; kms.count = 0; kms.change = false; kms.good = true; kms.changeto = 0;
 					k_.push_back( make_pair( pkm, kms ) );
+					// cout << "  " << (PositionKMer::rv->size() - 1) << " " << (k_.size()-1) << " " << PositionKMer::blob_size << "     " << pkm.str() << endl;
 				}
 				v.insert(v.begin(), k_.size() - 1);
-
-				// cout << "  " << (PositionKMer::rv->size() - 1) << " " << (k_.size()-1) << "     " << pkm.str() << endl;
 
 			}
 		}

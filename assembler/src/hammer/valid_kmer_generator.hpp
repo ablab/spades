@@ -1,8 +1,11 @@
 #ifndef HAMMER_VALIDKMERGENERATOR_HPP_
 #define HAMMER_VALIDKMERGENERATOR_HPP_
+#include <stdint.h>
 #include <cmath>
 #include <string>
 #include <vector>
+#include "common/read/read.hpp"
+#include "common/sequence/seq.hpp"
 /**
  * This class is designed to iterate through valid k-mers in read.
  * @example
@@ -41,7 +44,8 @@ class ValidKMerGenerator {
     Next();
   }
   /**
-   * @result true if Next() succeed while generating new k-mer, false otherwise.
+   * @result true if Next() succeed while generating new k-mer, false
+   * otherwise. 
    */
   bool HasMore() const {
     return has_more_;
@@ -99,12 +103,12 @@ template<uint32_t kK>
 void ValidKMerGenerator<kK>::TrimBadQuality() {
   pos_ = 0;
   for (; pos_ < qual_.size(); ++pos_) {
-    if ((uint32_t)qual_[pos_] > bad_quality_threshold_)
+    if ((uint32_t)qual_[pos_] >= bad_quality_threshold_)
       break;
   }
   end_ = qual_.size();
   for (; end_ > pos_; --end_) {
-    if ((uint32_t)qual_[end_ - 1] > bad_quality_threshold_)
+    if ((uint32_t)qual_[end_ - 1] >= bad_quality_threshold_)
       break;
   }
 }
