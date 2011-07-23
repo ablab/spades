@@ -1,28 +1,28 @@
-#ifndef TEST_MULTIFILEREADERWRAPPERTEST_HPP_
-#define TEST_MULTIFILEREADERWRAPPERTEST_HPP_
+#ifndef TEST_MULTIFILEREADERTEST_HPP_
+#define TEST_MULTIFILEREADERTEST_HPP_
 
 #include <vector>
 #include <string>
 #include "cute/cute.h"
 #include "common/io/single_read.hpp"
-#include "common/io/multifile_reader_wrapper.hpp"
+#include "common/io/multifile_reader.hpp"
 
-void TestMultifileReaderWrapperNoFile() {
+void TestMultifileReaderNoFile() {
   std::vector<SingleRead::FilenameType> filenames;
   filenames.push_back("./no-file");
   filenames.push_back("./test/data/s_test.fastq.gz");
-  MultifileReaderWrapper<SingleRead> reader(filenames);
+  MultifileReader<SingleRead> reader(filenames);
   ASSERT(reader.is_open());
   filenames.pop_back();
   filenames.push_back("./no-file");
-  MultifileReaderWrapper<SingleRead> reader2(filenames);
+  MultifileReader<SingleRead> reader2(filenames);
   ASSERT(!reader2.is_open());
 }
 
-void TestMultifileReaderWrapperReadingFrom1File() {
+void TestMultifileReaderReadingFrom1File() {
   std::vector<SingleRead::FilenameType> filenames;
   filenames.push_back("./test/data/s_test_2.fastq.gz");
-  MultifileReaderWrapper<SingleRead> reader(filenames);
+  MultifileReader<SingleRead> reader(filenames);
   ASSERT(reader.is_open());
   ASSERT(!reader.eof());
   SingleRead read;
@@ -37,12 +37,12 @@ void TestMultifileReaderWrapperReadingFrom1File() {
   ASSERT(reader.eof());
 }
 
-void TestMultifileReaderWrapperReadingFrom2Files() {
+void TestMultifileReaderReadingFrom2Files() {
   std::vector<SingleRead::FilenameType> filenames;
   filenames.push_back("./test/data/s_test.fastq.gz");
   filenames.push_back("./no-file");
   filenames.push_back("./test/data/s_test_2.fastq.gz");
-  MultifileReaderWrapper<SingleRead> reader(filenames);
+  MultifileReader<SingleRead> reader(filenames);
   ASSERT(reader.is_open());
   ASSERT(!reader.eof());
   SingleRead read;
@@ -69,12 +69,12 @@ void TestMultifileReaderWrapperReadingFrom2Files() {
   ASSERT(reader.eof());
 }
 
-cute::suite MultifileReaderWrapperSuite() {
+cute::suite MultifileReaderSuite() {
   cute::suite s;
-  s.push_back(CUTE(TestMultifileReaderWrapperNoFile));
-  s.push_back(CUTE(TestMultifileReaderWrapperReadingFrom1File));
-  s.push_back(CUTE(TestMultifileReaderWrapperReadingFrom2Files));
+  s.push_back(CUTE(TestMultifileReaderNoFile));
+  s.push_back(CUTE(TestMultifileReaderReadingFrom1File));
+  s.push_back(CUTE(TestMultifileReaderReadingFrom2Files));
   return s;
 }
 
-#endif /* TEST_MULTIFILEREADERWRAPPERTEST_HPP_ */
+#endif /* TEST_MULTIFILEREADERTEST_HPP_ */
