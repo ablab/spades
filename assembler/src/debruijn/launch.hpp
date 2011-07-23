@@ -478,7 +478,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index, NonconjugateDeBruijnGraph& graph, const string& work_tmp_dir, const string& output_folder){                                                                      
 
     NonconjugateDeBruijnGraph resolvedGraph(graph.k());                                                                                                                                                                                   
-    typedef typename NonconjugateDeBruijnGraph::EdgeId NCEdgeId;                                                                                                                                                                          
+    typedef NonconjugateDeBruijnGraph::EdgeId NCEdgeId;                                                                                                                                                                          
     PairInfoIndexData<NCEdgeId> piid;                                                                                                                                                                                                     
     for( auto iter = index.begin() ; iter != index.end() ; ++iter)                                                                                                                                                                        
     {                                                                                                                                                                                                                                     
