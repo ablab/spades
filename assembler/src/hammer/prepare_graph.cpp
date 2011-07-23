@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   BasicConfigurator::configure();
-  LOG4CXX_INFO(logger, "Starting prepare_graph: evaluating " 
+  LOG4CXX_INFO(logger, "Starting prepare_graph: evaluating "
                << opts.ifile << ".");
   FILE *ifile = fopen(opts.ifile.c_str(), "r");
   FILE *ofile = fopen(opts.ofile.c_str(), "w");

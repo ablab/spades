@@ -99,12 +99,12 @@ template<uint32_t kK>
 void ValidKMerGenerator<kK>::TrimBadQuality() {
   pos_ = 0;
   for (; pos_ < qual_.size(); ++pos_) {
-    if ((uint32_t)qual_[pos_] > bad_quality_threshold_)
+    if ((uint32_t)qual_[pos_] >= bad_quality_threshold_)
       break;
   }
   end_ = qual_.size();
   for (; end_ > pos_; --end_) {
-    if ((uint32_t)qual_[end_ - 1] > bad_quality_threshold_)
+    if ((uint32_t)qual_[end_ - 1] >= bad_quality_threshold_)
       break;
   }
 }
