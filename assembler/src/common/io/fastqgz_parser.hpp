@@ -55,9 +55,9 @@ class FastqgzParser : public Parser {
   }
 
   /*
-   * Read single read from stream.
+   * Read SingleRead from stream.
    *
-   * @param read The single read that will store read data.
+   * @param read The SingleRead that will store read data.
    *
    * @return Reference to this stream.
    */
@@ -94,7 +94,7 @@ class FastqgzParser : public Parser {
    */
   gzFile fp_;
   /*
-   * @variable Data element that stores last single read got from
+   * @variable Data element that stores last SingleRead got from
    * stream.
    */ 
   fastqgz::kseq_t* seq_;
@@ -117,7 +117,7 @@ class FastqgzParser : public Parser {
   }
 
   /* 
-   * Read next single read from file.
+   * Read next SingleRead from file.
    */
   void ReadAhead() {
     assert(is_open_);

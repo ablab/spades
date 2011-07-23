@@ -12,9 +12,9 @@
  *
  * @section DESCRIPTION
  *
- * ConvertingReaderWrapper is the class-wrapper that reads single
- * reads from paired reader (first and second single reads in a pair
- * one by one.
+ * ConvertingReaderWrapper is the class-wrapper that reads SingleReads 
+ * from IReader<PairedRead> (first and second single reads in a pair
+ * one by one).
  */
 
 #ifndef COMMON_IO_CONVERTINGREADERWRAPPER_HPP_
@@ -45,6 +45,8 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
 
   /* 
    * Check whether the stream is opened.
+   *
+   * @return true if the stream is opened and false otherwise.
    */
   /* virtual */ bool is_open() {
     return reader_->is_open();
@@ -52,16 +54,19 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
 
   /* 
    * Check whether we've reached the end of stream.
+   *
+   * @return true if the end of the stream is reached and false
+   * otherwise.
    */
   /* virtual */ bool eof() {
     return (index_ == 0) && (reader_->eof());
   }
 
   /*
-   * Read single read from stream (which is actually the part of
-   * paired read from paired read stream).
+   * Read SingleRead from stream (which is actually the part of
+   * PairedRead from stream).
    *
-   * @param singleread The single read that will store read data.
+   * @param singleread The SingleRead that will store read data.
    *
    * @return Reference to this stream.
    */

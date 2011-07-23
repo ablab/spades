@@ -33,8 +33,8 @@ class MultifileReaderWrapper : public IReader<ReadType> {
    * tries to open all the files of this list and proceeds only those
    * of them which present. The names of non-existing files are
    * ignored. 
-   * @param distance Distance between parts of paired reads (or useless
-   * parameter when we work with single reads).
+   * @param distance Distance between parts of PairedReads (or useless
+   * parameter when we work with SingleReads).
    * @param offset The offset of the read quality.
    */
   MultifileReaderWrapper(const vector<typename ReadType::FilenameType>&
@@ -65,6 +65,8 @@ class MultifileReaderWrapper : public IReader<ReadType> {
 
   /* 
    * Check whether the stream is opened.
+   *
+   * @return true if the stream is opened and false otherwise.
    */
   /* virtual */ bool is_open() {
     if (readers_.size() > 0) {
@@ -76,6 +78,9 @@ class MultifileReaderWrapper : public IReader<ReadType> {
 
   /* 
    * Check whether we've reached the end of stream.
+   *
+   * @return true if the end of the stream is reached and false
+   * otherwise.
    */
   /* virtual */ bool eof() {
     if (readers_.size() > 0) {
@@ -86,9 +91,10 @@ class MultifileReaderWrapper : public IReader<ReadType> {
   }
 
   /*
-   * Read single or paired read from stream (according to ReadType).
+   * Read SingleRead or PairedRead from stream (according to ReadType).
    *
-   * @param read The single or paired read that will store read data.
+   * @param read The SingleRead or PairedRead that will store read
+   * data. 
    *
    * @return Reference to this stream.
    */

@@ -46,9 +46,9 @@ class SingleRead {
   /*
    * Test constructor.
    *
-   * @param name The name of the single read (id in input file).
+   * @param name The name of the SingleRead (id in input file).
    * @param seq The sequence of ATGC letters.
-   * @param qual The quality of the single read sequence.
+   * @param qual The quality of the SingleRead sequence.
    */
   SingleRead(const std::string& name,
              const std::string& seq,
@@ -57,9 +57,9 @@ class SingleRead {
         valid_(UpdateValid()) {}
 
   /*
-   * Check whether single read is valid.
+   * Check whether SingleRead is valid.
    *
-   * @return true if single read is valid (there is no N in sequence
+   * @return true if SingleRead is valid (there is no N in sequence
    * and sequence size is equal to quality size), and false otherwise
    */
   bool IsValid() const {
@@ -69,7 +69,7 @@ class SingleRead {
   /*
    * Return Sequence object, got from sequence string.
    *
-   * @return Single read sequence.
+   * @return SingleRead sequence.
    */
   Sequence sequence() const {
     assert(valid_);
@@ -79,7 +79,7 @@ class SingleRead {
   /*
    * Return Quality object, got from quality string.
    *
-   * @return Single read quality.
+   * @return SingleRead quality.
    */
   Quality quality() const {
     assert(valid_);
@@ -89,46 +89,47 @@ class SingleRead {
   /*
    * Return name of single read.
    *
-   * @return Single read name.
+   * @return SingleRead name.
    */
   const std::string& name() const {
     return name_;
   }
 
   /*
-   * Return size of single read.
+   * Return size of SingleRead.
    *
-   * @return The size of single read sequence.
+   * @return The size of SingleRead sequence.
    */
   size_t size() const {
     return seq_.size();
   }
 
   /*
-   * Return single read sequence string (in readable form with ATGC).
+   * Return SingleRead sequence string (in readable form with ATGC).
    *
-   * @return Single read sequence string.
+   * @return SingleRead sequence string.
    */
   const std::string& GetSequenceString() const {
     return seq_;
   }
 
   /*
-   * Return single read quality string (in readable form).
+   * Return SingleRead quality string (in readable form).
    *
-   * @return Single read quality string.
+   * @return SingleRead quality string.
    */
   const std::string& GetQualityString() const {
     return qual_;
   }
 
   /*
-   * Return single read quality string, where every quality value is
+   * Return SingleRead quality string, where every quality value is
    * increased by offset (need for normalization of quality values).
    * Do not modify original quality values.
    *
-   * @param offset The offset of single read quality (PHRED_OFFSET by default).
-   * @return Modified single read quality string.
+   * @param offset The offset of SingleRead quality (PHRED_OFFSET by
+   * default). 
+   * @return Modified SingleRead quality string.
    */
   std::string GetPhredQualityString(int offset = PHRED_OFFSET) const {
     std::string res = qual_;
@@ -139,11 +140,11 @@ class SingleRead {
   }
 
   /*
-   * Return ith nucleotide of single read sequence in unreadable form
+   * Return ith nucleotide of SingleRead sequence in unreadable form
    * (0, 1, 2 or 3).
    *
    * @param i Nucleotide index.
-   * @return Nucleotide on ith position of single read sequence.
+   * @return Nucleotide on ith position of SingleRead sequence.
    */
   char operator[](size_t i) const {
     assert(is_nucl(seq_[i]));
@@ -151,10 +152,10 @@ class SingleRead {
   }
 
   /*
-   * Return reversed complimentary single read (single read with new name,
-   * reversed complimentary sequence, and reversed quality).
+   * Return reversed complimentary SingleRead (SingleRead with new
+   * name, reversed complimentary sequence, and reversed quality).
    *
-   * @return Reversed complimentary single read.
+   * @return Reversed complimentary SingleRead.
    */
   SingleRead operator!() const {
     std::string new_name;
@@ -167,9 +168,10 @@ class SingleRead {
   }
 
   /*
-   * Check whether two single reads are equal.
+   * Check whether two SingleReads are equal.
    *
-   * @param singleread The single read we want to compare ours with.
+   * @param singleread The SingleRead we want to compare ours with.
+   *
    * @return true if these two single reads have similar sequences,
    * and false otherwise.
    */
@@ -178,7 +180,7 @@ class SingleRead {
   }
 
   /*
-   * Set name of single read.
+   * Set name of SingleRead.
    *
    * @param new_name New name.
    */
@@ -187,7 +189,7 @@ class SingleRead {
   }
 
   /*
-   * Set sequence of single read.
+   * Set sequence of SingleRead.
    *
    * @param new_sequence New sequence.
    */
@@ -197,10 +199,10 @@ class SingleRead {
   }
 
   /*
-   * Set quality of single read.
+   * Set quality of SingleRead.
    *
-   * @param new_quality New quality of single read.
-   * @param offset The offset of single read quality 
+   * @param new_quality New quality of SingleRead.
+   * @param offset The offset of SingleRead quality 
    * (PHRED_OFFSET by default).
    */
   void SetQuality(const char* new_quality, int offset = PHRED_OFFSET) {
@@ -212,7 +214,7 @@ class SingleRead {
 
  private:
   /*
-   * @variable The name of single read in input file.
+   * @variable The name of SingleRead in input file.
    */
   std::string name_;
   /*
@@ -220,11 +222,11 @@ class SingleRead {
    */
   std::string seq_;
   /*
-   * @variable The quality of single read.
+   * @variable The quality of SingleRead.
    */
   std::string qual_;
   /*
-   * @variable The flag of single read correctness.
+   * @variable The flag of SingleRead correctness.
    */
   bool valid_;
 

@@ -42,6 +42,8 @@ class Parser {
 
   /* 
    * Check whether the stream is opened.
+   *
+   * @return true of the stream is opened and false otherwise.
    */
   virtual bool is_open() const {
     return is_open_;
@@ -49,15 +51,18 @@ class Parser {
 
   /* 
    * Check whether we've reached the end of stream.
+   *
+   * @return true if the end of stream is reached and false
+   * otherwise.
    */
   virtual bool eof() const {
     return eof_;
   }
 
   /*
-   * Read single read from stream.
+   * Read SingleRead from stream.
    *
-   * @param read The single read that will store read data.
+   * @param read The SingleRead that will store read data.
    *
    * @return Reference to this stream.
    */

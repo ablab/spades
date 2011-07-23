@@ -44,6 +44,8 @@ class CuttingReaderWrapper : public IReader<ReadType> {
 
   /* 
    * Check whether the stream is opened.
+   *
+   * @return true of the stream is opened and false otherwise.
    */
   /* virtual */ bool is_open() {
     return reader_->is_open();
@@ -51,15 +53,19 @@ class CuttingReaderWrapper : public IReader<ReadType> {
 
   /* 
    * Check whether we've reached the end of stream.
+   *
+   * @return true if the end of stream is reached and false
+   * otherwise.
    */
   /* virtual */ bool eof() {
     return (read_ == cut_) || (reader_->eof());
   }
 
   /*
-   * Read single or paired read from stream (according to ReadType).
+   * Read SingleRead or PairedRead from stream (according to ReadType).
    *
-   * @param read The single or paired read that will store read data.
+   * @param read The SingleRead or PairedRead that will store read
+   * data.
    *
    * @return Reference to this stream.
    */
@@ -93,7 +99,7 @@ class CuttingReaderWrapper : public IReader<ReadType> {
   IReader<ReadType>* reader_;
   /*
    * @variable Number of reads that are allowed to read (if it is less
-   * than 0, all reads in stream are allowed to be read.
+   * than 0, all the reads in stream are allowed to be read).
    */
   size_t cut_;
   /*
