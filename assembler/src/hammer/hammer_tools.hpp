@@ -52,8 +52,8 @@ private:
 	const KMerStatMap::const_iterator & cur_min();
 };
 
-void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerStatMap> * vv, vector<ReadStat> * rv);
-void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rmsc, vector< vector<uint64_t> > * vs, vector<KMerCount> * kmers, vector<ReadStat> * rv);
+void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerStatMap> * vv);
+void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rmsc, vector< vector<uint64_t> > * vs, vector<KMerCount> * kmers);
 
 /**
   * correct a read in place
