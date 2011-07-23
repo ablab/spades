@@ -22,6 +22,7 @@
 #include "omni_tools.hpp"
 #include "seq_map.hpp"
 #include "ID_track_handler.hpp"
+#include "edges_position_handler.hpp"
 #include "read/osequencestream.hpp"
 #include <time.h>
 #include <sys/types.h>
@@ -89,6 +90,26 @@ void ProduceInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
 	WriteToDotFile(g, file_name, graph_name, path1, path2);
 }
+
+template<size_t k>
+void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos ) {
+	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
+	int CurPos = 0;
+	for (auto it = path1.sequence().begin(); it != path1.sequence().end(); ++it) {
+		EdgeId ei = *it;
+		edgesPos.AddEdgePosition(ei, CurPos+1, CurPos+g.length(ei));
+		CurPos += g.length(ei);
+	}
+	CurPos = 1000000000;
+	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
+	for (auto it = path2.sequence().begin(); it != path2.sequence().end(); ++it) {
+		EdgeId ei = *it;
+		edgesPos.AddEdgePosition(ei, CurPos+1, CurPos+g.length(ei));
+		CurPos += g.length(ei);
+	}
+}
+
 
 template<size_t k>
 void ProduceNonconjugateInfo(NCGraph& g,
@@ -354,6 +375,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 	Graph g(k);
 	EdgeIndex<k + 1, Graph> index(g);
 	IdTrackHandler<Graph> IntIds(g);
+	EdgesPositionHandler<Graph> EdgePos(g);
 	// if it's not paired_mode, then it'll be just unused variable -- takes O(1) to initialize from graph
 	PairedInfoIndex<Graph> paired_index(g, 5);
 
@@ -378,6 +400,8 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 				"edge_graph");
 
+		FillEdgesPos<k>(g, index, genome, EdgePos);
+
 		SimplifyGraph<k> (g, index, 3, genome, output_folder);
 
 		ProduceInfo<k> (g, index, genome,
@@ -398,6 +422,14 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 	//		PairedInfoIndex<Graph> clustered_paired_index(g);
 	//		clusterer.cluster(clustered_paired_index);
 	//	}
+
+	EdgesPosGraphLabeler<Graph> EdgePosLab(g, EdgePos);
+	omnigraph::WriteSimple(
+			output_folder + "repeats_resolved_before_poslab.dot",
+			"no_repeat_graph", g, EdgePosLab);
+	omnigraph::WriteSimple(
+			work_tmp_dir + "repeats_resolved_before_poslab.dot",
+			"no_repeat_graph", g, EdgePosLab);
 
 	if (paired_mode) {
 		if (!from_saved) {
@@ -434,12 +466,15 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 
 		NonconjugateDeBruijnGraph resolved_graph(k);
 		IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
+		EdgesPositionHandler<NCGraph> EdgePosAfter(resolved_graph);
+
 		DEBUG("New index size: "<< new_index.size());
         if(rectangle_mode)
         {
              void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index, NonconjugateDeBruijnGraph& graph, const string& work_tmp_dir, const string& output_folder);                                                          
              RectangleResolve(new_index, new_graph, work_tmp_dir, output_folder);                        
         }
+
 		ResolveRepeats(new_graph, NewIntIds, new_index, resolved_graph,
 				Resolved_IntIds, output_folder + "resolve/");
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
