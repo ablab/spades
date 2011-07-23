@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <cstdio>
 #include <cstdlib>
+#include <cassert>
 #include <string>
 #include <set>
 #include <unordered_map>
@@ -125,7 +126,7 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles, bool q_mers) {
     ifs >> r;
     KMer::hash hash_function;
     for (ValidKMerGenerator<kK> gen(r); gen.HasMore(); gen.Next()) {
-      FILE *cur_file = ofiles[hash_function(gen.kmer()) % file_number];     
+      FILE *cur_file = ofiles[hash_function(gen.kmer()) % file_number];
       KMer kmer = gen.kmer();
       if (KMer::less2()(!kmer, kmer)) {
         kmer = !kmer;
@@ -156,7 +157,9 @@ void EvalFile(FILE *ifile, FILE *ofile, bool q_mers) {
     KMerFreqInfo &info = stat_map[kmer];
     if (q_mers) {
       double correct_probability;
-      assert(fread(&correct_probability, sizeof(correct_probability), 1, ifile) == 1);
+      assert(fread(&correct_probability, sizeof(correct_probability), 
+                   1, ifile) 
+             == 1);
       info.q_count += correct_probability;
     } else {
       info.count += 1;
@@ -188,6 +191,7 @@ int main(int argc, char *argv[]) {
     char filename[50];
     snprintf(filename, sizeof(filename), "%u.kmer.part", i);
     ofiles[i] = fopen(filename, "wb");
+    assert(ofiles[i] != NULL && "Too many files to open");
   }
   SplitToFiles(ireadstream(opts.ifile, opts.qvoffset), ofiles, opts.q_mers);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
@@ -195,6 +199,7 @@ int main(int argc, char *argv[]) {
   }
   
   FILE *ofile = fopen(opts.ofile.c_str(), "w");
+  assert(ofile != NULL && "Too many files to open");
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     char ifile_name[50];
     snprintf(ifile_name, sizeof(ifile_name), "%u.kmer.part", i);
