@@ -42,6 +42,8 @@ class RCReaderWrapper : public IReader<ReadType> {
 
   /* 
    * Check whether the stream is opened.
+   *
+   * @return true of the stream is opened and false otherwise.
    */
   /* virtual */ bool is_open() {
     return reader_->is_open();
@@ -49,15 +51,19 @@ class RCReaderWrapper : public IReader<ReadType> {
 
   /* 
    * Check whether we've reached the end of stream.
+   *
+   * @return true if the end of stream is reached and false
+   * otherwise.
    */
   /* virtual */ bool eof() {
     return (was_rc_) && (reader_->eof());
   }
 
   /*
-   * Read single or paired read from stream (according to ReadType).
+   * Read SingleRead or PairedRead from stream (according to ReadType).
    *
-   * @param read The single or paired read that will store read data.
+   * @param read The SingleRead or PairedRead that will store read
+   * data.
    *
    * @return Reference to this stream.
    */

@@ -24,6 +24,7 @@ struct ReadStat {
 	Read read;
 	// kmer indices
 	map<uint32_t, uint64_t> kmers;
+	uint64_t blobpos;
 };
 
 /*
@@ -71,14 +72,16 @@ public:
 		return res;
 	}
 
-	static vector<ReadStat>* readAllNoValidation(string filename, int cnt = -1) __attribute__ ((deprecated)) {
+	static vector<ReadStat>* readAllNoValidation(string filename, uint64_t * totalsize, int cnt = -1) __attribute__ ((deprecated)) {
 		ireadstream irs(filename);
 		assert(irs.is_open());
 		vector<ReadStat>* res = new vector<ReadStat>();
+		*totalsize = 0;
 		ReadStat rs;
 		while (cnt-- && irs.is_open() && !irs.eof()) {
 			irs >> rs.read;
 			res->push_back(rs);
+			*totalsize += rs.read.getSequenceString().size();
 		}
 		irs.close();
 		return res;

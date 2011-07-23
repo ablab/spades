@@ -151,7 +151,7 @@ template <class Graph>
 void WeakerGluer<Graph>::OneSideGluing(vector<PairInfo> &pairInfos, vector<pair<int,int> > &links, Direction direction){
     EdgeId firstMajorEdge, secondMajorEdge;
     EdgeId firstMinorEdge, secondMinorEdge;
-    size_t firstDistance, secondDistance;
+    int firstDistance, secondDistance;
    //long code, but legible
     for(size_t i = 0 ;  i < pairInfos.size() ; ++i)
     {
@@ -168,15 +168,15 @@ void WeakerGluer<Graph>::OneSideGluing(vector<PairInfo> &pairInfos, vector<pair<
                 links.push_back(make_pair(i,j));
                 continue;
             }
-            size_t  firstMinorEdgeLength = debruijn_.length(firstMinorEdge);
-            size_t secondMinorEdgeLength = debruijn_.length(secondMinorEdge);
-            size_t varDistanceFirstSecond = quotientGraphs_.Distance(firstMinorEdge, secondMinorEdge) ;
+            int firstMinorEdgeLength = debruijn_.length(firstMinorEdge);
+            int secondMinorEdgeLength = debruijn_.length(secondMinorEdge);
+            int varDistanceFirstSecond = quotientGraphs_.Distance(firstMinorEdge, secondMinorEdge) ;
             if((varDistanceFirstSecond < errorDistance_)  && ( abs(firstDistance + firstMinorEdgeLength  - (secondDistance - varDistanceFirstSecond)) < errorDistance_  ))
             {
                 links.push_back(make_pair(i,j));
                 continue;
             }
-            size_t  varDistanceSecondFirst = quotientGraphs_.Distance(secondMinorEdge, firstMinorEdge);
+            int  varDistanceSecondFirst = quotientGraphs_.Distance(secondMinorEdge, firstMinorEdge);
             if( ( varDistanceSecondFirst < errorDistance_ ) && ( abs( secondDistance + secondMinorEdgeLength - firstDistance + varDistanceSecondFirst ) < errorDistance_ ))
             {
                 links.push_back(make_pair(i,j));
@@ -193,9 +193,9 @@ void WeakerGluer<Graph>::LeftToRightGlue(vector<PairInfo> &leftPairInfos, vector
     
     EdgeId firstMajorEdge, firstMinorEdge; 
     EdgeId secondMajorEdge, secondMinorEdge;
-    size_t firstDistance, secondDistance;
-    size_t firstMajorEdgeLength , firstMinorEdgeLength;
-    size_t  secondMinorEdgeLength;
+    int firstDistance, secondDistance;
+    int firstMajorEdgeLength , firstMinorEdgeLength;
+    int  secondMinorEdgeLength;
     for(size_t i = 0 ; i < leftPairInfos.size() ; ++i)
     {
         ChooseMajorEdges(leftPairInfos[i], direction, firstMajorEdge,firstMinorEdge );
@@ -222,14 +222,14 @@ void WeakerGluer<Graph>::LeftToRightGlue(vector<PairInfo> &leftPairInfos, vector
                 leftToRightGluings.push_back(make_pair(i, j + leftPairInfos.size() ));
                 continue;
             }
-             size_t distanceFirstSecond = quotientGraphs_.Distance(firstMinorEdge, secondMinorEdge);
+             int distanceFirstSecond = quotientGraphs_.Distance(firstMinorEdge, secondMinorEdge);
              firstMinorEdgeLength = debruijn_.length(firstMinorEdge);
             if((distanceFirstSecond < errorDistance_) && ( abs(firstDistance - firstMajorEdgeLength + firstMinorEdgeLength - (secondDistance - distanceFirstSecond) ) < errorDistance_)   )
             {
                 leftToRightGluings.push_back(make_pair(i, j + leftPairInfos.size()));
                 continue;
             }
-            size_t distanceSecondFirst = quotientGraphs_.Distance(secondMinorEdge, firstMinorEdge);
+            int distanceSecondFirst = quotientGraphs_.Distance(secondMinorEdge, firstMinorEdge);
             secondMinorEdgeLength = debruijn_.length(secondMinorEdge);
 
             if( (distanceSecondFirst < errorDistance_) && ( abs(secondDistance + secondMinorEdgeLength - (firstDistance - distanceSecondFirst - firstMajorEdgeLength )  )  < errorDistance_  ) )

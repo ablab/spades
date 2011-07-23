@@ -6,6 +6,8 @@
 
 #define K 55
 #define GOOD_SINGLETON_THRESHOLD 1 
+#define CONSENSUS_BLOB_MARGIN 0.1
+
 
 class PositionKMer;
 
@@ -17,12 +19,16 @@ typedef pair<std::string, uint32_t> StringCount;
 
 
 class PositionKMer {
-	uint64_t read_;
+	// uint64_t read_;
 	uint32_t start_;
 
   public:
 	static std::vector<ReadStat> * rv;
 	static uint64_t revNo;
+
+	static char* blob;
+	static uint64_t blob_max_size;
+	static uint64_t blob_size;
 
 	static bool compareSubKMers( const uint64_t kmer1, const uint64_t kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t offset) {
 		for (uint32_t i = offset; i < K; i += tau+1) {
@@ -43,21 +49,24 @@ class PositionKMer {
 		return true;
 	}
 
-	PositionKMer( uint64_t readno, uint32_t startpos ) : read_(readno), start_(startpos) {
+	PositionKMer( uint64_t readno, uint32_t startpos ) {
+		start_ = rv->at(readno).blobpos + startpos;
 	}
 
-	virtual char at(uint32_t pos) const {
-		return rv->at(read_).read.getSequenceString()[ start_ + pos ];
+	char at(uint32_t pos) const {
+		return blob[ start_ + pos ];
+//		return rv->at(read_).read.getSequenceString()[ start_ + pos ];
 	}
 
 	char operator [] (uint32_t pos) const {
-		return at(pos);
+		return blob[ start_ + pos ];
+//		return at(pos);
 	}
 
-	virtual uint32_t size() const { return K; }
+	// virtual uint32_t size() const { return K; }
 
 	bool operator < ( const PositionKMer & kmer ) const {
-		for (uint32_t i = 0; i < size(); i++) {
+		for (uint32_t i = 0; i < K; i++) {
 			if ( at(i) != kmer.at(i) ) {
 				return ( at(i) < kmer.at(i) );
 			}

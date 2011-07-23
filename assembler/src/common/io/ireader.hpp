@@ -28,19 +28,23 @@ class IReader {
 
   /* 
    * Check whether the stream is opened.
+   *
+   * @return true if the stream is opened and false otherwise.
    */
   virtual bool is_open() = 0;
 
   /* 
    * Check whether we've reached the end of stream.
+   *
+   * @return true if the end of the stream is reached and false
+   * otherwise.
    */
   virtual bool eof() = 0;
 
   /*
-   * Read single or paired read from stream.
+   * Read SingleRead or PairedRead from stream (according to ReadType).
    *
-   * @param singleread The single or paired read that will store read
-   * data. 
+   * @param read The SingleRead or PairedRead that will store read data.
    *
    * @return Reference to this stream.
    */

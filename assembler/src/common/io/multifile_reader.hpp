@@ -1,5 +1,5 @@
 /**
- * @file    multifile_reader_wrapper.hpp
+ * @file    multifile_reader.hpp
  * @author  Mariya Fomkina
  * @version 1.0
  *
@@ -12,19 +12,19 @@
  *
  * @section DESCRIPTION
  *
- * MultifileReaderWrapper is the class-wrapper that gets data from
- * number of files, given in a constructor.
+ * MultifileReader is the stream that gets data from number of files,
+ * given in a constructor.
  */
 
-#ifndef COMMON_IO_MULTIFILEREADERWRAPPER_HPP_
-#define COMMON_IO_MULTIFILEREADERWRAPPER_HPP_
+#ifndef COMMON_IO_MULTIFILEREADER_HPP_
+#define COMMON_IO_MULTIFILEREADER_HPP_
 
 #include <vector>
 #include "common/io/ireader.hpp"
 #include "common/io/reader.hpp"
 
 template<typename ReadType>
-class MultifileReaderWrapper : public IReader<ReadType> {
+class MultifileReader : public IReader<ReadType> {
  public:
   /*
    * Default constructor.
@@ -33,13 +33,13 @@ class MultifileReaderWrapper : public IReader<ReadType> {
    * tries to open all the files of this list and proceeds only those
    * of them which present. The names of non-existing files are
    * ignored. 
-   * @param distance Distance between parts of paired reads (or useless
-   * parameter when we work with single reads).
+   * @param distance Distance between parts of PairedReads (or useless
+   * parameter when we work with SingleReads).
    * @param offset The offset of the read quality.
    */
-  MultifileReaderWrapper(const vector<typename ReadType::FilenameType>&
-                         filenames, size_t distance = 0,
-                         int offset = SingleRead::PHRED_OFFSET)
+  MultifileReader(const vector<typename ReadType::FilenameType>&
+                  filenames, size_t distance = 0,
+                  int offset = SingleRead::PHRED_OFFSET)
       : filenames_(filenames), readers_(), distance_(distance),
         offset_(offset), current_reader_index_(0) {
     for (size_t i = 0; i < filenames_.size(); ++i) {
@@ -56,7 +56,7 @@ class MultifileReaderWrapper : public IReader<ReadType> {
   /* 
    * Default destructor.
    */
-  /*virtual*/~MultifileReaderWrapper() {
+  /*virtual*/~MultifileReader() {
     close();
     for (size_t i = 0; i < readers_.size(); ++i) {
       delete readers_[i];
@@ -65,6 +65,8 @@ class MultifileReaderWrapper : public IReader<ReadType> {
 
   /* 
    * Check whether the stream is opened.
+   *
+   * @return true if the stream is opened and false otherwise.
    */
   /* virtual */ bool is_open() {
     if (readers_.size() > 0) {
@@ -76,6 +78,9 @@ class MultifileReaderWrapper : public IReader<ReadType> {
 
   /* 
    * Check whether we've reached the end of stream.
+   *
+   * @return true if the end of the stream is reached and false
+   * otherwise.
    */
   /* virtual */ bool eof() {
     if (readers_.size() > 0) {
@@ -86,13 +91,14 @@ class MultifileReaderWrapper : public IReader<ReadType> {
   }
 
   /*
-   * Read single or paired read from stream (according to ReadType).
+   * Read SingleRead or PairedRead from stream (according to ReadType).
    *
-   * @param read The single or paired read that will store read data.
+   * @param read The SingleRead or PairedRead that will store read
+   * data. 
    *
    * @return Reference to this stream.
    */
-  /* virtual */ MultifileReaderWrapper& operator>>(ReadType& read) {
+  /* virtual */ MultifileReader& operator>>(ReadType& read) {
     if (readers_.size() > 0) {
       if (readers_[current_reader_index_]->eof()) {
         ++current_reader_index_;
@@ -145,4 +151,4 @@ class MultifileReaderWrapper : public IReader<ReadType> {
   size_t current_reader_index_;
 };
 
-#endif /* COMMON_IO_MULTIFILEREADERWRAPPER_HPP_ */
+#endif /* COMMON_IO_MULTIFILEREADER_HPP_ */

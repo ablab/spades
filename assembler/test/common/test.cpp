@@ -16,7 +16,7 @@
 // TODO(mariyafomkina): Add tests for other parsers here.
 #include "reader_singleread_test.hpp"
 #include "reader_pairedread_test.hpp"
-#include "multifile_reader_wrapper_test.hpp"
+#include "multifile_reader_test.hpp"
 #include "cutting_reader_wrapper_test.hpp"
 #include "rc_reader_wrapper_test.hpp"
 #include "converting_reader_wrapper_test.hpp"
@@ -40,7 +40,7 @@ void runSuite() {
   // TODO(mariyafomkina): Add tests for other parsers here.
   s += ReaderSingleReadSuite();
   s += ReaderPairedReadSuite();
-  s += MultifileReaderWrapperSuite();
+  s += MultifileReaderSuite();
   s += CuttingReaderWrapperSuite();
   s += RCReaderWrapperSuite();
   s += ConvertingReaderWrapperSuite();

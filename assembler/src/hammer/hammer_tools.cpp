@@ -112,7 +112,7 @@ void AddKMers(const Read &r, uint64_t readno, KMerStatMap *v) {
 	}
 }
 
-void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerStatMap> * vv, vector<ReadStat> * rv) {
+void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerStatMap> * vv) {
 	vv->clear();
 	//for (int i=0; i<nthreads; ++i) {
 		KMerStatMap v; v.clear();
@@ -123,18 +123,19 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 
 	// TODO: think about a parallelization -- for some reason, the previous version started producing segfaults
 
-	for(int i=0; i < rv->size(); ++i) {
-		AddKMers<K, KMerStatMap>(rv->at(i).read, i, &(vv->at(0)));
+	for(int i=0; i < PositionKMer::rv->size(); ++i) {
+		AddKMers<K, KMerStatMap>(PositionKMer::rv->at(i).read, i, &(vv->at(0)));
+		if ( i % 1000000 == 0 ) cout << "Processed " << i << " reads." << endl;
 	}
 	
 	cout << "All k-mers added to maps." << endl;
 	//for (int i=0; i<nthreads; ++i) {
-		cout << "map " << 0 << " size = " << vv->at(0).size() << endl;
+		cout << "map " << 0 << " size = " << vv->size() << endl;
 	//}
 
 }
 
-void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rsmc, vector< vector<uint64_t> > * vs, vector<KMerCount> * kmers, vector<ReadStat> * rv) {
+void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rsmc, vector< vector<uint64_t> > * vs, vector<KMerCount> * kmers) {
 	int effective_threads = min(nthreads, tau+1);	
 	uint64_t kmerno = 0;
 	kmers->clear();
@@ -143,7 +144,7 @@ void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rsmc, vector< 
 	for (KMerCount p = rsmc.next(); p.second.count < MAX_INT_64; p = rsmc.next()) {
 		kmers->push_back(p);
 		for (uint32_t j=0; j<p.second.pos.size(); ++j) {
-			rv->at(p.second.pos[j].first).kmers.insert( make_pair(p.second.pos[j].second, kmerno) );
+			PositionKMer::rv->at(p.second.pos[j].first).kmers.insert( make_pair(p.second.pos[j].second, kmerno) );
 		}
 		++kmerno;
 	}
@@ -162,13 +163,13 @@ void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rsmc, vector< 
 }
 
 
-
 bool CorrectRead(const vector<KMerCount> & km, ReadStat * r, ReadStat * r_rev, ofstream * ofs) {
 	string seq = r->read.getSequenceString();
+	const uint32_t read_size = r->read.size();
 //	cout << "Correcting " << r->read.getName() << "\n" << seq.data() << endl;
 
 	// create auxiliary structures for consensus
-	vector<int> vA(r->read.size(), 0), vC(r->read.size(), 0), vG(r->read.size(), 0), vT(r->read.size(), 0);
+	vector<int> vA(read_size, 0), vC(read_size, 0), vG(read_size, 0), vT(read_size, 0);
 	vector< vector<int> > v;  // A=0, C=1, G=2, T=3
 	v.push_back(vA); v.push_back(vC); v.push_back(vG); v.push_back(vT);
 
@@ -212,7 +213,7 @@ bool CorrectRead(const vector<KMerCount> & km, ReadStat * r, ReadStat * r_rev, o
 		const KMerStat & stat = km[it->second].second;
 		if (stat.good == true) {
 			for (size_t j=0; j<K; ++j) {
-				v[complement(dignucl(kmer[j]))][r->read.size()-pos-j-1]++;
+				v[complement(dignucl(kmer[j]))][read_size-pos-j-1]++;
 			}
 			/*if (print_debug) {
 				for (size_t j=0; j<r->read.size()-pos-K; ++j) cout << " ";
@@ -227,14 +228,14 @@ bool CorrectRead(const vector<KMerCount> & km, ReadStat * r, ReadStat * r_rev, o
 //				cout << endl;
 
 				for (size_t j=0; j<K; ++j) {
-					v[complement(dignucl(newkmer[j]))][r->read.size()-pos-j-1]++;
+					v[complement(dignucl(newkmer[j]))][read_size-pos-j-1]++;
 				}
 				if (!changedRead) {
 					changedRead = true;
 					if (ofs != NULL) *ofs << "\n " << r->read.getName() << "\n" << r->read.getSequenceString().data() << "\n";
 				}
 				if (ofs != NULL) {
-					for (size_t j=0; j<r->read.size()-pos-K; ++j) *ofs << " ";
+					for (size_t j=0; j<read_size-pos-K; ++j) *ofs << " ";
 					for (size_t j=0; j<K; ++j) *ofs << nucl_complement(newkmer[K-j-1]);
 					*ofs << "\n";
 				}
@@ -246,7 +247,7 @@ bool CorrectRead(const vector<KMerCount> & km, ReadStat * r, ReadStat * r_rev, o
 
 	bool res = false; // has anything really changed?
 	// find max consensus element
-	for (size_t j=0; j<r->read.size(); ++j) {
+	for (size_t j=0; j<read_size; ++j) {
 		char cmax = seq[j]; int nummax = 0;
 		for (size_t k=0; k<4; ++k) {
 			if (v[k][j] > nummax) {
@@ -260,7 +261,7 @@ bool CorrectRead(const vector<KMerCount> & km, ReadStat * r, ReadStat * r_rev, o
 	// print consensus array
 	if (ofs != NULL && changedRead) {
 		for (size_t i=0; i<4; ++i) {
-			for (size_t j=0; j<r->read.size(); ++j) {
+			for (size_t j=0; j<read_size; ++j) {
 				*ofs << (char)((int)'0' + v[i][j]);
 			}
 			*ofs << "\n";

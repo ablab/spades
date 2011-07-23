@@ -12,12 +12,12 @@
  *
  * @section DESCRIPTION
  *
- * Reader is the base class that gets single reads or paired reads
+ * Reader is the base class that gets SingleReads or PairedReads
  * from one or two input files respectively.
  * Reader<SingleRead> is the very base class that reads from one file
  * through Parser object.
  * Reader<PairedRead> is the class that reads data from two input
- * files and gets paired reads using this data and distance information.
+ * files and gets PairedReads using this data and distance information.
  */
 
 #ifndef COMMON_IO_READER_HPP_
@@ -67,6 +67,8 @@ class Reader<SingleRead> : public IReader<SingleRead> {
 
   /* 
    * Check whether the stream is opened.
+   *
+   * @return true of the stream is opened and false otherwise.
    */
   /* virtual */ bool is_open() {
     if (parser_ != NULL) {
@@ -78,6 +80,9 @@ class Reader<SingleRead> : public IReader<SingleRead> {
 
   /* 
    * Check whether we've reached the end of stream.
+   *
+   * @return true if the end of stream is reached and false
+   * otherwise.
    */
   /* virtual */ bool eof() {
     if (parser_ != NULL) {
@@ -88,9 +93,9 @@ class Reader<SingleRead> : public IReader<SingleRead> {
   }
 
   /*
-   * Read single read from stream.
+   * Read SingleRead from stream.
    *
-   * @param singleread The single read that will store read data.
+   * @param singleread The SingleRead that will store read data.
    *
    * @return Reference to this stream.
    */
@@ -104,7 +109,7 @@ class Reader<SingleRead> : public IReader<SingleRead> {
   /*
    * Close the stream.
    */
-  /* virtual */  void close() {
+  /* virtual */ void close() {
     if (parser_ != NULL) {
       parser_->close();
     }
@@ -151,7 +156,7 @@ class Reader<PairedRead> : public IReader<PairedRead> {
    * 
    * @param filename The pair that containes the names of two files to
    * be opened.
-   * @param distance Distance between parts of paired reads.
+   * @param distance Distance between parts of PairedReads.
    * @param offset The offset of the read quality.
    */
   explicit Reader(const PairedRead::FilenameType& filename,
@@ -172,6 +177,8 @@ class Reader<PairedRead> : public IReader<PairedRead> {
 
   /* 
    * Check whether the stream is opened.
+   *
+   * @return true of the stream is opened and false otherwise.
    */
   /* virtual */ bool is_open() {
     return first_->is_open() && second_->is_open();
@@ -179,15 +186,18 @@ class Reader<PairedRead> : public IReader<PairedRead> {
 
   /* 
    * Check whether we've reached the end of stream.
+   *
+   * @return true if the end of stream is reached and false
+   * otherwise.
    */
   /* virtual */ bool eof() {
     return first_->eof() || second_->eof();
   }
 
   /*
-   * Read paired read from stream.
+   * Read PairedRead from stream.
    *
-   * @param pairedread The paired read that will store read data.
+   * @param pairedread The PairedRead that will store read data.
    *
    * @return Reference to this stream.
    */
@@ -221,7 +231,7 @@ class Reader<PairedRead> : public IReader<PairedRead> {
    */
   PairedRead::FilenameType filename_;
   /*
-   * @variable The distance between two parts of paired read.
+   * @variable The distance between two parts of PairedRead.
    */
   size_t distance_;
   /*
