@@ -25,7 +25,10 @@ class PositionKMer {
   public:
 	static std::vector<ReadStat> * rv;
 	static uint64_t revNo;
+
 	static char* blob;
+	static uint64_t blob_max_size;
+	static uint64_t blob_size;
 
 	static bool compareSubKMers( const uint64_t kmer1, const uint64_t kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t offset) {
 		for (uint32_t i = offset; i < K; i += tau+1) {

@@ -32,6 +32,8 @@ using namespace std;
 
 std::vector<ReadStat> * PositionKMer::rv = NULL;
 uint64_t PositionKMer::revNo = 0;
+uint64_t PositionKMer::blob_size = 0;
+uint64_t PositionKMer::blob_max_size = 0;
 char * PositionKMer::blob = NULL;
 
 int main(int argc, char * argv[]) {
@@ -57,6 +59,7 @@ int main(int argc, char * argv[]) {
 
 	PositionKMer::blob = new char[ (uint64_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];
 	cout << "Allocated blob of size " << (uint64_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) << endl;
+	PositionKMer::blob_max_size = totalReadSize;
 	
 	PositionKMer::revNo = PositionKMer::rv->size();
 	for (uint64_t i = 0; i < PositionKMer::revNo; ++i) {
@@ -72,7 +75,8 @@ int main(int argc, char * argv[]) {
 			PositionKMer::blob[ curpos + j ] = PositionKMer::rv->at(i).read.getSequenceString()[j];
 		curpos += PositionKMer::rv->at(i).read.size();
 	}
-	cout << "Filled up blob." << endl;
+	cout << "Filled up blob. Real size " << curpos << "." << endl;
+	PositionKMer::blob_size = curpos;
 	
 	for (int iter_count = 0; iter_count < iterno; ++iter_count) {
 		cout << "\n     === ITERATION " << iter_count << " ===" << endl;
