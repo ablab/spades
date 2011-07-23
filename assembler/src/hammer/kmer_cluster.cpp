@@ -340,17 +340,17 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 				}
 			}
 			if (!centerInCluster) {
-				// cout << "  pushing consensus\n";
-				// cout << "Consensus: " << bestCenters[k].first;
+				//cout << "  pushing consensus\n";
+				//cout << "Consensus: " << bestCenters[k].first;
 
 				Read consensus_read("Consensus", bestCenters[k].first, bestCenters[k].first);
 				ReadStat rs; rs.read = consensus_read;
-				PositionKMer pkm(PositionKMer::rv->size(), 0);
-				KMerStat kms; kms.count = 0;
 
 				#pragma omp critical
 				{
 					PositionKMer::rv->push_back(rs);
+					PositionKMer pkm(PositionKMer::rv->size()-1, 0);
+					KMerStat kms; kms.count = 0;
 					k_.push_back( make_pair( pkm, kms ) );
 				}
 				v.insert(v.begin(), k_.size() - 1);

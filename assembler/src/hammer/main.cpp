@@ -32,6 +32,7 @@ using namespace std;
 
 std::vector<ReadStat> * PositionKMer::rv = NULL;
 uint64_t PositionKMer::revNo = 0;
+char * PositionKMer::blob = NULL;
 
 int main(int argc, char * argv[]) {
 	if (argc < 6 || argc > 7) {
@@ -50,27 +51,40 @@ int main(int argc, char * argv[]) {
 
 	cout << "Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K << endl;
 
-	vector<ReadStat> * rv = ireadstream::readAllNoValidation(readsFilename);
+	uint64_t totalReadSize;
+	PositionKMer::rv = ireadstream::readAllNoValidation(readsFilename, &totalReadSize);
 	cout << "All reads read to memory." << endl;
+
+	PositionKMer::blob = new char[ (uint64_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];
+	cout << "Allocated blob of size " << (uint64_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) << endl;
 	
-	PositionKMer::rv = rv;
-	PositionKMer::revNo = rv->size();
+	PositionKMer::revNo = PositionKMer::rv->size();
 	for (uint64_t i = 0; i < PositionKMer::revNo; ++i) {
-		ReadStat rs; rs.read = !(rv->at(i).read);
-		rv->push_back( rs );
+		ReadStat rs; rs.read = !(PositionKMer::rv->at(i).read);
+		PositionKMer::rv->push_back( rs );
 	}
+	cout << "Reverse complementary reads added.\n";
+
+	uint64_t curpos = 0;
+	for (uint64_t i = 0; i < PositionKMer::rv->size(); ++i) {
+		PositionKMer::rv->at(i).blobpos = curpos;
+		for (uint32_t j=0; j < PositionKMer::rv->at(i).read.size(); ++j) 
+			PositionKMer::blob[ curpos + j ] = PositionKMer::rv->at(i).read.getSequenceString()[j];
+		curpos += PositionKMer::rv->at(i).read.size();
+	}
+	cout << "Filled up blob." << endl;
 	
 	for (int iter_count = 0; iter_count < iterno; ++iter_count) {
 		cout << "\n     === ITERATION " << iter_count << " ===" << endl;
 	
 		vector<KMerStatMap> vv;
-		DoPreprocessing(tau, qvoffset, readsFilename, nthreads, &vv, rv);
+		DoPreprocessing(tau, qvoffset, readsFilename, nthreads, &vv);
 		ReadStatMapContainer rmsc(vv);
 		cout << "Got RMSC of size " << rmsc.size() << "\n";
 		
 		vector< vector<uint64_t> > vs(tau+1);
 		vector<KMerCount> kmers;
-		DoSplitAndSort(tau, nthreads, rmsc, &vs, &kmers, rv);
+		DoSplitAndSort(tau, nthreads, rmsc, &vs, &kmers);
 		cout << "Got " << kmers.size() << " kmers.\n";
 		// free up memory
 		for (uint32_t i=0; i < vv.size(); ++i) vv[i].clear(); vv.clear();
@@ -89,9 +103,9 @@ int main(int argc, char * argv[]) {
 			changed.push_back(false);
 		}
 
-		#pragma omp parallel for shared(rv, changed, outfv) num_threads(nthreads)
+		#pragma omp parallel for shared(changed, outfv) num_threads(nthreads)
 		for (int i = 0; i < PositionKMer::revNo; ++i) {
-			bool res = CorrectRead(kmers, &(rv->at(i)), &(rv->at(i + PositionKMer::revNo)), outfv[omp_get_thread_num()]);
+			bool res = CorrectRead(kmers, &(PositionKMer::rv->at(i)), &(PositionKMer::rv->at(i + PositionKMer::revNo)), outfv[omp_get_thread_num()]);
 			changed[omp_get_thread_num()] = changed[omp_get_thread_num()] || res;
 		}
 		bool res = false;
@@ -104,18 +118,18 @@ int main(int argc, char * argv[]) {
 	
 		ofstream outf; outf.open(dirprefix + "/" + (char)((int)'0' + iter_count) + ".reads.corrected");	
 		for (uint64_t i = 0; i < PositionKMer::revNo; ++i) {
-			outf << "@" << rv->at(i).read.getName() << endl << rv->at(i).read.getSequenceString().data() << endl << "+" << rv->at(i).read.getName() << endl << rv->at(i).read.getPhredQualityString(qvoffset) << endl;		
+			outf << "@" << PositionKMer::rv->at(i).read.getName() << endl << PositionKMer::rv->at(i).read.getSequenceString().data() << endl << "+" << PositionKMer::rv->at(i).read.getName() << endl << PositionKMer::rv->at(i).read.getPhredQualityString(qvoffset) << endl;		
 		}
 		outf.close();
 
 		// prepare the reads for next iteration
 		// delete consensuses, clear kmer data, and restore correct revcomps
-		rv->resize( PositionKMer::revNo );
-		cout << rv->size() << "." << endl;
+		PositionKMer::rv->resize( PositionKMer::revNo );
+		cout << PositionKMer::rv->size() << "." << endl;
 		for (uint64_t i = 0; i < PositionKMer::revNo; ++i) {
-			rv->at(i).kmers.clear();
-			ReadStat rs; rs.read = !(rv->at(i).read);
-			rv->push_back( rs );
+			PositionKMer::rv->at(i).kmers.clear();
+			ReadStat rs; rs.read = !(PositionKMer::rv->at(i).read);
+			PositionKMer::rv->push_back( rs );
 		}
 		cout << "Reads restored." << endl;
 	
@@ -126,7 +140,8 @@ int main(int argc, char * argv[]) {
 
 	} // iterations
 
-	delete rv;
+	//delete [] PositionKMer::rv;
+	//delete [] PositionKMer::blob;
 	return 0;
 }
 
