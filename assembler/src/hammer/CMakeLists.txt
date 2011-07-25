@@ -1,4 +1,4 @@
-project(hammer CXX)
+project(hammer CXX C)
 
 find_package(OpenMP)
 
