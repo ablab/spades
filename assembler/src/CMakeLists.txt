@@ -37,7 +37,7 @@ endif()
 # common dependencies
 find_package(ZLIB)
 find_package(log4cxx)
-find_package(Boost COMPONENTS filesystem signals thread REQUIRED)
+find_package(Boost COMPONENTS signals REQUIRED)
 
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 
