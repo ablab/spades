@@ -1,16 +1,16 @@
-#ifndef TEST_FASTQGZPARSERTEST_HPP_
-#define TEST_FASTQGZPARSERTEST_HPP_
+#ifndef TEST_FASTAFASTQGZPARSERTEST_HPP_
+#define TEST_FASTAFASTQGZPARSERTEST_HPP_
 
 #include "cute/cute.h"
-#include "common/io/fastqgz_parser.hpp"
+#include "common/io/fasta_fastq_gz_parser.hpp"
 
-void TestFastqgzParserNoFile() {
-  FastqgzParser parser("./no-file");
+void TestFastaFastqGzParserNoFile() {
+  FastaFastqGzParser parser("./no-file");
   ASSERT(!parser.is_open());
 }
 
-void TestFastqgzParserReading() {
-  FastqgzParser parser("./test/data/s_test.fastq.gz", 33);
+void TestFastaFastqGzParserReading() {
+  FastaFastqGzParser parser("./test/data/s_test.fastq.gz", 33);
   ASSERT(parser.is_open());
   SingleRead read;
   parser >> read;
@@ -28,8 +28,8 @@ void TestFastqgzParserReading() {
   ASSERT(parser.eof());
 }
 
-void TestFastqgzParserFull() {
-  FastqgzParser parser("./test/data/s_test.fastq.gz", 33);
+void TestFastaFastqGzParserFull() {
+  FastaFastqGzParser parser("./test/data/s_test.fastq.gz", 33);
   ASSERT(parser.is_open());
   parser.reset();
   ASSERT(parser.is_open());
@@ -44,12 +44,12 @@ void TestFastqgzParserFull() {
   ASSERT(!parser.is_open());
 }
 
-cute::suite FastqgzParserSuite() {
+cute::suite FastaFastqGzParserSuite() {
   cute::suite s;
-  s.push_back(CUTE(TestFastqgzParserNoFile));
-  s.push_back(CUTE(TestFastqgzParserReading));
-  s.push_back(CUTE(TestFastqgzParserFull));
+  s.push_back(CUTE(TestFastaFastqGzParserNoFile));
+  s.push_back(CUTE(TestFastaFastqGzParserReading));
+  s.push_back(CUTE(TestFastaFastqGzParserFull));
   return s;
 }
 
-#endif /* TEST_FASTQGZPARSERTEST_HPP_ */
+#endif /* TEST_FASTAFASTQGZPARSERTEST_HPP_ */

@@ -3,7 +3,7 @@
 
 #include "cute/cute.h"
 #include "common/io/parser.hpp"
-#include "common/io/fastqgz_parser.hpp"
+#include "common/io/fasta_fastq_gz_parser.hpp"
 #include "common/io/parser.cpp"  // DURTY HACK!!!
 
 void TestGetExtension() {

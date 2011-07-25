@@ -25,7 +25,7 @@
 
 #include "common/io/parser.hpp"
 #include <string>
-#include "common/io/fastqgz_parser.hpp"
+#include "common/io/fasta_fastq_gz_parser.hpp"
 // TODO(mariyafomkina): Add more parsers here.
 
 /*
@@ -60,8 +60,9 @@ std::string GetExtension(const std::string& filename) {
  */
 Parser* SelectParser(const std::string& filename, int offset) {
   std::string ext = GetExtension(filename);
-  if (ext == "fastq.gz") {
-    return new FastqgzParser(filename, offset);
+  if ((ext == "fastq") || (ext == "fastq.gz") ||
+      (ext == "fasta") || (ext == "fasta.gz")) {
+    return new FastaFastqGzParser(filename, offset);
   }
   return NULL;
 }

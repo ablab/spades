@@ -12,12 +12,12 @@
  *
  * @section DESCRIPTION
  *
- * FastqgzParser is the parser stream that reads data from .fastq.gz
+ * FastaFastqGzParser is the parser stream that reads data from .fastq.gz
  * files.
  */
 
-#ifndef COMMON_IO_FASTQGZPARSER_HPP
-#define COMMON_IO_FASTQGZPARSER_HPP
+#ifndef COMMON_IO_FASTAFASTQGZPARSER_HPP
+#define COMMON_IO_FASTAFASTQGZPARSER_HPP
 
 #include <zlib.h>
 #include <string>
@@ -28,12 +28,12 @@
 #include "common/sequence/quality.hpp"
 #include "common/sequence/nucl.hpp"
 
-namespace fastqgz {
+namespace fastafastqgz {
 // STEP 1: declare the type of file handler and the read() function
 KSEQ_INIT(gzFile, gzread)
 }
 
-class FastqgzParser : public Parser {
+class FastaFastqGzParser : public Parser {
  public:
   /*
    * Default constructor.
@@ -41,7 +41,7 @@ class FastqgzParser : public Parser {
    * @param filename The name of the file to be opened.
    * @param offset The offset of the read quality.
    */
-  FastqgzParser(const std::string& filename,
+  FastaFastqGzParser(const std::string& filename,
          int offset = SingleRead::PHRED_OFFSET)
       :Parser(filename, offset), fp_(), seq_(NULL) {
     open();
@@ -50,7 +50,7 @@ class FastqgzParser : public Parser {
   /* 
    * Default destructor.
    */
-  /* virtual */ ~FastqgzParser() {
+  /* virtual */ ~FastaFastqGzParser() {
     close();
   }
 
@@ -61,7 +61,7 @@ class FastqgzParser : public Parser {
    *
    * @return Reference to this stream.
    */
-  /* virtual */ FastqgzParser& operator>>(SingleRead& read) {
+  /* virtual */ FastaFastqGzParser& operator>>(SingleRead& read) {
     if (!is_open_ || eof_) {
       return *this;
     }
@@ -80,7 +80,7 @@ class FastqgzParser : public Parser {
   /* virtual */ void close() {
     if (is_open_) {
       // STEP 5: destroy seq
-      fastqgz::kseq_destroy(seq_);
+      fastafastqgz::kseq_destroy(seq_);
       // STEP 6: close the file handler
       gzclose(fp_);
       is_open_ = false;
@@ -97,7 +97,7 @@ class FastqgzParser : public Parser {
    * @variable Data element that stores last SingleRead got from
    * stream.
    */ 
-  fastqgz::kseq_t* seq_;
+  fastafastqgz::kseq_t* seq_;
 
   /*
    * Open a stream.
@@ -110,7 +110,7 @@ class FastqgzParser : public Parser {
       return;
     }
     // STEP 3: initialize seq
-    seq_ = fastqgz::kseq_init(fp_);
+    seq_ = fastafastqgz::kseq_init(fp_);
     eof_ = false;
     is_open_ = true;
     ReadAhead();
@@ -122,7 +122,7 @@ class FastqgzParser : public Parser {
   void ReadAhead() {
     assert(is_open_);
     assert(!eof_);
-    if (fastqgz::kseq_read(seq_) < 0) {
+    if (fastafastqgz::kseq_read(seq_) < 0) {
       eof_ = true;
     }
   }
@@ -130,11 +130,11 @@ class FastqgzParser : public Parser {
   /*
    * Hidden copy constructor.
    */
-  FastqgzParser(const FastqgzParser& parser);
+  FastaFastqGzParser(const FastaFastqGzParser& parser);
   /*
    * Hidden assign operator.
    */
-  void operator=(const FastqgzParser& parser);
+  void operator=(const FastaFastqGzParser& parser);
 };
 
-#endif /* COMMON_IO_FASTQGZPARSER_HPP */
+#endif /* COMMON_IO_FASTAFASTQGZPARSER_HPP */
