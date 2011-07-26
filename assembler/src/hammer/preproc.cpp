@@ -163,7 +163,7 @@ void EvalFile(FILE *ifile, FILE *ofile, bool q_mers) {
   while (KMer::BinRead(ifile, &kmer)) {
     KMerFreqInfo &info = stat_map[kmer];
     if (q_mers) {
-      double correct_probability;
+      double correct_probability = -1;
       assert(fread(&correct_probability, sizeof(correct_probability),
                    1, ifile)
              == 1);
@@ -200,7 +200,8 @@ int main(int argc, char *argv[]) {
     ofiles[i] = fopen(filename, "wb");
     assert(ofiles[i] != NULL && "Too many files to open");
   }
-  SplitToFiles(ireadstream(opts.ifile, opts.qvoffset), ofiles, opts.q_mers, opts.error_threshold);
+  SplitToFiles(ireadstream(opts.ifile, opts.qvoffset), 
+               ofiles, opts.q_mers, opts.error_threshold);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     fclose(ofiles[i]);
   }
