@@ -66,6 +66,7 @@ struct Options {
    */
   uint32_t file_number;
   bool q_mers;
+  bool q_mer_inverse;
   bool valid;
   Options()
       : qvoffset(0),
@@ -74,18 +75,19 @@ struct Options {
         error_threshold(0),
         file_number(3),
         q_mers(false),
+        q_mer_inverse(false),
         valid(true) {}
 };
 
 void PrintHelp() {
-  printf("Usage: ./preproc qvoffset ifile.fastq ofile.[q]cst file_number error_threshold [q]\n");
+  printf("Usage: ./preproc qvoffset ifile.fastq ofile.[q]cst file_number error_threshold [[-]q]\n");
   printf("Where:\n");
   printf("\tqvoffset\tan offset of fastq quality data\n");
   printf("\tifile.fastq\tan input file with reads in fastq format\n");
   printf("\tofile.[q]cst\ta filename where k-mer statistics will be outputted\n");
   printf("\terror_threshold\tnucliotides with quality lower then threshold will be cut from the ends of reads\n");
   printf("\tfile_number\thow many files will be used when splitting k-mers\n");
-  printf("\tq\t\tif you want to count q-mers instead of k-mers\n");
+  printf("\t[-]q\t\tif you want to count q-mers instead of k-mers. - if you want to use correct probability\n");
 }
 
 Options ParseOptions(int argc, char *argv[]) {
@@ -103,7 +105,10 @@ Options ParseOptions(int argc, char *argv[]) {
     if (argc == 7) {
       if (string(argv[6]) == "q") {
         ret.q_mers = true;
-      } else {
+      } if (string(argv[6]) == "-q") {
+        ret.q_mers = true;
+        ret.q_mer_inverse = true;
+      }else {
         ret.valid = false;
       }
     }
@@ -121,7 +126,7 @@ Options ParseOptions(int argc, char *argv[]) {
  * one per line.
  */
 void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
-                  bool q_mers, uint8_t error_threshold) {
+                  bool q_mers, bool inverse, uint8_t error_threshold) {
   uint32_t file_number = ofiles.size();
   uint64_t read_number = 0;
   while (!ifs.eof()) {
@@ -141,6 +146,9 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
       KMer::BinWrite(cur_file, kmer);
       if (q_mers) {
         double correct_probability = gen.correct_probability();
+        if (inverse) {
+          correct_probability = 1 / correct_probability;
+        }
         fwrite(&correct_probability, sizeof(correct_probability), 1, cur_file);
       }
     }
@@ -201,7 +209,8 @@ int main(int argc, char *argv[]) {
     assert(ofiles[i] != NULL && "Too many files to open");
   }
   SplitToFiles(ireadstream(opts.ifile, opts.qvoffset), 
-               ofiles, opts.q_mers, opts.error_threshold);
+               ofiles, opts.q_mers, opts.q_mer_inverse,
+               opts.error_threshold);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     fclose(ofiles[i]);
   }
