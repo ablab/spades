@@ -174,7 +174,7 @@ void EvalFile(FILE *ifile, FILE *ofile, bool q_mers) {
       double correct_probability = -1;
       bool readed = 
           fread(&correct_probability, sizeof(correct_probability),
-                   1, ifile)
+                1, ifile);
       assert(readed == 1);
       info.q_count += correct_probability;
     } else {
