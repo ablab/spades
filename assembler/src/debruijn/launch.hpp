@@ -193,12 +193,12 @@ void RemoveLowCoverageEdges(Graph &g) {
 }
 template<class Graph>
 void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
-		PairedInfoIndex<Graph> &info, Graph &new_graph,
-		IdTrackHandler<Graph> &new_IDs, const string& output_folder) {
+		PairedInfoIndex<Graph> &info, EdgesPositionHandler<Graph> &edges_pos, Graph &new_graph,
+		IdTrackHandler<Graph> &new_IDs, EdgesPositionHandler<Graph> &edges_pos_new, const string& output_folder) {
 	INFO("-----------------------------------------");
 	INFO("Resolving primitive repeats");
-	RepeatResolver<Graph> repeat_resolver(g, old_IDs, 0, info, new_graph,
-			new_IDs);
+	RepeatResolver<Graph> repeat_resolver(g, old_IDs, 0, info, edges_pos, new_graph,
+			new_IDs, edges_pos_new);
 	mkdir((output_folder).c_str(),
 			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	repeat_resolver.ResolveRepeats(output_folder);
@@ -292,12 +292,34 @@ void ConstructGraphWithEtalonPairedInfo(Graph& g,
 
 template<class Graph>
 void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
-		const string &file_name, PairedInfoIndex<Graph> paired_index) {
+		const string &file_name, PairedInfoIndex<Graph> &paired_index, EdgesPositionHandler<Graph> &edges_positions) {
 	DataPrinter<Graph> dataPrinter(g, old_IDs);
 	dataPrinter.saveGraph(file_name);
 	dataPrinter.saveEdgeSequences(file_name);
 	dataPrinter.saveCoverage(file_name);
 	dataPrinter.savePaired(file_name, paired_index);
+	dataPrinter.savePositions(file_name, edges_positions);
+
+}
+template<class Graph>
+void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
+		const string &file_name, PairedInfoIndex<Graph> &paired_index) {
+	DataPrinter<Graph> dataPrinter(g, old_IDs);
+	dataPrinter.saveGraph(file_name);
+	dataPrinter.saveEdgeSequences(file_name);
+	dataPrinter.saveCoverage(file_name);
+	dataPrinter.savePaired(file_name, paired_index);
+
+}
+
+template<class Graph>
+void scanNCGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
+		const string &file_name, PairedInfoIndex<Graph>& paired_index, EdgesPositionHandler<Graph> &edges_positions) {
+	DataScanner<Graph> dataScanner(g, new_IDs);
+	dataScanner.loadNonConjugateGraph(file_name, true);
+	dataScanner.loadCoverage(file_name);
+	dataScanner.loadPaired(file_name, paired_index);
+	dataScanner.loadPositions(file_name, edges_positions);
 }
 
 template<class Graph>
@@ -438,24 +460,26 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 			omnigraph::WriteSimple(
 					output_folder + "repeats_resolved_before.dot",
 					"no_repeat_graph", g, IdTrackLabelerBefore);
-			printGraph(g, IntIds, work_tmp_dir + "graph", paired_index);
-			printGraph(g, IntIds, output_folder + "graph", paired_index);
+			printGraph(g, IntIds, work_tmp_dir + "graph", paired_index, EdgePos);
+			printGraph(g, IntIds, output_folder + "graph", paired_index, EdgePos);
 		}
 
 		NCGraph new_graph(k);
 		IdTrackHandler<NCGraph> NewIntIds(new_graph, IntIds.MaxVertexId(),
 				IntIds.MaxEdgeId());
 		PairedInfoIndex<NCGraph> new_index(new_graph);
+		EdgesPositionHandler<NCGraph> EdgePosBefore(new_graph);
 
 		Graph conj_copy_graph(k);
 		IdTrackHandler<Graph> conj_IntIds(conj_copy_graph, IntIds.MaxVertexId(),
 				IntIds.MaxEdgeId());
 		PairedInfoIndex<Graph> conj_copy_index(conj_copy_graph);
+
 		scanConjugateGraph(conj_copy_graph, conj_IntIds, work_tmp_dir + "graph", conj_copy_index);
 		printGraph(conj_copy_graph, conj_IntIds, work_tmp_dir + "graph_copy", conj_copy_index);
 
 
-		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index);
+		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index, EdgePosBefore);
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
@@ -475,20 +499,29 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
              RectangleResolve(new_index, new_graph, work_tmp_dir, output_folder);                        
         }
 
-		ResolveRepeats(new_graph, NewIntIds, new_index, resolved_graph,
-				Resolved_IntIds, output_folder + "resolve/");
+		ResolveRepeats(new_graph, NewIntIds, new_index, EdgePosBefore,
+				resolved_graph, Resolved_IntIds, EdgePosAfter, output_folder + "resolve/");
+
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
 				Resolved_IntIds);
 
 
 		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_after.dot", "no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		omnigraph::WriteSimple(output_folder + "repeats_resolved_after.dot", "no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+		EdgesPosGraphLabeler<NCGraph> EdgePosLAfterLab(resolved_graph, EdgePosAfter);
+
+		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_after_pos.dot", "no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+		omnigraph::WriteSimple(output_folder + "repeats_resolved_after_pos.dot", "no_repeat_graph", resolved_graph, EdgePosLAfterLab);
 
 		ClipTips(resolved_graph);
 		RemoveLowCoverageEdges(resolved_graph);
-		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_und cleared.dot",
+
+		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_after_und_cleared_pos.dot", "no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+		omnigraph::WriteSimple(output_folder + "repeats_resolved_after_und_cleared_pos.dot", "no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+
+		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_und_cleared.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
-		omnigraph::WriteSimple(output_folder + "repeats_resolved_und cleared.dot",
+		omnigraph::WriteSimple(output_folder + "repeats_resolved_und_cleared.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		INFO("repeat resolved grpah written");
 		EdgeIndex<k + 1, NCGraph> aux_index(resolved_graph);

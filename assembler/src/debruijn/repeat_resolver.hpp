@@ -22,6 +22,7 @@
 #include "omnigraph.hpp"
 
 #include "ID_track_handler.hpp"
+#include "edges_position_handler.hpp"
 #include "dijkstra.hpp"
 
 namespace debruijn_graph {
@@ -130,10 +131,10 @@ public:
 	};
 
 	RepeatResolver(Graph &old_graph_, IdTrackHandler<Graph> &old_IDs_,
-			int leap, PIIndex &ind, Graph &new_graph_,
-			IdTrackHandler<Graph> &new_IDs_) :
+			int leap, PIIndex &ind,	EdgesPositionHandler<Graph> &old_pos_,
+			Graph &new_graph_, IdTrackHandler<Graph> &new_IDs_, EdgesPositionHandler<Graph> &new_pos_) :
 		leap_(leap), new_graph(new_graph_), old_graph(old_graph_), new_IDs(
-				new_IDs_), old_IDs(old_IDs_) {
+				new_IDs_), old_IDs(old_IDs_), new_pos(new_pos_), old_pos(old_pos_) {
 		unordered_map<VertexId, VertexId> old_to_new;
 		unordered_map<EdgeId, EdgeId> old_to_new_edge;
 
@@ -230,6 +231,8 @@ private:
 	Graph &old_graph;
 	IdTrackHandler<Graph> &new_IDs;
 	IdTrackHandler<Graph> &old_IDs;
+	EdgesPositionHandler<Graph> &new_pos;
+	EdgesPositionHandler<Graph> &old_pos;
 	vector<int> edge_info_colors;
 	vector<EdgeInfo> edge_infos;
 	PairInfoIndexData<EdgeId> paired_di_data;
@@ -371,6 +374,14 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 		}
 	}
 	INFO("total vert" << sum_count);
+	INFO("Converting position labels");
+
+	for (auto e_iter = new_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter){
+		EdgeId old_edge = edge_labels[*e_iter];
+		for (size_t i = 0; i < old_pos.EdgesPositions[old_edge].size(); i++){
+			new_pos.AddEdgePosition(*e_iter, old_pos.EdgesPositions[old_edge][i].start_, old_pos.EdgesPositions[old_edge][i].end_);
+		}
+	}
 	//	gvis::WriteSimple(  "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
 }
 
