@@ -105,10 +105,10 @@ Options ParseOptions(int argc, char *argv[]) {
     if (argc == 7) {
       if (string(argv[6]) == "q") {
         ret.q_mers = true;
-      } if (string(argv[6]) == "-q") {
+      } else if (string(argv[6]) == "-q") {
         ret.q_mers = true;
         ret.q_mer_inverse = true;
-      }else {
+      } else {
         ret.valid = false;
       }
     }
