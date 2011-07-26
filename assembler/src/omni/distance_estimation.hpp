@@ -2,6 +2,7 @@
 #define DISTANCE_ESTIMATION_HPP_
 
 #include "paired_info.hpp"
+#include "omni_utils.hpp"
 
 namespace omnigraph {
 
@@ -19,9 +20,18 @@ class DistanceEstimator: AbstractDistanceEstimator<Graph> {
 private:
 	Graph &graph_;
 	PairedInfoIndex<Graph> &histogram_;
+	size_t insert_size_;
+	size_t read_length_;
+	size_t gap_;
+	size_t delta_;
 
-	vector<size_t> GetGraphDistances(EdgeId first, EdgeId second) {
-
+	const vector<size_t> GetGraphDistances(EdgeId first, EdgeId second) {
+		DifferentDistancesCallback<Graph> callback(graph_);
+		PathProcessor<Graph> path_processor(graph_
+				, 0. + gap_ - delta_ - graph_.length(first) - graph_.length(second), insert_size_ + delta_
+				, graph_.EdgeEnd(first), graph_.EdgeStart(second), callback);
+		path_processor.Process();
+		return callback.distances();
 	}
 
 	void EstimateEdgePairDistances(PairedInfoIndex<Graph> &result,
@@ -30,8 +40,14 @@ private:
 	}
 
 public:
-	DistanceEstimator(Graph &graph, PairedInfoIndex<Graph> &histogram) :
-		graph_(graph), histogram_(histogram) {
+	DistanceEstimator(Graph &graph, PairedInfoIndex<Graph> &histogram, size_t insert_size, size_t read_length, size_t delta) :
+		graph_(graph),
+		histogram_(histogram),
+		insert_size_(insert_size),
+		read_length_(read_length),
+		gap_(insert_size - 2 * read_length_),
+		delta_(delta)
+	{
 	}
 
 	virtual ~DistanceEstimator() {
