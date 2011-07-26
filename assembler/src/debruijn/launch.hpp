@@ -280,7 +280,7 @@ void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 template<size_t k, class PairedReadStream>
 void ConstructGraphWithEtalonPairedInfo(Graph& g,
 		EdgeIndex<k + 1, Graph>& index, PairedInfoIndex<Graph>& paired_index,
-		PairedReadStream stream, size_t insert_size, size_t read_length,
+		PairedReadStream& stream, size_t insert_size, size_t read_length,
 		const Sequence& genome) {
 	typedef SimpleReaderWrapper<PairedReadStream> UnitedStream;
 	UnitedStream united_stream(stream);

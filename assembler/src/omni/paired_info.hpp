@@ -22,6 +22,7 @@ struct PairInfo {
 	EdgeId second;
 	double d;//distance between starts. Can be negative
 	double weight;
+	double variance;
 
 	PairInfo(EdgeId first, EdgeId second, double d, double weight) :
 		first(first), second(second), d(d), weight(weight) {

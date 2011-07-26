@@ -693,5 +693,35 @@ public:
 	}
 };
 
+template<class Graph>
+class DifferentDistancesCallback : public PathProcessor<Graph>::Callback {
+	typedef typename Graph::EdgeId EdgeId;
+
+	Graph& g_;
+	set<size_t> distances_;
+
+public:
+	DifferentDistancesCallback(Graph& g) : g_(g) {
+
+	}
+
+	virtual ~DifferentDistancesCallback() {
+
+	}
+
+	virtual void HandlePath(const vector<EdgeId>& path) {
+		size_t path_length = 0;
+		for (auto it = path.start(); it != path.end(); ++it) {
+			path_length += g_.length(*it);
+		}
+		distances_.insert(path_length);
+	}
+
+	vector<size_t> distances() {
+		return vector<size_t>(distances_.begin(), distances_.end());
+	}
+
+};
+
 }
 #endif /* OMNI_UTILS_HPP_ */
