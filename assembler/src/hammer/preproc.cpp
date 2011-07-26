@@ -172,9 +172,10 @@ void EvalFile(FILE *ifile, FILE *ofile, bool q_mers) {
     KMerFreqInfo &info = stat_map[kmer];
     if (q_mers) {
       double correct_probability = -1;
-      assert(fread(&correct_probability, sizeof(correct_probability),
+      bool readed = 
+          fread(&correct_probability, sizeof(correct_probability),
                    1, ifile)
-             == 1);
+      assert(readed == 1);
       info.q_count += correct_probability;
     } else {
       info.count += 1;
