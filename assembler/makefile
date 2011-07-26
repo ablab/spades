@@ -12,9 +12,6 @@ p:
 b:
 	make -C src/bayes
 
-h:
-	make -C src/hammer
-
 at: 
 	make -C test/abruijn
 
@@ -36,4 +33,4 @@ clean:
 test: ct at dt ht
 
 #temporary fix
-all: a b d h test
+all: a b d test
