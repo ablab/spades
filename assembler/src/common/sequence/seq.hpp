@@ -108,6 +108,14 @@ private:
 
 public:
 
+	static bool BinRead(FILE *ifile, Seq<size_> *seq) {
+		return fread(seq->data_.data(), sizeof(T), data_size_, ifile) == data_size_;
+	}
+
+	static void BinWrite(FILE *ofile, const Seq<size_> &seq) {
+		fwrite(seq.data_.data(), sizeof(T), data_size_, ofile);
+	}
+
 	/**
 	 * Default constructor, fills Seq with A's
 	 */
@@ -338,12 +346,12 @@ public:
 
 	struct multiple_hash {
 		size_t operator()(const Seq<size_, T>& seq, size_t hash_num, 
-                      size_t h) const {
-      ++hash_num;
+				size_t h) const {
+			++hash_num;
 			for (size_t i = 0; i < seq.data_size_; i++) {
 				h = (h << hash_num) + seq.data_[i];
 			}
-      return h;
+			return h;
 		}
 	};
 

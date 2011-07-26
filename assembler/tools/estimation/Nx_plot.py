@@ -11,9 +11,9 @@ import fastaparser
 if len(sys.argv) < 2:
 	print "Draws Nx plot (from N00 through N50 to N100)"
 	print
-	print "Usage:", sys.argv[0], "FASTA1 [FASTA2 [FASTA3 ..."
+	print "Usage: python", sys.argv[0], "FASTA1 [FASTA2 [FASTA3 ..."
 	print
-	print "Example:", sys.argv[0], "../../data/debruijn/we_contigs.fasta ../../data/debruijn/velvet_contigs.fa"
+	print "Example: python", sys.argv[0], "../../data/debruijn/we_contigs.fasta ../../data/debruijn/velvet_contigs.fa"
 	exit(0)
 
 for filename in sys.argv[1:]:
@@ -41,12 +41,13 @@ pylab.ylabel('Contig length')
 pylab.title('Nx plot (N00 to N100)')
 pylab.grid(True)
 ax = pylab.gca()
+#ax.legend(["Our Assembler", "Velvet"], loc='lower right')
 ax.legend(sys.argv[1:], loc='lower right')
 formatter = matplotlib.ticker.FormatStrFormatter('N%.f')
 ax.xaxis.set_major_formatter(formatter)
 
 # save and show
-filename = 'Nx_plot'
+filename = 'Nx_plot.pdf'
 pylab.savefig(filename)
-print "Saved to ./" + filename + ".png"
+print "Saved to ./" + filename #+ ".png"
 pylab.show()

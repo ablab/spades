@@ -1,229 +1,223 @@
-/*
- * preproc.cpp
- *
- *  Created on: 11.05.2011
- *      Author: snikolenko
- */
- 
-#include<omp.h>
-#include<cmath>
-#include<string>
-#include<iostream>
-#include<sstream>
-#include<fstream>
-#include<cstdlib>
-#include<vector>
-#include<map>
-#include<list>
-#include<queue>
-#include<cstdarg>
-#include<algorithm>
-#include<cassert>
-
-#include "hammer_config.hpp"
-#include "hammer/defs.hpp"
-#include "common/read/read.hpp"
-#include "common/read/ireadstream.hpp"
-#include "common/sequence/seq.hpp"
-
-using namespace std;
-ostringstream oMsg;
-
-int qvoffset;
-
-double oct2phred(string qoct)  {
-  float freq = 1;
-  for (size_t i = 0; i < qoct.length(); i++) {
-    freq *= 1 - pow(10, -float(qoct[i] - qvoffset)/10.0);
-  }
-
-  return freq;
-}
-
-string encode3toabyte (const string & s)  {
-  string retval;
-  char c = 48;
-  int weight = 16;
-  size_t i;
-  for (i = 0; i < s.length(); i += 1) {
-    if (i % 3 == 0) {
-      c = 48;
-      weight = 16;
-    }
-    c += weight * nt2num(s[i]);
-    weight /= 4;
-    if (i % 3 == 2) retval += c;
-  }
-  if (i % 3 != 0) retval += c;
-  return retval;
-}
-
-
 /**
- * add k-mers from read to map
+ * @file    preproc.cpp
+ * @author  Alex Davydow
+ * @version 1.0
+ *
+ * @section LICENSE
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * @section DESCRIPTION
+ *
+ * For each k-mer this program calculates number of occurring in
+ * the reads provided. Reads file is supposed to be in fastq
+ * format.
  */
-void addKMers(const Read & r, KMerStatMap & v) {
-  KMerStatMap::iterator it;
-  float freq = oct2phred(r.getPhredQualityString(qvoffset));
-  string s = r.getSequenceString();
-  int i = 0;
-  while (true) {
-    i = r.firstValidKmer(i, K);
-    if (i == -1) break;
-    KMer kmer = KMer(r.getSubSequence(i, K));
-    while (true) {
-      it = v.find(kmer);
-      if (it != v.end()) {
-	it->second.count++;
-	it->second.freq += freq;
-      } else {
-	pair<KMer, KMerStat> p;
-	p.first = kmer;
-	p.second.count = 1; 
-	p.second.freq = freq;
-	v.insert(p);
-      }
-      if (i + K < (int)r.size() && is_nucl(s[i + K])) {
-	kmer = kmer << r[i + K];
-	++i;
-      } else {
-	i = i + K;
-	break;
-      }
-    }
-  }
-}
+#include <stdint.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cassert>
+#include <string>
+#include <set>
+#include <unordered_map>
+#include <vector>
+#include "log4cxx/logger.h"
+#include "log4cxx/basicconfigurator.h"
+#include "common/read/ireadstream.hpp"
+#include "common/read/read.hpp"
+#include "common/sequence/seq.hpp"
+#include "hammer/kmer_freq_info.hpp"
+#include "hammer/valid_kmer_generator.hpp"
 
-void join_maps(KMerStatMap &v1, const KMerStatMap &v2) {
-  KMerStatMap::iterator itf;
-  for (KMerStatMap::const_iterator it = v2.begin(); it != v2.end(); ++it) {
-    itf = v1.find(it->first);
-    if (itf != v1.end()) {
-      itf->second.count = itf->second.count + it->second.count;
-      itf->second.freq  = itf->second.freq  + it->second.freq;
-    } else {
-      pair<KMer, KMerStat> p;
-      p.first = it->first;
-      p.second.count = it->second.count;
-      p.second.freq = it->second.freq;
-      v1.insert(p);
-    }
-  }
-}
+using std::string;
+using std::set;
+using std::vector;
+using std::unordered_map;
+using std::map;
+using log4cxx::LoggerPtr;
+using log4cxx::Logger;
+using log4cxx::BasicConfigurator;
 
-const int READ_BATCH_SIZE = 1e6;
-const int BATCHES_PER_MAP = 4;
-const unsigned long long MAX_INT_64 = 15e18;
+namespace {
 
+const uint32_t kK = 31;
+typedef Seq<kK> KMer;
+typedef unordered_map<KMer, KMerFreqInfo, KMer::hash> UnorderedMap;
 
-class ReadStatMapContainer {
-public:
-  ReadStatMapContainer(const vector<KMerStatMap> &vv) : v_(vv) { init(); }
-  
-  void init() {
-    i_.clear();
-    for (size_t i = 0; i < v_.size(); ++i) {
-      i_.push_back(v_[i].begin());
-    }
-    
-  }
-  
-  pair<KMer, KMerStat> next() {
-    pair<KMer, KMerStat> p;
-    KMerStatMap::const_iterator imin = cur_min();
-    if (imin == v_[0].end()) {
-      p.second.count = MAX_INT_64;
-      return p;
-    }
-    p.first = imin->first; p.second.count = 0; p.second.freq = 0;
-    for (size_t i=0; i<v_.size(); ++i) {
-      if (i_[i]->first == p.first) {
-	p.second.count += i_[i]->second.count;
-	p.second.freq  += i_[i]->second.freq;
-	++i_[i];
-      }
-    }
-    return p;
-  }
-  
-private:
-  const vector<KMerStatMap> &v_;
-  vector<KMerStatMap::const_iterator> i_;
+LoggerPtr logger(Logger::getLogger("preproc"));
+/**
+ * @variable Every kStep k-mer will appear in the log.
+ */
+const int kStep = 1e5;
 
-  const KMerStatMap::const_iterator& cur_min() {
-    int min = 0;
-    for (size_t i = 1; i < v_.size(); ++i) {
-      if (i_[i] != v_[i].end()) {
-	if (i_[min] == v_[min].end() || KMerLess(i_[i]->first, i_[min]->first)) {
-	  min = i;
-	}
-      }
-    }
-    return i_[min];
-  }
-  
+struct Options {
+  /**
+   * @variable An offset for quality in a fastq file.
+   */
+  uint32_t qvoffset;
+  string ifile;
+  string ofile;
+  uint32_t error_threshold;
+  /**
+   * @variable How many files will be used when splitting k-mers.
+   */
+  uint32_t file_number;
+  bool q_mers;
+  bool valid;
+  Options()
+      : qvoffset(0),
+        ifile(""),
+        ofile(""),
+        error_threshold(0),
+        file_number(3),
+        q_mers(false),
+        valid(true) {}
 };
 
-
-int main(int argc, char * argv[]) {
-  
-  int tau = atoi(argv[1]);
-  qvoffset = atoi(argv[2]);
-  
-  string readsFilename = argv[3];
-  string outFilename = argv[4];
-  string kmerFilename = argv[5];
-  int nthreads = atoi(argv[6]);
-  
-  vector<KMerStatMap> vv;
-  for (int i = 0; i < nthreads; ++i) {
-    KMerStatMap v; v.clear();
-		vv.push_back(v);
-  }
-  
-  cout << "Starting preproc.\n";
-  ireadstream ifs(readsFilename.data(), qvoffset);
-  Read r;
-  size_t tmpc = 0;
-  size_t cur_maps = 0;
-  vector<Read> rv;
-  while (!ifs.eof()) {
-    // reading a batch of reads
-    for (int thr = 0; thr < READ_BATCH_SIZE; ++thr) {
-      ifs >> r; 
-      if (r.trimBadQuality() >= K) {
-	rv.push_back(r);
-      }
-      if (ifs.eof()) break;
-    }
-    
-    // trim the reads for bad quality and process only the ones with at least K "reasonable" elements
-    // we now do it in parallel
-    
-    ++tmpc;
-    cout << "Batch " << tmpc << " read.\n"; flush(cout);
-    #pragma omp parallel for shared(rv, vv) num_threads(nthreads)
-    for(int i = 0; i < (int)rv.size(); ++i) {
-      addKMers(rv[i], vv[omp_get_thread_num() + cur_maps * nthreads]);
-      addKMers(!(rv[i]), vv[omp_get_thread_num() + cur_maps * nthreads]);
-    }
-    cout << "Batch " << tmpc << " added.\n"; flush(cout);
-    rv.clear();
-  }
-  ifs.close();
-  cout << "All k-mers added to maps.\n"; flush(cout);
-  
-  ReadStatMapContainer rsmc(vv);
-  for (int i = 0; i < (int)vv.size(); ++i) cout << "size(" << i << ")=" << vv[i].size() << "\n"; flush(cout);
-  
-  FILE* f = fopen(kmerFilename.data(), "w");
-  vector<StringCountVector> vs(tau+1);
-  for (pair<KMer, KMerStat> p = rsmc.next(); p.second.count < MAX_INT_64; p = rsmc.next()) {
-    fprintf(f, "%s %5u %8.2f\n", p.first.str().data(), (unsigned int) p.second.count, p.second.freq);
-  }
-  fclose(f);
-  
-  return 0;
+void PrintHelp() {
+  printf("Usage: ./preproc qvoffset ifile.fastq ofile.[q]cst file_number error_threshold [q]\n");
+  printf("Where:\n");
+  printf("\tqvoffset\tan offset of fastq quality data\n");
+  printf("\tifile.fastq\tan input file with reads in fastq format\n");
+  printf("\tofile.[q]cst\ta filename where k-mer statistics will be outputted\n");
+  printf("\terror_threshold\tnucliotides with quality lower then threshold will be cut from the ends of reads\n");
+  printf("\tfile_number\thow many files will be used when splitting k-mers\n");
+  printf("\tq\t\tif you want to count q-mers instead of k-mers\n");
 }
 
+Options ParseOptions(int argc, char *argv[]) {
+  Options ret;
+  if (argc != 6 && argc != 7) {
+    ret.valid =  false;
+  } else {
+    ret.qvoffset = atoi(argv[1]);
+    ret.valid &= (ret.qvoffset >= 0 && ret.qvoffset <= 255);
+    ret.ifile = argv[2];
+    ret.ofile = argv[3];
+    ret.error_threshold = atoi(argv[4]);
+    ret.valid &= (ret.error_threshold >= 0 && ret.error_threshold <= 255);
+    ret.file_number = atoi(argv[5]);
+    if (argc == 7) {
+      if (string(argv[6]) == "q") {
+        ret.q_mers = true;
+      } else {
+        ret.valid = false;
+      }
+    }
+  }
+  return ret;
+}
 
+/**
+ * This function reads reads from the stream and splits them into
+ * k-mers. Then k-mers are written to several file almost
+ * uniformly. It is guaranteed that the same k-mers are written to the
+ * same files.
+ * @param ifs Steam to read reads from.
+ * @param ofiles Files to write the result k-mers. They are written
+ * one per line.
+ */
+void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
+                  bool q_mers, uint8_t error_threshold) {
+  uint32_t file_number = ofiles.size();
+  uint64_t read_number = 0;
+  while (!ifs.eof()) {
+    ++read_number;
+    if (read_number % kStep == 0) {
+      LOG4CXX_INFO(logger, "Reading read " << read_number << ".");
+    }
+    Read r;
+    ifs >> r;
+    KMer::hash hash_function;
+    for (ValidKMerGenerator<kK> gen(r, error_threshold); gen.HasMore(); gen.Next()) {
+      FILE *cur_file = ofiles[hash_function(gen.kmer()) % file_number];
+      KMer kmer = gen.kmer();
+      if (KMer::less2()(!kmer, kmer)) {
+        kmer = !kmer;
+      }
+      KMer::BinWrite(cur_file, kmer);
+      if (q_mers) {
+        double correct_probability = gen.correct_probability();
+        fwrite(&correct_probability, sizeof(correct_probability), 1, cur_file);
+      }
+    }
+  }
+}
+
+/**
+ * This function reads k-mer and calculates number of occurrences for
+ * each of them.
+ * @param ifile File with k-mer to process. One per line.
+ * @param ofile Output file. For each unique k-mer there will be a
+ * line with k-mer itself and number of its occurrences.
+ */
+template<typename KMerStatMap>
+void EvalFile(FILE *ifile, FILE *ofile, bool q_mers) {
+  KMerStatMap stat_map;
+  char buffer[kK + 1];
+  buffer[kK] = 0;
+  KMer kmer;
+  while (KMer::BinRead(ifile, &kmer)) {
+    KMerFreqInfo &info = stat_map[kmer];
+    if (q_mers) {
+      double correct_probability;
+      assert(fread(&correct_probability, sizeof(correct_probability),
+                   1, ifile)
+             == 1);
+      info.q_count += correct_probability;
+    } else {
+      info.count += 1;
+    }
+  }
+  for (typename KMerStatMap::iterator it = stat_map.begin();
+       it != stat_map.end(); ++it) {
+    fprintf(ofile, "%s ", it->first.str().c_str());
+    if (q_mers) {
+      fprintf(ofile, "%f\n", it->second.q_count);
+    } else {
+      fprintf(ofile, "%d\n", it->second.count);
+    }
+  }
+}
+}
+
+int main(int argc, char *argv[]) {
+  Options opts = ParseOptions(argc, argv);
+  if (!opts.valid) {
+    PrintHelp();
+    return 1;
+  }
+  BasicConfigurator::configure();
+  LOG4CXX_INFO(logger, "Starting preproc: evaluating "
+               << opts.ifile << ".");
+  vector<FILE*> ofiles(opts.file_number);
+  for (uint32_t i = 0; i < opts.file_number; ++i) {
+    char filename[50];
+    snprintf(filename, sizeof(filename), "%u.kmer.part", i);
+    ofiles[i] = fopen(filename, "wb");
+    assert(ofiles[i] != NULL && "Too many files to open");
+  }
+  SplitToFiles(ireadstream(opts.ifile, opts.qvoffset), ofiles, opts.q_mers, opts.error_threshold);
+  for (uint32_t i = 0; i < opts.file_number; ++i) {
+    fclose(ofiles[i]);
+  }
+  FILE *ofile = fopen(opts.ofile.c_str(), "w");
+  assert(ofile != NULL && "Too many files to open");
+  for (uint32_t i = 0; i < opts.file_number; ++i) {
+    char ifile_name[50];
+    snprintf(ifile_name, sizeof(ifile_name), "%u.kmer.part", i);
+    FILE *ifile = fopen(ifile_name, "rb");
+    LOG4CXX_INFO(logger, "Processing " << ifile_name << ".");
+    EvalFile<UnorderedMap>(ifile, ofile, opts.q_mers);
+    LOG4CXX_INFO(logger, "Processed " << ifile_name << ".");
+    fclose(ifile);
+  }
+  fclose(ofile);
+  LOG4CXX_INFO(logger,
+               "Preprocessing done. You can find results in " <<
+               opts.ofile << ".");
+  return 0;
+}

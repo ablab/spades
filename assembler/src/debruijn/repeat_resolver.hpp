@@ -52,7 +52,7 @@ public:
 
 	class EdgeInfo {
 	public:
-		static const int MAXD = 6;
+		static const int MAXD = 2;
 		static const int MAXSKIPDIST = 4;
 
 		EdgeInfo(const PairInfo &lp_, const int dir_, const EdgeId edge_,
@@ -80,7 +80,7 @@ public:
 			int other_len = old_graph.length(other_edge);
 			int other_d = other_info.getDistance();
 
-			if (other_edge == edge && isClose(d, other_d))
+			if ((other_edge == edge) && (isClose(d, other_d)))
 				return true;
 //ToDo: Understand if it is very dirty hack.
 			if ((lp.first != other_info.lp.first) && (new_graph.EdgeStart(lp.first) != new_graph.EdgeEnd(lp.first)) && (new_graph.EdgeStart(other_info.lp.first) != new_graph.EdgeEnd(other_info.lp.first))){
@@ -100,16 +100,20 @@ public:
 				if (isClose(other_d + other_len + dij.GetDistance(v_s), d))
 					return true;
 
+			if ((other_edge == edge && isClose(d, other_d))) return true;
+
+			if (lp.first == other_info.lp.first) {
 			if ((v_e == other_v_s && isClose(d + len, other_d)) || (v_s
 					== other_v_e && isClose(d, other_d + other_len))
 					|| (other_edge == edge && isClose(d, other_d))) {
 				//				DEBUG("ADJACENT!");
 				return true;
-			} else {
+			}
+			else {
 				//			DEBUG("not adjacent");
 				return false;
 			}
-
+			}
 			return false;
 		}
 

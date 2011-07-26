@@ -1,53 +1,40 @@
 DIR=hammer
-PROG=preproc
+PROG=
 MYCFLAGS=-fopenmp -fPIC -std=c++0x
 MYLDFLAGS=-fopenmp
 builddir=../../build/$(DIR)
 basedir=../
 
-hammer: preproc main reconstruct
+hammer: $(builddir)/preproc $(builddir)/main $(builddir)/prepare_graph
 	@echo "== MADE HAMMER =="
 
-main:  hammer_tools.o main.o
-	$(CC) $(LDFLAGS) $(builddir)/hammer_tools.o $(builddir)/main.o $(LDFLAGS) -o $(builddir)/$@
+$(builddir)/main:  $(builddir)/hammer_tools.o $(builddir)/main.o $(builddir)/kmer_cluster.o
+	$(CC) $(LDFLAGS) $(builddir)/hammer_tools.o $(builddir)/main.o $(builddir)/kmer_cluster.o -o $(builddir)/$@
 	@echo "== made main =="
 
-center:  center.o
-	$(CC) $(LDFLAGS) $(builddir)/center.o $(LDFLAGS) -o $(builddir)/$@
-	@echo "== made center =="
-
-cluster: cluster.o
-	$(CC) $(LDFLAGS) $(builddir)/cluster.o $(LDFLAGS) -o $(builddir)/$@
-	@echo "== made cluster =="
-
-preproc: preproc.o
-	$(CC) $(LDFLAGS) $(builddir)/preproc.o $(LDFLAGS) -o $(builddir)/$@
+$(builddir)/preproc: $(builddir)/preproc.o
+	$(CC) $(LDFLAGS) $(builddir)/preproc.o -o $(builddir)/$@
 	@echo "== made preproc =="
 
-preproc2: preproc2.o
-	$(CC) $(LDFLAGS) $(builddir)/preproc2.o $(LDFLAGS) -o $(builddir)/$@
-	@echo "== made preproc2 =="
+$(builddir)/prepare_graph: $(builddir)/prepare_graph.o
+	$(CC) $(LDFLAGS) $(builddir)/prepare_graph.o -o $(builddir)/$@
+	@echo "== made prepare_graph =="
 
-reconstruct: reconstruct.o
-	$(CC) $(LDFLAGS) $(builddir)/reconstruct.o $(LDFLAGS) -o $(builddir)/$@
-	@echo "== made reconstruct =="
+$(builddir)/prepare_graph.o: prepare_graph.cpp	
+	$(CC) $(CFLAGS) prepare_graph.cpp -o $(builddir)/$@
 
+$(builddir)/kmer_cluster.o: kmer_cluster.cpp $(builddir)/.d
+	$(CC) $(CFLAGS) kmer_cluster.cpp -o $(builddir)/$@
+$(builddir)/main.o: main.cpp $(builddir)/.d
+	$(CC) $(CFLAGS) main.cpp -o $(builddir)/$@
+$(builddir)/hammer_tools.o: hammer_tools.cpp $(builddir)/.d
+	$(CC) $(CFLAGS) hammer_tools.cpp -o $(builddir)/$@
+$(builddir)/preproc.o: preproc.cpp $(builddir)/.d
+	$(CC) $(CFLAGS) preproc.cpp -o $(builddir)/$@
 
-main.o: main.cpp $(builddir)/.d
-	$(CC) $(CFLAGS) -c main.cpp -o $(builddir)/$@
-hammer_tools.o: hammer_tools.cpp $(builddir)/.d
-	$(CC) $(CFLAGS) -c hammer_tools.cpp -o $(builddir)/$@
-cluster.o: cluster.cpp $(builddir)/.d
-	$(CC) $(CFLAGS) -c cluster.cpp -o $(builddir)/$@
-center.o: center.cpp $(builddir)/.d
-	$(CC) $(CFLAGS) -c center.cpp -o $(builddir)/$@
-reconstruct.o: reconstruct.cpp $(builddir)/.d
-	$(CC) $(CFLAGS) -c reconstruct.cpp -o $(builddir)/$@
-preproc.o: preproc.cpp $(builddir)/.d
-	$(CC) $(CFLAGS) -c preproc.cpp -o $(builddir)/$@
-preproc2.o: preproc2.cpp $(builddir)/.d
-	$(CC) $(CFLAGS) -c preproc2.cpp -o $(builddir)/$@
-
+test_headers: valid_kmer_generator.hpp
+	$(CC) $(CFLAGS) valid_kmer_generator.hpp -o valid_kmer_generator.gch
+	rm valid_kmer_generator.gch
 
 include ../makefile.inc
 
