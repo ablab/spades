@@ -80,7 +80,7 @@ struct Options {
 };
 
 void PrintHelp() {
-  printf("Usage: ./preproc qvoffset ifile.fastq ofile.[[-]q]cst file_number error_threshold [q]\n");
+  printf("Usage: ./preproc qvoffset ifile.fastq ofile.[q]cst file_number error_threshold [[-]q]\n");
   printf("Where:\n");
   printf("\tqvoffset\tan offset of fastq quality data\n");
   printf("\tifile.fastq\tan input file with reads in fastq format\n");
