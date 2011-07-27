@@ -24,6 +24,7 @@ private:
 	size_t read_length_;
 	size_t gap_;
 	size_t delta_;
+	size_t linkage_distance_;
 
 	const vector<size_t> GetGraphDistances(EdgeId first, EdgeId second) {
 		DifferentDistancesCallback<Graph> callback(graph_);
@@ -33,12 +34,14 @@ private:
 						second), insert_size_ + delta_, graph_.EdgeEnd(first),
 				graph_.EdgeStart(second), callback);
 		path_processor.Process();
-		return callback.distances();
+		auto result = callback.distances();
+		sort(result.begin(), result.end());
+		return result;
 	}
 
-	void EstimateEdgePairDistances(PairedInfoIndex<Graph> &result,
+	vector<pair<size_t, double> > EstimateEdgePairDistances(
 			vector<PairInfo<EdgeId> > data, vector<size_t> forward) {
-		sort(forward.begin(), forward.end());
+		vector < pair<size_t, double> > result;
 		size_t cur = 0;
 		for (size_t i = 0; i < forward.size(); i++) {
 			double weight = 0;
@@ -46,25 +49,53 @@ private:
 				if (data[i].d < 0) {
 					continue;
 				}
-				if (i + 1 < forward.size() && forward[i + 1]
-						- data[cur].d < data[cur].d
-						- forward[i]) {
+				if (i + 1 < forward.size() && forward[i + 1] - data[cur].d
+						< data[cur].d - forward[i]) {
 					break;
 				}
 				weight += data[cur].weight;
 			}
-			if(weight > 0) {
-				result.AddPairInfo(PairInfo(data[0].first, data[0].second, forward[i], weight));
+			if (weight > 0) {
+				result.push_back(make_pair(forward[i], weight));
 			}
+		}
+		return result;
+	}
+
+	vector<PairInfo<EdgeId> > ClusterResult(EdgeId edge1, EdgeId edge2,
+			vector<pair<size_t, double> > estimated) {
+		vector < PairInfo < EdgeId >> result;
+		for (size_t i = 0; i < estimated.size(); i++) {
+			size_t left = i;
+			double weight = estimated[i].second;
+			while (i + 1 < estimated.size() && estimated[i + 1].first - estimated[i].first
+					<= linkage_distance_) {
+				i++;
+				weight += estimated[i].second;
+			}
+			double center = (estimated[left].first + estimated[i].first) * 0.5;
+			double var = (estimated[i].first - estimated[left].first) * 0.5;
+			PairInfo<EdgeId> new_info(edge1, edge2, center, weight);
+			new_info.variance = var;
+			result.push_back(new_info);
+		}
+		return result;
+	}
+
+	void AddToResult(PairedInfoIndex<Graph> &result, vector<PairInfo<EdgeId> > clustered) {
+		for(auto it = clustered.begin(); it != clustered.end(); ++it) {
+			result.AddPairInfo(*it);
 		}
 	}
 
 public:
 	DistanceEstimator(Graph &graph, PairedInfoIndex<Graph> &histogram,
-			size_t insert_size, size_t read_length, size_t delta) :
+			size_t insert_size, size_t read_length, size_t delta,
+			size_t linkage_distance) :
 		graph_(graph), histogram_(histogram), insert_size_(insert_size),
 				read_length_(read_length),
-				gap_(insert_size - 2 * read_length_), delta_(delta) {
+				gap_(insert_size - 2 * read_length_), delta_(delta),
+				linkage_distance_(linkage_distance) {
 	}
 
 	virtual ~DistanceEstimator() {
@@ -76,7 +107,10 @@ public:
 			EdgeId first = data[0].first;
 			EdgeId second = data[0].second;
 			vector < size_t > forward = GetGraphDistances(first, second);
-			EstimateEdgePairDistances(result, data, forward);
+			vector < pair<size_t, double> > estimated
+					= EstimateEdgePairDistances(data, forward);
+			vector<PairInfo<EdgeId> > clustered = ClusterResult(estimated);
+			AddToResult(result, clustered);
 		}
 	}
 };
