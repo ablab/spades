@@ -18,20 +18,58 @@ namespace omnigraph {
  */
 template<typename EdgeId>
 struct PairInfo {
-	EdgeId first;
-	EdgeId second;
-	double d;//distance between starts. Can be negative
-	double weight;
-	double variance;
+	const EdgeId first;
+	const EdgeId second;
+	const double d;//distance between starts. Can be negative
+	const double weight;
+	const double variance;
 
-	PairInfo(EdgeId first, EdgeId second, double d, double weight) :
-		first(first), second(second), d(d), weight(weight) {
+	PairInfo(const PairInfo& pair_info) :
+		first(pair_info.first),
+		second(pair_info.second),
+		d(pair_info.d),
+		weight(pair_info.weight),
+		variance(pair_info.variance)
+	{
+
 	}
 
-	bool operator<(const PairInfo<EdgeId>& rhs) const {
+	PairInfo(EdgeId first, EdgeId second, double d, double weight, double variance = 0.) :
+		first(first), second(second), d(d), weight(weight), variance(variance) {
+	}
+
+
+	const PairInfo set_first(EdgeId first) const {
+		return PairInfo(first, this->second, this->d, this->weight, this->variance);
+	}
+
+	const PairInfo set_second(EdgeId second) const {
+		return PairInfo(this->first, second, this->d, this->weight, this->variance);
+	}
+
+	const PairInfo set_distance(double d) const {
+		return PairInfo(this->first, this->second, d, this->weight, this->variance);
+	}
+
+	const PairInfo set_weight(EdgeId first) const {
+		return PairInfo(this->first, this->second, this->d, weight, this->variance);
+	}
+
+	const PairInfo set_variance(EdgeId first) const {
+		return PairInfo(this->first, this->second, this->d, this->weight, variance);
+	}
+
+	bool operator<(const PairInfo& rhs) const {
 		const PairInfo &lhs = *this;
 		return lhs.first == rhs.first ? lhs.second == rhs.second ? lhs.d + E
 				< rhs.d : lhs.second < rhs.second : lhs.first < rhs.first;
+	}
+
+	const PairInfo& operator=(const PairInfo& pair_info) {
+		if (this != &pair_info) {
+			assert(false);
+		}
+		return *this;
 	}
 
 	/**
@@ -68,16 +106,12 @@ PairInfo<EdgeId> MaxPairInfo(EdgeId id) {
 
 template<typename EdgeId>
 PairInfo<EdgeId> MinPairInfo(EdgeId e1, EdgeId e2) {
-	PairInfo<EdgeId> pi = MinPairInfo(e1);
-	pi.second = e2;
-	return pi;
+	return MinPairInfo(e1).set_second(e2);
 }
 
 template<typename EdgeId>
 PairInfo<EdgeId> MaxPairInfo(EdgeId e1, EdgeId e2) {
-	PairInfo<EdgeId> pi = MaxPairInfo(e1);
-	pi.second = e2;
-	return pi;
+	return MaxPairInfo(e1).set_second(e2);
 }
 
 /**
