@@ -18,6 +18,7 @@ public:
 template<class Graph>
 class DistanceEstimator: AbstractDistanceEstimator<Graph> {
 private:
+	typedef typename Graph::EdgeId EdgeId;
 	Graph &graph_;
 	PairedInfoIndex<Graph> &histogram_;
 	size_t insert_size_;
@@ -75,8 +76,7 @@ private:
 			}
 			double center = (estimated[left].first + estimated[i].first) * 0.5;
 			double var = (estimated[i].first - estimated[left].first) * 0.5;
-			PairInfo<EdgeId> new_info(edge1, edge2, center, weight);
-			new_info.variance = var;
+			PairInfo<EdgeId> new_info(edge1, edge2, center, weight, var);
 			result.push_back(new_info);
 		}
 		return result;
@@ -109,7 +109,7 @@ public:
 			vector < size_t > forward = GetGraphDistances(first, second);
 			vector < pair<size_t, double> > estimated
 					= EstimateEdgePairDistances(data, forward);
-			vector<PairInfo<EdgeId> > clustered = ClusterResult(estimated);
+			vector<PairInfo<EdgeId> > clustered = ClusterResult(first, second, estimated);
 			AddToResult(result, clustered);
 		}
 	}

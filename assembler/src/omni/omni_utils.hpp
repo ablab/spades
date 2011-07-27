@@ -711,7 +711,7 @@ public:
 
 	virtual void HandlePath(const vector<EdgeId>& path) {
 		size_t path_length = 0;
-		for (auto it = path.start(); it != path.end(); ++it) {
+		for (auto it = path.begin(); it != path.end(); ++it) {
 			path_length += g_.length(*it);
 		}
 		distances_.insert(path_length);
