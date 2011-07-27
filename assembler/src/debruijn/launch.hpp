@@ -180,6 +180,24 @@ void RemoveBulges(Graph &g) {
 	bulge_remover.RemoveBulges();
 	INFO("Bulges removed");
 }
+
+void RemoveBulges2(NCGraph &g) {
+	INFO("-----------------------------------------");
+	INFO("Removing bulges");
+	double max_coverage = CONFIG.read<double> ("br_max_coverage");
+	double max_relative_coverage = CONFIG.read<double> (
+			"br_max_relative_coverage");
+	double max_delta = CONFIG.read<double> ("br_max_delta");
+	double max_relative_delta = CONFIG.read<double> ("br_max_relative_delta");
+	size_t max_length_div_K = CONFIG.read<int> ("br_max_length_div_K");
+	TrivialCondition<NCGraph> trivial_condition;
+	BulgeRemover<NCGraph, TrivialCondition<NCGraph>> bulge_remover(g,
+			max_length_div_K * g.k(), max_coverage, max_relative_coverage,
+			max_delta, max_relative_delta, trivial_condition);
+	bulge_remover.RemoveBulges();
+	INFO("Bulges removed");
+}
+
 template<class Graph>
 void RemoveLowCoverageEdges(Graph &g) {
 	INFO("-----------------------------------------");
