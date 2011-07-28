@@ -204,6 +204,21 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 	repeat_resolver.ResolveRepeats(output_folder);
 	INFO("Primitive repeats resolved");
 }
+template<size_t k, class ReadStream, class Graph>
+void MapPairedReads(Graph &g,
+		ReadStream& stream, EdgeIndex<k + 1, Graph>& index) {
+	INFO("-----------------------------------------");
+	stream.reset();
+	INFO("Threading reads");
+	int quantity = 0;
+	ReadMapper<k , Graph, ReadStream> rm(g, index, stream);
+	while (!stream.eof()){
+		rm.ThreadNext();
+		quantity ++;
+	}
+	INFO(quantity <<" reads_threaded");
+}
+
 
 template<size_t k, class ReadStream>
 void FillPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
@@ -425,6 +440,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		FillEdgesPos<k>(g, index, genome, EdgePos);
 
 		SimplifyGraph<k> (g, index, 3, genome, output_folder);
+//		MapPairedReads<k, ReadStream, Graph>(g, stream, index);
 
 		ProduceInfo<k> (g, index, genome,
 				output_folder + "simplified_graph.dot", "simplified_graph");
@@ -558,17 +574,20 @@ void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index, Nonconj
                 piid.AddPairInfo(pi[i],1);                                                                                                                                                                                                
         }                                                                                                                                                                                                                                 
     }                                                                                                                                                                                                                                     
-    RectangleRepeatResolver<NonconjugateDeBruijnGraph> rectangleResolver(graph, piid, resolvedGraph, (size_t)30);                                                                                                                         
+    RectangleRepeatResolver<NonconjugateDeBruijnGraph> rectangleResolver(graph, piid, resolvedGraph, (size_t)30);
     rectangleResolver.Process();                                                                                                                                                                                                          
 
 
     ClipTips(resolvedGraph);                                                                                                                                                                                                              
     RemoveLowCoverageEdges(resolvedGraph);                                                                                                                                                                                                
     EmptyGraphLabeler<NonconjugateDeBruijnGraph> emptyLabeler;                                                                                                                                                                            
+	IdTrackHandler<NCGraph> Resolved_IntIds(resolvedGraph);
+	RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolvedGraph,
+				Resolved_IntIds);
 
 
     omnigraph::WriteSimple(work_tmp_dir + "rectgraph.dot",                                                                                                                                                                                
-            "rectgraph", resolvedGraph, emptyLabeler );                                                                                                                                                                                   
+            "rectgraph", resolvedGraph, IdTrackLabelerResolved);
     INFO("rect graph written: " + work_tmp_dir + "rectgraph.dot");                                                                                                                                                                        
 
 

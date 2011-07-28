@@ -20,6 +20,16 @@ using omnigraph::Path;
 using omnigraph::PairInfo;
 using omnigraph::GraphActionHandler;
 
+template<size_t kmer_size_, typename Graph>
+class ReadThreaderResult {
+	typedef typename Graph::EdgeId EdgeId;
+
+	Path<EdgeId> left_read_, right_read_;
+	int gap_;
+public:
+	ReadThreaderResult(Path<EdgeId> left_read,Path<EdgeId> right_read, int gap): gap_(gap), left_read_(left_read), right_read_(right_read){
+	}
+};
 /**
  * DataHashRenewer listens to add/delete events and updates index according to those events. This class
  * can be used both with vertices and edges of graph.
@@ -228,6 +238,7 @@ public:
 	 * Finds a path in graph which corresponds to given sequence.
 	 * @read sequence to be mapped
 	 */
+
 	Path<EdgeId> MapSequence(const Sequence &read) const {
 		vector<EdgeId> passed;
 		if (read.size() <= k) {
@@ -457,7 +468,7 @@ private:
 	const EdgeIndex<kmer_size + 1, Graph>& index_;
 	Stream& stream_;
 
-	size_t CountDistance(const PairedRead& paired_read) {
+	inline size_t CountDistance(const PairedRead& paired_read) {
 		return paired_read.distance() - paired_read.second().size();
 	}
 
@@ -518,6 +529,50 @@ public:
 			stream_ >> p_r;
 			ProcessPairedRead(paired_index, p_r, read_threader);
 		}
+	}
+
+};
+
+
+/**
+ * This class finds how certain _paired_ read is mapped to genome. As it is now it is hoped to work correctly only if read
+ * is mapped to graph ideally and in unique way.
+ */
+template<size_t k, class Graph, class Stream>
+class ReadMapper {
+public:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef EdgeIndex<k + 1, Graph> Index;
+private:
+	SimpleSequenceMapper<k, Graph> read_seq_mapper;
+	Stream& stream_;
+public:
+	/**
+	 * Creates ReadMapper for given graph. Also requires index_ which should be synchronized
+	 * with graph.
+	 * @param g graph sequences should be mapped to
+	 * @param index index syncronized with graph
+	 */
+	ReadMapper(const Graph& g, const Index& index, Stream & stream):
+		read_seq_mapper(g, index), stream_(stream) {
+		stream_.reset();
+	}
+
+	ReadThreaderResult<k + 1, Graph> ThreadNext() {
+		if (!stream_.eof()) {
+			PairedRead p_r;
+			stream_ >> p_r;
+			Sequence read1 = p_r.first().getSequence();
+			Sequence read2 = p_r.second().getSequence();
+			Path<EdgeId> aligned_read[2];
+			aligned_read[0] = read_seq_mapper.MapSequence(read1);
+			aligned_read[1] = read_seq_mapper.MapSequence(read2);
+			size_t distance = p_r.distance();
+			int current_distance1 = distance + aligned_read[0].start_pos()
+					- aligned_read[1].start_pos();
+			return ReadThreaderResult<k + 1, Graph>(aligned_read[0], aligned_read[1], current_distance1);
+		}
+//		else return NULL;
 	}
 
 };

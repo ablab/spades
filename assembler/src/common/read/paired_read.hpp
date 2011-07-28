@@ -31,7 +31,7 @@ public:
 		return second_;
 	}
 
-	size_t distance() const {
+	inline size_t distance() const {
 		return distance_;
 	}
 
