@@ -58,11 +58,10 @@ protected:
 		}
 	}
 
-	void FireGlue(EdgeId edge1, EdgeId edge2) {
-		DEBUG("Fire Glue");
+	void FireGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
-			applier_->ApplyGlue(*it, edge1, edge2);
+			applier_->ApplyGlue(*it, new_edge, edge1, edge2);
 		}
 	}
 

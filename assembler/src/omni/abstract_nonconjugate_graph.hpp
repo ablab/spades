@@ -366,7 +366,6 @@ public:
 	}
 
 	pair<EdgeId, EdgeId> SplitEdge(EdgeId edge, size_t position) {
-		assert(edge != conjugate(edge));
 		pair<VertexData, pair<EdgeData, EdgeData>> newData = master_.SplitData(
 				edge->data(), position);
 		VertexId splitVertex = HiddenAddVertex(newData.first);
@@ -383,6 +382,23 @@ public:
 	}
 
 	void GlueEdges(EdgeId edge1, EdgeId edge2) {
+		EdgeId newEdge = HiddenAddEdge(EdgeStart(edge2), EdgeEnd(edge2), master_.GlueData(edge1->data(), edge2->data()));
+		FireGlue(newEdge, edge1, edge2);
+		FireDeleteEdge(edge1);
+		FireDeleteEdge(edge2);
+		FireAddEdge(newEdge);
+		VertexId start = EdgeStart(edge1);
+		VertexId end = EdgeEnd(edge1);
+		DeleteEdge(edge1);
+		if (IsDeadStart(start) && IsDeadEnd(start)) {
+			DeleteVertex(start);
+		}
+		if (IsDeadStart(end) && IsDeadEnd(end)) {
+			DeleteVertex(end);
+		}
+/*
+
+
 		FireDeleteEdge(edge2);
 		FireGlue(edge1, edge2);
 		edge2->set_data(master_.GlueData(edge1->data(), edge2->data()));
@@ -396,6 +412,7 @@ public:
 		if (IsDeadStart(end) && IsDeadEnd(end)) {
 			DeleteVertex(end);
 		}
+*/
 	}
 
 private:
