@@ -6,6 +6,7 @@
 #include <vector>
 #include "common/read/read.hpp"
 #include "common/sequence/seq.hpp"
+#include "position_read.hpp"
 /**
  * This class is designed to iterate through valid k-mers in read.
  * @example
@@ -39,6 +40,26 @@ class ValidKMerGenerator {
       first(true),
       kmer_(),
       seq_(read.getSequenceString()),
+      qual_(read.getQualityString()) {
+    TrimBadQuality();
+    Next();
+  }
+  /**
+   * @param read PositionRead to generate k-mers from.
+   * @param bad_quality_threshold  This class virtually cuts
+   * nucleotides with quality lower the threshold from the ends of the
+   * read. 
+   */
+  explicit ValidKMerGenerator(const PositionRead &read, const string & seq,
+                              uint32_t bad_quality_threshold = 2) :
+      bad_quality_threshold_(bad_quality_threshold),
+      pos_(-1),
+      end_(-1),
+      has_more_(true),
+      correct_probability_(1),
+      first(true),
+      kmer_(),
+      seq_(seq),
       qual_(read.getQualityString()) {
     TrimBadQuality();
     Next();

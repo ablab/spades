@@ -342,22 +342,27 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 			if (!centerInCluster) {
 				// cout << "  pushing consensus\n";
 				// cout << "Consensus: " << bestCenters[k].first;
-
-				Read consensus_read("Consensus", bestCenters[k].first, bestCenters[k].first);
 				
 				#pragma omp critical
 				{
-					ReadStat rs; rs.read = consensus_read; rs.blobpos = PositionKMer::blob_size;
-					for (uint32_t j = 0; j < rs.read.size(); ++j) {
-						PositionKMer::blob[PositionKMer::blob_size + j] = rs.read.getSequenceString()[j];
+					// change blob
+					for (uint32_t j = 0; j < bestCenters[k].first.size(); ++j) {
+						PositionKMer::blob[PositionKMer::blob_size + j] = bestCenters[k].first[j];
 					}
-					PositionKMer::blob_size += rs.read.size();
-					PositionKMer::rv->push_back(rs);
+					PositionKMer::blob_size += bestCenters[k].first.size();
 
-					PositionKMer pkm(PositionKMer::rv->size()-1, 0);
-					KMerStat kms; kms.count = 0; kms.change = false; kms.good = true; kms.changeto = 0;
+					// add read
+					Read r("Consensus", bestCenters[k].first, bestCenters[k].first);
+					PositionKMer::rv->push_back(r);
+
+					// add position read
+					PositionRead rs(PositionKMer::blob_size - r.size(), r.size(), PositionKMer::rv->size() - 1);
+					PositionKMer::pr->push_back(rs);
+
+					PositionKMer pkm(PositionKMer::pr->size()-1, 0);
+					KMerStat kms( 0, KMERSTAT_GOOD );
 					k_.push_back( make_pair( pkm, kms ) );
-					// cout << "  " << (PositionKMer::rv->size() - 1) << " " << (k_.size()-1) << " " << PositionKMer::blob_size << "     " << pkm.str() << endl;
+					// cout << "  " << (PositionKMer::pr->size() - 1) << " " << (k_.size()-1) << " " << PositionKMer::blob_size << "     " << pkm.str() << endl;
 				}
 				v.insert(v.begin(), k_.size() - 1);
 
@@ -435,22 +440,18 @@ void KMerClustering::process(string dirprefix, const vector< vector<uint64_t> > 
 			if (blocks[n][i].size() == 1) {
 				//cout << "  kmer " << blocks[n][i][0] << " is good with count " << k_[blocks[n][i][0]].second.count << endl;
 				if (k_[blocks[n][i][0]].second.count > GOOD_SINGLETON_THRESHOLD) {
-					k_[blocks[n][i][0]].second.change = false;
-					k_[blocks[n][i][0]].second.good = true;
+					k_[blocks[n][i][0]].second.changeto = KMERSTAT_GOOD;
 				}
 				//outf << blockNum << "\t" << k_[blocks[n][i][0]].first.str() << "\t" << k_[blocks[n][i][0]].second.count << "\t" << blocks[n][i].size() << "\t0.0\tgoodSingleton\t0" << endl;
 			} else {
 				//cout << "  kmer " << blocks[n][i][0] << " is good as a center with count " << k_[blocks[n][i][0]].second.count << endl;
-				k_[blocks[n][i][0]].second.change = false;
-				k_[blocks[n][i][0]].second.good = true;
+				k_[blocks[n][i][0]].second.changeto = KMERSTAT_GOOD;
 				//outf << blockNum << "\t" << k_[blocks[n][i][0]].first.str() << "\t" << k_[blocks[n][i][0]].second.count << "\t" << blocks[n][i].size() << "\t0.0\tcenter\t0" << endl;
 				for (uint32_t j=1; j < blocks[n][i].size(); ++j) {
 					//cout << "  kmer " << blocks[n][i][j] << " should be changed to " << blocks[n][i][0] << endl;
 					//cout << "       " << k_[blocks[n][i][j]].first.str() << "\n       " << k_[blocks[n][i][0]].first.str() << endl;
 
 					//outf << blockNum << "\t" << k_[blocks[n][i][j]].first.str() << "\t" << k_[blocks[n][i][j]].second.count << "\t" << blocks[n][i].size() << "\t0.0\tchange\t0" << endl;
-					k_[blocks[n][i][j]].second.good = false;
-					k_[blocks[n][i][j]].second.change = true;
 					k_[blocks[n][i][j]].second.changeto = blocks[n][i][0];
 				}
 			}
