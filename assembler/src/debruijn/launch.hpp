@@ -439,7 +439,8 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 	EdgesPositionHandler<Graph> EdgePos(g);
 	EdgesPosGraphLabeler<Graph> EdgePosLab(g, EdgePos);
 	// if it's not paired_mode, then it'll be just unused variable -- takes O(1) to initialize from graph
-	PairedInfoIndex<Graph> paired_index(g, 5);
+//	PairedInfoIndex<Graph> paired_index(g, 5);
+	PairedInfoIndex<Graph> paired_index(g, 0);
 
 	if (!from_saved) {
 
@@ -496,10 +497,9 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 			"no_repeat_graph", g, EdgePosLab);
 	omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_before_poslab.dot",
 			"no_repeat_graph", g, EdgePosLab);
-
 	PairedInfoIndex<Graph> clustered_index(g);
 	if(paired_mode) {
-		DistanceEstimator<Graph> estimator(g, paired_index, insert_size, max_read_length, 10, 10);
+		DistanceEstimator<Graph> estimator(g, paired_index, insert_size, max_read_length, 10, 10, 75);
 		estimator.Estimate(clustered_index);
 	}
 

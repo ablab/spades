@@ -216,6 +216,10 @@ public:
 		}
 	}
 
+	size_t length(const EdgeId edge) const {
+		return master_.length(data(edge));
+	}
+
 	vector<EdgeId> OutgoingEdges(VertexId v) const {
 		return v->OutgoingEdges();
 	}

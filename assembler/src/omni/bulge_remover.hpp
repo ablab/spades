@@ -21,7 +21,7 @@ struct SimplePathCondition {
 	Graph& g_;
 
 	SimplePathCondition(Graph& g) :
-			g_(g) {
+		g_(g) {
 
 	}
 
@@ -76,7 +76,7 @@ class MostCoveredAlternativePathChooser: public PathProcessor<Graph>::Callback {
 public:
 
 	MostCoveredAlternativePathChooser(Graph& g, EdgeId edge) :
-			g_(g), forbidden_edge_(edge), max_coverage_(-1.0) {
+		g_(g), forbidden_edge_(edge), max_coverage_(-1.0) {
 
 	}
 
@@ -120,9 +120,10 @@ public:
 	BulgeRemover(Graph& g, size_t max_length, double max_coverage,
 			double max_relative_coverage, double max_delta,
 			double max_relative_delta, const BulgeConditionF& bulge_condition) :
-			g_(g), max_length_(max_length), max_coverage_(max_coverage), max_relative_coverage_(
-					max_relative_coverage), max_delta_(max_delta), max_relative_delta_(
-					max_relative_delta), bulge_condition_(bulge_condition) {
+		g_(g), max_length_(max_length), max_coverage_(max_coverage),
+				max_relative_coverage_(max_relative_coverage),
+				max_delta_(max_delta), max_relative_delta_(max_relative_delta),
+				bulge_condition_(bulge_condition) {
 		assert(max_relative_coverage_ > 1.);
 	}
 
@@ -162,7 +163,7 @@ private:
 	void ProcessBulge(EdgeId edge, const vector<EdgeId>& path) {
 		size_t path_length = PathLength(path);
 		double prefix_length = 0.;
-		vector<size_t> bulge_prefix_lengths(path.size());
+		vector<size_t> bulge_prefix_lengths;
 		for (auto it = path.begin(); it != path.end(); ++it) {
 			prefix_length += g_.length(*it);
 			bulge_prefix_lengths.push_back(
@@ -170,12 +171,11 @@ private:
 							prefix_length / path_length * g_.length(edge) + 0.5
 									+ 1e-9));
 		}
-
 		EdgeId edge_to_split = edge;
 		size_t prev_length = 0;
 		for (size_t i = 0; i < path.size(); ++i) {
 			if (bulge_prefix_lengths[i] > prev_length) {
-				if (bulge_prefix_lengths[i] != g_.length(edge)) {
+				if (bulge_prefix_lengths[i]  - prev_length != g_.length(edge_to_split)) {
 					pair<EdgeId, EdgeId> split_result = g_.SplitEdge(
 							edge_to_split,
 							bulge_prefix_lengths[i] - prev_length);
@@ -243,9 +243,10 @@ void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
 
 			VertexId end = g_.EdgeEnd(edge);
 			TRACE("End " << g_.str(end));
-			size_t delta = std::floor(
-					std::max(max_relative_delta_ * g_.length(edge),
-							max_delta_));
+			size_t delta =
+					std::floor(
+							std::max(max_relative_delta_ * g_.length(edge),
+									max_delta_));
 			MostCoveredAlternativePathChooser<Graph> path_chooser(g_, edge);
 
 			PathProcessor<Graph> path_finder(g_,
