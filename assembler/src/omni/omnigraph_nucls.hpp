@@ -105,6 +105,32 @@ public:
 		}
 		return OmniNuclEdge(length, sb.BuildSequence());
 	}
+
+	OmniNuclEdge GlueData(const OmniNuclEdge &edge1, const OmniNuclEdge &edge2) {
+		return edge2;
+	}
+
+	pair<OmniNuclVertex, pair<OmniNuclEdge, OmniNuclEdge> > SplitData(OmniNuclEdge &edge,
+			size_t position) {
+		size_t k = edge.nucls().size() - edge.length();
+		return make_pair(
+				OmniNuclVertex(edge.nucls().Subseq(position, position + k)),
+				make_pair(OmniNuclEdge(position, edge.nucls().Subseq(0, position + k)),
+						OmniNuclEdge(edge.length() - position, edge.nucls().Subseq(position))));
+	}
+	OmniNuclEdge SplitData(vector<OmniNuclEdge*> toMerge) {
+		size_t length = 0;
+		SequenceBuilder sb;
+		for (auto it = toMerge.begin(); it != toMerge.end(); ++it) {
+			if (length == 0) {
+				sb.append((*it)->nucls());
+			} else {
+				sb.append((*it)->nucls().Subseq((*it)->nucls().size() - (*it)->length()));
+			}
+			length += (*it)->length();
+		}
+		return OmniNuclEdge(length, sb.BuildSequence());
+	}
 };
 
 class OmnigraphNucl : public AbstractConjugateGraph<OmniNuclVertex, OmniNuclEdge, OmniNuclDataMaster> {
