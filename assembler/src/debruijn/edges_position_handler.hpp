@@ -134,13 +134,22 @@ public:
 	}
 */
  	virtual void HandleAdd(EdgeId e) {
+ 		DEBUG("Add edge "<<e);
 		if (EdgesPositions.find(e) == EdgesPositions.end()) {
  			vector<EdgePosition> NewVec;
  			EdgesPositions[e] = NewVec;
 		}
  	}
 	virtual void HandleDelete(EdgeId e) {
-		DEBUG("Delete edge "<<e<<" handled");
+		if (EdgesPositions[e].size() > 0) {
+			DEBUG("Delete edge "<<e<<" handled. Not empty info: "<<EdgesPositions[e].size());
+			for (size_t i = 0; i < EdgesPositions[e].size(); i++){
+				DEBUG("Position info: "<<EdgesPositions[e][i].start_<<" --- "<<EdgesPositions[e][i].end_);
+			}
+		}
+		else {
+			DEBUG("Delete edge "<<e<<" handled.");
+		}
 		EdgesPositions.erase(e);
 	}
 
