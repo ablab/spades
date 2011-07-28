@@ -36,7 +36,7 @@ private:
 			return true;
 			//}
 		}
-		DEBUG("Stopped going right at " << edge);
+		TRACE("Stopped going right at " << edge);
 		return false;
 	}
 

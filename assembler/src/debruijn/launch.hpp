@@ -437,6 +437,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 	EdgeIndex<k + 1, Graph> index(g);
 	IdTrackHandler<Graph> IntIds(g);
 	EdgesPositionHandler<Graph> EdgePos(g);
+	EdgesPosGraphLabeler<Graph> EdgePosLab(g, EdgePos);
 	// if it's not paired_mode, then it'll be just unused variable -- takes O(1) to initialize from graph
 	PairedInfoIndex<Graph> paired_index(g, 5);
 
@@ -461,7 +462,12 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 				"edge_graph");
 
-		FillEdgesPos<k> (g, index, genome, EdgePos);
+
+		FillEdgesPos<k>(g, index, genome, EdgePos);
+		omnigraph::WriteSimple(
+				output_folder + "before_simplification_pos.dot",
+				"no_repeat_graph", g, EdgePosLab);
+
 
 		SimplifyGraph<k> (g, index, 3, genome, output_folder);
 //		MapPairedReads<k, ReadStream, Graph>(g, stream, index);
@@ -485,7 +491,6 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 	//		clusterer.cluster(clustered_paired_index);
 	//	}
 
-	EdgesPosGraphLabeler<Graph> EdgePosLab(g, EdgePos);
 	omnigraph::WriteSimple(
 			output_folder + "repeats_resolved_before_poslab.dot",
 			"no_repeat_graph", g, EdgePosLab);
