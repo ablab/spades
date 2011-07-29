@@ -20,7 +20,6 @@ add_subdirectory(quake_count)
 add_subdirectory(quake_enhanced)
 
 target_link_libraries(main ${COMMON_LIBRARIES})
-target_link_libraries(prepare_graph ${COMMON_LIBRARIES})
 
 
 
