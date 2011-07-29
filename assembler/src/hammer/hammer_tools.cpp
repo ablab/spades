@@ -124,42 +124,24 @@ void AddKMerNos(const PositionRead &r, uint64_t readno, vector<KMerNo> *v) {
 	}
 }
 
-
-//void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerStatMap> * vv) {
 void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerNo> * vv) {
 	vv->clear();
-//	KMerStatMap v; v.clear();
-//	vv->push_back(v);
-
 	cout << "Starting preproc. " << PositionKMer::pr->size() << " reads.\n";
 
 	// TODO: think about a parallelization -- for some reason, the previous version started producing segfaults
 
-//	vector<KMerNo> vkmerno;
-
 	for(size_t i=0; i < PositionKMer::pr->size(); ++i) {
-		// AddKMers<K, KMerStatMap>(PositionKMer::pr->at(i), i, &(vv->at(0)));
 		AddKMerNos(PositionKMer::pr->at(i), i, vv);
 		if ( i % 1000000 == 0 ) cout << "Processed " << i << " reads." << endl;
-	}
-	
+	}	
 	cout << "All k-mers added to maps." << endl;
 }
 
-//void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rsmc, vector< vector<uint64_t> > * vs, vector<KMerCount> * kmers) {
 void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< vector<uint64_t> > * vs, vector<KMerCount> * kmers) {
 	int effective_threads = min(nthreads, tau+1);
 	uint64_t kmerno = 0;
 	kmers->clear();
 	cout << "Starting split and sort..." << endl;
-
-	/*for (KMerCount p = rsmc.next(); p.second.count < MAX_INT_64; p = rsmc.next()) {
-		kmers->push_back(p);
-		for (uint32_t j=0; j<p.second.pos.size(); ++j) {
-			PositionKMer::pr->at(p.second.pos[j].first).kmers().insert( make_pair(p.second.pos[j].second, kmerno) );
-		}
-		++kmerno;
-	}*/
 
 	KMerNo curKMer = vv[0];
 	KMerCount curKMerCount = make_pair( PositionKMer(vv[0].index), KMerStat(0, KMERSTAT_GOOD) );
@@ -183,7 +165,10 @@ void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< ve
 		vs->at(j).resize( kmers->size() );
 		for (size_t m = 0; m < kmers->size(); ++m) vs->at(j)[m] = m;
 
+		cout << j << " " << vs->at(j).size() << " iter=" << (size_t)(&vs->at(j)) << endl;
+
 		sort(vs->at(j).begin(), vs->at(j).end(), boost::bind(PositionKMer::compareSubKMers, _1, _2, kmers, tau, j));
+		cout << "Sorted auxiliary vector " << j << endl;
 	}
 	cout << "Auxiliary vectors sorted." << endl;
 }
