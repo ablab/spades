@@ -19,11 +19,12 @@ add_definitions(-fPIC)
 add_executable(prepare_graph
    prepare_graph.cpp)
    
-add_executable(preproc
-   preproc.cpp)
+
+add_subdirectory(quake_count)
 
 #target_link_libraries(main ${COMMON_LIBRARIES})
 target_link_libraries(prepare_graph ${COMMON_LIBRARIES})
-target_link_libraries(preproc ${COMMON_LIBRARIES})
+
+
 
 
