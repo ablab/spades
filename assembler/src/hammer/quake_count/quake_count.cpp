@@ -31,6 +31,7 @@
 #include "common/sequence/seq.hpp"
 #include "hammer/kmer_freq_info.hpp"
 #include "hammer/valid_kmer_generator.hpp"
+#define SUPPRESS_UNUSED(X) ((void) (X))
 
 using std::string;
 using std::set;
@@ -77,8 +78,9 @@ struct Options {
         valid(true) {}
 };
 
-void PrintHelp() {
-  printf("Usage: ./preproc qvoffset ifile.fastq ofile.[q]cst file_number error_threshold [[-]q]\n");
+void PrintHelp(char *program_name) {
+  printf("Usage: %s qvoffset ifile.fastq ofile.[q]cst file_number error_threshold [q]\n",
+         program_name);
   printf("Where:\n");
   printf("\tqvoffset\tan offset of fastq quality data\n");
   printf("\tifile.fastq\tan input file with reads in fastq format\n");
@@ -168,6 +170,7 @@ void EvalFile(FILE *ifile, FILE *ofile, bool q_mers) {
           fread(&correct_probability, sizeof(correct_probability),
                 1, ifile);
       assert(readed == 1);
+      SUPPRESS_UNUSED(readed);
       info.q_count += correct_probability;
     } else {
       info.count += 1;
@@ -188,7 +191,7 @@ void EvalFile(FILE *ifile, FILE *ofile, bool q_mers) {
 int main(int argc, char *argv[]) {
   Options opts = ParseOptions(argc, argv);
   if (!opts.valid) {
-    PrintHelp();
+    PrintHelp(argv[0]);
     return 1;
   }
   BasicConfigurator::configure();
