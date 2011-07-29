@@ -143,8 +143,8 @@ int main(int argc, char * argv[]) {
 
 		// prepare the reads for next iteration
 		// delete consensuses, clear kmer data, and restore correct revcomps
+		kmers.clear();
 		delete PositionKMer::pr;
-		kmc.clear();
 		std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
 
 		PositionKMer::rv->resize( PositionKMer::revNo );
