@@ -7,7 +7,9 @@
 #include <map>
 #include <unordered_map>
 #include <algorithm>
-#include "read.hpp"
+//#include "read.hpp"
+#include "common/io/single_read.hpp"
+typedef SingleRead Read;
 #include "logging.hpp"
 #include "config.hpp"
 #include "omni_utils.hpp"

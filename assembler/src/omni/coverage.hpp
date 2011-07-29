@@ -32,7 +32,7 @@ private:
 	template<class ReadThreader>
 	void ProcessRead(const ReadThreader& threader, Read read) {
 		Path<EdgeId> path = threader.MapSequence(
-				Sequence(read.getSequenceString()));
+				Sequence(read.GetSequenceString()));
 		if (path.sequence().size() == 0)
 			return;
 		const vector<EdgeId> &sequence = path.sequence();

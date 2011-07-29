@@ -485,8 +485,8 @@ private:
 			omnigraph::PairedInfoIndex<Graph> &paired_index,
 			const PairedRead& p_r,
 			debruijn_graph::SimpleSequenceMapper<kmer_size, Graph> &read_threader) {
-		Sequence read1 = p_r.first().getSequence();
-		Sequence read2 = p_r.second().getSequence();
+		Sequence read1 = p_r.first().sequence();
+		Sequence read2 = p_r.second().sequence();
 		Path<EdgeId> path1 = read_threader.MapSequence(read1);
 		Path<EdgeId> path2 = read_threader.MapSequence(read2);
 		size_t distance = CountDistance(p_r);
@@ -562,8 +562,8 @@ public:
 		if (!stream_.eof()) {
 			PairedRead p_r;
 			stream_ >> p_r;
-			Sequence read1 = p_r.first().getSequence();
-			Sequence read2 = p_r.second().getSequence();
+			Sequence read1 = p_r.first().sequence();
+			Sequence read2 = p_r.second().sequence();
 			Path<EdgeId> aligned_read[2];
 			aligned_read[0] = read_seq_mapper.MapSequence(read1);
 			aligned_read[1] = read_seq_mapper.MapSequence(read2);

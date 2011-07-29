@@ -8,7 +8,10 @@
 #ifndef SEQ_MAP_HPP_
 #define SEQ_MAP_HPP_
 
-#include "read.hpp"
+//#include "read.hpp"
+#include "common/io/single_read.hpp"
+typedef SingleRead Read;
+
 #include "sequence.hpp"
 #include "seq.hpp"
 #include "cuckoo.hpp"
@@ -56,9 +59,9 @@ private:
 	}
 
 	void CountRead(const Read &read) {
-		if (read.isValid()) {
+		if (read.IsValid()) {
 			//cerr << read.getSequenceString() << endl;
-			Sequence s = read.getSequence();
+			Sequence s = read.sequence();
 			CountSequence(s);
 		}
 	}

@@ -58,15 +58,21 @@ int main() {
 	bool etalon_info_mode = CONFIG.read<bool>("etalon_info_mode");
 	bool from_saved = CONFIG.read<bool>("from_saved_graph");
 	// typedefs :)
-	typedef MateReader<Read, ireadstream>::type ReadStream;
-	typedef PairedReader<ireadstream> PairedReadStream;
-	typedef RCReaderWrapper<PairedReadStream, PairedRead> RCStream;
+	//typedef MateReader<Read, ireadstream>::type ReadStream;
+	//typedef PairedReader<ireadstream> PairedReadStream;
+	//typedef RCReaderWrapper<PairedReadStream, PairedRead>
+	//RCStream;
+        typedef Reader<PairedRead> PairedReadStream;
+        typedef RCReaderWrapper<PairedRead> RCStream;
 
 	// read data ('reads')
 	const string reads[2] = {reads_filename1, reads_filename2};
-	ReadStream reader(reads);
-	PairedReadStream pairStream(reader, insert_size);
-	RCStream rcStream(pairStream);
+	//ReadStream reader(reads);
+	//PairedReadStream pairStream(reader, insert_size);
+        PairedReadStream pairStream(std::pair<std::string, 
+                                    std::string>(reads_filename1,
+                                                 reads_filename2));
+	RCStream rcStream(&pairStream);
 
 	// read data ('genome')
 	std::string genome;
@@ -74,7 +80,7 @@ int main() {
 		ireadstream genome_stream(genome_filename);
 		Read full_genome;
 		genome_stream >> full_genome;
-		genome = full_genome.getSequenceString().substr(0, dataset_len); // cropped
+		genome = full_genome.GetSequenceString().substr(0, dataset_len); // cropped
 	}
 	// assemble it!
 	INFO("Assembling " << dataset << " dataset");
