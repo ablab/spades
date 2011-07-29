@@ -81,8 +81,9 @@ struct Options {
         valid(true) {}
 };
 
-void PrintHelp() {
-  printf("Usage: ./preproc qvoffset ifile.fastq ofile.[q]cst file_number error_threshold\n");
+void PrintHelp(char *program_name) {
+  printf("Usage: %s qvoffset ifile.fastq ofile.[q]cst file_number error_threshold\n",
+         program_name);
   printf("Where:\n");
   printf("\tqvoffset\tan offset of fastq quality data\n");
   printf("\tifile.fastq\tan input file with reads in fastq format\n");
@@ -182,7 +183,7 @@ void EvalFile(FILE *ifile, FILE *ofile) {
 int main(int argc, char *argv[]) {
   Options opts = ParseOptions(argc, argv);
   if (!opts.valid) {
-    PrintHelp();
+    PrintHelp(argv[0]);
     return 1;
   }
   BasicConfigurator::configure();
