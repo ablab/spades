@@ -22,7 +22,6 @@
 #include <unordered_set>
 
 #include "read/ireadstream.hpp"
-#include "hammer_config.hpp"
 #include "hammer_tools.hpp"
 #include "kmer_cluster.hpp"
 #include "position_kmer.hpp"

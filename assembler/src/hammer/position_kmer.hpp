@@ -114,11 +114,6 @@ struct KMerNo {
 		return ( strncmp( PositionKMer::blob + index, PositionKMer::blob + kmerno.index, K) == 0 );
 	}
 
-	static bool less(const KMerNo &l, const KMerNo &r) {
-		return ( strncmp( PositionKMer::blob + l.index, PositionKMer::blob + r.index, K) < 0 );
-
-	}
-
 	string str() const {
 		string res = "";
 		for (uint32_t i = 0; i < K; ++i) {
@@ -127,6 +122,10 @@ struct KMerNo {
 		return res;
 	}
 
+	static bool less(const KMerNo &l, const KMerNo &r) {
+		return ( strncmp( PositionKMer::blob + l.index, PositionKMer::blob + r.index, K) < 0 );
+
+	}
 };
 
 
