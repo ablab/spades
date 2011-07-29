@@ -170,6 +170,7 @@ double KMerClustering::clusterLogLikelihood(const vector<int> & cl, const vector
 
 double KMerClustering::lMeansClustering(int l, vector< vector<int> > & distances, const vector<int> & kmerinds, vector<int> & indices, vector<StringCount> & centers) {
 	centers.resize(l); // there are l centers
+
 	// if l==1 then clustering is trivial
 	if (l == 1) {
 		centers[0].first = find_consensus(kmerinds);
@@ -352,8 +353,8 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 				}
 			}
 			if (!centerInCluster) {
-				cout << "  pushing consensus\n";
-				cout << "Consensus: " << bestCenters[k].first;
+				//cout << "  pushing consensus\n";
+				//cout << "Consensus: " << bestCenters[k].first;
 				
 				#pragma omp critical
 				{
@@ -437,21 +438,20 @@ void KMerClustering::process(string dirprefix, const vector< vector<uint64_t> > 
 	vector< vector< vector<int> > > blocksInPlace(nthreads_);
 
 	#pragma omp parallel for shared(blocksInPlace, classes) num_threads(nthreads_)
-	for (int n=0; n < nthreads_; ++n) {
-		for (uint32_t i=n; i < classes.size(); i+=nthreads_) {
-			blocksInPlace[n].clear();
-			process_block_SIN(classes[i], blocksInPlace[n]);
-			for (uint32_t m = 0; m < blocksInPlace[n].size(); ++m) {
-				if (blocksInPlace[n][m].size() == 0) continue;
-				if (blocksInPlace[n][m].size() == 1) {
-					if (k_[blocksInPlace[n][m][0]].second.count > GOOD_SINGLETON_THRESHOLD) {
-						k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
-					}
-				} else {
+	for (int i=0; i < classes.size(); ++i) {
+		int n = omp_get_thread_num();
+		blocksInPlace[n].clear();
+		process_block_SIN(classes[i], blocksInPlace[n]);
+		for (uint32_t m = 0; m < blocksInPlace[n].size(); ++m) {
+			if (blocksInPlace[n][m].size() == 0) continue;
+			if (blocksInPlace[n][m].size() == 1) {
+				if (k_[blocksInPlace[n][m][0]].second.count > GOOD_SINGLETON_THRESHOLD) {
 					k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
-					for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
-						k_[blocksInPlace[n][m][j]].second.changeto = blocksInPlace[n][m][0];
-					}
+				}
+			} else {
+				k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
+				for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
+					k_[blocksInPlace[n][m][j]].second.changeto = blocksInPlace[n][m][0];
 				}
 			}
 		}

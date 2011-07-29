@@ -25,6 +25,8 @@ class PositionKMer {
 	static uint64_t blob_max_size;
 	static uint64_t blob_size;
 
+	static int64_t* blobkmers;
+
 	static std::vector<uint32_t> * subKMerPositions;
 
 	static bool compareSubKMers( const uint64_t kmer1, const uint64_t kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t offset) {

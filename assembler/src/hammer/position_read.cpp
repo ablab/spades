@@ -32,3 +32,15 @@ const std::string & PositionRead::getQualityString() const {
 	return PositionKMer::rv->at(readno_).getQualityString();
 }
 
+bool PositionRead::nextKMer( std::pair<uint32_t, uint64_t> * it ) const {
+	for ( uint32_t pos = it->first + 1; pos < size_; ++pos ) {
+		if (PositionKMer::blobkmers[ start_ + pos ] >= 0) {
+			it->first = pos;
+			it->second = PositionKMer::blobkmers[ start_ + pos ];
+			return true;
+		}
+	}
+	return false;
+}
+
+

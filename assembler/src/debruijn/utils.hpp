@@ -348,22 +348,24 @@ class NewEtalonPairedInfoCounter {
 			set<PairInfo<EdgeId>>& temporary_info) {
 		int mod_gap = (gap_ > delta_) ? int(gap_) - int(delta_) : 0;
 		Seq<k + 1> left(sequence);
+		0 >> left;
 		for (size_t left_idx = 0; left_idx <= sequence.size() - insert_size_ - gap_; ++left_idx) {
+			left = left << sequence[left_idx + k];
 			size_t right_idx = left_idx + read_length_ + mod_gap;
 			if (!index_.containsInIndex(left)) {
 				continue;
 			}
 			pair<EdgeId, size_t> left_pos = index_.get(left);
 			Seq<k + 1> right(sequence, right_idx);
+			0 >> right;
 			for (; right_idx < left_idx + insert_size_ + gap_ - k && right_idx < sequence.size() - k; ++right_idx) {
+				right << sequence[right_idx + k];
 				pair<EdgeId, size_t> right_pos = index_.get(right);
 				if (!index_.containsInIndex(right)) {
 					continue;
 				}
 				AddEtalonInfo(temporary_info, left_pos.first, right_pos.first, right_idx - left_idx + left_pos.second - right_pos.second);
-				right << sequence[right_idx + k + 1];
 			}
-			left = left << sequence[left_idx + k + 1];
 		}
 	}
 
@@ -604,7 +606,7 @@ public:
  * is mapped to graph ideally and in unique way.
  */
 template<size_t k, class Graph, class Stream>
-class ReadMapper {
+class TemplateReadMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef EdgeIndex<k + 1, Graph> Index;
@@ -613,13 +615,51 @@ private:
 	Stream& stream_;
 public:
 	/**
-	 * Creates ReadMapper for given graph. Also requires index_ which should be synchronized
+	 * Creates TemplateReadMapper for given graph. Also requires index_ which should be synchronized
 	 * with graph.
 	 * @param g graph sequences should be mapped to
 	 * @param index index syncronized with graph
 	 */
-	ReadMapper(const Graph& g, const Index& index, Stream & stream) :
-			read_seq_mapper(g, index), stream_(stream) {
+	TemplateReadMapper(const Graph& g, const Index& index, Stream & stream):
+		read_seq_mapper(g, index), stream_(stream) {
+		stream_.reset();
+	}
+
+	ReadThreaderResult<k + 1, Graph> ThreadNext() {
+		if (!stream_.eof()) {
+			PairedRead p_r;
+			stream_ >> p_r;
+			Sequence read1 = p_r.first().getSequence();
+			Sequence read2 = p_r.second().getSequence();
+			Path<EdgeId> aligned_read[2];
+			aligned_read[0] = read_seq_mapper.MapSequence(read1);
+			aligned_read[1] = read_seq_mapper.MapSequence(read2);
+			size_t distance = p_r.distance();
+			int current_distance1 = distance + aligned_read[0].start_pos()
+					- aligned_read[1].start_pos();
+			return ReadThreaderResult<k + 1, Graph>(aligned_read[0], aligned_read[1], current_distance1);
+		}
+//		else return NULL;
+	}
+
+};
+template<size_t k, class Graph, class Stream>
+class SingleReadMapper {
+public:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef EdgeIndex<k + 1, Graph> Index;
+private:
+	SimpleSequenceMapper<k, Graph> read_seq_mapper;
+	Stream& stream_;
+public:
+	/**
+	 * Creates SingleReadMapper for given graph. Also requires index_ which should be synchronized
+	 * with graph.
+	 * @param g graph sequences should be mapped to
+	 * @param index index syncronized with graph
+	 */
+	SingleReadMapper(const Graph& g, const Index& index, Stream & stream):
+		read_seq_mapper(g, index), stream_(stream) {
 		stream_.reset();
 	}
 

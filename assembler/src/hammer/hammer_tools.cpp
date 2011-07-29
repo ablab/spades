@@ -105,8 +105,9 @@ void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< ve
 			++kmerno;
 		}
 		curKMerCount.second.count++;
-		uint64_t readno = PositionKMer::readNoFromBlobPos( vv[i].index );
-		PositionKMer::pr->at(readno).kmers().insert( make_pair( vv[i].index - PositionKMer::pr->at(readno).start(), kmerno ) );
+		//uint64_t readno = PositionKMer::readNoFromBlobPos( vv[i].index );
+		//PositionKMer::pr->at(readno).kmers().insert( make_pair( vv[i].index - PositionKMer::pr->at(readno).start(), kmerno ) );
+		PositionKMer::blobkmers[ vv[i].index ] = kmerno;
 	}
 	kmers->push_back(curKMerCount);
 
@@ -140,10 +141,12 @@ bool CorrectRead(const vector<KMerCount> & km, uint64_t readno, ofstream * ofs) 
 	v.push_back(vA); v.push_back(vC); v.push_back(vG); v.push_back(vT);
 
 	bool changedRead = false;
-	for (map<uint32_t, uint64_t>::const_iterator it = pr.kmers().begin(); it != pr.kmers().end(); ++it) {
-		const PositionKMer & kmer = km[it->second].first;
-		const uint32_t pos = it->first;
-		const KMerStat & stat = km[it->second].second;
+	pair<uint32_t, uint64_t> it = make_pair( -1, -1 );
+	while ( pr.nextKMer( &it ) ) {
+	//for (map<uint32_t, uint64_t>::const_iterator it = pr.kmers().begin(); it != pr.kmers().end(); ++it) {
+		const PositionKMer & kmer = km[it.second].first;
+		const uint32_t pos = it.first;
+		const KMerStat & stat = km[it.second].second;
 
 		if (stat.changeto == KMERSTAT_GOOD) {
 			for (size_t j=0; j<K; ++j) {
@@ -170,10 +173,12 @@ bool CorrectRead(const vector<KMerCount> & km, uint64_t readno, ofstream * ofs) 
 		}
 	}
 
-	for (map<uint32_t, uint64_t>::const_iterator it = pr_rev.kmers().begin(); it != pr_rev.kmers().end(); ++it) {
-		const PositionKMer & kmer = km[it->second].first;
-		const uint32_t pos = it->first;
-		const KMerStat & stat = km[it->second].second;
+	it = make_pair( -1, -1 );
+	while ( pr_rev.nextKMer( &it ) ) {
+//	for (map<uint32_t, uint64_t>::const_iterator it = pr_rev.kmers().begin(); it != pr_rev.kmers().end(); ++it) {
+		const PositionKMer & kmer = km[it.second].first;
+		const uint32_t pos = it.first;
+		const KMerStat & stat = km[it.second].second;
 		if (stat.changeto == KMERSTAT_GOOD) {
 			for (size_t j=0; j<K; ++j) {
 				v[complement(dignucl(kmer[j]))][read_size-pos-j-1]++;

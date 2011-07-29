@@ -35,6 +35,7 @@ uint64_t PositionKMer::revNo = 0;
 uint64_t PositionKMer::blob_size = 0;
 uint64_t PositionKMer::blob_max_size = 0;
 char * PositionKMer::blob = NULL;
+int64_t * PositionKMer::blobkmers = NULL;
 std::vector<uint32_t> * PositionKMer::subKMerPositions = NULL;
 
 int main(int argc, char * argv[]) {
@@ -70,8 +71,11 @@ int main(int argc, char * argv[]) {
 	cout << "All reads read to memory." << endl;
 
 	PositionKMer::blob = new char[ (uint64_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];
+	PositionKMer::blobkmers = new int64_t[ (uint64_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];	
 	cout << "Allocated blob of size " << (uint64_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) << endl;
-	PositionKMer::blob_max_size = totalReadSize;
+	PositionKMer::blob_size = totalReadSize;
+	PositionKMer::blob_max_size = (uint64_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN));
+	std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
 	
 	PositionKMer::revNo = PositionKMer::rv->size();
 	for (uint64_t i = 0; i < PositionKMer::revNo; ++i) {
@@ -139,8 +143,9 @@ int main(int argc, char * argv[]) {
 
 		// prepare the reads for next iteration
 		// delete consensuses, clear kmer data, and restore correct revcomps
+		kmers.clear();
 		delete PositionKMer::pr;
-		kmc.clear();
+		std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
 
 		PositionKMer::rv->resize( PositionKMer::revNo );
 		cout << PositionKMer::rv->size() << ".  " << endl;

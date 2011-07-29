@@ -29,8 +29,8 @@
 #include "common/read/ireadstream.hpp"
 #include "common/read/read.hpp"
 #include "common/sequence/seq.hpp"
-#include "hammer/kmer_freq_info.hpp"
 #include "hammer/valid_kmer_generator.hpp"
+#define SUPPRESS_UNUSED(X) ((void) (X))
 
 using std::string;
 using std::set;
@@ -43,9 +43,15 @@ using log4cxx::BasicConfigurator;
 
 namespace {
 
+struct KMerInfo {
+  int count;
+  double q_count;
+  double q_inversed_count;
+};
+
 const uint32_t kK = 31;
 typedef Seq<kK> KMer;
-typedef unordered_map<KMer, KMerFreqInfo, KMer::hash> UnorderedMap;
+typedef unordered_map<KMer, KMerInfo, KMer::hash> UnorderedMap;
 
 LoggerPtr logger(Logger::getLogger("preproc"));
 /**
@@ -65,8 +71,6 @@ struct Options {
    * @variable How many files will be used when splitting k-mers.
    */
   uint32_t file_number;
-  bool q_mers;
-  bool q_mer_inverse;
   bool valid;
   Options()
       : qvoffset(0),
@@ -74,25 +78,23 @@ struct Options {
         ofile(""),
         error_threshold(0),
         file_number(3),
-        q_mers(false),
-        q_mer_inverse(false),
         valid(true) {}
 };
 
-void PrintHelp() {
-  printf("Usage: ./preproc qvoffset ifile.fastq ofile.[q]cst file_number error_threshold [[-]q]\n");
+void PrintHelp(char *program_name) {
+  printf("Usage: %s qvoffset ifile.fastq ofile.[q]cst file_number error_threshold\n",
+         program_name);
   printf("Where:\n");
   printf("\tqvoffset\tan offset of fastq quality data\n");
   printf("\tifile.fastq\tan input file with reads in fastq format\n");
   printf("\tofile.[q]cst\ta filename where k-mer statistics will be outputted\n");
   printf("\terror_threshold\tnucliotides with quality lower then threshold will be cut from the ends of reads\n");
   printf("\tfile_number\thow many files will be used when splitting k-mers\n");
-  printf("\t[-]q\t\tif you want to count q-mers instead of k-mers. - if you want to use correct probability\n");
 }
 
 Options ParseOptions(int argc, char *argv[]) {
   Options ret;
-  if (argc != 6 && argc != 7) {
+  if (argc != 6) {
     ret.valid =  false;
   } else {
     ret.qvoffset = atoi(argv[1]);
@@ -102,16 +104,6 @@ Options ParseOptions(int argc, char *argv[]) {
     ret.error_threshold = atoi(argv[4]);
     ret.valid &= (ret.error_threshold >= 0 && ret.error_threshold <= 255);
     ret.file_number = atoi(argv[5]);
-    if (argc == 7) {
-      if (string(argv[6]) == "q") {
-        ret.q_mers = true;
-      } else if (string(argv[6]) == "-q") {
-        ret.q_mers = true;
-        ret.q_mer_inverse = true;
-      } else {
-        ret.valid = false;
-      }
-    }
   }
   return ret;
 }
@@ -126,7 +118,7 @@ Options ParseOptions(int argc, char *argv[]) {
  * one per line.
  */
 void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
-                  bool q_mers, bool inverse, uint8_t error_threshold) {
+                  uint8_t error_threshold) {
   uint32_t file_number = ofiles.size();
   uint64_t read_number = 0;
   while (!ifs.eof()) {
@@ -144,13 +136,8 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
         kmer = !kmer;
       }
       KMer::BinWrite(cur_file, kmer);
-      if (q_mers) {
-        double correct_probability = gen.correct_probability();
-        if (inverse) {
-          correct_probability = 1 / correct_probability;
-        }
-        fwrite(&correct_probability, sizeof(correct_probability), 1, cur_file);
-      }
+      double correct_probability = gen.correct_probability();
+      fwrite(&correct_probability, sizeof(correct_probability), 1, cur_file);
     }
   }
 }
@@ -162,33 +149,33 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
  * @param ofile Output file. For each unique k-mer there will be a
  * line with k-mer itself and number of its occurrences.
  */
-template<typename KMerStatMap>
-void EvalFile(FILE *ifile, FILE *ofile, bool q_mers) {
-  KMerStatMap stat_map;
+void EvalFile(FILE *ifile, FILE *ofile) {
+  UnorderedMap stat_map;
   char buffer[kK + 1];
   buffer[kK] = 0;
   KMer kmer;
   while (KMer::BinRead(ifile, &kmer)) {
-    KMerFreqInfo &info = stat_map[kmer];
-    if (q_mers) {
-      double correct_probability = -1;
-      bool readed = 
-          fread(&correct_probability, sizeof(correct_probability),
-                1, ifile);
-      assert(readed == 1);
-      info.q_count += correct_probability;
-    } else {
-      info.count += 1;
+    KMerInfo &info = stat_map[kmer];
+    double correct_probability = -1;
+    bool readed = 
+        fread(&correct_probability, sizeof(correct_probability),
+              1, ifile);
+    assert(readed == 1);
+    SUPPRESS_UNUSED(readed);
+    double inversed_probability = 1 / correct_probability;
+    // ToDo 0.5 threshold ==>> command line option
+    if (correct_probability < 0.5) {
+      inversed_probability = 0;
     }
+    info.q_count += correct_probability;
+    info.count += 1;    
+    info.q_inversed_count += inversed_probability;
   }
-  for (typename KMerStatMap::iterator it = stat_map.begin();
+  for (UnorderedMap::iterator it = stat_map.begin();
        it != stat_map.end(); ++it) {
-    fprintf(ofile, "%s ", it->first.str().c_str());
-    if (q_mers) {
-      fprintf(ofile, "%f\n", it->second.q_count);
-    } else {
-      fprintf(ofile, "%d\n", it->second.count);
-    }
+    const KMerInfo &info = it->second;
+    fprintf(ofile, "%s %d %f %f\n", it->first.str().c_str(),
+            info.count, info.q_count, info.q_inversed_count);
   }
 }
 }
@@ -196,7 +183,7 @@ void EvalFile(FILE *ifile, FILE *ofile, bool q_mers) {
 int main(int argc, char *argv[]) {
   Options opts = ParseOptions(argc, argv);
   if (!opts.valid) {
-    PrintHelp();
+    PrintHelp(argv[0]);
     return 1;
   }
   BasicConfigurator::configure();
@@ -210,8 +197,7 @@ int main(int argc, char *argv[]) {
     assert(ofiles[i] != NULL && "Too many files to open");
   }
   SplitToFiles(ireadstream(opts.ifile, opts.qvoffset), 
-               ofiles, opts.q_mers, opts.q_mer_inverse,
-               opts.error_threshold);
+               ofiles, opts.error_threshold);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     fclose(ofiles[i]);
   }
@@ -222,7 +208,7 @@ int main(int argc, char *argv[]) {
     snprintf(ifile_name, sizeof(ifile_name), "%u.kmer.part", i);
     FILE *ifile = fopen(ifile_name, "rb");
     LOG4CXX_INFO(logger, "Processing " << ifile_name << ".");
-    EvalFile<UnorderedMap>(ifile, ofile, opts.q_mers);
+    EvalFile(ifile, ofile);
     LOG4CXX_INFO(logger, "Processed " << ifile_name << ".");
     fclose(ifile);
   }
