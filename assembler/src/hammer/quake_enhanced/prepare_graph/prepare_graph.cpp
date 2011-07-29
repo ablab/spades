@@ -88,10 +88,12 @@ int main(int argc, char *argv[]) {
   Map freq_to_num;
   char kmer[kMaxK];
   char format[20];
-  snprintf(format, sizeof(format), "%%%ds%%f", kMaxK);
+  snprintf(format, sizeof(format), "%%%ds%%d%%f%%f", kMaxK);
   float freq = -1;
+  int count;
+  float q_count;
   uint64_t read_number = 0;
-  while (fscanf(ifile, format, kmer, &freq) != EOF) {
+  while (fscanf(ifile, format, kmer, &count, &q_count, &freq) != EOF) {
     ++read_number;
     if (read_number % kStep == 0) {
       LOG4CXX_INFO(logger, "Reading k-mer " << read_number << ".");
