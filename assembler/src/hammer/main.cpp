@@ -36,6 +36,7 @@ uint64_t PositionKMer::revNo = 0;
 uint64_t PositionKMer::blob_size = 0;
 uint64_t PositionKMer::blob_max_size = 0;
 char * PositionKMer::blob = NULL;
+std::vector<uint32_t> * PositionKMer::subKMerPositions = NULL;
 
 int main(int argc, char * argv[]) {
 	if (argc < 6 || argc > 7) {
@@ -56,6 +57,12 @@ int main(int argc, char * argv[]) {
 	int nthreads = atoi(argv[5]);
 	
 	int iterno = 1; if (argc > 6) iterno = atoi(argv[6]);
+
+	// initialize subkmer positions
+	PositionKMer::subKMerPositions = new std::vector<uint32_t>(tau + 2);
+	for (uint32_t i=0; i < tau+1; ++i) PositionKMer::subKMerPositions->at(i) = (uint32_t)(i * K / (tau+1) );
+	PositionKMer::subKMerPositions->at(tau+1) = K;
+	cout << "SubKMer positions: "; for (uint32_t i=0; i < tau+2; ++i) cout << PositionKMer::subKMerPositions->at(i) << " "; cout << endl;
 
 	cout << "Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K << endl;
 
@@ -90,26 +97,14 @@ int main(int argc, char * argv[]) {
 		cout << "Filled up blob. Real size " << curpos << "." << endl;
 		PositionKMer::blob_size = curpos;
 	
-		//vector<KMerStatMap> vv;
 		vector<KMerNo> vv;
 		DoPreprocessing(tau, qvoffset, readsFilename, nthreads, &vv);
 		cout << "Got " << vv.size() << " kmer positions.\n";
 		sort ( vv.begin(), vv.end(), KMerNo::less );
-		/*for ( size_t i=0; i < vv.size(); ++i ) {
-			cout << "  " << vv[i].index << " ";
-			for ( size_t j=0; j < K; ++j ) cout << PositionKMer::blob[ vv[i].index + j ];
-			cout << endl;
-		}
-		cout << endl;*/
 
-		//ReadStatMapContainer rmsc(vv);
-		//cout << "Got RMSC of size " << rmsc.size() << "\n";
-		
 		vector< vector<uint64_t> > vs(tau+1);
 		vector<KMerCount> kmers;
 		DoSplitAndSort(tau, nthreads, vv, &vs, &kmers);
-		// free up memory
-		//for (uint32_t i=0; i < vv.size(); ++i) vv[i].clear(); 
 		vv.clear();
 		
 		KMerClustering kmc(kmers, nthreads, tau);
