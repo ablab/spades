@@ -170,6 +170,7 @@ double KMerClustering::clusterLogLikelihood(const vector<int> & cl, const vector
 
 double KMerClustering::lMeansClustering(int l, vector< vector<int> > & distances, const vector<int> & kmerinds, vector<int> & indices, vector<StringCount> & centers) {
 	centers.resize(l); // there are l centers
+
 	// if l==1 then clustering is trivial
 	if (l == 1) {
 		centers[0].first = find_consensus(kmerinds);
@@ -352,8 +353,8 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 				}
 			}
 			if (!centerInCluster) {
-				cout << "  pushing consensus\n";
-				cout << "Consensus: " << bestCenters[k].first;
+				//cout << "  pushing consensus\n";
+				//cout << "Consensus: " << bestCenters[k].first;
 				
 				#pragma omp critical
 				{
