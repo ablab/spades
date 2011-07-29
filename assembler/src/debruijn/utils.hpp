@@ -539,7 +539,7 @@ public:
  * is mapped to graph ideally and in unique way.
  */
 template<size_t k, class Graph, class Stream>
-class ReadMapper {
+class TemplateReadMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef EdgeIndex<k + 1, Graph> Index;
@@ -548,12 +548,50 @@ private:
 	Stream& stream_;
 public:
 	/**
-	 * Creates ReadMapper for given graph. Also requires index_ which should be synchronized
+	 * Creates TemplateReadMapper for given graph. Also requires index_ which should be synchronized
 	 * with graph.
 	 * @param g graph sequences should be mapped to
 	 * @param index index syncronized with graph
 	 */
-	ReadMapper(const Graph& g, const Index& index, Stream & stream):
+	TemplateReadMapper(const Graph& g, const Index& index, Stream & stream):
+		read_seq_mapper(g, index), stream_(stream) {
+		stream_.reset();
+	}
+
+	ReadThreaderResult<k + 1, Graph> ThreadNext() {
+		if (!stream_.eof()) {
+			PairedRead p_r;
+			stream_ >> p_r;
+			Sequence read1 = p_r.first().getSequence();
+			Sequence read2 = p_r.second().getSequence();
+			Path<EdgeId> aligned_read[2];
+			aligned_read[0] = read_seq_mapper.MapSequence(read1);
+			aligned_read[1] = read_seq_mapper.MapSequence(read2);
+			size_t distance = p_r.distance();
+			int current_distance1 = distance + aligned_read[0].start_pos()
+					- aligned_read[1].start_pos();
+			return ReadThreaderResult<k + 1, Graph>(aligned_read[0], aligned_read[1], current_distance1);
+		}
+//		else return NULL;
+	}
+
+};
+template<size_t k, class Graph, class Stream>
+class SingleReadMapper {
+public:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef EdgeIndex<k + 1, Graph> Index;
+private:
+	SimpleSequenceMapper<k, Graph> read_seq_mapper;
+	Stream& stream_;
+public:
+	/**
+	 * Creates SingleReadMapper for given graph. Also requires index_ which should be synchronized
+	 * with graph.
+	 * @param g graph sequences should be mapped to
+	 * @param index index syncronized with graph
+	 */
+	SingleReadMapper(const Graph& g, const Index& index, Stream & stream):
 		read_seq_mapper(g, index), stream_(stream) {
 		stream_.reset();
 	}
