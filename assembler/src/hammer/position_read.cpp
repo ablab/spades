@@ -1,0 +1,34 @@
+#include <vector>
+#include "position_kmer.hpp"
+#include "position_read.hpp"
+
+char PositionRead::at(uint32_t pos) const {
+	return PositionKMer::blob[ start_ + pos ];
+}
+
+char PositionRead::operator [] (uint32_t pos) const {
+	return PositionKMer::blob[ start_ + pos ];
+}
+
+void PositionRead::print(ofstream & outf, int offset) const {
+	outf << "@" << getName().data() << "\n";
+	for (uint32_t i = 0; i < size_; ++i) outf << PositionKMer::blob[ start_ + i ];
+	outf << "\n+" << getName().data() << "\n" << getPhredQualityString( offset ) << "\n";
+}
+
+std::string PositionRead::getPhredQualityString(int offset) const {
+	return PositionKMer::rv->at(readno_).getPhredQualityString(offset);
+}
+
+const std::string & PositionRead::getName() const {
+	return PositionKMer::rv->at(readno_).getName();
+}
+
+const std::string & PositionRead::getSequenceString() const {
+	return PositionKMer::rv->at(readno_).getSequenceString();
+}
+
+const std::string & PositionRead::getQualityString() const {
+	return PositionKMer::rv->at(readno_).getQualityString();
+}
+

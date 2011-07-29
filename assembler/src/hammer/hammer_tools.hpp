@@ -35,31 +35,19 @@ void join_maps(KMerStatMap & v1, const KMerStatMap & v2);
  * add k-mers from read to map
  */
 template<uint32_t kK, typename KMerStatMap>
-void AddKMers(const Read &r, uint64_t readno, KMerStatMap *v);
+void AddKMers(const PositionRead &r, uint64_t readno, KMerStatMap *v);
 
-class ReadStatMapContainer {
-public:
-	ReadStatMapContainer(const vector<KMerStatMap> & vv) : v_(vv) { init(); }
+void AddKMerNos(const PositionRead &r, uint64_t readno, vector<KMerNo> *v);
 
-	void init();
-	KMerCount next();
-	size_t size();
-	
-private:
-	const vector<KMerStatMap> & v_;
-	vector<KMerStatMap::const_iterator> i_;
 
-	const KMerStatMap::const_iterator & cur_min();
-};
-
-void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerStatMap> * vv);
-void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rmsc, vector< vector<uint64_t> > * vs, vector<KMerCount> * kmers);
+void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerNo> * vv);
+void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< vector<uint64_t> > * vs, vector<KMerCount> * kmers);
 
 /**
   * correct a read in place
   * @return whether the read has changed at all
   */
-bool CorrectRead(const vector<KMerCount> & kmers, ReadStat * r, ReadStat * r_rev, ofstream * ofs = NULL);
+bool CorrectRead(const vector<KMerCount> & kmers, uint64_t readno, ofstream * ofs = NULL);
 
 #endif
 

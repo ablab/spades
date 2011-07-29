@@ -22,7 +22,6 @@
 #include <unordered_set>
 
 #include "read/ireadstream.hpp"
-#include "hammer_config.hpp"
 #include "hammer_tools.hpp"
 #include "kmer_cluster.hpp"
 #include "position_kmer.hpp"
@@ -30,17 +29,24 @@
 
 using namespace std;
 
-std::vector<ReadStat> * PositionKMer::rv = NULL;
+std::vector<Read> * PositionKMer::rv = NULL;
+std::vector<PositionRead> * PositionKMer::pr = NULL;
 uint64_t PositionKMer::revNo = 0;
 uint64_t PositionKMer::blob_size = 0;
 uint64_t PositionKMer::blob_max_size = 0;
 char * PositionKMer::blob = NULL;
+std::vector<uint32_t> * PositionKMer::subKMerPositions = NULL;
 
 int main(int argc, char * argv[]) {
 	if (argc < 6 || argc > 7) {
 		cout << "Usage: ./main tau qvoffset readsFilename dirprefix nthreads [iterno]\n";
 		return 0;
 	}
+
+	cout << "sizeof( uint64_t ) = " << sizeof(uint64_t) << endl;
+	cout << "sizeof( KMerStat ) = " << sizeof(KMerStat) << endl;
+	cout << "sizeof( PositionRead ) = " << sizeof(PositionRead) << endl;
+	cout << "sizeof( PositionKMer ) = " << sizeof(PositionKMer) << endl;
 
 	int tau = atoi(argv[1]);
 	int qvoffset = atoi(argv[2]);
@@ -50,6 +56,12 @@ int main(int argc, char * argv[]) {
 	int nthreads = atoi(argv[5]);
 	
 	int iterno = 1; if (argc > 6) iterno = atoi(argv[6]);
+
+	// initialize subkmer positions
+	PositionKMer::subKMerPositions = new std::vector<uint32_t>(tau + 2);
+	for (uint32_t i=0; i < tau+1; ++i) PositionKMer::subKMerPositions->at(i) = (uint32_t)(i * K / (tau+1) );
+	PositionKMer::subKMerPositions->at(tau+1) = K;
+	cout << "SubKMer positions: "; for (uint32_t i=0; i < tau+2; ++i) cout << PositionKMer::subKMerPositions->at(i) << " "; cout << endl;
 
 	cout << "Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K << endl;
 
@@ -63,41 +75,40 @@ int main(int argc, char * argv[]) {
 	
 	PositionKMer::revNo = PositionKMer::rv->size();
 	for (uint64_t i = 0; i < PositionKMer::revNo; ++i) {
-		ReadStat rs; rs.read = !(PositionKMer::rv->at(i).read);
-		PositionKMer::rv->push_back( rs );
+		Read revcomp = !(PositionKMer::rv->at(i));
+		PositionKMer::rv->push_back( revcomp );
 	}
 	cout << "Reverse complementary reads added.\n";
-
-	uint64_t curpos = 0;
-	for (uint64_t i = 0; i < PositionKMer::rv->size(); ++i) {
-		PositionKMer::rv->at(i).blobpos = curpos;
-		for (uint32_t j=0; j < PositionKMer::rv->at(i).read.size(); ++j) 
-			PositionKMer::blob[ curpos + j ] = PositionKMer::rv->at(i).read.getSequenceString()[j];
-		curpos += PositionKMer::rv->at(i).read.size();
-	}
-	cout << "Filled up blob. Real size " << curpos << "." << endl;
-	PositionKMer::blob_size = curpos;
 	
 	for (int iter_count = 0; iter_count < iterno; ++iter_count) {
 		cout << "\n     === ITERATION " << iter_count << " ===" << endl;
+
+		PositionKMer::pr = new vector<PositionRead>();
+		uint64_t curpos = 0;
+
+		for (uint64_t i = 0; i < PositionKMer::rv->size(); ++i) {
+			PositionRead pread(curpos, PositionKMer::rv->at(i).size(), i);
+			PositionKMer::pr->push_back(pread);
+			for (uint32_t j=0; j < PositionKMer::rv->at(i).size(); ++j) 
+				PositionKMer::blob[ curpos + j ] = PositionKMer::rv->at(i).getSequenceString()[j];
+			curpos += PositionKMer::rv->at(i).size();
+		}
+		cout << "Filled up blob. Real size " << curpos << "." << endl;
+		PositionKMer::blob_size = curpos;
 	
-		vector<KMerStatMap> vv;
+		vector<KMerNo> vv;
 		DoPreprocessing(tau, qvoffset, readsFilename, nthreads, &vv);
-		ReadStatMapContainer rmsc(vv);
-		cout << "Got RMSC of size " << rmsc.size() << "\n";
-		
+		cout << "Got " << vv.size() << " kmer positions.\n";
+		sort ( vv.begin(), vv.end(), KMerNo::less );
+
 		vector< vector<uint64_t> > vs(tau+1);
 		vector<KMerCount> kmers;
-		DoSplitAndSort(tau, nthreads, rmsc, &vs, &kmers);
-		cout << "Got " << kmers.size() << " kmers.\n";
-		// free up memory
-		for (uint32_t i=0; i < vv.size(); ++i) vv[i].clear(); vv.clear();
+		DoSplitAndSort(tau, nthreads, vv, &vs, &kmers);
+		vv.clear();
 		
 		KMerClustering kmc(kmers, nthreads, tau);
 		// prepare the maps
 		kmc.process(dirprefix, vs);
-		// free up memory
-		kmc.clear();
 		cout << "Finished clustering." << endl;
 
 		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
@@ -109,7 +120,7 @@ int main(int argc, char * argv[]) {
 
 		#pragma omp parallel for shared(changed, outfv) num_threads(nthreads)
 		for (int i = 0; i < PositionKMer::revNo; ++i) {
-			bool res = CorrectRead(kmers, &(PositionKMer::rv->at(i)), &(PositionKMer::rv->at(i + PositionKMer::revNo)), outfv[omp_get_thread_num()]);
+			bool res = CorrectRead(kmers, i, outfv[omp_get_thread_num()]);
 			changed[omp_get_thread_num()] = changed[omp_get_thread_num()] || res;
 		}
 		bool res = false;
@@ -122,18 +133,19 @@ int main(int argc, char * argv[]) {
 	
 		ofstream outf; outf.open(dirprefix + "/" + (char)((int)'0' + iter_count) + ".reads.corrected");	
 		for (uint64_t i = 0; i < PositionKMer::revNo; ++i) {
-			outf << "@" << PositionKMer::rv->at(i).read.getName() << endl << PositionKMer::rv->at(i).read.getSequenceString().data() << endl << "+" << PositionKMer::rv->at(i).read.getName() << endl << PositionKMer::rv->at(i).read.getPhredQualityString(qvoffset) << endl;		
+			PositionKMer::pr->at(i).print(outf, qvoffset);
 		}
 		outf.close();
 
 		// prepare the reads for next iteration
 		// delete consensuses, clear kmer data, and restore correct revcomps
+		delete PositionKMer::pr;
+		kmc.clear();
+
 		PositionKMer::rv->resize( PositionKMer::revNo );
-		cout << PositionKMer::rv->size() << "." << endl;
+		cout << PositionKMer::rv->size() << ".  " << endl;
 		for (uint64_t i = 0; i < PositionKMer::revNo; ++i) {
-			PositionKMer::rv->at(i).kmers.clear();
-			ReadStat rs; rs.read = !(PositionKMer::rv->at(i).read);
-			PositionKMer::rv->push_back( rs );
+			PositionKMer::rv->push_back( !(PositionKMer::rv->at(i)) );
 		}
 		cout << "Reads restored." << endl;
 	
@@ -144,8 +156,8 @@ int main(int argc, char * argv[]) {
 
 	} // iterations
 
-	//delete [] PositionKMer::rv;
-	//delete [] PositionKMer::blob;
+	PositionKMer::rv->clear();
+	delete PositionKMer::rv;
 	return 0;
 }
 

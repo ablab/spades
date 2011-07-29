@@ -84,6 +84,10 @@ public:
 		return "";
 	}
 
+	const size_t length(EdgeData data) const {
+		return data.nucls_.size() - k_;
+	}
+
 };
 
 class ConjugateDeBruijnGraph: public AbstractConjugateGraph<VertexData,
@@ -151,10 +155,6 @@ public:
 		return data(edge).nucls();
 	}
 
-	const size_t length(EdgeId edge) const {
-		return data(edge).nucls_.size() - k_;
-	}
-
 	using super::AddVertex;
 	using super::AddEdge;
 
@@ -178,13 +178,13 @@ public:
 		}
 		assert(false);
 	}
-//TODO:
-/* It seems, that these two functions must be called  default_label, and str must sign lower two. */
+	//TODO:
+	/* It seems, that these two functions must be called  default_label, and str must sign lower two. */
 	std::string str(EdgeId edge) const {
 		//		return " ";
 
 		stringstream ss;
-		ss << /*edge << " " << */ length(edge) << "(" << coverage(edge) << ")";
+		ss << /*edge << " " << */length(edge) << "(" << coverage(edge) << ")";
 		return ss.str();
 
 	}
@@ -193,29 +193,33 @@ public:
 		return " ";
 	}
 
-	std::string toPrint(VertexId v, IdTrackHandler<ConjugateDeBruijnGraph> &id_handler) const {
+	std::string toPrint(VertexId v,
+			IdTrackHandler<ConjugateDeBruijnGraph> &id_handler) const {
 		stringstream ss;
-		ss << "Vertex " << id_handler.ReturnIntId(v) << " ~ " <<id_handler.ReturnIntId(conjugate(v)) << " .";
+		ss << "Vertex " << id_handler.ReturnIntId(v) << " ~ "
+				<< id_handler.ReturnIntId(conjugate(v)) << " .";
 		return ss.str();
 	}
 
-	std::string toPrint(EdgeId e, IdTrackHandler<ConjugateDeBruijnGraph> &id_handler) const {
+	std::string toPrint(EdgeId e,
+			IdTrackHandler<ConjugateDeBruijnGraph> &id_handler) const {
 		stringstream ss;
-		ss << "Edge " << id_handler.ReturnIntId(e) <<" : " << id_handler.ReturnIntId(EdgeStart(e)) << " -> " << id_handler.ReturnIntId(EdgeEnd(e))<<", l = "<< length(e) << " ~ " << id_handler.ReturnIntId(conjugate(e)) <<" .";
+		ss << "Edge " << id_handler.ReturnIntId(e) << " : "
+				<< id_handler.ReturnIntId(EdgeStart(e)) << " -> "
+				<< id_handler.ReturnIntId(EdgeEnd(e)) << ", l = " << length(e)
+				<< " ~ " << id_handler.ReturnIntId(conjugate(e)) << " .";
 		return ss.str();
 	}
-
 
 };
 
-class NonconjugateDeBruijnGraph: public AbstractNonconjugateGraph<
-		VertexData, EdgeData, DeBruijnMaster> {
+class NonconjugateDeBruijnGraph: public AbstractNonconjugateGraph<VertexData,
+		EdgeData, DeBruijnMaster> {
 private:
 	typedef AbstractNonconjugateGraph<VertexData, EdgeData, DeBruijnMaster>
 			super;
 	const size_t k_;
-	CoverageIndex<NonconjugateDeBruijnGraph>* coverage_index_;
-	DECL_LOGGER("NonconjugateDeBruijnGraph")
+	CoverageIndex<NonconjugateDeBruijnGraph>* coverage_index_;DECL_LOGGER("NonconjugateDeBruijnGraph")
 
 public:
 	NonconjugateDeBruijnGraph(size_t k) :
@@ -234,10 +238,6 @@ public:
 		return data(edge).nucls();
 	}
 
-	const size_t length(EdgeId edge) const {
-		return data(edge).nucls_.size() - k_;
-	}
-
 	size_t k() const {
 		return k_;
 	}
@@ -247,7 +247,8 @@ public:
 			return EdgeNucls(OutgoingEdges(v)[0]).Subseq(0, k_);
 		} else if (IncomingEdges(v).size() > 0) {
 			EdgeId inc = IncomingEdges(v)[0];
-			return EdgeNucls(inc).Subseq(length(inc) - k_, length(inc));
+			size_t length = EdgeNucls(inc).size();
+			return EdgeNucls(inc).Subseq(length - k_, length);
 		}
 		assert(false);
 	}
@@ -298,9 +299,8 @@ public:
 
 	std::string str(EdgeId edge) const {
 		//		return " ";
-
 		stringstream ss;
-		ss << length(edge) << "(" << coverage(edge) << ")";
+		ss << master_.length(data(edge)) << "(" << coverage(edge) << ")";
 		return ss.str();
 
 	}
@@ -309,15 +309,17 @@ public:
 		return " ";
 	}
 
-	std::string toPrint(VertexId v, IdTrackHandler<NonconjugateDeBruijnGraph> &id_handler) const {
+	std::string toPrint(VertexId v,
+			IdTrackHandler<NonconjugateDeBruijnGraph> &id_handler) const {
 		stringstream ss;
 		ss << "Vertex " << id_handler.ReturnIntId(v) << " .";
 		return ss.str();
 	}
 
-	std::string toPrint(EdgeId e, IdTrackHandler<NonconjugateDeBruijnGraph> &id_handler) const {
+	std::string toPrint(EdgeId e,
+			IdTrackHandler<NonconjugateDeBruijnGraph> &id_handler) const {
 		stringstream ss;
-		ss << "Edge " << id_handler.ReturnIntId(e) <<" : " << id_handler.ReturnIntId(EdgeStart(e)) << " -> " << id_handler.ReturnIntId(EdgeEnd(e))<<", l = "<< length(e) <<" .";
+		ss << "Edge " << id_handler.ReturnIntId(e) <<" : " << id_handler.ReturnIntId(EdgeStart(e)) << " -> " << id_handler.ReturnIntId(EdgeEnd(e))<<", l = "<< master_.length(data(e)) <<" .";
 		return ss.str();
 	}
 

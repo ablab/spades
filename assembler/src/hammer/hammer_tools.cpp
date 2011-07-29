@@ -43,67 +43,19 @@ void join_maps(KMerStatMap & v1, const KMerStatMap & v2) {
 			itf->second.count = itf->second.count + it->second.count;
 		} else {
 			PositionKMer pkm = it->first;
-			KMerStat kms; kms.count = it->second.count;
+			KMerStat kms( it->second.count, KMERSTAT_GOOD );
 			v1.insert( make_pair( pkm, kms ) );
 		}
 	}
-}
-
-
-size_t ReadStatMapContainer::size() {
-	size_t res = 0;
-	for (size_t i=0; i < v_.size(); ++i) {
-		res += v_[i].size();
-	}
-	return res;
-}
-void ReadStatMapContainer::init() {
-	i_.clear();
-	for (size_t i=0; i<v_.size(); ++i) {
-		i_.push_back(v_[i].begin());
-	}
-}
-
-KMerCount ReadStatMapContainer::next() {
-	KMerStatMap::const_iterator imin = cur_min();
-	if (imin == v_[0].end() ) {
-		//cout << "!end" << endl;
-		KMerCount p( make_pair(PositionKMer(0,0), KMerStat()) );
-		p.second.count = MAX_INT_64;
-		//cout << "!!end" << endl;
-		return p;
-	}
-	KMerCount p = *imin;
-	p.first = imin->first; p.second.count = 0;
-	for (size_t i=0; i<v_.size(); ++i) {
-		if (i_[i]->first == p.first) {
-			p.second.count += i_[i]->second.count;
-			p.second.pos.insert(p.second.pos.end(), i_[i]->second.pos.begin(), i_[i]->second.pos.end());
-			++i_[i];
-		}
-	}
-	return p;
-}
-
-const KMerStatMap::const_iterator & ReadStatMapContainer::cur_min() {
-	int min=0; //cout << (i_[min] == v_[min].end()) << endl;
-	for (size_t i=1; i<v_.size(); ++i) {
-		if (i_[i] != v_[i].end()) {
-			if (i_[min] == v_[min].end() || i_[i]->first < i_[min]->first) {
-				min = i;
-			}
-		}
-	}
-	//cout << min << "  " << (i_[min] == v_[min].end()) << endl;
-	return i_[min];
 }
 
 /**
  * add k-mers from read to map
  */
 template<uint32_t kK, typename KMerStatMap>
-void AddKMers(const Read &r, uint64_t readno, KMerStatMap *v) {
-	ValidKMerGenerator<K> gen(r);
+void AddKMers(const PositionRead &r, uint64_t readno, KMerStatMap *v) {
+	string s = r.getSequenceString();
+	ValidKMerGenerator<K> gen(r, s);
 	while (gen.HasMore()) {
 		PositionKMer pkm(readno, gen.pos() - 1);
 		++(*v)[pkm].count;
@@ -112,61 +64,75 @@ void AddKMers(const Read &r, uint64_t readno, KMerStatMap *v) {
 	}
 }
 
-void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerStatMap> * vv) {
-	vv->clear();
-	//for (int i=0; i<nthreads; ++i) {
-		KMerStatMap v; v.clear();
-		vv->push_back(v);
-	//}
+/**
+ * add k-mers from read to vector
+ */
+void AddKMerNos(const PositionRead &r, uint64_t readno, vector<KMerNo> *v) {
+	string s = r.getSequenceString();
+	ValidKMerGenerator<K> gen(r, s);
+	while (gen.HasMore()) {
+		v->push_back( PositionKMer::pr->at(readno).start() + gen.pos() - 1 );
+		gen.Next();
+	}
+}
 
-	cout << "Starting preproc.\n";
+void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerNo> * vv) {
+	vv->clear();
+	cout << "Starting preproc. " << PositionKMer::pr->size() << " reads.\n";
 
 	// TODO: think about a parallelization -- for some reason, the previous version started producing segfaults
 
-	for(int i=0; i < PositionKMer::rv->size(); ++i) {
-		AddKMers<K, KMerStatMap>(PositionKMer::rv->at(i).read, i, &(vv->at(0)));
+	for(size_t i=0; i < PositionKMer::pr->size(); ++i) {
+		AddKMerNos(PositionKMer::pr->at(i), i, vv);
 		if ( i % 1000000 == 0 ) cout << "Processed " << i << " reads." << endl;
-	}
-	
+	}	
 	cout << "All k-mers added to maps." << endl;
-	//for (int i=0; i<nthreads; ++i) {
-		cout << "map " << 0 << " size = " << vv->size() << endl;
-	//}
-
 }
 
-void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rsmc, vector< vector<uint64_t> > * vs, vector<KMerCount> * kmers) {
-	int effective_threads = min(nthreads, tau+1);	
+void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< vector<uint64_t> > * vs, vector<KMerCount> * kmers) {
+	int effective_threads = min(nthreads, tau+1);
 	uint64_t kmerno = 0;
 	kmers->clear();
 	cout << "Starting split and sort..." << endl;
 
-	for (KMerCount p = rsmc.next(); p.second.count < MAX_INT_64; p = rsmc.next()) {
-		kmers->push_back(p);
-		for (uint32_t j=0; j<p.second.pos.size(); ++j) {
-			PositionKMer::rv->at(p.second.pos[j].first).kmers.insert( make_pair(p.second.pos[j].second, kmerno) );
+	KMerNo curKMer = vv[0];
+	KMerCount curKMerCount = make_pair( PositionKMer(vv[0].index), KMerStat(0, KMERSTAT_GOOD) );
+	for (uint64_t i = 0; i < vv.size(); ++i) {
+		if ( !curKMer.equal(vv[i]) ) {
+			kmers->push_back(curKMerCount);
+			curKMer = vv[i];
+			curKMerCount = make_pair( PositionKMer(vv[i].index), KMerStat(0, KMERSTAT_GOOD) );
+			++kmerno;
 		}
-		++kmerno;
+		curKMerCount.second.count++;
+		uint64_t readno = PositionKMer::readNoFromBlobPos( vv[i].index );
+		PositionKMer::pr->at(readno).kmers().insert( make_pair( vv[i].index - PositionKMer::pr->at(readno).start(), kmerno ) );
 	}
-	cout << "Auxiliary vectors loaded. In total, we have " << kmerno << " kmers." << endl;
+	kmers->push_back(curKMerCount);
+
+	cout << "Auxiliary vectors loaded. In total, we have " << kmers->size() << " kmers." << endl;
 
 	#pragma omp parallel for shared(vs, kmers, tau) num_threads(effective_threads)
 	for (int j=0; j<tau+1; ++j) {
 		vs->at(j).resize( kmers->size() );
 		for (size_t m = 0; m < kmers->size(); ++m) vs->at(j)[m] = m;
 
+		cout << j << " " << vs->at(j).size() << " iter=" << (size_t)(&vs->at(j)) << endl;
+
 		sort(vs->at(j).begin(), vs->at(j).end(), boost::bind(PositionKMer::compareSubKMers, _1, _2, kmers, tau, j));
-		//cout << "SubVector " << j << ":" << endl;
-		//for (size_t m = 0; m < vs->at(j).size(); ++m ) cout << "  " << vs->at(j)[m] << "  " << kmers->at(vs->at(j)[m]).first.strSub(tau, j) << endl;
+		cout << "Sorted auxiliary vector " << j << endl;
 	}
 	cout << "Auxiliary vectors sorted." << endl;
 }
 
 
-bool CorrectRead(const vector<KMerCount> & km, ReadStat * r, ReadStat * r_rev, ofstream * ofs) {
-	string seq = r->read.getSequenceString();
-	const uint32_t read_size = r->read.size();
-//	cout << "Correcting " << r->read.getName() << "\n" << seq.data() << endl;
+bool CorrectRead(const vector<KMerCount> & km, uint64_t readno, ofstream * ofs) {
+	uint64_t readno_rev = PositionKMer::revNo + readno;
+	const Read & r = PositionKMer::rv->at(readno);
+	string seq = r.getSequenceString();
+	const uint32_t read_size = PositionKMer::rv->at(readno).size();
+	PositionRead & pr = PositionKMer::pr->at(readno);
+	PositionRead & pr_rev = PositionKMer::pr->at(readno_rev);
 
 	// create auxiliary structures for consensus
 	vector<int> vA(read_size, 0), vC(read_size, 0), vG(read_size, 0), vT(read_size, 0);
@@ -174,22 +140,19 @@ bool CorrectRead(const vector<KMerCount> & km, ReadStat * r, ReadStat * r_rev, o
 	v.push_back(vA); v.push_back(vC); v.push_back(vG); v.push_back(vT);
 
 	bool changedRead = false;
-	for (map<uint32_t, uint64_t>::const_iterator it = r->kmers.begin(); it != r->kmers.end(); ++it) {
+	for (map<uint32_t, uint64_t>::const_iterator it = pr.kmers().begin(); it != pr.kmers().end(); ++it) {
 		const PositionKMer & kmer = km[it->second].first;
 		const uint32_t pos = it->first;
 		const KMerStat & stat = km[it->second].second;
 
-		if (stat.good == true) {
+		if (stat.changeto == KMERSTAT_GOOD) {
 			for (size_t j=0; j<K; ++j) {
 				v[dignucl(kmer[j])][pos+j]++;
 			}
 
 		} else {
-			if (stat.change == true) {
+			if (stat.changeto < KMERSTAT_CHANGE) {
 				const PositionKMer & newkmer = km[ stat.changeto ].first;
-				
-//				for (size_t j=0; j<pos; ++j) cout << " ";
-//				cout << newkmer.str().data() << "\n";
 				
 				for (size_t j=0; j<K; ++j) {
 					v[dignucl(newkmer[j])][pos+j]++;
@@ -197,7 +160,7 @@ bool CorrectRead(const vector<KMerCount> & km, ReadStat * r, ReadStat * r_rev, o
 				// pretty print the k-mer
 				if (!changedRead) {
 					changedRead = true;
-					if (ofs != NULL) *ofs << "\n " << r->read.getName() << "\n" << r->read.getSequenceString().data() << "\n";
+					if (ofs != NULL) *ofs << "\n " << r.getName() << "\n" << seq.data() << "\n";
 				}
 				if (ofs != NULL) {
 					for (size_t j=0; j<pos; ++j) *ofs << " ";
@@ -207,11 +170,11 @@ bool CorrectRead(const vector<KMerCount> & km, ReadStat * r, ReadStat * r_rev, o
 		}
 	}
 
-	for (map<uint32_t, uint64_t>::const_iterator it = r_rev->kmers.begin(); it != r_rev->kmers.end(); ++it) {
+	for (map<uint32_t, uint64_t>::const_iterator it = pr_rev.kmers().begin(); it != pr_rev.kmers().end(); ++it) {
 		const PositionKMer & kmer = km[it->second].first;
 		const uint32_t pos = it->first;
 		const KMerStat & stat = km[it->second].second;
-		if (stat.good == true) {
+		if (stat.changeto == KMERSTAT_GOOD) {
 			for (size_t j=0; j<K; ++j) {
 				v[complement(dignucl(kmer[j]))][read_size-pos-j-1]++;
 			}
@@ -220,19 +183,15 @@ bool CorrectRead(const vector<KMerCount> & km, ReadStat * r, ReadStat * r_rev, o
 				cout << (!kmer).str().data() << "\n";
 			}*/
 		} else {
-			if (stat.change == true) {
+			if (stat.changeto < KMERSTAT_CHANGE) {
 				const PositionKMer & newkmer = km[ stat.changeto ].first;
-
-//				for (size_t j=0; j<r->read.size()-pos-K; ++j) cout << " ";
-//				for (size_t j=0; j<K; ++j) cout << nucl_complement( newkmer[K-j-1] );
-//				cout << endl;
 
 				for (size_t j=0; j<K; ++j) {
 					v[complement(dignucl(newkmer[j]))][read_size-pos-j-1]++;
 				}
 				if (!changedRead) {
 					changedRead = true;
-					if (ofs != NULL) *ofs << "\n " << r->read.getName() << "\n" << r->read.getSequenceString().data() << "\n";
+					if (ofs != NULL) *ofs << "\n " << r.getName() << "\n" << r.getSequenceString().data() << "\n";
 				}
 				if (ofs != NULL) {
 					for (size_t j=0; j<read_size-pos-K; ++j) *ofs << " ";
@@ -270,7 +229,7 @@ bool CorrectRead(const vector<KMerCount> & km, ReadStat * r, ReadStat * r_rev, o
 	}
 	
 	// change the read
-	r->read.setSequence(seq.data());
+	PositionKMer::rv->at(readno).setSequence(seq.data());
 	return res;
 }
 

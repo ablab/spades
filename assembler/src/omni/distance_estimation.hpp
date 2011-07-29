@@ -26,6 +26,7 @@ private:
 	size_t gap_;
 	size_t delta_;
 	size_t linkage_distance_;
+	size_t max_distance_;
 
 	const vector<size_t> GetGraphDistances(EdgeId first, EdgeId second) {
 		DifferentDistancesCallback<Graph> callback(graph_);
@@ -36,6 +37,12 @@ private:
 				graph_.EdgeStart(second), callback);
 		path_processor.Process();
 		auto result = callback.distances();
+		for(size_t i = 0; i < result.size(); i++) {
+			result[i] += graph_.length(first);
+		}
+		if (first == second) {
+			result.push_back(0);
+		}
 		sort(result.begin(), result.end());
 		return result;
 	}
@@ -54,7 +61,8 @@ private:
 						< data[cur].d - forward[i]) {
 					break;
 				}
-				weight += data[cur].weight;
+				if(abs(data[cur].d - forward[i]) < max_distance_)
+					weight += data[cur].weight;
 			}
 			if (weight > 0) {
 				result.push_back(make_pair(forward[i], weight));
@@ -91,11 +99,11 @@ private:
 public:
 	DistanceEstimator(Graph &graph, PairedInfoIndex<Graph> &histogram,
 			size_t insert_size, size_t read_length, size_t delta,
-			size_t linkage_distance) :
+			size_t linkage_distance, size_t max_distance) :
 		graph_(graph), histogram_(histogram), insert_size_(insert_size),
 				read_length_(read_length),
 				gap_(insert_size - 2 * read_length_), delta_(delta),
-				linkage_distance_(linkage_distance) {
+				linkage_distance_(linkage_distance), max_distance_(max_distance) {
 	}
 
 	virtual ~DistanceEstimator() {
