@@ -100,7 +100,8 @@ public:
 private:
 	typedef AbstractConjugateGraph<VertexData, EdgeData, DeBruijnMaster> super;
 	const size_t k_;
-	CoverageIndex<ConjugateDeBruijnGraph>* coverage_index_;DECL_LOGGER("NewConjugateDeBruijnGraph")
+	CoverageIndex<ConjugateDeBruijnGraph>* coverage_index_;
+	DECL_LOGGER("NewConjugateDeBruijnGraph")
 
 public:
 	ConjugateDeBruijnGraph(size_t k) :

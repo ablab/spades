@@ -37,6 +37,9 @@ private:
 				graph_.EdgeStart(second), callback);
 		path_processor.Process();
 		auto result = callback.distances();
+		if (first == second) {
+			result.push_back(0);
+		}
 		sort(result.begin(), result.end());
 		for(size_t i = 0; i < result.size(); i++) {
 			result[i] += graph_.length(first);
