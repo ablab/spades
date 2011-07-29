@@ -49,54 +49,6 @@ void join_maps(KMerStatMap & v1, const KMerStatMap & v2) {
 	}
 }
 
-
-size_t ReadStatMapContainer::size() {
-	size_t res = 0;
-	for (size_t i=0; i < v_.size(); ++i) {
-		res += v_[i].size();
-	}
-	return res;
-}
-void ReadStatMapContainer::init() {
-	i_.clear();
-	for (size_t i=0; i<v_.size(); ++i) {
-		i_.push_back(v_[i].begin());
-	}
-}
-
-KMerCount ReadStatMapContainer::next() {
-	KMerStatMap::const_iterator imin = cur_min();
-	if (imin == v_[0].end() ) {
-		//cout << "!end" << endl;
-		KMerCount p( make_pair(PositionKMer(0,0), KMerStat(MAX_INT_64, KMERSTAT_GOOD )) );
-		//cout << "!!end" << endl;
-		return p;
-	}
-	KMerCount p = *imin;
-	p.first = imin->first; p.second.count = 0;
-	for (size_t i=0; i<v_.size(); ++i) {
-		if (i_[i]->first == p.first) {
-			p.second.count += i_[i]->second.count;
-			// p.second.pos.insert(p.second.pos.end(), i_[i]->second.pos.begin(), i_[i]->second.pos.end());
-			++i_[i];
-		}
-	}
-	return p;
-}
-
-const KMerStatMap::const_iterator & ReadStatMapContainer::cur_min() {
-	int min=0; //cout << (i_[min] == v_[min].end()) << endl;
-	for (size_t i=1; i<v_.size(); ++i) {
-		if (i_[i] != v_[i].end()) {
-			if (i_[min] == v_[min].end() || i_[i]->first < i_[min]->first) {
-				min = i;
-			}
-		}
-	}
-	//cout << min << "  " << (i_[min] == v_[min].end()) << endl;
-	return i_[min];
-}
-
 /**
  * add k-mers from read to map
  */
@@ -153,8 +105,9 @@ void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< ve
 			++kmerno;
 		}
 		curKMerCount.second.count++;
-		uint64_t readno = PositionKMer::readNoFromBlobPos( vv[i].index );
-		PositionKMer::pr->at(readno).kmers().insert( make_pair( vv[i].index - PositionKMer::pr->at(readno).start(), kmerno ) );
+		//uint64_t readno = PositionKMer::readNoFromBlobPos( vv[i].index );
+		//PositionKMer::pr->at(readno).kmers().insert( make_pair( vv[i].index - PositionKMer::pr->at(readno).start(), kmerno ) );
+		PositionKMer::blobkmers[ vv[i].index ] = kmerno;
 	}
 	kmers->push_back(curKMerCount);
 
@@ -188,10 +141,12 @@ bool CorrectRead(const vector<KMerCount> & km, uint64_t readno, ofstream * ofs) 
 	v.push_back(vA); v.push_back(vC); v.push_back(vG); v.push_back(vT);
 
 	bool changedRead = false;
-	for (map<uint32_t, uint64_t>::const_iterator it = pr.kmers().begin(); it != pr.kmers().end(); ++it) {
-		const PositionKMer & kmer = km[it->second].first;
-		const uint32_t pos = it->first;
-		const KMerStat & stat = km[it->second].second;
+	pair<uint32_t, uint64_t> it = make_pair( -1, -1 );
+	while ( pr.nextKMer( &it ) ) {
+	//for (map<uint32_t, uint64_t>::const_iterator it = pr.kmers().begin(); it != pr.kmers().end(); ++it) {
+		const PositionKMer & kmer = km[it.second].first;
+		const uint32_t pos = it.first;
+		const KMerStat & stat = km[it.second].second;
 
 		if (stat.changeto == KMERSTAT_GOOD) {
 			for (size_t j=0; j<K; ++j) {
@@ -218,10 +173,12 @@ bool CorrectRead(const vector<KMerCount> & km, uint64_t readno, ofstream * ofs) 
 		}
 	}
 
-	for (map<uint32_t, uint64_t>::const_iterator it = pr_rev.kmers().begin(); it != pr_rev.kmers().end(); ++it) {
-		const PositionKMer & kmer = km[it->second].first;
-		const uint32_t pos = it->first;
-		const KMerStat & stat = km[it->second].second;
+	it = make_pair( -1, -1 );
+	while ( pr_rev.nextKMer( &it ) ) {
+//	for (map<uint32_t, uint64_t>::const_iterator it = pr_rev.kmers().begin(); it != pr_rev.kmers().end(); ++it) {
+		const PositionKMer & kmer = km[it.second].first;
+		const uint32_t pos = it.first;
+		const KMerStat & stat = km[it.second].second;
 		if (stat.changeto == KMERSTAT_GOOD) {
 			for (size_t j=0; j<K; ++j) {
 				v[complement(dignucl(kmer[j]))][read_size-pos-j-1]++;
