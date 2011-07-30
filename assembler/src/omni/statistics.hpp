@@ -2,10 +2,12 @@
 #define STATISTICS_HPP_
 
 #include "omni_tools.hpp"
+#include "xmath.h"
 #include "paired_info.hpp"
 #include <map>
 
 namespace omnigraph {
+using namespace math;
 
 class AbstractStatCounter {
 public:
@@ -422,6 +424,124 @@ private:
 	DECL_LOGGER("UniquePathStat")
 };
 
+template<class Graph>
+class EstimationQualityStat: public omnigraph::AbstractStatCounter {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef PairInfo<EdgeId> Info;
+	typedef typename PairedInfoIndex<Graph>::PairInfos Infos;
+	PairedInfoIndex<Graph>& estimated_pair_info_;
+	PairedInfoIndex<Graph>& etalon_pair_info_;
+	vector<double> false_positive_weights_;
+	vector<double> perfect_match_weights_;
+	//todo make count fair (now all the cluster weights are counted several times)
+	vector<double> imperfect_match_weights_;
+	size_t false_negative_count_;
+private:
+
+	void HandleFalsePositive(const Info& estimated) {
+		false_positive_weights_.push_back(estimated.weight);
+	}
+
+	void HandleFalseNegative(const Info& etalon) {
+		false_negative_count_++;
+	}
+
+	void HandlePairsNotInEtalon(const set<pair<EdgeId, EdgeId>>& pairs_in_etalon) {
+		for (auto it = estimated_pair_info_.begin(); it != estimated_pair_info_.end(); ++it) {
+			Infos estimated_infos = *it;
+			EdgeId first = estimated_infos[0].first;
+			EdgeId second = estimated_infos[0].second;
+			if (pairs_in_etalon.count(make_pair(first, second)) == 0) {
+				for_each(estimated_infos.begin(), estimated_infos.end(), HandleFalsePositive);
+			}
+		}
+	}
+
+	bool InfoLess(const Info& a, const Info& b) {
+		return le(a.d + a.variance, b.d - b.variance);
+	}
+
+	bool PerfectMatch(const Info& etalon, const Info& estimated) {
+		if (eq(etalon.d, estimated.d) && eq(estimated.variance, 0.)) {
+			perfect_match_weights_.push_back(estimated.weight);
+			return true;
+		}
+		return false;
+	}
+
+	bool ImperfectMatch(const Info& etalon, const Info& estimated) {
+		if (ge(etalon.d > estimated.d - estimated.variance) && le(etalon.d < estimated.d + estimated.variance)) {
+			imperfect_match_weights_.push_back(estimated.weight);
+			return true;
+		}
+		return false;
+	}
+
+	void ProcessInfos(const Infos& etalon_infos, const Infos& estimated_infos) {
+		size_t estimated_idx = 0;
+		bool last_matched = false;
+		for (size_t etalon_idx = 0; etalon_idx < etalon_infos.size(); ++etalon_idx) {
+			Info etalon_info = etalon_infos[etalon_idx];
+			while (estimated_idx < estimated_infos.size() && InfoLess(estimated_infos[estimated_idx], etalon_info)) {
+				HandleFalsePositive(estimated_infos[estimated_idx]);
+				estimated_idx++;
+			}
+			if (estimated_idx != estimated_infos.size()
+					&& (PerfectMatch(etalon_info, estimated_infos[estimated_idx])
+							|| ImperfectMatch(etalon_info, estimated_infos[estimated_idx]))) {
+				last_matched = true;
+			} else {
+				HandleFalseNegative(etalon_info);
+			}
+		}
+		if (last_matched)
+			estimated_idx++;
+		while (estimated_idx < estimated_infos.size()) {
+			HandleFalsePositive(estimated_infos[estimated_idx]);
+		}
+	}
+
+public:
+	EstimationQualityStat(PairedInfoIndex<Graph>& estimated_pair_info, PairedInfoIndex<Graph>& etalon_pair_info) :
+		estimated_pair_info_(estimated_pair_info), etalon_pair_info_(etalon_pair_info), false_negative_count_(0) {
+	}
+
+	virtual ~EstimationQualityStat() {
+	}
+
+	virtual void Count() {
+		set<pair<EdgeId, EdgeId>> pairs_in_etalon;
+		for (auto it = etalon_pair_info_.begin(); it != etalon_pair_info_.end(); ++it) {
+			Infos etalon_infos = *it;
+			EdgeId first = etalon_infos[0].first;
+			EdgeId second = etalon_infos[0].second;
+			pairs_in_etalon.insert(first, second);
+
+			Infos estimated_infos = estimated_pair_info_.GetEdgePairInfo(first, second);
+			ProcessInfos(etalon_infos, estimated_infos);
+		}
+		HandlePairsNotInEtalon(pairs_in_etalon);
+	}
+
+	vector<double> false_positive_weights() {
+		sort(false_positive_weights_.begin(), false_positive_weights_.end());
+		return false_positive_weights_;
+	}
+	vector<double> perfect_match_weights() {
+		sort(perfect_match_weights_.begin(), perfect_match_weights_.end());
+		return perfect_match_weights_;
+	}
+	//todo make count fair (now all the cluster weights are counted several times)
+	vector<double> imperfect_match_weights() {
+		sort(imperfect_match_weights_.begin(), imperfect_match_weights_.end());
+		return imperfect_match_weights_;
+	}
+	size_t false_negative_count() {
+		return false_negative_count_;
+	}
+
+};
 
 }
 
