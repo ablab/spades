@@ -82,6 +82,7 @@ public:
 			int other_d = other_info.getDistance();
 
 			double max_diff = max(lp.variance, other_info.lp.variance) + 0.5 + 1e-9;
+//			max_diff = MAXD;
 			if ((other_edge == edge) && (isClose(d, other_d, max_diff)))
 				return true;
 //ToDo: Understand if it is very dirty hack.
@@ -749,7 +750,8 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 						pair<bool, PairInfo> correction_result = CorrectedAndNotFiltered(new_graph, tmp[j]);
 						if (!correction_result.first)
 							continue;
-						DEBUG("PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<tmp[j].d);
+						DEBUG("PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<tmp[j].d<< "weight" << tmp[j].weight);
+						DEBUG("PairInfo: " << old_IDs.ReturnIntId(tmp[j].first) << " " << old_IDs.ReturnIntId(tmp[j].second) );
 						EdgeInfo ei(correction_result.second, dir, right_id, correction_result.second.d - dif_d);
 						edge_infos.push_back(ei);
 						//					DEBUG(right_id);
