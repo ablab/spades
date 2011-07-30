@@ -735,7 +735,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 			for (int j = 0, sz = tmp.size(); j < sz; j++) {
 				EdgeId right_id = tmp[j].second;
 				EdgeId left_id = tmp[j].first;
-				int d = tmp[j].d;
+				double d = tmp[j].d;
 				//				int w = tmp[j].weight;
 				//				if (w < 10) continue;
 				int dif_d = 0;
@@ -745,11 +745,11 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 						dif_d = new_graph.length(left_id);
 
 					}
-					if (d * mult >= 0) {
+					if (d * mult >= -0.001) {
 						pair<bool, PairInfo> correction_result = CorrectedAndNotFiltered(new_graph, tmp[j]);
 						if (!correction_result.first)
 							continue;
-						//						DEBUG("PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<tmp[j].d)
+						DEBUG("PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<tmp[j].d);
 						EdgeInfo ei(correction_result.second, dir, right_id, correction_result.second.d - dif_d);
 						edge_infos.push_back(ei);
 						//					DEBUG(right_id);
