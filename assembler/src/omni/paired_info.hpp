@@ -546,7 +546,7 @@ public:
 		//		size_t shift = graph_.length(new_edge1);
 		TransferInfo(old_edge, new_edge1, 0, prop);
 		//		PassEdge(graph_.length(new_edge1), shift);
-		TransferInfo(old_edge, new_edge1, graph_.length(new_edge1), 1 - prop);
+		TransferInfo(old_edge, new_edge2, graph_.length(new_edge1), 1 - prop);
 	}
 
 };
