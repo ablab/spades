@@ -471,7 +471,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 
 
 		SimplifyGraph<k> (g, index, 3, genome, output_folder);
-		MapPairedReads<k, ReadStream, Graph>(g, stream, index);
+//		MapPairedReads<k, ReadStream, Graph>(g, stream, index);
 
 		ProduceInfo<k> (g, index, genome,
 				output_folder + "simplified_graph.dot", "simplified_graph");

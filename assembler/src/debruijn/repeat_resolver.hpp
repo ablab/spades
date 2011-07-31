@@ -82,9 +82,7 @@ public:
 			int other_d = other_info.getDistance();
 
 			double max_diff = max(lp.variance, other_info.lp.variance) + 0.5 + 1e-9;
-//			max_diff = MAXD;
-			if ((other_edge == edge) && (isClose(d, other_d, max_diff)))
-				return true;
+			max_diff = MAXD;
 //ToDo: Understand if it is very dirty hack.
 			if ((lp.first != other_info.lp.first) && (new_graph.EdgeStart(lp.first) != new_graph.EdgeEnd(lp.first)) && (new_graph.EdgeStart(other_info.lp.first) != new_graph.EdgeEnd(other_info.lp.first))){
 				if ((new_graph.EdgeStart(lp.first) == new_graph.EdgeStart(other_info.lp.first) ) || (new_graph.EdgeEnd(lp.first) == new_graph.EdgeEnd(other_info.lp.first)))
@@ -126,7 +124,6 @@ public:
 	public:
 		PairInfo lp;
 		int dir;
-	private:
 		EdgeId edge;
 		int d;
 
@@ -747,11 +744,13 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 
 					}
 					if (d * mult >= -0.001) {
+						DEBUG("PairInfo: " << old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second)  <<" "<< tmp[j].d);
+
 						pair<bool, PairInfo> correction_result = CorrectedAndNotFiltered(new_graph, tmp[j]);
 						if (!correction_result.first)
 							continue;
 						DEBUG("PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<tmp[j].d<< "weight" << tmp[j].weight);
-						DEBUG("PairInfo: " << old_IDs.ReturnIntId(tmp[j].first) << " " << old_IDs.ReturnIntId(tmp[j].second) );
+						DEBUG("PairInfo: " << old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second)  <<" "<< tmp[j].d);
 						EdgeInfo ei(correction_result.second, dir, right_id, correction_result.second.d - dif_d);
 						edge_infos.push_back(ei);
 						//					DEBUG(right_id);
@@ -803,6 +802,8 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph)) {
 				neighbours[i].push_back(j);
 				neighbours[j].push_back(i);
+				DEBUG(old_IDs.ReturnIntId(edge_infos[i].lp.second) <<" " << edge_infos[i].d << "is adjacent "<<old_IDs.ReturnIntId( edge_infos[j].lp.second) <<" " <<  edge_infos[j].d);
+
 			}
 		}
 	}
