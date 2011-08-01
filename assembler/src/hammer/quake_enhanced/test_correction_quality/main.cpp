@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
       ++bad;
     }
   }
-  printf("bad: %d\n", trusted + trusted_fail);
-  printf("erroneous: %d\n", trusted_fail);
+  printf("bad: %d\n", bad + bad_fail);
+  printf("erroneous: %d\n", bad_fail);
   return 0;
 }
