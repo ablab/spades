@@ -9,8 +9,8 @@
 #define MATHFUNCTIONS_H
 
 #include<cmath>
-#include<math.h>
 #include "hammer/hammer_tools.hpp"
+#include "position_kmer.hpp"
 
 /**
   * @return logarithm of {n choose k}
@@ -50,6 +50,18 @@ inline double lMultinomial(const vector<KMerCount> & x) {
 	for (size_t i=0; i<x.size(); ++i) {
 		res += lgamma(x[i].second.count+1);
 		sum += x[i].second.count;
+	}
+	return (lgamma(sum+1) - res);
+}
+
+/**
+  * @return log({a_1+...+a_n \choose a_1, ..., a_n})
+  */
+inline double lMultinomial(const vector<StringCount> & x) {
+	double res = 0.0, sum = 0.0;
+	for (size_t i=0; i<x.size(); ++i) {
+		res += lgamma(x[i].second+1);
+		sum += x[i].second;
 	}
 	return (lgamma(sum+1) - res);
 }

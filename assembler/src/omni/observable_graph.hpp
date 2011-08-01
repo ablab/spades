@@ -51,20 +51,22 @@ protected:
 	}
 
 	void FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
+		DEBUG("Fire Merge");
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
 			applier_->ApplyMerge(*it, oldEdges, newEdge);
 		}
 	}
 
-	void FireGlue(EdgeId edge1, EdgeId edge2) {
+	void FireGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
-			applier_->ApplyGlue(*it, edge1, edge2);
+			applier_->ApplyGlue(*it, new_edge, edge1, edge2);
 		}
 	}
 
 	void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2) {
+		DEBUG("Fire Split");
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
 			applier_->ApplySplit(*it, edge, newEdge1, newEdge2);

@@ -20,8 +20,9 @@
 
 #include <cstring>
 #include <cmath>
-#include <map>
 #include <ctime>
+#include <utility>
+#include <map>
 #include <algorithm>
 
 #ifndef CUCKOO_HPP_
@@ -50,7 +51,7 @@ namespace {
 template <class Key, class Value, class Hash, class Equal>
 class cuckoo {
  private:
-  typedef pair<Key, Value> Data;
+  typedef std::pair<Key, Value> Data;
   /**
    * @variable The number of hash functions (thus arrays also)
    * that will be used in the program (can be >= 2).
@@ -155,12 +156,14 @@ class cuckoo {
      */
     const_iterator() : pos(0), hash(NULL) {}
 
-    void operator=(const const_iterator& it) {
+    const_iterator& operator=(const const_iterator& it) {
       pos = it.pos;
       hash = it.hash;
+      return *this;
     }
 
-    const_iterator(const const_iterator& it) {
+    const_iterator(const const_iterator& it)
+        : pos(0), hash(NULL) {
       *this = it;
     }
 
@@ -220,9 +223,10 @@ class cuckoo {
       return const_iterator(pos, hash);
     }
 
-    void operator=(const iterator &it) {
+    iterator& operator=(const iterator &it) {
       pos = it.pos;
       hash = it.hash;
+      return *this;
     }
 
     iterator(const iterator &it) {
@@ -302,6 +306,9 @@ class cuckoo {
     data_ = reinterpret_cast<Data**>(malloc(d_ * sizeof(Data*)));
     for (size_t i = 0; i < d_; ++i) {
       data_[i] = reinterpret_cast<Data*>(malloc(len_part_ * sizeof(Data)));
+      for (size_t j = 0; j < len_part_; ++j) {
+        data_[i][j] = Data();
+      }
     }
     exists_ = reinterpret_cast<char*>(malloc(len_ >> 3));
     for (size_t i = 0; i < len_ >> 3; ++i) exists_[i] = 0;
@@ -387,6 +394,7 @@ class cuckoo {
    */
   void update_exists(size_t len_temp_) {
     char* t = reinterpret_cast<char*>(malloc(len_ >> 3));
+    for (size_t i = 0; i < len_ >> 3; ++i) t[i] = 0;
     char* s = t;
     char* f = s + (len_ >> 3);
     for (; s < f; ++s) {
@@ -411,6 +419,9 @@ class cuckoo {
       memcpy(t, data_[i], len_temp_*sizeof(Data));
       std::swap(t, data_[i]);
       free(t);
+      for (size_t j = len_temp_; j < len_part_; ++j) {
+        data_[i][j] = Data();
+      }
     }
   }
 
@@ -772,7 +783,7 @@ class cuckoo {
    * @return Pair that determines the range [fisrt, last) or
    * pair with both iterators pointing to the end of cuckoo.
    */
-  pair<iterator, iterator> equal_range(const Key& k) {
+  std::pair<iterator, iterator> equal_range(const Key& k) {
     iterator l = find(k);
     iterator r = l;
     return std::make_pair(l, ++r);
@@ -785,7 +796,7 @@ class cuckoo {
    * @return Pair that determines the range [fisrt, last) or
    * pair with both iterator pointing to the end of cuckoo.
    */
-  pair<const_iterator, const_iterator> equal_range(const Key& k) const {
+  std::pair<const_iterator, const_iterator> equal_range(const Key& k) const {
     const_iterator l = find(k);
     const_iterator r = l;
     return std::make_pair(l, ++r);
@@ -798,7 +809,7 @@ class cuckoo {
    * @return Pair with iterator to existing element and bool value,
    * which is true if element was inserted or false if it existed before.
    */
-  pair<iterator, bool> insert(const Data& k) {
+  std::pair<iterator, bool> insert(const Data& k) {
     rehash_chain_length_ = 0;
     iterator res = find(k.first);
     if (res.pos != len_) {

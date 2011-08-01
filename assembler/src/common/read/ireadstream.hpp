@@ -20,14 +20,6 @@ using namespace std;
 // STEP 1: declare the type of file handler and the read() function
 KSEQ_INIT(gzFile, gzread)
 
-struct ReadStat {
-	Read read;
-	// kmer indices
-	map<uint32_t, uint64_t> kmers;
-	// revcomp kmer indices
-	map<uint32_t, uint64_t> kmers_rev;
-};
-
 /*
  * Read name, seq and qual strings from FASTQ data (one by one)
  */
@@ -73,14 +65,16 @@ public:
 		return res;
 	}
 
-	static vector<ReadStat>* readAllNoValidation(string filename, int cnt = -1) __attribute__ ((deprecated)) {
+	static vector<Read>* readAllNoValidation(string filename, uint64_t * totalsize, int cnt = -1) __attribute__ ((deprecated)) {
 		ireadstream irs(filename);
 		assert(irs.is_open());
-		vector<ReadStat>* res = new vector<ReadStat>();
-		ReadStat rs;
+		vector<Read>* res = new vector<Read>();
+		*totalsize = 0;
+		Read r;
 		while (cnt-- && irs.is_open() && !irs.eof()) {
-			irs >> rs.read;
-			res->push_back(rs);
+			irs >> r;
+			res->push_back(r);
+			*totalsize += r.getSequenceString().size();
 		}
 		irs.close();
 		return res;

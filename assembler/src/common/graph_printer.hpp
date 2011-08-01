@@ -74,7 +74,7 @@ void recordEdge(ostream &out, Edge<tVertex> &edge) {
 	recordVertexId(out, edge.to);
 	out << "_in";
 	out << "[";
-	recordParameter(out, "label", edge.label);
+	recordParameterInQuotes(out, "label", edge.label);
 	out << ",";
 	recordParameter(out, "color", edge.color);
 	out << "]" << endl;
@@ -86,7 +86,7 @@ void recordSimpleEdge(ostream &out, Edge<tVertex> &edge) {
 	out << "->";
 	recordVertexId(out, edge.to);
 	out << "[";
-	recordParameter(out, "label", edge.label);
+	recordParameterInQuotes(out, "label", edge.label);
 	out << ",";
 	recordParameter(out, "color", edge.color);
 	out << "]" << endl;
@@ -380,6 +380,10 @@ inline void endGraphRecord(ostream &out) {
 
 inline void recordParameter(ostream &out, const string &name, const string &value) {
 	out << name << "=" << "<" << value << ">";
+}
+
+inline void recordParameterInQuotes(ostream &out, const string &name, const string &value) {
+	out << name << "=" << "\"" << value << "\"";
 }
 
 inline string constructCell(const string &label, int border, const string &port) {

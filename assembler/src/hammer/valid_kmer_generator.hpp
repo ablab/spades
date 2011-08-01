@@ -1,8 +1,12 @@
 #ifndef HAMMER_VALIDKMERGENERATOR_HPP_
 #define HAMMER_VALIDKMERGENERATOR_HPP_
+#include <stdint.h>
 #include <cmath>
 #include <string>
 #include <vector>
+#include "common/read/read.hpp"
+#include "common/sequence/seq.hpp"
+#include "position_read.hpp"
 /**
  * This class is designed to iterate through valid k-mers in read.
  * @example
@@ -10,6 +14,10 @@
  *   while (gen.HasMore()) {
  *     MyTrickyFunction(gen.kmer());
  *     gen.Next();
+ *   }
+ *   or
+ *   for (ValidKMerGenerator<2> gen(read, 2); gen.HasMore; gen.Next() {
+ *     MyTrickyFunction(gen.kmer(), gen.pos(), gen.correct_probability());
  *   }
  * @param kK k-mer length.
  */
@@ -37,7 +45,28 @@ class ValidKMerGenerator {
     Next();
   }
   /**
-   * @result true if Next() succeed while generating new k-mer, false otherwise.
+   * @param read PositionRead to generate k-mers from.
+   * @param bad_quality_threshold  This class virtually cuts
+   * nucleotides with quality lower the threshold from the ends of the
+   * read. 
+   */
+  explicit ValidKMerGenerator(const PositionRead &read, const string & seq,
+                              uint32_t bad_quality_threshold = 2) :
+      bad_quality_threshold_(bad_quality_threshold),
+      pos_(-1),
+      end_(-1),
+      has_more_(true),
+      correct_probability_(1),
+      first(true),
+      kmer_(),
+      seq_(seq),
+      qual_(read.getQualityString()) {
+    TrimBadQuality();
+    Next();
+  }
+  /**
+   * @result true if Next() succeed while generating new k-mer, false
+   * otherwise. 
    */
   bool HasMore() const {
     return has_more_;
@@ -68,6 +97,9 @@ class ValidKMerGenerator {
  private:
   void TrimBadQuality();
   double Prob(uint8_t qual) {
+    if (qual < 3) {
+      return 0.25;
+    }
     static std::vector<double> prob(255, -1);
     if (prob[qual] < -0.1) {
       prob[qual] = 1 - pow(10.0, - qual / 10.0);
@@ -83,18 +115,21 @@ class ValidKMerGenerator {
   Seq<kK> kmer_;
   const std::string &seq_;
   const std::string &qual_;
+  // Disallow copy and assign
+  ValidKMerGenerator(const ValidKMerGenerator&);
+  void operator=(const ValidKMerGenerator&);
 };
 
 template<uint32_t kK>
 void ValidKMerGenerator<kK>::TrimBadQuality() {
   pos_ = 0;
   for (; pos_ < qual_.size(); ++pos_) {
-    if ((uint32_t)qual_[pos_] > bad_quality_threshold_)
+    if ((uint32_t)qual_[pos_] >= bad_quality_threshold_)
       break;
   }
   end_ = qual_.size();
   for (; end_ > pos_; --end_) {
-    if ((uint32_t)qual_[end_ - 1] > bad_quality_threshold_)
+    if ((uint32_t)qual_[end_ - 1] >= bad_quality_threshold_)
       break;
   }
 }

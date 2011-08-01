@@ -14,6 +14,7 @@
 #include "omnigraph.hpp"
 
 #include "debruijn/ID_track_handler.hpp"
+#include "debruijn/edges_position_handler.hpp"
 using namespace omnigraph;
 using namespace debruijn_graph;
 
@@ -30,6 +31,7 @@ public:
 	void saveEdgeSequences(const string& file_name);
 	void saveCoverage(const string& file_name);
 	void savePaired(const string& file_name, PairedInfoIndex<Graph>& PIIndex);
+	void savePositions(const string& file_name, EdgesPositionHandler<Graph>& EPHandler);
 	void close();
 
 private:
@@ -127,6 +129,21 @@ void DataPrinter<Graph>::savePaired(const string& file_name, PairedInfoIndex<Gra
 	fclose(file);
 }
 
+template<class Graph>
+void DataPrinter<Graph>::savePositions(const string& file_name, EdgesPositionHandler<Graph>& EPHandler) {
+	FILE* file = fopen((file_name + ".pos").c_str(), "w");
+	DEBUG("Saving edges positions, " << file_name <<" created");
+	assert(file != NULL);
+	fprintf(file, "%d\n", edge_count_);
+	for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), EPHandler.EdgesPositions[*iter].size());
+		for (size_t i = 0; i < EPHandler.EdgesPositions[*iter].size(); i++){
+			fprintf(file, "    %d - %d\n",  EPHandler.EdgesPositions[*iter][i].start_, EPHandler.EdgesPositions[*iter][i].end_);
+		}
+	}
+	fclose(file);
+}
+
 template <class Graph>
 class DataScanner {
 	typedef typename Graph::EdgeId EdgeId;
@@ -139,6 +156,7 @@ public:
 //	void saveEdgeSequences(const string& file_name);
 	void loadCoverage(const string& file_name);
 	void loadPaired(const string& file_name, PairedInfoIndex<Graph>& PIIndex);
+	void loadPositions(const string& file_name, EdgesPositionHandler<Graph>& EPHandler);
 	void close();
 
 private:
@@ -154,6 +172,7 @@ public:
 		edge_count_ = 0;
 	}
 };
+
 template<class Graph>
 void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name, bool with_Sequence) {
 
@@ -286,6 +305,28 @@ void DataScanner<Graph>::loadPaired(const string& file_name, PairedInfoIndex<Gra
 		PIIndex.AddPairInfo(*p_info, 0);
 	}
 	DEBUG("PII SIZE " << PIIndex.size());
+	fclose(file);
+}
+
+
+template<class Graph>
+void DataScanner<Graph>::loadPositions(const string& file_name, EdgesPositionHandler<Graph>& EPHandler) {
+	FILE* file = fopen((file_name + ".pos").c_str(), "r");
+	assert(file != NULL);
+	DEBUG("Reading edges positions, " << file_name <<" started");
+	assert(file != NULL);
+	int pos_count;
+	assert(fscanf(file, "%d\n", &pos_count) == 1);
+	for (int i = 0; i < pos_count; i++){
+		int edge_real_id, pos_info_count;
+		assert(fscanf(file, "%d %d\n", &edge_real_id, &pos_info_count) == 2);
+		for (int j = 0; j < pos_info_count; j++){
+			int start_pos, end_pos;
+			assert(fscanf(file, "%d - %d \n", &start_pos, &end_pos) == 2);
+			EdgeId eid = IdHandler_.ReturnEdgeId(edge_real_id);
+			EPHandler.AddEdgePosition(eid, start_pos, end_pos);
+		}
+	}
 	fclose(file);
 }
 

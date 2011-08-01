@@ -20,6 +20,17 @@ using omnigraph::Path;
 using omnigraph::PairInfo;
 using omnigraph::GraphActionHandler;
 
+template<size_t kmer_size_, typename Graph>
+class ReadThreaderResult {
+	typedef typename Graph::EdgeId EdgeId;
+
+	Path<EdgeId> left_read_, right_read_;
+	int gap_;
+public:
+	ReadThreaderResult(Path<EdgeId> left_read, Path<EdgeId> right_read, int gap) :
+			gap_(gap), left_read_(left_read), right_read_(right_read) {
+	}
+};
 /**
  * DataHashRenewer listens to add/delete events and updates index according to those events. This class
  * can be used both with vertices and edges of graph.
@@ -228,6 +239,7 @@ public:
 	 * Finds a path in graph which corresponds to given sequence.
 	 * @read sequence to be mapped
 	 */
+
 	Path<EdgeId> MapSequence(const Sequence &read) const {
 		vector<EdgeId> passed;
 		if (read.size() <= k) {
@@ -259,8 +271,8 @@ class EtalonPairedInfoCounter {
 	size_t gap_;
 	size_t delta_;
 
-
-	void AddEtalonInfo(omnigraph::PairedInfoIndex<Graph>& paired_info, EdgeId e1, EdgeId e2, double d) {
+	void AddEtalonInfo(omnigraph::PairedInfoIndex<Graph>& paired_info,
+			EdgeId e1, EdgeId e2, double d) {
 		PairInfo<EdgeId> pair_info(e1, e2, d, 1000.0);
 		paired_info.AddPairInfo(pair_info);
 	}
@@ -282,9 +294,11 @@ class EtalonPairedInfoCounter {
 			size_t length = 0;
 
 			while (j < path.size() && length < (insert_size_ + delta_)) {
-				if (length + g_.length(e) + g_.length(path[j]) + delta_ >= gap_) {
+				if (length + g_.length(e) + g_.length(path[j]) + delta_
+						>= gap_) {
 //					cout << "HERE2 " <<  /*g_.length(e) + */length << endl;
-					AddEtalonInfo(paired_info, e, path[j], g_.length(e) + length);
+					AddEtalonInfo(paired_info, e, path[j],
+							g_.length(e) + length);
 				}
 				length += g_.length(path[j++]);
 			}
@@ -294,13 +308,11 @@ class EtalonPairedInfoCounter {
 
 public:
 
-	EtalonPairedInfoCounter(Graph& g, const EdgeIndex<k + 1, Graph>& index, size_t insert_size, size_t read_length, size_t delta) :
-	g_(g),
-	index_(index),
-	insert_size_(insert_size),
-	read_length_(read_length),
-	gap_(insert_size_ - 2 * read_length_),
-	delta_(delta) {
+	EtalonPairedInfoCounter(Graph& g, const EdgeIndex<k + 1, Graph>& index
+			, size_t insert_size, size_t read_length, size_t delta) :
+			g_(g), index_(index), insert_size_(insert_size), read_length_(
+					read_length), gap_(insert_size_ - 2 * read_length_), delta_(
+					delta) {
 		assert(insert_size_ >= 2 * read_length_);
 //		cout << "IS " << insert_size_ << endl;
 //		cout << "RL " << read_length_ << endl;
@@ -315,6 +327,74 @@ public:
 	}
 };
 
+template<size_t k, class Graph>
+class NewEtalonPairedInfoCounter {
+	typedef typename Graph::EdgeId EdgeId;
+
+	Graph& g_;
+	const EdgeIndex<k + 1, Graph>& index_;
+	size_t insert_size_;
+	size_t read_length_;
+	size_t gap_;
+	size_t delta_;
+
+	void AddEtalonInfo(set<PairInfo<EdgeId>> paired_info, EdgeId e1, EdgeId e2,
+			double d) {
+		PairInfo<EdgeId> pair_info(e1, e2, d, 1000.0);
+		paired_info.insert(pair_info);
+	}
+
+	void ProcessSequence(const Sequence& sequence,
+			set<PairInfo<EdgeId>>& temporary_info) {
+		int mod_gap = (gap_ > delta_) ? int(gap_) - int(delta_) : 0;
+		Seq<k + 1> left(sequence);
+		0 >> left;
+		for (size_t left_idx = 0; left_idx <= sequence.size() - insert_size_ - gap_; ++left_idx) {
+			left = left << sequence[left_idx + k];
+			size_t right_idx = left_idx + read_length_ + mod_gap;
+			if (!index_.containsInIndex(left)) {
+				continue;
+			}
+			pair<EdgeId, size_t> left_pos = index_.get(left);
+			Seq<k + 1> right(sequence, right_idx);
+			0 >> right;
+			for (; right_idx < left_idx + insert_size_ + gap_ - k && right_idx < sequence.size() - k; ++right_idx) {
+				right << sequence[right_idx + k];
+				pair<EdgeId, size_t> right_pos = index_.get(right);
+				if (!index_.containsInIndex(right)) {
+					continue;
+				}
+				AddEtalonInfo(temporary_info, left_pos.first, right_pos.first, right_idx - left_idx + left_pos.second - right_pos.second);
+			}
+		}
+	}
+
+public:
+
+	NewEtalonPairedInfoCounter(Graph& g, const EdgeIndex<k + 1, Graph>& index
+			, size_t insert_size, size_t read_length, size_t delta) :
+			g_(g), index_(index), insert_size_(insert_size), read_length_(
+					read_length), gap_(insert_size_ - 2 * read_length_), delta_(
+					delta) {
+		assert(insert_size_ >= 2 * read_length_);
+//		cout << "IS " << insert_size_ << endl;
+//		cout << "RL " << read_length_ << endl;
+//		cout << "GAP " << gap_ << endl;
+//		cout << "DELTA " << delta_ << endl;
+	}
+
+	void FillEtalonPairedInfo(const Sequence& genome,
+			omnigraph::PairedInfoIndex<Graph>& paired_info) {
+		set<PairInfo<EdgeId>> temporary_info;
+		ProcessSequence(genome, temporary_info);
+		ProcessSequence(!genome, temporary_info);
+		for (auto it = temporary_info.begin(); it != temporary_info.end();
+				++it) {
+			paired_info.AddPairInfo(*it);
+		}
+	}
+};
+
 template<class Graph>
 class UniqueDistanceStat: public omnigraph::AbstractStatCounter {
 	typedef omnigraph::PairedInfoIndex<Graph> PairedIndex;
@@ -325,10 +405,7 @@ class UniqueDistanceStat: public omnigraph::AbstractStatCounter {
 public:
 
 	UniqueDistanceStat(PairedIndex& paired_info) :
-		paired_info_(paired_info),
-		unique_(0),
-		non_unique_(0)
-	{
+			paired_info_(paired_info), unique_(0), non_unique_(0) {
 
 	}
 
@@ -347,8 +424,7 @@ public:
 			} else {
 				unique_++;
 			}
-		}
-		INFO(unique_ << " unique edge distances");
+		}INFO(unique_ << " unique edge distances");
 		INFO(non_unique_ << " non unique edge distances");
 	}
 
@@ -434,7 +510,9 @@ public:
 				new omnigraph::BlackEdgesStat<Graph>(graph, path1, path2));
 		stats_.AddStat(new omnigraph::NStat<Graph>(graph, path1, 50));
 		stats_.AddStat(new omnigraph::SelfComplementStat<Graph>(graph));
-		stats_.AddStat(new GenomeMappingStat<Graph, k>(graph, index, Sequence(genome)));
+		stats_.AddStat(
+				new GenomeMappingStat<Graph, k>(graph, index,
+						Sequence(genome)));
 	}
 
 	virtual ~StatCounter() {
@@ -457,7 +535,7 @@ private:
 	const EdgeIndex<kmer_size + 1, Graph>& index_;
 	Stream& stream_;
 
-	size_t CountDistance(const PairedRead& paired_read) {
+	inline size_t CountDistance(const PairedRead& paired_read) {
 		return paired_read.distance() - paired_read.second().size();
 	}
 
@@ -484,7 +562,8 @@ private:
 		for (size_t i = 0; i < path1.size(); ++i) {
 			int current_distance2 = current_distance1;
 			for (size_t j = 0; j < path2.size(); ++j) {
-				double weight = CorrectLength(path1, i) * CorrectLength(path2, j);
+				double weight = CorrectLength(path1, i)
+						* CorrectLength(path2, j);
 				PairInfo<EdgeId> new_info(path1[i], path2[j], current_distance2,
 						weight);
 				paired_index.AddPairInfo(new_info);
@@ -518,6 +597,88 @@ public:
 			stream_ >> p_r;
 			ProcessPairedRead(paired_index, p_r, read_threader);
 		}
+	}
+
+};
+
+/**
+ * This class finds how certain _paired_ read is mapped to genome. As it is now it is hoped to work correctly only if read
+ * is mapped to graph ideally and in unique way.
+ */
+template<size_t k, class Graph, class Stream>
+class TemplateReadMapper {
+public:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef EdgeIndex<k + 1, Graph> Index;
+private:
+	SimpleSequenceMapper<k, Graph> read_seq_mapper;
+	Stream& stream_;
+public:
+	/**
+	 * Creates TemplateReadMapper for given graph. Also requires index_ which should be synchronized
+	 * with graph.
+	 * @param g graph sequences should be mapped to
+	 * @param index index syncronized with graph
+	 */
+	TemplateReadMapper(const Graph& g, const Index& index, Stream & stream):
+		read_seq_mapper(g, index), stream_(stream) {
+		stream_.reset();
+	}
+
+	ReadThreaderResult<k + 1, Graph> ThreadNext() {
+		if (!stream_.eof()) {
+			PairedRead p_r;
+			stream_ >> p_r;
+			Sequence read1 = p_r.first().getSequence();
+			Sequence read2 = p_r.second().getSequence();
+			Path<EdgeId> aligned_read[2];
+			aligned_read[0] = read_seq_mapper.MapSequence(read1);
+			aligned_read[1] = read_seq_mapper.MapSequence(read2);
+			size_t distance = p_r.distance();
+			int current_distance1 = distance + aligned_read[0].start_pos()
+					- aligned_read[1].start_pos();
+			return ReadThreaderResult<k + 1, Graph>(aligned_read[0], aligned_read[1], current_distance1);
+		}
+//		else return NULL;
+	}
+
+};
+template<size_t k, class Graph, class Stream>
+class SingleReadMapper {
+public:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef EdgeIndex<k + 1, Graph> Index;
+private:
+	SimpleSequenceMapper<k, Graph> read_seq_mapper;
+	Stream& stream_;
+public:
+	/**
+	 * Creates SingleReadMapper for given graph. Also requires index_ which should be synchronized
+	 * with graph.
+	 * @param g graph sequences should be mapped to
+	 * @param index index syncronized with graph
+	 */
+	SingleReadMapper(const Graph& g, const Index& index, Stream & stream):
+		read_seq_mapper(g, index), stream_(stream) {
+		stream_.reset();
+	}
+
+	ReadThreaderResult<k + 1, Graph> ThreadNext() {
+		if (!stream_.eof()) {
+			PairedRead p_r;
+			stream_ >> p_r;
+			Sequence read1 = p_r.first().getSequence();
+			Sequence read2 = p_r.second().getSequence();
+			Path<EdgeId> aligned_read[2];
+			aligned_read[0] = read_seq_mapper.MapSequence(read1);
+			aligned_read[1] = read_seq_mapper.MapSequence(read2);
+			size_t distance = p_r.distance();
+			int current_distance1 = distance + aligned_read[0].start_pos()
+					- aligned_read[1].start_pos();
+			return ReadThreaderResult<k + 1, Graph>(aligned_read[0],
+					aligned_read[1], current_distance1);
+		}
+//		else return NULL;
 	}
 
 };

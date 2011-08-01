@@ -22,6 +22,7 @@
 #include "omni_tools.hpp"
 #include "seq_map.hpp"
 #include "ID_track_handler.hpp"
+#include "edges_position_handler.hpp"
 #include "read/osequencestream.hpp"
 #include <time.h>
 #include <sys/types.h>
@@ -29,6 +30,8 @@
 #include "new_debruijn.hpp"
 #include "config.hpp"
 #include "graphio.hpp"
+#include "rectangleRepeatResolver.hpp"
+#include "distance_estimation.hpp"
 //#include "dijkstra.hpp"
 
 namespace debruijn_graph {
@@ -49,12 +52,13 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 }
 
 void CountPairedInfoStats(Graph &g, size_t insert_size, size_t max_read_length,
-		PairedInfoIndex<Graph> &paired_index, const string &output_folder, bool etalon_paired_info_mode) {
+		PairedInfoIndex<Graph> &paired_index, const string &output_folder,
+		bool etalon_paired_info_mode) {
 	EdgePairStat<Graph> (g, paired_index, output_folder).Count();
 	UniquePathStat<Graph> (g, paired_index, insert_size, max_read_length, 0.1,
 			40.0).Count();
 	if (etalon_paired_info_mode) {
-		UniqueDistanceStat<Graph>(paired_index).Count();
+		UniqueDistanceStat<Graph> (paired_index).Count();
 	}
 }
 
@@ -90,6 +94,25 @@ void ProduceInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 }
 
 template<size_t k>
+void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos) {
+	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
+	int CurPos = 0;
+	for (auto it = path1.sequence().begin(); it != path1.sequence().end(); ++it) {
+		EdgeId ei = *it;
+		edgesPos.AddEdgePosition(ei, CurPos + 1, CurPos + g.length(ei));
+		CurPos += g.length(ei);
+	}
+	CurPos = 1000000000;
+	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
+	for (auto it = path2.sequence().begin(); it != path2.sequence().end(); ++it) {
+		EdgeId ei = *it;
+		edgesPos.AddEdgePosition(ei, CurPos + 1, CurPos + g.length(ei));
+		CurPos += g.length(ei);
+	}
+}
+
+template<size_t k>
 void ProduceNonconjugateInfo(NCGraph& g,
 		const EdgeIndex<k + 1, NCGraph>& index, const string& genome,
 		const string& work_tmp_dir, const string& graph_name,
@@ -119,11 +142,13 @@ void WriteGraphComponents(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
 	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
 	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-	WriteComponents(folder + file_name, graph_name, g, split_edge_length, path1, path2);
+	WriteComponents(folder + file_name, graph_name, g, split_edge_length,
+			path1, path2);
 }
 
 void ProducePairedInfo(Graph& g, size_t insert_size, size_t max_read_length,
-		PairedInfoIndex<Graph> &paired_index, const string &output_folder, bool etalon_paired_info_mode) {
+		PairedInfoIndex<Graph> &paired_index, const string &output_folder,
+		bool etalon_paired_info_mode) {
 	CountPairedInfoStats(g, insert_size, max_read_length, paired_index,
 			output_folder, etalon_paired_info_mode);
 }
@@ -158,6 +183,24 @@ void RemoveBulges(Graph &g) {
 	bulge_remover.RemoveBulges();
 	INFO("Bulges removed");
 }
+
+void RemoveBulges2(NCGraph &g) {
+	INFO("-----------------------------------------");
+	INFO("Removing bulges");
+	double max_coverage = CONFIG.read<double> ("br_max_coverage");
+	double max_relative_coverage = CONFIG.read<double> (
+			"br_max_relative_coverage");
+	double max_delta = CONFIG.read<double> ("br_max_delta");
+	double max_relative_delta = CONFIG.read<double> ("br_max_relative_delta");
+	size_t max_length_div_K = CONFIG.read<int> ("br_max_length_div_K");
+	TrivialCondition<NCGraph> trivial_condition;
+	BulgeRemover<NCGraph, TrivialCondition<NCGraph>> bulge_remover(g,
+			max_length_div_K * g.k(), max_coverage, max_relative_coverage,
+			max_delta, max_relative_delta, trivial_condition);
+	bulge_remover.RemoveBulges();
+	INFO("Bulges removed");
+}
+
 template<class Graph>
 void RemoveLowCoverageEdges(Graph &g) {
 	INFO("-----------------------------------------");
@@ -171,17 +214,33 @@ void RemoveLowCoverageEdges(Graph &g) {
 }
 template<class Graph>
 void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
-		PairedInfoIndex<Graph> &info, Graph &new_graph,
-		IdTrackHandler<Graph> &new_IDs, const string& output_folder) {
+		PairedInfoIndex<Graph> &info, EdgesPositionHandler<Graph> &edges_pos,
+		Graph &new_graph, IdTrackHandler<Graph> &new_IDs,
+		EdgesPositionHandler<Graph> &edges_pos_new, const string& output_folder) {
 	INFO("-----------------------------------------");
 	INFO("Resolving primitive repeats");
-	RepeatResolver<Graph> repeat_resolver(g, old_IDs, 0, info, new_graph,
-			new_IDs);
+	RepeatResolver<Graph> repeat_resolver(g, old_IDs, 0, info, edges_pos,
+			new_graph, new_IDs, edges_pos_new);
 	mkdir((output_folder).c_str(),
 			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	repeat_resolver.ResolveRepeats(output_folder);
 	INFO("Primitive repeats resolved");
 }
+template<size_t k, class ReadStream, class Graph>
+void MapPairedReads(Graph &g,
+		ReadStream& stream, EdgeIndex<k + 1, Graph>& index) {
+	INFO("-----------------------------------------");
+	stream.reset();
+	INFO("Threading reads");
+	int quantity = 0;
+	TemplateReadMapper<k , Graph, ReadStream> rm(g, index, stream);
+	while (!stream.eof()){
+		rm.ThreadNext();
+		quantity ++;
+	}
+	INFO(quantity <<" reads_threaded");
+}
+
 
 template<size_t k, class ReadStream>
 void FillPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
@@ -258,7 +317,7 @@ void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 template<size_t k, class PairedReadStream>
 void ConstructGraphWithEtalonPairedInfo(Graph& g,
 		EdgeIndex<k + 1, Graph>& index, PairedInfoIndex<Graph>& paired_index,
-		PairedReadStream stream, size_t insert_size, size_t read_length,
+		PairedReadStream& stream, size_t insert_size, size_t read_length,
 		const Sequence& genome) {
 	typedef SimpleReaderWrapper<PairedReadStream> UnitedStream;
 	UnitedStream united_stream(stream);
@@ -270,12 +329,36 @@ void ConstructGraphWithEtalonPairedInfo(Graph& g,
 
 template<class Graph>
 void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
-		const string &file_name, PairedInfoIndex<Graph> paired_index) {
+		const string &file_name, PairedInfoIndex<Graph> &paired_index,
+		EdgesPositionHandler<Graph> &edges_positions) {
 	DataPrinter<Graph> dataPrinter(g, old_IDs);
 	dataPrinter.saveGraph(file_name);
 	dataPrinter.saveEdgeSequences(file_name);
 	dataPrinter.saveCoverage(file_name);
 	dataPrinter.savePaired(file_name, paired_index);
+	dataPrinter.savePositions(file_name, edges_positions);
+
+}
+template<class Graph>
+void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
+		const string &file_name, PairedInfoIndex<Graph> &paired_index) {
+	DataPrinter<Graph> dataPrinter(g, old_IDs);
+	dataPrinter.saveGraph(file_name);
+	dataPrinter.saveEdgeSequences(file_name);
+	dataPrinter.saveCoverage(file_name);
+	dataPrinter.savePaired(file_name, paired_index);
+
+}
+
+template<class Graph>
+void scanNCGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
+		const string &file_name, PairedInfoIndex<Graph>& paired_index,
+		EdgesPositionHandler<Graph> &edges_positions) {
+	DataScanner<Graph> dataScanner(g, new_IDs);
+	dataScanner.loadNonConjugateGraph(file_name, true);
+	dataScanner.loadCoverage(file_name);
+	dataScanner.loadPaired(file_name, paired_index);
+	dataScanner.loadPositions(file_name, edges_positions);
 }
 
 template<class Graph>
@@ -293,9 +376,8 @@ void scanConjugateGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
 	DataScanner<Graph> dataScanner(g, new_IDs);
 	dataScanner.loadConjugateGraph(file_name, true);
 	dataScanner.loadCoverage(file_name);
-//	dataScanner.loadPaired(file_name, paired_index);
+	//	dataScanner.loadPaired(file_name, paired_index);
 }
-
 
 template<size_t k>
 void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
@@ -342,9 +424,10 @@ void OutputContigs(Graph& g, const string& contigs_output_filename) {
 
 template<size_t k, class ReadStream>
 void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
-		const Sequence& genome, bool paired_mode, bool etalon_info_mode,
-		bool from_saved, size_t insert_size, size_t max_read_length,
-		const string& output_folder, const string& work_tmp_dir) {
+		const Sequence& genome, bool paired_mode, bool rectangle_mode,
+		bool etalon_info_mode, bool from_saved, size_t insert_size,
+		size_t max_read_length, const string& output_folder,
+		const string& work_tmp_dir) {
 	INFO("Edge graph construction tool started");
 	INFO("Paired mode: " << (paired_mode ? "Yes" : "No") );
 	INFO("Etalon paired info mode: " << (etalon_info_mode ? "Yes" : "No"))
@@ -353,8 +436,11 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 	Graph g(k);
 	EdgeIndex<k + 1, Graph> index(g);
 	IdTrackHandler<Graph> IntIds(g);
+	EdgesPositionHandler<Graph> EdgePos(g);
+	EdgesPosGraphLabeler<Graph> EdgePosLab(g, EdgePos);
 	// if it's not paired_mode, then it'll be just unused variable -- takes O(1) to initialize from graph
-	PairedInfoIndex<Graph> paired_index(g, 5);
+//	PairedInfoIndex<Graph> paired_index(g, 5);
+	PairedInfoIndex<Graph> paired_index(g, 0);
 
 	if (!from_saved) {
 
@@ -377,7 +463,15 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 				"edge_graph");
 
+
+		FillEdgesPos<k>(g, index, genome, EdgePos);
+		omnigraph::WriteSimple(
+				output_folder + "before_simplification_pos.dot",
+				"no_repeat_graph", g, EdgePosLab);
+
+
 		SimplifyGraph<k> (g, index, 3, genome, output_folder);
+//		MapPairedReads<k, ReadStream, Graph>(g, stream, index);
 
 		ProduceInfo<k> (g, index, genome,
 				output_folder + "simplified_graph.dot", "simplified_graph");
@@ -398,6 +492,17 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 	//		clusterer.cluster(clustered_paired_index);
 	//	}
 
+	omnigraph::WriteSimple(
+			output_folder + "repeats_resolved_before_poslab.dot",
+			"no_repeat_graph", g, EdgePosLab);
+	omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_before_poslab.dot",
+			"no_repeat_graph", g, EdgePosLab);
+	PairedInfoIndex<Graph> clustered_index(g);
+	if(paired_mode) {
+		DistanceEstimator<Graph> estimator(g, paired_index, insert_size, max_read_length, 10, 10, 75);
+		estimator.Estimate(clustered_index);
+	}
+
 	if (paired_mode) {
 		if (!from_saved) {
 			INFO("before ResolveRepeats");
@@ -405,24 +510,29 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 			omnigraph::WriteSimple(
 					output_folder + "repeats_resolved_before.dot",
 					"no_repeat_graph", g, IdTrackLabelerBefore);
-			printGraph(g, IntIds, work_tmp_dir + "graph", paired_index);
-			printGraph(g, IntIds, output_folder + "graph", paired_index);
+			printGraph(g, IntIds, work_tmp_dir + "graph", clustered_index, EdgePos);
+			printGraph(g, IntIds, output_folder + "graph", clustered_index,
+					EdgePos);
 		}
 
 		NCGraph new_graph(k);
 		IdTrackHandler<NCGraph> NewIntIds(new_graph, IntIds.MaxVertexId(),
 				IntIds.MaxEdgeId());
 		PairedInfoIndex<NCGraph> new_index(new_graph);
+		EdgesPositionHandler<NCGraph> EdgePosBefore(new_graph);
 
 		Graph conj_copy_graph(k);
-		IdTrackHandler<Graph> conj_IntIds(conj_copy_graph, IntIds.MaxVertexId(),
-				IntIds.MaxEdgeId());
+		IdTrackHandler<Graph> conj_IntIds(conj_copy_graph,
+				IntIds.MaxVertexId(), IntIds.MaxEdgeId());
 		PairedInfoIndex<Graph> conj_copy_index(conj_copy_graph);
-		scanConjugateGraph(conj_copy_graph, conj_IntIds, work_tmp_dir + "graph", conj_copy_index);
-		printGraph(conj_copy_graph, conj_IntIds, work_tmp_dir + "graph_copy", conj_copy_index);
 
+		scanConjugateGraph(conj_copy_graph, conj_IntIds,
+				work_tmp_dir + "graph", conj_copy_index);
+		printGraph(conj_copy_graph, conj_IntIds, work_tmp_dir + "graph_copy",
+				conj_copy_index);
 
-		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index);
+		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index,
+				EdgePosBefore);
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
@@ -433,21 +543,52 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 
 		NonconjugateDeBruijnGraph resolved_graph(k);
 		IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
+		EdgesPositionHandler<NCGraph> EdgePosAfter(resolved_graph);
+
 		DEBUG("New index size: "<< new_index.size());
-		ResolveRepeats(new_graph, NewIntIds, new_index, resolved_graph,
-				Resolved_IntIds, output_folder + "resolve/");
+		if (rectangle_mode) {
+			void RectangleResolve(
+					PairedInfoIndex<NonconjugateDeBruijnGraph>& index,
+					NonconjugateDeBruijnGraph& graph,
+					const string& work_tmp_dir, const string& output_folder);
+			RectangleResolve(new_index, new_graph, work_tmp_dir, output_folder);
+		}
+
+		ResolveRepeats(new_graph, NewIntIds, new_index, EdgePosBefore,
+				resolved_graph, Resolved_IntIds, EdgePosAfter,
+				output_folder + "resolve/");
+
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
 				Resolved_IntIds);
 
+		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_after.dot",
+				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+		omnigraph::WriteSimple(output_folder + "repeats_resolved_after.dot",
+				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+		EdgesPosGraphLabeler<NCGraph> EdgePosLAfterLab(resolved_graph,
+				EdgePosAfter);
 
-		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_after.dot", "no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
-		omnigraph::WriteSimple(output_folder + "repeats_resolved_after.dot", "no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_after_pos.dot",
+				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+		omnigraph::WriteSimple(
+				output_folder + "repeats_resolved_after_pos.dot",
+				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
 
 		ClipTips(resolved_graph);
 		RemoveLowCoverageEdges(resolved_graph);
-		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_und cleared.dot",
+
+		omnigraph::WriteSimple(
+				work_tmp_dir + "repeats_resolved_after_und_cleared_pos.dot",
+				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+		omnigraph::WriteSimple(
+				output_folder + "repeats_resolved_after_und_cleared_pos.dot",
+				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+
+		omnigraph::WriteSimple(
+				work_tmp_dir + "repeats_resolved_und_cleared.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
-		omnigraph::WriteSimple(output_folder + "repeats_resolved_und cleared.dot",
+		omnigraph::WriteSimple(
+				output_folder + "repeats_resolved_und_cleared.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		INFO("repeat resolved grpah written");
 		EdgeIndex<k + 1, NCGraph> aux_index(resolved_graph);
@@ -467,6 +608,49 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 	if (!paired_mode)
 		OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
+}
+
+void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index, NonconjugateDeBruijnGraph& graph, const string& work_tmp_dir, const string& output_folder){                                                                      
+
+    NonconjugateDeBruijnGraph resolvedGraph(graph.k());                                                                                                                                                                                   
+    typedef NonconjugateDeBruijnGraph::EdgeId NCEdgeId;                                                                                                                                                                          
+    PairInfoIndexData<NCEdgeId> piid;                                                                                                                                                                                                     
+    for( auto iter = index.begin() ; iter != index.end() ; ++iter)                                                                                                                                                                        
+    {                                                                                                                                                                                                                                     
+
+        vector<PairInfo<NCEdgeId> >  pi = *iter ;                                                                                                                                                                                         
+        for(size_t i = 0 ; i  < pi.size() ; ++i)                                                                                                                                                                                          
+        {                                                                                                                                                                                                                                 
+            if(pi[i].d >=0)                                                                                                                                                                                                               
+                piid.AddPairInfo(pi[i],1);                                                                                                                                                                                                
+        }                                                                                                                                                                                                                                 
+    }                                                                                                                                                                                                                                     
+    RectangleRepeatResolver<NonconjugateDeBruijnGraph> rectangleResolver(graph, piid, resolvedGraph, (size_t)30);
+    rectangleResolver.Process();                                                                                                                                                                                                          
+
+
+    ClipTips(resolvedGraph);                                                                                                                                                                                                              
+    RemoveLowCoverageEdges(resolvedGraph);                                                                                                                                                                                                
+	IdTrackHandler<NCGraph> Resolved_IntIds(resolvedGraph);
+	RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolvedGraph,
+				Resolved_IntIds);
+
+
+	ClipTips(resolvedGraph);
+	RemoveLowCoverageEdges(resolvedGraph);
+	EmptyGraphLabeler<NonconjugateDeBruijnGraph> emptyLabeler;
+
+    omnigraph::WriteSimple(work_tmp_dir + "rectgraph.dot",
+            "rectgraph", resolvedGraph, IdTrackLabelerResolved);
+    INFO("rect graph written: " + work_tmp_dir + "rectgraph.dot");
+
+
+	omnigraph::WriteSimple(work_tmp_dir + "before-rectgraph.dot",
+			"before-rectgraph", graph, emptyLabeler);
+	INFO("rect graph written: " + work_tmp_dir + "before-rectgraph.dot");
+
+	OutputContigs(resolvedGraph, output_folder + "rectcontig.fasta");
+	OutputContigs(graph, output_folder + "before-rectcontig.fasta");
 }
 
 }

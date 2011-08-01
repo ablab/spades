@@ -2,7 +2,7 @@
 
 a: 
 	make -C src/abruijn
-	
+
 d:
 	make -C src/debruijn
 
@@ -12,12 +12,9 @@ p:
 b:
 	make -C src/bayes
 
-h:
-	make -C src/hammer
-
 at: 
 	make -C test/abruijn
-	
+
 dt:
 	make -C test/debruijn
 
@@ -29,11 +26,11 @@ ct:
 
 ht:
 	make -C test/hammer
-	
+
 clean:
 	rm -rf ./build/*
 
 test: ct at dt ht
 
 #temporary fix
-all: a b d h test
+all: a b d test
