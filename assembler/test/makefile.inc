@@ -7,9 +7,9 @@ OBJS := $(addprefix $(builddir)/, $(notdir $(SRC:.cpp=.o)))
 all:$(EXEC)
 	@echo "vvvvvvvvvv MAKE SUCCESSFUL vvvvvvvvvv"
 
-CC=g++
-CFLAGS=-c -g3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x -I../../src/libs/cute -I../../src/libs -I../../src/common -I../../src/common/read -I../../src/common/sequence -I../../src -I../../src/omni -I../../src/$(DIR) -I../../src/$(DIR)
-LDFLAGS=-L/usr/local/lib -L/usr/local/apr/lib -lz -llog4cxx -lapr-1 -laprutil-1
+CC=g++44
+CFLAGS=-c -g3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x -I./../../ext/log4cxx/log4cxx_install/include/ -I../../src/libs/cute -I../../src/libs -I../../src/common -I../../src/common/read -I../../src/common/sequence -I../../src -I../../src/omni -I../../src/$(DIR) -I../../src/$(DIR)
+LDFLAGS=-L/usr/local/lib -L./../../ext/log4cxx/log4cxx_install/lib -L./../../ext/log4cxx/apr_install/lib -L./../../ext/log4cxx/apr-util_install/lib -lz -llog4cxx -lapr-2 -laprutil-1
 DEPSFL=-MM -MG
 
 
