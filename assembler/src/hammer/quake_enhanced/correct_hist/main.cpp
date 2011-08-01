@@ -89,7 +89,11 @@ int main(int argc, char *argv[]) {
       break;
     } 
   }
-  int lborder =  fmax;
+  if (fmax == -1) {
+    printf ("Bad histogram");
+    return 0;
+  }
+  int lborder = fmax;
   int rborder = fmax;
   while (hist[lborder] > fmax * 0.9) {
     --lborder;
