@@ -214,6 +214,19 @@ void RemoveLowCoverageEdges(Graph &g) {
 	erroneous_edge_remover.RemoveEdges(g);
 	INFO("Low coverage edges removed");
 }
+
+
+template<class Graph>
+void RemoveLowCoverageEdgesForResolver(Graph &g) {
+	INFO("-----------------------------------------");
+	INFO("Removing low coverage edges");
+	double max_coverage = CONFIG.read<double> ("ec_max_coverage");
+	int max_length_div_K = CONFIG.read<int> ("ec_max_length_div_K");
+	LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
+			10000000 * g.k(), max_coverage);
+	erroneous_edge_remover.RemoveEdges(g);
+	INFO("Low coverage edges removed");
+}
 template<class Graph>
 void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 		PairedInfoIndex<Graph> &info, EdgesPositionHandler<Graph> &edges_pos,
@@ -597,7 +610,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
 
 		ClipTips(resolved_graph);
-		RemoveLowCoverageEdges(resolved_graph);
+		RemoveLowCoverageEdgesForResolver(resolved_graph);
 
 		omnigraph::WriteSimple(
 				work_tmp_dir + "repeats_resolved_after_und_cleared_pos.dot",
