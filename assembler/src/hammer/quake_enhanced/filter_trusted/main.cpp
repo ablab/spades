@@ -27,31 +27,35 @@ typedef map<uint64_t, uint32_t> Map;
 struct Options {
   string ifile;
   string ofile;
+  string badfile;
   float threshold;
   bool valid;
   Options()
       : ifile(""),
         ofile(""),
+        badfile(""),
         threshold(-1),
         valid(true) {}  
 };
 
 void PrintHelp(char *progname) {
-  printf("Usage: %s ifile.[q]cst ofile.trust threshold\n", progname);
+  printf("Usage: %s ifile.[q]cst ofile.trust ofile.bad threshold\n", progname);
   printf("Where:\n");
   printf("\tifile.[q]cst\tfile with k|q-mer statistics\n");
-  printf("\tofile.trus\ta filename where filtered data will be outputted\n");
+  printf("\tofile.trust\ta filename where filtered data will be outputted\n");
+  printf("\tofile.bud\ta filename where filtered garbage will be outputted\n");
   printf("\tthreshold\tq-mer threshold\n");
 }
 
 Options ParseOptions(int argc, char *argv[]) {
   Options ret;
-  if (argc != 4) {
+  if (argc != 5) {
     ret.valid = false;
   } else {
     ret.ifile = argv[1];
     ret.ofile = argv[2];
-    ret.threshold = atof(argv[3]);
+    ret.badfile = argv[3];
+    ret.threshold = atof(argv[4]);
     if (ret.threshold <= -1e-5) {
       ret.valid = false;
     }
@@ -69,6 +73,7 @@ int main(int argc, char *argv[]) {
   }
   FILE *ifile = fopen(opts.ifile.c_str(), "r");
   FILE *ofile = fopen(opts.ofile.c_str(), "w");
+  FILE *badfile = fopen(opts.badfile.c_str(), "w");
   char kmer[kMaxK];
   char format[20];
   float freq = -1;
