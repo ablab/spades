@@ -83,11 +83,24 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 
 	// TODO: think about a parallelization -- for some reason, the previous version started producing segfaults
 
+	vector< vector<KMerNo> > vtmp;
+	for(size_t n=0; n < nthreads; ++n) {
+		vector<KMerNo> v_cur;
+		vtmp.push_back(v_cur);
+	}
+
+	#pragma omp parallel for shared(vtmp) num_threads(nthreads)
 	for(size_t i=0; i < PositionKMer::pr->size(); ++i) {
-		AddKMerNos(PositionKMer::pr->at(i), i, vv);
-		if ( i % 1000000 == 0 ) cout << "Processed " << i << " reads." << endl;
-	}	
-	cout << "All k-mers added to maps." << endl;
+		AddKMerNos(PositionKMer::pr->at(i), i, &vtmp[omp_get_thread_num()]);
+		if ( i % 1000000 == 0 ) cout << "Read no. " << i << " processed by thread " << omp_get_thread_num() << "." << endl;
+	}
+	cout << "All k-mers added to vectors." << endl;
+	
+	for(size_t n=0; n < nthreads; ++n) {
+		vv->insert(vv->end(), vtmp[n].begin(), vtmp[n].end());
+		vtmp[n].clear();
+	}
+	cout << "Vectors of k-mers joined. Got a vector of size " << vv->size() << "." << endl;
 }
 
 void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers) {
