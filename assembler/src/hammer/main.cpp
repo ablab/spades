@@ -117,12 +117,12 @@ int main(int argc, char * argv[]) {
 	
 		vector<KMerNo> vv;
 		DoPreprocessing(tau, qvoffset, readsFilename, nthreads, &vv);
-		cout << "Got " << vv.size() << " kmer positions." << endl;
+		cout << "Got " << vv.size() << " kmer positions. Starting parallel sort." << endl;
 		
 		vector<KMerCount> kmers;
 		ParallelSortKMerNos( &vv, &kmers, nthreads );
 
-		sort ( vv.begin(), vv.end(), KMerNo::less );
+		// sort ( vv.begin(), vv.end(), KMerNo::less );
 		cout << "KMer positions sorted." << endl;
 
 		vector< vector<hint_t> > vs(tau+1);
