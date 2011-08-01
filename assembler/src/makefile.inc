@@ -8,9 +8,9 @@ all:$(EXEC)
 	@echo "vvvvvvvvvv MAKE SUCCESSFUL vvvvvvvvvv"
 
 PG=#-pg
-CC=g++44
-CFLAGS=-c -O3 -g3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x $(PG) $(OMP) -I./../../ext/log4cxx/log4cxx_install/include/ -I./../common -I./../common/read -I./../common/sequence -I./../omni -I./.. $(MYCFLAGS) #-DNDEBUG
-LDFLAGS=-O3 -L/usr/local/lib -L./../../ext/log4cxx/log4cxx_install/lib -lz -llog4cxx $(PG) $(MYLDFLAGS)
+CC=g++
+CFLAGS=-c -O3 -g3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x $(PG) $(OMP) -I./../common -I./../common/read -I./../common/sequence -I./../omni -I./.. $(MYCFLAGS) #-DNDEBUG
+LDFLAGS=-O3 -L/usr/local/lib -lz -llog4cxx -lapr-1 -laprutil-1 $(PG) $(MYLDFLAGS)
 DEPSFL=-MM -MG
 
 
