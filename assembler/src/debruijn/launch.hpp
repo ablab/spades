@@ -221,7 +221,7 @@ void RemoveLowCoverageEdgesForResolver(Graph &g) {
 	INFO("-----------------------------------------");
 	INFO("Removing low coverage edges");
 	double max_coverage = CONFIG.read<double> ("ec_max_coverage");
-	int max_length_div_K = CONFIG.read<int> ("ec_max_length_div_K");
+//	int max_length_div_K = CONFIG.read<int> ("ec_max_length_div_K");
 	LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
 			10000000 * g.k(), max_coverage);
 	erroneous_edge_remover.RemoveEdges(g);
