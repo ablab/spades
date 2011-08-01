@@ -8,7 +8,6 @@ using log4cxx::LoggerPtr;
 using log4cxx::Logger;
 using log4cxx::BasicConfigurator;
 
-using std::map;
 using std::string;
 
 namespace {
@@ -23,7 +22,6 @@ const int kStep = 1e5;
 
 LoggerPtr logger(Logger::getLogger("filter_trusted"));
 
-typedef map<uint64_t, uint32_t> Map;
 struct Options {
   string ifile;
   string ofile;
@@ -72,7 +70,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   BasicConfigurator::configure();
-  LOG4CXX_INFO(logger, "Starting preproc: evaluating "
+  LOG4CXX_INFO(logger, "Starting filter_trusted: evaluating "
                << opts.ifile << ".");
   FILE *ifile = fopen(opts.ifile.c_str(), "r");
   FILE *ofile = fopen(opts.ofile.c_str(), "w");
