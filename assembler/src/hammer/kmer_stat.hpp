@@ -4,12 +4,12 @@
 #include <stdint.h>
 #include <vector>
 
-#define BLOBKMER_UNDEFINED	2e9
-#define KMERSTAT_CHANGE		2e9
-#define KMERSTAT_GOOD		2e9 + 1
-#define KMERSTAT_BAD		2e9 + 2
+#define BLOBKMER_UNDEFINED	2e12
+#define KMERSTAT_CHANGE		2e12
+#define KMERSTAT_GOOD		2e12 + 1
+#define KMERSTAT_BAD		2e12 + 2
 
-typedef uint32_t hint_t;
+typedef uint64_t hint_t;
 
 struct KMerStat {
 
