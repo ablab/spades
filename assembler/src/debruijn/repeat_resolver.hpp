@@ -349,6 +349,8 @@ private:
 				}
 			}
 		}
+		if (abs(best - pair_info.d) > 0.000001)
+			WARN("CORRECTED" << pair_info.d <<" TO " << best);
 		return pair_info.set_distance(best);
 	}
 
