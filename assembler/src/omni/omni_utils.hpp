@@ -467,11 +467,12 @@ public:
  */
 template<typename ElementId>
 class Path {
+public:
+
 	vector<ElementId> sequence_;
 	int start_pos_;
 	int end_pos_;
 
-public:
 	typedef typename vector<ElementId>::const_iterator iterator;
 
 	Path(vector<ElementId> sequence, size_t start_pos, size_t end_pos) :

@@ -32,6 +32,7 @@
 #include "graphio.hpp"
 #include "rectangleRepeatResolver.hpp"
 #include "distance_estimation.hpp"
+#include "one_many_contigs_enlarger.hpp"
 //#include "dijkstra.hpp"
 
 namespace debruijn_graph {
@@ -233,7 +234,7 @@ void MapPairedReads(Graph &g,
 	stream.reset();
 	INFO("Threading reads");
 	int quantity = 0;
-	TemplateReadMapper<k , Graph, ReadStream> rm(g, index, stream);
+	SingleReadMapper<k , Graph, ReadStream> rm(g, index, stream);
 	while (!stream.eof()){
 		rm.ThreadNext();
 		quantity ++;
@@ -590,6 +591,12 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		omnigraph::WriteSimple(
 				output_folder + "repeats_resolved_und_cleared.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
+		N50enlarger.one_many_resolve();
+
+		omnigraph::WriteSimple(
+						output_folder + "repeats_resolved_und_cleared_und_simplified.dot",
+						"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		INFO("repeat resolved grpah written");
 		EdgeIndex<k + 1, NCGraph> aux_index(resolved_graph);
 
