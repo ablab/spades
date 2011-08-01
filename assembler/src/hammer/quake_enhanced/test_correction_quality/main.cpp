@@ -12,10 +12,6 @@ namespace {
  * @variable Length of string buffer which will store k-mer.
  */
 const uint32_t kMaxK = 100;
-/**
- * @variable Every kStep k-mer will appear in the log.
- */
-const int kStep = 1e5;
 
 struct Options {
   string genom_file;
