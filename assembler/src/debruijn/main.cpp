@@ -8,6 +8,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "distance_estimation.hpp"
+//#include <distance_estimation.hpp>
 
 namespace {
 

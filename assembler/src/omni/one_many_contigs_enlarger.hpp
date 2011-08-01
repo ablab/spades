@@ -34,9 +34,13 @@ public:
 					vector<EdgeId> toMerge;
 					toMerge.push_back(edge1);
 					toMerge.push_back(edge2);
+					DEBUG("first part ");
 					g_.MergePath(toMerge);
 				}
+				DEBUG("first vertex before delete ");
+
 				g_.ForceDeleteVertex(vertex);
+				DEBUG("first vertex deleted ");
 			}
 		}
 
@@ -53,10 +57,11 @@ public:
 					vector<EdgeId> toMerge ;
 					toMerge.push_back(edge2);
 					toMerge.push_back(edge1);
-
+					DEBUG("second part ");
 					g_.MergePath(toMerge);
 				}
 				g_.ForceDeleteVertex(vertex);
+				DEBUG("second vertex deleted ");
 			}
 		}
 
