@@ -205,7 +205,7 @@ class Reader<PairedRead> : public IReader<PairedRead> {
     SingleRead sr1, sr2;
     (*first_) >> sr1;
     (*second_) >> sr2;
-    pairedread = PairedRead(sr1, sr2, distance_);  // is it correct?
+    pairedread = PairedRead(sr1, !sr2, distance_);
     return *this;
   }
 
