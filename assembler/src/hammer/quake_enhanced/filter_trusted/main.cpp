@@ -21,7 +21,7 @@ const uint32_t kMaxK = 100;
  */
 const int kStep = 1e5;
 
-LoggerPtr logger(Logger::getLogger("prepare_graph"));
+LoggerPtr logger(Logger::getLogger("filter_trusted"));
 
 typedef map<uint64_t, uint32_t> Map;
 struct Options {
@@ -71,6 +71,9 @@ int main(int argc, char *argv[]) {
     PrintHelp(argv[0]);
     return 1;
   }
+  BasicConfigurator::configure();
+  LOG4CXX_INFO(logger, "Starting preproc: evaluating "
+               << opts.ifile << ".");
   FILE *ifile = fopen(opts.ifile.c_str(), "r");
   FILE *ofile = fopen(opts.ofile.c_str(), "w");
   FILE *badfile = fopen(opts.badfile.c_str(), "w");
