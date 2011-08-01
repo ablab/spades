@@ -145,7 +145,39 @@ void WriteGraphComponents(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	WriteComponents(folder + file_name, graph_name, g, split_edge_length,
 			path1, path2);
+
 }
+
+
+string ConstructComponentName(string file_name, size_t cnt) {
+	stringstream ss;
+	ss << cnt;
+	string res = file_name;
+	res.insert(res.length() - 4, ss.str());
+	return res;
+}
+
+template<class Graph>
+void PrintGraphComponents(const string& file_name, Graph& g, size_t split_edge_length,
+		IdTrackHandler<Graph> &old_IDs,
+		PairedInfoIndex<Graph> &paired_index, EdgesPositionHandler<Graph> &edges_positions)
+{
+	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
+	ComponentSizeFilter<Graph> checker(g, split_edge_length);
+	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
+	size_t cnt = 1;
+	while (!splitter.Finished() && cnt <= 100) {
+		string component_name =
+				ConstructComponentName(file_name, cnt).c_str();
+		auto component = splitter.NextComponent();
+		EdgeVertexFilter<Graph> *filter = new EdgeVertexFilter<Graph>(g, component);
+		printGraph(g, old_IDs, component_name, paired_index, edges_positions, filter);
+		delete filter;
+		cnt++;
+	}
+
+}
+
 
 void ProducePairedInfo(Graph& g, size_t insert_size, size_t max_read_length,
 		PairedInfoIndex<Graph> &paired_index, const string &output_folder,
@@ -328,6 +360,20 @@ void ConstructGraphWithEtalonPairedInfo(Graph& g,
 			genome);
 }
 
+
+
+template<class Graph>
+void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
+		const string &file_name, PairedInfoIndex<Graph> &paired_index,
+		EdgesPositionHandler<Graph> &edges_positions, EdgeVertexFilter<Graph> *filter) {
+	DataPrinter<Graph> dataPrinter(g, old_IDs, filter);
+	dataPrinter.saveGraph(file_name);
+	dataPrinter.saveEdgeSequences(file_name);
+	dataPrinter.saveCoverage(file_name);
+	dataPrinter.savePaired(file_name, paired_index);
+	dataPrinter.savePositions(file_name, edges_positions);
+}
+
 template<class Graph>
 void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
 		const string &file_name, PairedInfoIndex<Graph> &paired_index,
@@ -338,8 +384,8 @@ void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
 	dataPrinter.saveCoverage(file_name);
 	dataPrinter.savePaired(file_name, paired_index);
 	dataPrinter.savePositions(file_name, edges_positions);
-
 }
+
 template<class Graph>
 void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
 		const string &file_name, PairedInfoIndex<Graph> &paired_index) {
@@ -471,6 +517,8 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 				"no_repeat_graph", g, EdgePosLab);
 
 
+		printGraph(g, IntIds, output_folder + "first_graph", paired_index, EdgePos);
+
 		SimplifyGraph<k> (g, index, 3, genome, output_folder);
 //		MapPairedReads<k, ReadStream, Graph>(g, stream, index);
 
@@ -480,6 +528,10 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		WriteGraphComponents<k> (g, index, genome,
 				output_folder + "graph_components" + "/", "graph.dot",
 				"graph_component", insert_size);
+		PrintGraphComponents(output_folder + "graph_components/graph", g, insert_size,
+				IntIds, paired_index, EdgePos);
+
+
 		if (paired_mode) {
 			ProducePairedInfo(g, insert_size, max_read_length, paired_index,
 					output_folder, etalon_info_mode);
@@ -499,6 +551,11 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 	omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_before_poslab.dot",
 			"no_repeat_graph", g, EdgePosLab);
 	PairedInfoIndex<Graph> clustered_index(g);
+
+	printGraph(g, IntIds, output_folder + "repeats_resolved_before", paired_index, EdgePos);
+
+
+
 	if(paired_mode) {
 		DistanceEstimator<Graph> estimator(g, paired_index, insert_size, max_read_length, 10, 10, 75);
 		estimator.Estimate(clustered_index);
