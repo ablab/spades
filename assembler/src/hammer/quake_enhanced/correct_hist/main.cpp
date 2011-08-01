@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
   int max = 0;
   float x;
   int count;
-  while (fscanf(kmer_hist, "%f %d", &x, &count)) {
+  while (fscanf(kmer_hist, "%f %d", &x, &count) == 2) {
     int r = (int)(x + 0.5);
     hist[r] += count;
     if (r > max) {
