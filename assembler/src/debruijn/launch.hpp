@@ -526,12 +526,12 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		IdTrackHandler<Graph> conj_IntIds(conj_copy_graph,
 				IntIds.MaxVertexId(), IntIds.MaxEdgeId());
 		PairedInfoIndex<Graph> conj_copy_index(conj_copy_graph);
-
+/*
 		scanConjugateGraph(conj_copy_graph, conj_IntIds,
 				work_tmp_dir + "graph", conj_copy_index);
 		printGraph(conj_copy_graph, conj_IntIds, work_tmp_dir + "graph_copy",
 				conj_copy_index);
-
+*/
 		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index,
 				EdgePosBefore);
 
