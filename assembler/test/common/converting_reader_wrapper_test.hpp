@@ -30,17 +30,17 @@ void TestConvertingReaderWrapperReading() {
   ASSERT_EQUAL("ATGCATGCATGC", read.GetSequenceString());
   ASSERT_EQUAL("HGHIHHHGHECH", read.GetPhredQualityString());
   reader >> read;
-  ASSERT_EQUAL("EAS20_8_6_1_2_1700/1", read.name());
-  ASSERT_EQUAL("AAAAAAAAAAAC", read.GetSequenceString());
-  ASSERT_EQUAL("GGGGCGGGGEGG", read.GetPhredQualityString());
+  ASSERT_EQUAL("!EAS20_8_6_1_2_1700/1", read.name());
+  ASSERT_EQUAL("GTTTTTTTTTTT", read.GetSequenceString());
+  ASSERT_EQUAL("GGEGGGGCGGGG", read.GetPhredQualityString());
   reader >> read;
   ASSERT_EQUAL("EAS20_8_6_1_2_1700/1", read.name());
   ASSERT_EQUAL("AAAAAAAAAAAC", read.GetSequenceString());
   ASSERT_EQUAL("GGGGCGGGGEGG", read.GetPhredQualityString());
   reader >> read;
-  ASSERT_EQUAL("EAS20_8_6_1_2_468/1", read.name());
-  ASSERT_EQUAL("TGTGTGTGTGTG", read.GetSequenceString());
-  ASSERT_EQUAL("DADDA8<?>@HH", read.GetPhredQualityString());
+  ASSERT_EQUAL("!EAS20_8_6_1_2_468/1", read.name());
+  ASSERT_EQUAL("CACACACACACA", read.GetSequenceString());
+  ASSERT_EQUAL("HH@>?<8ADDAD", read.GetPhredQualityString());
   ASSERT(reader.eof());
 }
 
