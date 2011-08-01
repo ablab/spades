@@ -21,7 +21,7 @@ public:
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
-	void process(std::string dirprefix, const std::vector< std::vector<hint_t> > & vs);
+	void process(std::string dirprefix, std::vector< SubKMerPQ > * vs);
 	
 	/// free up memory
 	void clear() {
