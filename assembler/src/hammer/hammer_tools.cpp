@@ -90,7 +90,7 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 	}
 
 	#pragma omp parallel for shared(vtmp) num_threads(nthreads)
-	for(size_t i=0; i < PositionKMer::pr->size(); ++i) {
+	for(int i=0; i < PositionKMer::pr->size(); ++i) {
 		AddKMerNos(PositionKMer::pr->at(i), i, &vtmp[omp_get_thread_num()]);
 		if ( i % 1000000 == 0 ) cout << "Read no. " << i << " processed by thread " << omp_get_thread_num() << "." << endl;
 	}
