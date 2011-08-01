@@ -4,15 +4,18 @@
 #include <stdint.h>
 #include <vector>
 
-#define KMERSTAT_CHANGE	1e12
-#define KMERSTAT_GOOD	1e12 + 1
-#define KMERSTAT_BAD	1e12 + 2
+#define BLOBKMER_UNDEFINED	2e9
+#define KMERSTAT_CHANGE		2e9
+#define KMERSTAT_GOOD		2e9 + 1
+#define KMERSTAT_BAD		2e9 + 2
+
+typedef uint32_t hint_t;
 
 struct KMerStat {
 
-	KMerStat (size_t cnt, uint64_t cng) : count(cnt), changeto(cng) { }
-	size_t count;
-	uint64_t changeto;
+	KMerStat (uint32_t cnt, hint_t cng) : count(cnt), changeto(cng) { }
+	uint32_t count;
+	hint_t changeto;
 
 	bool isGood() const { return changeto == KMERSTAT_GOOD; }
 	bool change() const { return changeto < KMERSTAT_CHANGE; }
