@@ -8,6 +8,7 @@
 #include <omp.h>
 #include <iostream>
 #include <fstream>
+#include <queue>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include "read/ireadstream.hpp"
@@ -103,43 +104,34 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 	cout << "Vectors of k-mers joined. Got a vector of size " << vv->size() << "." << endl;
 }
 
-void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers) {
+void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers, vector<SubKMerPQ> * vskpq) {
 	int effective_threads = min(nthreads, tau+1);
-	hint_t kmerno = 0;
-	kmers->clear();
+	int subkmer_nthreads = max ( (tau + 1) * ( (int)(nthreads / (tau + 1)) ), tau+1 );
+	int effective_subkmer_threads = min(subkmer_nthreads, nthreads);
+
 	cout << "Starting split and sort..." << endl;
-
-	KMerNo curKMer = vv[0];
-	KMerCount curKMerCount = make_pair( PositionKMer(vv[0].index), KMerStat(0, KMERSTAT_GOOD) );
-	for (hint_t i = 0; i < vv.size(); ++i) {
-		if ( !curKMer.equal(vv[i]) ) {
-			kmers->push_back(curKMerCount);
-			curKMer = vv[i];
-			curKMerCount = make_pair( PositionKMer(vv[i].index), KMerStat(0, KMERSTAT_GOOD) );
-			++kmerno;
-		}
-		curKMerCount.second.count++;
-		//hint_t readno = PositionKMer::readNoFromBlobPos( vv[i].index );
-		//PositionKMer::pr->at(readno).kmers().insert( make_pair( vv[i].index - PositionKMer::pr->at(readno).start(), kmerno ) );
-		PositionKMer::blobkmers[ vv[i].index ] = kmerno;
-	}
-	kmers->push_back(curKMerCount);
-
-	cout << "Auxiliary vectors loaded. In total, we have " << kmers->size() << " kmers." << endl;
 
 	#pragma omp parallel for shared(vs, kmers, tau) num_threads(effective_threads)
 	for (int j=0; j<tau+1; ++j) {
 		vs->at(j).resize( kmers->size() );
 		for (size_t m = 0; m < kmers->size(); ++m) vs->at(j)[m] = m;
-
-		cout << j << " " << vs->at(j).size() << " iter=" << (size_t)(&vs->at(j)) << endl;
-		
-
-		boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > sub_sort = boost::bind(PositionKMer::compareSubKMers, _1, _2, kmers, tau, PositionKMer::subKMerPositions->at(j), PositionKMer::subKMerPositions->at(j+1));
-		sort(vs->at(j).begin(), vs->at(j).end(), sub_sort);
-		cout << "Sorted auxiliary vector " << j << endl;
 	}
-	cout << "Auxiliary vectors sorted." << endl;
+
+	for (size_t j=0; j < tau+1; ++j) {
+		subkmer_comp_type sort_routine = boost::bind(SubKMerPQElement::compareSubKMerPQElements, _1, _2, kmers, tau, PositionKMer::subKMerPositions->at(j), PositionKMer::subKMerPositions->at(j+1));
+		SubKMerPQ skpq( &(vs->at(j)), max( (int)(nthreads / (tau + 1)), 1), sort_routine );
+		vskpq->push_back(skpq);
+	}
+
+	// we divide each of (tau+1) subkmer vectors into nthreads/(tau+1) subvectors
+	// as a result, we have subkmer_nthreads threads for sorting
+	#pragma omp parallel for shared(vs, vskpq) num_threads( effective_subkmer_threads )
+	for (size_t j=0; j < subkmer_nthreads; ++j) {
+		// for each j, we sort subvector (j/(tau+1)) of the vector of subkmers at offset (j%(tau+1))
+		boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > sub_sort = boost::bind(PositionKMer::compareSubKMers, _1, _2, kmers, tau, PositionKMer::subKMerPositions->at(j % (tau+1)), PositionKMer::subKMerPositions->at((j % (tau+1))+1));
+		(*vskpq)[ (j % (tau+1)) ].doSort( j / (tau+1), sub_sort );
+	}
+	cout << "Auxiliary subvectors sorted and sent to priority queues." << endl;
 }
 
 
@@ -256,4 +248,72 @@ bool CorrectRead(const vector<KMerCount> & km, hint_t readno, ofstream * ofs) {
 	PositionKMer::rv->at(readno).setSequence(seq.data());
 	return res;
 }
+
+struct PriorityQueueElement {
+	KMerNo kmerno;
+	int n;
+	PriorityQueueElement( KMerNo km, int l) : kmerno(km), n(l) { }
+};
+
+bool operator < (const PriorityQueueElement & l, const PriorityQueueElement & r) {
+	return KMerNo::greater(l.kmerno, r.kmerno);
+}
+
+bool operator == (const PriorityQueueElement & l, const PriorityQueueElement & r) {
+	return l.kmerno.equal(r.kmerno);
+}
+
+void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthreads) {
+
+	// find boundaries of the pieces
+	vector< size_t > boundaries(nthreads + 1);
+	size_t sub_size = (size_t)(v->size() / nthreads);
+	for (size_t j=0; j<nthreads; ++j) {
+		boundaries[j] = j * sub_size;
+	}
+	boundaries[nthreads] = v->size();
+	cout << "Thread boundaries: "; for (size_t j=0; j<nthreads+1; ++j) cout << boundaries[j] << " "; cout << endl;
+
+	#pragma omp parallel for shared(v, boundaries) num_threads(nthreads)
+	for (int j = 0; j < nthreads; ++j) {
+		sort(v->begin() + boundaries[j], v->begin() + boundaries[j+1], KMerNo::less);
+	}
+	cout << "Subvectors sorted." << endl;
+
+	std::priority_queue< PriorityQueueElement, vector<PriorityQueueElement> > pq;
+	vector< vector<KMerNo>::iterator > it(nthreads);
+	vector< vector<KMerNo>::iterator > it_end(nthreads);
+	for (size_t j=0; j<nthreads; ++j) {
+		it[j] = v->begin() + boundaries[j];
+		it_end[j] = v->begin() + boundaries[j+1];
+		pq.push( PriorityQueueElement(*(it[j]), j) );
+	}
+
+	PriorityQueueElement cur_min = pq.top();
+	KMerCount curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD) );
+	
+	hint_t kmerno = 0;
+
+	while(pq.size()) {
+		PriorityQueueElement pqel = pq.top(); pq.pop();
+		// cout << "cur_min = " << cur_min.kmerno.index << "   popped " << pqel.kmerno.index << endl;
+		if ( !(cur_min == pqel) ) {
+			//cout << "push " << curKMerCount.first.str() << " cnt=" << curKMerCount.second.count << endl;
+			cur_min = pqel;
+			kmers->push_back(curKMerCount);
+			curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD) );
+			++kmerno;			
+		}
+		curKMerCount.second.count++;
+		PositionKMer::blobkmers[ cur_min.kmerno.index ] = kmerno;
+
+		++it[pqel.n];
+		if ( it[pqel.n] != it_end[pqel.n] ) pq.push( PriorityQueueElement(*(it[pqel.n]), pqel.n) );
+	}
+	//cout << "push " << curKMerCount.first.str() << " cnt=" << curKMerCount.second.count << endl;
+	kmers->push_back(curKMerCount);
+
+	cout << "Subvectors merged. In total, we have " << kmers->size() << " kmers." << endl;
+}
+
 
