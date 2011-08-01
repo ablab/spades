@@ -95,10 +95,10 @@ int main(int argc, char *argv[]) {
   }
   int lborder = fmax;
   int rborder = fmax;
-  while (hist[lborder] > fmax * 0.9) {
+  while (hist[lborder] > hist[fmax] * 0.9) {
     --lborder;
   }
-  while (hist[rborder] > fmax * 0.9) {
+  while (hist[rborder] > hist[fmax] * 0.9) {
     ++rborder;
   }
 
@@ -112,6 +112,6 @@ int main(int argc, char *argv[]) {
   
   float average = mass_pos / (double) mass;
   int daverage = (int)(average * 2 + 0.5);
-  printf("Gauss median is at %f\n", daverage / 0.5);
+  printf("Gauss median is at %f\n", daverage / 2.0);
   return 0;
 }
