@@ -35,19 +35,19 @@ void join_maps(KMerStatMap & v1, const KMerStatMap & v2);
  * add k-mers from read to map
  */
 template<uint32_t kK, typename KMerStatMap>
-void AddKMers(const PositionRead &r, uint64_t readno, KMerStatMap *v);
+void AddKMers(const PositionRead &r, hint_t readno, KMerStatMap *v);
 
-void AddKMerNos(const PositionRead &r, uint64_t readno, vector<KMerNo> *v);
+void AddKMerNos(const PositionRead &r, hint_t readno, vector<KMerNo> *v);
 
 
 void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerNo> * vv);
-void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< vector<uint64_t> > * vs, vector<KMerCount> * kmers);
+void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers);
 
 /**
   * correct a read in place
   * @return whether the read has changed at all
   */
-bool CorrectRead(const vector<KMerCount> & kmers, uint64_t readno, ofstream * ofs = NULL);
+bool CorrectRead(const vector<KMerCount> & kmers, hint_t readno, ofstream * ofs = NULL);
 
 #endif
 

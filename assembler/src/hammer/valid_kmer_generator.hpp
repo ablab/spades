@@ -106,6 +106,13 @@ class ValidKMerGenerator {
     }
     return prob[qual];
   }
+  uint32_t GetQual(uint32_t pos) {
+    if (qual_.size() <= pos) {
+      return 2;
+    } else {
+      return qual_[pos];
+    }
+  }
   uint32_t bad_quality_threshold_;
   uint32_t pos_;
   uint32_t end_;
@@ -123,13 +130,13 @@ class ValidKMerGenerator {
 template<uint32_t kK>
 void ValidKMerGenerator<kK>::TrimBadQuality() {
   pos_ = 0;
-  for (; pos_ < qual_.size(); ++pos_) {
-    if ((uint32_t)qual_[pos_] >= bad_quality_threshold_)
+  for (; pos_ < seq_.size(); ++pos_) {
+    if (GetQual(pos_) >= bad_quality_threshold_)
       break;
   }
-  end_ = qual_.size();
+  end_ = seq_.size();
   for (; end_ > pos_; --end_) {
-    if ((uint32_t)qual_[end_ - 1] >= bad_quality_threshold_)
+    if (GetQual(end_ - 1) >= bad_quality_threshold_)
       break;
   }
 }
@@ -147,7 +154,7 @@ void ValidKMerGenerator<kK>::Next() {
       if (i == kK + start_hypothesis) {
         break;
       }
-      correct_probability_ *= Prob(qual_[i]);
+      correct_probability_ *= Prob(GetQual(i));
       if (!is_nucl(seq_[i])) {
         start_hypothesis = i + 1;
         correct_probability_ = 1;
@@ -162,8 +169,8 @@ void ValidKMerGenerator<kK>::Next() {
   } else {
     // good case we can just shift our previous answer
     kmer_ = kmer_ << seq_[pos_ + kK - 1];
-    correct_probability_ *= Prob(qual_[pos_ + kK - 1]);
-    correct_probability_ /= Prob(qual_[pos_ - 1]);
+    correct_probability_ *= Prob(GetQual(pos_ + kK - 1));
+    correct_probability_ /= Prob(GetQual(pos_ - 1));
     ++pos_;
   }
   first = false;
