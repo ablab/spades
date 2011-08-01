@@ -38,7 +38,7 @@ int KMerClustering::hamdistKMer(const PositionKMer & x, const string & y, int ta
 	return dist;
 }
 
-void KMerClustering::processBlock(unionFindClass * uf, vector<uint64_t> & block) {
+void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block) {
 	uint32_t blockSize = block.size();
 	for (uint32_t i = 0; i < blockSize; i++) {
 		uf->find_set(block[i]);
@@ -60,14 +60,10 @@ void KMerClustering::clusterMerge(vector<unionFindClass *>uf, unionFindClass * u
 	for (uint32_t i = 0; i < uf.size(); i++) {
 		classes.clear();
 		uf[i]->get_classes(classes);
+		// cout << classes.size() << " classes:" << endl;
 		delete uf[i];
-		/*cout << "classes[" << i << "]: ";
 		for (uint32_t j = 0; j < classes.size(); j++) {
-			for (uint32_t k = 0; k < classes[j].size(); k++) cout << classes[j][k] << " ";
-			cout << "|";
-		}
-		cout << endl;*/
-		for (uint32_t j = 0; j < classes.size(); j++) {
+			// cout << "  class " << j << " with " << classes[j].size() << " times " << sizeof(int) << endl;
 			uint32_t first = classes[j][0];
 			ufMaster->find_set(first);
 			for (uint32_t k = 0; k < classes[j].size(); k++) {
@@ -301,7 +297,6 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 			distances[i][j] = hamdistKMer(k_[block[i]].first, k_[block[j]].first);
 			distances[j][i] = distances[i][j];
 		}
-		//cout << k_[block[i]].first.str() << "\t" << k_[block[i]].second.count << endl;
 	}
 
 	// Multinomial coefficients -- why? TODO: remove
@@ -385,7 +380,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	}
 }
 
-void KMerClustering::process(string dirprefix, const vector< vector<uint64_t> > & vs) {
+void KMerClustering::process(string dirprefix, const vector< vector<hint_t> > & vs) {
 	
 	int effective_threads = min(nthreads_, tau_+1);
 	vector<unionFindClass *> uf(tau_ + 1);
@@ -397,8 +392,8 @@ void KMerClustering::process(string dirprefix, const vector< vector<uint64_t> > 
 		cout << "Processing split kmers " << i << ", total " << vs[i].size() << "\n";
 		
 		string sbuf;
-		uint64_t last = vs[i][0];
-		vector<uint64_t> block;
+		hint_t last = vs[i][0];
+		vector<hint_t> block;
 		for (size_t j=0; j<vs[i].size(); ++j) {
 			if (j % 10000000 == 0) cout << "Processed (" << i << ") " << j << ", ";
 			if ( PositionKMer::equalSubKMers(last, vs[i][j], &k_, tau_, i) ) { //add to current reads
@@ -458,7 +453,6 @@ void KMerClustering::process(string dirprefix, const vector< vector<uint64_t> > 
 	}
 	
 	cout << "Centering finished."  << endl;
-	
 	
 	/*ofstream outf; outf.open(dirprefix + "/reads.uf.corr");
 	size_t blockNum = 0;

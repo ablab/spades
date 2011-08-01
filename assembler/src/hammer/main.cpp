@@ -31,12 +31,24 @@ using namespace std;
 
 std::vector<Read> * PositionKMer::rv = NULL;
 std::vector<PositionRead> * PositionKMer::pr = NULL;
-uint64_t PositionKMer::revNo = 0;
-uint64_t PositionKMer::blob_size = 0;
-uint64_t PositionKMer::blob_max_size = 0;
+hint_t PositionKMer::revNo = 0;
+hint_t PositionKMer::blob_size = 0;
+hint_t PositionKMer::blob_max_size = 0;
 char * PositionKMer::blob = NULL;
-int64_t * PositionKMer::blobkmers = NULL;
+hint_t * PositionKMer::blobkmers = NULL;
 std::vector<uint32_t> * PositionKMer::subKMerPositions = NULL;
+
+struct KMerStatCount {
+	PositionKMer km;
+
+	KMerStatCount (uint32_t cnt, hint_t cng) : count(cnt), changeto(cng), km(cng) { }
+	uint32_t count;
+	hint_t changeto;
+
+	bool isGood() const { return changeto == KMERSTAT_GOOD; }
+	bool change() const { return changeto < KMERSTAT_CHANGE; }
+};
+
 
 int main(int argc, char * argv[]) {
 	if (argc < 6 || argc > 7) {
@@ -44,10 +56,12 @@ int main(int argc, char * argv[]) {
 		return 0;
 	}
 
-	cout << "sizeof( uint64_t ) = " << sizeof(uint64_t) << endl;
+	cout << "sizeof( hint_t ) = " << sizeof(hint_t) << endl;
 	cout << "sizeof( KMerStat ) = " << sizeof(KMerStat) << endl;
 	cout << "sizeof( PositionRead ) = " << sizeof(PositionRead) << endl;
 	cout << "sizeof( PositionKMer ) = " << sizeof(PositionKMer) << endl;
+	cout << "sizeof( KMerCount ) = " << sizeof(KMerCount) << endl;
+	cout << "sizeof( new KMerCount ) = " << sizeof(KMerStatCount) << endl;
 
 	int tau = atoi(argv[1]);
 	int qvoffset = atoi(argv[2]);
@@ -66,19 +80,19 @@ int main(int argc, char * argv[]) {
 
 	cout << "Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K << endl;
 
-	uint64_t totalReadSize;
+	hint_t totalReadSize;
 	PositionKMer::rv = ireadstream::readAllNoValidation(readsFilename, &totalReadSize);
 	cout << "All reads read to memory." << endl;
 
-	PositionKMer::blob = new char[ (uint64_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];
-	PositionKMer::blobkmers = new int64_t[ (uint64_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];	
-	cout << "Allocated blob of size " << (uint64_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) << endl;
+	PositionKMer::blob = new char[ (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];
+	PositionKMer::blobkmers = new hint_t[ (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];	
+	cout << "Allocated blob of size " << (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) << endl;
 	PositionKMer::blob_size = totalReadSize;
-	PositionKMer::blob_max_size = (uint64_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN));
+	PositionKMer::blob_max_size = (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN));
 	std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
 	
 	PositionKMer::revNo = PositionKMer::rv->size();
-	for (uint64_t i = 0; i < PositionKMer::revNo; ++i) {
+	for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
 		Read revcomp = !(PositionKMer::rv->at(i));
 		PositionKMer::rv->push_back( revcomp );
 	}
@@ -88,9 +102,9 @@ int main(int argc, char * argv[]) {
 		cout << "\n     === ITERATION " << iter_count << " ===" << endl;
 
 		PositionKMer::pr = new vector<PositionRead>();
-		uint64_t curpos = 0;
+		hint_t curpos = 0;
 
-		for (uint64_t i = 0; i < PositionKMer::rv->size(); ++i) {
+		for (hint_t i = 0; i < PositionKMer::rv->size(); ++i) {
 			PositionRead pread(curpos, PositionKMer::rv->at(i).size(), i);
 			PositionKMer::pr->push_back(pread);
 			for (uint32_t j=0; j < PositionKMer::rv->at(i).size(); ++j) 
@@ -105,7 +119,7 @@ int main(int argc, char * argv[]) {
 		cout << "Got " << vv.size() << " kmer positions.\n";
 		sort ( vv.begin(), vv.end(), KMerNo::less );
 
-		vector< vector<uint64_t> > vs(tau+1);
+		vector< vector<hint_t> > vs(tau+1);
 		vector<KMerCount> kmers;
 		DoSplitAndSort(tau, nthreads, vv, &vs, &kmers);
 		vv.clear();
@@ -131,12 +145,13 @@ int main(int argc, char * argv[]) {
 		for (int i=0; i<nthreads; ++i) {
 			outfv[i]->close(); delete outfv[i];
 			res = res || changed[i];
-		}		
+		}
 
-		cout << "Correction done. Printing out reads." << endl;
+		cout << "Correction done." << endl;
+		cout << "Printing out reads." << endl;
 	
 		ofstream outf; outf.open(dirprefix + "/" + (char)((int)'0' + iter_count) + ".reads.corrected");	
-		for (uint64_t i = 0; i < PositionKMer::revNo; ++i) {
+		for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
 			PositionKMer::pr->at(i).print(outf, qvoffset);
 		}
 		outf.close();
@@ -149,7 +164,7 @@ int main(int argc, char * argv[]) {
 
 		PositionKMer::rv->resize( PositionKMer::revNo );
 		cout << PositionKMer::rv->size() << ".  " << endl;
-		for (uint64_t i = 0; i < PositionKMer::revNo; ++i) {
+		for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
 			PositionKMer::rv->push_back( !(PositionKMer::rv->at(i)) );
 		}
 		cout << "Reads restored." << endl;
@@ -161,8 +176,12 @@ int main(int argc, char * argv[]) {
 
 	} // iterations
 
+	PositionKMer::subKMerPositions->clear();
+	delete PositionKMer::subKMerPositions;
 	PositionKMer::rv->clear();
 	delete PositionKMer::rv;
+	delete [] PositionKMer::blobkmers;
+	delete [] PositionKMer::blob;
 	return 0;
 }
 

@@ -65,7 +65,7 @@ public:
 		return res;
 	}
 
-	static vector<Read>* readAllNoValidation(string filename, uint64_t * totalsize, int cnt = -1) __attribute__ ((deprecated)) {
+	static vector<Read>* readAllNoValidation(string filename, uint32_t * totalsize, int cnt = -1) __attribute__ ((deprecated)) {
 		ireadstream irs(filename);
 		assert(irs.is_open());
 		vector<Read>* res = new vector<Read>();
