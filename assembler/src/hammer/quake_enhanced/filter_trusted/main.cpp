@@ -25,13 +25,15 @@ LoggerPtr logger(Logger::getLogger("prepare_graph"));
 
 typedef map<uint64_t, uint32_t> Map;
 struct Options {
-  float threshold;
   string ifile;
   string ofile;
+  float threshold;
+  bool valid;
   Options()
       : ifile(""),
         ofile(""),
-        threshold(-1);
+        threshold(-1),
+        valid(true) {}  
 };
 
 void PrintHelp(char *progname) {
@@ -50,7 +52,7 @@ Options ParseOptions(int argc, char *argv[]) {
     ret.ifile = argv[1];
     ret.ofile = argv[2];
     ret.threshold = atof(argv[3]);
-    if (ret.ticks_per_step <= 0) {
+    if (ret.threshold <= -1e-5) {
       ret.valid = false;
     }
   }
