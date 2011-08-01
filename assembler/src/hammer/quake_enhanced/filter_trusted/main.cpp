@@ -88,6 +88,8 @@ int main(int argc, char *argv[]) {
     }
     if (q_count > opts.threshold) {
       fprintf(ofile, "%s\n", kmer);
+    } else {
+      fprintf(badfile, "%s\n", kmer);
     }
   }
   return 0;
