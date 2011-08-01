@@ -34,14 +34,19 @@ public:
 					vector<EdgeId> toMerge;
 					toMerge.push_back(edge1);
 					toMerge.push_back(edge2);
+					DEBUG("first part ");
 					g_.MergePath(toMerge);
 				}
+				DEBUG("first vertex before delete ");
+
 				g_.ForceDeleteVertex(*iter);
+				DEBUG("first vertex deleted ");
 			}
 		}
 
 
 		for (auto iter = g_.SmartVertexBegin(); ! iter.IsEnd(); ++iter){
+			DEBUG(*iter);
 			if ((g_.OutgoingEdgeCount(*iter) > 1) && ((inc_count = g_.IncomingEdgeCount(*iter)) == 1)){
 				EdgeId unique = g_.GetUniqueIncomingEdge(*iter);
 				vector<EdgeId> incEdges = g_.OutgoingEdges(*iter);
@@ -54,10 +59,11 @@ public:
 					vector<EdgeId> toMerge ;
 					toMerge.push_back(edge2);
 					toMerge.push_back(edge1);
-
+					DEBUG("second part ");
 					g_.MergePath(toMerge);
 				}
 				g_.ForceDeleteVertex(*iter);
+				DEBUG("second vertex deleted ");
 			}
 		}
 
