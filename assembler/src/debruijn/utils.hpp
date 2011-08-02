@@ -699,22 +699,24 @@ public:
 			io::PairedRead p_r;
 			stream_ >> p_r;
 			Sequence read = p_r.first().sequence();
-			Seq<k + 1> kmer = read.start<k + 1>();
-			bool found;
-			for (size_t i = k + 1; i <= read.size(); ++i) {
-				if (index_.containsInIndex(kmer)) {
-					pair<EdgeId, size_t> position = index_.get(kmer);
-					found = false;
-					for (size_t j = 0; j < res.size(); j++)
-						if (res[j] == position.first) {
-							found = true;
-							break;
-						}
-					if (!found)
-						res.push_back(position.first);
+			if (k+1 <= read.size()) {
+				Seq<k + 1> kmer = read.start<k + 1>();
+				bool found;
+				for (size_t i = k + 1; i <= read.size(); ++i) {
+					if (index_.containsInIndex(kmer)) {
+						pair<EdgeId, size_t> position = index_.get(kmer);
+						found = false;
+						for (size_t j = 0; j < res.size(); j++)
+							if (res[j] == position.first) {
+								found = true;
+								break;
+							}
+						if (!found)
+							res.push_back(position.first);
+					}
+					if (i != read.size())
+						kmer = kmer << read[i];
 				}
-				if (i != read.size())
-					kmer = kmer << read[i];
 			}
 		}
 		return res;

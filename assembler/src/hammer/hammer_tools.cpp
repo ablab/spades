@@ -302,10 +302,6 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 	KMerCount curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD) );
 	
 	hint_t kmerno = 0;
-	size_t size_kmers = v->size() / 2;
-	kmers->reserve( size_kmers );
-	size_t size_increment = v->size() / 100;
-	kmers->clear();
 
 	while(pq.size()) {
 		PriorityQueueElement pqel = pq.top(); pq.pop();
@@ -313,7 +309,6 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 		if ( !(cur_min == pqel) ) {
 			//cout << "push " << curKMerCount.first.str() << " cnt=" << curKMerCount.second.count << endl;
 			cur_min = pqel;
-			if (kmerno >= size_kmers) { size_kmers += size_increment; kmers->reserve( size_kmers ); }
 			kmers->push_back(curKMerCount);
 			curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD) );
 			++kmerno;			
@@ -324,7 +319,10 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 		++it[pqel.n];
 		if ( it[pqel.n] != it_end[pqel.n] ) pq.push( PriorityQueueElement(*(it[pqel.n]), pqel.n) );
 	}
+	//cout << "push " << curKMerCount.first.str() << " cnt=" << curKMerCount.second.count << endl;
 	kmers->push_back(curKMerCount);
+
+	//cout << "Subvectors merged. In total, we have " << kmers->size() << " kmers." << endl;
 }
 
 
