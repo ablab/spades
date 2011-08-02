@@ -593,8 +593,8 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const Sequence& genome,
 		DistanceEstimator<Graph> estimator(g, paired_index, insert_size,
 				max_read_length, 10, 10, 75);
 		estimator.Estimate(clustered_index);
-		CountClusteredPairedInfoStats(g, insert_size, max_read_length, paired_index, etalon_paired_index,
-						output_folder);
+//		CountClusteredPairedInfoStats(g, insert_size, max_read_length, paired_index, etalon_paired_index,
+//						output_folder);
 	}
 
 	if (paired_mode) {
