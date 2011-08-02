@@ -238,7 +238,7 @@ void MapPairedReads(Graph &g,
 	stream.reset();
 	INFO("Threading reads");
 	int quantity = 0;
-	ReadMapper<k , Graph, ReadStream> rm(g, index, stream);
+	TemplateReadMapper<k , Graph, ReadStream> rm(g, index, stream);
 	while (!stream.eof()){
 		rm.ThreadNext();
 		quantity ++;

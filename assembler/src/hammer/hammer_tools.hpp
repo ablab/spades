@@ -39,24 +39,8 @@ void AddKMers(const PositionRead &r, uint64_t readno, KMerStatMap *v);
 
 void AddKMerNos(const PositionRead &r, uint64_t readno, vector<KMerNo> *v);
 
-class ReadStatMapContainer {
-public:
-	ReadStatMapContainer(const vector<KMerStatMap> & vv) : v_(vv) { init(); }
 
-	void init();
-	KMerCount next();
-	size_t size();
-	
-private:
-	const vector<KMerStatMap> & v_;
-	vector<KMerStatMap::const_iterator> i_;
-
-	const KMerStatMap::const_iterator & cur_min();
-};
-
-//void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerStatMap> * vv);
 void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerNo> * vv);
-// void DoSplitAndSort(int tau, int nthreads, ReadStatMapContainer & rmsc, vector< vector<uint64_t> > * vs, vector<KMerCount> * kmers);
 void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< vector<uint64_t> > * vs, vector<KMerCount> * kmers);
 
 /**

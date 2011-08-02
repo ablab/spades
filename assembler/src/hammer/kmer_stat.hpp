@@ -4,16 +4,15 @@
 #include <stdint.h>
 #include <vector>
 
-#define KMERSTAT_CHANGE	18446744073709551610
-#define KMERSTAT_GOOD	18446744073709551611
-#define KMERSTAT_BAD	18446744073709551612
+#define KMERSTAT_CHANGE	1e12
+#define KMERSTAT_GOOD	1e12 + 1
+#define KMERSTAT_BAD	1e12 + 2
 
 struct KMerStat {
 
 	KMerStat (size_t cnt, uint64_t cng) : count(cnt), changeto(cng) { }
 	size_t count;
 	uint64_t changeto;
-	// std::vector< std::pair<int64_t, uint32_t> > pos;  // positions in reads
 
 	bool isGood() const { return changeto == KMERSTAT_GOOD; }
 	bool change() const { return changeto < KMERSTAT_CHANGE; }

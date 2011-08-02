@@ -25,13 +25,14 @@ class PositionKMer {
 	static uint64_t blob_max_size;
 	static uint64_t blob_size;
 
+	static int64_t* blobkmers;
+
+	static std::vector<uint32_t> * subKMerPositions;
+
 	static bool compareSubKMers( const uint64_t kmer1, const uint64_t kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t offset) {
-		for (uint32_t i = offset; i < K; i += tau+1) {
-			if (km->at(kmer1).first[i] != km->at(kmer2).first[i]) {
-				return (  km->at(kmer1).first[i] < km->at(kmer2).first[i] );
-			}
-		}
-		return false;
+		return ( strncmp( blob + km->at(kmer1).first.start_ + subKMerPositions->at(offset),
+			  	  blob + km->at(kmer2).first.start_ + subKMerPositions->at(offset),
+				  subKMerPositions->at(offset + 1) - subKMerPositions->at(offset)) < 0 );
 	}
 
 	static bool equalSubKMers( const uint64_t kmer1, const uint64_t kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t offset) {
@@ -47,7 +48,6 @@ class PositionKMer {
   	static uint64_t readNoFromBlobPosInternal( uint64_t blobpos, uint64_t start, uint64_t end ) {
 		if (start >= end - 1) return start;
 		uint64_t mid = start + (end - start) / 2;
-		// cout << "      start = " << start << "  end = " << end << "  mid = " << mid << endl;
 		if ( blobpos < pr->at(mid).start() ) {
 			return readNoFromBlobPosInternal( blobpos, start, mid );
 		} else {
@@ -78,21 +78,11 @@ class PositionKMer {
 	}
 
 	bool operator < ( const PositionKMer & kmer ) const {
-		for (uint32_t i = 0; i < K; i++) {
-			if ( at(i) != kmer.at(i) ) {
-				return ( at(i) < kmer.at(i) );
-			}
-		}
-		return false;
+		return ( strncmp( blob + start_, blob + kmer.start_, K)  < 0 );
 	}
 	
 	bool operator == ( const PositionKMer & kmer ) const {
-		for (uint32_t i = 0; i < K; ++i) {
-			if ( at(i) != kmer.at(i) ) {
-				return false;
-			}
-		}
-		return true;
+		return ( strncmp( blob + start_, blob + kmer.start_, K) == 0 );
 	}
 
 	string str() const {
@@ -123,21 +113,7 @@ struct KMerNo {
 	KMerNo( uint64_t no ) : index(no) { } 
 
 	bool equal(const KMerNo & kmerno) {
-		for (size_t i = 0; i < K; ++i) {
-			if (PositionKMer::blob[ index + i ] != PositionKMer::blob[ kmerno.index + i ]) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	static bool less(const KMerNo &l, const KMerNo &r) {
-		for (size_t i = 0; i < K; ++i) {
-			if (PositionKMer::blob[ l.index + i ] != PositionKMer::blob[ r.index + i ]) {
-				return (PositionKMer::blob[ l.index + i ] < PositionKMer::blob[ r.index + i ]);
-			}
-		}
-		return false;
+		return ( strncmp( PositionKMer::blob + index, PositionKMer::blob + kmerno.index, K) == 0 );
 	}
 
 	string str() const {
@@ -148,6 +124,10 @@ struct KMerNo {
 		return res;
 	}
 
+	static bool less(const KMerNo &l, const KMerNo &r) {
+		return ( strncmp( PositionKMer::blob + l.index, PositionKMer::blob + r.index, K) < 0 );
+
+	}
 };
 
 

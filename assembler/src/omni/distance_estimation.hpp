@@ -37,10 +37,13 @@ private:
 				graph_.EdgeStart(second), callback);
 		path_processor.Process();
 		auto result = callback.distances();
-		sort(result.begin(), result.end());
 		for(size_t i = 0; i < result.size(); i++) {
 			result[i] += graph_.length(first);
 		}
+		if (first == second) {
+			result.push_back(0);
+		}
+		sort(result.begin(), result.end());
 		return result;
 	}
 
@@ -51,15 +54,16 @@ private:
 		for (size_t i = 0; i < forward.size(); i++) {
 			double weight = 0;
 			for (; cur < data.size(); cur++) {
-				if (data[i].d < 0) {
+				if (data[cur].d < 0) {
 					continue;
 				}
 				if (i + 1 < forward.size() && forward[i + 1] - data[cur].d
 						< data[cur].d - forward[i]) {
 					break;
 				}
-				if(abs(data[cur].d - forward[i]) < max_distance_)
+				if(abs(data[cur].d - forward[i]) < max_distance_) {
 					weight += data[cur].weight;
+				}
 			}
 			if (weight > 0) {
 				result.push_back(make_pair(forward[i], weight));
