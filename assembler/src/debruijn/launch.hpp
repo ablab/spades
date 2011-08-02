@@ -279,13 +279,15 @@ void MapPairedReads(Graph &g,
 	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Threading reads");
-	int quantity = 0;
+	int quantity = 0, map_quantity = 0;
+
 	SingleReadMapper<k , Graph, ReadStream> rm(g, index, stream);
 	while (!stream.eof()){
-		rm.ThreadNext();
+		vector<EdgeId> res = rm.GetContainingEdges();
 		quantity ++;
+		map_quantity += res.size();
 	}
-	INFO(quantity <<" reads_threaded");
+	INFO(2 * quantity <<" reads_threaded,to "<< map_quantity <<" edges");
 }
 
 
@@ -554,7 +556,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		printGraph(g, IntIds, output_folder + "first_graph", paired_index, EdgePos);
 
 		SimplifyGraph<k> (g, index, 3, genome, output_folder);
-//		MapPairedReads<k, ReadStream, Graph>(g, stream, index);
+		MapPairedReads<k, ReadStream, Graph>(g, stream, index);
 
 		ProduceInfo<k> (g, index, genome,
 				output_folder + "simplified_graph.dot", "simplified_graph");
