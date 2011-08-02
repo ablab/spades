@@ -456,7 +456,7 @@ private:
 	boost::optional<Info> last_estimated_imperfect_match_;
 	Infos last_etalon_imperfect_matches_;
 
-	void HandleImPerfectMatch(const Info& etalon, const Info& estimated) {
+	void HandleImperfectMatch(const Info& etalon, const Info& estimated) {
 		if (last_estimated_imperfect_match_ != estimated) {
 			ProcessImperfectMatch(last_estimated_imperfect_match_, last_etalon_imperfect_matches_);
 			last_estimated_imperfect_match_ = boost::in_place(estimated);
@@ -465,16 +465,16 @@ private:
 		last_etalon_imperfect_matches_.push_back(etalon);
 	}
 
-	void ProcessImperfectMatch(const Info& estimated_cluster, const Infos& etalon_matches) {
-		double etalon_variance = etalon_matches[etalon_matches.size() - 1].d - etalon_matches[0].d;
-		imperfect_match_stat_.push_back(make_pair(make_pair(estimated_cluster.weight, estimated_cluster.variance - etalon_variance)
+	void ProcessImperfectMatch(const boost::optional<Info>& estimated_cluster, const Infos& etalon_matches) {
+		if (estimated_cluster) {
+			double etalon_variance = etalon_matches[etalon_matches.size() - 1].d - etalon_matches[0].d;
+			imperfect_match_stat_.push_back(make_pair(make_pair(estimated_cluster.get().weight, estimated_cluster.get().variance - etalon_variance)
 				, etalon_matches.size()));
+		}
 	}
 
 	void Flush() {
-		if (last_estimated_imperfect_match_) {
-			ProcessImperfectMatch(last_estimated_imperfect_match_, last_etalon_imperfect_matches_);
-		}
+		ProcessImperfectMatch(last_estimated_imperfect_match_, last_etalon_imperfect_matches_);
 	}
 
 	void HandlePairsNotInEtalon(const set<pair<EdgeId, EdgeId>>& pairs_in_etalon) {
@@ -483,7 +483,10 @@ private:
 			EdgeId first = estimated_infos[0].first;
 			EdgeId second = estimated_infos[0].second;
 			if (pairs_in_etalon.count(make_pair(first, second)) == 0) {
-				for_each(estimated_infos.begin(), estimated_infos.end(), HandleFalsePositive);
+//				for_each(estimated_infos.begin(), estimated_infos.end(), HandleFalsePositive);
+				for (auto it2 = estimated_infos.begin(); it2!=estimated_infos.end(); ++it2) {
+					HandleFalsePositive(*it2);
+				}
 			}
 		}
 	}
@@ -501,8 +504,8 @@ private:
 	}
 
 	bool HandleIfImperfectMatch(const Info& etalon, const Info& estimated) {
-		if (ge(etalon.d > estimated.d - estimated.variance) && le(etalon.d < estimated.d + estimated.variance)) {
-			HandleImPerfectMatch(etalon, estimated);
+		if (ge(etalon.d, estimated.d - estimated.variance) && le(etalon.d, estimated.d + estimated.variance)) {
+			HandleImperfectMatch(etalon, estimated);
 			return true;
 		}
 		return false;
@@ -547,7 +550,7 @@ public:
 			Infos etalon_infos = *it;
 			EdgeId first = etalon_infos[0].first;
 			EdgeId second = etalon_infos[0].second;
-			pairs_in_etalon.insert(first, second);
+			pairs_in_etalon.insert(make_pair(first, second));
 
 			Infos estimated_infos = estimated_pair_info_.GetEdgePairInfo(first, second);
 			ProcessInfos(etalon_infos, estimated_infos);

@@ -77,10 +77,9 @@ void BuildDeBruijnGraph(ReadStream& stream,
 		WriteGraphComponents<k> (g, index, genome,
 				output_folder + "graph_components" + "/", "graph.dot",
 				"graph_component", insert_size);
-		if (paired_mode) {
-			ProducePairedInfo(g, insert_size, max_read_length, paired_index,
-					output_folder, etalon_info_mode);
-		}
+//		if (paired_mode) {
+//			ProducePairedInfoStats(g, insert_size, max_read_length, paired_index, output_folder);
+//		}
 	}
 
 	INFO("Building de Bruijn graph finished");
