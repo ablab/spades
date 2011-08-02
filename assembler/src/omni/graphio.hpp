@@ -15,6 +15,7 @@
 
 #include "debruijn/ID_track_handler.hpp"
 #include "debruijn/edges_position_handler.hpp"
+#include "EdgeVertexFilter.hpp"
 using namespace omnigraph;
 using namespace debruijn_graph;
 
@@ -38,16 +39,24 @@ private:
 	void save(FILE* file, EdgeId eid);
 //	void save(Sequence *sequence);
 	void save(FILE* file, VertexId vid);
-
 	Graph &graph_;
 	int edge_count_;
 //	map<EdgeId, typename IdTrackHandler<Graph>::realIdType> real_edge_ids_;
 	IdTrackHandler<Graph> &IdHandler_;
+	EdgeVertexFilter<Graph> *filter_;
 public:
 	DataPrinter(/*const string& file_name,*/ Graph &g, IdTrackHandler<Graph> &old_IDs) : graph_(g), IdHandler_(old_IDs) {
 		INFO("Creating of saver started");
 		edge_count_ = 0;
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+			edge_count_++;
+		}
+		filter_ = NULL;
+	}
+	DataPrinter(/*const string& file_name,*/ Graph &g, IdTrackHandler<Graph> &old_IDs, 	EdgeVertexFilter<Graph> *filter) : graph_(g), IdHandler_(old_IDs), filter_(filter)  {
+		INFO("Creating of saver started");
+		edge_count_ = 0;
+		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
 			edge_count_++;
 		}
 	}
@@ -59,19 +68,35 @@ void DataPrinter<Graph>::saveGraph(const string& file_name) {
 	FILE* file = fopen((file_name + ".grp").c_str(), "w");
 	INFO("Graph saving to " << file_name << " started");
 	assert(file != NULL);
-	int vertex_count = graph_.size();
-	fprintf(file, "%d %d \n", vertex_count, edge_count_);
-	for (auto iter = graph_.begin(); iter != graph_.end(); ++iter) {
-		save(file, *iter);
+	if (filter_ == NULL){
+		int vertex_count = graph_.size();
+		fprintf(file, "%d %d \n", vertex_count, edge_count_);
+		for (auto iter = graph_.begin(); iter != graph_.end(); ++iter) {
+			save(file, *iter);
+		}
+
+		fprintf(file, "\n");
+
+		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+			save(file, *iter);
+		}
+		INFO("Graph saving to " << file_name << " finished");
 	}
+	else {
+		int vertex_count = filter_->VertexCount();
+		fprintf(file, "%d %d \n", vertex_count, edge_count_);
+		for (auto iter = filter_->VerticesBegin(); iter != filter_->VerticesEnd(); ++iter) {
+			save(file, *iter);
+		}
 
-	fprintf(file, "\n");
+		fprintf(file, "\n");
 
-	for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-		save(file, *iter);
+		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
+			save(file, *iter);
+		}
+		INFO("Graph saving to " << file_name << " finished");
+
 	}
-	INFO("Graph saving to " << file_name << " finished");
-
 	fclose(file);
 }
 
@@ -91,13 +116,24 @@ void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
 	DEBUG("Saving sequences " << file_name <<" created");
 	assert(file != NULL);
 	fprintf(file, "%d\n", edge_count_);
-	for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-		fprintf(file, "%d ", IdHandler_.ReturnIntId(*iter));
-		int len = graph_.EdgeNucls(*iter).size();
-		for(int i = 0; i < len; i++ )
-			fprintf(file, "%c",nucl(graph_.EdgeNucls(*iter)[i]));
-		fprintf(file, " .\n");
-//		fprintf(file, "%s .\n", graph_.EdgeNucls(*iter).str().c_str());
+	if (filter_ == NULL) {
+		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+			fprintf(file, "%d ", IdHandler_.ReturnIntId(*iter));
+			int len = graph_.EdgeNucls(*iter).size();
+			for(int i = 0; i < len; i++ )
+				fprintf(file, "%c",nucl(graph_.EdgeNucls(*iter)[i]));
+			fprintf(file, " .\n");
+	//		fprintf(file, "%s .\n", graph_.EdgeNucls(*iter).str().c_str());
+		}
+	} else {
+		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
+			fprintf(file, "%d ", IdHandler_.ReturnIntId(*iter));
+			int len = graph_.EdgeNucls(*iter).size();
+			for(int i = 0; i < len; i++ )
+				fprintf(file, "%c",nucl(graph_.EdgeNucls(*iter)[i]));
+			fprintf(file, " .\n");
+	//		fprintf(file, "%s .\n", graph_.EdgeNucls(*iter).str().c_str());
+		}
 	}
 	fclose(file);
 }
@@ -108,9 +144,16 @@ void DataPrinter<Graph>::saveCoverage(const string& file_name) {
 	DEBUG("Saving coverage, " << file_name <<" created");
 	assert(file != NULL);
 	fprintf(file, "%d\n", edge_count_);
-	for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-		fprintf(file, "%d ", IdHandler_.ReturnIntId(*iter));
-		fprintf(file, "%f .\n", graph_.coverage(*iter));
+	if (filter_ == NULL) {
+		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+			fprintf(file, "%d ", IdHandler_.ReturnIntId(*iter));
+			fprintf(file, "%f .\n", graph_.coverage(*iter));
+		}
+	} else {
+		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
+			fprintf(file, "%d ", IdHandler_.ReturnIntId(*iter));
+			fprintf(file, "%f .\n", graph_.coverage(*iter));
+		}
 	}
 	fclose(file);
 }
@@ -123,8 +166,15 @@ void DataPrinter<Graph>::savePaired(const string& file_name, PairedInfoIndex<Gra
 	fprintf(file, "%d\n", PIIndex.size());
 	for (auto iter = PIIndex.begin(); iter != PIIndex.end(); ++iter) {
 		vector<PairInfo<typename Graph::EdgeId> > pair_infos = *iter;
-		for(size_t i = 0; i < pair_infos.size(); i++)
-			fprintf(file, "%d %d %.0f %.0f .\n", IdHandler_.ReturnIntId(pair_infos[i].first), IdHandler_.ReturnIntId(pair_infos[i].second), pair_infos[i].d, pair_infos[i].weight);
+		for(size_t i = 0; i < pair_infos.size(); i++) {
+			if (filter_ == NULL){
+				fprintf(file, "%d %d %.0f %.0f .\n", IdHandler_.ReturnIntId(pair_infos[i].first), IdHandler_.ReturnIntId(pair_infos[i].second), pair_infos[i].d, pair_infos[i].weight);
+			} else {
+				if (filter_->EdgeIsPresent(pair_infos[i].first) && filter_->EdgeIsPresent(pair_infos[i].second) ){
+					fprintf(file, "%d %d %.0f %.0f .\n", IdHandler_.ReturnIntId(pair_infos[i].first), IdHandler_.ReturnIntId(pair_infos[i].second), pair_infos[i].d, pair_infos[i].weight);
+				}
+			}
+		}
 	}
 	fclose(file);
 }
@@ -135,11 +185,21 @@ void DataPrinter<Graph>::savePositions(const string& file_name, EdgesPositionHan
 	DEBUG("Saving edges positions, " << file_name <<" created");
 	assert(file != NULL);
 	fprintf(file, "%d\n", edge_count_);
-	for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-		fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), EPHandler.EdgesPositions[*iter].size());
-		for (size_t i = 0; i < EPHandler.EdgesPositions[*iter].size(); i++){
-			fprintf(file, "    %d - %d\n",  EPHandler.EdgesPositions[*iter][i].start_, EPHandler.EdgesPositions[*iter][i].end_);
+	if (filter_ == NULL) {
+		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), EPHandler.EdgesPositions[*iter].size());
+			for (size_t i = 0; i < EPHandler.EdgesPositions[*iter].size(); i++){
+				fprintf(file, "    %d - %d\n",  EPHandler.EdgesPositions[*iter][i].start_, EPHandler.EdgesPositions[*iter][i].end_);
+			}
 		}
+	} else {
+		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
+			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), EPHandler.EdgesPositions[*iter].size());
+			for (size_t i = 0; i < EPHandler.EdgesPositions[*iter].size(); i++){
+				fprintf(file, "    %d - %d\n",  EPHandler.EdgesPositions[*iter][i].start_, EPHandler.EdgesPositions[*iter][i].end_);
+			}
+		}
+
 	}
 	fclose(file);
 }
