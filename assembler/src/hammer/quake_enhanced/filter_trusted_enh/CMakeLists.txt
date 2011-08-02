@@ -1,0 +1,6 @@
+project(quake CXX)
+
+add_executable(filter_trusted_enh
+   main.cpp)
+
+target_link_libraries(filter_trusted_enh ${COMMON_LIBRARIES})
