@@ -58,18 +58,22 @@ const Sequence& genome) {
 
 void CountPairedInfoStats(Graph &g, size_t insert_size, size_t max_read_length,
 		PairedInfoIndex<Graph> &paired_index, PairedInfoIndex<Graph> &etalon_paired_index, const string &output_folder) {
+	INFO("Counting paired info stats");
 	EdgePairStat<Graph>(g, paired_index, output_folder).Count();
 
 	//todo remove filtration if launch on etalon info is ok
 	UniquePathStat<Graph>(g, etalon_paired_index, insert_size, max_read_length, 0.1,
 			40.0).Count();
 	UniqueDistanceStat<Graph>(etalon_paired_index).Count();
+	INFO("Paired info stats counted");
 }
 
 void CountClusteredPairedInfoStats(Graph &g, size_t insert_size, size_t max_read_length,
 		PairedInfoIndex<Graph> &paired_index, PairedInfoIndex<Graph> &etalon_paired_index, const string &output_folder) {
+	INFO("Counting paired info stats");
 	EstimationQualityStat<Graph>(paired_index, etalon_paired_index).Count();
 	ClusterStat<Graph>(paired_index).Count();
+	INFO("Paired info stats counted");
 }
 
 void WriteToDotFile(Graph &g, const string& file_name, string graph_name,
@@ -505,7 +509,7 @@ void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
 }
 
 template<size_t k, class ReadStream>
-void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const Sequence& genome,
+void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		bool paired_mode, bool rectangle_mode, bool etalon_info_mode,
 		bool from_saved, size_t insert_size, size_t max_read_length,
 		const string& output_folder, const string& work_tmp_dir) {
@@ -593,8 +597,8 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const Sequence& genome,
 		DistanceEstimator<Graph> estimator(g, paired_index, insert_size,
 				max_read_length, 10, 10, 75);
 		estimator.Estimate(clustered_index);
-//		CountClusteredPairedInfoStats(g, insert_size, max_read_length, paired_index, etalon_paired_index,
-//						output_folder);
+		CountClusteredPairedInfoStats(g, insert_size, max_read_length, paired_index, etalon_paired_index,
+						output_folder);
 	}
 
 	if (paired_mode) {
