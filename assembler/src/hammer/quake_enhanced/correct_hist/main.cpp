@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
   float average = mass_pos / (double) mass;
   printf("Gauss median is at %f\n", average);
   vector<uint32_t> hist_trusted(hist);
-  for (uint32_t i = 0; (int)(average - i) > 0; ++i) {
+  for (uint32_t i = 0; (int)(average - i) >=0; ++i) {
     int where = (int)(average - i);
     int from = (int)(average + i + 0.5);
     if (where == from) {
