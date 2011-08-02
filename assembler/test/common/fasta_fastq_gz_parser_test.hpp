@@ -4,6 +4,8 @@
 #include "cute/cute.h"
 #include "common/io/fasta_fastq_gz_parser.hpp"
 
+using namespace io;
+
 void TestFastaFastqGzParserNoFile() {
   FastaFastqGzParser parser("./no-file");
   ASSERT(!parser.is_open());

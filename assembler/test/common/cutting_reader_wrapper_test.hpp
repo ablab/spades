@@ -6,6 +6,8 @@
 #include "common/io/reader.hpp"
 #include "common/io/cutting_reader_wrapper.hpp"
 
+using namespace io;
+
 void TestCuttingReaderWrapperNoFile() {
   Reader<SingleRead> internal_reader("./no-file");
   CuttingReaderWrapper<SingleRead> reader(&internal_reader);

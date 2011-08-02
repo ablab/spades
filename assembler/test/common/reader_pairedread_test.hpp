@@ -6,6 +6,8 @@
 #include "cute/cute.h"
 #include "common/io/reader.hpp"
 
+using namespace io;
+
 void TestReaderPairedReadNoFile() {
   Reader<PairedRead> reader(std::pair<std::string, std::string>
                             ("./no-file", "./test/data/s_test.fastq.gz"),

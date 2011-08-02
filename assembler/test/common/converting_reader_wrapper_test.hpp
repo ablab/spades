@@ -9,6 +9,8 @@
 #include "common/io/reader.hpp"
 #include "common/io/converting_reader_wrapper.hpp"
 
+using namespace io;
+
 void TestConvertingReaderWrapperNoFile() {
   Reader<PairedRead> internal_reader(
       std::pair<std::string, std::string>("./no-file", "./no_file"));

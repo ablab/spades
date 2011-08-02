@@ -4,6 +4,8 @@
 #include "cute/cute.h"
 #include "common/io/reader.hpp"
 
+using namespace io;
+
 void TestReaderSingleReadNoFile() {
   Reader<SingleRead> reader("./no-file");
   ASSERT(!reader.is_open());
