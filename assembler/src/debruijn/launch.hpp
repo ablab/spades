@@ -10,6 +10,9 @@
 
 //#include "ireadstream.hpp"
 #include "common/io/reader.hpp"
+
+using namespace io;
+
 typedef Reader<SingleRead> ireadstream;
 #include "common/io/rc_reader_wrapper.hpp"
 #include "common/io/cutting_reader_wrapper.hpp"

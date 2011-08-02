@@ -30,7 +30,7 @@ private:
 	}
 
 	template<class ReadThreader>
-	void ProcessRead(const ReadThreader& threader, Read read) {
+	void ProcessRead(const ReadThreader& threader, io::SingleRead read) {
 		Path<EdgeId> path = threader.MapSequence(
 				Sequence(read.GetSequenceString()));
 		if (path.sequence().size() == 0)
@@ -87,7 +87,7 @@ public:
 	template<class Stream, class ReadThreader>
 	void FillIndex(Stream& stream, const ReadThreader& threader) {
 		while (!stream.eof()) {
-			Read read;
+                  io::SingleRead read;
 			stream >> read;
 			ProcessRead(threader, read);
 		}

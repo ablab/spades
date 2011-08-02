@@ -27,6 +27,8 @@
 #include "common/sequence/sequence_tools.hpp"
 #include "common/simple_tools.hpp"
 
+namespace io {
+
 class SingleRead {
  public:
   static const int PHRED_OFFSET = 33;
@@ -250,5 +252,7 @@ class SingleRead {
     return true;
   }
 };
+
+}
 
 #endif /* COMMON_IO_SINGLEREAD_HPP_ */

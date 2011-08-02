@@ -18,6 +18,8 @@
 #ifndef COMMON_IO_IREADER_HPP_
 #define COMMON_IO_IREADER_HPP_
 
+namespace io {
+
 template<typename ReadType>
 class IReader {
  public:
@@ -60,5 +62,7 @@ class IReader {
    */
   virtual void reset() = 0;
 };
+
+}
 
 #endif /* COMMON_IO_IREADER_HPP_ */

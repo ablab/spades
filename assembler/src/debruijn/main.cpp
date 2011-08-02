@@ -1,6 +1,7 @@
 /*
  * Assembler Main
  */
+
 #include "launch.hpp"
 #include "config.hpp"
 #include "common/logging.hpp"

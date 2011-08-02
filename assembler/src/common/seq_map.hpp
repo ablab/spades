@@ -10,8 +10,8 @@
 
 //#include "read.hpp"
 #include "common/io/single_read.hpp"
-typedef SingleRead Read;
-
+//typedef SingleRead Read;
+using namespace io;
 #include "sequence.hpp"
 #include "seq.hpp"
 #include "cuckoo.hpp"
@@ -58,7 +58,7 @@ private:
 		}
 	}
 
-	void CountRead(const Read &read) {
+  void CountRead(const io::SingleRead &read) {
 		if (read.IsValid()) {
 			//cerr << read.getSequenceString() << endl;
 			Sequence s = read.sequence();
@@ -96,7 +96,7 @@ public:
 
 	template<class ReadStream>
 	void Fill(ReadStream &stream) {
-		Read r;
+    io::SingleRead r;
 		while (!stream.eof()) {
 			stream >> r;
 //			cout << r.getSequence() << endl;

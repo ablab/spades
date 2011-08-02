@@ -22,6 +22,8 @@
 #include <string>
 #include "common/io/single_read.hpp"
 
+namespace io {
+
 class Parser {
  public:
   /*
@@ -127,5 +129,7 @@ std::string GetExtension(const std::string& filename);
  */
 Parser* SelectParser(const std::string& filename,
                      int offset = SingleRead::PHRED_OFFSET);
+
+}
 
 #endif /* COMMON_IO_PARSER_HPP */

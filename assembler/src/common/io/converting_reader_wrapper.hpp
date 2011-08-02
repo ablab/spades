@@ -24,6 +24,8 @@
 #include "common/io/paired_read.hpp"
 #include "common/io/ireader.hpp"
 
+namespace io {
+
 class ConvertingReaderWrapper : public IReader<SingleRead> {
  public:
   /*
@@ -120,5 +122,7 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
    */
   void operator=(const ConvertingReaderWrapper& reader);
 };
+
+}
 
 #endif /* COMMON_IO_CONVERTINGREADERWRAPPER_HPP_ */

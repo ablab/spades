@@ -21,6 +21,8 @@
 
 #include "common/io/ireader.hpp"
 
+namespace io {
+
 template<typename ReadType>
 class CuttingReaderWrapper : public IReader<ReadType> {
  public:
@@ -117,5 +119,7 @@ class CuttingReaderWrapper : public IReader<ReadType> {
    */
   void operator=(const CuttingReaderWrapper<ReadType>& reader);
 };
+
+}
 
 #endif /* COMMON_IO_CUTTINGREADERWRAPPER_HPP_ */
