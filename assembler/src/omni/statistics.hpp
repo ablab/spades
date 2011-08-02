@@ -532,6 +532,7 @@ private:
 			estimated_idx++;
 		while (estimated_idx < estimated_infos.size()) {
 			HandleFalsePositive(estimated_infos[estimated_idx]);
+			estimated_idx++;
 		}
 		Flush();
 	}
