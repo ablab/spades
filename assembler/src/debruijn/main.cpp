@@ -86,7 +86,8 @@ int main() {
 	INFO("Assembling " << dataset << " dataset finished");
 
 	unlink((output_root + "latest").c_str());
-	symlink(output_dir_suffix.c_str(), (output_root + "latest").c_str());
+	if (symlink(output_dir_suffix.c_str(), (output_root + "latest").c_str()) != 0)
+		WARN( "Symlink to latest launch failed");
 
 	// OK
 	return 0;

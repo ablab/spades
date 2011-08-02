@@ -668,6 +668,7 @@ public:
 	}
 
 };
+
 template<size_t k, class Graph, class Stream>
 class SingleReadMapper {
 public:
@@ -677,6 +678,7 @@ private:
 	SimpleSequenceMapper<k, Graph> read_seq_mapper;
 	Stream& stream_;
 	Graph g_;
+	Index& index_;
 public:
 	/**
 	 * Creates SingleReadMapper for given graph. Also requires index_ which should be synchronized
@@ -685,8 +687,35 @@ public:
 	 * @param index index syncronized with graph
 	 */
 	SingleReadMapper(const Graph& g, const Index& index, Stream & stream):
-		read_seq_mapper(g, index), stream_(stream), g_(g) {
+		read_seq_mapper(g, index), stream_(stream), g_(g), index_(index) {
 		stream_.reset();
+	}
+
+	vector<EdgeId> GetContainingEdges(){
+		vector<EdgeId> res;
+		if (!stream_.eof()) {
+			Read p_r;
+			stream_ >> p_r;
+			Sequence read = p_r.getSequence();
+			Seq<k + 1> kmer = read.start<k + 1>();
+			bool found;
+			for (size_t i = k + 1; i <= read.size(); ++i) {
+				if (index_.containsInIndex(kmer)) {
+					pair<EdgeId, size_t> position = index_.get(kmer);
+					found = false;
+					for (size_t j = 0; j < res.size(); j++)
+						if (res[j] == position.first) {
+							found = true;
+							break;
+						}
+					if (!found)
+						res.push_back(position.first);
+				}
+				if (i != read.size())
+					kmer = kmer << read[i];
+			}
+		}
+		return res;
 	}
 
 	pair<ReadMappingResult<Graph>*, ReadMappingResult<Graph>*> ThreadNext() {
@@ -714,6 +743,7 @@ public:
 			}
 			return make_pair( new ReadMappingResult<Graph>(read[0], res_v[0]),new ReadMappingResult<Graph>(read[1], res_v[1]));
 	//		return res;
+
 		}
 //		else return NULL;
 	}
