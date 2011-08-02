@@ -18,11 +18,6 @@
  * according to extension.
  */
 
-// TODO(mariyafomkina): remove these lines when normal makefile is
-// ready.
-//#ifndef COMMON_IO_READER_CPP_
-//#define COMMON_IO_READER_CPP_
-
 #include "common/io/parser.hpp"
 #include <string>
 #include "common/io/fasta_fastq_gz_parser.hpp"
@@ -70,5 +65,3 @@ Parser* SelectParser(const std::string& filename, int offset) {
 }
 
 }
-
-//#endif /* COMMON_IO_READER_CPP_ */

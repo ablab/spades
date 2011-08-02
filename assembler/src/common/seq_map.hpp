@@ -8,10 +8,7 @@
 #ifndef SEQ_MAP_HPP_
 #define SEQ_MAP_HPP_
 
-//#include "read.hpp"
 #include "common/io/single_read.hpp"
-//typedef SingleRead Read;
-using namespace io;
 #include "sequence.hpp"
 #include "seq.hpp"
 #include "cuckoo.hpp"

@@ -27,7 +27,6 @@
 #include "common/io/single_read.hpp"
 #include "common/io/paired_read.hpp"
 #include "common/io/parser.hpp"
-//#include "common/io/parser.cpp"  // TEMPORARY HACK!!!
 
 namespace io {
 
