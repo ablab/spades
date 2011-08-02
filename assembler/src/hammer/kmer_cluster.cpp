@@ -54,7 +54,7 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block) {
 }
 
 void KMerClustering::clusterMerge(vector<unionFindClass *>uf, unionFindClass * ufMaster) {
-	cout << "Merging union find files..." << endl;
+	// cout << "Merging union find files..." << endl;
 	vector<string> row;
 	vector<vector<int> > classes;
 	for (uint32_t i = 0; i < uf.size(); i++) {
@@ -372,7 +372,7 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq) {
 	int effective_threads = min(nthreads_, tau_+1);
 	vector<unionFindClass *> uf(tau_ + 1);
 	
-	cout << "Starting split kmer processing in " << effective_threads << " threads." << endl;
+	// cout << "Starting split kmer processing in " << effective_threads << " threads." << endl;
 
 	#pragma omp parallel for shared(uf, vskpq) num_threads(effective_threads)
 	for (int i = 0; i < tau_ + 1; i++) {
@@ -383,9 +383,9 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq) {
 
 		hint_t last = (*vskpq)[i].peekPQ();
 		vector<hint_t> block;
-		size_t j = 0;
+		//size_t j = 0;
 		while (!(*vskpq)[i].emptyPQ()) {
-			++j; if (j % 10000000 == 0) cout << "Processed (" << i << ") " << j << endl;
+			//++j; if (j % 10000000 == 0) cout << "Processed (" << i << ") " << j << endl;
 			hint_t cur = (*vskpq)[i].nextPQ();
 
 			if ( PositionKMer::equalSubKMers(last, cur, &k_, tau_, i) ) { //add to current reads
@@ -398,17 +398,14 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq) {
 			}
 		}
 		processBlock(uf[i], block);
-		cout << "Finished(" << i << ") " << endl;
+		//cout << "Finished(" << i << ") " << endl;
 	}
-	cout << "All threads finished.\n";flush(cout);
+	TIMEDLN("All split kmer threads finished. Starting merge.");
 	
 	unionFindClass * ufMaster;
 	ufMaster = new unionFindClass(k_.size());
 	clusterMerge(uf, ufMaster);
-	cout << "Merging finished.\n"; flush(cout);
-	
-	
-	cout << "Centering begins...\n"; flush(cout);
+	TIMEDLN("Merging finished. Centering begins.");
 	vector<vector<int> > classes;
 	ufMaster->get_classes(classes);
 	delete ufMaster;
@@ -436,7 +433,7 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq) {
 		}
 	}
 	
-	cout << "Centering finished."  << endl;
+	TIMEDLN("Centering finished.");
 	
 	/*ofstream outf; outf.open(dirprefix + "/reads.uf.corr");
 	size_t blockNum = 0;
