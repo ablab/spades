@@ -44,7 +44,7 @@ void PrintHelp(char *progname) {
   printf("\tifile.[q]cst\tfile with k|q-mer statistics\n");
   printf("\tofile.trust\ta filename where filtered data will be outputted\n");
   printf("\tofile.bud\ta filename where filtered garbage will be outputted\n");
-  printf("\tthreshold\tq-mer threshold\n");
+  printf("\tfile.limits\tfile with q-value limits for k-mers\n");
 }
 
 Options ParseOptions(int argc, char *argv[]) {
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
     if (read_number % kStep == 0) {
       LOG4CXX_INFO(logger, "Reading k-mer " << read_number << ".");
     }
-    if (q_count > limits[count]) {
+    if (q_count / count > limits[count]) {
       fprintf(ofile, "%s\n", kmer);
     } else {
       fprintf(badfile, "%s\n", kmer);
