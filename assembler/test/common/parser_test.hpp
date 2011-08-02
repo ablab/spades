@@ -6,6 +6,8 @@
 #include "common/io/fasta_fastq_gz_parser.hpp"
 #include "common/io/parser.cpp"  // DURTY HACK!!!
 
+using namespace io;
+
 void TestGetExtension() {
   ASSERT_EQUAL("fastq", GetExtension("test.fastq"));
   ASSERT_EQUAL("fastq.gz", GetExtension("test.fastq.gz"));

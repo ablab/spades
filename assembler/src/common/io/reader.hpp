@@ -27,7 +27,8 @@
 #include "common/io/single_read.hpp"
 #include "common/io/paired_read.hpp"
 #include "common/io/parser.hpp"
-#include "common/io/parser.cpp"  // TEMPORARY HACK!!!
+
+namespace io {
 
 /*
  * This class only represents Reader. All the functionality
@@ -205,7 +206,7 @@ class Reader<PairedRead> : public IReader<PairedRead> {
     SingleRead sr1, sr2;
     (*first_) >> sr1;
     (*second_) >> sr2;
-    pairedread = PairedRead(sr1, sr2, distance_);  // is it correct?
+    pairedread = PairedRead(sr1, !sr2, distance_);
     return *this;
   }
 
@@ -256,5 +257,7 @@ class Reader<PairedRead> : public IReader<PairedRead> {
    */
   void operator=(const Reader<PairedRead>& reader);
 };
+
+}
 
 #endif /* COMMON_IO_READER_HPP_ */

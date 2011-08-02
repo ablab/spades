@@ -120,15 +120,27 @@ void BuildDeBruijnGraph(Graph& g,  PairedInfoIndex<Graph>& paired_index, EdgeInd
 	bool etalon_info_mode = CONFIG.read<bool>("etalon_info_mode");
 	bool from_saved = CONFIG.read<bool>("from_saved_graph");
 	// typedefs :)
-	typedef MateReader<Read, ireadstream>::type ReadStream;
-	typedef PairedReader<ireadstream> PairedReadStream;
-	typedef RCReaderWrapper<PairedReadStream, PairedRead> RCStream;
+	//typedef MateReader<Read, ireadstream>::type ReadStream;
+	//typedef PairedReader<ireadstream> PairedReadStream;
+	//typedef RCReaderWrapper<PairedReadStream, PairedRead> RCStream;
+	// read data ('reads')
+	//const string reads[2] = {reads_filename1, reads_filename2};
+	//ReadStream reader(reads);
+	//PairedReadStream pairStream(reader, insert_size);
+	//RCStream rcStream(pairStream);
+
+	// typedefs :)
+  typedef io::Reader<io::SingleRead> ReadStream;
+  typedef io::Reader<io::PairedRead> PairedReadStream;
+  typedef io::RCReaderWrapper<io::PairedRead> RCStream;
 
 	// read data ('reads')
-	const string reads[2] = {reads_filename1, reads_filename2};
-	ReadStream reader(reads);
-	PairedReadStream pairStream(reader, insert_size);
-	RCStream rcStream(pairStream);
+  PairedReadStream pairStream(std::pair<std::string, 
+                              std::string>(reads_filename1,
+                                           reads_filename2), 
+                              insert_size);
+	RCStream rcStream(&pairStream);
+
 
 	// read data ('genome')
 	std::string genome;
