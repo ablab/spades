@@ -21,6 +21,7 @@
 
 #include <string>
 #include "common/io/single_read.hpp"
+#include "common/io/fasta_fastq_gz_parser.hpp"
 
 namespace io {
 
@@ -109,6 +110,110 @@ class Parser {
   virtual void open() = 0;
 };
 
+class FastaFastqGzParser : public Parser {
+ public:
+  /*
+   * Default constructor.
+   *
+   * @param filename The name of the file to be opened.
+   * @param offset The offset of the read quality.
+   */
+  FastaFastqGzParser(const std::string& filename,
+         int offset = SingleRead::PHRED_OFFSET)
+      :Parser(filename, offset), fp_(), seq_(NULL) {
+    open();
+  }
+
+  /*
+   * Default destructor.
+   */
+  /* virtual */ ~FastaFastqGzParser() {
+    close();
+  }
+
+  /*
+   * Read SingleRead from stream.
+   *
+   * @param read The SingleRead that will store read data.
+   *
+   * @return Reference to this stream.
+   */
+  /* virtual */ FastaFastqGzParser& operator>>(SingleRead& read) {
+    if (!is_open_ || eof_) {
+      return *this;
+    }
+    read.SetName(seq_->name.s);
+    if (seq_->qual.s) {
+      read.SetQuality(seq_->qual.s, offset_);
+    }
+    read.SetSequence(seq_->seq.s);
+    ReadAhead();
+    return *this;
+  }
+
+  /*
+   * Close the stream.
+   */
+  /* virtual */ void close() {
+    if (is_open_) {
+      // STEP 5: destroy seq
+      fastafastqgz::kseq_destroy(seq_);
+      // STEP 6: close the file handler
+      gzclose(fp_);
+      is_open_ = false;
+      eof_ = true;
+    }
+  }
+
+ private:
+  /*
+   * @variable File that is associated with gzipped data file.
+   */
+  gzFile fp_;
+  /*
+   * @variable Data element that stores last SingleRead got from
+   * stream.
+   */
+  fastafastqgz::kseq_t* seq_;
+
+  /*
+   * Open a stream.
+   */
+  /* virtual */ void open() {
+    // STEP 2: open the file handler
+    fp_ = gzopen(filename_.c_str(), "r");
+    if (!fp_) {
+      is_open_ = false;
+      return;
+    }
+    // STEP 3: initialize seq
+    seq_ = fastafastqgz::kseq_init(fp_);
+    eof_ = false;
+    is_open_ = true;
+    ReadAhead();
+  }
+
+  /*
+   * Read next SingleRead from file.
+   */
+  void ReadAhead() {
+    assert(is_open_);
+    assert(!eof_);
+    if (fastafastqgz::kseq_read(seq_) < 0) {
+      eof_ = true;
+    }
+  }
+
+  /*
+   * Hidden copy constructor.
+   */
+  FastaFastqGzParser(const FastaFastqGzParser& parser);
+  /*
+   * Hidden assign operator.
+   */
+  void operator=(const FastaFastqGzParser& parser);
+};
+
 /*
  * Get extension from filename.
  *
@@ -116,7 +221,19 @@ class Parser {
  *
  * @return File extension (e.g. "fastq", "fastq.gz").
  */
-std::string GetExtension(const std::string& filename);
+inline std::string GetExtension(const std::string& filename) {
+	  std::string name = filename;
+	  size_t pos = name.find_last_of(".");
+	  std::string ext = "";
+	  if (pos != std::string::npos) {
+	    ext = name.substr(name.find_last_of(".") + 1);
+	    if (ext == "gz") {
+	      ext = name.substr(name.find_last_of
+	                        (".", name.find_last_of(".") - 1) + 1);
+	    }
+	  }
+	  return ext;
+}
 
 /*
  * Select parser type according to file extension.
@@ -127,8 +244,15 @@ std::string GetExtension(const std::string& filename);
  * @return Pointer to the new parser object with these filename and
  * offset.
  */
-Parser* SelectParser(const std::string& filename,
-                     int offset = SingleRead::PHRED_OFFSET);
+inline Parser* SelectParser(const std::string& filename,
+                     int offset = SingleRead::PHRED_OFFSET) {
+	std::string ext = GetExtension(filename);
+	  if ((ext == "fastq") || (ext == "fastq.gz") ||
+	      (ext == "fasta") || (ext == "fasta.gz")) {
+	    return new FastaFastqGzParser(filename, offset);
+	  }
+	  return NULL;
+}
 
 }
 
