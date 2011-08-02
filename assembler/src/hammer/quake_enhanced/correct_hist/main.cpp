@@ -68,8 +68,8 @@ int main(int argc, char *argv[]) {
   int count;
   while (fscanf(kmer_hist, "%f %d", &x, &count) == 2) {
     uint32_t r = (uint32_t)(x + 0.5);
-    if (r > hist.size()) {
-      hist.resize(r * 1.5);
+    if (r >= hist.size()) {
+      hist.resize(r * 1.5 + 1);
     }
     hist[r] += count;
   }
