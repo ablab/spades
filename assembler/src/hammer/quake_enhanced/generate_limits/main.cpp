@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <cmath>
 #include <cstdlib>
 #include <cstdio>
 #include <algorithm>
