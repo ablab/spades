@@ -22,42 +22,46 @@ public:
 		INFO("one_many_resolve");
 		int inc_count;
 		for (auto iter = g_.SmartVertexBegin(); ! iter.IsEnd(); ++iter) {
-			DEBUG(*iter);
-			if ((g_.OutgoingEdgeCount(*iter) == 1) && ((inc_count = g_.IncomingEdgeCount(*iter)) > 1)){
-				EdgeId unique = g_.GetUniqueOutgoingEdge(*iter);
-				vector<EdgeId> incEdges = g_.IncomingEdges(*iter);
+			VertexId vertex = *iter;
+			DEBUG(vertex);
+			if ((g_.OutgoingEdgeCount(vertex) == 1) && ((inc_count = g_.IncomingEdgeCount(vertex)) > 1)){
+				EdgeId unique = g_.GetUniqueOutgoingEdge(vertex);
+				vector<EdgeId> incEdges = g_.IncomingEdges(vertex);
 				for(int j = 0; j < inc_count; j++) {
 					VertexId tmp_v = g_.AddVertex();
-
 					EdgeId edge2 = g_.AddEdge(tmp_v, g_.EdgeEnd(unique), g_.EdgeNucls(unique));
 					EdgeId edge1 = g_.AddEdge(g_.EdgeStart(incEdges[j]), tmp_v, g_.EdgeNucls(incEdges[j]));
 					vector<EdgeId> toMerge;
 					toMerge.push_back(edge1);
 					toMerge.push_back(edge2);
+					DEBUG("first part ");
 					g_.MergePath(toMerge);
 				}
-				g_.ForceDeleteVertex(*iter);
+				DEBUG("first vertex before delete ");
+
+				g_.ForceDeleteVertex(vertex);
+				DEBUG("first vertex deleted ");
 			}
 		}
 
 
 		for (auto iter = g_.SmartVertexBegin(); ! iter.IsEnd(); ++iter){
-			if ((g_.OutgoingEdgeCount(*iter) > 1) && ((inc_count = g_.IncomingEdgeCount(*iter)) == 1)){
-				EdgeId unique = g_.GetUniqueIncomingEdge(*iter);
-				vector<EdgeId> incEdges = g_.OutgoingEdges(*iter);
+			VertexId vertex = *iter;
+			if ((g_.OutgoingEdgeCount(vertex) > 1) && ((inc_count = g_.IncomingEdgeCount(vertex)) == 1)){
+				EdgeId unique = g_.GetUniqueIncomingEdge(vertex);
+				vector<EdgeId> incEdges = g_.OutgoingEdges(vertex);
 				for(int j = 0; j < inc_count; j++) {
 					VertexId tmp_v = g_.AddVertex();
-
 					EdgeId edge2 = g_.AddEdge(g_.EdgeStart(unique), tmp_v, g_.EdgeNucls(unique));
-					;
 					EdgeId edge1 = g_.AddEdge(tmp_v, g_.EdgeEnd(incEdges[j]), g_.EdgeNucls(incEdges[j]));
 					vector<EdgeId> toMerge ;
 					toMerge.push_back(edge2);
 					toMerge.push_back(edge1);
-
+					DEBUG("second part ");
 					g_.MergePath(toMerge);
 				}
-				g_.ForceDeleteVertex(*iter);
+				g_.ForceDeleteVertex(vertex);
+				DEBUG("second vertex deleted ");
 			}
 		}
 

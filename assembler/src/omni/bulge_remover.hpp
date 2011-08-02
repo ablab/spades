@@ -124,7 +124,6 @@ public:
 				max_relative_coverage_(max_relative_coverage),
 				max_delta_(max_delta), max_relative_delta_(max_relative_delta),
 				bulge_condition_(bulge_condition) {
-		assert(max_relative_coverage_ > 1.);
 	}
 
 	void RemoveBulges();
