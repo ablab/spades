@@ -4,6 +4,8 @@
 #include "cute/cute.h"
 #include "common/io/single_read.hpp"
 
+using namespace io;
+
 void TestSingleRead() {
   SingleRead sr("Read1", "ATGCATGC", "aabbaabb");
   ASSERT_EQUAL(true, sr.IsValid());

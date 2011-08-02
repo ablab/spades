@@ -7,6 +7,8 @@
 #include "common/io/single_read.hpp"
 #include "common/io/multifile_reader.hpp"
 
+using namespace io;
+
 void TestMultifileReaderNoFile() {
   std::vector<SingleRead::FilenameType> filenames;
   filenames.push_back("./no-file");

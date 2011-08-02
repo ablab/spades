@@ -8,7 +8,7 @@
 #ifndef SEQ_MAP_HPP_
 #define SEQ_MAP_HPP_
 
-#include "read.hpp"
+#include "common/io/single_read.hpp"
 #include "sequence.hpp"
 #include "seq.hpp"
 #include "cuckoo.hpp"
@@ -55,10 +55,10 @@ private:
 		}
 	}
 
-	void CountRead(const Read &read) {
-		if (read.isValid()) {
+  void CountRead(const io::SingleRead &read) {
+		if (read.IsValid()) {
 			//cerr << read.getSequenceString() << endl;
-			Sequence s = read.getSequence();
+			Sequence s = read.sequence();
 			CountSequence(s);
 		}
 	}
@@ -93,7 +93,7 @@ public:
 
 	template<class ReadStream>
 	void Fill(ReadStream &stream) {
-		Read r;
+    io::SingleRead r;
 		while (!stream.eof()) {
 			stream >> r;
 //			cout << r.getSequence() << endl;

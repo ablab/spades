@@ -8,8 +8,11 @@
 #ifndef LAUNCH_HPP_
 #define LAUNCH_HPP_
 
+#include "common/io/reader.hpp"
+#include "common/io/rc_reader_wrapper.hpp"
+#include "common/io/cutting_reader_wrapper.hpp"
+#include "common/io/converting_reader_wrapper.hpp"
 #include "visualization_utils.hpp"
-#include "ireadstream.hpp"
 
 //#include "debruijn_graph.hpp"
 #include "paired_info.hpp"
@@ -356,8 +359,8 @@ template<size_t k, class PairedReadStream>
 /*CoverageHandler<Graph>& coverage_handler,*/
 void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& stream) {
-	typedef SimpleReaderWrapper<PairedReadStream> UnitedStream;
-	UnitedStream united_stream(stream);
+  typedef io::ConvertingReaderWrapper UnitedStream;
+	UnitedStream united_stream(&stream);
 	ConstructGraphWithCoverage<k, UnitedStream> (g,
 			index/*, coverage_handler*/, united_stream);
 	FillPairedIndex<k, PairedReadStream> (g, paired_index, stream, index);
@@ -368,8 +371,8 @@ void ConstructGraphWithEtalonPairedInfo(Graph& g,
 		EdgeIndex<k + 1, Graph>& index, PairedInfoIndex<Graph>& paired_index,
 		PairedReadStream& stream, size_t insert_size, size_t read_length,
 		const Sequence& genome) {
-	typedef SimpleReaderWrapper<PairedReadStream> UnitedStream;
-	UnitedStream united_stream(stream);
+  typedef io::ConvertingReaderWrapper UnitedStream;
+	UnitedStream united_stream(&stream);
 	ConstructGraphWithCoverage<k, UnitedStream> (g,
 			index/*, coverage_handler*/, united_stream);
 	FillEtalonPairedIndex<k> (g, paired_index, index, insert_size, read_length,
@@ -537,8 +540,8 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 						paired_index, stream);
 			}
 		} else {
-			typedef SimpleReaderWrapper<ReadStream> UnitedStream;
-			UnitedStream united_stream(stream);
+      typedef io::ConvertingReaderWrapper UnitedStream;
+			UnitedStream united_stream(&stream);
 			ConstructGraphWithCoverage<k, UnitedStream> (g, index,
 					united_stream);
 		}

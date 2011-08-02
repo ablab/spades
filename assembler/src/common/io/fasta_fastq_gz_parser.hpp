@@ -28,6 +28,8 @@
 #include "common/sequence/quality.hpp"
 #include "common/sequence/nucl.hpp"
 
+namespace io {
+
 namespace fastafastqgz {
 // STEP 1: declare the type of file handler and the read() function
 KSEQ_INIT(gzFile, gzread)
@@ -136,5 +138,7 @@ class FastaFastqGzParser : public Parser {
    */
   void operator=(const FastaFastqGzParser& parser);
 };
+
+}
 
 #endif /* COMMON_IO_FASTAFASTQGZPARSER_HPP */

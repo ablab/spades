@@ -4,6 +4,8 @@
 #include "cute/cute.h"
 #include "common/io/paired_read.hpp"
 
+using namespace io;
+
 void TestPairedRead() {
   SingleRead sr1("Read1", "ATGCATGC", "aabbaabb");
   SingleRead sr2("Read2", "AATTGGCC", "aabbaabb");

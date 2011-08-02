@@ -6,6 +6,8 @@
 #include "common/io/reader.hpp"
 #include "common/io/rc_reader_wrapper.hpp"
 
+using namespace io;
+
 void TestRCReaderWrapperNoFile() {
   Reader<SingleRead> internal_reader("./no-file");
   RCReaderWrapper<SingleRead> reader(&internal_reader);

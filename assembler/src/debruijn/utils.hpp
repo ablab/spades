@@ -8,6 +8,7 @@
 #ifndef UTILS_HPP_
 #define UTILS_HPP_
 
+#include "common/io/paired_read.hpp"
 #include "seq_map.hpp"
 #include "omni_utils.hpp"
 #include "logging.hpp"
@@ -560,7 +561,7 @@ private:
 	const EdgeIndex<kmer_size + 1, Graph>& index_;
 	Stream& stream_;
 
-	inline size_t CountDistance(const PairedRead& paired_read) {
+	inline size_t CountDistance(const io::PairedRead& paired_read) {
 		return paired_read.distance() - paired_read.second().size();
 	}
 
@@ -575,10 +576,10 @@ private:
 
 	void ProcessPairedRead(
 			omnigraph::PairedInfoIndex<Graph> &paired_index,
-			const PairedRead& p_r,
+			const io::PairedRead& p_r,
 			debruijn_graph::SimpleSequenceMapper<kmer_size, Graph> &read_threader) {
-		Sequence read1 = p_r.first().getSequence();
-		Sequence read2 = p_r.second().getSequence();
+		Sequence read1 = p_r.first().sequence();
+		Sequence read2 = p_r.second().sequence();
 		Path<EdgeId> path1 = read_threader.MapSequence(read1);
 		Path<EdgeId> path2 = read_threader.MapSequence(read2);
 		size_t distance = CountDistance(p_r);
@@ -618,7 +619,7 @@ public:
 				graph_, index_);
 		stream_.reset();
 		while (!stream_.eof()) {
-			PairedRead p_r;
+      io::PairedRead p_r;
 			stream_ >> p_r;
 			ProcessPairedRead(paired_index, p_r, read_threader);
 		}
@@ -652,10 +653,10 @@ public:
 
 	ReadThreaderResult<k + 1, Graph> ThreadNext() {
 		if (!stream_.eof()) {
-			PairedRead p_r;
+      io::PairedRead p_r;
 			stream_ >> p_r;
-			Sequence read1 = p_r.first().getSequence();
-			Sequence read2 = p_r.second().getSequence();
+			Sequence read1 = p_r.first().sequence();
+			Sequence read2 = p_r.second().sequence();
 			Path<EdgeId> aligned_read[2];
 			aligned_read[0] = read_seq_mapper.MapSequence(read1);
 			aligned_read[1] = read_seq_mapper.MapSequence(read2);
@@ -694,9 +695,10 @@ public:
 	vector<EdgeId> GetContainingEdges(){
 		vector<EdgeId> res;
 		if (!stream_.eof()) {
-			PairedRead p_r;
+
+			io::PairedRead p_r;
 			stream_ >> p_r;
-			Sequence read = p_r.first().getSequence();
+			Sequence read = p_r.first().sequence();
 			Seq<k + 1> kmer = read.start<k + 1>();
 			bool found;
 			for (size_t i = k + 1; i <= read.size(); ++i) {
@@ -720,11 +722,10 @@ public:
 
 	pair<ReadMappingResult<Graph>*, ReadMappingResult<Graph>*> ThreadNext() {
 		if (!stream_.eof()) {
-			PairedRead p_r;
+      io::PairedRead p_r;
 			stream_ >> p_r;
-			Sequence read[2];
-			read[0] = p_r.first().getSequence();
-			read[1] = p_r.second().getSequence();
+			Sequence read1 = p_r.first().sequence();
+			Sequence read2 = p_r.second().sequence();
 			Path<EdgeId> aligned_read[2];
 			aligned_read[0] = read_seq_mapper.MapSequence(read[0]);
 			aligned_read[1] = read_seq_mapper.MapSequence(read[1]);

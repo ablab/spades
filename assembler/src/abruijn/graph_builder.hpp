@@ -11,7 +11,8 @@
 #include "logging.hpp"
 #include "omnigraph.hpp"
 #include "omnigraph_nucls.hpp"
-#include "ireadstream.hpp"
+#include "common/io/single_read.hpp"
+#include "common/io/reader.hpp"
 
 namespace abruijn {
 
@@ -68,29 +69,29 @@ private:
 
 template <typename Reader>
 class GraphBuilderMaster {
-	Reader reader_;
+	Reader &reader_;
 	int mode_;
 	GraphBuilder gb_;
 public:
-	GraphBuilderMaster(Reader reader, size_t htake, int mode) :
+	GraphBuilderMaster(Reader &reader, size_t htake, int mode) :
 		reader_(reader), mode_(mode), gb_() {
 		gb_.hbest.reserve(htake);
 		gb_.htake_ = htake;
 	}
 
 	Graph* build() {
-		Read r;
+    io::SingleRead r;
 
 		INFO("===== Finding " << gb_.htake_ << " minimizers in each read... =====");
 		reader_.reset();
 		for (size_t i = 0; !reader_.eof(); ++i) {
 			reader_ >> r;
 			if (mode_ & 4) {
-				gb_.takeAllKmers(r.getSequence());
+				gb_.takeAllKmers(r.sequence());
 			} else if (mode_ & 1) {
-				gb_.findMinimizers(r.getSequence());
+				gb_.findMinimizers(r.sequence());
 			} else {
-				gb_.findLocalMinimizers(r.getSequence(), 51);
+				gb_.findLocalMinimizers(r.sequence(), 51);
 			}
 			VERBOSE(i, " single reads");
 		}
@@ -101,7 +102,7 @@ public:
 			reader_.reset();
 			for (size_t i = 0; !reader_.eof(); ++i) {
 				reader_ >> r;
-				gb_.findSecondMinimizer(r.getSequence());
+				gb_.findSecondMinimizer(r.sequence());
 				VERBOSE(i, " single reads");
 			}
 			INFO("Done: " << gb_.earmarked_hashes.size() << " earmarked hashes");
@@ -117,7 +118,7 @@ public:
 			reader_.reset();
 			for (size_t i = 0; !reader_.eof(); ++i) {
 				reader_ >> r;
-				gb_.revealTips(r.getSequence());
+				gb_.revealTips(r.sequence());
 				VERBOSE(i, " single reads");
 			}
 			for (map<hash_t, char>::iterator it = gb_.has_right.begin(); it != gb_.has_right.end(); ++it) {
@@ -137,7 +138,7 @@ public:
 			reader_.reset();
 			for (size_t i = 0; !reader_.eof(); ++i) {
 				reader_ >> r;
-				gb_.findTipExtensions(r.getSequence());
+				gb_.findTipExtensions(r.sequence());
 				VERBOSE(i, " single reads");
 			}
 			INFO("Done: " << gb_.has_right.size() << " possible tip extensions");
@@ -150,7 +151,7 @@ public:
 			reader_.reset();
 			for (size_t i = 0; !reader_.eof(); ++i) {
 				reader_ >> r;
-				gb_.lookRight(r.getSequence());
+				gb_.lookRight(r.sequence());
 				VERBOSE(i, " single reads");
 			}
 			for (GraphBuilder::TipExtensions::iterator it = gb_.tip_extensions.begin(); it != gb_.tip_extensions.end(); ++it) {
@@ -196,7 +197,7 @@ public:
 		reader_.reset();
 		for (size_t i = 0; !reader_.eof(); ++i) {
 			reader_ >> r;
-			gb_.addToGraph(r.getSequence());
+			gb_.addToGraph(r.sequence());
 			VERBOSE(i, " single reads");
 		}
 		INFO("Done: " << gb_.graph_.size() << " vertices");
@@ -224,13 +225,13 @@ public:
 
 		/// reading the reference genome
 		string const ref_genome_filename = "./data/input/MG1655-K12.fasta.gz";
-		Read ref_genome;
+    io::SingleRead ref_genome;
 
-		ireadstream genome_stream(ref_genome_filename);
+    io::Reader<io::SingleRead> genome_stream(ref_genome_filename);
 		genome_stream >> ref_genome;
 		genome_stream.close();
 
-		Sequence ref_seq = ref_genome.getSequence();
+		Sequence ref_seq = ref_genome.sequence();
 		if ( cut > 0 )
 			ref_seq = ref_seq.Subseq(0, cut);
 
@@ -256,7 +257,7 @@ public:
 				++num_of_earmarked_kmers;
 
 				current_index = i;
-				current_kmer  = ref_genome.getSequence().Subseq(i,i+K);
+				current_kmer  = ref_genome.sequence().Subseq(i,i+K);
 				if (!gb_.hasVertex( current_kmer)) {
 					++num_of_missing_kmers;
 					INFO("k-mer " << current_kmer << " is present in the genome, but not in the graph");
@@ -270,7 +271,7 @@ public:
 				}
 				else {
 					current_index = i;
-					current_kmer  = ref_genome.getSequence().Subseq( i,i+K );
+					current_kmer  = ref_genome.sequence().Subseq( i,i+K );
 					//printer.threadAdd( graph()->getVertex( current_kmer) );
 
 					size_t edge_length = current_index - previous_index;

@@ -29,7 +29,7 @@ public:
 
 private:
 	string qual_;
-	friend class ireadstream;
+  //friend class ireadstream;
 };
 
 #endif /* QUAL_HPP_ */

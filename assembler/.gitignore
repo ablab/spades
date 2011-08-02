@@ -5,3 +5,13 @@ output/
 .project
 gmon.out
 abruijn.sh
+CMakeCache.txt
+CMakeFiles/
+Makefile
+abruijn/
+bayes/
+cmake_install.cmake
+debruijn/
+hammer/
+src/debruijn/config.inp
+src/file

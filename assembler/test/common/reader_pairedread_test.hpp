@@ -6,6 +6,8 @@
 #include "cute/cute.h"
 #include "common/io/reader.hpp"
 
+using namespace io;
+
 void TestReaderPairedReadNoFile() {
   Reader<PairedRead> reader(std::pair<std::string, std::string>
                             ("./no-file", "./test/data/s_test.fastq.gz"),
@@ -26,17 +28,13 @@ void TestReaderPairedReadReading() {
   ASSERT_EQUAL("EAS20_8_6_1_2_768/1", read[0].name());
   ASSERT_EQUAL("ATGCATGCATGC", read[0].GetSequenceString());
   ASSERT_EQUAL("HGHIHHHGHECH", read[0].GetPhredQualityString());
-  ASSERT_EQUAL("EAS20_8_6_1_2_1700/1", read[1].name());
-  ASSERT_EQUAL("AAAAAAAAAAAC", read[1].GetSequenceString());
-  ASSERT_EQUAL("GGGGCGGGGEGG", read[1].GetPhredQualityString());
+  ASSERT_EQUAL("!EAS20_8_6_1_2_1700/1", read[1].name());
   ASSERT_EQUAL(100, read.distance());
   reader >> read;
   ASSERT_EQUAL("EAS20_8_6_1_2_1700/1", read[0].name());
   ASSERT_EQUAL("AAAAAAAAAAAC", read[0].GetSequenceString());
   ASSERT_EQUAL("GGGGCGGGGEGG", read[0].GetPhredQualityString());
-  ASSERT_EQUAL("EAS20_8_6_1_2_468/1", read[1].name());
-  ASSERT_EQUAL("TGTGTGTGTGTG", read[1].GetSequenceString());
-  ASSERT_EQUAL("DADDA8<?>@HH", read[1].GetPhredQualityString());
+  ASSERT_EQUAL("!EAS20_8_6_1_2_468/1", read[1].name());
   ASSERT_EQUAL(100, read.distance());
   ASSERT(reader.eof());
   reader.reset();

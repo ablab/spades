@@ -24,6 +24,8 @@
 #include <utility>
 #include "common/io/single_read.hpp"
 
+namespace io {
+
 class PairedRead {
  public:
   /*
@@ -141,5 +143,7 @@ class PairedRead {
    */
   size_t distance_;
 };
+
+}
 
 #endif /* COMMON_IO_PAIREDREAD_HPP_ */
