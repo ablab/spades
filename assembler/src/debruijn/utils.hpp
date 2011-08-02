@@ -694,9 +694,9 @@ public:
 	vector<EdgeId> GetContainingEdges(){
 		vector<EdgeId> res;
 		if (!stream_.eof()) {
-			Read p_r;
+      io::SingleRead p_r;
 			stream_ >> p_r;
-			Sequence read = p_r.getSequence();
+			Sequence read = p_r.sequence();
 			Seq<k + 1> kmer = read.start<k + 1>();
 			bool found;
 			for (size_t i = k + 1; i <= read.size(); ++i) {
