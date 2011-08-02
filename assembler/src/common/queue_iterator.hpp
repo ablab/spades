@@ -59,8 +59,7 @@ public:
 template<typename ElementId, typename Comparator = std::less<ElementId> >
 class QueueIterator {
 private:
-	bool ready_;
-	ElementId current_;
+	bool ready;
 	erasable_priority_queue<ElementId, Comparator> queue_;
 protected:
 
@@ -70,20 +69,20 @@ protected:
 	}
 
 	QueueIterator(const Comparator& comparator = Comparator()) :
-		ready_(false), queue_(comparator) {
+		ready(true), queue_(comparator) {
 	}
 
 	template<typename iterator>
 	QueueIterator(iterator begin, iterator end,
 			const Comparator& comparator = Comparator()) :
-		ready_(false), queue_(comparator) {
+		ready(true), queue_(comparator) {
 		fillQueue(begin, end);
 	}
 
 	void erase(const ElementId& toRemove) {
-//		if (ready_ && toRemove == queue_.top()) {
-//			ready_ = false;
-//		}
+		if (ready && toRemove == queue_.top()) {
+			ready = false;
+		}
 		queue_.erase(toRemove);
 	}
 
@@ -96,23 +95,17 @@ public:
 		return queue_.empty();
 	}
 
-	ElementId operator*() {
+	ElementId operator*() const {
 		assert(!queue_.empty());
-//		assert(ready);
-		if(!ready_) {
-			current_ = queue_.top();
-			ready_ = true;
-		}
-		return current_;
+		assert(ready);
+		return queue_.top();
 	}
 
 	void operator++() {
-		if (!ready_) {
+		if (ready) {
 			queue_.pop();
-		} else {
-			queue_.erase(current_);
 		}
-		ready_ = false;
+		ready = true;
 	}
 
 	virtual ~QueueIterator() {
