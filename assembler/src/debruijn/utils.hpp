@@ -667,8 +667,8 @@ public:
 		if (!stream_.eof()) {
 			PairedRead p_r;
 			stream_ >> p_r;
-			Sequence read1 = p_r.first().getSequence();
-			Sequence read2 = p_r.second().getSequence();
+			Sequence read1 = p_r.first().sequence();
+			Sequence read2 = p_r.second().sequence();
 			Path<EdgeId> aligned_read[2];
 			aligned_read[0] = read_seq_mapper.MapSequence(read1);
 			aligned_read[1] = read_seq_mapper.MapSequence(read2);
