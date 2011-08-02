@@ -40,7 +40,7 @@ class UnionFindClass {
 
         int num_classes() {
             int count = 0;
-            for (int i = 0; i < data.size(); i++) {
+            for (size_t i = 0; i < data.size(); i++) {
                 if (data[i] == i) count++;
             }
             return count; //return *max_element(data.begin(), data.end());
@@ -60,7 +60,7 @@ class UnionFindClass {
 
         void get_classes (vector<vector<int > > & otherWay) {
             otherWay.resize(data.size());
-            for (int i = 0; i < data.size(); i++) {
+            for (size_t i = 0; i < data.size(); i++) {
                 if (data[i] != -1) 
                     otherWay.at(find_set(data[i])).push_back(i);
             }
@@ -69,15 +69,15 @@ class UnionFindClass {
 
         void get_classes (vector<int> & consolidatedData, vector<vector<int > > & otherWay) {
             otherWay.resize(data.size());
-            for (int i = 0; i < data.size(); i++) {
+            for (size_t i = 0; i < data.size(); i++) {
                 if (data[i] != -1) 
                     otherWay.at(find_set(data[i])).push_back(i);
             }
             otherWay.erase(remove_if(otherWay.begin(), otherWay.end(), pred1), otherWay.end());
 
             consolidatedData.resize(data.size(), -1);
-            for (int i = 0; i < otherWay.size(); i++) 
-                for (int j = 0; j < otherWay[i].size(); j++) 
+            for (size_t i = 0; i < otherWay.size(); i++)
+                for (size_t j = 0; j < otherWay[i].size(); j++)
                     consolidatedData.at(otherWay[i][j]) = i;
         }
 

@@ -2,6 +2,9 @@
 #define POSITION_KMER_HPP_
 
 #include <vector>
+#include <queue>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
 #include "read/read.hpp"
 #include "kmer_stat.hpp"
 #include "position_read.hpp"
@@ -14,28 +17,35 @@
 typedef std::pair<std::string, uint32_t> StringCount;
 
 class PositionKMer {
-	uint64_t start_;
+	hint_t start_;
 
   public:
 	static std::vector<PositionRead> * pr;
 	static std::vector<Read> * rv;
-	static uint64_t revNo;
+	static hint_t revNo;
 
 	static char* blob;
-	static uint64_t blob_max_size;
-	static uint64_t blob_size;
+	static hint_t blob_max_size;
+	static hint_t blob_size;
 
-	static int64_t* blobkmers;
+	static hint_t* blobkmers;
 
 	static std::vector<uint32_t> * subKMerPositions;
 
-	static bool compareSubKMers( const uint64_t kmer1, const uint64_t kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t offset) {
-		return ( strncmp( blob + km->at(kmer1).first.start_ + subKMerPositions->at(offset),
-			  	  blob + km->at(kmer2).first.start_ + subKMerPositions->at(offset),
-				  subKMerPositions->at(offset + 1) - subKMerPositions->at(offset)) < 0 );
+	static bool compareSubKMers( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+		//cout << "    " << kmer1 << "\t" << km->at(kmer1).first.strSub(tau, ) << " vs " << kmer2 << 
+		return ( strncmp( blob + km->at(kmer1).first.start_ + start_offset,
+			  	  blob + km->at(kmer2).first.start_ + start_offset,
+				  end_offset - start_offset ) < 0 );
 	}
 
-	static bool equalSubKMers( const uint64_t kmer1, const uint64_t kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t offset) {
+	static bool compareSubKMersGreater( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+		return ( strncmp( blob + km->at(kmer1).first.start_ + start_offset,
+			  	  blob + km->at(kmer2).first.start_ + start_offset,
+				  end_offset - start_offset ) > 0 );
+	}
+
+	static bool equalSubKMers( const hint_t kmer1, const hint_t kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t offset) {
 		for (uint32_t i = offset; i < K; i += tau+1) {
 			if (km->at(kmer1).first[i] != km->at(kmer2).first[i]) {
 				return false;
@@ -45,9 +55,9 @@ class PositionKMer {
 		return true;
 	}
 
-  	static uint64_t readNoFromBlobPosInternal( uint64_t blobpos, uint64_t start, uint64_t end ) {
+  	static hint_t readNoFromBlobPosInternal( hint_t blobpos, hint_t start, hint_t end ) {
 		if (start >= end - 1) return start;
-		uint64_t mid = start + (end - start) / 2;
+		hint_t mid = start + (end - start) / 2;
 		if ( blobpos < pr->at(mid).start() ) {
 			return readNoFromBlobPosInternal( blobpos, start, mid );
 		} else {
@@ -55,17 +65,17 @@ class PositionKMer {
 		}
 	}
 
-	static uint64_t readNoFromBlobPos( uint64_t blobpos ) {
+	static hint_t readNoFromBlobPos( hint_t blobpos ) {
 		return readNoFromBlobPosInternal ( blobpos, 0, pr->size() );
 	}
 
 
 
-	PositionKMer( uint64_t readno, uint32_t startpos ) {
+	PositionKMer( hint_t readno, uint32_t startpos ) {
 		start_ = pr->at(readno).start() + startpos;
 	}
 
-	PositionKMer( uint64_t startpos ) {
+	PositionKMer( hint_t startpos ) {
 		start_ = startpos;
 	}
 
@@ -73,7 +83,7 @@ class PositionKMer {
 		return blob[ start_ + pos ];
 	}
 
-	char operator [] (uint32_t pos) const {
+	char operator [] (hint_t pos) const {
 		return blob[ start_ + pos ];
 	}
 
@@ -85,6 +95,8 @@ class PositionKMer {
 		return ( strncmp( blob + start_, blob + kmer.start_, K) == 0 );
 	}
 
+	hint_t start() const { return start_; }
+
 	string str() const {
 		string res = "";
 		for (uint32_t i = 0; i < K; ++i) {
@@ -95,7 +107,7 @@ class PositionKMer {
 
 	string strSub(uint32_t tau, uint32_t offset) const {
 		string res = "";
-		for (uint32_t i = offset; i < K; i+=tau+1) {
+		for (uint32_t i = PositionKMer::subKMerPositions->at(offset); i < PositionKMer::subKMerPositions->at(offset+1); ++i) {
 			res += at(i);
 		}
 		return res;
@@ -108,12 +120,16 @@ inline bool KCgreater ( const KMerCount & l, const KMerCount & r ) {
 }
 
 struct KMerNo {
-	uint64_t index;
+	hint_t index;
 
-	KMerNo( uint64_t no ) : index(no) { } 
+	KMerNo( hint_t no ) : index(no) { } 
 
-	bool equal(const KMerNo & kmerno) {
+	bool equal(const KMerNo & kmerno) const {
 		return ( strncmp( PositionKMer::blob + index, PositionKMer::blob + kmerno.index, K) == 0 );
+	}
+
+	bool test_equal(const KMerNo & kmerno) const {
+		return ( index == kmerno.index );
 	}
 
 	string str() const {
@@ -128,6 +144,84 @@ struct KMerNo {
 		return ( strncmp( PositionKMer::blob + l.index, PositionKMer::blob + r.index, K) < 0 );
 
 	}
+
+	static bool greater(const KMerNo &l, const KMerNo &r) {
+		return ( strncmp( PositionKMer::blob + l.index, PositionKMer::blob + r.index, K) > 0 );
+
+	}
+
+	static bool test_less(const KMerNo &l, const KMerNo &r) {
+		return ( l.index < r.index );
+
+	}
+	static bool test_greater(const KMerNo &l, const KMerNo &r) {
+		return ( l.index > r.index );
+
+	}
+
+};
+
+
+// these are classes for the subkmer priority queue -- a result of parallel sort
+
+struct SubKMerPQElement {
+	hint_t ind;
+	int n;
+	SubKMerPQElement( hint_t index, int no) : ind(index), n(no) { }
+
+	static bool compareSubKMerPQElements( const SubKMerPQElement & kmer1, const SubKMerPQElement & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+		return PositionKMer::compareSubKMersGreater( kmer1.ind, kmer2.ind, km, tau, start_offset, end_offset );
+	}
+	
+};
+
+typedef boost::function< bool (const SubKMerPQElement & kmer1, const SubKMerPQElement & kmer2) > subkmer_comp_type;
+
+class SubKMerPQ {
+  private:
+	vector< size_t > boundaries;
+	vector<hint_t> * v;
+	int nthreads;
+
+	subkmer_comp_type sort_routine;
+	std::priority_queue< SubKMerPQElement, vector<SubKMerPQElement>, subkmer_comp_type  > pq;
+	vector< vector<hint_t>::iterator > it;
+	vector< vector<hint_t>::iterator > it_end;
+	SubKMerPQElement cur_min;
+
+  public:
+	/**
+	  * constructor
+	  */
+	SubKMerPQ( vector<hint_t> * vec, int nthr, subkmer_comp_type sort_routine );
+
+	/**
+	  * sort one subvector array j (only one for easy parallelization)
+	  */
+	void doSort(int j, const boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > & sub_sort);
+
+	/**
+	  * initialize priority queue
+	  */
+	void initPQ();
+
+	/**
+	  * get next priority queue element and pop the top
+	  */
+	hint_t nextPQ();
+
+	/**
+	  * peek at next priority queue element
+	  */
+	hint_t peekPQ() { return cur_min.ind; }
+
+	/**
+	  * is priority queue empty
+	  */
+	bool emptyPQ() { return ( pq.size() == 0 ); }
+
+	/// get boundaries
+	const vector< size_t > & get_boundaries() { return boundaries; }
 };
 
 

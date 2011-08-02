@@ -11,8 +11,12 @@
  * the License, or (at your option) any later version.
  *
  * @section DESCRIPTION
- *
- * Immutable runtime length sequence (someway slow)
+ *		data_(seq.data_), from_(from), size_(size), rtl_(rtl) {
+			data_->Grab();
+		}
+ * Immutable runtime length sequence (someway slow)		data_(seq.data_), from_(from), size_(size), rtl_(rtl) {
+			data_->Grab();
+		}
  */
 
 
@@ -55,6 +59,12 @@ public:
             from_(0), size_(strlen(s)), rtl_(false) {
         data_ = new SequenceData(s, size_);
         data_->Grab();
+    }
+
+    Sequence() :
+             from_(0), size_(0), rtl_(false) {
+         data_ = new SequenceData("", size_);
+         data_->Grab();
     }
 
     Sequence(const char* s) :

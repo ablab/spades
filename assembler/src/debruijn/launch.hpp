@@ -35,6 +35,8 @@
 #include "graphio.hpp"
 #include "rectangleRepeatResolver.hpp"
 #include "distance_estimation.hpp"
+#include "one_many_contigs_enlarger.hpp"
+#include <cstdlib>
 //#include "dijkstra.hpp"
 
 namespace debruijn_graph {
@@ -215,6 +217,19 @@ void RemoveLowCoverageEdges(Graph &g) {
 	erroneous_edge_remover.RemoveEdges(g);
 	INFO("Low coverage edges removed");
 }
+
+
+template<class Graph>
+void RemoveLowCoverageEdgesForResolver(Graph &g) {
+	INFO("-----------------------------------------");
+	INFO("Removing low coverage edges");
+	double max_coverage = CONFIG.read<double> ("ec_max_coverage");
+	int max_length_div_K = CONFIG.read<int> ("ec_max_length_div_K");
+	LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
+			10000000 * g.k(), max_coverage);
+	erroneous_edge_remover.RemoveEdges(g);
+	INFO("Low coverage edges removed");
+}
 template<class Graph>
 void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 		PairedInfoIndex<Graph> &info, EdgesPositionHandler<Graph> &edges_pos,
@@ -236,7 +251,7 @@ void MapPairedReads(Graph &g,
 	stream.reset();
 	INFO("Threading reads");
 	int quantity = 0;
-	TemplateReadMapper<k , Graph, ReadStream> rm(g, index, stream);
+	SingleReadMapper<k , Graph, ReadStream> rm(g, index, stream);
 	while (!stream.eof()){
 		rm.ThreadNext();
 		quantity ++;
@@ -425,6 +440,26 @@ void OutputContigs(Graph& g, const string& contigs_output_filename) {
 	INFO("Contigs written");
 }
 
+template<class Graph>
+void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
+	INFO("-----------------------------------------");
+	INFO("Outputting contigs to " << contigs_output_dir);
+	int n = 0;
+	mkdir(contigs_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	char n_str[20];
+	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		sprintf(n_str, "%d.fa", n);
+
+		osequencestream oss(contigs_output_dir + n_str);
+
+//		osequencestream oss(contigs_output_dir + "tst.fasta");
+		oss << g.EdgeNucls(*it);
+		n++;
+	}
+	INFO("Contigs written");
+}
+
+
 template<size_t k, class ReadStream>
 void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		const Sequence& genome, bool paired_mode, bool rectangle_mode,
@@ -528,12 +563,12 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		IdTrackHandler<Graph> conj_IntIds(conj_copy_graph,
 				IntIds.MaxVertexId(), IntIds.MaxEdgeId());
 		PairedInfoIndex<Graph> conj_copy_index(conj_copy_graph);
-
+/*
 		scanConjugateGraph(conj_copy_graph, conj_IntIds,
 				work_tmp_dir + "graph", conj_copy_index);
 		printGraph(conj_copy_graph, conj_IntIds, work_tmp_dir + "graph_copy",
 				conj_copy_index);
-
+*/
 		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index,
 				EdgePosBefore);
 
@@ -578,7 +613,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
 
 		ClipTips(resolved_graph);
-		RemoveLowCoverageEdges(resolved_graph);
+		RemoveLowCoverageEdgesForResolver(resolved_graph);
 
 		omnigraph::WriteSimple(
 				work_tmp_dir + "repeats_resolved_after_und_cleared_pos.dot",
@@ -593,6 +628,12 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		omnigraph::WriteSimple(
 				output_folder + "repeats_resolved_und_cleared.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+//		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
+//		N50enlarger.one_many_resolve();
+
+		omnigraph::WriteSimple(
+						output_folder + "repeats_resolved_und_cleared_und_simplified.dot",
+						"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		INFO("repeat resolved grpah written");
 		EdgeIndex<k + 1, NCGraph> aux_index(resolved_graph);
 
@@ -605,7 +646,10 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream,
 		//				"no_repeat_graph");sss
 
 		OutputContigs(resolved_graph, output_folder + "contigs.fasta");
+
+		OutputSingleFileContigs(resolved_graph, output_folder + "consensus/");
 		OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
+
 
 	}
 	if (!paired_mode)

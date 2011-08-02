@@ -21,7 +21,7 @@ public:
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
-	void process(std::string dirprefix, const std::vector< std::vector<uint64_t> > & vs);
+	void process(std::string dirprefix, std::vector< SubKMerPQ > * vs);
 	
 	/// free up memory
 	void clear() {
@@ -66,7 +66,7 @@ private:
 	  */
 	void process_block_SIN(const std::vector<int> & block, std::vector< std::vector<int> > & vec);
 
-	void processBlock(unionFindClass * uf, vector<uint64_t> & block);
+	void processBlock(unionFindClass * uf, vector<hint_t> & block);
 	void clusterMerge(std::vector<unionFindClass *> uf, unionFindClass * ufMaster);
 
 };

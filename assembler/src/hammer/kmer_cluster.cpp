@@ -38,7 +38,7 @@ int KMerClustering::hamdistKMer(const PositionKMer & x, const string & y, int ta
 	return dist;
 }
 
-void KMerClustering::processBlock(unionFindClass * uf, vector<uint64_t> & block) {
+void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block) {
 	uint32_t blockSize = block.size();
 	for (uint32_t i = 0; i < blockSize; i++) {
 		uf->find_set(block[i]);
@@ -54,20 +54,16 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<uint64_t> & block)
 }
 
 void KMerClustering::clusterMerge(vector<unionFindClass *>uf, unionFindClass * ufMaster) {
-	cout << "Merging union find files..." << endl;
+	// cout << "Merging union find files..." << endl;
 	vector<string> row;
 	vector<vector<int> > classes;
 	for (uint32_t i = 0; i < uf.size(); i++) {
 		classes.clear();
 		uf[i]->get_classes(classes);
+		// cout << classes.size() << " classes:" << endl;
 		delete uf[i];
-		/*cout << "classes[" << i << "]: ";
 		for (uint32_t j = 0; j < classes.size(); j++) {
-			for (uint32_t k = 0; k < classes[j].size(); k++) cout << classes[j][k] << " ";
-			cout << "|";
-		}
-		cout << endl;*/
-		for (uint32_t j = 0; j < classes.size(); j++) {
+			// cout << "  class " << j << " with " << classes[j].size() << " times " << sizeof(int) << endl;
 			uint32_t first = classes[j][0];
 			ufMaster->find_set(first);
 			for (uint32_t k = 0; k < classes[j].size(); k++) {
@@ -178,11 +174,6 @@ double KMerClustering::lMeansClustering(int l, vector< vector<int> > & distances
 		for (size_t i=0; i < kmerinds.size(); ++i) indices[i] = 0;
 		return clusterLogLikelihood(kmerinds, centers, indices);
 	}
-	
-	/*cout << l << "  " << kmerinds.size() << ": "; 
-	for (size_t i=0; i < kmerinds.size(); ++i) cout << kmerinds[i] << " ";
-	cout << endl;*/
-
 
 	int restartCount = 1;
 	
@@ -301,7 +292,6 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 			distances[i][j] = hamdistKMer(k_[block[i]].first, k_[block[j]].first);
 			distances[j][i] = distances[i][j];
 		}
-		//cout << k_[block[i]].first.str() << "\t" << k_[block[i]].second.count << endl;
 	}
 
 	// Multinomial coefficients -- why? TODO: remove
@@ -315,7 +305,6 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	for (int l = 1; l <= origBlockSize; ++l) {
 		vector<StringCount> centers(l);
 		double curLikelihood = lMeansClustering(l, distances, block, indices, centers);
-		//cout << "   ...likelihood with " << l << " clusters = " << curLikelihood << endl;
 		if (curLikelihood <= bestLikelihood) {
 			break;
 		}
@@ -327,7 +316,6 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		if (bestCenters[k].second == 0) {
 			continue; // superfluous cluster with zero elements
 		}
-		//cout << "subcluster with " << bestCenters[k].second << " elements" << endl;
 		vector<int> v;
 		if (bestCenters[k].second == 1) {
 			for (int i = 0; i < origBlockSize; i++) {
@@ -337,14 +325,11 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 				}
 			}
 		} else { // there are several kmers in this cluster
-			// cout << "center: " << bestCenters[k].first.str().data() << "\n";
 			bool centerInCluster = false;
 			for (int i = 0; i < origBlockSize; i++) {
 				if (bestIndices[i] == (int)k) {
 					int dist = hamdistKMer(k_[block[i]].first, bestCenters[k].first);
-					// cout << "        " << k_[block[i]].first.str().data() << " " << dist << "\n";
 					if (dist == 0) {
-						// cout << "  found center\n";
 						centerInCluster = true;
 						v.insert(v.begin(), block[i]);
 					} else {
@@ -353,8 +338,6 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 				}
 			}
 			if (!centerInCluster) {
-				//cout << "  pushing consensus\n";
-				//cout << "Consensus: " << bestCenters[k].first;
 				
 				#pragma omp critical
 				{
@@ -375,7 +358,6 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 					PositionKMer pkm(PositionKMer::pr->size()-1, 0);
 					KMerStat kms( 0, KMERSTAT_GOOD );
 					k_.push_back( make_pair( pkm, kms ) );
-					// cout << "  " << (PositionKMer::pr->size() - 1) << " " << (k_.size()-1) << " " << PositionKMer::blob_size << "     " << pkm.str() << endl;
 				}
 				v.insert(v.begin(), k_.size() - 1);
 
@@ -385,56 +367,50 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	}
 }
 
-void KMerClustering::process(string dirprefix, const vector< vector<uint64_t> > & vs) {
+void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq) {
 	
 	int effective_threads = min(nthreads_, tau_+1);
 	vector<unionFindClass *> uf(tau_ + 1);
+	
+	// cout << "Starting split kmer processing in " << effective_threads << " threads." << endl;
 
-	#pragma omp parallel for shared(uf) num_threads(effective_threads)
+	#pragma omp parallel for shared(uf, vskpq) num_threads(effective_threads)
 	for (int i = 0; i < tau_ + 1; i++) {
 		uf[i] = new unionFindClass(k_.size()); 
 
-		cout << "Processing split kmers " << i << ", total " << vs[i].size() << "\n";
-		
 		string sbuf;
-		uint64_t last = vs[i][0];
-		vector<uint64_t> block;
-		for (size_t j=0; j<vs[i].size(); ++j) {
-			if (j % 10000000 == 0) cout << "Processed (" << i << ") " << j << ", ";
-			if ( PositionKMer::equalSubKMers(last, vs[i][j], &k_, tau_, i) ) { //add to current reads
-				block.push_back(vs[i][j]);
+		(*vskpq)[i].initPQ();
+
+		hint_t last = (*vskpq)[i].peekPQ();
+		vector<hint_t> block;
+		//size_t j = 0;
+		while (!(*vskpq)[i].emptyPQ()) {
+			//++j; if (j % 10000000 == 0) cout << "Processed (" << i << ") " << j << endl;
+			hint_t cur = (*vskpq)[i].nextPQ();
+
+			if ( PositionKMer::equalSubKMers(last, cur, &k_, tau_, i) ) { //add to current reads
+				block.push_back(cur);
 			} else {
 				processBlock(uf[i], block);
 				block.clear();
-				block.push_back(vs[i][j]);
-				last = vs[i][j];
+				block.push_back(cur);
+				last = cur;
 			}
 		}
 		processBlock(uf[i], block);
-		cout << "Finished(" << i << ") " << endl;
+		//cout << "Finished(" << i << ") " << endl;
 	}
-	cout << "All threads finished.\n";flush(cout);
+	TIMEDLN("All split kmer threads finished. Starting merge.");
 	
 	unionFindClass * ufMaster;
 	ufMaster = new unionFindClass(k_.size());
 	clusterMerge(uf, ufMaster);
-	cout << "Merging finished.\n"; flush(cout);
-	
-	
-	cout << "Centering begins...\n"; flush(cout);
+	TIMEDLN("Merging finished. Centering begins.");
 	vector<vector<int> > classes;
 	ufMaster->get_classes(classes);
 	delete ufMaster;
 	vector< vector< vector<int> > > blocks(nthreads_);
 
-	/*	cout << "classes: ";
-		for (uint32_t j = 0; j < classes.size(); j++) {
-			for (uint32_t k = 0; k < classes[j].size(); k++) cout << classes[j][k] << " " << k_[classes[j][k]].first.str() << endl;
-			cout << "------" << endl;
-		}
-		cout << endl;*/
-
-	
 	vector< vector< vector<int> > > blocksInPlace(nthreads_);
 
 	#pragma omp parallel for shared(blocksInPlace, classes) num_threads(nthreads_)
@@ -457,8 +433,7 @@ void KMerClustering::process(string dirprefix, const vector< vector<uint64_t> > 
 		}
 	}
 	
-	cout << "Centering finished."  << endl;
-	
+	TIMEDLN("Centering finished.");
 	
 	/*ofstream outf; outf.open(dirprefix + "/reads.uf.corr");
 	size_t blockNum = 0;
