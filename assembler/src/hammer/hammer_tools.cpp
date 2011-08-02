@@ -11,12 +11,14 @@
 #include <queue>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <time.h>
+#include <iomanip>
+
 #include "read/ireadstream.hpp"
 #include "defs.hpp"
 #include "mathfunctions.hpp"
 #include "valid_kmer_generator.hpp"
 #include "position_kmer.hpp"
-
 #include "hammer_tools.hpp"
 
 string encode3toabyte (const string & s)  {
@@ -80,7 +82,6 @@ void AddKMerNos(const PositionRead &r, hint_t readno, vector<KMerNo> *v) {
 
 void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerNo> * vv) {
 	vv->clear();
-	cout << "Starting preproc. " << PositionKMer::pr->size() << " reads.\n";
 
 	// TODO: think about a parallelization -- for some reason, the previous version started producing segfaults
 
@@ -93,15 +94,15 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 	#pragma omp parallel for shared(vtmp) num_threads(nthreads)
 	for(size_t i=0; i < PositionKMer::pr->size(); ++i) {
 		AddKMerNos(PositionKMer::pr->at(i), i, &vtmp[omp_get_thread_num()]);
-		if ( i % 1000000 == 0 ) cout << "Read no. " << i << " processed by thread " << omp_get_thread_num() << "." << endl;
+		//if ( i % 1000000 == 0 ) cout << "Read no. " << i << " processed by thread " << omp_get_thread_num() << "." << endl;
 	}
-	cout << "All k-mers added to vectors." << endl;
+	//TIMEDLN("All k-mers added to vectors.");
 	
 	for(size_t n=0; n < nthreads; ++n) {
 		vv->insert(vv->end(), vtmp[n].begin(), vtmp[n].end());
 		vtmp[n].clear();
 	}
-	cout << "Vectors of k-mers joined. Got a vector of size " << vv->size() << "." << endl;
+	//cout << "Vectors of k-mers joined. Got a vector of size " << vv->size() << "." << endl;
 }
 
 void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers, vector<SubKMerPQ> * vskpq) {
@@ -109,7 +110,7 @@ void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< ve
 	int subkmer_nthreads = max ( (tau + 1) * ( (int)(nthreads / (tau + 1)) ), tau+1 );
 	int effective_subkmer_threads = min(subkmer_nthreads, nthreads);
 
-	cout << "Starting split and sort..." << endl;
+	//cout << "Starting split and sort..." << endl;
 
 	#pragma omp parallel for shared(vs, kmers, tau) num_threads(effective_threads)
 	for (int j=0; j<tau+1; ++j) {
@@ -131,7 +132,7 @@ void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< ve
 		boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > sub_sort = boost::bind(PositionKMer::compareSubKMers, _1, _2, kmers, tau, PositionKMer::subKMerPositions->at(j % (tau+1)), PositionKMer::subKMerPositions->at((j % (tau+1))+1));
 		(*vskpq)[ (j % (tau+1)) ].doSort( j / (tau+1), sub_sort );
 	}
-	cout << "Auxiliary subvectors sorted and sent to priority queues." << endl;
+	//cout << "Auxiliary subvectors sorted and sent to priority queues." << endl;
 }
 
 
@@ -263,6 +264,14 @@ bool operator == (const PriorityQueueElement & l, const PriorityQueueElement & r
 	return l.kmerno.equal(r.kmerno);
 }
 
+void print_time() {
+	time_t rawtime;
+	tm * ptm;
+	time ( &rawtime );
+	ptm = gmtime( &rawtime );
+	cout << setfill('0') << "[ " << setw(2) << ptm->tm_hour << ":" << setw(2) << ptm->tm_min << ":" << setw(2) << ptm->tm_sec << " ] ";
+}
+
 void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthreads) {
 
 	// find boundaries of the pieces
@@ -272,13 +281,13 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 		boundaries[j] = j * sub_size;
 	}
 	boundaries[nthreads] = v->size();
-	cout << "Thread boundaries: "; for (size_t j=0; j<nthreads+1; ++j) cout << boundaries[j] << " "; cout << endl;
+	//cout << "  thread boundaries: "; for (size_t j=0; j<nthreads+1; ++j) cout << boundaries[j] << " "; cout << endl;
 
 	#pragma omp parallel for shared(v, boundaries) num_threads(nthreads)
 	for (int j = 0; j < nthreads; ++j) {
 		sort(v->begin() + boundaries[j], v->begin() + boundaries[j+1], KMerNo::less);
 	}
-	cout << "Subvectors sorted." << endl;
+	TIMEDLN("Subvectors sorted.");
 
 	std::priority_queue< PriorityQueueElement, vector<PriorityQueueElement> > pq;
 	vector< vector<KMerNo>::iterator > it(nthreads);
@@ -313,7 +322,7 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 	//cout << "push " << curKMerCount.first.str() << " cnt=" << curKMerCount.second.count << endl;
 	kmers->push_back(curKMerCount);
 
-	cout << "Subvectors merged. In total, we have " << kmers->size() << " kmers." << endl;
+	//cout << "Subvectors merged. In total, we have " << kmers->size() << " kmers." << endl;
 }
 
 
