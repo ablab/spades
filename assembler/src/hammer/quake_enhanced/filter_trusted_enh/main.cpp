@@ -94,9 +94,9 @@ int main(int argc, char *argv[]) {
       LOG4CXX_INFO(logger, "Reading k-mer " << read_number << ".");
     }
     if (q_count / count > limits[count]) {
-      fprintf(ofile, "%s\n", kmer);
+      fprintf(ofile, "%s%d%f%f\n", kmer, count, q_count, freq);
     } else {
-      fprintf(badfile, "%s\n", kmer);
+      fprintf(badfile, "%s%d%f%f\n", kmer, count, q_count, freq);
     }
   }
   return 0;

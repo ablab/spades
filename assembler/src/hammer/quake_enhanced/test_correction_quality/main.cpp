@@ -71,8 +71,7 @@ int main(int argc, char *argv[]) {
   int trusted_fail = 0;
   int bad = 0;
   int bad_fail = 0;
-  snprintf(format, sizeof(format), "%%%ds", kMaxK);
-  while (fscanf(trust_file, format, kmer) != EOF) {
+  while (fscanf(trust_file, format, kmer, &count, &q_count, &freq) != EOF) {
     if (real_kmers.count(string(kmer)) > 0) {
       ++trusted;
     } else {
@@ -81,8 +80,7 @@ int main(int argc, char *argv[]) {
   }
   printf("trusted: %d\n", trusted + trusted_fail);
   printf("erroneous: %d\n", trusted_fail);
-  snprintf(format, sizeof(format), "%%%ds", kMaxK);
-  while (fscanf(bad_file, format, kmer) != EOF) {
+  while (fscanf(bad_file, format, kmer, &count, &q_count, &freq) != EOF) {
     if (real_kmers.count(string(kmer)) > 0) {
       ++bad_fail;
     } else {
