@@ -1,10 +1,13 @@
 #include <stdint.h>
 #include <cstdlib>
 #include <cstdio>
+#include <algorithm>
 #include <string>
-#include <unordered_map>
+#include <vector>
 
-using std::unordered_map;
+using std::min;
+using std::max;
+using std::vector;
 using std::string;
 
 namespace {
@@ -60,19 +63,18 @@ int main(int argc, char *argv[]) {
   FILE *kmer_hist = fopen(opts.kmer_hist.c_str(), "r");
   FILE *trusted_hist = fopen(opts.trusted_hist.c_str(), "w");
   FILE *bad_hist = fopen(opts.bad_hist.c_str(), "w");
-  unordered_map<uint32_t, uint32_t> hist;
-  int max = 0;
+  vector<uint32_t> hist;
   float x;
   int count;
   while (fscanf(kmer_hist, "%f %d", &x, &count) == 2) {
-    int r = (int)(x + 0.5);
-    hist[r] += count;
-    if (r > max) {
-      max = r;
+    uint32_t r = (uint32_t)(x + 0.5);
+    if (r > hist.size()) {
+      hist.resize(r * 1.5);
     }
+    hist[r] += count;
   }
   int fmin = -1;
-  for (int i = 0; i < max - 1; ++i) {
+  for (uint32_t i = 0; i < hist.size() - 1; ++i) {
     if (hist[i + 1] > hist[i]) {
       fmin = i;
       break;
@@ -83,7 +85,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
   int fmax = -1;
-  for (int i = fmin; i < max - 1; ++i) {
+  for (uint32_t i = fmin; i < hist.size() - 1; ++i) {
     if (hist[i + 1] < hist[i] && hist[i] > hist[fmin] * opts.level) {
       fmax = i;
       break;
@@ -95,6 +97,7 @@ int main(int argc, char *argv[]) {
   }
   int lborder = fmax;
   int rborder = fmax;
+  // ToDo 0.9 ==>> command line options
   while (hist[lborder] > hist[fmax] * 0.9) {
     --lborder;
   }
@@ -111,7 +114,22 @@ int main(int argc, char *argv[]) {
   }
   
   float average = mass_pos / (double) mass;
-  int daverage = (int)(average * 2 + 0.5);
-  printf("Gauss median is at %f\n", daverage / 2.0);
+  printf("Gauss median is at %f\n", average);
+  vector<uint32_t> hist_trusted(hist);
+  for (uint32_t i = 0; (int)(average - i) > 0; ++i) {
+    int where = (int)(average - i);
+    int from = (int)(average + i + 0.5);
+    if (where == from) {
+      continue;
+    }
+    hist_trusted[where] = min(hist_trusted[where + 1], hist_trusted[from]);
+  }
+  for (uint32_t i = 0; i < hist_trusted.size(); ++i) {
+    fprintf(trusted_hist, "%d %d\n", i, hist_trusted[i]);
+    fprintf(bad_hist, "%d %d\n", i, hist[i] - hist_trusted[i]);
+  }
+  fclose(kmer_hist);
+  fclose(trusted_hist);
+  fclose(bad_hist);
   return 0;
 }
