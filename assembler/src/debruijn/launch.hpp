@@ -9,8 +9,6 @@
 #define LAUNCH_HPP_
 
 #include "common/io/reader.hpp"
-//using namespace io;
-//typedef Reader<SingleRead> ireadstream;
 #include "common/io/rc_reader_wrapper.hpp"
 #include "common/io/cutting_reader_wrapper.hpp"
 #include "common/io/converting_reader_wrapper.hpp"

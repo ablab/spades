@@ -66,7 +66,8 @@ int main() {
 	// read data ('reads')
   PairedReadStream pairStream(std::pair<std::string, 
                               std::string>(reads_filename1,
-                                           reads_filename2));
+                                           reads_filename2),
+                              insert_size);
 	RCStream rcStream(&pairStream);
 
 	// read data ('genome')
