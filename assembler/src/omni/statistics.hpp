@@ -2,6 +2,7 @@
 #define STATISTICS_HPP_
 
 #include "omni_tools.hpp"
+#include "simple_tools.hpp"
 #include "xmath.h"
 #include "paired_info.hpp"
 #include <boost/optional.hpp>
@@ -462,7 +463,8 @@ private:
 
 	void HandleImperfectMatch(const Info& etalon, const Info& estimated) {
 //		DEBUG("Handling imperfect match " << etalon << " " << estimated);
-		if (last_estimated_imperfect_match_ != estimated) {
+		if (!last_estimated_imperfect_match_ ||
+			*last_estimated_imperfect_match_ != estimated) {
 			ProcessImperfectMatch(last_estimated_imperfect_match_, last_etalon_imperfect_matches_);
 			last_estimated_imperfect_match_ = boost::in_place(estimated);
 			last_etalon_imperfect_matches_.clear();
@@ -598,7 +600,7 @@ private:
 
 	PairedInfoIndex<Graph>& estimated_pair_info_;
 	vector<pair<double, double>> weight_variance_stat_;
-
+	DECL_LOGGER("EstimatedClusterStat");
 public:
 	ClusterStat(PairedInfoIndex<Graph>& estimated_pair_info) :
 		estimated_pair_info_(estimated_pair_info) {
@@ -612,9 +614,9 @@ public:
 			Infos infos = *it;
 			for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
 				Info info = *it2;
-//				if (gr(info.variance, 0)) {
+				if (gr(info.variance, 0.)) {
 					weight_variance_stat_.push_back(make_pair(info.weight, info.variance));
-//				}
+				}
 			}
 			//todo talk with Anton!!!
 //			for (auto it2 = (*it).begin(); it2 != (*it).end(); ++it2) {
@@ -624,6 +626,13 @@ public:
 ////				}
 //			}
 		}
+		stringstream ss;
+		for (auto it = weight_variance_stat_.begin(); it != weight_variance_stat_.end(); ++it) {
+			ss <<*it;//<< "(" << (*it).first << ", " << (*it).second << ")" << " ; ";
+		}
+//		copy(weight_variance_stat_.begin(), weight_variance_stat_.end()
+//				, ostream_iterator<pair<double, double>>(ss, ", "));
+		INFO("Estimated cluster stat \n" << ss.str());
 	}
 
 	vector<pair<double, double>> weight_variance_stat() {
