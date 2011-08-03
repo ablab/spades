@@ -113,6 +113,14 @@ void BuildDeBruijnGraph(ReadStream& stream,
 	}
 
 	INFO("Building de Bruijn graph finished");
+
+	INFO("Writing graphs");
+	RealIdGraphLabeler<Graph> IdTrackLabelerBefore(g, IntIds);
+	omnigraph::WriteSimple(
+			output_folder + "repeats_resolved_before.dot",
+			"no_repeat_graph", g, IdTrackLabelerBefore);
+	printGraph(g, IntIds, work_tmp_dir + "graph", clustered_index, EdgePos);
+	printGraph(g, IntIds, output_folder + "graph", clustered_index, EdgePos);
 }
 
 
@@ -176,9 +184,39 @@ void BuildDeBruijnGraph(Graph& g,  PairedInfoIndex<Graph>& paired_index, EdgeInd
 			from_saved, insert_size, max_read_length, output_dir, work_tmp_dir, g, paired_index, index);
 }
 
+template<size_t k>
+void LoadFromFile(std::string fileName, Graph& g,  PairedInfoIndex<Graph>& paired_index, EdgeIndex<k + 1, Graph>& index,
+		Sequence& sequence) {
+
+	string input_dir = CONFIG.read<string>("input_dir");
+	string dataset = CONFIG.read<string>("dataset");
+	string genome_filename = input_dir
+			+ CONFIG.read<string>("reference_genome");
+	checkFileExistenceFATAL(genome_filename);
+	int dataset_len = CONFIG.read<int>(dataset + "_LEN");
+
+	// read data ('genome')
+	std::string genome;
+	{
+		ireadstream genome_stream(genome_filename);
+		Read full_genome;
+		genome_stream >> full_genome;
+		genome = full_genome.getSequenceString().substr(0, dataset_len); // cropped
+	}
+	sequence = Sequence(genome);
+
+	INFO("Reading graph");
+	//IdTrackHandler<Graph> IntIds(g);
+	IdTrackHandler<Graph> conj_IntIds(g);
+
+	scanConjugateGraph(g, conj_IntIds,	fileName, paired_index);
+}
+
 
 int main() {
 	using namespace long_contigs;
+
+	LoadLCConstants();
 
 	Graph g(K);
 	EdgeIndex<K + 1, Graph> index(g);
@@ -188,7 +226,12 @@ int main() {
 	std::vector<BidirectionalPath> seeds;
 	std::vector<BidirectionalPath> paths;
 
-	BuildDeBruijnGraph<K>(g, paired_index, index, sequence);
+	if (!LC_CONFIG.read<bool>("from_file")) {
+		BuildDeBruijnGraph<K>(g, paired_index, index, sequence);
+	}
+	else {
+		LoadFromFile<K>(LC_CONFIG.read<std::string>("graph_file"), g, paired_index, index, sequence);
+	}
 
 	FindSeeds(g, seeds);
 
@@ -203,7 +246,7 @@ int main() {
 	INFO("Seeds coverage");
 	PrintPathCoverage(g, seeds);
 
-	FindPaths(g, seeds, paired_index, paths, true);
+	FindPaths(g, seeds, paired_index, paths);
 
 	INFO("Final paths");
 	for(auto path = paths.begin(); path != paths.end(); ++path) {

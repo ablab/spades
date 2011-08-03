@@ -391,7 +391,7 @@ void scanConjugateGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
 	DataScanner<Graph> dataScanner(g, new_IDs);
 	dataScanner.loadConjugateGraph(file_name, true);
 	dataScanner.loadCoverage(file_name);
-	//	dataScanner.loadPaired(file_name, paired_index);
+	dataScanner.loadPaired(file_name, paired_index);
 }
 
 template<size_t k>
