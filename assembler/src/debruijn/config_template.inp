@@ -35,6 +35,12 @@ br_max_relative_delta = 0.1
 ec_max_coverage = 20.0 # erroneous_connection < this * not_erroneous_connection_cov
 ec_max_length_div_K = 5
 
+# distance estimator:
+
+de_delta = 10
+de_linkage_distance = 10
+de_max_distance = 75
+
 # different datasets:
 
 ECOLI_EMUL_1 = EAS20_8/emul/MG1655-K12_emul1.fastq.gz
