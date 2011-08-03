@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     hist[r] += count;
   }
   int fmin = -1;
-  for (uint32_t i = 0; i < hist.size() - 1; ++i) {
+  for (uint32_t i = 1; i < hist.size() - 1; ++i) {
     if (hist[i + 1] > hist[i]) {
       fmin = i;
       break;
