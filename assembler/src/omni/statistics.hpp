@@ -627,9 +627,9 @@ public:
 //			}
 		}
 		stringstream ss;
-		for (auto it = weight_variance_stat_.begin(); it != weight_variance_stat_.end(); ++it) {
-			ss <<*it;//<< "(" << (*it).first << ", " << (*it).second << ")" << " ; ";
-		}
+//		for (auto it = weight_variance_stat_.begin(); it != weight_variance_stat_.end(); ++it) {
+//			ss <<*it;//<< "(" << (*it).first << ", " << (*it).second << ")" << " ; ";
+//		}
 //		copy(weight_variance_stat_.begin(), weight_variance_stat_.end()
 //				, ostream_iterator<pair<double, double>>(ss, ", "));
 		INFO("Estimated cluster stat \n" << ss.str());
