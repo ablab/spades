@@ -185,11 +185,8 @@ void PrintGraphComponents(const string& file_name, Graph& g,
 	while (!splitter.Finished() && cnt <= 100) {
 		string component_name = ConstructComponentName(file_name, cnt).c_str();
 		auto component = splitter.NextComponent();
-		EdgeVertexFilter<Graph> *filter = new EdgeVertexFilter<Graph> (g,
-				component);
-		printGraph(g, old_IDs, component_name, paired_index, edges_positions,
-				filter);
-		delete filter;
+		EdgeVertexFilter<Graph>filter (g, component);
+		printGraph(g, old_IDs, component_name, paired_index, edges_positions, &filter);
 		cnt++;
 	}
 
@@ -281,20 +278,21 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 	repeat_resolver.ResolveRepeats(output_folder);
 	INFO("Primitive repeats resolved");
 }
+
 template<size_t k, class ReadStream, class Graph>
 void MapPairedReads(Graph &g, ReadStream& stream,
-		EdgeIndex<k + 1, Graph>& index) {
+		EdgeIndex<k + 1, Graph>& index/*, map<typename Graph::EdgeId, int>& reads_aligned*/) {
 	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Threading reads");
-	int quantity = 0, map_quantity = 0;
+	int read_num = 0, map_quantity = 0;
 
 	SingleReadMapper<k, Graph, ReadStream> rm(g, index, stream);
 	while (!stream.eof()) {
 		vector<EdgeId> res = rm.GetContainingEdges();
-		quantity++;
+		read_num++;
 		map_quantity += res.size();
-	}INFO(2 * quantity <<" reads_threaded,to "<< map_quantity <<" edges");
+	}INFO(2 * read_num <<" reads_threaded,to "<< map_quantity <<" edges");
 }
 
 template<size_t k, class ReadStream>
@@ -511,7 +509,7 @@ template<size_t k, class ReadStream>
 void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		bool paired_mode, bool rectangle_mode, bool etalon_info_mode,
 		bool from_saved, size_t insert_size, size_t max_read_length,
-		const string& output_folder, const string& work_tmp_dir) {
+		const string& output_folder, const string& work_tmp_dir, io::Reader<io::SingleRead>& read1, io::Reader<io::SingleRead>& read2) {
 	INFO("Edge graph construction tool started");
 	INFO("Paired mode: " << (paired_mode ? "Yes" : "No"));
 	INFO("Etalon paired info mode: " << (etalon_info_mode ? "Yes" : "No"))INFO(
@@ -550,13 +548,14 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 		ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 				"edge_graph");
+		FillEdgesPos<k>(g, index, genome, EdgePos);
 
-		FillEdgesPos<k> (g, index, genome, EdgePos);
 		omnigraph::WriteSimple(output_folder + "before_simplification_pos.dot",
 				"no_repeat_graph", g, EdgePosLab);
 
 		printGraph(g, IntIds, output_folder + "first_graph", paired_index,
 				EdgePos);
+
 
 		SimplifyGraph<k> (g, index, 3, genome, output_folder);
 		MapPairedReads<k, ReadStream, Graph> (g, stream, index);
@@ -649,7 +648,6 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		NonconjugateDeBruijnGraph resolved_graph(k);
 		IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
 		EdgesPositionHandler<NCGraph> EdgePosAfter(resolved_graph);
-
 		DEBUG("New index size: "<< new_index.size());
 		if (rectangle_mode) {
 			void RectangleResolve(
@@ -675,6 +673,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				EdgePosAfter);
 
 		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_after_pos.dot",
+
 				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
 		omnigraph::WriteSimple(
 				output_folder + "repeats_resolved_after_pos.dot",
@@ -696,8 +695,9 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		omnigraph::WriteSimple(
 				output_folder + "repeats_resolved_und_cleared.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
-		//		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
-		//		N50enlarger.one_many_resolve();
+		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
+		N50enlarger.one_many_resolve();
+
 
 		omnigraph::WriteSimple(
 				output_folder
@@ -706,7 +706,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		INFO("repeat resolved grpah written");
 		EdgeIndex<k + 1, NCGraph> aux_index(resolved_graph);
 
-		//		SimplifyGraph<k>(resolved_graph, aux_index, 3, genome, output_folder);
+		//		SimplifyGROPPED_raph<k>(resolved_graph, aux_index, 3, genome, output_folder);
 
 		//CountStats<k, NCGraph> (resolved_graph, aux_index, genome);
 		//		ProduceNonconjugateInfo<k> (resolved_graph, aux_index, genome, output_folder + "repeats_resolved.dot",
@@ -733,7 +733,6 @@ void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index,
 	typedef NonconjugateDeBruijnGraph::EdgeId NCEdgeId;
 	PairInfoIndexData<NCEdgeId> piid;
 	for (auto iter = index.begin(); iter != index.end(); ++iter) {
-
 		vector<PairInfo<NCEdgeId> > pi = *iter;
 		for (size_t i = 0; i < pi.size(); ++i) {
 			if (pi[i].d >= 0)
