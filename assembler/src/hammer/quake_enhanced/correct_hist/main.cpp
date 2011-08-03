@@ -53,7 +53,6 @@ Options ParseOptions(int argc, char *argv[]) {
 }
 }
 
-
 int main(int argc, char *argv[]) {
   Options opts = ParseOptions(argc, argv);
   if (!opts.valid) {

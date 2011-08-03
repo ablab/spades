@@ -40,6 +40,7 @@ using std::unordered_map;
 using std::map;
 
 namespace {
+
 DECL_LOGGER("count")
 
 struct KMerInfo {
