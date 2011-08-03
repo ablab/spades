@@ -70,7 +70,10 @@ int main() {
                               std::string>(reads_filename1,
                                            reads_filename2),
                               insert_size);
-	RCStream rcStream(&pairStream);
+  	ReadStream reads_1(reads_filename1);
+  	ReadStream reads_2(reads_filename2);
+
+  	RCStream rcStream(&pairStream);
 
 	// read data ('genome')
 	std::string genome;
@@ -82,7 +85,7 @@ int main() {
 	}
 	// assemble it!
 	INFO("Assembling " << dataset << " dataset");
-	debruijn_graph::DeBruijnGraphTool<K, RCStream>(rcStream, Sequence(genome), paired_mode, rectangle_mode, etalon_info_mode, from_saved, insert_size, max_read_length, output_dir, work_tmp_dir);
+	debruijn_graph::DeBruijnGraphTool<K, RCStream>(rcStream, Sequence(genome), paired_mode, rectangle_mode, etalon_info_mode, from_saved, insert_size, max_read_length, output_dir, work_tmp_dir, reads_1, reads_2);
 	INFO("Assembling " << dataset << " dataset finished");
 
 	unlink((output_root + "latest").c_str());
