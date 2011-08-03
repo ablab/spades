@@ -88,6 +88,10 @@ struct PairInfo {
 		//           lhs.d      == rhs.d     /*   &&
 		//           lhs.weight == rhs.weight*/;
 	}
+
+	bool operator!=(const PairInfo& rhs) const {
+		return !(*this == rhs);
+	}
 };
 
 template<typename Graph>
