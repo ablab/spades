@@ -169,7 +169,7 @@ string ConstructComponentName(string file_name, size_t cnt) {
 	stringstream ss;
 	ss << cnt;
 	string res = file_name;
-	res.insert(res.length() - 4, ss.str());
+	res.insert(res.length(), ss.str());
 	return res;
 }
 
@@ -524,6 +524,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	//	PairedInfoIndex<Graph> paired_index(g, 5);
 	PairedInfoIndex<Graph> paired_index(g, 0);
 	PairedInfoIndex<Graph> etalon_paired_index(g, 0);
+	PairedInfoIndex<Graph> clustered_index(g);
 
 	if (!from_saved) {
 
@@ -572,6 +573,29 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 			CountPairedInfoStats(g, insert_size, max_read_length, paired_index,
 					etalon_paired_index, output_folder);
 		}
+
+		omnigraph::WriteSimple(output_folder + "repeats_resolved_before_poslab.dot",
+				"no_repeat_graph", g, EdgePosLab);
+		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_before_poslab.dot",
+				"no_repeat_graph", g, EdgePosLab);
+
+		printGraph(g, IntIds, output_folder + "repeats_resolved_before",
+				paired_index, EdgePos);
+
+		if (paired_mode) {
+			DistanceEstimator<Graph> estimator(g, paired_index, insert_size,
+					max_read_length, CONFIG.read<size_t> ("de_delta"),
+					CONFIG.read<size_t> ("de_linkage_distance"),
+					CONFIG.read<size_t> ("de_max_distance"));
+			estimator.Estimate(clustered_index);
+			CountClusteredPairedInfoStats(g, insert_size, max_read_length,
+					paired_index, etalon_paired_index, output_folder);
+		}
+
+		PrintGraphComponents(output_folder + "graph_components/graphCl", g,
+				insert_size, IntIds, clustered_index, EdgePos);
+
+
 	}
 	//	if (paired_mode) {
 	//		paired_index.OutputData(output_folder + "edges_dist.txt");
@@ -580,27 +604,6 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	//		PairedInfoIndex<Graph> clustered_paired_index(g);
 	//		clusterer.cluster(clustered_paired_index);
 	//	}
-
-	omnigraph::WriteSimple(
-			output_folder + "repeats_resolved_before_poslab.dot",
-			"no_repeat_graph", g, EdgePosLab);
-	omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_before_poslab.dot",
-			"no_repeat_graph", g, EdgePosLab);
-	PairedInfoIndex<Graph> clustered_index(g);
-
-	printGraph(g, IntIds, output_folder + "repeats_resolved_before",
-			paired_index, EdgePos);
-	DEBUG("printGraph OK");
-
-	if (paired_mode) {
-		DistanceEstimator<Graph> estimator(g, paired_index, insert_size,
-				max_read_length, CONFIG.read<size_t> ("de_delta"),
-				CONFIG.read<size_t> ("de_linkage_distance"),
-				CONFIG.read<size_t> ("de_max_distance"));
-		estimator.Estimate(clustered_index);
-		CountClusteredPairedInfoStats(g, insert_size, max_read_length,
-				paired_index, etalon_paired_index, output_folder);
-	}
 
 	if (paired_mode) {
 		if (!from_saved) {
@@ -664,6 +667,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		omnigraph::WriteSimple(output_folder + "repeats_resolved_after.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+
 		EdgesPosGraphLabeler<NCGraph> EdgePosLAfterLab(resolved_graph,
 				EdgePosAfter);
 

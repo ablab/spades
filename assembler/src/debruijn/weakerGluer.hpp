@@ -58,7 +58,7 @@ public:
 
 
     WeakerGluer(Graph &debruijn, IQuotientGraphs<Graph> &quotientGraphs, IGraphFilter<Graph> &graphFilter, IDistanceEstimator<Graph> &distanceEstimator, 
-            PairInfoIndexData<typename Graph::EdgeId> &index, size_t errorDistance, 
+            PairInfoIndexData<typename Graph::EdgeId> &index, int errorDistance,
              Graph &weakerRedGraph, Graph &weakerBlueGraph)
         :debruijn_(debruijn), quotientGraphs_(quotientGraphs), graphFilter_(graphFilter), distanceEstimator_(distanceEstimator),
         pairIndex_(index), errorDistance_(errorDistance), weakerRedGraph_(weakerRedGraph),
@@ -98,7 +98,7 @@ private:
     IGraphFilter<Graph> &graphFilter_;
     IDistanceEstimator<Graph> &distanceEstimator_;
     PIIndex &pairIndex_;
-    size_t errorDistance_;
+    int errorDistance_;
     Graph &weakerRedGraph_;
     Graph &weakerBlueGraph_;
     multimap<EdgeId, EdgeId> redGraphEdgeMaps_;
