@@ -67,7 +67,7 @@ public:
 	std::string str(EdgeId edgeId){
 		std::string s = "";
 		if (EdgesPositions.find(edgeId) != EdgesPositions.end()) {
-			DEBUG("Number of labels "<<EdgesPositions[edgeId].size());
+			TRACE("Number of labels "<<EdgesPositions[edgeId].size());
 			for (size_t i = 0; i < EdgesPositions[edgeId].size(); i++){
 				s+="("+ToString((EdgesPositions[edgeId])[i].start_)+"-"+ToString((EdgesPositions[edgeId])[i].end_)+")\\n";
 			}

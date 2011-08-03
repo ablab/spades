@@ -27,7 +27,6 @@
 #include "kmer_cluster.hpp"
 #include "position_kmer.hpp"
 
-
 using namespace std;
 
 std::vector<Read> * PositionKMer::rv = NULL;
@@ -50,19 +49,18 @@ struct KMerStatCount {
 	bool change() const { return changeto < KMERSTAT_CHANGE; }
 };
 
-
 int main(int argc, char * argv[]) {
 	if (argc < 6 || argc > 7) {
 		cout << "Usage: ./main tau qvoffset readsFilename dirprefix nthreads [iterno]\n";
 		return 0;
 	}
 
-	cout << "sizeof( hint_t ) = " << sizeof(hint_t) << endl;
+	/*cout << "sizeof( hint_t ) = " << sizeof(hint_t) << endl;
 	cout << "sizeof( KMerStat ) = " << sizeof(KMerStat) << endl;
 	cout << "sizeof( PositionRead ) = " << sizeof(PositionRead) << endl;
 	cout << "sizeof( PositionKMer ) = " << sizeof(PositionKMer) << endl;
 	cout << "sizeof( KMerCount ) = " << sizeof(KMerCount) << endl;
-	cout << "sizeof( new KMerCount ) = " << sizeof(KMerStatCount) << endl;
+	cout << "sizeof( new KMerCount ) = " << sizeof(KMerStatCount) << endl;*/
 
 	int tau = atoi(argv[1]);
 	int qvoffset = atoi(argv[2]);
@@ -77,17 +75,16 @@ int main(int argc, char * argv[]) {
 	PositionKMer::subKMerPositions = new std::vector<uint32_t>(tau + 2);
 	for (uint32_t i=0; i < tau+1; ++i) PositionKMer::subKMerPositions->at(i) = (uint32_t)(i * K / (tau+1) );
 	PositionKMer::subKMerPositions->at(tau+1) = K;
-	cout << "SubKMer positions: "; for (uint32_t i=0; i < tau+2; ++i) cout << PositionKMer::subKMerPositions->at(i) << " "; cout << endl;
+	//cout << "SubKMer positions: "; for (uint32_t i=0; i < tau+2; ++i) cout << PositionKMer::subKMerPositions->at(i) << " "; cout << endl;
 
-	cout << "Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K << endl;
+	TIMEDLN("Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K);
 
 	hint_t totalReadSize;
 	PositionKMer::rv = ireadstream::readAllNoValidation(readsFilename, &totalReadSize);
-	cout << "All reads read to memory." << endl;
 
 	PositionKMer::blob = new char[ (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];
 	PositionKMer::blobkmers = new hint_t[ (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];	
-	cout << "Allocated blob of size " << (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) << endl;
+	//cout << "Allocated blob of size " << (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) << endl;
 	PositionKMer::blob_size = totalReadSize;
 	PositionKMer::blob_max_size = (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN));
 	std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
@@ -97,10 +94,10 @@ int main(int argc, char * argv[]) {
 		Read revcomp = !(PositionKMer::rv->at(i));
 		PositionKMer::rv->push_back( revcomp );
 	}
-	cout << "Reverse complementary reads added.\n";
+	TIMEDLN("All reads read to memory. Reverse complementary reads added.");
 	
 	for (int iter_count = 0; iter_count < iterno; ++iter_count) {
-		cout << "\n     === ITERATION " << iter_count << " ===" << endl;
+		cout << "\n     === ITERATION " << iter_count << " begins ===" << endl;
 
 		PositionKMer::pr = new vector<PositionRead>();
 		hint_t curpos = 0;
@@ -112,28 +109,27 @@ int main(int argc, char * argv[]) {
 				PositionKMer::blob[ curpos + j ] = PositionKMer::rv->at(i).getSequenceString()[j];
 			curpos += PositionKMer::rv->at(i).size();
 		}
-		cout << "Filled up blob. Real size " << curpos << "." << endl;
+		TIMEDLN("Filled up blob. Real size " << curpos << ". " << PositionKMer::pr->size() << " reads.");
 		PositionKMer::blob_size = curpos;
 	
 		vector<KMerNo> vv;
 		DoPreprocessing(tau, qvoffset, readsFilename, nthreads, &vv);
-		cout << "Got " << vv.size() << " kmer positions. Starting parallel sort." << endl;
+		TIMEDLN("Preprocessing done. Got " << vv.size() << " kmer positions. Starting parallel sort.");
 		
 		vector<KMerCount> kmers;
 		ParallelSortKMerNos( &vv, &kmers, nthreads );
-
-		// sort ( vv.begin(), vv.end(), KMerNo::less );
-		cout << "KMer positions sorted." << endl;
+		TIMEDLN("KMer positions sorted. In total, we have " << kmers.size() << " kmers.");
 
 		vector< vector<hint_t> > vs(tau+1);
 		vector<SubKMerPQ> vskpq;
 		DoSplitAndSort(tau, nthreads, vv, &vs, &kmers, &vskpq);
 		vv.clear();
+		TIMEDLN("Auxiliary subvectors sorted. Starting split kmer processing in " << min(nthreads, tau+1) << " effective threads.");
 
 		KMerClustering kmc(kmers, nthreads, tau);
 		// prepare the maps
 		kmc.process(dirprefix, &vskpq);
-		cout << "Finished clustering." << endl;
+		TIMEDLN("Finished clustering. Starting reconstruction.");
 
 		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
 		vector<ofstream *> outfv; vector<bool> changed;
@@ -153,8 +149,7 @@ int main(int argc, char * argv[]) {
 			res = res || changed[i];
 		}
 
-		cout << "Correction done." << endl;
-		cout << "Printing out reads." << endl;
+		TIMEDLN("Correction done. Printing out reads.");
 	
 		ofstream outf; outf.open(dirprefix + "/" + (char)((int)'0' + iter_count) + ".reads.corrected");	
 		for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
@@ -169,14 +164,14 @@ int main(int argc, char * argv[]) {
 		std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
 
 		PositionKMer::rv->resize( PositionKMer::revNo );
-		cout << PositionKMer::rv->size() << ".  " << endl;
+		// cout << PositionKMer::rv->size() << ".  " << endl;
 		for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
 			PositionKMer::rv->push_back( !(PositionKMer::rv->at(i)) );
 		}
-		cout << "Reads restored." << endl;
+		TIMEDLN("Reads restored.");
 	
 		if (!res) {
-			cout << "Nothing has changed in this iteration. Exiting." << endl;
+			TIMEDLN("Nothing has changed in this iteration. Exiting.");
 			break;
 		}
 

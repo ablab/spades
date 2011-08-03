@@ -25,8 +25,11 @@ using namespace std;
 #define READ_BATCH_SIZE 10000000
 #define ERROR_RATE 0.01
 
+#define TIMEDLN(a) print_time(); cout << a << endl
+
 double oct2phred(string qoct, int qvoffset);
 string encode3toabyte (const string & s);
+void print_time();
 
 /// join two maps
 void join_maps(KMerStatMap & v1, const KMerStatMap & v2);

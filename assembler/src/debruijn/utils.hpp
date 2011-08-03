@@ -8,17 +8,19 @@
 #ifndef UTILS_HPP_
 #define UTILS_HPP_
 
+#include "common/io/paired_read.hpp"
 #include "seq_map.hpp"
 #include "omni_utils.hpp"
 #include "logging.hpp"
 #include "paired_info.hpp"
 #include "statistics.hpp"
-
+//#include "common/io/paired_read.hpp"
 namespace debruijn_graph {
 
 using omnigraph::Path;
 using omnigraph::PairInfo;
 using omnigraph::GraphActionHandler;
+//using io::PairedRead;
 
 template<size_t kmer_size_, typename Graph>
 class ReadThreaderResult {
@@ -559,7 +561,7 @@ private:
 	const EdgeIndex<kmer_size + 1, Graph>& index_;
 	Stream& stream_;
 
-	inline size_t CountDistance(const PairedRead& paired_read) {
+	inline size_t CountDistance(const io::PairedRead& paired_read) {
 		return paired_read.distance() - paired_read.second().size();
 	}
 
@@ -574,10 +576,10 @@ private:
 
 	void ProcessPairedRead(
 			omnigraph::PairedInfoIndex<Graph> &paired_index,
-			const PairedRead& p_r,
+			const io::PairedRead& p_r,
 			debruijn_graph::SimpleSequenceMapper<kmer_size, Graph> &read_threader) {
-		Sequence read1 = p_r.first().getSequence();
-		Sequence read2 = p_r.second().getSequence();
+		Sequence read1 = p_r.first().sequence();
+		Sequence read2 = p_r.second().sequence();
 		Path<EdgeId> path1 = read_threader.MapSequence(read1);
 		Path<EdgeId> path2 = read_threader.MapSequence(read2);
 		size_t distance = CountDistance(p_r);
@@ -617,7 +619,7 @@ public:
 				graph_, index_);
 		stream_.reset();
 		while (!stream_.eof()) {
-			PairedRead p_r;
+      io::PairedRead p_r;
 			stream_ >> p_r;
 			ProcessPairedRead(paired_index, p_r, read_threader);
 		}
@@ -651,10 +653,10 @@ public:
 
 	ReadThreaderResult<k + 1, Graph> ThreadNext() {
 		if (!stream_.eof()) {
-			PairedRead p_r;
+      io::PairedRead p_r;
 			stream_ >> p_r;
-			Sequence read1 = p_r.first().getSequence();
-			Sequence read2 = p_r.second().getSequence();
+			Sequence read1 = p_r.first().sequence();
+			Sequence read2 = p_r.second().sequence();
 			Path<EdgeId> aligned_read[2];
 			aligned_read[0] = read_seq_mapper.MapSequence(read1);
 			aligned_read[1] = read_seq_mapper.MapSequence(read2);
@@ -667,6 +669,7 @@ public:
 	}
 
 };
+
 template<size_t k, class Graph, class Stream>
 class SingleReadMapper {
 public:
@@ -675,7 +678,8 @@ public:
 private:
 	SimpleSequenceMapper<k, Graph> read_seq_mapper;
 	Stream& stream_;
-	Graph g_;
+	const Graph& g_;
+	const Index& index_;
 public:
 	/**
 	 * Creates SingleReadMapper for given graph. Also requires index_ which should be synchronized
@@ -684,17 +688,46 @@ public:
 	 * @param index index syncronized with graph
 	 */
 	SingleReadMapper(const Graph& g, const Index& index, Stream & stream):
-		read_seq_mapper(g, index), stream_(stream), g_(g) {
+		read_seq_mapper(g, index), stream_(stream), g_(g), index_(index) {
 		stream_.reset();
+	}
+
+	vector<EdgeId> GetContainingEdges(){
+		vector<EdgeId> res;
+		if (!stream_.eof()) {
+
+			io::PairedRead p_r;
+			stream_ >> p_r;
+			Sequence read = p_r.first().sequence();
+			if (k+1 <= read.size()) {
+				Seq<k + 1> kmer = read.start<k + 1>();
+				bool found;
+				for (size_t i = k + 1; i <= read.size(); ++i) {
+					if (index_.containsInIndex(kmer)) {
+						pair<EdgeId, size_t> position = index_.get(kmer);
+						found = false;
+						for (size_t j = 0; j < res.size(); j++)
+							if (res[j] == position.first) {
+								found = true;
+								break;
+							}
+						if (!found)
+							res.push_back(position.first);
+					}
+					if (i != read.size())
+						kmer = kmer << read[i];
+				}
+			}
+		}
+		return res;
 	}
 
 	pair<ReadMappingResult<Graph>*, ReadMappingResult<Graph>*> ThreadNext() {
 		if (!stream_.eof()) {
-			PairedRead p_r;
+      io::PairedRead p_r;
 			stream_ >> p_r;
-			Sequence read[2];
-			read[0] = p_r.first().getSequence();
-			read[1] = p_r.second().getSequence();
+			Sequence read1 = p_r.first().sequence();
+			Sequence read2 = p_r.second().sequence();
 			Path<EdgeId> aligned_read[2];
 			aligned_read[0] = read_seq_mapper.MapSequence(read[0]);
 			aligned_read[1] = read_seq_mapper.MapSequence(read[1]);
@@ -714,6 +747,7 @@ public:
 			}
 			return make_pair( new ReadMappingResult<Graph>(read[0], res_v[0]),new ReadMappingResult<Graph>(read[1], res_v[1]));
 	//		return res;
+
 		}
 //		else return NULL;
 	}
