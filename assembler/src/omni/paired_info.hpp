@@ -90,6 +90,13 @@ struct PairInfo {
 	}
 };
 
+template<typename Graph>
+ostream& operator<<(ostream& os, const PairInfo<Graph>& info) {
+	return os << "PairInfo: first=" << info.first << ", second=" << info.second
+			<< ", distance=" << info.d << ", weight=" << info.weight
+			<< ", variance=" << info.variance;
+}
+
 //typedef vector<PairInfo<> > PairInfos;
 
 template<typename EdgeId>

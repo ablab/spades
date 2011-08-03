@@ -440,16 +440,20 @@ private:
 	//(weight, estimated_variance - actual_variance, number of etalon points)
 	vector<pair<pair<double, double>, size_t>> imperfect_match_stat_;
 	size_t false_negative_count_;
+	DECL_LOGGER("DistanceEstimationQualityStat");
 
 	void HandleFalsePositive(const Info& estimated) {
+//		DEBUG("Handling false positive " << estimated);
 		false_positive_weights_.push_back(estimated.weight);
 	}
 
 	void HandleFalseNegative(const Info& etalon) {
+//		DEBUG("Handling false negative " << etalon);
 		false_negative_count_++;
 	}
 
 	void HandlePerfectMatch(const Info& etalon, const Info& estimated) {
+//		DEBUG("Handling perfect match " << etalon << " " << estimated);
 		perfect_match_weights_.push_back(estimated.weight);
 	}
 
@@ -457,6 +461,7 @@ private:
 	Infos last_etalon_imperfect_matches_;
 
 	void HandleImperfectMatch(const Info& etalon, const Info& estimated) {
+//		DEBUG("Handling imperfect match " << etalon << " " << estimated);
 		if (last_estimated_imperfect_match_ != estimated) {
 			ProcessImperfectMatch(last_estimated_imperfect_match_, last_etalon_imperfect_matches_);
 			last_estimated_imperfect_match_ = boost::in_place(estimated);
@@ -531,7 +536,8 @@ private:
 		if (last_matched)
 			estimated_idx++;
 		while (estimated_idx < estimated_infos.size()) {
-			HandleFalsePositive(estimated_infos[estimated_idx]);
+//			DEBUG("Handling false positives beyond all etalons");
+			HandleFalsePositive(estimated_infos[estimated_idx++]);
 		}
 		Flush();
 	}
@@ -545,7 +551,9 @@ public:
 	}
 
 	virtual void Count() {
+		INFO("Counting distance estimation statistics");
 		set<pair<EdgeId, EdgeId>> pairs_in_etalon;
+//		DEBUG("Handling pairs present in etalon information");
 		for (auto it = etalon_pair_info_.begin(); it != etalon_pair_info_.end(); ++it) {
 			Infos etalon_infos = *it;
 			EdgeId first = etalon_infos[0].first;
@@ -553,9 +561,12 @@ public:
 			pairs_in_etalon.insert(make_pair(first, second));
 
 			Infos estimated_infos = estimated_pair_info_.GetEdgePairInfo(first, second);
+//			DEBUG("Processing distances for pair " << first << ", " << second);
 			ProcessInfos(etalon_infos, estimated_infos);
 		}
+//		DEBUG("Handling pairs that are not in etalon information");
 		HandlePairsNotInEtalon(pairs_in_etalon);
+		INFO("Distance estimation statistics counted");
 	}
 
 	vector<double> false_positive_weights() {
@@ -598,12 +609,20 @@ public:
 
 	virtual void Count() {
 		for (auto it = estimated_pair_info_.begin(); it != estimated_pair_info_.end(); ++it) {
-			for (auto it2 = (*it).begin(); it2 != (*it).end(); ++it2) {
+			Infos infos = *it;
+			for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
 				Info info = *it2;
 //				if (gr(info.variance, 0)) {
 					weight_variance_stat_.push_back(make_pair(info.weight, info.variance));
 //				}
 			}
+			//todo talk with Anton!!!
+//			for (auto it2 = (*it).begin(); it2 != (*it).end(); ++it2) {
+//				Info info = *it2;
+////				if (gr(info.variance, 0)) {
+//					weight_variance_stat_.push_back(make_pair(info.weight, info.variance));
+////				}
+//			}
 		}
 	}
 

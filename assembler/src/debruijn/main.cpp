@@ -82,7 +82,7 @@ int main() {
 	}
 	// assemble it!
 	INFO("Assembling " << dataset << " dataset");
-	debruijn_graph::DeBruijnGraphWithPairedInfoTool<K, RCStream>(rcStream, Sequence(genome), paired_mode, rectangle_mode, etalon_info_mode, from_saved, insert_size, max_read_length, output_dir, work_tmp_dir);
+	debruijn_graph::DeBruijnGraphTool<K, RCStream>(rcStream, Sequence(genome), paired_mode, rectangle_mode, etalon_info_mode, from_saved, insert_size, max_read_length, output_dir, work_tmp_dir);
 	INFO("Assembling " << dataset << " dataset finished");
 
 	unlink((output_root + "latest").c_str());
