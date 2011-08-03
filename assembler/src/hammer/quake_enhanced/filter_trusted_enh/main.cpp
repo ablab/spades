@@ -22,7 +22,7 @@ const uint32_t kMaxK = 100;
  */
 const int kStep = 1e5;
 
-LoggerPtr logger(Logger::getLogger("filter_trusted"));
+LoggerPtr logger(Logger::getLogger("filter_trusted_enh"));
 
 struct Options {
   string ifile;
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
   FILE *ifile = fopen(opts.ifile.c_str(), "r");
   FILE *ofile = fopen(opts.ofile.c_str(), "w");
   FILE *badfile = fopen(opts.badfile.c_str(), "w");
-  FILE *limits_file = fopen(opts.badfile.c_str(), "r");
+  FILE *limits_file = fopen(opts.limits.c_str(), "r");
   unordered_map<uint32_t, long double> limits;
   uint32_t x;
   long double limit;
@@ -94,9 +94,9 @@ int main(int argc, char *argv[]) {
       LOG4CXX_INFO(logger, "Reading k-mer " << read_number << ".");
     }
     if (q_count / count > limits[count]) {
-      fprintf(ofile, "%s%d%f%f\n", kmer, count, q_count, freq);
+      fprintf(ofile, "%s %d %f %f\n", kmer, count, q_count, freq);
     } else {
-      fprintf(badfile, "%s%d%f%f\n", kmer, count, q_count, freq);
+      fprintf(badfile, "%s %d %f %f\n", kmer, count, q_count, freq);
     }
   }
   return 0;

@@ -22,7 +22,7 @@ const uint32_t kMaxK = 100;
 struct Options {
   string ifile;
   string ofile;
-  float threshold;
+  long double threshold;
   uint32_t k;
   bool valid;
   Options()
@@ -49,45 +49,51 @@ Options ParseOptions(int argc, char *argv[]) {
   } else {
     ret.ifile = argv[1];
     ret.ofile = argv[2];
-    ret.threshold = atof(argv[3]);
+    sscanf(argv[3], "%Lf", &ret.threshold);
     ret.k = atoi(argv[4]);
   }
   return ret;
 }
 }
 
-double Factorial(int n) {
+long double Factorial(int n) {
   if (n == 0) {
     return 1;
   }
-  static unordered_map<int, double> ans;
+  static unordered_map<int, long double> ans;
   if (ans.count(n) == 0) {
     ans[n] = Factorial(n - 1) * n;
   }
   return ans[n];
 }
 
-double CNK(int n, int k) {
+long double CNK(int n, int k) {
   return Factorial(n) / (Factorial(k) * Factorial(n - k));
 }
 
-double Bernoulli(int k, int n, int p) {
+long double Bernoulli(int k, int n, long double p) {
   return pow(p, k) * pow(1 - p, n - k) * CNK(n, k);
 }
 
-float GetLimit(uint32_t x, const vector<uint32_t> &hist, 
-               float threshold, uint64_t total, uint32_t k) {
-  float l = 0;
-  float r = 1;
-  const float eps = 1e-6;
+long double GetLimit(uint32_t x, const vector<uint32_t> &hist, 
+                     long double threshold, uint64_t total, uint32_t k) {
+  long double l = 0.5;
+  long double r = 1;
+  const long double eps = 1e-10;
   while (r - l > eps) {
-    float m = l + (r - l) / 2;
-    double err_prob = 0;
-    double k_prob = 0;
+    long double m = l + (r - l) / 2;
+    long double err_prob = 0;
+    long double k_prob = 0;
     for (uint32_t i = x; i < hist.size(); ++i) {
-      err_prob += Bernoulli(x, i, 1 - m) * hist[i] * pow(1.0 / k, x);
-      k_prob += Bernoulli(x, i, m);
+      long double de = k * Bernoulli(x, i, (1 - m) / k) * hist[i];
+      long double dk = Bernoulli(x, i, m) * hist[i];
+      if (de != de || dk != dk) {
+        continue;
+      }
+      err_prob += de;
+      k_prob += dk;
     }
+    //    k_prob = hist[x];
     if (k_prob < threshold * err_prob) {
       l = m;
     } else {
@@ -97,10 +103,7 @@ float GetLimit(uint32_t x, const vector<uint32_t> &hist,
   if (l + 2 * eps > 1) {
     return 1;
   }
-  if (l - 2 * eps < 0) {
-    return 0;
-  }
-  return eps;
+  return l;
 }
 
 int main(int argc, char *argv[]) {
@@ -123,8 +126,8 @@ int main(int argc, char *argv[]) {
     hist[r] += count;
     total += count; 
   }
-  for (uint32_t i = 0; i < hist.size(); ++i) {
-    fprintf(ofile, "%d %f\n", i, 
+  for (uint32_t i = 0; i < 25; ++i) {
+    fprintf(ofile, "%d %Lf\n", i, 
            GetLimit(i, hist, opts.threshold, total, opts.k));
   }
   fclose(ifile);
