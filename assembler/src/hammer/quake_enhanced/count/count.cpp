@@ -155,7 +155,7 @@ void EvalFile(FILE *ifile, FILE *ofile) {
   while (KMer::BinRead(ifile, &kmer)) {
     KMerInfo &info = stat_map[kmer];
     double correct_probability = -1;
-    bool readed = 
+    bool readed =
         fread(&correct_probability, sizeof(correct_probability),
               1, ifile);
     assert(readed == 1);
@@ -166,7 +166,7 @@ void EvalFile(FILE *ifile, FILE *ofile) {
       inversed_probability = 0;
     }
     info.q_count += correct_probability;
-    info.count += 1;    
+    info.count += 1;
     info.q_inversed_count += inversed_probability;
   }
   for (UnorderedMap::iterator it = stat_map.begin();
@@ -187,7 +187,7 @@ void run(const Options &opts) {
     ofiles[i] = fopen(filename, "wb");
     assert(ofiles[i] != NULL && "Too many files to open");
   }
-  SplitToFiles(ireadstream(opts.ifile, opts.qvoffset), 
+  SplitToFiles(ireadstream(opts.ifile, opts.qvoffset),
                ofiles, opts.error_threshold);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     fclose(ofiles[i]);
@@ -206,9 +206,7 @@ void run(const Options &opts) {
   fclose(ofile);
   INFO("Preprocessing done. You can find results in " <<
        opts.ofile << ".");
-  
 }
-
 }
 
 int main(int argc, char *argv[]) {

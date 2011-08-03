@@ -27,7 +27,7 @@ struct Options {
         trusted_hist(""),
         bad_hist(""),
         level(0),
-        valid(true) {}  
+        valid(true) {}
 };
 
 void PrintHelp(char *progname) {
@@ -78,10 +78,10 @@ int main(int argc, char *argv[]) {
     if (hist[i + 1] > hist[i]) {
       fmin = i;
       break;
-    } 
+    }
   }
   if (fmin == -1) {
-    printf ("Bad histogram");
+    printf("Bad histogram");
     return 0;
   }
   int fmax = -1;
@@ -89,10 +89,10 @@ int main(int argc, char *argv[]) {
     if (hist[i + 1] < hist[i] && hist[i] > hist[fmin] * opts.level) {
       fmax = i;
       break;
-    } 
+    }
   }
   if (fmax == -1) {
-    printf ("Bad histogram");
+    printf("Bad histogram");
     return 0;
   }
   int lborder = fmax;
@@ -112,13 +112,12 @@ int main(int argc, char *argv[]) {
     mass += hist[i];
     mass_pos += hist[i] * i;
   }
-  
-  float average = mass_pos / (double) mass;
+  float average = mass_pos / static_cast<double>(mass);
   printf("Gauss median is at %f\n", average);
   vector<uint32_t> hist_trusted(hist);
-  for (uint32_t i = 0; (int)(average - i) >=0; ++i) {
-    int where = (int)(average - i);
-    int from = (int)(average + i + 0.5);
+  for (uint32_t i = 0; static_cast<int>(average - i) >=0; ++i) {
+    int where = static_cast<int>(average - i);
+    int from = static_cast<int>(average + i + 0.5);
     if (where == from) {
       continue;
     }
