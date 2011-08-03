@@ -24,24 +24,23 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
-#include "log4cxx/logger.h"
-#include "log4cxx/basicconfigurator.h"
+#include "common/logging.hpp"
 #include "common/read/ireadstream.hpp"
 #include "common/read/read.hpp"
 #include "common/sequence/seq.hpp"
 #include "hammer/valid_kmer_generator.hpp"
 #define SUPPRESS_UNUSED(X) ((void) (X))
 
+DECL_PROJECT_LOGGER("q")
+
 using std::string;
 using std::set;
 using std::vector;
 using std::unordered_map;
 using std::map;
-using log4cxx::LoggerPtr;
-using log4cxx::Logger;
-using log4cxx::BasicConfigurator;
 
 namespace {
+DECL_LOGGER("count")
 
 struct KMerInfo {
   int count;
@@ -53,7 +52,6 @@ const uint32_t kK = 31;
 typedef Seq<kK> KMer;
 typedef unordered_map<KMer, KMerInfo, KMer::hash> UnorderedMap;
 
-LoggerPtr logger(Logger::getLogger("preproc"));
 /**
  * @variable Every kStep k-mer will appear in the log.
  */
@@ -124,7 +122,7 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
   while (!ifs.eof()) {
     ++read_number;
     if (read_number % kStep == 0) {
-      LOG4CXX_INFO(logger, "Reading read " << read_number << ".");
+      INFO("Reading read " << read_number << ".");
     }
     Read r;
     ifs >> r;
@@ -178,17 +176,10 @@ void EvalFile(FILE *ifile, FILE *ofile) {
             info.count, info.q_count, info.q_inversed_count);
   }
 }
-}
 
-int main(int argc, char *argv[]) {
-  Options opts = ParseOptions(argc, argv);
-  if (!opts.valid) {
-    PrintHelp(argv[0]);
-    return 1;
-  }
-  BasicConfigurator::configure();
-  LOG4CXX_INFO(logger, "Starting preproc: evaluating "
-               << opts.ifile << ".");
+void run(const Options &opts) {
+  INFO("Starting preproc: evaluating "
+       << opts.ifile << ".");
   vector<FILE*> ofiles(opts.file_number);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     char filename[50];
@@ -207,14 +198,25 @@ int main(int argc, char *argv[]) {
     char ifile_name[50];
     snprintf(ifile_name, sizeof(ifile_name), "%u.kmer.part", i);
     FILE *ifile = fopen(ifile_name, "rb");
-    LOG4CXX_INFO(logger, "Processing " << ifile_name << ".");
+    INFO("Processing " << ifile_name << ".");
     EvalFile(ifile, ofile);
-    LOG4CXX_INFO(logger, "Processed " << ifile_name << ".");
+    INFO("Processed " << ifile_name << ".");
     fclose(ifile);
   }
   fclose(ofile);
-  LOG4CXX_INFO(logger,
-               "Preprocessing done. You can find results in " <<
-               opts.ofile << ".");
+  INFO("Preprocessing done. You can find results in " <<
+       opts.ofile << ".");
+  
+}
+
+}
+
+int main(int argc, char *argv[]) {
+  Options opts = ParseOptions(argc, argv);
+  if (!opts.valid) {
+    PrintHelp(argv[0]);
+    return 1;
+  }
+  run(opts);
   return 0;
 }
