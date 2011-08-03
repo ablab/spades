@@ -9,6 +9,7 @@
 #include <boost/utility/in_place_factory.hpp>
 #include <boost/utility/typed_in_place_factory.hpp>
 #include <map>
+#include <boost/bind.hpp>
 
 namespace omnigraph {
 using namespace math;
@@ -490,7 +491,9 @@ private:
 			EdgeId first = estimated_infos[0].first;
 			EdgeId second = estimated_infos[0].second;
 			if (pairs_in_etalon.count(make_pair(first, second)) == 0) {
-//				for_each(estimated_infos.begin(), estimated_infos.end(), HandleFalsePositive);
+//				for_each(estimated_infos.begin(), estimated_infos.end(),
+//						boost::bind(&EstimationQualityStat::HandleFalsePositive, this, _1));
+
 				for (auto it2 = estimated_infos.begin(); it2!=estimated_infos.end(); ++it2) {
 					HandleFalsePositive(*it2);
 				}
@@ -499,14 +502,17 @@ private:
 	}
 
 	bool InfoLess(const Info& a, const Info& b) {
-		return le(a.d + a.variance, b.d - b.variance);
+		return ls(a.d + a.variance, b.d - b.variance);
 	}
 
 	bool HandleIfPerfectMatch(const Info& etalon, const Info& estimated) {
+//		cout << "here3" << endl;
 		if (eq(etalon.d, estimated.d) && eq(estimated.variance, 0.)) {
+//			cout << "here3!!" << endl;
 			HandlePerfectMatch(etalon, estimated);
 			return true;
 		}
+//		cout << "here3???" << endl;
 		return false;
 	}
 
@@ -519,14 +525,19 @@ private:
 	}
 
 	void ProcessInfos(const Infos& etalon_infos, const Infos& estimated_infos) {
+//		WARN("Etalon_infos " << etalon_infos);
+//		WARN("Estimated infos " << estimated_infos);
 		size_t estimated_idx = 0;
 		bool last_matched = false;
 		for (size_t etalon_idx = 0; etalon_idx < etalon_infos.size(); ++etalon_idx) {
 			Info etalon_info = etalon_infos[etalon_idx];
+//			cout << "here" << endl;
 			while (estimated_idx < estimated_infos.size() && InfoLess(estimated_infos[estimated_idx], etalon_info)) {
 				HandleFalsePositive(estimated_infos[estimated_idx]);
 				estimated_idx++;
+//				cout << "here1" << endl;
 			}
+//			cout << "here2" << endl;
 			if (estimated_idx != estimated_infos.size()
 					&& (HandleIfPerfectMatch(etalon_info, estimated_infos[estimated_idx])
 							|| HandleIfImperfectMatch(etalon_info, estimated_infos[estimated_idx]))) {
@@ -542,6 +553,33 @@ private:
 			HandleFalsePositive(estimated_infos[estimated_idx++]);
 		}
 		Flush();
+	}
+
+	void ReportFalsePositiveWeights() {
+		sort(false_positive_weights_.begin(), false_positive_weights_.end());
+
+		stringstream ss;
+		copy(false_positive_weights_.begin(), false_positive_weights_.end()
+						, ostream_iterator<double>(ss, ", "));
+		INFO("False positive count: " << false_positive_weights_.size() << ". False positive weights: " << ss.str());
+	}
+
+	void ReportPerfectMatchWeights() {
+		sort(perfect_match_weights_.begin(), perfect_match_weights_.end());
+		stringstream ss;
+		copy(perfect_match_weights_.begin(), perfect_match_weights_.end()
+						, ostream_iterator<double>(ss, ", "));
+		INFO("Perfect match count: " << perfect_match_weights_.size() << ". Perfect match weights: " << ss.str());
+	}
+
+	void ReportImperfectMatchWeights() {
+		sort(imperfect_match_stat_.begin(), imperfect_match_stat_.end());
+		//todo do something better
+		INFO("Imperfect match count: " << imperfect_match_stat_.size());
+	}
+
+	void FalseNegativeCount() {
+		INFO("False negative count: " << false_negative_count_);
 	}
 
 public:
@@ -568,6 +606,10 @@ public:
 		}
 //		DEBUG("Handling pairs that are not in etalon information");
 		HandlePairsNotInEtalon(pairs_in_etalon);
+		ReportFalsePositiveWeights();
+		ReportPerfectMatchWeights();
+		ReportImperfectMatchWeights();
+		FalseNegativeCount();
 		INFO("Distance estimation statistics counted");
 	}
 
@@ -614,7 +656,9 @@ public:
 			Infos infos = *it;
 			for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
 				Info info = *it2;
+//				cerr << "HERE0" <<endl;
 				if (gr(info.variance, 0.)) {
+//					cerr << "HERE1" <<endl;
 					weight_variance_stat_.push_back(make_pair(info.weight, info.variance));
 				}
 			}
@@ -627,12 +671,12 @@ public:
 //			}
 		}
 		stringstream ss;
-//		for (auto it = weight_variance_stat_.begin(); it != weight_variance_stat_.end(); ++it) {
-//			ss <<*it;//<< "(" << (*it).first << ", " << (*it).second << ")" << " ; ";
-//		}
-//		copy(weight_variance_stat_.begin(), weight_variance_stat_.end()
-//				, ostream_iterator<pair<double, double>>(ss, ", "));
-		INFO("Estimated cluster stat \n" << ss.str());
+	/*	for (auto it = weight_variance_stat_.begin(); it != weight_variance_stat_.end(); ++it) {
+			ss <<*it;//<< "(" << (*it).first << ", " << (*it).second << ")" << " ; ";
+		}
+	*/	copy(weight_variance_stat_.begin(), weight_variance_stat_.end()
+				, ostream_iterator<pair<double, double>>(ss, ", "));
+		INFO("Estimated cluster stat: " << ss.str());
 	}
 
 	vector<pair<double, double>> weight_variance_stat() {
