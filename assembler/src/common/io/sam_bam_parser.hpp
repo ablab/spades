@@ -63,11 +63,6 @@ class SamBamParser : public Parser {
     if (!is_open_ || eof_) {
       return *this;
     }
-    // read.SetName(seq_->name.s);
-    // if (seq_->qual.s) {
-    //   read.SetQuality(seq_->qual.s, offset_);
-    // }
-    // read.SetSequence(seq_->seq.s);
     read.SetName(seq_.getReadName());
     if (seq_.getQuality()) {
       read.SetQuality(seq_.getQuality(), offset_);
@@ -82,10 +77,6 @@ class SamBamParser : public Parser {
    */
   /* virtual */ void close() {
     if (is_open_) {
-      // STEP 5: destroy seq
-      //fastafastqgz::kseq_destroy(seq_);
-      // STEP 6: close the file handler
-      //gzclose(fp_);
       fp_.Close();
       is_open_ = false;
       eof_ = true;
@@ -96,29 +87,21 @@ class SamBamParser : public Parser {
   /* 
    * @variable File that is associated with gzipped data file.
    */
-  //gzFile fp_;
+  SamFile fp_;
+  /*
+   * @variable File header.
+   */
+  SamFileHeader header_;
   /*
    * @variable Data element that stores last SingleRead got from
    * stream.
    */ 
-  //fastafastqgz::kseq_t* seq_;
-
-  SamFile fp_;
-  SamFileHeader header_;
   SamRecord seq_;
 
   /*
    * Open a stream.
    */
   /* virtual */ void open() {
-    // STEP 2: open the file handler
-    //fp_ = gzopen(filename_.c_str(), "r");
-    //if (!fp_) {
-    //  is_open_ = false;
-    //  return;
-    //}
-    // STEP 3: initialize seq
-    //seq_ = fastafastqgz::kseq_init(fp_);
     if (fp_.OpenForRead(filename_.c_str())) {
       fp_.ReadHeader(header_);
       eof_ = false;
@@ -134,7 +117,6 @@ class SamBamParser : public Parser {
     assert(is_open_);
     assert(!eof_);
     if (fp_.ReadRecord(header_, seq_) == 0) {
-    //if (fastafastqgz::kseq_read(seq_) < 0) {
       eof_ = true;
     }
   }

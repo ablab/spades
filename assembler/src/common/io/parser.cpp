@@ -65,7 +65,8 @@ Parser* SelectParser(const std::string& filename, int offset) {
       (ext == "seq") || (ext == "seq.gz")) {
     return new FastaFastqGzParser(filename, offset);
   }
-  if ((ext == "sam") || (ext == "bam")) {
+  if ((ext == "sam") || (ext == "bam") || 
+      (ext == "sam.gz")) {
     return new SamBamParser(filename, offset);
   }
   return NULL;
