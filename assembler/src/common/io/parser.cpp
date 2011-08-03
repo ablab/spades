@@ -21,6 +21,7 @@
 #include "common/io/parser.hpp"
 #include <string>
 #include "common/io/fasta_fastq_gz_parser.hpp"
+#include "common/io/sam_bam_parser.hpp"
 // TODO(mariyafomkina): Add more parsers here.
 
 namespace io {
@@ -58,8 +59,14 @@ std::string GetExtension(const std::string& filename) {
 Parser* SelectParser(const std::string& filename, int offset) {
   std::string ext = GetExtension(filename);
   if ((ext == "fastq") || (ext == "fastq.gz") ||
-      (ext == "fasta") || (ext == "fasta.gz")) {
+      (ext == "fasta") || (ext == "fasta.gz") || 
+      (ext == "fa") || (ext == "fq.gz") ||
+      (ext == "fq") || (ext == "fa.gz") ||
+      (ext == "seq") || (ext == "seq.gz")) {
     return new FastaFastqGzParser(filename, offset);
+  }
+  if ((ext == "sam") || (ext == "bam")) {
+    return new SamBamParser(filename, offset);
   }
   return NULL;
 }

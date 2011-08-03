@@ -41,13 +41,17 @@ find_package(Boost COMPONENTS signals REQUIRED)
 
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 
+set(statgen_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/libs/statgen/lib/include")
+set(statgen_LIBRARIES "${CMAKE_SOURCE_DIR}/libs/statgen/lib/libStatGen.a")
+
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
 include_directories(${ZLIB_INCLUDE_DIRS})
 include_directories(${log4cxx_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${statgen_INCLUDE_DIRS})
 
-set(COMMON_LIBRARIES ${ZLIB_LIBRARIES} ${log4cxx_LIBRARIES} ${Boost_LIBRARIES})
+set(COMMON_LIBRARIES ${ZLIB_LIBRARIES} ${log4cxx_LIBRARIES} ${Boost_LIBRARIES} ${statgen_LIBRARIES})
 
 # TODO: should be deleted after project restructurization
 include_directories(${CMAKE_SOURCE_DIR})
