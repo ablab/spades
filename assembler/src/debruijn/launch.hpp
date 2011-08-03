@@ -181,11 +181,8 @@ void PrintGraphComponents(const string& file_name, Graph& g,
 	while (!splitter.Finished() && cnt <= 100) {
 		string component_name = ConstructComponentName(file_name, cnt).c_str();
 		auto component = splitter.NextComponent();
-		EdgeVertexFilter<Graph> *filter = new EdgeVertexFilter<Graph>(g,
-				component);
-		printGraph(g, old_IDs, component_name, paired_index, edges_positions,
-				filter);
-		delete filter;
+		EdgeVertexFilter<Graph>filter (g, component);
+		printGraph(g, old_IDs, component_name, paired_index, edges_positions, &filter);
 		cnt++;
 	}
 
@@ -278,20 +275,21 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 	repeat_resolver.ResolveRepeats(output_folder);
 	INFO("Primitive repeats resolved");
 }
+
 template<size_t k, class ReadStream, class Graph>
 void MapPairedReads(Graph &g, ReadStream& stream,
-		EdgeIndex<k + 1, Graph>& index) {
+		EdgeIndex<k + 1, Graph>& index, map<typename Graph::EdgeId, int>& reads_aligned) {
 	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Threading reads");
-	int quantity = 0, map_quantity = 0;
+	int read_num = 0, map_quantity = 0;
 
 	SingleReadMapper<k, Graph, ReadStream> rm(g, index, stream);
 	while (!stream.eof()) {
 		vector<EdgeId> res = rm.GetContainingEdges();
-		quantity++;
+		read_num++;
 		map_quantity += res.size();
-	}INFO(2 * quantity <<" reads_threaded,to "<< map_quantity <<" edges");
+	}INFO(2 * read_num <<" reads_threaded,to "<< map_quantity <<" edges");
 }
 
 template<size_t k, class ReadStream>
@@ -547,7 +545,6 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const Sequence& genome,
 
 		ProduceInfo<k>(g, index, genome, output_folder + "edge_graph.dot",
 				"edge_graph");
-
 		FillEdgesPos<k>(g, index, genome, EdgePos);
 		omnigraph::WriteSimple(output_folder + "before_simplification_pos.dot",
 				"no_repeat_graph", g, EdgePosLab);
@@ -556,7 +553,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const Sequence& genome,
 				EdgePos);
 
 		SimplifyGraph<k>(g, index, 3, genome, output_folder);
-		MapPairedReads<k, ReadStream, Graph>(g, stream, index);
+//		MapPairedReads<k, ReadStream, Graph>(g, stream, index);
 
 		ProduceInfo<k>(g, index, genome, output_folder + "simplified_graph.dot",
 				"simplified_graph");
@@ -588,6 +585,7 @@ void DeBruijnGraphWithPairedInfoTool(ReadStream& stream, const Sequence& genome,
 
 	printGraph(g, IntIds, output_folder + "repeats_resolved_before",
 			paired_index, EdgePos);
+	DEBUG("printGraph OK");
 
 	if (paired_mode) {
 		DistanceEstimator<Graph> estimator(g, paired_index, insert_size,
