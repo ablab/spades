@@ -40,7 +40,7 @@ class UnionFindClass {
 
         int num_classes() {
             int count = 0;
-            for (size_t i = 0; i < data.size(); i++) {
+            for (int i = 0; i < (int)data.size(); i++) {
                 if (data[i] == i) count++;
             }
             return count; //return *max_element(data.begin(), data.end());
