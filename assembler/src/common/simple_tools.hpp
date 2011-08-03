@@ -81,4 +81,9 @@ inline void checkFileExistenceFATAL(std::string filename) {
 	}
 }
 
+template<class T1, class T2>
+std::ostream& operator<< (std::ostream& os, std::pair<T1, T2> pair) {
+	return os << "(" << pair.first << ", " << pair.second << ")";
+}
+
 #endif /* SIMPLE_TOOLS_HPP_ */
