@@ -13,7 +13,7 @@ default: long_contigs
 long_contigs: $(MYO_DIR)/main.o
 	$(CC) $(LDFLAGS) $(MYO_DIR)/main.o $(OBJ_DIR)/debruijn_graph.o -o $(APP_DIR)/long_contigs
 
-$(MYO_DIR)/main.o: main.cpp long_contigs.hpp 
+$(MYO_DIR)/main.o: main.cpp lc_config.hpp lc_common.hpp seeds.hpp paths.hpp quality.hpp
 	$(CC) $(CFLAGS) main.cpp -o $(MYO_DIR)/main.o
 
 clean: 

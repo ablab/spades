@@ -14,7 +14,10 @@
 #include "../../common/logging.hpp"
 #include "../../common/simple_tools.hpp"
 
-#include "long_contigs.hpp"
+#include "lc_common.hpp"
+#include "seeds.hpp"
+#include "paths.hpp"
+#include "quality.hpp"
 
 namespace {
 
@@ -32,6 +35,7 @@ std::string MakeLaunchTimeDirName() {
 }
 
 DECL_PROJECT_LOGGER("d")
+
 
 template<size_t k, class ReadStream>
 void BuildDeBruijnGraph(ReadStream& stream,
@@ -222,6 +226,7 @@ void LoadFromFile(std::string fileName, Graph& g,  PairedInfoIndex<Graph>& paire
 
 	scanConjugateGraph(g, conj_IntIds,	fileName, paired_index);
 }
+
 
 
 int main() {
