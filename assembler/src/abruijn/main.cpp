@@ -13,6 +13,9 @@ DECL_PROJECT_LOGGER("a")
 #include "osequencestream.hpp"
 #include "libs/getopt_pp/getopt_pp_standalone.h"
 #include <iostream>
+#include "common/io/reader.hpp"
+#include "common/io/converting_reader_wrapper.hpp"
+#include "common/io/cutting_reader_wrapper.hpp"
 
 using namespace std;
 using namespace GetOpt;
@@ -163,12 +166,13 @@ public:
 	}
 
 	void run() {
-		StrobeReader<2, Read, ireadstream> sr(input_files_);
-		PairedReader<ireadstream> paired_stream(sr, 220);
-		SimpleReaderWrapper<PairedReader<ireadstream> > srw(paired_stream);
-		CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream> > > cr(srw, cut_);
+    io::Reader<io::PairedRead> paired_stream(
+        std::pair<std::string, std::string>(
+            input_files_[0], input_files_[1]), 220);
+    io::ConvertingReaderWrapper srw(&paired_stream);
+    io::CuttingReaderWrapper<io::SingleRead> cr(&srw, cut_);
 
-		abruijn::GraphBuilderMaster<CuttingReader<SimpleReaderWrapper<PairedReader<ireadstream>>>> gbm(cr, take_, mode_);
+    abruijn::GraphBuilderMaster<io::CuttingReaderWrapper<io::SingleRead> > gbm(cr, take_, mode_);
 		g_ = gbm.build();
 		stats("uncompressed");
 

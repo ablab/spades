@@ -25,8 +25,11 @@ using namespace std;
 #define READ_BATCH_SIZE 10000000
 #define ERROR_RATE 0.01
 
+#define TIMEDLN(a) print_time(); cout << a << endl
+
 double oct2phred(string qoct, int qvoffset);
 string encode3toabyte (const string & s);
+void print_time();
 
 /// join two maps
 void join_maps(KMerStatMap & v1, const KMerStatMap & v2);
@@ -39,9 +42,9 @@ void AddKMers(const PositionRead &r, hint_t readno, KMerStatMap *v);
 
 void AddKMerNos(const PositionRead &r, hint_t readno, vector<KMerNo> *v);
 
-
 void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerNo> * vv);
-void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers);
+void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthreads);
+void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers, vector<SubKMerPQ> * vskpq);
 
 /**
   * correct a read in place

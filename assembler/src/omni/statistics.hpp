@@ -4,6 +4,9 @@
 #include "omni_tools.hpp"
 #include "xmath.h"
 #include "paired_info.hpp"
+#include <boost/optional.hpp>
+#include <boost/utility/in_place_factory.hpp>
+#include <boost/utility/typed_in_place_factory.hpp>
 #include <map>
 
 namespace omnigraph {
@@ -434,17 +437,49 @@ private:
 	PairedInfoIndex<Graph>& etalon_pair_info_;
 	vector<double> false_positive_weights_;
 	vector<double> perfect_match_weights_;
-	//todo make count fair (now all the cluster weights are counted several times)
-	vector<double> imperfect_match_weights_;
+	//(weight, estimated_variance - actual_variance, number of etalon points)
+	vector<pair<pair<double, double>, size_t>> imperfect_match_stat_;
 	size_t false_negative_count_;
-private:
+	DECL_LOGGER("DistanceEstimationQualityStat");
 
 	void HandleFalsePositive(const Info& estimated) {
+//		DEBUG("Handling false positive " << estimated);
 		false_positive_weights_.push_back(estimated.weight);
 	}
 
 	void HandleFalseNegative(const Info& etalon) {
+//		DEBUG("Handling false negative " << etalon);
 		false_negative_count_++;
+	}
+
+	void HandlePerfectMatch(const Info& etalon, const Info& estimated) {
+//		DEBUG("Handling perfect match " << etalon << " " << estimated);
+		perfect_match_weights_.push_back(estimated.weight);
+	}
+
+	boost::optional<Info> last_estimated_imperfect_match_;
+	Infos last_etalon_imperfect_matches_;
+
+	void HandleImperfectMatch(const Info& etalon, const Info& estimated) {
+//		DEBUG("Handling imperfect match " << etalon << " " << estimated);
+		if (last_estimated_imperfect_match_ != estimated) {
+			ProcessImperfectMatch(last_estimated_imperfect_match_, last_etalon_imperfect_matches_);
+			last_estimated_imperfect_match_ = boost::in_place(estimated);
+			last_etalon_imperfect_matches_.clear();
+		}
+		last_etalon_imperfect_matches_.push_back(etalon);
+	}
+
+	void ProcessImperfectMatch(const boost::optional<Info>& estimated_cluster, const Infos& etalon_matches) {
+		if (estimated_cluster) {
+			double etalon_variance = etalon_matches[etalon_matches.size() - 1].d - etalon_matches[0].d;
+			imperfect_match_stat_.push_back(make_pair(make_pair(estimated_cluster.get().weight, estimated_cluster.get().variance - etalon_variance)
+				, etalon_matches.size()));
+		}
+	}
+
+	void Flush() {
+		ProcessImperfectMatch(last_estimated_imperfect_match_, last_etalon_imperfect_matches_);
 	}
 
 	void HandlePairsNotInEtalon(const set<pair<EdgeId, EdgeId>>& pairs_in_etalon) {
@@ -453,7 +488,10 @@ private:
 			EdgeId first = estimated_infos[0].first;
 			EdgeId second = estimated_infos[0].second;
 			if (pairs_in_etalon.count(make_pair(first, second)) == 0) {
-				for_each(estimated_infos.begin(), estimated_infos.end(), HandleFalsePositive);
+//				for_each(estimated_infos.begin(), estimated_infos.end(), HandleFalsePositive);
+				for (auto it2 = estimated_infos.begin(); it2!=estimated_infos.end(); ++it2) {
+					HandleFalsePositive(*it2);
+				}
 			}
 		}
 	}
@@ -462,17 +500,17 @@ private:
 		return le(a.d + a.variance, b.d - b.variance);
 	}
 
-	bool PerfectMatch(const Info& etalon, const Info& estimated) {
+	bool HandleIfPerfectMatch(const Info& etalon, const Info& estimated) {
 		if (eq(etalon.d, estimated.d) && eq(estimated.variance, 0.)) {
-			perfect_match_weights_.push_back(estimated.weight);
+			HandlePerfectMatch(etalon, estimated);
 			return true;
 		}
 		return false;
 	}
 
-	bool ImperfectMatch(const Info& etalon, const Info& estimated) {
-		if (ge(etalon.d > estimated.d - estimated.variance) && le(etalon.d < estimated.d + estimated.variance)) {
-			imperfect_match_weights_.push_back(estimated.weight);
+	bool HandleIfImperfectMatch(const Info& etalon, const Info& estimated) {
+		if (ge(etalon.d, estimated.d - estimated.variance) && le(etalon.d, estimated.d + estimated.variance)) {
+			HandleImperfectMatch(etalon, estimated);
 			return true;
 		}
 		return false;
@@ -488,8 +526,8 @@ private:
 				estimated_idx++;
 			}
 			if (estimated_idx != estimated_infos.size()
-					&& (PerfectMatch(etalon_info, estimated_infos[estimated_idx])
-							|| ImperfectMatch(etalon_info, estimated_infos[estimated_idx]))) {
+					&& (HandleIfPerfectMatch(etalon_info, estimated_infos[estimated_idx])
+							|| HandleIfImperfectMatch(etalon_info, estimated_infos[estimated_idx]))) {
 				last_matched = true;
 			} else {
 				HandleFalseNegative(etalon_info);
@@ -498,8 +536,10 @@ private:
 		if (last_matched)
 			estimated_idx++;
 		while (estimated_idx < estimated_infos.size()) {
-			HandleFalsePositive(estimated_infos[estimated_idx]);
+//			DEBUG("Handling false positives beyond all etalons");
+			HandleFalsePositive(estimated_infos[estimated_idx++]);
 		}
+		Flush();
 	}
 
 public:
@@ -511,17 +551,22 @@ public:
 	}
 
 	virtual void Count() {
+		INFO("Counting distance estimation statistics");
 		set<pair<EdgeId, EdgeId>> pairs_in_etalon;
+//		DEBUG("Handling pairs present in etalon information");
 		for (auto it = etalon_pair_info_.begin(); it != etalon_pair_info_.end(); ++it) {
 			Infos etalon_infos = *it;
 			EdgeId first = etalon_infos[0].first;
 			EdgeId second = etalon_infos[0].second;
-			pairs_in_etalon.insert(first, second);
+			pairs_in_etalon.insert(make_pair(first, second));
 
 			Infos estimated_infos = estimated_pair_info_.GetEdgePairInfo(first, second);
+//			DEBUG("Processing distances for pair " << first << ", " << second);
 			ProcessInfos(etalon_infos, estimated_infos);
 		}
+//		DEBUG("Handling pairs that are not in etalon information");
 		HandlePairsNotInEtalon(pairs_in_etalon);
+		INFO("Distance estimation statistics counted");
 	}
 
 	vector<double> false_positive_weights() {
@@ -532,13 +577,58 @@ public:
 		sort(perfect_match_weights_.begin(), perfect_match_weights_.end());
 		return perfect_match_weights_;
 	}
-	//todo make count fair (now all the cluster weights are counted several times)
-	vector<double> imperfect_match_weights() {
-		sort(imperfect_match_weights_.begin(), imperfect_match_weights_.end());
-		return imperfect_match_weights_;
+
+	vector<pair<pair<double, double>, size_t>> imperfect_match_weights() {
+		sort(imperfect_match_stat_.begin(), imperfect_match_stat_.end());
+		return imperfect_match_stat_;
 	}
+
 	size_t false_negative_count() {
 		return false_negative_count_;
+	}
+
+};
+
+template<class Graph>
+class ClusterStat: public omnigraph::AbstractStatCounter {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef PairInfo<EdgeId> Info;
+	typedef typename PairedInfoIndex<Graph>::PairInfos Infos;
+
+	PairedInfoIndex<Graph>& estimated_pair_info_;
+	vector<pair<double, double>> weight_variance_stat_;
+
+public:
+	ClusterStat(PairedInfoIndex<Graph>& estimated_pair_info) :
+		estimated_pair_info_(estimated_pair_info) {
+	}
+
+	virtual ~ClusterStat() {
+	}
+
+	virtual void Count() {
+		for (auto it = estimated_pair_info_.begin(); it != estimated_pair_info_.end(); ++it) {
+			Infos infos = *it;
+			for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
+				Info info = *it2;
+//				if (gr(info.variance, 0)) {
+					weight_variance_stat_.push_back(make_pair(info.weight, info.variance));
+//				}
+			}
+			//todo talk with Anton!!!
+//			for (auto it2 = (*it).begin(); it2 != (*it).end(); ++it2) {
+//				Info info = *it2;
+////				if (gr(info.variance, 0)) {
+//					weight_variance_stat_.push_back(make_pair(info.weight, info.variance));
+////				}
+//			}
+		}
+	}
+
+	vector<pair<double, double>> weight_variance_stat() {
+		sort(weight_variance_stat_.begin(), weight_variance_stat_.end());
+		return weight_variance_stat_;
 	}
 
 };

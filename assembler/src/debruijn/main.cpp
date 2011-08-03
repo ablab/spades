@@ -1,6 +1,7 @@
 /*
  * Assembler Main
  */
+
 #include "launch.hpp"
 #include "config.hpp"
 #include "common/logging.hpp"
@@ -8,6 +9,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "distance_estimation.hpp"
+//#include <distance_estimation.hpp>
 
 namespace {
 
@@ -58,31 +61,33 @@ int main() {
 	bool etalon_info_mode = CONFIG.read<bool>("etalon_info_mode");
 	bool from_saved = CONFIG.read<bool>("from_saved_graph");
 	// typedefs :)
-	typedef MateReader<Read, ireadstream>::type ReadStream;
-	typedef PairedReader<ireadstream> PairedReadStream;
-	typedef RCReaderWrapper<PairedReadStream, PairedRead> RCStream;
+  typedef io::Reader<io::SingleRead> ReadStream;
+  typedef io::Reader<io::PairedRead> PairedReadStream;
+  typedef io::RCReaderWrapper<io::PairedRead> RCStream;
 
 	// read data ('reads')
-	const string reads[2] = {reads_filename1, reads_filename2};
-	ReadStream reader(reads);
-	PairedReadStream pairStream(reader, insert_size);
-	RCStream rcStream(pairStream);
+  PairedReadStream pairStream(std::pair<std::string, 
+                              std::string>(reads_filename1,
+                                           reads_filename2),
+                              insert_size);
+	RCStream rcStream(&pairStream);
 
 	// read data ('genome')
 	std::string genome;
 	{
-		ireadstream genome_stream(genome_filename);
-		Read full_genome;
+		ReadStream genome_stream(genome_filename);
+    io::SingleRead full_genome;
 		genome_stream >> full_genome;
-		genome = full_genome.getSequenceString().substr(0, dataset_len); // cropped
+		genome = full_genome.GetSequenceString().substr(0, dataset_len); // cropped
 	}
 	// assemble it!
 	INFO("Assembling " << dataset << " dataset");
-	debruijn_graph::DeBruijnGraphWithPairedInfoTool<K, RCStream>(rcStream, Sequence(genome), paired_mode, rectangle_mode, etalon_info_mode, from_saved, insert_size, max_read_length, output_dir, work_tmp_dir);
+	debruijn_graph::DeBruijnGraphTool<K, RCStream>(rcStream, Sequence(genome), paired_mode, rectangle_mode, etalon_info_mode, from_saved, insert_size, max_read_length, output_dir, work_tmp_dir);
 	INFO("Assembling " << dataset << " dataset finished");
 
 	unlink((output_root + "latest").c_str());
-	symlink(output_dir_suffix.c_str(), (output_root + "latest").c_str());
+	if (symlink(output_dir_suffix.c_str(), (output_root + "latest").c_str()) != 0)
+		WARN( "Symlink to latest launch failed");
 
 	// OK
 	return 0;

@@ -23,6 +23,8 @@
 #include "common/io/ireader.hpp"
 #include "common/io/reader.hpp"
 
+namespace io {
+
 template<typename ReadType>
 class MultifileReader : public IReader<ReadType> {
  public:
@@ -150,5 +152,7 @@ class MultifileReader : public IReader<ReadType> {
    */
   size_t current_reader_index_;
 };
+
+}
 
 #endif /* COMMON_IO_MULTIFILEREADER_HPP_ */

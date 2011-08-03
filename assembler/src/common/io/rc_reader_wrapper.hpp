@@ -21,6 +21,8 @@
 
 #include "common/io/ireader.hpp"
 
+namespace io {
+
 template<typename ReadType>
 class RCReaderWrapper : public IReader<ReadType> {
  public:
@@ -117,5 +119,7 @@ class RCReaderWrapper : public IReader<ReadType> {
    */
   void operator=(const RCReaderWrapper<ReadType>& reader);
 };
+
+}
 
 #endif /* COMMON_IO_RCREADERWRAPPER_HPP_ */

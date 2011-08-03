@@ -14,7 +14,8 @@ add_executable(main
    main.cpp
    hammer_tools.cpp
    kmer_cluster.cpp
-   position_read.cpp)
+   position_read.cpp
+   position_kmer.cpp)
    
 add_subdirectory(quake_count)
 add_subdirectory(quake_enhanced)
