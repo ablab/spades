@@ -509,7 +509,7 @@ void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
 
 
 void ResolveOneComponent(const string& load_from_dir, const string& save_to_dir, int component_id, int k){
-	string load_from = ConstructComponentName(load_from_dir+"/graph", component_id);
+	string load_from = ConstructComponentName(load_from_dir+"/graphCl", component_id);
 	string save_to = ConstructComponentName(save_to_dir+"/graph", component_id);
 
 	string save_resolving_history = ConstructComponentName(save_to_dir+"/resolve", component_id);
