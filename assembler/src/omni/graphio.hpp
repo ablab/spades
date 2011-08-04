@@ -206,14 +206,14 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 	fprintf(file, "%d\n", edge_count_);
 	if (filter_ == NULL) {
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), EPHandler.EdgesPositions[*iter].size());
+			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), (int)EPHandler.EdgesPositions[*iter].size());
 			for (size_t i = 0; i < EPHandler.EdgesPositions[*iter].size(); i++){
 				fprintf(file, "    %d - %d\n",  EPHandler.EdgesPositions[*iter][i].start_, EPHandler.EdgesPositions[*iter][i].end_);
 			}
 		}
 	} else {
 		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
-			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), EPHandler.EdgesPositions[*iter].size());
+			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), (int)EPHandler.EdgesPositions[*iter].size());
 			for (size_t i = 0; i < EPHandler.EdgesPositions[*iter].size(); i++){
 				fprintf(file, "    %d - %d\n",  EPHandler.EdgesPositions[*iter][i].start_, EPHandler.EdgesPositions[*iter][i].end_);
 			}
