@@ -12,15 +12,16 @@ class PositionRead {
 	hint_t start_;
 	uint32_t size_;
 	hint_t readno_;
+	bool bad_;
 	
   public:
-	PositionRead(hint_t start, uint32_t size, hint_t readno) : start_(start), size_(size), readno_(readno) { }
+	PositionRead(hint_t start, uint32_t size, hint_t readno) : start_(start), size_(size), readno_(readno), bad_(false) { }
 	hint_t start() const { return start_; }
 	uint32_t size() const { return size_; }
 	char at(uint32_t pos) const;
 	char operator [] (uint32_t pos) const;
-	// std::map<uint32_t, hint_t> & kmers() { return kmers_; }
-	// void clearKMers() { kmers_.clear(); }
+	bool bad() { return bad_; }
+	void setBad(bool b) { bad_ = b; }
 
 	bool nextKMer( std::pair<uint32_t, hint_t> * it ) const;
 

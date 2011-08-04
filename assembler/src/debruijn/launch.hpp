@@ -76,7 +76,12 @@ void CountClusteredPairedInfoStats(Graph &g, size_t insert_size,
 		PairedInfoIndex<Graph> &etalon_paired_index,
 		const string &output_folder) {
 	INFO("Counting paired info stats");
-	EstimationQualityStat<Graph> (paired_index, etalon_paired_index).Count();
+	EstimationQualityStat<Graph> estimation_stat(paired_index,
+			etalon_paired_index);
+	estimation_stat.Count();
+	string stat_folder = output_folder + "/pair_inf_stat";
+	mkdir(stat_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	estimation_stat.WriteEstmationStats(stat_folder);
 	ClusterStat<Graph> (paired_index).Count();
 	INFO("Paired info stats counted");
 }
@@ -175,7 +180,7 @@ string ConstructComponentName(string file_name, size_t cnt) {
 }
 
 template<class Graph>
-void PrintGraphComponents(const string& file_name, Graph& g,
+int PrintGraphComponents(const string& file_name, Graph& g,
 		size_t split_edge_length, IdTrackHandler<Graph> &old_IDs,
 		PairedInfoIndex<Graph> &paired_index,
 		EdgesPositionHandler<Graph> &edges_positions) {
@@ -183,13 +188,15 @@ void PrintGraphComponents(const string& file_name, Graph& g,
 	ComponentSizeFilter<Graph> checker(g, split_edge_length);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	size_t cnt = 1;
-	while (!splitter.Finished() && cnt <= 100) {
+	while (!splitter.Finished() && cnt <= 1000) {
 		string component_name = ConstructComponentName(file_name, cnt).c_str();
 		auto component = splitter.NextComponent();
-		EdgeVertexFilter<Graph>filter (g, component);
-		printGraph(g, old_IDs, component_name, paired_index, edges_positions, &filter);
+		EdgeVertexFilter<Graph> filter(g, component);
+		printGraph(g, old_IDs, component_name, paired_index, edges_positions,
+				&filter);
 		cnt++;
 	}
+	return (cnt - 1);
 
 }
 
@@ -525,11 +532,71 @@ void SelectReadsForConsensus(Graph& g, const EdgeIndex<k + 1, Graph>& index ,vec
 	}
 }
 
+void ResolveOneComponent(const string& load_from_dir,
+		const string& save_to_dir, int component_id, int k) {
+	string load_from = ConstructComponentName(load_from_dir + "/graphCl",
+			component_id);
+	string save_to = ConstructComponentName(save_to_dir + "/graph",
+			component_id);
+
+	string save_resolving_history = ConstructComponentName(
+			save_to_dir + "/resolve", component_id);
+	mkdir(save_resolving_history.c_str(),
+			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+
+	NCGraph new_graph(k);
+	IdTrackHandler<NCGraph> NewIntIds(new_graph);
+	PairedInfoIndex<NCGraph> new_index(new_graph);
+	EdgesPositionHandler<NCGraph> EdgePosBefore(new_graph);
+	scanNCGraph(new_graph, NewIntIds, load_from, new_index, EdgePosBefore);
+
+	RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
+
+	omnigraph::WriteSimple(save_to + "_before.dot", "no_repeat_graph",
+			new_graph, IdTrackLabelerAfter);
+
+	NonconjugateDeBruijnGraph resolved_graph(k);
+	IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
+	EdgesPositionHandler<NCGraph> EdgePosAfter(resolved_graph);
+
+	ResolveRepeats(new_graph, NewIntIds, new_index, EdgePosBefore,
+			resolved_graph, Resolved_IntIds, EdgePosAfter,
+			save_resolving_history + "/");
+
+	RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
+			Resolved_IntIds);
+	omnigraph::WriteSimple(save_to + "_after.dot", "no_repeat_graph",
+			resolved_graph, IdTrackLabelerResolved);
+
+	EdgesPosGraphLabeler<NCGraph>
+			EdgePosLAfterLab(resolved_graph, EdgePosAfter);
+
+	omnigraph::WriteSimple(
+			save_resolving_history + "/repeats_resolved_after_pos.dot",
+			"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+
+	ClipTips(resolved_graph);
+	RemoveLowCoverageEdgesForResolver(resolved_graph);
+
+	omnigraph::WriteSimple(
+			save_resolving_history
+					+ "/repeats_resolved_after_und_cleared_pos.dot",
+			"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+	omnigraph::WriteSimple(
+			save_resolving_history + "/repeats_resolved_und_cleared.dot",
+			"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+	one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
+	N50enlarger.one_many_resolve();
+	omnigraph::WriteSimple(save_to + "_finished.dot", "no_repeat_graph",
+			resolved_graph, IdTrackLabelerResolved);
+}
+
 template<size_t k, class ReadStream>
 void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		bool paired_mode, bool rectangle_mode, bool etalon_info_mode,
 		bool from_saved, size_t insert_size, size_t max_read_length,
 		const string& output_folder, const string& work_tmp_dir, vector<SingleReadStream* > reads) {
+
 	INFO("Edge graph construction tool started");
 	INFO("Paired mode: " << (paired_mode ? "Yes" : "No"));
 	INFO("Etalon paired info mode: " << (etalon_info_mode ? "Yes" : "No"))INFO(
@@ -545,6 +612,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	PairedInfoIndex<Graph> paired_index(g, 0);
 	PairedInfoIndex<Graph> etalon_paired_index(g, 0);
 	PairedInfoIndex<Graph> clustered_index(g);
+	int number_of_components = 0;
 
 	if (!from_saved) {
 
@@ -568,14 +636,13 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 		ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 				"edge_graph");
-		FillEdgesPos<k>(g, index, genome, EdgePos);
+		FillEdgesPos<k> (g, index, genome, EdgePos);
 
 		omnigraph::WriteSimple(output_folder + "before_simplification_pos.dot",
 				"no_repeat_graph", g, EdgePosLab);
 
 		printGraph(g, IntIds, output_folder + "first_graph", paired_index,
 				EdgePos);
-
 
 		SimplifyGraph<k> (g, index, 3, genome, output_folder);
 		ProduceInfo<k> (g, index, genome,
@@ -584,17 +651,20 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		WriteGraphComponents<k> (g, index, genome,
 				output_folder + "graph_components" + "/", "graph.dot",
 				"graph_component", insert_size);
-		PrintGraphComponents(output_folder + "graph_components/graph", g,
-				insert_size, IntIds, paired_index, EdgePos);
+		number_of_components = PrintGraphComponents(
+				output_folder + "graph_components/graph", g, insert_size,
+				IntIds, paired_index, EdgePos);
 
 		if (paired_mode) {
 			CountPairedInfoStats(g, insert_size, max_read_length, paired_index,
 					etalon_paired_index, output_folder);
 		}
 
-		omnigraph::WriteSimple(output_folder + "repeats_resolved_before_poslab.dot",
+		omnigraph::WriteSimple(
+				output_folder + "repeats_resolved_before_poslab.dot",
 				"no_repeat_graph", g, EdgePosLab);
-		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_before_poslab.dot",
+		omnigraph::WriteSimple(
+				work_tmp_dir + "repeats_resolved_before_poslab.dot",
 				"no_repeat_graph", g, EdgePosLab);
 
 		printGraph(g, IntIds, output_folder + "repeats_resolved_before",
@@ -607,12 +677,12 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 					CONFIG.read<size_t> ("de_max_distance"));
 			estimator.Estimate(clustered_index);
 			CountClusteredPairedInfoStats(g, insert_size, max_read_length,
-					paired_index, etalon_paired_index, output_folder);
+					clustered_index, etalon_paired_index, output_folder);
 		}
 
-		PrintGraphComponents(output_folder + "graph_components/graphCl", g,
-				insert_size, IntIds, clustered_index, EdgePos);
-
+		number_of_components = PrintGraphComponents(
+				output_folder + "graph_components/graphCl", g, insert_size,
+				IntIds, clustered_index, EdgePos);
 
 	}
 	//	if (paired_mode) {
@@ -622,6 +692,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	//		PairedInfoIndex<Graph> clustered_paired_index(g);
 	//		clusterer.cluster(clustered_paired_index);
 	//	}
+
 
 	if (paired_mode) {
 		if (!from_saved) {
@@ -690,7 +761,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_after_pos.dot",
 
-				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+		"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
 		omnigraph::WriteSimple(
 				output_folder + "repeats_resolved_after_pos.dot",
 				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
@@ -715,7 +786,6 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
 		N50enlarger.one_many_resolve();
 
-
 		omnigraph::WriteSimple(
 				output_folder
 						+ "repeats_resolved_und_cleared_und_simplified.dot",
@@ -737,6 +807,16 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		SelectReadsForConsensus<k, Graph>(g, index, reads, consensus_folder);
 
 		OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
+
+		if (number_of_components > 0) {
+			string output_comp = output_folder + "resolved_comp";
+			mkdir(output_comp.c_str(),
+					S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+
+			for (int i = 1; i <= number_of_components; i++)
+				ResolveOneComponent(output_folder + "graph_components/",
+						output_comp + "/", i, k);
+		}
 
 	}
 	if (!paired_mode)
