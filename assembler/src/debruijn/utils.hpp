@@ -670,14 +670,13 @@ public:
 
 };
 
-template<size_t k, class Graph, class Stream>
+template<size_t k, class Graph>
 class SingleReadMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef EdgeIndex<k + 1, Graph> Index;
 private:
 	SimpleSequenceMapper<k, Graph> read_seq_mapper;
-	Stream& stream_;
 	const Graph& g_;
 	const Index& index_;
 public:
@@ -687,69 +686,35 @@ public:
 	 * @param g graph sequences should be mapped to
 	 * @param index index syncronized with graph
 	 */
-	SingleReadMapper(const Graph& g, const Index& index, Stream & stream):
-		read_seq_mapper(g, index), stream_(stream), g_(g), index_(index) {
-		stream_.reset();
+	SingleReadMapper(const Graph& g, const Index& index):
+		read_seq_mapper(g, index),  g_(g), index_(index) {
 	}
 
-	vector<EdgeId> GetContainingEdges(){
+	vector<EdgeId> GetContainingEdges(io::SingleRead& p_r){
 		vector<EdgeId> res;
-		if (!stream_.eof()) {
 
-			io::PairedRead p_r;
-			stream_ >> p_r;
-			Sequence read = p_r.first().sequence();
-			if (k+1 <= read.size()) {
-				Seq<k + 1> kmer = read.start<k + 1>();
-				bool found;
-				for (size_t i = k + 1; i <= read.size(); ++i) {
-					if (index_.containsInIndex(kmer)) {
-						pair<EdgeId, size_t> position = index_.get(kmer);
-						found = false;
-						for (size_t j = 0; j < res.size(); j++)
-							if (res[j] == position.first) {
-								found = true;
-								break;
-							}
-						if (!found)
-							res.push_back(position.first);
-					}
-					if (i != read.size())
-						kmer = kmer << read[i];
+		Sequence read = p_r.sequence();
+		if (k+1 <= read.size()) {
+			Seq<k + 1> kmer = read.start<k + 1>();
+			bool found;
+			for (size_t i = k + 1; i <= read.size(); ++i) {
+				if (index_.containsInIndex(kmer)) {
+					pair<EdgeId, size_t> position = index_.get(kmer);
+					found = false;
+					for (size_t j = 0; j < res.size(); j++)
+						if (res[j] == position.first) {
+							found = true;
+							break;
+						}
+					if (!found)
+						res.push_back(position.first);
 				}
+				if (i != read.size())
+					kmer = kmer << read[i];
 			}
 		}
+
 		return res;
-	}
-
-	pair<ReadMappingResult<Graph>*, ReadMappingResult<Graph>*> ThreadNext() {
-		if (!stream_.eof()) {
-      io::PairedRead p_r;
-			stream_ >> p_r;
-			Sequence read1 = p_r.first().sequence();
-			Sequence read2 = p_r.second().sequence();
-			Path<EdgeId> aligned_read[2];
-			aligned_read[0] = read_seq_mapper.MapSequence(read[0]);
-			aligned_read[1] = read_seq_mapper.MapSequence(read[1]);
-//			pair<ReadMappingResult<Graph>, ReadMappingResult<Graph> >  res;
-			vector<SingleReadThreaderResult<Graph>> res_v[2];
-			for(int i = 0; i < 2; i++) {
-				int start = 0;
-				res_v[i].clear();
-				if (!aligned_read[i].sequence_.empty()){
-					res_v[i].push_back(SingleReadThreaderResult<Graph>(aligned_read[i].sequence_[0], aligned_read[i].start_pos_, start));
-					start += g_.length(aligned_read[i].sequence_[0]) - aligned_read[i].start_pos_;
-				}
-				for(int j = 1; j < aligned_read[i].sequence_.size(); j++) {
-					res_v[i].push_back(SingleReadThreaderResult<Graph>(aligned_read[i].sequence_[j], 0, start));
-					start += g_.length(aligned_read[i].sequence_[j]);
-				}
-			}
-			return make_pair( new ReadMappingResult<Graph>(read[0], res_v[0]),new ReadMappingResult<Graph>(read[1], res_v[1]));
-	//		return res;
-
-		}
-//		else return NULL;
 	}
 
 };

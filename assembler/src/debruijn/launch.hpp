@@ -45,6 +45,7 @@ typedef ConjugateDeBruijnGraph Graph;
 typedef Graph::EdgeId EdgeId;
 typedef Graph::VertexId VertexId;
 typedef NonconjugateDeBruijnGraph NCGraph;
+typedef io::Reader<io::SingleRead> SingleReadStream;
 using namespace omnigraph;
 
 template<size_t k, class Graph>
@@ -279,21 +280,6 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 	INFO("Primitive repeats resolved");
 }
 
-template<size_t k, class ReadStream, class Graph>
-void MapPairedReads(Graph &g, ReadStream& stream,
-		EdgeIndex<k + 1, Graph>& index/*, map<typename Graph::EdgeId, int>& reads_aligned*/) {
-	INFO("-----------------------------------------");
-	stream.reset();
-	INFO("Threading reads");
-	int read_num = 0, map_quantity = 0;
-
-	SingleReadMapper<k, Graph, ReadStream> rm(g, index, stream);
-	while (!stream.eof()) {
-		vector<EdgeId> res = rm.GetContainingEdges();
-		read_num++;
-		map_quantity += res.size();
-	}INFO(2 * read_num <<" reads_threaded,to "<< map_quantity <<" edges");
-}
 
 template<size_t k, class ReadStream>
 void FillPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
@@ -495,7 +481,7 @@ void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
 			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	char n_str[20];
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-		sprintf(n_str, "%d.fa", n);
+		sprintf(n_str, "contigs%d.fa", n);
 
 		osequencestream oss(contigs_output_dir + n_str);
 
@@ -504,12 +490,46 @@ void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
 		n++;
 	}INFO("Contigs written");
 }
+template<size_t k, class Graph>
+void SelectReadsForConsensus(Graph& g, const EdgeIndex<k + 1, Graph>& index ,vector<SingleReadStream *>& reads, string& consensus_output_dir){
+	INFO("ReadMapping started");
+	map<typename Graph::EdgeId, int> contigNumbers;
+	int cur_num = 0;
+	for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		contigNumbers[*iter] = cur_num;
+		cur_num++;
+	}
+	INFO(cur_num << "contigs");
+	for( int i = 0; i < 2; i ++ ) {
+		int read_num = 0;
+		osequencestream* mapped_reads[2000];
+		for(int j = 0; j < cur_num; j++){
+			string output_filename = consensus_output_dir+"reads" + ToString(j) + "_" + ToString(i)+".fa";
+			osequencestream* tmp = new osequencestream(output_filename);
+//			mapped_reads.push_back(tmp);
+			mapped_reads[j] = tmp;
+		}
+		SingleReadMapper<55, Graph> rm(g, index);
+		while (!reads[i]->eof()) {
+			io::SingleRead cur_read;
+			(*reads[i]) >> cur_read;
+			vector<EdgeId> res = rm.GetContainingEdges(cur_read);
+			read_num++;
+			TRACE(read_num<< " mapped to"<< res.size() <<" contigs :, read"<< cur_read.sequence());
+//			map_quantity += res.size();
+			for(size_t ii = 0; ii < res.size(); ii++) {
+				TRACE("conting number "<< contigNumbers[res[ii]]);
+				(*mapped_reads[contigNumbers[res[ii]]]) << cur_read.sequence();
+			}
+		}
+	}
+}
 
 template<size_t k, class ReadStream>
 void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		bool paired_mode, bool rectangle_mode, bool etalon_info_mode,
 		bool from_saved, size_t insert_size, size_t max_read_length,
-		const string& output_folder, const string& work_tmp_dir, io::Reader<io::SingleRead>& read1, io::Reader<io::SingleRead>& read2) {
+		const string& output_folder, const string& work_tmp_dir, vector<SingleReadStream* > reads) {
 	INFO("Edge graph construction tool started");
 	INFO("Paired mode: " << (paired_mode ? "Yes" : "No"));
 	INFO("Etalon paired info mode: " << (etalon_info_mode ? "Yes" : "No"))INFO(
@@ -558,8 +578,6 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 
 		SimplifyGraph<k> (g, index, 3, genome, output_folder);
-		MapPairedReads<k, ReadStream, Graph> (g, stream, index);
-
 		ProduceInfo<k> (g, index, genome,
 				output_folder + "simplified_graph.dot", "simplified_graph");
 
@@ -639,8 +657,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
-		omnigraph::WriteSimple(
-				work_tmp_dir + "repeats_resolved_nonconjugate_copy.dot",
+		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_nonconjugate_copy.dot",
 				"no_repeat_graph", new_graph, IdTrackLabelerAfter);
 		INFO("repeat resolved graph written");
 
@@ -679,6 +696,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
 
 		ClipTips(resolved_graph);
+		RemoveBulges2(resolved_graph);
 		RemoveLowCoverageEdgesForResolver(resolved_graph);
 
 		omnigraph::WriteSimple(
@@ -705,7 +723,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		INFO("repeat resolved grpah written");
 		EdgeIndex<k + 1, NCGraph> aux_index(resolved_graph);
 
-		//		SimplifyGROPPED_raph<k>(resolved_graph, aux_index, 3, genome, output_folder);
+		//		SimplifyGRaph<k>(resolved_graph, aux_index, 3, genome, output_folder);
 
 		//CountStats<k, NCGraph> (resolved_graph, aux_index, genome);
 		//		ProduceNonconjugateInfo<k> (resolved_graph, aux_index, genome, output_folder + "repeats_resolved.dot",
@@ -714,8 +732,10 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		//				"no_repeat_graph");sss
 
 		OutputContigs(resolved_graph, output_folder + "contigs.fasta");
+		string consensus_folder = output_folder + "consensus/";
+		OutputSingleFileContigs(g, consensus_folder);
+		SelectReadsForConsensus<k, Graph>(g, index, reads, consensus_folder);
 
-		OutputSingleFileContigs(resolved_graph, output_folder + "consensus/");
 		OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
 
 	}

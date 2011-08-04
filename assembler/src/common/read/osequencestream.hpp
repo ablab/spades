@@ -24,6 +24,7 @@ public:
 	}
 
 	osequencestream& operator<<(const Sequence& seq) {
+//		DEBUG("outputting");
 		string s = seq.str();
 		ofstream_ << "> contig_" << id_++ << " length=" << s.size() << endl;
 		size_t cur = 0;
