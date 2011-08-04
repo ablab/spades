@@ -5,6 +5,8 @@
 #include "simple_tools.hpp"
 #include "xmath.h"
 #include "paired_info.hpp"
+#include <iostream>
+#include <fstream>
 #include <map>
 
 namespace omnigraph {
@@ -439,8 +441,7 @@ private:
 	vector<double> perfect_match_weights_;
 	//(weight, estimated_variance - actual_variance, number of etalon points)
 	vector<pair<pair<double, double> , size_t>> imperfect_match_stat_;
-	size_t false_negative_count_;DECL_LOGGER("DistanceEstimationQualityStat")
-	;
+	size_t false_negative_count_;DECL_LOGGER("DistanceEstimationQualityStat");
 
 	void HandleFalsePositive(const Info& estimated) {
 		DEBUG("Handling false positive " << estimated);
@@ -463,17 +464,15 @@ private:
 				- etalon_matches[0].d;
 		imperfect_match_stat_.push_back(
 				make_pair(
-						make_pair(
-								estimated_cluster.weight,
-								estimated_cluster.variance
-										- etalon_variance),
+						make_pair(estimated_cluster.weight,
+								estimated_cluster.variance - etalon_variance),
 						etalon_matches.size()));
 	}
 
-//	void Flush() {
-//		ProcessImperfectMatch(last_estimated_imperfect_match_,
-//				last_etalon_imperfect_matches_);
-//	}
+	//	void Flush() {
+	//		ProcessImperfectMatch(last_estimated_imperfect_match_,
+	//				last_etalon_imperfect_matches_);
+	//	}
 
 	void HandlePairsNotInEtalon(
 			const set<pair<EdgeId, EdgeId>>& pairs_in_etalon) {
@@ -576,24 +575,18 @@ private:
 			//			DEBUG("Handling false positives beyond all etalons");
 			HandleFalseNegative(etalon_infos[etalon_idx++]);
 		}
-//		Flush();
+		//		Flush();
 	}
 
 	void ReportFalsePositiveWeights() {
 		sort(false_positive_weights_.begin(), false_positive_weights_.end());
 
-		stringstream ss;
-		copy(false_positive_weights_.begin(), false_positive_weights_.end(),
-				ostream_iterator<double> (ss, ", "));
-		INFO("False positive count: " << false_positive_weights_.size() << ". False positive weights: " << ss.str());
+		INFO("False positive count: " << false_positive_weights_.size());
 	}
 
 	void ReportPerfectMatchWeights() {
 		sort(perfect_match_weights_.begin(), perfect_match_weights_.end());
-		stringstream ss;
-		copy(perfect_match_weights_.begin(), perfect_match_weights_.end(),
-				ostream_iterator<double> (ss, ", "));
-		INFO("Perfect match count: " << perfect_match_weights_.size() << ". Perfect match weights: " << ss.str());
+		INFO("Perfect match count: " << perfect_match_weights_.size());
 	}
 
 	void ReportImperfectMatchWeights() {
@@ -656,6 +649,19 @@ public:
 
 	size_t false_negative_count() {
 		return false_negative_count_;
+	}
+
+	void WriteEstmationStats(const string &output_folder) {
+		ofstream stream;
+		stream.open(output_folder + "/perfect.inf");
+		copy(perfect_match_weights_.begin(), perfect_match_weights_.end(),
+				ostream_iterator<double> (stream, "\n"));
+		stream.close();
+
+		stream.open(output_folder + "/false_positive.inf");
+		copy(false_positive_weights_.begin(), false_positive_weights_.end(),
+				ostream_iterator<double> (stream, "\n"));
+		stream.close();
 	}
 
 };
