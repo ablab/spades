@@ -298,9 +298,10 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 	hint_t kmerno = 0;
 
 	while(pq.size()) {
-		PriorityQueueElement pqel = pq.top(); pq.pop();
+		const PriorityQueueElement & pqel = pq.top();
 		if ( !(cur_min == pqel) ) {
 			cur_min = pqel;
+			//cout << curKMerCount.first.str() << "\t" << curKMerCount.second.count << endl;
 			kmers->push_back(curKMerCount);
 			curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD) );
 			++kmerno;			
@@ -308,9 +309,13 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 		curKMerCount.second.count++;
 		PositionKMer::blobkmers[ pqel.kmerno.index ] = kmerno;
 
-		++it[pqel.n];
-		if ( it[pqel.n] != it_end[pqel.n] ) pq.push( PriorityQueueElement(*(it[pqel.n]), pqel.n) );
+		int nn = pqel.n;
+		vector<KMerNo>::iterator & it_cur = it[nn];
+		pq.pop();
+		++it_cur;
+		if ( it_cur != it_end[nn] ) pq.push( PriorityQueueElement(*it_cur, nn) );
 	}
+	//cout << curKMerCount.first.str() << "\t" << curKMerCount.second.count << endl;
 	kmers->push_back(curKMerCount);
 }
 

@@ -421,13 +421,17 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq, ofstre
 			if (blocksInPlace[n][m].size() == 1) {
 				if (k_[blocksInPlace[n][m][0]].second.count > GOOD_SINGLETON_THRESHOLD) {
 					k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
-					// cout << k_[blocksInPlace[n][m][0]].first.str() << " good" << endl;
+					#pragma omp critical
+					{
 					(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>\n";
+					}
 				}
 			} else {
 				k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
-				// cout << k_[blocksInPlace[n][m][0]].first.str() << " center" << endl;
+				#pragma omp critical
+				{
 				(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>\n";
+				}
 				for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
 					k_[blocksInPlace[n][m][j]].second.changeto = blocksInPlace[n][m][0];
 				}
