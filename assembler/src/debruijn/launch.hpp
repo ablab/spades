@@ -488,7 +488,7 @@ void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
 			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	char n_str[20];
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-		sprintf(n_str, "contigs%d.fa", n);
+		sprintf(n_str, "%d.fa", n);
 
 		osequencestream oss(contigs_output_dir + n_str);
 
@@ -507,19 +507,19 @@ void SelectReadsForConsensus(Graph& g, const EdgeIndex<k + 1, Graph>& index ,vec
 		cur_num++;
 	}
 	INFO(cur_num << "contigs");
-	for( int i = 0; i < 2; i ++ ) {
+	for( int i = 1; i < 3; i ++ ) {
 		int read_num = 0;
 		osequencestream* mapped_reads[2000];
 		for(int j = 0; j < cur_num; j++){
-			string output_filename = consensus_output_dir+"reads" + ToString(j) + "_" + ToString(i)+".fa";
+			string output_filename = consensus_output_dir + ToString(j) + "_reads" + ToString(i)+".fa";
 			osequencestream* tmp = new osequencestream(output_filename);
 //			mapped_reads.push_back(tmp);
 			mapped_reads[j] = tmp;
 		}
 		SingleReadMapper<55, Graph> rm(g, index);
-		while (!reads[i]->eof()) {
+		while (!reads[i - 1]->eof()) {
 			io::SingleRead cur_read;
-			(*reads[i]) >> cur_read;
+			(*reads[i - 1]) >> cur_read;
 			vector<EdgeId> res = rm.GetContainingEdges(cur_read);
 			read_num++;
 			TRACE(read_num<< " mapped to"<< res.size() <<" contigs :, read"<< cur_read.sequence());
