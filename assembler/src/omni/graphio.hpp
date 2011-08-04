@@ -167,7 +167,21 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
 	FILE* file = fopen((file_name + ".prd").c_str(), "w");
 	DEBUG("Saving paired info, " << file_name <<" created");
 	assert(file != NULL);
-	fprintf(file, "%d\n", PIIndex.size());
+	if (filter_ == NULL) {
+		fprintf(file, "%d\n", PIIndex.size());
+	}
+	else {
+		int filteredPIIsize = 0;
+		for (auto iter = PIIndex.begin(); iter != PIIndex.end(); ++iter) {
+			vector<PairInfo<typename Graph::EdgeId> > pair_infos = *iter;
+			for(size_t i = 0; i < pair_infos.size(); i++) {
+				if (filter_->EdgeIsPresent(pair_infos[i].first) && filter_->EdgeIsPresent(pair_infos[i].second) ){
+					filteredPIIsize++;
+				}
+			}
+		}
+		fprintf(file, "%d\n", filteredPIIsize);
+	}
 	for (auto iter = PIIndex.begin(); iter != PIIndex.end(); ++iter) {
 		vector<PairInfo<typename Graph::EdgeId> > pair_infos = *iter;
 		for(size_t i = 0; i < pair_infos.size(); i++) {
@@ -259,7 +273,7 @@ void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name,
 		assert(read_count == 1);
 		char c = 'a';
 		while (c != '.') {
-			read_count == fscanf(file, "%c", &c);
+			read_count = fscanf(file, "%c", &c);
 			assert(read_count == 1);
 		}
 		read_count = fscanf(file, "\n");
