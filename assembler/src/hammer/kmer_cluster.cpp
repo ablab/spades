@@ -367,7 +367,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	}
 }
 
-void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq) {
+void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq, ofstream * ofs) {
 	
 	int effective_threads = min(nthreads_, tau_+1);
 	vector<unionFindClass *> uf(tau_ + 1);
@@ -385,7 +385,6 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq) {
 		vector<hint_t> block;
 		//size_t j = 0;
 		while (!(*vskpq)[i].emptyPQ()) {
-			//++j; if (j % 10000000 == 0) cout << "Processed (" << i << ") " << j << endl;
 			hint_t cur = (*vskpq)[i].nextPQ();
 
 			if ( PositionKMer::equalSubKMers(last, cur, &k_, tau_, i) ) { //add to current reads
@@ -398,7 +397,6 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq) {
 			}
 		}
 		processBlock(uf[i], block);
-		//cout << "Finished(" << i << ") " << endl;
 	}
 	TIMEDLN("All split kmer threads finished. Starting merge.");
 	
@@ -414,7 +412,7 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq) {
 	vector< vector< vector<int> > > blocksInPlace(nthreads_);
 
 	#pragma omp parallel for shared(blocksInPlace, classes) num_threads(nthreads_)
-	for (int i=0; i < classes.size(); ++i) {
+	for (size_t i=0; i < classes.size(); ++i) {
 		int n = omp_get_thread_num();
 		blocksInPlace[n].clear();
 		process_block_SIN(classes[i], blocksInPlace[n]);
@@ -423,44 +421,19 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq) {
 			if (blocksInPlace[n][m].size() == 1) {
 				if (k_[blocksInPlace[n][m][0]].second.count > GOOD_SINGLETON_THRESHOLD) {
 					k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
+					// cout << k_[blocksInPlace[n][m][0]].first.str() << " good" << endl;
+					(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>\n";
 				}
 			} else {
 				k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
+				// cout << k_[blocksInPlace[n][m][0]].first.str() << " center" << endl;
+				(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>\n";
 				for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
 					k_[blocksInPlace[n][m][j]].second.changeto = blocksInPlace[n][m][0];
 				}
 			}
 		}
 	}
-	
-	TIMEDLN("Centering finished.");
-	
-	/*ofstream outf; outf.open(dirprefix + "/reads.uf.corr");
-	size_t blockNum = 0;
-	for (int n=0; n < nthreads_; ++n) {
-		for (uint32_t i=0; i < blocks[n].size(); ++i) {
-			if (blocks[n][i].size() == 0) continue;
-			if (blocks[n][i].size() == 1) {
-				cout << "  kmer " << blocks[n][i][0] << " is good with count " << k_[blocks[n][i][0]].second.count << endl;
-				if (k_[blocks[n][i][0]].second.count > GOOD_SINGLETON_THRESHOLD) {
-					k_[blocks[n][i][0]].second.changeto = KMERSTAT_GOOD;
-				}
-				outf << blockNum << "\t" << k_[blocks[n][i][0]].first.str() << "\t" << k_[blocks[n][i][0]].second.count << "\t" << blocks[n][i].size() << "\t0.0\tgoodSingleton\t0" << endl;
-			} else {
-				cout << "  kmer " << blocks[n][i][0] << " is good as a center with count " << k_[blocks[n][i][0]].second.count << endl;
-				k_[blocks[n][i][0]].second.changeto = KMERSTAT_GOOD;
-				outf << blockNum << "\t" << k_[blocks[n][i][0]].first.str() << "\t" << k_[blocks[n][i][0]].second.count << "\t" << blocks[n][i].size() << "\t0.0\tcenter\t0" << endl;
-				for (uint32_t j=1; j < blocks[n][i].size(); ++j) {
-					cout << "  kmer " << blocks[n][i][j] << " should be changed to " << blocks[n][i][0] << endl;
-					cout << "       " << k_[blocks[n][i][j]].first.str() << "\n       " << k_[blocks[n][i][0]].first.str() << endl;
-
-					outf << blockNum << "\t" << k_[blocks[n][i][j]].first.str() << "\t" << k_[blocks[n][i][j]].second.count << "\t" << blocks[n][i].size() << "\t0.0\tchange\t0" << endl;
-					k_[blocks[n][i][j]].second.changeto = blocks[n][i][0];
-				}
-			}
-			++blockNum; outf << endl;
-		}
-	}
-	outf.close();*/
+	TIMEDLN("Centering finished.");	
 }
 
