@@ -14,16 +14,40 @@ namespace long_contigs {
 
 using namespace debruijn_graph;
 
+//Recounting lengths form all edges to path's end
+void RecountLengthsForward(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
+	lengths.clear();
+	double currentLength = 0;
+
+	for(auto iter = path.rbegin(); iter != path.rend(); ++iter) {
+		currentLength += g.length(*iter);
+		lengths.push_front(currentLength);
+	}
+}
+
+//Recounting lengths from path's start to all edges
+void RecountLengthsBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
+	lengths.clear();
+	double currentLength = 0;
+
+	for(auto iter = path.begin(); iter != path.end(); ++iter) {
+		lengths.push_back(currentLength);
+		currentLength += g.length(*iter);
+	}
+}
+
 // ====== Extension functions ======
 
+
 //Calculate weight for particular path extension
-double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, EdgeId e, PairedInfoIndex<Graph>& pairedInfo, bool forward) {
+double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, EdgeId e, PairedInfoIndexLibrary& pairedInfoLibrary, bool forward) {
 	double weight = 0;
 	int edgeLength = forward ? 0 : g.length(e);
 
 	for(size_t i = 0; i < path.size(); ++i) {
 		EdgeId edge = path[i];
-		omnigraph::PairedInfoIndex<Graph>::PairInfos pairs = forward ? pairedInfo.GetEdgePairInfo(edge, e) : pairedInfo.GetEdgePairInfo(e, edge);
+		omnigraph::PairedInfoIndex<Graph>::PairInfos pairs =
+				forward ? pairedInfoLibrary.pairedInfoIndex->GetEdgePairInfo(edge, e) : pairedInfoLibrary.pairedInfoIndex->GetEdgePairInfo(e, edge);
 		int distance = lengths[i] + edgeLength;
 
 		for (auto iter = pairs.begin(); iter != pairs.end(); ++iter) {
@@ -36,7 +60,7 @@ double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, 
 		}
 	}
 
-	return weight / (double) std::min(g.length(e), READ_SIZE);
+	return weight / (double) std::min(g.length(e), pairedInfoLibrary.readSize);
 }
 
 //Check whether selected extension is good enough
@@ -48,23 +72,27 @@ bool ExtensionGoodEnough(double weight) {
 //Choose best matching extension
 //Threshold to be discussed
 EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, const std::vector<EdgeId>& edges,
-		PathLengths& lengths, PairedInfoIndex<Graph>& pairedInfo, double& maxWeight, bool forward) {
-	INFO("Choosing extension " << (forward ? "forward" : "backward"));
+		PathLengths& lengths, PairedInfoIndices& pairedInfo, double& maxWeight, bool forward) {
+	//INFO("Choosing extension " << (forward ? "forward" : "backward"));
 
 	maxWeight = 0;
 	EdgeId bestEdge = 0;
 
 	for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
-		INFO("Calculating weight");
-		double weight = ExtentionWeight(g, path, lengths, *iter, pairedInfo, forward);
-		INFO("Weight " << weight);
+		//INFO("Calculating weight");
+		double weight = 0;
+		for (auto lib = pairedInfo.begin(); lib != pairedInfo.end(); ++lib) {
+			weight += ExtentionWeight(g, path, lengths, *iter, *lib, forward);
+			//INFO(weight);
+		}
+		//INFO("Weight " << weight);
 
 		if (weight > maxWeight) {
 			maxWeight = weight;
 			bestEdge = *iter;
 		}
 	}
-	INFO("Best " << maxWeight);
+	//INFO("Best " << maxWeight);
 
 	return ExtensionGoodEnough(maxWeight) ? bestEdge : 0;
 }
@@ -114,7 +142,7 @@ size_t CountLoopEdges(EdgeId lastEdge, CycleDetector& detector, bool fullRemoval
 //Cut loop forward
 void RemoveLoopForward(BidirectionalPath& path, CycleDetector& detector, bool fullRemoval) {
 	size_t edgesToRemove = CountLoopEdges(path.back(), detector, fullRemoval);
-	INFO("Removing loop of " << edgesToRemove << " edges");
+	//INFO("Removing loop of " << edgesToRemove << " edges");
 
 	for(size_t i = 0; i < edgesToRemove; ++i) {
 		path.pop_back();
@@ -123,7 +151,7 @@ void RemoveLoopForward(BidirectionalPath& path, CycleDetector& detector, bool fu
 
 void RemoveLoopBackward(BidirectionalPath& path, CycleDetector& detector, bool fullRemoval) {
 	size_t edgesToRemove = CountLoopEdges(path.front(), detector, fullRemoval);
-	INFO("Removing loop of " << edgesToRemove << " edges");
+	//INFO("Removing loop of " << edgesToRemove << " edges");
 
 	for(size_t i = 0; i < edgesToRemove; ++i) {
 		path.pop_front();
@@ -133,7 +161,7 @@ void RemoveLoopBackward(BidirectionalPath& path, CycleDetector& detector, bool f
 
 //Extend path forward
 bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
-		CycleDetector& detector, PairedInfoIndex<Graph>& pairedInfo) {
+		CycleDetector& detector, PairedInfoIndices& pairedInfo) {
 
 	double w;
 	std::vector<EdgeId> edges = g.OutgoingEdges(g.EdgeEnd(path.back()));
@@ -146,17 +174,15 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	IncreaseLengths(g, lengths, extension, true);
 
 	if (CheckCycle(path, extension, detector, w)) {
-		INFO("Loop found");
-		PrintPath(g, path);
-		PrintDetector(detector);
-
-		int aaa;
-		std::cin >> aaa;
+		//INFO("Loop found");
+		//PrintPath(g, path);
+		//PrintDetector(detector);
+		//MakeKeyPause();
 
 		RemoveLoopForward(path, detector, FULL_LOOP_REMOVAL);
-		PrintPath(g, path);
 
-		std::cin >> aaa;
+		//PrintPath(g, path);
+		//MakeKeyPause();
 		return false;
 	}
 
@@ -167,7 +193,7 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 
 //And backward
 bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
-		CycleDetector& detector, PairedInfoIndex<Graph>& pairedInfo) {
+		CycleDetector& detector, PairedInfoIndices& pairedInfo) {
 
 	double w;
 	std::vector<EdgeId> edges = g.IncomingEdges(g.EdgeStart(path.front()));
@@ -181,14 +207,14 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	IncreaseLengths(g, lengths, extension, false);
 
 	if (CheckCycle(path, extension, detector, w)) {
-		INFO("Loop found");
-		PrintPath(g, path);
-		PrintDetector(detector);
+		//INFO("Loop found");
+		//PrintPath(g, path);
+		//PrintDetector(detector);
 
 		//MakeKeyPause();
 
 		RemoveLoopBackward(path, detector, FULL_LOOP_REMOVAL);
-		PrintPath(g, path);
+		//PrintPath(g, path);
 
 		//MakeKeyPause();
 		return false;
@@ -200,7 +226,7 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 }
 
 //Grow selected seed in both directions
-void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndex<Graph>& pairedInfo) {
+void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo) {
 	PathLengths lengths;
 	CycleDetector detector;
 
@@ -208,9 +234,9 @@ void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndex<Graph>& pairedI
 
 	//PrintPath(g, seed, lengths);
 
-	INFO("Extending forward");
+	//INFO("Extending forward");
 	while (ExtendPathForward(g, seed, lengths, detector, pairedInfo)) {
-		INFO("Added edge");
+		//INFO("Added edge");
 	}
 
 	detector.clear();
@@ -218,12 +244,12 @@ void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndex<Graph>& pairedI
 
 	//PrintPath(g, seed, lengths);
 
-	INFO("Extending backward");
+	//INFO("Extending backward");
 	while (ExtendPathBackward(g, seed, lengths, detector, pairedInfo)) {
-		INFO("Added edge");
+		//INFO("Added edge");
 	}
 
-	INFO("Growing done");
+	//INFO("Growing done");
 }
 
 //Metrics for choosing seeds
@@ -232,7 +258,7 @@ size_t SeedPriority(const BidirectionalPath& seed) {
 }
 
 //Find paths with given seeds
-void FindPaths(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndex<Graph>& pairedInfo, std::vector<BidirectionalPath>& paths) {
+void FindPaths(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndices& pairedInfo, std::vector<BidirectionalPath>& paths) {
 	std::multimap<size_t, BidirectionalPath> priorityQueue;
 
 	INFO("Finding paths started");
@@ -250,6 +276,24 @@ void FindPaths(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndex<
 	}
 
 	INFO("Finding paths finished");
+}
+
+
+//Remove duplicate paths
+void RemoveDuplicate(const std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& output) {
+	for (auto path = paths.begin(); path != paths.end(); ++path) {
+		bool copy = true;
+		for (auto iter = output.begin(); iter != output.end(); ++iter) {
+			if (ComparePaths(*path, *iter)) {
+					copy = false;
+					break;
+			}
+		}
+
+		if (copy) {
+			output.push_back(*path);
+		}
+	}
 }
 
 

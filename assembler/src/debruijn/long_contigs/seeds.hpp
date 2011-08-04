@@ -98,7 +98,7 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 
 			//If extended till another seed, than concatenate them
 			if (nextStart != 0) {
-				INFO("Join paths");
+				//INFO("Join paths");
 				JoinPaths(newPath, starts[nextStart]);
 				starts.erase(nextStart);
 			}
@@ -123,27 +123,6 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 	INFO("Finding seeds finished");
 }
 
-//Recounting lengths form all edges to path's end
-void RecountLengthsForward(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
-	lengths.clear();
-	double currentLength = 0;
-
-	for(auto iter = path.rbegin(); iter != path.rend(); ++iter) {
-		currentLength += g.length(*iter);
-		lengths.push_front(currentLength);
-	}
-}
-
-//Recounting lengths from path's start to all edges
-void RecountLengthsBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
-	lengths.clear();
-	double currentLength = 0;
-
-	for(auto iter = path.begin(); iter != path.end(); ++iter) {
-		lengths.push_back(currentLength);
-		currentLength += g.length(*iter);
-	}
-}
 
 } // namespace long_contigs
 

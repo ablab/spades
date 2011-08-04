@@ -36,6 +36,7 @@ std::string MakeLaunchTimeDirName() {
 
 DECL_PROJECT_LOGGER("d")
 
+namespace long_contigs {
 
 template<size_t k, class ReadStream>
 void BuildDeBruijnGraph(ReadStream& stream,
@@ -67,8 +68,8 @@ void BuildDeBruijnGraph(ReadStream& stream,
 						paired_index, stream);
 			}
 		} else {
-			typedef SimpleReaderWrapper<ReadStream> UnitedStream;
-			UnitedStream united_stream(stream);
+			typedef io::ConvertingReaderWrapper UnitedStream;
+			UnitedStream united_stream(&stream);
 			ConstructGraphWithCoverage<k, UnitedStream> (g, index,
 					united_stream);
 		}
@@ -187,10 +188,10 @@ void BuildDeBruijnGraph(Graph& g,  PairedInfoIndex<Graph>& paired_index, EdgeInd
 	// read data ('genome')
 	std::string genome;
 	{
-		ireadstream genome_stream(genome_filename);
-		Read full_genome;
+		ReadStream genome_stream(genome_filename);
+		io::SingleRead full_genome;
 		genome_stream >> full_genome;
-		genome = full_genome.getSequenceString().substr(0, dataset_len); // cropped
+		genome = full_genome.GetSequenceString().substr(0, dataset_len); // cropped
 	}
 	sequence = Sequence(genome);
 	// assemble it!
@@ -210,13 +211,17 @@ void LoadFromFile(std::string fileName, Graph& g,  PairedInfoIndex<Graph>& paire
 	checkFileExistenceFATAL(genome_filename);
 	int dataset_len = CONFIG.read<int>(dataset + "_LEN");
 
+	  typedef io::Reader<io::SingleRead> ReadStream;
+	  typedef io::Reader<io::PairedRead> PairedReadStream;
+	  typedef io::RCReaderWrapper<io::PairedRead> RCStream;
+
 	// read data ('genome')
 	std::string genome;
 	{
-		ireadstream genome_stream(genome_filename);
-		Read full_genome;
+		ReadStream genome_stream(genome_filename);
+		io::SingleRead full_genome;
 		genome_stream >> full_genome;
-		genome = full_genome.getSequenceString().substr(0, dataset_len); // cropped
+		genome = full_genome.GetSequenceString().substr(0, dataset_len); // cropped
 	}
 	sequence = Sequence(genome);
 
@@ -227,6 +232,29 @@ void LoadFromFile(std::string fileName, Graph& g,  PairedInfoIndex<Graph>& paire
 	scanConjugateGraph(g, conj_IntIds,	fileName, paired_index);
 }
 
+template<size_t k>
+void AddEtalonInfo(Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence& genome, PairedInfoIndices& pairedInfos) {
+	size_t libCount = LC_CONFIG.read<size_t>("lib_count");
+
+	for (size_t i = 1; i <= libCount; ++i) {
+		std::string num = ToString<size_t>(i);
+		size_t insertSize = LC_CONFIG.read<size_t>("insert_size_" + num);
+		size_t readSize = LC_CONFIG.read<size_t>("read_size_" + num);
+		INFO("Generating info with read size " << readSize << ", insert size " << insertSize);
+
+		pairedInfos.push_back(PairedInfoIndexLibrary(readSize, insertSize, new PairedInfoIndex<Graph>(g, 0)));
+		FillEtalonPairedIndex<k> (g, *pairedInfos.back().pairedInfoIndex, index, insertSize, readSize, genome);
+	}
+}
+
+void DeleteEtalonInfo(PairedInfoIndices& pairedInfos) {
+	while (pairedInfos.size() > 1) {
+		delete pairedInfos.back().pairedInfoIndex;
+		pairedInfos.pop_back();
+	}
+}
+
+} // namespace long_contigs
 
 
 int main() {
@@ -236,42 +264,48 @@ int main() {
 
 	Graph g(K);
 	EdgeIndex<K + 1, Graph> index(g);
-	PairedInfoIndex<Graph> paired_index(g, 0);
+	PairedInfoIndex<Graph> pairedIndex(g, 0);
+	PairedInfoIndices pairedInfos;
 	Sequence sequence("");
 
 	std::vector<BidirectionalPath> seeds;
 	std::vector<BidirectionalPath> paths;
 
 	if (!LC_CONFIG.read<bool>("from_file")) {
-		BuildDeBruijnGraph<K>(g, paired_index, index, sequence);
+		BuildDeBruijnGraph<K>(g, pairedIndex, index, sequence);
 	}
 	else {
-		LoadFromFile<K>(LC_CONFIG.read<std::string>("graph_file"), g, paired_index, index, sequence);
+		std::string dataset = CONFIG.read<string>("dataset");
+		LoadFromFile<K>(LC_CONFIG.read<std::string>("graph_file_" + dataset), g, pairedIndex, index, sequence);
+	}
+
+	PairedInfoIndexLibrary basicPairedLib(LC_CONFIG.read<size_t>("read_size"), LC_CONFIG.read<size_t>("insert_size"), &pairedIndex);
+	pairedInfos.push_back(basicPairedLib);
+
+	if (LC_CONFIG.read<bool>("etalon_info_mode")) {
+		AddEtalonInfo<K>(g, index, sequence, pairedInfos);
 	}
 
 	FindSeeds(g, seeds);
+	INFO("Seeds");
+	PrintPathsShort(g, seeds);
+	FilterLowCovered(g, seeds, MIN_COVERAGE);
+	INFO("Filtered");
+	PrintPathsShort(g, seeds);
 
-	for(auto iter = seeds.begin(); iter != seeds.end(); ++iter) {
-		PrintPath(g, *iter);
-	}
+	size_t found = PathsInGenome<K>(g, index, sequence, seeds);
+	INFO("Good seeds found " << found << " in total " << seeds.size());
+	INFO("All seed coverage " << PathsCoverage(g, seeds));
 
-	INFO("Seeds length");
-	PrintPathLengthStats(g ,seeds);
-	INFO("Seeds edges count");
-	PrintPathEdgeLengthStats(seeds);
-	INFO("Seeds coverage");
-	PrintPathCoverage(g, seeds);
-
-	FindPaths(g, seeds, paired_index, paths);
-
+	FindPaths(g, seeds, pairedInfos, paths);
 	INFO("Final paths");
-	for(auto path = paths.begin(); path != paths.end(); ++path) {
-		PrintPath(g, *path);
-	}
+	PrintPathsShort(g, paths);
 
-	size_t found = PathsInGenome<K>(g, index, sequence, paths);
+	found = PathsInGenome<K>(g, index, sequence, paths);
 	INFO("Good paths found " << found << " in total " << paths.size());
 	INFO("Path coverage " << PathsCoverage(g, paths));
+
+	DeleteEtalonInfo(pairedInfos);
 	return 0;
 }
 

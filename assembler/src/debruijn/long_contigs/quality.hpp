@@ -102,12 +102,12 @@ size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Seque
 				size_t edges2 = FindInGenomeInexact(g, *iter, path2, pos2, len2);
 
 				if (edges1 > edges2) {
-					INFO("Path partly found, percent of edges matched " << (double) edges1 / iter->size() <<
-							", length percentage " << (double) len1 / PathLength(g, *iter));
+					INFO("Path partly found, edges matched " << edges1 << "/" << iter->size() <<
+							", length matched " << len1 << "/" << PathLength(g, *iter));
 				}
 				else {
-					INFO("Path partly found, percent of edges matched " << (double) edges2 / iter->size() <<
-												", length percentage " << (double) len2 / PathLength(g, *iter));
+					INFO("Path partly found, edges matched " << edges2 << "/" << iter->size() <<
+												", length matched " << len2 << "/" << PathLength(g, *iter));
 				}
 
 			}

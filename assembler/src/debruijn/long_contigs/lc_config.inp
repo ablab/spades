@@ -1,11 +1,26 @@
 #input options
 from_file = true
-graph_file = ./data/debruijn/08.02_18_45.QUAKE_CROPPED_400K/graph
+etalon_info_mode = true
+graph_file_QUAKE_CROPPED_400K = ./data/debruijn/08.04_17_25.QUAKE_CROPPED_400K/graph
+graph_file_QUAKE_CROPPED_100K = ./data/debruijn/08.04_17_17.QUAKE_CROPPED_100K/graph
+graph_file_QUAKE_CROPPED_10K = ./data/debruijn/08.04_17_23.QUAKE_CROPPED_10K/graph
 
 #paired info
+#basic lib
 read_size = 100
-lib_count = 2
-etalon_mode = true
+insert_size = 220 
+
+#additional libs
+lib_count = 0
+read_size_1 = 50
+insert_size_1 = 500
+read_size_2 = 50
+insert_size_2 = 1000
+
+
+#seed selection
+min_coverage = 0
+
 
 #extension selection
 real_distance_dev = 20
@@ -16,6 +31,7 @@ weight_threshold = 0
 #loops removal
 max_loops = 5
 full_loop_removal = true
+
 
 #stop criteria
 all_seeds = true
