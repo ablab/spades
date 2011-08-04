@@ -25,11 +25,12 @@ public:
 
 	osequencestream& operator<<(const Sequence& seq) {
 		string s = seq.str();
-		ofstream_ << "> contig_" << id_++ << " length=" << s.size() << endl;
+		ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << endl;
+		// Velvet format: NODE_1_length_24705_cov_358.255249
 		size_t cur = 0;
 		while (cur < s.size()) {
-			ofstream_ << s.substr(cur, 70) << endl;
-			cur += 70;
+			ofstream_ << s.substr(cur, 60) << endl;
+			cur += 60;
 		}
 		return *this;
 	}
