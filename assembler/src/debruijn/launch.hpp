@@ -174,7 +174,7 @@ string ConstructComponentName(string file_name, size_t cnt) {
 }
 
 template<class Graph>
-void PrintGraphComponents(const string& file_name, Graph& g,
+int PrintGraphComponents(const string& file_name, Graph& g,
 		size_t split_edge_length, IdTrackHandler<Graph> &old_IDs,
 		PairedInfoIndex<Graph> &paired_index,
 		EdgesPositionHandler<Graph> &edges_positions) {
@@ -182,13 +182,14 @@ void PrintGraphComponents(const string& file_name, Graph& g,
 	ComponentSizeFilter<Graph> checker(g, split_edge_length);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	size_t cnt = 1;
-	while (!splitter.Finished() && cnt <= 100) {
+	while (!splitter.Finished() && cnt <= 1000) {
 		string component_name = ConstructComponentName(file_name, cnt).c_str();
 		auto component = splitter.NextComponent();
 		EdgeVertexFilter<Graph>filter (g, component);
 		printGraph(g, old_IDs, component_name, paired_index, edges_positions, &filter);
 		cnt++;
 	}
+	return (cnt-1);
 
 }
 
@@ -505,6 +506,67 @@ void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
 	}INFO("Contigs written");
 }
 
+
+
+void ResolveOneComponent(const string& load_from_dir, const string& save_to_dir, int component_id, int k){
+	string load_from = ConstructComponentName(load_from_dir+"/graphCl", component_id);
+	string save_to = ConstructComponentName(save_to_dir+"/graph", component_id);
+
+	string save_resolving_history = ConstructComponentName(save_to_dir+"/resolve", component_id);
+	mkdir( save_resolving_history.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+
+	NCGraph new_graph(k);
+	IdTrackHandler<NCGraph> NewIntIds(new_graph);
+	PairedInfoIndex<NCGraph> new_index(new_graph);
+	EdgesPositionHandler<NCGraph> EdgePosBefore(new_graph);
+	scanNCGraph(new_graph, NewIntIds, load_from, new_index,
+			EdgePosBefore);
+
+	RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
+
+	omnigraph::WriteSimple(save_to + "_before.dot",
+			"no_repeat_graph", new_graph, IdTrackLabelerAfter);
+
+	NonconjugateDeBruijnGraph resolved_graph(k);
+	IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
+	EdgesPositionHandler<NCGraph> EdgePosAfter(resolved_graph);
+
+	ResolveRepeats(new_graph, NewIntIds, new_index, EdgePosBefore,
+			resolved_graph, Resolved_IntIds, EdgePosAfter,
+			save_resolving_history+"/");
+
+	RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
+			Resolved_IntIds);
+	omnigraph::WriteSimple(save_to + "_after.dot",
+			"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+
+	EdgesPosGraphLabeler<NCGraph> EdgePosLAfterLab(resolved_graph,
+			EdgePosAfter);
+
+	omnigraph::WriteSimple(save_resolving_history + "/repeats_resolved_after_pos.dot",
+			"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+
+	ClipTips(resolved_graph);
+	RemoveLowCoverageEdgesForResolver(resolved_graph);
+
+	omnigraph::WriteSimple(
+			save_resolving_history + "/repeats_resolved_after_und_cleared_pos.dot",
+			"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+	omnigraph::WriteSimple(
+			save_resolving_history + "/repeats_resolved_und_cleared.dot",
+			"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+	one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
+	N50enlarger.one_many_resolve();
+	omnigraph::WriteSimple(
+			save_to
+					+ "_finished.dot",
+			"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+}
+
+
+
+
+
 template<size_t k, class ReadStream>
 void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		bool paired_mode, bool rectangle_mode, bool etalon_info_mode,
@@ -525,6 +587,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	PairedInfoIndex<Graph> paired_index(g, 0);
 	PairedInfoIndex<Graph> etalon_paired_index(g, 0);
 	PairedInfoIndex<Graph> clustered_index(g);
+	int number_of_components = 0;
 
 	if (!from_saved) {
 
@@ -566,7 +629,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		WriteGraphComponents<k> (g, index, genome,
 				output_folder + "graph_components" + "/", "graph.dot",
 				"graph_component", insert_size);
-		PrintGraphComponents(output_folder + "graph_components/graph", g,
+		number_of_components = PrintGraphComponents(output_folder + "graph_components/graph", g,
 				insert_size, IntIds, paired_index, EdgePos);
 
 		if (paired_mode) {
@@ -592,7 +655,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 					clustered_index, etalon_paired_index, output_folder);
 		}
 
-		PrintGraphComponents(output_folder + "graph_components/graphCl", g,
+		number_of_components = PrintGraphComponents(output_folder + "graph_components/graphCl", g,
 				insert_size, IntIds, clustered_index, EdgePos);
 
 
@@ -718,6 +781,14 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 		OutputSingleFileContigs(resolved_graph, output_folder + "consensus/");
 		OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
+
+		if (number_of_components > 0) {
+			string output_comp = output_folder + "resolved_comp";
+			mkdir( output_comp.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+
+			for (int i = 1; i <= number_of_components; i++)
+				ResolveOneComponent(output_folder+"graph_components/", output_comp+"/", i, k);
+		}
 
 	}
 	if (!paired_mode)
