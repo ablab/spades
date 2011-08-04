@@ -372,24 +372,24 @@ class NewEtalonPairedInfoCounter {
 
 	void ProcessSequence(const Sequence& sequence,
 			set<PairInfo<EdgeId>>& temporary_info) {
-		int mod_gap = (gap_ > delta_) ? int(gap_) - int(delta_) : 0;
+		int mod_gap = (gap_ > delta_) ? gap_ - delta_ : 0;
 		Seq<k + 1> left(sequence);
-		0 >> left;
-		for (size_t left_idx = 0; left_idx <= sequence.size() - insert_size_ - gap_; ++left_idx) {
+		left >> 0;
+		for (size_t left_idx = 0; left_idx + k + 1 + mod_gap <= sequence.size(); ++left_idx) {
 			left = left << sequence[left_idx + k];
-			size_t right_idx = left_idx + read_length_ + mod_gap;
+			size_t right_idx = left_idx + mod_gap;
 			if (!index_.containsInIndex(left)) {
 				continue;
 			}
 			pair<EdgeId, size_t> left_pos = index_.get(left);
 			Seq<k + 1> right(sequence, right_idx);
-			0 >> right;
-			for (; right_idx < left_idx + insert_size_ + gap_ - k && right_idx < sequence.size() - k; ++right_idx) {
+			right >> 0;
+			for (; right_idx + k + 1 <= left_idx + insert_size_ + delta_ && right_idx + k + 1 <= sequence.size(); ++right_idx) {
 				right << sequence[right_idx + k];
-				pair<EdgeId, size_t> right_pos = index_.get(right);
 				if (!index_.containsInIndex(right)) {
 					continue;
 				}
+				pair<EdgeId, size_t> right_pos = index_.get(right);
 				AddEtalonInfo(temporary_info, left_pos.first, right_pos.first, right_idx - left_idx + left_pos.second - right_pos.second);
 			}
 		}
