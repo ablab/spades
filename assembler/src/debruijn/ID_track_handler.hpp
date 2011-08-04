@@ -43,7 +43,10 @@ public:
 	}
 	realIdType AddEdgeIntId(EdgeId NewEdgeId) {
 		realIdType PreviousId = ReturnIntId(NewEdgeId);
-		if (PreviousId != 0) EdgeOriginalId.erase(PreviousId);
+		if (PreviousId != 0) {
+			return PreviousId;
+		}
+//			EdgeOriginalId.erase(PreviousId);
 		MaxEdgeIntId++;
 		EdgeIntId[NewEdgeId] = MaxEdgeIntId;
 		EdgeOriginalId[MaxEdgeIntId] = NewEdgeId;
@@ -135,12 +138,18 @@ public:
 	/*	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
 	 }
 
-	 virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-	 }
 
 	 virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
 	 }
 	 */
+
+	 virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+		 realIdType RealEdgeId = ReturnIntId(edge1);
+		 ClearEdgeId(edge1);
+		 AddEdgeIntId(new_edge, RealEdgeId);
+	 }
+
+
 	virtual void HandleAdd(VertexId v) {
 		AddVertexIntId(v);
 	}
