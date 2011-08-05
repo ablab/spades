@@ -32,8 +32,8 @@ private:
 		DifferentDistancesCallback<Graph> callback(graph_);
 		PathProcessor<Graph> path_processor(
 				graph_,
-				0. + gap_ - delta_ - graph_.length(first) - graph_.length(
-						second), insert_size_ + delta_, graph_.EdgeEnd(first),
+				0. + gap_  + 2 * (graph_.k() + 1) - graph_.k() - delta_ - graph_.length(first) - graph_.length(
+						second), insert_size_ - graph_.k() - 2 + delta_, graph_.EdgeEnd(first),
 				graph_.EdgeStart(second), callback);
 		path_processor.Process();
 		auto result = callback.distances();
