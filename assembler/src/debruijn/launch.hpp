@@ -517,7 +517,7 @@ void SelectReadsForConsensus(Graph& g, const EdgeIndex<k + 1, Graph>& index ,vec
 //			mapped_reads.push_back(tmp);
 			mapped_reads[j] = tmp;
 		}
-		SingleReadMapper<55, Graph> rm(g, index);
+		SingleReadMapper<k, Graph> rm(g, index);
 		while (!reads[i - 1]->eof()) {
 			io::SingleRead cur_read;
 			(*reads[i - 1]) >> cur_read;
