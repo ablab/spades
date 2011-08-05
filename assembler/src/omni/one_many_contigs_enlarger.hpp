@@ -18,34 +18,46 @@ class one_many_contigs_enlarger {
 public:
 	one_many_contigs_enlarger(Graph &g): g_(g){
 	}
+	void Loops_resolve(){
+//ToDo: Think about good loop resolver
+		INFO("All loops with length < 250 just removed");
+		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
+			if ((g_.EdgeStart(*iter) == g_.EdgeEnd(*iter))&&(g_.length(*iter) < 250))
+				g_.DeleteEdge(*iter);
+		}
+	}
+
 	void one_many_resolve(){
 		INFO("one_many_resolve");
+		Loops_resolve();
 		int inc_count;
 		int out_count;
 		for (auto iter = g_.SmartVertexBegin(); ! iter.IsEnd(); ++iter) {
 			VertexId vertex = *iter;
 			DEBUG(vertex);
-			if ((g_.OutgoingEdgeCount(vertex) == 1) && ((inc_count = g_.IncomingEdgeCount(vertex)) > 1)){
+			if ((g_.OutgoingEdgeCount(vertex) == 1) && ((inc_count = g_.IncomingEdgeCount(vertex)) >= 1)){
 				EdgeId unique = g_.GetUniqueOutgoingEdge(vertex);
-				vector<EdgeId> incEdges = g_.IncomingEdges(vertex);
-				for(int j = 0; j < inc_count; j++) {
-					VertexId tmp_v = g_.AddVertex();
-					EdgeId edge2 = g_.AddEdge(tmp_v, g_.EdgeEnd(unique), g_.EdgeNucls(unique));
-					EdgeId edge1 = g_.AddEdge(g_.EdgeStart(incEdges[j]), tmp_v, g_.EdgeNucls(incEdges[j]));
-					vector<EdgeId> toMerge;
-					toMerge.push_back(edge1);
-					toMerge.push_back(edge2);
-					DEBUG("first part ");
-					g_.MergePath(toMerge);
+				if ((g_.EdgeStart(unique) != g_.EdgeEnd(unique))){
+					vector<EdgeId> incEdges = g_.IncomingEdges(vertex);
+					for(int j = 0; j < inc_count; j++) {
+						VertexId tmp_v = g_.AddVertex();
+						EdgeId edge2 = g_.AddEdge(tmp_v, g_.EdgeEnd(unique), g_.EdgeNucls(unique));
+						EdgeId edge1 = g_.AddEdge(g_.EdgeStart(incEdges[j]), tmp_v, g_.EdgeNucls(incEdges[j]));
+						vector<EdgeId> toMerge;
+						toMerge.push_back(edge1);
+						toMerge.push_back(edge2);
+						DEBUG("first part ");
+						g_.MergePath(toMerge);
+					}
+					g_.ForceDeleteVertex(vertex);
 				}
-				g_.ForceDeleteVertex(vertex);
 			}
 		}
 
 
 		for (auto iter = g_.SmartVertexBegin(); ! iter.IsEnd(); ++iter){
 			VertexId vertex = *iter;
-			if (((out_count = g_.OutgoingEdgeCount(vertex)) > 1) && (g_.IncomingEdgeCount(vertex) == 1)){
+			if (((out_count = g_.OutgoingEdgeCount(vertex)) >= 1) && (g_.IncomingEdgeCount(vertex) == 1)){
 				EdgeId unique = g_.GetUniqueIncomingEdge(vertex);
 				vector<EdgeId> outEdges = g_.OutgoingEdges(vertex);
 				for(int j = 0; j < out_count; j++) {

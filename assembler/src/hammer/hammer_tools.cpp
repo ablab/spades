@@ -93,6 +93,7 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 
 	#pragma omp parallel for shared(vtmp) num_threads(nthreads)
 	for(size_t i=0; i < PositionKMer::pr->size(); ++i) {
+		if (PositionKMer::pr->at(i).bad()) continue;
 		AddKMerNos(PositionKMer::pr->at(i), i, &vtmp[omp_get_thread_num()]);
 		//if ( i % 1000000 == 0 ) cout << "Read no. " << i << " processed by thread " << omp_get_thread_num() << "." << endl;
 	}
@@ -102,7 +103,6 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 		vv->insert(vv->end(), vtmp[n].begin(), vtmp[n].end());
 		vtmp[n].clear();
 	}
-	//cout << "Vectors of k-mers joined. Got a vector of size " << vv->size() << "." << endl;
 }
 
 void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers, vector<SubKMerPQ> * vskpq) {
@@ -148,7 +148,7 @@ bool CorrectRead(const vector<KMerCount> & km, hint_t readno, ofstream * ofs) {
 	vector<int> vA(read_size, 0), vC(read_size, 0), vG(read_size, 0), vT(read_size, 0);
 	vector< vector<int> > v;  // A=0, C=1, G=2, T=3
 	v.push_back(vA); v.push_back(vC); v.push_back(vG); v.push_back(vT);
-	pr.setBad(true);
+	PositionKMer::rv_bad->at(readno) = true;
 
 	bool changedRead = false;
 	pair<uint32_t, hint_t> it = make_pair( -1, -1 );
@@ -158,13 +158,13 @@ bool CorrectRead(const vector<KMerCount> & km, hint_t readno, ofstream * ofs) {
 		const KMerStat & stat = km[it.second].second;
 
 		if (stat.changeto == KMERSTAT_GOOD) {
-			pr.setBad(false);
+			PositionKMer::rv_bad->at(readno) = false;
 			for (size_t j=0; j<K; ++j) {
 				v[dignucl(kmer[j])][pos+j]++;
 			}
 		} else {
 			if (stat.changeto < KMERSTAT_CHANGE) {
-				pr.setBad(false);
+				PositionKMer::rv_bad->at(readno) = false;
 				const PositionKMer & newkmer = km[ stat.changeto ].first;
 				
 				for (size_t j=0; j<K; ++j) {
@@ -190,13 +190,13 @@ bool CorrectRead(const vector<KMerCount> & km, hint_t readno, ofstream * ofs) {
 		const KMerStat & stat = km[it.second].second;
 
 		if (stat.changeto == KMERSTAT_GOOD) {
-			pr.setBad(false);
+			PositionKMer::rv_bad->at(readno) = false;
 			for (size_t j=0; j<K; ++j) {
 				v[complement(dignucl(kmer[j]))][read_size-pos-j-1]++;
 			}
 		} else {
 			if (stat.changeto < KMERSTAT_CHANGE) {
-				pr.setBad(false);
+				PositionKMer::rv_bad->at(readno) = false;
 				const PositionKMer & newkmer = km[ stat.changeto ].first;
 
 				for (size_t j=0; j<K; ++j) {
@@ -298,9 +298,10 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 	hint_t kmerno = 0;
 
 	while(pq.size()) {
-		PriorityQueueElement pqel = pq.top(); pq.pop();
+		const PriorityQueueElement & pqel = pq.top();
 		if ( !(cur_min == pqel) ) {
 			cur_min = pqel;
+			//cout << curKMerCount.first.str() << "\t" << curKMerCount.second.count << endl;
 			kmers->push_back(curKMerCount);
 			curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD) );
 			++kmerno;			
@@ -308,9 +309,13 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 		curKMerCount.second.count++;
 		PositionKMer::blobkmers[ pqel.kmerno.index ] = kmerno;
 
-		++it[pqel.n];
-		if ( it[pqel.n] != it_end[pqel.n] ) pq.push( PriorityQueueElement(*(it[pqel.n]), pqel.n) );
+		int nn = pqel.n;
+		vector<KMerNo>::iterator & it_cur = it[nn];
+		pq.pop();
+		++it_cur;
+		if ( it_cur != it_end[nn] ) pq.push( PriorityQueueElement(*it_cur, nn) );
 	}
+	//cout << curKMerCount.first.str() << "\t" << curKMerCount.second.count << endl;
 	kmers->push_back(curKMerCount);
 }
 

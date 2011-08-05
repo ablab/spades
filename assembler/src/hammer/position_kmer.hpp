@@ -22,6 +22,7 @@ class PositionKMer {
   public:
 	static std::vector<PositionRead> * pr;
 	static std::vector<Read> * rv;
+	static std::vector<bool> * rv_bad;
 	static hint_t revNo;
 
 	static char* blob;

@@ -5,6 +5,8 @@
 #include "simple_tools.hpp"
 #include "xmath.h"
 #include "paired_info.hpp"
+#include <iostream>
+#include <fstream>
 #include <map>
 
 namespace omnigraph {
@@ -433,9 +435,12 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef PairInfo<EdgeId> Info;
 	typedef typename PairedInfoIndex<Graph>::PairInfos Infos;
+	Graph &graph_;
+	PairedInfoIndex<Graph>& pair_info_;
 	PairedInfoIndex<Graph>& estimated_pair_info_;
 	PairedInfoIndex<Graph>& etalon_pair_info_;
 	vector<double> false_positive_weights_;
+	set<Info> false_positive_infos_;
 	vector<double> perfect_match_weights_;
 	//(weight, estimated_variance - actual_variance, number of etalon points)
 	vector<pair<pair<double, double> , size_t>> imperfect_match_stat_;
@@ -444,6 +449,11 @@ private:
 
 	void HandleFalsePositive(const Info& estimated) {
 		DEBUG("Handling false positive " << estimated);
+		false_positive_infos_.insert(estimated);
+		//		false_positive_weights_.push_back(
+		//				estimated.weight
+		//						/ std::min(graph_.length(estimated.first), 50u)
+		//						/ std::min(graph_.length(estimated.second), 50u));
 		false_positive_weights_.push_back(estimated.weight);
 	}
 
@@ -454,6 +464,10 @@ private:
 
 	void HandlePerfectMatch(const Info& etalon, const Info& estimated) {
 		//		DEBUG("Handling perfect match " << etalon << " " << estimated);
+		//		perfect_match_weights_.push_back(
+		//				estimated.weight
+		//						/ std::min(graph_.length(estimated.first), 50u)
+		//						/ std::min(graph_.length(estimated.second), 50u));
 		perfect_match_weights_.push_back(estimated.weight);
 	}
 
@@ -463,17 +477,15 @@ private:
 				- etalon_matches[0].d;
 		imperfect_match_stat_.push_back(
 				make_pair(
-						make_pair(
-								estimated_cluster.weight,
-								estimated_cluster.variance
-										- etalon_variance),
+						make_pair(estimated_cluster.weight,
+								estimated_cluster.variance - etalon_variance),
 						etalon_matches.size()));
 	}
 
-//	void Flush() {
-//		ProcessImperfectMatch(last_estimated_imperfect_match_,
-//				last_etalon_imperfect_matches_);
-//	}
+	//	void Flush() {
+	//		ProcessImperfectMatch(last_estimated_imperfect_match_,
+	//				last_etalon_imperfect_matches_);
+	//	}
 
 	void HandlePairsNotInEtalon(
 			const set<pair<EdgeId, EdgeId>>& pairs_in_etalon) {
@@ -576,24 +588,18 @@ private:
 			//			DEBUG("Handling false positives beyond all etalons");
 			HandleFalseNegative(etalon_infos[etalon_idx++]);
 		}
-//		Flush();
+		//		Flush();
 	}
 
 	void ReportFalsePositiveWeights() {
 		sort(false_positive_weights_.begin(), false_positive_weights_.end());
 
-		stringstream ss;
-		copy(false_positive_weights_.begin(), false_positive_weights_.end(),
-				ostream_iterator<double> (ss, ", "));
-		INFO("False positive count: " << false_positive_weights_.size() << ". False positive weights: " << ss.str());
+		INFO("False positive count: " << false_positive_weights_.size());
 	}
 
 	void ReportPerfectMatchWeights() {
 		sort(perfect_match_weights_.begin(), perfect_match_weights_.end());
-		stringstream ss;
-		copy(perfect_match_weights_.begin(), perfect_match_weights_.end(),
-				ostream_iterator<double> (ss, ", "));
-		INFO("Perfect match count: " << perfect_match_weights_.size() << ". Perfect match weights: " << ss.str());
+		INFO("Perfect match count: " << perfect_match_weights_.size());
 	}
 
 	void ReportImperfectMatchWeights() {
@@ -607,9 +613,11 @@ private:
 	}
 
 public:
-	EstimationQualityStat(PairedInfoIndex<Graph>& estimated_pair_info,
+	EstimationQualityStat(Graph &graph, PairedInfoIndex<Graph>& pair_info,
+			PairedInfoIndex<Graph>& estimated_pair_info,
 			PairedInfoIndex<Graph>& etalon_pair_info) :
-		estimated_pair_info_(estimated_pair_info),
+		graph_(graph), pair_info_(pair_info),
+				estimated_pair_info_(estimated_pair_info),
 				etalon_pair_info_(etalon_pair_info), false_negative_count_(0) {
 	}
 
@@ -656,6 +664,63 @@ public:
 
 	size_t false_negative_count() {
 		return false_negative_count_;
+	}
+
+	void WriteEstmationStats(const string &output_folder) {
+		ofstream stream;
+		stream.open(output_folder + "/perfect.inf");
+		copy(perfect_match_weights_.begin(), perfect_match_weights_.end(),
+				ostream_iterator<double> (stream, "\n"));
+		stream.close();
+
+		stream.open(output_folder + "/false_positive.inf");
+		copy(false_positive_weights_.begin(), false_positive_weights_.end(),
+				ostream_iterator<double> (stream, "\n"));
+		stream.close();
+		WriteWorstEdgesStat(output_folder, 1000000);
+	}
+
+	void WriteEdgePairInfo(const string &file_name, Infos infos) {
+		ofstream stream;
+		stream.open(file_name);
+		for (size_t i = 0; i < infos.size(); i++) {
+			stream << infos[i] << endl;
+		}
+		stream.close();
+	}
+
+	string ConstructEdgePairFileName(const string output_folder,
+			const string &name, const string &modifier, size_t index) {
+		stringstream ss;
+		ss.clear();
+		ss << output_folder << "/" << name << "_" << index << "_" << modifier
+				<< ".inf";
+		return ss.str();
+	}
+
+	void WriteWorstEdgesStat(const string &output_folder, double bound) {
+		size_t count = 0;
+		for (auto iterator = false_positive_infos_.begin(); iterator
+				!= false_positive_infos_.end(); ++iterator) {
+			if (iterator->weight > bound) {
+				WriteEdgePairInfo(
+						ConstructEdgePairFileName(output_folder, "fp",
+								"histogram", count),
+						pair_info_.GetEdgePairInfo(iterator->first,
+								iterator->second));
+				WriteEdgePairInfo(
+						ConstructEdgePairFileName(output_folder, "fp",
+								"estimated", count),
+						estimated_pair_info_.GetEdgePairInfo(iterator->first,
+								iterator->second));
+				WriteEdgePairInfo(
+						ConstructEdgePairFileName(output_folder, "fp",
+								"etalon", count),
+						etalon_pair_info_.GetEdgePairInfo(iterator->first,
+								iterator->second));
+				count++;
+			}
+		}
 	}
 
 };
