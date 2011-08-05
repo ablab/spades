@@ -123,7 +123,6 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 	INFO("Finding seeds finished");
 }
 
-
 } // namespace long_contigs
 
 

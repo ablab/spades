@@ -8,6 +8,8 @@
 #ifndef QUALITY_HPP_
 #define QUALITY_HPP_
 
+#include "lc_common.hpp"
+
 namespace long_contigs {
 
 using namespace debruijn_graph;
@@ -21,16 +23,14 @@ size_t FindInGenomePath(BidirectionalPath& myPath, Path<Graph::EdgeId>& genomePa
 		return -1;
 	}
 
-	for (size_t i = 0; i < genomePath.size() - myPath.size() + 1; ++i) {
+	for (size_t i = 0; i < genomePath.size(); ++i) {
 		bool found = true;
 
-		size_t j = i;
-		for(auto iter = myPath.begin(); iter != myPath.end(); ++iter) {
-			if (*iter != genomePath[j]) {
+		for (size_t j = 0; j < myPath.size() && i + j < genomePath.size(); ++j) {
+			if (myPath[j] != genomePath[i + j]) {
 				found = false;
 				break;
 			}
-			++j;
 		}
 
 		if (found) {
@@ -48,18 +48,15 @@ size_t FindInGenomeInexact(Graph& g, BidirectionalPath& myPath, Path<Graph::Edge
 	}
 
 	size_t maxEdgesMatched = 0;
-	for (size_t i = 0; i < genomePath.size() - myPath.size() + 1; ++i) {
-
-		size_t j = i;
+	for (size_t i = 0; i < genomePath.size(); ++i) {
 		size_t edgesMatched = 0;
 		size_t lengthMatched = 0;
 
-		for(auto iter = myPath.begin(); iter != myPath.end(); ++iter) {
-			if (*iter == genomePath[j]) {
+		for (size_t j = 0; j < myPath.size() && i + j < genomePath.size(); ++j) {
+			if (myPath[j] == genomePath[i + j]) {
 				++edgesMatched;
-				lengthMatched += g.length(*iter);
+				lengthMatched += g.length(myPath[j]);
 			}
-			++j;
 		}
 
 		if (edgesMatched > maxEdgesMatched) {
@@ -75,9 +72,8 @@ size_t FindInGenomeInexact(Graph& g, BidirectionalPath& myPath, Path<Graph::Edge
 
 //Count all paths in genome paths
 template<size_t k>
-size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Sequence& genome, std::vector<BidirectionalPath>& paths) {
-	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
-	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
+size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Sequence& genome, std::vector<BidirectionalPath>& paths,
+		Path<typename Graph::EdgeId>& path1, Path<typename Graph::EdgeId>& path2) {
 
 	size_t pathCount = 0;
 	for(auto iter = paths.begin(); iter != paths.end(); ++iter) {
@@ -104,16 +100,31 @@ size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Seque
 				if (edges1 > edges2) {
 					INFO("Path partly found, edges matched " << edges1 << "/" << iter->size() <<
 							", length matched " << len1 << "/" << PathLength(g, *iter));
+
+					//PrintPath(g, *iter);
+					//PrintPathFromTo(g, path1, pos1, pos1 + iter->size());
 				}
 				else {
 					INFO("Path partly found, edges matched " << edges2 << "/" << iter->size() <<
 												", length matched " << len2 << "/" << PathLength(g, *iter));
+
+					//PrintPath(g, *iter);
+					//PrintPathFromTo(g, path2, pos2, pos2 + iter->size());
 				}
 
 			}
 		}
 	}
 	return pathCount;
+}
+
+//Count all paths in genome paths
+template<size_t k>
+size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Sequence& genome, std::vector<BidirectionalPath>& paths) {
+	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
+	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
+
+	return PathsInGenome(g, index, genome, paths, path1, path2);
 }
 
 

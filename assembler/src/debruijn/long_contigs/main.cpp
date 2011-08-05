@@ -9,15 +9,13 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "../launch.hpp"
-#include "../config.hpp"
-#include "../../common/logging.hpp"
-#include "../../common/simple_tools.hpp"
-
 #include "lc_common.hpp"
 #include "seeds.hpp"
 #include "paths.hpp"
 #include "quality.hpp"
+#include "visualize.hpp"
+
+#include "../../common/simple_tools.hpp"
 
 namespace {
 
@@ -256,11 +254,13 @@ void DeleteEtalonInfo(PairedInfoIndices& pairedInfos) {
 
 } // namespace long_contigs
 
-
 int main() {
 	using namespace long_contigs;
 
-	LoadLCConstants();
+	checkFileExistenceFATAL(LC_CONFIG_FILENAME);
+	checkFileExistenceFATAL(CONFIG_FILENAME);
+
+	double MIN_COVERAGE = LC_CONFIG.read<double>("min_coverage");
 
 	Graph g(K);
 	EdgeIndex<K + 1, Graph> index(g);
@@ -271,13 +271,23 @@ int main() {
 	std::vector<BidirectionalPath> seeds;
 	std::vector<BidirectionalPath> paths;
 
+	std::string dataset = CONFIG.read<string>("dataset");
+	string output_root = CONFIG.read<string>("output_dir");
+	string output_dir_suffix = MakeLaunchTimeDirName()+ "." + dataset + "/";
+	string output_dir = output_root + output_dir_suffix;
+
 	if (!LC_CONFIG.read<bool>("from_file")) {
 		BuildDeBruijnGraph<K>(g, pairedIndex, index, sequence);
 	}
 	else {
-		std::string dataset = CONFIG.read<string>("dataset");
+		mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+
 		LoadFromFile<K>(LC_CONFIG.read<std::string>("graph_file_" + dataset), g, pairedIndex, index, sequence);
 	}
+
+	Path<Graph::EdgeId> path1 = FindGenomePath<K> (sequence, g, index);
+	Path<Graph::EdgeId> path2 = FindGenomePath<K> (!sequence, g, index);
+
 
 	PairedInfoIndexLibrary basicPairedLib(LC_CONFIG.read<size_t>("read_size"), LC_CONFIG.read<size_t>("insert_size"), &pairedIndex);
 	pairedInfos.push_back(basicPairedLib);
@@ -289,21 +299,33 @@ int main() {
 	FindSeeds(g, seeds);
 	INFO("Seeds");
 	PrintPathsShort(g, seeds);
+
+
 	FilterLowCovered(g, seeds, MIN_COVERAGE);
 	INFO("Filtered");
 	PrintPathsShort(g, seeds);
 
-	size_t found = PathsInGenome<K>(g, index, sequence, seeds);
+	size_t found = PathsInGenome<K>(g, index, sequence, seeds, path1, path2);
 	INFO("Good seeds found " << found << " in total " << seeds.size());
 	INFO("All seed coverage " << PathsCoverage(g, seeds));
 
+	WriteGraphWithPathsSimple(output_dir + "seeds.dot", "seeds", g, seeds, path1, path2);
+
+	MakeKeyPause();
 	FindPaths(g, seeds, pairedInfos, paths);
 	INFO("Final paths");
 	PrintPathsShort(g, paths);
 
-	found = PathsInGenome<K>(g, index, sequence, paths);
-	INFO("Good paths found " << found << " in total " << paths.size());
-	INFO("Path coverage " << PathsCoverage(g, paths));
+	std::vector<BidirectionalPath> result;
+	RemoveDuplicate(paths, result);
+	INFO("Final paths");
+	PrintPathsShort(g, result);
+
+	found = PathsInGenome<K>(g, index, sequence, result, path1, path2);
+	INFO("Good paths found " << found << " in total " << result.size());
+	INFO("Path coverage " << PathsCoverage(g, result));
+
+	WriteGraphWithPathsSimple(output_dir + "paths.dot", "paths", g, result, path1, path2);
 
 	DeleteEtalonInfo(pairedInfos);
 	return 0;

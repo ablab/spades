@@ -14,30 +14,15 @@
 #include <map>
 
 #include "../launch.hpp"
-#include "../../omni/paired_info.hpp"
 #include "../../common/logging.hpp"
+#include "../new_debruijn.hpp"
+#include "../config.hpp"
 
 #include "lc_config.hpp"
 
 namespace long_contigs {
 
 using namespace debruijn_graph;
-
-//Heuristic constants
-size_t READ_SIZE;
-
-int DISTANCE_DEV;
-size_t WEIGHT_TRESHOLD;
-
-size_t MAX_LOOPS;
-bool FULL_LOOP_REMOVAL;
-
-bool ALL_SEEDS;
-double EDGE_COVERAGE_TRESHOLD;
-double LENGTH_COVERAGE_TRESHOLD;
-
-size_t MIN_COVERAGE;
-
 
 //Deque used for extending path in both directions
 typedef std::deque<EdgeId> BidirectionalPath;
@@ -57,27 +42,6 @@ struct PairedInfoIndexLibrary {
 typedef std::vector<PairedInfoIndexLibrary> PairedInfoIndices;
 
 // ====== Support functions ======
-
-//Heuristic constants loader
-void LoadLCConstants() {
-	checkFileExistenceFATAL(LC_CONFIG_FILENAME);
-	checkFileExistenceFATAL(CONFIG_FILENAME);
-
-	READ_SIZE = LC_CONFIG.read<size_t>("read_size");
-
-	DISTANCE_DEV = CONFIG.read<bool>("etalon_info_mode") ? LC_CONFIG.read<int>("etalon_distance_dev") : LC_CONFIG.read<int>("real_distance_dev");
-	WEIGHT_TRESHOLD = LC_CONFIG.read<size_t>("weight_threshold");
-
-	MAX_LOOPS = LC_CONFIG.read<size_t>("max_loops");
-	FULL_LOOP_REMOVAL = LC_CONFIG.read<bool>("full_loop_removal");
-
-	ALL_SEEDS = LC_CONFIG.read<bool>("all_seeds");
-	EDGE_COVERAGE_TRESHOLD = LC_CONFIG.read<double>("edge_coverage");
-	LENGTH_COVERAGE_TRESHOLD = LC_CONFIG.read<double>("len_coverage");
-
-	MIN_COVERAGE = LC_CONFIG.read<size_t>("min_coverage");
-}
-
 //Pause to see output
 void MakeKeyPause() {
 	int v;
@@ -112,6 +76,7 @@ void PrintPathEdgeLengthStats(std::vector<BidirectionalPath>& paths) {
 		++lengthMap[iter->size()];
 	}
 
+	INFO("Total paths " << paths.size());
 	INFO("Edges in path : path count");
 	for(auto iter = lengthMap.begin(); iter != lengthMap.end(); ++iter) {
 		INFO(iter->first << " : " << iter->second);
@@ -126,6 +91,7 @@ void PrintPathLengthStats(Graph& g, std::vector<BidirectionalPath>& paths) {
 		++lengthMap[PathLength(g, *iter)];
 	}
 
+	INFO("Total paths " << paths.size());
 	INFO("Path length : paths count");
 	for(auto iter = lengthMap.begin(); iter != lengthMap.end(); ++iter) {
 		INFO(iter->first << " : " << iter->second);
@@ -202,6 +168,7 @@ double PathsLengthCoverage(Graph& g, std::vector<BidirectionalPath>& paths) {
 
 //Print short info about paths paths (length and edge count)
 void PrintPathsShort(Graph& g, std::vector<BidirectionalPath>& paths) {
+	INFO("Total paths " << paths.size());
 	INFO("Path length : edge count")
 	for(auto iter = paths.begin(); iter != paths.end(); ++iter) {
 		INFO(PathLength(g, *iter) << " : " << iter->size());
@@ -222,6 +189,34 @@ void PrintPath(Graph& g, BidirectionalPath& path) {
 	INFO("Path " << &path)
 	INFO("#, edge, length")
 	for(size_t i = 0; i < path.size(); ++i) {
+		INFO(i << ", " << path[i] << ", " << g.length(path[i]));
+	}
+}
+
+//[,)
+void PrintPathFromTo(Graph& g, Path<Graph::EdgeId>& path, size_t startPos = 0, size_t endPos = 0) {
+	if (startPos >= path.size() || endPos > path.size()) return;
+
+	if (endPos == 0) {
+		endPos = path.size();
+	}
+
+	INFO("Path of length " << path.size() << " from " << startPos << " to " << endPos);
+	for (size_t i = startPos; i < endPos; ++i) {
+		INFO(i << ", " << path[i] << ", " << g.length(path[i]));
+	}
+}
+
+//[,)
+void PrintPathFromTo(Graph& g, BidirectionalPath& path, size_t startPos = 0, size_t endPos = 0) {
+	if (startPos >= path.size() || endPos > path.size()) return;
+
+	if (endPos == 0) {
+		endPos = path.size();
+	}
+
+	INFO("Path of length " << path.size() << " from " << startPos << " to " << endPos);
+	for (size_t i = startPos; i < endPos; ++i) {
 		INFO(i << ", " << path[i] << ", " << g.length(path[i]));
 	}
 }
@@ -248,33 +243,34 @@ bool ComparePaths(const BidirectionalPath& path1, const BidirectionalPath& path2
 }
 
 //Find coverage of worst covered edge
-size_t PathMinReadCoverage(Graph& g, BidirectionalPath& path) {
+double PathMinReadCoverage(Graph& g, BidirectionalPath& path) {
 	if (path.empty()) {
 		return 0;
 	}
 
-	size_t minCov = g.coverage(path[0]);
+	double minCov = g.coverage(path[0]);
 
 	for (auto edge = path.begin(); edge != path.end(); ++edge) {
-		size_t cov = g.coverage(*edge);
-		INFO("Coverage" << cov);
-		if (minCov < cov) {
+		double cov = g.coverage(*edge);
+		if (minCov > cov) {
 			minCov = cov;
 		}
 	}
 
-	INFO("Min coverage" << minCov);
 	return minCov;
 }
 
 //Remove paths with low covered edges
-void FilterLowCovered(Graph& g, std::vector<BidirectionalPath>& paths, size_t threshold) {
-	for (auto path = paths.begin(); path != paths.end(); ++path) {
+void FilterLowCovered(Graph& g, std::vector<BidirectionalPath>& paths, double threshold) {
+	for (auto path = paths.begin(); path != paths.end(); ) {
 		if (PathMinReadCoverage(g, *path) < threshold) {
 			paths.erase(path);
+		} else {
+			++path;
 		}
 	}
 }
+
 
 } // namespace long_contigs
 

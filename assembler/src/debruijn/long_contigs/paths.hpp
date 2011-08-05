@@ -43,6 +43,7 @@ void RecountLengthsBackward(Graph& g, BidirectionalPath& path, PathLengths& leng
 double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, EdgeId e, PairedInfoIndexLibrary& pairedInfoLibrary, bool forward) {
 	double weight = 0;
 	int edgeLength = forward ? 0 : g.length(e);
+	static int DISTANCE_DEV = CONFIG.read<bool>("etalon_info_mode") ? LC_CONFIG.read<int>("etalon_distance_dev") : LC_CONFIG.read<int>("real_distance_dev");
 
 	for(size_t i = 0; i < path.size(); ++i) {
 		EdgeId edge = path[i];
@@ -65,6 +66,8 @@ double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, 
 
 //Check whether selected extension is good enough
 bool ExtensionGoodEnough(double weight) {
+	static size_t WEIGHT_TRESHOLD = LC_CONFIG.read<size_t>("weight_threshold");
+
 	//Condition of passing threshold is to be done
 	return weight > WEIGHT_TRESHOLD;
 }
@@ -118,6 +121,7 @@ bool CheckForCyclesSimple(Graph& g, BidirectionalPath& path, size_t datasetLen) 
 
 //Add edge to cycle detector and check
 bool CheckCycle(BidirectionalPath& path, EdgeId extension, CycleDetector& detector, double weight) {
+	static size_t MAX_LOOPS = LC_CONFIG.read<size_t>("max_loops");
 	detector.insert(std::make_pair(extension, std::make_pair(path.size(), weight)));
 
 	return detector.count(extension) > MAX_LOOPS;
@@ -125,6 +129,7 @@ bool CheckCycle(BidirectionalPath& path, EdgeId extension, CycleDetector& detect
 
 //Edges to remove
 size_t CountLoopEdges(EdgeId lastEdge, CycleDetector& detector, bool fullRemoval) {
+	static size_t MAX_LOOPS = LC_CONFIG.read<size_t>("max_loops");
 	auto iter = detector.upper_bound(lastEdge);
 
 	--iter;
@@ -164,6 +169,7 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		CycleDetector& detector, PairedInfoIndices& pairedInfo) {
 
 	double w;
+	static bool FULL_LOOP_REMOVAL = LC_CONFIG.read<bool>("full_loop_removal");
 	std::vector<EdgeId> edges = g.OutgoingEdges(g.EdgeEnd(path.back()));
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, true);
 
@@ -196,6 +202,7 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		CycleDetector& detector, PairedInfoIndices& pairedInfo) {
 
 	double w;
+	static bool FULL_LOOP_REMOVAL = LC_CONFIG.read<bool>("full_loop_removal");
 	std::vector<EdgeId> edges = g.IncomingEdges(g.EdgeStart(path.front()));
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, false);
 
@@ -260,6 +267,9 @@ size_t SeedPriority(const BidirectionalPath& seed) {
 //Find paths with given seeds
 void FindPaths(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndices& pairedInfo, std::vector<BidirectionalPath>& paths) {
 	std::multimap<size_t, BidirectionalPath> priorityQueue;
+	static bool ALL_SEEDS = LC_CONFIG.read<bool>("all_seeds");
+	static double EDGE_COVERAGE_TRESHOLD = LC_CONFIG.read<double>("edge_coverage");
+	static double LENGTH_COVERAGE_TRESHOLD = LC_CONFIG.read<double>("len_coverage");
 
 	INFO("Finding paths started");
 	for(auto seed = seeds.begin(); seed != seeds.end(); ++seed) {

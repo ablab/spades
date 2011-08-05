@@ -12,7 +12,7 @@
 
 #define LC_CONFIG_FILENAME "./src/debruijn/long_contigs/lc_config.inp"
 
-ConfigFile LC_CONFIG(LC_CONFIG_FILENAME);
+static ConfigFile LC_CONFIG(LC_CONFIG_FILENAME);
 
 
 #endif /* LC_CONFIG_HPP_ */
