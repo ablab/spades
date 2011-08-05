@@ -136,7 +136,8 @@ public:
 				new_IDs_), old_IDs(old_IDs_), new_pos(new_pos_), old_pos(old_pos_) {
 		unordered_map<VertexId, VertexId> old_to_new;
 		unordered_map<EdgeId, EdgeId> old_to_new_edge;
-
+		cheating_mode = 0;
+		cheating_edges.clear();
 		size_t paired_size = 0;
 		set<VertexId> vertices;
 		vertices.clear();
@@ -374,6 +375,9 @@ private:
 	unordered_map<EdgeId, EdgeId> edge_labels;
 	set<VertexId> real_vertices;
 
+	int cheating_mode;
+	set<EdgeId> cheating_edges;
+	map<VertexId, int> resolving_vertices_degrees;
 	int sum_count;
 
 private:
@@ -479,32 +483,35 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	//	old_index = ind;
 	INFO("resolve_repeats started");
 	sum_count = 0;
-	bool changed = true;
-	set<VertexId> vertices;
-	while (changed) {
-		changed = false;
-		vertices.clear();
-		for (auto v_iter = new_graph.SmartVertexBegin(); !v_iter.IsEnd(); ++v_iter) {
-//			if (vertices.find(new_graph.conjugate(*v_iter)) == vertices.end()) {
+	for(cheating_mode = 0; cheating_mode < 1; cheating_mode ++) {
+		bool changed = true;
+		set<VertexId> vertices;
+
+		while (changed) {
+			changed = false;
+			vertices.clear();
+			for (auto v_iter = new_graph.SmartVertexBegin(); !v_iter.IsEnd(); ++v_iter) {
+				//			if (vertices.find(new_graph.conjugate(*v_iter)) == vertices.end()) {
 				vertices.insert(*v_iter);
-//			}
-		}
-		INFO("Having "<< vertices.size() << "paired vertices, trying to split");
-		RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
-		int GraphCnt = 0;
+				//			}
+			}
+			INFO("Having "<< vertices.size() << "paired vertices, trying to split");
+			RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
+			int GraphCnt = 0;
 
-		omnigraph::WriteSimple(output_folder + "resolve_" + ToString(GraphCnt)
-				+ ".dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
-
-		for (auto v_iter = real_vertices.begin(), v_end = real_vertices.end(); v_iter
-				!= v_end; ++v_iter) {
-			DEBUG(" resolving vertex"<<*v_iter<<" "<<GenerateVertexPairedInfo(new_graph, paired_di_data, *v_iter));
-			int tcount = RectangleResolveVertex(*v_iter);
-			DEBUG("Vertex "<< *v_iter<< " resolved to "<< tcount);
-			sum_count += tcount;
-			GraphCnt++;
 			omnigraph::WriteSimple(output_folder + "resolve_" + ToString(GraphCnt)
 					+ ".dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
+
+			for (auto v_iter = real_vertices.begin(), v_end = real_vertices.end(); v_iter
+			!= v_end; ++v_iter) {
+				DEBUG(" resolving vertex"<<*v_iter<<" "<<GenerateVertexPairedInfo(new_graph, paired_di_data, *v_iter));
+				int tcount = RectangleResolveVertex(*v_iter);
+				DEBUG("Vertex "<< *v_iter<< " resolved to "<< tcount);
+				sum_count += tcount;
+				GraphCnt++;
+				omnigraph::WriteSimple(output_folder + "resolve_" + ToString(GraphCnt)
+						+ ".dot", "no_repeat_graph", new_graph, IdTrackLabelerAfter);
+			}
 		}
 	}
 	INFO("total vert" << sum_count);
@@ -720,15 +727,18 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 	DEBUG("Generate vertex paired info for:  " << vid);
 	//	DEBUG(new_graph.conjugate(vid));
 	edge_infos.clear();
+	cheating_edges.clear();
 	vector<EdgeId> edgeIds[2];
 	edgeIds[0] = new_graph.OutgoingEdges(vid);
 	edgeIds[1] = new_graph.IncomingEdges(vid);
 	vector<set<EdgeId> > paired_edges;
 	DEBUG(edgeIds[0].size()<< "  " << edgeIds[1].size());
 	paired_edges.resize(edgeIds[0].size() + edgeIds[1].size());
-
+//TODO:: extract this optional parameter- direction of resolve?
+//Or due to r-c structure of original graph it doesn't matter?
 	int mult = 1;
-	set<EdgeId> neighbours;
+	set<EdgeId> right_edges;
+	map<VertexId, int> right_vertex_degrees;
 	for (int dir = 0; dir < 2; dir++) {
 		for (int i = 0, n = edgeIds[dir].size(); i < n; i++) {
 			PairInfos tmp = paired_di_data.GetEdgeInfos(edgeIds[dir][i]);
@@ -746,6 +756,12 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 
 					}
 					if (d * mult >= -0.001) {
+						if (cheating_mode && (i == 1) && (right_id == left_id)  && (tmp[j].d == 0)) {
+							DEBUG("Paired info in cheating mode ignored");
+							//ignoring information from incoming edge to itself, ignoring
+							cheating_edges.insert(left_id);
+							continue;
+						}
 						DEBUG("PairInfo: " << old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second)  <<" "<< tmp[j].d);
 
 						pair<bool, PairInfo> correction_result = CorrectedAndNotFiltered(new_graph, tmp[j]);
@@ -756,14 +772,14 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 						EdgeInfo ei(correction_result.second, dir, right_id, correction_result.second.d - dif_d);
 						edge_infos.push_back(ei);
 						//					DEBUG(right_id);
-						neighbours.insert(right_id);
+						right_edges.insert(right_id);
 					}
 
 				}
 			}
 		}
 	}
-	return neighbours.size();
+	return right_edges.size();
 }
 
 template<class Graph>
@@ -776,6 +792,8 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 	}
 	vector<vector<int> > neighbours;
 	neighbours.resize(size);
+	cheating_edges.clear();
+
 	DEBUG("constructing edge-set");
 	set<EdgeId> edges;
 	edges.clear();

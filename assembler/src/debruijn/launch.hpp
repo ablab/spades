@@ -436,7 +436,7 @@ void scanConjugateGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
 	DataScanner<Graph> dataScanner(g, new_IDs);
 	dataScanner.loadConjugateGraph(file_name, true);
 	dataScanner.loadCoverage(file_name);
-	//	dataScanner.loadPaired(file_name, paired_index);
+	dataScanner.loadPaired(file_name, paired_index);
 }
 
 template<size_t k>
@@ -785,6 +785,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		omnigraph::WriteSimple(
 				output_folder + "repeats_resolved_und_cleared.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+		OutputContigs(resolved_graph, output_folder + "contigs_before_enlarge.fasta");
 		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
 		N50enlarger.one_many_resolve();
 
@@ -803,7 +804,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		//		ProduceNonconjugateInfo<k> (resolved_graph, aux_index, genome, work_tmp_dir + "repeats_resolved.dot",
 		//				"no_repeat_graph");sss
 
-		OutputContigs(resolved_graph, output_folder + "contigs.fasta");
+		OutputContigs(resolved_graph, output_folder + "contigs_final.fasta");
 		string consensus_folder = output_folder + "consensus/";
 		OutputSingleFileContigs(g, consensus_folder);
 		SelectReadsForConsensus<k, Graph>(g, index, reads, consensus_folder);

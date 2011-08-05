@@ -16,6 +16,7 @@ class PositionRead {
 	
   public:
 	PositionRead(hint_t start, uint32_t size, hint_t readno) : start_(start), size_(size), readno_(readno), bad_(false) { }
+	PositionRead(hint_t start, uint32_t size, hint_t readno, bool bad) : start_(start), size_(size), readno_(readno), bad_(bad) { }
 	hint_t start() const { return start_; }
 	uint32_t size() const { return size_; }
 	char at(uint32_t pos) const;

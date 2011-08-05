@@ -367,7 +367,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	}
 }
 
-void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq, ofstream * ofs) {
+void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq, ofstream * ofs, ofstream * ofs_bad) {
 	
 	int effective_threads = min(nthreads_, tau_+1);
 	vector<unionFindClass *> uf(tau_ + 1);
@@ -423,17 +423,26 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq, ofstre
 					k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
 					#pragma omp critical
 					{
-					(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>\n";
+					(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n> good singleton " << k_[blocksInPlace[n][m][0]].first.start() << "\n";
+					}
+				} else {
+					#pragma omp critical
+					{
+					(*ofs_bad) << k_[blocksInPlace[n][m][0]].first.str() << "\n> bad singleton " << k_[blocksInPlace[n][m][0]].first.start() << "\n";
 					}
 				}
 			} else {
 				k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
 				#pragma omp critical
 				{
-				(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n>\n";
+				(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n> center  " << k_[blocksInPlace[n][m][0]].first.start() << "\n";
 				}
 				for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
 					k_[blocksInPlace[n][m][j]].second.changeto = blocksInPlace[n][m][0];
+					#pragma omp critical
+					{
+					(*ofs_bad) << k_[blocksInPlace[n][m][j]].first.str() << "\n> part of cluster " << k_[blocksInPlace[n][m][j]].first.start() << "\n";
+					}					
 				}
 			}
 		}
