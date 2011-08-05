@@ -43,7 +43,7 @@ class UnionFindClass {
             for (int i = 0; i < (int)data.size(); i++) {
                 if (data[i] == i) count++;
             }
-            return count; //return *max_element(data.begin(), data.end());
+            return count; 
         }
 
         int num_elements() {
@@ -67,20 +67,6 @@ class UnionFindClass {
             otherWay.erase(remove_if(otherWay.begin(), otherWay.end(), pred1), otherWay.end());
         }
 
-        void get_classes (vector<int> & consolidatedData, vector<vector<int > > & otherWay) {
-            otherWay.resize(data.size());
-            for (size_t i = 0; i < data.size(); i++) {
-                if (data[i] != -1) 
-                    otherWay.at(find_set(data[i])).push_back(i);
-            }
-            otherWay.erase(remove_if(otherWay.begin(), otherWay.end(), pred1), otherWay.end());
-
-            consolidatedData.resize(data.size(), -1);
-            for (size_t i = 0; i < otherWay.size(); i++)
-                for (size_t j = 0; j < otherWay[i].size(); j++)
-                    consolidatedData.at(otherWay[i][j]) = i;
-        }
-
     private:
         void link (const int & x, const int & y) {
             if (rank.at(x) > rank.at(y)) {
@@ -94,6 +80,4 @@ class UnionFindClass {
         vector<int> data;
         vector<int> rank;
 };
-
-
 #endif 
