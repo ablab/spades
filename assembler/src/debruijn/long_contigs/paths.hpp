@@ -289,22 +289,6 @@ void FindPaths(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndice
 }
 
 
-//Remove duplicate paths
-void RemoveDuplicate(const std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& output) {
-	for (auto path = paths.begin(); path != paths.end(); ++path) {
-		bool copy = true;
-		for (auto iter = output.begin(); iter != output.end(); ++iter) {
-			if (ComparePaths(*path, *iter)) {
-					copy = false;
-					break;
-			}
-		}
-
-		if (copy) {
-			output.push_back(*path);
-		}
-	}
-}
 
 
 } // namespace long_contigs

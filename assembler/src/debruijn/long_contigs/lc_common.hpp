@@ -242,6 +242,28 @@ bool ComparePaths(const BidirectionalPath& path1, const BidirectionalPath& path2
 	return true;
 }
 
+bool ContainsPath(const BidirectionalPath& path, const BidirectionalPath& sample) {
+	if (path.size() < sample.size()) {
+		return false;
+	}
+
+	for (size_t i = 0; i < path.size() - sample.size() + 1 ; ++i) {
+		bool found = true;
+
+		for (size_t j = 0; j < sample.size(); ++j) {
+			if (sample[j] != path[i + j]) {
+				found = false;
+				break;
+			}
+		}
+
+		if (found) {
+			return true;
+		}
+	}
+	return false;
+}
+
 //Find coverage of worst covered edge
 double PathMinReadCoverage(Graph& g, BidirectionalPath& path) {
 	if (path.empty()) {
@@ -271,6 +293,40 @@ void FilterLowCovered(Graph& g, std::vector<BidirectionalPath>& paths, double th
 	}
 }
 
+
+//Remove duplicate paths
+void RemoveDuplicate(const std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& output) {
+	for (auto path = paths.begin(); path != paths.end(); ++path) {
+		bool copy = true;
+		for (auto iter = output.begin(); iter != output.end(); ++iter) {
+			if (ComparePaths(*path, *iter)) {
+					copy = false;
+					break;
+			}
+		}
+
+		if (copy) {
+			output.push_back(*path);
+		}
+	}
+}
+
+//Remove subpaths paths
+void RemoveSubpaths(const std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& output) {
+	for (auto path = paths.begin(); path != paths.end(); ++path) {
+		bool copy = true;
+		for (auto iter = output.begin(); iter != output.end(); ++iter) {
+			if (ContainsPath(*iter, *path)) {
+					copy = false;
+					break;
+			}
+		}
+
+		if (copy) {
+			output.push_back(*path);
+		}
+	}
+}
 
 } // namespace long_contigs
 

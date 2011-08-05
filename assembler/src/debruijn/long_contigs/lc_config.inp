@@ -1,7 +1,7 @@
 #input options
 from_file = true
 etalon_info_mode = true
-graph_file_QUAKE_CROPPED_400K = ./data/debruijn/08.02_18_45.QUAKE_CROPPED_400K/graph
+graph_file_QUAKE_CROPPED_400K = ./data/debruijn/08.04_17_25.QUAKE_CROPPED_400K/graph
 graph_file_QUAKE_CROPPED_100K = ./data/debruijn/08.04_17_17.QUAKE_CROPPED_100K/graph
 graph_file_QUAKE_CROPPED_10K = ./data/debruijn/08.04_17_23.QUAKE_CROPPED_10K/graph
 
@@ -19,7 +19,7 @@ insert_size_2 = 1000
 
 
 #seed selection
-min_coverage = 120
+min_coverage = 150
 
 
 #extension selection

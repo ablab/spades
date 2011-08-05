@@ -73,7 +73,7 @@ void JoinPaths(BidirectionalPath& path1, BidirectionalPath& path2) {
 
 //Find all seeds as trivial paths
 void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
-	std::set<EdgeId> visited;
+	//std::set<EdgeId> visited;
 	std::map<EdgeId, BidirectionalPath> starts;
 	int count = 0;
 
@@ -83,8 +83,8 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 		EdgeId e = *iter;
 
 		//Try to make seed starting from unvisited edge
-		if (visited.count(e) == 0) {
-			visited.insert(e);
+		//if (visited.count(e) == 0) {
+			//visited.insert(e);
 
 			starts[e] = BidirectionalPath();
 			BidirectionalPath& newPath = starts[e];
@@ -92,9 +92,9 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 
 			//Extend trivially
 			EdgeId nextStart = ExtendTrivialForward(g, newPath, starts);
-			for (auto edgeInPath = newPath.begin(); edgeInPath != newPath.end(); ++edgeInPath) {
-				visited.insert(*edgeInPath);
-			}
+//			for (auto edgeInPath = newPath.begin(); edgeInPath != newPath.end(); ++edgeInPath) {
+//				visited.insert(*edgeInPath);
+//			}
 
 			//If extended till another seed, than concatenate them
 			if (nextStart != 0) {
@@ -102,14 +102,14 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 				JoinPaths(newPath, starts[nextStart]);
 				starts.erase(nextStart);
 			}
-		}
+		//}
 	}
 
 	//Debug part
-	for (auto pathIter = starts.begin(); pathIter != starts.end(); ++pathIter) {
-		seeds.push_back(pathIter->second);
-	}
-	PrintPathCoverage(g, seeds);
+//	for (auto pathIter = starts.begin(); pathIter != starts.end(); ++pathIter) {
+//		seeds.push_back(pathIter->second);
+//	}
+//	PrintPathCoverage(g, seeds);
 	//End of debug part
 
 	//Extending seed backward

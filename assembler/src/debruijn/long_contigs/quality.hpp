@@ -23,10 +23,10 @@ size_t FindInGenomePath(BidirectionalPath& myPath, Path<Graph::EdgeId>& genomePa
 		return -1;
 	}
 
-	for (size_t i = 0; i < genomePath.size(); ++i) {
+	for (size_t i = 0; i < genomePath.size() - myPath.size() + 1 ; ++i) {
 		bool found = true;
 
-		for (size_t j = 0; j < myPath.size() && i + j < genomePath.size(); ++j) {
+		for (size_t j = 0; j < myPath.size(); ++j) {
 			if (myPath[j] != genomePath[i + j]) {
 				found = false;
 				break;

@@ -269,6 +269,7 @@ int main() {
 	Sequence sequence("");
 
 	std::vector<BidirectionalPath> seeds;
+	std::vector<BidirectionalPath> rawSeeds;
 	std::vector<BidirectionalPath> paths;
 
 	std::string dataset = CONFIG.read<string>("dataset");
@@ -296,10 +297,15 @@ int main() {
 		AddEtalonInfo<K>(g, index, sequence, pairedInfos);
 	}
 
-	FindSeeds(g, seeds);
+	FindSeeds(g, rawSeeds);
+	INFO("Seeds");
+	PrintPathsShort(g, rawSeeds);
+	WriteGraphWithPathsSimple(output_dir + "raw_seeds.dot", "raw_seeds", g, rawSeeds, path1, path2);
+
+	RemoveSubpaths(rawSeeds, seeds);
 	INFO("Seeds");
 	PrintPathsShort(g, seeds);
-
+	WriteGraphWithPathsSimple(output_dir + "no_dupl_seeds.dot", "no_dupl_seeds", g, seeds, path1, path2);
 
 	FilterLowCovered(g, seeds, MIN_COVERAGE);
 	INFO("Filtered");
