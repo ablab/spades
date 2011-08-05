@@ -73,16 +73,17 @@ void CountPairedInfoStats(Graph &g, size_t insert_size, size_t max_read_length,
 
 void CountClusteredPairedInfoStats(Graph &g, size_t insert_size,
 		size_t max_read_length, PairedInfoIndex<Graph> &paired_index,
+		PairedInfoIndex<Graph> &clustered_index,
 		PairedInfoIndex<Graph> &etalon_paired_index,
 		const string &output_folder) {
 	INFO("Counting paired info stats");
-	EstimationQualityStat<Graph> estimation_stat(paired_index,
-			etalon_paired_index);
+	EstimationQualityStat<Graph> estimation_stat(g, paired_index,
+			clustered_index, etalon_paired_index);
 	estimation_stat.Count();
 	string stat_folder = output_folder + "/pair_inf_stat";
 	mkdir(stat_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	estimation_stat.WriteEstmationStats(stat_folder);
-	ClusterStat<Graph> (paired_index).Count();
+	ClusterStat<Graph> (clustered_index).Count();
 	INFO("Paired info stats counted");
 }
 
@@ -435,7 +436,7 @@ void scanConjugateGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
 	DataScanner<Graph> dataScanner(g, new_IDs);
 	dataScanner.loadConjugateGraph(file_name, true);
 	dataScanner.loadCoverage(file_name);
-	//	dataScanner.loadPaired(file_name, paired_index);
+	dataScanner.loadPaired(file_name, paired_index);
 }
 
 template<size_t k>
@@ -677,7 +678,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 					CONFIG.read<size_t> ("de_max_distance"));
 			estimator.Estimate(clustered_index);
 			CountClusteredPairedInfoStats(g, insert_size, max_read_length,
-					clustered_index, etalon_paired_index, output_folder);
+					paired_index, clustered_index, etalon_paired_index,
+					output_folder);
 		}
 
 		number_of_components = PrintGraphComponents(

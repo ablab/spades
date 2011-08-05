@@ -22,6 +22,7 @@
 #include "distanceEstimator.hpp"
 #include "graphFilter.hpp"
 #include "graphCopy.hpp"
+#include <time.h>
 namespace debruijn_graph {
 
 
@@ -90,7 +91,6 @@ public:
         graphFilter_.Filter(blueGraph);
         //store red and blue graphs so that the caller can get the information
         GenerateResultGraphs(redGraph, blueGraph);
-        return true;
     }
 private:
     Graph &debruijn_; 
@@ -247,7 +247,7 @@ void WeakerGluer<Graph>::GenerateRedGraph(Graph &redGraph){
     map<PairInfo,size_t> leftPairInfosToNewNodesID;// we have to store this map to add the outgoing edges back to the graph
     map<PairInfo,size_t> rightPairInfosToNewNodesID;//we have to store this map to add the incoming edges back to the graph
     map<size_t, VertexId> nodeIntToVertexId;
-    size_t maxNodeId = 0;
+    size_t maxNodeId = 0;   
     for (auto iter = debruijn_.SmartVertexBegin(); !iter.IsEnd(); ++iter) 
     {
         vector<EdgeId> outGoingEdges = debruijn_.OutgoingEdges(*iter);
@@ -317,10 +317,10 @@ size_t WeakerGluer<Graph>::Glue(vector<PairInfo> &leftPairInfos, vector<PairInfo
      }
      vector<vector<int> > resultsGluing ;
      myunion.get_classes(resultsGluing);
-     size_t nodeID= 0;
+     size_t nodeID= maxNodeId;
      for(size_t i = 0 ; i < resultsGluing.size() ; i++)
      {
-         nodeID = i +  maxNodeId;
+         nodeID += i ;
          for(auto iter = resultsGluing[i].begin() ; iter !=  resultsGluing[i].end() ; ++iter)
          {
              if((size_t)*iter < leftSize) //TODO refractor the Union
