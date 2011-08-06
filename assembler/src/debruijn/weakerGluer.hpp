@@ -87,10 +87,11 @@ public:
         quotientGraphs_.AddGraph(redGraph,redGraphEdgeMaps_);
         quotientGraphs_.AddGraph(blueGraph, blueGraphEdgeMaps_);
         //Filtered the graph because of noise in distance
-        graphFilter_.Filter(redGraph);
-        graphFilter_.Filter(blueGraph);
+        graphFilter_.Filter(redGraph, debruijn_);
+        graphFilter_.Filter(blueGraph, debruijn_);
         //store red and blue graphs so that the caller can get the information
         GenerateResultGraphs(redGraph, blueGraph);
+        return true;
     }
 private:
     Graph &debruijn_; 
@@ -121,7 +122,6 @@ private:
      * 1. (e_1, e_1, d, w): if 0 < d < length(e_1): replace by (e_1, e_1,0, maxweight)
      * others will be added as moving on
      */
-    void SimplestMatePairFilter(){}//TODO referencetype used incorrectly
 
     void GetPairInfos(const vector<EdgeId> &edges, Direction direction, vector<PairInfo> &pairInfos);
 };
@@ -257,6 +257,7 @@ void WeakerGluer<Graph>::GenerateRedGraph(Graph &redGraph){
         vector<PairInfo> rightPairInfos;
         GetPairInfos(outGoingEdges,FORWARD, rightPairInfos);
         size_t currentMaxNodeId = Glue(leftPairInfos, rightPairInfos, FORWARD, leftPairInfosToNewNodesID, rightPairInfosToNewNodesID, maxNodeId);
+
         for(size_t currentNodeId = maxNodeId ; currentNodeId != currentMaxNodeId ; ++currentNodeId)
         {
             VertexId id = redGraph.AddVertex();
@@ -264,7 +265,7 @@ void WeakerGluer<Graph>::GenerateRedGraph(Graph &redGraph){
         }
         maxNodeId = currentMaxNodeId;
     }
-    multimap< pair<VertexId, VertexId> , string> edgesMaps;//get rid of parallel edges in a dirty way
+    multimap< pair<VertexId, VertexId> , string> edgesMaps;//get rid of parallel edges in a dirty way.Actually this is incorrect. Should use EdgeNucls instead.
     for(auto iter = leftPairInfosToNewNodesID.begin(); iter != leftPairInfosToNewNodesID.end(); ++iter)
     {
         PairInfo pairInfo = iter->first;
@@ -333,7 +334,9 @@ size_t WeakerGluer<Graph>::Glue(vector<PairInfo> &leftPairInfos, vector<PairInfo
              }
          }
      }
-     return nodeID+1;
+     if(resultsGluing.size() != 0)
+         return nodeID+1;
+     return nodeID;
 }
 /*
  * Clear all  intermediate variables in the WeakerGluer
