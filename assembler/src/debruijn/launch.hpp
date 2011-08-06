@@ -216,6 +216,20 @@ void ClipTips(Graph &g) {
 	INFO("Clipping tips finished");
 }
 
+void ClipTipsForResolve(NCGraph &g) {
+	INFO("-----------------------------------------");
+	INFO("Clipping tips");
+	TipComparator<NCGraph> comparator(g);
+	size_t max_tip_length = CONFIG.read<size_t> ("tc_max_tip_length");
+	size_t max_coverage = CONFIG.read<size_t> ("tc_max_coverage");
+	double max_relative_coverage = CONFIG.read<double> (
+			"tc_max_relative_coverage");
+	TipClipper<NCGraph, TipComparator<NCGraph>> tc(g, comparator, max_tip_length *10000,
+			max_coverage, max_relative_coverage);
+	tc.ClipTips();
+	INFO("Clipping tips finished");
+}
+
 void RemoveBulges(Graph &g) {
 	INFO("-----------------------------------------");
 	INFO("Removing bulges");
@@ -241,10 +255,10 @@ void RemoveBulges2(NCGraph &g) {
 			"br_max_relative_coverage");
 	double max_delta = CONFIG.read<double> ("br_max_delta");
 	double max_relative_delta = CONFIG.read<double> ("br_max_relative_delta");
-	size_t max_length_div_K = CONFIG.read<int> ("br_max_length_div_K");
+//	size_t max_length_div_K = CONFIG.read<int> ("br_max_length_div_K");
 	TrivialCondition<NCGraph> trivial_condition;
 	BulgeRemover<NCGraph, TrivialCondition<NCGraph>> bulge_remover(g,
-			max_length_div_K * g.k(), max_coverage, max_relative_coverage,
+			1000000, max_coverage, max_relative_coverage,
 			max_delta, max_relative_delta, trivial_condition);
 	bulge_remover.RemoveBulges();
 	INFO("Bulges removed");
@@ -768,10 +782,11 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				output_folder + "repeats_resolved_after_pos.dot",
 				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
 
-		ClipTips(resolved_graph);
-		RemoveBulges2(resolved_graph);
-		RemoveLowCoverageEdgesForResolver(resolved_graph);
-
+		for(int i = 0; i < 2; i ++) {
+			ClipTipsForResolve(resolved_graph);
+			RemoveBulges2(resolved_graph);
+			RemoveLowCoverageEdgesForResolver(resolved_graph);
+		}
 		omnigraph::WriteSimple(
 				work_tmp_dir + "repeats_resolved_after_und_cleared_pos.dot",
 				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
