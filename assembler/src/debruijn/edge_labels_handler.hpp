@@ -13,12 +13,15 @@
 #include "utils.hpp"
 #include "graph_labeler.hpp"
 #include "simple_tools.hpp"
+#include <unordered_map>
+#include <map>
+
 using namespace omnigraph;
 
 namespace omnigraph {
 
 template<class Graph>
-class EdgesLabelHandler: public GraphActionHandler<Graph> {
+class EdgeLabelHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef int realIdType;
@@ -26,15 +29,14 @@ private:
 	Graph &new_graph_;
 	Graph &old_graph_;
 	//From new edge to sequence of old
-	unordered_map<EdgeId, vector<EdgeId> > edge_labels;
+	map<EdgeId, vector<EdgeId> > edge_labels;
 	//From old edge to set of new ones, containing it.
-	unordered_map<EdgeId,set<EdgeId> > edge_inclusions;
+	map<EdgeId,set<EdgeId> > edge_inclusions;
 public:
-	map<EdgeId, vector<EdgePosition> > EdgesPositions;
 //TODO: integrate this to resolver, remove "from_resolve" parameter
-	EdgesLabelHandler(Graph &new_graph, Graph &old_graph, unordered_map<EdgeId, EdgeId>& from_resolve) :
+	EdgeLabelHandler(Graph &new_graph, Graph &old_graph, unordered_map<EdgeId, EdgeId>& from_resolve) :
 		GraphActionHandler<Graph> ("EdgePositionHandler"), new_graph_(new_graph), old_graph_(old_graph) {
-		g_.AddActionHandler(this);
+		new_graph_.AddActionHandler(this);
 		for(auto iter = from_resolve.begin(); iter != from_resolve.end(); ++iter) {
 			if (edge_inclusions.find(iter->second) == edge_inclusions.end()){
 				set<EdgeId> tmp;
@@ -42,39 +44,38 @@ public:
 			}
 			edge_inclusions[iter->second].insert(iter->first);
 
-			if (edge_labels.find(iter->second) == edge_labels.end()){
+			if (edge_labels.find(iter->first) == edge_labels.end()) {
 				set<EdgeId> tmp;
-				edge_labels.insert(make_pair(iter->second, tmp));
+				edge_labels.insert(make_pair(iter->first, tmp));
 			}
-			edge_labels[iter->second].insert(iter->first);
+			edge_labels[iter->second].push_back(iter->second);
 		}
 	}
-	virtual ~EdgesPositionHandler() {
-		TRACE("~EdgePositionHandler");
-		g_.RemoveActionHandler(this);
-		TRACE("~EdgePositionHandler ok");
+
+	virtual ~EdgeLabelHandler() {
+		new_graph_.RemoveActionHandler(this);
 	}
 
 	 virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		 DEBUG("Handle glue ");
+		 DEBUG("Handle glue");
+		 assert(edge_labels[edge1] == edge_labels[edge2]);
 
-		 for( size_t i = 0; i< EdgesPositions[edge1].size(); i++){
-			 AddEdgePosition(new_edge, (EdgesPositions[edge1])[i].start_,(EdgesPositions[edge1])[i].end_);
+		 if (edge_labels[edge1].size() != edge_labels[edge2].size())
+			 WARN("gluing two different edges is not a good idea on this step!");
+		 set<EdgeId> tmp;
+		 for(size_t i = 0; i < edge_labels[edge1].size(); i++){
+			 edge_inclusions[edge_labels[edge1][i]].insert(new_edge);
+			 edge_inclusions[edge_labels[edge1][i]].remove(edge1);
+			 tmp.push_back(edge_labels[edge1][i]);
 		 }
-		 for( size_t j = 0; j< EdgesPositions[edge2].size(); j++){
-			 AddEdgePosition(new_edge, (EdgesPositions[edge2])[j].start_,(EdgesPositions[edge2])[j].end_);
+		 for(size_t i = 0; i < edge_labels[edge2].size(); i++) {
+		 	edge_inclusions[edge_labels[edge2][i]].insert(new_edge);
+		 	edge_inclusions[edge_labels[edge2][i]].remove(edge2);
+		//	tmp.push_back(edge_labels[edge1][i]);
 		 }
 
-/*		 for( size_t i = 0; i< EdgesPositions[edge1].size(); i++){
-			 for( size_t j = 0; j< EdgesPositions[edge2].size(); j++){
-//				 DEBUG(" "<<EdgesPositions[edge1])[i].start_<<" "<<EdgesPositions[edge1])[i].end_);
-//				 DEBUG(" "<<EdgesPositions[edge2])[j].start_<<" "<<EdgesPositions[edge2])[j].end_);
-				 if ((EdgesPositions[edge1])[i].end_ + 1 == (EdgesPositions[edge2])[j].start_) {
-					 AddEdgePosition(new_edge, (EdgesPositions[edge1])[i].start_, (EdgesPositions[edge2])[j].end_);
-				 }
-			 }
-		 }
-		 */
+		 edge_labels.insert(make_pair(new_edge, tmp));
+
 	 }
 
 
@@ -82,8 +83,9 @@ public:
 		 WARN("EdgesLabelHandler does not support splits");
 	 }
 
+
  	 virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
-		 WARN("HandleMerge by position handler");
+		 DEBUG("HandleMerge by edge labels handler");
  		 // we assume that all edge have good ordered position labels.
  		 size_t n = oldEdges.size();
 
@@ -98,16 +100,14 @@ public:
 */
  	virtual void HandleAdd(EdgeId e) {
  		DEBUG("Add edge "<<e);
-		if (EdgesPositions.find(e) == EdgesPositions.end()) {
- 			vector<EdgePosition> NewVec;
- 			EdgesPositions[e] = NewVec;
-		}
+
  	}
 	virtual void HandleDelete(EdgeId e) {
 
 	}
 
 };
+}
 
 
 

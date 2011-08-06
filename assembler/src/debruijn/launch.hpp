@@ -15,6 +15,7 @@
 #include "visualization_utils.hpp"
 
 //#include "debruijn_graph.hpp"
+#include "edge_labels_handler.hpp"
 #include "paired_info.hpp"
 #include "debruijn_graph_constructor.hpp"
 #include "tip_clipper.hpp"
