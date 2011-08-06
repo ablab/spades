@@ -91,6 +91,7 @@ public:
         graphFilter_.Filter(blueGraph, debruijn_);
         //store red and blue graphs so that the caller can get the information
         GenerateResultGraphs(redGraph, blueGraph);
+        return true;
     }
 private:
     Graph &debruijn_; 
