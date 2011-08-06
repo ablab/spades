@@ -255,10 +255,10 @@ void RemoveBulges2(NCGraph &g) {
 			"br_max_relative_coverage");
 	double max_delta = CONFIG.read<double> ("br_max_delta");
 	double max_relative_delta = CONFIG.read<double> ("br_max_relative_delta");
-//	size_t max_length_div_K = CONFIG.read<int> ("br_max_length_div_K");
+	size_t max_length_div_K = CONFIG.read<int> ("br_max_length_div_K");
 	TrivialCondition<NCGraph> trivial_condition;
 	BulgeRemover<NCGraph, TrivialCondition<NCGraph>> bulge_remover(g,
-			1000000, max_coverage, max_relative_coverage,
+			max_length_div_K * g.k(), max_coverage, max_relative_coverage,
 			max_delta, max_relative_delta, trivial_condition);
 	bulge_remover.RemoveBulges();
 	INFO("Bulges removed");
@@ -535,7 +535,7 @@ void SelectReadsForConsensus(Graph& g, const EdgeIndex<k + 1, Graph>& index ,vec
 		while (!reads[i - 1]->eof()) {
 			io::SingleRead cur_read;
 			(*reads[i - 1]) >> cur_read;
-			vector<EdgeId> res = rm.GetContainingEdges(cur_read);
+			vector<typename Graph::EdgeId> res = rm.GetContainingEdges(cur_read);
 			read_num++;
 			TRACE(read_num<< " mapped to"<< res.size() <<" contigs :, read"<< cur_read.sequence());
 //			map_quantity += res.size();
@@ -727,6 +727,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		IdTrackHandler<NCGraph> NewIntIds(new_graph, IntIds.MaxVertexId(),
 				IntIds.MaxEdgeId());
 		PairedInfoIndex<NCGraph> new_index(new_graph);
+		EdgeIndex<k+1, NCGraph> new_edge_index(new_graph);
 		EdgesPositionHandler<NCGraph> EdgePosBefore(new_graph);
 
 		/*Graph conj_copy_graph(k);
@@ -783,7 +784,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
 
 		for(int i = 0; i < 2; i ++) {
-			ClipTipsForResolve(resolved_graph);
+			ClipTips(resolved_graph);
 			RemoveBulges2(resolved_graph);
 			RemoveLowCoverageEdgesForResolver(resolved_graph);
 		}
@@ -809,7 +810,6 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 						+ "repeats_resolved_und_cleared_und_simplified.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		INFO("repeat resolved grpah written");
-		EdgeIndex<k + 1, NCGraph> aux_index(resolved_graph);
 
 		//		SimplifyGRaph<k>(resolved_graph, aux_index, 3, genome, output_folder);
 
@@ -822,7 +822,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		OutputContigs(resolved_graph, output_folder + "contigs_final.fasta");
 		string consensus_folder = output_folder + "consensus/";
 		OutputSingleFileContigs(new_graph, consensus_folder);
-		//SelectReadsForConsensus<k, Graph>(g, index, reads, consensus_folder);
+		SelectReadsForConsensus<k, NCGraph>(new_graph, new_edge_index, reads, consensus_folder);
 
 		OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
 
