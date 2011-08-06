@@ -66,6 +66,7 @@ bool SimpleGraphFilter<Graph>::IsIsolatedEdge(Graph& graph,const Sequence& seq)
         }
     }
     INFO("ERROR!");
+    return true;
 
 }
 #endif /* end of include guard: GRAPHFILTER_H */
