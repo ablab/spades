@@ -386,6 +386,28 @@ public:
 		return make_pair(newEdge1, newEdge2);
 	}
 
+	VertexId SplitVertex(VertexId vertex, vector<EdgeId> splittingEdges) {
+//TODO:: check whether we handle loops correctly!
+		VertexId newVertex = HiddenAddVertex(vertex->data());
+		vector<EdgeId, EdgeId> edge_clones;
+		for (size_t i = 0; i < splittingEdges.size(); i++) {
+			VertexId start_v = this->EdgeStart(splittingEdges[i]);
+			VertexId start_e = this->EdgeEnd(splittingEdges[i]);
+			if (start_v == vertex)
+				start_v = newVertex;
+			if (start_e == vertex)
+				start_e = newVertex;
+			EdgeId newEdge = HiddenAddEdge(start_v, start_e, splittingEdges[i]->data());
+			edge_clones.push_back(make_pair(splittingEdges[i], newEdge));
+		}
+//FIRE
+		FireSplitVertex(newVertex, edge_clones, vertex);
+		FireAddVertex(newVertex);
+		for(size_t i = 0; i < splittingEdges.size(); i ++)
+			FireAddEdge(edge_clones.second());
+		return newVertex;
+	}
+
 	void GlueEdges(EdgeId edge1, EdgeId edge2) {
 		EdgeId newEdge = HiddenAddEdge(EdgeStart(edge2), EdgeEnd(edge2), master_.GlueData(edge1->data(), edge2->data()));
 		FireGlue(newEdge, edge1, edge2);

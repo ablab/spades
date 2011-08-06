@@ -183,7 +183,7 @@ string ConstructComponentName(string file_name, size_t cnt) {
 template<class Graph>
 int PrintGraphComponents(const string& file_name, Graph& g,
 		size_t split_edge_length, IdTrackHandler<Graph> &old_IDs,
-		PairedInfoIndex<Graph> &paired_index,
+		PairedInfoIndex<Graph>  &paired_index,
 		EdgesPositionHandler<Graph> &edges_positions) {
 	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
 	ComponentSizeFilter<Graph> checker(g, split_edge_length);
