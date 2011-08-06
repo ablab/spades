@@ -256,21 +256,7 @@ void WeakerGluer<Graph>::GenerateRedGraph(Graph &redGraph){
         vector<PairInfo> rightPairInfos;
         GetPairInfos(outGoingEdges,FORWARD, rightPairInfos);
         size_t currentMaxNodeId = Glue(leftPairInfos, rightPairInfos, FORWARD, leftPairInfosToNewNodesID, rightPairInfosToNewNodesID, maxNodeId);
-//debug
-//        if(currentMaxNodeId == maxNodeId +1)
-//        {
-//            INFO("out going "<<outGoingEdges.size());
-//            INFO("in coming "<<inComingEdges.size());
-//            if(outGoingEdges.size() !=0)
-//            {
-//                INFO("OUT GOING EDGE " <<  debruijn_.length(outGoingEdges[0]) );
-//            }
-//            if(inComingEdges.size() !=0)
-//            {
-//                INFO("IN COMING EDGE " << debruijn_.length(inComingEdges[0]));
-//            }
-//        }
-        //end debug
+
         for(size_t currentNodeId = maxNodeId ; currentNodeId != currentMaxNodeId ; ++currentNodeId)
         {
             VertexId id = redGraph.AddVertex();
@@ -290,7 +276,6 @@ void WeakerGluer<Graph>::GenerateRedGraph(Graph &redGraph){
         {
             if(iter->second == debruijn_.str(pairInfo.first))
             {
-                INFO("EVER REACHED ");
                 isAlreadyAdded = true;
                 break;
             }
