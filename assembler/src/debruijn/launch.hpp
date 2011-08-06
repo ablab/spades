@@ -715,11 +715,11 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		PairedInfoIndex<NCGraph> new_index(new_graph);
 		EdgesPositionHandler<NCGraph> EdgePosBefore(new_graph);
 
-		Graph conj_copy_graph(k);
+		/*Graph conj_copy_graph(k);
 		IdTrackHandler<Graph> conj_IntIds(conj_copy_graph,
 				IntIds.MaxVertexId(), IntIds.MaxEdgeId());
 		PairedInfoIndex<Graph> conj_copy_index(conj_copy_graph);
-		/*
+
 		 scanConjugateGraph(conj_copy_graph, conj_IntIds,
 		 work_tmp_dir + "graph", conj_copy_index);
 		 printGraph(conj_copy_graph, conj_IntIds, work_tmp_dir + "graph_copy",
@@ -806,8 +806,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 		OutputContigs(resolved_graph, output_folder + "contigs_final.fasta");
 		string consensus_folder = output_folder + "consensus/";
-		OutputSingleFileContigs(g, consensus_folder);
-		SelectReadsForConsensus<k, Graph>(g, index, reads, consensus_folder);
+		OutputSingleFileContigs(new_graph, consensus_folder);
+		//SelectReadsForConsensus<k, Graph>(g, index, reads, consensus_folder);
 
 		OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
 
