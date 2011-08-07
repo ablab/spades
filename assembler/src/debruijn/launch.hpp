@@ -37,6 +37,7 @@
 #include "rectangleRepeatResolver.hpp"
 #include "distance_estimation.hpp"
 #include "one_many_contigs_enlarger.hpp"
+#include "loop_resolver.hpp"
 #include <cstdlib>
 //#include "dijkstra.hpp"
 
@@ -869,6 +870,10 @@ void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index,
 			resolvedGraph, IdTrackLabelerResolved);
 	INFO("rect graph written: " + work_tmp_dir + "rectgraph.dot");
 
+    for(auto iter = resolvedGraph.SmartEdgeBegin() ; !iter.IsEnd(); ++iter)
+    {
+        INFO("COV:" << resolvedGraph.coverage(*iter));
+    }
 
 //	ClipTips(resolvedGraph);
 //	RemoveLowCoverageEdges(resolvedGraph);
@@ -877,17 +882,24 @@ void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index,
 //	RemoveLowCoverageEdges(resolvedGraph);
 //	see if two methods result in the same graph.
 
-    for(int i = 0; i < 2; i ++) {
+    for(int i = 0; i < 3; i ++) {
         ClipTips(resolvedGraph);
         RemoveBulges2(resolvedGraph);
-        RemoveLowCoverageEdges(resolvedGraph);
+        RemoveLowCoverageEdgesForResolver(resolvedGraph);
+        
     }
-    one_many_contigs_enlarger<NCGraph> N50enlarger(resolvedGraph);
-    N50enlarger.one_many_resolve();
+    LoopResolver<NCGraph> loopResolver(resolvedGraph,0.5);
+    loopResolver.ResolveLoops();
 
-//seems to me that rectangle resolver using just the red graph and split method result in the same graph.
+   one_many_contigs_enlarger<NCGraph> N50enlarger(resolvedGraph);
+   N50enlarger.one_many_resolve();
+   N50enlarger.Loops_resolve();
+   omnigraph::Compressor<NCGraph> compressor(resolvedGraph);
+   compressor.CompressAllVertices();
+   omnigraph::Cleaner<NCGraph> cleaner(resolvedGraph);
+   cleaner.Clean();
 
-
+   
 
     IdTrackHandler<NCGraph> idTrackerAfter(resolvedGraph);
     RealIdGraphLabeler<NCGraph> idLabelAfter(resolvedGraph,
