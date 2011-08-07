@@ -271,24 +271,25 @@ void WeakerGluer<Graph>::GenerateRedGraph(Graph &redGraph){
         PairInfo pairInfo = iter->first;
         VertexId endVertex = nodeIntToVertexId[iter->second];
         VertexId startVertex = nodeIntToVertexId[rightPairInfosToNewNodesID[pairInfo]];
-        auto range = edgesMaps.equal_range(make_pair(startVertex, endVertex));
-        bool isAlreadyAdded = false;
-        for(auto iter = range.first ; iter != range.second ; ++iter)
+
+        bool correctIsAlreadyAdded = false;
+        vector<EdgeId>  outGoingEdges = redGraph.OutgoingEdges(startVertex);
+        for(auto iterOG = outGoingEdges.begin() ; iterOG != outGoingEdges.end(); ++iterOG)
         {
-            if(iter->second == debruijn_.str(pairInfo.first))
+            if((redGraph.EdgeEnd(*iterOG) == endVertex) && (redGraph.EdgeNucls(*iterOG) == debruijn_.EdgeNucls(pairInfo.first))) 
             {
-                isAlreadyAdded = true;
+                correctIsAlreadyAdded =true;
                 break;
             }
-
         }
-        if(isAlreadyAdded)
+        
+
+        if(correctIsAlreadyAdded )
             continue;
-        edgesMaps.insert(make_pair( make_pair(startVertex, endVertex ), (debruijn_.str(pairInfo.first) ) ));
-        redGraph.AddEdge(startVertex, endVertex, debruijn_.data(pairInfo.first));
+        EdgeId addedEdge = redGraph.AddEdge(startVertex, endVertex, debruijn_.data(pairInfo.first));
+        redGraph.SetCoverage(addedEdge,debruijn_.coverage(pairInfo.first)* debruijn_.length(pairInfo.first) );// I don't understand the mechanism of removing weak edges, so I use the way Shurik and Dima did
     }
 }
-
 
 template<class Graph>
 size_t WeakerGluer<Graph>::Glue(vector<PairInfo> &leftPairInfos, vector<PairInfo> &rightPairInfos, Direction direction,
