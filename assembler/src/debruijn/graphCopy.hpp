@@ -82,8 +82,9 @@ public:
         //Copy Edges
         for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
             EdgeId edge = *iter;
-            new_graph.AddEdge(copy[graph_.EdgeStart(edge)],
+            EdgeId addedEdge = new_graph.AddEdge(copy[graph_.EdgeStart(edge)],
                     copy[graph_.EdgeEnd(edge)], graph_.data(edge));
+            new_graph.SetCoverage(addedEdge, graph_.coverage(edge)* graph_.length(edge));
         }
     }
 };

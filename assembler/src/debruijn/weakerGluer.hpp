@@ -287,7 +287,7 @@ void WeakerGluer<Graph>::GenerateRedGraph(Graph &redGraph){
         if(correctIsAlreadyAdded )
             continue;
         EdgeId addedEdge = redGraph.AddEdge(startVertex, endVertex, debruijn_.data(pairInfo.first));
-        redGraph.SetCoverage(addedEdge,debruijn_.coverage(pairInfo.first)* debruijn_.length(pairInfo.first) );// I don't understand the mechanism of removing weak edges, so I use the way Shurik and Dima did
+        redGraph.SetCoverage(addedEdge,debruijn_.coverage(pairInfo.first)* debruijn_.length(pairInfo.first) );// It is very strange that we have to normalized it every time by the edge length. 
     }
 }
 

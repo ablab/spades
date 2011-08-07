@@ -870,25 +870,37 @@ void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index,
 	INFO("rect graph written: " + work_tmp_dir + "rectgraph.dot");
 
 
-	ClipTips(resolvedGraph);
-	RemoveLowCoverageEdges(resolvedGraph);
+//	ClipTips(resolvedGraph);
+//	RemoveLowCoverageEdges(resolvedGraph);
+//
+//	ClipTips(resolvedGraph);
+//	RemoveLowCoverageEdges(resolvedGraph);
+//	see if two methods result in the same graph.
 
-	ClipTips(resolvedGraph);
-	RemoveLowCoverageEdges(resolvedGraph);
-    
-    
+    for(int i = 0; i < 2; i ++) {
+        ClipTips(resolvedGraph);
+        RemoveBulges2(resolvedGraph);
+        RemoveLowCoverageEdges(resolvedGraph);
+    }
+    one_many_contigs_enlarger<NCGraph> N50enlarger(resolvedGraph);
+    N50enlarger.one_many_resolve();
+
+//seems to me that rectangle resolver using just the red graph and split method result in the same graph.
+
+
+
     IdTrackHandler<NCGraph> idTrackerAfter(resolvedGraph);
-	RealIdGraphLabeler<NCGraph> idLabelAfter(resolvedGraph,
-			idTrackerAfter);
+    RealIdGraphLabeler<NCGraph> idLabelAfter(resolvedGraph,
+            idTrackerAfter);
 
-	omnigraph::WriteSimple(work_tmp_dir + "rectgraphAfter.dot", "rectgraphAfter",
-			resolvedGraph, idLabelAfter);
-	INFO("rect graph written: " + work_tmp_dir + "rectgraphAfter.dot");
+    omnigraph::WriteSimple(work_tmp_dir + "rectgraphAfter.dot", "rectgraphAfter",
+            resolvedGraph, idLabelAfter);
+    INFO("rect graph written: " + work_tmp_dir + "rectgraphAfter.dot");
 
-   EmptyGraphLabeler<NonconjugateDeBruijnGraph> emptyLabeler;
-	omnigraph::WriteSimple(work_tmp_dir + "beforerectgraph.dot",
-			"beforerectgraph", graph, emptyLabeler);
-	INFO("rect graph written: " + work_tmp_dir + "beforerectgraph.dot");
+    EmptyGraphLabeler<NonconjugateDeBruijnGraph> emptyLabeler;
+    omnigraph::WriteSimple(work_tmp_dir + "beforerectgraph.dot",
+            "beforerectgraph", graph, emptyLabeler);
+    INFO("rect graph written: " + work_tmp_dir + "beforerectgraph.dot");
 
 	OutputContigs(resolvedGraph, output_folder + "rectcontig.fasta");
 	OutputContigs(graph, output_folder + "before-rectcontig.fasta");
