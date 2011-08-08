@@ -9,6 +9,8 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
 #include "read/ireadstream.hpp"
 #include "defs.hpp"
 #include "mathfunctions.hpp"
@@ -54,16 +56,7 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block) {
 		uf->find_set(block[i]);
 		for (uint32_t j = i + 1; j < blockSize; j++) {
 			if (hamdistKMer(k_[block[i]].first, k_[block[j]].first, tau_ ) <= tau_) {
-				#pragma omp critical
-				{
-				cout << "Comparing " << k_[block[i]].first.str().data() << "  " << k_[block[i]].first.start() << "\n          " << k_[block[j]].first.str().data() << "  " << k_[block[j]].first.start() << "  ok!\n";
-				}
 				uf->unionn(block[i], block[j]);
-			} else {
-				#pragma omp critical
-				{
-				cout << "Comparing " << k_[block[i]].first.str().data() << "  " << k_[block[i]].first.start() << "\n          " << k_[block[j]].first.str().data() << "  " << k_[block[j]].first.start() << "\n";
-				}
 			}
 		}
 	}
@@ -71,16 +64,13 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block) {
 }
 
 void KMerClustering::clusterMerge(vector<unionFindClass *>uf, unionFindClass * ufMaster) {
-	// cout << "Merging union find files..." << endl;
 	vector<string> row;
 	vector<vector<int> > classes;
 	for (uint32_t i = 0; i < uf.size(); i++) {
 		classes.clear();
 		uf[i]->get_classes(classes);
-		// cout << classes.size() << " classes:" << endl;
 		delete uf[i];
 		for (uint32_t j = 0; j < classes.size(); j++) {
-			//cout << "class " << j << " with " << classes[j].size() << " subclasses" << endl;
 			uint32_t first = classes[j][0];
 			ufMaster->find_set(first);
 			for (uint32_t k = 0; k < classes[j].size(); k++) {
@@ -341,10 +331,10 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	
 	bool cons_suspicion = false;
 	for (size_t k=0; k<bestCenters.size(); ++k) if (centersInCluster[k] == -1) cons_suspicion = true;
-	if (cons_suspicion) {
+	/*if (cons_suspicion) {
 		#pragma omp critical
 		{
-		cout << "\nConsensus suspicion. Centers: \n";
+		cout << "\nCenters: \n";
 		for (size_t k=0; k<bestCenters.size(); ++k) {
 			cout << "  " << bestCenters[k].first.data() << " " << bestCenters[k].second << " ";
 			if ( centersInCluster[k] >= 0 ) cout << k_[block[centersInCluster[k]]].first.start();
@@ -356,7 +346,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		}
 		cout << endl;
 		}
-	}
+	}*/
 	
 	// it may happen that consensus string from one subcluster occurs in other subclusters
 	// we need to check for that
@@ -380,7 +370,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		}
 	}
 
-	if (cons_suspicion) {
+	/*if (cons_suspicion) {
 		#pragma omp critical
 		{
 		cout << "\nAfter the check we got centers: \n";
@@ -391,7 +381,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		}
 		cout << "\n";
 		}
-	}
+	}*/
 
 	for (size_t k=0; k<bestCenters.size(); ++k) {
 		if (bestCenters[k].second == 0) {
@@ -450,11 +440,11 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq, ofstre
 	int effective_threads = min(nthreads_, tau_+1);
 	vector<unionFindClass *> uf(tau_ + 1);
 	
-	// cout << "Starting split kmer processing in " << effective_threads << " threads." << endl;
-
 	#pragma omp parallel for shared(uf, vskpq) num_threads(effective_threads)
 	for (int i = 0; i < tau_ + 1; i++) {
 		uf[i] = new unionFindClass(k_.size()); 
+
+		boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > sub_equal = boost::bind(PositionKMer::equalSubKMers, _1, _2, &k_, tau_, PositionKMer::subKMerPositions->at(i), PositionKMer::subKMerPositions->at(i+1) );
 
 		string sbuf;
 		(*vskpq)[i].initPQ();
@@ -465,7 +455,7 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq, ofstre
 		while (!(*vskpq)[i].emptyPQ()) {
 			hint_t cur = (*vskpq)[i].nextPQ();
 
-			if ( PositionKMer::equalSubKMers(last, cur, &k_, tau_, i) ) { //add to current reads
+			if ( sub_equal(last, cur) ) { //add to current reads
 				block.push_back(cur);
 			} else {
 				processBlock(uf[i], block);
