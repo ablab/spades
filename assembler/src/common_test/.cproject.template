@@ -20,10 +20,10 @@
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.2028742134.1197645316." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.409705617" name="cdt.managedbuild.toolchain.gnu.base" superClass="cdt.managedbuild.toolchain.gnu.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.1903724761" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder arguments="-C ../../build/${ConfigName}/${ProjName}" command="make" enabledIncrementalBuild="false" id="cdt.managedbuild.target.gnu.builder.base.344031545" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+							<builder arguments="-C ../../build/${ConfigName}/${ProjName}" command="make" enabledIncrementalBuild="true" id="cdt.managedbuild.target.gnu.builder.base.344031545" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.810955102" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.663132642" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
-								<option id="gnu.cpp.compiler.option.include.paths.765362461" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+								<option id="gnu.cpp.compiler.option.include.paths.765362461" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../common"/>
 									<listOptionValue builtIn="false" value="../../omni"/>
 									<listOptionValue builtIn="false" value="../../libs"/>
@@ -31,7 +31,7 @@
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.850295122" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1826705786" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
-								<option id="gnu.c.compiler.option.include.paths.2009820622" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+								<option id="gnu.c.compiler.option.include.paths.2009820622" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../common"/>
 									<listOptionValue builtIn="false" value="../../omni"/>
 									<listOptionValue builtIn="false" value="../../libs"/>
@@ -46,7 +46,7 @@
 								</inputType>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.base.361480721" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
-								<option id="gnu.both.asm.option.include.paths.807527234" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+								<option id="gnu.both.asm.option.include.paths.807527234" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../common"/>
 									<listOptionValue builtIn="false" value="../../omni"/>
 									<listOptionValue builtIn="false" value="../../libs"/>
@@ -76,10 +76,10 @@
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.2028742134.1197645316.1880221223." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.1102205124" name="cdt.managedbuild.toolchain.gnu.base" superClass="cdt.managedbuild.toolchain.gnu.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.1712657681" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder arguments="-C ../../build/${ConfigName}/${ProjName}" command="make" enabledIncrementalBuild="false" id="cdt.managedbuild.target.gnu.builder.base.1296912814" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+							<builder arguments="-C ../../build/${ConfigName}/${ProjName}" command="make" enabledIncrementalBuild="true" id="cdt.managedbuild.target.gnu.builder.base.1296912814" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1886814606" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1512946593" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
-								<option id="gnu.cpp.compiler.option.include.paths.713052006" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+								<option id="gnu.cpp.compiler.option.include.paths.713052006" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../common"/>
 									<listOptionValue builtIn="false" value="../../omni"/>
 									<listOptionValue builtIn="false" value="../../libs"/>
@@ -87,7 +87,7 @@
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1473148491" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1778501740" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
-								<option id="gnu.c.compiler.option.include.paths.1954732003" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+								<option id="gnu.c.compiler.option.include.paths.1954732003" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../common"/>
 									<listOptionValue builtIn="false" value="../../omni"/>
 									<listOptionValue builtIn="false" value="../../libs"/>
@@ -102,7 +102,7 @@
 								</inputType>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.base.602916655" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
-								<option id="gnu.both.asm.option.include.paths.2027850983" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+								<option id="gnu.both.asm.option.include.paths.2027850983" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../common"/>
 									<listOptionValue builtIn="false" value="../../omni"/>
 									<listOptionValue builtIn="false" value="../../libs"/>
