@@ -19,7 +19,7 @@ using namespace debruijn_graph;
 //Find bidirectional path in given genome path
 int FindInGenomePath(BidirectionalPath& myPath, Path<Graph::EdgeId>& genomePath) {
 	if (myPath.size() > genomePath.size()) {
-		INFO("Warning, unexpected path length")
+		INFO("Warning, unexpected path length");
 		return -1;
 	}
 
@@ -43,7 +43,7 @@ int FindInGenomePath(BidirectionalPath& myPath, Path<Graph::EdgeId>& genomePath)
 //Find inexact match to genome path
 size_t FindInGenomeInexact(Graph& g, BidirectionalPath& myPath, Path<Graph::EdgeId>& genomePath, int& startPos, size_t& maxLengthMached) {
 	if (myPath.size() > genomePath.size()) {
-		INFO("Warning, unexpected path length")
+		INFO("Warning, unexpected path length");
 		return -1;
 	}
 

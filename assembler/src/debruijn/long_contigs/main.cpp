@@ -301,7 +301,7 @@ int main() {
 	PrintPathsShort(g, rawSeeds);
 	WriteGraphWithPathsSimple(output_dir + "raw_seeds.dot", "raw_seeds", g, rawSeeds, path1, path2);
 
-	RemoveSubpaths(rawSeeds, seeds);
+	RemoveSubpaths(g, rawSeeds, seeds);
 	INFO("No duplicates");
 	PrintPathsShort(g, seeds);
 	WriteGraphWithPathsSimple(output_dir + "no_dupl_seeds.dot", "no_dupl_seeds", g, seeds, path1, path2);
@@ -322,19 +322,20 @@ int main() {
 	PrintPathsShort(g, paths);
 
 	std::vector<BidirectionalPath> result;
-	RemoveSubpaths(paths, result);
+	RemoveSubpaths(g, paths, result);
 	INFO("Final paths");
 	PrintPathsShort(g, result);
 
 	found = PathsInGenome<K>(g, index, sequence, result, path1, path2);
 	INFO("Good paths found " << found << " in total " << result.size());
 	INFO("Path coverage " << PathsCoverage(g, result));
+	INFO("Path length coverage " << PathsLengthCoverage(g, result));
 
 	WriteGraphWithPathsSimple(output_dir + "paths.dot", "paths", g, result, path1, path2);
 
-	INFO("Genome paths");
-	PrintPathWithVertices(g, path1);
-	PrintPathWithVertices	(g, path2);
+//	INFO("Genome paths");
+//	PrintPathWithVertices(g, path1);
+//	PrintPathWithVertices	(g, path2);
 
 
 	DeleteEtalonInfo(pairedInfos);

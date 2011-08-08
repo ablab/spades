@@ -40,12 +40,16 @@ void RecountLengthsBackward(Graph& g, BidirectionalPath& path, PathLengths& leng
 
 
 //Calculate weight for particular path extension
-double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, EdgeId e, PairedInfoIndexLibrary& pairedInfoLibrary, bool forward) {
+double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, EdgeId e, PairedInfoIndexLibrary& pairedInfoLibrary,
+		bool forward, size_t edgesToExclude) {
 	double weight = 0;
 	int edgeLength = forward ? 0 : g.length(e);
+	size_t start = forward ? 0 : edgesToExclude;
+	size_t end = forward ? path.size() - edgesToExclude : path.size();
+
 	static int DISTANCE_DEV = CONFIG.read<bool>("etalon_info_mode") ? LC_CONFIG.read<int>("etalon_distance_dev") : LC_CONFIG.read<int>("real_distance_dev");
 
-	for(size_t i = 0; i < path.size(); ++i) {
+	for(size_t i = start; i < end; ++i) {
 		EdgeId edge = path[i];
 		omnigraph::PairedInfoIndex<Graph>::PairInfos pairs =
 				forward ? pairedInfoLibrary.pairedInfoIndex->GetEdgePairInfo(edge, e) : pairedInfoLibrary.pairedInfoIndex->GetEdgePairInfo(e, edge);
@@ -75,8 +79,11 @@ bool ExtensionGoodEnough(double weight) {
 //Choose best matching extension
 //Threshold to be discussed
 EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, const std::vector<EdgeId>& edges,
-		PathLengths& lengths, PairedInfoIndices& pairedInfo, double& maxWeight, bool forward) {
+		PathLengths& lengths, PairedInfoIndices& pairedInfo, double& maxWeight, bool forward, size_t edgesToExclude) {
 	//INFO("Choosing extension " << (forward ? "forward" : "backward"));
+	if (edges.size() == 1) {
+		return edges.back();
+	}
 
 	maxWeight = 0;
 	EdgeId bestEdge = 0;
@@ -85,7 +92,7 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, const std::vector<Edge
 		//INFO("Calculating weight");
 		double weight = 0;
 		for (auto lib = pairedInfo.begin(); lib != pairedInfo.end(); ++lib) {
-			weight += ExtentionWeight(g, path, lengths, *iter, *lib, forward);
+			weight += ExtentionWeight(g, path, lengths, *iter, *lib, forward, edgesToExclude);
 			//INFO(weight);
 		}
 		//INFO("Weight " << weight);
@@ -163,15 +170,43 @@ void RemoveLoopBackward(BidirectionalPath& path, CycleDetector& detector, bool f
 	}
 }
 
+//Count edges to be excluded
+size_t EdgesToExcludeForward(Graph& g, BidirectionalPath& path) {
+	VertexId currentVertex = g.EdgeEnd(path.back());
+	size_t toExclude = 0;
+
+	while (g.CheckUniqueIncomingEdge(currentVertex)) {
+		currentVertex = g.EdgeStart(g.GetUniqueIncomingEdge(currentVertex));
+		++toExclude;
+	}
+
+	//INFO("Edges to exclude backward " << toExclude);
+	return toExclude;
+}
+
+//Count edges to be excludeD
+size_t EdgesToExcludeBackward(Graph& g, BidirectionalPath& path) {
+	VertexId currentVertex = g.EdgeStart(path.front());
+	size_t toExclude = 0;
+
+	while (g.CheckUniqueOutgoingEdge(currentVertex)) {
+		currentVertex = g.EdgeEnd(g.GetUniqueOutgoingEdge(currentVertex));
+		++toExclude;
+	}
+
+	//INFO("Edges to exclude backward " << toExclude);
+	return toExclude;
+}
+
 
 //Extend path forward
 bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		CycleDetector& detector, PairedInfoIndices& pairedInfo) {
 
-	double w;
+	double w = 0;
 	static bool FULL_LOOP_REMOVAL = LC_CONFIG.read<bool>("full_loop_removal");
 	std::vector<EdgeId> edges = g.OutgoingEdges(g.EdgeEnd(path.back()));
-	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, true);
+	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, true, EdgesToExcludeForward(g, path));
 
 	if (extension == 0) {
 		return false;
@@ -201,10 +236,10 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		CycleDetector& detector, PairedInfoIndices& pairedInfo) {
 
-	double w;
+	double w = 0;
 	static bool FULL_LOOP_REMOVAL = LC_CONFIG.read<bool>("full_loop_removal");
 	std::vector<EdgeId> edges = g.IncomingEdges(g.EdgeStart(path.front()));
-	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, false);
+	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, false, EdgesToExcludeBackward(g, path));
 
 	if (extension == 0) {
 		return false;

@@ -13,7 +13,7 @@ insert_size = 220
 #additional libs
 lib_count = 1
 read_size_1 = 100
-insert_size_1 = 1400
+insert_size_1 = 2000
 read_size_2 = 100
 insert_size_2 = 2100
 read_size_3 = 100

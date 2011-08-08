@@ -58,7 +58,7 @@ size_t EdgeCount(Graph& g) {
 }
 
 //Path length
-size_t PathLength(Graph& g, BidirectionalPath& path) {
+size_t PathLength(Graph& g, const BidirectionalPath& path) {
 	double currentLength = 0;
 
 	for(auto iter = path.begin(); iter != path.end(); ++iter) {
@@ -324,9 +324,27 @@ void RemoveDuplicate(const std::vector<BidirectionalPath>& paths, std::vector<Bi
 	}
 }
 
-//Remove subpaths paths
-void RemoveSubpaths(const std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& output) {
-	for (auto path = paths.begin(); path != paths.end(); ++path) {
+class SimplePathComparator {
+private:
+	Graph& g_;
+
+public:
+	SimplePathComparator(Graph& g): g_(g) {}
+
+	bool operator() (const BidirectionalPath& path1, const BidirectionalPath& path2) {
+		return PathLength(g_, path1) > PathLength(g_, path2);
+	}
+};
+
+//Remove subpaths
+void RemoveSubpaths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& output) {
+	std::vector<BidirectionalPath> temp(paths.size());
+	std::copy(paths.begin(), paths.end(), temp.begin());
+
+	SimplePathComparator pathComparator(g);
+	std::sort(temp.begin(), temp.end(), pathComparator);
+
+	for (auto path = temp.begin(); path != temp.end(); ++path) {
 		bool copy = true;
 		for (auto iter = output.begin(); iter != output.end(); ++iter) {
 			if (ContainsPath(*iter, *path)) {
