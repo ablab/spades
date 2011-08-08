@@ -120,6 +120,7 @@ void Quake::Count(string ifile_name, string ofile_name,
     FILE *ifile = fopen(ifile_name, "rb");
     EvalFile(ifile, ofile);
     fclose(ifile);
+    remove(ifile_name);
   }
   fclose(ofile);
   cur_state_ = kCountDone;
