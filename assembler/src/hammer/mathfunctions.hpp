@@ -8,8 +8,8 @@
 #ifndef MATHFUNCTIONS_H
 #define MATHFUNCTIONS_H
 
-#include<cmath>
-#include "hammer/hammer_tools.hpp"
+#include <cmath>
+#include "hammer_tools.hpp"
 #include "position_kmer.hpp"
 
 /**

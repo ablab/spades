@@ -8,7 +8,7 @@
 #ifndef UTILS_HPP_
 #define UTILS_HPP_
 
-#include "common/io/paired_read.hpp"
+#include "io/paired_read.hpp"
 #include "seq_map.hpp"
 #include "omni_utils.hpp"
 #include "logging.hpp"

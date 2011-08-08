@@ -19,7 +19,7 @@
 #ifndef COMMON_IO_RCREADERWRAPPER_HPP_
 #define COMMON_IO_RCREADERWRAPPER_HPP_
 
-#include "common/io/ireader.hpp"
+#include "io/ireader.hpp"
 
 namespace io {
 

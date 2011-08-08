@@ -10,12 +10,12 @@ DECL_PROJECT_LOGGER("a")
 #include "statistics.hpp"
 #include "omni_tools.hpp"
 #include "visualization_utils.hpp"
-#include "osequencestream.hpp"
-#include "libs/getopt_pp/getopt_pp_standalone.h"
+#include "read/osequencestream.hpp"
+#include "getopt_pp/getopt_pp_standalone.h"
 #include <iostream>
-#include "common/io/reader.hpp"
-#include "common/io/converting_reader_wrapper.hpp"
-#include "common/io/cutting_reader_wrapper.hpp"
+#include "io/reader.hpp"
+#include "io/converting_reader_wrapper.hpp"
+#include "io/cutting_reader_wrapper.hpp"
 
 using namespace std;
 using namespace GetOpt;

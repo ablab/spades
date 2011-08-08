@@ -4,8 +4,8 @@
 
 #include "launch.hpp"
 #include "config.hpp"
-#include "common/logging.hpp"
-#include "common/simple_tools.hpp"
+#include "logging.hpp"
+#include "simple_tools.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>

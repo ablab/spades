@@ -13,8 +13,8 @@
 #include "omni_tools.hpp"
 #include "omnigraph.hpp"
 
-#include "debruijn/ID_track_handler.hpp"
-#include "debruijn/edges_position_handler.hpp"
+#include "ID_track_handler.hpp"
+#include "edges_position_handler.hpp"
 #include "EdgeVertexFilter.hpp"
 using namespace omnigraph;
 using namespace debruijn_graph;

@@ -26,9 +26,9 @@
 #include <vector>
 #include "log4cxx/logger.h"
 #include "log4cxx/basicconfigurator.h"
-#include "common/read/ireadstream.hpp"
-#include "common/read/read.hpp"
-#include "common/sequence/seq.hpp"
+#include "read/ireadstream.hpp"
+#include "read/read.hpp"
+#include "sequence/seq.hpp"
 #include "hammer/valid_kmer_generator.hpp"
 #define SUPPRESS_UNUSED(X) ((void) (X))
 

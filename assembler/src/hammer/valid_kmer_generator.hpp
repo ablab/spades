@@ -4,8 +4,8 @@
 #include <cmath>
 #include <string>
 #include <vector>
-#include "common/read/read.hpp"
-#include "common/sequence/seq.hpp"
+#include "read/read.hpp"
+#include "sequence/seq.hpp"
 #include "position_read.hpp"
 /**
  * This class is designed to iterate through valid k-mers in read.

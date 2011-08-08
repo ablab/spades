@@ -11,8 +11,8 @@
 #include "logging.hpp"
 #include "omnigraph.hpp"
 #include "omnigraph_nucls.hpp"
-#include "common/io/single_read.hpp"
-#include "common/io/reader.hpp"
+#include "io/single_read.hpp"
+#include "io/reader.hpp"
 
 namespace abruijn {
 
