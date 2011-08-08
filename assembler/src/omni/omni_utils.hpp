@@ -7,8 +7,10 @@
 #include "dijkstra.hpp"
 #include <cmath>
 #include <iterator>
+#include <vector>
 
 namespace omnigraph {
+using std::vector;
 
 //DECL_LOGGER("omg.graph")
 
@@ -105,6 +107,19 @@ public:
 	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
 			EdgeId new_edge2) {
 	}
+
+	/**
+	 * High level event which is triggered when vertex split operation is performed on graph, which is when
+	 * vertex is split into several vertices, possibly doubling edges.
+	 * Since this is high level operation events of creation of new edges and vertex
+	 * should not have been triggered yet when this event was triggered.
+	 * @param oldVertex vertex to be split
+	 * @param newEdges edges which are results of split, paired with their preimage
+	 * @param newVertex - resulting vertex
+	 */
+	virtual void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) {
+	}
+
 
 	virtual ~ActionHandler() {
 		TRACE("~ActionHandler");
@@ -205,6 +220,11 @@ public:
 	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
 	EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) const {
 		handler->HandleSplit(old_edge, new_edge1, new_edge2);
+	}
+
+	virtual void ApplVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
+			VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) const {
+			handler->HandleVertexSplit(newVertex, newEdges, oldVertex);
 	}
 
 	virtual ~SimpleHandlerApplier() {
@@ -468,7 +488,6 @@ public:
 template<typename ElementId>
 class Path {
 public:
-
 	vector<ElementId> sequence_;
 	int start_pos_;
 	int end_pos_;
@@ -502,6 +521,15 @@ public:
 	ElementId operator[](size_t index) const {
 		return sequence_[index];
 	}
+
+	iterator begin() {
+		return sequence_.begin();
+	}
+
+	iterator end() {
+		return sequence_.end();
+	}
+
 };
 
 template<class Graph>

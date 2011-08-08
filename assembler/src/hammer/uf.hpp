@@ -9,12 +9,12 @@
 #ifndef UF_HPP
 #define UF_HPP
 
-#include<iostream>
-#include<fstream>
-#include<strstream>
-#include<string.h>
-#include<seq.hpp>
-#include<vector>
+#include <iostream>
+#include <fstream>
+#include <strstream>
+#include <string.h>
+#include "sequence/seq.hpp"
+#include <vector>
 
 #define READ_BUFFER 256
 
@@ -140,7 +140,7 @@ private:
 		assert(ifs_.good());
 		
 		char buffer[READ_BUFFER];
-		istrstream ostr(buffer, READ_BUFFER);
+		istringstream ostr(buffer, READ_BUFFER);
 		
 		ufc_.clear();
 		int index, count, total, dist;

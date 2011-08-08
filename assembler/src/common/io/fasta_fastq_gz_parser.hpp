@@ -22,11 +22,11 @@
 #include <zlib.h>
 #include <string>
 #include <cassert>
-#include "libs/kseq/kseq.h"
-#include "common/io/single_read.hpp"
-#include "common/io/parser.hpp"
-#include "common/sequence/quality.hpp"
-#include "common/sequence/nucl.hpp"
+#include "kseq/kseq.h"
+#include "io/single_read.hpp"
+#include "io/parser.hpp"
+#include "sequence/quality.hpp"
+#include "sequence/nucl.hpp"
 
 namespace io {
 

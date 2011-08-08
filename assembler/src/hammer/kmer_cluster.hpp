@@ -21,7 +21,7 @@ public:
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
-	void process(std::string dirprefix, std::vector< SubKMerPQ > * vs, ofstream * ofs = NULL);
+	void process(std::string dirprefix, std::vector< SubKMerPQ > * vs, ofstream * ofs, ofstream * ofs_bad);
 
 	/// free up memory
 	void clear() {
@@ -35,6 +35,7 @@ private:
 		
 	int hamdistKMer(const PositionKMer & x, const PositionKMer & y, int tau = K);
 	int hamdistKMer(const PositionKMer & x, const string & y, int tau = K);
+	int hamdistKMer(const string & x, const string & y, int tau = K);
 	double calcMultCoef(std::vector<int> & distances, const std::vector<int> & cl);
 	std::string find_consensus(const std::vector<int> & block);
 

@@ -8,12 +8,14 @@
 #ifndef UTILS_HPP_
 #define UTILS_HPP_
 
-#include "common/io/paired_read.hpp"
+#include "io/paired_read.hpp"
 #include "seq_map.hpp"
 #include "omni_utils.hpp"
 #include "logging.hpp"
 #include "paired_info.hpp"
 #include "statistics.hpp"
+#include "xmath.h"
+#include <boost/optional.hpp>
 //#include "common/io/paired_read.hpp"
 namespace debruijn_graph {
 
@@ -188,7 +190,50 @@ public:
 	}
 };
 
-class NoInfo {
+template<size_t k, class Graph>
+class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef Seq<k> Kmer;
+	typedef typename std::tr1::unordered_map<Kmer, Kmer, typename Kmer::hash> MapType;
+
+	void RemapKmers(const Sequence& old_s, const Sequence& new_s) {
+		Kmer old_kmer(old_s);
+		old_kmer >> 0;
+		for (size_t i = k - 1; i < old_s.size(); ++i) {
+			old_kmer << old_s[i];
+			size_t old_kmer_offset = i - k + 1;
+			size_t new_kmer_offest = std::floor(1. * old_kmer_offset / (old_s.size() - k + 1) * (new_s.size() - k + 1) + 0.5);
+			Kmer new_kmer(new_s, new_kmer_offest);
+			mapping_[old_kmer] = new_kmer;
+		}
+	}
+
+	const Graph& g_;
+	MapType mapping_;
+
+public:
+	KmerMapper(const Graph& g) : g_(g) {
+
+	}
+
+	virtual ~KmerMapper() {
+
+	}
+
+	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+		assert(g_.GetNucls(new_edge) == g_.GetNucls(edge2));
+		RemapKmers(g_.GetNucls(edge1), g_.GetNucls(edge2));
+	}
+
+	Kmer Substitute(const Kmer& kmer) {
+		Kmer answer = kmer;
+		auto it = mapping_.find(answer);
+		while (it != mapping_.end()) {
+			answer = (*it).second;
+			it = mapping_.find(answer);
+		}
+		return answer;
+	}
 };
 
 /**
@@ -199,23 +244,26 @@ template<size_t k, class Graph>
 class SimpleSequenceMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
-	typedef EdgeIndex<k + 1, Graph> Index;
+	typedef Seq<k> Kmer;
+	typedef EdgeIndex<k, Graph> Index;
+	typedef KmerMapper<k, Graph> KmerSubs;
 private:
 	const Graph& g_;
 	const Index &index_;
+	const boost::optional<KmerSubs&> kmer_mapper_;
 
-	bool TryThread(Seq<k + 1> &kmer, vector<EdgeId> &passed,
+	bool TryThread(Kmer &kmer, vector<EdgeId> &passed,
 			size_t &endPosition) const {
 		EdgeId last = passed[passed.size() - 1];
 		if (endPosition + 1 < g_.length(last)) {
-			if (g_.EdgeNucls(last)[endPosition + k + 1] == kmer[k]) {
+			if (g_.EdgeNucls(last)[endPosition + k] == kmer[k - 1]) {
 				endPosition++;
 				return true;
 			}
 		} else {
 			vector<EdgeId> edges = g_.OutgoingEdges(g_.EdgeEnd(last));
 			for (size_t i = 0; i < edges.size(); i++) {
-				if (g_.EdgeNucls(edges[i])[k] == kmer[k]) {
+				if (g_.EdgeNucls(edges[i])[k - 1] == kmer[k - 1]) {
 					passed.push_back(edges[i]);
 					endPosition = 0;
 					return true;
@@ -225,8 +273,11 @@ private:
 		return false;
 	}
 
-	bool FindKmer(Seq<k + 1> &kmer, vector<EdgeId> &passed,
+	bool FindKmer(Kmer kmer, vector<EdgeId> &passed,
 			size_t &startPosition, size_t &endPosition) const {
+		if (kmer_mapper_) {
+			kmer = (*kmer_mapper_).Substitute(kmer);
+		}
 		if (index_.containsInIndex(kmer)) {
 			pair<EdgeId, size_t> position = index_.get(kmer);
 			endPosition = position.second;
@@ -241,7 +292,7 @@ private:
 		return false;
 	}
 
-	bool ProcessKmer(Seq<k + 1> &kmer, vector<EdgeId> &passed,
+	bool ProcessKmer(Kmer &kmer, vector<EdgeId> &passed,
 			size_t &startPosition, size_t &endPosition, bool valid) const {
 		if (valid) {
 			return TryThread(kmer, passed, endPosition);
@@ -255,10 +306,14 @@ public:
 	 * Creates SimpleSequenceMapper for given graph. Also requires index_ which should be synchronized
 	 * with graph.
 	 * @param g graph sequences should be mapped to
-	 * @param index index syncronized with graph
+	 * @param index index synchronized with graph
 	 */
 	SimpleSequenceMapper(const Graph& g, const Index& index) :
 			g_(g), index_(index) {
+	}
+
+	SimpleSequenceMapper(const Graph& g, const Index& index, const KmerSubs& kmer_mapper) :
+			g_(g), index_(index), kmer_mapper_(kmer_mapper) {
 	}
 
 	/**
@@ -268,15 +323,15 @@ public:
 
 	Path<EdgeId> MapSequence(const Sequence &read) const {
 		vector<EdgeId> passed;
-		if (read.size() <= k) {
+		if (read.size() <= k - 1) {
 			return Path<EdgeId>();
 		}
-		Seq<k + 1> kmer = read.start<k + 1>();
+		Kmer kmer = read.start<k>();
 		size_t startPosition = -1;
 		size_t endPosition = -1;
 		bool valid = ProcessKmer(kmer, passed, startPosition, endPosition,
 				false);
-		for (size_t i = k + 1; i < read.size(); ++i) {
+		for (size_t i = k; i < read.size(); ++i) {
 			kmer = kmer << read[i];
 			valid = ProcessKmer(kmer, passed, startPosition, endPosition,
 					valid);
@@ -305,7 +360,7 @@ class EtalonPairedInfoCounter {
 
 	void ProcessSequence(const Sequence& sequence,
 			omnigraph::PairedInfoIndex<Graph>& paired_info) {
-		SimpleSequenceMapper<k, Graph> sequence_mapper(g_, index_);
+		SimpleSequenceMapper<k + 1, Graph> sequence_mapper(g_, index_);
 		Path<EdgeId> path = sequence_mapper.MapSequence(sequence);
 
 //		cout << "PATH SIZE " << path.size() << endl;
@@ -319,9 +374,9 @@ class EtalonPairedInfoCounter {
 			size_t j = i + 1;
 			size_t length = 0;
 
-			while (j < path.size() && length < (insert_size_ + delta_)) {
-				if (length + g_.length(e) + g_.length(path[j]) + delta_
-						>= gap_) {
+			while (j < path.size() && length  + k + 2 <= (insert_size_ + delta_)) {
+				if (length + g_.length(e) + g_.length(path[j]) + delta_ + k
+						>= gap_ + 2 * (k + 1)) {
 //					cout << "HERE2 " <<  /*g_.length(e) + */length << endl;
 					AddEtalonInfo(paired_info, e, path[j],
 							g_.length(e) + length);
@@ -330,6 +385,33 @@ class EtalonPairedInfoCounter {
 			}
 		}
 
+	}
+
+	void CheckPairInfo(const Sequence& genome, omnigraph::PairedInfoIndex<Graph>& paired_info) {
+		SimpleSequenceMapper<k + 1, Graph> mapper(g_, index_);
+		Path<EdgeId> path = mapper.MapSequence(genome);
+		vector<EdgeId> sequence = path.sequence();
+		EdgeId prev = 0;
+		for (auto it = sequence.begin(); it != sequence.end(); ++it) {
+			if (prev != 0) {
+				vector<PairInfo<EdgeId> > infos = paired_info.GetEdgePairInfo(prev, *it);
+				bool imperfect_flag = false;
+				bool perfect_flag = false;
+				for (auto info_it = infos.begin(); info_it != infos.end(); info_it++) {
+					if (abs((*info_it).d - g_.length(prev)) < 2) {
+						imperfect_flag = true;
+					}
+					if (math::eq((*info_it).d, 0. + g_.length(prev))) {
+						perfect_flag = true;
+						break;
+					}
+				}
+				if (!perfect_flag && imperfect_flag) {
+					cerr<< "AAAAAAAAAAAAAAA" <<endl;
+				}
+			}
+			prev = *it;
+		}
 	}
 
 public:
@@ -350,6 +432,8 @@ public:
 			omnigraph::PairedInfoIndex<Graph>& paired_info) {
 		ProcessSequence(genome, paired_info);
 		ProcessSequence(!genome, paired_info);
+		//DEBUG
+		CheckPairInfo(genome, paired_info);
 	}
 };
 
@@ -372,24 +456,24 @@ class NewEtalonPairedInfoCounter {
 
 	void ProcessSequence(const Sequence& sequence,
 			set<PairInfo<EdgeId>>& temporary_info) {
-		int mod_gap = (gap_ > delta_) ? int(gap_) - int(delta_) : 0;
+		int mod_gap = (gap_ > delta_) ? gap_ - delta_ : 0;
 		Seq<k + 1> left(sequence);
-		0 >> left;
-		for (size_t left_idx = 0; left_idx <= sequence.size() - insert_size_ - gap_; ++left_idx) {
+		left >> 0;
+		for (size_t left_idx = 0; left_idx + k + 1 + mod_gap <= sequence.size(); ++left_idx) {
 			left = left << sequence[left_idx + k];
-			size_t right_idx = left_idx + read_length_ + mod_gap;
+			size_t right_idx = left_idx + mod_gap;
 			if (!index_.containsInIndex(left)) {
 				continue;
 			}
 			pair<EdgeId, size_t> left_pos = index_.get(left);
 			Seq<k + 1> right(sequence, right_idx);
-			0 >> right;
-			for (; right_idx < left_idx + insert_size_ + gap_ - k && right_idx < sequence.size() - k; ++right_idx) {
+			right >> 0;
+			for (; right_idx + k + 1 <= left_idx + insert_size_ + delta_ && right_idx + k + 1 <= sequence.size(); ++right_idx) {
 				right << sequence[right_idx + k];
-				pair<EdgeId, size_t> right_pos = index_.get(right);
 				if (!index_.containsInIndex(right)) {
 					continue;
 				}
+				pair<EdgeId, size_t> right_pos = index_.get(right);
 				AddEtalonInfo(temporary_info, left_pos.first, right_pos.first, right_idx - left_idx + left_pos.second - right_pos.second);
 			}
 		}
@@ -528,7 +612,7 @@ public:
 
 	StatCounter(Graph& graph, const EdgeIndex<k + 1, Graph>& index,
 	const Sequence& genome) {
-		SimpleSequenceMapper<k, Graph> sequence_mapper(graph, index);
+		SimpleSequenceMapper<k + 1, Graph> sequence_mapper(graph, index);
 		Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
 		Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
 		stats_.AddStat(new omnigraph::VertexEdgeStat<Graph>(graph));
@@ -577,7 +661,7 @@ private:
 	void ProcessPairedRead(
 			omnigraph::PairedInfoIndex<Graph> &paired_index,
 			const io::PairedRead& p_r,
-			debruijn_graph::SimpleSequenceMapper<kmer_size, Graph> &read_threader) {
+			debruijn_graph::SimpleSequenceMapper<kmer_size + 1, Graph> &read_threader) {
 		Sequence read1 = p_r.first().sequence();
 		Sequence read2 = p_r.second().sequence();
 		Path<EdgeId> path1 = read_threader.MapSequence(read1);
@@ -615,7 +699,7 @@ public:
 			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0));
 		}
 		typedef Seq<kmer_size + 1> KPOMer;
-		debruijn_graph::SimpleSequenceMapper<kmer_size, Graph> read_threader(
+		debruijn_graph::SimpleSequenceMapper<kmer_size + 1, Graph> read_threader(
 				graph_, index_);
 		stream_.reset();
 		while (!stream_.eof()) {
@@ -626,6 +710,91 @@ public:
 	}
 
 };
+
+/*
+template<class Graph, size_t k, class Stream>
+class ReadCountPairedIndexFiller {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef Seq<k> Kmer;
+	Graph &graph_;
+	const EdgeIndex<k, Graph>& index_;
+	const KmerMapper<k, Graph>& kmer_mapper_;
+	Stream& stream_;
+
+	inline size_t CountDistance(const io::PairedRead& paired_read) {
+		return paired_read.distance() - paired_read.second().size();
+	}
+
+//	size_t CorrectLength(Path<EdgeId> path, size_t idx) {
+//		size_t answer = graph_.length(path[idx]);
+//		if (idx == 0)
+//			answer -= path.start_pos();
+//		if (idx == path.size() - 1)
+//			answer -= graph_.length(path[idx]) - path.end_pos();
+//		return answer;
+//	}
+
+	void ProcessPairedRead(
+			omnigraph::PairedInfoIndex<Graph> &paired_index,
+			const io::PairedRead& p_r,
+			debruijn_graph::SimpleSequenceMapper<k, Graph> &read_threader) {
+		Sequence read1 = p_r.first().sequence();
+		size_t left_pos = 0;
+		Kmer left_kmer = Kmer(read1) >> 0;
+
+		Sequence read2 = p_r.second().sequence();
+		size_t right_pos = 0;
+		Kmer right_kmer = Kmer(read2) >> 0;
+
+
+		Path<EdgeId> path1 = read_threader.MapSequence(read1);
+		Path<EdgeId> path2 = read_threader.MapSequence(read2);
+		size_t distance = CountDistance(p_r);
+		int current_distance1 = distance + path1.start_pos()
+				- path2.start_pos();
+		for (size_t i = 0; i < path1.size(); ++i) {
+			int current_distance2 = current_distance1;
+			for (size_t j = 0; j < path2.size(); ++j) {
+				double weight = 1;
+//				double weight = CorrectLength(path1, i)
+//						* CorrectLength(path2, j);
+				PairInfo<EdgeId> new_info(path1[i], path2[j], current_distance2,
+						weight);
+				paired_index.AddPairInfo(new_info);
+				current_distance2 += graph_.length(path2[j]);
+			}
+			current_distance1 -= graph_.length(path1[i]);
+		}
+	}
+
+public:
+
+	ReadCountPairedIndexFiller(Graph &graph, const EdgeIndex<kmer_size + 1, Graph>& index
+			, const KmerMapper<kmer_size + 1, Graph>& kmer_mapper, Stream& stream) :
+			graph_(graph), index_(index), kmer_mapper_(kmer_mapper), stream_(stream) {
+
+	}
+
+	*
+	 * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
+
+	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0));
+		}
+		debruijn_graph::SimpleSequenceMapper<kmer_size + 1, Graph> read_threader(
+				graph_, index_, kmer_mapper_);
+		stream_.reset();
+		while (!stream_.eof()) {
+			io::PairedRead p_r;
+			stream_ >> p_r;
+			ProcessPairedRead(paired_index, p_r, read_threader);
+		}
+	}
+
+};
+*/
 
 /**
  * This class finds how certain _paired_ read is mapped to genome. As it is now it is hoped to work correctly only if read
@@ -670,14 +839,13 @@ public:
 
 };
 
-template<size_t k, class Graph, class Stream>
+template<size_t k, class Graph>
 class SingleReadMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef EdgeIndex<k + 1, Graph> Index;
 private:
-	SimpleSequenceMapper<k, Graph> read_seq_mapper;
-	Stream& stream_;
+	SimpleSequenceMapper<k + 1, Graph> read_seq_mapper;
 	const Graph& g_;
 	const Index& index_;
 public:
@@ -687,69 +855,35 @@ public:
 	 * @param g graph sequences should be mapped to
 	 * @param index index syncronized with graph
 	 */
-	SingleReadMapper(const Graph& g, const Index& index, Stream & stream):
-		read_seq_mapper(g, index), stream_(stream), g_(g), index_(index) {
-		stream_.reset();
+	SingleReadMapper(const Graph& g, const Index& index):
+		read_seq_mapper(g, index),  g_(g), index_(index) {
 	}
 
-	vector<EdgeId> GetContainingEdges(){
+	vector<EdgeId> GetContainingEdges(io::SingleRead& p_r){
 		vector<EdgeId> res;
-		if (!stream_.eof()) {
 
-			io::PairedRead p_r;
-			stream_ >> p_r;
-			Sequence read = p_r.first().sequence();
-			if (k+1 <= read.size()) {
-				Seq<k + 1> kmer = read.start<k + 1>();
-				bool found;
-				for (size_t i = k + 1; i <= read.size(); ++i) {
-					if (index_.containsInIndex(kmer)) {
-						pair<EdgeId, size_t> position = index_.get(kmer);
-						found = false;
-						for (size_t j = 0; j < res.size(); j++)
-							if (res[j] == position.first) {
-								found = true;
-								break;
-							}
-						if (!found)
-							res.push_back(position.first);
-					}
-					if (i != read.size())
-						kmer = kmer << read[i];
+		Sequence read = p_r.sequence();
+		if (k+1 <= read.size()) {
+			Seq<k + 1> kmer = read.start<k + 1>();
+			bool found;
+			for (size_t i = k + 1; i <= read.size(); ++i) {
+				if (index_.containsInIndex(kmer)) {
+					pair<EdgeId, size_t> position = index_.get(kmer);
+					found = false;
+					for (size_t j = 0; j < res.size(); j++)
+						if (res[j] == position.first) {
+							found = true;
+							break;
+						}
+					if (!found)
+						res.push_back(position.first);
 				}
+				if (i != read.size())
+					kmer = kmer << read[i];
 			}
 		}
+
 		return res;
-	}
-
-	pair<ReadMappingResult<Graph>*, ReadMappingResult<Graph>*> ThreadNext() {
-		if (!stream_.eof()) {
-      io::PairedRead p_r;
-			stream_ >> p_r;
-			Sequence read1 = p_r.first().sequence();
-			Sequence read2 = p_r.second().sequence();
-			Path<EdgeId> aligned_read[2];
-			aligned_read[0] = read_seq_mapper.MapSequence(read[0]);
-			aligned_read[1] = read_seq_mapper.MapSequence(read[1]);
-//			pair<ReadMappingResult<Graph>, ReadMappingResult<Graph> >  res;
-			vector<SingleReadThreaderResult<Graph>> res_v[2];
-			for(int i = 0; i < 2; i++) {
-				int start = 0;
-				res_v[i].clear();
-				if (!aligned_read[i].sequence_.empty()){
-					res_v[i].push_back(SingleReadThreaderResult<Graph>(aligned_read[i].sequence_[0], aligned_read[i].start_pos_, start));
-					start += g_.length(aligned_read[i].sequence_[0]) - aligned_read[i].start_pos_;
-				}
-				for(int j = 1; j < aligned_read[i].sequence_.size(); j++) {
-					res_v[i].push_back(SingleReadThreaderResult<Graph>(aligned_read[i].sequence_[j], 0, start));
-					start += g_.length(aligned_read[i].sequence_[j]);
-				}
-			}
-			return make_pair( new ReadMappingResult<Graph>(read[0], res_v[0]),new ReadMappingResult<Graph>(read[1], res_v[1]));
-	//		return res;
-
-		}
-//		else return NULL;
 	}
 
 };

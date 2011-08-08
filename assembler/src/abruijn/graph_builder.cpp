@@ -1,7 +1,7 @@
 #include "graph_builder.hpp"
 #include <ext/hash_map>
 #include "logging.hpp"
-#include "read.hpp"
+#include "read/read.hpp"
 
 namespace abruijn {
 

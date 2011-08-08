@@ -5,21 +5,21 @@
  *      Author: snikolenko
  */
  
-#include<omp.h>
-#include<cmath>
-#include<string>
-#include<iostream>
-#include<sstream>
-#include<fstream>
-#include<iomanip>
-#include<cstdlib>
-#include<vector>
-#include<map>
-#include<list>
-#include<queue>
-#include<cstdarg>
-#include<algorithm>
-#include<cassert>
+#include <omp.h>
+#include <cmath>
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <fstream>
+#include <iomanip>
+#include <cstdlib>
+#include <vector>
+#include <map>
+#include <list>
+#include <queue>
+#include <cstdarg>
+#include <algorithm>
+#include <cassert>
 #include <unordered_set>
 #include <boost/bind.hpp>
 
@@ -31,6 +31,7 @@
 using namespace std;
 
 std::vector<Read> * PositionKMer::rv = NULL;
+std::vector<bool> * PositionKMer::rv_bad = NULL;
 std::vector<PositionRead> * PositionKMer::pr = NULL;
 hint_t PositionKMer::revNo = 0;
 hint_t PositionKMer::blob_size = 0;
@@ -83,6 +84,7 @@ int main(int argc, char * argv[]) {
 
 	hint_t totalReadSize;
 	PositionKMer::rv = ireadstream::readAllNoValidation(readsFilename, &totalReadSize);
+	PositionKMer::rv_bad = new std::vector<bool>(PositionKMer::rv->size(), false);
 
 	PositionKMer::blob = new char[ (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];
 	PositionKMer::blobkmers = new hint_t[ (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];	
@@ -95,6 +97,7 @@ int main(int argc, char * argv[]) {
 	for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
 		Read revcomp = !(PositionKMer::rv->at(i));
 		PositionKMer::rv->push_back( revcomp );
+		PositionKMer::rv_bad->push_back(false);
 	}
 	TIMEDLN("All reads read to memory. Reverse complementary reads added.");
 	
@@ -105,7 +108,7 @@ int main(int argc, char * argv[]) {
 		hint_t curpos = 0;
 
 		for (hint_t i = 0; i < PositionKMer::rv->size(); ++i) {
-			PositionRead pread(curpos, PositionKMer::rv->at(i).size(), i);
+			PositionRead pread(curpos, PositionKMer::rv->at(i).size(), i, PositionKMer::rv_bad->at(i));
 			PositionKMer::pr->push_back(pread);
 			for (uint32_t j=0; j < PositionKMer::rv->at(i).size(); ++j) 
 				PositionKMer::blob[ curpos + j ] = PositionKMer::rv->at(i).getSequenceString()[j];
@@ -129,18 +132,21 @@ int main(int argc, char * argv[]) {
 		TIMEDLN("Auxiliary subvectors sorted. Starting split kmer processing in " << min(nthreads, tau+1) << " effective threads.");
 
 		tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << ".kmers.solid";
-		ofstream ofkmers( tmp.str() );
+		ofstream ofkmers( tmp.str().data() );
+		tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << ".kmers.bad";
+		ofstream ofkmers_bad( tmp.str().data() );
 		KMerClustering kmc(kmers, nthreads, tau);
 		// prepare the maps
-		kmc.process(dirprefix, &vskpq, &ofkmers);
+		kmc.process(dirprefix, &vskpq, &ofkmers, &ofkmers_bad);
 		ofkmers.close();
+		ofkmers_bad.close();
 		TIMEDLN("Finished clustering. Starting reconstruction.");
 
 		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
 		vector<ofstream *> outfv; vector<bool> changed;
 		for (int i=0; i<nthreads; ++i) {
 			tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << ".reconstruct." << i;
-			outfv.push_back(new ofstream( tmp.str() ));
+			outfv.push_back(new ofstream( tmp.str().data() ));
 			changed.push_back(false);
 		}
 
@@ -158,13 +164,14 @@ int main(int argc, char * argv[]) {
 		TIMEDLN("Correction done. Printing out reads.");
 	
 		tmp.str(""); tmp << dirprefix << "/" << std::setfill('0') << std::setw(2) << iter_count << ".reads.corrected";
-		ofstream outf( tmp.str() );
+		ofstream outf( tmp.str().data() );
 		tmp.str(""); tmp << dirprefix << "/" << std::setfill('0') << std::setw(2) << iter_count << ".reads.bad";
-		ofstream outf_bad( tmp.str() );
+		ofstream outf_bad( tmp.str().data() );
 		for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
-			PositionKMer::pr->at(i).print(outf, qvoffset);
-			if (PositionKMer::pr->at(i).bad()) {
+			if (PositionKMer::rv_bad->at(i)) {
 				PositionKMer::pr->at(i).print(outf_bad, qvoffset);
+			} else {
+				PositionKMer::pr->at(i).print(outf, qvoffset);
 			}
 		}
 		outf.close(); outf_bad.close();
@@ -193,6 +200,7 @@ int main(int argc, char * argv[]) {
 	delete PositionKMer::subKMerPositions;
 	PositionKMer::rv->clear();
 	delete PositionKMer::rv;
+	delete PositionKMer::rv_bad;
 	delete [] PositionKMer::blobkmers;
 	delete [] PositionKMer::blob;
 	return 0;

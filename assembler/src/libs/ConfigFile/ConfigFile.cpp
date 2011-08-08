@@ -9,7 +9,7 @@ ConfigFile::ConfigFile( string filename, string delimiter,
 	: myDelimiter(delimiter), myComment(comment), mySentry(sentry)
 {
 	// Construct a ConfigFile, getting keys and values from given file
-	
+
 	std::ifstream in( filename.c_str() );
 	
 	if( !in ) throw file_not_found( filename ); 
