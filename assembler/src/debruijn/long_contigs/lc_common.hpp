@@ -185,10 +185,23 @@ void PrintPath(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
 }
 
 //Print path
-void PrintPath(Graph& g, BidirectionalPath& path) {
+template<class PathType>
+void PrintPath(Graph& g, PathType& path) {
 	INFO("Path " << &path)
 	INFO("#, edge, length")
 	for(size_t i = 0; i < path.size(); ++i) {
+		INFO(i << ", " << path[i] << ", " << g.length(path[i]));
+	}
+}
+
+//Print path
+template<class PathType>
+void PrintPathWithVertices(Graph& g, PathType& path) {
+	INFO("Path " << &path)
+	INFO("#, edge, length")
+
+	for(size_t i = 0; i < path.size(); ++i) {
+		INFO(g.EdgeStart(path[i]));
 		INFO(i << ", " << path[i] << ", " << g.length(path[i]));
 	}
 }

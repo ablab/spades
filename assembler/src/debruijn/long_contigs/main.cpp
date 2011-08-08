@@ -289,7 +289,6 @@ int main() {
 	Path<Graph::EdgeId> path1 = FindGenomePath<K> (sequence, g, index);
 	Path<Graph::EdgeId> path2 = FindGenomePath<K> (!sequence, g, index);
 
-
 	PairedInfoIndexLibrary basicPairedLib(LC_CONFIG.read<size_t>("read_size"), LC_CONFIG.read<size_t>("insert_size"), &pairedIndex);
 	pairedInfos.push_back(basicPairedLib);
 
@@ -303,7 +302,7 @@ int main() {
 	WriteGraphWithPathsSimple(output_dir + "raw_seeds.dot", "raw_seeds", g, rawSeeds, path1, path2);
 
 	RemoveSubpaths(rawSeeds, seeds);
-	INFO("Seeds");
+	INFO("No duplicates");
 	PrintPathsShort(g, seeds);
 	WriteGraphWithPathsSimple(output_dir + "no_dupl_seeds.dot", "no_dupl_seeds", g, seeds, path1, path2);
 
@@ -311,7 +310,7 @@ int main() {
 	INFO("Filtered");
 	PrintPathsShort(g, seeds);
 
-	size_t found = PathsInGenome<K>(g, index, sequence, seeds, path1, path2);
+	size_t found = PathsInGenome<K>(g, index, sequence, seeds, path1, path2, true);
 	INFO("Good seeds found " << found << " in total " << seeds.size());
 	INFO("All seed coverage " << PathsCoverage(g, seeds));
 
@@ -323,7 +322,7 @@ int main() {
 	PrintPathsShort(g, paths);
 
 	std::vector<BidirectionalPath> result;
-	RemoveDuplicate(paths, result);
+	RemoveSubpaths(paths, result);
 	INFO("Final paths");
 	PrintPathsShort(g, result);
 
@@ -332,6 +331,11 @@ int main() {
 	INFO("Path coverage " << PathsCoverage(g, result));
 
 	WriteGraphWithPathsSimple(output_dir + "paths.dot", "paths", g, result, path1, path2);
+
+	INFO("Genome paths");
+	PrintPathWithVertices(g, path1);
+	PrintPathWithVertices	(g, path2);
+
 
 	DeleteEtalonInfo(pairedInfos);
 	return 0;
