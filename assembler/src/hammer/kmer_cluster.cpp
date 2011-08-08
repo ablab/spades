@@ -28,6 +28,16 @@ int KMerClustering::hamdistKMer(const PositionKMer & x, const PositionKMer & y, 
 	return dist;
 }
 
+int KMerClustering::hamdistKMer(const string & x, const string & y, int tau) {
+	int dist = 0;
+	for (uint32_t i = 0; i < K; ++i) {
+		if (x[i] != y[i]) {
+			++dist; if (dist > tau) return dist;
+		}
+	}
+	return dist;
+}
+
 int KMerClustering::hamdistKMer(const PositionKMer & x, const string & y, int tau) {
 	int dist = 0;
 	for (uint32_t i = 0; i < K; ++i) {
@@ -311,6 +321,38 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		bestLikelihood = curLikelihood;
 		bestCenters = centers; bestIndices = indices;
 	}
+
+
+	// find if centers are in clusters
+	vector<int> centersInCluster(bestCenters.size(), -1);
+	for (int i = 0; i < origBlockSize; i++) {
+		int dist = hamdistKMer(k_[block[i]].first, bestCenters[bestIndices[i]].first);
+		if (dist == 0) {
+			centersInCluster[bestIndices[i]] = i;
+		}
+	}
+	
+	// it may happen that consensus string from one subcluster occurs in other subclusters
+	// we need to check for that
+	for (size_t k=0; k<bestCenters.size(); ++k) {
+		if (bestCenters[k].second == 0) continue;
+		if (centersInCluster[k] >= 0) continue;
+		for (size_t s=0; s<bestCenters.size(); ++s) {
+			if (s == k || centersInCluster[s] < 0) continue;
+			int dist = hamdistKMer(bestCenters[k].first, bestCenters[s].first);
+			if ( dist == 0 ) {
+				// OK, that's the situation, cluster k should be added to cluster s
+				for (int i = 0; i < origBlockSize; i++) {
+					if ( indices[i] == (int)k ) {
+						indices[i] = (int)s;
+						bestCenters[s].second++;
+					}
+				}
+				bestCenters[k].second = 0; // it will be skipped now
+				break;
+			}
+		}
+	}
 	
 	for (size_t k=0; k<bestCenters.size(); ++k) {
 		if (bestCenters[k].second == 0) {
@@ -325,19 +367,16 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 				}
 			}
 		} else { // there are several kmers in this cluster
-			bool centerInCluster = false;
 			for (int i = 0; i < origBlockSize; i++) {
 				if (bestIndices[i] == (int)k) {
-					int dist = hamdistKMer(k_[block[i]].first, bestCenters[k].first);
-					if (dist == 0) {
-						centerInCluster = true;
+					if (centersInCluster[k] == i) {
 						v.insert(v.begin(), block[i]);
 					} else {
 						v.push_back(block[i]);
 					}
 				}
 			}
-			if (!centerInCluster) {
+			if (centersInCluster[k] == -1) {
 				
 				#pragma omp critical
 				{
