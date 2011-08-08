@@ -8,12 +8,12 @@
 #ifndef IREADSTREAM_HPP_
 #define IREADSTREAM_HPP_
 
-#include "libs/kseq/kseq.h"
+#include "kseq/kseq.h"
 #include <zlib.h>
 #include <cassert>
-#include "read.hpp"
-#include "quality.hpp"
-#include "nucl.hpp"
+#include "read/read.hpp"
+#include "sequence/quality.hpp"
+#include "sequence/nucl.hpp"
 
 using namespace std;
 

@@ -3,14 +3,14 @@
  */
 #ifndef READGENERATOR_HPP_
 #define READGENERATOR_HPP_
-#include "iostream"
-#include "fstream"
-#include "string"
-#include "strobe_read.hpp"
+#include <iostream>
+#include <fstream>
+#include <string>
+#include "read/strobe_read.hpp"
 #include <cstdlib>
-#include "vector"
-#include "nucl.hpp"
-#include "read.hpp"
+#include <vector>
+#include "sequence/nucl.hpp"
+#include "read/read.hpp"
 
 namespace read_generator {
 #define MAX_PROBABILITY 10000

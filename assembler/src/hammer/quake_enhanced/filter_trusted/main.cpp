@@ -2,11 +2,9 @@
 #include <cstdlib>
 #include <cstdio>
 #include <string>
-#include "log4cxx/logger.h"
-#include "log4cxx/basicconfigurator.h"
-using log4cxx::LoggerPtr;
-using log4cxx::Logger;
-using log4cxx::BasicConfigurator;
+#include "common/logging.hpp"
+
+DECL_PROJECT_LOGGER("q")
 
 using std::string;
 
@@ -20,7 +18,7 @@ const uint32_t kMaxK = 100;
  */
 const int kStep = 1e5;
 
-LoggerPtr logger(Logger::getLogger("filter_trusted"));
+DECL_LOGGER("filter_trusted")
 
 struct Options {
   string ifile;
@@ -33,7 +31,7 @@ struct Options {
         ofile(""),
         badfile(""),
         threshold(-1),
-        valid(true) {}  
+        valid(true) {}
 };
 
 void PrintHelp(char *progname) {
@@ -60,18 +58,10 @@ Options ParseOptions(int argc, char *argv[]) {
   }
   return ret;
 }
-}
 
-
-int main(int argc, char *argv[]) {
-  Options opts = ParseOptions(argc, argv);
-  if (!opts.valid) {
-    PrintHelp(argv[0]);
-    return 1;
-  }
-  BasicConfigurator::configure();
-  LOG4CXX_INFO(logger, "Starting filter_trusted: evaluating "
-               << opts.ifile << ".");
+void run(const Options &opts) {
+  INFO("Starting filter_trusted: evaluating "
+       << opts.ifile << ".");
   FILE *ifile = fopen(opts.ifile.c_str(), "r");
   FILE *ofile = fopen(opts.ofile.c_str(), "w");
   FILE *badfile = fopen(opts.badfile.c_str(), "w");
@@ -85,13 +75,23 @@ int main(int argc, char *argv[]) {
   while (fscanf(ifile, format, kmer, &count, &q_count, &freq) != EOF) {
     ++read_number;
     if (read_number % kStep == 0) {
-      LOG4CXX_INFO(logger, "Reading k-mer " << read_number << ".");
+      INFO("Reading k-mer " << read_number << ".");
     }
     if (q_count > opts.threshold) {
       fprintf(ofile, "%s %d %f %f\n", kmer, count, q_count, freq);
     } else {
       fprintf(badfile, "%s %d %f %f\n", kmer, count, q_count, freq);
     }
+  }
+}
+}
+
+
+int main(int argc, char *argv[]) {
+  Options opts = ParseOptions(argc, argv);
+  if (!opts.valid) {
+    PrintHelp(argv[0]);
+    return 1;
   }
   return 0;
 }

@@ -3,7 +3,7 @@
 //#include "utils.hpp"
 //#include "sequence.hpp"
 //#include "paired_read.hpp"
-#include "common/io/paired_read.hpp"
+#include "io/paired_read.hpp"
 #include <cmath>
 #include <map>
 #include <limits>

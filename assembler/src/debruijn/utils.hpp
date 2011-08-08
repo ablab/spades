@@ -8,7 +8,7 @@
 #ifndef UTILS_HPP_
 #define UTILS_HPP_
 
-#include "common/io/paired_read.hpp"
+#include "io/paired_read.hpp"
 #include "seq_map.hpp"
 #include "omni_utils.hpp"
 #include "logging.hpp"
@@ -374,9 +374,9 @@ class EtalonPairedInfoCounter {
 			size_t j = i + 1;
 			size_t length = 0;
 
-			while (j < path.size() && length < (insert_size_ + delta_)) {
-				if (length + g_.length(e) + g_.length(path[j]) + delta_
-						>= gap_) {
+			while (j < path.size() && length  + k + 2 <= (insert_size_ + delta_)) {
+				if (length + g_.length(e) + g_.length(path[j]) + delta_ + k
+						>= gap_ + 2 * (k + 1)) {
 //					cout << "HERE2 " <<  /*g_.length(e) + */length << endl;
 					AddEtalonInfo(paired_info, e, path[j],
 							g_.length(e) + length);

@@ -4,8 +4,8 @@
 
 #include "launch.hpp"
 #include "config.hpp"
-#include "common/logging.hpp"
-#include "common/simple_tools.hpp"
+#include "logging.hpp"
+#include "simple_tools.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -52,6 +52,7 @@ int main() {
 	checkFileExistenceFATAL(genome_filename);
 	checkFileExistenceFATAL(reads_filename1);
 	checkFileExistenceFATAL(reads_filename2);
+	INFO("Assembling " << dataset << " dataset");
 
 	size_t insert_size = CONFIG.read<size_t>(dataset + "_IS");
 	size_t max_read_length = 100; //CONFIG.read<size_t> (dataset + "_READ_LEN");
@@ -66,19 +67,23 @@ int main() {
   typedef io::RCReaderWrapper<io::PairedRead> RCStream;
 
 	// read data ('reads')
+
   PairedReadStream pairStream(std::pair<std::string, 
                               std::string>(reads_filename1,
                                            reads_filename2),
                               insert_size);
+  	string real_reads = CONFIG.read<string>("uncorrected_reads");
+ 	vector<ReadStream*> reads;
+  	if (real_reads != "none") {
+		reads_filename1 = input_dir + (real_reads + "_1");
+		reads_filename2 = input_dir + (real_reads + "_2");
+  	}
   	ReadStream reads_1(reads_filename1);
   	ReadStream reads_2(reads_filename2);
-  	vector<ReadStream*> reads;
   	reads.push_back(&reads_1);
 
   	reads.push_back(&reads_2);
-// 	reads.push_back(reads_2);
-  	//  	reads[1] = reads_1;
-//  	reads[2] = reads_2;
+
   	RCStream rcStream(&pairStream);
 
 	// read data ('genome')

@@ -23,8 +23,8 @@
 #ifndef SEQUENCE_HPP_
 #define SEQUENCE_HPP_
 
-#include "seq.hpp"
-#include "sequence_data.hpp"
+#include "sequence/seq.hpp"
+#include "sequence/sequence_data.hpp"
 #include <vector>
 #include <string>
 #include <string.h>
