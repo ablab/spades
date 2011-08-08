@@ -1,6 +1,5 @@
 CMakeCache.txt
 CMakeFiles
-Makefile
 abruijn/abruijn
 common/io/libiolib.a
 debruijn/debruijn
