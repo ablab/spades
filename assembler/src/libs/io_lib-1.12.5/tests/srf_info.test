@@ -1,0 +1,16 @@
+#!/bin/sh
+(cd $outdir
+cp ../$srcdir/data/proc.srf .
+../$top_builddir/progs/srf_info proc.srf | tr -d '\015' > proc.info)
+cmp $outdir/proc.info $srcdir/data/proc.info || exit 1
+
+(cd $outdir
+cp ../$srcdir/data/raw.srf .
+../$top_builddir/progs/srf_info raw.srf | tr -d '\015' > raw.info)
+cmp $outdir/raw.info $srcdir/data/raw.info || exit 1
+
+(cd $outdir
+cp ../$srcdir/data/both.srf .
+../$top_builddir/progs/srf_info both.srf | tr -d '\015' > both.info)
+cmp $outdir/both.info $srcdir/data/both.info || exit 1
+

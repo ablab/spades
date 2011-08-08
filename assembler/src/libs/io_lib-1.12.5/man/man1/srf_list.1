@@ -1,0 +1,61 @@
+.TH srf_list 1 "September 29" "" "Staden io_lib"
+
+.SH "NAME"
+
+.PP
+.BR srf_list
+\- Lists and/or counts the contents of an SRF file
+
+.SH "SYNOPSIS"
+.PP
+\fBsrf_list\fR  [\fIoptions\fR] \fIsrf_archive\fR ...
+
+.SH "DESCRIPTION"
+.PP
+\fBsrf_list\fR lists the filenames held within one or more SRF
+container.  To simply count the contents rather than list them specify
+the \fB-c\fR option. Note that when in count-only mode if an index is
+present it will be used to determine the number of entries in the
+index and hence sequences in the SRF file. The index cannot be used
+when listing the filenames however as the index itself does not
+contain the full filenames.
+.PP
+Note that it is not possible to count sequences matching certain
+patterns or with specific flags set. \fBsrf_info\fR is a more general
+purpose tool that may cover this.
+
+.SH "OPTIONS"
+.PP
+.TP
+\fB-c\fR
+Counts sequences instead of listing them. Note that this may be
+substantially faster than listing if an index exists.
+.TP
+\fB-v\fR
+Verbose mode. This gives summary count information per file rather
+than just the total at the end.
+.TP
+\fB-l\fR
+Long format. When listing sequence names this also provides
+information on the position in the archive and the size of the
+sequence specific \fIdata block\fR and the size of the shared \fIdata
+block header\fR.
+
+.SH "EXAMPLES"
+.PP
+To count the total number of sequences in several SRF files:
+.PP
+.nf
+    srf_list -c *.srf
+.fi
+
+.PP
+To produce a "fofn" (file of filenames) for an SRF file:
+.PP
+.nf
+    srf_list foo.srf > foo.fofn
+.fi
+
+.SH "AUTHOR"
+.PP
+James Bonfield, Wellcome Trust Sanger Institute

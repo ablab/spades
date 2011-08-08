@@ -1,0 +1,100 @@
+.TH scf2read 3 "" "" "Staden Package"
+
+.SH NAME
+
+.LP
+.BR scf2read ,
+.BR read2scf ,
+.BR exp2read ,
+.BR read2exp
+\- Translate to and from the \fBRead\fR structure.
+
+.SH SYNOPSIS
+.LP
+.nf
+.ft
+#include <Read.h>
+
+.nf
+.ft B
+Read *scf2read(
+	Scf *scf);
+.ft
+.fi
+.LP
+.nf
+.ft B
+Scf *read2scf(
+	Read *read);
+.ft
+.fi
+.LP
+.nf
+.ft B
+Exp_info *read2exp(
+	Read *read,
+	char *EN);
+.ft
+.fi
+.LP
+.nf
+.ft B
+Read *exp2read(
+	Exp_info *e);
+.ft
+.fi
+.IX "scf2read()" "" "scf2read()"
+.IX "read2scf()" "" "read2scf()"
+.IX "read2exp()" "" "read2exp()"
+.IX "exp2read()" "" "exp2reead()"
+
+.SH DESCRIPTION
+.LP
+These functions are used internally by the io library for converting between
+the in memory representations of the supported file formats. The \fBRead\fR
+structure is the central format so only conversion to and from this structure
+is available. Conversions consist of to and from the SCF format and to and
+from the Experiment File format.
+.LP
+.B scf2read()
+converts an \fBScf\fR structure into a \fBRead\fR structure. The \fBRead\fR
+structure is allocated by the function. The \fBScf\fR structure is left
+unchanged.
+.LP
+.B read2scf()
+converts a \fBRead\fR structure into an \fBScf\fR structure. The \fBScf\fR
+structure is allocated by the function. The \fBRead\fR structure is left
+unchanged.
+.LP
+.B exp2read()
+converts an \fBExp_info\fR structure into a \fBRead\fR structure. The
+entryname to use in the EN line type of the Experiment File must be specified.
+The \fBRead\fR structure is allocated by the function. The \fBExp_info\fR
+structure is left unchanged.
+.LP
+.B read2exp()
+converts a \fBRead\fR structure into an \fBExp_info\fR structure. The
+\fBExp_info\fR structure is allocated by the function. The \fBRead\fR
+structure is left unchanged.
+
+.SH RETURN VALUES
+.LP
+On successful completion, the \fBscf2read()\fR and \fBexp2read\fR functions
+return a pointer to an allocated \fBRead\fR structure. Otherwise these
+functions return NULLRead.
+.LP
+On successful completion, the \fBread2scf\fR function returns a pointer to an
+allocated \fBScf\fR structure. Otherwise this function returns a null pointer.
+.LP
+On successful completion, the \fBread2exp\fR function returns a pointer to an
+allocated \fBExp_info\fR structure. Otherwise this function returns a null
+pointer.
+
+.SH SEE ALSO
+.LP
+.BR read_reading (3),
+.BR fread_reading (3),
+.BR write_reading (3),
+.BR fwrite_reading (3),
+.BR scf (4),
+.BR ExperimentFile (4)

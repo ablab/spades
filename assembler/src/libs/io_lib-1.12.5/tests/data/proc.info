@@ -1,0 +1,17 @@
+Reading archive proc.srf.
+trace_name: test_run:4:133: + 593:417 ... 539:484 x10
+trace_name: test_run:4:134: + 548:359 ... 529:256 x10
+Reading srf null index block
+Reads: GOOD : 18
+Reads: BAD : 2
+Reads: TOTAL : 20
+Chunk: BASE : 20 475
+Chunk: CNF4 : 20 842
+  Mdata key: SCALE : 20
+Chunk: SMP4 : 20 9467
+  Mdata key: OFFS : 20
+Bases: A: 411
+Bases: C: 296
+Bases: G: 367
+Bases: T: 406
+Bases: TOTAL: 1480
