@@ -73,7 +73,7 @@ private:
 				- error_distribution_[1];
 	}
 
-	vector<Read> next_sr_;
+	vector<io::SingleRead> next_sr_;
 
 	void ReadAhead() {
 		if (is_open() && !eof()) {
@@ -84,7 +84,7 @@ private:
 						- insert_error_;
 				string read = genome_.substr(p + position_error, size_);
 				IntroduceErrors(read);
-				next_sr_[i] = Read("", read, "");
+				next_sr_[i] = io::SingleRead("", read, "");
 				p += size_ + insertLength_;
 			}
 			current_read_number_++;
@@ -162,7 +162,7 @@ public:
 		min_position_ = insert_error_;
 	}
 
-	ReadGenerator& operator>>(vector<Read>& reads) {
+	ReadGenerator& operator>>(vector<io::SingleRead>& reads) {
 		if (eof()) {
 			return *this;
 		}
@@ -175,7 +175,7 @@ public:
 		return *this;
 	}
 
-	ReadGenerator& operator>>(PairedRead &p_r) {
+	ReadGenerator& operator>>(io::PairedRead &p_r) {
 		assert(cnt_ ==2);
 		if (eof()) {
 			return *this;
@@ -184,13 +184,13 @@ public:
 			reading_started_ = true;
 			ReadAhead();
 		}
-		p_r = PairedRead(next_sr_[0], next_sr_[1], insertLength_ + 2 * size_);
+		p_r = io::PairedRead(next_sr_[0], next_sr_[1], insertLength_ + 2 * size_);
 		ReadAhead();
 		return *this;
 	}
 
 	//todo think about interface
-	ReadGenerator& operator>>(Read &r) {
+	ReadGenerator& operator>>(io::SingleRead &r) {
 		assert(cnt_ == 1);
 
 		if (eof()) {

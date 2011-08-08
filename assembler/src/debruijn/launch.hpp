@@ -104,7 +104,7 @@ void DetailedWriteToDot(Graph &g, const string& file_name, string graph_name,
 template<size_t k>
 Path<typename Graph::EdgeId> FindGenomePath(const Sequence& genome,
 		const Graph& g, const EdgeIndex<k + 1, Graph>& index) {
-	SimpleSequenceMapper<k, Graph> srt(g, index);
+	SimpleSequenceMapper<k + 1, Graph> srt(g, index);
 	return srt.MapSequence(genome);
 }
 
@@ -300,6 +300,31 @@ void FillPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
 	INFO("Paired info counted");
 }
 
+void ToSet(PairedInfoIndex<Graph>& paired_index, set<PairInfo<EdgeId>>& as_set) {
+	for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
+		vector<PairInfo<EdgeId>> infos = *it;
+		for (auto it2 = infos.begin(); it2!=infos.end(); it2++) {
+			as_set.insert(*it2);
+		}
+	}
+}
+
+void CheckInfoEquality(PairedInfoIndex<Graph>& paired_index1, PairedInfoIndex<Graph>& paired_index2) {
+	set<PairInfo<EdgeId>> set1;
+	set<PairInfo<EdgeId>> set2;
+	ToSet(paired_index1, set1);
+	ToSet(paired_index2, set2);
+	//todo remove assert
+	if (set1.size() != set2.size()) {
+		cerr << "HELP_1!!!" << endl;
+	}
+	for (auto it = set1.begin(); it != set1.end(); ++it) {
+		if (set2.count(*it) == 0) {
+			cerr << "HELP_2!!!" << endl;
+		}
+	}
+}
+
 template<size_t k>
 void FillEtalonPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
 		EdgeIndex<k + 1, Graph>& index, size_t insert_size, size_t read_length,
@@ -309,13 +334,27 @@ void FillEtalonPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
 	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index,
 			insert_size, read_length, insert_size * 0.1);
 	etalon_paired_info_counter.FillEtalonPairedInfo(genome, paired_info_index);
+	//////////////////DEBUG
+	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
+	Path<EdgeId> path = simple_mapper.MapSequence(genome);
+	SequenceBuilder sequnce_builder;
+	for (auto it = path.begin(); it != path.end(); ++it) {
+		sequnce_builder.append(g.EdgeNucls(*it));
+	}
+	Sequence new_genome = sequnce_builder.BuildSequence();
+	NewEtalonPairedInfoCounter<k, Graph> new_etalon_paired_info_counter(g, index,
+			insert_size, read_length, insert_size * 0.1);
+	PairedInfoIndex<Graph> new_paired_info_index(g);
+	new_etalon_paired_info_counter.FillEtalonPairedInfo(new_genome, new_paired_info_index);
+	CheckInfoEquality(paired_info_index, new_paired_info_index);
+	//////////////////DEBUG
 	INFO("Paired info counted");
 }
 
 template<size_t k, class ReadStream>
 void FillCoverage(Graph& g/*CoverageHandler<Graph> coverage_handler*/,
 		ReadStream& stream, EdgeIndex<k + 1, Graph>& index) {
-	typedef SimpleSequenceMapper<k, Graph> ReadThreader;
+	typedef SimpleSequenceMapper<k + 1, Graph> ReadThreader;
 	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Counting coverage");
