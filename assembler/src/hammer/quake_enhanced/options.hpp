@@ -12,6 +12,7 @@ class Options {
   std::string help_message;
   // Count options.
   //
+  std::string kmer_count_file;
   std::string hash_file_prefix;
   int hash_file_number;
   int quality_offset;
