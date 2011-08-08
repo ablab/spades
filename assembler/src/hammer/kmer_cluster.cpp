@@ -53,10 +53,17 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block) {
 	for (uint32_t i = 0; i < blockSize; i++) {
 		uf->find_set(block[i]);
 		for (uint32_t j = i + 1; j < blockSize; j++) {
-			//cout << "Comparing " << block[i].kmer.str() << "\n          " << block[j].kmer.str() << "\n";
 			if (hamdistKMer(k_[block[i]].first, k_[block[j]].first, tau_ ) <= tau_) {
-				//cout << "    ok!\n"; 
+				#pragma omp critical
+				{
+				cout << "Comparing " << k_[block[i]].first.str().data() << "  " << k_[block[i]].first.start() << "\n          " << k_[block[j]].first.str().data() << "  " << k_[block[j]].first.start() << "  ok!\n";
+				}
 				uf->unionn(block[i], block[j]);
+			} else {
+				#pragma omp critical
+				{
+				cout << "Comparing " << k_[block[i]].first.str().data() << "  " << k_[block[i]].first.start() << "\n          " << k_[block[j]].first.str().data() << "  " << k_[block[j]].first.start() << "\n";
+				}
 			}
 		}
 	}
@@ -332,6 +339,25 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		}
 	}
 	
+	bool cons_suspicion = false;
+	for (size_t k=0; k<bestCenters.size(); ++k) if (centersInCluster[k] == -1) cons_suspicion = true;
+	if (cons_suspicion) {
+		#pragma omp critical
+		{
+		cout << "\nConsensus suspicion. Centers: \n";
+		for (size_t k=0; k<bestCenters.size(); ++k) {
+			cout << "  " << bestCenters[k].first.data() << " " << bestCenters[k].second << " ";
+			if ( centersInCluster[k] >= 0 ) cout << k_[block[centersInCluster[k]]].first.start();
+			cout << "\n";
+		}
+		cout << "The entire block:\n";
+		for (int i = 0; i < origBlockSize; i++) {
+			cout << "  " << k_[block[i]].first.str().data() << " " << k_[block[i]].first.start() << "\n";
+		}
+		cout << endl;
+		}
+	}
+	
 	// it may happen that consensus string from one subcluster occurs in other subclusters
 	// we need to check for that
 	for (size_t k=0; k<bestCenters.size(); ++k) {
@@ -353,7 +379,20 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 			}
 		}
 	}
-	
+
+	if (cons_suspicion) {
+		#pragma omp critical
+		{
+		cout << "\nAfter the check we got centers: \n";
+		for (size_t k=0; k<bestCenters.size(); ++k) {
+			cout << "  " << bestCenters[k].first.data() << " " << bestCenters[k].second << " ";
+			if ( centersInCluster[k] >= 0 ) cout << k_[block[centersInCluster[k]]].first.start();
+			cout << "\n";
+		}
+		cout << "\n";
+		}
+	}
+
 	for (size_t k=0; k<bestCenters.size(); ++k) {
 		if (bestCenters[k].second == 0) {
 			continue; // superfluous cluster with zero elements
