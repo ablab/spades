@@ -14,4 +14,4 @@ statgen/lib/bam/obj/
 statgen/lib/fastq/obj/
 statgen/lib/general/obj/*.o
 statgen/lib/glf/obj/
-statgen/lib/libStatGen.a
+
