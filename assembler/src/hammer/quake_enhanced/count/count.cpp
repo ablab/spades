@@ -129,11 +129,11 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
     ifs >> r;
     KMer::hash hash_function;
     for (ValidKMerGenerator<kK> gen(r, error_threshold); gen.HasMore(); gen.Next()) {
-      FILE *cur_file = ofiles[hash_function(gen.kmer()) % file_number];
       KMer kmer = gen.kmer();
       if (KMer::less2()(!kmer, kmer)) {
         kmer = !kmer;
       }
+      FILE *cur_file = ofiles[hash_function(gen.kmer()) % file_number];
       KMer::BinWrite(cur_file, kmer);
       double correct_probability = gen.correct_probability();
       fwrite(&correct_probability, sizeof(correct_probability), 1, cur_file);
