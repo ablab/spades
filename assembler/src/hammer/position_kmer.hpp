@@ -45,14 +45,10 @@ class PositionKMer {
 				  end_offset - start_offset ) > 0 );
 	}
 
-	static bool equalSubKMers( const hint_t kmer1, const hint_t kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t offset) {
-		for (uint32_t i = offset; i < K; i += tau+1) {
-			if (km->at(kmer1).first[i] != km->at(kmer2).first[i]) {
-				return false;
-			}
-			i += tau+1;
-		}
-		return true;
+	static bool equalSubKMers( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+		return ( strncmp( blob + km->at(kmer1).first.start_ + start_offset,
+			  	  blob + km->at(kmer2).first.start_ + start_offset,
+				  end_offset - start_offset ) == 0 );
 	}
 
   	static hint_t readNoFromBlobPosInternal( hint_t blobpos, hint_t start, hint_t end ) {
