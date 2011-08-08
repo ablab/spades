@@ -20,9 +20,9 @@
 #ifndef COMMON_IO_CONVERTINGREADERWRAPPER_HPP_
 #define COMMON_IO_CONVERTINGREADERWRAPPER_HPP_
 
-#include "io/single_read.hpp"
-#include "io/paired_read.hpp"
-#include "io/ireader.hpp"
+#include "common/io/single_read.hpp"
+#include "common/io/paired_read.hpp"
+#include "common/io/ireader.hpp"
 
 namespace io {
 
