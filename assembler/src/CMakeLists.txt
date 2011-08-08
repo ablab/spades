@@ -37,6 +37,10 @@ endif()
 # common dependencies
 find_package(ZLIB)
 find_package(log4cxx)
+find_package(statgen)
+find_package(staden)
+find_package(ssl)
+find_package(bam)
 find_package(Boost COMPONENTS signals REQUIRED)
 
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
@@ -46,8 +50,12 @@ include_directories("${CMAKE_SOURCE_DIR}/include")
 include_directories(${ZLIB_INCLUDE_DIRS})
 include_directories(${log4cxx_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${statgen_INCLUDE_DIRS})
+include_directories(${staden_INCLUDE_DIRS})
+include_directories(${ssl_INCLUDE_DIRS})
+include_directories(${bam_INCLUDE_DIRS})
 
-set(COMMON_LIBRARIES ${ZLIB_LIBRARIES} ${log4cxx_LIBRARIES} ${Boost_LIBRARIES})
+set(COMMON_LIBRARIES ${ZLIB_LIBRARIES} ${log4cxx_LIBRARIES} ${Boost_LIBRARIES} ${statgen_LIBRARIES} ${staden_LIBRARIES} ${ssl_LIBRARIES} ${bam_LIBRARIES})
 
 # TODO: should be deleted after project restructurization
 include_directories(${CMAKE_SOURCE_DIR})

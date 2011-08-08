@@ -13,6 +13,7 @@
 #include "paired_read_test.hpp"
 #include "parser_test.hpp"
 #include "fasta_fastq_gz_parser_test.hpp"
+#include "sam_bam_parser_test.hpp"
 // TODO(mariyafomkina): Add tests for other parsers here.
 #include "reader_singleread_test.hpp"
 #include "reader_pairedread_test.hpp"
@@ -37,6 +38,7 @@ void runSuite() {
   s += PairedReadSuite();
   s += ParserSuite();
   s += FastaFastqGzParserSuite();
+  s += SamBamParserSuite();
   // TODO(mariyafomkina): Add tests for other parsers here.
   s += ReaderSingleReadSuite();
   s += ReaderPairedReadSuite();

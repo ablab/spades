@@ -1,0 +1,1387 @@
+Version 1.12.5 (3rd Feb 2011)
+--------------
+
+* Fixed detection of requirement for va_copy(); affecting some Mac
+  builds.
+
+* Added hash_exp. I'm not sure this is of pratical use, but it was in
+  the source tree and in theory at least still works.
+
+* Removed minor memory leak in HashTableResize().
+
+
+
+Version 1.12.4 (7th July 2010)
+--------------
+
+* Fixed bug added with 1.12.3 in extracting data from .hash files.
+
+
+Version 1.12.3 (6th July 2010)
+--------------
+
+* Resolved compilation problems: endianness and large file support are
+  now detected in a wider variety of cases.
+
+* srf2fastq now automatically outputs appropriate calibrated vs
+  non-calibrated values without having to explicitly use -c. This
+  option is now only needed when both CNF1 and CNF4 ZTR chunks are
+  present (it'll default to CNF4).
+
+* srf2fastq no longer forces "." to be reformatted to "N".
+
+* srf_dump_all improvements when facing read names with "#index" from
+  tagged runs.
+
+* srf_filter can now act as a pipe, reading from stdin and writing to
+  stdout.
+
+* hash_tar can now index multiple tar files together into one .hash
+  file. hash_list -l has been extended to list the originating .tar.
+  Additionally "hash_tar -m map_file" allows renaming of tar filenames
+  prior to indexing, allowing for a hacky way to work around modified
+  names, cases, directory layouts, etc.
+
+
+Version 1.12.2 (15th Jan 2010)
+--------------
+
+* Extra options in srf2fastq: -S to output split regions sequentially
+  to stdout. -r to request a region to be reverse complemented before
+  output.
+
+* API addition
+  - Added pooled_alloc.h. This is a general purpose mechanism of
+    pooling multiple fixed size memory allocations into fewer malloc()
+    library calls.
+  - HashTables now have a HASH_POOL_ITEMS option to use the above
+    pooling system. This reduces memory wasted and speeds them up.
+
+* Bug fix: Fixed ztr_add_text() so that is leaves two nul bytes on the
+  end of TEXT chunks instead of one, as documented in the ZTR
+  specification.
+
+* Bug fix: Fixed buffer overrun in parse region chunks; srf2fastq and
+  srf2fasta.
+
+* Bug fix: API read_sff_read_data() did not skip ahead to the next
+  8-byte boundary.
+
+
+Version 1.12.1 (7th August 2009)
+--------------
+
+* Fixed the endianness detection in io_lib/os.h when used in
+  conjuction with auto-conf. This fix allows for "fat" binaries to be
+  built on MacOS X.
+
+* Fixed io_lib-config program to use -lstaden-read instead of -lread.
+
+
+Version 1.12.0 (29th July 2009)
+--------------
+
+* Renamed the library from libread.so to libstaden-read.so. This was
+  already the case for the Fedora bundled RPM.
+
+* Switched to using libtool to allow building of dynamic libraries.
+  Note that this is tweaked to not use -rpath though. Proper library
+  versioning has been added too.
+
+* Removed deprecated platform specific tools: illumina2srf,
+  srf2illumina.
+
+* Srf_info now reports the compressed size of chunks, sorted by type,
+  in addition to their counts. It also correctly sums to over 2Gb now
+  for base-call counting.
+
+* Various SRF tools have had the maximum sequence length changed from
+  1024 to 10000. This allows for even the most gifting capillary traces.
+
+* API
+  - The Array functions now take size_t instead of int for the
+    array dimensions. (API CHANGE)
+
+  - Removed the (unused?) pipe2 function from compress.h. This was
+    intended to be internal only, and it now clashes with a new linux
+    kernel function. (API CHANGE)
+
+  - Added iterators to the HashTable* api.
+
+* Bug fixes
+
+  - Fixed a memory allocation bug in the codes2codeset() function.
+
+  - ztr2read() should now work better on ZTR structs with no BPOS
+    chunk.
+
+  - Fixed various srf tools when facing an SRF file containing zero
+    chunks in the data block header.
+
+  - index_tar handles some GNU tar extensions better (LongLink).
+
+
+Version 1.11.6.1 (9th December 2008)
+----------------
+
+* Identical except removal of a debugging printf statement in solexa2srf.
+
+
+Version 1.11.6 (9th December 2008)
+--------------
+
+* illumina2srf, srf2illumina, srf2fastq
+  - We no longer change from log-odds to phred when storing data in
+    SRF, instead preferring to just mark it in correct input
+    scale. srf2fastq now honours this scale information and so the
+    conversion from log-odd to phred is done at the export stage
+    instead. (Chris Saunders)
+
+  - Bug fix to srf2illumina qcal conversion. Combined with above
+    changes the qcal output should now be 100% identical to the
+    original data input via illumina2srf.
+
+* API
+  - New function srf_next_ztr_flags. This is like srf_next_ztr but
+    also returns the SRF flags value (good/bad read, etc).
+
+* srf_filter, srf2fastq, srf_info (Steven Leonard)
+  - Improved support for multiple index blocks in SRF files, eg from
+    manually concatenated files.
+
+  - srf2fastq now sports options for splitting the output into
+    multiple fastq files when the input data is a paired-end run.
+
+
+Version 1.11.5 (3rd December 2008)
+--------------
+
+* Illumina2srf
+  - Fixed major bug with using *both* -qf and -qr together. The
+    quality values for the reverse strand were shifted by one
+    character.
+
+  - Fixed qcal quality values so they're not shifted down by 64
+    (illumina format fastq).
+
+  - Fixed bugs in parsing directory names if not matching the expected
+    format.
+
+* Removed major memory leaks from srf_filter.
+
+* hash_sff now has support for outputting the table of contents to a
+  new file rather than appending to an existing sff file or copying
+  the entire contents to a new file.
+
+* Various man pages have been added. The list is still incomplete
+  though. Additions are most welcome.
+
+* New program: srf_list. This lists and/or counts the number of
+  sequences within an SRF file.
+
+
+Version 1.11.4 (11th September 2008)
+--------------
+
+* New "make check" build target to perform some automated tested.
+  Currently limited to testing the SRF tools.
+
+* Fixed machine endianness issues. Specifically this resolves known Intel
+  MacOS-X problems.
+
+* New SRF tools
+
+  - srf_info: reports simple metrics on the contents of an SRF file.
+
+  - srf_filter: slices and dices the SRF file to produce a new one
+    with various types of data removed.
+
+* illumina2srf
+
+  - Minor float/int rounding change when storing int/nse/sig2 data.
+
+  - Improved error detection such that it returns a failure code more
+    often given a parsing issue.
+
+  - Added -pf/pr parameters for storing Phasing files.
+
+  - Reduced memory usage, especially on large numbers of clusters per
+    tile. We may now produce multiple DBH blocks per tile. Also major
+    reduction to memory when handling the .params files.
+
+  - Added storage of 2nd .params file (firecrest).
+
+  - Fixed bug in the automatic base-call version identification.
+
+  - Fixed a bug with using -qf/qr when not providing all tiles (ie not
+    starting from tile number 1).
+
+  - Bug fix with storing the reverse matrix file in paired-end runs; a
+    duplicate of the forward one was being used instead.
+
+* General SRF
+
+  - Improved error checking in srf_index_hash. It now spots duplicate
+    reads and also has a -c option to check an existing SRF file
+    without writing the index.
+
+  - Fixed a memory leak in srf_next_ztr(), triggered in srf2fastq -C.
+
+Version 1.11.3 (9th July 2008)
+--------------
+
+* illumina2srf change:
+
+  - IMPORTANT bug fix to illumina2srf when using the "-r" flag to
+    store raw (.int and .nse) data. This could often result in
+    corrupting the data ZTR meta-data for the SMP4 chunks resulting in
+    confusion over which trace channels are raw and which are
+    processed.
+
+    Fortunately the corruption is reversable. For more details and a
+    fix see the ssrformat announcement of the issue:
+
+    http://www.bcgsc.ca/pipermail/ssrformat/2008-July/000531.html
+
+* General SRF changes:
+
+  - Removed a memory leak in ztr_find_chunks().
+
+  - Added SRFB_NULL_INDEX as an SRF block type. This provides a more
+    transparent way to skip over the 8 zero value bytes that may exist
+    at the end of an SRF file missing an index block.
+
+* Other changes
+
+  - Fixed a bug in extract_seq when operating on multiple files and
+    outputting to a file rather than a pipe. An erroneous seek in the
+    mFILE code lead to it repeatedly truncating the output, resulting
+    in one sequence file at the end instead of multiple files.
+
+
+Version 1.11.2 (4th June 2008)
+--------------
+
+* solexa2srf/srf2solexa changes:
+
+  - Renamed to illumina2srf/srf2illumina.
+
+  - Incorporated support the IPAR format (Come Raczy, Illumina).
+
+  - Added support for qcal format data (Come Raczy).
+
+  - Added -C option to tag data as failing the chastity filter, but it
+    is still included in the SRF output (Camil Toma).
+
+  - Many more additional features added to srf_dump_all provided by
+    Camil Toma. It somewhat overlaps srf2solexa now, but may still
+    have it's own use.
+
+  - Ztr TEXT chunks now output in srf2solexa.
+
+  - Improved ways to specify matrices (-mf/-mr) in solexa2srf.
+
+  - solexa2srf is substantially faster when reading gzipped files.
+
+  - The -N/-n naming scheme options for solexa2srf now default to the
+    same conventions used by GERALD. Added additional %d, %m and %r
+    format rules too.
+
+  - Calibrated confidence values are now output if -qf or -qr
+    paramaters are used, in addition to uncalibrated ones. These are
+    stored in phred scale in a CNF1 ZTR chunk.
+
+* srf2fastq now has a -c option to output calibrated confidence values
+  (if present). It also supports multiple archives on the command line.
+
+* SRF fixes:
+
+  - Better handling of full pathnames in solexa2srf.
+
+  - Use binary IO mode; fixes bugs on Windows.
+
+  - Fixed an error where some chunks were not compressed properly
+    (valid still, just not compressed).
+
+  - Removed memory corruption in solexa2srf (in rare cases).
+
+  - Fixed bug with binary formatted read_id suffixes (fixed by
+    Cristian Goina).
+
+  - Initialised memory in hash table code (used in indexing amongst
+    other things).
+
+  - Indexes very occasionally failed to find a trace that did infact
+    exist. 
+
+  - Removed memory leak in construct_trace_name (patch from John
+    Emhoff, Helicos).
+
+  - Fixed reading of XML block in srf_read_xml(). From John Emhoff.
+
+
+* Added SRF= format string to TRACE_PATH to facilitate on-the-fly
+  extraction from indexed SRF files. This means io_lib can now
+  transparently pull traces from an archive or treat it as if it was a
+  directory - eg "foo.srf/IL15_..._123:456".
+
+* Bug fix (SF-1898427) - now builds on Fedora.
+
+* Better handling of 64-bit file size sensing in autoconf.
+
+
+Version 1.11.1 (not officially released - internal testing only)
+--------------
+
+Version 1.11.0 (20th February 2008)
+--------------
+
+First official release of v1.11.0 and SRF support.
+
+* Further speed improvements to solexa2srf.
+
+* Added extract_qual program (analogous to extract_seq).
+
+* Added new srf2fasta program and also sped up srf2fastq by 25%.
+
+* Solexa2srf now supports storing the raw .int/.nse trace data instead
+  of or in addition to the processed .sig2 data. 
+
+* Solexa2srf now stores enough to reproduce sufficient firecrest
+  output to rerun the solexa basecaller. Specifically that's a couple
+  matrix files and 'region' data for paired end runs.
+
+* Minor changes / bug fixes:
+
+  - extract_seq no longer attempts to gzip the output by default if
+    the input was gzipped
+
+  - ztr2read conversion (eg visible in trace_dump) now correctly
+    handles ZTR files with multiple SMP4 chunks.
+
+  - Fixed memory leaks in various bits of SRF code (srf_extract_linear
+    mainly and srf_index_hash).
+
+
+Version 1.11.0b8 (25th January 2008)
+----------------
+
+(Hopefully final beta test of SRF code before official 1.11.0 release.)
+
+* Bug fixed the index format. We incorrectly handled null dbhFile and
+  containerFile elements plus incorrectly computing the index size.
+
+* Improvements for solexa2srf code.
+  - Can store raw vs processed data
+  - Stores matrix and .params contents.
+  - Optional chastity filtering.
+  - Input data may now be gzipped.
+
+* Minor fixes to output of trace_dump and ztr_dump.
+
+* Minor srf_index_hash bug fixes (when dealing with concatenated
+  indexed files).
+
+
+Version 1.11.0b7 (11th January 2008)
+----------------
+
+* IMPORTANT bug fix to the SRF format. The Data Block Header had the
+  blocksize field 4 bytes too large. Now fixed. Old SRF files will not
+  be readable by this new code (as they were in error).
+
+
+Version 1.11.0b6 (2nd January 2008)
+----------------
+
+* Changes to adhere to SRF v1.3:
+
+* Removal of the readID counter.
+
+* Added support for printf style name formatting.
+
+* Minor index format tweaks (64-bit data, dch/container filenames).
+  Index format is therefore now 1.01.
+
+
+Version 1.11.0b5 (8th November 2007)
+----------------
+
+* Major reorganisation of directories. All library code is in subdir
+  "io_lib". The code now uses "io_lib/xxx.h" in all include statements
+  too.
+
+* Fixed memory leaks in ZTR code
+
+* Various SRF bug fixes and better support for sample OFFS metadata in
+  both ZTR/ZTR.
+
+* Added srf_extract_hash program to perform random-access on a hash
+  indexed SRF archive.
+
+
+Version 1.11.0b4 (26th October 2007)
+----------------
+
+* The SRF format now supported adheres to version 1.2.
+
+* More speedups, in particular focusing on uncompression this time, so
+  srf2solexa is an order of magnitude faster.
+
+* ztr2read() now honours the read_sections() options and so is much
+  faster when only decoding (say) base and quality values.
+
+* New program srf2fastq.
+
+* Internal changes to various ztr data structures. If you use these
+  yourself take note of the new ztr_owns fields to avoid memory leaks.
+
+
+Version 1.11.0b3 (16th October 2007)
+----------------
+
+* Major speed improvements for compression. solexa2srf is now 30-35x faster.
+
+* Fixed various buffer overruns and memory leaks reported by valgrind
+  in the new deflate interlaced and SRF code.
+
+
+Version 1.11.0b2 (2nd October 2007)
+----------------
+
+* Minor version change to fix typoes in Makefile system.
+
+
+Version 1.11.0b1 (28th September 2007)
+----------------
+
+Beta release 1.
+
+* Added preliminary SRF support. This consists of a new	subdirectory
+ 'srf' (yes these all really need merging into a single directory,
+ but that's a later task), a substantial update to ZTR and a variety
+ of SRF tools in progs.
+
+ The old huffman_static.[ch] files were renamed and substantially
+ worked upon to create deflate_interlaced.[ch].
+
+ Added new compression types. xrle2, tshift and qshift. The latter two
+ of these are very specific to trace and quality packings. May need to
+ rename to be more generic.
+
+
+Version 1.10.3 (???)
+--------------
+
+* The HashTable interface now also allows for Bob Jenkins' lookup3
+  64-bit hash function. This allows for substantially larger hash
+  tables.
+
+* Replaced tempnam() with tmpfile(). On systems without tmpfile
+  (Windows) this is simply a wrapper to use the old tempnam calls.
+
+* hash_extract bug fix for windows: now operates in binary mode.
+
+* INCOMPATIBLE CHANGE: On windows we now use semi-colon as the path
+  separator. The reason is that with the MinGW getenv() seems to do
+  "clever things" with PATH variables and consequently ends up
+  corrupting our clumsy attempt of escaping colons in paths.
+
+* Fasta format is semi-supported in "plain" format. It returns the
+  first entry when reading.
+
+* Experimental support for static huffman (STHUFF) compression type.
+
+
+Version 1.10.2 (30th May 2007)
+--------------
+
+Primarily this is a bug fix release.
+
+* Convert_trace now has -signed and -noneg options to control signed
+  vs unsigned issues when shifting trace data about.
+
+* Include files now have C++ extern "C" style guards around them.
+
+* Various programs now accept -ztr command line arguments to force ZTR
+  format reading. This is for consistencies sake only and it is
+  recommended that users simply let the programs automatically detect
+  the file formats.
+
+* Hash_exp now outputs to the same file containing the experiment
+  files (in appended hash-table mode). It also has better Windows
+  handling (stripping ^M and using binary mode).
+
+* hash_extract bug fix: now only needs at least 1 filename specified
+  when fofn mode is not in use.
+
+* mFILE emulation: bug fixes when dealing with ftruncate, append mode,
+  checking for read/write flags, new mfcreate_from() function.
+
+* ZTR: added an experimental ZTR_FORM_STHUFF compression scheme. This
+  uses static huffman encoding on a predefined hard-coded set of
+  huffman tables. The purpose (as yet not put into action) is to allow
+  efficient compression of very small data sets for Illumina, AB
+  SOLiD, etc style traces.
+
+
+Version 1.10.1 (20th June 2006)
+--------------
+
+* Trace files are now opened in read-only mode by default
+  (open_trace_file func).
+
+
+Version 1.10.0 (15th June 2006)
+--------------
+
+* Two new environment variables are used, EXP_PATH and TRACE_PATH, to
+  replace RAWDATA. EXP_PATH is used when the new open_exp_mfile()
+  function is called and TRACE_PATH is used when open_trace_mfile() is
+  called. Both default to using RAWDATA when EXP or TRACE env is now
+  found. Also defined a trace type TT_ANYTR which is analogous to the
+  existing TT_ANY except it will not look for experiment or plain
+  format files.
+
+  Modified the various example programs to use the appropriate open
+  call. This allows for traces and experiment files to have identical
+  names, such as is usually the case when querying named trace objects
+  from a trace server.
+
+* New program: extract_fastq to generate FASTQ output format.
+
+* New program: hash_exp. This allows multiple experiment files to be
+  contatenated together and then indexed so io_lib can still treat
+  them as single files.
+
+* The URL based search path mechanism now by default uses libcurl
+  instead of wget. This makes it considerably faster.
+
+* If an element in RAWDATA, EXP_PATH or TRACE_PATH now starts with the
+  pipe symbol ("|") then the compressed file extension code is negated
+  for that search element. (This prevents looking for foo.gz, foo.Z,
+  foo.bz2, etc if it fails to find foo.)
+
+* Added HashTableDel() and HashTableRemove() functions to take items
+  out of a hash table.
+
+* ZTR's compress_chunk() and uncompress_chunk() functions are now
+  externally callable.
+
+* New program io_lib-config. This has --version, --cflags and --libs
+  options to query the appropriate configuration when compiling and
+  linking against io_lib. There's also a new io_lib.m4 file which
+  provides an AC_CHECK_IO_LIB autoconf macro to use io_lib-config and
+  generate appropriate Makefile substitutions.
+
+* Updated the autoconf code to support libcurl searching.
+
+* Renamed SCF's delta_samples[12] functions to be
+  scf_delta_samples[12]. (From Saul Kravitz)
+
+* Added a '-error filename' option to convert_trace. (From Saul Kravitz)
+
+* Bug fix: HashTableAdd() now works properly with non-string keys.
+
+* Bug fix to read_dup().
+
+* Bug fix to xrle which could read past the array bounds. It also now
+  handles run-lengths of 256 or more.
+
+* Bug fix: the fwrite_* functions no longer close the FILE pointer
+  given to them.
+
+* Bug fix to fdetermine_trace_type(); it now rewinds the file back.
+
+* Bug fix to mfseek and mrewind; they both now clear the EOF flag.
+
+* Bug fix to find_file_dir().
+
+
+Version 1.9.2 (14th December 2005)
+-------------
+
+* Added AC_CHECK_LIB calls for the nsl and socket libraries
+  (gethostbyname / socket functions). Needed for Solaris compilations.
+
+* In extract_seq, used open_trace_mfile instead of
+  open_trace_file. Functionally this is the same, but it is faster.
+
+* fwrite_reading() now frees the temporary mFILE it created.
+
+* mfreopen_compressed() no longer closes the original FILE
+  pointer. This brings it back into line with the original
+  functionality provided in 1.8.x. It also cures a bug where the old
+  file pointer was often left opening meaning operates on many files
+  could could cause a resource leak ending in the inability to open
+  more trace files.
+
+* Added private_data and private_size to the Read struct. Populate
+  these when reading SCF files.
+
+* Hash_extract now returns an error code to the calling process upon
+  failure.
+
+* Major overhaul of hash_sff. It no longer loads the entire file into
+  memory. It can now cope with adding a hash index to an archive that
+  already contains an index.
+
+* Added support for 454's "sorted index" code. NB this is based on the
+  extraction code from their getsff.c code and has not been tested
+  with a genuine indexed SFF file yet.
+
+* Fixed an uninitialised memory access in mfload().
+
+* Fixed a bug where hash query searches for items that do not exist
+  and map to an empty bucket could cause hangs or crashes.
+
+* Fixed a hang in mfload() when reading a zero length file.
+
+
+Version 1.9.1
+-------------
+
+* Implemented the SFF (454) file structure, currently as read-only.
+  This is supported both as an archive containing multiple files and
+  also as a single SFF entry.
+
+* Allow for SFF=? components in RAWDATA search path.
+
+* Tar files, SFF archives and hashed archives (eg hashed tar, sff, or
+  "solid" archives) may now be used as part of a pathname. Eg if a
+  tar file foo.tar contains entry xyzzy.ztr then we can ask to fetch
+  trace foo.tar/xyzzy.ztr instead of requiring setting of the
+  RAWDATA environment variable.
+
+* Changed the HashFile format slightly. It's now format 1.00.
+	
+  The key difference is that it has a file footer pointing back to the
+  hashfile header (so the hashfile can be appended to an archive) and
+  it also has an offset in the header to apply to all seeks within the
+  archive itself, so it can be prepending to an archive that's already
+  been indexed without breaking the offsets.
+
+  Extended the hash_tar program to allow control over these header options.
+
+* Fixed divide-by-zero buf when calling mfread for zero
+
+* Removed the warning for unknown ZTR chunk types. It now just
+  silently stores them in memory. 
+
+* mfopen now honours binary verses ascii differences (and so updated
+  Read.c calls accordingly) so that Windows works better.
+
+* Removed file descriptor 'leak' in write_reading(). 
+
+* Unset compression_used when opening uncompressed files instead of
+  leaving as the last value.
+
+* Fixed a file descriptor (and some memory) leak in
+  freopen_compressed. (Bug ID #1289095) 
+
+* Fixed the hash file saving and loading so that it works on all
+  platforms instead of just x86 linux. There were bugs in assuming the
+  size of structures. The assumptions are still there in that I assume
+  they pad the same internally (for ease of coding - we can change it
+  when we finally see a system which operates differently), but the
+  final "boundary" padding has been resolved.
+
+
+Version 1.9.0
+-------------
+
+* ***INCOMPATIBILITIES*** to 1.8.12
+
+  - The Exp_info structure now internally contains an "mFILE *" member
+    instead of "FILE *" member. If you use the experiment file functions
+    for I/O then hopefully it'll still work. However if you directly
+    manipulated the Exp_info yourself using fprintf etc then you will
+    need to modify your code.
+  
+  - Some functions no longer have external scope. Most of these did not
+    previously have external function prototypes. If you have a burning
+    need to use one of these, please contact me directly via sourceforge.
+    The full list is:
+  
+      ctfType (global variable)            ztr_encode_samples_C         
+      replace_nl                           ztr_encode_samples_G    
+      ctfDecorrelate                       ztr_encode_samples_T    
+      exp_print_line_                      ztr_decode_samples              
+      find_file_tar                        ztr_encode_bases                
+      find_file_archive                    ztr_decode_bases                
+      find_file_url                        ztr_encode_positions    
+      ztr_write_header                     ztr_decode_positions    
+      ztr_write_chunk                      ztr_encode_confidence_1         
+      ztr_read_header                      ztr_decode_confidence_1         
+      ztr_read_chunk_hdr                   ztr_encode_confidence_4         
+      compress_chunk                       ztr_decode_confidence_4         
+      uncompress_chunk                     ztr_encode_text                 
+      ztr_encode_samples_4                 ztr_decode_text                 
+      ztr_decode_samples_4                 ztr_encode_clips                
+      ztr_encode_samples_common            ztr_decode_clips                
+      ztr_encode_samples_A                                         
+  
+  - Some external functions have changed prototypes to use mFILE instead
+    of FILE. Most cases of these I've put in place a wrapper function
+    with the old name, but not yet all. Functions changed are:
+  
+      ctfFRead                             write_scf_samples32       
+      ctfFWrite                            write_scf_base       
+      exp_print_line                       write_scf_bases      
+      exp_print_mline                      write_scf_bases3     
+      exp_print_seq                        write_scf_comment            
+      read_scf_header                      fcompress_file       
+      read_scf_sample1                     fopen_compressed     
+      read_scf_samples1                    freopen_compressed           
+      read_scf_samples31                   be_write_int_1       
+      read_scf_sample2                     be_write_int_2       
+      read_scf_samples2                    be_write_int_4       
+      read_scf_samples32                   be_read_int_1                
+      read_scf_base                        be_read_int_2                
+      read_scf_bases                       be_read_int_4                
+      read_scf_bases3                      le_write_int_1       
+      read_scf_comment                     le_write_int_2       
+      write_scf_header                     le_write_int_4       
+      write_scf_sample1                    le_read_int_1                
+      write_scf_samples1                   le_read_int_2                
+      write_scf_samples31                  le_read_int_4                
+      write_scf_samples2                   fdetermine_trace_type        
+  
+  - Removed support for the OLD unix "pack" program as a valid trace
+    compression algorithm.
+  
+  - Removed CORBA support. (It wasn't enabled and I've no idea if it
+    even worked as I cannot test it.)
+  
+  - The default search order for RAWDATA now has the current working
+    directory at the end of RAWDATA instead of the start.
+  
+* Significant speed ups, particularly when dealing with reading
+  gzipped files or when extracting data from tar files.
+
+* New external functions for faster access via mFILE (memory-file)
+  structs. These mimic the fread/fwrite calls, but with mfread/mfwrite
+  etc.
+
+* Numerous minor tweaks and updates to fix compiler warnings on more
+  stricter modes of the Intel C Compiler.
+
+* Preliminary support for storing pyrosequencing style traces. This
+  has been modeled on the flowgram data from 454, but should be
+  applicable to other platforms. ZTR has been updated to incorporate
+  this too.
+
+  The Read structure also has flow, flow_order, nflows and flow_raw
+  elements too. Code to convert these into the more usual traceA/C/G/T
+  arrays exists currently as part of Trev (in tk_utils in the Staden
+  Package), but this may move into io_lib for the next official release.
+
+* New hash_tar and hash_extract programs. These replace the index_tar
+  program for rast random access. For RAWDATA include "HASH=hashfile"
+  as an element to get io_lib to use the archive hash. It's possible
+  to create hash files of most archive formats as the hash itself
+  contains the offset and size of each item in the archive. This means
+  that extracting an item does not need to know the format of the
+  original archive.
+
+  Some benchmarks show that on ext3 it's actually faster to extract
+  files from the hash than directly via the directory. This was
+  testing with ~200,000 files, whereupon directory lookups become
+  slow. I'd imagine ResierFS or similar to be faster.
+
+* Added an XRLE encoding for ZTR. This is similar to the existing RLE
+  mechanism but it copes with run length encoding of items larger than
+  a single byte. It's current use is for storing the 4-base repeating
+  flow order in 454 data.
+
+
+Version 1.8.12
+--------------
+
+* The ABI format code now reads the confidence values from KB (via
+  PCON field).
+
+* New program: trace_dump. Like scf_dump, but deals with generic input
+  formats.
+
+* Slightly more sensible average spacing calculation in the ABI
+  reading code. It's still not perfect, but is only used when the real
+  spacing value is negative or zero.
+
+* Disabled the base-reordering fix for ABI files. We believe the bug
+  causing this no longer exists.
+
+* Expriment file format: added FT (EMBL feature table) and LF
+  (LiGation; a combination of LI and LE) records.
+
+* Experiment files: strip out digits from the sequence we read
+  (for better support of EMBL files).
+
+* Experiment files: fixed a potential buffer overrun in the conversion
+  of binary confidence values to ascii values.
+
+* Minor improvements to portability (INT_MAX vs MAXINT2) and removal
+  of some compilation warnings.
+
+* Extract_seq now accepts a -fofn argument.
+
+* New functions: read_update_base_positions() and
+  read_udpate_confidence_values() to replace read_update_opos().
+  These apply an edit buffer to the sequence details and are used (for
+  example) within Trev for saving edits back to a trace file.
+
+* Better error handling in fcompress_file().
+
+* New specifiers in RAWDATA. Added a generic URL format (eg
+  "URL=http://some/where/trace=%s") implemented via use of wget. There
+  is also an ARC= format to make use of the Sanger Trace Archive,
+  although currently this will not work externally.
+
+* Zero memory used in read_alloc(). Fixes to read_dup().
+
+
+Version 1.8.11
+--------------
+
+* Rewrote the background subtraction in convert_trace to deal with each
+  channel independently.
+
+* Make install now install the include files (all of them, although not all
+  are strictly required) in $prefix/include/io_lib/.
+
+* Moved the ABI filter wheel order (FWO) reading from outside the sample
+  reading code into the general reading bit as this is needed for reading the
+  comments too (it also applies to the order of the signal strengths). Hence
+  when the READ_COMMENTS section only is defined it now works correctly.
+
+* Moved the DataCount #defines into static values and added a
+  abi_set_data_counts function to change these. This allows reading of the raw
+  data from ABI files. This is used within the new convert_trace -abi_data
+  option.
+
+* Removed a one-byte write buffer overflow in the CTF writing code.
+
+* New Experiment file records WL and WR for indicating clip points within a WT 
+  trace.
+
+* Removed the saved copy of fp for exp_fread_info in 'e' structure as it
+  doesn't belong to us. (If we do store it there then the exp_destroy_info
+  function will free it and this causes bugs.). POTENTIAL INCOMPATIBILITY:
+  if you assumed that exp_destroy_info closed the files that you opened and
+  passed into exp_fread_info, then this is no longer true.
+
+* New function read_dup() to copy a Read structure.
+
+* get_read_conf() now deals with loading confidence values from any suitable
+  format and not just SCF.
+
+* Fixed memory leak in ztr (ztr->text_segments).
+
+
+Version 1.8.10
+--------------
+
+* Added Steven Leonard's changes to index_tar. It no longer adds index entries
+  for directories, unless -d is specified. It also now supports longer names
+  using the @LongLink tar extension.
+
+* Fixed a bug in exp2read where the base positions were random if experiment
+  files are loaded without referencing a trace and without having ON lines.
+
+* New program get_comment. This queries and extracts text fields held within
+  the Read 'info' section
+
+* Overhaul of convert_trace to support the makeSCF options (normalise etc).
+
+
+Version 1.8.9
+-------------
+
+Sorry this isn't a proper changes-by-source listing. Any suggestions for how I 
+collate the 'cvs log' output into something more concise? The below text is
+simply a list of changes, but more complete than in the NEWS file.
+
+* ZTR spec updated to v1.2. The chebyshev predictor has been rewritten in
+  integer format. The old chebyshev still has a format type allocated to it
+  (73), but the new ICHEB format (74) is now the default. The old floating
+  point method was potentially unstable (eg when running on non IEEE fp
+  systems). The new method also seems to save a bit more space.
+
+* The docs and code disagreed for CNF4 storage. Changed the docs to reflect
+  the code (which does as intended).
+
+* ZTR speed increase. Follow1 is substantially faster, increasing write
+  times by about 10%. 
+
+* New named formats types. ZTR1, ZTR2 and ZTR3. ZTR defaults to ZTR2, but we
+  can explicitly ask for another compression level if desired. Also explicit
+  statement of format (TT_ZTR instead of TT_ANY) removes the need for
+  a rewind() call and so ZTR can now work through a pipe.
+
+* General tidy up to remove a few compilation warnings (missing include files,
+  signed vs unsigned issues, etc).
+
+* Initial support is included for BioLIMS integration, but this is not
+  complete. (Unfortunately it requires access to a non-public library.)
+
+* New function compress_str2int - opposite of existing compress_int2str.
+
+* (Steven Leonard). Uses zlib for gzip compression and decompression.
+
+
+
+
+
+These are extracts from the full Staden Package change log. They may not be
+immediately obvious when taken out of context, but we feel this information
+may still be useful to the users of io_lib.
+
+23rd August 2000, James
+-----------------------
+1. Removed find_trace_file and added an open_trace_file function.
+The idea is that searching for a files existance is better done by attempting
+to open it. This in turn allows for more possibilities of file searching.
+        Makefile
+	utils/open_trace_file.c
+	read/Read.c
+	read/scf_extras.c
+	read/translate.[ch]
+	progs/extract_seq.c
+
+2. Added a TAR option to RAWDATA. We can now read trace files directly from
+tar files (although they cannot be written to directly).
+        utils/open_trace_file.c
+	utils/tar_format.h
+
+3. Created an index_tar program to optimise tar reading, although it is not
+mandatory.
+	progs/index_tar.c
+	progs/Makefile
+
+4. Fixed a bug when dealing with plain text files containing spaces.
+        plain/seqIOPlain.c
+
+
+31st July 2000, James
+---------------------
+1. Renamed TTFF to be ZTR.
+	read/Read.[ch]
+	utils/traceType.c
+	utils/compress.c
+	ttff/* -> ztr/*
+	README
+
+2. ZTR reading will now stop when it spots a ZTR magic number. This allows
+concatenation of ZTR files.
+	ztr/ztr.[ch]
+
+
+15th June 2000, James
+---------------------
+1. Added a TTFF_FOLLOW filter type to TTFF. This is enabled with compression
+level 2 for the chromatogram data.
+      io_lib/ttff/ttff.[ch]
+      io_lib/ttff/compression.[ch]
+
+9th June 2000, James
+--------------------
+* RELEASED 1.8.4 */
+
+1. Added zlib bits to windows compilation.
+	io_lib/mk/windows.mk
+
+2. Updated convert_trace. It can now reduce sample-size to 8-bit (with the
+"-8" option) and the formats may now be specified as either integer or text
+format. The text format is case insensitive.
+	io_lib/progs/convert_trace.c
+	io_lib/utils/traceType.c
+
+3. More windows binary vs ascii fixes. When reading we switch to binary mode
+before attempting fdetermine_trace_type, otherwise it fails to auto-detect
+TTFF (which includes a newline as part of the magic number). Also added a
+_setmode() call to the fwrite_reading code too.
+	io_lib/read/Read.c
+
+4. Changed the default compression technique of TTFF to that used in 1.8.2. I
+accidently left it set to the experimental dynamic-delta method in 1.8.3,
+which currently doesn't have the uncompression function! Also removed lots of
+debugging output.
+	io_lib/ttff/ttff.c
+	io_lib/ttff/ttff_translate.c
+
+5. Bug fix to exp2read - when no right hand quality cutoff is specified we
+were defaulting to the left end of the trace, instead of the right end. (This
+only happens when opening experiment files which do not have clip points.)
+	io_lib/read/translate.c
+
+6. Changed the strftime() format in ABI reading code to use %H:%M:%S instead
+of %T, as %T doesn't appear to be part of ANSI (I think it's probably
+XPG4-UNIX). It worked on Unix machines, but not on MS Windows.
+	io_lib/abi/seqIOABI.c
+
+
+8th June 2000, James
+--------------------
+* RELEASED 1.8.3 */
+
+1. Updated the CTF support so that it includes a couple of new block
+types. This allows for base positions being non-sequentially ordered, as is
+possible in severe compressions.
+	 io_lib/ctf/ctfCompress.c
+
+2. Overhaul of TTFF format - now more PNG based in style. Still highly
+experimental.
+	io_lib/ttff/*
+
+
+16th May 2000, James
+--------------------
+* RELEASED 1.8.0 */
+
+1. Added szip support. Szip generally gives better compression ratios than
+gzip and often marginally better than bzip2, but is generally considerably
+slower at decompression.
+	io_lib/utils/compress.[ch]
+
+2. Merged in Jean Thierre-Mieg's CTF code. This is a compressed trace format
+which holds the same data as SCF, but in reduce space.
+	io_lib/read/Read.[ch]
+	io_lib/utils/traceType.c
+	io_lib/ctf/*
+
+3. Added my own highly experimental TTFF format. (Thanks to Jean Thierre-Mieg
+for re-awakining my interest in this.) TTFF files are typically equivalent in
+size to bzip2'ed SCF files, but are much quicker to write than any of the
+currently supported compressed formats. Depends on zlib.
+	io_lib/read/Read.[ch]
+	io_lib/utils/traceType.c
+	io_lib/ttff/*
+
+4. Reorganised the Makefiles for easier building.
+	*/Makefile
+
+5. New program "convert_trace". Primarily a test tool at present as it needs
+a friendlier interface.
+	progs/convert_trace.c
+
+
+20th April 2000, James
+----------------------
+1. Removed a file-descriptor leak in extract_seq.
+	io_lib/progs/extract_seq.c
+
+22nd March 2000, James
+----------------------
+1. Fixed bug in time formatting from ABI files. We used strftime code
+%a without setting tm.tm_wday (number of days since sunday). It's not
+easy to work that out, so we convert from struct tm to time_t, which
+resets any errornous elements of struct tm. Also fixed a silly error
+where the end time was set to the start time (incorrectly).
+	io_lib/abi/seqIOABI.c
+
+25th February 2000, James
+-------------------------
+2. Added checks for QR <= QL in the exp2read conversion function. This caused
+trev to display incorrectly (blanking incorrect screen portions) when dealing
+with inconsistent experiment files. Also changed qclip so that it doesn't
+create this inconsistent case.
+	io_lib/read/translate.c
+
+1st February 2000, Kathryn
+--------------------------
+1. Fixed bug which caused init_exp to crash when QL was more than 5 digits.
+Increased it to handle 15 digits.
+	io_lib/read/translate.c
+
+27th January 2000, James
+------------------------
+1. Moved Gap4's copy of scf_extras into io_lib, and renamed io_liub's
+scf_bits to be scf_extras (to avoid editing too many #include statements).
+Without this we were getting errors due to dynamic linking using odd
+copies. Eg loading libread.so and then libgap.so meant that
+find_trace_file called from edUtils2.c (libgap.so) would pick up the first
+copy from libread.so, despite the fact that there's also a copy in the
+same libgap.so.
+	gap4/scf_extras.[ch]
+	io_lib/scf_bits.[ch]
+
+25th January 2000, Kathryn
+--------------------------
+1. Fixed crash in qclip due to insufficent arguments being passed to 
+find_trace_file and also fixed an array bounds error in scan_right of qclip.c
+	io_lib/read/scf_bits.c
+	
+19th January 2000, James
+------------------------
+4. Copied bits of the fakii and cap2/3 scf/expFile reading code into
+io_lib. Not all of this is in there, just the things which seem to be
+common and sensibly fit there. This also helps qclip to build on Windows.
+FIXME: We should now remove some of this code from Gap4.
+Also fixed a small memory leak in fopen_compressed() - it wasn't freeing
+the result of tempnam().
+	io_lib/read/translate.c
+	io_lib/read/scf_bits.[ch]
+	io_lib/read/seqInfo.[ch]
+	io_lib/utils/files.c
+	io_lib/utils/compress.c
+
+31st August 1999, James
+-----------------------
+1. -fasta_out mode of extract_seq now changes - to N.
+	io_lib/progs/extract_seq.c
+
+27th August 1999, James
+-----------------------
+1. The order of information items added by the abi to scf code has
+changed, to make it more sensible. Also fixed a bug in the textual (rather
+than numerical) date output, and wrote this to the DATE field.
+	io_lib/abi/seqIOABI.c
+
+2. makeSCF no longer adds a MACH field, as this was redudant.
+	io_lib/abi/makeSCF.c
+
+3. Extract_seq now has proper use of CL and CR when using -cosmid_only. It
+was assuming they were the same as QL/QR and SL/SR, which is not the case
+(rather it's like having a CS line of `CL`..`CR`). Extract_seq also now
+has a -fasta_out format option and can handle multiple files, which makes
+it easier to produce a fasta file from multiple experiment files.
+	io_lib/progs/extract_seq.c
+
+4th August 1999, James
+----------------------
+1. The exp2read() function in io_lib now initialises the confidence arrays
+(eg r->prob_A) to zero, or to the experiment file AV line.
+	io_lib/read/translate.c
+
+2nd June 1999, James
+--------------------
+1. The MegaBACE sequencer creates ABI files. However it does so in a odd way.
+Sometimes the samples arrays are truncated such that bases are positioned
+above samples which are not stored in the ABI file. We now realloc the samples
+array in such cases and fill out the remainder with blank data. This removes a
+crash in trev when viewing such data.
+	io_lib/abi/seqIOABI.c
+
+2. Fixed a memory corruption of io-lib compression. The switch to use tempnam
+(for Windows) implies that the filename returned is no longer allocated by us.
+Unfortunately we forgot to remove the xfree(fname) calls.
+	src/io_lib/utils/compress.c
+
+18th May 1999, James
+--------------------
+1. Fixed the trace rescaling option of makeSCF. We now go through the rescale
+function twice. Once to work out the maximum value, and again to do the
+rescaling. This fixes a bug where the maximum value after rescaling was
+sometimes above 65536 and hence cause "trace wraparound" effects.
+	io_lib/progs/makeSCF.c
+
+26th April 1999, JohnT
+----------------------
+1. Allow : to be entered in RAW_DATA by using ::
+	Misc/find.c
+	io_lib/utils/find.c
+
+2. Support for fetching trace files using Corba
+   Modified:
+	Misc/find.c
+	mk/misc.mk
+	io_lib/utils/find.c
+        init_exp/init_exp.c
+        io_lib/read/Makefile
+        io_lib/utils/find.c
+	io_lib/utils/compress.c
+	io_lib/utils/Makefile
+        mk/global.mk
+    Added:
+	io_lib/utils/corba.cpp
+	io_lib/utils/stcorba.h
+    Generated from IDL:
+	io_lib/utils/trace.h
+	io_lib/utils/trace.cpp
+	io_lib/utils/basicServer.h
+	io_lib/utils/basicServer.cpp
+
+
+3. Added ABI utility progs to NT port
+	mk/abi.mk
+
+4. Added Windows 95 support
+	io_lib/utils/compress.c
+        mk/WINNT.mk
+
+5th March 1999, JohnT
+---------------------
+Various changes for WINNT support as follows:
+io_lib/utils       - Don't redirect to /dev/null on WINNT
+
+3rd February 1999, James
+------------------------
+1. Fixed problems reported by Insure on Windows NT.
+These are mainly lack of prototypes (malloc/memcpy) and not returning properly
+from 'int' functions. However one fix to seqed_translate.c (find_line_start3)
+was a array read overflow.
+	io_lib/progs/makeSCF.c
+
+18th January 1999, James
+------------------------
+1. Changed the read2exp io_lib translation function so that it can accept
+lowercase a,c,g,t. Oddly enough it was already coded to accept lowercase IUB
+codes, but we missed out a,c,g and t!
+	io_lib/read/translate.c
+
+15th January 1999, JohnT
+-----------------------
+Modified files thoughout for Windows NT Compatibility as follows:
+
+8. need to explicitly set text or binary file mode under WINNT
+   io_lib/exp_file/expFileIO.c
+
+18. need to include stddef.h for size_t with Visual C++
+    io_lib/utils/array.h
+
+19. need to have target LIBS (not LIB) and correct ordering for correct make
+    on WINNT. Also need additional abstractions to allow for different compile
+    and link calling conventions with Visual C++, and have rules for building
+    Windows .def files.
+    io_lib/abi/Makefile
+    io_lib/alf/Makefile
+    io_lib/exp_file/Makefile
+    io_lib/plain/Makefile
+    io_lib/progs/Makefile
+    io_lib/read/Makefile
+    io_lib/scf/Makefile
+    io_lib/utils/Makefile
+
+18th December 1998, James
+-------------------------
+1. Added bzip2 recognition to the (de)compression code of io_lib. This is now
+the latest bzip, and is recognised by phred (unlike bzip version 1). Bzip2 is
+approx the same as bzip1, but more or less twice as fast for decompression.
+	io_lib/utils/compress.c
+
+27th November 1998, James
+-------------------------
+1. Fixed the trace file searching mechanism in io_lib. When loading an
+experiment file with LN/LT lines, we now first search for the trace file
+relative to the location of the experiment file.
+	io_lib/read/Read.c
+	io_lib/read/translate.[ch]
+
+16th November 1998, James
+-------------------------
+4. Added NT (NoTe) and GD (Gap4 Database) line types to the experiment file.
+	io_lib/exp_file/expFile.[ch]
+
+24th September 1998, James
+--------------------------
+1. The scf reading and writing code now handles traces with zero bases.
+Previously this failed after a malloc(0).
+	io_lib/scf/read_scf.c
+	io_lib/scf/write_scf.c
+
+2. The ABI file reading code has been tidied up. It now also supports
+conversion of more ABI fields, including RUND, RUNT, SPAC(2), CMNT, LANE and
+MTXF.
+	io_lib/abi/seqIOABI.c
+
+17th July 1998, James
+---------------------
+1. Extract_seq now copes with sequences containing no SQ line (instead of just
+SEGV).
+	io_lib/progs/extract_seq
+
+9th July 1998, James
+--------------------
+1. Enforce IUBC code set in io_lib when converting from trace (any format) to
+experiment file. We leave the IUBC 'N' intact.
+	io_lib/read/translate.c
+
+28th May 1998, James
+--------------------
+1. Added a read_sections() function to io_lib so that programs can state
+which bits of a trace file they are interested in. The loading code only
+then parses those bits. This can give big increases to things like init_exp
+which only wants bases and does not care about the delta-delta format of SCF
+trace data.
+	io_lib/read/Read.h
+	io_lib/read/translate.c
+	io_lib/scf/scf.h
+	io_lib/scf/read_scf.c	
+	io_lib/abi/seqIOABI.c
+	io_lib/alf/seqIOALF.c
+	init_exp/init_exp.c
+
+3. Extract GELN (gel name) from ABI file when converting to SCF.
+	io_lib/abi/seqIOABI.[ch]
+
+2. Improved the makeSCF -normalise option. Background subtraction is now
+cleaner (and simpler) and it also now scales the heights. Moved it to io_lib
+as it's now freely available.
+	io_lib/progs/makeSCF.c
+
+23rd March 1998, James
+----------------------
+1. Removed the change made on 7th May 1997 to seqIOPlain.c. This code is used
+by extract_seq, and so clipping in seqIOPlain causes double clipping (and
+hence wrong sections).
+	io_lib/plain/seqIOPlain.c
+
+11th March 1998, James
+----------------------
+2. Removed the requirement of EXP_FILE_LINE_LENGTH in exp_fread_info().
+This allows for (eg) tags with very long comments to be read in without
+being truncated.
+	io_lib/exp_file/expFileIO.c
+
+4th March 1998, James
+---------------------
+1. Following advice from Leif Hansson <leif.hansson@mbox4.swipnet.se>, the ALF
+reading code now reads the "Raw data" subfile when the "Processed data"
+subfile is not present, as "Processed data" is apparently an optional output
+of the pharmacia software. Raw data is in the same format, although I do not
+know what processing takes place to convert it to Processed data. (Looking at
+some real traces, apparently none!)
+	io_lib/alf/seqIOALF.c
+
+24th February 1998, James
+-------------------------
+1. Added an ABI in MacBinary format file type detector so that these are
+now autodetected.
+	io_lib/utils/traceType.c
+
+15th January 1998, James
+------------------------
+1. Rewrote the delta_samples1/2 functions to be faster. Times vary between 0.55
+and 0.7 fractions of the original time.
+	io_lib/scf/misc_scf.c
+
+4th December 1997, James
+------------------------
+1. First post-release bug fix.
+Io_lib incorrect sets read->trace_name when reading anything except SCF files.
+This means that when outputting to an experiment file no LN line is present.
+	io_lib/read/Read.c
+
+1st October 1997, James
+-----------------------
+1. Allow for SCF files to contain 0 bases. This mainly affects memory
+allocation, but also the display widget.
+	io_lib/scf/read_scf.c
+	io_lib/utils/read_alloc.c
+
+28/29th August 1997, James
+--------------------------
+2. Added a few changes to make the code more portable for the Mac. Not really
+used at present.
+	Misc/os.h
+	Misc/files.c
+	io_lib/utils/traceType.c
+	io_lib/read/translate.c
+	io_lib/utils/compress.c
+
+30th June 1997, James
+---------------------
+1. The exp2read function produced invalid rightCutoff values (INT_MAX) when no
+QR line is present. It now correctly sets it to 0.
+	io_lib/read/translate.c
+
