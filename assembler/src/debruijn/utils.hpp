@@ -8,18 +8,19 @@
 #ifndef UTILS_HPP_
 #define UTILS_HPP_
 
-#include "common/io/paired_read.hpp"
+#include "io/paired_read.hpp"
 #include "seq_map.hpp"
 #include "omni_utils.hpp"
 #include "logging.hpp"
 #include "paired_info.hpp"
 #include "statistics.hpp"
-
+//#include "common/io/paired_read.hpp"
 namespace debruijn_graph {
 
 using omnigraph::Path;
 using omnigraph::PairInfo;
 using omnigraph::GraphActionHandler;
+//using io::PairedRead;
 
 template<size_t kmer_size_, typename Graph>
 class ReadThreaderResult {
@@ -318,9 +319,9 @@ class EtalonPairedInfoCounter {
 			size_t j = i + 1;
 			size_t length = 0;
 
-			while (j < path.size() && length < (insert_size_ + delta_)) {
-				if (length + g_.length(e) + g_.length(path[j]) + delta_
-						>= gap_) {
+			while (j < path.size() && length  + k + 2 <= (insert_size_ + delta_)) {
+				if (length + g_.length(e) + g_.length(path[j]) + delta_ + k
+						>= gap_ + 2 * (k + 1)) {
 //					cout << "HERE2 " <<  /*g_.length(e) + */length << endl;
 					AddEtalonInfo(paired_info, e, path[j],
 							g_.length(e) + length);
@@ -371,24 +372,24 @@ class NewEtalonPairedInfoCounter {
 
 	void ProcessSequence(const Sequence& sequence,
 			set<PairInfo<EdgeId>>& temporary_info) {
-		int mod_gap = (gap_ > delta_) ? int(gap_) - int(delta_) : 0;
+		int mod_gap = (gap_ > delta_) ? gap_ - delta_ : 0;
 		Seq<k + 1> left(sequence);
-		0 >> left;
-		for (size_t left_idx = 0; left_idx <= sequence.size() - insert_size_ - gap_; ++left_idx) {
+		left >> 0;
+		for (size_t left_idx = 0; left_idx + k + 1 + mod_gap <= sequence.size(); ++left_idx) {
 			left = left << sequence[left_idx + k];
-			size_t right_idx = left_idx + read_length_ + mod_gap;
+			size_t right_idx = left_idx + mod_gap;
 			if (!index_.containsInIndex(left)) {
 				continue;
 			}
 			pair<EdgeId, size_t> left_pos = index_.get(left);
 			Seq<k + 1> right(sequence, right_idx);
-			0 >> right;
-			for (; right_idx < left_idx + insert_size_ + gap_ - k && right_idx < sequence.size() - k; ++right_idx) {
+			right >> 0;
+			for (; right_idx + k + 1 <= left_idx + insert_size_ + delta_ && right_idx + k + 1 <= sequence.size(); ++right_idx) {
 				right << sequence[right_idx + k];
-				pair<EdgeId, size_t> right_pos = index_.get(right);
 				if (!index_.containsInIndex(right)) {
 					continue;
 				}
+				pair<EdgeId, size_t> right_pos = index_.get(right);
 				AddEtalonInfo(temporary_info, left_pos.first, right_pos.first, right_idx - left_idx + left_pos.second - right_pos.second);
 			}
 		}
@@ -669,16 +670,15 @@ public:
 
 };
 
-template<size_t k, class Graph, class Stream>
+template<size_t k, class Graph>
 class SingleReadMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef EdgeIndex<k + 1, Graph> Index;
 private:
 	SimpleSequenceMapper<k, Graph> read_seq_mapper;
-	Stream& stream_;
-	Graph g_;
-	Index& index_;
+	const Graph& g_;
+	const Index& index_;
 public:
 	/**
 	 * Creates SingleReadMapper for given graph. Also requires index_ which should be synchronized
@@ -686,17 +686,15 @@ public:
 	 * @param g graph sequences should be mapped to
 	 * @param index index syncronized with graph
 	 */
-	SingleReadMapper(const Graph& g, const Index& index, Stream & stream):
-		read_seq_mapper(g, index), stream_(stream), g_(g), index_(index) {
-		stream_.reset();
+	SingleReadMapper(const Graph& g, const Index& index):
+		read_seq_mapper(g, index),  g_(g), index_(index) {
 	}
 
-	vector<EdgeId> GetContainingEdges(){
+	vector<EdgeId> GetContainingEdges(io::SingleRead& p_r){
 		vector<EdgeId> res;
-		if (!stream_.eof()) {
-      io::SingleRead p_r;
-			stream_ >> p_r;
-			Sequence read = p_r.sequence();
+
+		Sequence read = p_r.sequence();
+		if (k+1 <= read.size()) {
 			Seq<k + 1> kmer = read.start<k + 1>();
 			bool found;
 			for (size_t i = k + 1; i <= read.size(); ++i) {
@@ -715,37 +713,8 @@ public:
 					kmer = kmer << read[i];
 			}
 		}
+
 		return res;
-	}
-
-	pair<ReadMappingResult<Graph>*, ReadMappingResult<Graph>*> ThreadNext() {
-		if (!stream_.eof()) {
-      io::PairedRead p_r;
-			stream_ >> p_r;
-			Sequence read1 = p_r.first().sequence();
-			Sequence read2 = p_r.second().sequence();
-			Path<EdgeId> aligned_read[2];
-			aligned_read[0] = read_seq_mapper.MapSequence(read[0]);
-			aligned_read[1] = read_seq_mapper.MapSequence(read[1]);
-//			pair<ReadMappingResult<Graph>, ReadMappingResult<Graph> >  res;
-			vector<SingleReadThreaderResult<Graph>> res_v[2];
-			for(int i = 0; i < 2; i++) {
-				int start = 0;
-				res_v[i].clear();
-				if (!aligned_read[i].sequence_.empty()){
-					res_v[i].push_back(SingleReadThreaderResult<Graph>(aligned_read[i].sequence_[0], aligned_read[i].start_pos_, start));
-					start += g_.length(aligned_read[i].sequence_[0]) - aligned_read[i].start_pos_;
-				}
-				for(int j = 1; j < aligned_read[i].sequence_.size(); j++) {
-					res_v[i].push_back(SingleReadThreaderResult<Graph>(aligned_read[i].sequence_[j], 0, start));
-					start += g_.length(aligned_read[i].sequence_[j]);
-				}
-			}
-			return make_pair( new ReadMappingResult<Graph>(read[0], res_v[0]),new ReadMappingResult<Graph>(read[1], res_v[1]));
-	//		return res;
-
-		}
-//		else return NULL;
 	}
 
 };

@@ -22,6 +22,7 @@ class PositionKMer {
   public:
 	static std::vector<PositionRead> * pr;
 	static std::vector<Read> * rv;
+	static std::vector<bool> * rv_bad;
 	static hint_t revNo;
 
 	static char* blob;
@@ -33,7 +34,6 @@ class PositionKMer {
 	static std::vector<uint32_t> * subKMerPositions;
 
 	static bool compareSubKMers( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
-		//cout << "    " << kmer1 << "\t" << km->at(kmer1).first.strSub(tau, ) << " vs " << kmer2 << 
 		return ( strncmp( blob + km->at(kmer1).first.start_ + start_offset,
 			  	  blob + km->at(kmer2).first.start_ + start_offset,
 				  end_offset - start_offset ) < 0 );

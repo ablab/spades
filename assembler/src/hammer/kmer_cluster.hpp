@@ -21,8 +21,8 @@ public:
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
-	void process(std::string dirprefix, std::vector< SubKMerPQ > * vs);
-	
+	void process(std::string dirprefix, std::vector< SubKMerPQ > * vs, ofstream * ofs, ofstream * ofs_bad);
+
 	/// free up memory
 	void clear() {
 		k_.clear();

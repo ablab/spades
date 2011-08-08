@@ -5,20 +5,21 @@
  *      Author: snikolenko
  */
  
-#include<omp.h>
-#include<cmath>
-#include<string>
-#include<iostream>
-#include<sstream>
-#include<fstream>
-#include<cstdlib>
-#include<vector>
-#include<map>
-#include<list>
-#include<queue>
-#include<cstdarg>
-#include<algorithm>
-#include<cassert>
+#include <omp.h>
+#include <cmath>
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <fstream>
+#include <iomanip>
+#include <cstdlib>
+#include <vector>
+#include <map>
+#include <list>
+#include <queue>
+#include <cstdarg>
+#include <algorithm>
+#include <cassert>
 #include <unordered_set>
 #include <boost/bind.hpp>
 
@@ -30,6 +31,7 @@
 using namespace std;
 
 std::vector<Read> * PositionKMer::rv = NULL;
+std::vector<bool> * PositionKMer::rv_bad = NULL;
 std::vector<PositionRead> * PositionKMer::pr = NULL;
 hint_t PositionKMer::revNo = 0;
 hint_t PositionKMer::blob_size = 0;
@@ -40,10 +42,10 @@ std::vector<uint32_t> * PositionKMer::subKMerPositions = NULL;
 
 struct KMerStatCount {
 	PositionKMer km;
-
-	KMerStatCount (uint32_t cnt, hint_t cng) : count(cnt), changeto(cng), km(cng) { }
 	uint32_t count;
 	hint_t changeto;
+
+	KMerStatCount (uint32_t cnt, hint_t cng) :  km(cng), count(cnt), changeto(cng) { }
 
 	bool isGood() const { return changeto == KMERSTAT_GOOD; }
 	bool change() const { return changeto < KMERSTAT_CHANGE; }
@@ -55,12 +57,13 @@ int main(int argc, char * argv[]) {
 		return 0;
 	}
 
-	/*cout << "sizeof( hint_t ) = " << sizeof(hint_t) << endl;
+/*	cout << "sizeof( hint_t ) = " << sizeof(hint_t) << endl;
 	cout << "sizeof( KMerStat ) = " << sizeof(KMerStat) << endl;
 	cout << "sizeof( PositionRead ) = " << sizeof(PositionRead) << endl;
 	cout << "sizeof( PositionKMer ) = " << sizeof(PositionKMer) << endl;
 	cout << "sizeof( KMerCount ) = " << sizeof(KMerCount) << endl;
-	cout << "sizeof( new KMerCount ) = " << sizeof(KMerStatCount) << endl;*/
+	cout << "sizeof( new KMerCount ) = " << sizeof(KMerStatCount) << endl;
+	cout << "sizeof( long double ) = " << sizeof( long double ) << endl;*/
 
 	int tau = atoi(argv[1]);
 	int qvoffset = atoi(argv[2]);
@@ -68,19 +71,20 @@ int main(int argc, char * argv[]) {
 	string readsFilename = argv[3];
 	string dirprefix = argv[4];
 	int nthreads = atoi(argv[5]);
+	ostringstream tmp;
 	
 	int iterno = 1; if (argc > 6) iterno = atoi(argv[6]);
 
 	// initialize subkmer positions
 	PositionKMer::subKMerPositions = new std::vector<uint32_t>(tau + 2);
-	for (uint32_t i=0; i < tau+1; ++i) PositionKMer::subKMerPositions->at(i) = (uint32_t)(i * K / (tau+1) );
+	for (uint32_t i=0; i < (uint32_t)(tau+1); ++i) PositionKMer::subKMerPositions->at(i) = (i * K / (tau+1) );
 	PositionKMer::subKMerPositions->at(tau+1) = K;
-	//cout << "SubKMer positions: "; for (uint32_t i=0; i < tau+2; ++i) cout << PositionKMer::subKMerPositions->at(i) << " "; cout << endl;
 
 	TIMEDLN("Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K);
 
 	hint_t totalReadSize;
 	PositionKMer::rv = ireadstream::readAllNoValidation(readsFilename, &totalReadSize);
+	PositionKMer::rv_bad = new std::vector<bool>(PositionKMer::rv->size(), false);
 
 	PositionKMer::blob = new char[ (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];
 	PositionKMer::blobkmers = new hint_t[ (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];	
@@ -93,6 +97,7 @@ int main(int argc, char * argv[]) {
 	for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
 		Read revcomp = !(PositionKMer::rv->at(i));
 		PositionKMer::rv->push_back( revcomp );
+		PositionKMer::rv_bad->push_back(false);
 	}
 	TIMEDLN("All reads read to memory. Reverse complementary reads added.");
 	
@@ -103,7 +108,7 @@ int main(int argc, char * argv[]) {
 		hint_t curpos = 0;
 
 		for (hint_t i = 0; i < PositionKMer::rv->size(); ++i) {
-			PositionRead pread(curpos, PositionKMer::rv->at(i).size(), i);
+			PositionRead pread(curpos, PositionKMer::rv->at(i).size(), i, PositionKMer::rv_bad->at(i));
 			PositionKMer::pr->push_back(pread);
 			for (uint32_t j=0; j < PositionKMer::rv->at(i).size(); ++j) 
 				PositionKMer::blob[ curpos + j ] = PositionKMer::rv->at(i).getSequenceString()[j];
@@ -126,20 +131,27 @@ int main(int argc, char * argv[]) {
 		vv.clear();
 		TIMEDLN("Auxiliary subvectors sorted. Starting split kmer processing in " << min(nthreads, tau+1) << " effective threads.");
 
+		tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << ".kmers.solid";
+		ofstream ofkmers( tmp.str() );
+		tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << ".kmers.bad";
+		ofstream ofkmers_bad( tmp.str() );
 		KMerClustering kmc(kmers, nthreads, tau);
 		// prepare the maps
-		kmc.process(dirprefix, &vskpq);
+		kmc.process(dirprefix, &vskpq, &ofkmers, &ofkmers_bad);
+		ofkmers.close();
+		ofkmers_bad.close();
 		TIMEDLN("Finished clustering. Starting reconstruction.");
 
 		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
 		vector<ofstream *> outfv; vector<bool> changed;
 		for (int i=0; i<nthreads; ++i) {
-			outfv.push_back(new ofstream(dirprefix + "/" + (char)((int)'0' + iter_count) + ".reconstruct." + (char)((int)'0' + i)));
+			tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << ".reconstruct." << i;
+			outfv.push_back(new ofstream( tmp.str() ));
 			changed.push_back(false);
 		}
 
 		#pragma omp parallel for shared(changed, outfv) num_threads(nthreads)
-		for (int i = 0; i < PositionKMer::revNo; ++i) {
+		for (size_t i = 0; i < PositionKMer::revNo; ++i) {
 			bool res = CorrectRead(kmers, i, outfv[omp_get_thread_num()]);
 			changed[omp_get_thread_num()] = changed[omp_get_thread_num()] || res;
 		}
@@ -151,11 +163,18 @@ int main(int argc, char * argv[]) {
 
 		TIMEDLN("Correction done. Printing out reads.");
 	
-		ofstream outf; outf.open(dirprefix + "/" + (char)((int)'0' + iter_count) + ".reads.corrected");	
+		tmp.str(""); tmp << dirprefix << "/" << std::setfill('0') << std::setw(2) << iter_count << ".reads.corrected";
+		ofstream outf( tmp.str() );
+		tmp.str(""); tmp << dirprefix << "/" << std::setfill('0') << std::setw(2) << iter_count << ".reads.bad";
+		ofstream outf_bad( tmp.str() );
 		for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
-			PositionKMer::pr->at(i).print(outf, qvoffset);
+			if (PositionKMer::rv_bad->at(i)) {
+				PositionKMer::pr->at(i).print(outf_bad, qvoffset);
+			} else {
+				PositionKMer::pr->at(i).print(outf, qvoffset);
+			}
 		}
-		outf.close();
+		outf.close(); outf_bad.close();
 
 		// prepare the reads for next iteration
 		// delete consensuses, clear kmer data, and restore correct revcomps
@@ -181,6 +200,7 @@ int main(int argc, char * argv[]) {
 	delete PositionKMer::subKMerPositions;
 	PositionKMer::rv->clear();
 	delete PositionKMer::rv;
+	delete PositionKMer::rv_bad;
 	delete [] PositionKMer::blobkmers;
 	delete [] PositionKMer::blob;
 	return 0;

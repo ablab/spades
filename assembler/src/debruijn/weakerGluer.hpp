@@ -7,7 +7,7 @@
 #include <map>
 #include <unordered_map>
 #include <algorithm>
-#include "common/io/single_read.hpp"
+#include "io/single_read.hpp"
 #include "logging.hpp"
 #include "config.hpp"
 #include "omni_utils.hpp"
@@ -22,6 +22,7 @@
 #include "distanceEstimator.hpp"
 #include "graphFilter.hpp"
 #include "graphCopy.hpp"
+#include <time.h>
 namespace debruijn_graph {
 
 
@@ -58,7 +59,7 @@ public:
 
 
     WeakerGluer(Graph &debruijn, IQuotientGraphs<Graph> &quotientGraphs, IGraphFilter<Graph> &graphFilter, IDistanceEstimator<Graph> &distanceEstimator, 
-            PairInfoIndexData<typename Graph::EdgeId> &index, size_t errorDistance, 
+            PairInfoIndexData<typename Graph::EdgeId> &index, int errorDistance,
              Graph &weakerRedGraph, Graph &weakerBlueGraph)
         :debruijn_(debruijn), quotientGraphs_(quotientGraphs), graphFilter_(graphFilter), distanceEstimator_(distanceEstimator),
         pairIndex_(index), errorDistance_(errorDistance), weakerRedGraph_(weakerRedGraph),
@@ -86,8 +87,8 @@ public:
         quotientGraphs_.AddGraph(redGraph,redGraphEdgeMaps_);
         quotientGraphs_.AddGraph(blueGraph, blueGraphEdgeMaps_);
         //Filtered the graph because of noise in distance
-        graphFilter_.Filter(redGraph);
-        graphFilter_.Filter(blueGraph);
+        graphFilter_.Filter(redGraph, debruijn_);
+        graphFilter_.Filter(blueGraph, debruijn_);
         //store red and blue graphs so that the caller can get the information
         GenerateResultGraphs(redGraph, blueGraph);
         return true;
@@ -98,7 +99,7 @@ private:
     IGraphFilter<Graph> &graphFilter_;
     IDistanceEstimator<Graph> &distanceEstimator_;
     PIIndex &pairIndex_;
-    size_t errorDistance_;
+    int errorDistance_;
     Graph &weakerRedGraph_;
     Graph &weakerBlueGraph_;
     multimap<EdgeId, EdgeId> redGraphEdgeMaps_;
@@ -121,7 +122,6 @@ private:
      * 1. (e_1, e_1, d, w): if 0 < d < length(e_1): replace by (e_1, e_1,0, maxweight)
      * others will be added as moving on
      */
-    void SimplestMatePairFilter(){}//TODO referencetype used incorrectly
 
     void GetPairInfos(const vector<EdgeId> &edges, Direction direction, vector<PairInfo> &pairInfos);
 };
@@ -247,7 +247,7 @@ void WeakerGluer<Graph>::GenerateRedGraph(Graph &redGraph){
     map<PairInfo,size_t> leftPairInfosToNewNodesID;// we have to store this map to add the outgoing edges back to the graph
     map<PairInfo,size_t> rightPairInfosToNewNodesID;//we have to store this map to add the incoming edges back to the graph
     map<size_t, VertexId> nodeIntToVertexId;
-    size_t maxNodeId = 0;
+    size_t maxNodeId = 0;   
     for (auto iter = debruijn_.SmartVertexBegin(); !iter.IsEnd(); ++iter) 
     {
         vector<EdgeId> outGoingEdges = debruijn_.OutgoingEdges(*iter);
@@ -257,6 +257,7 @@ void WeakerGluer<Graph>::GenerateRedGraph(Graph &redGraph){
         vector<PairInfo> rightPairInfos;
         GetPairInfos(outGoingEdges,FORWARD, rightPairInfos);
         size_t currentMaxNodeId = Glue(leftPairInfos, rightPairInfos, FORWARD, leftPairInfosToNewNodesID, rightPairInfosToNewNodesID, maxNodeId);
+
         for(size_t currentNodeId = maxNodeId ; currentNodeId != currentMaxNodeId ; ++currentNodeId)
         {
             VertexId id = redGraph.AddVertex();
@@ -264,30 +265,31 @@ void WeakerGluer<Graph>::GenerateRedGraph(Graph &redGraph){
         }
         maxNodeId = currentMaxNodeId;
     }
-    multimap< pair<VertexId, VertexId> , string> edgesMaps;//get rid of parallel edges in a dirty way
+    multimap< pair<VertexId, VertexId> , string> edgesMaps;//get rid of parallel edges in a dirty way.Actually this is incorrect. Should use EdgeNucls instead.
     for(auto iter = leftPairInfosToNewNodesID.begin(); iter != leftPairInfosToNewNodesID.end(); ++iter)
     {
         PairInfo pairInfo = iter->first;
         VertexId endVertex = nodeIntToVertexId[iter->second];
         VertexId startVertex = nodeIntToVertexId[rightPairInfosToNewNodesID[pairInfo]];
-        auto range = edgesMaps.equal_range(make_pair(startVertex, endVertex));
-        bool isAlreadyAdded = false;
-        for(auto iter = range.first ; iter != range.second ; ++iter)
+
+        bool correctIsAlreadyAdded = false;
+        vector<EdgeId>  outGoingEdges = redGraph.OutgoingEdges(startVertex);
+        for(auto iterOG = outGoingEdges.begin() ; iterOG != outGoingEdges.end(); ++iterOG)
         {
-            if(iter->second == debruijn_.str(pairInfo.first))
+            if((redGraph.EdgeEnd(*iterOG) == endVertex) && (redGraph.EdgeNucls(*iterOG) == debruijn_.EdgeNucls(pairInfo.first))) 
             {
-                isAlreadyAdded = true;
+                correctIsAlreadyAdded =true;
                 break;
             }
-
         }
-        if(isAlreadyAdded)
+        
+
+        if(correctIsAlreadyAdded )
             continue;
-        edgesMaps.insert(make_pair( make_pair(startVertex, endVertex ), (debruijn_.str(pairInfo.first) ) ));
-        redGraph.AddEdge(startVertex, endVertex, debruijn_.data(pairInfo.first));
+        EdgeId addedEdge = redGraph.AddEdge(startVertex, endVertex, debruijn_.data(pairInfo.first));
+        redGraph.SetCoverage(addedEdge,debruijn_.coverage(pairInfo.first)* debruijn_.length(pairInfo.first) );// It is very strange that we have to normalized it every time by the edge length. 
     }
 }
-
 
 template<class Graph>
 size_t WeakerGluer<Graph>::Glue(vector<PairInfo> &leftPairInfos, vector<PairInfo> &rightPairInfos, Direction direction,
@@ -317,10 +319,10 @@ size_t WeakerGluer<Graph>::Glue(vector<PairInfo> &leftPairInfos, vector<PairInfo
      }
      vector<vector<int> > resultsGluing ;
      myunion.get_classes(resultsGluing);
-     size_t nodeID= 0;
+     size_t nodeID= maxNodeId;
      for(size_t i = 0 ; i < resultsGluing.size() ; i++)
      {
-         nodeID = i +  maxNodeId;
+         nodeID += i ;
          for(auto iter = resultsGluing[i].begin() ; iter !=  resultsGluing[i].end() ; ++iter)
          {
              if((size_t)*iter < leftSize) //TODO refractor the Union
@@ -333,7 +335,9 @@ size_t WeakerGluer<Graph>::Glue(vector<PairInfo> &leftPairInfos, vector<PairInfo
              }
          }
      }
-     return nodeID+1;
+     if(resultsGluing.size() != 0)
+         return nodeID+1;
+     return nodeID;
 }
 /*
  * Clear all  intermediate variables in the WeakerGluer

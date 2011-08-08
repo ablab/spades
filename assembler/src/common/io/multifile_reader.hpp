@@ -20,8 +20,8 @@
 #define COMMON_IO_MULTIFILEREADER_HPP_
 
 #include <vector>
-#include "common/io/ireader.hpp"
-#include "common/io/reader.hpp"
+#include "io/ireader.hpp"
+#include "io/reader.hpp"
 
 namespace io {
 

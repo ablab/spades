@@ -5,22 +5,22 @@
  *      Author: snikolenko
  */
  
-#include<omp.h>
-#include<cmath>
-#include<string>
-#include<iostream>
-#include<sstream>
-#include<fstream>
-#include<cstdlib>
-#include<vector>
-#include<map>
-#include<list>
-#include<queue>
-#include<cstdarg>
-#include<algorithm>
-#include<cassert>
+#include <omp.h>
+#include <cmath>
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <fstream>
+#include <cstdlib>
+#include <vector>
+#include <map>
+#include <list>
+#include <queue>
+#include <cstdarg>
+#include <algorithm>
+#include <cassert>
 
-#include "hammer_config.hpp"
+//#include "hammer_config.hpp"
 #include "defs.hpp"
 #include "read/read.hpp"
 #include "read/ireadstream.hpp"

@@ -13,8 +13,8 @@
 #include "omni_tools.hpp"
 #include "omnigraph.hpp"
 
-#include "debruijn/ID_track_handler.hpp"
-#include "debruijn/edges_position_handler.hpp"
+#include "ID_track_handler.hpp"
+#include "edges_position_handler.hpp"
 #include "EdgeVertexFilter.hpp"
 using namespace omnigraph;
 using namespace debruijn_graph;
@@ -160,14 +160,48 @@ void DataPrinter<Graph>::saveCoverage(const string& file_name) {
 	}
 	fclose(file);
 }
-
+/*
+template<class Graph>
+void DataPrinter<Graph>::saveIndex(const string& file_name) {
+	FILE* file = fopen((file_name + ".ind").c_str(), "w");
+	DEBUG("Saving index, " << file_name <<" created");
+	assert(file != NULL);
+	fprintf(file, "%d\n", edge_count_);
+	if (filter_ == NULL) {
+		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+			fprintf(file, "%d ", IdHandler_.ReturnIntId(*iter));
+			fprintf(file, "%f .\n", graph_.coverage(*iter));
+		}
+	} else {
+		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
+			fprintf(file, "%d ", IdHandler_.ReturnIntId(*iter));
+			fprintf(file, "%f .\n", graph_.coverage(*iter));
+		}
+	}
+	fclose(file);
+}
+*/
 template<class Graph>
 void DataPrinter<Graph>::savePaired(const string& file_name,
 		PairedInfoIndex<Graph>& PIIndex) {
 	FILE* file = fopen((file_name + ".prd").c_str(), "w");
 	DEBUG("Saving paired info, " << file_name <<" created");
 	assert(file != NULL);
-	fprintf(file, "%d\n", PIIndex.size());
+	if (filter_ == NULL) {
+		fprintf(file, "%d\n", PIIndex.size());
+	}
+	else {
+		int filteredPIIsize = 0;
+		for (auto iter = PIIndex.begin(); iter != PIIndex.end(); ++iter) {
+			vector<PairInfo<typename Graph::EdgeId> > pair_infos = *iter;
+			for(size_t i = 0; i < pair_infos.size(); i++) {
+				if (filter_->EdgeIsPresent(pair_infos[i].first) && filter_->EdgeIsPresent(pair_infos[i].second) ){
+					filteredPIIsize++;
+				}
+			}
+		}
+		fprintf(file, "%d\n", filteredPIIsize);
+	}
 	for (auto iter = PIIndex.begin(); iter != PIIndex.end(); ++iter) {
 		vector<PairInfo<typename Graph::EdgeId> > pair_infos = *iter;
 		for(size_t i = 0; i < pair_infos.size(); i++) {
@@ -192,14 +226,14 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 	fprintf(file, "%d\n", edge_count_);
 	if (filter_ == NULL) {
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), EPHandler.EdgesPositions[*iter].size());
+			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), (int)EPHandler.EdgesPositions[*iter].size());
 			for (size_t i = 0; i < EPHandler.EdgesPositions[*iter].size(); i++){
 				fprintf(file, "    %d - %d\n",  EPHandler.EdgesPositions[*iter][i].start_, EPHandler.EdgesPositions[*iter][i].end_);
 			}
 		}
 	} else {
 		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
-			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), EPHandler.EdgesPositions[*iter].size());
+			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), (int)EPHandler.EdgesPositions[*iter].size());
 			for (size_t i = 0; i < EPHandler.EdgesPositions[*iter].size(); i++){
 				fprintf(file, "    %d - %d\n",  EPHandler.EdgesPositions[*iter][i].start_, EPHandler.EdgesPositions[*iter][i].end_);
 			}
@@ -259,7 +293,7 @@ void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name,
 		assert(read_count == 1);
 		char c = 'a';
 		while (c != '.') {
-			read_count == fscanf(file, "%c", &c);
+			read_count = fscanf(file, "%c", &c);
 			assert(read_count == 1);
 		}
 		read_count = fscanf(file, "\n");

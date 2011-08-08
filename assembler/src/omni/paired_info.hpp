@@ -3,7 +3,7 @@
 //#include "utils.hpp"
 //#include "sequence.hpp"
 //#include "paired_read.hpp"
-#include "common/io/paired_read.hpp"
+#include "io/paired_read.hpp"
 #include <cmath>
 #include <map>
 #include <limits>
@@ -88,7 +88,18 @@ struct PairInfo {
 		//           lhs.d      == rhs.d     /*   &&
 		//           lhs.weight == rhs.weight*/;
 	}
+
+	bool operator!=(const PairInfo& rhs) const {
+		return !(*this == rhs);
+	}
 };
+
+template<typename Graph>
+ostream& operator<<(ostream& os, const PairInfo<Graph>& info) {
+	return os << "PairInfo: first=" << info.first << ", second=" << info.second
+			<< ", distance=" << info.d << ", weight=" << info.weight
+			<< ", variance=" << info.variance;
+}
 
 //typedef vector<PairInfo<> > PairInfos;
 

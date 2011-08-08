@@ -9,8 +9,8 @@
 #include <map>
 #include <set>
 #include <ext/hash_map>
-#include "seq.hpp"
-#include "sequence.hpp"
+#include "sequence/seq.hpp"
+#include "sequence/sequence.hpp"
 #include "parameters.hpp"
 #include "hash.hpp"
 #include "logging.hpp"

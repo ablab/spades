@@ -2,7 +2,7 @@
 
 input_dir  = ./data/input/E.Coli.K12.MG1655/
 output_dir = ./data/debruijn/
-dataset = QUAKE_CROPPED_100K
+dataset = QUAKE_FULL
 reference_genome = MG1655-K12.fasta.gz
 
 # paired (1) or unpaired (0, for quick debug and algorithms testing) mode
@@ -34,6 +34,15 @@ br_max_relative_delta = 0.1
 
 ec_max_coverage = 20.0 # erroneous_connection < this * not_erroneous_connection_cov
 ec_max_length_div_K = 5
+
+# distance estimator:
+
+de_delta = 10
+de_linkage_distance = 10
+de_max_distance = 75
+
+# consensus
+uncorrected_reads = none
 
 # different datasets:
 

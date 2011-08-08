@@ -8,9 +8,9 @@
 #ifndef SEQ_MAP_HPP_
 #define SEQ_MAP_HPP_
 
-#include "common/io/single_read.hpp"
-#include "sequence.hpp"
-#include "seq.hpp"
+#include "io/single_read.hpp"
+#include "sequence/sequence.hpp"
+#include "sequence/seq.hpp"
 #include "cuckoo.hpp"
 #include <tr1/unordered_map>
 

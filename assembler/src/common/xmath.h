@@ -8,6 +8,8 @@
 #ifndef XMATH_H_
 #define XMATH_H_
 
+#include "sequence/seq.hpp"
+
 namespace math
 {
     template<class T>
