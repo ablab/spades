@@ -20,8 +20,7 @@
 #define COMMON_IO_PARSER_HPP
 
 #include <string>
-#include "io/single_read.hpp"
-#include "io/fasta_fastq_gz_parser.hpp"
+#include "common/io/single_read.hpp"
 
 namespace io {
 
@@ -109,6 +108,27 @@ class Parser {
    */
   virtual void open() = 0;
 };
+
+/*
+ * Get extension from filename.
+ *
+ * @param filename The name of the file to read from.
+ *
+ * @return File extension (e.g. "fastq", "fastq.gz").
+ */
+std::string GetExtension(const std::string& filename);
+
+/*
+ * Select parser type according to file extension.
+ *
+ * @param filename The name of the file to be opened.
+ * @param offset The offset of the read quality.
+
+ * @return Pointer to the new parser object with these filename and
+ * offset.
+ */
+Parser* SelectParser(const std::string& filename,
+                     int offset = SingleRead::PHRED_OFFSET);
 
 }
 
