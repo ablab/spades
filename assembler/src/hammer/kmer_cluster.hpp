@@ -35,6 +35,7 @@ private:
 		
 	int hamdistKMer(const PositionKMer & x, const PositionKMer & y, int tau = K);
 	int hamdistKMer(const PositionKMer & x, const string & y, int tau = K);
+	int hamdistKMer(const string & x, const string & y, int tau = K);
 	double calcMultCoef(std::vector<int> & distances, const std::vector<int> & cl);
 	std::string find_consensus(const std::vector<int> & block);
 

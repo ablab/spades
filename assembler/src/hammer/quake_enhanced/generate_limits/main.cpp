@@ -29,7 +29,7 @@ struct Options {
       : ifile(""),
         ofile(""),
         threshold(0),
-        valid(true) {}  
+        valid(true) {}
 };
 
 void PrintHelp(char *progname) {
@@ -39,7 +39,6 @@ void PrintHelp(char *progname) {
   printf("\tofile.limits\tq-value limits for every k-value will be outputted here\n");
   printf("\tthreshold\t k-mer will be treated as erroneous if probability of being erroneous is greater then threshold\n");
   printf("\tk\t k-mer size\n");
-
 }
 
 Options ParseOptions(int argc, char *argv[]) {
@@ -75,7 +74,7 @@ long double Bernoulli(int k, int n, long double p) {
   return pow(p, k) * pow(1 - p, n - k) * CNK(n, k);
 }
 
-long double GetLimit(uint32_t x, const vector<uint32_t> &hist, 
+long double GetLimit(uint32_t x, const vector<uint32_t> &hist,
                      long double threshold, uint64_t total, uint32_t k) {
   long double l = 0.5;
   long double r = 1;
@@ -124,11 +123,11 @@ int main(int argc, char *argv[]) {
       hist.resize(r * 1.5 + 1);
     }
     hist[r] += count;
-    total += count; 
+    total += count;
   }
   for (uint32_t i = 0; i < 25; ++i) {
-    fprintf(ofile, "%d %Lf\n", i, 
-           GetLimit(i, hist, opts.threshold, total, opts.k));
+    fprintf(ofile, "%d %Lf\n", i,
+            GetLimit(i, hist, opts.threshold, total, opts.k));
   }
   fclose(ifile);
   fclose(ofile);
