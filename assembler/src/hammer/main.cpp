@@ -5,21 +5,21 @@
  *      Author: snikolenko
  */
  
-#include<omp.h>
-#include<cmath>
-#include<string>
-#include<iostream>
-#include<sstream>
-#include<fstream>
-#include<iomanip>
-#include<cstdlib>
-#include<vector>
-#include<map>
-#include<list>
-#include<queue>
-#include<cstdarg>
-#include<algorithm>
-#include<cassert>
+#include <omp.h>
+#include <cmath>
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <fstream>
+#include <iomanip>
+#include <cstdlib>
+#include <vector>
+#include <map>
+#include <list>
+#include <queue>
+#include <cstdarg>
+#include <algorithm>
+#include <cassert>
 #include <unordered_set>
 #include <boost/bind.hpp>
 

@@ -14,8 +14,8 @@
 #include <map>
 
 #include "../launch.hpp"
-#include "../../omni/paired_info.hpp"
-#include "../../common/logging.hpp"
+#include "paired_info.hpp"
+#include "logging.hpp"
 
 #include "lc_config.hpp"
 

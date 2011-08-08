@@ -14,7 +14,7 @@
 #include <map>
 
 #include "../launch.hpp"
-#include "../../common/logging.hpp"
+#include "logging.hpp"
 #include "../new_debruijn.hpp"
 #include "../config.hpp"
 

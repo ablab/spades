@@ -20,8 +20,8 @@
 #define COMMON_IO_PARSER_HPP
 
 #include <string>
-#include "common/io/single_read.hpp"
-#include "common/io/fasta_fastq_gz_parser.hpp"
+#include "io/single_read.hpp"
+#include "io/fasta_fastq_gz_parser.hpp"
 
 namespace io {
 

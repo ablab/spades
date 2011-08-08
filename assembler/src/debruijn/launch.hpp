@@ -8,13 +8,14 @@
 #ifndef LAUNCH_HPP_
 #define LAUNCH_HPP_
 
-#include "common/io/reader.hpp"
-#include "common/io/rc_reader_wrapper.hpp"
-#include "common/io/cutting_reader_wrapper.hpp"
-#include "common/io/converting_reader_wrapper.hpp"
+#include "io/reader.hpp"
+#include "io/rc_reader_wrapper.hpp"
+#include "io/cutting_reader_wrapper.hpp"
+#include "io/converting_reader_wrapper.hpp"
 #include "visualization_utils.hpp"
 
 //#include "debruijn_graph.hpp"
+#include "edge_labels_handler.hpp"
 #include "paired_info.hpp"
 #include "debruijn_graph_constructor.hpp"
 #include "tip_clipper.hpp"
@@ -36,6 +37,7 @@
 #include "rectangleRepeatResolver.hpp"
 #include "distance_estimation.hpp"
 #include "one_many_contigs_enlarger.hpp"
+#include "loop_resolver.hpp"
 #include <cstdlib>
 //#include "dijkstra.hpp"
 
@@ -183,7 +185,7 @@ string ConstructComponentName(string file_name, size_t cnt) {
 template<class Graph>
 int PrintGraphComponents(const string& file_name, Graph& g,
 		size_t split_edge_length, IdTrackHandler<Graph> &old_IDs,
-		PairedInfoIndex<Graph> &paired_index,
+		PairedInfoIndex<Graph>  &paired_index,
 		EdgesPositionHandler<Graph> &edges_positions) {
 	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
 	ComponentSizeFilter<Graph> checker(g, split_edge_length);
@@ -211,6 +213,20 @@ void ClipTips(Graph &g) {
 	double max_relative_coverage = CONFIG.read<double> (
 			"tc_max_relative_coverage");
 	TipClipper<Graph, TipComparator<Graph>> tc(g, comparator, max_tip_length,
+			max_coverage, max_relative_coverage);
+	tc.ClipTips();
+	INFO("Clipping tips finished");
+}
+
+void ClipTipsForResolve(NCGraph &g) {
+	INFO("-----------------------------------------");
+	INFO("Clipping tips");
+	TipComparator<NCGraph> comparator(g);
+	size_t max_tip_length = CONFIG.read<size_t> ("tc_max_tip_length");
+	size_t max_coverage = CONFIG.read<size_t> ("tc_max_coverage");
+	double max_relative_coverage = CONFIG.read<double> (
+			"tc_max_relative_coverage");
+	TipClipper<NCGraph, TipComparator<NCGraph>> tc(g, comparator, max_tip_length *10000,
 			max_coverage, max_relative_coverage);
 	tc.ClipTips();
 	INFO("Clipping tips finished");
@@ -517,11 +533,11 @@ void SelectReadsForConsensus(Graph& g, const EdgeIndex<k + 1, Graph>& index ,vec
 //			mapped_reads.push_back(tmp);
 			mapped_reads[j] = tmp;
 		}
-		SingleReadMapper<55, Graph> rm(g, index);
+		SingleReadMapper<k, Graph> rm(g, index);
 		while (!reads[i - 1]->eof()) {
 			io::SingleRead cur_read;
 			(*reads[i - 1]) >> cur_read;
-			vector<EdgeId> res = rm.GetContainingEdges(cur_read);
+			vector<typename Graph::EdgeId> res = rm.GetContainingEdges(cur_read);
 			read_num++;
 			TRACE(read_num<< " mapped to"<< res.size() <<" contigs :, read"<< cur_read.sequence());
 //			map_quantity += res.size();
@@ -713,13 +729,14 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		IdTrackHandler<NCGraph> NewIntIds(new_graph, IntIds.MaxVertexId(),
 				IntIds.MaxEdgeId());
 		PairedInfoIndex<NCGraph> new_index(new_graph);
+		EdgeIndex<k+1, NCGraph> new_edge_index(new_graph);
 		EdgesPositionHandler<NCGraph> EdgePosBefore(new_graph);
 
-		Graph conj_copy_graph(k);
+		/*Graph conj_copy_graph(k);
 		IdTrackHandler<Graph> conj_IntIds(conj_copy_graph,
 				IntIds.MaxVertexId(), IntIds.MaxEdgeId());
 		PairedInfoIndex<Graph> conj_copy_index(conj_copy_graph);
-		/*
+
 		 scanConjugateGraph(conj_copy_graph, conj_IntIds,
 		 work_tmp_dir + "graph", conj_copy_index);
 		 printGraph(conj_copy_graph, conj_IntIds, work_tmp_dir + "graph_copy",
@@ -768,10 +785,11 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				output_folder + "repeats_resolved_after_pos.dot",
 				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
 
-		ClipTips(resolved_graph);
-		RemoveBulges2(resolved_graph);
-		RemoveLowCoverageEdgesForResolver(resolved_graph);
-
+		for(int i = 0; i < 2; i ++) {
+			ClipTips(resolved_graph);
+			RemoveBulges2(resolved_graph);
+			RemoveLowCoverageEdgesForResolver(resolved_graph);
+		}
 		omnigraph::WriteSimple(
 				work_tmp_dir + "repeats_resolved_after_und_cleared_pos.dot",
 				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
@@ -785,6 +803,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		omnigraph::WriteSimple(
 				output_folder + "repeats_resolved_und_cleared.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+		OutputContigs(resolved_graph, output_folder + "contigs_before_enlarge.fasta");
 		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
 		N50enlarger.one_many_resolve();
 
@@ -793,7 +812,6 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 						+ "repeats_resolved_und_cleared_und_simplified.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		INFO("repeat resolved grpah written");
-		EdgeIndex<k + 1, NCGraph> aux_index(resolved_graph);
 
 		//		SimplifyGRaph<k>(resolved_graph, aux_index, 3, genome, output_folder);
 
@@ -803,10 +821,10 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		//		ProduceNonconjugateInfo<k> (resolved_graph, aux_index, genome, work_tmp_dir + "repeats_resolved.dot",
 		//				"no_repeat_graph");sss
 
-		OutputContigs(resolved_graph, output_folder + "contigs.fasta");
+		OutputContigs(resolved_graph, output_folder + "contigs_final.fasta");
 		string consensus_folder = output_folder + "consensus/";
-		OutputSingleFileContigs(g, consensus_folder);
-		SelectReadsForConsensus<k, Graph>(g, index, reads, consensus_folder);
+		OutputSingleFileContigs(new_graph, consensus_folder);
+		SelectReadsForConsensus<k, NCGraph>(new_graph, new_edge_index, reads, consensus_folder);
 
 		OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
 
@@ -844,23 +862,57 @@ void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index,
 			piid, resolvedGraph, (size_t) 30);
 	rectangleResolver.Process();
 
-	ClipTips(resolvedGraph);
-	RemoveLowCoverageEdges(resolvedGraph);
 	IdTrackHandler<NCGraph> Resolved_IntIds(resolvedGraph);
 	RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolvedGraph,
 			Resolved_IntIds);
-
-	ClipTips(resolvedGraph);
-	RemoveLowCoverageEdges(resolvedGraph);
-	EmptyGraphLabeler<NonconjugateDeBruijnGraph> emptyLabeler;
 
 	omnigraph::WriteSimple(work_tmp_dir + "rectgraph.dot", "rectgraph",
 			resolvedGraph, IdTrackLabelerResolved);
 	INFO("rect graph written: " + work_tmp_dir + "rectgraph.dot");
 
-	omnigraph::WriteSimple(work_tmp_dir + "before-rectgraph.dot",
-			"before-rectgraph", graph, emptyLabeler);
-	INFO("rect graph written: " + work_tmp_dir + "before-rectgraph.dot");
+    for(auto iter = resolvedGraph.SmartEdgeBegin() ; !iter.IsEnd(); ++iter)
+    {
+        INFO("COV:" << resolvedGraph.coverage(*iter));
+    }
+
+//	ClipTips(resolvedGraph);
+//	RemoveLowCoverageEdges(resolvedGraph);
+//
+//	ClipTips(resolvedGraph);
+//	RemoveLowCoverageEdges(resolvedGraph);
+//	see if two methods result in the same graph.
+
+    for(int i = 0; i < 3; i ++) {
+        ClipTips(resolvedGraph);
+        RemoveBulges2(resolvedGraph);
+        RemoveLowCoverageEdgesForResolver(resolvedGraph);
+        
+    }
+    LoopResolver<NCGraph> loopResolver(resolvedGraph,0.5);
+    loopResolver.ResolveLoops();
+
+   one_many_contigs_enlarger<NCGraph> N50enlarger(resolvedGraph);
+   N50enlarger.one_many_resolve();
+   N50enlarger.Loops_resolve();
+   omnigraph::Compressor<NCGraph> compressor(resolvedGraph);
+   compressor.CompressAllVertices();
+   omnigraph::Cleaner<NCGraph> cleaner(resolvedGraph);
+   cleaner.Clean();
+
+   
+
+    IdTrackHandler<NCGraph> idTrackerAfter(resolvedGraph);
+    RealIdGraphLabeler<NCGraph> idLabelAfter(resolvedGraph,
+            idTrackerAfter);
+
+    omnigraph::WriteSimple(work_tmp_dir + "rectgraphAfter.dot", "rectgraphAfter",
+            resolvedGraph, idLabelAfter);
+    INFO("rect graph written: " + work_tmp_dir + "rectgraphAfter.dot");
+
+    EmptyGraphLabeler<NonconjugateDeBruijnGraph> emptyLabeler;
+    omnigraph::WriteSimple(work_tmp_dir + "beforerectgraph.dot",
+            "beforerectgraph", graph, emptyLabeler);
+    INFO("rect graph written: " + work_tmp_dir + "beforerectgraph.dot");
 
 	OutputContigs(resolvedGraph, output_folder + "rectcontig.fasta");
 	OutputContigs(graph, output_folder + "before-rectcontig.fasta");

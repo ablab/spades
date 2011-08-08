@@ -15,7 +15,7 @@
 #include "quality.hpp"
 #include "visualize.hpp"
 
-#include "../../common/simple_tools.hpp"
+#include "simple_tools.hpp"
 
 namespace {
 

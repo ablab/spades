@@ -4,12 +4,12 @@
 #include <vector>
 #include <set>
 #include <cstring>
-#include "seq.hpp"
-#include "sequence.hpp"
+#include "sequence/seq.hpp"
+#include "sequence/sequence.hpp"
 #include "logging.hpp"
-#include "nucl.hpp"
+#include "sequence/nucl.hpp"
 //#include "strobe_read.hpp"
-#include "common/io/paired_read.hpp"
+#include "io/paired_read.hpp"
 #include "omni_utils.hpp"
 #include "observable_graph.hpp"
 
@@ -384,6 +384,28 @@ public:
 		FireAddEdge(newEdge2);
 		DeleteEdge(edge);
 		return make_pair(newEdge1, newEdge2);
+	}
+
+	VertexId SplitVertex(VertexId vertex, vector<EdgeId> splittingEdges) {
+//TODO:: check whether we handle loops correctly!
+		VertexId newVertex = HiddenAddVertex(vertex->data());
+		vector<EdgeId, EdgeId> edge_clones;
+		for (size_t i = 0; i < splittingEdges.size(); i++) {
+			VertexId start_v = this->EdgeStart(splittingEdges[i]);
+			VertexId start_e = this->EdgeEnd(splittingEdges[i]);
+			if (start_v == vertex)
+				start_v = newVertex;
+			if (start_e == vertex)
+				start_e = newVertex;
+			EdgeId newEdge = HiddenAddEdge(start_v, start_e, splittingEdges[i]->data());
+			edge_clones.push_back(make_pair(splittingEdges[i], newEdge));
+		}
+//FIRE
+		FireSplitVertex(newVertex, edge_clones, vertex);
+		FireAddVertex(newVertex);
+		for(size_t i = 0; i < splittingEdges.size(); i ++)
+			FireAddEdge(edge_clones.second());
+		return newVertex;
 	}
 
 	void GlueEdges(EdgeId edge1, EdgeId edge2) {

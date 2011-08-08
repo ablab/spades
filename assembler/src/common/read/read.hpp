@@ -11,10 +11,10 @@
 #include <string>
 #include <iostream>
 #include <cassert>
-#include "common/sequence/quality.hpp"
-#include "common/sequence/sequence.hpp"
-#include "common/sequence/nucl.hpp"
-#include "common/sequence/sequence_tools.hpp"
+#include "sequence/quality.hpp"
+#include "sequence/sequence.hpp"
+#include "sequence/nucl.hpp"
+#include "sequence/sequence_tools.hpp"
 #include "simple_tools.hpp"
 
 

@@ -63,7 +63,7 @@ void KMerClustering::clusterMerge(vector<unionFindClass *>uf, unionFindClass * u
 		// cout << classes.size() << " classes:" << endl;
 		delete uf[i];
 		for (uint32_t j = 0; j < classes.size(); j++) {
-			// cout << "  class " << j << " with " << classes[j].size() << " times " << sizeof(int) << endl;
+			//cout << "class " << j << " with " << classes[j].size() << " subclasses" << endl;
 			uint32_t first = classes[j][0];
 			ufMaster->find_set(first);
 			for (uint32_t k = 0; k < classes[j].size(); k++) {
@@ -441,7 +441,7 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq, ofstre
 					k_[blocksInPlace[n][m][j]].second.changeto = blocksInPlace[n][m][0];
 					#pragma omp critical
 					{
-					(*ofs_bad) << k_[blocksInPlace[n][m][j]].first.str() << "\n> part of cluster " << k_[blocksInPlace[n][m][j]].first.start() << "\n";
+					(*ofs_bad) << k_[blocksInPlace[n][m][j]].first.str() << "\n> part of cluster " << k_[blocksInPlace[n][m][0]].first.start() << "\n";
 					}					
 				}
 			}
