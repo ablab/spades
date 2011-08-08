@@ -8,7 +8,7 @@
 #ifndef LC_CONFIG_HPP_
 #define LC_CONFIG_HPP_
 
-#include "libs/ConfigFile/ConfigFile.h"
+#include "ConfigFile/ConfigFile.h"
 
 #define LC_CONFIG_FILENAME "./src/debruijn/long_contigs/lc_config.inp"
 

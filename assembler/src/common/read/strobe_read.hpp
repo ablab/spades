@@ -8,9 +8,9 @@
 #ifndef STROBE_READ_HPP_
 #define STROBE_READ_HPP_
 
-#include "seq.hpp"
-#include "read.hpp"
-#include "paired_read.hpp"
+#include "sequence/seq.hpp"
+#include "read/read.hpp"
+#include "read/paired_read.hpp"
 
 using namespace std;
 

@@ -2,7 +2,7 @@
 
 #define GRAPHFILTER_H
 
-#include "sequence.hpp"
+#include "sequence/sequence.hpp"
 //This graph will be a crucial component in multi-library
 //TODO tdd this in the next iteration
 template<class Graph>

@@ -8,10 +8,10 @@
 #ifndef LAUNCH_HPP_
 #define LAUNCH_HPP_
 
-#include "common/io/reader.hpp"
-#include "common/io/rc_reader_wrapper.hpp"
-#include "common/io/cutting_reader_wrapper.hpp"
-#include "common/io/converting_reader_wrapper.hpp"
+#include "io/reader.hpp"
+#include "io/rc_reader_wrapper.hpp"
+#include "io/cutting_reader_wrapper.hpp"
+#include "io/converting_reader_wrapper.hpp"
 #include "visualization_utils.hpp"
 
 //#include "debruijn_graph.hpp"

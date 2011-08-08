@@ -7,7 +7,7 @@
 #include <map>
 #include <unordered_map>
 #include <algorithm>
-#include "common/io/single_read.hpp"
+#include "io/single_read.hpp"
 #include "logging.hpp"
 #include "config.hpp"
 #include "omni_utils.hpp"

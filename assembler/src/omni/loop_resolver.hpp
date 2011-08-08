@@ -1,8 +1,10 @@
 #ifndef LOOP_RESOLVER_H
-
 #define LOOP_RESOLVER_H
+
 #include <math.h>
+
 namespace omnigraph{
+
 template<class Graph>
 class LoopResolver{
 	typedef typename Graph::EdgeId EdgeId;
