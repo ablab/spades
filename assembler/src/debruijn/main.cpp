@@ -52,6 +52,7 @@ int main() {
 	checkFileExistenceFATAL(genome_filename);
 	checkFileExistenceFATAL(reads_filename1);
 	checkFileExistenceFATAL(reads_filename2);
+	INFO("Assembling " << dataset << " dataset");
 
 	size_t insert_size = CONFIG.read<size_t>(dataset + "_IS");
 	size_t max_read_length = 100; //CONFIG.read<size_t> (dataset + "_READ_LEN");
