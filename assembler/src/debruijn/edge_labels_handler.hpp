@@ -58,19 +58,21 @@ public:
 
 	 virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 		 DEBUG("Handle glue");
-		 assert(edge_labels[edge1] == edge_labels[edge2]);
-
-		 if (edge_labels[edge1].size() != edge_labels[edge2].size())
-			 WARN("gluing two different edges is not a good idea on this step!");
-		 set<EdgeId> tmp;
+		 if (edge_labels[edge1] != edge_labels[edge2]);
+		 	 WARN("gluing two different edges is not a good idea on this step! EdgeLabel Handler can fail on such operation");
+		 vector<EdgeId> tmp;
 		 for(size_t i = 0; i < edge_labels[edge1].size(); i++){
 			 edge_inclusions[edge_labels[edge1][i]].insert(new_edge);
 			 edge_inclusions[edge_labels[edge1][i]].remove(edge1);
 			 tmp.push_back(edge_labels[edge1][i]);
+
+		 	 edge_labels.erase(edge1);
 		 }
 		 for(size_t i = 0; i < edge_labels[edge2].size(); i++) {
 		 	edge_inclusions[edge_labels[edge2][i]].insert(new_edge);
 		 	edge_inclusions[edge_labels[edge2][i]].remove(edge2);
+		 	edge_labels.erase(edge2);
+
 		//	tmp.push_back(edge_labels[edge1][i]);
 		 }
 
@@ -86,11 +88,38 @@ public:
 
  	 virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
 		 DEBUG("HandleMerge by edge labels handler");
- 		 // we assume that all edge have good ordered position labels.
  		 size_t n = oldEdges.size();
+		 set<EdgeId> tmp;
+		 for(size_t j = 0; j < n; j++) {
+		 	 for(size_t i = 0; i < edge_labels[oldEdges[j]].size(); i++){
+				edge_inclusions[edge_labels[oldEdges[j]][i]].insert(newEdge);
+				edge_inclusions[edge_labels[oldEdges[j]][i]].remove(oldEdges[j]);
+				tmp.insert(edge_labels[oldEdges[j]][i]);
+			 }
+		 	 edge_labels.erase(oldEdges[j]);
+		 }
+		 edge_labels.insert(make_pair(newEdge, tmp));
 
-	 }
-/*
+ 	 }
+
+ 	 virtual void HandleVertexSplit(vector<EdgeId> oldEdges, EdgeId newEdge) {
+		 DEBUG("HandleMerge by edge labels handler");
+ 		 size_t n = oldEdges.size();
+		 set<EdgeId> tmp;
+		 for(size_t j = 0; j < n; j++) {
+		 	 for(size_t i = 0; i < edge_labels[oldEdges[j]].size(); i++){
+				edge_inclusions[edge_labels[oldEdges[j]][i]].insert(newEdge);
+				edge_inclusions[edge_labels[oldEdges[j]][i]].remove(oldEdges[j]);
+				tmp.insert(edge_labels[oldEdges[j]][i]);
+			 }
+		 	 edge_labels.erase(oldEdges[j]);
+		 }
+		 edge_labels.insert(make_pair(newEdge, tmp));
+
+ 	 }
+
+
+ 	 /*
 	virtual void HandleAdd(VertexId v) {
 		AddVertexIntId(v);
 	}
