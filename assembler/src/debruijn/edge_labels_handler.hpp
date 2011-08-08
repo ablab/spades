@@ -102,20 +102,18 @@ public:
 
  	 }
 
- 	 virtual void HandleVertexSplit(vector<EdgeId> oldEdges, EdgeId newEdge) {
+ 	void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) {
 		 DEBUG("HandleMerge by edge labels handler");
- 		 size_t n = oldEdges.size();
-		 set<EdgeId> tmp;
+ 		 size_t n = newEdges.size();
 		 for(size_t j = 0; j < n; j++) {
-		 	 for(size_t i = 0; i < edge_labels[oldEdges[j]].size(); i++){
-				edge_inclusions[edge_labels[oldEdges[j]][i]].insert(newEdge);
-				edge_inclusions[edge_labels[oldEdges[j]][i]].remove(oldEdges[j]);
-				tmp.insert(edge_labels[oldEdges[j]][i]);
+			 EdgeId old_ID = newEdges[j].first;
+			 EdgeId new_ID = newEdges[j].second;
+			 vector<EdgeId> tmp_vec(edge_labels[old_ID]);
+			 edge_labels[new_ID] = tmp_vec;
+		 	 for(size_t i = 0; i < edge_labels[new_ID].size(); i++){
+				edge_inclusions[edge_labels[new_ID][i]].insert(new_ID);
 			 }
-		 	 edge_labels.erase(oldEdges[j]);
 		 }
-		 edge_labels.insert(make_pair(newEdge, tmp));
-
  	 }
 
 
@@ -135,7 +133,49 @@ public:
 
 	}
 
+	std::string str(EdgeId edgeId){
+		std::string s = "";
+		if (edge_labels.find(edgeId) != edge_labels.end()) {
+			TRACE("Number of labels "<<edge_labels[edgeId].size());
+			for (size_t i = 0; i < edge_labels[edgeId].size(); i++){
+				s+=ToString((edge_labels[edgeId])[i])+"\\n";
+			}
+		}
+		return s;
+	}
+
 };
+
+
+
+template<class Graph>
+class EdgesLabelsGraphLabeler: public GraphLabeler<Graph> {
+
+protected:
+	typedef GraphLabeler<Graph> super;
+	typedef typename super::EdgeId EdgeId;
+	typedef typename super::VertexId VertexId;
+	Graph& g_;
+public:
+	EdgeLabelHandler<Graph>& EdgesLabels;
+
+	EdgesLabelsGraphLabeler(Graph& g, EdgeLabelHandler<Graph>& EdgesLab) :
+		g_(g), EdgesLabels(EdgesLab) {
+	}
+
+	virtual std::string label(VertexId vertexId) const {
+		return g_.str(vertexId);
+	}
+
+	virtual std::string label(EdgeId edgeId) const {
+		return EdgesLabels.str(edgeId) + ": " + g_.str(edgeId);
+	}
+	virtual ~EdgesLabelsGraphLabeler() {
+		TRACE("~EdgesPosGraphLabeler");
+	}
+
+};
+
 }
 
 

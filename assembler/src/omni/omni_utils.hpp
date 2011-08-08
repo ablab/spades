@@ -171,6 +171,9 @@ public:
 	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
 	EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const = 0;
 
+	virtual void ApplyVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
+	VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) const = 0;
+
 	virtual ~HandlerApplier() {
 	}
 };
@@ -220,7 +223,7 @@ public:
 		handler->HandleSplit(old_edge, new_edge1, new_edge2);
 	}
 
-	virtual void ApplVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
+	virtual void ApplyVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
 			VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) const {
 			handler->HandleVertexSplit(newVertex, newEdges, oldVertex);
 	}
@@ -370,6 +373,11 @@ public:
 			TRACE(
 					"Edge " << old_edge << "is self-conjugate thus handler is not applied the second time");
 		}
+	}
+
+	virtual void ApplyVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
+			VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) const {
+			handler->HandleVertexSplit(newVertex, newEdges, oldVertex);
 	}
 
 	virtual ~PairedHandlerApplier() {

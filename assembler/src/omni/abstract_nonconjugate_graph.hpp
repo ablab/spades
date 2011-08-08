@@ -389,7 +389,7 @@ public:
 	VertexId SplitVertex(VertexId vertex, vector<EdgeId> splittingEdges) {
 //TODO:: check whether we handle loops correctly!
 		VertexId newVertex = HiddenAddVertex(vertex->data());
-		vector<EdgeId, EdgeId> edge_clones;
+		vector<pair<EdgeId, EdgeId>> edge_clones;
 		for (size_t i = 0; i < splittingEdges.size(); i++) {
 			VertexId start_v = this->EdgeStart(splittingEdges[i]);
 			VertexId start_e = this->EdgeEnd(splittingEdges[i]);
@@ -401,10 +401,10 @@ public:
 			edge_clones.push_back(make_pair(splittingEdges[i], newEdge));
 		}
 //FIRE
-		FireSplitVertex(newVertex, edge_clones, vertex);
+		FireVertexSplit(newVertex, edge_clones, vertex);
 		FireAddVertex(newVertex);
 		for(size_t i = 0; i < splittingEdges.size(); i ++)
-			FireAddEdge(edge_clones.second());
+			FireAddEdge(edge_clones[i].second);
 		return newVertex;
 	}
 

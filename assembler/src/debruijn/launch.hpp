@@ -804,8 +804,12 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				output_folder + "repeats_resolved_und_cleared.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		OutputContigs(resolved_graph, output_folder + "contigs_before_enlarge.fasta");
+
+
 		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
-		N50enlarger.one_many_resolve();
+		N50enlarger.one_many_resolve_with_vertex_split();
+
+
 
 		omnigraph::WriteSimple(
 				output_folder
