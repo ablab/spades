@@ -1,6 +1,24 @@
- w1 <- read.csv(file="w1.dat",sep=",",head=TRUE)
+fpos <- scan("false_positive.inf")
+#perfect <- read.csv(file="perfect.inf",sep=",",head=FALSE)
+#hist(fpos,breaks=100)
+filt_fpos = fpos[fpos <= 10000]
+#for (i in 1:length(fpos)) {
+#	if (fpos[i] > 10000) 
+#		fpos[i] <- 10000	
+#}
+jpeg('fpos_hist.jpg')
+hist(filt_fpos, breaks=100)
+dev.off()
 
-hist(w1$vals,breaks=2)
+perf <- scan("perfect.inf")
+#for (i in 1:length(perf)) {
+#    if (perf[i] > 10000)
+#        perf[i] <- 10000
+#}
+filt_perf = perf[perf <= 10000]
+jpeg('perf_hist.jpg')
+hist(filt_perf, breaks=100)
+dev.off()
 
  superhist2pdf <- function(x, filename = "super_histograms.pdf",
  dev = "pdf", title = "Superimposed Histograms", nbreaks ="Sturges") {
@@ -31,9 +49,5 @@ hist(w1$vals,breaks=2)
  dev.off() }
  }
 
- # How to use the function:
- d1 = rnorm(1:100)
- d2 = rnorm(1:100) + 4
- # the input object MUST be a list!
- l1 = list(d1,d2)
- superhist2pdf(l1, nbreaks="Sturges")
+l = list(filt_fpos,filt_perf)
+superhist2pdf(l, nbreaks=100)
