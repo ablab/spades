@@ -312,7 +312,7 @@ class EtalonPairedInfoCounter {
 
 		for (size_t i = 0; i < path.size(); ++i) {
 			EdgeId e = path[i];
-			if (g_.length(e) + delta_ > gap_) {
+			if (g_.length(e) + delta_ > gap_ + k + 1) {
 //				cout << "HERE1 " << endl;
 				AddEtalonInfo(paired_info, e, e, 0);
 			}
