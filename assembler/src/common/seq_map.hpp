@@ -151,7 +151,7 @@ public:
 				return s;
 			}
 		}
-		assert(false); // no next edges (we should request one here).
+		FATAL("Couldn't find requested edge!"); // no next edges (we should request one here).
 	}
 
 	// INDEX:

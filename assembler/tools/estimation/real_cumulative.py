@@ -35,7 +35,7 @@ for filename, mul in itertools.izip(sys.argv[1::2], sys.argv[2::2]):
 	for l in lengths:
 		lcur += l
 		lind += 1
-		x = lind
+		x = lind  * float(mul)
 		vals_percent.append(x)
 		y = lcur * float(mul)
 		vals_length.append(y)

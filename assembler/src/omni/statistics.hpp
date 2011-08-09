@@ -327,6 +327,7 @@ class UniquePathStat: public omnigraph::AbstractStatCounter {
 	PairedInfoIndex<Graph>& pair_info_;
 	size_t insert_size_;
 	size_t max_read_length_;
+	size_t gap_;
 	double variance_delta_;
 
 	//todo get rid of this parameter
@@ -361,7 +362,7 @@ public:
 			size_t insert_size, size_t max_read_length, double variance_delta,
 			double weight_threshold, bool draw_pictures = false) :
 		g_(g), pair_info_(pair_info), insert_size_(insert_size),
-				max_read_length_(max_read_length),
+				max_read_length_(max_read_length), gap_(insert_size_ - 2 * max_read_length_),
 				variance_delta_(variance_delta),
 				weight_threshold_(weight_threshold),
 				considered_edge_pair_cnt_(0), unique_distance_cnt_(0),
@@ -386,18 +387,9 @@ public:
 				//				CompositeCallback<Graph> composite_callback;
 				//				composite_callback.AddProcessor(counter);
 				//				composite_callback.AddProcessor(graph_labeler);
-				//todo delete unnecessary parentheses and casts
-				int lower_bound = ((int) insert_size_) - 2
-						* ((int) max_read_length_) - ((int) g_.length(e1))
-						- ((int) g_.length(e2));
-				//				cout << "IS " << insert_size_ << endl;
-				//				cout << "MRL " << max_read_length_ << endl;
-				//				cout << "Raw Lower bound " << lower_bound << endl;
-				//				cout << "Var delta " << variance_delta_ << endl;
-				//				cout << "Lower bound " << (1 - variance_delta_) * lower_bound << endl;
 				PathProcessor<Graph> path_processor(g_,
-						(1 - variance_delta_) * lower_bound,
-						(1 + variance_delta_) * insert_size_, g_.EdgeEnd(e1),
+						omnigraph::PairInfoPathLengthLowerBound(g_.k(), g_.length(e1), g_.length(e2), gap_, variance_delta_),
+						omnigraph::PairInfoPathLengthUpperBound(g_.k(), insert_size_, variance_delta_), g_.EdgeEnd(e1),
 						g_.EdgeStart(e2), counter);
 				path_processor.Process();
 				if (counter.count() == 1) {
@@ -427,6 +419,48 @@ public:
 	}
 private:
 	DECL_LOGGER("UniquePathStat")
+};
+
+template<class Graph>
+class UniqueDistanceStat: public omnigraph::AbstractStatCounter {
+	typedef omnigraph::PairedInfoIndex<Graph> PairedIndex;
+
+	PairedIndex& paired_info_;
+	size_t unique_;
+	size_t non_unique_;
+public:
+
+	UniqueDistanceStat(PairedIndex& paired_info) :
+			paired_info_(paired_info), unique_(0), non_unique_(0) {
+
+	}
+
+	virtual ~UniqueDistanceStat() {
+
+	}
+
+	virtual void Count() {
+		for (auto it = paired_info_.begin(); it != paired_info_.end(); ++it) {
+			assert((*it).size() > 0);
+			if ((*it).size() > 1) {
+				non_unique_++;
+//				for (auto info_it = (*it).begin(); info_it != (*it).end(); ++info_it) {
+//					//todo
+//				}
+			} else {
+				unique_++;
+			}
+		}INFO(unique_ << " unique edge distances");
+		INFO(non_unique_ << " non unique edge distances");
+	}
+
+	size_t unique() {
+		return unique_;
+	}
+
+	size_t non_unique() {
+		return non_unique_;
+	}
 };
 
 template<class Graph>

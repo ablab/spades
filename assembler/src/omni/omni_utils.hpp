@@ -5,6 +5,7 @@
 #include "logging.hpp"
 #include "simple_tools.hpp"
 #include "dijkstra.hpp"
+#include "xmath.h"
 #include <cmath>
 #include <iterator>
 #include <vector>
@@ -173,6 +174,9 @@ public:
 	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
 	EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const = 0;
 
+	virtual void ApplyVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
+	VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) const = 0;
+
 	virtual ~HandlerApplier() {
 	}
 };
@@ -222,7 +226,7 @@ public:
 		handler->HandleSplit(old_edge, new_edge1, new_edge2);
 	}
 
-	virtual void ApplVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
+	virtual void ApplyVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
 			VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) const {
 			handler->HandleVertexSplit(newVertex, newEdges, oldVertex);
 	}
@@ -374,6 +378,11 @@ public:
 		}
 	}
 
+	virtual void ApplyVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
+			VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) const {
+			handler->HandleVertexSplit(newVertex, newEdges, oldVertex);
+	}
+
 	virtual ~PairedHandlerApplier() {
 		TRACE("~PairedHandlerApplier");
 
@@ -487,11 +496,10 @@ public:
  */
 template<typename ElementId>
 class Path {
-public:
 	vector<ElementId> sequence_;
 	int start_pos_;
 	int end_pos_;
-
+public:
 	typedef typename vector<ElementId>::const_iterator iterator;
 
 	Path(vector<ElementId> sequence, size_t start_pos, size_t end_pos) :
@@ -530,6 +538,31 @@ public:
 		return sequence_.end();
 	}
 
+};
+
+template<typename ElementId>
+class MappingPath {
+public:
+
+	struct Interval {
+		size_t start_pos;
+		size_t end_pos;
+	};
+
+	struct MappingInterval {
+		Interval sequence_interval;
+		Interval edge_interval;
+	};
+
+	typedef typename vector<ElementId>::const_iterator iterator;
+
+	MappingPath(const vector<ElementId>& edges, const vector<MappingInterval> interval_mapping) :
+			edges_(edges), interval_mapping_(interval_mapping) {
+	}
+
+private:
+	vector<ElementId> edges_;
+	vector<MappingInterval> interval_mapping_;
 };
 
 template<class Graph>
@@ -752,5 +785,15 @@ public:
 
 };
 
+size_t PairInfoPathLengthUpperBound(size_t k, size_t insert_size, double delta) {
+	double answer = 0. +  insert_size + delta - k - 2;
+	assert(math::gr(answer, 0.));
+	return std::floor(answer);
+}
+
+size_t PairInfoPathLengthLowerBound(size_t k, size_t l_e1, size_t l_e2, size_t gap, double delta) {
+	double answer = 0. + gap + k + 2 - l_e1 - l_e2 - delta;
+	return math::gr(answer, 0.) ? std::floor(answer) : 0;
+}
 }
 #endif /* OMNI_UTILS_HPP_ */

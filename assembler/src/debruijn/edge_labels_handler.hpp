@@ -37,7 +37,8 @@ public:
 	EdgeLabelHandler(Graph &new_graph, Graph &old_graph, unordered_map<EdgeId, EdgeId>& from_resolve) :
 		GraphActionHandler<Graph> ("EdgePositionHandler"), new_graph_(new_graph), old_graph_(old_graph) {
 		new_graph_.AddActionHandler(this);
-		for(auto iter = from_resolve.begin(); iter != from_resolve.end(); ++iter) {
+		FillLabels(from_resolve);
+		/*		for(auto iter = from_resolve.begin(); iter != from_resolve.end(); ++iter) {
 			if (edge_inclusions.find(iter->second) == edge_inclusions.end()){
 				set<EdgeId> tmp;
 				edge_inclusions.insert(make_pair(iter->second, tmp));
@@ -49,6 +50,25 @@ public:
 				edge_labels.insert(make_pair(iter->first, tmp));
 			}
 			edge_labels[iter->second].push_back(iter->second);
+		}
+*/	}
+	EdgeLabelHandler(Graph &new_graph, Graph &old_graph) :
+		GraphActionHandler<Graph> ("EdgePositionHandler"), new_graph_(new_graph), old_graph_(old_graph) {
+		new_graph_.AddActionHandler(this);
+	}
+	void FillLabels(unordered_map<EdgeId, EdgeId>& from_resolve) {
+		for(auto iter = from_resolve.begin(); iter != from_resolve.end(); ++iter) {
+			if (edge_inclusions.find(iter->second) == edge_inclusions.end()){
+				set<EdgeId> tmp;
+				edge_inclusions.insert(make_pair(iter->second, tmp));
+			}
+			edge_inclusions[iter->second].insert(iter->first);
+
+			if (edge_labels.find(iter->first) == edge_labels.end()) {
+				vector<EdgeId> tmp;
+				edge_labels.insert(make_pair(iter->first, tmp));
+			}
+			edge_labels[iter->first].push_back(iter->second);
 		}
 	}
 
@@ -63,14 +83,14 @@ public:
 		 vector<EdgeId> tmp;
 		 for(size_t i = 0; i < edge_labels[edge1].size(); i++){
 			 edge_inclusions[edge_labels[edge1][i]].insert(new_edge);
-			 edge_inclusions[edge_labels[edge1][i]].remove(edge1);
+			 edge_inclusions[edge_labels[edge1][i]].erase(edge1);
 			 tmp.push_back(edge_labels[edge1][i]);
 
 		 	 edge_labels.erase(edge1);
 		 }
 		 for(size_t i = 0; i < edge_labels[edge2].size(); i++) {
 		 	edge_inclusions[edge_labels[edge2][i]].insert(new_edge);
-		 	edge_inclusions[edge_labels[edge2][i]].remove(edge2);
+		 	edge_inclusions[edge_labels[edge2][i]].erase(edge2);
 		 	edge_labels.erase(edge2);
 
 		//	tmp.push_back(edge_labels[edge1][i]);
@@ -89,12 +109,12 @@ public:
  	 virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
 		 DEBUG("HandleMerge by edge labels handler");
  		 size_t n = oldEdges.size();
-		 set<EdgeId> tmp;
+		vector<EdgeId> tmp;
 		 for(size_t j = 0; j < n; j++) {
 		 	 for(size_t i = 0; i < edge_labels[oldEdges[j]].size(); i++){
 				edge_inclusions[edge_labels[oldEdges[j]][i]].insert(newEdge);
-				edge_inclusions[edge_labels[oldEdges[j]][i]].remove(oldEdges[j]);
-				tmp.insert(edge_labels[oldEdges[j]][i]);
+				edge_inclusions[edge_labels[oldEdges[j]][i]].erase(oldEdges[j]);
+				tmp.push_back(edge_labels[oldEdges[j]][i]);
 			 }
 		 	 edge_labels.erase(oldEdges[j]);
 		 }
@@ -102,20 +122,18 @@ public:
 
  	 }
 
- 	 virtual void HandleVertexSplit(vector<EdgeId> oldEdges, EdgeId newEdge) {
+ 	void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) {
 		 DEBUG("HandleMerge by edge labels handler");
- 		 size_t n = oldEdges.size();
-		 set<EdgeId> tmp;
+ 		 size_t n = newEdges.size();
 		 for(size_t j = 0; j < n; j++) {
-		 	 for(size_t i = 0; i < edge_labels[oldEdges[j]].size(); i++){
-				edge_inclusions[edge_labels[oldEdges[j]][i]].insert(newEdge);
-				edge_inclusions[edge_labels[oldEdges[j]][i]].remove(oldEdges[j]);
-				tmp.insert(edge_labels[oldEdges[j]][i]);
+			 EdgeId old_ID = newEdges[j].first;
+			 EdgeId new_ID = newEdges[j].second;
+			 vector<EdgeId> tmp_vec(edge_labels[old_ID]);
+			 edge_labels[new_ID] = tmp_vec;
+		 	 for(size_t i = 0; i < edge_labels[new_ID].size(); i++){
+				edge_inclusions[edge_labels[new_ID][i]].insert(new_ID);
 			 }
-		 	 edge_labels.erase(oldEdges[j]);
 		 }
-		 edge_labels.insert(make_pair(newEdge, tmp));
-
  	 }
 
 
@@ -135,7 +153,49 @@ public:
 
 	}
 
+	std::string str(EdgeId edgeId){
+		std::string s = "";
+		if (edge_labels.find(edgeId) != edge_labels.end()) {
+			TRACE("Number of labels "<<edge_labels[edgeId].size());
+			for (size_t i = 0; i < edge_labels[edgeId].size(); i++){
+				s+=ToString((edge_labels[edgeId])[i])+"\\n";
+			}
+		}
+		return s;
+	}
+
 };
+
+
+
+template<class Graph>
+class EdgesLabelsGraphLabeler: public GraphLabeler<Graph> {
+
+protected:
+	typedef GraphLabeler<Graph> super;
+	typedef typename super::EdgeId EdgeId;
+	typedef typename super::VertexId VertexId;
+	Graph& g_;
+public:
+	EdgeLabelHandler<Graph>& EdgesLabels;
+
+	EdgesLabelsGraphLabeler(Graph& g, EdgeLabelHandler<Graph>& EdgesLab) :
+		g_(g), EdgesLabels(EdgesLab) {
+	}
+
+	virtual std::string label(VertexId vertexId) const {
+		return g_.str(vertexId);
+	}
+
+	virtual std::string label(EdgeId edgeId) const {
+		return EdgesLabels.str(edgeId) + ": " + g_.str(edgeId);
+	}
+	virtual ~EdgesLabelsGraphLabeler() {
+		TRACE("~EdgesPosGraphLabeler");
+	}
+
+};
+
 }
 
 

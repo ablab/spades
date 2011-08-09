@@ -68,7 +68,7 @@ void CountPairedInfoStats(Graph &g, size_t insert_size, size_t max_read_length,
 
 	//todo remove filtration if launch on etalon info is ok
 	UniquePathStat<Graph> (g, etalon_paired_index, insert_size,
-			max_read_length, 0.1, 40.0).Count();
+			max_read_length, 0.1 * insert_size, 40.0).Count();
 	UniqueDistanceStat<Graph> (etalon_paired_index).Count();
 	INFO("Paired info stats counted");
 }
@@ -293,7 +293,8 @@ template<class Graph>
 void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 		PairedInfoIndex<Graph> &info, EdgesPositionHandler<Graph> &edges_pos,
 		Graph &new_graph, IdTrackHandler<Graph> &new_IDs,
-		EdgesPositionHandler<Graph> &edges_pos_new, const string& output_folder) {
+		EdgesPositionHandler<Graph> &edges_pos_new, const string& output_folder,
+		EdgeLabelHandler<Graph> &LabelsAfter) {
 	INFO("-----------------------------------------");
 	INFO("Resolving primitive repeats");
 	RepeatResolver<Graph> repeat_resolver(g, old_IDs, 0, info, edges_pos,
@@ -301,6 +302,8 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 	mkdir((output_folder).c_str(),
 			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	repeat_resolver.ResolveRepeats(output_folder);
+	unordered_map<typename Graph::EdgeId, typename Graph::EdgeId> edge_labels = repeat_resolver.GetEdgeLabels();
+	LabelsAfter.FillLabels(edge_labels);
 	INFO("Primitive repeats resolved");
 }
 
@@ -614,10 +617,12 @@ void ResolveOneComponent(const string& load_from_dir,
 	NonconjugateDeBruijnGraph resolved_graph(k);
 	IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
 	EdgesPositionHandler<NCGraph> EdgePosAfter(resolved_graph);
+	EdgeLabelHandler<NCGraph> LabelsAfter(resolved_graph, new_graph);
+
 
 	ResolveRepeats(new_graph, NewIntIds, new_index, EdgePosBefore,
 			resolved_graph, Resolved_IntIds, EdgePosAfter,
-			save_resolving_history + "/");
+			save_resolving_history + "/", LabelsAfter);
 
 	RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
 			Resolved_IntIds);
@@ -793,6 +798,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		NonconjugateDeBruijnGraph resolved_graph(k);
 		IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
 		EdgesPositionHandler<NCGraph> EdgePosAfter(resolved_graph);
+		EdgeLabelHandler<NCGraph> LabelsAfter(resolved_graph, new_graph);
+
 		DEBUG("New index size: "<< new_index.size());
 		if (rectangle_mode) {
 			void RectangleResolve(
@@ -804,7 +811,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 		ResolveRepeats(new_graph, NewIntIds, new_index, EdgePosBefore,
 				resolved_graph, Resolved_IntIds, EdgePosAfter,
-				output_folder + "resolve/");
+				output_folder + "resolve/", LabelsAfter);
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
 				Resolved_IntIds);
@@ -824,11 +831,20 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				output_folder + "repeats_resolved_after_pos.dot",
 				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
 
+		EdgesLabelsGraphLabeler<NCGraph> LabelLabler(resolved_graph, LabelsAfter);
+
+		omnigraph::WriteSimple(
+				output_folder + "resolved_labels_1.dot",
+				"no_repeat_graph", resolved_graph, LabelLabler);
+
 		for(int i = 0; i < 2; i ++) {
 			ClipTips(resolved_graph);
 			RemoveBulges2(resolved_graph);
 			RemoveLowCoverageEdgesForResolver(resolved_graph);
 		}
+		omnigraph::WriteSimple(
+				output_folder + "resolved_labels_2.dot",
+				"no_repeat_graph", resolved_graph, LabelLabler);
 		omnigraph::WriteSimple(
 				work_tmp_dir + "repeats_resolved_after_und_cleared_pos.dot",
 				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
@@ -843,8 +859,19 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				output_folder + "repeats_resolved_und_cleared.dot",
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		OutputContigs(resolved_graph, output_folder + "contigs_before_enlarge.fasta");
+
+
+		omnigraph::WriteSimple(
+				output_folder + "repeats_resolved_und_cleared.dot",
+				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+
 		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
-		N50enlarger.one_many_resolve();
+		N50enlarger.one_many_resolve_with_vertex_split();
+
+		omnigraph::WriteSimple(
+				output_folder + "resolved_labels_3.dot",
+				"no_repeat_graph", resolved_graph, LabelLabler);
+
 
 		omnigraph::WriteSimple(
 				output_folder
@@ -862,8 +889,9 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 		OutputContigs(resolved_graph, output_folder + "contigs_final.fasta");
 		string consensus_folder = output_folder + "consensus/";
-		OutputSingleFileContigs(new_graph, consensus_folder);
-		SelectReadsForConsensus<k, NCGraph>(new_graph, new_edge_index, reads, consensus_folder);
+
+//		OutputSingleFileContigs(new_graph, consensus_folder);
+//		SelectReadsForConsensus<k, NCGraph>(new_graph, new_edge_index, reads, consensus_folder);
 
 		OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
 

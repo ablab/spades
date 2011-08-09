@@ -140,6 +140,10 @@ public:
 
 	};
 
+	unordered_map<EdgeId, EdgeId> GetEdgeLabels(){
+		return edge_labels;
+	}
+
 	RepeatResolver(Graph &old_graph_, IdTrackHandler<Graph> &old_IDs_, int leap,
 			PIIndex &ind, EdgesPositionHandler<Graph> &old_pos_,
 			Graph &new_graph_, IdTrackHandler<Graph> &new_IDs_,
@@ -375,7 +379,9 @@ private:
 		}
 		if (abs(best - pair_info.d) > 0.000001)
 			WARN("CORRECTED" << pair_info.d <<" TO " << best);
-		return pair_info.set_distance(best);
+		PairInfo answer = pair_info;
+		answer.d = best;
+		return pair_info;
 	}
 
 	pair<bool, PairInfo> CorrectedAndNotFiltered(Graph &new_graph,
