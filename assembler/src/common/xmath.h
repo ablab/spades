@@ -22,10 +22,11 @@ namespace math
     inline float eps<float>() { return 1e-5; }
 
 	template<class T>
-	bool eq(T lhs, T rhs) { return abs(lhs - rhs) < eps<T>(); }
-
-	template<class T>
 	bool ls(T lhs, T rhs) { return lhs + eps<T>() < rhs; }
+
+	//todo return initial variant fixing compilation
+	template<class T>
+	bool eq(T lhs, T rhs) { return !ls(lhs, rhs) && !ls(rhs, lhs)/* std::abs(lhs - rhs) < eps<T>()*/; }
 
 	template<class T>
 	bool gr(T lhs, T rhs) { return ls(rhs, lhs); }
@@ -35,6 +36,13 @@ namespace math
 
 	template<class T>
 	bool ge(T lhs, T rhs) { return !ls(lhs, rhs); }
+
+//	template<class T, class R>
+//	R floor(T t) {return std::floor(t + eps<T>());}
+//
+//	template<class T, class R>
+//	R round(T t) {return floor(t + 0.5);}
+
 }
 
 

@@ -374,9 +374,10 @@ class EtalonPairedInfoCounter {
 			size_t j = i + 1;
 			size_t length = 0;
 
-			while (j < path.size() && length  + k + 2 <= (insert_size_ + delta_)) {
-				if (length + g_.length(e) + g_.length(path[j]) + delta_ + k
-						>= gap_ + 2 * (k + 1)) {
+			while (j < path.size() && length <= omnigraph::PairInfoPathLengthUpperBound(k, insert_size_, delta_)
+			/*length  + k + 2 <= (insert_size_ + delta_)*/) {
+				if (length >= omnigraph::PairInfoPathLengthLowerBound(k, g_.length(e), g_.length(path[j]), gap_, delta_)
+						/*length + g_.length(e) + g_.length(path[j]) + delta_ + k >= gap_ + 2 * (k + 1)*/) {
 //					cout << "HERE2 " <<  /*g_.length(e) + */length << endl;
 					AddEtalonInfo(paired_info, e, path[j],
 							g_.length(e) + length);

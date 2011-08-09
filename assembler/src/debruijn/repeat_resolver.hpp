@@ -379,7 +379,9 @@ private:
 		}
 		if (abs(best - pair_info.d) > 0.000001)
 			WARN("CORRECTED" << pair_info.d <<" TO " << best);
-		return pair_info.set_distance(best);
+		PairInfo answer = pair_info;
+		answer.d = best;
+		return pair_info;
 	}
 
 	pair<bool, PairInfo> CorrectedAndNotFiltered(Graph &new_graph,

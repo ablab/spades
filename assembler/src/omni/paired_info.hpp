@@ -18,11 +18,11 @@ namespace omnigraph {
  */
 template<typename EdgeId>
 struct PairInfo {
-	const EdgeId first;
-	const EdgeId second;
-	const double d; //distance between starts. Can be negative
-	const double weight;
-	const double variance;
+	EdgeId first;
+	EdgeId second;
+	double d; //distance between starts. Can be negative
+	double weight;
+	double variance;
 
 	PairInfo(const PairInfo& pair_info) :
 		first(pair_info.first), second(pair_info.second), d(pair_info.d),
@@ -35,7 +35,7 @@ struct PairInfo {
 		first(first), second(second), d(d), weight(weight), variance(variance) {
 	}
 
-	const PairInfo set_first(EdgeId first) const {
+/*	const PairInfo set_first(EdgeId first) const {
 		return PairInfo(first, this->second, this->d, this->weight,
 				this->variance);
 	}
@@ -58,19 +58,12 @@ struct PairInfo {
 	const PairInfo set_variance(EdgeId first) const {
 		return PairInfo(this->first, this->second, this->d, this->weight,
 				variance);
-	}
+	}*/
 
 	bool operator<(const PairInfo& rhs) const {
 		const PairInfo &lhs = *this;
 		return lhs.first == rhs.first ? lhs.second == rhs.second ? lhs.d + E
 				< rhs.d : lhs.second < rhs.second : lhs.first < rhs.first;
-	}
-
-	const PairInfo& operator=(const PairInfo& pair_info) {
-		if (this != &pair_info) {
-			assert(false);
-		}
-		return *this;
 	}
 
 	/**
@@ -104,26 +97,30 @@ ostream& operator<<(ostream& os, const PairInfo<Graph>& info) {
 //typedef vector<PairInfo<> > PairInfos;
 
 template<typename EdgeId>
-PairInfo<EdgeId> MinPairInfo(EdgeId id) {
+const PairInfo<EdgeId> MinPairInfo(EdgeId id) {
 	return PairInfo<EdgeId> (id, (EdgeId) 0/*numeric_limits<EdgeId>::min()*/,
 			-100000000/*numeric_limits<double>::min()*/, 0.);
 }
 
 template<typename EdgeId>
-PairInfo<EdgeId> MaxPairInfo(EdgeId id) {
+const PairInfo<EdgeId> MaxPairInfo(EdgeId id) {
 	return PairInfo<EdgeId> (id,
 			(EdgeId) (-1)/*numeric_limits<EdgeId>::max()*/,
 			1000000000/*numeric_limits<double>::max()*/, 0.);
 }
 
 template<typename EdgeId>
-PairInfo<EdgeId> MinPairInfo(EdgeId e1, EdgeId e2) {
-	return MinPairInfo(e1).set_second(e2);
+const PairInfo<EdgeId> MinPairInfo(EdgeId e1, EdgeId e2) {
+	PairInfo<EdgeId> info = MinPairInfo(e1);
+	info.second = e2;
+	return info;
 }
 
 template<typename EdgeId>
-PairInfo<EdgeId> MaxPairInfo(EdgeId e1, EdgeId e2) {
-	return MaxPairInfo(e1).set_second(e2);
+const PairInfo<EdgeId> MaxPairInfo(EdgeId e1, EdgeId e2) {
+	PairInfo<EdgeId> info = MaxPairInfo(e1);
+	info.second = e2;
+	return info;
 }
 
 /**
@@ -284,7 +281,7 @@ class PairedInfoIndex: public GraphActionHandler<Graph> {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef vector<PairInfo<EdgeId>> PairInfos;
+	typedef const vector<PairInfo<EdgeId>> PairInfos;
 
 private:
 	const int max_difference_;
