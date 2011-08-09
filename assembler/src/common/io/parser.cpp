@@ -22,6 +22,7 @@
 #include <string>
 #include "common/io/fasta_fastq_gz_parser.hpp"
 #include "common/io/sam_bam_parser.hpp"
+#include "common/io/sff_parser.hpp"
 // TODO(mariyafomkina): Add more parsers here.
 
 namespace io {
@@ -68,6 +69,9 @@ Parser* SelectParser(const std::string& filename, int offset) {
   if ((ext == "sam") || (ext == "bam") || 
       (ext == "sam.gz")) {
     return new SamBamParser(filename, offset);
+  }
+  if ((ext == "srf") || (ext == "sff")) {
+    return new SffParser(filename, offset);
   }
   return NULL;
 }
