@@ -68,7 +68,7 @@ void CountPairedInfoStats(Graph &g, size_t insert_size, size_t max_read_length,
 
 	//todo remove filtration if launch on etalon info is ok
 	UniquePathStat<Graph> (g, etalon_paired_index, insert_size,
-			max_read_length, 0.1, 40.0).Count();
+			max_read_length, 0.1 * insert_size, 40.0).Count();
 	UniqueDistanceStat<Graph> (etalon_paired_index).Count();
 	INFO("Paired info stats counted");
 }
