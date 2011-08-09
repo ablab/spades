@@ -1,9 +1,3 @@
-io_lib-1.12.5/Makefile
-io_lib-1.12.5/config.log
-io_lib-1.12.5/config.status
-io_lib-1.12.5/io_lib/Makefile
-io_lib-1.12.5/progs/Makefile
-io_lib-1.12.5/tests/Makefile
 statgen/lib/samtools/*.o
 statgen/lib/samtools/samtools
 statgen/lib/tclap
@@ -15,3 +9,15 @@ statgen/lib/fastq/obj/
 statgen/lib/general/obj/*.o
 statgen/lib/glf/obj/
 statgen/lib/libStatGen.a
+io_lib-1.12.5/Makefile
+io_lib-1.12.5/config.log
+io_lib-1.12.5/config.status
+io_lib-1.12.5/io_lib-config
+io_lib-1.12.5/io_lib/.deps/
+io_lib-1.12.5/io_lib/Makefile
+io_lib-1.12.5/libtool
+io_lib-1.12.5/progs/.deps/
+io_lib-1.12.5/progs/Makefile
+io_lib-1.12.5/stamp-h1
+io_lib-1.12.5/tests/Makefile
+
