@@ -297,18 +297,18 @@ int main() {
 	}
 
 	FindSeeds(g, rawSeeds);
-	INFO("Seeds");
-	PrintPathsShort(g, rawSeeds);
+	INFO("Seeds found");
+//	PrintPathsShort(g, rawSeeds);
 	WriteGraphWithPathsSimple(output_dir + "raw_seeds.dot", "raw_seeds", g, rawSeeds, path1, path2);
 
 	RemoveSubpaths(g, rawSeeds, seeds);
-	INFO("No duplicates");
-	PrintPathsShort(g, seeds);
+	INFO("Removed subseeds");
+//	PrintPathsShort(g, seeds);
 	WriteGraphWithPathsSimple(output_dir + "no_dupl_seeds.dot", "no_dupl_seeds", g, seeds, path1, path2);
 
 	FilterLowCovered(g, seeds, MIN_COVERAGE);
-	INFO("Filtered");
-	PrintPathsShort(g, seeds);
+	INFO("Seeds filtered");
+//	PrintPathsShort(g, seeds);
 
 	size_t found = PathsInGenome<K>(g, index, sequence, seeds, path1, path2, true);
 	INFO("Good seeds found " << found << " in total " << seeds.size());
@@ -318,13 +318,13 @@ int main() {
 
 	MakeKeyPause();
 	FindPaths(g, seeds, pairedInfos, paths);
-	INFO("Final paths");
-	PrintPathsShort(g, paths);
+	//INFO("Final paths");
+	//PrintPathsShort(g, paths);
 
 	std::vector<BidirectionalPath> result;
 	RemoveSubpaths(g, paths, result);
-	INFO("Final paths");
-	PrintPathsShort(g, result);
+	INFO("Removed subpaths");
+	//PrintPathsShort(g, result);
 
 	found = PathsInGenome<K>(g, index, sequence, result, path1, path2);
 	INFO("Good paths found " << found << " in total " << result.size());
@@ -336,7 +336,6 @@ int main() {
 //	INFO("Genome paths");
 //	PrintPathWithVertices(g, path1);
 //	PrintPathWithVertices	(g, path2);
-
 
 	DeleteEtalonInfo(pairedInfos);
 	return 0;
