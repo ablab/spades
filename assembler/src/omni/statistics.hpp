@@ -525,18 +525,32 @@ private:
 				estimated.d + estimated.variance);
 	}
 
+	size_t Move(size_t estimated_idx, const Infos &estimated_infos) {
+		estimated_idx++;
+		while (estimated_idx < estimated_infos.size()
+				&& estimated_infos[estimated_idx].weight == 0)
+			estimated_idx++;
+		return estimated_idx;
+		return 0;
+	}
+
+	size_t InitIdx(const Infos &pair_infos) {
+		return Move(-1, pair_infos);
+	}
+
 	void ProcessInfos(const Infos& etalon_infos, const Infos& estimated_infos) {
 		//		WARN("Etalon_infos " << etalon_infos);
 		//		WARN("Estimated infos " << estimated_infos);
 		//		size_t estimated_idx = 0;
-		size_t etalon_idx = 0;
+		size_t etalon_idx = InitIdx(etalon_infos);
 		//		bool last_matched = false;
-		for (size_t estimated_idx = 0; estimated_idx < estimated_infos.size(); ++estimated_idx) {
+		for (size_t estimated_idx = InitIdx(estimated_infos); estimated_idx < estimated_infos.size(); estimated_idx
+				= Move(estimated_idx, estimated_infos)) {
 			while (estimated_idx < estimated_infos.size() && (etalon_idx
 					== etalon_infos.size() || InfoLess(
 					estimated_infos[estimated_idx], etalon_infos[etalon_idx]))) {
 				HandleFalsePositive(estimated_infos[estimated_idx]);
-				estimated_idx++;
+				estimated_idx = Move(estimated_idx, estimated_infos);
 				//				cout << "here1" << endl;
 			}
 			if (estimated_idx == estimated_infos.size()) {
@@ -545,7 +559,7 @@ private:
 			while (etalon_idx < etalon_infos.size() && InfoLess(
 					etalon_infos[etalon_idx], estimated_infos[estimated_idx])) {
 				HandleFalseNegative(etalon_infos[etalon_idx]);
-				etalon_idx++;
+				etalon_idx = Move(etalon_idx, etalon_infos);
 			}
 			if (IsPerfectMatch(etalon_infos[etalon_idx],
 					estimated_infos[estimated_idx])) {
@@ -553,7 +567,7 @@ private:
 						estimated_infos[estimated_idx])) {
 					HandlePerfectMatch(etalon_infos[etalon_idx],
 							estimated_infos[estimated_idx]);
-					etalon_idx++;
+					etalon_idx = Move(etalon_idx, etalon_infos);
 				}
 			} else {
 				vector<PairInfo<EdgeId> > cluster_hits;
@@ -563,7 +577,7 @@ private:
 					cluster_hits.push_back(etalon_infos[etalon_idx]);
 					//					HandleImperfectMatch(etalon_infos[etalon_idx],
 					//							estimated_infos[estimated_idx]);
-					etalon_idx++;
+					etalon_idx = Move(etalon_idx, etalon_infos);
 				}
 				if (cluster_hits.size() == 0) {
 					HandleFalsePositive(estimated_infos[estimated_idx]);
@@ -594,7 +608,8 @@ private:
 		//			estimated_idx++;
 		while (etalon_idx < etalon_infos.size()) {
 			//			DEBUG("Handling false positives beyond all etalons");
-			HandleFalseNegative(etalon_infos[etalon_idx++]);
+			HandleFalseNegative(etalon_infos[etalon_idx]);
+			etalon_idx = Move(etalon_idx, etalon_infos);
 		}
 		//		Flush();
 	}
@@ -704,7 +719,7 @@ public:
 		copy(false_positive_weights_.begin(), false_positive_weights_.end(),
 				ostream_iterator<double> (stream, "\n"));
 		stream.close();
-		WriteWorstEdgesStat(output_folder, 200000);
+		WriteWorstEdgesStat(output_folder, 1000000);
 	}
 
 	void WriteEdgePairInfo(const string &file_name, Infos infos) {

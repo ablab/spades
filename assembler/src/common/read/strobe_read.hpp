@@ -163,7 +163,7 @@ public:
 
 //////////////////
 
-template <class TR>
+/*template <class TR>
 class PairedReader {
 public:
 	typedef StrobeReader<2, Read, TR> InnerReader;
@@ -199,7 +199,7 @@ public:
 	void close() {
 		reader_.close();
 	}
-};
+};*/
 
 /////////////////////////////////
 
@@ -207,6 +207,7 @@ public:
 /**
  * RC is reverse complement?
  */
+/*
 template<class Stream, typename ReadType>
 class RCReaderWrapper {
 public:
@@ -244,9 +245,11 @@ public:
 		inner_reader_.close();
 	}
 };
+*/
 
 /////////////////////////////////
 
+/*
 template<class Stream>
 class SimpleReaderWrapper {
 public:
@@ -284,6 +287,7 @@ public:
 		inner_reader_.close();
 	}
 };
+*/
 
 
 #endif /* STROBE_READ_HPP_ */

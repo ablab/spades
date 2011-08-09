@@ -30,13 +30,14 @@ public:
 		for(size_t i = 0; i < paths.size(); ++i) {
 			BidirectionalPath& path = paths[i];
 
+			for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+				size_t edgeLen = g.length(*iter);
+				std::string label = "{" + ToString(edgeLen) + "}";
+				labels_.insert(std::make_pair(*iter, label));
+			}
+
 			for(size_t edge = 0; edge < path.size(); ++edge) {
-				if (labels_.find(path[edge]) == labels_.end()) {
-					std::string label = ToString(i) + "(" + ToString(edge) + ")";
-					labels_.insert(std::make_pair(path[edge], label));
-				} else {
-					labels_[path[edge]] += ", " + ToString(i) + "(" + ToString(edge) + ")";
-				}
+				labels_[path[edge]] += "," + ToString(i) + "(" + ToString(edge) + ")";
 			}
 		}
 	}

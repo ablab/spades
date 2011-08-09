@@ -7,8 +7,10 @@
 #include "dijkstra.hpp"
 #include <cmath>
 #include <iterator>
+#include <vector>
 
 namespace omnigraph {
+using std::vector;
 
 //DECL_LOGGER("omg.graph")
 
@@ -494,7 +496,6 @@ public:
 template<typename ElementId>
 class Path {
 public:
-
 	vector<ElementId> sequence_;
 	int start_pos_;
 	int end_pos_;
@@ -528,6 +529,15 @@ public:
 	ElementId operator[](size_t index) const {
 		return sequence_[index];
 	}
+
+	iterator begin() {
+		return sequence_.begin();
+	}
+
+	iterator end() {
+		return sequence_.end();
+	}
+
 };
 
 template<class Graph>
