@@ -16,7 +16,6 @@
 #define CONFIG_FILENAME "./src/debruijn/config.inp"
 #define K 55 // must be odd (so there is no k-mer which is equal to it's reverse-complimentary k-mer)
 
-
 ConfigFile CONFIG(CONFIG_FILENAME);
 
 #endif /* CONFIG_HPP_ */

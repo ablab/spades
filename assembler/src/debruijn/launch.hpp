@@ -133,11 +133,13 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	//CurPos = 1000000000;
 	CurPos = 0;
 	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
-//	for (auto it = path2.sequence().begin(); it != path2.sequence().end(); ++it) {
-	for(size_t i = path2.sequence().size()-1; i>=0; i--){
-		EdgeId ei = path2.sequence()[i];
-		edgesPos.AddEdgePosition(ei, CurPos - 1, CurPos + g.length(ei));
-		CurPos -= g.length(ei);
+	for (auto it = path2.sequence().begin(); it != path2.sequence().end(); ++it) {
+		CurPos -= g.length(*it);
+	}
+	for (auto it = path2.sequence().begin(); it != path2.sequence().end(); ++it) {
+		EdgeId ei = *it;
+		edgesPos.AddEdgePosition(ei, CurPos, CurPos + g.length(ei)-1);
+		CurPos += g.length(ei);
 	}
 }
 
@@ -360,6 +362,7 @@ void FillEtalonPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
 	Path<EdgeId> path = simple_mapper.MapSequence(genome);
 	SequenceBuilder sequnce_builder;
 	for (auto it = path.begin(); it != path.end(); ++it) {
+		INFO("append");
 		sequnce_builder.append(g.EdgeNucls(*it));
 	}
 	Sequence new_genome = sequnce_builder.BuildSequence();

@@ -29,11 +29,12 @@ insert_size_6 = 1000
 #seed selection
 min_coverage = 150
 
-
 #extension selection
+use_weight_function_first = false
+weight_fun_threshold = 0
+weight_threshold = 0
 real_distance_dev = 20
 etalon_distance_dev = 2
-weight_threshold = 0
 
 
 #loops removal
