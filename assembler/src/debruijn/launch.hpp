@@ -889,8 +889,9 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 		OutputContigs(resolved_graph, output_folder + "contigs_final.fasta");
 		string consensus_folder = output_folder + "consensus/";
-		OutputSingleFileContigs(new_graph, consensus_folder);
-		SelectReadsForConsensus<k, NCGraph>(new_graph, new_edge_index, reads, consensus_folder);
+
+//		OutputSingleFileContigs(new_graph, consensus_folder);
+//		SelectReadsForConsensus<k, NCGraph>(new_graph, new_edge_index, reads, consensus_folder);
 
 		OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
 
