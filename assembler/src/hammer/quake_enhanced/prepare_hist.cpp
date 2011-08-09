@@ -49,7 +49,7 @@ void Quake::PrepareTrustedHist(string trusted_hist_file,
     }
   }
   if (fmin == -1) {
-    printf("Bad histogram");
+    printf("Bad histogram\n");
     return;
   }
   int fmax = -1;
@@ -61,7 +61,7 @@ void Quake::PrepareTrustedHist(string trusted_hist_file,
     }
   }
   if (fmax == -1) {
-    printf("Bad histogram");
+    printf("Bad histogram\n");
     return;
   }
   int lborder = fmax;

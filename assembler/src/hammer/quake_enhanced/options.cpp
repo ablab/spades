@@ -105,7 +105,7 @@ Options::Options(int argc, char **argv) :
 
     } else if (help_module == "prepare_hist") {      
       help_builder << 
- "PrepareHist Options                                                        \n" 
+ "PrepareHist options:                                                       \n" 
  "--hist-file <str>                   file where k-mer histogram will be     \n"
  "                                    written, default "" - no histogram     \n"
  "--trusted-hist <str>                file where trusted k-mer histogram will\n"
