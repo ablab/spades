@@ -138,14 +138,14 @@ public:
     seq_ = s;
     valid_ = updateValid();
   }
- 
+
   Read() :
     valid_(false) {
     ;
   }
 
   Read(const std::string &name, const std::string &seq, const std::string &qual) :
-    name_(name), seq_(seq), qual_(qual) { // for test only!
+    name_(name), seq_(seq), qual_(qual) {  // for test only!
     valid_ = updateValid();
   }
 private:
