@@ -38,6 +38,26 @@ void RecountLengthsBackward(Graph& g, BidirectionalPath& path, PathLengths& leng
 
 // ====== Extension functions ======
 
+//Calculate weight
+double WeightFunction(omnigraph::PairedInfoIndex<Graph>::PairInfos pairs, int distance, int distanceDev) {
+	double weight = 0;
+
+	for (auto iter = pairs.begin(); iter != pairs.end(); ++iter) {
+		int pairedDistance = rounded_d(*iter);
+		//Can be modified according to distance comparison
+		if (pairedDistance >= distance - DISTANCE_DEV &&
+				pairedDistance <= distance + DISTANCE_DEV) {
+			weight += iter->weight;
+		}
+	}
+
+	return weight > 0 ? 1 : 0;
+}
+
+//Fixing weight value
+double WeightFixing(double weight, Graph& g, EdgeId edge, PairedInfoIndexLibrary& pairedInfoLibrary) {
+	return weight / (double) std::min(g.length(edge), pairedInfoLibrary.readSize);
+}
 
 //Calculate weight for particular path extension
 double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, EdgeId e, PairedInfoIndexLibrary& pairedInfoLibrary,
@@ -55,17 +75,10 @@ double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, 
 				forward ? pairedInfoLibrary.pairedInfoIndex->GetEdgePairInfo(edge, e) : pairedInfoLibrary.pairedInfoIndex->GetEdgePairInfo(e, edge);
 		int distance = lengths[i] + edgeLength;
 
-		for (auto iter = pairs.begin(); iter != pairs.end(); ++iter) {
-			int pairedDistance = rounded_d(*iter);
-			//Can be modified according to distance comparison
-			if (pairedDistance >= distance - DISTANCE_DEV &&
-					pairedDistance <= distance + DISTANCE_DEV) {
-				weight += iter->weight;
-			}
-		}
+		WeightFunction(pairs, distance, distanceDev);
 	}
 
-	return weight / (double) std::min(g.length(e), pairedInfoLibrary.readSize);
+	return WeightFixing(weight);
 }
 
 //Check whether selected extension is good enough

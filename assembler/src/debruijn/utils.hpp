@@ -367,7 +367,7 @@ class EtalonPairedInfoCounter {
 
 		for (size_t i = 0; i < path.size(); ++i) {
 			EdgeId e = path[i];
-			if (g_.length(e) + delta_ > gap_) {
+			if (g_.length(e) + delta_ > gap_ + k + 1) {
 //				cout << "HERE1 " << endl;
 				AddEtalonInfo(paired_info, e, e, 0);
 			}
@@ -502,48 +502,6 @@ public:
 				++it) {
 			paired_info.AddPairInfo(*it);
 		}
-	}
-};
-
-template<class Graph>
-class UniqueDistanceStat: public omnigraph::AbstractStatCounter {
-	typedef omnigraph::PairedInfoIndex<Graph> PairedIndex;
-
-	PairedIndex& paired_info_;
-	size_t unique_;
-	size_t non_unique_;
-public:
-
-	UniqueDistanceStat(PairedIndex& paired_info) :
-			paired_info_(paired_info), unique_(0), non_unique_(0) {
-
-	}
-
-	virtual ~UniqueDistanceStat() {
-
-	}
-
-	virtual void Count() {
-		for (auto it = paired_info_.begin(); it != paired_info_.end(); ++it) {
-			assert((*it).size() > 0);
-			if ((*it).size() > 1) {
-				non_unique_++;
-//				for (auto info_it = (*it).begin(); info_it != (*it).end(); ++info_it) {
-//					//todo
-//				}
-			} else {
-				unique_++;
-			}
-		}INFO(unique_ << " unique edge distances");
-		INFO(non_unique_ << " non unique edge distances");
-	}
-
-	size_t unique() {
-		return unique_;
-	}
-
-	size_t non_unique() {
-		return non_unique_;
 	}
 };
 
