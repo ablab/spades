@@ -358,6 +358,7 @@ void FillEtalonPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
 	Path<EdgeId> path = simple_mapper.MapSequence(genome);
 	SequenceBuilder sequnce_builder;
 	for (auto it = path.begin(); it != path.end(); ++it) {
+		INFO("append");
 		sequnce_builder.append(g.EdgeNucls(*it));
 	}
 	Sequence new_genome = sequnce_builder.BuildSequence();

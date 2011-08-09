@@ -13,7 +13,7 @@ insert_size = 220
 #additional libs
 lib_count = 0
 read_size_1 = 100
-insert_size_1 = 600
+insert_size_1 = 800
 read_size_2 = 100
 insert_size_2 = 2100
 read_size_3 = 100
@@ -29,14 +29,12 @@ insert_size_6 = 1000
 #seed selection
 min_coverage = 150
 
-
 #extension selection
 use_weight_function_first = false
 weight_fun_threshold = 0
 weight_threshold = 0
 real_distance_dev = 20
 etalon_distance_dev = 2
-
 
 
 #loops removal

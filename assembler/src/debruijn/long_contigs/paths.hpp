@@ -131,6 +131,9 @@ double FilterExtentions(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& 
 EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& edges,
 		PathLengths& lengths, PairedInfoIndices& pairedInfo, double& maxWeight, size_t edgesToExclude, bool forward) {
 	//INFO("Choosing extension " << (forward ? "forward" : "backward"));
+	if (edges.size() == 0) {
+		return 0;
+	}
 	if (edges.size() == 1) {
 		return edges.back();
 	}
