@@ -378,10 +378,10 @@ private:
 			}
 		}
 		if (abs(best - pair_info.d) > 0.000001)
-			WARN("CORRECTED" << pair_info.d <<" TO " << best);
+			DEBUG("CORRECTED " << pair_info.d <<" TO " << best);
 		PairInfo answer = pair_info;
 		answer.d = best;
-		return pair_info;
+		return answer;
 	}
 
 	pair<bool, PairInfo> CorrectedAndNotFiltered(Graph &new_graph,
@@ -804,13 +804,15 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 							//ignoring information from incoming edge to itself, ignoring
 							cheating_edges.insert(left_id);
 							continue;
-						}DEBUG(
-								"PairInfo: " << old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
+						}
+
+						DEBUG("PairInfo: " << old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 
 						pair<bool, PairInfo> correction_result =
 								CorrectedAndNotFiltered(new_graph, tmp[j]);
 						if (!correction_result.first)
-							continue;DEBUG(
+							continue;
+						DEBUG(
 								"PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<tmp[j].d<< "weight" << tmp[j].weight);
 						DEBUG(
 								"PairInfo: " << old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
