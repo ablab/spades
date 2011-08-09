@@ -333,6 +333,8 @@ int main() {
 
 	WriteGraphWithPathsSimple(output_dir + "paths.dot", "paths", g, result, path1, path2);
 
+	OutputPathsAsContigs(g, paths, output_dir + "paths.contigs");
+
 //	INFO("Genome paths");
 //	PrintPathWithVertices(g, path1);
 //	PrintPathWithVertices	(g, path2);

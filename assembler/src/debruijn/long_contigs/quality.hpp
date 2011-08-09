@@ -131,6 +131,27 @@ size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Seque
 	return PathsInGenome(g, index, genome, paths, path1, path2, displayInexactPaths);
 }
 
+//Convert path to contig sequence
+Sequence PathToSequence(Graph& g, BidirectionalPath& path) {
+	SequenceBuilder result;
+
+	for (auto edge = path.begin(); edge != path.end(); ++edge) {
+		result.append(g.EdgeNucls(*edge));
+	}
+
+	return result.BuildSequence();
+}
+
+//Output
+void OutputPathsAsContigs(Graph& g, std::vector<BidirectionalPath> paths, const string& filename) {
+	INFO("Writing contigs");
+	osequencestream oss(filename);
+	for (auto path = paths.begin(); path != paths.end(); ++path ) {
+		oss << PathToSequence(g, *path);
+	}
+	INFO("Contigs written");
+}
+
 
 } // namespace long_contigs
 
