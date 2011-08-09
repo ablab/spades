@@ -69,7 +69,7 @@ class SffParser : public Parser {
     // read.SetSequence(seq_.getSequence());
     read.SetName("Name");
     read.SetQuality("");
-    read.SetSequence(read_->bases);
+    read.SetSequence(read_->base);
     ReadAhead();
     return *this;
   }
@@ -122,7 +122,7 @@ class SffParser : public Parser {
     //if (fp_.ReadRecord(header_, seq_) == 0) {
     //  eof_ = true;
     //}
-    read_ = read_reading(filename_, 0);
+    read_ = read_reading(const_cast<char *>(filename_.c_str()), 0);
     if (read_ == NULLRead) {
       eof_ = true;
     }

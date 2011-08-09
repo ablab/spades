@@ -2,9 +2,9 @@
 #define TEST_PARSERTEST_HPP_
 
 #include "cute/cute.h"
-#include "io/parser.hpp"
-#include "io/fasta_fastq_gz_parser.hpp"
-#include "io/parser.cpp"  // DURTY HACK!!!
+#include "common/io/parser.hpp"
+#include "common/io/fasta_fastq_gz_parser.hpp"
+#include "common/io/parser.cpp"  // DURTY HACK!!!
 
 using namespace io;
 
