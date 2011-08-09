@@ -37,7 +37,8 @@ public:
 	EdgeLabelHandler(Graph &new_graph, Graph &old_graph, unordered_map<EdgeId, EdgeId>& from_resolve) :
 		GraphActionHandler<Graph> ("EdgePositionHandler"), new_graph_(new_graph), old_graph_(old_graph) {
 		new_graph_.AddActionHandler(this);
-		for(auto iter = from_resolve.begin(); iter != from_resolve.end(); ++iter) {
+		FillLabels(from_resolve);
+		/*		for(auto iter = from_resolve.begin(); iter != from_resolve.end(); ++iter) {
 			if (edge_inclusions.find(iter->second) == edge_inclusions.end()){
 				set<EdgeId> tmp;
 				edge_inclusions.insert(make_pair(iter->second, tmp));
@@ -49,6 +50,25 @@ public:
 				edge_labels.insert(make_pair(iter->first, tmp));
 			}
 			edge_labels[iter->second].push_back(iter->second);
+		}
+*/	}
+	EdgeLabelHandler(Graph &new_graph, Graph &old_graph) :
+		GraphActionHandler<Graph> ("EdgePositionHandler"), new_graph_(new_graph), old_graph_(old_graph) {
+		new_graph_.AddActionHandler(this);
+	}
+	void FillLabels(unordered_map<EdgeId, EdgeId>& from_resolve) {
+		for(auto iter = from_resolve.begin(); iter != from_resolve.end(); ++iter) {
+			if (edge_inclusions.find(iter->second) == edge_inclusions.end()){
+				set<EdgeId> tmp;
+				edge_inclusions.insert(make_pair(iter->second, tmp));
+			}
+			edge_inclusions[iter->second].insert(iter->first);
+
+			if (edge_labels.find(iter->first) == edge_labels.end()) {
+				vector<EdgeId> tmp;
+				edge_labels.insert(make_pair(iter->first, tmp));
+			}
+			edge_labels[iter->first].push_back(iter->second);
 		}
 	}
 
@@ -63,14 +83,14 @@ public:
 		 vector<EdgeId> tmp;
 		 for(size_t i = 0; i < edge_labels[edge1].size(); i++){
 			 edge_inclusions[edge_labels[edge1][i]].insert(new_edge);
-			 edge_inclusions[edge_labels[edge1][i]].remove(edge1);
+			 edge_inclusions[edge_labels[edge1][i]].erase(edge1);
 			 tmp.push_back(edge_labels[edge1][i]);
 
 		 	 edge_labels.erase(edge1);
 		 }
 		 for(size_t i = 0; i < edge_labels[edge2].size(); i++) {
 		 	edge_inclusions[edge_labels[edge2][i]].insert(new_edge);
-		 	edge_inclusions[edge_labels[edge2][i]].remove(edge2);
+		 	edge_inclusions[edge_labels[edge2][i]].erase(edge2);
 		 	edge_labels.erase(edge2);
 
 		//	tmp.push_back(edge_labels[edge1][i]);
@@ -89,12 +109,12 @@ public:
  	 virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
 		 DEBUG("HandleMerge by edge labels handler");
  		 size_t n = oldEdges.size();
-		 set<EdgeId> tmp;
+		vector<EdgeId> tmp;
 		 for(size_t j = 0; j < n; j++) {
 		 	 for(size_t i = 0; i < edge_labels[oldEdges[j]].size(); i++){
 				edge_inclusions[edge_labels[oldEdges[j]][i]].insert(newEdge);
-				edge_inclusions[edge_labels[oldEdges[j]][i]].remove(oldEdges[j]);
-				tmp.insert(edge_labels[oldEdges[j]][i]);
+				edge_inclusions[edge_labels[oldEdges[j]][i]].erase(oldEdges[j]);
+				tmp.push_back(edge_labels[oldEdges[j]][i]);
 			 }
 		 	 edge_labels.erase(oldEdges[j]);
 		 }

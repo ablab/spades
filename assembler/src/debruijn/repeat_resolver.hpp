@@ -140,6 +140,10 @@ public:
 
 	};
 
+	unordered_map<EdgeId, EdgeId> GetEdgeLabels(){
+		return edge_labels;
+	}
+
 	RepeatResolver(Graph &old_graph_, IdTrackHandler<Graph> &old_IDs_, int leap,
 			PIIndex &ind, EdgesPositionHandler<Graph> &old_pos_,
 			Graph &new_graph_, IdTrackHandler<Graph> &new_IDs_,
