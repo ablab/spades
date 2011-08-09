@@ -12,6 +12,9 @@
 
 namespace debruijn_graph {
 
+using io::SingleRead;
+using io::PairedRead;
+
 void EmptyGraphTest() {
 	Graph g(11);
 	ASSERT_EQUAL(11, g.k());
@@ -175,16 +178,16 @@ const EdgePairInfo AddComplement(const EdgePairInfo& pair_info) {
 }
 
 void EdgesEqual(const Edges& s1, const Edges& s2) {
-	ASSERT_EQUAL(s1.size(), s2.size());
+	ASSERT_EQUAL(s2.size(), s1.size());
 	for (auto it = s1.begin(); it != s1.end(); ++it) {
 		ASSERT(s2.count(*it) > 0);
 	}
 }
 
-const vector<Read> MakeReads(const vector<MyRead>& reads) {
-	vector<Read> ans;
+const vector<io::SingleRead> MakeReads(const vector<MyRead>& reads) {
+	vector<io::SingleRead> ans;
 	for (size_t i = 0; i < reads.size(); ++i) {
-		ans.push_back(Read("", reads[i], ""));
+		ans.push_back(io::SingleRead("", reads[i], ""));
 	}
 	return ans;
 }
@@ -192,7 +195,7 @@ const vector<Read> MakeReads(const vector<MyRead>& reads) {
 const vector<PairedRead> MakePairedReads(const vector<MyPairedRead>& paired_reads, size_t insert_size) {
 	vector<PairedRead> ans;
 	for (size_t i = 0; i < paired_reads.size(); ++i) {
-		ans.push_back(PairedRead(Read("", paired_reads[i].first, ""), Read("", paired_reads[i].second, ""), insert_size));
+		ans.push_back(PairedRead(SingleRead("", paired_reads[i].first, ""), SingleRead("", paired_reads[i].second, ""), insert_size));
 	}
 	return ans;
 }
@@ -213,10 +216,10 @@ void AssertEdges(Graph& g, const Edges& etalon_edges) {
 
 template<size_t kmer_size_>
 void AssertGraph(const vector<string>& reads, const vector<string>& etalon_edges) {
-	typedef VectorStream<Read> RawStream;
-	typedef RCReaderWrapper<RawStream, Read> Stream;
+	typedef VectorStream<SingleRead> RawStream;
+	typedef io::RCReaderWrapper<SingleRead> Stream;
 	RawStream raw_stream(MakeReads(reads));
-	Stream read_stream(raw_stream);
+	Stream read_stream(&raw_stream);
 	Graph g(kmer_size_);
 	EdgeIndex<kmer_size_ + 1, Graph> index(g);
 
@@ -273,10 +276,10 @@ template<size_t k>
 void AssertGraph(const vector<MyPairedRead>& paired_reads, size_t insert_size, const vector<MyEdge>& etalon_edges
 		, const CoverageInfo& etalon_coverage, const EdgePairInfo& etalon_pair_info) {
 	typedef VectorStream<PairedRead> RawStream;
-	typedef RCReaderWrapper<RawStream, PairedRead> Stream;
+	typedef io::RCReaderWrapper<PairedRead> Stream;
 
 	RawStream raw_stream(MakePairedReads(paired_reads, insert_size));
-	Stream paired_read_stream(raw_stream);
+	Stream paired_read_stream(&raw_stream);
 	Graph g(k);
 	EdgeIndex<k + 1, Graph> index(g);
 //	CoverageHandler<Graph> coverage_handler(g);
@@ -331,10 +334,10 @@ void TestCondenseSimple() {
 
 void TestStrange() {
 	vector<string> reads = {"TTCTGCATGGTTATGCATAACCATGCAGAA", "ACACACACTGGGGGTCCCTTTTGGGGGGGGTTTTTTTTG"};
-	typedef VectorStream<Read> RawStream;
-	typedef RCReaderWrapper<RawStream, Read> Stream;
+	typedef VectorStream<SingleRead> RawStream;
+	typedef io::RCReaderWrapper<SingleRead> Stream;
 	RawStream raw_stream(MakeReads(reads));
-	Stream read_stream(raw_stream);
+	Stream read_stream(&raw_stream);
 	Graph g(27);
 	EdgeIndex<28, Graph> index(g);
 

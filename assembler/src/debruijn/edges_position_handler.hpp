@@ -152,6 +152,9 @@ public:
 		}
 		EdgesPositions.erase(e);
 	}
+ 	void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) {
+ 	}
+
 
 };
 

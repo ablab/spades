@@ -35,7 +35,7 @@ struct Options {
         ofile(""),
         badfile(""),
         limits(""),
-        valid(true) {}  
+        valid(true) {}
 };
 
 void PrintHelp(char *progname) {
@@ -56,7 +56,7 @@ Options ParseOptions(int argc, char *argv[]) {
     ret.ofile = argv[2];
     ret.badfile = argv[3];
     ret.limits = argv[4];
- }
+  }
   return ret;
 }
 }

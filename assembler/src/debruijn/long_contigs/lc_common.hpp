@@ -14,7 +14,7 @@
 #include <map>
 
 #include "../launch.hpp"
-#include "../../common/logging.hpp"
+#include "logging.hpp"
 #include "../new_debruijn.hpp"
 #include "../config.hpp"
 
@@ -58,7 +58,7 @@ size_t EdgeCount(Graph& g) {
 }
 
 //Path length
-size_t PathLength(Graph& g, BidirectionalPath& path) {
+size_t PathLength(Graph& g, const BidirectionalPath& path) {
 	double currentLength = 0;
 
 	for(auto iter = path.begin(); iter != path.end(); ++iter) {
@@ -185,10 +185,23 @@ void PrintPath(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
 }
 
 //Print path
-void PrintPath(Graph& g, BidirectionalPath& path) {
+template<class PathType>
+void PrintPath(Graph& g, PathType& path) {
 	INFO("Path " << &path)
 	INFO("#, edge, length")
 	for(size_t i = 0; i < path.size(); ++i) {
+		INFO(i << ", " << path[i] << ", " << g.length(path[i]));
+	}
+}
+
+//Print path
+template<class PathType>
+void PrintPathWithVertices(Graph& g, PathType& path) {
+	INFO("Path " << &path)
+	INFO("#, edge, length")
+
+	for(size_t i = 0; i < path.size(); ++i) {
+		INFO(g.EdgeStart(path[i]));
 		INFO(i << ", " << path[i] << ", " << g.length(path[i]));
 	}
 }
@@ -242,6 +255,28 @@ bool ComparePaths(const BidirectionalPath& path1, const BidirectionalPath& path2
 	return true;
 }
 
+bool ContainsPath(const BidirectionalPath& path, const BidirectionalPath& sample) {
+	if (path.size() < sample.size()) {
+		return false;
+	}
+
+	for (size_t i = 0; i < path.size() - sample.size() + 1 ; ++i) {
+		bool found = true;
+
+		for (size_t j = 0; j < sample.size(); ++j) {
+			if (sample[j] != path[i + j]) {
+				found = false;
+				break;
+			}
+		}
+
+		if (found) {
+			return true;
+		}
+	}
+	return false;
+}
+
 //Find coverage of worst covered edge
 double PathMinReadCoverage(Graph& g, BidirectionalPath& path) {
 	if (path.empty()) {
@@ -271,6 +306,58 @@ void FilterLowCovered(Graph& g, std::vector<BidirectionalPath>& paths, double th
 	}
 }
 
+
+//Remove duplicate paths
+void RemoveDuplicate(const std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& output) {
+	for (auto path = paths.begin(); path != paths.end(); ++path) {
+		bool copy = true;
+		for (auto iter = output.begin(); iter != output.end(); ++iter) {
+			if (ComparePaths(*path, *iter)) {
+					copy = false;
+					break;
+			}
+		}
+
+		if (copy) {
+			output.push_back(*path);
+		}
+	}
+}
+
+class SimplePathComparator {
+private:
+	Graph& g_;
+
+public:
+	SimplePathComparator(Graph& g): g_(g) {}
+
+	bool operator() (const BidirectionalPath& path1, const BidirectionalPath& path2) {
+		return PathLength(g_, path1) > PathLength(g_, path2);
+	}
+};
+
+//Remove subpaths
+void RemoveSubpaths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& output) {
+	std::vector<BidirectionalPath> temp(paths.size());
+	std::copy(paths.begin(), paths.end(), temp.begin());
+
+	SimplePathComparator pathComparator(g);
+	std::sort(temp.begin(), temp.end(), pathComparator);
+
+	for (auto path = temp.begin(); path != temp.end(); ++path) {
+		bool copy = true;
+		for (auto iter = output.begin(); iter != output.end(); ++iter) {
+			if (ContainsPath(*iter, *path)) {
+					copy = false;
+					break;
+			}
+		}
+
+		if (copy) {
+			output.push_back(*path);
+		}
+	}
+}
 
 } // namespace long_contigs
 

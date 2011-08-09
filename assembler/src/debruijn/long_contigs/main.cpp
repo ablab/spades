@@ -15,7 +15,7 @@
 #include "quality.hpp"
 #include "visualize.hpp"
 
-#include "../../common/simple_tools.hpp"
+#include "simple_tools.hpp"
 
 namespace {
 
@@ -269,6 +269,7 @@ int main() {
 	Sequence sequence("");
 
 	std::vector<BidirectionalPath> seeds;
+	std::vector<BidirectionalPath> rawSeeds;
 	std::vector<BidirectionalPath> paths;
 
 	std::string dataset = CONFIG.read<string>("dataset");
@@ -288,7 +289,6 @@ int main() {
 	Path<Graph::EdgeId> path1 = FindGenomePath<K> (sequence, g, index);
 	Path<Graph::EdgeId> path2 = FindGenomePath<K> (!sequence, g, index);
 
-
 	PairedInfoIndexLibrary basicPairedLib(LC_CONFIG.read<size_t>("read_size"), LC_CONFIG.read<size_t>("insert_size"), &pairedIndex);
 	pairedInfos.push_back(basicPairedLib);
 
@@ -296,16 +296,21 @@ int main() {
 		AddEtalonInfo<K>(g, index, sequence, pairedInfos);
 	}
 
-	FindSeeds(g, seeds);
+	FindSeeds(g, rawSeeds);
 	INFO("Seeds");
-	PrintPathsShort(g, seeds);
+	PrintPathsShort(g, rawSeeds);
+	WriteGraphWithPathsSimple(output_dir + "raw_seeds.dot", "raw_seeds", g, rawSeeds, path1, path2);
 
+	RemoveSubpaths(g, rawSeeds, seeds);
+	INFO("No duplicates");
+	PrintPathsShort(g, seeds);
+	WriteGraphWithPathsSimple(output_dir + "no_dupl_seeds.dot", "no_dupl_seeds", g, seeds, path1, path2);
 
 	FilterLowCovered(g, seeds, MIN_COVERAGE);
 	INFO("Filtered");
 	PrintPathsShort(g, seeds);
 
-	size_t found = PathsInGenome<K>(g, index, sequence, seeds, path1, path2);
+	size_t found = PathsInGenome<K>(g, index, sequence, seeds, path1, path2, true);
 	INFO("Good seeds found " << found << " in total " << seeds.size());
 	INFO("All seed coverage " << PathsCoverage(g, seeds));
 
@@ -317,15 +322,21 @@ int main() {
 	PrintPathsShort(g, paths);
 
 	std::vector<BidirectionalPath> result;
-	RemoveDuplicate(paths, result);
+	RemoveSubpaths(g, paths, result);
 	INFO("Final paths");
 	PrintPathsShort(g, result);
 
 	found = PathsInGenome<K>(g, index, sequence, result, path1, path2);
 	INFO("Good paths found " << found << " in total " << result.size());
 	INFO("Path coverage " << PathsCoverage(g, result));
+	INFO("Path length coverage " << PathsLengthCoverage(g, result));
 
 	WriteGraphWithPathsSimple(output_dir + "paths.dot", "paths", g, result, path1, path2);
+
+//	INFO("Genome paths");
+//	PrintPathWithVertices(g, path1);
+//	PrintPathWithVertices	(g, path2);
+
 
 	DeleteEtalonInfo(pairedInfos);
 	return 0;

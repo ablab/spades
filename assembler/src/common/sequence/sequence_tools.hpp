@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "nucl.hpp"
+#include "sequence/nucl.hpp"
 
 inline std::string Reverse(const std::string &s) {
 	return std::string(s.rbegin(), s.rend());

@@ -4,12 +4,12 @@
 #include <vector>
 #include <set>
 #include <cstring>
-#include "seq.hpp"
-#include "sequence.hpp"
+#include "sequence/seq.hpp"
+#include "sequence/sequence.hpp"
 #include "logging.hpp"
-#include "nucl.hpp"
+#include "sequence/nucl.hpp"
 //#include "strobe_read.hpp"
-#include "common/io/paired_read.hpp"
+#include "io/paired_read.hpp"
 #include "omni_utils.hpp"
 #include "observable_graph.hpp"
 #include "coverage.hpp"

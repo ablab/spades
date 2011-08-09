@@ -52,10 +52,8 @@ set(COMMON_LIBRARIES ${ZLIB_LIBRARIES} ${log4cxx_LIBRARIES} ${Boost_LIBRARIES})
 # TODO: should be deleted after project restructurization
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/common)
-include_directories(${CMAKE_SOURCE_DIR}/common/read)
-include_directories(${CMAKE_SOURCE_DIR}/common/sequence)
-include_directories(${CMAKE_SOURCE_DIR}/common/io)
 include_directories(${CMAKE_SOURCE_DIR}/omni)
+include_directories(${CMAKE_SOURCE_DIR}/libs)
 
 # sub projects
 add_subdirectory(common/io)
@@ -63,5 +61,6 @@ add_subdirectory(debruijn)
 add_subdirectory(abruijn)
 add_subdirectory(bayes)
 add_subdirectory(hammer)
+add_subdirectory(common_test)
 
 

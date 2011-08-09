@@ -26,9 +26,9 @@
 #include <vector>
 #include "log4cxx/logger.h"
 #include "log4cxx/basicconfigurator.h"
-#include "common/read/ireadstream.hpp"
-#include "common/read/read.hpp"
-#include "common/sequence/seq.hpp"
+#include "read/ireadstream.hpp"
+#include "read/read.hpp"
+#include "sequence/seq.hpp"
 #include "hammer/kmer_freq_info.hpp"
 #include "hammer/valid_kmer_generator.hpp"
 #define SUPPRESS_UNUSED(X) ((void) (X))
@@ -135,11 +135,11 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
     ifs >> r;
     KMer::hash hash_function;
     for (ValidKMerGenerator<kK> gen(r, error_threshold); gen.HasMore(); gen.Next()) {
-      FILE *cur_file = ofiles[hash_function(gen.kmer()) % file_number];
       KMer kmer = gen.kmer();
       if (KMer::less2()(!kmer, kmer)) {
         kmer = !kmer;
       }
+      FILE *cur_file = ofiles[hash_function(gen.kmer()) % file_number];
       KMer::BinWrite(cur_file, kmer);
       if (q_mers) {
         double correct_probability = gen.correct_probability();

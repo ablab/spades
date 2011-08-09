@@ -327,6 +327,7 @@ class UniquePathStat: public omnigraph::AbstractStatCounter {
 	PairedInfoIndex<Graph>& pair_info_;
 	size_t insert_size_;
 	size_t max_read_length_;
+	size_t gap_;
 	double variance_delta_;
 
 	//todo get rid of this parameter
@@ -361,7 +362,7 @@ public:
 			size_t insert_size, size_t max_read_length, double variance_delta,
 			double weight_threshold, bool draw_pictures = false) :
 		g_(g), pair_info_(pair_info), insert_size_(insert_size),
-				max_read_length_(max_read_length),
+				max_read_length_(max_read_length), gap_(insert_size_ - 2 * max_read_length_),
 				variance_delta_(variance_delta),
 				weight_threshold_(weight_threshold),
 				considered_edge_pair_cnt_(0), unique_distance_cnt_(0),
@@ -386,18 +387,9 @@ public:
 				//				CompositeCallback<Graph> composite_callback;
 				//				composite_callback.AddProcessor(counter);
 				//				composite_callback.AddProcessor(graph_labeler);
-				//todo delete unnecessary parentheses and casts
-				int lower_bound = ((int) insert_size_) - 2
-						* ((int) max_read_length_) - ((int) g_.length(e1))
-						- ((int) g_.length(e2));
-				//				cout << "IS " << insert_size_ << endl;
-				//				cout << "MRL " << max_read_length_ << endl;
-				//				cout << "Raw Lower bound " << lower_bound << endl;
-				//				cout << "Var delta " << variance_delta_ << endl;
-				//				cout << "Lower bound " << (1 - variance_delta_) * lower_bound << endl;
 				PathProcessor<Graph> path_processor(g_,
-						(1 - variance_delta_) * lower_bound,
-						(1 + variance_delta_) * insert_size_, g_.EdgeEnd(e1),
+						omnigraph::PairInfoPathLengthLowerBound(g_.k(), g_.length(e1), g_.length(e2), gap_, variance_delta_),
+						omnigraph::PairInfoPathLengthUpperBound(g_.k(), insert_size_, variance_delta_), g_.EdgeEnd(e1),
 						g_.EdgeStart(e2), counter);
 				path_processor.Process();
 				if (counter.count() == 1) {
@@ -427,6 +419,48 @@ public:
 	}
 private:
 	DECL_LOGGER("UniquePathStat")
+};
+
+template<class Graph>
+class UniqueDistanceStat: public omnigraph::AbstractStatCounter {
+	typedef omnigraph::PairedInfoIndex<Graph> PairedIndex;
+
+	PairedIndex& paired_info_;
+	size_t unique_;
+	size_t non_unique_;
+public:
+
+	UniqueDistanceStat(PairedIndex& paired_info) :
+			paired_info_(paired_info), unique_(0), non_unique_(0) {
+
+	}
+
+	virtual ~UniqueDistanceStat() {
+
+	}
+
+	virtual void Count() {
+		for (auto it = paired_info_.begin(); it != paired_info_.end(); ++it) {
+			assert((*it).size() > 0);
+			if ((*it).size() > 1) {
+				non_unique_++;
+//				for (auto info_it = (*it).begin(); info_it != (*it).end(); ++info_it) {
+//					//todo
+//				}
+			} else {
+				unique_++;
+			}
+		}INFO(unique_ << " unique edge distances");
+		INFO(non_unique_ << " non unique edge distances");
+	}
+
+	size_t unique() {
+		return unique_;
+	}
+
+	size_t non_unique() {
+		return non_unique_;
+	}
 };
 
 template<class Graph>
@@ -525,18 +559,32 @@ private:
 				estimated.d + estimated.variance);
 	}
 
+	size_t Move(size_t estimated_idx, const Infos &estimated_infos) {
+		estimated_idx++;
+		while (estimated_idx < estimated_infos.size()
+				&& estimated_infos[estimated_idx].weight == 0)
+			estimated_idx++;
+		return estimated_idx;
+		return 0;
+	}
+
+	size_t InitIdx(const Infos &pair_infos) {
+		return Move(-1, pair_infos);
+	}
+
 	void ProcessInfos(const Infos& etalon_infos, const Infos& estimated_infos) {
 		//		WARN("Etalon_infos " << etalon_infos);
 		//		WARN("Estimated infos " << estimated_infos);
 		//		size_t estimated_idx = 0;
-		size_t etalon_idx = 0;
+		size_t etalon_idx = InitIdx(etalon_infos);
 		//		bool last_matched = false;
-		for (size_t estimated_idx = 0; estimated_idx < estimated_infos.size(); ++estimated_idx) {
+		for (size_t estimated_idx = InitIdx(estimated_infos); estimated_idx < estimated_infos.size(); estimated_idx
+				= Move(estimated_idx, estimated_infos)) {
 			while (estimated_idx < estimated_infos.size() && (etalon_idx
 					== etalon_infos.size() || InfoLess(
 					estimated_infos[estimated_idx], etalon_infos[etalon_idx]))) {
 				HandleFalsePositive(estimated_infos[estimated_idx]);
-				estimated_idx++;
+				estimated_idx = Move(estimated_idx, estimated_infos);
 				//				cout << "here1" << endl;
 			}
 			if (estimated_idx == estimated_infos.size()) {
@@ -545,7 +593,7 @@ private:
 			while (etalon_idx < etalon_infos.size() && InfoLess(
 					etalon_infos[etalon_idx], estimated_infos[estimated_idx])) {
 				HandleFalseNegative(etalon_infos[etalon_idx]);
-				etalon_idx++;
+				etalon_idx = Move(etalon_idx, etalon_infos);
 			}
 			if (IsPerfectMatch(etalon_infos[etalon_idx],
 					estimated_infos[estimated_idx])) {
@@ -553,7 +601,7 @@ private:
 						estimated_infos[estimated_idx])) {
 					HandlePerfectMatch(etalon_infos[etalon_idx],
 							estimated_infos[estimated_idx]);
-					etalon_idx++;
+					etalon_idx = Move(etalon_idx, etalon_infos);
 				}
 			} else {
 				vector<PairInfo<EdgeId> > cluster_hits;
@@ -563,7 +611,7 @@ private:
 					cluster_hits.push_back(etalon_infos[etalon_idx]);
 					//					HandleImperfectMatch(etalon_infos[etalon_idx],
 					//							estimated_infos[estimated_idx]);
-					etalon_idx++;
+					etalon_idx = Move(etalon_idx, etalon_infos);
 				}
 				if (cluster_hits.size() == 0) {
 					HandleFalsePositive(estimated_infos[estimated_idx]);
@@ -594,7 +642,8 @@ private:
 		//			estimated_idx++;
 		while (etalon_idx < etalon_infos.size()) {
 			//			DEBUG("Handling false positives beyond all etalons");
-			HandleFalseNegative(etalon_infos[etalon_idx++]);
+			HandleFalseNegative(etalon_infos[etalon_idx]);
+			etalon_idx = Move(etalon_idx, etalon_infos);
 		}
 		//		Flush();
 	}
@@ -704,7 +753,7 @@ public:
 		copy(false_positive_weights_.begin(), false_positive_weights_.end(),
 				ostream_iterator<double> (stream, "\n"));
 		stream.close();
-		WriteWorstEdgesStat(output_folder, 200000);
+		WriteWorstEdgesStat(output_folder, 1000000);
 	}
 
 	void WriteEdgePairInfo(const string &file_name, Infos infos) {
