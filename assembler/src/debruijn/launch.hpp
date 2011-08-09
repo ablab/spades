@@ -130,11 +130,15 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		edgesPos.AddEdgePosition(ei, CurPos + 1, CurPos + g.length(ei));
 		CurPos += g.length(ei);
 	}
-	CurPos = 1000000000;
+	//CurPos = 1000000000;
+	CurPos = 0;
 	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
 	for (auto it = path2.sequence().begin(); it != path2.sequence().end(); ++it) {
+		CurPos -= g.length(*it);
+	}
+	for (auto it = path2.sequence().begin(); it != path2.sequence().end(); ++it) {
 		EdgeId ei = *it;
-		edgesPos.AddEdgePosition(ei, CurPos + 1, CurPos + g.length(ei));
+		edgesPos.AddEdgePosition(ei, CurPos, CurPos + g.length(ei)-1);
 		CurPos += g.length(ei);
 	}
 }
