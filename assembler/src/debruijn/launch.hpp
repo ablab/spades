@@ -138,7 +138,7 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	}
 	for (auto it = path2.sequence().begin(); it != path2.sequence().end(); ++it) {
 		EdgeId ei = *it;
-		edgesPos.AddEdgePosition(ei, CurPos - 1, CurPos + g.length(ei));
+		edgesPos.AddEdgePosition(ei, CurPos, CurPos + g.length(ei)-1);
 		CurPos += g.length(ei);
 	}
 }
