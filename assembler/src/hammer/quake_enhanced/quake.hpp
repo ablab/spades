@@ -5,7 +5,7 @@
 #include "common/read/ireadstream.hpp"
 
 // ToDo => to settings.hpp
-const uint32_t kK = 3;
+const uint32_t kK = 31;
 
 namespace quake_enhanced {
 class Quake {
@@ -19,6 +19,7 @@ class Quake {
   void PrepareHists(std::string hist_file, std::string trusted_hist_file,
                     std::string bad_hist_file, uint32_t top_threshold,
                     double average_min);
+  void CountLimits();
  private:
   enum QuakeState {kInitial, kCountDone, kRealHistPrepared, kRealHistPrinted,
                    kTrustedHistPrepared, kLimitsCounted, kTrustedFiltered};

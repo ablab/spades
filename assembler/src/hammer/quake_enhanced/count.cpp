@@ -49,7 +49,7 @@ void Quake::SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
       if (KMer::less2()(!kmer, kmer)) {
         kmer = !kmer;
       }
-      FILE *cur_file = ofiles[hash_function(gen.kmer()) % file_number];
+      FILE *cur_file = ofiles[hash_function(kmer()) % file_number];
       KMer::BinWrite(cur_file, kmer);
       double q_count = gen.correct_probability();
       fwrite(&q_count, sizeof(q_count), 1, cur_file);

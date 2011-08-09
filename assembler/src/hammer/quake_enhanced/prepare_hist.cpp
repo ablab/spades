@@ -99,14 +99,18 @@ void Quake::PrepareTrustedHist(string trusted_hist_file,
   if (trusted_hist_file != "") {
     FILE *trusted_hist_out = fopen(trusted_hist_file.c_str(), "w");
     for (uint32_t i = 0; i < trusted_hist.size(); ++i) {
-      fprintf(trusted_hist_out, "%d %d\n", i, trusted_hist[i]);
+      if (trusted_hist[i] > 0) {
+        fprintf(trusted_hist_out, "%d %d\n", i, trusted_hist[i]);
+      }
     }    
     fclose(trusted_hist_out);
   }
   if (bad_hist_file != "") {
     FILE *bad_hist_out = fopen(bad_hist_file.c_str(), "w");
     for (uint32_t i = 0; i < trusted_hist.size(); ++i) {
-      fprintf(bad_hist_out, "%d %d\n", i, real_hist[i] - trusted_hist[i]);
+      if (real_hist[i] - trusted_hist[i] > 0) {
+        fprintf(bad_hist_out, "%d %d\n", i, real_hist[i] - trusted_hist[i]);
+      }
     }
     fclose(bad_hist_out);
   }
