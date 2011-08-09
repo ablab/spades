@@ -5,8 +5,8 @@ using quake_enhanced::Quake;
 
 void Quake::AddToHist(double freq) {
   uint64_t c = static_cast<uint64_t>(freq + 0.5);
-  if (real_hist.size() <= c) {
-    real_hist.resize(c + 1);
+  if (real_hist.size() <= c + 1) {
+    real_hist.resize(c + 2);
   }
   ++real_hist[c];
 }
@@ -83,13 +83,18 @@ void Quake::PrepareTrustedHist(string trusted_hist_file,
   float average = mass_pos / static_cast<double>(mass);
   printf("Gauss median is at %f\n", average);
   vector<uint32_t> hist_trusted(real_hist);
+  trusted_hist = real_hist;
   for (uint32_t i = 0; static_cast<int>(average - i) >=0; ++i) {
-    int where = static_cast<int>(average - i);
-    int from = static_cast<int>(average + i + 0.5);
-    if (where == from) {
+    uint32_t where = static_cast<uint32_t>(average - i);
+    uint32_t from = static_cast<uint32_t>(average + i + 0.5);
+    if (where == from || where + 1 >= trusted_hist.size()) {
       continue;
     }
-    trusted_hist[where] = min(trusted_hist[where + 1], trusted_hist[from]);
+    uint32_t value = 0;
+    if (from < trusted_hist.size()) {
+      value = trusted_hist[from];
+    }
+    trusted_hist[where] = min(trusted_hist[where + 1], value);
   }
   if (trusted_hist_file != "") {
     FILE *trusted_hist_out = fopen(trusted_hist_file.c_str(), "w");
@@ -107,7 +112,6 @@ void Quake::PrepareTrustedHist(string trusted_hist_file,
   }
   cur_state_ = kTrustedHistPrepared;
 }
-
 
 void Quake::PrepareHists(string hist_file, string trusted_hist_file,
                          string bad_hist_file, uint32_t top_threshold,

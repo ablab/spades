@@ -5,7 +5,7 @@
 #include "common/read/ireadstream.hpp"
 
 // ToDo => to settings.hpp
-const uint32_t kK = 31;
+const uint32_t kK = 3;
 
 namespace quake_enhanced {
 class Quake {
