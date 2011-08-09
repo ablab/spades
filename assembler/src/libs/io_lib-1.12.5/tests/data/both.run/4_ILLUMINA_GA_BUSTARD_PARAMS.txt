@@ -1,0 +1,196 @@
+<?xml version="1.0"?>
+<BaseCallAnalysis>
+  <Run Name="Bustard1.9.5_28-08-2008_auto">
+    <BaseCallParameters>
+      <Matrix Path="">
+        <AutoFlag>1</AutoFlag>
+        <AutoLane>4</AutoLane>
+        <Cycle>2</Cycle>
+        <CycleOffset>1</CycleOffset>
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>37</LastCycle>
+        <Read>1</Read>
+      </Matrix>
+      <Matrix Path="">
+        <AutoFlag>1</AutoFlag>
+        <AutoLane>4</AutoLane>
+        <Cycle>39</Cycle>
+        <CycleOffset>1</CycleOffset>
+        <FirstCycle>38</FirstCycle>
+        <LastCycle>74</LastCycle>
+        <Read>2</Read>
+      </Matrix>
+      <MatrixElements />
+      <Phasing Path="">
+        <AutoFlag>1</AutoFlag>
+        <AutoLane>4</AutoLane>
+        <Cycle>1</Cycle>
+        <CycleOffset>0</CycleOffset>
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>37</LastCycle>
+        <Read>1</Read>
+      </Phasing>
+      <Phasing Path="">
+        <AutoFlag>1</AutoFlag>
+        <AutoLane>4</AutoLane>
+        <Cycle>38</Cycle>
+        <CycleOffset>0</CycleOffset>
+        <FirstCycle>38</FirstCycle>
+        <LastCycle>74</LastCycle>
+        <Read>2</Read>
+      </Phasing>
+      <PhasingRestarts />
+    </BaseCallParameters>
+    <Cycles First="1" Last="74" Number="74" />
+    <Input Path="C1-74_Firecrest1.9.5_28-08-2008_auto" />
+    <RunParameters>
+      <AutoCycleFlag>0</AutoCycleFlag>
+      <BasecallFlag>1</BasecallFlag>
+      <Compression>gzip</Compression>
+      <CompressionSuffix>.gz</CompressionSuffix>
+      <Deblocked>0</Deblocked>
+      <DebugFlag>0</DebugFlag>
+      <FirstRunOnlyFlag>0</FirstRunOnlyFlag>
+      <ImagingReads Index="1">
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>37</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      </ImagingReads>
+      <ImagingReads Index="2">
+        <FirstCycle>38</FirstCycle>
+        <LastCycle>74</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080818_IL9_1232</RunFolder>
+      </ImagingReads>
+      <Instrument>HWI-EAS130</Instrument>
+      <MakeFlag>1</MakeFlag>
+      <MaxCycle>-1</MaxCycle>
+      <MinCycle>-1</MinCycle>
+      <Reads Index="1">
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>37</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      </Reads>
+      <Reads Index="2">
+        <FirstCycle>38</FirstCycle>
+        <LastCycle>74</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080818_IL9_1232</RunFolder>
+      </Reads>
+      <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      <SelectedCycles>1</SelectedCycles>
+      <SelectedCycles>2</SelectedCycles>
+      <SelectedCycles>3</SelectedCycles>
+      <SelectedCycles>4</SelectedCycles>
+      <SelectedCycles>5</SelectedCycles>
+      <SelectedCycles>6</SelectedCycles>
+      <SelectedCycles>7</SelectedCycles>
+      <SelectedCycles>8</SelectedCycles>
+      <SelectedCycles>9</SelectedCycles>
+      <SelectedCycles>10</SelectedCycles>
+      <SelectedCycles>11</SelectedCycles>
+      <SelectedCycles>12</SelectedCycles>
+      <SelectedCycles>13</SelectedCycles>
+      <SelectedCycles>14</SelectedCycles>
+      <SelectedCycles>15</SelectedCycles>
+      <SelectedCycles>16</SelectedCycles>
+      <SelectedCycles>17</SelectedCycles>
+      <SelectedCycles>18</SelectedCycles>
+      <SelectedCycles>19</SelectedCycles>
+      <SelectedCycles>20</SelectedCycles>
+      <SelectedCycles>21</SelectedCycles>
+      <SelectedCycles>22</SelectedCycles>
+      <SelectedCycles>23</SelectedCycles>
+      <SelectedCycles>24</SelectedCycles>
+      <SelectedCycles>25</SelectedCycles>
+      <SelectedCycles>26</SelectedCycles>
+      <SelectedCycles>27</SelectedCycles>
+      <SelectedCycles>28</SelectedCycles>
+      <SelectedCycles>29</SelectedCycles>
+      <SelectedCycles>30</SelectedCycles>
+      <SelectedCycles>31</SelectedCycles>
+      <SelectedCycles>32</SelectedCycles>
+      <SelectedCycles>33</SelectedCycles>
+      <SelectedCycles>34</SelectedCycles>
+      <SelectedCycles>35</SelectedCycles>
+      <SelectedCycles>36</SelectedCycles>
+      <SelectedCycles>37</SelectedCycles>
+      <SelectedCycles>38</SelectedCycles>
+      <SelectedCycles>39</SelectedCycles>
+      <SelectedCycles>40</SelectedCycles>
+      <SelectedCycles>41</SelectedCycles>
+      <SelectedCycles>42</SelectedCycles>
+      <SelectedCycles>43</SelectedCycles>
+      <SelectedCycles>44</SelectedCycles>
+      <SelectedCycles>45</SelectedCycles>
+      <SelectedCycles>46</SelectedCycles>
+      <SelectedCycles>47</SelectedCycles>
+      <SelectedCycles>48</SelectedCycles>
+      <SelectedCycles>49</SelectedCycles>
+      <SelectedCycles>50</SelectedCycles>
+      <SelectedCycles>51</SelectedCycles>
+      <SelectedCycles>52</SelectedCycles>
+      <SelectedCycles>53</SelectedCycles>
+      <SelectedCycles>54</SelectedCycles>
+      <SelectedCycles>55</SelectedCycles>
+      <SelectedCycles>56</SelectedCycles>
+      <SelectedCycles>57</SelectedCycles>
+      <SelectedCycles>58</SelectedCycles>
+      <SelectedCycles>59</SelectedCycles>
+      <SelectedCycles>60</SelectedCycles>
+      <SelectedCycles>61</SelectedCycles>
+      <SelectedCycles>62</SelectedCycles>
+      <SelectedCycles>63</SelectedCycles>
+      <SelectedCycles>64</SelectedCycles>
+      <SelectedCycles>65</SelectedCycles>
+      <SelectedCycles>66</SelectedCycles>
+      <SelectedCycles>67</SelectedCycles>
+      <SelectedCycles>68</SelectedCycles>
+      <SelectedCycles>69</SelectedCycles>
+      <SelectedCycles>70</SelectedCycles>
+      <SelectedCycles>71</SelectedCycles>
+      <SelectedCycles>72</SelectedCycles>
+      <SelectedCycles>73</SelectedCycles>
+      <SelectedCycles>74</SelectedCycles>
+      <SelectedFolders />
+      <SelectedTiles />
+    </RunParameters>
+    <Software Name="Bustard" Version="1.9.5" />
+    <TileSelection>
+      <Lane Index="1">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="2">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="3">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="4">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="5">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="6">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="7">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="8">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+    </TileSelection>
+    <Time>
+      <Start>28-08-08 10:36:31 BST</Start>
+    </Time>
+    <User Name="auto" />
+  </Run>
+</BaseCallAnalysis>
