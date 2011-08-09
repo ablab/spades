@@ -31,7 +31,7 @@ class Options {
   size_t top_threshold; 
   // trying to find Gauss's average we will go to the left and to the
   // right until we rich coverage average_min * max
-  float average_min;
+  double average_min;
   // GenerateLimits options.
   std::string limits_file;
   // we will consider k-mer trusted if its probability of being

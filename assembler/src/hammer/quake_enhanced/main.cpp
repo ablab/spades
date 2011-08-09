@@ -20,5 +20,8 @@ int main(int argc, char **argv) {
   quake.Count(opts.read_file, opts.kmer_count_file,
               opts.hash_file_prefix, opts.hash_file_number,
               opts.quality_offset, opts.quality_threshold);
+  quake.PrepareHists(opts.hist_file, opts.trusted_hist_file, 
+                     opts.bad_hist_file, opts.top_threshold,
+                     opts.average_min);
   return 0;
 }

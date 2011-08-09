@@ -22,10 +22,9 @@ using io::SingleRead;
 struct KMerInfo {
   int count;
   double q_count;
-  double q_inversed_count;
+  double freq;
 };
 
-const uint32_t kK = 31;
 typedef Seq<kK> KMer;
 typedef unordered_map<KMer, KMerInfo, KMer::hash> UnorderedMap;
 
@@ -52,8 +51,8 @@ void Quake::SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
       }
       FILE *cur_file = ofiles[hash_function(gen.kmer()) % file_number];
       KMer::BinWrite(cur_file, kmer);
-      double correct_probability = gen.correct_probability();
-      fwrite(&correct_probability, sizeof(correct_probability), 1, cur_file);
+      double q_count = gen.correct_probability();
+      fwrite(&q_count, sizeof(q_count), 1, cur_file);
     }
   }
 }
@@ -72,26 +71,27 @@ void Quake::EvalFile(FILE *ifile, FILE *ofile) {
   KMer kmer;
   while (KMer::BinRead(ifile, &kmer)) {
     KMerInfo &info = stat_map[kmer];
-    double correct_probability = -1;
+    double q_count = -1;
     bool readed =
-        fread(&correct_probability, sizeof(correct_probability),
+        fread(&q_count, sizeof(q_count),
               1, ifile);
     assert(readed == 1);
     SUPPRESS_UNUSED(readed);
-    double inversed_probability = 1 / correct_probability;
+    double freq = 0;
     // ToDo 0.5 threshold ==>> command line option
-    if (correct_probability < 0.5) {
-      inversed_probability = 0;
+    if (q_count > 0.5) {
+      freq = 1 / q_count;
     }
-    info.q_count += correct_probability;
+    info.q_count += q_count;
     info.count += 1;
-    info.q_inversed_count += inversed_probability;
+    info.freq += freq;
   }
   for (UnorderedMap::iterator it = stat_map.begin();
        it != stat_map.end(); ++it) {
     const KMerInfo &info = it->second;
+    AddToHist(info.freq);
     fprintf(ofile, "%s %d %f %f\n", it->first.str().c_str(),
-            info.count, info.q_count, info.q_inversed_count);
+            info.count, info.q_count, info.freq);
   }
 }
 
@@ -123,5 +123,5 @@ void Quake::Count(string ifile_name, string ofile_name,
     remove(ifile_name);
   }
   fclose(ofile);
-  cur_state_ = kCountDone;
+  cur_state_ = kRealHistPrepared;
 }

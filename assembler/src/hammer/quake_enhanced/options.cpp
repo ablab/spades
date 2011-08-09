@@ -57,6 +57,18 @@ Options::Options(int argc, char **argv) :
                     quality_threshold, quality_threshold);
   options >> Option('\0', "kmer-count-file", 
                     kmer_count_file, kmer_count_file);
+  // PrepareHist Options
+  options >> Option('\0', "hist-file",
+                    hist_file, hist_file);
+  options >> Option('\0', "trusted-hist-file",
+                    trusted_hist_file, trusted_hist_file);
+  options >> Option('\0', "bad-hist-file",
+                    bad_hist_file, bad_hist_file);
+  options >> Option('\0', "top-threshold", 
+                    top_threshold, top_threshold);
+  options >> Option('\0', "average-min", 
+                    average_min, average_min);
+
   if (need_help || help_module != "") {
     valid = false;
   } else {
@@ -71,7 +83,7 @@ Options::Options(int argc, char **argv) :
  "--corrected-read-file <str>         fasta file, where corrected reads will \n"
  "                                    be written                             \n" 
  "--help-module <str>                 produce a help for a given module,     \n"
- "                                    module can be: count                   \n";
+ "                                    module can be: count, prepare_hist     \n";
 
     if (help_module == "count") {
       help_builder << 
@@ -92,6 +104,20 @@ Options::Options(int argc, char **argv) :
  "                                    the read, default: 2                   \n";
 
     } else if (help_module == "prepare_hist") {      
+      help_builder << 
+ "PrepareHist Options                                                        \n" 
+ "--hist-file <str>                   file where k-mer histogram will be     \n"
+ "                                    written, default "" - no histogram     \n"
+ "--trusted-hist <str>                file where trusted k-mer histogram will\n"
+ "                                    be written, default "" - no histogram  \n"
+ "--bad-hist <str>                    file where bad k-mer histogram will be \n"
+ "                                    written, default "" - no histogram     \n"
+ "--top-threshold <int(>0)>           we will look for maximum which is at   \n"
+ "                                    least top_threshold times higher than  \n"
+ "                                    previous, default 5                    \n"
+ "--average-min <float([0..1])>       trying to find Gauss's average we will \n"
+ "                                    go to the left and to the right until  \n"
+ "                                    we rich coverage average_min * max     \n";
     }
   }
   help_message += help_builder.str();
@@ -125,5 +151,10 @@ void Options::Validate() {
         "Error: quality_threshold must be in 0..255\n";
     valid = false;
   }
-
+  // Prepare Hist Validation
+  if (average_min < 0 || average_min > 1) {
+    help_builder << 
+        "Error: average_min must be in 0..1\n";
+    valid = false;
+  }
 }
