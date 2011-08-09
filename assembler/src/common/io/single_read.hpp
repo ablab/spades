@@ -21,11 +21,11 @@
 
 #include <string>
 #include <cassert>
-#include "sequence/quality.hpp"
-#include "sequence/sequence.hpp"
-#include "sequence/nucl.hpp"
-#include "sequence/sequence_tools.hpp"
-#include "simple_tools.hpp"
+#include "common/sequence/quality.hpp"
+#include "common/sequence/sequence.hpp"
+#include "common/sequence/nucl.hpp"
+#include "common/sequence/sequence_tools.hpp"
+#include "common/simple_tools.hpp"
 
 namespace io {
 

@@ -1,0 +1,36 @@
+.TH srf_index_hash 1 "September 29" "" "Staden io_lib"
+
+.SH "NAME"
+
+.PP
+.BR srf_index_hash
+\- Adds a hash-table index to an SRF file.
+
+.SH "SYNOPSIS"
+.PP
+\fBsrf_index_hash\fR  [\fI-c] \fIsrf_archive\fR
+
+.SH "DESCRIPTION"
+.PP
+\fBsrf_index_hash\fR adds and index to an SRF file or replaces an
+existing index with a new one. In the case of concatenated SRF files
+only the index at the end of a file will be replaced, but internal
+indices will not be consulted by SRF tools.
+.PP
+The index is a hash table indexing the sequence names only. The name
+itself does not appear in the index, rather the top 7-bits of a 64-bit
+hash key are held in the index along with N-bits used to determine the
+hash bucket. This reduces the index size to around 10-15 bytes per
+sequence.
+
+.SH "OPTIONS"
+.PP
+.TP
+\fB-c\fR
+Check only. This requests that the index is not produced, but the
+checks performed during the creation of an index (such as looking for
+duplicate sequence names) are still performed.
+
+.SH "AUTHOR"
+.PP
+James Bonfield, Wellcome Trust Sanger Institute

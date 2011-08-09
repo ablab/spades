@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Filter out raw data from both.srf and we should get something similar to
+# proc.srf. Hard to verify this fully.
+$top_builddir/progs/srf_filter -m PROC $srcdir/data/both.srf $outdir/f_proc.srf
+$top_builddir/progs/srf_dump_all $srcdir/data/proc.srf > $outdir/proc.dump
+$top_builddir/progs/srf_dump_all $outdir/f_proc.srf > $outdir/f_proc.dump
+cmp $outdir/proc.dump $outdir/f_proc.dump || exit 1
+
+# Also check with srf_info to see that we have the expected number of
+# ZTR chunks
+$top_builddir/progs/srf_info $srcdir/data/proc.srf|tail -n +2|grep -v 'null index' > $outdir/proc.info
+$top_builddir/progs/srf_info $outdir/f_proc.srf|tail -n +2|grep -v 'null index' > $outdir/f_proc.info
+cmp $outdir/proc.info $outdir/f_proc.info || exit 1

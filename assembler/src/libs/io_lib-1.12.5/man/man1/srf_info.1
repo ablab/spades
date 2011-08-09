@@ -1,0 +1,63 @@
+.TH srf_info 1 "September 19" "" "Staden io_lib"
+
+.SH "NAME"
+
+.PP
+.BR srf_info
+\- Lists information about the contents of an SRF file
+
+.SH "SYNOPSIS"
+.PP
+\fBsrf_info\fR  [\fI-l\fR bitmap] \fIsrf_archive\fR ...
+
+.SH "DESCRIPTION"
+.PP
+\fBsrf_info\fR lists some simple frequency metrics on the contents of
+an SRF file, both in terms of how many traces there are and the sort of
+data held within them.
+.PP
+For efficiencies sake some control is given over which statistics to
+gather and display. This is controlled by the \fI-l\fR level
+parameter. The value is the summation of one or more of the following
+values, representing the data to display.
+
+.TP
+1
+Count of good/bad reads.
+.TP
+2
+Counts and compressed size for selected chunk types.
+.TP
+4
+Trace count and trace name prefix for each trace_header.
+.TP
+8
+Base count.
+
+.SH "OPTIONS"
+.PP
+.TP
+\fB-l\fR bitmap
+Controls which statistics to gather and display. Bitmap is a value
+from 0 to 15 (1+2+4+8) as described in the DESCRIPTION section above.
+
+.SH "EXAMPLES"
+.PP
+To count the total number of good and bad reads along with a break
+down of trace names per SRF data-block-header we would use bitmap
+values 1 and 4 combined.
+.PP
+.nf
+    srf_info -l 5 foo.srf
+.fi
+
+.PP
+To count the total number of reads for all srf files in a directory.
+.PP
+.nf
+    srf_info -l 1 *.srf
+.fi
+
+.SH "AUTHOR"
+.PP
+Steven Leonard, Wellcome Trust Sanger Institute
