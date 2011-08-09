@@ -188,7 +188,7 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
 	DEBUG("Saving paired info, " << file_name <<" created");
 	assert(file != NULL);
 	if (filter_ == NULL) {
-		fprintf(file, "%d\n", PIIndex.size());
+		fprintf(file, "%d\n", (int)PIIndex.size());
 	}
 	else {
 		int filteredPIIsize = 0;
