@@ -16,8 +16,6 @@ using boost::property_tree::ptree;
 using boost::property_tree::ptree_bad_path;
 using std::string;
 
-void test_cfg_ptree();
-
 // Meyers' singleton
 class config
 {
