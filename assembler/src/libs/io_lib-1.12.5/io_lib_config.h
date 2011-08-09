@@ -147,7 +147,7 @@
 /* #undef _FILE_OFFSET_BITS */
 
 /* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
-#define _LARGEFILE_SOURCE 1
+/* #undef _LARGEFILE_SOURCE */
 
 /* Define for large files, on AIX-style hosts. */
 /* #undef _LARGE_FILES */

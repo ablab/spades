@@ -1,10 +1,10 @@
 include (FindPackageHandleStandardArgs)
 
 find_path (ssl_INCLUDE_DIRS
-  "openssl"
+  "md5.h"
   PATHS
-    /usr/local/include
-    /usr/include
+    /usr/local/include/openssl
+    /usr/include/openssl
 )
 
 find_library (ssl_LIBRARIES
