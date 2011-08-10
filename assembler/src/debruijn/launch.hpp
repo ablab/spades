@@ -313,7 +313,6 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 	INFO("Primitive repeats resolved");
 }
 
-
 template<size_t k, class ReadStream>
 void FillPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
 		ReadStream& stream, EdgeIndex<k + 1, Graph>& index) {

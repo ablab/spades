@@ -540,29 +540,53 @@ public:
 
 };
 
+struct Range {
+	size_t start_pos;
+	size_t end_pos;
+
+	Range(size_t start_pos, size_t end_pos)
+	: start_pos(start_pos), end_pos(end_pos)
+	{}
+};
+
+struct MappingRange {
+	Range initial_range;
+	Range mapped_range;
+
+	MappingRange(Range initial_range, Range mapped_range)
+	: initial_range(initial_range), mapped_range(mapped_range)
+	{}
+};
+
 template<typename ElementId>
 class MappingPath {
 public:
 
-	struct Interval {
-		size_t start_pos;
-		size_t end_pos;
-	};
-
-	struct MappingInterval {
-		Interval sequence_interval;
-		Interval edge_interval;
-	};
-
-	typedef typename vector<ElementId>::const_iterator iterator;
-
-	MappingPath(const vector<ElementId>& edges, const vector<MappingInterval> interval_mapping) :
-			edges_(edges), interval_mapping_(interval_mapping) {
+	MappingPath(const vector<ElementId>& edges, const vector<MappingRange> range_mappings) :
+			edges_(edges), range_mappings_(range_mappings) {
 	}
+
+	size_t size() const {
+		return edges_.size();
+	}
+
+	pair<const ElementId, const MappingRange> operator[](size_t idx) const {
+		return make_pair(edges_[idx], range_mappings_[idx]);
+	}
+
+	size_t start_pos() const {
+		return range_mappings_.front().mapped_range.start_pos;
+	}
+
+	size_t end_pos() const {
+		return range_mappings_.back().mapped_range.end_pos;
+	}
+
+	//todo add iterator
 
 private:
 	vector<ElementId> edges_;
-	vector<MappingInterval> interval_mapping_;
+	vector<MappingRange> range_mappings_;
 };
 
 template<class Graph>

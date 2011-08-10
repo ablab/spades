@@ -14,14 +14,13 @@
 #include "graph_labeler.hpp"
 #include "simple_tools.hpp"
 #include <unordered_map>
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
+//#include <boost/function.hpp>
+//#include <boost/bind.hpp>
 #include <map>
 
 using namespace omnigraph;
 
 namespace omnigraph {
-//using std::tr1::unordered_map;
 
 template<class Graph>
 class EdgeLabelHandler: public GraphActionHandler<Graph> {
@@ -167,16 +166,16 @@ public:
 		return s;
 	}
 
-	std::string str(EdgeId edgeId, boost::function<string (EdgeId)> f) {
-		std::string s = "";
-		if (edge_labels.find(edgeId) != edge_labels.end()) {
-			TRACE("Number of labels "<<edge_labels[edgeId].size());
-			for (size_t i = 0; i < edge_labels[edgeId].size(); i++){
-				s+=f((edge_labels[edgeId])[i])+"\\n";
-			}
-		}
-		return s;
-	}
+//	std::string str(EdgeId edgeId, boost::function<string (EdgeId)> f) {
+//		std::string s = "";
+//		if (edge_labels.find(edgeId) != edge_labels.end()) {
+//			TRACE("Number of labels "<<edge_labels[edgeId].size());
+//			for (size_t i = 0; i < edge_labels[edgeId].size(); i++){
+//				s+=f((edge_labels[edgeId])[i])+"\\n";
+//			}
+//		}
+//		return s;
+//	}
 
 };
 
