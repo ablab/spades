@@ -50,9 +50,36 @@ int KMerClustering::hamdistKMer(const PositionKMer & x, const string & y, int ta
 	return dist;
 }
 
-void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block) {
+void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, int cur_subkmer) {
 	uint32_t blockSize = block.size();
-	for (uint32_t i = 0; i < blockSize; i++) {
+	/*cout << "\nblocksize=" << blockSize << "\n  ";
+	for (uint32_t i = 0; i < blockSize; ++i) cout << block[i] << " ";
+	cout << endl;*/
+
+	if (blockSize < BLOCKSIZE_QUADRATIC_THRESHOLD) {
+		processBlockQuadratic(uf, block);
+	} else {
+		cout << "  making a sub-subkmersorter for blocksize=" << blockSize << endl;
+		int nthreads_per_subkmer = max( (int)(nthreads_ / (tau_ + 1)), 1);
+		SubKMerSorter subsubsorter( &block, &k_, nthreads_per_subkmer, tau_, cur_subkmer,
+			SubKMerSorter::SorterTypeStraight, SubKMerSorter::SorterTypeStraight );
+		subsubsorter.runSort();
+		for (uint32_t sub_i = 0; sub_i < tau_+1; ++sub_i) {
+			vector<hint_t> subblock;
+			while ( subsubsorter.getNextBlock(sub_i, subblock) ) {
+				if (subblock.size() > (BLOCKSIZE_QUADRATIC_THRESHOLD / 2) ) {
+					cout << "    running quadratic on size=" << subblock.size() << endl;
+				}
+				processBlockQuadratic(uf, subblock);
+			}
+		}		
+	}
+}
+
+void KMerClustering::processBlockQuadratic(unionFindClass * uf, vector<hint_t> & block) {
+	uint32_t blockSize = block.size();
+
+	for (uint32_t i = 0; i < blockSize; ++i) {
 		uf->find_set(block[i]);
 		for (uint32_t j = i + 1; j < blockSize; j++) {
 			if (hamdistKMer(k_[block[i]].first, k_[block[j]].first, tau_ ) <= tau_) {
@@ -62,6 +89,7 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block) {
 	}
 	return;
 }
+
 
 void KMerClustering::clusterMerge(vector<unionFindClass *>uf, unionFindClass * ufMaster) {
 	vector<string> row;
@@ -370,17 +398,15 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		}
 	}
 
-	/*if (cons_suspicion) {
-		#pragma omp critical
-		{
-		cout << "\nAfter the check we got centers: \n";
-		for (size_t k=0; k<bestCenters.size(); ++k) {
-			cout << "  " << bestCenters[k].first.data() << " " << bestCenters[k].second << " ";
-			if ( centersInCluster[k] >= 0 ) cout << k_[block[centersInCluster[k]]].first.start();
-			cout << "\n";
-		}
+	/*#pragma omp critical
+	{
+	cout << "\nAfter the check we got centers: \n";
+	for (size_t k=0; k<bestCenters.size(); ++k) {
+		cout << "  " << bestCenters[k].first.data() << " " << bestCenters[k].second << " ";
+		if ( centersInCluster[k] >= 0 ) cout << k_[block[centersInCluster[k]]].first.start();
 		cout << "\n";
-		}
+	}
+	cout << "\n";
 	}*/
 
 	for (size_t k=0; k<bestCenters.size(); ++k) {
@@ -435,16 +461,21 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	}
 }
 
-void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq, ofstream * ofs, ofstream * ofs_bad) {
+void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstream * ofs, ofstream * ofs_bad) {
 	
 	int effective_threads = min(nthreads_, tau_+1);
 	vector<unionFindClass *> uf(tau_ + 1);
 	
-	#pragma omp parallel for shared(uf, vskpq) num_threads(effective_threads)
+	#pragma omp parallel for shared(uf, skmsorter) num_threads(effective_threads)
 	for (int i = 0; i < tau_ + 1; i++) {
 		uf[i] = new unionFindClass(k_.size()); 
 
-		boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > sub_equal = boost::bind(PositionKMer::equalSubKMers, _1, _2, &k_, tau_, PositionKMer::subKMerPositions->at(i), PositionKMer::subKMerPositions->at(i+1) );
+		vector<hint_t> block;
+		while ( skmsorter->getNextBlock(i, block) ) {
+			processBlock(uf[i], block, i);
+		}
+
+		/*boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > sub_equal = boost::bind(PositionKMer::equalSubKMers, _1, _2, &k_, tau_, PositionKMer::subKMerPositions->at(i), PositionKMer::subKMerPositions->at(i+1) );
 
 		string sbuf;
 		(*vskpq)[i].initPQ();
@@ -465,7 +496,7 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq, ofstre
 			}
 			++j; if ( j % 1000000 == 0 ) cout << "  " << j << " in thread " << i << endl;
 		}
-		processBlock(uf[i], block);
+		processBlock(uf[i], block);*/
 	}
 	TIMEDLN("All split kmer threads finished. Starting merge.");
 	
