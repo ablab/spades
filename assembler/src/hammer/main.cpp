@@ -145,8 +145,9 @@ int main(int argc, char * argv[]) {
 		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
 		vector<ofstream *> outfv; vector<bool> changed;
 		for (int i=0; i<nthreads; ++i) {
-			tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << ".reconstruct." << i;
-			outfv.push_back(new ofstream( tmp.str().data() ));
+			//tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << ".reconstruct." << i;
+			// outfv.push_back(new ofstream( tmp.str().data() ));
+			outfv.push_back(NULL);
 			changed.push_back(false);
 		}
 

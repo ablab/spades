@@ -119,7 +119,8 @@ void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< ve
 	}
 
 	for (int j=0; j < tau+1; ++j) {
-		subkmer_comp_type sort_routine = boost::bind(SubKMerPQElement::compareSubKMerPQElements, _1, _2, kmers, tau, PositionKMer::subKMerPositions->at(j), PositionKMer::subKMerPositions->at(j+1));
+		//subkmer_comp_type sort_routine = boost::bind(SubKMerPQElement::compareSubKMerPQElements, _1, _2, kmers, tau, PositionKMer::subKMerPositions->at(j), PositionKMer::subKMerPositions->at(j+1));
+		subkmer_comp_type sort_routine = boost::bind(SubKMerPQElement::compareSubKMerPQElementsCheq, _1, _2, kmers, tau, j);
 		SubKMerPQ skpq( &(vs->at(j)), max( (int)(nthreads / (tau + 1)), 1), sort_routine );
 		vskpq->push_back(skpq);
 	}
@@ -129,6 +130,7 @@ void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< ve
 	#pragma omp parallel for shared(vs, vskpq) num_threads( effective_subkmer_threads )
 	for (int j=0; j < subkmer_nthreads; ++j) {
 		// for each j, we sort subvector (j/(tau+1)) of the vector of subkmers at offset (j%(tau+1))
+		//boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > sub_sort = boost::bind(PositionKMer::compareSubKMers, _1, _2, kmers, tau, PositionKMer::subKMerPositions->at(j % (tau+1)), PositionKMer::subKMerPositions->at((j % (tau+1))+1));
 		boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > sub_sort = boost::bind(PositionKMer::compareSubKMers, _1, _2, kmers, tau, PositionKMer::subKMerPositions->at(j % (tau+1)), PositionKMer::subKMerPositions->at((j % (tau+1))+1));
 		(*vskpq)[ (j % (tau+1)) ].doSort( j / (tau+1), sub_sort );
 	}
