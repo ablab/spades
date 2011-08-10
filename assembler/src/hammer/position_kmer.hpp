@@ -33,6 +33,34 @@ class PositionKMer {
 
 	static std::vector<uint32_t> * subKMerPositions;
 
+	static bool compareSubKMersCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tauplusone, const uint32_t start) {
+		for ( hint_t i = start; i < K; i += tauplusone ) {
+			if ( blob[ km->at(kmer1).first.start_ + i ] != blob [ km->at(kmer2).first.start_ + i ] ) {
+				return ( blob[ km->at(kmer1).first.start_ + i ] < blob [ km->at(kmer2).first.start_ + i ] );
+			}
+		}
+		return false;
+	}
+
+	static bool compareSubKMersGreaterCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tauplusone, const uint32_t start) {
+		for ( hint_t i = start; i < K; i += tauplusone ) {
+			if ( blob[ km->at(kmer1).first.start_ + i ] != blob [ km->at(kmer2).first.start_ + i ] ) {
+				return ( blob[ km->at(kmer1).first.start_ + i ] > blob [ km->at(kmer2).first.start_ + i ] );
+			}
+		}
+		return false;
+	}
+
+	static bool equalSubKMersCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tauplusone, const uint32_t start) {
+		for ( hint_t i = start; i < K; i += tauplusone ) {
+			if ( blob[ km->at(kmer1).first.start_ + i ] != blob [ km->at(kmer2).first.start_ + i ] ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+
 	static bool compareSubKMers( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
 		return ( strncmp( blob + km->at(kmer1).first.start_ + start_offset,
 			  	  blob + km->at(kmer2).first.start_ + start_offset,
@@ -167,6 +195,10 @@ struct SubKMerPQElement {
 
 	static bool compareSubKMerPQElements( const SubKMerPQElement & kmer1, const SubKMerPQElement & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
 		return PositionKMer::compareSubKMersGreater( kmer1.ind, kmer2.ind, km, tau, start_offset, end_offset );
+	}
+
+	static bool compareSubKMerPQElementsCheq( const SubKMerPQElement & kmer1, const SubKMerPQElement & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start) {
+		return PositionKMer::compareSubKMersGreaterCheq( kmer1.ind, kmer2.ind, km, tau, start );
 	}
 	
 };

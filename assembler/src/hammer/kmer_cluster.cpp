@@ -451,7 +451,7 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq, ofstre
 
 		hint_t last = (*vskpq)[i].peekPQ();
 		vector<hint_t> block;
-		//size_t j = 0;
+		size_t j = 0;
 		while (!(*vskpq)[i].emptyPQ()) {
 			hint_t cur = (*vskpq)[i].nextPQ();
 
@@ -463,6 +463,7 @@ void KMerClustering::process(string dirprefix, vector<SubKMerPQ> * vskpq, ofstre
 				block.push_back(cur);
 				last = cur;
 			}
+			++j; if ( j % 1000000 == 0 ) cout << "  " << j << " in thread " << i << endl;
 		}
 		processBlock(uf[i], block);
 	}
