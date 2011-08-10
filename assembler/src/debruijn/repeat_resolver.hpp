@@ -554,7 +554,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				sum_count += tcount;
 				GraphCnt++;
 				omnigraph::WriteSimple(
-						output_folder + "resolve_" + ToString(GraphCnt)
+						output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
 								+ ".dot", "no_repeat_graph", new_graph,
 						IdTrackLabelerAfter);
 			}
