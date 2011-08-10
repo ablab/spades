@@ -31,7 +31,7 @@ struct PairInfo {
 	}
 
 	PairInfo(EdgeId first, EdgeId second, double d, double weight,
-			double variance = 0.) :
+			double variance) :
 		first(first), second(second), d(d), weight(weight), variance(variance) {
 	}
 
@@ -99,14 +99,14 @@ ostream& operator<<(ostream& os, const PairInfo<Graph>& info) {
 template<typename EdgeId>
 const PairInfo<EdgeId> MinPairInfo(EdgeId id) {
 	return PairInfo<EdgeId> (id, (EdgeId) 0/*numeric_limits<EdgeId>::min()*/,
-			-100000000/*numeric_limits<double>::min()*/, 0.);
+			-100000000/*numeric_limits<double>::min()*/, 0., 0.);
 }
 
 template<typename EdgeId>
 const PairInfo<EdgeId> MaxPairInfo(EdgeId id) {
 	return PairInfo<EdgeId> (id,
 			(EdgeId) (-1)/*numeric_limits<EdgeId>::max()*/,
-			1000000000/*numeric_limits<double>::max()*/, 0.);
+			1000000000/*numeric_limits<double>::max()*/, 0., 0.);
 }
 
 template<typename EdgeId>
@@ -138,7 +138,7 @@ int rounded_d(PairInfo<EdgeId> const& pi) {
 
 template<typename EdgeId>
 PairInfo<EdgeId> BackwardInfo(const PairInfo<EdgeId>& pi) {
-	return PairInfo<EdgeId> (pi.second, pi.first, -pi.d, pi.weight);
+	return PairInfo<EdgeId> (pi.second, pi.first, -pi.d, pi.weight, pi.variance);
 }
 
 template<typename EdgeId>
@@ -174,13 +174,13 @@ public:
 	void UpdateSingleInfo(const PairInfo<EdgeId>& info, double d, double weight) {
 		size_t count = data_.erase(info);
 		assert(count != 0);
-		data_.insert(PairInfo<EdgeId> (info.first, info.second, d, weight));
+		data_.insert(PairInfo<EdgeId> (info.first, info.second, d, weight, info.variance));
 	}
 
 	void ReplaceFirstEdge(const PairInfo<EdgeId>& info, EdgeId newId) {
 		//		size_t count = data_.erase(info);
 		//	assert(count != 0);
-		data_.insert(PairInfo<EdgeId> (newId, info.second, info.d, info.weight));
+		data_.insert(PairInfo<EdgeId> (newId, info.second, info.d, info.weight, info.variance));
 	}
 public:
 	data_iterator begin() {
@@ -479,11 +479,11 @@ private:
 				AddPairInfo(
 						PairInfo<EdgeId> (new_edge, old_pair_info.second,
 								old_pair_info.d - shift,
-								weight_scale * old_pair_info.weight));
+								weight_scale * old_pair_info.weight, old_pair_info.variance));
 			} else {
 				AddPairInfo(
 						PairInfo<EdgeId> (new_edge, new_edge, old_pair_info.d,
-								weight_scale * 0.5 * old_pair_info.weight));
+								weight_scale * 0.5 * old_pair_info.weight, old_pair_info.variance));
 			}
 		}
 	}
@@ -526,7 +526,7 @@ public:
 	}
 
 	virtual void HandleAdd(EdgeId e) {
-		this->AddPairInfo(PairInfo<EdgeId> (e, e, 0, 0.0));
+		this->AddPairInfo(PairInfo<EdgeId> (e, e, 0, 0.0, 0.));
 	}
 
 	virtual void HandleDelete(EdgeId e) {
@@ -534,7 +534,7 @@ public:
 	}
 
 	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
-		this->AddPairInfo(PairInfo<EdgeId> (new_edge, new_edge, 0, 0.0));
+		this->AddPairInfo(PairInfo<EdgeId> (new_edge, new_edge, 0, 0.0, 0.));
 		int shift = 0;
 		for (size_t i = 0; i < old_edges.size(); ++i) {
 			EdgeId old_edge = old_edges[i];

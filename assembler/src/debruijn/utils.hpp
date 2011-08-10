@@ -415,7 +415,7 @@ class EtalonPairedInfoCounter {
 
 	void AddEtalonInfo(omnigraph::PairedInfoIndex<Graph>& paired_info,
 			EdgeId e1, EdgeId e2, double d) {
-		PairInfo<EdgeId> pair_info(e1, e2, d, 1000.0);
+		PairInfo<EdgeId> pair_info(e1, e2, d, 1000.0, 0.);
 		paired_info.AddPairInfo(pair_info);
 	}
 
@@ -695,7 +695,7 @@ private:
 				double weight = CorrectLength(path1, i)
 						* CorrectLength(path2, j);
 				PairInfo<EdgeId> new_info(path1[i], path2[j], current_distance2,
-						weight);
+						weight, 0.);
 				paired_index.AddPairInfo(new_info);
 				current_distance2 += graph_.length(path2[j]);
 			}
@@ -716,7 +716,7 @@ public:
 	 */
 	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0));
+			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
 		}
 		typedef Seq<kmer_size + 1> KPOMer;
 		debruijn_graph::SimpleSequenceMapper<kmer_size + 1, Graph> read_threader(

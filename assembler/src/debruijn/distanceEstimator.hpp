@@ -66,7 +66,7 @@ class SimpleDistanceEstimator: public IDistanceEstimator<Graph>
                 {
 
                     if(graph_.length(iter->first) > iter->d){
-                        PairInfo *pairInfo = new PairInfo(iter->first, iter->first, 0, maxweight );
+                        PairInfo *pairInfo = new PairInfo(iter->first, iter->first, 0, maxweight, 0.);
                         filteredIndex->AddPairInfo(*pairInfo,1);
                     }
                     else
@@ -76,7 +76,7 @@ class SimpleDistanceEstimator: public IDistanceEstimator<Graph>
                 else if(graph_.EdgeStart(iter->second) == graph_.EdgeEnd(iter->first))
                 {
                     if( iter->d  < lengthFirstEdge + lengthSecondEdge )  {
-                        PairInfo *pairInfo = new PairInfo(iter->first, iter->second, lengthFirstEdge, maxweight );
+                        PairInfo *pairInfo = new PairInfo(iter->first, iter->second, lengthFirstEdge, maxweight, 0.);
                         filteredIndex->AddPairInfo(*pairInfo,1);
                     }
                     else
@@ -93,7 +93,7 @@ class SimpleDistanceEstimator: public IDistanceEstimator<Graph>
                     //If they are shorter than the shortest distance
                     if((distanceTool_.IsReachable(endOfFirstEdge, startOfSecondEdge)) &&    ((graphDistance = distanceTool_.Distance(endOfFirstEdge, startOfSecondEdge)) + graph_.length(iter->first) > iter->d) )
                     {
-                        PairInfo *pairInfo = new PairInfo(iter->first, iter->second, graphDistance + graph_.length(iter->first) , middleweight );
+                        PairInfo *pairInfo = new PairInfo(iter->first, iter->second, graphDistance + graph_.length(iter->first) , middleweight, 0.);
                         filteredIndex->AddPairInfo(*pairInfo,1);
                     }
                     //If they are not reachable
