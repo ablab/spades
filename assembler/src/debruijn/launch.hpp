@@ -27,6 +27,8 @@
 #include "seq_map.hpp"
 #include "ID_track_handler.hpp"
 #include "edges_position_handler.hpp"
+#include "edges_position_handler.hpp"
+#include "total_labeler.hpp"
 #include "read/osequencestream.hpp"
 #include <time.h>
 #include <sys/types.h>
@@ -704,6 +706,13 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				"edge_graph");
 		FillEdgesPos<k> (g, index, genome, EdgePos);
 
+		TotalLabelerGraphStruct<Graph> graph_struct(g, &IntIds, &EdgePos, NULL);
+		TotalLabeler<Graph> TotLab(&graph_struct, NULL);
+
+
+		omnigraph::WriteSimple(output_folder + "total_before_simplification.dot",
+				"no_repeat_graph", g, TotLab);
+
 		omnigraph::WriteSimple(output_folder + "before_simplification_pos.dot",
 				"no_repeat_graph", g, EdgePosLab);
 
@@ -818,6 +827,16 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				resolved_graph, Resolved_IntIds, EdgePosAfter,
 				output_folder + "resolve/", LabelsAfter);
 
+		INFO("Total labeler start");
+		TotalLabelerGraphStruct<NCGraph> graph_struct_before(new_graph, &NewIntIds, &EdgePosBefore, NULL);
+		TotalLabelerGraphStruct<NCGraph> graph_struct_after(resolved_graph, &Resolved_IntIds, &EdgePosAfter, &LabelsAfter);
+		TotalLabeler<NCGraph> TotLabAfter(&graph_struct_after, &graph_struct_before);
+
+		omnigraph::WriteSimple(work_tmp_dir + "total_after.dot",
+				"no_repeat_graph", resolved_graph, TotLabAfter);
+
+		INFO("Total labeler finished");
+
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
 				Resolved_IntIds);
 
@@ -865,6 +884,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		OutputContigs(resolved_graph, output_folder + "contigs_before_enlarge.fasta");
 
+		omnigraph::WriteSimple(work_tmp_dir + "total_after_simple.dot",
+				"no_repeat_graph", resolved_graph, TotLabAfter);
 
 		omnigraph::WriteSimple(
 				output_folder + "repeats_resolved_und_cleared.dot",

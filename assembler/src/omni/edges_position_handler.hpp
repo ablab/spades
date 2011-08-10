@@ -8,7 +8,7 @@
 #ifndef EDGES_POSITION_HANDLER_HPP_
 #define EDGES_POSITION_HANDLER_HPP_
 
-#include "utils.hpp"
+//#include "utils.hpp"
 #include "graph_labeler.hpp"
 #include "simple_tools.hpp"
 using namespace omnigraph;
