@@ -756,7 +756,7 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 
 template<class Graph>
 size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
-	DEBUG("ACHTUNG, cheating resolve vertex started");
+	DEBUG("ACHTUNG, cheating resolve vertex started "<<new_IDs.ReturnIntId(vid));
 	int size = edge_infos.size();
 	edge_info_colors.resize(size);
 	vector<EdgeId> edgeIds[2];
@@ -778,21 +778,21 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 	vector<vector<int> > neighbours;
 	neighbours.resize(in_count + out_count);
 	for(int i = 0; i < size; i++){
-		DEBUG("info N "<<i<<":" <<new_IDs.ReturnIntId(edge_infos[i].edge)<<" -> "<<old_IDs.ReturnIntId(edge_infos[i].lp.second)<<" dist "<< edge_infos[i].d);
+		DEBUG("info N "<<i<<":" <<new_IDs.ReturnIntId(edge_infos[i].lp.first)<<" -> "<<old_IDs.ReturnIntId(edge_infos[i].lp.second)<<" dist "<< edge_infos[i].d);
 	}
 	for(int i = 0; i < size; i++){
 		EdgeId second = NULL;
-		EdgeId first = edge_infos[i].edge;
+		EdgeId first = edge_infos[i].lp.first;
 		if (EdgeIdMap[0].find(first) == EdgeIdMap[0].end())
 			continue;
 		for(int j = 0; j < size; j++){
-			if ( (first != edge_infos[j].edge)&&(edge_infos[i].d==edge_infos[j].d)/*(edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph))*/
+			if ( (first != edge_infos[j].lp.first)&&(edge_infos[i].d==edge_infos[j].d)/*(edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph))*/
 				&& (edge_infos[i].lp.second == edge_infos[j].lp.second)	){
 				if (second == NULL) {
-					second = edge_infos[j].edge;
+					second = edge_infos[j].lp.first;
 				}
 				else {
-					if (second != edge_infos[j].edge){
+					if (second != edge_infos[j].lp.first){
 						second = NULL;
 						break;
 					}
@@ -841,11 +841,11 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 	if (bad) return 1;
 
 	for (size_t i = 0; i<edge_info_colors.size();i++){
-		if (EdgeIdMap[0].find(edge_infos[i].edge) != EdgeIdMap[0].end()){
-			edge_info_colors[i] = cheater_colors[EdgeIdMap[0][edge_infos[i].edge]];
+		if (EdgeIdMap[0].find(edge_infos[i].lp.first) != EdgeIdMap[0].end()){
+			edge_info_colors[i] = cheater_colors[EdgeIdMap[0][edge_infos[i].lp.first]];
 		} else {
-			if (EdgeIdMap[1].find(edge_infos[i].edge) != EdgeIdMap[1].end()){
-				edge_info_colors[i] = cheater_colors[EdgeIdMap[1][edge_infos[i].edge] + counts[0]];
+			if (EdgeIdMap[1].find(edge_infos[i].lp.first) != EdgeIdMap[1].end()){
+				edge_info_colors[i] = cheater_colors[EdgeIdMap[1][edge_infos[i].lp.first] + counts[0]];
 			}
 		}
 	}
