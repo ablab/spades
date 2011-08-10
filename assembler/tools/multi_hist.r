@@ -20,7 +20,7 @@ jpeg('perf_hist.jpg')
 hist(filt_perf, breaks=100)
 dev.off()
 
- superhist2pdf <- function(x, filename = "super_histograms.pdf",
+ superhist2pdf <- function(x, filename = "multi_histograms.pdf",
  dev = "pdf", title = "Superimposed Histograms", nbreaks ="Sturges") {
  junk = NULL
  grouping = NULL
@@ -34,7 +34,7 @@ dev.off()
  maxC <- max(sapply(lapply(histL, "[[", "counts"), max))
  if(dev == "pdf") { pdf(filename, version = "1.4") } else{}
  if((TC <- transparent.cols <- .Device %in% c("pdf", "png"))) {
- cols <- hcl(h = seq(30, by=360 / n.gr, length = n.gr), l = 65, alpha = 0.5) }
+ cols <- hcl(h = seq(30, by=360 / n.gr, length = n.gr), l = 80, alpha = 0.5) }
  else {
  h.den <- c(10, 15, 20)
  h.ang <- c(45, 15, -30) }

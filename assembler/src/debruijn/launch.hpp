@@ -27,6 +27,8 @@
 #include "seq_map.hpp"
 #include "ID_track_handler.hpp"
 #include "edges_position_handler.hpp"
+#include "edges_position_handler.hpp"
+#include "total_labeler.hpp"
 #include "read/osequencestream.hpp"
 #include <time.h>
 #include <sys/types.h>
@@ -311,7 +313,6 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 	INFO("Primitive repeats resolved");
 }
 
-
 template<size_t k, class ReadStream>
 void FillPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
 		ReadStream& stream, EdgeIndex<k + 1, Graph>& index) {
@@ -505,7 +506,7 @@ void scanConjugateGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
 template<size_t k>
 void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		size_t iteration_count, const Sequence& genome,
-		const string& output_folder) {
+		const string& output_folder/*, PairedInfoIndex<Graph> &etalon_paired_index*/) {
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
 
@@ -517,16 +518,19 @@ void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		INFO("Iteration " << i);
 
 		ClipTips(g);
+//		etalon_paired_index.Check();
 		ProduceDetailedInfo<k> (g, index, genome,
 				output_folder + "tips_clipped_" + ToString(i) + "/",
 				"graph.dot", "no_tip_graph");
 
 		RemoveBulges(g);
+//		etalon_paired_index.Check();
 		ProduceDetailedInfo<k> (g, index, genome,
 				output_folder + "bulges_removed_" + ToString(i) + "/",
 				"graph.dot", "no_bulge_graph");
 
 		RemoveLowCoverageEdges(g);
+//		etalon_paired_index.Check();
 		ProduceDetailedInfo<k> (g, index, genome,
 				output_folder + "erroneous_edges_removed_" + ToString(i) + "/",
 				"graph.dot", "no_erroneous_edges_graph");
@@ -704,13 +708,20 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				"edge_graph");
 		FillEdgesPos<k> (g, index, genome, EdgePos);
 
+		TotalLabelerGraphStruct<Graph> graph_struct(g, &IntIds, &EdgePos, NULL);
+		TotalLabeler<Graph> TotLab(&graph_struct, NULL);
+
+
+		omnigraph::WriteSimple(output_folder + "total_before_simplification.dot",
+				"no_repeat_graph", g, TotLab);
+
 		omnigraph::WriteSimple(output_folder + "before_simplification_pos.dot",
 				"no_repeat_graph", g, EdgePosLab);
 
 		printGraph(g, IntIds, output_folder + "first_graph", paired_index,
 				EdgePos);
 
-		SimplifyGraph<k> (g, index, 3, genome, output_folder);
+		SimplifyGraph<k> (g, index, 3, genome, output_folder/*, etalon_paired_index*/);
 		ProduceInfo<k> (g, index, genome,
 				output_folder + "simplified_graph.dot", "simplified_graph");
 
@@ -818,6 +829,16 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				resolved_graph, Resolved_IntIds, EdgePosAfter,
 				output_folder + "resolve/", LabelsAfter);
 
+		INFO("Total labeler start");
+		TotalLabelerGraphStruct<NCGraph> graph_struct_before(new_graph, &NewIntIds, &EdgePosBefore, NULL);
+		TotalLabelerGraphStruct<NCGraph> graph_struct_after(resolved_graph, &Resolved_IntIds, &EdgePosAfter, &LabelsAfter);
+		TotalLabeler<NCGraph> TotLabAfter(&graph_struct_after, &graph_struct_before);
+
+		omnigraph::WriteSimple(work_tmp_dir + "total_after.dot",
+				"no_repeat_graph", resolved_graph, TotLabAfter);
+
+		INFO("Total labeler finished");
+
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
 				Resolved_IntIds);
 
@@ -865,6 +886,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 		OutputContigs(resolved_graph, output_folder + "contigs_before_enlarge.fasta");
 
+		omnigraph::WriteSimple(work_tmp_dir + "total_after_simple.dot",
+				"no_repeat_graph", resolved_graph, TotLabAfter);
 
 		omnigraph::WriteSimple(
 				output_folder + "repeats_resolved_und_cleared.dot",

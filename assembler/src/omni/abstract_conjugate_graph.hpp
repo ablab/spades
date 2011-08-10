@@ -186,6 +186,7 @@ public:
 		v2->set_conjugate(v1);
 		vertices_.insert(v1);
 		vertices_.insert(v2);
+//		cout << "add v " << v1 << " " << v2 << endl;
 		return v1;
 	}
 
@@ -204,6 +205,7 @@ public:
 				master_.conjugate(data));
 		result->set_conjugate(rcEdge);
 		rcEdge->set_conjugate(result);
+//		cout << "add e" << result << " " << rcEdge << endl;
 		return result;
 	}
 
@@ -342,6 +344,7 @@ public:
 		TRACE("ab_conj delete "<<conjugate);
 		delete conjugate;
 		TRACE("ab_conj delete FINISHED");
+//		cout << "del v " << v << " " << conjugate << endl;
 	}
 
 	void ForceDeleteVertex(VertexId v) {
@@ -391,6 +394,7 @@ public:
 			delete rcEdge;
 		}
 		delete edge;
+//		cout << "del e" << edge << " " << rcEdge << endl;
 	}
 
 	bool IsDeadEnd(VertexId v) const {

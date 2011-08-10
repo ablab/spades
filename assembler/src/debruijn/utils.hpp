@@ -20,6 +20,9 @@
 namespace debruijn_graph {
 
 using omnigraph::Path;
+using omnigraph::MappingPath;
+using omnigraph::Range;
+using omnigraph::MappingRange;
 using omnigraph::PairInfo;
 using omnigraph::GraphActionHandler;
 //using io::PairedRead;
@@ -246,11 +249,9 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef Seq<k> Kmer;
 	typedef EdgeIndex<k, Graph> Index;
-	typedef KmerMapper<k, Graph> KmerSubs;
 private:
 	const Graph& g_;
 	const Index &index_;
-	const boost::optional<KmerSubs&> kmer_mapper_;
 
 	bool TryThread(Kmer &kmer, vector<EdgeId> &passed,
 			size_t &endPosition) const {
@@ -275,9 +276,6 @@ private:
 
 	bool FindKmer(Kmer kmer, vector<EdgeId> &passed,
 			size_t &startPosition, size_t &endPosition) const {
-		if (kmer_mapper_) {
-			kmer = (*kmer_mapper_).Substitute(kmer);
-		}
 		if (index_.containsInIndex(kmer)) {
 			pair<EdgeId, size_t> position = index_.get(kmer);
 			endPosition = position.second;
@@ -312,10 +310,6 @@ public:
 			g_(g), index_(index) {
 	}
 
-	SimpleSequenceMapper(const Graph& g, const Index& index, const KmerSubs& kmer_mapper) :
-			g_(g), index_(index), kmer_mapper_(kmer_mapper) {
-	}
-
 	/**
 	 * Finds a path in graph which corresponds to given sequence.
 	 * @read sequence to be mapped
@@ -341,6 +335,73 @@ public:
 
 };
 
+//template<size_t k, class Graph>
+//class ExtendedSequenceMapper {
+//public:
+//	typedef typename Graph::EdgeId EdgeId;
+//	typedef vector<MappingRange> RangeMappings;
+//	typedef Seq<k> Kmer;
+//	typedef EdgeIndex<k, Graph> Index;
+//	typedef KmerMapper<k, Graph> KmerSubs;
+//
+//private:
+//	const Graph& g_;
+//	const Index& index_;
+//	const KmerSubs& kmer_mapper_;
+//
+//	bool FindKmer(Kmer kmer, size_t kmer_pos, vector<EdgeId> &passed,
+//			RangeMappings& range_mappings) const {
+//
+//		if (index_.containsInIndex(kmer)) {
+//			pair<EdgeId, size_t> position = index_.get(kmer);
+//			if (passed.empty() || passed.back() != position.first || kmer_pos != range_mappings.back().initial_range.end) {
+//				passed.push_back(position.first);
+//				MappingRange mapping_range(Range(kmer_pos, kmer_pos + 1), Range(position.second, position.second + 1));
+//				range_mappings.push_back(mapping_range);
+//			} else {
+////				range_mappings.back().
+//			}
+//			size_t endPosition = position.second + 1;
+////			if (passed.empty()) {
+////				startPosition = position.second;
+////			}
+////			if (passed.empty() || passed.back() != position.first) {
+////				passed.push_back(position.first);
+////			}
+////			return true;
+////		}
+//		return false;
+//	}
+//
+//	void ProcessKmer(Kmer kmer, size_t kmer_pos, vector<EdgeId> &passed, RangeMappings& interval_mapping) const {
+//		kmer = kmer_mapper_.Substitute(kmer);
+//		FindKmer(kmer, kmer_pos, passed, interval_mapping);
+//	}
+//
+//public:
+//	ExtendedSequenceMapper(const Graph& g, const Index& index, const KmerSubs& kmer_mapper) :
+//			g_(g), index_(index), kmer_mapper_(kmer_mapper) {
+//	}
+//
+//	/**
+//	 * Finds a path in graph which corresponds to given sequence.
+//	 * @read sequence to be mapped
+//	 */
+//
+//	MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
+//		vector<EdgeId> passed_edges;
+//		RangeMappings range_mapping;
+//
+//		FATAL_ASSERT(sequence.size() >= k, "Sequence to map was too short");
+//		Kmer kmer = sequence.start<k>() >> 0;
+//		for (size_t i = k - 1; i < sequence.size(); ++i) {
+//			kmer = kmer << sequence[i];
+//			ProcessKmer(kmer, i - k + 1, passed_edges, range_mapping);
+//		}
+//		return MappingPath<EdgeId>(passed_edges, range_mapping);
+//	}
+//};
+
 template<size_t k, class Graph>
 class EtalonPairedInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;
@@ -354,7 +415,7 @@ class EtalonPairedInfoCounter {
 
 	void AddEtalonInfo(omnigraph::PairedInfoIndex<Graph>& paired_info,
 			EdgeId e1, EdgeId e2, double d) {
-		PairInfo<EdgeId> pair_info(e1, e2, d, 1000.0);
+		PairInfo<EdgeId> pair_info(e1, e2, d, 1000.0, 0.);
 		paired_info.AddPairInfo(pair_info);
 	}
 
@@ -634,7 +695,7 @@ private:
 				double weight = CorrectLength(path1, i)
 						* CorrectLength(path2, j);
 				PairInfo<EdgeId> new_info(path1[i], path2[j], current_distance2,
-						weight);
+						weight, 0.);
 				paired_index.AddPairInfo(new_info);
 				current_distance2 += graph_.length(path2[j]);
 			}
@@ -655,7 +716,7 @@ public:
 	 */
 	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0));
+			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
 		}
 		typedef Seq<kmer_size + 1> KPOMer;
 		debruijn_graph::SimpleSequenceMapper<kmer_size + 1, Graph> read_threader(

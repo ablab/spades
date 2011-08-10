@@ -10,7 +10,7 @@
 #ifndef EDGE_LABELS_HANDLER_HPP_
 #define EDGE_LABELS_HANDLER_HPP_
 
-#include "utils.hpp"
+//#include "utils.hpp"
 #include "graph_labeler.hpp"
 #include "simple_tools.hpp"
 #include <unordered_map>
@@ -21,7 +21,6 @@
 using namespace omnigraph;
 
 namespace omnigraph {
-using std::tr1::unordered_map;
 
 template<class Graph>
 class EdgeLabelHandler: public GraphActionHandler<Graph> {

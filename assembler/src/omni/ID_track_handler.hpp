@@ -2,7 +2,7 @@
 #define ID_TRACK_HANDLER_HPP_
 
 #include <unordered_map>
-#include "utils.hpp"
+//#include "utils.hpp"
 #include "graph_labeler.hpp"
 #include "simple_tools.hpp"
 using namespace omnigraph;
@@ -163,6 +163,13 @@ public:
 	virtual void HandleDelete(EdgeId e) {
 		ClearEdgeId(e);
 	}
+
+	std::string str(EdgeId edgeId) {
+		int x = this->ReturnIntId(edgeId);
+		return ToString(x);
+	}
+
+
 
 };
 

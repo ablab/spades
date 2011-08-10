@@ -10,8 +10,6 @@
 #include "position_read.hpp"
 
 #define K 55
-#define GOOD_SINGLETON_THRESHOLD 1 
-#define CONSENSUS_BLOB_MARGIN 0.1
 
 
 typedef std::pair<std::string, uint32_t> StringCount;
@@ -183,73 +181,6 @@ struct KMerNo {
 
 	}
 
-};
-
-
-// these are classes for the subkmer priority queue -- a result of parallel sort
-
-struct SubKMerPQElement {
-	hint_t ind;
-	int n;
-	SubKMerPQElement( hint_t index, int no) : ind(index), n(no) { }
-
-	static bool compareSubKMerPQElements( const SubKMerPQElement & kmer1, const SubKMerPQElement & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
-		return PositionKMer::compareSubKMersGreater( kmer1.ind, kmer2.ind, km, tau, start_offset, end_offset );
-	}
-
-	static bool compareSubKMerPQElementsCheq( const SubKMerPQElement & kmer1, const SubKMerPQElement & kmer2, const std::vector<KMerCount> * km, const uint32_t tau, const uint32_t start) {
-		return PositionKMer::compareSubKMersGreaterCheq( kmer1.ind, kmer2.ind, km, tau, start );
-	}
-	
-};
-
-typedef boost::function< bool (const SubKMerPQElement & kmer1, const SubKMerPQElement & kmer2) > subkmer_comp_type;
-
-class SubKMerPQ {
-  private:
-	vector< size_t > boundaries;
-	vector<hint_t> * v;
-	int nthreads;
-
-	subkmer_comp_type sort_routine;
-	std::priority_queue< SubKMerPQElement, vector<SubKMerPQElement>, subkmer_comp_type  > pq;
-	vector< vector<hint_t>::iterator > it;
-	vector< vector<hint_t>::iterator > it_end;
-	SubKMerPQElement cur_min;
-
-  public:
-	/**
-	  * constructor
-	  */
-	SubKMerPQ( vector<hint_t> * vec, int nthr, subkmer_comp_type sort_routine );
-
-	/**
-	  * sort one subvector array j (only one for easy parallelization)
-	  */
-	void doSort(int j, const boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > & sub_sort);
-
-	/**
-	  * initialize priority queue
-	  */
-	void initPQ();
-
-	/**
-	  * get next priority queue element and pop the top
-	  */
-	hint_t nextPQ();
-
-	/**
-	  * peek at next priority queue element
-	  */
-	hint_t peekPQ() { return cur_min.ind; }
-
-	/**
-	  * is priority queue empty
-	  */
-	bool emptyPQ() { return ( pq.size() == 0 ); }
-
-	/// get boundaries
-	const vector< size_t > & get_boundaries() { return boundaries; }
 };
 
 
