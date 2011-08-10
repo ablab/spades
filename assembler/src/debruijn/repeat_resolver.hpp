@@ -554,7 +554,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				sum_count += tcount;
 				GraphCnt++;
 				omnigraph::WriteSimple(
-						output_folder + "resolve_" + ToString(GraphCnt)
+						output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
 								+ ".dot", "no_repeat_graph", new_graph,
 						IdTrackLabelerAfter);
 			}
@@ -785,6 +785,7 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 	for(int i = 0; i < size; i++){
 		EdgeId second = NULL;
 		EdgeId first = edge_infos[i].lp.first;
+		DEBUG("trying first "<< new_IDs.ReturnIntId(first)<<" with paired "<< old_IDs.ReturnIntId(edge_infos[i].lp.second));
 		if (EdgeIdMap[0].find(first) == EdgeIdMap[0].end())
 			continue;
 		for(int j = 0; j < size; j++){
@@ -796,6 +797,7 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 				else {
 					if (second != edge_infos[j].lp.first){
 						second = NULL;
+						DEBUG("multiple pairing, break");
 						break;
 					}
 				}
@@ -803,19 +805,22 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 			}
 		}
 		if (second != NULL) {
+			DEBUG("found second "<< new_IDs.ReturnIntId(second));
+
 			if (EdgeIdMap[1].find(second) == EdgeIdMap[1].end())
 				continue;
 			else {
 				size_t first_ind = EdgeIdMap[0][first];
 				size_t second_ind = EdgeIdMap[1][second];
-				neighbours[first_ind + counts[0]].push_back(second_ind);
-				neighbours[second_ind].push_back(first_ind + counts[0]);
+				DEBUG(first_ind <<" "<< second_ind);
+				neighbours[first_ind + counts[1]].push_back(second_ind);
+				neighbours[second_ind].push_back(first_ind + counts[1]);
 				DEBUG("neighbours "<<first_ind<<" + "<<counts[0]<<"  "<<second_ind);
 //				table[first_ind][second_ind] = 1;
 			}
 		}
 	}
-
+	DEBUG("cheater_colors creating");
 	vector<int> cheater_colors(counts[0] + counts[1], -1);
 
 	int cur_color = 0;
@@ -847,10 +852,10 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 
 	for (size_t i = 0; i<edge_info_colors.size();i++){
 		if (EdgeIdMap[0].find(edge_infos[i].lp.first) != EdgeIdMap[0].end()){
-			edge_info_colors[i] = cheater_colors[EdgeIdMap[0][edge_infos[i].lp.first]];
+			edge_info_colors[i] = cheater_colors[EdgeIdMap[0][edge_infos[i].lp.first]+ counts[1]];
 		} else {
 			if (EdgeIdMap[1].find(edge_infos[i].lp.first) != EdgeIdMap[1].end()){
-				edge_info_colors[i] = cheater_colors[EdgeIdMap[1][edge_infos[i].lp.first] + counts[0]];
+				edge_info_colors[i] = cheater_colors[EdgeIdMap[1][edge_infos[i].lp.first] ];
 			}
 		}
 	}
