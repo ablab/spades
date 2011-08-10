@@ -403,13 +403,13 @@ template<class Graph, typename ElementId, typename Comparator = std::less<
 class SmartIterator: public GraphActionHandler<Graph>, public QueueIterator<
 		ElementId, Comparator> {
 private:
-	Graph &graph_;
+	const Graph &graph_;
 public:
 	typedef QueueIterator<ElementId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartIterator(Graph &graph, const string &name,
+	SmartIterator(const Graph &graph, const string &name,
 			const Comparator& comparator = Comparator()) :
 			GraphActionHandler<Graph>(name), QueueIterator<ElementId, Comparator>(
 					comparator),
@@ -445,13 +445,11 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartVertexIterator(Graph &graph, bool fill, const Comparator& comparator =
+	SmartVertexIterator(const Graph &graph, const Comparator& comparator =
 			Comparator()) :
 			SmartIterator<Graph, VertexId, Comparator>(graph,
 					"SmartVertexIterator " + ToString(this), comparator) {
-		if (fill) {
-			super::insert(graph.begin(), graph.end());
-		}
+		super::insert(graph.begin(), graph.end());
 	}
 
 	virtual ~SmartVertexIterator() {
@@ -474,15 +472,13 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartEdgeIterator(Graph &graph, bool fill, Comparator comparator =
+	SmartEdgeIterator(const Graph &graph, Comparator comparator =
 			Comparator()) :
 			SmartIterator<Graph, EdgeId, Comparator>(graph,
 					"SmartEdgeIterator " + ToString(this), comparator) {
-		if (fill) {
-			for (auto it = graph.begin(); it != graph.end(); ++it) {
-				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
-				this->super::insert(outgoing.begin(), outgoing.end());
-			}
+		for (auto it = graph.begin(); it != graph.end(); ++it) {
+			const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
+			this->super::insert(outgoing.begin(), outgoing.end());
 		}
 	}
 
@@ -541,7 +537,9 @@ public:
 };
 
 struct Range {
+	//inclusive
 	size_t start_pos;
+	//exclusive
 	size_t end_pos;
 
 	Range(size_t start_pos, size_t end_pos)

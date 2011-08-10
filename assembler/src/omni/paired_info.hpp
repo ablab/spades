@@ -624,6 +624,76 @@ public:
 	}
 };
 
+template<size_t k, class Graph, class SequenceMapper, class Stream>
+class PairedIndexFiller {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef Seq<k> Kmer;
+
+	Graph &graph_;
+	const SequenceMapper& mapper_;
+	Stream& stream_;
+
+	inline size_t CountDistance(const io::PairedRead& paired_read) {
+		return paired_read.distance() - paired_read.second().size();
+	}
+
+	size_t CorrectLength(Path<EdgeId> path, size_t idx) {
+		size_t answer = graph_.length(path[idx]);
+		if (idx == 0)
+			answer -= path.start_pos();
+		if (idx == path.size() - 1)
+			answer -= graph_.length(path[idx]) - path.end_pos();
+		return answer;
+	}
+
+	void ProcessPairedRead(
+			omnigraph::PairedInfoIndex<Graph> &paired_index,
+			const io::PairedRead& p_r) {
+		Sequence read1 = p_r.first().sequence();
+		Sequence read2 = p_r.second().sequence();
+		Path<EdgeId> path1 = mapper_.MapSequence(read1);
+		Path<EdgeId> path2 = mapper_.MapSequence(read2);
+		size_t distance = CountDistance(p_r);
+		int current_distance1 = distance + path1.start_pos()
+				- path2.start_pos();
+		for (size_t i = 0; i < path1.size(); ++i) {
+			int current_distance2 = current_distance1;
+			for (size_t j = 0; j < path2.size(); ++j) {
+				double weight = CorrectLength(path1, i)
+						* CorrectLength(path2, j);
+				PairInfo<EdgeId> new_info(path1[i], path2[j], current_distance2,
+						weight, 0.);
+				paired_index.AddPairInfo(new_info);
+				current_distance2 += graph_.length(path2[j]);
+			}
+			current_distance1 -= graph_.length(path1[i]);
+		}
+	}
+
+public:
+
+	PairedIndexFiller(Graph &graph, const SequenceMapper& mapper, Stream& stream) :
+			graph_(graph), mapper_(mapper), stream_(stream) {
+
+	}
+
+	/**
+	 * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
+	 */
+	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
+		}
+		stream_.reset();
+		while (!stream_.eof()) {
+      io::PairedRead p_r;
+			stream_ >> p_r;
+			ProcessPairedRead(paired_index, p_r);
+		}
+	}
+
+};
 }
 
 #endif /* PAIRED_INFO_HPP_ */

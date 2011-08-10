@@ -314,12 +314,14 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 }
 
 template<size_t k, class ReadStream>
-void FillPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
-		ReadStream& stream, EdgeIndex<k + 1, Graph>& index) {
+void FillPairedIndex(Graph &g, const EdgeIndex<k + 1, Graph>& index, PairedInfoIndex<Graph>& paired_info_index,
+		ReadStream& stream) {
+	typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
 	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Counting paired info");
-	PairedIndexFiller<Graph, k, ReadStream> pif(g, index, stream);
+	SequenceMapper mapper(g, index);
+	PairedIndexFiller<k + 1, Graph, SequenceMapper, ReadStream> pif(g, mapper, stream);
 	pif.FillIndex(paired_info_index);
 	INFO("Paired info counted");
 }
@@ -350,8 +352,8 @@ void CheckInfoEquality(PairedInfoIndex<Graph>& paired_index1, PairedInfoIndex<Gr
 }
 
 template<size_t k>
-void FillEtalonPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
-		EdgeIndex<k + 1, Graph>& index, size_t insert_size, size_t read_length,
+void FillEtalonPairedIndex(const Graph &g, PairedInfoIndex<Graph>& paired_info_index,
+		const EdgeIndex<k + 1, Graph>& index, size_t insert_size, size_t read_length,
 		const Sequence& genome) {
 	INFO("-----------------------------------------");
 	INFO("Counting etalon paired info");
@@ -422,7 +424,7 @@ void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 	UnitedStream united_stream(&stream);
 	ConstructGraphWithCoverage<k, UnitedStream> (g,
 			index/*, coverage_handler*/, united_stream);
-	FillPairedIndex<k, PairedReadStream> (g, paired_index, stream, index);
+	FillPairedIndex<k, PairedReadStream> (g, index, paired_index, stream);
 }
 
 template<size_t k, class PairedReadStream>
