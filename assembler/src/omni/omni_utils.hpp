@@ -29,9 +29,8 @@ using std::vector;
  */
 template<typename VertexId, typename EdgeId>
 class ActionHandler {
-public:
 	const string handler_name_;
-
+public:
 	/**
 	 * Create action handler with given name. With this name one can find out what tipe of handler is it.
 	 */
@@ -131,13 +130,22 @@ template<class Graph>
 class GraphActionHandler: public ActionHandler<typename Graph::VertexId,
 		typename Graph::EdgeId> {
 	typedef ActionHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
-public:
-	GraphActionHandler(const string& name) :
-			base(name) {
 
+	const Graph& g_;
+protected:
+	const Graph& g() const {
+		return g_;
+	}
+public:
+	GraphActionHandler(const Graph& g, const string& name) :
+			base(name), g_(g) {
+		TRACE("Adding new action handler: " << this->name());
+		g_.AddActionHandler(this);
 	}
 
 	virtual ~GraphActionHandler() {
+		TRACE("Removing action handler: " << this->name());
+		g_.RemoveActionHandler(this);
 	}
 };
 
@@ -402,8 +410,6 @@ template<class Graph, typename ElementId, typename Comparator = std::less<
 		ElementId> >
 class SmartIterator: public GraphActionHandler<Graph>, public QueueIterator<
 		ElementId, Comparator> {
-private:
-	const Graph &graph_;
 public:
 	typedef QueueIterator<ElementId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
@@ -411,14 +417,11 @@ public:
 public:
 	SmartIterator(const Graph &graph, const string &name,
 			const Comparator& comparator = Comparator()) :
-			GraphActionHandler<Graph>(name), QueueIterator<ElementId, Comparator>(
-					comparator),
-			graph_(graph) {
-		graph_.AddActionHandler(this);
+			GraphActionHandler<Graph>(graph, name), QueueIterator<ElementId, Comparator>(
+					comparator) {
 	}
 
 	virtual ~SmartIterator() {
-		graph_.RemoveActionHandler(this);
 	}
 
 	virtual void HandleAdd(ElementId v) {

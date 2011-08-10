@@ -129,26 +129,12 @@ public:
 				comparator);
 	}
 
-//	template<typename Comparator = std::less<VertexId> >
-//	SmartVertexIterator<ObservableGraph, Comparator> SmartVertexEnd(
-//			const Comparator& comparator = Comparator()) {
-//		return SmartVertexIterator<ObservableGraph, Comparator> (*this,
-//				false, comparator);
-//	}
-
 	template<typename Comparator = std::less<EdgeId> >
 	SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeBegin(
 			const Comparator& comparator = Comparator()) {
 		return SmartEdgeIterator<ObservableGraph, Comparator> (*this,
 				comparator);
 	}
-
-//	template<typename Comparator = std::less<EdgeId> >
-//	SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeEnd(
-//			const Comparator& comparator = Comparator()) {
-//		return SmartEdgeIterator<ObservableGraph, Comparator> (*this,
-//				false, comparator);
-//	}
 
 
 private:

@@ -20,8 +20,6 @@ class IdTrackHandler: public GraphActionHandler<Graph> {
 	map<realIdType, EdgeId> EdgeOriginalId;
 	int MaxVertexIntId;
 	int MaxEdgeIntId;
-private:
-	Graph &g_;
 
 public:
 	realIdType AddVertexIntId(VertexId NewVertexId) {
@@ -117,21 +115,17 @@ public:
 	}
 
 	IdTrackHandler(Graph &g) :
-		GraphActionHandler<Graph> ("IdTrackHandler"), g_(g) {
-		g_.AddActionHandler(this);
+		GraphActionHandler<Graph> (g, "IdTrackHandler") {
 		MaxVertexIntId = 0;
 		MaxEdgeIntId = 0;
 	}
 	IdTrackHandler(Graph &g, int VertexStartIndex, int EdgeStartIndex) :
-		GraphActionHandler<Graph> ("IdTrackHandler"), g_(g) {
-		g_.AddActionHandler(this);
+		GraphActionHandler<Graph> (g, "IdTrackHandler") {
 		MaxVertexIntId = VertexStartIndex;
 		MaxEdgeIntId = EdgeStartIndex;
 	}
 
 	virtual ~IdTrackHandler() {
-		TRACE("~IdTrackHandler");
-		g_.RemoveActionHandler(this);
 		TRACE("~IdTrackHandler ok");
 	}
 

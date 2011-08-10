@@ -120,12 +120,12 @@ public:
 		coverage_index_->FillIndex(stream, threader);
 	}
 
-	/**
-	 * Method sets coverage value for the edge
-	 */
-	void SetCoverage(EdgeId edge, size_t cov) {
-		coverage_index_->SetCoverage(edge, cov);
-	}
+//	/**
+//	 * Method sets coverage value for the edge
+//	 */
+//	void SetCoverage(EdgeId edge, size_t cov) {
+//		coverage_index_->SetCoverage(edge, cov);
+//	}
 
 	/**
 	 * Method returns average coverage of the edge
@@ -134,19 +134,19 @@ public:
 		return coverage_index_->coverage(edge);
 	}
 
-	/**
-	 * Method increases coverage value
-	 */
-	void IncCoverage(EdgeId edge, int toAdd) {
-		coverage_index_->IncCoverage(edge, toAdd);
-	}
-
-	/**
-	 * Method increases coverage value by 1
-	 */
-	void IncCoverage(EdgeId edge) {
-		coverage_index_->IncCoverage(edge);
-	}
+//	/**
+//	 * Method increases coverage value
+//	 */
+//	void IncCoverage(EdgeId edge, int toAdd) {
+//		coverage_index_->IncCoverage(edge, toAdd);
+//	}
+//
+//	/**
+//	 * Method increases coverage value by 1
+//	 */
+//	void IncCoverage(EdgeId edge) {
+//		coverage_index_->IncCoverage(edge);
+//	}
 
 	/**
 	 * Method returns Sequence stored in the edge

@@ -21,12 +21,10 @@ class CoverageIndex: public GraphActionHandler<Graph> {
 
 private:
 
-	Graph &g_;
-
 	map_type storage_;
 
 	size_t KPlusOneMerCoverage(EdgeId edge) const {
-		return (size_t) (coverage(edge) * g_.length(edge));
+		return (size_t) (coverage(edge) * this->g().length(edge));
 	}
 
 	template<class ReadThreader>
@@ -38,21 +36,19 @@ private:
 		const vector<EdgeId> &sequence = path.sequence();
 		for (typename vector<EdgeId>::const_iterator it = sequence.begin(); it
 				!= path.sequence().end(); ++it) {
-			IncCoverage(*it, g_.length(*it));
+			IncCoverage(*it, this->g().length(*it));
 		}
 		IncCoverage(sequence[0], -path.start_pos());
 		EdgeId last = sequence[sequence.size() - 1];
-		IncCoverage(last, path.end_pos() - g_.length(last));
+		IncCoverage(last, path.end_pos() - this->g().length(last));
 	}
 
 public:
 	CoverageIndex(Graph &g) :
-		GraphActionHandler<Graph> ("CoverageIndex"), g_(g) {
-		g_.AddActionHandler(this);
+		GraphActionHandler<Graph> (g, "CoverageIndex") {
 	}
 
 	virtual ~CoverageIndex() {
-		g_.RemoveActionHandler(this);
 	}
 
 	void SetCoverage(EdgeId edge, size_t cov) {
@@ -67,7 +63,7 @@ public:
 		if (it == storage_.end()) {
 			return 0;
 		}
-		return (double) it->second / g_.length(edge);
+		return (double) it->second / this->g().length(edge);
 	}
 
 	/**
@@ -103,17 +99,17 @@ public:
 				!= oldEdges.end(); ++it) {
 			coverage += KPlusOneMerCoverage(*it);
 		}
-		g_.SetCoverage(newEdge, coverage);
+		SetCoverage(newEdge, coverage);
 	}
 
 	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		g_.IncCoverage(new_edge, KPlusOneMerCoverage(edge1));
-		g_.IncCoverage(new_edge, KPlusOneMerCoverage(edge2));
+		IncCoverage(new_edge, KPlusOneMerCoverage(edge1));
+		IncCoverage(new_edge, KPlusOneMerCoverage(edge2));
 	}
 
 	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
-		size_t length1 = g_.length(newEdge1);
-		size_t length = g_.length(oldEdge);
+		size_t length1 = this->g().length(newEdge1);
+		size_t length = this->g().length(oldEdge);
 		size_t coverage = KPlusOneMerCoverage(oldEdge);
 		size_t coverage1 = coverage * length1 / length;
 		if (coverage1 == 0)
@@ -121,8 +117,8 @@ public:
 		size_t coverage2 = coverage - coverage1;
 		if (coverage2 == 0)
 			coverage2 = 1;
-		g_.SetCoverage(newEdge1, coverage1);
-		g_.SetCoverage(newEdge2, coverage2);
+		SetCoverage(newEdge1, coverage1);
+		SetCoverage(newEdge2, coverage2);
 	}
 
 };

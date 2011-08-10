@@ -328,22 +328,19 @@ public:
 	}
 
 	//begin-end insert size supposed
-	PairedInfoIndex(Graph &g, int max_difference = 0) :
-		GraphActionHandler<Graph> ("PairedInfoIndex"),
-				max_difference_(max_difference), graph_(g) {
-		g.AddActionHandler(this);
+	PairedInfoIndex(const Graph &g, int max_difference = 0) :
+		GraphActionHandler<Graph> (g, "PairedInfoIndex"),
+				max_difference_(max_difference) {
 	}
 
 	virtual ~PairedInfoIndex() {
-		TRACE("~PairedInfoIndex");
-		graph_.RemoveActionHandler(this);
 		TRACE("~PairedInfoIndex ok");
 	}
 
 	double sum() {
 		double res = 0;
-		for (auto it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it; ++it)
-			for (auto it1 = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
+		for (auto it = this->g().SmartEdgeBegin(); this->g().SmartEdgeEnd() != it; ++it)
+			for (auto it1 = this->g().SmartEdgeBegin(); this->g().SmartEdgeEnd()
 					!= it1; ++it1) {
 				PairInfos vec = GetEdgePairInfo(*it1, *it);
 				if (vec.size() != 0) {
@@ -356,16 +353,15 @@ public:
 
 private:
 
-	Graph& graph_;
 	PairInfoIndexData<EdgeId> data_;
 
 	size_t CorrectLength(const Path<EdgeId>& path, size_t index) {
-		size_t result = graph_.length(path[index]);
+		size_t result = this->g().length(path[index]);
 		if (index == 0) {
 			result -= path.start_pos();
 		}
 		if (index == path.size() - 1) {
-			result -= graph_.length(path[index]) - path.end_pos();
+			result -= this->g().length(path[index]) - path.end_pos();
 		}
 		return result;
 	}
@@ -443,11 +439,11 @@ private:
 	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os = cout) {
 		PairInfos vec = GetEdgePairInfo(edge1, edge2);
 		if (vec.size() != 0) {
-			os << edge1 << " " << graph_.length(edge1) << " " << edge2 << " "
-					<< graph_.length(edge2) << endl;
-			if (graph_.EdgeEnd(edge1) == graph_.EdgeStart(edge2))
+			os << edge1 << " " << this->g().length(edge1) << " " << edge2 << " "
+					<< this->g().length(edge2) << endl;
+			if (this->g().EdgeEnd(edge1) == this->g().EdgeStart(edge2))
 				os << "+" << endl;
-			if (graph_.EdgeEnd(edge2) == graph_.EdgeStart(edge1))
+			if (this->g().EdgeEnd(edge2) == this->g().EdgeStart(edge1))
 				os << "-" << endl;
 			int min = INT_MIN;
 			for (size_t i = 0; i < vec.size(); i++) {
@@ -539,7 +535,7 @@ public:
 		for (size_t i = 0; i < old_edges.size(); ++i) {
 			EdgeId old_edge = old_edges[i];
 			TransferInfo(old_edge, new_edge, shift);
-			shift -= graph_.length(old_edge);
+			shift -= this->g().length(old_edge);
 		}
 	}
 
@@ -550,12 +546,12 @@ public:
 
 	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
 			EdgeId new_edge2) {
-		double prop = (double) graph_.length(new_edge1) / graph_.length(
+		double prop = (double) this->g().length(new_edge1) / this->g().length(
 				old_edge);
 		//		size_t shift = graph_.length(new_edge1);
 		TransferInfo(old_edge, new_edge1, 0, prop);
 		//		PassEdge(graph_.length(new_edge1), shift);
-		TransferInfo(old_edge, new_edge2, graph_.length(new_edge1), 1 - prop);
+		TransferInfo(old_edge, new_edge2, this->g().length(new_edge1), 1 - prop);
 	}
 
 //	bool Check() {
