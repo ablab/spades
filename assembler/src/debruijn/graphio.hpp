@@ -443,7 +443,7 @@ void DataScanner<Graph>::loadPaired(const string& file_name,
 		double w, d, v;
 		read_count = fscanf(file, "%d %d %lf %lf %lf .\n", &first_real_id,
 				&second_real_id, &d, &w, &v);
-		assert(read_count == 4);
+		assert(read_count == 5);
 		TRACE(first_real_id<< " " << second_real_id << " " << d << " " << w << " " << v);
 		TRACE (IdHandler_.ReturnEdgeId(first_real_id)<<" "<< IdHandler_.ReturnEdgeId(second_real_id)<<" "<< d<<" "<< w);
 		PairInfo<typename Graph::EdgeId> *p_info = new PairInfo<
