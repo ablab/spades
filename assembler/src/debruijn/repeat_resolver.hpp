@@ -426,8 +426,8 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	res.resize(k);
 	if (k == 1) {
 		DEBUG("NOTHING TO SPLIT:( ");
-		//	res[0] = v;
-		//		return res;
+		res[0] = v;
+		return res;
 	}
 	vector<EdgeId> edgeIds[2];
 	//TODO: fix labels
@@ -585,7 +585,7 @@ void RepeatResolver<Graph>::dfs(vector<vector<int> > &edge_list,
 						"error in dfs, neighbour to " << edge_list[cur_vert][i] << " cur_color: "<< cur_color);
 			}
 		} else {
-			if (i != cur_vert) {
+			if (edge_list[cur_vert][i] != cur_vert) {
 				dfs(edge_list, colors, edge_list[cur_vert][i], cur_color);
 			}
 		}
@@ -661,13 +661,13 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 
 					}
 					if (d * mult >= -0.001) {
-						if (cheating_mode && (i == 1) && (right_id == left_id)
-								&& (tmp[j].d == 0)) {
-							DEBUG("Paired info in cheating mode ignored");
-							//ignoring information from incoming edge to itself, ignoring
-							cheating_edges.insert(left_id);
-							continue;
-						}
+//						if (cheating_mode && (i == 1) && (right_id == left_id)
+//								&& (tmp[j].d == 0)) {
+//							DEBUG("Paired info in cheating mode ignored");
+//							//ignoring information from incoming edge to itself, ignoring
+//							cheating_edges.insert(left_id);
+//							continue;
+//						}
 
 						DEBUG("PairInfo: " << new_IDs.ReturnIntId(tmp[j].first)<<" "<<old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 
@@ -769,8 +769,10 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 	counts[0] = edgeIds[0].size();
 	counts[1] = edgeIds[1].size();
 	for(int ind = 0; ind < 2; ind ++)
-		for(size_t i = 0; i < counts[ind]; i++)
+		for(size_t i = 0; i < counts[ind]; i++) {
+			DEBUG("direction" << ind << " edge " << new_IDs.ReturnIntId(edgeIds[ind][i]));
 			EdgeIdMap[ind].insert(make_pair(edgeIds[ind][i], i));
+		}
 //	int table[out_count][in_count];
 //	for(int i = 0; i < out_count; i ++)
 //		for(int j = 0; j < in_count; j++)
@@ -804,8 +806,8 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 			if (EdgeIdMap[1].find(second) == EdgeIdMap[1].end())
 				continue;
 			else {
-				size_t first_ind = EdgeIdMap[1][first];
-				size_t second_ind = EdgeIdMap[0][second];
+				size_t first_ind = EdgeIdMap[0][first];
+				size_t second_ind = EdgeIdMap[1][second];
 				neighbours[first_ind + counts[0]].push_back(second_ind);
 				neighbours[second_ind].push_back(first_ind + counts[0]);
 				DEBUG("neighbours "<<first_ind<<" + "<<counts[0]<<"  "<<second_ind);
@@ -830,7 +832,7 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 	for (size_t i = 0; i < counts[0] + counts[1]; i++) {
 		bad = true;
 		for (size_t j = 0; j < counts[0] + counts[1]; j++) {
-			if ((i!=j)&&(cheater_colors[i]==cheater_colors[j])){
+			if ((i != j) && (cheater_colors[i] == cheater_colors[j])){
 				bad = false;
 				break;
 			}
@@ -838,7 +840,10 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 		if (bad) break;
 	}
 
-	if (bad) return 1;
+	if (bad) {
+		DEBUG("Cheat failed");
+		return 1;
+	}
 
 	for (size_t i = 0; i<edge_info_colors.size();i++){
 		if (EdgeIdMap[0].find(edge_infos[i].lp.first) != EdgeIdMap[0].end()){
