@@ -558,6 +558,25 @@ public:
 		TransferInfo(old_edge, new_edge2, graph_.length(new_edge1), 1 - prop);
 	}
 
+//	bool Check() {
+//		for (auto it = data_.begin(); it != data_.end(); ++it) {
+//			PairInfo<EdgeId> inf = *it;
+//			if (inf.first != inf.second && inf.d > 0) {
+////				cout << inf.first << endl;
+////				cout << graph_.length(inf.first) << endl;
+//				if (inf.d <= graph_.length(inf.first) - 1) {
+//					cout << "gopa " << inf.first << " " << inf.second << endl;
+//					cout << graph_.length(inf.first) << " " << graph_.length(inf.second) << endl;
+//					cout << graph_.EdgeStart(inf.first) << " " << graph_.EdgeEnd(inf.first);
+//					cout << graph_.EdgeStart(inf.second) << " " << graph_.EdgeEnd(inf.second);
+//					assert(false);
+//					return false;
+//				}
+//			}
+//		}
+//		return true;
+//	}
+
 };
 
 /**

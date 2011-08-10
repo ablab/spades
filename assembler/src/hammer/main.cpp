@@ -27,6 +27,7 @@
 #include "hammer_tools.hpp"
 #include "kmer_cluster.hpp"
 #include "position_kmer.hpp"
+#include "subkmers.hpp"
 
 using namespace std;
 
@@ -86,11 +87,13 @@ int main(int argc, char * argv[]) {
 	PositionKMer::rv = ireadstream::readAllNoValidation(readsFilename, &totalReadSize);
 	PositionKMer::rv_bad = new std::vector<bool>(PositionKMer::rv->size(), false);
 
-	PositionKMer::blob = new char[ (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];
-	PositionKMer::blobkmers = new hint_t[ (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) ];	
-	//cout << "Allocated blob of size " << (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN)) << endl;
 	PositionKMer::blob_size = totalReadSize;
 	PositionKMer::blob_max_size = (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN));
+
+	PositionKMer::blob = new char[ PositionKMer::blob_max_size ];
+	PositionKMer::blobkmers = new hint_t[ PositionKMer::blob_max_size ];
+	TIMEDLN("Max blob size as allocated is " << PositionKMer::blob_max_size);
+
 	std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
 	
 	PositionKMer::revNo = PositionKMer::rv->size();
@@ -124,11 +127,14 @@ int main(int argc, char * argv[]) {
 		vector<KMerCount> kmers;
 		ParallelSortKMerNos( &vv, &kmers, nthreads );
 		TIMEDLN("KMer positions sorted. In total, we have " << kmers.size() << " kmers.");
-
-		vector< vector<hint_t> > vs(tau+1);
-		vector<SubKMerPQ> vskpq;
-		DoSplitAndSort(tau, nthreads, vv, &vs, &kmers, &vskpq);
 		vv.clear();
+
+		/*vector< vector<hint_t> > vs(tau+1);
+		vector<SubKMerPQ> vskpq;
+		DoSplitAndSort(tau, nthreads, &vs, &kmers, &vskpq);*/
+
+		SubKMerSorter * skmsorter = new SubKMerSorter( kmers.size(), &kmers, nthreads, tau, SubKMerSorter::SorterTypeStraight );
+		skmsorter->runSort();
 		TIMEDLN("Auxiliary subvectors sorted. Starting split kmer processing in " << min(nthreads, tau+1) << " effective threads.");
 
 		tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << ".kmers.solid";
@@ -137,9 +143,10 @@ int main(int argc, char * argv[]) {
 		ofstream ofkmers_bad( tmp.str().data() );
 		KMerClustering kmc(kmers, nthreads, tau);
 		// prepare the maps
-		kmc.process(dirprefix, &vskpq, &ofkmers, &ofkmers_bad);
+		kmc.process(dirprefix, skmsorter, &ofkmers, &ofkmers_bad);
 		ofkmers.close();
 		ofkmers_bad.close();
+		delete skmsorter;
 		TIMEDLN("Finished clustering. Starting reconstruction.");
 
 		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
@@ -158,7 +165,7 @@ int main(int argc, char * argv[]) {
 		}
 		bool res = false;
 		for (int i=0; i<nthreads; ++i) {
-			outfv[i]->close(); delete outfv[i];
+			if (outfv[i] != NULL) { outfv[i]->close(); delete outfv[i]; }
 			res = res || changed[i];
 		}
 
@@ -184,7 +191,6 @@ int main(int argc, char * argv[]) {
 		std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
 
 		PositionKMer::rv->resize( PositionKMer::revNo );
-		// cout << PositionKMer::rv->size() << ".  " << endl;
 		for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
 			PositionKMer::rv->push_back( !(PositionKMer::rv->at(i)) );
 		}

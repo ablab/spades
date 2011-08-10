@@ -506,7 +506,7 @@ void scanConjugateGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
 template<size_t k>
 void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		size_t iteration_count, const Sequence& genome,
-		const string& output_folder) {
+		const string& output_folder/*, PairedInfoIndex<Graph> &etalon_paired_index*/) {
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
 
@@ -518,16 +518,19 @@ void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		INFO("Iteration " << i);
 
 		ClipTips(g);
+//		etalon_paired_index.Check();
 		ProduceDetailedInfo<k> (g, index, genome,
 				output_folder + "tips_clipped_" + ToString(i) + "/",
 				"graph.dot", "no_tip_graph");
 
 		RemoveBulges(g);
+//		etalon_paired_index.Check();
 		ProduceDetailedInfo<k> (g, index, genome,
 				output_folder + "bulges_removed_" + ToString(i) + "/",
 				"graph.dot", "no_bulge_graph");
 
 		RemoveLowCoverageEdges(g);
+//		etalon_paired_index.Check();
 		ProduceDetailedInfo<k> (g, index, genome,
 				output_folder + "erroneous_edges_removed_" + ToString(i) + "/",
 				"graph.dot", "no_erroneous_edges_graph");
@@ -718,7 +721,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		printGraph(g, IntIds, output_folder + "first_graph", paired_index,
 				EdgePos);
 
-		SimplifyGraph<k> (g, index, 3, genome, output_folder);
+		SimplifyGraph<k> (g, index, 3, genome, output_folder/*, etalon_paired_index*/);
 		ProduceInfo<k> (g, index, genome,
 				output_folder + "simplified_graph.dot", "simplified_graph");
 
