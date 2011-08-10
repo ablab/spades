@@ -21,7 +21,7 @@ public:
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
-	void process(std::string dirprefix, std::vector< SubKMerPQ > * vs, ofstream * ofs, ofstream * ofs_bad);
+	void process(std::string dirprefix, SubKMerSorter * skmsorter, ofstream * ofs, ofstream * ofs_bad);
 
 	/// free up memory
 	void clear() {
@@ -67,7 +67,8 @@ private:
 	  */
 	void process_block_SIN(const std::vector<int> & block, std::vector< std::vector<int> > & vec);
 
-	void processBlock(unionFindClass * uf, vector<hint_t> & block);
+	void processBlock(unionFindClass * uf, vector<hint_t> & block, int cur_subkmer);
+	void processBlockQuadratic(unionFindClass * uf, vector<hint_t> & block);
 	void clusterMerge(std::vector<unionFindClass *> uf, unionFindClass * ufMaster);
 
 };

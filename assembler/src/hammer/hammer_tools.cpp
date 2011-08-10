@@ -105,12 +105,10 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 	}
 }
 
-void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers, vector<SubKMerPQ> * vskpq) {
+void DoSplitAndSort(int tau, int nthreads, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers, vector<SubKMerPQ> * vskpq) {
 	int effective_threads = min(nthreads, tau+1);
 	int subkmer_nthreads = max ( (tau + 1) * ( (int)(nthreads / (tau + 1)) ), tau+1 );
 	int effective_subkmer_threads = min(subkmer_nthreads, nthreads);
-
-	//cout << "Starting split and sort..." << endl;
 
 	#pragma omp parallel for shared(vs, kmers, tau) num_threads(effective_threads)
 	for (int j=0; j<tau+1; ++j) {
@@ -119,8 +117,8 @@ void DoSplitAndSort(int tau, int nthreads, const vector<KMerNo> & vv, vector< ve
 	}
 
 	for (int j=0; j < tau+1; ++j) {
-		//subkmer_comp_type sort_routine = boost::bind(SubKMerPQElement::compareSubKMerPQElements, _1, _2, kmers, tau, PositionKMer::subKMerPositions->at(j), PositionKMer::subKMerPositions->at(j+1));
-		subkmer_comp_type sort_routine = boost::bind(SubKMerPQElement::compareSubKMerPQElementsCheq, _1, _2, kmers, tau, j);
+		SubKMerCompType sort_routine = boost::bind(SubKMerPQElement::compareSubKMerPQElements, _1, _2, kmers, tau, PositionKMer::subKMerPositions->at(j), PositionKMer::subKMerPositions->at(j+1));
+		//SubKMerCompType sort_routine = boost::bind(SubKMerPQElement::compareSubKMerPQElementsCheq, _1, _2, kmers, tau, j);
 		SubKMerPQ skpq( &(vs->at(j)), max( (int)(nthreads / (tau + 1)), 1), sort_routine );
 		vskpq->push_back(skpq);
 	}
@@ -242,6 +240,17 @@ bool CorrectRead(const vector<KMerCount> & km, hint_t readno, ofstream * ofs) {
 		}
 		*ofs << seq.data() << "\n";
 	}
+
+	/*if (changedRead) {
+		cout << "\n" << PositionKMer::rv->at(readno).getSequenceString() << endl;
+		for (size_t i=0; i<4; ++i) {
+			for (size_t j=0; j<read_size; ++j) {
+				cout << (char)((int)'0' + v[i][j]);
+			}
+			cout << endl;
+		}
+		cout << seq.data() << endl;
+	}*/
 	
 	PositionKMer::rv->at(readno).setSequence(seq.data());
 	return res;
