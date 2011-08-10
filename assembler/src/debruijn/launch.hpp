@@ -358,19 +358,19 @@ void FillEtalonPairedIndex(Graph &g, PairedInfoIndex<Graph>& paired_info_index,
 			insert_size, read_length, insert_size * 0.1);
 	etalon_paired_info_counter.FillEtalonPairedInfo(genome, paired_info_index);
 	//////////////////DEBUG
-	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
-	Path<EdgeId> path = simple_mapper.MapSequence(genome);
-	SequenceBuilder sequnce_builder;
-	for (auto it = path.begin(); it != path.end(); ++it) {
-		INFO("append");
-		sequnce_builder.append(g.EdgeNucls(*it));
-	}
-	Sequence new_genome = sequnce_builder.BuildSequence();
-	NewEtalonPairedInfoCounter<k, Graph> new_etalon_paired_info_counter(g, index,
-			insert_size, read_length, insert_size * 0.1);
-	PairedInfoIndex<Graph> new_paired_info_index(g);
-	new_etalon_paired_info_counter.FillEtalonPairedInfo(new_genome, new_paired_info_index);
-	CheckInfoEquality(paired_info_index, new_paired_info_index);
+//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
+//	Path<EdgeId> path = simple_mapper.MapSequence(genome);
+//	SequenceBuilder sequnce_builder;
+//	for (auto it = path.begin(); it != path.end(); ++it) {
+//		INFO("append");
+//		sequnce_builder.append(g.EdgeNucls(*it));
+//	}
+//	Sequence new_genome = sequnce_builder.BuildSequence();
+//	NewEtalonPairedInfoCounter<k, Graph> new_etalon_paired_info_counter(g, index,
+//			insert_size, read_length, insert_size * 0.1);
+//	PairedInfoIndex<Graph> new_paired_info_index(g);
+//	new_etalon_paired_info_counter.FillEtalonPairedInfo(new_genome, new_paired_info_index);
+//	CheckInfoEquality(paired_info_index, new_paired_info_index);
 	//////////////////DEBUG
 	INFO("Paired info counted");
 }
