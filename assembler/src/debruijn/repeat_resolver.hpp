@@ -199,7 +199,7 @@ public:
 					old_to_new[old_graph.EdgeStart(*e_iter)],
 					old_to_new[old_graph.EdgeEnd(*e_iter)],
 					old_graph.EdgeNucls(*e_iter));
-			new_graph.SetCoverage(new_edge,
+			new_graph.coverage_index().SetCoverage(new_edge,
 					old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
 //			new_graph.SetCoverage(new_graph.conjugate(new_edge), 0);
 			edge_labels[new_edge] = *e_iter;
@@ -498,7 +498,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 					&& (1.0 * new_paired_coverage[edge_iter->second])
 							/ old_paired_coverage[edge_iter->first] < 0.9)
 				DEBUG("INTERESTING");
-			new_graph.SetCoverage(
+			new_graph.coverage_index().SetCoverage(
 					edge_iter->second,
 					new_graph.length(edge_iter->first)
 							* new_graph.coverage(edge_iter->first)

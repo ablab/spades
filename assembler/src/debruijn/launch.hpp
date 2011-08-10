@@ -379,16 +379,14 @@ void FillEtalonPairedIndex(const Graph &g, PairedInfoIndex<Graph>& paired_info_i
 }
 
 template<size_t k, class ReadStream>
-void FillCoverage(Graph& g/*CoverageHandler<Graph> coverage_handler*/,
+void FillCoverage(Graph& g,
 		ReadStream& stream, EdgeIndex<k + 1, Graph>& index) {
-	typedef SimpleSequenceMapper<k + 1, Graph> ReadThreader;
+	typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
 	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Counting coverage");
-	ReadThreader read_threader(g, index);
-	//todo temporary solution!
-	g.FillCoverage<ReadStream, ReadThreader> (stream, read_threader);
-	//	coverage_handler.FillCoverage<k, ReadStream> (stream, index);
+	SequenceMapper read_threader(g, index);
+	g.coverage_index().FillIndex<ReadStream, SequenceMapper> (stream, read_threader);
 	INFO("Coverage counted");
 }
 
@@ -410,14 +408,12 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 }
 
 template<size_t k, class ReadStream>
-void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index,
-/*CoverageHandler<Graph>& coverage_handler,*/ReadStream& stream) {
+void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index, ReadStream& stream) {
 	ConstructGraph<k, ReadStream> (g, index, stream);
-	FillCoverage<k, ReadStream> (g/*coverage_handler*/, stream, index);
+	FillCoverage<k, ReadStream> (g, stream, index);
 }
 
 template<size_t k, class PairedReadStream>
-/*CoverageHandler<Graph>& coverage_handler,*/
 void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& stream) {
 	typedef io::ConvertingReaderWrapper UnitedStream;
@@ -508,7 +504,7 @@ void scanConjugateGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
 template<size_t k>
 void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		size_t iteration_count, const Sequence& genome,
-		const string& output_folder/*, PairedInfoIndex<Graph> &etalon_paired_index*/) {
+		const string& output_folder) {
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
 

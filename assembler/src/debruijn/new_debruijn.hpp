@@ -115,9 +115,8 @@ public:
 		DEBUG("~ConjugateDeBruijnGraph() finished");
 	}
 
-	template<class Stream, class ReadThreader>
-	void FillCoverage(Stream& stream, const ReadThreader& threader) {
-		coverage_index_->FillIndex(stream, threader);
+	CoverageIndex<ConjugateDeBruijnGraph>& coverage_index() {
+		return *coverage_index_;
 	}
 
 //	/**
@@ -193,6 +192,7 @@ public:
 		return " ";
 	}
 
+	//todo extract from here!!!
 	std::string toPrint(VertexId v,
 			IdTrackHandler<ConjugateDeBruijnGraph> &id_handler) const {
 		stringstream ss;
@@ -201,6 +201,7 @@ public:
 		return ss.str();
 	}
 
+	//todo extract from here!!!
 	std::string toPrint(EdgeId e,
 			IdTrackHandler<ConjugateDeBruijnGraph> &id_handler) const {
 		stringstream ss;
@@ -231,6 +232,10 @@ public:
 		DEBUG("~NonconjugateDeBruijnGraph()");
 	}
 
+	CoverageIndex<NonconjugateDeBruijnGraph>& coverage_index() {
+		return *coverage_index_;
+	}
+
 	/**
 	 * Method returns Sequence stored in the edge
 	 */
@@ -253,17 +258,12 @@ public:
 		assert(false);
 	}
 
-	template<class Stream, class ReadThreader>
-	void FillCoverage(Stream& stream, const ReadThreader& threader) {
-		coverage_index_->FillIndex(stream, threader);
-	}
-
-	/**
-	 * Method sets coverage value for the edge
-	 */
-	void SetCoverage(EdgeId edge, size_t cov) {
-		coverage_index_->SetCoverage(edge, cov);
-	}
+//	/**
+//	 * Method sets coverage value for the edge
+//	 */
+//	void SetCoverage(EdgeId edge, size_t cov) {
+//		coverage_index_->SetCoverage(edge, cov);
+//	}
 
 	/**
 	 * Method returns average coverage of the edge
@@ -272,19 +272,19 @@ public:
 		return coverage_index_->coverage(edge);
 	}
 
-	/**
-	 * Method increases coverage value
-	 */
-	void IncCoverage(EdgeId edge, int toAdd) {
-		coverage_index_->IncCoverage(edge, toAdd);
-	}
-
-	/**
-	 * Method increases coverage value by 1
-	 */
-	void IncCoverage(EdgeId edge) {
-		coverage_index_->IncCoverage(edge);
-	}
+//	/**
+//	 * Method increases coverage value
+//	 */
+//	void IncCoverage(EdgeId edge, int toAdd) {
+//		coverage_index_->IncCoverage(edge, toAdd);
+//	}
+//
+//	/**
+//	 * Method increases coverage value by 1
+//	 */
+//	void IncCoverage(EdgeId edge) {
+//		coverage_index_->IncCoverage(edge);
+//	}
 
 	using super::AddVertex;
 	using super::AddEdge;
@@ -309,6 +309,7 @@ public:
 		return " ";
 	}
 
+	//todo extract from here!!!
 	std::string toPrint(VertexId v,
 			IdTrackHandler<NonconjugateDeBruijnGraph> &id_handler) const {
 		stringstream ss;
@@ -316,6 +317,7 @@ public:
 		return ss.str();
 	}
 
+	//todo extract from here!!!
 	std::string toPrint(EdgeId e,
 			IdTrackHandler<NonconjugateDeBruijnGraph> &id_handler) const {
 		stringstream ss;

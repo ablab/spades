@@ -423,7 +423,7 @@ void DataScanner<Graph>::loadCoverage(const string& file_name) {
 		read_count = fscanf(file, "%d %lf .\n", &edge_real_id, &edge_coverage);
 		assert(read_count == 2);
 		EdgeId eid = IdHandler_.ReturnEdgeId(edge_real_id);
-		graph_.SetCoverage(eid, edge_coverage * graph_.length(eid));
+		graph_.coverage_index().SetCoverage(eid, edge_coverage * graph_.length(eid));
 	}
 	fclose(file);
 }

@@ -337,19 +337,19 @@ public:
 		TRACE("~PairedInfoIndex ok");
 	}
 
-	double sum() {
-		double res = 0;
-		for (auto it = this->g().SmartEdgeBegin(); this->g().SmartEdgeEnd() != it; ++it)
-			for (auto it1 = this->g().SmartEdgeBegin(); this->g().SmartEdgeEnd()
-					!= it1; ++it1) {
-				PairInfos vec = GetEdgePairInfo(*it1, *it);
-				if (vec.size() != 0) {
-					for (size_t i = 0; i < vec.size(); i++)
-						res += vec[i].weight;
-				}
-			}
-		return res;
-	}
+//	double sum() {
+//		double res = 0;
+//		for (auto it = this->g().SmartEdgeBegin(); this->g().SmartEdgeEnd() != it; ++it)
+//			for (auto it1 = this->g().SmartEdgeBegin(); this->g().SmartEdgeEnd()
+//					!= it1; ++it1) {
+//				PairInfos vec = GetEdgePairInfo(*it1, *it);
+//				if (vec.size() != 0) {
+//					for (size_t i = 0; i < vec.size(); i++)
+//						res += vec[i].weight;
+//				}
+//			}
+//		return res;
+//	}
 
 private:
 
@@ -436,35 +436,35 @@ public:
 	}
 
 private:
-	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os = cout) {
-		PairInfos vec = GetEdgePairInfo(edge1, edge2);
-		if (vec.size() != 0) {
-			os << edge1 << " " << this->g().length(edge1) << " " << edge2 << " "
-					<< this->g().length(edge2) << endl;
-			if (this->g().EdgeEnd(edge1) == this->g().EdgeStart(edge2))
-				os << "+" << endl;
-			if (this->g().EdgeEnd(edge2) == this->g().EdgeStart(edge1))
-				os << "-" << endl;
-			int min = INT_MIN;
-			for (size_t i = 0; i < vec.size(); i++) {
-				int next = -1;
-				for (size_t j = 0; j < vec.size(); j++) {
-					if (vec[j].d > min
-							&& (next == -1 || vec[next].d > vec[j].d)) {
-						next = j;
-					}
-				}
-				os << vec[next].d << " " << vec[next].weight << endl;
-				if (next == -1) {
-					assert(false);
-				}
-				if (vec[next].d > 100000) {
-					assert(false);
-				}
-				min = vec[next].d;
-			}
-		}
-	}
+//	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os = cout) {
+//		PairInfos vec = GetEdgePairInfo(edge1, edge2);
+//		if (vec.size() != 0) {
+//			os << edge1 << " " << this->g().length(edge1) << " " << edge2 << " "
+//					<< this->g().length(edge2) << endl;
+//			if (this->g().EdgeEnd(edge1) == this->g().EdgeStart(edge2))
+//				os << "+" << endl;
+//			if (this->g().EdgeEnd(edge2) == this->g().EdgeStart(edge1))
+//				os << "-" << endl;
+//			int min = INT_MIN;
+//			for (size_t i = 0; i < vec.size(); i++) {
+//				int next = -1;
+//				for (size_t j = 0; j < vec.size(); j++) {
+//					if (vec[j].d > min
+//							&& (next == -1 || vec[next].d > vec[j].d)) {
+//						next = j;
+//					}
+//				}
+//				os << vec[next].d << " " << vec[next].weight << endl;
+//				if (next == -1) {
+//					assert(false);
+//				}
+//				if (vec[next].d > 100000) {
+//					assert(false);
+//				}
+//				min = vec[next].d;
+//			}
+//		}
+//	}
 
 	void TransferInfo(EdgeId old_edge, EdgeId new_edge, int shift = 0,
 			double weight_scale = 1.0) {
