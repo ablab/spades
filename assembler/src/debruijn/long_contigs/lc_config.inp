@@ -4,7 +4,7 @@ etalon_info_mode = true
 graph_file_QUAKE_CROPPED_400K = ./data/debruijn/08.10_21_05.QUAKE_CROPPED_400K/graph
 graph_file_QUAKE_CROPPED_100K = ./data/debruijn/08.04_17_17.QUAKE_CROPPED_100K/graph
 graph_file_QUAKE_CROPPED_10K = ./data/debruijn/08.04_17_23.QUAKE_CROPPED_10K/graph
-graph_file_QUAKE_FULL = ./data/debruijn/08.09_22_27.QUAKE_FULL/graph
+graph_file_QUAKE_FULL = ./data/debruijn/08.10_21_52.QUAKE_FULL/graph
 
 #paired info
 #basic lib
@@ -14,7 +14,7 @@ insert_size = 220
 #additional libs
 lib_count = 0
 read_size_1 = 100
-insert_size_1 = 2000
+insert_size_1 = 800
 read_size_2 = 100
 insert_size_2 = 2100
 read_size_3 = 100
