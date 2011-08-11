@@ -43,7 +43,7 @@ public:
 		k_(k) {
 	}
 
-	const EdgeData MergeData(const vector<EdgeData *> &toMerge) const {
+	const EdgeData MergeData(const vector<const EdgeData *>& toMerge) const {
 		SequenceBuilder sb;
 		sb.append(toMerge[0]->nucls_.Subseq(0, k_));
 		for (size_t i = 0; i < toMerge.size(); i++) {
@@ -52,27 +52,27 @@ public:
 		return EdgeData(sb.BuildSequence());
 	}
 
-	pair<VertexData, pair<EdgeData, EdgeData> > SplitData(EdgeData &edge,
-			size_t position) {
+	pair<VertexData, pair<EdgeData, EdgeData> > SplitData(const EdgeData &edge,
+			size_t position) const {
 		return make_pair(
 				VertexData(),
 				make_pair(EdgeData(edge.nucls_.Subseq(0, position + k_)),
 						EdgeData(edge.nucls_.Subseq(position))));
 	}
 
-	EdgeData GlueData(EdgeData &data1, EdgeData &data2) {
+	EdgeData GlueData(const EdgeData &data1, const EdgeData &data2) const {
 		return data2;
 	}
 
-	bool isSelfConjugate(const EdgeData &data) {
+	bool isSelfConjugate(const EdgeData &data) const {
 		return data.nucls_ == !(data.nucls_);
 	}
 
-	EdgeData conjugate(const EdgeData &data) {
+	EdgeData conjugate(const EdgeData &data) const {
 		return EdgeData(!(data.nucls_));
 	}
 
-	VertexData conjugate(const VertexData &data) {
+	VertexData conjugate(const VertexData &data) const {
 		return VertexData();
 	}
 
@@ -92,13 +92,11 @@ public:
 
 class ConjugateDeBruijnGraph: public AbstractConjugateGraph<VertexData,
 		EdgeData, DeBruijnMaster> {
-public:
-	typedef SmartVertexIterator<ObservableGraph<VertexId, EdgeId> >
-			SmartVertexItarator;
-	typedef SmartEdgeIterator<ObservableGraph<VertexId, EdgeId>>
-			SmartEdgeItarator;
-private:
 	typedef AbstractConjugateGraph<VertexData, EdgeData, DeBruijnMaster> super;
+public:
+//	typedef typename super::SmartVertexIt SmartVertexIt;
+//	typedef typename super::SmartEdgeIt SmartEdgeIt;
+private:
 	const size_t k_;
 	CoverageIndex<ConjugateDeBruijnGraph>* coverage_index_;
 	DECL_LOGGER("ConjugateDeBruijnGraph")
@@ -218,7 +216,7 @@ public:
 class NonconjugateDeBruijnGraph: public AbstractNonconjugateGraph<VertexData,
 		EdgeData, DeBruijnMaster> {
 private:
-	typedef AbstractNonconjugateGraph<VertexData, EdgeData, DeBruijnMaster>
+	typedef omnigraph::AbstractNonconjugateGraph<VertexData, EdgeData, DeBruijnMaster>
 			super;
 	const size_t k_;
 	CoverageIndex<NonconjugateDeBruijnGraph>* coverage_index_;DECL_LOGGER("NonconjugateDeBruijnGraph")
@@ -301,7 +299,7 @@ public:
 	std::string str(EdgeId edge) const {
 		//		return " ";
 		stringstream ss;
-		ss << master_.length(data(edge)) << "(" << coverage(edge) << ")";
+		ss << length(edge) << "(" << coverage(edge) << ")";
 		return ss.str();
 
 	}
@@ -322,7 +320,8 @@ public:
 	std::string toPrint(EdgeId e,
 			IdTrackHandler<NonconjugateDeBruijnGraph> &id_handler) const {
 		stringstream ss;
-		ss << "Edge " << id_handler.ReturnIntId(e) <<" : " << id_handler.ReturnIntId(EdgeStart(e)) << " -> " << id_handler.ReturnIntId(EdgeEnd(e))<<", l = "<< master_.length(data(e)) <<" .";
+		ss << "Edge " << id_handler.ReturnIntId(e) <<" : " << id_handler.ReturnIntId(EdgeStart(e))
+				<< " -> " << id_handler.ReturnIntId(EdgeEnd(e))<<", l = "<< length(e) <<" .";
 		return ss.str();
 	}
 

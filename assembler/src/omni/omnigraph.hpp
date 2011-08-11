@@ -43,15 +43,15 @@ class OmniDataMaster {
 public:
 	OmniDataMaster() {}
 
-	bool isSelfConjugate(const OmniEdge &data) {
+	bool isSelfConjugate(const OmniEdge &data) const {
 		return false;
 	}
 
-	OmniVertex conjugate(const OmniVertex &data) {
+	OmniVertex conjugate(const OmniVertex &data) const {
 		return data;
 	}
 
-	OmniEdge conjugate(const OmniEdge &data) {
+	OmniEdge conjugate(const OmniEdge &data) const {
 		return data;
 	}
 
@@ -71,11 +71,11 @@ public:
 		return v.length();
 	}
 
-	bool equals(const OmniEdge &data1, const OmniEdge &data2) {
+	bool equals(const OmniEdge &data1, const OmniEdge &data2) const {
 		return data1 == data2;
 	}
 
-	OmniEdge MergeData(vector<OmniEdge*> toMerge) {
+	OmniEdge MergeData(const vector<const OmniEdge*>& toMerge) const {
 		size_t length = 0;
 		for (auto it = toMerge.begin(); it != toMerge.end(); ++it) {
 			length += (*it)->length();
