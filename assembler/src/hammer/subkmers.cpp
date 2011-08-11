@@ -1,3 +1,4 @@
+#include <omp.h>
 #include "subkmers.hpp"
 
 void SubKMerSorter::runSort() {
@@ -5,12 +6,14 @@ void SubKMerSorter::runSort() {
 	int subkmer_nthreads = max ( (tau_ + 1) * ( (int)(nthreads_ / (tau_ + 1)) ), tau_+1 );
 	int effective_subkmer_threads = min(subkmer_nthreads, nthreads_);
 
+	vector< SubKMerPQ > * vskpq = &vskpq_;
+
 	// we divide each of (tau+1) subkmer vectors into nthreads/(tau+1) subvectors
 	// as a result, we have subkmer_nthreads threads for sorting
-	#pragma omp parallel for num_threads( effective_subkmer_threads )
+	#pragma omp parallel for shared(vskpq) num_threads( effective_subkmer_threads )
 	for (int j=0; j < subkmer_nthreads; ++j) {
 		// for each j, we sort subvector (j/(tau_+1)) of the vector of subkmers at offset (j%(tau+1))
-		vskpq_[ (j % (tau_+1)) ].doSort( j / (tau_+1), sub_less[j] );
+		(*vskpq)[ (j % (tau_+1)) ].doSort( j / (tau_+1), sub_less[(j % (tau_+1))] );
 	}
 
 	for (int j=0; j < tau_+1; ++j) {
@@ -99,7 +102,14 @@ SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount> * k, i
 			sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMers,          _1, _2, k, tau,
 				my_positions[j].first, my_positions[j].second ) );
 		}
-	} else assert(1); // not implemented yet
+	} else if ( type == SorterTypeChequered ) {
+		assert(parent_type == SorterTypeStraight); // yet to implement a chequered second level
+		for (int j=0; j < tau+1; ++j) {
+			sub_less.push_back(    boost::bind(PositionKMer::compareSubKMersCheq,        _1, _2, k, tau, j) );
+			sub_greater.push_back( boost::bind(PositionKMer::compareSubKMersGreaterCheq, _1, _2, k, tau, j) );
+			sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMersCheq,          _1, _2, k, tau, j) );
+		}
+	}
 
 	// initialize the vectors
 	initVectors();

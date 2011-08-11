@@ -84,7 +84,7 @@ public:
             EdgeId edge = *iter;
             EdgeId addedEdge = new_graph.AddEdge(copy[graph_.EdgeStart(edge)],
                     copy[graph_.EdgeEnd(edge)], graph_.data(edge));
-            new_graph.SetCoverage(addedEdge, graph_.coverage(edge)* graph_.length(edge));
+            new_graph.coverage_index().SetCoverage(addedEdge, graph_.coverage(edge)* graph_.length(edge));
         }
     }
 };

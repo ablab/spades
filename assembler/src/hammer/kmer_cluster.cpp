@@ -62,7 +62,7 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, i
 		cout << "  making a sub-subkmersorter for blocksize=" << blockSize << endl;
 		int nthreads_per_subkmer = max( (int)(nthreads_ / (tau_ + 1)), 1);
 		SubKMerSorter subsubsorter( &block, &k_, nthreads_per_subkmer, tau_, cur_subkmer,
-			SubKMerSorter::SorterTypeStraight, SubKMerSorter::SorterTypeStraight );
+			SubKMerSorter::SorterTypeChequered, SubKMerSorter::SorterTypeStraight );
 		subsubsorter.runSort();
 		for (uint32_t sub_i = 0; sub_i < tau_+1; ++sub_i) {
 			vector<hint_t> subblock;

@@ -16,7 +16,7 @@ private:
 
 	const HandlerApplier<VertexId, EdgeId> *applier_;
 
-	vector<Handler*> action_handler_list_;
+	mutable vector<Handler*> action_handler_list_;
 
 protected:
 	void FireAddVertex(VertexId v) {
@@ -93,7 +93,7 @@ public:
 		TRACE("~ObservableGraph ok")
 	}
 
-	void AddActionHandler(Handler* action_handler) {
+	void AddActionHandler(Handler* action_handler) const {
 		TRACE("Action handler added");
 		if (find(action_handler_list_.begin(),action_handler_list_.end(), action_handler) != action_handler_list_.end()){
 			FATAL_ASSERT(false, "Action handler " << action_handler->name() << " has already been added");
@@ -102,7 +102,7 @@ public:
 		}
 	}
 
-	bool RemoveActionHandler(Handler* action_handler) {
+	bool RemoveActionHandler(Handler* action_handler) const {
 		TRACE("Trying to remove action handler " << action_handler->name());
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
@@ -126,28 +126,14 @@ public:
 	SmartVertexIterator<ObservableGraph, Comparator> SmartVertexBegin(
 			const Comparator& comparator = Comparator()) {
 		return SmartVertexIterator<ObservableGraph, Comparator> (*this,
-				true, comparator);
-	}
-
-	template<typename Comparator = std::less<VertexId> >
-	SmartVertexIterator<ObservableGraph, Comparator> SmartVertexEnd(
-			const Comparator& comparator = Comparator()) {
-		return SmartVertexIterator<ObservableGraph, Comparator> (*this,
-				false, comparator);
+				comparator);
 	}
 
 	template<typename Comparator = std::less<EdgeId> >
 	SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeBegin(
 			const Comparator& comparator = Comparator()) {
 		return SmartEdgeIterator<ObservableGraph, Comparator> (*this,
-				true, comparator);
-	}
-
-	template<typename Comparator = std::less<EdgeId> >
-	SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeEnd(
-			const Comparator& comparator = Comparator()) {
-		return SmartEdgeIterator<ObservableGraph, Comparator> (*this,
-				false, comparator);
+				comparator);
 	}
 
 

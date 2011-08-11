@@ -22,6 +22,7 @@ using namespace omnigraph;
 
 namespace omnigraph {
 
+//todo ask Shurik to remove new_graph_
 template<class Graph>
 class EdgeLabelHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
@@ -37,8 +38,7 @@ private:
 public:
 //TODO: integrate this to resolver, remove "from_resolve" parameter
 	EdgeLabelHandler(Graph &new_graph, Graph &old_graph, unordered_map<EdgeId, EdgeId>& from_resolve) :
-		GraphActionHandler<Graph> ("EdgePositionHandler"), new_graph_(new_graph), old_graph_(old_graph) {
-		new_graph_.AddActionHandler(this);
+		GraphActionHandler<Graph> (new_graph, "EdgePositionHandler"), new_graph_(new_graph), old_graph_(old_graph) {
 		FillLabels(from_resolve);
 		/*		for(auto iter = from_resolve.begin(); iter != from_resolve.end(); ++iter) {
 			if (edge_inclusions.find(iter->second) == edge_inclusions.end()){
@@ -55,8 +55,7 @@ public:
 		}
 */	}
 	EdgeLabelHandler(Graph &new_graph, Graph &old_graph) :
-		GraphActionHandler<Graph> ("EdgePositionHandler"), new_graph_(new_graph), old_graph_(old_graph) {
-		new_graph_.AddActionHandler(this);
+		GraphActionHandler<Graph> (new_graph, "EdgePositionHandler"), new_graph_(new_graph), old_graph_(old_graph) {
 	}
 	void FillLabels(unordered_map<EdgeId, EdgeId>& from_resolve) {
 		for(auto iter = from_resolve.begin(); iter != from_resolve.end(); ++iter) {
@@ -75,7 +74,6 @@ public:
 	}
 
 	virtual ~EdgeLabelHandler() {
-		new_graph_.RemoveActionHandler(this);
 	}
 
 	 virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {

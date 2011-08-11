@@ -45,8 +45,6 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef int realIdType;
-private:
-	Graph &g_;
 
 public:
 	map<EdgeId, vector<EdgePosition> > EdgesPositions;
@@ -76,12 +74,9 @@ public:
 	}
 
 	EdgesPositionHandler(Graph &g) :
-		GraphActionHandler<Graph> ("EdgePositionHandler"), g_(g) {
-		g_.AddActionHandler(this);
+		GraphActionHandler<Graph> (g, "EdgePositionHandler") {
 	}
 	virtual ~EdgesPositionHandler() {
-		TRACE("~EdgePositionHandler");
-		g_.RemoveActionHandler(this);
 		TRACE("~EdgePositionHandler ok");
 	}
 
