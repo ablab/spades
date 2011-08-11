@@ -135,8 +135,11 @@ size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Seque
 Sequence PathToSequence(Graph& g, BidirectionalPath& path) {
 	SequenceBuilder result;
 
+	if (!path.empty()) {
+		result.append(g.EdgeNucls(path[0]).Subseq(0, K));
+	}
 	for (auto edge = path.begin(); edge != path.end(); ++edge) {
-		result.append(g.EdgeNucls(*edge));
+		result.append(g.EdgeNucls(*edge).Subseq(K + 1));
 	}
 
 	return result.BuildSequence();
