@@ -670,6 +670,10 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	INFO("Etalon paired info mode: " << (etalon_info_mode ? "Yes" : "No"))INFO(
 			"From file: " << (from_saved ? "Yes" : "No"))
 	mkdir(work_tmp_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+
+	string graph_save_path = output_folder+"saves/";
+	mkdir(graph_save_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+
 	Graph g(k);
 	EdgeIndex<k + 1, Graph> index(g);
 	IdTrackHandler<Graph> IntIds(g);
@@ -683,7 +687,6 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	int number_of_components = 0;
 
 	if (!from_saved) {
-
 		if (paired_mode) {
 			if (etalon_info_mode) {
 				ConstructGraphWithEtalonPairedInfo<k, ReadStream> (g, index,
@@ -710,13 +713,13 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		TotalLabeler<Graph> TotLab(&graph_struct, NULL);
 
 
-		omnigraph::WriteSimple(output_folder + "total_before_simplification.dot",
+		omnigraph::WriteSimple(output_folder + "1_initial_graph.dot",
 				"no_repeat_graph", g, TotLab);
 
-		omnigraph::WriteSimple(output_folder + "before_simplification_pos.dot",
-				"no_repeat_graph", g, EdgePosLab);
+//		omnigraph::WriteSimple(output_folder + "before_simplification_pos.dot",
+//				"no_repeat_graph", g, EdgePosLab);
 
-		printGraph(g, IntIds, output_folder + "first_graph", paired_index,
+		printGraph(g, IntIds, graph_save_path + "first_graph", paired_index,
 				EdgePos);
 
 		SimplifyGraph<k> (g, index, 3, genome, output_folder/*, etalon_paired_index*/);
@@ -726,6 +729,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		WriteGraphComponents<k> (g, index, genome,
 				output_folder + "graph_components" + "/", "graph.dot",
 				"graph_component", insert_size);
+
 		number_of_components = PrintGraphComponents(
 				output_folder + "graph_components/graph", g, insert_size,
 				IntIds, paired_index, EdgePos);
@@ -735,15 +739,18 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 					etalon_paired_index, output_folder);
 		}
 
-		omnigraph::WriteSimple(
-				output_folder + "repeats_resolved_before_poslab.dot",
-				"no_repeat_graph", g, EdgePosLab);
-		omnigraph::WriteSimple(
-				work_tmp_dir + "repeats_resolved_before_poslab.dot",
-				"no_repeat_graph", g, EdgePosLab);
+//		omnigraph::WriteSimple(
+//				output_folder + "repeats_resolved_before_poslab.dot",
+//				"no_repeat_graph", g, EdgePosLab);
+//		omnigraph::WriteSimple(
+//				work_tmp_dir + "repeats_resolved_before_poslab.dot",
+//				"no_repeat_graph", g, EdgePosLab);
 
-		printGraph(g, IntIds, output_folder + "repeats_resolved_before",
+		printGraph(g, IntIds, graph_save_path + "repeats_resolved_before",
 				paired_index, EdgePos);
+
+		omnigraph::WriteSimple(output_folder + "2_simplified_graph.dot",
+				"no_repeat_graph", g, TotLab);
 
 		if (paired_mode) {
 			DistanceEstimator<Graph> estimator(g, paired_index, insert_size,
@@ -774,9 +781,9 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		if (!from_saved) {
 			INFO("before ResolveRepeats");
 			RealIdGraphLabeler<Graph> IdTrackLabelerBefore(g, IntIds);
-			omnigraph::WriteSimple(
-					output_folder + "repeats_resolved_before.dot",
-					"no_repeat_graph", g, IdTrackLabelerBefore);
+//			omnigraph::WriteSimple(
+//					output_folder + "repeats_resolved_before.dot",
+//					"no_repeat_graph", g, IdTrackLabelerBefore);
 			printGraph(g, IntIds, work_tmp_dir + "graph", clustered_index,
 					EdgePos);
 			printGraph(g, IntIds, output_folder + "graph", clustered_index,
@@ -805,8 +812,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
-		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_nonconjugate_copy.dot",
-				"no_repeat_graph", new_graph, IdTrackLabelerAfter);
+//		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_nonconjugate_copy.dot",
+//				"no_repeat_graph", new_graph, IdTrackLabelerAfter);
 		INFO("repeat resolved graph written");
 
 		NonconjugateDeBruijnGraph resolved_graph(k);
@@ -832,7 +839,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		TotalLabelerGraphStruct<NCGraph> graph_struct_after(resolved_graph, &Resolved_IntIds, &EdgePosAfter, &LabelsAfter);
 		TotalLabeler<NCGraph> TotLabAfter(&graph_struct_after, &graph_struct_before);
 
-		omnigraph::WriteSimple(work_tmp_dir + "total_after.dot",
+		omnigraph::WriteSimple(output_folder + "3_resolved_graph.dot",
 				"no_repeat_graph", resolved_graph, TotLabAfter);
 
 		INFO("Total labeler finished");
@@ -840,70 +847,73 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
 				Resolved_IntIds);
 
-		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_after.dot",
-				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
-		omnigraph::WriteSimple(output_folder + "repeats_resolved_after.dot",
-				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+//		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_after.dot",
+//				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+//		omnigraph::WriteSimple(output_folder + "repeats_resolved_after.dot",
+//				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 
 		EdgesPosGraphLabeler<NCGraph> EdgePosLAfterLab(resolved_graph,
 				EdgePosAfter);
 
-		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_after_pos.dot",
-
-		"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
-		omnigraph::WriteSimple(
-				output_folder + "repeats_resolved_after_pos.dot",
-				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+//		omnigraph::WriteSimple(work_tmp_dir + "repeats_resolved_after_pos.dot",
+//		"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+//		omnigraph::WriteSimple(
+//				output_folder + "repeats_resolved_after_pos.dot",
+//				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
 
 		EdgesLabelsGraphLabeler<NCGraph> LabelLabler(resolved_graph, LabelsAfter);
 
-		omnigraph::WriteSimple(
-				output_folder + "resolved_labels_1.dot",
-				"no_repeat_graph", resolved_graph, LabelLabler);
+//		omnigraph::WriteSimple(
+//				output_folder + "resolved_labels_1.dot",
+//				"no_repeat_graph", resolved_graph, LabelLabler);
 
 		for(int i = 0; i < 2; i ++) {
 			ClipTips(resolved_graph);
 			RemoveBulges2(resolved_graph);
 			RemoveLowCoverageEdgesForResolver(resolved_graph);
 		}
-		omnigraph::WriteSimple(
-				output_folder + "resolved_labels_2.dot",
-				"no_repeat_graph", resolved_graph, LabelLabler);
-		omnigraph::WriteSimple(
-				work_tmp_dir + "repeats_resolved_after_und_cleared_pos.dot",
-				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
-		omnigraph::WriteSimple(
-				output_folder + "repeats_resolved_after_und_cleared_pos.dot",
-				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+//		omnigraph::WriteSimple(
+//				output_folder + "resolved_labels_2.dot",
+//				"no_repeat_graph", resolved_graph, LabelLabler);
+//		omnigraph::WriteSimple(
+//				work_tmp_dir + "repeats_resolved_after_und_cleared_pos.dot",
+//				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+//		omnigraph::WriteSimple(
+//				output_folder + "repeats_resolved_after_und_cleared_pos.dot",
+//				"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
 
-		omnigraph::WriteSimple(
-				work_tmp_dir + "repeats_resolved_und_cleared.dot",
-				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
-		omnigraph::WriteSimple(
-				output_folder + "repeats_resolved_und_cleared.dot",
-				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+//		omnigraph::WriteSimple(
+//				work_tmp_dir + "repeats_resolved_und_cleared.dot",
+//				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+//		omnigraph::WriteSimple(
+//				output_folder + "repeats_resolved_und_cleared.dot",
+//				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+
 		OutputContigs(resolved_graph, output_folder + "contigs_before_enlarge.fasta");
 
-		omnigraph::WriteSimple(work_tmp_dir + "total_after_simple.dot",
+		omnigraph::WriteSimple(output_folder + "4_cleared_graph.dot",
 				"no_repeat_graph", resolved_graph, TotLabAfter);
 
-		omnigraph::WriteSimple(
-				output_folder + "repeats_resolved_und_cleared.dot",
-				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+//		omnigraph::WriteSimple(
+//				output_folder + "repeats_resolved_und_cleared.dot",
+//				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
 
 		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
 		N50enlarger.one_many_resolve_with_vertex_split();
 
-		omnigraph::WriteSimple(
-				output_folder + "resolved_labels_3.dot",
-				"no_repeat_graph", resolved_graph, LabelLabler);
+		omnigraph::WriteSimple(output_folder + "4_finished_graph.dot",
+				"no_repeat_graph", resolved_graph, TotLabAfter);
 
-
-		omnigraph::WriteSimple(
-				output_folder
-						+ "repeats_resolved_und_cleared_und_simplified.dot",
-				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
-		INFO("repeat resolved grpah written");
+//		omnigraph::WriteSimple(
+//				output_folder + "resolved_labels_3.dot",
+//				"no_repeat_graph", resolved_graph, LabelLabler);
+//
+//
+//		omnigraph::WriteSimple(
+//				output_folder
+//						+ "repeats_resolved_und_cleared_und_simplified.dot",
+//				"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+//		INFO("repeat resolved grpah written");
 
 		//		SimplifyGRaph<k>(resolved_graph, aux_index, 3, genome, output_folder);
 

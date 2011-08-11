@@ -28,7 +28,7 @@ private:
 	typedef PairedVertex<VertexData, EdgeData, DataMaster>* VertexId;
 	typedef PairedEdge<VertexData, EdgeData, DataMaster>* EdgeId;
 
-	friend class AbstractConjugateGraph<VertexData, EdgeData, DataMaster>;
+	friend class AbstractConjugateGraph<VertexData, EdgeData, DataMaster> ;
 
 	vector<EdgeId> outgoing_edges_;
 
@@ -186,7 +186,7 @@ public:
 		v2->set_conjugate(v1);
 		vertices_.insert(v1);
 		vertices_.insert(v2);
-//		cout << "add v " << v1 << " " << v2 << endl;
+		cout << "add v " << v1 << " " << v2 << endl;
 		return v1;
 	}
 
@@ -205,8 +205,21 @@ public:
 				master_.conjugate(data));
 		result->set_conjugate(rcEdge);
 		rcEdge->set_conjugate(result);
-//		cout << "add e" << result << " " << rcEdge << endl;
+		cout << "add e" << result << " " << rcEdge << endl;
 		return result;
+	}
+
+	void HiddenDeleteEdge(EdgeId edge) {
+		EdgeId rcEdge = conjugate(edge);
+		VertexId rcStart = conjugate(edge->end());
+		VertexId start = conjugate(rcEdge->end());
+		start->RemoveOutgoingEdge(edge);
+		rcStart->RemoveOutgoingEdge(rcEdge);
+		if (edge != rcEdge) {
+			delete rcEdge;
+		}
+		delete edge;
+		cout << "del e" << edge << " " << rcEdge << endl;
 	}
 
 	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data) {
@@ -326,13 +339,7 @@ public:
 		return result;
 	}
 
-	void DeleteVertex(VertexId v) {
-		TRACE("ab_conj DeleteVertex "<<v);
-		assert(IsDeadEnd(v) && IsDeadStart(v));
-		TRACE("ab_conj DeleteVertex "<<v);
-		assert(v != NULL);
-		TRACE("ab_conj DeleteVertex "<<v);
-		FireDeleteVertex(v);
+	void HiddenDeleteVertex(VertexId v) {
 		TRACE("ab_conj DeleteVertex "<<v);
 		VertexId conjugate = v->conjugate();
 		TRACE("ab_conj DeleteVertex "<<v<<" and conj "<<conjugate);
@@ -344,7 +351,17 @@ public:
 		TRACE("ab_conj delete "<<conjugate);
 		delete conjugate;
 		TRACE("ab_conj delete FINISHED");
-//		cout << "del v " << v << " " << conjugate << endl;
+		cout << "del v " << v << " " << conjugate << endl;
+	}
+
+	void DeleteVertex(VertexId v) {
+		TRACE("ab_conj DeleteVertex "<<v);
+		assert(IsDeadEnd(v) && IsDeadStart(v));
+		TRACE("ab_conj DeleteVertex "<<v);
+		assert(v != NULL);
+		TRACE("ab_conj DeleteVertex "<<v);
+		FireDeleteVertex(v);
+		HiddenDeleteVertex(v);
 	}
 
 	void ForceDeleteVertex(VertexId v) {
@@ -385,16 +402,7 @@ public:
 
 	void DeleteEdge(EdgeId edge) {
 		FireDeleteEdge(edge);
-		EdgeId rcEdge = conjugate(edge);
-		VertexId rcStart = conjugate(edge->end());
-		VertexId start = conjugate(rcEdge->end());
-		start->RemoveOutgoingEdge(edge);
-		rcStart->RemoveOutgoingEdge(rcEdge);
-		if (edge != rcEdge) {
-			delete rcEdge;
-		}
-		delete edge;
-//		cout << "del e" << edge << " " << rcEdge << endl;
+		HiddenDeleteEdge(edge);
 	}
 
 	bool IsDeadEnd(VertexId v) const {
@@ -469,27 +477,50 @@ public:
 		}
 		EdgeId newEdge = HiddenAddEdge(v1, v2, master_.MergeData(toMerge));
 		FireMerge(correctedPath, newEdge);
-		DeletePath(correctedPath);
+		set<EdgeId> edgesToDelete = EdgesToDelete(path);
+		set<VertexId> verticesToDelete = VerticesToDelete(path);
+		FireDeletePath(edgesToDelete, verticesToDelete);
 		FireAddEdge(newEdge);
+		HiddenDeletePath(edgesToDelete, verticesToDelete);
 		return newEdge;
 	}
 
-	void DeletePath(const vector<EdgeId> &path) {
+	void FireDeletePath(const set<EdgeId> &edgesToDelete,
+			const set<VertexId> &verticesToDelete) {
+		for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
+			FireDeleteEdge(*it);
+		for (auto it = verticesToDelete.begin(); it != verticesToDelete.end(); ++it)
+			FireDeleteVertex(*it);
+	}
+
+	void HiddenDeletePath(const set<EdgeId> &edgesToDelete,
+			const set<VertexId> &verticesToDelete) {
+		for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
+			HiddenDeleteEdge(*it);
+		for (auto it = verticesToDelete.begin(); it != verticesToDelete.end(); ++it)
+			HiddenDeleteVertex(*it);
+	}
+
+	set<EdgeId> EdgesToDelete(const vector<EdgeId> &path) {
 		set<EdgeId> edgesToDelete;
-		set<VertexId> verticesToDelete;
 		edgesToDelete.insert(path[0]);
 		for (size_t i = 0; i + 1 < path.size(); i++) {
 			EdgeId e = path[i + 1];
 			if (edgesToDelete.find(conjugate(e)) == edgesToDelete.end())
 				edgesToDelete.insert(e);
+		}
+		return edgesToDelete;
+	}
+
+	set<VertexId> VerticesToDelete(const vector<EdgeId> &path) {
+		set<VertexId> verticesToDelete;
+		for (size_t i = 0; i + 1 < path.size(); i++) {
+			EdgeId e = path[i + 1];
 			VertexId v = EdgeStart(e);
 			if (verticesToDelete.find(conjugate(v)) == verticesToDelete.end())
 				verticesToDelete.insert(v);
 		}
-		for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
-			DeleteEdge(*it);
-		for (auto it = verticesToDelete.begin(); it != verticesToDelete.end(); ++it)
-			DeleteVertex(*it);
+		return verticesToDelete;
 	}
 
 	pair<EdgeId, EdgeId> SplitEdge(EdgeId edge, size_t position) {
@@ -502,22 +533,25 @@ public:
 		EdgeId newEdge2 = HiddenAddEdge(splitVertex, this->EdgeEnd(edge),
 				newData.second.second);
 		FireSplit(edge, newEdge1, newEdge2);
+		FireDeleteEdge(edge);
 		FireAddVertex(splitVertex);
 		FireAddEdge(newEdge1);
 		FireAddEdge(newEdge2);
-		DeleteEdge(edge);
+		HiddenDeleteEdge(edge);
 		return make_pair(newEdge1, newEdge2);
 	}
 
 	void GlueEdges(EdgeId edge1, EdgeId edge2) {
-		EdgeId newEdge = HiddenAddEdge(EdgeStart(edge2), EdgeEnd(edge2), master_.GlueData(edge1->data(), edge2->data()));
+		EdgeId newEdge = HiddenAddEdge(EdgeStart(edge2), EdgeEnd(edge2),
+				master_.GlueData(edge1->data(), edge2->data()));
 		FireGlue(newEdge, edge1, edge2);
 		FireDeleteEdge(edge1);
 		FireDeleteEdge(edge2);
 		FireAddEdge(newEdge);
 		VertexId start = EdgeStart(edge1);
 		VertexId end = EdgeEnd(edge1);
-		DeleteEdge(edge1);
+		HiddenDeleteEdge(edge1);
+		HiddenDeleteEdge(edge2);
 		if (IsDeadStart(start) && IsDeadEnd(start)) {
 			DeleteVertex(start);
 		}
@@ -526,19 +560,19 @@ public:
 		}
 
 		/*/////////////////
-		FireDeleteEdge(edge2);
-		FireGlue(edge1, edge2);
-		edge2->set_data(master_.GlueData(edge1->data(), edge2->data()));
-		FireAddEdge(edge2);
-		VertexId start = EdgeStart(edge1);
-		VertexId end = EdgeEnd(edge1);
-		DeleteEdge(edge1);
-		if (IsDeadStart(start) && IsDeadEnd(start)) {
-			DeleteVertex(start);
-		}
-		if (IsDeadStart(end) && IsDeadEnd(end)) {
-			DeleteVertex(end);
-		}*/
+		 FireDeleteEdge(edge2);
+		 FireGlue(edge1, edge2);
+		 edge2->set_data(master_.GlueData(edge1->data(), edge2->data()));
+		 FireAddEdge(edge2);
+		 VertexId start = EdgeStart(edge1);
+		 VertexId end = EdgeEnd(edge1);
+		 DeleteEdge(edge1);
+		 if (IsDeadStart(start) && IsDeadEnd(start)) {
+		 DeleteVertex(start);
+		 }
+		 if (IsDeadStart(end) && IsDeadEnd(end)) {
+		 DeleteVertex(end);
+		 }*/
 	}
 
 private:
