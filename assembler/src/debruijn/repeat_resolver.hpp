@@ -647,6 +647,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 	for (int dir = 0; dir < 2; dir++) {
 		for (int i = 0, n = edgeIds[dir].size(); i < n; i++) {
 			PairInfos tmp = paired_di_data.GetEdgeInfos(edgeIds[dir][i]);
+
 			for (int j = 0, sz = tmp.size(); j < sz; j++) {
 				EdgeId right_id = tmp[j].second;
 				EdgeId left_id = tmp[j].first;
@@ -655,6 +656,8 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 				//				if (w < 10) continue;
 				int dif_d = 0;
 				//				if ((d >=new_graph.length(left_id))||(edge_labels[left_id] == right_id ))
+				vector<EdgeInfo> tmp_edge_infos;
+
 				{
 					if ((dir == 1) /*&& (edge_labels[left_id] != right_id)*/) {
 						dif_d = new_graph.length(left_id);
@@ -681,12 +684,27 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 								"PairInfo: " << old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 						EdgeInfo ei(correction_result.second, dir, right_id,
 								correction_result.second.d - dif_d);
-						edge_infos.push_back(ei);
+						tmp_edge_infos.push_back(ei);
 						//					DEBUG(right_id);
 						right_edges.insert(right_id);
 					}
 
 				}
+				bool NotOnSelfExist = false;
+				for (int j = 0; j < (int)tmp_edge_infos.size(); j++) {
+					if ((tmp_edge_infos[j].lp.weight != 0)||(edge_labels[tmp_edge_infos[j].lp.first] != tmp_edge_infos[j].lp.second)){
+						NotOnSelfExist = true;
+						break;
+					}
+				}
+				for (int j = 0; j < (int)tmp_edge_infos.size(); j++) {
+					if ((!NotOnSelfExist)||(tmp_edge_infos[j].lp.weight != 0)||(edge_labels[tmp_edge_infos[j].lp.first] != tmp_edge_infos[j].lp.second)){
+						edge_infos.push_back(tmp_edge_infos[j]);
+					}
+
+				}
+
+
 			}
 		}
 	}
@@ -815,7 +833,7 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 				DEBUG(first_ind <<" "<< second_ind);
 				neighbours[first_ind + counts[1]].push_back(second_ind);
 				neighbours[second_ind].push_back(first_ind + counts[1]);
-				DEBUG("neighbours "<<first_ind<<" + "<<counts[0]<<"  "<<second_ind);
+				DEBUG("neighbours "<<first_ind<<" + "<<counts[1]<<"  "<<second_ind);
 //				table[first_ind][second_ind] = 1;
 			}
 		}
