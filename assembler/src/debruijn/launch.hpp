@@ -313,6 +313,19 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 	INFO("Primitive repeats resolved");
 }
 
+/*void FindZeros(PairedInfoIndex<Graph>& etalon_paired_index) {
+	for (auto it = etalon_paired_index.begin(); it != etalon_paired_index.end(); ++it) {
+		const vector<PairInfo<EdgeId>> infos = *it;
+		for (auto it2 = infos.begin(); it2!=infos.end(); ++it2) {
+			PairInfo<EdgeId> info = *it2;
+			if (info.first == info.second && info.d == 0.) {
+				cout << "FOUND ZEROS!!!" << endl;
+				return;
+			}
+		}
+	}
+}*/
+
 template<size_t k, class ReadStream>
 void FillPairedIndex(Graph &g, const EdgeIndex<k + 1, Graph>& index, PairedInfoIndex<Graph>& paired_info_index,
 		ReadStream& stream) {
@@ -335,45 +348,69 @@ void ToSet(PairedInfoIndex<Graph>& paired_index, set<PairInfo<EdgeId>>& as_set) 
 	}
 }
 
-void CheckInfoEquality(PairedInfoIndex<Graph>& paired_index1, PairedInfoIndex<Graph>& paired_index2) {
-	set<PairInfo<EdgeId>> set1;
-	set<PairInfo<EdgeId>> set2;
-	ToSet(paired_index1, set1);
-	ToSet(paired_index2, set2);
-	//todo remove assert
-	if (set1.size() != set2.size()) {
-		cerr << "HELP_1!!!" << endl;
-	}
-	for (auto it = set1.begin(); it != set1.end(); ++it) {
-		if (set2.count(*it) == 0) {
-			cerr << "HELP_2!!!" << endl;
+void CheckPairInfo(const vector<PairInfo<EdgeId>>& infos1, const vector<PairInfo<EdgeId>>& infos2) {
+
+	for (auto it = infos1.begin(); it != infos1.end(); ++it) {
+		bool found = false;
+		for (auto it2 = infos2.begin(); it2 != infos2.end(); ++it2) {
+			if (*it == *it2)
+				found = true;
+		}
+		if (!found && !((*it).first == (*it).second && (*it).d == 0.)) {
+			cerr << "Didn't find " << *it << " in " << infos2 <<  " initial:" << infos1 << endl;
 		}
 	}
+
 }
 
+void CheckInfoEquality(PairedInfoIndex<Graph>& paired_index1, PairedInfoIndex<Graph>& paired_index2) {
+	for (auto it = paired_index1.begin(); it != paired_index1.end(); ++it) {
+		const vector<PairInfo<EdgeId>> infos1 = *it;
+		EdgeId first = infos1.front().first;
+		EdgeId second = infos1.front().second;
+		const vector<PairInfo<EdgeId>> infos2 = paired_index2.GetEdgePairInfo(first, second);
+		CheckPairInfo(infos1, infos2);
+		CheckPairInfo(infos2, infos1);
+	}
+//	set<PairInfo<EdgeId>> set1;
+//	set<PairInfo<EdgeId>> set2;
+//	ToSet(paired_index1, set1);
+//	ToSet(paired_index2, set2);
+//	//todo remove assert
+//	if (set1.size() != set2.size()) {
+//		cerr << "HELP_1!!!" << endl;
+//	}
+//	for (auto it = set1.begin(); it != set1.end(); ++it) {
+//		if (set2.count(*it) == 0) {
+//			cerr << "HELP_2!!!" << endl;
+//		}
+//	}
+}
+
+
 template<size_t k>
-void FillEtalonPairedIndex(const Graph &g, PairedInfoIndex<Graph>& paired_info_index,
+void FillEtalonPairedIndex(const Graph &g, PairedInfoIndex<Graph>& etalon_paired_index,
 		const EdgeIndex<k + 1, Graph>& index, size_t insert_size, size_t read_length,
 		const Sequence& genome) {
 	INFO("-----------------------------------------");
 	INFO("Counting etalon paired info");
 	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index,
 			insert_size, read_length, insert_size * 0.1);
-	etalon_paired_info_counter.FillEtalonPairedInfo(genome, paired_info_index);
+	etalon_paired_info_counter.FillEtalonPairedInfo(genome, etalon_paired_index);
 	//////////////////DEBUG
 //	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
 //	Path<EdgeId> path = simple_mapper.MapSequence(genome);
-//	SequenceBuilder sequnce_builder;
+//	SequenceBuilder sequence_builder;
+//	sequence_builder.append(Seq<k>(g.EdgeNucls(path[0])));
 //	for (auto it = path.begin(); it != path.end(); ++it) {
-//		INFO("append");
-//		sequnce_builder.append(g.EdgeNucls(*it));
+//		sequence_builder.append(g.EdgeNucls(*it).Subseq(k));
 //	}
-//	Sequence new_genome = sequnce_builder.BuildSequence();
+//	Sequence new_genome = sequence_builder.BuildSequence();
 //	NewEtalonPairedInfoCounter<k, Graph> new_etalon_paired_info_counter(g, index,
 //			insert_size, read_length, insert_size * 0.1);
 //	PairedInfoIndex<Graph> new_paired_info_index(g);
 //	new_etalon_paired_info_counter.FillEtalonPairedInfo(new_genome, new_paired_info_index);
-//	CheckInfoEquality(paired_info_index, new_paired_info_index);
+//	CheckInfoEquality(etalon_paired_index, new_paired_info_index);
 	//////////////////DEBUG
 	INFO("Paired info counted");
 }
@@ -434,71 +471,6 @@ void ConstructGraphWithEtalonPairedInfo(Graph& g,
 			index/*, coverage_handler*/, united_stream);
 	FillEtalonPairedIndex<k> (g, paired_index, index, insert_size, read_length,
 			genome);
-}
-
-template<class Graph>
-void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
-		const string &file_name, PairedInfoIndex<Graph> &paired_index,
-		EdgesPositionHandler<Graph> &edges_positions,
-		EdgeVertexFilter<Graph> *filter) {
-	DataPrinter<Graph> dataPrinter(g, old_IDs, filter);
-	dataPrinter.saveGraph(file_name);
-	dataPrinter.saveEdgeSequences(file_name);
-	dataPrinter.saveCoverage(file_name);
-	dataPrinter.savePaired(file_name, paired_index);
-	dataPrinter.savePositions(file_name, edges_positions);
-}
-
-template<class Graph>
-void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
-		const string &file_name, PairedInfoIndex<Graph> &paired_index,
-		EdgesPositionHandler<Graph> &edges_positions) {
-	DataPrinter<Graph> dataPrinter(g, old_IDs);
-	dataPrinter.saveGraph(file_name);
-	dataPrinter.saveEdgeSequences(file_name);
-	dataPrinter.saveCoverage(file_name);
-	dataPrinter.savePaired(file_name, paired_index);
-	dataPrinter.savePositions(file_name, edges_positions);
-}
-
-template<class Graph>
-void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
-		const string &file_name, PairedInfoIndex<Graph> &paired_index) {
-	DataPrinter<Graph> dataPrinter(g, old_IDs);
-	dataPrinter.saveGraph(file_name);
-	dataPrinter.saveEdgeSequences(file_name);
-	dataPrinter.saveCoverage(file_name);
-	dataPrinter.savePaired(file_name, paired_index);
-
-}
-
-template<class Graph>
-void scanNCGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
-		const string &file_name, PairedInfoIndex<Graph>& paired_index,
-		EdgesPositionHandler<Graph> &edges_positions) {
-	DataScanner<Graph> dataScanner(g, new_IDs);
-	dataScanner.loadNonConjugateGraph(file_name, true);
-	dataScanner.loadCoverage(file_name);
-	dataScanner.loadPaired(file_name, paired_index);
-	dataScanner.loadPositions(file_name, edges_positions);
-}
-
-template<class Graph>
-void scanNCGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
-		const string &file_name, PairedInfoIndex<Graph>& paired_index) {
-	DataScanner<Graph> dataScanner(g, new_IDs);
-	dataScanner.loadNonConjugateGraph(file_name, true);
-	dataScanner.loadCoverage(file_name);
-	dataScanner.loadPaired(file_name, paired_index);
-}
-
-template<class Graph>
-void scanConjugateGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
-		const string &file_name, PairedInfoIndex<Graph>& paired_index) {
-	DataScanner<Graph> dataScanner(g, new_IDs);
-	dataScanner.loadConjugateGraph(file_name, true);
-	dataScanner.loadCoverage(file_name);
-	dataScanner.loadPaired(file_name, paired_index);
 }
 
 template<size_t k>
@@ -679,6 +651,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	//	PairedInfoIndex<Graph> paired_index(g, 5);
 	PairedInfoIndex<Graph> paired_index(g, 0);
 	PairedInfoIndex<Graph> etalon_paired_index(g, 0);
+
 	PairedInfoIndex<Graph> clustered_index(g);
 	int number_of_components = 0;
 

@@ -683,7 +683,7 @@ public:
 		}
 		stream_.reset();
 		while (!stream_.eof()) {
-      io::PairedRead p_r;
+			io::PairedRead p_r;
 			stream_ >> p_r;
 			ProcessPairedRead(paired_index, p_r);
 		}
