@@ -29,9 +29,8 @@ using std::vector;
  */
 template<typename VertexId, typename EdgeId>
 class ActionHandler {
-public:
 	const string handler_name_;
-
+public:
 	/**
 	 * Create action handler with given name. With this name one can find out what tipe of handler is it.
 	 */
@@ -131,13 +130,22 @@ template<class Graph>
 class GraphActionHandler: public ActionHandler<typename Graph::VertexId,
 		typename Graph::EdgeId> {
 	typedef ActionHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
-public:
-	GraphActionHandler(const string& name) :
-			base(name) {
 
+	const Graph& g_;
+protected:
+	const Graph& g() const {
+		return g_;
+	}
+public:
+	GraphActionHandler(const Graph& g, const string& name) :
+			base(name), g_(g) {
+		TRACE("Adding new action handler: " << this->name());
+		g_.AddActionHandler(this);
 	}
 
 	virtual ~GraphActionHandler() {
+		TRACE("Removing action handler: " << this->name());
+		g_.RemoveActionHandler(this);
 	}
 };
 
@@ -402,23 +410,18 @@ template<class Graph, typename ElementId, typename Comparator = std::less<
 		ElementId> >
 class SmartIterator: public GraphActionHandler<Graph>, public QueueIterator<
 		ElementId, Comparator> {
-private:
-	Graph &graph_;
 public:
 	typedef QueueIterator<ElementId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartIterator(Graph &graph, const string &name,
+	SmartIterator(const Graph &graph, const string &name,
 			const Comparator& comparator = Comparator()) :
-			GraphActionHandler<Graph>(name), QueueIterator<ElementId, Comparator>(
-					comparator),
-			graph_(graph) {
-		graph_.AddActionHandler(this);
+			GraphActionHandler<Graph>(graph, name), QueueIterator<ElementId, Comparator>(
+					comparator) {
 	}
 
 	virtual ~SmartIterator() {
-		graph_.RemoveActionHandler(this);
 	}
 
 	virtual void HandleAdd(ElementId v) {
@@ -445,13 +448,11 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartVertexIterator(Graph &graph, bool fill, const Comparator& comparator =
+	SmartVertexIterator(const Graph &graph, const Comparator& comparator =
 			Comparator()) :
 			SmartIterator<Graph, VertexId, Comparator>(graph,
 					"SmartVertexIterator " + ToString(this), comparator) {
-		if (fill) {
-			super::insert(graph.begin(), graph.end());
-		}
+		super::insert(graph.begin(), graph.end());
 	}
 
 	virtual ~SmartVertexIterator() {
@@ -474,15 +475,13 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartEdgeIterator(Graph &graph, bool fill, Comparator comparator =
+	SmartEdgeIterator(const Graph &graph, Comparator comparator =
 			Comparator()) :
 			SmartIterator<Graph, EdgeId, Comparator>(graph,
 					"SmartEdgeIterator " + ToString(this), comparator) {
-		if (fill) {
-			for (auto it = graph.begin(); it != graph.end(); ++it) {
-				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
-				this->super::insert(outgoing.begin(), outgoing.end());
-			}
+		for (auto it = graph.begin(); it != graph.end(); ++it) {
+			const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
+			this->super::insert(outgoing.begin(), outgoing.end());
 		}
 	}
 
@@ -541,7 +540,9 @@ public:
 };
 
 struct Range {
+	//inclusive
 	size_t start_pos;
+	//exclusive
 	size_t end_pos;
 
 	Range(size_t start_pos, size_t end_pos)

@@ -45,11 +45,11 @@ public:
                         VertexId addedVertex = graph_.AddVertex();
                         VertexId afterLoopEdgeEndVertex = graph_.EdgeEnd(afterLoopEdge);
                         EdgeId addedAfterLoopEdge =  graph_.AddEdge( addedVertex, afterLoopEdgeEndVertex, graph_.EdgeNucls(afterLoopEdge));
-                        graph_.SetCoverage(addedAfterLoopEdge, graph_.coverage(afterLoopEdge) * graph_.length(afterLoopEdge) );
+                        graph_.coverage_index().SetCoverage(addedAfterLoopEdge, graph_.coverage(afterLoopEdge) * graph_.length(afterLoopEdge) );
                         graph_.DeleteEdge(afterLoopEdge);
 
                         EdgeId transformedLoopEdge = graph_.AddEdge(loopNode, addedVertex, graph_.EdgeNucls(*iter));
-                        graph_.SetCoverage(transformedLoopEdge, graph_.coverage(*iter) * graph_.length(*iter));
+                        graph_.coverage_index().SetCoverage(transformedLoopEdge, graph_.coverage(*iter) * graph_.length(*iter));
                         graph_.DeleteEdge(*iter);
 
                     }

@@ -328,44 +328,40 @@ public:
 	}
 
 	//begin-end insert size supposed
-	PairedInfoIndex(Graph &g, int max_difference = 0) :
-		GraphActionHandler<Graph> ("PairedInfoIndex"),
-				max_difference_(max_difference), graph_(g) {
-		g.AddActionHandler(this);
+	PairedInfoIndex(const Graph &g, int max_difference = 0) :
+		GraphActionHandler<Graph> (g, "PairedInfoIndex"),
+				max_difference_(max_difference) {
 	}
 
 	virtual ~PairedInfoIndex() {
-		TRACE("~PairedInfoIndex");
-		graph_.RemoveActionHandler(this);
 		TRACE("~PairedInfoIndex ok");
 	}
 
-	double sum() {
-		double res = 0;
-		for (auto it = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd() != it; ++it)
-			for (auto it1 = graph_.SmartEdgeBegin(); graph_.SmartEdgeEnd()
-					!= it1; ++it1) {
-				PairInfos vec = GetEdgePairInfo(*it1, *it);
-				if (vec.size() != 0) {
-					for (size_t i = 0; i < vec.size(); i++)
-						res += vec[i].weight;
-				}
-			}
-		return res;
-	}
+//	double sum() {
+//		double res = 0;
+//		for (auto it = this->g().SmartEdgeBegin(); this->g().SmartEdgeEnd() != it; ++it)
+//			for (auto it1 = this->g().SmartEdgeBegin(); this->g().SmartEdgeEnd()
+//					!= it1; ++it1) {
+//				PairInfos vec = GetEdgePairInfo(*it1, *it);
+//				if (vec.size() != 0) {
+//					for (size_t i = 0; i < vec.size(); i++)
+//						res += vec[i].weight;
+//				}
+//			}
+//		return res;
+//	}
 
 private:
 
-	Graph& graph_;
 	PairInfoIndexData<EdgeId> data_;
 
 	size_t CorrectLength(const Path<EdgeId>& path, size_t index) {
-		size_t result = graph_.length(path[index]);
+		size_t result = this->g().length(path[index]);
 		if (index == 0) {
 			result -= path.start_pos();
 		}
 		if (index == path.size() - 1) {
-			result -= graph_.length(path[index]) - path.end_pos();
+			result -= this->g().length(path[index]) - path.end_pos();
 		}
 		return result;
 	}
@@ -440,35 +436,35 @@ public:
 	}
 
 private:
-	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os = cout) {
-		PairInfos vec = GetEdgePairInfo(edge1, edge2);
-		if (vec.size() != 0) {
-			os << edge1 << " " << graph_.length(edge1) << " " << edge2 << " "
-					<< graph_.length(edge2) << endl;
-			if (graph_.EdgeEnd(edge1) == graph_.EdgeStart(edge2))
-				os << "+" << endl;
-			if (graph_.EdgeEnd(edge2) == graph_.EdgeStart(edge1))
-				os << "-" << endl;
-			int min = INT_MIN;
-			for (size_t i = 0; i < vec.size(); i++) {
-				int next = -1;
-				for (size_t j = 0; j < vec.size(); j++) {
-					if (vec[j].d > min
-							&& (next == -1 || vec[next].d > vec[j].d)) {
-						next = j;
-					}
-				}
-				os << vec[next].d << " " << vec[next].weight << endl;
-				if (next == -1) {
-					assert(false);
-				}
-				if (vec[next].d > 100000) {
-					assert(false);
-				}
-				min = vec[next].d;
-			}
-		}
-	}
+//	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os = cout) {
+//		PairInfos vec = GetEdgePairInfo(edge1, edge2);
+//		if (vec.size() != 0) {
+//			os << edge1 << " " << this->g().length(edge1) << " " << edge2 << " "
+//					<< this->g().length(edge2) << endl;
+//			if (this->g().EdgeEnd(edge1) == this->g().EdgeStart(edge2))
+//				os << "+" << endl;
+//			if (this->g().EdgeEnd(edge2) == this->g().EdgeStart(edge1))
+//				os << "-" << endl;
+//			int min = INT_MIN;
+//			for (size_t i = 0; i < vec.size(); i++) {
+//				int next = -1;
+//				for (size_t j = 0; j < vec.size(); j++) {
+//					if (vec[j].d > min
+//							&& (next == -1 || vec[next].d > vec[j].d)) {
+//						next = j;
+//					}
+//				}
+//				os << vec[next].d << " " << vec[next].weight << endl;
+//				if (next == -1) {
+//					assert(false);
+//				}
+//				if (vec[next].d > 100000) {
+//					assert(false);
+//				}
+//				min = vec[next].d;
+//			}
+//		}
+//	}
 
 	void TransferInfo(EdgeId old_edge, EdgeId new_edge, int shift = 0,
 			double weight_scale = 1.0) {
@@ -539,7 +535,7 @@ public:
 		for (size_t i = 0; i < old_edges.size(); ++i) {
 			EdgeId old_edge = old_edges[i];
 			TransferInfo(old_edge, new_edge, shift);
-			shift -= graph_.length(old_edge);
+			shift -= this->g().length(old_edge);
 		}
 	}
 
@@ -550,12 +546,12 @@ public:
 
 	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
 			EdgeId new_edge2) {
-		double prop = (double) graph_.length(new_edge1) / graph_.length(
+		double prop = (double) this->g().length(new_edge1) / this->g().length(
 				old_edge);
 		//		size_t shift = graph_.length(new_edge1);
 		TransferInfo(old_edge, new_edge1, 0, prop);
 		//		PassEdge(graph_.length(new_edge1), shift);
-		TransferInfo(old_edge, new_edge2, graph_.length(new_edge1), 1 - prop);
+		TransferInfo(old_edge, new_edge2, this->g().length(new_edge1), 1 - prop);
 	}
 
 //	bool Check() {
@@ -624,6 +620,76 @@ public:
 	}
 };
 
+template<size_t k, class Graph, class SequenceMapper, class Stream>
+class PairedIndexFiller {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef Seq<k> Kmer;
+
+	Graph &graph_;
+	const SequenceMapper& mapper_;
+	Stream& stream_;
+
+	inline size_t CountDistance(const io::PairedRead& paired_read) {
+		return paired_read.distance() - paired_read.second().size();
+	}
+
+	size_t CorrectLength(Path<EdgeId> path, size_t idx) {
+		size_t answer = graph_.length(path[idx]);
+		if (idx == 0)
+			answer -= path.start_pos();
+		if (idx == path.size() - 1)
+			answer -= graph_.length(path[idx]) - path.end_pos();
+		return answer;
+	}
+
+	void ProcessPairedRead(
+			omnigraph::PairedInfoIndex<Graph> &paired_index,
+			const io::PairedRead& p_r) {
+		Sequence read1 = p_r.first().sequence();
+		Sequence read2 = p_r.second().sequence();
+		Path<EdgeId> path1 = mapper_.MapSequence(read1);
+		Path<EdgeId> path2 = mapper_.MapSequence(read2);
+		size_t distance = CountDistance(p_r);
+		int current_distance1 = distance + path1.start_pos()
+				- path2.start_pos();
+		for (size_t i = 0; i < path1.size(); ++i) {
+			int current_distance2 = current_distance1;
+			for (size_t j = 0; j < path2.size(); ++j) {
+				double weight = CorrectLength(path1, i)
+						* CorrectLength(path2, j);
+				PairInfo<EdgeId> new_info(path1[i], path2[j], current_distance2,
+						weight, 0.);
+				paired_index.AddPairInfo(new_info);
+				current_distance2 += graph_.length(path2[j]);
+			}
+			current_distance1 -= graph_.length(path1[i]);
+		}
+	}
+
+public:
+
+	PairedIndexFiller(Graph &graph, const SequenceMapper& mapper, Stream& stream) :
+			graph_(graph), mapper_(mapper), stream_(stream) {
+
+	}
+
+	/**
+	 * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
+	 */
+	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
+		}
+		stream_.reset();
+		while (!stream_.eof()) {
+      io::PairedRead p_r;
+			stream_ >> p_r;
+			ProcessPairedRead(paired_index, p_r);
+		}
+	}
+
+};
 }
 
 #endif /* PAIRED_INFO_HPP_ */
