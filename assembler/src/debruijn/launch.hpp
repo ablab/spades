@@ -905,8 +905,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		OutputContigs(resolved_graph, output_folder + "contigs_final.fasta");
 		string consensus_folder = output_folder + "consensus/";
 
-		OutputSingleFileContigs(resolved_graph, consensus_folder);
-		SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
+//		OutputSingleFileContigs(resolved_graph, consensus_folder);
+//		SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
 
 		OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
 
@@ -981,7 +981,7 @@ void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index,
    omnigraph::Cleaner<NCGraph> cleaner(resolvedGraph);
    cleaner.Clean();
 
-   
+
 
     IdTrackHandler<NCGraph> idTrackerAfter(resolvedGraph);
     RealIdGraphLabeler<NCGraph> idLabelAfter(resolvedGraph,
