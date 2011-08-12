@@ -1,5 +1,6 @@
 #ifndef NEW_DEBRUIJN_HPP_
 #define NEW_DEBRUIJN_HPP_
+
 #include "abstract_conjugate_graph.hpp"
 #include "abstract_nonconjugate_graph.hpp"
 #include "coverage.hpp"
@@ -326,6 +327,12 @@ public:
 	}
 
 };
+
+typedef ConjugateDeBruijnGraph Graph;
+typedef Graph::EdgeId EdgeId;
+typedef Graph::VertexId VertexId;
+typedef NonconjugateDeBruijnGraph NCGraph;
+
 }
 
 #endif /* NEW_DEBRUIJN_HPP_ */
