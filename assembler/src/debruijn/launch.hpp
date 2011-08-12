@@ -887,7 +887,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 //		omnigraph::WriteSimple(
 //				output_folder + "resolved_labels_3.dot",
 //				"no_repeat_graph", resolved_graph, LabelLabler);
-//
+////
 //
 //		omnigraph::WriteSimple(
 //				output_folder
