@@ -46,35 +46,6 @@ typedef io::Reader<io::SingleRead> SingleReadStream;
 using namespace omnigraph;
 
 
-template<class Graph>
-void RemoveLowCoverageEdgesForResolver(Graph &g) {
-	INFO("-----------------------------------------");
-	INFO("Removing low coverage edges");
-	double max_coverage = CONFIG.read<double> ("ec_max_coverage");
-	//	int max_length_div_K = CONFIG.read<int> ("ec_max_length_div_K");
-	LowCoverageEdgeRemover<Graph> erroneous_edge_remover(10000000 * g.k(),
-			max_coverage * 4);
-	erroneous_edge_remover.RemoveEdges(g);
-	INFO("Low coverage edges removed");
-}
-template<class Graph>
-void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
-		PairedInfoIndex<Graph> &info, EdgesPositionHandler<Graph> &edges_pos,
-		Graph &new_graph, IdTrackHandler<Graph> &new_IDs,
-		EdgesPositionHandler<Graph> &edges_pos_new, const string& output_folder,
-		EdgeLabelHandler<Graph> &LabelsAfter) {
-	INFO("-----------------------------------------");
-	INFO("Resolving primitive repeats");
-	RepeatResolver<Graph> repeat_resolver(g, old_IDs, 0, info, edges_pos,
-			new_graph, new_IDs, edges_pos_new);
-	mkdir((output_folder).c_str(),
-			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-	unordered_map<typename Graph::EdgeId, typename Graph::EdgeId> edge_labels = repeat_resolver.GetEdgeLabels();
-	LabelsAfter.FillLabels(edge_labels);
-	repeat_resolver.ResolveRepeats(output_folder);
-	INFO("Primitive repeats resolved");
-}
-
 /*void FindZeros(PairedInfoIndex<Graph>& etalon_paired_index) {
 	for (auto it = etalon_paired_index.begin(); it != etalon_paired_index.end(); ++it) {
 		const vector<PairInfo<EdgeId>> infos = *it;
