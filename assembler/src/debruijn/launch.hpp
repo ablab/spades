@@ -229,7 +229,7 @@ void ClipTipsForResolver(NCGraph &g) {
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
 	TipComparator<NCGraph> comparator(g);
-	size_t max_tip_length = CONFIG.read<size_t> ("tc_max_tip_length");
+//	size_t max_tip_length = CONFIG.read<size_t> ("tc_max_tip_length");
 	size_t max_coverage = CONFIG.read<size_t> ("tc_max_coverage");
 	double max_relative_coverage = CONFIG.read<double> (
 			"tc_max_relative_coverage");
@@ -536,26 +536,28 @@ void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
 		n++;
 	}INFO("Contigs written");
 }
+
+
 template<size_t k, class Graph>
-void SelectReadsForConsensus(Graph& g, const EdgeIndex<k + 1, Graph>& index ,vector<SingleReadStream *>& reads, string& consensus_output_dir){
+void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph, EdgeLabelHandler<Graph>& LabelsAfter, const EdgeIndex<k + 1, Graph>& index ,vector<SingleReadStream *>& reads, string& consensus_output_dir){
 	INFO("ReadMapping started");
 	map<typename Graph::EdgeId, int> contigNumbers;
 	int cur_num = 0;
-	for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+	for (auto iter = cur_graph.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		contigNumbers[*iter] = cur_num;
 		cur_num++;
 	}
 	INFO(cur_num << "contigs");
 	for( int i = 1; i < 3; i ++ ) {
 		int read_num = 0;
-		osequencestream* mapped_reads[2000];
+		osequencestream* mapped_reads[4000];
 		for(int j = 0; j < cur_num; j++){
 			string output_filename = consensus_output_dir + ToString(j) + "_reads" + ToString(i)+".fa";
 			osequencestream* tmp = new osequencestream(output_filename);
 //			mapped_reads.push_back(tmp);
 			mapped_reads[j] = tmp;
 		}
-		SingleReadMapper<k, Graph> rm(g, index);
+		SingleReadMapper<k, Graph> rm(etalon_graph, index);
 		while (!reads[i - 1]->eof()) {
 			io::SingleRead cur_read;
 			(*reads[i - 1]) >> cur_read;
@@ -565,11 +567,14 @@ void SelectReadsForConsensus(Graph& g, const EdgeIndex<k + 1, Graph>& index ,vec
 //			map_quantity += res.size();
 			for(size_t ii = 0; ii < res.size(); ii++) {
 				TRACE("conting number "<< contigNumbers[res[ii]]);
-				(*mapped_reads[contigNumbers[res[ii]]]) << cur_read.sequence();
+				set<typename Graph::EdgeId> images = LabelsAfter.edge_inclusions[res[ii]];
+				for (auto iter = images.begin(); iter != images.end();++iter)
+				(*mapped_reads[contigNumbers[*iter]]) << cur_read.sequence();
 			}
 		}
 	}
 }
+
 
 void ResolveOneComponent(const string& load_from_dir,
 		const string& save_to_dir, int component_id, int k) {
@@ -900,8 +905,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		OutputContigs(resolved_graph, output_folder + "contigs_final.fasta");
 		string consensus_folder = output_folder + "consensus/";
 
-//		OutputSingleFileContigs(new_graph, consensus_folder);
-//		SelectReadsForConsensus<k, NCGraph>(new_graph, new_edge_index, reads, consensus_folder);
+		OutputSingleFileContigs(resolved_graph, consensus_folder);
+		SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
 
 		OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
 
