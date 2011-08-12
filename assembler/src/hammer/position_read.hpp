@@ -8,6 +8,7 @@
 
 #include "kmer_stat.hpp"
 
+
 class PositionRead {
 	hint_t start_;
 	uint32_t size_;

@@ -44,4 +44,3 @@ bool PositionRead::nextKMer( std::pair<uint32_t, hint_t> * it ) const {
 	return false;
 }
 
-
