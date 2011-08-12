@@ -20,6 +20,7 @@ using namespace omnigraph;
 using namespace debruijn_graph;
 
 namespace omnigraph {
+//todo think of inner namespace
 //DECL_LOGGER("DataPrinter")
 
 template<class Graph>
@@ -480,6 +481,71 @@ void DataScanner<Graph>::loadPositions(const string& file_name,
 		}
 	}
 	fclose(file);
+}
+
+template<class Graph>
+void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
+		const string &file_name, PairedInfoIndex<Graph> &paired_index,
+		EdgesPositionHandler<Graph> &edges_positions,
+		EdgeVertexFilter<Graph> *filter) {
+	DataPrinter<Graph> dataPrinter(g, old_IDs, filter);
+	dataPrinter.saveGraph(file_name);
+	dataPrinter.saveEdgeSequences(file_name);
+	dataPrinter.saveCoverage(file_name);
+	dataPrinter.savePaired(file_name, paired_index);
+	dataPrinter.savePositions(file_name, edges_positions);
+}
+
+template<class Graph>
+void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
+		const string &file_name, PairedInfoIndex<Graph> &paired_index,
+		EdgesPositionHandler<Graph> &edges_positions) {
+	DataPrinter<Graph> dataPrinter(g, old_IDs);
+	dataPrinter.saveGraph(file_name);
+	dataPrinter.saveEdgeSequences(file_name);
+	dataPrinter.saveCoverage(file_name);
+	dataPrinter.savePaired(file_name, paired_index);
+	dataPrinter.savePositions(file_name, edges_positions);
+}
+
+template<class Graph>
+void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
+		const string &file_name, PairedInfoIndex<Graph> &paired_index) {
+	DataPrinter<Graph> dataPrinter(g, old_IDs);
+	dataPrinter.saveGraph(file_name);
+	dataPrinter.saveEdgeSequences(file_name);
+	dataPrinter.saveCoverage(file_name);
+	dataPrinter.savePaired(file_name, paired_index);
+
+}
+
+template<class Graph>
+void scanNCGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
+		const string &file_name, PairedInfoIndex<Graph>& paired_index,
+		EdgesPositionHandler<Graph> &edges_positions) {
+	DataScanner<Graph> dataScanner(g, new_IDs);
+	dataScanner.loadNonConjugateGraph(file_name, true);
+	dataScanner.loadCoverage(file_name);
+	dataScanner.loadPaired(file_name, paired_index);
+	dataScanner.loadPositions(file_name, edges_positions);
+}
+
+template<class Graph>
+void scanNCGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
+		const string &file_name, PairedInfoIndex<Graph>& paired_index) {
+	DataScanner<Graph> dataScanner(g, new_IDs);
+	dataScanner.loadNonConjugateGraph(file_name, true);
+	dataScanner.loadCoverage(file_name);
+	dataScanner.loadPaired(file_name, paired_index);
+}
+
+template<class Graph>
+void scanConjugateGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
+		const string &file_name, PairedInfoIndex<Graph>& paired_index) {
+	DataScanner<Graph> dataScanner(g, new_IDs);
+	dataScanner.loadConjugateGraph(file_name, true);
+	dataScanner.loadCoverage(file_name);
+	dataScanner.loadPaired(file_name, paired_index);
 }
 
 }

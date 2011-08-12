@@ -65,6 +65,7 @@ public:
 /**
  * DataHashRenewer listens to add/delete events and updates index according to those events. This class
  * can be used both with vertices and edges of graph.
+ * todo EdgeNucls are hardcoded!
  */
 template<size_t kmer_size_, typename Graph, typename ElementId>
 class DataHashRenewer {
@@ -176,8 +177,7 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
 	typedef typename std::tr1::unordered_map<Kmer, Kmer, typename Kmer::hash> MapType;
 
 	void RemapKmers(const Sequence& old_s, const Sequence& new_s) {
-		Kmer old_kmer(old_s);
-		old_kmer >> 0;
+		Kmer old_kmer = old_s.start<k>() >> 0;
 		for (size_t i = k - 1; i < old_s.size(); ++i) {
 			old_kmer << old_s[i];
 			size_t old_kmer_offset = i - k + 1;
@@ -390,22 +390,16 @@ class EtalonPairedInfoCounter {
 		SimpleSequenceMapper<k + 1, Graph> sequence_mapper(g_, index_);
 		Path<EdgeId> path = sequence_mapper.MapSequence(sequence);
 
-//		cout << "PATH SIZE " << path.size() << endl;
-
 		for (size_t i = 0; i < path.size(); ++i) {
 			EdgeId e = path[i];
 			if (g_.length(e) + delta_ > gap_ + k + 1) {
-//				cout << "HERE1 " << endl;
 				AddEtalonInfo(paired_info, e, e, 0);
 			}
 			size_t j = i + 1;
 			size_t length = 0;
 
-			while (j < path.size() && length <= omnigraph::PairInfoPathLengthUpperBound(k, insert_size_, delta_)
-			/*length  + k + 2 <= (insert_size_ + delta_)*/) {
-				if (length >= omnigraph::PairInfoPathLengthLowerBound(k, g_.length(e), g_.length(path[j]), gap_, delta_)
-						/*length + g_.length(e) + g_.length(path[j]) + delta_ + k >= gap_ + 2 * (k + 1)*/) {
-//					cout << "HERE2 " <<  /*g_.length(e) + */length << endl;
+			while (j < path.size() && length <= omnigraph::PairInfoPathLengthUpperBound(k, insert_size_, delta_)) {
+				if (length >= omnigraph::PairInfoPathLengthLowerBound(k, g_.length(e), g_.length(path[j]), gap_, delta_)) {
 					AddEtalonInfo(paired_info, e, path[j],
 							g_.length(e) + length);
 				}
@@ -473,7 +467,7 @@ class NewEtalonPairedInfoCounter {
 	size_t gap_;
 	size_t delta_;
 
-	void AddEtalonInfo(set<PairInfo<EdgeId>> paired_info, EdgeId e1, EdgeId e2,
+	void AddEtalonInfo(set<PairInfo<EdgeId>>& paired_info, EdgeId e1, EdgeId e2,
 			double d) {
 		PairInfo<EdgeId> pair_info(e1, e2, d, 1000.0, 0.);
 		paired_info.insert(pair_info);
@@ -483,22 +477,24 @@ class NewEtalonPairedInfoCounter {
 			set<PairInfo<EdgeId>>& temporary_info) {
 		int mod_gap = (gap_ > delta_) ? gap_ - delta_ : 0;
 		Seq<k + 1> left(sequence);
-		left >> 0;
+		left = left >> 0;
 		for (size_t left_idx = 0; left_idx + k + 1 + mod_gap <= sequence.size(); ++left_idx) {
 			left = left << sequence[left_idx + k];
-			size_t right_idx = left_idx + mod_gap;
 			if (!index_.containsInIndex(left)) {
 				continue;
 			}
 			pair<EdgeId, size_t> left_pos = index_.get(left);
+
+			size_t right_idx = left_idx + mod_gap;
 			Seq<k + 1> right(sequence, right_idx);
-			right >> 0;
+			right = right >> 0;
 			for (; right_idx + k + 1 <= left_idx + insert_size_ + delta_ && right_idx + k + 1 <= sequence.size(); ++right_idx) {
-				right << sequence[right_idx + k];
+				right = right << sequence[right_idx + k];
 				if (!index_.containsInIndex(right)) {
 					continue;
 				}
 				pair<EdgeId, size_t> right_pos = index_.get(right);
+
 				AddEtalonInfo(temporary_info, left_pos.first, right_pos.first, right_idx - left_idx + left_pos.second - right_pos.second);
 			}
 		}

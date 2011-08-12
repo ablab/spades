@@ -96,7 +96,7 @@ private:
 
 	Graph &graph_;
 	set<EdgeId> black_edges_;
-	SmartEdgeIterator<omnigraph::ObservableGraph<VertexId, EdgeId> > iterator_;
+	typename Graph::SmartEdgeIt iterator_;
 	set<VertexId> visited_;
 
 public:

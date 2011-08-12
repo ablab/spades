@@ -562,7 +562,7 @@ private:
 	size_t Move(size_t estimated_idx, const Infos &estimated_infos) {
 		estimated_idx++;
 		while (estimated_idx < estimated_infos.size()
-				&& estimated_infos[estimated_idx].weight == 0)
+				&& math::eq(estimated_infos[estimated_idx].weight, 0.))
 			estimated_idx++;
 		return estimated_idx;
 		return 0;
@@ -595,9 +595,14 @@ private:
 				HandleFalseNegative(etalon_infos[etalon_idx]);
 				etalon_idx = Move(etalon_idx, etalon_infos);
 			}
+			//todo ask Anton
+			if (etalon_idx == etalon_infos.size()) {
+				continue;
+			}
+			//
 			if (IsPerfectMatch(etalon_infos[etalon_idx],
 					estimated_infos[estimated_idx])) {
-				while (IsPerfectMatch(etalon_infos[etalon_idx],
+				while (etalon_idx < etalon_infos.size() && IsPerfectMatch(etalon_infos[etalon_idx],
 						estimated_infos[estimated_idx])) {
 					HandlePerfectMatch(etalon_infos[etalon_idx],
 							estimated_infos[estimated_idx]);
@@ -609,8 +614,6 @@ private:
 						etalon_infos[etalon_idx],
 						estimated_infos[estimated_idx])) {
 					cluster_hits.push_back(etalon_infos[etalon_idx]);
-					//					HandleImperfectMatch(etalon_infos[etalon_idx],
-					//							estimated_infos[estimated_idx]);
 					etalon_idx = Move(etalon_idx, etalon_infos);
 				}
 				if (cluster_hits.size() == 0) {
