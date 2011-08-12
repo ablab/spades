@@ -87,53 +87,73 @@ public:
 		Loops_resolve();
 		int inc_count;
 		int out_count;
-		for (auto iter = g_.SmartVertexBegin(); ! iter.IsEnd(); ++iter) {
-			VertexId vertex = *iter;
-			DEBUG(vertex);
-			if ((g_.OutgoingEdgeCount(vertex) == 1) && ((inc_count = g_.IncomingEdgeCount(vertex)) >= 1)){
-				EdgeId unique = g_.GetUniqueOutgoingEdge(vertex);
-				if ((g_.EdgeStart(unique) != g_.EdgeEnd(unique))){
-					vector<EdgeId> incEdges = g_.IncomingEdges(vertex);
-					for(int j = 0; j < inc_count; j++) {
-						vector<EdgeId> SplitVect;
-						SplitVect.push_back(unique);
-						SplitVect.push_back(incEdges[j]);
-						VertexId tmp_v = g_.SplitVertex(vertex, SplitVect);
-						EdgeId edge2 = g_.GetUniqueOutgoingEdge(tmp_v);
-						EdgeId edge1 = g_.GetUniqueIncomingEdge(tmp_v);
-						vector<EdgeId> toMerge;
-						toMerge.push_back(edge1);
-						toMerge.push_back(edge2);
-						DEBUG("first part ");
-						g_.MergePath(toMerge);
+		bool changed = true;
+		while(changed) {
+			changed = false;
+			for (auto iter = g_.SmartVertexBegin(); ! iter.IsEnd(); ++iter) {
+				VertexId vertex = *iter;
+				DEBUG(vertex);
+				if ((g_.OutgoingEdgeCount(vertex) == 1) && ((inc_count = g_.IncomingEdgeCount(vertex)) >= 1)){
+					EdgeId unique = g_.GetUniqueOutgoingEdge(vertex);
+					if ((g_.EdgeStart(unique) != g_.EdgeEnd(unique))){
+						vector<EdgeId> incEdges = g_.IncomingEdges(vertex);
+						double unique_cov = g_.coverage(unique);
+						double sum_cov = 0;
+						for(int i = 0; i < inc_count; i++)
+							sum_cov += g_.coverage(incEdges[i]);
+						if (sum_cov * 0.7 > unique_cov)
+							continue;
+//						changed = true;
+						for(int j = 0; j < inc_count; j++) {
+							vector<EdgeId> SplitVect;
+							SplitVect.push_back(unique);
+							SplitVect.push_back(incEdges[j]);
+							VertexId tmp_v = g_.SplitVertex(vertex, SplitVect);
+							EdgeId edge2 = g_.GetUniqueOutgoingEdge(tmp_v);
+							EdgeId edge1 = g_.GetUniqueIncomingEdge(tmp_v);
+							vector<EdgeId> toMerge;
+							toMerge.push_back(edge1);
+							toMerge.push_back(edge2);
+							DEBUG("first part ");
+							g_.MergePath(toMerge);
+						}
+						g_.ForceDeleteVertex(vertex);
 					}
-					g_.ForceDeleteVertex(vertex);
 				}
 			}
 		}
-
-
-		for (auto iter = g_.SmartVertexBegin(); ! iter.IsEnd(); ++iter){
-			VertexId vertex = *iter;
-			if (((out_count = g_.OutgoingEdgeCount(vertex)) >= 1) && (g_.IncomingEdgeCount(vertex) == 1)){
-				EdgeId unique = g_.GetUniqueIncomingEdge(vertex);
-				if ((g_.EdgeStart(unique) != g_.EdgeEnd(unique))) {
-					vector<EdgeId> outEdges = g_.OutgoingEdges(vertex);
-					for(int j = 0; j < out_count; j++) {
-						vector<EdgeId> SplitVect;
-						SplitVect.push_back(unique);
-						SplitVect.push_back(outEdges[j]);
-						VertexId tmp_v = g_.SplitVertex(vertex, SplitVect);
-						EdgeId edge2 = g_.GetUniqueOutgoingEdge(tmp_v);
-						EdgeId edge1 = g_.GetUniqueIncomingEdge(tmp_v);
-						vector<EdgeId> toMerge;
-						toMerge.push_back(edge1);
-						toMerge.push_back(edge2);
-						DEBUG("first part ");
-						g_.MergePath(toMerge);
+		changed = true;
+		while(changed) {
+			changed = false;
+			for (auto iter = g_.SmartVertexBegin(); ! iter.IsEnd(); ++iter){
+				VertexId vertex = *iter;
+				if (((out_count = g_.OutgoingEdgeCount(vertex)) >= 1) && (g_.IncomingEdgeCount(vertex) == 1)){
+					EdgeId unique = g_.GetUniqueIncomingEdge(vertex);
+					if ((g_.EdgeStart(unique) != g_.EdgeEnd(unique))) {
+						vector<EdgeId> outEdges = g_.OutgoingEdges(vertex);
+						double unique_cov = g_.coverage(unique);
+						double sum_cov = 0;
+						for(int i = 0; i < out_count; i++)
+							sum_cov += g_.coverage(outEdges[i]);
+						if (sum_cov * 0.7 > unique_cov)
+							continue;
+//						changed = true;
+						for(int j = 0; j < out_count; j++) {
+							vector<EdgeId> SplitVect;
+							SplitVect.push_back(unique);
+							SplitVect.push_back(outEdges[j]);
+							VertexId tmp_v = g_.SplitVertex(vertex, SplitVect);
+							EdgeId edge2 = g_.GetUniqueOutgoingEdge(tmp_v);
+							EdgeId edge1 = g_.GetUniqueIncomingEdge(tmp_v);
+							vector<EdgeId> toMerge;
+							toMerge.push_back(edge1);
+							toMerge.push_back(edge2);
+							DEBUG("first part ");
+							g_.MergePath(toMerge);
+						}
+						g_.ForceDeleteVertex(vertex);
+						//				DEBUG("second vertex deleted ");
 					}
-					g_.ForceDeleteVertex(vertex);
-					//				DEBUG("second vertex deleted ");
 				}
 			}
 		}

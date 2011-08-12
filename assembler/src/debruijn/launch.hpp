@@ -224,7 +224,8 @@ void ClipTips(Graph &g) {
 	INFO("Clipping tips finished");
 }
 
-void ClipTipsForResolve(NCGraph &g) {
+
+void ClipTipsForResolver(NCGraph &g) {
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
 	TipComparator<NCGraph> comparator(g);
@@ -232,8 +233,8 @@ void ClipTipsForResolve(NCGraph &g) {
 	size_t max_coverage = CONFIG.read<size_t> ("tc_max_coverage");
 	double max_relative_coverage = CONFIG.read<double> (
 			"tc_max_relative_coverage");
-	TipClipper<NCGraph, TipComparator<NCGraph>> tc(g, comparator, max_tip_length *10000,
-			max_coverage, max_relative_coverage);
+	TipClipper<NCGraph, TipComparator<NCGraph>> tc(g, comparator, 400,
+			max_coverage, max_relative_coverage * 1.2);
 	tc.ClipTips();
 	INFO("Clipping tips finished");
 }
@@ -840,8 +841,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 //				output_folder + "resolved_labels_1.dot",
 //				"no_repeat_graph", resolved_graph, LabelLabler);
 
-		for(int i = 0; i < 2; i ++) {
-			ClipTips(resolved_graph);
+		for(int i = 0; i < 3; i ++) {
+			ClipTipsForResolver(resolved_graph);
 			RemoveBulges2(resolved_graph);
 			RemoveLowCoverageEdgesForResolver(resolved_graph);
 		}
