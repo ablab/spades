@@ -1,6 +1,7 @@
 #ifndef POSITION_KMER_HPP_
 #define POSITION_KMER_HPP_
 
+#include <math.h>
 #include <vector>
 #include <queue>
 #include <boost/function.hpp>
@@ -11,6 +12,17 @@
 
 #define K 55
 
+/**
+  * convert quality value to actual probability
+  */
+inline double qual2prob(uint8_t qual) {
+	if (qual < 3) return 0.25;
+	static std::vector<double> prob(255, -1);
+	if (prob[qual] < -0.1) {
+		prob[qual] = 1 - pow(10.0, - qual / 10.0);
+	}
+	return prob[qual];
+}
 
 typedef std::pair<std::string, uint32_t> StringCount;
 
@@ -24,12 +36,21 @@ class PositionKMer {
 	static hint_t revNo;
 
 	static char* blob;
+	static char* blobquality;
 	static hint_t blob_max_size;
 	static hint_t blob_size;
 
 	static hint_t* blobkmers;
 
 	static std::vector<uint32_t> * subKMerPositions;
+
+	static double getKMerQuality( const hint_t & index, const int qvoffset ) {
+		long double res = 1;
+		for ( hint_t i = index; i < index+K; ++i ) {
+			res *= qual2prob( (uint8_t)( blobquality[i] - qvoffset ) );
+		}
+		return res;
+	}
 
 	static bool compareSubKMersCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tauplusone, const uint32_t start) {
 		for ( hint_t i = start; i < K; i += tauplusone ) {
