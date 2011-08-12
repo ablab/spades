@@ -1,0 +1,57 @@
+#input options
+from_file = true
+
+graph_file_QUAKE_CROPPED_400K = ./data/debruijn/08.11_20_27.QUAKE_CROPPED_400K/graph
+graph_file_QUAKE_CROPPED_100K = ./data/debruijn/08.11_20_43.QUAKE_CROPPED_100K/graph
+graph_file_QUAKE_FULL = ./data/debruijn/08.10_21_52.QUAKE_FULL/graph
+
+#paired info from
+#basic lib
+read_size = 100
+insert_size = 220 
+
+#additional real libs
+real_lib_count = 0
+real_read_size_1 = 100
+real_insert_size_1 = 800
+
+real_path_1_QUAKE_CROPPED_400K_1 = ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first400000_1.fastq.gz
+real_path_1_QUAKE_CROPPED_400K_2 = ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first400000_2.fastq.gz
+
+real_path_1_QUAKE_CROPPED_100K_1 = ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first100000_1.fastq.gz
+real_path_1_QUAKE_CROPPED_100K_2 = ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first100000_2.fastq.gz
+
+#not copied yet
+real_path_1_QUAKE_FULL_1 = ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_1.cor.fastq.gz
+real_path_1_QUAKE_FULL_2 = ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_2.cor.fastq.gz
+#real_path_1_QUAKE_FULL_1 = /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_1.cor.fastq.gz
+#real_path_1_QUAKE_FULL_2 = /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_2.cor.fastq.gz
+
+#additional libs
+lib_count = 0
+read_size_1 = 100
+insert_size_1 = 800
+read_size_2 = 100
+insert_size_2 = 2100
+
+
+#seed selection
+min_coverage = 150
+
+#extension selection
+use_weight_function_first = false
+weight_fun_threshold = 0
+weight_threshold = 0
+real_distance_dev = 25
+etalon_distance_dev = 2
+
+
+#loops removal
+max_loops = 5
+full_loop_removal = true
+
+
+#stop criteria
+all_seeds = true
+edge_coverage = 0.8
+len_coverage = 0.9
