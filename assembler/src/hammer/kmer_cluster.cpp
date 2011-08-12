@@ -454,7 +454,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 					PositionKMer::pr->push_back(rs);
 
 					PositionKMer pkm(PositionKMer::pr->size()-1, 0);
-					KMerStat kms( 0, KMERSTAT_GOOD );
+					KMerStat kms( 0, KMERSTAT_GOOD, 1 );
 					k_.push_back( make_pair( pkm, kms ) );
 				}
 				v.insert(v.begin(), k_.size() - 1);
@@ -523,16 +523,22 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 		for (uint32_t m = 0; m < blocksInPlace[n].size(); ++m) {
 			if (blocksInPlace[n][m].size() == 0) continue;
 			if (blocksInPlace[n][m].size() == 1) {
-				if (k_[blocksInPlace[n][m][0]].second.count > GOOD_SINGLETON_THRESHOLD) {
+				if (k_[blocksInPlace[n][m][0]].second.totalQual > GOOD_SINGLETON_THRESHOLD) {
 					k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
 					#pragma omp critical
 					{
-					(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n> good singleton " << k_[blocksInPlace[n][m][0]].first.start() << "\n";
+					(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n> good singleton "
+					       << k_[blocksInPlace[n][m][0]].first.start() 
+					       << "  cnt=" << k_[blocksInPlace[n][m][0]].second.count 
+					       << "  tql=" << k_[blocksInPlace[n][m][0]].second.totalQual << "\n";
 					}
 				} else {
 					#pragma omp critical
 					{
-					(*ofs_bad) << k_[blocksInPlace[n][m][0]].first.str() << "\n> bad singleton " << k_[blocksInPlace[n][m][0]].first.start() << "\n";
+					(*ofs_bad) << k_[blocksInPlace[n][m][0]].first.str() << "\n> bad singleton " 
+						   << k_[blocksInPlace[n][m][0]].first.start() 
+						   << "  cnt=" << k_[blocksInPlace[n][m][0]].second.count 
+						   << "  tql=" << k_[blocksInPlace[n][m][0]].second.totalQual << "\n";
 					}
 				}
 			} else {

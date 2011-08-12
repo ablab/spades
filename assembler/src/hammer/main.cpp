@@ -38,6 +38,7 @@ hint_t PositionKMer::revNo = 0;
 hint_t PositionKMer::blob_size = 0;
 hint_t PositionKMer::blob_max_size = 0;
 char * PositionKMer::blob = NULL;
+char * PositionKMer::blobquality = NULL;
 hint_t * PositionKMer::blobkmers = NULL;
 std::vector<uint32_t> * PositionKMer::subKMerPositions = NULL;
 
@@ -91,10 +92,12 @@ int main(int argc, char * argv[]) {
 	PositionKMer::blob_max_size = (hint_t)(totalReadSize * ( 2 + CONSENSUS_BLOB_MARGIN));
 
 	PositionKMer::blob = new char[ PositionKMer::blob_max_size ];
+	PositionKMer::blobquality = new char[ PositionKMer::blob_max_size ];
 	PositionKMer::blobkmers = new hint_t[ PositionKMer::blob_max_size ];
 	TIMEDLN("Max blob size as allocated is " << PositionKMer::blob_max_size);
 
 	std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
+	std::fill( PositionKMer::blobquality, PositionKMer::blobquality + PositionKMer::blob_max_size, (char)(qvoffset + 2) );
 	
 	PositionKMer::revNo = PositionKMer::rv->size();
 	for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
@@ -113,8 +116,10 @@ int main(int argc, char * argv[]) {
 		for (hint_t i = 0; i < PositionKMer::rv->size(); ++i) {
 			PositionRead pread(curpos, PositionKMer::rv->at(i).size(), i, PositionKMer::rv_bad->at(i));
 			PositionKMer::pr->push_back(pread);
-			for (uint32_t j=0; j < PositionKMer::rv->at(i).size(); ++j) 
+			for (uint32_t j=0; j < PositionKMer::rv->at(i).size(); ++j) {
 				PositionKMer::blob[ curpos + j ] = PositionKMer::rv->at(i).getSequenceString()[j];
+				PositionKMer::blobquality[ curpos + j ] = PositionKMer::rv->at(i).getQualityString()[j];
+			}
 			curpos += PositionKMer::rv->at(i).size();
 		}
 		TIMEDLN("Filled up blob. Real size " << curpos << ". " << PositionKMer::pr->size() << " reads.");
@@ -125,13 +130,9 @@ int main(int argc, char * argv[]) {
 		TIMEDLN("Preprocessing done. Got " << vv.size() << " kmer positions. Starting parallel sort.");
 		
 		vector<KMerCount> kmers;
-		ParallelSortKMerNos( &vv, &kmers, nthreads );
+		ParallelSortKMerNos( &vv, &kmers, qvoffset, nthreads );
 		TIMEDLN("KMer positions sorted. In total, we have " << kmers.size() << " kmers.");
 		vv.clear();
-
-		/*vector< vector<hint_t> > vs(tau+1);
-		vector<SubKMerPQ> vskpq;
-		DoSplitAndSort(tau, nthreads, &vs, &kmers, &vskpq);*/
 
 		SubKMerSorter * skmsorter = new SubKMerSorter( kmers.size(), &kmers, nthreads, tau, SubKMerSorter::SorterTypeStraight );
 		skmsorter->runSort();
@@ -195,7 +196,7 @@ int main(int argc, char * argv[]) {
 			PositionKMer::rv->push_back( !(PositionKMer::rv->at(i)) );
 		}
 		TIMEDLN("Reads restored.");
-	
+
 		if (!res) {
 			TIMEDLN("Nothing has changed in this iteration. Exiting.");
 			break;
@@ -210,6 +211,7 @@ int main(int argc, char * argv[]) {
 	delete PositionKMer::rv_bad;
 	delete [] PositionKMer::blobkmers;
 	delete [] PositionKMer::blob;
+	delete [] PositionKMer::blobquality;
 	return 0;
 }
 
