@@ -11,6 +11,7 @@
 #include "seq.hpp"
 #include "read.hpp"
 #include "paired_read.hpp"
+#include <array>
 
 using namespace std;
 
