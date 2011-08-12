@@ -20,6 +20,96 @@
 
 namespace debruijn_graph {
 
+template<class Graph, size_t k>
+class GenomeMappingStat: public omnigraph::AbstractStatCounter {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	Graph &graph_;
+	const EdgeIndex<k + 1, Graph>& index_;
+	Sequence genome_;
+public:
+	GenomeMappingStat(Graph &graph, const EdgeIndex<k + 1, Graph> &index,
+	Sequence genome) :
+			graph_(graph), index_(index), genome_(genome) {
+	}
+
+	virtual ~GenomeMappingStat() {
+	}
+
+	virtual void Count() {
+		INFO("Mapping genome");
+		size_t break_number = 0;
+		size_t covered_kp1mers = 0;
+		size_t fail = 0;
+		Seq<k + 1> cur = genome_.start<k + 1>() >> 0;
+		bool breaked = true;
+		pair<EdgeId, size_t> cur_position;
+		for (size_t cur_nucl = k; cur_nucl < genome_.size(); cur_nucl++) {
+			cur = cur << genome_[cur_nucl];
+			if (index_.containsInIndex(cur)) {
+				pair<EdgeId, size_t> next = index_.get(cur);
+				if (!breaked
+						&& cur_position.second + 1
+								< graph_.length(cur_position.first)) {
+					if (next.first != cur_position.first
+							|| cur_position.second + 1 != next.second) {
+						fail++;
+					}
+				}
+				cur_position = next;
+				covered_kp1mers++;
+				breaked = false;
+			} else {
+				if (!breaked) {
+					breaked = true;
+					break_number++;
+				}
+			}
+		}INFO("Genome mapped");
+		INFO("Genome mapping results:");
+		INFO(
+				"Covered k+1-mers:" << covered_kp1mers << " of " << (genome_.size() - k) << " which is " << (100.0 * covered_kp1mers / (genome_.size() - k)) << "%");
+		INFO(
+				"Covered k+1-mers form " << break_number + 1 << " contigious parts");
+		INFO("Continuity failtures " << fail);
+	}
+};
+
+template<class Graph, size_t k>
+class StatCounter: public omnigraph::AbstractStatCounter {
+private:
+	omnigraph::StatList stats_;
+public:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
+	StatCounter(Graph& graph, const EdgeIndex<k + 1, Graph>& index,
+	const Sequence& genome) {
+		SimpleSequenceMapper<k + 1, Graph> sequence_mapper(graph, index);
+		Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
+		Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
+		stats_.AddStat(new omnigraph::VertexEdgeStat<Graph>(graph));
+		stats_.AddStat(
+				new omnigraph::BlackEdgesStat<Graph>(graph, path1, path2));
+		stats_.AddStat(new omnigraph::NStat<Graph>(graph, path1, 50));
+		stats_.AddStat(new omnigraph::SelfComplementStat<Graph>(graph));
+		stats_.AddStat(
+				new GenomeMappingStat<Graph, k>(graph, index,
+						Sequence(genome)));
+	}
+
+	virtual ~StatCounter() {
+		stats_.DeleteStats();
+	}
+
+	virtual void Count() {
+		stats_.Count();
+	}
+
+private:
+	DECL_LOGGER("StatCounter")
+};
+
 template<size_t k, class Graph>
 void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		const Sequence& genome) {
@@ -209,95 +299,6 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	}
 }
 
-template<class Graph, size_t k>
-class GenomeMappingStat: public omnigraph::AbstractStatCounter {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	Graph &graph_;
-	const EdgeIndex<k + 1, Graph>& index_;
-	Sequence genome_;
-public:
-	GenomeMappingStat(Graph &graph, const EdgeIndex<k + 1, Graph> &index,
-	Sequence genome) :
-			graph_(graph), index_(index), genome_(genome) {
-	}
-
-	virtual ~GenomeMappingStat() {
-	}
-
-	virtual void Count() {
-		INFO("Mapping genome");
-		size_t break_number = 0;
-		size_t covered_kp1mers = 0;
-		size_t fail = 0;
-		Seq<k + 1> cur = genome_.start<k + 1>() >> 0;
-		bool breaked = true;
-		pair<EdgeId, size_t> cur_position;
-		for (size_t cur_nucl = k; cur_nucl < genome_.size(); cur_nucl++) {
-			cur = cur << genome_[cur_nucl];
-			if (index_.containsInIndex(cur)) {
-				pair<EdgeId, size_t> next = index_.get(cur);
-				if (!breaked
-						&& cur_position.second + 1
-								< graph_.length(cur_position.first)) {
-					if (next.first != cur_position.first
-							|| cur_position.second + 1 != next.second) {
-						fail++;
-					}
-				}
-				cur_position = next;
-				covered_kp1mers++;
-				breaked = false;
-			} else {
-				if (!breaked) {
-					breaked = true;
-					break_number++;
-				}
-			}
-		}INFO("Genome mapped");
-		INFO("Genome mapping results:");
-		INFO(
-				"Covered k+1-mers:" << covered_kp1mers << " of " << (genome_.size() - k) << " which is " << (100.0 * covered_kp1mers / (genome_.size() - k)) << "%");
-		INFO(
-				"Covered k+1-mers form " << break_number + 1 << " contigious parts");
-		INFO("Continuity failtures " << fail);
-	}
-};
-
-template<class Graph, size_t k>
-class StatCounter: public omnigraph::AbstractStatCounter {
-private:
-	omnigraph::StatList stats_;
-public:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-
-	StatCounter(Graph& graph, const EdgeIndex<k + 1, Graph>& index,
-	const Sequence& genome) {
-		SimpleSequenceMapper<k + 1, Graph> sequence_mapper(graph, index);
-		Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
-		Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
-		stats_.AddStat(new omnigraph::VertexEdgeStat<Graph>(graph));
-		stats_.AddStat(
-				new omnigraph::BlackEdgesStat<Graph>(graph, path1, path2));
-		stats_.AddStat(new omnigraph::NStat<Graph>(graph, path1, 50));
-		stats_.AddStat(new omnigraph::SelfComplementStat<Graph>(graph));
-		stats_.AddStat(
-				new GenomeMappingStat<Graph, k>(graph, index,
-						Sequence(genome)));
-	}
-
-	virtual ~StatCounter() {
-		stats_.DeleteStats();
-	}
-
-	virtual void Count() {
-		stats_.Count();
-	}
-
-private:
-	DECL_LOGGER("StatCounter")
-};
 
 }
 
