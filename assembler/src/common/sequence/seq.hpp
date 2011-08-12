@@ -23,9 +23,9 @@
 #include <cassert>
 #include <array>
 #include <algorithm>
-#include "nucl.hpp"
+#include "sequence/nucl.hpp"
 #include "log.hpp"
-#include "iostream"
+#include <iostream>
 
 using namespace std;
 

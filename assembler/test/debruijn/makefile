@@ -1,4 +1,4 @@
-SRC=test.cpp debruijn_graph.cpp
+SRC=test.cpp
 DIR=debruijn
 PROG=debruijnTest
 

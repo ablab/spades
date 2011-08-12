@@ -21,8 +21,8 @@ public:
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
-	void process(std::string dirprefix, std::vector< SubKMerPQ > * vs);
-	
+	void process(std::string dirprefix, SubKMerSorter * skmsorter, ofstream * ofs, ofstream * ofs_bad);
+
 	/// free up memory
 	void clear() {
 		k_.clear();
@@ -35,6 +35,7 @@ private:
 		
 	int hamdistKMer(const PositionKMer & x, const PositionKMer & y, int tau = K);
 	int hamdistKMer(const PositionKMer & x, const string & y, int tau = K);
+	int hamdistKMer(const string & x, const string & y, int tau = K);
 	double calcMultCoef(std::vector<int> & distances, const std::vector<int> & cl);
 	std::string find_consensus(const std::vector<int> & block);
 
@@ -66,7 +67,8 @@ private:
 	  */
 	void process_block_SIN(const std::vector<int> & block, std::vector< std::vector<int> > & vec);
 
-	void processBlock(unionFindClass * uf, vector<hint_t> & block);
+	void processBlock(unionFindClass * uf, vector<hint_t> & block, int cur_subkmer);
+	void processBlockQuadratic(unionFindClass * uf, vector<hint_t> & block);
 	void clusterMerge(std::vector<unionFindClass *> uf, unionFindClass * ufMaster);
 
 };

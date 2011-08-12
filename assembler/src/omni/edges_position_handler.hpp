@@ -8,7 +8,7 @@
 #ifndef EDGES_POSITION_HANDLER_HPP_
 #define EDGES_POSITION_HANDLER_HPP_
 
-#include "utils.hpp"
+//#include "utils.hpp"
 #include "graph_labeler.hpp"
 #include "simple_tools.hpp"
 using namespace omnigraph;
@@ -45,8 +45,6 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef int realIdType;
-private:
-	Graph &g_;
 
 public:
 	map<EdgeId, vector<EdgePosition> > EdgesPositions;
@@ -76,12 +74,9 @@ public:
 	}
 
 	EdgesPositionHandler(Graph &g) :
-		GraphActionHandler<Graph> ("EdgePositionHandler"), g_(g) {
-		g_.AddActionHandler(this);
+		GraphActionHandler<Graph> (g, "EdgePositionHandler") {
 	}
 	virtual ~EdgesPositionHandler() {
-		TRACE("~EdgePositionHandler");
-		g_.RemoveActionHandler(this);
 		TRACE("~EdgePositionHandler ok");
 	}
 
@@ -152,6 +147,9 @@ public:
 		}
 		EdgesPositions.erase(e);
 	}
+ 	void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) {
+ 	}
+
 
 };
 

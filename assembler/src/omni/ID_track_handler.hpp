@@ -2,7 +2,7 @@
 #define ID_TRACK_HANDLER_HPP_
 
 #include <unordered_map>
-#include "utils.hpp"
+//#include "utils.hpp"
 #include "graph_labeler.hpp"
 #include "simple_tools.hpp"
 using namespace omnigraph;
@@ -20,8 +20,6 @@ class IdTrackHandler: public GraphActionHandler<Graph> {
 	map<realIdType, EdgeId> EdgeOriginalId;
 	int MaxVertexIntId;
 	int MaxEdgeIntId;
-private:
-	Graph &g_;
 
 public:
 	realIdType AddVertexIntId(VertexId NewVertexId) {
@@ -43,7 +41,10 @@ public:
 	}
 	realIdType AddEdgeIntId(EdgeId NewEdgeId) {
 		realIdType PreviousId = ReturnIntId(NewEdgeId);
-		if (PreviousId != 0) EdgeOriginalId.erase(PreviousId);
+		if (PreviousId != 0) {
+			return PreviousId;
+		}
+//			EdgeOriginalId.erase(PreviousId);
 		MaxEdgeIntId++;
 		EdgeIntId[NewEdgeId] = MaxEdgeIntId;
 		EdgeOriginalId[MaxEdgeIntId] = NewEdgeId;
@@ -114,33 +115,35 @@ public:
 	}
 
 	IdTrackHandler(Graph &g) :
-		GraphActionHandler<Graph> ("IdTrackHandler"), g_(g) {
-		g_.AddActionHandler(this);
+		GraphActionHandler<Graph> (g, "IdTrackHandler") {
 		MaxVertexIntId = 0;
 		MaxEdgeIntId = 0;
 	}
 	IdTrackHandler(Graph &g, int VertexStartIndex, int EdgeStartIndex) :
-		GraphActionHandler<Graph> ("IdTrackHandler"), g_(g) {
-		g_.AddActionHandler(this);
+		GraphActionHandler<Graph> (g, "IdTrackHandler") {
 		MaxVertexIntId = VertexStartIndex;
 		MaxEdgeIntId = EdgeStartIndex;
 	}
 
 	virtual ~IdTrackHandler() {
-		TRACE("~IdTrackHandler");
-		g_.RemoveActionHandler(this);
 		TRACE("~IdTrackHandler ok");
 	}
 
 	/*	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
 	 }
 
-	 virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-	 }
 
 	 virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
 	 }
 	 */
+
+	 virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+		 realIdType RealEdgeId = ReturnIntId(edge1);
+		 ClearEdgeId(edge1);
+		 AddEdgeIntId(new_edge, RealEdgeId);
+	 }
+
+
 	virtual void HandleAdd(VertexId v) {
 		AddVertexIntId(v);
 	}
@@ -154,6 +157,13 @@ public:
 	virtual void HandleDelete(EdgeId e) {
 		ClearEdgeId(e);
 	}
+
+	std::string str(EdgeId edgeId) {
+		int x = this->ReturnIntId(edgeId);
+		return ToString(x);
+	}
+
+
 
 };
 

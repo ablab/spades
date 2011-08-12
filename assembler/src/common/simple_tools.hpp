@@ -10,8 +10,10 @@
 
 #include <string>
 #include <sstream>
+#include <iterator>
 #include <vector>
 #include "logging.hpp"
+#include "io/ireader.hpp"
 #include <fstream>
 
 /**
@@ -39,7 +41,7 @@ void checkFileExistenceFATAL(std::string filename);
  * Use vector<T> as input-stream with operator>>(T& t)
  */
 template <typename T>
-class VectorStream {
+class VectorStream : public io::IReader<T> {
 	std::vector<T> data_;
 	size_t pos_;
 	bool closed_;
@@ -48,7 +50,7 @@ public:
 
 	}
 
-	bool eof() const {
+	virtual bool eof() /*const */{
 		return pos_ == data_.size();
 	}
 
@@ -61,7 +63,7 @@ public:
 		closed_ = true;
 	}
 
-	bool is_open() const {
+	virtual bool is_open() /*const */{
 		return !closed_;
 	}
 
@@ -81,9 +83,22 @@ inline void checkFileExistenceFATAL(std::string filename) {
 	}
 }
 
+namespace std
+{
 template<class T1, class T2>
-std::ostream& operator<< (std::ostream& os, std::pair<T1, T2> pair) {
+std::ostream& operator<< (std::ostream& os, std::pair<T1, T2> const& pair)
+{
 	return os << "(" << pair.first << ", " << pair.second << ")";
+}
+
+template<class T>
+std::ostream& operator<< (std::ostream& os, std::vector<T> const& v)
+{
+	os << "[";
+	std::copy(v.begin(), v.end(), std::ostream_iterator<T>(os, ", "));
+	os << "]";
+	return os;
+}
 }
 
 #endif /* SIMPLE_TOOLS_HPP_ */

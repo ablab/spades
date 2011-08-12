@@ -5,10 +5,13 @@
 #include "logging.hpp"
 #include "simple_tools.hpp"
 #include "dijkstra.hpp"
+#include "xmath.h"
 #include <cmath>
 #include <iterator>
+#include <vector>
 
 namespace omnigraph {
+using std::vector;
 
 //DECL_LOGGER("omg.graph")
 
@@ -26,9 +29,8 @@ namespace omnigraph {
  */
 template<typename VertexId, typename EdgeId>
 class ActionHandler {
-public:
 	const string handler_name_;
-
+public:
 	/**
 	 * Create action handler with given name. With this name one can find out what tipe of handler is it.
 	 */
@@ -106,6 +108,19 @@ public:
 			EdgeId new_edge2) {
 	}
 
+	/**
+	 * High level event which is triggered when vertex split operation is performed on graph, which is when
+	 * vertex is split into several vertices, possibly doubling edges.
+	 * Since this is high level operation events of creation of new edges and vertex
+	 * should not have been triggered yet when this event was triggered.
+	 * @param oldVertex vertex to be split
+	 * @param newEdges edges which are results of split, paired with their preimage
+	 * @param newVertex - resulting vertex
+	 */
+	virtual void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) {
+	}
+
+
 	virtual ~ActionHandler() {
 		TRACE("~ActionHandler");
 	}
@@ -115,13 +130,22 @@ template<class Graph>
 class GraphActionHandler: public ActionHandler<typename Graph::VertexId,
 		typename Graph::EdgeId> {
 	typedef ActionHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
-public:
-	GraphActionHandler(const string& name) :
-			base(name) {
 
+	const Graph& g_;
+protected:
+	const Graph& g() const {
+		return g_;
+	}
+public:
+	GraphActionHandler(const Graph& g, const string& name) :
+			base(name), g_(g) {
+		TRACE("Adding new action handler: " << this->name());
+		g_.AddActionHandler(this);
 	}
 
 	virtual ~GraphActionHandler() {
+		TRACE("Removing action handler: " << this->name());
+		g_.RemoveActionHandler(this);
 	}
 };
 
@@ -157,6 +181,9 @@ public:
 
 	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
 	EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const = 0;
+
+	virtual void ApplyVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
+	VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) const = 0;
 
 	virtual ~HandlerApplier() {
 	}
@@ -205,6 +232,11 @@ public:
 	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
 	EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) const {
 		handler->HandleSplit(old_edge, new_edge1, new_edge2);
+	}
+
+	virtual void ApplyVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
+			VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) const {
+			handler->HandleVertexSplit(newVertex, newEdges, oldVertex);
 	}
 
 	virtual ~SimpleHandlerApplier() {
@@ -340,6 +372,7 @@ public:
 	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
 	EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const {
 		EdgeId rce = graph_.conjugate(old_edge);
+		assert(old_edge != rce);
 		TRACE(
 				"Triggering split event of handler " << handler->name() << " with old edge " << old_edge);
 		handler->HandleSplit(old_edge, new_edge_1, new_edge2);
@@ -352,6 +385,11 @@ public:
 			TRACE(
 					"Edge " << old_edge << "is self-conjugate thus handler is not applied the second time");
 		}
+	}
+
+	virtual void ApplyVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
+			VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) const {
+			handler->HandleVertexSplit(newVertex, newEdges, oldVertex);
 	}
 
 	virtual ~PairedHandlerApplier() {
@@ -373,23 +411,18 @@ template<class Graph, typename ElementId, typename Comparator = std::less<
 		ElementId> >
 class SmartIterator: public GraphActionHandler<Graph>, public QueueIterator<
 		ElementId, Comparator> {
-private:
-	Graph &graph_;
 public:
 	typedef QueueIterator<ElementId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartIterator(Graph &graph, const string &name,
+	SmartIterator(const Graph &graph, const string &name,
 			const Comparator& comparator = Comparator()) :
-			GraphActionHandler<Graph>(name), QueueIterator<ElementId, Comparator>(
-					comparator),
-			graph_(graph) {
-		graph_.AddActionHandler(this);
+			GraphActionHandler<Graph>(graph, name), QueueIterator<ElementId, Comparator>(
+					comparator) {
 	}
 
 	virtual ~SmartIterator() {
-		graph_.RemoveActionHandler(this);
 	}
 
 	virtual void HandleAdd(ElementId v) {
@@ -416,13 +449,11 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartVertexIterator(Graph &graph, bool fill, const Comparator& comparator =
+	SmartVertexIterator(const Graph &graph, const Comparator& comparator =
 			Comparator()) :
 			SmartIterator<Graph, VertexId, Comparator>(graph,
 					"SmartVertexIterator " + ToString(this), comparator) {
-		if (fill) {
-			super::insert(graph.begin(), graph.end());
-		}
+		super::insert(graph.begin(), graph.end());
 	}
 
 	virtual ~SmartVertexIterator() {
@@ -445,15 +476,13 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	SmartEdgeIterator(Graph &graph, bool fill, Comparator comparator =
+	SmartEdgeIterator(const Graph &graph, Comparator comparator =
 			Comparator()) :
 			SmartIterator<Graph, EdgeId, Comparator>(graph,
 					"SmartEdgeIterator " + ToString(this), comparator) {
-		if (fill) {
-			for (auto it = graph.begin(); it != graph.end(); ++it) {
-				const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
-				this->super::insert(outgoing.begin(), outgoing.end());
-			}
+		for (auto it = graph.begin(); it != graph.end(); ++it) {
+			const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
+			this->super::insert(outgoing.begin(), outgoing.end());
 		}
 	}
 
@@ -467,12 +496,10 @@ public:
  */
 template<typename ElementId>
 class Path {
-public:
-
 	vector<ElementId> sequence_;
 	int start_pos_;
 	int end_pos_;
-
+public:
 	typedef typename vector<ElementId>::const_iterator iterator;
 
 	Path(vector<ElementId> sequence, size_t start_pos, size_t end_pos) :
@@ -502,6 +529,66 @@ public:
 	ElementId operator[](size_t index) const {
 		return sequence_[index];
 	}
+
+	iterator begin() {
+		return sequence_.begin();
+	}
+
+	iterator end() {
+		return sequence_.end();
+	}
+
+};
+
+struct Range {
+	//inclusive
+	size_t start_pos;
+	//exclusive
+	size_t end_pos;
+
+	Range(size_t start_pos, size_t end_pos)
+	: start_pos(start_pos), end_pos(end_pos)
+	{}
+};
+
+struct MappingRange {
+	Range initial_range;
+	Range mapped_range;
+
+	MappingRange(Range initial_range, Range mapped_range)
+	: initial_range(initial_range), mapped_range(mapped_range)
+	{}
+};
+
+template<typename ElementId>
+class MappingPath {
+public:
+
+	MappingPath(const vector<ElementId>& edges, const vector<MappingRange> range_mappings) :
+			edges_(edges), range_mappings_(range_mappings) {
+	}
+
+	size_t size() const {
+		return edges_.size();
+	}
+
+	pair<const ElementId, const MappingRange> operator[](size_t idx) const {
+		return make_pair(edges_[idx], range_mappings_[idx]);
+	}
+
+	size_t start_pos() const {
+		return range_mappings_.front().mapped_range.start_pos;
+	}
+
+	size_t end_pos() const {
+		return range_mappings_.back().mapped_range.end_pos;
+	}
+
+	//todo add iterator
+
+private:
+	vector<ElementId> edges_;
+	vector<MappingRange> range_mappings_;
 };
 
 template<class Graph>
@@ -724,5 +811,15 @@ public:
 
 };
 
+size_t PairInfoPathLengthUpperBound(size_t k, size_t insert_size, double delta) {
+	double answer = 0. +  insert_size + delta - k - 2;
+	assert(math::gr(answer, 0.));
+	return std::floor(answer);
+}
+
+size_t PairInfoPathLengthLowerBound(size_t k, size_t l_e1, size_t l_e2, size_t gap, double delta) {
+	double answer = 0. + gap + k + 2 - l_e1 - l_e2 - delta;
+	return math::gr(answer, 0.) ? std::floor(answer) : 0;
+}
 }
 #endif /* OMNI_UTILS_HPP_ */

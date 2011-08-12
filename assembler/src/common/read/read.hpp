@@ -11,10 +11,10 @@
 #include <string>
 #include <iostream>
 #include <cassert>
-#include "common/sequence/quality.hpp"
-#include "common/sequence/sequence.hpp"
-#include "common/sequence/nucl.hpp"
-#include "common/sequence/sequence_tools.hpp"
+#include "sequence/quality.hpp"
+#include "sequence/sequence.hpp"
+#include "sequence/nucl.hpp"
+#include "sequence/sequence_tools.hpp"
 #include "simple_tools.hpp"
 
 
@@ -138,14 +138,14 @@ public:
     seq_ = s;
     valid_ = updateValid();
   }
- 
+
   Read() :
     valid_(false) {
     ;
   }
 
   Read(const std::string &name, const std::string &seq, const std::string &qual) :
-    name_(name), seq_(seq), qual_(qual) { // for test only!
+    name_(name), seq_(seq), qual_(qual) {  // for test only!
     valid_ = updateValid();
   }
 private:
