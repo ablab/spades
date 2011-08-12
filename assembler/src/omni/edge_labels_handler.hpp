@@ -32,11 +32,12 @@ private:
 	Graph &new_graph_;
 	Graph &old_graph_;
 	//From new edge to sequence of old
+public:
 	map<EdgeId, vector<EdgeId> > edge_labels;
 	//From old edge to set of new ones, containing it.
 	map<EdgeId,set<EdgeId> > edge_inclusions;
 public:
-//TODO: integrate this to resolver, remove "from_resolve" parameter
+	//TODO: integrate this to resolver, remove "from_resolve" parameter
 	EdgeLabelHandler(Graph &new_graph, Graph &old_graph, unordered_map<EdgeId, EdgeId>& from_resolve) :
 		GraphActionHandler<Graph> (new_graph, "EdgePositionHandler"), new_graph_(new_graph), old_graph_(old_graph) {
 		FillLabels(from_resolve);
