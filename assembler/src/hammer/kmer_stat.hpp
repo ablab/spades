@@ -13,9 +13,10 @@ typedef uint64_t hint_t;
 
 struct KMerStat {
 
-	KMerStat (uint32_t cnt, hint_t cng) : count(cnt), changeto(cng) { }
+	KMerStat (uint32_t cnt, hint_t cng, double qual) : count(cnt), changeto(cng), totalQual(qual) { }
 	uint32_t count;
 	hint_t changeto;
+	double totalQual;
 
 	bool isGood() const { return changeto == KMERSTAT_GOOD; }
 	bool change() const { return changeto < KMERSTAT_CHANGE; }

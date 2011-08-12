@@ -25,8 +25,8 @@ using namespace std;
 #define MAX_INT_64 1000000000000000000
 #define READ_BATCH_SIZE 10000000
 #define ERROR_RATE 0.01
-#define BLOCKSIZE_QUADRATIC_THRESHOLD 50
-#define GOOD_SINGLETON_THRESHOLD 1 
+#define BLOCKSIZE_QUADRATIC_THRESHOLD 100
+#define GOOD_SINGLETON_THRESHOLD 0.95
 #define CONSENSUS_BLOB_MARGIN 0.25
 
 #define TIMEDLN(a) print_time(); cout << a << endl
@@ -47,7 +47,7 @@ void AddKMers(const PositionRead &r, hint_t readno, KMerStatMap *v);
 void AddKMerNos(const PositionRead &r, hint_t readno, vector<KMerNo> *v);
 
 void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerNo> * vv);
-void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthreads);
+void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int qvoffset, int nthreads);
 void DoSplitAndSort(int tau, int nthreads, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers, vector<SubKMerPQ> * vskpq);
 
 /**
