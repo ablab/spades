@@ -245,12 +245,47 @@ void AddEtalonInfo(Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence& genom
 	}
 }
 
-void DeleteEtalonInfo(PairedInfoIndices& pairedInfos) {
+template<size_t k>
+void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence& genome, PairedInfoIndices& pairedInfos) {
+	size_t libCount = LC_CONFIG.read<size_t>("real_lib_count");
+
+	for (size_t i = 1; i <= libCount; ++i) {
+		std::string num = ToString<size_t>(i);
+		size_t insertSize = LC_CONFIG.read<size_t>("real_insert_size_" + num);
+		size_t readSize = LC_CONFIG.read<size_t>("real_read_size_" + num);
+		string dataset = CONFIG.read<string>("dataset");
+
+		INFO("Reading additional info with read size " << readSize << ", insert size " << insertSize);
+
+		string reads_filename1 = LC_CONFIG.read<string>("real_path_" + ToString<size_t>(i) + "_" + dataset + "_1");
+		string reads_filename2 = LC_CONFIG.read<string>("real_path_" + ToString<size_t>(i) + "_" + dataset + "_2");
+		checkFileExistenceFATAL(reads_filename1);
+		checkFileExistenceFATAL(reads_filename2);
+
+		typedef io::Reader<io::PairedRead> PairedReadStream;
+		typedef io::RCReaderWrapper<io::PairedRead> RCStream;
+
+		PairedReadStream pairStream(std::pair<std::string,
+								  std::string>(reads_filename1,
+											   reads_filename2),
+											   insertSize);
+
+		RCStream rcStream(&pairStream);
+
+		pairedInfos.push_back(PairedInfoIndexLibrary(readSize, insertSize, new PairedInfoIndex<Graph>(g, 0)));
+		FillPairedIndex<k, RCStream> (g, index, *pairedInfos.back().pairedInfoIndex, rcStream);
+	}
+}
+
+void DeleteAdditionalInfo(PairedInfoIndices& pairedInfos) {
 	while (pairedInfos.size() > 1) {
 		delete pairedInfos.back().pairedInfoIndex;
 		pairedInfos.pop_back();
 	}
 }
+
+
+
 
 } // namespace long_contigs
 
@@ -292,8 +327,10 @@ int main() {
 	PairedInfoIndexLibrary basicPairedLib(LC_CONFIG.read<size_t>("read_size"), LC_CONFIG.read<size_t>("insert_size"), &pairedIndex);
 	pairedInfos.push_back(basicPairedLib);
 
-	if (LC_CONFIG.read<bool>("etalon_info_mode")) {
+	if (CONFIG.read<bool>("etalon_info_mode")) {
 		AddEtalonInfo<K>(g, index, sequence, pairedInfos);
+	} else {
+		AddRealInfo<K>(g, index, sequence, pairedInfos);
 	}
 
 	FindSeeds(g, rawSeeds);
@@ -339,7 +376,7 @@ int main() {
 //	PrintPathWithVertices(g, path1);
 //	PrintPathWithVertices	(g, path2);
 
-	DeleteEtalonInfo(pairedInfos);
+	DeleteAdditionalInfo(pairedInfos);
 	return 0;
 }
 
