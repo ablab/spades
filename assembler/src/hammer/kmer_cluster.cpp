@@ -60,15 +60,19 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, i
 		processBlockQuadratic(uf, block);
 	} else {
 		cout << "  making a sub-subkmersorter for blocksize=" << blockSize << endl;
+		for (uint32_t i = 0; i < blockSize; ++i) cout << block[i] << " ";
+		cout << endl;
 		int nthreads_per_subkmer = max( (int)(nthreads_ / (tau_ + 1)), 1);
 		SubKMerSorter subsubsorter( &block, &k_, nthreads_per_subkmer, tau_, cur_subkmer,
-			SubKMerSorter::SorterTypeChequered, SubKMerSorter::SorterTypeStraight );
+			SubKMerSorter::SorterTypeStraight, SubKMerSorter::SorterTypeStraight );
 		subsubsorter.runSort();
 		for (uint32_t sub_i = 0; sub_i < tau_+1; ++sub_i) {
 			vector<hint_t> subblock;
 			while ( subsubsorter.getNextBlock(sub_i, subblock) ) {
 				if (subblock.size() > (BLOCKSIZE_QUADRATIC_THRESHOLD / 2) ) {
 					cout << "    running quadratic on size=" << subblock.size() << endl;
+					for (uint32_t i = 0; i < blockSize; ++i) cout << "    " << subblock[i] << " " << k_[subblock[i]].first.str() << endl;
+					cout << endl;
 				}
 				processBlockQuadratic(uf, subblock);
 			}
