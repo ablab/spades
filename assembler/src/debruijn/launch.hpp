@@ -290,8 +290,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 //				output_folder + "resolved_labels_1.dot",
 //				"no_repeat_graph", resolved_graph, LabelLabler);
 
-		for(int i = 0; i < 2; i ++) {
-			ClipTips(resolved_graph);
+		for(int i = 0; i < 3; i ++) {
+			ClipTipsForResolver(resolved_graph);
 			RemoveBulges2(resolved_graph);
 			RemoveLowCoverageEdgesForResolver(resolved_graph);
 		}

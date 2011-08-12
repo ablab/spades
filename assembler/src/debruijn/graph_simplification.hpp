@@ -32,7 +32,7 @@ void ClipTips(Graph &g) {
 	INFO("Clipping tips finished");
 }
 
-void ClipTipsForResolve(NCGraph &g) {
+void ClipTipsForResolver(NCGraph &g) {
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
 	omnigraph::TipComparator<NCGraph> comparator(g);
@@ -40,8 +40,9 @@ void ClipTipsForResolve(NCGraph &g) {
 	size_t max_coverage = CONFIG.read<size_t> ("tc_max_coverage");
 	double max_relative_coverage = CONFIG.read<double> (
 			"tc_max_relative_coverage");
-	omnigraph::TipClipper<NCGraph, omnigraph::TipComparator<NCGraph>> tc(g, comparator, max_tip_length *10000,
-			max_coverage, max_relative_coverage);
+	omnigraph::TipClipper<NCGraph, TipComparator<NCGraph>> tc(g, comparator, 400,
+                      max_coverage, max_relative_coverage * 1.2);
+
 	tc.ClipTips();
 	INFO("Clipping tips finished");
 }
