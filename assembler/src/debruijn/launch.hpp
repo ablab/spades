@@ -307,9 +307,9 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 			new_graph, new_IDs, edges_pos_new);
 	mkdir((output_folder).c_str(),
 			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-	repeat_resolver.ResolveRepeats(output_folder);
 	unordered_map<typename Graph::EdgeId, typename Graph::EdgeId> edge_labels = repeat_resolver.GetEdgeLabels();
 	LabelsAfter.FillLabels(edge_labels);
+	repeat_resolver.ResolveRepeats(output_folder);
 	INFO("Primitive repeats resolved");
 }
 
@@ -736,9 +736,9 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 					output_folder);
 		}
 
-		number_of_components = PrintGraphComponents(
-				output_folder + "graph_components/graphCl", g, insert_size,
-				IntIds, clustered_index, EdgePos);
+//		number_of_components = PrintGraphComponents(
+//				output_folder + "graph_components/graphCl", g, insert_size,
+//				IntIds, clustered_index, EdgePos);
 
 	}
 	//	if (paired_mode) {
@@ -782,6 +782,12 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		 */
 		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index,
 				EdgePosBefore);
+
+		number_of_components = PrintGraphComponents(
+				output_folder + "graph_components/graphCl", new_graph, insert_size,
+				NewIntIds, new_index, EdgePosBefore);
+
+
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
@@ -874,7 +880,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
 		N50enlarger.one_many_resolve_with_vertex_split();
 
-		omnigraph::WriteSimple(output_folder + "4_finished_graph.dot",
+		omnigraph::WriteSimple(output_folder + "5_finished_graph.dot",
 				"no_repeat_graph", resolved_graph, TotLabAfter);
 
 //		omnigraph::WriteSimple(

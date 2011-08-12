@@ -122,7 +122,7 @@ public:
 
  	 }
 
- 	void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) {
+ 	void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) {
 		 DEBUG("HandleMerge by edge labels handler");
  		 size_t n = newEdges.size();
 		 for(size_t j = 0; j < n; j++) {

@@ -386,7 +386,11 @@ public:
 		return make_pair(newEdge1, newEdge2);
 	}
 
-	VertexId SplitVertex(VertexId vertex, vector<EdgeId> splittingEdges) {
+	pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId vertex, vector<EdgeId> splittingEdges) {
+		vector<double> split_coefficients(splittingEdges.size(),1);
+		return SplitVertex(vertex, splittingEdges, split_coefficients);
+	}
+	pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId vertex, vector<EdgeId> &splittingEdges, vector<double> &split_coefficients) {
 //TODO:: check whether we handle loops correctly!
 		VertexId newVertex = HiddenAddVertex(vertex->data());
 		vector<pair<EdgeId, EdgeId>> edge_clones;
@@ -401,11 +405,11 @@ public:
 			edge_clones.push_back(make_pair(splittingEdges[i], newEdge));
 		}
 //FIRE
-		FireVertexSplit(newVertex, edge_clones, vertex);
+		FireVertexSplit(newVertex, edge_clones, split_coefficients, vertex);
 		FireAddVertex(newVertex);
 		for(size_t i = 0; i < splittingEdges.size(); i ++)
 			FireAddEdge(edge_clones[i].second);
-		return newVertex;
+		return make_pair(newVertex, edge_clones);
 	}
 
 	void GlueEdges(EdgeId edge1, EdgeId edge2) {
