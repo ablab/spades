@@ -372,6 +372,7 @@ public:
 	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
 	EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const {
 		EdgeId rce = graph_.conjugate(old_edge);
+		assert(old_edge != rce);
 		TRACE(
 				"Triggering split event of handler " << handler->name() << " with old edge " << old_edge);
 		handler->HandleSplit(old_edge, new_edge_1, new_edge2);

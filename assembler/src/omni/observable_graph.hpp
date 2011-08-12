@@ -4,13 +4,13 @@
 #include "omni_utils.hpp"
 
 namespace omnigraph {
-template<typename VertexIdT, typename EdgeIdT, typename VertexIterator = typename set<VertexIdT>::iterator>
+template<typename VertexIdT, typename EdgeIdT, typename VertexIterator/* = typename set<VertexIdT>::iterator*/>
 class ObservableGraph {
 public:
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;
-	typedef SmartVertexIterator<ObservableGraph> SmartVertexItarator;
-	typedef SmartEdgeIterator<ObservableGraph> SmartEdgeItarator;
+	typedef SmartVertexIterator<ObservableGraph> SmartVertexIt;
+	typedef SmartEdgeIterator<ObservableGraph> SmartEdgeIt;
 private:
 	typedef ActionHandler<VertexId, EdgeId> Handler;
 
@@ -94,9 +94,9 @@ public:
 	}
 
 	void AddActionHandler(Handler* action_handler) const {
-		TRACE("Action handler added");
+		TRACE("Action handler " << action_handler->name() << " added");
 		if (find(action_handler_list_.begin(),action_handler_list_.end(), action_handler) != action_handler_list_.end()){
-			FATAL_ASSERT(false, "Action handler " << action_handler->name() << " has already been added");
+			FATAL("Action handler " << action_handler->name() << " has already been added");
 		} else {
 			action_handler_list_.push_back(action_handler);
 		}
@@ -120,7 +120,8 @@ public:
 
 	virtual VertexIterator end() const = 0;
 
-	virtual vector<EdgeId> OutgoingEdges(VertexId vertex) const = 0;
+	//todo think of moving to AbstractGraph
+	virtual const vector<EdgeId> OutgoingEdges(VertexId vertex) const = 0;
 
 	template<typename Comparator = std::less<VertexId> >
 	SmartVertexIterator<ObservableGraph, Comparator> SmartVertexBegin(

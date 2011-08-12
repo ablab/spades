@@ -87,6 +87,7 @@ public:
 		Loops_resolve();
 		int inc_count;
 		int out_count;
+
 		for (auto iter = g_.SmartVertexBegin(); ! iter.IsEnd(); ++iter) {
 			VertexId vertex = *iter;
 			DEBUG(vertex);
@@ -107,8 +108,8 @@ public:
 						toMerge.push_back(edge2);
 						DEBUG("first part ");
 						g_.MergePath(toMerge);
+
 					}
-					g_.ForceDeleteVertex(vertex);
 				}
 			}
 		}
@@ -133,9 +134,8 @@ public:
 						toMerge.push_back(edge2);
 						DEBUG("first part ");
 						g_.MergePath(toMerge);
+
 					}
-					g_.ForceDeleteVertex(vertex);
-					//				DEBUG("second vertex deleted ");
 				}
 			}
 		}
