@@ -784,6 +784,13 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index,
 				EdgePosBefore);
 
+		if (from_saved){
+			WriteGraphComponents<k> (g, index, genome,
+					output_folder + "graph_components" + "/", "graph.dot",
+					"graph_component", insert_size);
+
+		}
+
 		number_of_components = PrintGraphComponents(
 				output_folder + "graph_components/graphCl", new_graph, insert_size,
 				NewIntIds, new_index, EdgePosBefore);

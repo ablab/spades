@@ -638,7 +638,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 	EdgeId right_id = pair_inf.second;
 	EdgeId left_id = pair_inf.first;
 
-	if (pair_inf.d - new_graph.length(left_id) > 140) {
+	if (pair_inf.d - new_graph.length(left_id) > 240) {
 		DEBUG(
 				"PairInfo "<<edge_labels[left_id]<<"("<<new_graph.length(left_id)<<")"<<" "<<right_id<<"("<<old_graph.length(right_id)<<")"<<" "<<pair_inf.d)DEBUG(
 				"too far to correct");
@@ -687,7 +687,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 	for (int dir = 0; dir < 2; dir++) {
 		for (int i = 0, n = edgeIds[dir].size(); i < n; i++) {
 			PairInfos tmp = paired_di_data.GetEdgeInfos(edgeIds[dir][i]);
-
+			vector<EdgeInfo> tmp_edge_infos;
 			for (int j = 0, sz = tmp.size(); j < sz; j++) {
 				EdgeId right_id = tmp[j].second;
 				EdgeId left_id = tmp[j].first;
@@ -696,7 +696,6 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 				//				if (w < 10) continue;
 				int dif_d = 0;
 				//				if ((d >=new_graph.length(left_id))||(edge_labels[left_id] == right_id ))
-				vector<EdgeInfo> tmp_edge_infos;
 
 				{
 					if ((dir == 1) /*&& (edge_labels[left_id] != right_id)*/) {
@@ -730,24 +729,36 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 					}
 
 				}
-				bool NotOnSelfExist = false;
-				for (int j = 0; j < (int)tmp_edge_infos.size(); j++) {
-					if ((tmp_edge_infos[j].lp.weight != 0)||(edge_labels[tmp_edge_infos[j].lp.first] != tmp_edge_infos[j].lp.second)){
-						NotOnSelfExist = true;
-						break;
-					}
+			}
+			bool NotOnSelfExist = false;
+			for (int j = 0; j < (int)tmp_edge_infos.size(); j++) {
+				if ((tmp_edge_infos[j].lp.d != 0)||(edge_labels[tmp_edge_infos[j].lp.first] != tmp_edge_infos[j].lp.second)){
+					NotOnSelfExist = true;
+					break;
 				}
-				for (int j = 0; j < (int)tmp_edge_infos.size(); j++) {
-					if ((!NotOnSelfExist)||(tmp_edge_infos[j].lp.weight != 0)||(edge_labels[tmp_edge_infos[j].lp.first] != tmp_edge_infos[j].lp.second)){
-						edge_infos.push_back(tmp_edge_infos[j]);
-					}
+			}
 
+			for (int j = 0; j < (int)tmp_edge_infos.size(); j++) {
+				if ((!NotOnSelfExist)||(tmp_edge_infos[j].lp.d != 0)||(edge_labels[tmp_edge_infos[j].lp.first] != tmp_edge_infos[j].lp.second)){
+					edge_infos.push_back(tmp_edge_infos[j]);
 				}
-
 
 			}
+
+
+
+
+
 		}
 	}
+
+	for (int j = 0; j < (int)edge_infos.size(); j++) {
+		DEBUG("Edge infos "<<j<<" distance is "<<edge_infos[j].d);
+		PairInfo tmp = edge_infos[j].lp;
+		DEBUG("PairInfo: " << new_IDs.ReturnIntId(tmp.first)<<" "<<old_IDs.ReturnIntId(edge_labels[tmp.first]) << " " << old_IDs.ReturnIntId(tmp.second) <<" "<< tmp.d);
+	}
+
+
 	return right_edges.size();
 }
 
