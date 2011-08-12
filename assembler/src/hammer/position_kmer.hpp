@@ -1,6 +1,7 @@
 #ifndef POSITION_KMER_HPP_
 #define POSITION_KMER_HPP_
 
+#include <math.h>
 #include <vector>
 #include <queue>
 #include <boost/function.hpp>

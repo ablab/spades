@@ -479,28 +479,6 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 			processBlock(uf[i], block, i);
 		}
 
-		/*boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > sub_equal = boost::bind(PositionKMer::equalSubKMers, _1, _2, &k_, tau_, PositionKMer::subKMerPositions->at(i), PositionKMer::subKMerPositions->at(i+1) );
-
-		string sbuf;
-		(*vskpq)[i].initPQ();
-
-		hint_t last = (*vskpq)[i].peekPQ();
-		vector<hint_t> block;
-		size_t j = 0;
-		while (!(*vskpq)[i].emptyPQ()) {
-			hint_t cur = (*vskpq)[i].nextPQ();
-
-			if ( sub_equal(last, cur) ) { //add to current reads
-				block.push_back(cur);
-			} else {
-				processBlock(uf[i], block);
-				block.clear();
-				block.push_back(cur);
-				last = cur;
-			}
-			++j; if ( j % 1000000 == 0 ) cout << "  " << j << " in thread " << i << endl;
-		}
-		processBlock(uf[i], block);*/
 	}
 	TIMEDLN("All split kmer threads finished. Starting merge.");
 	
