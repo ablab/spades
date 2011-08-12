@@ -369,7 +369,7 @@ public:
 };
 
 template<size_t k, class Graph>
-class EtalonPairedInfoCounter {
+class OldEtalonPairedInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;
 
 	const Graph& g_;
@@ -439,7 +439,7 @@ class EtalonPairedInfoCounter {
 
 public:
 
-	EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<k + 1, Graph>& index
+	OldEtalonPairedInfoCounter(const Graph& g, const EdgeIndex<k + 1, Graph>& index
 			, size_t insert_size, size_t read_length, size_t delta) :
 			g_(g), index_(index), insert_size_(insert_size), read_length_(
 					read_length), gap_(insert_size_ - 2 * read_length_), delta_(
@@ -457,7 +457,7 @@ public:
 };
 
 template<size_t k, class Graph>
-class NewEtalonPairedInfoCounter {
+class EtalonPairedInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;
 
 	const Graph& g_;
@@ -502,7 +502,7 @@ class NewEtalonPairedInfoCounter {
 
 public:
 
-	NewEtalonPairedInfoCounter(const Graph& g, const EdgeIndex<k + 1, Graph>& index
+	EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<k + 1, Graph>& index
 			, size_t insert_size, size_t read_length, size_t delta) :
 			g_(g), index_(index), insert_size_(insert_size), read_length_(
 					read_length), gap_(insert_size_ - 2 * read_length_), delta_(
