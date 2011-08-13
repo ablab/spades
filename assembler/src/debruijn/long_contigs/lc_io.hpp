@@ -56,7 +56,7 @@ void AddEtalonInfo(Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence& genom
 }
 
 template<size_t k>
-void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, PairedInfoIndices& pairedInfos) {
+void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds, PairedInfoIndices& pairedInfos) {
 	size_t libCount = LC_CONFIG.read<size_t>("real_lib_count");
 
 	for (size_t i = 1; i <= libCount; ++i) {
@@ -68,11 +68,10 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, PairedInfoIndices& pair
 
 		INFO("Reading additional info with read size " << readSize << ", insert size " << insertSize);
 
-		if (LC_CONFIG.read<bool>("real_precounted_" + num)) {
+		if (LC_CONFIG.read<bool>("real_precounted_" + num + "_" + dataset)) {
 			//Reading saved paired info
-			IdTrackHandler<Graph> conj_IntIds(g);
 			DataScanner<Graph> dataScanner(g, conj_IntIds);
-			dataScanner.loadPaired(LC_CONFIG.read<string>("real_precounted_" + num + "_" + dataset), *pairedInfos.back().pairedInfoIndex);
+			dataScanner.loadPaired(LC_CONFIG.read<string>("real_precounted_path_" + num + "_" + dataset), *pairedInfos.back().pairedInfoIndex);
 		}
 		else {
 			//Reading paired info from fastq files
@@ -112,6 +111,17 @@ void DeleteAdditionalInfo(PairedInfoIndices& pairedInfos) {
 	while (pairedInfos.size() > 1) {
 		delete pairedInfos.back().pairedInfoIndex;
 		pairedInfos.pop_back();
+	}
+}
+
+void PrintPairedInfo(Graph& g, PairedInfoIndex<Graph>& pairedInfo, IdTrackHandler<Graph>& intIds) {
+	for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		for (auto iter2 = g.SmartEdgeBegin(); !iter2.IsEnd(); ++iter2) {
+			omnigraph::PairedInfoIndex<Graph>::PairInfos pairs = pairedInfo.GetEdgePairInfo(*iter, *iter2);
+			for (auto pair = pairs.begin(); pair != pairs.end(); ++pair) {
+				INFO(intIds.ReturnIntId(pair->first) << " - " << intIds.ReturnIntId(pair->second) << " : " << pair->weight);
+			}
+		}
 	}
 }
 

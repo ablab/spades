@@ -75,7 +75,7 @@ int main() {
 	if (CONFIG.read<bool>("etalon_info_mode")) {
 		AddEtalonInfo<K>(g, index, sequence, pairedInfos);
 	} else {
-		AddRealInfo<K>(g, index, pairedInfos);
+		AddRealInfo<K>(g, index, intIds, pairedInfos);
 	}
 
 	FindSeeds(g, rawSeeds);
@@ -99,7 +99,7 @@ int main() {
 	FindPaths(g, seeds, pairedInfos, paths);
 
 	std::vector<BidirectionalPath> result;
-	if (LC_CONFIG.read<bool>("remove_duplicates_only")) {
+	if (LC_CONFIG.read<bool>("remove_duplicates_only") || LC_CONFIG.read<bool>("remove_overlaps")) {
 		RemoveSubpaths(g, paths, result);
 		INFO("Duplicates removed");
 	}
@@ -107,7 +107,6 @@ int main() {
 		RemoveSubpaths(g, paths, result);
 		INFO("Subpaths removed");
 	}
-
 
 	found = PathsInGenome<K>(g, index, sequence, result, path1, path2);
 	INFO("Good paths found " << found << " in total " << result.size());
@@ -118,13 +117,12 @@ int main() {
 		WriteGraphWithPathsSimple(output_dir + "overlaped_paths.dot", "overlaped_paths", g, result, path1, path2);
 	}
 
-	std::vector<BidirectionalPath> noOverlapPaths;
-	if (LC_CONFIG.read<bool>("write_paths")) {
-		RemoveOverlaps(result, noOverlapPaths);
+	if (LC_CONFIG.read<bool>("remove_overlaps")) {
+		RemoveOverlaps(result);
+	}
 
-		if (LC_CONFIG.read<bool>("write_paths")) {
-			WriteGraphWithPathsSimple(output_dir + "final_paths.dot", "final_paths", g, noOverlapPaths, path1, path2);
-		}
+	if (LC_CONFIG.read<bool>("write_paths")) {
+		WriteGraphWithPathsSimple(output_dir + "final_paths.dot", "final_paths", g, result, path1, path2);
 	}
 
 	if (LC_CONFIG.read<bool>("write_contigs")) {

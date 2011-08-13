@@ -360,28 +360,42 @@ void RemoveSubpaths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector
 }
 
 //Remove overlaps, remove sub paths first
-void RemoveOverlaps(std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& output) {
-//TODO
-	output.resize(paths.size());
-	std::copy(paths.begin(), paths.end(), output.begin());
+void RemoveOverlaps(std::vector<BidirectionalPath>& paths) {
+	INFO("Removing overlaps");
+	for (auto path = paths.begin(); path != paths.end(); ++path) {
+		EdgeId lastEdge = path->back();
 
-//	for (auto path = paths.begin(); path != paths.end(); ++path) {
-//		EdgeId lastEdge = path->back();
-//
-//		for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-//			if (iter != path) {
-//				BidirectionalPath& toCompare = *iter;
-//				size_t overlap = 0;
-//
-//				for (size_t i = 0; i < toCompare.size(); ++i) {
-//					if (lastEdge == toCompare[i]) {
-//
-//					}
-//				}
-//
-//			}
-//		}
-//	}
+		for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+			if (iter != path) {
+				BidirectionalPath& toCompare = *iter;
+				int overlap = -1;
+
+				for (size_t i = 0; i < toCompare.size(); ++i) {
+					if (lastEdge == toCompare[i]) {
+						int diff = path->size() - i;
+						bool found = true;
+
+						for (int j = i - 1; j >= 0; --j) {
+							if (toCompare[j] != path->at(j + diff)) {
+								found = false;
+								break;
+							}
+						}
+
+						if (found) {
+							overlap = i;
+							INFO("Found overlap by " << i);
+						}
+					}
+				}
+
+				for (int i = 0; i <= overlap; ++i) {
+					toCompare.pop_front();
+				}
+			}
+		}
+	}
+	INFO("Done");
 }
 
 } // namespace long_contigs
