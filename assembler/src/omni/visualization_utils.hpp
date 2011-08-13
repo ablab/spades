@@ -7,7 +7,6 @@
 #include <stack>
 #include <queue>
 #include "dijkstra.hpp"
-#include "observable_graph.hpp"
 #include "splitters.hpp"
 
 namespace omnigraph {

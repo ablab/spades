@@ -27,6 +27,5 @@ class PositionKMer;
 typedef std::map<PositionKMer, KMerStat> KMerStatMap;
 typedef std::pair<PositionKMer, KMerStat> KMerCount;
 
-
 #endif //  HAMMER_KMERSTAT_HPP_
 

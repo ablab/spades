@@ -66,7 +66,7 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, i
 		SubKMerSorter subsubsorter( &block, &k_, nthreads_per_subkmer, tau_, cur_subkmer,
 			SubKMerSorter::SorterTypeStraight, SubKMerSorter::SorterTypeStraight );
 		subsubsorter.runSort();
-		for (uint32_t sub_i = 0; sub_i < tau_+1; ++sub_i) {
+		for (int sub_i = 0; sub_i < tau_+1; ++sub_i) {
 			vector<hint_t> subblock;
 			while ( subsubsorter.getNextBlock(sub_i, subblock) ) {
 				if (subblock.size() > (BLOCKSIZE_QUADRATIC_THRESHOLD / 2) ) {

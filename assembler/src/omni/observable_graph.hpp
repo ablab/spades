@@ -73,11 +73,11 @@ protected:
 		}
 	}
 
-	void FireVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) {
+	void FireVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) {
 		DEBUG("Fire VertexSplit");
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
-			applier_->ApplyVertexSplit(*it, newVertex, newEdges, oldVertex);
+			applier_->ApplyVertexSplit(*it, newVertex, newEdges, split_coefficients, oldVertex);
 		}
 	}
 

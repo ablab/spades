@@ -117,7 +117,7 @@ public:
 	 * @param newEdges edges which are results of split, paired with their preimage
 	 * @param newVertex - resulting vertex
 	 */
-	virtual void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) {
+	virtual void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) {
 	}
 
 
@@ -183,7 +183,7 @@ public:
 	EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const = 0;
 
 	virtual void ApplyVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
-	VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) const = 0;
+	VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) const = 0;
 
 	virtual ~HandlerApplier() {
 	}
@@ -235,8 +235,8 @@ public:
 	}
 
 	virtual void ApplyVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
-			VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) const {
-			handler->HandleVertexSplit(newVertex, newEdges, oldVertex);
+			VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) const {
+			handler->HandleVertexSplit(newVertex, newEdges, split_coefficients, oldVertex);
 	}
 
 	virtual ~SimpleHandlerApplier() {
@@ -388,8 +388,8 @@ public:
 	}
 
 	virtual void ApplyVertexSplit(ActionHandler<VertexId, EdgeId> *handler,
-			VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, VertexId oldVertex) const {
-			handler->HandleVertexSplit(newVertex, newEdges, oldVertex);
+			VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) const {
+			handler->HandleVertexSplit(newVertex, newEdges, split_coefficients, oldVertex);
 	}
 
 	virtual ~PairedHandlerApplier() {
