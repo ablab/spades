@@ -626,7 +626,7 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef Seq<k> Kmer;
 
-	Graph &graph_;
+	const Graph &graph_;
 	const SequenceMapper& mapper_;
 	Stream& stream_;
 
@@ -669,7 +669,7 @@ private:
 
 public:
 
-	PairedIndexFiller(Graph &graph, const SequenceMapper& mapper, Stream& stream) :
+	PairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, Stream& stream) :
 			graph_(graph), mapper_(mapper), stream_(stream) {
 
 	}

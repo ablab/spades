@@ -122,7 +122,7 @@ public:
 
 
 	virtual ~ActionHandler() {
-		TRACE("~ActionHandler");
+		TRACE("~ActionHandler " << handler_name_);
 	}
 };
 

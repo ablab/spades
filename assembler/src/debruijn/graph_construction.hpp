@@ -12,11 +12,12 @@
 #include "edges_position_handler.hpp"
 #include "new_debruijn.hpp"
 #include "paired_info.hpp"
+#include "utils.hpp"
 
 namespace debruijn_graph {
 
 template<size_t k, class ReadStream>
-void FillPairedIndex(Graph &g, const EdgeIndex<k + 1, Graph>& index, PairedInfoIndex<Graph>& paired_info_index,
+void FillPairedIndex(const Graph &g, const EdgeIndex<k + 1, Graph>& index, PairedInfoIndex<Graph>& paired_info_index,
 		ReadStream& stream) {
 	typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
 	INFO("-----------------------------------------");
@@ -26,6 +27,19 @@ void FillPairedIndex(Graph &g, const EdgeIndex<k + 1, Graph>& index, PairedInfoI
 	PairedIndexFiller<k + 1, Graph, SequenceMapper, ReadStream> pif(g, mapper, stream);
 	pif.FillIndex(paired_info_index);
 	INFO("Paired info counted");
+}
+
+template<size_t k, class ReadStream>
+void FillPairedIndexWithReadCountMetric(const Graph &g, const EdgeIndex<k + 1, Graph>& index
+		, const KmerMapper<k + 1, Graph> kmer_mapper, PairedInfoIndex<Graph>& paired_info_index
+		, ReadStream& stream) {
+	INFO("-----------------------------------------");
+	stream.reset();
+	INFO("Counting paired info with read count weight");
+	ExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
+	ReadCountPairedIndexFiller<k + 1, Graph, ReadStream> pif(g, mapper, stream);
+	pif.FillIndex(paired_info_index);
+	INFO("Paired info with read count weight counted");
 }
 
 template<size_t k>

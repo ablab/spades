@@ -199,11 +199,11 @@ public:
 	}
 
 	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		assert(this->g().GetNucls(new_edge) == this->g().GetNucls(edge2));
-		RemapKmers(this->g().GetNucls(edge1), this->g().GetNucls(edge2));
+		assert(this->g().EdgeNucls(new_edge) == this->g().EdgeNucls(edge2));
+		RemapKmers(this->g().EdgeNucls(edge1), this->g().EdgeNucls(edge2));
 	}
 
-	Kmer Substitute(const Kmer& kmer) {
+	Kmer Substitute(const Kmer& kmer) const {
 		Kmer answer = kmer;
 		auto it = mapping_.find(answer);
 		while (it != mapping_.end()) {
@@ -629,7 +629,7 @@ class ReadCountPairedIndexFiller {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef Seq<k> Kmer;
-	Graph &graph_;
+	const Graph &graph_;
 	const ExtendedSequenceMapper<k, Graph>& mapper_;
 	Stream& stream_;
 
@@ -653,7 +653,7 @@ private:
 				double weight = 1;
 				size_t kmer_distance = read_distance + mapping_edge_2.second.initial_range.start_pos - mapping_edge_1.second.initial_range.start_pos;
 				size_t edge_distance = kmer_distance + mapping_edge_1.second.mapped_range.start_pos - mapping_edge_2.second.mapped_range.start_pos;
-				PairInfo<EdgeId> new_info(mapping_edge_1.first, mapping_edge_2.second, edge_distance, weight);
+				PairInfo<EdgeId> new_info(mapping_edge_1.first, mapping_edge_2.first, (double) edge_distance, weight, 0.);
 				paired_index.AddPairInfo(new_info);
 			}
 		}
@@ -668,7 +668,7 @@ public:
 
 	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0));
+			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
 		}
 		stream_.reset();
 		while (!stream_.eof()) {
@@ -679,7 +679,6 @@ public:
 	}
 
 };
-
 
 /**
  * This class finds how certain _paired_ read is mapped to genome. As it is now it is hoped to work correctly only if read
