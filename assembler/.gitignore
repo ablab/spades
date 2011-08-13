@@ -11,3 +11,5 @@ Makefile
 cmake_install.cmake
 src/debruijn/config.inp
 src/file
+*.launch
+
