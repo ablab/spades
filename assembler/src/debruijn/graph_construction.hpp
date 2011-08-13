@@ -31,7 +31,7 @@ void FillPairedIndex(const Graph &g, const EdgeIndex<k + 1, Graph>& index, Paire
 
 template<size_t k, class ReadStream>
 void FillPairedIndexWithReadCountMetric(const Graph &g, const EdgeIndex<k + 1, Graph>& index
-		, const KmerMapper<k + 1, Graph> kmer_mapper, PairedInfoIndex<Graph>& paired_info_index
+		, const KmerMapper<k + 1, Graph>& kmer_mapper, PairedInfoIndex<Graph>& paired_info_index
 		, ReadStream& stream) {
 	INFO("-----------------------------------------");
 	stream.reset();

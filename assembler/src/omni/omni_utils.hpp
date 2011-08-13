@@ -564,6 +564,9 @@ template<typename ElementId>
 class MappingPath {
 public:
 
+	MappingPath() {
+	}
+
 	MappingPath(const vector<ElementId>& edges, const vector<MappingRange> range_mappings) :
 			edges_(edges), range_mappings_(range_mappings) {
 	}

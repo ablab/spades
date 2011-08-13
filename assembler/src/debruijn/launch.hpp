@@ -95,6 +95,7 @@ void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph, EdgeLabelHan
 		}
 	}
 }
+
 template<size_t k, class ReadStream>
 void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		bool paired_mode, bool rectangle_mode, bool etalon_info_mode,
@@ -156,7 +157,6 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		TotalLabelerGraphStruct<Graph> graph_struct(g, &IntIds, &EdgePos, NULL);
 		TotalLabeler<Graph> TotLab(&graph_struct, NULL);
 
-
 		omnigraph::WriteSimple(output_folder + "1_initial_graph.dot",
 				"no_repeat_graph", g, TotLab);
 
@@ -171,8 +171,19 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				output_folder + "simplified_graph.dot", "simplified_graph");
 
 		//experimental
-//		FillPairedIndexWithReadCountMetric<k, ReadStream>(g, index, kmer_mapper, read_count_weight_paired_index, stream);
+		FillPairedIndexWithReadCountMetric<k, ReadStream>(g, index, kmer_mapper, read_count_weight_paired_index, stream);
 		//experimental
+
+		//DEBUG
+		cout << "HERE" << endl;
+		set<PairInfo<EdgeId>> infos;
+		ToSet(read_count_weight_paired_index, infos);
+		cout << "----------------------"<<endl;
+		cout << "HERE" << endl;
+		cout << infos.size() <<endl;
+		std::copy(infos.begin(), infos.end(), ostream_iterator<PairInfo<EdgeId>>(cout, "\n"));
+		cout << "----------------------"<<endl;
+		//DEBUG
 
 		WriteGraphComponents<k> (g, index, genome,
 				output_folder + "graph_components" + "/", "graph.dot",
@@ -195,7 +206,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 //				"no_repeat_graph", g, EdgePosLab);
 
 		printGraph(g, IntIds, graph_save_path + "repeats_resolved_before",
-				paired_index, EdgePos);
+				paired_index, EdgePos, &read_count_weight_paired_index);
 
 		omnigraph::WriteSimple(output_folder + "2_simplified_graph.dot",
 				"no_repeat_graph", g, TotLab);
@@ -206,6 +217,11 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 					CONFIG.read<size_t> ("de_linkage_distance"),
 					CONFIG.read<size_t> ("de_max_distance"));
 			estimator.Estimate(clustered_index);
+
+			//experiment
+			estimator.Estimate(read_count_weight_paired_index);
+			//experiment
+
 			CountClusteredPairedInfoStats(g, insert_size, max_read_length,
 					paired_index, clustered_index, etalon_paired_index,
 					output_folder);
@@ -233,9 +249,9 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 //					output_folder + "repeats_resolved_before.dot",
 //					"no_repeat_graph", g, IdTrackLabelerBefore);
 			printGraph(g, IntIds, work_tmp_dir + "graph", clustered_index,
-					EdgePos);
+					EdgePos, &read_count_weight_paired_index);
 			printGraph(g, IntIds, output_folder + "graph", clustered_index,
-					EdgePos);
+					EdgePos, &read_count_weight_paired_index);
 		}
 
 		NCGraph new_graph(k);

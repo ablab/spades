@@ -634,7 +634,7 @@ class ReadCountPairedIndexFiller {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef Seq<k> Kmer;
-	const Graph &graph_;
+	const Graph& graph_;
 	const ExtendedSequenceMapper<k, Graph>& mapper_;
 	Stream& stream_;
 
@@ -643,13 +643,16 @@ private:
 	}
 
 	void ProcessPairedRead(
-			omnigraph::PairedInfoIndex<Graph> &paired_index,
+			omnigraph::PairedInfoIndex<Graph>& paired_index,
 			const io::PairedRead& p_r) {
+//		static size_t count = 0;
 		Sequence read1 = p_r.first().sequence();
 		Sequence read2 = p_r.second().sequence();
 
 		MappingPath<EdgeId> path1 = mapper_.MapSequence(read1);
+//		cout << "Path1 length " << path1.size() << endl;
 		MappingPath<EdgeId> path2 = mapper_.MapSequence(read2);
+//		cout << "Path2 length " << path2.size() << endl;
 		size_t read_distance = CountDistance(p_r);
 		for (size_t i = 0; i < path1.size(); ++i) {
 			pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
@@ -657,9 +660,15 @@ private:
 				pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
 				double weight = 1;
 				size_t kmer_distance = read_distance + mapping_edge_2.second.initial_range.start_pos - mapping_edge_1.second.initial_range.start_pos;
-				size_t edge_distance = kmer_distance + mapping_edge_1.second.mapped_range.start_pos - mapping_edge_2.second.mapped_range.start_pos;
-				PairInfo<EdgeId> new_info(mapping_edge_1.first, mapping_edge_2.first, (double) edge_distance, weight, 0.);
-				paired_index.AddPairInfo(new_info);
+				int edge_distance = kmer_distance + mapping_edge_1.second.mapped_range.start_pos - mapping_edge_2.second.mapped_range.start_pos;
+
+//				cout << PairInfo<EdgeId>(mapping_edge_1.first, mapping_edge_2.first, (double) edge_distance, weight, 0.) << endl;
+//				cout << "here2" << endl;
+				paired_index.AddPairInfo(PairInfo<EdgeId>(mapping_edge_1.first, mapping_edge_2.first, (double) edge_distance, weight, 0.));
+//				count++;
+//				if (count == 1000) {
+//					exit(0);
+//				}
 			}
 		}
 	}
@@ -671,8 +680,9 @@ public:
 
 	}
 
-	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+	void FillIndex(omnigraph::PairedInfoIndex<Graph>& paired_index) {
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			cout << "here1" << endl;
 			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
 		}
 		stream_.reset();

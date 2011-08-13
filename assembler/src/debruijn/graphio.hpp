@@ -499,12 +499,17 @@ void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
 template<class Graph>
 void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
 		const string &file_name, PairedInfoIndex<Graph> &paired_index,
-		EdgesPositionHandler<Graph> &edges_positions) {
+		EdgesPositionHandler<Graph> &edges_positions, /*todo delete*/ PairedInfoIndex<Graph>* paired_index2 = 0) {
 	DataPrinter<Graph> dataPrinter(g, old_IDs);
 	dataPrinter.saveGraph(file_name);
 	dataPrinter.saveEdgeSequences(file_name);
 	dataPrinter.saveCoverage(file_name);
 	dataPrinter.savePaired(file_name, paired_index);
+	//todo delete
+	if (paired_index2) {
+		cerr << "here" << endl;
+		dataPrinter.savePaired(file_name + "_2", *paired_index2);
+	}
 	dataPrinter.savePositions(file_name, edges_positions);
 }
 
