@@ -11,7 +11,7 @@
 namespace long_contigs {
 
 template<size_t k>
-void LoadFromFile(std::string fileName, Graph& g,  PairedInfoIndex<Graph>& paired_index, EdgeIndex<k + 1, Graph>& index,
+void LoadFromFile(std::string fileName, Graph& g,  PairedInfoIndex<Graph>& paired_index, EdgeIndex<k + 1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds,
 		Sequence& sequence) {
 
 	string input_dir = CONFIG.read<string>("input_dir");
@@ -36,8 +36,7 @@ void LoadFromFile(std::string fileName, Graph& g,  PairedInfoIndex<Graph>& paire
 	sequence = Sequence(genome);
 
 	INFO("Reading graph");
-	IdTrackHandler<Graph> conj_IntIds(g);
-	scanConjugateGraph(g, conj_IntIds,	fileName, paired_index);
+	scanConjugateGraph(g, conj_IntIds,fileName, paired_index);
 	INFO("Graph read")
 }
 
@@ -57,7 +56,7 @@ void AddEtalonInfo(Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence& genom
 }
 
 template<size_t k>
-void AddRealInfo(Graph& g, PairedInfoIndices& pairedInfos) {
+void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, PairedInfoIndices& pairedInfos) {
 	size_t libCount = LC_CONFIG.read<size_t>("real_lib_count");
 
 	for (size_t i = 1; i <= libCount; ++i) {
@@ -99,12 +98,14 @@ void AddRealInfo(Graph& g, PairedInfoIndices& pairedInfos) {
 	}
 }
 
-void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, const std::string& fileNamePrefix) {
-	IdTrackHandler<Graph> old_IDs(g);
+void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Graph>& old_IDs, const std::string& fileNamePrefix) {
+	INFO("Saving paired info");
 	DataPrinter<Graph> dataPrinter(g, old_IDs);
 	for (auto lib = pairedInfos.begin(); lib != pairedInfos.end(); ++lib) {
-		dataPrinter.savePaired(fileNamePrefix + "IS" + ToString(lib->insertSize) + "_RS" + ToString(lib->readSize), lib->pairedInfoIndex);
+		std::string fileName = fileNamePrefix + "IS" + ToString(lib->insertSize) + "_RS" + ToString(lib->readSize);
+		dataPrinter.savePaired(fileName, *lib->pairedInfoIndex);
 	}
+	INFO("Saved");
 }
 
 void DeleteAdditionalInfo(PairedInfoIndices& pairedInfos) {

@@ -43,6 +43,7 @@ int main() {
 
 	Graph g(K);
 	EdgeIndex<K + 1, Graph> index(g);
+	IdTrackHandler<Graph> intIds(g);
 	PairedInfoIndex<Graph> pairedIndex(g, 0);
 	PairedInfoIndices pairedInfos;
 	Sequence sequence("");
@@ -61,7 +62,7 @@ int main() {
 		return -1;
 	}
 	else {
-		LoadFromFile<K>(LC_CONFIG.read<std::string>("graph_file_" + dataset), g, pairedIndex, index, sequence);
+		LoadFromFile<K>(LC_CONFIG.read<std::string>("graph_file_" + dataset), g, pairedIndex, index, intIds, sequence);
 	}
 	mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
@@ -74,7 +75,7 @@ int main() {
 	if (CONFIG.read<bool>("etalon_info_mode")) {
 		AddEtalonInfo<K>(g, index, sequence, pairedInfos);
 	} else {
-		AddRealInfo<K>(g, pairedInfos);
+		AddRealInfo<K>(g, index, pairedInfos);
 	}
 
 	FindSeeds(g, rawSeeds);
@@ -117,7 +118,7 @@ int main() {
 		WriteGraphWithPathsSimple(output_dir + "overlaped_paths.dot", "overlaped_paths", g, result, path1, path2);
 	}
 
-	std::vector<BiderectionalPath> noOverlapPaths;
+	std::vector<BidirectionalPath> noOverlapPaths;
 	if (LC_CONFIG.read<bool>("write_paths")) {
 		RemoveOverlaps(result, noOverlapPaths);
 
@@ -131,7 +132,7 @@ int main() {
 	}
 
 	if (!CONFIG.read<bool>("etalon_info_mode") && LC_CONFIG.read<bool>("write_real_paired_info")) {
-		SavePairedInfo(g, pairedInfos, LC_CONFIG.read<std::string>("paired_info_file_prefix"));
+		SavePairedInfo(g, pairedInfos, intIds, output_dir + LC_CONFIG.read<std::string>("paired_info_file_prefix"));
 	}
 
 	DeleteAdditionalInfo(pairedInfos);

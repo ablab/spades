@@ -361,12 +361,23 @@ void RemoveSubpaths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector
 
 //Remove overlaps, remove sub paths first
 void RemoveOverlaps(std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& output) {
+//TODO
 	output.resize(paths.size());
-	std::copy(paths.begin(), paths.end(), temp.begin());
+	std::copy(paths.begin(), paths.end(), output.begin());
+
 //	for (auto path = paths.begin(); path != paths.end(); ++path) {
+//		EdgeId lastEdge = path->back();
 //
 //		for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
 //			if (iter != path) {
+//				BidirectionalPath& toCompare = *iter;
+//				size_t overlap = 0;
+//
+//				for (size_t i = 0; i < toCompare.size(); ++i) {
+//					if (lastEdge == toCompare[i]) {
+//
+//					}
+//				}
 //
 //			}
 //		}
