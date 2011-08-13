@@ -175,14 +175,14 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		//experimental
 
 		//DEBUG
-		cout << "HERE" << endl;
-		set<PairInfo<EdgeId>> infos;
-		ToSet(read_count_weight_paired_index, infos);
-		cout << "----------------------"<<endl;
-		cout << "HERE" << endl;
-		cout << infos.size() <<endl;
-		std::copy(infos.begin(), infos.end(), ostream_iterator<PairInfo<EdgeId>>(cout, "\n"));
-		cout << "----------------------"<<endl;
+//		cout << "HERE" << endl;
+//		set<PairInfo<EdgeId>> infos;
+//		ToSet(read_count_weight_paired_index, infos);
+//		cout << "----------------------"<<endl;
+//		cout << "HERE" << endl;
+//		cout << infos.size() <<endl;
+//		std::copy(infos.begin(), infos.end(), ostream_iterator<PairInfo<EdgeId>>(cout, "\n"));
+//		cout << "----------------------"<<endl;
 		//DEBUG
 
 		WriteGraphComponents<k> (g, index, genome,

@@ -507,7 +507,6 @@ void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
 	dataPrinter.savePaired(file_name, paired_index);
 	//todo delete
 	if (paired_index2) {
-		cerr << "here" << endl;
 		dataPrinter.savePaired(file_name + "_2", *paired_index2);
 	}
 	dataPrinter.savePositions(file_name, edges_positions);
