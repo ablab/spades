@@ -177,13 +177,15 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
 	typedef typename std::tr1::unordered_map<Kmer, Kmer, typename Kmer::hash> MapType;
 
 	void RemapKmers(const Sequence& old_s, const Sequence& new_s) {
+//		cout << endl << "Mapping " << old_s << " to " << new_s << endl;
 		Kmer old_kmer = old_s.start<k>() >> 0;
 		for (size_t i = k - 1; i < old_s.size(); ++i) {
-			old_kmer << old_s[i];
+			old_kmer = old_kmer << old_s[i];
 			size_t old_kmer_offset = i - k + 1;
 			size_t new_kmer_offest = std::floor(1. * old_kmer_offset / (old_s.size() - k + 1) * (new_s.size() - k + 1) + 0.5);
 			Kmer new_kmer(new_s, new_kmer_offest);
 			mapping_[old_kmer] = new_kmer;
+//			cout << "Kmer " << old_kmer << " mapped to " << new_kmer << endl;
 		}
 	}
 
@@ -356,6 +358,9 @@ public:
 		vector<EdgeId> passed_edges;
 		RangeMappings range_mapping;
 
+		if (sequence.size() < k) {
+			return MappingPath<EdgeId>();
+		}
 		assert(sequence.size() >= k);
 		Kmer kmer = sequence.start<k>() >> 0;
 		for (size_t i = k - 1; i < sequence.size(); ++i) {
