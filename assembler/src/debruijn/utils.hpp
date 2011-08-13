@@ -682,7 +682,7 @@ public:
 
 	void FillIndex(omnigraph::PairedInfoIndex<Graph>& paired_index) {
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			cout << "here1" << endl;
+//			cout << "here1" << endl;
 			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
 		}
 		stream_.reset();
