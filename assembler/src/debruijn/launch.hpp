@@ -45,26 +45,40 @@ namespace debruijn_graph {
 typedef io::Reader<io::SingleRead> SingleReadStream;
 using namespace omnigraph;
 
+
+/*void FindZeros(PairedInfoIndex<Graph>& etalon_paired_index) {
+	for (auto it = etalon_paired_index.begin(); it != etalon_paired_index.end(); ++it) {
+		const vector<PairInfo<EdgeId>> infos = *it;
+		for (auto it2 = infos.begin(); it2!=infos.end(); ++it2) {
+			PairInfo<EdgeId> info = *it2;
+			if (info.first == info.second && info.d == 0.) {
+				cout << "FOUND ZEROS!!!" << endl;
+				return;
+			}
+		}
+	}
+}*/
+
 template<size_t k, class Graph>
-void SelectReadsForConsensus(Graph& g, const EdgeIndex<k + 1, Graph>& index ,vector<SingleReadStream *>& reads, string& consensus_output_dir){
+void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph, EdgeLabelHandler<Graph>& LabelsAfter, const EdgeIndex<k + 1, Graph>& index ,vector<SingleReadStream *>& reads, string& consensus_output_dir){
 	INFO("ReadMapping started");
 	map<typename Graph::EdgeId, int> contigNumbers;
 	int cur_num = 0;
-	for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+	for (auto iter = cur_graph.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		contigNumbers[*iter] = cur_num;
 		cur_num++;
 	}
 	INFO(cur_num << "contigs");
 	for( int i = 1; i < 3; i ++ ) {
 		int read_num = 0;
-		osequencestream* mapped_reads[2000];
+		osequencestream* mapped_reads[4000];
 		for(int j = 0; j < cur_num; j++){
 			string output_filename = consensus_output_dir + ToString(j) + "_reads" + ToString(i)+".fa";
 			osequencestream* tmp = new osequencestream(output_filename);
 //			mapped_reads.push_back(tmp);
 			mapped_reads[j] = tmp;
 		}
-		SingleReadMapper<k, Graph> rm(g, index);
+		SingleReadMapper<k, Graph> rm(etalon_graph, index);
 		while (!reads[i - 1]->eof()) {
 			io::SingleRead cur_read;
 			(*reads[i - 1]) >> cur_read;
@@ -74,12 +88,13 @@ void SelectReadsForConsensus(Graph& g, const EdgeIndex<k + 1, Graph>& index ,vec
 //			map_quantity += res.size();
 			for(size_t ii = 0; ii < res.size(); ii++) {
 				TRACE("conting number "<< contigNumbers[res[ii]]);
-				(*mapped_reads[contigNumbers[res[ii]]]) << cur_read.sequence();
+				set<typename Graph::EdgeId> images = LabelsAfter.edge_inclusions[res[ii]];
+				for (auto iter = images.begin(); iter != images.end();++iter)
+				(*mapped_reads[contigNumbers[*iter]]) << cur_read.sequence();
 			}
 		}
 	}
 }
-
 template<size_t k, class ReadStream>
 void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		bool paired_mode, bool rectangle_mode, bool etalon_info_mode,
@@ -185,9 +200,9 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 					output_folder);
 		}
 
-		number_of_components = PrintGraphComponents(
-				output_folder + "graph_components/graphCl", g, insert_size,
-				IntIds, clustered_index, EdgePos);
+//		number_of_components = PrintGraphComponents(
+//				output_folder + "graph_components/graphCl", g, insert_size,
+//				IntIds, clustered_index, EdgePos);
 
 	}
 	//	if (paired_mode) {
@@ -231,6 +246,19 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		 */
 		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "graph", new_index,
 				EdgePosBefore);
+
+		if (from_saved){
+			WriteGraphComponents<k> (g, index, genome,
+					output_folder + "graph_components" + "/", "graph.dot",
+					"graph_component", insert_size);
+
+		}
+
+		number_of_components = PrintGraphComponents(
+				output_folder + "graph_components/graphCl", new_graph, insert_size,
+				NewIntIds, new_index, EdgePosBefore);
+
+
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
@@ -323,13 +351,13 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
 		N50enlarger.one_many_resolve_with_vertex_split();
 
-		omnigraph::WriteSimple(output_folder + "4_finished_graph.dot",
+		omnigraph::WriteSimple(output_folder + "5_finished_graph.dot",
 				"no_repeat_graph", resolved_graph, TotLabAfter);
 
 //		omnigraph::WriteSimple(
 //				output_folder + "resolved_labels_3.dot",
 //				"no_repeat_graph", resolved_graph, LabelLabler);
-//
+////
 //
 //		omnigraph::WriteSimple(
 //				output_folder
@@ -348,8 +376,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		OutputContigs(resolved_graph, output_folder + "contigs_final.fasta");
 		string consensus_folder = output_folder + "consensus/";
 
-//		OutputSingleFileContigs(new_graph, consensus_folder);
-//		SelectReadsForConsensus<k, NCGraph>(new_graph, new_edge_index, reads, consensus_folder);
+//		OutputSingleFileContigs(resolved_graph, consensus_folder);
+//		SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
 
 		OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
 
@@ -368,7 +396,6 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 }
-
 }
 
 #endif /* LAUNCH_HPP_ */

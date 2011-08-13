@@ -30,10 +30,11 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 			new_graph, new_IDs, edges_pos_new);
 	mkdir((output_folder).c_str(),
 			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-	repeat_resolver.ResolveRepeats(output_folder);
 	unordered_map<typename Graph::EdgeId, typename Graph::EdgeId> edge_labels =
 			repeat_resolver.GetEdgeLabels();
 	LabelsAfter.FillLabels(edge_labels);
+
+	repeat_resolver.ResolveRepeats(output_folder);
 	INFO("Primitive repeats resolved");
 }
 

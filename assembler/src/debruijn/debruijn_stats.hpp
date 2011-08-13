@@ -29,6 +29,7 @@ private:
 	Sequence genome_;
 public:
 	GenomeMappingStat(const Graph &graph, const EdgeIndex<k + 1, Graph> &index,
+
 	Sequence genome) :
 			graph_(graph), index_(index), genome_(genome) {
 	}

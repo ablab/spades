@@ -36,7 +36,7 @@ void ClipTipsForResolver(NCGraph &g) {
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
 	omnigraph::TipComparator<NCGraph> comparator(g);
-	size_t max_tip_length = CONFIG.read<size_t> ("tc_max_tip_length");
+//	size_t max_tip_length = CONFIG.read<size_t> ("tc_max_tip_length");
 	size_t max_coverage = CONFIG.read<size_t> ("tc_max_coverage");
 	double max_relative_coverage = CONFIG.read<double> (
 			"tc_max_relative_coverage");
