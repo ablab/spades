@@ -390,7 +390,9 @@ private:
 				/ newWeight;
 		if (info1.first == info1.second && (info1.d == 0 || info2.d == 0)) {
 			newD = 0;
-			newWeight += info2.weight;
+			//TODO
+			//newWeight += info2.weight;
+			//INFO("In merge: weight was " << info1.weight << ", + " << info2.weight << " = " << newWeight);
 		}
 		data_.UpdateInfo(info1, newD, newWeight);
 	}
