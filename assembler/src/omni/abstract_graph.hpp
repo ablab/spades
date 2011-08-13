@@ -156,12 +156,6 @@ public:
 		return result;
 	}
 
-	VertexId AddVertex(const VertexData& data1, const VertexData& data2) {
-		VertexId result = HiddenAddVertex(data1, data2);
-		FireAddVertex(result);
-		return result;
-	}
-
 	void DeleteVertex(VertexId v) {
 		assert(IsDeadEnd(v) && IsDeadStart(v));
 		assert(v != NULL);

@@ -125,14 +125,14 @@ public:
 
 	template<typename Comparator = std::less<VertexId> >
 	SmartVertexIterator<ObservableGraph, Comparator> SmartVertexBegin(
-			const Comparator& comparator = Comparator()) {
+			const Comparator& comparator = Comparator()) const {
 		return SmartVertexIterator<ObservableGraph, Comparator> (*this,
 				comparator);
 	}
 
 	template<typename Comparator = std::less<EdgeId> >
 	SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeBegin(
-			const Comparator& comparator = Comparator()) {
+			const Comparator& comparator = Comparator()) const {
 		return SmartEdgeIterator<ObservableGraph, Comparator> (*this,
 				comparator);
 	}

@@ -62,9 +62,9 @@ public:
 template<class Graph>
 class VertexEdgeStat: public AbstractStatCounter {
 private:
-	Graph &graph_;
+	const Graph &graph_;
 public:
-	VertexEdgeStat(Graph &graph) :
+	VertexEdgeStat(const Graph &graph) :
 		graph_(graph) {
 	}
 
@@ -91,11 +91,11 @@ template<class Graph>
 class BlackEdgesStat: public omnigraph::AbstractStatCounter {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-	Graph &graph_;
+	const Graph &graph_;
 	Path<EdgeId> path1_;
 	Path<EdgeId> path2_;
 public:
-	BlackEdgesStat(Graph &graph, Path<EdgeId> path1, Path<EdgeId> path2) :
+	BlackEdgesStat(const Graph &graph, Path<EdgeId> path1, Path<EdgeId> path2) :
 		graph_(graph), path1_(path1), path2_(path2) {
 	}
 
@@ -133,11 +133,11 @@ template<class Graph>
 class NStat: public omnigraph::AbstractStatCounter {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-	Graph &graph_;
+	const Graph &graph_;
 	Path<EdgeId> path_;
 	size_t perc_;
 public:
-	NStat(Graph &graph, Path<EdgeId> path, size_t perc = 50) :
+	NStat(const Graph &graph, Path<EdgeId> path, size_t perc = 50) :
 		graph_(graph), path_(path), perc_(perc) {
 	}
 
@@ -166,9 +166,9 @@ template<class Graph>
 class SelfComplementStat: public omnigraph::AbstractStatCounter {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-	Graph &graph_;
+	const Graph &graph_;
 public:
-	SelfComplementStat(Graph &graph) :
+	SelfComplementStat(const Graph &graph) :
 		graph_(graph) {
 	}
 
