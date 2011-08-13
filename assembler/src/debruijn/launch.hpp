@@ -121,6 +121,12 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	PairedInfoIndex<Graph> etalon_paired_index(g, 0);
 
 	PairedInfoIndex<Graph> clustered_index(g);
+
+	//experimental
+	KmerMapper<k+1, Graph> kmer_mapper(g);
+	PairedInfoIndex<Graph> read_count_weight_paired_index(g, 0);
+	//experimental
+
 	int number_of_components = 0;
 
 	if (!from_saved) {
@@ -135,6 +141,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 			}
 			FillEtalonPairedIndex<k> (g, etalon_paired_index, index,
 					insert_size, max_read_length, genome);
+
 		} else {
 			typedef io::ConvertingReaderWrapper UnitedStream;
 			UnitedStream united_stream(&stream);
@@ -162,6 +169,10 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		SimplifyGraph<k> (g, index, 3, genome, output_folder/*, etalon_paired_index*/);
 		ProduceInfo<k> (g, index, genome,
 				output_folder + "simplified_graph.dot", "simplified_graph");
+
+		//experimental
+//		FillPairedIndexWithReadCountMetric<k, ReadStream>(g, index, kmer_mapper, read_count_weight_paired_index, stream);
+		//experimental
 
 		WriteGraphComponents<k> (g, index, genome,
 				output_folder + "graph_components" + "/", "graph.dot",

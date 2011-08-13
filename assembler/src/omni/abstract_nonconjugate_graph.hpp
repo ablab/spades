@@ -243,7 +243,7 @@ public:
 		return vertices_.end();
 	}
 
-	size_t size() {
+	size_t size() const {
 		return vertices_.size();
 	}
 
