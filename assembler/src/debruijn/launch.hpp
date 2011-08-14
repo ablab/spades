@@ -30,7 +30,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "new_debruijn.hpp"
-#include "config.hpp"
+#include "config_struct.hpp"
 #include "debruijn_stats.hpp"
 #include "graphio.hpp"
 #include "rectangleRepeatResolver.hpp"
@@ -213,9 +213,9 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 		if (paired_mode) {
 			DistanceEstimator<Graph> estimator(g, paired_index, insert_size,
-					max_read_length, CONFIG.read<size_t> ("de_delta"),
-					CONFIG.read<size_t> ("de_linkage_distance"),
-					CONFIG.read<size_t> ("de_max_distance"));
+					max_read_length, cfg::get().de.delta,
+					cfg::get().de.linkage_distance,
+					cfg::get().de.max_distance);
 			estimator.Estimate(clustered_index);
 
 			//experiment

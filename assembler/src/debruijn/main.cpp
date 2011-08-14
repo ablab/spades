@@ -2,8 +2,9 @@
  * Assembler Main
  */
 
+
+#include "config_struct.hpp"
 #include "launch.hpp"
-#include "config.hpp"
 #include "logging.hpp"
 #include "simple_tools.hpp"
 #include <sys/types.h>
@@ -30,37 +31,39 @@ std::string MakeLaunchTimeDirName() {
 DECL_PROJECT_LOGGER("d")
 
 int main() {
-	// check config.hpp parameters
+	cfg::create_instance(CONFIG_FILENAME);
+
+	// check config_struct.hpp parameters
 	if (K % 2 == 0) {
 		FATAL("K in config.hpp must be odd!\n");
 	}
 	checkFileExistenceFATAL(CONFIG_FILENAME);
 
 	// read configuration file (dataset path etc.)
-	string input_dir = CONFIG.read<string>("input_dir");
-	string dataset = CONFIG.read<string>("dataset");
-	string output_root = CONFIG.read<string>("output_dir");
+	string input_dir = cfg::get().input_dir;
+	string dataset = cfg::get().dataset_name;
+	string output_root = cfg::get().output_dir;
 	string output_dir_suffix = MakeLaunchTimeDirName()+ "." + dataset + "/";
 	string output_dir = output_root + output_dir_suffix;
 	string work_tmp_dir = output_root + "tmp/";
 //	std::cout << "here " << mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH) << std::endl;
 	mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	string genome_filename = input_dir
-			+ CONFIG.read<string>("reference_genome");
-	string reads_filename1 = input_dir + CONFIG.read<string>(dataset + "_1");
-	string reads_filename2 = input_dir + CONFIG.read<string>(dataset + "_2");
+			+ cfg::get().reference_genome;
+	string reads_filename1 = input_dir + cfg::get().ds.first;
+	string reads_filename2 = input_dir + cfg::get().ds.second;
 	checkFileExistenceFATAL(genome_filename);
 	checkFileExistenceFATAL(reads_filename1);
 	checkFileExistenceFATAL(reads_filename2);
 	INFO("Assembling " << dataset << " dataset");
 
-	size_t insert_size = CONFIG.read<size_t>(dataset + "_IS");
+	size_t insert_size = cfg::get().ds.IS;
 	size_t max_read_length = 100; //CONFIG.read<size_t> (dataset + "_READ_LEN");
-	int dataset_len = CONFIG.read<int>(dataset + "_LEN");
-	bool paired_mode = CONFIG.read<bool>("paired_mode");
-    bool rectangle_mode  = CONFIG.read<bool>("rectangle_mode");
-	bool etalon_info_mode = CONFIG.read<bool>("etalon_info_mode");
-	bool from_saved = CONFIG.read<bool>("from_saved_graph");
+	int dataset_len = cfg::get().ds.LEN;
+	bool paired_mode = cfg::get().paired_mode;
+    bool rectangle_mode  = cfg::get().rectangle_mode;
+	bool etalon_info_mode = cfg::get().etalon_info_mode;
+	bool from_saved = cfg::get().from_saved_graph;
 	// typedefs :)
   typedef io::Reader<io::SingleRead> ReadStream;
   typedef io::Reader<io::PairedRead> PairedReadStream;
@@ -68,11 +71,11 @@ int main() {
 
 	// read data ('reads')
 
-  PairedReadStream pairStream(std::pair<std::string, 
+  PairedReadStream pairStream(std::pair<std::string,
                               std::string>(reads_filename1,
                                            reads_filename2),
                               insert_size);
-  	string real_reads = CONFIG.read<string>("uncorrected_reads");
+  	string real_reads = cfg::get().uncorrected_reads;
  	vector<ReadStream*> reads;
   	if (real_reads != "none") {
 		reads_filename1 = input_dir + (real_reads + "_1");
