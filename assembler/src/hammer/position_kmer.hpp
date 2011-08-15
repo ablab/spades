@@ -51,14 +51,7 @@ class PositionKMer {
 	static void writeKMerCounts( const char * fname, const vector<KMerCount> & kmers );
 	static void readKMerCounts( const char * fname, vector<KMerCount> * kmers );
 
-
-	static double getKMerQuality( const hint_t & index, const int qvoffset ) {
-		long double res = 1;
-		for ( hint_t i = index; i < index+K; ++i ) {
-			res *= qual2prob( (uint8_t)( blobquality[i] - qvoffset ) );
-		}
-		return res;
-	}
+	static double getKMerQuality( const hint_t & index, const int qvoffset );
 
 	static bool compareSubKMersCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tauplusone, const uint32_t start) {
 		for ( hint_t i = start; i < K; i += tauplusone ) {

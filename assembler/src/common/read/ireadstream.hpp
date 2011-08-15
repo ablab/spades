@@ -48,7 +48,7 @@ public:
 		return eof_;
 	}
 
-	static vector<Read>* readAll(string filename, int cnt = -1) __attribute__ ((deprecated)) {
+	static vector<Read>* readAll(string filename, int cnt = -1) {
 		ireadstream irs(filename);
 		assert(irs.is_open());
 		vector<Read>* res = new vector<Read>();
@@ -65,8 +65,8 @@ public:
 		return res;
 	}
 
-	static vector<Read>* readAllNoValidation(string filename, uint64_t * totalsize, int cnt = -1) __attribute__ ((deprecated)) {
-		ireadstream irs(filename);
+	static vector<Read>* readAllNoValidation(string filename, uint64_t * totalsize, int qvoffset = Read::PHRED_OFFSET, int cnt = -1) {
+		ireadstream irs(filename, qvoffset);
 		assert(irs.is_open());
 		vector<Read>* res = new vector<Read>();
 		*totalsize = 0;

@@ -52,11 +52,8 @@ int KMerClustering::hamdistKMer(const PositionKMer & x, const string & y, int ta
 
 void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, int cur_subkmer) {
 	uint32_t blockSize = block.size();
-	/*cout << "\nblocksize=" << blockSize << "\n  ";
-	for (uint32_t i = 0; i < blockSize; ++i) cout << block[i] << " ";
-	cout << endl;*/
 
-	if (blockSize < BLOCKSIZE_QUADRATIC_THRESHOLD) {
+	if (blockSize < (uint32_t)Globals::blocksize_quadratic_threshold) {
 		processBlockQuadratic(uf, block);
 	} else {
 		cout << "  making a sub-subkmersorter for blocksize=" << blockSize << endl;
@@ -69,7 +66,7 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, i
 		for (int sub_i = 0; sub_i < tau_+1; ++sub_i) {
 			vector<hint_t> subblock;
 			while ( subsubsorter.getNextBlock(sub_i, subblock) ) {
-				if (subblock.size() > (BLOCKSIZE_QUADRATIC_THRESHOLD / 2) ) {
+				if (subblock.size() > (Globals::blocksize_quadratic_threshold / 2) ) {
 					cout << "    running quadratic on size=" << subblock.size() << endl;
 					for (uint32_t i = 0; i < blockSize; ++i) cout << "    " << subblock[i] << " " << k_[subblock[i]].first.str() << endl;
 					cout << endl;
@@ -116,7 +113,7 @@ double KMerClustering::calcMultCoef(vector<int> & distances, const vector<int> &
 	double prob = 0;
 	double theta;
 	for (size_t i = 0; i < cl.size(); i++) {
-		theta = k_[cl[i]].second.count * -((K - distances[i]) * log(1 - ERROR_RATE) + distances[i] * log(ERROR_RATE));
+		theta = k_[cl[i]].second.count * -((K - distances[i]) * log(1 - Globals::error_rate) + distances[i] * log(Globals::error_rate));
 		prob = prob + theta;
 	}
 	return prob;
@@ -181,7 +178,7 @@ double KMerClustering::clusterLogLikelihood(const vector<int> & cl, const vector
 		for (size_t i=0; i<blockSize; ++i) {
 			dist += hamdistKMer(k_[cl[i]].first, centers[indices[i]].first);
 		}
-		return ( lMultinomial(cl, k_) + log(ERROR_RATE) * dist + log(1-ERROR_RATE) * (K * blockSize - dist) );
+		return ( lMultinomial(cl, k_) + log(Globals::error_rate) * dist + log(1-Globals::error_rate) * (K * blockSize - dist) );
 	}
 	
 	// compute sufficient statistics
@@ -197,7 +194,7 @@ double KMerClustering::clusterLogLikelihood(const vector<int> & cl, const vector
 	res += lMultinomial(centers); 		// {sum(centers.count) \choose centers.count}
 	for (size_t i=0; i<centers.size(); ++i) {
 		res += lMultinomialWithMask(cl, k_, indices, i) + 
-			   log(ERROR_RATE) * totaldist[i] + log(1-ERROR_RATE) * (K * count[i] - totaldist[i]);
+			   log(Globals::error_rate) * totaldist[i] + log(1-Globals::error_rate) * (K * count[i] - totaldist[i]);
 	}
 	return res;
 }
@@ -502,7 +499,7 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 		for (uint32_t m = 0; m < blocksInPlace[n].size(); ++m) {
 			if (blocksInPlace[n][m].size() == 0) continue;
 			if (blocksInPlace[n][m].size() == 1) {
-				if (k_[blocksInPlace[n][m][0]].second.totalQual > GOOD_SINGLETON_THRESHOLD) {
+				if ( k_[blocksInPlace[n][m][0]].second.totalQual > Globals::good_cluster_threshold) {
 					k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
 					#pragma omp critical
 					{
@@ -521,10 +518,25 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 					}
 				}
 			} else {
-				k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
-				#pragma omp critical
-				{
-				(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n> center  " << k_[blocksInPlace[n][m][0]].first.start() << "\n";
+				// we've got a nontrivial cluster; computing its overall quality
+				double cluster_quality = 1;
+				for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
+					cluster_quality *= 1 - k_[blocksInPlace[n][m][j]].second.totalQual;
+				}
+				cluster_quality = 1-cluster_quality;
+
+				if ( cluster_quality > Globals::good_cluster_threshold ) {
+					k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
+					#pragma omp critical
+					{
+					(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n> center  " << k_[blocksInPlace[n][m][0]].first.start() << "  tql=" << cluster_quality << "\n";
+					}
+				} else {
+					k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_BAD;
+					#pragma omp critical
+					{
+					(*ofs_bad) << k_[blocksInPlace[n][m][0]].first.str() << "\n> center of bad cluster " << k_[blocksInPlace[n][m][0]].first.start() << "  tql=" << cluster_quality << "\n";
+					}					
 				}
 				for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
 					k_[blocksInPlace[n][m][j]].second.changeto = blocksInPlace[n][m][0];
