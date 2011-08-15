@@ -27,6 +27,11 @@ struct hammer_config
 	bool exit_after_writing_blob_and_kmers;
 	std::string blob;
 	std::string kmers;
+
+	double error_rate;
+	int blocksize_quadratic_threshold;
+	double good_cluster_threshold;
+	double blob_margin;
 };
 
 
@@ -48,6 +53,11 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 		load(pt, "blob", cfg.blob);
 		load(pt, "kmers", cfg.kmers);
 	}
+
+	load(pt, "error_rate", cfg.error_rate);
+	load(pt, "blocksize_quadratic_threshold", cfg.blocksize_quadratic_threshold);
+	load(pt, "good_cluster_threshold", cfg.good_cluster_threshold);
+	load(pt, "blob_margin", cfg.blob_margin);
 }
 
 typedef config<hammer_config> cfg;

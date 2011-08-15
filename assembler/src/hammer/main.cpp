@@ -43,6 +43,11 @@ char * PositionKMer::blobquality = NULL;
 hint_t * PositionKMer::blobkmers = NULL;
 std::vector<uint32_t> * PositionKMer::subKMerPositions = NULL;
 
+double Globals::error_rate = 0.01;
+int Globals::blocksize_quadratic_threshold = 100;
+double Globals::good_cluster_threshold = 0.95;
+double Globals::blob_margin = 0.25;
+
 struct KMerStatCount {
 	PositionKMer km;
 	uint32_t count;
@@ -83,20 +88,26 @@ int main(int argc, char * argv[]) {
 		kmersFilename = cfg::get().kmers;
 		exitAfterWritingBlobAndKMers = cfg::get().exit_after_writing_blob_and_kmers;
 	}
+	Globals::error_rate = cfg::get().error_rate;
+	Globals::blocksize_quadratic_threshold = cfg::get().blocksize_quadratic_threshold;
+	Globals::good_cluster_threshold = cfg::get().good_cluster_threshold;
+	Globals::blob_margin = cfg::get().blob_margin;
 
 	// initialize subkmer positions
 	PositionKMer::subKMerPositions = new std::vector<uint32_t>(tau + 2);
-	for (uint32_t i=0; i < (uint32_t)(tau+1); ++i) PositionKMer::subKMerPositions->at(i) = (i * K / (tau+1) );
+	for (uint32_t i=0; i < (uint32_t)(tau+1); ++i) {
+		PositionKMer::subKMerPositions->at(i) = (i * K / (tau+1) );
+	}
 	PositionKMer::subKMerPositions->at(tau+1) = K;
 
 	TIMEDLN("Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K);
 
 	hint_t totalReadSize;
-	PositionKMer::rv = ireadstream::readAllNoValidation(readsFilename, &totalReadSize);
+	PositionKMer::rv = ireadstream::readAllNoValidation(readsFilename, &totalReadSize, qvoffset);
 	PositionKMer::rv_bad = new std::vector<bool>(PositionKMer::rv->size(), false);
 
 	PositionKMer::blob_size = totalReadSize + 1;
-	PositionKMer::blob_max_size = (hint_t)(PositionKMer::blob_size * ( 2 + CONSENSUS_BLOB_MARGIN));
+	PositionKMer::blob_max_size = (hint_t)(PositionKMer::blob_size * ( 2 + Globals::blob_margin));
 
 	PositionKMer::blob = new char[ PositionKMer::blob_max_size ];
 	PositionKMer::blobquality = new char[ PositionKMer::blob_max_size ];

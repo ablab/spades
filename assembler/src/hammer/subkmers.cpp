@@ -81,19 +81,12 @@ SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount> * k, i
 		uint32_t left_end = ( (tau + 1) * left_size ) / ( total_size );
 		uint32_t increment = total_size / (tau+1);
 
-		//cout << "    " << left_size << " " << total_size << " " << left_end << " " << increment << endl;
-
 		for (uint32_t i=0; i < left_end; ++i) my_positions[i] = make_pair( i * increment, (i+1) * increment );
 		if (left_end > 0) my_positions[left_end-1].second = left_size;
 		for (uint32_t i=left_end; i < (uint32_t)tau+1; ++i) my_positions[i] = make_pair(
 			PositionKMer::subKMerPositions->at(jj+1) + (i  -left_end) * increment,
 			PositionKMer::subKMerPositions->at(jj+1) + (i+1-left_end) * increment );
 		if (jj < tau) my_positions[tau].second = K;
-
-		//cout << "    my old positions: "; for (int j=0; j < tau+1; ++j) cout << "[" << PositionKMer::subKMerPositions->at(j) << ", " << PositionKMer::subKMerPositions->at(j+1) << "] ";
-		//cout << endl;
-		//cout << "    my new positions: "; for (int j=0; j < tau+1; ++j) cout << "[" << my_positions[j].first << ", " << my_positions[j].second << "] ";
-		//cout << endl;
 
 		for (int j=0; j < tau+1; ++j) {
 			sub_less.push_back(    boost::bind(PositionKMer::compareSubKMers,        _1, _2, k, tau,
@@ -121,7 +114,6 @@ void SubKMerSorter::initVectors() {
 	int effective_threads = min(nthreads_, tau_+1);
 	int nthreads_per_subkmer = max( (int)(nthreads_ / (tau_ + 1)), 1);
 
-	#pragma omp parallel for num_threads(effective_threads)
 	for (int j=0; j<tau_+1; ++j) {
 		(*v_)[j].resize( kmers_size_ );
 		for (size_t m = 0; m < kmers_size_; ++m) (*v_)[j][m] = m;
