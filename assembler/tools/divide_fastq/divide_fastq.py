@@ -13,7 +13,7 @@ outfile2 = open(outfilename2, 'w')
 cnt = 0
 for line in open(infilename):
 	if cnt % 8 < 4:
-		print >>outfile1, strip(line)
+		print >>outfile1, line,
 	else:
-		print >>outfile2, strip(line)
+		print >>outfile2, line,
 	cnt += 1
