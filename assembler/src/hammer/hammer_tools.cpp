@@ -19,6 +19,7 @@
 #include "mathfunctions.hpp"
 #include "valid_kmer_generator.hpp"
 #include "position_kmer.hpp"
+#include "globals.hpp"
 #include "hammer_tools.hpp"
 
 string encode3toabyte (const string & s)  {
@@ -80,7 +81,7 @@ void AddKMerNos(const PositionRead &r, hint_t readno, vector<KMerNo> *v) {
 	}
 }
 
-void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerNo> * vv) {
+void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerNo> * vv) {
 	vv->clear();
 
 	vector< vector<KMerNo> > vtmp;
@@ -271,7 +272,7 @@ void print_time() {
 	cout << setfill('0') << "[ " << setw(2) << ptm->tm_hour << ":" << setw(2) << ptm->tm_min << ":" << setw(2) << ptm->tm_sec << " ] ";
 }
 
-void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int qvoffset, int nthreads) {
+void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthreads) {
 
 	ofstream ofs;
 
@@ -316,7 +317,7 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int qvof
 			++kmerno;
 		}
 		curKMerCount.second.count++;
-		curErrorProb *= (1 - PositionKMer::getKMerQuality(pqel.kmerno.index, qvoffset) );
+		curErrorProb *= (1 - PositionKMer::getKMerQuality(pqel.kmerno.index, Globals::qvoffset) );
 		PositionKMer::blobkmers[ pqel.kmerno.index ] = kmerno;
 
 		int nn = pqel.n;
@@ -327,5 +328,58 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int qvof
 	}
 	curKMerCount.second.totalQual = 1-curErrorProb;
 	kmers->push_back(curKMerCount);
+}
+
+void outputReads(bool paired, const char * fname, const char * fname_bad, const char * fname_right, const char * fname_right_bad,
+			      const char * fname_left_unpaired, const char * fname_right_unpaired) {
+	ofstream outf(fname); ofstream outf_bad(fname_bad); 
+	if (paired) {
+		cout << "outputting paired results" << endl;
+		ofstream outf_right(fname_right);
+		ofstream outf_right_bad(fname_right_bad);
+		ofstream outf_left_unpaired(fname_left_unpaired);
+		ofstream outf_right_unpaired(fname_right_unpaired);
+
+		for (hint_t i = 0; i < PositionKMer::lastLeftNo; ++i) {
+			if (PositionKMer::rv_bad->at(i)) {
+				cout << "  read " << i << " -- left bad " << endl;
+				PositionKMer::pr->at(i).print(outf_bad);
+			} else {
+				if ( i + PositionKMer::lastLeftNo < PositionKMer::revNo && PositionKMer::rv_bad->at(i + PositionKMer::lastLeftNo) ) {
+					cout << "  read " << i << " -- left unpaired " << endl;
+					PositionKMer::pr->at(i).print(outf_left_unpaired);
+				} else {
+					cout << "  read " << i << " -- left good " << endl;
+					PositionKMer::pr->at(i).print(outf);
+				}
+			}
+		}
+
+		for (hint_t i = PositionKMer::lastLeftNo; i < PositionKMer::revNo; ++i) {
+			if (PositionKMer::rv_bad->at(i)) {
+					cout << "  read " << i << " -- right bad " << endl;
+				PositionKMer::pr->at(i).print(outf_right_bad);
+			} else {
+				if ( PositionKMer::rv_bad->at(i - PositionKMer::lastLeftNo) ) {
+					cout << "  read " << i << " -- right unpaired " << endl;
+					PositionKMer::pr->at(i).print(outf_right_unpaired);
+				} else {
+					cout << "  read " << i << " -- right good " << endl;
+					PositionKMer::pr->at(i).print(outf_right);
+				}
+			}
+		}
+		outf_right.close(); outf_right_bad.close(); outf_left_unpaired.close(); outf_right_unpaired.close();
+	} else {
+		for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
+			if (PositionKMer::rv_bad->at(i)) {
+				PositionKMer::pr->at(i).print(outf_bad);
+			} else {
+				PositionKMer::pr->at(i).print(outf);
+			}
+		}
+	}
+
+	outf.close(); outf_bad.close();
 }
 

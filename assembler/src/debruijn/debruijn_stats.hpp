@@ -276,7 +276,6 @@ void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
 	}INFO("Contigs written");
 }
 
-
 template<size_t k>
 void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos) {
@@ -297,6 +296,31 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		EdgeId ei = *it;
 		edgesPos.AddEdgePosition(ei, CurPos, CurPos + g.length(ei)-1);
 		CurPos += g.length(ei);
+	}
+}
+
+template<size_t k>
+void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+		const string& contig_file, EdgesPositionHandler<Graph>& edgesPos) {
+	INFO("Threading large contigs");
+	io::Reader<io::SingleRead> irs(contig_file);
+	for (int cur = 0, c = 1; !irs.eof(); c++) {
+		io::SingleRead read;
+		irs >> read;
+		INFO(read.size());
+		read.ClearQuality();
+		Sequence contig = read.sequence();
+		if (contig.size() < 50000) {
+			continue;
+		}
+		INFO("Large contig #" << c << " has number " << cur);
+		Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (contig, g, index);
+		for (auto it = path1.sequence().begin(); it != path1.sequence().end(); ++it) {
+			EdgeId ei = *it;
+			edgesPos.AddEdgePosition(ei, cur + 1, cur + g.length(ei));
+			cur += g.length(ei);
+		}
+		cur += 10000000;
 	}
 }
 

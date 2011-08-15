@@ -16,18 +16,12 @@
 #include "read/ireadstream.hpp"
 #include "union.hpp"
 #include "sequence/seq.hpp"
+#include "globals.hpp"
 #include "kmer_stat.hpp"
 #include "position_kmer.hpp"
 #include "subkmers.hpp"
 
 using namespace std;
-
-struct Globals {
-	static double error_rate;
-	static int blocksize_quadratic_threshold;
-	static double good_cluster_threshold;
-	static double blob_margin;
-};
 
 #define MAX_INT_64 1000000000000000000
 
@@ -48,9 +42,10 @@ void AddKMers(const PositionRead &r, hint_t readno, KMerStatMap *v);
 
 void AddKMerNos(const PositionRead &r, hint_t readno, vector<KMerNo> *v);
 
-void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerNo> * vv);
-void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int qvoffset, int nthreads);
+void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerNo> * vv);
+void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthreads);
 void DoSplitAndSort(int tau, int nthreads, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers, vector<SubKMerPQ> * vskpq);
+void outputReads(bool paired, const char * fname, const char * fname_bad, const char * fname_right = NULL, const char * fname_right_bad = NULL, const char * fname_left_unpaired = NULL, const char * fname_right_unpaired = NULL);
 
 /**
   * correct a read in place

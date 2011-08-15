@@ -29,6 +29,7 @@
 #include "kmer_cluster.hpp"
 #include "position_kmer.hpp"
 #include "subkmers.hpp"
+#include "globals.hpp"
 
 using namespace std;
 
@@ -36,6 +37,7 @@ std::vector<Read> * PositionKMer::rv = NULL;
 std::vector<bool> * PositionKMer::rv_bad = NULL;
 std::vector<PositionRead> * PositionKMer::pr = NULL;
 hint_t PositionKMer::revNo = 0;
+hint_t PositionKMer::lastLeftNo = 0;
 hint_t PositionKMer::blob_size = 0;
 hint_t PositionKMer::blob_max_size = 0;
 char * PositionKMer::blob = NULL;
@@ -47,6 +49,8 @@ double Globals::error_rate = 0.01;
 int Globals::blocksize_quadratic_threshold = 100;
 double Globals::good_cluster_threshold = 0.95;
 double Globals::blob_margin = 0.25;
+int Globals::qvoffset = 64;
+bool Globals::paired_reads = false;
 
 struct KMerStatCount {
 	PositionKMer km;
@@ -72,11 +76,15 @@ string getFilename( const string & dirprefix, int iter_count, const string & suf
 }
 
 int main(int argc, char * argv[]) {
-	cfg::create_instance(CONFIG_FILENAME);
+	string config_file = CONFIG_FILENAME;
+	if (argc > 1) config_file = argv[1];
+	TIMEDLN("Loading config from " << config_file.c_str());
+
+	cfg::create_instance(config_file);
 	string dirprefix = cfg::get().working_dir;
 	string readsFilename = cfg::get().reads;
 	int tau = cfg::get().tau;
-	int qvoffset = cfg::get().quality_offset;
+	Globals::qvoffset = cfg::get().quality_offset;
 	int nthreads = cfg::get().num_threads;
 	int iterno = cfg::get().num_iterations;
 	string blobFilename, kmersFilename;
@@ -93,6 +101,14 @@ int main(int argc, char * argv[]) {
 	Globals::good_cluster_threshold = cfg::get().good_cluster_threshold;
 	Globals::blob_margin = cfg::get().blob_margin;
 
+	Globals::paired_reads = cfg::get().paired_reads;
+	string readsFilenameLeft, readsFilenameRight;
+	if (Globals::paired_reads) {
+		readsFilenameLeft = cfg::get().reads_left;
+		readsFilenameRight = cfg::get().reads_right;
+		cout << "got paired reads from " << readsFilenameLeft.c_str() << "  and  " << readsFilenameRight.c_str() << endl;
+	}
+
 	// initialize subkmer positions
 	PositionKMer::subKMerPositions = new std::vector<uint32_t>(tau + 2);
 	for (uint32_t i=0; i < (uint32_t)(tau+1); ++i) {
@@ -102,9 +118,22 @@ int main(int argc, char * argv[]) {
 
 	TIMEDLN("Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K);
 
-	hint_t totalReadSize;
-	PositionKMer::rv = ireadstream::readAllNoValidation(readsFilename, &totalReadSize, qvoffset);
-	PositionKMer::rv_bad = new std::vector<bool>(PositionKMer::rv->size(), false);
+	hint_t totalReadSize = 0;
+
+	if (!Globals::paired_reads) {
+		PositionKMer::rv = new std::vector<Read>();
+		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilename, &totalReadSize, Globals::qvoffset);
+		PositionKMer::lastLeftNo = PositionKMer::rv->size();
+		cout << "  lastLeftNo=" << PositionKMer::lastLeftNo << "  no pairs" << endl;
+	} else {
+		PositionKMer::rv = new std::vector<Read>();
+		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameLeft, &totalReadSize, Globals::qvoffset);
+		PositionKMer::lastLeftNo = PositionKMer::rv->size();
+		hint_t rightSize = 0;
+		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameRight, &rightSize, Globals::qvoffset);
+		totalReadSize += rightSize;
+		cout << "  lastLeftNo=" << PositionKMer::lastLeftNo << "   total reads=" << PositionKMer::rv->size() << endl;
+	}
 
 	PositionKMer::blob_size = totalReadSize + 1;
 	PositionKMer::blob_max_size = (hint_t)(PositionKMer::blob_size * ( 2 + Globals::blob_margin));
@@ -115,13 +144,14 @@ int main(int argc, char * argv[]) {
 	TIMEDLN("Max blob size as allocated is " << PositionKMer::blob_max_size);
 
 	std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
-	
+
 	PositionKMer::revNo = PositionKMer::rv->size();
 	for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
 		Read revcomp = !(PositionKMer::rv->at(i));
 		PositionKMer::rv->push_back( revcomp );
-		PositionKMer::rv_bad->push_back(false);
 	}
+	PositionKMer::rv_bad = new std::vector<bool>(PositionKMer::rv->size(), false);
+
 	TIMEDLN("All reads read to memory. Reverse complementary reads added.");
 
 	if (readBlobAndKmers) {
@@ -140,7 +170,7 @@ int main(int argc, char * argv[]) {
 			if (!readBlobAndKmers || iter_count > 1) {
 				for (uint32_t j=0; j < PositionKMer::rv->at(i).size(); ++j) {
 					PositionKMer::blob[ curpos + j ] = PositionKMer::rv->at(i).getSequenceString()[j];
-					PositionKMer::blobquality[ curpos + j ] = (char)(qvoffset + PositionKMer::rv->at(i).getQualityString()[j]);
+					PositionKMer::blobquality[ curpos + j ] = (char)(Globals::qvoffset + PositionKMer::rv->at(i).getQualityString()[j]);
 				}
 			}
 			curpos += PositionKMer::rv->at(i).size();
@@ -152,11 +182,11 @@ int main(int argc, char * argv[]) {
 			TIMEDLN("Doing honest preprocessing.");
 			PositionKMer::blob_size = curpos;	
 			vector<KMerNo> vv;
-			DoPreprocessing(tau, qvoffset, readsFilename, nthreads, &vv);
+			DoPreprocessing(tau, readsFilename, nthreads, &vv);
 			TIMEDLN("Preprocessing done. Got " << vv.size() << " kmer positions. Starting parallel sort.");
 		
 			
-			ParallelSortKMerNos( &vv, &kmers, qvoffset, nthreads );
+			ParallelSortKMerNos( &vv, &kmers, nthreads );
 			TIMEDLN("KMer positions sorted. In total, we have " << kmers.size() << " kmers.");
 			vv.clear();
 		} else {
@@ -209,16 +239,17 @@ int main(int argc, char * argv[]) {
 
 		TIMEDLN("Correction done. Printing out reads.");
 
-		ofstream outf( getFilename(dirprefix, iter_count, "reads.corrected").data() );
-		ofstream outf_bad( getFilename(dirprefix, iter_count, "reads.bad").data() );
-		for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
-			if (PositionKMer::rv_bad->at(i)) {
-				PositionKMer::pr->at(i).print(outf_bad, qvoffset);
-			} else {
-				PositionKMer::pr->at(i).print(outf, qvoffset);
-			}
+		if (!Globals::paired_reads) {
+			outputReads( false, getFilename(dirprefix, iter_count, "reads.corrected").c_str(),
+					    getFilename(dirprefix, iter_count, "reads.bad").c_str() );
+		} else {
+			outputReads( true,  getFilename(dirprefix, iter_count, "reads.left.corrected").c_str(),
+					    getFilename(dirprefix, iter_count, "reads.left.bad").c_str(),
+					    getFilename(dirprefix, iter_count, "reads.right.corrected").c_str(),
+					    getFilename(dirprefix, iter_count, "reads.right.bad").c_str(),
+					    getFilename(dirprefix, iter_count, "reads.left.unpaired").c_str(),
+					    getFilename(dirprefix, iter_count, "reads.right.unpaired").c_str() );
 		}
-		outf.close(); outf_bad.close();
 
 		// prepare the reads for next iteration
 		// delete consensuses, clear kmer data, and restore correct revcomps

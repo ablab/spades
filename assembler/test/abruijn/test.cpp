@@ -8,14 +8,14 @@
 DECL_PROJECT_LOGGER("at")
 
 void runSuite() {
-  cute::suite s;
+	cute::suite s;
 	s += HashSuite();
-  s += SpellingGenomeSuite();
+	s += SpellingGenomeSuite();
 	cute::ide_listener lis;
 	cute::makeRunner(lis)(s, "The Suite");
 }
 
 int main() {
-  runSuite();
-  return 0;
+	runSuite();
+	return 0;
 }
