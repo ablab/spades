@@ -153,6 +153,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 				"edge_graph");
 		FillEdgesPos<k> (g, index, genome, EdgePos);
+//		string contig_file("/home/ftp/data/velvet/velvet_unpaired55.fasta.gz");
+//		FillEdgesPos<k> (g, index, contig_file, EdgePos);
 
 		TotalLabelerGraphStruct<Graph> graph_struct(g, &IntIds, &EdgePos, NULL);
 		TotalLabeler<Graph> TotLab(&graph_struct, NULL);
