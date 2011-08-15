@@ -318,7 +318,7 @@ void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name,
 		assert(read_count == 0);
 		VertexId vid = graph_.AddVertex();
 		IdHandler_.AddVertexIntId(vid, vertex_real_id);
-		DEBUG(vid);
+		TRACE(vid);
 	}
 	int tmp_edge_count;
 	read_count = fscanf(sequence_file, "%d", &tmp_edge_count);

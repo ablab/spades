@@ -166,7 +166,7 @@ public:
 			//		if (vertices.find(old_graph.conjugate(*v_iter)) == vertices.end())
 			{
 				vertices.insert(*v_iter);
-				DEBUG(*v_iter);
+				TRACE(*v_iter);
 			}
 		}
 		for (auto e_iter = old_graph.SmartEdgeBegin(); !e_iter.IsEnd();
@@ -183,7 +183,7 @@ public:
 			if (degree > 0) {
 				VertexId new_vertex = new_graph.AddVertex();
 				real_vertices.insert(new_vertex);
-				DEBUG("Added vertex" << new_vertex);
+				TRACE("Added vertex" << new_vertex);
 				// <<" " << new_graph.conjugate(new_vertex));
 				vertex_labels[new_vertex] = *v_iter;
 				old_to_new[*v_iter] = new_vertex;
@@ -192,7 +192,7 @@ public:
 
 		}
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
-			DEBUG(
+			TRACE(
 					"Adding edge from " << old_to_new[old_graph.EdgeStart(*e_iter)] <<" to " << old_to_new[old_graph.EdgeEnd(*e_iter)]);
 			//			DEBUG("Setting coverage to edge length " << old_graph.length(*e_iter) << "  cov: " << old_graph.coverage(*e_iter));
 			EdgeId new_edge = new_graph.AddEdge(
@@ -203,7 +203,7 @@ public:
 					old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
 //			new_graph.SetCoverage(new_graph.conjugate(new_edge), 0);
 			edge_labels[new_edge] = *e_iter;
-			DEBUG("Adding edge " << new_edge<< " from" << *e_iter);
+			TRACE("Adding edge " << new_edge<< " from" << *e_iter);
 			old_to_new_edge[*e_iter] = new_edge;
 			//			old_to_new_edge[old_graph.conjugate(*e_iter)] = new_graph.conjugate(new_edge);
 			//			PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
@@ -639,29 +639,30 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 	EdgeId left_id = pair_inf.first;
 
 	if (pair_inf.d - new_graph.length(left_id) > 240) {
-		DEBUG(
-				"PairInfo "<<edge_labels[left_id]<<"("<<new_graph.length(left_id)<<")"<<" "<<right_id<<"("<<old_graph.length(right_id)<<")"<<" "<<pair_inf.d)DEBUG(
-				"too far to correct");
+		TRACE(
+				"PairInfo "<<edge_labels[left_id]<<"("<<new_graph.length(left_id)<<")"<<" "<<right_id<<"("<<old_graph.length(right_id)<<")"<<" "<<pair_inf.d);
+//				DEBUG("too far to correct");
 		return make_pair(false, pair_inf);
 	}
 
 	PairInfo corrected_info = StupidPairInfoCorrectorByOldGraph(new_graph,
 			pair_inf);
-	DEBUG(
+	TRACE(
 			"PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<pair_inf.d<< " corrected into "<<corrected_info.d)
 	if (abs(corrected_info.d - pair_inf.d) > MAX_DISTANCE_CORRECTION) {
-		DEBUG("big correction");
+		TRACE("big correction");
 		return make_pair(false, corrected_info);
 	}
-	if (corrected_info.d - new_graph.length(left_id) > 130) {
-		DEBUG("too far");
-		return make_pair(false, corrected_info);
-	}
+//	if (corrected_info.d - new_graph.length(left_id) > 130) {
+//		DEBUG("too far");
+//		return make_pair(false, corrected_info);
+//	}
 	//todo check correctness. right_id belongs to original graph, not to new_graph.
 	if (corrected_info.d + new_graph.length(right_id) < 110) {
-		DEBUG("too close");
+		TRACE("too close");
 		return make_pair(false, corrected_info);
-	}DEBUG("good");
+	}
+	TRACE("good");
 	return make_pair(true, corrected_info);
 //	return make_pair(true, pair_inf);
 }
@@ -669,7 +670,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 template<class Graph>
 size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 		PairInfoIndexData<EdgeId> &paired_data, VertexId vid) {
-	DEBUG("Generate vertex paired info for:  " << vid);
+	DEBUG("---- Generate vertex paired info for:  " << vid <<" ("<<new_IDs.ReturnIntId(vid) <<") -----------------------------");
 	//	DEBUG(new_graph.conjugate(vid));
 	edge_infos.clear();
 	cheating_edges.clear();
@@ -677,7 +678,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 	edgeIds[0] = new_graph.OutgoingEdges(vid);
 	edgeIds[1] = new_graph.IncomingEdges(vid);
 	vector<set<EdgeId> > paired_edges;
-	DEBUG(edgeIds[0].size()<< "  " << edgeIds[1].size());
+	DEBUG("out: " << edgeIds[0].size()<< "  in:" << edgeIds[1].size());
 	paired_edges.resize(edgeIds[0].size() + edgeIds[1].size());
 //TODO:: extract this optional parameter- direction of resolve?
 //Or due to r-c structure of original graph it doesn't matter?
@@ -711,16 +712,16 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 //							continue;
 //						}
 
-						DEBUG("PairInfo: " << new_IDs.ReturnIntId(tmp[j].first)<<" "<<old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
+//						DEBUG("PairInfo: " << new_IDs.ReturnIntId(tmp[j].first)<<" "<<old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 
 						pair<bool, PairInfo> correction_result =
 								CorrectedAndNotFiltered(new_graph, tmp[j]);
 						if (!correction_result.first)
 							continue;
-						DEBUG(
-								"PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<tmp[j].d<< "weight" << tmp[j].weight);
-						DEBUG(
-								"PairInfo: " << old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
+//						DEBUG(
+//								"PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<tmp[j].d<< "weight" << tmp[j].weight);
+//						DEBUG(
+//								"PairInfo: " << old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 						EdgeInfo ei(correction_result.second, dir, right_id,
 								correction_result.second.d - dif_d);
 						tmp_edge_infos.push_back(ei);
@@ -753,9 +754,8 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 	}
 
 	for (int j = 0; j < (int)edge_infos.size(); j++) {
-		DEBUG("Edge infos "<<j<<" distance is "<<edge_infos[j].d);
 		PairInfo tmp = edge_infos[j].lp;
-		DEBUG("PairInfo: " << new_IDs.ReturnIntId(tmp.first)<<" "<<old_IDs.ReturnIntId(edge_labels[tmp.first]) << " " << old_IDs.ReturnIntId(tmp.second) <<" "<< tmp.d);
+		DEBUG("Edge infos "<<j<<":"  << new_IDs.ReturnIntId(tmp.first)<<" ("<<old_IDs.ReturnIntId(edge_labels[tmp.first]) << ") -- " << old_IDs.ReturnIntId(tmp.second) <<" "<< tmp.d << " from vertex: "<<edge_infos[j].d<< " weigth "<<tmp.weight);
 	}
 
 
@@ -804,8 +804,8 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph)) {
 				neighbours[i].push_back(j);
 				neighbours[j].push_back(i);
-				DEBUG(
-						old_IDs.ReturnIntId(edge_infos[i].lp.second) <<" " << edge_infos[i].d << "is adjacent "<<old_IDs.ReturnIntId( edge_infos[j].lp.second) <<" " << edge_infos[j].d);
+				TRACE(
+						old_IDs.ReturnIntId(edge_infos[i].lp.second) <<" " << edge_infos[i].d << " is adjacent "<<old_IDs.ReturnIntId( edge_infos[j].lp.second) <<" " << edge_infos[j].d);
 
 			}
 		}
@@ -818,6 +818,7 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 			cur_color++;
 		}
 	}
+	DEBUG("Info colors "<<edge_info_colors);
 	MultiSplit(vid);
 	return cur_color;
 }
