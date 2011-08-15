@@ -246,12 +246,13 @@ inline std::string GetExtension(const std::string& filename) {
  */
 inline Parser* SelectParser(const std::string& filename,
                      int offset = SingleRead::PHRED_OFFSET) {
-	std::string ext = GetExtension(filename);
-	  if ((ext == "fastq") || (ext == "fastq.gz") ||
-	      (ext == "fasta") || (ext == "fasta.gz")) {
-	    return new FastaFastqGzParser(filename, offset);
-	  }
-	  return NULL;
+	return new FastaFastqGzParser(filename, offset);
+//	std::string ext = GetExtension(filename);
+//	if ((ext == "fastq") || (ext == "fastq.gz") ||
+//			(ext == "fasta") || (ext == "fasta.gz")) {
+//		return new FastaFastqGzParser(filename, offset);
+//	}
+//	return NULL;
 }
 
 }
