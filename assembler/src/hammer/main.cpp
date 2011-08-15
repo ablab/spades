@@ -76,7 +76,11 @@ string getFilename( const string & dirprefix, int iter_count, const string & suf
 }
 
 int main(int argc, char * argv[]) {
-	cfg::create_instance(CONFIG_FILENAME);
+	string config_file = CONFIG_FILENAME;
+	if (argc > 1) config_file = argv[1];
+	TIMEDLN("Loading config from " << config_file.c_str());
+
+	cfg::create_instance(config_file);
 	string dirprefix = cfg::get().working_dir;
 	string readsFilename = cfg::get().reads;
 	int tau = cfg::get().tau;
