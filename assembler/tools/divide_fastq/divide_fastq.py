@@ -11,7 +11,7 @@ outfile1 = open(outfilename1, 'w')
 outfilename2 = os.path.basename(infilename) + '_2'
 outfile2 = open(outfilename2, 'w')
 cnt = 0
-for line in open(filename):
+for line in open(infilename):
 	if cnt % 8 < 4:
 		print >>outfile1, line
 	else:
