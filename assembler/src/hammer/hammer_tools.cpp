@@ -279,6 +279,8 @@ void print_time() {
 
 void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int qvoffset, int nthreads) {
 
+	ofstream ofs;
+
 	// find boundaries of the pieces
 	vector< size_t > boundaries(nthreads + 1);
 	size_t sub_size = (size_t)(v->size() / nthreads);
@@ -316,7 +318,7 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int qvof
 			kmers->push_back(curKMerCount);
 			curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD, 1 ) );
 			curErrorProb = 1;
-			++kmerno;			
+			++kmerno;
 		}
 		curKMerCount.second.count++;
 		curErrorProb *= (1 - PositionKMer::getKMerQuality(pqel.kmerno.index, qvoffset) );

@@ -23,6 +23,7 @@ void SubKMerSorter::runSort() {
 
 bool SubKMerSorter::getNextBlock( int i, vector<hint_t> & block ) {
 	block.clear();
+	if ( vskpq_[i].emptyPQ() ) return false;
 	hint_t last = vskpq_[i].peekPQ();
 	while (!vskpq_[i].emptyPQ()) {
 		hint_t cur = vskpq_[i].peekPQ();

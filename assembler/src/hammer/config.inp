@@ -1,0 +1,7 @@
+working_dir		/home/snikolenko/algorithmic-biology/assembler/build/debug/hammer/tmp
+reads			/home/snikolenko/algorithmic-biology/assembler/data/hammer/0.fastq
+
+tau			1
+quality_offset		33
+num_threads		1
+num_iterations		2

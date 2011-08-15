@@ -44,46 +44,12 @@ class PositionKMer {
 
 	static std::vector<uint32_t> * subKMerPositions;
 
-	static void writeBlob( const char * fname ) {
-		ofstream ofs( fname );
-		ofs << blob_max_size << "\n" << blob_size << "\n";
-		ofs.write(blob, blob_size); ofs << "\n";
-		ofs.write(blobquality, blob_size);
-		ofs.close();
-	}
-
-	static void readBlob( const char * fname ) {
-		if (blob != NULL) delete [] blob;
-		if (blobquality != NULL) delete [] blobquality;
-
-		FILE * f = fopen( fname, "r" );
-		fscanf(f, "%lu\n", &blob_max_size);
-		fscanf(f, "%lu\n", &blob_size);
-		blob = new char[blob_max_size];
-		blobquality = new char[blob_max_size];
-		fgets( blob, blob_size, f );
-		fgets( blobquality, blob_size, f );
-		fclose(f);
-	}
-
-	static void writeKMerCounts( const char * fname, const vector<KMerCount> & kmers ) {
-		ofstream ofs( fname );
-		for ( size_t i=0; i < kmers.size(); ++i ) {
-			ofs << kmers[i].first.str() << "\t" << kmers[i].first.start() << "\t" << kmers[i].second.count << "\t" << kmers[i].second.totalQual << "\n";
-		}
-		ofs.close();
-	}
-
-	static void readKMerCounts( const char * fname, vector<KMerCount> * kmers ) {
-		kmers->clear();
-		FILE * f = fopen( fname, "r" );
-		unsigned long int start; unsigned int count; double qual; char tmp[K+10];
-		while (!feof(f)) {
-			fscanf(f, "%s\t%lu\t%u\t%lf", tmp, &start, &count, &qual);
-			kmers->push_back( make_pair( PositionKMer(start), KMerStat(count, KMERSTAT_GOOD, qual) ) );
-		}
-		fclose(f);
-	}
+	static void writeBlob( const char * fname );
+	static void readBlob( const char * fname );
+	static void writeBlobKMers( const char * fname );
+	static void readBlobKMers( const char * fname );
+	static void writeKMerCounts( const char * fname, const vector<KMerCount> & kmers );
+	static void readKMerCounts( const char * fname, vector<KMerCount> * kmers );
 
 
 	static double getKMerQuality( const hint_t & index, const int qvoffset ) {

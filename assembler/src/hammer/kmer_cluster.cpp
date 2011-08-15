@@ -489,6 +489,7 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 	vector<vector<int> > classes;
 	ufMaster->get_classes(classes);
 	delete ufMaster;
+
 	vector< vector< vector<int> > > blocks(nthreads_);
 
 	vector< vector< vector<int> > > blocksInPlace(nthreads_);
