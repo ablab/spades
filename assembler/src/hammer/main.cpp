@@ -54,6 +54,12 @@ struct KMerStatCount {
 	bool change() const { return changeto < KMERSTAT_CHANGE; }
 };
 
+string getFilename( const string & dirprefix, const string & suffix ) {
+	ostringstream tmp;
+	tmp.str(""); tmp << dirprefix.data() << "/" << suffix.data();
+	return tmp.str();
+}
+
 string getFilename( const string & dirprefix, int iter_count, const string & suffix ) {
 	ostringstream tmp;
 	tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << "." << suffix.data();
@@ -68,6 +74,15 @@ int main(int argc, char * argv[]) {
 	int qvoffset = cfg::get().quality_offset;
 	int nthreads = cfg::get().num_threads;
 	int iterno = cfg::get().num_iterations;
+	string blobFilename, kmersFilename;
+	bool readBlobAndKmers = cfg::get().read_blob_and_kmers;
+	bool writeBlobAndKmers = cfg::get().write_blob_and_kmers;
+	bool exitAfterWritingBlobAndKMers = false;
+	if (readBlobAndKmers || writeBlobAndKmers) {
+		blobFilename = cfg::get().blob;
+		kmersFilename = cfg::get().kmers;
+		exitAfterWritingBlobAndKMers = cfg::get().exit_after_writing_blob_and_kmers;
+	}
 
 	// initialize subkmer positions
 	PositionKMer::subKMerPositions = new std::vector<uint32_t>(tau + 2);
@@ -97,43 +112,55 @@ int main(int argc, char * argv[]) {
 		PositionKMer::rv_bad->push_back(false);
 	}
 	TIMEDLN("All reads read to memory. Reverse complementary reads added.");
-	
+
+	if (readBlobAndKmers) {
+		PositionKMer::readBlob( getFilename(dirprefix, blobFilename.c_str() ).c_str() );
+	}
+
+
 	for (int iter_count = 0; iter_count < iterno; ++iter_count) {
 		cout << "\n     === ITERATION " << iter_count << " begins ===" << endl;
 
 		PositionKMer::pr = new vector<PositionRead>();
-		PositionKMer::readBlob( "tmp/00.blob" );
 		hint_t curpos = 0;
 		for (hint_t i = 0; i < PositionKMer::rv->size(); ++i) {
 			PositionRead pread(curpos, PositionKMer::rv->at(i).size(), i, PositionKMer::rv_bad->at(i));
 			PositionKMer::pr->push_back(pread);
-			/*for (uint32_t j=0; j < PositionKMer::rv->at(i).size(); ++j) {
-				PositionKMer::blob[ curpos + j ] = PositionKMer::rv->at(i).getSequenceString()[j];
-				PositionKMer::blobquality[ curpos + j ] = (char)(qvoffset + PositionKMer::rv->at(i).getQualityString()[j]);
-			}*/
+			if (!readBlobAndKmers || iter_count > 1) {
+				for (uint32_t j=0; j < PositionKMer::rv->at(i).size(); ++j) {
+					PositionKMer::blob[ curpos + j ] = PositionKMer::rv->at(i).getSequenceString()[j];
+					PositionKMer::blobquality[ curpos + j ] = (char)(qvoffset + PositionKMer::rv->at(i).getQualityString()[j]);
+				}
+			}
 			curpos += PositionKMer::rv->at(i).size();
 		}
-		TIMEDLN("Read blob, filled up PositionReads. Real size " << curpos << ". " << PositionKMer::pr->size() << " reads.");
-		/*PositionKMer::blob_size = curpos;
-	
-		vector<KMerNo> vv;
-		DoPreprocessing(tau, qvoffset, readsFilename, nthreads, &vv);
-		TIMEDLN("Preprocessing done. Got " << vv.size() << " kmer positions. Starting parallel sort.");
-		
-		vector<KMerCount> kmers;
-		ParallelSortKMerNos( &vv, &kmers, qvoffset, nthreads );
-		TIMEDLN("KMer positions sorted. In total, we have " << kmers.size() << " kmers.");
-		vv.clear();*/
-		
-		vector<KMerCount> kmers;
-		string kmerfname = "tmp/00.kmers.all";
-		PositionKMer::readKMerCounts( kmerfname.c_str(), &kmers );
-		TIMEDLN("Kmers read from " << kmerfname.c_str());
+		TIMEDLN("Blob done, filled up PositionReads. Real size " << curpos << ". " << PositionKMer::pr->size() << " reads.");
 
-		/*PositionKMer::writeBlob( getFilename(dirprefix, iter_count, "blob2").data() );
-		PositionKMer::writeKMerCounts( getFilename(dirprefix, iter_count, "kmers.all2").data(), kmers );
-		TIMEDLN("Blob and kmers written.");
-		break;*/
+		vector<KMerCount> kmers;
+		if (!readBlobAndKmers || iter_count > 0) {
+			TIMEDLN("Doing honest preprocessing.");
+			PositionKMer::blob_size = curpos;	
+			vector<KMerNo> vv;
+			DoPreprocessing(tau, qvoffset, readsFilename, nthreads, &vv);
+			TIMEDLN("Preprocessing done. Got " << vv.size() << " kmer positions. Starting parallel sort.");
+		
+			
+			ParallelSortKMerNos( &vv, &kmers, qvoffset, nthreads );
+			TIMEDLN("KMer positions sorted. In total, we have " << kmers.size() << " kmers.");
+			vv.clear();
+		} else {
+			TIMEDLN("Reading kmers from " << kmersFilename.c_str() );
+			PositionKMer::readKMerCounts( getFilename( dirprefix, kmersFilename.c_str() ).c_str(), &kmers );
+			TIMEDLN("Kmers read from " << kmersFilename.c_str());
+		}
+
+
+		if ( writeBlobAndKmers ) {
+			PositionKMer::writeBlob( getFilename(dirprefix, blobFilename.c_str() ).data() );
+			PositionKMer::writeKMerCounts( getFilename(dirprefix, kmersFilename.c_str() ).data(), kmers );
+			TIMEDLN("Blob and kmers written.");
+			if ( exitAfterWritingBlobAndKMers ) break;
+		}
 
 		SubKMerSorter * skmsorter = new SubKMerSorter( kmers.size(), &kmers, nthreads, tau, SubKMerSorter::SorterTypeStraight );
 		skmsorter->runSort();
@@ -170,7 +197,7 @@ int main(int argc, char * argv[]) {
 		}
 
 		TIMEDLN("Correction done. Printing out reads.");
-	
+
 		ofstream outf( getFilename(dirprefix, iter_count, "reads.corrected").data() );
 		ofstream outf_bad( getFilename(dirprefix, iter_count, "reads.bad").data() );
 		for (hint_t i = 0; i < PositionKMer::revNo; ++i) {

@@ -21,6 +21,12 @@ struct hammer_config
 	int num_threads;
 	int num_iterations;
 	int quality_offset;
+
+	bool read_blob_and_kmers;
+	bool write_blob_and_kmers;
+	bool exit_after_writing_blob_and_kmers;
+	std::string blob;
+	std::string kmers;
 };
 
 
@@ -34,6 +40,14 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 	load(pt, "num_threads", cfg.num_threads);
 	load(pt, "num_iterations", cfg.num_iterations);
 	load(pt, "quality_offset", cfg.quality_offset);
+
+	load(pt, "read_blob_and_kmers", cfg.read_blob_and_kmers);
+	load(pt, "write_blob_and_kmers", cfg.write_blob_and_kmers);
+	load(pt, "exit_after_writing_blob_and_kmers", cfg.exit_after_writing_blob_and_kmers);
+	if ( cfg.read_blob_and_kmers || cfg.write_blob_and_kmers ) {
+		load(pt, "blob", cfg.blob);
+		load(pt, "kmers", cfg.kmers);
+	}
 }
 
 typedef config<hammer_config> cfg;
