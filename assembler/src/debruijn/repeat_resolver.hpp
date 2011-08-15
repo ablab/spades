@@ -166,7 +166,7 @@ public:
 			//		if (vertices.find(old_graph.conjugate(*v_iter)) == vertices.end())
 			{
 				vertices.insert(*v_iter);
-				DEBUG(*v_iter);
+				TRACE(*v_iter);
 			}
 		}
 		for (auto e_iter = old_graph.SmartEdgeBegin(); !e_iter.IsEnd();
@@ -183,7 +183,7 @@ public:
 			if (degree > 0) {
 				VertexId new_vertex = new_graph.AddVertex();
 				real_vertices.insert(new_vertex);
-				DEBUG("Added vertex" << new_vertex);
+				TRACE("Added vertex" << new_vertex);
 				// <<" " << new_graph.conjugate(new_vertex));
 				vertex_labels[new_vertex] = *v_iter;
 				old_to_new[*v_iter] = new_vertex;
@@ -192,7 +192,7 @@ public:
 
 		}
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
-			DEBUG(
+			TRACE(
 					"Adding edge from " << old_to_new[old_graph.EdgeStart(*e_iter)] <<" to " << old_to_new[old_graph.EdgeEnd(*e_iter)]);
 			//			DEBUG("Setting coverage to edge length " << old_graph.length(*e_iter) << "  cov: " << old_graph.coverage(*e_iter));
 			EdgeId new_edge = new_graph.AddEdge(
@@ -203,7 +203,7 @@ public:
 					old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
 //			new_graph.SetCoverage(new_graph.conjugate(new_edge), 0);
 			edge_labels[new_edge] = *e_iter;
-			DEBUG("Adding edge " << new_edge<< " from" << *e_iter);
+			TRACE("Adding edge " << new_edge<< " from" << *e_iter);
 			old_to_new_edge[*e_iter] = new_edge;
 			//			old_to_new_edge[old_graph.conjugate(*e_iter)] = new_graph.conjugate(new_edge);
 			//			PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
@@ -434,79 +434,119 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	edgeIds[0] = new_graph.OutgoingEdges(v);
 	edgeIds[1] = new_graph.IncomingEdges(v);
 	vector<unordered_map<EdgeId, EdgeId> > new_edges(k);
+	vector<vector<EdgeId> > edges_for_split(k);
+
 	unordered_map<EdgeId, int> old_paired_coverage;
-	unordered_map<EdgeId, int> new_paired_coverage;
+	vector<unordered_map<EdgeId, int>> colored_paired_coverage(k);
 	//Remember-because of loops there can be same edges in edgeIds[0] and edgeIds[1]
-	for (int i = 0; i < k; i++) {
-		res[i] = new_graph.AddVertex();
-	}DEBUG("Vertex = "<<new_IDs.ReturnIntId(v));
+//TODO: fix loop problem by split loop into 2 eges.
+
+	//	for (int i = 0; i < k; i++) {
+//		res[i] = new_graph.AddVertex();
+//	}DEBUG("Vertex = "<<new_IDs.ReturnIntId(v));
+
 	for (size_t i = 0; i < edge_info_colors.size(); i++) {
 		EdgeId le = edge_infos[i].lp.first;
+		int color = edge_info_colors[i];
 		if (old_paired_coverage.find(le) == old_paired_coverage.end())
 			old_paired_coverage[le] = 0;
 		old_paired_coverage[le] += edge_infos[i].lp.weight;
-		DEBUG(
-				"EdgeID = "<<new_IDs.ReturnIntId(le)<<"("<<old_IDs.ReturnIntId(edge_labels[le])<<")"<<" PairEdgeId = "<<old_IDs.ReturnIntId(edge_infos[i].lp.second)<< " Distance = "<<edge_infos[i].lp.d<<" Provided dist = "<<edge_infos[i].getDistance()<<"Weight = "<<edge_infos[i].lp.weight<<" Color = "<<edge_info_colors[i]);
-		TRACE(
-				"replacing edge " << le<<" with label " << edge_labels[le] << " "<< (new_edges[edge_info_colors[i]].find(le) == new_edges[edge_info_colors[i]].end()));
-
-		EdgeId res_edge = NULL;
-		if (edge_infos[i].dir == 0) {
-			if (new_graph.EdgeStart(le) != v) {
-				ERROR(
-						"Non incident edge!!!" << new_graph.EdgeStart(le) <<" instead of "<< v);
-			} else {
-
-				if (new_edges[edge_info_colors[i]].find(le)
-						== new_edges[edge_info_colors[i]].end())
-					res_edge = new_graph.AddEdge(res[edge_info_colors[i]],
-							new_graph.EdgeEnd(le), new_graph.EdgeNucls(le));
-			}
-		} else {
-			if (new_graph.EdgeEnd(le) != v) {
-				ERROR(
-						"Non incident edge!!!" << new_graph.EdgeEnd(le) <<" instead of "<< v);
-			} else {
-				if (new_edges[edge_info_colors[i]].find(le)
-						== new_edges[edge_info_colors[i]].end())
-					res_edge = new_graph.AddEdge(new_graph.EdgeStart(le),
-							res[edge_info_colors[i]], new_graph.EdgeNucls(le));
-			}
-		}TRACE("replaced");
-		if (res_edge != NULL) {
-			new_edges[edge_info_colors[i]].insert(make_pair(le, res_edge));
-			edge_labels[res_edge] = edge_labels[le];
-			TRACE("before replace first Edge");
-			paired_di_data.ReplaceFirstEdge(edge_infos[i].lp, res_edge);
-
-			new_paired_coverage[new_edges[edge_info_colors[i]][le]] = 0;
-		} else {
-			paired_di_data.ReplaceFirstEdge(edge_infos[i].lp,
-					new_edges[edge_info_colors[i]][le]);
-		}
-		new_paired_coverage[new_edges[edge_info_colors[i]][le]] +=
-				edge_infos[i].lp.weight;
-		//		old_paired_coverage[le] += edge_infos[i].lp.weight;
+		if (colored_paired_coverage[color].find(le) == colored_paired_coverage[color].end())
+			colored_paired_coverage[color][le] = 0;
+		colored_paired_coverage[color][le] += edge_infos[i].lp.weight;
 	}
+
 	for (int i = 0; i < k; i++) {
-		for (auto edge_iter = new_edges[i].begin();
-				edge_iter != new_edges[i].end(); edge_iter++) {
-			DEBUG(
-					"setting coverage to component "<< i << ", from edgeid "<< edge_iter->first<<"("<< new_IDs.ReturnIntId(edge_iter->first)<<")"<<" length "<<new_graph.length(edge_iter->first) <<"   "<< new_graph.coverage(edge_iter->first) <<" taking "<< new_paired_coverage[edge_iter->second] <<"/"<< old_paired_coverage[edge_iter->first]<<" to edgeid "<< edge_iter->second<<"("<< new_IDs.ReturnIntId(edge_iter->second)<<")");
-			if ((1.0 * new_paired_coverage[edge_iter->second])
-					/ old_paired_coverage[edge_iter->first] > 0.1
-					&& (1.0 * new_paired_coverage[edge_iter->second])
-							/ old_paired_coverage[edge_iter->first] < 0.9)
-				DEBUG("INTERESTING");
-			new_graph.coverage_index().SetCoverage(
-					edge_iter->second,
-					new_graph.length(edge_iter->first)
-							* new_graph.coverage(edge_iter->first)
-							* new_paired_coverage[edge_iter->second]
-							/ old_paired_coverage[edge_iter->first]);
-//			new_graph.SetCoverage(new_graph.conjugate(edge_iter->second), 0);
+		vector<EdgeId> split_edge;
+		vector<double> split_coeff;
+		for (auto it = colored_paired_coverage[i].begin(); it !=  colored_paired_coverage[i].end(); it++){
+			if (it->second != 0){
+				split_edge.push_back(it->first);
+				split_coeff.push_back(((double)it->second)/old_paired_coverage[it->first]);
+			}
+		}
+		if (split_edge.size() > 0) {
+			pair<VertexId, vector<pair<EdgeId, EdgeId>>> split_pair = new_graph.SplitVertex(v, split_edge, split_coeff);
+			res.push_back(split_pair.first);
+			map<EdgeId, EdgeId> old_to_new_edgeId;
+			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
+				old_to_new_edgeId[it->first] = it->second;
+				edge_labels[it->second] = edge_labels[it->first];
+			}
+			for (size_t j = 0; j < edge_infos.size(); j++){
+				if (edge_info_colors[j] == i)
+					paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, old_to_new_edgeId[edge_infos[j].lp.first]);
+			}
 		}
 	}
+
+
+//		DEBUG(
+//				"EdgeID = "<<new_IDs.ReturnIntId(le)<<"("<<old_IDs.ReturnIntId(edge_labels[le])<<")"<<" PairEdgeId = "<<old_IDs.ReturnIntId(edge_infos[i].lp.second)<< " Distance = "<<edge_infos[i].lp.d<<" Provided dist = "<<edge_infos[i].getDistance()<<"Weight = "<<edge_infos[i].lp.weight<<" Color = "<<edge_info_colors[i]);
+//		TRACE(
+//				"replacing edge " << le<<" with label " << edge_labels[le] << " "<< (new_edges[edge_info_colors[i]].find(le) == new_edges[edge_info_colors[i]].end()));
+
+//		EdgeId res_edge = NULL;
+//
+//		if (edge_infos[i].dir == 0) {
+//			if (new_graph.EdgeStart(le) != v) {
+//				ERROR(
+//						"Non incident edge!!!" << new_graph.EdgeStart(le) <<" instead of "<< v);
+//			} else {
+//
+//				if (new_edges[edge_info_colors[i]].find(le)
+//						== new_edges[edge_info_colors[i]].end())
+//					res_edge = new_graph.AddEdge(res[edge_info_colors[i]],
+//							new_graph.EdgeEnd(le), new_graph.EdgeNucls(le));
+//			}
+//		} else {
+//			if (new_graph.EdgeEnd(le) != v) {
+//				ERROR(
+//						"Non incident edge!!!" << new_graph.EdgeEnd(le) <<" instead of "<< v);
+//			} else {
+//				if (new_edges[edge_info_colors[i]].find(le)
+//						== new_edges[edge_info_colors[i]].end())
+//					res_edge = new_graph.AddEdge(new_graph.EdgeStart(le),
+//							res[edge_info_colors[i]], new_graph.EdgeNucls(le));
+//			}
+//		}
+//		TRACE("replaced");
+//
+//		if (res_edge != NULL) {
+//			new_edges[edge_info_colors[i]].insert(make_pair(le, res_edge));
+//			edge_labels[res_edge] = edge_labels[le];
+//			TRACE("before replace first Edge");
+//			paired_di_data.ReplaceFirstEdge(edge_infos[i].lp, res_edge);
+//
+//			new_paired_coverage[new_edges[edge_info_colors[i]][le]] = 0;
+//		} else {
+//			paired_di_data.ReplaceFirstEdge(edge_infos[i].lp,
+//					new_edges[edge_info_colors[i]][le]);
+//		}
+//		new_paired_coverage[new_edges[edge_info_colors[i]][le]] +=
+//				edge_infos[i].lp.weight;
+//		//		old_paired_coverage[le] += edge_infos[i].lp.weight;
+//	}
+
+//	for (int i = 0; i < k; i++) {
+//		for (auto edge_iter = new_edges[i].begin();
+//				edge_iter != new_edges[i].end(); edge_iter++) {
+//			DEBUG(
+//					"setting coverage to component "<< i << ", from edgeid "<< edge_iter->first<<"("<< new_IDs.ReturnIntId(edge_iter->first)<<")"<<" length "<<new_graph.length(edge_iter->first) <<"   "<< new_graph.coverage(edge_iter->first) <<" taking "<< new_paired_coverage[edge_iter->second] <<"/"<< old_paired_coverage[edge_iter->first]<<" to edgeid "<< edge_iter->second<<"("<< new_IDs.ReturnIntId(edge_iter->second)<<")");
+//			if ((1.0 * new_paired_coverage[edge_iter->second])
+//					/ old_paired_coverage[edge_iter->first] > 0.1
+//					&& (1.0 * new_paired_coverage[edge_iter->second])
+//							/ old_paired_coverage[edge_iter->first] < 0.9)
+//				DEBUG("INTERESTING");
+//			new_graph.coverage_index().SetCoverage(
+//					edge_iter->second,
+//					new_graph.length(edge_iter->first)
+//							* new_graph.coverage(edge_iter->first)
+//							* new_paired_coverage[edge_iter->second]
+//							/ old_paired_coverage[edge_iter->first]);
+////			new_graph.SetCoverage(new_graph.conjugate(edge_iter->second), 0);
+//		}
+//	}
 
 	new_graph.ForceDeleteVertex(v);
 	return res;
@@ -598,30 +638,31 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 	EdgeId right_id = pair_inf.second;
 	EdgeId left_id = pair_inf.first;
 
-	if (pair_inf.d - new_graph.length(left_id) > 140) {
-		DEBUG(
-				"PairInfo "<<edge_labels[left_id]<<"("<<new_graph.length(left_id)<<")"<<" "<<right_id<<"("<<old_graph.length(right_id)<<")"<<" "<<pair_inf.d)DEBUG(
-				"too far to correct");
+	if (pair_inf.d - new_graph.length(left_id) > 240) {
+		TRACE(
+				"PairInfo "<<edge_labels[left_id]<<"("<<new_graph.length(left_id)<<")"<<" "<<right_id<<"("<<old_graph.length(right_id)<<")"<<" "<<pair_inf.d);
+//				DEBUG("too far to correct");
 		return make_pair(false, pair_inf);
 	}
 
 	PairInfo corrected_info = StupidPairInfoCorrectorByOldGraph(new_graph,
 			pair_inf);
-	DEBUG(
+	TRACE(
 			"PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<pair_inf.d<< " corrected into "<<corrected_info.d)
 	if (abs(corrected_info.d - pair_inf.d) > MAX_DISTANCE_CORRECTION) {
-		DEBUG("big correction");
+		TRACE("big correction");
 		return make_pair(false, corrected_info);
 	}
-	if (corrected_info.d - new_graph.length(left_id) > 130) {
-		DEBUG("too far");
-		return make_pair(false, corrected_info);
-	}
+//	if (corrected_info.d - new_graph.length(left_id) > 130) {
+//		DEBUG("too far");
+//		return make_pair(false, corrected_info);
+//	}
 	//todo check correctness. right_id belongs to original graph, not to new_graph.
 	if (corrected_info.d + new_graph.length(right_id) < 110) {
-		DEBUG("too close");
+		TRACE("too close");
 		return make_pair(false, corrected_info);
-	}DEBUG("good");
+	}
+	TRACE("good");
 	return make_pair(true, corrected_info);
 //	return make_pair(true, pair_inf);
 }
@@ -629,7 +670,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 template<class Graph>
 size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 		PairInfoIndexData<EdgeId> &paired_data, VertexId vid) {
-	DEBUG("Generate vertex paired info for:  " << vid);
+	DEBUG("---- Generate vertex paired info for:  " << vid <<" ("<<new_IDs.ReturnIntId(vid) <<") -----------------------------");
 	//	DEBUG(new_graph.conjugate(vid));
 	edge_infos.clear();
 	cheating_edges.clear();
@@ -637,7 +678,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 	edgeIds[0] = new_graph.OutgoingEdges(vid);
 	edgeIds[1] = new_graph.IncomingEdges(vid);
 	vector<set<EdgeId> > paired_edges;
-	DEBUG(edgeIds[0].size()<< "  " << edgeIds[1].size());
+	DEBUG("out: " << edgeIds[0].size()<< "  in:" << edgeIds[1].size());
 	paired_edges.resize(edgeIds[0].size() + edgeIds[1].size());
 //TODO:: extract this optional parameter- direction of resolve?
 //Or due to r-c structure of original graph it doesn't matter?
@@ -647,7 +688,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 	for (int dir = 0; dir < 2; dir++) {
 		for (int i = 0, n = edgeIds[dir].size(); i < n; i++) {
 			PairInfos tmp = paired_di_data.GetEdgeInfos(edgeIds[dir][i]);
-
+			vector<EdgeInfo> tmp_edge_infos;
 			for (int j = 0, sz = tmp.size(); j < sz; j++) {
 				EdgeId right_id = tmp[j].second;
 				EdgeId left_id = tmp[j].first;
@@ -656,7 +697,6 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 				//				if (w < 10) continue;
 				int dif_d = 0;
 				//				if ((d >=new_graph.length(left_id))||(edge_labels[left_id] == right_id ))
-				vector<EdgeInfo> tmp_edge_infos;
 
 				{
 					if ((dir == 1) /*&& (edge_labels[left_id] != right_id)*/) {
@@ -672,16 +712,16 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 //							continue;
 //						}
 
-						DEBUG("PairInfo: " << new_IDs.ReturnIntId(tmp[j].first)<<" "<<old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
+//						DEBUG("PairInfo: " << new_IDs.ReturnIntId(tmp[j].first)<<" "<<old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 
 						pair<bool, PairInfo> correction_result =
 								CorrectedAndNotFiltered(new_graph, tmp[j]);
 						if (!correction_result.first)
 							continue;
-						DEBUG(
-								"PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<tmp[j].d<< "weight" << tmp[j].weight);
-						DEBUG(
-								"PairInfo: " << old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
+//						DEBUG(
+//								"PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<tmp[j].d<< "weight" << tmp[j].weight);
+//						DEBUG(
+//								"PairInfo: " << old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 						EdgeInfo ei(correction_result.second, dir, right_id,
 								correction_result.second.d - dif_d);
 						tmp_edge_infos.push_back(ei);
@@ -690,24 +730,35 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 					}
 
 				}
-				bool NotOnSelfExist = false;
-				for (int j = 0; j < (int)tmp_edge_infos.size(); j++) {
-					if ((tmp_edge_infos[j].lp.weight != 0)||(edge_labels[tmp_edge_infos[j].lp.first] != tmp_edge_infos[j].lp.second)){
-						NotOnSelfExist = true;
-						break;
-					}
+			}
+			bool NotOnSelfExist = false;
+			for (int j = 0; j < (int)tmp_edge_infos.size(); j++) {
+				if ((tmp_edge_infos[j].lp.d != 0)||(edge_labels[tmp_edge_infos[j].lp.first] != tmp_edge_infos[j].lp.second)){
+					NotOnSelfExist = true;
+					break;
 				}
-				for (int j = 0; j < (int)tmp_edge_infos.size(); j++) {
-					if ((!NotOnSelfExist)||(tmp_edge_infos[j].lp.weight != 0)||(edge_labels[tmp_edge_infos[j].lp.first] != tmp_edge_infos[j].lp.second)){
-						edge_infos.push_back(tmp_edge_infos[j]);
-					}
+			}
 
+			for (int j = 0; j < (int)tmp_edge_infos.size(); j++) {
+				if ((!NotOnSelfExist)||(tmp_edge_infos[j].lp.d != 0)||(edge_labels[tmp_edge_infos[j].lp.first] != tmp_edge_infos[j].lp.second)){
+					edge_infos.push_back(tmp_edge_infos[j]);
 				}
-
 
 			}
+
+
+
+
+
 		}
 	}
+
+	for (int j = 0; j < (int)edge_infos.size(); j++) {
+		PairInfo tmp = edge_infos[j].lp;
+		DEBUG("Edge infos "<<j<<":"  << new_IDs.ReturnIntId(tmp.first)<<" ("<<old_IDs.ReturnIntId(edge_labels[tmp.first]) << ") -- " << old_IDs.ReturnIntId(tmp.second) <<" "<< tmp.d << " from vertex: "<<edge_infos[j].d<< " weigth "<<tmp.weight);
+	}
+
+
 	return right_edges.size();
 }
 
@@ -753,8 +804,8 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph)) {
 				neighbours[i].push_back(j);
 				neighbours[j].push_back(i);
-				DEBUG(
-						old_IDs.ReturnIntId(edge_infos[i].lp.second) <<" " << edge_infos[i].d << "is adjacent "<<old_IDs.ReturnIntId( edge_infos[j].lp.second) <<" " << edge_infos[j].d);
+				TRACE(
+						old_IDs.ReturnIntId(edge_infos[i].lp.second) <<" " << edge_infos[i].d << " is adjacent "<<old_IDs.ReturnIntId( edge_infos[j].lp.second) <<" " << edge_infos[j].d);
 
 			}
 		}
@@ -767,6 +818,7 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 			cur_color++;
 		}
 	}
+	DEBUG("Info colors "<<edge_info_colors);
 	MultiSplit(vid);
 	return cur_color;
 }

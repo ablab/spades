@@ -60,15 +60,19 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, i
 		processBlockQuadratic(uf, block);
 	} else {
 		cout << "  making a sub-subkmersorter for blocksize=" << blockSize << endl;
+		for (uint32_t i = 0; i < blockSize; ++i) cout << block[i] << " ";
+		cout << endl;
 		int nthreads_per_subkmer = max( (int)(nthreads_ / (tau_ + 1)), 1);
 		SubKMerSorter subsubsorter( &block, &k_, nthreads_per_subkmer, tau_, cur_subkmer,
-			SubKMerSorter::SorterTypeChequered, SubKMerSorter::SorterTypeStraight );
+			SubKMerSorter::SorterTypeStraight, SubKMerSorter::SorterTypeStraight );
 		subsubsorter.runSort();
-		for (uint32_t sub_i = 0; sub_i < tau_+1; ++sub_i) {
+		for (int sub_i = 0; sub_i < tau_+1; ++sub_i) {
 			vector<hint_t> subblock;
 			while ( subsubsorter.getNextBlock(sub_i, subblock) ) {
 				if (subblock.size() > (BLOCKSIZE_QUADRATIC_THRESHOLD / 2) ) {
 					cout << "    running quadratic on size=" << subblock.size() << endl;
+					for (uint32_t i = 0; i < blockSize; ++i) cout << "    " << subblock[i] << " " << k_[subblock[i]].first.str() << endl;
+					cout << endl;
 				}
 				processBlockQuadratic(uf, subblock);
 			}
@@ -450,7 +454,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 					PositionKMer::pr->push_back(rs);
 
 					PositionKMer pkm(PositionKMer::pr->size()-1, 0);
-					KMerStat kms( 0, KMERSTAT_GOOD );
+					KMerStat kms( 0, KMERSTAT_GOOD, 1 );
 					k_.push_back( make_pair( pkm, kms ) );
 				}
 				v.insert(v.begin(), k_.size() - 1);
@@ -475,28 +479,6 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 			processBlock(uf[i], block, i);
 		}
 
-		/*boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > sub_equal = boost::bind(PositionKMer::equalSubKMers, _1, _2, &k_, tau_, PositionKMer::subKMerPositions->at(i), PositionKMer::subKMerPositions->at(i+1) );
-
-		string sbuf;
-		(*vskpq)[i].initPQ();
-
-		hint_t last = (*vskpq)[i].peekPQ();
-		vector<hint_t> block;
-		size_t j = 0;
-		while (!(*vskpq)[i].emptyPQ()) {
-			hint_t cur = (*vskpq)[i].nextPQ();
-
-			if ( sub_equal(last, cur) ) { //add to current reads
-				block.push_back(cur);
-			} else {
-				processBlock(uf[i], block);
-				block.clear();
-				block.push_back(cur);
-				last = cur;
-			}
-			++j; if ( j % 1000000 == 0 ) cout << "  " << j << " in thread " << i << endl;
-		}
-		processBlock(uf[i], block);*/
 	}
 	TIMEDLN("All split kmer threads finished. Starting merge.");
 	
@@ -507,6 +489,7 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 	vector<vector<int> > classes;
 	ufMaster->get_classes(classes);
 	delete ufMaster;
+
 	vector< vector< vector<int> > > blocks(nthreads_);
 
 	vector< vector< vector<int> > > blocksInPlace(nthreads_);
@@ -519,16 +502,22 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 		for (uint32_t m = 0; m < blocksInPlace[n].size(); ++m) {
 			if (blocksInPlace[n][m].size() == 0) continue;
 			if (blocksInPlace[n][m].size() == 1) {
-				if (k_[blocksInPlace[n][m][0]].second.count > GOOD_SINGLETON_THRESHOLD) {
+				if (k_[blocksInPlace[n][m][0]].second.totalQual > GOOD_SINGLETON_THRESHOLD) {
 					k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
 					#pragma omp critical
 					{
-					(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n> good singleton " << k_[blocksInPlace[n][m][0]].first.start() << "\n";
+					(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n> good singleton "
+					       << k_[blocksInPlace[n][m][0]].first.start() 
+					       << "  cnt=" << k_[blocksInPlace[n][m][0]].second.count 
+					       << "  tql=" << k_[blocksInPlace[n][m][0]].second.totalQual << "\n";
 					}
 				} else {
 					#pragma omp critical
 					{
-					(*ofs_bad) << k_[blocksInPlace[n][m][0]].first.str() << "\n> bad singleton " << k_[blocksInPlace[n][m][0]].first.start() << "\n";
+					(*ofs_bad) << k_[blocksInPlace[n][m][0]].first.str() << "\n> bad singleton " 
+						   << k_[blocksInPlace[n][m][0]].first.start() 
+						   << "  cnt=" << k_[blocksInPlace[n][m][0]].second.count 
+						   << "  tql=" << k_[blocksInPlace[n][m][0]].second.totalQual << "\n";
 					}
 				}
 			} else {

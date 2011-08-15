@@ -121,6 +121,18 @@ public:
 		SetCoverage(newEdge2, coverage2);
 	}
 
+ 	void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) {
+		 DEBUG("HandleMerge by coverage handler");
+ 		 size_t n = newEdges.size();
+		 for(size_t j = 0; j < n; j++) {
+			 EdgeId old_ID = newEdges[j].first;
+			 EdgeId new_ID = newEdges[j].second;
+			 IncCoverage(new_ID, floor(KPlusOneMerCoverage(old_ID)*split_coefficients[j]));
+		 }
+ 	 }
+
+
+
 };
 
 }

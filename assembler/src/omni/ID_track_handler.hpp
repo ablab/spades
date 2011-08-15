@@ -183,7 +183,7 @@ public:
 	}
 
 	virtual std::string label(VertexId vertexId) const {
-		DEBUG("Label for vertex "<<vertexId);
+		TRACE("Label for vertex "<<vertexId);
 		int x = IDs.ReturnIntId(vertexId);
 		//		DEBUG("is "<<x<<" "<<ToString(x));
 		return ToString(x) + ": " + g_.str(vertexId);

@@ -47,7 +47,7 @@ void join_maps(KMerStatMap & v1, const KMerStatMap & v2) {
 			itf->second.count = itf->second.count + it->second.count;
 		} else {
 			PositionKMer pkm = it->first;
-			KMerStat kms( it->second.count, KMERSTAT_GOOD );
+			KMerStat kms( it->second.count, KMERSTAT_GOOD, it->second.totalQual );
 			v1.insert( make_pair( pkm, kms ) );
 		}
 	}
@@ -95,7 +95,6 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 	for(size_t i=0; i < PositionKMer::pr->size(); ++i) {
 		if (PositionKMer::pr->at(i).bad()) continue;
 		AddKMerNos(PositionKMer::pr->at(i), i, &vtmp[omp_get_thread_num()]);
-		//if ( i % 1000000 == 0 ) cout << "Read no. " << i << " processed by thread " << omp_get_thread_num() << "." << endl;
 	}
 	//TIMEDLN("All k-mers added to vectors.");
 	
@@ -278,7 +277,9 @@ void print_time() {
 	cout << setfill('0') << "[ " << setw(2) << ptm->tm_hour << ":" << setw(2) << ptm->tm_min << ":" << setw(2) << ptm->tm_sec << " ] ";
 }
 
-void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthreads) {
+void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int qvoffset, int nthreads) {
+
+	ofstream ofs;
 
 	// find boundaries of the pieces
 	vector< size_t > boundaries(nthreads + 1);
@@ -304,20 +305,23 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 	}
 
 	PriorityQueueElement cur_min = pq.top();
-	KMerCount curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD) );
+	KMerCount curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD, 1) );
 	
 	hint_t kmerno = 0;
+	double curErrorProb = 1;
 
 	while(pq.size()) {
 		const PriorityQueueElement & pqel = pq.top();
 		if ( !(cur_min == pqel) ) {
 			cur_min = pqel;
-			//cout << curKMerCount.first.str() << "\t" << curKMerCount.second.count << endl;
+			curKMerCount.second.totalQual = 1-curErrorProb;
 			kmers->push_back(curKMerCount);
-			curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD) );
-			++kmerno;			
+			curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD, 1 ) );
+			curErrorProb = 1;
+			++kmerno;
 		}
 		curKMerCount.second.count++;
+		curErrorProb *= (1 - PositionKMer::getKMerQuality(pqel.kmerno.index, qvoffset) );
 		PositionKMer::blobkmers[ pqel.kmerno.index ] = kmerno;
 
 		int nn = pqel.n;
@@ -326,7 +330,6 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 		++it_cur;
 		if ( it_cur != it_end[nn] ) pq.push( PriorityQueueElement(*it_cur, nn) );
 	}
-	//cout << curKMerCount.first.str() << "\t" << curKMerCount.second.count << endl;
 	kmers->push_back(curKMerCount);
 }
 

@@ -177,13 +177,15 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
 	typedef typename std::tr1::unordered_map<Kmer, Kmer, typename Kmer::hash> MapType;
 
 	void RemapKmers(const Sequence& old_s, const Sequence& new_s) {
+//		cout << endl << "Mapping " << old_s << " to " << new_s << endl;
 		Kmer old_kmer = old_s.start<k>() >> 0;
 		for (size_t i = k - 1; i < old_s.size(); ++i) {
-			old_kmer << old_s[i];
+			old_kmer = old_kmer << old_s[i];
 			size_t old_kmer_offset = i - k + 1;
 			size_t new_kmer_offest = std::floor(1. * old_kmer_offset / (old_s.size() - k + 1) * (new_s.size() - k + 1) + 0.5);
 			Kmer new_kmer(new_s, new_kmer_offest);
 			mapping_[old_kmer] = new_kmer;
+//			cout << "Kmer " << old_kmer << " mapped to " << new_kmer << endl;
 		}
 	}
 
@@ -199,11 +201,11 @@ public:
 	}
 
 	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		assert(this->g().GetNucls(new_edge) == this->g().GetNucls(edge2));
-		RemapKmers(this->g().GetNucls(edge1), this->g().GetNucls(edge2));
+		assert(this->g().EdgeNucls(new_edge) == this->g().EdgeNucls(edge2));
+		RemapKmers(this->g().EdgeNucls(edge1), this->g().EdgeNucls(edge2));
 	}
 
-	Kmer Substitute(const Kmer& kmer) {
+	Kmer Substitute(const Kmer& kmer) const {
 		Kmer answer = kmer;
 		auto it = mapping_.find(answer);
 		while (it != mapping_.end()) {
@@ -310,7 +312,6 @@ public:
 
 };
 
-//todo optimize if needed
 template<size_t k, class Graph>
 class ExtendedSequenceMapper {
 public:
@@ -324,7 +325,6 @@ private:
 	const Graph& g_;
 	const Index& index_;
 	const KmerSubs& kmer_mapper_;
-	bool glue_across_gap_;
 
 	void FindKmer(Kmer kmer, size_t kmer_pos, vector<EdgeId> &passed,
 			RangeMappings& range_mappings) const {
@@ -358,6 +358,9 @@ public:
 		vector<EdgeId> passed_edges;
 		RangeMappings range_mapping;
 
+		if (sequence.size() < k) {
+			return MappingPath<EdgeId>();
+		}
 		assert(sequence.size() >= k);
 		Kmer kmer = sequence.start<k>() >> 0;
 		for (size_t i = k - 1; i < sequence.size(); ++i) {
@@ -368,8 +371,106 @@ public:
 	}
 };
 
+//todo compare performance
 template<size_t k, class Graph>
-class EtalonPairedInfoCounter {
+class NewExtendedSequenceMapper {
+public:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef vector<MappingRange> RangeMappings;
+	typedef Seq<k> Kmer;
+	typedef EdgeIndex<k, Graph> Index;
+	typedef KmerMapper<k, Graph> KmerSubs;
+
+private:
+	const Graph& g_;
+	const Index& index_;
+	const KmerSubs& kmer_mapper_;
+
+	bool FindKmer(Kmer kmer, size_t kmer_pos, vector<EdgeId> &passed,
+			RangeMappings& range_mappings) const {
+		if (index_.containsInIndex(kmer)) {
+			pair<EdgeId, size_t> position = index_.get(kmer);
+			if (passed.empty() || passed.back() != position.first
+					|| kmer_pos != range_mappings.back().initial_range.end_pos
+					|| position.second + 1 < range_mappings.back().mapped_range.end_pos) {
+				passed.push_back(position.first);
+				range_mappings.push_back(MappingRange(Range(kmer_pos, kmer_pos + 1), Range(position.second, position.second + 1)));
+			} else {
+				range_mappings.back().initial_range.end_pos = kmer_pos + 1;
+				range_mappings.back().mapped_range.end_pos = position.second + 1;
+			}
+			return true;
+		}
+		return false;
+	}
+
+	bool TryThread(const Kmer& kmer, size_t kmer_pos, vector<EdgeId> &passed,
+			RangeMappings& range_mappings) const {
+		range_mappings.back().initial_range.end_pos++;
+		EdgeId last_edge = passed.back();
+		size_t end_pos = range_mappings.back().mapped_range.end_pos;
+		if (end_pos < g_.length(last_edge)) {
+			if (g_.EdgeNucls(last_edge)[end_pos + k - 1] == kmer[k - 1]) {
+				range_mappings.back().mapped_range.end_pos++;
+				return true;
+			}
+		} else {
+			vector<EdgeId> edges = g_.OutgoingEdges(g_.EdgeEnd(last_edge));
+			for (size_t i = 0; i < edges.size(); i++) {
+				if (g_.EdgeNucls(edges[i])[k - 1] == kmer[k - 1]) {
+					passed.push_back(edges[i]);
+					range_mappings.push_back(MappingRange(Range(kmer_pos, kmer_pos + 1), Range(0, 1)));
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	bool Substitute(Kmer& kmer) {
+		Kmer subs = kmer_mapper_.Substitute();
+		if (subs != kmer) {
+			kmer = subs;
+			return true;
+		}
+		return false;
+	}
+
+	bool ProcessKmer(Kmer kmer, size_t kmer_pos, vector<EdgeId> &passed_edges, RangeMappings& range_mapping, bool try_thread) const {
+		if (!Substitute(kmer)) {
+			if (try_thread) {
+				return TryThread(kmer, kmer_pos, passed_edges, range_mapping);
+			} else {
+				return FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
+			}
+		} else {
+			FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
+			return false;
+		}
+	}
+
+public:
+	NewExtendedSequenceMapper(const Graph& g, const Index& index, const KmerSubs& kmer_mapper) :
+			g_(g), index_(index), kmer_mapper_(kmer_mapper) {
+	}
+
+	MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
+		vector<EdgeId> passed_edges;
+		RangeMappings range_mapping;
+
+		assert(sequence.size() >= k);
+		Kmer kmer = sequence.start<k>() >> 0;
+		bool try_thread = false;
+		for (size_t i = k - 1; i < sequence.size(); ++i) {
+			kmer = kmer << sequence[i];
+			try_thread = ProcessKmer(kmer, i - k + 1, passed_edges, range_mapping, try_thread);
+		}
+		return MappingPath<EdgeId>(passed_edges, range_mapping);
+	}
+};
+
+template<size_t k, class Graph>
+class OldEtalonPairedInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;
 
 	const Graph& g_;
@@ -439,7 +540,7 @@ class EtalonPairedInfoCounter {
 
 public:
 
-	EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<k + 1, Graph>& index
+	OldEtalonPairedInfoCounter(const Graph& g, const EdgeIndex<k + 1, Graph>& index
 			, size_t insert_size, size_t read_length, size_t delta) :
 			g_(g), index_(index), insert_size_(insert_size), read_length_(
 					read_length), gap_(insert_size_ - 2 * read_length_), delta_(
@@ -457,7 +558,7 @@ public:
 };
 
 template<size_t k, class Graph>
-class NewEtalonPairedInfoCounter {
+class EtalonPairedInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;
 
 	const Graph& g_;
@@ -502,7 +603,7 @@ class NewEtalonPairedInfoCounter {
 
 public:
 
-	NewEtalonPairedInfoCounter(const Graph& g, const EdgeIndex<k + 1, Graph>& index
+	EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<k + 1, Graph>& index
 			, size_t insert_size, size_t read_length, size_t delta) :
 			g_(g), index_(index), insert_size_(insert_size), read_length_(
 					read_length), gap_(insert_size_ - 2 * read_length_), delta_(
@@ -522,96 +623,6 @@ public:
 	}
 };
 
-template<class Graph, size_t k>
-class GenomeMappingStat: public omnigraph::AbstractStatCounter {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	Graph &graph_;
-	const EdgeIndex<k + 1, Graph>& index_;
-	Sequence genome_;
-public:
-	GenomeMappingStat(Graph &graph, const EdgeIndex<k + 1, Graph> &index,
-	Sequence genome) :
-			graph_(graph), index_(index), genome_(genome) {
-	}
-
-	virtual ~GenomeMappingStat() {
-	}
-
-	virtual void Count() {
-		INFO("Mapping genome");
-		size_t break_number = 0;
-		size_t covered_kp1mers = 0;
-		size_t fail = 0;
-		Seq<k + 1> cur = genome_.start<k + 1>() >> 0;
-		bool breaked = true;
-		pair<EdgeId, size_t> cur_position;
-		for (size_t cur_nucl = k; cur_nucl < genome_.size(); cur_nucl++) {
-			cur = cur << genome_[cur_nucl];
-			if (index_.containsInIndex(cur)) {
-				pair<EdgeId, size_t> next = index_.get(cur);
-				if (!breaked
-						&& cur_position.second + 1
-								< graph_.length(cur_position.first)) {
-					if (next.first != cur_position.first
-							|| cur_position.second + 1 != next.second) {
-						fail++;
-					}
-				}
-				cur_position = next;
-				covered_kp1mers++;
-				breaked = false;
-			} else {
-				if (!breaked) {
-					breaked = true;
-					break_number++;
-				}
-			}
-		}INFO("Genome mapped");
-		INFO("Genome mapping results:");
-		INFO(
-				"Covered k+1-mers:" << covered_kp1mers << " of " << (genome_.size() - k) << " which is " << (100.0 * covered_kp1mers / (genome_.size() - k)) << "%");
-		INFO(
-				"Covered k+1-mers form " << break_number + 1 << " contigious parts");
-		INFO("Continuity failtures " << fail);
-	}
-};
-
-template<class Graph, size_t k>
-class StatCounter: public omnigraph::AbstractStatCounter {
-private:
-	omnigraph::StatList stats_;
-public:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-
-	StatCounter(Graph& graph, const EdgeIndex<k + 1, Graph>& index,
-	const Sequence& genome) {
-		SimpleSequenceMapper<k + 1, Graph> sequence_mapper(graph, index);
-		Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
-		Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
-		stats_.AddStat(new omnigraph::VertexEdgeStat<Graph>(graph));
-		stats_.AddStat(
-				new omnigraph::BlackEdgesStat<Graph>(graph, path1, path2));
-		stats_.AddStat(new omnigraph::NStat<Graph>(graph, path1, 50));
-		stats_.AddStat(new omnigraph::SelfComplementStat<Graph>(graph));
-		stats_.AddStat(
-				new GenomeMappingStat<Graph, k>(graph, index,
-						Sequence(genome)));
-	}
-
-	virtual ~StatCounter() {
-		stats_.DeleteStats();
-	}
-
-	virtual void Count() {
-		stats_.Count();
-	}
-
-private:
-	DECL_LOGGER("StatCounter")
-};
-
 /**
  * As for now it ignores sophisticated case of repeated consecutive
  * occurrence of edge in path due to gaps in mapping
@@ -623,7 +634,7 @@ class ReadCountPairedIndexFiller {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef Seq<k> Kmer;
-	Graph &graph_;
+	const Graph& graph_;
 	const ExtendedSequenceMapper<k, Graph>& mapper_;
 	Stream& stream_;
 
@@ -632,13 +643,16 @@ private:
 	}
 
 	void ProcessPairedRead(
-			omnigraph::PairedInfoIndex<Graph> &paired_index,
+			omnigraph::PairedInfoIndex<Graph>& paired_index,
 			const io::PairedRead& p_r) {
+//		static size_t count = 0;
 		Sequence read1 = p_r.first().sequence();
 		Sequence read2 = p_r.second().sequence();
 
 		MappingPath<EdgeId> path1 = mapper_.MapSequence(read1);
+//		cout << "Path1 length " << path1.size() << endl;
 		MappingPath<EdgeId> path2 = mapper_.MapSequence(read2);
+//		cout << "Path2 length " << path2.size() << endl;
 		size_t read_distance = CountDistance(p_r);
 		for (size_t i = 0; i < path1.size(); ++i) {
 			pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
@@ -646,9 +660,15 @@ private:
 				pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
 				double weight = 1;
 				size_t kmer_distance = read_distance + mapping_edge_2.second.initial_range.start_pos - mapping_edge_1.second.initial_range.start_pos;
-				size_t edge_distance = kmer_distance + mapping_edge_1.second.mapped_range.start_pos - mapping_edge_2.second.mapped_range.start_pos;
-				PairInfo<EdgeId> new_info(mapping_edge_1.first, mapping_edge_2.second, edge_distance, weight);
-				paired_index.AddPairInfo(new_info);
+				int edge_distance = kmer_distance + mapping_edge_1.second.mapped_range.start_pos - mapping_edge_2.second.mapped_range.start_pos;
+
+//				cout << PairInfo<EdgeId>(mapping_edge_1.first, mapping_edge_2.first, (double) edge_distance, weight, 0.) << endl;
+//				cout << "here2" << endl;
+				paired_index.AddPairInfo(PairInfo<EdgeId>(mapping_edge_1.first, mapping_edge_2.first, (double) edge_distance, weight, 0.));
+//				count++;
+//				if (count == 1000) {
+//					exit(0);
+//				}
 			}
 		}
 	}
@@ -660,9 +680,10 @@ public:
 
 	}
 
-	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+	void FillIndex(omnigraph::PairedInfoIndex<Graph>& paired_index) {
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0));
+//			cout << "here1" << endl;
+			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
 		}
 		stream_.reset();
 		while (!stream_.eof()) {
@@ -673,7 +694,6 @@ public:
 	}
 
 };
-
 
 /**
  * This class finds how certain _paired_ read is mapped to genome. As it is now it is hoped to work correctly only if read
