@@ -390,7 +390,9 @@ private:
 				/ newWeight;
 		if (info1.first == info1.second && (info1.d == 0 || info2.d == 0)) {
 			newD = 0;
-			newWeight += info2.weight;
+			//TODO
+			//newWeight += info2.weight;
+			//INFO("In merge: weight was " << info1.weight << ", + " << info2.weight << " = " << newWeight);
 		}
 		data_.UpdateInfo(info1, newD, newWeight);
 	}
@@ -626,7 +628,7 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef Seq<k> Kmer;
 
-	Graph &graph_;
+	const Graph &graph_;
 	const SequenceMapper& mapper_;
 	Stream& stream_;
 
@@ -669,7 +671,7 @@ private:
 
 public:
 
-	PairedIndexFiller(Graph &graph, const SequenceMapper& mapper, Stream& stream) :
+	PairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, Stream& stream) :
 			graph_(graph), mapper_(mapper), stream_(stream) {
 
 	}

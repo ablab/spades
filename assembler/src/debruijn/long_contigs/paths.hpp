@@ -48,6 +48,13 @@ double GetWeight(omnigraph::PairedInfoIndex<Graph>::PairInfos pairs, int distanc
 
 	for (auto iter = pairs.begin(); iter != pairs.end(); ++iter) {
 		int pairedDistance = rounded_d(*iter);
+
+		if (LC_CONFIG.read<int>("use_delta_first")) {
+			if (iter->variance != 0) {
+				distanceDev = iter->variance;
+			}
+		}
+
 		//Can be modified according to distance comparison
 		if (pairedDistance >= distance - distanceDev &&
 				pairedDistance <= distance + distanceDev) {

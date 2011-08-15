@@ -24,11 +24,12 @@ template<class Graph, size_t k>
 class GenomeMappingStat: public omnigraph::AbstractStatCounter {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-	Graph &graph_;
+	const Graph &graph_;
 	const EdgeIndex<k + 1, Graph>& index_;
 	Sequence genome_;
 public:
-	GenomeMappingStat(Graph &graph, const EdgeIndex<k + 1, Graph> &index,
+	GenomeMappingStat(const Graph &graph, const EdgeIndex<k + 1, Graph> &index,
+
 	Sequence genome) :
 			graph_(graph), index_(index), genome_(genome) {
 	}
@@ -83,7 +84,7 @@ public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
-	StatCounter(Graph& graph, const EdgeIndex<k + 1, Graph>& index,
+	StatCounter(const Graph& graph, const EdgeIndex<k + 1, Graph>& index,
 	const Sequence& genome) {
 		SimpleSequenceMapper<k + 1, Graph> sequence_mapper(graph, index);
 		Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
@@ -298,7 +299,6 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		CurPos += g.length(ei);
 	}
 }
-
 
 }
 
