@@ -83,8 +83,6 @@ void AddKMerNos(const PositionRead &r, hint_t readno, vector<KMerNo> *v) {
 void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, vector<KMerNo> * vv) {
 	vv->clear();
 
-	// TODO: think about a parallelization -- for some reason, the previous version started producing segfaults
-
 	vector< vector<KMerNo> > vtmp;
 	for(int n=0; n < nthreads; ++n) {
 		vector<KMerNo> v_cur;
@@ -96,7 +94,6 @@ void DoPreprocessing(int tau, int qvoffset, string readsFilename, int nthreads, 
 		if (PositionKMer::pr->at(i).bad()) continue;
 		AddKMerNos(PositionKMer::pr->at(i), i, &vtmp[omp_get_thread_num()]);
 	}
-	//TIMEDLN("All k-mers added to vectors.");
 	
 	for(int n=0; n < nthreads; ++n) {
 		vv->insert(vv->end(), vtmp[n].begin(), vtmp[n].end());
@@ -117,7 +114,6 @@ void DoSplitAndSort(int tau, int nthreads, vector< vector<hint_t> > * vs, vector
 
 	for (int j=0; j < tau+1; ++j) {
 		SubKMerCompType sort_routine = boost::bind(SubKMerPQElement::compareSubKMerPQElements, _1, _2, kmers, tau, PositionKMer::subKMerPositions->at(j), PositionKMer::subKMerPositions->at(j+1));
-		//SubKMerCompType sort_routine = boost::bind(SubKMerPQElement::compareSubKMerPQElementsCheq, _1, _2, kmers, tau, j);
 		SubKMerPQ skpq( &(vs->at(j)), max( (int)(nthreads / (tau + 1)), 1), sort_routine );
 		vskpq->push_back(skpq);
 	}
@@ -127,11 +123,9 @@ void DoSplitAndSort(int tau, int nthreads, vector< vector<hint_t> > * vs, vector
 	#pragma omp parallel for shared(vs, vskpq) num_threads( effective_subkmer_threads )
 	for (int j=0; j < subkmer_nthreads; ++j) {
 		// for each j, we sort subvector (j/(tau+1)) of the vector of subkmers at offset (j%(tau+1))
-		//boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > sub_sort = boost::bind(PositionKMer::compareSubKMers, _1, _2, kmers, tau, PositionKMer::subKMerPositions->at(j % (tau+1)), PositionKMer::subKMerPositions->at((j % (tau+1))+1));
 		boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > sub_sort = boost::bind(PositionKMer::compareSubKMers, _1, _2, kmers, tau, PositionKMer::subKMerPositions->at(j % (tau+1)), PositionKMer::subKMerPositions->at((j % (tau+1))+1));
 		(*vskpq)[ (j % (tau+1)) ].doSort( j / (tau+1), sub_sort );
 	}
-	//cout << "Auxiliary subvectors sorted and sent to priority queues." << endl;
 }
 
 
@@ -289,6 +283,7 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int qvof
 	}
 	boundaries[nthreads] = v->size();
 
+
 	#pragma omp parallel for shared(v, boundaries) num_threads(nthreads)
 	for (int j = 0; j < nthreads; ++j) {
 		sort(v->begin() + boundaries[j], v->begin() + boundaries[j+1], KMerNo::less);
@@ -330,6 +325,7 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int qvof
 		++it_cur;
 		if ( it_cur != it_end[nn] ) pq.push( PriorityQueueElement(*it_cur, nn) );
 	}
+	curKMerCount.second.totalQual = 1-curErrorProb;
 	kmers->push_back(curKMerCount);
 }
 

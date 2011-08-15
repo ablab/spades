@@ -22,12 +22,14 @@
 
 using namespace std;
 
+struct Globals {
+	static double error_rate;
+	static int blocksize_quadratic_threshold;
+	static double good_cluster_threshold;
+	static double blob_margin;
+};
+
 #define MAX_INT_64 1000000000000000000
-#define READ_BATCH_SIZE 10000000
-#define ERROR_RATE 0.01
-#define BLOCKSIZE_QUADRATIC_THRESHOLD 100
-#define GOOD_SINGLETON_THRESHOLD 0.95
-#define CONSENSUS_BLOB_MARGIN 0.25
 
 #define TIMEDLN(a) print_time(); cout << a << endl
 
