@@ -30,7 +30,10 @@ if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   add_definitions(-D_GLIBCXX_DEBUG)
 else()
   message("Making Release Configuration...")
-  add_definitions(-o2 -DNDEBUG)
+  add_definitions(-o2)
+  
+  #temporarily turned off to run our assembler on large datasets
+  #add_definitions(-DNDEBUG)
 endif()
 
 
