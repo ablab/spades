@@ -7,7 +7,7 @@
 #include <fstream>
 
 #include "kmer_stat.hpp"
-
+#include "globals.hpp"
 
 class PositionRead {
 	hint_t start_;
@@ -32,7 +32,7 @@ class PositionRead {
 	const std::string & getSequenceString() const;
 	std::string getPhredQualityString(int offset) const;
 
-	void print(ofstream & ofs, int offset) const;
+	void print(ofstream & ofs, int offset = Globals::qvoffset) const;
 
 };
 

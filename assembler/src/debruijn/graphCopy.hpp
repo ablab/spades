@@ -9,7 +9,7 @@
 
 #include "logging.hpp"
 #include "paired_info.hpp"
-#include "config.hpp"
+#include "config_struct.hpp"
 #include "omni_utils.hpp"
 
 #include "omni_tools.hpp"

@@ -33,7 +33,12 @@ class PositionKMer {
 	static std::vector<PositionRead> * pr;
 	static std::vector<Read> * rv;
 	static std::vector<bool> * rv_bad;
+	static std::vector<Read> * rvLeft;
+	static std::vector<Read> * rvRight;
+	static std::vector<Read> * rvLeft_bad;
+	static std::vector<Read> * rvRight_bad;
 	static hint_t revNo;
+	static hint_t lastLeftNo;
 
 	static char* blob;
 	static char* blobquality;
