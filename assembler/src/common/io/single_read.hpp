@@ -214,6 +214,10 @@ class SingleRead {
     }
   }
 
+  void ClearQuality() {
+	  qual_ = std::string(seq_.size(), (char) 0);
+  }
+
  private:
   /*
    * @variable The name of SingleRead in input file.
