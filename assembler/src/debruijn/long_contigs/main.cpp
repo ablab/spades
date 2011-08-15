@@ -9,6 +9,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "../config_struct.hpp"
+#include "simple_tools.hpp"
+
 #include "lc_common.hpp"
 #include "lc_io.hpp"
 #include "seeds.hpp"
@@ -16,7 +19,7 @@
 #include "quality.hpp"
 #include "visualize.hpp"
 
-#include "simple_tools.hpp"
+
 
 namespace {
 
@@ -36,6 +39,7 @@ std::string MakeLaunchTimeDirName() {
 DECL_PROJECT_LOGGER("d")
 
 int main() {
+	cfg::create_instance(CONFIG_FILENAME);
 	using namespace long_contigs;
 
 	checkFileExistenceFATAL(LC_CONFIG_FILENAME);
@@ -52,8 +56,8 @@ int main() {
 	std::vector<BidirectionalPath> rawSeeds;
 	std::vector<BidirectionalPath> paths;
 
-	std::string dataset = CONFIG.read<string>("dataset");
-	string output_root = CONFIG.read<string>("output_dir");
+	std::string dataset = cfg::get().dataset_name;
+	string output_root = cfg::get().output_dir;
 	string output_dir_suffix = MakeLaunchTimeDirName()+ "." + dataset + "/";
 	string output_dir = output_root + output_dir_suffix;
 
@@ -72,7 +76,7 @@ int main() {
 	PairedInfoIndexLibrary basicPairedLib(LC_CONFIG.read<size_t>("read_size"), LC_CONFIG.read<size_t>("insert_size"), &pairedIndex);
 	pairedInfos.push_back(basicPairedLib);
 
-	if (CONFIG.read<bool>("etalon_info_mode")) {
+	if (cfg::get().etalon_info_mode) {
 		AddEtalonInfo<K>(g, index, sequence, pairedInfos);
 	} else {
 		AddRealInfo<K>(g, index, intIds, pairedInfos);
@@ -129,7 +133,7 @@ int main() {
 		OutputPathsAsContigs(g, result, output_dir + "paths.contigs");
 	}
 
-	if (!CONFIG.read<bool>("etalon_info_mode") && LC_CONFIG.read<bool>("write_real_paired_info")) {
+	if (!cfg::get().etalon_info_mode && LC_CONFIG.read<bool>("write_real_paired_info")) {
 		SavePairedInfo(g, pairedInfos, intIds, output_dir + LC_CONFIG.read<std::string>("paired_info_file_prefix"));
 	}
 

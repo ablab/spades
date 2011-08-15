@@ -20,6 +20,7 @@ using namespace debruijn_graph;
 //If a start of another trivial path is found, returns it
 //Otherwise returns 0
 EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, const std::map<EdgeId, BidirectionalPath>& starts) {
+	static bool glueSeeds = LC_CONFIG.read<bool>("glue_seeds");
 	if (path.empty()) {
 		return 0;
 	}
@@ -28,7 +29,7 @@ EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, const std::map<Ed
 	while (g.CheckUniqueOutgoingEdge(currentVertex)) {
 		EdgeId nextEdge = g.GetUniqueOutgoingEdge(currentVertex);
 
-		if (starts.count(nextEdge) != 0) {
+		if (glueSeeds && starts.count(nextEdge) != 0) {
 			return nextEdge;
 		}
 
@@ -73,7 +74,6 @@ void JoinPaths(BidirectionalPath& path1, BidirectionalPath& path2) {
 
 //Find all seeds as trivial paths
 void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
-	//std::set<EdgeId> visited;
 	std::map<EdgeId, BidirectionalPath> starts;
 	int count = 0;
 
@@ -82,27 +82,19 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 		count++;
 		EdgeId e = *iter;
 
-		//Try to make seed starting from unvisited edge
-		//if (visited.count(e) == 0) {
-			//visited.insert(e);
+		starts[e] = BidirectionalPath();
+		BidirectionalPath& newPath = starts[e];
+		newPath.push_back(e);
 
-			starts[e] = BidirectionalPath();
-			BidirectionalPath& newPath = starts[e];
-			newPath.push_back(e);
+		//Extend trivially
+		EdgeId nextStart = ExtendTrivialForward(g, newPath, starts);
 
-			//Extend trivially
-			EdgeId nextStart = ExtendTrivialForward(g, newPath, starts);
-//			for (auto edgeInPath = newPath.begin(); edgeInPath != newPath.end(); ++edgeInPath) {
-//				visited.insert(*edgeInPath);
-//			}
-
-			//If extended till another seed, than concatenate them
-			if (nextStart != 0) {
-				//INFO("Join paths");
-				JoinPaths(newPath, starts[nextStart]);
-				starts.erase(nextStart);
-			}
-		//}
+		//If extended till another seed, than concatenate them
+		if (nextStart != 0) {
+			//INFO("Join paths");
+			JoinPaths(newPath, starts[nextStart]);
+			starts.erase(nextStart);
+		}
 	}
 
 	//Debug part

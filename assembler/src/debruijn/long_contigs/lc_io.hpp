@@ -14,12 +14,12 @@ template<size_t k>
 void LoadFromFile(std::string fileName, Graph& g,  PairedInfoIndex<Graph>& paired_index, EdgeIndex<k + 1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds,
 		Sequence& sequence) {
 
-	string input_dir = CONFIG.read<string>("input_dir");
-	string dataset = CONFIG.read<string>("dataset");
+	string input_dir = cfg::get().input_dir;
+	string dataset = cfg::get().dataset_name;
 	string genome_filename = input_dir
-			+ CONFIG.read<string>("reference_genome");
+			+ cfg::get().reference_genome;
 	checkFileExistenceFATAL(genome_filename);
-	int dataset_len = CONFIG.read<int>(dataset + "_LEN");
+	int dataset_len = cfg::get().ds.LEN;
 
 	typedef io::Reader<io::SingleRead> ReadStream;
 	typedef io::Reader<io::PairedRead> PairedReadStream;
@@ -63,7 +63,7 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 		std::string num = ToString<size_t>(i);
 		size_t insertSize = LC_CONFIG.read<size_t>("real_insert_size_" + num);
 		size_t readSize = LC_CONFIG.read<size_t>("real_read_size_" + num);
-		string dataset = CONFIG.read<string>("dataset");
+		string dataset = cfg::get().dataset_name;
 		pairedInfos.push_back(PairedInfoIndexLibrary(readSize, insertSize, new PairedInfoIndex<Graph>(g, 0)));
 
 		INFO("Reading additional info with read size " << readSize << ", insert size " << insertSize);
@@ -102,7 +102,20 @@ void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Gra
 	DataPrinter<Graph> dataPrinter(g, old_IDs);
 	for (auto lib = pairedInfos.begin(); lib != pairedInfos.end(); ++lib) {
 		std::string fileName = fileNamePrefix + "IS" + ToString(lib->insertSize) + "_RS" + ToString(lib->readSize);
-		dataPrinter.savePaired(fileName, *lib->pairedInfoIndex);
+
+		if (LC_CONFIG.read<bool>("cluster_paired_info")) {
+			PairedInfoIndex<Graph> clustered_index(g);
+			DistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), lib->insertSize, lib->readSize, cfg::get().de.delta,
+					cfg::get().de.linkage_distance,
+					cfg::get().de.max_distance);
+			estimator.Estimate(clustered_index);
+
+			dataPrinter.savePaired(fileName, clustered_index);
+		} else {
+			dataPrinter.savePaired(fileName, *(lib->pairedInfoIndex));
+		}
+
+
 	}
 	INFO("Saved");
 }

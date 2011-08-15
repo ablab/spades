@@ -78,7 +78,7 @@ double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, 
 	size_t start = forward ? 0 : edgesToExclude;
 	size_t end = forward ? path.size() - edgesToExclude : path.size();
 
-	static int DISTANCE_DEV = CONFIG.read<bool>("etalon_info_mode") ? LC_CONFIG.read<int>("etalon_distance_dev") : LC_CONFIG.read<int>("real_distance_dev");
+	static int DISTANCE_DEV = cfg::get().etalon_info_mode ? LC_CONFIG.read<int>("etalon_distance_dev") : LC_CONFIG.read<int>("real_distance_dev");
 
 	for(size_t i = start; i < end; ++i) {
 		EdgeId edge = path[i];

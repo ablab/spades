@@ -16,7 +16,6 @@
 #include "../launch.hpp"
 #include "logging.hpp"
 #include "../new_debruijn.hpp"
-#include "../config.hpp"
 
 #include "lc_config.hpp"
 
