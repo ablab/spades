@@ -9,7 +9,7 @@
 #include <algorithm>
 #include "io/single_read.hpp"
 #include "logging.hpp"
-#include "config.hpp"
+#include "config_struct.hpp"
 #include "omni_utils.hpp"
 #include "omni_tools.hpp"
 #include "omnigraph.hpp"
