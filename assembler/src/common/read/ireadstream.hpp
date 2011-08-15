@@ -65,10 +65,9 @@ public:
 		return res;
 	}
 
-	static vector<Read>* readAllNoValidation(string filename, uint64_t * totalsize, int qvoffset = Read::PHRED_OFFSET, int cnt = -1) {
+	static void readAllNoValidation(vector<Read>* res, string filename, uint64_t * totalsize, int qvoffset = Read::PHRED_OFFSET, int cnt = -1) {
 		ireadstream irs(filename, qvoffset);
 		assert(irs.is_open());
-		vector<Read>* res = new vector<Read>();
 		*totalsize = 0;
 		Read r;
 		while (cnt-- && irs.is_open() && !irs.eof()) {
@@ -77,7 +76,6 @@ public:
 			*totalsize += r.getSequenceString().size();
 		}
 		irs.close();
-		return res;
 	}
 	
 	ireadstream& operator>>(Read &r) {
