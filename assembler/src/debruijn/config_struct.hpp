@@ -10,7 +10,7 @@
 
 #include "config_common.hpp"
 
-const char* const CONFIG_FILENAME = "./src/debruijn/config.inp";
+const char* const CONFIG_FILENAME = "./src/debruijn/config.info";
 const size_t K = 55; // must be odd (so there is no k-mer which is equal to it's reverse-complimentary k-mer)
 
 // struct for debruijn project's configuration file
