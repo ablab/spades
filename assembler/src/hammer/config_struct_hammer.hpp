@@ -28,6 +28,10 @@ struct hammer_config
 	std::string blob;
 	std::string kmers;
 
+	bool paired_reads;
+	std::string reads_left;
+	std::string reads_right;
+
 	double error_rate;
 	int blocksize_quadratic_threshold;
 	double good_cluster_threshold;
@@ -45,6 +49,12 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 	load(pt, "num_threads", cfg.num_threads);
 	load(pt, "num_iterations", cfg.num_iterations);
 	load(pt, "quality_offset", cfg.quality_offset);
+
+	load(pt, "paired_reads", cfg.paired_reads);
+	if ( cfg.paired_reads ) {
+		load(pt, "reads_left", cfg.reads_left);
+		load(pt, "reads_right", cfg.reads_right);
+	}
 
 	load(pt, "read_blob_and_kmers", cfg.read_blob_and_kmers);
 	load(pt, "write_blob_and_kmers", cfg.write_blob_and_kmers);
