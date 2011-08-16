@@ -66,7 +66,7 @@ struct PairInfo {
 		const PairInfo &lhs = *this;
 		return lhs.first == rhs.first
 				? lhs.second == rhs.second
-						? math::le(lhs.d, rhs.d)
+						? math::ls(lhs.d, rhs.d)
 						: lhs.second < rhs.second
 				: lhs.first < rhs.first;
 	}
