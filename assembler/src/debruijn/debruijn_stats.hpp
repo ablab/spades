@@ -307,8 +307,12 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	for (int cur = 0, c = 1; !irs.eof(); c++) {
 		io::SingleRead read;
 		irs >> read;
-		INFO(read.size());
+		DEBUG("Length: " << read.size());
 		read.ClearQuality();
+		if (!read.IsValid()) {
+			WARN("Contig #" << c << " contains Ns");
+			continue;
+		}
 		Sequence contig = read.sequence();
 		if (contig.size() < 50000) {
 			continue;
@@ -320,7 +324,9 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 			edgesPos.AddEdgePosition(ei, cur + 1, cur + g.length(ei));
 			cur += g.length(ei);
 		}
-		cur += 10000000;
+		cur /= 10000000;
+		cur++;
+		cur *= 10000000;
 	}
 }
 
