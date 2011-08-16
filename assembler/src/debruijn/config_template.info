@@ -19,9 +19,9 @@ from_saved_graph	0 ; not used(?)
 entry_point		simplification
 ;	construction, pair_info_counting, simplification, distance_estimation, repeat_resolving, consensus
 
-;start_from begin   ; Full run.
+start_from begin   ; Full run.
 ;start_from after_filling  ; Run with previous constructed graph.
-start_from after_simplify  ; Run with previous constructed and simplified graph.
+;start_from after_simplify  ; Run with previous constructed and simplified graph.
 
 
 
