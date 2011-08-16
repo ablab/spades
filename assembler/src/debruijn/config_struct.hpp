@@ -90,10 +90,10 @@ void load(boost::property_tree::ptree const& pt, debruijn_config::tip_clipper& t
 	load(pt, "max_relative_coverage", tc.max_relative_coverage);
 }
 
-void load(boost::property_tree::ptree const& pt, debruijn_config::working_stage& entry_point)
+void load(boost::property_tree::ptree const& pt, std::string const&, debruijn_config::working_stage& entry_point)
 {
-	std::string s;
-	load(pt, "entry_point", s);
+	std::string s = pt.get<std::string>("entry_point");
+
 	if (s == "construction") {
 		entry_point = debruijn_config::working_stage::construction;
 	}
@@ -148,7 +148,7 @@ void load(boost::property_tree::ptree const& pt, debruijn_config::dataset& ds)
 void load(boost::property_tree::ptree const& pt, debruijn_config& cfg)
 {
 	// input options:
-//	load(pt, "entry_point", cfg.entry_point);
+	load(pt, "entry_point", cfg.entry_point);
 	load(pt, "input_dir", cfg.input_dir);
 	load(pt, "output_dir", cfg.output_dir);
 	load(pt, "dataset", cfg.dataset_name);
