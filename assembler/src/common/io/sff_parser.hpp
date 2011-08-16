@@ -40,7 +40,7 @@ class SffParser : public Parser {
    */
   SffParser(const std::string& filename,
          int offset = SingleRead::PHRED_OFFSET)
-      :Parser(filename, offset), read_(NULL) {
+      :Parser(filename, offset), read_() {
     open();
   }
 
@@ -62,9 +62,9 @@ class SffParser : public Parser {
     if (!is_open_ || eof_) {
       return *this;
     }
-    read.SetName(read_.name());
-    read.SetQuality(read_.GetQualityString());
-    read.SetSequence(read_.GetSequenceString());
+    read.SetName(read_.name().c_str());
+    read.SetQuality(read_.GetQualityString().c_str());
+    read.SetSequence(read_.GetSequenceString().c_str());
     ReadAhead();
     return *this;
   }
@@ -74,34 +74,32 @@ class SffParser : public Parser {
    */
   /* virtual */ void close() {
     if (is_open_) {
-      free_sff_common_header(&h_);
+      free_sff_common_header(h_);
       is_open_ = false;
       eof_ = true;
     }
   }
 
  private:
-  sff_common_header h_;
-  sff_read_header rh_;
-  sff_read_data rd_;
-  FILE *sff_fp_;
+  sff_common_header* h_;
+  sff_read_header* rh_;
+  sff_read_data* rd_;
+  mFILE *sff_fp_;
   int num_of_reads_;
   int cnt_;
   SingleRead read_;
-
-int 
 
   /*
    * Open a stream.
    */
   /* virtual */ void open() {
-    sff_fp_ = fopen(filename_.c.str(), "r");
+    sff_fp_ = mfopen(filename_.c_str(), "r");
     if (sff_fp_ == NULL) {
       eof_ = true;
       is_open_ = false;
     } else {
-      read_sff_common_header(sff_fp_, &h_);
-      num_of_reads_ = (int) h_.nreads;
+      h_ = read_sff_common_header(sff_fp_);
+      num_of_reads_ = (int) h_->nreads;
       cnt_ = 0;
       eof_ = false;
       is_open_ = true;
@@ -115,11 +113,11 @@ int
   void ReadAhead() {
     assert(is_open_);
     assert(!eof_);
-    read_sff_read_header(sff_fp_, &rh_);
-    read_sff_read_data(sff_fp_, &rd_, h_.flow_len, rh_.nbases);
+    rh_ = read_sff_read_header(sff_fp_);
+    rd_ = read_sff_read_data(sff_fp_, h_->flow_len, rh_->nbases);
     ++cnt_;
     if (cnt_ == num_of_reads_) {
-      eof_ true;
+      eof_ = true;
     }
     // fill fields in sff single read
   }
