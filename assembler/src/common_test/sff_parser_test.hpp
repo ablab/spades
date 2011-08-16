@@ -11,10 +11,10 @@ void TestSffParserReading() {
   ASSERT(parser.is_open());
   SingleRead read;
   parser >> read;
-  ASSERT_EQUAL("Name", read.name());
+  ASSERT_EQUAL("GSV1ISZ08GSHS3", read.name());
   ASSERT_EQUAL("GACTCTTTCATTTCCTACTGTAGCTTTTAGTCTCTTCAAATACAAGGCACACAGGGATAGG", 
                read.GetSequenceString());
-  ASSERT_EQUAL("", 
+  ASSERT_EQUAL("IIIEB=@@GB555>>IIIIIIIHI>>>>IIIIIIIII666IHIHHHIIIIIH>554:AA66", 
                read.GetPhredQualityString());
   parser >> read;
   ASSERT(!parser.eof());
@@ -29,10 +29,10 @@ void TestSffParserFull() {
   while (!parser.eof()) {
     parser >> read;
   }
-  ASSERT_EQUAL("Name", read.name());
-  ASSERT_EQUAL("GACTCTTTCATTTCCTACTGTAGCTTTTAGTCTCTTCAAATACAAGGCACACAGGGATAGG", 
+  ASSERT_EQUAL("GSV1ISZ08GXRMP", read.name());
+  ASSERT_EQUAL("GACTCTTTCATTTCCTACTGTAGCTTTTAGTCTCTTCAAATACAAGGCACACAGGGAGAGTG", 
                read.GetSequenceString());
-  ASSERT_EQUAL("", 
+  ASSERT_EQUAL("IIHEEEEHHF:99AAHIHHIHIIIIIIGHHBHHIHHH999DCHHHHHHHHHIIG<<757655", 
                read.GetPhredQualityString());
   parser.close();
   ASSERT(!parser.is_open());

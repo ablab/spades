@@ -64,9 +64,13 @@ class SffParser : public Parser {
       return *this;
     }
     read.SetName(read_.name().c_str());
-    read.SetQuality(read_.GetQualityString().c_str());
+    read.SetQuality(read_.GetPhredQualityString().c_str());
     read.SetSequence(read_.GetSequenceString().c_str());
-    ReadAhead();
+    if (cnt_ == num_of_reads_) {
+      eof_ = true;
+    } else {
+      ReadAhead();
+    }    
     return *this;
   }
 
@@ -117,26 +121,25 @@ class SffParser : public Parser {
     rh_ = read_sff_read_header(sff_fp_);
     rd_ = read_sff_read_data(sff_fp_, h_->flow_len, rh_->nbases);
     ++cnt_;
-    if (cnt_ == num_of_reads_) {
-      eof_ = true;
-    }
 
     char* name_;
     char* bases_;
-    char* quality_;
-    char quality_char_;
+    unsigned char* quality_;
+    unsigned char quality_char_;
     name_ = (char *)malloc(rh_->name_len + 1);
     strncpy(name_, rh_->name, rh_->name_len);
     read_.SetName(name_);
-    bases_ = (char *)malloc(rh_->nbases);
+    bases_ = (char *)malloc(rh_->nbases + 1);
     strncpy(bases_, rd_->bases, rh_->nbases);
+    bases_[rh_->nbases] = '\0';
     read_.SetSequence(bases_);
-    quality_ = (char *)malloc(rh_->nbases);
+    quality_ = (unsigned char *)malloc(rh_->nbases + 1);
     for (size_t i = 0; i < rh_-> nbases; i++) {
       quality_char_ = (rd_->quality[i] <= 93 ? rd_->quality[i] : 93) + 33;
       quality_[i] = quality_char_;
     }
-    read_.SetQuality(quality_);
+    quality_[rh_->nbases] = '\0';
+    read_.SetQuality((char *)quality_, 33);
     free(name_);
     free(bases_);
     free(quality_);
