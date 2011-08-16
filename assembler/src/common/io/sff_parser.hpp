@@ -12,8 +12,9 @@
  *
  * @section DESCRIPTION
  *
- * SamBamParser is the parser stream that reads data from .sam and
- * .bam files.
+ * SffParser is a parser that reads data from .sff files.
+ * Note: Quality offset is set into 33!
+ * Note: Current version of parser doesn't trim ends!
  */
 
 #ifndef COMMON_IO_SFFPARSER_HPP
@@ -119,7 +120,26 @@ class SffParser : public Parser {
     if (cnt_ == num_of_reads_) {
       eof_ = true;
     }
-    // fill fields in sff single read
+
+    char* name_;
+    char* bases_;
+    char* quality_;
+    char quality_char_;
+    name_ = (char *)malloc(rh_->name_len + 1);
+    strncpy(name_, rh_->name, rh_->name_len);
+    read_.SetName(name_);
+    bases_ = (char *)malloc(rh_->nbases);
+    strncpy(bases_, rd_->bases, rh_->nbases);
+    read_.SetSequence(bases_);
+    quality_ = (char *)malloc(rh_->nbases);
+    for (size_t i = 0; i < rh_-> nbases; i++) {
+      quality_char_ = (rd_->quality[i] <= 93 ? rd_->quality[i] : 93) + 33;
+      quality_[i] = quality_char_;
+    }
+    read_.SetQuality(quality_);
+    free(name_);
+    free(bases_);
+    free(quality_);
   }
 
   /*
