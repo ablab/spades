@@ -38,6 +38,25 @@ struct PairedInfoIndexLibrary {
 
 typedef std::vector<PairedInfoIndexLibrary> PairedInfoIndices;
 
+enum StopReason { LOOP, NO_GOOD_EXTENSION };
+
+struct PathStatData {
+	StopReason reason_;
+	std::string data_;
+	std::vector<double> weights_;
+
+};
+
+class PathStats {
+private:
+	std::map<BidirectionalPath*, PathStatData> forward_;
+	std::map<BidirectionalPath*, PathStatData> backward_;
+
+
+public:
+	void AddStop(BidirectionalPath& path, StopReason reason, std::string& data, )
+};
+
 // ====== Support functions ======
 //Pause to see output
 void MakeKeyPause() {
