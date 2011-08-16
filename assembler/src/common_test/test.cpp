@@ -42,12 +42,12 @@ void runSuite() {
   s += SamBamParserSuite();
   s += SffParserSuite();
   // TODO(mariyafomkina): Add tests for other parsers here.
-  s += ReaderSingleReadSuite();
-  s += ReaderPairedReadSuite();
-  s += MultifileReaderSuite();
-  s += CuttingReaderWrapperSuite();
-  s += RCReaderWrapperSuite();
-  s += ConvertingReaderWrapperSuite();
+  // s += ReaderSingleReadSuite();
+  // s += ReaderPairedReadSuite();
+  // s += MultifileReaderSuite();
+  // s += CuttingReaderWrapperSuite();
+  // s += RCReaderWrapperSuite();
+  // s += ConvertingReaderWrapperSuite();
   cute::ide_listener lis;
   cute::makeRunner(lis)(s, "The Suite");
 }

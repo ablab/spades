@@ -1,5 +1,5 @@
 /**
- * @file    sff_parser.hpp
+ * @file    scf_parser.hpp
  * @author  Mariya Fomkina
  * @version 1.0
  *
@@ -12,17 +12,19 @@
  *
  * @section DESCRIPTION
  *
- * SamBamParser is the parser stream that reads data from .sam and
- * .bam files.
+ * ScfParser is the parser stream that reads data from .scf and .abi.
+ * Be careful with this stream - it can read only one record from 
+ * one file! It is experimental and is not suggected to be actively
+ * used. 
  */
 
-#ifndef COMMON_IO_SFFPARSER_HPP
-#define COMMON_IO_SFFPARSER_HPP
+#ifndef COMMON_IO_SCFPARSER_HPP
+#define COMMON_IO_SCFPARSER_HPP
 
 #include <zlib.h>
 #include <string>
 #include <cassert>
-#include <io_lib/sff.h>
+#include <io_lib/Read.h>
 #include "common/io/single_read.hpp"
 #include "common/io/parser.hpp"
 #include "common/sequence/quality.hpp"
@@ -30,7 +32,7 @@
 
 namespace io {
 
-class SffParser : public Parser {
+class ScfParser : public Parser {
  public:
   /*
    * Default constructor.
@@ -38,7 +40,7 @@ class SffParser : public Parser {
    * @param filename The name of the file to be opened.
    * @param offset The offset of the read quality.
    */
-  SffParser(const std::string& filename,
+  ScfParser(const std::string& filename,
          int offset = SingleRead::PHRED_OFFSET)
       :Parser(filename, offset), read_(NULL) {
     open();
@@ -47,7 +49,7 @@ class SffParser : public Parser {
   /* 
    * Default destructor.
    */
-  /* virtual */ ~SffParser() {
+  /* virtual */ ~ScfParser() {
     close();
   }
 
@@ -58,14 +60,15 @@ class SffParser : public Parser {
    *
    * @return Reference to this stream.
    */
-  /* virtual */ SffParser& operator>>(SingleRead& read) {
+  /* virtual */ ScfParser& operator>>(SingleRead& read) {
     if (!is_open_ || eof_) {
       return *this;
     }
-    read.SetName(read_.name());
-    read.SetQuality(read_.GetQualityString());
-    read.SetSequence(read_.GetSequenceString());
-    ReadAhead();
+    // TODO(mariyafomkina): Rewrite 2 following instructions.
+    read.SetName("%s", filename_);     
+    read.SetQuality("");
+    read.SetSequence(read_->base);
+    eof_ = true;
     return *this;
   }
 
@@ -74,66 +77,40 @@ class SffParser : public Parser {
    */
   /* virtual */ void close() {
     if (is_open_) {
-      free_sff_common_header(&h_);
       is_open_ = false;
       eof_ = true;
     }
   }
 
  private:
-  sff_common_header h_;
-  sff_read_header rh_;
-  sff_read_data rd_;
-  FILE *sff_fp_;
-  int num_of_reads_;
-  int cnt_;
-  SingleRead read_;
-
-int 
+  /*
+   * @variable Data element that stores last SingleRead got from
+   * stream.
+   */ 
+  Read* read_;
 
   /*
    * Open a stream.
    */
   /* virtual */ void open() {
-    sff_fp_ = fopen(filename_.c.str(), "r");
-    if (sff_fp_ == NULL) {
+    eof_ = false;
+    is_open_ = true;
+    read_ = read_reading(const_cast<char *>(filename_.c_str()), 0);
+    if (read_ == NULLRead) {
       eof_ = true;
-      is_open_ = false;
-    } else {
-      read_sff_common_header(sff_fp_, &h_);
-      num_of_reads_ = (int) h_.nreads;
-      cnt_ = 0;
-      eof_ = false;
-      is_open_ = true;
-      ReadAhead();
     }
-  }
-
-  /* 
-   * Read next SingleRead from file.
-   */
-  void ReadAhead() {
-    assert(is_open_);
-    assert(!eof_);
-    read_sff_read_header(sff_fp_, &rh_);
-    read_sff_read_data(sff_fp_, &rd_, h_.flow_len, rh_.nbases);
-    ++cnt_;
-    if (cnt_ == num_of_reads_) {
-      eof_ true;
-    }
-    // fill fields in sff single read
   }
 
   /*
    * Hidden copy constructor.
    */
-  SffParser(const SffParser& parser);
+  ScfParser(const ScfParser& parser);
   /*
    * Hidden assign operator.
    */
-  void operator=(const SffParser& parser);
+  void operator=(const ScfParser& parser);
 };
 
 }
 
-#endif /* COMMON_IO_SFFPARSER_HPP */
+#endif /* COMMON_IO_SCFPARSER_HPP */

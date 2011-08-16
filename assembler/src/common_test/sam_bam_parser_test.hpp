@@ -6,11 +6,6 @@
 
 using namespace io;
 
-void TestSamBamParserNoFile() {
-  SamBamParser parser("./no-file");
-  ASSERT(!parser.is_open());
-}
-
 void TestSamBamParserReading() {
   SamBamParser parser("./test/data/ex1.sam", 33);
   ASSERT(parser.is_open());
@@ -45,7 +40,6 @@ void TestSamBamParserFull() {
 
 cute::suite SamBamParserSuite() {
   cute::suite s;
-  s.push_back(CUTE(TestSamBamParserNoFile));
   s.push_back(CUTE(TestSamBamParserReading));
   s.push_back(CUTE(TestSamBamParserFull));
   return s;
