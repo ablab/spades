@@ -2,7 +2,7 @@
 
 input_dir	      ./data/input/E.Coli.K12.MG1655/
 output_dir	      ./data/debruijn/
-dataset 	      QUAKE_FULL
+dataset 	      QUAKE_CROPPED_100K
 reference_genome  MG1655-K12.fasta.gz
 
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
@@ -14,7 +14,17 @@ rectangle_mode	false
 ; set to true to obtain paired info from genome mapping rather than from paired reads
 etalon_info_mode  false
 
-from_saved_graph	0
+from_saved_graph	0 ; not used(?)
+
+entry_point		simplification
+;	construction, pair_info_counting, simplification, distance_estimation, repeat_resolving, consensus
+
+;start_from begin   ; Full run.
+;start_from after_filling  ; Run with previous constructed graph.
+start_from after_simplify  ; Run with previous constructed and simplified graph.
+
+
+
 
 ; tip clipper:
 

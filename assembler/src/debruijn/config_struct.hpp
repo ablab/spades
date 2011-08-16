@@ -16,6 +16,11 @@ const size_t K = 55; // must be odd (so there is no k-mer which is equal to it's
 // struct for debruijn project's configuration file
 struct debruijn_config
 {
+	enum working_stage {
+		construction, pair_info_counting, simplification
+		, distance_estimation, repeat_resolving, consensus
+	};
+
 	struct tip_clipper
 	{
 	   size_t max_tip_length;
@@ -57,7 +62,9 @@ struct debruijn_config
 	std::string output_dir;
 	std::string dataset_name;
 	std::string reference_genome;
+	std::string start_from;
 
+	working_stage entry_point;
 	bool paired_mode;
 	bool rectangle_mode;
 	bool etalon_info_mode;
@@ -81,6 +88,30 @@ void load(boost::property_tree::ptree const& pt, debruijn_config::tip_clipper& t
 	load(pt, "max_tip_length", tc.max_tip_length);
 	load(pt, "max_coverage", tc.max_coverage);
 	load(pt, "max_relative_coverage", tc.max_relative_coverage);
+}
+
+void load(boost::property_tree::ptree const& pt, debruijn_config::working_stage& entry_point)
+{
+	std::string s;
+	load(pt, "entry_point", s);
+	if (s == "construction") {
+		entry_point = debruijn_config::working_stage::construction;
+	}
+	if (s == "pair_info_counting") {
+		entry_point = debruijn_config::working_stage::pair_info_counting;
+	}
+	if (s == "simplification") {
+		entry_point = debruijn_config::working_stage::simplification;
+	}
+	if (s == "distance_estimation") {
+		entry_point = debruijn_config::working_stage::distance_estimation;
+	}
+	if (s == "repeat_resolving") {
+		entry_point = debruijn_config::working_stage::repeat_resolving;
+	}
+	if (s == "consensus") {
+		entry_point = debruijn_config::working_stage::consensus;
+	}
 }
 
 void load(boost::property_tree::ptree const& pt, debruijn_config::bulge_remover& br)
@@ -117,10 +148,12 @@ void load(boost::property_tree::ptree const& pt, debruijn_config::dataset& ds)
 void load(boost::property_tree::ptree const& pt, debruijn_config& cfg)
 {
 	// input options:
+//	load(pt, "entry_point", cfg.entry_point);
 	load(pt, "input_dir", cfg.input_dir);
 	load(pt, "output_dir", cfg.output_dir);
 	load(pt, "dataset", cfg.dataset_name);
 	load(pt, "reference_genome", cfg.reference_genome);
+	load(pt, "start_from", cfg.start_from);
 
 	load(pt, "paired_mode", cfg.paired_mode);
 	load(pt, "rectangle_mode", cfg.rectangle_mode);

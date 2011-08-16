@@ -544,12 +544,16 @@ void scanNCGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
 }
 
 template<class Graph>
-void scanConjugateGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
-		const string &file_name, PairedInfoIndex<Graph>& paired_index) {
-	DataScanner<Graph> dataScanner(g, new_IDs);
+void scanConjugateGraph(Graph * g, IdTrackHandler<Graph> *new_IDs,
+		const string &file_name, PairedInfoIndex<Graph>* paired_index,
+		EdgesPositionHandler<Graph> *edges_positions = NULL) {
+	//ToDo Apply * vs & conventions
+	DataScanner<Graph> dataScanner(*g, *new_IDs);
 	dataScanner.loadConjugateGraph(file_name, true);
 	dataScanner.loadCoverage(file_name);
-	dataScanner.loadPaired(file_name, paired_index);
+	dataScanner.loadPaired(file_name, *paired_index);
+	if (edges_positions != NULL)
+		dataScanner.loadPositions(file_name, *edges_positions);
 }
 
 }
