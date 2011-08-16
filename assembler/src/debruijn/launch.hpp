@@ -205,7 +205,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				output_folder + "simplified_graph.dot", "simplified_graph");
 
 		//experimental
-		FillPairedIndexWithReadCountMetric<k, ReadStream>(g, index, kmer_mapper, read_count_weight_paired_index, stream);
+//		FillPairedIndexWithReadCountMetric<k, ReadStream>(g, index, kmer_mapper, read_count_weight_paired_index, stream);
 		//experimental
 
 		WriteGraphComponents<k> (g, index, genome,
@@ -222,7 +222,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		}
 
 		printGraph(g, IntIds, graph_save_path + "repeats_resolved_before",
-				paired_index, EdgePos, &read_count_weight_paired_index);
+				paired_index, EdgePos/*, &read_count_weight_paired_index*/);
 
 		omnigraph::WriteSimple(output_folder + "2_simplified_graph.dot",
 				"no_repeat_graph", g, *TotLab);
