@@ -49,7 +49,7 @@ double GetWeight(omnigraph::PairedInfoIndex<Graph>::PairInfos pairs, int distanc
 	for (auto iter = pairs.begin(); iter != pairs.end(); ++iter) {
 		int pairedDistance = rounded_d(*iter);
 
-		if (LC_CONFIG.read<int>("use_delta_first")) {
+		if (lc_cfg::get().es.use_delta_first) {
 			if (iter->variance != 0) {
 				distanceDev = iter->variance;
 			}
@@ -78,7 +78,7 @@ double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, 
 	size_t start = forward ? 0 : edgesToExclude;
 	size_t end = forward ? path.size() - edgesToExclude : path.size();
 
-	static int DISTANCE_DEV = cfg::get().etalon_info_mode ? LC_CONFIG.read<int>("etalon_distance_dev") : LC_CONFIG.read<int>("real_distance_dev");
+	static int DISTANCE_DEV = cfg::get().etalon_info_mode ? lc_cfg::get().es.etalon_distance_dev : lc_cfg::get().es.real_distance_dev;
 
 	for(size_t i = start; i < end; ++i) {
 		EdgeId edge = path[i];
@@ -145,13 +145,13 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 		return edges.back();
 	}
 
-	static bool useWeightFunctionFirst = LC_CONFIG.read<bool>("use_weight_function_first");
+	static bool useWeightFunctionFirst = lc_cfg::get().es.use_weight_function_first;
 
 	if (useWeightFunctionFirst) {
 		FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, true);
 
 		if (edges.size() == 1) {
-			static double weightFunThreshold = LC_CONFIG.read<double>("weight_fun_threshold");
+			static double weightFunThreshold = lc_cfg::get().es.weight_fun_threshold;
 			maxWeight = ExtentionWeight(g, path, lengths, edges.back(), pairedInfo, edgesToExclude, forward);
 
 			return ExtensionGoodEnough(edges.back(), maxWeight, weightFunThreshold);
@@ -161,7 +161,7 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 	maxWeight = FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward);
 
 	if (edges.size() == 1) {
-		static double weightFunThreshold = LC_CONFIG.read<double>("weight_threshold");
+		static double weightFunThreshold = lc_cfg::get().es.weight_threshold;
 		return ExtensionGoodEnough(edges.back(), maxWeight, weightFunThreshold);
 	}
 
@@ -189,7 +189,7 @@ bool CheckForCyclesSimple(Graph& g, BidirectionalPath& path, size_t datasetLen) 
 
 //Add edge to cycle detector and check
 bool CheckCycle(BidirectionalPath& path, EdgeId extension, CycleDetector& detector, double weight) {
-	static size_t MAX_LOOPS = LC_CONFIG.read<size_t>("max_loops");
+	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
 	detector.insert(std::make_pair(extension, std::make_pair(path.size(), weight)));
 
 	return detector.count(extension) > MAX_LOOPS;
@@ -197,7 +197,7 @@ bool CheckCycle(BidirectionalPath& path, EdgeId extension, CycleDetector& detect
 
 //Edges to remove
 size_t CountLoopEdges(EdgeId lastEdge, CycleDetector& detector, bool fullRemoval) {
-	static size_t MAX_LOOPS = LC_CONFIG.read<size_t>("max_loops");
+	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
 	auto iter = detector.upper_bound(lastEdge);
 
 	--iter;
@@ -265,7 +265,7 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		CycleDetector& detector, PairedInfoIndices& pairedInfo) {
 
 	double w = 0;
-	static bool FULL_LOOP_REMOVAL = LC_CONFIG.read<bool>("full_loop_removal");
+	static bool FULL_LOOP_REMOVAL = lc_cfg::get().lr.full_loop_removal;
 	std::vector<EdgeId> edges = g.OutgoingEdges(g.EdgeEnd(path.back()));
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, EdgesToExcludeForward(g, path), true);
 
@@ -298,7 +298,7 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		CycleDetector& detector, PairedInfoIndices& pairedInfo) {
 
 	double w = 0;
-	static bool FULL_LOOP_REMOVAL = LC_CONFIG.read<bool>("full_loop_removal");
+	static bool FULL_LOOP_REMOVAL = lc_cfg::get().lr.full_loop_removal;
 	std::vector<EdgeId> edges = g.IncomingEdges(g.EdgeStart(path.front()));
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, EdgesToExcludeBackward(g, path), false);
 
@@ -363,9 +363,9 @@ size_t SeedPriority(const BidirectionalPath& seed) {
 //Find paths with given seeds
 void FindPaths(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndices& pairedInfo, std::vector<BidirectionalPath>& paths) {
 	std::multimap<size_t, BidirectionalPath> priorityQueue;
-	static bool ALL_SEEDS = LC_CONFIG.read<bool>("all_seeds");
-	static double EDGE_COVERAGE_TRESHOLD = LC_CONFIG.read<double>("edge_coverage");
-	static double LENGTH_COVERAGE_TRESHOLD = LC_CONFIG.read<double>("len_coverage");
+	static bool ALL_SEEDS = lc_cfg::get().sc.all_seeds;
+	static double EDGE_COVERAGE_TRESHOLD = lc_cfg::get().sc.edge_coverage;
+	static double LENGTH_COVERAGE_TRESHOLD = lc_cfg::get().sc.len_coverage;
 
 	INFO("Finding paths started");
 	for(auto seed = seeds.begin(); seed != seeds.end(); ++seed) {

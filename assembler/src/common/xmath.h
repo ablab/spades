@@ -37,11 +37,11 @@ namespace math
 	template<class T>
 	bool ge(T lhs, T rhs) { return !ls(lhs, rhs); }
 
-//	template<class T, class R>
-//	R floor(T t) {return std::floor(t + eps<T>());}
-//
-//	template<class T, class R>
-//	R round(T t) {return floor(t + 0.5);}
+	template<class T>
+	T floor(T t) {return std::floor(t + eps<T>());}
+
+	template<class T>
+	T round(T t) {return floor(t + 0.5);}
 
 }
 
