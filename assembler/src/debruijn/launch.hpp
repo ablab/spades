@@ -126,6 +126,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	//experimental
 	KmerMapper<k+1, Graph> kmer_mapper(g);
 	PairedInfoIndex<Graph> read_count_weight_paired_index(g, 0);
+	PairedInfoIndex<Graph> read_count_clustered_index(g);
 	//experimental
 
 	int number_of_components = 0;
@@ -221,7 +222,11 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 			estimator.Estimate(clustered_index);
 
 			//experiment
-			estimator.Estimate(read_count_weight_paired_index);
+			DistanceEstimator<Graph> estimator2(g, read_count_weight_paired_index, insert_size,
+					max_read_length, cfg::get().de.delta,
+					cfg::get().de.linkage_distance,
+					cfg::get().de.max_distance);
+			estimator2.Estimate(read_count_clustered_index);
 			//experiment
 
 			CountClusteredPairedInfoStats(g, insert_size, max_read_length,
@@ -251,9 +256,9 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 //					output_folder + "repeats_resolved_before.dot",
 //					"no_repeat_graph", g, IdTrackLabelerBefore);
 			printGraph(g, IntIds, work_tmp_dir + "graph", clustered_index,
-					EdgePos, &read_count_weight_paired_index);
+					EdgePos, &read_count_clustered_index);
 			printGraph(g, IntIds, output_folder + "graph", clustered_index,
-					EdgePos, &read_count_weight_paired_index);
+					EdgePos, &read_count_clustered_index);
 		}
 
 		NCGraph new_graph(k);
