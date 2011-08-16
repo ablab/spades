@@ -11,9 +11,9 @@ CC=g++
 default: long_contigs
 
 long_contigs: main.o 
-	$(CC) $(LDFLAGS) $(MYO_DIR)/main.o  $(OBJ_DIR)/debruijn_graph.cpp.o -o $(APP_DIR)/long_contigs
+	$(CC) $(LDFLAGS) $(MYO_DIR)/main.o  -o $(APP_DIR)/long_contigs
 
-main.o: main.cpp lc_config.hpp lc_common.hpp seeds.hpp paths.hpp quality.hpp visualize.hpp ../new_debruijn.hpp ../../omni/visualization_utils.hpp
+main.o: main.cpp lc_config_struct.hpp lc_common.hpp seeds.hpp paths.hpp quality.hpp visualize.hpp ../new_debruijn.hpp ../../omni/visualization_utils.hpp
 	$(CC) $(CFLAGS) main.cpp -o $(MYO_DIR)/main.o
 
 clean: 
