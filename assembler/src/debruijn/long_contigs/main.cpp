@@ -137,6 +137,11 @@ int main() {
 		SavePairedInfo(g, pairedInfos, intIds, output_dir + LC_CONFIG.read<std::string>("paired_info_file_prefix"));
 	}
 
+	//TODO option in config
+	if (true) {
+		SaveGraph(g, intIds, output_dir + "graph");
+	}
+
 	DeleteAdditionalInfo(pairedInfos);
 	return 0;
 }

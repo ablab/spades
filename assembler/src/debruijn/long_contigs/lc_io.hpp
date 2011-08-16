@@ -120,6 +120,11 @@ void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Gra
 	INFO("Saved");
 }
 
+void SaveGraph(Graph& g, IdTrackHandler<Graph>& old_IDs, const std::string& fileName) {
+	DataPrinter<Graph> dataPrinter(g, old_IDs);
+	dataPrinter.saveGraph(fileName);
+}
+
 void DeleteAdditionalInfo(PairedInfoIndices& pairedInfos) {
 	while (pairedInfos.size() > 1) {
 		delete pairedInfos.back().pairedInfoIndex;
