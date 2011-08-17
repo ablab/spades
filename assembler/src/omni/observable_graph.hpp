@@ -73,6 +73,7 @@ protected:
 		}
 	}
 
+public:
 	void FireVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) {
 		DEBUG("Fire VertexSplit");
 		for (auto it = action_handler_list_.begin(); it
@@ -81,7 +82,6 @@ protected:
 		}
 	}
 
-public:
 
 	ObservableGraph(HandlerApplier<VertexId, EdgeId> *applier) :
 		applier_(applier) {

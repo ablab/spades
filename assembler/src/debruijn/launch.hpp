@@ -331,9 +331,15 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				"no_repeat_graph", resolved_graph, TotLabAfter);
 
 		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
+		N50enlarger.Loops_resolve();
+
+		omnigraph::WriteSimple(output_folder + "5_unlooped_graph.dot",
+						"no_repeat_graph", resolved_graph, TotLabAfter);
+		OutputContigs(resolved_graph, output_folder + "contigs_unlooped.fasta");
+
 		N50enlarger.one_many_resolve_with_vertex_split();
 
-		omnigraph::WriteSimple(output_folder + "5_finished_graph.dot",
+		omnigraph::WriteSimple(output_folder + "6_finished_graph.dot",
 				"no_repeat_graph", resolved_graph, TotLabAfter);
 
 		OutputContigs(resolved_graph, output_folder + "contigs_final.fasta");

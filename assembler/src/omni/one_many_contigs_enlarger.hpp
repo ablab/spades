@@ -22,8 +22,31 @@ public:
 //ToDo: Think about good loop resolver
 		INFO("All loops with length < 250 just removed");
 		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
-			if ((g_.EdgeStart(*iter) == g_.EdgeEnd(*iter))&&(g_.length(*iter) < 250))
-				g_.DeleteEdge(*iter);
+			if ((g_.EdgeStart(*iter) == g_.EdgeEnd(*iter))&&(g_.length(*iter) < 250)){
+				VertexId vertex = g_.EdgeEnd(*iter);
+				EdgeId loopEdge = *iter;
+				if ((g_.OutgoingEdgeCount(vertex) == 2)&&(g_.IncomingEdgeCount(vertex) == 2)){
+					VertexId newVertex = g_.AddVertex();
+					vector<EdgeId> outEdges = g_.OutgoingEdges(vertex);
+					vector<EdgeId> inEdges = g_.IncomingEdges(vertex);
+					EdgeId outEdge = (outEdges[0] == *iter)? outEdges[1]:outEdges[0];
+					EdgeId inEdge = (inEdges[0] == *iter)? inEdges[1]:inEdges[0];
+					EdgeId newOutEdge = g_.AddEdge(newVertex, g_.EdgeEnd(outEdge), g_.EdgeNucls(outEdge));
+					EdgeId newLoopEdge = g_.AddEdge(vertex, newVertex, g_.EdgeNucls(loopEdge));
+					vector<pair<EdgeId, EdgeId>> cloneEdges= {make_pair(outEdge, newOutEdge), make_pair(loopEdge, newLoopEdge)};
+					vector<double> coeff = {1.,1.};
+					g_.FireVertexSplit(newVertex, cloneEdges, coeff, vertex);
+					g_.DeleteEdge(loopEdge);
+					g_.DeleteEdge(outEdge);
+					vector<EdgeId> toMerge = {inEdge, newLoopEdge, newOutEdge};
+					g_.MergePath(toMerge);
+					g_.ForceDeleteVertex(vertex);
+					g_.ForceDeleteVertex(newVertex);
+				}
+				else {
+					g_.DeleteEdge(*iter);
+				}
+			}
 		}
 	}
 
@@ -84,7 +107,7 @@ public:
 
 	void one_many_resolve_with_vertex_split(){
 		INFO("one_many_resolve");
-		Loops_resolve();
+//		Loops_resolve();
 		int inc_count;
 		int out_count;
 
