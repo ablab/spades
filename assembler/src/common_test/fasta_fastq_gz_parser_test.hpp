@@ -54,7 +54,7 @@ void TestFastaFastqGzParserFastaReading() {
   ASSERT_EQUAL("GSV1ISZ08GSHS3", read.name());
   ASSERT_EQUAL("CTTTCATTTCCTACTGTAGCTTTTAGTCTCTTCAAATACAAGGCACACA", 
                read.GetSequenceString());
-  ASSERT_EQUAL("", 
+  ASSERT_EQUAL("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", 
                read.GetPhredQualityString());
   parser >> read;
   parser >> read;
@@ -62,7 +62,7 @@ void TestFastaFastqGzParserFastaReading() {
   ASSERT_EQUAL("GSV1ISZ08GXRMP", read.name());
   ASSERT_EQUAL("CTTTCATTTCCTACTGTAGCTTTTAGTCTCTTCAAATACAAGGCACACAGGGAG", 
                read.GetSequenceString());
-  ASSERT_EQUAL("", 
+  ASSERT_EQUAL("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", 
                read.GetPhredQualityString());
   Sequence seq;
   seq = read.sequence();
