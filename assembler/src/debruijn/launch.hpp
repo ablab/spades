@@ -128,7 +128,9 @@ void CreateAndFillGraph(Graph& g,
 	}
 	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
 			"edge_graph");
-	FillEdgesPos<k> (g, index, genome, EdgePos);
+	string contig_file("/home/ftp/data/velvet/velvet_unpaired55.fasta.gz");
+//	FillEdgesPos<k> (g, index, genome, EdgePos);
+	FillEdgesPos<k> (g, index, contig_file, EdgePos);
 }
 
 template<size_t k, class ReadStream>
