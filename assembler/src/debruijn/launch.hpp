@@ -186,6 +186,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		graph_loaded = true;
 
 		graph_struct = in_place(boost::ref(g), &int_ids, &EdgePos);
+
 		TotLab = in_place(&(*graph_struct));
 
 		omnigraph::WriteSimple(output_folder + "1_initial_graph.dot",

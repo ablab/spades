@@ -68,7 +68,7 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, i
 			while ( subsubsorter.getNextBlock(sub_i, subblock) ) {
 				if (subblock.size() > (Globals::blocksize_quadratic_threshold / 2) ) {
 					cout << "    running quadratic on size=" << subblock.size() << endl;
-					for (uint32_t i = 0; i < blockSize; ++i) cout << "    " << subblock[i] << " " << k_[subblock[i]].first.str() << endl;
+					for (uint32_t i = 0; i < subblock.size(); ++i) cout << "    " << subblock[i] << " " << k_[subblock[i]].first.str() << endl;
 					cout << endl;
 				}
 				processBlockQuadratic(uf, subblock);

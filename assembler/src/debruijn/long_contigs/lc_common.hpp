@@ -17,8 +17,6 @@
 #include "logging.hpp"
 #include "../new_debruijn.hpp"
 
-#include "lc_config.hpp"
-
 namespace long_contigs {
 
 using namespace debruijn_graph;

@@ -42,41 +42,33 @@ void LoadFromFile(std::string fileName, Graph& g,  PairedInfoIndex<Graph>& paire
 
 template<size_t k>
 void AddEtalonInfo(Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence& genome, PairedInfoIndices& pairedInfos) {
-	size_t libCount = LC_CONFIG.read<size_t>("etalon_lib_count");
+	for (auto el = lc_cfg::get().etalon_libs.begin(); el != lc_cfg::get().etalon_libs.end(); ++el) {
+		INFO("Generating info with read size " << el->read_size << ", insert size " << el->insert_size);
 
-	for (size_t i = 1; i <= libCount; ++i) {
-		std::string num = ToString<size_t>(i);
-		size_t insertSize = LC_CONFIG.read<size_t>("etalon_insert_size_" + num);
-		size_t readSize = LC_CONFIG.read<size_t>("etalon_read_size_" + num);
-		INFO("Generating info with read size " << readSize << ", insert size " << insertSize);
-
-		pairedInfos.push_back(PairedInfoIndexLibrary(readSize, insertSize, new PairedInfoIndex<Graph>(g, 0)));
-		FillEtalonPairedIndex<k> (g, *pairedInfos.back().pairedInfoIndex, index, insertSize, readSize, genome);
+		pairedInfos.push_back(PairedInfoIndexLibrary(el->read_size, el->insert_size, new PairedInfoIndex<Graph>(g, 0)));
+		FillEtalonPairedIndex<k> (g, *pairedInfos.back().pairedInfoIndex, index, el->insert_size, el->read_size, genome);
 	}
 }
 
 template<size_t k>
 void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds, PairedInfoIndices& pairedInfos) {
-	size_t libCount = LC_CONFIG.read<size_t>("real_lib_count");
-
-	for (size_t i = 1; i <= libCount; ++i) {
-		std::string num = ToString<size_t>(i);
-		size_t insertSize = LC_CONFIG.read<size_t>("real_insert_size_" + num);
-		size_t readSize = LC_CONFIG.read<size_t>("real_read_size_" + num);
+	for (auto rl = lc_cfg::get().real_libs.begin(); rl != lc_cfg::get().real_libs.end(); ++rl) {
+		size_t insertSize = rl->insert_size;
+		size_t readSize = rl->read_size;
 		string dataset = cfg::get().dataset_name;
 		pairedInfos.push_back(PairedInfoIndexLibrary(readSize, insertSize, new PairedInfoIndex<Graph>(g, 0)));
 
 		INFO("Reading additional info with read size " << readSize << ", insert size " << insertSize);
 
-		if (LC_CONFIG.read<bool>("real_precounted_" + num + "_" + dataset)) {
+		if (rl->ds.precounted) {
 			//Reading saved paired info
 			DataScanner<Graph> dataScanner(g, conj_IntIds);
-			dataScanner.loadPaired(LC_CONFIG.read<string>("real_precounted_path_" + num + "_" + dataset), *pairedInfos.back().pairedInfoIndex);
+			dataScanner.loadPaired(rl->ds.precounted_path, *pairedInfos.back().pairedInfoIndex);
 		}
 		else {
 			//Reading paired info from fastq files
-			string reads_filename1 = LC_CONFIG.read<string>("real_path_" + num + "_" + dataset + "_1");
-			string reads_filename2 = LC_CONFIG.read<string>("real_path_" + num + "_" + dataset + "_2");
+			string reads_filename1 = rl->ds.first;
+			string reads_filename2 = rl->ds.second;
 			checkFileExistenceFATAL(reads_filename1);
 			checkFileExistenceFATAL(reads_filename2);
 
@@ -103,7 +95,7 @@ void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Gra
 	for (auto lib = pairedInfos.begin(); lib != pairedInfos.end(); ++lib) {
 		std::string fileName = fileNamePrefix + "IS" + ToString(lib->insertSize) + "_RS" + ToString(lib->readSize);
 
-		if (LC_CONFIG.read<bool>("cluster_paired_info")) {
+		if (lc_cfg::get().cluster_paired_info) {
 			PairedInfoIndex<Graph> clustered_index(g);
 			DistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), lib->insertSize, lib->readSize, cfg::get().de.delta,
 					cfg::get().de.linkage_distance,
@@ -118,6 +110,11 @@ void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Gra
 
 	}
 	INFO("Saved");
+}
+
+void SaveGraph(Graph& g, IdTrackHandler<Graph>& old_IDs, const std::string& fileName) {
+	DataPrinter<Graph> dataPrinter(g, old_IDs);
+	dataPrinter.saveGraph(fileName);
 }
 
 void DeleteAdditionalInfo(PairedInfoIndices& pairedInfos) {

@@ -20,7 +20,7 @@ using namespace debruijn_graph;
 //If a start of another trivial path is found, returns it
 //Otherwise returns 0
 EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, const std::map<EdgeId, BidirectionalPath>& starts) {
-	static bool glueSeeds = LC_CONFIG.read<bool>("glue_seeds");
+	static bool glueSeeds = lc_cfg::get().ss.glue_seeds;
 	if (path.empty()) {
 		return 0;
 	}
