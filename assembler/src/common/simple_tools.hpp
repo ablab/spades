@@ -13,6 +13,7 @@
 #include <iterator>
 #include <vector>
 #include "logging.hpp"
+#include "io/ireader.hpp"
 #include <fstream>
 
 /**
@@ -40,7 +41,7 @@ void checkFileExistenceFATAL(std::string filename);
  * Use vector<T> as input-stream with operator>>(T& t)
  */
 template <typename T>
-class VectorStream {
+class VectorStream : public io::IReader<T> {
 	std::vector<T> data_;
 	size_t pos_;
 	bool closed_;
@@ -49,7 +50,7 @@ public:
 
 	}
 
-	bool eof() const {
+	virtual bool eof() /*const */{
 		return pos_ == data_.size();
 	}
 
@@ -62,7 +63,7 @@ public:
 		closed_ = true;
 	}
 
-	bool is_open() const {
+	virtual bool is_open() /*const */{
 		return !closed_;
 	}
 
