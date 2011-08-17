@@ -162,22 +162,23 @@ class AbstractConjugateGraph:
 	PairedEdge<VertexData, EdgeData, DataMaster>*, EdgeData, DataMaster, typename set<PairedVertex<VertexData, EdgeData, DataMaster>*>::const_iterator> {
 	typedef AbstractGraph<PairedVertex<VertexData, EdgeData, DataMaster>*, VertexData,
 			PairedEdge<VertexData, EdgeData, DataMaster>*, EdgeData, DataMaster, typename set<PairedVertex<VertexData, EdgeData, DataMaster>*>::const_iterator> base;
+
 public:
 	//todo remove unused typedefs
 	typedef PairedVertex<VertexData, EdgeData, DataMaster>* VertexId;
-	typedef set<VertexId> Vertices;
-	typedef typename Vertices::const_iterator VertexIterator;
 	typedef VertexData VertexDataType;
 	typedef PairedEdge<VertexData, EdgeData, DataMaster>* EdgeId;
-	typedef vector<EdgeId> Edges;
-	typedef typename Edges::const_iterator EdgeIterator;
 	typedef EdgeData EdgeDataType;
 	typedef typename base::SmartVertexIt SmartVertexIt;
 	typedef typename base::SmartEdgeIt SmartEdgeIt;
 
-	Vertices vertices_;
+private:
+	typedef set<VertexId> Vertices;
+	typedef typename Vertices::const_iterator VertexIterator;
+	typedef vector<EdgeId> Edges;
+	typedef typename Edges::const_iterator EdgeIterator;
 
-//	DataMaster master_;
+	Vertices vertices_;
 
 	VertexId HiddenAddVertex(const VertexData &data1, const VertexData &data2) {
 		VertexId v1 =
@@ -291,6 +292,7 @@ public:
 	}
 
 public:
+
 	AbstractConjugateGraph(const DataMaster& master) :
 		base(new PairedHandlerApplier<AbstractConjugateGraph>(*this), master)
 	{}

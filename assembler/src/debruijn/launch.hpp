@@ -103,18 +103,18 @@ void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph, EdgeLabelHan
 
 template<size_t k, class PairedReadStream>
 void CreateAndFillGraph(Graph& g,
-		EdgeIndex<k + 1, Graph>& index, PairedInfoIndex<Graph>& paired_index,
+		EdgeIndex<k + 1, Graph>& index, IdTrackHandler<Graph>& int_ids, PairedInfoIndex<Graph>& paired_index,
 		PairedReadStream& stream, size_t insert_size, size_t read_length,
 		const Sequence& genome, EdgesPositionHandler<Graph> &EdgePos,
 		PairedInfoIndex<Graph> &etalon_paired_index,
 		const string& output_folder){
 	if (cfg::get().paired_mode) {
 		if (cfg::get().etalon_info_mode) {
-			ConstructGraphWithEtalonPairedInfo<k, PairedReadStream> (g, index,
+			ConstructGraphWithEtalonPairedInfo<k, PairedReadStream> (g, index, int_ids,
 					paired_index, stream, insert_size, read_length,
 					genome);
 		} else {
-			ConstructGraphWithPairedInfo<k, PairedReadStream> (g, index,
+			ConstructGraphWithPairedInfo<k, PairedReadStream> (g, index, int_ids,
 					paired_index, stream);
 		}
 		FillEtalonPairedIndex<k> (g, etalon_paired_index, index,
@@ -123,7 +123,7 @@ void CreateAndFillGraph(Graph& g,
 	} else {
 		typedef io::ConvertingReaderWrapper UnitedStream;
 		UnitedStream united_stream(&stream);
-		ConstructGraphWithCoverage<k, UnitedStream> (g, index,
+		ConstructGraphWithCoverage<k, UnitedStream> (g, index, int_ids,
 				united_stream);
 	}
 	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
@@ -140,7 +140,6 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	using boost::optional;
 	using boost::in_place;
 
-	cerr << (int)cfg::get().entry_point << endl;
 	INFO("Edge graph construction tool started");
 	INFO("Paired mode: " << (paired_mode ? "Yes" : "No"));
 	INFO("Etalon paired info mode: " << (etalon_info_mode ? "Yes" : "No"))INFO(
@@ -152,7 +151,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 	Graph g(k);
 	EdgeIndex<k + 1, Graph> index(g);
-	IdTrackHandler<Graph> IntIds(g);
+	IdTrackHandler<Graph> int_ids(g);
 	EdgesPositionHandler<Graph> EdgePos(g);
 	EdgesPosGraphLabeler<Graph> EdgePosLab(g, EdgePos);
 	// if it's not paired_mode, then it'll be just unused variable -- takes O(1) to initialize from graph
@@ -173,18 +172,21 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	optional<TotalLabelerGraphStruct<Graph>> graph_struct;
 	optional<TotalLabeler<Graph>> TotLab;
 
+	INFO("------(don't look at this line) Starting from: " << debruijn_config::working_stage_name(cfg::get().entry_point) << "-----")
+
 	if ( cfg::get().start_from == "begin"){
 		INFO("------Starting from Begin-----")
-		CreateAndFillGraph<k, ReadStream> (g, index,
+		CreateAndFillGraph<k, ReadStream> (g, index, int_ids,
 							paired_index, stream, insert_size, max_read_length,
 							genome, EdgePos, etalon_paired_index, output_folder);
-		printGraph(g, IntIds, work_tmp_dir + "1_filled_graph",
+		printGraph(g, int_ids, work_tmp_dir + "1_filled_graph",
 				paired_index, EdgePos);
-		printGraph(g, IntIds, graph_save_path + "1_filled_graph",
+		printGraph(g, int_ids, graph_save_path + "1_filled_graph",
 				paired_index, EdgePos);
 		graph_loaded = true;
 
-		graph_struct = in_place(boost::ref(g), &IntIds, &EdgePos);
+		graph_struct = in_place(boost::ref(g), &int_ids, &EdgePos);
+
 		TotLab = in_place(&(*graph_struct));
 
 		omnigraph::WriteSimple(output_folder + "1_initial_graph.dot",
@@ -192,10 +194,10 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	}
 
 	if (cfg::get().start_from == "after_filling"){
-		scanConjugateGraph(&g, &IntIds, work_tmp_dir + "1_filled_graph", &paired_index,
+		scanConjugateGraph(&g, &int_ids, work_tmp_dir + "1_filled_graph", &paired_index,
 				&EdgePos);
 		graph_loaded = true;
-		graph_struct = boost::in_place(boost::ref(g), &IntIds, &EdgePos);
+		graph_struct = boost::in_place(boost::ref(g), &int_ids, &EdgePos);
 		TotLab = in_place(&(*graph_struct));
 	}
 
@@ -214,14 +216,14 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 		number_of_components = PrintGraphComponents(
 				output_folder + "graph_components/graph", g, insert_size,
-				IntIds, paired_index, EdgePos);
+				int_ids, paired_index, EdgePos);
 
 		if (paired_mode) {
 			CountPairedInfoStats(g, insert_size, max_read_length, paired_index,
 					etalon_paired_index, output_folder);
 		}
 
-		printGraph(g, IntIds, graph_save_path + "repeats_resolved_before",
+		printGraph(g, int_ids, graph_save_path + "repeats_resolved_before",
 				paired_index, EdgePos/*, &read_count_weight_paired_index*/);
 
 		omnigraph::WriteSimple(output_folder + "2_simplified_graph.dot",
@@ -246,9 +248,9 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 					paired_index, clustered_index, etalon_paired_index,
 					output_folder);
 		}
-		printGraph(g, IntIds, work_tmp_dir + "2_simplified_graph", clustered_index,
+		printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph", clustered_index,
 				EdgePos/*, &read_count_weight_paired_index*/);
-		printGraph(g, IntIds, output_folder + "2_simplified_graph", clustered_index,
+		printGraph(g, int_ids, output_folder + "2_simplified_graph", clustered_index,
 				EdgePos/*, &read_count_weight_paired_index*/);
 	}
 
@@ -257,8 +259,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		INFO("before ResolveRepeats");
 
 		NCGraph new_graph(k);
-		IdTrackHandler<NCGraph> NewIntIds(new_graph, IntIds.MaxVertexId(),
-				IntIds.MaxEdgeId());
+		IdTrackHandler<NCGraph> NewIntIds(new_graph, int_ids.MaxVertexId(),
+				int_ids.MaxEdgeId());
 		PairedInfoIndex<NCGraph> new_index(new_graph);
 		EdgeIndex<k+1, NCGraph> new_edge_index(new_graph);
 		EdgesPositionHandler<NCGraph> EdgePosBefore(new_graph);
