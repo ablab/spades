@@ -70,6 +70,10 @@ class FastaFastqGzParser : public Parser {
     read.SetName(seq_->name.s);
     if (seq_->qual.s) {
       read.SetQuality(seq_->qual.s, offset_);
+    } else {
+
+
+
     }
     read.SetSequence(seq_->seq.s);
     ReadAhead();

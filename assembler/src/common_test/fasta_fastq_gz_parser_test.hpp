@@ -46,11 +46,37 @@ void TestFastaFastqGzParserFull() {
   ASSERT(!parser.is_open());
 }
 
+void TestFastaFastqGzParserFastaReading() {
+  FastaFastqGzParser parser("./test/data/test.fasta", 33);
+  ASSERT(parser.is_open());
+  SingleRead read;
+  parser >> read;
+  ASSERT_EQUAL("GSV1ISZ08GSHS3", read.name());
+  ASSERT_EQUAL("CTTTCATTTCCTACTGTAGCTTTTAGTCTCTTCAAATACAAGGCACACA", 
+               read.GetSequenceString());
+  ASSERT_EQUAL("", 
+               read.GetPhredQualityString());
+  parser >> read;
+  parser >> read;
+  parser >> read;
+  ASSERT_EQUAL("GSV1ISZ08GXRMP", read.name());
+  ASSERT_EQUAL("CTTTCATTTCCTACTGTAGCTTTTAGTCTCTTCAAATACAAGGCACACAGGGAG", 
+               read.GetSequenceString());
+  ASSERT_EQUAL("", 
+               read.GetPhredQualityString());
+  Sequence seq;
+  seq = read.sequence();
+  Quality qual(read.quality());
+  ASSERT(parser.eof());
+  parser.close();
+}
+
 cute::suite FastaFastqGzParserSuite() {
   cute::suite s;
   s.push_back(CUTE(TestFastaFastqGzParserNoFile));
   s.push_back(CUTE(TestFastaFastqGzParserReading));
   s.push_back(CUTE(TestFastaFastqGzParserFull));
+  s.push_back(CUTE(TestFastaFastqGzParserFastaReading));
   return s;
 }
 

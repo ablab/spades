@@ -188,6 +188,7 @@ class SingleRead {
    */
   void SetName(const char* new_name) {
     name_ = new_name;
+    valid_ = UpdateValid();
   }
 
   /*
@@ -212,6 +213,7 @@ class SingleRead {
     for (size_t i = 0; i < qual_.size(); ++i) {
       qual_[i] -= offset;
     }
+    valid_ = UpdateValid();
   }
 
  private:
