@@ -17,8 +17,12 @@ const size_t K = 55; // must be odd (so there is no k-mer which is equal to it's
 struct debruijn_config
 {
 	enum working_stage {
-		construction, pair_info_counting, simplification
-		, distance_estimation, repeat_resolving, consensus
+		construction		,
+		pair_info_counting	,
+		simplification		,
+		distance_estimation	,
+		repeat_resolving	,
+		consensus
 	};
 
 	struct tip_clipper
@@ -90,28 +94,24 @@ void load(boost::property_tree::ptree const& pt, debruijn_config::tip_clipper& t
 	load(pt, "max_relative_coverage", tc.max_relative_coverage);
 }
 
-void load(boost::property_tree::ptree const& pt, std::string const&, debruijn_config::working_stage& entry_point)
+void load(boost::property_tree::ptree const& pt, std::string const& key, debruijn_config::working_stage& entry_point)
 {
-	std::string s = pt.get<std::string>("entry_point");
+	std::string ep = pt.get<std::string>(key);
 
-	if (s == "construction") {
-		entry_point = debruijn_config::working_stage::construction;
-	}
-	if (s == "pair_info_counting") {
-		entry_point = debruijn_config::working_stage::pair_info_counting;
-	}
-	if (s == "simplification") {
-		entry_point = debruijn_config::working_stage::simplification;
-	}
-	if (s == "distance_estimation") {
-		entry_point = debruijn_config::working_stage::distance_estimation;
-	}
-	if (s == "repeat_resolving") {
-		entry_point = debruijn_config::working_stage::repeat_resolving;
-	}
-	if (s == "consensus") {
-		entry_point = debruijn_config::working_stage::consensus;
-	}
+	std::map<std::string, debruijn_config::working_stage> stages =
+	{
+			{"construction"			, debruijn_config::construction},
+			{"pair_info_counting"	, debruijn_config::pair_info_counting},
+			{"simplification"		, debruijn_config::simplification},
+			{"distance_estimation"	, debruijn_config::distance_estimation},
+			{"repeat_resolving"		, debruijn_config::repeat_resolving},
+			{"consensus"			, debruijn_config::consensus}
+	};
+
+	auto it = stages.find(ep);
+	assert(it != stages.end());
+
+	entry_point = it->second;
 }
 
 void load(boost::property_tree::ptree const& pt, debruijn_config::bulge_remover& br)
