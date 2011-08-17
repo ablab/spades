@@ -20,7 +20,7 @@ public:
 	}
 	void Loops_resolve(){
 //ToDo: Think about good loop resolver
-		INFO("All loops with length < 250 just removed");
+		INFO("----Resolving Loops----");
 		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
 			if ((g_.EdgeStart(*iter) == g_.EdgeEnd(*iter))&&(g_.length(*iter) < 250)){
 				VertexId vertex = g_.EdgeEnd(*iter);
@@ -40,8 +40,6 @@ public:
 					g_.DeleteEdge(outEdge);
 					vector<EdgeId> toMerge = {inEdge, newLoopEdge, newOutEdge};
 					g_.MergePath(toMerge);
-					g_.ForceDeleteVertex(vertex);
-					g_.ForceDeleteVertex(newVertex);
 				}
 				else {
 					g_.DeleteEdge(*iter);
