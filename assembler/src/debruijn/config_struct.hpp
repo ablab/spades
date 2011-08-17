@@ -9,6 +9,7 @@
 #define CONFIG_STRUCT_HPP_
 
 #include "config_common.hpp"
+#include <boost/bimap.hpp>
 
 const char* const CONFIG_FILENAME = "./src/debruijn/config.info";
 const size_t K = 55; // must be odd (so there is no k-mer which is equal to it's reverse-complimentary k-mer)
@@ -16,8 +17,8 @@ const size_t K = 55; // must be odd (so there is no k-mer which is equal to it's
 // struct for debruijn project's configuration file
 struct debruijn_config
 {
-	enum working_stage {
 
+	enum working_stage {
 		construction		,
 		pair_info_counting	,
 		simplification		,
@@ -25,6 +26,36 @@ struct debruijn_config
 		repeat_resolving	,
 		consensus
 	};
+
+	typedef boost::bimap<std::string, working_stage> name_id_mapping;
+
+	static const name_id_mapping FillStageInfo() {
+		name_id_mapping working_stages_info;
+		working_stages_info.insert(name_id_mapping::value_type("construction", construction));
+		working_stages_info.insert(name_id_mapping::value_type("pair_info_counting"	, pair_info_counting));
+		working_stages_info.insert(name_id_mapping::value_type("simplification"		, simplification));
+		working_stages_info.insert(name_id_mapping::value_type("distance_estimation"	, distance_estimation));
+		working_stages_info.insert(name_id_mapping::value_type("repeat_resolving"		, repeat_resolving));
+		working_stages_info.insert(name_id_mapping::value_type("consensus"			, consensus));
+		return working_stages_info;
+	}
+
+	static const name_id_mapping& working_stages_info() {
+		static name_id_mapping working_stages_info = FillStageInfo();
+		return working_stages_info;
+	}
+
+	static const std::string& working_stage_name(working_stage stage_id) {
+		name_id_mapping::right_const_iterator it = working_stages_info().right.find(stage_id);
+		FATAL_ASSERT(it != working_stages_info().right.end(), "No name for working stage id = " << stage_id);
+		return it->second;
+	}
+
+	static working_stage working_stage_id(std::string name) {
+		name_id_mapping::left_const_iterator it = working_stages_info().left.find(name);
+		FATAL_ASSERT(it != working_stages_info().left.end(), "There is no working stage with name = " << name);
+		return it->second;
+	}
 
 	struct tip_clipper
 	{
@@ -99,21 +130,19 @@ void load(boost::property_tree::ptree const& pt, debruijn_config::tip_clipper& t
 void load(boost::property_tree::ptree const& pt, std::string const& key, debruijn_config::working_stage& entry_point)
 {
 	std::string ep = pt.get<std::string>(key);
-
-	std::map<std::string, debruijn_config::working_stage> stages =
-	{
-			{"construction"			, debruijn_config::construction},
-			{"pair_info_counting"	, debruijn_config::pair_info_counting},
-			{"simplification"		, debruijn_config::simplification},
-			{"distance_estimation"	, debruijn_config::distance_estimation},
-			{"repeat_resolving"		, debruijn_config::repeat_resolving},
-			{"consensus"			, debruijn_config::consensus}
-	};
-
-	auto it = stages.find(ep);
-	assert(it != stages.end());
-
-	entry_point = it->second;
+//	std::map<std::string, debruijn_config::working_stage> stages =
+//	{
+//			{"construction"			, debruijn_config::construction},
+//			{"pair_info_counting"	, debruijn_config::pair_info_counting},
+//			{"simplification"		, debruijn_config::simplification},
+//			{"distance_estimation"	, debruijn_config::distance_estimation},
+//			{"repeat_resolving"		, debruijn_config::repeat_resolving},
+//			{"consensus"			, debruijn_config::consensus}
+//	};
+//
+//	auto it = stages.find(ep);
+//	assert(it != stages.end());
+	entry_point = debruijn_config::working_stage_id(ep);
 }
 
 void load(boost::property_tree::ptree const& pt, debruijn_config::bulge_remover& br)
