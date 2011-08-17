@@ -461,8 +461,13 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		vector<double> split_coeff;
 		for (auto it = colored_paired_coverage[i].begin(); it !=  colored_paired_coverage[i].end(); it++){
 			if (it->second != 0){
-				split_edge.push_back(it->first);
-				split_coeff.push_back(((double)it->second)/old_paired_coverage[it->first]);
+				if (((double)it->second)/old_paired_coverage[it->first] > 0.01){
+					split_edge.push_back(it->first);
+					split_coeff.push_back(((double)it->second)/old_paired_coverage[it->first]);
+				}
+			}
+			else {
+				DEBUG("Very low covered pair info");
 			}
 		}
 		if (split_edge.size() > 0) {
