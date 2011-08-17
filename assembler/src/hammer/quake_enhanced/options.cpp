@@ -2,7 +2,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include "libs/getopt_pp/getopt_pp_standalone.h"
+#include "getopt_pp/getopt_pp_standalone.h"
 #include "options.hpp"
 using quake_enhanced::Options;
 using GetOpt::GetOpt_pp;

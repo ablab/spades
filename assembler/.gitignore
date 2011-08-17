@@ -1,8 +1,6 @@
 build/
 logs/
 output/
-.cproject
-.project
 gmon.out
 abruijn.sh
 CMakeCache.txt

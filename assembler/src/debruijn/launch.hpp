@@ -12,20 +12,20 @@
 #include "io/rc_reader_wrapper.hpp"
 #include "io/cutting_reader_wrapper.hpp"
 #include "io/converting_reader_wrapper.hpp"
-#include "visualization_utils.hpp"
+#include "omni/visualization_utils.hpp"
 
 //#include "debruijn_graph.hpp"
-#include "edge_labels_handler.hpp"
-#include "paired_info.hpp"
+#include "omni/edge_labels_handler.hpp"
+#include "omni/paired_info.hpp"
 #include "graph_construction.hpp"
 #include "graph_simplification.hpp"
 #include "coverage_handler.hpp"
 #include "repeat_resolving.hpp"
-#include "omni_tools.hpp"
+#include "omni/omni_tools.hpp"
 #include "seq_map.hpp"
-#include "ID_track_handler.hpp"
-#include "edges_position_handler.hpp"
-#include "total_labeler.hpp"
+#include "omni/ID_track_handler.hpp"
+#include "omni/edges_position_handler.hpp"
+#include "omni/total_labeler.hpp"
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -34,8 +34,8 @@
 #include "debruijn_stats.hpp"
 #include "graphio.hpp"
 #include "rectangleRepeatResolver.hpp"
-#include "distance_estimation.hpp"
-#include "loop_resolver.hpp"
+#include "omni/distance_estimation.hpp"
+#include "omni/loop_resolver.hpp"
 #include "check_tools.hpp"
 #include <cstdlib>
 

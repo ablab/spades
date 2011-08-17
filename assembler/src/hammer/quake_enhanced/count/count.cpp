@@ -24,11 +24,11 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
-#include "common/logging.hpp"
-#include "common/read/ireadstream.hpp"
-#include "common/read/read.hpp"
-#include "common/sequence/seq.hpp"
-#include "hammer/valid_kmer_generator.hpp"
+#include "logging.hpp"
+#include "read/ireadstream.hpp"
+#include "read/read.hpp"
+#include "sequence/seq.hpp"
+#include "valid_kmer_generator.hpp"
 #define SUPPRESS_UNUSED(X) ((void) (X))
 
 DECL_PROJECT_LOGGER("q")

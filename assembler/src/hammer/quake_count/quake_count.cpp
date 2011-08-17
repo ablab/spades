@@ -29,8 +29,8 @@
 #include "read/ireadstream.hpp"
 #include "read/read.hpp"
 #include "sequence/seq.hpp"
-#include "hammer/kmer_freq_info.hpp"
-#include "hammer/valid_kmer_generator.hpp"
+#include "../kmer_freq_info.hpp"
+#include "../valid_kmer_generator.hpp"
 #define SUPPRESS_UNUSED(X) ((void) (X))
 
 using std::string;

@@ -9,9 +9,9 @@
 #define GRAPH_CONSTRUCTION_HPP_
 
 #include "debruijn_graph_constructor.hpp"
-#include "edges_position_handler.hpp"
+#include "omni/edges_position_handler.hpp"
 #include "new_debruijn.hpp"
-#include "paired_info.hpp"
+#include "omni/paired_info.hpp"
 #include "graphio.hpp"
 #include "utils.hpp"
 

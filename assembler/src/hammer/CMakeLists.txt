@@ -10,6 +10,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
 add_definitions(${OpenMP_CXX_FLAGS})
 add_definitions(-fPIC)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 add_executable(main
    main.cpp
    hammer_tools.cpp

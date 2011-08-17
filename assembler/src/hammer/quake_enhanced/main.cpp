@@ -1,6 +1,6 @@
 #include <iostream>
-#include "common/logging.hpp"
-#include "hammer/quake_enhanced/options.hpp"
+#include "logging.hpp"
+#include "options.hpp"
 DECL_PROJECT_LOGGER("q")
 
 namespace quake_enhanced {

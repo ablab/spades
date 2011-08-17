@@ -7,15 +7,15 @@
 #include <algorithm>
 
 #include "logging.hpp"
-#include "paired_info.hpp"
-#include "omni_utils.hpp"
+#include "omni/paired_info.hpp"
+#include "omni/omni_utils.hpp"
 
-#include "omni_tools.hpp"
-#include "omnigraph.hpp"
+#include "omni/omni_tools.hpp"
+#include "omni/omnigraph.hpp"
 
-#include "ID_track_handler.hpp"
-#include "edges_position_handler.hpp"
-#include "EdgeVertexFilter.hpp"
+#include "omni/ID_track_handler.hpp"
+#include "omni/edges_position_handler.hpp"
+#include "omni/EdgeVertexFilter.hpp"
 using namespace omnigraph;
 using namespace debruijn_graph;
 

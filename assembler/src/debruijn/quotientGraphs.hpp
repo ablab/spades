@@ -1,6 +1,6 @@
 #ifndef QUOTIENTGRAPHS_H
 #define QUOTIENTGRAPHS_H
-#include "dijkstra.hpp"
+#include "omni/dijkstra.hpp"
 
 
 namespace debruijn_graph {
