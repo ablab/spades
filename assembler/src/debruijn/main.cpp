@@ -15,13 +15,13 @@
 DECL_PROJECT_LOGGER("d")
 
 int main() {
-	cfg::create_instance(CONFIG_FILENAME);
+	cfg::create_instance(debruijn::cfg_filename);
 
 	// check config_struct.hpp parameters
-	if (K % 2 == 0) {
+	if (debruijn::K % 2 == 0) {
 		FATAL("K in config.hpp must be odd!\n");
 	}
-	checkFileExistenceFATAL(CONFIG_FILENAME);
+	checkFileExistenceFATAL(debruijn::cfg_filename);
 
 	// read configuration file (dataset path etc.)
 	string input_dir = cfg::get().input_dir;
@@ -82,7 +82,7 @@ int main() {
 	}
 	// assemble it!
 	INFO("Assembling " << dataset << " dataset");
-	debruijn_graph::DeBruijnGraphTool<K, RCStream>(rcStream, Sequence(genome),
+	debruijn_graph::DeBruijnGraphTool<debruijn::K, RCStream>(rcStream, Sequence(genome),
 			paired_mode, rectangle_mode, etalon_info_mode, from_saved,
 			insert_size, max_read_length, work_tmp_dir, reads);
 

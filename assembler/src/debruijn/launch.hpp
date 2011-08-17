@@ -173,7 +173,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	optional<TotalLabelerGraphStruct<Graph>> graph_struct;
 	optional<TotalLabeler<Graph>> TotLab;
 
-	INFO("------(don't look at this line) Starting from: " << debruijn_config::working_stage_name(cfg::get().entry_point) << "-----")
+	INFO("------(don't look at this line) Starting from: " << debruijn::debruijn_config::working_stage_name(cfg::get().entry_point) << "-----")
 
 	if ( cfg::get().start_from == "begin"){
 		INFO("------Starting from Begin-----")

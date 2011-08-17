@@ -111,7 +111,7 @@ void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index
 		, IdTrackHandler<Graph>& int_ids, ReadStream& stream) {
 	ConstructGraph<k, ReadStream>(g, index, stream);
 	if (cfg::get().entry_point
-			<= debruijn_config::working_stage::construction) {
+			<= debruijn::debruijn_config::working_stage::construction) {
 		FillCoverage<k, ReadStream>(g, stream, index);
 	} else {
 		string file_name = cfg::get().previous_run_dir + "1_filled_graph";
@@ -126,7 +126,7 @@ void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index
 		, IdTrackHandler<Graph>& int_ids,
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& stream) {
 	if (cfg::get().entry_point
-			<= debruijn_config::working_stage::pair_info_counting) {
+			<= debruijn::debruijn_config::working_stage::pair_info_counting) {
 		typedef io::ConvertingReaderWrapper UnitedStream;
 		UnitedStream united_stream(&stream);
 		ConstructGraphWithCoverage<k, UnitedStream>(g, index,
