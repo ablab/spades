@@ -86,12 +86,34 @@ class SffParser : public Parser {
   }
 
  private:
+  /*
+   * Header of the whole sff file.
+   */
   sff_common_header* h_;
+  /*
+   * Header of one read in sff file.
+   */
   sff_read_header* rh_;
+  /*
+   * Read data of one read in sff file.
+   */
   sff_read_data* rd_;
+  /*
+   * File that contains sff data.
+   */
   mFILE *sff_fp_;
+  /* 
+   * Number of reads that are stored in this sff file.
+   */
   int num_of_reads_;
+  /*
+   * Number of reads that are already read from stream.
+   */
   int cnt_;
+  /*
+   * Read that was last read from file (and next to be outputted by
+   * operator>>.
+   */
   SingleRead read_;
 
   /*
