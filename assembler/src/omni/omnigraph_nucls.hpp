@@ -52,15 +52,15 @@ class OmniNuclDataMaster {
 public:
 	OmniNuclDataMaster() {}
 
-	bool isSelfConjugate(const OmniNuclEdge &data) {
+	bool isSelfConjugate(const OmniNuclEdge &data) const {
 		return data.nucls() == !data.nucls();
 	}
 
-	OmniNuclVertex conjugate(const OmniNuclVertex &data) {
+	OmniNuclVertex conjugate(const OmniNuclVertex &data) const {
 		return OmniNuclVertex(!data.nucls());
 	}
 
-	OmniNuclEdge conjugate(const OmniNuclEdge &data) {
+	OmniNuclEdge conjugate(const OmniNuclEdge &data) const {
 		return OmniNuclEdge(data.length(), !data.nucls());
 	}
 
@@ -92,7 +92,7 @@ public:
 		return data1 == data2;
 	}
 
-	OmniNuclEdge MergeData(vector<OmniNuclEdge*> toMerge) {
+	OmniNuclEdge MergeData(vector<const OmniNuclEdge*> toMerge) const {
 		size_t length = 0;
 		SequenceBuilder sb;
 		for (auto it = toMerge.begin(); it != toMerge.end(); ++it) {
@@ -110,8 +110,7 @@ public:
 		return edge2;
 	}
 
-	pair<OmniNuclVertex, pair<OmniNuclEdge, OmniNuclEdge> > SplitData(OmniNuclEdge &edge,
-			size_t position) {
+	pair<OmniNuclVertex, pair<OmniNuclEdge, OmniNuclEdge> > SplitData(const OmniNuclEdge &edge, size_t position) const {
 		size_t k = edge.nucls().size() - edge.length();
 		return make_pair(
 				OmniNuclVertex(edge.nucls().Subseq(position, position + k)),
@@ -149,11 +148,11 @@ public:
 	}
 
 	Sequence nucls(const EdgeId edge) const {
-		return master_.nucls(data(edge));
+		return this->master().nucls(data(edge));
 	}
 
 	Sequence nucls(const VertexId v) const {
-		return master_.nucls(data(v));
+		return this->master().nucls(data(v));
 	}
 
 };

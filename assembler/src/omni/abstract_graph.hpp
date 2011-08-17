@@ -186,12 +186,13 @@ public:
 		return false;
 	}
 
-	//todo delete if not used
-	EdgeId GetEdge(VertexId v1, VertexId v2, const EdgeData &data) {
+	EdgeId GetEdge(VertexId v1, VertexId v2, const EdgeData &datum) {
 		vector<EdgeId> out = OutgoingEdges(v1);
 		for (auto it = out.begin(); it != out.end(); ++it) {
-			if ((EdgeEnd(*it) == v2) && (master_.equals(data(*it), data))) {
-				return *it;
+			if (EdgeEnd(*it) == v2) {
+				if (master_.equals(data(*it), datum)) {
+					return *it;
+				}
 			}
 		}
 		return NULL;
