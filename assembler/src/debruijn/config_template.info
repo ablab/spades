@@ -117,3 +117,36 @@ QUAKE_FULL
 	IS 	   220 	; insert size
 	LEN	   4639675 ; total size
 }
+
+EAS600_QUAKE_CROPPED_1K
+{
+	first	EAS600_70/quaked/cropped/E.Coli_600.first1000_1.fastq.gz
+	second	EAS600_70/quaked/cropped/E.Coli_600.first1000_2.fastq.gz
+	IS		480 	; insert size
+	LEN		1000 	; total size
+}
+
+EAS600_QUAKE_CROPPED_10K
+{
+	first	EAS600_70/quaked/cropped/E.Coli_600.first10000_1.fastq.gz
+	second	EAS600_70/quaked/cropped/E.Coli_600.first10000_2.fastq.gz
+	IS		480 	; insert size
+	LEN		10000 	; total size
+}
+
+EAS600_QUAKE_CROPPED_100K
+{
+	first	EAS600_70/quaked/cropped/E.Coli_600.first100000_1.fastq.gz
+	second	EAS600_70/quaked/cropped/E.Coli_600.first100000_2.fastq.gz
+	IS		480 	; insert size
+	LEN		100000 	; total size
+}
+
+EAS600_QUAKE_CROPPED_400K
+{
+	first	EAS600_70/quaked/cropped/E.Coli_600.first400000_1.fastq.gz
+	second	EAS600_70/quaked/cropped/E.Coli_600.first400000_2.fastq.gz
+	IS		480 	; insert size
+	LEN		400000 	; total size
+}
+

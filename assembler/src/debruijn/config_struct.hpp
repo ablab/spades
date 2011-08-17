@@ -14,6 +14,18 @@
 const char* const CONFIG_FILENAME = "./src/debruijn/config.info";
 const size_t K = 55; // must be odd (so there is no k-mer which is equal to it's reverse-complimentary k-mer)
 
+inline std::string MakeLaunchTimeDirName() {
+	time_t rawtime;
+	struct tm * timeinfo;
+	char buffer[80];
+
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+
+	strftime(buffer, 80, "%m.%d_%H_%M", timeinfo);
+	return std::string(buffer);
+}
+
 // struct for debruijn project's configuration file
 struct debruijn_config
 {
@@ -95,11 +107,15 @@ struct debruijn_config
 	};
 
 	std::string input_dir;
+	std::string output_root;
 	std::string output_dir;
+	std::string output_dir_suffix;
+
 	std::string previous_run_dir;
 	std::string dataset_name;
 	std::string reference_genome;
 	std::string start_from;
+
 
 	working_stage entry_point;
 	bool paired_mode;
@@ -181,9 +197,14 @@ void load(boost::property_tree::ptree const& pt, debruijn_config& cfg)
 	// input options:
 	load(pt, "entry_point", cfg.entry_point);
 	load(pt, "input_dir", cfg.input_dir);
-	load(pt, "output_dir", cfg.output_dir);
+//	= cfg::get().output_dir
 	load(pt, "previous_run_dir", cfg.previous_run_dir);
 	load(pt, "dataset", cfg.dataset_name);
+
+	load(pt, "output_dir", cfg.output_root);
+	cfg.output_dir_suffix = MakeLaunchTimeDirName() + "." + cfg.dataset_name + "/";
+	cfg.output_dir = cfg.output_root + cfg.output_dir_suffix;
+
 	load(pt, "reference_genome", cfg.reference_genome);
 	load(pt, "start_from", cfg.start_from);
 

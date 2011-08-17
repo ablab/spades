@@ -137,6 +137,7 @@ void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index
 		string file_name = cfg::get().previous_run_dir + "1_filled_graph";
 		dataScanner.loadPaired(file_name, paired_index);
 	}
+
 }
 
 template<size_t k, class PairedReadStream>

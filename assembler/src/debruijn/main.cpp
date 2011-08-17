@@ -12,21 +12,6 @@
 #include "distance_estimation.hpp"
 //#include <distance_estimation.hpp>
 
-namespace {
-
-std::string MakeLaunchTimeDirName() {
-	time_t rawtime;
-	struct tm * timeinfo;
-	char buffer[80];
-
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-
-	strftime(buffer, 80, "%m.%d_%H_%M", timeinfo);
-	return string(buffer);
-}
-}
-
 DECL_PROJECT_LOGGER("d")
 
 int main() {
@@ -41,17 +26,11 @@ int main() {
 	// read configuration file (dataset path etc.)
 	string input_dir = cfg::get().input_dir;
 	string dataset = cfg::get().dataset_name;
-	string output_root = cfg::get().output_dir;
-	string output_dir_suffix = MakeLaunchTimeDirName() + "." + dataset + "/";
-	string output_dir = output_root + output_dir_suffix;
-	string work_tmp_dir = output_root + "tmp/";
-//	std::cout << "here " << mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH) << std::endl;
-	mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
-	unlink((output_root + "latest").c_str());
-	if (symlink(output_dir_suffix.c_str(), (output_root + "latest").c_str())
-			!= 0)
-		WARN( "Symlink to latest launch failed");
+	string work_tmp_dir = cfg::get().output_root + "tmp/";
+//	std::cout << "here " << mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH) << std::endl;
+	mkdir(cfg::get().output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+
 
 	string genome_filename = input_dir + cfg::get().reference_genome;
 	string reads_filename1 = input_dir + cfg::get().ds.first;
@@ -105,9 +84,14 @@ int main() {
 	INFO("Assembling " << dataset << " dataset");
 	debruijn_graph::DeBruijnGraphTool<K, RCStream>(rcStream, Sequence(genome),
 			paired_mode, rectangle_mode, etalon_info_mode, from_saved,
-			insert_size, max_read_length, output_dir, work_tmp_dir, reads);
-	INFO("Assembling " << dataset << " dataset finished");
+			insert_size, max_read_length, work_tmp_dir, reads);
 
+	unlink((cfg::get().output_root + "latest").c_str());
+		if (symlink(cfg::get().output_dir_suffix.c_str(), (cfg::get().output_root + "latest").c_str())
+				!= 0)
+	WARN( "Symlink to latest launch failed");
+
+	INFO("Assembling " << dataset << " dataset finished");
 	// OK
 	return 0;
 }

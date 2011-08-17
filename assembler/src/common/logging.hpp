@@ -36,7 +36,7 @@ static log4cxx::LoggerPtr __scope_logger()					          \
 #define WARN(message)                       LOG4CXX_WARN (__scope_logger(), message)
 #define ERROR(message)                      LOG4CXX_ERROR(__scope_logger(), message)
 #define LOG_ASSERT(condition, message)      LOG4CXX_ASSERT(__scope_logger(), condition, message)
-#define FATAL_ASSERT(condition, message)    LOG4CXX_ASSERT(__scope_logger(), condition, message) std::cerr << "ASSERTION FAILED: " << message; exit(1)
+#define FATAL_ASSERT(condition, message)    if (!(condition)) {std::cerr << "ASSERTION FAILED: " << message; exit(1);} while(0)
 #define FATAL(message)                      LOG4CXX_FATAL(__scope_logger(), message) std::cerr << "FATAL ERROR: " << message; exit(1)
 
 #endif /* LOGGING_HPP_ */

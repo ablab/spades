@@ -106,8 +106,7 @@ void CreateAndFillGraph(Graph& g,
 		EdgeIndex<k + 1, Graph>& index, IdTrackHandler<Graph>& int_ids, PairedInfoIndex<Graph>& paired_index,
 		PairedReadStream& stream, size_t insert_size, size_t read_length,
 		const Sequence& genome, EdgesPositionHandler<Graph> &EdgePos,
-		PairedInfoIndex<Graph> &etalon_paired_index,
-		const string& output_folder){
+		PairedInfoIndex<Graph> &etalon_paired_index){
 	if (cfg::get().paired_mode) {
 		if (cfg::get().etalon_info_mode) {
 			ConstructGraphWithEtalonPairedInfo<k, PairedReadStream> (g, index, int_ids,
@@ -126,7 +125,7 @@ void CreateAndFillGraph(Graph& g,
 		ConstructGraphWithCoverage<k, UnitedStream> (g, index, int_ids,
 				united_stream);
 	}
-	ProduceInfo<k> (g, index, genome, output_folder + "edge_graph.dot",
+	ProduceInfo<k> (g, index, genome, cfg::get().output_dir + "edge_graph.dot",
 			"edge_graph");
 	FillEdgesPos<k> (g, index, genome, EdgePos);
 }
@@ -135,10 +134,12 @@ template<size_t k, class ReadStream>
 void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		bool paired_mode, bool rectangle_mode, bool etalon_info_mode,
 		bool from_saved, size_t insert_size, size_t max_read_length,
-		const string& output_folder, const string& work_tmp_dir, vector<SingleReadStream* > reads) {
+		const string& work_tmp_dir, vector<SingleReadStream* > reads) {
 
 	using boost::optional;
 	using boost::in_place;
+
+	string output_folder = cfg::get().output_dir;
 
 	INFO("Edge graph construction tool started");
 	INFO("Paired mode: " << (paired_mode ? "Yes" : "No"));
@@ -146,7 +147,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 			"From file:entry_point " << (from_saved ? "Yes" : "No"))
 	mkdir(work_tmp_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
-	string graph_save_path = output_folder+"saves/";
+	string graph_save_path = cfg::get().output_dir + "saves/";
 	mkdir(graph_save_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
 	Graph g(k);
@@ -178,7 +179,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		INFO("------Starting from Begin-----")
 		CreateAndFillGraph<k, ReadStream> (g, index, int_ids,
 							paired_index, stream, insert_size, max_read_length,
-							genome, EdgePos, etalon_paired_index, output_folder);
+							genome, EdgePos, etalon_paired_index);
 		printGraph(g, int_ids, work_tmp_dir + "1_filled_graph",
 				paired_index, EdgePos);
 		printGraph(g, int_ids, graph_save_path + "1_filled_graph",
