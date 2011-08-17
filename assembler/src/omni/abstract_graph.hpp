@@ -21,26 +21,6 @@ class AbstractGraph: public ObservableGraph<VertexIdT, EdgeIdT, VertexIterator> 
 	typedef EdgeIdT EdgeId;
 	//todo think of necessity to pull these typedefs through hierarchy
 	DataMaster master_;
-public:
-	typedef typename base::SmartVertexIt SmartVertexIt;
-	typedef typename base::SmartEdgeIt SmartEdgeIt;
-
-	AbstractGraph(HandlerApplier<VertexId, EdgeId>* applier
-			, const DataMaster& master) :
-			base(applier), master_(master) {
-	}
-
-	virtual ~AbstractGraph() {
-		TRACE("~AbstractGraph")
-//		doesn't work this way because call to virtual function is needed
-//		for (auto it = this->SmartVertexBegin(); !it.IsEnd(); ++it) {
-//			ForceDeleteVertex(*it);
-//		}
-	}
-
-	const DataMaster& master() const {
-		return master_;
-	}
 
 	virtual VertexId HiddenAddVertex(const VertexData &data) = 0;
 
@@ -96,6 +76,27 @@ public:
 	}
 
 public:
+	typedef typename base::SmartVertexIt SmartVertexIt;
+	typedef typename base::SmartEdgeIt SmartEdgeIt;
+
+	AbstractGraph(HandlerApplier<VertexId, EdgeId>* applier
+			, const DataMaster& master) :
+			base(applier), master_(master) {
+	}
+
+	virtual ~AbstractGraph() {
+		TRACE("~AbstractGraph")
+//		doesn't work this way because call to virtual function is needed
+//		for (auto it = this->SmartVertexBegin(); !it.IsEnd(); ++it) {
+//			ForceDeleteVertex(*it);
+//		}
+	}
+
+	const DataMaster& master() const {
+		return master_;
+	}
+
+
 //already in base
 //	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const = 0;
 

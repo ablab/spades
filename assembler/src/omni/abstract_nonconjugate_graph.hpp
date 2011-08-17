@@ -163,18 +163,20 @@ class AbstractNonconjugateGraph: public AbstractGraph<SingleVertex<VertexData, E
 	typedef AbstractGraph<SingleVertex<VertexData, EdgeData, DataMaster>*, VertexData,
 			SingleEdge<VertexData, EdgeData, DataMaster>*, EdgeData, DataMaster, typename set<SingleVertex<VertexData, EdgeData, DataMaster>*>::const_iterator> base;
 public:
-	typedef SingleVertex<VertexData, EdgeData, DataMaster>* VertexId;
-	typedef set<VertexId> Vertices;
 	//todo take from base
-	typedef typename Vertices::const_iterator VertexIterator;
+	typedef SingleVertex<VertexData, EdgeData, DataMaster>* VertexId;
 	typedef SingleEdge<VertexData, EdgeData, DataMaster>* EdgeId;
+
+private:
+	typedef set<VertexId> Vertices;
+	typedef typename Vertices::const_iterator VertexIterator;
 	typedef vector<EdgeId> Edges;
 	typedef typename Edges::const_iterator EdgeIterator;
 
 	Vertices vertices_;
 
-	virtual VertexId HiddenAddVertex(const VertexData &data1) {
-		VertexId v = new SingleVertex<VertexData, EdgeData, DataMaster> (data1);
+	virtual VertexId HiddenAddVertex(const VertexData &data) {
+		VertexId v = new SingleVertex<VertexData, EdgeData, DataMaster> (data);
 		vertices_.insert(v);
 		return v;
 	}
@@ -220,6 +222,7 @@ public:
 	}
 
 public:
+
 	AbstractNonconjugateGraph(const DataMaster& master) :
 				base(new SimpleHandlerApplier<AbstractNonconjugateGraph>(), master) {
 	}
@@ -288,6 +291,7 @@ public:
 		vector<double> split_coefficients(splittingEdges.size(),1);
 		return SplitVertex(vertex, splittingEdges, split_coefficients);
 	}
+
 	pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId vertex, vector<EdgeId> &splittingEdges, vector<double> &split_coefficients) {
 //TODO:: check whether we handle loops correctly!
 		VertexId newVertex = HiddenAddVertex(vertex->data());

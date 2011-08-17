@@ -109,9 +109,9 @@ ReadStream& stream) {
 template<size_t k, class ReadStream>
 void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index
 		, IdTrackHandler<Graph>& int_ids, ReadStream& stream) {
+	ConstructGraph<k, ReadStream>(g, index, stream);
 	if (cfg::get().entry_point
 			<= debruijn_config::working_stage::construction) {
-		ConstructGraph<k, ReadStream>(g, index, stream);
 		FillCoverage<k, ReadStream>(g, stream, index);
 	} else {
 		string file_name = cfg::get().previous_run_dir + "1_filled_graph";
