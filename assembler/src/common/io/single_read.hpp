@@ -55,8 +55,9 @@ class SingleRead {
   SingleRead(const std::string& name,
              const std::string& seq,
              const std::string& qual)
-      : name_(name), seq_(seq), qual_(qual),
-        valid_(UpdateValid()) {}
+      : name_(name), seq_(seq), qual_(qual) {
+    UpdateValid();
+  }
 
   /*
    * Check whether SingleRead is valid.
@@ -188,7 +189,7 @@ class SingleRead {
    */
   void SetName(const char* new_name) {
     name_ = new_name;
-    valid_ = UpdateValid();
+    UpdateValid();
   }
 
   /*
@@ -198,7 +199,7 @@ class SingleRead {
    */
   void SetSequence(const char* new_sequence) {
     seq_ = new_sequence;
-    valid_ = UpdateValid();
+    UpdateValid();
   }
 
   /*
@@ -213,7 +214,7 @@ class SingleRead {
     for (size_t i = 0; i < qual_.size(); ++i) {
       qual_[i] -= offset;
     }
-    valid_ = UpdateValid();
+    UpdateValid();
   }
 
  private:
@@ -239,19 +240,19 @@ class SingleRead {
    *
    * @see IsValid()
    */
-  const bool UpdateValid() const {
+  void UpdateValid() {
+    valid_ = true;
     if (seq_.size() == 0) {
-      return false;
+      valid_ = false;
     }
     if (seq_.size() != qual_.size()) {
-      return false;
+      valid_ = false;
     }
     for (size_t i = 0; i < seq_.size(); ++i) {
       if (!is_nucl(seq_[i])) {
-        return false;
+        valid_ = false;
       }
     }
-    return true;
   }
 };
 
