@@ -16,6 +16,7 @@
 #include "lc_common.hpp"
 #include "lc_io.hpp"
 #include "seeds.hpp"
+#include "path_utils.hpp"
 #include "paths.hpp"
 #include "quality.hpp"
 #include "visualize.hpp"
@@ -104,19 +105,16 @@ int main() {
 	FindPaths(g, seeds, pairedInfos, paths);
 
 	std::vector<BidirectionalPath> result;
-	if (lc_cfg::get().fo.remove_duplicates_only || lc_cfg::get().fo.remove_overlaps) {
-		RemoveSubpaths(g, paths, result);
-		INFO("Duplicates removed");
-	}
-	else {
+	if (lc_cfg::get().fo.remove_subpaths || lc_cfg::get().fo.remove_overlaps) {
 		RemoveSubpaths(g, paths, result);
 		INFO("Subpaths removed");
 	}
-
-	found = PathsInGenome<K>(g, index, sequence, result, path1, path2);
-	INFO("Good paths found " << found << " in total " << result.size());
-	INFO("Path coverage " << PathsCoverage(g, result));
-	INFO("Path length coverage " << PathsLengthCoverage(g, result));
+	else if (lc_cfg::get().fo.remove_duplicates) {
+		RemoveDuplicate(paths, result);
+		INFO("Duplicates removed");
+	} else {
+		result = paths;
+	}
 
 	if (lc_cfg::get().write_overlaped_paths) {
 		WriteGraphWithPathsSimple(output_dir + "overlaped_paths.dot", "overlaped_paths", g, result, path1, path2);
@@ -125,6 +123,12 @@ int main() {
 	if (lc_cfg::get().fo.remove_overlaps) {
 		RemoveOverlaps(result);
 	}
+
+	found = PathsInGenome<K>(g, index, sequence, result, path1, path2);
+	INFO("Good paths found " << found << " in total " << result.size());
+	INFO("Path coverage " << PathsCoverage(g, result));
+	INFO("Path length coverage " << PathsLengthCoverage(g, result));
+
 
 	if (lc_cfg::get().write_paths) {
 		WriteGraphWithPathsSimple(output_dir + "final_paths.dot", "final_paths", g, result, path1, path2);
@@ -138,10 +142,12 @@ int main() {
 		SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix);
 	}
 
-	//TODO option in config
-	if (true) {
+	if (lc_cfg::get().write_graph) {
 		SaveGraph(g, intIds, output_dir + "graph");
 	}
+
+	PrintEdgeNuclsByLength(g, 55);
+	PrintEdgeNuclsByLength(g, 46);
 
 	DeleteAdditionalInfo(pairedInfos);
 	return 0;

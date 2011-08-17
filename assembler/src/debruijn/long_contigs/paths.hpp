@@ -161,8 +161,8 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 	maxWeight = FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward);
 
 	if (edges.size() == 1) {
-		static double weightFunThreshold = lc_cfg::get().es.weight_threshold;
-		return ExtensionGoodEnough(edges.back(), maxWeight, weightFunThreshold);
+		static double weightThreshold = lc_cfg::get().es.weight_threshold;
+		return ExtensionGoodEnough(edges.back(), maxWeight, weightThreshold);
 	}
 
 	return 0;
@@ -255,7 +255,6 @@ size_t EdgesToExcludeBackward(Graph& g, BidirectionalPath& path) {
 		++toExclude;
 	}
 
-	//INFO("Edges to exclude backward " << toExclude);
 	return toExclude;
 }
 
@@ -276,19 +275,9 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	IncreaseLengths(g, lengths, extension, true);
 
 	if (CheckCycle(path, extension, detector, w)) {
-		//INFO("Loop found");
-		//PrintPath(g, path);
-		//PrintDetector(detector);
-		//MakeKeyPause();
-
 		RemoveLoopForward(path, detector, FULL_LOOP_REMOVAL);
-
-		//PrintPath(g, path);
-		//MakeKeyPause();
 		return false;
 	}
-
-	//PrintPath(g, path, lengths);
 
 	return true;
 }
@@ -310,20 +299,10 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	IncreaseLengths(g, lengths, extension, false);
 
 	if (CheckCycle(path, extension, detector, w)) {
-		//INFO("Loop found");
-		//PrintPath(g, path);
-		//PrintDetector(detector);
-
-		//MakeKeyPause();
 
 		RemoveLoopBackward(path, detector, FULL_LOOP_REMOVAL);
-		//PrintPath(g, path);
-
-		//MakeKeyPause();
 		return false;
 	}
-
-	//PrintPath(g, path, lengths);
 
 	return true;
 }
@@ -334,25 +313,13 @@ void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo) 
 	CycleDetector detector;
 
 	RecountLengthsForward(g, seed, lengths);
-
-	//PrintPath(g, seed, lengths);
-
-	//INFO("Extending forward");
 	while (ExtendPathForward(g, seed, lengths, detector, pairedInfo)) {
-		//INFO("Added edge");
 	}
-
 	detector.clear();
+
 	RecountLengthsBackward(g, seed, lengths);
-
-	//PrintPath(g, seed, lengths);
-
-	//INFO("Extending backward");
 	while (ExtendPathBackward(g, seed, lengths, detector, pairedInfo)) {
-		//INFO("Added edge");
 	}
-
-	//INFO("Growing done");
 }
 
 //Metrics for choosing seeds
