@@ -47,7 +47,7 @@ void TestFastaFastqGzParserFull() {
 }
 
 void TestFastaFastqGzParserFastaReading() {
-  FastaFastqGzParser parser("./test/data/test.fasta", 33);
+  FastaFastqGzParser parser("./test/data/test.fasta", 64);
   ASSERT(parser.is_open());
   SingleRead read;
   parser >> read;
@@ -55,7 +55,7 @@ void TestFastaFastqGzParserFastaReading() {
   ASSERT_EQUAL("CTTTCATTTCCTACTGTAGCTTTTAGTCTCTTCAAATACAAGGCACACA", 
                read.GetSequenceString());
   ASSERT_EQUAL("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", 
-               read.GetPhredQualityString());
+               read.GetPhredQualityString(64));
   parser >> read;
   parser >> read;
   parser >> read;
@@ -63,7 +63,7 @@ void TestFastaFastqGzParserFastaReading() {
   ASSERT_EQUAL("CTTTCATTTCCTACTGTAGCTTTTAGTCTCTTCAAATACAAGGCACACAGGGAG", 
                read.GetSequenceString());
   ASSERT_EQUAL("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", 
-               read.GetPhredQualityString());
+               read.GetPhredQualityString(64));
   Sequence seq;
   seq = read.sequence();
   Quality qual(read.quality());

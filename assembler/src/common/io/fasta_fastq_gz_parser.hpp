@@ -68,19 +68,19 @@ class FastaFastqGzParser : public Parser {
       return *this;
     }
     read.SetName(seq_->name.s);
+    read.SetSequence(seq_->seq.s);
     if (seq_->qual.s) {
       read.SetQuality(seq_->qual.s, offset_);
     } else {
-      size_t len = strlen(seq_->name.s);
-      char* qual = malloc(len + 1);
-      char q = 2 + offset_;
+      size_t len = strlen(seq_->seq.s);
+      char* qual = (char*) malloc(len + 1);
+      char q = '\2' + offset_;
       for (size_t i = 0; i < len; ++i) {
         qual[i] = q;
       }
       qual[len] = '\0';
       read.SetQuality(qual, offset_);
     }
-    read.SetSequence(seq_->seq.s);
     ReadAhead();
     return *this;
   }
