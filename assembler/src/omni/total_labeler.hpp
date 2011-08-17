@@ -28,7 +28,7 @@ public:
 	EdgesPositionHandler<Graph>* EdgesPos;
 	EdgeLabelHandler<Graph>* EdgesLabels;
 	TotalLabelerGraphStruct(Graph &g, IdTrackHandler<Graph>* id_handler,	EdgesPositionHandler<Graph>* position_handler,
-							EdgeLabelHandler<Graph>* label_handler): g_(g),
+							EdgeLabelHandler<Graph>* label_handler = NULL): g_(g),
 							IDs(id_handler), EdgesPos(position_handler), EdgesLabels(label_handler)	{
 
 	}

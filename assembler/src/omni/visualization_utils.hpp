@@ -260,7 +260,7 @@ void WriteToDotFile(const string& file_name, const string& graph_name,
 
 template<class Graph>
 void WriteSimple(const string& file_name, const string& graph_name, Graph& g,
-		const GraphLabeler<Graph>& labeler) {
+		GraphLabeler<Graph> const& labeler) {
 	fstream filestr;
 	string simple_file_name(file_name);
 	simple_file_name.insert(simple_file_name.size() - 4, "_simple");

@@ -7,9 +7,11 @@
 #include <cmath>
 #include <map>
 #include <limits>
+#include <xmath.h>
 
 //#define MERGE_DATA_RELATIVE_DIFFERENCE 0.3
-#define E 1e-6
+
+
 namespace omnigraph {
 
 /**
@@ -62,8 +64,11 @@ struct PairInfo {
 
 	bool operator<(const PairInfo& rhs) const {
 		const PairInfo &lhs = *this;
-		return lhs.first == rhs.first ? lhs.second == rhs.second ? lhs.d + E
-				< rhs.d : lhs.second < rhs.second : lhs.first < rhs.first;
+		return lhs.first == rhs.first
+				? lhs.second == rhs.second
+						? math::ls(lhs.d, rhs.d)
+						: lhs.second < rhs.second
+				: lhs.first < rhs.first;
 	}
 
 	/**

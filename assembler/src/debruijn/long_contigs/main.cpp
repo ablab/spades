@@ -11,6 +11,7 @@
 
 #include "../config_struct.hpp"
 #include "simple_tools.hpp"
+#include "lc_config_struct.hpp"
 
 #include "lc_common.hpp"
 #include "lc_io.hpp"
@@ -18,7 +19,6 @@
 #include "paths.hpp"
 #include "quality.hpp"
 #include "visualize.hpp"
-
 
 
 namespace {
@@ -40,6 +40,7 @@ DECL_PROJECT_LOGGER("d")
 
 int main() {
 	cfg::create_instance(CONFIG_FILENAME);
+	lc_cfg::create_instance(LC_CONFIG_FILENAME);
 	using namespace long_contigs;
 
 	checkFileExistenceFATAL(LC_CONFIG_FILENAME);
@@ -61,19 +62,19 @@ int main() {
 	string output_dir_suffix = MakeLaunchTimeDirName()+ "." + dataset + "/";
 	string output_dir = output_root + output_dir_suffix;
 
-	if (!LC_CONFIG.read<bool>("from_file")) {
+	if (!lc_cfg::get().from_file) {
 		INFO("Load from file");
 		return -1;
 	}
 	else {
-		LoadFromFile<K>(LC_CONFIG.read<std::string>("graph_file_" + dataset), g, pairedIndex, index, intIds, sequence);
+		LoadFromFile<K>(lc_cfg::get().ds.graph_file, g, pairedIndex, index, intIds, sequence);
 	}
 	mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
 	Path<Graph::EdgeId> path1 = FindGenomePath<K> (sequence, g, index);
 	Path<Graph::EdgeId> path2 = FindGenomePath<K> (!sequence, g, index);
 
-	PairedInfoIndexLibrary basicPairedLib(LC_CONFIG.read<size_t>("read_size"), LC_CONFIG.read<size_t>("insert_size"), &pairedIndex);
+	PairedInfoIndexLibrary basicPairedLib(lc_cfg::get().bl.read_size, lc_cfg::get().bl.insert_size, &pairedIndex);
 	pairedInfos.push_back(basicPairedLib);
 
 	if (cfg::get().etalon_info_mode) {
@@ -87,7 +88,7 @@ int main() {
 	RemoveSubpaths(g, rawSeeds, seeds);
 	INFO("Sub seeds removed");
 
-	double MIN_COVERAGE = LC_CONFIG.read<double>("min_coverage");
+	double MIN_COVERAGE = lc_cfg::get().ss.min_coverage;
 	FilterLowCovered(g, seeds, MIN_COVERAGE);
 	INFO("Seeds filtered");
 
@@ -96,14 +97,14 @@ int main() {
 	INFO("Seed coverage " << PathsCoverage(g, seeds));
 	INFO("Path length coverage " << PathsLengthCoverage(g, seeds));
 
-	if (LC_CONFIG.read<bool>("write_seeds")) {
+	if (lc_cfg::get().write_seeds) {
 		WriteGraphWithPathsSimple(output_dir + "seeds.dot", "seeds", g, seeds, path1, path2);
 	}
 
 	FindPaths(g, seeds, pairedInfos, paths);
 
 	std::vector<BidirectionalPath> result;
-	if (LC_CONFIG.read<bool>("remove_duplicates_only") || LC_CONFIG.read<bool>("remove_overlaps")) {
+	if (lc_cfg::get().fo.remove_duplicates_only || lc_cfg::get().fo.remove_overlaps) {
 		RemoveSubpaths(g, paths, result);
 		INFO("Duplicates removed");
 	}
@@ -117,24 +118,29 @@ int main() {
 	INFO("Path coverage " << PathsCoverage(g, result));
 	INFO("Path length coverage " << PathsLengthCoverage(g, result));
 
-	if (LC_CONFIG.read<bool>("write_overlaped_paths")) {
+	if (lc_cfg::get().write_overlaped_paths) {
 		WriteGraphWithPathsSimple(output_dir + "overlaped_paths.dot", "overlaped_paths", g, result, path1, path2);
 	}
 
-	if (LC_CONFIG.read<bool>("remove_overlaps")) {
+	if (lc_cfg::get().fo.remove_overlaps) {
 		RemoveOverlaps(result);
 	}
 
-	if (LC_CONFIG.read<bool>("write_paths")) {
+	if (lc_cfg::get().write_paths) {
 		WriteGraphWithPathsSimple(output_dir + "final_paths.dot", "final_paths", g, result, path1, path2);
 	}
 
-	if (LC_CONFIG.read<bool>("write_contigs")) {
+	if (lc_cfg::get().write_contigs) {
 		OutputPathsAsContigs(g, result, output_dir + "paths.contigs");
 	}
 
-	if (!cfg::get().etalon_info_mode && LC_CONFIG.read<bool>("write_real_paired_info")) {
-		SavePairedInfo(g, pairedInfos, intIds, output_dir + LC_CONFIG.read<std::string>("paired_info_file_prefix"));
+	if (!cfg::get().etalon_info_mode && lc_cfg::get().write_real_paired_info) {
+		SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix);
+	}
+
+	//TODO option in config
+	if (true) {
+		SaveGraph(g, intIds, output_dir + "graph");
 	}
 
 	DeleteAdditionalInfo(pairedInfos);
