@@ -2,7 +2,8 @@
 
 input_dir	      ./data/input/E.Coli.K12.MG1655/
 output_dir	      ./data/debruijn/
-dataset 	      QUAKE_FULL
+previous_run_dir tmp	; tmp or latest 
+dataset 	      QUAKE_CROPPED_100K
 reference_genome  MG1655-K12.fasta.gz
 
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
@@ -14,7 +15,17 @@ rectangle_mode	false
 ; set to true to obtain paired info from genome mapping rather than from paired reads
 etalon_info_mode  false
 
-from_saved_graph	0
+from_saved_graph	0 ; not used(?)
+
+entry_point		construction
+;	construction, pair_info_counting, simplification, distance_estimation, repeat_resolving, consensus
+
+start_from begin   ; Full run.
+;start_from after_filling  ; Run with previous constructed graph.
+;start_from after_simplify  ; Run with previous constructed and simplified graph.
+
+
+
 
 ; tip clipper:
 
@@ -105,4 +116,44 @@ QUAKE_FULL
 	second	EAS20_8/quaked/s_6_2.cor.fastq.gz
 	IS 	   220 	; insert size
 	LEN	   4639675 ; total size
+}
+
+EAS600_QUAKE_CROPPED_1K
+{
+	first	EAS600_70/quaked/cropped/E.Coli_600.first1000_1.fastq.gz
+	second	EAS600_70/quaked/cropped/E.Coli_600.first1000_2.fastq.gz
+	IS		480 	; insert size
+	LEN		1000 	; total size
+}
+
+EAS600_QUAKE_CROPPED_10K
+{
+	first	EAS600_70/quaked/cropped/E.Coli_600.first10000_1.fastq.gz
+	second	EAS600_70/quaked/cropped/E.Coli_600.first10000_2.fastq.gz
+	IS		480 	; insert size
+	LEN		10000 	; total size
+}
+
+EAS600_QUAKE_CROPPED_100K
+{
+	first	EAS600_70/quaked/cropped/E.Coli_600.first100000_1.fastq.gz
+	second	EAS600_70/quaked/cropped/E.Coli_600.first100000_2.fastq.gz
+	IS		480 	; insert size
+	LEN		100000 	; total size
+}
+
+EAS600_QUAKE_CROPPED_400K
+{
+	first	EAS600_70/quaked/cropped/E.Coli_600.first400000_1.fastq.gz
+	second	EAS600_70/quaked/cropped/E.Coli_600.first400000_2.fastq.gz
+	IS		480 	; insert size
+	LEN		400000 	; total size
+}
+
+EAS600_QUAKE_FULL
+{
+	first	EAS600_70/quaked/ERR022075_1.cor.fastq.gz
+	second	EAS600_70/quaked/ERR022075_2.cor.fastq.gz
+	IS		480 	; insert size
+	LEN		400000 	; total size
 }

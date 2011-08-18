@@ -9,8 +9,8 @@
 #include "hash.hpp"
 #include "parameters.hpp"
 #include "logging.hpp"
-#include "omnigraph.hpp"
-#include "omnigraph_nucls.hpp"
+#include "omni/omnigraph.hpp"
+#include "omni/omnigraph_nucls.hpp"
 #include "io/single_read.hpp"
 #include "io/reader.hpp"
 

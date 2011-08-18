@@ -11,9 +11,9 @@
 #include "config_struct.hpp"
 #include "new_debruijn.hpp"
 #include "debruijn_stats.hpp"
-#include "tip_clipper.hpp"
-#include "bulge_remover.hpp"
-#include "erroneous_connection_remover.hpp"
+#include "omni/tip_clipper.hpp"
+#include "omni/bulge_remover.hpp"
+#include "omni/erroneous_connection_remover.hpp"
 
 namespace debruijn_graph {
 

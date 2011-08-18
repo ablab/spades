@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <map>
 #include <string>
-#include "common/logging.hpp"
+#include "logging.hpp"
 
 using std::map;
 using std::string;

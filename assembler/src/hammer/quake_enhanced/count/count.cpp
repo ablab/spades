@@ -24,11 +24,11 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
-#include "common/logging.hpp"
-#include "common/read/ireadstream.hpp"
-#include "common/read/read.hpp"
-#include "common/sequence/seq.hpp"
-#include "hammer/valid_kmer_generator.hpp"
+#include "logging.hpp"
+#include "read/ireadstream.hpp"
+#include "read/read.hpp"
+#include "sequence/seq.hpp"
+#include "valid_kmer_generator.hpp"
 #define SUPPRESS_UNUSED(X) ((void) (X))
 
 DECL_PROJECT_LOGGER("q")
@@ -133,7 +133,7 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
       if (KMer::less2()(!kmer, kmer)) {
         kmer = !kmer;
       }
-      FILE *cur_file = ofiles[hash_function(gen.kmer()) % file_number];
+      FILE *cur_file = ofiles[hash_function(kmer) % file_number];
       KMer::BinWrite(cur_file, kmer);
       double correct_probability = gen.correct_probability();
       fwrite(&correct_probability, sizeof(correct_probability), 1, cur_file);

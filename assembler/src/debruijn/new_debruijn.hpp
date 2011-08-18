@@ -1,10 +1,10 @@
 #ifndef NEW_DEBRUIJN_HPP_
 #define NEW_DEBRUIJN_HPP_
 
-#include "abstract_conjugate_graph.hpp"
-#include "abstract_nonconjugate_graph.hpp"
-#include "coverage.hpp"
-#include "ID_track_handler.hpp"
+#include "omni/abstract_conjugate_graph.hpp"
+#include "omni/abstract_nonconjugate_graph.hpp"
+#include "omni/coverage.hpp"
+#include "omni/ID_track_handler.hpp"
 
 using omnigraph::CoverageIndex;
 namespace debruijn_graph {

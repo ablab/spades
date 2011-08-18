@@ -59,20 +59,28 @@ class PositionKMer {
 	static double getKMerQuality( const hint_t & index, const int qvoffset );
 
 	static bool compareSubKMersCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tauplusone, const uint32_t start) {
+		//cout << "    comparing " << km->at(kmer1).first.str() << "\n"
+		//    << "              " << km->at(kmer2).first.str();
 		for ( hint_t i = start; i < K; i += tauplusone ) {
 			if ( blob[ km->at(kmer1).first.start_ + i ] != blob [ km->at(kmer2).first.start_ + i ] ) {
+		//		cout << " " << (blob[ km->at(kmer1).first.start_ + i ] < blob [ km->at(kmer2).first.start_ + i ]) << " at pos=" << i << "\n";
 				return ( blob[ km->at(kmer1).first.start_ + i ] < blob [ km->at(kmer2).first.start_ + i ] );
 			}
 		}
+		//cout << "\n";
 		return false;
 	}
 
 	static bool compareSubKMersGreaterCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tauplusone, const uint32_t start) {
+		//cout << "    comparing " << km->at(kmer1).first.str() << "\n"
+		//     << "              " << km->at(kmer2).first.str();
 		for ( hint_t i = start; i < K; i += tauplusone ) {
 			if ( blob[ km->at(kmer1).first.start_ + i ] != blob [ km->at(kmer2).first.start_ + i ] ) {
+		//		cout << " " << (blob[ km->at(kmer1).first.start_ + i ] > blob [ km->at(kmer2).first.start_ + i ]) << "\n";
 				return ( blob[ km->at(kmer1).first.start_ + i ] > blob [ km->at(kmer2).first.start_ + i ] );
 			}
 		}
+		//cout << "\n";
 		return false;
 	}
 

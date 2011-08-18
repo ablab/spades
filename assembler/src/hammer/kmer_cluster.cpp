@@ -56,21 +56,21 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, i
 	if (blockSize < (uint32_t)Globals::blocksize_quadratic_threshold) {
 		processBlockQuadratic(uf, block);
 	} else {
-		cout << "  making a sub-subkmersorter for blocksize=" << blockSize << endl;
-		for (uint32_t i = 0; i < blockSize; ++i) cout << block[i] << " ";
-		cout << endl;
+		//cout << "  making a sub-subkmersorter for blocksize=" << blockSize << endl;
+		//for (uint32_t i = 0; i < blockSize; ++i) cout << block[i] << " ";
+		//cout << endl;
 		int nthreads_per_subkmer = max( (int)(nthreads_ / (tau_ + 1)), 1);
 		SubKMerSorter subsubsorter( &block, &k_, nthreads_per_subkmer, tau_, cur_subkmer,
-			SubKMerSorter::SorterTypeStraight, SubKMerSorter::SorterTypeStraight );
+			SubKMerSorter::SorterTypeChequered, SubKMerSorter::SorterTypeStraight );
 		subsubsorter.runSort();
 		for (int sub_i = 0; sub_i < tau_+1; ++sub_i) {
 			vector<hint_t> subblock;
 			while ( subsubsorter.getNextBlock(sub_i, subblock) ) {
-				if (subblock.size() > (Globals::blocksize_quadratic_threshold / 2) ) {
+				/*if (subblock.size() > (Globals::blocksize_quadratic_threshold / 2) ) {
 					cout << "    running quadratic on size=" << subblock.size() << endl;
-					for (uint32_t i = 0; i < blockSize; ++i) cout << "    " << subblock[i] << " " << k_[subblock[i]].first.str() << endl;
+					for (uint32_t i = 0; i < subblock.size(); ++i) cout << "    " << subblock[i] << " " << k_[subblock[i]].first.str() << endl;
 					cout << endl;
-				}
+				}*/
 				processBlockQuadratic(uf, subblock);
 			}
 		}		
@@ -375,7 +375,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		}
 		cout << endl;
 		}
-	}*/
+	//}*/
 	
 	// it may happen that consensus string from one subcluster occurs in other subclusters
 	// we need to check for that

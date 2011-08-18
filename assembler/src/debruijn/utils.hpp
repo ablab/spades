@@ -10,10 +10,10 @@
 
 #include "io/paired_read.hpp"
 #include "seq_map.hpp"
-#include "omni_utils.hpp"
+#include "omni/omni_utils.hpp"
 #include "logging.hpp"
-#include "paired_info.hpp"
-#include "statistics.hpp"
+#include "omni/paired_info.hpp"
+#include "omni/statistics.hpp"
 #include "xmath.h"
 #include <boost/optional.hpp>
 //#include "common/io/paired_read.hpp"
@@ -645,7 +645,10 @@ private:
 	void ProcessPairedRead(
 			omnigraph::PairedInfoIndex<Graph>& paired_index,
 			const io::PairedRead& p_r) {
-//		static size_t count = 0;
+		//DEBUG
+		static size_t count = 0;
+		//DEBUG
+
 		Sequence read1 = p_r.first().sequence();
 		Sequence read2 = p_r.second().sequence();
 
@@ -662,13 +665,14 @@ private:
 				size_t kmer_distance = read_distance + mapping_edge_2.second.initial_range.start_pos - mapping_edge_1.second.initial_range.start_pos;
 				int edge_distance = kmer_distance + mapping_edge_1.second.mapped_range.start_pos - mapping_edge_2.second.mapped_range.start_pos;
 
-//				cout << PairInfo<EdgeId>(mapping_edge_1.first, mapping_edge_2.first, (double) edge_distance, weight, 0.) << endl;
-//				cout << "here2" << endl;
 				paired_index.AddPairInfo(PairInfo<EdgeId>(mapping_edge_1.first, mapping_edge_2.first, (double) edge_distance, weight, 0.));
-//				count++;
-//				if (count == 1000) {
-//					exit(0);
-//				}
+				//DEBUG
+				cout << "here2 " << PairInfo<EdgeId>(mapping_edge_1.first, mapping_edge_2.first, (double) edge_distance, weight, 0.) << endl;
+				count++;
+				if (count == 10000) {
+					exit(0);
+				}
+				//DEBUG
 			}
 		}
 	}

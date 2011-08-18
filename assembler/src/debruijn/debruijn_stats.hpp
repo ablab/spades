@@ -8,11 +8,11 @@
 #ifndef DEBRUIJN_STATS_HPP_
 #define DEBRUIJN_STATS_HPP_
 
-#include "visualization_utils.hpp"
-#include "statistics.hpp"
+#include "omni/visualization_utils.hpp"
+#include "omni/statistics.hpp"
 #include "new_debruijn.hpp"
-#include "edges_position_handler.hpp"
-#include "EdgeVertexFilter.hpp"
+#include "omni/edges_position_handler.hpp"
+#include "omni/EdgeVertexFilter.hpp"
 //#include <boost/filesystem.hpp>
 #include "read/osequencestream.hpp"
 #include <sys/types.h>
@@ -307,17 +307,17 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	for (int cur = 0, c = 1; !irs.eof(); c++) {
 		io::SingleRead read;
 		irs >> read;
-		DEBUG("Length: " << read.size());
+		DEBUG("Contig #" << c << ", length: " << read.size());
 		read.ClearQuality();
 		if (!read.IsValid()) {
-			WARN("Contig #" << c << " contains Ns");
+			WARN("Attention: contig #" << c << " contains Ns");
 			continue;
 		}
 		Sequence contig = read.sequence();
-		if (contig.size() < 50000) {
+		if (contig.size() < 150000) {
 			continue;
 		}
-		INFO("Large contig #" << c << " has number " << cur);
+		INFO("Large contig #" << c << " has position number " << cur);
 		Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (contig, g, index);
 		for (auto it = path1.sequence().begin(); it != path1.sequence().end(); ++it) {
 			EdgeId ei = *it;
