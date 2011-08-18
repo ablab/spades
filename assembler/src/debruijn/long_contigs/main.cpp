@@ -146,9 +146,6 @@ int main() {
 		SaveGraph(g, intIds, output_dir + "graph");
 	}
 
-	PrintEdgeNuclsByLength(g, 55);
-	PrintEdgeNuclsByLength(g, 46);
-
 	DeleteAdditionalInfo(pairedInfos);
 	return 0;
 }
