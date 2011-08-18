@@ -1,7 +1,7 @@
 #include <iostream>
 #include "logging.hpp"
-#include "hammer/quake_enhanced/options.hpp"
-#include "hammer/quake_enhanced/quake.hpp"
+#include "options.hpp"
+#include "quake.hpp"
 DECL_PROJECT_LOGGER("q")
 
 namespace quake_enhanced {

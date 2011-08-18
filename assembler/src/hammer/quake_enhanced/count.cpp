@@ -5,11 +5,11 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "common/read/ireadstream.hpp"
-#include "common/read/read.hpp"
-#include "common/sequence/seq.hpp"
-#include "hammer/valid_kmer_generator.hpp"
-#include "hammer/quake_enhanced/quake.hpp"
+#include "read/ireadstream.hpp"
+#include "read/read.hpp"
+#include "sequence/seq.hpp"
+#include "valid_kmer_generator.hpp"
+#include "quake_enhanced/quake.hpp"
 #define SUPPRESS_UNUSED(X) ((void) (X))
 using quake_enhanced::Quake;
 

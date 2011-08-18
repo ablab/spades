@@ -1,8 +1,8 @@
 #include "stdint.h"
 #include <string>
 #include <vector>
-#include "common/io/reader.hpp"
-#include "common/read/ireadstream.hpp"
+#include "io/reader.hpp"
+#include "read/ireadstream.hpp"
 
 // ToDo => to settings.hpp
 const uint32_t kK = 31;

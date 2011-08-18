@@ -1,5 +1,5 @@
 #include <string>
-#include "hammer/quake_enhanced/quake.hpp"
+#include "quake_enhanced/quake.hpp"
 using std::string;
 using quake_enhanced::Quake;
 
