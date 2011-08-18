@@ -80,6 +80,7 @@ class FastaFastqGzParser : public Parser {
       }
       qual[len] = '\0';
       read.SetQuality(qual, offset_);
+      free(qual);
     }
     ReadAhead();
     return *this;
