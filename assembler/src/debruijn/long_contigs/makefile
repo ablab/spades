@@ -2,7 +2,7 @@ OBJ_DIR=../../../build/release/debruijn/CMakeFiles/debruijn.dir
 MYO_DIR=../../../build/release/debruijn/long_contigs
 APP_DIR=../../../build/release/debruijn/long_contigs
 
-CFLAGS=-c -O3 -g3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x $(PG) $(OMP) -I./../../common -I./../../common/read -I./../../common/sequence -I./../../omni -I./../../libs -I./.. -I./../..
+CFLAGS=-c -O3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x $(PG) $(OMP) -I./../../common -I./../../common/read -I./../../common/sequence -I./../../omni -I./../../libs -I./.. -I./../..
 
 LDFLAGS=-O3 -L/usr/local/lib -L/usr/local/apr/lib -lz -llog4cxx -lapr-1 -laprutil-1
 
