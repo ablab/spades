@@ -79,6 +79,7 @@ class SffParser : public Parser {
    */
   /* virtual */ void close() {
     if (is_open_) {
+      mfclose(sff_fp_);
       free_sff_common_header(h_);
       is_open_ = false;
       eof_ = true;
@@ -148,23 +149,28 @@ class SffParser : public Parser {
     char* bases_;
     unsigned char* quality_;
     unsigned char quality_char_;
-    name_ = (char *)malloc(rh_->name_len + 1);
-    strncpy(name_, rh_->name, rh_->name_len);
+    size_t nlen = rh_->name_len;
+    size_t slen = rh_->nbases;
+    name_ = (char *)malloc(nlen + 1);
+    strncpy(name_, rh_->name, nlen);
+    name_[nlen] = '\0';
     read_.SetName(name_);
-    bases_ = (char *)malloc(rh_->nbases + 1);
-    strncpy(bases_, rd_->bases, rh_->nbases);
-    bases_[rh_->nbases] = '\0';
+    bases_ = (char *)malloc(slen + 1);
+    strncpy(bases_, rd_->bases, slen);
+    bases_[slen] = '\0';
     read_.SetSequence(bases_);
-    quality_ = (unsigned char *)malloc(rh_->nbases + 1);
-    for (size_t i = 0; i < rh_-> nbases; i++) {
+    quality_ = (unsigned char *)malloc(slen + 1);
+    for (size_t i = 0; i < slen; i++) {
       quality_char_ = (rd_->quality[i] <= 93 ? rd_->quality[i] : 93) + 33;
       quality_[i] = quality_char_;
     }
-    quality_[rh_->nbases] = '\0';
+    quality_[slen] = '\0';
     read_.SetQuality((char *)quality_, 33);
     free(name_);
     free(bases_);
     free(quality_);
+    free_sff_read_header(rh_);
+    free_sff_read_data(rd_);
   }
 
   /*
