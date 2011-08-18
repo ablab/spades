@@ -10,6 +10,7 @@ CMakeFiles/
 Makefile
 cmake_install.cmake
 src/debruijn/config.inp
+src/debruijn/long_contigs/lc_config.info
 src/file
 *.launch
 
