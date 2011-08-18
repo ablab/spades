@@ -341,7 +341,7 @@ void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name,
 		read_count = fscanf(file, "\n");
 		assert(read_count == 0);
 		Sequence tmp(longstring);
-		DEBUG(start_id<<" "<< fin_id <<" "<< IdHandler_.ReturnVertexId(start_id)<<" "<< IdHandler_.ReturnVertexId(fin_id));
+		TRACE(start_id<<" "<< fin_id <<" "<< IdHandler_.ReturnVertexId(start_id)<<" "<< IdHandler_.ReturnVertexId(fin_id));
 		EdgeId eid = graph_.AddEdge(IdHandler_.ReturnVertexId(start_id),
 				IdHandler_.ReturnVertexId(fin_id), tmp);
 		IdHandler_.AddEdgeIntId(eid, e_real_id);
@@ -369,7 +369,9 @@ void DataScanner<Graph>::loadConjugateGraph(const string& file_name,
 		int vertex_real_id, conjugate_id;
 		read_count = fscanf(file, "Vertex %d ~ %d .\n", &vertex_real_id,
 				&conjugate_id);
+		TRACE("Vertex "<<vertex_real_id<<" ~ "<<conjugate_id<<" .");
 		assert(read_count == 2);
+
 		if (vertex_set.find(vertex_real_id) == vertex_set.end()) {
 			VertexId vid = graph_.AddVertex();
 			VertexId conj_vid = graph_.conjugate(vid);
@@ -377,7 +379,7 @@ void DataScanner<Graph>::loadConjugateGraph(const string& file_name,
 			IdHandler_.AddVertexIntId(vid, vertex_real_id);
 			IdHandler_.AddVertexIntId(conj_vid, conjugate_id);
 			vertex_set.insert(conjugate_id);
-			TRACE(vid<<" "<< conj_vid << "added");
+			TRACE(vid<<" ( "<< IdHandler_.ReturnVertexId(vertex_real_id) <<" )   "<< conj_vid << "( "<<IdHandler_.ReturnVertexId(conjugate_id)<<" )  added");
 		}
 	}
 	int tmp_edge_count;
@@ -392,9 +394,10 @@ void DataScanner<Graph>::loadConjugateGraph(const string& file_name,
 		assert(read_count == 5);
 		read_count = fscanf(sequence_file, "%d %s .", &e_real_id, longstring);
 		assert(read_count == 2);
+		TRACE("Edge "<<e_real_id<<" : "<<start_id<<" -> " << fin_id << " l = " << length << " ~ "<< conjugate_edge_id);
 		if (edge_set.find(e_real_id) == edge_set.end()) {
 			Sequence tmp(longstring);
-			DEBUG(start_id<<" "<< fin_id <<" "<< IdHandler_.ReturnVertexId(start_id)<<" "<< IdHandler_.ReturnVertexId(fin_id));
+			TRACE(start_id<<" "<< fin_id <<" "<< IdHandler_.ReturnVertexId(start_id)<<" "<< IdHandler_.ReturnVertexId(fin_id));
 			EdgeId eid = graph_.AddEdge(IdHandler_.ReturnVertexId(start_id),
 					IdHandler_.ReturnVertexId(fin_id), tmp);
 			IdHandler_.AddEdgeIntId(eid, e_real_id);
@@ -423,7 +426,9 @@ void DataScanner<Graph>::loadCoverage(const string& file_name) {
 		double edge_coverage;
 		read_count = fscanf(file, "%d %lf .\n", &edge_real_id, &edge_coverage);
 		assert(read_count == 2);
+		TRACE(edge_real_id<< " "<<edge_coverage <<" . ");
 		EdgeId eid = IdHandler_.ReturnEdgeId(edge_real_id);
+		TRACE("EdgeId "<<eid);
 		graph_.coverage_index().SetCoverage(eid, edge_coverage * graph_.length(eid));
 	}
 	fclose(file);

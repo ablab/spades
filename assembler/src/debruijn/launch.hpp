@@ -321,13 +321,14 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				EdgePosAfter);
 
 		EdgesLabelsGraphLabeler<NCGraph> LabelLabler(resolved_graph, LabelsAfter);
-
+		INFO("---Clearing resolved graph---");
 		for(int i = 0; i < 3; i ++) {
 			ClipTipsForResolver(resolved_graph);
 			RemoveBulges2(resolved_graph);
 			RemoveLowCoverageEdgesForResolver(resolved_graph);
 		}
-
+		INFO("---Cleared---");
+		INFO("---Output Contigs---");
 		OutputContigs(resolved_graph, output_folder + "contigs_before_enlarge.fasta");
 
 		omnigraph::WriteSimple(output_folder + "4_cleared_graph.dot",
