@@ -65,30 +65,39 @@ double PathMinReadCoverage(Graph& g, BidirectionalPath& path) {
 	return minCov;
 }
 
-//Remove paths with low covered edges
-void FilterLowCovered(Graph& g, std::vector<BidirectionalPath>& paths, double threshold) {
-	BidirectionalPath sample;
-	for (auto edge = g.SmartEdgeBegin(); !edge.IsEnd(); ++edge) {
-		if (g.length(*edge) == 18257) {
-			sample.push_back(*edge);
-			break;
-		}
-	}
-
-	BidirectionalPath sample2;
-	bool fst = true;
-	for (auto edge = g.SmartEdgeBegin(); !edge.IsEnd(); ++edge) {
-		if (g.length(*edge) == 18257) {
-			if (fst) {
-				fst = false;
-			} else {
-				sample2.push_back(*edge);
+//Filter paths by containing paths
+void FilterPaths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& samples) {
+	for(auto path = paths.begin(); path != paths.end(); ) {
+		bool toErase = true;
+		for (auto sample = samples.begin(); sample != samples.end(); ++sample) {
+			if (ContainsPath(*path, *sample)) {
+				toErase = false;
 				break;
 			}
 		}
+		if (toErase) {
+			paths.erase(path);
+		} else {
+			++path;
+		}
 	}
+}
 
+//Filter paths only with edges with given length
+void FilterEdge(Graph& g, std::vector<BidirectionalPath>& paths, size_t edgeLen) {
+	std::vector<BidirectionalPath> samples;
+	for (auto edge = g.SmartEdgeBegin(); !edge.IsEnd(); ++edge) {
+		if (g.length(*edge) == edgeLen) {
+			BidirectionalPath sample;
+			sample.push_back(*edge);
+			samples.push_back(sample);
+		}
+	}
+	FilterPaths(g, paths, samples);
+}
 
+//Remove paths with low covered edges
+void FilterLowCovered(Graph& g, std::vector<BidirectionalPath>& paths, double threshold) {
 	for (auto path = paths.begin(); path != paths.end(); ) {
 		if (PathMinReadCoverage(g, *path) < threshold) {
 			paths.erase(path);
@@ -152,6 +161,7 @@ void RemoveSubpaths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector
 }
 
 //Remove overlaps, remove sub paths first
+//TODO
 void RemoveOverlaps(std::vector<BidirectionalPath>& paths) {
 	INFO("Removing overlaps");
 	for (auto path = paths.begin(); path != paths.end(); ++path) {

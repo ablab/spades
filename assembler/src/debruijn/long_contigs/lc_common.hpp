@@ -13,6 +13,7 @@
 #include <set>
 #include <map>
 
+#include "lc_config_struct.hpp"
 #include "../launch.hpp"
 #include "logging.hpp"
 #include "../new_debruijn.hpp"
@@ -20,6 +21,7 @@
 namespace long_contigs {
 
 using namespace debruijn_graph;
+using debruijn::K;
 
 //Deque used for extending path in both directions
 typedef std::deque<EdgeId> BidirectionalPath;
@@ -274,6 +276,8 @@ void PrintEdgeNuclsByLength(Graph& g, size_t edgeLen) {
 		}
 	}
 }
+
+#define DETAILED_INFO(message) { if (lc_cfg::get().rs.detailed_output) { INFO(message) } }
 
 } // namespace long_contigs
 
