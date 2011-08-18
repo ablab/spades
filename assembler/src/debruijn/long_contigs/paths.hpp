@@ -123,11 +123,6 @@ double FilterExtentions(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& 
 		weights.insert(std::make_pair(weight, *iter));
 	}
 
-	INFO("Choosing weights " << (forward ? "forward" : "backward"))
-	for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
-		INFO(iter->second << " (" << g.length(iter->second) << ") = " << iter->first);
-	}
-
 	//Filling maximum edges
 	edges.clear();
 	auto bestEdge = weights.lower_bound((--weights.end())->first);
@@ -274,19 +269,13 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, EdgesToExcludeForward(g, path), true);
 
 	if (extension == 0) {
-		INFO("All are bad");
 		return false;
 	}
-	INFO("Chosen forward " << extension << " (" << g.length(extension) << ")");
-
 	path.push_back(extension);
 	IncreaseLengths(g, lengths, extension, true);
-	PrintPath(g, path, lengths);
 
 	if (CheckCycle(path, extension, detector, w)) {
-		INFO("Cycle detected");
 		RemoveLoopForward(path, detector, FULL_LOOP_REMOVAL);
-		PrintPath(g, path, lengths);
 		return false;
 	}
 
@@ -303,19 +292,15 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, EdgesToExcludeBackward(g, path), false);
 
 	if (extension == 0) {
-		INFO("All are bad");
 		return false;
 	}
-	INFO("Chosen backward " << extension << " (" << g.length(extension) << ")");
 
 	path.push_front(extension);
 	IncreaseLengths(g, lengths, extension, false);
-	PrintPath(g, path, lengths);
 
 	if (CheckCycle(path, extension, detector, w)) {
-		INFO("Cycle detected");
+
 		RemoveLoopBackward(path, detector, FULL_LOOP_REMOVAL);
-		PrintPath(g, path, lengths);
 		return false;
 	}
 
@@ -328,15 +313,11 @@ void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo) 
 	CycleDetector detector;
 
 	RecountLengthsForward(g, seed, lengths);
-	INFO("Before forward");
-	PrintPath(g, seed, lengths);
 	while (ExtendPathForward(g, seed, lengths, detector, pairedInfo)) {
 	}
 	detector.clear();
 
 	RecountLengthsBackward(g, seed, lengths);
-	INFO("Before backward");
-	PrintPath(g, seed, lengths);
 	while (ExtendPathBackward(g, seed, lengths, detector, pairedInfo)) {
 	}
 }
