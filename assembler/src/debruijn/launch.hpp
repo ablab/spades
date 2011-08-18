@@ -127,6 +127,8 @@ void CreateAndFillGraph(Graph& g,
 	}
 	ProduceInfo<k> (g, index, genome, cfg::get().output_dir + "edge_graph.dot",
 			"edge_graph");
+	string contig_file("/home/ftp/data/velvet/velvet_unpaired55.fasta.gz");
+//	FillEdgesPos<k> (g, index, contig_file, EdgePos);
 	FillEdgesPos<k> (g, index, genome, EdgePos);
 }
 
