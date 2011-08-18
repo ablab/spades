@@ -150,3 +150,10 @@ EAS600_QUAKE_CROPPED_400K
 	LEN		400000 	; total size
 }
 
+EAS600_QUAKE_FULL
+{
+	first	EAS600_70/quaked/ERR022075_1.cor.fastq.gz
+	second	EAS600_70/quaked/ERR022075_2.cor.fastq.gz
+	IS		480 	; insert size
+	LEN		400000 	; total size
+}
