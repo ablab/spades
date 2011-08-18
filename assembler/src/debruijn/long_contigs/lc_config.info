@@ -130,3 +130,15 @@ fo
     remove_subpaths         true
     remove_overlaps         false
 }
+
+
+;research options
+research 
+{
+    research_mode            true
+    detailed_output          true
+    fiter_by_edge            true
+    edge_length              46
+    force_to_cycle           true 
+    cycle_priority_edge      55
+}

@@ -40,12 +40,13 @@ std::string MakeLaunchTimeDirName() {
 DECL_PROJECT_LOGGER("d")
 
 int main() {
-	cfg::create_instance(CONFIG_FILENAME);
-	lc_cfg::create_instance(LC_CONFIG_FILENAME);
+	cfg::create_instance(debruijn::cfg_filename);
 	using namespace long_contigs;
+	lc_cfg::create_instance(lc_cfg_filename);
+	using debruijn::K;
 
-	checkFileExistenceFATAL(LC_CONFIG_FILENAME);
-	checkFileExistenceFATAL(CONFIG_FILENAME);
+	checkFileExistenceFATAL(lc_cfg_filename);
+	checkFileExistenceFATAL(debruijn::cfg_filename);
 
 	Graph g(K);
 	EdgeIndex<K + 1, Graph> index(g);
@@ -59,7 +60,7 @@ int main() {
 	std::vector<BidirectionalPath> paths;
 
 	std::string dataset = cfg::get().dataset_name;
-	string output_root = cfg::get().output_dir;
+	string output_root = cfg::get().output_root;
 	string output_dir_suffix = MakeLaunchTimeDirName()+ "." + dataset + "/";
 	string output_dir = output_root + output_dir_suffix;
 
@@ -88,6 +89,10 @@ int main() {
 	INFO("Seeds found");
 	RemoveSubpaths(g, rawSeeds, seeds);
 	INFO("Sub seeds removed");
+
+	if (lc_cfg::get().rs.research_mode && lc_cfg::get().rs.fiter_by_edge) {
+		FilterEdge(g, seeds, lc_cfg::get().rs.edge_length);
+	}
 
 	double MIN_COVERAGE = lc_cfg::get().ss.min_coverage;
 	FilterLowCovered(g, seeds, MIN_COVERAGE);
@@ -138,6 +143,8 @@ int main() {
 		OutputPathsAsContigs(g, result, output_dir + "paths.contigs");
 	}
 
+	INFO(output_dir);
+	INFO(lc_cfg::get().paired_info_file_prefix);
 	if (!cfg::get().etalon_info_mode && lc_cfg::get().write_real_paired_info) {
 		SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix);
 	}

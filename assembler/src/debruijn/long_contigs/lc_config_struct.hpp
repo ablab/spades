@@ -8,11 +8,13 @@
 #ifndef LC_CONFIG_STRUCT_HPP_
 #define LC_CONFIG_STRUCT_HPP_
 
-#include "../config_common.hpp"
+#include "config_common.hpp"
 #include "../config_struct.hpp"
 #include <vector>
 
-const char* const LC_CONFIG_FILENAME = "./src/debruijn/long_contigs/lc_config.info";
+namespace long_contigs {
+
+const char* const lc_cfg_filename = "./src/debruijn/long_contigs/lc_config.info";
 
 // struct for long_contigs subproject's configuration file
 struct lc_config
@@ -87,6 +89,17 @@ struct lc_config
 		bool remove_overlaps;
 	};
 
+	struct research {
+		bool research_mode;
+		bool detailed_output;
+
+		bool fiter_by_edge;
+		size_t edge_length;
+
+		bool force_to_cycle;
+		size_t cycle_priority_edge;
+	};
+
 	bool from_file;
 
 	//size_t real_libs_count;
@@ -112,12 +125,25 @@ struct lc_config
 	loops_removal lr;
 	stop_criteria sc;
 	filter_options fo;
+	research rs;
 };
 
 
 // specific load functions
+void load(boost::property_tree::ptree const& pt, lc_config::research& rs)
+{
+	using config_common::load;
+	load(pt, "research_mode", rs.research_mode);
+	load(pt, "detailed_output", rs.detailed_output);
+	load(pt, "fiter_by_edge", rs.fiter_by_edge);
+	load(pt, "force_to_cycle", rs.force_to_cycle);
+	load(pt, "edge_length", rs.edge_length);
+	load(pt, "cycle_priority_edge", rs.cycle_priority_edge);
+}
+
 void load(boost::property_tree::ptree const& pt, lc_config::rl_dataset& ds)
 {
+	using config_common::load;
 	load(pt, "precounted", ds.precounted);
 	load(pt, "precounted_path", ds.precounted_path);
 	load(pt, "first", ds.first);
@@ -126,6 +152,7 @@ void load(boost::property_tree::ptree const& pt, lc_config::rl_dataset& ds)
 
 void load(boost::property_tree::ptree const& pt, lc_config::real_lib& rl)
 {
+	using config_common::load;
 	load(pt, "read_size", rl.read_size);
 	load(pt, "insert_size", rl.insert_size);
 	load(pt, cfg::get().dataset_name, rl.ds);
@@ -133,29 +160,34 @@ void load(boost::property_tree::ptree const& pt, lc_config::real_lib& rl)
 
 void load(boost::property_tree::ptree const& pt, lc_config::etalon_lib& el)
 {
+	using config_common::load;
 	load(pt, "insert_size", el.insert_size);
 	load(pt, "read_size", el.read_size);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::dataset& ds)
 {
+	using config_common::load;
 	load(pt, "graph_file", ds.graph_file);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::basic_lib& bl)
 {
+	using config_common::load;
 	load(pt, "insert_size", bl.insert_size);
 	load(pt, "read_size", bl.read_size);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::seed_selection& ss)
 {
+	using config_common::load;
 	load(pt, "min_coverage", ss.min_coverage);
 	load(pt, "glue_seeds", ss.glue_seeds);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::extension_selection& es)
 {
+	using config_common::load;
 	load(pt, "use_weight_function_first", es.use_weight_function_first);
 	load(pt, "weight_fun_threshold", es.weight_fun_threshold);
 	load(pt, "weight_threshold", es.weight_threshold);
@@ -166,12 +198,14 @@ void load(boost::property_tree::ptree const& pt, lc_config::extension_selection&
 
 void load(boost::property_tree::ptree const& pt, lc_config::loops_removal& lr)
 {
+	using config_common::load;
 	load(pt, "max_loops", lr.max_loops);
 	load(pt, "full_loop_removal", lr.full_loop_removal);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::stop_criteria& sc)
 {
+	using config_common::load;
 	load(pt, "all_seeds", sc.all_seeds);
 	load(pt, "edge_coverage", sc.edge_coverage);
 	load(pt, "len_coverage", sc.len_coverage);
@@ -179,15 +213,17 @@ void load(boost::property_tree::ptree const& pt, lc_config::stop_criteria& sc)
 
 void load(boost::property_tree::ptree const& pt, lc_config::filter_options& fo)
 {
+	using config_common::load;
 	load(pt, "remove_overlaps", fo.remove_overlaps);
 	load(pt, "remove_subpaths", fo.remove_subpaths);
 	load(pt, "remove_duplicates", fo.remove_duplicates);
 }
 
 
-// main debruijn config load function
+// main long contigs config load function
 void load(boost::property_tree::ptree const& pt, lc_config& lc_cfg)
 {
+	using config_common::load;
 	load(pt, "from_file", lc_cfg.from_file);
 	//load(pt, "real_libs_count", cfg.real_libs_count);
 	//load(pt, "etalon_libs_count", cfg.etalon_libs_count);
@@ -212,9 +248,11 @@ void load(boost::property_tree::ptree const& pt, lc_config& lc_cfg)
 	load(pt, "lr", lc_cfg.lr);
 	load(pt, "sc", lc_cfg.sc);
 	load(pt, "fo", lc_cfg.fo);
+	load(pt, "research", lc_cfg.rs);
 }
 
+} // namespace lc
 
-typedef config<lc_config> lc_cfg;
+typedef config_common::config<long_contigs::lc_config> lc_cfg;
 
 #endif /* CONFIG_STRUCT_HPP_ */
