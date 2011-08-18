@@ -196,7 +196,7 @@ int main(int argc, char * argv[]) {
 		}
 
 
-		if ( writeBlobAndKmers ) {
+		if ( writeBlobAndKmers && iter_count == 0 ) { // doesn't make sense to overwrite the first blob
 			PositionKMer::writeBlob( getFilename(dirprefix, blobFilename.c_str() ).data() );
 			PositionKMer::writeKMerCounts( getFilename(dirprefix, kmersFilename.c_str() ).data(), kmers );
 			TIMEDLN("Blob and kmers written.");

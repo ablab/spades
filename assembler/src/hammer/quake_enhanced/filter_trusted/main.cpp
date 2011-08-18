@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <string>
-#include "common/logging.hpp"
+#include "logging.hpp"
 
 DECL_PROJECT_LOGGER("q")
 

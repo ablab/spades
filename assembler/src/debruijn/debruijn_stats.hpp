@@ -8,11 +8,11 @@
 #ifndef DEBRUIJN_STATS_HPP_
 #define DEBRUIJN_STATS_HPP_
 
-#include "visualization_utils.hpp"
-#include "statistics.hpp"
+#include "omni/visualization_utils.hpp"
+#include "omni/statistics.hpp"
 #include "new_debruijn.hpp"
-#include "edges_position_handler.hpp"
-#include "EdgeVertexFilter.hpp"
+#include "omni/edges_position_handler.hpp"
+#include "omni/EdgeVertexFilter.hpp"
 //#include <boost/filesystem.hpp>
 #include "read/osequencestream.hpp"
 #include <sys/types.h>

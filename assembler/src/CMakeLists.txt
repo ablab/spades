@@ -52,14 +52,11 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 set(COMMON_LIBRARIES ${ZLIB_LIBRARIES} ${log4cxx_LIBRARIES} ${Boost_LIBRARIES})
 
-# TODO: should be deleted after project restructurization
-include_directories(${CMAKE_SOURCE_DIR})
-include_directories(${CMAKE_SOURCE_DIR}/common)
-include_directories(${CMAKE_SOURCE_DIR}/omni)
-include_directories(${CMAKE_SOURCE_DIR}/libs)
+include_directories(${EXT_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # sub projects
-add_subdirectory(common/io)
+add_subdirectory(include/io)
 add_subdirectory(debruijn)
 add_subdirectory(abruijn)
 add_subdirectory(bayes)

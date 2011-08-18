@@ -8,7 +8,7 @@
 #ifndef CONFIG_STRUCT_HAMMER_HPP_
 #define CONFIG_STRUCT_HAMMER_HPP_
 
-#include "../debruijn/config_common.hpp"
+#include "config_common.hpp"
 
 #define CONFIG_FILENAME "/home/snikolenko/algorithmic-biology/assembler/src/hammer/config.inp"
 
@@ -42,6 +42,7 @@ struct hammer_config
 // main debruijn config load function
 void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 {
+	using config_common::load;
 	// input options:
 	load(pt, "working_dir", cfg.working_dir);
 	load(pt, "reads", cfg.reads);
@@ -70,7 +71,7 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 	load(pt, "blob_margin", cfg.blob_margin);
 }
 
-typedef config<hammer_config> cfg;
+typedef config_common::config<hammer_config> cfg;
 
 #endif
 

@@ -334,7 +334,7 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
 			      const char * fname_left_unpaired, const char * fname_right_unpaired) {
 	ofstream outf(fname); ofstream outf_bad(fname_bad); 
 	if (paired) {
-		cout << "outputting paired results" << endl;
+		//cout << "outputting paired results" << endl;
 		ofstream outf_right(fname_right);
 		ofstream outf_right_bad(fname_right_bad);
 		ofstream outf_left_unpaired(fname_left_unpaired);
@@ -342,14 +342,14 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
 
 		for (hint_t i = 0; i < PositionKMer::lastLeftNo; ++i) {
 			if (PositionKMer::rv_bad->at(i)) {
-				cout << "  read " << i << " -- left bad " << endl;
+				//cout << "  read " << i << " -- left bad " << endl;
 				PositionKMer::pr->at(i).print(outf_bad);
 			} else {
 				if ( i + PositionKMer::lastLeftNo < PositionKMer::revNo && PositionKMer::rv_bad->at(i + PositionKMer::lastLeftNo) ) {
-					cout << "  read " << i << " -- left unpaired " << endl;
+					//cout << "  read " << i << " -- left unpaired " << endl;
 					PositionKMer::pr->at(i).print(outf_left_unpaired);
 				} else {
-					cout << "  read " << i << " -- left good " << endl;
+					//cout << "  read " << i << " -- left good " << endl;
 					PositionKMer::pr->at(i).print(outf);
 				}
 			}
@@ -357,14 +357,14 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
 
 		for (hint_t i = PositionKMer::lastLeftNo; i < PositionKMer::revNo; ++i) {
 			if (PositionKMer::rv_bad->at(i)) {
-					cout << "  read " << i << " -- right bad " << endl;
+					//cout << "  read " << i << " -- right bad " << endl;
 				PositionKMer::pr->at(i).print(outf_right_bad);
 			} else {
 				if ( PositionKMer::rv_bad->at(i - PositionKMer::lastLeftNo) ) {
-					cout << "  read " << i << " -- right unpaired " << endl;
+					//cout << "  read " << i << " -- right unpaired " << endl;
 					PositionKMer::pr->at(i).print(outf_right_unpaired);
 				} else {
-					cout << "  read " << i << " -- right good " << endl;
+					//cout << "  read " << i << " -- right good " << endl;
 					PositionKMer::pr->at(i).print(outf_right);
 				}
 			}

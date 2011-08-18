@@ -8,7 +8,7 @@
 #ifndef CHECK_TOOLS_HPP_
 #define CHECK_TOOLS_HPP_
 
-#include "paired_info.hpp"
+#include "omni/paired_info.hpp"
 #include "new_debruijn.hpp"
 
 namespace debruijn_graph {

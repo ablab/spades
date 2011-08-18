@@ -10,9 +10,9 @@
 
 #include "repeat_resolver.hpp"
 #include "graphio.hpp"
-#include "one_many_contigs_enlarger.hpp"
+#include "omni/one_many_contigs_enlarger.hpp"
 #include "rectangleRepeatResolver.hpp"
-#include "loop_resolver.hpp"
+#include "omni/loop_resolver.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 
