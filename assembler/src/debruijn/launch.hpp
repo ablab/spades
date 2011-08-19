@@ -221,10 +221,11 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 				output_folder + "graph_components/graph", g, insert_size,
 				int_ids, paired_index, EdgePos);
 
-		if (paired_mode) {
-			CountPairedInfoStats(g, insert_size, max_read_length, paired_index,
-					etalon_paired_index, output_folder);
-		}
+		//todo return after debug
+//		if (paired_mode) {
+//			CountPairedInfoStats(g, insert_size, max_read_length, paired_index,
+//					etalon_paired_index, output_folder);
+//		}
 
 		printGraph(g, int_ids, graph_save_path + "repeats_resolved_before",
 				paired_index, EdgePos/*, &read_count_weight_paired_index*/);
@@ -247,9 +248,10 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 //			estimator2.Estimate(read_count_clustered_index);
 			//experiment
 
-			CountClusteredPairedInfoStats(g, insert_size, max_read_length,
-					paired_index, clustered_index, etalon_paired_index,
-					output_folder);
+			//todo return after debug
+//			CountClusteredPairedInfoStats(g, insert_size, max_read_length,
+//					paired_index, clustered_index, etalon_paired_index,
+//					output_folder);
 		}
 		printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph", clustered_index,
 				EdgePos/*, &read_count_weight_paired_index*/);

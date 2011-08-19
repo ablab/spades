@@ -596,7 +596,7 @@ class EtalonPairedInfoCounter {
 				}
 				pair<EdgeId, size_t> right_pos = index_.get(right);
 
-				AddEtalonInfo(temporary_info, left_pos.first, right_pos.first, right_idx - left_idx + left_pos.second - right_pos.second);
+				AddEtalonInfo(temporary_info, left_pos.first, right_pos.first, 0. + right_idx - left_idx + left_pos.second - right_pos.second);
 			}
 		}
 	}
