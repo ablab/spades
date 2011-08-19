@@ -108,6 +108,29 @@ public:
 			INFO("Done: " << gb_.earmarked_hashes.size() << " earmarked hashes");
 		}
 
+		if (mode_ & 8) {
+			INFO("===== Outputting earmarked k-mers... =====");
+			typedef hash_map <Sequence, vector<size_t>, hashing::Hash<Sequence> > SeqReads;
+			SeqReads seqReads;
+			for (size_t i = 0; !reader_.eof(); ++i) {
+				reader_ >> r;
+				Sequence s = r.sequence();
+				hashSym.kmers(s, ha);
+				for (size_t i = 0; i + K <= s.size(); ++i) {
+					hash_t hi = ha[i];
+					if (earmarked_hashes.count(hi)) {
+						seqReads[s.Subseq(i, i + K)].push_back(i);
+					}
+				}
+				VERBOSE(i, " single reads");
+			}
+			for (auto it = seqReads.begin(); it != seqReads.end(); ++it) {
+				WARN(it->first);
+				WARN(it->second);
+			}
+			INFO("Done: " << gb_.earmarked_hashes.size() << " earmarked hashes");
+		}
+
 		for (int tip_iteration = 0;; tip_iteration++) {
 			size_t eh = gb_.earmarked_hashes.size();
 			gb_.has_right.clear();
