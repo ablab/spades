@@ -116,12 +116,12 @@ void GraphBuilder::findSecondMinimizer(Sequence s) {
 	// the code does not break
 }
 
-void GraphBuilder::mapToReads(Sequence s) {
+void GraphBuilder::mapToReads(Sequence s, size_t num) {
 	hashSym.kmers(s, ha);
 	for (size_t i = 0; i + K <= s.size(); ++i) {
 		hash_t hi = ha[i];
 		if (earmarked_hashes.count(hi)) {
-			seqReads[s.Subseq(i, i + K)].push_back(i);
+			seqReads[s.Subseq(i, i + K)].push_back(num);
 		}
 	}
 }
