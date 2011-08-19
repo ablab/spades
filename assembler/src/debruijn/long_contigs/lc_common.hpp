@@ -25,11 +25,17 @@ using debruijn::K;
 
 //Deque used for extending path in both directions
 typedef std::deque<EdgeId> BidirectionalPath;
+
+//Forward declaration
 size_t PathLength(Graph& g, const BidirectionalPath& path);
 
+//Path cumulative lengths
 typedef std::deque<double> PathLengths;
+
+//Simple cycle detector
 typedef std::multimap<EdgeId, std::pair<size_t, double> > CycleDetector;
 
+//Paired infi library
 struct PairedInfoIndexLibrary {
 
 	PairedInfoIndexLibrary(size_t readS, size_t insS, PairedInfoIndex<Graph>* index): readSize(readS), insertSize(insS) , pairedInfoIndex(index) {
@@ -42,6 +48,8 @@ struct PairedInfoIndexLibrary {
 
 typedef std::vector<PairedInfoIndexLibrary> PairedInfoIndices;
 
+
+//Statistics
 enum StopReason { LOOP, NO_GOOD_EXTENSION, NO_EXTENSION };
 
 struct PathStatData {
@@ -67,6 +75,9 @@ public:
 		}
 	}
 };
+
+//Detailed output for research mode
+#define DETAILED_INFO(message) { if (lc_cfg::get().rs.detailed_output) { INFO(message) } }
 
 // ====== Support functions ======
 //Pause to see output
@@ -269,6 +280,7 @@ void PrintDetector(CycleDetector& detector) {
 	}
 }
 
+//Ouput only edges with specified length
 void PrintEdgeNuclsByLength(Graph& g, size_t edgeLen) {
 	for (auto edge = g.SmartEdgeBegin(); !edge.IsEnd(); ++edge) {
 		if (g.length(*edge) == edgeLen) {
@@ -276,8 +288,6 @@ void PrintEdgeNuclsByLength(Graph& g, size_t edgeLen) {
 		}
 	}
 }
-
-#define DETAILED_INFO(message) { if (lc_cfg::get().rs.detailed_output) { INFO(message) } }
 
 } // namespace long_contigs
 

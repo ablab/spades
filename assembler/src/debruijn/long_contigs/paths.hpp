@@ -9,6 +9,7 @@
 #define PATHS_HPP_
 
 #include "lc_common.hpp"
+#include "loop.hpp"
 
 namespace long_contigs {
 
@@ -346,14 +347,19 @@ void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo) 
 
 	RecountLengthsForward(g, seed, lengths);
 	DETAILED_INFO("Before forward");
-	PrintPath(g, seed, lengths);
+	if (lc_cfg::get().rs.detailed_output) {
+		PrintPath(g, path, lengths);
+	}
+
 	while (ExtendPathForward(g, seed, lengths, detector, pairedInfo)) {
 	}
 	detector.clear();
 
 	RecountLengthsBackward(g, seed, lengths);
 	DETAILED_INFO("Before backward");
-	PrintPath(g, seed, lengths);
+	if (lc_cfg::get().rs.detailed_output) {
+		PrintPath(g, path, lengths);
+	}
 	while (ExtendPathBackward(g, seed, lengths, detector, pairedInfo)) {
 	}
 }

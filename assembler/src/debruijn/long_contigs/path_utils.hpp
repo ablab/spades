@@ -25,6 +25,15 @@ bool ComparePaths(const BidirectionalPath& path1, const BidirectionalPath& path2
 	return true;
 }
 
+bool ConatainsPath(const BidirectionalPath& path, EdgeId sample) {
+	for (size_t i = 0; i < path.size(); ++i) {
+		if (sample == path[i + j]) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool ContainsPath(const BidirectionalPath& path, const BidirectionalPath& sample) {
 	if (path.size() < sample.size()) {
 		return false;
@@ -41,6 +50,16 @@ bool ContainsPath(const BidirectionalPath& path, const BidirectionalPath& sample
 		}
 
 		if (found) {
+			return true;
+		}
+	}
+	return false;
+}
+
+template<class T>
+bool ContainsAnyOf(const BidirectionalPath& path, T& pathCollection) {
+	for (auto iter = pathCollection.begin(); iter != pathCollection.end(); ++iter) {
+		if (ContainsPath(path, *iter)) {
 			return true;
 		}
 	}
