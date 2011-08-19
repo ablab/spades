@@ -66,9 +66,34 @@ double GetWeight(omnigraph::PairedInfoIndex<Graph>::PairInfos pairs, int distanc
 	return useWeightFunction ? WeightFunction(weight) : weight;
 }
 
+//Weight fixing coefficient, sum weight of ideal info
+int FixingCoefficient(Graph& g, const BidirectionalPath& path, EdgeId edge, size_t edgesToExclude, PairedInfoIndexLibrary& pairedInfoLibrary, bool forward) {
+	int overlap = 1;
+
+	int pathLen = 0;
+	size_t start = forward ? 0 : edgesToExclude;
+	size_t end = forward ? path.size() - edgesToExclude : path.size();
+	for (size_t i = start; i < end; ++i) {
+		pathLen += g.length(path[i]);
+	}
+	int exclLen = PathLength(g, path) - pathLen;
+	int edgeLen = g.length(edge);
+
+	int is = pairedInfoLibrary.insertSize;
+	int rs = pairedInfoLibrary.readSize;
+
+	int right = std::min(is - overlap, exclLen + edgeLen + rs - overlap);
+	int left = std::max(exclLen - is + overlap, overlap - rs - pathLen) + is;
+
+	int delta = right - left + 1;
+
+	return delta > 0 ? delta : -1;
+}
+
 //Fixing weight value
-double WeightFixing(double weight, Graph& g, EdgeId edge, PairedInfoIndexLibrary& pairedInfoLibrary) {
-	return weight / (double) std::min(g.length(edge), pairedInfoLibrary.readSize);
+double WeightFixing(Graph& g, const BidirectionalPath& path, EdgeId edge, size_t edgesToExclude, PairedInfoIndexLibrary& pairedInfoLibrary, double weight, bool forward) {
+	//return weight / (double) std::min(g.length(edge), pairedInfoLibrary.readSize);
+	return weight/(double) FixingCoefficient(g, path, edge, edgesToExclude, pairedInfoLibrary, forward);
 }
 
 //Calculate weight for particular path extension from one library
@@ -90,7 +115,7 @@ double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, 
 		weight += GetWeight(pairs, distance, DISTANCE_DEV, useWeightFunction);
 	}
 
-	return WeightFixing(weight, g, e, pairedInfoLibrary);
+	return WeightFixing(g, path, e, edgesToExclude, pairedInfoLibrary, weight, forward);
 }
 
 //Weight from a set of libraries
@@ -340,11 +365,11 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	return true;
 }
 
-size_t GetMaxInsetSize(PairedInfoIndices& pairedInfo) {
+size_t GetMaxInsertSize(PairedInfoIndices& pairedInfo) {
 	size_t maxIS = 0;
 	for(auto lib = pairedInfo.begin(); lib != pairedInfo.end(); ++lib) {
 		if (maxIS < lib->insertSize) {
-			maxIs = lib->insertSize;
+			maxIS = lib->insertSize;
 		}
 	}
 	return maxIS;
