@@ -135,8 +135,8 @@ fo
 ;research options
 research 
 {
-    research_mode            true
-    detailed_output          true
+    research_mode            false
+    detailed_output          false
     fiter_by_edge            true
     edge_length              46
     force_to_cycle           true 
