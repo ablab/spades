@@ -13,7 +13,7 @@
  * @section DESCRIPTION
  *
  * SffParser is a parser that reads data from .sff files.
- * Note: Quality offset is set into 33!
+ * Note: Quality offset type is set to PhredOffset.
  * Note: Current version of parser doesn't trim ends!
  */
 

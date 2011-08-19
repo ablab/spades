@@ -14,6 +14,8 @@
  *
  * SamBamParser is the parser stream that reads data from .sam and
  * .bam files.
+ * Note: Quality offset type is set to PhredOffset (not regarding to
+ * offset_type given).
  */
 
 #ifndef COMMON_IO_SAMBAMPARSER_HPP
@@ -65,7 +67,7 @@ class SamBamParser : public Parser {
     }
     read.SetName(seq_.getReadName());
     if (seq_.getQuality()) {
-      read.SetQuality(seq_.getQuality(), offset_type_);
+      read.SetQuality(seq_.getQuality(), PhredOffset);
     }
     read.SetSequence(seq_.getSequence());
     ReadAhead();
