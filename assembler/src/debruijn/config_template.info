@@ -23,6 +23,7 @@ entry_point		construction
 start_from begin   ; Full run.
 ;start_from after_filling  ; Run with previous constructed graph.
 ;start_from after_simplify  ; Run with previous constructed and simplified graph.
+;start_from before_resolve  ; Same as previous but without loading conjugate graph
 
 
 
