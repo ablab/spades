@@ -26,7 +26,7 @@ struct LoopDetectorData {
 	LoopDetectorData(): alternatives(), weights()  {
 	}
 
-	void SetSelectedEdge(site_t iter, double w) {
+	void SetSelectedEdge(size_t iter, double w) {
 		iteration = iter;
 		selfWeight = w;
 	}
@@ -59,49 +59,49 @@ struct LoopDetector {
 };
 
 
-//Add edge to cycle detector and check
-bool CheckCycle(BidirectionalPath& path, EdgeId extension, CycleDetector& detector, double weight) {
-	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
-	detector.insert(std::make_pair(extension, std::make_pair(path.size(), weight)));
-
-	return detector.count(extension) > MAX_LOOPS;
-}
-
-//Edges to remove
-size_t CountLoopEdges(EdgeId lastEdge, CycleDetector& detector, bool fullRemoval) {
-	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
-	auto iter = detector.upper_bound(lastEdge);
-
-	--iter;
-	size_t loopSize = iter->second.first;
-	--iter;
-	loopSize -= iter->second.first;
-
-	if (fullRemoval) {
-		return MAX_LOOPS * loopSize;
-	} else {
-		return (MAX_LOOPS - 1) * loopSize + 1;
-	}
-}
-
-//Cut loop forward
-void RemoveLoopForward(BidirectionalPath& path, CycleDetector& detector, bool fullRemoval) {
-	size_t edgesToRemove = CountLoopEdges(path.back(), detector, fullRemoval);
-	//INFO("Removing loop of " << edgesToRemove << " edges");
-
-	for(size_t i = 0; i < edgesToRemove; ++i) {
-		path.pop_back();
-	}
-}
-
-void RemoveLoopBackward(BidirectionalPath& path, CycleDetector& detector, bool fullRemoval) {
-	size_t edgesToRemove = CountLoopEdges(path.front(), detector, fullRemoval);
-	//INFO("Removing loop of " << edgesToRemove << " edges");
-
-	for(size_t i = 0; i < edgesToRemove; ++i) {
-		path.pop_front();
-	}
-}
+////Add edge to cycle detector and check
+//bool CheckCycle(BidirectionalPath& path, EdgeId extension, CycleDetector& detector, double weight) {
+//	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
+//	detector.insert(std::make_pair(extension, std::make_pair(path.size(), weight)));
+//
+//	return detector.count(extension) > MAX_LOOPS;
+//}
+//
+////Edges to remove
+//size_t CountLoopEdges(EdgeId lastEdge, CycleDetector& detector, bool fullRemoval) {
+//	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
+//	auto iter = detector.upper_bound(lastEdge);
+//
+//	--iter;
+//	size_t loopSize = iter->second.first;
+//	--iter;
+//	loopSize -= iter->second.first;
+//
+//	if (fullRemoval) {
+//		return MAX_LOOPS * loopSize;
+//	} else {
+//		return (MAX_LOOPS - 1) * loopSize + 1;
+//	}
+//}
+//
+////Cut loop forward
+//void RemoveLoopForward(BidirectionalPath& path, CycleDetector& detector, bool fullRemoval) {
+//	size_t edgesToRemove = CountLoopEdges(path.back(), detector, fullRemoval);
+//	//INFO("Removing loop of " << edgesToRemove << " edges");
+//
+//	for(size_t i = 0; i < edgesToRemove; ++i) {
+//		path.pop_back();
+//	}
+//}
+//
+//void RemoveLoopBackward(BidirectionalPath& path, CycleDetector& detector, bool fullRemoval) {
+//	size_t edgesToRemove = CountLoopEdges(path.front(), detector, fullRemoval);
+//	//INFO("Removing loop of " << edgesToRemove << " edges");
+//
+//	for(size_t i = 0; i < edgesToRemove; ++i) {
+//		path.pop_front();
+//	}
+//}
 
 bool LoopBecameStable();
 

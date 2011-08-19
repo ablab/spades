@@ -340,27 +340,46 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	return true;
 }
 
+size_t GetMaxInsetSize(PairedInfoIndices& pairedInfo) {
+	size_t maxIS = 0;
+	for(auto lib = pairedInfo.begin(); lib != pairedInfo.end(); ++lib) {
+		if (maxIS < lib->insertSize) {
+			maxIs = lib->insertSize;
+		}
+	}
+	return maxIS;
+}
+
 //Grow selected seed in both directions
 void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo) {
 	PathLengths lengths;
 	CycleDetector detector;
 
-	RecountLengthsForward(g, seed, lengths);
-	DETAILED_INFO("Before forward");
-	if (lc_cfg::get().rs.detailed_output) {
-		PrintPath(g, path, lengths);
-	}
+	static size_t maxIS = GetMaxInsertSize(pairedInfo);
+	bool stop = false;
 
-	while (ExtendPathForward(g, seed, lengths, detector, pairedInfo)) {
-	}
-	detector.clear();
+	while (!stop) {
+		RecountLengthsForward(g, seed, lengths);
+		DETAILED_INFO("Before forward");
+		if (lc_cfg::get().rs.detailed_output) {
+			PrintPath(g, seed, lengths);
+		}
 
-	RecountLengthsBackward(g, seed, lengths);
-	DETAILED_INFO("Before backward");
-	if (lc_cfg::get().rs.detailed_output) {
-		PrintPath(g, path, lengths);
-	}
-	while (ExtendPathBackward(g, seed, lengths, detector, pairedInfo)) {
+		while (ExtendPathForward(g, seed, lengths, detector, pairedInfo)) {
+		}
+		detector.clear();
+
+		if (PathLength(g, seed) > maxIS) {
+			stop = true;
+		}
+
+		RecountLengthsBackward(g, seed, lengths);
+		DETAILED_INFO("Before backward");
+		if (lc_cfg::get().rs.detailed_output) {
+			PrintPath(g, seed, lengths);
+		}
+		while (ExtendPathBackward(g, seed, lengths, detector, pairedInfo)) {
+		}
 	}
 }
 

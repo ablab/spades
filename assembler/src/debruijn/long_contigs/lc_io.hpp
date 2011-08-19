@@ -8,6 +8,8 @@
 #ifndef LC_IO_HPP_
 #define LC_IO_HPP_
 
+#include "path_utils.hpp"
+
 namespace long_contigs {
 
 using namespace debruijn_graph;
@@ -162,23 +164,6 @@ void OutputPathsAsContigs(Graph& g, std::vector<BidirectionalPath> paths, const 
 		oss << PathToSequence(g, *path);
 	}
 	INFO("Contigs written");
-}
-
-
-void FilterComlementEdges(Graph& g, std::set<EdgeId>& filtered, std::set<EdgeId>& rest) {
-	for (EdgeId* iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-		if (rest.count(*iter) == 0) {
-			filtered.insert(*iter);
-			if (iter->conjugate() != *iter) {
-				rest.insert(iter->conjugate());
-			}
-		}
-	}
-}
-
-void FilterComlementEdges(Graph& g, std::set<EdgeId>& filtered) {
-	std::set<EdgeId> rest;
-	FilterComlementEdges(g, filtered, rest);
 }
 
 
