@@ -16,6 +16,7 @@
 #include "lc_common.hpp"
 #include "lc_io.hpp"
 #include "seeds.hpp"
+#include "path_utils.hpp"
 #include "paths.hpp"
 #include "quality.hpp"
 #include "visualize.hpp"
@@ -39,12 +40,13 @@ std::string MakeLaunchTimeDirName() {
 DECL_PROJECT_LOGGER("d")
 
 int main() {
-	cfg::create_instance(CONFIG_FILENAME);
-	lc_cfg::create_instance(LC_CONFIG_FILENAME);
+	cfg::create_instance(debruijn::cfg_filename);
 	using namespace long_contigs;
+	lc_cfg::create_instance(lc_cfg_filename);
+	using debruijn::K;
 
-	checkFileExistenceFATAL(LC_CONFIG_FILENAME);
-	checkFileExistenceFATAL(CONFIG_FILENAME);
+	checkFileExistenceFATAL(lc_cfg_filename);
+	checkFileExistenceFATAL(debruijn::cfg_filename);
 
 	Graph g(K);
 	EdgeIndex<K + 1, Graph> index(g);
@@ -58,7 +60,7 @@ int main() {
 	std::vector<BidirectionalPath> paths;
 
 	std::string dataset = cfg::get().dataset_name;
-	string output_root = cfg::get().output_dir;
+	string output_root = cfg::get().output_root;
 	string output_dir_suffix = MakeLaunchTimeDirName()+ "." + dataset + "/";
 	string output_dir = output_root + output_dir_suffix;
 
@@ -88,6 +90,10 @@ int main() {
 	RemoveSubpaths(g, rawSeeds, seeds);
 	INFO("Sub seeds removed");
 
+	if (lc_cfg::get().rs.research_mode && lc_cfg::get().rs.fiter_by_edge) {
+		FilterEdge(g, seeds, lc_cfg::get().rs.edge_length);
+	}
+
 	double MIN_COVERAGE = lc_cfg::get().ss.min_coverage;
 	FilterLowCovered(g, seeds, MIN_COVERAGE);
 	INFO("Seeds filtered");
@@ -104,19 +110,16 @@ int main() {
 	FindPaths(g, seeds, pairedInfos, paths);
 
 	std::vector<BidirectionalPath> result;
-	if (lc_cfg::get().fo.remove_duplicates_only || lc_cfg::get().fo.remove_overlaps) {
-		RemoveSubpaths(g, paths, result);
-		INFO("Duplicates removed");
-	}
-	else {
+	if (lc_cfg::get().fo.remove_subpaths || lc_cfg::get().fo.remove_overlaps) {
 		RemoveSubpaths(g, paths, result);
 		INFO("Subpaths removed");
 	}
-
-	found = PathsInGenome<K>(g, index, sequence, result, path1, path2);
-	INFO("Good paths found " << found << " in total " << result.size());
-	INFO("Path coverage " << PathsCoverage(g, result));
-	INFO("Path length coverage " << PathsLengthCoverage(g, result));
+	else if (lc_cfg::get().fo.remove_duplicates) {
+		RemoveDuplicate(paths, result);
+		INFO("Duplicates removed");
+	} else {
+		result = paths;
+	}
 
 	if (lc_cfg::get().write_overlaped_paths) {
 		WriteGraphWithPathsSimple(output_dir + "overlaped_paths.dot", "overlaped_paths", g, result, path1, path2);
@@ -126,6 +129,12 @@ int main() {
 		RemoveOverlaps(result);
 	}
 
+	found = PathsInGenome<K>(g, index, sequence, result, path1, path2);
+	INFO("Good paths found " << found << " in total " << result.size());
+	INFO("Path coverage " << PathsCoverage(g, result));
+	INFO("Path length coverage " << PathsLengthCoverage(g, result));
+
+
 	if (lc_cfg::get().write_paths) {
 		WriteGraphWithPathsSimple(output_dir + "final_paths.dot", "final_paths", g, result, path1, path2);
 	}
@@ -134,12 +143,13 @@ int main() {
 		OutputPathsAsContigs(g, result, output_dir + "paths.contigs");
 	}
 
+	INFO(output_dir);
+	INFO(lc_cfg::get().paired_info_file_prefix);
 	if (!cfg::get().etalon_info_mode && lc_cfg::get().write_real_paired_info) {
 		SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix);
 	}
 
-	//TODO option in config
-	if (true) {
+	if (lc_cfg::get().write_graph) {
 		SaveGraph(g, intIds, output_dir + "graph");
 	}
 
