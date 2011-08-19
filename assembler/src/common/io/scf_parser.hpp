@@ -65,7 +65,7 @@ class ScfParser : public Parser {
       return *this;
     }
     // TODO(mariyafomkina): Rewrite 2 following instructions.
-    read.SetName("%s", filename_);     
+    read.SetName(filename_.c_str());     
     read.SetQuality("");
     read.SetSequence(read_->base);
     eof_ = true;

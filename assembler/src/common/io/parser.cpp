@@ -23,7 +23,7 @@
 #include "common/io/fasta_fastq_gz_parser.hpp"
 #include "common/io/sam_bam_parser.hpp"
 #include "common/io/sff_parser.hpp"
-// TODO(mariyafomkina): Add more parsers here.
+#include "common/io/scf_parser.hpp"
 
 namespace io {
 
@@ -70,8 +70,15 @@ Parser* SelectParser(const std::string& filename, int offset) {
       (ext == "sam.gz")) {
     return new SamBamParser(filename, offset);
   }
-  if ((ext == "srf") || (ext == "sff")) {
+  if ((ext == "sff")) {
     return new SffParser(filename, offset);
+  }
+  // Experimental parser!!! Be carefull using it!!!
+  if ((ext == "scf") || (ext == "abi") ||
+      (ext == "alf") || (ext == "pln") ||
+      (ext == "exp") || (ext == "ctf") ||
+      (ext == "str") || (ext == "bio")) {
+    return new ScfParser(filename, offset);
   }
   return NULL;
 }
