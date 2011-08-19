@@ -56,12 +56,12 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, i
 	if (blockSize < (uint32_t)Globals::blocksize_quadratic_threshold) {
 		processBlockQuadratic(uf, block);
 	} else {
-		/*cout << "  making a sub-subkmersorter for blocksize=" << blockSize << endl;
-		for (uint32_t i = 0; i < blockSize; ++i) cout << block[i] << " ";
-		cout << endl;*/
+		//cout << "  making a sub-subkmersorter for blocksize=" << blockSize << endl;
+		//for (uint32_t i = 0; i < blockSize; ++i) cout << block[i] << " ";
+		//cout << endl;
 		int nthreads_per_subkmer = max( (int)(nthreads_ / (tau_ + 1)), 1);
 		SubKMerSorter subsubsorter( &block, &k_, nthreads_per_subkmer, tau_, cur_subkmer,
-			SubKMerSorter::SorterTypeStraight, SubKMerSorter::SorterTypeStraight );
+			SubKMerSorter::SorterTypeChequered, SubKMerSorter::SorterTypeStraight );
 		subsubsorter.runSort();
 		for (int sub_i = 0; sub_i < tau_+1; ++sub_i) {
 			vector<hint_t> subblock;
@@ -375,7 +375,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		}
 		cout << endl;
 		}
-	}*/
+	//}*/
 	
 	// it may happen that consensus string from one subcluster occurs in other subclusters
 	// we need to check for that
@@ -499,14 +499,14 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 		for (uint32_t m = 0; m < blocksInPlace[n].size(); ++m) {
 			if (blocksInPlace[n][m].size() == 0) continue;
 			if (blocksInPlace[n][m].size() == 1) {
-				if ( k_[blocksInPlace[n][m][0]].second.totalQual > Globals::good_cluster_threshold) {
+				if ( (1-k_[blocksInPlace[n][m][0]].second.totalQual) > Globals::good_cluster_threshold) {
 					k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
 					#pragma omp critical
 					{
 					(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n> good singleton "
 					       << k_[blocksInPlace[n][m][0]].first.start() 
 					       << "  cnt=" << k_[blocksInPlace[n][m][0]].second.count 
-					       << "  tql=" << k_[blocksInPlace[n][m][0]].second.totalQual << "\n";
+					       << "  tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
 					}
 				} else {
 					#pragma omp critical
@@ -514,14 +514,14 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 					(*ofs_bad) << k_[blocksInPlace[n][m][0]].first.str() << "\n> bad singleton " 
 						   << k_[blocksInPlace[n][m][0]].first.start() 
 						   << "  cnt=" << k_[blocksInPlace[n][m][0]].second.count 
-						   << "  tql=" << k_[blocksInPlace[n][m][0]].second.totalQual << "\n";
+						   << "  tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
 					}
 				}
 			} else {
 				// we've got a nontrivial cluster; computing its overall quality
 				double cluster_quality = 1;
 				for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
-					cluster_quality *= 1 - k_[blocksInPlace[n][m][j]].second.totalQual;
+					cluster_quality *= k_[blocksInPlace[n][m][j]].second.totalQual;
 				}
 				cluster_quality = 1-cluster_quality;
 

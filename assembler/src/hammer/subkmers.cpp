@@ -99,9 +99,9 @@ SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount> * k, i
 	} else if ( type == SorterTypeChequered ) {
 		assert(parent_type == SorterTypeStraight); // yet to implement a chequered second level
 		for (int j=0; j < tau+1; ++j) {
-			sub_less.push_back(    boost::bind(PositionKMer::compareSubKMersCheq,        _1, _2, k, tau, j) );
-			sub_greater.push_back( boost::bind(PositionKMer::compareSubKMersGreaterCheq, _1, _2, k, tau, j) );
-			sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMersCheq,          _1, _2, k, tau, j) );
+			sub_less.push_back(    boost::bind(PositionKMer::compareSubKMersCheq,        _1, _2, k, tau+1, j) );
+			sub_greater.push_back( boost::bind(PositionKMer::compareSubKMersGreaterCheq, _1, _2, k, tau+1, j) );
+			sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMersCheq,          _1, _2, k, tau+1, j) );
 		}
 	}
 
@@ -111,7 +111,6 @@ SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount> * k, i
 
 void SubKMerSorter::initVectors() {
 	v_ = new vector< vector<hint_t> >(tau_+1);
-	int effective_threads = min(nthreads_, tau_+1);
 	int nthreads_per_subkmer = max( (int)(nthreads_ / (tau_ + 1)), 1);
 
 	for (int j=0; j<tau_+1; ++j) {

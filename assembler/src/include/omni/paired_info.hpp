@@ -37,38 +37,35 @@ struct PairInfo {
 		first(first), second(second), d(d), weight(weight), variance(variance) {
 	}
 
-/*	const PairInfo set_first(EdgeId first) const {
-		return PairInfo(first, this->second, this->d, this->weight,
-				this->variance);
-	}
+	/*	const PairInfo set_first(EdgeId first) const {
+	 return PairInfo(first, this->second, this->d, this->weight,
+	 this->variance);
+	 }
 
-	const PairInfo set_second(EdgeId second) const {
-		return PairInfo(this->first, second, this->d, this->weight,
-				this->variance);
-	}
+	 const PairInfo set_second(EdgeId second) const {
+	 return PairInfo(this->first, second, this->d, this->weight,
+	 this->variance);
+	 }
 
-	const PairInfo set_distance(double d) const {
-		return PairInfo(this->first, this->second, d, this->weight,
-				this->variance);
-	}
+	 const PairInfo set_distance(double d) const {
+	 return PairInfo(this->first, this->second, d, this->weight,
+	 this->variance);
+	 }
 
-	const PairInfo set_weight(EdgeId first) const {
-		return PairInfo(this->first, this->second, this->d, weight,
-				this->variance);
-	}
+	 const PairInfo set_weight(EdgeId first) const {
+	 return PairInfo(this->first, this->second, this->d, weight,
+	 this->variance);
+	 }
 
-	const PairInfo set_variance(EdgeId first) const {
-		return PairInfo(this->first, this->second, this->d, this->weight,
-				variance);
-	}*/
+	 const PairInfo set_variance(EdgeId first) const {
+	 return PairInfo(this->first, this->second, this->d, this->weight,
+	 variance);
+	 }*/
 
 	bool operator<(const PairInfo& rhs) const {
 		const PairInfo &lhs = *this;
-		return lhs.first == rhs.first
-				? lhs.second == rhs.second
-						? math::ls(lhs.d, rhs.d)
-						: lhs.second < rhs.second
-				: lhs.first < rhs.first;
+		return lhs.first == rhs.first ? lhs.second == rhs.second ? math::ls(
+				lhs.d, rhs.d) : lhs.second < rhs.second : lhs.first < rhs.first;
 	}
 
 	/**
@@ -179,13 +176,17 @@ public:
 	void UpdateSingleInfo(const PairInfo<EdgeId>& info, double d, double weight) {
 		size_t count = data_.erase(info);
 		assert(count != 0);
-		data_.insert(PairInfo<EdgeId> (info.first, info.second, d, weight, info.variance));
+		data_.insert(
+				PairInfo<EdgeId> (info.first, info.second, d, weight,
+						info.variance));
 	}
 
 	void ReplaceFirstEdge(const PairInfo<EdgeId>& info, EdgeId newId) {
 		//		size_t count = data_.erase(info);
 		//	assert(count != 0);
-		data_.insert(PairInfo<EdgeId> (newId, info.second, info.d, info.weight, info.variance));
+		data_.insert(
+				PairInfo<EdgeId> (newId, info.second, info.d, info.weight,
+						info.variance));
 	}
 public:
 	data_iterator begin() {
@@ -244,7 +245,7 @@ public:
 		return PairInfos(LowerBound(e1, e2), UpperBound(e1, e2));
 	}
 
-	void UpdateInfo(const PairInfo<EdgeId>& info, const int d,
+	void UpdateInfo(const PairInfo<EdgeId>& info, const double d,
 			const double weight) {
 		UpdateSingleInfo(info, d, weight);
 
@@ -342,19 +343,19 @@ public:
 		TRACE("~PairedInfoIndex ok");
 	}
 
-//	double sum() {
-//		double res = 0;
-//		for (auto it = this->g().SmartEdgeBegin(); this->g().SmartEdgeEnd() != it; ++it)
-//			for (auto it1 = this->g().SmartEdgeBegin(); this->g().SmartEdgeEnd()
-//					!= it1; ++it1) {
-//				PairInfos vec = GetEdgePairInfo(*it1, *it);
-//				if (vec.size() != 0) {
-//					for (size_t i = 0; i < vec.size(); i++)
-//						res += vec[i].weight;
-//				}
-//			}
-//		return res;
-//	}
+	//	double sum() {
+	//		double res = 0;
+	//		for (auto it = this->g().SmartEdgeBegin(); this->g().SmartEdgeEnd() != it; ++it)
+	//			for (auto it1 = this->g().SmartEdgeBegin(); this->g().SmartEdgeEnd()
+	//					!= it1; ++it1) {
+	//				PairInfos vec = GetEdgePairInfo(*it1, *it);
+	//				if (vec.size() != 0) {
+	//					for (size_t i = 0; i < vec.size(); i++)
+	//						res += vec[i].weight;
+	//				}
+	//			}
+	//		return res;
+	//	}
 
 private:
 
@@ -395,9 +396,6 @@ private:
 				/ newWeight;
 		if (info1.first == info1.second && (info1.d == 0 || info2.d == 0)) {
 			newD = 0;
-			//TODO
-			//newWeight += info2.weight;
-			//INFO("In merge: weight was " << info1.weight << ", + " << info2.weight << " = " << newWeight);
 		}
 		data_.UpdateInfo(info1, newD, newWeight);
 	}
@@ -443,35 +441,35 @@ public:
 	}
 
 private:
-//	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os = cout) {
-//		PairInfos vec = GetEdgePairInfo(edge1, edge2);
-//		if (vec.size() != 0) {
-//			os << edge1 << " " << this->g().length(edge1) << " " << edge2 << " "
-//					<< this->g().length(edge2) << endl;
-//			if (this->g().EdgeEnd(edge1) == this->g().EdgeStart(edge2))
-//				os << "+" << endl;
-//			if (this->g().EdgeEnd(edge2) == this->g().EdgeStart(edge1))
-//				os << "-" << endl;
-//			int min = INT_MIN;
-//			for (size_t i = 0; i < vec.size(); i++) {
-//				int next = -1;
-//				for (size_t j = 0; j < vec.size(); j++) {
-//					if (vec[j].d > min
-//							&& (next == -1 || vec[next].d > vec[j].d)) {
-//						next = j;
-//					}
-//				}
-//				os << vec[next].d << " " << vec[next].weight << endl;
-//				if (next == -1) {
-//					assert(false);
-//				}
-//				if (vec[next].d > 100000) {
-//					assert(false);
-//				}
-//				min = vec[next].d;
-//			}
-//		}
-//	}
+	//	void OutputEdgeData(EdgeId edge1, EdgeId edge2, ostream &os = cout) {
+	//		PairInfos vec = GetEdgePairInfo(edge1, edge2);
+	//		if (vec.size() != 0) {
+	//			os << edge1 << " " << this->g().length(edge1) << " " << edge2 << " "
+	//					<< this->g().length(edge2) << endl;
+	//			if (this->g().EdgeEnd(edge1) == this->g().EdgeStart(edge2))
+	//				os << "+" << endl;
+	//			if (this->g().EdgeEnd(edge2) == this->g().EdgeStart(edge1))
+	//				os << "-" << endl;
+	//			int min = INT_MIN;
+	//			for (size_t i = 0; i < vec.size(); i++) {
+	//				int next = -1;
+	//				for (size_t j = 0; j < vec.size(); j++) {
+	//					if (vec[j].d > min
+	//							&& (next == -1 || vec[next].d > vec[j].d)) {
+	//						next = j;
+	//					}
+	//				}
+	//				os << vec[next].d << " " << vec[next].weight << endl;
+	//				if (next == -1) {
+	//					assert(false);
+	//				}
+	//				if (vec[next].d > 100000) {
+	//					assert(false);
+	//				}
+	//				min = vec[next].d;
+	//			}
+	//		}
+	//	}
 
 	void TransferInfo(EdgeId old_edge, EdgeId new_edge, int shift = 0,
 			double weight_scale = 1.0) {
@@ -482,30 +480,37 @@ private:
 				AddPairInfo(
 						PairInfo<EdgeId> (new_edge, old_pair_info.second,
 								old_pair_info.d - shift,
-								weight_scale * old_pair_info.weight, old_pair_info.variance));
+								weight_scale * old_pair_info.weight,
+								old_pair_info.variance));
+			} else if (old_pair_info.d != 0) {
+				AddPairInfo(
+						PairInfo<EdgeId> (new_edge, new_edge, old_pair_info.d,
+								weight_scale * 0.5 * old_pair_info.weight,
+								old_pair_info.variance));
 			} else {
 				AddPairInfo(
 						PairInfo<EdgeId> (new_edge, new_edge, old_pair_info.d,
-								weight_scale * 0.5 * old_pair_info.weight, old_pair_info.variance));
+								weight_scale * old_pair_info.weight,
+								old_pair_info.variance));
 			}
 		}
 	}
 
 public:
 
-//	void OutputData(ostream &os = cout) {
-//		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it)
-//			for (auto it1 = graph_.SmartEdgeBegin(); !it1.IsEnd(); ++it1) {
-//				OutputEdgeData(*it, *it1, os);
-//			}
-//	}
-//
-//	void OutputData(string fileName) {
-//		ofstream s;
-//		s.open(fileName.c_str());
-//		OutputData(s);
-//		s.close();
-//	}
+	//	void OutputData(ostream &os = cout) {
+	//		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it)
+	//			for (auto it1 = graph_.SmartEdgeBegin(); !it1.IsEnd(); ++it1) {
+	//				OutputEdgeData(*it, *it1, os);
+	//			}
+	//	}
+	//
+	//	void OutputData(string fileName) {
+	//		ofstream s;
+	//		s.open(fileName.c_str());
+	//		OutputData(s);
+	//		s.close();
+	//	}
 
 	/*
 	 * @return quantity of paired info
@@ -561,24 +566,24 @@ public:
 		TransferInfo(old_edge, new_edge2, this->g().length(new_edge1), 1 - prop);
 	}
 
-//	bool Check() {
-//		for (auto it = data_.begin(); it != data_.end(); ++it) {
-//			PairInfo<EdgeId> inf = *it;
-//			if (inf.first != inf.second && inf.d > 0) {
-////				cout << inf.first << endl;
-////				cout << graph_.length(inf.first) << endl;
-//				if (inf.d <= graph_.length(inf.first) - 1) {
-//					cout << "gopa " << inf.first << " " << inf.second << endl;
-//					cout << graph_.length(inf.first) << " " << graph_.length(inf.second) << endl;
-//					cout << graph_.EdgeStart(inf.first) << " " << graph_.EdgeEnd(inf.first);
-//					cout << graph_.EdgeStart(inf.second) << " " << graph_.EdgeEnd(inf.second);
-//					assert(false);
-//					return false;
-//				}
-//			}
-//		}
-//		return true;
-//	}
+	//	bool Check() {
+	//		for (auto it = data_.begin(); it != data_.end(); ++it) {
+	//			PairInfo<EdgeId> inf = *it;
+	//			if (inf.first != inf.second && inf.d > 0) {
+	////				cout << inf.first << endl;
+	////				cout << graph_.length(inf.first) << endl;
+	//				if (inf.d <= graph_.length(inf.first) - 1) {
+	//					cout << "gopa " << inf.first << " " << inf.second << endl;
+	//					cout << graph_.length(inf.first) << " " << graph_.length(inf.second) << endl;
+	//					cout << graph_.EdgeStart(inf.first) << " " << graph_.EdgeEnd(inf.first);
+	//					cout << graph_.EdgeStart(inf.second) << " " << graph_.EdgeEnd(inf.second);
+	//					assert(false);
+	//					return false;
+	//				}
+	//			}
+	//		}
+	//		return true;
+	//	}
 
 };
 
@@ -650,8 +655,7 @@ private:
 		return answer;
 	}
 
-	void ProcessPairedRead(
-			omnigraph::PairedInfoIndex<Graph> &paired_index,
+	void ProcessPairedRead(omnigraph::PairedInfoIndex<Graph> &paired_index,
 			const io::PairedRead& p_r) {
 		Sequence read1 = p_r.first().sequence();
 		Sequence read2 = p_r.second().sequence();
@@ -663,10 +667,10 @@ private:
 		for (size_t i = 0; i < path1.size(); ++i) {
 			int current_distance2 = current_distance1;
 			for (size_t j = 0; j < path2.size(); ++j) {
-				double weight = CorrectLength(path1, i)
-						* CorrectLength(path2, j);
-				PairInfo<EdgeId> new_info(path1[i], path2[j], current_distance2,
-						weight, 0.);
+				double weight = CorrectLength(path1, i) * CorrectLength(path2,
+						j);
+				PairInfo<EdgeId> new_info(path1[i], path2[j],
+						current_distance2, weight, 0.);
 				paired_index.AddPairInfo(new_info);
 				current_distance2 += graph_.length(path2[j]);
 			}
@@ -676,8 +680,9 @@ private:
 
 public:
 
-	PairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, Stream& stream) :
-			graph_(graph), mapper_(mapper), stream_(stream) {
+	PairedIndexFiller(const Graph &graph, const SequenceMapper& mapper,
+			Stream& stream) :
+		graph_(graph), mapper_(mapper), stream_(stream) {
 
 	}
 
@@ -686,7 +691,7 @@ public:
 	 */
 	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
+			paired_index.AddPairInfo(PairInfo<EdgeId> (*it, *it, 0, 0.0, 0.));
 		}
 		stream_.reset();
 		while (!stream_.eof()) {

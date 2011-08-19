@@ -31,12 +31,23 @@ public:
 		return MaxVertexIntId;
 	}
 	realIdType AddVertexIntId(VertexId NewVertexId, realIdType NewIntId) {
+		DEBUG("AddVertexIntId( "<< NewVertexId<<", "<<NewIntId<<")");
 		realIdType PreviousId = ReturnIntId(NewVertexId);
-		if (PreviousId != 0) VertexOriginalId.erase(PreviousId);
+		if (PreviousId != 0)
+	    {
+			VertexOriginalId.erase(PreviousId);
+		}
+		VertexId PreviousVertex = ReturnVertexId(NewIntId);
+		if (PreviousVertex != NULL)
+	    {
+			VertexIntId.erase(PreviousVertex);
+		}
+
 		if (MaxVertexIntId < NewIntId)
 			MaxVertexIntId = NewIntId;
 		VertexIntId[NewVertexId] = NewIntId;
 		VertexOriginalId[NewIntId] = NewVertexId;
+		DEBUG(VertexIntId[NewVertexId]<<" "<<VertexOriginalId[NewIntId]);
 		return NewIntId;
 	}
 	realIdType AddEdgeIntId(EdgeId NewEdgeId) {
@@ -52,7 +63,16 @@ public:
 	}
 	realIdType AddEdgeIntId(EdgeId NewEdgeId, realIdType NewIntId) {
 		realIdType PreviousId = ReturnIntId(NewEdgeId);
-		if (PreviousId != 0) EdgeOriginalId.erase(PreviousId);
+		if (PreviousId != 0) {
+			//if (EdgeOriginalId[PreviousId] == NewEdgeId);
+			EdgeOriginalId.erase(PreviousId);
+		}
+		EdgeId PreviousEdge = ReturnEdgeId(NewIntId);
+		if (PreviousEdge != NULL)
+	    {
+			EdgeIntId.erase(PreviousEdge);
+		}
+
 		if (MaxEdgeIntId < NewIntId)
 			MaxEdgeIntId = NewIntId;
 		EdgeIntId[NewEdgeId] = NewIntId;

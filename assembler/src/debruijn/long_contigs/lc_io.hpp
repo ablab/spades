@@ -10,6 +10,9 @@
 
 namespace long_contigs {
 
+using namespace debruijn_graph;
+using debruijn::K;
+
 template<size_t k>
 void LoadFromFile(std::string fileName, Graph& g,  PairedInfoIndex<Graph>& paired_index, EdgeIndex<k + 1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds,
 		Sequence& sequence) {
@@ -36,7 +39,7 @@ void LoadFromFile(std::string fileName, Graph& g,  PairedInfoIndex<Graph>& paire
 	sequence = Sequence(genome);
 
 	INFO("Reading graph");
-	scanConjugateGraph(g, conj_IntIds,fileName, paired_index);
+	omnigraph::scanConjugateGraph(&g, &conj_IntIds,fileName, &paired_index);
 	INFO("Graph read")
 }
 
@@ -94,6 +97,7 @@ void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Gra
 	DataPrinter<Graph> dataPrinter(g, old_IDs);
 	for (auto lib = pairedInfos.begin(); lib != pairedInfos.end(); ++lib) {
 		std::string fileName = fileNamePrefix + "IS" + ToString(lib->insertSize) + "_RS" + ToString(lib->readSize);
+		INFO("Saving to " << fileName);
 
 		if (lc_cfg::get().cluster_paired_info) {
 			PairedInfoIndex<Graph> clustered_index(g);
@@ -114,6 +118,7 @@ void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Gra
 
 void SaveGraph(Graph& g, IdTrackHandler<Graph>& old_IDs, const std::string& fileName) {
 	DataPrinter<Graph> dataPrinter(g, old_IDs);
+	INFO("Saving graph file to " << fileName);
 	dataPrinter.saveGraph(fileName);
 }
 
