@@ -504,15 +504,20 @@ void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
 template<class Graph>
 void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
 		const string &file_name, PairedInfoIndex<Graph> &paired_index,
-		EdgesPositionHandler<Graph> &edges_positions, /*todo delete*/ PairedInfoIndex<Graph>* paired_index2 = 0) {
+		EdgesPositionHandler<Graph> &edges_positions,
+		PairedInfoIndex<Graph>* etalon_index = 0,
+		PairedInfoIndex<Graph>* clustered_index = 0) {
 	DataPrinter<Graph> dataPrinter(g, old_IDs);
 	dataPrinter.saveGraph(file_name);
 	dataPrinter.saveEdgeSequences(file_name);
 	dataPrinter.saveCoverage(file_name);
 	dataPrinter.savePaired(file_name, paired_index);
 	//todo delete
-	if (paired_index2) {
-		dataPrinter.savePaired(file_name + "_2", *paired_index2);
+	if (etalon_index) {
+		dataPrinter.savePaired(file_name + "_et", *etalon_index);
+	}
+	if (clustered_index) {
+		dataPrinter.savePaired(file_name + "_cl", *clustered_index);
 	}
 	dataPrinter.savePositions(file_name, edges_positions);
 }
@@ -530,12 +535,22 @@ void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
 
 template<class Graph>
 void scanNCGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
-		const string &file_name, PairedInfoIndex<Graph>& paired_index,
-		EdgesPositionHandler<Graph> &edges_positions) {
+		const string &file_name, PairedInfoIndex<Graph>* paired_index,
+		EdgesPositionHandler<Graph> &edges_positions,
+		PairedInfoIndex<Graph>* etalon_index = 0,
+		PairedInfoIndex<Graph>* clustered_index = 0) {
 	DataScanner<Graph> dataScanner(g, new_IDs);
 	dataScanner.loadNonConjugateGraph(file_name, true);
 	dataScanner.loadCoverage(file_name);
-	dataScanner.loadPaired(file_name, paired_index);
+	if (paired_index) {
+		dataScanner.loadPaired(file_name, *paired_index);
+	}
+	if (etalon_index) {
+		dataScanner.loadPaired(file_name + "_et", *etalon_index);
+	}
+	if (clustered_index) {
+		dataScanner.loadPaired(file_name + "_cl", *clustered_index);
+	}
 	dataScanner.loadPositions(file_name, edges_positions);
 }
 
@@ -550,15 +565,25 @@ void scanNCGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
 
 template<class Graph>
 void scanConjugateGraph(Graph * g, IdTrackHandler<Graph> *new_IDs,
-		const string &file_name, PairedInfoIndex<Graph>* paired_index,
-		EdgesPositionHandler<Graph> *edges_positions = NULL) {
+		const string &file_name, PairedInfoIndex<Graph>* paired_index = 0,
+		EdgesPositionHandler<Graph> *edges_positions = NULL,
+		PairedInfoIndex<Graph>* etalon_index = 0,
+		PairedInfoIndex<Graph>* clustered_index = 0) {
 	//ToDo Apply * vs & conventions
 	DataScanner<Graph> dataScanner(*g, *new_IDs);
 	dataScanner.loadConjugateGraph(file_name, true);
 	dataScanner.loadCoverage(file_name);
-	dataScanner.loadPaired(file_name, *paired_index);
+	if (paired_index) {
+		dataScanner.loadPaired(file_name, *paired_index);
+	}
 	if (edges_positions != NULL)
 		dataScanner.loadPositions(file_name, *edges_positions);
+	if (etalon_index) {
+		dataScanner.loadPaired(file_name + "_et", *etalon_index);
+	}
+	if (clustered_index) {
+		dataScanner.loadPaired(file_name + "_cl", *clustered_index);
+	}
 }
 
 }

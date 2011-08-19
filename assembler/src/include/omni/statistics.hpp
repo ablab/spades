@@ -29,10 +29,9 @@ class StatList: AbstractStatCounter {
 private:
 	vector<AbstractStatCounter*> to_count_;
 public:
-	StatList(
-			vector<AbstractStatCounter*> to_count =
-					vector<AbstractStatCounter*> ()) :
-		to_count_(to_count) {
+	StatList(vector<AbstractStatCounter*> to_count =
+			vector<AbstractStatCounter*>()) :
+			to_count_(to_count) {
 	}
 
 	virtual ~StatList() {
@@ -65,7 +64,7 @@ private:
 	const Graph &graph_;
 public:
 	VertexEdgeStat(const Graph &graph) :
-		graph_(graph) {
+			graph_(graph) {
 	}
 
 	virtual ~VertexEdgeStat() {
@@ -74,7 +73,8 @@ public:
 	virtual void Count() {
 		size_t edgeNumber = 0;
 		size_t sum_edge_length = 0;
-		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator) {
+		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd();
+				++iterator) {
 			edgeNumber++;
 			if (graph_.coverage(*iterator) > 30) {
 				sum_edge_length += graph_.length(*iterator);
@@ -83,7 +83,7 @@ public:
 		INFO("Vertex count=" << graph_.size() << "; Edge count=" << edgeNumber);
 		INFO(
 				"sum length of edges(coverage > 30, both strands)"
-				<< sum_edge_length);
+						<< sum_edge_length);
 	}
 };
 
@@ -96,7 +96,7 @@ private:
 	Path<EdgeId> path2_;
 public:
 	BlackEdgesStat(const Graph &graph, Path<EdgeId> path1, Path<EdgeId> path2) :
-		graph_(graph), path1_(path1), path2_(path2) {
+			graph_(graph), path1_(path1), path2_(path2) {
 	}
 
 	virtual ~BlackEdgesStat() {
@@ -119,12 +119,12 @@ public:
 		if (edge_count > 0) {
 			INFO(
 					"Error edges count: " << black_count << " which is "
-					<< 100.0 * black_count / edge_count
-					<< "% of all edges");
+							<< 100.0 * black_count / edge_count
+							<< "% of all edges");
 		} else {
 			INFO(
 					"Error edges count: " << black_count
-					<< " which is 0% of all edges");
+							<< " which is 0% of all edges");
 		}
 	}
 };
@@ -138,7 +138,7 @@ private:
 	size_t perc_;
 public:
 	NStat(const Graph &graph, Path<EdgeId> path, size_t perc = 50) :
-		graph_(graph), path_(path), perc_(perc) {
+			graph_(graph), path_(path), perc_(perc) {
 	}
 
 	virtual ~NStat() {
@@ -169,7 +169,7 @@ private:
 	const Graph &graph_;
 public:
 	SelfComplementStat(const Graph &graph) :
-		graph_(graph) {
+			graph_(graph) {
 	}
 
 	virtual ~SelfComplementStat() {
@@ -177,7 +177,8 @@ public:
 
 	virtual void Count() {
 		size_t sc_number = 0;
-		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator)
+		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd();
+				++iterator)
 			if (graph_.conjugate(*iterator) == (*iterator))
 				sc_number++;
 		//		INFO("Self-complement count failed!!! ");
@@ -195,7 +196,7 @@ private:
 public:
 	EdgePairStat(Graph &graph, PairedInfoIndex<Graph> &pair_info,
 			const string &output_folder) :
-		graph_(graph), pair_info_(pair_info), output_folder_(output_folder) {
+			graph_(graph), pair_info_(pair_info), output_folder_(output_folder) {
 	}
 
 	virtual ~EdgePairStat() {
@@ -204,7 +205,8 @@ public:
 private:
 	vector<double> GetWeights(map<pair<EdgeId, EdgeId> , double> &edge_pairs) {
 		vector<double> weights;
-		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end(); ++iterator) {
+		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end();
+				++iterator) {
 			weights.push_back(iterator->second);
 		}
 		sort(weights.begin(), weights.end());
@@ -212,9 +214,10 @@ private:
 	}
 
 	void GetPairInfo(map<pair<EdgeId, EdgeId> , double> &edge_pairs,
-			PairedInfoIndex<Graph> &index) {
-		for (auto iterator = index.begin(); iterator != index.end(); ++iterator) {
-			vector<PairInfo<EdgeId>> v = *iterator;
+	PairedInfoIndex<Graph> &index) {
+		for (auto iterator = index.begin(); iterator != index.end();
+				++iterator) {
+			vector < PairInfo < EdgeId >> v = *iterator;
 			size_t w = 0;
 			for (size_t i = 0; i < v.size(); i++) {
 				w += v[i].weight;
@@ -225,7 +228,8 @@ private:
 
 	void RemoveTrivial(map<pair<EdgeId, EdgeId> , double> &edge_pairs) {
 		TrivialEdgePairChecker<Graph> checker(graph_);
-		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end();) {
+		for (auto iterator = edge_pairs.begin(); iterator != edge_pairs.end();
+				) {
 			if (checker.Check(iterator->first.first, iterator->first.second)) {
 				edge_pairs.erase(iterator++);
 			} else {
@@ -297,14 +301,15 @@ public:
 	virtual void Count() {
 		//		OutputWeights(GetWeights(edge_pairs), output_folder_ + "pair_info_weights.txt");
 		PairedInfoIndex<Graph> new_index(graph_);
-		PairInfoFilter<Graph> (graph_, 40).Filter(pair_info_, new_index);
+		PairInfoFilter < Graph > (graph_, 40).Filter(pair_info_, new_index);
 		//		RemoveUntrustful(edge_pairs, 40);
 		map<pair<EdgeId, EdgeId> , double> edge_pairs;
 		TrivialEdgePairChecker<Graph> checker(graph_);
 		size_t nontrivial = 0;
 		size_t pair_number = 0;
-		for (auto iterator = new_index.begin(); iterator != new_index.end(); ++iterator) {
-			vector<PairInfo<EdgeId>> info = *iterator;
+		for (auto iterator = new_index.begin(); iterator != new_index.end();
+				++iterator) {
+			vector < PairInfo < EdgeId >> info = *iterator;
 			if (ContainsPositiveDistance(info)) {
 				pair_number++;
 				if (checker.Check(info[0].first, info[0].second)) {
@@ -313,9 +318,13 @@ public:
 			}
 		}
 		GetPairInfo(edge_pairs, new_index);
-		INFO("Number of edge pairs connected with paired info: " << pair_number);
+		INFO(
+				"Number of edge pairs connected with paired info: "
+						<< pair_number);
 		RemoveTrivial(edge_pairs);
-		INFO("Number of nontrivial edge pairs connected with paired info: " << nontrivial);
+		INFO(
+				"Number of nontrivial edge pairs connected with paired info: "
+						<< nontrivial);
 	}
 };
 
@@ -336,8 +345,6 @@ class UniquePathStat: public omnigraph::AbstractStatCounter {
 	size_t considered_edge_pair_cnt_;
 	size_t unique_distance_cnt_;
 	size_t non_unique_distance_cnt_;
-
-	bool draw_pictures_;
 
 	//	bool ContainsPositiveDistance(const vector<PairInfo<EdgeId>>& infos) {
 	//		double s = 0.0;
@@ -360,21 +367,20 @@ public:
 
 	UniquePathStat(Graph& g, PairedInfoIndex<Graph>& pair_info,
 			size_t insert_size, size_t max_read_length, double variance_delta,
-			double weight_threshold, bool draw_pictures = false) :
-		g_(g), pair_info_(pair_info), insert_size_(insert_size),
-				max_read_length_(max_read_length), gap_(insert_size_ - 2 * max_read_length_),
-				variance_delta_(variance_delta),
-				weight_threshold_(weight_threshold),
-				considered_edge_pair_cnt_(0), unique_distance_cnt_(0),
-				non_unique_distance_cnt_(0), draw_pictures_(draw_pictures) {
+			double weight_threshold) :
+			g_(g), pair_info_(pair_info), insert_size_(insert_size), max_read_length_(
+					max_read_length), gap_(insert_size_ - 2 * max_read_length_), variance_delta_(
+					variance_delta), weight_threshold_(weight_threshold), considered_edge_pair_cnt_(
+					0), unique_distance_cnt_(0), non_unique_distance_cnt_(0) {
 
 	}
 
 	virtual void Count() {
 		PairedInfoIndex<Graph> filtered_index(g_);
-		PairInfoFilter<Graph> (g_, 40).Filter(pair_info_, filtered_index);
+		PairInfoFilter < Graph > (g_, 40).Filter(pair_info_, filtered_index);
 
-		for (auto it = filtered_index.begin(); it != filtered_index.end(); ++it) {
+		for (auto it = filtered_index.begin(); it != filtered_index.end();
+				++it) {
 			if (ContainsPositiveDistance(*it)) {
 				considered_edge_pair_cnt_++;
 				PairInfo<EdgeId> delegate = (*it)[0];
@@ -387,9 +393,13 @@ public:
 				//				CompositeCallback<Graph> composite_callback;
 				//				composite_callback.AddProcessor(counter);
 				//				composite_callback.AddProcessor(graph_labeler);
-				PathProcessor<Graph> path_processor(g_,
-						omnigraph::PairInfoPathLengthLowerBound(g_.k(), g_.length(e1), g_.length(e2), gap_, variance_delta_),
-						omnigraph::PairInfoPathLengthUpperBound(g_.k(), insert_size_, variance_delta_), g_.EdgeEnd(e1),
+				PathProcessor<Graph> path_processor(
+						g_,
+						omnigraph::PairInfoPathLengthLowerBound(g_.k(),
+								g_.length(e1), g_.length(e2), gap_,
+								variance_delta_),
+						omnigraph::PairInfoPathLengthUpperBound(g_.k(),
+								insert_size_, variance_delta_), g_.EdgeEnd(e1),
 						g_.EdgeStart(e2), counter);
 				path_processor.Process();
 				if (counter.count() == 1) {
@@ -402,8 +412,12 @@ public:
 			}
 		}
 		INFO("Considered " << considered_edge_pair_cnt_ << " edge pairs")
-		INFO(unique_distance_cnt_ << " edge pairs connected with unique path of appropriate length")
-		INFO(non_unique_distance_cnt_ << " edge pairs connected with non-unique path of appropriate length")
+		INFO(
+				unique_distance_cnt_
+						<< " edge pairs connected with unique path of appropriate length")
+		INFO(
+				non_unique_distance_cnt_
+						<< " edge pairs connected with non-unique path of appropriate length")
 	}
 
 	size_t considered_edge_pair_count() {
@@ -419,6 +433,84 @@ public:
 	}
 private:
 	DECL_LOGGER("UniquePathStat")
+};
+
+template<class Graph>
+class MatePairTransformStat: public omnigraph::AbstractStatCounter {
+
+	typedef typename Graph::EdgeId EdgeId;
+	Graph& g_;
+	PairedInfoIndex<Graph>& pair_info_;
+
+	size_t considered_dist_cnt_;
+	size_t unique_distance_cnt_;
+	size_t non_unique_distance_cnt_;
+
+	void ProcessInfos(const vector<PairInfo<EdgeId>>& infos) {
+		for (auto it = infos.begin(); it != infos.end(); ++it) {
+			PairInfo<EdgeId> info = *it;
+			if (gr(info.d, 0.)) {
+				if (info.variance == 0) {
+					EdgeId e1 = info.first;
+					EdgeId e2 = info.second;
+
+					NonEmptyPathCounter<Graph> counter(g_);
+
+					PathProcessor<Graph> path_processor(g_,
+							info.d - g_.length(e1), info.d - g_.length(e1),
+							g_.EdgeEnd(e1), g_.EdgeStart(e2), counter);
+					path_processor.Process();
+					if (counter.count() == 1) {
+						unique_distance_cnt_++;
+					}
+					if (counter.count() > 1) {
+						non_unique_distance_cnt_++;
+					}
+				} else {
+					non_unique_distance_cnt_++;
+				}
+				considered_dist_cnt_++;
+			}
+		}
+	}
+
+public:
+
+	MatePairTransformStat(Graph& g, PairedInfoIndex<Graph>& pair_info) :
+			g_(g), pair_info_(pair_info), considered_dist_cnt_(0), unique_distance_cnt_(
+					0), non_unique_distance_cnt_(0) {
+
+	}
+
+	virtual void Count() {
+		for (auto it = pair_info_.begin(); it != pair_info_.end(); ++it) {
+			vector < PairInfo < EdgeId >> infos = *it;
+			ProcessInfos(infos);
+		}
+		INFO(
+				"Considered " << considered_dist_cnt_
+						<< " edge pair distances (including trivial)")
+		INFO(
+				unique_distance_cnt_
+						<< " edge distances connected with unique path of appropriate length")
+		INFO(
+				non_unique_distance_cnt_
+						<< " edge distances connected with non-unique path of appropriate length")
+	}
+
+	size_t considered_edge_pair_count() {
+		return considered_dist_cnt_;
+	}
+
+	size_t unique_distance_count() {
+		return unique_distance_cnt_;
+	}
+
+	size_t non_unique_distance_count() {
+		return non_unique_distance_cnt_;
+	}
+private:
+	DECL_LOGGER("MatePairTransformStat")
 };
 
 template<class Graph>
@@ -450,7 +542,8 @@ public:
 			} else {
 				unique_++;
 			}
-		}INFO(unique_ << " unique edge distances");
+		}
+		INFO(unique_ << " unique edge distances");
 		INFO(non_unique_ << " non unique edge distances");
 	}
 
@@ -524,8 +617,8 @@ private:
 
 	void HandlePairsNotInEtalon(
 			const set<pair<EdgeId, EdgeId>>& pairs_in_etalon) {
-		for (auto it = estimated_pair_info_.begin(); it
-				!= estimated_pair_info_.end(); ++it) {
+		for (auto it = estimated_pair_info_.begin();
+				it != estimated_pair_info_.end(); ++it) {
 			Infos estimated_infos = *it;
 			EdgeId first = estimated_infos[0].first;
 			EdgeId second = estimated_infos[0].second;
@@ -533,8 +626,8 @@ private:
 				//				for_each(estimated_infos.begin(), estimated_infos.end(),
 				//						boost::bind(&EstimationQualityStat::HandleFalsePositive, this, _1));
 
-				for (auto it2 = estimated_infos.begin(); it2
-						!= estimated_infos.end(); ++it2) {
+				for (auto it2 = estimated_infos.begin();
+						it2 != estimated_infos.end(); ++it2) {
 					HandleFalsePositive(*it2);
 				}
 			}
@@ -555,8 +648,8 @@ private:
 	}
 
 	bool IsImperfectMatch(const Info& etalon, const Info& estimated) {
-		return ge(etalon.d, estimated.d - estimated.variance) && le(etalon.d,
-				estimated.d + estimated.variance);
+		return ge(etalon.d, estimated.d - estimated.variance)
+				&& le(etalon.d, estimated.d + estimated.variance);
 	}
 
 	size_t Move(size_t estimated_idx, const Infos &estimated_infos) {
@@ -578,11 +671,13 @@ private:
 		//		size_t estimated_idx = 0;
 		size_t etalon_idx = InitIdx(etalon_infos);
 		//		bool last_matched = false;
-		for (size_t estimated_idx = InitIdx(estimated_infos); estimated_idx < estimated_infos.size(); estimated_idx
-				= Move(estimated_idx, estimated_infos)) {
-			while (estimated_idx < estimated_infos.size() && (etalon_idx
-					== etalon_infos.size() || InfoLess(
-					estimated_infos[estimated_idx], etalon_infos[etalon_idx]))) {
+		for (size_t estimated_idx = InitIdx(estimated_infos);
+				estimated_idx < estimated_infos.size();
+				estimated_idx = Move(estimated_idx, estimated_infos)) {
+			while (estimated_idx < estimated_infos.size()
+					&& (etalon_idx == etalon_infos.size()
+							|| InfoLess(estimated_infos[estimated_idx],
+									etalon_infos[etalon_idx]))) {
 				HandleFalsePositive(estimated_infos[estimated_idx]);
 				estimated_idx = Move(estimated_idx, estimated_infos);
 				//				cout << "here1" << endl;
@@ -590,8 +685,9 @@ private:
 			if (estimated_idx == estimated_infos.size()) {
 				break;
 			}
-			while (etalon_idx < etalon_infos.size() && InfoLess(
-					etalon_infos[etalon_idx], estimated_infos[estimated_idx])) {
+			while (etalon_idx < etalon_infos.size()
+					&& InfoLess(etalon_infos[etalon_idx],
+							estimated_infos[estimated_idx])) {
 				HandleFalseNegative(etalon_infos[etalon_idx]);
 				etalon_idx = Move(etalon_idx, etalon_infos);
 			}
@@ -602,17 +698,18 @@ private:
 			//
 			if (IsPerfectMatch(etalon_infos[etalon_idx],
 					estimated_infos[estimated_idx])) {
-				while (etalon_idx < etalon_infos.size() && IsPerfectMatch(etalon_infos[etalon_idx],
-						estimated_infos[estimated_idx])) {
+				while (etalon_idx < etalon_infos.size()
+						&& IsPerfectMatch(etalon_infos[etalon_idx],
+								estimated_infos[estimated_idx])) {
 					HandlePerfectMatch(etalon_infos[etalon_idx],
 							estimated_infos[estimated_idx]);
 					etalon_idx = Move(etalon_idx, etalon_infos);
 				}
 			} else {
-				vector<PairInfo<EdgeId> > cluster_hits;
-				while (etalon_idx < etalon_infos.size() && IsImperfectMatch(
-						etalon_infos[etalon_idx],
-						estimated_infos[estimated_idx])) {
+				vector < PairInfo<EdgeId> > cluster_hits;
+				while (etalon_idx < etalon_infos.size()
+						&& IsImperfectMatch(etalon_infos[etalon_idx],
+								estimated_infos[estimated_idx])) {
 					cluster_hits.push_back(etalon_infos[etalon_idx]);
 					etalon_idx = Move(etalon_idx, etalon_infos);
 				}
@@ -676,9 +773,9 @@ public:
 	EstimationQualityStat(Graph &graph, PairedInfoIndex<Graph>& pair_info,
 			PairedInfoIndex<Graph>& estimated_pair_info,
 			PairedInfoIndex<Graph>& etalon_pair_info) :
-		graph_(graph), pair_info_(pair_info),
-				estimated_pair_info_(estimated_pair_info),
-				etalon_pair_info_(etalon_pair_info), false_negative_count_(0) {
+			graph_(graph), pair_info_(pair_info), estimated_pair_info_(
+					estimated_pair_info), etalon_pair_info_(etalon_pair_info), false_negative_count_(
+					0) {
 	}
 
 	virtual ~EstimationQualityStat() {
@@ -688,7 +785,8 @@ public:
 		INFO("Counting distance estimation statistics");
 		set<pair<EdgeId, EdgeId>> pairs_in_etalon;
 		//		DEBUG("Handling pairs present in etalon information");
-		for (auto it = etalon_pair_info_.begin(); it != etalon_pair_info_.end(); ++it) {
+		for (auto it = etalon_pair_info_.begin(); it != etalon_pair_info_.end();
+				++it) {
 			Infos etalon_infos = *it;
 			EdgeId first = etalon_infos[0].first;
 			EdgeId second = etalon_infos[0].second;
@@ -749,12 +847,12 @@ public:
 		ofstream stream;
 		stream.open(output_folder + "/perfect.inf");
 		copy(perfect_match_weights_.begin(), perfect_match_weights_.end(),
-				ostream_iterator<double> (stream, "\n"));
+				ostream_iterator<double>(stream, "\n"));
 		stream.close();
 
 		stream.open(output_folder + "/false_positive.inf");
 		copy(false_positive_weights_.begin(), false_positive_weights_.end(),
-				ostream_iterator<double> (stream, "\n"));
+				ostream_iterator<double>(stream, "\n"));
 		stream.close();
 		WriteWorstEdgesStat(output_folder, 1000000);
 	}
@@ -780,8 +878,8 @@ public:
 	void WriteWorstEdgesStat(const string &output_folder, double bound) {
 		size_t count = 0;
 		WriteFalseNegativeGaps(output_folder + "/gaps.inf");
-		for (auto iterator = false_positive_infos_.begin(); iterator
-				!= false_positive_infos_.end(); ++iterator) {
+		for (auto iterator = false_positive_infos_.begin();
+				iterator != false_positive_infos_.end(); ++iterator) {
 			if (iterator->weight > bound) {
 				WriteEdgePairInfo(
 						ConstructEdgePairFileName(output_folder, "fp",
@@ -794,15 +892,15 @@ public:
 						estimated_pair_info_.GetEdgePairInfo(iterator->first,
 								iterator->second));
 				WriteEdgePairInfo(
-						ConstructEdgePairFileName(output_folder, "fp",
-								"etalon", count),
+						ConstructEdgePairFileName(output_folder, "fp", "etalon",
+								count),
 						etalon_pair_info_.GetEdgePairInfo(iterator->first,
 								iterator->second));
 				count++;
 			}
 		}
-		for (auto iterator = false_negative_infos_.begin(); iterator
-				!= false_negative_infos_.end(); ++iterator) {
+		for (auto iterator = false_negative_infos_.begin();
+				iterator != false_negative_infos_.end(); ++iterator) {
 			if (iterator->weight > bound) {
 				WriteEdgePairInfo(
 						ConstructEdgePairFileName(output_folder, "fp",
@@ -815,8 +913,8 @@ public:
 						estimated_pair_info_.GetEdgePairInfo(iterator->first,
 								iterator->second));
 				WriteEdgePairInfo(
-						ConstructEdgePairFileName(output_folder, "fp",
-								"etalon", count),
+						ConstructEdgePairFileName(output_folder, "fp", "etalon",
+								count),
 						etalon_pair_info_.GetEdgePairInfo(iterator->first,
 								iterator->second));
 				count++;
@@ -838,15 +936,15 @@ private:
 	;
 public:
 	ClusterStat(PairedInfoIndex<Graph>& estimated_pair_info) :
-		estimated_pair_info_(estimated_pair_info) {
+			estimated_pair_info_(estimated_pair_info) {
 	}
 
 	virtual ~ClusterStat() {
 	}
 
 	virtual void Count() {
-		for (auto it = estimated_pair_info_.begin(); it
-				!= estimated_pair_info_.end(); ++it) {
+		for (auto it = estimated_pair_info_.begin();
+				it != estimated_pair_info_.end(); ++it) {
 			Infos infos = *it;
 			for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
 				Info info = *it2;
@@ -871,7 +969,7 @@ public:
 		 }
 		 */
 		copy(weight_variance_stat_.begin(), weight_variance_stat_.end(),
-				ostream_iterator<pair<double, double>> (ss, ", "));
+				ostream_iterator<pair<double, double>>(ss, ", "));
 		INFO("Estimated cluster stat: " << ss.str());
 	}
 
