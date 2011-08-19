@@ -29,9 +29,23 @@
 
 namespace io {
 
+/* 
+ * This enumerate contains offset type.
+ * UnknownOffset is equal to "offset = 0".
+ * PhredOffset is equal to "offset = 33".
+ * SolexaOffset is equal to "offset = 64".
+ */
+enum OffsetType {
+  UnknownOffset,
+  PhredOffset,
+  SolexaOffset
+};
+
 class SingleRead {
  public:
+  static const int UNKNOWN_OFFSET = 0;
   static const int PHRED_OFFSET = 33;
+  static const int SOLEXA_OFFSET = 64;
   static const int BAD_QUALITY_THRESHOLD = 2;
 
   /*
@@ -134,7 +148,8 @@ class SingleRead {
    * default). 
    * @return Modified SingleRead quality string.
    */
-  std::string GetPhredQualityString(int offset = PHRED_OFFSET) const {
+  std::string GetPhredQualityString(OffsetType offset_type = PhredOffset) const {
+    int offset = GetOffset(offset_type);
     std::string res = qual_;
     for (size_t i = 0; i < res.size(); ++i) {
       res[i] += offset;
@@ -209,7 +224,8 @@ class SingleRead {
    * @param offset The offset of SingleRead quality 
    * (PHRED_OFFSET by default).
    */
-  void SetQuality(const char* new_quality, int offset = PHRED_OFFSET) {
+  void SetQuality(const char* new_quality, OffsetType offset_type = PhredOffset) {
+    int offset = GetOffset(offset_type);
     qual_ = new_quality;
     for (size_t i = 0; i < qual_.size(); ++i) {
       qual_[i] -= offset;
@@ -234,6 +250,21 @@ class SingleRead {
    * @variable The flag of SingleRead correctness.
    */
   bool valid_;
+
+  /*
+   * Return quality offset value from offset type.
+   *
+   * @param offset_type One of possible enum values.
+   * @return Quality offset value.
+   */ 
+  int GetOffset(OffsetType offset_type) const {
+    switch (offset_type) {
+      case UnknownOffset: return 0;
+      case PhredOffset: return 33;
+      case SolexaOffset: return 64;
+    }
+    return -1;
+  }
 
   /*
    * Update valid_ flag.

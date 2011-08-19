@@ -41,8 +41,8 @@ class ScfParser : public Parser {
    * @param offset The offset of the read quality.
    */
   ScfParser(const std::string& filename,
-         int offset = SingleRead::PHRED_OFFSET)
-      :Parser(filename, offset), read_(NULL) {
+            OffsetType offset_type = PhredOffset)
+      :Parser(filename, offset_type), read_(NULL) {
     open();
   }
 

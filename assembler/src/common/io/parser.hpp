@@ -33,8 +33,8 @@ class Parser {
    * @param offset The offset of the read quality.
    */
   Parser(const std::string& filename,
-         int offset = SingleRead::PHRED_OFFSET)
-      : filename_(filename), offset_(offset),
+         OffsetType offset_type = PhredOffset)
+      : filename_(filename), offset_type_(offset_type),
         is_open_(false), eof_(true) {}
 
   /* 
@@ -89,9 +89,9 @@ class Parser {
    */
   std::string filename_;
   /*
-   * @variable Quality offset.
+   * @variable Quality offset type.
    */
-  int offset_;
+  OffsetType offset_type_;
   /*
    * @variable Flag that shows whether the stream is opened.
    */
@@ -128,7 +128,7 @@ std::string GetExtension(const std::string& filename);
  * offset.
  */
 Parser* SelectParser(const std::string& filename,
-                     int offset = SingleRead::PHRED_OFFSET);
+                     OffsetType offset_type);
 
 }
 

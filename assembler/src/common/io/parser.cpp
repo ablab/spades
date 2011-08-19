@@ -57,28 +57,29 @@ std::string GetExtension(const std::string& filename) {
  * @return Pointer to the new parser object with these filename and
  * offset.
  */
-Parser* SelectParser(const std::string& filename, int offset) {
+Parser* SelectParser(const std::string& filename, 
+                     OffsetType offset_type = PhredOffset) {
   std::string ext = GetExtension(filename);
   if ((ext == "fastq") || (ext == "fastq.gz") ||
       (ext == "fasta") || (ext == "fasta.gz") || 
       (ext == "fa") || (ext == "fq.gz") ||
       (ext == "fq") || (ext == "fa.gz") ||
       (ext == "seq") || (ext == "seq.gz")) {
-    return new FastaFastqGzParser(filename, offset);
+    return new FastaFastqGzParser(filename, offset_type);
   }
   if ((ext == "sam") || (ext == "bam") || 
       (ext == "sam.gz")) {
-    return new SamBamParser(filename, offset);
+    return new SamBamParser(filename, offset_type);
   }
   if ((ext == "sff")) {
-    return new SffParser(filename, offset);
+    return new SffParser(filename, offset_type);
   }
   // Experimental parser!!! Be carefull using it!!!
   if ((ext == "scf") || (ext == "abi") ||
       (ext == "alf") || (ext == "pln") ||
       (ext == "exp") || (ext == "ctf") ||
       (ext == "str") || (ext == "bio")) {
-    return new ScfParser(filename, offset);
+    return new ScfParser(filename, offset_type);
   }
   return NULL;
 }

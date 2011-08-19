@@ -7,7 +7,7 @@
 using namespace io;
 
 void TestSffParserReading() {
-  SffParser parser("./test/data/test.sff", 33);
+  SffParser parser("./test/data/test.sff");
   ASSERT(parser.is_open());
   SingleRead read;
   parser >> read;
@@ -21,7 +21,7 @@ void TestSffParserReading() {
 }
 
 void TestSffParserFull() {
-  SffParser parser("./test/data/test.sff", 33);
+  SffParser parser("./test/data/test.sff");
   ASSERT(parser.is_open());
   parser.reset();
   ASSERT(parser.is_open());

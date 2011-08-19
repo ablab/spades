@@ -7,7 +7,7 @@
 using namespace io;
 
 void TestSamBamParserReading() {
-  SamBamParser parser("./test/data/ex1.sam", 33);
+  SamBamParser parser("./test/data/ex1.sam");
   ASSERT(parser.is_open());
   SingleRead read;
   parser >> read;
@@ -21,7 +21,7 @@ void TestSamBamParserReading() {
 }
 
 void TestSamBamParserFull() {
-  SamBamParser parser("./test/data/ex1.sam", 33);
+  SamBamParser parser("./test/data/ex1.sam");
   ASSERT(parser.is_open());
   parser.reset();
   ASSERT(parser.is_open());

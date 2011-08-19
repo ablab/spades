@@ -12,7 +12,7 @@ void TestFastaFastqGzParserNoFile() {
 }
 
 void TestFastaFastqGzParserReading() {
-  FastaFastqGzParser parser("./test/data/s_test.fastq.gz", 33);
+  FastaFastqGzParser parser("./test/data/s_test.fastq.gz");
   ASSERT(parser.is_open());
   SingleRead read;
   parser >> read;
@@ -31,7 +31,7 @@ void TestFastaFastqGzParserReading() {
 }
 
 void TestFastaFastqGzParserFull() {
-  FastaFastqGzParser parser("./test/data/s_test.fastq.gz", 33);
+  FastaFastqGzParser parser("./test/data/s_test.fastq.gz");
   ASSERT(parser.is_open());
   parser.reset();
   ASSERT(parser.is_open());
@@ -47,7 +47,7 @@ void TestFastaFastqGzParserFull() {
 }
 
 void TestFastaFastqGzParserFastaReading() {
-  FastaFastqGzParser parser("./test/data/test.fasta", 64);
+  FastaFastqGzParser parser("./test/data/test.fasta", SolexaOffset);
   ASSERT(parser.is_open());
   SingleRead read;
   parser >> read;
@@ -55,7 +55,7 @@ void TestFastaFastqGzParserFastaReading() {
   ASSERT_EQUAL("CTTTCATTTCCTACTGTAGCTTTTAGTCTCTTCAAATACAAGGCACACA", 
                read.GetSequenceString());
   ASSERT_EQUAL("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", 
-               read.GetPhredQualityString(64));
+               read.GetPhredQualityString(SolexaOffset));
   parser >> read;
   parser >> read;
   parser >> read;
@@ -63,7 +63,7 @@ void TestFastaFastqGzParserFastaReading() {
   ASSERT_EQUAL("CTTTCATTTCCTACTGTAGCTTTTAGTCTCTTCAAATACAAGGCACACAGGGAG", 
                read.GetSequenceString());
   ASSERT_EQUAL("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", 
-               read.GetPhredQualityString(64));
+               read.GetPhredQualityString(SolexaOffset));
   Sequence seq;
   seq = read.sequence();
   Quality qual(read.quality());

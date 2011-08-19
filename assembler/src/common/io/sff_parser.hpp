@@ -40,8 +40,8 @@ class SffParser : public Parser {
    * @param offset The offset of the read quality.
    */
   SffParser(const std::string& filename,
-         int offset = SingleRead::PHRED_OFFSET)
-      :Parser(filename, offset), read_() {
+            OffsetType offset_type = PhredOffset)
+      :Parser(filename, offset_type), read_() {
     open();
   }
 
@@ -165,7 +165,7 @@ class SffParser : public Parser {
       quality_[i] = quality_char_;
     }
     quality_[slen] = '\0';
-    read_.SetQuality((char *)quality_, 33);
+    read_.SetQuality((char *)quality_, PhredOffset);
     free(name_);
     free(bases_);
     free(quality_);

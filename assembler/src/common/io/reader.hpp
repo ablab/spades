@@ -52,10 +52,10 @@ class Reader<SingleRead> : public IReader<SingleRead> {
    * @param offset The offset of the read quality.
    */
   explicit Reader(const SingleRead::FilenameType& filename,
-         size_t distance = 0,
-         int offset = SingleRead::PHRED_OFFSET)
-      : filename_(filename), offset_(offset), parser_(NULL) {
-    parser_ = SelectParser(filename_, offset_);
+                  size_t distance = 0,
+                  OffsetType offset_type = PhredOffset)
+      : filename_(filename), offset_type_(offset_type), parser_(NULL) {
+    parser_ = SelectParser(filename_, offset_type_);
   }
 
   /* 
@@ -131,9 +131,9 @@ class Reader<SingleRead> : public IReader<SingleRead> {
    */
   SingleRead::FilenameType filename_;
   /*
-   * @variable Quality offset.
+   * @variable Quality offset type.
    */
-  int offset_;
+  OffsetType offset_type_;
   /*
    * @variable Internal stream that reads from file.
    */ 
@@ -162,10 +162,11 @@ class Reader<PairedRead> : public IReader<PairedRead> {
    */
   explicit Reader(const PairedRead::FilenameType& filename,
          size_t distance = 100,
-         int offset = SingleRead::PHRED_OFFSET)
-      : filename_(filename), distance_(distance), offset_(offset),
-        first_(new Reader<SingleRead>(filename_.first, offset_)),
-        second_(new Reader<SingleRead>(filename_.second, offset_)) {}
+         OffsetType offset_type = PhredOffset)
+      : filename_(filename), distance_(distance), 
+        offset_type_(offset_type),
+        first_(new Reader<SingleRead>(filename_.first, offset_type_)),
+        second_(new Reader<SingleRead>(filename_.second, offset_type_)) {}
 
   /* 
    * Default destructor.
@@ -236,9 +237,9 @@ class Reader<PairedRead> : public IReader<PairedRead> {
    */
   size_t distance_;
   /*
-   * @variable Quality offset.
+   * @variable Quality offset type.
    */
-  int offset_;
+  OffsetType offset_type_;
   /*
    * @variable The first stream (reads from first file).
    */

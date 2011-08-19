@@ -44,8 +44,8 @@ class FastaFastqGzParser : public Parser {
    * @param offset The offset of the read quality.
    */
   FastaFastqGzParser(const std::string& filename,
-         int offset = SingleRead::PHRED_OFFSET)
-      :Parser(filename, offset), fp_(), seq_(NULL) {
+                     OffsetType offset_type = PhredOffset)
+      :Parser(filename, offset_type), fp_(), seq_(NULL) {
     open();
   }
 
@@ -70,16 +70,16 @@ class FastaFastqGzParser : public Parser {
     read.SetName(seq_->name.s);
     read.SetSequence(seq_->seq.s);
     if (seq_->qual.s) {
-      read.SetQuality(seq_->qual.s, offset_);
+      read.SetQuality(seq_->qual.s, offset_type_);
     } else {
       size_t len = strlen(seq_->seq.s);
       char* qual = (char*) malloc(len + 1);
-      char q = '\2' + offset_;
+      char q = '\2' + 64;
       for (size_t i = 0; i < len; ++i) {
         qual[i] = q;
       }
       qual[len] = '\0';
-      read.SetQuality(qual, offset_);
+      read.SetQuality(qual, SolexaOffset);
       free(qual);
     }
     ReadAhead();

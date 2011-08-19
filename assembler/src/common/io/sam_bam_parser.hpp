@@ -40,8 +40,8 @@ class SamBamParser : public Parser {
    * @param offset The offset of the read quality.
    */
   SamBamParser(const std::string& filename,
-         int offset = SingleRead::PHRED_OFFSET)
-      :Parser(filename, offset), fp_(), seq_() {
+               OffsetType offset_type = PhredOffset)
+      :Parser(filename, offset_type), fp_(), seq_() {
     open();
   }
 
@@ -65,7 +65,7 @@ class SamBamParser : public Parser {
     }
     read.SetName(seq_.getReadName());
     if (seq_.getQuality()) {
-      read.SetQuality(seq_.getQuality(), offset_);
+      read.SetQuality(seq_.getQuality(), offset_type_);
     }
     read.SetSequence(seq_.getSequence());
     ReadAhead();

@@ -15,7 +15,8 @@ void TestGetExtension() {
 }
 
 void TestParserSelector() {
-  ASSERT_EQUAL(reinterpret_cast<Parser*>(NULL), SelectParser("README"));
+  ASSERT_EQUAL(reinterpret_cast<Parser*>(NULL), 
+               SelectParser("README"));
 }
 
 cute::suite ParserSuite() {
