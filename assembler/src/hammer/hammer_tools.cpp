@@ -46,6 +46,7 @@ void join_maps(KMerStatMap & v1, const KMerStatMap & v2) {
 		itf = v1.find(it->first);
 		if (itf != v1.end()) {
 			itf->second.count = itf->second.count + it->second.count;
+			itf->second.totalQual = itf->second.totalQual * it->second.totalQual;
 		} else {
 			PositionKMer pkm = it->first;
 			KMerStat kms( it->second.count, KMERSTAT_GOOD, it->second.totalQual );
@@ -310,7 +311,7 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 		const PriorityQueueElement & pqel = pq.top();
 		if ( !(cur_min == pqel) ) {
 			cur_min = pqel;
-			curKMerCount.second.totalQual = 1-curErrorProb;
+			curKMerCount.second.totalQual = curErrorProb;
 			kmers->push_back(curKMerCount);
 			curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD, 1 ) );
 			curErrorProb = 1;
@@ -326,7 +327,7 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 		++it_cur;
 		if ( it_cur != it_end[nn] ) pq.push( PriorityQueueElement(*it_cur, nn) );
 	}
-	curKMerCount.second.totalQual = 1-curErrorProb;
+	curKMerCount.second.totalQual = curErrorProb;
 	kmers->push_back(curKMerCount);
 }
 

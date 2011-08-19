@@ -499,14 +499,14 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 		for (uint32_t m = 0; m < blocksInPlace[n].size(); ++m) {
 			if (blocksInPlace[n][m].size() == 0) continue;
 			if (blocksInPlace[n][m].size() == 1) {
-				if ( k_[blocksInPlace[n][m][0]].second.totalQual > Globals::good_cluster_threshold) {
+				if ( (1-k_[blocksInPlace[n][m][0]].second.totalQual) > Globals::good_cluster_threshold) {
 					k_[blocksInPlace[n][m][0]].second.changeto = KMERSTAT_GOOD;
 					#pragma omp critical
 					{
 					(*ofs) << k_[blocksInPlace[n][m][0]].first.str() << "\n> good singleton "
 					       << k_[blocksInPlace[n][m][0]].first.start() 
 					       << "  cnt=" << k_[blocksInPlace[n][m][0]].second.count 
-					       << "  tql=" << k_[blocksInPlace[n][m][0]].second.totalQual << "\n";
+					       << "  tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
 					}
 				} else {
 					#pragma omp critical
@@ -514,14 +514,14 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 					(*ofs_bad) << k_[blocksInPlace[n][m][0]].first.str() << "\n> bad singleton " 
 						   << k_[blocksInPlace[n][m][0]].first.start() 
 						   << "  cnt=" << k_[blocksInPlace[n][m][0]].second.count 
-						   << "  tql=" << k_[blocksInPlace[n][m][0]].second.totalQual << "\n";
+						   << "  tql=" << (1-k_[blocksInPlace[n][m][0]].second.totalQual) << "\n";
 					}
 				}
 			} else {
 				// we've got a nontrivial cluster; computing its overall quality
 				double cluster_quality = 1;
 				for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
-					cluster_quality *= 1 - k_[blocksInPlace[n][m][j]].second.totalQual;
+					cluster_quality *= k_[blocksInPlace[n][m][j]].second.totalQual;
 				}
 				cluster_quality = 1-cluster_quality;
 
