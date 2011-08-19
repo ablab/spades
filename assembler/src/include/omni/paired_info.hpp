@@ -245,7 +245,7 @@ public:
 		return PairInfos(LowerBound(e1, e2), UpperBound(e1, e2));
 	}
 
-	void UpdateInfo(const PairInfo<EdgeId>& info, const int d,
+	void UpdateInfo(const PairInfo<EdgeId>& info, const double d,
 			const double weight) {
 		UpdateSingleInfo(info, d, weight);
 
