@@ -151,9 +151,10 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 	INFO("Edge graph construction tool started");
 	INFO("Paired mode: " << (paired_mode ? "Yes" : "No"));
-	INFO("Etalon paired info mode: " << (etalon_info_mode ? "Yes" : "No"));
-	INFO("From file:entry_point " << (from_saved ? "Yes" : "No"));
-	mkdir(work_tmp_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	INFO("Etalon paired info mode: " << (etalon_info_mode ? "Yes" : "No"))INFO(
+			"From file:entry_point " << (from_saved ? "Yes" : "No"))
+	mkdir(work_tmp_dir.c_str(),
+			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
 	string graph_save_path = cfg::get().output_dir + "saves/";
 	mkdir(graph_save_path.c_str(),
@@ -182,17 +183,18 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	optional<TotalLabelerGraphStruct<Graph>> graph_struct;
 	optional<TotalLabeler<Graph>> TotLab;
 
-	INFO("------(don't look at this line) Starting from: " << debruijn::debruijn_config::working_stage_name(cfg::get().entry_point) << "-----");
+	INFO(
+			"------(don't look at this line) Starting from: " << debruijn::debruijn_config::working_stage_name(cfg::get().entry_point) << "-----")
 
-	if ( cfg::get().start_from == "begin"){
-		INFO("------Starting from Begin-----");
-		CreateAndFillGraph<k, ReadStream> (g, index, int_ids,
-							paired_index, stream, insert_size, max_read_length,
-							genome, EdgePos, etalon_paired_index);
-		printGraph(g, int_ids, work_tmp_dir + "1_filled_graph",
-				paired_index, EdgePos);
-		printGraph(g, int_ids, graph_save_path + "1_filled_graph",
-				paired_index, EdgePos);
+	if (cfg::get().start_from == "begin") {
+		INFO("------Starting from Begin-----")
+		CreateAndFillGraph<k, ReadStream>(g, index, int_ids, paired_index,
+				stream, insert_size, max_read_length, genome, EdgePos,
+				etalon_paired_index);
+		printGraph(g, int_ids, work_tmp_dir + "1_filled_graph", paired_index,
+				EdgePos, &etalon_paired_index);
+		printGraph(g, int_ids, graph_save_path + "1_filled_graph", paired_index,
+				EdgePos, &etalon_paired_index);
 		graph_loaded = true;
 
 		graph_struct = in_place(boost::ref(g), &int_ids, &EdgePos);
@@ -296,10 +298,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 			WriteGraphComponents<k>(g, index, genome,
 					output_folder + "graph_components" + "/", "graph.dot",
 					"graph_component", insert_size);
-			TotalLabelerGraphStruct<NCGraph> graph_struct_tmp(new_graph, &NewIntIds, &EdgePosBefore);
-			TotalLabeler<NCGraph> TotLabTmp(&graph_struct_tmp);
-			omnigraph::WriteSimple(output_folder + "2_simplified_graph.dot",
-					"no_repeat_graph", new_graph, TotLabTmp);
+
 		}
 
 		number_of_components = PrintGraphComponents(
