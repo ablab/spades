@@ -49,6 +49,8 @@ public:
 //	typedef hash_map <Sequence, Graph::VertexId, hashing::HashSym<Sequence>, hashing::EqSym<Sequence> > SeqVertice;
 	typedef hash_map <Sequence, Graph::VertexId, hashing::Hash<Sequence> > SeqVertice;
 	SeqVertice seqVertice;
+	typedef hash_map <Sequence, vector<size_t>, hashing::Hash<Sequence> > SeqReads;
+	SeqReads seqReads;
 	size_t htake_;
 
 	void findMinimizers(Sequence s);
@@ -110,18 +112,9 @@ public:
 
 		if (mode_ & 8) {
 			INFO("===== Outputting earmarked k-mers... =====");
-			typedef hash_map <Sequence, vector<size_t>, hashing::Hash<Sequence> > SeqReads;
-			SeqReads seqReads;
 			for (size_t i = 0; !reader_.eof(); ++i) {
 				reader_ >> r;
-				Sequence s = r.sequence();
-				hashSym.kmers(s, ha);
-				for (size_t i = 0; i + K <= s.size(); ++i) {
-					hash_t hi = ha[i];
-					if (earmarked_hashes.count(hi)) {
-						seqReads[s.Subseq(i, i + K)].push_back(i);
-					}
-				}
+				gb_.mapToReads(r.sequence());
 				VERBOSE(i, " single reads");
 			}
 			for (auto it = seqReads.begin(); it != seqReads.end(); ++it) {
