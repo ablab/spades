@@ -139,7 +139,7 @@ void CountClusteredPairedInfoStats(Graph &g, size_t insert_size,
 		PairedInfoIndex<Graph> &clustered_index,
 		PairedInfoIndex<Graph> &etalon_paired_index,
 		const string &output_folder) {
-	INFO("Counting paired info stats");
+	INFO("Counting clustered info stats");
 	EstimationQualityStat<Graph> estimation_stat(g, paired_index,
 			clustered_index, etalon_paired_index);
 	estimation_stat.Count();
@@ -148,7 +148,17 @@ void CountClusteredPairedInfoStats(Graph &g, size_t insert_size,
 	mkdir(stat_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	estimation_stat.WriteEstmationStats(stat_folder);
 	ClusterStat<Graph> (clustered_index).Count();
-	INFO("Paired info stats counted");
+
+//	PairedInfoIndex<Graph> etalon_clustered_index;
+//	DistanceEstimator<Graph> estimator(g, etalon_paired_index, insert_size,
+//			max_read_length, cfg::get().de.delta,
+//			cfg::get().de.linkage_distance, cfg::get().de.max_distance);
+//	estimator.Estimate(etalon_clustered_index);
+
+	PairedInfoIndex<Graph> filtered_clustered_index(g);
+	PairInfoFilter<Graph> (g, 1000.).Filter(clustered_index/*etalon_clustered_index*/, filtered_clustered_index);
+	MatePairTransformStat<Graph> (g, filtered_clustered_index);
+	INFO("Counting clustered info stats");
 }
 
 void WriteToDotFile(Graph &g, const string& file_name, string graph_name,
