@@ -50,6 +50,94 @@ namespace debruijn_graph {
 typedef io::Reader<io::SingleRead> SingleReadStream;
 using namespace omnigraph;
 
+//For future refactoring
+////---Graph Construction---
+//void ConstructGraph();
+//void SaveEnvAfterGC();
+//void LoadEnvAfterGC();
+//void CopyEnvAfterGC();
+//
+//void RunGraphConstruction() {
+//	if (cfg::get().entry_point != debruijn::debruijn_config::after_construction) {
+//		ConstructGraph();
+//		SaveEnvAfterGC();
+//	} else {
+//		LoadEnvAfterGC();
+//		CopyEnvAfterGC();
+//	}
+//}
+//
+////---Paired Info Counting---
+//void CountPairedInfo();
+//void SaveEnvAfterPIC();
+//void LoadEnvAfterPIC();
+//void CopyEnvAfterPIC();
+//
+//void RunPairedInfoCounting() {
+//	if (cfg::get().entry_point != debruijn::debruijn_config::after_pair_info_counting) {
+//		RunGraphConstruction();
+//		CountPairedInfo();
+//		SaveEnvAfterPIC();
+//	} else {
+//		LoadEnvAfterPIC();
+//		CopyEnvAfterPIC();
+//	}
+//}
+//
+//void Simplify();
+//void SaveEnvAfterSimp();
+//void LoadEnvAfterSimp();
+//void CopyEnvAfterSimp();
+//
+//void RunSimplification() {
+//	if (cfg::get().entry_point != debruijn::debruijn_config::after_simplification) {
+//		RunPairedInfoCounting();
+//		Simplify();
+//		SaveEnvAfterSimp();
+//	} else {
+//		LoadEnvAfterSimp();
+//		CopyEnvAfterSimp();
+//	}
+//}
+//
+//void RunSimplification();
+//void EstimateDistances();
+//void SaveEnvAfterDE();
+//void LoadEnvAfterDE();
+//void CopyEnvAfterDE();
+//
+//void RunDistanceEstimation() {
+//	if (cfg::get().entry_point != debruijn::debruijn_config::after_distance_estimation) {
+//		RunSimplification();
+//		EstimateDistances();
+//		SaveEnvAfterDE();
+//	} else {
+//		LoadEnvAfterDE();
+//		CopyEnvAfterDE();
+//	}
+//}
+//
+//void ResolveRepeats();
+//void SaveEnvAfterRR();
+//void LoadEnvAfterRR();
+//void CopyEnvAfterRR();
+//
+//void RunRepeatResolving() {
+//	if (cfg::get().entry_point != debruijn::debruijn_config::after_repeat_resolving) {
+//		RunDistanceEstimation();
+//		ResolveRepeats();
+//		SaveEnvAfterRR();
+//	} else {
+//		LoadEnvAfterRR();
+//		CopyEnvAfterRR();
+//	}
+//}
+//
+//void RunAssembler() {
+//	RunRepeatResolving();
+//}
+
+
 /*void FindZeros(PairedInfoIndex<Graph>& etalon_paired_index) {
  for (auto it = etalon_paired_index.begin(); it != etalon_paired_index.end(); ++it) {
  const vector<PairInfo<EdgeId>> infos = *it;
@@ -62,6 +150,7 @@ using namespace omnigraph;
  }
  }
  }*/
+
 
 template<size_t k, class Graph>
 void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
@@ -178,8 +267,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	optional<TotalLabelerGraphStruct<Graph>> graph_struct;
 	optional<TotalLabeler<Graph>> TotLab;
 
-	INFO(
-			"------(don't look at this line) Starting from: " << debruijn::debruijn_config::working_stage_name(cfg::get().entry_point) << "-----")
+//	INFO(
+//			"------Starting from: " << debruijn::debruijn_config::working_stage_name(cfg::get().entry_point) << "-----")
 
 	if (cfg::get().start_from == "begin") {
 		INFO("------Starting from Begin-----")

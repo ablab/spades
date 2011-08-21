@@ -17,8 +17,7 @@ etalon_info_mode  false
 
 from_saved_graph	0 ; not used(?)
 
-entry_point		construction
-;	construction, pair_info_counting, simplification, distance_estimation, repeat_resolving, consensus
+entry_point		begin
 
 start_from begin   ; Full run.
 ;start_from after_filling  ; Run with previous constructed graph.

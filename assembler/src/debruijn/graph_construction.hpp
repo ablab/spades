@@ -109,34 +109,18 @@ template<size_t k, class ReadStream>
 void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index
 		, IdTrackHandler<Graph>& int_ids, ReadStream& stream) {
 	ConstructGraph<k, ReadStream>(g, index, stream);
-	if (cfg::get().entry_point
-			<= debruijn::debruijn_config::working_stage::construction) {
-		FillCoverage<k, ReadStream>(g, stream, index);
-	} else {
-		string file_name = cfg::get().previous_run_dir + "1_filled_graph";
-		DataScanner<Graph> dataScanner(g, int_ids);
-		dataScanner.loadConjugateGraph(file_name, true);
-		dataScanner.loadCoverage(file_name);
-	}
+	FillCoverage<k, ReadStream>(g, stream, index);
 }
 
 template<size_t k, class PairedReadStream>
 void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index
 		, IdTrackHandler<Graph>& int_ids,
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& stream) {
-	if (cfg::get().entry_point
-			<= debruijn::debruijn_config::working_stage::pair_info_counting) {
 		typedef io::ConvertingReaderWrapper UnitedStream;
 		UnitedStream united_stream(&stream);
 		ConstructGraphWithCoverage<k, UnitedStream>(g, index,
 				int_ids/*, coverage_handler*/, united_stream);
 		FillPairedIndex<k, PairedReadStream>(g, index, paired_index, stream);
-	} else {
-		DataScanner<Graph> dataScanner(g, int_ids);
-		string file_name = cfg::get().previous_run_dir + "1_filled_graph";
-		dataScanner.loadPaired(file_name, paired_index);
-	}
-
 }
 
 template<size_t k, class PairedReadStream>
