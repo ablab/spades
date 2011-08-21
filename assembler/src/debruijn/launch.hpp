@@ -293,7 +293,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "2_simplified_graph", (PairedInfoIndex<NCGraph>*)0
 				, EdgePosBefore, (PairedInfoIndex<NCGraph>*)0, &new_index);
 
-		if (cfg::get().start_from == "after_simplify") {
+		if (cfg::get().start_from == "after_simplify" || cfg::get().start_from == "before_resolve") {
 			//todo ask Shurik if graph is not empty here
 			WriteGraphComponents<k>(g, index, genome,
 					output_folder + "graph_components" + "/", "graph.dot",

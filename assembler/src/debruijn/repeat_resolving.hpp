@@ -54,7 +54,7 @@ void ResolveOneComponent(const string& load_from_dir, const string& save_to_dir,
 	IdTrackHandler<NCGraph> NewIntIds(new_graph);
 	PairedInfoIndex<NCGraph> new_index(new_graph);
 	EdgesPositionHandler<NCGraph> EdgePosBefore(new_graph);
-	scanNCGraph(new_graph, NewIntIds, load_from, (PairedInfoIndex<NCGraph>*)0, EdgePosBefore, (PairedInfoIndex<NCGraph>*)0, &new_index);
+	scanNCGraph(new_graph, NewIntIds, load_from, &new_index, EdgePosBefore);
 
 	RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
