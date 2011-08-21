@@ -110,20 +110,17 @@ void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
 template<size_t k, class PairedReadStream>
 void CreateAndFillGraph(Graph& g, EdgeIndex<k + 1, Graph>& index
 		, IdTrackHandler<Graph>& int_ids, PairedInfoIndex<Graph>& paired_index,
-		PairedReadStream& stream, size_t insert_size, size_t read_length,
-		const Sequence& genome, EdgesPositionHandler<Graph> &EdgePos,
+		PairedReadStream& stream, const Sequence& genome, EdgesPositionHandler<Graph> &EdgePos,
 		PairedInfoIndex<Graph> &etalon_paired_index) {
 	if (cfg::get().paired_mode) {
 		if (cfg::get().etalon_info_mode) {
 			ConstructGraphWithEtalonPairedInfo<k, PairedReadStream>(g, index,
-					int_ids, paired_index, stream, insert_size, read_length,
-					genome);
+					int_ids, paired_index, stream, genome);
 		} else {
 			ConstructGraphWithPairedInfo<k, PairedReadStream>(g, index, int_ids,
 					paired_index, stream);
 		}
-		FillEtalonPairedIndex<k>(g, etalon_paired_index, index, insert_size,
-				read_length, genome);
+		FillEtalonPairedIndex<k>(g, etalon_paired_index, index, genome);
 
 	} else {
 		typedef io::ConvertingReaderWrapper UnitedStream;
@@ -140,8 +137,6 @@ void CreateAndFillGraph(Graph& g, EdgeIndex<k + 1, Graph>& index
 
 template<size_t k, class ReadStream>
 void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
-		bool paired_mode, bool rectangle_mode, bool etalon_info_mode,
-		bool from_saved, size_t insert_size, size_t max_read_length,
 		const string& work_tmp_dir, vector<SingleReadStream*> reads) {
 
 	using boost::optional;
@@ -150,9 +145,9 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	string output_folder = cfg::get().output_dir;
 
 	INFO("Edge graph construction tool started");
-	INFO("Paired mode: " << (paired_mode ? "Yes" : "No"));
-	INFO("Etalon paired info mode: " << (etalon_info_mode ? "Yes" : "No"))INFO(
-			"From file:entry_point " << (from_saved ? "Yes" : "No"))
+	INFO("Paired mode: " << (cfg::get().paired_mode ? "Yes" : "No"));
+	INFO("Etalon paired info mode: " << (cfg::get().etalon_info_mode ? "Yes" : "No"))INFO(
+			"From file:entry_point " << (cfg::get().from_saved_graph ? "Yes" : "No"))
 	mkdir(work_tmp_dir.c_str(),
 			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
@@ -189,7 +184,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	if (cfg::get().start_from == "begin") {
 		INFO("------Starting from Begin-----")
 		CreateAndFillGraph<k, ReadStream>(g, index, int_ids, paired_index,
-				stream, insert_size, max_read_length, genome, EdgePos,
+				stream, genome, EdgePos,
 				etalon_paired_index);
 		printGraph(g, int_ids, work_tmp_dir + "1_filled_graph", paired_index,
 				EdgePos, &etalon_paired_index);
@@ -232,14 +227,14 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 			WriteGraphComponents<k>(g, index, genome,
 					output_folder + "graph_components" + "/", "graph.dot",
-					"graph_component", insert_size);
+					"graph_component", cfg::get().ds.IS);
 
 			number_of_components = PrintGraphComponents(
-					output_folder + "graph_components/graph", g, insert_size,
+					output_folder + "graph_components/graph", g, cfg::get().ds.IS,
 					int_ids, paired_index, EdgePos);
 
-			DistanceEstimator<Graph> estimator(g, paired_index, insert_size,
-					max_read_length, cfg::get().de.delta,
+			DistanceEstimator<Graph> estimator(g, paired_index, cfg::get().ds.IS,
+					cfg::get().ds.RL, cfg::get().de.delta,
 					cfg::get().de.linkage_distance, cfg::get().de.max_distance);
 			estimator.Estimate(clustered_index);
 
@@ -260,8 +255,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	}
 
 	if (graph_loaded) {
-		if (paired_mode) {
-			CountPairedInfoStats(g, insert_size, max_read_length, paired_index,
+		if (cfg::get().paired_mode) {
+			CountPairedInfoStats(g, paired_index,
 					etalon_paired_index, output_folder);
 		}
 
@@ -273,14 +268,13 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		//			estimator2.Estimate(read_count_clustered_index);
 		//experiment
 
-		CountClusteredPairedInfoStats(g, insert_size, max_read_length,
-				paired_index, clustered_index, etalon_paired_index,
+		CountClusteredPairedInfoStats(g, paired_index, clustered_index, etalon_paired_index,
 				output_folder);
 
 	}
 
 // after_simplify
-	if (paired_mode) {
+	if (cfg::get().paired_mode) {
 		INFO("before ResolveRepeats");
 
 		NCGraph new_graph(k);
@@ -297,13 +291,13 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 			//todo ask Shurik if graph is not empty here
 			WriteGraphComponents<k>(g, index, genome,
 					output_folder + "graph_components" + "/", "graph.dot",
-					"graph_component", insert_size);
+					"graph_component", cfg::get().ds.IS);
 
 		}
 
 		number_of_components = PrintGraphComponents(
 				output_folder + "graph_components/graphCl", new_graph,
-				insert_size, NewIntIds, new_index, EdgePosBefore);
+				cfg::get().ds.IS, NewIntIds, new_index, EdgePosBefore);
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
@@ -315,7 +309,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		EdgeLabelHandler<NCGraph> LabelsAfter(resolved_graph, new_graph);
 
 		DEBUG("New index size: "<< new_index.size());
-		if (rectangle_mode) {
+		if (cfg::get().rectangle_mode) {
 			void RectangleResolve(
 					PairedInfoIndex<NonconjugateDeBruijnGraph>& index,
 					NonconjugateDeBruijnGraph& graph,
@@ -392,7 +386,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		}
 
 	}
-	if (!paired_mode)
+	if (!cfg::get().paired_mode)
 		OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 }

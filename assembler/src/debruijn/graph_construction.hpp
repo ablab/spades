@@ -49,13 +49,12 @@ void FillPairedIndexWithReadCountMetric(const Graph &g,
 template<size_t k>
 void FillEtalonPairedIndex(const Graph &g,
 		PairedInfoIndex<Graph>& etalon_paired_index,
-		const EdgeIndex<k + 1, Graph>& index, size_t insert_size
-		, size_t read_length,
+		const EdgeIndex<k + 1, Graph>& index,
 		const Sequence& genome) {
 	INFO("-----------------------------------------");
 	INFO("Counting etalon paired info");
 	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index,
-			insert_size, read_length, insert_size * 0.1);
+			cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().ds.IS * 0.1);
 	etalon_paired_info_counter.FillEtalonPairedInfo(genome,
 			etalon_paired_index);
 	//////////////////DEBUG
@@ -143,13 +142,12 @@ void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index
 template<size_t k, class PairedReadStream>
 void ConstructGraphWithEtalonPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		IdTrackHandler<Graph>& int_ids, PairedInfoIndex<Graph>& paired_index,
-		PairedReadStream& stream, size_t insert_size, size_t read_length,
-		const Sequence& genome) {
+		PairedReadStream& stream, const Sequence& genome) {
 	typedef io::ConvertingReaderWrapper UnitedStream;
 	UnitedStream united_stream(&stream);
 	ConstructGraphWithCoverage<k, UnitedStream>(g, index,
 			int_ids/*, coverage_handler*/, united_stream);
-	FillEtalonPairedIndex<k>(g, paired_index, index, insert_size, read_length,
+	FillEtalonPairedIndex<k>(g, paired_index, index,
 			genome);
 }
 
