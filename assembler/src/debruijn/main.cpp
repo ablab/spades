@@ -41,7 +41,7 @@ int main() {
 	INFO("Assembling " << dataset << " dataset");
 
 	size_t insert_size = cfg::get().ds.IS;
-	size_t max_read_length = 100; //CONFIG.read<size_t> (dataset + "_READ_LEN");
+	size_t max_read_length = cfg::get().ds.RL;
 	int dataset_len = cfg::get().ds.LEN;
 	bool paired_mode = cfg::get().paired_mode;
 	bool rectangle_mode = cfg::get().rectangle_mode;

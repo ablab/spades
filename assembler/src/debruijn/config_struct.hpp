@@ -106,6 +106,7 @@ namespace debruijn
 		{
 			std::string first;
 			std::string second;
+			size_t RL;
 			size_t IS;
 			int LEN;
 		};
