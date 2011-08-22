@@ -2,7 +2,7 @@
 #define TEST_SFFPARSERTEST_HPP
 
 #include "cute/cute.h"
-#include "common/io/sff_parser.hpp"
+#include "io/sff_parser.hpp"
 
 using namespace io;
 

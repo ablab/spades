@@ -2,9 +2,8 @@
 #define TEST_PARSERTEST_HPP_
 
 #include "cute/cute.h"
-#include "common/io/parser.hpp"
-#include "common/io/fasta_fastq_gz_parser.hpp"
-#include "common/io/parser.cpp"  // DURTY HACK!!!
+#include "io/parser.hpp"
+#include "io/fasta_fastq_gz_parser.hpp"
 
 using namespace io;
 
@@ -16,7 +15,7 @@ void TestGetExtension() {
 
 void TestParserSelector() {
   ASSERT_EQUAL(reinterpret_cast<Parser*>(NULL), 
-               SelectParser("README"));
+               SelectParser("README", PhredOffset));
 }
 
 cute::suite ParserSuite() {

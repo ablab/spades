@@ -2,7 +2,7 @@
 #define TEST_SAMBAMPARSERTEST_HPP
 
 #include "cute/cute.h"
-#include "common/io/sam_bam_parser.hpp"
+#include "io/sam_bam_parser.hpp"
 
 using namespace io;
 
