@@ -50,6 +50,94 @@ namespace debruijn_graph {
 typedef io::Reader<io::SingleRead> SingleReadStream;
 using namespace omnigraph;
 
+//For future refactoring
+////---Graph Construction---
+//void ConstructGraph();
+//void SaveEnvAfterGC();
+//void LoadEnvAfterGC();
+//void CopyEnvAfterGC();
+//
+//void RunGraphConstruction() {
+//	if (cfg::get().entry_point != debruijn::debruijn_config::after_construction) {
+//		ConstructGraph();
+//		SaveEnvAfterGC();
+//	} else {
+//		LoadEnvAfterGC();
+//		CopyEnvAfterGC();
+//	}
+//}
+//
+////---Paired Info Counting---
+//void CountPairedInfo();
+//void SaveEnvAfterPIC();
+//void LoadEnvAfterPIC();
+//void CopyEnvAfterPIC();
+//
+//void RunPairedInfoCounting() {
+//	if (cfg::get().entry_point != debruijn::debruijn_config::after_pair_info_counting) {
+//		RunGraphConstruction();
+//		CountPairedInfo();
+//		SaveEnvAfterPIC();
+//	} else {
+//		LoadEnvAfterPIC();
+//		CopyEnvAfterPIC();
+//	}
+//}
+//
+//void Simplify();
+//void SaveEnvAfterSimp();
+//void LoadEnvAfterSimp();
+//void CopyEnvAfterSimp();
+//
+//void RunSimplification() {
+//	if (cfg::get().entry_point != debruijn::debruijn_config::after_simplification) {
+//		RunPairedInfoCounting();
+//		Simplify();
+//		SaveEnvAfterSimp();
+//	} else {
+//		LoadEnvAfterSimp();
+//		CopyEnvAfterSimp();
+//	}
+//}
+//
+//void RunSimplification();
+//void EstimateDistances();
+//void SaveEnvAfterDE();
+//void LoadEnvAfterDE();
+//void CopyEnvAfterDE();
+//
+//void RunDistanceEstimation() {
+//	if (cfg::get().entry_point != debruijn::debruijn_config::after_distance_estimation) {
+//		RunSimplification();
+//		EstimateDistances();
+//		SaveEnvAfterDE();
+//	} else {
+//		LoadEnvAfterDE();
+//		CopyEnvAfterDE();
+//	}
+//}
+//
+//void ResolveRepeats();
+//void SaveEnvAfterRR();
+//void LoadEnvAfterRR();
+//void CopyEnvAfterRR();
+//
+//void RunRepeatResolving() {
+//	if (cfg::get().entry_point != debruijn::debruijn_config::after_repeat_resolving) {
+//		RunDistanceEstimation();
+//		ResolveRepeats();
+//		SaveEnvAfterRR();
+//	} else {
+//		LoadEnvAfterRR();
+//		CopyEnvAfterRR();
+//	}
+//}
+//
+//void RunAssembler() {
+//	RunRepeatResolving();
+//}
+
+
 /*void FindZeros(PairedInfoIndex<Graph>& etalon_paired_index) {
  for (auto it = etalon_paired_index.begin(); it != etalon_paired_index.end(); ++it) {
  const vector<PairInfo<EdgeId>> infos = *it;
@@ -62,6 +150,7 @@ using namespace omnigraph;
  }
  }
  }*/
+
 
 template<size_t k, class Graph>
 void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
@@ -110,20 +199,17 @@ void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
 template<size_t k, class PairedReadStream>
 void CreateAndFillGraph(Graph& g, EdgeIndex<k + 1, Graph>& index
 		, IdTrackHandler<Graph>& int_ids, PairedInfoIndex<Graph>& paired_index,
-		PairedReadStream& stream, size_t insert_size, size_t read_length,
-		const Sequence& genome, EdgesPositionHandler<Graph> &EdgePos,
+		PairedReadStream& stream, const Sequence& genome, EdgesPositionHandler<Graph> &EdgePos,
 		PairedInfoIndex<Graph> &etalon_paired_index) {
 	if (cfg::get().paired_mode) {
 		if (cfg::get().etalon_info_mode) {
 			ConstructGraphWithEtalonPairedInfo<k, PairedReadStream>(g, index,
-					int_ids, paired_index, stream, insert_size, read_length,
-					genome);
+					int_ids, paired_index, stream, genome);
 		} else {
 			ConstructGraphWithPairedInfo<k, PairedReadStream>(g, index, int_ids,
 					paired_index, stream);
 		}
-		FillEtalonPairedIndex<k>(g, etalon_paired_index, index, insert_size,
-				read_length, genome);
+		FillEtalonPairedIndex<k>(g, etalon_paired_index, index, genome);
 
 	} else {
 		typedef io::ConvertingReaderWrapper UnitedStream;
@@ -140,8 +226,6 @@ void CreateAndFillGraph(Graph& g, EdgeIndex<k + 1, Graph>& index
 
 template<size_t k, class ReadStream>
 void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
-		bool paired_mode, bool rectangle_mode, bool etalon_info_mode,
-		bool from_saved, size_t insert_size, size_t max_read_length,
 		const string& work_tmp_dir, vector<SingleReadStream*> reads) {
 
 	using boost::optional;
@@ -150,9 +234,9 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	string output_folder = cfg::get().output_dir;
 
 	INFO("Edge graph construction tool started");
-	INFO("Paired mode: " << (paired_mode ? "Yes" : "No"));
-	INFO("Etalon paired info mode: " << (etalon_info_mode ? "Yes" : "No"))INFO(
-			"From file:entry_point " << (from_saved ? "Yes" : "No"))
+	INFO("Paired mode: " << (cfg::get().paired_mode ? "Yes" : "No"));
+	INFO("Etalon paired info mode: " << (cfg::get().etalon_info_mode ? "Yes" : "No"))INFO(
+			"From file:entry_point " << (cfg::get().from_saved_graph ? "Yes" : "No"))
 	mkdir(work_tmp_dir.c_str(),
 			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
@@ -183,13 +267,13 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	optional<TotalLabelerGraphStruct<Graph>> graph_struct;
 	optional<TotalLabeler<Graph>> TotLab;
 
-	INFO(
-			"------(don't look at this line) Starting from: " << debruijn::debruijn_config::working_stage_name(cfg::get().entry_point) << "-----")
+//	INFO(
+//			"------Starting from: " << debruijn::debruijn_config::working_stage_name(cfg::get().entry_point) << "-----")
 
 	if (cfg::get().start_from == "begin") {
 		INFO("------Starting from Begin-----")
 		CreateAndFillGraph<k, ReadStream>(g, index, int_ids, paired_index,
-				stream, insert_size, max_read_length, genome, EdgePos,
+				stream, genome, EdgePos,
 				etalon_paired_index);
 		printGraph(g, int_ids, work_tmp_dir + "1_filled_graph", paired_index,
 				EdgePos, &etalon_paired_index);
@@ -232,14 +316,14 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 			WriteGraphComponents<k>(g, index, genome,
 					output_folder + "graph_components" + "/", "graph.dot",
-					"graph_component", insert_size);
+					"graph_component", cfg::get().ds.IS);
 
 			number_of_components = PrintGraphComponents(
-					output_folder + "graph_components/graph", g, insert_size,
+					output_folder + "graph_components/graph", g, cfg::get().ds.IS,
 					int_ids, paired_index, EdgePos);
 
-			DistanceEstimator<Graph> estimator(g, paired_index, insert_size,
-					max_read_length, cfg::get().de.delta,
+			DistanceEstimator<Graph> estimator(g, paired_index, cfg::get().ds.IS,
+					cfg::get().ds.RL, cfg::get().de.delta,
 					cfg::get().de.linkage_distance, cfg::get().de.max_distance);
 			estimator.Estimate(clustered_index);
 
@@ -260,8 +344,8 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	}
 
 	if (graph_loaded) {
-		if (paired_mode) {
-			CountPairedInfoStats(g, insert_size, max_read_length, paired_index,
+		if (cfg::get().paired_mode) {
+			CountPairedInfoStats(g, paired_index,
 					etalon_paired_index, output_folder);
 		}
 
@@ -273,14 +357,13 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		//			estimator2.Estimate(read_count_clustered_index);
 		//experiment
 
-		CountClusteredPairedInfoStats(g, insert_size, max_read_length,
-				paired_index, clustered_index, etalon_paired_index,
+		CountClusteredPairedInfoStats(g, paired_index, clustered_index, etalon_paired_index,
 				output_folder);
 
 	}
 
 // after_simplify
-	if (paired_mode) {
+	if (cfg::get().paired_mode) {
 		INFO("before ResolveRepeats");
 
 		NCGraph new_graph(k);
@@ -293,17 +376,17 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "2_simplified_graph", (PairedInfoIndex<NCGraph>*)0
 				, EdgePosBefore, (PairedInfoIndex<NCGraph>*)0, &new_index);
 
-		if (cfg::get().start_from == "after_simplify") {
+		if (cfg::get().start_from == "after_simplify" || cfg::get().start_from == "before_resolve") {
 			//todo ask Shurik if graph is not empty here
 			WriteGraphComponents<k>(g, index, genome,
 					output_folder + "graph_components" + "/", "graph.dot",
-					"graph_component", insert_size);
+					"graph_component", cfg::get().ds.IS);
 
 		}
 
 		number_of_components = PrintGraphComponents(
 				output_folder + "graph_components/graphCl", new_graph,
-				insert_size, NewIntIds, new_index, EdgePosBefore);
+				cfg::get().ds.IS, NewIntIds, new_index, EdgePosBefore);
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
@@ -315,7 +398,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		EdgeLabelHandler<NCGraph> LabelsAfter(resolved_graph, new_graph);
 
 		DEBUG("New index size: "<< new_index.size());
-		if (rectangle_mode) {
+		if (cfg::get().rectangle_mode) {
 			void RectangleResolve(
 					PairedInfoIndex<NonconjugateDeBruijnGraph>& index,
 					NonconjugateDeBruijnGraph& graph,
@@ -392,7 +475,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		}
 
 	}
-	if (!paired_mode)
+	if (!cfg::get().paired_mode)
 		OutputContigs(g, output_folder + "contigs.fasta");
 	INFO("Tool finished");
 }

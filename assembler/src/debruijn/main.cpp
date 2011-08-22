@@ -40,13 +40,6 @@ int main() {
 	checkFileExistenceFATAL(reads_filename2);
 	INFO("Assembling " << dataset << " dataset");
 
-	size_t insert_size = cfg::get().ds.IS;
-	size_t max_read_length = 100; //CONFIG.read<size_t> (dataset + "_READ_LEN");
-	int dataset_len = cfg::get().ds.LEN;
-	bool paired_mode = cfg::get().paired_mode;
-	bool rectangle_mode = cfg::get().rectangle_mode;
-	bool etalon_info_mode = cfg::get().etalon_info_mode;
-	bool from_saved = cfg::get().from_saved_graph;
 	// typedefs :)
 	typedef io::Reader<io::SingleRead> ReadStream;
 	typedef io::Reader<io::PairedRead> PairedReadStream;
@@ -57,7 +50,7 @@ int main() {
 	PairedReadStream pairStream(
 			std::pair<std::string, std::string>(reads_filename1,
 					reads_filename2),
-			insert_size);
+			cfg::get().ds.IS);
 	string real_reads = cfg::get().uncorrected_reads;
 	vector<ReadStream*> reads;
 	if (real_reads != "none") {
@@ -78,13 +71,11 @@ int main() {
 		ReadStream genome_stream(genome_filename);
 		io::SingleRead full_genome;
 		genome_stream >> full_genome;
-		genome = full_genome.GetSequenceString().substr(0, dataset_len); // cropped
+		genome = full_genome.GetSequenceString().substr(0, cfg::get().ds.LEN); // cropped
 	}
 	// assemble it!
 	INFO("Assembling " << dataset << " dataset");
-	debruijn_graph::DeBruijnGraphTool<debruijn::K, RCStream>(rcStream, Sequence(genome),
-			paired_mode, rectangle_mode, etalon_info_mode, from_saved,
-			insert_size, max_read_length, work_tmp_dir, reads);
+	debruijn_graph::DeBruijnGraphTool<debruijn::K, RCStream>(rcStream, Sequence(genome), work_tmp_dir, reads);
 
 	unlink((cfg::get().output_root + "latest").c_str());
 		if (symlink(cfg::get().output_dir_suffix.c_str(), (cfg::get().output_root + "latest").c_str())

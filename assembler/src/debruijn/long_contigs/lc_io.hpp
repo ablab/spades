@@ -8,6 +8,8 @@
 #ifndef LC_IO_HPP_
 #define LC_IO_HPP_
 
+#include "path_utils.hpp"
+
 namespace long_contigs {
 
 using namespace debruijn_graph;
@@ -163,6 +165,37 @@ void OutputPathsAsContigs(Graph& g, std::vector<BidirectionalPath> paths, const 
 	}
 	INFO("Contigs written");
 }
+
+
+//Output only one half of edges
+void OutputContigsNoComplement(Graph& g, const std::string& filename) {
+	std::set<EdgeId> filtered;
+	FilterComlementEdges(g, filtered);
+
+	INFO("Outputting contigs to " << filename);
+	osequencestream oss(filename);
+	for (auto it =filtered.begin(); it != filtered.end(); ++it) {
+		oss << g.EdgeNucls(*it);
+	}
+	INFO("Contigs written");
+}
+
+
+void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath> paths, const string& filename) {
+	std::set<EdgeId> filtered;
+	std::set<EdgeId> rest;
+	FilterComlementEdges(g, filtered, rest);
+
+	INFO("Writing contigs");
+	osequencestream oss(filename);
+	for (auto path = paths.begin(); path != paths.end(); ++path ) {
+		if (!ContainsAnyOf(*path, rest)) {
+			oss << PathToSequence(g, *path);
+		}
+	}
+	INFO("Contigs written");
+}
+
 
 } // namespace long_contigs
 

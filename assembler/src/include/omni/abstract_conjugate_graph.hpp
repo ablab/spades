@@ -144,15 +144,16 @@ private:
 		return end_;
 	}
 
-	EdgeId conjugate() {
-		return conjugate_;
-	}
-
 	void set_conjugate(EdgeId conjugate) {
 		conjugate_ = conjugate;
 	}
 
 	~PairedEdge() {
+	}
+
+public:
+	EdgeId conjugate() {
+		return conjugate_;
 	}
 };
 

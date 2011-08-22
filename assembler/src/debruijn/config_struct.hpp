@@ -34,25 +34,28 @@ namespace debruijn
 	struct debruijn_config
 	{
 
+
 		enum working_stage {
-			construction		,
-			pair_info_counting	,
-			simplification		,
-			distance_estimation	,
-			repeat_resolving	,
-			consensus
+			start	,
+			after_construction		,
+			after_pair_info_counting	,
+			after_simplification		,
+			after_distance_estimation	,
+			after_repeat_resolving	,
+			after_consensus
 		};
 
 		typedef boost::bimap<std::string, working_stage> name_id_mapping;
 
 		static const name_id_mapping FillStageInfo() {
 			name_id_mapping working_stages_info;
-			working_stages_info.insert(name_id_mapping::value_type("construction", construction));
-			working_stages_info.insert(name_id_mapping::value_type("pair_info_counting"	, pair_info_counting));
-			working_stages_info.insert(name_id_mapping::value_type("simplification"		, simplification));
-			working_stages_info.insert(name_id_mapping::value_type("distance_estimation"	, distance_estimation));
-			working_stages_info.insert(name_id_mapping::value_type("repeat_resolving"		, repeat_resolving));
-			working_stages_info.insert(name_id_mapping::value_type("consensus"			, consensus));
+			working_stages_info.insert(name_id_mapping::value_type("start", start));
+			working_stages_info.insert(name_id_mapping::value_type("after_construction", after_construction));
+			working_stages_info.insert(name_id_mapping::value_type("after_pair_info_counting"	, after_pair_info_counting));
+			working_stages_info.insert(name_id_mapping::value_type("after_simplification"		, after_simplification));
+			working_stages_info.insert(name_id_mapping::value_type("after_distance_estimation"	, after_distance_estimation));
+			working_stages_info.insert(name_id_mapping::value_type("after_repeat_resolving"		, after_repeat_resolving));
+			working_stages_info.insert(name_id_mapping::value_type("after_consensus"			, after_consensus));
 			return working_stages_info;
 		}
 
@@ -106,6 +109,7 @@ namespace debruijn
 		{
 			std::string first;
 			std::string second;
+			size_t RL;
 			size_t IS;
 			int LEN;
 		};
@@ -121,7 +125,7 @@ namespace debruijn
 		std::string start_from;
 
 
-		working_stage entry_point;
+//		working_stage entry_point;
 		bool paired_mode;
 		bool rectangle_mode;
 		bool etalon_info_mode;
@@ -205,7 +209,8 @@ namespace debruijn
 	{
 		using config_common::load;
 		// input options:
-		load(pt, "entry_point", cfg.entry_point);
+//		temporarily disabled
+//		load(pt, "entry_point", cfg.entry_point);
 		load(pt, "input_dir", cfg.input_dir);
 	//	= cfg::get().output_dir
 		load(pt, "previous_run_dir", cfg.previous_run_dir);

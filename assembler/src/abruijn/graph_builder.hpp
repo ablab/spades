@@ -56,6 +56,7 @@ public:
 	void findMinimizers(Sequence s);
 	void findLocalMinimizers(Sequence s, size_t window_size);
 	void findSecondMinimizer(Sequence s);
+	void mapToReads(Sequence s, size_t num);
 	void takeAllKmers(Sequence s);
 	void revealTips(Sequence s);
 	void findTipExtensions(Sequence s);
@@ -112,16 +113,23 @@ public:
 
 		if (mode_ & 8) {
 			INFO("===== Outputting earmarked k-mers... =====");
+			reader_.reset();
 			for (size_t i = 0; !reader_.eof(); ++i) {
 				reader_ >> r;
-				gb_.mapToReads(r.sequence());
+				gb_.mapToReads(r.sequence(), i);
 				VERBOSE(i, " single reads");
 			}
-			for (auto it = seqReads.begin(); it != seqReads.end(); ++it) {
-				WARN(it->first);
-				WARN(it->second);
+			ofstream out("./data/earmarks.txt");
+			for (auto it = gb_.seqReads.begin(); it != gb_.seqReads.end(); ++it) {
+				out << (it->first);
+				for (auto i = it->second.begin(); i != it->second.end(); ++i) {
+				    out << " " << (*i);
+				}
+				out << endl;
 			}
+			out.close();
 			INFO("Done: " << gb_.earmarked_hashes.size() << " earmarked hashes");
+			exit(0);
 		}
 
 		for (int tip_iteration = 0;; tip_iteration++) {

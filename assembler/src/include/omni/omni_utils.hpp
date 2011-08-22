@@ -671,10 +671,21 @@ public:
 			VertexId start, VertexId end, Callback& callback) :
 			g_(g), min_length_((min_length < 0) ? 0 : std::floor(min_length)), max_length_(std::floor(max_length + 0.5))
 		, start_(start), end_(end), callback_(callback), call_cnt_(0) {
+//		if (g_.OutgoingEdgeCount(start) != 0 && g_.OutgoingEdgeCount(end) != 0) {
+			 //WARN("Looking for path connecting starts of edges " << g_.OutgoingEdges(start)[0] <<
+//					" and " << g_.OutgoingEdges(end)[0] << " of length between " << min_length << " and " << max_length);
+//		} else {
+			//WARN("Looking for some path");
+//		}
+
 //		cout << "RawMin " << min_length << endl;
 //		cout << "Min " << min_length_ << endl;
 //		cout << "RawMax " << max_length << endl;
 //		cout << "Max " << max_length_ << endl;
+	}
+
+	~PathProcessor() {
+		//WARN("Stopped looking for the path");
 	}
 
 	void Process() {
@@ -730,6 +741,9 @@ public:
 
 	virtual void HandlePath(const vector<EdgeId>& path) {
 		if (path.size() > 0) {
+			//WARN("here " << path);
+
+
 			/*
 			 size_t s = 0;
 			 for (auto it = path.begin(); it != path.end(); ++it) {

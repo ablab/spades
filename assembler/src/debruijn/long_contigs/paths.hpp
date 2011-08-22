@@ -9,6 +9,7 @@
 #define PATHS_HPP_
 
 #include "lc_common.hpp"
+#include "loop.hpp"
 
 namespace long_contigs {
 
@@ -65,9 +66,34 @@ double GetWeight(omnigraph::PairedInfoIndex<Graph>::PairInfos pairs, int distanc
 	return useWeightFunction ? WeightFunction(weight) : weight;
 }
 
+//Weight fixing coefficient, sum weight of ideal info
+int FixingCoefficient(Graph& g, const BidirectionalPath& path, EdgeId edge, size_t edgesToExclude, PairedInfoIndexLibrary& pairedInfoLibrary, bool forward) {
+	int overlap = 1;
+
+	int pathLen = 0;
+	size_t start = forward ? 0 : edgesToExclude;
+	size_t end = forward ? path.size() - edgesToExclude : path.size();
+	for (size_t i = start; i < end; ++i) {
+		pathLen += g.length(path[i]);
+	}
+	int exclLen = PathLength(g, path) - pathLen;
+	int edgeLen = g.length(edge);
+
+	int is = pairedInfoLibrary.insertSize;
+	int rs = pairedInfoLibrary.readSize;
+
+	int right = std::min(is - overlap, exclLen + edgeLen + rs - overlap);
+	int left = std::max(exclLen - is + overlap, overlap - rs - pathLen) + is;
+
+	int delta = right - left + 1;
+
+	return delta > 0 ? delta : -1;
+}
+
 //Fixing weight value
-double WeightFixing(double weight, Graph& g, EdgeId edge, PairedInfoIndexLibrary& pairedInfoLibrary) {
-	return weight / (double) std::min(g.length(edge), pairedInfoLibrary.readSize);
+double WeightFixing(Graph& g, const BidirectionalPath& path, EdgeId edge, size_t edgesToExclude, PairedInfoIndexLibrary& pairedInfoLibrary, double weight, bool forward) {
+	//return weight / (double) std::min(g.length(edge), pairedInfoLibrary.readSize);
+	return weight/(double) FixingCoefficient(g, path, edge, edgesToExclude, pairedInfoLibrary, forward);
 }
 
 //Calculate weight for particular path extension from one library
@@ -89,7 +115,7 @@ double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, 
 		weight += GetWeight(pairs, distance, DISTANCE_DEV, useWeightFunction);
 	}
 
-	return WeightFixing(weight, g, e, pairedInfoLibrary);
+	return WeightFixing(g, path, e, edgesToExclude, pairedInfoLibrary, weight, forward);
 }
 
 //Weight from a set of libraries
@@ -339,22 +365,46 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	return true;
 }
 
+size_t GetMaxInsertSize(PairedInfoIndices& pairedInfo) {
+	size_t maxIS = 0;
+	for(auto lib = pairedInfo.begin(); lib != pairedInfo.end(); ++lib) {
+		if (maxIS < lib->insertSize) {
+			maxIS = lib->insertSize;
+		}
+	}
+	return maxIS;
+}
+
 //Grow selected seed in both directions
 void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo) {
 	PathLengths lengths;
 	CycleDetector detector;
 
-	RecountLengthsForward(g, seed, lengths);
-	DETAILED_INFO("Before forward");
-	PrintPath(g, seed, lengths);
-	while (ExtendPathForward(g, seed, lengths, detector, pairedInfo)) {
-	}
-	detector.clear();
+	static size_t maxIS = GetMaxInsertSize(pairedInfo);
+	bool stop = false;
 
-	RecountLengthsBackward(g, seed, lengths);
-	DETAILED_INFO("Before backward");
-	PrintPath(g, seed, lengths);
-	while (ExtendPathBackward(g, seed, lengths, detector, pairedInfo)) {
+	while (!stop) {
+		RecountLengthsForward(g, seed, lengths);
+		DETAILED_INFO("Before forward");
+		if (lc_cfg::get().rs.detailed_output) {
+			PrintPath(g, seed, lengths);
+		}
+
+		while (ExtendPathForward(g, seed, lengths, detector, pairedInfo)) {
+		}
+		detector.clear();
+
+		if (PathLength(g, seed) > maxIS) {
+			stop = true;
+		}
+
+		RecountLengthsBackward(g, seed, lengths);
+		DETAILED_INFO("Before backward");
+		if (lc_cfg::get().rs.detailed_output) {
+			PrintPath(g, seed, lengths);
+		}
+		while (ExtendPathBackward(g, seed, lengths, detector, pairedInfo)) {
+		}
 	}
 }
 

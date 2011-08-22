@@ -25,6 +25,15 @@ bool ComparePaths(const BidirectionalPath& path1, const BidirectionalPath& path2
 	return true;
 }
 
+bool ContainsPath(const BidirectionalPath& path, const EdgeId sample) {
+	for (size_t i = 0; i < path.size(); ++i) {
+		if (sample == path[i]) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool ContainsPath(const BidirectionalPath& path, const BidirectionalPath& sample) {
 	if (path.size() < sample.size()) {
 		return false;
@@ -41,6 +50,16 @@ bool ContainsPath(const BidirectionalPath& path, const BidirectionalPath& sample
 		}
 
 		if (found) {
+			return true;
+		}
+	}
+	return false;
+}
+
+template<class T>
+bool ContainsAnyOf(const BidirectionalPath& path, T& pathCollection) {
+	for (auto iter = pathCollection.begin(); iter != pathCollection.end(); ++iter) {
+		if (ContainsPath(path, *iter)) {
 			return true;
 		}
 	}
@@ -81,6 +100,22 @@ void FilterPaths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<Bi
 			++path;
 		}
 	}
+}
+
+void FilterComlementEdges(Graph& g, std::set<EdgeId>& filtered, std::set<EdgeId>& rest) {
+	for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		if (rest.count(*iter) == 0) {
+			filtered.insert(*iter);
+			if ((*iter)->conjugate() != *iter) {
+				rest.insert((*iter)->conjugate());
+			}
+		}
+	}
+}
+
+void FilterComlementEdges(Graph& g, std::set<EdgeId>& filtered) {
+	std::set<EdgeId> rest;
+	FilterComlementEdges(g, filtered, rest);
 }
 
 //Filter paths only with edges with given length

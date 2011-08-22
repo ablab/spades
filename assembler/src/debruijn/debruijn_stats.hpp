@@ -120,22 +120,20 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	INFO("Stats counted");
 }
 
-void CountPairedInfoStats(Graph &g, size_t insert_size, size_t max_read_length,
-		PairedInfoIndex<Graph> &paired_index,
+void CountPairedInfoStats(Graph &g, PairedInfoIndex<Graph> &paired_index,
 		PairedInfoIndex<Graph> &etalon_paired_index,
 		const string &output_folder) {
 	INFO("Counting paired info stats");
 	EdgePairStat<Graph> (g, paired_index, output_folder).Count();
 
 	//todo remove filtration if launch on etalon info is ok
-	UniquePathStat<Graph> (g, etalon_paired_index, insert_size,
-			max_read_length, 0.1 * insert_size, 40.0).Count();
+	UniquePathStat<Graph> (g, etalon_paired_index, cfg::get().ds.IS,
+			cfg::get().ds.RL, 0.1 * cfg::get().ds.IS, 40.0).Count();
 	UniqueDistanceStat<Graph> (etalon_paired_index).Count();
 	INFO("Paired info stats counted");
 }
 
-void CountClusteredPairedInfoStats(Graph &g, size_t insert_size,
-		size_t max_read_length, PairedInfoIndex<Graph> &paired_index,
+void CountClusteredPairedInfoStats(Graph &g, PairedInfoIndex<Graph> &paired_index,
 		PairedInfoIndex<Graph> &clustered_index,
 		PairedInfoIndex<Graph> &etalon_paired_index,
 		const string &output_folder) {
@@ -157,8 +155,8 @@ void CountClusteredPairedInfoStats(Graph &g, size_t insert_size,
 
 	PairedInfoIndex<Graph> filtered_clustered_index(g);
 	PairInfoFilter<Graph> (g, 1000.).Filter(clustered_index/*etalon_clustered_index*/, filtered_clustered_index);
-	MatePairTransformStat<Graph> (g, filtered_clustered_index);
-	INFO("Counting clustered info stats");
+	MatePairTransformStat<Graph> (g, filtered_clustered_index).Count();
+	INFO("Clustered info stats counted");
 }
 
 void WriteToDotFile(Graph &g, const string& file_name, string graph_name,
