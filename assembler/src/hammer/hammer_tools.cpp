@@ -292,7 +292,7 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 	}
 	TIMEDLN("Subvectors sorted.");
 
-	/*for (int j=1; j < nthreads; ++j) {
+	for (int j=1; j < nthreads; ++j) {
 		inplace_merge( v->begin(), v->begin() + boundaries[j], v->begin() + boundaries[j+1], KMerNo::less );
 	}
 	TIMEDLN("Merge done");
@@ -319,9 +319,9 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 	}
 	curKMerCount.second.totalQual = curErrorProb;
 	kmers->push_back(curKMerCount);
-	TIMEDLN("KMer vector created"); */
+	TIMEDLN("KMer vector created");
 
-	
+	/*
 	std::priority_queue< PriorityQueueElement, vector<PriorityQueueElement> > pq;
 	vector< vector<KMerNo>::iterator > it(nthreads);
 	vector< vector<KMerNo>::iterator > it_end(nthreads);
@@ -358,7 +358,7 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 		if ( it_cur != it_end[nn] ) pq.push( PriorityQueueElement(*it_cur, nn) );
 	}
 	curKMerCount.second.totalQual = curErrorProb;
-	kmers->push_back(curKMerCount);
+	kmers->push_back(curKMerCount); */
 }
 
 void outputReads(bool paired, const char * fname, const char * fname_bad, const char * fname_right, const char * fname_right_bad,
