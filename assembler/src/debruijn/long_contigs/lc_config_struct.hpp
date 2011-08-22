@@ -24,12 +24,6 @@ struct lc_config
 		std::string graph_file;
 	};
 
-	struct basic_lib
-	{
-		size_t read_size;
-		size_t insert_size;
-	};
-
 	struct rl_dataset
 	{
 		bool precounted;
@@ -115,7 +109,6 @@ struct lc_config
 	std::string paired_info_file_prefix;
 
 	dataset ds;
-	basic_lib bl;
 
 	std::vector<real_lib> real_libs;
 	std::vector<etalon_lib> etalon_libs;
@@ -169,13 +162,6 @@ void load(boost::property_tree::ptree const& pt, lc_config::dataset& ds)
 {
 	using config_common::load;
 	load(pt, "graph_file", ds.graph_file);
-}
-
-void load(boost::property_tree::ptree const& pt, lc_config::basic_lib& bl)
-{
-	using config_common::load;
-	load(pt, "insert_size", bl.insert_size);
-	load(pt, "read_size", bl.read_size);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::seed_selection& ss)
@@ -238,8 +224,6 @@ void load(boost::property_tree::ptree const& pt, lc_config& lc_cfg)
 	load(pt, "paired_info_file_prefix", lc_cfg.paired_info_file_prefix);
 
 	load(pt, cfg::get().dataset_name, lc_cfg.ds);
-	load(pt, "bl", lc_cfg.bl);
-
 	load(pt, "real_libs", lc_cfg.real_libs);
 	load(pt, "etalon_libs", lc_cfg.etalon_libs);
 
