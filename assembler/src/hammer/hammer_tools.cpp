@@ -272,17 +272,32 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 	}
 	boundaries[nthreads] = v->size();
 
+	cout << "  nthreads=" << nthreads << endl;
 
-	#pragma omp parallel for shared(v, boundaries) num_threads(nthreads)
+	// #pragma omp parallel for shared(v, boundaries) num_threads(nthreads)
 	for (int j = 0; j < nthreads; ++j) {
 		sort(v->begin() + boundaries[j], v->begin() + boundaries[j+1], KMerNo::less);
 	}
 	TIMEDLN("Subvectors sorted.");
 
-	for (int j=1; j < nthreads; ++j) {
-		inplace_merge( v->begin(), v->begin() + boundaries[j], v->begin() + boundaries[j+1], KMerNo::less );
+	int npieces = nthreads;
+	while ( npieces > 1 ) {
+		int new_npieces = npieces / 2;
+		cout << "    npieces=" << npieces << " new_npieces=" << new_npieces << endl;
+		// #pragma omp parallel for shared(v, boundaries) num_threads(new_npieces)
+		for (int j=0; j < new_npieces; ++j) {
+			cout << "  Merging from " << (j*2) << "=" << boundaries[j*2] << " via " << (j*2+1) << "=" << boundaries[j*2+1] << " to " << (j*2+2) << "=" << boundaries[j*2+2] << endl;
+			inplace_merge( v->begin() + boundaries[j*2], v->begin() + boundaries[j*2+1], v->begin() + boundaries[j*2+2], KMerNo::less );
+		}
+		vector<size_t> new_boundaries;
+		for (int j=0; j < new_npieces; ++j) { new_boundaries.push_back( boundaries[j*2] ); }
+		if ( npieces % 2 ) { new_boundaries.push_back( boundaries[npieces-1] ); new_npieces++; }
+		new_boundaries.push_back( boundaries[npieces] );
+
+		npieces = new_npieces;
+		boundaries.swap(new_boundaries);
 	}
-	TIMEDLN("Merge done");
+	TIMEDLN("Merge done.");
 
 	hint_t kmerno = 0;
 	double curErrorProb = 1;
