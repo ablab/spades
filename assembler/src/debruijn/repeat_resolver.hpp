@@ -1,5 +1,5 @@
 /*
- * repeat_resolver.hpp
+ * Repeat_resolver.hpp
  *
  *  Created on: May 5, 2011
  *      Author: antipov
@@ -14,6 +14,7 @@
 #include <algorithm>
 
 #include "logging.hpp"
+#include "simple_tools.hpp"
 #include "omni/paired_info.hpp"
 #include "config_struct.hpp"
 #include "omni/omni_utils.hpp"
@@ -24,6 +25,7 @@
 #include "omni/ID_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/dijkstra.hpp"
+
 
 namespace debruijn_graph {
 
@@ -823,7 +825,7 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 			cur_color++;
 		}
 	}
-	DEBUG("Info colors "<<edge_info_colors);
+	DEBUG("Edge color info " << debruijn::operator<<(oss_, edge_info_colors));
 	MultiSplit(vid);
 	return cur_color;
 }
@@ -906,7 +908,7 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 			cur_color++;
 		}
 	}
-	DEBUG("Colours "<<cheater_colors);
+	DEBUG("Colours " << debruijn::operator<<(oss_, cheater_colors));
 
 	bool bad = true;
 	for (size_t i = 0; i < counts[0] + counts[1]; i++) {

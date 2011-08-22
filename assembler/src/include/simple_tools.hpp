@@ -90,15 +90,18 @@ std::ostream& operator<< (std::ostream& os, std::pair<T1, T2> const& pair)
 {
 	return os << "(" << pair.first << ", " << pair.second << ")";
 }
+}
 
-// template<class T>
-// std::ostream& operator<< (std::ostream& os, std::vector<T> const v)
-// {
-//  	os << "[";
-//  	std::copy(v.begin(), v.end(), std::ostream_iterator<T>(os, ", "));
-//  	os << "]";
-//  	return os;
-// }
+namespace debruijn
+{
+template<class T>
+std::ostream& operator<< (std::ostream& os, std::vector<T> const& v)
+{
+ 	os << "[";
+ 	std::copy(v.begin(), v.end(), std::ostream_iterator<T>(os, ", "));
+ 	os << "]";
+ 	return os;
+}
 }
 
 #endif /* SIMPLE_TOOLS_HPP_ */
