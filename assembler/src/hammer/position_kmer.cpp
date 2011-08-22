@@ -16,7 +16,6 @@ void PositionKMer::readBlob( const char * fname ) {
 	if (blob != NULL) delete [] blob;
 	if (blobquality != NULL) delete [] blobquality;
 	if (blobkmers != NULL) delete [] blobkmers;
-	if (blobprob != NULL) delete [] blobprob;
 
 	FILE * f = fopen( fname, "r" );
 	assert( fscanf(f, "%lu\n", &blob_max_size) != EOF );

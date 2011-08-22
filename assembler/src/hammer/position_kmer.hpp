@@ -31,7 +31,6 @@ class PositionKMer {
 
 	static char* blob;
 	static char* blobquality;
-	static double* blobprob;
 	static hint_t blob_max_size;
 	static hint_t blob_size;
 
@@ -160,9 +159,10 @@ inline bool KCgreater ( const KMerCount & l, const KMerCount & r ) {
 
 struct KMerNo {
 	hint_t index;
-	//Seq<K> kmer;
+	uint32_t count;
+	double errprob;
 
-	KMerNo( hint_t no ) : index(no) { } // , kmer(PositionKMer::blob + index) { } 
+	KMerNo( hint_t no, double qual ) : index(no), count(1), errprob(qual) { } // , kmer(PositionKMer::blob + index) { } 
 
 	bool equal(const KMerNo & kmerno) const {
 		// return ( kmer == kmerno.kmer );

@@ -43,7 +43,6 @@ hint_t PositionKMer::blob_max_size = 0;
 char * PositionKMer::blob = NULL;
 char * PositionKMer::blobquality = NULL;
 hint_t * PositionKMer::blobkmers = NULL;
-double * PositionKMer::blobprob = NULL;
 std::vector<uint32_t> * PositionKMer::subKMerPositions = NULL;
 
 double Globals::error_rate = 0.01;
@@ -128,7 +127,6 @@ int main(int argc, char * argv[]) {
 		PositionKMer::rv = new std::vector<Read>();
 		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilename, &totalReadSize, Globals::qvoffset);
 		PositionKMer::lastLeftNo = PositionKMer::rv->size();
-		cout << "  lastLeftNo=" << PositionKMer::lastLeftNo << "  no pairs" << endl;
 	} else {
 		PositionKMer::rv = new std::vector<Read>();
 		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameLeft, &totalReadSize, Globals::qvoffset);
@@ -136,7 +134,6 @@ int main(int argc, char * argv[]) {
 		hint_t rightSize = 0;
 		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameRight, &rightSize, Globals::qvoffset);
 		totalReadSize += rightSize;
-		cout << "  lastLeftNo=" << PositionKMer::lastLeftNo << "   total reads=" << PositionKMer::rv->size() << endl;
 	}
 
 	PositionKMer::blob_size = totalReadSize + 1;
@@ -144,12 +141,10 @@ int main(int argc, char * argv[]) {
 
 	PositionKMer::blob = new char[ PositionKMer::blob_max_size ];
 	PositionKMer::blobquality = new char[ PositionKMer::blob_max_size ];
-	PositionKMer::blobprob = new double[ PositionKMer::blob_max_size ];
 	PositionKMer::blobkmers = new hint_t[ PositionKMer::blob_max_size ];
 	TIMEDLN("Max blob size as allocated is " << PositionKMer::blob_max_size);
 
 	std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
-	std::fill( PositionKMer::blobprob,  PositionKMer::blobprob + PositionKMer::blob_max_size,  -1 );
 
 	PositionKMer::revNo = PositionKMer::rv->size();
 	for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
