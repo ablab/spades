@@ -12,7 +12,7 @@ void TestFastaFastqGzParserNoFile() {
 }
 
 void TestFastaFastqGzParserReading() {
-  FastaFastqGzParser parser("./test/data/s_test.fastq.gz");
+  FastaFastqGzParser parser("./src/common_test/data/s_test.fastq.gz");
   ASSERT(parser.is_open());
   SingleRead read;
   parser >> read;
@@ -31,7 +31,7 @@ void TestFastaFastqGzParserReading() {
 }
 
 void TestFastaFastqGzParserFull() {
-  FastaFastqGzParser parser("./test/data/s_test.fastq.gz");
+  FastaFastqGzParser parser("./src/common_test/data/s_test.fastq.gz");
   ASSERT(parser.is_open());
   parser.reset();
   ASSERT(parser.is_open());
@@ -47,7 +47,7 @@ void TestFastaFastqGzParserFull() {
 }
 
 void TestFastaFastqGzParserFastaReading() {
-  FastaFastqGzParser parser("./test/data/test.fasta", SolexaOffset);
+  FastaFastqGzParser parser("./src/common_test/data/test.fasta", SolexaOffset);
   ASSERT(parser.is_open());
   SingleRead read;
   parser >> read;
