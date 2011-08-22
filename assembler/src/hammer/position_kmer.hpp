@@ -6,6 +6,7 @@
 #include <queue>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
+#include "sequence/seq.hpp"
 #include "read/read.hpp"
 #include "kmer_stat.hpp"
 #include "position_read.hpp"
@@ -178,10 +179,12 @@ inline bool KCgreater ( const KMerCount & l, const KMerCount & r ) {
 
 struct KMerNo {
 	hint_t index;
+	//Seq<K> kmer;
 
-	KMerNo( hint_t no ) : index(no) { } 
+	KMerNo( hint_t no ) : index(no) { } // , kmer(PositionKMer::blob + index) { } 
 
 	bool equal(const KMerNo & kmerno) const {
+		// return ( kmer == kmerno.kmer );
 		return ( strncmp( PositionKMer::blob + index, PositionKMer::blob + kmerno.index, K) == 0 );
 	}
 
@@ -209,7 +212,6 @@ struct KMerNo {
 
 	static bool test_less(const KMerNo &l, const KMerNo &r) {
 		return ( l.index < r.index );
-
 	}
 	static bool test_greater(const KMerNo &l, const KMerNo &r) {
 		return ( l.index > r.index );

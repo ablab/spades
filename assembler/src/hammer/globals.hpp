@@ -8,6 +8,7 @@ struct Globals {
 	static double good_cluster_threshold;
 	static double blob_margin;
 	static bool paired_reads;
+	static int trim_quality;
 };
 
 #endif //  HAMMER_GLOBALS_HPP_

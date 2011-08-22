@@ -51,6 +51,7 @@ double Globals::good_cluster_threshold = 0.95;
 double Globals::blob_margin = 0.25;
 int Globals::qvoffset = 64;
 bool Globals::paired_reads = false;
+int Globals::trim_quality = -1;
 
 struct KMerStatCount {
 	PositionKMer km;
@@ -76,6 +77,7 @@ string getFilename( const string & dirprefix, int iter_count, const string & suf
 }
 
 int main(int argc, char * argv[]) {
+	
 	string config_file = CONFIG_FILENAME;
 	if (argc > 1) config_file = argv[1];
 	TIMEDLN("Loading config from " << config_file.c_str());
@@ -100,6 +102,7 @@ int main(int argc, char * argv[]) {
 	Globals::blocksize_quadratic_threshold = cfg::get().blocksize_quadratic_threshold;
 	Globals::good_cluster_threshold = cfg::get().good_cluster_threshold;
 	Globals::blob_margin = cfg::get().blob_margin;
+	Globals::trim_quality = cfg::get().trim_quality;
 
 	Globals::paired_reads = cfg::get().paired_reads;
 	string readsFilenameLeft, readsFilenameRight;
@@ -147,6 +150,7 @@ int main(int argc, char * argv[]) {
 
 	PositionKMer::revNo = PositionKMer::rv->size();
 	for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
+		string seq = PositionKMer::rv->at(i).getSequenceString();
 		Read revcomp = !(PositionKMer::rv->at(i));
 		PositionKMer::rv->push_back( revcomp );
 	}
@@ -157,7 +161,6 @@ int main(int argc, char * argv[]) {
 	if (readBlobAndKmers) {
 		PositionKMer::readBlob( getFilename(dirprefix, blobFilename.c_str() ).c_str() );
 	}
-
 
 	for (int iter_count = 0; iter_count < iterno; ++iter_count) {
 		cout << "\n     === ITERATION " << iter_count << " begins ===" << endl;

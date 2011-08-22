@@ -182,6 +182,7 @@ Path<typename Graph::EdgeId> FindGenomePath(const Sequence& genome,
 
 template<size_t k>
 void ProduceInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+		const IdTrackHandler<Graph>& int_ids,
 		const Sequence& genome, const string& file_name,
 		const string& graph_name) {
 	CountStats<k> (g, index, genome);
@@ -204,6 +205,7 @@ void ProduceNonconjugateInfo(NCGraph& g,
 
 template<size_t k>
 void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+		const IdTrackHandler<Graph>& int_ids,
 		const Sequence& genome, const string& folder, const string& file_name,
 		const string& graph_name) {
 	CountStats<k> (g, index, genome);
