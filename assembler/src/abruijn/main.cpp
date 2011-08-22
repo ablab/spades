@@ -4,12 +4,12 @@
 #include "logging.hpp"
 DECL_PROJECT_LOGGER("a")
 
-#include "tip_clipper.hpp"
-#include "bulge_remover.hpp"
-#include "erroneous_connection_remover.hpp"
-#include "statistics.hpp"
-#include "omni_tools.hpp"
-#include "visualization_utils.hpp"
+#include "omni/tip_clipper.hpp"
+#include "omni/bulge_remover.hpp"
+#include "omni/erroneous_connection_remover.hpp"
+#include "omni/statistics.hpp"
+#include "omni/omni_tools.hpp"
+#include "omni/visualization_utils.hpp"
 #include "read/osequencestream.hpp"
 #include "getopt_pp/getopt_pp_standalone.h"
 #include <iostream>

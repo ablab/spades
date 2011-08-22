@@ -9,8 +9,8 @@
 #include "hash.hpp"
 #include "parameters.hpp"
 #include "logging.hpp"
-#include "omnigraph.hpp"
-#include "omnigraph_nucls.hpp"
+#include "omni/omnigraph.hpp"
+#include "omni/omnigraph_nucls.hpp"
 #include "io/single_read.hpp"
 #include "io/reader.hpp"
 
@@ -49,11 +49,14 @@ public:
 //	typedef hash_map <Sequence, Graph::VertexId, hashing::HashSym<Sequence>, hashing::EqSym<Sequence> > SeqVertice;
 	typedef hash_map <Sequence, Graph::VertexId, hashing::Hash<Sequence> > SeqVertice;
 	SeqVertice seqVertice;
+	typedef hash_map <Sequence, vector<size_t>, hashing::Hash<Sequence> > SeqReads;
+	SeqReads seqReads;
 	size_t htake_;
 
 	void findMinimizers(Sequence s);
 	void findLocalMinimizers(Sequence s, size_t window_size);
 	void findSecondMinimizer(Sequence s);
+	void mapToReads(Sequence s, size_t num);
 	void takeAllKmers(Sequence s);
 	void revealTips(Sequence s);
 	void findTipExtensions(Sequence s);
@@ -106,6 +109,27 @@ public:
 				VERBOSE(i, " single reads");
 			}
 			INFO("Done: " << gb_.earmarked_hashes.size() << " earmarked hashes");
+		}
+
+		if (mode_ & 8) {
+			INFO("===== Outputting earmarked k-mers... =====");
+			reader_.reset();
+			for (size_t i = 0; !reader_.eof(); ++i) {
+				reader_ >> r;
+				gb_.mapToReads(r.sequence(), i);
+				VERBOSE(i, " single reads");
+			}
+			ofstream out("./data/earmarks.txt");
+			for (auto it = gb_.seqReads.begin(); it != gb_.seqReads.end(); ++it) {
+				out << (it->first);
+				for (auto i = it->second.begin(); i != it->second.end(); ++i) {
+				    out << " " << (*i);
+				}
+				out << endl;
+			}
+			out.close();
+			INFO("Done: " << gb_.earmarked_hashes.size() << " earmarked hashes");
+			exit(0);
 		}
 
 		for (int tip_iteration = 0;; tip_iteration++) {

@@ -8,15 +8,15 @@
 #include <algorithm>
 
 #include "logging.hpp"
-#include "paired_info.hpp"
-#include "config.hpp"
-#include "omni_utils.hpp"
+#include "omni/paired_info.hpp"
+#include "config_struct.hpp"
+#include "omni/omni_utils.hpp"
 
-#include "omni_tools.hpp"
-#include "omnigraph.hpp"
+#include "omni/omni_tools.hpp"
+#include "omni/omnigraph.hpp"
 
-#include "ID_track_handler.hpp"
-#include "dijkstra.hpp"
+#include "omni/ID_track_handler.hpp"
+#include "omni/dijkstra.hpp"
 
 
 using omnigraph::SmartVertexIterator;
@@ -84,7 +84,7 @@ public:
             EdgeId edge = *iter;
             EdgeId addedEdge = new_graph.AddEdge(copy[graph_.EdgeStart(edge)],
                     copy[graph_.EdgeEnd(edge)], graph_.data(edge));
-            new_graph.SetCoverage(addedEdge, graph_.coverage(edge)* graph_.length(edge));
+            new_graph.coverage_index().SetCoverage(addedEdge, graph_.coverage(edge)* graph_.length(edge));
         }
     }
 };

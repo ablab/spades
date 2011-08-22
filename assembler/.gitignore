@@ -1,8 +1,6 @@
 build/
 logs/
 output/
-.cproject
-.project
 gmon.out
 abruijn.sh
 CMakeCache.txt
@@ -10,3 +8,5 @@ CMakeFiles/
 cmake_install.cmake
 src/debruijn/config.inp
 src/file
+*.launch
+

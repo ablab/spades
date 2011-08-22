@@ -9,16 +9,16 @@
 #include <algorithm>
 #include "io/single_read.hpp"
 #include "logging.hpp"
-#include "config.hpp"
-#include "omni_utils.hpp"
-#include "omni_tools.hpp"
-#include "omnigraph.hpp"
-#include "ID_track_handler.hpp"
+#include "config_struct.hpp"
+#include "omni/omni_utils.hpp"
+#include "omni/omni_tools.hpp"
+#include "omni/omnigraph.hpp"
+#include "omni/ID_track_handler.hpp"
 #include "union.h"   
-#include "paired_info.hpp"
+#include "omni/paired_info.hpp"
 #include "new_debruijn.hpp"
 #include "quotientGraphs.hpp"
-#include "dijkstra.hpp"
+#include "omni/dijkstra.hpp"
 #include "distanceEstimator.hpp"
 #include "graphFilter.hpp"
 #include "graphCopy.hpp"
@@ -287,7 +287,7 @@ void WeakerGluer<Graph>::GenerateRedGraph(Graph &redGraph){
         if(correctIsAlreadyAdded )
             continue;
         EdgeId addedEdge = redGraph.AddEdge(startVertex, endVertex, debruijn_.data(pairInfo.first));
-        redGraph.SetCoverage(addedEdge,debruijn_.coverage(pairInfo.first)* debruijn_.length(pairInfo.first) );// It is very strange that we have to normalized it every time by the edge length. 
+        redGraph.coverage_index().SetCoverage(addedEdge,debruijn_.coverage(pairInfo.first)* debruijn_.length(pairInfo.first) );// It is very strange that we have to normalized it every time by the edge length.
     }
 }
 

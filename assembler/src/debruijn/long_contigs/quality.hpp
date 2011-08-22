@@ -131,7 +131,6 @@ size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Seque
 	return PathsInGenome(g, index, genome, paths, path1, path2, displayInexactPaths);
 }
 
-
 } // namespace long_contigs
 
 

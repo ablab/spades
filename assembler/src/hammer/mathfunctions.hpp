@@ -12,6 +12,7 @@
 #include "hammer_tools.hpp"
 #include "position_kmer.hpp"
 
+
 /**
   * @return logarithm of {n choose k}
   */

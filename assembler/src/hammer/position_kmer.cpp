@@ -1,47 +1,66 @@
-/*
- * position_kmer.cpp
- *
- *  Created on: 01.08.2011
- *      Author: snikolenko
- */
-
-#include <omp.h>
-#include <iostream>
-#include <fstream>
-#include <algorithm>
-#include "read/ireadstream.hpp"
-#include "defs.hpp"
-#include "mathfunctions.hpp"
-#include "hammer_tools.hpp"
 #include "position_kmer.hpp"
 
-
-SubKMerPQ::SubKMerPQ( vector<hint_t> * vec, int nthr, subkmer_comp_type sort_routine ) : boundaries(nthr + 1), v(vec), nthreads(nthr), pq(sort_routine), it(nthr), it_end(nthr), cur_min(0, 0) {
-	// find boundaries of the pieces
-	size_t sub_size = (size_t)(v->size() / nthreads);
-	for (int j=0; j<nthreads; ++j) {
-		boundaries[j] = j * sub_size;
+double PositionKMer::getKMerQuality( const hint_t & index, const int qvoffset ) {
+	long double res = 1;
+	for ( hint_t i = index; i < index+K; ++i ) {
+		res *= qual2prob( (uint8_t)( blobquality[i] - qvoffset ) );
 	}
-	boundaries[nthreads] = v->size();
+	return res;
 }
 
-void SubKMerPQ::doSort(int j, const boost::function< bool (const hint_t & kmer1, const hint_t & kmer2)  > & sub_sort) {
-	sort(v->begin() + boundaries[j], v->begin() + boundaries[j+1], sub_sort);
-}
-
-void SubKMerPQ::initPQ() {
-	for (int j=0; j<nthreads; ++j) {
-		it[j] = v->begin() + boundaries[j];
-		it_end[j] = v->begin() + boundaries[j+1];
-		pq.push( SubKMerPQElement(*(it[j]), j) );
+void PositionKMer::writeBlob( const char * fname ) {
+	ofstream ofs( fname );
+	ofs << blob_max_size << "\n" << blob_size << "\n";
+	ofs.write(blob, blob_size); ofs << "\n";
+	ofs.write(blobquality, blob_size); ofs << "\n";
+	for (hint_t i=0; i < blob_size; ++i) {
+		ofs << blobkmers[i] << "\n";
 	}
-	cur_min = pq.top();	
+	ofs.close();
 }
 
-hint_t SubKMerPQ::nextPQ() {
-	SubKMerPQElement pqel = pq.top(); pq.pop();
-	++it[pqel.n];
-	if ( it[pqel.n] != it_end[pqel.n] ) pq.push( SubKMerPQElement(*(it[pqel.n]), pqel.n) );	
-	return pqel.ind;
+
+void PositionKMer::readBlob( const char * fname ) {
+	if (blob != NULL) delete [] blob;
+	if (blobquality != NULL) delete [] blobquality;
+	if (blobkmers != NULL) delete [] blobkmers;
+
+	FILE * f = fopen( fname, "r" );
+	fscanf(f, "%lu\n", &blob_max_size);
+	fscanf(f, "%lu\n", &blob_size);
+	blob = new char[blob_max_size];
+	blobquality = new char[blob_max_size];
+	blobkmers = new hint_t[blob_max_size];
+	fscanf(f, "%s\n", blob );
+	fscanf(f, "%s\n", blobquality );
+	hint_t tmp;
+	for (hint_t i=0; i < blob_size; ++i) {
+		if (feof(f)) { cout << "Not enough blobkmers!" << endl; break; }
+		fscanf(f, "%lu\n", &tmp);
+		blobkmers[i] = tmp;
+	}
+	fclose(f);
+}
+
+void PositionKMer::writeKMerCounts( const char * fname, const vector<KMerCount> & kmers ) {
+	ofstream ofs( fname );
+	for ( size_t i=0; i < kmers.size(); ++i ) {
+		ofs << kmers[i].first.str() << "\t" << kmers[i].first.start() << "\t" << kmers[i].second.count << "\t" << kmers[i].second.totalQual << "\n";
+	}
+	ofs.close();
+}
+
+void PositionKMer::readKMerCounts( const char * fname, vector<KMerCount> * kmers ) {
+	kmers->clear();
+	FILE * f = fopen( fname, "r" );
+	unsigned long int start; unsigned int count; unsigned long int startlast = -1; double qual; char tmp[K+10];
+	while (!feof(f)) {
+		fscanf(f, "%s\t%lu\t%u\t%lf", tmp, &start, &count, &qual);
+		if (start != startlast) {
+			kmers->push_back( make_pair( PositionKMer(start), KMerStat(count, KMERSTAT_GOOD, qual) ) );
+			startlast = start;
+		}
+	}
+	fclose(f);
 }
 

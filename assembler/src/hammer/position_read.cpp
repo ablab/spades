@@ -11,9 +11,10 @@ char PositionRead::operator [] (uint32_t pos) const {
 }
 
 void PositionRead::print(ofstream & outf, int offset) const {
-	outf << "@" << getName().data() << "\n";
-	for (uint32_t i = 0; i < size_; ++i) outf << PositionKMer::blob[ start_ + i ];
-	outf << "\n+" << getName().data() << "\n" << getPhredQualityString( offset ) << "\n";
+	outf << "@" << getName().c_str() << "\n" 
+	     << PositionKMer::rv->at(readno_).getSequenceString().c_str() << "\n"
+	     << "+" << getName().c_str() << "\n"
+	     << getPhredQualityString( offset ).c_str() << "\n";
 }
 
 std::string PositionRead::getPhredQualityString(int offset) const {
@@ -42,5 +43,4 @@ bool PositionRead::nextKMer( std::pair<uint32_t, hint_t> * it ) const {
 	}
 	return false;
 }
-
 

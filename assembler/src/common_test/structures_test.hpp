@@ -11,7 +11,6 @@
 #include <map>
 #include <ext/hash_map>
 #include <tr1/unordered_map>
-#include <google/sparse_hash_map>
 #include "cuckoo.hpp"
 #include "memory.hpp"
 
@@ -73,12 +72,6 @@ void TestAllStructures() {
   process_mem_usage(vm, rss);
   std::tr1::unordered_map<int, int> s3;
   TestStructure<std::tr1::unordered_map<int, int> >(s3, tim, vm, rss);
-
-  std::cout << "Testing google/sparse_hash_map: \n";
-  gettimeofday(&tim, NULL);
-  process_mem_usage(vm, rss);
-  google::sparse_hash_map<int, int> s4;
-  TestStructure<google::sparse_hash_map<int, int> >(s4, tim, vm, rss);
 
   std::cout << "Testing cuckoo: \n";
   gettimeofday(&tim, NULL);

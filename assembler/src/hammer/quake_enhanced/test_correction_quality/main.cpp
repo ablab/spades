@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 #include <cstdlib>
 #include <cstdio>
 #include <string>
@@ -17,31 +18,36 @@ struct Options {
   string genom_file;
   string trust_file;
   string bad_file;
+  bool full;
   float threshold;
   bool valid;
   Options()
       : genom_file(""),
         trust_file(""),
         bad_file(""),
+	full(false),
         valid(true) {}  
 };
 
 void PrintHelp(char *progname) {
-  printf("Usage: %s genom.[q]cst ifile.trust ifile.bad\n", progname);
+  printf("Usage: %s genom.[q]cst ifile.trust ifile.bad [--full]\n", progname);
   printf("Where:\n");
   printf("\tgenom.[q]cst\tfile with k|q-mer statistics from real genom\n");
   printf("\tifile.trust\ta filename where filtered data is\n");
   printf("\tifile.bud\ta filename where filtered garbage is\n");
+  printf("\t--full\tpass this option to output all incorrect k-mers with their names to stdout\n");
 }
 
 Options ParseOptions(int argc, char *argv[]) {
   Options ret;
-  if (argc != 4) {
+  if (argc < 4 || argc > 5) {
     ret.valid = false;
   } else {
     ret.genom_file = argv[1];
     ret.trust_file = argv[2];
     ret.bad_file = argv[3];
+    if (argc == 5 && ( !strcmp(argv[4], "--full") || !strcmp(argv[4], "-f") ) )
+      ret.full = true;
   }
   return ret;
 }
@@ -76,6 +82,7 @@ int main(int argc, char *argv[]) {
       ++trusted;
     } else {
       ++trusted_fail;
+      if ( opts.full ) printf("  %s\t%d\t%f\t%f\n", kmer, count, q_count, freq);
     }
   }
   printf("trusted: %d\n", trusted + trusted_fail);
@@ -83,6 +90,7 @@ int main(int argc, char *argv[]) {
   while (fscanf(bad_file, format, kmer, &count, &q_count, &freq) != EOF) {
     if (real_kmers.count(string(kmer)) > 0) {
       ++bad_fail;
+      if ( opts.full ) printf("  %s\t%d\t%f\t%f\n", kmer, count, q_count, freq);
     } else {
       ++bad;
     }
