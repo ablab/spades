@@ -69,15 +69,12 @@ int main() {
 		return -1;
 	}
 	else {
-		LoadFromFile<K>(lc_cfg::get().ds.graph_file, g, pairedIndex, index, intIds, sequence);
+		LoadFromFile<K>(lc_cfg::get().ds.graph_file, &g, &intIds, sequence);
 	}
 	mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
 	Path<Graph::EdgeId> path1 = FindGenomePath<K> (sequence, g, index);
 	Path<Graph::EdgeId> path2 = FindGenomePath<K> (!sequence, g, index);
-
-	PairedInfoIndexLibrary basicPairedLib(lc_cfg::get().bl.read_size, lc_cfg::get().bl.insert_size, &pairedIndex);
-	pairedInfos.push_back(basicPairedLib);
 
 	if (cfg::get().etalon_info_mode) {
 		AddEtalonInfo<K>(g, index, sequence, pairedInfos);
@@ -140,7 +137,9 @@ int main() {
 	}
 
 	if (lc_cfg::get().write_contigs) {
-		OutputPathsAsContigs(g, result, output_dir + "paths.contigs");
+		OutputPathsAsContigs(g, result, output_dir + "all_paths.contigs");
+		OutputContigsNoComplement(g, output_dir + "edges.contigs");
+		OutputPathsAsContigsNoComplement(g, result, output_dir + "paths.contigs");
 	}
 
 	INFO(output_dir);

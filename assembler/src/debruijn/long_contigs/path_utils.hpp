@@ -66,6 +66,38 @@ bool ContainsAnyOf(const BidirectionalPath& path, T& pathCollection) {
 	return false;
 }
 
+bool ContainsPathAt(const BidirectionalPath& path, const EdgeId sample, size_t at = 0) {
+	if (at >= path.size()) {
+		return false;
+	}
+
+	return path[at] == sample;
+}
+
+bool ContainsPathAt(const BidirectionalPath& path, const BidirectionalPath& sample, size_t at = 0) {
+	if (path.size() < at + sample.size()) {
+		return false;
+	}
+
+	for (size_t j = 0; j < sample.size(); ++j) {
+		if (sample[j] != path[at + j]) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+template<class T>
+bool ContainsAnyAt(const BidirectionalPath& path, T& pathCollection, size_t at = 0) {
+	for (auto iter = pathCollection.begin(); iter != pathCollection.end(); ++iter) {
+		if (ContainsPathAt(path, *iter, at)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 //Find coverage of worst covered edge
 double PathMinReadCoverage(Graph& g, BidirectionalPath& path) {
 	if (path.empty()) {
@@ -103,14 +135,17 @@ void FilterPaths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<Bi
 }
 
 void FilterComlementEdges(Graph& g, std::set<EdgeId>& filtered, std::set<EdgeId>& rest) {
+	size_t edges = 0;
 	for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		++edges;
 		if (rest.count(*iter) == 0) {
 			filtered.insert(*iter);
-			if ((*iter)->conjugate() != *iter) {
-				rest.insert((*iter)->conjugate());
+			if (g.conjugate(*iter) != *iter) {
+				rest.insert(g.conjugate(*iter));
 			}
 		}
 	}
+	INFO("Edges separated by " << filtered.size() << " and " << rest.size() << " from " << edges);
 }
 
 void FilterComlementEdges(Graph& g, std::set<EdgeId>& filtered) {

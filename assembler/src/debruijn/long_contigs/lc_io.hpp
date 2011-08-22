@@ -16,8 +16,7 @@ using namespace debruijn_graph;
 using debruijn::K;
 
 template<size_t k>
-void LoadFromFile(std::string fileName, Graph& g,  PairedInfoIndex<Graph>& paired_index, EdgeIndex<k + 1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds,
-		Sequence& sequence) {
+void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_IntIds,	Sequence& sequence) {
 
 	string input_dir = cfg::get().input_dir;
 	string dataset = cfg::get().dataset_name;
@@ -41,12 +40,12 @@ void LoadFromFile(std::string fileName, Graph& g,  PairedInfoIndex<Graph>& paire
 	sequence = Sequence(genome);
 
 	INFO("Reading graph");
-	omnigraph::scanConjugateGraph(&g, &conj_IntIds,fileName, &paired_index);
+	omnigraph::scanConjugateGraph(g, conj_IntIds, fileName);
 	INFO("Graph read")
 }
 
 template<size_t k>
-void AddEtalonInfo(Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence& genome, PairedInfoIndices& pairedInfos) {
+void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence& genome, PairedInfoIndices& pairedInfos) {
 	for (auto el = lc_cfg::get().etalon_libs.begin(); el != lc_cfg::get().etalon_libs.end(); ++el) {
 		INFO("Generating info with read size " << el->read_size << ", insert size " << el->insert_size);
 
@@ -87,8 +86,8 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 
 			RCStream rcStream(&pairStream);
 
-
-			FillPairedIndex<k, RCStream> (g, index, *pairedInfos.back().pairedInfoIndex, rcStream);
+			KmerMapper mapper<k, Graph>(g);
+			FillPairedIndexWithReadCountMetric<k, RCStream>(g, index, mapper,*pairedInfos.back().pairedInfoIndex, rcStream);
 		}
 		INFO("Done");
 	}
@@ -158,7 +157,7 @@ Sequence PathToSequence(Graph& g, BidirectionalPath& path) {
 
 //Output
 void OutputPathsAsContigs(Graph& g, std::vector<BidirectionalPath> paths, const string& filename) {
-	INFO("Writing contigs");
+	INFO("Writing contigs to " << filename);
 	osequencestream oss(filename);
 	for (auto path = paths.begin(); path != paths.end(); ++path ) {
 		oss << PathToSequence(g, *path);
@@ -174,24 +173,23 @@ void OutputContigsNoComplement(Graph& g, const std::string& filename) {
 
 	INFO("Outputting contigs to " << filename);
 	osequencestream oss(filename);
-	for (auto it =filtered.begin(); it != filtered.end(); ++it) {
+	for (auto it = filtered.begin(); it != filtered.end(); ++it) {
 		oss << g.EdgeNucls(*it);
 	}
 	INFO("Contigs written");
 }
 
 
-void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath> paths, const string& filename) {
-	std::set<EdgeId> filtered;
-	std::set<EdgeId> rest;
-	FilterComlementEdges(g, filtered, rest);
 
-	INFO("Writing contigs");
+void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath> paths, const string& filename) {
+	INFO("Writing contigs to " << filename);
 	osequencestream oss(filename);
-	for (auto path = paths.begin(); path != paths.end(); ++path ) {
-		if (!ContainsAnyOf(*path, rest)) {
-			oss << PathToSequence(g, *path);
-		}
+
+	std::vector<BidirectionalPath> temp(paths.size());
+	std::copy(paths.begin(), paths.end(), temp.begin());
+
+	for (auto path = paths.begin(); path < paths.end(); path += 2) {
+		oss << PathToSequence(g, *path);
 	}
 	INFO("Contigs written");
 }
