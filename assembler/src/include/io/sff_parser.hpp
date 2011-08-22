@@ -24,10 +24,10 @@
 #include <string>
 #include <cassert>
 #include <io_lib/sff.h>
-#include "common/io/single_read.hpp"
-#include "common/io/parser.hpp"
-#include "common/sequence/quality.hpp"
-#include "common/sequence/nucl.hpp"
+#include "io/single_read.hpp"
+#include "io/parser.hpp"
+#include "sequence/quality.hpp"
+#include "sequence/nucl.hpp"
 
 namespace io {
 

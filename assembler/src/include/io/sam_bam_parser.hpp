@@ -24,12 +24,12 @@
 #include <zlib.h>
 #include <string>
 #include <cassert>
-#include "libs/statgen/lib/include/SamFile.h"
-#include "libs/statgen/lib/include/SamValidation.h"
-#include "common/io/single_read.hpp"
-#include "common/io/parser.hpp"
-#include "common/sequence/quality.hpp"
-#include "common/sequence/nucl.hpp"
+#include "statgen/lib/include/SamFile.h"
+#include "statgen/lib/include/SamValidation.h"
+#include "io/single_read.hpp"
+#include "io/parser.hpp"
+#include "sequence/quality.hpp"
+#include "sequence/nucl.hpp"
 
 namespace io {
 

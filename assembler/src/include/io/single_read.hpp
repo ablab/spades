@@ -21,11 +21,11 @@
 
 #include <string>
 #include <cassert>
-#include "common/sequence/quality.hpp"
-#include "common/sequence/sequence.hpp"
-#include "common/sequence/nucl.hpp"
-#include "common/sequence/sequence_tools.hpp"
-#include "common/simple_tools.hpp"
+#include "sequence/quality.hpp"
+#include "sequence/sequence.hpp"
+#include "sequence/nucl.hpp"
+#include "sequence/sequence_tools.hpp"
+#include "simple_tools.hpp"
 
 namespace io {
 
@@ -235,7 +235,7 @@ class SingleRead {
 
   void ClearQuality() {
 	  qual_ = std::string(seq_.size(), (char) 0);
-	  valid_ = UpdateValid();
+	  UpdateValid();
   }
 
  private:

@@ -18,12 +18,12 @@
  * according to extension.
  */
 
-#include "common/io/parser.hpp"
+#include "io/parser.hpp"
 #include <string>
-#include "common/io/fasta_fastq_gz_parser.hpp"
-#include "common/io/sam_bam_parser.hpp"
-#include "common/io/sff_parser.hpp"
-#include "common/io/scf_parser.hpp"
+#include "io/fasta_fastq_gz_parser.hpp"
+#include "io/sam_bam_parser.hpp"
+#include "io/sff_parser.hpp"
+#include "io/scf_parser.hpp"
 
 namespace io {
 
