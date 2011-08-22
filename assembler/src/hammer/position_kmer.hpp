@@ -11,19 +11,7 @@
 #include "kmer_stat.hpp"
 #include "position_read.hpp"
 
-#define K 55
-
-/**
-  * convert quality value to actual probability
-  */
-inline double qual2prob(uint8_t qual) {
-	if (qual < 3) return 0.25;
-	static std::vector<double> prob(255, -1);
-	if (prob[qual] < -0.1) {
-		prob[qual] = 1 - pow(10.0, - qual / 10.0);
-	}
-	return prob[qual];
-}
+const uint32_t K = 55;
 
 typedef std::pair<std::string, uint32_t> StringCount;
 
@@ -43,6 +31,7 @@ class PositionKMer {
 
 	static char* blob;
 	static char* blobquality;
+	static double* blobprob;
 	static hint_t blob_max_size;
 	static hint_t blob_size;
 
@@ -57,36 +46,28 @@ class PositionKMer {
 	static void writeKMerCounts( const char * fname, const vector<KMerCount> & kmers );
 	static void readKMerCounts( const char * fname, vector<KMerCount> * kmers );
 
-	static double getKMerQuality( const hint_t & index, const int qvoffset );
+	//static double getKMerQuality( const hint_t & index, const int qvoffset );
 
 	static bool compareSubKMersCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tauplusone, const uint32_t start) {
-		//cout << "    comparing " << km->at(kmer1).first.str() << "\n"
-		//    << "              " << km->at(kmer2).first.str();
-		for ( hint_t i = start; i < K; i += tauplusone ) {
+		for ( uint32_t i = start; i < K; i += tauplusone ) {
 			if ( blob[ km->at(kmer1).first.start_ + i ] != blob [ km->at(kmer2).first.start_ + i ] ) {
-		//		cout << " " << (blob[ km->at(kmer1).first.start_ + i ] < blob [ km->at(kmer2).first.start_ + i ]) << " at pos=" << i << "\n";
 				return ( blob[ km->at(kmer1).first.start_ + i ] < blob [ km->at(kmer2).first.start_ + i ] );
 			}
 		}
-		//cout << "\n";
 		return false;
 	}
 
 	static bool compareSubKMersGreaterCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tauplusone, const uint32_t start) {
-		//cout << "    comparing " << km->at(kmer1).first.str() << "\n"
-		//     << "              " << km->at(kmer2).first.str();
-		for ( hint_t i = start; i < K; i += tauplusone ) {
+		for ( uint32_t i = start; i < K; i += tauplusone ) {
 			if ( blob[ km->at(kmer1).first.start_ + i ] != blob [ km->at(kmer2).first.start_ + i ] ) {
-		//		cout << " " << (blob[ km->at(kmer1).first.start_ + i ] > blob [ km->at(kmer2).first.start_ + i ]) << "\n";
 				return ( blob[ km->at(kmer1).first.start_ + i ] > blob [ km->at(kmer2).first.start_ + i ] );
 			}
 		}
-		//cout << "\n";
 		return false;
 	}
 
 	static bool equalSubKMersCheq( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount> * km, const uint32_t tauplusone, const uint32_t start) {
-		for ( hint_t i = start; i < K; i += tauplusone ) {
+		for ( uint32_t i = start; i < K; i += tauplusone ) {
 			if ( blob[ km->at(kmer1).first.start_ + i ] != blob [ km->at(kmer2).first.start_ + i ] ) {
 				return false;
 			}

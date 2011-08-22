@@ -1,13 +1,5 @@
 #include "position_kmer.hpp"
 
-double PositionKMer::getKMerQuality( const hint_t & index, const int qvoffset ) {
-	long double res = 1;
-	for ( hint_t i = index; i < index+K; ++i ) {
-		res *= qual2prob( (uint8_t)( blobquality[i] - qvoffset ) );
-	}
-	return res;
-}
-
 void PositionKMer::writeBlob( const char * fname ) {
 	ofstream ofs( fname );
 	ofs << blob_max_size << "\n" << blob_size << "\n";
@@ -24,6 +16,7 @@ void PositionKMer::readBlob( const char * fname ) {
 	if (blob != NULL) delete [] blob;
 	if (blobquality != NULL) delete [] blobquality;
 	if (blobkmers != NULL) delete [] blobkmers;
+	if (blobprob != NULL) delete [] blobprob;
 
 	FILE * f = fopen( fname, "r" );
 	assert( fscanf(f, "%lu\n", &blob_max_size) != EOF );

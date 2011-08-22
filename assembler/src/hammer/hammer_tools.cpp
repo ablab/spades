@@ -78,6 +78,7 @@ void AddKMerNos(const PositionRead &r, hint_t readno, vector<KMerNo> *v) {
 	ValidKMerGenerator<K> gen(r, s);
 	while (gen.HasMore()) {
 		v->push_back( PositionKMer::pr->at(readno).start() + gen.pos() - 1 );
+		PositionKMer::blobprob[ PositionKMer::pr->at(readno).start() + gen.pos() - 1 ] = gen.correct_probability();
 		gen.Next();
 	}
 }
@@ -251,20 +252,6 @@ bool CorrectRead(const vector<KMerCount> & km, hint_t readno, ofstream * ofs) {
 	return res;
 }
 
-struct PriorityQueueElement {
-	KMerNo kmerno;
-	int n;
-	PriorityQueueElement( KMerNo km, int l) : kmerno(km), n(l) { }
-};
-
-bool operator < (const PriorityQueueElement & l, const PriorityQueueElement & r) {
-	return KMerNo::greater(l.kmerno, r.kmerno);
-}
-
-bool operator == (const PriorityQueueElement & l, const PriorityQueueElement & r) {
-	return l.kmerno.equal(r.kmerno);
-}
-
 void print_time() {
 	time_t rawtime;
 	tm * ptm;
@@ -314,51 +301,12 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 			++kmerno;
 		}
 		curKMerCount.second.count++;
-		curErrorProb *= (1 - PositionKMer::getKMerQuality(it->index, Globals::qvoffset) );
+		// curErrorProb *= (1 - PositionKMer::getKMerQuality(it->index, Globals::qvoffset) );
+		curErrorProb *= (1 - PositionKMer::blobprob[ it->index ] );
 		PositionKMer::blobkmers[ it->index ] = kmerno;
 	}
 	curKMerCount.second.totalQual = curErrorProb;
 	kmers->push_back(curKMerCount);
-	TIMEDLN("KMer vector created");
-
-	/*
-	std::priority_queue< PriorityQueueElement, vector<PriorityQueueElement> > pq;
-	vector< vector<KMerNo>::iterator > it(nthreads);
-	vector< vector<KMerNo>::iterator > it_end(nthreads);
-	for (int j=0; j<nthreads; ++j) {
-		it[j] = v->begin() + boundaries[j];
-		it_end[j] = v->begin() + boundaries[j+1];
-		pq.push( PriorityQueueElement(*(it[j]), j) );
-	}
-
-	PriorityQueueElement cur_min = pq.top();
-	KMerCount curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD, 1) );
-	
-	hint_t kmerno = 0;
-	double curErrorProb = 1;
-
-	while(pq.size()) {
-		const PriorityQueueElement & pqel = pq.top();
-		if ( !(cur_min == pqel) ) {
-			cur_min = pqel;
-			curKMerCount.second.totalQual = curErrorProb;
-			kmers->push_back(curKMerCount);
-			curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD, 1 ) );
-			curErrorProb = 1;
-			++kmerno;
-		}
-		curKMerCount.second.count++;
-		curErrorProb *= (1 - PositionKMer::getKMerQuality(pqel.kmerno.index, Globals::qvoffset) );
-		PositionKMer::blobkmers[ pqel.kmerno.index ] = kmerno;
-
-		int nn = pqel.n;
-		vector<KMerNo>::iterator & it_cur = it[nn];
-		pq.pop();
-		++it_cur;
-		if ( it_cur != it_end[nn] ) pq.push( PriorityQueueElement(*it_cur, nn) );
-	}
-	curKMerCount.second.totalQual = curErrorProb;
-	kmers->push_back(curKMerCount); */
 }
 
 void outputReads(bool paired, const char * fname, const char * fname_bad, const char * fname_right, const char * fname_right_bad,

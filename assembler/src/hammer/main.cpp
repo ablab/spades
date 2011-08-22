@@ -43,6 +43,7 @@ hint_t PositionKMer::blob_max_size = 0;
 char * PositionKMer::blob = NULL;
 char * PositionKMer::blobquality = NULL;
 hint_t * PositionKMer::blobkmers = NULL;
+double * PositionKMer::blobprob = NULL;
 std::vector<uint32_t> * PositionKMer::subKMerPositions = NULL;
 
 double Globals::error_rate = 0.01;
@@ -109,7 +110,9 @@ int main(int argc, char * argv[]) {
 	if (Globals::paired_reads) {
 		readsFilenameLeft = cfg::get().reads_left;
 		readsFilenameRight = cfg::get().reads_right;
-		cout << "got paired reads from " << readsFilenameLeft.c_str() << "  and  " << readsFilenameRight.c_str() << endl;
+		TIMEDLN("Starting work on " << readsFilenameLeft << " and " << readsFilenameRight << " with " << nthreads << " threads, K=" << K);
+	} else {
+		TIMEDLN("Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K);
 	}
 
 	// initialize subkmer positions
@@ -118,8 +121,6 @@ int main(int argc, char * argv[]) {
 		PositionKMer::subKMerPositions->at(i) = (i * K / (tau+1) );
 	}
 	PositionKMer::subKMerPositions->at(tau+1) = K;
-
-	TIMEDLN("Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K);
 
 	hint_t totalReadSize = 0;
 
@@ -143,10 +144,12 @@ int main(int argc, char * argv[]) {
 
 	PositionKMer::blob = new char[ PositionKMer::blob_max_size ];
 	PositionKMer::blobquality = new char[ PositionKMer::blob_max_size ];
+	PositionKMer::blobprob = new double[ PositionKMer::blob_max_size ];
 	PositionKMer::blobkmers = new hint_t[ PositionKMer::blob_max_size ];
 	TIMEDLN("Max blob size as allocated is " << PositionKMer::blob_max_size);
 
 	std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
+	std::fill( PositionKMer::blobprob,  PositionKMer::blobprob + PositionKMer::blob_max_size,  -1 );
 
 	PositionKMer::revNo = PositionKMer::rv->size();
 	for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
