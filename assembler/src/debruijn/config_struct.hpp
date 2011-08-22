@@ -200,6 +200,7 @@ namespace debruijn
 		using config_common::load;
 		load(pt, "first", ds.first);
 		load(pt, "second", ds.second);
+		load(pt, "RL", ds.RL);
 		load(pt, "IS", ds.IS);
 		load(pt, "LEN", ds.LEN);
 	}
