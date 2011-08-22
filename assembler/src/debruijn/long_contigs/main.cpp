@@ -143,8 +143,8 @@ int main() {
 	if (lc_cfg::get().write_contigs) {
 		OutputPathsAsContigs(g, result, output_dir + "all_paths.contigs");
 		OutputContigsNoComplement(g, output_dir + "edges.contigs");
-
-		FilterComplement(g, result, &pairs, &quality);
+		OutputPathsAsContigsNoComplement(g, result, output_dir + "paths.contigs");
+	}
 
 		if (lc_cfg::get().fo.remove_overlaps) {
 			RemoveOverlaps(g, result, pairs, quality);
