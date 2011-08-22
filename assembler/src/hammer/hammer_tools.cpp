@@ -273,6 +273,22 @@ size_t KMerNoUnique( vector<KMerNo> * v, size_t first, size_t last ) {
 	return ++result;
 }
 
+void KMerNoErase( vector<KMerNo> * v, int nthreads, vector< size_t > * boundaries, const vector< size_t > & unique_results ) {
+	size_t start_erase = unique_results[0];
+	size_t end_erase = (*boundaries)[1];
+	for (int j = 0; j < nthreads; ++j) {
+		cout << "  Erasing from " << start_erase << " to " << end_erase << endl;
+		v->erase( v->begin() + start_erase, v->begin() + end_erase );
+		size_t new_boundary = start_erase;
+		if (j < nthreads-1) {
+			start_erase = start_erase + (unique_results[j+1] - (*boundaries)[j+1]);
+			end_erase = start_erase + (*boundaries)[j+2] - unique_results[j+1];
+		}
+		(*boundaries)[j+1] = new_boundary;
+	}
+	(*boundaries)[nthreads] = v->size();
+}
+
 void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthreads) {
 
 	ofstream ofs;
@@ -287,32 +303,24 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 
 	cout << "  nthreads=" << nthreads << endl;
 
-	vector< size_t > unique_results(nthreads);
 	#pragma omp parallel for shared(v, boundaries) num_threads(nthreads)
 	for (int j = 0; j < nthreads; ++j) {
 		sort(v->begin() + boundaries[j], v->begin() + boundaries[j+1], KMerNo::less);
 	}
 	TIMEDLN("Subvectors sorted.");
+
+
 	cout << "  Boundaries: "; for (int j=0; j < nthreads+1; ++j) cout << boundaries[j] << " "; cout << endl;
+
+
 	TIMEDLN("Running unique.");
+	vector< size_t > unique_results(nthreads);
 	#pragma omp parallel for shared(v, boundaries, unique_results) num_threads(nthreads)
 	for (int j = 0; j < nthreads; ++j) {
 		unique_results[j] = KMerNoUnique(v, boundaries[j], boundaries[j+1]);
 	}
 	//for (size_t j=0; j < v->size(); ++j) cout << (*v)[j].str() << "\t" << (*v)[j].count << "\t" << (*v)[j].errprob << endl;
-	size_t start_erase = unique_results[0];
-	size_t end_erase = boundaries[1];
-	for (int j = 0; j < nthreads; ++j) {
-		cout << "  Erasing from " << start_erase << " to " << end_erase << endl;
-		v->erase( v->begin() + start_erase, v->begin() + end_erase );
-		size_t new_boundary = start_erase;
-		if (j < nthreads-1) {
-			start_erase = start_erase + (unique_results[j+1] - boundaries[j+1]);
-			end_erase = start_erase + boundaries[j+2] - unique_results[j+1];
-		}
-		boundaries[j+1] = new_boundary;
-	}
-	boundaries[nthreads] = v->size();
+	KMerNoErase( v, nthreads, &boundaries, unique_results );
 	TIMEDLN("Erased non-unique.");
 	// for (size_t j=0; j < v->size(); ++j) cout << (*v)[j].str() << "\t" << (*v)[j].count << "\t" << (*v)[j].errprob << endl;
 	cout << "  Boundaries: "; for (int j=0; j < nthreads+1; ++j) cout << boundaries[j] << " "; cout << endl;
@@ -323,7 +331,10 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 		cout << "    npieces=" << npieces << " new_npieces=" << new_npieces << endl;
 		#pragma omp parallel for shared(v, boundaries) num_threads(new_npieces)
 		for (int j=0; j < new_npieces; ++j) {
+			#pragma omp critical
+			{
 			cout << "  Merging from " << (j*2) << "=" << boundaries[j*2] << " via " << (j*2+1) << "=" << boundaries[j*2+1] << " to " << (j*2+2) << "=" << boundaries[j*2+2] << endl;
+			}
 			inplace_merge( v->begin() + boundaries[j*2], v->begin() + boundaries[j*2+1], v->begin() + boundaries[j*2+2], KMerNo::less );
 		}
 		vector<size_t> new_boundaries;
@@ -333,10 +344,24 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 
 		npieces = new_npieces;
 		boundaries.swap(new_boundaries);
+		cout << "  Boundaries before unique: "; for (int j=0; j < npieces+1; ++j) cout << boundaries[j] << " "; cout << endl;
+
+		vector< size_t > cur_unique_results(npieces);
+		#pragma omp parallel for shared(v, boundaries, unique_results) num_threads(npieces)
+		for (int j = 0; j < npieces; ++j) {
+			cur_unique_results[j] = KMerNoUnique(v, boundaries[j], boundaries[j+1]);
+		}		
+		KMerNoErase( v, npieces, &boundaries, cur_unique_results );
+		cout << "  Boundaries after unique: "; for (int j=0; j < npieces+1; ++j) cout << boundaries[j] << " "; cout << endl;
 	}
 	TIMEDLN("Merge done.");
 
-	hint_t kmerno = 0;
+	// now everything is merged already, and KMerNos exactly correspond to KMerCounts
+	for (vector<KMerNo>::iterator it = v->begin(); it != v->end(); ++it) {
+		kmers->push_back( make_pair( PositionKMer(it->index), KMerStat(it->count, KMERSTAT_GOOD, it->errprob) ) );
+	}
+
+	/*hint_t kmerno = 0;
 	double curErrorProb = 1;
 	vector<KMerNo>::iterator it = v->begin();
 	KMerNo cur = *it;
@@ -359,7 +384,7 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 		PositionKMer::blobkmers[ it->index ] = kmerno;
 	}
 	curKMerCount.second.totalQual = curErrorProb;
-	kmers->push_back(curKMerCount);
+	kmers->push_back(curKMerCount);*/
 }
 
 void outputReads(bool paired, const char * fname, const char * fname_bad, const char * fname_right, const char * fname_right_bad,
