@@ -50,7 +50,7 @@ public:
 	DataPrinter(/*const string& file_name,*/Graph &g,
 			IdTrackHandler<Graph> &old_IDs) :
 		graph_(g), IdHandler_(old_IDs) {
-		INFO("Creating of saver started");
+		DEBUG("Creating of saver started");
 		edge_count_ = 0;
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 			edge_count_++;
@@ -60,7 +60,7 @@ public:
 	DataPrinter(/*const string& file_name,*/Graph &g,
 			IdTrackHandler<Graph> &old_IDs, EdgeVertexFilter<Graph> *filter) :
 		graph_(g), IdHandler_(old_IDs), filter_(filter) {
-		INFO("Creating of saver started");
+		DEBUG("Creating of saver started");
 		edge_count_ = 0;
 		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
 			edge_count_++;
@@ -72,7 +72,7 @@ template<class Graph>
 void DataPrinter<Graph>::saveGraph(const string& file_name) {
 
 	FILE* file = fopen((file_name + ".grp").c_str(), "w");
-	INFO("Graph saving to " << file_name << " started");
+	DEBUG("Graph saving to " << file_name << " started");
 	assert(file != NULL);
 	if (filter_ == NULL) {
 		int vertex_count = graph_.size();
@@ -86,7 +86,7 @@ void DataPrinter<Graph>::saveGraph(const string& file_name) {
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 			save(file, *iter);
 		}
-		INFO("Graph saving to " << file_name << " finished");
+		DEBUG("Graph saving to " << file_name << " finished");
 	} else {
 		int vertex_count = filter_->VertexCount();
 		fprintf(file, "%d %d \n", vertex_count, edge_count_);
@@ -100,7 +100,7 @@ void DataPrinter<Graph>::saveGraph(const string& file_name) {
 		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
 			save(file, *iter);
 		}
-		INFO("Graph saving to " << file_name << " finished");
+		DEBUG("Graph saving to " << file_name << " finished");
 
 	}
 	fclose(file);

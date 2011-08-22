@@ -43,6 +43,7 @@ hint_t PositionKMer::blob_max_size = 0;
 char * PositionKMer::blob = NULL;
 char * PositionKMer::blobquality = NULL;
 hint_t * PositionKMer::blobkmers = NULL;
+double * PositionKMer::blobprob = NULL;
 std::vector<uint32_t> * PositionKMer::subKMerPositions = NULL;
 
 double Globals::error_rate = 0.01;
@@ -51,6 +52,7 @@ double Globals::good_cluster_threshold = 0.95;
 double Globals::blob_margin = 0.25;
 int Globals::qvoffset = 64;
 bool Globals::paired_reads = false;
+int Globals::trim_quality = -1;
 
 struct KMerStatCount {
 	PositionKMer km;
@@ -76,6 +78,7 @@ string getFilename( const string & dirprefix, int iter_count, const string & suf
 }
 
 int main(int argc, char * argv[]) {
+	
 	string config_file = CONFIG_FILENAME;
 	if (argc > 1) config_file = argv[1];
 	TIMEDLN("Loading config from " << config_file.c_str());
@@ -100,13 +103,16 @@ int main(int argc, char * argv[]) {
 	Globals::blocksize_quadratic_threshold = cfg::get().blocksize_quadratic_threshold;
 	Globals::good_cluster_threshold = cfg::get().good_cluster_threshold;
 	Globals::blob_margin = cfg::get().blob_margin;
+	Globals::trim_quality = cfg::get().trim_quality;
 
 	Globals::paired_reads = cfg::get().paired_reads;
 	string readsFilenameLeft, readsFilenameRight;
 	if (Globals::paired_reads) {
 		readsFilenameLeft = cfg::get().reads_left;
 		readsFilenameRight = cfg::get().reads_right;
-		cout << "got paired reads from " << readsFilenameLeft.c_str() << "  and  " << readsFilenameRight.c_str() << endl;
+		TIMEDLN("Starting work on " << readsFilenameLeft << " and " << readsFilenameRight << " with " << nthreads << " threads, K=" << K);
+	} else {
+		TIMEDLN("Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K);
 	}
 
 	// initialize subkmer positions
@@ -115,8 +121,6 @@ int main(int argc, char * argv[]) {
 		PositionKMer::subKMerPositions->at(i) = (i * K / (tau+1) );
 	}
 	PositionKMer::subKMerPositions->at(tau+1) = K;
-
-	TIMEDLN("Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K);
 
 	hint_t totalReadSize = 0;
 
@@ -140,13 +144,16 @@ int main(int argc, char * argv[]) {
 
 	PositionKMer::blob = new char[ PositionKMer::blob_max_size ];
 	PositionKMer::blobquality = new char[ PositionKMer::blob_max_size ];
+	PositionKMer::blobprob = new double[ PositionKMer::blob_max_size ];
 	PositionKMer::blobkmers = new hint_t[ PositionKMer::blob_max_size ];
 	TIMEDLN("Max blob size as allocated is " << PositionKMer::blob_max_size);
 
 	std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
+	std::fill( PositionKMer::blobprob,  PositionKMer::blobprob + PositionKMer::blob_max_size,  -1 );
 
 	PositionKMer::revNo = PositionKMer::rv->size();
 	for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
+		string seq = PositionKMer::rv->at(i).getSequenceString();
 		Read revcomp = !(PositionKMer::rv->at(i));
 		PositionKMer::rv->push_back( revcomp );
 	}
@@ -157,7 +164,6 @@ int main(int argc, char * argv[]) {
 	if (readBlobAndKmers) {
 		PositionKMer::readBlob( getFilename(dirprefix, blobFilename.c_str() ).c_str() );
 	}
-
 
 	for (int iter_count = 0; iter_count < iterno; ++iter_count) {
 		cout << "\n     === ITERATION " << iter_count << " begins ===" << endl;

@@ -53,6 +53,7 @@ void FillEtalonPairedIndex(const Graph &g,
 		const Sequence& genome) {
 	INFO("-----------------------------------------");
 	INFO("Counting etalon paired info");
+
 	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index,
 			cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().ds.IS * 0.1);
 	etalon_paired_info_counter.FillEtalonPairedInfo(genome,
@@ -72,7 +73,7 @@ void FillEtalonPairedIndex(const Graph &g,
 //	new_etalon_paired_info_counter.FillEtalonPairedInfo(new_genome, new_paired_info_index);
 //	CheckInfoEquality(etalon_paired_index, new_paired_info_index);
 	//////////////////DEBUG
-	INFO("Paired info counted");
+	INFO("Etalon paired info counted");
 }
 
 template<size_t k>

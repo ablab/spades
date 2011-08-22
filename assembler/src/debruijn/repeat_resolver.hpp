@@ -578,7 +578,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				//			}
 			}
 			INFO(
-					"Having "<< vertices.size() << "paired vertices, trying to split");
+					"Having "<< vertices.size() << " paired vertices, trying to split");
 			RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
 			int GraphCnt = 0;
 

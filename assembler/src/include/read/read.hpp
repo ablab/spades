@@ -21,7 +21,6 @@
 class Read {
 public:
   static const int PHRED_OFFSET = 33;
-  static const int BAD_QUALITY_THRESHOLD = 2;
 
   bool isValid() const {
     return valid_;
@@ -71,48 +70,28 @@ public:
     return dignucl(seq_[i]);
   }
 
-  /**
-   * It's actually not trim Ns, but trim everything before first 'N'
-   * P.S. wtf? (Kolya)
-   */
-  void trimNs() __attribute__ ((deprecated)) {
-    size_t index = seq_.find('N');
-    if (index != std::string::npos) {
-      seq_.erase(seq_.begin() + index, seq_.end());
-      qual_.erase(qual_.begin() + index, qual_.end());
+  size_t trimNsAndBadQuality(int threshold) {
+    int start = 0;
+    for (; start < (int)seq_.size(); ++start) {
+      if (seq_[start] != 'N' && qual_[start] > threshold) break;
+    }
+    if (start > 0 && start < (int)seq_.size()) {
+      seq_.erase(0, start);
+      qual_.erase(0, start);
+    } else if (start >= (int)seq_.size()) {
+      seq_ = ""; qual_ = ""; valid_ = false; return 0;
+    }
+    for (start = (int)seq_.size()-1; start > -1; --start) {
+      if (seq_[start] != 'N' && qual_[start] > threshold) break;
+    }
+    if (start > -1 && start < (int)seq_.size()-1) {
+      seq_.erase(start+1, string::npos);
+      qual_.erase(start+1, string::npos);
     }
     valid_ = updateValid();
+    return seq_.size();
   }
 
-  /**
-   * trim bad quality nucleotides from start and end of the read
-   * @return size of the read left
-   */
-  size_t trimBadQuality() __attribute__ ((deprecated)) {
-    size_t start = 0;
-    for (; start < seq_.size(); ++start) {
-      if (qual_[start] > BAD_QUALITY_THRESHOLD)
-        break;
-    }
-    if (start != seq_.size()) {
-      seq_.erase(seq_.begin(), seq_.begin() + start);
-      qual_.erase(qual_.begin(), qual_.begin() + start);
-      size_t end = seq_.size();
-      for (; end > 0; --end) {
-        if (qual_[end] > BAD_QUALITY_THRESHOLD)
-          break;
-      }
-      seq_.erase(seq_.begin() + end + 1, seq_.end());
-      qual_.erase(qual_.begin() + end + 1, qual_.end());
-      valid_ = updateValid();
-      return seq_.size();
-    } else {
-      seq_ = "";
-      qual_ = "";
-      valid_ = updateValid();
-      return 0;
-    }
-  }
   /**
    * @param k k as in k-mer
    * @param start start point
