@@ -737,7 +737,7 @@ configure:23424: result: no
 configure:23448: checking for library containing cos
 configure:23489: gcc -o conftest -g -O2   conftest.c  >&5
 conftest.c:40: warning: conflicting types for built-in function 'cos'
-/tmp/ccdSSq4a.o: In function `main':
+/tmp/ccugh3T7.o: In function `main':
 /home/mariya/algorithmic-biology/assembler/ext/src/io_lib-1.12.5/conftest.c:44: undefined reference to `cos'
 collect2: ld returned 1 exit status
 configure:23495: $? = 1
@@ -1095,4 +1095,5 @@ config.status:677: creating tests/Makefile
 config.status:677: creating io_lib-config
 config.status:677: creating io_lib/os.h
 config.status:677: creating io_lib_config.h
+config.status:911: io_lib_config.h is unchanged
 config.status:957: executing depfiles commands
