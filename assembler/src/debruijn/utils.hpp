@@ -706,10 +706,6 @@ private:
 								mapping_edge_2.first, (double) edge_distance,
 								weight, 0.));
 				//DEBUG
-//				cout << "here2 " << PairInfo<EdgeId> (mapping_edge_1.first,
-//						mapping_edge_2.first, (double) edge_distance, weight,
-//						0.) << endl;
-//				count++;
 //				if (count == 10000) {
 //					exit(0);
 //				}
