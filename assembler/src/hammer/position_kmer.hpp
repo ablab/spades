@@ -179,13 +179,13 @@ inline bool KCgreater ( const KMerCount & l, const KMerCount & r ) {
 
 struct KMerNo {
 	hint_t index;
-	Seq<K> kmer;
+	//Seq<K> kmer;
 
-	KMerNo( hint_t no ) : index(no), kmer(PositionKMer::blob + index) { } 
+	KMerNo( hint_t no ) : index(no) { } // , kmer(PositionKMer::blob + index) { } 
 
 	bool equal(const KMerNo & kmerno) const {
-		return ( kmer == kmerno.kmer );
-		// return ( strncmp( PositionKMer::blob + index, PositionKMer::blob + kmerno.index, K) == 0 );
+		// return ( kmer == kmerno.kmer );
+		return ( strncmp( PositionKMer::blob + index, PositionKMer::blob + kmerno.index, K) == 0 );
 	}
 
 	bool test_equal(const KMerNo & kmerno) const {

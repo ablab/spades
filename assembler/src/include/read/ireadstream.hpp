@@ -65,15 +65,16 @@ public:
 		return res;
 	}
 
-	static void readAllNoValidation(vector<Read>* res, string filename, uint64_t * totalsize, int qvoffset = Read::PHRED_OFFSET, int cnt = -1) {
+	static void readAllNoValidation(vector<Read>* res, string filename, uint64_t * totalsize, int qvoffset = Read::PHRED_OFFSET, int trim_quality = -1, int cnt = -1) {
 		ireadstream irs(filename, qvoffset);
 		assert(irs.is_open());
 		*totalsize = 0;
 		Read r;
 		while (cnt-- && irs.is_open() && !irs.eof()) {
 			irs >> r;
+			size_t read_size = r.trimNsAndBadQuality(trim_quality);
 			res->push_back(r);
-			*totalsize += r.getSequenceString().size();
+			*totalsize += read_size;
 		}
 		irs.close();
 	}
