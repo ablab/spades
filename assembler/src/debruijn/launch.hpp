@@ -57,13 +57,13 @@ using namespace omnigraph;
 //void LoadEnvAfterGC();
 //void CopyEnvAfterGC();
 //
-//void RunGraphConstruction() {
+//void RunGraphConstruction(GraphPack gp) {
 //	if (cfg::get().entry_point != debruijn::debruijn_config::after_construction) {
-//		ConstructGraph();
-//		SaveEnvAfterGC();
+//		ConstructGraph(gp);
+//		SaveEnvAfterGC(gp);
 //	} else {
-//		LoadEnvAfterGC();
-//		CopyEnvAfterGC();
+//		LoadEnvAfterGC(gp);
+//		CopyEnvAfterGC(files);
 //	}
 //}
 //
@@ -217,7 +217,7 @@ void CreateAndFillGraph(Graph& g, EdgeIndex<k + 1, Graph>& index
 		ConstructGraphWithCoverage<k, UnitedStream>(g, index, int_ids,
 				united_stream);
 	}
-	ProduceInfo<k>(g, index, genome, cfg::get().output_dir + "edge_graph.dot",
+	ProduceInfo<k>(g, index, int_ids, genome, cfg::get().output_dir + "edge_graph.dot",
 			"edge_graph");
 	string contig_file("/home/ftp/data/velvet/velvet_unpaired55.fasta.gz");
 //	FillEdgesPos<k> (g, index, contig_file, EdgePos);
@@ -305,9 +305,9 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 		TotLab = in_place(&(*graph_struct));
 	} else {
 		if (graph_loaded) {
-			SimplifyGraph<k>(g, index, 3, genome,
+			SimplifyGraph<k>(g, index, int_ids, 3, genome,
 					output_folder/*, etalon_paired_index*/);
-			ProduceInfo<k>(g, index, genome,
+			ProduceInfo<k>(g, index, int_ids, genome,
 					output_folder + "simplified_graph.dot", "simplified_graph");
 
 			//experimental
