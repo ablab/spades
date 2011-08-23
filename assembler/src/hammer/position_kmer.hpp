@@ -31,7 +31,6 @@ class PositionKMer {
 
 	static char* blob;
 	static char* blobquality;
-	static double* blobprob;
 	static hint_t blob_max_size;
 	static hint_t blob_size;
 
@@ -160,17 +159,20 @@ inline bool KCgreater ( const KMerCount & l, const KMerCount & r ) {
 
 struct KMerNo {
 	hint_t index;
-	//Seq<K> kmer;
+	double errprob;
+/*	uint32_t count;
+	vector<hint_t> v;
+	KMerNo( hint_t no, double qual ) : index(no), count(1), errprob(qual), v(0) { } // , kmer(PositionKMer::blob + index) { }
+	~KMerNo() { v.clear(); }   */
 
-	KMerNo( hint_t no ) : index(no) { } // , kmer(PositionKMer::blob + index) { } 
+	static const uint32_t MIDDLE_POINT = 35;
+	static const uint32_t K_MINUS_MIDDLE_POINT = 20;
+
+	KMerNo( hint_t no, double qual ) : index(no), errprob(qual) { }
 
 	bool equal(const KMerNo & kmerno) const {
-		// return ( kmer == kmerno.kmer );
-		return ( strncmp( PositionKMer::blob + index, PositionKMer::blob + kmerno.index, K) == 0 );
-	}
-
-	bool test_equal(const KMerNo & kmerno) const {
-		return ( index == kmerno.index );
+		return ( (strncmp( PositionKMer::blob + index + MIDDLE_POINT, PositionKMer::blob + kmerno.index + MIDDLE_POINT, K_MINUS_MIDDLE_POINT) == 0)
+		      && (strncmp( PositionKMer::blob + index, PositionKMer::blob + kmerno.index, MIDDLE_POINT) == 0) );
 	}
 
 	string str() const {

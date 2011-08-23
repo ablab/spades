@@ -43,7 +43,6 @@ hint_t PositionKMer::blob_max_size = 0;
 char * PositionKMer::blob = NULL;
 char * PositionKMer::blobquality = NULL;
 hint_t * PositionKMer::blobkmers = NULL;
-double * PositionKMer::blobprob = NULL;
 std::vector<uint32_t> * PositionKMer::subKMerPositions = NULL;
 
 double Globals::error_rate = 0.01;
@@ -126,17 +125,15 @@ int main(int argc, char * argv[]) {
 
 	if (!Globals::paired_reads) {
 		PositionKMer::rv = new std::vector<Read>();
-		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilename, &totalReadSize, Globals::qvoffset);
+		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilename, &totalReadSize, Globals::qvoffset, Globals::trim_quality);
 		PositionKMer::lastLeftNo = PositionKMer::rv->size();
-		cout << "  lastLeftNo=" << PositionKMer::lastLeftNo << "  no pairs" << endl;
 	} else {
 		PositionKMer::rv = new std::vector<Read>();
-		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameLeft, &totalReadSize, Globals::qvoffset);
+		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameLeft, &totalReadSize, Globals::qvoffset, Globals::trim_quality);
 		PositionKMer::lastLeftNo = PositionKMer::rv->size();
 		hint_t rightSize = 0;
-		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameRight, &rightSize, Globals::qvoffset);
+		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameRight, &rightSize, Globals::qvoffset, Globals::trim_quality);
 		totalReadSize += rightSize;
-		cout << "  lastLeftNo=" << PositionKMer::lastLeftNo << "   total reads=" << PositionKMer::rv->size() << endl;
 	}
 
 	PositionKMer::blob_size = totalReadSize + 1;
@@ -144,12 +141,10 @@ int main(int argc, char * argv[]) {
 
 	PositionKMer::blob = new char[ PositionKMer::blob_max_size ];
 	PositionKMer::blobquality = new char[ PositionKMer::blob_max_size ];
-	PositionKMer::blobprob = new double[ PositionKMer::blob_max_size ];
 	PositionKMer::blobkmers = new hint_t[ PositionKMer::blob_max_size ];
 	TIMEDLN("Max blob size as allocated is " << PositionKMer::blob_max_size);
 
 	std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
-	std::fill( PositionKMer::blobprob,  PositionKMer::blobprob + PositionKMer::blob_max_size,  -1 );
 
 	PositionKMer::revNo = PositionKMer::rv->size();
 	for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
@@ -224,26 +219,29 @@ int main(int argc, char * argv[]) {
 		TIMEDLN("Finished clustering. Starting reconstruction.");
 
 		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
-		vector<ofstream *> outfv; vector<bool> changed;
+		vector<ofstream *> outfv; vector<hint_t> changedReads; vector<hint_t> changedNucleotides;
 		for (int i=0; i<nthreads; ++i) {
 			//tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << ".reconstruct." << i;
 			// outfv.push_back(new ofstream( tmp.str().data() ));
 			outfv.push_back(NULL);
-			changed.push_back(false);
+			changedReads.push_back(0);
+			changedNucleotides.push_back(0);
 		}
 
-		#pragma omp parallel for shared(changed, outfv) num_threads(nthreads)
+		#pragma omp parallel for shared(changedReads, changedNucleotides, outfv) num_threads(nthreads)
 		for (size_t i = 0; i < PositionKMer::revNo; ++i) {
 			bool res = CorrectRead(kmers, i, outfv[omp_get_thread_num()]);
-			changed[omp_get_thread_num()] = changed[omp_get_thread_num()] || res;
+			changedNucleotides[omp_get_thread_num()] += res;
+			if (res) ++changedReads[omp_get_thread_num()];
 		}
-		bool res = false;
+		hint_t totalReads = 0; hint_t totalNucleotides = 0;
 		for (int i=0; i<nthreads; ++i) {
 			if (outfv[i] != NULL) { outfv[i]->close(); delete outfv[i]; }
-			res = res || changed[i];
+			totalReads += changedReads[i];
+			totalNucleotides += changedNucleotides[i];
 		}
 
-		TIMEDLN("Correction done. Printing out reads.");
+		TIMEDLN("Correction done. Changed " << totalNucleotides << " bases in " << totalReads << " reads. Printing out reads.");
 
 		if (!Globals::paired_reads) {
 			outputReads( false, getFilename(dirprefix, iter_count, "reads.corrected").c_str(),
@@ -269,8 +267,8 @@ int main(int argc, char * argv[]) {
 		}
 		TIMEDLN("Reads restored.");
 
-		if (!res) {
-			TIMEDLN("Nothing has changed in this iteration. Exiting.");
+		if (totalReads < 10) {
+			TIMEDLN("Too few reads have changed in this iteration. Exiting.");
 			break;
 		}
 
