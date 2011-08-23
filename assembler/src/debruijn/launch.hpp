@@ -7,6 +7,8 @@
 
 #ifndef LAUNCH_HPP_
 #define LAUNCH_HPP_
+
+#include "io/converting_reader_wrapper.hpp"
 #include "omni/visualization_utils.hpp"
 
 //#include "debruijn_graph.hpp"
