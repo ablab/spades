@@ -218,8 +218,12 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 		return toReturn == 0 ? ExtensionGoodEnough(edges.back(), maxWeight, weightThreshold, g, path, handler, forward) : toReturn;
 	}
 	else if (edges.size() > 1) {
-		DETAILED_INFO("Cannot choose extension, no obvious maximum");
-		handler.AddStop(path, MANY_GOOD_EXTENSIONS, forward);
+		if (ExtensionGoodEnough(edges.back(), maxWeight, weightThreshold) == 0) {
+			handler.AddStop(path, NO_GOOD_EXTENSION, forward);
+		} else {
+			DETAILED_INFO("Cannot choose extension, no obvious maximum");
+			handler.AddStop(path, MANY_GOOD_EXTENSIONS, forward);
+		}
 	}
 
 	return toReturn;
@@ -439,19 +443,19 @@ size_t SeedPriority(const BidirectionalPath& seed) {
 //Find paths with given seeds
 void FindPaths(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndices& pairedInfo, std::vector<BidirectionalPath>& paths,
 		PathStopHandler& handler) {
-	std::multimap<size_t, BidirectionalPath> priorityQueue;
+	std::multimap<size_t, BidirectionalPath*> priorityQueue;
 	static bool ALL_SEEDS = lc_cfg::get().sc.all_seeds;
 	static double EDGE_COVERAGE_TRESHOLD = lc_cfg::get().sc.edge_coverage;
 	static double LENGTH_COVERAGE_TRESHOLD = lc_cfg::get().sc.len_coverage;
 
 	INFO("Finding paths started");
 	for(auto seed = seeds.begin(); seed != seeds.end(); ++seed) {
-		priorityQueue.insert(std::make_pair(SeedPriority(*seed), *seed));
+		priorityQueue.insert(std::make_pair(SeedPriority(*seed), &(*seed)));
 	}
 
 	for(auto seed = priorityQueue.rbegin(); seed != priorityQueue.rend(); ++seed) {
-		GrowSeed(g, seed->second, pairedInfo, handler);
-		paths.push_back(seed->second);
+		GrowSeed(g, *(seed->second), pairedInfo, handler);
+		paths.push_back(*(seed->second));
 
 		if (!ALL_SEEDS && PathsCoverage(g, paths) > EDGE_COVERAGE_TRESHOLD && PathsLengthCoverage(g, paths) > LENGTH_COVERAGE_TRESHOLD) {
 			break;

@@ -230,6 +230,16 @@ void RemoveSubpaths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector
 	}
 }
 
+//Filter simetric complement contigs
+void FilterComplement(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& output) {
+	std::sort(paths.begin(), paths.end(), SimplePathComparator(g));
+	output.clear();
+
+	for (auto path = paths.begin(); path < paths.end(); path += 2) {
+		output.push_back(*	path);
+	}
+}
+
 //Remove overlaps, remove sub paths first
 //TODO
 void RemoveOverlaps(std::vector<BidirectionalPath>& paths) {

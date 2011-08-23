@@ -133,6 +133,9 @@ int main() {
 	INFO("Path coverage " << PathsCoverage(g, result));
 	INFO("Path length coverage " << PathsLengthCoverage(g, result));
 
+	if (lc_cfg::get().print_stats) {
+		stopHandler.print();
+	}
 
 	if (lc_cfg::get().write_paths) {
 		WriteGraphWithPathsSimple(output_dir + "final_paths.dot", "final_paths", g, result, path1, path2);

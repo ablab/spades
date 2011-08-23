@@ -51,7 +51,7 @@ typedef std::vector<PairedInfoIndexLibrary> PairedInfoIndices;
 
 
 //Statistics
-enum StopReason { LOOP, NO_EXTENSION, MANY_GOOD_EXTENSIONS, WEAK_EXTENSION };
+enum StopReason { LOOP, NO_EXTENSION, NO_GOOD_EXTENSION, MANY_GOOD_EXTENSIONS, WEAK_EXTENSION };
 
 struct PathStatData {
 	StopReason reason;
@@ -86,6 +86,10 @@ public:
 			msg = "two or more possible extensions are very similar";
 			break;
 		}
+		case NO_GOOD_EXTENSION: {
+			msg = "all extensions are bad";
+			break;
+		}
 		case WEAK_EXTENSION: {
 			msg = "bast extension's weight does not pass the threshold";
 			break;
@@ -108,6 +112,14 @@ public:
 
 	void print(const BidirectionalPath& path) {
 		INFO("Stats for path with " << path.size() << " edges and length " <<  PathLength(g_, path));
+		INFO("Stoppages forward (" << forward_.count(&path) << "):");
+		for (auto iter = forward_.lower_bound(&path); iter != forward_.upper_bound(&path); ++iter) {
+			INFO("Stop reason at length " << iter->second.pathLength << ", reason: " << iter->second.message);
+		}
+		INFO("Stoppages backward (" << backward_.count(&path) << "):");
+		for (auto iter = backward_.lower_bound(&path); iter != backward_.upper_bound(&path); ++iter) {
+			INFO("Stop reason at length " << iter->second.pathLength << ", reason: " << iter->second.message);
+		}
 	}
 
 	void print() {

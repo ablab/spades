@@ -111,6 +111,7 @@ struct lc_config
 	bool write_real_paired_info;
 	bool cluster_paired_info;
 	bool write_graph;
+	bool print_stats;
 	std::string paired_info_file_prefix;
 
 	dataset ds;
@@ -228,6 +229,7 @@ void load(boost::property_tree::ptree const& pt, lc_config& lc_cfg)
 	load(pt, "write_contigs", lc_cfg.write_contigs);
 	load(pt, "write_real_paired_info", lc_cfg.write_real_paired_info);
 	load(pt, "write_graph", lc_cfg.write_graph);
+	load(pt, "print_stats", lc_cfg.print_stats);
 	load(pt, "cluster_paired_info", lc_cfg.cluster_paired_info);
 	load(pt, "paired_info_file_prefix", lc_cfg.paired_info_file_prefix);
 

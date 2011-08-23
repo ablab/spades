@@ -164,6 +164,7 @@ write_contigs           true
 write_real_paired_info  true
 cluster_paired_info     false
 write_graph             true
+print_stats             false
 paired_info_file_prefix "paired_info_"
 
 ; seed selection
@@ -207,7 +208,7 @@ fo
 {
     remove_duplicates       true
     remove_subpaths         true
-    remove_overlaps         true
+    remove_overlaps         false
 }
 
 
