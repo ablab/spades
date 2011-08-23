@@ -68,8 +68,6 @@ double GetWeight(omnigraph::PairedInfoIndex<Graph>::PairInfos pairs, int distanc
 
 //Weight fixing coefficient, sum weight of ideal info
 int FixingCoefficient(Graph& g, const BidirectionalPath& path, EdgeId edge, size_t edgesToExclude, PairedInfoIndexLibrary& pairedInfoLibrary, bool forward) {
-	int overlap = 1;
-
 	int pathLen = 0;
 	size_t start = forward ? 0 : edgesToExclude;
 	size_t end = forward ? path.size() - edgesToExclude : path.size();
@@ -82,10 +80,10 @@ int FixingCoefficient(Graph& g, const BidirectionalPath& path, EdgeId edge, size
 	int is = pairedInfoLibrary.insertSize;
 	int rs = pairedInfoLibrary.readSize;
 
-	int right = std::min(is - overlap, exclLen + edgeLen + rs - overlap);
-	int left = std::max(exclLen - is + overlap, overlap - rs - pathLen) + is;
+	int right = std::min(is, exclLen + edgeLen + rs);
+	int left = std::max(exclLen - is, - rs - pathLen) + is;
 
-	int delta = right - left + 1;
+	int delta = right - left + 1 - K;
 
 	return delta > 0 ? delta : -1;
 }
@@ -104,7 +102,7 @@ double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, 
 	size_t start = forward ? 0 : edgesToExclude;
 	size_t end = forward ? path.size() - edgesToExclude : path.size();
 
-	static int DISTANCE_DEV = cfg::get().etalon_info_mode ? lc_cfg::get().es.etalon_distance_dev : lc_cfg::get().es.real_distance_dev;
+	static int DISTANCE_DEV = cfg::get().etalon_info_mode ? lc_cfg::get().es.etalon_distance_dev : pairedInfoLibrary.var;
 
 	for(size_t i = start; i < end; ++i) {
 		EdgeId edge = path[i];
@@ -156,7 +154,7 @@ double FilterExtentions(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& 
 
 	//Filling maximum edges
 	edges.clear();
-	auto bestEdge = weights.lower_bound((--weights.end())->first);
+	auto bestEdge = weights.lower_bound((--weights.end())->first / lc_cfg::get().es.priority_coeff);
 	for (auto maxEdge = bestEdge; maxEdge != weights.end(); ++maxEdge) {
 		edges.push_back(maxEdge->second);
 	}
@@ -203,6 +201,10 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 	if (edges.size() == 1) {
 		static double weightThreshold = lc_cfg::get().es.weight_threshold;
 		return toReturn == 0 ? ExtensionGoodEnough(edges.back(), maxWeight, weightThreshold) : toReturn;
+	} else if (edges.size() > 1) {
+		DETAILED_INFO("Cannot choose extension, no obvious maximum");
+	} else {
+		DETAILED_INFO("Cannot choose extension, all are bad");
 	}
 
 	return toReturn;
@@ -309,7 +311,6 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, EdgesToExcludeForward(g, path), true);
 
 	if (extension == 0) {
-		DETAILED_INFO("All are bad");
 		return false;
 	}
 	DETAILED_INFO("Chosen forward " << extension << " (" << g.length(extension) << ")");
@@ -342,7 +343,6 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, EdgesToExcludeBackward(g, path), false);
 
 	if (extension == 0) {
-		DETAILED_INFO("All are bad");
 		return false;
 	}
 	DETAILED_INFO("Chosen backward " << extension << " (" << g.length(extension) << ")");
@@ -381,9 +381,10 @@ void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo) 
 	CycleDetector detector;
 
 	static size_t maxIS = GetMaxInsertSize(pairedInfo);
+	int i = 0;
 	bool stop = false;
 
-	while (!stop) {
+	while (i < lc_cfg::get().es.max_iter && !stop) {
 		RecountLengthsForward(g, seed, lengths);
 		DETAILED_INFO("Before forward");
 		if (lc_cfg::get().rs.detailed_output) {
@@ -405,6 +406,9 @@ void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo) 
 		}
 		while (ExtendPathBackward(g, seed, lengths, detector, pairedInfo)) {
 		}
+		detector.clear();
+
+		++i;
 	}
 }
 

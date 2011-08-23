@@ -49,7 +49,7 @@ void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence&
 	for (auto el = lc_cfg::get().etalon_libs.begin(); el != lc_cfg::get().etalon_libs.end(); ++el) {
 		INFO("Generating info with read size " << el->read_size << ", insert size " << el->insert_size);
 
-		pairedInfos.push_back(PairedInfoIndexLibrary(el->read_size, el->insert_size, new PairedInfoIndex<Graph>(g, 0)));
+		pairedInfos.push_back(PairedInfoIndexLibrary(el->read_size, el->insert_size, lc_cfg::get().es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
 		FillEtalonPairedIndex<k> (g, *pairedInfos.back().pairedInfoIndex, index, el->insert_size, el->read_size, genome);
 	}
 }
@@ -59,8 +59,9 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 	for (auto rl = lc_cfg::get().real_libs.begin(); rl != lc_cfg::get().real_libs.end(); ++rl) {
 		size_t insertSize = rl->insert_size;
 		size_t readSize = rl->read_size;
+		size_t var = rl->var;
 		string dataset = cfg::get().dataset_name;
-		pairedInfos.push_back(PairedInfoIndexLibrary(readSize, insertSize, new PairedInfoIndex<Graph>(g, 0)));
+		pairedInfos.push_back(PairedInfoIndexLibrary(readSize, insertSize, var, new PairedInfoIndex<Graph>(g, 0)));
 
 		INFO("Reading additional info with read size " << readSize << ", insert size " << insertSize);
 
@@ -86,8 +87,12 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 
 			RCStream rcStream(&pairStream);
 
-			KmerMapper<k+1, Graph> mapper(g);
-			FillPairedIndexWithReadCountMetric<k, RCStream>(g, index, mapper,*pairedInfos.back().pairedInfoIndex, rcStream);
+			if (lc_cfg::get().use_new_metrics) {
+				KmerMapper<k+1, Graph> mapper(g);
+				FillPairedIndexWithReadCountMetric<k, RCStream>(g, index, mapper,*pairedInfos.back().pairedInfoIndex, rcStream);
+			} else {
+				FillPairedIndex<k, RCStream>(g, index, *pairedInfos.back().pairedInfoIndex, rcStream);
+			}
 		}
 		INFO("Done");
 	}
@@ -149,7 +154,7 @@ Sequence PathToSequence(Graph& g, BidirectionalPath& path) {
 		result.append(g.EdgeNucls(path[0]).Subseq(0, K));
 	}
 	for (auto edge = path.begin(); edge != path.end(); ++edge) {
-		result.append(g.EdgeNucls(*edge).Subseq(K + 1));
+		result.append(g.EdgeNucls(*edge).Subseq(K));
 	}
 
 	return result.BuildSequence();

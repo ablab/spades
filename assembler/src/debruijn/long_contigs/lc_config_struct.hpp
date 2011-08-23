@@ -36,6 +36,7 @@ struct lc_config
 	{
 		size_t read_size;
 		size_t insert_size;
+		size_t var;
 
 		rl_dataset ds;
 	};
@@ -59,8 +60,10 @@ struct lc_config
 		double weight_threshold;
 
 		bool use_delta_first;
-		int  real_distance_dev;
 		int  etalon_distance_dev;
+		int max_iter;
+
+		double priority_coeff;
 	};
 
 	struct loops_removal
@@ -98,6 +101,8 @@ struct lc_config
 
 	//size_t real_libs_count;
 	//size_t etalon_libs_count;
+
+	bool use_new_metrics;
 
 	bool write_seeds;
 	bool write_overlaped_paths;
@@ -148,6 +153,7 @@ void load(boost::property_tree::ptree const& pt, lc_config::real_lib& rl)
 	using config_common::load;
 	load(pt, "read_size", rl.read_size);
 	load(pt, "insert_size", rl.insert_size);
+	load(pt, "var", rl.var);
 	load(pt, cfg::get().dataset_name, rl.ds);
 }
 
@@ -178,8 +184,9 @@ void load(boost::property_tree::ptree const& pt, lc_config::extension_selection&
 	load(pt, "weight_fun_threshold", es.weight_fun_threshold);
 	load(pt, "weight_threshold", es.weight_threshold);
 	load(pt, "use_delta_first", es.use_delta_first);
-	load(pt, "real_distance_dev", es.real_distance_dev);
 	load(pt, "etalon_distance_dev", es.etalon_distance_dev);
+	load(pt, "max_iter", es.max_iter);
+	load(pt, "priority_coeff", es.priority_coeff);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::loops_removal& lr)
@@ -214,6 +221,7 @@ void load(boost::property_tree::ptree const& pt, lc_config& lc_cfg)
 	//load(pt, "real_libs_count", cfg.real_libs_count);
 	//load(pt, "etalon_libs_count", cfg.etalon_libs_count);
 
+	load(pt, "use_new_metrics", lc_cfg.use_new_metrics);
 	load(pt, "write_seeds", lc_cfg.write_seeds);
 	load(pt, "write_overlaped_paths", lc_cfg.write_overlaped_paths);
 	load(pt, "write_paths", lc_cfg.write_paths);

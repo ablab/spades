@@ -38,11 +38,12 @@ typedef std::multimap<EdgeId, std::pair<size_t, double> > CycleDetector;
 //Paired infi library
 struct PairedInfoIndexLibrary {
 
-	PairedInfoIndexLibrary(size_t readS, size_t insS, PairedInfoIndex<Graph>* index): readSize(readS), insertSize(insS) , pairedInfoIndex(index) {
+	PairedInfoIndexLibrary(size_t readS, size_t insS, size_t v, PairedInfoIndex<Graph>* index): readSize(readS), insertSize(insS), var(v), pairedInfoIndex(index) {
 	}
 
 	size_t readSize;
 	size_t insertSize;
+	size_t var;
 	PairedInfoIndex<Graph>* pairedInfoIndex;
 };
 
