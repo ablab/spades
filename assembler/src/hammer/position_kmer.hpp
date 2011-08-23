@@ -161,8 +161,10 @@ struct KMerNo {
 	hint_t index;
 	uint32_t count;
 	double errprob;
+	vector<hint_t> v;
 
-	KMerNo( hint_t no, double qual ) : index(no), count(1), errprob(qual) { } // , kmer(PositionKMer::blob + index) { } 
+	KMerNo( hint_t no, double qual ) : index(no), count(1), errprob(qual), v(0) { } // , kmer(PositionKMer::blob + index) { }
+	~KMerNo() { v.clear(); } 
 
 	bool equal(const KMerNo & kmerno) const {
 		// return ( kmer == kmerno.kmer );

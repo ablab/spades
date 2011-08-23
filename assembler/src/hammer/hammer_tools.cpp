@@ -132,7 +132,7 @@ void DoSplitAndSort(int tau, int nthreads, vector< vector<hint_t> > * vs, vector
 }
 
 
-bool CorrectRead(const vector<KMerCount> & km, hint_t readno, ofstream * ofs) {
+size_t CorrectRead(const vector<KMerCount> & km, hint_t readno, ofstream * ofs) {
 	hint_t readno_rev = PositionKMer::revNo + readno;
 	const Read & r = PositionKMer::rv->at(readno);
 	string seq = r.getSequenceString();
@@ -213,7 +213,7 @@ bool CorrectRead(const vector<KMerCount> & km, hint_t readno, ofstream * ofs) {
 
 	// at this point the array v contains votes for consensus
 
-	bool res = false; // has anything really changed?
+	size_t res = 0; // how many nucleotides have really changed?
 	// find max consensus element
 	for (size_t j=0; j<read_size; ++j) {
 		char cmax = seq[j]; int nummax = 0;
@@ -268,6 +268,8 @@ size_t KMerNoUnique( vector<KMerNo> * v, size_t first, size_t last ) {
 		} else {
 			(*v)[result].count += (*v)[first].count;
 			(*v)[result].errprob *= (*v)[first].errprob;
+			(*v)[result].v.push_back( (*v)[first].index );
+			(*v)[result].v.insert( (*v)[result].v.end(), (*v)[first].v.begin(), (*v)[first].v.end() );
 		}
 	}
 	return ++result;
@@ -357,8 +359,14 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 	TIMEDLN("Merge done.");
 
 	// now everything is merged already, and KMerNos exactly correspond to KMerCounts
+	hint_t kmerno = 0;
 	for (vector<KMerNo>::iterator it = v->begin(); it != v->end(); ++it) {
 		kmers->push_back( make_pair( PositionKMer(it->index), KMerStat(it->count, KMERSTAT_GOOD, it->errprob) ) );
+		PositionKMer::blobkmers[ it->index ] = kmerno;
+		for ( vector<hint_t>::iterator it_v = it->v.begin(); it_v != it->v.end(); ++it_v) {
+			PositionKMer::blobkmers[ *it_v ] = kmerno;
+		}
+		++kmerno;
 	}
 
 	/*hint_t kmerno = 0;
