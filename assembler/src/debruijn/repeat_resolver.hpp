@@ -513,7 +513,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	INFO("resolve_repeats started");
 	sum_count = 0;
 	global_cheating_edges.clear();
-	for (cheating_mode = 0; cheating_mode < 3; cheating_mode++) {
+	for (cheating_mode = 0; cheating_mode < 2; cheating_mode++) {
 		INFO(" cheating_mode = " << cheating_mode);
 		bool changed = true;
 		set<VertexId> vertices;
@@ -680,7 +680,8 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 //								"PairInfo: " << old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 						EdgeInfo ei(correction_result.second, dir, right_id,
 								correction_result.second.d - dif_d);
-						if (cheating_mode == 2 && ((correction_result.second.d - dif_d + old_graph.length(right_id) < 120 - FAR_FROM_VERTEX) || (correction_result.second.d - dif_d > 120  + FAR_FROM_VERTEX))) {
+						int trusted_dist = cfg::get().ds.IS - cfg::get().ds.RL;
+						if (cheating_mode == 2 && ((correction_result.second.d - dif_d + old_graph.length(right_id) < trusted_dist - FAR_FROM_VERTEX) || (correction_result.second.d - dif_d > trusted_dist  + FAR_FROM_VERTEX))) {
 							local_cheating_edges.insert(make_pair(left_id, 0));
 							DEBUG("ignored paired_info between " << new_IDs.ReturnIntId(left_id) <<" and " <<old_IDs.ReturnIntId(right_id) <<" with distance " << correction_result.second.d - dif_d);
 						} else {
