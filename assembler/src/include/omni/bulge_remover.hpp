@@ -172,6 +172,7 @@ private:
 		}
 		EdgeId edge_to_split = edge;
 		size_t prev_length = 0;
+		TRACE("Process bulge "<<path.size()<< " edges");
 		for (size_t i = 0; i < path.size(); ++i) {
 			if (bulge_prefix_lengths[i] > prev_length) {
 				if (bulge_prefix_lengths[i]  - prev_length != g_.length(edge_to_split)) {
