@@ -119,7 +119,7 @@ EdgeId ExtensionGoodEnough(EdgeId edge, double weight, double threshold, Graph& 
 	if (weight > threshold) {
 		return edge;
 	} else {
-		handler.AddStop(&path, WEAK_EXTENSION, forward);
+		handler.AddStop(path, WEAK_EXTENSION, forward);
 		return 0;
 	}
 }
@@ -164,7 +164,7 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 	detector.temp.clear();
 
 	if (edges.size() == 0) {
-		handler.AddStop(&path, NO_EXTENSION, forward);
+		handler.AddStop(path, NO_EXTENSION, forward);
 		return 0;
 	}
 	if (edges.size() == 1) {
@@ -201,12 +201,8 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 		return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold, g, path, handler, forward) : toReturn;
 	}
 	else if (edges.size() > 1) {
-		if (ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold) == 0) {
-			handler.AddStop(&path, NO_GOOD_EXTENSION, forward);
-		} else {
-			DETAILED_INFO("Cannot choose extension, no obvious maximum");
-			handler.AddStop(&path, MANY_GOOD_EXTENSIONS, forward);
-		}
+		DETAILED_INFO("Cannot choose extension, no obvious maximum");
+		handler.AddStop(path, MANY_GOOD_EXTENSIONS, forward);
 	}
 
 	return toReturn;
@@ -535,8 +531,11 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		RemoveLoopForward(path, detector, FULL_LOOP_REMOVAL, MAX_LOOPS);
 
 		DETAILED_INFO("Cycle detected");
-		DetailedPrintPath(g, path, lengths);
-		handler.AddStop(&path, LOOP, true);
+		handler.AddStop(path, LOOP, true);
+		RemoveLoopForward(path, detector, FULL_LOOP_REMOVAL);
+		if (lc_cfg::get().rs.detailed_output) {
+			PrintPath(g, path, lengths);
+		}
 		return false;
 	}
 
@@ -590,8 +589,11 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		RemoveLoopBackward(path, detector, FULL_LOOP_REMOVAL, MAX_LOOPS);
 
 		DETAILED_INFO("Cycle detected");
-		DetailedPrintPath(g, path, lengths);
-		handler.AddStop(&path, LOOP, false);
+		handler.AddStop(path, LOOP, false);
+		RemoveLoopBackward(path, detector, FULL_LOOP_REMOVAL);
+		if (lc_cfg::get().rs.detailed_output) {
+			PrintPath(g, path, lengths);
+		}
 		return false;
 	}
 
