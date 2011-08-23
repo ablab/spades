@@ -83,7 +83,7 @@ int main() {
 	}
 	// assemble it!
 	INFO("Assembling " << dataset << " dataset");
-	debruijn_graph::DeBruijnGraphTool<debruijn::K, RCStream>(rcStream, Sequence(genome), work_tmp_dir, reads);
+	debruijn_graph::DeBruijnGraphTool<debruijn::K>(rcStream, Sequence(genome), work_tmp_dir, reads);
 
 	unlink((cfg::get().output_root + "latest").c_str());
 		if (symlink(cfg::get().output_dir_suffix.c_str(), (cfg::get().output_root + "latest").c_str())

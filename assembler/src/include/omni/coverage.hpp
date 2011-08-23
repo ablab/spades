@@ -10,6 +10,7 @@
 
 #include <tr1/unordered_map>
 #include "logging.hpp"
+#include "io/reader.hpp"
 
 namespace omnigraph {
 
@@ -80,8 +81,8 @@ public:
 		IncCoverage(edge, 1);
 	}
 
-	template<class Stream, class ReadThreader>
-	void FillIndex(Stream& stream, const ReadThreader& threader) {
+	template<class ReadThreader>
+	void FillIndex(io::IReader<io::SingleRead>& stream, const ReadThreader& threader) {
 		while (!stream.eof()) {
                   io::SingleRead read;
 			stream >> read;
