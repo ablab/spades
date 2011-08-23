@@ -64,14 +64,15 @@ struct PathStatData {
 
 class PathStopHandler {
 private:
+	Graph& g_;
 	std::multimap<const BidirectionalPath*, PathStatData> forward_;
 	std::multimap<const BidirectionalPath*, PathStatData> backward_;
 
 public:
-	PathStopHandler(): forward_(), backward_() {}
+	PathStopHandler(Graph& g):  g_(g), forward_(), backward_() {}
 
-	void AddStop(Graph& g, const BidirectionalPath& path, StopReason reason, bool forward) {
-		const std::string & msg;
+	void AddStop(const BidirectionalPath& path, StopReason reason, bool forward) {
+		std::string msg;
 		switch (reason) {
 		case LOOP: {
 			msg = "cycle detected";
@@ -94,14 +95,24 @@ public:
 		}
 		}
 
-		AddStop(h, path, reason, forward, msg);
+		AddStop(path, reason, forward, msg);
 	}
 
-	void AddStop(Graph& g, const BidirectionalPath& path, StopReason reason, bool forward, const std::string& msg) {
+	void AddStop(const BidirectionalPath& path, StopReason reason, bool forward, const std::string& msg) {
 		if (forward) {
-			forward_.insert(std::make_pair(&path, PathStatData(reason, PathLength(g, path), msg)));
+			forward_.insert(std::make_pair(&path, PathStatData(reason, PathLength(g_, path), msg)));
 		} else {
-			backward_.insert(std::make_pair(&path, PathStatData(reason, PathLength(g, path), msg)));
+			backward_.insert(std::make_pair(&path, PathStatData(reason, PathLength(g_, path), msg)));
+		}
+	}
+
+	void print(const BidirectionalPath& path) {
+		INFO("Stats for path with " << path.size() << " edges and length " <<  PathLength(g_, path));
+	}
+
+	void print() {
+		for (auto iter = forward_.begin(); iter != forward_.end(); ++iter) {
+			print(*(iter->first));
 		}
 	}
 };

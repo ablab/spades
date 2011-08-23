@@ -646,7 +646,7 @@ private:
 			omnigraph::PairedInfoIndex<Graph>& paired_index,
 			const io::PairedRead& p_r) {
 		//DEBUG
-		static size_t count = 0;
+//		static size_t count = 0;
 		//DEBUG
 
 		Sequence read1 = p_r.first().sequence();

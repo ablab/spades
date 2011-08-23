@@ -141,7 +141,7 @@ EdgeId ExtensionGoodEnough(EdgeId edge, double weight, double threshold, Graph& 
 	if (weight > threshold) {
 		return edge;
 	} else {
-		handler.AddStop(g, path, WEAK_EXTENSION, forward);
+		handler.AddStop(path, WEAK_EXTENSION, forward);
 		return 0;
 	}
 }
@@ -182,7 +182,7 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 
 	//INFO("Choosing extension " << (forward ? "forward" : "backward"));
 	if (edges.size() == 0) {
-		handler.AddStop(g, path, NO_EXTENSION, forward);
+		handler.AddStop(path, NO_EXTENSION, forward);
 		return 0;
 	}
 	if (edges.size() == 1) {
@@ -219,7 +219,7 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 	}
 	else if (edges.size() > 1) {
 		DETAILED_INFO("Cannot choose extension, no obvious maximum");
-		handler.AddStop(g, path, MANY_GOOD_EXTENSIONS, forward);
+		handler.AddStop(path, MANY_GOOD_EXTENSIONS, forward);
 	}
 
 	return toReturn;
@@ -339,7 +339,7 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 
 	if (CheckCycle(path, extension, detector, w)) {
 		DETAILED_INFO("Cycle detected");
-		handler.AddStop(h, path, LOOP, true);
+		handler.AddStop(path, LOOP, true);
 		RemoveLoopForward(path, detector, FULL_LOOP_REMOVAL);
 		if (lc_cfg::get().rs.detailed_output) {
 			PrintPath(g, path, lengths);
@@ -373,7 +373,7 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 
 	if (CheckCycle(path, extension, detector, w)) {
 		DETAILED_INFO("Cycle detected");
-		handler.AddStop(h, path, LOOP, false);
+		handler.AddStop(path, LOOP, false);
 		RemoveLoopBackward(path, detector, FULL_LOOP_REMOVAL);
 		if (lc_cfg::get().rs.detailed_output) {
 			PrintPath(g, path, lengths);

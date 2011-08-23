@@ -64,7 +64,7 @@ int main() {
 	string output_dir_suffix = MakeLaunchTimeDirName()+ "." + dataset + "/";
 	string output_dir = output_root + output_dir_suffix;
 
-	PathStopHandler handler();
+	PathStopHandler stopHandler(g);
 
 	if (!lc_cfg::get().from_file) {
 		INFO("Load from file");
@@ -106,7 +106,7 @@ int main() {
 		WriteGraphWithPathsSimple(output_dir + "seeds.dot", "seeds", g, seeds, path1, path2);
 	}
 
-	FindPaths(g, seeds, pairedInfos, paths, handler);
+	FindPaths(g, seeds, pairedInfos, paths, stopHandler);
 
 	std::vector<BidirectionalPath> result;
 	if (lc_cfg::get().fo.remove_subpaths || lc_cfg::get().fo.remove_overlaps) {
