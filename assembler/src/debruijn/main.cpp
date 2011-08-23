@@ -2,7 +2,12 @@
  * Assembler Main
  */
 
+
 #include "config_struct.hpp"
+#include "io/reader.hpp"
+#include "io/rc_reader_wrapper.hpp"
+#include "io/cutting_reader_wrapper.hpp"
+#include "io/filtering_reader_wrapper.hpp"
 #include "launch.hpp"
 #include "logging.hpp"
 #include "simple_tools.hpp"
@@ -44,6 +49,7 @@ int main() {
 	typedef io::Reader<io::SingleRead> ReadStream;
 	typedef io::Reader<io::PairedRead> PairedReadStream;
 	typedef io::RCReaderWrapper<io::PairedRead> RCStream;
+	typedef io::FilteringReaderWrapper<io::PairedRead> FilteringStream;
 
 	// read data ('reads')
 
@@ -63,7 +69,9 @@ int main() {
 
 	reads.push_back(&reads_2);
 
-	RCStream rcStream(&pairStream);
+	FilteringStream filter_stream(pairStream);
+
+	RCStream rcStream(&filter_stream);
 
 	// read data ('genome')
 	std::string genome;

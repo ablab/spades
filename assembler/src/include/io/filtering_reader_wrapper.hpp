@@ -50,6 +50,7 @@ public:
 	/* virtual */
 	void reset() {
 		reader_.reset();
+		eof_ = false;
 		StepForward();
 	}
 
@@ -63,11 +64,11 @@ private:
 	void StepForward() {
 		while (!reader_.eof()) {
 			reader_ >> next_read_;
-			if (next_read_.isValid()) {
+			if (next_read_.IsValid()) {
 				return;
 			}
 		}
-		eof_ = false;
+		eof_ = true;
 	}
 
 	/*
