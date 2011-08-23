@@ -35,6 +35,7 @@ const std::string & PositionRead::getQualityString() const {
 
 pair<int, KMerCount*> PositionRead::nextKMer( int begin ) const {
 	for ( int pos = begin + 1; pos < (int)(size_-K+1); ++pos ) {
+		// cout << "    looking for " << (start_ + pos) << ": " << PositionKMer(start_ + pos).str() << endl;
 		KMerNoHashMap::const_iterator it_hash = PositionKMer::hm.find ( KMerNo(start_ + pos) );
 		if ( it_hash != PositionKMer::hm.end() ) {
 			return make_pair(pos, it_hash->second);
