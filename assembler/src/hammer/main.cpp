@@ -125,14 +125,14 @@ int main(int argc, char * argv[]) {
 
 	if (!Globals::paired_reads) {
 		PositionKMer::rv = new std::vector<Read>();
-		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilename, &totalReadSize, Globals::qvoffset);
+		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilename, &totalReadSize, Globals::qvoffset, Globals::trim_quality);
 		PositionKMer::lastLeftNo = PositionKMer::rv->size();
 	} else {
 		PositionKMer::rv = new std::vector<Read>();
-		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameLeft, &totalReadSize, Globals::qvoffset);
+		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameLeft, &totalReadSize, Globals::qvoffset, Globals::trim_quality);
 		PositionKMer::lastLeftNo = PositionKMer::rv->size();
 		hint_t rightSize = 0;
-		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameRight, &rightSize, Globals::qvoffset);
+		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameRight, &rightSize, Globals::qvoffset, Globals::trim_quality);
 		totalReadSize += rightSize;
 	}
 

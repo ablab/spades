@@ -73,7 +73,7 @@ public:
   size_t trimNsAndBadQuality(int threshold) {
     int start = 0;
     for (; start < (int)seq_.size(); ++start) {
-      if (seq_[start] != 'N' && qual_[start] > threshold) break;
+      if (seq_[start] != 'N' && (int)qual_[start] > threshold) break;
     }
     if (start > 0 && start < (int)seq_.size()) {
       seq_.erase(0, start);
@@ -82,7 +82,7 @@ public:
       seq_ = ""; qual_ = ""; valid_ = false; return 0;
     }
     for (start = (int)seq_.size()-1; start > -1; --start) {
-      if (seq_[start] != 'N' && qual_[start] > threshold) break;
+      if (seq_[start] != 'N' && (int)qual_[start] > threshold) break;
     }
     if (start > -1 && start < (int)seq_.size()-1) {
       seq_.erase(start+1, string::npos);
