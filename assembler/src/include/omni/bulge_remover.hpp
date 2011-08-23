@@ -47,9 +47,7 @@ struct TrivialCondition {
 	typedef typename Graph::EdgeId EdgeId;
 
 	bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
-		for (size_t i = 0; i < path.size(); ++i)
-			if (edge == path[i])
-				return false;
+		return true;
 	}
 };
 
