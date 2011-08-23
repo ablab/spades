@@ -51,7 +51,7 @@ typedef std::vector<PairedInfoIndexLibrary> PairedInfoIndices;
 
 
 //Statistics
-enum StopReason { LOOP, NO_GOOD_EXTENSION, NO_EXTENSION };
+enum StopReason { LOOP, NO_EXTENSION, MANY_GOOD_EXTENSIONS, WEAK_EXTENSION };
 
 struct PathStatData {
 	StopReason reason;
@@ -62,13 +62,42 @@ struct PathStatData {
 	}
 };
 
-class PathStats {
+class PathStopHandler {
 private:
-	std::map<const BidirectionalPath*, PathStatData> forward_;
-	std::map<const BidirectionalPath*, PathStatData> backward_;
+	std::multimap<const BidirectionalPath*, PathStatData> forward_;
+	std::multimap<const BidirectionalPath*, PathStatData> backward_;
 
 public:
-	void AddStop(Graph& g, const BidirectionalPath& path, StopReason reason, const std::string& msg, bool forward) {
+	PathStopHandler(): forward_(), backward_() {}
+
+	void AddStop(Graph& g, const BidirectionalPath& path, StopReason reason, bool forward) {
+		const std::string & msg;
+		switch (reason) {
+		case LOOP: {
+			msg = "cycle detected";
+			break;
+		}
+		case NO_EXTENSION: {
+			msg = "no extension found";
+			break;
+		}
+		case MANY_GOOD_EXTENSIONS: {
+			msg = "two or more possible extensions are very similar";
+			break;
+		}
+		case WEAK_EXTENSION: {
+			msg = "bast extension's weight does not pass the threshold";
+			break;
+		}
+		default: {
+			msg = "";
+		}
+		}
+
+		AddStop(h, path, reason, forward, msg);
+	}
+
+	void AddStop(Graph& g, const BidirectionalPath& path, StopReason reason, bool forward, const std::string& msg) {
 		if (forward) {
 			forward_.insert(std::make_pair(&path, PathStatData(reason, PathLength(g, path), msg)));
 		} else {
