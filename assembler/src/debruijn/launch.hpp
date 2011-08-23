@@ -232,7 +232,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 	string output_folder = cfg::get().output_dir;
 
 	INFO("Edge graph construction tool started");
-	INFO("Start from" << cfg::get().start_from);
+	INFO("Start from " << cfg::get().start_from);
 	INFO("Paired mode: " << (cfg::get().paired_mode ? "Yes" : "No"));
 	INFO(
 			"Etalon paired info mode: " << (cfg::get().etalon_info_mode ? "Yes" : "No"))INFO(
