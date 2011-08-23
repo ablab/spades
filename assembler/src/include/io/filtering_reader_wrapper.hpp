@@ -6,69 +6,79 @@
 namespace io {
 
 template<typename ReadType>
-class FilteringReaderWrapper : public IReader<ReadType> {
- public:
+class FilteringReaderWrapper: public IReader<ReadType> {
+public:
 
-	explicit FilteringReaderWrapper(IReader<ReadType>& reader)
-      : reader_(reader), eof_(false) {
-  }
+	explicit FilteringReaderWrapper(IReader<ReadType>& reader) :
+			reader_(reader), eof_(false) {
+		StepForward();
+	}
 
-  /* virtual */ ~FilteringReaderWrapper() {
-    close();
-  }
+	/* virtual */
+	~FilteringReaderWrapper() {
+		close();
+	}
 
-  /* virtual */ bool is_open() {
-    return reader_.is_open();
-  }
+	/* virtual */
+	bool is_open() {
+		return reader_.is_open();
+	}
 
-  /* virtual */ bool eof() {
-    return eof_;
-  }
+	/* virtual */
+	bool eof() {
+		return eof_;
+	}
 
-  /* virtual */ FilteringReaderWrapper& operator>>(ReadType& read) {
-  }
+	/* virtual */
+	FilteringReaderWrapper& operator>>(ReadType& read) {
+		read = next_read_;
+		StepForward();
+		return *this;
+	}
 
-  /*
-   * Close the stream.
-   */
-  /* virtual */ void close() {
-    reader_.close();
-  }
+	/*
+	 * Close the stream.
+	 */
+	/* virtual */
+	void close() {
+		reader_.close();
+	}
 
-  /*
-   * Close the stream and open it again.
-   */
-  /* virtual */ void reset() {
-    reader_.reset();
-  }
+	/*
+	 * Close the stream and open it again.
+	 */
+	/* virtual */
+	void reset() {
+		reader_.reset();
+		StepForward();
+	}
 
- private:
-  IReader<ReadType>& reader_;
+private:
+	IReader<ReadType>& reader_;
 
-  bool eof_;
+	bool eof_;
 
-  ReadType next_read_;
+	ReadType next_read_;
 
-  bool StepForward() {
-	  if (!eof_) {
-		  while (!reader_.eof()) {
-			  reader_ >> next_read_;
-			  if (next_read_.isValid()) {
-				  return true;
-			  }
-		  }
-	  }
-  }
+	void StepForward() {
+		while (!reader_.eof()) {
+			reader_ >> next_read_;
+			if (next_read_.isValid()) {
+				return;
+			}
+		}
+		eof_ = false;
+	}
 
-  /*
-   * Hidden copy constructor.
-   */
-  explicit FilteringReaderWrapper(const FilteringReaderWrapper<ReadType>&
-                                reader);
-  /*
-   * Hidden assign operator.
-   */
-  void operator=(const FilteringReaderWrapper<ReadType>& reader);
+	/*
+	 * Hidden copy constructor.
+	 */
+	explicit FilteringReaderWrapper(
+			const FilteringReaderWrapper<ReadType>& reader);
+	/*
+	 * Hidden assign operator.
+	 */
+	void operator=(const FilteringReaderWrapper<ReadType>& reader);
 };
 
 }
