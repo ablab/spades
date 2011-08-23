@@ -49,9 +49,9 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
 
 /**
   * correct a read in place
-  * @return whether the read has changed at all
+  * @return how many nucleotides have been changed
   */
-bool CorrectRead(const vector<KMerCount> & kmers, hint_t readno, ofstream * ofs = NULL);
+size_t CorrectRead(const vector<KMerCount> & kmers, hint_t readno, ofstream * ofs = NULL);
 
 #endif
 

@@ -168,3 +168,12 @@ EAS600_QUAKE_FULL
 	IS		480 	; insert size
 	LEN		4639675	; total size
 }
+
+SC_FULL
+{
+	first	SC/left.fastq.gz
+	second	SC/right.fastq.gz
+	RL		100		; read length
+	IS		600 	; insert size
+	LEN		4639675	; total size
+}
