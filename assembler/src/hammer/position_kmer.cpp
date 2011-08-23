@@ -34,22 +34,22 @@ void PositionKMer::readBlob( const char * fname ) {
 	fclose(f);
 }
 
-void PositionKMer::writeKMerCounts( const char * fname, const vector<KMerCount> & kmers ) {
+void PositionKMer::writeKMerCounts( const char * fname, const vector<KMerCount*> & kmers ) {
 	ofstream ofs( fname );
 	for ( size_t i=0; i < kmers.size(); ++i ) {
-		ofs << kmers[i].first.str() << "\t" << kmers[i].first.start() << "\t" << kmers[i].second.count << "\t" << kmers[i].second.totalQual << "\n";
+		ofs << kmers[i]->first.str() << "\t" << kmers[i]->first.start() << "\t" << kmers[i]->second.count << "\t" << kmers[i]->second.totalQual << "\n";
 	}
 	ofs.close();
 }
 
-void PositionKMer::readKMerCounts( const char * fname, vector<KMerCount> * kmers ) {
+void PositionKMer::readKMerCounts( const char * fname, vector<KMerCount*> * kmers ) {
 	kmers->clear();
 	FILE * f = fopen( fname, "r" );
 	unsigned long int start; unsigned int count; unsigned long int startlast = -1; double qual; char tmp[K+10];
 	while (!feof(f)) {
 		assert( fscanf(f, "%s\t%lu\t%u\t%lf", tmp, &start, &count, &qual) != EOF );
 		if (start != startlast) {
-			kmers->push_back( make_pair( PositionKMer(start), KMerStat(count, KMERSTAT_GOOD, qual) ) );
+			kmers->push_back( new KMerCount( PositionKMer(start), KMerStat(count, KMERSTAT_GOOD, qual) ) );
 			startlast = start;
 		}
 	}

@@ -43,6 +43,7 @@ hint_t PositionKMer::blob_max_size = 0;
 char * PositionKMer::blob = NULL;
 char * PositionKMer::blobquality = NULL;
 hint_t * PositionKMer::blobkmers = NULL;
+KMerNoHashMap PositionKMer::hm = KMerNoHashMap();
 std::vector<uint32_t> * PositionKMer::subKMerPositions = NULL;
 
 double Globals::error_rate = 0.01;
@@ -178,17 +179,20 @@ int main(int argc, char * argv[]) {
 		}
 		TIMEDLN("Blob done, filled up PositionReads. Real size " << curpos << ". " << PositionKMer::pr->size() << " reads.");
 
-		vector<KMerCount> kmers;
+		vector<KMerCount*> kmers;
+		PositionKMer::hm.clear();
+
 		if (!readBlobAndKmers || iter_count > 0) {
 			TIMEDLN("Doing honest preprocessing.");
-			PositionKMer::blob_size = curpos;	
+			PositionKMer::blob_size = curpos;
 			vector<KMerNo> vv;
-			DoPreprocessing(tau, readsFilename, nthreads, &vv);
-			TIMEDLN("Preprocessing done. Got " << vv.size() << " kmer positions. Starting parallel sort.");
+			DoPreprocessing(tau, readsFilename, nthreads, &vv, &kmers, &PositionKMer::hm);
+			//TIMEDLN("Preprocessing done. Got " << vv.size() << " kmer positions. Starting parallel sort.");
+			TIMEDLN("Preprocessing done. Got " << PositionKMer::hm.size() << " kmers.");
 		
 			
-			ParallelSortKMerNos( &vv, &kmers, nthreads );
-			TIMEDLN("KMer positions sorted. In total, we have " << kmers.size() << " kmers.");
+			//ParallelSortKMerNos( &vv, &kmers, nthreads );
+			//TIMEDLN("KMer positions sorted. In total, we have " << kmers.size() << " kmers.");
 			vv.clear();
 		} else {
 			TIMEDLN("Reading kmers from " << kmersFilename.c_str() );
@@ -230,7 +234,7 @@ int main(int argc, char * argv[]) {
 
 		#pragma omp parallel for shared(changedReads, changedNucleotides, outfv) num_threads(nthreads)
 		for (size_t i = 0; i < PositionKMer::revNo; ++i) {
-			bool res = CorrectRead(kmers, i, outfv[omp_get_thread_num()]);
+			bool res = CorrectRead(PositionKMer::hm, kmers, i, outfv[omp_get_thread_num()]);
 			changedNucleotides[omp_get_thread_num()] += res;
 			if (res) ++changedReads[omp_get_thread_num()];
 		}
