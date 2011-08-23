@@ -16,7 +16,7 @@ class unionFindClass;
 
 class KMerClustering {
 public:
-	KMerClustering(std::vector<KMerCount> & kmers, int nthreads, int tau) : k_(kmers), nthreads_(nthreads), tau_(tau) { }
+	KMerClustering(std::vector<KMerCount*> & kmers, int nthreads, int tau) : k_(kmers), nthreads_(nthreads), tau_(tau) { }
 
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
@@ -29,7 +29,7 @@ public:
 	}
 	
 private:
-	std::vector<KMerCount> & k_;
+	std::vector<KMerCount*> & k_;
 	int nthreads_;
 	int tau_;
 		

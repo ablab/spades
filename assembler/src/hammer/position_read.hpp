@@ -8,6 +8,7 @@
 
 #include "kmer_stat.hpp"
 #include "globals.hpp"
+#include "kmerno.hpp"
 
 class PositionRead {
 	hint_t start_;
@@ -25,7 +26,7 @@ class PositionRead {
 	bool bad() { return bad_; }
 	void setBad(bool b) { bad_ = b; }
 
-	bool nextKMer( std::pair<uint32_t, hint_t> * it ) const;
+	pair<int, KMerCount*> nextKMer( int begin ) const;
 
 	const std::string & getQualityString() const;
 	const std::string & getName() const;
