@@ -5,14 +5,14 @@
 mkdir -p build/ext/lib
 
 cd ./ext/src/io_lib-1.12.5
-# if [ -z "$1" ]; then
-# ./configure
-# else
-# ./configure --prefix="$1"
-# fi
-# make
-# make install
-# make clean
+if [ -z "$1" ]; then
+./configure
+else
+./configure --prefix="$1"
+fi
+make
+make install
+make clean
 
 cd ../statgen/lib
 make
