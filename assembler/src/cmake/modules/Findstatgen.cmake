@@ -9,7 +9,7 @@ find_path (statgen_INCLUDE_DIRS
 find_library (statgen_LIBRARIES
   "StatGen"
   PATHS
-    ${CMAKE_SOURCE_DIR}/../build/libs/
+    ${CMAKE_SOURCE_DIR}/../build/ext/lib
 )
 
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(statgen
