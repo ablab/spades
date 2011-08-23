@@ -35,9 +35,6 @@ public:
 	~TotalLabelerGraphStruct(){};
 };
 
-
-
-
 template<class Graph>
 class TotalLabeler: public GraphLabeler<Graph> {
 

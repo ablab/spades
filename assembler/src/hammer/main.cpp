@@ -51,6 +51,7 @@ double Globals::good_cluster_threshold = 0.95;
 double Globals::blob_margin = 0.25;
 int Globals::qvoffset = 64;
 bool Globals::paired_reads = false;
+int Globals::trim_quality = -1;
 
 struct KMerStatCount {
 	PositionKMer km;
@@ -76,6 +77,7 @@ string getFilename( const string & dirprefix, int iter_count, const string & suf
 }
 
 int main(int argc, char * argv[]) {
+	
 	string config_file = CONFIG_FILENAME;
 	if (argc > 1) config_file = argv[1];
 	TIMEDLN("Loading config from " << config_file.c_str());
@@ -100,13 +102,16 @@ int main(int argc, char * argv[]) {
 	Globals::blocksize_quadratic_threshold = cfg::get().blocksize_quadratic_threshold;
 	Globals::good_cluster_threshold = cfg::get().good_cluster_threshold;
 	Globals::blob_margin = cfg::get().blob_margin;
+	Globals::trim_quality = cfg::get().trim_quality;
 
 	Globals::paired_reads = cfg::get().paired_reads;
 	string readsFilenameLeft, readsFilenameRight;
 	if (Globals::paired_reads) {
 		readsFilenameLeft = cfg::get().reads_left;
 		readsFilenameRight = cfg::get().reads_right;
-		cout << "got paired reads from " << readsFilenameLeft.c_str() << "  and  " << readsFilenameRight.c_str() << endl;
+		TIMEDLN("Starting work on " << readsFilenameLeft << " and " << readsFilenameRight << " with " << nthreads << " threads, K=" << K);
+	} else {
+		TIMEDLN("Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K);
 	}
 
 	// initialize subkmer positions
@@ -116,15 +121,12 @@ int main(int argc, char * argv[]) {
 	}
 	PositionKMer::subKMerPositions->at(tau+1) = K;
 
-	TIMEDLN("Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K);
-
 	hint_t totalReadSize = 0;
 
 	if (!Globals::paired_reads) {
 		PositionKMer::rv = new std::vector<Read>();
 		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilename, &totalReadSize, Globals::qvoffset);
 		PositionKMer::lastLeftNo = PositionKMer::rv->size();
-		cout << "  lastLeftNo=" << PositionKMer::lastLeftNo << "  no pairs" << endl;
 	} else {
 		PositionKMer::rv = new std::vector<Read>();
 		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameLeft, &totalReadSize, Globals::qvoffset);
@@ -132,7 +134,6 @@ int main(int argc, char * argv[]) {
 		hint_t rightSize = 0;
 		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameRight, &rightSize, Globals::qvoffset);
 		totalReadSize += rightSize;
-		cout << "  lastLeftNo=" << PositionKMer::lastLeftNo << "   total reads=" << PositionKMer::rv->size() << endl;
 	}
 
 	PositionKMer::blob_size = totalReadSize + 1;
@@ -147,6 +148,7 @@ int main(int argc, char * argv[]) {
 
 	PositionKMer::revNo = PositionKMer::rv->size();
 	for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
+		string seq = PositionKMer::rv->at(i).getSequenceString();
 		Read revcomp = !(PositionKMer::rv->at(i));
 		PositionKMer::rv->push_back( revcomp );
 	}
@@ -157,7 +159,6 @@ int main(int argc, char * argv[]) {
 	if (readBlobAndKmers) {
 		PositionKMer::readBlob( getFilename(dirprefix, blobFilename.c_str() ).c_str() );
 	}
-
 
 	for (int iter_count = 0; iter_count < iterno; ++iter_count) {
 		cout << "\n     === ITERATION " << iter_count << " begins ===" << endl;
@@ -218,26 +219,29 @@ int main(int argc, char * argv[]) {
 		TIMEDLN("Finished clustering. Starting reconstruction.");
 
 		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
-		vector<ofstream *> outfv; vector<bool> changed;
+		vector<ofstream *> outfv; vector<hint_t> changedReads; vector<hint_t> changedNucleotides;
 		for (int i=0; i<nthreads; ++i) {
 			//tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << ".reconstruct." << i;
 			// outfv.push_back(new ofstream( tmp.str().data() ));
 			outfv.push_back(NULL);
-			changed.push_back(false);
+			changedReads.push_back(0);
+			changedNucleotides.push_back(0);
 		}
 
-		#pragma omp parallel for shared(changed, outfv) num_threads(nthreads)
+		#pragma omp parallel for shared(changedReads, changedNucleotides, outfv) num_threads(nthreads)
 		for (size_t i = 0; i < PositionKMer::revNo; ++i) {
 			bool res = CorrectRead(kmers, i, outfv[omp_get_thread_num()]);
-			changed[omp_get_thread_num()] = changed[omp_get_thread_num()] || res;
+			changedNucleotides[omp_get_thread_num()] += res;
+			if (res) ++changedReads[omp_get_thread_num()];
 		}
-		bool res = false;
+		hint_t totalReads = 0; hint_t totalNucleotides = 0;
 		for (int i=0; i<nthreads; ++i) {
 			if (outfv[i] != NULL) { outfv[i]->close(); delete outfv[i]; }
-			res = res || changed[i];
+			totalReads += changedReads[i];
+			totalNucleotides += changedNucleotides[i];
 		}
 
-		TIMEDLN("Correction done. Printing out reads.");
+		TIMEDLN("Correction done. Changed " << totalNucleotides << " bases in " << totalReads << " reads. Printing out reads.");
 
 		if (!Globals::paired_reads) {
 			outputReads( false, getFilename(dirprefix, iter_count, "reads.corrected").c_str(),
@@ -263,8 +267,8 @@ int main(int argc, char * argv[]) {
 		}
 		TIMEDLN("Reads restored.");
 
-		if (!res) {
-			TIMEDLN("Nothing has changed in this iteration. Exiting.");
+		if (totalReads < 10) {
+			TIMEDLN("Too few reads have changed in this iteration. Exiting.");
 			break;
 		}
 

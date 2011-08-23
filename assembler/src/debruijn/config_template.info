@@ -3,7 +3,7 @@
 input_dir	      ./data/input/E.Coli.K12.MG1655/
 output_dir	      ./data/debruijn/
 previous_run_dir tmp	; tmp or latest 
-dataset 	      EAS600_QUAKE_CROPPED_400K
+dataset 	      QUAKE_FULL
 reference_genome  MG1655-K12.fasta.gz
 
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
@@ -166,5 +166,14 @@ EAS600_QUAKE_FULL
 	second	EAS600_70/quaked/ERR022075_2.cor.fastq.gz
 	RL		100		; read length
 	IS		480 	; insert size
+	LEN		4639675	; total size
+}
+
+SC_FULL
+{
+	first	SC/left.fastq.gz
+	second	SC/right.fastq.gz
+	RL		100		; read length
+	IS		600 	; insert size
 	LEN		4639675	; total size
 }

@@ -36,6 +36,7 @@ struct hammer_config
 	int blocksize_quadratic_threshold;
 	double good_cluster_threshold;
 	double blob_margin;
+	int trim_quality;
 };
 
 
@@ -69,6 +70,7 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 	load(pt, "blocksize_quadratic_threshold", cfg.blocksize_quadratic_threshold);
 	load(pt, "good_cluster_threshold", cfg.good_cluster_threshold);
 	load(pt, "blob_margin", cfg.blob_margin);
+	load(pt, "trim_quality", cfg.trim_quality);
 }
 
 typedef config_common::config<hammer_config> cfg;

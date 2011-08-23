@@ -1,13 +1,5 @@
 #include "position_kmer.hpp"
 
-double PositionKMer::getKMerQuality( const hint_t & index, const int qvoffset ) {
-	long double res = 1;
-	for ( hint_t i = index; i < index+K; ++i ) {
-		res *= qual2prob( (uint8_t)( blobquality[i] - qvoffset ) );
-	}
-	return res;
-}
-
 void PositionKMer::writeBlob( const char * fname ) {
 	ofstream ofs( fname );
 	ofs << blob_max_size << "\n" << blob_size << "\n";
@@ -26,17 +18,17 @@ void PositionKMer::readBlob( const char * fname ) {
 	if (blobkmers != NULL) delete [] blobkmers;
 
 	FILE * f = fopen( fname, "r" );
-	fscanf(f, "%lu\n", &blob_max_size);
-	fscanf(f, "%lu\n", &blob_size);
+	assert( fscanf(f, "%lu\n", &blob_max_size) != EOF );
+	assert( fscanf(f, "%lu\n", &blob_size) != EOF );
 	blob = new char[blob_max_size];
 	blobquality = new char[blob_max_size];
 	blobkmers = new hint_t[blob_max_size];
-	fscanf(f, "%s\n", blob );
-	fscanf(f, "%s\n", blobquality );
+	assert( fscanf(f, "%s\n", blob ) != EOF );
+	assert( fscanf(f, "%s\n", blobquality ) != EOF );
 	hint_t tmp;
 	for (hint_t i=0; i < blob_size; ++i) {
 		if (feof(f)) { cout << "Not enough blobkmers!" << endl; break; }
-		fscanf(f, "%lu\n", &tmp);
+		assert( fscanf(f, "%lu\n", &tmp) != EOF );
 		blobkmers[i] = tmp;
 	}
 	fclose(f);
@@ -55,7 +47,7 @@ void PositionKMer::readKMerCounts( const char * fname, vector<KMerCount> * kmers
 	FILE * f = fopen( fname, "r" );
 	unsigned long int start; unsigned int count; unsigned long int startlast = -1; double qual; char tmp[K+10];
 	while (!feof(f)) {
-		fscanf(f, "%s\t%lu\t%u\t%lf", tmp, &start, &count, &qual);
+		assert( fscanf(f, "%s\t%lu\t%u\t%lf", tmp, &start, &count, &qual) != EOF );
 		if (start != startlast) {
 			kmers->push_back( make_pair( PositionKMer(start), KMerStat(count, KMERSTAT_GOOD, qual) ) );
 			startlast = start;
