@@ -42,7 +42,7 @@ hint_t PositionKMer::blob_size = 0;
 hint_t PositionKMer::blob_max_size = 0;
 char * PositionKMer::blob = NULL;
 char * PositionKMer::blobquality = NULL;
-hint_t * PositionKMer::blobkmers = NULL;
+hint_t * PositionKMer::blobhash = NULL;
 KMerNoHashMap PositionKMer::hm = KMerNoHashMap();
 std::vector<uint32_t> * PositionKMer::subKMerPositions = NULL;
 
@@ -142,10 +142,10 @@ int main(int argc, char * argv[]) {
 
 	PositionKMer::blob = new char[ PositionKMer::blob_max_size ];
 	PositionKMer::blobquality = new char[ PositionKMer::blob_max_size ];
-	PositionKMer::blobkmers = new hint_t[ PositionKMer::blob_max_size ];
+	PositionKMer::blobhash = new hint_t[ PositionKMer::blob_max_size ];
 	TIMEDLN("Max blob size as allocated is " << PositionKMer::blob_max_size);
 
-	std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
+	std::fill( PositionKMer::blobhash, PositionKMer::blobhash + PositionKMer::blob_max_size, -1 );
 
 	PositionKMer::revNo = PositionKMer::rv->size();
 	for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
@@ -177,7 +177,11 @@ int main(int argc, char * argv[]) {
 			}
 			curpos += PositionKMer::rv->at(i).size();
 		}
-		TIMEDLN("Blob done, filled up PositionReads. Real size " << curpos << ". " << PositionKMer::pr->size() << " reads.");
+		PositionKMer::blob_size = curpos;
+		TIMEDLN("Blob done, filled up PositionReads. Real size " << PositionKMer::blob_size << ". " << PositionKMer::pr->size() << " reads.");
+
+		KMerNo::precomputeHashes();
+		TIMEDLN("Hashes precomputed.");
 
 		vector<KMerCount*> kmers;
 		PositionKMer::hm.clear();
@@ -263,7 +267,7 @@ int main(int argc, char * argv[]) {
 		// delete consensuses, clear kmer data, and restore correct revcomps
 		kmers.clear();
 		delete PositionKMer::pr;
-		std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
+		std::fill( PositionKMer::blobhash, PositionKMer::blobhash + PositionKMer::blob_max_size, -1 );
 
 		PositionKMer::rv->resize( PositionKMer::revNo );
 		for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
@@ -283,7 +287,7 @@ int main(int argc, char * argv[]) {
 	PositionKMer::rv->clear();
 	delete PositionKMer::rv;
 	delete PositionKMer::rv_bad;
-	delete [] PositionKMer::blobkmers;
+	delete [] PositionKMer::blobhash;
 	delete [] PositionKMer::blob;
 	delete [] PositionKMer::blobquality;
 	return 0;

@@ -422,7 +422,6 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
                 }
                 curKMerCount.second.count++;
                 curErrorProb *= pqel.kmerno.errprob;
-                PositionKMer::blobkmers[ pqel.kmerno.index ] = kmerno;
 
                 int nn = pqel.n;
                 vector<KMerNo>::iterator & it_cur = it[nn];

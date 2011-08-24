@@ -33,7 +33,7 @@ class PositionKMer {
 	static hint_t blob_max_size;
 	static hint_t blob_size;
 
-	static hint_t* blobkmers;
+	static hint_t* blobhash;
 	static KMerNoHashMap hm;
 
 	static std::vector<uint32_t> * subKMerPositions;

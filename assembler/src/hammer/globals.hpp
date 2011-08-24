@@ -13,5 +13,9 @@ struct Globals {
 	static int trim_quality;
 };
 
+struct Vars {
+
+};
+
 #endif //  HAMMER_GLOBALS_HPP_
 

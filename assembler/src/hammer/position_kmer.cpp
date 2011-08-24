@@ -5,9 +5,6 @@ void PositionKMer::writeBlob( const char * fname ) {
 	ofs << blob_max_size << "\n" << blob_size << "\n";
 	ofs.write(blob, blob_size); ofs << "\n";
 	ofs.write(blobquality, blob_size); ofs << "\n";
-	for (hint_t i=0; i < blob_size; ++i) {
-		ofs << blobkmers[i] << "\n";
-	}
 	ofs.close();
 }
 
@@ -15,23 +12,20 @@ void PositionKMer::writeBlob( const char * fname ) {
 void PositionKMer::readBlob( const char * fname ) {
 	if (blob != NULL) delete [] blob;
 	if (blobquality != NULL) delete [] blobquality;
-	if (blobkmers != NULL) delete [] blobkmers;
+	if (blobhash != NULL) delete [] blobhash;
 
 	FILE * f = fopen( fname, "r" );
 	assert( fscanf(f, "%lu\n", &blob_max_size) != EOF );
 	assert( fscanf(f, "%lu\n", &blob_size) != EOF );
 	blob = new char[blob_max_size];
 	blobquality = new char[blob_max_size];
-	blobkmers = new hint_t[blob_max_size];
 	assert( fscanf(f, "%s\n", blob ) != EOF );
 	assert( fscanf(f, "%s\n", blobquality ) != EOF );
-	hint_t tmp;
-	for (hint_t i=0; i < blob_size; ++i) {
-		if (feof(f)) { cout << "Not enough blobkmers!" << endl; break; }
-		assert( fscanf(f, "%lu\n", &tmp) != EOF );
-		blobkmers[i] = tmp;
-	}
 	fclose(f);
+
+	// precompute hashes
+	PositionKMer::blobhash = new hint_t[ PositionKMer::blob_max_size ];
+	KMerNo::precomputeHashes();
 }
 
 void PositionKMer::writeKMerCounts( const char * fname, const vector<KMerCount*> & kmers ) {

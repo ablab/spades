@@ -11,6 +11,11 @@
 #include "kmer_stat.hpp"
 #include "globals.hpp"
 
+const int KMERNO_HASH_MODULUS = 32451233;
+const int KMERNO_HASH_Q = 1299673;
+const int KMERNO_HASH_Q_INV = 31471908;
+const int KMERNO_HASH_Q_POW_K_MINUS_ONE = 12533099;
+
 struct KMerNo {
 	hint_t index;
 	double errprob;
@@ -23,8 +28,12 @@ struct KMerNo {
 	bool less(const KMerNo &r) const;
 	bool greater(const KMerNo &r) const;
 
+	static hint_t new_hash( hint_t index );
+	static hint_t next_hash( hint_t old_hash, hint_t new_index );
+	static void precomputeHashes();
+
 	struct hash {
-		size_t operator() (const KMerNo &kn) const;
+		uint32_t operator() (const KMerNo &kn) const;
 	};
 
 	struct are_equal {
