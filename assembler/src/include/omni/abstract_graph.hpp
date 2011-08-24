@@ -274,14 +274,16 @@ public:
 		VertexId end = EdgeEnd(edge1);
 		HiddenDeleteEdge(edge1);
 		HiddenDeleteEdge(edge2);
-		if (IsDeadStart(start) && IsDeadEnd(start)) {
-			WARN("Start vertex without edges after glue");
-			DeleteVertex(start);
-		}
-		if (IsDeadStart(end) && IsDeadEnd(end)) {
-			WARN("End vertex without edges after glue");
-			DeleteVertex(end);
-		}
+		//DEBUG
+//		if (IsDeadStart(start) && IsDeadEnd(start)) {
+//			WARN("Start vertex without edges after glue");
+//			DeleteVertex(start);
+//		}
+//		if (IsDeadStart(end) && IsDeadEnd(end)) {
+//			WARN("End vertex without edges after glue");
+//			DeleteVertex(end);
+//		}
+		//DEBUG
 		TRACE("End glue");
 
 		/*/////////////////
