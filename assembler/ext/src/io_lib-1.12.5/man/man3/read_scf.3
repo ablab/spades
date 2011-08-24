@@ -1,0 +1,78 @@
+.TH read_scf 3 "" "" "Staden Package"
+
+.SH NAME
+
+.LP
+.BR read_scf ,
+.BR fread_scf ,
+.BR read_scf_header
+\- Read SCF files
+
+.SH SYNOPSIS
+.LP
+.nf
+.ft B
+#include <scf.h>
+.ft
+.fi
+.LP
+.nf
+.ft B
+Scf *read_scf(
+	char *fn);
+.ft
+.fi
+.LP
+.nf
+.ft B
+Scf *fread_scf(
+	FILE *fp);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int read_scf_header(
+	FILE *fp,
+	Header *h);
+.ft
+.fi
+.IX "read_scf()" "" "read_scf()"
+.IX "fread_scf()" "" "fread_scf()"
+.IX "read_scf_header()" "" "read_scf_header()"
+
+.SH DESCRIPTION
+.LP
+These functions read SCF format trace files. All the functions accepting a
+\fBFILE *\fP as an argument assume that the file pointer is at the correct
+offset within the file.
+.LP
+.B read_scf()
+reads an entire SCF file into the \fBScf\fR structure (see the
+.BR scf (4)
+manual page for the details of this structure). The data is read from the
+specified file name.
+.LP
+.B fread_scf()
+reads an entire SCF file into the \fBScf\fR structure (see the
+.BR scf (4)
+manual page for the details of this structure). The data is read from the
+specified file pointer, which is neither closed or rewound after the
+operation.
+.LP
+.B read_scf_header()
+reads the \fBHeader\fR structure from the specified file pointer.
+
+.SH RETURN VALUES
+.LP
+On successful completion, the \fBread_scf()\fR and \fBfread_scf()\fR functions
+return a pointer to a \fBScf\fR structure. Othewise these functions return a
+null pointer.
+.LP
+On successful completion, the \fBread_scf_header()\fR function returns 0.
+Otherwise the function returns -1.
+
+.SH SEE ALSO
+.LP
+.BR scf (4),
+.BR write_scf (3)

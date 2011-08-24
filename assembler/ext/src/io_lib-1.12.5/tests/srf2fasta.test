@@ -1,0 +1,20 @@
+#!/bin/sh
+if ! test -e $outdir
+then
+    mkdir $outdir
+fi
+
+$top_builddir/progs/srf2fasta $srcdir/data/proc.srf > $outdir/slx.fasta
+cmp $outdir/slx.fasta $srcdir/data/slx.fasta || exit 1
+$top_builddir/progs/srf2fasta -C $srcdir/data/proc.srf > $outdir/slx.fasta
+cmp $outdir/slx.fasta $srcdir/data/slx-C.fasta || exit 1
+
+$top_builddir/progs/srf2fasta $srcdir/data/raw.srf > $outdir/slx.fasta
+cmp $outdir/slx.fasta $srcdir/data/slx.fasta || exit 1
+$top_builddir/progs/srf2fasta -C $srcdir/data/raw.srf > $outdir/slx.fasta
+cmp $outdir/slx.fasta $srcdir/data/slx-C.fasta || exit 1
+
+$top_builddir/progs/srf2fasta $srcdir/data/both.srf > $outdir/slx.fasta
+cmp $outdir/slx.fasta $srcdir/data/slx.fasta || exit 1
+$top_builddir/progs/srf2fasta -C $srcdir/data/both.srf > $outdir/slx.fasta
+cmp $outdir/slx.fasta $srcdir/data/slx-C.fasta || exit 1
