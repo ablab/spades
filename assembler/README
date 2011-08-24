@@ -24,13 +24,9 @@ We need the following programs and libraries (can be installed from repositories
 1. Install all mentioned above.
 2. In assembler: run prepare_cfg.sh (this script will build and install libraries from ext (if necessary) and prepare debug and release build files). 
 
-Note: if you do not have sudo account, you should install libraries somewhere in your home directory. For this, run
+Note: if you do not have sudo account, you should install libraries in build/ext. For this run:
 
-./prepare_cfg.sh <absolute path to directory where libraries should be installed>
-
-For example:
-
-./prepare_cfg.sh /home/username/lib/
+./prepare_cfg.sh nosys 
  
 === Project structure ===
 
