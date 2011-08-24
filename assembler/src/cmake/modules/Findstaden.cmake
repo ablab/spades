@@ -5,6 +5,7 @@ find_path (staden_INCLUDE_DIRS
   PATHS
     /usr/local/include
     /usr/include
+		${CMAKE_SOURCE_DIR}/../build/ext/include
 )
 
 find_library (staden_LIBRARIES
@@ -12,6 +13,7 @@ find_library (staden_LIBRARIES
   PATHS
     /usr/local/lib
     /usr/lib
+		${CMAKE_SOURCE_DIR}/../build/ext/lib
 )
 
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(staden
