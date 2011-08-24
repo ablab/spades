@@ -27,6 +27,19 @@ function build_staden
    make install
 }
 
+function build_fftw
+{
+   print_heading 'Building fftw'
+   
+   mkdir -p $build/ext/fftw
+   cd $build/ext/fftw
+
+   $ext/src/fftw-3.3/configure --prefix="`pwd`"
+
+   make
+   make install
+}
+
 function build_statgen
 {
    print_heading 'building statgen'
@@ -43,8 +56,9 @@ function build_statgen
    make clean 
 }
 
-build_staden
-build_statgen
+#build_staden
+#build_statgen
+build_fftw
 
 
 

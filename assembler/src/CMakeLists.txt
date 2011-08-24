@@ -23,7 +23,7 @@ endif()
 
 add_definitions(-g3)
 add_definitions(-std=c++0x)
-add_definitions(-Wall -pedantic -Wno-long-long -Wno-deprecated)
+add_definitions(-Wall -Wno-long-long -Wno-deprecated)
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   message("Making Debug Configuration...")
@@ -45,7 +45,7 @@ find_package(staden)
 find_package(ssl)
 find_package(bam)
 find_package(Boost COMPONENTS signals REQUIRED)
-
+find_package(fftw3)
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 
 include_directories("${CMAKE_SOURCE_DIR}/include")
@@ -53,12 +53,11 @@ include_directories("${CMAKE_SOURCE_DIR}/include")
 include_directories(${ZLIB_INCLUDE_DIRS})
 include_directories(${log4cxx_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
-
 include_directories(${statgen_INCLUDE_DIRS})
 include_directories(${staden_INCLUDE_DIRS})
 include_directories(${ssl_INCLUDE_DIRS})
 include_directories(${bam_INCLUDE_DIRS})
-
+include_directories(${fftw3_INCLUDE_DIRS})
 
 set(COMMON_LIBRARIES 
    ${ZLIB_LIBRARIES} 
@@ -68,6 +67,7 @@ set(COMMON_LIBRARIES
    ${staden_LIBRARIES} 
    ${ssl_LIBRARIES} 
    ${bam_LIBRARIES}
+   ${fftw3_LIBRARIES}
    )
 
 include_directories(${EXT_DIR}/include)

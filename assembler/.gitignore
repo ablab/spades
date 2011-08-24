@@ -10,3 +10,5 @@ src/debruijn/config.inp
 src/file
 *.launch
 *~
+src/tags
+tags
