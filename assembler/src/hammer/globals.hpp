@@ -1,6 +1,8 @@
 #ifndef HAMMER_GLOBALS_HPP_
 #define HAMMER_GLOBALS_HPP_
 
+const uint32_t K = 55;
+
 struct Globals {
 	static int qvoffset;
 	static double error_rate;

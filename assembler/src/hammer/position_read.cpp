@@ -33,14 +33,14 @@ const std::string & PositionRead::getQualityString() const {
 	return PositionKMer::rv->at(readno_).getQualityString();
 }
 
-bool PositionRead::nextKMer( std::pair<uint32_t, hint_t> * it ) const {
-	for ( uint32_t pos = it->first + 1; pos < size_; ++pos ) {
-		if (PositionKMer::blobkmers[ start_ + pos ] < BLOBKMER_UNDEFINED) {
-			it->first = pos;
-			it->second = PositionKMer::blobkmers[ start_ + pos ];
-			return true;
+pair<int, KMerCount*> PositionRead::nextKMer( int begin ) const {
+	for ( int pos = begin + 1; pos < (int)(size_-K+1); ++pos ) {
+		// cout << "    looking for " << (start_ + pos) << ": " << PositionKMer(start_ + pos).str() << endl;
+		KMerNoHashMap::const_iterator it_hash = PositionKMer::hm.find ( KMerNo(start_ + pos) );
+		if ( it_hash != PositionKMer::hm.end() ) {
+			return make_pair(pos, it_hash->second);
 		}
 	}
-	return false;
+	return make_pair(-1, (KMerCount*)NULL);
 }
 

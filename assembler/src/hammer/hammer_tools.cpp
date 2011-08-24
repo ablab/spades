@@ -82,7 +82,7 @@ void AddKMerNos(const PositionRead &r, hint_t readno, vector<KMerNo> *v) {
 	}
 }
 
-void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerNo> * vv) {
+void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerNo> * vv, vector<KMerCount*> * kmers, KMerNoHashMap * km) {
 	vv->clear();
 
 	vector< vector<KMerNo> > vtmp;
@@ -97,13 +97,34 @@ void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerNo>
 		AddKMerNos(PositionKMer::pr->at(i), i, &vtmp[omp_get_thread_num()]);
 	}
 	
+	TIMEDLN("Made KMerNo vector.");
+	// fill in the KMerNoHashMap
+	for(int n=0; n < nthreads; ++n) {
+		for ( vector<KMerNo>::const_iterator it = vtmp[n].begin(); it != vtmp[n].end(); ++it ) {
+			KMerNoHashMap::iterator it_hash = km->find( *it );
+			if ( it_hash == km->end() ) {
+				km->insert( make_pair( *it, new KMerCount( PositionKMer(it->index), KMerStat(1, KMERSTAT_GOOD, it->errprob) ) ) );
+			} else {
+				it_hash->second->second.count++;
+				it_hash->second->second.totalQual *= it->errprob;
+			}
+		}
+	}
+	TIMEDLN("Made KMerNo hash map.");
+	kmers->clear();
+	for ( KMerNoHashMap::const_iterator it_hash = km->begin(); it_hash != km->end(); ++it_hash ) {
+		//cout << it_hash->first.index << "\t" << it_hash->second->first.str() << "\t" << it_hash->second->second.count << "\t" << it_hash->second->second.totalQual << endl;
+		kmers->push_back(it_hash->second);
+	}
+
 	for(int n=0; n < nthreads; ++n) {
 		vv->insert(vv->end(), vtmp[n].begin(), vtmp[n].end());
 		vtmp[n].clear();
 	}
+
 }
 
-void DoSplitAndSort(int tau, int nthreads, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers, vector<SubKMerPQ> * vskpq) {
+void DoSplitAndSort(int tau, int nthreads, vector< vector<hint_t> > * vs, vector<KMerCount*> * kmers, vector<SubKMerPQ> * vskpq) {
 	int effective_threads = min(nthreads, tau+1);
 	int subkmer_nthreads = max ( (tau + 1) * ( (int)(nthreads / (tau + 1)) ), tau+1 );
 	int effective_subkmer_threads = min(subkmer_nthreads, nthreads);
@@ -131,7 +152,7 @@ void DoSplitAndSort(int tau, int nthreads, vector< vector<hint_t> > * vs, vector
 }
 
 
-size_t CorrectRead(const vector<KMerCount> & km, hint_t readno, ofstream * ofs) {
+size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint_t readno, ofstream * ofs) {
 	hint_t readno_rev = PositionKMer::revNo + readno;
 	const Read & r = PositionKMer::rv->at(readno);
 	string seq = r.getSequenceString();
@@ -146,11 +167,11 @@ size_t CorrectRead(const vector<KMerCount> & km, hint_t readno, ofstream * ofs) 
 	PositionKMer::rv_bad->at(readno) = true;
 
 	bool changedRead = false;
-	pair<uint32_t, hint_t> it = make_pair( -1, -1 );
-	while ( pr.nextKMer( &it ) ) {
-		const PositionKMer & kmer = km[it.second].first;
+	pair<int, KMerCount *> it = make_pair( -1, (KMerCount*)NULL );
+	while ( (it = pr.nextKMer(it.first)).first > -1 ) {
+		const PositionKMer & kmer = it.second->first;
 		const uint32_t pos = it.first;
-		const KMerStat & stat = km[it.second].second;
+		const KMerStat & stat = it.second->second;
 
 		if (stat.changeto == KMERSTAT_GOOD) {
 			PositionKMer::rv_bad->at(readno) = false;
@@ -160,7 +181,7 @@ size_t CorrectRead(const vector<KMerCount> & km, hint_t readno, ofstream * ofs) 
 		} else {
 			if (stat.changeto < KMERSTAT_CHANGE) {
 				PositionKMer::rv_bad->at(readno) = false;
-				const PositionKMer & newkmer = km[ stat.changeto ].first;
+				const PositionKMer & newkmer = km[ stat.changeto ]->first;
 				
 				for (size_t j=0; j<K; ++j) {
 					v[dignucl(newkmer[j])][pos+j]++;
@@ -178,11 +199,11 @@ size_t CorrectRead(const vector<KMerCount> & km, hint_t readno, ofstream * ofs) 
 		}
 	}
 
-	it = make_pair( -1, -1 );
-	while ( pr_rev.nextKMer( &it ) ) {
-		const PositionKMer & kmer = km[it.second].first;
+	it = make_pair( -1, (KMerCount*)NULL );
+	while ( (it = pr_rev.nextKMer(it.first)).first > -1 ) {
+		const PositionKMer & kmer = it.second->first;
 		const uint32_t pos = it.first;
-		const KMerStat & stat = km[it.second].second;
+		const KMerStat & stat = it.second->second;
 
 		if (stat.changeto == KMERSTAT_GOOD) {
 			PositionKMer::rv_bad->at(readno) = false;
@@ -192,7 +213,7 @@ size_t CorrectRead(const vector<KMerCount> & km, hint_t readno, ofstream * ofs) 
 		} else {
 			if (stat.changeto < KMERSTAT_CHANGE) {
 				PositionKMer::rv_bad->at(readno) = false;
-				const PositionKMer & newkmer = km[ stat.changeto ].first;
+				const PositionKMer & newkmer = km[ stat.changeto ]->first;
 
 				for (size_t j=0; j<K; ++j) {
 					v[complement(dignucl(newkmer[j]))][read_size-pos-j-1]++;
@@ -297,7 +318,7 @@ struct PriorityQueueElement {
 };
 
 bool operator < (const PriorityQueueElement & l, const PriorityQueueElement & r) {
-        return KMerNo::greater(l.kmerno, r.kmerno);
+        return l.kmerno.greater(r.kmerno);
 }
 
 bool operator == (const PriorityQueueElement & l, const PriorityQueueElement & r) {
@@ -320,7 +341,7 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 
 	#pragma omp parallel for shared(v, boundaries) num_threads(nthreads)
 	for (int j = 0; j < nthreads; ++j) {
-		sort(v->begin() + boundaries[j], v->begin() + boundaries[j+1], KMerNo::less);
+		// sort(v->begin() + boundaries[j], v->begin() + boundaries[j+1], KMerNo::less);
 	}
 	TIMEDLN("Subvectors sorted.");
 
@@ -338,19 +359,19 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 	TIMEDLN("Erased non-unique.");*/
 
 	// for (size_t j=0; j < v->size(); ++j) cout << (*v)[j].str() << "\t" << (*v)[j].count << "\t" << (*v)[j].errprob << endl;
-	cout << "  Boundaries: "; for (int j=0; j < nthreads+1; ++j) cout << boundaries[j] << " "; cout << endl;
+	//cout << "  Boundaries: "; for (int j=0; j < nthreads+1; ++j) cout << boundaries[j] << " "; cout << endl;
 
 	int npieces = nthreads;
 	while ( npieces > 4 ) {
 		int new_npieces = npieces / 2;
-		cout << "    npieces=" << npieces << " new_npieces=" << new_npieces << endl;
+		//cout << "    npieces=" << npieces << " new_npieces=" << new_npieces << endl;
 		#pragma omp parallel for shared(v, boundaries) num_threads(new_npieces)
 		for (int j=0; j < new_npieces; ++j) {
 			#pragma omp critical
 			{
 			//cout << "  Merging from " << (j*2) << "=" << boundaries[j*2] << " via " << (j*2+1) << "=" << boundaries[j*2+1] << " to " << (j*2+2) << "=" << boundaries[j*2+2] << endl;
 			}
-			inplace_merge( v->begin() + boundaries[j*2], v->begin() + boundaries[j*2+1], v->begin() + boundaries[j*2+2], KMerNo::less );
+		//	inplace_merge( v->begin() + boundaries[j*2], v->begin() + boundaries[j*2+1], v->begin() + boundaries[j*2+2], KMerNo::less );
 		}
 		vector<size_t> new_boundaries;
 		for (int j=0; j < new_npieces; ++j) { new_boundaries.push_back( boundaries[j*2] ); }
@@ -373,17 +394,6 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 
 	}
 	TIMEDLN("Merge done. Starting priority queue operations.");
-
-	// now everything is merged already, and KMerNos exactly correspond to KMerCounts
-	/*hint_t kmerno = 0;
-	for (vector<KMerNo>::iterator it = v->begin(); it != v->end(); ++it) {
-		kmers->push_back( make_pair( PositionKMer(it->index), KMerStat(it->count, KMERSTAT_GOOD, it->errprob) ) );
-		PositionKMer::blobkmers[ it->index ] = kmerno;
-		for ( vector<hint_t>::iterator it_v = it->v.begin(); it_v != it->v.end(); ++it_v) {
-			PositionKMer::blobkmers[ *it_v ] = kmerno;
-		}
-		++kmerno;
-	}*/
 
         std::priority_queue< PriorityQueueElement, vector<PriorityQueueElement> > pq;
         vector< vector<KMerNo>::iterator > it(npieces);
@@ -428,7 +438,6 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
 			      const char * fname_left_unpaired, const char * fname_right_unpaired) {
 	ofstream outf(fname); ofstream outf_bad(fname_bad); 
 	if (paired) {
-		//cout << "outputting paired results" << endl;
 		ofstream outf_right(fname_right);
 		ofstream outf_right_bad(fname_right_bad);
 		ofstream outf_left_unpaired(fname_left_unpaired);
@@ -436,14 +445,11 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
 
 		for (hint_t i = 0; i < PositionKMer::lastLeftNo; ++i) {
 			if (PositionKMer::rv_bad->at(i)) {
-				//cout << "  read " << i << " -- left bad " << endl;
 				PositionKMer::pr->at(i).print(outf_bad);
 			} else {
 				if ( i + PositionKMer::lastLeftNo < PositionKMer::revNo && PositionKMer::rv_bad->at(i + PositionKMer::lastLeftNo) ) {
-					//cout << "  read " << i << " -- left unpaired " << endl;
 					PositionKMer::pr->at(i).print(outf_left_unpaired);
 				} else {
-					//cout << "  read " << i << " -- left good " << endl;
 					PositionKMer::pr->at(i).print(outf);
 				}
 			}
@@ -451,14 +457,11 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
 
 		for (hint_t i = PositionKMer::lastLeftNo; i < PositionKMer::revNo; ++i) {
 			if (PositionKMer::rv_bad->at(i)) {
-					//cout << "  read " << i << " -- right bad " << endl;
 				PositionKMer::pr->at(i).print(outf_right_bad);
 			} else {
 				if ( PositionKMer::rv_bad->at(i - PositionKMer::lastLeftNo) ) {
-					//cout << "  read " << i << " -- right unpaired " << endl;
 					PositionKMer::pr->at(i).print(outf_right_unpaired);
 				} else {
-					//cout << "  read " << i << " -- right good " << endl;
 					PositionKMer::pr->at(i).print(outf_right);
 				}
 			}
