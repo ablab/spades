@@ -5,10 +5,10 @@
 mkdir -p build/ext/lib
 
 cd ./ext/src/io_lib-1.12.5
-if [ -z "$1" ]; then
-./configure
-else
+if [ "$1" == "nosys" ]; then
 ./configure --prefix="`pwd`/../../../build/ext"
+else
+./configure 
 fi
 make
 make install
