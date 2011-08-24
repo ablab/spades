@@ -488,6 +488,9 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 				if (edge_info_colors[j] == i)
 					paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, old_to_new_edgeId[edge_infos[j].lp.first]);
 			}
+			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
+				if (new_graph.coverage(it->second) < cfg::get().ec.max_coverage) new_graph.DeleteEdge(it->second);
+			}
 		}
 	}
 	if (cheating_mode) {
@@ -513,7 +516,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	INFO("resolve_repeats started");
 	sum_count = 0;
 	global_cheating_edges.clear();
-	for (cheating_mode = 0; cheating_mode < 1; cheating_mode++) {
+	for (cheating_mode = 0; cheating_mode < 3; cheating_mode++) {
 		INFO(" cheating_mode = " << cheating_mode);
 		bool changed = true;
 		set<VertexId> vertices;
