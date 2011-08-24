@@ -21,7 +21,7 @@ struct SimplePathCondition {
 	Graph& g_;
 
 	SimplePathCondition(Graph& g) :
-		g_(g) {
+			g_(g) {
 
 	}
 
@@ -47,6 +47,10 @@ struct TrivialCondition {
 	typedef typename Graph::EdgeId EdgeId;
 
 	bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
+		for (size_t i = 0; i < path.size(); ++i)
+			for (size_t j = i + 1; j < path.size(); ++j)
+				if (path[i] == path[j])
+					return false;
 		return true;
 	}
 };
@@ -76,7 +80,7 @@ class MostCoveredAlternativePathChooser: public PathProcessor<Graph>::Callback {
 public:
 
 	MostCoveredAlternativePathChooser(Graph& g, EdgeId edge) :
-		g_(g), forbidden_edge_(edge), max_coverage_(-1.0) {
+			g_(g), forbidden_edge_(edge), max_coverage_(-1.0) {
 
 	}
 
@@ -120,10 +124,9 @@ public:
 	BulgeRemover(Graph& g, size_t max_length, double max_coverage,
 			double max_relative_coverage, double max_delta,
 			double max_relative_delta, const BulgeConditionF& bulge_condition) :
-		g_(g), max_length_(max_length), max_coverage_(max_coverage),
-				max_relative_coverage_(max_relative_coverage),
-				max_delta_(max_delta), max_relative_delta_(max_relative_delta),
-				bulge_condition_(bulge_condition) {
+			g_(g), max_length_(max_length), max_coverage_(max_coverage), max_relative_coverage_(
+					max_relative_coverage), max_delta_(max_delta), max_relative_delta_(
+					max_relative_delta), bulge_condition_(bulge_condition) {
 	}
 
 	void RemoveBulges();
@@ -172,9 +175,11 @@ private:
 		}
 		EdgeId edge_to_split = edge;
 		size_t prev_length = 0;
+		TRACE("Process bulge "<<path.size()<< " edges");
 		for (size_t i = 0; i < path.size(); ++i) {
 			if (bulge_prefix_lengths[i] > prev_length) {
-				if (bulge_prefix_lengths[i]  - prev_length != g_.length(edge_to_split)) {
+				if (bulge_prefix_lengths[i] - prev_length
+						!= g_.length(edge_to_split)) {
 					pair<EdgeId, EdgeId> split_result = g_.SplitEdge(
 							edge_to_split,
 							bulge_prefix_lengths[i] - prev_length);
@@ -229,23 +234,24 @@ void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
 	for (auto iterator = g_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator) {
 		EdgeId edge = *iterator;
 		TRACE(
-				"Considering edge of length " << g_.length(edge) << " and avg coverage " << g_.coverage(edge));
+				"Considering edge of length " << g_.length(edge)
+						<< " and avg coverage " << g_.coverage(edge));
 		TRACE("Is possible bulge " << PossibleBulgeEdge(edge));
 		if (PossibleBulgeEdge(edge)) {
 			size_t kplus_one_mer_coverage = std::floor(
 					g_.length(edge) * g_.coverage(edge) + 0.5);
 			TRACE(
-					"Processing edge " << g_.str(edge) << " and coverage " << kplus_one_mer_coverage);
+					"Processing edge " << g_.str(edge) << " and coverage "
+							<< kplus_one_mer_coverage);
 
 			VertexId start = g_.EdgeStart(edge);
 			TRACE("Start " << g_.str(start));
 
 			VertexId end = g_.EdgeEnd(edge);
 			TRACE("End " << g_.str(end));
-			size_t delta =
-					std::floor(
-							std::max(max_relative_delta_ * g_.length(edge),
-									max_delta_));
+			size_t delta = std::floor(
+					std::max(max_relative_delta_ * g_.length(edge),
+							max_delta_));
 			MostCoveredAlternativePathChooser<Graph> path_chooser(g_, edge);
 
 			PathProcessor<Graph> path_finder(g_,
@@ -257,20 +263,23 @@ void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
 			const vector<EdgeId>& path = path_chooser.most_covered_path();
 			double path_coverage = path_chooser.max_coverage();
 			TRACE(
-					"Best path with coverage " << path_coverage << " is " << PrintPath<Graph> (g_, path));
+					"Best path with coverage " << path_coverage << " is "
+							<< PrintPath<Graph>(g_, path));
 
 			//if edge was returned, this condition will fail
 			if (BulgeCondition(edge, path, path_coverage)) {
 				TRACE("Satisfied condition");
 				TRACE(
-						"Deleting edge " << g_.str(edge) << " and compressing ends");
+						"Deleting edge " << g_.str(edge)
+								<< " and compressing ends");
 				ProcessBulge(edge, path);
 				g_.CompressVertex(start);
 				g_.CompressVertex(end);
 			} else {
 				TRACE("Didn't satisfy condition");
 			}
-		}TRACE("-----------------------------------");
+		}
+		TRACE("-----------------------------------");
 	}
 }
 

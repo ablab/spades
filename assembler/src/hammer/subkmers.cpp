@@ -37,7 +37,7 @@ bool SubKMerSorter::getNextBlock( int i, vector<hint_t> & block ) {
 	return (block.size() > 0);
 }
 
-SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount> * k, int nthreads, int tau, SubKMerSorterType type ) :
+SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount*> * k, int nthreads, int tau, SubKMerSorterType type ) :
 	nthreads_(nthreads), tau_(tau), kmers_size_(kmers_size), kmers_(NULL) {
 	// we set the sorting functions depending on the type
 	// here the sorting functions are regular sorting functions predefined in PositionKMer
@@ -65,7 +65,7 @@ SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount> * k, int nthr
 	initVectors();
 }
 
-SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount> * k, int nthreads, int tau, int jj,
+SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount*> * k, int nthreads, int tau, int jj,
 	SubKMerSorterType type, SubKMerSorterType parent_type ) : nthreads_(nthreads), tau_(tau), kmers_size_(kmers->size()), kmers_(kmers) {
 
 	//cout << "    constructor nthreads=" << nthreads << " tau=" << tau << " kmerssize=" << kmers_size_ << " jj=" << jj << endl;

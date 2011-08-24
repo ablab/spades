@@ -18,7 +18,8 @@ add_executable(main
    kmer_cluster.cpp
    position_read.cpp
    position_kmer.cpp
-   subkmers.cpp)
+   subkmers.cpp
+   kmerno.cpp)
    
 add_subdirectory(quake_count)
 add_subdirectory(quake_enhanced)

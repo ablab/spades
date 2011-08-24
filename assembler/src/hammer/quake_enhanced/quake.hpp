@@ -10,9 +10,7 @@ const uint32_t kK = 31;
 namespace quake_enhanced {
 class Quake {
  public:
-  Quake() {
-    cur_state_ = kInitial;
-  }
+  Quake() : cur_state_(kInitial) {}
   void Count(std::string ifile, std::string ofile,
              std::string hash_file_prefix, uint32_t hash_file_number, 
              uint8_t quality_offset, uint8_t quality_threshold);
@@ -24,9 +22,9 @@ class Quake {
   enum QuakeState {kInitial, kCountDone, kRealHistPrepared, kRealHistPrinted,
                    kTrustedHistPrepared, kLimitsCounted, kTrustedFiltered};
   QuakeState cur_state_;
-  std::string kmer_count_file;
-  std::vector<uint32_t> trusted_hist;
-  std::vector<uint32_t> real_hist;
+  std::string kmer_count_file_;
+  std::vector<uint32_t> trusted_hist_;
+  std::vector<uint32_t> real_hist_;
 
   // Count
   /**

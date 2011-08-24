@@ -263,22 +263,28 @@ public:
 	}
 
 	void GlueEdges(EdgeId edge1, EdgeId edge2) {
+		TRACE("Start glue");
 		EdgeId newEdge = HiddenAddEdge(EdgeStart(edge2), EdgeEnd(edge2),
 				master_.GlueData(data(edge1), data(edge2)));
 		FireGlue(newEdge, edge1, edge2);
 		FireDeleteEdge(edge1);
 		FireDeleteEdge(edge2);
 		FireAddEdge(newEdge);
-		VertexId start = EdgeStart(edge1);
-		VertexId end = EdgeEnd(edge1);
 		HiddenDeleteEdge(edge1);
 		HiddenDeleteEdge(edge2);
-		if (IsDeadStart(start) && IsDeadEnd(start)) {
-			DeleteVertex(start);
-		}
-		if (IsDeadStart(end) && IsDeadEnd(end)) {
-			DeleteVertex(end);
-		}
+		//DEBUG
+//		VertexId start = EdgeStart(edge1);
+//		VertexId end = EdgeEnd(edge1);
+//		if (IsDeadStart(start) && IsDeadEnd(start)) {
+//			WARN("Start vertex without edges after glue");
+//			DeleteVertex(start);
+//		}
+//		if (IsDeadStart(end) && IsDeadEnd(end)) {
+//			WARN("End vertex without edges after glue");
+//			DeleteVertex(end);
+//		}
+		//DEBUG
+		TRACE("End glue");
 
 		/*/////////////////
 		 FireDeleteEdge(edge2);
