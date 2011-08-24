@@ -7,6 +7,12 @@
 #include <fstream>
 
 #include <boost/unordered_map.hpp>
+#include "google/sparse_hash_map"
+#include "google/dense_hash_map"
+
+#define GOOGLE_SPARSE_MAP
+//#define BOOST_UNORDERED_MAP
+//#define GOOGLE_DENSE_MAP
 
 #include "kmer_stat.hpp"
 
@@ -21,6 +27,7 @@ struct KMerNo {
 
 	KMerNo( hint_t no, double qual ) : index(no), errprob(qual) { }
 	KMerNo( hint_t no ) : index(no), errprob(1) { }
+	KMerNo( ) : index(-1), errprob(1) { }
 
 	bool equal(const KMerNo & kmerno) const;
 	std::string str() const;
@@ -40,7 +47,16 @@ struct KMerNo {
 	};
 };
 
-typedef boost::unordered_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;
+#ifdef GOOGLE_SPARSE_MAP
+	typedef google::sparse_hash_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;
+#endif
+#ifdef BOOST_UNORDERED_MAP
+	typedef boost::unordered_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;
+#endif
+#ifdef GOOGLE_DENSE_MAP
+	typedef google::dense_hash_map<KMerNo, KMerCount *, KMerNo::hash, KMerNo::are_equal> KMerNoHashMap;
+#endif
+
 
 #endif
 

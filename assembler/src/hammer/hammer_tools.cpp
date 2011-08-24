@@ -82,9 +82,7 @@ void AddKMerNos(const PositionRead &r, hint_t readno, vector<KMerNo> *v) {
 	}
 }
 
-void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerNo> * vv, vector<KMerCount*> * kmers, KMerNoHashMap * km) {
-	vv->clear();
-
+void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerCount*> * kmers, KMerNoHashMap * km) {
 	vector< vector<KMerNo> > vtmp;
 	for(int n=0; n < nthreads; ++n) {
 		vector<KMerNo> v_cur;
@@ -113,15 +111,8 @@ void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerNo>
 	TIMEDLN("Made KMerNo hash map.");
 	kmers->clear();
 	for ( KMerNoHashMap::const_iterator it_hash = km->begin(); it_hash != km->end(); ++it_hash ) {
-		//cout << it_hash->first.index << "\t" << it_hash->second->first.str() << "\t" << it_hash->second->second.count << "\t" << it_hash->second->second.totalQual << endl;
 		kmers->push_back(it_hash->second);
 	}
-
-	for(int n=0; n < nthreads; ++n) {
-		vv->insert(vv->end(), vtmp[n].begin(), vtmp[n].end());
-		vtmp[n].clear();
-	}
-
 }
 
 void DoSplitAndSort(int tau, int nthreads, vector< vector<hint_t> > * vs, vector<KMerCount*> * kmers, vector<SubKMerPQ> * vskpq) {

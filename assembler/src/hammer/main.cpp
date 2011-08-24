@@ -23,6 +23,8 @@
 #include <unordered_set>
 #include <boost/bind.hpp>
 
+#include "google/sparse_hash_map"
+
 #include "config_struct_hammer.hpp"
 #include "read/ireadstream.hpp"
 #include "hammer_tools.hpp"
@@ -187,25 +189,22 @@ int main(int argc, char * argv[]) {
 
 		vector<KMerCount*> kmers;
 		Globals::hm.clear();
+		#ifdef BOOST_UNORDERED_MAP
+			Globals::hm.rehash(Globals::blob_size);
+		#endif
+		#if defined GOOGLE_SPARSE_MAP
+			Globals::hm.resize(Globals::blob_size);
+		#endif
 
 		if (!readBlobAndKmers || iter_count > 0) {
 			TIMEDLN("Doing honest preprocessing.");
-			Globals::blob_size = curpos;
-			vector<KMerNo> vv;
-			DoPreprocessing(tau, readsFilename, nthreads, &vv, &kmers, &Globals::hm);
-			//TIMEDLN("Preprocessing done. Got " << vv.size() << " kmer positions. Starting parallel sort.");
+			DoPreprocessing(tau, readsFilename, nthreads, &kmers, &Globals::hm);
 			TIMEDLN("Preprocessing done. Got " << Globals::hm.size() << " kmers.");
-		
-			
-			//ParallelSortKMerNos( &vv, &kmers, nthreads );
-			//TIMEDLN("KMer positions sorted. In total, we have " << kmers.size() << " kmers.");
-			vv.clear();
 		} else {
 			TIMEDLN("Reading kmers from " << kmersFilename.c_str() );
 			Globals::readKMerCounts( getFilename( dirprefix, kmersFilename.c_str() ).c_str(), &kmers );
 			TIMEDLN("Kmers read from " << kmersFilename.c_str());
 		}
-
 
 		if ( writeBlobAndKmers && iter_count == 0 ) { // doesn't make sense to overwrite the first blob
 			Globals::writeBlob( getFilename(dirprefix, blobFilename.c_str() ).data() );
