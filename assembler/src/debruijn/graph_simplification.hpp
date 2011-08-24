@@ -22,7 +22,7 @@ void ClipTips(Graph &g) {
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
 	omnigraph::TipComparator<Graph> comparator(g);
-	size_t max_tip_length = cfg::get().tc.max_tip_length;
+	size_t max_tip_length = cfg::get().tc.max_tip_length_div_K * g.k();
 	size_t max_coverage = cfg::get().tc.max_coverage;
 	double max_relative_coverage = cfg::get().tc.max_relative_coverage;
 	omnigraph::TipClipper<Graph, TipComparator<Graph>> tc(g, comparator, max_tip_length,

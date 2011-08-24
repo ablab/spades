@@ -78,7 +78,7 @@ namespace debruijn
 
 		struct tip_clipper
 		{
-		   size_t max_tip_length;
+		   double max_tip_length_div_K;
 		   size_t max_coverage;
 		   double max_relative_coverage;
 		};
@@ -147,7 +147,7 @@ namespace debruijn
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::tip_clipper& tc)
 	{
 		using config_common::load;
-		load(pt, "max_tip_length", tc.max_tip_length);
+		load(pt, "max_tip_length_div_K", tc.max_tip_length_div_K);
 		load(pt, "max_coverage", tc.max_coverage);
 		load(pt, "max_relative_coverage", tc.max_relative_coverage);
 	}
