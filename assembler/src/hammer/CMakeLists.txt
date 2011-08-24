@@ -17,7 +17,7 @@ add_executable(main
    hammer_tools.cpp
    kmer_cluster.cpp
    position_read.cpp
-   position_kmer.cpp
+   globals.cpp
    subkmers.cpp
    kmerno.cpp)
    

@@ -438,19 +438,19 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 				{
 					// change blob
 					for (uint32_t j = 0; j < bestCenters[k].first.size(); ++j) {
-						PositionKMer::blob[PositionKMer::blob_size + j] = bestCenters[k].first[j];
+						Globals::blob[Globals::blob_size + j] = bestCenters[k].first[j];
 					}
-					PositionKMer::blob_size += bestCenters[k].first.size();
+					Globals::blob_size += bestCenters[k].first.size();
 
 					// add read
 					Read r("Consensus", bestCenters[k].first, bestCenters[k].first);
-					PositionKMer::rv->push_back(r);
+					Globals::rv->push_back(r);
 
 					// add position read
-					PositionRead rs(PositionKMer::blob_size - r.size(), r.size(), PositionKMer::rv->size() - 1);
-					PositionKMer::pr->push_back(rs);
+					PositionRead rs(Globals::blob_size - r.size(), r.size(), Globals::rv->size() - 1);
+					Globals::pr->push_back(rs);
 
-					PositionKMer pkm(PositionKMer::pr->size()-1, 0);
+					PositionKMer pkm(Globals::pr->size()-1, 0);
 					KMerStat kms( 0, KMERSTAT_GOOD, 1 );
 					k_.push_back( new KMerCount( pkm, kms ) );
 				}

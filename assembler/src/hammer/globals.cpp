@@ -1,7 +1,9 @@
+#include "kmer_stat.hpp"
 #include "position_kmer.hpp"
+#include "globals.hpp"
 
-void PositionKMer::writeBlob( const char * fname ) {
-	ofstream ofs( fname );
+void Globals::writeBlob( const char * fname ) {
+	std::ofstream ofs( fname );
 	ofs << blob_max_size << "\n" << blob_size << "\n";
 	ofs.write(blob, blob_size); ofs << "\n";
 	ofs.write(blobquality, blob_size); ofs << "\n";
@@ -9,7 +11,7 @@ void PositionKMer::writeBlob( const char * fname ) {
 }
 
 
-void PositionKMer::readBlob( const char * fname ) {
+void Globals::readBlob( const char * fname ) {
 	if (blob != NULL) delete [] blob;
 	if (blobquality != NULL) delete [] blobquality;
 	if (blobhash != NULL) delete [] blobhash;
@@ -24,19 +26,19 @@ void PositionKMer::readBlob( const char * fname ) {
 	fclose(f);
 
 	// precompute hashes
-	PositionKMer::blobhash = new hint_t[ PositionKMer::blob_max_size ];
+	Globals::blobhash = new hint_t[ Globals::blob_max_size ];
 	KMerNo::precomputeHashes();
 }
 
-void PositionKMer::writeKMerCounts( const char * fname, const vector<KMerCount*> & kmers ) {
-	ofstream ofs( fname );
+void Globals::writeKMerCounts( const char * fname, const std::vector<KMerCount*> & kmers ) {
+	std::ofstream ofs( fname );
 	for ( size_t i=0; i < kmers.size(); ++i ) {
 		ofs << kmers[i]->first.str() << "\t" << kmers[i]->first.start() << "\t" << kmers[i]->second.count << "\t" << kmers[i]->second.totalQual << "\n";
 	}
 	ofs.close();
 }
 
-void PositionKMer::readKMerCounts( const char * fname, vector<KMerCount*> * kmers ) {
+void Globals::readKMerCounts( const char * fname, std::vector<KMerCount*> * kmers ) {
 	kmers->clear();
 	FILE * f = fopen( fname, "r" );
 	unsigned long int start; unsigned int count; unsigned long int startlast = -1; double qual; char tmp[K+10];
