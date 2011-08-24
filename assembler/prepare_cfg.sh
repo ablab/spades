@@ -8,7 +8,7 @@ cd ./ext/src/io_lib-1.12.5
 if [ -z "$1" ]; then
 ./configure
 else
-./configure --prefix="$1"
+./configure --prefix="`pwd`/../../../build/ext"
 fi
 make
 make install
