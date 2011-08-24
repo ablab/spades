@@ -13,6 +13,7 @@ io_lib-1.12.5/Makefile
 io_lib-1.12.5/config.log
 io_lib-1.12.5/config.status
 io_lib-1.12.5/io_lib-config
+io_lib-1.12.5/io_lib_config.h
 io_lib-1.12.5/io_lib/.deps/
 io_lib-1.12.5/io_lib/Makefile
 io_lib-1.12.5/libtool
