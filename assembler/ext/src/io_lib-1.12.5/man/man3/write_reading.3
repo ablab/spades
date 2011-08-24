@@ -1,0 +1,74 @@
+.TH write_reading 3 "" "" "Staden Package"
+
+.SH NAME
+
+.LP
+.BR write_reading ,
+.BR fwrite_reading
+\- Write a \fBRead\fR structure into a trace file.
+
+.SH SYNOPSIS
+.LP
+.nf
+.ft B
+#include <Read.h>
+
+.nf
+.ft B
+int write_reading(
+	char *filename,
+	Read *read,
+	int format);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int fwrite_reading(
+	FILE *fp,
+	Read *read,
+	int format);
+.ft
+.fi
+.IX "write_reading()" "" "write_reading()"
+.IX "fwrite_reading()" "" "fwrite_reading()"
+
+.SH DESCRIPTION
+.LP
+These functions write a \fBRead\fR structure into a trace file. The principle
+format support is the SCF format. Although reading is supported for ABI and
+ALF, writing is not. Additionally, it is possible to write using the plain
+(old) staden format files or as Experiment files. In both these cases only the
+sequence component of the trace file will be written.
+.LP
+When writing as an experiment file the QL, QR and SQ fields are generated from
+the \fBRead\fR structure. If we previously created the \fBRead\fR structure
+from reading an experiment file then the original experiment file data is also
+written. Otherwise EN, ID, LN and LT lines are also generated.
+.LP
+.B write_reading()
+writes a \fBRead\fR structure to the specified filename in the specified
+format. Formats available are
+.BR TT_SCF ,
+.BR TT_PLN and
+.BR TT_EXP.
+Specifying format \fBTT_ANY\fR will be treated as \fBTT_SCF\fR.
+.LP
+.B fwrite_reading()
+writes a \fBRead\fR structure to the specified FILE pointer in the specified
+format. Apart from writing to FILE pointer instead of a filename, the function
+is identical to \fBwrite_reading()\fR.
+
+.SH RETURN VALUES
+.LP
+On successful completion, the \fBwrite_reading()\fR and \fBfwrite_reading()\fR
+functions return 0. Otherwise these functions return -1.
+
+.SH SEE ALSO
+.LP
+.BR read_reading (3),
+.BR fread_reading (3),
+.BR deallocate_reading (3),
+.BR scf (4),
+.br
+.BR ExperimentFile (4)

@@ -5,7 +5,6 @@ gmon.out
 abruijn.sh
 CMakeCache.txt
 CMakeFiles/
-Makefile
 cmake_install.cmake
 src/debruijn/config.inp
 src/file

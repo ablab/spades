@@ -41,6 +41,7 @@ void ToSet(PairedInfoIndex<Graph>& paired_index, set<PairInfo<EdgeId>>& as_set) 
 }
 
 void CheckPairInfo(const vector<PairInfo<EdgeId>>& infos1, const vector<PairInfo<EdgeId>>& infos2) {
+  using debruijn::operator<<;
 
 	for (auto it = infos1.begin(); it != infos1.end(); ++it) {
 		bool found = false;

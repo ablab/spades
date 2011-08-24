@@ -1,0 +1,356 @@
+.TH ExperimentFile 3 "" "" "Staden Package"
+
+.SH NAME
+
+.LP
+.BR exp_read_info ,
+.BR exp_fread_info ,
+.BR exp_create_info ,
+.BR exp_destroy_info ,
+.BR exp_create_range ,
+.BR exp_extract_range ,
+.BR exp_get_feature_index ,
+.BR exp_get_int ,
+.BR exp_get_rng ,
+.BR exp_get_str ,
+.BR exp_put_int ,
+.BR exp_put_rng ,
+.BR exp_put_str ,
+.BR exp_print_line ,
+.BR exp_print_seq ,
+.BR exp_print_file ,
+.BR opos2str ,
+.BR str2opos ,
+.BR conf2str ,
+.BR str2conf
+\- Manipulations of the Experiment File format
+
+.IX "exp_read_info()" "" "exp_read_info()"
+.IX "exp_fread_info()" "" "exp_fread_info()"
+.IX "exp_create_info()" "" "exp_create_info()"
+.IX "exp_destroy_info()" "" "exp_destroy_info()"
+.IX "exp_create_range()" "" "exp_create_range()"
+.IX "exp_extract_range()" "" "exp_extract_range()"
+.IX "exp_get_feature_index()" "" "exp_get_feature_index()"
+.IX "exp_get_int()" "" "exp_get_int()"
+.IX "exp_get_rng()" "" "exp_get_rng()"
+.IX "exp_get_str()" "" "exp_get_str()"
+.IX "exp_put_int()" "" "exp_put_int()"
+.IX "exp_put_rng()" "" "exp_put_rng()"
+.IX "exp_put_str()" "" "exp_put_str()"
+.IX "exp_print_line()" "" "exp_print_line()"
+.IX "exp_print_seq()" "" "exp_print_seq()"
+.IX "exp_print_file()" "" "exp_print_file()"
+.IX "opos2str()" "" "opos2str()"
+.IX "str2opos()" "" "str2opos()"
+.IX "conf2str()" "" "conf2str()"
+.IX "str2conf()" "" "str2conf()"
+
+.SH SYNOPSIS
+.LP
+.nf
+.ft B
+#include <expFileIO.h>
+
+.nf
+.ft B
+Exp_info *exp_read_info(
+	char *file);
+.ft
+.fi
+.LP
+.nf
+.ft B
+Exp_info *exp_fread_info(
+	FILE *fp);
+.ft
+.fi
+.LP
+.nf
+.ft B
+Exp_info *exp_create_info();
+.ft
+.fi
+.LP
+.nf
+.ft B
+void exp_destroy_info(
+	Exp_info *e);
+.ft
+.fi
+.LP
+.nf
+.ft B
+char *exp_create_range(
+	char *str,
+	int start,
+	int end);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int exp_extract_range(
+	char *str,
+	int *start,
+	int *end);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int exp_get_feature_index(
+	char *e);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int exp_get_int(
+	Exp_info *e,
+	int id,
+	int *val);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int exp_get_rng(
+	Exp_info *e,
+	int id,
+	int *from,
+	int *to);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int exp_get_str(
+	Exp_info *e,
+	int id,
+	char *s,
+	f_implicit s_l);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int exp_put_int(
+	Exp_info *e,
+	int id,
+	int *val);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int exp_put_rng(
+	Exp_info *e,
+	int id,
+	int *from,
+	int *to);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int exp_put_str(
+	Exp_info *e,
+	int id,
+	char *s,
+	f_implicit s_l);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int exp_print_line(
+	FILE *fp,
+	Exp_info *e,
+	int eflt,
+	int i);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int exp_print_seq(
+	FILE *fp,
+	Exp_info *e,
+	int eflt,
+	int i);
+.ft
+.fi
+.LP
+.nf
+.ft B
+void exp_print_file(
+	FILE *fp,
+	Exp_info *e);
+.ft
+.fi
+.LP
+.nf
+.ft B
+char *opos2str(
+	int2 *opos,
+	int len,
+	char *buf);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int str2opos(
+	int2 *opos,
+	char *buf);
+.ft
+.fi
+.LP
+.nf
+.ft B
+char *conf2str(
+	int1 *conf,
+	int len,
+	char *buf);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int str2conf(
+	int1 *conf,
+	char *buf);
+.ft
+.fi
+
+.SH DESCRIPTION
+.LP
+These functions manipulate Experiment Files. They include functions for
+reading, writing, and editing the files. The principle structure used by the
+routines is the \fBExp_info\fR structure. This is as follows.
+.EX 5
+.ft B
+#define MAXIMUM_EFLT_LENGTH     4
+#define MAXIMUM_EFLTS          48
+#define EXP_FILE_LINE_LENGTH  128
+
+typedef Array Exp_entries;
+
+typedef struct {
+    Array entries[MAXIMUM_EFLTS]; /* array of array of entries */
+    int Nentries[MAXIMUM_EFLTS];  /* array of number of entries */
+    FILE *fp;
+} Exp_info;
+
+#define NULL_Exp_info ( (Exp_info *) NULL )
+.ft
+.EE
+.LP
+For the purposes of simple and efficient coding, each line on an experiment
+file must be smaller than the defined EXP_FILE_LINE_LENGTH, which is 128
+characters.
+.LP
+Many functions take an experiment file line type identifier as an argument.
+These functions are listed in the prototypes as taking \fBint id\fR. Here
+\fBid\fR should be specified using one of the macros defining in the header
+file. They take the form of \fBEFLT_\fRXX where XX is the line type. For
+instance, the \fBID\fR line type identifier should be written as
+\fBEFLT_ID\fR.
+.LP
+The C functions available follow. Some FORTRAN interfaces are also available,
+but these are not documented. See the include file for their prototypes.
+.LP
+.B exp_read_info
+and
+.B exp_fread_info
+read an experiment file into an allocated \fBExp_info\fR structure. If
+successful, the structure pointer is return. Otherwise the null pointer is
+returned.
+.LP
+.B exp_create_info
+allocates and initialises a new, blank, \fBExp_info\fR structure. If
+successful, the structure pointer is return. Otherwise the null pointer is
+returned.
+.LP
+.B exp_destroy_info
+deallocates an \fBExp_info\fR structure.
+.LP
+.B exp_create_range
+creates a string using the experiment file range format of "start..stop". This
+format is used by the AQ, ON, TG and TC line types. The buffer specified
+should be large enough to hold the string. The function returns the \fBstr\fR
+pointer supplied as an argument.
+.LP
+.B exp_extract_range
+extracts the start and end values from the string representation of a range;
+"start..stop". The values are stored in the integer pointers sent as
+arguments. If successful, the function returns 0. Otherwise -1 is returned.
+.LP
+.B exp_get_feature_index
+converts from a string representation of an experiment file line type to the
+integer value. For example, \fBexp_get_feature_index("SQ")\fR returns the
+integer 22, which is the same as the \fBEFLT_SQ\fR definition.
+.LP
+.B exp_get_int
+obtains the integer value held in a specific line type. The value is stored in
+the integer pointer \fBval\fR. If successful, the function returns 0.
+Otherwise 1 is returned.
+.LP
+.B exp_get_rng
+obtains the range values held in a specific line type. The values are stored in
+the integer pointers \fBfrom\fR and \fBto\fR. If successful, the function
+returns 0. Otherwise 1 is returned.
+.LP
+.B exp_get_str
+obtains the string value held in a specific line type. The value is stored in
+the string \fBs\fR. At most \fBs_l\fR characters are copied. If successful,
+the function returns 0. Otherwise 1 is returned.
+.LP
+.B exp_put_int
+writes the integer pointed to by \fBval\fR to the specified line type. If
+successful, the function returns 0. Otherwise 1 is returned.
+.LP
+.B exp_put_rng
+writes the range pointed to by \fBfrom\fR and \fBto\fR to the specified line
+type. If successful, the function returns 0. Otherwise 1 is returned.
+.LP
+.B exp_put_str
+writes the string \fBs\fR of length \fBs_l\fR to the specified line type. If
+successful, the function returns 0. Otherwise 1 is returned.
+.LP
+.B exp_print_line
+outputs all entries of the specified type to the specified file pointer.
+.LP
+.B exp_print_seq
+.LP
+.B exp_print_file
+outputs all entries of all line types to the specified file pointer.
+.LP
+.B opos2str
+converts an array of original positions held in \fBopos\fR with \fBlen\fR
+elements to a string suitable for use in the ON line type. The \fBbuf\fR
+should be large enough to hold the string, which in the worst case will be
+4 * sequence length. Returns \fBbuf\fR.
+.LP
+.B str2opos
+converts the experiment file original position string held in \fBbuf\fR to an
+array of original positions to be stored in \fBopos\fR. \fBopos\fR must be
+large enough to hold the data, hence it should be of the same length as the
+sequence. Returns the number of elements written to the \fBopos\fR array.
+.LP
+.B conf2str
+converts an array of confidence values helf in \fBconf\dR with \fBlen\fR
+elements to a string suitable for use in the AV line type. The \fBbuf\fR
+should be large enough to hold the string, which in the worst case will be
+4 * sequence length. Returns \fBbuf\fR.
+.LP
+.B str2conf
+convers the experiment file confidence values string held in \fBbuf\fR to an
+array of confidence values to be stored in \fBconf\fR. \fBconf\fR must be
+large enough to hold the data, hence it should be of the same length as the
+sequence. Returns the number of elements written to the \fBconf\fR array.
+
+.SH SEE ALSO
+.LP
+.BR ExperimentFile (4)

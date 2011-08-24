@@ -9,7 +9,7 @@ all:$(EXEC)
 
 CC=g++
 CFLAGS=-c -g3 -Wall -pedantic -Wno-long-long -Wno-deprecated -std=gnu++0x -I../../src/libs/cute -I../../src/libs -I../../src/common -I../../src/common/read -I../../src/common/sequence -I../../src -I../../src/omni -I../../src/$(DIR) -I../../src/$(DIR)
-LDFLAGS=-L/usr/local/lib -L/usr/local/apr/lib -lz -llog4cxx -lapr-1 -laprutil-1
+LDFLAGS=-L/usr/local/lib -L/usr/local/apr/lib -lz -llog4cxx -lapr-1 -laprutil-1 -L../../src/libs/statgen/lib -lStatGen -L../../src/libs/statgen/lib/samtools -lbam -L/usr/lib -lssl
 DEPSFL=-MM -MG
 
 
