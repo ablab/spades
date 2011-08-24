@@ -8,9 +8,6 @@
 #ifndef LAUNCH_HPP_
 #define LAUNCH_HPP_
 
-#include "io/reader.hpp"
-#include "io/rc_reader_wrapper.hpp"
-#include "io/cutting_reader_wrapper.hpp"
 #include "io/converting_reader_wrapper.hpp"
 #include "omni/visualization_utils.hpp"
 
@@ -47,7 +44,10 @@
 
 namespace debruijn_graph {
 
-typedef io::Reader<io::SingleRead> SingleReadStream;
+typedef io::IReader<io::SingleRead> SingleReadStream;
+typedef io::IReader<io::PairedRead> PairedReadStream;
+typedef io::ConvertingReaderWrapper UnitedStream;
+
 using namespace omnigraph;
 
 //For future refactoring
@@ -194,7 +194,7 @@ void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
 	}
 }
 
-template<size_t k, class PairedReadStream>
+template<size_t k>
 void CreateAndFillGraph(Graph& g, EdgeIndex<k + 1, Graph>& index
 		, IdTrackHandler<Graph>& int_ids, PairedInfoIndex<Graph>& paired_index,
 		PairedReadStream& stream, const Sequence& genome
@@ -202,18 +202,17 @@ void CreateAndFillGraph(Graph& g, EdgeIndex<k + 1, Graph>& index
 		PairedInfoIndex<Graph> &etalon_paired_index) {
 	if (cfg::get().paired_mode) {
 		if (cfg::get().etalon_info_mode) {
-			ConstructGraphWithEtalonPairedInfo<k, PairedReadStream>(g, index,
+			ConstructGraphWithEtalonPairedInfo<k>(g, index,
 					int_ids, paired_index, stream, genome);
 		} else {
-			ConstructGraphWithPairedInfo<k, PairedReadStream>(g, index, int_ids,
+			ConstructGraphWithPairedInfo<k>(g, index, int_ids,
 					paired_index, stream);
 		}
 		FillEtalonPairedIndex<k>(g, etalon_paired_index, index, genome);
 
 	} else {
-		typedef io::ConvertingReaderWrapper UnitedStream;
 		UnitedStream united_stream(&stream);
-		ConstructGraphWithCoverage<k, UnitedStream>(g, index, int_ids,
+		ConstructGraphWithCoverage<k>(g, index, int_ids,
 				united_stream);
 	}
 	ProduceInfo<k>(g, index, int_ids, genome,
@@ -222,9 +221,9 @@ void CreateAndFillGraph(Graph& g, EdgeIndex<k + 1, Graph>& index
 	FillEdgesPos<k>(g, index, genome, EdgePos);
 }
 
-template<size_t k, class ReadStream>
-void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
-		const string& work_tmp_dir, vector<SingleReadStream*> reads) {
+template<size_t k>
+void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
+		const string& work_tmp_dir, vector<io::Reader<io::SingleRead>*> reads) {
 
 	using boost::optional;
 	using boost::in_place;
@@ -272,7 +271,7 @@ void DeBruijnGraphTool(ReadStream& stream, const Sequence& genome,
 
 	if (cfg::get().start_from == "begin") {
 		INFO("------Starting from Begin-----")
-		CreateAndFillGraph<k, ReadStream>(g, index, int_ids, paired_index,
+		CreateAndFillGraph<k>(g, index, int_ids, paired_index,
 				stream, genome, EdgePos, etalon_paired_index);
 		printGraph(g, int_ids, work_tmp_dir + "1_filled_graph", paired_index,
 				EdgePos, &etalon_paired_index);

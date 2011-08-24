@@ -27,6 +27,8 @@
 using namespace std;
 
 
+
+
 inline int nt2num(char c) {
 	if (c=='A') return 0;
 	if (c=='C') return 1;

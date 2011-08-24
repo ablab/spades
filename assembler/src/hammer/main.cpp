@@ -23,6 +23,8 @@
 #include <unordered_set>
 #include <boost/bind.hpp>
 
+#include "google/sparse_hash_map"
+
 #include "config_struct_hammer.hpp"
 #include "read/ireadstream.hpp"
 #include "hammer_tools.hpp"
@@ -31,19 +33,22 @@
 #include "subkmers.hpp"
 #include "globals.hpp"
 
-using namespace std;
+using std::string;
+using std::vector;
+using std::map;
 
-std::vector<Read> * PositionKMer::rv = NULL;
-std::vector<bool> * PositionKMer::rv_bad = NULL;
-std::vector<PositionRead> * PositionKMer::pr = NULL;
-hint_t PositionKMer::revNo = 0;
-hint_t PositionKMer::lastLeftNo = 0;
-hint_t PositionKMer::blob_size = 0;
-hint_t PositionKMer::blob_max_size = 0;
-char * PositionKMer::blob = NULL;
-char * PositionKMer::blobquality = NULL;
-hint_t * PositionKMer::blobkmers = NULL;
-std::vector<uint32_t> * PositionKMer::subKMerPositions = NULL;
+std::vector<Read> * Globals::rv = NULL;
+std::vector<bool> * Globals::rv_bad = NULL;
+std::vector<PositionRead> * Globals::pr = NULL;
+hint_t Globals::revNo = 0;
+hint_t Globals::lastLeftNo = 0;
+hint_t Globals::blob_size = 0;
+hint_t Globals::blob_max_size = 0;
+char * Globals::blob = NULL;
+char * Globals::blobquality = NULL;
+hint_t * Globals::blobhash = NULL;
+KMerNoHashMap Globals::hm = KMerNoHashMap();
+std::vector<uint32_t> * Globals::subKMerPositions = NULL;
 
 double Globals::error_rate = 0.01;
 int Globals::blocksize_quadratic_threshold = 100;
@@ -115,91 +120,95 @@ int main(int argc, char * argv[]) {
 	}
 
 	// initialize subkmer positions
-	PositionKMer::subKMerPositions = new std::vector<uint32_t>(tau + 2);
+	Globals::subKMerPositions = new std::vector<uint32_t>(tau + 2);
 	for (uint32_t i=0; i < (uint32_t)(tau+1); ++i) {
-		PositionKMer::subKMerPositions->at(i) = (i * K / (tau+1) );
+		Globals::subKMerPositions->at(i) = (i * K / (tau+1) );
 	}
-	PositionKMer::subKMerPositions->at(tau+1) = K;
+	Globals::subKMerPositions->at(tau+1) = K;
 
 	hint_t totalReadSize = 0;
 
 	if (!Globals::paired_reads) {
-		PositionKMer::rv = new std::vector<Read>();
-		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilename, &totalReadSize, Globals::qvoffset, Globals::trim_quality);
-		PositionKMer::lastLeftNo = PositionKMer::rv->size();
+		Globals::rv = new std::vector<Read>();
+		ireadstream::readAllNoValidation(Globals::rv, readsFilename, &totalReadSize, Globals::qvoffset, Globals::trim_quality);
+		Globals::lastLeftNo = Globals::rv->size();
 	} else {
-		PositionKMer::rv = new std::vector<Read>();
-		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameLeft, &totalReadSize, Globals::qvoffset, Globals::trim_quality);
-		PositionKMer::lastLeftNo = PositionKMer::rv->size();
+		Globals::rv = new std::vector<Read>();
+		ireadstream::readAllNoValidation(Globals::rv, readsFilenameLeft, &totalReadSize, Globals::qvoffset, Globals::trim_quality);
+		Globals::lastLeftNo = Globals::rv->size();
 		hint_t rightSize = 0;
-		ireadstream::readAllNoValidation(PositionKMer::rv, readsFilenameRight, &rightSize, Globals::qvoffset, Globals::trim_quality);
+		ireadstream::readAllNoValidation(Globals::rv, readsFilenameRight, &rightSize, Globals::qvoffset, Globals::trim_quality);
 		totalReadSize += rightSize;
 	}
 
-	PositionKMer::blob_size = totalReadSize + 1;
-	PositionKMer::blob_max_size = (hint_t)(PositionKMer::blob_size * ( 2 + Globals::blob_margin));
+	Globals::blob_size = totalReadSize + 1;
+	Globals::blob_max_size = (hint_t)(Globals::blob_size * ( 2 + Globals::blob_margin));
 
-	PositionKMer::blob = new char[ PositionKMer::blob_max_size ];
-	PositionKMer::blobquality = new char[ PositionKMer::blob_max_size ];
-	PositionKMer::blobkmers = new hint_t[ PositionKMer::blob_max_size ];
-	TIMEDLN("Max blob size as allocated is " << PositionKMer::blob_max_size);
+	Globals::blob = new char[ Globals::blob_max_size ];
+	Globals::blobquality = new char[ Globals::blob_max_size ];
+	Globals::blobhash = new hint_t[ Globals::blob_max_size ];
+	TIMEDLN("Max blob size as allocated is " << Globals::blob_max_size);
 
-	std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
+	std::fill( Globals::blobhash, Globals::blobhash + Globals::blob_max_size, -1 );
 
-	PositionKMer::revNo = PositionKMer::rv->size();
-	for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
-		string seq = PositionKMer::rv->at(i).getSequenceString();
-		Read revcomp = !(PositionKMer::rv->at(i));
-		PositionKMer::rv->push_back( revcomp );
+	Globals::revNo = Globals::rv->size();
+	for (hint_t i = 0; i < Globals::revNo; ++i) {
+		string seq = Globals::rv->at(i).getSequenceString();
+		Read revcomp = !(Globals::rv->at(i));
+		Globals::rv->push_back( revcomp );
 	}
-	PositionKMer::rv_bad = new std::vector<bool>(PositionKMer::rv->size(), false);
+	Globals::rv_bad = new std::vector<bool>(Globals::rv->size(), false);
 
 	TIMEDLN("All reads read to memory. Reverse complementary reads added.");
 
 	if (readBlobAndKmers) {
-		PositionKMer::readBlob( getFilename(dirprefix, blobFilename.c_str() ).c_str() );
+		Globals::readBlob( getFilename(dirprefix, blobFilename.c_str() ).c_str() );
 	}
 
 	for (int iter_count = 0; iter_count < iterno; ++iter_count) {
 		cout << "\n     === ITERATION " << iter_count << " begins ===" << endl;
 
-		PositionKMer::pr = new vector<PositionRead>();
+		Globals::pr = new vector<PositionRead>();
 		hint_t curpos = 0;
-		for (hint_t i = 0; i < PositionKMer::rv->size(); ++i) {
-			PositionRead pread(curpos, PositionKMer::rv->at(i).size(), i, PositionKMer::rv_bad->at(i));
-			PositionKMer::pr->push_back(pread);
+		for (hint_t i = 0; i < Globals::rv->size(); ++i) {
+			PositionRead pread(curpos, Globals::rv->at(i).size(), i, Globals::rv_bad->at(i));
+			Globals::pr->push_back(pread);
 			if (!readBlobAndKmers || iter_count > 1) {
-				for (uint32_t j=0; j < PositionKMer::rv->at(i).size(); ++j) {
-					PositionKMer::blob[ curpos + j ] = PositionKMer::rv->at(i).getSequenceString()[j];
-					PositionKMer::blobquality[ curpos + j ] = (char)(Globals::qvoffset + PositionKMer::rv->at(i).getQualityString()[j]);
+				for (uint32_t j=0; j < Globals::rv->at(i).size(); ++j) {
+					Globals::blob[ curpos + j ] = Globals::rv->at(i).getSequenceString()[j];
+					Globals::blobquality[ curpos + j ] = (char)(Globals::qvoffset + Globals::rv->at(i).getQualityString()[j]);
 				}
 			}
-			curpos += PositionKMer::rv->at(i).size();
+			curpos += Globals::rv->at(i).size();
 		}
-		TIMEDLN("Blob done, filled up PositionReads. Real size " << curpos << ". " << PositionKMer::pr->size() << " reads.");
+		Globals::blob_size = curpos;
+		TIMEDLN("Blob done, filled up PositionReads. Real size " << Globals::blob_size << ". " << Globals::pr->size() << " reads.");
 
-		vector<KMerCount> kmers;
+		KMerNo::precomputeHashes();
+		TIMEDLN("Hashes precomputed.");
+
+		vector<KMerCount*> kmers;
+		Globals::hm.clear();
+		#ifdef BOOST_UNORDERED_MAP
+			Globals::hm.rehash(Globals::blob_size);
+		#endif
+		#if defined GOOGLE_SPARSE_MAP
+			Globals::hm.resize(Globals::blob_size);
+		#endif
+
 		if (!readBlobAndKmers || iter_count > 0) {
 			TIMEDLN("Doing honest preprocessing.");
-			PositionKMer::blob_size = curpos;	
-			vector<KMerNo> vv;
-			DoPreprocessing(tau, readsFilename, nthreads, &vv);
-			TIMEDLN("Preprocessing done. Got " << vv.size() << " kmer positions. Starting parallel sort.");
-		
-			
-			ParallelSortKMerNos( &vv, &kmers, nthreads );
-			TIMEDLN("KMer positions sorted. In total, we have " << kmers.size() << " kmers.");
-			vv.clear();
+			DoPreprocessing(tau, readsFilename, nthreads, &kmers, &Globals::hm);
+			TIMEDLN("Preprocessing done. Got " << Globals::hm.size() << " kmers.");
 		} else {
 			TIMEDLN("Reading kmers from " << kmersFilename.c_str() );
-			PositionKMer::readKMerCounts( getFilename( dirprefix, kmersFilename.c_str() ).c_str(), &kmers );
+			Globals::readKMerCounts( getFilename( dirprefix, kmersFilename.c_str() ).c_str(), &kmers );
 			TIMEDLN("Kmers read from " << kmersFilename.c_str());
 		}
 
-
 		if ( writeBlobAndKmers && iter_count == 0 ) { // doesn't make sense to overwrite the first blob
-			PositionKMer::writeBlob( getFilename(dirprefix, blobFilename.c_str() ).data() );
-			PositionKMer::writeKMerCounts( getFilename(dirprefix, kmersFilename.c_str() ).data(), kmers );
+			Globals::writeBlob( getFilename(dirprefix, blobFilename.c_str() ).data() );
+			Globals::writeKMerCounts( getFilename(dirprefix, kmersFilename.c_str() ).data(), kmers );
 			TIMEDLN("Blob and kmers written.");
 			if ( exitAfterWritingBlobAndKMers ) break;
 		}
@@ -229,8 +238,8 @@ int main(int argc, char * argv[]) {
 		}
 
 		#pragma omp parallel for shared(changedReads, changedNucleotides, outfv) num_threads(nthreads)
-		for (size_t i = 0; i < PositionKMer::revNo; ++i) {
-			bool res = CorrectRead(kmers, i, outfv[omp_get_thread_num()]);
+		for (size_t i = 0; i < Globals::revNo; ++i) {
+			bool res = CorrectRead(Globals::hm, kmers, i, outfv[omp_get_thread_num()]);
 			changedNucleotides[omp_get_thread_num()] += res;
 			if (res) ++changedReads[omp_get_thread_num()];
 		}
@@ -258,12 +267,12 @@ int main(int argc, char * argv[]) {
 		// prepare the reads for next iteration
 		// delete consensuses, clear kmer data, and restore correct revcomps
 		kmers.clear();
-		delete PositionKMer::pr;
-		std::fill( PositionKMer::blobkmers, PositionKMer::blobkmers + PositionKMer::blob_max_size, -1 );
+		delete Globals::pr;
+		std::fill( Globals::blobhash, Globals::blobhash + Globals::blob_max_size, -1 );
 
-		PositionKMer::rv->resize( PositionKMer::revNo );
-		for (hint_t i = 0; i < PositionKMer::revNo; ++i) {
-			PositionKMer::rv->push_back( !(PositionKMer::rv->at(i)) );
+		Globals::rv->resize( Globals::revNo );
+		for (hint_t i = 0; i < Globals::revNo; ++i) {
+			Globals::rv->push_back( !(Globals::rv->at(i)) );
 		}
 		TIMEDLN("Reads restored.");
 
@@ -274,14 +283,14 @@ int main(int argc, char * argv[]) {
 
 	} // iterations
 
-	PositionKMer::subKMerPositions->clear();
-	delete PositionKMer::subKMerPositions;
-	PositionKMer::rv->clear();
-	delete PositionKMer::rv;
-	delete PositionKMer::rv_bad;
-	delete [] PositionKMer::blobkmers;
-	delete [] PositionKMer::blob;
-	delete [] PositionKMer::blobquality;
+	Globals::subKMerPositions->clear();
+	delete Globals::subKMerPositions;
+	Globals::rv->clear();
+	delete Globals::rv;
+	delete Globals::rv_bad;
+	delete [] Globals::blobhash;
+	delete [] Globals::blob;
+	delete [] Globals::blobquality;
 	return 0;
 }
 

@@ -37,7 +37,7 @@ bool SubKMerSorter::getNextBlock( int i, vector<hint_t> & block ) {
 	return (block.size() > 0);
 }
 
-SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount> * k, int nthreads, int tau, SubKMerSorterType type ) :
+SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount*> * k, int nthreads, int tau, SubKMerSorterType type ) :
 	nthreads_(nthreads), tau_(tau), kmers_size_(kmers_size), kmers_(NULL) {
 	// we set the sorting functions depending on the type
 	// here the sorting functions are regular sorting functions predefined in PositionKMer
@@ -45,11 +45,11 @@ SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount> * k, int nthr
 		case SorterTypeStraight:
 			for (int j=0; j < tau+1; ++j) {
 				sub_less.push_back(    boost::bind(PositionKMer::compareSubKMers,        _1, _2, k, tau, 
-					PositionKMer::subKMerPositions->at(j), PositionKMer::subKMerPositions->at(j+1) ) );
+					Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
 				sub_greater.push_back( boost::bind(PositionKMer::compareSubKMersGreater, _1, _2, k, tau, 
-					PositionKMer::subKMerPositions->at(j), PositionKMer::subKMerPositions->at(j+1) ) );
+					Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
 				sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMers,          _1, _2, k, tau, 
-					PositionKMer::subKMerPositions->at(j), PositionKMer::subKMerPositions->at(j+1) ) );
+					Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
 			}
 			break;
 		case SorterTypeChequered:
@@ -65,7 +65,7 @@ SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount> * k, int nthr
 	initVectors();
 }
 
-SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount> * k, int nthreads, int tau, int jj,
+SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount*> * k, int nthreads, int tau, int jj,
 	SubKMerSorterType type, SubKMerSorterType parent_type ) : nthreads_(nthreads), tau_(tau), kmers_size_(kmers->size()), kmers_(kmers) {
 
 	//cout << "    constructor nthreads=" << nthreads << " tau=" << tau << " kmerssize=" << kmers_size_ << " jj=" << jj << endl;
@@ -75,8 +75,8 @@ SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount> * k, i
 		assert(parent_type == SorterTypeStraight);
 
 		vector< pair<uint32_t, uint32_t> > my_positions(tau+1);
-		uint32_t left_size = PositionKMer::subKMerPositions->at(jj);
-		uint32_t right_size = K - PositionKMer::subKMerPositions->at(jj+1);
+		uint32_t left_size = Globals::subKMerPositions->at(jj);
+		uint32_t right_size = K - Globals::subKMerPositions->at(jj+1);
 		uint32_t total_size = left_size + right_size;
 		uint32_t left_end = ( (tau + 1) * left_size ) / ( total_size );
 		uint32_t increment = total_size / (tau+1);
@@ -84,8 +84,8 @@ SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<KMerCount> * k, i
 		for (uint32_t i=0; i < left_end; ++i) my_positions[i] = make_pair( i * increment, (i+1) * increment );
 		if (left_end > 0) my_positions[left_end-1].second = left_size;
 		for (uint32_t i=left_end; i < (uint32_t)tau+1; ++i) my_positions[i] = make_pair(
-			PositionKMer::subKMerPositions->at(jj+1) + (i  -left_end) * increment,
-			PositionKMer::subKMerPositions->at(jj+1) + (i+1-left_end) * increment );
+			Globals::subKMerPositions->at(jj+1) + (i  -left_end) * increment,
+			Globals::subKMerPositions->at(jj+1) + (i+1-left_end) * increment );
 		if (jj < tau) my_positions[tau].second = K;
 
 		for (int j=0; j < tau+1; ++j) {
