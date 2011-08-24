@@ -270,11 +270,11 @@ public:
 		FireDeleteEdge(edge1);
 		FireDeleteEdge(edge2);
 		FireAddEdge(newEdge);
-		VertexId start = EdgeStart(edge1);
-		VertexId end = EdgeEnd(edge1);
 		HiddenDeleteEdge(edge1);
 		HiddenDeleteEdge(edge2);
 		//DEBUG
+//		VertexId start = EdgeStart(edge1);
+//		VertexId end = EdgeEnd(edge1);
 //		if (IsDeadStart(start) && IsDeadEnd(start)) {
 //			WARN("Start vertex without edges after glue");
 //			DeleteVertex(start);
