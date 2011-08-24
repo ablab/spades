@@ -26,7 +26,7 @@ void Globals::readBlob( const char * fname ) {
 	fclose(f);
 
 	// precompute hashes
-	Globals::blobhash = new hint_t[ Globals::blob_max_size ];
+	Globals::blobhash = new uint64_t[ Globals::blob_max_size ];
 	KMerNo::precomputeHashes();
 }
 
