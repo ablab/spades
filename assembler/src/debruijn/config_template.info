@@ -31,8 +31,8 @@ start_from begin   ; Full run.
 
 tc
 {
-   max_tip_length		      50
-	max_coverage		      1000
+   	max_tip_length_div_K	2.5
+	max_coverage			1000
 	max_relative_coverage	2.0   ; tip_cov < this * not_tip_cov
 }
 
@@ -40,11 +40,11 @@ tc
 
 br
 {
-	max_length_div_K	      5
-	max_coverage		      1000.0
+	max_length_div_K	    5
+	max_coverage			1000.0
 	max_relative_coverage	1.1 	; bulge_cov < this * not_bulge_cov
-	max_delta		         4.0
-	max_relative_delta	   0.1
+	max_delta				4.0
+	max_relative_delta		0.1
 }
 
 ; erroneous connections remover:
