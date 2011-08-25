@@ -539,8 +539,9 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 			int GraphCnt = 0;
 
 			omnigraph::WriteSimple(
+					new_graph, IdTrackLabelerAfter,
 					output_folder + "resolve_" + ToString(cheating_mode)+"_"+ ToString(GraphCnt) + ".dot",
-					"no_repeat_graph", new_graph, IdTrackLabelerAfter);
+					"no_repeat_graph");
 
 			for (auto v_iter = vertices.begin(), v_end =
 					vertices.end(); v_iter != v_end; ++v_iter) {
@@ -555,9 +556,8 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				sum_count += tcount;
 				GraphCnt++;
 				omnigraph::WriteSimple(
-						output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
-								+ ".dot", "no_repeat_graph", new_graph,
-						IdTrackLabelerAfter);
+						new_graph, IdTrackLabelerAfter, output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
+								+ ".dot", "no_repeat_graph");
 			}
 		}
 	}INFO("total vert" << sum_count);

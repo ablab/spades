@@ -190,11 +190,11 @@ template<class Graph>
 class EdgePairStat: public omnigraph::AbstractStatCounter {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-	Graph &graph_;
-	PairedInfoIndex<Graph> &pair_info_;
+	const Graph &graph_;
+	const PairedInfoIndex<Graph> &pair_info_;
 	const string &output_folder_;
 public:
-	EdgePairStat(Graph &graph, PairedInfoIndex<Graph> &pair_info,
+	EdgePairStat(const Graph &graph, const PairedInfoIndex<Graph> &pair_info,
 			const string &output_folder) :
 			graph_(graph), pair_info_(pair_info), output_folder_(output_folder) {
 	}
@@ -332,8 +332,8 @@ template<class Graph>
 class UniquePathStat: public omnigraph::AbstractStatCounter {
 
 	typedef typename Graph::EdgeId EdgeId;
-	Graph& g_;
-	PairedInfoIndex<Graph>& pair_info_;
+	const Graph& g_;
+	const PairedInfoIndex<Graph>& pair_info_;
 	size_t insert_size_;
 	size_t max_read_length_;
 	size_t gap_;
@@ -365,7 +365,7 @@ class UniquePathStat: public omnigraph::AbstractStatCounter {
 	}
 public:
 
-	UniquePathStat(Graph& g, PairedInfoIndex<Graph>& pair_info,
+	UniquePathStat(const Graph& g, const PairedInfoIndex<Graph>& pair_info,
 			size_t insert_size, size_t max_read_length, double variance_delta,
 			double weight_threshold) :
 			g_(g), pair_info_(pair_info), insert_size_(insert_size), max_read_length_(
@@ -439,8 +439,8 @@ template<class Graph>
 class MatePairTransformStat: public omnigraph::AbstractStatCounter {
 
 	typedef typename Graph::EdgeId EdgeId;
-	Graph& g_;
-	PairedInfoIndex<Graph>& pair_info_;
+	const Graph& g_;
+	const PairedInfoIndex<Graph>& pair_info_;
 
 	size_t considered_dist_cnt_;
 	size_t unique_distance_cnt_;
@@ -476,7 +476,7 @@ class MatePairTransformStat: public omnigraph::AbstractStatCounter {
 
 public:
 
-	MatePairTransformStat(Graph& g, PairedInfoIndex<Graph>& pair_info) :
+	MatePairTransformStat(const Graph& g, const PairedInfoIndex<Graph>& pair_info) :
 			g_(g), pair_info_(pair_info), considered_dist_cnt_(0), unique_distance_cnt_(
 					0), non_unique_distance_cnt_(0) {
 
@@ -517,12 +517,12 @@ template<class Graph>
 class UniqueDistanceStat: public omnigraph::AbstractStatCounter {
 	typedef omnigraph::PairedInfoIndex<Graph> PairedIndex;
 
-	PairedIndex& paired_info_;
+	const PairedIndex& paired_info_;
 	size_t unique_;
 	size_t non_unique_;
 public:
 
-	UniqueDistanceStat(PairedIndex& paired_info) :
+	UniqueDistanceStat(const PairedIndex& paired_info) :
 			paired_info_(paired_info), unique_(0), non_unique_(0) {
 
 	}
@@ -562,10 +562,10 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef PairInfo<EdgeId> Info;
 	typedef typename PairedInfoIndex<Graph>::PairInfos Infos;
-	Graph &graph_;
-	PairedInfoIndex<Graph>& pair_info_;
-	PairedInfoIndex<Graph>& estimated_pair_info_;
-	PairedInfoIndex<Graph>& etalon_pair_info_;
+	const Graph &graph_;
+	const PairedInfoIndex<Graph>& pair_info_;
+	const PairedInfoIndex<Graph>& estimated_pair_info_;
+	const PairedInfoIndex<Graph>& etalon_pair_info_;
 	vector<double> false_positive_weights_;
 	set<Info> false_positive_infos_;
 	vector<double> perfect_match_weights_;
@@ -770,9 +770,9 @@ private:
 	}
 
 public:
-	EstimationQualityStat(Graph &graph, PairedInfoIndex<Graph>& pair_info,
-			PairedInfoIndex<Graph>& estimated_pair_info,
-			PairedInfoIndex<Graph>& etalon_pair_info) :
+	EstimationQualityStat(const Graph &graph, const PairedInfoIndex<Graph>& pair_info,
+			const PairedInfoIndex<Graph>& estimated_pair_info,
+			const PairedInfoIndex<Graph>& etalon_pair_info) :
 			graph_(graph), pair_info_(pair_info), estimated_pair_info_(
 					estimated_pair_info), etalon_pair_info_(etalon_pair_info), false_negative_count_(
 					0) {
@@ -931,11 +931,11 @@ private:
 	typedef PairInfo<EdgeId> Info;
 	typedef typename PairedInfoIndex<Graph>::PairInfos Infos;
 
-	PairedInfoIndex<Graph>& estimated_pair_info_;
+	const PairedInfoIndex<Graph>& estimated_pair_info_;
 	vector<pair<double, double>> weight_variance_stat_;DECL_LOGGER("EstimatedClusterStat")
 	;
 public:
-	ClusterStat(PairedInfoIndex<Graph>& estimated_pair_info) :
+	ClusterStat(const PairedInfoIndex<Graph>& estimated_pair_info) :
 			estimated_pair_info_(estimated_pair_info) {
 	}
 

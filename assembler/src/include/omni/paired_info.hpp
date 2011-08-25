@@ -189,7 +189,7 @@ public:
 						info.variance));
 	}
 public:
-	data_iterator begin() {
+	data_iterator begin() const {
 		auto itp = data_.begin();
 		int cnt = 1;
 		for (auto it = data_.begin(); it != data_.end(); ++it) {
@@ -206,11 +206,11 @@ public:
 		return data_.begin();
 	}
 
-	data_iterator end() {
+	data_iterator end() const {
 		return data_.end();
 	}
 
-	size_t size() {
+	size_t size() const {
 		return data_.size();
 	}
 
@@ -237,11 +237,11 @@ public:
 		data_.erase(LowerBound(e), UpperBound(e));
 	}
 
-	PairInfos GetEdgeInfos(EdgeId e) {
+	PairInfos GetEdgeInfos(EdgeId e) const {
 		return PairInfos(LowerBound(e), UpperBound(e));
 	}
 
-	PairInfos GetEdgePairInfos(EdgeId e1, EdgeId e2) {
+	PairInfos GetEdgePairInfos(EdgeId e1, EdgeId e2) const {
 		return PairInfos(LowerBound(e1, e2), UpperBound(e1, e2));
 	}
 
@@ -261,15 +261,15 @@ public:
 		return data_.lower_bound(MinPairInfo(e));
 	}
 
-	data_iterator UpperBound(EdgeId e) {
+	data_iterator UpperBound(EdgeId e) const {
 		return data_.upper_bound(MaxPairInfo(e));
 	}
 
-	data_iterator LowerBound(EdgeId e1, EdgeId e2) {
+	data_iterator LowerBound(EdgeId e1, EdgeId e2) const {
 		return data_.lower_bound(MinPairInfo(e1, e2));
 	}
 
-	data_iterator UpperBound(EdgeId e1, EdgeId e2) {
+	data_iterator UpperBound(EdgeId e1, EdgeId e2) const {
 		return data_.upper_bound(MaxPairInfo(e1, e2));
 	}
 
@@ -299,11 +299,11 @@ public:
 	 */
 	class EdgePairIterator {
 		typename PairInfoIndexData<EdgeId>::data_iterator position_;
-		PairedInfoIndex<Graph> &index_;
+		const PairedInfoIndex<Graph> &index_;
 	public:
 		EdgePairIterator(
 				typename PairInfoIndexData<EdgeId>::data_iterator position,
-				PairedInfoIndex<Graph> &index) :
+				const PairedInfoIndex<Graph> &index) :
 			position_(position), index_(index) {
 		}
 
@@ -325,11 +325,11 @@ public:
 		}
 	};
 
-	EdgePairIterator begin() {
+	EdgePairIterator begin() const {
 		return EdgePairIterator(data_.begin(), *this);
 	}
 
-	EdgePairIterator end() {
+	EdgePairIterator end() const {
 		return EdgePairIterator(data_.end(), *this);
 	}
 
@@ -522,14 +522,14 @@ public:
 	/**
 	 * Method returns all data about given edge
 	 */
-	PairInfos GetEdgeInfo(EdgeId edge) {
+	PairInfos GetEdgeInfo(EdgeId edge) const {
 		return data_.GetEdgeInfos(edge);
 	}
 
 	/**
 	 * Method returns all data about distance between two given edges
 	 */
-	PairInfos GetEdgePairInfo(EdgeId first, EdgeId second) {
+	PairInfos GetEdgePairInfo(EdgeId first, EdgeId second) const {
 		return data_.GetEdgePairInfos(first, second);
 	}
 
