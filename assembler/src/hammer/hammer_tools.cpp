@@ -157,6 +157,9 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 	v.push_back(vA); v.push_back(vC); v.push_back(vG); v.push_back(vT);
 	Globals::rv_bad->at(readno) = true;
 
+	// getting the leftmost and rightmost positions of a solid kmer
+	int left = read_size; int right = -1;
+
 	bool changedRead = false;
 	pair<int, KMerCount *> it = make_pair( -1, (KMerCount*)NULL );
 	while ( (it = pr.nextKMer(it.first)).first > -1 ) {
@@ -169,9 +172,11 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 			for (size_t j=0; j<K; ++j) {
 				v[dignucl(kmer[j])][pos+j]++;
 			}
+			if ((int)pos < left) left = pos; if ((int)pos > right) right = pos;
 		} else {
 			if (stat.changeto < KMERSTAT_CHANGE) {
 				Globals::rv_bad->at(readno) = false;
+				if ((int)pos < left) left = pos; if ((int)pos > right) right = pos;
 				const PositionKMer & newkmer = km[ stat.changeto ]->first;
 				
 				for (size_t j=0; j<K; ++j) {
@@ -201,9 +206,11 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 			for (size_t j=0; j<K; ++j) {
 				v[complement(dignucl(kmer[j]))][read_size-pos-j-1]++;
 			}
+			if ((int)(read_size-K-pos) < left) left = (int)(read_size-K-pos); if ((int)(read_size-K-pos) > right) right = (int)(read_size-K-pos);
 		} else {
 			if (stat.changeto < KMERSTAT_CHANGE) {
 				Globals::rv_bad->at(readno) = false;
+				if ((int)(read_size-K-pos) < left) left = (int)(read_size-K-pos); if ((int)(read_size-K-pos) > right) right = (int)(read_size-K-pos);
 				const PositionKMer & newkmer = km[ stat.changeto ]->first;
 
 				for (size_t j=0; j<K; ++j) {
@@ -260,6 +267,16 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 	}*/
 	
 	Globals::rv->at(readno).setSequence(seq.data());
+	if (ofs != NULL && changedRead) {
+		*ofs << "Final result:  size=" << Globals::rv->at(readno).size() << "\n" << Globals::rv->at(readno).getSequenceString().c_str() << "\n" << Globals::rv->at(readno).getPhredQualityString(Globals::qvoffset).c_str() << endl;
+	}
+	if (Globals::trim_left_right) {
+		Globals::rv->at(readno).trimLeftRight(left, right+K-1);
+		if (ofs != NULL && changedRead) {
+			*ofs << "Trimming to [ " << left << ", " << right+K-1 << "]" << endl;
+			*ofs << "Trimmed: " << Globals::rv->at(readno).getSequenceString().c_str() << endl;
+		}
+	}
 	return res;
 }
 
@@ -328,41 +345,18 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 	}
 	boundaries[nthreads] = v->size();
 
-	//cout << "  nthreads=" << nthreads << endl;
-
 	#pragma omp parallel for shared(v, boundaries) num_threads(nthreads)
 	for (int j = 0; j < nthreads; ++j) {
 		// sort(v->begin() + boundaries[j], v->begin() + boundaries[j+1], KMerNo::less);
 	}
 	TIMEDLN("Subvectors sorted.");
 
-
-	//cout << "  Boundaries: "; for (int j=0; j < nthreads+1; ++j) cout << boundaries[j] << " "; cout << endl;
-
-
-	/*TIMEDLN("Running unique.");
-	vector< size_t > unique_results(nthreads);
-	#pragma omp parallel for shared(v, boundaries, unique_results) num_threads(nthreads)
-	for (int j = 0; j < nthreads; ++j) {
-		unique_results[j] = KMerNoUnique(v, boundaries[j], boundaries[j+1]);
-	}
-	KMerNoErase( v, nthreads, &boundaries, unique_results );
-	TIMEDLN("Erased non-unique.");*/
-
-	// for (size_t j=0; j < v->size(); ++j) cout << (*v)[j].str() << "\t" << (*v)[j].count << "\t" << (*v)[j].errprob << endl;
-	//cout << "  Boundaries: "; for (int j=0; j < nthreads+1; ++j) cout << boundaries[j] << " "; cout << endl;
-
 	int npieces = nthreads;
 	while ( npieces > 4 ) {
 		int new_npieces = npieces / 2;
-		//cout << "    npieces=" << npieces << " new_npieces=" << new_npieces << endl;
 		#pragma omp parallel for shared(v, boundaries) num_threads(new_npieces)
 		for (int j=0; j < new_npieces; ++j) {
-			#pragma omp critical
-			{
-			//cout << "  Merging from " << (j*2) << "=" << boundaries[j*2] << " via " << (j*2+1) << "=" << boundaries[j*2+1] << " to " << (j*2+2) << "=" << boundaries[j*2+2] << endl;
-			}
-		//	inplace_merge( v->begin() + boundaries[j*2], v->begin() + boundaries[j*2+1], v->begin() + boundaries[j*2+2], KMerNo::less );
+			// inplace_merge( v->begin() + boundaries[j*2], v->begin() + boundaries[j*2+1], v->begin() + boundaries[j*2+2], KMerNo::less );
 		}
 		vector<size_t> new_boundaries;
 		for (int j=0; j < new_npieces; ++j) { new_boundaries.push_back( boundaries[j*2] ); }
@@ -371,18 +365,6 @@ void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthr
 
 		npieces = new_npieces;
 		boundaries.swap(new_boundaries);
-
-		/*
-		cout << "  Boundaries before unique: "; for (int j=0; j < npieces+1; ++j) cout << boundaries[j] << " "; cout << endl;
-		vector< size_t > cur_unique_results(npieces);
-		#pragma omp parallel for shared(v, boundaries, unique_results) num_threads(npieces)
-		for (int j = 0; j < npieces; ++j) {
-			cur_unique_results[j] = KMerNoUnique(v, boundaries[j], boundaries[j+1]);
-		}		
-		KMerNoErase( v, npieces, &boundaries, cur_unique_results );
-		cout << "  Boundaries after unique: "; for (int j=0; j < npieces+1; ++j) cout << boundaries[j] << " "; cout << endl;
-		*/
-
 	}
 	TIMEDLN("Merge done. Starting priority queue operations.");
 

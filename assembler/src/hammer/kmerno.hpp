@@ -10,8 +10,8 @@
 #include "google/sparse_hash_map"
 #include "google/dense_hash_map"
 
-#define GOOGLE_SPARSE_MAP
-//#define BOOST_UNORDERED_MAP
+//#define GOOGLE_SPARSE_MAP
+#define BOOST_UNORDERED_MAP
 //#define GOOGLE_DENSE_MAP
 
 #include "kmer_stat.hpp"
@@ -36,7 +36,7 @@ struct KMerNo {
 
 	static uint64_t new_hash( hint_t index );
 	static uint64_t next_hash( uint64_t old_hash, hint_t new_index );
-	static void precomputeHashes();
+	//static void precomputeHashes();
 
 	struct hash {
 		uint64_t operator() (const KMerNo &kn) const;
