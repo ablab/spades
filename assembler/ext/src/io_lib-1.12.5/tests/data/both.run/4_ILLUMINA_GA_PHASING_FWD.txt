@@ -1,0 +1,4 @@
+<Parameters>
+  <Phasing>0.004400</Phasing>
+  <Prephasing>0.003000</Prephasing>
+</Parameters>

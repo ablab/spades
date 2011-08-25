@@ -1,0 +1,135 @@
+.TH read_reading 3 "" "" "Staden Package"
+
+.SH NAME
+
+.LP
+.BR read_reading ,
+.BR fread_reading
+\- Read a trace file into a \fBRead\fR structure.
+
+.SH SYNOPSIS
+.LP
+.nf
+.ft B
+#include <Read.h>
+
+.nf
+.ft B
+Read *read_reading(
+	char *filename,
+	int format);
+.ft
+.fi
+.LP
+.nf
+.ft B
+Read *fread_reading(
+	FILE *fp,
+	char *filename,
+	int format);
+.ft
+.fi
+.IX "read_reading()" "" "read_reading()"
+.IX "fread_reading()" "" "fread_reading()"
+
+.SH DESCRIPTION
+.LP
+These functions read trace files into a \fBRead\fR structure. A variety of
+formats are supported including ABI, ALF and SCF. (Note that the first two are
+only supported when the library is used as part of the Staden Package.)
+Additionally, support for reading the plain (old) staden format files and
+Experiment files is included. Compressed trace files may also be read.
+Decompression is performed using either \fBgzip -d\fR or \fBuncompress\fR and
+is written to a temporary file for further processing. The temporary file is
+then read and removed.
+.LP
+When reading an experiment file the trace file referenced by the LN and LT
+line types is read. The QL, QR (left and right quality clips), SL and SR
+(left and right vector clips) are taken from the Experiment file to produce
+the cutoff information held within the \fBRead\fR structure. The
+\fBorig_trace\fR field of the \fBRead\fR structure will then contain the
+pointer to the experiment file structure and the \fBorig_trace_format\fR field
+will be set to \fBTT_EXP\fR.
+.LP
+The functions allocate a \fBRead\fR structure which is returned. To deallocate
+this structure use the \fBread_deallocate()\fR function.
+.LP
+.B read_reading()
+reads a trace from the specified filename and format. Formats available are
+.BR TT_SCF ,
+.BR TT_ABI ,
+.BR TT_ALF ,
+.BR TT_PLN ,
+.BR TT_EXP and
+.BR TT_ANY .
+Specifying format \fBTT_ANY\fR will attempt to automatically detect the corret
+format type by analysing the trace file for magic numbers and composition. The
+\fBformat\fR field of the structure can then be used to determine the real
+trace type.
+.LP
+.B fread_reading()
+reads a trace from the specified file pointer. The filename argument is used
+for setting the \fBtrace_name\fR field of the resulting structure, and for
+error messages. Otherwise the function is identical to the
+\fBread_reading()\fR function.
+.LP
+The \fBRead\fR structure itself is as follows.
+.EX 5
+.ft B
+typedef uint_2 TRACE;        /* for trace heights */
+
+typedef struct
+{
+    int         format;      /* Trace file format */
+    char       *trace_name;  /* Trace file name   */
+
+    int         NPoints;     /* No. of points of data */
+    int         NBases;      /* No. of bases          */
+
+    /* Traces */
+    TRACE      *traceA;      /* Array of length `NPoints' */
+    TRACE      *traceC;      /* Array of length `NPoints' */
+    TRACE      *traceG;      /* Array of length `NPoints' */
+    TRACE      *traceT;      /* Array of length `NPoints' */
+    TRACE       maxTraceVal; /* The maximal value in any trace */
+
+    /* Bases */
+    char       *base;        /* Array of length `NBases' */
+    uint_2     *basePos;     /* Array of length `NBases' */
+
+    /* Cutoffs */
+    int         leftCutoff;  /* Number of unwanted bases */
+    int         rightCutoff; /* Number of unwanted bases */
+
+    /* Miscellaneous Sequence Information */
+    char       *info;        /* misc seq info, eg comments */
+
+    /* Probability information */
+    char       *prob_A;      /* Array of length 'NBases' */
+    char       *prob_C;      /* Array of length 'NBases' */
+    char       *prob_G;      /* Array of length 'NBases' */
+    char       *prob_T;      /* Array of length 'NBases' */
+
+    /* The original input format data, or NULL if inapplicable */
+    int orig_trace_format;
+    void *orig_trace;
+
+} Read;
+.EE
+.ft
+.LP
+
+.SH RETURN VALUES
+.LP
+On successful completion, the \fBread_reading()\fR and \fBfread_reading()\fR
+functions return a pointer to a \fBRead\fR structure. Otherwise these
+functions return NULLRead (which is a null pointer).
+
+.SH SEE ALSO
+.LP
+.BR write_reading (3),
+.BR fwrite_reading (3),
+.BR deallocate_reading (3),
+.BR scf (4),
+.br
+.BR ExperimentFile (4)

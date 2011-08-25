@@ -1,0 +1,35 @@
+.TH srf2fasta 1 "September 19" "" "Staden io_lib"
+
+.SH "NAME"
+
+.PP
+.BR srf2fasta
+\- Converts SRF files to fasta format
+
+.SH "SYNOPSIS"
+.PP
+\fBsrf2fasta\fR  [\fI-C\fR] \fIsrf_archive\fR
+
+.SH "DESCRIPTION"
+.PP
+\fBsrf2fasta\fR extracts sequences from an SRF archive and writes them
+in fasta format to stdout.
+
+.SH "OPTIONS"
+.PP
+.TP
+\fB-C\fR
+Masks out sequences tagged as bad quality.
+
+.SH "EXAMPLES"
+.PP
+To extract only the good quality sequences from runX.srf into
+runX.fasta.
+.PP
+.nf
+    srf2fasta -C runX.srf > runX.fasta
+.fi
+
+.SH "AUTHOR"
+.PP
+James Bonfield, Wellcome Trust Sanger Institute

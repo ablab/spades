@@ -1,0 +1,171 @@
+			IO_LIB VERSION 1.12.5
+			=====================
+
+Io_lib is a library of file reading and writing code to provide a general
+purpose trace file (and Experiment File) reading interface. The programmer
+simply calls the (eg) read_reading to create a "Read" C structure with the
+data loaded into memory. It has been compiled and tested on a variety
+of unix systems, MacOS X and MS Windows.
+
+The directories below here contain the io_lib code. These support the
+following file formats:
+
+	SCF trace files
+	ABI trace files
+	ALF trace files
+	CTF trace files
+	ZTR trace files
+	SFF trace archives
+	SRF trace archives
+	Experiment files
+	Plain text files
+
+These link together to form a single "libstaden-read" library supporting
+all the file formats via a single read_reading (or fread_reading or
+mfread_reading) function call and analogous write_reading functions
+too. See the file include/Read.h for the generic 'Read' structure.
+
+
+What's new in 1.12.5
+====================
+
+Improvements for MacOS X builds and maybe other platforms (related to
+the use of va_copy function call).
+
+
+What's new in 1.12.4
+====================
+
+Bug fix to extracting data from .hash files.
+
+
+What's new in 1.12.3
+====================
+
+Primarily this release is to resolve compilation issues on some platforms. 
+
+Additionally there are a few improvements to srf2fastq, srf_dump_all,
+srf_filter, hash_tar and hash_list. See CHANGES for the full list.
+
+
+What's new in 1.12.2
+====================
+
+Extra options in srf2fastq:
+	-S to output split regions sequentially to stdout.
+	-r to request a region to be reverse complemented before output.
+
+API changes in HashTable code:
+	We now support HASH_POOL_ITEMS flag to reduce memory usage and
+	fragmentation, while speeding it up too. The pooled_alloc
+	methods implementing this may be useful in other places too.
+	(This change does not break the existing ABI.)
+
+Minor bug fixes (see CHANGES file).
+
+
+What's new in 1.12.1
+====================
+
+Library renaming:
+	The final object is no longer libread.so (or read.dll), but
+	libstaden-read.so. This had already been done by the Fedora bundled
+	version and work was in progress to do this in Debian too.
+
+Illumina2srf/srf2illumina:
+	Both of these tools have now been removed. Illumina itself should
+	now be supporting these tools and shipping appropriate versions
+	compatible with each GA-pipeline release.
+
+Libtool:
+	We now create dynamic library too, in addition to the static
+	versions, using the autoconf "libtool" program.  Furthermore we now
+	have proper library versioning, starting with an soname of
+	libstaden-read.so.1 for this release.
+
+INCOMPATIBILITY:
+	The Array data type and Array* functions now use size_t instead of
+	int for the array sizes. This means programs linked against the old
+	io_lib releases are not binary compatible with this version. 
+
+See CHANGES and ChangeLog for a full list of changes and for older release
+notes.
+
+
+Older comments
+==============
+
+In 1.11.x the SRF support was added. The SRF v1.3 format specification can
+be found here:
+
+http://www.bcgsc.ca/pipermail/ssrformat/attachments/20071209/b0f865a0/ShortSequenceFormatDec9th_v_1_3-0001.doc
+
+The ZTR specification changes involve adding some new compression
+types (the general purpose XRLE2 plus some more solexa specific TSHIT
+and QSHIFT methods), a region chunk (REGN) to indicate the location of
+paired-end data stored in a single trace, improved meta-data support
+for SMP4/SAMP chunks including specifying the baseline (OFFS meta-data
+tag) and various minor tweaks. There's still a few questions in the
+ZTR format itself (pending feedback), but what is implemented
+currently is also what has been described in the docs/ZTR_format
+file.
+
+Finally the directory layout has been greatly simplified with the
+merging of all the format directories into a single "io_lib"
+directory and the programs utilising it remaining in the "progs"
+subdirectory.
+
+
+Building
+========
+
+Linux
+-----
+
+We use the GNU autoconf build mechanism.
+
+To build:
+
+1. ./configure
+
+"./configure --help" will give a list of the options for GNU autoconf. For
+modifying the compiler options or flags you may wish to redefine the CC or
+CFLAGS variable.
+
+Eg (in sh or bash):
+   CC=cc CFLAGS=-g ./configure
+
+2. make (or gmake)
+
+This will build the sources.
+
+CFLAGS may also be changed a build time using (eg):
+    make 'CFLAGS=-g ...'
+
+3. make install
+
+The default installation location is /usr/local/bin and /usr/local/lib. These
+can be changed with the --prefix option to "configure".
+
+Windows
+-------
+
+Under Microsoft Windows we recommend the use of MSYS and MINGW as a
+build environment.
+
+These contain enough tools to build using the configure script as per
+Linux. Visit http://sourceforge.net/projects/mingw/files/ and
+download/install Automated MinGW Installer (eg MinGW-5.1.4.exe), MSYS
+Base System (eg MSYS-1.0.11.exe) and MSYS Supplementary Tools (eg
+msysDTK-1.0.1.exe).
+
+
+MacOS X
+-------
+
+The configure script should work by default, but if you are attempting
+to build FAT binaries to work on both i386 and ppc targets you'll need
+to disable dependency tracking. Ie:
+
+    CFLAGS="-arch i386 -arch ppc" LDFLAGS="-arch i386 -arch ppc" \
+      ../configure --disable-dependency-tracking

@@ -12,7 +12,7 @@ void TestReaderSingleReadNoFile() {
 }
 
 void TestReaderSingleReadReading() {
-  Reader<SingleRead> reader("./test/data/s_test.fastq.gz", 0, 33);
+  Reader<SingleRead> reader("./test/data/s_test.fastq.gz");
   ASSERT(reader.is_open());
   SingleRead read;
   reader >> read;
@@ -31,7 +31,7 @@ void TestReaderSingleReadReading() {
 }
 
 void TestReaderSingleReadFull() {
-  Reader<SingleRead> reader("./test/data/s_test.fastq.gz", 0, 33);
+  Reader<SingleRead> reader("./test/data/s_test.fastq.gz");
   ASSERT(reader.is_open());
   reader.reset();
   ASSERT(reader.is_open());
