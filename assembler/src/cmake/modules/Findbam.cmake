@@ -3,13 +3,13 @@ include (FindPackageHandleStandardArgs)
 find_path (bam_INCLUDE_DIRS
   "bam.h"
   PATHS
-    ${CMAKE_SOURCE_DIR}/../ext/include/statgen/samtools
+    ${CMAKE_SOURCE_DIR}/../ext/include/statgen
 )
 
 find_library (bam_LIBRARIES
   "bam"
   PATHS
-    ${CMAKE_SOURCE_DIR}/../build/ext/lib
+    ${CMAKE_SOURCE_DIR}/../build/ext/statgen
 )
 
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(bam

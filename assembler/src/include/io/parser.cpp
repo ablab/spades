@@ -22,11 +22,10 @@
 #include <string>
 #include "io/fasta_fastq_gz_parser.hpp"
 
-/*
 #include "io/sam_bam_parser.hpp"
 #include "io/sff_parser.hpp"
 #include "io/scf_parser.hpp"
-*/
+
 
 namespace io {
 
@@ -70,7 +69,7 @@ Parser* SelectParser(const std::string& filename,
       (ext == "seq") || (ext == "seq.gz")) {
     return new FastaFastqGzParser(filename, offset_type);
   }
-  /*
+  
   if ((ext == "sam") || (ext == "bam") || 
       (ext == "sam.gz")) {
     return new SamBamParser(filename, offset_type);
@@ -85,7 +84,7 @@ Parser* SelectParser(const std::string& filename,
       (ext == "str") || (ext == "bio")) {
     return new ScfParser(filename, offset_type);
   }
-  */
+  
   return NULL;
 }
 

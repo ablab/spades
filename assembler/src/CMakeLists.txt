@@ -54,20 +54,20 @@ include_directories(${ZLIB_INCLUDE_DIRS})
 include_directories(${log4cxx_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 
-#include_directories(${statgen_INCLUDE_DIRS})
-#include_directories(${staden_INCLUDE_DIRS})
-#include_directories(${ssl_INCLUDE_DIRS})
-#include_directories(${bam_INCLUDE_DIRS})
+include_directories(${statgen_INCLUDE_DIRS})
+include_directories(${staden_INCLUDE_DIRS})
+include_directories(${ssl_INCLUDE_DIRS})
+include_directories(${bam_INCLUDE_DIRS})
 
 
 set(COMMON_LIBRARIES 
    ${ZLIB_LIBRARIES} 
    ${log4cxx_LIBRARIES} 
    ${Boost_LIBRARIES} 
-#   ${statgen_LIBRARIES} 
-#   ${staden_LIBRARIES} 
-#   ${ssl_LIBRARIES} 
-#   ${bam_LIBRARIES}
+   ${statgen_LIBRARIES} 
+   ${staden_LIBRARIES} 
+   ${ssl_LIBRARIES} 
+   ${bam_LIBRARIES}
    )
 
 include_directories(${EXT_DIR}/include)
