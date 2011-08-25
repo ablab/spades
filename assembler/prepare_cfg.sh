@@ -2,39 +2,60 @@
 
 # compile and install libraries from ext
 
-mkdir -p build/ext/lib
+export assembler="`pwd`"
+export src="$assembler/src"
+export ext="$assembler/ext"
+export build="$assembler/build"
 
-cd ./ext/src/io_lib-1.12.5
-if [ "$1" == "nosys" ]; then
-./configure --prefix="`pwd`/../../../build/ext"
-else
-./configure 
-fi
-make
-make install
-make clean
 
-cd ../statgen/lib
-make
-cp ./libStatGen.a ../../../../build/ext/lib
-cp ./samtools/libbam.a ../../../../build/ext/lib
-cd ../../../include/statgen/lib/
-rm -f include
-ln -s ../../../src/statgen/lib/include include
-cd ../samtools
-rm -f bam.h
-ln ../../../src/statgen/lib/samtools/bam.h bam.h
-cd ../../../.. #back to assembler
 
-# prepare debug
+#  echo "/**************************************/"
+#  echo "/********  building staden ************/"
+#  echo "/**************************************/"
 
-mkdir -p build/debug
-cd build/debug
-cmake ../../src -Dcfg="Debug"
-cd ../.. # back to assembler
+#  mkdir -p $build/ext/staden
+#  cd $build/ext/staden
 
-# prepare release
+#  $ext/src/io_lib-1.12.5/configure --prefix="`pwd`"
 
-mkdir -p build/release
-cd build/release
-cmake ../../src
+#  make
+#  make install
+
+#  echo "/**************************************/"
+#  echo "/********  building statgen ***********/"
+#  echo "/**************************************/"
+
+#  mkdir -p $build/ext/statgen
+
+#  cd $ext/src/statgen/lib
+#  make
+
+#  cp ./libStatGen.a       $build/ext/statgen/
+#  cp ./samtools/libbam.a  $build/ext/statgen/
+
+#unfortunately need to clean everything 
+#  make clean 
+
+#cd ../../../include/statgen/lib/
+#rm -f include
+#ln -s ../../../src/statgen/lib/include include
+#cd ../samtools
+#rm -f bam.h
+#ln ../../../src/statgen/lib/samtools/bam.h bam.h
+#cd ../../../.. #back to assembler
+
+echo "/**************************************/"
+echo "/********  preparing debug ************/"
+echo "/**************************************/"
+
+mkdir -p $build/debug
+cd $build/debug
+cmake $src -Dcfg="Debug"
+
+echo "/**************************************/"
+echo "/********  preparing release **********/"
+echo "/**************************************/"
+
+mkdir -p $build/release
+cd $build/release
+cmake $src
