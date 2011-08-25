@@ -47,6 +47,10 @@ function build_statgen
    mkdir -p $build/ext/statgen
 
    cd $ext/src/statgen/lib
+   cd ./samtools
+   make
+   cd ..
+   
    make
 
    cp ./libStatGen.a       $build/ext/statgen/
@@ -56,8 +60,8 @@ function build_statgen
    make clean 
 }
 
-#build_staden
-#build_statgen
+build_staden
+build_statgen
 build_fftw
 
 

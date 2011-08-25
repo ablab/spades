@@ -45,7 +45,7 @@ private:
 
 	vector<pair<size_t, double> > EstimateEdgePairDistances(vector<PairInfo<EdgeId> > data, vector<size_t> forward) {
 		vector<pair<size_t, double> > result;
-        if (data.empty()) return result;
+        if (data.size() <= 1) return result;
 		std::vector<int> clusters = divideData(data);
 		std::vector<int> peaks;
 		size_t cur = 0;
