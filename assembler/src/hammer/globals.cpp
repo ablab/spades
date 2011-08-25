@@ -14,7 +14,7 @@ void Globals::writeBlob( const char * fname ) {
 void Globals::readBlob( const char * fname ) {
 	if (blob != NULL) delete [] blob;
 	if (blobquality != NULL) delete [] blobquality;
-	if (blobhash != NULL) delete [] blobhash;
+	// if (blobhash != NULL) delete [] blobhash;
 
 	FILE * f = fopen( fname, "r" );
 	assert( fscanf(f, "%lu\n", &blob_max_size) != EOF );
@@ -26,8 +26,8 @@ void Globals::readBlob( const char * fname ) {
 	fclose(f);
 
 	// precompute hashes
-	Globals::blobhash = new uint64_t[ Globals::blob_max_size ];
-	KMerNo::precomputeHashes();
+	//Globals::blobhash = new uint64_t[ Globals::blob_max_size ];
+	//KMerNo::precomputeHashes();
 }
 
 void Globals::writeKMerCounts( const char * fname, const std::vector<KMerCount*> & kmers ) {

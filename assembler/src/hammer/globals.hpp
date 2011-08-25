@@ -12,6 +12,7 @@ struct Globals {
 	static double blob_margin;
 	static bool paired_reads;
 	static int trim_quality;
+	static bool trim_left_right;
 
 
 	static std::vector<PositionRead> * pr;
@@ -29,7 +30,7 @@ struct Globals {
 	static hint_t blob_max_size;
 	static hint_t blob_size;
 
-	static uint64_t* blobhash;
+	// static uint64_t* blobhash;
 	static KMerNoHashMap hm;
 
 	static std::vector<uint32_t> * subKMerPositions;

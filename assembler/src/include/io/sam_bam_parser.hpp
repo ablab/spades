@@ -24,8 +24,8 @@
 #include <zlib.h>
 #include <string>
 #include <cassert>
-#include "statgen/lib/include/SamFile.h"
-#include "statgen/lib/include/SamValidation.h"
+#include "statgen/SamFile.h"
+#include "statgen/SamValidation.h"
 #include "io/single_read.hpp"
 #include "io/parser.hpp"
 #include "sequence/quality.hpp"

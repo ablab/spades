@@ -1,6 +1,6 @@
 ; working directories, input files...
 working_dir		/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/tmp
-reads			/home/snikolenko/algorithmic-biology/assembler/data/hammer/head100000.fastq
+reads			/home/snikolenko/algorithmic-biology/assembler/data/hammer/head10000.fastq
 paired_reads		0
 reads_left		/home/snikolenko/algorithmic-biology/assembler/data/hammer/head20000.fastq
 reads_right		/home/snikolenko/algorithmic-biology/assembler/data/hammer/head20000right.fastq
@@ -9,7 +9,7 @@ reads_right		/home/snikolenko/algorithmic-biology/assembler/data/hammer/head2000
 tau			1
 quality_offset		64
 num_threads		1
-num_iterations		1
+num_iterations		5
 
 ; reading and writing intermediate data
 read_blob_and_kmers			0
@@ -24,4 +24,7 @@ blocksize_quadratic_threshold		50
 good_cluster_threshold			0.98
 blob_margin				0.25
 trim_quality				4
+
+; aggressive trimming strategies
+trim_left_right				1
 

@@ -539,8 +539,9 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 			int GraphCnt = 0;
 
 			omnigraph::WriteSimple(
+					new_graph, IdTrackLabelerAfter,
 					output_folder + "resolve_" + ToString(cheating_mode)+"_"+ ToString(GraphCnt) + ".dot",
-					"no_repeat_graph", new_graph, IdTrackLabelerAfter);
+					"no_repeat_graph");
 
 			for (auto v_iter = vertices.begin(), v_end =
 					vertices.end(); v_iter != v_end; ++v_iter) {
@@ -555,9 +556,8 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				sum_count += tcount;
 				GraphCnt++;
 				omnigraph::WriteSimple(
-						output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
-								+ ".dot", "no_repeat_graph", new_graph,
-						IdTrackLabelerAfter);
+						new_graph, IdTrackLabelerAfter, output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
+								+ ".dot", "no_repeat_graph");
 			}
 		}
 	}INFO("total vert" << sum_count);
@@ -599,7 +599,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 	EdgeId right_id = pair_inf.second;
 	EdgeId left_id = pair_inf.first;
 
-	if (pair_inf.d - new_graph.length(left_id) > 240) {
+	if (pair_inf.d - new_graph.length(left_id) > cfg::get().ds.IS + 120) {
 		TRACE(
 				"PairInfo "<<edge_labels[left_id]<<"("<<new_graph.length(left_id)<<")"<<" "<<right_id<<"("<<old_graph.length(right_id)<<")"<<" "<<pair_inf.d);
 //				DEBUG("too far to correct");
@@ -619,7 +619,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 //		return make_pair(false, corrected_info);
 //	}
 	//todo check correctness. right_id belongs to original graph, not to new_graph.
-	if (corrected_info.d + new_graph.length(right_id) < 110) {
+	if (corrected_info.d + new_graph.length(right_id) < cfg::get().ds.IS - 120) {
 		TRACE("too close");
 		return make_pair(false, corrected_info);
 	}

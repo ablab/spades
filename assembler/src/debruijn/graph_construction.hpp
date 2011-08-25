@@ -111,28 +111,27 @@ ReadStream& stream) {
 
 template<size_t k>
 void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index
-		, IdTrackHandler<Graph>& int_ids, SingleReadStream& stream) {
+		, SingleReadStream& stream) {
 	ConstructGraph<k>(g, index, stream);
 	FillCoverage<k>(g, stream, index);
 }
 
 template<size_t k>
-void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index
-		, IdTrackHandler<Graph>& int_ids,
+void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& stream) {
 		UnitedStream united_stream(&stream);
 		ConstructGraphWithCoverage<k>(g, index,
-				int_ids, united_stream);
+				united_stream);
 		FillPairedIndex<k>(g, index, paired_index, stream);
 }
 
 template<size_t k>
 void ConstructGraphWithEtalonPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		IdTrackHandler<Graph>& int_ids, PairedInfoIndex<Graph>& paired_index,
+		PairedInfoIndex<Graph>& paired_index,
 		PairedReadStream& stream, const Sequence& genome) {
 	UnitedStream united_stream(&stream);
 	ConstructGraphWithCoverage<k>(g, index,
-			int_ids, united_stream);
+			united_stream);
 	FillEtalonPairedIndex<k>(g, paired_index, index,
 			genome);
 }

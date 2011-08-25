@@ -24,7 +24,7 @@ private:
 	set<EdgeId> &edges_;
 
 public:
-	ComponentFinder(Graph &g, set<EdgeId> &edges) :
+	ComponentFinder(const Graph &g, set<EdgeId> &edges) :
 		super(g), edges_(edges) {
 	}
 
@@ -46,7 +46,7 @@ private:
 	const size_t bound_;
 
 public:
-	NeighbourhoodFinder(Graph &g, set<EdgeId> &edges, size_t bound) :
+	NeighbourhoodFinder(const Graph &g, set<EdgeId> &edges, size_t bound) :
 		super(g), edges_(edges), bound_(bound) {
 	}
 
@@ -75,7 +75,7 @@ private:
 	const set<VertexId> &subgraph_;
 
 public:
-	SubgraphDijkstra(Graph &g, const set<VertexId> &subgraph) :
+	SubgraphDijkstra(const Graph &g, const set<VertexId> &subgraph) :
 		super(g), subgraph_(subgraph) {
 	}
 
@@ -94,13 +94,13 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
-	Graph &graph_;
+	const Graph &graph_;
 	set<EdgeId> black_edges_;
 	typename Graph::SmartEdgeIt iterator_;
 	set<VertexId> visited_;
 
 public:
-	ErrorComponentSplitter(Graph &graph, const set<EdgeId> &black_edges) :
+	ErrorComponentSplitter(const Graph &graph, const set<EdgeId> &black_edges) :
 		graph_(graph), black_edges_(black_edges),
 				iterator_(graph.SmartEdgeBegin()) {
 	}
@@ -171,7 +171,7 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	size_t bound_;
 public:
-	ShortEdgeComponentFinder(Graph &graph, size_t bound) :
+	ShortEdgeComponentFinder(const Graph &graph, size_t bound) :
 		UnorientedDijkstra<Graph> (graph), bound_(bound) {
 	}
 
@@ -196,7 +196,7 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
-	Graph &graph_;
+	const Graph &graph_;
 	erasable_priority_queue<VertexId> queue_;
 	//	SmartVertexIterator<omnigraph::ObservableGraph<VertexId, EdgeId> >
 	//			iterator_;
@@ -204,7 +204,7 @@ private:
 	size_t bound_;
 
 public:
-	LongEdgesSplitter(Graph &graph, size_t bound) :
+	LongEdgesSplitter(const Graph &graph, size_t bound) :
 		graph_(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */
 		bound_(bound) {
 	}
@@ -253,7 +253,7 @@ class ComponentSizeFilter: public AbstractFilter<vector<
 private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	Graph& graph_;
+	const Graph& graph_;
 	size_t max_length_;
 
 	//	bool CheckYellow() {
@@ -261,7 +261,7 @@ private:
 	//	}
 	//
 public:
-	ComponentSizeFilter(Graph &graph, size_t max_length) :
+	ComponentSizeFilter(const Graph &graph, size_t max_length) :
 		graph_(graph), max_length_(max_length) {
 	}
 
