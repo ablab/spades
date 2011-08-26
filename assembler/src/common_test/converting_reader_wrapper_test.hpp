@@ -21,8 +21,8 @@ void TestConvertingReaderWrapperNoFile() {
 void TestConvertingReaderWrapperReading() {
   Reader<PairedRead> internal_reader(
       std::pair<std::string, std::string>(
-          "./test/data/s_test.fastq.gz",
-          "./test/data/s_test_2.fastq.gz"));
+          "./src/common_test/data/s_test.fastq.gz",
+          "./src/common_test/data/s_test_2.fastq.gz"));
   ConvertingReaderWrapper reader(internal_reader);
   ASSERT(reader.is_open());
   ASSERT(!reader.eof());

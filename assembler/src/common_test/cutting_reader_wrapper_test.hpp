@@ -15,7 +15,7 @@ void TestCuttingReaderWrapperNoFile() {
 }
 
 void TestCuttingReaderWrapperReading() {
-  Reader<SingleRead> internal_reader("./test/data/s_test.fastq.gz");
+  Reader<SingleRead> internal_reader("./src/common_test/data/s_test.fastq.gz");
   CuttingReaderWrapper<SingleRead> reader(internal_reader);
   ASSERT(reader.is_open());
   ASSERT(!reader.eof());
