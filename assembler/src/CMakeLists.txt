@@ -74,7 +74,7 @@ include_directories(${EXT_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # sub projects
-add_subdirectory(include/io)
+add_subdirectory(io)
 add_subdirectory(debruijn)
 add_subdirectory(abruijn)
 add_subdirectory(bayes)

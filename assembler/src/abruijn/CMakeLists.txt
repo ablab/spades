@@ -8,4 +8,4 @@ add_executable(abruijn
    toy_examples.cpp
 )
 
-target_link_libraries(abruijn ${COMMON_LIBRARIES} iolib)
+target_link_libraries(abruijn ${COMMON_LIBRARIES} input)
