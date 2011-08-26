@@ -425,6 +425,11 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	for (size_t i = 0; i < edge_info_colors.size(); i++)
 		if (edge_info_colors[i] >= k)
 			k++;
+	vector<EdgeId> edgeIds[2];
+	//TODO: fix labels
+	edgeIds[0] = new_graph.OutgoingEdges(v);
+	edgeIds[1] = new_graph.IncomingEdges(v);
+
 	DEBUG("splitting to "<< k <<" parts");
 	vector<VertexId> res;
 	res.resize(k);
@@ -433,10 +438,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		res[0] = v;
 		return res;
 	}
-	vector<EdgeId> edgeIds[2];
-	//TODO: fix labels
-	edgeIds[0] = new_graph.OutgoingEdges(v);
-	edgeIds[1] = new_graph.IncomingEdges(v);
+
 	vector<unordered_map<EdgeId, EdgeId> > new_edges(k);
 	vector<vector<EdgeId> > edges_for_split(k);
 
