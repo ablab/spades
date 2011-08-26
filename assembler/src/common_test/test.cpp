@@ -15,7 +15,6 @@
 #include "fasta_fastq_gz_parser_test.hpp"
 #include "sam_bam_parser_test.hpp"
 #include "sff_parser_test.hpp"
-// TODO(mariyafomkina): Add tests for other parsers here.
 #include "reader_singleread_test.hpp"
 #include "reader_pairedread_test.hpp"
 #include "multifile_reader_test.hpp"
@@ -24,6 +23,8 @@
 #include "converting_reader_wrapper_test.hpp"
 
 using namespace std;
+
+DECL_PROJECT_LOGGER("ct")
 
 void runSuite() {
   cute::suite s;
@@ -41,13 +42,12 @@ void runSuite() {
   s += FastaFastqGzParserSuite();
   s += SamBamParserSuite();
   s += SffParserSuite();
-  // TODO(mariyafomkina): Add tests for other parsers here.
-  // s += ReaderSingleReadSuite();
-  // s += ReaderPairedReadSuite();
-  // s += MultifileReaderSuite();
-  // s += CuttingReaderWrapperSuite();
-  // s += RCReaderWrapperSuite();
-  // s += ConvertingReaderWrapperSuite();
+  s += ReaderSingleReadSuite();
+  s += ReaderPairedReadSuite();
+  s += MultifileReaderSuite();
+  s += CuttingReaderWrapperSuite();
+  s += RCReaderWrapperSuite();
+  s += ConvertingReaderWrapperSuite();
   cute::ide_listener lis;
   cute::makeRunner(lis)(s, "The Suite");
 }
