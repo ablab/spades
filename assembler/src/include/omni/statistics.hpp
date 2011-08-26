@@ -333,14 +333,11 @@ class UniquePathStat: public omnigraph::AbstractStatCounter {
 
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph& g_;
-	const PairedInfoIndex<Graph>& pair_info_;
+	const PairedInfoIndex<Graph>& filtered_index_;
 	size_t insert_size_;
 	size_t max_read_length_;
 	size_t gap_;
 	double variance_delta_;
-
-	//todo get rid of this parameter
-	double weight_threshold_;
 
 	size_t considered_edge_pair_cnt_;
 	size_t unique_distance_cnt_;
@@ -365,21 +362,20 @@ class UniquePathStat: public omnigraph::AbstractStatCounter {
 	}
 public:
 
-	UniquePathStat(const Graph& g, const PairedInfoIndex<Graph>& pair_info,
-			size_t insert_size, size_t max_read_length, double variance_delta,
-			double weight_threshold) :
-			g_(g), pair_info_(pair_info), insert_size_(insert_size), max_read_length_(
+	UniquePathStat(const Graph& g, const PairedInfoIndex<Graph>& filtered_index,
+			size_t insert_size, size_t max_read_length, double variance_delta) :
+			g_(g), filtered_index_(filtered_index), insert_size_(insert_size), max_read_length_(
 					max_read_length), gap_(insert_size_ - 2 * max_read_length_), variance_delta_(
-					variance_delta), weight_threshold_(weight_threshold), considered_edge_pair_cnt_(
+					variance_delta), considered_edge_pair_cnt_(
 					0), unique_distance_cnt_(0), non_unique_distance_cnt_(0) {
 
 	}
 
 	virtual void Count() {
-		PairedInfoIndex<Graph> filtered_index(g_);
-		PairInfoFilter < Graph > (g_, 40).Filter(pair_info_, filtered_index);
+//		PairedInfoIndex<Graph> filtered_index(g_);
+//		PairInfoFilter < Graph > (g_, 40).Filter(pair_info_, filtered_index);
 
-		for (auto it = filtered_index.begin(); it != filtered_index.end();
+		for (auto it = filtered_index_.begin(); it != filtered_index_.end();
 				++it) {
 			if (ContainsPositiveDistance(*it)) {
 				considered_edge_pair_cnt_++;
