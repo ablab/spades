@@ -10,13 +10,13 @@ using namespace io;
 
 void TestRCReaderWrapperNoFile() {
   Reader<SingleRead> internal_reader("./no-file");
-  RCReaderWrapper<SingleRead> reader(&internal_reader);
+  RCReaderWrapper<SingleRead> reader(internal_reader);
   ASSERT(!reader.is_open());
 }
 
 void TestRCReaderWrapperReading() {
   Reader<SingleRead> internal_reader("./test/data/s_test.fastq.gz");
-  RCReaderWrapper<SingleRead> reader(&internal_reader);
+  RCReaderWrapper<SingleRead> reader(internal_reader);
   ASSERT(reader.is_open());
   ASSERT(!reader.eof());
   SingleRead read;

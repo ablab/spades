@@ -31,7 +31,7 @@ class RCReaderWrapper : public IReader<ReadType> {
    *
    * @param reader Pointer to any other reader (ancestor of IReader).
    */
-  explicit RCReaderWrapper(IReader<ReadType>* reader)
+  explicit RCReaderWrapper(IReader<ReadType>& reader)
       : reader_(reader), rc_read_(), was_rc_(true) {
   }
 
@@ -48,7 +48,7 @@ class RCReaderWrapper : public IReader<ReadType> {
    * @return true of the stream is opened and false otherwise.
    */
   /* virtual */ bool is_open() {
-    return reader_->is_open();
+    return reader_.is_open();
   }
 
   /* 
@@ -58,7 +58,7 @@ class RCReaderWrapper : public IReader<ReadType> {
    * otherwise.
    */
   /* virtual */ bool eof() {
-    return (was_rc_) && (reader_->eof());
+    return (was_rc_) && (reader_.eof());
   }
 
   /*
@@ -71,7 +71,7 @@ class RCReaderWrapper : public IReader<ReadType> {
    */
   /* virtual */ RCReaderWrapper& operator>>(ReadType& read) {
     if (was_rc_) {
-      (*reader_) >> read;
+      reader_ >> read;
       rc_read_ = read;
     } else {
       read = !rc_read_;
@@ -84,7 +84,7 @@ class RCReaderWrapper : public IReader<ReadType> {
    * Close the stream.
    */
   /* virtual */ void close() {
-    reader_->close();
+    reader_.close();
   }
 
   /* 
@@ -92,14 +92,14 @@ class RCReaderWrapper : public IReader<ReadType> {
    */
   /* virtual */ void reset() {
     was_rc_ = true;
-    reader_->reset();
+    reader_.reset();
   }
 
  private:
   /*
    * @variable Internal stream readers.
    */
-  IReader<ReadType>* reader_;
+  IReader<ReadType>& reader_;
   /*
    * @variable Last read got from the stream.
    */ 

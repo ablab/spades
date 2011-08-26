@@ -34,7 +34,7 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
    * @param reader Pointer to any other reader (ancestor of
    * IReader<PairedRead>). 
    */
-  explicit ConvertingReaderWrapper(IReader<PairedRead>* reader)
+  explicit ConvertingReaderWrapper(IReader<PairedRead>& reader)
       : reader_(reader), pairedread_(), index_(0) {
   }
 
@@ -51,7 +51,7 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
    * @return true if the stream is opened and false otherwise.
    */
   /* virtual */ bool is_open() {
-    return reader_->is_open();
+    return reader_.is_open();
   }
 
   /* 
@@ -61,7 +61,7 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
    * otherwise.
    */
   /* virtual */ bool eof() {
-    return (index_ == 0) && (reader_->eof());
+    return (index_ == 0) && (reader_.eof());
   }
 
   /*
@@ -75,7 +75,7 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
   /* virtual */ ConvertingReaderWrapper& operator>>(
       SingleRead& singleread) {
     if (index_ == 0) {
-      (*reader_) >> pairedread_;
+      reader_ >> pairedread_;
     }
     singleread = pairedread_[index_];
     index_ = 1 - index_;
@@ -86,7 +86,7 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
    * Close the stream.
    */
   /* virtual */ void close() {
-    reader_->close();
+    reader_.close();
   }
 
   /* 
@@ -94,14 +94,14 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
    */
   /* virtual */ void reset() {
     index_ = 0;
-    reader_->reset();
+    reader_.reset();
   }
 
  private:
   /*
    * @variable Internal stream reader.
    */
-  IReader<PairedRead>* reader_;
+  IReader<PairedRead>& reader_;
   /*
    * @variable Element that stores the last read PairedRead from
    * stream.

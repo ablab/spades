@@ -14,7 +14,7 @@ using namespace io;
 void TestConvertingReaderWrapperNoFile() {
   Reader<PairedRead> internal_reader(
       std::pair<std::string, std::string>("./no-file", "./no_file"));
-  ConvertingReaderWrapper reader(&internal_reader);
+  ConvertingReaderWrapper reader(internal_reader);
   ASSERT(!reader.is_open());
 }
 
@@ -23,7 +23,7 @@ void TestConvertingReaderWrapperReading() {
       std::pair<std::string, std::string>(
           "./test/data/s_test.fastq.gz",
           "./test/data/s_test_2.fastq.gz"));
-  ConvertingReaderWrapper reader(&internal_reader);
+  ConvertingReaderWrapper reader(internal_reader);
   ASSERT(reader.is_open());
   ASSERT(!reader.eof());
   SingleRead read;

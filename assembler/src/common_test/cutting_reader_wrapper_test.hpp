@@ -10,13 +10,13 @@ using namespace io;
 
 void TestCuttingReaderWrapperNoFile() {
   Reader<SingleRead> internal_reader("./no-file");
-  CuttingReaderWrapper<SingleRead> reader(&internal_reader);
+  CuttingReaderWrapper<SingleRead> reader(internal_reader);
   ASSERT(!reader.is_open());
 }
 
 void TestCuttingReaderWrapperReading() {
   Reader<SingleRead> internal_reader("./test/data/s_test.fastq.gz");
-  CuttingReaderWrapper<SingleRead> reader(&internal_reader);
+  CuttingReaderWrapper<SingleRead> reader(internal_reader);
   ASSERT(reader.is_open());
   ASSERT(!reader.eof());
   SingleRead read;
@@ -34,7 +34,7 @@ void TestCuttingReaderWrapperReading() {
   ASSERT_EQUAL("DADDA8<?>@HH", read.GetPhredQualityString());
   ASSERT(reader.eof());
   internal_reader.reset();
-  CuttingReaderWrapper<SingleRead> reader2(&internal_reader, 1);
+  CuttingReaderWrapper<SingleRead> reader2(internal_reader, 1);
   reader2 >> read;
   ASSERT_EQUAL("EAS20_8_6_1_2_768/1", read.name());
   ASSERT_EQUAL("ATGCATGCATGC", read.GetSequenceString());
