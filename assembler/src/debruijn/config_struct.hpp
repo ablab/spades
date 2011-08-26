@@ -10,6 +10,8 @@
 
 #include "config_common.hpp"
 #include <boost/bimap.hpp>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 
 namespace debruijn
@@ -227,8 +229,11 @@ namespace debruijn
 		load(pt, "previous_run_dir", cfg.previous_run_dir);
 		load(pt, "dataset", cfg.dataset_name);
 
-		load(pt, "output_dir", cfg.output_root);
-		cfg.output_dir_suffix = MakeLaunchTimeDirName() + "." + cfg.dataset_name + "/";
+		std::string base_output_dir;
+		load(pt, "output_dir", base_output_dir);
+		cfg.output_root = base_output_dir + "/" + cfg.dataset_name + "/";
+		mkdir(cfg.output_root.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+		cfg.output_dir_suffix = MakeLaunchTimeDirName() + "/";
 		cfg.output_dir = cfg.output_root + cfg.output_dir_suffix;
 
 		load(pt, "reference_genome", cfg.reference_genome);

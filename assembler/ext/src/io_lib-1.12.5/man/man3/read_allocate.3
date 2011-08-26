@@ -1,0 +1,60 @@
+.TH read_allocate 3 "" "" "Staden Package"
+
+.SH NAME
+
+.LP
+.BR read_allocate ,
+.BR read_deallocate
+\- Allocate and deallocate the \fBRead\fR structure.
+
+.SH SYNOPSIS
+.LP
+.nf
+.ft B
+#include <Read.h>
+
+.nf
+.ft B
+Read *read_allocate(
+	int num_points,
+	int num_bases);
+.ft
+.fi
+.LP
+.nf
+.ft B
+void read_deallocate(
+	Read *read);
+.ft
+.fi
+.IX "read_allocate()" "" "read_allocate()"
+.IX "read_deallocate()" "" "read_deallocate()"
+
+.SH DESCRIPTION
+.LP
+These functions create and destroy \fBRead\fR structures. The \fBRead\fR
+structure is a generalised in-memory data structure used for holding trace
+data information.
+.LP
+.B read_allocate()
+creates a \fBRead\fR structure large enough to hold \fBnum_points\fR trace
+sample points and \fBnum_bases\fR called bases. The allocated data is then
+initialised to appropriate defaults, which are mainly zeros and null pointers.
+.LP
+.B read_deallocate()
+destroys a previously created \fBRead\fR structure. It is not sufficient to
+simply use the \fBfree()\fR call instead.
+
+.SH RETURN VALUES
+.LP
+On successful completion, the \fBread_allocate()\fR function returns a pointer
+to a \fBRead\fR structure. Otherwise this function returns a null pointer.
+.LP
+The \fBread_deallocate()\fR function returns no value.
+
+.SH SEE ALSO
+.LP
+.BR read_reading (3),
+.BR fread_reading (3),
+.BR write_reading (3),
+.BR fwrite_reading (3)

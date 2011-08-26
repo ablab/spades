@@ -1,5 +1,5 @@
 /*
- * repeat_resolver.hpp
+ * Repeat_resolver.hpp
  *
  *  Created on: May 5, 2011
  *      Author: antipov
@@ -14,6 +14,7 @@
 #include <algorithm>
 
 #include "logging.hpp"
+#include "simple_tools.hpp"
 #include "omni/paired_info.hpp"
 #include "config_struct.hpp"
 #include "omni/omni_utils.hpp"
@@ -24,6 +25,7 @@
 #include "omni/ID_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/dijkstra.hpp"
+
 
 namespace debruijn_graph {
 
@@ -537,8 +539,9 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 			int GraphCnt = 0;
 
 			omnigraph::WriteSimple(
+					new_graph, IdTrackLabelerAfter,
 					output_folder + "resolve_" + ToString(cheating_mode)+"_"+ ToString(GraphCnt) + ".dot",
-					"no_repeat_graph", new_graph, IdTrackLabelerAfter);
+					"no_repeat_graph");
 
 			for (auto v_iter = vertices.begin(), v_end =
 					vertices.end(); v_iter != v_end; ++v_iter) {
@@ -553,9 +556,8 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				sum_count += tcount;
 				GraphCnt++;
 				omnigraph::WriteSimple(
-						output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
-								+ ".dot", "no_repeat_graph", new_graph,
-						IdTrackLabelerAfter);
+						new_graph, IdTrackLabelerAfter, output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
+								+ ".dot", "no_repeat_graph");
 			}
 		}
 	}INFO("total vert" << sum_count);
@@ -597,7 +599,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 	EdgeId right_id = pair_inf.second;
 	EdgeId left_id = pair_inf.first;
 
-	if (pair_inf.d - new_graph.length(left_id) > 240) {
+	if (pair_inf.d - new_graph.length(left_id) > cfg::get().ds.IS + 120) {
 		TRACE(
 				"PairInfo "<<edge_labels[left_id]<<"("<<new_graph.length(left_id)<<")"<<" "<<right_id<<"("<<old_graph.length(right_id)<<")"<<" "<<pair_inf.d);
 //				DEBUG("too far to correct");
@@ -617,7 +619,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 //		return make_pair(false, corrected_info);
 //	}
 	//todo check correctness. right_id belongs to original graph, not to new_graph.
-	if (corrected_info.d + new_graph.length(right_id) < 110) {
+	if (corrected_info.d + new_graph.length(right_id) < cfg::get().ds.IS - 120) {
 		TRACE("too close");
 		return make_pair(false, corrected_info);
 	}
@@ -805,7 +807,7 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 			cur_color++;
 		}
 	}
-	DEBUG("Info colors "<<edge_info_colors);
+	DEBUG("Edge color info " << debruijn::operator<<(oss_, edge_info_colors));
 	MultiSplit(vid);
 	if (cheating_mode && (cur_color > 1))
 		INFO("resolved vertex " << new_IDs.ReturnIntId(vid));
@@ -890,7 +892,7 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 			cur_color++;
 		}
 	}
-	DEBUG("Colours "<<cheater_colors);
+	DEBUG("Colours " << debruijn::operator<<(oss_, cheater_colors));
 
 	bool bad = true;
 	for (size_t i = 0; i < counts[0] + counts[1]; i++) {

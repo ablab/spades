@@ -49,7 +49,7 @@ struct KMerInfo {
   double q_inversed_count;
 };
 
-const uint32_t kK = 31;
+const uint32_t kK = 55;
 typedef Seq<kK> KMer;
 typedef unordered_map<KMer, KMerInfo, KMer::hash> UnorderedMap;
 

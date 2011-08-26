@@ -46,7 +46,7 @@ hint_t Globals::blob_size = 0;
 hint_t Globals::blob_max_size = 0;
 char * Globals::blob = NULL;
 char * Globals::blobquality = NULL;
-hint_t * Globals::blobhash = NULL;
+//uint64_t * Globals::blobhash = NULL;
 KMerNoHashMap Globals::hm = KMerNoHashMap();
 std::vector<uint32_t> * Globals::subKMerPositions = NULL;
 
@@ -57,6 +57,7 @@ double Globals::blob_margin = 0.25;
 int Globals::qvoffset = 64;
 bool Globals::paired_reads = false;
 int Globals::trim_quality = -1;
+bool Globals::trim_left_right = false;
 
 struct KMerStatCount {
 	PositionKMer km;
@@ -78,6 +79,12 @@ string getFilename( const string & dirprefix, const string & suffix ) {
 string getFilename( const string & dirprefix, int iter_count, const string & suffix ) {
 	ostringstream tmp;
 	tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << "." << suffix.data();
+	return tmp.str();
+}
+
+string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num ) {
+	ostringstream tmp;
+	tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << "." << suffix.data() << "." << suffix_num;
 	return tmp.str();
 }
 
@@ -108,6 +115,7 @@ int main(int argc, char * argv[]) {
 	Globals::good_cluster_threshold = cfg::get().good_cluster_threshold;
 	Globals::blob_margin = cfg::get().blob_margin;
 	Globals::trim_quality = cfg::get().trim_quality;
+	Globals::trim_left_right = cfg::get().trim_left_right;
 
 	Globals::paired_reads = cfg::get().paired_reads;
 	string readsFilenameLeft, readsFilenameRight;
@@ -146,10 +154,10 @@ int main(int argc, char * argv[]) {
 
 	Globals::blob = new char[ Globals::blob_max_size ];
 	Globals::blobquality = new char[ Globals::blob_max_size ];
-	Globals::blobhash = new hint_t[ Globals::blob_max_size ];
+	//Globals::blobhash = new uint64_t[ Globals::blob_max_size ];
 	TIMEDLN("Max blob size as allocated is " << Globals::blob_max_size);
 
-	std::fill( Globals::blobhash, Globals::blobhash + Globals::blob_max_size, -1 );
+	//std::fill( Globals::blobhash, Globals::blobhash + Globals::blob_max_size, -1 );
 
 	Globals::revNo = Globals::rv->size();
 	for (hint_t i = 0; i < Globals::revNo; ++i) {
@@ -184,8 +192,8 @@ int main(int argc, char * argv[]) {
 		Globals::blob_size = curpos;
 		TIMEDLN("Blob done, filled up PositionReads. Real size " << Globals::blob_size << ". " << Globals::pr->size() << " reads.");
 
-		KMerNo::precomputeHashes();
-		TIMEDLN("Hashes precomputed.");
+		//KMerNo::precomputeHashes();
+		//TIMEDLN("Hashes precomputed.");
 
 		vector<KMerCount*> kmers;
 		Globals::hm.clear();
@@ -230,8 +238,7 @@ int main(int argc, char * argv[]) {
 		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
 		vector<ofstream *> outfv; vector<hint_t> changedReads; vector<hint_t> changedNucleotides;
 		for (int i=0; i<nthreads; ++i) {
-			//tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << ".reconstruct." << i;
-			// outfv.push_back(new ofstream( tmp.str().data() ));
+			//outfv.push_back(new ofstream( getFilename(dirprefix, iter_count, "reconstruct", i ).data() ));
 			outfv.push_back(NULL);
 			changedReads.push_back(0);
 			changedNucleotides.push_back(0);
@@ -242,6 +249,12 @@ int main(int argc, char * argv[]) {
 			bool res = CorrectRead(Globals::hm, kmers, i, outfv[omp_get_thread_num()]);
 			changedNucleotides[omp_get_thread_num()] += res;
 			if (res) ++changedReads[omp_get_thread_num()];
+			if (res && outfv[omp_get_thread_num()] != NULL) {
+				#pragma omp critical
+				{
+				*(outfv[omp_get_thread_num()]) << "Final result again:  size=" << Globals::rv->at(i).size() << "\n" << Globals::rv->at(i).getSequenceString().c_str() << "\n" << Globals::rv->at(i).getPhredQualityString(Globals::qvoffset).c_str() << endl;
+				}
+			}
 		}
 		hint_t totalReads = 0; hint_t totalNucleotides = 0;
 		for (int i=0; i<nthreads; ++i) {
@@ -266,9 +279,11 @@ int main(int argc, char * argv[]) {
 
 		// prepare the reads for next iteration
 		// delete consensuses, clear kmer data, and restore correct revcomps
+		for (size_t i=0; i < kmers.size(); ++i) delete kmers[i];
 		kmers.clear();
+		Globals::hm.clear();
 		delete Globals::pr;
-		std::fill( Globals::blobhash, Globals::blobhash + Globals::blob_max_size, -1 );
+		//std::fill( Globals::blobhash, Globals::blobhash + Globals::blob_max_size, -1 );
 
 		Globals::rv->resize( Globals::revNo );
 		for (hint_t i = 0; i < Globals::revNo; ++i) {
@@ -276,7 +291,7 @@ int main(int argc, char * argv[]) {
 		}
 		TIMEDLN("Reads restored.");
 
-		if (totalReads < 10) {
+		if (totalReads < 1) {
 			TIMEDLN("Too few reads have changed in this iteration. Exiting.");
 			break;
 		}
@@ -288,7 +303,7 @@ int main(int argc, char * argv[]) {
 	Globals::rv->clear();
 	delete Globals::rv;
 	delete Globals::rv_bad;
-	delete [] Globals::blobhash;
+	//delete [] Globals::blobhash;
 	delete [] Globals::blob;
 	delete [] Globals::blobquality;
 	return 0;

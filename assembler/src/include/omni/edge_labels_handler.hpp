@@ -112,7 +112,8 @@ public:
  		 size_t n = oldEdges.size();
 		vector<EdgeId> tmp;
 		 for(size_t j = 0; j < n; j++) {
-	 		 DEBUG("Edge "<< oldEdges[j] << " was labeled by "<<edge_labels[oldEdges[j]]);
+	 		 DEBUG("Edge "<< oldEdges[j] << " was labeled by " <<
+             debruijn::operator<<(oss_, edge_labels[oldEdges[j]]));
 		 	 for(size_t i = 0; i < edge_labels[oldEdges[j]].size(); i++){
 				edge_inclusions[edge_labels[oldEdges[j]][i]].insert(newEdge);
 				edge_inclusions[edge_labels[oldEdges[j]][i]].erase(oldEdges[j]);

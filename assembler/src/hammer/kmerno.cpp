@@ -32,7 +32,7 @@ inline char my_dignucl(char c) {
 	}
 }
 
-hint_t KMerNo::new_hash( hint_t index ) {
+uint64_t KMerNo::new_hash( hint_t index ) {
 	hint_t res = 0;
 	for (int i = K-1; i >=0; --i) {
 		res = ( res*KMERNO_HASH_Q + my_dignucl(Globals::blob[index + i]) ) % KMERNO_HASH_MODULUS;
@@ -40,20 +40,24 @@ hint_t KMerNo::new_hash( hint_t index ) {
 	return res;
 }
 
-hint_t KMerNo::next_hash( hint_t old_hash, hint_t new_index ) {
+uint64_t KMerNo::next_hash( uint64_t old_hash, hint_t new_index ) {
 	return (( (old_hash - my_dignucl(Globals::blob[new_index-1]))*KMERNO_HASH_Q_INV
 		+ my_dignucl(Globals::blob[new_index+K-1])*KMERNO_HASH_Q_POW_K_MINUS_ONE ) % KMERNO_HASH_MODULUS);
 }
 
-void KMerNo::precomputeHashes() {
+/*void KMerNo::precomputeHashes() {
 	Globals::blobhash[0] = KMerNo::new_hash(0);
 	for (hint_t i=1; i < (Globals::blob_size - K + 1); ++i) {
 		Globals::blobhash[i] = KMerNo::next_hash(Globals::blobhash[i-1], i);
 	}
-}
+}*/
 
-uint32_t KMerNo::hash::operator() (const KMerNo &kn) const {
-	return Globals::blobhash[kn.index];
+uint64_t KMerNo::hash::operator() (const KMerNo &kn) const {
+	size_t h = 239;
+	for (size_t i = 0; i < K; i++) {
+		h = ((h << 5) - h) + Globals::blob[kn.index+i];
+	}
+	return h;
 }
 
 bool KMerNo::are_equal::operator() (const KMerNo &l, const KMerNo &r) const {

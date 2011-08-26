@@ -70,26 +70,41 @@ public:
     return dignucl(seq_[i]);
   }
 
+  /**
+    * trim read
+    * @param ltrim first good base
+    * @param rtrim last good base
+    * @return whether there is anything left
+    */
+  bool trimLeftRight(int ltrim, int rtrim) {
+    if (ltrim >= (int)seq_.size() || rtrim < 0 || rtrim < ltrim ) {
+      seq_ = ""; qual_ = ""; valid_ = false; return 0;
+    }
+    if (ltrim > 0) {
+      ltrim_ += ltrim;
+      seq_.erase(0, ltrim);
+      qual_.erase(0, ltrim);      
+    }
+    if (rtrim < (int)seq_.size()-ltrim-1) {
+      rtrim_ -= ((int)seq_.size()-(rtrim-ltrim+1));
+      seq_.erase(rtrim-ltrim+1, string::npos);
+      qual_.erase(rtrim-ltrim+1, string::npos);
+    }
+    valid_ = updateValid();
+    return true;
+  }
+
   size_t trimNsAndBadQuality(int threshold) {
     int start = 0;
     for (; start < (int)seq_.size(); ++start) {
       if (seq_[start] != 'N' && (int)qual_[start] > threshold) break;
     }
-    if (start > 0 && start < (int)seq_.size()) {
-      seq_.erase(0, start);
-      qual_.erase(0, start);
-    } else if (start >= (int)seq_.size()) {
-      seq_ = ""; qual_ = ""; valid_ = false; return 0;
+    int end = 0;
+    for (end = (int)seq_.size()-1; end > -1; --end) {
+      if (seq_[end] != 'N' && (int)qual_[end] > threshold) break;
     }
-    for (start = (int)seq_.size()-1; start > -1; --start) {
-      if (seq_[start] != 'N' && (int)qual_[start] > threshold) break;
-    }
-    if (start > -1 && start < (int)seq_.size()-1) {
-      seq_.erase(start+1, string::npos);
-      qual_.erase(start+1, string::npos);
-    }
-    valid_ = updateValid();
-    return seq_.size();
+    if (!trimLeftRight(start, end)) return 0;
+    else return seq_.size();
   }
 
   /**
@@ -127,11 +142,19 @@ public:
     name_(name), seq_(seq), qual_(qual) {  // for test only!
     valid_ = updateValid();
   }
+
+  const int ltrim() { return ltrim_; }
+  const int rtrim() { return rtrim_; }
+  const int initial_size() { return initial_size_; }
+
 private:
   std::string name_;
   std::string seq_;
   std::string qual_;
   bool valid_;
+  int ltrim_;
+  int rtrim_;
+  int initial_size_;
   friend class ireadstream;
   friend uint32_t TrimBadQuality(Read*, int);
   void setName(const char* s) {

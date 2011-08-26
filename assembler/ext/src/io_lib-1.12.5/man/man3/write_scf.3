@@ -1,0 +1,77 @@
+.TH write_scf 3 "" "" "Staden Package"
+
+.SH NAME
+
+.LP
+.BR write_scf ,
+.BR fwrite_scf ,
+.BR write_scf_header
+\- Write SCF files
+
+.SH SYNOPSIS
+.LP
+.nf
+.ft B
+#include <scf.h>
+.ft
+.fi
+.LP
+.nf
+.ft B
+int write_scf(
+	Scf *scf,
+	char *fn);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int fwrite_scf(
+	Scf *scf,
+	FILE *fp);
+.ft
+.fi
+.LP
+.nf
+.ft B
+int write_scf_header(
+	FILE *fp,
+	Header *h);
+.ft
+.fi
+.IX "write_scf()" "" "write_scf()"
+.IX "fwrite_scf()" "" "fwrite_scf()"
+.IX "write_scf_header()" "" "write_scf_header()"
+
+.SH DESCRIPTION
+.LP
+These functions write SCF format trace files. All the functions accepting a
+\fBFILE *\fP as an argument assume that the file pointer is at the correct
+offset within the file, which should be the start.
+.LP
+.B write_scf()
+writes an entire SCF file into the \fBScf\fR structure (see the
+.BR scf (4)
+manual page for the details of this structure). The data is written to the
+specified file name.
+.LP
+.B fwrite_scf()
+writesan entire SCF file into the \fBScf\fR structure (see the
+.BR scf (4)
+manual page for the details of this structure). The data is written to the
+specified file pointer, which is neither closed or rewound after the
+operation.
+.LP
+.B write_scf_header()
+writes the \fBHeader\fR structure to the specified file pointer.
+
+.SH RETURN VALUES
+.LP
+On successful completion, the \fBwrite_scf()\fR, \fBfwrite_scf()\fR and
+\fBwrite_scf_header()\fR functions return 0. Otherwise these function returns
+-1.
+
+.SH SEE ALSO
+.LP
+.BR scf (4),
+.BR read_scf (3)

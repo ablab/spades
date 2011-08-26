@@ -1,0 +1,1043 @@
+<?xml version="1.0"?>
+<ImageAnalysis>
+  <Run Name="C2-37_Firecrest1.9.2_19-08-2008_single">
+    <Cycles First="2" Last="37" Number="36" />
+    <ImageParameters>
+      <AutoOffsetFlag>1</AutoOffsetFlag>
+      <AutoSizeFlag>0</AutoSizeFlag>
+      <DataOffsetFile>/staging/IL9/analysis/080813_IL9_1213/Data/default_offsets.txt</DataOffsetFile>
+      <Fwhm>2.700000</Fwhm>
+      <InstrumentOffsetFile>/staging/IL9/analysis/Instruments/HWI-EAS130/default_offsets.txt</InstrumentOffsetFile>
+      <OffsetFile>/staging/IL9/analysis/Instruments/HWI-EAS130/default_offsets.txt</OffsetFile>
+      <Offsets X="0.000000" Y="0.000000" />
+      <Offsets X="-1.840000" Y="0.950000" />
+      <Offsets X="-0.010000" Y="0.800000" />
+      <Offsets X="1.330000" Y="3.170000" />
+      <RemappingDistance>1.500000</RemappingDistance>
+      <SizeFile />
+      <Threshold>4.000000</Threshold>
+    </ImageParameters>
+    <RunParameters>
+      <AutoCycleFlag>1</AutoCycleFlag>
+      <BasecallFlag>1</BasecallFlag>
+      <Compression>gzip</Compression>
+      <CompressionSuffix>.gz</CompressionSuffix>
+      <Deblocked>0</Deblocked>
+      <DebugFlag>0</DebugFlag>
+      <ImagingReads Index="1">
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>37</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      </ImagingReads>
+      <Instrument>HWI-EAS130</Instrument>
+      <MakeFlag>1</MakeFlag>
+      <MaxCycle>-1</MaxCycle>
+      <MinCycle>-1</MinCycle>
+      <Reads Index="1">
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>36</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      </Reads>
+      <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      <SelectedCycles>2</SelectedCycles>
+      <SelectedCycles>3</SelectedCycles>
+      <SelectedCycles>4</SelectedCycles>
+      <SelectedCycles>5</SelectedCycles>
+      <SelectedCycles>6</SelectedCycles>
+      <SelectedCycles>7</SelectedCycles>
+      <SelectedCycles>8</SelectedCycles>
+      <SelectedCycles>9</SelectedCycles>
+      <SelectedCycles>10</SelectedCycles>
+      <SelectedCycles>11</SelectedCycles>
+      <SelectedCycles>12</SelectedCycles>
+      <SelectedCycles>13</SelectedCycles>
+      <SelectedCycles>14</SelectedCycles>
+      <SelectedCycles>15</SelectedCycles>
+      <SelectedCycles>16</SelectedCycles>
+      <SelectedCycles>17</SelectedCycles>
+      <SelectedCycles>18</SelectedCycles>
+      <SelectedCycles>19</SelectedCycles>
+      <SelectedCycles>20</SelectedCycles>
+      <SelectedCycles>21</SelectedCycles>
+      <SelectedCycles>22</SelectedCycles>
+      <SelectedCycles>23</SelectedCycles>
+      <SelectedCycles>24</SelectedCycles>
+      <SelectedCycles>25</SelectedCycles>
+      <SelectedCycles>26</SelectedCycles>
+      <SelectedCycles>27</SelectedCycles>
+      <SelectedCycles>28</SelectedCycles>
+      <SelectedCycles>29</SelectedCycles>
+      <SelectedCycles>30</SelectedCycles>
+      <SelectedCycles>31</SelectedCycles>
+      <SelectedCycles>32</SelectedCycles>
+      <SelectedCycles>33</SelectedCycles>
+      <SelectedCycles>34</SelectedCycles>
+      <SelectedCycles>35</SelectedCycles>
+      <SelectedCycles>36</SelectedCycles>
+      <SelectedCycles>37</SelectedCycles>
+      <SelectedFolders />
+      <SelectedTiles>s_[12345678]_[0-9][0-9][02468]1</SelectedTiles>
+    </RunParameters>
+    <Software Name="Firecrest" Version="1.9.2" />
+    <TileSelection>
+      <Lane Index="1">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="2">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="3">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="4">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="5">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="6">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="7">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="8">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+    </TileSelection>
+    <Time>
+      <Start>19-08-08 09:15:06 BST</Start>
+    </Time>
+    <UsedCycleFolders>C2.1,C3.1,C4.1,C5.1,C6.1,C7.1,C8.1,C9.1,C10.1,C11.1,C12.1,C13.1,C14.1,C15.1,C16.1,C17.1,C18.1,C19.1,C20.1,C21.1,C22.1,C23.1,C24.1,C25.1,C26.1,C27.1,C28.1,C29.1,C30.1,C31.1,C32.1,C33.1,C34.1,C35.1,C36.1,C37.1</UsedCycleFolders>
+    <User Name="single" />
+  </Run>
+  <Run Name="C2-37_Firecrest1.9.2_22-08-2008_single">
+    <Cycles First="2" Last="37" Number="36" />
+    <ImageParameters>
+      <AutoOffsetFlag>1</AutoOffsetFlag>
+      <AutoSizeFlag>0</AutoSizeFlag>
+      <DataOffsetFile>/staging/IL9/analysis/080813_IL9_1213/Data/default_offsets.txt</DataOffsetFile>
+      <Fwhm>2.700000</Fwhm>
+      <InstrumentOffsetFile />
+      <OffsetFile>/staging/IL9/analysis/080813_IL9_1213/Data/default_offsets.txt</OffsetFile>
+      <Offsets X="0.000000" Y="0.000000" />
+      <Offsets X="-1.830000" Y="0.950000" />
+      <Offsets X="-0.070000" Y="0.800000" />
+      <Offsets X="1.260000" Y="3.170000" />
+      <RemappingDistance>1.500000</RemappingDistance>
+      <SizeFile />
+      <Threshold>4.000000</Threshold>
+    </ImageParameters>
+    <RunParameters>
+      <AutoCycleFlag>1</AutoCycleFlag>
+      <BasecallFlag>1</BasecallFlag>
+      <Compression>gzip</Compression>
+      <CompressionSuffix>.gz</CompressionSuffix>
+      <Deblocked>0</Deblocked>
+      <DebugFlag>0</DebugFlag>
+      <ImagingReads Index="1">
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>37</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      </ImagingReads>
+      <Instrument>HWI-EAS130</Instrument>
+      <MakeFlag>1</MakeFlag>
+      <MaxCycle>-1</MaxCycle>
+      <MinCycle>-1</MinCycle>
+      <Reads Index="1">
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>36</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      </Reads>
+      <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      <SelectedCycles>2</SelectedCycles>
+      <SelectedCycles>3</SelectedCycles>
+      <SelectedCycles>4</SelectedCycles>
+      <SelectedCycles>5</SelectedCycles>
+      <SelectedCycles>6</SelectedCycles>
+      <SelectedCycles>7</SelectedCycles>
+      <SelectedCycles>8</SelectedCycles>
+      <SelectedCycles>9</SelectedCycles>
+      <SelectedCycles>10</SelectedCycles>
+      <SelectedCycles>11</SelectedCycles>
+      <SelectedCycles>12</SelectedCycles>
+      <SelectedCycles>13</SelectedCycles>
+      <SelectedCycles>14</SelectedCycles>
+      <SelectedCycles>15</SelectedCycles>
+      <SelectedCycles>16</SelectedCycles>
+      <SelectedCycles>17</SelectedCycles>
+      <SelectedCycles>18</SelectedCycles>
+      <SelectedCycles>19</SelectedCycles>
+      <SelectedCycles>20</SelectedCycles>
+      <SelectedCycles>21</SelectedCycles>
+      <SelectedCycles>22</SelectedCycles>
+      <SelectedCycles>23</SelectedCycles>
+      <SelectedCycles>24</SelectedCycles>
+      <SelectedCycles>25</SelectedCycles>
+      <SelectedCycles>26</SelectedCycles>
+      <SelectedCycles>27</SelectedCycles>
+      <SelectedCycles>28</SelectedCycles>
+      <SelectedCycles>29</SelectedCycles>
+      <SelectedCycles>30</SelectedCycles>
+      <SelectedCycles>31</SelectedCycles>
+      <SelectedCycles>32</SelectedCycles>
+      <SelectedCycles>33</SelectedCycles>
+      <SelectedCycles>34</SelectedCycles>
+      <SelectedCycles>35</SelectedCycles>
+      <SelectedCycles>36</SelectedCycles>
+      <SelectedCycles>37</SelectedCycles>
+      <SelectedFolders />
+      <SelectedTiles>s_[12345678]_[0-9][0-9][02468]1</SelectedTiles>
+    </RunParameters>
+    <Software Name="Firecrest" Version="1.9.2" />
+    <TileSelection>
+      <Lane Index="1">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="2">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="3">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="4">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="5">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="6">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="7">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="8">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+    </TileSelection>
+    <Time>
+      <Start>22-08-08 11:11:01 BST</Start>
+    </Time>
+    <UsedCycleFolders>C2.1,C3.1,C4.1,C5.1,C6.1,C7.1,C8.1,C9.1,C10.1,C11.1,C12.1,C13.1,C14.1,C15.1,C16.1,C17.1,C18.1,C19.1,C20.1,C21.1,C22.1,C23.1,C24.1,C25.1,C26.1,C27.1,C28.1,C29.1,C30.1,C31.1,C32.1,C33.1,C34.1,C35.1,C36.1,C37.1</UsedCycleFolders>
+    <User Name="single" />
+  </Run>
+  <Run Name="C2-37,39-74_Firecrest1.9.2_22-08-2008_auto">
+    <Cycles First="2" Last="74" Number="72" />
+    <ImageParameters>
+      <AutoOffsetFlag>1</AutoOffsetFlag>
+      <AutoSizeFlag>0</AutoSizeFlag>
+      <DataOffsetFile>/staging/IL9/analysis/080813_IL9_1213/Data/default_offsets.txt</DataOffsetFile>
+      <Fwhm>2.700000</Fwhm>
+      <InstrumentOffsetFile />
+      <OffsetFile>/staging/IL9/analysis/080813_IL9_1213/Data/default_offsets.txt</OffsetFile>
+      <Offsets X="0.000000" Y="0.000000" />
+      <Offsets X="-1.830000" Y="0.950000" />
+      <Offsets X="-0.070000" Y="0.800000" />
+      <Offsets X="1.260000" Y="3.170000" />
+      <RemappingDistance>1.500000</RemappingDistance>
+      <SizeFile />
+      <Threshold>4.000000</Threshold>
+    </ImageParameters>
+    <RunParameters>
+      <AutoCycleFlag>1</AutoCycleFlag>
+      <BasecallFlag>1</BasecallFlag>
+      <Compression>gzip</Compression>
+      <CompressionSuffix>.gz</CompressionSuffix>
+      <Deblocked>0</Deblocked>
+      <DebugFlag>0</DebugFlag>
+      <ImagingReads Index="1">
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>37</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      </ImagingReads>
+      <ImagingReads Index="2">
+        <FirstCycle>38</FirstCycle>
+        <LastCycle>74</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080818_IL9_1232</RunFolder>
+      </ImagingReads>
+      <Instrument>HWI-EAS130</Instrument>
+      <MakeFlag>1</MakeFlag>
+      <MaxCycle>-1</MaxCycle>
+      <MinCycle>-1</MinCycle>
+      <Reads Index="1">
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>36</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      </Reads>
+      <Reads Index="2">
+        <FirstCycle>37</FirstCycle>
+        <LastCycle>72</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080818_IL9_1232</RunFolder>
+      </Reads>
+      <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      <SelectedCycles>2</SelectedCycles>
+      <SelectedCycles>3</SelectedCycles>
+      <SelectedCycles>4</SelectedCycles>
+      <SelectedCycles>5</SelectedCycles>
+      <SelectedCycles>6</SelectedCycles>
+      <SelectedCycles>7</SelectedCycles>
+      <SelectedCycles>8</SelectedCycles>
+      <SelectedCycles>9</SelectedCycles>
+      <SelectedCycles>10</SelectedCycles>
+      <SelectedCycles>11</SelectedCycles>
+      <SelectedCycles>12</SelectedCycles>
+      <SelectedCycles>13</SelectedCycles>
+      <SelectedCycles>14</SelectedCycles>
+      <SelectedCycles>15</SelectedCycles>
+      <SelectedCycles>16</SelectedCycles>
+      <SelectedCycles>17</SelectedCycles>
+      <SelectedCycles>18</SelectedCycles>
+      <SelectedCycles>19</SelectedCycles>
+      <SelectedCycles>20</SelectedCycles>
+      <SelectedCycles>21</SelectedCycles>
+      <SelectedCycles>22</SelectedCycles>
+      <SelectedCycles>23</SelectedCycles>
+      <SelectedCycles>24</SelectedCycles>
+      <SelectedCycles>25</SelectedCycles>
+      <SelectedCycles>26</SelectedCycles>
+      <SelectedCycles>27</SelectedCycles>
+      <SelectedCycles>28</SelectedCycles>
+      <SelectedCycles>29</SelectedCycles>
+      <SelectedCycles>30</SelectedCycles>
+      <SelectedCycles>31</SelectedCycles>
+      <SelectedCycles>32</SelectedCycles>
+      <SelectedCycles>33</SelectedCycles>
+      <SelectedCycles>34</SelectedCycles>
+      <SelectedCycles>35</SelectedCycles>
+      <SelectedCycles>36</SelectedCycles>
+      <SelectedCycles>37</SelectedCycles>
+      <SelectedFolders />
+      <SelectedTiles />
+    </RunParameters>
+    <Software Name="Firecrest" Version="1.9.2" />
+    <TileSelection>
+      <Lane Index="1">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="2">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="3">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="4">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="5">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="6">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="7">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="8">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+    </TileSelection>
+    <Time>
+      <Start>22-08-08 12:20:16 BST</Start>
+    </Time>
+    <UsedCycleFolders>C2.1,C3.1,C4.1,C5.1,C6.1,C7.1,C8.1,C9.1,C10.1,C11.1,C12.1,C13.1,C14.1,C15.1,C16.1,C17.1,C18.1,C19.1,C20.1,C21.1,C22.1,C23.1,C24.1,C25.1,C26.1,C27.1,C28.1,C29.1,C30.1,C31.1,C32.1,C33.1,C34.1,C35.1,C36.1,C37.1</UsedCycleFolders>
+    <User Name="auto" />
+  </Run>
+  <Run Name="C1-37_Firecrest1.9.5_27-08-2008_single">
+    <Cycles First="1" Last="37" Number="37" />
+    <ImageParameters>
+      <AutoOffsetFlag>1</AutoOffsetFlag>
+      <AutoSizeFlag>0</AutoSizeFlag>
+      <DataOffsetFile>/staging/IL9/analysis/080813_IL9_1213/Data/default_offsets.txt</DataOffsetFile>
+      <Fwhm>2.700000</Fwhm>
+      <InstrumentOffsetFile />
+      <OffsetFile>/staging/IL9/analysis/080813_IL9_1213/Data/default_offsets.txt</OffsetFile>
+      <Offsets X="0.000000" Y="0.000000" />
+      <Offsets X="-1.820000" Y="0.950000" />
+      <Offsets X="-0.080000" Y="0.810000" />
+      <Offsets X="1.250000" Y="3.180000" />
+      <RemappingDistance>1.500000</RemappingDistance>
+      <SizeFile />
+      <Threshold>4.000000</Threshold>
+    </ImageParameters>
+    <RunParameters>
+      <AutoCycleFlag>0</AutoCycleFlag>
+      <BasecallFlag>1</BasecallFlag>
+      <Compression>gzip</Compression>
+      <CompressionSuffix>.gz</CompressionSuffix>
+      <Deblocked>0</Deblocked>
+      <DebugFlag>0</DebugFlag>
+      <FirstRunOnlyFlag>0</FirstRunOnlyFlag>
+      <ImagingReads Index="1">
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>37</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      </ImagingReads>
+      <Instrument>HWI-EAS130</Instrument>
+      <MakeFlag>1</MakeFlag>
+      <MaxCycle>-1</MaxCycle>
+      <MinCycle>-1</MinCycle>
+      <Reads Index="1">
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>37</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      </Reads>
+      <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      <SelectedCycles>1</SelectedCycles>
+      <SelectedCycles>2</SelectedCycles>
+      <SelectedCycles>3</SelectedCycles>
+      <SelectedCycles>4</SelectedCycles>
+      <SelectedCycles>5</SelectedCycles>
+      <SelectedCycles>6</SelectedCycles>
+      <SelectedCycles>7</SelectedCycles>
+      <SelectedCycles>8</SelectedCycles>
+      <SelectedCycles>9</SelectedCycles>
+      <SelectedCycles>10</SelectedCycles>
+      <SelectedCycles>11</SelectedCycles>
+      <SelectedCycles>12</SelectedCycles>
+      <SelectedCycles>13</SelectedCycles>
+      <SelectedCycles>14</SelectedCycles>
+      <SelectedCycles>15</SelectedCycles>
+      <SelectedCycles>16</SelectedCycles>
+      <SelectedCycles>17</SelectedCycles>
+      <SelectedCycles>18</SelectedCycles>
+      <SelectedCycles>19</SelectedCycles>
+      <SelectedCycles>20</SelectedCycles>
+      <SelectedCycles>21</SelectedCycles>
+      <SelectedCycles>22</SelectedCycles>
+      <SelectedCycles>23</SelectedCycles>
+      <SelectedCycles>24</SelectedCycles>
+      <SelectedCycles>25</SelectedCycles>
+      <SelectedCycles>26</SelectedCycles>
+      <SelectedCycles>27</SelectedCycles>
+      <SelectedCycles>28</SelectedCycles>
+      <SelectedCycles>29</SelectedCycles>
+      <SelectedCycles>30</SelectedCycles>
+      <SelectedCycles>31</SelectedCycles>
+      <SelectedCycles>32</SelectedCycles>
+      <SelectedCycles>33</SelectedCycles>
+      <SelectedCycles>34</SelectedCycles>
+      <SelectedCycles>35</SelectedCycles>
+      <SelectedCycles>36</SelectedCycles>
+      <SelectedCycles>37</SelectedCycles>
+      <SelectedFolders />
+      <SelectedTiles>s_[12345678]_[0-9][0-9][02468]1</SelectedTiles>
+    </RunParameters>
+    <Software Name="Firecrest" Version="1.9.5" />
+    <TileSelection>
+      <Lane Index="1">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="2">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="3">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="4">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="5">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="6">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="7">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+      <Lane Index="8">
+        <Sample>s</Sample>
+        <Tile>1</Tile>
+        <Tile>21</Tile>
+        <Tile>41</Tile>
+        <Tile>61</Tile>
+        <Tile>81</Tile>
+        <Tile>101</Tile>
+        <Tile>121</Tile>
+        <Tile>141</Tile>
+        <Tile>161</Tile>
+        <Tile>181</Tile>
+        <Tile>201</Tile>
+        <Tile>221</Tile>
+        <Tile>241</Tile>
+        <Tile>261</Tile>
+        <Tile>281</Tile>
+        <Tile>301</Tile>
+        <Tile>321</Tile>
+      </Lane>
+    </TileSelection>
+    <Time>
+      <Start>27-08-08 17:03:52 BST</Start>
+    </Time>
+    <UsedCycleFolders>C1.1,C2.1,C3.1,C4.1,C5.1,C6.1,C7.1,C8.1,C9.1,C10.1,C11.1,C12.1,C13.1,C14.1,C15.1,C16.1,C17.1,C18.1,C19.1,C20.1,C21.1,C22.1,C23.1,C24.1,C25.1,C26.1,C27.1,C28.1,C29.1,C30.1,C31.1,C32.1,C33.1,C34.1,C35.1,C36.1,C37.1</UsedCycleFolders>
+    <User Name="single" />
+  </Run>
+  <Run Name="C1-74_Firecrest1.9.5_28-08-2008_auto">
+    <Cycles First="1" Last="74" Number="74" />
+    <ImageParameters>
+      <AutoOffsetFlag>1</AutoOffsetFlag>
+      <AutoSizeFlag>0</AutoSizeFlag>
+      <DataOffsetFile>/staging/IL9/analysis/080813_IL9_1213/Data/default_offsets.txt</DataOffsetFile>
+      <Fwhm>2.700000</Fwhm>
+      <InstrumentOffsetFile></InstrumentOffsetFile>
+      <OffsetFile>/staging/IL9/analysis/080813_IL9_1213/Data/default_offsets.txt</OffsetFile>
+      <Offsets X="0.000000" Y="0.000000" />
+      <Offsets X="-1.830000" Y="0.950000" />
+      <Offsets X="-0.070000" Y="0.800000" />
+      <Offsets X="1.260000" Y="3.190000" />
+      <RemappingDistance>1.500000</RemappingDistance>
+      <SizeFile></SizeFile>
+      <Threshold>4.000000</Threshold>
+    </ImageParameters>
+    <RunParameters>
+      <AutoCycleFlag>0</AutoCycleFlag>
+      <BasecallFlag>1</BasecallFlag>
+      <Compression>gzip</Compression>
+      <CompressionSuffix>.gz</CompressionSuffix>
+      <Deblocked>0</Deblocked>
+      <DebugFlag>0</DebugFlag>
+      <FirstRunOnlyFlag>0</FirstRunOnlyFlag>
+      <ImagingReads Index="1">
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>37</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      </ImagingReads>
+      <ImagingReads Index="2">
+        <FirstCycle>38</FirstCycle>
+        <LastCycle>74</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080818_IL9_1232</RunFolder>
+      </ImagingReads>
+      <Instrument>HWI-EAS130</Instrument>
+      <MakeFlag>1</MakeFlag>
+      <MaxCycle>-1</MaxCycle>
+      <MinCycle>-1</MinCycle>
+      <Reads Index="1">
+        <FirstCycle>1</FirstCycle>
+        <LastCycle>37</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      </Reads>
+      <Reads Index="2">
+        <FirstCycle>38</FirstCycle>
+        <LastCycle>74</LastCycle>
+        <RunFolder>/staging/IL9/analysis/080818_IL9_1232</RunFolder>
+      </Reads>
+      <RunFolder>/staging/IL9/analysis/080813_IL9_1213</RunFolder>
+      <SelectedCycles>1</SelectedCycles>
+      <SelectedCycles>2</SelectedCycles>
+      <SelectedCycles>3</SelectedCycles>
+      <SelectedCycles>4</SelectedCycles>
+      <SelectedCycles>5</SelectedCycles>
+      <SelectedCycles>6</SelectedCycles>
+      <SelectedCycles>7</SelectedCycles>
+      <SelectedCycles>8</SelectedCycles>
+      <SelectedCycles>9</SelectedCycles>
+      <SelectedCycles>10</SelectedCycles>
+      <SelectedCycles>11</SelectedCycles>
+      <SelectedCycles>12</SelectedCycles>
+      <SelectedCycles>13</SelectedCycles>
+      <SelectedCycles>14</SelectedCycles>
+      <SelectedCycles>15</SelectedCycles>
+      <SelectedCycles>16</SelectedCycles>
+      <SelectedCycles>17</SelectedCycles>
+      <SelectedCycles>18</SelectedCycles>
+      <SelectedCycles>19</SelectedCycles>
+      <SelectedCycles>20</SelectedCycles>
+      <SelectedCycles>21</SelectedCycles>
+      <SelectedCycles>22</SelectedCycles>
+      <SelectedCycles>23</SelectedCycles>
+      <SelectedCycles>24</SelectedCycles>
+      <SelectedCycles>25</SelectedCycles>
+      <SelectedCycles>26</SelectedCycles>
+      <SelectedCycles>27</SelectedCycles>
+      <SelectedCycles>28</SelectedCycles>
+      <SelectedCycles>29</SelectedCycles>
+      <SelectedCycles>30</SelectedCycles>
+      <SelectedCycles>31</SelectedCycles>
+      <SelectedCycles>32</SelectedCycles>
+      <SelectedCycles>33</SelectedCycles>
+      <SelectedCycles>34</SelectedCycles>
+      <SelectedCycles>35</SelectedCycles>
+      <SelectedCycles>36</SelectedCycles>
+      <SelectedCycles>37</SelectedCycles>
+      <SelectedCycles>38</SelectedCycles>
+      <SelectedCycles>39</SelectedCycles>
+      <SelectedCycles>40</SelectedCycles>
+      <SelectedCycles>41</SelectedCycles>
+      <SelectedCycles>42</SelectedCycles>
+      <SelectedCycles>43</SelectedCycles>
+      <SelectedCycles>44</SelectedCycles>
+      <SelectedCycles>45</SelectedCycles>
+      <SelectedCycles>46</SelectedCycles>
+      <SelectedCycles>47</SelectedCycles>
+      <SelectedCycles>48</SelectedCycles>
+      <SelectedCycles>49</SelectedCycles>
+      <SelectedCycles>50</SelectedCycles>
+      <SelectedCycles>51</SelectedCycles>
+      <SelectedCycles>52</SelectedCycles>
+      <SelectedCycles>53</SelectedCycles>
+      <SelectedCycles>54</SelectedCycles>
+      <SelectedCycles>55</SelectedCycles>
+      <SelectedCycles>56</SelectedCycles>
+      <SelectedCycles>57</SelectedCycles>
+      <SelectedCycles>58</SelectedCycles>
+      <SelectedCycles>59</SelectedCycles>
+      <SelectedCycles>60</SelectedCycles>
+      <SelectedCycles>61</SelectedCycles>
+      <SelectedCycles>62</SelectedCycles>
+      <SelectedCycles>63</SelectedCycles>
+      <SelectedCycles>64</SelectedCycles>
+      <SelectedCycles>65</SelectedCycles>
+      <SelectedCycles>66</SelectedCycles>
+      <SelectedCycles>67</SelectedCycles>
+      <SelectedCycles>68</SelectedCycles>
+      <SelectedCycles>69</SelectedCycles>
+      <SelectedCycles>70</SelectedCycles>
+      <SelectedCycles>71</SelectedCycles>
+      <SelectedCycles>72</SelectedCycles>
+      <SelectedCycles>73</SelectedCycles>
+      <SelectedCycles>74</SelectedCycles>
+      <SelectedFolders />
+      <SelectedTiles />
+    </RunParameters>
+    <Software Name="Firecrest" Version="1.9.5" />
+    <TileSelection>
+      <Lane Index="1">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="2">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="3">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="4">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="5">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="6">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="7">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+      <Lane Index="8">
+        <Sample>s</Sample>
+        <TileRange Max="330" Min="1" />
+      </Lane>
+    </TileSelection>
+    <Time>
+      <Start>28-08-08 10:20:44 BST</Start>
+    </Time>
+    <UsedCycleFolders>C1.1,C2.1,C3.1,C4.1,C5.1,C6.1,C7.1,C8.1,C9.1,C10.1,C11.1,C12.1,C13.1,C14.1,C15.1,C16.1,C17.1,C18.1,C19.1,C20.1,C21.1,C22.1,C23.1,C24.1,C25.1,C26.1,C27.1,C28.1,C29.1,C30.1,C31.1,C32.1,C33.1,C34.1,C35.1,C36.1,C37.1</UsedCycleFolders>
+    <User Name="auto" />
+  </Run>
+</ImageAnalysis>

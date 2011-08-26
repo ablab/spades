@@ -10,16 +10,16 @@
 #include "google/sparse_hash_map"
 #include "google/dense_hash_map"
 
-#define GOOGLE_SPARSE_MAP
-//#define BOOST_UNORDERED_MAP
+//#define GOOGLE_SPARSE_MAP
+#define BOOST_UNORDERED_MAP
 //#define GOOGLE_DENSE_MAP
 
 #include "kmer_stat.hpp"
 
-const int KMERNO_HASH_MODULUS = 32451233;
-const int KMERNO_HASH_Q = 1299673;
-const int KMERNO_HASH_Q_INV = 31471908;
-const int KMERNO_HASH_Q_POW_K_MINUS_ONE = 12533099;
+const uint64_t KMERNO_HASH_MODULUS = 2305843009213693951;
+const uint64_t KMERNO_HASH_Q = 3712758430079221;
+const uint64_t KMERNO_HASH_Q_INV = 2250585152990002931;
+const uint64_t KMERNO_HASH_Q_POW_K_MINUS_ONE = 412252044596125152;
 
 struct KMerNo {
 	hint_t index;
@@ -34,12 +34,12 @@ struct KMerNo {
 	bool less(const KMerNo &r) const;
 	bool greater(const KMerNo &r) const;
 
-	static hint_t new_hash( hint_t index );
-	static hint_t next_hash( hint_t old_hash, hint_t new_index );
-	static void precomputeHashes();
+	static uint64_t new_hash( hint_t index );
+	static uint64_t next_hash( uint64_t old_hash, hint_t new_index );
+	//static void precomputeHashes();
 
 	struct hash {
-		uint32_t operator() (const KMerNo &kn) const;
+		uint64_t operator() (const KMerNo &kn) const;
 	};
 
 	struct are_equal {

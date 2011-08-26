@@ -1,0 +1,83 @@
+A Hash File is an on-disk copy of a Hash Table keyed by filenames and
+with data containing a file size and position within an archive. It's
+designed to be a general purpose indexing tool for most archive
+formats or for "solid" (concatenated) file archives.
+
+Basic operations need to be performed on hash files and there are
+tools to do this:
+
+Listing the contents
+	hash_list [-l]
+
+Extraction
+	hash_extract
+
+Concatenation
+	hash_cat
+
+
+The Hash File format is:
+
+Header, archive file name, file headers/footers, hash buckets, hash
+linked list items, footer.
+
+In more detail:
+
+Header:
+   ".hsh" (magic numebr)
+   x4     (1-bytes of version code, eg "1.00")
+   x1     (HASH_FUNC_? function used)
+   x1     (number of file headers: FH. These count from 1 to FH inclusive)
+   x1     (number of file footers: FF. These count from 1 to FF inclusive)
+   x1     (reserved - zero for now)
+   x4     (4-bytes big-endian; number of hash buckets)
+   x8     (offset to add to item positions. eg size of this index)
+   x4     (total size of hashfile, includingf header, ..., index, footer)
+Archive name:
+   x1     (length 'L', zero => no name)
+   xL      (archive filename)
+File headers (FH copies of):
+   x8     (position)
+   x4     (size)
+File footers (FH copies of):
+   x8     (position)
+   x4     (size)
+Buckets (multiples of)
+   x4     (4-byte offset of linked list pos,  rel. to the start of the hdr)
+Items (per bucket chain, not written if Bucket[?]==0)
+   x1     (key length 'K', zero => end of chain)
+   xK     (key)
+   x0.5   (File header to use. zero => none) top 4 bits
+   x0.5   (File footer to use. zero => none) bottom 4 bits
+   x8     (position)
+   x4     (size)
+Index footer:
+   ".hsh" (magic number)
+   x8     (offset to Hash Header. >=0 = absolute, -ve = relative to end)
+
+The HashFile index may either be a separate file to the archive, in
+which case the "Archive name" section references the archive itself,
+or part of the archive itself in which case archive name is zero
+length. Additionally if the archive name length is non-zero but the
+first byte of the archive filename is zero then it is also considered
+to be part of the same archive. This allows for an index previously
+generated as a separate file to simply be appended to the archive with
+a minimal of binary editing (ie zeroing 1 byte).
+
+The HashFile index may also be at the start (preferred and searched
+for first) or the end of the file. This is the rationale behind having
+an index footer. It allows us to simply append a hash of a tar file to
+the end of the tar file itself and it'll work just fine without
+breaking the format of the tar file. (Tar files end with a blank
+block, so additional data is not read by tar.) Appending the hashfile
+requires an extra 2 seeks and 1 read (if opening from scratch) to fetch
+a file compared to prepending the hashfile. 
+
+If the hash file was originally stored as a separate file from the
+archive but is now being merged then zero the first byte of the
+archive filename and either prepend or append as desired. If you
+prepend the hash file then note that all the absolute offsets in the
+Item structures will now be incorrect. A correction factor may be
+applied, of the size of the HashFile itself, and this is the purpose
+of the offset field in the header.
+
