@@ -29,10 +29,10 @@ class CuttingReaderWrapper : public IReader<ReadType> {
   /*
    * Default constructor.
    *
-   * @param reader Pointer to any other reader (ancestor of IReader).
+   * @param reader Reference to any other reader (child of IReader).
    * @param cut Number of reads to be read (-1 by default, i.e. all).
    */
-  explicit CuttingReaderWrapper(IReader<ReadType>* reader,
+  explicit CuttingReaderWrapper(IReader<ReadType>& reader,
                                 size_t cut = -1)
       : reader_(reader), cut_(cut), read_(0) {
   }
@@ -50,7 +50,7 @@ class CuttingReaderWrapper : public IReader<ReadType> {
    * @return true of the stream is opened and false otherwise.
    */
   /* virtual */ bool is_open() {
-    return reader_->is_open();
+    return reader_.is_open();
   }
 
   /* 
@@ -60,7 +60,7 @@ class CuttingReaderWrapper : public IReader<ReadType> {
    * otherwise.
    */
   /* virtual */ bool eof() {
-    return (read_ == cut_) || (reader_->eof());
+    return (read_ == cut_) || (reader_.eof());
   }
 
   /*
@@ -73,7 +73,7 @@ class CuttingReaderWrapper : public IReader<ReadType> {
    */
   /* virtual */ CuttingReaderWrapper& operator>>(ReadType& read) {
     if (read_ < cut_) {
-      (*reader_) >> read;
+      reader_ >> read;
       ++read_;
     }
     return (*this);
@@ -83,7 +83,7 @@ class CuttingReaderWrapper : public IReader<ReadType> {
    * Close the stream.
    */
   /* virtual */ void close() {
-    reader_->close();
+    reader_.close();
   }
 
   /* 
@@ -91,14 +91,14 @@ class CuttingReaderWrapper : public IReader<ReadType> {
    */
   /* virtual */ void reset() {
     read_ = 0;
-    reader_->reset();
+    reader_.reset();
   }
 
  private:
   /*
    * @variable Internal stream readers.
    */
-  IReader<ReadType>* reader_;
+  IReader<ReadType>& reader_;
   /*
    * @variable Number of reads that are allowed to read (if it is less
    * than 0, all the reads in stream are allowed to be read).

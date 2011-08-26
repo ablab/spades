@@ -71,7 +71,7 @@ int main() {
 
 	FilteringStream filter_stream(pairStream);
 
-	RCStream rcStream(&filter_stream);
+	RCStream rcStream(filter_stream);
 
 	// read data ('genome')
 	std::string genome;
