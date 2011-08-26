@@ -22,12 +22,8 @@ We need the following programs and libraries (can be installed from repositories
 === Preparation ===
 
 1. Install all mentioned above.
-2. In assembler: run prepare_cfg.sh (this script will build and install libraries from ext (if necessary) and prepare debug and release build files). 
+2. In assembler: run prepare_cfg.sh (this script will build and install libraries from ext to build/ext and prepare debug and release build files). 
 
-Note: if you do not have sudo account, you should install libraries in build/ext. For this run:
-
-./prepare_cfg.sh nosys 
- 
 === Project structure ===
 
 Our project structure is the following. In the algorithmic-biology/assembler/ there are directories:
@@ -67,3 +63,5 @@ We're using Google C++ Style Guide http://google-styleguide.googlecode.com/svn/t
 If you do not have sudo account you should install all the necessary libraries somewhere in your home directory. In this case CMake will not be able to find them. You should use ccmake to solve this problem (it can be found in cmake-curses-gui package).
 
 Run ccmake . in the directory where CMakeLists.txt are (e.g. build/debug/ or build/release/). Press t to see all the options. Now you can manually correct the paths to libraries and their headers. 
+
+Updated 26 Aug 2011

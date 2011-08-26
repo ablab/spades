@@ -141,15 +141,13 @@ class SingleRead {
 
   /*
    * Return SingleRead quality string, where every quality value is
-   * increased by offset (need for normalization of quality values).
+   * increased by PhredOffset (need for normalization of quality values).
    * Do not modify original quality values.
    *
-   * @param offset The offset of SingleRead quality (PHRED_OFFSET by
-   * default). 
    * @return Modified SingleRead quality string.
    */
-  std::string GetPhredQualityString(OffsetType offset_type = PhredOffset) const {
-    int offset = GetOffset(offset_type);
+  std::string GetPhredQualityString() const {
+    int offset = PHRED_OFFSET;
     std::string res = qual_;
     for (size_t i = 0; i < res.size(); ++i) {
       res[i] += offset;
