@@ -430,12 +430,12 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	res.resize(k);
 	if (k == 1) {
 		DEBUG("NOTHING TO SPLIT:( ");
-		for (size_t j = 0; j < edge_infos.size(); j++){
-			if (edge_info_colors[j] == 1)
-				paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, edge_infos[j].lp.first);
-		}
-		res[0] = v;
-		return res;
+//		for (size_t j = 0; j < edge_infos.size(); j++){
+//			if (edge_info_colors[j] == 1)
+//				paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, edge_infos[j].lp.first);
+//		}
+//		res[0] = v;
+//		return res;
 	}
 	vector<EdgeId> edgeIds[2];
 	//TODO: fix labels
@@ -495,7 +495,10 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 					paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, old_to_new_edgeId[edge_infos[j].lp.first]);
 			}
 			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
-				if (new_graph.coverage(it->second) < cfg::get().ec.max_coverage) new_graph.DeleteEdge(it->second);
+				if (new_graph.coverage(it->second) < cfg::get().ec.max_coverage) {
+				    paired_di_data.DeleteEdgeInfo(it->second);
+				    new_graph.DeleteEdge(it->second);
+				}
 			}
 		}
 	}
