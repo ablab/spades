@@ -23,7 +23,7 @@ endif()
 
 add_definitions(-g3)
 add_definitions(-std=c++0x)
-add_definitions(-Wall -pedantic -Wno-long-long -Wno-deprecated)
+add_definitions(-Wall -Wno-long-long -Wno-deprecated)
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   message("Making Debug Configuration...")
