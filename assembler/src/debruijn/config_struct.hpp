@@ -100,6 +100,10 @@ namespace debruijn
 			int max_length_div_K;
 		};
 
+		struct repeat_resolver
+		{
+			int mode;
+		};
 		struct distance_estimator
 		{
 			size_t delta;
@@ -139,7 +143,7 @@ namespace debruijn
 		bulge_remover br;
 		erroneous_connections_remover ec;
 		distance_estimator de;
-
+		repeat_resolver rr;
 		dataset ds;
 	};
 
@@ -197,6 +201,12 @@ namespace debruijn
 		load(pt, "max_distance", de.max_distance);
 	}
 
+	inline void load(boost::property_tree::ptree const& pt, debruijn_config::repeat_resolver& rr)
+	{
+		using config_common::load;
+		load(pt, "mode", rr.mode);
+	}
+
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::dataset& ds)
 	{
 		using config_common::load;
@@ -238,6 +248,7 @@ namespace debruijn
 		load(pt, "br", cfg.br); // bulge remover:
 		load(pt, "ec", cfg.ec); // erroneous connections remover:
 		load(pt, "de", cfg.de); // distance estimator:
+		load(pt, "rr", cfg.rr); // repeat resolver:
 		load(pt, "uncorrected_reads", cfg.uncorrected_reads);
 		load(pt, cfg.dataset_name, cfg.ds);
 	}
