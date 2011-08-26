@@ -7,7 +7,7 @@
 using namespace io;
 
 void TestReaderSingleReadNoFile() {
-  Reader<SingleRead> reader("./no-file");
+  Reader<SingleRead> reader("./no-file.fa");
   ASSERT(!reader.is_open());
 }
 

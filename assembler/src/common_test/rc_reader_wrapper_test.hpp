@@ -9,7 +9,7 @@
 using namespace io;
 
 void TestRCReaderWrapperNoFile() {
-  Reader<SingleRead> internal_reader("./no-file");
+  Reader<SingleRead> internal_reader("./no-file.fa");
   RCReaderWrapper<SingleRead> reader(internal_reader);
   ASSERT(!reader.is_open());
 }

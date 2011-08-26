@@ -10,10 +10,11 @@ using namespace io;
 
 void TestReaderPairedReadNoFile() {
   Reader<PairedRead> reader(std::pair<std::string, std::string>
-                            ("./no-file", "./src/common_test/data/s_test.fastq.gz"), 100);
+                            ("./no-file.fa", 
+                             "./src/common_test/data/s_test.fastq.gz"), 100);
   ASSERT(!reader.is_open());
   Reader<PairedRead> reader2(std::pair<std::string, std::string>
-                             ("./no-file", "./no-file"), 100);
+                             ("./no-file.fa", "./no-file.fa"), 100);
   ASSERT(!reader.is_open());
 }
 

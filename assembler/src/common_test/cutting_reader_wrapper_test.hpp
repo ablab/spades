@@ -9,7 +9,7 @@
 using namespace io;
 
 void TestCuttingReaderWrapperNoFile() {
-  Reader<SingleRead> internal_reader("./no-file");
+  Reader<SingleRead> internal_reader("./no-file.fa");
   CuttingReaderWrapper<SingleRead> reader(internal_reader);
   ASSERT(!reader.is_open());
 }

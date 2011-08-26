@@ -13,7 +13,8 @@ using namespace io;
 
 void TestConvertingReaderWrapperNoFile() {
   Reader<PairedRead> internal_reader(
-      std::pair<std::string, std::string>("./no-file", "./no_file"));
+      std::pair<std::string, std::string>(
+          "./no-file.fa", "./no_file.fa"));
   ConvertingReaderWrapper reader(internal_reader);
   ASSERT(!reader.is_open());
 }
