@@ -123,12 +123,14 @@ void CountStats(const Graph& g, const EdgeIndex<k + 1, Graph>& index,
 void CountPairedInfoStats(const Graph &g, const PairedInfoIndex<Graph> &paired_index,
 		const PairedInfoIndex<Graph> &etalon_paired_index,
 		const string &output_folder) {
+	PairedInfoIndex<Graph> filtered_index(g);
+	PairInfoFilter < Graph > (g, 40).Filter(paired_index, filtered_index);
 	INFO("Counting paired info stats");
 	EdgePairStat<Graph> (g, paired_index, output_folder).Count();
 
 	//todo remove filtration if launch on etalon info is ok
-	UniquePathStat<Graph> (g, etalon_paired_index, cfg::get().ds.IS,
-			cfg::get().ds.RL, 0.1 * cfg::get().ds.IS, 40.0).Count();
+	UniquePathStat<Graph> (g, filtered_index, cfg::get().ds.IS,
+			cfg::get().ds.RL, 0.1 * cfg::get().ds.IS).Count();
 	UniqueDistanceStat<Graph> (etalon_paired_index).Count();
 	INFO("Paired info stats counted");
 }
