@@ -430,8 +430,8 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	res.resize(k);
 	if (k == 1) {
 		DEBUG("NOTHING TO SPLIT:( ");
-		res[0] = v;
-		return res;
+		//res[0] = v;
+		//return res;
 	}
 	vector<EdgeId> edgeIds[2];
 	//TODO: fix labels
@@ -716,10 +716,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 
 				}
 			}
-
-
-
-
+			paired_di_data.DeleteEdgeInfo(edgeIds[dir][i]);
 		}
 	}
 
