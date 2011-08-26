@@ -55,7 +55,7 @@ void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence&
 }
 
 template<size_t k>
-void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds, PairedInfoIndices& pairedInfos) {
+void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds, PairedInfoIndices& pairedInfos, bool useNewMetrics) {
 	for (auto rl = lc_cfg::get().real_libs.begin(); rl != lc_cfg::get().real_libs.end(); ++rl) {
 		size_t insertSize = rl->insert_size;
 		size_t readSize = rl->read_size;
@@ -87,7 +87,7 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 
 			RCStream rcStream(&pairStream);
 
-			if (lc_cfg::get().use_new_metrics) {
+			if (useNewMetrics) {
 				KmerMapper<k+1, Graph> mapper(g);
 				FillPairedIndexWithReadCountMetric<k, RCStream>(g, index, mapper,*pairedInfos.back().pairedInfoIndex, rcStream);
 			} else {
@@ -112,12 +112,9 @@ void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Gra
 					cfg::get().de.max_distance);
 			estimator.Estimate(clustered_index);
 
-			dataPrinter.savePaired(fileName, clustered_index);
-		} else {
-			dataPrinter.savePaired(fileName, *(lib->pairedInfoIndex));
+			dataPrinter.savePaired(fileName + "_clustered", clustered_index);
 		}
-
-
+		dataPrinter.savePaired(fileName, *(lib->pairedInfoIndex));
 	}
 	INFO("Saved");
 }

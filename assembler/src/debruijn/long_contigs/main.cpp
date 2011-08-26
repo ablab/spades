@@ -81,7 +81,14 @@ int main() {
 	if (cfg::get().etalon_info_mode) {
 		AddEtalonInfo<K>(g, index, sequence, pairedInfos);
 	} else {
-		AddRealInfo<K>(g, index, intIds, pairedInfos);
+		//AddRealInfo<K>(g, index, intIds, pairedInfos, false);
+		//SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix + "_old");
+		pairedInfos.clear();
+		AddRealInfo<K>(g, index, intIds, pairedInfos, lc_cfg::get().use_new_metrics);
+
+		if (!cfg::get().etalon_info_mode && lc_cfg::get().write_real_paired_info) {
+			SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix);
+		}
 	}
 
 	FindSeeds(g, rawSeeds);
@@ -124,10 +131,6 @@ int main() {
 		WriteGraphWithPathsSimple(output_dir + "overlaped_paths.dot", "overlaped_paths", g, result, path1, path2);
 	}
 
-	if (lc_cfg::get().fo.remove_overlaps) {
-		RemoveOverlaps(result);
-	}
-
 	found = PathsInGenome<K>(g, index, sequence, result, path1, path2);
 	INFO("Good paths found " << found << " in total " << result.size());
 	INFO("Path coverage " << PathsCoverage(g, result));
@@ -144,13 +147,15 @@ int main() {
 	if (lc_cfg::get().write_contigs) {
 		OutputPathsAsContigs(g, result, output_dir + "all_paths.contigs");
 		OutputContigsNoComplement(g, output_dir + "edges.contigs");
-		OutputPathsAsContigsNoComplement(g, result, output_dir + "paths.contigs");
-	}
 
-	INFO(output_dir);
-	INFO(lc_cfg::get().paired_info_file_prefix);
-	if (!cfg::get().etalon_info_mode && lc_cfg::get().write_real_paired_info) {
-		SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix);
+		std::vector<BidirectionalPath> noOverlaps;
+		if (lc_cfg::get().fo.remove_overlaps) {
+			FilterComplement(g, result, noOverlaps);
+			RemoveOverlaps(g, noOverlaps);
+			OutputPathsAsContigs(g, noOverlaps, output_dir + "paths.contigs");
+		} else {
+			OutputPathsAsContigsNoComplement(g, result, output_dir + "paths.contigs");
+		}
 	}
 
 	if (lc_cfg::get().write_graph) {

@@ -213,8 +213,8 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 
 	maxWeight = FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward);
 
+	static double weightThreshold = lc_cfg::get().es.weight_threshold;
 	if (edges.size() == 1) {
-		static double weightThreshold = lc_cfg::get().es.weight_threshold;
 		return toReturn == 0 ? ExtensionGoodEnough(edges.back(), maxWeight, weightThreshold, g, path, handler, forward) : toReturn;
 	}
 	else if (edges.size() > 1) {

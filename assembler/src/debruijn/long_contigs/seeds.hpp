@@ -26,7 +26,8 @@ EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, const std::map<Ed
 	}
 
 	VertexId currentVertex = g.EdgeEnd(path.back());
-	while (g.CheckUniqueOutgoingEdge(currentVertex)) {
+	//TODO cycling -- tmp fix
+	while (g.CheckUniqueOutgoingEdge(currentVertex) && path.size() < 10) {
 		EdgeId nextEdge = g.GetUniqueOutgoingEdge(currentVertex);
 
 		if (glueSeeds && starts.count(nextEdge) != 0) {
@@ -53,7 +54,8 @@ void ExtendTrivialBackward(Graph& g, BidirectionalPath& path) {
 	}
 
 	VertexId currentVertex = g.EdgeStart(path.front());
-	while (g.CheckUniqueIncomingEdge(currentVertex)) {
+	//TODO fix cycling
+	while (g.CheckUniqueIncomingEdge(currentVertex) && path.size() < 12) {
 		EdgeId nextEdge = g.GetUniqueIncomingEdge(currentVertex);
 		path.push_front(nextEdge);
 		currentVertex = g.EdgeStart(nextEdge);
@@ -79,10 +81,12 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 
 	INFO("Finding seeds started");
 	for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		INFO(count);
 		count++;
 		EdgeId e = *iter;
 
 		starts[e] = BidirectionalPath();
+//		seeds.push_back(BidirectionalPath());
 		BidirectionalPath& newPath = starts[e];
 		newPath.push_back(e);
 
@@ -112,6 +116,10 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 		ExtendTrivialBackward(g, pathIter->second);
 		seeds.push_back(pathIter->second);
 	}
+//	for (auto pathIter = seeds.begin(); pathIter != seeds.end(); ++pathIter) {
+//		ExtendTrivialBackward(g, *pathIter);
+//	}
+
 	INFO("Finding seeds finished");
 }
 

@@ -242,7 +242,7 @@ void FilterComplement(Graph& g, std::vector<BidirectionalPath>& paths, std::vect
 
 //Remove overlaps, remove sub paths first
 //TODO
-void RemoveOverlaps(std::vector<BidirectionalPath>& paths) {
+void RemoveOverlaps(Graph& g, std::vector<BidirectionalPath>& paths) {
 	INFO("Removing overlaps");
 	for (auto path = paths.begin(); path != paths.end(); ++path) {
 		EdgeId lastEdge = path->back();
@@ -267,6 +267,22 @@ void RemoveOverlaps(std::vector<BidirectionalPath>& paths) {
 						if (found) {
 							overlap = i;
 							INFO("Found overlap by " << i);
+						}
+					}
+					else if (g.conjugate(lastEdge) == toCompare[i]) {
+						int diff = path->size() - i;
+						bool found = true;
+
+						for (int j = i - 1; j >= 0; --j) {
+							if (g.conjugate(toCompare[j]) != path->at(j + diff)) {
+								found = false;
+								break;
+							}
+						}
+
+						if (found) {
+							overlap = i;
+							INFO("Found overlap by " << i + 1);
 						}
 					}
 				}
