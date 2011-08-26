@@ -1,0 +1,93 @@
+.TH srf2fastq 1 "December 10" "" "Staden io_lib"
+
+.SH "NAME"
+
+.PP
+.BR srf2fastq
+\- Converts SRF files to Sanger fastq format
+
+.SH "SYNOPSIS"
+.PP
+\fBsrf2fastq\fR  [\fIoptions\fR] \fIsrf_archive\fR ...
+
+.SH "DESCRIPTION"
+.PP
+\fBsrf2fastq\fR extracts sequences and qualities from one or more SRF
+archives and writes them in Sanger fastq format to stdout.
+.PP
+Note that Illumina
+also have a fastq format (used in the GERALD directories) which
+differs slightly in the use of log-odds scores for the quality
+values. The format described here is using the traditional \fIPhred\fR
+style of quality encoding.
+
+.SH "OPTIONS"
+.PP
+.TP
+\fB-c\fR
+Outputs calibrated confidence values using the ZTR \fBCNF1\fR
+chunk type for a single quality per base. Without this use the
+original Illumina \fI_prb.txt\fR files consisting of four quality
+values per base, stored in the ZTR \fBCNF4\fR chunks.
+.TP
+\fB-C\fR
+Masks out sequences tagged as bad quality.
+.TP
+\fB-s\fR \fIroot\fR
+Generates files on disk with filenames starting \fIroot\fR, one file
+per non-explicit element in the SRF/ZTR region (REGN) chunk. Typically
+this results in two files for paired end runs. The filename suffixes
+come from the names listed in the SRF region chunks.  This
+option conflicts with the \fB-S\fR parameter.
+.TP
+\fB-S\fR
+Splits sequences into regions, but sequentially lists each sequence
+region to stdout instead of splitting to separate files on disk. This
+option conflicts with the \fB-s\fR parameter.
+.TP
+\fB-n\FR
+When using -s the filename suffixes are simply numbered (starting with
+1) instead of using the names listed in the SRF region chunks.
+.TP
+\fB-a\fR
+Appends region index to the sequence names. Ie generate "name/1" and
+"name/2" for a paired read.
+.TP
+\fB-e\fR
+Include any explicit sequence (ZTR region chunk of type 'E') in the
+sequence output. The explicit sequence is also included in the quality
+line too. Currently this is utilised by ABI SOLiD to store the last
+base of the primer.
+.TP
+\fB-r\fR \fIregion list\fR
+Reverse complements the sequence and reverses the quality values for
+all regions in the \fIregion list\fR. This is a comma separated list
+of integer values enumerating the regions, starting from 1. Note that
+this option only works when either \fB-s\fR or \fB-S\fR are
+specified.
+
+.SH "EXAMPLES"
+.PP
+To extract only the good quality sequences from all srf files in the
+current directory using calibrated confidence values (if available).
+.PP
+.nf
+    srf2fastq -c -C *.srf > runX.fastq
+.fi
+.PP
+To extract a paired end run into two separate files with sequences
+named \fIname\fR/1 and \fIname\fR/2.
+.PP
+.nf
+    srf2fastq -s runX -a -n runX.srf
+.fi
+.PP
+To extract a paired end run as a single file, alternating forward and
+reverse sequences, with the second read being reverse complemented.
+.PP
+.nf
+    srf2fastq -S -r 2 runX.srf > runX.fastq
+.fi
+.SH "AUTHOR"
+.PP
+James Bonfield, Steven Leonard - Wellcome Trust Sanger Institute

@@ -1,0 +1,45 @@
+#!/bin/sh
+#
+# This program prints up a few io_lib configuration parameters. It is
+# designed to be used in other build environments so that programs
+# using io_lib can automatically generate the appropriate CFLAGS and LDFLAGS.
+
+usage() {
+    cat << _EOF_
+Usage: io_lib-config [option]
+
+where 'option' is any one of:
+
+  --cflags      C and preprocessor flags (eg -I/foo/include)
+  --libs        Link-line parameters, eg -L/foo/lib -lstaden-read
+  --version	List io_lib version number
+
+_EOF_
+
+    exit $1
+}
+
+[ $# -eq 0 ] && usage 1
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+includedir=@includedir@
+
+case "$1" in
+--cflags)
+    echo "-I@includedir@"
+    ;;
+--libs)
+    echo "-L@libdir@ -lstaden-read @LDFLAGS@ @LIBS@ @LIBCURL@ @LIBZ@"
+    ;;
+--version)
+    echo @VERSION@
+    ;;
+--help)
+    usage 0
+    ;;
+*)
+    echo "Unknown option '$1'" 1>&2
+    exit 1
+esac
+

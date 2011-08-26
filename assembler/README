@@ -1,80 +1,67 @@
 ASSEMBLER
-15 Feb 2011
+24 Aug 2011
 
 De novo sequence assembler for short mate paired reads (70+ bp).
 
-=== PREREQ ===
+=== Download ===
 
-You need zlib (dev), liblog4cxx and google-sparsehash installed in your system.
+Our project is situated on: git@github.com:ablab/algorithmic-biology.git
+For more actual information please visit http://bioinf.spbau.ru/wiki/Main_Page
 
-In Ubuntu/Debian it's simple:
- 
-> sudo apt-get install zlib1g-dev
+=== Libraries ===
 
-> sudo apt-get install liblog4cxx10-dev
+We need the following programs and libraries (can be installed from repositories):
 
-> sudo apt-get install sparsehash
+* gcc 4.4 or more
+* cmake 2.6 or more
+* log4cxx
+* zlib
+* cute
+* boost 1.42 (exactly!) 
 
-# or do the following:
-#> cd ./assembler/src/libs/sparsehash-1.10/
-#> ./configure
-#> make
-#> sudo make install
-#> make clean
+=== Preparation ===
 
-In Fedora:
-> su
-> yum search sparsehash-devel
-> yum install sparsehash-devel
+1. Install all mentioned above.
+2. In assembler: run prepare_cfg.sh (this script will build and install libraries from ext to build/ext and prepare debug and release build files). 
 
-> yum install log4cxx-devel
-> yum install apr-util-devel
+=== Project structure ===
 
+Our project structure is the following. In the algorithmic-biology/assembler/ there are directories:
 
+* src - contains all the code written inside laboratory:
+    o subprojects (e.g. debruijn, abruijn, etc);
+    o common code in directory include that is used by all subprojects (e.g. io, sequence, cuckoo.hpp, etc);
+    o tools (various utils). 
+* ext - contains all the external code that we use:
+    o src - code of some necessary libraries that are impossible to get from apt-get;
+    o include - headers (e.g. kseq);
+    o tools - any external tools that we use. 
+* doc - contains documentation.
+* data - contains links to data (which is not actually stored under git).
+* build - contains all executables. 
 
-=== INSTALLATION ===
+=== CMake ===
 
-With a GNU environment (g++, make):
+We use cmake as a build system.
 
-> make
+There are 2 types of executables: debug and release. Debug is not optimized and can easily be used for debug, and release is optimized and can't be debugged.
 
-=== USAGE ===
+If you work under Eclipse just prepare your system. For each project there are 2 build configurations (debug and release) and 2 run configurations.
 
-For usual de Bruijn graph run:
+If you work under console you should also prepare you system. To build a project run make in appropriate directory:
 
-> ./build/debruijn/debruijn
+build/<debug|release>/<project name>
 
-For A-Bruijn graph run:
+To run: build/<debug|release>/<project name>/<project name>
 
-> ./build/abruijn/abruijn
+=== Coding conventions ===
 
-For Paired de Bruijn graph run:
+We're using Google C++ Style Guide http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml 
 
-> ./build/paireddebruijn/paireddebruijn
+=== Troubleshooting ===
 
+If you do not have sudo account you should install all the necessary libraries somewhere in your home directory. In this case CMake will not be able to find them. You should use ccmake to solve this problem (it can be found in cmake-curses-gui package).
 
-#ERROR CORRECTION:
-#
-#> ./assember-ec [-i `indir`] [-o `outdir`]
-#
-#Inputs mate paired reads from `indir` (default "data"), corrects errors etc.
-#Outputs corrected mate paired reads to `outdir` (default "data-ec").
-#
-#ASSEMBLY:
-#
-#> ./assembler [-i `indir`] [-o `outfile`] [-s]
-#
-#Inputs mate paired reads from `indir` (default "data-ec"), builds de Bruijn graph, simplifies it etc..
-#Outputs final de Bruijn graph to `outfile` (default "assembly.out").
-#
-#If -s key presented then outputs linear sequence of contigs (scaffold), but not the graph.
+Run ccmake . in the directory where CMakeLists.txt are (e.g. build/debug/ or build/release/). Press t to see all the options. Now you can manually correct the paths to libraries and their headers. 
 
-=== CODE STYLE ===
-
-I'm using Google C++ Style Guide: http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml .
-
-#=== P.S. ===
-#
-#It's good idea to make ./assembler-sf (scaffolder) as separate utility program.
-
-// This README was updated 26 Feb 2011
+Updated 26 Aug 2011

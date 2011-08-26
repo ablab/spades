@@ -112,7 +112,7 @@ private:
 };
 
 template<size_t k, class Graph>
-void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+void CountStats(const Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		const Sequence& genome) {
 	INFO("Counting stats");
 	StatCounter<Graph, k> stat(g, index, genome);
@@ -120,22 +120,24 @@ void CountStats(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	INFO("Stats counted");
 }
 
-void CountPairedInfoStats(Graph &g, PairedInfoIndex<Graph> &paired_index,
-		PairedInfoIndex<Graph> &etalon_paired_index,
+void CountPairedInfoStats(const Graph &g, const PairedInfoIndex<Graph> &paired_index,
+		const PairedInfoIndex<Graph> &etalon_paired_index,
 		const string &output_folder) {
+	PairedInfoIndex<Graph> filtered_index(g);
+	PairInfoFilter < Graph > (g, 40).Filter(paired_index, filtered_index);
 	INFO("Counting paired info stats");
 	EdgePairStat<Graph> (g, paired_index, output_folder).Count();
 
 	//todo remove filtration if launch on etalon info is ok
-	UniquePathStat<Graph> (g, etalon_paired_index, cfg::get().ds.IS,
-			cfg::get().ds.RL, 0.1 * cfg::get().ds.IS, 40.0).Count();
+	UniquePathStat<Graph> (g, filtered_index, cfg::get().ds.IS,
+			cfg::get().ds.RL, 0.1 * cfg::get().ds.IS).Count();
 	UniqueDistanceStat<Graph> (etalon_paired_index).Count();
 	INFO("Paired info stats counted");
 }
 
-void CountClusteredPairedInfoStats(Graph &g, PairedInfoIndex<Graph> &paired_index,
-		PairedInfoIndex<Graph> &clustered_index,
-		PairedInfoIndex<Graph> &etalon_paired_index,
+void CountClusteredPairedInfoStats(const Graph &g, const PairedInfoIndex<Graph> &paired_index,
+		const PairedInfoIndex<Graph> &clustered_index,
+		const PairedInfoIndex<Graph> &etalon_paired_index,
 		const string &output_folder) {
 	INFO("Counting clustered info stats");
 	EstimationQualityStat<Graph> estimation_stat(g, paired_index,
@@ -159,17 +161,19 @@ void CountClusteredPairedInfoStats(Graph &g, PairedInfoIndex<Graph> &paired_inde
 	INFO("Clustered info stats counted");
 }
 
-void WriteToDotFile(Graph &g, const string& file_name, string graph_name,
+void WriteToDotFile(const Graph &g, const omnigraph::GraphLabeler<Graph>& labeler,
+		const string& file_name, string graph_name,
 		Path<EdgeId> path1/* = Path<EdgeId> ()*/, Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
-	omnigraph::WritePaired(file_name, graph_name, g, path1, path2);
+	omnigraph::WritePaired(g, labeler, file_name, graph_name, path1, path2);
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
 
-void DetailedWriteToDot(Graph &g, const string& file_name, string graph_name,
+void DetailedWriteToDot(const Graph &g, const omnigraph::GraphLabeler<Graph>& labeler,
+		const string& file_name, string graph_name,
 		Path<EdgeId> path1/* = Path<EdgeId> ()*/, Path<EdgeId> path2/* = Path<EdgeId> ()*/) {
 	INFO("Writing graph '" << graph_name << "' to file " << file_name);
-	omnigraph::WriteToFile(file_name, graph_name, g, path1, path2);
+	omnigraph::WriteToFile(g, labeler, file_name, graph_name, path1, path2);
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
 
@@ -181,14 +185,15 @@ Path<typename Graph::EdgeId> FindGenomePath(const Sequence& genome,
 }
 
 template<size_t k>
-void ProduceInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const IdTrackHandler<Graph>& int_ids,
+void ProduceInfo(const Graph& g,
+		const EdgeIndex<k + 1, Graph>& index,
+		const omnigraph::GraphLabeler<Graph>& labeler,
 		const Sequence& genome, const string& file_name,
 		const string& graph_name) {
 	CountStats<k> (g, index, genome);
 	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
 	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
-	WriteToDotFile(g, file_name, graph_name, path1, path2);
+	WriteToDotFile(g, labeler, file_name, graph_name, path1, path2);
 }
 
 
@@ -204,8 +209,9 @@ void ProduceNonconjugateInfo(NCGraph& g,
 }
 
 template<size_t k>
-void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const IdTrackHandler<Graph>& int_ids,
+void ProduceDetailedInfo(const Graph& g,
+		const EdgeIndex<k + 1, Graph>& index,
+		const omnigraph::GraphLabeler<Graph>& labeler,
 		const Sequence& genome, const string& folder, const string& file_name,
 		const string& graph_name) {
 	CountStats<k> (g, index, genome);
@@ -213,17 +219,19 @@ void ProduceDetailedInfo(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
 
 	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-	DetailedWriteToDot(g, folder + file_name, graph_name, path1, path2);
+	DetailedWriteToDot(g, labeler, folder + file_name, graph_name, path1, path2);
 }
 
 template<size_t k>
-void WriteGraphComponents(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+void WriteGraphComponents(const Graph& g,
+		const EdgeIndex<k + 1, Graph>& index,
+		 const GraphLabeler<Graph>& labeler,
 		const Sequence& genome, const string& folder, const string &file_name,
 		const string &graph_name, size_t split_edge_length) {
 	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
 	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
 	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-	WriteComponents(folder + file_name, graph_name, g, split_edge_length,
+	WriteComponents(g, labeler, folder + file_name, graph_name, split_edge_length,
 			path1, path2);
 
 }

@@ -16,6 +16,9 @@
 #include "utils.hpp"
 
 namespace debruijn_graph {
+typedef io::IReader<io::SingleRead> SingleReadStream;
+typedef io::IReader<io::PairedRead> PairedReadStream;
+typedef io::ConvertingReaderWrapper UnitedStream;
 
 template<size_t k, class ReadStream>
 void FillPairedIndex(const Graph &g, const EdgeIndex<k + 1, Graph>& index
@@ -77,6 +80,7 @@ void FillEtalonPairedIndex(const Graph &g,
 }
 
 template<size_t k>
+<<<<<<< HEAD
 void FillEtalonPairedIndex(const Graph &g,
 		PairedInfoIndex<Graph>& etalon_paired_index,
 		const EdgeIndex<k + 1, Graph>& index,
@@ -95,13 +99,16 @@ void FillEtalonPairedIndex(const Graph &g,
 
 template<size_t k, class ReadStream>
 void FillCoverage(Graph& g, ReadStream& stream,
+=======
+void FillCoverage(Graph& g, SingleReadStream& stream,
+>>>>>>> f746b91192184477ebb9e6dd3edf6189c6818fc9
 		EdgeIndex<k + 1, Graph>& index) {
 	typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
 	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Counting coverage");
 	SequenceMapper read_threader(g, index);
-	g.coverage_index().FillIndex<ReadStream, SequenceMapper>(stream,
+	g.coverage_index().FillIndex<SequenceMapper>(stream,
 			read_threader);
 	INFO("Coverage counted");
 }
@@ -123,32 +130,29 @@ ReadStream& stream) {
 	INFO("Graph condensed");
 }
 
-template<size_t k, class ReadStream>
+template<size_t k>
 void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index
-		, IdTrackHandler<Graph>& int_ids, ReadStream& stream) {
-	ConstructGraph<k, ReadStream>(g, index, stream);
-	FillCoverage<k, ReadStream>(g, stream, index);
+		, SingleReadStream& stream) {
+	ConstructGraph<k>(g, index, stream);
+	FillCoverage<k>(g, stream, index);
 }
 
-template<size_t k, class PairedReadStream>
-void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index
-		, IdTrackHandler<Graph>& int_ids,
+template<size_t k>
+void ConstructGraphWithPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& stream) {
-		typedef io::ConvertingReaderWrapper UnitedStream;
 		UnitedStream united_stream(&stream);
-		ConstructGraphWithCoverage<k, UnitedStream>(g, index,
-				int_ids/*, coverage_handler*/, united_stream);
-		FillPairedIndex<k, PairedReadStream>(g, index, paired_index, stream);
+		ConstructGraphWithCoverage<k>(g, index,
+				united_stream);
+		FillPairedIndex<k>(g, index, paired_index, stream);
 }
 
-template<size_t k, class PairedReadStream>
+template<size_t k>
 void ConstructGraphWithEtalonPairedInfo(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		IdTrackHandler<Graph>& int_ids, PairedInfoIndex<Graph>& paired_index,
+		PairedInfoIndex<Graph>& paired_index,
 		PairedReadStream& stream, const Sequence& genome) {
-	typedef io::ConvertingReaderWrapper UnitedStream;
 	UnitedStream united_stream(&stream);
-	ConstructGraphWithCoverage<k, UnitedStream>(g, index,
-			int_ids/*, coverage_handler*/, united_stream);
+	ConstructGraphWithCoverage<k>(g, index,
+			united_stream);
 	FillEtalonPairedIndex<k>(g, paired_index, index,
 			genome);
 }

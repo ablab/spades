@@ -37,6 +37,8 @@ struct hammer_config
 	double good_cluster_threshold;
 	double blob_margin;
 	int trim_quality;
+
+	bool trim_left_right;
 };
 
 
@@ -71,6 +73,8 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 	load(pt, "good_cluster_threshold", cfg.good_cluster_threshold);
 	load(pt, "blob_margin", cfg.blob_margin);
 	load(pt, "trim_quality", cfg.trim_quality);
+
+	load(pt, "trim_left_right", cfg.trim_left_right);
 }
 
 typedef config_common::config<hammer_config> cfg;

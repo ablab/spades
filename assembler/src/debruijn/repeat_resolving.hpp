@@ -58,8 +58,7 @@ void ResolveOneComponent(const string& load_from_dir, const string& save_to_dir,
 
 	RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
-	omnigraph::WriteSimple(save_to + "_before.dot", "no_repeat_graph",
-			new_graph, IdTrackLabelerAfter);
+	omnigraph::WriteSimple(new_graph, IdTrackLabelerAfter, save_to + "_before.dot", "no_repeat_graph");
 
 	NonconjugateDeBruijnGraph resolved_graph(k);
 	IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
@@ -72,30 +71,28 @@ void ResolveOneComponent(const string& load_from_dir, const string& save_to_dir,
 
 	RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
 			Resolved_IntIds);
-	omnigraph::WriteSimple(save_to + "_after.dot", "no_repeat_graph",
-			resolved_graph, IdTrackLabelerResolved);
+	omnigraph::WriteSimple(resolved_graph, IdTrackLabelerResolved, save_to + "_after.dot", "no_repeat_graph");
 
 	EdgesPosGraphLabeler<NCGraph> EdgePosLAfterLab(resolved_graph,
 			EdgePosAfter);
 
-	omnigraph::WriteSimple(
+	omnigraph::WriteSimple(resolved_graph, EdgePosLAfterLab,
 			save_resolving_history + "/repeats_resolved_after_pos.dot",
-			"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
+			"no_repeat_graph");
 
 	ClipTips(resolved_graph);
 	RemoveLowCoverageEdgesForResolver(resolved_graph);
 
-	omnigraph::WriteSimple(
+	omnigraph::WriteSimple(resolved_graph, EdgePosLAfterLab,
 			save_resolving_history
 					+ "/repeats_resolved_after_und_cleared_pos.dot",
-			"no_repeat_graph", resolved_graph, EdgePosLAfterLab);
-	omnigraph::WriteSimple(
+			"no_repeat_graph");
+	omnigraph::WriteSimple(resolved_graph, IdTrackLabelerResolved,
 			save_resolving_history + "/repeats_resolved_und_cleared.dot",
-			"no_repeat_graph", resolved_graph, IdTrackLabelerResolved);
+			"no_repeat_graph");
 	one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
 	N50enlarger.one_many_resolve();
-	omnigraph::WriteSimple(save_to + "_finished.dot", "no_repeat_graph",
-			resolved_graph, IdTrackLabelerResolved);
+	omnigraph::WriteSimple(resolved_graph, IdTrackLabelerResolved, save_to + "_finished.dot", "no_repeat_graph");
 }
 
 void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index,
@@ -120,8 +117,7 @@ void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index,
 	RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolvedGraph,
 			Resolved_IntIds);
 
-	omnigraph::WriteSimple(work_tmp_dir + "rectgraph.dot", "rectgraph",
-			resolvedGraph, IdTrackLabelerResolved);
+	omnigraph::WriteSimple(resolvedGraph, IdTrackLabelerResolved, work_tmp_dir + "rectgraph.dot", "rectgraph");
 	INFO("rect graph written: " + work_tmp_dir + "rectgraph.dot");
 
 	for (auto iter = resolvedGraph.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -155,13 +151,13 @@ void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index,
 	IdTrackHandler<NCGraph> idTrackerAfter(resolvedGraph);
 	RealIdGraphLabeler<NCGraph> idLabelAfter(resolvedGraph, idTrackerAfter);
 
-	omnigraph::WriteSimple(work_tmp_dir + "rectgraphAfter.dot",
-			"rectgraphAfter", resolvedGraph, idLabelAfter);
+	omnigraph::WriteSimple(resolvedGraph, idLabelAfter, work_tmp_dir + "rectgraphAfter.dot",
+			"rectgraphAfter");
 	INFO("rect graph written: " + work_tmp_dir + "rectgraphAfter.dot");
 
 	EmptyGraphLabeler<NonconjugateDeBruijnGraph> emptyLabeler;
-	omnigraph::WriteSimple(work_tmp_dir + "beforerectgraph.dot",
-			"beforerectgraph", graph, emptyLabeler);
+	omnigraph::WriteSimple(graph, emptyLabeler, work_tmp_dir + "beforerectgraph.dot",
+			"beforerectgraph");
 	INFO("rect graph written: " + work_tmp_dir + "beforerectgraph.dot");
 
 	OutputContigs(resolvedGraph, output_folder + "rectcontig.fasta");

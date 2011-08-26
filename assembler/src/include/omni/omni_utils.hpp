@@ -356,7 +356,7 @@ public:
 		assert(edge1 != edge2);
 		assert(edge2 != rcNewEdge);
 		assert(graph_.EdgeStart(edge1) != graph_.EdgeEnd(edge1));
-		assert(graph_.EdgeStart(edge2) != graph_.EdgeEnd(edge2));
+//		assert(graph_.EdgeStart(edge2) != graph_.EdgeEnd(edge2));
 		handler->HandleGlue(new_edge, edge1, edge2);
 		if (edge1 != rcOldEdge) {
 			TRACE(
@@ -603,7 +603,7 @@ private:
 	const size_t bound_;
 
 public:
-	BackwardBoundedDijkstra(Graph &g, size_t bound) :
+	BackwardBoundedDijkstra(const Graph &g, size_t bound) :
 		super(g), bound_(bound) {
 	}
 
@@ -628,7 +628,7 @@ public:
 	};
 
 private:
-	Graph& g_;
+	const Graph& g_;
 	size_t min_length_;
 	size_t max_length_;
 	VertexId start_;
@@ -667,7 +667,7 @@ private:
 	}
 
 public:
-	PathProcessor(Graph& g, double min_length, double max_length,
+	PathProcessor(const Graph& g, double min_length, double max_length,
 			VertexId start, VertexId end, Callback& callback) :
 			g_(g), min_length_((min_length < 0) ? 0 : std::floor(min_length)), max_length_(std::floor(max_length + 0.5))
 		, start_(start), end_(end), callback_(callback), call_cnt_(0) {
@@ -729,12 +729,12 @@ class NonEmptyPathCounter: public PathProcessor<Graph>::Callback {
 	typedef typename Graph::EdgeId EdgeId;
 
 	//todo temporary
-	Graph& g_;
+	const Graph& g_;
 
 	size_t count_;
 public:
 
-	NonEmptyPathCounter(Graph& g) :
+	NonEmptyPathCounter(const Graph& g) :
 			g_(g), count_(0) {
 //		cout << "........................" << endl;
 	}

@@ -7,10 +7,10 @@
 using namespace io;
 
 void TestSingleRead() {
-  SingleRead sr("Read1", "ATGCATGC", "aabbaabb");
+  SingleRead sr("Read1", "ATGCATGC", "\3\3\4\4\3\3\4\4");
   ASSERT_EQUAL(true, sr.IsValid());
   ASSERT_EQUAL(8, sr.size());
-  ASSERT_EQUAL("ccddccdd", sr.GetPhredQualityString(2));
+  ASSERT_EQUAL("$$%%$$%%", sr.GetPhredQualityString());
   ASSERT_EQUAL(dignucl('A'), sr[0]);
   ASSERT_EQUAL(dignucl('T'), sr[5]);
   ASSERT_EQUAL("GCATGCAT", (!sr).GetSequenceString());

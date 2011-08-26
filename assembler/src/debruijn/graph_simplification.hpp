@@ -22,7 +22,7 @@ void ClipTips(Graph &g) {
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
 	omnigraph::TipComparator<Graph> comparator(g);
-	size_t max_tip_length = cfg::get().tc.max_tip_length;
+	size_t max_tip_length = cfg::get().tc.max_tip_length_div_K * g.k();
 	size_t max_coverage = cfg::get().tc.max_coverage;
 	double max_relative_coverage = cfg::get().tc.max_relative_coverage;
 	omnigraph::TipClipper<Graph, TipComparator<Graph>> tc(g, comparator, max_tip_length,
@@ -102,14 +102,14 @@ void RemoveLowCoverageEdgesForResolver(Graph &g) {
 }
 
 template<size_t k>
-void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		const IdTrackHandler<Graph>& int_ids,
+void SimplifyGraph(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+		const omnigraph::GraphLabeler<Graph>& labeler,
 		size_t iteration_count, const Sequence& genome,
 		const string& output_folder) {
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
 
-	ProduceDetailedInfo<k> (g, index, int_ids, genome,
+	ProduceDetailedInfo<k> (g, index, labeler, genome,
 			output_folder + "before_simplification/", "graph.dot",
 			"non_simplified_graph");
 	for (size_t i = 0; i < iteration_count; i++) {
@@ -118,19 +118,19 @@ void SimplifyGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 
 		ClipTips(g);
 //		etalon_paired_index.Check();
-		ProduceDetailedInfo<k> (g, index, int_ids, genome,
+		ProduceDetailedInfo<k> (g, index, labeler, genome,
 				output_folder + "tips_clipped_" + ToString(i) + "/",
 				"graph.dot", "no_tip_graph");
 
 		RemoveBulges(g);
 //		etalon_paired_index.Check();
-		ProduceDetailedInfo<k> (g, index, int_ids, genome,
+		ProduceDetailedInfo<k> (g, index, labeler, genome,
 				output_folder + "bulges_removed_" + ToString(i) + "/",
 				"graph.dot", "no_bulge_graph");
 
 		RemoveLowCoverageEdges(g);
 //		etalon_paired_index.Check();
-		ProduceDetailedInfo<k> (g, index, int_ids, genome,
+		ProduceDetailedInfo<k> (g, index, labeler, genome,
 				output_folder + "erroneous_edges_removed_" + ToString(i) + "/",
 				"graph.dot", "no_erroneous_edges_graph");
 	}INFO("Graph simplification finished");

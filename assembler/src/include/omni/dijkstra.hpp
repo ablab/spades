@@ -22,11 +22,11 @@ private:
 	//	typedef map<VertexId, distance_t>::iterator distances_map_iterator;
 	typedef typename distances_map::const_iterator distances_map_ci;
 
-	Graph &graph_;
+	const Graph &graph_;
 	bool finished_;
 	map<VertexId, distance_t> distances_;
 protected:
-	Graph& graph() {
+	const Graph& graph() {
 		return graph_;
 	}
 
@@ -36,7 +36,7 @@ public:
 		return finished_;
 	}
 
-	Dijkstra(Graph &graph) :
+	Dijkstra(const Graph &graph) :
 		graph_(graph), finished_(false) {
 	}
 
@@ -172,7 +172,7 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	UnorientedDijkstra(Graph &graph) :
+	UnorientedDijkstra(const Graph &graph) :
 		super(graph) {
 	}
 
@@ -181,7 +181,7 @@ public:
 
 	virtual vector<pair<VertexId, EdgeId>> Neighbours(VertexId vertex) {
 		vector < pair < VertexId, EdgeId >> result;
-		Graph &g = this->graph();
+		const Graph &g = this->graph();
 		vector < EdgeId > edges = g.OutgoingEdges(vertex);
 		for (size_t i = 0; i < edges.size(); i++) {
 			result.push_back(make_pair(g.EdgeEnd(edges[i]), edges[i]));
@@ -201,7 +201,7 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	BackwardDijkstra(Graph &graph) :
+	BackwardDijkstra(const Graph &graph) :
 		super(graph) {
 	}
 
@@ -210,7 +210,7 @@ public:
 
 	virtual vector<pair<VertexId, EdgeId>> Neighbours(VertexId vertex) {
 		vector <pair<VertexId, EdgeId>> result;
-		Graph &g = this->graph();
+		const Graph &g = this->graph();
 		vector<EdgeId> edges = g.OutgoingEdges(vertex);
 		edges = g.IncomingEdges(vertex);
 		for (size_t i = 0; i < edges.size(); i++) {

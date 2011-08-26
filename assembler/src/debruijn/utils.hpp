@@ -182,7 +182,7 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
 		for (size_t i = k - 1; i < old_s.size(); ++i) {
 			old_kmer = old_kmer << old_s[i];
 			size_t old_kmer_offset = i - k + 1;
-			size_t new_kmer_offest = std::floor(1. * old_kmer_offset / (old_s.size() - k + 1) * (new_s.size() - k + 1) + 0.5);
+			size_t new_kmer_offest = std::floor(1. * old_kmer_offset / (old_s.size() - k + 1) * (new_s.size() - k + 1) + 1e-9);
 			Kmer new_kmer(new_s, new_kmer_offest);
 			mapping_[old_kmer] = new_kmer;
 //			cout << "Kmer " << old_kmer << " mapped to " << new_kmer << endl;

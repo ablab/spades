@@ -41,12 +41,12 @@ class MultifileReader : public IReader<ReadType> {
    */
   MultifileReader(const vector<typename ReadType::FilenameType>&
                   filenames, size_t distance = 0,
-                  int offset = SingleRead::PHRED_OFFSET)
+                  OffsetType offset_type = PhredOffset)
       : filenames_(filenames), readers_(), distance_(distance),
-        offset_(offset), current_reader_index_(0) {
+        offset_type_(offset_type), current_reader_index_(0) {
     for (size_t i = 0; i < filenames_.size(); ++i) {
       Reader<ReadType>* reader_ = new Reader<ReadType>(
-          filenames_[i], distance_, offset_);
+          filenames_[i], distance_, offset_type_);
       if (reader_->is_open()) {
         readers_.push_back(reader_);
       } else {
@@ -144,9 +144,9 @@ class MultifileReader : public IReader<ReadType> {
    */
   size_t distance_;
   /*
-   * @variable Quality offset.
+   * @variable Quality offset type.
    */
-  int offset_;
+  OffsetType offset_type_;
   /*
    * @variable The index of the file that is currently read from.
    */

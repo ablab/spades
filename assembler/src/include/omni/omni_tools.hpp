@@ -203,10 +203,10 @@ class TrivialEdgePairChecker {
 private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	Graph &graph_;
+	const Graph &graph_;
 	const size_t bound_;
 public:
-	TrivialEdgePairChecker(Graph &graph, size_t bound = (size_t) -1) :
+	TrivialEdgePairChecker(const Graph &graph, size_t bound = (size_t) -1) :
 		graph_(graph), bound_(bound) {
 	}
 
@@ -267,7 +267,7 @@ template<class Graph>
 class PairInfoFilter {
 private:
 	typedef typename Graph::EdgeId EdgeId;
-	Graph &graph_;
+	const Graph &graph_;
 	double weight_threshold_;
 
 	bool ContainsPositiveDistance(const vector<PairInfo<EdgeId>>& infos) {
@@ -292,12 +292,12 @@ private:
 	}
 
 public:
-	PairInfoFilter(Graph &graph, double weight_threshold) :
+	PairInfoFilter(const Graph &graph, double weight_threshold) :
 		graph_(graph), weight_threshold_(weight_threshold) {
 
 	}
 
-	void Filter(PairedInfoIndex<Graph> &old_index,
+	void Filter(const PairedInfoIndex<Graph> &old_index,
 			PairedInfoIndex<Graph> &new_index) {
 		for (auto iterator = old_index.begin(); iterator != old_index.end(); ++iterator) {
 			auto data = *iterator;
