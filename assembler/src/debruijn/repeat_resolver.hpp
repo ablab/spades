@@ -430,8 +430,12 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	res.resize(k);
 	if (k == 1) {
 		DEBUG("NOTHING TO SPLIT:( ");
-		//res[0] = v;
-		//return res;
+		for (size_t j = 0; j < edge_infos.size(); j++){
+			if (edge_info_colors[j] == 1)
+				paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, edge_infos[j].lp.first);
+		}
+		res[0] = v;
+		return res;
 	}
 	vector<EdgeId> edgeIds[2];
 	//TODO: fix labels
@@ -554,10 +558,12 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 					tcount = CheatingResolveVertex(*v_iter);
 				DEBUG("Vertex "<< *v_iter<< " resolved to "<< tcount);
 				sum_count += tcount;
-				GraphCnt++;
-				omnigraph::WriteSimple(
+				if (tcount > 1) {
+					GraphCnt++;
+					omnigraph::WriteSimple(
 						new_graph, IdTrackLabelerAfter, output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
 								+ ".dot", "no_repeat_graph");
+				}
 			}
 		}
 	}INFO("total vert" << sum_count);
