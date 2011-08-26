@@ -297,6 +297,7 @@ void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name,
 		bool with_Sequence) {
 	int read_count;
 	FILE* file = fopen((file_name + ".grp").c_str(), "r");
+	if (file == NULL) WARN("File "<<(file_name + ".grp")<<" not found");
 	assert(file != NULL);
 	FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
 	assert(sequence_file != NULL);

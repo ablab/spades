@@ -11,19 +11,19 @@ using namespace io;
 
 void TestMultifileReaderNoFile() {
   std::vector<SingleRead::FilenameType> filenames;
-  filenames.push_back("./no-file");
-  filenames.push_back("./test/data/s_test.fastq.gz");
+  filenames.push_back("./no-file.fa");
+  filenames.push_back("./src/common_test/data/s_test.fastq.gz");
   MultifileReader<SingleRead> reader(filenames);
   ASSERT(reader.is_open());
   filenames.pop_back();
-  filenames.push_back("./no-file");
+  filenames.push_back("./no-file.fa");
   MultifileReader<SingleRead> reader2(filenames);
   ASSERT(!reader2.is_open());
 }
 
 void TestMultifileReaderReadingFrom1File() {
   std::vector<SingleRead::FilenameType> filenames;
-  filenames.push_back("./test/data/s_test_2.fastq.gz");
+  filenames.push_back("./src/common_test/data/s_test_2.fastq.gz");
   MultifileReader<SingleRead> reader(filenames);
   ASSERT(reader.is_open());
   ASSERT(!reader.eof());
@@ -41,9 +41,9 @@ void TestMultifileReaderReadingFrom1File() {
 
 void TestMultifileReaderReadingFrom2Files() {
   std::vector<SingleRead::FilenameType> filenames;
-  filenames.push_back("./test/data/s_test.fastq.gz");
-  filenames.push_back("./no-file");
-  filenames.push_back("./test/data/s_test_2.fastq.gz");
+  filenames.push_back("./src/common_test/data/s_test.fastq.gz");
+  filenames.push_back("./no-file.fa");
+  filenames.push_back("./src/common_test/data/s_test_2.fastq.gz");
   MultifileReader<SingleRead> reader(filenames);
   ASSERT(reader.is_open());
   ASSERT(!reader.eof());
