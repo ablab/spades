@@ -29,7 +29,7 @@ class RCReaderWrapper : public IReader<ReadType> {
   /*
    * Default constructor.
    *
-   * @param reader Pointer to any other reader (ancestor of IReader).
+   * @param reader Reference to any other reader (child of IReader).
    */
   explicit RCReaderWrapper(IReader<ReadType>& reader)
       : reader_(reader), rc_read_(), was_rc_(true) {

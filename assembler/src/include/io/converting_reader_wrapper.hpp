@@ -31,8 +31,7 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
   /*
    * Default constructor.
    *
-   * @param reader Pointer to any other reader (ancestor of
-   * IReader<PairedRead>). 
+   * @param reader Reference to any other reader (child of IReader).
    */
   explicit ConvertingReaderWrapper(IReader<PairedRead>& reader)
       : reader_(reader), pairedread_(), index_(0) {

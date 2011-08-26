@@ -29,7 +29,7 @@ class CuttingReaderWrapper : public IReader<ReadType> {
   /*
    * Default constructor.
    *
-   * @param reader Pointer to any other reader (ancestor of IReader).
+   * @param reader Reference to any other reader (child of IReader).
    * @param cut Number of reads to be read (-1 by default, i.e. all).
    */
   explicit CuttingReaderWrapper(IReader<ReadType>& reader,
