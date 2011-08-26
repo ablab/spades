@@ -356,7 +356,7 @@ public:
 		assert(edge1 != edge2);
 		assert(edge2 != rcNewEdge);
 		assert(graph_.EdgeStart(edge1) != graph_.EdgeEnd(edge1));
-		assert(graph_.EdgeStart(edge2) != graph_.EdgeEnd(edge2));
+//		assert(graph_.EdgeStart(edge2) != graph_.EdgeEnd(edge2));
 		handler->HandleGlue(new_edge, edge1, edge2);
 		if (edge1 != rcOldEdge) {
 			TRACE(
