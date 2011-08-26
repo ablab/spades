@@ -64,6 +64,13 @@ de
 	max_distance		75
 }
 
+;repeat_resolving 
+
+rr
+{
+	mode		3	
+}
+
 ; consensus
 
 uncorrected_reads	none

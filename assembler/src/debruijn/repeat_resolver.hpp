@@ -516,7 +516,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	INFO("resolve_repeats started");
 	sum_count = 0;
 	global_cheating_edges.clear();
-	for (cheating_mode = 0; cheating_mode < 3; cheating_mode++) {
+	for (cheating_mode = 0; cheating_mode < cfg::get().rr.mode; cheating_mode++) {
 		INFO(" cheating_mode = " << cheating_mode);
 		bool changed = true;
 		set<VertexId> vertices;
