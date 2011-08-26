@@ -54,16 +54,16 @@ void TestFastaFastqGzParserFastaReading() {
   ASSERT_EQUAL("GSV1ISZ08GSHS3", read.name());
   ASSERT_EQUAL("CTTTCATTTCCTACTGTAGCTTTTAGTCTCTTCAAATACAAGGCACACA", 
                read.GetSequenceString());
-  ASSERT_EQUAL("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", 
-               read.GetPhredQualityString(SolexaOffset));
+  ASSERT_EQUAL("#################################################", 
+               read.GetPhredQualityString());
   parser >> read;
   parser >> read;
   parser >> read;
   ASSERT_EQUAL("GSV1ISZ08GXRMP", read.name());
   ASSERT_EQUAL("CTTTCATTTCCTACTGTAGCTTTTAGTCTCTTCAAATACAAGGCACACAGGGAG", 
                read.GetSequenceString());
-  ASSERT_EQUAL("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", 
-               read.GetPhredQualityString(SolexaOffset));
+  ASSERT_EQUAL("######################################################", 
+               read.GetPhredQualityString());
   Sequence seq;
   seq = read.sequence();
   Quality qual(read.quality());
