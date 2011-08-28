@@ -31,8 +31,8 @@ private:
 	typedef Seq<size_> Kmer;
 //	typedef std::tr1::unordered_map<Kmer, pair<Value, size_t> ,
 //		typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
-	typedef cuckoo<Kmer, pair<Value, size_t>, typename Kmer::multiple_hash,
-			typename Kmer::equal_to> map_type;
+	typedef cuckoo<Kmer, pair<Value, size_t> , typename Kmer::multiple_hash,
+	typename Kmer::equal_to> map_type;
 	map_type nodes_;
 
 	bool contains(const Kmer &k) const {
@@ -46,8 +46,9 @@ private:
 	}
 
 	void CountSequence(const Sequence& s) {
-		if (s.size() < size_) return;
-		Seq<size_> kmer = s.start<size_> ();
+		if (s.size() < size_)
+			return;
+		Seq<size_> kmer = s.start<size_>();
 		addEdge(kmer);
 		for (size_t j = size_; j < s.size(); ++j) {
 			kmer = kmer << s[j];
@@ -55,12 +56,10 @@ private:
 		}
 	}
 
-  void CountRead(const io::SingleRead &read) {
-		if (read.IsValid()) {
-			//cerr << read.getSequenceString() << endl;
-			Sequence s = read.sequence();
-			CountSequence(s);
-		}
+	void CountRead(const io::SingleRead &read) {
+		//cerr << read.getSequenceString() << endl;
+		Sequence s = read.sequence();
+		CountSequence(s);
 	}
 
 	// INDEX:
@@ -74,7 +73,6 @@ private:
 			mi->second.second = offset;
 		}
 	}
-
 
 public:
 	typedef typename map_type::iterator map_iterator;
@@ -93,7 +91,7 @@ public:
 
 	template<class ReadStream>
 	void Fill(ReadStream &stream) {
-    io::SingleRead r;
+		io::SingleRead r;
 		while (!stream.eof()) {
 			stream >> r;
 //			cout << r.getSequence() << endl;
@@ -150,8 +148,8 @@ public:
 			if (contains(s)) {
 				return s;
 			}
-		}
-		FATAL("Couldn't find requested edge!"); // no next edges (we should request one here).
+		}FATAL("Couldn't find requested edge!");
+		// no next edges (we should request one here).
 	}
 
 	// INDEX:
@@ -163,7 +161,8 @@ public:
 
 	const pair<Value, size_t>& get(const Kmer& kmer) const {
 		map_const_iterator mci = nodes_.find(kmer);
-		assert(mci != nodes_.end()); // contains
+		assert(mci != nodes_.end());
+		// contains
 		return mci->second;
 	}
 
