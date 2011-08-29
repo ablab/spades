@@ -1,6 +1,6 @@
 ; working directories, input files...
 working_dir		/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/tmp
-reads			/home/snikolenko/algorithmic-biology/assembler/data/hammer/head10000.fastq
+reads			/home/snikolenko/algorithmic-biology/assembler/data/hammer/head100000.fastq
 paired_reads		0
 reads_left		/home/snikolenko/algorithmic-biology/assembler/data/hammer/head20000.fastq
 reads_right		/home/snikolenko/algorithmic-biology/assembler/data/hammer/head20000right.fastq
@@ -27,4 +27,7 @@ trim_quality				4
 
 ; aggressive trimming strategies
 trim_left_right				1
+use_iterative_reconstruction		1
+iterative_reconstruction_threshold	0.995
+max_reconstruction_iterations		10
 

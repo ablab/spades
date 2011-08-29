@@ -49,7 +49,7 @@ void join_maps(KMerStatMap & v1, const KMerStatMap & v2) {
 			itf->second.totalQual = itf->second.totalQual * it->second.totalQual;
 		} else {
 			PositionKMer pkm = it->first;
-			KMerStat kms( it->second.count, KMERSTAT_GOOD, it->second.totalQual );
+			KMerStat kms( it->second.count, KMERSTAT_GOODITER, it->second.totalQual );
 			v1.insert( make_pair( pkm, kms ) );
 		}
 	}
@@ -101,7 +101,7 @@ void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerCou
 		for ( vector<KMerNo>::const_iterator it = vtmp[n].begin(); it != vtmp[n].end(); ++it ) {
 			KMerNoHashMap::iterator it_hash = km->find( *it );
 			if ( it_hash == km->end() ) {
-				km->insert( make_pair( *it, new KMerCount( PositionKMer(it->index), KMerStat(1, KMERSTAT_GOOD, it->errprob) ) ) );
+				km->insert( make_pair( *it, new KMerCount( PositionKMer(it->index), KMerStat(1, KMERSTAT_GOODITER, it->errprob) ) ) );
 			} else {
 				it_hash->second->second.count++;
 				it_hash->second->second.totalQual *= it->errprob;
@@ -167,14 +167,14 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 		const uint32_t pos = it.first;
 		const KMerStat & stat = it.second->second;
 
-		if (stat.changeto == KMERSTAT_GOOD) {
+		if (stat.isGoodForIterative() || ( Globals::use_iterative_reconstruction && stat.isGood() ) ) {
 			Globals::rv_bad->at(readno) = false;
 			for (size_t j=0; j<K; ++j) {
 				v[dignucl(kmer[j])][pos+j]++;
 			}
 			if ((int)pos < left) left = pos; if ((int)pos > right) right = pos;
 		} else {
-			if (stat.changeto < KMERSTAT_CHANGE) {
+			if (stat.change()) {
 				Globals::rv_bad->at(readno) = false;
 				if ((int)pos < left) left = pos; if ((int)pos > right) right = pos;
 				const PositionKMer & newkmer = km[ stat.changeto ]->first;
@@ -201,14 +201,14 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 		const uint32_t pos = it.first;
 		const KMerStat & stat = it.second->second;
 
-		if (stat.changeto == KMERSTAT_GOOD) {
+		if (stat.isGoodForIterative() || ( Globals::use_iterative_reconstruction && stat.isGood() ) ) {
 			Globals::rv_bad->at(readno) = false;
 			for (size_t j=0; j<K; ++j) {
 				v[complement(dignucl(kmer[j]))][read_size-pos-j-1]++;
 			}
 			if ((int)(read_size-K-pos) < left) left = (int)(read_size-K-pos); if ((int)(read_size-K-pos) > right) right = (int)(read_size-K-pos);
 		} else {
-			if (stat.changeto < KMERSTAT_CHANGE) {
+			if (stat.change()) {
 				Globals::rv_bad->at(readno) = false;
 				if ((int)(read_size-K-pos) < left) left = (int)(read_size-K-pos); if ((int)(read_size-K-pos) > right) right = (int)(read_size-K-pos);
 				const PositionKMer & newkmer = km[ stat.changeto ]->first;
@@ -288,37 +288,6 @@ void print_time() {
 	cout << setfill('0') << "[ " << setw(2) << ptm->tm_hour << ":" << setw(2) << ptm->tm_min << ":" << setw(2) << ptm->tm_sec << " ] ";
 }
 
-/*size_t KMerNoUnique( vector<KMerNo> * v, size_t first, size_t last ) {
-	size_t result=first;
-	while (++first != last) {
-		if (!( (*v)[result].equal((*v)[first]) )) {
-			(*v)[++result]=(*v)[first];
-		} else {
-			(*v)[result].count += (*v)[first].count;
-			(*v)[result].errprob *= (*v)[first].errprob;
-			(*v)[result].v.push_back( (*v)[first].index );
-			(*v)[result].v.insert( (*v)[result].v.end(), (*v)[first].v.begin(), (*v)[first].v.end() );
-		}
-	}
-	return ++result;
-}
-
-void KMerNoErase( vector<KMerNo> * v, int nthreads, vector< size_t > * boundaries, const vector< size_t > & unique_results ) {
-	size_t start_erase = unique_results[0];
-	size_t end_erase = (*boundaries)[1];
-	for (int j = 0; j < nthreads; ++j) {
-		cout << "  Erasing from " << start_erase << " to " << end_erase << endl;
-		v->erase( v->begin() + start_erase, v->begin() + end_erase );
-		size_t new_boundary = start_erase;
-		if (j < nthreads-1) {
-			start_erase = start_erase + (unique_results[j+1] - (*boundaries)[j+1]);
-			end_erase = start_erase + (*boundaries)[j+2] - unique_results[j+1];
-		}
-		(*boundaries)[j+1] = new_boundary;
-	}
-	(*boundaries)[nthreads] = v->size();
-}*/
-
 struct PriorityQueueElement {
         KMerNo kmerno;
         int n;
@@ -331,79 +300,6 @@ bool operator < (const PriorityQueueElement & l, const PriorityQueueElement & r)
 
 bool operator == (const PriorityQueueElement & l, const PriorityQueueElement & r) {
         return l.kmerno.equal(r.kmerno);
-}
-
-void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthreads) {
-
-	ofstream ofs;
-
-	// find boundaries of the pieces
-	vector< size_t > boundaries(nthreads + 1);
-	size_t sub_size = (size_t)(v->size() / nthreads);
-	for (int j=0; j<nthreads; ++j) {
-		boundaries[j] = j * sub_size;
-	}
-	boundaries[nthreads] = v->size();
-
-	#pragma omp parallel for shared(v, boundaries) num_threads(nthreads)
-	for (int j = 0; j < nthreads; ++j) {
-		// sort(v->begin() + boundaries[j], v->begin() + boundaries[j+1], KMerNo::less);
-	}
-	TIMEDLN("Subvectors sorted.");
-
-	int npieces = nthreads;
-	while ( npieces > 4 ) {
-		int new_npieces = npieces / 2;
-		#pragma omp parallel for shared(v, boundaries) num_threads(new_npieces)
-		for (int j=0; j < new_npieces; ++j) {
-			// inplace_merge( v->begin() + boundaries[j*2], v->begin() + boundaries[j*2+1], v->begin() + boundaries[j*2+2], KMerNo::less );
-		}
-		vector<size_t> new_boundaries;
-		for (int j=0; j < new_npieces; ++j) { new_boundaries.push_back( boundaries[j*2] ); }
-		if ( npieces % 2 ) { new_boundaries.push_back( boundaries[npieces-1] ); new_npieces++; }
-		new_boundaries.push_back( boundaries[npieces] );
-
-		npieces = new_npieces;
-		boundaries.swap(new_boundaries);
-	}
-	TIMEDLN("Merge done. Starting priority queue operations.");
-
-        std::priority_queue< PriorityQueueElement, vector<PriorityQueueElement> > pq;
-        vector< vector<KMerNo>::iterator > it(npieces);
-        vector< vector<KMerNo>::iterator > it_end(npieces);
-        for (int j=0; j<npieces; ++j) {
-                it[j] = v->begin() + boundaries[j];
-                it_end[j] = v->begin() + boundaries[j+1];
-                pq.push( PriorityQueueElement(*(it[j]), j) );
-        }
-
-        PriorityQueueElement cur_min = pq.top();
-        KMerCount curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD, 1) );
-        
-        hint_t kmerno = 0;
-        double curErrorProb = 1;
-
-        while(pq.size()) {
-                const PriorityQueueElement & pqel = pq.top();
-                if ( !(cur_min == pqel) ) {
-                        cur_min = pqel;
-                        curKMerCount.second.totalQual = curErrorProb;
-                        kmers->push_back(curKMerCount);
-                        curKMerCount = make_pair( PositionKMer(cur_min.kmerno.index), KMerStat(0, KMERSTAT_GOOD, 1 ) );
-                        curErrorProb = 1;
-                        ++kmerno;
-                }
-                curKMerCount.second.count++;
-                curErrorProb *= pqel.kmerno.errprob;
-
-                int nn = pqel.n;
-                vector<KMerNo>::iterator & it_cur = it[nn];
-                pq.pop();
-                ++it_cur;
-                if ( it_cur != it_end[nn] ) pq.push( PriorityQueueElement(*it_cur, nn) );
-        }
-        curKMerCount.second.totalQual = curErrorProb;
-        kmers->push_back(curKMerCount);
 }
 
 void outputReads(bool paired, const char * fname, const char * fname_bad, const char * fname_right, const char * fname_right_bad,
@@ -451,4 +347,65 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
 
 	outf.close(); outf_bad.close();
 }
+
+size_t IterativeReconstructionStep(int nthreads, ostream * ofs) {
+	size_t res = 0;
+	// cycle over the reads, looking for reads completely covered by solid k-mers and adding new solid k-mers on the fly
+	for (hint_t readno = 0; readno < Globals::revNo; ++readno) {
+		if ( ofs != NULL ) (*ofs) << "Read: " << Globals::rv->at(readno).getSequenceString().c_str() << "\n";
+		const uint32_t read_size = Globals::rv->at(readno).size();
+		vector< bool > covered_by_solid( read_size, false );
+
+		const PositionRead & pr = Globals::pr->at(readno);
+		pair<int, KMerCount *> it = make_pair( -1, (KMerCount*)NULL );
+		while ( (it = pr.nextKMer(it.first)).first > -1 ) {
+			if ( it.second->second.isGoodForIterative() ) {
+				for ( size_t j = it.first; j < it.first + K; ++j )
+					covered_by_solid[j] = true;
+			}
+		}
+		bool isGood = true;
+		for ( size_t j = 0; j < read_size; ++j ) {
+			if ( !covered_by_solid[j] ) { isGood = false; break; }
+		}
+		if ( !isGood ) continue;
+
+		const PositionRead & pr_rev = Globals::pr->at(Globals::revNo + readno);
+		std::fill( covered_by_solid.begin(), covered_by_solid.end(), false );
+		it = make_pair( -1, (KMerCount*)NULL );
+		while ( (it = pr_rev.nextKMer(it.first)).first > -1 ) {
+			if ( it.second->second.isGoodForIterative() ) {
+				for ( size_t j = read_size-it.first-K; j < read_size-it.first; ++j )
+					covered_by_solid[j] = true;
+			}			
+		}
+		isGood = true;
+		for ( size_t j = 0; j < read_size; ++j ) {
+			if ( !covered_by_solid[j] ) { isGood = false; break; }
+		}
+		if ( !isGood ) continue;
+		if ( ofs != NULL ) (*ofs) << "  ...it's good!\n";
+
+		// ok, now we're sure that everything is covered
+		// let's make all k-mers solid
+		it = make_pair( -1, (KMerCount*)NULL );
+		while ( (it = pr.nextKMer(it.first)).first > -1 ) {
+			if ( !it.second->second.isGoodForIterative() ) { 
+				++res;
+				if ( ofs != NULL ) (*ofs) << "    make solid: " << it.second->first.str().c_str() << "\n";
+			}
+			it.second->second.makeGoodForIterative();
+		}
+		it = make_pair( -1, (KMerCount*)NULL );
+		while ( (it = pr_rev.nextKMer(it.first)).first > -1 ) {
+			if ( !it.second->second.isGoodForIterative() ) {
+				++res;
+				if ( ofs != NULL ) (*ofs) << "    make solid: " << it.second->first.str().c_str() << "\n";
+			}				
+			it.second->second.makeGoodForIterative();
+		}
+	}
+	return res;
+}
+
 

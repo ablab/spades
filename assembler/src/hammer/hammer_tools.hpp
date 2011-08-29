@@ -43,7 +43,6 @@ void AddKMers(const PositionRead &r, hint_t readno, KMerStatMap *v);
 void AddKMerNos(const PositionRead &r, hint_t readno, vector<KMerNo> *v);
 
 void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerCount*> * kmers, KMerNoHashMap * km);
-void ParallelSortKMerNos(vector<KMerNo> * v, vector<KMerCount> * kmers, int nthreads);
 void DoSplitAndSort(int tau, int nthreads, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers, vector<SubKMerPQ> * vskpq);
 void outputReads(bool paired, const char * fname, const char * fname_bad, const char * fname_right = NULL, const char * fname_right_bad = NULL, const char * fname_left_unpaired = NULL, const char * fname_right_unpaired = NULL);
 
@@ -52,6 +51,12 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
   * @return how many nucleotides have been changed
   */
 size_t CorrectRead(const KMerNoHashMap & km, const vector<KMerCount*> & kmers, hint_t readno, ofstream * ofs = NULL);
+
+/**
+  * make a step of iterative reconstruction
+  * @return number of new solid k-mers
+  */
+size_t IterativeReconstructionStep(int nthreads, ostream * ofs = NULL);
 
 #endif
 
