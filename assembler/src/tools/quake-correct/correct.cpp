@@ -301,8 +301,8 @@ static void parse_command_line(int argc, char **argv) {
       cerr << "Must provide a trusted/untrusted kmer cutoff (-c) or a file containing the cutoff as a function of the AT content (-a)" << endl;
       exit(EXIT_FAILURE);
     }
-  } else if(bithashf == NULL) {
-    cerr << "Must provide a file of kmer counts (-m) or a saved bithash (-b)" << endl;
+  } else if(bithashf == NULL && hammerf == NULL) {
+    cerr << "Must provide a file of kmer counts (-m) or a saved bithash (-b) or solid kmers from Hammer (-v)" << endl;
     exit(EXIT_FAILURE);
   }
   
