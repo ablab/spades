@@ -8,6 +8,11 @@
 #ifndef LC_IO_HPP_
 #define LC_IO_HPP_
 
+#include "io/reader.hpp"
+#include "io/parser.hpp"
+#include "io/rc_reader_wrapper.hpp"
+#include "io/cutting_reader_wrapper.hpp"
+#include "io/filtering_reader_wrapper.hpp"
 #include "path_utils.hpp"
 
 namespace long_contigs {
@@ -26,8 +31,6 @@ void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_I
 	int dataset_len = cfg::get().ds.LEN;
 
 	typedef io::Reader<io::SingleRead> ReadStream;
-	typedef io::Reader<io::PairedRead> PairedReadStream;
-	typedef io::RCReaderWrapper<io::PairedRead> RCStream;
 
 	// read data ('genome')
 	std::string genome;
@@ -77,15 +80,19 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 			checkFileExistenceFATAL(reads_filename1);
 			checkFileExistenceFATAL(reads_filename2);
 
+			typedef io::Reader<io::SingleRead> ReadStream;
 			typedef io::Reader<io::PairedRead> PairedReadStream;
 			typedef io::RCReaderWrapper<io::PairedRead> RCStream;
+			typedef io::FilteringReaderWrapper<io::PairedRead> FilteringStream;
 
 			PairedReadStream pairStream(std::pair<std::string,
 									  std::string>(reads_filename1,
 												   reads_filename2),
 												   insertSize);
 
-			RCStream rcStream(&pairStream);
+			FilteringStream filter_stream(pairStream);
+
+			RCStream rcStream(&filter_stream);
 
 			if (useNewMetrics) {
 				KmerMapper<k+1, Graph> mapper(g);

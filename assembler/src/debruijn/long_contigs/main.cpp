@@ -21,22 +21,6 @@
 #include "quality.hpp"
 #include "visualize.hpp"
 
-
-namespace {
-
-std::string MakeLaunchTimeDirName() {
-	time_t rawtime;
-	struct tm * timeinfo;
-	char buffer[80];
-
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-
-	strftime(buffer, 80, "%m.%d_%H_%M", timeinfo);
-	return string(buffer);
-}
-}
-
 DECL_PROJECT_LOGGER("d")
 
 int main() {
@@ -59,10 +43,7 @@ int main() {
 	std::vector<BidirectionalPath> rawSeeds;
 	std::vector<BidirectionalPath> paths;
 
-	std::string dataset = cfg::get().dataset_name;
-	string output_root = cfg::get().output_root;
-	string output_dir_suffix = MakeLaunchTimeDirName()+ "." + dataset + "/";
-	string output_dir = output_root + output_dir_suffix;
+	string output_dir = cfg::get().output_dir;
 
 	PathStopHandler stopHandler(g);
 
@@ -73,7 +54,7 @@ int main() {
 	else {
 		LoadFromFile<K>(lc_cfg::get().ds.graph_file, &g, &intIds, sequence);
 	}
-	mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	mkdir(cfg::get().output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
 	Path<Graph::EdgeId> path1 = FindGenomePath<K> (sequence, g, index);
 	Path<Graph::EdgeId> path2 = FindGenomePath<K> (!sequence, g, index);
