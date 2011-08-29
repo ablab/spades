@@ -163,7 +163,6 @@ class AbstractNonconjugateGraph: public AbstractGraph<SingleVertex<VertexData, E
 	typedef AbstractGraph<SingleVertex<VertexData, EdgeData, DataMaster>*, VertexData,
 			SingleEdge<VertexData, EdgeData, DataMaster>*, EdgeData, DataMaster, typename set<SingleVertex<VertexData, EdgeData, DataMaster>*>::const_iterator> base;
 public:
-	//todo take from base
 	typedef SingleVertex<VertexData, EdgeData, DataMaster>* VertexId;
 	typedef SingleEdge<VertexData, EdgeData, DataMaster>* EdgeId;
 

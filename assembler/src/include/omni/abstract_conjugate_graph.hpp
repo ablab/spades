@@ -167,9 +167,7 @@ class AbstractConjugateGraph:
 public:
 	//todo remove unused typedefs
 	typedef PairedVertex<VertexData, EdgeData, DataMaster>* VertexId;
-	typedef VertexData VertexDataType;
 	typedef PairedEdge<VertexData, EdgeData, DataMaster>* EdgeId;
-	typedef EdgeData EdgeDataType;
 	typedef typename base::SmartVertexIt SmartVertexIt;
 	typedef typename base::SmartEdgeIt SmartEdgeIt;
 
