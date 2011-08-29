@@ -83,21 +83,21 @@ template<size_t k>
 void FillEtalonPairedIndex(const Graph &g,
 		PairedInfoIndex<Graph>& etalon_paired_index,
 		const EdgeIndex<k + 1, Graph>& index,
-		size_t insert_size, size_t read_size,
+		size_t is, size_t rs,
 		const Sequence& genome) {
 	INFO("-----------------------------------------");
 	INFO("Counting etalon paired info");
 
 	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index,
-			insert_size, read_size, insert_size * 0.1);
+			is, rs, is * 0.1);
 	etalon_paired_info_counter.FillEtalonPairedInfo(genome,
 			etalon_paired_index);
 
-	INFO("Paired info counted");
+	INFO("Etalon paired info counted");
 }
 
-template<size_t k, class ReadStream>
-void FillCoverage(Graph& g, ReadStream& stream,
+template<size_t k>
+void FillCoverage(Graph& g, SingleReadStream& stream,
 		EdgeIndex<k + 1, Graph>& index) {
 	typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
 	INFO("-----------------------------------------");

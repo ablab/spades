@@ -92,6 +92,8 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 
 			FilteringStream filter_stream(pairStream);
 
+			RCStream rcStream(&filter_stream);
+
 			KmerMapper<k+1, Graph> mapper(g);
 			FillPairedIndexWithReadCountMetric<k, RCStream>(g, index, mapper,*pairedInfos.back().pairedInfoIndex, rcStream);
 		}
