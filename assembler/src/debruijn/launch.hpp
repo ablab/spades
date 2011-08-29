@@ -211,7 +211,7 @@ void CreateAndFillGraph(Graph& g, EdgeIndex<k + 1, Graph>& index
 		FillEtalonPairedIndex<k>(g, etalon_paired_index, index, genome);
 
 	} else {
-		UnitedStream united_stream(&stream);
+		UnitedStream united_stream(stream);
 		ConstructGraphWithCoverage<k>(g, index,
 				united_stream);
 	}

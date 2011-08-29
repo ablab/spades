@@ -58,6 +58,9 @@ int Globals::qvoffset = 64;
 bool Globals::paired_reads = false;
 int Globals::trim_quality = -1;
 bool Globals::trim_left_right = false;
+bool Globals::use_iterative_reconstruction = false;
+double Globals::iterative_reconstruction_threshold = 0.995;
+int Globals::max_reconstruction_iterations = 1;
 
 struct KMerStatCount {
 	PositionKMer km;
@@ -116,6 +119,9 @@ int main(int argc, char * argv[]) {
 	Globals::blob_margin = cfg::get().blob_margin;
 	Globals::trim_quality = cfg::get().trim_quality;
 	Globals::trim_left_right = cfg::get().trim_left_right;
+	Globals::use_iterative_reconstruction = cfg::get().use_iterative_reconstruction;
+	Globals::iterative_reconstruction_threshold = cfg::get().iterative_reconstruction_threshold;
+	Globals::max_reconstruction_iterations = cfg::get().max_reconstruction_iterations;
 
 	Globals::paired_reads = cfg::get().paired_reads;
 	string readsFilenameLeft, readsFilenameRight;
@@ -154,10 +160,7 @@ int main(int argc, char * argv[]) {
 
 	Globals::blob = new char[ Globals::blob_max_size ];
 	Globals::blobquality = new char[ Globals::blob_max_size ];
-	//Globals::blobhash = new uint64_t[ Globals::blob_max_size ];
 	TIMEDLN("Max blob size as allocated is " << Globals::blob_max_size);
-
-	//std::fill( Globals::blobhash, Globals::blobhash + Globals::blob_max_size, -1 );
 
 	Globals::revNo = Globals::rv->size();
 	for (hint_t i = 0; i < Globals::revNo; ++i) {
@@ -191,9 +194,6 @@ int main(int argc, char * argv[]) {
 		}
 		Globals::blob_size = curpos;
 		TIMEDLN("Blob done, filled up PositionReads. Real size " << Globals::blob_size << ". " << Globals::pr->size() << " reads.");
-
-		//KMerNo::precomputeHashes();
-		//TIMEDLN("Hashes precomputed.");
 
 		vector<KMerCount*> kmers;
 		Globals::hm.clear();
@@ -233,7 +233,16 @@ int main(int argc, char * argv[]) {
 		ofkmers.close();
 		ofkmers_bad.close();
 		delete skmsorter;
-		TIMEDLN("Finished clustering. Starting reconstruction.");
+		TIMEDLN("Finished clustering.");
+
+		if ( Globals::use_iterative_reconstruction ) {
+			for ( int iter_no = 0; iter_no < Globals::max_reconstruction_iterations; ++iter_no ) {
+				size_t res = IterativeReconstructionStep(nthreads);
+				TIMEDLN("Solid k-mers iteration " << iter_no << " produced " << res << " new k-mers.");
+				if ( res < 10 ) break;
+			}
+			TIMEDLN("Solid k-mers finalized.");
+		}
 
 		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
 		vector<ofstream *> outfv; vector<hint_t> changedReads; vector<hint_t> changedNucleotides;

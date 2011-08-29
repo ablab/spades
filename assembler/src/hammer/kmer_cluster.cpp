@@ -66,11 +66,6 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, i
 		for (int sub_i = 0; sub_i < tau_+1; ++sub_i) {
 			vector<hint_t> subblock;
 			while ( subsubsorter.getNextBlock(sub_i, subblock) ) {
-				/*if (subblock.size() > (Globals::blocksize_quadratic_threshold / 2) ) {
-					cout << "    running quadratic on size=" << subblock.size() << endl;
-					for (uint32_t i = 0; i < subblock.size(); ++i) cout << "    " << subblock[i] << " " << k_[subblock[i]].first.str() << endl;
-					cout << endl;
-				}*/
 				processBlockQuadratic(uf, subblock);
 			}
 		}		
@@ -451,7 +446,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 					Globals::pr->push_back(rs);
 
 					PositionKMer pkm(Globals::pr->size()-1, 0);
-					KMerStat kms( 0, KMERSTAT_GOOD, 1 );
+					KMerStat kms( 0, KMERSTAT_GOODITER, 1 );
 					k_.push_back( new KMerCount( pkm, kms ) );
 				}
 				v.insert(v.begin(), k_.size() - 1);
@@ -501,6 +496,11 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 			if (blocksInPlace[n][m].size() == 1) {
 				if ( (1-k_[blocksInPlace[n][m][0]]->second.totalQual) > Globals::good_cluster_threshold) {
 					k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOOD;
+					if ( (1-k_[blocksInPlace[n][m][0]]->second.totalQual) > Globals::iterative_reconstruction_threshold) {
+						k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER;
+					} else {
+						k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER_BAD;
+					}
 					#pragma omp critical
 					{
 					(*ofs) << k_[blocksInPlace[n][m][0]]->first.str() << "\n> good singleton "
@@ -527,6 +527,11 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 
 				if ( cluster_quality > Globals::good_cluster_threshold ) {
 					k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOOD;
+					if ( cluster_quality > Globals::iterative_reconstruction_threshold) {
+						k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER;
+					} else {
+						k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER_BAD;
+					}
 					#pragma omp critical
 					{
 					(*ofs) << k_[blocksInPlace[n][m][0]]->first.str() << "\n> center  " << k_[blocksInPlace[n][m][0]]->first.start() << "  tql=" << cluster_quality << "\n";

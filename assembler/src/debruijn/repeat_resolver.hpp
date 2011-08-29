@@ -425,18 +425,24 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	for (size_t i = 0; i < edge_info_colors.size(); i++)
 		if (edge_info_colors[i] >= k)
 			k++;
+	vector<EdgeId> edgeIds[2];
+	//TODO: fix labels
+	edgeIds[0] = new_graph.OutgoingEdges(v);
+	edgeIds[1] = new_graph.IncomingEdges(v);
+
 	DEBUG("splitting to "<< k <<" parts");
 	vector<VertexId> res;
 	res.resize(k);
 	if (k == 1) {
 		DEBUG("NOTHING TO SPLIT:( ");
-		//res[0] = v;
-		//return res;
+//		for (size_t j = 0; j < edge_infos.size(); j++){
+//			if (edge_info_colors[j] == 1)
+//				paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, edge_infos[j].lp.first);
+//		}
+//		res[0] = v;
+//		return res;
 	}
-	vector<EdgeId> edgeIds[2];
-	//TODO: fix labels
-	edgeIds[0] = new_graph.OutgoingEdges(v);
-	edgeIds[1] = new_graph.IncomingEdges(v);
+
 	vector<unordered_map<EdgeId, EdgeId> > new_edges(k);
 	vector<vector<EdgeId> > edges_for_split(k);
 
@@ -491,7 +497,10 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 					paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, old_to_new_edgeId[edge_infos[j].lp.first]);
 			}
 			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
-				if (new_graph.coverage(it->second) < cfg::get().ec.max_coverage) new_graph.DeleteEdge(it->second);
+				if (new_graph.coverage(it->second) < cfg::get().ec.max_coverage) {
+				    paired_di_data.DeleteEdgeInfo(it->second);
+				    new_graph.DeleteEdge(it->second);
+				}
 			}
 		}
 	}
@@ -554,10 +563,12 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 					tcount = CheatingResolveVertex(*v_iter);
 				DEBUG("Vertex "<< *v_iter<< " resolved to "<< tcount);
 				sum_count += tcount;
-				GraphCnt++;
-				omnigraph::WriteSimple(
+				if (tcount > 1) {
+					GraphCnt++;
+					omnigraph::WriteSimple(
 						new_graph, IdTrackLabelerAfter, output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
 								+ ".dot", "no_repeat_graph");
+				}
 			}
 		}
 	}INFO("total vert" << sum_count);

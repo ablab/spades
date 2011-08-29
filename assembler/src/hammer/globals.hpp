@@ -13,7 +13,9 @@ struct Globals {
 	static bool paired_reads;
 	static int trim_quality;
 	static bool trim_left_right;
-
+	static bool use_iterative_reconstruction;
+	static double iterative_reconstruction_threshold;
+	static int max_reconstruction_iterations;
 
 	static std::vector<PositionRead> * pr;
 	static std::vector<Read> * rv;
