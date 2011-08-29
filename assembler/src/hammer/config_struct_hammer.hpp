@@ -32,6 +32,10 @@ struct hammer_config
 	std::string reads_left;
 	std::string reads_right;
 
+	bool read_kmers_after_clustering;
+	bool write_kmers_after_clustering;
+	std::string kmers_after_clustering;
+
 	double error_rate;
 	int blocksize_quadratic_threshold;
 	double good_cluster_threshold;
@@ -70,6 +74,10 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 		load(pt, "blob", cfg.blob);
 		load(pt, "kmers", cfg.kmers);
 	}
+
+	load(pt, "read_kmers_after_clustering", cfg.read_kmers_after_clustering);
+	load(pt, "write_kmers_after_clustering", cfg.write_kmers_after_clustering);
+	load(pt, "kmers_after_clustering", cfg.kmers_after_clustering);
 
 	load(pt, "error_rate", cfg.error_rate);
 	load(pt, "blocksize_quadratic_threshold", cfg.blocksize_quadratic_threshold);

@@ -17,8 +17,13 @@ template<typename VertexIdT, typename VertexData, typename EdgeIdT, typename Edg
 class AbstractGraph: public ObservableGraph<VertexIdT, EdgeIdT, VertexIterator> {
 	typedef ObservableGraph<VertexIdT, EdgeIdT, VertexIterator> base;
 	//todo maybe rename template params themselves???
+public:
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;
+	typedef VertexData VertexDataType;
+	typedef EdgeData EdgeDataType;
+	typedef DataMaster DataMasterType;
+private:
 	//todo think of necessity to pull these typedefs through hierarchy
 	DataMaster master_;
 
