@@ -51,6 +51,7 @@ struct lc_config
 	{
 	    double min_coverage;
 	    bool   glue_seeds;
+	    size_t max_cycles;
 	};
 
 	struct extension_selection
@@ -68,7 +69,9 @@ struct lc_config
 
 	struct loops_removal
 	{
+		bool investigation;
 		size_t max_loops;
+		size_t loop_to_investigate;
 		bool full_loop_removal;
 	};
 
@@ -176,6 +179,7 @@ void load(boost::property_tree::ptree const& pt, lc_config::seed_selection& ss)
 	using config_common::load;
 	load(pt, "min_coverage", ss.min_coverage);
 	load(pt, "glue_seeds", ss.glue_seeds);
+	load(pt, "max_cycles", ss.max_cycles);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::extension_selection& es)
@@ -193,6 +197,8 @@ void load(boost::property_tree::ptree const& pt, lc_config::extension_selection&
 void load(boost::property_tree::ptree const& pt, lc_config::loops_removal& lr)
 {
 	using config_common::load;
+	load(pt, "investigation", lr.investigation);
+	load(pt, "loop_to_investigate", lr.loop_to_investigate);
 	load(pt, "max_loops", lr.max_loops);
 	load(pt, "full_loop_removal", lr.full_loop_removal);
 }

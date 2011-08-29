@@ -9,6 +9,8 @@
 #define SEEDS_HPP_
 
 #include "lc_common.hpp"
+#include "loop.hpp"
+
 
 namespace long_contigs {
 
@@ -19,15 +21,16 @@ using namespace debruijn_graph;
 //Extends trivial path forward
 //If a start of another trivial path is found, returns it
 //Otherwise returns 0
-EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, const std::map<EdgeId, BidirectionalPath>& starts) {
+EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detector, const std::map<EdgeId, BidirectionalPath>& starts) {
 	static bool glueSeeds = lc_cfg::get().ss.glue_seeds;
+	static bool maxCycles = lc_cfg::get().ss.max_cycles;
+
 	if (path.empty()) {
 		return 0;
 	}
 
 	VertexId currentVertex = g.EdgeEnd(path.back());
-	//TODO cycling -- tmp fix
-	while (g.CheckUniqueOutgoingEdge(currentVertex) && path.size() < 10) {
+	while (g.CheckUniqueOutgoingEdge(currentVertex)) {
 		EdgeId nextEdge = g.GetUniqueOutgoingEdge(currentVertex);
 
 		if (glueSeeds && starts.count(nextEdge) != 0) {
@@ -36,29 +39,42 @@ EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, const std::map<Ed
 
 		path.push_back(nextEdge);
 		currentVertex = g.EdgeEnd(nextEdge);
+
+		detector.temp.clear();
+		detector.AddNewEdge(nextEdge, path.size());
+		if (CheckCycle(path, nextEdge, detector, maxCycles)) {
+			break;
+		}
 	}
 	return 0;
 }
 
 //Previous one without checking for other seeds' starts
-EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path) {
+EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detector) {
 	static std::map<EdgeId, BidirectionalPath> empty = std::map<EdgeId, BidirectionalPath>();
-	return ExtendTrivialForward(g, path, empty);
+	return ExtendTrivialForward(g, path, detector, empty);
 }
 
 
 //Trivially extend path backward
-void ExtendTrivialBackward(Graph& g, BidirectionalPath& path) {
+void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& detector) {
+	static bool maxCycles = lc_cfg::get().ss.max_cycles;
+
 	if (path.empty()) {
 		return;
 	}
 
 	VertexId currentVertex = g.EdgeStart(path.front());
-	//TODO fix cycling
-	while (g.CheckUniqueIncomingEdge(currentVertex) && path.size() < 12) {
+	while (g.CheckUniqueIncomingEdge(currentVertex)) {
 		EdgeId nextEdge = g.GetUniqueIncomingEdge(currentVertex);
 		path.push_front(nextEdge);
 		currentVertex = g.EdgeStart(nextEdge);
+
+		detector.temp.clear();
+		detector.AddNewEdge(nextEdge, path.size());
+		if (CheckCycle(path, nextEdge, detector, maxCycles)) {
+			break;
+		}
 	}
 }
 
@@ -86,39 +102,29 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 		EdgeId e = *iter;
 
 		starts[e] = BidirectionalPath();
-//		seeds.push_back(BidirectionalPath());
 		BidirectionalPath& newPath = starts[e];
 		newPath.push_back(e);
 
 		//Extend trivially
-		EdgeId nextStart = ExtendTrivialForward(g, newPath, starts);
+		LoopDetector detector;
+		EdgeId nextStart = ExtendTrivialForward(g, newPath, detector, starts);
 
 		//If extended till another seed, than concatenate them
 		if (nextStart != 0) {
-			//INFO("Join paths");
 			JoinPaths(newPath, starts[nextStart]);
 			starts.erase(nextStart);
 		}
 	}
-
-	//Debug part
-//	for (auto pathIter = starts.begin(); pathIter != starts.end(); ++pathIter) {
-//		seeds.push_back(pathIter->second);
-//	}
-//	PrintPathCoverage(g, seeds);
-	//End of debug part
 
 	//Extending seed backward
 	seeds.clear();
 	seeds.reserve(starts.size());
 	INFO("Extending seeds backward");
 	for (auto pathIter = starts.begin(); pathIter != starts.end(); ++pathIter) {
-		ExtendTrivialBackward(g, pathIter->second);
+		LoopDetector detector;
+		ExtendTrivialBackward(g, pathIter->second, detector);
 		seeds.push_back(pathIter->second);
 	}
-//	for (auto pathIter = seeds.begin(); pathIter != seeds.end(); ++pathIter) {
-//		ExtendTrivialBackward(g, *pathIter);
-//	}
 
 	INFO("Finding seeds finished");
 }

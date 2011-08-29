@@ -176,6 +176,7 @@ ss
 {
     min_coverage   150
     glue_seeds     true
+    max_cycles     1
 }
 
 ; extension selection
@@ -183,7 +184,7 @@ es
 {
     use_weight_function_first  false
     weight_fun_threshold       0
-    weight_threshold           0
+    weight_threshold           0.1
     priority_coeff             1.2
 
     use_delta_first       false
@@ -195,6 +196,8 @@ es
 ; loops removal
 lr
 {
+    investigation      false
+	loop_to_investigate 1
     max_loops          5
     full_loop_removal  true
 }

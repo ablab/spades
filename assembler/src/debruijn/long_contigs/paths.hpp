@@ -149,14 +149,16 @@ EdgeId ExtensionGoodEnough(EdgeId edge, double weight, double threshold, Graph& 
 
 //Select only best extensions
 double FilterExtentions(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& edges,
-		PathLengths& lengths, PairedInfoIndices& pairedInfo, size_t edgesToExclude, bool forward, bool useWeightFunction = false) {
+		PathLengths& lengths, PairedInfoIndices& pairedInfo, size_t edgesToExclude, bool forward,
+		LoopDetector& detector,
+		bool useWeightFunction = false) {
 
 	std::multimap<double, EdgeId> weights;
 
 	for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
 		double weight = ExtentionWeight(g, path, lengths, *iter, pairedInfo, edgesToExclude, forward, useWeightFunction);
-
 		weights.insert(std::make_pair(weight, *iter));
+		detector.temp.AddAlternative(*iter, weight);
 	}
 
 	DETAILED_INFO("Choosing weights " << (forward ? "forward" : "backward"))
@@ -177,10 +179,12 @@ double FilterExtentions(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& 
 //Choose best matching extension
 //Threshold to be discussed
 EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& edges,
-		PathLengths& lengths, PairedInfoIndices& pairedInfo, double& maxWeight, size_t edgesToExclude, bool forward,
+		PathLengths& lengths, PairedInfoIndices& pairedInfo, double * maxWeight, size_t edgesToExclude, bool forward,
+		LoopDetector& detector,
 		PathStopHandler& handler) {
 
-	//INFO("Choosing extension " << (forward ? "forward" : "backward"));
+	detector.temp.clear();
+
 	if (edges.size() == 0) {
 		handler.AddStop(path, NO_EXTENSION, forward);
 		return 0;
@@ -201,24 +205,24 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 	static bool useWeightFunctionFirst = lc_cfg::get().es.use_weight_function_first;
 
 	if (useWeightFunctionFirst) {
-		FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, true);
+		FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector, true);
 
 		if (edges.size() == 1) {
 			static double weightFunThreshold = lc_cfg::get().es.weight_fun_threshold;
-			maxWeight = ExtentionWeight(g, path, lengths, edges.back(), pairedInfo, edgesToExclude, forward);
+			*maxWeight = ExtentionWeight(g, path, lengths, edges.back(), pairedInfo, edgesToExclude, forward);
 
-			return toReturn == 0 ? ExtensionGoodEnough(edges.back(), maxWeight, weightFunThreshold, g, path, handler, forward) : toReturn;
+			return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightFunThreshold, g, path, handler, forward) : toReturn;
 		}
 	}
 
-	maxWeight = FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward);
+	*maxWeight = FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector);
 
 	static double weightThreshold = lc_cfg::get().es.weight_threshold;
 	if (edges.size() == 1) {
-		return toReturn == 0 ? ExtensionGoodEnough(edges.back(), maxWeight, weightThreshold, g, path, handler, forward) : toReturn;
+		return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold, g, path, handler, forward) : toReturn;
 	}
 	else if (edges.size() > 1) {
-		if (ExtensionGoodEnough(edges.back(), maxWeight, weightThreshold) == 0) {
+		if (ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold) == 0) {
 			handler.AddStop(path, NO_GOOD_EXTENSION, forward);
 		} else {
 			DETAILED_INFO("Cannot choose extension, no obvious maximum");
@@ -240,55 +244,6 @@ void IncreaseLengths(Graph& g, PathLengths& lengths, EdgeId edge, bool forward) 
 		lengths.push_back(len);
 	} else {
 		lengths.push_front(0);
-	}
-}
-
-//Check for cycling
-bool CheckForCyclesSimple(Graph& g, BidirectionalPath& path, size_t datasetLen) {
-	return PathLength(g, path) > datasetLen;
-}
-
-//Add edge to cycle detector and check
-bool CheckCycle(BidirectionalPath& path, EdgeId extension, CycleDetector& detector, double weight) {
-	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
-	detector.insert(std::make_pair(extension, std::make_pair(path.size(), weight)));
-
-	return detector.count(extension) > MAX_LOOPS;
-}
-
-//Edges to remove
-size_t CountLoopEdges(EdgeId lastEdge, CycleDetector& detector, bool fullRemoval) {
-	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
-	auto iter = detector.upper_bound(lastEdge);
-
-	--iter;
-	size_t loopSize = iter->second.first;
-	--iter;
-	loopSize -= iter->second.first;
-
-	if (fullRemoval) {
-		return MAX_LOOPS * loopSize;
-	} else {
-		return (MAX_LOOPS - 1) * loopSize + 1;
-	}
-}
-
-//Cut loop forward
-void RemoveLoopForward(BidirectionalPath& path, CycleDetector& detector, bool fullRemoval) {
-	size_t edgesToRemove = CountLoopEdges(path.back(), detector, fullRemoval);
-	//INFO("Removing loop of " << edgesToRemove << " edges");
-
-	for(size_t i = 0; i < edgesToRemove; ++i) {
-		path.pop_back();
-	}
-}
-
-void RemoveLoopBackward(BidirectionalPath& path, CycleDetector& detector, bool fullRemoval) {
-	size_t edgesToRemove = CountLoopEdges(path.front(), detector, fullRemoval);
-	//INFO("Removing loop of " << edgesToRemove << " edges");
-
-	for(size_t i = 0; i < edgesToRemove; ++i) {
-		path.pop_front();
 	}
 }
 
@@ -322,32 +277,39 @@ size_t EdgesToExcludeBackward(Graph& g, BidirectionalPath& path) {
 
 //Extend path forward
 bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
-		CycleDetector& detector, PairedInfoIndices& pairedInfo,
+		LoopDetector& detector, PairedInfoIndices& pairedInfo,
 		PathStopHandler& handler) {
 
 	double w = 0;
 	static bool FULL_LOOP_REMOVAL = lc_cfg::get().lr.full_loop_removal;
-	std::vector<EdgeId> edges = g.OutgoingEdges(g.EdgeEnd(path.back()));
-	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, EdgesToExcludeForward(g, path), true, handler);
+	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
+	static size_t LOOPS_TO_IVESTIGATE = lc_cfg::get().lr.loop_to_investigate;
 
+	std::vector<EdgeId> edges = g.OutgoingEdges(g.EdgeEnd(path.back()));
+
+	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, &w, EdgesToExcludeForward(g, path), true, detector, handler);
 	if (extension == 0) {
 		return false;
 	}
-	DETAILED_INFO("Chosen forward " << extension << " (" << g.length(extension) << ")");
 
 	path.push_back(extension);
+	detector.AddNewEdge(extension, path.size(), w);
 	IncreaseLengths(g, lengths, extension, true);
-	if (lc_cfg::get().rs.detailed_output) {
-		PrintPath(g, path, lengths);
+
+	DETAILED_INFO("Chosen forward " << extension << " (" << g.length(extension) << ")");
+	DetailedPrintPath(g, path, lengths);
+
+	if (lc_cfg::get().lr.investigation && CheckCycle(path, extension, detector, LOOPS_TO_IVESTIGATE)) {
+		//TODO: imitate loop and find maximum
+
 	}
 
-	if (CheckCycle(path, extension, detector, w)) {
+	if (CheckCycle(path, extension, detector, MAX_LOOPS)) {
+		RemoveLoopForward(path, detector, FULL_LOOP_REMOVAL, MAX_LOOPS);
+
 		DETAILED_INFO("Cycle detected");
+		DetailedPrintPath(g, path, lengths);
 		handler.AddStop(path, LOOP, true);
-		RemoveLoopForward(path, detector, FULL_LOOP_REMOVAL);
-		if (lc_cfg::get().rs.detailed_output) {
-			PrintPath(g, path, lengths);
-		}
 		return false;
 	}
 
@@ -356,32 +318,39 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 
 //And backward
 bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
-		CycleDetector& detector, PairedInfoIndices& pairedInfo,
+		LoopDetector& detector, PairedInfoIndices& pairedInfo,
 		PathStopHandler& handler) {
 
 	double w = 0;
 	static bool FULL_LOOP_REMOVAL = lc_cfg::get().lr.full_loop_removal;
-	std::vector<EdgeId> edges = g.IncomingEdges(g.EdgeStart(path.front()));
-	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, EdgesToExcludeBackward(g, path), false, handler);
+	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
+	static size_t LOOPS_TO_IVESTIGATE = lc_cfg::get().lr.loop_to_investigate;
 
+	std::vector<EdgeId> edges = g.IncomingEdges(g.EdgeStart(path.front()));
+
+	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, w, EdgesToExcludeBackward(g, path), false, handler);
 	if (extension == 0) {
 		return false;
 	}
-	DETAILED_INFO("Chosen backward " << extension << " (" << g.length(extension) << ")");
 
 	path.push_front(extension);
+	detector.AddNewEdge(extension, path.size(), w);
 	IncreaseLengths(g, lengths, extension, false);
-	if (lc_cfg::get().rs.detailed_output) {
-		PrintPath(g, path, lengths);
+
+	DETAILED_INFO("Chosen backward " << extension << " (" << g.length(extension) << ")");
+	DetailedPrintPath(g, path, lengths);
+
+	if (lc_cfg::get().lr.investigation && CheckCycle(path, extension, detector, LOOPS_TO_IVESTIGATE)) {
+		//TODO: imitate loop and find maximum
+
 	}
 
 	if (CheckCycle(path, extension, detector, w)) {
+		RemoveLoopBackward(path, detector, FULL_LOOP_REMOVAL, MAX_LOOPS);
+
 		DETAILED_INFO("Cycle detected");
+		DetailedPrintPath(g, path, lengths);
 		handler.AddStop(path, LOOP, false);
-		RemoveLoopBackward(path, detector, FULL_LOOP_REMOVAL);
-		if (lc_cfg::get().rs.detailed_output) {
-			PrintPath(g, path, lengths);
-		}
 		return false;
 	}
 
@@ -401,7 +370,7 @@ size_t GetMaxInsertSize(PairedInfoIndices& pairedInfo) {
 //Grow selected seed in both directions
 void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo, PathStopHandler& handler) {
 	PathLengths lengths;
-	CycleDetector detector;
+	LoopDetector detector;
 
 	static size_t maxIS = GetMaxInsertSize(pairedInfo);
 	int i = 0;

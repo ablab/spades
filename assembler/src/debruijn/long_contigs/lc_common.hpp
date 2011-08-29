@@ -275,6 +275,13 @@ void PrintPath(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
 	}
 }
 
+//Print path with length from start / end to the every edge
+void DetailedPrintPath(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
+	if (lc_cfg::get().rs.detailed_output) {
+		PrintPath(g, path, lengths);
+	}
+}
+
 //Print path
 template<class PathType>
 void PrintPath(Graph& g, PathType& path) {
@@ -282,6 +289,14 @@ void PrintPath(Graph& g, PathType& path) {
 	INFO("#, edge, length")
 	for(size_t i = 0; i < path.size(); ++i) {
 		INFO(i << ", " << path[i] << ", " << g.length(path[i]));
+	}
+}
+
+//Print path
+template<class PathType>
+void DetailedPrintPath(Graph& g, PathType& path) {
+	if (lc_cfg::get().rs.detailed_output) {
+		PrintPath(g, path);
 	}
 }
 
