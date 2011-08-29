@@ -63,12 +63,6 @@ public:
 };
 
 
-typedef
-		AbstractConjugateGraph<Graph::Vertex, E, D>
-
-
-
-
 template <class Graph>
 class IterativeLowCoverageEdgeRemover {
 	size_t max_length_;
