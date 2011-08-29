@@ -4,3 +4,5 @@ stats/*
 *.exe
 *.exe.stackdump
 .metadata/*
+RemoteSystemsTempFiles/*
+
