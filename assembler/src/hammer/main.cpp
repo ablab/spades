@@ -214,7 +214,7 @@ int main(int argc, char * argv[]) {
 			TIMEDLN("Doing honest preprocessing.");
 			DoPreprocessing(tau, readsFilename, nthreads, &kmers, &Globals::hm);
 			TIMEDLN("Preprocessing done. Got " << Globals::hm.size() << " kmers.");
-		} else if (readBlobAndKmers) {
+		} else {
 			TIMEDLN("Reading kmers from " << kmersFilename.c_str() );
 			Globals::readKMerCounts( getFilename( dirprefix, kmersFilename.c_str() ).c_str(), &kmers );
 			TIMEDLN("Kmers read from " << kmersFilename.c_str());
@@ -251,7 +251,7 @@ int main(int argc, char * argv[]) {
 			TIMEDLN("Finished clustering.");
 		}
 
-		if ( Globals::write_kmers_after_clustering ) {
+		if ( Globals::write_kmers_after_clustering && iter_count == 0 ) {
 			TIMEDLN("Writing k-mers hash after clustering.");
 			Globals::writeKMerHashMap( getFilename(dirprefix, iter_count, "kmers.hash").data(), Globals::hm);
 			TIMEDLN("K-mers hash written.");
