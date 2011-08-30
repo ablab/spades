@@ -351,8 +351,14 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
 size_t IterativeReconstructionStep(int nthreads, ostream * ofs) {
 	size_t res = 0;
 	// cycle over the reads, looking for reads completely covered by solid k-mers and adding new solid k-mers on the fly
+	#pragma omp parallel for shared(res, ofs) num_threads(nthreads)
 	for (hint_t readno = 0; readno < Globals::revNo; ++readno) {
-		if ( ofs != NULL ) (*ofs) << "Read: " << Globals::rv->at(readno).getSequenceString().c_str() << "\n";
+		if ( ofs != NULL ) {
+			#pragma omp critical
+			{
+			(*ofs) << "Read: " << Globals::rv->at(readno).getSequenceString().c_str() << "\n";
+			}
+		}
 		const uint32_t read_size = Globals::rv->at(readno).size();
 		vector< bool > covered_by_solid( read_size, false );
 
@@ -384,7 +390,11 @@ size_t IterativeReconstructionStep(int nthreads, ostream * ofs) {
 			if ( !covered_by_solid[j] ) { isGood = false; break; }
 		}
 		if ( !isGood ) continue;
-		if ( ofs != NULL ) (*ofs) << "  ...it's good!\n";
+		#pragma omp critical
+		{
+		if ( ofs != NULL ) {
+			(*ofs) << "  ...it's good!\n";
+		}
 
 		// ok, now we're sure that everything is covered
 		// let's make all k-mers solid
@@ -403,6 +413,7 @@ size_t IterativeReconstructionStep(int nthreads, ostream * ofs) {
 				if ( ofs != NULL ) (*ofs) << "    make solid: " << it.second->first.str().c_str() << "\n";
 			}				
 			it.second->second.makeGoodForIterative();
+		}
 		}
 	}
 	return res;

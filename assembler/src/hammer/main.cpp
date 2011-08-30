@@ -259,9 +259,10 @@ int main(int argc, char * argv[]) {
 
 		if ( Globals::use_iterative_reconstruction ) {
 			for ( int iter_no = 0; iter_no < Globals::max_reconstruction_iterations; ++iter_no ) {
-				ofstream ofiter( getFilename(dirprefix, iter_count, "reconstruct", iter_no).data() );
-				size_t res = IterativeReconstructionStep(nthreads, &ofiter);
-				ofiter.close();
+				//ofstream ofiter( getFilename(dirprefix, iter_count, "reconstruct", iter_no).data() );
+				//size_t res = IterativeReconstructionStep(nthreads, &ofiter);
+				//ofiter.close();
+				size_t res = IterativeReconstructionStep(nthreads);
 				TIMEDLN("Solid k-mers iteration " << iter_no << " produced " << res << " new k-mers.");
 				if ( res < 10 ) break;
 			}
