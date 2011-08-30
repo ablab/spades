@@ -11,6 +11,7 @@
 #include <cmath>
 #include <stack>
 #include "omni_utils.hpp"
+#include "xmath.h"
 #include "sequence/sequence_tools.hpp"
 
 namespace omnigraph {
@@ -236,8 +237,7 @@ void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
 						<< " and avg coverage " << g_.coverage(edge));
 		TRACE("Is possible bulge " << PossibleBulgeEdge(edge));
 		if (PossibleBulgeEdge(edge)) {
-			size_t kplus_one_mer_coverage = std::floor(
-					g_.length(edge) * g_.coverage(edge) + 0.5);
+			size_t kplus_one_mer_coverage = math::round(g_.length(edge) * g_.coverage(edge));
 			TRACE(
 					"Processing edge " << g_.str(edge) << " and coverage "
 							<< kplus_one_mer_coverage);
@@ -268,10 +268,11 @@ void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
 			if (BulgeCondition(edge, path, path_coverage)) {
 				TRACE("Satisfied condition");
 				TRACE(
-						"Deleting edge " << g_.str(edge)
-								<< " and compressing ends");
+						"Projecting edge " << g_.str(edge));
 				ProcessBulge(edge, path);
+				TRACE("Compressing start of edge " << g_.str(edge))
 				g_.CompressVertex(start);
+				TRACE("Compressing end of edge " << g_.str(edge))
 				g_.CompressVertex(end);
 			} else {
 				TRACE("Didn't satisfy condition");
