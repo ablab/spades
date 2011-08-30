@@ -125,7 +125,7 @@ namespace debruijn
 		std::string output_dir;
 		std::string output_dir_suffix;
 
-		std::string previous_run_dir;
+//		std::string previous_run_dir;
 		std::string dataset_name;
 		std::string reference_genome;
 		std::string start_from;
@@ -135,7 +135,7 @@ namespace debruijn
 		bool paired_mode;
 		bool rectangle_mode;
 		bool etalon_info_mode;
-		bool from_saved_graph;
+//		bool from_saved_graph;
 
 		std::string uncorrected_reads;
 
@@ -226,7 +226,7 @@ namespace debruijn
 //		load(pt, "entry_point", cfg.entry_point);
 		load(pt, "input_dir", cfg.input_dir);
 	//	= cfg::get().output_dir
-		load(pt, "previous_run_dir", cfg.previous_run_dir);
+//		load(pt, "previous_run_dir", cfg.previous_run_dir);
 		load(pt, "dataset", cfg.dataset_name);
 
 		std::string base_output_dir;
@@ -242,7 +242,7 @@ namespace debruijn
 		load(pt, "paired_mode", cfg.paired_mode);
 		load(pt, "rectangle_mode", cfg.rectangle_mode);
 		load(pt, "etalon_info_mode", cfg.etalon_info_mode);
-		load(pt, "from_saved_graph", cfg.from_saved_graph);
+//		load(pt, "from_saved_graph", cfg.from_saved_graph);
 
 		load(pt, "tc", cfg.tc); // tip clipper:
 		load(pt, "br", cfg.br); // bulge remover:

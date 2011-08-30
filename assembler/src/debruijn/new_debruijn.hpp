@@ -98,14 +98,6 @@ class ConjugateDeBruijnGraph: public AbstractConjugateGraph<DeBruijnMaster> {
 	typedef AbstractConjugateGraph<DeBruijnMaster> base;
 public:
 
-	typedef typename base::VertexId VertexId;
-	typedef typename base::EdgeId EdgeId;
-	typedef typename base::VertexData VertexData;
-	typedef typename base::EdgeData EdgeData;
-	typedef typename base::VertexIterator VertexIterator;
-
-//	typedef typename super::SmartVertexIt SmartVertexIt;
-//	typedef typename super::SmartEdgeIt SmartEdgeIt;
 private:
 	const size_t k_;
 	CoverageIndex<ConjugateDeBruijnGraph>* coverage_index_;
@@ -161,10 +153,6 @@ public:
 	const Sequence& EdgeNucls(EdgeId edge) const {
 		return data(edge).nucls();
 	}
-
-	//todo Ask Valera of the right way to do it
-	using base::AddVertex;
-	using base::AddEdge;
 
 	VertexId AddVertex() {
 		return base::AddVertex(VertexData());
@@ -293,9 +281,6 @@ public:
 //	void IncCoverage(EdgeId edge) {
 //		coverage_index_->IncCoverage(edge);
 //	}
-
-	using base::AddVertex;
-	using base::AddEdge;
 
 	virtual VertexId AddVertex() {
 		return base::AddVertex(VertexData());
