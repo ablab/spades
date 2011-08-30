@@ -167,14 +167,15 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 		const uint32_t pos = it.first;
 		const KMerStat & stat = it.second->second;
 
-		if (stat.isGoodForIterative() || ( Globals::use_iterative_reconstruction && stat.isGood() ) ) {
+		if (stat.isGoodForIterative() || ( !Globals::use_iterative_reconstruction && stat.isGood() ) ) {
 			Globals::rv_bad->at(readno) = false;
 			for (size_t j=0; j<K; ++j) {
 				v[dignucl(kmer[j])][pos+j]++;
 			}
 			if ((int)pos < left) left = pos; if ((int)pos > right) right = pos;
 		} else {
-			if (stat.change()) {
+			if (stat.change() && (km[stat.changeto]->second.isGoodForIterative() || 
+						( !Globals::use_iterative_reconstruction && km[stat.changeto]->second.isGood() ) ) ) {
 				Globals::rv_bad->at(readno) = false;
 				if ((int)pos < left) left = pos; if ((int)pos > right) right = pos;
 				const PositionKMer & newkmer = km[ stat.changeto ]->first;
@@ -201,14 +202,15 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 		const uint32_t pos = it.first;
 		const KMerStat & stat = it.second->second;
 
-		if (stat.isGoodForIterative() || ( Globals::use_iterative_reconstruction && stat.isGood() ) ) {
+		if (stat.isGoodForIterative() || ( !Globals::use_iterative_reconstruction && stat.isGood() ) ) {
 			Globals::rv_bad->at(readno) = false;
 			for (size_t j=0; j<K; ++j) {
 				v[complement(dignucl(kmer[j]))][read_size-pos-j-1]++;
 			}
 			if ((int)(read_size-K-pos) < left) left = (int)(read_size-K-pos); if ((int)(read_size-K-pos) > right) right = (int)(read_size-K-pos);
 		} else {
-			if (stat.change()) {
+			if (stat.change() && (km[stat.changeto]->second.isGoodForIterative() || 
+						( !Globals::use_iterative_reconstruction && km[stat.changeto]->second.isGood() ) ) ) {
 				Globals::rv_bad->at(readno) = false;
 				if ((int)(read_size-K-pos) < left) left = (int)(read_size-K-pos); if ((int)(read_size-K-pos) > right) right = (int)(read_size-K-pos);
 				const PositionKMer & newkmer = km[ stat.changeto ]->first;
@@ -348,11 +350,17 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
 	outf.close(); outf_bad.close();
 }
 
-size_t IterativeReconstructionStep(int nthreads, ostream * ofs) {
+size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmers, ostream * ofs) {
 	size_t res = 0;
 	// cycle over the reads, looking for reads completely covered by solid k-mers and adding new solid k-mers on the fly
+	#pragma omp parallel for shared(res, ofs) num_threads(nthreads)
 	for (hint_t readno = 0; readno < Globals::revNo; ++readno) {
-		if ( ofs != NULL ) (*ofs) << "Read: " << Globals::rv->at(readno).getSequenceString().c_str() << "\n";
+		if ( ofs != NULL ) {
+			#pragma omp critical
+			{
+			(*ofs) << "Read: " << Globals::rv->at(readno).getSequenceString().c_str() << "\n";
+			}
+		}
 		const uint32_t read_size = Globals::rv->at(readno).size();
 		vector< bool > covered_by_solid( read_size, false );
 
@@ -377,34 +385,51 @@ size_t IterativeReconstructionStep(int nthreads, ostream * ofs) {
 			if ( it.second->second.isGoodForIterative() ) {
 				for ( size_t j = read_size-it.first-K; j < read_size-it.first; ++j )
 					covered_by_solid[j] = true;
-			}			
+			}
 		}
 		isGood = true;
 		for ( size_t j = 0; j < read_size; ++j ) {
 			if ( !covered_by_solid[j] ) { isGood = false; break; }
 		}
 		if ( !isGood ) continue;
-		if ( ofs != NULL ) (*ofs) << "  ...it's good!\n";
 
 		// ok, now we're sure that everything is covered
-		// let's make all k-mers solid
+		// let's mark all k-mers as solid
 		it = make_pair( -1, (KMerCount*)NULL );
 		while ( (it = pr.nextKMer(it.first)).first > -1 ) {
-			if ( !it.second->second.isGoodForIterative() ) { 
+			if ( !it.second->second.isGoodForIterative() && !it.second->second.isMarkedGoodForIterative() ) {
+				#pragma omp critical
+				{
 				++res;
 				if ( ofs != NULL ) (*ofs) << "    make solid: " << it.second->first.str().c_str() << "\n";
+				if (Globals::reconstruction_in_full_iterations) it.second->second.markGoodForIterative();
+				else it.second->second.makeGoodForIterative();
+				}
 			}
-			it.second->second.makeGoodForIterative();
 		}
 		it = make_pair( -1, (KMerCount*)NULL );
 		while ( (it = pr_rev.nextKMer(it.first)).first > -1 ) {
-			if ( !it.second->second.isGoodForIterative() ) {
+			if ( !it.second->second.isGoodForIterative() && !it.second->second.isMarkedGoodForIterative() ) {
+				#pragma omp critical
+				{
 				++res;
 				if ( ofs != NULL ) (*ofs) << "    make solid: " << it.second->first.str().c_str() << "\n";
+				if (Globals::reconstruction_in_full_iterations) it.second->second.markGoodForIterative();
+				else it.second->second.makeGoodForIterative();
+				}
 			}				
-			it.second->second.makeGoodForIterative();
 		}
 	}
+
+	if (Globals::reconstruction_in_full_iterations) {
+		// ok, so now we've marked everything and simply need to go through marked k-mers actually making them good
+		for ( hint_t i=0; i < kmers.size(); ++i ) {
+			if ( kmers[i]->second.isMarkedGoodForIterative() ) {
+				kmers[i]->second.makeGoodForIterative();
+			}
+		}
+	}
+
 	return res;
 }
 

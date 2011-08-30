@@ -1,6 +1,6 @@
 ; working directories, input files...
 working_dir		/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/tmp
-reads			/home/snikolenko/algorithmic-biology/assembler/data/hammer/head10000.fastq
+reads			/home/snikolenko/algorithmic-biology/assembler/data/hammer/head100000.fastq
 paired_reads		0
 reads_left		/home/snikolenko/algorithmic-biology/assembler/data/hammer/head20000.fastq
 reads_right		/home/snikolenko/algorithmic-biology/assembler/data/hammer/head20000right.fastq
@@ -17,7 +17,7 @@ write_blob_and_kmers			0
 exit_after_writing_blob_and_kmers	0
 blob					blob.raw.out
 kmers					kmers.raw.out
-write_kmers_after_clustering		1
+write_kmers_after_clustering		0
 read_kmers_after_clustering		0
 kmers_after_clustering			/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/tmp/00.kmers.hash
 
@@ -31,6 +31,7 @@ trim_quality				4
 ; aggressive trimming strategies
 trim_left_right				1
 use_iterative_reconstruction		1
+reconstruction_in_full_iterations	1
 iterative_reconstruction_threshold	0.995
 max_reconstruction_iterations		10
 
