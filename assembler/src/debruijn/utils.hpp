@@ -16,6 +16,7 @@
 #include "omni/statistics.hpp"
 #include "xmath.h"
 #include <boost/optional.hpp>
+#include "sequence/sequence_tools.hpp"
 //#include "common/io/paired_read.hpp"
 namespace debruijn_graph {
 
@@ -178,11 +179,12 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
 
 	void RemapKmers(const Sequence& old_s, const Sequence& new_s) {
 //		cout << endl << "Mapping " << old_s << " to " << new_s << endl;
+		UniformPositionAligner aligner(old_s.size() - k + 1, new_s.size() - k + 1);
 		Kmer old_kmer = old_s.start<k>() >> 0;
 		for (size_t i = k - 1; i < old_s.size(); ++i) {
 			old_kmer = old_kmer << old_s[i];
 			size_t old_kmer_offset = i - k + 1;
-			size_t new_kmer_offest = std::floor(1. * old_kmer_offset / (old_s.size() - k + 1) * (new_s.size() - k + 1) + 1e-9);
+			size_t new_kmer_offest = aligner.GetPosition(old_kmer_offset);
 			Kmer new_kmer(new_s, new_kmer_offest);
 			mapping_[old_kmer] = new_kmer;
 //			cout << "Kmer " << old_kmer << " mapped to " << new_kmer << endl;
