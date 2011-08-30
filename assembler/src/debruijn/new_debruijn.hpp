@@ -154,12 +154,15 @@ public:
 		return data(edge).nucls();
 	}
 
+	using base::AddVertex;
+	using base::AddEdge;
+
 	VertexId AddVertex() {
-		return base::AddVertex(VertexData());
+		return AddVertex(VertexData());
 	}
 
 	EdgeId AddEdge(VertexId from, VertexId to, const Sequence &nucls) {
-		return base::AddEdge(from, to, EdgeData(nucls));
+		return AddEdge(from, to, EdgeData(nucls));
 	}
 
 	size_t k() const {
@@ -282,12 +285,15 @@ public:
 //		coverage_index_->IncCoverage(edge);
 //	}
 
+	using base::AddVertex;
+	using base::AddEdge;
+
 	virtual VertexId AddVertex() {
-		return base::AddVertex(VertexData());
+		return AddVertex(VertexData());
 	}
 
 	virtual EdgeId AddEdge(VertexId from, VertexId to, const Sequence &nucls) {
-		return base::AddEdge(from, to, EdgeData(nucls));
+		return AddEdge(from, to, EdgeData(nucls));
 	}
 
 	std::string str(EdgeId edge) const {
