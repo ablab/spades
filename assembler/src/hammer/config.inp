@@ -17,7 +17,7 @@ write_blob_and_kmers			0
 exit_after_writing_blob_and_kmers	0
 blob					blob.raw.out
 kmers					kmers.raw.out
-write_kmers_after_clustering		1
+write_kmers_after_clustering		0
 read_kmers_after_clustering		0
 kmers_after_clustering			/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/tmp/00.kmers.hash
 

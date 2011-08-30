@@ -35,7 +35,7 @@ struct KMerStat {
 	hint_t changeto;
 	double totalQual;
 
-	bool isGood() const { return (changeto >= KMERSTAT_GOOD); }
+	bool isGood() const { return changeto >= KMERSTAT_GOOD; }
 	bool isGoodForIterative() const { return (changeto == KMERSTAT_GOODITER); }
 	void makeGoodForIterative() { changeto = KMERSTAT_GOODITER; }
 	void markGoodForIterative() { changeto = KMERSTAT_MARKED_FOR_GOODITER; }

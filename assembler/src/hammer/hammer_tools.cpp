@@ -167,14 +167,15 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 		const uint32_t pos = it.first;
 		const KMerStat & stat = it.second->second;
 
-		if (stat.isGoodForIterative() || ( Globals::use_iterative_reconstruction && stat.isGood() ) ) {
+		if (stat.isGoodForIterative() || ( !Globals::use_iterative_reconstruction && stat.isGood() ) ) {
 			Globals::rv_bad->at(readno) = false;
 			for (size_t j=0; j<K; ++j) {
 				v[dignucl(kmer[j])][pos+j]++;
 			}
 			if ((int)pos < left) left = pos; if ((int)pos > right) right = pos;
 		} else {
-			if (stat.change()) {
+			if (stat.change() && (km[stat.changeto]->second.isGoodForIterative() || 
+						( !Globals::use_iterative_reconstruction && km[stat.changeto]->second.isGood() ) ) ) {
 				Globals::rv_bad->at(readno) = false;
 				if ((int)pos < left) left = pos; if ((int)pos > right) right = pos;
 				const PositionKMer & newkmer = km[ stat.changeto ]->first;
@@ -201,14 +202,15 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 		const uint32_t pos = it.first;
 		const KMerStat & stat = it.second->second;
 
-		if (stat.isGoodForIterative() || ( Globals::use_iterative_reconstruction && stat.isGood() ) ) {
+		if (stat.isGoodForIterative() || ( !Globals::use_iterative_reconstruction && stat.isGood() ) ) {
 			Globals::rv_bad->at(readno) = false;
 			for (size_t j=0; j<K; ++j) {
 				v[complement(dignucl(kmer[j]))][read_size-pos-j-1]++;
 			}
 			if ((int)(read_size-K-pos) < left) left = (int)(read_size-K-pos); if ((int)(read_size-K-pos) > right) right = (int)(read_size-K-pos);
 		} else {
-			if (stat.change()) {
+			if (stat.change() && (km[stat.changeto]->second.isGoodForIterative() || 
+						( !Globals::use_iterative_reconstruction && km[stat.changeto]->second.isGood() ) ) ) {
 				Globals::rv_bad->at(readno) = false;
 				if ((int)(read_size-K-pos) < left) left = (int)(read_size-K-pos); if ((int)(read_size-K-pos) > right) right = (int)(read_size-K-pos);
 				const PositionKMer & newkmer = km[ stat.changeto ]->first;
