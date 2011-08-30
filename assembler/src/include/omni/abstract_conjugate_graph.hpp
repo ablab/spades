@@ -16,19 +16,20 @@
 
 namespace omnigraph {
 
-template<typename VertexData, typename EdgeData, class DataMaster>
+template<class DataMaster>
 class AbstractConjugateGraph;
 
-template<typename VertexData, typename EdgeData, class DataMaster>
+template<class DataMaster>
 class PairedEdge;
 
-template<typename VertexData, typename EdgeData, class DataMaster>
+template<class DataMaster>
 class PairedVertex {
 private:
-	typedef PairedVertex<VertexData, EdgeData, DataMaster>* VertexId;
-	typedef PairedEdge<VertexData, EdgeData, DataMaster>* EdgeId;
+	typedef PairedVertex<DataMaster>* VertexId;
+	typedef PairedEdge<DataMaster>* EdgeId;
+	typedef typename DataMaster::VertexData VertexData;
 
-	friend class AbstractConjugateGraph<VertexData, EdgeData, DataMaster> ;
+	friend class AbstractConjugateGraph<DataMaster> ;
 
 	vector<EdgeId> outgoing_edges_;
 
@@ -113,15 +114,15 @@ private:
 	}
 };
 
-template<typename VertexData, typename EdgeData, class DataMaster>
+template<class DataMaster>
 class PairedEdge {
 private:
-	typedef PairedVertex<VertexData, EdgeData, DataMaster>* VertexId;
-	typedef PairedEdge<VertexData, EdgeData, DataMaster>* EdgeId;
-
-	friend class AbstractConjugateGraph<VertexData, EdgeData, DataMaster> ;
+	typedef PairedVertex<DataMaster>* VertexId;
+	typedef PairedEdge<DataMaster>* EdgeId;
+	typedef typename DataMaster::EdgeData EdgeData;
+	friend class AbstractConjugateGraph<DataMaster> ;
 	//todo unfriend
-	friend class PairedVertex<VertexData, EdgeData, DataMaster> ;
+	friend class PairedVertex<DataMaster> ;
 	VertexId end_;
 
 	EdgeData data_;
@@ -157,33 +158,34 @@ public:
 	}
 };
 
-template<typename VertexData, typename EdgeData, class DataMaster>
+template<class DataMaster>
 class AbstractConjugateGraph:
-	public AbstractGraph<PairedVertex<VertexData, EdgeData, DataMaster>*, VertexData,
-	PairedEdge<VertexData, EdgeData, DataMaster>*, EdgeData, DataMaster, typename set<PairedVertex<VertexData, EdgeData, DataMaster>*>::const_iterator> {
-	typedef AbstractGraph<PairedVertex<VertexData, EdgeData, DataMaster>*, VertexData,
-			PairedEdge<VertexData, EdgeData, DataMaster>*, EdgeData, DataMaster, typename set<PairedVertex<VertexData, EdgeData, DataMaster>*>::const_iterator> base;
+	public AbstractGraph<PairedVertex<DataMaster>*, PairedEdge<DataMaster>*
+	, DataMaster, typename set<PairedVertex<DataMaster>*>::const_iterator> {
+	typedef AbstractGraph<PairedVertex<DataMaster>*, PairedEdge<DataMaster>*
+			, DataMaster, typename set<PairedVertex<DataMaster>*>::const_iterator> base;
 
 public:
 	//todo remove unused typedefs
-	typedef PairedVertex<VertexData, EdgeData, DataMaster>* VertexId;
-	typedef PairedEdge<VertexData, EdgeData, DataMaster>* EdgeId;
-	typedef typename base::SmartVertexIt SmartVertexIt;
-	typedef typename base::SmartEdgeIt SmartEdgeIt;
+//	typedef typename base::SmartVertexIt SmartVertexIt;
+//	typedef typename base::SmartEdgeIt SmartEdgeIt;
+
+	typedef typename base::VertexId VertexId;
+	typedef typename base::EdgeId EdgeId;
+	typedef typename base::VertexData VertexData;
+	typedef typename base::EdgeData EdgeData;
+	typedef typename base::VertexIterator VertexIterator;
 
 private:
 	typedef set<VertexId> Vertices;
-	typedef typename Vertices::const_iterator VertexIterator;
-	typedef vector<EdgeId> Edges;
-	typedef typename Edges::const_iterator EdgeIterator;
 
 	Vertices vertices_;
 
 	VertexId HiddenAddVertex(const VertexData &data1, const VertexData &data2) {
 		VertexId v1 =
-				new PairedVertex<VertexData, EdgeData, DataMaster> (data1);
+				new PairedVertex<DataMaster> (data1);
 		VertexId v2 =
-				new PairedVertex<VertexData, EdgeData, DataMaster> (data2);
+				new PairedVertex<DataMaster> (data2);
 		v1->set_conjugate(v2);
 		v2->set_conjugate(v1);
 		vertices_.insert(v1);
@@ -284,7 +286,7 @@ private:
 	}
 
 	EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-		EdgeId newEdge = new PairedEdge<VertexData, EdgeData, DataMaster> (v2,
+		EdgeId newEdge = new PairedEdge<DataMaster> (v2,
 				data);
 		v1->AddOutgoingEdge(newEdge);
 		return newEdge;

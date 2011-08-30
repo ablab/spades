@@ -70,6 +70,16 @@ class IterativeLowCoverageEdgeRemover {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
+	static bool RelatedVertices(const AbstractConjugateGraph<typename Graph::DataMaster>& g
+			, VertexId v1, VertexId v2) {
+		return v1 == v2 || v1 == g.conjugate(v2);
+	}
+
+	static bool RelatedVertices(const AbstractNonconjugateGraph<typename Graph::DataMaster>& g
+			, VertexId v1, VertexId v2) {
+		return v1 == v2;
+	}
+
 public:
 	IterativeLowCoverageEdgeRemover(size_t max_length, double max_coverage)
 	: max_length_(max_length), max_coverage_(max_coverage) {
@@ -88,7 +98,7 @@ public:
 				VertexId end = g.EdgeEnd(e);
 				g.DeleteEdge(e);
 				g.CompressVertex(start);
-				if (start != end && start != g.conjugate(end)) {
+				if (!RelatedVertices(g, start, end)) {
 					g.CompressVertex(end);
 				}
 			}

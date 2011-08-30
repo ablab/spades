@@ -13,16 +13,17 @@
 
 namespace omnigraph {
 
-template<typename VertexIdT, typename VertexData, typename EdgeIdT, typename EdgeData, class DataMaster, typename VertexIterator/* = typename set<VertexIdT>::iterator*/>
-class AbstractGraph: public ObservableGraph<VertexIdT, EdgeIdT, VertexIterator> {
-	typedef ObservableGraph<VertexIdT, EdgeIdT, VertexIterator> base;
+template<typename VertexIdT, typename EdgeIdT, class DataMasterT, typename VertexIt>
+class AbstractGraph: public ObservableGraph<VertexIdT, EdgeIdT, VertexIt> {
+	typedef ObservableGraph<VertexIdT, EdgeIdT, VertexIt> base;
 	//todo maybe rename template params themselves???
 public:
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;
-	typedef VertexData VertexDataType;
-	typedef EdgeData EdgeDataType;
-	typedef DataMaster DataMasterType;
+	typedef DataMasterT DataMaster;
+	typedef typename DataMaster::VertexData VertexData;
+	typedef typename DataMaster::EdgeData EdgeData;
+	typedef VertexIt VertexIterator;
 private:
 	//todo think of necessity to pull these typedefs through hierarchy
 	DataMaster master_;
