@@ -44,6 +44,7 @@ struct hammer_config
 
 	bool trim_left_right;
 	bool use_iterative_reconstruction;
+	bool reconstruction_in_full_iterations;
 	double iterative_reconstruction_threshold;
 	int max_reconstruction_iterations;
 };
@@ -87,6 +88,7 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 
 	load(pt, "trim_left_right", cfg.trim_left_right);
 	load(pt, "use_iterative_reconstruction", cfg.use_iterative_reconstruction);
+	load(pt, "reconstruction_in_full_iterations", cfg.reconstruction_in_full_iterations);
 	load(pt, "iterative_reconstruction_threshold", cfg.iterative_reconstruction_threshold);
 	load(pt, "max_reconstruction_iterations", cfg.max_reconstruction_iterations);
 }

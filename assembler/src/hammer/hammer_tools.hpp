@@ -56,7 +56,7 @@ size_t CorrectRead(const KMerNoHashMap & km, const vector<KMerCount*> & kmers, h
   * make a step of iterative reconstruction
   * @return number of new solid k-mers
   */
-size_t IterativeReconstructionStep(int nthreads, ostream * ofs = NULL);
+size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmers, ostream * ofs = NULL);
 
 #endif
 
