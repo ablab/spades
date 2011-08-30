@@ -34,16 +34,16 @@ protected:
 	}
 
 	void FireDeleteVertex(VertexId v) {
-		for (auto it = action_handler_list_.begin(); it
-				!= action_handler_list_.end(); ++it) {
+		for (auto it = action_handler_list_.rbegin(); it
+				!= action_handler_list_.rend(); ++it) {
 			applier_->ApplyDelete(*it, v);
 		}
 	}
 
 	void FireDeleteEdge(EdgeId edge) {
 		TRACE("FireDeleteEdge for "<<action_handler_list_.size()<<" handlers");
-		for (auto it = action_handler_list_.begin(); it
-				!= action_handler_list_.end(); ++it) {
+		for (auto it = action_handler_list_.rbegin(); it
+				!= action_handler_list_.rend(); ++it) {
 			TRACE("FireDeleteEdge to handler "<<*it);
 			applier_->ApplyDelete(*it, edge);
 		}

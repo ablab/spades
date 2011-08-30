@@ -34,14 +34,14 @@ public:
 	/**
 	 * Create action handler with given name. With this name one can find out what tipe of handler is it.
 	 */
-	ActionHandler(const string &name) :
+	ActionHandler(const string& name) :
 			handler_name_(name) {
 	}
 
 	/**
 	 * Method returns name of this handler
 	 */
-	const string &name() const {
+	const string& name() const {
 		return handler_name_;
 	}
 

@@ -106,7 +106,6 @@ public:
 		omnigraph::Cleaner<Graph> cleaner(g);
 		cleaner.Clean();
 	}
-
 };
 
 }
