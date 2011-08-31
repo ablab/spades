@@ -7,6 +7,7 @@ BOWTIE_DIR = '../../../ext/tools/bowtie-0.12.7/'
 
 if len(sys.argv) < 6:
 	print 'Usage:', sys.argv[0], ' FASTA_REFERENCE  FASTQ_READS_1  FASTQ_READS_2  MIN_INSERT_SIZE  MAX_INSERT_SIZE'
+	print 'Maps short paired reads to reference (e.g. contigs), produces sam file'
 	exit(1)
 
 reference = sys.argv[1]
