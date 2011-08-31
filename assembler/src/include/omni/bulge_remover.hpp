@@ -270,9 +270,9 @@ void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
 				TRACE(
 						"Projecting edge " << g_.str(edge));
 				ProcessBulge(edge, path);
-				TRACE("Compressing start of edge " << g_.str(edge))
+				TRACE("Compressing start of edge " << edge)
 				g_.CompressVertex(start);
-				TRACE("Compressing end of edge " << g_.str(edge))
+				TRACE("Compressing end of edge " << edge)
 				g_.CompressVertex(end);
 			} else {
 				TRACE("Didn't satisfy condition");
