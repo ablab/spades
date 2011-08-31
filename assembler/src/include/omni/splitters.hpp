@@ -261,16 +261,22 @@ private:
 	const Graph &graph_;
 	set<VertexId> visited_;
 	size_t bound_;
-	Graph::VertexIt current_;
+	typename Graph::VertexIterator current_;
+
+	void SkipVisited() {
+		while(current_ != graph_.end() && visited_.count(*current_) == 1) {
+			++current_;
+		}
+	}
 
 public:
 	PrimitiveSplitter(const Graph &graph, size_t bound) :
-		graph_(graph), bound_(bound), current(graph.begin()) {
+		graph_(graph), bound_(bound), current_(graph.begin()) {
 		TRACE(
 				"Long edges splitter created and queue filled with all graph vertices");
 	}
 
-	virtual ~LongEdgesSplitter() {
+	virtual ~PrimitiveSplitter() {
 	}
 
 	virtual vector<VertexId> NextComponent() {
@@ -281,27 +287,18 @@ public:
 		VertexId cur = *current_;
 		TRACE("Search started");
 		BoundedDijkstra<Graph> cf(graph_, bound_);
-		cf.run(next);
+		cf.run(cur);
 		TRACE("Search finished");
 		vector < VertexId > result = cf.VisitedVertices();
-		for (auto it = result.begin(); it != result.end(); ++it) {
-			if (cf.GetDistance(*it) == 0) {
-				//				iterator_.erase(*it);
-				queue_.erase(*it);
-			}
-		}
+		visited_.insert(result.begin(), result.end());
 		TRACE("Component vector filled");
+		SkipVisited();
 		return result;
 	}
 
 	virtual bool Finished() {
-		while(current_ != graph_.end() && visited_.count(*current_) == 1) {
-			++current_;
-		}
-		//		return iterator_.IsEnd();
-		return current == graph_.end();
+		return current_ == graph_.end();
 	}
-
 };
 
 template<class Element>
