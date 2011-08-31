@@ -111,9 +111,9 @@ void SimplifyGraph(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
 
-//	ProduceDetailedInfo<k> (g, index, labeler, genome,
-//			output_folder + "before_simplification/", "graph.dot",
-//			"non_simplified_graph");
+	ProduceDetailedInfo<k> (g, index, labeler, genome,
+			output_folder + "before_simplification/", "graph.dot",
+			"non_simplified_graph");
 	CountStats<k> (g, index, genome);
 	for (size_t i = 0; i < iteration_count; i++) {
 		INFO("-----------------------------------------");
@@ -121,10 +121,9 @@ void SimplifyGraph(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 
 		INFO(i << " TipClipping");
 		ClipTips(g);
-//		etalon_paired_index.Check();
-//		ProduceDetailedInfo<k> (g, index, labeler, genome,
-//				output_folder + "tips_clipped_" + ToString(i) + "/",
-//				"graph.dot", "no_tip_graph");
+		ProduceDetailedInfo<k> (g, index, labeler, genome,
+				output_folder + "tips_clipped_" + ToString(i) + "/",
+				"graph.dot", "no_tip_graph");
 
 		INFO(i << " TipClipping stats");
 		CountStats<k> (g, index, genome);
@@ -132,9 +131,9 @@ void SimplifyGraph(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		INFO(i << " BulgeRemoval");
 		RemoveBulges(g);
 //		etalon_paired_index.Check();
-//		ProduceDetailedInfo<k> (g, index, labeler, genome,
-//				output_folder + "bulges_removed_" + ToString(i) + "/",
-//				"graph.dot", "no_bulge_graph");
+		ProduceDetailedInfo<k> (g, index, labeler, genome,
+				output_folder + "bulges_removed_" + ToString(i) + "/",
+				"graph.dot", "no_bulge_graph");
 
 		INFO(i << " BulgeRemoval stats");
 		CountStats<k> (g, index, genome);
@@ -142,9 +141,9 @@ void SimplifyGraph(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		INFO(i << " ErroneousConnectionsRemoval");
 		RemoveLowCoverageEdges(g, iteration_count, i);
 //		etalon_paired_index.Check();
-//		ProduceDetailedInfo<k> (g, index, labeler, genome,
-//				output_folder + "erroneous_edges_removed_" + ToString(i) + "/",
-//				"graph.dot", "no_erroneous_edges_graph");
+		ProduceDetailedInfo<k> (g, index, labeler, genome,
+				output_folder + "erroneous_edges_removed_" + ToString(i) + "/",
+				"graph.dot", "no_erroneous_edges_graph");
 
 		INFO(i << " ErroneousConnectionsRemoval stats");
 		CountStats<k> (g, index, genome);

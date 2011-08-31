@@ -260,7 +260,7 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 //	PairedInfoIndex<Graph> read_count_clustered_index(g);
 	//experimental
 
-	int number_of_components = 0;
+//	int number_of_components = 0;
 	bool graph_loaded = false;
 	optional<TotalLabelerGraphStruct<Graph>> graph_struct;
 	optional<TotalLabeler<Graph>> TotLab;
@@ -315,10 +315,10 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 			//		FillPairedIndexWithReadCountMetric<k, ReadStream>(g, index, kmer_mapper, read_count_weight_paired_index, stream);
 			//experimental
 
-//			WriteGraphComponents<k>(g, index, *TotLab, genome,
-//					output_folder + "graph_components" + "/", "graph.dot",
-//					"graph_component", cfg::get().ds.IS);
-//
+			WriteGraphComponents<k>(g, index, *TotLab, genome,
+					output_folder + "graph_components" + "/", "graph.dot",
+					"graph_component", cfg::get().ds.IS);
+
 //			number_of_components = PrintGraphComponents(
 //					output_folder + "graph_components/graph", g,
 //					cfg::get().ds.IS, int_ids, paired_index, EdgePos);

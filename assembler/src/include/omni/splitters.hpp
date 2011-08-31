@@ -103,6 +103,7 @@ public:
 	ErrorComponentSplitter(const Graph &graph, const set<EdgeId> &black_edges) :
 		graph_(graph), black_edges_(black_edges),
 				iterator_(graph.SmartEdgeBegin()) {
+		TRACE("ErrorComponentSplitter created and SmartIterator initialized");
 	}
 
 	virtual ~ErrorComponentSplitter() {
@@ -136,6 +137,7 @@ public:
 	}
 
 	virtual vector<VertexId> NextComponent() {
+		TRACE("Construction of next component started");
 		if (Finished()) {
 			assert(false);
 			return vector<VertexId> ();
@@ -143,9 +145,16 @@ public:
 		EdgeId next = *iterator_;
 		++iterator_;
 		set < VertexId > component = FindComponent(graph_.EdgeEnd(next));
+		TRACE(
+				"Error edges component constructed. It contains "
+						<< component.size() << " vertices");
 		size_t component_size = FindDiameter(component);
+		TRACE("Diameter of component is " << component_size);
 		set < VertexId > neighbourhood = FindNeighbourhood(
 				graph_.EdgeEnd(next), 1.5 * component_size);
+		TRACE(
+				"Error edges component neighborhood constructed. It contains "
+						<< neighbourhood.size() << " vertices");
 		visited_.insert(component.begin(), component.end());
 		return vector<VertexId> (neighbourhood.begin(), neighbourhood.end());
 	}
@@ -207,6 +216,8 @@ public:
 	LongEdgesSplitter(const Graph &graph, size_t bound) :
 		graph_(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */
 		bound_(bound) {
+		TRACE(
+				"Long edges splitter created and queue filled with all graph vertices");
 	}
 
 	virtual ~LongEdgesSplitter() {
@@ -218,9 +229,11 @@ public:
 			return vector<VertexId> ();
 		}
 		VertexId next = queue_.top();
+		TRACE("Search started");
 		queue_.pop();
 		ShortEdgeComponentFinder<Graph> cf(graph_, bound_);
 		cf.run(next);
+		TRACE("Search finished");
 		vector < VertexId > result = cf.VisitedVertices();
 		for (auto it = result.begin(); it != result.end(); ++it) {
 			if (cf.GetDistance(*it) == 0) {
@@ -228,6 +241,7 @@ public:
 				queue_.erase(*it);
 			}
 		}
+		TRACE("Component vector filled");
 		return result;
 	}
 
@@ -265,7 +279,7 @@ public:
 		graph_(graph), max_length_(max_length) {
 	}
 
-	virtual ~ComponentSizeFilter(){
+	virtual ~ComponentSizeFilter() {
 	}
 
 	virtual bool Check(vector<VertexId> &vertices) {
@@ -313,17 +327,23 @@ public:
 
 	virtual bool Finished() {
 		if (!ready) {
+			TRACE("Calculating next nontrivial component");
 			while (!inner_splitter_.Finished()) {
+				TRACE("Calculating next component");
 				next = inner_splitter_.NextComponent();
+				TRACE("Next component calculated");
 				if (checker_.Check(next)) {
+					TRACE("Nontrivial component found");
 					ready = true;
 					return false;
 				}
+				TRACE("Component skipped");
 			}
 			return true;
 		}
 		return false;
 	}
+
 };
 
 }
