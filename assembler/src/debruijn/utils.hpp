@@ -606,7 +606,7 @@ class EtalonPairedInfoCounter {
 		int mod_gap = (gap_ > delta_) ? gap_ - delta_ : 0;
 		Seq<k + 1> left(sequence);
 		left = left >> 0;
-		for (size_t left_idx = 0; left_idx + k + 1 + mod_gap <= sequence.size(); ++left_idx) {
+		for (size_t left_idx = 0; left_idx + 2 * k + 2 + mod_gap <= sequence.size(); ++left_idx) {
 			left = left << sequence[left_idx + k];
 			if (!index_.containsInIndex(left)) {
 				continue;
