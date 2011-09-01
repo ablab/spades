@@ -285,8 +285,8 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 
 //		omnigraph::RealIdGraphLabeler<Graph> labeler(g, int_ids);
 
-		omnigraph::WriteSimple(g, *TotLab, output_folder + "1_initial_graph.dot",
-				"no_repeat_graph");
+//		omnigraph::WriteSimple(g, *TotLab, output_folder + "1_initial_graph.dot",
+//				"no_repeat_graph");
 	}
 
 	if (cfg::get().start_from == "after_filling") {
