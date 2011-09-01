@@ -678,7 +678,7 @@ private:
 	void ProcessPairedRead(omnigraph::PairedInfoIndex<Graph>& paired_index,
 			const io::PairedRead& p_r) {
 		//DEBUG
-//		static size_t count = 0;
+		//static size_t count = 0;
 		//DEBUG
 
 		Sequence read1 = p_r.first().sequence();
@@ -706,6 +706,10 @@ private:
 								mapping_edge_2.first, (double) edge_distance,
 								weight, 0.));
 				//DEBUG
+//				cout << "here2 " << PairInfo<EdgeId> (mapping_edge_1.first,
+//						mapping_edge_2.first, (double) edge_distance, weight,
+//						0.) << endl;
+//				count++;
 //				if (count == 10000) {
 //					exit(0);
 //				}

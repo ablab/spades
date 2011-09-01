@@ -22,6 +22,13 @@ struct LoopDetectorData {
 	LoopDetectorData(size_t iter, double weight): iteration(iter), selfWeight(weight), weights()  {
 	}
 
+	LoopDetectorData(const LoopDetectorData& d) {
+		iteration = d.iteration;
+		selfWeight = d.selfWeight;
+
+		d.weights.insert(weights.begin(), weights.end());
+	}
+
 	LoopDetectorData(): weights()  {
 	}
 
@@ -62,7 +69,8 @@ struct LoopDetector {
 
 	void AddNewEdge(EdgeId e, size_t iter, double weight = 0) {
 		temp.SetSelectedEdge(iter, weight);
-		data.insert(std::make_pair(e, temp));
+		LoopDetectorData
+		data.insert(std::make_pair(e, ));
 	}
 
 	void clear() {
