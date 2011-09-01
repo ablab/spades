@@ -9,6 +9,7 @@
 #define SEEDS_HPP_
 
 #include "lc_common.hpp"
+#include "path_utils.hpp"
 #include "loop.hpp"
 
 
@@ -21,7 +22,8 @@ using namespace debruijn_graph;
 //Extends trivial path forward
 //If a start of another trivial path is found, returns it
 //Otherwise returns 0
-EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detector, const std::map<EdgeId, BidirectionalPath>& starts) {
+EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detector, const std::map<EdgeId, BidirectionalPath>& starts,
+		PathLengths* lengths = 0) {
 	static bool glueSeeds = lc_cfg::get().ss.glue_seeds;
 	static bool maxCycles = lc_cfg::get().ss.max_cycles;
 
@@ -38,6 +40,9 @@ EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& det
 		}
 
 		path.push_back(nextEdge);
+		if (lengths != 0) {
+			IncreaseLengths(g, *lengths, nextEdge, true);
+		}
 		currentVertex = g.EdgeEnd(nextEdge);
 
 		detector.temp.clear();
@@ -50,14 +55,14 @@ EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& det
 }
 
 //Previous one without checking for other seeds' starts
-EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detector) {
+EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detector, PathLengths* lengths = 0) {
 	static std::map<EdgeId, BidirectionalPath> empty = std::map<EdgeId, BidirectionalPath>();
-	return ExtendTrivialForward(g, path, detector, empty);
+	return ExtendTrivialForward(g, path, detector, empty, lengths);
 }
 
 
 //Trivially extend path backward
-void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& detector) {
+void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& detector, PathLengths* lengths = 0) {
 	static bool maxCycles = lc_cfg::get().ss.max_cycles;
 
 	if (path.empty()) {
@@ -68,6 +73,9 @@ void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& dete
 	while (g.CheckUniqueIncomingEdge(currentVertex)) {
 		EdgeId nextEdge = g.GetUniqueIncomingEdge(currentVertex);
 		path.push_front(nextEdge);
+		if (lengths != 0) {
+			IncreaseLengths(g, *lengths, nextEdge, true);
+		}
 		currentVertex = g.EdgeStart(nextEdge);
 
 		detector.temp.clear();

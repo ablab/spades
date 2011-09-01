@@ -12,6 +12,42 @@
 
 namespace long_contigs {
 
+//Increase path lengths
+void IncreaseLengths(Graph& g, PathLengths& lengths, EdgeId edge, bool forward) {
+	size_t len = g.length(edge);
+	for(auto iter = lengths.begin(); iter != lengths.end(); ++iter) {
+		*iter += len;
+	}
+
+	if (forward) {
+		lengths.push_back(len);
+	} else {
+		lengths.push_front(0);
+	}
+}
+
+//Recounting lengths form all edges to path's end
+void RecountLengthsForward(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
+	lengths.clear();
+	double currentLength = 0;
+
+	for(auto iter = path.rbegin(); iter != path.rend(); ++iter) {
+		currentLength += g.length(*iter);
+		lengths.push_front(currentLength);
+	}
+}
+
+//Recounting lengths from path's start to all edges
+void RecountLengthsBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
+	lengths.clear();
+	double currentLength = 0;
+
+	for(auto iter = path.begin(); iter != path.end(); ++iter) {
+		lengths.push_back(currentLength);
+		currentLength += g.length(*iter);
+	}
+}
+
 bool ComparePaths(const BidirectionalPath& path1, const BidirectionalPath& path2) {
 	if (path1.size() != path2.size()) {
 		return false;

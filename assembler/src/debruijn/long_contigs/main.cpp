@@ -85,7 +85,7 @@ int main() {
 	FilterLowCovered(g, seeds, MIN_COVERAGE);
 	INFO("Seeds filtered");
 
-	size_t found = PathsInGenome<K>(g, index, sequence, seeds, path1, path2, true);
+	size_t found = PathsInGenome<K>(g, index, sequence, seeds, path1, path2);
 	INFO("Good seeds found " << found << " in total " << seeds.size());
 	INFO("Seed coverage " << PathsCoverage(g, seeds));
 	INFO("Path length coverage " << PathsLengthCoverage(g, seeds));

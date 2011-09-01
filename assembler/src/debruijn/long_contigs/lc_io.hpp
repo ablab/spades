@@ -22,6 +22,7 @@ using debruijn::K;
 
 template<size_t k>
 void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_IntIds,	Sequence& sequence) {
+	io::first_fun(6);
 
 	string input_dir = cfg::get().input_dir;
 	string dataset = cfg::get().dataset_name;
@@ -92,7 +93,7 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 
 			FilteringStream filter_stream(pairStream);
 
-			RCStream rcStream(&filter_stream);
+			RCStream rcStream(filter_stream);
 
 			if (useNewMetrics) {
 				KmerMapper<k+1, Graph> mapper(g);

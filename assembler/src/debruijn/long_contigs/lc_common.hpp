@@ -342,7 +342,7 @@ void PrintPathFromTo(Graph& g, BidirectionalPath& path, size_t startPos = 0, siz
 
 //Print cycle detector data
 void PrintDetector(CycleDetector& detector) {
-	INFO("Detector data")
+	INFO("Detector data");
 	for(auto iter = detector.begin(); iter != detector.end(); ++iter) {
 		INFO("Edge " << iter->first << " comes when path length is " << iter->second.first << " with weight " << iter->second.second);
 	}
@@ -355,6 +355,16 @@ void PrintEdgeNuclsByLength(Graph& g, size_t edgeLen) {
 			INFO("Length " << edgeLen << ", Data: " << g.EdgeNucls(*edge).Subseq(0, g.length(*edge) + 1).str());
 		}
 	}
+}
+
+size_t GetMaxInsertSize(PairedInfoIndices& pairedInfo) {
+	size_t maxIS = 0;
+	for(auto lib = pairedInfo.begin(); lib != pairedInfo.end(); ++lib) {
+		if (maxIS < lib->insertSize) {
+			maxIS = lib->insertSize;
+		}
+	}
+	return maxIS;
 }
 
 } // namespace long_contigs

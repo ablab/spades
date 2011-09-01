@@ -70,8 +70,11 @@ struct lc_config
 	struct loops_removal
 	{
 		bool investigation;
-		size_t max_loops;
 		size_t loop_to_investigate;
+		size_t max_exits;
+		size_t max_loop_len;
+
+		size_t max_loops;
 		bool full_loop_removal;
 	};
 
@@ -199,6 +202,9 @@ void load(boost::property_tree::ptree const& pt, lc_config::loops_removal& lr)
 	using config_common::load;
 	load(pt, "investigation", lr.investigation);
 	load(pt, "loop_to_investigate", lr.loop_to_investigate);
+	load(pt, "max_exits", lr.max_exits);
+	load(pt, "max_loop_len", lr.max_loop_len);
+
 	load(pt, "max_loops", lr.max_loops);
 	load(pt, "full_loop_removal", lr.full_loop_removal);
 }

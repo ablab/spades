@@ -98,11 +98,11 @@ class ConjugateDeBruijnGraph: public AbstractConjugateGraph<DeBruijnMaster> {
 	typedef AbstractConjugateGraph<DeBruijnMaster> base;
 public:
 
-	typedef typename base::VertexId VertexId;
-	typedef typename base::EdgeId EdgeId;
-	typedef typename base::VertexData VertexData;
-	typedef typename base::EdgeData EdgeData;
-	typedef typename base::VertexIterator VertexIterator;
+	typedef base::VertexId VertexId;
+	typedef base::EdgeId EdgeId;
+	typedef base::VertexData VertexData;
+	typedef base::EdgeData EdgeData;
+	typedef base::VertexIterator VertexIterator;
 
 //	typedef typename super::SmartVertexIt SmartVertexIt;
 //	typedef typename super::SmartEdgeIt SmartEdgeIt;

@@ -175,7 +175,7 @@ paired_info_file_prefix "paired_info_"
 ss
 {
     min_coverage   150
-    glue_seeds     true
+    glue_seeds     false
     max_cycles     1
 }
 
@@ -196,8 +196,11 @@ es
 ; loops removal
 lr
 {
-    investigation      false
+    investigation      true
 	loop_to_investigate 1
+	max_loop_len       2
+	max_exits          1
+	
     max_loops          5
     full_loop_removal  true
 }
