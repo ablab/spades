@@ -36,27 +36,80 @@ real_libs
     item_0
     {
         read_size     100
+        insert_size   220
+        var           5
+                
+        QUAKE_CROPPED_100K
+        {
+            precounted       true
+            precounted_path  ./data/debruijn/08.23_20_21.QUAKE_CROPPED_100K/paired_info_IS220_RS100  
+            ;precounted_path  ./data/debruijn/08.22_19_43.QUAKE_CROPPED_100K/paired_info_IS220_RS100          
+            first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first100000_1.fastq.gz
+            second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first100000_2.fastq.gz             
+        }
+        QUAKE_CROPPED_400K
+        {   
+        	precounted       true 
+        	precounted_path  ./data/debruijn/08.23_20_22.QUAKE_CROPPED_400K/paired_info_IS220_RS100  
+            ;precounted_path  ./data/debruijn/08.22_20_25.QUAKE_CROPPED_400K/paired_info_IS220_RS100
+            first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first400000_1.fastq.gz
+            second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first400000_2.fastq.gz                        
+        }
+        QUAKE_FULL
+        {
+            precounted       true
+            precounted_path  ./data/debruijn/08.24_11_23.QUAKE_FULL/paired_info_IS220_RS100_clustered
+            first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
+            second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz  
+        }
+        EAS600_QUAKE_CROPPED_100K
+        {
+            precounted       true 
+            precounted_path  ./data/debruijn/08.22_19_43.QUAKE_CROPPED_100K/paired_info_IS220_RS100          
+            first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first100000_1.fastq.gz
+            second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first100000_2.fastq.gz             
+        }
+        EAS600_QUAKE_CROPPED_400K
+        {   
+            precounted       true 
+            precounted_path  ./data/debruijn/08.22_20_25.QUAKE_CROPPED_400K/paired_info_IS220_RS100
+            first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first400000_1.fastq.gz
+            second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first400000_2.fastq.gz                        
+        }
+        EAS600_QUAKE_FULL
+        {
+            precounted       false 
+            precounted_path  ./data/debruijn/
+            first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
+            second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz  
+        }
+    }     
+    item_1
+    {
+        read_size     100
         insert_size   500
         var           10
 
         QUAKE_CROPPED_100K
         {
             precounted       true 
-            precounted_path  ./data/debruijn/08.22_19_43.QUAKE_CROPPED_100K/paired_info_IS500_RS100 
+            precounted_path  ./data/debruijn/08.23_20_21.QUAKE_CROPPED_100K/paired_info_IS500_RS100 
+            ;precounted_path  ./data/debruijn/08.22_19_43.QUAKE_CROPPED_100K/paired_info_IS500_RS100
             first            ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first100000_1.fastq.gz
             second           ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first100000_2.fastq.gz             
         }                
         QUAKE_CROPPED_400K
         {   
         	precounted       true 
-            precounted_path  ./data/debruijn/08.22_20_25.QUAKE_CROPPED_400K/paired_info_IS500_RS100  
+            precounted_path  ./data/debruijn/08.23_20_22.QUAKE_CROPPED_400K/paired_info_IS500_RS100  
+            ;precounted_path  ./data/debruijn/08.22_20_25.QUAKE_CROPPED_400K/paired_info_IS500_RS100
             first            ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first400000_1.fastq.gz
             second           ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first400000_2.fastq.gz                        
         }
         QUAKE_FULL
         {
-            precounted       false 
-            precounted_path  ./data/debruijn/
+            precounted       true
+            precounted_path  ./data/debruijn/08.24_11_23.QUAKE_FULL/paired_info_IS500_RS100_clustered
             first            /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_1.cor.fastq.gz
             second           /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_2.cor.fastq.gz
            
@@ -120,56 +173,7 @@ real_libs
             ; second    ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_2.cor.fastq.gz    
         }
     } 
-      
-    item_1
-    {
-        read_size     100
-        insert_size   220
-        var           5
-                
-        QUAKE_CROPPED_100K
-        {
-            precounted       true 
-            precounted_path  ./data/debruijn/08.22_19_43.QUAKE_CROPPED_100K/paired_info_IS220_RS100          
-            first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first100000_1.fastq.gz
-            second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first100000_2.fastq.gz             
-        }
-        QUAKE_CROPPED_400K
-        {   
-        	precounted       true 
-            precounted_path  ./data/debruijn/08.22_20_25.QUAKE_CROPPED_400K/paired_info_IS220_RS100
-            first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first400000_1.fastq.gz
-            second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first400000_2.fastq.gz                        
-        }
-        QUAKE_FULL
-        {
-            precounted       false 
-            precounted_path  ./data/debruijn/
-            first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
-            second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz  
-        }
-        EAS600_QUAKE_CROPPED_100K
-        {
-            precounted       true 
-            precounted_path  ./data/debruijn/08.22_19_43.QUAKE_CROPPED_100K/paired_info_IS220_RS100          
-            first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first100000_1.fastq.gz
-            second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first100000_2.fastq.gz             
-        }
-        EAS600_QUAKE_CROPPED_400K
-        {   
-            precounted       true 
-            precounted_path  ./data/debruijn/08.22_20_25.QUAKE_CROPPED_400K/paired_info_IS220_RS100
-            first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first400000_1.fastq.gz
-            second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first400000_2.fastq.gz                        
-        }
-        EAS600_QUAKE_FULL
-        {
-            precounted       false 
-            precounted_path  ./data/debruijn/
-            first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
-            second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz  
-        }
-    }        
+
 }
 
 ; additional etalon libs
@@ -194,8 +198,9 @@ write_overlaped_paths   true
 write_paths             true
 write_contigs           true
 write_real_paired_info  true
-cluster_paired_info     false
+cluster_paired_info     true
 write_graph             true
+print_stats             false
 paired_info_file_prefix "paired_info_"
 
 ; seed selection
@@ -211,7 +216,7 @@ es
 {
     use_weight_function_first  false
     weight_fun_threshold       0
-    weight_threshold           0
+    weight_threshold           0.1
     priority_coeff             1.2
 
     use_delta_first       false

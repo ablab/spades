@@ -76,7 +76,7 @@ void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& dete
 
 		path.push_front(nextEdge);
 		if (lengths != 0) {
-			IncreaseLengths(g, *lengths, nextEdge, false);
+			IncreaseLengths(g, *lengths, nextEdge, true);
 		}
 		currentVertex = g.EdgeStart(nextEdge);
 

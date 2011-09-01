@@ -230,7 +230,7 @@ lr
 	max_loop_len       2
 	max_exits          1
 	
-    max_loops          10
+    max_loops          5
     full_loop_removal  true
 }
 
