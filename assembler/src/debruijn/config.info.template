@@ -170,8 +170,8 @@ EAS600_QUAKE_FULL
 
 SC_FULL
 {
-	first	SC/left.fastq.gz
-	second	SC/right.fastq.gz
+	first	SC_OLD/left.fastq.gz
+	second	SC_OLD/right.fastq.gz
 	RL		100	; read length
 	IS		270 	; insert size
 	LEN		4639675	; total size
@@ -179,8 +179,8 @@ SC_FULL
 
 SC_EULER_FULL
 {
-	first	SC/sc_1.cor.fasta.gz
-	second	SC/sc_2.cor.fasta.gz
+	first	SC_EULER/sc_1.cor.fasta.gz
+	second	SC_EULER/sc_2.cor.fasta.gz
 	RL		100	; read length
 	IS		270 	; insert size
 	LEN		4639675	; total size
