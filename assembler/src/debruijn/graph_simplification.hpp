@@ -58,6 +58,8 @@ void RemoveBulges(Graph &g) {
 			max_length_div_K * g.k(), max_coverage, max_relative_coverage,
 			max_delta, max_relative_delta, simple_path_condition);
 	bulge_remover.RemoveBulges();
+	Cleaner<Graph> cleaner(g);
+	cleaner.Clean();
 	INFO("Bulges removed");
 }
 
