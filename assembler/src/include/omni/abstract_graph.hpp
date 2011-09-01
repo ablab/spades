@@ -223,7 +223,7 @@ public:
 
 	void CompressVertex(VertexId v) {
 		//assert(CanCompressVertex(v));
-		if (CanCompressVertex(v)) {
+		if (CanCompressVertex(v) && GetUniqueOutgoingEdge(v) != GetUniqueIncomingEdge(v)) {
 			vector<EdgeId> toMerge;
 			toMerge.push_back(GetUniqueIncomingEdge(v));
 			toMerge.push_back(GetUniqueOutgoingEdge(v));
@@ -233,6 +233,10 @@ public:
 
 	EdgeId MergePath(const vector<EdgeId>& path) {
 		assert(!path.empty());
+		for(size_t i = 0; i < path.size(); i++)
+			for(size_t j = i + 1; j < path.size(); j++) {
+				assert(path[i] != path[j]);
+			}
 		vector<EdgeId> correctedPath = CorrectMergePath(path);
 		SequenceBuilder sb;
 		VertexId v1 = EdgeStart(correctedPath[0]);
