@@ -422,14 +422,44 @@ private:
 template<class Graph>
 vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	int k = 0;
-	for (size_t i = 0; i < edge_info_colors.size(); i++)
-		if (edge_info_colors[i] >= k)
-			k++;
 	vector<EdgeId> edgeIds[2];
 	//TODO: fix labels
 	edgeIds[0] = new_graph.OutgoingEdges(v);
 	edgeIds[1] = new_graph.IncomingEdges(v);
-
+	map<EdgeId, int> edgeCounts;
+	for(int i = 0; i < 2; i++) {
+		for(size_t j = 0; j < edgeIds[i].size(); j++)
+			edgeCounts.insert(make_pair(edgeIds[i][j], 0));
+	}
+	for (size_t i = 0; i < edge_info_colors.size(); i++) {
+		if (edge_info_colors[i] >= k)
+			k = edge_info_colors[i];
+		EdgeId le = edge_infos[i].lp.first;
+		edgeCounts[le] ++;
+	}
+	for(auto iter = edgeCounts.begin(); iter != edgeCounts.end(); ++iter) {
+		if (iter->second == 0) {
+			INFO("Adding no-paired edge: " << new_IDs.ReturnIntId(iter->first)<< " potential bug here.");
+			PairInfos tmp = paired_di_data.GetEdgeInfos(iter->first);
+			for(size_t j = 0; j < tmp.size(); j ++ ){
+				EdgeId right_id = tmp[j].second;
+//				EdgeId left_id = tmp[j].first;
+				double d = tmp[j].d;
+							//				int w = tmp[j].weight;
+							//				if (w < 10) continue;
+			//	if (v == new_graph.S)
+				int dif_d = 0;
+				int dir = 0;
+				// it doesn't matter now
+				EdgeInfo ei(tmp[j], dir, right_id,
+					int(d - dif_d));
+				edge_infos.push_back(ei);
+				edge_info_colors.push_back(k);
+			}
+			k++;
+		}
+	}
+	k++;
 	DEBUG("splitting to "<< k <<" parts");
 	vector<VertexId> res;
 	res.resize(k);
