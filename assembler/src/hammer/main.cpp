@@ -58,6 +58,7 @@ bool Globals::paired_reads = false;
 int Globals::trim_quality = -1;
 bool Globals::trim_left_right = false;
 bool Globals::use_iterative_reconstruction = false;
+bool Globals::reconstruction_in_full_iterations = false;
 double Globals::iterative_reconstruction_threshold = 0.995;
 int Globals::max_reconstruction_iterations = 1;
 
@@ -125,6 +126,7 @@ int main(int argc, char * argv[]) {
 	Globals::use_iterative_reconstruction = cfg::get().use_iterative_reconstruction;
 	Globals::iterative_reconstruction_threshold = cfg::get().iterative_reconstruction_threshold;
 	Globals::max_reconstruction_iterations = cfg::get().max_reconstruction_iterations;
+	Globals::reconstruction_in_full_iterations = cfg::get().reconstruction_in_full_iterations;
 	Globals::read_kmers_after_clustering = cfg::get().read_kmers_after_clustering;
 	Globals::write_kmers_after_clustering = cfg::get().write_kmers_after_clustering;
 	Globals::kmers_after_clustering = cfg::get().kmers_after_clustering;
@@ -259,9 +261,10 @@ int main(int argc, char * argv[]) {
 
 		if ( Globals::use_iterative_reconstruction ) {
 			for ( int iter_no = 0; iter_no < Globals::max_reconstruction_iterations; ++iter_no ) {
-				ofstream ofiter( getFilename(dirprefix, iter_count, "reconstruct", iter_no).data() );
-				size_t res = IterativeReconstructionStep(nthreads, &ofiter);
-				ofiter.close();
+				//ofstream ofiter( getFilename(dirprefix, iter_count, "reconstruct", iter_no).data() );
+				//size_t res = IterativeReconstructionStep(nthreads, &ofiter);
+				//ofiter.close();
+				size_t res = IterativeReconstructionStep(nthreads, kmers);
 				TIMEDLN("Solid k-mers iteration " << iter_no << " produced " << res << " new k-mers.");
 				if ( res < 10 ) break;
 			}

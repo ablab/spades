@@ -97,16 +97,17 @@ public:
 				VertexId start = g.EdgeStart(e);
 				VertexId end = g.EdgeEnd(e);
 				g.DeleteEdge(e);
-				g.CompressVertex(start);
 				if (!RelatedVertices(g, start, end)) {
+					g.CompressVertex(start);
 					g.CompressVertex(end);
+				} else {
+					g.CompressVertex(start);
 				}
 			}
 		}
 		omnigraph::Cleaner<Graph> cleaner(g);
 		cleaner.Clean();
 	}
-
 };
 
 }

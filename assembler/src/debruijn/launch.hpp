@@ -234,8 +234,7 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 	INFO("Start from " << cfg::get().start_from);
 	INFO("Paired mode: " << (cfg::get().paired_mode ? "Yes" : "No"));
 	INFO(
-			"Etalon paired info mode: " << (cfg::get().etalon_info_mode ? "Yes" : "No"))INFO(
-			"From file:entry_point " << (cfg::get().from_saved_graph ? "Yes" : "No"))
+			"Etalon paired info mode: " << (cfg::get().etalon_info_mode ? "Yes" : "No"))
 	mkdir(work_tmp_dir.c_str(),
 			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 

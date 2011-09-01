@@ -98,14 +98,6 @@ class ConjugateDeBruijnGraph: public AbstractConjugateGraph<DeBruijnMaster> {
 	typedef AbstractConjugateGraph<DeBruijnMaster> base;
 public:
 
-	typedef base::VertexId VertexId;
-	typedef base::EdgeId EdgeId;
-	typedef base::VertexData VertexData;
-	typedef base::EdgeData EdgeData;
-	typedef base::VertexIterator VertexIterator;
-
-//	typedef typename super::SmartVertexIt SmartVertexIt;
-//	typedef typename super::SmartEdgeIt SmartEdgeIt;
 private:
 	const size_t k_;
 	CoverageIndex<ConjugateDeBruijnGraph>* coverage_index_;
@@ -162,16 +154,15 @@ public:
 		return data(edge).nucls();
 	}
 
-	//todo Ask Valera of the right way to do it
 	using base::AddVertex;
 	using base::AddEdge;
 
 	VertexId AddVertex() {
-		return base::AddVertex(VertexData());
+		return AddVertex(VertexData());
 	}
 
 	EdgeId AddEdge(VertexId from, VertexId to, const Sequence &nucls) {
-		return base::AddEdge(from, to, EdgeData(nucls));
+		return AddEdge(from, to, EdgeData(nucls));
 	}
 
 	size_t k() const {
@@ -298,11 +289,11 @@ public:
 	using base::AddEdge;
 
 	virtual VertexId AddVertex() {
-		return base::AddVertex(VertexData());
+		return AddVertex(VertexData());
 	}
 
 	virtual EdgeId AddEdge(VertexId from, VertexId to, const Sequence &nucls) {
-		return base::AddEdge(from, to, EdgeData(nucls));
+		return AddEdge(from, to, EdgeData(nucls));
 	}
 
 	std::string str(EdgeId edge) const {

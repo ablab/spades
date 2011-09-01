@@ -11,6 +11,7 @@
 #include <cmath>
 #include <stack>
 #include "omni_utils.hpp"
+#include "sequence/sequence_tools.hpp"
 
 namespace omnigraph {
 
@@ -163,15 +164,12 @@ private:
 	}
 
 	void ProcessBulge(EdgeId edge, const vector<EdgeId>& path) {
-		size_t path_length = PathLength(path);
+		UniformPositionAligner aligner(PathLength(path), g_.length(edge));
 		double prefix_length = 0.;
 		vector<size_t> bulge_prefix_lengths;
 		for (auto it = path.begin(); it != path.end(); ++it) {
 			prefix_length += g_.length(*it);
-			bulge_prefix_lengths.push_back(
-					std::floor(
-							prefix_length / path_length * g_.length(edge) + 0.5
-									+ 1e-9));
+			bulge_prefix_lengths.push_back(aligner.GetPosition(prefix_length));
 		}
 		EdgeId edge_to_split = edge;
 		size_t prev_length = 0;

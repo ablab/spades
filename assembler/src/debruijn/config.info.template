@@ -2,7 +2,6 @@
 
 input_dir	      ./data/input/E.Coli.K12.MG1655/
 output_dir	      ./data/debruijn/
-previous_run_dir tmp	; tmp or latest 
 dataset 	      QUAKE_FULL
 reference_genome  MG1655-K12.fasta.gz
 
@@ -15,17 +14,10 @@ rectangle_mode	false
 ; set to true to obtain paired info from genome mapping rather than from paired reads
 etalon_info_mode  false
 
-from_saved_graph	0 ; not used(?)
-
-entry_point		begin
-
 start_from begin   ; Full run.
 ;start_from after_filling  ; Run with previous constructed graph.
 ;start_from after_simplify  ; Run with previous constructed and simplified graph.
 ;start_from before_resolve  ; Same as previous but without loading conjugate graph
-
-
-
 
 ; tip clipper:
 

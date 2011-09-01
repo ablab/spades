@@ -14,6 +14,7 @@ struct Globals {
 	static int trim_quality;
 	static bool trim_left_right;
 	static bool use_iterative_reconstruction;
+	static bool reconstruction_in_full_iterations;
 	static double iterative_reconstruction_threshold;
 	static int max_reconstruction_iterations;
 	static bool read_kmers_after_clustering;
