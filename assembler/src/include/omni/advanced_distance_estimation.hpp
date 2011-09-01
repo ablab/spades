@@ -17,6 +17,7 @@ private:
 
 	Graph &graph_;
 	PairedInfoIndex<Graph> &histogram_;
+	IdTrackHandler<Graph> &int_ids_;
 	size_t insert_size_;
 	size_t read_length_;
 	size_t gap_;
@@ -47,22 +48,36 @@ private:
 	const static int MINIMALPEAKPOINTS = 1; //the minimal number of points in cluster to be considered consistent
 
 	vector<pair<size_t, double> > EstimateEdgePairDistances(vector<PairInfo<EdgeId> > data, vector<size_t> forward) {
-		vector<pair<size_t, double> > result;
+vector<pair<size_t, double> > result;
         if (data.size() <= 1) return result;
 		std::vector<interval> clusters = divideData(data);
 		std::vector<int> peaks;
 		size_t cur = 0;
+        std::stringstream ss;
+        for (size_t i = 0; i < forward.size(); i++){
+            ss << forward[i] << " ";
+        }
+        INFO("Possible distances : " << ss.str());
+
 		for (size_t i = 0; i < clusters.size(); i++) {
-			if (clusters[i + 1] - clusters[i] > MINIMALPEAKPOINTS) {
-				size_t begin = clusters[i].first;
-				size_t end = clusters[i].second;
-				while (cur<forward.size() && forward[cur] < rounded_d(data[begin]));
+            size_t begin = clusters[i].first;
+            size_t end = clusters[i].second;
+            if (end - begin > MINIMALPEAKPOINTS) {
+                while ((cur<forward.size()) && (forward[cur] < rounded_d(data[begin])))
 					cur++;
-				PeakFinder peakfinder(data, begin, end);
-//				std::cout << "Processing window : " << x[array[i]] << " " << x[array[i + 1] - 1] << std::endl;
+                if (cur == forward.size()) break;
+                PeakFinder peakfinder(data, begin, end);
+				INFO("Processing window : " << rounded_d(data[begin]) << " " << rounded_d(data[end-1]));
 				peakfinder.FFTSmoothing(CUTOFF);
-				while (cur<forward.size() && forward[cur] <= data[end - 1].d) {
-					if (peakfinder.isPeak(forward[cur])) result.push_back(make_pair(forward[cur], 10000));
+                if ( ( (cur + 1) == forward.size()) || (forward[cur + 1] > rounded_d(data[end - 1]))) {
+                    result.push_back(make_pair(forward[cur], 1));
+                    INFO("Pair made " << forward[cur]);
+                }
+				while (cur<forward.size() && forward[cur] <= rounded_d(data[end - 1])) {
+					if (peakfinder.isPeak(forward[cur])){ 
+                        result.push_back(make_pair(forward[cur], 1));
+                        INFO("Pair made " << forward[cur]);
+                    }
 					cur++;
 				}
 			}
@@ -96,9 +111,9 @@ private:
 	}
 
 public:
-	AdvancedDistanceEstimator(Graph &graph, PairedInfoIndex<Graph> &histogram, size_t insert_size, size_t read_length, size_t delta, size_t linkage_distance,
+	AdvancedDistanceEstimator(Graph &graph, PairedInfoIndex<Graph> &histogram, IdTrackHandler<Graph> &int_ids, size_t insert_size, size_t read_length, size_t delta, size_t linkage_distance,
 			size_t max_distance) :
-			graph_(graph), histogram_(histogram), insert_size_(insert_size), read_length_(read_length), gap_(insert_size - 2 * read_length_), delta_(delta), linkage_distance_(
+			graph_(graph), histogram_(histogram), int_ids_(int_ids), insert_size_(insert_size), read_length_(read_length), gap_(insert_size - 2 * read_length_), delta_(delta), linkage_distance_(
 					linkage_distance), max_distance_(max_distance) {
 	        INFO("Advanced Estimator started");
     }
@@ -111,7 +126,13 @@ public:
 			vector<PairInfo<EdgeId> > data = *iterator;
 			EdgeId first = data[0].first;
 			EdgeId second = data[0].second;
-			vector<size_t> forward = GetGraphDistances(first, second);
+		
+            int firstNumber =  int_ids_.ReturnIntId(first); 
+            int secondNumber =  int_ids_.ReturnIntId(second); 
+
+            INFO("Estimating edges number : " << firstNumber << " " << secondNumber); 
+
+            vector<size_t> forward = GetGraphDistances(first, second);
 			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(data, forward);
 			vector<PairInfo<EdgeId> > clustered = ClusterResult(first, second, estimated);
 			AddToResult(result, clustered);

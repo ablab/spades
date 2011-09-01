@@ -70,7 +70,7 @@ namespace config_common
 	template <class Config>
 	struct config
 	{
-	//	template<typename ...Args>
+	//	template<typenamea...Args>
 	//	static void create_instance(std::string const& filename, Args&&... args)
 	//	{
 	//		boost::property_tree::ptree pt;

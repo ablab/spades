@@ -50,6 +50,7 @@ private:
 			if (ind == data_size - 1)
 				f[i][0] = max;
 			else {
+                assert(x_[ind + 1] - x_[ind] > 0);
 				f[i][0] = ((i + min - x_[ind]) * y_[ind + 1] + y_[ind] * (x_[ind + 1] - i - min)) / (1.0f * (x_[ind + 1] - x_[ind]));
 			}
 			f[i][1] = 0;
@@ -112,7 +113,7 @@ private:
 		min = x_[0];
 		max = x_[data_size - 1];
 		data_length = max - min + 1;
-		std::cout << data_size << " " << data_length << std::endl;
+//		std::cout << data_size << " " << data_length << std::endl;
 		//fast Fourier transform
 		out = (fftw_complex*) (((fftw_malloc(sizeof(fftw_complex) * data_length))));
 		in = (fftw_complex*) (((fftw_malloc(sizeof(fftw_complex) * data_length))));
@@ -165,7 +166,7 @@ private:
 //            if (RightDerivative(index_max + 1)>-DerivativeThreshold || LeftDerivative(index_max - 1)<DerivativeThreshold) 
 //            continue;
 //            std::cout<< RightDerivative(index_max + 1) << " HUISHUIS "<< LeftDerivative(index_max - 1) << std::endl;
-            if  (abs(index_max - peak) < data_length>>2) return true;
+            if  (abs(index_max - peak) < data_length>>1) return true;
 		}
 		return false;
     

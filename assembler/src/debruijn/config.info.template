@@ -11,6 +11,9 @@ paired_mode true
 ; rectangle_mode (1) or not (0)
 rectangle_mode	false
 
+; use advanced distance estimation or not
+advanced_estimator_mode true;
+
 ; set to true to obtain paired info from genome mapping rather than from paired reads
 etalon_info_mode  false
 
@@ -54,6 +57,15 @@ de
 	delta			      10
 	linkage_distance	10
 	max_distance		75
+}
+
+; advanced distance estimator:
+
+ade
+{
+	mode			    1
+    cutoff	            3
+	minpeakpoints       1
 }
 
 ;repeat_resolving 

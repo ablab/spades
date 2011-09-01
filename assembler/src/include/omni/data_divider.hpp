@@ -22,7 +22,6 @@
 namespace omnigraph {
 
 typedef std::pair<int, int> interval;
-typedef std::vector<coord> mydata;
 
 //	double LeftDerivative(int index, std::vector<int> x, std::vector<int> y) {
 //		return outf[dist - min + 1][0] - outf[dist - min][0];
@@ -59,7 +58,6 @@ static bool isCluster(int index, std::vector<PairInfo<EdgeId> > data) {
 //
 //}
 
-
 static std::vector<interval> divideData(std::vector<PairInfo<EdgeId> > data) {
 	data_size = data.size();
 
@@ -74,20 +72,22 @@ static std::vector<interval> divideData(std::vector<PairInfo<EdgeId> > data) {
 
 //	std::cout << "Data length is " << data_length << std::endl;
 
-	int data_positive_size = data_size >> 1;
-	int data_positive_length = max - data[data_positive_size].d + 1;
+//	int data_positive_size = data_size >> 1;
+//	int data_positive_length = max - data[data_positive_size].d + 1;
 
-	Thr = (4 * data_positive_length / data_positive_size);
+//	Thr = (4 * data_positive_length / data_positive_size);
+
+    Thr = 20;
 
 //	std::cout << "Threshold is " << Thr << std::endl << std::endl;
     int begin = 0;
     for (int i = 0; i < data_size - 1; i++) {
 		if (isCluster(i, data)){ 
-            answer.push_back(new std::pair(clear(begin, i + 1)));
+            answer.push_back(std::make_pair(begin, i + 1));
             begin = i + 1;
         }
     }
-    answer.push_back(new std::pair(clear(begin, data_size)));
+    answer.push_back(std::make_pair(begin, data_size));
 
 	return answer;
 }

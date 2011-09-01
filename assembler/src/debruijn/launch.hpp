@@ -32,6 +32,7 @@
 #include "graphio.hpp"
 #include "rectangleRepeatResolver.hpp"
 #include "omni/distance_estimation.hpp"
+#include "omni/advanced_distance_estimation.hpp"
 #include "omni/loop_resolver.hpp"
 #include "check_tools.hpp"
 #include <cstdlib>
@@ -323,26 +324,69 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 					output_folder + "graph_components/graph", g,
 					cfg::get().ds.IS, int_ids, paired_index, EdgePos);
 
-			DistanceEstimator<Graph> estimator(g, paired_index,
-					cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
-					cfg::get().de.linkage_distance, cfg::get().de.max_distance);
-			estimator.Estimate(clustered_index);
+			if (cfg::get().advanced_estimator_mode) {
+ 
+                AdvancedDistanceEstimator<Graph> estimator(g, paired_index, int_ids, 
+                        cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
+                        cfg::get().de.linkage_distance, cfg::get().de.max_distance);
+                estimator.Estimate(clustered_index);
 
-			omnigraph::WriteSimple(g, *TotLab, output_folder + "2_simplified_graph.dot",
-					"no_repeat_graph");
+                printGraph(g, int_ids, graph_save_path + "a_repeats_resolved_before",
+                        paired_index, EdgePos/*, &read_count_weight_paired_index*/);
 
-			//todo think if we need this save
-			printGraph(g, int_ids, graph_save_path + "repeats_resolved_before",
-					paired_index, EdgePos/*, &read_count_weight_paired_index*/);
+                printGraph(g, int_ids, work_tmp_dir + "a_simplified_graph",
+                        paired_index, EdgePos, &etalon_paired_index,
+                        &clustered_index/*, &read_count_weight_paired_index*/);
+                
+                printGraph(g, int_ids, output_folder + "a_simplified_graph",
+                        clustered_index, EdgePos, &etalon_paired_index,
+                        &clustered_index/*, &read_count_weight_paired_index*/);
 
-			printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph",
-					paired_index, EdgePos, &etalon_paired_index,
-					&clustered_index/*, &read_count_weight_paired_index*/);
-			printGraph(g, int_ids, output_folder + "2_simplified_graph",
-					clustered_index, EdgePos, &etalon_paired_index,
-					&clustered_index/*, &read_count_weight_paired_index*/);
-		}
+                
+//                DistanceEstimator<Graph> estimator(g, paired_index,
+//                        cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
+//                        cfg::get().de.linkage_distance, cfg::get().de.max_distance);
+//                estimator.Estimate(clustered_index);
+//
+//                omnigraph::WriteSimple(g, *TotLab, output_folder + "2_simplified_graph.dot",
+//                        "no_repeat_graph");
+//
+//                //todo think if we need this save
+//                printGraph(g, int_ids, graph_save_path + "repeats_resolved_before",
+//                        paired_index, EdgePos/*, &read_count_weight_paired_index*/);
+//
+//                printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph",
+//                        paired_index, EdgePos, &etalon_paired_index,
+//                        &clustered_index/*, &read_count_weight_paired_index*/);
+//                
+//                printGraph(g, int_ids, output_folder + "2_simplified_graph",
+//                        clustered_index, EdgePos, &etalon_paired_index,
+//                        &clustered_index/*, &read_count_weight_paired_index*/);
+		    } else{
+
+                DistanceEstimator<Graph> estimator(g, paired_index,
+                        cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
+                        cfg::get().de.linkage_distance, cfg::get().de.max_distance);
+                estimator.Estimate(clustered_index);
+
+                omnigraph::WriteSimple(g, *TotLab, output_folder + "2_simplified_graph.dot",
+                        "no_repeat_graph");
+
+                //todo think if we need this save
+                printGraph(g, int_ids, graph_save_path + "repeats_resolved_before",
+                        paired_index, EdgePos/*, &read_count_weight_paired_index*/);
+
+                printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph",
+                        paired_index, EdgePos, &etalon_paired_index,
+                        &clustered_index/*, &read_count_weight_paired_index*/);
+                
+                printGraph(g, int_ids, output_folder + "2_simplified_graph",
+                        clustered_index, EdgePos, &etalon_paired_index,
+                        &clustered_index/*, &read_count_weight_paired_index*/);
+            }
+        }
 	}
+    
 
 	if (cfg::get().paired_mode) {
 		if (graph_loaded) {
