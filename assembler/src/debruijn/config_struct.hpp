@@ -100,6 +100,10 @@ namespace debruijn
 			int max_length_div_K;
 		};
 
+		struct repeat_resolver
+		{
+			int mode;
+		};
 		struct distance_estimator
 		{
 			size_t delta;
@@ -121,7 +125,7 @@ namespace debruijn
 		std::string output_dir;
 		std::string output_dir_suffix;
 
-		std::string previous_run_dir;
+//		std::string previous_run_dir;
 		std::string dataset_name;
 		std::string reference_genome;
 		std::string start_from;
@@ -131,7 +135,7 @@ namespace debruijn
 		bool paired_mode;
 		bool rectangle_mode;
 		bool etalon_info_mode;
-		bool from_saved_graph;
+//		bool from_saved_graph;
 
 		std::string uncorrected_reads;
 
@@ -139,7 +143,7 @@ namespace debruijn
 		bulge_remover br;
 		erroneous_connections_remover ec;
 		distance_estimator de;
-
+		repeat_resolver rr;
 		dataset ds;
 	};
 
@@ -197,6 +201,12 @@ namespace debruijn
 		load(pt, "max_distance", de.max_distance);
 	}
 
+	inline void load(boost::property_tree::ptree const& pt, debruijn_config::repeat_resolver& rr)
+	{
+		using config_common::load;
+		load(pt, "mode", rr.mode);
+	}
+
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::dataset& ds)
 	{
 		using config_common::load;
@@ -216,7 +226,7 @@ namespace debruijn
 //		load(pt, "entry_point", cfg.entry_point);
 		load(pt, "input_dir", cfg.input_dir);
 	//	= cfg::get().output_dir
-		load(pt, "previous_run_dir", cfg.previous_run_dir);
+//		load(pt, "previous_run_dir", cfg.previous_run_dir);
 		load(pt, "dataset", cfg.dataset_name);
 
 		std::string base_output_dir;
@@ -232,12 +242,13 @@ namespace debruijn
 		load(pt, "paired_mode", cfg.paired_mode);
 		load(pt, "rectangle_mode", cfg.rectangle_mode);
 		load(pt, "etalon_info_mode", cfg.etalon_info_mode);
-		load(pt, "from_saved_graph", cfg.from_saved_graph);
+//		load(pt, "from_saved_graph", cfg.from_saved_graph);
 
 		load(pt, "tc", cfg.tc); // tip clipper:
 		load(pt, "br", cfg.br); // bulge remover:
 		load(pt, "ec", cfg.ec); // erroneous connections remover:
 		load(pt, "de", cfg.de); // distance estimator:
+		load(pt, "rr", cfg.rr); // repeat resolver:
 		load(pt, "uncorrected_reads", cfg.uncorrected_reads);
 		load(pt, cfg.dataset_name, cfg.ds);
 	}

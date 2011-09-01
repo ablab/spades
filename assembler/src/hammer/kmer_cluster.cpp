@@ -56,9 +56,6 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, i
 	if (blockSize < (uint32_t)Globals::blocksize_quadratic_threshold) {
 		processBlockQuadratic(uf, block);
 	} else {
-		//cout << "  making a sub-subkmersorter for blocksize=" << blockSize << endl;
-		//for (uint32_t i = 0; i < blockSize; ++i) cout << block[i] << " ";
-		//cout << endl;
 		int nthreads_per_subkmer = max( (int)(nthreads_ / (tau_ + 1)), 1);
 		SubKMerSorter subsubsorter( &block, &k_, nthreads_per_subkmer, tau_, cur_subkmer,
 			SubKMerSorter::SorterTypeChequered, SubKMerSorter::SorterTypeStraight );
@@ -66,11 +63,6 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, i
 		for (int sub_i = 0; sub_i < tau_+1; ++sub_i) {
 			vector<hint_t> subblock;
 			while ( subsubsorter.getNextBlock(sub_i, subblock) ) {
-				/*if (subblock.size() > (Globals::blocksize_quadratic_threshold / 2) ) {
-					cout << "    running quadratic on size=" << subblock.size() << endl;
-					for (uint32_t i = 0; i < subblock.size(); ++i) cout << "    " << subblock[i] << " " << k_[subblock[i]].first.str() << endl;
-					cout << endl;
-				}*/
 				processBlockQuadratic(uf, subblock);
 			}
 		}		
@@ -451,7 +443,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 					Globals::pr->push_back(rs);
 
 					PositionKMer pkm(Globals::pr->size()-1, 0);
-					KMerStat kms( 0, KMERSTAT_GOOD, 1 );
+					KMerStat kms( 0, KMERSTAT_GOODITER, 1 );
 					k_.push_back( new KMerCount( pkm, kms ) );
 				}
 				v.insert(v.begin(), k_.size() - 1);
@@ -501,18 +493,26 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 			if (blocksInPlace[n][m].size() == 1) {
 				if ( (1-k_[blocksInPlace[n][m][0]]->second.totalQual) > Globals::good_cluster_threshold) {
 					k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOOD;
+					if ( (1-k_[blocksInPlace[n][m][0]]->second.totalQual) > Globals::iterative_reconstruction_threshold) {
+						k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER;
+					} else {
+						k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER_BAD;
+					}
 					#pragma omp critical
 					{
-					(*ofs) << k_[blocksInPlace[n][m][0]]->first.str() << "\n> good singleton "
-					       << k_[blocksInPlace[n][m][0]]->first.start() 
+					(*ofs) << k_[blocksInPlace[n][m][0]]->first.str() << "\n>" << k_[blocksInPlace[n][m][0]]->first.start()
+					       << " good singleton "
+					       << "  ind=" << blocksInPlace[n][m][0]
 					       << "  cnt=" << k_[blocksInPlace[n][m][0]]->second.count 
 					       << "  tql=" << (1-k_[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
 					}
 				} else {
+					k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_BAD;
 					#pragma omp critical
 					{
-					(*ofs_bad) << k_[blocksInPlace[n][m][0]]->first.str() << "\n> bad singleton " 
-						   << k_[blocksInPlace[n][m][0]]->first.start() 
+					(*ofs_bad) << k_[blocksInPlace[n][m][0]]->first.str() << "\n>" << k_[blocksInPlace[n][m][0]]->first.start()
+						   << " bad singleton "
+					       	   << "  ind=" << blocksInPlace[n][m][0]
 						   << "  cnt=" << k_[blocksInPlace[n][m][0]]->second.count 
 						   << "  tql=" << (1-k_[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
 					}
@@ -527,23 +527,40 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 
 				if ( cluster_quality > Globals::good_cluster_threshold ) {
 					k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOOD;
+					if ( cluster_quality > Globals::iterative_reconstruction_threshold) {
+						k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER;
+					} else {
+						k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER_BAD;
+					}
 					#pragma omp critical
 					{
-					(*ofs) << k_[blocksInPlace[n][m][0]]->first.str() << "\n> center  " << k_[blocksInPlace[n][m][0]]->first.start() << "  tql=" << cluster_quality << "\n";
+					(*ofs) << k_[blocksInPlace[n][m][0]]->first.str() << "\n>" << k_[blocksInPlace[n][m][0]]->first.start()
+					       << " center clust=" << cluster_quality
+					       << " ind=" << blocksInPlace[n][m][0]
+					       << " cnt=" << k_[blocksInPlace[n][m][0]]->second.count
+					       << " tql=" << (1-k_[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
 					}
 				} else {
 					k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_BAD;
 					#pragma omp critical
 					{
-					(*ofs_bad) << k_[blocksInPlace[n][m][0]]->first.str() << "\n> center of bad cluster " << k_[blocksInPlace[n][m][0]]->first.start() << "  tql=" << cluster_quality << "\n";
-					}					
+					(*ofs_bad) << k_[blocksInPlace[n][m][0]]->first.str() << "\n>" << k_[blocksInPlace[n][m][0]]->first.start()
+						   << " center of bad cluster clust=" << cluster_quality
+					  	   << " ind=" << blocksInPlace[n][m][0]
+						   << " cnt=" << k_[blocksInPlace[n][m][0]]->second.count
+						   << " tql=" << k_[blocksInPlace[n][m][0]]->second.totalQual << "\n";
+					}
 				}
 				for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
 					k_[blocksInPlace[n][m][j]]->second.changeto = blocksInPlace[n][m][0];
 					#pragma omp critical
 					{
-					(*ofs_bad) << k_[blocksInPlace[n][m][j]]->first.str() << "\n> part of cluster " << k_[blocksInPlace[n][m][0]]->first.start() << "\n";
-					}					
+					(*ofs_bad) << k_[blocksInPlace[n][m][j]]->first.str() << "\n>" << k_[blocksInPlace[n][m][j]]->first.start() 
+						   << " part of cluster " << k_[blocksInPlace[n][m][0]]->first.start() << " clust=" << cluster_quality
+					           << " ind=" << blocksInPlace[n][m][j]
+						   << " cnt=" << k_[blocksInPlace[n][m][j]]->second.count
+						   << " tql=" << k_[blocksInPlace[n][m][j]]->second.totalQual << "\n";
+					}
 				}
 			}
 		}

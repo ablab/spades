@@ -11,22 +11,22 @@ namespace debruijn_graph {
 
 class DeBruijnMaster;
 
-class VertexData {
+class DeBruijnVertexData {
 	friend class NewDeBruijnGraph;
 	friend class DeBruinMaster;
 public:
-	VertexData() {
+	DeBruijnVertexData() {
 
 	}
 };
 
-class EdgeData {
+class DeBruijnEdgeData {
 	friend class NewDeBruijnGraph;
 	friend class DeBruinMaster;
 public:
 	const Sequence nucls_;
 
-	EdgeData(const Sequence &nucls) :
+	DeBruijnEdgeData(const Sequence &nucls) :
 		nucls_(nucls) {
 	}
 
@@ -40,6 +40,9 @@ private:
 	const size_t k_;
 
 public:
+	typedef DeBruijnVertexData VertexData;
+	typedef DeBruijnEdgeData EdgeData;
+
 	DeBruijnMaster(size_t k) :
 		k_(k) {
 	}
@@ -91,12 +94,10 @@ public:
 
 };
 
-class ConjugateDeBruijnGraph: public AbstractConjugateGraph<VertexData,
-		EdgeData, DeBruijnMaster> {
-	typedef AbstractConjugateGraph<VertexData, EdgeData, DeBruijnMaster> super;
+class ConjugateDeBruijnGraph: public AbstractConjugateGraph<DeBruijnMaster> {
+	typedef AbstractConjugateGraph<DeBruijnMaster> base;
 public:
-//	typedef typename super::SmartVertexIt SmartVertexIt;
-//	typedef typename super::SmartEdgeIt SmartEdgeIt;
+
 private:
 	const size_t k_;
 	CoverageIndex<ConjugateDeBruijnGraph>* coverage_index_;
@@ -104,7 +105,7 @@ private:
 
 public:
 	ConjugateDeBruijnGraph(size_t k) :
-		super(DeBruijnMaster(k)), k_(k) {
+		base(DeBruijnMaster(k)), k_(k) {
 		coverage_index_ = new CoverageIndex<ConjugateDeBruijnGraph> (*this);
 	}
 
@@ -153,15 +154,15 @@ public:
 		return data(edge).nucls();
 	}
 
-	using super::AddVertex;
-	using super::AddEdge;
+	using base::AddVertex;
+	using base::AddEdge;
 
 	VertexId AddVertex() {
-		return super::AddVertex(VertexData());
+		return AddVertex(VertexData());
 	}
 
 	EdgeId AddEdge(VertexId from, VertexId to, const Sequence &nucls) {
-		return super::AddEdge(from, to, EdgeData(nucls));
+		return AddEdge(from, to, EdgeData(nucls));
 	}
 
 	size_t k() const {
@@ -214,17 +215,15 @@ public:
 
 };
 
-class NonconjugateDeBruijnGraph: public AbstractNonconjugateGraph<VertexData,
-		EdgeData, DeBruijnMaster> {
+class NonconjugateDeBruijnGraph: public AbstractNonconjugateGraph<DeBruijnMaster> {
 private:
-	typedef omnigraph::AbstractNonconjugateGraph<VertexData, EdgeData, DeBruijnMaster>
-			super;
+	typedef omnigraph::AbstractNonconjugateGraph<DeBruijnMaster> base;
 	const size_t k_;
 	CoverageIndex<NonconjugateDeBruijnGraph>* coverage_index_;DECL_LOGGER("NonconjugateDeBruijnGraph")
 
 public:
 	NonconjugateDeBruijnGraph(size_t k) :
-		super(DeBruijnMaster(k)), k_(k) {
+		base(DeBruijnMaster(k)), k_(k) {
 		coverage_index_ = new CoverageIndex<NonconjugateDeBruijnGraph> (*this);
 	}
 
@@ -286,15 +285,15 @@ public:
 //		coverage_index_->IncCoverage(edge);
 //	}
 
-	using super::AddVertex;
-	using super::AddEdge;
+	using base::AddVertex;
+	using base::AddEdge;
 
 	virtual VertexId AddVertex() {
-		return super::AddVertex(VertexData());
+		return AddVertex(VertexData());
 	}
 
 	virtual EdgeId AddEdge(VertexId from, VertexId to, const Sequence &nucls) {
-		return super::AddEdge(from, to, EdgeData(nucls));
+		return AddEdge(from, to, EdgeData(nucls));
 	}
 
 	std::string str(EdgeId edge) const {

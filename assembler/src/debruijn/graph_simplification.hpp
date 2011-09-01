@@ -83,6 +83,8 @@ void RemoveLowCoverageEdges(Graph &g) {
 	INFO("Removing low coverage edges");
 	double max_coverage = cfg::get().ec.max_coverage;
 	int max_length_div_K = cfg::get().ec.max_length_div_K;
+//	omnigraph::IterativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(
+//			max_length_div_K * g.k(), max_coverage);
 	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
 			max_length_div_K * g.k(), max_coverage);
 	erroneous_edge_remover.RemoveEdges(g);

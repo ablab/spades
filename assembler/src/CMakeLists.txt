@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
-
+ 
 # allow more human readable "if then else" constructs
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE) 
 
@@ -23,7 +23,7 @@ endif()
 
 add_definitions(-g3)
 add_definitions(-std=c++0x)
-add_definitions(-Wall -Wno-long-long -Wno-deprecated)
+add_definitions(-Wall -Wconversion -Wno-long-long -Wno-deprecated)
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   message("Making Debug Configuration...")

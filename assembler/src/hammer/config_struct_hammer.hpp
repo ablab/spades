@@ -32,6 +32,10 @@ struct hammer_config
 	std::string reads_left;
 	std::string reads_right;
 
+	bool read_kmers_after_clustering;
+	bool write_kmers_after_clustering;
+	std::string kmers_after_clustering;
+
 	double error_rate;
 	int blocksize_quadratic_threshold;
 	double good_cluster_threshold;
@@ -39,6 +43,10 @@ struct hammer_config
 	int trim_quality;
 
 	bool trim_left_right;
+	bool use_iterative_reconstruction;
+	bool reconstruction_in_full_iterations;
+	double iterative_reconstruction_threshold;
+	int max_reconstruction_iterations;
 };
 
 
@@ -68,6 +76,10 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 		load(pt, "kmers", cfg.kmers);
 	}
 
+	load(pt, "read_kmers_after_clustering", cfg.read_kmers_after_clustering);
+	load(pt, "write_kmers_after_clustering", cfg.write_kmers_after_clustering);
+	load(pt, "kmers_after_clustering", cfg.kmers_after_clustering);
+
 	load(pt, "error_rate", cfg.error_rate);
 	load(pt, "blocksize_quadratic_threshold", cfg.blocksize_quadratic_threshold);
 	load(pt, "good_cluster_threshold", cfg.good_cluster_threshold);
@@ -75,6 +87,10 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 	load(pt, "trim_quality", cfg.trim_quality);
 
 	load(pt, "trim_left_right", cfg.trim_left_right);
+	load(pt, "use_iterative_reconstruction", cfg.use_iterative_reconstruction);
+	load(pt, "reconstruction_in_full_iterations", cfg.reconstruction_in_full_iterations);
+	load(pt, "iterative_reconstruction_threshold", cfg.iterative_reconstruction_threshold);
+	load(pt, "max_reconstruction_iterations", cfg.max_reconstruction_iterations);
 }
 
 typedef config_common::config<hammer_config> cfg;

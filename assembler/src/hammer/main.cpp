@@ -46,7 +46,6 @@ hint_t Globals::blob_size = 0;
 hint_t Globals::blob_max_size = 0;
 char * Globals::blob = NULL;
 char * Globals::blobquality = NULL;
-//uint64_t * Globals::blobhash = NULL;
 KMerNoHashMap Globals::hm = KMerNoHashMap();
 std::vector<uint32_t> * Globals::subKMerPositions = NULL;
 
@@ -58,6 +57,14 @@ int Globals::qvoffset = 64;
 bool Globals::paired_reads = false;
 int Globals::trim_quality = -1;
 bool Globals::trim_left_right = false;
+bool Globals::use_iterative_reconstruction = false;
+bool Globals::reconstruction_in_full_iterations = false;
+double Globals::iterative_reconstruction_threshold = 0.995;
+int Globals::max_reconstruction_iterations = 1;
+
+bool Globals::read_kmers_after_clustering = false;
+bool Globals::write_kmers_after_clustering = false;
+string Globals::kmers_after_clustering = "";
 
 struct KMerStatCount {
 	PositionKMer km;
@@ -116,6 +123,13 @@ int main(int argc, char * argv[]) {
 	Globals::blob_margin = cfg::get().blob_margin;
 	Globals::trim_quality = cfg::get().trim_quality;
 	Globals::trim_left_right = cfg::get().trim_left_right;
+	Globals::use_iterative_reconstruction = cfg::get().use_iterative_reconstruction;
+	Globals::iterative_reconstruction_threshold = cfg::get().iterative_reconstruction_threshold;
+	Globals::max_reconstruction_iterations = cfg::get().max_reconstruction_iterations;
+	Globals::reconstruction_in_full_iterations = cfg::get().reconstruction_in_full_iterations;
+	Globals::read_kmers_after_clustering = cfg::get().read_kmers_after_clustering;
+	Globals::write_kmers_after_clustering = cfg::get().write_kmers_after_clustering;
+	Globals::kmers_after_clustering = cfg::get().kmers_after_clustering;
 
 	Globals::paired_reads = cfg::get().paired_reads;
 	string readsFilenameLeft, readsFilenameRight;
@@ -154,10 +168,7 @@ int main(int argc, char * argv[]) {
 
 	Globals::blob = new char[ Globals::blob_max_size ];
 	Globals::blobquality = new char[ Globals::blob_max_size ];
-	//Globals::blobhash = new uint64_t[ Globals::blob_max_size ];
 	TIMEDLN("Max blob size as allocated is " << Globals::blob_max_size);
-
-	//std::fill( Globals::blobhash, Globals::blobhash + Globals::blob_max_size, -1 );
 
 	Globals::revNo = Globals::rv->size();
 	for (hint_t i = 0; i < Globals::revNo; ++i) {
@@ -192,9 +203,6 @@ int main(int argc, char * argv[]) {
 		Globals::blob_size = curpos;
 		TIMEDLN("Blob done, filled up PositionReads. Real size " << Globals::blob_size << ". " << Globals::pr->size() << " reads.");
 
-		//KMerNo::precomputeHashes();
-		//TIMEDLN("Hashes precomputed.");
-
 		vector<KMerCount*> kmers;
 		Globals::hm.clear();
 		#ifdef BOOST_UNORDERED_MAP
@@ -214,26 +222,54 @@ int main(int argc, char * argv[]) {
 			TIMEDLN("Kmers read from " << kmersFilename.c_str());
 		}
 
-		if ( writeBlobAndKmers && iter_count == 0 ) { // doesn't make sense to overwrite the first blob
+		if ( !Globals::read_kmers_after_clustering && writeBlobAndKmers && iter_count == 0 ) { // doesn't make sense to overwrite the first blob
 			Globals::writeBlob( getFilename(dirprefix, blobFilename.c_str() ).data() );
 			Globals::writeKMerCounts( getFilename(dirprefix, kmersFilename.c_str() ).data(), kmers );
 			TIMEDLN("Blob and kmers written.");
 			if ( exitAfterWritingBlobAndKMers ) break;
 		}
 
-		SubKMerSorter * skmsorter = new SubKMerSorter( kmers.size(), &kmers, nthreads, tau, SubKMerSorter::SorterTypeStraight );
-		skmsorter->runSort();
-		TIMEDLN("Auxiliary subvectors sorted. Starting split kmer processing in " << min(nthreads, tau+1) << " effective threads.");
+		if ( Globals::read_kmers_after_clustering ) {
+			TIMEDLN("Reading clustering results");
+			Globals::readKMerHashMap( Globals::kmers_after_clustering.c_str(), &Globals::hm, &kmers );
+			TIMEDLN("Clustering results read.");
+		} else {
+			TIMEDLN("Starting subvectors sort.");
+			SubKMerSorter * skmsorter = new SubKMerSorter( kmers.size(), &kmers, nthreads, tau, SubKMerSorter::SorterTypeStraight );
+			skmsorter->runSort();
+			TIMEDLN("Auxiliary subvectors sorted. Starting split kmer processing in " << min(nthreads, tau+1) << " effective threads.");
 
-		ofstream ofkmers( getFilename(dirprefix, iter_count, "kmers.solid").data() );
-		ofstream ofkmers_bad( getFilename(dirprefix, iter_count, "kmers.bad").data() );
-		KMerClustering kmc(kmers, nthreads, tau);
-		// prepare the maps
-		kmc.process(dirprefix, skmsorter, &ofkmers, &ofkmers_bad);
-		ofkmers.close();
-		ofkmers_bad.close();
-		delete skmsorter;
-		TIMEDLN("Finished clustering. Starting reconstruction.");
+			KMerClustering kmc(kmers, nthreads, tau);
+			// prepare the maps
+			ofstream ofkmersnum( getFilename(dirprefix, iter_count, "kmers.num").data() );
+			ofkmersnum << kmers.size() << endl;
+			ofkmersnum.close();
+			ofstream ofkmers( getFilename(dirprefix, iter_count, "kmers.solid").data() );
+			ofstream ofkmers_bad( getFilename(dirprefix, iter_count, "kmers.bad").data() );
+			kmc.process(dirprefix, skmsorter, &ofkmers, &ofkmers_bad);
+			ofkmers.close();
+			ofkmers_bad.close();
+			delete skmsorter;
+			TIMEDLN("Finished clustering.");
+		}
+
+		if ( Globals::write_kmers_after_clustering && iter_count == 0 ) {
+			TIMEDLN("Writing k-mers hash after clustering.");
+			Globals::writeKMerHashMap( getFilename(dirprefix, iter_count, "kmers.hash").data(), Globals::hm);
+			TIMEDLN("K-mers hash written.");
+		}
+
+		if ( Globals::use_iterative_reconstruction ) {
+			for ( int iter_no = 0; iter_no < Globals::max_reconstruction_iterations; ++iter_no ) {
+				//ofstream ofiter( getFilename(dirprefix, iter_count, "reconstruct", iter_no).data() );
+				//size_t res = IterativeReconstructionStep(nthreads, &ofiter);
+				//ofiter.close();
+				size_t res = IterativeReconstructionStep(nthreads, kmers);
+				TIMEDLN("Solid k-mers iteration " << iter_no << " produced " << res << " new k-mers.");
+				if ( res < 10 ) break;
+			}
+			TIMEDLN("Solid k-mers finalized.");
+		}
 
 		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
 		vector<ofstream *> outfv; vector<hint_t> changedReads; vector<hint_t> changedNucleotides;

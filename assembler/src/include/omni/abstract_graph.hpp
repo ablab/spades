@@ -13,12 +13,18 @@
 
 namespace omnigraph {
 
-template<typename VertexIdT, typename VertexData, typename EdgeIdT, typename EdgeData, class DataMaster, typename VertexIterator/* = typename set<VertexIdT>::iterator*/>
-class AbstractGraph: public ObservableGraph<VertexIdT, EdgeIdT, VertexIterator> {
-	typedef ObservableGraph<VertexIdT, EdgeIdT, VertexIterator> base;
+template<typename VertexIdT, typename EdgeIdT, class DataMasterT, typename VertexIt>
+class AbstractGraph: public ObservableGraph<VertexIdT, EdgeIdT, VertexIt> {
+	typedef ObservableGraph<VertexIdT, EdgeIdT, VertexIt> base;
 	//todo maybe rename template params themselves???
+public:
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;
+	typedef DataMasterT DataMaster;
+	typedef typename DataMaster::VertexData VertexData;
+	typedef typename DataMaster::EdgeData EdgeData;
+	typedef VertexIt VertexIterator;
+private:
 	//todo think of necessity to pull these typedefs through hierarchy
 	DataMaster master_;
 
@@ -217,7 +223,7 @@ public:
 
 	void CompressVertex(VertexId v) {
 		//assert(CanCompressVertex(v));
-		if (CanCompressVertex(v)) {
+		if (CanCompressVertex(v) && GetUniqueOutgoingEdge(v) != GetUniqueIncomingEdge(v)) {
 			vector<EdgeId> toMerge;
 			toMerge.push_back(GetUniqueIncomingEdge(v));
 			toMerge.push_back(GetUniqueOutgoingEdge(v));
@@ -227,6 +233,10 @@ public:
 
 	EdgeId MergePath(const vector<EdgeId>& path) {
 		assert(!path.empty());
+		for(size_t i = 0; i < path.size(); i++)
+			for(size_t j = i + 1; j < path.size(); j++) {
+				assert(path[i] != path[j]);
+			}
 		vector<EdgeId> correctedPath = CorrectMergePath(path);
 		SequenceBuilder sb;
 		VertexId v1 = EdgeStart(correctedPath[0]);
@@ -270,20 +280,18 @@ public:
 		FireDeleteEdge(edge1);
 		FireDeleteEdge(edge2);
 		FireAddEdge(newEdge);
+		VertexId start = EdgeStart(edge1);
+		VertexId end = EdgeEnd(edge1);
 		HiddenDeleteEdge(edge1);
 		HiddenDeleteEdge(edge2);
-		//DEBUG
-//		VertexId start = EdgeStart(edge1);
-//		VertexId end = EdgeEnd(edge1);
-//		if (IsDeadStart(start) && IsDeadEnd(start)) {
-//			WARN("Start vertex without edges after glue");
-//			DeleteVertex(start);
-//		}
-//		if (IsDeadStart(end) && IsDeadEnd(end)) {
-//			WARN("End vertex without edges after glue");
-//			DeleteVertex(end);
-//		}
-		//DEBUG
+		if (IsDeadStart(start) && IsDeadEnd(start)) {
+			WARN("Start vertex without edges after glue");
+			DeleteVertex(start);
+		}
+		if (IsDeadStart(end) && IsDeadEnd(end)) {
+			WARN("End vertex without edges after glue");
+			DeleteVertex(end);
+		}
 		TRACE("End glue");
 
 		/*/////////////////

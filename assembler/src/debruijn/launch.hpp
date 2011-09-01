@@ -212,7 +212,7 @@ void CreateAndFillGraph(Graph& g, EdgeIndex<k + 1, Graph>& index
 		FillEtalonPairedIndex<k>(g, etalon_paired_index, index, genome);
 
 	} else {
-		UnitedStream united_stream(&stream);
+		UnitedStream united_stream(stream);
 		ConstructGraphWithCoverage<k>(g, index,
 				united_stream);
 	}
@@ -235,8 +235,7 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 	INFO("Start from " << cfg::get().start_from);
 	INFO("Paired mode: " << (cfg::get().paired_mode ? "Yes" : "No"));
 	INFO(
-			"Etalon paired info mode: " << (cfg::get().etalon_info_mode ? "Yes" : "No"))INFO(
-			"From file:entry_point " << (cfg::get().from_saved_graph ? "Yes" : "No"))
+			"Etalon paired info mode: " << (cfg::get().etalon_info_mode ? "Yes" : "No"))
 	mkdir(work_tmp_dir.c_str(),
 			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 

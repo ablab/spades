@@ -41,6 +41,9 @@ public:
 
 class OmniDataMaster {
 public:
+	typedef OmniVertex VertexData;
+	typedef OmniEdge EdgeData;
+
 	OmniDataMaster() {}
 
 	bool isSelfConjugate(const OmniEdge &data) const {
@@ -84,11 +87,11 @@ public:
 	}
 };
 
-class Omnigraph : public AbstractConjugateGraph<OmniVertex, OmniEdge, OmniDataMaster> {
+class Omnigraph : public AbstractConjugateGraph<OmniDataMaster> {
 	CoverageIndex<Omnigraph>* coverage_index_;
 
 public:
-	Omnigraph() : AbstractConjugateGraph<OmniVertex, OmniEdge, OmniDataMaster>(OmniDataMaster()) {
+	Omnigraph() : AbstractConjugateGraph<OmniDataMaster>(OmniDataMaster()) {
 		coverage_index_ = new CoverageIndex<Omnigraph>(*this);
 	}
 

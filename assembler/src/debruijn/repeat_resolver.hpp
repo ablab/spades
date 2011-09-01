@@ -422,21 +422,57 @@ private:
 template<class Graph>
 vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	int k = 0;
-	for (size_t i = 0; i < edge_info_colors.size(); i++)
+	vector<EdgeId> edgeIds[2];
+	//TODO: fix labels
+	edgeIds[0] = new_graph.OutgoingEdges(v);
+	edgeIds[1] = new_graph.IncomingEdges(v);
+	map<EdgeId, int> edgeCounts;
+	for(int i = 0; i < 2; i++) {
+		for(size_t j = 0; j < edgeIds[i].size(); j++)
+			edgeCounts.insert(make_pair(edgeIds[i][j], 0));
+	}
+	for (size_t i = 0; i < edge_info_colors.size(); i++) {
 		if (edge_info_colors[i] >= k)
+			k = edge_info_colors[i];
+		EdgeId le = edge_infos[i].lp.first;
+		edgeCounts[le] ++;
+	}
+	for(auto iter = edgeCounts.begin(); iter != edgeCounts.end(); ++iter) {
+		if (iter->second == 0) {
+			INFO("Adding no-paired edge: " << new_IDs.ReturnIntId(iter->first)<< " potential bug here.");
+			PairInfos tmp = paired_di_data.GetEdgeInfos(iter->first);
+			for(size_t j = 0; j < tmp.size(); j ++ ){
+				EdgeId right_id = tmp[j].second;
+//				EdgeId left_id = tmp[j].first;
+				double d = tmp[j].d;
+							//				int w = tmp[j].weight;
+							//				if (w < 10) continue;
+			//	if (v == new_graph.S)
+				int dif_d = 0;
+				int dir = 0;
+				// it doesn't matter now
+				EdgeInfo ei(tmp[j], dir, right_id,
+					int(d - dif_d));
+				edge_infos.push_back(ei);
+				edge_info_colors.push_back(k);
+			}
 			k++;
+		}
+	}
+	k++;
 	DEBUG("splitting to "<< k <<" parts");
 	vector<VertexId> res;
 	res.resize(k);
 	if (k == 1) {
 		DEBUG("NOTHING TO SPLIT:( ");
-		res[0] = v;
-		return res;
+//		for (size_t j = 0; j < edge_infos.size(); j++){
+//			if (edge_info_colors[j] == 1)
+//				paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, edge_infos[j].lp.first);
+//		}
+//		res[0] = v;
+//		return res;
 	}
-	vector<EdgeId> edgeIds[2];
-	//TODO: fix labels
-	edgeIds[0] = new_graph.OutgoingEdges(v);
-	edgeIds[1] = new_graph.IncomingEdges(v);
+
 	vector<unordered_map<EdgeId, EdgeId> > new_edges(k);
 	vector<vector<EdgeId> > edges_for_split(k);
 
@@ -491,7 +527,10 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 					paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, old_to_new_edgeId[edge_infos[j].lp.first]);
 			}
 			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
-				if (new_graph.coverage(it->second) < cfg::get().ec.max_coverage) new_graph.DeleteEdge(it->second);
+				if (new_graph.coverage(it->second) < cfg::get().ec.max_coverage) {
+				    paired_di_data.DeleteEdgeInfo(it->second);
+				    new_graph.DeleteEdge(it->second);
+				}
 			}
 		}
 	}
@@ -518,7 +557,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	INFO("resolve_repeats started");
 	sum_count = 0;
 	global_cheating_edges.clear();
-	for (cheating_mode = 0; cheating_mode < 3; cheating_mode++) {
+	for (cheating_mode = 0; cheating_mode < cfg::get().rr.mode; cheating_mode++) {
 		INFO(" cheating_mode = " << cheating_mode);
 		bool changed = true;
 		set<VertexId> vertices;
@@ -554,10 +593,12 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 					tcount = CheatingResolveVertex(*v_iter);
 				DEBUG("Vertex "<< *v_iter<< " resolved to "<< tcount);
 				sum_count += tcount;
-				GraphCnt++;
-				omnigraph::WriteSimple(
+				if (tcount > 1) {
+					GraphCnt++;
+					omnigraph::WriteSimple(
 						new_graph, IdTrackLabelerAfter, output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
 								+ ".dot", "no_repeat_graph");
+				}
 			}
 		}
 	}INFO("total vert" << sum_count);
@@ -716,10 +757,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 
 				}
 			}
-
-
-
-
+			paired_di_data.DeleteEdgeInfo(edgeIds[dir][i]);
 		}
 	}
 

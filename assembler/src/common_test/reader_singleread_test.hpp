@@ -7,12 +7,12 @@
 using namespace io;
 
 void TestReaderSingleReadNoFile() {
-  Reader<SingleRead> reader("./no-file");
+  Reader<SingleRead> reader("./no-file.fa");
   ASSERT(!reader.is_open());
 }
 
 void TestReaderSingleReadReading() {
-  Reader<SingleRead> reader("./test/data/s_test.fastq.gz");
+  Reader<SingleRead> reader("./src/common_test/data/s_test.fastq.gz");
   ASSERT(reader.is_open());
   SingleRead read;
   reader >> read;
@@ -31,7 +31,7 @@ void TestReaderSingleReadReading() {
 }
 
 void TestReaderSingleReadFull() {
-  Reader<SingleRead> reader("./test/data/s_test.fastq.gz");
+  Reader<SingleRead> reader("./src/common_test/data/s_test.fastq.gz");
   ASSERT(reader.is_open());
   reader.reset();
   ASSERT(reader.is_open());

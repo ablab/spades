@@ -34,14 +34,14 @@ public:
 	/**
 	 * Create action handler with given name. With this name one can find out what tipe of handler is it.
 	 */
-	ActionHandler(const string &name) :
+	ActionHandler(const string& name) :
 			handler_name_(name) {
 	}
 
 	/**
 	 * Method returns name of this handler
 	 */
-	const string &name() const {
+	const string& name() const {
 		return handler_name_;
 	}
 
@@ -356,7 +356,7 @@ public:
 		assert(edge1 != edge2);
 		assert(edge2 != rcNewEdge);
 		assert(graph_.EdgeStart(edge1) != graph_.EdgeEnd(edge1));
-		assert(graph_.EdgeStart(edge2) != graph_.EdgeEnd(edge2));
+//		assert(graph_.EdgeStart(edge2) != graph_.EdgeEnd(edge2));
 		handler->HandleGlue(new_edge, edge1, edge2);
 		if (edge1 != rcOldEdge) {
 			TRACE(

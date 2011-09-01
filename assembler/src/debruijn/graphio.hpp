@@ -209,7 +209,7 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
 		vector<PairInfo<typename Graph::EdgeId> > pair_infos = *iter;
 		for (size_t i = 0; i < pair_infos.size(); i++) {
 			if (filter_ == NULL) {
-				fprintf(file, "%d %d %.0f %.0f %.0f .\n",
+				fprintf(file, "%d %d %.2f %.2f %.2f .\n",
 						IdHandler_.ReturnIntId(pair_infos[i].first),
 						IdHandler_.ReturnIntId(pair_infos[i].second),
 						pair_infos[i].d, pair_infos[i].weight,
@@ -217,7 +217,7 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
 			} else {
 				if (filter_->EdgeIsPresent(pair_infos[i].first)
 						&& filter_->EdgeIsPresent(pair_infos[i].second)) {
-					fprintf(file, "%d %d %.0f %.0f %.0f .\n",
+					fprintf(file, "%d %d %.2f %.2f %.2f .\n",
 							IdHandler_.ReturnIntId(pair_infos[i].first),
 							IdHandler_.ReturnIntId(pair_infos[i].second),
 							pair_infos[i].d, pair_infos[i].weight,
@@ -297,6 +297,7 @@ void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name,
 		bool with_Sequence) {
 	int read_count;
 	FILE* file = fopen((file_name + ".grp").c_str(), "r");
+	if (file == NULL) WARN("File "<<(file_name + ".grp")<<" not found");
 	assert(file != NULL);
 	FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
 	assert(sequence_file != NULL);
