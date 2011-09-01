@@ -16,14 +16,14 @@ private:
 	typedef std::pair<int, int> interval;
 	IdTrackHandler<Graph> &int_ids_;
 
+
 	const static int CUTOFF = 3;
 	const static size_t MINIMALPEAKPOINTS = 1; //the minimal number of points in cluster to be considered consistent
 
 	vector<pair<size_t, double> > EstimateEdgePairDistances(vector<PairInfo<EdgeId> > data, vector<size_t> forward) {
-vector<pair<size_t, double> > result;
+        vector<pair<size_t, double> > result;
         if (data.size() <= 1) return result;
 		std::vector<interval> clusters = divideData(data);
-		std::vector<int> peaks;
 		size_t cur = 0;
         std::stringstream ss;
         for (size_t i = 0; i < forward.size(); i++){
@@ -37,13 +37,16 @@ vector<pair<size_t, double> > result;
             if (end - begin > MINIMALPEAKPOINTS) {
                 while ((cur<forward.size()) && (forward[cur] < rounded_d(data[begin])))
 					cur++;
-                if (cur == forward.size()) break;
+                if (cur == forward.size()) {
+                    DEBUG("BREAKING");
+                    break;
+                }
                 PeakFinder peakfinder(data, begin, end);
-				INFO("Processing window : " << rounded_d(data[begin]) << " " << rounded_d(data[end-1]));
+				DEBUG("Processing window : " << rounded_d(data[begin]) << " " << rounded_d(data[end-1]));
 				peakfinder.FFTSmoothing(CUTOFF);
                 if ( ( (cur + 1) == forward.size()) || (forward[cur + 1] > rounded_d(data[end - 1]))) {
                     result.push_back(make_pair(forward[cur], 1));
-                    INFO("Pair made " << forward[cur]);
+                    INFO("Pair made " << forward[cur++]);
                 }
 				while (cur<forward.size() && forward[cur] <= rounded_d(data[end - 1])) {
 					if (peakfinder.isPeak(forward[cur])){ 
@@ -75,7 +78,6 @@ public:
             int secondNumber =  int_ids_.ReturnIntId(second); 
 
             INFO("Estimating edges number : " << firstNumber << " " << secondNumber); 
-
             vector<size_t> forward = this->GetGraphDistances(first, second);
 			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(data, forward);
 			vector<PairInfo<EdgeId> > clustered = this->ClusterResult(first, second, estimated);

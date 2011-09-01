@@ -326,10 +326,10 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 
 			if (cfg::get().advanced_estimator_mode) {
  
-                AdvancedDistanceEstimator<Graph> estimator(g, paired_index, int_ids, 
+                AdvancedDistanceEstimator<Graph> estimator_(g, paired_index, int_ids, 
                         cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
                         cfg::get().de.linkage_distance, cfg::get().de.max_distance);
-                estimator.Estimate(clustered_index);
+                estimator_.Estimate(clustered_index);
 
                 printGraph(g, int_ids, graph_save_path + "a_repeats_resolved_before",
                         paired_index, EdgePos/*, &read_count_weight_paired_index*/);
