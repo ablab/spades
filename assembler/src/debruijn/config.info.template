@@ -168,6 +168,33 @@ EAS600_QUAKE_FULL
 	LEN		4639675	; total size
 }
 
+SC_NEW_1
+{
+	first	SC/2908_tau1_00_left.gz
+	second	SC/2908_tau1_00_right.gz
+	RL		100	; read length
+	IS		270 	; insert size
+	LEN		4639675	; total size
+}
+
+SC_NEW_2
+{
+	first	SC/2908_tau1_02_left.gz
+	second	SC/2908_tau1_02_right.gz
+	RL		100	; read length
+	IS		270 	; insert size
+	LEN		4639675	; total size
+}
+
+SC_NEW_3
+{
+	first	SC/3008_tau1_095_02_left.gz
+	second	SC/3008_tau1_095_02_right.gz
+	RL		100	; read length
+	IS		270 	; insert size
+	LEN		4639675	; total size
+}
+
 SC_FULL
 {
 	first	SC_OLD/left.fastq.gz

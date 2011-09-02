@@ -151,6 +151,7 @@ void SimplifyGraph(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		CountStats<k> (g, index, genome);
 
 	}
+	INFO("Simplified graph stats");
 	CountStats<k> (g, index, genome);
 
 	INFO("Graph simplification finished");
