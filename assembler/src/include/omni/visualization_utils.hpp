@@ -394,7 +394,8 @@ public:
 			auto visualizer = factory_.GetVisualizerInstance(*gp);
 			auto component = splitter_.NextComponent();
 			visualizer->open();
-			visualizer->Visualize(component);
+			if(component.size() < 10000)
+				visualizer->Visualize(component);
 			visualizer->close();
 			os.close();
 			delete visualizer;
