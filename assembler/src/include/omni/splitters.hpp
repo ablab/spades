@@ -135,10 +135,11 @@ public:
 		return result;
 	}
 
-	pair<VertexId, size_t> GetFarthest(VertexId v, set<VertexId> &component) {
+	pair<VertexId, size_t> GetFarthest(VertexId v, const set<VertexId> &component) {
 		SubgraphDijkstra<Graph> sd(graph_, component);
 		sd.run(v);
-		pair<VertexId, size_t> result = make_pair(null, 0);
+		pair<VertexId, size_t> result;
+		result.second = 0;
 		auto bounds = sd.GetDistances();
 		for (auto it = bounds.first; it != bounds.second; ++it) {
 			if(it->second > result.second) {
