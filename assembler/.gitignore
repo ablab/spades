@@ -10,4 +10,6 @@ src/debruijn/config.inp
 src/file
 *.launch
 *~
-*tags
+src/tags
+tags
+*.ebwt
