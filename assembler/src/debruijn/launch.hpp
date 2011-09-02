@@ -32,7 +32,6 @@
 #include "graphio.hpp"
 #include "rectangleRepeatResolver.hpp"
 #include "omni/distance_estimation.hpp"
-#include "omni/advanced_distance_estimation.hpp"
 #include "omni/loop_resolver.hpp"
 #include "check_tools.hpp"
 #include <cstdlib>
@@ -324,24 +323,7 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 					output_folder + "graph_components/graph", g,
 					cfg::get().ds.IS, int_ids, paired_index, EdgePos);
 
-			AdvancedDistanceEstimator<Graph> _estimator(g, paired_index,
-					cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
-					cfg::get().de.linkage_distance, cfg::get().de.max_distance);
-			_estimator.Estimate(clustered_index);
-
-			printGraph(g, int_ids, graph_save_path + "advanced_repeats_resolved_before",
-					paired_index, EdgePos/*, &read_count_weight_paired_index*/);
-
-			printGraph(g, int_ids, work_tmp_dir + "advanced_2_simplified_graph",
-					paired_index, EdgePos, &etalon_paired_index,
-					&clustered_index/*, &read_count_weight_paired_index*/);
-			
-            printGraph(g, int_ids, output_folder + "advanced_2_simplified_graph",
-					clustered_index, EdgePos, &etalon_paired_index,
-					&clustered_index/*, &read_count_weight_paired_index*/);
-
-            
-            DistanceEstimator<Graph> estimator(g, paired_index,
+			DistanceEstimator<Graph> estimator(g, paired_index,
 					cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
 					cfg::get().de.linkage_distance, cfg::get().de.max_distance);
 			estimator.Estimate(clustered_index);
@@ -356,13 +338,11 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 			printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph",
 					paired_index, EdgePos, &etalon_paired_index,
 					&clustered_index/*, &read_count_weight_paired_index*/);
-			
-            printGraph(g, int_ids, output_folder + "2_simplified_graph",
+			printGraph(g, int_ids, output_folder + "2_simplified_graph",
 					clustered_index, EdgePos, &etalon_paired_index,
 					&clustered_index/*, &read_count_weight_paired_index*/);
 		}
 	}
-    
 
 	if (cfg::get().paired_mode) {
 		if (graph_loaded) {
