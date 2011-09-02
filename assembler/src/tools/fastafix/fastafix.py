@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+#
+# This script removes whitespaces from headers in FASTA-file 
+#
+
 import sys
 import re
 
