@@ -396,6 +396,8 @@ public:
 			visualizer->open();
 			if(component.size() < 10000)
 				visualizer->Visualize(component);
+			else
+				WARN("Too large component " << component.size());
 			visualizer->close();
 			os.close();
 			delete visualizer;
@@ -449,7 +451,8 @@ void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
 		Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId> ()) {
 	PathColorer<Graph> path_colorer(g, path1, path2);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
+//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
+	PrimitiveSplitter<Graph> inner_splitter(g, split_edge_length);
 	ComponentSizeFilter<Graph> checker(g, split_edge_length);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
