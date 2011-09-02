@@ -11,6 +11,7 @@
 namespace omnigraph {
 
 #include "omni_tools.hpp"
+#include "omni_utils.hpp"
 #include "abstract_conjugate_graph.hpp"
 #include "abstract_nonconjugate_graph.hpp"
 #include "xmath.h"
@@ -38,28 +39,6 @@ public:
 		cleaner.Clean();
 	}
 
-};
-
-template<class Graph>
-struct CoverageComparator {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	const Graph& graph_;
-public:
-	CoverageComparator(const Graph &graph) :
-		graph_(graph) {
-	}
-
-	/**
-	 * Standard comparator function as used in collections.
-	 */
-	bool operator()(EdgeId edge1, EdgeId edge2) const {
-		if (math::eq(graph_.coverage(edge1), graph_.coverage(edge2))) {
-			return edge1 < edge2;
-		}
-		return math::ls(graph_.coverage(edge1), graph_.coverage(edge2));
-	}
 };
 
 

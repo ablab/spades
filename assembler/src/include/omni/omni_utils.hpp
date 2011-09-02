@@ -828,6 +828,28 @@ public:
 
 };
 
+template<class Graph>
+struct CoverageComparator {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	const Graph& graph_;
+public:
+	CoverageComparator(const Graph &graph) :
+		graph_(graph) {
+	}
+
+	/**
+	 * Standard comparator function as used in collections.
+	 */
+	bool operator()(EdgeId edge1, EdgeId edge2) const {
+		if (math::eq(graph_.coverage(edge1), graph_.coverage(edge2))) {
+			return edge1 < edge2;
+		}
+		return math::ls(graph_.coverage(edge1), graph_.coverage(edge2));
+	}
+};
+
 inline size_t PairInfoPathLengthUpperBound(size_t k, size_t insert_size, double delta) {
 	double answer = 0. +  insert_size + delta - k - 2;
 	assert(math::gr(answer, 0.));

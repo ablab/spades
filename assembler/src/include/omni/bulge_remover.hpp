@@ -230,7 +230,8 @@ void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
 
 	TRACE("Bulge remove process started");
 
-	for (auto iterator = g_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator) {
+	CoverageComparator<Graph> comparator(g_);
+	for (auto iterator = g_.SmartEdgeBegin(comparator); !iterator.IsEnd(); ++iterator) {
 		EdgeId edge = *iterator;
 		TRACE(
 				"Considering edge of length " << g_.length(edge)
