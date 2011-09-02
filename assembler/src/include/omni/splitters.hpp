@@ -126,11 +126,23 @@ public:
 	size_t FindDiameter(const set<VertexId> &component) {
 		size_t result = 0;
 		SubgraphDijkstra<Graph> sd(graph_, component);
-		for (auto it = component.begin(); it != component.end(); ++it) {
-			sd.run(*it);
-			auto bounds = sd.GetDistances();
-			for (auto it = bounds.first; it != bounds.second; ++it) {
-				result = std::max(result, it->second);
+		VertexId current = *(component.begin());
+		for(size_t i = 0; i < 4; i++) {
+			pair<VertexId, size_t> next = GetFarthest(current, component);
+			current = next.first;
+			result = next.second;
+		}
+		return result;
+	}
+
+	pair<VertexId, size_t> GetFarthest(VertexId v, set<VertexId> &component) {
+		SubgraphDijkstra<Graph> sd(graph_, component);
+		sd.run(v);
+		pair<VertexId, size_t> result = make_pair(null, 0);
+		auto bounds = sd.GetDistances();
+		for (auto it = bounds.first; it != bounds.second; ++it) {
+			if(it->second > result.second) {
+				result = *it;
 			}
 		}
 		return result;
