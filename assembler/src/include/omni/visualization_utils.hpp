@@ -196,8 +196,8 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph &graph_;
-	Path<EdgeId> path1_;
-	Path<EdgeId> path2_;
+	const Path<EdgeId> &path1_;
+	const Path<EdgeId> &path2_;
 
 	void SetColor(map<EdgeId, string> &color, EdgeId edge, string col) {
 		auto it = color.find(edge);
@@ -231,7 +231,7 @@ private:
 	}
 
 public:
-	PathColorer(const Graph &graph, Path<EdgeId> path1, Path<EdgeId> path2) :
+	PathColorer(const Graph &graph, const Path<EdgeId> &path1, const Path<EdgeId> &path2) :
 		graph_(graph), path1_(path1), path2_(path2) {
 	}
 
@@ -276,7 +276,7 @@ void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 template<class Graph>
 void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 		const string& file_name, const string& graph_name,
-		Path<typename Graph::EdgeId> path1, Path<typename Graph::EdgeId> path2) {
+		const Path<typename Graph::EdgeId> &path1, const Path<typename Graph::EdgeId> &path2) {
 	fstream filestr;
 	string simple_file_name(file_name);
 	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
@@ -296,8 +296,8 @@ void WritePaired(
 		const GraphLabeler<Graph>& labeler,
 		const string& file_name,
 		const string& graph_name,
-		Path<typename Graph::EdgeId> path1/* = Path<typename Graph::EdgeId> ()*/,
-		Path<typename Graph::EdgeId> path2/* = Path<typename Graph::EdgeId> ()*/) {
+		const Path<typename Graph::EdgeId> &path1/* = Path<typename Graph::EdgeId> ()*/,
+		const Path<typename Graph::EdgeId> &path2/* = Path<typename Graph::EdgeId> ()*/) {
 	fstream filestr;
 	filestr.open(file_name.c_str(), fstream::out);
 	gvis::DotPairedGraphPrinter<Graph> gp(g, graph_name, filestr);
@@ -414,8 +414,8 @@ string InsertComponentName(string file_name, string component) {
 template<class Graph>
 void WriteErrors(const Graph& g, const GraphLabeler<Graph>& labeler,
 		const string& file_name, const string& graph_name,
-		Path<typename Graph::EdgeId> path1 = Path<typename Graph::EdgeId> (),
-		Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId> ()) {
+		const Path<typename Graph::EdgeId> &path1/* = Path<typename Graph::EdgeId> ()*/,
+		const Path<typename Graph::EdgeId> &path2/* = Path<typename Graph::EdgeId> ()*/) {
 	PathColorer<Graph> path_colorer(g, path1, path2);
 	set<typename Graph::EdgeId> black = path_colorer.BlackEdges();
 	ErrorComponentSplitter<Graph> splitter(g, black);
@@ -463,8 +463,8 @@ void WriteToFile(
 		const GraphLabeler<Graph>& labeler,
 		const string& file_name,
 		const string& graph_name,
-		Path<typename Graph::EdgeId> path1/* = Path<typename Graph::EdgeId> ()*/,
-		Path<typename Graph::EdgeId> path2/* = Path<typename Graph::EdgeId> ()*/) {
+		const Path<typename Graph::EdgeId> &path1/* = Path<typename Graph::EdgeId> ()*/,
+		const Path<typename Graph::EdgeId> &path2/* = Path<typename Graph::EdgeId> ()*/) {
 	if (g.size() < 10000) {
 		WritePaired(g, labeler, file_name, graph_name, path1, path2);
 		WriteSimple(g, labeler, file_name, graph_name, path1, path2);
