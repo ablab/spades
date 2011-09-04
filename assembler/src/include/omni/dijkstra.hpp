@@ -137,7 +137,7 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
-	Graph& graph_;
+	const Graph& graph_;
 	Dijkstra<Graph> dijkstra_;
 	VertexId prev_;
 	bool ready_;
@@ -230,7 +230,7 @@ private:
 	distance_t bound_;
 
 public:
-	BoundedDijkstra(Graph &graph, distance_t bound) :
+	BoundedDijkstra(const Graph &graph, distance_t bound) :
 		super(graph), bound_(bound) {
 	}
 
@@ -248,5 +248,6 @@ public:
 	}
 
 };
+
 }
 #endif /* DIJKSTRA_HPP_ */

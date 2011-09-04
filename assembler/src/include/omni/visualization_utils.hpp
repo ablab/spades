@@ -452,7 +452,7 @@ void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
 	PathColorer<Graph> path_colorer(g, path1, path2);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
 //	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
-	PrimitiveSplitter<Graph> inner_splitter(g, split_edge_length);
+	ReliableSplitter<Graph> inner_splitter(g, 60, split_edge_length);
 	ComponentSizeFilter<Graph> checker(g, split_edge_length);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
