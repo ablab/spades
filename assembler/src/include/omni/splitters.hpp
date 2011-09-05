@@ -396,6 +396,8 @@ public:
 	}
 
 	virtual bool Check(vector<VertexId> &vertices) {
+		if(vertices.size() <= 4)
+			return false;
 		set<VertexId> component(vertices.begin(), vertices.end());
 		for (auto iterator = vertices.begin(); iterator != vertices.end();
 				++iterator) {
