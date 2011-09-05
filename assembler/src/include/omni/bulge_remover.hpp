@@ -227,12 +227,10 @@ const string PrintPath(Graph& g, const vector<typename Graph::EdgeId>& edges) {
 template<class Graph, class BulgeConditionF>
 void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
 	//todo add right comparator
-	typedef SmartEdgeIterator<Graph> EdgeIter;
-
 	TRACE("Bulge remove process started");
 
-	CoverageComparator<Graph> comparator(g_);
-	for (auto iterator = g_.SmartEdgeBegin(comparator); !iterator.IsEnd(); ++iterator) {
+//	CoverageComparator<Graph> comparator(g_);
+	for (auto iterator = g_.SmartEdgeBegin(/*comparator*/); !iterator.IsEnd(); ++iterator) {
 		EdgeId edge = *iterator;
 		TRACE(
 				"Considering edge of length " << g_.length(edge)
