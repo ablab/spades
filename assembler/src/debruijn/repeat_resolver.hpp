@@ -473,27 +473,28 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		return res;
 	}
 
+
 	for(auto iter = edgeCounts.begin(); iter != edgeCounts.end(); ++iter) {
 		if (iter->second > 1) {
 			paired_di_data.DeleteEdgeInfo(iter->first);
-		} else {
-			int updated_edge_color = 0;
+		} else 
+		if (iter->second == 1){
+			int updated_edge_color = -1;
 			for (size_t j = 0; j < edge_infos.size(); j++){
-				if (edge_infos[j].EdgeId == iter->first){
-					if (!updated_edge_color){
+				if (edge_infos[j].lp.first == iter->first){
+					if (updated_edge_color == -1){
 						updated_edge_color = edge_info_colors[j];
 					} else {
 						if (updated_edge_color != edge_info_colors[j]){
 							WARN("Different colors found for one colored edge info");
 						}
 					}
-
 				}
 			}
 
-			if (updated_edge_color){
+			if (updated_edge_color > -1){
 				for (size_t j = 0; j < edge_infos.size(); j++){
-					if (edge_info_colors[j] == updated_edge_color){
+					if ((edge_info_colors[j] == updated_edge_color)&&(edge_infos[j].lp.first == iter->first)){
 						edge_info_colors.erase(edge_info_colors.begin()+j);
 						edge_infos.erase(edge_infos.begin()+j);
 						j--;
@@ -501,7 +502,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 				}
 				PairInfos tmp = paired_di_data.GetEdgeInfos(iter->first);
 				for(size_t info_j = 0; info_j < tmp.size(); info_j ++ ){
-					EdgeInfo ei(tmp[info_j], 0, tmp[info_j].first,	0); //check
+					EdgeInfo ei(tmp[info_j], 0, tmp[info_j].second, 0); //check
 					edge_infos.push_back(ei);
 					edge_info_colors.push_back(updated_edge_color);
 				}
@@ -509,7 +510,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 			}
 		}
 	}
-
+	
 	vector<unordered_map<EdgeId, EdgeId> > new_edges(k);
 	vector<vector<EdgeId> > edges_for_split(k);
 
