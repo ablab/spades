@@ -49,10 +49,10 @@ public:
 	}
 
 	size_t GetPosition(size_t upper_position) {
-		if (lower_length == 1)
+		if (lower_length_ == 1)
 			return 0;
-		return (2 * upper_position * lower_length_ + upper_length) / (2
-				* upper_length);
+		return (2 * upper_position * lower_length_ + upper_length_) / (2
+				* upper_length_);
 	}
 };
 
