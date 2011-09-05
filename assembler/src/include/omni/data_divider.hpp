@@ -58,15 +58,6 @@ static bool isCluster(int index, std::vector<PairInfo<EdgeId> > data) {
 //
 //}
 
-static std::vector<interval> divideData(std::vector<PairInfo<EdgeId> > data) {
-	data_size = data.size();
-
-	std::vector<interval> answer;
-
-//	answer.push_back(0);
-	min = rounded_d(data.front());
-	max = rounded_d(data.back());
-	data_length = max - min + 1;
 
 //	std::cout << "Data size is " << data_size << std::endl;
 

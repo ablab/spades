@@ -17,7 +17,7 @@ public:
 
 template<class Graph>
 class DistanceEstimator: AbstractDistanceEstimator<Graph> {
-private:
+protected:
 	typedef typename Graph::EdgeId EdgeId;
 	Graph &graph_;
 	PairedInfoIndex<Graph> &histogram_;

@@ -50,7 +50,6 @@ private:
 			if (ind == data_size - 1)
 				f[i][0] = max;
 			else {
-                assert(x_[ind + 1] - x_[ind] > 0);
 				f[i][0] = ((i + min - x_[ind]) * y_[ind + 1] + y_[ind] * (x_[ind + 1] - i - min)) / (1.0f * (x_[ind + 1] - x_[ind]));
 			}
 			f[i][1] = 0;
