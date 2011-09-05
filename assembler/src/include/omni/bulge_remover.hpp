@@ -165,7 +165,8 @@ private:
 	}
 
 	void ProcessBulge(EdgeId edge, const vector<EdgeId>& path) {
-		UniformPositionAligner aligner(PathLength(path) + 1, g_.length(edge) + 1);
+//		UniformPositionAligner aligner(PathLength(path) + 1, g_.length(edge) + 1);
+		EnsureEndsPositionAligner aligner(PathLength(path), g_.length(edge));
 		double prefix_length = 0.;
 		vector<size_t> bulge_prefix_lengths;
 		for (auto it = path.begin(); it != path.end(); ++it) {

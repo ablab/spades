@@ -39,4 +39,21 @@ public:
 	}
 };
 
+class EnsureEndsPositionAligner {
+private:
+	size_t upper_length_;
+	size_t lower_length_;
+public:
+	EnsureEndsPositionAligner(size_t upper_length, size_t lower_length) :
+		upper_length_(upper_length), lower_length_(lower_length) {
+	}
+
+	size_t GetPosition(size_t upper_position) {
+		if (lower_length == 1)
+			return 0;
+		return (2 * upper_position * lower_length_ + upper_length) / (2
+				* upper_length);
+	}
+};
+
 #endif /* SEQUENCE_TOOLS_HPP_ */
