@@ -301,7 +301,9 @@ public:
 	virtual ~AbstractConjugateGraph() {
 		TRACE("~AbstractConjugateGraph")
 		for (auto it = this->SmartVertexBegin(); !it.IsEnd(); ++it) {
+			TRACE("Deleting vertex " << *it);
 			ForceDeleteVertex(*it);
+			TRACE("Vertex " << *it << " deleted");
 		}
 		TRACE("~AbstractConjugateGraph ok")
 	}
