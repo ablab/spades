@@ -32,7 +32,7 @@ void limit_memory(size_t limit){
 
 int main() {
 
-    size_t GB = 2 << 30;
+    size_t GB = 1 << 30;
     limit_memory(384 * GB);
 
     cfg::create_instance(debruijn::cfg_filename);
