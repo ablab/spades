@@ -11,6 +11,7 @@
 #include "config_struct.hpp"
 #include "new_debruijn.hpp"
 #include "debruijn_stats.hpp"
+#include "omni/omni_utils.hpp"
 #include "omni/tip_clipper.hpp"
 #include "omni/bulge_remover.hpp"
 #include "omni/erroneous_connection_remover.hpp"
@@ -21,11 +22,11 @@ template<class Graph>
 void ClipTips(Graph &g) {
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
-	omnigraph::TipComparator<Graph> comparator(g);
+	omnigraph::LengthComparator<Graph> comparator(g);
 	size_t max_tip_length = cfg::get().tc.max_tip_length_div_K * g.k();
 	size_t max_coverage = cfg::get().tc.max_coverage;
 	double max_relative_coverage = cfg::get().tc.max_relative_coverage;
-	omnigraph::TipClipper<Graph, TipComparator<Graph>> tc(g, comparator, max_tip_length,
+	omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(g, comparator, max_tip_length,
 			max_coverage, max_relative_coverage);
 	tc.ClipTips();
 	INFO("Clipping tips finished");
@@ -34,11 +35,11 @@ void ClipTips(Graph &g) {
 void ClipTipsForResolver(NCGraph &g) {
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
-	omnigraph::TipComparator<NCGraph> comparator(g);
+	omnigraph::LengthComparator<NCGraph> comparator(g);
 //	size_t max_tip_length = CONFIG.read<size_t> ("tc_max_tip_length");
 	size_t max_coverage = cfg::get().tc.max_coverage;
 	double max_relative_coverage = cfg::get().tc.max_relative_coverage;
-	omnigraph::TipClipper<NCGraph, TipComparator<NCGraph>> tc(g, comparator, 400,
+	omnigraph::TipClipper<NCGraph, LengthComparator<NCGraph>> tc(g, comparator, 400,
                       max_coverage, max_relative_coverage * 1.2);
 
 	tc.ClipTips();
@@ -86,10 +87,10 @@ void RemoveLowCoverageEdges(Graph &g, size_t iteration_count, size_t i) {
 	double max_coverage = cfg::get().ec.max_coverage;
 	int max_length_div_K = cfg::get().ec.max_length_div_K;
 	omnigraph::IterativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(
-			max_length_div_K * g.k(), max_coverage / iteration_count * (i + 1));
+			g, max_length_div_K * g.k(), max_coverage / iteration_count * (i + 1));
 //	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
 //			max_length_div_K * g.k(), max_coverage);
-	erroneous_edge_remover.RemoveEdges(g);
+	erroneous_edge_remover.RemoveEdges();
 	INFO("Low coverage edges removed");
 }
 
@@ -99,9 +100,9 @@ void RemoveLowCoverageEdgesForResolver(Graph &g) {
 	INFO("Removing low coverage edges");
 	double max_coverage = cfg::get().ec.max_coverage;
 	//	int max_length_div_K = CONFIG.read<int> ("ec_max_length_div_K");
-	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(10000000 * g.k(),
+	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(g, 10000000 * g.k(),
 			max_coverage * 4);
-	erroneous_edge_remover.RemoveEdges(g);
+	erroneous_edge_remover.RemoveEdges();
 	INFO("Low coverage edges removed");
 }
 
