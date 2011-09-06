@@ -10,7 +10,7 @@ sys.path.append('../quality/libs')
 import fastaparser
 
 if len(sys.argv) < 2:
-	print 'Usage', sys.argv[0], 'FASTA'
+	print 'Usage', sys.argv[0], 'in.fasta > out.fasta'
 	exit(1)
 
 fastafilename = sys.argv[1]
@@ -21,7 +21,4 @@ for name, seq in fasta:
 	if (seq not in fasta_res) and (fastaparser.rev_comp(seq) not in fasta_res):
 		fasta_res[seq] = name
 
-fastaparser.write_fasta((name, seq) for seq, name in fasta_res.iteritems())
-
-		
-
+fastaparser.write_fasta((name, seq) for seq, name in fasta_res.iteritems())		
