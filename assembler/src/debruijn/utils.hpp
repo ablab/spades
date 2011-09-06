@@ -831,6 +831,84 @@ public:
 
 		return res;
 	}
+};
+
+template<class Graph>
+class EdgeQuality: public GraphLabeler<Graph> ,
+		public GraphActionHandler<Graph> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	map<EdgeId, size_t> quality_;
+
+public:
+	template<size_t l>
+	void FillQuality(EdgeIndex<l, Graph> &index, const Sequence &genome) {
+		if (genome.size() < l)
+			return;
+		auto cur = genome.start<l> ();
+		cur = cur >> 0;
+		for (size_t i = 0; i + l - 1 < genome.size(); i++) {
+			cur = cur << genome[i];
+			if (index.containsInIndex(cur)) {
+				quality_[index.get(cur).first]++;
+			}
+		}
+	}
+
+	template<size_t l>
+	EdgeQuality(Graph &graph, EdgeIndex<l, Graph> &index,
+			const Sequence &genome) :
+		GraphActionHandler<Graph> (graph, "EdgeQualityLabeler") {
+		FillQuality<l> (index, genome);
+		FillQuality(index, !genome);
+	}
+
+	virtual ~EdgeQuality() {
+	}
+
+	virtual void HandleAdd(EdgeId e) {
+	}
+
+	virtual void HandleDelete(EdgeId e) {
+		quality_.erase(e);
+	}
+
+	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
+		size_t res = 0;
+		for (size_t i = 0; i < old_edges.size(); i++) {
+			res += quality_[old_edges[i]];
+		}
+		quality_[new_edge] += res;
+	}
+
+	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+		quality_[new_edge] += quality_[edge1];
+		quality_[new_edge] += quality_[edge2];
+	}
+
+	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
+			EdgeId new_edge2) {
+		quality_[new_edge1] = quality_[old_edge] * this->g().length(new_edge1)
+				/ (this->g().length(new_edge1) + this->g().length(new_edge2));
+		quality_[new_edge2] = quality_[old_edge] * this->g().length(new_edge2)
+				/ (this->g().length(new_edge1) + this->g().length(new_edge2));
+	}
+
+	virtual std::string label(VertexId vertexId) const {
+		return "";
+	}
+
+	virtual std::string label(EdgeId edgeId) const {
+		stringstream ss;
+		ss << "quality: ";
+		auto q = quality_.find(edgeId);
+		if (q == quality_.end())
+			ss << 0;
+		else
+			ss << 1. * q->second / this->g().length(edgeId);
+		return ss.str();
+	}
 
 };
 
