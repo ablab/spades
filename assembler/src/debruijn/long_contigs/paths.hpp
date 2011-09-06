@@ -168,6 +168,7 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 		return 0;
 	}
 	if (edges.size() == 1) {
+		detector.temp.AddAlternative(edges.back(), 1);
 		return edges.back();
 	}
 
@@ -213,45 +214,68 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 
 //Count edges to be excluded
 size_t EdgesToExcludeForward(Graph& g, BidirectionalPath& path) {
+	static bool maxCycles = lc_cfg::get().ss.max_cycles;
+	static LoopDetector detector;
+	detector.clear();
+
 	VertexId currentVertex = g.EdgeEnd(path.back());
 	size_t toExclude = 0;
 
 	while (g.CheckUniqueIncomingEdge(currentVertex)) {
-		currentVertex = g.EdgeStart(g.GetUniqueIncomingEdge(currentVertex));
+		EdgeId e = g.GetUniqueIncomingEdge(currentVertex);
+		currentVertex = g.EdgeStart(e);
 		++toExclude;
+
+		detector.temp.clear();
+		detector.temp.AddAlternative(e);
+		detector.AddNewEdge(e, toExclude);
+		if (CheckCycle(path, e, detector, maxCycles)) {
+			INFO("Cycled trivial path");
+			return 0;
+		}
 	}
 
-	//INFO("Edges to exclude backward " << toExclude);
 	return toExclude;
 }
 
 //Count edges to be excludeD
 size_t EdgesToExcludeBackward(Graph& g, BidirectionalPath& path) {
+	static bool maxCycles = lc_cfg::get().ss.max_cycles;
+	static LoopDetector detector;
+	detector.clear();
+
 	VertexId currentVertex = g.EdgeStart(path.front());
 	size_t toExclude = 0;
 
 	while (g.CheckUniqueOutgoingEdge(currentVertex)) {
-		currentVertex = g.EdgeEnd(g.GetUniqueOutgoingEdge(currentVertex));
+		EdgeId e = g.GetUniqueOutgoingEdge(currentVertex);
+		currentVertex = g.EdgeEnd(e);
 		++toExclude;
+
+		detector.temp.clear();
+		detector.temp.AddAlternative(e);
+		detector.AddNewEdge(e, toExclude);
+		if (CheckCycle(path, e, detector, maxCycles)) {
+			INFO("Cycled trivial path");
+			return 0;
+		}
 	}
 
 	return toExclude;
 }
 
-EdgeId FindExitFromLoop(BidirectionalPath& path, LoopDetector& detector) {
-	INFO("Finding exit");
-	if (CountLoopExits(path, path.back(), detector) > 1) {
-		INFO("Many exists, will resolve in normal way");
+EdgeId FindExitFromLoop(BidirectionalPath& path, LoopDetector& detector, bool forward) {
+	EdgeId lastEdge = forward ? path.back() : path.front();
+	if (CountLoopExits(path, lastEdge, detector, forward) > 1) {
+		DETAILED_INFO("Many exists, will resolve in normal way");
 		return 0;
 	}
-	return FindFirstFork(path, path.back(), detector);
+	return FindFirstFork(path, lastEdge, detector, forward);
 }
 
 void ImitateFork(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		LoopDetector& detector, PairedInfoIndices& pairedInfo,
 		EdgeId loopEdge, EdgeId loopExit, bool forward) {
-
-	IncreaseLengths(g, lengths, loopEdge, forward);
 
 	size_t edgesToExclude = forward ? EdgesToExcludeForward(g, path) : EdgesToExcludeBackward(g, path);
 
@@ -263,88 +287,204 @@ void ImitateFork(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	detector.AddNewEdge(loopEdge, path.size(), w);
 }
 
-void ReducePathTo(BidirectionalPath& path, size_t newSize, bool forward) {
+void RemoveFromDetector(LoopDetector& detector, EdgeId e, size_t iteration, EdgeId substitution = 0) {
+	auto upper = --detector.data.upper_bound(e);
+	auto lower = detector.data.upper_bound(e);
+
+	for (auto iter = upper; iter != lower; --iter) {
+		if (iter->second.iteration == iteration) {
+			if (substitution == 0) {
+				detector.data.erase(iter);
+			} else {
+				auto newData = std::make_pair(substitution, iter->second);
+				detector.data.erase(iter);
+				detector.data.insert(newData);
+			}
+			return;
+		}
+	}
+
+	if (lower->second.iteration == iteration) {
+		if (substitution == 0) {
+			detector.data.erase(lower);
+		} else {
+			auto newData = std::make_pair(substitution, lower->second);
+			detector.data.erase(lower);
+			detector.data.insert(newData);
+		}
+		return;
+	}
+
+	DETAILED_INFO("Iteration not found in detector!");
+}
+
+void ReducePathTo(BidirectionalPath& path, LoopDetector& detector, size_t newSize, EdgeId loopExit, bool forward) {
 	if (path.size() < newSize) {
 		return;
 	}
 
 	if (forward) {
-		while (path.size() != newSize) {
+		while (path.size() > newSize + 1) {
+			RemoveFromDetector(detector, path.back(), path.size() - 1);
 			path.pop_back();
 		}
+		RemoveFromDetector(detector, path.back(), path.size() - 1, loopExit);
+		path.pop_back();
 	} else {
-		while (path.size() != newSize) {
+		while (path.size() > newSize + 1) {
+			RemoveFromDetector(detector, path.front(), path.size() - 1);
 			path.pop_front();
 		}
+		RemoveFromDetector(detector, path.front(), path.size() - 1, loopExit);
+		path.pop_front();
 	}
 }
 
-//Find best loop path
-void ResolveLoopForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
-		LoopDetector& detector, PairedInfoIndices& pairedInfo,
-		EdgeId loopEdge) {
-
-	INFO("Resolving loop");
-	size_t originalSize = path.size();
+//Find length
+size_t CheckLoop(Graph& g, BidirectionalPath& path, LoopDetector& detector, EdgeId& loopEdge, bool forward) {
 	size_t loopLength = 0;
 	if (loopEdge == 0) {
 		//Loop already found
-		loopEdge = FindExitFromLoop(path, detector);
-
-		if (loopEdge == 0) {
-			INFO("Not found");
-			return;
+		DETAILED_INFO("Loop was already found");
+		if (PathIsOnlyLoop(path, detector, forward)) {
+			DETAILED_INFO("Not enough info");
+			return 0;
 		}
-		loopLength = CountLoopLength(g, path, detector, true);
+
+		loopEdge = FindExitFromLoop(path, detector, forward);
+		if (loopEdge == 0) {
+			DETAILED_INFO("Not found");
+			return 0;
+		}
+		loopLength = CountLoopLength(g, path, detector, forward);
 	} else {
-		loopLength = g.length(loopEdge) + g.length(path.back());
+		DETAILED_INFO("Short loop");
+		if (PathIsOnlyLoop(path, loopEdge, forward)) {
+			DETAILED_INFO("Not enough info");
+			return 0;
+		}
+		loopLength = g.length(loopEdge) + g.length(forward ? path.back() : path.front());
 	}
+	return loopLength;
+}
 
-	if (loopLength > GetMaxInsertSize(pairedInfo)) {
-		return;
-	}
-
-	INFO("Finding forward fork");
-	EdgeId loopExit = GetForwardFork(g, loopEdge);
-	INFO("Calculating max loop count")
-	size_t maxCycles = 2 * GetMaxInsertSize(pairedInfo) / loopLength + 2;
-
-	size_t i = 0;
-	INFO("Imitating loop")
-	do {
-		INFO("Extending trivially")
-		ExtendTrivialForward(g, path, detector, &lengths);
-		detector.print();
-
-		path.push_back(loopEdge);
-		INFO("Imitating fork")
-		ImitateFork(g, path, lengths, detector, pairedInfo, loopEdge, loopExit, true);
-		detector.print();
-
-		++i;
-	} while (i <= maxCycles && LoopBecameStable(loopEdge, detector));
-
-	INFO("Counting proper loop count")
+bool MakeCorrectLoop(BidirectionalPath& path, LoopDetector& detector, EdgeId loopEdge, EdgeId loopExit, size_t originalSize, bool forward) {
 	size_t properSize = GetMaxExitIteration(loopEdge, loopExit, detector);
 	size_t firstToExit = GetFirstExitIteration(loopEdge, loopExit, detector);
 	if (firstToExit == std::numeric_limits<size_t>::max()) {
 		firstToExit = GetFirstExitIteration(loopEdge, loopExit, detector, 1);
 	}
 
+	size_t loopLen = CountLoopEdges(forward ? path.back() : path.front(), detector);
 	if (firstToExit == properSize) {
-		INFO("Resolved fine");
+		DETAILED_INFO("Resolved fine: " << properSize << ", usual resolved: " << firstToExit << ", loop size " << loopLen);
 	} else {
-		INFO("Proper resolved: " << properSize << ", usual resolved: " << firstToExit << ", loop size " << CountLoopEdges(path.back(), detector));
-	}
-	if (firstToExit == 0) {
-		ReducePathTo(path, properSize - 1, true);
-		path.push_back(loopExit);
-	} else {
-		ReducePathTo(path, originalSize, true);
+		INFO("Proper resolved: " << properSize << ", usual resolved: " << firstToExit << ", loop size " << loopLen);
 	}
 
+	if (properSize != 0) {
+		ReducePathTo(path, detector, properSize, loopExit, forward);
+	}
+	else if (firstToExit != std::numeric_limits<size_t>::max()) {
+		ReducePathTo(path, detector, firstToExit, loopExit, forward);
+	}
+	else {
+		INFO("Cannot detect proper cycle exit!");
+		ReducePathTo(path, detector, originalSize, 0, forward);
+		return false;
+	}
+
+	if (forward) {
+		path.push_back(loopExit);
+	} else {
+		path.push_front(loopExit);
+	}
+	return true;
+}
+
+//Find best loop path
+bool ResolveLoopForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
+		LoopDetector& detector, PairedInfoIndices& pairedInfo,
+		EdgeId loopEdge) {
+
+	DETAILED_INFO("Resolving loop forward");
+	size_t originalSize = path.size();
+	size_t loopLength = CheckLoop(g, path, detector, loopEdge, true);
+	if (loopLength == 0) {
+		return true;
+	}
+
+	if (loopLength > GetMaxInsertSize(pairedInfo)) {
+		DETAILED_INFO("Loop is too long");
+		return true;
+	}
+
+	EdgeId loopExit = GetForwardFork(g, loopEdge);
+	if (loopExit == 0) {
+		return true;
+	}
+	size_t maxCycles = 2 * GetMaxInsertSize(pairedInfo) / loopLength + 2;
+
+	size_t i = 0;
+	do {
+		ExtendTrivialForward(g, path, detector, &lengths);
+		ImitateFork(g, path, lengths, detector, pairedInfo, loopEdge, loopExit, true);
+
+		path.push_back(loopEdge);
+		IncreaseLengths(g, lengths, loopEdge, true);
+
+		++i;
+	} while (i <= maxCycles && !LoopBecameStable(loopEdge, detector));
+
+	bool result = MakeCorrectLoop(path, detector, loopEdge, loopExit, originalSize, true);
 	lengths.clear();
 	RecountLengthsForward(g, path, lengths);
+	DETAILED_INFO("Resolved");
+
+	return result;
+}
+
+//Find best loop path
+bool ResolveLoopBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
+		LoopDetector& detector, PairedInfoIndices& pairedInfo,
+		EdgeId loopEdge) {
+
+	DETAILED_INFO("Resolving loop backward");
+	size_t originalSize = path.size();
+	size_t loopLength = CheckLoop(g, path, detector, loopEdge, false);
+	if (loopLength == 0) {
+		return true;
+	}
+
+	if (loopLength > GetMaxInsertSize(pairedInfo)) {
+		DETAILED_INFO("Loop is too long");
+		return true;
+	}
+
+	EdgeId loopExit = GetBackwardFork(g, loopEdge);
+	if (loopExit == 0) {
+		return true;
+	}
+	size_t maxCycles = 2 * GetMaxInsertSize(pairedInfo) / loopLength + 2;
+
+	size_t i = 0;
+	DETAILED_INFO("Imitating loop backward")
+	do {
+		ExtendTrivialBackward(g, path, detector, &lengths);
+		ImitateFork(g, path, lengths, detector, pairedInfo, loopEdge, loopExit, false);
+
+		path.push_front(loopEdge);
+		IncreaseLengths(g, lengths, loopEdge, false);
+
+		++i;
+	} while (i <= maxCycles && !LoopBecameStable(loopEdge, detector));
+
+	bool result = MakeCorrectLoop(path, detector, loopEdge, loopExit, originalSize, false);
+	lengths.clear();
+	RecountLengthsBackward(g, path, lengths);
+	DETAILED_INFO("Resolved");
+
+	return result;
 }
 
 
@@ -358,23 +498,37 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
 	static size_t LOOPS_TO_IVESTIGATE = lc_cfg::get().lr.loop_to_investigate;
 
-	std::vector<EdgeId> edges = g.OutgoingEdges(g.EdgeEnd(path.back()));
+	EdgeId loopEdge = 0;
+	if (lc_cfg::get().lr.investigation) {
+		loopEdge = IsEdgeInShortLoopForward(g, path.back());
+		if (loopEdge != 0) {
+			DETAILED_INFO("Seed already near loop");
+			if (!ResolveLoopForward(g, path, lengths, detector, pairedInfo, loopEdge)) {
+				return false;
+			}
+			loopEdge = 0;
+		}
+	}
 
+	std::vector<EdgeId> edges = g.OutgoingEdges(g.EdgeEnd(path.back()));
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, &w, EdgesToExcludeForward(g, path), true, detector, handler);
 	if (extension == 0) {
 		return false;
 	}
 
-	path.push_back(extension);
 	detector.AddNewEdge(extension, path.size(), w);
 	IncreaseLengths(g, lengths, extension, true);
+	path.push_back(extension);
 
 	DETAILED_INFO("Chosen forward " << extension << " (" << g.length(extension) << ")");
 	DetailedPrintPath(g, path, lengths);
 
-	EdgeId loopEdge = IsEdgeInShortLoopForward(g, extension);
-	if (lc_cfg::get().lr.investigation && (loopEdge != 0 || CheckCycle(path, extension, detector, LOOPS_TO_IVESTIGATE))) {
-		ResolveLoopForward(g, path, lengths, detector, pairedInfo, loopEdge);
+	if (lc_cfg::get().lr.investigation) {
+		loopEdge = IsEdgeInShortLoopForward(g, extension);
+		if ((loopEdge != 0 || CheckCycle(path, extension, detector, LOOPS_TO_IVESTIGATE)) &&
+				!ResolveLoopForward(g, path, lengths, detector, pairedInfo, loopEdge)) {
+			return false;
+		}
 	}
 
 	if (CheckCycle(path, extension, detector, MAX_LOOPS)) {
@@ -399,23 +553,37 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
 	static size_t LOOPS_TO_IVESTIGATE = lc_cfg::get().lr.loop_to_investigate;
 
-	std::vector<EdgeId> edges = g.IncomingEdges(g.EdgeStart(path.front()));
+	EdgeId loopEdge = 0;
+	if (lc_cfg::get().lr.investigation) {
+		loopEdge = IsEdgeInShortLoopBackward(g, path.front());
+		if (loopEdge != 0) {
+			DETAILED_INFO("Seed already near loop");
+			if (!ResolveLoopBackward(g, path, lengths, detector, pairedInfo, loopEdge)){
+				return false;
+			}
+			loopEdge = 0;
+		}
+	}
 
+	std::vector<EdgeId> edges = g.IncomingEdges(g.EdgeStart(path.front()));
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, &w, EdgesToExcludeBackward(g, path), false, detector, handler);
 	if (extension == 0) {
 		return false;
 	}
 
-	path.push_front(extension);
 	detector.AddNewEdge(extension, path.size(), w);
 	IncreaseLengths(g, lengths, extension, false);
+	path.push_front(extension);
 
 	DETAILED_INFO("Chosen backward " << extension << " (" << g.length(extension) << ")");
 	DetailedPrintPath(g, path, lengths);
 
-	if (lc_cfg::get().lr.investigation && CheckCycle(path, extension, detector, LOOPS_TO_IVESTIGATE)) {
-		//TODO: imitate loop and find maximum
-
+	if (lc_cfg::get().lr.investigation) {
+		loopEdge = IsEdgeInShortLoopBackward(g, extension);
+		if ((loopEdge != 0 || CheckCycle(path, extension, detector, LOOPS_TO_IVESTIGATE)) &&
+				!ResolveLoopBackward(g, path, lengths, detector, pairedInfo, loopEdge)) {
+			return false;
+		}
 	}
 
 	if (CheckCycle(path, extension, detector, MAX_LOOPS)) {
@@ -442,13 +610,11 @@ void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo, 
 	while (i < lc_cfg::get().es.max_iter && !stop) {
 		RecountLengthsForward(g, seed, lengths);
 		DETAILED_INFO("Before forward");
-		if (lc_cfg::get().rs.detailed_output) {
-			PrintPath(g, seed, lengths);
-		}
+		DetailedPrintPath(g, seed, lengths);
 
+		detector.clear();
 		while (ExtendPathForward(g, seed, lengths, detector, pairedInfo, handler)) {
 		}
-		detector.clear();
 
 		if (PathLength(g, seed) > maxIS) {
 			stop = true;
@@ -456,12 +622,11 @@ void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo, 
 
 		RecountLengthsBackward(g, seed, lengths);
 		DETAILED_INFO("Before backward");
-		if (lc_cfg::get().rs.detailed_output) {
-			PrintPath(g, seed, lengths);
-		}
+		DetailedPrintPath(g, seed, lengths);
+
+		detector.clear();
 		while (ExtendPathBackward(g, seed, lengths, detector, pairedInfo, handler)) {
 		}
-		detector.clear();
 
 		++i;
 	}
@@ -475,7 +640,7 @@ size_t SeedPriority(const BidirectionalPath& seed) {
 //Find paths with given seeds
 void FindPaths(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndices& pairedInfo, std::vector<BidirectionalPath>& paths,
 		PathStopHandler& handler) {
-	std::multimap<size_t, BidirectionalPath*> priorityQueue;
+	std::multimap<size_t, BidirectionalPath*, std::greater<size_t> > priorityQueue;
 	static bool ALL_SEEDS = lc_cfg::get().sc.all_seeds;
 	static double EDGE_COVERAGE_TRESHOLD = lc_cfg::get().sc.edge_coverage;
 	static double LENGTH_COVERAGE_TRESHOLD = lc_cfg::get().sc.len_coverage;

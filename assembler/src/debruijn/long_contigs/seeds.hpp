@@ -46,7 +46,8 @@ EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& det
 		currentVertex = g.EdgeEnd(nextEdge);
 
 		detector.temp.clear();
-		detector.AddNewEdge(nextEdge, path.size());
+		detector.temp.AddAlternative(nextEdge);
+		detector.AddNewEdge(nextEdge, path.size() - 1);
 		if (CheckCycle(path, nextEdge, detector, maxCycles)) {
 			break;
 		}
@@ -72,14 +73,16 @@ void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& dete
 	VertexId currentVertex = g.EdgeStart(path.front());
 	while (g.CheckUniqueIncomingEdge(currentVertex)) {
 		EdgeId nextEdge = g.GetUniqueIncomingEdge(currentVertex);
+
 		path.push_front(nextEdge);
 		if (lengths != 0) {
-			IncreaseLengths(g, *lengths, nextEdge, true);
+			IncreaseLengths(g, *lengths, nextEdge, false);
 		}
 		currentVertex = g.EdgeStart(nextEdge);
 
 		detector.temp.clear();
-		detector.AddNewEdge(nextEdge, path.size());
+		detector.temp.AddAlternative(nextEdge);
+		detector.AddNewEdge(nextEdge, path.size() - 1);
 		if (CheckCycle(path, nextEdge, detector, maxCycles)) {
 			break;
 		}
@@ -101,20 +104,24 @@ void JoinPaths(BidirectionalPath& path1, BidirectionalPath& path2) {
 //Find all seeds as trivial paths
 void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 	std::map<EdgeId, BidirectionalPath> starts;
+	LoopDetector detector;
 	int count = 0;
 
 	INFO("Finding seeds started");
 	for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-		INFO(count);
 		count++;
 		EdgeId e = *iter;
+
+		detector.clear();
+		detector.temp.clear();
+		detector.temp.AddAlternative(e);
+		detector.AddNewEdge(e, 0);
 
 		starts[e] = BidirectionalPath();
 		BidirectionalPath& newPath = starts[e];
 		newPath.push_back(e);
 
 		//Extend trivially
-		LoopDetector detector;
 		EdgeId nextStart = ExtendTrivialForward(g, newPath, detector, starts);
 
 		//If extended till another seed, than concatenate them
@@ -129,7 +136,6 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 	seeds.reserve(starts.size());
 	INFO("Extending seeds backward");
 	for (auto pathIter = starts.begin(); pathIter != starts.end(); ++pathIter) {
-		LoopDetector detector;
 		ExtendTrivialBackward(g, pathIter->second, detector);
 		seeds.push_back(pathIter->second);
 	}
