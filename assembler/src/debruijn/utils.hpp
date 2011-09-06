@@ -849,7 +849,7 @@ public:
 		auto cur = genome.start<l> ();
 		cur = cur >> 0;
 		for (size_t i = 0; i + l - 1 < genome.size(); i++) {
-			cur = cur << genome[i];
+			cur = cur << genome[i + l - 1];
 			if (index.containsInIndex(cur)) {
 				quality_[index.get(cur).first]++;
 			}
@@ -860,7 +860,7 @@ public:
 	EdgeQuality(Graph &graph, EdgeIndex<l, Graph> &index,
 			const Sequence &genome) :
 		GraphActionHandler<Graph> (graph, "EdgeQualityLabeler") {
-		FillQuality<l> (index, genome);
+		FillQuality(index, genome);
 		FillQuality(index, !genome);
 	}
 
