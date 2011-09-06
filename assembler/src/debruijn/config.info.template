@@ -168,6 +168,15 @@ EAS600_QUAKE_FULL
 	LEN		4639675	; total size
 }
 
+EAS600_EMUL_FULL
+{
+	first	EAS600_70/emulation/reads_1.fastq
+	second	EAS600_70/emulation/reads_2.fastq
+	RL		100		; read length
+	IS		500 	; insert size
+	LEN		4639675	; total size
+}
+
 SC_FULL
 {
 	first	SC/left.fastq.gz
