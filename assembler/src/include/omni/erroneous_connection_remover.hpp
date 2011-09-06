@@ -144,8 +144,8 @@ public:
 			if (Check(adjacent_edges, e)) {
 				VertexId start = g_.EdgeStart(e);
 				VertexId end = g_.EdgeEnd(e);
-				g_.DeleteEdge(e);
 				if (!RelatedVertices<Graph>(g_, start, end)) {
+					g_.DeleteEdge(e);
 					g_.CompressVertex(start);
 					g_.CompressVertex(end);
 				}
