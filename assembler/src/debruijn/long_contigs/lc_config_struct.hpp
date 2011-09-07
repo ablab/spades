@@ -90,6 +90,9 @@ struct lc_config
 		bool remove_duplicates;
 		bool remove_subpaths;
 		bool remove_overlaps;
+
+		double length_percent;
+	    double conjugate_percent;
 	};
 
 	struct research {
@@ -223,6 +226,8 @@ void load(boost::property_tree::ptree const& pt, lc_config::filter_options& fo)
 	load(pt, "remove_overlaps", fo.remove_overlaps);
 	load(pt, "remove_subpaths", fo.remove_subpaths);
 	load(pt, "remove_duplicates", fo.remove_duplicates);
+	load(pt, "conjugate_percent", fo.conjugate_percent);
+	load(pt, "length_percent", fo.length_percent);
 }
 
 

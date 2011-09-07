@@ -92,6 +92,65 @@ bool ContainsPath(const BidirectionalPath& path, const BidirectionalPath& sample
 	return false;
 }
 
+bool ComplementPaths(Graph& g, const BidirectionalPath& path1, const BidirectionalPath& path2) {
+	if (path1.size() != path2.size()) {
+		return false;
+	}
+
+	for (size_t i = 0; i < path1.size(); ++i) {
+		if (path1[i] != g.conjugate(path2[path1.size() - i - 1])) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool ContainsComplementPath(Graph& g, const BidirectionalPath& path, const BidirectionalPath& sample) {
+	if (path.size() < sample.size()) {
+		return false;
+	}
+
+	for (size_t i = 0; i < path.size() - sample.size() + 1 ; ++i) {
+		bool found = true;
+
+		for (size_t j = 0; j < sample.size(); ++j) {
+			if (g.conjugate(sample[sample.size() - j - 1]) != path[i + j]) {
+				found = false;
+				break;
+			}
+		}
+
+		if (found) {
+			return true;
+		}
+	}
+	return false;
+}
+
+size_t LengthComplement(Graph& g, const BidirectionalPath& path, const BidirectionalPath& sample) {
+	if (path.size() < sample.size()) {
+		return false;
+	}
+
+	size_t max = 0;
+	for (size_t i = 0; i < path.size() - sample.size() + 1 ; ++i) {
+		size_t found = 0;
+
+		for (size_t j = 0; j < sample.size(); ++j) {
+			if (g.conjugate(sample[sample.size() - j - 1]) != path[i + j]) {
+				continue;
+			}
+			found += g.length(path[i + j]);
+		}
+
+		if (max < found) {
+			max = found;
+		}
+	}
+	return max;
+}
+
 template<class T>
 bool ContainsAnyOf(const BidirectionalPath& path, T& pathCollection) {
 	for (auto iter = pathCollection.begin(); iter != pathCollection.end(); ++iter) {
@@ -215,120 +274,263 @@ void FilterLowCovered(Graph& g, std::vector<BidirectionalPath>& paths, double th
 
 
 //Remove duplicate paths
-void RemoveDuplicate(const std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& output) {
-	for (auto path = paths.begin(); path != paths.end(); ++path) {
-		bool copy = true;
-		for (auto iter = output.begin(); iter != output.end(); ++iter) {
-			if (ComparePaths(*path, *iter)) {
-					copy = false;
-					break;
-			}
-		}
+void RemoveDuplicate(Graph& g, const std::vector<BidirectionalPath>& paths,
+		std::vector<BidirectionalPath>& output,
+		std::vector<double>* quality = 0) {
 
-		if (copy) {
-			output.push_back(*path);
-		}
-	}
-}
-
-class SimplePathComparator {
-private:
-	Graph& g_;
-
-public:
-	SimplePathComparator(Graph& g): g_(g) {}
-
-	bool operator() (const BidirectionalPath& path1, const BidirectionalPath& path2) {
-		return PathLength(g_, path1) > PathLength(g_, path2);
-	}
-};
-
-//Remove subpaths
-void RemoveSubpaths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& output) {
 	std::vector<BidirectionalPath> temp(paths.size());
 	std::copy(paths.begin(), paths.end(), temp.begin());
 
 	SimplePathComparator pathComparator(g);
 	std::sort(temp.begin(), temp.end(), pathComparator);
 
-	for (auto path = temp.begin(); path != temp.end(); ++path) {
+	output.clear();
+	if (quality != 0) {
+		quality->clear();
+	}
+
+	for (int i = 0; i < (int) temp.size(); ++i) {
 		bool copy = true;
-		for (auto iter = output.begin(); iter != output.end(); ++iter) {
-			if (ContainsPath(*iter, *path)) {
+		for (int j = 0; j < (int) output.size(); ++j) {
+			if (ComparePaths(output[j], temp[i])) {
 				copy = false;
+				if (quality != 0) {
+					quality->at(j) += 1.0;
+				}
 				break;
 			}
 		}
 
 		if (copy) {
-			output.push_back(*path);
+			output.push_back(temp[i]);
+			if (quality != 0) {
+				quality->push_back(1.0);
+			}
 		}
+	}
+}
+
+//Remove subpaths
+void RemoveSubpaths(Graph& g, std::vector<BidirectionalPath>& paths,
+		std::vector<BidirectionalPath>& output,
+		std::vector<double>* quality = 0) {
+
+	std::vector<BidirectionalPath> temp(paths.size());
+	std::copy(paths.begin(), paths.end(), temp.begin());
+
+	SimplePathComparator pathComparator(g);
+	std::sort(temp.begin(), temp.end(), pathComparator);
+	std::vector<size_t> lengths;
+	CountPathLengths(g, temp, lengths);
+
+	output.clear();
+	if (quality != 0) {
+		quality->clear();
+	}
+
+	for (int i = 0; i < (int) temp.size(); ++i) {
+		bool copy = true;
+		for (int j = 0; j < (int) output.size(); ++j) {
+			if (ContainsPath(output[j], temp[i])) {
+				copy = false;
+				if (quality != 0) {
+					quality->at(j) += ((double) lengths[i]) / ((double) lengths[j]);
+				}
+				break;
+			}
+		}
+
+		if (copy) {
+			output.push_back(temp[i]);
+			if (quality != 0) {
+				quality->push_back(1.0);
+			}
+		}
+	}
+}
+
+std::pair<int, int> FindSameSearchRange(std::vector<BidirectionalPath>& paths, std::vector<size_t>& lengths, int pathNum) {
+	size_t length = lengths[pathNum];
+
+	int i = pathNum - 1;
+	while (i >= 0 && lengths[i] == length) {
+		--i;
+	}
+
+	int j = pathNum + 1;
+	while (j < (int) paths.size() && lengths[j] == length) {
+		++j;
+	}
+
+	return std::make_pair(i + 1, j - 1);
+}
+
+
+std::pair<int, int> FindSearchRange(std::vector<BidirectionalPath>& paths, std::vector<size_t>& lengths, int pathNum) {
+	static double coeff = lc_cfg::get().fo.length_percent;
+	double length = (double) lengths[pathNum];
+
+	int i = pathNum - 1;
+	while (i >=0 && lengths[i] <= length * coeff) {
+		--i;
+	}
+
+	int j = pathNum + 1;
+	while (j < (int) paths.size() && lengths[j] >= length / coeff) {
+		++j;
+	}
+
+	return std::make_pair(i + 1, j - 1);
+}
+
+
+std::pair<int, double> FindComlementPath(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<size_t>& lengths, int pathNum) {
+	static double conjugatePercent = lc_cfg::get().fo.conjugate_percent;
+	BidirectionalPath& path = paths[pathNum];
+
+	auto range = FindSameSearchRange(paths, lengths, pathNum);
+	for (int i = range.first; i <= range.second; ++i) {
+		if (ComplementPaths(g, path, paths[i])) {
+			INFO("Total complemented");
+			return std::make_pair(i, 1.0);
+		}
+	}
+
+	double maxConj = 0;
+	int maxI = 0;
+
+	range = FindSearchRange(paths, lengths, pathNum);
+	for (int i = range.first; i <= range.second; ++i) {
+		BidirectionalPath& p = (path.size() < paths[i].size()) ? paths[i] : path;
+		BidirectionalPath& sample = (path.size() < paths[i].size()) ? path : paths[i];
+
+		if (ContainsComplementPath(g, p, sample)) {
+			INFO("Complement subpath " << ((double) PathLength(g, sample)) / ((double) PathLength(g, p)));
+			PrintPath(g, p);
+			PrintPath(g, sample);
+			return std::make_pair(i, ((double) PathLength(g, sample)) / ((double) PathLength(g, p)));
+		}
+
+		size_t conjLength = LengthComplement(g, p, sample);
+		double c = ((double) conjLength) / ((double) PathLength(g, p));
+
+		if (c > maxConj) {
+			maxConj = c;
+			maxI = i;
+		}
+	}
+
+	if (maxConj >= conjugatePercent) {
+		INFO("Partly complement with " << maxI << ", percentage " << maxConj);
+		PrintPath(g, path);
+		PrintPath(g, paths[maxI]);
+		return std::make_pair(maxI, maxConj);
+	}
+	else {
+		INFO("NO COMPLEMENT!");
+		PrintPath(g, path);
+		return std::make_pair(-1, 0);
 	}
 }
 
 //Filter simetric complement contigs
-void FilterComplement(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<BidirectionalPath>& output) {
-	std::sort(paths.begin(), paths.end(), SimplePathComparator(g));
-	output.clear();
+void FilterComplement(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<int>* pairs, std::vector<double>* quality) {
 
-	for (auto path = paths.begin(); path < paths.end(); path += 2) {
-		output.push_back(*	path);
+	std::sort(paths.begin(), paths.end(), SimplePathComparator(g));
+	pairs->clear();
+	quality->clear();
+	pairs->resize(paths.size());
+	quality->resize(paths.size());
+
+	std::vector<size_t> lengths;
+	CountPathLengths(g, paths, lengths);
+
+	std::set<int> found;
+
+	for (int i = 0; i < (int) paths.size(); ++i) {
+		if (found.count(i) == 0) {
+			auto comp = FindComlementPath(g, paths, lengths, i);
+
+			if (found.count(comp.first) > 0 && comp.first != i && comp.first != -1) {
+				INFO("Wrong complement pairing");
+				PrintPath(g, paths[i]);
+				PrintPath(g, paths[pairs->at(i)]);
+				PrintPath(g, paths[comp.first]);
+				continue;
+			}
+
+			if (comp.first == -1) {
+				INFO("Really not found");
+				continue;
+			}
+
+			found.insert(i);
+			found.insert(comp.first);
+			pairs->at(i) = comp.first;
+			pairs->at(comp.first) = i;
+			quality->at(i) = comp.second;
+			quality->at(comp.first) = comp.second;
+		}
 	}
 }
 
 //Remove overlaps, remove sub paths first
-//TODO
-void RemoveOverlaps(Graph& g, std::vector<BidirectionalPath>& paths) {
+void RemoveOverlaps(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<int>& pairs, std::vector<double>& quality) {
 	INFO("Removing overlaps");
-	for (auto path = paths.begin(); path != paths.end(); ++path) {
-		EdgeId lastEdge = path->back();
+    for (int k = 0; k < (int) paths.size(); ++k) {
+    		BidirectionalPath& path = paths[k];
+            EdgeId lastEdge = path.back();
 
-		for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-			if (iter != path) {
-				BidirectionalPath& toCompare = *iter;
-				int overlap = -1;
+            int overlap = -1;
+            int overlaped = - 1;
+            for (int l = 0; l < (int) paths.size(); ++l) {
+				if (k != l) {
+					BidirectionalPath& toCompare = paths[l];
 
-				for (size_t i = 0; i < toCompare.size(); ++i) {
-					if (lastEdge == toCompare[i]) {
-						int diff = path->size() - i;
-						bool found = true;
+					for (int i = 0; i < (int) toCompare.size(); ++i) {
+						if (lastEdge == toCompare[i]) {
+							int diff = path.size() - i;
+							bool found = true;
 
-						for (int j = i - 1; j >= 0; --j) {
-							if (toCompare[j] != path->at(j + diff)) {
-								found = false;
-								break;
+							for (int j = i - 1; j >= 0; --j) {
+								if (toCompare[j] != path[j + diff]) {
+									found = false;
+									break;
+								}
 							}
-						}
 
-						if (found) {
-							overlap = i;
-							INFO("Found overlap by " << i);
-						}
-					}
-					else if (g.conjugate(lastEdge) == toCompare[i]) {
-						int diff = path->size() - i;
-						bool found = true;
-
-						for (int j = i - 1; j >= 0; --j) {
-							if (g.conjugate(toCompare[j]) != path->at(j + diff)) {
-								found = false;
-								break;
+							if (found && overlap < i) {
+								overlap = i;
+								overlaped = l;
 							}
-						}
-
-						if (found) {
-							overlap = i;
-							INFO("Found overlap by " << i + 1);
-						}
+					   }
 					}
 				}
+            }
+
+            if (overlap != -1) {
+            	size_t overlapLength = 0;
+				for (int i = 0; i <= overlap; ++i) {
+					overlapLength += g.length(path.back());
+				}
+
+            	INFO("Found overlap by " << overlap + 1 << " edge(s) with total length " << overlapLength);
+            	PrintPath(g, path);
+            	PrintPath(g, paths[overlaped]);
 
 				for (int i = 0; i <= overlap; ++i) {
-					toCompare.pop_front();
+					path.pop_back();
 				}
-			}
-		}
-	}
+
+				if (quality[k] == 1.0) {
+					INFO("Same one removed from reverse-complement path");
+					BidirectionalPath& comp = paths[pairs[k]];
+					for (int i = 0; i <= overlap; ++i) {
+						comp.pop_front();
+					}
+				}
+            }
+    }
 	INFO("Done");
 }
 

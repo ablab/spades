@@ -72,47 +72,49 @@ size_t FindInGenomeInexact(Graph& g, BidirectionalPath& myPath, Path<Graph::Edge
 
 //Count all paths in genome paths
 template<size_t k>
-size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Sequence& genome, std::vector<BidirectionalPath>& paths,
-		Path<typename Graph::EdgeId>& path1, Path<typename Graph::EdgeId>& path2, bool displayInexactPaths = false) {
+size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Sequence& genome,
+		std::vector<BidirectionalPath>& paths, Path<typename Graph::EdgeId>& path1, Path<typename Graph::EdgeId>& path2,
+		std::vector<double>* quality = 0, bool displayInexactPaths = false) {
 
 	size_t pathCount = 0;
-	for(auto iter = paths.begin(); iter != paths.end(); ++iter) {
+	for(int i = 0; i < (int) paths.size(); ++i) {
+		std::string q = (quality == 0 ? "" : ", quality: " + ToString(quality->at(i)));
 
-		int s = FindInGenomePath(*iter, path1);
+		int s = FindInGenomePath(paths[i], path1);
 		if (s != -1) {
 			++pathCount;
-			INFO("Path of length " << PathLength(g, *iter)  << " with " << iter->size() << " edges is found in genome path starting from edge " << s)
+			INFO("Path of length " << PathLength(g, paths[i])  << " with " << paths[i].size() << " edges is found in genome path starting from edge " << s << q);
 		}
 
 		else {
-			s = FindInGenomePath(*iter, path2);
+			s = FindInGenomePath(paths[i], path2);
 			if (s != -1) {
 				++pathCount;
-				INFO("Path of length " << PathLength(g, *iter) << " with " << iter->size() << " edges is found in !genome path starting from edge " << s)
+				INFO("Path of length " << PathLength(g, paths[i]) << " with " << paths[i].size() << " edges is found in !genome path starting from edge " << s << q);
 			}
 
 			else {
 				int pos1 = 0, pos2 = 0;
 				size_t len1 = 0, len2 = 0;
-				size_t edges1 = FindInGenomeInexact(g, *iter, path1, pos1, len1);
-				size_t edges2 = FindInGenomeInexact(g, *iter, path2, pos2, len2);
+				size_t edges1 = FindInGenomeInexact(g, paths[i], path1, pos1, len1);
+				size_t edges2 = FindInGenomeInexact(g, paths[i], path2, pos2, len2);
 
 				if (edges1 > edges2) {
-					INFO("Path partly found, edges matched " << edges1 << "/" << iter->size() <<
-							", length matched " << len1 << "/" << PathLength(g, *iter));
+					INFO("Path partly found, edges matched " << edges1 << "/" << paths[i].size() <<
+							", length matched " << len1 << "/" << PathLength(g, paths[i]) << q);
 
 					if (displayInexactPaths) {
-						PrintPath(g, *iter);
-						PrintPathFromTo(g, path1, pos1, pos1 + iter->size());
+						PrintPath(g, paths[i]);
+						PrintPathFromTo(g, path1, pos1, pos1 + paths[i].size());
 					}
 				}
 				else {
-					INFO("Path partly found, edges matched " << edges2 << "/" << iter->size() <<
-												", length matched " << len2 << "/" << PathLength(g, *iter));
+					INFO("Path partly found, edges matched " << edges2 << "/" << paths[i].size() <<
+							", length matched " << len2 << "/" << PathLength(g, paths[i]) << q);
 
 					if (displayInexactPaths) {
-						PrintPath(g, *iter);
-						PrintPathFromTo(g, path2, pos2, pos2 + iter->size());
+						PrintPath(g, paths[i]);
+						PrintPathFromTo(g, path2, pos2, pos2 + paths[i].size());
 					}
 				}
 
@@ -124,7 +126,10 @@ size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Seque
 
 //Count all paths in genome paths
 template<size_t k>
-size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Sequence& genome, std::vector<BidirectionalPath>& paths, bool displayInexactPaths = false) {
+size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Sequence& genome,
+		std::vector<BidirectionalPath>& paths, std::vector<double>* quality,
+		bool displayInexactPaths = false) {
+
 	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
 	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
 

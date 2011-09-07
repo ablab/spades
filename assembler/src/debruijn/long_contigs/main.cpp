@@ -74,8 +74,15 @@ int main() {
 
 	FindSeeds(g, rawSeeds);
 	INFO("Seeds found");
+
+	std::vector<int> seedPairs;
+	std::vector<double> seedQuality;
+	FilterComplement(g, rawSeeds, &seedPairs, &seedQuality);
+
 	RemoveSubpaths(g, rawSeeds, seeds);
 	INFO("Sub seeds removed");
+
+	FilterComplement(g, seeds, &seedPairs, &seedQuality);
 
 	if (lc_cfg::get().rs.research_mode && lc_cfg::get().rs.fiter_by_edge) {
 		FilterEdge(g, seeds, lc_cfg::get().rs.edge_length);
@@ -84,6 +91,8 @@ int main() {
 	double MIN_COVERAGE = lc_cfg::get().ss.min_coverage;
 	FilterLowCovered(g, seeds, MIN_COVERAGE);
 	INFO("Seeds filtered");
+
+	FilterComplement(g, seeds, &seedPairs, &seedQuality);
 
 	size_t found = PathsInGenome<K>(g, index, sequence, seeds, path1, path2);
 	INFO("Good seeds found " << found << " in total " << seeds.size());
@@ -97,22 +106,26 @@ int main() {
 	FindPaths(g, seeds, pairedInfos, paths, stopHandler);
 
 	std::vector<BidirectionalPath> result;
+	std::vector<double> pathQuality;
 	if (lc_cfg::get().fo.remove_subpaths || lc_cfg::get().fo.remove_overlaps) {
-		RemoveSubpaths(g, paths, result);
+		RemoveSubpaths(g, paths, result, &pathQuality);
 		INFO("Subpaths removed");
 	}
 	else if (lc_cfg::get().fo.remove_duplicates) {
-		RemoveDuplicate(paths, result);
+		RemoveDuplicate(g, paths, result, &pathQuality);
 		INFO("Duplicates removed");
-	} else {
+	}
+	else {
 		result = paths;
+		std::sort(result.begin(), result.end(), SimplePathComparator(g));
+		pathQuality.resize(result.size(), 1.0);
 	}
 
 	if (lc_cfg::get().write_overlaped_paths) {
 		WriteGraphWithPathsSimple(output_dir + "overlaped_paths.dot", "overlaped_paths", g, result, path1, path2);
 	}
 
-	found = PathsInGenome<K>(g, index, sequence, result, path1, path2);
+	found = PathsInGenome<K>(g, index, sequence, result, path1, path2, &pathQuality);
 	INFO("Good paths found " << found << " in total " << result.size());
 	INFO("Path coverage " << PathsCoverage(g, result));
 	INFO("Path length coverage " << PathsLengthCoverage(g, result));
@@ -125,24 +138,26 @@ int main() {
 		WriteGraphWithPathsSimple(output_dir + "final_paths.dot", "final_paths", g, result, path1, path2);
 	}
 
+	std::vector<int> pairs;
+	std::vector<double> quality;
 	if (lc_cfg::get().write_contigs) {
 		OutputPathsAsContigs(g, result, output_dir + "all_paths.contigs");
 		OutputContigsNoComplement(g, output_dir + "edges.contigs");
 
-		std::vector<BidirectionalPath> noOverlaps;
+		FilterComplement(g, result, &pairs, &quality);
+
 		if (lc_cfg::get().fo.remove_overlaps) {
-			FilterComplement(g, result, noOverlaps);
-			RemoveOverlaps(g, noOverlaps);
-			OutputPathsAsContigs(g, noOverlaps, output_dir + "paths.contigs");
-		} else {
-			OutputPathsAsContigsNoComplement(g, result, output_dir + "paths.contigs");
+			RemoveOverlaps(g, result, pairs, quality);
 		}
+		OutputPathsAsContigsNoComplement(g, result, pairs, output_dir + "paths.contigs");
+		INFO("All contigs written");
 	}
 
 	if (lc_cfg::get().write_graph) {
 		SaveGraph(g, intIds, output_dir + "graph");
 	}
 
+	INFO("Tool finished");
 	DeleteAdditionalInfo(pairedInfos);
 	return 0;
 }

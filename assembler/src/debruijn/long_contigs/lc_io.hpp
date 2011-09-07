@@ -189,14 +189,18 @@ void OutputContigsNoComplement(Graph& g, const std::string& filename) {
 
 
 
-void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath>& paths, const string& filename) {
+void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<int>& pairs, const string& filename) {
 	INFO("Writing contigs to " << filename);
 	osequencestream oss(filename);
 
-	std::vector<BidirectionalPath> toPrint;
-	FilterComplement(g, paths, toPrint);
-	for (auto iter = toPrint.begin(); iter != toPrint.end(); ++iter) {
-		oss << PathToSequence(g, *iter);
+	std::set<int> printed;
+
+	for (int i = 0; i < (int) paths.size(); ++i) {
+		if (printed.count(i) == 0) {
+			oss << PathToSequence(g, paths[i]);
+			printed.insert(i);
+			printed.insert(pairs[i]);
+		}
 	}
 
 	INFO("Contigs written");

@@ -124,7 +124,7 @@ size_t CountEdgesToRemove(EdgeId lastEdge, LoopDetector& detector, bool fullRemo
 	size_t loopSize = CountLoopEdges(lastEdge, detector);
 
 	if (fullRemoval) {
-		return loopCount * loopSize;
+		return loopCount * loopSize + 1;
 	} else {
 		return (loopCount - 1) * loopSize + 1;
 	}

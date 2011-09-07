@@ -27,7 +27,7 @@ using debruijn::K;
 typedef std::deque<EdgeId> BidirectionalPath;
 
 //Forward declaration
-size_t PathLength(Graph& g, const BidirectionalPath& path);
+size_t PathLength(const Graph& g, const BidirectionalPath& path);
 
 //Path cumulative lengths
 typedef std::deque<double> PathLengths;
@@ -50,6 +50,23 @@ struct PairedInfoIndexLibrary {
 typedef std::vector<PairedInfoIndexLibrary> PairedInfoIndices;
 
 
+class SimplePathComparator {
+private:
+	Graph& g_;
+
+public:
+	SimplePathComparator(Graph& g): g_(g) {}
+
+	bool operator() (const BidirectionalPath& path1, const BidirectionalPath& path2) const {
+		return PathLength(g_, path1) > PathLength(g_, path2);
+	}
+
+	bool operator() (const BidirectionalPath* path1, const BidirectionalPath* path2) const {
+		return PathLength(g_, *path1) > PathLength(g_, *path2);
+	}
+};
+
+
 //Statistics
 enum StopReason { LOOP, NO_EXTENSION, NO_GOOD_EXTENSION, MANY_GOOD_EXTENSIONS, WEAK_EXTENSION };
 
@@ -65,13 +82,13 @@ struct PathStatData {
 class PathStopHandler {
 private:
 	Graph& g_;
-	std::multimap<const BidirectionalPath*, PathStatData> forward_;
-	std::multimap<const BidirectionalPath*, PathStatData> backward_;
+	std::multimap<BidirectionalPath*, PathStatData> forward_;
+	std::multimap<BidirectionalPath*, PathStatData> backward_;
 
 public:
 	PathStopHandler(Graph& g):  g_(g), forward_(), backward_() {}
 
-	void AddStop(const BidirectionalPath& path, StopReason reason, bool forward) {
+	void AddStop(BidirectionalPath* path, StopReason reason, bool forward) {
 		std::string msg;
 		switch (reason) {
 		case LOOP: {
@@ -102,29 +119,34 @@ public:
 		AddStop(path, reason, forward, msg);
 	}
 
-	void AddStop(const BidirectionalPath& path, StopReason reason, bool forward, const std::string& msg) {
+	void AddStop(BidirectionalPath* path, StopReason reason, bool forward, const std::string& msg) {
 		if (forward) {
-			forward_.insert(std::make_pair(&path, PathStatData(reason, PathLength(g_, path), msg)));
+			forward_.insert(std::make_pair(path, PathStatData(reason, PathLength(g_, *path), msg)));
 		} else {
-			backward_.insert(std::make_pair(&path, PathStatData(reason, PathLength(g_, path), msg)));
+			backward_.insert(std::make_pair(path, PathStatData(reason, PathLength(g_, *path), msg)));
 		}
 	}
 
-	void print(const BidirectionalPath& path) {
-		INFO("Stats for path with " << path.size() << " edges and length " <<  PathLength(g_, path));
-		INFO("Stoppages forward (" << forward_.count(&path) << "):");
-		for (auto iter = forward_.lower_bound(&path); iter != forward_.upper_bound(&path); ++iter) {
+	void print(BidirectionalPath* path) {
+		INFO("Stats for path " << path << " with " << path->size() << " edges and length " <<  PathLength(g_, *path));
+		INFO("Stoppages forward (" << forward_.count(path) << "):");
+		for (auto iter = forward_.lower_bound(path); iter != forward_.upper_bound(path); ++iter) {
 			INFO("Stop reason at length " << iter->second.pathLength << ", reason: " << iter->second.message);
 		}
-		INFO("Stoppages backward (" << backward_.count(&path) << "):");
-		for (auto iter = backward_.lower_bound(&path); iter != backward_.upper_bound(&path); ++iter) {
+		INFO("Stoppages backward (" << backward_.count(path) << "):");
+		for (auto iter = backward_.lower_bound(path); iter != backward_.upper_bound(path); ++iter) {
 			INFO("Stop reason at length " << iter->second.pathLength << ", reason: " << iter->second.message);
 		}
 	}
 
 	void print() {
+		std::set<BidirectionalPath*> printed;
+
 		for (auto iter = forward_.begin(); iter != forward_.end(); ++iter) {
-			print(*(iter->first));
+			if (printed.count(iter->first) == 0) {
+				printed.insert(iter->first);
+				print(iter->first);
+			}
 		}
 	}
 };
@@ -149,13 +171,20 @@ size_t EdgeCount(Graph& g) {
 }
 
 //Path length
-size_t PathLength(Graph& g, const BidirectionalPath& path) {
+size_t PathLength(const Graph& g, const BidirectionalPath& path) {
 	double currentLength = 0;
 
 	for(auto iter = path.begin(); iter != path.end(); ++iter) {
 		currentLength += g.length(*iter);
 	}
 	return currentLength;
+}
+
+void CountPathLengths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<size_t>& lengths) {
+	lengths.clear();
+	for (auto path = paths.begin(); path != paths.end(); ++path) {
+		lengths.push_back(PathLength(g, *path));
+	}
 }
 
 //Statistic functions
@@ -285,7 +314,7 @@ void DetailedPrintPath(Graph& g, BidirectionalPath& path, PathLengths& lengths) 
 //Print path
 template<class PathType>
 void PrintPath(Graph& g, PathType& path) {
-	INFO("Path " << &path)
+	INFO("Path " << &path << " with length " << PathLength(g, path));
 	INFO("#, edge, length")
 	for(size_t i = 0; i < path.size(); ++i) {
 		INFO(i << ", " << path[i] << ", " << g.length(path[i]));

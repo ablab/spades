@@ -134,8 +134,11 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 	//Extending seed backward
 	seeds.clear();
 	seeds.reserve(starts.size());
+	detector.clear();
+	detector.temp.clear();
 	INFO("Extending seeds backward");
 	for (auto pathIter = starts.begin(); pathIter != starts.end(); ++pathIter) {
+		LoopDetector detector;
 		ExtendTrivialBackward(g, pathIter->second, detector);
 		seeds.push_back(pathIter->second);
 	}

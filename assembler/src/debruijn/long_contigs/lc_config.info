@@ -58,7 +58,7 @@ real_libs
         QUAKE_FULL
         {
             precounted       true
-            precounted_path  ./data/debruijn/08.24_11_23.QUAKE_FULL/paired_info_IS220_RS100_clustered
+            precounted_path  ./data/debruijn/08.24_11_23.QUAKE_FULL/paired_info_IS220_RS100
             first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
             second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz  
         }
@@ -88,7 +88,7 @@ real_libs
     {
         read_size     100
         insert_size   500
-        var           10
+        var           20
 
         QUAKE_CROPPED_100K
         {
@@ -109,7 +109,7 @@ real_libs
         QUAKE_FULL
         {
             precounted       true
-            precounted_path  ./data/debruijn/08.24_11_23.QUAKE_FULL/paired_info_IS500_RS100_clustered
+            precounted_path  ./data/debruijn/08.24_11_23.QUAKE_FULL/paired_info_IS500_RS100
             first            /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_1.cor.fastq.gz
             second           /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_2.cor.fastq.gz
            
@@ -168,7 +168,7 @@ write_contigs           true
 write_real_paired_info  true
 cluster_paired_info     true
 write_graph             true
-print_stats             false
+print_stats             true
 paired_info_file_prefix "paired_info_"
 
 ; seed selection
@@ -185,9 +185,9 @@ es
     use_weight_function_first  false
     weight_fun_threshold       0
     weight_threshold           0.1
-    priority_coeff             1.2
+    priority_coeff             15
 
-    use_delta_first       false
+    use_delta_first       true
     etalon_distance_dev   2
     
     max_iter              3
@@ -201,7 +201,7 @@ lr
 	max_loop_len       2
 	max_exits          1
 	
-    max_loops          5
+    max_loops          10
     full_loop_removal  true
 }
 
@@ -219,6 +219,9 @@ fo
     remove_duplicates       true
     remove_subpaths         true
     remove_overlaps         true
+    
+    length_percent          1.5
+    conjugate_percent       0.4
 }
 
 
@@ -226,9 +229,9 @@ fo
 research 
 {
     research_mode            false
-    detailed_output          false
+    detailed_output          true
     fiter_by_edge            true
     edge_length              46
-    force_to_cycle           true 
+    force_to_cycle           false 
     cycle_priority_edge      55
 }
