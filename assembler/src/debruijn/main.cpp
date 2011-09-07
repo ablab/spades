@@ -17,23 +17,14 @@
 #include "omni/distance_estimation.hpp"
 //#include <distance_estimation.hpp>
 
-#include <sys/time.h>
-#include <sys/resource.h>
+#include "memory_limit.hpp"
 
 DECL_PROJECT_LOGGER("d")
 
-void limit_memory(size_t limit){
-
-    rlimit rl = {limit, limit};
-    int res = setrlimit(RLIMIT_AS, &rl);
-
-    assert(res == 0);
-}
-
 int main() {
 
-    size_t GB = 1 << 30;
-    limit_memory(384 * GB);
+    const size_t GB = 1 << 30;
+    limit_memory(120 * GB);
 
     cfg::create_instance(debruijn::cfg_filename);
 
