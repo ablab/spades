@@ -343,25 +343,25 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
                         &clustered_index/*, &read_count_weight_paired_index*/);
 
                 
-//                DistanceEstimator<Graph> estimator(g, paired_index,
-//                        cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
-//                        cfg::get().de.linkage_distance, cfg::get().de.max_distance);
-//                estimator.Estimate(clustered_index);
-//
-//                omnigraph::WriteSimple(g, *TotLab, output_folder + "2_simplified_graph.dot",
-//                        "no_repeat_graph");
-//
-//                //todo think if we need this save
-//                printGraph(g, int_ids, graph_save_path + "repeats_resolved_before",
-//                        paired_index, EdgePos/*, &read_count_weight_paired_index*/);
-//
-//                printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph",
-//                        paired_index, EdgePos, &etalon_paired_index,
-//                        &clustered_index/*, &read_count_weight_paired_index*/);
-//                
-//                printGraph(g, int_ids, output_folder + "2_simplified_graph",
-//                        clustered_index, EdgePos, &etalon_paired_index,
-//                        &clustered_index/*, &read_count_weight_paired_index*/);
+               DistanceEstimator<Graph> estimator(g, paired_index,
+                       cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
+                       cfg::get().de.linkage_distance, cfg::get().de.max_distance);
+               estimator.Estimate(clustered_index);
+
+               omnigraph::WriteSimple(g, *TotLab, output_folder + "2_simplified_graph.dot",
+                       "no_repeat_graph");
+
+               //todo think if we need this save
+               printGraph(g, int_ids, graph_save_path + "repeats_resolved_before",
+                       paired_index, EdgePos/*, &read_count_weight_paired_index*/);
+
+               printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph",
+                       paired_index, EdgePos, &etalon_paired_index,
+                       &clustered_index/*, &read_count_weight_paired_index*/);
+               
+               printGraph(g, int_ids, output_folder + "2_simplified_graph",
+                       clustered_index, EdgePos, &etalon_paired_index,
+                       &clustered_index/*, &read_count_weight_paired_index*/);
 		    } else{
 
                 DistanceEstimator<Graph> estimator(g, paired_index,

@@ -35,26 +35,32 @@ private:
             size_t begin = clusters[i].first;
             size_t end = clusters[i].second;
             if (end - begin > MINIMALPEAKPOINTS) {
-                while ((cur<forward.size()) && (forward[cur] < rounded_d(data[begin])))
+                while ((cur<forward.size()) && (((int)forward[cur]) < rounded_d(data[begin])))
 					cur++;
                 if (cur == forward.size()) {
-                    DEBUG("BREAKING");
+                    DEBUG("BREAKING " << rounded_d(data[begin]));
                     break;
                 }
+                if ((int) forward[cur] > rounded_d(data[end - 1])) continue;
                 PeakFinder peakfinder(data, begin, end);
 				DEBUG("Processing window : " << rounded_d(data[begin]) << " " << rounded_d(data[end-1]));
 				peakfinder.FFTSmoothing(CUTOFF);
-                if ( ( (cur + 1) == forward.size()) || (forward[cur + 1] > rounded_d(data[end - 1]))) {
-                    result.push_back(make_pair(forward[cur], 1));
-                    INFO("Pair made " << forward[cur++]);
-                }
-				while (cur<forward.size() && forward[cur] <= rounded_d(data[end - 1])) {
-					if (peakfinder.isPeak(forward[cur])){ 
+                if ( ( (cur + 1) == forward.size()) || ( (int) forward[cur + 1] > rounded_d(data[end - 1]))){
+                    if (5*((int) end - (int) begin) > (1 + rounded_d(data[end - 1]) - rounded_d(data[begin])) ){
                         result.push_back(make_pair(forward[cur], 1));
                         INFO("Pair made " << forward[cur]);
                     }
-					cur++;
-				}
+                    cur++;
+                }else{
+                
+                    while (cur<forward.size() && ((int)forward[cur] <= rounded_d(data[end - 1]))) {
+					    if (peakfinder.isPeak(forward[cur])){ 
+                            result.push_back(make_pair(forward[cur], 1));
+                            INFO("Pair made " << forward[cur]);
+                        }   
+					    cur++;
+				    }
+                }
 			}
 		}
 		return result;

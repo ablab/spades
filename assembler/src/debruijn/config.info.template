@@ -12,7 +12,7 @@ paired_mode true
 rectangle_mode	false
 
 ; use advanced distance estimation or not
-advanced_estimator_mode true;
+advanced_estimator_mode false;
 
 ; set to true to obtain paired info from genome mapping rather than from paired reads
 etalon_info_mode  false
