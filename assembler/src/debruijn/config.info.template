@@ -23,7 +23,7 @@ start_from begin   ; Full run.
 
 tc
 {
-   	max_tip_length_div_K	2.5
+   	max_tip_length_div_K	4.0
 	max_coverage			1000
 	max_relative_coverage	100.0   ; tip_cov < this * not_tip_cov
 }
@@ -45,6 +45,13 @@ ec
 {
 	max_coverage		20.0
 	max_length_div_K	3
+}
+
+cec
+{
+	max_length		100
+	coverage_gap		5.0
+	sufficient_neighbour_length 1000		
 }
 
 ; distance estimator:

@@ -100,6 +100,13 @@ namespace debruijn
 			int max_length_div_K;
 		};
 
+		struct cheating_erroneous_connections_remover
+		{
+			size_t max_length;
+			double coverage_gap;
+			size_t sufficient_neighbour_length;
+		};
+
 		struct repeat_resolver
 		{
 			int mode;
@@ -142,6 +149,7 @@ namespace debruijn
 		tip_clipper tc;
 		bulge_remover br;
 		erroneous_connections_remover ec;
+		cheating_erroneous_connections_remover cec;
 		distance_estimator de;
 		repeat_resolver rr;
 		dataset ds;
@@ -191,6 +199,14 @@ namespace debruijn
 		using config_common::load;
 		load(pt, "max_coverage", ec.max_coverage);
 		load(pt, "max_length_div_K", ec.max_length_div_K);
+	}
+
+	inline void load(boost::property_tree::ptree const& pt, debruijn_config::cheating_erroneous_connections_remover& cec)
+	{
+		using config_common::load;
+		load(pt, "max_length", cec.max_length);
+		load(pt, "coverage_gap", cec.coverage_gap);
+		load(pt, "sufficient_neighbour_length", cec.sufficient_neighbour_length);
 	}
 
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::distance_estimator& de)

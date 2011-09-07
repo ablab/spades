@@ -112,7 +112,7 @@ public:
 	}
 
 	static void Append(vector<EdgeId>& edges, const vector<EdgeId>& to_append) {
-		edges.insert(to_append.begin(), to_append.end());
+		edges.insert(edges.end(), to_append.begin(), to_append.end());
 	}
 
 	bool Condition(EdgeId edge, double possible_ec_coverage) {
@@ -132,7 +132,7 @@ public:
 		LengthComparator<Graph> comparator(g_);
 		for (auto it = g_.SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
 			typename Graph::EdgeId e = *it;
-			if (math::gr(g_.length(e), max_length_)) {
+			if (g_.length(e) > max_length_) {
 				return;
 			}
 			vector<EdgeId> adjacent_edges;
