@@ -17,10 +17,16 @@
 #include "omni/distance_estimation.hpp"
 //#include <distance_estimation.hpp>
 
+#include "memory_limit.hpp"
+
 DECL_PROJECT_LOGGER("d")
 
 int main() {
-	cfg::create_instance(debruijn::cfg_filename);
+
+    const size_t GB = 1 << 30;
+    limit_memory(120 * GB);
+
+    cfg::create_instance(debruijn::cfg_filename);
 
 	// check config_struct.hpp parameters
 	if (debruijn::K % 2 == 0) {

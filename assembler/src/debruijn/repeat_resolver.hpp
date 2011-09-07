@@ -438,7 +438,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		edgeCounts[le] ++;
 	}
 	for(auto iter = edgeCounts.begin(); iter != edgeCounts.end(); ++iter) {
-		if (iter->second == 0) {
+		if (iter->second == 0 && cheating_mode == 2) {
 			INFO("Adding no-paired edge: " << new_IDs.ReturnIntId(iter->first)<< " potential bug here.");
 			PairInfos tmp = paired_di_data.GetEdgeInfos(iter->first);
 			for(size_t j = 0; j < tmp.size(); j ++ ){
