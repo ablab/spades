@@ -49,9 +49,6 @@ static bool isCluster(int index, std::vector<PairInfo<EdgeId> > data) {
 	return (abs(data[index + 1].d - data[index].d) > Thr);
 }
 
-
-
-
 //static void debug(mydata vec) {
 //
 //	for (size_t i = 0; i < vec.size(); i++) {
@@ -66,7 +63,6 @@ static std::vector<interval> divideData(std::vector<PairInfo<EdgeId> > data){
     data_size = data.size();
     std::vector<interval> answer;
 
-
     min = rounded_d(data.front());
     max = rounded_d(data.back());
 //	std::cout << "Data size is " << data_size << std::endl;
@@ -77,7 +73,6 @@ static std::vector<interval> divideData(std::vector<PairInfo<EdgeId> > data){
 //	int data_positive_length = max - data[data_positive_size].d + 1;
 
 //	Thr = (4 * data_positive_length / data_positive_size);
-    Thr = 20;
 
     Thr = 20;
 
