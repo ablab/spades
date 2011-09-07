@@ -315,9 +315,14 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 			//		FillPairedIndexWithReadCountMetric<k, ReadStream>(g, index, kmer_mapper, read_count_weight_paired_index, stream);
 			//experimental
 
-//			WriteGraphComponents<k>(g, index, *TotLab, genome,
-//					output_folder + "graph_components" + "/", "graph.dot",
-//					"graph_component", cfg::get().ds.IS);
+			EdgeQuality<Graph> quality_labeler(g, index, genome);
+
+			LabelerList<Graph> labeler_list(*TotLab, quality_labeler);
+//			LabelerList<Graph> labeler_list;
+
+			WriteGraphComponents<k>(g, index, labeler_list, genome,
+					output_folder + "graph_components" + "/", "graph.dot",
+					"graph_component", cfg::get().ds.IS);
 
 //			number_of_components = PrintGraphComponents(
 //					output_folder + "graph_components/graph", g,

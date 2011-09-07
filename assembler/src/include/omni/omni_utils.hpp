@@ -850,6 +850,44 @@ public:
 	}
 };
 
+/**
+ * This class defines which edge is more likely to be tip. In this case we just assume shorter edges
+ * are more likely tips then longer ones.
+ */
+template<class Graph>
+struct LengthComparator {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	const Graph& graph_;
+public:
+	/**
+	 * TipComparator should never be created with default constructor but it is necessary on order for
+	 * code to compile.
+	 */
+	//	TipComparator() {
+	//		assert(false);
+	//	}
+
+	/**
+	 * Construct TipComparator for given graph
+	 * @param graph graph for which comparator is created
+	 */
+	LengthComparator(const Graph &graph) :
+		graph_(graph) {
+	}
+
+	/**
+	 * Standard comparator function as used in collections.
+	 */
+	bool operator()(EdgeId edge1, EdgeId edge2) const {
+		if (graph_.length(edge1) == graph_.length(edge2)) {
+			return edge1 < edge2;
+		}
+		return graph_.length(edge1) < graph_.length(edge2);
+	}
+};
+
 inline size_t PairInfoPathLengthUpperBound(size_t k, size_t insert_size, double delta) {
 	double answer = 0. +  insert_size + delta - k - 2;
 	assert(math::gr(answer, 0.));
