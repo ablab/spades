@@ -24,7 +24,7 @@ start_from begin   ; Full run.
 tc
 {
    	max_tip_length_div_K	4.0
-	max_coverage			1000
+	max_coverage			1000.0
 	max_relative_coverage	100.0   ; tip_cov < this * not_tip_cov
 }
 

@@ -81,7 +81,7 @@ namespace debruijn
 		struct tip_clipper
 		{
 		   double max_tip_length_div_K;
-		   size_t max_coverage;
+		   double max_coverage;
 		   double max_relative_coverage;
 		};
 

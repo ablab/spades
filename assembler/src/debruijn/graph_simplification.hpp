@@ -20,6 +20,7 @@ namespace debruijn_graph {
 
 template<class Graph>
 void ClipTips(Graph &g, size_t iteration_count = 1, size_t i = 0) {
+	assert(i < iteration_count);
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
 	omnigraph::LengthComparator<Graph> comparator(g);
@@ -174,7 +175,7 @@ void SimplifyGraph(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	CountStats<k> (g, index, genome);
 
 	INFO("Final TipClipping");
-	ClipTips(g, iteration_count, -1);
+	ClipTips(g, iteration_count, iteration_count - 1);
 //		ProduceDetailedInfo<k> (g, index, labeler, genome,
 //				output_folder + "tips_clipped_" + ToString(i) + "/",
 //				"graph.dot", "no_tip_graph");
