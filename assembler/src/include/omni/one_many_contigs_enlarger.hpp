@@ -7,22 +7,23 @@
 
 #ifndef ONE_MANY_CONTIGS_ENLARGER_HPP_
 #define ONE_MANY_CONTIGS_ENLARGER_HPP_
+
 using namespace omnigraph;
 
 template <class Graph>
 class one_many_contigs_enlarger {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-
+	int insert_size_;
 	Graph &g_;
 public:
-	one_many_contigs_enlarger(Graph &g): g_(g){
+	one_many_contigs_enlarger(Graph &g, int insert_size): g_(g), insert_size_(insert_size){
 	}
 	void Loops_resolve(){
 //ToDo: Think about good loop resolver
 		INFO("----Resolving Loops----");
 		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
-			if ((g_.EdgeStart(*iter) == g_.EdgeEnd(*iter))&&(g_.length(*iter) < 250)){
+			if ((g_.EdgeStart(*iter) == g_.EdgeEnd(*iter))&&(g_.length(*iter) < insert_size_ * 1.1)){
 				VertexId vertex = g_.EdgeEnd(*iter);
 				EdgeId loopEdge = *iter;
 				if ((g_.OutgoingEdgeCount(vertex) == 2)&&(g_.IncomingEdgeCount(vertex) == 2)){
@@ -47,7 +48,7 @@ public:
 			}
 		}
 	}
-
+/*
 	void one_many_resolve(){
 		INFO("one_many_resolve");
 		Loops_resolve();
@@ -102,7 +103,7 @@ public:
 
 	}
 
-
+*/
 	void one_many_resolve_with_vertex_split(){
 		INFO("one_many_resolve");
 //		Loops_resolve();
@@ -127,6 +128,7 @@ public:
 						vector<EdgeId> toMerge;
 						toMerge.push_back(edge1);
 						toMerge.push_back(edge2);
+
 						DEBUG("first part ");
 						g_.MergePath(toMerge);
 

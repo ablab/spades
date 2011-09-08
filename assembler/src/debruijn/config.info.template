@@ -73,6 +73,7 @@ ade
 rr
 {
 	mode		3	
+	near_vertex  30
 }
 
 ; consensus
