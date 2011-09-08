@@ -42,14 +42,15 @@ void construct_graph(PairedReadStream& stream, conj_graph_pack& gp, graph_labele
     }
     else
     {
-        UnitedStream united_stream(&stream);
+        UnitedStream united_stream(stream);
         ConstructGraphWithCoverage<K>(gp.g, gp.index, united_stream);
     }
 
     //TODO:
     //ProduceInfo<K>(gp.g, gp.index, labeler, gp.genome, cfg::get().output_dir + "edge_graph.dot", "edge_graph");
 
-    FillEdgesPos<K>(gp.g, gp.index, gp.genome, gp.edge_pos);
+    // todo by single_cell
+    //FillEdgesPos<K>(gp.g, gp.index, gp.genome, gp.edge_pos);
 }
 
 void load_construction(conj_graph_pack& gp, total_labeler& tl, paired_info_index& paired_index, files_t* files)

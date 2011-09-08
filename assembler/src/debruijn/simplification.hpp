@@ -32,7 +32,23 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp, paired_info_i
 
     make_construction(stream, gp, tot_lab, paired_index);
 
-    SimplifyGraph<K>(gp.g, gp.index, tot_lab, 3, gp.genome, cfg::get().output_dir/*, etalon_paired_index*/);
+    // by single_cell 3->10
+    SimplifyGraph<K>(gp.g, gp.index, tot_lab, 10, gp.genome, cfg::get().output_dir/*, etalon_paired_index*/);
+
+    // by single_cell
+    EdgeQuality<Graph> quality_labeler(gp.g, gp.index, gp.genome);
+    LabelerList<Graph> labeler_list(tot_lab, quality_labeler);
+
+    WriteGraphComponents<K>(
+        gp.g,
+        gp.index,
+        labeler_list,
+        gp.genome,
+        cfg::get().output_dir + "graph_components/",
+        "graph.dot",
+        "graph_component",
+        cfg::get().ds.IS);
+
 
 //  ProduceInfo<k>(g, index, *totLab, genome, output_folder + "simplified_graph.dot", "simplified_graph");
 

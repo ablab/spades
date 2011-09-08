@@ -41,6 +41,7 @@ void estimate_distance(
 
     make_simplification(stream, gp, paired_index);
 
+    /* by single cell
     DistanceEstimator<Graph> estimator(
         gp.g,
         paired_index,
@@ -51,6 +52,7 @@ void estimate_distance(
         cfg::get().de.max_distance);
 
     estimator.Estimate(clustered_index);
+    */
 
 //  omnigraph::WriteSimple(g, *totLab, output_folder + "2_simplified_graph.dot", "no_repeat_graph");
 }
