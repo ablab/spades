@@ -13,9 +13,18 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-namespace debruijn
+namespace debruijn_graph
 {
+    enum working_stage
+    {
+        ws_construction,
+        ws_paired_info_count,
+        ws_simplification,
+        ws_distance_estimation,
+        ws_repeats_resolving,
+        ws_n50_enlargement
+    };
+
 	const char* const cfg_filename = "./src/debruijn/config.info";
 	const size_t K = 31; // must be odd (so there is no k-mer which is equal to it's reverse-complimentary k-mer)
 
@@ -35,29 +44,16 @@ namespace debruijn
 	// struct for debruijn project's configuration file
 	struct debruijn_config
 	{
-
-
-		enum working_stage {
-			start	,
-			after_construction		,
-			after_pair_info_counting	,
-			after_simplification		,
-			after_distance_estimation	,
-			after_repeat_resolving	,
-			after_consensus
-		};
-
 		typedef boost::bimap<std::string, working_stage> name_id_mapping;
 
 		static const name_id_mapping FillStageInfo() {
 			name_id_mapping working_stages_info;
-			working_stages_info.insert(name_id_mapping::value_type("start", start));
-			working_stages_info.insert(name_id_mapping::value_type("after_construction", after_construction));
-			working_stages_info.insert(name_id_mapping::value_type("after_pair_info_counting"	, after_pair_info_counting));
-			working_stages_info.insert(name_id_mapping::value_type("after_simplification"		, after_simplification));
-			working_stages_info.insert(name_id_mapping::value_type("after_distance_estimation"	, after_distance_estimation));
-			working_stages_info.insert(name_id_mapping::value_type("after_repeat_resolving"		, after_repeat_resolving));
-			working_stages_info.insert(name_id_mapping::value_type("after_consensus"			, after_consensus));
+			working_stages_info.insert(name_id_mapping::value_type("construction"       , ws_construction       ));
+			working_stages_info.insert(name_id_mapping::value_type("paired_info_count"  , ws_paired_info_count  ));
+			working_stages_info.insert(name_id_mapping::value_type("simplification"	    , ws_simplification     ));
+			working_stages_info.insert(name_id_mapping::value_type("distance_estimation", ws_distance_estimation));
+			working_stages_info.insert(name_id_mapping::value_type("repeats_resolving"	, ws_repeats_resolving  ));
+			working_stages_info.insert(name_id_mapping::value_type("n50_enlargement"	, ws_n50_enlargement    ));
 			return working_stages_info;
 		}
 
@@ -127,22 +123,24 @@ namespace debruijn
 			int LEN;
 		};
 
-		std::string input_dir;
+        std::string dataset_name;
+
+        std::string input_dir;
+
 		std::string output_root;
 		std::string output_dir;
-		std::string output_dir_suffix;
+		std::string output_suffix;
+		std::string output_saves;
 
-//		std::string previous_run_dir;
-		std::string dataset_name;
 		std::string reference_genome;
-		std::string start_from;
 
+		std::string load_from;
 
-//		working_stage entry_point;
+		working_stage entry_point;
+
 		bool paired_mode;
 		bool rectangle_mode;
 		bool etalon_info_mode;
-//		bool from_saved_graph;
 
 		std::string uncorrected_reads;
 
@@ -166,21 +164,9 @@ namespace debruijn
 		load(pt, "max_relative_coverage", tc.max_relative_coverage);
 	}
 
-	inline void load(boost::property_tree::ptree const& pt, std::string const& key, debruijn_config::working_stage& entry_point)
+	inline void load(boost::property_tree::ptree const& pt, std::string const& key, working_stage& entry_point)
 	{
 		std::string ep = pt.get<std::string>(key);
-	//	std::map<std::string, debruijn_config::working_stage> stages =
-	//	{
-	//			{"construction"			, debruijn_config::construction},
-	//			{"pair_info_counting"	, debruijn_config::pair_info_counting},
-	//			{"simplification"		, debruijn_config::simplification},
-	//			{"distance_estimation"	, debruijn_config::distance_estimation},
-	//			{"repeat_resolving"		, debruijn_config::repeat_resolving},
-	//			{"consensus"			, debruijn_config::consensus}
-	//	};
-	//
-	//	auto it = stages.find(ep);
-	//	assert(it != stages.end());
 		entry_point = debruijn_config::working_stage_id(ep);
 	}
 
@@ -238,30 +224,29 @@ namespace debruijn
 	{
 		using config_common::load;
 		// input options:
-//		temporarily disabled
-//		load(pt, "entry_point", cfg.entry_point);
-		load(pt, "input_dir", cfg.input_dir);
-	//	= cfg::get().output_dir
-//		load(pt, "previous_run_dir", cfg.previous_run_dir);
-		load(pt, "dataset", cfg.dataset_name);
+        load(pt, "dataset", cfg.dataset_name);
 
-		std::string base_output_dir;
-		load(pt, "output_dir", base_output_dir);
-		cfg.output_root = base_output_dir + "/" + cfg.dataset_name + "/";
-		mkdir(cfg.output_root.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-		cfg.output_root += "K" + ToString(K) + "/";
-		mkdir(cfg.output_root.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+        load(pt, "input_dir"  , cfg.input_dir);
 
-		cfg.output_dir_suffix = MakeLaunchTimeDirName() + "/";
-		cfg.output_dir = cfg.output_root + cfg.output_dir_suffix;
+		std::string output_base;
+		load(pt, "output_base", output_base);
+
+		cfg.output_root  = output_base + cfg.dataset_name + "/K" + ToString(K) + "/";
+		cfg.output_suffix= MakeLaunchTimeDirName() + "/";
+		cfg.output_dir   = cfg.output_root + cfg.output_suffix;
+		cfg.output_saves = cfg.output_dir + "saves/";
+
+        load(pt, "load_from", cfg.load_from);
+        cfg.load_from = cfg.output_root + cfg.load_from;
+
+		load(pt, "entry_point", cfg.entry_point);
 
 		load(pt, "reference_genome", cfg.reference_genome);
-		load(pt, "start_from", cfg.start_from);
+		//load(pt, "start_from", cfg.start_from);
 
 		load(pt, "paired_mode", cfg.paired_mode);
 		load(pt, "rectangle_mode", cfg.rectangle_mode);
 		load(pt, "etalon_info_mode", cfg.etalon_info_mode);
-//		load(pt, "from_saved_graph", cfg.from_saved_graph);
 
 		load(pt, "tc", cfg.tc); // tip clipper:
 		load(pt, "br", cfg.br); // bulge remover:
@@ -273,9 +258,9 @@ namespace debruijn
 		load(pt, cfg.dataset_name, cfg.ds);
 	}
 
-}
+} // debruijn_graph
 
-typedef config_common::config<debruijn::debruijn_config> cfg;
+typedef config_common::config<debruijn_graph::debruijn_config> cfg;
 
 #endif
 

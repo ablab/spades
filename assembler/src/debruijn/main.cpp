@@ -19,27 +19,35 @@
 
 DECL_PROJECT_LOGGER("d")
 
+int make_dir(std::string const& str)
+{
+    return mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+}
+
+
 int main() {
-	cfg::create_instance(debruijn::cfg_filename);
+
+    using namespace debruijn_graph;
+
+    checkFileExistenceFATAL(cfg_filename);
+    cfg::create_instance(cfg_filename);
 
 	// check config_struct.hpp parameters
-	if (debruijn::K % 2 == 0) {
+	if (K % 2 == 0)
 		FATAL("K in config.hpp must be odd!\n");
-	}
-	checkFileExistenceFATAL(debruijn::cfg_filename);
 
 	// read configuration file (dataset path etc.)
 	string input_dir = cfg::get().input_dir;
-	string dataset = cfg::get().dataset_name;
+	string dataset   = cfg::get().dataset_name;
 
-	string work_tmp_dir = cfg::get().output_root + "tmp/";
-//	std::cout << "here " << mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH) << std::endl;
-	mkdir(cfg::get().output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-
+	make_dir(cfg::get().output_root );
+	make_dir(cfg::get().output_dir  );
+	make_dir(cfg::get().output_saves);
 
 	string genome_filename = input_dir + cfg::get().reference_genome;
 	string reads_filename1 = input_dir + cfg::get().ds.first;
 	string reads_filename2 = input_dir + cfg::get().ds.second;
+
 	checkFileExistenceFATAL(genome_filename);
 	checkFileExistenceFATAL(reads_filename1);
 	checkFileExistenceFATAL(reads_filename2);
@@ -53,21 +61,17 @@ int main() {
 
 	// read data ('reads')
 
-	PairedReadStream pairStream(
-			std::pair<std::string, std::string>(reads_filename1,
-					reads_filename2),
-			cfg::get().ds.IS);
+	PairedReadStream pairStream(std::make_pair(reads_filename1,reads_filename2), cfg::get().ds.IS);
+
 	string real_reads = cfg::get().uncorrected_reads;
-	vector<ReadStream*> reads;
 	if (real_reads != "none") {
 		reads_filename1 = input_dir + (real_reads + "_1");
 		reads_filename2 = input_dir + (real_reads + "_2");
 	}
 	ReadStream reads_1(reads_filename1);
 	ReadStream reads_2(reads_filename2);
-	reads.push_back(&reads_1);
 
-	reads.push_back(&reads_2);
+	vector<ReadStream*> reads = {&reads_1, &reads_2};
 
 	FilteringStream filter_stream(pairStream);
 
@@ -83,12 +87,13 @@ int main() {
 	}
 	// assemble it!
 	INFO("Assembling " << dataset << " dataset");
-	debruijn_graph::DeBruijnGraphTool<debruijn::K>(rcStream, Sequence(genome), work_tmp_dir, reads);
+	debruijn_graph::assembly_genome(rcStream, Sequence(genome)/*, work_tmp_dir, reads*/);
 
-	unlink((cfg::get().output_root + "latest").c_str());
-		if (symlink(cfg::get().output_dir_suffix.c_str(), (cfg::get().output_root + "latest").c_str())
-				!= 0)
-	WARN( "Symlink to latest launch failed");
+	string latest_folder = cfg::get().output_root + "latest";
+	unlink(latest_folder.c_str());
+
+	if (symlink(cfg::get().output_suffix.c_str(), latest_folder.c_str()) != 0)
+	    WARN( "Symlink to latest launch failed");
 
 	INFO("Assembling " << dataset << " dataset finished");
 	// OK
