@@ -115,14 +115,14 @@ public:
 		edges.insert(edges.end(), to_append.begin(), to_append.end());
 	}
 
-	bool Condition(EdgeId edge, double possible_ec_coverage) {
-		return math::gr(g_.coverage(edge), possible_ec_coverage * coverage_gap_)
-				|| g_.length(edge) >= neighbour_length_threshold_;
+	bool StrongNeighbourCondition(EdgeId neighbour_edge, double possible_ec_coverage) {
+		return math::gr(g_.coverage(neighbour_edge), possible_ec_coverage * coverage_gap_)
+				|| g_.length(neighbour_edge) >= neighbour_length_threshold_;
 	}
 
-	bool Check(const vector<EdgeId>& edges, EdgeId possible_ec) {
+	bool CheckAdjacent(const vector<EdgeId>& edges, EdgeId possible_ec) {
 		for (auto it = edges.begin(); it != edges.end(); ++it) {
-			if (!Condition(*it, g_.coverage(possible_ec)))
+			if (!StrongNeighbourCondition(*it, g_.coverage(possible_ec)))
 				return false;
 		}
 		return true;
@@ -141,7 +141,7 @@ public:
 			Append(adjacent_edges, g_.OutgoingEdges(g_.EdgeEnd(e)));
 			Append(adjacent_edges, g_.IncomingEdges(g_.EdgeEnd(e)));
 
-			if (Check(adjacent_edges, e)) {
+			if (CheckAdjacent(adjacent_edges, e)) {
 				VertexId start = g_.EdgeStart(e);
 				VertexId end = g_.EdgeEnd(e);
 				if (!RelatedVertices<Graph>(g_, start, end)) {
