@@ -5,6 +5,8 @@ find_path (fftw3_INCLUDE_DIRS
   PATHS
     /usr/local/include
     /usr/include
+    ${CMAKE_SOURCE_DIR}/../build/ext/fftw/include
+
 )
 
 find_library (fftw3_LIBRARIES
@@ -12,6 +14,7 @@ find_library (fftw3_LIBRARIES
   PATHS
     /usr/local/lib
     /usr/lib
+    ${CMAKE_SOURCE_DIR}/../build/ext/fftw/lib
 )
 
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(fftw3
