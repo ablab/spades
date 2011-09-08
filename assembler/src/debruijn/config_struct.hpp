@@ -263,6 +263,7 @@ namespace debruijn
 		load(pt, "tc", cfg.tc); // tip clipper:
 		load(pt, "br", cfg.br); // bulge remover:
 		load(pt, "ec", cfg.ec); // erroneous connections remover:
+		load(pt, "cec", cfg.cec); // cheating erroneous connections remover:
 		load(pt, "de", cfg.de); // distance estimator:
 		load(pt, "rr", cfg.rr); // repeat resolver:
 		load(pt, "uncorrected_reads", cfg.uncorrected_reads);
