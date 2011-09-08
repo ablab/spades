@@ -9,11 +9,11 @@ reference_genome  MG1655-K12.fasta.gz
 
 load_from         latest/saves/ ; tmp or latest 
 
-;entry_point construction
+ entry_point construction
 ;entry_point paired_info_count
 ;entry_point simplification    
 ;entry_point distance_estimation
- entry_point repeats_resolving	
+;entry_point repeats_resolving	
 ;entry_point n50_enlargement
 
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
@@ -29,8 +29,8 @@ etalon_info_mode  false
 
 tc
 {
-   	max_tip_length_div_K	4.0
-	max_coverage			1000.0
+   max_tip_length_div_K	   4.0
+	max_coverage			   1000.0
 	max_relative_coverage	100.0   ; tip_cov < this * not_tip_cov
 }
 
@@ -38,10 +38,10 @@ tc
 
 br
 {
-	max_length_div_K	    5
-	max_coverage			1000.0
+	max_length_div_K	      5
+	max_coverage			   1000.0
 	max_relative_coverage	100.0 	; bulge_cov < this * not_bulge_cov
-	max_delta				2.1
+	max_delta				   2.1
 	max_relative_delta		0.1
 }
 
@@ -205,6 +205,7 @@ SC_NEW_3
 	second	SC/3008_tau1_095_02_right.fastq.gz
 	RL		100	; read length
 	IS		270 	; insert size
+}
 
 EAS600_EMUL_FULL
 {
