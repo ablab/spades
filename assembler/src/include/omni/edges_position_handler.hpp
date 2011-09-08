@@ -19,11 +19,12 @@ class EdgePosition {
 public:
 	int start_;
 	int end_;
-	EdgePosition (int start, int end): start_(start), end_(end) {};
+	int contigId_;
+	EdgePosition (int start, int end, int contigId = 0): start_(start), end_(end), contigId_(contigId) {};
 };
 
 bool PosCompare(const EdgePosition &a, const EdgePosition &b){
-	return (a.end_<b.end_);
+	return ((a.contigId_ < b.contigId_) ||((a.contigId == b.contigId_)&&(a.end_<b.end_)));
 }
 
 vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosition> v2){
@@ -31,9 +32,18 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosi
 	if (v1.size() == 0 || v2.size() == 0) return res;
 	for( size_t i = 0; i< v1.size(); i++){
 		for( size_t j = 0; j< v2.size(); j++){
-			if (v1[i].end_ + 1 == v2[j].start_) {
-				res.push_back(EdgePosition(v1[i].start_, v2[j].end_));
-	 		}
+			if {(v1[i].contigId_ == v2[j].contigId_)}{
+				if (v1[i].end_ + 1 == v2[j].start_) {
+					res.push_back(EdgePosition(v1[i].start_, v2[j].end_, v1[i].contigId_));
+				}
+				else
+				{
+					if ((v1[i].end_ < v2[j].start_)&&(v1[i].end_ + cfg::get().pos.max_single_gap > v2[j].start_)){
+						res.push_back(EdgePosition(v1[i].start_, v2[j].end_, v1[i].contigId_));
+						DEBUG("Glue parts of contigs "<<v1[i].contigId_<< "with gap: "<<v1[i].start_<<"-"<<v1[i].end_<<" and "<<v2[j].start_<<"-"<<v2[j].end_);
+					}
+				}
+			}
 	 	}
 	}
 	return res;
