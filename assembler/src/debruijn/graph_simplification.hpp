@@ -175,7 +175,7 @@ void SimplifyGraph(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	CountStats<k> (g, index, genome);
 
 	INFO("Final TipClipping");
-	ClipTips(g, iteration_count, iteration_count - 1);
+	ClipTips(g);
 //		ProduceDetailedInfo<k> (g, index, labeler, genome,
 //				output_folder + "tips_clipped_" + ToString(i) + "/",
 //				"graph.dot", "no_tip_graph");
