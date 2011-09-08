@@ -30,7 +30,7 @@
 namespace debruijn_graph {
 
 #define MAX_DISTANCE_CORRECTION 10
-#define FAR_FROM_VERTEX 14
+
 
 using omnigraph::SmartVertexIterator;
 using omnigraph::Compressor;
@@ -164,6 +164,7 @@ public:
 		real_vertices.clear();
 		set<EdgeId> edges;
 		edges.clear();
+		near_vertex = cfg::get().rr.near_vertex;
 		for (auto v_iter = old_graph.SmartVertexBegin(); !v_iter.IsEnd();
 				++v_iter) {
 			//		if (vertices.find(old_graph.conjugate(*v_iter)) == vertices.end())
@@ -239,6 +240,7 @@ public:
 
 private:
 	int leap_;
+	int near_vertex;
 	size_t RectangleResolveVertex(VertexId vid);
 	size_t CheatingResolveVertex(VertexId vid);
 
@@ -598,7 +600,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	for (cheating_mode = 0; cheating_mode < cfg::get().rr.mode; cheating_mode++) {
 		INFO(" cheating_mode = " << cheating_mode);
 		bool changed = true;
-		set<VertexId> vertices;
+		map<int, VertexId> vertices;
 
 		while (changed) {
 			changed = false;
@@ -607,7 +609,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 					++v_iter) {
 				//			if (vertices.find(new_graph.conjugate(*v_iter)) == vertices.end()) {
 //				if (new_graph.OutgoingEdgeCount(*v_iter) + new_graph.IncomingEdgeCount(*v_iter) > 0)
-					vertices.insert(*v_iter);
+					vertices.insert(make_pair(100000 - new_IDs.ReturnIntId(*v_iter), *v_iter));
 				//			}
 			}
 			INFO(
@@ -622,14 +624,14 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 
 			for (auto v_iter = vertices.begin(), v_end =
 					vertices.end(); v_iter != v_end; ++v_iter) {
-				size_t p_size = GenerateVertexPairedInfo(new_graph, paired_di_data, *v_iter);
+				size_t p_size = GenerateVertexPairedInfo(new_graph, paired_di_data, v_iter->second);
 				DEBUG(" resolving vertex"<<*v_iter<<" "<< p_size);
 				int tcount;
 				if (cheating_mode != 1)
-					tcount = RectangleResolveVertex(*v_iter);
+					tcount = RectangleResolveVertex(v_iter->second);
 				else
-					tcount = CheatingResolveVertex(*v_iter);
-				DEBUG("Vertex "<< *v_iter<< " resolved to "<< tcount);
+					tcount = CheatingResolveVertex(v_iter->second);
+				DEBUG("Vertex "<< v_iter->first<< " resolved to "<< tcount);
 				sum_count += tcount;
 				if (tcount > 1) {
 					GraphCnt++;
@@ -765,7 +767,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 						EdgeInfo ei(correction_result.second, dir, right_id,
 								correction_result.second.d - dif_d);
 						int trusted_dist = cfg::get().ds.IS - cfg::get().ds.RL;
-						if (cheating_mode == 2 && ((correction_result.second.d - dif_d + old_graph.length(right_id) < trusted_dist - FAR_FROM_VERTEX) || (correction_result.second.d - dif_d > trusted_dist  + FAR_FROM_VERTEX))) {
+						if (cheating_mode == 2 && ((correction_result.second.d - dif_d + old_graph.length(right_id) < trusted_dist - near_vertex) || (correction_result.second.d - dif_d > trusted_dist  + near_vertex))) {
 							local_cheating_edges.insert(make_pair(left_id, 0));
 							DEBUG("ignored paired_info between " << new_IDs.ReturnIntId(left_id) <<" and " <<old_IDs.ReturnIntId(right_id) <<" with distance " << correction_result.second.d - dif_d);
 						} else {
@@ -885,9 +887,14 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 		}
 	}
 	DEBUG("Edge color info " << debruijn::operator<<(oss_, edge_info_colors));
+	if (cheating_mode) {
+		if (cur_color > 1) {
+			INFO("cheat_2 resolved vertex " << new_IDs.ReturnIntId(vid));
+		} else {
+			INFO("cheat_2 ignored vertex " << new_IDs.ReturnIntId(vid));
+		}
+	}
 	MultiSplit(vid);
-	if (cheating_mode && (cur_color > 1))
-		INFO("resolved vertex " << new_IDs.ReturnIntId(vid));
 	return cur_color;
 }
 

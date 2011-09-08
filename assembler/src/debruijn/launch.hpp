@@ -491,7 +491,7 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 		omnigraph::WriteSimple(resolved_graph, TotLabAfter, output_folder + "4_cleared_graph.dot",
 				"no_repeat_graph");
 
-		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
+		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph, cfg::get().ds.IS);
 		N50enlarger.Loops_resolve();
 
 		omnigraph::WriteSimple(resolved_graph, TotLabAfter, output_folder + "5_unlooped_graph.dot",

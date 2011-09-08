@@ -103,6 +103,7 @@ namespace debruijn
 		struct repeat_resolver
 		{
 			int mode;
+			int near_vertex;
 		};
 		struct distance_estimator
 		{
@@ -221,6 +222,7 @@ namespace debruijn
 	{
 		using config_common::load;
 		load(pt, "mode", rr.mode);
+		load(pt, "near_vertex", rr.near_vertex);
 	}
 
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::dataset& ds)
