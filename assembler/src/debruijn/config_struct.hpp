@@ -249,6 +249,9 @@ namespace debruijn
 		load(pt, "output_dir", base_output_dir);
 		cfg.output_root = base_output_dir + "/" + cfg.dataset_name + "/";
 		mkdir(cfg.output_root.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+		cfg.output_root += "K" + ToString(K) + "/";
+		mkdir(cfg.output_root.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+
 		cfg.output_dir_suffix = MakeLaunchTimeDirName() + "/";
 		cfg.output_dir = cfg.output_root + cfg.output_dir_suffix;
 
