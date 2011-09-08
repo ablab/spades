@@ -116,15 +116,15 @@ public:
 	}
 
 	bool StrongNeighbourCondition(EdgeId neighbour_edge,
-			double possible_ec_coverage) {
-		return math::gr(g_.coverage(neighbour_edge),
-				possible_ec_coverage * coverage_gap_)
+			EdgeId possible_ec) {
+		return neighbour_edge == possible_ec || math::gr(g_.coverage(neighbour_edge),
+				g_.coverage(possible_ec) * coverage_gap_)
 				|| g_.length(neighbour_edge) >= neighbour_length_threshold_;
 	}
 
 	bool CheckAdjacent(const vector<EdgeId>& edges, EdgeId possible_ec) {
 		for (auto it = edges.begin(); it != edges.end(); ++it) {
-			if (!StrongNeighbourCondition(*it, g_.coverage(possible_ec)))
+			if (!StrongNeighbourCondition(*it, possible_ec))
 				return false;
 		}
 		return true;
@@ -134,34 +134,22 @@ public:
 		LengthComparator<Graph> comparator(g_);
 		for (auto it = g_.SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
 			typename Graph::EdgeId e = *it;
-			cerr << "Length " << g_.length(e) << endl;
 			if (g_.length(e) > max_length_) {
 				return;
 			}
-			if (g_.length(e) == 25 && math::eq(g_.coverage(e), 25.16)) {
+			vector<EdgeId> adjacent_edges;
+			Append(adjacent_edges, g_.OutgoingEdges(g_.EdgeStart(e)));
+			Append(adjacent_edges, g_.IncomingEdges(g_.EdgeStart(e)));
+			Append(adjacent_edges, g_.OutgoingEdges(g_.EdgeEnd(e)));
+			Append(adjacent_edges, g_.IncomingEdges(g_.EdgeEnd(e)));
 
-				cerr << "Edge found" << endl;
-
-				vector<EdgeId> adjacent_edges;
-				Append(adjacent_edges, g_.OutgoingEdges(g_.EdgeStart(e)));
-				Append(adjacent_edges, g_.IncomingEdges(g_.EdgeStart(e)));
-				Append(adjacent_edges, g_.OutgoingEdges(g_.EdgeEnd(e)));
-				Append(adjacent_edges, g_.IncomingEdges(g_.EdgeEnd(e)));
-
-				cerr << "Adjacent edges count " << adjacent_edges.size()
-						<< endl;
-
-				if (CheckAdjacent(adjacent_edges, e)) {
-					cerr << "Adjacent check passed " << endl;
-
-					VertexId start = g_.EdgeStart(e);
-					VertexId end = g_.EdgeEnd(e);
-					if (!RelatedVertices<Graph>(g_, start, end)) {
-						cerr << "Vertices not related " << endl;
-						g_.DeleteEdge(e);
-						g_.CompressVertex(start);
-						g_.CompressVertex(end);
-					}
+			if (CheckAdjacent(adjacent_edges, e)) {
+				VertexId start = g_.EdgeStart(e);
+				VertexId end = g_.EdgeEnd(e);
+				if (!RelatedVertices<Graph>(g_, start, end)) {
+					g_.DeleteEdge(e);
+					g_.CompressVertex(start);
+					g_.CompressVertex(end);
 				}
 			}
 		}
