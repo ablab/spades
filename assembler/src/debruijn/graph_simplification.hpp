@@ -165,7 +165,6 @@ void SimplifyGraph(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 
 		INFO(i << " ErroneousConnectionsRemoval stats");
 		CountStats<k> (g, index, genome);
-
 	}
 
 	INFO("Cheating ErroneousConnectionsRemoval");
