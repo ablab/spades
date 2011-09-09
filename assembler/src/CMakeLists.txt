@@ -45,7 +45,7 @@ find_package(statgen)
 find_package(staden)
 find_package(ssl)
 find_package(bam)
-find_package(Boost COMPONENTS signals REQUIRED)
+find_package(Boost COMPONENTS signals system filesystem REQUIRED)
 
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 

@@ -195,7 +195,7 @@ public:
 
 	//todo extract from here!!!
 	std::string toPrint(VertexId v,
-			IdTrackHandler<ConjugateDeBruijnGraph> &id_handler) const {
+			IdTrackHandler<ConjugateDeBruijnGraph> const &id_handler) const {
 		stringstream ss;
 		ss << "Vertex " << id_handler.ReturnIntId(v) << " ~ "
 				<< id_handler.ReturnIntId(conjugate(v)) << " .";
@@ -204,7 +204,7 @@ public:
 
 	//todo extract from here!!!
 	std::string toPrint(EdgeId e,
-			IdTrackHandler<ConjugateDeBruijnGraph> &id_handler) const {
+			IdTrackHandler<ConjugateDeBruijnGraph> const &id_handler) const {
 		stringstream ss;
 		ss << "Edge " << id_handler.ReturnIntId(e) << " : "
 				<< id_handler.ReturnIntId(EdgeStart(e)) << " -> "
@@ -310,7 +310,7 @@ public:
 
 	//todo extract from here!!!
 	std::string toPrint(VertexId v,
-			IdTrackHandler<NonconjugateDeBruijnGraph> &id_handler) const {
+			IdTrackHandler<NonconjugateDeBruijnGraph> const& id_handler) const {
 		stringstream ss;
 		ss << "Vertex " << id_handler.ReturnIntId(v) << " .";
 		return ss.str();
@@ -318,7 +318,7 @@ public:
 
 	//todo extract from here!!!
 	std::string toPrint(EdgeId e,
-			IdTrackHandler<NonconjugateDeBruijnGraph> &id_handler) const {
+			IdTrackHandler<NonconjugateDeBruijnGraph> const& id_handler) const {
 		stringstream ss;
 		ss << "Edge " << id_handler.ReturnIntId(e) <<" : " << id_handler.ReturnIntId(EdgeStart(e))
 				<< " -> " << id_handler.ReturnIntId(EdgeEnd(e))<<", l = "<< length(e) <<" .";

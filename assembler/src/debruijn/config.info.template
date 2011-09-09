@@ -1,9 +1,20 @@
 ; input options:
 
+dataset 	      QUAKE_CROPPED_1K
+
 input_dir	      ./data/input/E.Coli.K12.MG1655/
-output_dir	      ./data/debruijn/
-dataset 	      SC_FULL
+output_base	      ./data/debruijn/
+
 reference_genome  MG1655-K12.fasta.gz
+
+load_from         latest/saves/ ; tmp or latest 
+
+ entry_point construction
+;entry_point paired_info_count
+;entry_point simplification    
+;entry_point distance_estimation
+;entry_point repeats_resolving	
+;entry_point n50_enlargement
 
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
 paired_mode false
@@ -14,17 +25,12 @@ rectangle_mode	false
 ; set to true to obtain paired info from genome mapping rather than from paired reads
 etalon_info_mode  false
 
-start_from begin   ; Full run.
-;start_from after_filling  ; Run with previous constructed graph.
-;start_from after_simplify  ; Run with previous constructed and simplified graph.
-;start_from before_resolve  ; Same as previous but without loading conjugate graph
-
 ; tip clipper:
 
 tc
 {
-   	max_tip_length_div_K	4.0
-	max_coverage			1000.0
+   max_tip_length_div_K	   4.0
+	max_coverage			   1000.0
 	max_relative_coverage	100.0   ; tip_cov < this * not_tip_cov
 }
 
@@ -32,10 +38,10 @@ tc
 
 br
 {
-	max_length_div_K	    5
-	max_coverage			1000.0
+	max_length_div_K	      5
+	max_coverage			   1000.0
 	max_relative_coverage	100.0 	; bulge_cov < this * not_bulge_cov
-	max_delta				2.1
+	max_delta				   2.1
 	max_relative_delta		0.1
 }
 
@@ -199,6 +205,14 @@ SC_NEW_3
 	second	SC/3008_tau1_095_02_right.fastq.gz
 	RL		100	; read length
 	IS		270 	; insert size
+}
+
+EAS600_EMUL_FULL
+{
+	first	EAS600_70/emulation/reads_1.fastq
+	second	EAS600_70/emulation/reads_2.fastq
+	RL		100		; read length
+	IS		500 	; insert size
 	LEN		4639675	; total size
 }
 

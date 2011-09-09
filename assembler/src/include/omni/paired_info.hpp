@@ -8,6 +8,7 @@
 #include <map>
 #include <limits>
 #include <xmath.h>
+#include "omni_utils.hpp"
 
 //#define MERGE_DATA_RELATIVE_DIFFERENCE 0.3
 
@@ -515,7 +516,7 @@ public:
 	/*
 	 * @return quantity of paired info
 	 */
-	size_t size() {
+	size_t size() const {
 		return data_.size();
 	}
 

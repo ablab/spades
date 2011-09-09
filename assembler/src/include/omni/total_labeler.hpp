@@ -10,7 +10,8 @@
 #include "graph_labeler.hpp"
 #include "simple_tools.hpp"
 #include "edge_labels_handler.hpp"
-
+#include "ID_track_handler.hpp"
+#include "edges_position_handler.hpp"
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -27,7 +28,7 @@ public:
 	IdTrackHandler<Graph>* IDs;
 	EdgesPositionHandler<Graph>* EdgesPos;
 	EdgeLabelHandler<Graph>* EdgesLabels;
-	TotalLabelerGraphStruct(Graph &g, IdTrackHandler<Graph>* id_handler,	EdgesPositionHandler<Graph>* position_handler,
+	TotalLabelerGraphStruct(Graph &g, IdTrackHandler<Graph>* id_handler, EdgesPositionHandler<Graph>* position_handler,
 							EdgeLabelHandler<Graph>* label_handler = NULL): g_(g),
 							IDs(id_handler), EdgesPos(position_handler), EdgesLabels(label_handler)	{
 
