@@ -23,6 +23,7 @@ function build_staden
 
    $ext/src/io_lib-1.12.5/configure --prefix="`pwd`"
 
+   make distclean
    make
    make install
 }
@@ -36,6 +37,7 @@ function build_fftw
 
    $ext/src/fftw-3.3/configure --prefix="`pwd`"
 
+   make distclean
    make
    make install
 }
