@@ -20,10 +20,10 @@ function build_staden
    
    mkdir -p $build/ext/staden
    cd $build/ext/staden
-
+   make distclean
+   
    $ext/src/io_lib-1.12.5/configure --prefix="`pwd`"
 
-   make distclean
    make
    make install
 }
@@ -34,10 +34,10 @@ function build_fftw
    
    mkdir -p $build/ext/fftw
    cd $build/ext/fftw
-
+   make distclean
+   
    $ext/src/fftw-3.3/configure --prefix="`pwd`"
 
-   make distclean
    make
    make install
 }
