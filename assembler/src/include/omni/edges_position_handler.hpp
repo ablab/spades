@@ -58,18 +58,47 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 
 public:
 	map<EdgeId, vector<EdgePosition> > EdgesPositions;
-	void AddEdgePosition (EdgeId NewEdgeId, int start, int end) {
+	void AddEdgePosition (EdgeId NewEdgeId, int start, int end, int contigId = 0) {
 		if (EdgesPositions.find(NewEdgeId) == EdgesPositions.end()) {
 			vector<EdgePosition> NewVec;
 			EdgesPositions[NewEdgeId] = NewVec;
 		}
-		EdgePosition NewPos(start, end);
+		EdgePosition NewPos(start, end, contigId);
 		(EdgesPositions[NewEdgeId]).push_back(NewPos);
-		DEBUG("Add pos "<<NewPos.start_<<" "<<NewPos.end_<<" for edge "<<NewEdgeId<<" total positions: "<< EdgesPositions[NewEdgeId].size());
+//		DEBUG("Add pos "<<NewPos.start_<<" "<<NewPos.end_<<" for edge "<<NewEdgeId<<" total positions: "<< EdgesPositions[NewEdgeId].size());
 
 		if (EdgesPositions[NewEdgeId].size()>1){
 			std::sort(EdgesPositions[NewEdgeId].begin(), EdgesPositions[NewEdgeId].end(), PosCompare);
 		}
+
+	}
+
+	void AddEdgePosition (EdgeId NewEdgeId, EdgePosition NewPos) {
+		if (EdgesPositions.find(NewEdgeId) == EdgesPositions.end()) {
+			vector<EdgePosition> NewVec;
+			EdgesPositions[NewEdgeId] = NewVec;
+		}
+		(EdgesPositions[NewEdgeId]).push_back(NewPos);
+	//	DEBUG("Add pos "<<NewPos.start_<<" "<<NewPos.end_<<" for edge "<<NewEdgeId<<" total positions: "<< EdgesPositions[NewEdgeId].size());
+
+		if (EdgesPositions[NewEdgeId].size()>1){
+			std::sort(EdgesPositions[NewEdgeId].begin(), EdgesPositions[NewEdgeId].end(), PosCompare);
+		}
+
+	}
+
+	void AddEdgePosition (EdgeId NewEdgeId, vector<EdgePosition> NewPositions) {
+			if (EdgesPositions.find(NewEdgeId) == EdgesPositions.end()) {
+				vector<EdgePosition> NewVec;
+				EdgesPositions[NewEdgeId] = NewVec;
+			}
+			for (auto iter = NewPositions.begin(); iter != NewPositions.end(); ++iter)
+				(EdgesPositions[NewEdgeId]).push_back(*iter);
+		//	DEBUG("Add pos "<<NewPos.start_<<" "<<NewPos.end_<<" for edge "<<NewEdgeId<<" total positions: "<< EdgesPositions[NewEdgeId].size());
+
+			if (EdgesPositions[NewEdgeId].size()>1){
+				std::sort(EdgesPositions[NewEdgeId].begin(), EdgesPositions[NewEdgeId].end(), PosCompare);
+			}
 
 	}
 	std::string str(EdgeId edgeId){
@@ -90,15 +119,11 @@ public:
 		TRACE("~EdgePositionHandler ok");
 	}
 
-	 virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		 DEBUG("Handle glue ");
+	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+		DEBUG("Handle glue ");
 
-		 for( size_t i = 0; i< EdgesPositions[edge1].size(); i++){
-			 AddEdgePosition(new_edge, (EdgesPositions[edge1])[i].start_,(EdgesPositions[edge1])[i].end_);
-		 }
-		 for( size_t j = 0; j< EdgesPositions[edge2].size(); j++){
-			 AddEdgePosition(new_edge, (EdgesPositions[edge2])[j].start_,(EdgesPositions[edge2])[j].end_);
-		 }
+		AddEdgePosition(new_edge, (EdgesPositions[edge1]));
+		AddEdgePosition(new_edge, (EdgesPositions[edge2]));
 
 /*		 for( size_t i = 0; i< EdgesPositions[edge1].size(); i++){
 			 for( size_t j = 0; j< EdgesPositions[edge2].size(); j++){
@@ -126,9 +151,7 @@ public:
  			 res = GluePositionsLists(res, EdgesPositions[oldEdges[i]]);
  		 }
 
- 		 for(size_t i =0; i < res.size(); i++){
- 			AddEdgePosition(newEdge, res[i].start_, res[i].end_);
- 		 }
+ 		AddEdgePosition(newEdge, res);
 	 }
 /*
 	virtual void HandleAdd(VertexId v) {
@@ -146,18 +169,21 @@ public:
 		}
  	}
 	virtual void HandleDelete(EdgeId e) {
-		if (EdgesPositions[e].size() > 0) {
-			DEBUG("Delete edge "<<e<<" handled. Not empty info: "<<EdgesPositions[e].size());
-			for (size_t i = 0; i < EdgesPositions[e].size(); i++){
-				DEBUG("Position info: "<<EdgesPositions[e][i].start_<<" --- "<<EdgesPositions[e][i].end_);
-			}
-		}
-		else {
-			DEBUG("Delete edge "<<e<<" handled.");
-		}
+//		if (EdgesPositions[e].size() > 0) {
+//			DEBUG("Delete edge "<<e<<" handled. Not empty info: "<<EdgesPositions[e].size());
+//			for (size_t i = 0; i < EdgesPositions[e].size(); i++){
+//				DEBUG("Position info: "<<EdgesPositions[e][i].start_<<" --- "<<EdgesPositions[e][i].end_);
+//			}
+//		}
+//		else {
+//			DEBUG("Delete edge "<<e<<" handled.");
+//		}
 		EdgesPositions.erase(e);
 	}
  	void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) {
+ 		for (auto cur_edges_pair = newEdges.begin(); cur_edges_pair != newEdges.end(); ++cur_edges_pair){
+ 			AddEdgePosition(cur_edges_pair->second, EdgePositions[cur_edges_pair->first]);
+ 		}
  	}
 
 
