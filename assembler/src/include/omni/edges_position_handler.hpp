@@ -24,7 +24,7 @@ public:
 };
 
 bool PosCompare(const EdgePosition &a, const EdgePosition &b){
-	return ((a.contigId_ < b.contigId_) ||((a.contigId == b.contigId_)&&(a.end_<b.end_)));
+	return ((a.contigId_ < b.contigId_) ||((a.contigId_ == b.contigId_)&&(a.end_<b.end_)));
 }
 
 vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosition> v2){
@@ -32,7 +32,7 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosi
 	if (v1.size() == 0 || v2.size() == 0) return res;
 	for( size_t i = 0; i< v1.size(); i++){
 		for( size_t j = 0; j< v2.size(); j++){
-			if {(v1[i].contigId_ == v2[j].contigId_)}{
+			if (v1[i].contigId_ == v2[j].contigId_){
 				if (v1[i].end_ + 1 == v2[j].start_) {
 					res.push_back(EdgePosition(v1[i].start_, v2[j].end_, v1[i].contigId_));
 				}
@@ -182,7 +182,7 @@ public:
 	}
  	void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) {
  		for (auto cur_edges_pair = newEdges.begin(); cur_edges_pair != newEdges.end(); ++cur_edges_pair){
- 			AddEdgePosition(cur_edges_pair->second, EdgePositions[cur_edges_pair->first]);
+ 			AddEdgePosition(cur_edges_pair->second, EdgesPositions[cur_edges_pair->first]);
  		}
  	}
 
