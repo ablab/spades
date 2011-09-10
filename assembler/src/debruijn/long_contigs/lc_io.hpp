@@ -20,6 +20,78 @@ namespace long_contigs {
 using namespace debruijn_graph;
 using debruijn::K;
 
+int FindInfoByDistance(omnigraph::PairedInfoIndex<Graph>::PairInfos pairs, int d) {
+	for (int i = 0; i < (int) pairs.size(); ++i) {
+		if (d >= rounded_d(pairs[i]) - 1 && d <= rounded_d(pairs[i]) + 1) {
+			return i;
+		}
+	}
+	INFO("CONJUGATE INFO NOT FOUND: " << d);
+	return -1;
+}
+
+
+void MakeSymetricInfo(Graph& g, PairedInfoIndexLibrary& lib) {
+	INFO("Making symetric info")
+	for (auto edge1 = g.SmartEdgeBegin(); !edge1.IsEnd(); ++edge1) {
+		for (auto edge2 = g.SmartEdgeBegin(); !edge2.IsEnd(); ++edge2) {
+
+			std::vector<PairInfo<EdgeId>> pairs = lib.pairedInfoIndex->GetEdgePairInfo(*edge1, *edge2);
+			std::vector<PairInfo<EdgeId>> conjPairs = lib.pairedInfoIndex->GetEdgePairInfo(g.conjugate(*edge2), g.conjugate(*edge1));
+
+			if (pairs.size() != conjPairs.size()) {
+				INFO("Paired info count is not the same in conjugate");
+			}
+
+			for (auto iter1 = pairs.begin(); iter1 != pairs.end(); ++iter1) {
+				int d = rounded_d(*iter1);
+				int conjD = d - g.length(*edge1) + g.length(*edge2);
+				int i = FindInfoByDistance(conjPairs, conjD);
+
+				if (i == -1) {
+					INFO("Edges: " << g.length(*edge1) << ", " << g.length(*edge2)  << ". Distances: " << d << ", " << conjD);
+					continue;
+				}
+
+				if (conjPairs[i].d != conjD) {
+					INFO("Changing distances");
+					conjPairs[i].d = conjD;
+
+					std::vector<PairInfo<EdgeId>> conjSymPairs = lib.pairedInfoIndex->GetEdgePairInfo(g.conjugate(*edge1), g.conjugate(*edge2));
+					int j = FindInfoByDistance(conjSymPairs, -conjD);
+					if (j == -1) {
+						INFO("SYMETIC CONJ! Edges: " << g.length(*edge1) << ", " << g.length(*edge2)  << ". Distances: " << d << ", " << - conjD);
+					}
+					conjSymPairs[j].d = - conjD;
+				}
+
+				if (conjPairs[i].weight != iter1->weight) {
+					INFO("Changing weights");
+					double newWeight = (conjPairs[i].weight + iter1->weight) / 2;
+					iter1->weight = newWeight;
+					conjPairs[i].weight = newWeight;
+
+
+					std::vector<PairInfo<EdgeId>> symPairs = lib.pairedInfoIndex->GetEdgePairInfo(*edge2, *edge1);
+					int j = FindInfoByDistance(symPairs, -d);
+					if (j == -1) {
+						INFO("SYMETIC! Edges: " << g.length(*edge1) << ", " << g.length(*edge2)  << ". Distances: " << d << ", " << -d);
+					}
+					symPairs[j].weight = newWeight;
+
+					std::vector<PairInfo<EdgeId>> conjSymPairs = lib.pairedInfoIndex->GetEdgePairInfo(g.conjugate(*edge1), g.conjugate(*edge2));
+					j = FindInfoByDistance(conjSymPairs, -conjD);
+					if (j == -1) {
+						INFO("SYMETIC CONJ! Edges: " << g.length(*edge1) << ", " << g.length(*edge2)  << ". Distances: " << d << ", " << - conjD);
+					}
+					conjSymPairs[j].weight = newWeight;
+				}
+			}
+		}
+	}
+	INFO("Done")
+}
+
 template<size_t k>
 void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_IntIds,	Sequence& sequence) {
 	string input_dir = cfg::get().input_dir;
@@ -51,7 +123,7 @@ void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence&
 	for (auto el = lc_cfg::get().etalon_libs.begin(); el != lc_cfg::get().etalon_libs.end(); ++el) {
 		INFO("Generating info with read size " << el->read_size << ", insert size " << el->insert_size);
 
-		pairedInfos.push_back(PairedInfoIndexLibrary(el->read_size, el->insert_size, lc_cfg::get().es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
+		pairedInfos.push_back(PairedInfoIndexLibrary(el->read_size, el->insert_size, 0, lc_cfg::get().es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
 		FillEtalonPairedIndex<k> (g, *pairedInfos.back().pairedInfoIndex, index, el->insert_size, el->read_size, genome);
 	}
 }
@@ -61,9 +133,10 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 	for (auto rl = lc_cfg::get().real_libs.begin(); rl != lc_cfg::get().real_libs.end(); ++rl) {
 		size_t insertSize = rl->insert_size;
 		size_t readSize = rl->read_size;
+		size_t delta = rl->is_delta;
 		size_t var = rl->var;
 		string dataset = cfg::get().dataset_name;
-		pairedInfos.push_back(PairedInfoIndexLibrary(readSize, insertSize, var, new PairedInfoIndex<Graph>(g, 0)));
+		pairedInfos.push_back(PairedInfoIndexLibrary(readSize, insertSize, delta, var, new PairedInfoIndex<Graph>(g, 0)));
 
 		INFO("Reading additional info with read size " << readSize << ", insert size " << insertSize);
 
@@ -101,6 +174,8 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 			}
 		}
 		INFO("Done");
+
+		MakeSymetricInfo(g, pairedInfos.back());
 	}
 }
 
@@ -197,7 +272,8 @@ void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath>& 
 
 	for (int i = 0; i < (int) paths.size(); ++i) {
 		if (printed.count(i) == 0) {
-			oss << PathToSequence(g, paths[i]);
+			int toPrint = (pairs[i] == -1 || PathLength(g, paths[i]) > PathLength(g, paths[pairs[i]])) ? i : pairs[i];
+			oss << PathToSequence(g, paths[toPrint]);
 			printed.insert(i);
 			printed.insert(pairs[i]);
 		}

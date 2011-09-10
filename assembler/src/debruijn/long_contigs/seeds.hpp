@@ -101,6 +101,27 @@ void JoinPaths(BidirectionalPath& path1, BidirectionalPath& path2) {
 	}
 }
 
+void SimpleRecountDetectorForward(BidirectionalPath& path, LoopDetector& detector) {
+	detector.clear();
+
+	for (int i = 0; i < (int) path.size(); ++i) {
+		detector.temp.clear();
+		detector.temp.AddAlternative(path[i]);
+		detector.AddNewEdge(path[i], i);
+	}
+}
+
+void SimpleRecountDetectorBackward(BidirectionalPath& path, LoopDetector& detector) {
+	detector.clear();
+
+	for (int i = path.size() - 1; i >= 0; --i) {
+		detector.temp.clear();
+		detector.temp.AddAlternative(path[i]);
+		detector.AddNewEdge(path[i], path.size() - 1 - i);
+	}
+}
+
+
 //Find all seeds as trivial paths
 void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 	std::map<EdgeId, BidirectionalPath> starts;
@@ -134,11 +155,10 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 	//Extending seed backward
 	seeds.clear();
 	seeds.reserve(starts.size());
-	detector.clear();
-	detector.temp.clear();
+
 	INFO("Extending seeds backward");
 	for (auto pathIter = starts.begin(); pathIter != starts.end(); ++pathIter) {
-		LoopDetector detector;
+		SimpleRecountDetectorBackward(pathIter->second, detector);
 		ExtendTrivialBackward(g, pathIter->second, detector);
 		seeds.push_back(pathIter->second);
 	}

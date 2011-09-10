@@ -62,8 +62,6 @@ int main() {
 	if (cfg::get().etalon_info_mode) {
 		AddEtalonInfo<K>(g, index, sequence, pairedInfos);
 	} else {
-		//AddRealInfo<K>(g, index, intIds, pairedInfos, false);
-		//SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix + "_old");
 		pairedInfos.clear();
 		AddRealInfo<K>(g, index, intIds, pairedInfos, lc_cfg::get().use_new_metrics);
 
@@ -156,6 +154,9 @@ int main() {
 	if (lc_cfg::get().write_graph) {
 		SaveGraph(g, intIds, output_dir + "graph");
 	}
+
+	PrintPath(g, path1);
+	PrintPath(g, path2);
 
 	INFO("Tool finished");
 	DeleteAdditionalInfo(pairedInfos);

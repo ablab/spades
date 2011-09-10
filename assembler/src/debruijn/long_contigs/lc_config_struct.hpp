@@ -37,6 +37,7 @@ struct lc_config
 		size_t read_size;
 		size_t insert_size;
 		size_t var;
+		size_t is_delta;
 
 		rl_dataset ds;
 	};
@@ -63,6 +64,7 @@ struct lc_config
 		bool use_delta_first;
 		int  etalon_distance_dev;
 		int max_iter;
+		int max_depth;
 
 		double priority_coeff;
 	};
@@ -164,6 +166,7 @@ void load(boost::property_tree::ptree const& pt, lc_config::real_lib& rl)
 	load(pt, "read_size", rl.read_size);
 	load(pt, "insert_size", rl.insert_size);
 	load(pt, "var", rl.var);
+	load(pt, "is_delta", rl.is_delta);
 	load(pt, cfg::get().dataset_name, rl.ds);
 }
 
@@ -198,6 +201,7 @@ void load(boost::property_tree::ptree const& pt, lc_config::extension_selection&
 	load(pt, "etalon_distance_dev", es.etalon_distance_dev);
 	load(pt, "max_iter", es.max_iter);
 	load(pt, "priority_coeff", es.priority_coeff);
+	load(pt, "max_depth", es.max_depth);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::loops_removal& lr)

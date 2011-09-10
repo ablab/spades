@@ -37,7 +37,8 @@ real_libs
     {
         read_size     100
         insert_size   220
-        var           5
+        is_delta      20
+        var           2
                 
         QUAKE_CROPPED_100K
         {
@@ -58,7 +59,7 @@ real_libs
         QUAKE_FULL
         {
             precounted       true
-            precounted_path  ./data/debruijn/08.24_11_23.QUAKE_FULL/paired_info_IS220_RS100
+            precounted_path  ./data/debruijn/08.24_11_23.QUAKE_FULL/paired_info_IS220_RS100_clustered
             first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
             second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz  
         }
@@ -88,7 +89,8 @@ real_libs
     {
         read_size     100
         insert_size   500
-        var           20
+        is_delta      50
+        var           2
 
         QUAKE_CROPPED_100K
         {
@@ -109,7 +111,7 @@ real_libs
         QUAKE_FULL
         {
             precounted       true
-            precounted_path  ./data/debruijn/08.24_11_23.QUAKE_FULL/paired_info_IS500_RS100
+            precounted_path  ./data/debruijn/08.24_11_23.QUAKE_FULL/paired_info_IS500_RS100_clustered
             first            /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_1.cor.fastq.gz
             second           /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_2.cor.fastq.gz
            
@@ -174,7 +176,7 @@ paired_info_file_prefix "paired_info_"
 ; seed selection
 ss
 {
-    min_coverage   150
+    min_coverage   120
     glue_seeds     false
     max_cycles     1
 }
@@ -185,18 +187,20 @@ es
     use_weight_function_first  false
     weight_fun_threshold       0
     weight_threshold           0.1
-    priority_coeff             15
+    priority_coeff             2
 
     use_delta_first       true
     etalon_distance_dev   2
     
     max_iter              3
+    
+    max_depth             0
 }    
 
 ; loops removal
 lr
 {
-    investigation      true
+    investigation      true																														
 	loop_to_investigate 1
 	max_loop_len       2
 	max_exits          1
