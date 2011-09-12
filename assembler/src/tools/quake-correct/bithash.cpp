@@ -6,7 +6,7 @@
 using namespace::std;
 
 bithash::bithash(int _k)
-   :bits( (unsigned long long int)pow(4.0,_k) )
+   :bits()
 {
   k = _k;
   mask = (unsigned long long)pow(4.0,k) - 1;
@@ -21,7 +21,7 @@ bithash::~bithash() {
 // Add a single sequence to the bitmap
 ////////////////////////////////////////////////////////////
 void bithash::add(unsigned long long kmer) {
-  bits.set(kmer);
+  bits.insert(kmer);
 }
 
 
@@ -41,7 +41,7 @@ bool bithash::check(unsigned kmer[]) {
     } else
       return false;
   }
-  return bits[kmermap];
+  return bits.count(kmermap) != 0;
 }
 
 ////////////////////////////////////////////////////////////
@@ -63,7 +63,7 @@ bool bithash::check(unsigned kmer[], unsigned long long & kmermap) {
       exit(EXIT_FAILURE);
     }
   }
-  return bits[kmermap];
+  return bits.count(kmermap) != 0;
 }
 
 ////////////////////////////////////////////////////////////
@@ -72,7 +72,7 @@ bool bithash::check(unsigned kmer[], unsigned long long & kmermap) {
 // Check for the presence of a sequence in the tree.
 ////////////////////////////////////////////////////////////
 bool bithash::check(unsigned long long kmermap) {
-  return bits[kmermap];
+  return bits.count(kmermap) != 0;
 }
 
 ////////////////////////////////////////////////////////////
@@ -92,7 +92,33 @@ bool bithash::check(unsigned long long & kmermap, unsigned last, unsigned next) 
     kmermap &= mask;
     kmermap |= next;
   }
-  return bits[kmermap];
+  return bits.count(kmermap) != 0;
+}
+
+////////////////////////////////////////////////////////////
+// file_load
+//
+// Make a prefix_tree from kmers in the FASTA-file 
+////////////////////////////////////////////////////////////
+void bithash::hammer_file_load(istream & hammer_in, unsigned long long atgc[]) {
+  string line;
+  while(getline(hammer_in, line)) {
+    if (line[0] != '>') {
+      // add to tree
+      string kmer = line.substr(0,k);
+      add(binary_kmer(kmer));
+
+      // add reverse to tree
+      add(binary_rckmer(kmer));
+
+      // count gc
+      if(atgc != NULL) {
+	unsigned int at = count_at(kmer);
+	atgc[0] += at;
+	atgc[1] += (k-at);
+      }  
+    }
+  }
 }
 
 
@@ -169,33 +195,6 @@ void bithash::tab_file_load(istream & mer_in, const double boundary, unsigned lo
   }
 }
 
-
-////////////////////////////////////////////////////////////
-// file_load
-//
-// Make a prefix_tree from kmers in the FASTA-file 
-////////////////////////////////////////////////////////////
-void bithash::hammer_file_load(istream & hammer_in, unsigned long long atgc[]) {
-  string line;
-  while(getline(hammer_in, line)) {
-    if (line[0] != '>') {
-      // add to tree
-      string kmer = line.substr(0,k);
-      add(binary_kmer(kmer));
-
-      // add reverse to tree
-      add(binary_rckmer(kmer));
-
-      // count gc
-      if(atgc != NULL) {
-	unsigned int at = count_at(kmer);
-	atgc[0] += at;
-	atgc[1] += (k-at);
-      }  
-    }
-  }
-}
-   
 ////////////////////////////////////////////////////////////
 // file_load
 //
@@ -229,9 +228,9 @@ void bithash::tab_file_load(istream & mer_in, const vector<double> boundary, uns
 
       // count gc
       if(atgc != NULL) {
-	unsigned int my_at = count_at(line.substr(0,k));
-	atgc[0] += my_at;
-	atgc[1] += (k-my_at);
+	unsigned int at = count_at(line.substr(0,k));
+	atgc[0] += at;
+	atgc[1] += (k-at);
       }
     }
   }
@@ -243,7 +242,7 @@ void bithash::tab_file_load(istream & mer_in, const vector<double> boundary, uns
 // Write bithash to file in binary format
 ////////////////////////////////////////////////////////////
 void bithash::binary_file_output(char* outf) {
-  unsigned long long mysize = (unsigned long long)bits.size() / 8ULL;
+  /*  unsigned long long mysize = (unsigned long long)bits.size() / 8ULL;
   char* buffer = new char[mysize];
   unsigned int flag = 1;
   for(unsigned long long i = 0; i < mysize; i++) {
@@ -252,14 +251,14 @@ void bithash::binary_file_output(char* outf) {
       temp <<= 1;
       //unsigned int tmp = i*8 + j;
       //cout << tmp << ",";
-      if(bits[i*8 + j])
+      if(bits.count(i*8 + j) != 0)
 	temp |= flag;
     }
     buffer[i] = (char)temp;
   }
   ofstream ofs(outf, ios::out | ios::binary);
   ofs.write(buffer, mysize);
-  ofs.close();
+  ofs.close();*/
 }
 
 ////////////////////////////////////////////////////////////
@@ -304,7 +303,7 @@ void bithash::binary_file_input(char* inf) {
 // Read bithash from file in binary format
 ////////////////////////////////////////////////////////////
 void bithash::binary_file_input(char* inf, unsigned long long atgc[]) {
-  unsigned int flag = 128;
+  /*unsigned int flag = 128;
   unsigned int temp;
 
   ifstream ifs(inf, ios::binary);
@@ -342,7 +341,7 @@ void bithash::binary_file_input(char* inf, unsigned long long atgc[]) {
     }
   }
 
-  delete[] buffer;
+  delete[] buffer;*/
 }
 
 ////////////////////////////////////////////////////////////
@@ -406,5 +405,5 @@ unsigned bithash::binary_nt(char ch) {
 
 
 unsigned int bithash::num_kmers() {
-  return (unsigned int)bits.count();
+  return (unsigned int)bits.size();
 }
