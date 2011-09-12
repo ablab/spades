@@ -40,7 +40,9 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosi
 				{
 					if ((v1[i].end_ < v2[j].start_)&&(v1[i].end_ + cfg::get().pos.max_single_gap > v2[j].start_)){
 						res.push_back(EdgePosition(v1[i].start_, v2[j].end_, v1[i].contigId_));
-						DEBUG("Glue parts of contigs "<<v1[i].contigId_<< "with gap: "<<v1[i].start_<<"-"<<v1[i].end_<<" and "<<v2[j].start_<<"-"<<v2[j].end_);
+//						if (v2[j].start_ - v1[i].end_ > 1){
+							DEBUG("Glue parts of contig Id = "<<v1[i].contigId_<< " with gap: "<<v1[i].start_<<"-"<<v1[i].end_<<" and "<<v2[j].start_<<"-"<<v2[j].end_);
+//						}
 					}
 				}
 			}
@@ -162,7 +164,7 @@ public:
 	}
 */
  	virtual void HandleAdd(EdgeId e) {
- 		DEBUG("Add edge "<<e);
+ 		TRACE("Add edge "<<e);
 		if (EdgesPositions.find(e) == EdgesPositions.end()) {
  			vector<EdgePosition> NewVec;
  			EdgesPositions[e] = NewVec;
