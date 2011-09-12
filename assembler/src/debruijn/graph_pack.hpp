@@ -140,12 +140,22 @@ struct nonconj_graph_pack
         , edge_pos  (g)
     {
         fs::path p = cfg::get().output_root / "temp_conversion" / "conj_graph";
-
         printGraph(gp.g, gp.int_ids, p.string(), paired_info_index(),
                    gp.edge_pos, &gp.etalon_paired_index, &clustered_index);
 
         scanNCGraph<graph_t>(g, int_ids, p.string(), 0, edge_pos, 0, &clustered_index);
+
+
     }
+   /* void nonconj_graph_copy (conj_graph_pack const& cg, nonconj_graph_pack& ncg) {
+    	for(auto iter = cg.g.SmartVertexBegin(); !iter.IsEnd(); ++iter) {
+    		ncg.g.AddVertex();
+    		ncg.
+    	}
+
+
+    }
+*/
 };
 
 } // namespace debruijn_graph

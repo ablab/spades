@@ -680,7 +680,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 	EdgeId right_id = pair_inf.second;
 	EdgeId left_id = pair_inf.first;
 
-	if (pair_inf.d - new_graph.length(left_id) > cfg::get().ds.IS + 120) {
+	if (pair_inf.d - new_graph.length(left_id) > 1.3 * cfg::get().ds.IS ) {
 		TRACE(
 				"PairInfo "<<edge_labels[left_id]<<"("<<new_graph.length(left_id)<<")"<<" "<<right_id<<"("<<old_graph.length(right_id)<<")"<<" "<<pair_inf.d);
 //				DEBUG("too far to correct");
@@ -689,8 +689,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 
 	PairInfo corrected_info = StupidPairInfoCorrectorByOldGraph(new_graph,
 			pair_inf);
-	TRACE(
-			"PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<pair_inf.d<< " corrected into "<<corrected_info.d)
+	TRACE("PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<pair_inf.d<< " corrected into "<<corrected_info.d);
 	if (abs(corrected_info.d - pair_inf.d) > MAX_DISTANCE_CORRECTION) {
 		TRACE("big correction");
 		return make_pair(false, corrected_info);
@@ -700,7 +699,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 //		return make_pair(false, corrected_info);
 //	}
 	//todo check correctness. right_id belongs to original graph, not to new_graph.
-	if (corrected_info.d + new_graph.length(right_id) < cfg::get().ds.IS - 120) {
+	if (corrected_info.d + new_graph.length(right_id) < 1/(1.3) * cfg::get().ds.IS) {
 		TRACE("too close");
 		return make_pair(false, corrected_info);
 	}
@@ -713,7 +712,6 @@ template<class Graph>
 size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 		PairInfoIndexData<EdgeId> &paired_data, VertexId vid) {
 	DEBUG("---- Generate vertex paired info for:  " << vid <<" ("<<new_IDs.ReturnIntId(vid) <<") -----------------------------");
-	//	DEBUG(new_graph.conjugate(vid));
 	edge_infos.clear();
 	local_cheating_edges.clear();
 	vector<EdgeId> edgeIds[2];
