@@ -207,6 +207,14 @@ SC_NEW_3
 	IS		270 	; insert size
 }
 
+SC_K35
+{
+	first	SC/0209_tau1_095_K35_02_left.fastq.gz
+	second	SC/0209_tau1_095_K35_02_right.fastq.gz
+	RL		100	; read length
+	IS		270 	; insert size
+}
+
 EAS600_EMUL_FULL
 {
 	first	EAS600_70/emulation/reads_1.fastq
