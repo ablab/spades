@@ -54,6 +54,9 @@ protected:
 
 	vector<pair<size_t, double> > EstimateEdgePairDistances(
 			vector<PairInfo<EdgeId> > data, vector<size_t> forward) {
+		vector < pair<size_t, double> > result;
+		if(forward.size() == 0)
+			return result;
 		size_t cur_dist = 0;
 		vector<double> weights(forward.size());
 		for (size_t i = 0; i < data.size(); i++) {
@@ -76,7 +79,6 @@ protected:
 				weights[cur_dist] += data[i].weight;
 			}
 		}
-		vector < pair<size_t, double> > result;
 		for(size_t i = 0; i < forward.size(); i++) {
 			if(weights[i] != 0) {
 				result.push_back(make_pair(forward[i], weights[i]));
