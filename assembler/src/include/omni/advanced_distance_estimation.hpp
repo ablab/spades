@@ -32,8 +32,9 @@ private:
         INFO("Possible distances : " << ss.str());
 
 		for (size_t i = 0; i < clusters.size(); i++) {
-            size_t begin = clusters[i].first;
+            size_t begin = std::max(clusters[i].first, 0);
             size_t end = clusters[i].second;
+            size_t data_length = rounded_d(data[end - 1]) - rounded_d(data[begin]) + 1;
             if (end - begin > MINIMALPEAKPOINTS) {
                 while ((cur<forward.size()) && (((int)forward[cur]) < rounded_d(data[begin])))
 					cur++;
@@ -46,7 +47,7 @@ private:
 				DEBUG("Processing window : " << rounded_d(data[begin]) << " " << rounded_d(data[end-1]));
 				peakfinder.FFTSmoothing(CUTOFF);
                 if ( ( (cur + 1) == forward.size()) || ( (int) forward[cur + 1] > rounded_d(data[end - 1]))){
-                    if (5*((int) end - (int) begin) > (1 + rounded_d(data[end - 1]) - rounded_d(data[begin])) ){
+                    if (5*((int) end - (int) begin) > data_length ){
                         result.push_back(make_pair(forward[cur], 1));
                         INFO("Pair made " << forward[cur]);
                     }
@@ -54,7 +55,7 @@ private:
                 }else{
                 
                     while (cur<forward.size() && ((int)forward[cur] <= rounded_d(data[end - 1]))) {
-					    if (peakfinder.isPeak(forward[cur])){ 
+					    if (peakfinder.isPeak(forward[cur], data_length / 3)){ 
                             result.push_back(make_pair(forward[cur], 1));
                             INFO("Pair made " << forward[cur]);
                         }   
@@ -73,6 +74,40 @@ public:
     }
 
 	virtual ~AdvancedDistanceEstimator() {
+	}
+
+	vector<pair<int, double> > FindEdgePairDistances(vector<PairInfo<EdgeId> > data, vector<size_t> forward = NULL) {
+        vector<pair<size_t, double> > result;
+        if (data.size() <= 1) return result;
+		std::vector<interval> clusters = divideData(data);
+		size_t cur = 0;
+        std::stringstream ss;
+        for (size_t i = 0; i < forward.size(); i++){
+            ss << forward[i] << " ";
+        }
+        INFO("Possible distances : " << ss.str());
+
+		for (size_t i = 0; i < clusters.size(); i++) {
+            size_t begin = clusters[i].first;
+            size_t end = clusters[i].second;
+            size_t data_length = rounded_d(data[end - 1]) - rounded_d(data[begin]) + 1;
+            if (end - begin > MINIMALPEAKPOINTS) {
+                while ((cur < forward.size()) && ( (int) forward[cur] < rounded_d(data[begin])))
+					cur++;
+                if (cur == forward.size()) {
+                    break;
+                }
+                if ((int) forward[cur] > rounded_d(data[end - 1])) continue;
+                PeakFinder peakfinder(data, begin, end);
+				DEBUG("Processing window : " << rounded_d(data[begin]) << " " << rounded_d(data[end - 1]));
+				
+                peakfinder.FFTSmoothing(CUTOFF);
+
+                vector<pair<int, double> > peaks = peakfinder.ListPeaks();
+                for (auto iter = peaks.begin(); iter != peaks.end(); iter++) result.push_back(*iter);
+			}
+		}
+		return result;
 	}
 
 	virtual void Estimate(PairedInfoIndex<Graph> &result) {
