@@ -163,7 +163,7 @@ private:
 				} else if (j < i && outf[index_max - min][0] == outf[j - min][0] ) index_max = j;
 			
 
-            if (!((index_max > i - (range >> 1)) && (index_max < i + (range >> 1)))) continue;
+            if (!((index_max > i - (range >> 2)) && (index_max < i + (range >> 2)))) continue;
             if  (abs(index_max - peak) <= delta) return true;
 		}
 		return false;

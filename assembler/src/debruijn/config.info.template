@@ -67,18 +67,18 @@ ade
 	threshold          20 ;maximal distance between two points in cluster
     
     ;local maximum seeking
-	range_coeff          0.33 ;data_length*range_coeff := width of the averaging window
-	delta_coeff          0.25 ;data_length*delta_coeff := maximal difference between possible distance and real peak on the graph 
+    range_coeff          0.33 ;data_length*range_coeff := width of the averaging window
+	delta_coeff          0.5 ;data_length*delta_coeff := maximal difference between possible distance and real peak on the graph 
 
     ;fft smoothing
-	percentage          0.01 ;percent of data for baseline subraction
+    percentage          0.01 ;percent of data for baseline subraction
 	cutoff	            3 ;the number of the lowest freqs in fourier decomp being taken
     
     ;other
-   	minpeakpoints       3 ;the minimal number of points in cluster to be considered
+    minpeakpoints       2 ;the minimal number of points in cluster to be considered
 	inv_density         5.0 ;maximal inverse density of points in cluster to be considered
 
-    ;hard_mode arguments
+	; hard_mode arguments
 	derivative_threshold  0.1 ;threshold for derivative in hard mode
 
 }
