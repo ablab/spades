@@ -35,18 +35,18 @@ typedef std::pair<int, int> interval;
 //		return 0.5f * (outf[dist - min + 1][0] - outf[dist - min - 1][0]);
 //	}
 
-static int data_size, data_length, min, max;
+int data_size, data_length, min, max;
 
-static double Thr;
+double Threshold;
 
-static bool isCluster(int index, std::vector<int> & x, std::vector<int> & y) {
+bool isCluster(int index, std::vector<int> & x, std::vector<int> & y) {
 	assert(index < data_size - 1);
-	return (abs(x[index + 1] - x[index]) > Thr);
+	return (abs(x[index + 1] - x[index]) > Threshold);
 }
 
-static bool isCluster(int index, std::vector<PairInfo<EdgeId> > data) {
+bool isCluster(int index, std::vector<PairInfo<EdgeId> > data) {
 	assert(index < data_size - 1);
-	return (abs(data[index + 1].d - data[index].d) > Thr);
+	return (abs(data[index + 1].d - data[index].d) > Threshold);
 }
 
 //static void debug(mydata vec) {
@@ -58,7 +58,7 @@ static bool isCluster(int index, std::vector<PairInfo<EdgeId> > data) {
 //
 //}
 
-static std::vector<interval> divideData(std::vector<PairInfo<EdgeId> > data){
+std::vector<interval> divideData(std::vector<PairInfo<EdgeId> > data){
 
     data_size = data.size();
     std::vector<interval> answer;
@@ -74,7 +74,7 @@ static std::vector<interval> divideData(std::vector<PairInfo<EdgeId> > data){
 
 //	Thr = (4 * data_positive_length / data_positive_size);
 
-    Thr = 20;
+    Threshold = 20;
 
 //	std::cout << "Threshold is " << Thr << std::endl << std::endl;
     

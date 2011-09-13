@@ -18,7 +18,7 @@ private:
 
 
 	const static int CUTOFF = 3;
-	const static size_t MINIMALPEAKPOINTS = 1; //the minimal number of points in cluster to be considered consistent
+	const static size_t MINIMALPEAKPOINTS = 3; //the minimal number of points in cluster to be considered consistent
 
 	vector<pair<size_t, double> > EstimateEdgePairDistances(vector<PairInfo<EdgeId> > data, vector<size_t> forward) {
         vector<pair<size_t, double> > result;
@@ -32,10 +32,10 @@ private:
         INFO("Possible distances : " << ss.str());
 
 		for (size_t i = 0; i < clusters.size(); i++) {
-            size_t begin = std::max(clusters[i].first, 0);
+            size_t begin = clusters[i].first;
             size_t end = clusters[i].second;
-            size_t data_length = rounded_d(data[end - 1]) - rounded_d(data[begin]) + 1;
-            if (end - begin > MINIMALPEAKPOINTS) {
+            if (end - begin >= MINIMALPEAKPOINTS) {
+                size_t data_length = rounded_d(data[end - 1]) - rounded_d(data[begin]) + 1;
                 while ((cur<forward.size()) && (((int)forward[cur]) < rounded_d(data[begin])))
 					cur++;
                 if (cur == forward.size()) {
@@ -47,7 +47,7 @@ private:
 				DEBUG("Processing window : " << rounded_d(data[begin]) << " " << rounded_d(data[end-1]));
 				peakfinder.FFTSmoothing(CUTOFF);
                 if ( ( (cur + 1) == forward.size()) || ( (int) forward[cur + 1] > rounded_d(data[end - 1]))){
-                    if (5*((int) end - (int) begin) > data_length ){
+                    if (5*((int) end - (int) begin) > data_length){
                         result.push_back(make_pair(forward[cur], 1));
                         INFO("Pair made " << forward[cur]);
                     }
