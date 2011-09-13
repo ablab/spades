@@ -9,6 +9,7 @@
 
 #include "standart.hpp"
 
+#include "logging.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation.hpp"
 

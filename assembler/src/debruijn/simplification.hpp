@@ -76,6 +76,9 @@ void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index)
 {
     fs::path p  = fs::path(cfg::get().output_saves) / "simplified_graph";
     printGraph(gp.g, gp.int_ids, p.string(), paired_index, gp.edge_pos, &gp.etalon_paired_index);
+
+    //todo temporary solution!!!
+    OutputContigs(gp.g, cfg::get().output_root + "tmp_contigs.fasta");
 }
 
 void make_simplification(PairedReadStream& stream, conj_graph_pack& gp, paired_info_index& paired_index)
