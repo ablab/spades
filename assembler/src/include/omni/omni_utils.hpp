@@ -617,6 +617,17 @@ public:
 };
 
 template<class Graph>
+const string PrintPath(Graph& g, const vector<typename Graph::EdgeId>& edges) {
+	string delim = "";
+	stringstream ss;
+	for (size_t i = 0; i < edges.size(); ++i) {
+		ss << delim << g.str(edges[i]) << " (" << g.length(edges[i]) << ")";
+		delim = " -> ";
+	}
+	return ss.str();
+}
+
+template<class Graph>
 class PathProcessor {
 public:
 	typedef typename Graph::EdgeId EdgeId;
@@ -657,12 +668,12 @@ private:
 		TRACE("Vetex " << v << " should be processed");
 
 		if (v == end_ && current_path_length >= min_length_) {
-			TRACE("New path found: " << path_);
+			TRACE("New path found: " << PrintPath(g_, path_));
 			TRACE("Callback is performed.");
 			callback_.HandlePath(path_);
 			TRACE("Callback finished");
 		}
-		TRACE("Iterating through outgoing edges of vertex " < v)
+		TRACE("Iterating through outgoing edges of vertex " << v)
 		vector<EdgeId> outgoing_edges = g_.OutgoingEdges(v);
 		for (size_t i = 0; i < outgoing_edges.size(); ++i) {
 			TRACE("Processing outgoing edge " << outgoing_edges[i] << " started");

@@ -212,18 +212,6 @@ size_t BulgeRemover<Graph, BulgeConditionF>::PathLength(
 	return length;
 }
 
-//todo move to some common place
-template<class Graph>
-const string PrintPath(Graph& g, const vector<typename Graph::EdgeId>& edges) {
-	string delim = "";
-	stringstream ss;
-	for (size_t i = 0; i < edges.size(); ++i) {
-		ss << delim << g.str(edges[i]) << " (" << g.length(edges[i]) << ")";
-		delim = " -> ";
-	}
-	return ss.str();
-}
-
 template<class Graph, class BulgeConditionF>
 void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
 	TRACE("Bulge remove process started");
