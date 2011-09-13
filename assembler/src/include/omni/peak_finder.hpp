@@ -28,19 +28,20 @@ private:
 
 	double x1, x2, y1, y2;
 
-	static const double Percentage;
+    size_t range_;
+    
+    size_t delta_;
+	
+    double percentage_;
 
-	static const double DerivativeThreshold;
-
-	static const double HeightThreshold;
-
-//	static const int range;
+	double derivative_threshold_;
 
 	std::vector<int> x_, y_;
 
 	std::vector<int> peaks;
 
 	int data_size, data_length, min, max;
+
 
 	complex *in, *out, *outf;
 
@@ -76,7 +77,7 @@ private:
 	}
 
 	void InitBaseline() {
-		int Np = (int) ((((data_length * Percentage))));
+		int Np = (int) (data_length * percentage_);
 		if (Np == 0) Np++; // Np <> 0 !!!!
 
 		double mean_beg = 0.0;
@@ -163,42 +164,25 @@ private:
 			
 
             if (!((index_max > i - (range >> 1)) && (index_max < i + (range >> 1)))) continue;
-//            if (RightDerivative(index_max + 1)>-DerivativeThreshold || LeftDerivative(index_max - 1)<DerivativeThreshold) 
-//            continue;
-//            std::cout<< RightDerivative(index_max + 1) << " HUISHUIS "<< LeftDerivative(index_max - 1) << std::endl;
-            if  (abs(index_max - peak) < delta) return true;
+            if  (abs(index_max - peak) <= delta) return true;
 		}
 		return false;
     
     }
 
-	bool isLocalMaximum(int peak, int range) {
-        return isLocalMaximum(peak, range, min, max, data_length >> 2);
+	bool isLocalMaximum(int peak, size_t range) {
+        return isLocalMaximum(peak, range, min, max, delta_);
     }
 
 public:
-	PeakFinder(std::vector<int> x, std::vector<int> y) :
-			x_(x), y_(y) {
-		Init();
-	}
-
-	PeakFinder(std::vector<int> x, std::vector<int> y, int begin, int end) {
-//		std::cout << "hahaha " << begin << " " << end << std::endl;
-		for (int i = begin; i < end; i++) {
-			x_.push_back(x[i]);
-			y_.push_back(y[i]);
-		}
-		Init();
-	}
-
-	PeakFinder(std::vector<PairInfo<EdgeId> > data, int begin, int end) {
-	//		std::cout << "hahaha " << begin << " " << end << std::endl;
-			for (int i = begin; i < end; i++) {
-				x_.push_back(rounded_d(data[i]));
-				y_.push_back(data[i].weight);
-			}
-			Init();
-		}
+	PeakFinder(std::vector<PairInfo<EdgeId> > data, int begin, int end, size_t range, size_t delta, double percentage, double derivative_threshold): 
+    range_(range), delta_(delta), percentage_(percentage), derivative_threshold_(derivative_threshold){
+        for (int i = begin; i < end; i++) {
+            x_.push_back(rounded_d(data[i]));
+            y_.push_back(data[i].weight);
+        }
+        Init();
+    }
 	~PeakFinder() {
 		fftw_destroy_plan(p);
 		fftw_destroy_plan(p1);
@@ -244,6 +228,11 @@ public:
         return isLocalMaximum(dist, range);
 	}
 
+	bool isPeak(int dist) {
+        return isLocalMaximum(dist, range_);
+	}
+
+//  not tested at all
     std::vector<std::pair<int, double> > ListPeaks(int delta = 5) {
         std::vector<std::pair<int, double> > peaks;
         //another data_length
@@ -270,10 +259,10 @@ public:
             double right = RightDerivative(index);
             double left = LeftDerivative(index);
             if (index >= max - delta || index <= min + delta) continue;
-            if ((right < -DerivativeThreshold) && (left > DerivativeThreshold))
-                    if (isLocalMaximum(index, delta, index - delta - 1, index + delta - 1, delta>>1)){
+            if ((right < -derivative_threshold_) && (left > derivative_threshold_))
+                    if (isLocalMaximum(index, delta, index - delta - 1, index + delta - 1, delta >> 1)){
                         double weight = 0;
-                        for (int i = std::max(min, index - delta<<1); i<std::min(max, index + delta<<1); i++){
+                        for (int i = std::max(min, index - (delta << 1)); i<std::min(max, index + (delta << 1)); i++){
                             double right = RightDerivative(i);
                             weight+=right*right;
                         }
@@ -303,11 +292,6 @@ public:
 
 };
 
-const double PeakFinder::Percentage = 0.01f;
-
-const double PeakFinder::DerivativeThreshold = 0.1f;
-
-const double PeakFinder::HeightThreshold = 1;
 }
 
 #endif /* PEAKFINDER_HPP_ */

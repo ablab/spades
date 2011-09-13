@@ -37,7 +37,7 @@ typedef std::pair<int, int> interval;
 
 int data_size, data_length, min, max;
 
-double Threshold;
+size_t Threshold;
 
 bool isCluster(int index, std::vector<int> & x, std::vector<int> & y) {
 	assert(index < data_size - 1);
@@ -73,8 +73,6 @@ std::vector<interval> divideData(std::vector<PairInfo<EdgeId> > data){
 //	int data_positive_length = max - data[data_positive_size].d + 1;
 
 //	Thr = (4 * data_positive_length / data_positive_size);
-
-    Threshold = 20;
 
 //	std::cout << "Threshold is " << Thr << std::endl << std::endl;
     

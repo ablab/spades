@@ -113,9 +113,15 @@ namespace debruijn
 		};
 		struct advanced_distance_estimator
 		{
-			size_t mode;
+            size_t threshold;
+            double range_coeff;
+            double delta_coeff;
+            double percentage;
 			size_t cutoff;
 			size_t minpeakpoints;
+			double inv_density;
+            double derivative_threshold;
+            
 		};
 
 		struct dataset
@@ -213,9 +219,14 @@ namespace debruijn
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::advanced_distance_estimator& ade)
 	{
 		using config_common::load;
-		load(pt, "mode", ade.mode);
+		load(pt, "threshold", ade.threshold);
+		load(pt, "range_coeff", ade.range_coeff);
+		load(pt, "delta_coeff", ade.delta_coeff);
+		load(pt, "percentage", ade.percentage);
 		load(pt, "cutoff", ade.cutoff);
 		load(pt, "minpeakpoints", ade.minpeakpoints);
+		load(pt, "inv_density", ade.inv_density);
+		load(pt, "derivative_threshold", ade.derivative_threshold);
 	}
 
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::repeat_resolver& rr)
@@ -267,7 +278,7 @@ namespace debruijn
 		load(pt, "br", cfg.br); // bulge remover:
 		load(pt, "ec", cfg.ec); // erroneous connections remover:
 		load(pt, "de", cfg.de); // distance estimator:
-		load(pt, "ade", cfg.ade); // distance estimator:
+		load(pt, "ade", cfg.ade); // advanced distance estimator:
 		load(pt, "rr", cfg.rr); // repeat resolver:
 		load(pt, "uncorrected_reads", cfg.uncorrected_reads);
 		load(pt, cfg.dataset_name, cfg.ds);

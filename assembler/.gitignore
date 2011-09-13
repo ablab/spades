@@ -13,5 +13,6 @@ src/file
 *~
 config.info
 src/tags
+scripts/
 tags
 *.ebwt
