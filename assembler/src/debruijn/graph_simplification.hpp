@@ -138,14 +138,13 @@ void OutputWrongContigs(const Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	set<EdgeId> path_set;
 	path_set.insert(path1.begin(), path1.end());
 	path_set.insert(path2.begin(), path2.end());
-	ofstream os;
-	os.open((cfg::get().output_dir + "/" + file_name).c_str());
+	osequencestream os((cfg::get().output_dir + "/" + file_name).c_str());
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-		if (path_set.count(*it) == 0) {
-			os << g.EdgeNucls(*it) << endl;
+		if (path_set.count(*it) == 0 && g.length(*it) > 1000) {
+			const Sequence &nucls = g.EdgeNucls(*it);
+			os << nucls;
 		}
 	}
-	os.close();
 }
 
 template<size_t k>
@@ -216,7 +215,7 @@ void SimplifyGraph(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	INFO("Simplified graph stats");
 	CountStats<k> (g, index, genome);
 
-	OutputWrongContigs<k, Graph>(g, index, genome, 1000, "long_contigs.notfasta");
+	OutputWrongContigs<k, Graph>(g, index, genome, 1000, "long_contigs.fasta");
 	INFO("Graph simplification finished");
 }
 
