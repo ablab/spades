@@ -116,8 +116,10 @@ void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index
 		, SingleReadStream& stream, SingleReadStream* contigs_stream = 0) {
 	vector<SingleReadStream*> streams;
 	streams.push_back(&stream);
-	if (contigs_stream)
+	if (contigs_stream) {
+		INFO("Additional contigs stream added for construction");
 		streams.push_back(contigs_stream);
+	}
 	CompositeSingleReadStream composite_stream(streams);
 	ConstructGraph<k>(g, index, composite_stream);
 	//It is not a bug!!! Don't use composite_stream here!!!
