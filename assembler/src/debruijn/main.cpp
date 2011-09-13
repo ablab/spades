@@ -24,6 +24,15 @@ int make_dir(std::string const& str)
     return mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 }
 
+void link_output(std::string const& link_name)
+{
+	string link = cfg::get().output_root + link_name;
+	unlink(link.c_str());
+
+	if (symlink(cfg::get().output_suffix.c_str(), link.c_str()) != 0)
+	    WARN( "Symlink to \"" << link << "\" launch failed");
+}
+
 
 int main() {
 
@@ -43,6 +52,8 @@ int main() {
 	make_dir(cfg::get().output_root );
 	make_dir(cfg::get().output_dir  );
 	make_dir(cfg::get().output_saves);
+
+	link_output("latest_try");
 
 	string genome_filename = input_dir + cfg::get().reference_genome;
 	string reads_filename1 = input_dir + cfg::get().ds.first;
@@ -89,11 +100,7 @@ int main() {
 	INFO("Assembling " << dataset << " dataset");
 	debruijn_graph::assembly_genome(rcStream, Sequence(genome)/*, work_tmp_dir, reads*/);
 
-	string latest_folder = cfg::get().output_root + "latest";
-	unlink(latest_folder.c_str());
-
-	if (symlink(cfg::get().output_suffix.c_str(), latest_folder.c_str()) != 0)
-	    WARN( "Symlink to latest launch failed");
+	link_output("latest_success");
 
 	INFO("Assembling " << dataset << " dataset finished");
 	// OK
