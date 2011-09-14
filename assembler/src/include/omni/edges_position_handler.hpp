@@ -55,7 +55,7 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosi
 		if (best_fit_j != -1) {
 			res.push_back(EdgePosition(v1[i].start_, v2[best_fit_j].end_, v1[i].contigId_));
 			if (v2[best_fit_j].start_ - v1[i].end_ > 1){
-				DEBUG("Glue parts of contig Id = "<<v1[i].contigId_<< " with gap: "<<v1[i].start_<<"-"<<v1[i].end_<<" and "<<v2[best_fit_j].start_<<"-"<<v2[best_fit_j].end_);
+				DEBUG("Contig "<<v1[i].contigId_<<v1[i].contigId_<< " Glue parts with gap: "<<v1[i].start_<<"-"<<v1[i].end_<<" and "<<v2[best_fit_j].start_<<"-"<<v2[best_fit_j].end_);
 			}
 		}
 	}
@@ -160,7 +160,7 @@ public:
 					int end1 = iter->start_ + (length1*(iter->end_ - iter->start_))/(length1+length2);
 					AddEdgePosition(newEdge1, iter->start_, end1, iter->contigId_);
 					AddEdgePosition(newEdge2, end1 + 1, iter->end_, iter->contigId_);
-					DEBUG("EdgesPositionHandler Split: " << iter->start_<<"--"<<iter->end_<<" after pos "<<end1);
+					DEBUG("Contig "<<iter->contigId_<<" Split: " << iter->start_<<"--"<<iter->end_<<" after pos "<<end1);
 				}
 //				 DEBUG("EdgesPositionHandler not handled Split yet");
 			}
