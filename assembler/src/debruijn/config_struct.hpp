@@ -129,6 +129,7 @@ namespace debruijn
 
 		struct position_handler{
 			int max_single_gap;
+			std::string contigs_for_threading;
 		};
 
 		std::string input_dir;
@@ -234,6 +235,7 @@ namespace debruijn
 	{
 		using config_common::load;
 		load(pt, "max_single_gap", pos.max_single_gap);
+		load(pt, "contigs_for_threading", pos.contigs_for_threading);
 	}
 
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::dataset& ds)

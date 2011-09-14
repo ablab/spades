@@ -315,6 +315,8 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		edgesPos.AddEdgePosition(ei, CurPos, CurPos + g.length(ei)-1);
 		CurPos += g.length(ei);
 	}
+
+
 }
 
 template<size_t k>
@@ -333,18 +335,16 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		}
 		Sequence contig = read.sequence();
 		if (contig.size() < 150000) {
-			continue;
+	//		continue;
 		}
-		INFO("Large contig #" << c << " has position number " << cur);
+//		INFO("Large contig #" << c << " has position number " << cur);
 		Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (contig, g, index);
 		for (auto it = path1.sequence().begin(); it != path1.sequence().end(); ++it) {
 			EdgeId ei = *it;
-			edgesPos.AddEdgePosition(ei, cur + 1, cur + g.length(ei));
+			edgesPos.AddEdgePosition(ei, cur + 1, cur + g.length(ei), c);
 			cur += g.length(ei);
 		}
-		cur /= 10000000;
-		cur++;
-		cur *= 10000000;
+		cur = 0;
 	}
 }
 

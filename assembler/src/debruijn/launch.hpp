@@ -307,6 +307,11 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 		TotLab = in_place(&(*graph_struct));
 	} else {
 		if (graph_loaded) {
+
+
+
+			FillEdgesPos<k>(g, index, cfg::get().pos.contigs_for_threading, EdgePos);
+
 			SimplifyGraph<k>(g, index, *TotLab, 3, genome,
 					output_folder/*, etalon_paired_index*/);
 			ProduceInfo<k>(g, index, *TotLab, genome,
