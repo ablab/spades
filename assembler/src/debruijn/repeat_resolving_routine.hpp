@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "standart.hpp"
+#include "standard.hpp"
 
 #include "logging.hpp"
 #include "repeat_resolving.hpp"
@@ -71,13 +71,13 @@ void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
 
 void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 {
-	INFO("Resolve Repeats");
-
     conj_graph_pack   conj_gp (genome);
     paired_info_index paired_index   (conj_gp.g);
     paired_info_index clustered_index(conj_gp.g);
 
-    make_distance_estimation(stream, conj_gp, paired_index, clustered_index);
+    exec_distance_estimation(stream, conj_gp, paired_index, clustered_index);
+
+    INFO("STAGE == Resolving Repeats");
 
     if (!cfg::get().paired_mode)
     {
@@ -164,10 +164,8 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 //    }
 }
 
-void make_repeat_resolving(PairedReadStream& stream, const Sequence& genome)
+void exec_repeat_resolving(PairedReadStream& stream, const Sequence& genome)
 {
-	INFO("Make Repeat Resolving");
-
 	if (cfg::get().entry_point <= ws_repeats_resolving)
     {
 		resolve_repeats(stream, genome);
@@ -176,6 +174,7 @@ void make_repeat_resolving(PairedReadStream& stream, const Sequence& genome)
     else
     {
     	INFO("Loading Repeat Resolving");
+    	INFO("Nothing to load");
     	// nothing to load
     }
 }
