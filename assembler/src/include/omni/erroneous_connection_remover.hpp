@@ -28,26 +28,17 @@ public:
 	}
 
 	void RemoveEdges() {
-		TRACE("Deleting low coverage edges");
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			typename Graph::EdgeId e = *it;
 			if (g_.length(e) < max_length_ && g_.coverage(e) < max_coverage_) {
 				g_.DeleteEdge(e);
 			}
 		}
-		TRACE("Low coverage edges removed");
-		TRACE("Compressing vertices");
 		omnigraph::Compressor<Graph> compressor(g_);
 		compressor.CompressAllVertices();
-		TRACE("Vertices compressed");
-		TRACE("Cleaning graph");
 		omnigraph::Cleaner<Graph> cleaner(g_);
 		cleaner.Clean();
-		TRACE("Graph cleaned");
 	}
-
-private:
-	DECL_LOGGER("LowCoverageEdgeRemover");
 };
 
 template<class Graph>
@@ -80,25 +71,43 @@ public:
 	}
 
 	void RemoveEdges() {
+		TRACE("Removing edges")
 		CoverageComparator<Graph> comparator(g_);
 		for (auto it = g_.SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
 			typename Graph::EdgeId e = *it;
+			TRACE("Considering edge " << e);
 			if (math::gr(g_.coverage(e), max_coverage_)) {
+				TRACE("Max coverage " << max_coverage_ << " achieved");
 				return;
 			}
+			TRACE("Checking length");
 			if (g_.length(e) < max_length_) {
+				TRACE("Condition ok");
 				VertexId start = g_.EdgeStart(e);
 				VertexId end = g_.EdgeEnd(e);
+				TRACE("Start " << start);
+				TRACE("End " << end);
+				TRACE("Deleting edge");
 				g_.DeleteEdge(e);
+				TRACE("Compressing locality");
 				if (!RelatedVertices<Graph>(g_, start, end)) {
+					TRACE("Vertices not related");
+					TRACE("Compressing end");
 					g_.CompressVertex(end);
 				}
 				g_.CompressVertex(start);
+				TRACE("Compressing start");
+			} else {
+				TRACE("Condition failed");
 			}
 		}
+		TRACE("Cleaning graph");
 		omnigraph::Cleaner<Graph> cleaner(g_);
 		cleaner.Clean();
+		TRACE("Graph cleaned");
 	}
+private:
+	DECL_LOGGER("IterativeLowCoverageEdgeRemover");
 };
 
 template<class Graph>
