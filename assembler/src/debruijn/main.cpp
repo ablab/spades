@@ -39,75 +39,96 @@ void link_output(std::string const& link_name)
 	    WARN( "Symlink to \"" << link << "\" launch failed");
 }
 
+void segfault_handler(int signum)
+{
+	if (signum == SIGSEGV)
+	{
+		std::cout << "The program was terminated by segmentation fault" << std::endl;
+		link_output("latest_try");
+	}
+
+	signal(signum, SIG_DFL);
+	kill  (getpid(), signum);
+}
+
 int main() {
 
-    using namespace debruijn_graph;
+	signal(SIGSEGV, segfault_handler);
 
-    checkFileExistenceFATAL(cfg_filename);
-    cfg::create_instance(cfg_filename);
+    try
+    {
+		using namespace debruijn_graph;
 
-	// check config_struct.hpp parameters
-	if (K % 2 == 0)
-		FATAL("K in config.hpp must be odd!\n");
+		checkFileExistenceFATAL(cfg_filename);
+		cfg::create_instance(cfg_filename);
 
-	// read configuration file (dataset path etc.)
-	string input_dir = cfg::get().input_dir;
-	string dataset   = cfg::get().dataset_name;
+		// check config_struct.hpp parameters
+		if (K % 2 == 0)
+			FATAL("K in config.hpp must be odd!\n");
 
-	make_dir(cfg::get().output_root );
-	make_dir(cfg::get().output_dir  );
-	make_dir(cfg::get().output_saves);
+		// read configuration file (dataset path etc.)
+		string input_dir = cfg::get().input_dir;
+		string dataset   = cfg::get().dataset_name;
 
-	link_output("latest_try");
+		make_dir(cfg::get().output_root );
+		make_dir(cfg::get().output_dir  );
+		make_dir(cfg::get().output_saves);
 
-	string genome_filename = input_dir + cfg::get().reference_genome;
-	string reads_filename1 = input_dir + cfg::get().ds.first;
-	string reads_filename2 = input_dir + cfg::get().ds.second;
+		string genome_filename = input_dir + cfg::get().reference_genome;
+		string reads_filename1 = input_dir + cfg::get().ds.first;
+		string reads_filename2 = input_dir + cfg::get().ds.second;
 
-	checkFileExistenceFATAL(genome_filename);
-	checkFileExistenceFATAL(reads_filename1);
-	checkFileExistenceFATAL(reads_filename2);
-	INFO("Assembling " << dataset << " dataset");
+		checkFileExistenceFATAL(genome_filename);
+		checkFileExistenceFATAL(reads_filename1);
+		checkFileExistenceFATAL(reads_filename2);
+		INFO("Assembling " << dataset << " dataset");
 
-	// typedefs :)
-	typedef io::Reader<io::SingleRead> ReadStream;
-	typedef io::Reader<io::PairedRead> PairedReadStream;
-	typedef io::RCReaderWrapper<io::PairedRead> RCStream;
-	typedef io::FilteringReaderWrapper<io::PairedRead> FilteringStream;
+		// typedefs :)
+		typedef io::Reader<io::SingleRead> ReadStream;
+		typedef io::Reader<io::PairedRead> PairedReadStream;
+		typedef io::RCReaderWrapper<io::PairedRead> RCStream;
+		typedef io::FilteringReaderWrapper<io::PairedRead> FilteringStream;
 
-	// read data ('reads')
+		// read data ('reads')
 
-	PairedReadStream pairStream(std::make_pair(reads_filename1,reads_filename2), cfg::get().ds.IS);
+		PairedReadStream pairStream(std::make_pair(reads_filename1,reads_filename2), cfg::get().ds.IS);
 
-	string real_reads = cfg::get().uncorrected_reads;
-	if (real_reads != "none") {
-		reads_filename1 = input_dir + (real_reads + "_1");
-		reads_filename2 = input_dir + (real_reads + "_2");
-	}
-	ReadStream reads_1(reads_filename1);
-	ReadStream reads_2(reads_filename2);
+		string real_reads = cfg::get().uncorrected_reads;
+		if (real_reads != "none") {
+			reads_filename1 = input_dir + (real_reads + "_1");
+			reads_filename2 = input_dir + (real_reads + "_2");
+		}
+		ReadStream reads_1(reads_filename1);
+		ReadStream reads_2(reads_filename2);
 
-	vector<ReadStream*> reads = {&reads_1, &reads_2};
+		vector<ReadStream*> reads = {&reads_1, &reads_2};
 
-	FilteringStream filter_stream(pairStream);
+		FilteringStream filter_stream(pairStream);
 
-	RCStream rcStream(filter_stream);
+		RCStream rcStream(filter_stream);
 
-	// read data ('genome')
-	std::string genome;
-	{
-		ReadStream genome_stream(genome_filename);
-		io::SingleRead full_genome;
-		genome_stream >> full_genome;
-		genome = full_genome.GetSequenceString().substr(0, cfg::get().ds.LEN); // cropped
-	}
-	// assemble it!
-	INFO("Assembling " << dataset << " dataset");
-	debruijn_graph::assemble_genome(rcStream, Sequence(genome)/*, work_tmp_dir, reads*/);
+		// read data ('genome')
+		std::string genome;
+		{
+			ReadStream genome_stream(genome_filename);
+			io::SingleRead full_genome;
+			genome_stream >> full_genome;
+			genome = full_genome.GetSequenceString().substr(0, cfg::get().ds.LEN); // cropped
+		}
+		// assemble it!
+		INFO("Assembling " << dataset << " dataset");
+		debruijn_graph::assemble_genome(rcStream, Sequence(genome)/*, work_tmp_dir, reads*/);
 
-	link_output("latest_success");
+		link_output("latest_success");
 
-	INFO("Assembling " << dataset << " dataset finished");
+		INFO("Assembling " << dataset << " dataset finished");
+    }
+    catch(...)
+    {
+    	std::cout << "Unknown exception caught" << std::endl;
+    	link_output("latest_try");
+    }
+
 	// OK
 	return 0;
 }

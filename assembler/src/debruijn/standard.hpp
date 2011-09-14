@@ -10,6 +10,7 @@
 //==crt and stl
 #include <cstdlib>
 #include <time.h>
+#include <signal.h>
 
 #include <algorithm>
 #include <list>
