@@ -19,9 +19,15 @@
 
 DECL_PROJECT_LOGGER("d")
 
-int make_dir(std::string const& str)
+bool make_dir(std::string const& str)
 {
-    return mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	if (fs::create_directories(str))
+		return true;
+
+	WARN("Can't create directory " << str);
+	return false;
+
+    //return mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 }
 
 void link_output(std::string const& link_name)
