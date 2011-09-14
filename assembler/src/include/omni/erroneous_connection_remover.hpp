@@ -45,6 +45,10 @@ template<class Graph>
 bool RelatedVertices(
 		const AbstractConjugateGraph<typename Graph::DataMaster>& g,
 		typename Graph::VertexId v1, typename Graph::VertexId v2) {
+	cout << "Checking vertices relation " << v1 << " and " << v2 << endl;
+	cout << "v1 == v2 -- " << (v1 == v2) << endl;
+	cout << "v1 == g.conjugate(v2) -- " << (v1 == g.conjugate(v2)) << endl;
+	cout << "Vertices related -- " << (v1 == v2 || v1 == g.conjugate(v2)) << endl;
 	return v1 == v2 || v1 == g.conjugate(v2);
 }
 
@@ -95,11 +99,12 @@ public:
 					TRACE("Compressing end");
 					g_.CompressVertex(end);
 				}
-				g_.CompressVertex(start);
 				TRACE("Compressing start");
+				g_.CompressVertex(start);
 			} else {
 				TRACE("Condition failed");
 			}
+			TRACE("Edge " << e << " processed");
 		}
 		TRACE("Cleaning graph");
 		omnigraph::Cleaner<Graph> cleaner(g_);
