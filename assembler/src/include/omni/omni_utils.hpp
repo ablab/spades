@@ -699,8 +699,10 @@ public:
 	}
 
 	void Process() {
-		TRACE("Backward dijkstra started");
+		TRACE("Backward dijkstra creation started");
 		BackwardBoundedDijkstra<Graph> backward_dijkstra(g_, max_length_);
+		TRACE("Backward dijkstra created with bound " << max_length_);
+		TRACE("Backward dijkstra started");
 		backward_dijkstra.run(end_);
 		TRACE("Backward dijkstra finished");
 		TRACE("Starting recursive traversal");

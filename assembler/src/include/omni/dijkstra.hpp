@@ -87,38 +87,64 @@ public:
 	}
 
 	void run(VertexId start) {
+		TRACE("Starting dijkstra run from vertex " << start);
+		TRACE("Initializing dijkstra priority queue");
 		set_finished(false);
 		distances_.clear();
 		init(start);
 		priority_queue<pair<distance_t, VertexId> , vector<pair<distance_t,
 				VertexId>> , ReverseComparator<pair<distance_t, VertexId>> > q;
 		q.push(make_pair(0, start));
+		TRACE("Priority queue initialized. Starting search");
 		while (!q.empty() && !finished()) {
+			TRACE("Dijkstra iteration started");
 			auto next = q.top();
 			q.pop();
 			distance_t distance = next.first;
 			VertexId vertex = next.second;
+			TRACE(
+					"Vertex " << vertex << " with distance " << distance
+							<< "fetched from queue");
 			if (DistanceCounted(vertex)) {
+				TRACE(
+						"Distance to vertex " << vertex
+								<< " already counted. Proceeding to next queue entry.");
 				continue;
 			}
 			distances_.insert(make_pair(vertex, distance));
+			TRACE(
+					"Vertex " << vertex << " is found to be at distance "
+							<< distance << " from vertex " << start);
 			if (!CheckProcessVertex(vertex, distance)) {
+				TRACE(
+						"Check for processing vertex failed. Proceeding to the next queue entry.");
 				continue;
 			}
 			auto neighbours = Neighbours(vertex);
+			TRACE(
+					"Neighbours of vertex " << vertex
+							<< " found. Iterating through neighbours and adding them to queue.");
 			for (size_t i = 0; i < neighbours.size(); i++) {
+				TRACE("Checking " << i << "th neighbour of vertex " << vertex << " started");
 				auto neighbour = neighbours[i];
+				TRACE("Which is " << neighbours[i]);
 				if (!DistanceCounted(neighbour.first)) {
+					TRACE("Adding new entry to queue");
 					distance_t new_distance = GetLength(neighbour.second)
 							+ distance;
+					TRACE("Entry: vertex " << vertex << " distance " << new_distance);
 					if (CheckPutVertex(neighbour.first, neighbour.second,
 							new_distance)) {
+						TRACE("CheckPutVertex returned true and new entry is added");
 						q.push(make_pair(new_distance, neighbour.first));
 					}
 				}
+				TRACE("Checking " << i << "th neighbour of vertex " << vertex << " finished");
 			}
+			TRACE("All neighbours of vertex " << vertex << " processed");
 		}
 		set_finished(true);
+		TRACE("Finished dijkstra run from vertex " << start);
 	}
 
 	vector<VertexId> VisitedVertices() {
@@ -129,6 +155,8 @@ public:
 		return result;
 	}
 
+private:
+	DECL_LOGGER("Dijkstra");
 };
 
 template<class Graph>
@@ -143,7 +171,7 @@ private:
 	bool ready_;
 private:
 	void EnsureFrom(VertexId from) {
-		if(!ready_ || prev_ != from) {
+		if (!ready_ || prev_ != from) {
 			dijkstra_.run(from);
 			ready_ = true;
 			prev_ = from;
@@ -151,7 +179,8 @@ private:
 	}
 
 public:
-	DistanceCounter(Graph &graph) :graph_(graph), dijkstra_(graph), ready_(false){
+	DistanceCounter(Graph &graph) :
+		graph_(graph), dijkstra_(graph), ready_(false) {
 	}
 
 	bool IsReachable(VertexId from, VertexId to) {
@@ -209,13 +238,15 @@ public:
 	}
 
 	virtual vector<pair<VertexId, EdgeId>> Neighbours(VertexId vertex) {
-		vector <pair<VertexId, EdgeId>> result;
+		TRACE("Starting to collect incoming edges for vertex " << vertex);
+		vector < pair < VertexId, EdgeId >> result;
 		const Graph &g = this->graph();
-		vector<EdgeId> edges = g.OutgoingEdges(vertex);
-		edges = g.IncomingEdges(vertex);
+		vector < EdgeId > edges = g.IncomingEdges(vertex);
+		TRACE("Vector of incoming edges fetched from graph");
 		for (size_t i = 0; i < edges.size(); i++) {
 			result.push_back(make_pair(g.EdgeStart(edges[i]), edges[i]));
 		}
+		TRACE("Incoming edges info for vertex " << vertex << " constructed");
 		return result;
 	}
 };
@@ -238,12 +269,14 @@ public:
 	}
 
 	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, distance_t length) {
-		if (length > bound_) return false;
+		if (length > bound_)
+			return false;
 		return true;
 	}
 
 	virtual bool CheckProcessVertex(VertexId vertex, distance_t distance) {
-		if (distance > bound_) return false;
+		if (distance > bound_)
+			return false;
 		return true;
 	}
 
