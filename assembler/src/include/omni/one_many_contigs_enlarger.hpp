@@ -14,8 +14,8 @@ template <class Graph>
 class one_many_contigs_enlarger {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	int insert_size_;
 	Graph &g_;
+	int insert_size_;
 public:
 	one_many_contigs_enlarger(Graph &g, int insert_size): g_(g), insert_size_(insert_size){
 	}
