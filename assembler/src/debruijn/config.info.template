@@ -2,7 +2,7 @@
 
 input_dir	      ./data/input/E.Coli.K12.MG1655/
 output_dir	      ./data/debruijn/
-dataset 	      QUAKE_FULL
+dataset 	      EAS600_QUAKE_CROPPED_400K
 reference_genome  MG1655-K12.fasta.gz
 
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
@@ -12,13 +12,13 @@ paired_mode true
 rectangle_mode	false
 
 ; use advanced distance estimation or not
-advanced_estimator_mode false;
+advanced_estimator_mode false
 
 ; set to true to obtain paired info from genome mapping rather than from paired reads
 etalon_info_mode  false
 
-start_from begin   ; Full run.
-;start_from after_filling  ; Run with previous constructed graph.
+;start_from begin   ; Full run.
+start_from after_filling  ; Run with previous constructed graph.
 ;start_from after_simplify  ; Run with previous constructed and simplified graph.
 ;start_from before_resolve  ; Same as previous but without loading conjugate graph
 
@@ -75,6 +75,19 @@ rr
 	mode		3	
 	near_vertex  30
 }
+
+
+;position handling
+
+pos
+{
+	max_single_gap 500
+	contigs_for_threading ./data/debruijn/contigs.fasta
+}
+
+
+
+
 
 ; consensus
 
