@@ -42,7 +42,7 @@ private:
         for (size_t i = 0; i < forward.size(); i++){
             ss << forward[i] << " ";
         }
-        INFO("Possible distances : " << ss.str());
+        DEBUG("Possible distances : " << ss.str());
 
 		for (size_t i = 0; i < clusters.size(); i++) {
             size_t begin = clusters[i].first;
@@ -134,7 +134,7 @@ public:
             int firstNumber =  int_ids_.ReturnIntId(first); 
             int secondNumber =  int_ids_.ReturnIntId(second); 
 
-            INFO("Estimating edges number : " << firstNumber << " " << secondNumber); 
+            DEBUG("Estimating edges number : " << firstNumber << " " << secondNumber); 
             vector<size_t> forward = this->GetGraphDistances(first, second);
 			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(data, forward);
 			vector<PairInfo<EdgeId> > clustered = this->ClusterResult(first, second, estimated);
