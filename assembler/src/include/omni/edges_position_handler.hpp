@@ -29,24 +29,35 @@ bool PosCompare(const EdgePosition &a, const EdgePosition &b){
 
 vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosition> v2){
 	vector<EdgePosition> res;
+	if (v1.size() == 0) return v2;
+	if (v2.size() == 0) return v1;
+
 	if (v1.size() == 0 || v2.size() == 0) return res;
 	for( size_t i = 0; i< v1.size(); i++){
+		int best_fit_j = -1;
 		for( size_t j = 0; j< v2.size(); j++){
 			if (v1[i].contigId_ == v2[j].contigId_){
 				if (v1[i].end_ + 1 == v2[j].start_) {
-					res.push_back(EdgePosition(v1[i].start_, v2[j].end_, v1[i].contigId_));
+					best_fit_j = j;
+					break;
 				}
 				else
 				{
 					if ((v1[i].end_ < v2[j].start_)&&(v1[i].end_ + cfg::get().pos.max_single_gap > v2[j].start_)){
-						res.push_back(EdgePosition(v1[i].start_, v2[j].end_, v1[i].contigId_));
-//						if (v2[j].start_ - v1[i].end_ > 1){
-							DEBUG("Glue parts of contig Id = "<<v1[i].contigId_<< " with gap: "<<v1[i].start_<<"-"<<v1[i].end_<<" and "<<v2[j].start_<<"-"<<v2[j].end_);
-//						}
+						//res.push_back(EdgePosition(v1[i].start_, v2[j].end_, v1[i].contigId_));
+						if (best_fit_j < 0) best_fit_j = j;
+						else if (v2[j].start_ < v2[best_fit_j].start_) best_fit_j = j;
 					}
 				}
+
 			}
 	 	}
+		if (best_fit_j != -1) {
+			res.push_back(EdgePosition(v1[i].start_, v2[best_fit_j].end_, v1[i].contigId_));
+			if (v2[best_fit_j].start_ - v1[i].end_ > 1){
+				DEBUG("Glue parts of contig Id = "<<v1[i].contigId_<< " with gap: "<<v1[i].start_<<"-"<<v1[i].end_<<" and "<<v2[best_fit_j].start_<<"-"<<v2[best_fit_j].end_);
+			}
+		}
 	}
 	return res;
 }
@@ -108,7 +119,7 @@ public:
 		if (EdgesPositions.find(edgeId) != EdgesPositions.end()) {
 			TRACE("Number of labels "<<EdgesPositions[edgeId].size());
 			for (size_t i = 0; i < EdgesPositions[edgeId].size(); i++){
-				s+="("+ToString((EdgesPositions[edgeId])[i].start_)+"-"+ToString((EdgesPositions[edgeId])[i].end_)+")\\n";
+				s+="("+ToString((EdgesPositions[edgeId])[i].contigId_)+": "+ToString((EdgesPositions[edgeId])[i].start_)+"-"+ToString((EdgesPositions[edgeId])[i].end_)+")\\n";
 			}
 		}
 		return s;
@@ -122,7 +133,7 @@ public:
 	}
 
 	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		DEBUG("Handle glue ");
+//		DEBUG("Handle glue ");
 
 		AddEdgePosition(new_edge, (EdgesPositions[edge1]));
 		AddEdgePosition(new_edge, (EdgesPositions[edge2]));
@@ -141,19 +152,36 @@ public:
 
 
 	 virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
-		 DEBUG("EdgesPositionHandler not handled Split yet");
+		if (EdgesPositions.find(oldEdge) != EdgesPositions.end()) {
+			if (EdgesPositions[oldEdge].size() > 0){
+				size_t length1 = this->g().length(newEdge1);
+				size_t length2 = this->g().length(newEdge2);
+				for (auto iter = EdgesPositions[oldEdge].begin(); iter != EdgesPositions[oldEdge].end(); ++iter){
+					int end1 = iter->start_ + (length1*(iter->end_ - iter->start_))/(length1+length2);
+					AddEdgePosition(newEdge1, iter->start_, end1, iter->contigId_);
+					AddEdgePosition(newEdge2, end1 + 1, iter->end_, iter->contigId_);
+					DEBUG("EdgesPositionHandler Split: " << iter->start_<<"--"<<iter->end_<<" after pos "<<end1);
+				}
+//				 DEBUG("EdgesPositionHandler not handled Split yet");
+			}
+		}
 	 }
 
  	 virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
-		 DEBUG("HandleMerge by position handler");
+//		 DEBUG("HandleMerge by position handler");
  		 // we assume that all edge have good ordered position labels.
  		 size_t n = oldEdges.size();
  		 vector<EdgePosition> res = (EdgesPositions[oldEdges[0]]);
+ 		 bool positive_size = (res.size() > 0);
  		 for (size_t i = 1; i < n; i++) {
  			 res = GluePositionsLists(res, EdgesPositions[oldEdges[i]]);
+ 	 		 positive_size = positive_size || (EdgesPositions[oldEdges[i]].size() > 0);
  		 }
 
- 		AddEdgePosition(newEdge, res);
+ 		 if (positive_size && (res.size() == 0)){
+ 			 DEBUG("Merge operation broke some positions");
+ 		 }
+ 		 AddEdgePosition(newEdge, res);
 	 }
 /*
 	virtual void HandleAdd(VertexId v) {
@@ -164,7 +192,7 @@ public:
 	}
 */
  	virtual void HandleAdd(EdgeId e) {
- 		TRACE("Add edge "<<e);
+ //		TRACE("Add edge "<<e);
 		if (EdgesPositions.find(e) == EdgesPositions.end()) {
  			vector<EdgePosition> NewVec;
  			EdgesPositions[e] = NewVec;

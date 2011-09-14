@@ -324,6 +324,7 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 					output_folder + "graph_components/graph", g,
 					cfg::get().ds.IS, int_ids, paired_index, EdgePos);
 
+			INFO("Components printed");
 			if (cfg::get().advanced_estimator_mode) {
  
                 AdvancedDistanceEstimator<Graph> estimator_(g, paired_index, int_ids, 
@@ -384,6 +385,7 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
                         clustered_index, EdgePos, &etalon_paired_index,
                         &clustered_index/*, &read_count_weight_paired_index*/);
             }
+			INFO("Distance estimation finished");
         }
 	}
     
