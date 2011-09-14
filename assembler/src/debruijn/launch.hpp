@@ -331,14 +331,14 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
                         cfg::get().de.linkage_distance, cfg::get().de.max_distance, cfg::get().ade.threshold, cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff, cfg::get().ade.cutoff, cfg::get().ade.minpeakpoints, cfg::get().ade.inv_density, cfg::get().ade.percentage, cfg::get().ade.derivative_threshold);
                 estimator.Estimate(clustered_index);
 
-                printGraph(g, int_ids, graph_save_path + "a_repeats_resolved_before",
+                printGraph(g, int_ids, graph_save_path + "repeats_resolved_before",
                         paired_index, EdgePos/*, &read_count_weight_paired_index*/);
 
-                printGraph(g, int_ids, work_tmp_dir + "a_simplified_graph",
+                printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph",
                         paired_index, EdgePos, &etalon_paired_index,
                         &clustered_index/*, &read_count_weight_paired_index*/);
                 
-                printGraph(g, int_ids, output_folder + "a_simplified_graph",
+                printGraph(g, int_ids, output_folder + "2_simplified_graph",
                         clustered_index, EdgePos, &etalon_paired_index,
                         &clustered_index/*, &read_count_weight_paired_index*/);
 
