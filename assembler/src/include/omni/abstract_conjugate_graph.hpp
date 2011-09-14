@@ -333,6 +333,21 @@ public:
 		return v->OutgoingEdgeCount();
 	}
 
+	virtual void CheckGraph() {
+		double a = 0;
+		for(auto it = this->SmartVertexBegin(); !it.IsEnd(); ++it) {
+			vector<EdgeId> vec = OutgoingEdges(*it);
+			for(size_t i = 0; i < vec.size(); i++) {
+				a += length(conjugate(vec[i]));
+			}
+			vec = IncomingEdges(*it);
+			for(size_t i = 0; i < vec.size(); i++) {
+				a += length(conjugate(vec[i]));
+			}
+		}
+		cout << a << endl;
+	}
+
 	virtual size_t IncomingEdgeCount(VertexId v) const {
 		return v->conjugate()->OutgoingEdgeCount();
 	}
