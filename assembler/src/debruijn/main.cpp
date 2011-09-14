@@ -21,7 +21,7 @@ DECL_PROJECT_LOGGER("d")
 
 bool make_dir(std::string const& str)
 {
-	if (fs::create_directories(str))
+	if (fs::is_directory(str) || fs::create_directories(str))
 		return true;
 
 	WARN("Can't create directory " << str);
@@ -38,7 +38,6 @@ void link_output(std::string const& link_name)
 	if (symlink(cfg::get().output_suffix.c_str(), link.c_str()) != 0)
 	    WARN( "Symlink to \"" << link << "\" launch failed");
 }
-
 
 int main() {
 
@@ -104,7 +103,7 @@ int main() {
 	}
 	// assemble it!
 	INFO("Assembling " << dataset << " dataset");
-	debruijn_graph::assembly_genome(rcStream, Sequence(genome)/*, work_tmp_dir, reads*/);
+	debruijn_graph::assemble_genome(rcStream, Sequence(genome)/*, work_tmp_dir, reads*/);
 
 	link_output("latest_success");
 

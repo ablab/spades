@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "standart.hpp"
+#include "standard.hpp"
 #include "construction.hpp"
 #include "omni_labelers.hpp"
 
@@ -23,14 +23,13 @@ namespace debruijn_graph
 
 void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp, paired_info_index& paired_index)
 {
-	INFO("Simplify Graph");
-
     using namespace omnigraph;
 
     total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
     total_labeler              tot_lab     (&graph_struct);
 
-    make_construction(stream, gp, tot_lab, paired_index);
+    exec_construction(stream, gp, tot_lab, paired_index);
+    INFO("STAGE == Simplifying graph");
 
     // by single_cell 3->10
     SimplifyGraph<K>(gp.g, gp.index, tot_lab, 10, gp.genome, cfg::get().output_dir/*, etalon_paired_index*/);
@@ -81,10 +80,8 @@ void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index)
     OutputContigs(gp.g, cfg::get().output_root + "tmp_contigs.fasta");
 }
 
-void make_simplification(PairedReadStream& stream, conj_graph_pack& gp, paired_info_index& paired_index)
+void exec_simplification(PairedReadStream& stream, conj_graph_pack& gp, paired_info_index& paired_index)
 {
-	INFO("Make Simplification");
-
     if (cfg::get().entry_point <= ws_simplification)
     {
         simplify_graph     (stream, gp, paired_index);

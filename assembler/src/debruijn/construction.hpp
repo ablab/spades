@@ -7,12 +7,12 @@
 
 #pragma once
 
-#include "standart.hpp"
+#include "standard.hpp"
 #include "omni_labelers.hpp"
 
 namespace debruijn_graph {
 
-void make_construction(PairedReadStream& stream, conj_graph_pack& gp,
+void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 		total_labeler& tl, paired_info_index& paired_index);
 
 } // namespace debruijn_graph
@@ -24,7 +24,7 @@ namespace debruijn_graph {
 void construct_graph(PairedReadStream& stream, conj_graph_pack& gp,
 		graph_labeler& labeler, paired_info_index& paired_index,
 		SingleReadStream* contigs_stream = 0) {
-	INFO("Construct Graph");
+	INFO("STAGE == Constructing Graph");
 
 	if (cfg::get().paired_mode) {
 		ConstructGraphWithPairedInfo<K>(gp, paired_index, stream, contigs_stream);
@@ -62,9 +62,8 @@ void save_construction(conj_graph_pack& gp, total_labeler& tl,
 //  omnigraph::WriteSimple(g, *totLab, output_folder + "1_initial_graph.dot", "no_repeat_graph");
 }
 
-void make_construction(PairedReadStream& stream, conj_graph_pack& gp,
+void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 		total_labeler& tl, paired_info_index& paired_index) {
-	INFO("Make Construction");
 
 	if (cfg::get().entry_point <= ws_construction) {
 		INFO("Checking for additional contigs file");

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "standart.hpp"
+#include "standard.hpp"
 #include "simplification.hpp"
 
 namespace debruijn_graph
@@ -37,9 +37,8 @@ void estimate_distance(
     paired_info_index& paired_index,
     paired_info_index& clustered_index)
 {
-	INFO("Estimate Distance");
-
-    make_simplification(stream, gp, paired_index);
+    exec_simplification(stream, gp, paired_index);
+	INFO("STAGE == Estimating Distance");
 
     /* by single cell
     DistanceEstimator<Graph> estimator(
@@ -75,11 +74,9 @@ void save_distance_estimation(conj_graph_pack& gp, paired_info_index& paired_ind
     printGraph(gp.g, gp.int_ids, p.string(), paired_index, gp.edge_pos, &gp.etalon_paired_index, &clustered_index/*, &read_count_weight_paired_index*/);
 }
 
-void make_distance_estimation(PairedReadStream& stream, conj_graph_pack& gp, paired_info_index& paired_index, paired_info_index& clustered_index)
+void exec_distance_estimation(PairedReadStream& stream, conj_graph_pack& gp, paired_info_index& paired_index, paired_info_index& clustered_index)
 {
-	INFO("Make Distance Estimation");
-
-    if (cfg::get().entry_point <= ws_distance_estimation)
+	if (cfg::get().entry_point <= ws_distance_estimation)
     {
         estimate_distance       (stream, gp, paired_index, clustered_index);
         save_distance_estimation(        gp, paired_index, clustered_index);

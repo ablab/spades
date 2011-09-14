@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "standart.hpp"
+#include "standard.hpp"
 #include "omni/visualization_utils.hpp"
 
 //#include "debruijn_graph.hpp"
@@ -41,14 +41,14 @@
 namespace debruijn_graph
 {
 
-void assembly_genome(PairedReadStream& stream, const Sequence& genome)
+void assemble_genome(PairedReadStream& stream, const Sequence& genome)
 {
-    INFO("Assembly Genome Started");
-    TRACE("Starting from: " << debruijn_config::working_stage_name(cfg::get().entry_point));
+    INFO("Genome Assembling Started");
+    TRACE("Starting from stage: " << debruijn_config::working_stage_name(cfg::get().entry_point));
 
-    make_repeat_resolving(stream, genome);
+    exec_repeat_resolving(stream, genome);
 
-    INFO("Assembly Genome Finished");
+    INFO("Genome Assembling Finished");
 }
 
 }
