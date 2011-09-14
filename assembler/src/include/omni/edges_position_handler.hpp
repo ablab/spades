@@ -29,10 +29,20 @@ bool PosCompare(const EdgePosition &a, const EdgePosition &b){
 
 vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosition> v2){
 	vector<EdgePosition> res;
-	if (v1.size() == 0) return v2;
-	if (v2.size() == 0) return v1;
+	set<int> contigs_num;
+	if (v1.size() == 0) {res = v2;}
+	if (v2.size() == 0) {res = v1;}
 
-	if (v1.size() == 0 || v2.size() == 0) return res;
+	if (v1.size() == 0 || v2.size() == 0) {
+		vector<EdgePosition> res;
+		for (auto iter = res.begin(); iter != res.end(); ++iter){
+			if (contigs_num.find(iter->contigId_)==contigs_num.end()){
+				DEBUG("Contig "<<iter->contigId_<< " glued with empty edge");
+				contigs_num.insert(iter->contigId_);
+			}
+		}
+		return res;
+	}
 	for( size_t i = 0; i< v1.size(); i++){
 		int best_fit_j = -1;
 		for( size_t j = 0; j< v2.size(); j++){
@@ -55,7 +65,7 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosi
 		if (best_fit_j != -1) {
 			res.push_back(EdgePosition(v1[i].start_, v2[best_fit_j].end_, v1[i].contigId_));
 			if (v2[best_fit_j].start_ - v1[i].end_ > 1){
-				DEBUG("Contig "<<v1[i].contigId_<<v1[i].contigId_<< " Glue parts with gap: "<<v1[i].start_<<"-"<<v1[i].end_<<" and "<<v2[best_fit_j].start_<<"-"<<v2[best_fit_j].end_);
+				DEBUG("Contig "<<v1[i].contigId_<< " Glue parts with gap: "<<v1[i].start_<<"-"<<v1[i].end_<<" and "<<v2[best_fit_j].start_<<"-"<<v2[best_fit_j].end_);
 			}
 		}
 	}
