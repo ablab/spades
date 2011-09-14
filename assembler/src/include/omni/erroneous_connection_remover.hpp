@@ -28,18 +28,26 @@ public:
 	}
 
 	void RemoveEdges() {
+		TRACE("Deleting low coverage edges");
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			typename Graph::EdgeId e = *it;
 			if (g_.length(e) < max_length_ && g_.coverage(e) < max_coverage_) {
 				g_.DeleteEdge(e);
 			}
 		}
+		TRACE("Low coverage edges removed");
+		TRACE("Compressing vertices");
 		omnigraph::Compressor<Graph> compressor(g_);
 		compressor.CompressAllVertices();
+		TRACE("Vertices compressed");
+		TRACE("Cleaning graph");
 		omnigraph::Cleaner<Graph> cleaner(g_);
 		cleaner.Clean();
+		TRACE("Graph cleaned");
 	}
 
+private:
+	DECL_LOGGER("LowCoverageEdgeRemover");
 };
 
 template<class Graph>
