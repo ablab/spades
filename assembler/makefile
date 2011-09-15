@@ -1,36 +1,16 @@
-.PHONY: a d p at dt pt ct
+.PHONY: dd rd
 
-a: 
-	make -C src/abruijn
+dd: 
+	make -C build/debug/debruijn
 
-d:
-	make -C src/debruijn
-
-p:
-	make -C src/paireddebruijn	
-
-b:
-	make -C src/bayes
-
-at: 
-	make -C test/abruijn
-
-dt:
-	make -C test/debruijn
-
-pt:
-	make -C test/paireddebruijn	
-
-ct:
-	make -C test/common
-
-ht:
-	make -C test/hammer
+rd:
+	make -C build/release/debruijn
 
 clean:
-	rm -rf ./build/*
-
-test: ct at dt ht
+	make -C build/debug clean
+	make -C build/release clean
 
 #temporary fix
-all: a b d test
+all: make -C build/release all
+
+

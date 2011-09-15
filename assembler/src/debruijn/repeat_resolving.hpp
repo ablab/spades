@@ -90,8 +90,8 @@ void ResolveOneComponent(const string& load_from_dir, const string& save_to_dir,
 	omnigraph::WriteSimple(resolved_graph, IdTrackLabelerResolved,
 			save_resolving_history + "/repeats_resolved_und_cleared.dot",
 			"no_repeat_graph");
-	one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph);
-	N50enlarger.one_many_resolve();
+	one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph, cfg::get().ds.IS);
+	N50enlarger.one_many_resolve_with_vertex_split();
 	omnigraph::WriteSimple(resolved_graph, IdTrackLabelerResolved, save_to + "_finished.dot", "no_repeat_graph");
 }
 
@@ -140,8 +140,8 @@ void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index,
 	LoopResolver<NCGraph> loopResolver(resolvedGraph, 0.5);
 	loopResolver.ResolveLoops();
 
-	one_many_contigs_enlarger<NCGraph> N50enlarger(resolvedGraph);
-	N50enlarger.one_many_resolve();
+	one_many_contigs_enlarger<NCGraph> N50enlarger(resolvedGraph, cfg::get().ds.IS);
+	N50enlarger.one_many_resolve_with_vertex_split();
 	N50enlarger.Loops_resolve();
 	omnigraph::Compressor<NCGraph> compressor(resolvedGraph);
 	compressor.CompressAllVertices();

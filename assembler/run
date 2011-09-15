@@ -1,0 +1,11 @@
+#!/bin/bash
+
+case $1 in
+
+'ech') echo $2 $3 $4 $5 ;;
+'rd' ) build/release/debruijn/debruijn $2 $3 $4 $5 ;;
+'dd' ) build/debug/debruijn/debruijn $2 $3 $4 $5 ;;
+
+esac
+
+

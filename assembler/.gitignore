@@ -1,3 +1,4 @@
+.gitignore
 build/
 logs/
 output/
@@ -10,3 +11,8 @@ src/debruijn/config.inp
 src/file
 *.launch
 *~
+config.info
+src/tags
+scripts/
+tags
+*.ebwt

@@ -103,12 +103,25 @@ namespace debruijn
 		struct repeat_resolver
 		{
 			int mode;
+			int near_vertex;
 		};
 		struct distance_estimator
 		{
 			size_t delta;
 			size_t linkage_distance;
 			size_t max_distance;
+		};
+		struct advanced_distance_estimator
+		{
+            size_t threshold;
+            double range_coeff;
+            double delta_coeff;
+            double percentage;
+			size_t cutoff;
+			size_t minpeakpoints;
+			double inv_density;
+            double derivative_threshold;
+            
 		};
 
 		struct dataset
@@ -135,6 +148,7 @@ namespace debruijn
 		bool paired_mode;
 		bool rectangle_mode;
 		bool etalon_info_mode;
+		bool advanced_estimator_mode;
 //		bool from_saved_graph;
 
 		std::string uncorrected_reads;
@@ -143,6 +157,7 @@ namespace debruijn
 		bulge_remover br;
 		erroneous_connections_remover ec;
 		distance_estimator de;
+		advanced_distance_estimator ade;
 		repeat_resolver rr;
 		dataset ds;
 	};
@@ -201,10 +216,24 @@ namespace debruijn
 		load(pt, "max_distance", de.max_distance);
 	}
 
+	inline void load(boost::property_tree::ptree const& pt, debruijn_config::advanced_distance_estimator& ade)
+	{
+		using config_common::load;
+		load(pt, "threshold", ade.threshold);
+		load(pt, "range_coeff", ade.range_coeff);
+		load(pt, "delta_coeff", ade.delta_coeff);
+		load(pt, "percentage", ade.percentage);
+		load(pt, "cutoff", ade.cutoff);
+		load(pt, "minpeakpoints", ade.minpeakpoints);
+		load(pt, "inv_density", ade.inv_density);
+		load(pt, "derivative_threshold", ade.derivative_threshold);
+	}
+
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::repeat_resolver& rr)
 	{
 		using config_common::load;
 		load(pt, "mode", rr.mode);
+		load(pt, "near_vertex", rr.near_vertex);
 	}
 
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::dataset& ds)
@@ -242,12 +271,14 @@ namespace debruijn
 		load(pt, "paired_mode", cfg.paired_mode);
 		load(pt, "rectangle_mode", cfg.rectangle_mode);
 		load(pt, "etalon_info_mode", cfg.etalon_info_mode);
+		load(pt, "advanced_estimator_mode", cfg.advanced_estimator_mode);
 //		load(pt, "from_saved_graph", cfg.from_saved_graph);
 
 		load(pt, "tc", cfg.tc); // tip clipper:
 		load(pt, "br", cfg.br); // bulge remover:
 		load(pt, "ec", cfg.ec); // erroneous connections remover:
 		load(pt, "de", cfg.de); // distance estimator:
+		load(pt, "ade", cfg.ade); // advanced distance estimator:
 		load(pt, "rr", cfg.rr); // repeat resolver:
 		load(pt, "uncorrected_reads", cfg.uncorrected_reads);
 		load(pt, cfg.dataset_name, cfg.ds);

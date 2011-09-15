@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cp src/debruijn/config.info.template src/debruijn/config.info
+
