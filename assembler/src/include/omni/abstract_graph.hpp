@@ -272,14 +272,20 @@ public:
 		return ss.str();
 	}
 
+	virtual void find_bug(const vector<EdgeId>& path){}
+
+
 	EdgeId MergePath(const vector<EdgeId>& path) {
 		assert(!path.empty());
 		for (size_t i = 0; i < path.size(); i++)
 			for (size_t j = i + 1; j < path.size(); j++) {
 				assert(path[i] != path[j]);
 			}
-		cout << "Merging " << PrintDetailedPath(path) << endl;
-		cout << "Conjugate " << PrintConjugatePath(path) << endl;
+
+		find_bug(path);
+
+		cerr << "Merging " << PrintDetailedPath(path) << endl;
+		cerr << "Conjugate " << PrintConjugatePath(path) << endl;
 		vector<EdgeId> corrected_path = CorrectMergePath(path);
 		VertexId v1 = EdgeStart(corrected_path[0]);
 		VertexId v2 = EdgeEnd(corrected_path[corrected_path.size() - 1]);
@@ -290,12 +296,12 @@ public:
 		EdgeId newEdge = HiddenAddEdge(v1, v2, master_.MergeData(toMerge));
 		FireMerge(corrected_path, newEdge);
 
-		cout << "Corrected " << PrintDetailedPath(corrected_path) << endl;
-		cout << "Corrected conjugate " << PrintConjugatePath(corrected_path) << endl;
+		cerr << "Corrected " << PrintDetailedPath(corrected_path) << endl;
+		cerr << "Corrected conjugate " << PrintConjugatePath(corrected_path) << endl;
 		vector<EdgeId> edges_to_delete = EdgesToDelete(corrected_path);
-		cout << "To delete " << PrintEdges(edges_to_delete) << endl;
+		cerr << "To delete " << PrintEdges(edges_to_delete) << endl;
 		vector<VertexId> vertices_to_delete = VerticesToDelete(corrected_path);
-		cout << "To delete " << PrintVertices(vertices_to_delete) << endl;
+		cerr << "To delete " << PrintVertices(vertices_to_delete) << endl;
 
 		//todo ask Anton why fire and hidden are divided here
 		FireDeletePath(edges_to_delete, vertices_to_delete);

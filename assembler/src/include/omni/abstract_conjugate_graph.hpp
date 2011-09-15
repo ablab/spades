@@ -386,7 +386,7 @@ public:
 		stringstream ss;
 		ss << "Edges ";
 		for (auto it = path.begin(); it != path.end(); ++it) {
-			ss << *it << " (conjugate " << conjugate(*it) << "), ";
+			ss << (*it) << " (conjugate " << conjugate(*it) << "), ";
 		}
 		return ss.str();
 	}
@@ -394,9 +394,21 @@ public:
 	virtual std::string PrintDetailedVertexInfo(VertexId v) {
 		stringstream ss;
 		ss << "Vertex " << v << " (conjugate " << conjugate(v) << "), ";
-		ss << "Incoming " << PrintEdges(IncomingEdges(v));
+		ss << "Incoming " << PrintEdges(IncomingEdges(v)) << ", ";
 		ss << "Outgoing " << PrintEdges(OutgoingEdges(v));
+		ss << ";";
 		return ss.str();
+	}
+
+	virtual void find_bug(const vector<EdgeId>& path)
+	{
+		cout << "path edges: " << endl;
+		for (size_t i = 0; i < path.size(); ++i)
+			cout << i << "edge: " << path[i] << " conj: " << conjugate(path[i]) << endl;
+
+		cout << "last vertex: " << endl;
+		VertexId vid = EdgeEnd(path.back());
+		PrintDetailedVertexInfo(vid);
 	}
 
 	virtual std::string PrintDetailedPath(const vector<EdgeId>& path) {
