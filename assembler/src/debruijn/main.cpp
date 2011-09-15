@@ -2,7 +2,6 @@
  * Assembler Main
  */
 
-
 #include "config_struct.hpp"
 #include "io/reader.hpp"
 #include "io/rc_reader_wrapper.hpp"
@@ -39,11 +38,32 @@ void link_output(std::string const& link_name)
 	    WARN( "Symlink to \"" << link << "\" launch failed");
 }
 
+void print_trace()
+{
+	std::cout << "=== Stack Trace ===" << std::endl;
+
+	const size_t max_stack_size = 1000;
+
+	void* stack_pointers[max_stack_size];
+	int count = backtrace(stack_pointers, max_stack_size);
+
+	char** func_names = backtrace_symbols(stack_pointers, count);
+
+	// Print the stack trace
+	for(int i = 0; i < count; ++i)
+		std::cout << func_names[i] << std::endl;
+
+	// Free the string pointers
+	free(func_names);
+}
+
 void segfault_handler(int signum)
 {
 	if (signum == SIGSEGV)
 	{
 		std::cout << "The program was terminated by segmentation fault" << std::endl;
+		print_trace();
+
 		link_output("latest_try");
 	}
 
@@ -119,6 +139,7 @@ int main() {
 		INFO("Assembling " << dataset << " dataset");
 		debruijn_graph::assemble_genome(rcStream, Sequence(genome)/*, work_tmp_dir, reads*/);
 
+		link_output("latest_try");
 		link_output("latest_success");
 
 		INFO("Assembling " << dataset << " dataset finished");
