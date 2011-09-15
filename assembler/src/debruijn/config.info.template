@@ -92,7 +92,7 @@ rr
 }
 
 ; consensus
-
+need_consensus  false ; output is VERY large(gigabytes).
 uncorrected_reads	none
 
 ; different datasets:
