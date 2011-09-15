@@ -145,13 +145,13 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 			DataScanner<Graph> dataScanner(g, conj_IntIds);
 			dataScanner.loadPaired(rl->ds.precounted_path, *pairedInfos.back().pairedInfoIndex);
 
-			*pairedInfos.back().has_advanced = rl->ds.has_advanced;
+			pairedInfos.back().has_advanced = rl->ds.has_advanced;
 			if (rl->ds.has_advanced) {
-				*pairedInfos.back().advanced = new PairedInfoIndexLibrary(readSize, insertSize, delta, var, new PairedInfoIndex<Graph>(g, 0));
+				pairedInfos.back().advanced = new PairedInfoIndexLibrary(readSize, insertSize, delta, var, new PairedInfoIndex<Graph>(g, 0));
 				DataScanner<Graph> advDataScanner(g, conj_IntIds);
-				advDataScanner.loadPaired(rl->ds.precounted_path, *pairedInfos.back().pairedInfoIndex);
+				advDataScanner.loadPaired(rl->ds.advanced, *pairedInfos.back().advanced->pairedInfoIndex);
 			} else {
-				*pairedInfos.back().advanced = 0;
+				pairedInfos.back().advanced = 0;
 			}
 
 		}
