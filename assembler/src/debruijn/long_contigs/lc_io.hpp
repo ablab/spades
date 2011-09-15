@@ -144,6 +144,16 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 			//Reading saved paired info
 			DataScanner<Graph> dataScanner(g, conj_IntIds);
 			dataScanner.loadPaired(rl->ds.precounted_path, *pairedInfos.back().pairedInfoIndex);
+
+			*pairedInfos.back().has_advanced = rl->ds.has_advanced;
+			if (rl->ds.has_advanced) {
+				*pairedInfos.back().advanced = new PairedInfoIndexLibrary(readSize, insertSize, delta, var, new PairedInfoIndex<Graph>(g, 0));
+				DataScanner<Graph> advDataScanner(g, conj_IntIds);
+				advDataScanner.loadPaired(rl->ds.precounted_path, *pairedInfos.back().pairedInfoIndex);
+			} else {
+				*pairedInfos.back().advanced = 0;
+			}
+
 		}
 		else {
 			//Reading paired info from fastq files
@@ -264,14 +274,23 @@ void OutputContigsNoComplement(Graph& g, const std::string& filename) {
 
 
 
-void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<int>& pairs, const string& filename) {
+void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<int>& pairs, const string& filename,
+		std::set<int> notToPrint) {
 	INFO("Writing contigs to " << filename);
 	osequencestream oss(filename);
 
 	std::set<int> printed;
 
 	for (int i = 0; i < (int) paths.size(); ++i) {
+		if (notToPrint.count(i)) {
+			continue;
+		}
 		if (printed.count(i) == 0) {
+			if (lc_cfg::get().fo.remove_single && pairs[i] == -1) {
+				printed.insert(i);
+				continue;
+			}
+
 			int toPrint = (pairs[i] == -1 || PathLength(g, paths[i]) > PathLength(g, paths[pairs[i]])) ? i : pairs[i];
 			oss << PathToSequence(g, paths[toPrint]);
 			printed.insert(i);

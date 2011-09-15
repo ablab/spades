@@ -30,6 +30,8 @@ struct lc_config
 	    std::string precounted_path;
 		std::string first;
 		std::string second;
+		bool has_advanced;
+		std::string advanced;
 	};
 
 	struct real_lib
@@ -78,6 +80,8 @@ struct lc_config
 
 		size_t max_loops;
 		bool full_loop_removal;
+
+		bool exlude_cycle;
 	};
 
 	struct stop_criteria
@@ -95,6 +99,11 @@ struct lc_config
 
 		double length_percent;
 	    double conjugate_percent;
+
+	    bool remove_single;
+	    bool remove_similar;
+	    double similar_edges;
+	    double similar_length;
 	};
 
 	struct research {
@@ -158,6 +167,8 @@ void load(boost::property_tree::ptree const& pt, lc_config::rl_dataset& ds)
 	load(pt, "precounted_path", ds.precounted_path);
 	load(pt, "first", ds.first);
 	load(pt, "second", ds.second);
+	load(pt, "has_advanced", ds.has_advanced);
+	load(pt, "advanced", ds.advanced);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::real_lib& rl)
@@ -214,6 +225,7 @@ void load(boost::property_tree::ptree const& pt, lc_config::loops_removal& lr)
 
 	load(pt, "max_loops", lr.max_loops);
 	load(pt, "full_loop_removal", lr.full_loop_removal);
+	load(pt, "exlude_cycle", lr.exlude_cycle);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::stop_criteria& sc)
@@ -232,6 +244,11 @@ void load(boost::property_tree::ptree const& pt, lc_config::filter_options& fo)
 	load(pt, "remove_duplicates", fo.remove_duplicates);
 	load(pt, "conjugate_percent", fo.conjugate_percent);
 	load(pt, "length_percent", fo.length_percent);
+	load(pt, "remove_single", fo.remove_single);
+
+	load(pt, "remove_similar", fo.remove_similar);
+    load(pt, "similar_edges", fo.similar_edges);
+    load(pt, "similar_length", fo.similar_length);
 }
 
 

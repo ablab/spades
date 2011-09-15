@@ -144,10 +144,15 @@ int main() {
 
 		FilterComplement(g, result, &pairs, &quality);
 
+		std::set<int> toRemove;
 		if (lc_cfg::get().fo.remove_overlaps) {
 			RemoveOverlaps(g, result, pairs, quality);
+
+			if (lc_cfg::get().fo.remove_similar) {
+				RemoveSimilar(g, result, pathQuality, toRemove);
+			}
 		}
-		OutputPathsAsContigsNoComplement(g, result, pairs, output_dir + "paths.contigs");
+		OutputPathsAsContigsNoComplement(g, result, pairs, output_dir + "paths.contigs", toRemove);
 		INFO("All contigs written");
 	}
 

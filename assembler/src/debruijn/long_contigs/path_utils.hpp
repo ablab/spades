@@ -350,6 +350,62 @@ void RemoveSubpaths(Graph& g, std::vector<BidirectionalPath>& paths,
 	}
 }
 
+typedef std::multiset<EdgeId> EdgeStat;
+
+void CountSimilarity(Graph& g, EdgeStat& path1, EdgeStat& path2, int& similarEdges, int& similarLen) {
+	similarEdges = 0;
+	similarLen = 0;
+
+	auto iter = path1.begin();
+	while (iter != path1.end()) {
+		int count = std::min(path1.count(*iter), path2.count(*iter));
+		similarEdges += count;
+		similarLen += count * g.length(*iter);
+		EdgeId current = *iter;
+		while (iter != path1.end() && current == *iter) {
+			++iter;
+		}
+	}
+}
+
+//Remove similar paths
+void RemoveSimilar(Graph& g, std::vector<BidirectionalPath>& paths,
+		std::vector<double>& quality,
+		std::set<int>& toRemove) {
+
+	toRemove.clear();
+	std::vector<EdgeStat> pathStat;
+
+	std::vector<size_t> lengths;
+	CountPathLengths(g, paths, lengths);
+
+	for (int i = 0; i < (int) paths.size(); ++i) {
+		EdgeStat stat;
+		for (auto edge = paths[i].begin(); edge != paths[i].end(); ++edge) {
+			stat.insert(*edge);
+		}
+		pathStat.push_back(stat);
+	}
+
+	for (int i = 0; i < (int) paths.size(); ++i) {
+		if (toRemove.count(i) != 0) {
+			continue;
+		}
+
+		for (int j = i + 1; j < (int) paths.size(); ++j) {
+			int similarLen = 0;
+			int similarEdges = 0;
+			CountSimilarity(g, pathStat[i], pathStat[j], similarEdges, similarLen);
+
+			if (((double) similarLen) / ((double) lengths[j]) >= lc_cfg::get().fo.similar_length &&
+					((double) similarEdges) / ((double) paths[j].size()) >= lc_cfg::get().fo.similar_edges) {
+				toRemove.insert(j);
+			}
+		}
+	}
+}
+
+
 std::pair<int, int> FindSameSearchRange(std::vector<BidirectionalPath>& paths, std::vector<size_t>& lengths, int pathNum) {
 	size_t length = lengths[pathNum];
 

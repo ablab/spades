@@ -54,6 +54,9 @@ struct PairedInfoIndexLibrary {
 	size_t is_delta;
 	size_t var;
 	PairedInfoIndex<Graph>* pairedInfoIndex;
+
+	bool has_advanced;
+	PairedInfoIndexLibrary* advanced;
 };
 
 typedef std::vector<PairedInfoIndexLibrary> PairedInfoIndices;

@@ -302,14 +302,16 @@ EdgeId IsEdgeInShortLoopBackward(Graph& g, EdgeId e) {
 	return result;
 }
 
-size_t GetMaxExitIteration(EdgeId loopEdge, EdgeId loopExit, LoopDetector& detector) {
+size_t GetMaxExitIteration(EdgeId loopEdge, EdgeId loopExit, LoopDetector& detector, std::pair<size_t, size_t> iterRange) {
 	auto range = detector.data.equal_range(loopEdge);
 
 	size_t maxIter = 0;
 	double maxWeight = 0;
 	for (auto iter = range.first; iter != range.second; ++iter) {
 		double w = iter->second.weights[loopExit];
-		if (w > maxWeight) {
+		if (w > maxWeight &&
+				iter->second.iteration >= iterRange.first && iter->second.iteration <= iterRange.second) {
+
 			maxIter = iter->second.iteration;
 			maxWeight = w;
 		}
@@ -317,12 +319,15 @@ size_t GetMaxExitIteration(EdgeId loopEdge, EdgeId loopExit, LoopDetector& detec
 	return maxIter;
 }
 
-size_t GetFirstExitIteration(EdgeId loopEdge, EdgeId loopExit, LoopDetector& detector, double coeff = lc_cfg::get().es.priority_coeff) {
+size_t GetFirstExitIteration(EdgeId loopEdge, EdgeId loopExit, LoopDetector& detector,
+		std::pair<size_t, size_t> iterRange, double coeff = lc_cfg::get().es.priority_coeff) {
 	auto range = detector.data.equal_range(loopEdge);
 
 	size_t maxIter = std::numeric_limits<size_t>::max();
 	for (auto iter = range.first; iter != range.second; ++iter) {
-		if (iter->second.weights[loopExit] * coeff > iter->second.weights[loopEdge] && maxIter > iter->second.iteration) {
+		if (iter->second.weights[loopExit] * coeff > iter->second.weights[loopEdge] && maxIter > iter->second.iteration	&&
+				iter->second.iteration >= iterRange.first && iter->second.iteration <= iterRange.second) {
+
 			maxIter = iter->second.iteration;
 		}
 	}
