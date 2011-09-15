@@ -235,12 +235,6 @@ public:
 		}
 	}
 
-	std::string DetailedPrintPath(vector<EdgeId> path) {
-
-	}
-		vector<VertexId> verticesToDelete = VerticesToDelete(path);
-
-
 	EdgeId MergePath(const vector<EdgeId>& path) {
 		assert(!path.empty());
 		for (size_t i = 0; i < path.size(); i++)
