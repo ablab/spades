@@ -244,7 +244,7 @@ public:
 	//todo remove after debug
 	std::string PrintConjugatePath(const vector<EdgeId>& path) {
 		vector<EdgeId> conjugate_path;
-		for (size_t i = path.size() - 1; i >=0; --i) {
+		for (int i = path.size() - 1; i >=0; --i) {
 			conjugate_path.push_back(path[i]);
 		}
 		return PrintDetailedPath(conjugate_path);
