@@ -414,7 +414,7 @@ public:
 
 	/*virtual*/ bool AdditionalCompressCondition(VertexId v) {
 		return !(EdgeEnd(GetUniqueOutgoingEdge(v)) == conjugate(v)
-				&& EdgeStart(GetUniqueIncomingEdge(v) == conjugate(v)));
+				&& EdgeStart(GetUniqueIncomingEdge(v)) == conjugate(v));
 	}
 
 private:
