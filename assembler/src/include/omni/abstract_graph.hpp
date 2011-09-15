@@ -220,14 +220,18 @@ public:
 		return IncomingEdgeCount(v) == 0;
 	}
 
+	virtual bool AdditionalCompressCondition(VertexId v) {
+		return true;
+	}
+
 	bool CanCompressVertex(VertexId v) const {
-		return OutgoingEdgeCount(v) == 1 && IncomingEdgeCount(v) == 1;
+		return OutgoingEdgeCount(v) == 1 && IncomingEdgeCount(v) == 1 /*one-in one-out*/
+				&& GetUniqueOutgoingEdge(v) != GetUniqueIncomingEdge(v) /*not loop*/;
 	}
 
 	void CompressVertex(VertexId v) {
 		//assert(CanCompressVertex(v));
-		if (CanCompressVertex(v)
-				&& GetUniqueOutgoingEdge(v) != GetUniqueIncomingEdge(v)) {
+		if (CanCompressVertex(v) && AdditionalCompressCondition(v)) {
 			vector<EdgeId> toMerge;
 			toMerge.push_back(GetUniqueIncomingEdge(v));
 			toMerge.push_back(GetUniqueOutgoingEdge(v));
@@ -272,9 +276,6 @@ public:
 		return ss.str();
 	}
 
-	virtual void find_bug(const vector<EdgeId>& path){}
-
-
 	EdgeId MergePath(const vector<EdgeId>& path) {
 		assert(!path.empty());
 		for (size_t i = 0; i < path.size(); i++)
@@ -282,10 +283,8 @@ public:
 				assert(path[i] != path[j]);
 			}
 
-		find_bug(path);
-
-		cerr << "Merging " << PrintDetailedPath(path) << endl;
-		cerr << "Conjugate " << PrintConjugatePath(path) << endl;
+		//cerr << "Merging " << PrintDetailedPath(path) << endl;
+		//cerr << "Conjugate " << PrintConjugatePath(path) << endl;
 		vector<EdgeId> corrected_path = CorrectMergePath(path);
 		VertexId v1 = EdgeStart(corrected_path[0]);
 		VertexId v2 = EdgeEnd(corrected_path[corrected_path.size() - 1]);
@@ -296,12 +295,12 @@ public:
 		EdgeId newEdge = HiddenAddEdge(v1, v2, master_.MergeData(toMerge));
 		FireMerge(corrected_path, newEdge);
 
-		cerr << "Corrected " << PrintDetailedPath(corrected_path) << endl;
-		cerr << "Corrected conjugate " << PrintConjugatePath(corrected_path) << endl;
+		//cerr << "Corrected " << PrintDetailedPath(corrected_path) << endl;
+		//cerr << "Corrected conjugate " << PrintConjugatePath(corrected_path) << endl;
 		vector<EdgeId> edges_to_delete = EdgesToDelete(corrected_path);
-		cerr << "To delete " << PrintEdges(edges_to_delete) << endl;
+		//cerr << "To delete " << PrintEdges(edges_to_delete) << endl;
 		vector<VertexId> vertices_to_delete = VerticesToDelete(corrected_path);
-		cerr << "To delete " << PrintVertices(vertices_to_delete) << endl;
+		//cerr << "To delete " << PrintVertices(vertices_to_delete) << endl;
 
 		//todo ask Anton why fire and hidden are divided here
 		FireDeletePath(edges_to_delete, vertices_to_delete);

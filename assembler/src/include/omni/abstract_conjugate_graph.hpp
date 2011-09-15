@@ -400,17 +400,6 @@ public:
 		return ss.str();
 	}
 
-	virtual void find_bug(const vector<EdgeId>& path)
-	{
-		cout << "path edges: " << endl;
-		for (size_t i = 0; i < path.size(); ++i)
-			cout << i << "edge: " << path[i] << " conj: " << conjugate(path[i]) << endl;
-
-		cout << "last vertex: " << endl;
-		VertexId vid = EdgeEnd(path.back());
-		PrintDetailedVertexInfo(vid);
-	}
-
 	virtual std::string PrintDetailedPath(const vector<EdgeId>& path) {
 		stringstream ss;
 		ss << "Path: ";
@@ -423,6 +412,10 @@ public:
 		return ss.str();
 	}
 
+	/*virtual*/ bool AdditionalCompressCondition(VertexId v) {
+		return !(EdgeEnd(GetUniqueOutgoingEdge(v)) == conjugate(v)
+				&& EdgeStart(GetUniqueIncomingEdge(v) == conjugate(v)));
+	}
 
 private:
 	DECL_LOGGER("AbstractConjugateGraph")
