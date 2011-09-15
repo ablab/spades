@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
-#include <boost/dynamic_bitset.hpp>
+#include <boost/unordered_set.hpp>
 using namespace::std;
 
 class bithash {
@@ -33,7 +33,7 @@ class bithash {
   int count_at(string seq);
   int count_at(unsigned long long seq);
 
-  boost::dynamic_bitset<> bits;
+  boost::unordered_set<unsigned long long> bits;
   unsigned long long mask;
 };
 

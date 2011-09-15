@@ -87,4 +87,7 @@ Parser* SelectParser(const std::string& filename,
   return NULL;
 }
 
+void first_fun(int) {
+}
+
 }

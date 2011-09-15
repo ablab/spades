@@ -94,6 +94,8 @@ void MakeSymetricInfo(Graph& g, PairedInfoIndexLibrary& lib) {
 
 template<size_t k>
 void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_IntIds,	Sequence& sequence) {
+	io::first_fun(6);
+
 	string input_dir = cfg::get().input_dir;
 	string dataset = cfg::get().dataset_name;
 	string genome_filename = input_dir
@@ -176,12 +178,8 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 
 			RCStream rcStream(filter_stream);
 
-			if (useNewMetrics) {
-				KmerMapper<k+1, Graph> mapper(g);
-				FillPairedIndexWithReadCountMetric<k, RCStream>(g, index, mapper,*pairedInfos.back().pairedInfoIndex, rcStream);
-			} else {
-				FillPairedIndex<k, RCStream>(g, index, *pairedInfos.back().pairedInfoIndex, rcStream);
-			}
+			KmerMapper<k+1, Graph> mapper(g);
+			FillPairedIndexWithReadCountMetric<k, RCStream>(g, index, mapper,*pairedInfos.back().pairedInfoIndex, rcStream);
 		}
 		INFO("Done");
 
@@ -279,7 +277,8 @@ void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath>& 
 	INFO("Writing contigs to " << filename);
 	osequencestream oss(filename);
 
-	std::set<int> printed;
+	std::vector<BidirectionalPath> temp(paths.size());
+	std::copy(paths.begin(), paths.end(), temp.begin());
 
 	for (int i = 0; i < (int) paths.size(); ++i) {
 		if (notToPrint.count(i)) {

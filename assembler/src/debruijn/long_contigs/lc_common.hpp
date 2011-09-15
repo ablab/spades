@@ -94,13 +94,13 @@ struct PathStatData {
 class PathStopHandler {
 private:
 	Graph& g_;
-	std::multimap<BidirectionalPath*, PathStatData> forward_;
-	std::multimap<BidirectionalPath*, PathStatData> backward_;
+	std::multimap<const BidirectionalPath*, PathStatData> forward_;
+	std::multimap<const BidirectionalPath*, PathStatData> backward_;
 
 public:
 	PathStopHandler(Graph& g):  g_(g), forward_(), backward_() {}
 
-	void AddStop(BidirectionalPath* path, StopReason reason, bool forward) {
+	void AddStop(const BidirectionalPath& path, StopReason reason, bool forward) {
 		std::string msg;
 		switch (reason) {
 		case LOOP: {
@@ -135,34 +135,21 @@ public:
 		AddStop(path, reason, forward, msg);
 	}
 
-	void AddStop(BidirectionalPath* path, StopReason reason, bool forward, const std::string& msg) {
+	void AddStop(const BidirectionalPath& path, StopReason reason, bool forward, const std::string& msg) {
 		if (forward) {
-			forward_.insert(std::make_pair(path, PathStatData(reason, PathLength(g_, *path), msg)));
+			forward_.insert(std::make_pair(&path, PathStatData(reason, PathLength(g_, path), msg)));
 		} else {
-			backward_.insert(std::make_pair(path, PathStatData(reason, PathLength(g_, *path), msg)));
+			backward_.insert(std::make_pair(&path, PathStatData(reason, PathLength(g_, path), msg)));
 		}
 	}
 
-	void print(BidirectionalPath* path) {
-		INFO("Stats for path " << path << " with " << path->size() << " edges and length " <<  PathLength(g_, *path));
-		INFO("Stoppages forward (" << forward_.count(path) << "):");
-		for (auto iter = forward_.lower_bound(path); iter != forward_.upper_bound(path); ++iter) {
-			INFO("Stop reason at length " << iter->second.pathLength << ", reason: " << iter->second.message);
-		}
-		INFO("Stoppages backward (" << backward_.count(path) << "):");
-		for (auto iter = backward_.lower_bound(path); iter != backward_.upper_bound(path); ++iter) {
-			INFO("Stop reason at length " << iter->second.pathLength << ", reason: " << iter->second.message);
-		}
+	void print(const BidirectionalPath& path) {
+		INFO("Stats for path with " << path.size() << " edges and length " <<  PathLength(g_, path));
 	}
 
 	void print() {
-		std::set<BidirectionalPath*> printed;
-
 		for (auto iter = forward_.begin(); iter != forward_.end(); ++iter) {
-			if (printed.count(iter->first) == 0) {
-				printed.insert(iter->first);
-				print(iter->first);
-			}
+			print(*(iter->first));
 		}
 	}
 };

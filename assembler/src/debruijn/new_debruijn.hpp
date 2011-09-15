@@ -98,6 +98,14 @@ class ConjugateDeBruijnGraph: public AbstractConjugateGraph<DeBruijnMaster> {
 	typedef AbstractConjugateGraph<DeBruijnMaster> base;
 public:
 
+	typedef base::VertexId VertexId;
+	typedef base::EdgeId EdgeId;
+	typedef base::VertexData VertexData;
+	typedef base::EdgeData EdgeData;
+	typedef base::VertexIterator VertexIterator;
+
+//	typedef typename super::SmartVertexIt SmartVertexIt;
+//	typedef typename super::SmartEdgeIt SmartEdgeIt;
 private:
 	const size_t k_;
 	CoverageIndex<ConjugateDeBruijnGraph>* coverage_index_;
