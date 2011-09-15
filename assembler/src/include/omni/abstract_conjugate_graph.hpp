@@ -190,7 +190,7 @@ private:
 		v2->set_conjugate(v1);
 		vertices_.insert(v1);
 		vertices_.insert(v2);
-//		cout << "add v " << v1 << " " << v2 << endl;
+		TRACE("Vettices " << v1 << "and " << v2 << " added");
 		return v1;
 	}
 
@@ -225,6 +225,7 @@ private:
 				this->master().conjugate(data));
 		result->set_conjugate(rcEdge);
 		rcEdge->set_conjugate(result);
+		TRACE("Edges " << result << " and " << rcEdge << " added");
 //		cout << "add e" << result << " " << rcEdge << endl;
 		return result;
 	}
@@ -239,6 +240,7 @@ private:
 			delete rcEdge;
 		}
 		delete edge;
+		TRACE("Edges " << edge << " and " << rcEdge << " deleted");
 //		cout << "del e" << edge << " " << rcEdge << endl;
 	}
 
