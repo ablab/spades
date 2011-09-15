@@ -219,7 +219,6 @@ void CreateAndFillGraph(Graph& g, EdgeIndex<k + 1, Graph>& index
 	ProduceInfo<k>(g, index, labeler, genome,
 			cfg::get().output_dir + "edge_graph.dot", "edge_graph");
 
-	FillEdgesPos<k>(g, index, genome, EdgePos);
 }
 
 template<size_t k>
@@ -286,8 +285,6 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 
 //		omnigraph::RealIdGraphLabeler<Graph> labeler(g, int_ids);
 
-		omnigraph::WriteSimple(g, *TotLab, output_folder + "1_initial_graph.dot",
-				"no_repeat_graph");
 	}
 
 	if (cfg::get().start_from == "after_filling") {
@@ -308,12 +305,15 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 	} else {
 		if (graph_loaded) {
 
-
-
-			FillEdgesPos<k>(g, index, cfg::get().pos.contigs_for_threading, EdgePos);
+//			FillEdgesPos<k>(g, index, genome, EdgePos, kmer_mapper);
+//			FillEdgesPos<k>(g, index, genome, EdgePos, kmer_mapper, 1);
+//			FillEdgesPos<k>(g, index, cfg::get().pos.contigs_for_threading, EdgePos);
+			omnigraph::WriteSimple(g, *TotLab, output_folder + "1_initial_graph.dot",
+					"no_repeat_graph");
 
 			SimplifyGraph<k>(g, index, *TotLab, 3, genome,
 					output_folder/*, etalon_paired_index*/);
+            FillEdgesPos<k>(g, index, genome, EdgePos, kmer_mapper, 2);
 			ProduceInfo<k>(g, index, *TotLab, genome,
 					output_folder + "simplified_graph.dot", "simplified_graph");
 
@@ -353,6 +353,7 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
                        cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
                        cfg::get().de.linkage_distance, cfg::get().de.max_distance);
                estimator.Estimate(clustered_index);
+
 
                omnigraph::WriteSimple(g, *TotLab, output_folder + "2_simplified_graph.dot",
                        "no_repeat_graph");

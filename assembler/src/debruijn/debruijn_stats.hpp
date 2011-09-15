@@ -185,6 +185,13 @@ Path<typename Graph::EdgeId> FindGenomePath(const Sequence& genome,
 }
 
 template<size_t k>
+MappingPath<typename Graph::EdgeId> FindGenomeMappingPath(const Sequence& genome,
+		const Graph& g, const EdgeIndex<k + 1, Graph>& index, KmerMapper<k + 1, Graph>& kmer_mapper) {
+	ExtendedSequenceMapper<k + 1, Graph> srt(g, index, kmer_mapper);
+	return srt.MapSequence(genome);
+}
+
+template<size_t k>
 void ProduceInfo(const Graph& g,
 		const EdgeIndex<k + 1, Graph>& index,
 		const omnigraph::GraphLabeler<Graph>& labeler,
@@ -296,7 +303,7 @@ void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
 
 template<size_t k>
 void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos) {
+		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper) {
 	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
 	int CurPos = 0;
 	for (auto it = path1.sequence().begin(); it != path1.sequence().end(); ++it) {
@@ -304,19 +311,35 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		edgesPos.AddEdgePosition(ei, CurPos + 1, CurPos + g.length(ei));
 		CurPos += g.length(ei);
 	}
-	//CurPos = 1000000000;
+
 	CurPos = 0;
 	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
 	for (auto it = path2.sequence().begin(); it != path2.sequence().end(); ++it) {
 		CurPos -= g.length(*it);
 	}
+
 	for (auto it = path2.sequence().begin(); it != path2.sequence().end(); ++it) {
 		EdgeId ei = *it;
 		edgesPos.AddEdgePosition(ei, CurPos, CurPos + g.length(ei)-1);
 		CurPos += g.length(ei);
 	}
 
+}
 
+template<size_t k>
+void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int contigId) {
+	MappingPath<typename Graph::EdgeId> m_path1 = FindGenomeMappingPath<k> (genome, g, index, kmer_mapper);
+	int CurPos = 0;
+	for (size_t i = 0; i < m_path1.size(); i++) {
+		EdgeId ei = m_path1[i].first;
+		MappingRange mr = m_path1[i].second;
+		int len = mr.mapped_range.end_pos - mr.mapped_range.start_pos;
+		edgesPos.AddEdgePosition(ei, mr.initial_range.start_pos+1, mr.initial_range.end_pos, contigId);
+//		edgesPos.AddEdgePosition(ei, CurPos + 1, CurPos+len, contigId);
+		CurPos += len;
+	}
+	//CurPos = 1000000000;
 }
 
 template<size_t k>

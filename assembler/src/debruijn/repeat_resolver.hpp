@@ -195,6 +195,7 @@ public:
 			}
 
 		}
+
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			TRACE(
 					"Adding edge from " << old_to_new[old_graph.EdgeStart(*e_iter)] <<" to " << old_to_new[old_graph.EdgeEnd(*e_iter)]);
@@ -211,6 +212,8 @@ public:
 			old_to_new_edge[*e_iter] = new_edge;
 			//			old_to_new_edge[old_graph.conjugate(*e_iter)] = new_graph.conjugate(new_edge);
 			//			PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
+			new_pos.AddEdgePosition(new_edge, old_pos.EdgesPositions[*e_iter]);
+
 
 		}
 		old_to_new.clear();
@@ -644,15 +647,15 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	}INFO("total vert" << sum_count);
 	INFO("Converting position labels");
 
-	for (auto e_iter = new_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+/*	for (auto e_iter = new_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
 		EdgeId old_edge = edge_labels[*e_iter];
 		for (size_t i = 0; i < old_pos.EdgesPositions[old_edge].size(); i++) {
 			new_pos.AddEdgePosition(*e_iter,
-					old_pos.EdgesPositions[old_edge][i].start_,
-					old_pos.EdgesPositions[old_edge][i].end_);
+					old_pos.EdgesPositions[old_edge][i].start(),
+					old_pos.EdgesPositions[old_edge][i].end());
 		}
 	}
-	//	gvis::WriteSimple(  "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
+*/	//	gvis::WriteSimple(  "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
 }
 
 template<class Graph>
