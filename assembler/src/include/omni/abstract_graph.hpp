@@ -226,51 +226,42 @@ public:
 
 	void CompressVertex(VertexId v) {
 		//assert(CanCompressVertex(v));
-		cerr << "here" << endl;
 		if (CanCompressVertex(v)
 				&& GetUniqueOutgoingEdge(v) != GetUniqueIncomingEdge(v)) {
-			cerr << "here1" << endl;
 			vector<EdgeId> toMerge;
 			toMerge.push_back(GetUniqueIncomingEdge(v));
 			toMerge.push_back(GetUniqueOutgoingEdge(v));
 			MergePath(toMerge);
-			cerr << "here1" << endl;
 		}
 	}
 
+	std::string DetailedPrintPath(vector<EdgeId> path) {
+
+	}
+		vector<VertexId> verticesToDelete = VerticesToDelete(path);
+
+
 	EdgeId MergePath(const vector<EdgeId>& path) {
-		cerr << "here2" << endl;
 		assert(!path.empty());
-		cerr << "here2" << endl;
 		for (size_t i = 0; i < path.size(); i++)
 			for (size_t j = i + 1; j < path.size(); j++) {
 				assert(path[i] != path[j]);
 			}
-		cerr << "here2" << endl;
 		vector<EdgeId> correctedPath = CorrectMergePath(path);
-		cerr << "here2" << endl;
 		VertexId v1 = EdgeStart(correctedPath[0]);
 		VertexId v2 = EdgeEnd(correctedPath[correctedPath.size() - 1]);
 		vector<const EdgeData*> toMerge;
 		for (auto it = correctedPath.begin(); it != correctedPath.end(); ++it) {
 			toMerge.push_back(&(data(*it)));
 		}
-		cerr << "here2" << endl;
 		EdgeId newEdge = HiddenAddEdge(v1, v2, master_.MergeData(toMerge));
-		cerr << "here2" << endl;
 		FireMerge(correctedPath, newEdge);
-		cerr << "here2" << endl;
-		vector<EdgeId> edgesToDelete = EdgesToDelete(path);
-		cerr << "here2" << endl;
-		vector<VertexId> verticesToDelete = VerticesToDelete(path);
-		cerr << "here2" << endl;
+		vector<EdgeId> edgesToDelete = EdgesToDelete(correctedPath);
+		vector<VertexId> verticesToDelete = VerticesToDelete(correctedPath);
 		//todo ask Anton why fire and hidden are divided here
 		FireDeletePath(edgesToDelete, verticesToDelete);
-		cerr << "here2" << endl;
 		FireAddEdge(newEdge);
-		cerr << "here2" << endl;
 		HiddenDeletePath(edgesToDelete, verticesToDelete);
-		cerr << "here2" << endl;
 		return newEdge;
 	}
 
