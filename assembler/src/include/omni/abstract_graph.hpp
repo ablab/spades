@@ -235,27 +235,72 @@ public:
 		}
 	}
 
+	//todo remove after debug
+	virtual std::string PrintDetailedPath(const vector<EdgeId>& path) {
+		assert(false);
+		return "";
+	}
+
+	//todo remove after debug
+	std::string PrintConjugatePath(const vector<EdgeId>& path) {
+		vector<EdgeId> conjugate_path;
+		for (size_t i = path.size() - 1; i >=0; --i) {
+			conjugate_path.push_back(path[i]);
+		}
+		return PrintDetailedPath(conjugate_path);
+	}
+
+	//todo remove after debug
+	virtual std::string PrintDetailedVertexInfo(VertexId v) {
+		assert(false);
+		return "";
+	}
+
+	//todo remove after debug
+	virtual std::string PrintEdges(const vector<EdgeId>& path) {
+		assert(false);
+		return "";
+	}
+
+	//todo remove after debug
+	std::string PrintVertices(const vector<VertexId>& path) {
+		stringstream ss;
+		ss << "Vertices ";
+		for (auto it = path.begin(); it != path.end(); ++it) {
+			ss << *it << ", ";
+		}
+		return ss.str();
+	}
+
 	EdgeId MergePath(const vector<EdgeId>& path) {
 		assert(!path.empty());
 		for (size_t i = 0; i < path.size(); i++)
 			for (size_t j = i + 1; j < path.size(); j++) {
 				assert(path[i] != path[j]);
 			}
-		vector<EdgeId> correctedPath = CorrectMergePath(path);
-		VertexId v1 = EdgeStart(correctedPath[0]);
-		VertexId v2 = EdgeEnd(correctedPath[correctedPath.size() - 1]);
+		cout << "Merging " << PrintDetailedPath(path) << endl;
+		cout << "Conjugate " << PrintConjugatePath(path) << endl;
+		vector<EdgeId> corrected_path = CorrectMergePath(path);
+		VertexId v1 = EdgeStart(corrected_path[0]);
+		VertexId v2 = EdgeEnd(corrected_path[corrected_path.size() - 1]);
 		vector<const EdgeData*> toMerge;
-		for (auto it = correctedPath.begin(); it != correctedPath.end(); ++it) {
+		for (auto it = corrected_path.begin(); it != corrected_path.end(); ++it) {
 			toMerge.push_back(&(data(*it)));
 		}
 		EdgeId newEdge = HiddenAddEdge(v1, v2, master_.MergeData(toMerge));
-		FireMerge(correctedPath, newEdge);
-		vector<EdgeId> edgesToDelete = EdgesToDelete(correctedPath);
-		vector<VertexId> verticesToDelete = VerticesToDelete(correctedPath);
+		FireMerge(corrected_path, newEdge);
+
+		cout << "Corrected " << PrintDetailedPath(corrected_path) << endl;
+		cout << "Corrected conjugate " << PrintConjugatePath(corrected_path) << endl;
+		vector<EdgeId> edges_to_delete = EdgesToDelete(corrected_path);
+		cout << "To delete " << PrintEdges(edges_to_delete) << endl;
+		vector<VertexId> vertices_to_delete = VerticesToDelete(corrected_path);
+		cout << "To delete " << PrintVertices(vertices_to_delete) << endl;
+
 		//todo ask Anton why fire and hidden are divided here
-		FireDeletePath(edgesToDelete, verticesToDelete);
+		FireDeletePath(edges_to_delete, vertices_to_delete);
 		FireAddEdge(newEdge);
-		HiddenDeletePath(edgesToDelete, verticesToDelete);
+		HiddenDeletePath(edges_to_delete, vertices_to_delete);
 		return newEdge;
 	}
 

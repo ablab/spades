@@ -382,6 +382,36 @@ public:
 		return edge->conjugate();
 	}
 
+	virtual std::string PrintEdges(const vector<EdgeId>& path) {
+		stringstream ss;
+		ss << "Edges ";
+		for (auto it = path.begin(); it != path.end(); ++it) {
+			ss << *it << " (conjugate " << conjugate(*it) << "), ";
+		}
+		return ss.str();
+	}
+
+	virtual std::string PrintDetailedVertexInfo(VertexId v) {
+		stringstream ss;
+		ss << "Vertex " << v << " (conjugate " << conjugate(v) << "), ";
+		ss << "Incoming " << PrintEdges(IncomingEdges(v));
+		ss << "Outgoing " << PrintEdges(OutgoingEdges(v));
+		return ss.str();
+	}
+
+	virtual std::string PrintDetailedPath(const vector<EdgeId>& path) {
+		stringstream ss;
+		ss << "Path: ";
+		ss << PrintDetailedVertexInfo(EdgeStart(path[0]));
+		for (auto it = path.begin(); it != path.end(); ++it) {
+			EdgeId e = *it;
+			ss << "Edge " << e << " (conjugate " << conjugate(e) << "); ";
+			ss << PrintDetailedVertexInfo(EdgeEnd(e));
+		}
+		return ss.str();
+	}
+
+
 private:
 	DECL_LOGGER("AbstractConjugateGraph")
 };
