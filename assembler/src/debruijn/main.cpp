@@ -139,6 +139,7 @@ int main() {
 		INFO("Assembling " << dataset << " dataset");
 		debruijn_graph::assemble_genome(rcStream, Sequence(genome)/*, work_tmp_dir, reads*/);
 
+		link_output("latest_try");
 		link_output("latest_success");
 
 		INFO("Assembling " << dataset << " dataset finished");
