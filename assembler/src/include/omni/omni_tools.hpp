@@ -58,14 +58,16 @@ public:
 		TRACE("Vertex " << v << " judged compressible");
 		EdgeId e = graph_.GetUniqueOutgoingEdge(v);
 		EdgeId start_edge = e;
-		while (GoUniqueWayBackward(e) && e != start_edge) {
+		while (GoUniqueWayBackward(e) && e != start_edge
+				&& !graph_.RelatedVertices(graph_.EdgeStart(e), graph_.EdgeEnd(e))) {
 		}
 		vector<EdgeId> mergeList;
 		//		e = graph_.conjugate(e);
 		start_edge = e;
 		do {
 			mergeList.push_back(e);
-		} while (GoUniqueWayForward(e) && e != start_edge);
+		} while (GoUniqueWayForward(e) && e != start_edge
+				&& !graph_.RelatedVertices(graph_.EdgeStart(e), graph_.EdgeEnd(e)));
 		EdgeId new_edge = graph_.MergePath(mergeList);
 		TRACE("Vertex " << v << " compressed and is now part of edge " << new_edge);
 		TRACE("Processing vertex " << v << " finished");
@@ -78,6 +80,9 @@ public:
 	void CompressAllVertices() {
 		TRACE("Vertex compressing started");
 		//SmartVertexIterator<Graph> end = graph_.SmartVertexEnd();
+
+		//in current implementation will work incorrectly if smart iterator won't give vertex and its conjugate
+		//(in case of self-conjugate edges)
 		for (auto it = graph_.SmartVertexBegin(); !it.IsEnd(); ++it) {
 			VertexId v = *it;
 			CompressVertex(v);

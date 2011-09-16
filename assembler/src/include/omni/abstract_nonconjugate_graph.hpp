@@ -287,6 +287,9 @@ public:
 		return edge->end();
 	}
 
+	/*virtual*/ bool RelatedVertices(VertexId v1, VertexId v2) {
+		return v1 == v2;
+	}
 
 	pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId vertex, vector<EdgeId> splittingEdges) {
 		vector<double> split_coefficients(splittingEdges.size(),1);

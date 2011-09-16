@@ -126,6 +126,8 @@ public:
 
 	virtual VertexId EdgeEnd(EdgeId edge) const = 0;
 
+	virtual bool RelatedVertices(VertexId v1, VertexId v2) = 0;
+
 	bool CheckUniqueOutgoingEdge(VertexId v) const {
 		return OutgoingEdgeCount(v) == 1;
 	}
@@ -316,6 +318,9 @@ public:
 			for (size_t j = i + 1; j < path.size(); j++) {
 				assert(path[i] != path[j]);
 			}
+		if (path.size() == 1) {
+			TRACE("Path of single edge " << PrintEdge(*(path.begin())) << ". Nothing to merge.");
+		}
 		TRACE("Merging path " << PrintEdges(path));
 		cerr << "Merging " << PrintDetailedPath(path) << endl;
 		cerr << "Conjugate " << PrintConjugatePath(path) << endl;

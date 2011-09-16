@@ -12,8 +12,6 @@ namespace omnigraph {
 
 #include "omni_tools.hpp"
 #include "omni_utils.hpp"
-#include "abstract_conjugate_graph.hpp"
-#include "abstract_nonconjugate_graph.hpp"
 #include "xmath.h"
 
 template<class Graph>
@@ -40,24 +38,6 @@ public:
 		cleaner.Clean();
 	}
 };
-
-template<class Graph>
-bool RelatedVertices(
-		const AbstractConjugateGraph<typename Graph::DataMaster>& g,
-		typename Graph::VertexId v1, typename Graph::VertexId v2) {
-	cout << "Checking vertices relation " << v1 << " and " << v2 << endl;
-	cout << "v1 == v2 -- " << (v1 == v2) << endl;
-	cout << "v1 == g.conjugate(v2) -- " << (v1 == g.conjugate(v2)) << endl;
-	cout << "Vertices related -- " << (v1 == v2 || v1 == g.conjugate(v2)) << endl;
-	return v1 == v2 || v1 == g.conjugate(v2);
-}
-
-template<class Graph>
-bool RelatedVertices(
-		const AbstractNonconjugateGraph<typename Graph::DataMaster>& g,
-		typename Graph::VertexId v1, typename Graph::VertexId v2) {
-	return v1 == v2;
-}
 
 template<class Graph>
 class IterativeLowCoverageEdgeRemover {
@@ -94,7 +74,7 @@ public:
 				TRACE("Deleting edge");
 				g_.DeleteEdge(e);
 				TRACE("Compressing locality");
-				if (!RelatedVertices<Graph>(g_, start, end)) {
+				if (!g_.RelatedVertices(start, end)) {
 					TRACE("Vertices not related");
 					TRACE("Compressing end");
 					g_.CompressVertex(end);
@@ -168,7 +148,7 @@ public:
 			if (CheckAdjacent(adjacent_edges, e)) {
 				VertexId start = g_.EdgeStart(e);
 				VertexId end = g_.EdgeEnd(e);
-				if (!RelatedVertices<Graph>(g_, start, end)) {
+				if (!g_.RelatedVertices(start, end)) {
 					g_.DeleteEdge(e);
 					g_.CompressVertex(start);
 					g_.CompressVertex(end);

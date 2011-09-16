@@ -431,6 +431,10 @@ public:
 				&& EdgeStart(GetUniqueIncomingEdge(v)) == conjugate(v));
 	}
 
+	/*virtual*/ bool RelatedVertices(VertexId v1, VertexId v2) {
+		return v1 == v2 || v1 == conjugate(v2);
+	}
+
 private:
 	DECL_LOGGER("AbstractConjugateGraph")
 };
