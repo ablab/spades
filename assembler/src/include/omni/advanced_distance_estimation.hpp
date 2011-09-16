@@ -25,6 +25,13 @@ private:
     double percentage_;
     double derivative_threshold_;
 
+    int round(double x){ 
+        int res = (int) (x + 0.5 + 1e-9);
+        if (x < 0)
+            res = -res;
+        return res;
+    }
+
 
 	vector<pair<size_t, double> > EstimateEdgePairDistances(vector<PairInfo<EdgeId> > data, vector<size_t> forward) {
         vector<pair<size_t, double> > result;
@@ -35,7 +42,7 @@ private:
         for (size_t i = 0; i < forward.size(); i++){
             ss << forward[i] << " ";
         }
-        INFO("Possible distances : " << ss.str());
+        DEBUG("Possible distances : " << ss.str());
 
 		for (size_t i = 0; i < clusters.size(); i++) {
             size_t begin = clusters[i].first;
@@ -49,11 +56,11 @@ private:
                     break;
                 }
                 if ((int) forward[cur] > rounded_d(data[end - 1])) continue;
-                PeakFinder peakfinder(data, begin, end, data_length*range_coeff_, data_length*delta_coeff_, percentage_, derivative_threshold_);
+                PeakFinder peakfinder(data, begin, end, round(data_length*range_coeff_), round(data_length*delta_coeff_), percentage_, derivative_threshold_);
 				DEBUG("Processing window : " << rounded_d(data[begin]) << " " << rounded_d(data[end - 1]));
 				peakfinder.FFTSmoothing(cutoff_);
                 if ( ( (cur + 1) == forward.size()) || ( (int) forward[cur + 1] > rounded_d(data[end - 1]))){
-                    if (inv_density_*(end - begin) > data_length){
+                    if (round(inv_density_*(end - begin)) > (int) data_length){
                         result.push_back(make_pair(forward[cur], 1));
                         DEBUG("Pair made " << forward[cur]);
                     }
@@ -127,7 +134,7 @@ public:
             int firstNumber =  int_ids_.ReturnIntId(first); 
             int secondNumber =  int_ids_.ReturnIntId(second); 
 
-            INFO("Estimating edges number : " << firstNumber << " " << secondNumber); 
+            DEBUG("Estimating edges number : " << firstNumber << " " << secondNumber); 
             vector<size_t> forward = this->GetGraphDistances(first, second);
 			vector<pair<size_t, double> > estimated = EstimateEdgePairDistances(data, forward);
 			vector<PairInfo<EdgeId> > clustered = this->ClusterResult(first, second, estimated);

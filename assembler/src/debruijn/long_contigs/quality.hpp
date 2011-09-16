@@ -79,11 +79,13 @@ size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Seque
 	size_t pathCount = 0;
 	for(int i = 0; i < (int) paths.size(); ++i) {
 		std::string q = (quality == 0 ? "" : ", quality: " + ToString(quality->at(i)));
+		double cov = PathMinReadCoverage(g, paths[i]);
 
 		int s = FindInGenomePath(paths[i], path1);
 		if (s != -1) {
 			++pathCount;
 			INFO("Path of length " << PathLength(g, paths[i])  << " with " << paths[i].size() << " edges is found in genome path starting from edge " << s << q);
+			DetailedPrintPath(g, paths[i]);
 		}
 
 		else {
@@ -91,6 +93,7 @@ size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Seque
 			if (s != -1) {
 				++pathCount;
 				INFO("Path of length " << PathLength(g, paths[i]) << " with " << paths[i].size() << " edges is found in !genome path starting from edge " << s << q);
+				DetailedPrintPath(g, paths[i]);
 			}
 
 			else {
@@ -101,7 +104,10 @@ size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Seque
 
 				if (edges1 > edges2) {
 					INFO("Path partly found, edges matched " << edges1 << "/" << paths[i].size() <<
-							", length matched " << len1 << "/" << PathLength(g, paths[i]) << q);
+							", length matched " << len1 << "/" << PathLength(g, paths[i]) << q
+							 << ", min coverage " << cov);
+
+					DetailedPrintPath(g, paths[i]);
 
 					if (displayInexactPaths) {
 						PrintPath(g, paths[i]);
@@ -110,7 +116,10 @@ size_t PathsInGenome(Graph& g, const EdgeIndex<k + 1, Graph>& index, const Seque
 				}
 				else {
 					INFO("Path partly found, edges matched " << edges2 << "/" << paths[i].size() <<
-							", length matched " << len2 << "/" << PathLength(g, paths[i]) << q);
+							", length matched " << len2 << "/" << PathLength(g, paths[i]) << q
+							 << ", min coverage " << cov);
+
+					DetailedPrintPath(g, paths[i]);
 
 					if (displayInexactPaths) {
 						PrintPath(g, paths[i]);

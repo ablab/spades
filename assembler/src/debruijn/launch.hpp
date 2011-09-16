@@ -150,12 +150,16 @@ using namespace omnigraph;
  }
  }
  }*/
+//SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
 
 template<size_t k, class Graph>
-void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
-		EdgeLabelHandler<Graph>& LabelsAfter,
-		const EdgeIndex<k + 1, Graph>& index ,vector<SingleReadStream *>& reads
-		, string& consensus_output_dir) {
+void SelectReadsForConsensus(
+		Graph& etalon_graph, Graph& cur_graph,
+		EdgeLabelHandler<Graph>& LabelsAfter
+		 , const EdgeIndex<k + 1, Graph>& index , vector<io::Reader<io::SingleRead>*>& reads
+		, string& consensus_output_dir
+
+) {
 	INFO("ReadMapping started");
 	map<typename Graph::EdgeId, int> contigNumbers;
 	int cur_num = 0;
@@ -219,7 +223,6 @@ void CreateAndFillGraph(Graph& g, EdgeIndex<k + 1, Graph>& index
 	ProduceInfo<k>(g, index, labeler, genome,
 			cfg::get().output_dir + "edge_graph.dot", "edge_graph");
 
-	FillEdgesPos<k>(g, index, genome, EdgePos);
 }
 
 template<size_t k>
@@ -286,8 +289,6 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 
 //		omnigraph::RealIdGraphLabeler<Graph> labeler(g, int_ids);
 
-		omnigraph::WriteSimple(g, *TotLab, output_folder + "1_initial_graph.dot",
-				"no_repeat_graph");
 	}
 
 	if (cfg::get().start_from == "after_filling") {
@@ -308,12 +309,15 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 	} else {
 		if (graph_loaded) {
 
-
-
-			FillEdgesPos<k>(g, index, cfg::get().pos.contigs_for_threading, EdgePos);
+			FillEdgesPos<k>(g, index, genome, EdgePos, kmer_mapper, 0);
+			FillEdgesPos<k>(g, index, !genome, EdgePos, kmer_mapper, 1);
+			FillEdgesPos<k>(g, index, cfg::get().pos.contigs_for_threading, EdgePos, kmer_mapper, 10);
+			omnigraph::WriteSimple(g, *TotLab, output_folder + "1_initial_graph.dot",
+					"no_repeat_graph");
 
 			SimplifyGraph<k>(g, index, *TotLab, 3, genome,
 					output_folder/*, etalon_paired_index*/);
+            FillEdgesPos<k>(g, index, genome, EdgePos, kmer_mapper, 2);
 			ProduceInfo<k>(g, index, *TotLab, genome,
 					output_folder + "simplified_graph.dot", "simplified_graph");
 
@@ -337,14 +341,17 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
                         cfg::get().de.linkage_distance, cfg::get().de.max_distance, cfg::get().ade.threshold, cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff, cfg::get().ade.cutoff, cfg::get().ade.minpeakpoints, cfg::get().ade.inv_density, cfg::get().ade.percentage, cfg::get().ade.derivative_threshold);
                 estimator.Estimate(clustered_index);
 
-                printGraph(g, int_ids, graph_save_path + "a_repeats_resolved_before",
+                omnigraph::WriteSimple(g, *TotLab, output_folder + "2_simplified_graph.dot",
+                        "no_repeat_graph");
+
+                printGraph(g, int_ids, graph_save_path + "repeats_resolved_before",
                         paired_index, EdgePos/*, &read_count_weight_paired_index*/);
 
-                printGraph(g, int_ids, work_tmp_dir + "a_simplified_graph",
+                printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph",
                         paired_index, EdgePos, &etalon_paired_index,
                         &clustered_index/*, &read_count_weight_paired_index*/);
                 
-                printGraph(g, int_ids, output_folder + "a_simplified_graph",
+                printGraph(g, int_ids, output_folder + "2_simplified_graph",
                         clustered_index, EdgePos, &etalon_paired_index,
                         &clustered_index/*, &read_count_weight_paired_index*/);
 
@@ -507,10 +514,10 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 
 		OutputContigs(resolved_graph, output_folder + "contigs_final.fasta");
 		string consensus_folder = output_folder + "consensus/";
-
-//		OutputSingleFileContigs(resolved_graph, consensus_folder);
-//		SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
-
+		if (cfg::get().need_consensus) {
+			OutputSingleFileContigs(resolved_graph, consensus_folder);
+			SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter ,new_edge_index, reads, consensus_folder);
+		}
 		OutputContigs(new_graph,
 				output_folder + "contigs_before_resolve.fasta");
 

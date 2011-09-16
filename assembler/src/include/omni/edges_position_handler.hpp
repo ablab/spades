@@ -11,30 +11,39 @@
 //#include "utils.hpp"
 #include "graph_labeler.hpp"
 #include "simple_tools.hpp"
+#include "omni_utils.hpp"
 using namespace omnigraph;
 
 namespace omnigraph {
 
 class EdgePosition {
 public:
+	MappingRange m_range_;
 	int start_;
+
 	int end_;
+	int start() const{return m_range_.initial_range.start_pos;}
+	int end() const{return m_range_.initial_range.end_pos;}
 	int contigId_;
-	EdgePosition (int start, int end, int contigId = 0): start_(start), end_(end), contigId_(contigId) {};
+	EdgePosition (int start, int end, int contigId = 0):  m_range_(Range(start,end), Range(0,0)), start_(start), end_(end), contigId_(contigId) {
+	};
 };
 
 bool PosCompare(const EdgePosition &a, const EdgePosition &b){
-	return ((a.contigId_ < b.contigId_) ||((a.contigId_ == b.contigId_)&&(a.end_<b.end_)));
+	int aend =  a.end();
+	int bend =  b.end();
+	return ((a.contigId_ < b.contigId_) ||((a.contigId_ == b.contigId_)&&( aend < bend )));
 }
 
 vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosition> v2){
 	vector<EdgePosition> res;
-	set<int> contigs_num;
+	if (v1.size() == 0 && v2.size() == 0) return res;
 	if (v1.size() == 0) {res = v2;}
 	if (v2.size() == 0) {res = v1;}
 
 	if (v1.size() == 0 || v2.size() == 0) {
-		vector<EdgePosition> res;
+		DEBUG("GluePosition fist parameter size "<<v1.size()<<", second parameter size "<<v2.size());
+		set<int> contigs_num;
 		for (auto iter = res.begin(); iter != res.end(); ++iter){
 			if (contigs_num.find(iter->contigId_)==contigs_num.end()){
 				DEBUG("Contig "<<iter->contigId_<< " glued with empty edge");
@@ -47,25 +56,25 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosi
 		int best_fit_j = -1;
 		for( size_t j = 0; j< v2.size(); j++){
 			if (v1[i].contigId_ == v2[j].contigId_){
-				if (v1[i].end_ + 1 == v2[j].start_) {
+				if (v1[i].end() + 1 == v2[j].start()) {
 					best_fit_j = j;
 					break;
 				}
 				else
 				{
-					if ((v1[i].end_ < v2[j].start_)&&(v1[i].end_ + cfg::get().pos.max_single_gap > v2[j].start_)){
+					if ((v1[i].end() < v2[j].start())&&(v1[i].end() + cfg::get().pos.max_single_gap > v2[j].start())){
 						//res.push_back(EdgePosition(v1[i].start_, v2[j].end_, v1[i].contigId_));
 						if (best_fit_j < 0) best_fit_j = j;
-						else if (v2[j].start_ < v2[best_fit_j].start_) best_fit_j = j;
+						else if (v2[j].start() < v2[best_fit_j].start()) best_fit_j = j;
 					}
 				}
 
 			}
 	 	}
 		if (best_fit_j != -1) {
-			res.push_back(EdgePosition(v1[i].start_, v2[best_fit_j].end_, v1[i].contigId_));
-			if (v2[best_fit_j].start_ - v1[i].end_ > 1){
-				DEBUG("Contig "<<v1[i].contigId_<< " Glue parts with gap: "<<v1[i].start_<<"-"<<v1[i].end_<<" and "<<v2[best_fit_j].start_<<"-"<<v2[best_fit_j].end_);
+			res.push_back(EdgePosition(v1[i].start(), v2[best_fit_j].end(), v1[i].contigId_));
+			if (v2[best_fit_j].start() - v1[i].end() > 1){
+				DEBUG("Contig "<<v1[i].contigId_<< " Glue parts with gap: "<<v1[i].start()<<"-"<<v1[i].end()<<" and "<<v2[best_fit_j].start()<<"-"<<v2[best_fit_j].end());
 			}
 		}
 	}
@@ -124,6 +133,7 @@ public:
 			}
 
 	}
+
 	std::string str(EdgeId edgeId){
 		std::string s = "";
 		if (EdgesPositions.find(edgeId) != EdgesPositions.end()) {
@@ -147,6 +157,12 @@ public:
 
 		AddEdgePosition(new_edge, (EdgesPositions[edge1]));
 		AddEdgePosition(new_edge, (EdgesPositions[edge2]));
+
+		if (EdgesPositions[edge1].size() > 0 && EdgesPositions[edge2].size() > 0) {
+			DEBUG("Gluing two edges with not empty positions:");
+			DEBUG("First: "<<str(edge1));
+			DEBUG("Second: "<<str(edge2));
+		}
 
 /*		 for( size_t i = 0; i< EdgesPositions[edge1].size(); i++){
 			 for( size_t j = 0; j< EdgesPositions[edge2].size(); j++){
@@ -189,8 +205,13 @@ public:
  		 }
 
  		 if (positive_size && (res.size() == 0)){
- 			 DEBUG("Merge operation broke some positions");
+ 			 DEBUG("Merge operation broke some positions:");
+ 	 		 for (size_t i = 0; i < n; i++) {
+ 	 			 DEBUG("Size "<<EdgesPositions[oldEdges[i]].size()<<" "<<str(oldEdges[i]));
+ 	 	 		 positive_size = positive_size || (EdgesPositions[oldEdges[i]].size() > 0);
+ 	 		 }
  		 }
+
  		 AddEdgePosition(newEdge, res);
 	 }
 /*

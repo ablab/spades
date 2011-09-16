@@ -78,7 +78,8 @@ struct LoopDetector {
 		temp.clear();
 	}
 
-	void print() {
+	void print(Graph& g) {
+		INFO("== Detector data ==");
 		for (auto iter = data.begin(); iter != data.end(); ++iter) {
 			INFO("Edge " << iter->first << ", weight " << iter->second.selfWeight << ", iteration " << iter->second.iteration);
 			for(auto alt = iter->second.weights.begin(); alt != iter->second.weights.end(); ++alt) {
@@ -105,6 +106,38 @@ size_t CountLoopEdges(EdgeId lastEdge, LoopDetector& detector) {
 	return loopSize;
 }
 
+
+bool PathIsOnlyLoop(BidirectionalPath& path, EdgeId loopEdge, bool forward) {
+	EdgeId secondEdge = forward ? path.back() : path.front();
+	for (auto edge = path.begin(); edge != path.end(); ++edge) {
+		if (*edge != secondEdge && *edge != loopEdge) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool PathIsOnlyLoop(BidirectionalPath& path, LoopDetector& detector, bool forward) {
+	EdgeId lastEdge = forward ? path.back() : path.front();
+	size_t loopSize = CountLoopEdges(lastEdge, detector);
+	int start = forward ? path.size() - 1 : loopSize - 1;
+	int end = forward ? path.size() - loopSize : 0;
+
+	std::set<EdgeId> loopEdges;
+
+	for (int i = start; i >= end; --i) {
+		loopEdges.insert(path[i]);
+	}
+
+	for (int i = 0; i < (int) path.size(); ++i) {
+		if (loopEdges.count(path[i]) == 0) {
+			return false;
+		}
+	}
+	return true;
+}
+
+
 size_t CountLoopLength(Graph& g, BidirectionalPath& path, LoopDetector& detector, bool forward) {
 	EdgeId lastEdge = forward ? path.back() : path.front();
 	size_t loopSize = CountLoopEdges(lastEdge, detector);
@@ -121,19 +154,27 @@ size_t CountLoopLength(Graph& g, BidirectionalPath& path, LoopDetector& detector
 }
 
 //Edges to remove
-size_t CountEdgesToRemove(EdgeId lastEdge, LoopDetector& detector, bool fullRemoval, size_t loopCount) {
+size_t CountEdgesToRemove(BidirectionalPath& path, EdgeId lastEdge, LoopDetector& detector, bool fullRemoval, size_t loopCount, bool forward) {
 	size_t loopSize = CountLoopEdges(lastEdge, detector);
+	bool onlyCycle = PathIsOnlyLoop(path, detector, forward);
+
+	if (onlyCycle || path.size() <= loopCount * loopSize + 1) {
+		INFO("Only loop, loop size " << loopSize << ", loop count " << loopCount);
+		return path.size() - loopSize;
+	}
 
 	if (fullRemoval) {
+		INFO("Loop size " << loopSize << ", loop count " << loopCount);
 		return loopCount * loopSize + 1;
 	} else {
+		INFO("loop size " << loopSize << ", loop count " << loopCount);
 		return (loopCount - 1) * loopSize + 1;
 	}
 }
 
 //Cut loop forward
 void RemoveLoopForward(BidirectionalPath& path, LoopDetector& detector, bool fullRemoval, size_t loopCount) {
-	size_t edgesToRemove = CountEdgesToRemove(path.back(), detector, fullRemoval, loopCount);
+	size_t edgesToRemove = CountEdgesToRemove(path, path.back(), detector, fullRemoval, loopCount, true);
 
 	for(size_t i = 0; i < edgesToRemove; ++i) {
 		path.pop_back();
@@ -141,7 +182,7 @@ void RemoveLoopForward(BidirectionalPath& path, LoopDetector& detector, bool ful
 }
 
 void RemoveLoopBackward(BidirectionalPath& path, LoopDetector& detector, bool fullRemoval, size_t loopCount) {
-	size_t edgesToRemove = CountEdgesToRemove(path.front(), detector, fullRemoval, loopCount);
+	size_t edgesToRemove = CountEdgesToRemove(path, path.front(), detector, fullRemoval, loopCount, false);
 
 	for(size_t i = 0; i < edgesToRemove; ++i) {
 		path.pop_front();
@@ -247,25 +288,31 @@ EdgeId IsEdgeInShortLoopBackward(Graph& g, EdgeId e) {
 	return result;
 }
 
-size_t GetMaxExitIteration(EdgeId loopEdge, EdgeId loopExit, LoopDetector& detector) {
+size_t GetMaxExitIteration(EdgeId loopEdge, EdgeId loopExit, LoopDetector& detector, std::pair<size_t, size_t> iterRange) {
 	auto range = detector.data.equal_range(loopEdge);
 
 	size_t maxIter = 0;
 	double maxWeight = 0;
 	for (auto iter = range.first; iter != range.second; ++iter) {
-		if (iter->second.weights[loopExit] > maxWeight) {
+		double w = iter->second.weights[loopExit];
+		if (w > maxWeight &&
+				iter->second.iteration >= iterRange.first && iter->second.iteration <= iterRange.second) {
+
 			maxIter = iter->second.iteration;
 		}
 	}
 	return maxIter;
 }
 
-size_t GetFirstExitIteration(EdgeId loopEdge, EdgeId loopExit, LoopDetector& detector, double coeff = lc_cfg::get().es.priority_coeff) {
+size_t GetFirstExitIteration(EdgeId loopEdge, EdgeId loopExit, LoopDetector& detector,
+		std::pair<size_t, size_t> iterRange, double coeff = lc_cfg::get().es.priority_coeff) {
 	auto range = detector.data.equal_range(loopEdge);
 
 	size_t maxIter = std::numeric_limits<size_t>::max();
 	for (auto iter = range.first; iter != range.second; ++iter) {
-		if (iter->second.weights[loopExit] * coeff > iter->second.weights[loopExit] && maxIter > iter->second.iteration) {
+		if (iter->second.weights[loopExit] * coeff > iter->second.weights[loopEdge] && maxIter > iter->second.iteration	&&
+				iter->second.iteration >= iterRange.first && iter->second.iteration <= iterRange.second) {
+
 			maxIter = iter->second.iteration;
 		}
 	}
