@@ -26,8 +26,16 @@ using debruijn::K;
 //Deque used for extending path in both directions
 typedef std::deque<EdgeId> BidirectionalPath;
 
-//Forward declaration
-size_t PathLength(const Graph& g, const BidirectionalPath& path);
+//Path length
+template<class T>
+size_t PathLength(const Graph& g, T& path) {
+	double currentLength = 0;
+
+	for(auto iter = path.begin(); iter != path.end(); ++iter) {
+		currentLength += g.length(*iter);
+	}
+	return currentLength;
+}
 
 //Path cumulative lengths
 typedef std::deque<double> PathLengths;
@@ -38,13 +46,17 @@ typedef std::multimap<EdgeId, std::pair<size_t, double> > CycleDetector;
 //Paired infi library
 struct PairedInfoIndexLibrary {
 
-	PairedInfoIndexLibrary(size_t readS, size_t insS, size_t v, PairedInfoIndex<Graph>* index): readSize(readS), insertSize(insS), var(v), pairedInfoIndex(index) {
+	PairedInfoIndexLibrary(size_t readS, size_t insS, size_t delta, size_t v, PairedInfoIndex<Graph>* index): readSize(readS), insertSize(insS), is_delta(delta), var(v), pairedInfoIndex(index) {
 	}
 
 	size_t readSize;
 	size_t insertSize;
+	size_t is_delta;
 	size_t var;
 	PairedInfoIndex<Graph>* pairedInfoIndex;
+
+	bool has_advanced;
+	PairedInfoIndexLibrary* advanced;
 };
 
 typedef std::vector<PairedInfoIndexLibrary> PairedInfoIndices;
@@ -68,7 +80,7 @@ public:
 
 
 //Statistics
-enum StopReason { LOOP, NO_EXTENSION, NO_GOOD_EXTENSION, MANY_GOOD_EXTENSIONS, WEAK_EXTENSION };
+enum StopReason { LOOP, LONG_LOOP, NO_EXTENSION, NO_GOOD_EXTENSION, MANY_GOOD_EXTENSIONS, WEAK_EXTENSION };
 
 struct PathStatData {
 	StopReason reason;
@@ -93,6 +105,10 @@ public:
 		switch (reason) {
 		case LOOP: {
 			msg = "cycle detected";
+			break;
+		}
+		case LONG_LOOP: {
+			msg = "loop is too long to resolve correctly";
 			break;
 		}
 		case NO_EXTENSION: {
@@ -155,16 +171,6 @@ size_t EdgeCount(Graph& g) {
 		++edgeCount;
 	}
 	return edgeCount;
-}
-
-//Path length
-size_t PathLength(const Graph& g, const BidirectionalPath& path) {
-	double currentLength = 0;
-
-	for(auto iter = path.begin(); iter != path.end(); ++iter) {
-		currentLength += g.length(*iter);
-	}
-	return currentLength;
 }
 
 void CountPathLengths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<size_t>& lengths) {

@@ -13,7 +13,9 @@
 #include "data_divider.hpp"
 #include "paired_info.hpp"
 #include "omni_utils.hpp"
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 
 namespace  omnigraph{
@@ -26,19 +28,20 @@ private:
 
 	double x1, x2, y1, y2;
 
-	static const double Percentage;
+    size_t range_;
+    
+    size_t delta_;
+	
+    double percentage_;
 
-	static const double DerivativeThreshold;
-
-	static const double HeightThreshold;
-
-//	static const int range;
+	double derivative_threshold_;
 
 	std::vector<int> x_, y_;
 
 	std::vector<int> peaks;
 
 	int data_size, data_length, min, max;
+
 
 	complex *in, *out, *outf;
 
@@ -74,7 +77,7 @@ private:
 	}
 
 	void InitBaseline() {
-		int Np = (int) ((((data_length * Percentage))));
+		int Np = (int) (data_length * percentage_);
 		if (Np == 0) Np++; // Np <> 0 !!!!
 
 		double mean_beg = 0.0;
@@ -148,13 +151,11 @@ private:
 			return RightDerivative(dist);
 
 		else return MiddleDerivative(dist);
+    }
 
-	}
-	bool isLocalMaximum(int peak, int range) {
-//		int left_limit = std::max(peak - range * 2, min);
-//		int right_limit = std::min(max, peak + range * 2);
+	bool isLocalMaximum(int peak, int range, int left_bound, int right_bound, int delta) {
 
-		for (int i = min + range; i <= max - range; i++) {
+		for (int i = left_bound + range; i <= right_bound - range; i++) {
 			int index_max = i - range;
 			for (int j = i - range; j <= i + range; j++)
 				if (outf[index_max - min][0] < outf[j - min][0]) {
@@ -163,38 +164,25 @@ private:
 			
 
             if (!((index_max > i - (range >> 1)) && (index_max < i + (range >> 1)))) continue;
-//            if (RightDerivative(index_max + 1)>-DerivativeThreshold || LeftDerivative(index_max - 1)<DerivativeThreshold) 
-//            continue;
-//            std::cout<< RightDerivative(index_max + 1) << " HUISHUIS "<< LeftDerivative(index_max - 1) << std::endl;
-            if  (abs(index_max - peak) < data_length>>1) return true;
+            if  (abs(index_max - peak) <= delta) return true;
 		}
 		return false;
     
     }
 
+	bool isLocalMaximum(int peak, size_t range) {
+        return isLocalMaximum(peak, range, min, max, delta_);
+    }
+
 public:
-	PeakFinder(std::vector<int> x, std::vector<int> y) :
-			x_(x), y_(y) {
-		Init();
-	}
-
-	PeakFinder(std::vector<int> x, std::vector<int> y, int begin, int end) {
-//		std::cout << "hahaha " << begin << " " << end << std::endl;
-		for (int i = begin; i < end; i++) {
-			x_.push_back(x[i]);
-			y_.push_back(y[i]);
-		}
-		Init();
-	}
-
-	PeakFinder(std::vector<PairInfo<EdgeId> > data, int begin, int end) {
-	//		std::cout << "hahaha " << begin << " " << end << std::endl;
-			for (int i = begin; i < end; i++) {
-				x_.push_back(rounded_d(data[i]));
-				y_.push_back(data[i].weight);
-			}
-			Init();
-		}
+	PeakFinder(std::vector<PairInfo<EdgeId> > data, int begin, int end, size_t range, size_t delta, double percentage, double derivative_threshold): 
+    range_(range), delta_(delta), percentage_(percentage), derivative_threshold_(derivative_threshold){
+        for (int i = begin; i < end; i++) {
+            x_.push_back(rounded_d(data[i]));
+            y_.push_back(data[i].weight);
+        }
+        Init();
+    }
 	~PeakFinder() {
 		fftw_destroy_plan(p);
 		fftw_destroy_plan(p1);
@@ -215,17 +203,15 @@ public:
 			in[0][0] = x_[0];
 			outf[0][0] = y_[0];
 		}
-		// linear extension right HERE, because it'll be faster
 		ExtendLinear(in);
 		InitBaseline();
 		SubtractBaseline();
 		fftw_execute(p);
-		//	cutting off
 		p1 = fftw_plan_dft_1d(data_length, out, outf, FFTW_BACKWARD, FFTW_ESTIMATE);
 
 		int Ncrit = (int) (cutoff);
-//		cout<< "NCRITICAL "<<Ncrit << std::endl;
-		for (int i = 0; i < std::min(data_length, Ncrit); i++) {
+//        cutting off - standard parabolic filter
+        for (int i = 0; i < std::min(data_length, Ncrit); i++) {
 			out[i][0] *= 1 - (i * i * 1.0f) / (Ncrit * Ncrit);
 			out[i][1] *= 1 - (i * i * 1.0f) / (Ncrit * Ncrit);
 		}
@@ -236,27 +222,54 @@ public:
 
 		fftw_execute(p1);
 		AddBaseline();
-		//		for (int i = 0; i < data_length; i+Ф+)
-		//			std::cout << in[i][0] << " " << in[i][1] << "*I" << "           " << out[i][0] << " " << out[i][1] << "*I" << "           "
-		//					<< out1[i][0] / data_length << " " << out1[i][1] / data_length << "*I" << std::endl;
+	}
+
+	bool isPeak(int dist, int range) {
+        return isLocalMaximum(dist, range);
 	}
 
 	bool isPeak(int dist) {
-		if (!isInrange(dist)) return false;
-
-        int range = data_length >> 2;
-
-        if (isLocalMaximum(dist, range)) return true;
-
-		return false;
+        return isLocalMaximum(dist, range_);
 	}
-	std::vector<int> ListPeaks() {
-		for (int i = min; i <= max; i++) {
-			if (isPeak(i)) {
-				peaks.push_back(i);
-//				cout << "PEEEEEEEEAK : " << i << endl;
-			}
-		}
+
+//  not tested at all
+    std::vector<std::pair<int, double> > ListPeaks(int delta = 5) {
+        std::vector<std::pair<int, double> > peaks;
+        //another data_length
+        int data_length = max - min + 1;
+        bool* was;
+        srand(time(NULL));    
+        std::fill(was, was + data_length, false);
+        for (int l = 0; l<data_length; l++){
+            int v = std::rand() % data_length;
+            if (was[v]) continue;
+            was[v] = true;
+            int index = v + min;
+            while (index < max && index > min){
+                // if @index is local maximum, then leave it
+                double right = RightDerivative(index);
+                double left = LeftDerivative(index);
+
+                if (right > 0 && right >= left){
+                    index++;
+                }else if (left > 0){
+                    index--;
+                }
+            }
+            double right = RightDerivative(index);
+            double left = LeftDerivative(index);
+            if (index >= max - delta || index <= min + delta) continue;
+            if ((right < -derivative_threshold_) && (left > derivative_threshold_))
+                    if (isLocalMaximum(index, delta, index - delta - 1, index + delta - 1, delta >> 1)){
+                        double weight = 0;
+                        for (int i = std::max(min, index - (delta << 1)); i<std::min(max, index + (delta << 1)); i++){
+                            double right = RightDerivative(i);
+                            weight+=right*right;
+                        }
+                        peaks.push_back(std::make_pair(index, weight));
+                    }
+            
+        }
 
 		return peaks;
 	}
@@ -279,11 +292,6 @@ public:
 
 };
 
-const double PeakFinder::Percentage = 0.01f;
-
-const double PeakFinder::DerivativeThreshold = 0.1f;
-
-const double PeakFinder::HeightThreshold = 1;
 }
 
 #endif /* PEAKFINDER_HPP_ */

@@ -165,17 +165,14 @@ public:
 };
 
 template<class Graph>
-class ShortEdgeComponentFinder: public UnorientedDijkstra<Graph> {
+class ShortEdgeComponentNeighbourhoodFinder: public UnorientedDijkstra<Graph> {
 private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	size_t bound_;
 public:
-	ShortEdgeComponentFinder(const Graph &graph, size_t bound) :
+	ShortEdgeComponentNeighbourhoodFinder(const Graph &graph, size_t bound) :
 		UnorientedDijkstra<Graph> (graph), bound_(bound) {
-	}
-
-	virtual ~ShortEdgeComponentFinder() {
 	}
 
 	virtual bool CheckProcessVertex(VertexId vertex, size_t distance) {
@@ -191,7 +188,7 @@ public:
 };
 
 template<class Graph>
-class LongEdgesSplitter: public GraphSplitter<typename Graph::VertexId> {
+class LongEdgesInclusiveSplitter: public GraphSplitter<typename Graph::VertexId> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
@@ -204,12 +201,77 @@ private:
 	size_t bound_;
 
 public:
-	LongEdgesSplitter(const Graph &graph, size_t bound) :
+	LongEdgesInclusiveSplitter(const Graph &graph, size_t bound) :
 		graph_(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */
 		bound_(bound) {
 	}
 
-	virtual ~LongEdgesSplitter() {
+	virtual vector<VertexId> NextComponent() {
+		if (Finished()) {
+			assert(false);
+			return vector<VertexId> ();
+		}
+		VertexId next = queue_.top();
+		queue_.pop();
+		ShortEdgeComponentNeighbourhoodFinder<Graph> cf(graph_, bound_);
+		cf.run(next);
+		vector < VertexId > result = cf.VisitedVertices();
+		for (auto it = result.begin(); it != result.end(); ++it) {
+			if (cf.GetDistance(*it) == 0) {
+				//				iterator_.erase(*it);
+				queue_.erase(*it);
+			}
+		}
+		return result;
+	}
+
+	virtual bool Finished() {
+		//		return iterator_.IsEnd();
+		return queue_.empty();
+	}
+
+};
+
+template<class Graph>
+class ShortEdgeComponentFinder: public UnorientedDijkstra<Graph> {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	size_t bound_;
+public:
+	ShortEdgeComponentFinder(const Graph &graph, size_t bound) :
+		UnorientedDijkstra<Graph> (graph), bound_(bound) {
+	}
+
+	virtual bool CheckPutVertex(VertexId vertex, size_t distance) {
+		return distance == 0;
+	}
+
+	virtual size_t GetLength(EdgeId edge) {
+		if (this->graph().length(edge) <= bound_)
+			return 0;
+		else
+			return 1;
+	}
+};
+
+template<class Graph>
+class LongEdgesExclusiveSplitter: public GraphSplitter<typename Graph::VertexId> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	const Graph &graph_;
+	erasable_priority_queue<VertexId> queue_;
+	//	SmartVertexIterator<omnigraph::ObservableGraph<VertexId, EdgeId> >
+	//			iterator_;
+	set<VertexId> visited_;
+	size_t bound_;
+
+public:
+	LongEdgesExclusiveSplitter(const Graph &graph, size_t bound) :
+		graph_(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */
+		bound_(bound) {
 	}
 
 	virtual vector<VertexId> NextComponent() {
@@ -223,10 +285,7 @@ public:
 		cf.run(next);
 		vector < VertexId > result = cf.VisitedVertices();
 		for (auto it = result.begin(); it != result.end(); ++it) {
-			if (cf.GetDistance(*it) == 0) {
-				//				iterator_.erase(*it);
-				queue_.erase(*it);
-			}
+			queue_.erase(*it);
 		}
 		return result;
 	}

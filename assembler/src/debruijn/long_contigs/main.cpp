@@ -62,8 +62,6 @@ int main() {
 	if (cfg::get().etalon_info_mode) {
 		AddEtalonInfo<K>(g, index, sequence, pairedInfos);
 	} else {
-		//AddRealInfo<K>(g, index, intIds, pairedInfos, false);
-		//SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix + "_old");
 		pairedInfos.clear();
 		AddRealInfo<K>(g, index, intIds, pairedInfos, lc_cfg::get().use_new_metrics);
 
@@ -144,16 +142,24 @@ int main() {
 		OutputPathsAsContigsNoComplement(g, result, output_dir + "paths.contigs");
 	}
 
+		std::set<int> toRemove;
 		if (lc_cfg::get().fo.remove_overlaps) {
 			RemoveOverlaps(g, result, pairs, quality);
+
+			if (lc_cfg::get().fo.remove_similar) {
+				RemoveSimilar(g, result, pathQuality, toRemove);
+			}
 		}
-		OutputPathsAsContigsNoComplement(g, result, pairs, output_dir + "paths.contigs");
+		OutputPathsAsContigsNoComplement(g, result, pairs, output_dir + "paths.contigs", toRemove);
 		INFO("All contigs written");
 	}
 
 	if (lc_cfg::get().write_graph) {
 		SaveGraph(g, intIds, output_dir + "graph");
 	}
+
+	PrintPath(g, path1);
+	PrintPath(g, path2);
 
 	INFO("Tool finished");
 	DeleteAdditionalInfo(pairedInfos);

@@ -150,12 +150,16 @@ using namespace omnigraph;
  }
  }
  }*/
+//SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
 
 template<size_t k, class Graph>
-void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
-		EdgeLabelHandler<Graph>& LabelsAfter,
-		const EdgeIndex<k + 1, Graph>& index ,vector<SingleReadStream *>& reads
-		, string& consensus_output_dir) {
+void SelectReadsForConsensus(
+		Graph& etalon_graph, Graph& cur_graph,
+		EdgeLabelHandler<Graph>& LabelsAfter
+		 , const EdgeIndex<k + 1, Graph>& index , vector<io::Reader<io::SingleRead>*>& reads
+		, string& consensus_output_dir
+
+) {
 	INFO("ReadMapping started");
 	map<typename Graph::EdgeId, int> contigNumbers;
 	int cur_num = 0;
@@ -332,9 +336,29 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 			INFO("Components printed");
 			if (cfg::get().advanced_estimator_mode) {
  
+                AdvancedDistanceEstimator<Graph> estimator(g, paired_index, int_ids, 
+                        cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
+                        cfg::get().de.linkage_distance, cfg::get().de.max_distance, cfg::get().ade.threshold, cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff, cfg::get().ade.cutoff, cfg::get().ade.minpeakpoints, cfg::get().ade.inv_density, cfg::get().ade.percentage, cfg::get().ade.derivative_threshold);
+                estimator.Estimate(clustered_index);
+
+                omnigraph::WriteSimple(g, *TotLab, output_folder + "2_simplified_graph.dot",
+                        "no_repeat_graph");
+
+                printGraph(g, int_ids, graph_save_path + "repeats_resolved_before",
+                        paired_index, EdgePos/*, &read_count_weight_paired_index*/);
+
+                printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph",
+                        paired_index, EdgePos, &etalon_paired_index,
+                        &clustered_index/*, &read_count_weight_paired_index*/);
+                
+                printGraph(g, int_ids, output_folder + "2_simplified_graph",
+                        clustered_index, EdgePos, &etalon_paired_index,
+                        &clustered_index/*, &read_count_weight_paired_index*/);
+
+		    } else{
                 AdvancedDistanceEstimator<Graph> estimator_(g, paired_index, int_ids, 
                         cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
-                        cfg::get().de.linkage_distance, cfg::get().de.max_distance);
+                        cfg::get().de.linkage_distance, cfg::get().de.max_distance, cfg::get().ade.threshold, cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff, cfg::get().ade.cutoff, cfg::get().ade.minpeakpoints, cfg::get().ade.inv_density, cfg::get().ade.percentage, cfg::get().ade.derivative_threshold);
                 estimator_.Estimate(clustered_index);
 
                 printGraph(g, int_ids, graph_save_path + "a_repeats_resolved_before",
@@ -347,29 +371,6 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
                 printGraph(g, int_ids, output_folder + "a_simplified_graph",
                         clustered_index, EdgePos, &etalon_paired_index,
                         &clustered_index/*, &read_count_weight_paired_index*/);
-
-                
-               DistanceEstimator<Graph> estimator(g, paired_index,
-                       cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
-                       cfg::get().de.linkage_distance, cfg::get().de.max_distance);
-               estimator.Estimate(clustered_index);
-
-
-               omnigraph::WriteSimple(g, *TotLab, output_folder + "2_simplified_graph.dot",
-                       "no_repeat_graph");
-
-               //todo think if we need this save
-               printGraph(g, int_ids, graph_save_path + "repeats_resolved_before",
-                       paired_index, EdgePos/*, &read_count_weight_paired_index*/);
-
-               printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph",
-                       paired_index, EdgePos, &etalon_paired_index,
-                       &clustered_index/*, &read_count_weight_paired_index*/);
-               
-               printGraph(g, int_ids, output_folder + "2_simplified_graph",
-                       clustered_index, EdgePos, &etalon_paired_index,
-                       &clustered_index/*, &read_count_weight_paired_index*/);
-		    } else{
 
                 DistanceEstimator<Graph> estimator(g, paired_index,
                         cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
@@ -513,10 +514,10 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 
 		OutputContigs(resolved_graph, output_folder + "contigs_final.fasta");
 		string consensus_folder = output_folder + "consensus/";
-
-//		OutputSingleFileContigs(resolved_graph, consensus_folder);
-//		SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
-
+		if (cfg::get().need_consensus) {
+			OutputSingleFileContigs(resolved_graph, consensus_folder);
+			SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter ,new_edge_index, reads, consensus_folder);
+		}
 		OutputContigs(new_graph,
 				output_folder + "contigs_before_resolve.fasta");
 

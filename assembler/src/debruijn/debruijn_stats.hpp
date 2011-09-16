@@ -256,7 +256,7 @@ int PrintGraphComponents(const string& file_name, Graph& g,
 		size_t split_edge_length, IdTrackHandler<Graph> &old_IDs,
 		PairedInfoIndex<Graph>  &paired_index,
 		EdgesPositionHandler<Graph> &edges_positions) {
-	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
+	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
 	ComponentSizeFilter<Graph> checker(g, split_edge_length);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	size_t cnt = 1;
