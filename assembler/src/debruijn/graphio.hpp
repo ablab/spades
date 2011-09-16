@@ -232,10 +232,14 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
 template<class Graph>
 void DataPrinter<Graph>::savePositions(const string& file_name,
 		EdgesPositionHandler<Graph>const& EPHandler) {
-	FILE* file = fopen((file_name + ".pos").c_str(), "w");
-	DEBUG("Saving edges positions, " << file_name <<" created");
+
+	std::ofstream file((file_name + ".pos").c_str());
+
+	DEBUG("Saving edges positions, " << file_name << " created");
 	assert(file != NULL);
-	fprintf(file, "%d\n", edge_count_);
+
+	file << edge_count_ << std::endl;
+
 	if (filter_ == NULL) {
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 
@@ -243,10 +247,10 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 		    assert(it != EPHandler.EdgesPositions.end());
 
 		    size_t size = it->second.size();
-			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), size);
+		    file << IdHandler_.ReturnIntId(*iter) << " " << size;
 
 			for (size_t i = 0; i < it->second.size(); i++)
-				fprintf(file, "    %d - %d\n", it->second[i].start_, it->second[i].end_);
+				file << "    " << it->second[i].start_ << " - " << it->second[i].end_;
 		}
 	} else {
 		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
@@ -254,13 +258,13 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 		    auto it = EPHandler.EdgesPositions.find(*iter);
 		    assert(it != EPHandler.EdgesPositions.end());
 
-			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), (int) it->second.size());
+			file << IdHandler_.ReturnIntId(*iter) << " " << it->second.size();
 
 			for (size_t i = 0; i < it->second.size(); i++)
-				fprintf(file, "    %d - %d\n", it->second[i].start_, it->second[i].end_);
+				file << "    " << it->second[i].start_ << " - " << it->second[i].end_;
+
 		}
 	}
-	fclose(file);
 }
 
 template<class Graph>
