@@ -305,9 +305,9 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 	} else {
 		if (graph_loaded) {
 
-//			FillEdgesPos<k>(g, index, genome, EdgePos, kmer_mapper);
-//			FillEdgesPos<k>(g, index, genome, EdgePos, kmer_mapper, 1);
-//			FillEdgesPos<k>(g, index, cfg::get().pos.contigs_for_threading, EdgePos);
+			FillEdgesPos<k>(g, index, genome, EdgePos, kmer_mapper, 0);
+			FillEdgesPos<k>(g, index, !genome, EdgePos, kmer_mapper, 1);
+			FillEdgesPos<k>(g, index, cfg::get().pos.contigs_for_threading, EdgePos, kmer_mapper, 10);
 			omnigraph::WriteSimple(g, *TotLab, output_folder + "1_initial_graph.dot",
 					"no_repeat_graph");
 

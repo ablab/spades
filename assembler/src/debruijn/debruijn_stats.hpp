@@ -344,10 +344,10 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 
 template<size_t k>
 void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const string& contig_file, EdgesPositionHandler<Graph>& edgesPos) {
+		const string& contig_file, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int start_contig_id) {
 	INFO("Threading large contigs");
 	io::Reader<io::SingleRead> irs(contig_file);
-	for (int cur = 0, c = 1; !irs.eof(); c++) {
+	for (int cur = 0, c = start_contig_id; !irs.eof(); c++) {
 		io::SingleRead read;
 		irs >> read;
 		DEBUG("Contig #" << c << ", length: " << read.size());
@@ -357,17 +357,10 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 			continue;
 		}
 		Sequence contig = read.sequence();
-		if (contig.size() < 150000) {
+		if (contig.size() < 1500000) {
 	//		continue;
 		}
-//		INFO("Large contig #" << c << " has position number " << cur);
-		Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (contig, g, index);
-		for (auto it = path1.sequence().begin(); it != path1.sequence().end(); ++it) {
-			EdgeId ei = *it;
-			edgesPos.AddEdgePosition(ei, cur + 1, cur + g.length(ei), c);
-			cur += g.length(ei);
-		}
-		cur = 0;
+		FillEdgesPos<k>(g, index, contig, edgesPos, kmer_mapper, c);
 	}
 }
 
