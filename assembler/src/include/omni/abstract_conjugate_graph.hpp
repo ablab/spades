@@ -384,10 +384,24 @@ public:
 
 	virtual std::string PrintEdges(const vector<EdgeId>& path) {
 		stringstream ss;
-		ss << "Edges ";
+		ss << "Edges: ";
 		for (auto it = path.begin(); it != path.end(); ++it) {
-			ss << (*it) << " (conjugate " << conjugate(*it) << "), ";
+			ss << PrintEdge(*it) << ", ";
 		}
+		return ss.str();
+	}
+
+	virtual std::string PrintEdge(EdgeId edge) {
+		stringstream ss;
+//		ss << "Edge ";
+		ss << edge << " (conjugate " << conjugate(edge) << ")";
+		return ss.str();
+	}
+
+	virtual std::string PrintVertex(VertexId v) {
+		stringstream ss;
+//		ss << "Edge ";
+		ss << v << " (conjugate " << conjugate(v) << ")";
 		return ss.str();
 	}
 

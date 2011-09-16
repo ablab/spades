@@ -243,7 +243,7 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 		    assert(it != EPHandler.EdgesPositions.end());
 
 		    size_t size = it->second.size();
-			fprintf(file, "%d %lu\n", IdHandler_.ReturnIntId(*iter), size);
+			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter), size);
 
 			for (size_t i = 0; i < it->second.size(); i++)
 				fprintf(file, "    %d - %d\n", it->second[i].start_, it->second[i].end_);
