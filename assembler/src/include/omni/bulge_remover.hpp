@@ -20,9 +20,9 @@ template<class Graph>
 struct SimplePathCondition {
 	typedef typename Graph::EdgeId EdgeId;
 
-	Graph& g_;
+	const Graph& g_;
 
-	SimplePathCondition(Graph& g) :
+	SimplePathCondition(const Graph& g) :
 			g_(g) {
 
 	}

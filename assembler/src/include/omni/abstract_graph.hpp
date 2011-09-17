@@ -62,6 +62,7 @@ private:
 			DeleteEdge(edge);
 			TRACE("DeleteIncoming ok");
 		}
+		TRACE("DeleteAllIncoming ok");
 	}
 
 	void FireDeletePath(const vector<EdgeId> &edgesToDelete,
@@ -322,6 +323,7 @@ public:
 			TRACE("Path of single edge " << PrintEdge(*(path.begin())) << ". Nothing to merge.");
 		}
 		TRACE("Merging path " << PrintEdges(path));
+
 		cerr << "Merging " << PrintDetailedPath(path) << endl;
 		cerr << "Conjugate " << PrintConjugatePath(path) << endl;
 		vector<EdgeId> corrected_path = CorrectMergePath(path);
