@@ -298,7 +298,9 @@ public:
 
 	AbstractConjugateGraph(const DataMaster& master) :
 		base(new PairedHandlerApplier<AbstractConjugateGraph>(*this), master)
-	{}
+	{
+		TRACE("AbstractConjugateGraph constructor");
+	}
 
 	virtual ~AbstractConjugateGraph() {
 		TRACE("~AbstractConjugateGraph")

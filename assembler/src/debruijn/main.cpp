@@ -103,6 +103,7 @@ int main() {
 		checkFileExistenceFATAL(reads_filename2);
 		INFO("Assembling " << dataset << " dataset");
 
+		INFO("K = " << debruijn_graph::K);
 		// typedefs :)
 		typedef io::Reader<io::SingleRead> ReadStream;
 		typedef io::Reader<io::PairedRead> PairedReadStream;
