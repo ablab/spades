@@ -109,8 +109,17 @@ public:
 			KPlusOneMer edge = it->first;
 			if (!index.containsInIndex(edge)) {
 				Sequence edge_sequence = ConstructSequenceWithEdge(edge);
-				VertexId start = FindVertexMaybeMissing(graph, index, edge_sequence.start<kmer_size_> ());
-				VertexId end = FindVertexMaybeMissing(graph, index, edge_sequence.end<kmer_size_> ());
+				Kmer start_kmer = edge_sequence.start<kmer_size_>();
+				Kmer end_kmer = edge_sequence.end<kmer_size_> ();
+				VertexId start = FindVertexMaybeMissing(graph, index, start_kmer);
+				VertexId end;
+				if (start_kmer == end_kmer) {
+					end = start;
+				} else if (start_kmer == !end_kmer) {
+					end = graph.conjugate(start);
+				} else {
+					end = FindVertexMaybeMissing(graph, index, end_kmer);
+				}
 				graph.AddEdge(start, end, edge_sequence);
 				assert(index.containsInIndex(edge));
 			}
