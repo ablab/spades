@@ -149,19 +149,6 @@ bool IsSymmetric(PairInfo<EdgeId> const& pi) {
 	return pi.first == pi.second && pi.d == 0;
 }
 
-template<typename EdgeId>
-void PrintPairInfo(const PairInfo<EdgeId>& pair_info) {
-	cerr << pair_info.first << "  " << pair_info.second << "  " << pair_info.d
-			<< "  " << pair_info.weight << endl;
-}
-
-template<typename EdgeId>
-void PrintPairInfos(const vector<PairInfo<EdgeId>>& pair_infos) {
-	for (auto it = pair_infos.begin(); it != pair_infos.end(); ++it) {
-		PrintPairInfo(*it);
-	}
-}
-
 //todo try storing set<PairInfo>
 template<typename EdgeId>
 class PairInfoIndexData {

@@ -324,8 +324,8 @@ public:
 		}
 		TRACE("Merging path " << PrintEdges(path));
 
-		cerr << "Merging " << PrintDetailedPath(path) << endl;
-		cerr << "Conjugate " << PrintConjugatePath(path) << endl;
+//		cerr << "Merging " << PrintDetailedPath(path) << endl;
+//		cerr << "Conjugate " << PrintConjugatePath(path) << endl;
 		vector<EdgeId> corrected_path = CorrectMergePath(path);
 		TRACE("Corrected path " << PrintEdges(corrected_path));
 		VertexId v1 = EdgeStart(corrected_path[0]);
@@ -337,14 +337,13 @@ public:
 		EdgeId new_edge = HiddenAddEdge(v1, v2, master_.MergeData(toMerge));
 		FireMerge(corrected_path, new_edge);
 
-		cerr << "Corrected " << PrintDetailedPath(corrected_path) << endl;
-		cerr << "Corrected conjugate " << PrintConjugatePath(corrected_path) << endl;
+//		cerr << "Corrected " << PrintDetailedPath(corrected_path) << endl;
+//		cerr << "Corrected conjugate " << PrintConjugatePath(corrected_path) << endl;
 		vector<EdgeId> edges_to_delete = EdgesToDelete(corrected_path);
-		cerr << "To delete " << PrintEdges(edges_to_delete) << endl;
+//		cerr << "To delete " << PrintEdges(edges_to_delete) << endl;
 		vector<VertexId> vertices_to_delete = VerticesToDelete(corrected_path);
-		cerr << "To delete " << PrintVertices(vertices_to_delete) << endl;
+//		cerr << "To delete " << PrintVertices(vertices_to_delete) << endl;
 
-		//todo ask Anton why fire and hidden are divided here
 		FireDeletePath(edges_to_delete, vertices_to_delete);
 		FireAddEdge(new_edge);
 		HiddenDeletePath(edges_to_delete, vertices_to_delete);

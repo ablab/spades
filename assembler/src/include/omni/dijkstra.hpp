@@ -241,14 +241,6 @@ public:
 		TRACE("Starting to collect incoming edges for vertex " << vertex);
 		vector < pair < VertexId, EdgeId >> result;
 		const Graph &g = this->graph();
-
-		//DEBUG
-		cerr << "Looking for incoming edges for vertex " << vertex << endl;;
-		cerr << "Check vertex " << vertex;
-		cerr << this->graph().OutgoingEdges(vertex).size() <<endl;
-		cerr << "Check ok";
-		//DEBUG
-
 		vector < EdgeId > edges = g.IncomingEdges(vertex);
 		TRACE("Vector of incoming edges fetched from graph");
 		for (size_t i = 0; i < edges.size(); i++) {
