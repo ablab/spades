@@ -104,8 +104,10 @@ public:
 		return master_;
 	}
 
+/*
 	virtual void CheckGraph() {
 	}
+*/
 
 //already in base
 //	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const = 0;
