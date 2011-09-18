@@ -607,7 +607,7 @@ void RepeatResolver<Graph>::BanRCVertex(VertexId v ){
 	int id = new_IDs.ReturnIntId(v);
 
 	int rc_id = ((id - 1) / 2 ) * 2 + 2 - ((id - 1) % 2);
-	vector<EdgeId> tmp = new_graph.IncomingEdges(rc_id);
+	vector<EdgeId> tmp = new_graph.IncomingEdges(new_IDs.ReturnVertexId(rc_id));
 	for(size_t i = 0; i < tmp.size(); i++)
 		global_cheating_edges.insert(tmp[i]);
 	tmp = new_graph.OutgoingEdges(v);
