@@ -61,16 +61,16 @@ private:
 				peakfinder.FFTSmoothing(cutoff_);
                 if ( ( (cur + 1) == forward.size()) || ( (int) forward[cur + 1] > rounded_d(data[end - 1]))){
                     if (round(inv_density_*(end - begin)) > (int) data_length){
-                        result.push_back(make_pair(forward[cur], 1));       // default weight is one
-                        DEBUG("Pair made " << forward[cur]);
+                        result.push_back(make_pair(forward[cur], peakfinder.getNormalizedWeight()));       // default weight is one
+                        DEBUG("Pair made " << forward[cur] << " " << peakfinder.getNormalizedWeight());
                     }
                     cur++;
                 }else{
                 
                     while (cur<forward.size() && ((int)forward[cur] <= rounded_d(data[end - 1]))) {
 					    if (peakfinder.isPeak(forward[cur])){ 
-                            result.push_back(make_pair(forward[cur], 1));
-                            DEBUG("Pair made " << forward[cur]);
+                            result.push_back(make_pair(forward[cur], peakfinder.getNormalizedWeight()));
+                            DEBUG("Pair made " << forward[cur] << " " << peakfinder.getNormalizedWeight());
                         }   
 					    cur++;
 				    }
