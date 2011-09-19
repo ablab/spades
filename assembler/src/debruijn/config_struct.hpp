@@ -141,6 +141,7 @@ namespace debruijn_graph
 		bool paired_mode;
 		bool rectangle_mode;
 		bool etalon_info_mode;
+		bool late_paired_info;
 
 		std::string uncorrected_reads;
 

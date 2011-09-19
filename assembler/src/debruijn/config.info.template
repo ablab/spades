@@ -27,6 +27,9 @@ rectangle_mode	false
 ; set to true to obtain paired info from genome mapping rather than from paired reads
 etalon_info_mode  false
 
+; Collect paired information before or after graph simplification
+late_paired_info true
+
 ; tip clipper:
 
 tc
