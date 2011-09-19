@@ -69,6 +69,9 @@ struct lc_config
 		int max_depth;
 
 		double priority_coeff;
+
+		bool fix_weight;
+		bool use_advanced;
 	};
 
 	struct loops_removal
@@ -118,6 +121,7 @@ struct lc_config
 	};
 
 	bool from_file;
+	bool syminfo;
 
 	//size_t real_libs_count;
 	//size_t etalon_libs_count;
@@ -213,6 +217,8 @@ void load(boost::property_tree::ptree const& pt, lc_config::extension_selection&
 	load(pt, "max_iter", es.max_iter);
 	load(pt, "priority_coeff", es.priority_coeff);
 	load(pt, "max_depth", es.max_depth);
+	load(pt, "use_advanced", es.use_advanced);
+	load(pt, "fix_weight", es.fix_weight);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::loops_removal& lr)
@@ -257,6 +263,7 @@ void load(boost::property_tree::ptree const& pt, lc_config& lc_cfg)
 {
 	using config_common::load;
 	load(pt, "from_file", lc_cfg.from_file);
+	load(pt, "syminfo", lc_cfg.syminfo);
 	//load(pt, "real_libs_count", cfg.real_libs_count);
 	//load(pt, "etalon_libs_count", cfg.etalon_libs_count);
 

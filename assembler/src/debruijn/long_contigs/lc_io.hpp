@@ -94,8 +94,6 @@ void MakeSymetricInfo(Graph& g, PairedInfoIndexLibrary& lib) {
 
 template<size_t k>
 void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_IntIds,	Sequence& sequence) {
-	io::first_fun(6);
-
 	string input_dir = cfg::get().input_dir;
 	string dataset = cfg::get().dataset_name;
 	string genome_filename = input_dir
@@ -178,12 +176,18 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 
 			RCStream rcStream(filter_stream);
 
-			KmerMapper<k+1, Graph> mapper(g);
-			FillPairedIndexWithReadCountMetric<k, RCStream>(g, index, mapper,*pairedInfos.back().pairedInfoIndex, rcStream);
+			if (useNewMetrics) {
+				KmerMapper<k+1, Graph> mapper(g);
+				FillPairedIndexWithReadCountMetric<k, RCStream>(g, index, mapper,*pairedInfos.back().pairedInfoIndex, rcStream);
+			} else {
+				FillPairedIndex<k, RCStream>(g, index, *pairedInfos.back().pairedInfoIndex, rcStream);
+			}
 		}
 		INFO("Done");
 
-		MakeSymetricInfo(g, pairedInfos.back());
+		if (lc_cfg::get().syminfo) {
+			MakeSymetricInfo(g, pairedInfos.back());
+		}
 	}
 }
 
@@ -202,6 +206,15 @@ void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Gra
 			estimator.Estimate(clustered_index);
 
 			dataPrinter.savePaired(fileName + "_clustered", clustered_index);
+
+			PairedInfoIndex<Graph> clustered_index_(g);
+            AdvancedDistanceEstimator<Graph> estimator_(g, *(lib->pairedInfoIndex), old_IDs,
+            		lib->insertSize, lib->readSize, cfg::get().de.delta,
+                    cfg::get().de.linkage_distance, cfg::get().de.max_distance, cfg::get().ade.threshold, cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff, cfg::get().ade.cutoff, cfg::get().ade.minpeakpoints, cfg::get().ade.inv_density, cfg::get().ade.percentage, cfg::get().ade.derivative_threshold);
+            estimator_.Estimate(clustered_index_);
+
+            dataPrinter.savePaired(fileName + "_acl", clustered_index_);
+
 		}
 		dataPrinter.savePaired(fileName, *(lib->pairedInfoIndex));
 	}
@@ -277,8 +290,7 @@ void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath>& 
 	INFO("Writing contigs to " << filename);
 	osequencestream oss(filename);
 
-	std::vector<BidirectionalPath> temp(paths.size());
-	std::copy(paths.begin(), paths.end(), temp.begin());
+	std::set<int> printed;
 
 	for (int i = 0; i < (int) paths.size(); ++i) {
 		if (notToPrint.count(i)) {

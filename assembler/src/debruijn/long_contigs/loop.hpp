@@ -26,7 +26,7 @@ struct LoopDetectorData {
 		iteration = d.iteration;
 		selfWeight = d.selfWeight;
 
-		d.weights.insert(weights.begin(), weights.end());
+		weights.insert(d.weights.begin(), d.weights.end());
 	}
 
 	LoopDetectorData(): weights()  {
@@ -37,7 +37,7 @@ struct LoopDetectorData {
 		selfWeight = w;
 	}
 
-	void AddAlternative(EdgeId e, double w) {
+	void AddAlternative(EdgeId e, double w = 1) {
 		weights.insert(std::make_pair(e,w));
 	}
 
@@ -67,10 +67,9 @@ struct LoopDetector {
 	LoopDetectorData temp;
 	std::multimap<EdgeId, LoopDetectorData> data;
 
-	void AddNewEdge(EdgeId e, size_t iter, double weight = 0) {
+	void AddNewEdge(EdgeId e, size_t iter, double weight = 1) {
 		temp.SetSelectedEdge(iter, weight);
-		LoopDetectorData
-		data.insert(std::make_pair(e, ));
+		data.insert(std::make_pair(e, temp));
 	}
 
 	void clear() {
@@ -81,9 +80,9 @@ struct LoopDetector {
 	void print(Graph& g) {
 		INFO("== Detector data ==");
 		for (auto iter = data.begin(); iter != data.end(); ++iter) {
-			INFO("Edge " << iter->first << ", weight " << iter->second.selfWeight << ", iteration " << iter->second.iteration);
+			INFO("Edge " << g.length(iter->first) << ", weight " << iter->second.selfWeight << ", iteration " << iter->second.iteration);
 			for(auto alt = iter->second.weights.begin(); alt != iter->second.weights.end(); ++alt) {
-				INFO("Edge " << alt->first << ", weight " << alt->second);
+				INFO("Edge " << g.length(alt->first) << ", weight " << alt->second);
 			}
 		}
 	}
@@ -190,18 +189,31 @@ void RemoveLoopBackward(BidirectionalPath& path, LoopDetector& detector, bool fu
 }
 
 bool LoopBecameStable(EdgeId e, LoopDetector& detector) {
+	if (detector.data.count(e) < 2) {
+		DETAILED_INFO("Loop still unstable");
+		return false;
+	}
 	auto iter = detector.data.upper_bound(e);
 	auto last = --iter;
 	auto prev = --iter;
 
-	return prev->second == last->second;
+	bool res = prev->second == last->second;
+
+	if (res) {
+		DETAILED_INFO("Loop became stable");
+	} else {
+		DETAILED_INFO("Loop still unstable");
+	}
+	return res;
 }
 
-size_t CountLoopExits(BidirectionalPath& path, EdgeId e, LoopDetector& detector) {
+size_t CountLoopExits(BidirectionalPath& path, EdgeId e, LoopDetector& detector, bool forward) {
 	size_t loopSize = CountLoopEdges(e, detector);
 	size_t exits = 0;
+	int start = forward ? path.size() - 1 : loopSize - 1;
+	int end = forward ? path.size() - loopSize : 0;
 
-	for (int i = (int) (path.size() - 1); i >= (int) (path.size() - loopSize); --i) {
+	for (int i = start; i >= end; --i) {
 		LoopDetectorData& data = detector.data.find(path[i])->second;
 
 		exits += data.weights.size() - 1;
@@ -209,10 +221,12 @@ size_t CountLoopExits(BidirectionalPath& path, EdgeId e, LoopDetector& detector)
 	return exits;
 }
 
-EdgeId FindFirstFork(BidirectionalPath& path, EdgeId e, LoopDetector& detector) {
+EdgeId FindFirstFork(BidirectionalPath& path, EdgeId e, LoopDetector& detector, bool forward) {
 	size_t loopSize = CountLoopEdges(e, detector);
+	int start = forward ? path.size() - 1 : loopSize - 1;
+	int end = forward ? path.size() - loopSize : 0;
 
-	for (int i = (int) (path.size() - 1); i >= (int) (path.size() - loopSize); --i) {
+	for (int i = start; i >= end; --i) {
 		LoopDetectorData& data = detector.data.find(path[i])->second;
 
 		if (data.weights.size() == 2) {
@@ -263,8 +277,8 @@ EdgeId IsEdgeInShortLoopForward(Graph& g, EdgeId e) {
 		}
 	}
 
-	if (result != 0 && g.OutgoingEdgeCount(v) == 1) {
-		result = e;
+	if (g.OutgoingEdgeCount(v) == 1 && result != 0) {
+		INFO("Seems no fork backward: edge " << g.length(e) << ", loops with " << g.length(result) << ". " << g.OutgoingEdgeCount(v));
 	}
 
 	return result;
@@ -281,8 +295,8 @@ EdgeId IsEdgeInShortLoopBackward(Graph& g, EdgeId e) {
 		}
 	}
 
-	if (result != 0 && g.IncomingEdgeCount(v) == 1) {
-		result = e;
+	if (g.IncomingEdgeCount(v) == 1 && result != 0) {
+		INFO("Seems no fork backward: edge " << g.length(e) << ", loops with " << g.length(result) << ". " << g.IncomingEdgeCount(v));
 	}
 
 	return result;
@@ -299,6 +313,7 @@ size_t GetMaxExitIteration(EdgeId loopEdge, EdgeId loopExit, LoopDetector& detec
 				iter->second.iteration >= iterRange.first && iter->second.iteration <= iterRange.second) {
 
 			maxIter = iter->second.iteration;
+			maxWeight = w;
 		}
 	}
 	return maxIter;

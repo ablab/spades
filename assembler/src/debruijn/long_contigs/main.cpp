@@ -90,6 +90,8 @@ int main() {
 	FilterLowCovered(g, seeds, MIN_COVERAGE);
 	INFO("Seeds filtered");
 
+	FilterComplement(g, seeds, &seedPairs, &seedQuality);
+
 	size_t found = PathsInGenome<K>(g, index, sequence, seeds, path1, path2);
 	INFO("Good seeds found " << found << " in total " << seeds.size());
 	INFO("Seed coverage " << PathsCoverage(g, seeds));
@@ -139,8 +141,8 @@ int main() {
 	if (lc_cfg::get().write_contigs) {
 		OutputPathsAsContigs(g, result, output_dir + "all_paths.contigs");
 		OutputContigsNoComplement(g, output_dir + "edges.contigs");
-		OutputPathsAsContigsNoComplement(g, result, output_dir + "paths.contigs");
-	}
+
+		FilterComplement(g, result, &pairs, &quality);
 
 		std::set<int> toRemove;
 		if (lc_cfg::get().fo.remove_overlaps) {
