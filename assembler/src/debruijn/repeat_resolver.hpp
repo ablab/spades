@@ -24,6 +24,7 @@
 
 #include "omni/ID_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
+#include "omni/total_labeler.hpp"
 #include "omni/dijkstra.hpp"
 
 
@@ -414,6 +415,7 @@ private:
 	unordered_map<EdgeId, EdgeId> edge_labels;
 	set<VertexId> real_vertices;
 
+
 	int cheating_mode;
 	map<EdgeId, int> local_cheating_edges;
 	set<EdgeId> global_cheating_edges;
@@ -600,10 +602,18 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	INFO("resolve_repeats started");
 	sum_count = 0;
 	global_cheating_edges.clear();
+
 	for (cheating_mode = 0; cheating_mode < cfg::get().rr.mode; cheating_mode++) {
 		INFO(" cheating_mode = " << cheating_mode);
 		bool changed = true;
 		map<int, VertexId> vertices;
+
+		TotalLabelerGraphStruct<NCGraph> graph_struct_before(old_graph,
+					&old_IDs, &old_pos, NULL);
+		TotalLabelerGraphStruct<NCGraph> graph_struct_after(new_graph,
+					&new_IDs, &new_pos, NULL);
+		TotalLabeler<NCGraph> TotLabAfter(&graph_struct_after,
+					&graph_struct_before);
 
 		while (changed) {
 			changed = false;
@@ -621,7 +631,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 			int GraphCnt = 0;
 
 			omnigraph::WriteSimple(
-					new_graph, IdTrackLabelerAfter,
+					new_graph, TotLabAfter,
 					output_folder + "resolve_" + ToString(cheating_mode)+"_"+ ToString(GraphCnt) + ".dot",
 					"no_repeat_graph");
 
@@ -639,7 +649,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				if (tcount > 1) {
 					GraphCnt++;
 					omnigraph::WriteSimple(
-						new_graph, IdTrackLabelerAfter, output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
+						new_graph, TotLabAfter, output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
 								+ ".dot", "no_repeat_graph");
 				}
 			}
