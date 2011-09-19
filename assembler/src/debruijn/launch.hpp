@@ -150,12 +150,16 @@ using namespace omnigraph;
  }
  }
  }*/
+//SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
 
 template<size_t k, class Graph>
-void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
-		EdgeLabelHandler<Graph>& LabelsAfter,
-		const EdgeIndex<k + 1, Graph>& index ,vector<SingleReadStream *>& reads
-		, string& consensus_output_dir) {
+void SelectReadsForConsensus(
+		Graph& etalon_graph, Graph& cur_graph,
+		EdgeLabelHandler<Graph>& LabelsAfter
+		 , const EdgeIndex<k + 1, Graph>& index , vector<io::Reader<io::SingleRead>*>& reads
+		, string& consensus_output_dir
+
+) {
 	INFO("ReadMapping started");
 	map<typename Graph::EdgeId, int> contigNumbers;
 	int cur_num = 0;
@@ -503,10 +507,10 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 
 		OutputContigs(resolved_graph, output_folder + "contigs_final.fasta");
 		string consensus_folder = output_folder + "consensus/";
-
-//		OutputSingleFileContigs(resolved_graph, consensus_folder);
-//		SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
-
+		if (cfg::get().need_consensus) {
+			OutputSingleFileContigs(resolved_graph, consensus_folder);
+			SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter ,new_edge_index, reads, consensus_folder);
+		}
 		OutputContigs(new_graph,
 				output_folder + "contigs_before_resolve.fasta");
 

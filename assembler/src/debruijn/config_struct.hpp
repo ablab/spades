@@ -152,7 +152,7 @@ namespace debruijn
 //		bool from_saved_graph;
 
 		std::string uncorrected_reads;
-
+		bool need_consensus;
 		tip_clipper tc;
 		bulge_remover br;
 		erroneous_connections_remover ec;
@@ -280,6 +280,7 @@ namespace debruijn
 		load(pt, "de", cfg.de); // distance estimator:
 		load(pt, "ade", cfg.ade); // advanced distance estimator:
 		load(pt, "rr", cfg.rr); // repeat resolver:
+		load(pt, "need_consensus", cfg.need_consensus);
 		load(pt, "uncorrected_reads", cfg.uncorrected_reads);
 		load(pt, cfg.dataset_name, cfg.ds);
 	}
