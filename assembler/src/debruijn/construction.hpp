@@ -26,7 +26,7 @@ void construct_graph(PairedReadStream& stream, conj_graph_pack& gp,
 		SingleReadStream* contigs_stream = 0) {
 	INFO("STAGE == Constructing Graph");
 
-	if (cfg::get().paired_mode) {
+	if (cfg::get().paired_mode && !cfg::get().late_paired_info) {
 		ConstructGraphWithPairedInfo<K>(gp, paired_index, stream, contigs_stream);
 		FillEtalonPairedIndex<K>(gp.g, gp.etalon_paired_index, gp.index,
 				gp.genome);
