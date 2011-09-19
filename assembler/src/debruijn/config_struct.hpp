@@ -248,6 +248,7 @@ namespace debruijn_graph
 		load(pt, "paired_mode", cfg.paired_mode);
 		load(pt, "rectangle_mode", cfg.rectangle_mode);
 		load(pt, "etalon_info_mode", cfg.etalon_info_mode);
+		load(pt, "late_paired_info", cfg.late_paired_info);
 
 		load(pt, "tc", cfg.tc); // tip clipper:
 		load(pt, "br", cfg.br); // bulge remover:

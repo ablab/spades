@@ -26,10 +26,14 @@ void construct_graph(PairedReadStream& stream, conj_graph_pack& gp,
 		SingleReadStream* contigs_stream = 0) {
 	INFO("STAGE == Constructing Graph");
 
-	if (cfg::get().paired_mode && !cfg::get().late_paired_info) {
-		ConstructGraphWithPairedInfo<K>(gp, paired_index, stream, contigs_stream);
+	//todo extract everything connected with etalon to separate tool
+	if (cfg::get().paired_mode) {
 		FillEtalonPairedIndex<K>(gp.g, gp.etalon_paired_index, gp.index,
 				gp.genome);
+	}
+
+	if (cfg::get().paired_mode && !cfg::get().late_paired_info) {
+		ConstructGraphWithPairedInfo<K>(gp, paired_index, stream, contigs_stream);
 	} else {
 		UnitedStream united_stream(stream);
 		ConstructGraphWithCoverage<K>(gp.g, gp.index, united_stream, contigs_stream);

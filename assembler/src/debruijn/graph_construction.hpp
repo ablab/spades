@@ -62,7 +62,8 @@ void FillEtalonPairedIndex(const Graph &g,
 
 	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index,
 			cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().ds.IS * 0.1);
-	etalon_paired_info_counter.FillEtalonPairedInfo(genome, etalon_paired_index);
+	etalon_paired_info_counter.FillEtalonPairedInfo(genome,
+			etalon_paired_index);
 	//////////////////DEBUG
 	//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
 	//	Path<EdgeId> path = simple_mapper.MapSequence(genome);
@@ -89,13 +90,13 @@ void FillCoverage(Graph& g, SingleReadStream& stream,
 	stream.reset();
 	INFO("Counting coverage");
 	SequenceMapper read_threader(g, index);
-	g.coverage_index().FillIndex<SequenceMapper> (stream, read_threader);
+	g.coverage_index().FillIndex<SequenceMapper>(stream, read_threader);
 	INFO("Coverage counted");
 }
 
 template<size_t k, class ReadStream>
 void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		ReadStream& stream) {
+ReadStream& stream) {
 	typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;
 	INFO("-----------------------------------------");
 	INFO("Constructing DeBruijn graph");
@@ -112,7 +113,7 @@ void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 
 template<size_t k>
 void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index,
-		SingleReadStream& stream, SingleReadStream* contigs_stream = 0) {
+SingleReadStream& stream, SingleReadStream* contigs_stream = 0) {
 	vector<SingleReadStream*> streams;
 	streams.push_back(&stream);
 	if (contigs_stream) {
@@ -120,9 +121,9 @@ void ConstructGraphWithCoverage(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		streams.push_back(contigs_stream);
 	}
 	CompositeSingleReadStream composite_stream(streams);
-	ConstructGraph<k> (g, index, composite_stream);
+	ConstructGraph<k>(g, index, composite_stream);
 	//It is not a bug!!! Don't use composite_stream here!!!
-	FillCoverage<k> (g, stream, index);
+	FillCoverage<k>(g, stream, index);
 }
 
 template<size_t k>
@@ -130,12 +131,12 @@ void ConstructGraphWithPairedInfo(conj_graph_pack& gp,
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& stream,
 		SingleReadStream* contigs_stream = 0) {
 	UnitedStream united_stream(stream);
-	ConstructGraphWithCoverage<k> (gp.g, gp.index, united_stream,
+	ConstructGraphWithCoverage<k>(gp.g, gp.index, united_stream,
 			contigs_stream);
 	if (cfg::get().etalon_info_mode)
-		FillEtalonPairedIndex<k> (gp.g, paired_index, gp.index, gp.genome);
+		FillEtalonPairedIndex<k>(gp.g, paired_index, gp.index, gp.genome);
 	else
-		FillPairedIndex<k> (gp.g, gp.index, paired_index, stream);
+		FillPairedIndex<k>(gp.g, gp.index, paired_index, stream);
 }
 
 }
