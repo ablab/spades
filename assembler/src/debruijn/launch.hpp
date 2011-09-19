@@ -306,6 +306,8 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 		graph_loaded = true;
 		graph_struct = boost::in_place(boost::ref(g), &int_ids, &EdgePos);
 		TotLab = in_place(&(*graph_struct));
+		FillEdgesPos<k>(g, index, cfg::get().pos.contigs_for_threading, EdgePos, kmer_mapper, 2000);
+		
 	} else {
 		if (graph_loaded) {
 
@@ -428,17 +430,12 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "2_simplified_graph",
 				(PairedInfoIndex<NCGraph>*) 0, EdgePosBefore,
 				(PairedInfoIndex<NCGraph>*) 0, &new_index);
-
-		KmerMapper<k + 1, Graph> clear_kmer_mapper(g);
-
-		FillEdgesPos<k>(g, index, cfg::get().pos.contigs_for_threading, EdgePos, clear_kmer_mapper, 2000);
-
 		if (cfg::get().start_from == "after_simplify"
 				|| cfg::get().start_from == "before_resolve") {
 			//todo ask Shurik if graph is not empty here
 //			WriteGraphComponents<k>(g, index, genome,
 //					output_folder + "graph_components" + "/", "graph.dot",
-//					"graph_component", cfg::get().ds.IS);
+//					"graph_component", 1300);
 
 			mkdir((output_folder + "graph_components" + "/").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 		}
@@ -446,7 +443,7 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 
 		number_of_components = PrintGraphComponents(
 				output_folder + "graph_components/graphCl", new_graph,
-				cfg::get().ds.IS, NewIntIds, new_index, EdgePosBefore);
+				1300, NewIntIds, new_index, EdgePosBefore);
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
