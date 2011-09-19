@@ -26,7 +26,7 @@ private:
     double derivative_threshold_;
 
     int round(double x){ 
-        int res = (int) (x + 0.5 + 1e-9);
+        int res = (int) (std::abs(x) + 0.5 + 1e-9);
         if (x < 0)
             res = -res;
         return res;
@@ -61,7 +61,7 @@ private:
 				peakfinder.FFTSmoothing(cutoff_);
                 if ( ( (cur + 1) == forward.size()) || ( (int) forward[cur + 1] > rounded_d(data[end - 1]))){
                     if (round(inv_density_*(end - begin)) > (int) data_length){
-                        result.push_back(make_pair(forward[cur], 1));
+                        result.push_back(make_pair(forward[cur], 1));       // default weight is one
                         DEBUG("Pair made " << forward[cur]);
                     }
                     cur++;
