@@ -656,6 +656,14 @@ public:
 	}
 };
 
+double PairedReadCountWeight(const MappingRange& , const MappingRange&) {
+	return 1.;
+}
+
+double KmerCountProductWeight(const MappingRange& mr1, const MappingRange& mr2) {
+	return mr1.initial_range.size() * mr2.initial_range.size();
+}
+
 /**
  * As for now it ignores sophisticated case of repeated consecutive
  * occurrence of edge in path due to gaps in mapping
@@ -663,13 +671,15 @@ public:
  * todo talk with Anton about simplification and speed-up of procedure with little quality loss
  */
 template<size_t k, class Graph, class Stream>
-class ReadCountPairedIndexFiller {
+class LatePairedIndexFiller {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef Seq<k> Kmer;
+	typedef boost::function<double (MappingRange, MappingRange)> WeightF;
 	const Graph& graph_;
 	const ExtendedSequenceMapper<k, Graph>& mapper_;
 	Stream& stream_;
+	WeightF weight_f_;
 
 	inline size_t CountDistance(const io::PairedRead& paired_read) {
 		return paired_read.distance() - paired_read.second().size();
@@ -678,7 +688,7 @@ private:
 	void ProcessPairedRead(omnigraph::PairedInfoIndex<Graph>& paired_index,
 			const io::PairedRead& p_r) {
 		//DEBUG
-		static size_t count = 0;
+//		static size_t count = 0;
 		//DEBUG
 
 		Sequence read1 = p_r.first().sequence();
@@ -693,7 +703,7 @@ private:
 			pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
 			for (size_t j = 0; j < path2.size(); ++j) {
 				pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
-				double weight = 1;
+				double weight = weight_f_(mapping_edge_1.second, mapping_edge_2.second);
 				size_t kmer_distance = read_distance
 						+ mapping_edge_2.second.initial_range.start_pos
 						- mapping_edge_1.second.initial_range.start_pos;
@@ -706,13 +716,13 @@ private:
 								mapping_edge_2.first, (double) edge_distance,
 								weight, 0.));
 				//DEBUG
-				cout << "here2 " << PairInfo<EdgeId> (mapping_edge_1.first,
-						mapping_edge_2.first, (double) edge_distance, weight,
-						0.) << endl;
-				count++;
-				if (count == 10000) {
-					exit(0);
-				}
+//				cout << "here2 " << PairInfo<EdgeId> (mapping_edge_1.first,
+//						mapping_edge_2.first, (double) edge_distance, weight,
+//						0.) << endl;
+//				count++;
+//				if (count == 10000) {
+//					exit(0);
+//				}
 				//DEBUG
 			}
 		}
@@ -720,9 +730,9 @@ private:
 
 public:
 
-	ReadCountPairedIndexFiller(const Graph &graph,
-			const ExtendedSequenceMapper<k, Graph>& mapper, Stream& stream) :
-		graph_(graph), mapper_(mapper), stream_(stream) {
+	LatePairedIndexFiller(const Graph &graph,
+			const ExtendedSequenceMapper<k, Graph>& mapper, Stream& stream, WeightF weight_f) :
+		graph_(graph), mapper_(mapper), stream_(stream), weight_f_(weight_f) {
 
 	}
 

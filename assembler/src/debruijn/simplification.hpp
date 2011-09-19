@@ -45,7 +45,7 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 	//  ProduceInfo<k>(g, index, *totLab, genome, output_folder + "simplified_graph.dot", "simplified_graph");
 
 	//experimental
-	if (cfg::get().late_paired_info) {
+	if (cfg::get().paired_mode && cfg::get().late_paired_info) {
 		FillPairedIndexWithReadCountMetric<K> (gp.g, gp.index,
 				gp.kmer_mapper, paired_index, stream);
 	}

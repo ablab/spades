@@ -24,8 +24,24 @@ typedef io::MultifileReader<io::SingleRead> CompositeSingleReadStream;
 typedef io::ConvertingReaderWrapper UnitedStream;
 
 template<size_t k, class ReadStream>
-void FillPairedIndex(const Graph &g, const EdgeIndex<k + 1, Graph>& index,
-		PairedInfoIndex<Graph>& paired_info_index, ReadStream& stream) {
+
+void FillPairedIndexWithReadCountMetric(const Graph &g,
+		const EdgeIndex<k + 1, Graph>& index
+		, const KmerMapper<k + 1, Graph>& kmer_mapper
+		, PairedInfoIndex<Graph>& paired_info_index , ReadStream& stream) {
+	INFO("-----------------------------------------");
+	stream.reset();
+	INFO("Counting paired info with read count weight");
+	ExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
+	LatePairedIndexFiller<k + 1, Graph, ReadStream> pif(g, mapper, stream, PairedReadCountWeight);
+	pif.FillIndex(paired_info_index);
+	INFO("Paired info with read count weight counted");
+}
+
+template<size_t k, class ReadStream>
+void FillPairedIndex(const Graph &g, const EdgeIndex<k + 1, Graph>& index
+		, PairedInfoIndex<Graph>& paired_info_index,
+		ReadStream& stream) {
 	typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
 	INFO("-----------------------------------------");
 	stream.reset();
@@ -35,20 +51,6 @@ void FillPairedIndex(const Graph &g, const EdgeIndex<k + 1, Graph>& index,
 			stream);
 	pif.FillIndex(paired_info_index);
 	INFO("Paired info counted");
-}
-
-template<size_t k, class ReadStream>
-void FillPairedIndexWithReadCountMetric(const Graph &g,
-		const EdgeIndex<k + 1, Graph>& index,
-		const KmerMapper<k + 1, Graph>& kmer_mapper,
-		PairedInfoIndex<Graph>& paired_info_index, ReadStream& stream) {
-	INFO("-----------------------------------------");
-	stream.reset();
-	INFO("Counting paired info with read count weight");
-	ExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
-	ReadCountPairedIndexFiller<k + 1, Graph, ReadStream> pif(g, mapper, stream);
-	pif.FillIndex(paired_info_index);
-	INFO("Paired info with read count weight counted");
 }
 
 template<size_t k>
