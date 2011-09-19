@@ -71,23 +71,31 @@ void ResolveOneComponent(const string& load_from_dir, const string& save_to_dir,
 
 	RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
 			Resolved_IntIds);
-	omnigraph::WriteSimple(resolved_graph, IdTrackLabelerResolved, save_to + "_after.dot", "no_repeat_graph");
+
+	TotalLabelerGraphStruct<NCGraph> graph_struct_before(new_graph,
+				&NewIntIds, &EdgePosBefore, NULL);
+	TotalLabelerGraphStruct<NCGraph> graph_struct_after(resolved_graph,
+				&Resolved_IntIds, &EdgePosAfter, &LabelsAfter);
+	TotalLabeler<NCGraph> TotLabAfter(&graph_struct_after,
+				&graph_struct_before);
+
+	omnigraph::WriteSimple(resolved_graph, TotLabAfter, save_to + "_after.dot", "no_repeat_graph");
 
 	EdgesPosGraphLabeler<NCGraph> EdgePosLAfterLab(resolved_graph,
 			EdgePosAfter);
 
-	omnigraph::WriteSimple(resolved_graph, EdgePosLAfterLab,
+	omnigraph::WriteSimple(resolved_graph, TotLabAfter,
 			save_resolving_history + "/repeats_resolved_after_pos.dot",
 			"no_repeat_graph");
 
 	ClipTips(resolved_graph);
 	RemoveLowCoverageEdgesForResolver(resolved_graph);
 
-	omnigraph::WriteSimple(resolved_graph, EdgePosLAfterLab,
+	omnigraph::WriteSimple(resolved_graph, TotLabAfter,
 			save_resolving_history
 					+ "/repeats_resolved_after_und_cleared_pos.dot",
 			"no_repeat_graph");
-	omnigraph::WriteSimple(resolved_graph, IdTrackLabelerResolved,
+	omnigraph::WriteSimple(resolved_graph, TotLabAfter,
 			save_resolving_history + "/repeats_resolved_und_cleared.dot",
 			"no_repeat_graph");
 	one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph, cfg::get().ds.IS);
