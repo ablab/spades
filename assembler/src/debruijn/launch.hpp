@@ -311,7 +311,7 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 
 			FillEdgesPos<k>(g, index, genome, EdgePos, kmer_mapper, 0);
 			FillEdgesPos<k>(g, index, !genome, EdgePos, kmer_mapper, 1);
-			FillEdgesPos<k>(g, index, cfg::get().pos.contigs_for_threading, EdgePos, kmer_mapper, 10);
+			FillEdgesPos<k>(g, index, cfg::get().pos.contigs_for_threading, EdgePos, kmer_mapper, 1000);
 			omnigraph::WriteSimple(g, *TotLab, output_folder + "1_initial_graph.dot",
 					"no_repeat_graph");
 
@@ -428,6 +428,10 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "2_simplified_graph",
 				(PairedInfoIndex<NCGraph>*) 0, EdgePosBefore,
 				(PairedInfoIndex<NCGraph>*) 0, &new_index);
+
+		KmerMapper<k + 1, Graph> clear_kmer_mapper(g);
+
+		FillEdgesPos<k>(g, index, cfg::get().pos.contigs_for_threading, EdgePos, clear_kmer_mapper, 2000);
 
 		if (cfg::get().start_from == "after_simplify"
 				|| cfg::get().start_from == "before_resolve") {
