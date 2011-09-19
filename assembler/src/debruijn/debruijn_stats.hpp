@@ -331,12 +331,12 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int contigId) {
 	MappingPath<typename Graph::EdgeId> m_path1 = FindGenomeMappingPath<k> (genome, g, index, kmer_mapper);
 	int CurPos = 0;
+	DEBUG("Contig "<<contigId<< " maped on "<<m_path1.size()<<" fragments.");
 	for (size_t i = 0; i < m_path1.size(); i++) {
 		EdgeId ei = m_path1[i].first;
 		MappingRange mr = m_path1[i].second;
 		int len = mr.mapped_range.end_pos - mr.mapped_range.start_pos;
 		edgesPos.AddEdgePosition(ei, mr.initial_range.start_pos+1, mr.initial_range.end_pos, contigId);
-//		edgesPos.AddEdgePosition(ei, CurPos + 1, CurPos+len, contigId);
 		CurPos += len;
 	}
 	//CurPos = 1000000000;

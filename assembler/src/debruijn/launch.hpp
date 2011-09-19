@@ -307,6 +307,9 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 		graph_struct = boost::in_place(boost::ref(g), &int_ids, &EdgePos);
 		TotLab = in_place(&(*graph_struct));
 		FillEdgesPos<k>(g, index, cfg::get().pos.contigs_for_threading, EdgePos, kmer_mapper, 2000);
+		printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph", paired_index,
+				EdgePos, &etalon_paired_index);
+
 		
 	} else {
 		if (graph_loaded) {
@@ -336,6 +339,7 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 					cfg::get().ds.IS, int_ids, paired_index, EdgePos);
 
 			INFO("Components printed");
+
 			if (cfg::get().advanced_estimator_mode) {
  
                 AdvancedDistanceEstimator<Graph> estimator(g, paired_index, int_ids, 
