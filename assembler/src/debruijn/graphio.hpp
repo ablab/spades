@@ -233,12 +233,12 @@ template<class Graph>
 void DataPrinter<Graph>::savePositions(const string& file_name,
 		EdgesPositionHandler<Graph>const& EPHandler) {
 
-	std::ofstream file((file_name + ".pos").c_str());
+	ofstream file((file_name + ".pos").c_str());
 
 	DEBUG("Saving edges positions, " << file_name << " created");
 	assert(file != NULL);
 
-	file << edge_count_ << std::endl;
+	file << edge_count_ << endl;
 
 	if (filter_ == NULL) {
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -247,10 +247,10 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 		    assert(it != EPHandler.EdgesPositions.end());
 
 		    size_t size = it->second.size();
-		    file << IdHandler_.ReturnIntId(*iter) << " " << size;
+		    file << IdHandler_.ReturnIntId(*iter) << " " << size << endl;
 
 			for (size_t i = 0; i < it->second.size(); i++)
-				file << "    " << it->second[i].start_ << " - " << it->second[i].end_;
+				file << "    " << it->second[i].start_ << " - " << it->second[i].end_ << endl;
 		}
 	} else {
 		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
@@ -258,10 +258,10 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 		    auto it = EPHandler.EdgesPositions.find(*iter);
 		    assert(it != EPHandler.EdgesPositions.end());
 
-			file << IdHandler_.ReturnIntId(*iter) << " " << it->second.size();
+			file << IdHandler_.ReturnIntId(*iter) << " " << it->second.size() << endl;
 
 			for (size_t i = 0; i < it->second.size(); i++)
-				file << "    " << it->second[i].start_ << " - " << it->second[i].end_;
+				file << "    " << it->second[i].start_ << " - " << it->second[i].end_ << endl;
 
 		}
 	}
