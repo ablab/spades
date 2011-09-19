@@ -80,6 +80,16 @@ private:
 		return result;
 	}
 
+    vector<PairInfo<EdgeId> > ClusterResult(EdgeId edge1, EdgeId edge2, vector<pair<size_t, double> > estimated){
+        vector<PairInfo<EdgeId> > result;
+        for (size_t i = 0; i < estimated.size(); i++){
+            PairInfo<EdgeId> new_info(edge1, edge2, estimated[i].first, estimated[i].second, 0);
+            
+            result.push_back(new_info);
+        }
+        return result;
+    }
+
 public:
 	AdvancedDistanceEstimator(Graph &graph, PairedInfoIndex<Graph> &histogram, IdTrackHandler<Graph> &int_ids, size_t insert_size, size_t read_length, size_t delta, size_t linkage_distance, size_t max_distance, size_t threshold, double range_coeff, double delta_coeff, 
     size_t cutoff, size_t minpeakpoints, double inv_density, double percentage, double derivative_threshold) : 
