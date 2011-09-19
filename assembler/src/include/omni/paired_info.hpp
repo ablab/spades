@@ -12,7 +12,6 @@
 
 //#define MERGE_DATA_RELATIVE_DIFFERENCE 0.3
 
-
 namespace omnigraph {
 
 /**
@@ -28,14 +27,15 @@ struct PairInfo {
 	double variance;
 
 	PairInfo(const PairInfo& pair_info) :
-		first(pair_info.first), second(pair_info.second), d(pair_info.d),
-				weight(pair_info.weight), variance(pair_info.variance) {
+			first(pair_info.first), second(pair_info.second), d(pair_info.d), weight(
+					pair_info.weight), variance(pair_info.variance) {
 
 	}
 
 	PairInfo(EdgeId first, EdgeId second, double d, double weight,
 			double variance) :
-		first(first), second(second), d(d), weight(weight), variance(variance) {
+			first(first), second(second), d(d), weight(weight), variance(
+					variance) {
 	}
 
 	/*	const PairInfo set_first(EdgeId first) const {
@@ -65,8 +65,10 @@ struct PairInfo {
 
 	bool operator<(const PairInfo& rhs) const {
 		const PairInfo &lhs = *this;
-		return lhs.first == rhs.first ? lhs.second == rhs.second ? math::ls(
-				lhs.d, rhs.d) : lhs.second < rhs.second : lhs.first < rhs.first;
+		return lhs.first == rhs.first ?
+				lhs.second == rhs.second ?
+						math::ls(lhs.d, rhs.d) : lhs.second < rhs.second
+				: lhs.first < rhs.first;
 	}
 
 	/**
@@ -101,14 +103,13 @@ ostream& operator<<(ostream& os, const PairInfo<Graph>& info) {
 
 template<typename EdgeId>
 const PairInfo<EdgeId> MinPairInfo(EdgeId id) {
-	return PairInfo<EdgeId> (id, (EdgeId) 0/*numeric_limits<EdgeId>::min()*/,
+	return PairInfo<EdgeId>(id, (EdgeId) 0/*numeric_limits<EdgeId>::min()*/,
 			-100000000/*numeric_limits<double>::min()*/, 0., 0.);
 }
 
 template<typename EdgeId>
 const PairInfo<EdgeId> MaxPairInfo(EdgeId id) {
-	return PairInfo<EdgeId> (id,
-			(EdgeId) (-1)/*numeric_limits<EdgeId>::max()*/,
+	return PairInfo<EdgeId>(id, (EdgeId) (-1)/*numeric_limits<EdgeId>::max()*/,
 			1000000000/*numeric_limits<double>::max()*/, 0., 0.);
 }
 
@@ -141,7 +142,7 @@ int rounded_d(PairInfo<EdgeId> const& pi) {
 
 template<typename EdgeId>
 PairInfo<EdgeId> BackwardInfo(const PairInfo<EdgeId>& pi) {
-	return PairInfo<EdgeId> (pi.second, pi.first, -pi.d, pi.weight, pi.variance);
+	return PairInfo<EdgeId>(pi.second, pi.first, -pi.d, pi.weight, pi.variance);
 }
 
 template<typename EdgeId>
@@ -161,11 +162,12 @@ public:
 	typedef std::pair<data_const_iterator, data_const_iterator> iterator_range;
 
 public:
-	void UpdateSingleInfo(const PairInfo<EdgeId>& info, double d, double weight) {
+	void UpdateSingleInfo(const PairInfo<EdgeId>& info, double d,
+			double weight) {
 		size_t count = data_.erase(info);
 		assert(count != 0);
 		data_.insert(
-				PairInfo<EdgeId> (info.first, info.second, d, weight,
+				PairInfo<EdgeId>(info.first, info.second, d, weight,
 						info.variance));
 	}
 
@@ -173,7 +175,7 @@ public:
 		//		size_t count = data_.erase(info);
 		//	assert(count != 0);
 		data_.insert(
-				PairInfo<EdgeId> (newId, info.second, info.d, info.weight,
+				PairInfo<EdgeId>(newId, info.second, info.d, info.weight,
 						info.variance));
 	}
 public:
@@ -181,8 +183,8 @@ public:
 		auto itp = data_.begin();
 		int cnt = 1;
 		for (auto it = data_.begin(); it != data_.end(); ++it) {
-			if (it->first == itp->first && it->second == itp->second && it
-					!= data_.begin()) {
+			if (it->first == itp->first && it->second == itp->second
+					&& it != data_.begin()) {
 				cnt++;
 			} else {
 				if (it != data_.begin()) {
@@ -214,7 +216,8 @@ public:
 	void DeleteEdgeInfo(EdgeId e) {
 		set<PairInfo<EdgeId>> paired_edges;
 
-		for (auto lower = LowerBound(e), upper = UpperBound(e); lower != upper; ++lower) {
+		for (auto lower = LowerBound(e), upper = UpperBound(e); lower != upper;
+				++lower) {
 			paired_edges.insert(BackwardInfo(*lower));
 		}
 
@@ -278,7 +281,7 @@ public:
 	typedef const vector<PairInfo<EdgeId>> PairInfos;
 
 private:
-	const int max_difference_;
+	const double max_difference_;
 
 public:
 	/**
@@ -292,7 +295,7 @@ public:
 		EdgePairIterator(
 				typename PairInfoIndexData<EdgeId>::data_iterator position,
 				const PairedInfoIndex<Graph> &index) :
-			position_(position), index_(index) {
+				position_(position), index_(index) {
 		}
 
 		bool operator==(const EdgePairIterator &other) {
@@ -322,9 +325,9 @@ public:
 	}
 
 	//begin-end insert size supposed
-	PairedInfoIndex(const Graph &g, int max_difference = 0) :
-		GraphActionHandler<Graph> (g, "PairedInfoIndex"),
-				max_difference_(max_difference) {
+	PairedInfoIndex(const Graph &g, double max_difference = 0.) :
+			GraphActionHandler<Graph>(g, "PairedInfoIndex"), max_difference_(
+					max_difference) {
 	}
 
 	virtual ~PairedInfoIndex() {
@@ -371,13 +374,14 @@ private:
 			const PairInfo<EdgeId>& info2) {
 		if (info1.first != info2.first || info1.second != info2.second)
 			return false;
-		if (std::abs(info2.d - info1.d) <= max_difference_) {
+		if (math::le(std::abs(info2.d - info1.d), max_difference_)) {
 			return true;
 		}
 		return false;
 	}
 
-	void MergeData(const PairInfo<EdgeId>& info1, const PairInfo<EdgeId>& info2) {
+	void MergeData(const PairInfo<EdgeId>& info1,
+			const PairInfo<EdgeId>& info2) {
 		assert(info1.first == info2.first && info1.second == info2.second);
 		double newWeight = info1.weight + info2.weight;
 		double newD = (info1.d * info1.weight + info2.d * info2.weight)
@@ -390,15 +394,15 @@ private:
 
 	int NearestClusterIndex(const vector<PairInfo<EdgeId>>& current_pair_infos,
 			const PairInfo<EdgeId>& new_info) {
-		double min_dist = max_difference_ + 1e-9;
+		double min_dist = max_difference_;
 		int answer = -1;
 		for (size_t i = 0; i < current_pair_infos.size(); ++i) {
-			if (std::abs(new_info.d - current_pair_infos[i].d) < min_dist
-					+ 1e-9)
-				if (std::abs(new_info.d - current_pair_infos[i].d) < min_dist
-						- 1e-9 || answer == -1 || std::abs(
-						current_pair_infos[answer].d) > std::abs(
-						current_pair_infos[i].d)) {
+			if (math::le(std::abs(new_info.d - current_pair_infos[i].d),
+					min_dist))
+				if (math::ls(std::abs(new_info.d - current_pair_infos[i].d),
+						min_dist) || answer == -1
+						|| math::gr(std::abs(current_pair_infos[answer].d),
+								std::abs(current_pair_infos[i].d))) {
 					min_dist = std::abs(new_info.d - current_pair_infos[i].d);
 					answer = i;
 				}
@@ -412,8 +416,7 @@ public:
 	 */
 	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool add_reversed = 1) {
 		TRACE(
-				"IN ADD:" << pair_info.first << pair_info.second << " "
-						<< data_.size());
+				"IN ADD:" << pair_info.first << pair_info.second << " " << data_.size());
 		PairInfos pair_infos = data_.GetEdgePairInfos(pair_info.first,
 				pair_info.second);
 		int cluster_index = NearestClusterIndex(pair_infos, pair_info);
@@ -466,18 +469,18 @@ private:
 			PairInfo<EdgeId> old_pair_info = pair_infos[j];
 			if (old_edge != old_pair_info.second) {
 				AddPairInfo(
-						PairInfo<EdgeId> (new_edge, old_pair_info.second,
+						PairInfo<EdgeId>(new_edge, old_pair_info.second,
 								old_pair_info.d - shift,
 								weight_scale * old_pair_info.weight,
 								old_pair_info.variance));
 			} else if (old_pair_info.d != 0) {
 				AddPairInfo(
-						PairInfo<EdgeId> (new_edge, new_edge, old_pair_info.d,
+						PairInfo<EdgeId>(new_edge, new_edge, old_pair_info.d,
 								weight_scale * 0.5 * old_pair_info.weight,
 								old_pair_info.variance));
 			} else {
 				AddPairInfo(
-						PairInfo<EdgeId> (new_edge, new_edge, old_pair_info.d,
+						PairInfo<EdgeId>(new_edge, new_edge, old_pair_info.d,
 								weight_scale * old_pair_info.weight,
 								old_pair_info.variance));
 			}
@@ -522,7 +525,7 @@ public:
 	}
 
 	virtual void HandleAdd(EdgeId e) {
-		this->AddPairInfo(PairInfo<EdgeId> (e, e, 0, 0.0, 0.));
+		this->AddPairInfo(PairInfo<EdgeId>(e, e, 0, 0.0, 0.));
 	}
 
 	virtual void HandleDelete(EdgeId e) {
@@ -530,7 +533,7 @@ public:
 	}
 
 	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
-		this->AddPairInfo(PairInfo<EdgeId> (new_edge, new_edge, 0, 0.0, 0.));
+		this->AddPairInfo(PairInfo<EdgeId>(new_edge, new_edge, 0, 0.0, 0.));
 		int shift = 0;
 		for (size_t i = 0; i < old_edges.size(); ++i) {
 			EdgeId old_edge = old_edges[i];
@@ -546,12 +549,13 @@ public:
 
 	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
 			EdgeId new_edge2) {
-		double prop = (double) this->g().length(new_edge1) / this->g().length(
-				old_edge);
+		double prop = (double) this->g().length(new_edge1)
+				/ this->g().length(old_edge);
 		//		size_t shift = graph_.length(new_edge1);
 		TransferInfo(old_edge, new_edge1, 0, prop);
 		//		PassEdge(graph_.length(new_edge1), shift);
-		TransferInfo(old_edge, new_edge2, this->g().length(new_edge1), 1 - prop);
+		TransferInfo(old_edge, new_edge2, this->g().length(new_edge1),
+				1 - prop);
 	}
 
 	//	bool Check() {
@@ -573,7 +577,8 @@ public:
 	//		return true;
 	//	}
 
-};
+}
+;
 
 /**
  * This class performs the most simple offline clustering of paired information.
@@ -589,7 +594,7 @@ public:
 	PairedInfoIndex<Graph> &not_clustered_;
 
 	SimpleOfflineClusterer(PairedInfoIndex<Graph> &not_clustered) :
-		not_clustered_(not_clustered) {
+			not_clustered_(not_clustered) {
 	}
 
 	PairInfos ProcessEdgePair(const PairInfos &infos) {
@@ -655,10 +660,10 @@ private:
 		for (size_t i = 0; i < path1.size(); ++i) {
 			int current_distance2 = current_distance1;
 			for (size_t j = 0; j < path2.size(); ++j) {
-				double weight = CorrectLength(path1, i) * CorrectLength(path2,
-						j);
-				PairInfo<EdgeId> new_info(path1[i], path2[j],
-						current_distance2, weight, 0.);
+				double weight = CorrectLength(path1, i)
+						* CorrectLength(path2, j);
+				PairInfo<EdgeId> new_info(path1[i], path2[j], current_distance2,
+						weight, 0.);
 				paired_index.AddPairInfo(new_info);
 				current_distance2 += graph_.length(path2[j]);
 			}
@@ -670,7 +675,7 @@ public:
 
 	PairedIndexFiller(const Graph &graph, const SequenceMapper& mapper,
 			Stream& stream) :
-		graph_(graph), mapper_(mapper), stream_(stream) {
+			graph_(graph), mapper_(mapper), stream_(stream) {
 
 	}
 
@@ -679,7 +684,7 @@ public:
 	 */
 	void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			paired_index.AddPairInfo(PairInfo<EdgeId> (*it, *it, 0, 0.0, 0.));
+			paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
 		}
 		stream_.reset();
 		while (!stream_.eof()) {

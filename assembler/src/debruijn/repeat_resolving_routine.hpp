@@ -72,11 +72,11 @@ void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
 void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 {
     conj_graph_pack   conj_gp (genome);
-    paired_info_index paired_index   (conj_gp.g);
+    paired_info_index paired_index   (conj_gp.g, 5.);
     paired_info_index clustered_index(conj_gp.g);
 
     exec_distance_estimation(stream, conj_gp, paired_index, clustered_index);
-
+/*
     INFO("STAGE == Resolving Repeats");
 
     if (!cfg::get().paired_mode)
@@ -162,6 +162,7 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 //            ResolveOneComponent(output_folder + "graph_components/",
 //                    output_comp + "/", i, k);
 //    }
+ */
 }
 
 void exec_repeat_resolving(PairedReadStream& stream, const Sequence& genome)
@@ -169,6 +170,7 @@ void exec_repeat_resolving(PairedReadStream& stream, const Sequence& genome)
 	if (cfg::get().entry_point <= ws_repeats_resolving)
     {
 		resolve_repeats(stream, genome);
+		//todo why nothing to save???
         // nothing to save yet
     }
     else
