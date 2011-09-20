@@ -36,6 +36,8 @@ private:
 
 	double derivative_threshold_;
 
+    double weight;
+
 	std::vector<int> x_, y_;
 
 	std::vector<int> peaks;
@@ -49,6 +51,7 @@ private:
 
 	inline void ExtendLinear(complex* f) {
 		int ind = 0;
+        weight = 0;
 		for (int i = 0; i < data_length; i++) {
 			if (ind == data_size - 1)
 				f[i][0] = max;
@@ -56,6 +59,7 @@ private:
                 assert(x_[ind + 1] - x_[ind] > 0);
 				f[i][0] = ((i + min - x_[ind]) * y_[ind + 1] + y_[ind] * (x_[ind + 1] - i - min)) / (1.0f * (x_[ind + 1] - x_[ind]));
 			}
+            weight += f[i][0]; //   filling the array on the fly
 			f[i][1] = 0;
 //			cout<<f[i][0]<<endl;
 
@@ -190,6 +194,14 @@ public:
 		fftw_free(out);
 		fftw_free(outf);
 	}
+
+    double getWeight(){
+        return weight;
+    }
+
+    double getNormalizedWeight(){
+        return weight / data_length;
+    }
 
 	void printstat() {
 		for (int i = 0; i < data_length; i++)
