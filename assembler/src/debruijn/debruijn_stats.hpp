@@ -336,6 +336,11 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		EdgeId ei = m_path1[i].first;
 		MappingRange mr = m_path1[i].second;
 		int len = mr.mapped_range.end_pos - mr.mapped_range.start_pos;
+		if (i>0)
+			if (m_path1[i-1].first != ei)
+				if (g.EdgeStart(ei) != graph_.EdgeEnd(m_path1[i-1].first)){
+					DEBUG("Contig "<<contigId<<" maped on not adjacent edge. Position in contig is "<<m_path1[i-1].second.initial_range.start_pos+1<<"--" <<m_path1[i-1].second.initial_range.end_pos<< " and "<<mr.initial_range.start_pos+1<<"--" <<mr.initial_range.end_pos);
+				}
 		edgesPos.AddEdgePosition(ei, mr.initial_range.start_pos+1, mr.initial_range.end_pos, contigId);
 		CurPos += len;
 	}

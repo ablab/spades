@@ -447,7 +447,7 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 
 		number_of_components = PrintGraphComponents(
 				output_folder + "graph_components/graphCl", new_graph,
-				1300, NewIntIds, new_index, EdgePosBefore);
+				cfg::get().ds.IS+100, NewIntIds, new_index, EdgePosBefore);
 
 		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
