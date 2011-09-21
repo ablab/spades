@@ -173,7 +173,6 @@ public:
 		near_vertex = cfg::get().rr.near_vertex;
 		for (auto v_iter = old_graph.SmartVertexBegin(); !v_iter.IsEnd();
 				++v_iter) {
-			//		if (vertices.find(old_graph.conjugate(*v_iter)) == vertices.end())
 			{
 				vertices.insert(*v_iter);
 				TRACE(*v_iter);
@@ -181,30 +180,38 @@ public:
 		}
 		for (auto e_iter = old_graph.SmartEdgeBegin(); !e_iter.IsEnd();
 				++e_iter) {
-			//	if (edges.find(old_graph.conjugate(*e_iter)) == edges.end())
 			{
 				edges.insert(*e_iter);
 			}
 		}
 		for (auto v_iter = vertices.begin(); v_iter != vertices.end();
 				++v_iter) {
+			if (rc_mode) {
+				vertices.erase(old_IDs.ReturnVertexId(GetRCId(old_IDs.ReturnIntId(*v_iter))));
+			}
 			size_t degree = old_graph.IncomingEdgeCount(*v_iter)
 					+ old_graph.OutgoingEdgeCount(*v_iter);
 			if (degree > 0) {
 				VertexId new_vertex = new_graph.AddVertex();
 				real_vertices.insert(new_vertex);
+
 				TRACE("Added vertex" << new_vertex);
-				// <<" " << new_graph.conjugate(new_vertex));
 				vertex_labels[new_vertex] = *v_iter;
 				old_to_new[*v_iter] = new_vertex;
-				//	old_to_new[old_graph.conjugate(*v_iter)] = new_graph.conjugate(new_vertex);
+				if (rc_mode) {
+					VertexId new_rc_vertex = new_IDs.ReturnVertexId(GetRCId(new_IDs.ReturnIntId(new_vertex)));
+					VertexId old_rc_vertex = old_IDs.ReturnVertexId(GetRCId(old_IDs.ReturnIntId(*v_iter)));
+					real_vertices.insert(new_rc_vertex);
+					vertex_labels[new_rc_vertex] = old_rc_vertex;
+					old_to_new[old_rc_vertex] = new_rc_vertex;
+				}
 			}
 
 		}
 		set<int> added_edges;
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
-//			if (rc_mode)
-//				edges.erase(old_IDs.ReturnEdgeId(GetRCId(old_IDs.ReturnIntId(*e_iter))));
+			if (rc_mode)
+				edges.erase(old_IDs.ReturnEdgeId(GetRCId(old_IDs.ReturnIntId(*e_iter))));
 
 			TRACE(
 					"Adding edge from " << old_to_new[old_graph.EdgeStart(*e_iter)] <<" to " << old_to_new[old_graph.EdgeEnd(*e_iter)]);
@@ -217,13 +224,15 @@ public:
 					old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
 //			new_graph.coverage_index().SetCoverage(new_edge,
 //					old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
-//			new_graph.SetCoverage(new_graph.conjugate(new_edge), 0);
 			edge_labels[new_edge] = *e_iter;
 			TRACE("Adding edge " << new_edge<< " from" << *e_iter);
 			old_to_new_edge[*e_iter] = new_edge;
-			//			old_to_new_edge[old_graph.conjugate(*e_iter)] = new_graph.conjugate(new_edge);
-			//			PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
-
+			if (rc_mode) {
+				EdgeId new_rc_edge = new_IDs.ReturnEdgeId(GetRCId(new_IDs.ReturnIntId(new_edge)));
+				EdgeId old_rc_edge = old_IDs.ReturnEdgeId(GetRCId(old_IDs.ReturnIntId(*e_iter)));
+				edge_labels[new_rc_edge] = old_rc_edge;
+				old_to_new_edge[old_rc_edge] = new_rc_edge;
+			}
 		}
 		old_to_new.clear();
 		for (auto p_iter = ind.begin(), p_end_iter = ind.end();
