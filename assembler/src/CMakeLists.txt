@@ -23,6 +23,8 @@ endif()
 
 add_definitions(-g3)
 add_definitions(-std=c++0x)
+add_definitions(-Wall -Wno-long-long -Wno-deprecated)
+add_definitions(-rdynamic)
 #add_definitions(-Wall -Wconversion -Wno-long-long -Wno-deprecated)
 add_definitions(-Wall -Wno-long-long -Wno-deprecated)
 
@@ -45,8 +47,9 @@ find_package(statgen)
 find_package(staden)
 find_package(ssl)
 find_package(bam)
-find_package(Boost COMPONENTS signals REQUIRED)
+find_package(Boost COMPONENTS signals system filesystem REQUIRED)
 find_package(fftw3)
+
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 
 include_directories("${CMAKE_SOURCE_DIR}/include")

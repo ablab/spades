@@ -14,8 +14,8 @@ class IdTrackHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef int realIdType;
-	tr1::unordered_map<VertexId, realIdType> VertexIntId;
-	tr1::unordered_map<EdgeId, realIdType> EdgeIntId;
+	std::unordered_map<VertexId, realIdType> VertexIntId;
+	std::unordered_map<EdgeId, realIdType> EdgeIntId;
 	map<realIdType, VertexId> VertexOriginalId;
 	map<realIdType, EdgeId> EdgeOriginalId;
 	int MaxVertexIntId;
@@ -95,23 +95,13 @@ public:
 		if (PreviousId != 0) EdgeOriginalId.erase(PreviousId);
 		EdgeIntId.erase(OldEdgeId);
 	}
-	realIdType ReturnIntId(EdgeId e) {
-		typename tr1::unordered_map<EdgeId, int>::iterator it = EdgeIntId.find(
-				e);
-		if (it != EdgeIntId.end())
-			return it->second;
-		else
-			return 0;
+	realIdType ReturnIntId(EdgeId e) const{
+		auto it = EdgeIntId.find(e);
+		return it != EdgeIntId.end() ? it->second : 0;
 	}
-	realIdType ReturnIntId(VertexId v) {
-		typename tr1::unordered_map<VertexId, int>::iterator it;
-		it = VertexIntId.find(v);
-		if (it != VertexIntId.end()) {
-			//			DEBUG("Find finished successful");
-
-			return it->second;
-		} else
-			return 0;
+	realIdType ReturnIntId(VertexId v) const {
+		auto it = VertexIntId.find(v);
+		return it != VertexIntId.end() ? it->second : 0;
 	}
 
 	EdgeId ReturnEdgeId(realIdType id){

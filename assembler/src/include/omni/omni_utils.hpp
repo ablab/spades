@@ -546,9 +546,14 @@ struct Range {
 	//exclusive
 	size_t end_pos;
 
+	size_t size() const {
+		assert(end_pos >= start_pos);
+		return end_pos - start_pos;
+	}
+
 	Range(size_t start_pos, size_t end_pos)
 	: start_pos(start_pos), end_pos(end_pos)
-	{}
+	{assert(end_pos >= start_pos);}
 };
 
 struct MappingRange {
@@ -617,6 +622,17 @@ public:
 };
 
 template<class Graph>
+const string PrintPath(Graph& g, const vector<typename Graph::EdgeId>& edges) {
+	string delim = "";
+	stringstream ss;
+	for (size_t i = 0; i < edges.size(); ++i) {
+		ss << delim << g.str(edges[i]) << " (" << g.length(edges[i]) << ")";
+		delim = " -> ";
+	}
+	return ss.str();
+}
+
+template<class Graph>
 class PathProcessor {
 public:
 	typedef typename Graph::EdgeId EdgeId;
@@ -643,6 +659,7 @@ private:
 
 	//todo rewrite without recursion
 	void Go(VertexId v, size_t current_path_length, Dijkstra<Graph>& distances_to_end) {
+		TRACE("Processing vertex " << v << " started");
 		call_cnt_++;
 		if (call_cnt_ == MAX_CALL_CNT) {
 			DEBUG(
@@ -653,35 +670,33 @@ private:
 
 		if (!distances_to_end.DistanceCounted(v) || distances_to_end.GetDistance(v) + current_path_length > max_length_)
 			return;
+		TRACE("Vetex " << v << " should be processed");
 
 		if (v == end_ && current_path_length >= min_length_) {
+			TRACE("New path found: " << PrintPath(g_, path_));
+			TRACE("Callback is performed.");
 			callback_.HandlePath(path_);
+			TRACE("Callback finished");
 		}
+		TRACE("Iterating through outgoing edges of vertex " << v)
 		vector<EdgeId> outgoing_edges = g_.OutgoingEdges(v);
 		for (size_t i = 0; i < outgoing_edges.size(); ++i) {
+			TRACE("Processing outgoing edge " << outgoing_edges[i] << " started");
 			EdgeId edge = outgoing_edges[i];
 			path_.push_back(edge);
 			Go(g_.EdgeEnd(edge), current_path_length + g_.length(edge), distances_to_end);
 			path_.pop_back();
+			TRACE("Processing outgoing edge " << outgoing_edges[i] << " finished");
 		}
+		TRACE("Processing vertex " << v << " finished");
 	}
 
 public:
 	PathProcessor(const Graph& g, double min_length, double max_length,
 			VertexId start, VertexId end, Callback& callback) :
-			g_(g), min_length_((min_length < 0) ? 0 : std::floor(min_length)), max_length_(std::floor(max_length + 0.5))
+			g_(g), min_length_((min_length < 0) ? 0 : (size_t) std::floor(min_length)), max_length_((size_t) std::floor(max_length + 0.5))
 		, start_(start), end_(end), callback_(callback), call_cnt_(0) {
-//		if (g_.OutgoingEdgeCount(start) != 0 && g_.OutgoingEdgeCount(end) != 0) {
-			 //WARN("Looking for path connecting starts of edges " << g_.OutgoingEdges(start)[0] <<
-//					" and " << g_.OutgoingEdges(end)[0] << " of length between " << min_length << " and " << max_length);
-//		} else {
-			//WARN("Looking for some path");
-//		}
-
-//		cout << "RawMin " << min_length << endl;
-//		cout << "Min " << min_length_ << endl;
-//		cout << "RawMax " << max_length << endl;
-//		cout << "Max " << max_length_ << endl;
+		TRACE("Finding path from vertex " << start_ << " to vertex " << end_ << " of length [" << min_length_ << ", " << max_length_ << "]");
 	}
 
 	~PathProcessor() {
@@ -689,9 +704,15 @@ public:
 	}
 
 	void Process() {
+		TRACE("Backward dijkstra creation started");
 		BackwardBoundedDijkstra<Graph> backward_dijkstra(g_, max_length_);
+		TRACE("Backward dijkstra created with bound " << max_length_);
+		TRACE("Backward dijkstra started");
 		backward_dijkstra.run(end_);
+		TRACE("Backward dijkstra finished");
+		TRACE("Starting recursive traversal");
 		Go(start_, 0, backward_dijkstra);
+		TRACE("Recursive traversal finished");
 	}
 
 private:
@@ -828,6 +849,66 @@ public:
 
 };
 
+template<class Graph>
+struct CoverageComparator {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	const Graph& graph_;
+public:
+	CoverageComparator(const Graph &graph) :
+		graph_(graph) {
+	}
+
+	/**
+	 * Standard comparator function as used in collections.
+	 */
+	bool operator()(EdgeId edge1, EdgeId edge2) const {
+		if (math::eq(graph_.coverage(edge1), graph_.coverage(edge2))) {
+			return edge1 < edge2;
+		}
+		return math::ls(graph_.coverage(edge1), graph_.coverage(edge2));
+	}
+};
+
+/**
+ * This class defines which edge is more likely to be tip. In this case we just assume shorter edges
+ * are more likely tips then longer ones.
+ */
+template<class Graph>
+struct LengthComparator {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	const Graph& graph_;
+public:
+	/**
+	 * TipComparator should never be created with default constructor but it is necessary on order for
+	 * code to compile.
+	 */
+	//	TipComparator() {
+	//		assert(false);
+	//	}
+
+	/**
+	 * Construct TipComparator for given graph
+	 * @param graph graph for which comparator is created
+	 */
+	LengthComparator(const Graph &graph) :
+		graph_(graph) {
+	}
+
+	/**
+	 * Standard comparator function as used in collections.
+	 */
+	bool operator()(EdgeId edge1, EdgeId edge2) const {
+		if (graph_.length(edge1) == graph_.length(edge2)) {
+			return edge1 < edge2;
+		}
+		return graph_.length(edge1) < graph_.length(edge2);
+	}
+};
+
 inline size_t PairInfoPathLengthUpperBound(size_t k, size_t insert_size, double delta) {
 	double answer = 0. +  insert_size + delta - k - 2;
 	assert(math::gr(answer, 0.));
@@ -838,5 +919,7 @@ inline size_t PairInfoPathLengthLowerBound(size_t k, size_t l_e1, size_t l_e2, s
 	double answer = 0. + gap + k + 2 - l_e1 - l_e2 - delta;
 	return math::gr(answer, 0.) ? std::floor(answer) : 0;
 }
+
+
 }
 #endif /* OMNI_UTILS_HPP_ */

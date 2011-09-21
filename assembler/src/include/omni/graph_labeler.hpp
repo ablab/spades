@@ -90,6 +90,59 @@ public:
 	}
 };
 
+template<class Graph>
+class LabelerList : public GraphLabeler<Graph> {
+private:
+	typedef GraphLabeler<Graph> super;
+protected:
+	typedef typename super::EdgeId EdgeId;
+	typedef typename super::VertexId VertexId;
+private:
+	vector<GraphLabeler<Graph>*> list_;
+
+	template<typename ElementId>
+	string ConstructLabel(ElementId id) const {
+		vector<string> to_print;
+		for(size_t i = 0; i < list_.size(); i++) {
+			string next = list_[i]->label(id);
+			if(next.size() != 0) {
+				to_print.push_back(next);
+			}
+		}
+		string result = "";
+		for(size_t i = 0; i < to_print.size(); i++) {
+			result += to_print[i];
+			if(i + 1 < to_print.size())
+				result += "\\n";
+		}
+		return result;
+	}
+
+public:
+	LabelerList() {
+	}
+
+	LabelerList(GraphLabeler<Graph> &labeler1, GraphLabeler<Graph> &labeler2) {
+		AddLabeler(labeler1);
+		AddLabeler(labeler2);
+	}
+
+	virtual ~LabelerList() {
+	}
+
+	void AddLabeler(GraphLabeler<Graph> &labeler) {
+		list_.push_back(&labeler);
+	}
+
+	virtual std::string label(VertexId vertexId) const {
+		return ConstructLabel<VertexId>(vertexId);
+	}
+
+	virtual std::string label(EdgeId edgeId) const {
+		return ConstructLabel<EdgeId>(edgeId);
+	}
+};
+
 }
 
 #endif /* GRAPH_LABELER_HPP_ */

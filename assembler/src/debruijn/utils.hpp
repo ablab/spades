@@ -606,7 +606,7 @@ class EtalonPairedInfoCounter {
 		int mod_gap = (gap_ > delta_) ? gap_ - delta_ : 0;
 		Seq<k + 1> left(sequence);
 		left = left >> 0;
-		for (size_t left_idx = 0; left_idx + 2 * k + 2 + mod_gap <= sequence.size(); ++left_idx) {
+		for (size_t left_idx = 0; left_idx + k + 1 + mod_gap <= sequence.size(); ++left_idx) {
 			left = left << sequence[left_idx + k];
 			if (!index_.containsInIndex(left)) {
 				continue;
@@ -656,6 +656,14 @@ public:
 	}
 };
 
+double PairedReadCountWeight(const MappingRange& , const MappingRange&) {
+	return 1.;
+}
+
+double KmerCountProductWeight(const MappingRange& mr1, const MappingRange& mr2) {
+	return mr1.initial_range.size() * mr2.initial_range.size();
+}
+
 /**
  * As for now it ignores sophisticated case of repeated consecutive
  * occurrence of edge in path due to gaps in mapping
@@ -663,13 +671,15 @@ public:
  * todo talk with Anton about simplification and speed-up of procedure with little quality loss
  */
 template<size_t k, class Graph, class Stream>
-class ReadCountPairedIndexFiller {
+class LatePairedIndexFiller {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef Seq<k> Kmer;
+	typedef boost::function<double (MappingRange, MappingRange)> WeightF;
 	const Graph& graph_;
 	const ExtendedSequenceMapper<k, Graph>& mapper_;
 	Stream& stream_;
+	WeightF weight_f_;
 
 	inline size_t CountDistance(const io::PairedRead& paired_read) {
 		return paired_read.distance() - paired_read.second().size();
@@ -693,7 +703,7 @@ private:
 			pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
 			for (size_t j = 0; j < path2.size(); ++j) {
 				pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
-				double weight = 1;
+				double weight = weight_f_(mapping_edge_1.second, mapping_edge_2.second);
 				size_t kmer_distance = read_distance
 						+ mapping_edge_2.second.initial_range.start_pos
 						- mapping_edge_1.second.initial_range.start_pos;
@@ -720,9 +730,9 @@ private:
 
 public:
 
-	ReadCountPairedIndexFiller(const Graph &graph,
-			const ExtendedSequenceMapper<k, Graph>& mapper, Stream& stream) :
-		graph_(graph), mapper_(mapper), stream_(stream) {
+	LatePairedIndexFiller(const Graph &graph,
+			const ExtendedSequenceMapper<k, Graph>& mapper, Stream& stream, WeightF weight_f) :
+		graph_(graph), mapper_(mapper), stream_(stream), weight_f_(weight_f) {
 
 	}
 
@@ -830,6 +840,84 @@ public:
 		}
 
 		return res;
+	}
+};
+
+template<class Graph>
+class EdgeQuality: public GraphLabeler<Graph> ,
+		public GraphActionHandler<Graph> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	map<EdgeId, size_t> quality_;
+
+public:
+	template<size_t l>
+	void FillQuality(EdgeIndex<l, Graph> &index, const Sequence &genome) {
+		if (genome.size() < l)
+			return;
+		auto cur = genome.start<l> ();
+		cur = cur >> 0;
+		for (size_t i = 0; i + l - 1 < genome.size(); i++) {
+			cur = cur << genome[i + l - 1];
+			if (index.containsInIndex(cur)) {
+				quality_[index.get(cur).first]++;
+			}
+		}
+	}
+
+	template<size_t l>
+	EdgeQuality(Graph &graph, EdgeIndex<l, Graph> &index,
+			const Sequence &genome) :
+		GraphActionHandler<Graph> (graph, "EdgeQualityLabeler") {
+		FillQuality(index, genome);
+		FillQuality(index, !genome);
+	}
+
+	virtual ~EdgeQuality() {
+	}
+
+	virtual void HandleAdd(EdgeId e) {
+	}
+
+	virtual void HandleDelete(EdgeId e) {
+		quality_.erase(e);
+	}
+
+	virtual void HandleMerge(vector<EdgeId> old_edges, EdgeId new_edge) {
+		size_t res = 0;
+		for (size_t i = 0; i < old_edges.size(); i++) {
+			res += quality_[old_edges[i]];
+		}
+		quality_[new_edge] += res;
+	}
+
+	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+		quality_[new_edge] += quality_[edge1];
+		quality_[new_edge] += quality_[edge2];
+	}
+
+	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
+			EdgeId new_edge2) {
+		quality_[new_edge1] = quality_[old_edge] * this->g().length(new_edge1)
+				/ (this->g().length(new_edge1) + this->g().length(new_edge2));
+		quality_[new_edge2] = quality_[old_edge] * this->g().length(new_edge2)
+				/ (this->g().length(new_edge1) + this->g().length(new_edge2));
+	}
+
+	virtual std::string label(VertexId vertexId) const {
+		return "";
+	}
+
+	virtual std::string label(EdgeId edgeId) const {
+		stringstream ss;
+		ss << "quality: ";
+		auto q = quality_.find(edgeId);
+		if (q == quality_.end())
+			ss << 0;
+		else
+			ss << 1. * q->second / this->g().length(edgeId);
+		return ss.str();
 	}
 
 };

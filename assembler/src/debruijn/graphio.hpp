@@ -32,23 +32,23 @@ public:
 	void saveGraph(const string& file_name);
 	void saveEdgeSequences(const string& file_name);
 	void saveCoverage(const string& file_name);
-	void savePaired(const string& file_name, PairedInfoIndex<Graph>& PIIndex);
+	void savePaired(const string& file_name, PairedInfoIndex<Graph> const& PIIndex);
 	void savePositions(const string& file_name,
-			EdgesPositionHandler<Graph>& EPHandler);
+			EdgesPositionHandler<Graph> const& EPHandler);
 	void close();
 
 private:
 	void save(FILE* file, EdgeId eid);
 	//	void save(Sequence *sequence);
 	void save(FILE* file, VertexId vid);
-	Graph &graph_;
+	Graph const& graph_;
 	int edge_count_;
 	//	map<EdgeId, typename IdTrackHandler<Graph>::realIdType> real_edge_ids_;
-	IdTrackHandler<Graph> &IdHandler_;
+	IdTrackHandler<Graph> const& IdHandler_;
 	EdgeVertexFilter<Graph> *filter_;
 public:
-	DataPrinter(/*const string& file_name,*/Graph &g,
-			IdTrackHandler<Graph> &old_IDs) :
+	DataPrinter(/*const string& file_name,*/Graph const&g,
+			IdTrackHandler<Graph> const& old_IDs) :
 		graph_(g), IdHandler_(old_IDs) {
 		DEBUG("Creating of saver started");
 		edge_count_ = 0;
@@ -57,8 +57,8 @@ public:
 		}
 		filter_ = NULL;
 	}
-	DataPrinter(/*const string& file_name,*/Graph &g,
-			IdTrackHandler<Graph> &old_IDs, EdgeVertexFilter<Graph> *filter) :
+	DataPrinter(/*const string& file_name,*/Graph const& g,
+			IdTrackHandler<Graph> const& old_IDs, EdgeVertexFilter<Graph> *filter) :
 		graph_(g), IdHandler_(old_IDs), filter_(filter) {
 		DEBUG("Creating of saver started");
 		edge_count_ = 0;
@@ -186,7 +186,7 @@ void DataPrinter<Graph>::saveCoverage(const string& file_name) {
  */
 template<class Graph>
 void DataPrinter<Graph>::savePaired(const string& file_name,
-		PairedInfoIndex<Graph>& PIIndex) {
+		PairedInfoIndex<Graph> const& PIIndex) {
 	FILE* file = fopen((file_name + ".prd").c_str(), "w");
 	DEBUG("Saving paired info, " << file_name <<" created");
 	assert(file != NULL);
@@ -231,33 +231,40 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
 
 template<class Graph>
 void DataPrinter<Graph>::savePositions(const string& file_name,
-		EdgesPositionHandler<Graph>& EPHandler) {
-	FILE* file = fopen((file_name + ".pos").c_str(), "w");
-	DEBUG("Saving edges positions, " << file_name <<" created");
+		EdgesPositionHandler<Graph>const& EPHandler) {
+
+	ofstream file((file_name + ".pos").c_str());
+
+	DEBUG("Saving edges positions, " << file_name << " created");
 	assert(file != NULL);
-	fprintf(file, "%d\n", edge_count_);
+
+	file << edge_count_ << endl;
+
 	if (filter_ == NULL) {
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter),
-					(int) EPHandler.EdgesPositions[*iter].size());
-			for (size_t i = 0; i < EPHandler.EdgesPositions[*iter].size(); i++) {
-				fprintf(file, "    %d - %d\n",
-						EPHandler.EdgesPositions[*iter][i].start_,
-						EPHandler.EdgesPositions[*iter][i].end_);
-			}
+
+		    auto it = EPHandler.EdgesPositions.find(*iter);
+		    assert(it != EPHandler.EdgesPositions.end());
+
+		    size_t size = it->second.size();
+		    file << IdHandler_.ReturnIntId(*iter) << " " << size << endl;
+
+			for (size_t i = 0; i < it->second.size(); i++)
+				file << "    " << it->second[i].start_ << " - " << it->second[i].end_ << endl;
 		}
 	} else {
 		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
-			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter),
-					(int) EPHandler.EdgesPositions[*iter].size());
-			for (size_t i = 0; i < EPHandler.EdgesPositions[*iter].size(); i++) {
-				fprintf(file, "    %d - %d\n",
-						EPHandler.EdgesPositions[*iter][i].start_,
-						EPHandler.EdgesPositions[*iter][i].end_);
-			}
+
+		    auto it = EPHandler.EdgesPositions.find(*iter);
+		    assert(it != EPHandler.EdgesPositions.end());
+
+			file << IdHandler_.ReturnIntId(*iter) << " " << it->second.size() << endl;
+
+			for (size_t i = 0; i < it->second.size(); i++)
+				file << "    " << it->second[i].start_ << " - " << it->second[i].end_ << endl;
+
 		}
 	}
-	fclose(file);
 }
 
 template<class Graph>
@@ -282,11 +289,12 @@ private:
 	Graph &graph_;
 	int edge_count_;
 	//	map<EdgeId, typename IdTrackHandler<Graph>::realIdType> real_edge_ids_;
-	IdTrackHandler<Graph> &IdHandler_;
+	IdTrackHandler<Graph>& IdHandler_;
 public:
-	DataScanner(/*const string& file_name,*/Graph &g,
-			IdTrackHandler<Graph> &new_IDs) :
-		graph_(g), IdHandler_(new_IDs) {
+	DataScanner(/*const string& file_name,*/Graph &g, IdTrackHandler<Graph>&new_IDs)
+	    : graph_    (g)
+	    , IdHandler_(new_IDs)
+	{
 		INFO("Creating of scanner started");
 		edge_count_ = 0;
 	}
@@ -490,7 +498,7 @@ void DataScanner<Graph>::loadPositions(const string& file_name,
 }
 
 template<class Graph>
-void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
+void printGraph(Graph const& g, IdTrackHandler<Graph> &old_IDs,
 		const string &file_name, PairedInfoIndex<Graph> &paired_index,
 		EdgesPositionHandler<Graph> &edges_positions,
 		EdgeVertexFilter<Graph> *filter) {
@@ -503,11 +511,11 @@ void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
 }
 
 template<class Graph>
-void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
-		const string &file_name, PairedInfoIndex<Graph> &paired_index,
-		EdgesPositionHandler<Graph> &edges_positions,
-		PairedInfoIndex<Graph>* etalon_index = 0,
-		PairedInfoIndex<Graph>* clustered_index = 0) {
+void printGraph(Graph const & g, IdTrackHandler<Graph> const& old_IDs,
+		const string &file_name, PairedInfoIndex<Graph> const& paired_index,
+		EdgesPositionHandler<Graph> const& edges_positions,
+		PairedInfoIndex<Graph> const* etalon_index = 0,
+		PairedInfoIndex<Graph> const* clustered_index = 0) {
 	DataPrinter<Graph> dataPrinter(g, old_IDs);
 	dataPrinter.saveGraph(file_name);
 	dataPrinter.saveEdgeSequences(file_name);
@@ -524,7 +532,7 @@ void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
 }
 
 template<class Graph>
-void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
+void printGraph(Graph const & g, IdTrackHandler<Graph> &old_IDs,
 		const string &file_name, PairedInfoIndex<Graph> &paired_index) {
 	DataPrinter<Graph> dataPrinter(g, old_IDs);
 	dataPrinter.saveGraph(file_name);
@@ -535,7 +543,7 @@ void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,
 }
 
 template<class Graph>
-void scanNCGraph(Graph & g, IdTrackHandler<Graph> &new_IDs,
+void scanNCGraph(Graph & g, IdTrackHandler<Graph>&new_IDs,
 		const string &file_name, PairedInfoIndex<Graph>* paired_index,
 		EdgesPositionHandler<Graph> &edges_positions,
 		PairedInfoIndex<Graph>* etalon_index = 0,

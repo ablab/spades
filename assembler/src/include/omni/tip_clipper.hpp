@@ -21,44 +21,6 @@
 namespace omnigraph {
 
 /**
- * This class defines which edge is more likely to be tip. In this case we just assume shorter edges
- * are more likely tips then longer ones.
- */
-template<class Graph>
-struct TipComparator {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	Graph *graph_;
-public:
-	/**
-	 * TipComparator should never be created with default constructor but it is necessary on order for
-	 * code to compile.
-	 */
-	//	TipComparator() {
-	//		assert(false);
-	//	}
-
-	/**
-	 * Construct TipComparator for given graph
-	 * @param graph graph for which comparator is created
-	 */
-	TipComparator(Graph &graph) :
-		graph_(&graph) {
-	}
-
-	/**
-	 * Standard comparator function as used in collections.
-	 */
-	bool operator()(EdgeId edge1, EdgeId edge2) const {
-		if (graph_->length(edge1) == graph_->length(edge2)) {
-			return edge1 < edge2;
-		}
-		return graph_->length(edge1) < graph_->length(edge2);
-	}
-};
-
-/**
  * This class removes tips from given graph with the following algorithm: it iterates through all edges of
  * the graph(in order defined by certain comparator) and for each edge checks if this edge is likely to be
  * a tip and if edge is judged to be one it is removed.
