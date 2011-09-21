@@ -576,6 +576,18 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
 				old_to_new_edgeId[it->first] = it->second;
 				edge_labels[it->second] = edge_labels[it->first];
+				if (cheating_mode) {
+					if (local_cheating_edges[it->first] == 0 ) {
+						WARN(" 0 copy of edge "<< new_IDs.ReturnIntId(it->first) << " , something wrong");
+					} else {
+						if (local_cheating_edges[it->first] == 1 ) {
+							DEBUG( "cheating OK, no global cheaters needed(but actually added)");
+						} else{
+							DEBUG( "cheating OK");
+						}
+						global_cheating_edges.insert(it->second);
+					}
+				}
 			}
 			for (size_t j = 0; j < edge_infos.size(); j++){
 				if (edge_info_colors[j] == i)
@@ -589,17 +601,6 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 			}
 			if (rc_mode)
 				BanRCVertex(split_pair.first);
-		}
-	}
-	if (cheating_mode) {
-		for(auto it = local_cheating_edges.begin(); it != local_cheating_edges.end(); ++it) {
-			if (it-> second == 0 ) {
-				WARN(" 0 copy of edge "<< new_IDs.ReturnIntId(it->first) << " , something wrong");
-			} else {
-				if (it-> second == 1 )
-					DEBUG( "cheating OK, no global cheaters needed(but actually added)");
-				global_cheating_edges.insert(it->first);
-			}
 		}
 	}
 
