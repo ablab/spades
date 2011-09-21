@@ -16,6 +16,7 @@
 #include "omni/statistics.hpp"
 #include "xmath.h"
 #include <boost/optional.hpp>
+#include <iostream>
 #include "sequence/sequence_tools.hpp"
 //#include "common/io/paired_read.hpp"
 namespace debruijn_graph {
@@ -222,6 +223,29 @@ public:
 			it = mapping_.find(answer);
 		}
 		return answer;
+	}
+
+	void BinWrite(std::ostream& file) {
+		u_int32_t size = mapping_.size();
+		file.write((const char *) &size, sizeof(u_int32_t));
+		for (auto iter = mapping_.begin(); iter != mapping_.end(); ++iter) {
+			Kmer::BinWrite(file, iter->first);
+			Kmer::BinWrite(file, iter->second);
+		}
+	}
+
+	void BirRead(std::istream& file) {
+		mapping_.clear();
+		u_int32_t size;
+
+		file.read((char *) &size, sizeof(u_int32_t));
+		for(u_int32_t i = 0; i < size; ++i) {
+			Kmer key;
+			Kmer value;
+			Kmer::BinRead(file, &key);
+			Kmer::BinRead(file, &value);
+			mapping_[key] = value;
+		}
 	}
 };
 

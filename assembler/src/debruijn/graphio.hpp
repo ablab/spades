@@ -5,6 +5,7 @@
 #include <map>
 #include <unordered_map>
 #include <algorithm>
+#include <fstream>
 
 #include "logging.hpp"
 #include "omni/paired_info.hpp"
@@ -35,6 +36,11 @@ public:
 	void savePaired(const string& file_name, PairedInfoIndex<Graph>& PIIndex);
 	void savePositions(const string& file_name,
 			EdgesPositionHandler<Graph>& EPHandler);
+
+	template<size_t k>
+	void saveKMerMapper(const string& file_name,
+			KmerMapper<k, Graph>& mapper);
+
 	void close();
 
 private:
@@ -261,6 +267,23 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 }
 
 template<class Graph>
+template<size_t k>
+void DataPrinter<Graph>::saveKMerMapper(const string& file_name,
+		KmerMapper<k, Graph>& mapper) {
+
+	std::ofstream file;
+	file.open((file_name + ".kmm").c_str(),  std::ios_base::binary | std::ios_base::out);
+	DEBUG("Saving kmer mapper, " << file_name <<" created");
+	assert(file.is_open());
+
+	u_int32_t k_ = k;
+	file.write((char *) &k_, sizeof(u_int32_t));
+	mapper.BinWrite(file);
+
+	file.close();
+}
+
+template<class Graph>
 class DataScanner {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
@@ -274,6 +297,11 @@ public:
 	void loadPaired(const string& file_name, PairedInfoIndex<Graph>& PIIndex);
 	void loadPositions(const string& file_name,
 			EdgesPositionHandler<Graph>& EPHandler);
+
+	template<size_t k>
+	void loadKMerMapper(const string& file_name,
+			KmerMapper<k, Graph>& mapper);
+
 	void close();
 
 private:
@@ -488,6 +516,27 @@ void DataScanner<Graph>::loadPositions(const string& file_name,
 	}
 	fclose(file);
 }
+
+template<class Graph>
+template<size_t k>
+void DataScanner<Graph>::loadKMerMapper(const string& file_name,
+		KmerMapper<k, Graph>& mapper) {
+
+	std::ifstream file;
+	file.open((file_name + ".kmm").c_str(), std::ios_base::binary | std::ios_base::in);
+	DEBUG("Reading kmer mapper, " << file_name <<" started");
+	assert(file.is_open());
+
+	u_int32_t k_;
+	file.read((char *) &k_, sizeof(u_int32_t));
+	assert(k_ == k);
+	mapper.BinRead(file);
+
+	file.close();
+}
+
+
+
 
 template<class Graph>
 void printGraph(Graph & g, IdTrackHandler<Graph> &old_IDs,

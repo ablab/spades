@@ -22,7 +22,7 @@ using namespace std;
  * where size -- number of nucleotides in each read
  * (we don't store info about gaps' size here)
  */
-template <size_t size, size_t cnt = 1, typename T = int>
+template <size_t size, size_t cnt = 1, typename T = u_int32_t>
 class strobe_read {
 public:
 	strobe_read() __attribute__ ((deprecated))  {

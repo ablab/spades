@@ -27,7 +27,7 @@ class SequenceData {
 private:
     friend class Sequence;
     // type to store Seq in Sequences
-    typedef unsigned int ST;
+    typedef u_int32_t ST;
     // number of nucleotides in ST
     static const size_t STN = (sizeof(ST) * 4);
     // number of bits in STN (for faster div and mod)

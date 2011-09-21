@@ -27,12 +27,13 @@
 #include "log.hpp"
 #include <iostream>
 
+
 using namespace std;
 
 /**
  * @param T is max number of nucleotides, type for storage
  */
-template<size_t size_, typename T = unsigned int>
+template<size_t size_, typename T = u_int32_t>
 class Seq {
 private:
 	/**
@@ -108,12 +109,12 @@ private:
 
 public:
 
-	static bool BinRead(FILE *ifile, Seq<size_> *seq) {
-		return fread(seq->data_.data(), sizeof(T), data_size_, ifile) == data_size_;
+	static void BinRead(std::istream& file, Seq<size_> *seq) {
+		file.read((const char *) seq->data_.data(), sizeof(T) * data_size_);
 	}
 
-	static void BinWrite(FILE *ofile, const Seq<size_> &seq) {
-		fwrite(seq.data_.data(), sizeof(T), data_size_, ofile);
+	static void BinWrite(std::ostream& file, const Seq<size_> &seq) {
+		file.write((char *) seq.data_.data(), sizeof(T) * data_size_);
 	}
 
 	/**
