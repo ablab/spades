@@ -153,7 +153,7 @@ const Sequence& genome, const string& output_folder) {
 	INFO("Graph simplification started");
 
 	CountStats<k>(g, index, genome);
-	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "before_simplification/", "graph.dot", "non_simplified_graph");
+	//ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "before_simplification/", "graph.dot", "non_simplified_graph");
 	for (size_t i = 0; i < iteration_count; i++) {
 		INFO("-----------------------------------------");
 		INFO("Iteration " << i);
@@ -163,20 +163,20 @@ const Sequence& genome, const string& output_folder) {
 
 		INFO(i << " TipClipping stats");
 		CountStats<k>(g, index, genome);
-		ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "tips_clipped_" + ToString(i) + "/", "graph.dot", "no_tip_graph");
+		//ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "tips_clipped_" + ToString(i) + "/", "graph.dot", "no_tip_graph");
 
 		INFO(i << " BulgeRemoval");
 		RemoveBulges(g);
 
 		INFO(i << " BulgeRemoval stats");
 		CountStats<k>(g, index, genome);
-		ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "bulges_removed_" + ToString(i) + "/", "graph.dot", "no_bulge_graph");
+		//ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "bulges_removed_" + ToString(i) + "/", "graph.dot", "no_bulge_graph");
 
 		INFO(i << " ErroneousConnectionsRemoval");
 		RemoveLowCoverageEdges(g, iteration_count, i);
 		INFO(i << " ErroneousConnectionsRemoval stats");
 		CountStats<k>(g, index, genome);
-		ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "erroneous_edges_removed_" + ToString(i) + "/", "graph.dot", "no_erroneous_edges_graph");
+		//ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "erroneous_edges_removed_" + ToString(i) + "/", "graph.dot", "no_erroneous_edges_graph");
 	}
 
 	INFO("Cheating ErroneousConnectionsRemoval");
@@ -184,20 +184,20 @@ const Sequence& genome, const string& output_folder) {
 
 	INFO("Cheating ErroneousConnectionsRemoval stats");
 	CountStats<k>(g, index, genome);
-	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "final_erroneous_edges_removed/",	"graph.dot", "no_erroneous_edges_graph");
+	//ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "final_erroneous_edges_removed/",	"graph.dot", "no_erroneous_edges_graph");
 
 	INFO("Final TipClipping");
 	ClipTips(g);
 	INFO("Final TipClipping stats");
 	CountStats<k>(g, index, genome);
-	ProduceDetailedInfo<k>(g, index, labeler, genome,	output_folder + "final_tips_clipped/", "graph.dot", "no_tip_graph");
+	//ProduceDetailedInfo<k>(g, index, labeler, genome,	output_folder + "final_tips_clipped/", "graph.dot", "no_tip_graph");
 
 	INFO("Final BulgeRemoval");
 	RemoveBulges(g);
 	//		etalon_paired_index.Check();
 	INFO("Final BulgeRemoval stats");
 	CountStats<k>(g, index, genome);
-	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "final_bulges_removed/", "graph.dot",	"no_bulge_graph");
+	//ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "final_bulges_removed/", "graph.dot",	"no_bulge_graph");
 
 	INFO("Simplified graph stats");
 	CountStats<k>(g, index, genome);

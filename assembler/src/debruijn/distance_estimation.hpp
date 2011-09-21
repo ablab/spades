@@ -22,25 +22,73 @@ void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
 
 namespace debruijn_graph {
 
-void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
-		paired_info_index& paired_index, paired_info_index& clustered_index) {
+void estimate_distance(
+	PairedReadStream& stream,
+	conj_graph_pack& gp,
+	paired_info_index& paired_index,
+	paired_info_index& clustered_index)
+{
 	exec_simplification(stream, gp, paired_index);
 	INFO("STAGE == Estimating Distance");
 
-	/* by single cell
-	 DistanceEstimator<Graph> estimator(
-	 gp.g,
-	 paired_index,
-	 cfg::get().ds.IS,
-	 cfg::get().ds.RL,
-	 cfg::get().de.delta,
-	 cfg::get().de.linkage_distance,
-	 cfg::get().de.max_distance);
+    if (cfg::get().advanced_estimator_mode)
+    {
+    	 AdvancedDistanceEstimator<Graph> estimator(
+    	     gp.g,
+    	     paired_index,
+    	     gp.int_ids,
+             cfg::get().ds.IS,
+             cfg::get().ds.RL,
+             cfg::get().de.delta,
+             cfg::get().de.linkage_distance,
+             cfg::get().de.max_distance,
+             cfg::get().ade.threshold,
+             cfg::get().ade.range_coeff,
+             cfg::get().ade.delta_coeff,
+             cfg::get().ade.cutoff,
+             cfg::get().ade.minpeakpoints,
+             cfg::get().ade.inv_density,
+             cfg::get().ade.percentage,
+             cfg::get().ade.derivative_threshold);
 
-	 estimator.Estimate(clustered_index);
-	 */
+         estimator.Estimate(clustered_index);
 
-	//  omnigraph::WriteSimple(g, *totLab, output_folder + "2_simplified_graph.dot", "no_repeat_graph");
+//   printGraph(g, int_ids, graph_save_path + "repeats_resolved_before",
+//           paired_index, EdgePos/*, &read_count_weight_paired_index*/);
+//
+//   printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph",
+//           paired_index, EdgePos, &etalon_paired_index,
+//           &clustered_index/*, &read_count_weight_paired_index*/);
+//
+//   printGraph(g, int_ids, output_folder + "2_simplified_graph",
+//           clustered_index, EdgePos, &etalon_paired_index,
+//           &clustered_index/*, &read_count_weight_paired_index*/);
+      }
+    else
+    {
+    	DistanceEstimator<Graph> estimator(
+    	    gp.g,
+    	    paired_index,
+            cfg::get().ds.IS,
+            cfg::get().ds.RL,
+            cfg::get().de.delta,
+            cfg::get().de.linkage_distance,
+            cfg::get().de.max_distance);
+
+    	estimator.Estimate(clustered_index);
+
+//  //todo think if we need this save
+//   printGraph(g, int_ids, graph_save_path + "repeats_resolved_before",
+//           paired_index, EdgePos/*, &read_count_weight_paired_index*/);
+//
+//   printGraph(g, int_ids, work_tmp_dir + "2_simplified_graph",
+//           paired_index, EdgePos, &etalon_paired_index,
+//           &clustered_index/*, &read_count_weight_paired_index*/);
+//
+//   printGraph(g, int_ids, output_folder + "2_simplified_graph",
+//           clustered_index, EdgePos, &etalon_paired_index,
+//           &clustered_index/*, &read_count_weight_paired_index*/);
+    }
 }
 
 void load_distance_estimation(conj_graph_pack& gp,

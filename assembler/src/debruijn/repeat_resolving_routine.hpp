@@ -72,11 +72,11 @@ void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
 void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 {
     conj_graph_pack   conj_gp (genome);
-    paired_info_index paired_index   (conj_gp.g, 5.);
+    paired_info_index paired_index   (conj_gp.g/*, 5.*/);
     paired_info_index clustered_index(conj_gp.g);
 
     exec_distance_estimation(stream, conj_gp, paired_index, clustered_index);
-/*
+
     INFO("STAGE == Resolving Repeats");
 
     if (!cfg::get().paired_mode)
@@ -131,7 +131,7 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 //  omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
 //                         cfg::get().output_dir + "4_cleared_graph.dot", "no_repeat_graph");
 
-    one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_gp.g);
+	one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_gp.g, cfg::get().ds.IS);
     N50enlarger.Loops_resolve();
 
 //  omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
@@ -148,8 +148,11 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 
     // for future:
 //  string consensus_folder = output_folder + "consensus/";
-//  OutputSingleFileContigs(resolved_graph, consensus_folder);
-//  SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
+//  if (cfg::get().need_consensus)
+//  {
+//	  OutputSingleFileContigs(resolved_graph, consensus_folder);
+//	  SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
+//  }
 
 //  OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
 
@@ -162,7 +165,7 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 //            ResolveOneComponent(output_folder + "graph_components/",
 //                    output_comp + "/", i, k);
 //    }
- */
+
 }
 
 void exec_repeat_resolving(PairedReadStream& stream, const Sequence& genome)

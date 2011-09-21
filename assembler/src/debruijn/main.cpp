@@ -40,6 +40,22 @@ void link_output(std::string const& link_name)
 	    WARN( "Symlink to \"" << link << "\" launch failed");
 }
 
+struct on_exit_ouput_linker
+{
+	on_exit_ouput_linker(std::string const& link_name)
+		: link_name_(link_name)
+	{
+	}
+
+	~on_exit_ouput_linker()
+	{
+		link_output(link_name_);
+	}
+
+private:
+	std::string link_name_;
+};
+
 void print_trace()
 {
 	std::cout << "=== Stack Trace ===" << std::endl;
@@ -77,6 +93,8 @@ int main() {
 
     const size_t GB = 1 << 30;
     limit_memory(120 * GB);
+
+    on_exit_ouput_linker try_linker("latest_try");
 
 	signal(SIGSEGV, segfault_handler);
 
@@ -145,15 +163,17 @@ int main() {
 		INFO("Assembling " << dataset << " dataset");
 		debruijn_graph::assemble_genome(rcStream, Sequence(genome)/*, work_tmp_dir, reads*/);
 
-		link_output("latest_try");
-		link_output("latest_success");
+		on_exit_ouput_linker("latest_success");
 
 		INFO("Assembling " << dataset << " dataset finished");
+    }
+    catch(std::exception const& e)
+    {
+    	std::cout << "Exception caught" << e.what() << std::endl;
     }
     catch(...)
     {
     	std::cout << "Unknown exception caught" << std::endl;
-    	link_output("latest_try");
     }
 
 	// OK
