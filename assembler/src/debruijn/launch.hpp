@@ -411,16 +411,28 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 // after_simplify
 		INFO("before ResolveRepeats");
 
-		NCGraph new_graph(k);
-		IdTrackHandler<NCGraph> NewIntIds(new_graph, int_ids.MaxVertexId(),
-				int_ids.MaxEdgeId());
-		PairedInfoIndex<NCGraph> new_index(new_graph);
-		EdgeIndex<k + 1, NCGraph> new_edge_index(new_graph);
-		EdgesPositionHandler<NCGraph> EdgePosBefore(new_graph);
+//		NCGraph new_graph(k);
+//		IdTrackHandler<NCGraph> NewIntIds(new_graph, int_ids.MaxVertexId(),
+//				int_ids.MaxEdgeId());
+//		PairedInfoIndex<NCGraph> new_index(new_graph);
+//		EdgeIndex<k + 1, NCGraph> new_edge_index(new_graph);
+//		EdgesPositionHandler<NCGraph> EdgePosBefore(new_graph);
 
-		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "2_simplified_graph",
-				(PairedInfoIndex<NCGraph>*) 0, EdgePosBefore,
-				(PairedInfoIndex<NCGraph>*) 0, &new_index);
+
+		Graph new_graph(k);
+		IdTrackHandler<Graph> NewIntIds(new_graph, int_ids.MaxVertexId(),
+				int_ids.MaxEdgeId());
+		PairedInfoIndex<Graph> new_index(new_graph);
+		EdgeIndex<k + 1, Graph> new_edge_index(new_graph);
+		EdgesPositionHandler<Graph> EdgePosBefore(new_graph);
+
+//		scanNCGraph(new_graph, NewIntIds, work_tmp_dir + "2_simplified_graph",
+//				(PairedInfoIndex<NCGraph>*) 0, EdgePosBefore,
+//				(PairedInfoIndex<NCGraph>*) 0, &new_index);
+		scanConjugateGraph(&new_graph, &NewIntIds, work_tmp_dir + "2_simplified_graph",
+				(PairedInfoIndex<Graph>*) 0, &EdgePosBefore,
+				(PairedInfoIndex<Graph>*) 0, &new_index);
+
 
 		if (cfg::get().start_from == "after_simplify"
 				|| cfg::get().start_from == "before_resolve") {
@@ -437,63 +449,94 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 				output_folder + "graph_components/graphCl", new_graph,
 				cfg::get().ds.IS, NewIntIds, new_index, EdgePosBefore);
 
-		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
+//		RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
+		RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
 		INFO("repeat resolved graph written");
 
-		NonconjugateDeBruijnGraph resolved_graph(k);
-		IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
-		EdgesPositionHandler<NCGraph> EdgePosAfter(resolved_graph);
-		EdgeLabelHandler<NCGraph> LabelsAfter(resolved_graph, new_graph);
+//		NonconjugateDeBruijnGraph resolved_graph(k);
+//		IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
+//		EdgesPositionHandler<NCGraph> EdgePosAfter(resolved_graph);
+//		EdgeLabelHandler<NCGraph> LabelsAfter(resolved_graph, new_graph);
+
+		ConjugateDeBruijnGraph resolved_graph(k);
+		IdTrackHandler<Graph> Resolved_IntIds(resolved_graph);
+		EdgesPositionHandler<Graph> EdgePosAfter(resolved_graph);
+		EdgeLabelHandler<Graph> LabelsAfter(resolved_graph, new_graph);
 
 		DEBUG("New index size: "<< new_index.size());
-		if (cfg::get().rectangle_mode) {
+/*		if (cfg::get().rectangle_mode) {
 			void RectangleResolve(
 					PairedInfoIndex<NonconjugateDeBruijnGraph>& index,
 					NonconjugateDeBruijnGraph& graph,
 					const string& work_tmp_dir, const string& output_folder);
 			RectangleResolve(new_index, new_graph, work_tmp_dir, output_folder);
 		}
-
+*/
 		ResolveRepeats(new_graph, NewIntIds, new_index, EdgePosBefore,
 				resolved_graph, Resolved_IntIds, EdgePosAfter,
 				output_folder + "resolve/", LabelsAfter);
 
 		INFO("Total labeler start");
-		TotalLabelerGraphStruct<NCGraph> graph_struct_before(new_graph,
+//		TotalLabelerGraphStruct<NCGraph> graph_struct_before(new_graph,
+//				&NewIntIds, &EdgePosBefore, NULL);
+//		TotalLabelerGraphStruct<NCGraph> graph_struct_after(resolved_graph,
+//				&Resolved_IntIds, &EdgePosAfter, &LabelsAfter);
+//		TotalLabeler<NCGraph> TotLabAfter(&graph_struct_after,
+//				&graph_struct_before);
+
+
+		TotalLabelerGraphStruct<Graph> graph_struct_before(new_graph,
 				&NewIntIds, &EdgePosBefore, NULL);
-		TotalLabelerGraphStruct<NCGraph> graph_struct_after(resolved_graph,
+		TotalLabelerGraphStruct<Graph> graph_struct_after(resolved_graph,
 				&Resolved_IntIds, &EdgePosAfter, &LabelsAfter);
-		TotalLabeler<NCGraph> TotLabAfter(&graph_struct_after,
+		TotalLabeler<Graph> TotLabAfter(&graph_struct_after,
 				&graph_struct_before);
 
 		omnigraph::WriteSimple(resolved_graph, TotLabAfter, output_folder + "3_resolved_graph.dot",
 				"no_repeat_graph");
 
 		INFO("Total labeler finished");
+//
+//		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
+//				Resolved_IntIds);
+//
+//		EdgesPosGraphLabeler<NCGraph> EdgePosLAfterLab(resolved_graph,
+//				EdgePosAfter);
+//
+//		EdgesLabelsGraphLabeler<NCGraph> LabelLabler(resolved_graph,
+//				LabelsAfter);
 
-		RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
+
+		RealIdGraphLabeler<Graph> IdTrackLabelerResolved(resolved_graph,
 				Resolved_IntIds);
 
-		EdgesPosGraphLabeler<NCGraph> EdgePosLAfterLab(resolved_graph,
+		EdgesPosGraphLabeler<Graph> EdgePosLAfterLab(resolved_graph,
 				EdgePosAfter);
 
-		EdgesLabelsGraphLabeler<NCGraph> LabelLabler(resolved_graph,
+		EdgesLabelsGraphLabeler<Graph> LabelLabler(resolved_graph,
 				LabelsAfter);
+
+
 		INFO("---Clearing resolved graph---");
 		for (int i = 0; i < 3; i++) {
-			ClipTipsForResolver(resolved_graph);
-			RemoveBulges2(resolved_graph);
-			RemoveLowCoverageEdgesForResolver(resolved_graph);
+			ClipTipsForResolver<Graph>(resolved_graph);
+			omnigraph::WriteSimple(resolved_graph, TotLabAfter, output_folder + (ToString (i) + "tips_cleared_graph.dot"),
+					"no_repeat_graph");
+			RemoveBulges(resolved_graph);
+			RemoveLowCoverageEdgesForResolver<Graph>(resolved_graph);
 		}INFO("---Cleared---");
 		INFO("---Output Contigs---");
-		OutputContigs(resolved_graph,
-				output_folder + "contigs_before_enlarge.fasta");
+//		OutputContigs(resolved_graph,
+		OutputConjugateContigs(resolved_graph,
+
+		output_folder + "contigs_before_enlarge.fasta");
 
 		omnigraph::WriteSimple(resolved_graph, TotLabAfter, output_folder + "4_cleared_graph.dot",
 				"no_repeat_graph");
 
-		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph, cfg::get().ds.IS);
+//		one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph, cfg::get().ds.IS);
+		one_many_contigs_enlarger<Graph> N50enlarger(resolved_graph, cfg::get().ds.IS);
 		N50enlarger.Loops_resolve();
 
 		omnigraph::WriteSimple(resolved_graph, TotLabAfter, output_folder + "5_unlooped_graph.dot",
@@ -509,7 +552,9 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 		string consensus_folder = output_folder + "consensus/";
 		if (cfg::get().need_consensus) {
 			OutputSingleFileContigs(resolved_graph, consensus_folder);
-			SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter ,new_edge_index, reads, consensus_folder);
+//			SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter ,new_edge_index, reads, consensus_folder);
+			SelectReadsForConsensus<k, Graph>(new_graph, resolved_graph, LabelsAfter ,new_edge_index, reads, consensus_folder);
+
 		}
 		OutputContigs(new_graph,
 				output_folder + "contigs_before_resolve.fasta");
@@ -520,7 +565,8 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 					S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
 			for (int i = 1; i <= number_of_components; i++)
-				ResolveOneComponent(output_folder + "graph_components/",
+//				ResolveOneComponent(output_folder + "graph_components/",
+				ConjugateResolveOneComponent(output_folder + "graph_components/",
 						output_comp + "/", i, k);
 		}
 	}

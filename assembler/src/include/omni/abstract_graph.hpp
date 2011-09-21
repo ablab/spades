@@ -272,6 +272,7 @@ public:
 		return make_pair(newEdge1, newEdge2);
 	}
 
+
 	void GlueEdges(EdgeId edge1, EdgeId edge2) {
 		TRACE("Start glue");
 		EdgeId newEdge = HiddenAddEdge(EdgeStart(edge2), EdgeEnd(edge2),

@@ -275,6 +275,21 @@ void OutputContigs(Graph& g, const string& contigs_output_filename) {
 	}INFO("Contigs written");
 }
 
+void OutputConjugateContigs(ConjugateDeBruijnGraph& g, const string& contigs_output_filename){
+	INFO("-----------------------------------------");
+	INFO("Outputting contigs to " << contigs_output_filename);
+	osequencestream oss(contigs_output_filename);
+	set<ConjugateDeBruijnGraph::EdgeId> edges;
+	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		if(edges.find(*it) == edges.end()) {
+			oss << g.EdgeNucls(*it);
+			edges.insert(g.conjugate(*it));
+		}
+//		oss << g.EdgeNucls(*it);
+	}INFO("Contigs written");
+
+}
+
 template<class Graph>
 void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
 	INFO("-----------------------------------------");

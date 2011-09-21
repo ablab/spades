@@ -32,7 +32,7 @@
 namespace debruijn_graph {
 
 #define MAX_DISTANCE_CORRECTION 10
-#define rc_mode 0
+#define rc_mode 1
 
 
 using omnigraph::SmartVertexIterator;
@@ -201,7 +201,11 @@ public:
 			}
 
 		}
+		set<int> added_edges;
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
+//			if (rc_mode)
+//				edges.erase(old_IDs.ReturnEdgeId(GetRCId(old_IDs.ReturnIntId(*e_iter))));
+
 			TRACE(
 					"Adding edge from " << old_to_new[old_graph.EdgeStart(*e_iter)] <<" to " << old_to_new[old_graph.EdgeEnd(*e_iter)]);
 			//			DEBUG("Setting coverage to edge length " << old_graph.length(*e_iter) << "  cove: " << old_graph.coverage(*e_iter));
@@ -209,8 +213,10 @@ public:
 					old_to_new[old_graph.EdgeStart(*e_iter)],
 					old_to_new[old_graph.EdgeEnd(*e_iter)],
 					old_graph.EdgeNucls(*e_iter));
-			new_graph.coverage_index().SetCoverage(new_edge,
+			WrappedSetCoverage(new_edge,
 					old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
+//			new_graph.coverage_index().SetCoverage(new_edge,
+//					old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
 //			new_graph.SetCoverage(new_graph.conjugate(new_edge), 0);
 			edge_labels[new_edge] = *e_iter;
 			TRACE("Adding edge " << new_edge<< " from" << *e_iter);
@@ -253,6 +259,9 @@ private:
 	size_t RectangleResolveVertex(VertexId vid);
 	size_t CheatingResolveVertex(VertexId vid);
 	void BanRCVertex(VertexId v );
+	int GetRCId (int id);
+	EdgeId RCEdge(EdgeId e);
+	void WrappedSetCoverage(EdgeId e, int cov);
 	size_t GenerateVertexPairedInfo(Graph &g, PairInfoIndexData<EdgeId> &ind,
 			VertexId vid);
 	vector<typename Graph::VertexId> MultiSplit(VertexId v);
@@ -567,6 +576,11 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		if (split_edge.size() > 0) {
 			pair<VertexId, vector<pair<EdgeId, EdgeId>>> split_pair = new_graph.SplitVertex(v, split_edge, split_coeff);
 			res.push_back(split_pair.first);
+			if (rc_mode) {
+				for( auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it) {
+					WrappedSetCoverage(RCEdge(it->second), new_graph.coverage(it->second) * new_graph.length(it->second));
+				}
+			}
 			map<EdgeId, EdgeId> old_to_new_edgeId;
 			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
 				old_to_new_edgeId[it->first] = it->second;
@@ -605,23 +619,43 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 template<class Graph>
 void RepeatResolver<Graph>::BanRCVertex(VertexId v ){
 	int id = new_IDs.ReturnIntId(v);
+	int rc_id = GetRCId(id);
 
-	int rc_id = ((id - 1) / 2 ) * 2 + 2 - ((id - 1) % 2);
+	INFO("added vertex " << id << " banning vertex "<< rc_id);
 	vector<EdgeId> tmp = new_graph.IncomingEdges(new_IDs.ReturnVertexId(rc_id));
 	for(size_t i = 0; i < tmp.size(); i++)
 		global_cheating_edges.insert(tmp[i]);
-	tmp = new_graph.OutgoingEdges(v);
+	DEBUG("incoming cheaters added");
+	tmp = new_graph.OutgoingEdges(new_IDs.ReturnVertexId(rc_id));
 	for(size_t i = 0; i < tmp.size(); i++)
 		global_cheating_edges.insert(tmp[i]);
+	DEBUG("outgoing cheaters added");
 }
-/*
 template<class Graph>
-EdgeId RepeatResolver<Graph>::RCEdge(EdgeId e) {
+int RepeatResolver<Graph>::GetRCId(int id) {
+	return ((id - 1) / 2 ) * 2 + 2 - ((id - 1) % 2);
+}
+
+template<class Graph>
+void RepeatResolver<Graph>::WrappedSetCoverage(EdgeId e, int cov){
+	if (rc_mode == 0) {
+		new_graph.coverage_index().SetCoverage(e, cov);
+	} else {
+		new_graph.coverage_index().SetCoverage(e, cov);
+		EdgeId rc_e = new_IDs.ReturnEdgeId(GetRCId(new_IDs.ReturnIntId(e)));
+		new_graph.coverage_index().SetCoverage(rc_e, cov);
+
+	}
+
+}
+
+template<class Graph>
+typename Graph::EdgeId RepeatResolver<Graph>::RCEdge(EdgeId e) {
 	int id = new_IDs.ReturnIntId(e);
-	int rc_id = ((id - 1) / 2 ) * 2 + 2 - ((id - 1) % 2);
+	int rc_id = GetRCId(id);
 	return new_IDs.ReturnEdgeId(rc_id);
 }
-*/
+
 template<class Graph>
 map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesAuto(){
 	map<int, typename Graph::VertexId> vertices;
@@ -641,13 +675,18 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 	map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
 	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, cfg::get().ds.IS);
-	vector<VertexId> comps = splitter.NextComponent();
+
+	vector<VertexId> comps;
+	if (! splitter.Finished())
+		comps = splitter.NextComponent();
 	int count = 0;
 	while (comps.size() != 0) {
 		for(size_t i = 0; i < comps.size(); i++) {
 			vertices.insert(make_pair(count, comps[i]));
 			count++;
 		}
+		if (splitter.Finished())
+			break;
 		comps = splitter.NextComponent();
 	}
 	return vertices;
@@ -685,13 +724,16 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 			for (auto v_iter = vertices.begin(), v_end =
 					vertices.end(); v_iter != v_end; ++v_iter) {
 
-
-				size_t p_size = GenerateVertexPairedInfo(new_graph, paired_di_data, v_iter->second);
-				DEBUG(" resolving vertex"<<*v_iter<<" "<< p_size);
+				DEBUG(" resolving vertex"<<*v_iter);
 				if (rc_mode && deleted_handler.live_vertex.find(v_iter->second) == deleted_handler.live_vertex.end()){
 					DEBUG("already deleted");
 					continue;
+				} else {
+					DEBUG("not deleted");
 				}
+				size_t p_size = GenerateVertexPairedInfo(new_graph, paired_di_data, v_iter->second);
+				DEBUG("paired info size: " << p_size);
+
 				int tcount;
 				if (cheating_mode != 1)
 					tcount = RectangleResolveVertex(v_iter->second);
