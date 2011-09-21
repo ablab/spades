@@ -577,15 +577,17 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 				old_to_new_edgeId[it->first] = it->second;
 				edge_labels[it->second] = edge_labels[it->first];
 				if (cheating_mode) {
-					if (local_cheating_edges[it->first] == 0 ) {
-						WARN(" 0 copy of edge "<< new_IDs.ReturnIntId(it->first) << " , something wrong");
-					} else {
-						if (local_cheating_edges[it->first] == 1 ) {
-							DEBUG( "cheating OK, no global cheaters needed(but actually added)");
-						} else{
-							DEBUG( "cheating OK");
+					if (local_cheating_edges.find(it->first) != local_cheating_edges.end()) {
+						if (local_cheating_edges[it->first] == 0 ) {
+							WARN(" 0 copy of edge "<< new_IDs.ReturnIntId(it->first) << " , something wrong");
+						} else {
+							if (local_cheating_edges[it->first] == 1 ) {
+								DEBUG( "cheating OK, no global cheaters needed(but actually added)");
+							} else{
+								DEBUG( "cheating OK");
+							}
+							global_cheating_edges.insert(it->second);
 						}
-						global_cheating_edges.insert(it->second);
 					}
 				}
 			}
