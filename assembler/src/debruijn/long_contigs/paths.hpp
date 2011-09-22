@@ -533,7 +533,7 @@ bool ResolveLoopForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	size_t loopSize = 0;
 	bool goodLoop = CheckLoop(g, path, detector, loopEdge, loopLength, true, loopSize);
 
-	if (loopLength > GetMaxInsertSize(pairedInfo) - debruijn::K) {
+	if (loopLength > GetMaxInsertSize(pairedInfo) - K) {
 		DETAILED_INFO("Loop is too long");
 		return false;
 	}
@@ -581,7 +581,7 @@ bool ResolveLoopBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths
 	size_t loopSize = 0;
 	bool goodLoop = CheckLoop(g, path, detector, loopEdge, loopLength, false, loopSize);
 
-	if (loopLength > GetMaxInsertSize(pairedInfo) - debruijn::K) {
+	if (loopLength > GetMaxInsertSize(pairedInfo) - K) {
 		DETAILED_INFO("Loop is too long");
 		return false;
 	}

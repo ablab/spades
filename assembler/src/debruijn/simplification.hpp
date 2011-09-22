@@ -66,12 +66,20 @@ void load_simplification(conj_graph_pack& gp, paired_info_index& paired_index,
 	// TODO: what's the difference with construction?
 	scanConjugateGraph(&gp.g, &gp.int_ids, p.string(), &paired_index,
 			&gp.edge_pos, &gp.etalon_paired_index);
+
+	scanKmerMapper(gp.g, gp.int_ids, p.string(), &gp.kmer_mapper);
+
+	//DEBUG
+	printKmerMapper(gp.g, gp.int_ids, p.string() + "_debug", gp.kmer_mapper);
+	//DEBUG
 }
 
 void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
 	fs::path p = fs::path(cfg::get().output_saves) / "simplified_graph";
 	printGraph(gp.g, gp.int_ids, p.string(), paired_index, gp.edge_pos,
 			&gp.etalon_paired_index);
+
+	printKmerMapper(gp.g, gp.int_ids, p.string(), gp.kmer_mapper);
 
 	//todo temporary solution!!!
 	OutputContigs(gp.g, cfg::get().output_root + "tmp_contigs.fasta");

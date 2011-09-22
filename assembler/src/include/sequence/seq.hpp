@@ -110,11 +110,11 @@ private:
 public:
 
 	static void BinRead(std::istream& file, Seq<size_> *seq) {
-		file.read((const char *) seq->data_.data(), sizeof(T) * data_size_);
+		file.read((char *) seq->data_.data(), sizeof(T) * data_size_);
 	}
 
 	static void BinWrite(std::ostream& file, const Seq<size_> &seq) {
-		file.write((char *) seq.data_.data(), sizeof(T) * data_size_);
+		file.write((const char *) seq.data_.data(), sizeof(T) * data_size_);
 	}
 
 	/**

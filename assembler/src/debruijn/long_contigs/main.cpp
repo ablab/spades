@@ -24,13 +24,12 @@
 DECL_PROJECT_LOGGER("d")
 
 int main() {
-	cfg::create_instance(debruijn::cfg_filename);
+	cfg::create_instance(cfg_filename);
 	using namespace long_contigs;
 	lc_cfg::create_instance(lc_cfg_filename);
-	using debruijn::K;
 
 	checkFileExistenceFATAL(lc_cfg_filename);
-	checkFileExistenceFATAL(debruijn::cfg_filename);
+	checkFileExistenceFATAL(cfg_filename);
 
 	Graph g(K);
 	EdgeIndex<K + 1, Graph> index(g);

@@ -18,7 +18,6 @@
 namespace long_contigs {
 
 using namespace debruijn_graph;
-using debruijn::K;
 
 
 class PairedInfoSimpleSymmertrizer {
@@ -199,7 +198,7 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 		INFO("Done");
 
 		if (lc_cfg::get().syminfo) {
-			sym.MakeSymetricInfo(pairedInfos.back());
+			sym.MakeSymmetricInfo(pairedInfos.back());
 		}
 	}
 }

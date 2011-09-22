@@ -37,9 +37,8 @@ public:
 	void savePositions(const string& file_name,
 			EdgesPositionHandler<Graph> const& EPHandler);
 
-	template<size_t k>
-	void saveKMerMapper(const string& file_name,
-			KmerMapper<k, Graph>& mapper);
+	void saveKmerMapper(const string& file_name,
+			KmerMapper<K + 1, Graph> const& mapper);
 
 	void close();
 
@@ -274,16 +273,15 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 }
 
 template<class Graph>
-template<size_t k>
-void DataPrinter<Graph>::saveKMerMapper(const string& file_name,
-		KmerMapper<k, Graph>& mapper) {
+void DataPrinter<Graph>::saveKmerMapper(const string& file_name,
+		KmerMapper<K + 1, Graph> const& mapper) {
 
 	std::ofstream file;
 	file.open((file_name + ".kmm").c_str(),  std::ios_base::binary | std::ios_base::out);
 	DEBUG("Saving kmer mapper, " << file_name <<" created");
 	assert(file.is_open());
 
-	u_int32_t k_ = k;
+	u_int32_t k_ = K;
 	file.write((char *) &k_, sizeof(u_int32_t));
 	mapper.BinWrite(file);
 
@@ -305,9 +303,8 @@ public:
 	void loadPositions(const string& file_name,
 			EdgesPositionHandler<Graph>& EPHandler);
 
-	template<size_t k>
-	void loadKMerMapper(const string& file_name,
-			KmerMapper<k, Graph>& mapper);
+	void loadKmerMapper(const string& file_name,
+			KmerMapper<K + 1, Graph>& mapper);
 
 	void close();
 
@@ -526,9 +523,8 @@ void DataScanner<Graph>::loadPositions(const string& file_name,
 }
 
 template<class Graph>
-template<size_t k>
-void DataScanner<Graph>::loadKMerMapper(const string& file_name,
-		KmerMapper<k, Graph>& mapper) {
+void DataScanner<Graph>::loadKmerMapper(const string& file_name,
+		KmerMapper<K + 1, Graph>& mapper) {
 
 	std::ifstream file;
 	file.open((file_name + ".kmm").c_str(), std::ios_base::binary | std::ios_base::in);
@@ -537,7 +533,7 @@ void DataScanner<Graph>::loadKMerMapper(const string& file_name,
 
 	u_int32_t k_;
 	file.read((char *) &k_, sizeof(u_int32_t));
-	assert(k_ == k);
+	assert(k_ == K);
 	mapper.BinRead(file);
 
 	file.close();
@@ -564,7 +560,9 @@ void printGraph(Graph const & g, IdTrackHandler<Graph> const& old_IDs,
 		const string &file_name, PairedInfoIndex<Graph> const& paired_index,
 		EdgesPositionHandler<Graph> const& edges_positions,
 		PairedInfoIndex<Graph> const* etalon_index = 0,
-		PairedInfoIndex<Graph> const* clustered_index = 0) {
+		PairedInfoIndex<Graph> const* clustered_index = 0,
+		KmerMapper<K + 1, Graph> const* mapper = 0) {
+
 	DataPrinter<Graph> dataPrinter(g, old_IDs);
 	dataPrinter.saveGraph(file_name);
 	dataPrinter.saveEdgeSequences(file_name);
@@ -578,6 +576,10 @@ void printGraph(Graph const & g, IdTrackHandler<Graph> const& old_IDs,
 		dataPrinter.savePaired(file_name + "_cl", *clustered_index);
 	}
 	dataPrinter.savePositions(file_name, edges_positions);
+
+	if (mapper) {
+		dataPrinter.saveKmerMapper(file_name, *mapper);
+	}
 }
 
 template<class Graph>
@@ -590,6 +592,15 @@ void printGraph(Graph const & g, IdTrackHandler<Graph> &old_IDs,
 	dataPrinter.savePaired(file_name, paired_index);
 
 }
+
+template<class Graph>
+void printKmerMapper(Graph const & g, IdTrackHandler<Graph> const& old_IDs,
+		const string &file_name, KmerMapper<K + 1, Graph>& mapper) {
+
+	DataPrinter<Graph> dataPrinter(g, old_IDs);
+	dataPrinter.saveKmerMapper(file_name, mapper);
+}
+
 
 template<class Graph>
 void scanNCGraph(Graph & g, IdTrackHandler<Graph>&new_IDs,
@@ -626,7 +637,8 @@ void scanConjugateGraph(Graph * g, IdTrackHandler<Graph> *new_IDs,
 		const string &file_name, PairedInfoIndex<Graph>* paired_index = 0,
 		EdgesPositionHandler<Graph> *edges_positions = NULL,
 		PairedInfoIndex<Graph>* etalon_index = 0,
-		PairedInfoIndex<Graph>* clustered_index = 0) {
+		PairedInfoIndex<Graph>* clustered_index = 0,
+		KmerMapper<K + 1, Graph> * mapper = 0) {
 	//ToDo Apply * vs & conventions
 	DataScanner<Graph> dataScanner(*g, *new_IDs);
 	dataScanner.loadConjugateGraph(file_name, true);
@@ -642,6 +654,17 @@ void scanConjugateGraph(Graph * g, IdTrackHandler<Graph> *new_IDs,
 	if (clustered_index) {
 		dataScanner.loadPaired(file_name + "_cl", *clustered_index);
 	}
+	if (mapper) {
+		dataScanner.loadKmerMapper(file_name, *mapper);
+	}
+}
+
+template<class Graph>
+void scanKmerMapper(Graph& g, IdTrackHandler<Graph>& new_IDs,
+		const string &file_name, KmerMapper<K + 1, Graph> * mapper) {
+
+	DataScanner<Graph> dataScanner(g, new_IDs);
+	dataScanner.loadKmerMapper(file_name, *mapper);
 }
 
 }

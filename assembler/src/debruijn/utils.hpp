@@ -225,7 +225,7 @@ public:
 		return answer;
 	}
 
-	void BinWrite(std::ostream& file) {
+	void BinWrite(std::ostream& file) const {
 		u_int32_t size = mapping_.size();
 		file.write((const char *) &size, sizeof(u_int32_t));
 		for (auto iter = mapping_.begin(); iter != mapping_.end(); ++iter) {
@@ -234,7 +234,7 @@ public:
 		}
 	}
 
-	void BirRead(std::istream& file) {
+	void BinRead(std::istream& file) {
 		mapping_.clear();
 		u_int32_t size;
 

@@ -21,7 +21,6 @@
 namespace long_contigs {
 
 using namespace debruijn_graph;
-using debruijn::K;
 
 //Deque used for extending path in both directions
 typedef std::deque<EdgeId> BidirectionalPath;
