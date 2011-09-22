@@ -241,7 +241,8 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter),
 					(int) EPHandler.EdgesPositions[*iter].size());
 			for (size_t i = 0; i < EPHandler.EdgesPositions[*iter].size(); i++) {
-				fprintf(file, "    %d - %d\n",
+				fprintf(file, "    %d: %d - %d\n",
+						EPHandler.EdgesPositions[*iter][i].contigId_,
 						EPHandler.EdgesPositions[*iter][i].start_,
 						EPHandler.EdgesPositions[*iter][i].end_);
 			}
@@ -251,7 +252,8 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 			fprintf(file, "%d %d\n", IdHandler_.ReturnIntId(*iter),
 					(int) EPHandler.EdgesPositions[*iter].size());
 			for (size_t i = 0; i < EPHandler.EdgesPositions[*iter].size(); i++) {
-				fprintf(file, "    %d - %d\n",
+				fprintf(file, "    %d: %d - %d\n",
+						EPHandler.EdgesPositions[*iter][i].contigId_,
 						EPHandler.EdgesPositions[*iter][i].start_,
 						EPHandler.EdgesPositions[*iter][i].end_);
 			}
@@ -475,15 +477,15 @@ void DataScanner<Graph>::loadPositions(const string& file_name,
 	read_count = fscanf(file, "%d\n", &pos_count);
 	assert(read_count == 1);
 	for (int i = 0; i < pos_count; i++) {
-		int edge_real_id, pos_info_count;
+		int edge_real_id, pos_info_count, contigId;
 		read_count = fscanf(file, "%d %d\n", &edge_real_id, &pos_info_count);
 		assert(read_count == 2);
 		for (int j = 0; j < pos_info_count; j++) {
 			int start_pos, end_pos;
-			read_count = fscanf(file, "%d - %d \n", &start_pos, &end_pos);
-			assert(read_count == 2);
+			read_count = fscanf(file, "%d: %d - %d \n", &contigId, &start_pos, &end_pos);
+			assert(read_count == 3);
 			EdgeId eid = IdHandler_.ReturnEdgeId(edge_real_id);
-			EPHandler.AddEdgePosition(eid, start_pos, end_pos);
+			EPHandler.AddEdgePosition(eid, start_pos, end_pos, contigId);
 		}
 	}
 	fclose(file);

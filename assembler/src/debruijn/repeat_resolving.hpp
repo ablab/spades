@@ -40,62 +40,70 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 }
 
 
-void ResolveOneComponent(const string& load_from_dir, const string& save_to_dir,
-		int component_id, int k) {
-	string load_from = ConstructComponentName(load_from_dir + "/graphCl",
-			component_id);
-	string save_to = ConstructComponentName(save_to_dir + "/graph",
-			component_id);
-
-	string save_resolving_history = ConstructComponentName(
-			save_to_dir + "/resolve", component_id);
-	mkdir(save_resolving_history.c_str(),
-			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-
-	NCGraph new_graph(k);
-	IdTrackHandler<NCGraph> NewIntIds(new_graph);
-	PairedInfoIndex<NCGraph> new_index(new_graph);
-	EdgesPositionHandler<NCGraph> EdgePosBefore(new_graph);
-	scanNCGraph(new_graph, NewIntIds, load_from, &new_index, EdgePosBefore);
-
-	RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
-
-	omnigraph::WriteSimple(new_graph, IdTrackLabelerAfter, save_to + "_before.dot", "no_repeat_graph");
-
-	NonconjugateDeBruijnGraph resolved_graph(k);
-	IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
-	EdgesPositionHandler<NCGraph> EdgePosAfter(resolved_graph);
-	EdgeLabelHandler<NCGraph> LabelsAfter(resolved_graph, new_graph);
-
-	ResolveRepeats(new_graph, NewIntIds, new_index, EdgePosBefore,
-			resolved_graph, Resolved_IntIds, EdgePosAfter,
-			save_resolving_history + "/", LabelsAfter);
-
-	RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
-			Resolved_IntIds);
-	omnigraph::WriteSimple(resolved_graph, IdTrackLabelerResolved, save_to + "_after.dot", "no_repeat_graph");
-
-	EdgesPosGraphLabeler<NCGraph> EdgePosLAfterLab(resolved_graph,
-			EdgePosAfter);
-
-	omnigraph::WriteSimple(resolved_graph, EdgePosLAfterLab,
-			save_resolving_history + "/repeats_resolved_after_pos.dot",
-			"no_repeat_graph");
-
-	ClipTips(resolved_graph);
-	RemoveLowCoverageEdgesForResolver(resolved_graph);
-
-	omnigraph::WriteSimple(resolved_graph, EdgePosLAfterLab,
-			save_resolving_history
-					+ "/repeats_resolved_after_und_cleared_pos.dot",
-			"no_repeat_graph");
-	omnigraph::WriteSimple(resolved_graph, IdTrackLabelerResolved,
-			save_resolving_history + "/repeats_resolved_und_cleared.dot",
-			"no_repeat_graph");
-	one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph, cfg::get().ds.IS);
-	N50enlarger.one_many_resolve_with_vertex_split();
-	omnigraph::WriteSimple(resolved_graph, IdTrackLabelerResolved, save_to + "_finished.dot", "no_repeat_graph");
-}
+//void ResolveOneComponent(const string& load_from_dir, const string& save_to_dir,
+//		int component_id, int k) {
+//	string load_from = ConstructComponentName(load_from_dir + "/graphCl",
+//			component_id);
+//	string save_to = ConstructComponentName(save_to_dir + "/graph",
+//			component_id);
+//
+//	string save_resolving_history = ConstructComponentName(
+//			save_to_dir + "/resolve", component_id);
+//	mkdir(save_resolving_history.c_str(),
+//			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+//
+//	NCGraph new_graph(k);
+//	IdTrackHandler<NCGraph> NewIntIds(new_graph);
+//	PairedInfoIndex<NCGraph> new_index(new_graph);
+//	EdgesPositionHandler<NCGraph> EdgePosBefore(new_graph);
+//	scanNCGraph(new_graph, NewIntIds, load_from, &new_index, EdgePosBefore);
+//
+//	RealIdGraphLabeler<NCGraph> IdTrackLabelerAfter(new_graph, NewIntIds);
+//
+//	omnigraph::WriteSimple(new_graph, IdTrackLabelerAfter, save_to + "_before.dot", "no_repeat_graph");
+//
+//	NonconjugateDeBruijnGraph resolved_graph(k);
+//	IdTrackHandler<NCGraph> Resolved_IntIds(resolved_graph);
+//	EdgesPositionHandler<NCGraph> EdgePosAfter(resolved_graph);
+//	EdgeLabelHandler<NCGraph> LabelsAfter(resolved_graph, new_graph);
+//
+//	ResolveRepeats(new_graph, NewIntIds, new_index, EdgePosBefore,
+//			resolved_graph, Resolved_IntIds, EdgePosAfter,
+//			save_resolving_history + "/", LabelsAfter);
+//
+//	RealIdGraphLabeler<NCGraph> IdTrackLabelerResolved(resolved_graph,
+//			Resolved_IntIds);
+//
+//	TotalLabelerGraphStruct<NCGraph> graph_struct_before(new_graph,
+//				&NewIntIds, &EdgePosBefore, NULL);
+//	TotalLabelerGraphStruct<NCGraph> graph_struct_after(resolved_graph,
+//				&Resolved_IntIds, &EdgePosAfter, &LabelsAfter);
+//	TotalLabeler<NCGraph> TotLabAfter(&graph_struct_after,
+//				&graph_struct_before);
+//
+//	omnigraph::WriteSimple(resolved_graph, TotLabAfter, save_to + "_after.dot", "no_repeat_graph");
+//
+//	EdgesPosGraphLabeler<NCGraph> EdgePosLAfterLab(resolved_graph,
+//			EdgePosAfter);
+//
+//	omnigraph::WriteSimple(resolved_graph, TotLabAfter,
+//			save_resolving_history + "/repeats_resolved_after_pos.dot",
+//			"no_repeat_graph");
+//
+//	ClipTips(resolved_graph);
+//	RemoveLowCoverageEdgesForResolver(resolved_graph);
+//
+//	omnigraph::WriteSimple(resolved_graph, TotLabAfter,
+//			save_resolving_history
+//					+ "/repeats_resolved_after_und_cleared_pos.dot",
+//			"no_repeat_graph");
+//	omnigraph::WriteSimple(resolved_graph, TotLabAfter,
+//			save_resolving_history + "/repeats_resolved_und_cleared.dot",
+//			"no_repeat_graph");
+//	one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_graph, cfg::get().ds.IS);
+//	N50enlarger.one_many_resolve_with_vertex_split();
+//	omnigraph::WriteSimple(resolved_graph, IdTrackLabelerResolved, save_to + "_finished.dot", "no_repeat_graph");
+//}
 
 void ConjugateResolveOneComponent(const string& load_from_dir, const string& save_to_dir,
 		int component_id, int k) {
@@ -113,7 +121,11 @@ void ConjugateResolveOneComponent(const string& load_from_dir, const string& sav
 	IdTrackHandler<Graph> NewIntIds(new_graph);
 	PairedInfoIndex<Graph> new_index(new_graph);
 	EdgesPositionHandler<Graph> EdgePosBefore(new_graph);
-	scanNCGraph(new_graph, NewIntIds, load_from, &new_index, EdgePosBefore);
+//	scanNCGraph(new_graph, NewIntIds, load_from, &new_index, EdgePosBefore);
+//	scanConjugateGraph(new_graph, NewIntIds, load_from, &new_index, EdgePosBefore);
+	scanConjugateGraph(&new_graph, &NewIntIds, load_from,
+			(PairedInfoIndex<Graph>*) 0, &EdgePosBefore,
+			(PairedInfoIndex<Graph>*) 0, &new_index);
 
 	RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, NewIntIds);
 

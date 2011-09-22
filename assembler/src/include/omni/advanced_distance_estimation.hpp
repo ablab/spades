@@ -61,16 +61,16 @@ private:
 				peakfinder.FFTSmoothing(cutoff_);
                 if ( ( (cur + 1) == forward.size()) || ( (int) forward[cur + 1] > rounded_d(data[end - 1]))){
                     if (round(inv_density_*(end - begin)) > (int) data_length){
-                        result.push_back(make_pair(forward[cur], 1));       // default weight is one
-                        DEBUG("Pair made " << forward[cur]);
+                        result.push_back(make_pair(forward[cur], peakfinder.getNormalizedWeight()));       // default weight is one
+                        DEBUG("Pair made " << forward[cur] << " " << peakfinder.getNormalizedWeight());
                     }
                     cur++;
                 }else{
                 
                     while (cur<forward.size() && ((int)forward[cur] <= rounded_d(data[end - 1]))) {
 					    if (peakfinder.isPeak(forward[cur])){ 
-                            result.push_back(make_pair(forward[cur], 1));
-                            DEBUG("Pair made " << forward[cur]);
+                            result.push_back(make_pair(forward[cur], peakfinder.getNormalizedWeight()));
+                            DEBUG("Pair made " << forward[cur] << " " << peakfinder.getNormalizedWeight());
                         }   
 					    cur++;
 				    }
@@ -79,6 +79,16 @@ private:
 		}
 		return result;
 	}
+
+    vector<PairInfo<EdgeId> > ClusterResult(EdgeId edge1, EdgeId edge2, vector<pair<size_t, double> > estimated){
+        vector<PairInfo<EdgeId> > result;
+        for (size_t i = 0; i < estimated.size(); i++){
+            PairInfo<EdgeId> new_info(edge1, edge2, estimated[i].first, estimated[i].second, 0);
+            
+            result.push_back(new_info);
+        }
+        return result;
+    }
 
 public:
 	AdvancedDistanceEstimator(Graph &graph, PairedInfoIndex<Graph> &histogram, IdTrackHandler<Graph> &int_ids, size_t insert_size, size_t read_length, size_t delta, size_t linkage_distance, size_t max_distance, size_t threshold, double range_coeff, double delta_coeff, 

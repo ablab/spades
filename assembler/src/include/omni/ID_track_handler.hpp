@@ -31,7 +31,7 @@ public:
 		return MaxVertexIntId;
 	}
 	realIdType AddVertexIntId(VertexId NewVertexId, realIdType NewIntId) {
-		DEBUG("AddVertexIntId( "<< NewVertexId<<", "<<NewIntId<<")");
+		TRACE("AddVertexIntId( "<< NewVertexId<<", "<<NewIntId<<")");
 		realIdType PreviousId = ReturnIntId(NewVertexId);
 		if (PreviousId != 0)
 	    {
@@ -47,7 +47,7 @@ public:
 			MaxVertexIntId = NewIntId;
 		VertexIntId[NewVertexId] = NewIntId;
 		VertexOriginalId[NewIntId] = NewVertexId;
-		DEBUG(VertexIntId[NewVertexId]<<" "<<VertexOriginalId[NewIntId]);
+		TRACE(VertexIntId[NewVertexId]<<" "<<VertexOriginalId[NewIntId]);
 		return NewIntId;
 	}
 	realIdType AddEdgeIntId(EdgeId NewEdgeId) {

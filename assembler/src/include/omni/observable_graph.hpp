@@ -51,7 +51,7 @@ protected:
 	}
 
 	void FireMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
-		DEBUG("Fire Merge");
+		TRACE("Fire Merge");
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
 			applier_->ApplyMerge(*it, oldEdges, newEdge);
@@ -66,7 +66,7 @@ protected:
 	}
 
 	void FireSplit(EdgeId edge, EdgeId newEdge1, EdgeId newEdge2) {
-		DEBUG("Fire Split");
+		TRACE("Fire Split");
 		for (auto it = action_handler_list_.begin(); it
 				!= action_handler_list_.end(); ++it) {
 			applier_->ApplySplit(*it, edge, newEdge1, newEdge2);
