@@ -442,6 +442,7 @@ void DataScanner<Graph>::loadPaired(const string& file_name,
 		PairedInfoIndex<Graph>& PIIndex) {
 	int read_count;
 	FILE* file = fopen((file_name + ".prd").c_str(), "r");
+	DEBUG((file_name + ".prd"));
 	assert(file != NULL);
 	INFO("Reading paired info from " << file_name << " started");
 	int paired_count;
@@ -588,6 +589,7 @@ void scanConjugateGraph(Graph * g, IdTrackHandler<Graph> *new_IDs,
 		dataScanner.loadPaired(file_name + "_cl", *clustered_index);
 	}
 }
+
 
 }
 #endif /* IOPROCEDURES_HPP_ */

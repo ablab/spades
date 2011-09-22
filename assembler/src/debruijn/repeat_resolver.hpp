@@ -719,23 +719,25 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	sum_count = 0;
 	global_cheating_edges.clear();
 
+
+
+	//		TotalLabelerGraphStruct<NCGraph> graph_struct_before(old_graph,
+	//					&old_IDs, &old_pos, NULL);
+	//		TotalLabelerGraphStruct<NCGraph> graph_struct_after(new_graph,
+	//					&new_IDs, &new_pos, NULL);
+	//		TotalLabeler<NCGraph> TotLabAfter(&graph_struct_after,
+	//					&graph_struct_before);
+	TotalLabelerGraphStruct<Graph> graph_struct_before(old_graph,
+			&old_IDs, &old_pos, NULL);
+	TotalLabelerGraphStruct<Graph> graph_struct_after(new_graph,
+			&new_IDs, &new_pos, NULL);
+	TotalLabeler<Graph> TotLabAfter(&graph_struct_after,
+			&graph_struct_before);
+
 	for (cheating_mode = 0; cheating_mode < cfg::get().rr.mode; cheating_mode++) {
 		INFO(" cheating_mode = " << cheating_mode);
 		bool changed = true;
 		map<int, VertexId> vertices;
-
-//		TotalLabelerGraphStruct<NCGraph> graph_struct_before(old_graph,
-//					&old_IDs, &old_pos, NULL);
-//		TotalLabelerGraphStruct<NCGraph> graph_struct_after(new_graph,
-//					&new_IDs, &new_pos, NULL);
-//		TotalLabeler<NCGraph> TotLabAfter(&graph_struct_after,
-//					&graph_struct_before);
-		TotalLabelerGraphStruct<Graph> graph_struct_before(old_graph,
-					&old_IDs, &old_pos, NULL);
-		TotalLabelerGraphStruct<Graph> graph_struct_after(new_graph,
-					&new_IDs, &new_pos, NULL);
-		TotalLabeler<Graph> TotLabAfter(&graph_struct_after,
-					&graph_struct_before);
 
 		while (changed) {
 			changed = false;
@@ -756,12 +758,27 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 			for (auto v_iter = vertices.begin(), v_end =
 					vertices.end(); v_iter != v_end; ++v_iter) {
 
-				DEBUG(" resolving vertex"<<*v_iter);
+				DEBUG(" resolving vertex "<<new_IDs.ReturnIntId(v_iter->second));
 				if (rc_mode && deleted_handler.live_vertex.find(v_iter->second) == deleted_handler.live_vertex.end()){
 					DEBUG("already deleted");
 					continue;
 				} else {
 					DEBUG("not deleted");
+				}
+				vector<EdgeId> edgeIds[2];
+				int flag = 1;
+				edgeIds[0] = new_graph.OutgoingEdges(v_iter->second);
+				edgeIds[1] = new_graph.IncomingEdges(v_iter->second);
+				for(int i = 0; i < 2; i++) {
+					for(size_t j = 0; j < edgeIds[i].size(); j++)
+						if (global_cheating_edges.find(edgeIds[i][j]) != global_cheating_edges.end()) {
+							flag = 0;
+							break;
+						}
+				}
+				if (! flag) {
+					DEBUG("Cheaters are near" << new_IDs.ReturnIntId(v_iter->second));
+					continue;
 				}
 				size_t p_size = GenerateVertexPairedInfo(new_graph, paired_di_data, v_iter->second);
 				DEBUG("paired info size: " << p_size);

@@ -51,7 +51,8 @@ public:
 	}
 
 	virtual std::string label(VertexId vertexId) const {
-		return graph_struct->g_.str(vertexId);
+		int vId = graph_struct->IDs->ReturnIntId(vertexId);
+		return ToString(vId);
 	}
 
 	std::string OldEdgeIdToStr(EdgeId e_id){

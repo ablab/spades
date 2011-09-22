@@ -184,6 +184,11 @@ public:
 	}
 
 
+//	std::string str(VertexId vId) {
+//		int x = this->ReturnIntId(vId);
+//		return ToString(x);
+//	}
+
 
 };
 

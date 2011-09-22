@@ -122,10 +122,11 @@ void ConjugateResolveOneComponent(const string& load_from_dir, const string& sav
 	PairedInfoIndex<Graph> new_index(new_graph);
 	EdgesPositionHandler<Graph> EdgePosBefore(new_graph);
 //	scanNCGraph(new_graph, NewIntIds, load_from, &new_index, EdgePosBefore);
-//	scanConjugateGraph(new_graph, NewIntIds, load_from, &new_index, EdgePosBefore);
+//scanConjugateGraph(new_graph, NewIntIds, load_from, &new_index, EdgePosBefore);
+
 	scanConjugateGraph(&new_graph, &NewIntIds, load_from,
-			(PairedInfoIndex<Graph>*) 0, &EdgePosBefore,
-			(PairedInfoIndex<Graph>*) 0, &new_index);
+			&new_index, &EdgePosBefore,
+			(PairedInfoIndex<Graph>*) 0, (PairedInfoIndex<Graph>*) 0);
 
 	RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, NewIntIds);
 
