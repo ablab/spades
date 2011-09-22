@@ -2,7 +2,6 @@
  * Assembler Main
  */
 
-
 #include "config_struct.hpp"
 #include "io/reader.hpp"
 #include "io/rc_reader_wrapper.hpp"
@@ -21,82 +20,162 @@
 
 DECL_PROJECT_LOGGER("d")
 
+bool make_dir(std::string const& str)
+{
+	if (fs::is_directory(str) || fs::create_directories(str))
+		return true;
+
+	WARN("Can't create directory " << str);
+	return false;
+
+    //return mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+}
+
+void link_output(std::string const& link_name)
+{
+	string link = cfg::get().output_root + link_name;
+	unlink(link.c_str());
+
+	if (symlink(cfg::get().output_suffix.c_str(), link.c_str()) != 0)
+	    WARN( "Symlink to \"" << link << "\" launch failed");
+}
+
+struct on_exit_ouput_linker
+{
+	on_exit_ouput_linker(std::string const& link_name)
+		: link_name_(link_name)
+	{
+	}
+
+	~on_exit_ouput_linker()
+	{
+		link_output(link_name_);
+	}
+
+private:
+	std::string link_name_;
+};
+
+void print_trace()
+{
+	std::cout << "=== Stack Trace ===" << std::endl;
+
+	const size_t max_stack_size = 1000;
+
+	void* stack_pointers[max_stack_size];
+	int count = backtrace(stack_pointers, max_stack_size);
+
+	char** func_names = backtrace_symbols(stack_pointers, count);
+
+	// Print the stack trace
+	for(int i = 0; i < count; ++i)
+		std::cout << func_names[i] << std::endl;
+
+	// Free the string pointers
+	free(func_names);
+}
+
+void segfault_handler(int signum)
+{
+	if (signum == SIGSEGV)
+	{
+		std::cout << "The program was terminated by segmentation fault" << std::endl;
+		print_trace();
+
+		link_output("latest_try");
+	}
+
+	signal(signum, SIG_DFL);
+	kill  (getpid(), signum);
+}
+
 int main() {
 
     const size_t GB = 1 << 30;
     limit_memory(120 * GB);
 
-    cfg::create_instance(debruijn::cfg_filename);
+    on_exit_ouput_linker try_linker("latest_try");
 
-	// check config_struct.hpp parameters
-	if (debruijn::K % 2 == 0) {
-		FATAL("K in config.hpp must be odd!\n");
-	}
-	checkFileExistenceFATAL(debruijn::cfg_filename);
+	signal(SIGSEGV, segfault_handler);
 
-	// read configuration file (dataset path etc.)
-	string input_dir = cfg::get().input_dir;
-	string dataset = cfg::get().dataset_name;
+    try
+    {
+		using namespace debruijn_graph;
 
-	string work_tmp_dir = cfg::get().output_root + "tmp/";
-//	std::cout << "here " << mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH| S_IWOTH) << std::endl;
-	mkdir(cfg::get().output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+		checkFileExistenceFATAL(cfg_filename);
+		cfg::create_instance(cfg_filename);
 
+		// check config_struct.hpp parameters
+		if (K % 2 == 0)
+			FATAL("K in config.hpp must be odd!\n");
 
-	string genome_filename = input_dir + cfg::get().reference_genome;
-	string reads_filename1 = input_dir + cfg::get().ds.first;
-	string reads_filename2 = input_dir + cfg::get().ds.second;
-	checkFileExistenceFATAL(genome_filename);
-	checkFileExistenceFATAL(reads_filename1);
-	checkFileExistenceFATAL(reads_filename2);
-	INFO("Assembling " << dataset << " dataset");
+		// read configuration file (dataset path etc.)
+		string input_dir = cfg::get().input_dir;
+		string dataset   = cfg::get().dataset_name;
 
-	// typedefs :)
-	typedef io::Reader<io::SingleRead> ReadStream;
-	typedef io::Reader<io::PairedRead> PairedReadStream;
-	typedef io::RCReaderWrapper<io::PairedRead> RCStream;
-	typedef io::FilteringReaderWrapper<io::PairedRead> FilteringStream;
+		make_dir(cfg::get().output_root );
+		make_dir(cfg::get().output_dir  );
+		make_dir(cfg::get().output_saves);
 
-	// read data ('reads')
+		string genome_filename = input_dir + cfg::get().reference_genome;
+		string reads_filename1 = input_dir + cfg::get().ds.first;
+		string reads_filename2 = input_dir + cfg::get().ds.second;
 
-	PairedReadStream pairStream(
-			std::pair<std::string, std::string>(reads_filename1,
-					reads_filename2),
-			cfg::get().ds.IS);
-	string real_reads = cfg::get().uncorrected_reads;
-	vector<ReadStream*> reads;
-	if (real_reads != "none") {
-		reads_filename1 = input_dir + (real_reads + "_1");
-		reads_filename2 = input_dir + (real_reads + "_2");
-	}
-	ReadStream reads_1(reads_filename1);
-	ReadStream reads_2(reads_filename2);
-	reads.push_back(&reads_1);
+		checkFileExistenceFATAL(genome_filename);
+		checkFileExistenceFATAL(reads_filename1);
+		checkFileExistenceFATAL(reads_filename2);
+		INFO("Assembling " << dataset << " dataset");
 
-	reads.push_back(&reads_2);
+		INFO("K = " << debruijn_graph::K);
+		// typedefs :)
+		typedef io::Reader<io::SingleRead> ReadStream;
+		typedef io::Reader<io::PairedRead> PairedReadStream;
+		typedef io::RCReaderWrapper<io::PairedRead> RCStream;
+		typedef io::FilteringReaderWrapper<io::PairedRead> FilteringStream;
 
-	FilteringStream filter_stream(pairStream);
+		// read data ('reads')
 
-	RCStream rcStream(filter_stream);
+		PairedReadStream pairStream(std::make_pair(reads_filename1,reads_filename2), cfg::get().ds.IS);
 
-	// read data ('genome')
-	std::string genome;
-	{
-		ReadStream genome_stream(genome_filename);
-		io::SingleRead full_genome;
-		genome_stream >> full_genome;
-		genome = full_genome.GetSequenceString().substr(0, cfg::get().ds.LEN); // cropped
-	}
-	// assemble it!
-	INFO("Assembling " << dataset << " dataset");
-	debruijn_graph::DeBruijnGraphTool<debruijn::K>(rcStream, Sequence(genome), work_tmp_dir, reads);
+		string real_reads = cfg::get().uncorrected_reads;
+		if (real_reads != "none") {
+			reads_filename1 = input_dir + (real_reads + "_1");
+			reads_filename2 = input_dir + (real_reads + "_2");
+		}
+		ReadStream reads_1(reads_filename1);
+		ReadStream reads_2(reads_filename2);
 
-	unlink((cfg::get().output_root + "latest").c_str());
-		if (symlink(cfg::get().output_dir_suffix.c_str(), (cfg::get().output_root + "latest").c_str())
-				!= 0)
-	WARN( "Symlink to latest launch failed");
+		vector<ReadStream*> reads = {&reads_1, &reads_2};
 
-	INFO("Assembling " << dataset << " dataset finished");
+		FilteringStream filter_stream(pairStream);
+
+		RCStream rcStream(filter_stream);
+
+		// read data ('genome')
+		std::string genome;
+		{
+			ReadStream genome_stream(genome_filename);
+			io::SingleRead full_genome;
+			genome_stream >> full_genome;
+			genome = full_genome.GetSequenceString().substr(0, cfg::get().ds.LEN); // cropped
+		}
+		// assemble it!
+		INFO("Assembling " << dataset << " dataset");
+		debruijn_graph::assemble_genome(rcStream, Sequence(genome)/*, work_tmp_dir, reads*/);
+
+		on_exit_ouput_linker("latest_success");
+
+		INFO("Assembling " << dataset << " dataset finished");
+    }
+    catch(std::exception const& e)
+    {
+    	std::cout << "Exception caught" << e.what() << std::endl;
+    }
+    catch(...)
+    {
+    	std::cout << "Unknown exception caught" << std::endl;
+    }
+
 	// OK
 	return 0;
 }

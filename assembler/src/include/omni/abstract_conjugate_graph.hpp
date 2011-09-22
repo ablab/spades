@@ -190,7 +190,7 @@ private:
 		v2->set_conjugate(v1);
 		vertices_.insert(v1);
 		vertices_.insert(v2);
-//		cout << "add v " << v1 << " " << v2 << endl;
+		TRACE("Vettices " << v1 << "and " << v2 << " added");
 		return v1;
 	}
 
@@ -225,6 +225,7 @@ private:
 				this->master().conjugate(data));
 		result->set_conjugate(rcEdge);
 		rcEdge->set_conjugate(result);
+		TRACE("Edges " << result << " and " << rcEdge << " added");
 //		cout << "add e" << result << " " << rcEdge << endl;
 		return result;
 	}
@@ -239,6 +240,7 @@ private:
 			delete rcEdge;
 		}
 		delete edge;
+		TRACE("Edges " << edge << " and " << rcEdge << " deleted");
 //		cout << "del e" << edge << " " << rcEdge << endl;
 	}
 
@@ -330,6 +332,21 @@ public:
 	virtual size_t OutgoingEdgeCount(VertexId v) const {
 		return v->OutgoingEdgeCount();
 	}
+//
+//	virtual void CheckGraph() {
+//		double a = 0;
+//		for(auto it = this->SmartVertexBegin(); !it.IsEnd(); ++it) {
+//			vector<EdgeId> vec = OutgoingEdges(*it);
+//			for(size_t i = 0; i < vec.size(); i++) {
+//				a += length(conjugate(vec[i]));
+//			}
+//			vec = IncomingEdges(*it);
+//			for(size_t i = 0; i < vec.size(); i++) {
+//				a += length(conjugate(vec[i]));
+//			}
+//		}
+//		cout << a << endl;
+//	}
 
 	virtual size_t IncomingEdgeCount(VertexId v) const {
 		return v->conjugate()->OutgoingEdgeCount();
@@ -361,6 +378,59 @@ public:
 
 	EdgeId conjugate(EdgeId edge) const {
 		return edge->conjugate();
+	}
+
+	virtual std::string PrintEdges(const vector<EdgeId>& path) {
+		stringstream ss;
+		ss << "Edges: ";
+		for (auto it = path.begin(); it != path.end(); ++it) {
+			ss << PrintEdge(*it) << ", ";
+		}
+		return ss.str();
+	}
+
+	virtual std::string PrintEdge(EdgeId edge) {
+		stringstream ss;
+//		ss << "Edge ";
+		ss << edge << " (conjugate " << conjugate(edge) << ")";
+		return ss.str();
+	}
+
+	virtual std::string PrintVertex(VertexId v) {
+		stringstream ss;
+//		ss << "Edge ";
+		ss << v << " (conjugate " << conjugate(v) << ")";
+		return ss.str();
+	}
+
+	virtual std::string PrintDetailedVertexInfo(VertexId v) {
+		stringstream ss;
+		ss << "Vertex " << v << " (conjugate " << conjugate(v) << "), ";
+		ss << "Incoming " << PrintEdges(IncomingEdges(v)) << ", ";
+		ss << "Outgoing " << PrintEdges(OutgoingEdges(v));
+		ss << ";";
+		return ss.str();
+	}
+
+	virtual std::string PrintDetailedPath(const vector<EdgeId>& path) {
+		stringstream ss;
+		ss << "Path: ";
+		ss << PrintDetailedVertexInfo(EdgeStart(path[0]));
+		for (auto it = path.begin(); it != path.end(); ++it) {
+			EdgeId e = *it;
+			ss << "Edge " << e << " (conjugate " << conjugate(e) << "); ";
+			ss << PrintDetailedVertexInfo(EdgeEnd(e));
+		}
+		return ss.str();
+	}
+
+	/*virtual*/ bool AdditionalCompressCondition(VertexId v) {
+		return !(EdgeEnd(GetUniqueOutgoingEdge(v)) == conjugate(v)
+				&& EdgeStart(GetUniqueIncomingEdge(v)) == conjugate(v));
+	}
+
+	/*virtual*/ bool RelatedVertices(VertexId v1, VertexId v2) {
+		return v1 == v2 || v1 == conjugate(v2);
 	}
 
 private:

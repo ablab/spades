@@ -11,6 +11,7 @@
 #include <cmath>
 #include <stack>
 #include "omni_utils.hpp"
+#include "xmath.h"
 #include "sequence/sequence_tools.hpp"
 
 namespace omnigraph {
@@ -19,9 +20,9 @@ template<class Graph>
 struct SimplePathCondition {
 	typedef typename Graph::EdgeId EdgeId;
 
-	Graph& g_;
+	const Graph& g_;
 
-	SimplePathCondition(Graph& g) :
+	SimplePathCondition(const Graph& g) :
 			g_(g) {
 
 	}
@@ -164,7 +165,8 @@ private:
 	}
 
 	void ProcessBulge(EdgeId edge, const vector<EdgeId>& path) {
-		UniformPositionAligner aligner(PathLength(path), g_.length(edge));
+//		UniformPositionAligner aligner(PathLength(path) + 1, g_.length(edge) + 1);
+		EnsureEndsPositionAligner aligner(PathLength(path), g_.length(edge));
 		double prefix_length = 0.;
 		vector<size_t> bulge_prefix_lengths;
 		for (auto it = path.begin(); it != path.end(); ++it) {
@@ -210,34 +212,19 @@ size_t BulgeRemover<Graph, BulgeConditionF>::PathLength(
 	return length;
 }
 
-//todo move to some common place
-template<class Graph>
-const string PrintPath(Graph& g, const vector<typename Graph::EdgeId>& edges) {
-	string delim = "";
-	stringstream ss;
-	for (size_t i = 0; i < edges.size(); ++i) {
-		ss << delim << g.str(edges[i]) << " (" << g.length(edges[i]) << ")";
-		delim = " -> ";
-	}
-	return ss.str();
-}
-
 template<class Graph, class BulgeConditionF>
 void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
-	//todo add right comparator
-	typedef SmartEdgeIterator<Graph> EdgeIter;
-
 	TRACE("Bulge remove process started");
 
-	for (auto iterator = g_.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator) {
+//	CoverageComparator<Graph> comparator(g_);
+	for (auto iterator = g_.SmartEdgeBegin(/*comparator*/); !iterator.IsEnd(); ++iterator) {
 		EdgeId edge = *iterator;
 		TRACE(
 				"Considering edge of length " << g_.length(edge)
 						<< " and avg coverage " << g_.coverage(edge));
 		TRACE("Is possible bulge " << PossibleBulgeEdge(edge));
 		if (PossibleBulgeEdge(edge)) {
-			size_t kplus_one_mer_coverage = std::floor(
-					g_.length(edge) * g_.coverage(edge) + 0.5);
+			size_t kplus_one_mer_coverage = math::round(g_.length(edge) * g_.coverage(edge));
 			TRACE(
 					"Processing edge " << g_.str(edge) << " and coverage "
 							<< kplus_one_mer_coverage);
@@ -268,10 +255,11 @@ void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
 			if (BulgeCondition(edge, path, path_coverage)) {
 				TRACE("Satisfied condition");
 				TRACE(
-						"Deleting edge " << g_.str(edge)
-								<< " and compressing ends");
+						"Projecting edge " << g_.str(edge));
 				ProcessBulge(edge, path);
+				TRACE("Compressing start of edge " << edge)
 				g_.CompressVertex(start);
+				TRACE("Compressing end of edge " << edge)
 				g_.CompressVertex(end);
 			} else {
 				TRACE("Didn't satisfy condition");

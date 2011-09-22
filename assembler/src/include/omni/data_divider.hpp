@@ -41,7 +41,7 @@ size_t Threshold;
 
 bool isCluster(int index, std::vector<int> & x, std::vector<int> & y) {
 	assert(index < data_size - 1);
-	return (abs(x[index + 1] - x[index]) > Threshold);
+	return (size_t(abs(x[index + 1] - x[index])) > Threshold);
 }
 
 bool isCluster(int index, std::vector<PairInfo<EdgeId> > data) {
