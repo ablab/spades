@@ -322,7 +322,7 @@ void DeBruijnGraphTool(PairedReadStream& stream, const Sequence& genome,
 
 			SimplifyGraph<k>(g, index, *TotLab, 3, genome,
 					output_folder/*, etalon_paired_index*/);
-            FillEdgesPos<k>(g, index, genome, EdgePos, kmer_mapper, 2);
+  //          FillEdgesPos<k>(g, index, genome, EdgePos, kmer_mapper, 2);
 			ProduceInfo<k>(g, index, *TotLab, genome,
 					output_folder + "simplified_graph.dot", "simplified_graph");
 
