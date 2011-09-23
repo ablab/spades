@@ -1,5 +1,5 @@
-#ifndef PAIRED_INFO_HPP_
-#define PAIRED_INFO_HPP_
+#pragma once
+
 //#include "utils.hpp"
 //#include "sequence.hpp"
 //#include "paired_read.hpp"
@@ -695,6 +695,45 @@ public:
 	}
 
 };
-}
 
-#endif /* PAIRED_INFO_HPP_ */
+template <class Graph>
+class PairedInfoWeightNormalizer {
+	typedef typename Graph::EdgeId EdgeId;
+	const Graph& g_;
+public:
+
+	PairedInfoWeightNormalizer(const Graph& g) : g_(g) {
+
+	}
+
+	const PairInfo<EdgeId> operator()(const PairInfo<EdgeId>& pair_info) {
+		//todo put code here
+		return pair_info;
+	}
+};
+
+template <class Graph>
+class PairedInfoNormalizer {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef boost::function<double (const PairInfo<EdgeId>&)> WeightNormalizer;
+
+	const PairedInfoIndex<Graph>& paired_index_;
+	WeightNormalizer& normalizing_function_;
+public:
+
+	PairedInfoNormalizer(const PairedInfoIndex<Graph>& paired_index, WeightNormalizer normalizing_function)
+	: paired_index_(paired_index), normalizing_function_(normalizing_function) {
+
+	}
+
+	void FillNormalizedIndex(PairedInfoIndex<Graph>& normalized_index) {
+		for (auto it = paired_index_.begin(); it != paired_index_.end(); ++it) {
+			vector<PairInfo<EdgeId>> infos = *it;
+			for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
+				normalized_index.AddPairInfo(normalizing_function_(*it2));
+			}
+		}
+	}
+};
+
+}
