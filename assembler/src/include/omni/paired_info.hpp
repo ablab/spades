@@ -696,19 +696,47 @@ public:
 
 };
 
+//New metric weight normalizer
 template <class Graph>
 class PairedInfoWeightNormalizer {
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph& g_;
+	const size_t insert_size_;
+	const size_t read_length_;
+	const size_t k_;
+	const size_t delta_;
 public:
 
-	PairedInfoWeightNormalizer(const Graph& g) : g_(g) {
+	//Delta better to be around 5-10% of insert size
+	PairedInfoWeightNormalizer(const Graph& g, size_t insert_size, size_t read_length, size_t k, size_t delta = 0) :
+		g_(g), insert_size_(insert_size), read_length_(read_length), k_(k), delta_(delta) {
 
 	}
 
 	const PairInfo<EdgeId> operator()(const PairInfo<EdgeId>& pair_info) {
-		//todo put code here
-		return pair_info;
+		if (pair_info.distance == 0 && pair_info.first == pair_info.second) {
+			double w = g_.length(pair_info.first) - insert_size_ + 2 * read_length_ + 1 - k_ + delta_;
+			if (w <= 0 && pair_info.weight > 0) {
+				DEBUG("Ideal weight is negative");
+				return PairInfo<EdgeId>(pair_info.first, pair_info.second, pair_info.d, 0, pair_info.variance);
+			}
+			return PairInfo<EdgeId>(pair_info.first, pair_info.second, pair_info.d, pair_info.weight / w, pair_info.variance);
+		}
+
+		EdgeId e1 = (pair_info.distance >= 0) ? pair_info.first : pair_info.second;
+		EdgeId e2 = (pair_info.distance >= 0) ? pair_info.second : pair_info.first;
+
+		int gap_len = std::abs(rounded_d(pair_info)) - g_.length(e1);
+		int right = std::min(insert_size_, gap_len + g_.length(e2) + read_length_);
+		int left = std::max(gap_len, - read_length_ - g_.length(e1) + insert_size_);
+		double w = right - left + 1 - k_ + delta_;
+
+		if (w <= 0 && pair_info.weight > 0) {
+			DEBUG("Ideal weight is negative");
+			return PairInfo<EdgeId>(pair_info.first, pair_info.second, pair_info.d, 0, pair_info.variance);
+		}
+
+		return PairInfo<EdgeId>(pair_info.first, pair_info.second, pair_info.d, pair_info.weight / w, pair_info.variance);
 	}
 };
 

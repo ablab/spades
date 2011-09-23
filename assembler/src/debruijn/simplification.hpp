@@ -78,14 +78,14 @@ void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
 	printKmerMapper(gp.g, gp.int_ids, p.string(), gp.kmer_mapper);
 
 	//DEBUG
-	KmerMapper<K+1, Graph> cmp(gp.g);
-	scanKmerMapper(gp.g, gp.int_ids, p.string(), &cmp);
-	if (!gp.kmer_mapper.CompareTo(cmp)) {
-		WARN("Kmer mappers are not equal!");
-	}
-	else {
-		INFO("Mappers are equal");
-	}
+//	KmerMapper<K+1, Graph> cmp(gp.g);
+//	scanKmerMapper(gp.g, gp.int_ids, p.string(), &cmp);
+//	if (!gp.kmer_mapper.CompareTo(cmp)) {
+//		WARN("Kmer mappers are not equal!");
+//	}
+//	else {
+//		INFO("Mappers are equal");
+//	}
 	//DEBUG
 
 

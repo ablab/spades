@@ -1,6 +1,6 @@
 ; input options
 from_file     true	  ; always true
-syminfo       false
+syminfo       true
 
 QUAKE_CROPPED_100K
 {
@@ -65,7 +65,7 @@ real_libs
         }
         QUAKE_FULL
         {
-            precounted       false
+            precounted       true
             precounted_path  ./data/debruijn/QUAKE_FULL/09.15_16_31/paired_info_IS220_RS100
             first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
             second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz
@@ -136,7 +136,7 @@ real_libs
         }
         QUAKE_FULL
         {
-            precounted       false
+            precounted       true
             precounted_path  ./data/debruijn/QUAKE_FULL/09.15_16_31/paired_info_IS500_RS100_clustered
             first            /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_1.cor.fastq.gz
             second           /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_2.cor.fastq.gz
