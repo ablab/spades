@@ -36,6 +36,7 @@ int main() {
 	IdTrackHandler<Graph> intIds(g);
 	PairedInfoIndex<Graph> pairedIndex(g, 0);
 	PairedInfoIndices pairedInfos;
+	KmerMapper<K+1, Graph> mapper(g);
 	Sequence sequence("");
 
 	std::vector<BidirectionalPath> seeds;
@@ -51,7 +52,7 @@ int main() {
 		return -1;
 	}
 	else {
-		LoadFromFile<K>(lc_cfg::get().ds.graph_file, &g, &intIds, sequence);
+		LoadFromFile(lc_cfg::get().ds.graph_file, &g, &intIds, sequence, &mapper);
 	}
 	mkdir(cfg::get().output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 
@@ -62,7 +63,7 @@ int main() {
 		AddEtalonInfo<K>(g, index, sequence, pairedInfos);
 	} else {
 		pairedInfos.clear();
-		AddRealInfo<K>(g, index, intIds, pairedInfos, lc_cfg::get().use_new_metrics);
+		AddRealInfo<K>(g, index, intIds, pairedInfos, mapper, lc_cfg::get().use_new_metrics);
 
 		if (!cfg::get().etalon_info_mode && lc_cfg::get().write_real_paired_info) {
 			SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix);

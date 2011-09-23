@@ -102,8 +102,7 @@ public:
 };
 
 
-template<size_t k>
-void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_IntIds,	Sequence& sequence) {
+void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_IntIds,	Sequence& sequence, KmerMapper<K+1, Graph> * mapper) {
 	string input_dir = cfg::get().input_dir;
 	string dataset = cfg::get().dataset_name;
 	string genome_filename = input_dir
@@ -125,7 +124,8 @@ void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_I
 
 	INFO("Reading graph");
 	omnigraph::scanConjugateGraph(g, conj_IntIds, fileName);
-	INFO("Graph read")
+	omnigraph::scanKmerMapper(*g, *conj_IntIds, fileName, mapper);
+	INFO("Graph read");
 }
 
 template<size_t k>
@@ -139,7 +139,8 @@ void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence&
 }
 
 template<size_t k>
-void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds, PairedInfoIndices& pairedInfos, bool useNewMetrics) {
+void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds, PairedInfoIndices& pairedInfos, KmerMapper<k+1, Graph>& mapper,
+		bool useNewMetrics) {
 	PairedInfoSimpleSymmertrizer sym(g);
 
 	for (auto rl = lc_cfg::get().real_libs.begin(); rl != lc_cfg::get().real_libs.end(); ++rl) {
@@ -189,10 +190,9 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 			RCStream rcStream(filter_stream);
 
 			if (useNewMetrics) {
-				KmerMapper<k+1, Graph> mapper(g);
-				FillPairedIndexWithReadCountMetric<k, RCStream>(g, index, mapper,*pairedInfos.back().pairedInfoIndex, rcStream);
+				FillPairedIndexWithReadCountMetric<k, RCStream>(g, index, mapper, *pairedInfos.back().pairedInfoIndex, rcStream);
 			} else {
-				FillPairedIndex<k, RCStream>(g, index, *pairedInfos.back().pairedInfoIndex, rcStream);
+				FillPairedIndexWithProductMetric<k, RCStream>(g, index, mapper, *pairedInfos.back().pairedInfoIndex, rcStream);
 			}
 		}
 		INFO("Done");
