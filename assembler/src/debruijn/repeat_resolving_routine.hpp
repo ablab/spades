@@ -11,7 +11,7 @@
 
 #include "logging.hpp"
 #include "repeat_resolving.hpp"
-#include "distance_estimation.hpp"
+#include "distance_estimation_routine.hpp"
 
 namespace debruijn_graph
 {

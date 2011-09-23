@@ -697,7 +697,7 @@ public:
 };
 
 //New metric weight normalizer
-template <class Graph>
+template<class Graph>
 class PairedInfoWeightNormalizer {
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph& g_;
@@ -708,49 +708,64 @@ class PairedInfoWeightNormalizer {
 public:
 
 	//Delta better to be around 5-10% of insert size
-	PairedInfoWeightNormalizer(const Graph& g, size_t insert_size, size_t read_length, size_t k, size_t delta = 0) :
-		g_(g), insert_size_(insert_size), read_length_(read_length), k_(k), delta_(delta) {
+	PairedInfoWeightNormalizer(const Graph& g, size_t insert_size,
+			size_t read_length, size_t k, size_t delta = 0) :
+			g_(g), insert_size_(insert_size), read_length_(read_length), k_(k), delta_(
+					delta) {
 
 	}
 
-	const PairInfo<EdgeId> operator()(const PairInfo<EdgeId>& pair_info) {
-		if (pair_info.distance == 0 && pair_info.first == pair_info.second) {
-			double w = g_.length(pair_info.first) - insert_size_ + 2 * read_length_ + 1 - k_ + delta_;
-			if (w <= 0 && pair_info.weight > 0) {
-				DEBUG("Ideal weight is negative");
-				return PairInfo<EdgeId>(pair_info.first, pair_info.second, pair_info.d, 0, pair_info.variance);
-			}
-			return PairInfo<EdgeId>(pair_info.first, pair_info.second, pair_info.d, pair_info.weight / w, pair_info.variance);
+	const PairInfo<EdgeId> NormalizeWeight(const PairInfo<EdgeId>& pair_info) {
+		double w = 0.;
+		if (math::eq(pair_info.d, 0.) && pair_info.first == pair_info.second) {
+			w = 0. + g_.length(pair_info.first) - insert_size_
+					+ 2 * read_length_ + 1 - k_ + delta_;
+		} else {
+			EdgeId e1 =	(math::ge(pair_info.d, 0.)) ?
+							pair_info.first : pair_info.second;
+			EdgeId e2 =	(math::ge(pair_info.d, 0.)) ?
+							pair_info.second : pair_info.first;
+			int gap_len = std::abs(rounded_d(pair_info)) - g_.length(e1);
+			int right = std::min(insert_size_,
+					gap_len + g_.length(e2) + read_length_);
+			int left = std::max(gap_len, int(insert_size_) - int(read_length_) - int(g_.length(e1)));
+			w = 0. + right - left + 1 - k_ + delta_;
 		}
 
-		EdgeId e1 = (pair_info.distance >= 0) ? pair_info.first : pair_info.second;
-		EdgeId e2 = (pair_info.distance >= 0) ? pair_info.second : pair_info.first;
-
-		int gap_len = std::abs(rounded_d(pair_info)) - g_.length(e1);
-		int right = std::min(insert_size_, gap_len + g_.length(e2) + read_length_);
-		int left = std::max(gap_len, - read_length_ - g_.length(e1) + insert_size_);
-		double w = right - left + 1 - k_ + delta_;
-
-		if (w <= 0 && pair_info.weight > 0) {
+		double result_weight = 0.;
+		if (math::le(w, 0.) && math::gr(pair_info.weight, 0.)) {
+			//todo talk to Andrey
 			DEBUG("Ideal weight is negative");
-			return PairInfo<EdgeId>(pair_info.first, pair_info.second, pair_info.d, 0, pair_info.variance);
+		} else {
+			result_weight = pair_info.weight / w;
 		}
 
-		return PairInfo<EdgeId>(pair_info.first, pair_info.second, pair_info.d, pair_info.weight / w, pair_info.variance);
+		PairInfo<EdgeId> result(pair_info);
+		result.weight = result_weight;
+		return result;
 	}
 };
 
-template <class Graph>
+template<class Graph>
+const PairInfo<typename Graph::EdgeId> TrivialWeightNormalization(
+		const PairInfo<typename Graph::EdgeId>& pair_info) {
+	return pair_info;
+}
+;
+
+template<class Graph>
 class PairedInfoNormalizer {
 	typedef typename Graph::EdgeId EdgeId;
-	typedef boost::function<double (const PairInfo<EdgeId>&)> WeightNormalizer;
+	typedef boost::function<const PairInfo<EdgeId>(const PairInfo<EdgeId>&)> WeightNormalizer;
 
 	const PairedInfoIndex<Graph>& paired_index_;
-	WeightNormalizer& normalizing_function_;
+	WeightNormalizer normalizing_function_;
 public:
 
-	PairedInfoNormalizer(const PairedInfoIndex<Graph>& paired_index, WeightNormalizer normalizing_function)
-	: paired_index_(paired_index), normalizing_function_(normalizing_function) {
+	PairedInfoNormalizer(const PairedInfoIndex<Graph>& paired_index,
+			WeightNormalizer normalizing_function) :
+			paired_index_(paired_index), normalizing_function_(
+					normalizing_function) {
 
 	}
 

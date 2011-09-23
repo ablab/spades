@@ -3,7 +3,7 @@
 #include "simplification.info"
 #include "datasets.info"
 
-dataset 	      QUAKE_CROPPED_10K
+dataset 	      QUAKE_CROPPED_1K
 
 input_dir	      ./data/input/E.Coli.K12.MG1655/
 output_base	      ./data/debruijn/
@@ -14,7 +14,7 @@ reference_genome  MG1655-K12.fasta.gz
 
 load_from         latest_try/saves/ ; tmp or latest 
 
- entry_point construction`
+ entry_point construction
 ;entry_point paired_info_count
 ;entry_point simplification    
 ;entry_point distance_estimation
@@ -22,10 +22,10 @@ load_from         latest_try/saves/ ; tmp or latest
 ;entry_point n50_enlargement
 
 ; single cell mode swithcer, influence the simplification
-single_cell_mode true
+single_cell_mode false
 
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
-paired_mode false
+paired_mode true
 
 ; rectangle_mode (1) or not (0)
 rectangle_mode	false
