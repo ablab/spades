@@ -39,7 +39,7 @@ public:
 	}
 
 	void MakeSymmetricInfo(PairedInfoIndexLibrary& lib) {
-		INFO("Making symmetric info")
+		INFO("Making symmetric info");
 		for (auto edge1 = g.SmartEdgeBegin(); !edge1.IsEnd(); ++edge1) {
 			for (auto edge2 = g.SmartEdgeBegin(); !edge2.IsEnd(); ++edge2) {
 

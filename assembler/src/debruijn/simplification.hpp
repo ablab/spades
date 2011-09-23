@@ -68,10 +68,6 @@ void load_simplification(conj_graph_pack& gp, paired_info_index& paired_index,
 			&gp.edge_pos, &gp.etalon_paired_index);
 
 	scanKmerMapper(gp.g, gp.int_ids, p.string(), &gp.kmer_mapper);
-
-	//DEBUG
-	printKmerMapper(gp.g, gp.int_ids, p.string() + "_debug", gp.kmer_mapper);
-	//DEBUG
 }
 
 void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
@@ -80,6 +76,18 @@ void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
 			&gp.etalon_paired_index);
 
 	printKmerMapper(gp.g, gp.int_ids, p.string(), gp.kmer_mapper);
+
+	//DEBUG
+	KmerMapper<K+1, Graph> cmp(gp.g);
+	scanKmerMapper(gp.g, gp.int_ids, p.string(), &cmp);
+	if (!gp.kmer_mapper.CompareTo(cmp)) {
+		WARN("Kmer mappers are not equal!");
+	}
+	else {
+		INFO("Mappers are equal");
+	}
+	//DEBUG
+
 
 	//todo temporary solution!!!
 	OutputContigs(gp.g, cfg::get().output_root + "tmp_contigs.fasta");

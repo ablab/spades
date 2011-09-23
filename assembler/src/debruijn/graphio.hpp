@@ -526,6 +526,7 @@ template<class Graph>
 void DataScanner<Graph>::loadKmerMapper(const string& file_name,
 		KmerMapper<K + 1, Graph>& mapper) {
 
+	mapper.clear();
 	std::ifstream file;
 	file.open((file_name + ".kmm").c_str(), std::ios_base::binary | std::ios_base::in);
 	DEBUG("Reading kmer mapper, " << file_name <<" started");
@@ -533,7 +534,8 @@ void DataScanner<Graph>::loadKmerMapper(const string& file_name,
 
 	u_int32_t k_;
 	file.read((char *) &k_, sizeof(u_int32_t));
-	assert(k_ == K);
+
+	FATAL_ASSERT(k_ == K, "Cannot read kmer mapper, different Ks");
 	mapper.BinRead(file);
 
 	file.close();

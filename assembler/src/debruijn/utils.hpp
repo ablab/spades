@@ -247,6 +247,23 @@ public:
 			mapping_[key] = value;
 		}
 	}
+
+	bool CompareTo(KmerMapper<k, Graph> const& m) {
+		if (mapping_.size() != m.mapping_.size()) {
+			INFO("Unequal sizes");
+		}
+		for (auto iter = mapping_.begin(); iter != mapping_.end(); ++iter) {
+			auto cmp = m.mapping_.find(iter->first);
+			if (cmp == m.mapping_.end() || cmp->second != iter->second) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	void clear() {
+		mapping_.clear();
+	}
 };
 
 /**
