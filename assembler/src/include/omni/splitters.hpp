@@ -139,8 +139,7 @@ public:
 			const set<VertexId> &component) {
 		SubgraphDijkstra<Graph> sd(graph_, component);
 		sd.run(v);
-		pair<VertexId, size_t> result;
-		result.second = 0;
+		pair<VertexId, size_t> result(v, 0);
 		auto bounds = sd.GetDistances();
 		for (auto it = bounds.first; it != bounds.second; ++it) {
 			if (it->second > result.second) {
