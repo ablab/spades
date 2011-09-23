@@ -45,7 +45,7 @@ private:
 		return outgoing_edges_.size();
 	}
 
-	const vector<EdgeId> OutgoingEdges() const {
+	const vector<EdgeId>& OutgoingEdges() const {
 		return outgoing_edges_;
 	}
 
