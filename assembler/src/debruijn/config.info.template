@@ -1,7 +1,7 @@
 ; input options:
 
-#include "simplification.info"
-#include "datasets.info"
+#include "src/debruijn/simplification.info"
+#include "src/debruijn/datasets.info"
 
 dataset 	      QUAKE_CROPPED_1K
 
