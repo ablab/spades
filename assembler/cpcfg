@@ -1,4 +1,7 @@
 #!/bin/bash
 
-cp src/debruijn/config.info.template src/debruijn/config.info
+cp src/debruijn/config.info.template         src/debruijn/config.info
+cp src/debruijn/simplification.info.template src/debruijn/simplification.info
+cp src/debruijn/datasets.info.template       src/debruijn/datasets.info
+
 

@@ -1,2 +1,13 @@
-vi src/debruijn/config.info
+#!/bin/bash
+
+if [ $# = 0 ] 
+then
+  vi src/debruijn/config.info
+else 
+  case $1 in 
+  'c') vi src/debruijn/config.info ;;
+  's') vi src/debruijn/simplification.info ;;
+  'd') vi src/debruijn/datasets.info ;;
+  esac
+fi
 

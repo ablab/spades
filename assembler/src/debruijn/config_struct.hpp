@@ -74,33 +74,41 @@ namespace debruijn_graph
 			return it->second;
 		}
 
-		struct tip_clipper
+		struct simplification
 		{
-		   double max_tip_length_div_K;
-		   double max_coverage;
-		   double max_relative_coverage;
-		};
+			struct tip_clipper
+			{
+			   double max_tip_length_div_K;
+			   double max_coverage;
+			   double max_relative_coverage;
+			};
 
-		struct bulge_remover
-		{
-			size_t max_length_div_K;
-			double max_coverage;
-			double max_relative_coverage;
-			double max_delta;
-			double max_relative_delta;
-		};
+			struct bulge_remover
+			{
+				size_t max_length_div_K;
+				double max_coverage;
+				double max_relative_coverage;
+				double max_delta;
+				double max_relative_delta;
+			};
 
-		struct erroneous_connections_remover
-		{
-			double max_coverage;
-			int max_length_div_K;
-		};
+			struct erroneous_connections_remover
+			{
+				double  max_coverage;
+				int     max_length_div_K;
+			};
 
-		struct cheating_erroneous_connections_remover
-		{
-			size_t max_length;
-			double coverage_gap;
-			size_t sufficient_neighbour_length;
+			struct cheating_erroneous_connections_remover
+			{
+				size_t max_length;
+				double coverage_gap;
+				size_t sufficient_neighbour_length;
+			};
+
+			tip_clipper                            tc;
+			bulge_remover                          br;
+			erroneous_connections_remover          ec;
+			cheating_erroneous_connections_remover cec;
 		};
 
 		struct repeat_resolver
@@ -159,10 +167,9 @@ namespace debruijn_graph
 
 		std::string uncorrected_reads;
 		bool need_consensus;
-		tip_clipper tc;
-		bulge_remover br;
-		erroneous_connections_remover ec;
-		cheating_erroneous_connections_remover cec;
+
+		simplification simp;
+
 		distance_estimator de;
 		advanced_distance_estimator ade;
 		repeat_resolver rr;
@@ -172,11 +179,11 @@ namespace debruijn_graph
 
 	// specific load functions
 
-	inline void load(boost::property_tree::ptree const& pt, debruijn_config::tip_clipper& tc)
+	inline void load(boost::property_tree::ptree const& pt, debruijn_config::simplification::tip_clipper& tc)
 	{
 		using config_common::load;
-		load(pt, "max_tip_length_div_K", tc.max_tip_length_div_K);
-		load(pt, "max_coverage", tc.max_coverage);
+		load(pt, "max_tip_length_div_K" , tc.max_tip_length_div_K);
+		load(pt, "max_coverage"		    , tc.max_coverage);
 		load(pt, "max_relative_coverage", tc.max_relative_coverage);
 	}
 
@@ -186,7 +193,7 @@ namespace debruijn_graph
 		entry_point = debruijn_config::working_stage_id(ep);
 	}
 
-	inline void load(boost::property_tree::ptree const& pt, debruijn_config::bulge_remover& br)
+	inline void load(boost::property_tree::ptree const& pt, debruijn_config::simplification::bulge_remover& br)
 	{
 		using config_common::load;
 		load(pt, "max_length_div_K", br.max_length_div_K);
@@ -196,14 +203,18 @@ namespace debruijn_graph
 		load(pt, "max_relative_delta", br.max_relative_delta);
 	}
 
-	inline void load(boost::property_tree::ptree const& pt, debruijn_config::erroneous_connections_remover& ec)
+	inline void load(
+	    boost::property_tree::ptree const& pt,
+	    debruijn_config::simplification::erroneous_connections_remover& ec)
 	{
 		using config_common::load;
 		load(pt, "max_coverage", ec.max_coverage);
 		load(pt, "max_length_div_K", ec.max_length_div_K);
 	}
 
-	inline void load(boost::property_tree::ptree const& pt, debruijn_config::cheating_erroneous_connections_remover& cec)
+	inline void load(
+	    boost::property_tree::ptree const& pt,
+	    debruijn_config::simplification::cheating_erroneous_connections_remover& cec)
 	{
 		using config_common::load;
 		load(pt, "max_length", cec.max_length);
@@ -249,6 +260,16 @@ namespace debruijn_graph
 		load(pt, "LEN", ds.LEN);
 	}
 
+	inline void load(boost::property_tree::ptree const& pt, debruijn_config::simplification& simp)
+	{
+	    using config_common::load;
+
+        load(pt, "tc" , simp.tc ); // tip clipper:
+        load(pt, "br" , simp.br ); // bulge remover:
+        load(pt, "ec" , simp.ec ); // erroneous connections remover:
+        load(pt, "cec", simp.cec); // cheating erroneous connections remover:
+	}
+
 	// main debruijn config load function
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config& cfg)
 	{
@@ -280,10 +301,10 @@ namespace debruijn_graph
 		load(pt, "late_paired_info", cfg.late_paired_info);
 		load(pt, "advanced_estimator_mode", cfg.advanced_estimator_mode);
 
-		load(pt, "tc", cfg.tc); // tip clipper:
-		load(pt, "br", cfg.br); // bulge remover:
-		load(pt, "ec", cfg.ec); // erroneous connections remover:
-		load(pt, "cec", cfg.cec); // cheating erroneous connections remover:
+		bool single_cell;
+		load(pt, "single_cell_mode", single_cell);
+		load(pt, single_cell ? "sc_simplification" : "usual_simplification", cfg.simp);
+
 		load(pt, "de", cfg.de); // distance estimator:
 		load(pt, "ade", cfg.ade); // advanced distance estimator:
 		load(pt, "rr", cfg.rr); // repeat resolver:
