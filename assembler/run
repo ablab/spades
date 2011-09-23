@@ -5,6 +5,11 @@ function run_n_measure
    /usr/bin/time -f "\n\ntime: %E\nmemory: %MKb" $1 $2 $3 $4 $5 $6 $7 
 }
 
+if [ $# = 0 ]
+then
+  set $1 'rd'
+fi
+
 case $1 in
 
 'rd' ) run_n_measure build/release/debruijn/debruijn $2 $3 $4 $5 ;;
