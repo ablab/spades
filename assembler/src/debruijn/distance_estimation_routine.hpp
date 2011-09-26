@@ -46,10 +46,8 @@ void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
 		paired_info_index raw_clustered_index(gp.g);
 		estimator.Estimate(raw_clustered_index);
 
-		//todo magic number
-		size_t delta = 20;
 		//todo reduce number of constructor params
-		PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g, cfg::get().ds.IS, cfg::get().ds.RL, debruijn_graph::K, delta);
+		PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g, cfg::get().ds.IS, cfg::get().ds.RL, debruijn_graph::K);
 		PairedInfoNormalizer<Graph> normalizer(
 				raw_clustered_index, /*&TrivialWeightNormalization<Graph>*/
 				boost::bind(

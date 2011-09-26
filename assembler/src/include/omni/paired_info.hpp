@@ -131,6 +131,7 @@ const PairInfo<EdgeId> MaxPairInfo(EdgeId e1, EdgeId e2) {
  * Method returns approximate distance between occurrences of edges in genome rounded to the nearest
  * integer. In case of a tie closest to 0 value is chosen thus one can assume that distance
  * is rounded the same way as opposite one.
+ * todo check that written here is true and rewrite without e
  */
 template<typename EdgeId>
 int rounded_d(PairInfo<EdgeId> const& pi) {
@@ -704,14 +705,12 @@ class PairedInfoWeightNormalizer {
 	const size_t insert_size_;
 	const size_t read_length_;
 	const size_t k_;
-	const size_t delta_;
 public:
 
 	//Delta better to be around 5-10% of insert size
 	PairedInfoWeightNormalizer(const Graph& g, size_t insert_size,
-			size_t read_length, size_t k, size_t delta = 0) :
-			g_(g), insert_size_(insert_size), read_length_(read_length), k_(k), delta_(
-					delta) {
+			size_t read_length, size_t k) :
+			g_(g), insert_size_(insert_size), read_length_(read_length), k_(k) {
 
 	}
 
@@ -719,7 +718,7 @@ public:
 		double w = 0.;
 		if (math::eq(pair_info.d, 0.) && pair_info.first == pair_info.second) {
 			w = 0. + g_.length(pair_info.first) - insert_size_
-					+ 2 * read_length_ + 1 - k_ + delta_;
+					+ 2 * read_length_ + 1 - k_;
 		} else {
 			EdgeId e1 =	(math::ge(pair_info.d, 0.)) ?
 							pair_info.first : pair_info.second;
@@ -729,15 +728,12 @@ public:
 			int right = std::min(insert_size_,
 					gap_len + g_.length(e2) + read_length_);
 			int left = std::max(gap_len, int(insert_size_) - int(read_length_) - int(g_.length(e1)));
-			w = 0. + right - left + 1 - k_ + delta_;
+			w = 0. + right - left + 1 - k_;
 		}
 
-		double result_weight = 0.;
-		if (math::le(w, 0.) && math::gr(pair_info.weight, 0.)) {
-			//todo talk to Andrey
-			DEBUG("Ideal weight is negative");
-		} else {
-			result_weight = pair_info.weight / w;
+		double result_weight = pair_info.weight;
+		if (math::gr(w, 0.)) {
+			result_weight /= w;
 		}
 
 		PairInfo<EdgeId> result(pair_info);
