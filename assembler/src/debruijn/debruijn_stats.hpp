@@ -316,8 +316,29 @@ void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
 		//		osequencestream oss(contigs_output_dir + "tst.fasta");
 		oss << g.EdgeNucls(*it);
 		n++;
-	}INFO("Contigs written");
+	}INFO("SingleFileContigs written");
 }
+
+void OutputSingleFileContigs(ConjugateDeBruijnGraph& g, const string& contigs_output_dir) {
+	INFO("-----------------------------------------");
+	INFO("Outputting contigs to " << contigs_output_dir);
+	int n = 0;
+	mkdir(contigs_output_dir.c_str(),
+			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	char n_str[20];
+	set<ConjugateDeBruijnGraph::EdgeId> edges;
+	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		if(edges.find(*it) == edges.end()) {
+			sprintf(n_str, "%d.fa", n);
+			edges.insert(g.conjugate(*it));
+			osequencestream oss(contigs_output_dir + n_str);
+			oss << g.EdgeNucls(*it);
+			n++;
+		}
+	}
+	INFO("SingleFileContigs(Conjugate) written");
+}
+
 
 template<size_t k>
 void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
