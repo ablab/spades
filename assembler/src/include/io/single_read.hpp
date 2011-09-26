@@ -183,6 +183,22 @@ class SingleRead {
     return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_));
   }
 
+  SingleRead SubstrStrict(size_t from, size_t to) {
+    std::string new_name = name_ + ".substr(" + ToString(from) + "," + ToString(to) + ")";
+    return SingleRead(new_name, seq_.substr(from, to), qual_.substr(from, to));
+  }
+
+  SingleRead Substr(size_t from, size_t to) {
+    size_t len = to - from;
+    if (len == size()) {
+      return *this;
+    }
+    if (len == 0) {
+      return SingleRead();
+    }
+    return SubstrStrict(from, to);
+  }
+
   /*
    * Check whether two SingleReads are equal.
    *
@@ -280,6 +296,7 @@ class SingleRead {
       valid_ = false;
     }
     if (seq_.size() != qual_.size()) {
+      // assert(false); TODO Happens sometimes! o_O
       valid_ = false;
     }
     for (size_t i = 0; i < seq_.size(); ++i) {

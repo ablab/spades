@@ -26,13 +26,14 @@
 
 #include "omni/ID_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
+#include "omni/total_labeler.hpp"
 #include "omni/dijkstra.hpp"
 
 
 namespace debruijn_graph {
 
 #define MAX_DISTANCE_CORRECTION 10
-#define rc_mode 0
+#define rc_mode 1
 
 
 using omnigraph::SmartVertexIterator;
@@ -173,7 +174,6 @@ public:
 		near_vertex = cfg::get().rr.near_vertex;
 		for (auto v_iter = old_graph.SmartVertexBegin(); !v_iter.IsEnd();
 				++v_iter) {
-			//		if (vertices.find(old_graph.conjugate(*v_iter)) == vertices.end())
 			{
 				vertices.insert(*v_iter);
 				TRACE(*v_iter);
@@ -181,27 +181,38 @@ public:
 		}
 		for (auto e_iter = old_graph.SmartEdgeBegin(); !e_iter.IsEnd();
 				++e_iter) {
-			//	if (edges.find(old_graph.conjugate(*e_iter)) == edges.end())
 			{
 				edges.insert(*e_iter);
 			}
 		}
 		for (auto v_iter = vertices.begin(); v_iter != vertices.end();
 				++v_iter) {
+			if (rc_mode) {
+				vertices.erase(old_IDs.ReturnVertexId(GetRCId(old_IDs.ReturnIntId(*v_iter))));
+			}
 			size_t degree = old_graph.IncomingEdgeCount(*v_iter)
 					+ old_graph.OutgoingEdgeCount(*v_iter);
 			if (degree > 0) {
 				VertexId new_vertex = new_graph.AddVertex();
 				real_vertices.insert(new_vertex);
+
 				TRACE("Added vertex" << new_vertex);
-				// <<" " << new_graph.conjugate(new_vertex));
 				vertex_labels[new_vertex] = *v_iter;
 				old_to_new[*v_iter] = new_vertex;
-				//	old_to_new[old_graph.conjugate(*v_iter)] = new_graph.conjugate(new_vertex);
+				if (rc_mode) {
+					VertexId new_rc_vertex = new_IDs.ReturnVertexId(GetRCId(new_IDs.ReturnIntId(new_vertex)));
+					VertexId old_rc_vertex = old_IDs.ReturnVertexId(GetRCId(old_IDs.ReturnIntId(*v_iter)));
+					real_vertices.insert(new_rc_vertex);
+					vertex_labels[new_rc_vertex] = old_rc_vertex;
+					old_to_new[old_rc_vertex] = new_rc_vertex;
+				}
 			}
 
 		}
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
+			if (rc_mode)
+				edges.erase(old_IDs.ReturnEdgeId(GetRCId(old_IDs.ReturnIntId(*e_iter))));
+
 			TRACE(
 					"Adding edge from " << old_to_new[old_graph.EdgeStart(*e_iter)] <<" to " << old_to_new[old_graph.EdgeEnd(*e_iter)]);
 			//			DEBUG("Setting coverage to edge length " << old_graph.length(*e_iter) << "  cove: " << old_graph.coverage(*e_iter));
@@ -209,15 +220,24 @@ public:
 					old_to_new[old_graph.EdgeStart(*e_iter)],
 					old_to_new[old_graph.EdgeEnd(*e_iter)],
 					old_graph.EdgeNucls(*e_iter));
-			new_graph.coverage_index().SetCoverage(new_edge,
+			WrappedSetCoverage(new_edge,
 					old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
-//			new_graph.SetCoverage(new_graph.conjugate(new_edge), 0);
+//			new_graph.coverage_index().SetCoverage(new_edge,
+//					old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
 			edge_labels[new_edge] = *e_iter;
 			TRACE("Adding edge " << new_edge<< " from" << *e_iter);
 			old_to_new_edge[*e_iter] = new_edge;
-			//			old_to_new_edge[old_graph.conjugate(*e_iter)] = new_graph.conjugate(new_edge);
-			//			PairInfos tmp = ind.GetEdgeInfo(edgeIds[dir][i]);
+			new_pos.AddEdgePosition(new_edge, old_pos.EdgesPositions[*e_iter]);
 
+
+			if (rc_mode) {
+				EdgeId new_rc_edge = new_IDs.ReturnEdgeId(GetRCId(new_IDs.ReturnIntId(new_edge)));
+				EdgeId old_rc_edge = old_IDs.ReturnEdgeId(GetRCId(old_IDs.ReturnIntId(*e_iter)));
+				edge_labels[new_rc_edge] = old_rc_edge;
+				old_to_new_edge[old_rc_edge] = new_rc_edge;
+				new_pos.AddEdgePosition(new_rc_edge, old_pos.EdgesPositions[old_rc_edge]);
+
+			}
 		}
 		old_to_new.clear();
 		for (auto p_iter = ind.begin(), p_end_iter = ind.end();
@@ -253,6 +273,9 @@ private:
 	size_t RectangleResolveVertex(VertexId vid);
 	size_t CheatingResolveVertex(VertexId vid);
 	void BanRCVertex(VertexId v );
+	int GetRCId (int id);
+	EdgeId RCEdge(EdgeId e);
+	void WrappedSetCoverage(EdgeId e, int cov);
 	size_t GenerateVertexPairedInfo(Graph &g, PairInfoIndexData<EdgeId> &ind,
 			VertexId vid);
 	vector<typename Graph::VertexId> MultiSplit(VertexId v);
@@ -421,6 +444,7 @@ private:
 	unordered_map<EdgeId, EdgeId> edge_labels;
 	set<VertexId> real_vertices;
 
+
 	int cheating_mode;
 	map<EdgeId, int> local_cheating_edges;
 	set<EdgeId> global_cheating_edges;
@@ -567,10 +591,29 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		if (split_edge.size() > 0) {
 			pair<VertexId, vector<pair<EdgeId, EdgeId>>> split_pair = new_graph.SplitVertex(v, split_edge, split_coeff);
 			res.push_back(split_pair.first);
+			if (rc_mode) {
+				for( auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it) {
+					WrappedSetCoverage(RCEdge(it->second), new_graph.coverage(it->second) * new_graph.length(it->second));
+				}
+			}
 			map<EdgeId, EdgeId> old_to_new_edgeId;
 			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
 				old_to_new_edgeId[it->first] = it->second;
 				edge_labels[it->second] = edge_labels[it->first];
+				if (cheating_mode) {
+					if (local_cheating_edges.find(it->first) != local_cheating_edges.end()) {
+						if (local_cheating_edges[it->first] == 0 ) {
+							WARN(" 0 copy of edge "<< new_IDs.ReturnIntId(it->first) << " , something wrong");
+						} else {
+							if (local_cheating_edges[it->first] == 1 ) {
+								DEBUG( "cheating OK, no global cheaters needed(but actually added)");
+							} else{
+								DEBUG( "cheating OK");
+							}
+							global_cheating_edges.insert(it->second);
+						}
+					}
+				}
 			}
 			for (size_t j = 0; j < edge_infos.size(); j++){
 				if (edge_info_colors[j] == i)
@@ -586,17 +629,6 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 				BanRCVertex(split_pair.first);
 		}
 	}
-	if (cheating_mode) {
-		for(auto it = local_cheating_edges.begin(); it != local_cheating_edges.end(); ++it) {
-			if (it-> second == 0 ) {
-				WARN(" 0 copy of edge "<< new_IDs.ReturnIntId(it->first) << " , something wrong");
-			} else {
-				if (it-> second == 1 )
-					DEBUG( "cheating OK, no global cheaters needed(but actually added)");
-				global_cheating_edges.insert(it->first);
-			}
-		}
-	}
 
 	new_graph.ForceDeleteVertex(v);
 	return res;
@@ -605,23 +637,43 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 template<class Graph>
 void RepeatResolver<Graph>::BanRCVertex(VertexId v ){
 	int id = new_IDs.ReturnIntId(v);
+	int rc_id = GetRCId(id);
 
-	int rc_id = ((id - 1) / 2 ) * 2 + 2 - ((id - 1) % 2);
+	INFO("added vertex " << id << " banning vertex "<< rc_id);
 	vector<EdgeId> tmp = new_graph.IncomingEdges(new_IDs.ReturnVertexId(rc_id));
 	for(size_t i = 0; i < tmp.size(); i++)
 		global_cheating_edges.insert(tmp[i]);
-	tmp = new_graph.OutgoingEdges(v);
+	DEBUG("incoming cheaters added");
+	tmp = new_graph.OutgoingEdges(new_IDs.ReturnVertexId(rc_id));
 	for(size_t i = 0; i < tmp.size(); i++)
 		global_cheating_edges.insert(tmp[i]);
+	DEBUG("outgoing cheaters added");
 }
-/*
 template<class Graph>
-EdgeId RepeatResolver<Graph>::RCEdge(EdgeId e) {
+int RepeatResolver<Graph>::GetRCId(int id) {
+	return ((id - 1) / 2 ) * 2 + 2 - ((id - 1) % 2);
+}
+
+template<class Graph>
+void RepeatResolver<Graph>::WrappedSetCoverage(EdgeId e, int cov){
+	if (rc_mode == 0) {
+		new_graph.coverage_index().SetCoverage(e, cov);
+	} else {
+		new_graph.coverage_index().SetCoverage(e, cov);
+		EdgeId rc_e = new_IDs.ReturnEdgeId(GetRCId(new_IDs.ReturnIntId(e)));
+		new_graph.coverage_index().SetCoverage(rc_e, cov);
+
+	}
+
+}
+
+template<class Graph>
+typename Graph::EdgeId RepeatResolver<Graph>::RCEdge(EdgeId e) {
 	int id = new_IDs.ReturnIntId(e);
-	int rc_id = ((id - 1) / 2 ) * 2 + 2 - ((id - 1) % 2);
+	int rc_id = GetRCId(id);
 	return new_IDs.ReturnEdgeId(rc_id);
 }
-*/
+
 template<class Graph>
 map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesAuto(){
 	map<int, typename Graph::VertexId> vertices;
@@ -641,13 +693,18 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 	map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
 	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, cfg::get().ds.IS);
-	vector<VertexId> comps = splitter.NextComponent();
+
+	vector<VertexId> comps;
+	if (! splitter.Finished())
+		comps = splitter.NextComponent();
 	int count = 0;
 	while (comps.size() != 0) {
 		for(size_t i = 0; i < comps.size(); i++) {
 			vertices.insert(make_pair(count, comps[i]));
 			count++;
 		}
+		if (splitter.Finished())
+			break;
 		comps = splitter.NextComponent();
 	}
 	return vertices;
@@ -661,6 +718,22 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	INFO("resolve_repeats started");
 	sum_count = 0;
 	global_cheating_edges.clear();
+
+
+
+	//		TotalLabelerGraphStruct<NCGraph> graph_struct_before(old_graph,
+	//					&old_IDs, &old_pos, NULL);
+	//		TotalLabelerGraphStruct<NCGraph> graph_struct_after(new_graph,
+	//					&new_IDs, &new_pos, NULL);
+	//		TotalLabeler<NCGraph> TotLabAfter(&graph_struct_after,
+	//					&graph_struct_before);
+	TotalLabelerGraphStruct<Graph> graph_struct_before(old_graph,
+			&old_IDs, &old_pos, NULL);
+	TotalLabelerGraphStruct<Graph> graph_struct_after(new_graph,
+			&new_IDs, &new_pos, NULL);
+	TotalLabeler<Graph> TotLabAfter(&graph_struct_after,
+			&graph_struct_before);
+
 	for (cheating_mode = 0; cheating_mode < cfg::get().rr.mode; cheating_mode++) {
 		INFO(" cheating_mode = " << cheating_mode);
 		bool changed = true;
@@ -678,20 +751,38 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 			int GraphCnt = 0;
 
 			omnigraph::WriteSimple(
-					new_graph, IdTrackLabelerAfter,
+					new_graph, TotLabAfter,
 					output_folder + "resolve_" + ToString(cheating_mode)+"_"+ ToString(GraphCnt) + ".dot",
 					"no_repeat_graph");
 
 			for (auto v_iter = vertices.begin(), v_end =
 					vertices.end(); v_iter != v_end; ++v_iter) {
 
-
-				size_t p_size = GenerateVertexPairedInfo(new_graph, paired_di_data, v_iter->second);
-				DEBUG(" resolving vertex"<<*v_iter<<" "<< p_size);
+				DEBUG(" resolving vertex "<<new_IDs.ReturnIntId(v_iter->second));
 				if (rc_mode && deleted_handler.live_vertex.find(v_iter->second) == deleted_handler.live_vertex.end()){
 					DEBUG("already deleted");
 					continue;
+				} else {
+					DEBUG("not deleted");
 				}
+				vector<EdgeId> edgeIds[2];
+				int flag = 1;
+				edgeIds[0] = new_graph.OutgoingEdges(v_iter->second);
+				edgeIds[1] = new_graph.IncomingEdges(v_iter->second);
+				for(int i = 0; i < 2; i++) {
+					for(size_t j = 0; j < edgeIds[i].size(); j++)
+						if (global_cheating_edges.find(edgeIds[i][j]) != global_cheating_edges.end()) {
+							flag = 0;
+							break;
+						}
+				}
+				if (! flag) {
+					DEBUG("Cheaters are near" << new_IDs.ReturnIntId(v_iter->second));
+					continue;
+				}
+				size_t p_size = GenerateVertexPairedInfo(new_graph, paired_di_data, v_iter->second);
+				DEBUG("paired info size: " << p_size);
+
 				int tcount;
 				if (cheating_mode != 1)
 					tcount = RectangleResolveVertex(v_iter->second);
@@ -702,7 +793,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				if (tcount > 1) {
 					GraphCnt++;
 					omnigraph::WriteSimple(
-						new_graph, IdTrackLabelerAfter, output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
+						new_graph, TotLabAfter, output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
 								+ ".dot", "no_repeat_graph");
 				}
 			}
@@ -710,15 +801,15 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	}INFO("total vert" << sum_count);
 	INFO("Converting position labels");
 
-	for (auto e_iter = new_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+/*	for (auto e_iter = new_graph.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
 		EdgeId old_edge = edge_labels[*e_iter];
 		for (size_t i = 0; i < old_pos.EdgesPositions[old_edge].size(); i++) {
 			new_pos.AddEdgePosition(*e_iter,
-					old_pos.EdgesPositions[old_edge][i].start_,
-					old_pos.EdgesPositions[old_edge][i].end_);
+					old_pos.EdgesPositions[old_edge][i].start(),
+					old_pos.EdgesPositions[old_edge][i].end());
 		}
 	}
-	//	gvis::WriteSimple(  "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
+*/	//	gvis::WriteSimple(  "repeats_resolved_siiimple.dot", "no_repeat_graph", new_graph);
 }
 
 template<class Graph>

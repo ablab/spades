@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if [ "$EDITOR" = "" ] ; then
+  EDITOR=`git config --get core.editor`
+fi
+if [ "$EDITOR" = "" ] ; then
+  EDITOR="vi"
+fi
+
+if [ $# = 0 ]
+then
+  set $1 'c'
+fi
+
+case $1 in
+  'c') cfg="src/debruijn/config.info" ;;
+  's') cfg="src/debruijn/simplification.info" ;;
+  'd') cfg="src/debruijn/datasets.info" ;;
+esac
+
+$EDITOR $cfg

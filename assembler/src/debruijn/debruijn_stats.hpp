@@ -148,7 +148,10 @@ void CountClusteredPairedInfoStats(const Graph &g,
 	//	boost::filesystem::create_directory(stat_folder.c_str());
 	mkdir(stat_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	estimation_stat.WriteEstmationStats(stat_folder);
+
+	INFO("Counting overall cluster stat")
 	ClusterStat<Graph> (clustered_index).Count();
+	INFO("Overall cluster stat")
 
 	//	PairedInfoIndex<Graph> etalon_clustered_index;
 	//	DistanceEstimator<Graph> estimator(g, etalon_paired_index, insert_size,
@@ -156,10 +159,12 @@ void CountClusteredPairedInfoStats(const Graph &g,
 	//			cfg::get().de.linkage_distance, cfg::get().de.max_distance);
 	//	estimator.Estimate(etalon_clustered_index);
 
-	PairedInfoIndex<Graph> filtered_clustered_index(g);
-	PairInfoFilter<Graph> (g, 1000.).Filter(
-			clustered_index/*etalon_clustered_index*/, filtered_clustered_index);
-	MatePairTransformStat<Graph> (g, filtered_clustered_index).Count();
+//	PairedInfoIndex<Graph> filtered_clustered_index(g);
+//	PairInfoFilter<Graph> (g, 1000.).Filter(
+//			clustered_index/*etalon_clustered_index*/, filtered_clustered_index);
+	INFO("Counting mate-pair transformation stat");
+	MatePairTransformStat<Graph> (g, /*filtered_*/clustered_index).Count();
+	INFO("Mate-pair transformation stat counted");
 	INFO("Clustered info stats counted");
 }
 
@@ -185,6 +190,13 @@ template<size_t k>
 Path<typename Graph::EdgeId> FindGenomePath(const Sequence& genome,
 		const Graph& g, const EdgeIndex<k + 1, Graph>& index) {
 	SimpleSequenceMapper<k + 1, Graph> srt(g, index);
+	return srt.MapSequence(genome);
+}
+
+template<size_t k>
+MappingPath<typename Graph::EdgeId> FindGenomeMappingPath(const Sequence& genome,
+		const Graph& g, const EdgeIndex<k + 1, Graph>& index, KmerMapper<k + 1, Graph>& kmer_mapper) {
+	ExtendedSequenceMapper<k + 1, Graph> srt(g, index, kmer_mapper);
 	return srt.MapSequence(genome);
 }
 
@@ -273,6 +285,21 @@ void OutputContigs(Graph& g, const string& contigs_output_filename) {
 	}INFO("Contigs written");
 }
 
+void OutputConjugateContigs(ConjugateDeBruijnGraph& g, const string& contigs_output_filename){
+	INFO("-----------------------------------------");
+	INFO("Outputting contigs to " << contigs_output_filename);
+	osequencestream oss(contigs_output_filename);
+	set<ConjugateDeBruijnGraph::EdgeId> edges;
+	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		if(edges.find(*it) == edges.end()) {
+			oss << g.EdgeNucls(*it);
+			edges.insert(g.conjugate(*it));
+		}
+//		oss << g.EdgeNucls(*it);
+	}INFO("Contigs written");
+
+}
+
 template<class Graph>
 void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
 	INFO("-----------------------------------------");
@@ -294,7 +321,7 @@ void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
 
 template<size_t k>
 void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos) {
+		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper) {
 	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
 	int CurPos = 0;
 	for (auto it = path1.sequence().begin(); it != path1.sequence().end(); ++it) {
@@ -302,25 +329,48 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 		edgesPos.AddEdgePosition(ei, CurPos + 1, CurPos + g.length(ei));
 		CurPos += g.length(ei);
 	}
-	//CurPos = 1000000000;
+
 	CurPos = 0;
 	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
 	for (auto it = path2.sequence().begin(); it != path2.sequence().end(); ++it) {
 		CurPos -= g.length(*it);
 	}
+
 	for (auto it = path2.sequence().begin(); it != path2.sequence().end(); ++it) {
 		EdgeId ei = *it;
 		edgesPos.AddEdgePosition(ei, CurPos, CurPos + g.length(ei) - 1);
 		CurPos += g.length(ei);
 	}
+
 }
 
 template<size_t k>
 void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const string& contig_file, EdgesPositionHandler<Graph>& edgesPos) {
+		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int contigId) {
+	MappingPath<typename Graph::EdgeId> m_path1 = FindGenomeMappingPath<k> (genome, g, index, kmer_mapper);
+	int CurPos = 0;
+	DEBUG("Contig "<<contigId<< " maped on "<<m_path1.size()<<" fragments.");
+	for (size_t i = 0; i < m_path1.size(); i++) {
+		EdgeId ei = m_path1[i].first;
+		MappingRange mr = m_path1[i].second;
+		int len = mr.mapped_range.end_pos - mr.mapped_range.start_pos;
+		if (i>0)
+			if (m_path1[i-1].first != ei)
+				if (g.EdgeStart(ei) != g.EdgeEnd(m_path1[i-1].first)){
+					DEBUG("Contig "<<contigId<<" maped on not adjacent edge. Position in contig is "<<m_path1[i-1].second.initial_range.start_pos+1<<"--" <<m_path1[i-1].second.initial_range.end_pos<< " and "<<mr.initial_range.start_pos+1<<"--" <<mr.initial_range.end_pos);
+				}
+		edgesPos.AddEdgePosition(ei, mr.initial_range.start_pos+1, mr.initial_range.end_pos, contigId);
+		CurPos += len;
+	}
+	//CurPos = 1000000000;
+}
+
+template<size_t k>
+void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+		const string& contig_file, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int start_contig_id) {
 	INFO("Threading large contigs");
 	io::Reader<io::SingleRead> irs(contig_file);
-	for (int cur = 0, c = 1; !irs.eof(); c++) {
+	for (int c = start_contig_id; !irs.eof(); c++) {
 		io::SingleRead read;
 		irs >> read;
 		DEBUG("Contig #" << c << ", length: " << read.size());
@@ -330,20 +380,10 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 			continue;
 		}
 		Sequence contig = read.sequence();
-		if (contig.size() < 150000) {
-			continue;
+		if (contig.size() < 1500000) {
+	//		continue;
 		}
-		INFO("Large contig #" << c << " has position number " << cur);
-		Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (contig, g,
-				index);
-		for (auto it = path1.sequence().begin(); it != path1.sequence().end(); ++it) {
-			EdgeId ei = *it;
-			edgesPos.AddEdgePosition(ei, cur + 1, cur + g.length(ei));
-			cur += g.length(ei);
-		}
-		cur /= 10000000;
-		cur++;
-		cur *= 10000000;
+		FillEdgesPos<k>(g, index, contig, edgesPos, kmer_mapper, c);
 	}
 }
 

@@ -52,7 +52,8 @@ public:
 	}
 
 	virtual std::string label(VertexId vertexId) const {
-		return graph_struct->g_.str(vertexId);
+		int vId = graph_struct->IDs->ReturnIntId(vertexId);
+		return ToString(vId);
 	}
 
 	std::string OldEdgeIdToStr(EdgeId e_id){
@@ -81,7 +82,9 @@ public:
 				ret_label += "Labels:\\n" + graph_struct->EdgesLabels->str(edgeId);
 			}
 		}
-		ret_label += "Len(cov): " + graph_struct->g_.str(edgeId);
+		int len = graph_struct->g_.length(edgeId);
+		double cov = graph_struct->g_.coverage(edgeId);
+		ret_label += "Len(cov): " + ToString(len)+"("+ToString(cov)+")";// + graph_struct->g_.str(edgeId);
 		return ret_label;
 	}
 	virtual ~TotalLabeler() {

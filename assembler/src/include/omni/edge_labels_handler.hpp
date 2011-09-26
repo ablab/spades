@@ -78,7 +78,7 @@ public:
 	}
 
 	 virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		 DEBUG("Handle glue");
+		 TRACE("Handle glue");
 		 if (edge_labels[edge1] != edge_labels[edge2]);
 		 	 WARN("gluing two different edges is not a good idea on this step! EdgeLabel Handler can fail on such operation");
 		 vector<EdgeId> tmp;
@@ -108,11 +108,11 @@ public:
 
 
  	 virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
-		 DEBUG("HandleMerge by edge labels handler");
+		 TRACE("HandleMerge by edge labels handler");
  		 size_t n = oldEdges.size();
 		vector<EdgeId> tmp;
 		 for(size_t j = 0; j < n; j++) {
-	 		 DEBUG("Edge "<< oldEdges[j] << " was labeled by " <<
+	 		 TRACE("Edge "<< oldEdges[j] << " was labeled by " <<
              debruijn::operator<<(oss_, edge_labels[oldEdges[j]]));
 		 	 for(size_t i = 0; i < edge_labels[oldEdges[j]].size(); i++){
 				edge_inclusions[edge_labels[oldEdges[j]][i]].insert(newEdge);
@@ -127,7 +127,7 @@ public:
  	 }
 
  	void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) {
-		 DEBUG("HandleMerge by edge labels handler");
+		 TRACE("HandleMerge by edge labels handler");
  		 size_t n = newEdges.size();
 		 for(size_t j = 0; j < n; j++) {
 			 EdgeId old_ID = newEdges[j].first;
@@ -150,7 +150,7 @@ public:
 	}
 */
  	virtual void HandleAdd(EdgeId e) {
- 		DEBUG("Add edge "<<e);
+ 		TRACE("Add edge "<<e);
 
  	}
 	virtual void HandleDelete(EdgeId e) {

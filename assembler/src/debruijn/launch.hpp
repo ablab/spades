@@ -51,5 +51,4 @@ void assemble_genome(PairedReadStream& stream, const Sequence& genome)
 
     INFO("Genome Assembling Finished");
 }
-
 }

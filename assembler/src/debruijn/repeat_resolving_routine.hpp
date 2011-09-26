@@ -69,48 +69,36 @@ void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
     }
 }
 
-void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
+
+template <class graph_pack>
+void process_resolve_repeats(
+		graph_pack& origin_gp,
+		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
+		graph_pack& resolved_gp)
 {
-    conj_graph_pack   conj_gp (genome);
-    paired_info_index paired_index   (conj_gp.g/*, 5.*/);
-    paired_info_index clustered_index(conj_gp.g);
-
-    exec_distance_estimation(stream, conj_gp, paired_index, clustered_index);
-
-    INFO("STAGE == Resolving Repeats");
-
-    if (!cfg::get().paired_mode)
-    {
-        OutputContigs(conj_gp.g, cfg::get().output_dir + "contigs.fasta");
-        return;
-    }
-
-    nonconj_graph_pack origin_gp(conj_gp, clustered_index);
-    nonconj_graph_pack resolved_gp;
-
-    EdgeLabelHandler<NCGraph> labels_after(resolved_gp.g, origin_gp.g);
-    DEBUG("New index size: "<< origin_gp.clustered_index.size());
+    EdgeLabelHandler<typename graph_pack::graph_t> labels_after(resolved_gp.g, origin_gp.g);
+    DEBUG("New index size: "<< clustered_index.size());
     // todo: make printGraph const to its arguments
 
     // todo: possibly we don't need it
-    if (cfg::get().rectangle_mode)
-        RectangleResolve(origin_gp.clustered_index, origin_gp.g, cfg::get().output_root + "tmp/", cfg::get().output_dir);
+//    if (cfg::get().rectangle_mode)
+//        RectangleResolve(clustered_index, origin_gp.g, cfg::get().output_root + "tmp/", cfg::get().output_dir);
 
-    ResolveRepeats(origin_gp  .g, origin_gp  .int_ids, origin_gp.clustered_index, origin_gp  .edge_pos,
-                   resolved_gp.g, resolved_gp.int_ids,                            resolved_gp.edge_pos,
+    ResolveRepeats(origin_gp  .g, origin_gp  .int_ids, clustered_index, origin_gp  .edge_pos,
+                   resolved_gp.g, resolved_gp.int_ids,                  resolved_gp.edge_pos,
                    cfg::get().output_dir + "resolve/", labels_after);
 
     INFO("Total labeler start");
 
-    typedef TotalLabelerGraphStruct<NCGraph> total_labeler_gs;
-    typedef TotalLabeler           <NCGraph> total_labeler;
+    typedef TotalLabelerGraphStruct<typename graph_pack::graph_t> total_labeler_gs;
+    typedef TotalLabeler           <typename graph_pack::graph_t> total_labeler;
 
     total_labeler_gs graph_struct_before(origin_gp  .g, &origin_gp  .int_ids, &origin_gp  .edge_pos, NULL);
     total_labeler_gs graph_struct_after (resolved_gp.g, &resolved_gp.int_ids, &resolved_gp.edge_pos, &labels_after);
 
     total_labeler tot_labeler_after(&graph_struct_after, &graph_struct_before);
 
-    //omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after, cfg::get().output_dir + "3_resolved_graph.dot", "no_repeat_graph");
+    omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after, cfg::get().output_dir + "3_resolved_graph.dot", "no_repeat_graph");
 
     INFO("Total labeler finished");
 
@@ -128,21 +116,21 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 
     OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_before_enlarge.fasta");
 
-//  omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
-//                         cfg::get().output_dir + "4_cleared_graph.dot", "no_repeat_graph");
+  omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+                         cfg::get().output_dir + "4_cleared_graph.dot", "no_repeat_graph");
 
-	one_many_contigs_enlarger<NCGraph> N50enlarger(resolved_gp.g, cfg::get().ds.IS);
+	one_many_contigs_enlarger<typename graph_pack::graph_t> N50enlarger(resolved_gp.g, cfg::get().ds.IS);
     N50enlarger.Loops_resolve();
 
-//  omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
-//                         cfg::get().output_dir + "5_unlooped_graph.dot", "no_repeat_graph");
+  omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+                         cfg::get().output_dir + "5_unlooped_graph.dot", "no_repeat_graph");
 
     OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_unlooped.fasta");
 
     N50enlarger.one_many_resolve_with_vertex_split();
 
-//  omnigraph::WriteSimple(resolved_gp,g, tot_labeler_after,
-//                         cfg::get().output_dir + "6_finished_graph.dot", "no_repeat_graph");
+    omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+                         cfg::get().output_dir + "6_finished_graph.dot", "no_repeat_graph");
 
     OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_final.fasta");
 
@@ -151,7 +139,7 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 //  if (cfg::get().need_consensus)
 //  {
 //	  OutputSingleFileContigs(resolved_graph, consensus_folder);
-//	  SelectReadsForConsensus<k, NCGraph>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
+//	  SelectReadsForConsensus<k, typename graph_pack::graph_t>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
 //  }
 
 //  OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
@@ -167,6 +155,37 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 //    }
 
 }
+
+
+
+void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
+{
+    conj_graph_pack   conj_gp (genome);
+    paired_info_index paired_index   (conj_gp.g/*, 5.*/);
+    paired_info_index clustered_index(conj_gp.g);
+
+    exec_distance_estimation(stream, conj_gp, paired_index, clustered_index);
+
+    INFO("STAGE == Resolving Repeats");
+
+    if (!cfg::get().paired_mode)
+    {
+        OutputContigs(conj_gp.g, cfg::get().output_dir + "contigs.fasta");
+        return;
+    }
+    bool conjugate_repeat_resolve = true; //ToDo: get it from config
+    if (conjugate_repeat_resolve) {
+    	conj_graph_pack   resolved_gp (genome);
+    	process_resolve_repeats(conj_gp, clustered_index, resolved_gp) ;
+    } else {
+    	nonconj_graph_pack origin_gp(conj_gp, clustered_index);
+    	nonconj_graph_pack resolved_gp;
+    	process_resolve_repeats(origin_gp, origin_gp.clustered_index, resolved_gp) ;
+
+    }
+
+}
+
 
 void exec_repeat_resolving(PairedReadStream& stream, const Sequence& genome)
 {
@@ -185,3 +204,9 @@ void exec_repeat_resolving(PairedReadStream& stream, const Sequence& genome)
 }
 
 } // debruijn_graph
+
+
+
+
+
+

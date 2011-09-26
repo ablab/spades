@@ -46,6 +46,7 @@ de
 	delta			      10
 	linkage_distance	10
 	max_distance		75
+	filter_threshold		1.0
 }
 
 ; advanced distance estimator:
@@ -79,6 +80,19 @@ rr
 	mode		3	
 	near_vertex  30
 }
+
+
+;position handling
+
+pos
+{
+	max_single_gap 500
+	contigs_for_threading ./data/debruijn/contigs.fasta
+}
+
+
+
+
 
 ; consensus
 need_consensus  false ; output is VERY large(gigabytes).
