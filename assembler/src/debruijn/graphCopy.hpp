@@ -62,8 +62,8 @@ public:
             //Copy PairInfoIndexData
             for(auto iter = old_index.begin() ; iter != old_index.end() ; ++iter)
             {
-                PairInfo<NewEdgeId> *newPairInfo = new PairInfo<NewEdgeId>(edgeMap[iter->first] , edgeMap[iter->second], iter->d, iter->weight);
-                new_index.AddPairInfo(*newPairInfo,1);
+                PairInfo<NewEdgeId> newPairInfo(edgeMap[iter->first] , edgeMap[iter->second], iter->d, iter->weight);
+                new_index.AddPairInfo(newPairInfo,0);
             }
         }
 
