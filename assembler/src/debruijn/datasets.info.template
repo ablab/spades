@@ -123,6 +123,7 @@ SC_NEW_3
 	second	SC/3008_tau1_095_02_right.fastq.gz
 	RL		100	; read length
 	IS		270 	; insert size
+	LEN		4639675	; total size
 }
 
 SC_K35
@@ -131,6 +132,7 @@ SC_K35
 	second	SC/0209_tau1_095_K35_02_right.fastq.gz
 	RL		100	; read length
 	IS		270 	; insert size
+	LEN		4639675	; total size
 }
 
 EAS600_EMUL_FULL
