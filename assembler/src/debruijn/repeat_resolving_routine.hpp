@@ -129,7 +129,7 @@ void process_resolve_repeats(
 
     N50enlarger.one_many_resolve_with_vertex_split();
 
-    omnigraph::WriteSimple(resolved_gp,g, tot_labeler_after,
+    omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
                          cfg::get().output_dir + "6_finished_graph.dot", "no_repeat_graph");
 
     OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_final.fasta");
