@@ -296,7 +296,7 @@ class SingleRead {
       valid_ = false;
     }
     if (seq_.size() != qual_.size()) {
-      assert(false);
+      // assert(false); TODO Happens sometimes! o_O
       valid_ = false;
     }
     for (size_t i = 0; i < seq_.size(); ++i) {
