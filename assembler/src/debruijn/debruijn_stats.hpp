@@ -148,7 +148,10 @@ void CountClusteredPairedInfoStats(const Graph &g,
 	//	boost::filesystem::create_directory(stat_folder.c_str());
 	mkdir(stat_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	estimation_stat.WriteEstmationStats(stat_folder);
+
+	INFO("Counting overall cluster stat")
 	ClusterStat<Graph> (clustered_index).Count();
+	INFO("Overall cluster stat")
 
 	//	PairedInfoIndex<Graph> etalon_clustered_index;
 	//	DistanceEstimator<Graph> estimator(g, etalon_paired_index, insert_size,
@@ -156,10 +159,12 @@ void CountClusteredPairedInfoStats(const Graph &g,
 	//			cfg::get().de.linkage_distance, cfg::get().de.max_distance);
 	//	estimator.Estimate(etalon_clustered_index);
 
-	PairedInfoIndex<Graph> filtered_clustered_index(g);
-	PairInfoFilter<Graph> (g, 1000.).Filter(
-			clustered_index/*etalon_clustered_index*/, filtered_clustered_index);
-	MatePairTransformStat<Graph> (g, filtered_clustered_index).Count();
+//	PairedInfoIndex<Graph> filtered_clustered_index(g);
+//	PairInfoFilter<Graph> (g, 1000.).Filter(
+//			clustered_index/*etalon_clustered_index*/, filtered_clustered_index);
+	INFO("Counting mate-pair transformation stat");
+	MatePairTransformStat<Graph> (g, /*filtered_*/clustered_index).Count();
+	INFO("Mate-pair transformation stat counted");
 	INFO("Clustered info stats counted");
 }
 

@@ -24,6 +24,7 @@ typedef io::MultifileReader<io::SingleRead> CompositeSingleReadStream;
 typedef io::ConvertingReaderWrapper UnitedStream;
 
 template<size_t k, class ReadStream>
+
 void FillPairedIndexWithReadCountMetric(const Graph &g,
 		const EdgeIndex<k + 1, Graph>& index
 		, const KmerMapper<k + 1, Graph>& kmer_mapper
@@ -33,20 +34,6 @@ void FillPairedIndexWithReadCountMetric(const Graph &g,
 	INFO("Counting paired info with read count weight");
 	ExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
 	LatePairedIndexFiller<k + 1, Graph, ReadStream> pif(g, mapper, stream, PairedReadCountWeight);
-	pif.FillIndex(paired_info_index);
-	INFO("Paired info with read count weight counted");
-}
-
-template<size_t k, class ReadStream>
-void FillPairedIndexWithProductMetric(const Graph &g,
-		const EdgeIndex<k + 1, Graph>& index
-		, const KmerMapper<k + 1, Graph>& kmer_mapper
-		, PairedInfoIndex<Graph>& paired_info_index , ReadStream& stream) {
-	INFO("-----------------------------------------");
-	stream.reset();
-	INFO("Counting paired info with read count weight");
-	ExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
-	LatePairedIndexFiller<k + 1, Graph, ReadStream> pif(g, mapper, stream, KmerCountProductWeight);
 	pif.FillIndex(paired_info_index);
 	INFO("Paired info with read count weight counted");
 }
@@ -69,14 +56,25 @@ void FillPairedIndex(const Graph &g, const EdgeIndex<k + 1, Graph>& index
 template<size_t k>
 void FillEtalonPairedIndex(const Graph &g,
 		PairedInfoIndex<Graph>& etalon_paired_index,
-		const EdgeIndex<k + 1, Graph>& index, const Sequence& genome) {
+		const EdgeIndex<k + 1, Graph>& index,
+		size_t is, size_t rs,
+		const Sequence& genome) {
 	INFO("-----------------------------------------");
 	INFO("Counting etalon paired info");
 
 	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index,
-			cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().ds.IS * 0.1);
+			is, rs, is * 0.1);
 	etalon_paired_info_counter.FillEtalonPairedInfo(genome,
 			etalon_paired_index);
+
+	INFO("Etalon paired info counted");
+}
+
+template<size_t k>
+void FillEtalonPairedIndex(const Graph &g,
+		PairedInfoIndex<Graph>& etalon_paired_index,
+		const EdgeIndex<k + 1, Graph>& index, const Sequence& genome) {
+	FillEtalonPairedIndex<k>(g, etalon_paired_index, index, cfg::get().ds.IS, cfg::get().ds.RL, genome);
 	//////////////////DEBUG
 	//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
 	//	Path<EdgeId> path = simple_mapper.MapSequence(genome);
@@ -92,23 +90,6 @@ void FillEtalonPairedIndex(const Graph &g,
 	//	new_etalon_paired_info_counter.FillEtalonPairedInfo(new_genome, new_paired_info_index);
 	//	CheckInfoEquality(etalon_paired_index, new_paired_info_index);
 	//////////////////DEBUG
-	INFO("Etalon paired info counted");
-}
-
-template<size_t k>
-void FillEtalonPairedIndex(const Graph &g,
-		PairedInfoIndex<Graph>& etalon_paired_index,
-		const EdgeIndex<k + 1, Graph>& index,
-		size_t is, size_t rs,
-		const Sequence& genome) {
-	INFO("-----------------------------------------");
-	INFO("Counting etalon paired info");
-
-	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index,
-			is, rs, is * 0.1);
-	etalon_paired_info_counter.FillEtalonPairedInfo(genome,
-			etalon_paired_index);
-
 	INFO("Etalon paired info counted");
 }
 

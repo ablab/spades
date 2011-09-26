@@ -84,17 +84,24 @@ void save_distance_estimation(conj_graph_pack& gp,
 			&clustered_index/*, &read_count_weight_paired_index*/);
 }
 
+void count_estimated_info_stats(conj_graph_pack& gp, paired_info_index& paired_index, paired_info_index& clustered_index) {
+	paired_info_index etalon_paired_index(gp.g);
+	FillEtalonPairedIndex<debruijn_graph::K>(gp.g, etalon_paired_index, gp.index, gp.genome);
+	CountClusteredPairedInfoStats(gp.g, paired_index, clustered_index, etalon_paired_index, cfg::get().output_dir);
+}
+
 void exec_distance_estimation(PairedReadStream& stream, conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index) {
 	if (cfg::get().entry_point <= ws_distance_estimation) {
 		estimate_distance(stream, gp, paired_index, clustered_index);
 		save_distance_estimation(gp, paired_index, clustered_index);
+
+		count_estimated_info_stats(gp, paired_index, clustered_index);
 	} else {
 		INFO("Loading Distance Estimation");
 
 		files_t used_files;
-		load_distance_estimation(gp, paired_index, clustered_index,
-				&used_files);
+		load_distance_estimation(gp, paired_index, clustered_index, &used_files);
 		copy_files(used_files);
 	}
 }
