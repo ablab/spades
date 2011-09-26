@@ -12,6 +12,7 @@
 #include "logging.hpp"
 #include "io/reader.hpp"
 
+
 namespace omnigraph {
 
 template<class Graph>
@@ -131,9 +132,6 @@ public:
 			 IncCoverage(new_ID, floor(KPlusOneMerCoverage(old_ID)*split_coefficients[j]));
 		 }
  	 }
-
-
-
 };
 
 }

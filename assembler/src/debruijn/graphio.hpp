@@ -247,7 +247,6 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 
 	if (filter_ == NULL) {
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-
 		    auto it = EPHandler.EdgesPositions.find(*iter);
 		    assert(it != EPHandler.EdgesPositions.end());
 
@@ -255,7 +254,7 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 		    file << IdHandler_.ReturnIntId(*iter) << " " << size << endl;
 
 			for (size_t i = 0; i < it->second.size(); i++)
-				file << "    " << it->second[i].start_ << " - " << it->second[i].end_ << endl;
+				file << "    " <<it->second[i].contigId_<<": "<< it->second[i].start_ << " - " << it->second[i].end_ << endl;
 		}
 	} else {
 		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
@@ -266,7 +265,7 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 			file << IdHandler_.ReturnIntId(*iter) << " " << it->second.size() << endl;
 
 			for (size_t i = 0; i < it->second.size(); i++)
-				file << "    " << it->second[i].start_ << " - " << it->second[i].end_ << endl;
+				file << "    "<<it->second[i].contigId_<<": " << it->second[i].start_ << " - " << it->second[i].end_ << endl;
 
 		}
 	}
@@ -473,6 +472,7 @@ void DataScanner<Graph>::loadPaired(const string& file_name,
 		PairedInfoIndex<Graph>& PIIndex) {
 	int read_count;
 	FILE* file = fopen((file_name + ".prd").c_str(), "r");
+	DEBUG((file_name + ".prd"));
 	assert(file != NULL);
 	INFO("Reading paired info from " << file_name << " started");
 	int paired_count;
@@ -508,15 +508,15 @@ void DataScanner<Graph>::loadPositions(const string& file_name,
 	read_count = fscanf(file, "%d\n", &pos_count);
 	assert(read_count == 1);
 	for (int i = 0; i < pos_count; i++) {
-		int edge_real_id, pos_info_count;
+		int edge_real_id, pos_info_count, contigId;
 		read_count = fscanf(file, "%d %d\n", &edge_real_id, &pos_info_count);
 		assert(read_count == 2);
 		for (int j = 0; j < pos_info_count; j++) {
 			int start_pos, end_pos;
-			read_count = fscanf(file, "%d - %d \n", &start_pos, &end_pos);
-			assert(read_count == 2);
+			read_count = fscanf(file, "%d: %d - %d \n", &contigId, &start_pos, &end_pos);
+			assert(read_count == 3);
 			EdgeId eid = IdHandler_.ReturnEdgeId(edge_real_id);
-			EPHandler.AddEdgePosition(eid, start_pos, end_pos);
+			EPHandler.AddEdgePosition(eid, start_pos, end_pos, contigId);
 		}
 	}
 	fclose(file);
@@ -668,6 +668,7 @@ void scanKmerMapper(Graph& g, IdTrackHandler<Graph>& new_IDs,
 	DataScanner<Graph> dataScanner(g, new_IDs);
 	dataScanner.loadKmerMapper(file_name, *mapper);
 }
+
 
 }
 #endif /* IOPROCEDURES_HPP_ */

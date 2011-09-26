@@ -80,6 +80,19 @@ rr
 	near_vertex  30
 }
 
+
+;position handling
+
+pos
+{
+	max_single_gap 500
+	contigs_for_threading ./data/debruijn/contigs.fasta
+}
+
+
+
+
+
 ; consensus
 need_consensus  false ; output is VERY large(gigabytes).
 uncorrected_reads	none

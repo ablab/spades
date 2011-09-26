@@ -144,10 +144,13 @@ namespace debruijn_graph
 			int LEN;
 		};
 
+        struct position_handler{
+			int max_single_gap;
+			std::string contigs_for_threading;
+		};
+
         std::string dataset_name;
-
         std::string input_dir;
-
 		std::string output_root;
 		std::string output_dir;
 		std::string output_suffix;
@@ -174,6 +177,7 @@ namespace debruijn_graph
 		advanced_distance_estimator ade;
 		repeat_resolver rr;
 		dataset ds;
+		position_handler pos;
 	};
 
 
@@ -250,6 +254,13 @@ namespace debruijn_graph
 		load(pt, "near_vertex", rr.near_vertex);
 	}
 
+	inline void load(boost::property_tree::ptree const& pt, debruijn_config::position_handler& pos)
+	{
+		using config_common::load;
+		load(pt, "max_single_gap", pos.max_single_gap);
+		load(pt, "contigs_for_threading", pos.contigs_for_threading);
+	}
+
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::dataset& ds)
 	{
 		using config_common::load;
@@ -308,6 +319,7 @@ namespace debruijn_graph
 		load(pt, "de", cfg.de); // distance estimator:
 		load(pt, "ade", cfg.ade); // advanced distance estimator:
 		load(pt, "rr", cfg.rr); // repeat resolver:
+		load(pt, "pos", cfg.pos); // position handler:
 		load(pt, "need_consensus", cfg.need_consensus);
 		load(pt, "uncorrected_reads", cfg.uncorrected_reads);
 		load(pt, cfg.dataset_name, cfg.ds);
