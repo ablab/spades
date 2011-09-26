@@ -121,6 +121,7 @@ namespace debruijn_graph
 			size_t delta;
 			size_t linkage_distance;
 			size_t max_distance;
+			double filter_threshold;
 		};
 		struct advanced_distance_estimator
 		{
@@ -232,6 +233,7 @@ namespace debruijn_graph
 		load(pt, "delta", de.delta);
 		load(pt, "linkage_distance", de.linkage_distance);
 		load(pt, "max_distance", de.max_distance);
+		load(pt, "filter_threshold", de.filter_threshold);
 	}
 
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::advanced_distance_estimator& ade)

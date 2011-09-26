@@ -57,9 +57,8 @@ void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
 		paired_info_index normalized_index(gp.g);
 		normalizer.FillNormalizedIndex(normalized_index);
 
-		//todo magic number
-		double threshold = 100.;
-		PairInfoFilter<Graph> filter(gp.g, threshold);
+		//todo add coeffitient dependent on coverage and K
+		PairInfoFilter<Graph> filter(gp.g, cfg::get().de.filter_threshold);
 		filter.Filter(normalized_index, clustered_index);
 	}
 }

@@ -46,6 +46,7 @@ de
 	delta			      10
 	linkage_distance	10
 	max_distance		75
+	filter_threshold		3.0
 }
 
 ; advanced distance estimator:
