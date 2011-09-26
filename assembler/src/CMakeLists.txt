@@ -85,4 +85,4 @@ add_subdirectory(bayes)
 add_subdirectory(hammer)
 add_subdirectory(common_test)
 add_subdirectory(debruijn/long_contigs)
-
+add_subdirectory(debruijn/long_contigs/utils)

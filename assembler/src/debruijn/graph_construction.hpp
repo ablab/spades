@@ -44,11 +44,11 @@ void FillPairedIndexWithProductMetric(const Graph &g,
 		, PairedInfoIndex<Graph>& paired_info_index , ReadStream& stream) {
 	INFO("-----------------------------------------");
 	stream.reset();
-	INFO("Counting paired info with read count weight");
+	INFO("Counting paired info with product weight");
 	ExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
 	LatePairedIndexFiller<k + 1, Graph, ReadStream> pif(g, mapper, stream, KmerCountProductWeight);
 	pif.FillIndex(paired_info_index);
-	INFO("Paired info with read count weight counted");
+	INFO("Paired info with product weight counted");
 }
 
 template<size_t k, class ReadStream>
