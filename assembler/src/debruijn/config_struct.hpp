@@ -105,10 +105,17 @@ namespace debruijn_graph
 				size_t sufficient_neighbour_length;
 			};
 
+			struct pair_info_ec_remover
+			{
+				size_t max_length;
+				size_t min_neighbour_length;
+			};
+
 			tip_clipper                            tc;
 			bulge_remover                          br;
 			erroneous_connections_remover          ec;
 			cheating_erroneous_connections_remover cec;
+			pair_info_ec_remover                   piec;
 		};
 
 		struct repeat_resolver
@@ -207,6 +214,15 @@ namespace debruijn_graph
 		load(pt, "max_relative_coverage", br.max_relative_coverage);
 		load(pt, "max_delta", br.max_delta);
 		load(pt, "max_relative_delta", br.max_relative_delta);
+	}
+
+	inline void load(
+	    boost::property_tree::ptree const& pt,
+	    debruijn_config::simplification::pair_info_ec_remover& ec)
+	{
+		using config_common::load;
+		load(pt, "max_length", ec.max_length);
+		load(pt, "min_neighbour_length", ec.min_neighbour_length);
 	}
 
 	inline void load(

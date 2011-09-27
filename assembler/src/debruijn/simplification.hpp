@@ -31,7 +31,7 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 	INFO("STAGE == Simplifying graph");
 
 	// by single_cell 3->10
-	SimplifyGraph<K> (gp.g, gp.index, tot_lab, 10, gp.genome,
+	SimplifyGraph<K> (gp.g, gp.index, paired_index, tot_lab, 10, gp.genome,
 			cfg::get().output_dir/*, etalon_paired_index*/);
 
 	// by single_cell
@@ -50,6 +50,15 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 				gp.kmer_mapper, paired_index, stream);
 	}
 	//experimental
+
+	//experimental
+//	INFO("Pair info aware ErroneousConnectionsRemoval");
+//	RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index);
+//	INFO("Pair info aware ErroneousConnectionsRemoval stats");
+//	CountStats<K>(gp.g, gp.index, gp.genome);
+	//experimental
+
+	//	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "with_pair_info_edges_removed/",	"graph.dot", "no_erroneous_edges_graph");
 
 	//  WriteGraphComponents<k>(g, index, *totLab, genome, output_folder + "graph_components" + "/", "graph.dot",
 	//            "graph_component", cfg::get().ds.IS);

@@ -167,7 +167,7 @@ class PairInfoAwareErroneousEdgeRemover {
 	typedef typename Graph::VertexId VertexId;
 
 	Graph& g_;
-	PairedInfoIndex<Graph>& paired_index_;
+	const PairedInfoIndex<Graph>& paired_index_;
 	size_t max_length_;
 	size_t min_neighbour_length_;
 	size_t insert_size_;
@@ -176,11 +176,12 @@ class PairInfoAwareErroneousEdgeRemover {
 
 public:
 	PairInfoAwareErroneousEdgeRemover(Graph& g,
+			const PairedInfoIndex<Graph>& paired_index,
 			size_t max_length,
 			size_t min_neighbour_length,
 			size_t insert_size,
 			size_t read_length) :
-			g_(g),
+			g_(g), paired_index_(paired_index),
 			max_length_(max_length),
 			min_neighbour_length_(min_neighbour_length),
 			insert_size_(insert_size),
@@ -192,8 +193,8 @@ public:
 	bool ShouldContainInfo(EdgeId e1, EdgeId e2, size_t gap_length) {
 		//todo discuss addition of negative delta
 		//todo second condition may be included into the constructor warn/assert
-		return gap_length >= PairInfoPathLengthLowerBound(g_.k, g_.length(e1), g_.length(e2), gap_, 0.)
-				&& gap_length <= PairInfoPathLengthUpperBound(g_.k, insert_size_, 0.);
+		return gap_length >= PairInfoPathLengthLowerBound(g_.k(), g_.length(e1), g_.length(e2), gap_, 0.)
+				&& gap_length <= PairInfoPathLengthUpperBound(g_.k(), insert_size_, 0.);
 	}
 
 	bool ContainsInfo(EdgeId e1, EdgeId e2, size_t ec_length) {
@@ -201,7 +202,7 @@ public:
 		for (auto it = infos.begin(); it != infos.end(); ++it) {
 			PairInfo<EdgeId> info = *it;
 			size_t distance = g_.length(e1) + ec_length;
-			if (math::ge(distance + info.variance, info.d) && math::le(distance, info.d + info.variance)) {
+			if (math::ge(0. + distance + info.variance, info.d) && math::le(0. + distance, info.d + info.variance)) {
 				return true;
 			}
 		}
