@@ -12,8 +12,10 @@
 #include "logging.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation_routine.hpp"
+typedef io::Reader<io::SingleRead> ReadStream;
 
 namespace debruijn_graph
+
 {
 void resolve_repeats(PairedReadStream& stream, const Sequence& genome);
 } // debruijn_graph
@@ -24,19 +26,43 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome);
 namespace debruijn_graph
 {
 
+void FillContigNumbers(   map<ConjugateDeBruijnGraph::EdgeId, int>& contigNumbers,  ConjugateDeBruijnGraph& cur_graph){
+	int cur_num = 0;
+	set<ConjugateDeBruijnGraph::EdgeId> edges;
+	for (auto iter = cur_graph.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		if (edges.find(*iter) == edges.end()) {
+			contigNumbers[*iter] = cur_num;
+			cur_num++;
+			edges.insert(cur_graph.conjugate(*iter));
+		}
+	}
+}
+
+void FillContigNumbers(   map<NonconjugateDeBruijnGraph::EdgeId, int>& contigNumbers,  NonconjugateDeBruijnGraph& cur_graph){
+	int cur_num = 0;
+	for (auto iter = cur_graph.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		contigNumbers[*iter] = cur_num;
+	    cur_num++;
+	}
+}
+
 template<size_t k, class Graph>
 void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
         EdgeLabelHandler<Graph>& LabelsAfter,
-        const EdgeIndex<k + 1, Graph>& index ,vector<SingleReadStream *>& reads
+        const EdgeIndex<K + 1, Graph>& index ,vector<ReadStream *>& reads
         , string& consensus_output_dir)
 {
     INFO("ReadMapping started");
     map<typename Graph::EdgeId, int> contigNumbers;
     int cur_num = 0;
-    for (auto iter = cur_graph.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-        contigNumbers[*iter] = cur_num;
-        cur_num++;
-    }INFO(cur_num << "contigs");
+    FillContigNumbers(contigNumbers, cur_graph);
+//    for (auto iter = cur_graph.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+//        contigNumbers[*iter] = cur_num;
+//        cur_num++;
+//    }
+//
+    cur_num = contigNumbers.size();
+    INFO(cur_num << "contigs");
     for (int i = 1; i < 3; i++) {
         int read_num = 0;
         osequencestream* mapped_reads[4000];
@@ -116,13 +142,35 @@ void process_resolve_repeats(
 
     OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_before_enlarge.fasta");
 
-  omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+    omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
                          cfg::get().output_dir + "4_cleared_graph.dot", "no_repeat_graph");
+
+    if (cfg::get().need_consensus)
+    {
+        string consensus_folder = cfg::get().output_dir + "consensus_after_resolve/";
+    	OutputSingleFileContigs(resolved_gp.g, consensus_folder);
+    	string input_dir = cfg::get().input_dir;
+		string reads_filename1 = input_dir + cfg::get().ds.first;
+		string reads_filename2 = input_dir + cfg::get().ds.second;
+
+		string real_reads = cfg::get().uncorrected_reads;
+		if (real_reads != "none") {
+			reads_filename1 = input_dir + (real_reads + "_1");
+			reads_filename2 = input_dir + (real_reads + "_2");
+		}
+
+		ReadStream reads_1(reads_filename1);
+		ReadStream reads_2(reads_filename2);
+
+		vector<ReadStream*> reads = {&reads_1, &reads_2};
+
+    	SelectReadsForConsensus<K, typename graph_pack::graph_t>(origin_gp.g, resolved_gp.g, labels_after, origin_gp.index, reads, consensus_folder);
+    }
 
 	one_many_contigs_enlarger<typename graph_pack::graph_t> N50enlarger(resolved_gp.g, cfg::get().ds.IS);
     N50enlarger.Loops_resolve();
 
-  omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+    omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
                          cfg::get().output_dir + "5_unlooped_graph.dot", "no_repeat_graph");
 
     OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_unlooped.fasta");
@@ -134,15 +182,9 @@ void process_resolve_repeats(
 
     OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_final.fasta");
 
-    // for future:
-//  string consensus_folder = output_folder + "consensus/";
-//  if (cfg::get().need_consensus)
-//  {
-//	  OutputSingleFileContigs(resolved_graph, consensus_folder);
-//	  SelectReadsForConsensus<k, typename graph_pack::graph_t>(new_graph, resolved_graph, LabelsAfter, new_edge_index, reads, consensus_folder);
-//  }
 
-//  OutputContigs(new_graph, output_folder + "contigs_before_resolve.fasta");
+
+    OutputContigs(origin_gp.g, cfg::get().output_dir + "contigs_before_resolve.fasta");
 
 //    if (number_of_components > 0) {
 //        string output_comp = output_folder + "resolved_comp";

@@ -275,8 +275,8 @@ int PrintGraphComponents(const string& file_name, Graph& g,
 
 }
 
-template<class Graph>
-void OutputContigs(Graph& g, const string& contigs_output_filename) {
+
+void OutputContigs(NonconjugateDeBruijnGraph& g, const string& contigs_output_filename) {
 	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_filename);
 	osequencestream oss(contigs_output_filename);
@@ -285,7 +285,7 @@ void OutputContigs(Graph& g, const string& contigs_output_filename) {
 	}INFO("Contigs written");
 }
 
-void OutputConjugateContigs(ConjugateDeBruijnGraph& g, const string& contigs_output_filename){
+void OutputContigs(ConjugateDeBruijnGraph& g, const string& contigs_output_filename){
 	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_filename);
 	osequencestream oss(contigs_output_filename);
@@ -300,8 +300,7 @@ void OutputConjugateContigs(ConjugateDeBruijnGraph& g, const string& contigs_out
 
 }
 
-template<class Graph>
-void OutputSingleFileContigs(Graph& g, const string& contigs_output_dir) {
+void OutputSingleFileContigs(NonconjugateDeBruijnGraph& g, const string& contigs_output_dir) {
 	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_dir);
 	int n = 0;
