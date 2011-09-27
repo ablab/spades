@@ -113,6 +113,7 @@ namespace debruijn_graph
 
 		struct repeat_resolver
 		{
+			bool symmetric_resolve;
 			int mode;
 			int near_vertex;
 		};
@@ -252,6 +253,7 @@ namespace debruijn_graph
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::repeat_resolver& rr)
 	{
 		using config_common::load;
+		load(pt, "symmetric_resolve", rr.symmetric_resolve);
 		load(pt, "mode", rr.mode);
 		load(pt, "near_vertex", rr.near_vertex);
 	}

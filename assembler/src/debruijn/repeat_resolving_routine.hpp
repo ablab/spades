@@ -215,8 +215,7 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
         OutputContigs(conj_gp.g, cfg::get().output_dir + "contigs.fasta");
         return;
     }
-    bool conjugate_repeat_resolve = true; //ToDo: get it from config
-    if (conjugate_repeat_resolve) {
+    if (cfg::get().rr.symmetric_resolve) {
     	conj_graph_pack   resolved_gp (genome);
     	process_resolve_repeats(conj_gp, clustered_index, resolved_gp) ;
     } else {
