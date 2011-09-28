@@ -108,15 +108,22 @@ private:
 	}
 
 public:
-
+        /**
+         *  Reads sequence from the file (in the same format as BinWrite writes it)
+         *  and returns false if error occured, true otherwise.
+         */
 	static bool BinRead(std::istream& file, Seq<size_> *seq) {
 		file.read((char *) seq->data_.data(), sizeof(T) * data_size_);
-		return (file.fail());
+		return !file.fail();
 	}
 
+	/**
+         *  Writes sequence to the file (in the same format as BinRead reads it)
+         *  and returns false if error occured, true otherwise.
+         */
 	static bool BinWrite(std::ostream& file, const Seq<size_> &seq) {
 		file.write((const char *) seq.data_.data(), sizeof(T) * data_size_);
-		return (file.fail());
+		return !file.fail();
 	}
 
 	/**
