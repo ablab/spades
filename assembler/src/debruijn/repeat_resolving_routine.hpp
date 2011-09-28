@@ -165,8 +165,8 @@ void process_resolve_repeats(
 
 			string real_reads = cfg::get().uncorrected_reads;
 			if (real_reads != "none") {
-				reads_filename1 = input_dir + (real_reads + "_1");
-				reads_filename2 = input_dir + (real_reads + "_2");
+				reads_filename1 = input_dir + cfg::get().ds.first;
+				reads_filename2 = input_dir + cfg::get().ds.second;
 			}
 
 			ReadStream reads_1(reads_filename1);
