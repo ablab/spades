@@ -348,7 +348,7 @@ void FillEdgesPos(conj_graph_pack& gp, const Sequence& contig, int contigId)
 //		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int contigId)
 
 {
-	MappingPath<typename Graph::EdgeId> m_path1 = FindGenomeMappingPath<K> (contig, gp.g, gp.index, gp.kmer_mapper);
+	MappingPath<Graph::EdgeId> m_path1 = FindGenomeMappingPath<K> (contig, gp.g, gp.index, gp.kmer_mapper);
 	int CurPos = 0;
 	DEBUG("Contig "<<contigId<< " maped on "<<m_path1.size()<<" fragments.");
 	for (size_t i = 0; i < m_path1.size(); i++) {
