@@ -66,6 +66,7 @@ int Globals::max_reconstruction_iterations = 1;
 
 bool Globals::read_kmers_after_clustering = false;
 bool Globals::write_kmers_after_clustering = false;
+bool Globals::write_each_iteration_kmers = false;
 string Globals::kmers_after_clustering = "";
 
 struct KMerStatCount {
@@ -135,6 +136,7 @@ int main(int argc, char * argv[]) {
 	Globals::read_kmers_after_clustering = cfg::get().read_kmers_after_clustering;
 	Globals::write_kmers_after_clustering = cfg::get().write_kmers_after_clustering;
 	Globals::kmers_after_clustering = cfg::get().kmers_after_clustering;
+	Globals::write_each_iteration_kmers = cfg::get().write_each_iteration_kmers;
 
 	Globals::paired_reads = cfg::get().paired_reads;
 	string readsFilenameLeft, readsFilenameRight;
@@ -266,11 +268,18 @@ int main(int argc, char * argv[]) {
 
 		if ( Globals::use_iterative_reconstruction ) {
 			for ( int iter_no = 0; iter_no < Globals::max_reconstruction_iterations; ++iter_no ) {
-				//ofstream ofiter( getFilename(dirprefix, iter_count, "reconstruct", iter_no).data() );
-				//size_t res = IterativeReconstructionStep(nthreads, &ofiter);
-				//ofiter.close();
 				size_t res = IterativeReconstructionStep(nthreads, kmers);
 				TIMEDLN("Solid k-mers iteration " << iter_no << " produced " << res << " new k-mers.");
+
+				if ( Globals::write_each_iteration_kmers ) {
+					ofstream oftmp( getFilename(dirprefix, iter_count, "goodkmers", iter_no ).data() );
+					for ( hint_t n = 0; n < kmers.size(); ++n ) {
+						if ( kmers[n]->second.isGoodForIterative() ) {
+							oftmp << kmers[n]->first.str() << "\n>" << kmers[n]->first.start()
+							      << "  cnt=" << kmers[n]->second.count << "  tql=" << (1-kmers[n]->second.totalQual) << "\n";
+						}
+					}
+				}
 				if ( res < 10 ) break;
 			}
 			TIMEDLN("Solid k-mers finalized.");
