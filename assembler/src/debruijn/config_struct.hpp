@@ -176,6 +176,8 @@ namespace debruijn_graph
 		bool etalon_info_mode;
 		bool late_paired_info;
 		bool advanced_estimator_mode;
+		bool componential_resolve;
+
 
 		std::string uncorrected_reads;
 		bool need_consensus;
@@ -330,6 +332,7 @@ namespace debruijn_graph
 		load(pt, "rectangle_mode", cfg.rectangle_mode);
 		load(pt, "etalon_info_mode", cfg.etalon_info_mode);
 		load(pt, "late_paired_info", cfg.late_paired_info);
+		load(pt, "late_paired_info", cfg.componential_resolve);
 		load(pt, "advanced_estimator_mode", cfg.advanced_estimator_mode);
 
 		bool single_cell;

@@ -266,7 +266,8 @@ int PrintGraphComponents(const string& file_name, Graph& g,
 	while (!splitter.Finished() && cnt <= 1000) {
 		string component_name = ConstructComponentName(file_name, cnt).c_str();
 		auto component = splitter.NextComponent();
-		EdgeVertexFilter<Graph> filter(g, component);
+//		EdgeVertexFilter<Graph> filter(g, component);
+		EdgeVertexFilter<Graph> filter(g, component, true);
 		printGraph(g, old_IDs, component_name, paired_index, edges_positions,
 				&filter);
 		cnt++;
@@ -339,14 +340,72 @@ void OutputSingleFileContigs(ConjugateDeBruijnGraph& g, const string& contigs_ou
 }
 
 
-template<size_t k>
-void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper) {
-	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
+
+//template<size_t k>
+void FillEdgesPos(conj_graph_pack& gp, const Sequence& contig, int contigId)
+
+//		Graph& g, const EdgeIndex<k + 1, Graph>& index,
+//		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int contigId)
+
+{
+	MappingPath<typename Graph::EdgeId> m_path1 = FindGenomeMappingPath<K> (contig, gp.g, gp.index, gp.kmer_mapper);
+	int CurPos = 0;
+	DEBUG("Contig "<<contigId<< " maped on "<<m_path1.size()<<" fragments.");
+	for (size_t i = 0; i < m_path1.size(); i++) {
+		EdgeId ei = m_path1[i].first;
+		MappingRange mr = m_path1[i].second;
+		int len = mr.mapped_range.end_pos - mr.mapped_range.start_pos;
+		if (i>0)
+			if (m_path1[i-1].first != ei)
+				if (gp.g.EdgeStart(ei) != gp.g.EdgeEnd(m_path1[i-1].first)){
+					DEBUG("Contig "<<contigId<<" maped on not adjacent edge. Position in contig is "<<m_path1[i-1].second.initial_range.start_pos+1<<"--" <<m_path1[i-1].second.initial_range.end_pos<< " and "<<mr.initial_range.start_pos+1<<"--" <<mr.initial_range.end_pos);
+				}
+		gp.edge_pos.AddEdgePosition(ei, mr.initial_range.start_pos+1, mr.initial_range.end_pos, contigId);
+		CurPos += len;
+	}
+	//CurPos = 1000000000;
+}
+
+//template<size_t k>
+void FillEdgesPos(conj_graph_pack& gp, const string& contig_file, int start_contig_id)
+
+//(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+//		const string& contig_file, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int start_contig_id)
+
+{
+	INFO("Threading large contigs");
+	io::Reader<io::SingleRead> irs(contig_file);
+	for (int c = start_contig_id; !irs.eof(); c++) {
+		io::SingleRead read;
+		irs >> read;
+		DEBUG("Contig #" << c << ", length: " << read.size());
+		read.ClearQuality();
+		if (!read.IsValid()) {
+			WARN("Attention: contig #" << c << " contains Ns");
+			continue;
+		}
+		Sequence contig = read.sequence();
+		if (contig.size() < 1500000) {
+	//		continue;
+		}
+		FillEdgesPos(gp, contig, c);
+	}
+}
+
+
+//template<size_t k>
+void FillEdgesPos(conj_graph_pack& gp, const Sequence& genome){
+	FillEdgesPos(gp, genome, 0);
+}
+
+/*//		Graph& g, const EdgeIndex<k + 1, Graph>& index,
+//		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper)
+{
+	Path<typename Graph::EdgeId> path1 = FindGenomePath<K> (genome, gp.g, gp.index);
 	int CurPos = 0;
 	for (auto it = path1.sequence().begin(); it != path1.sequence().end(); ++it) {
 		EdgeId ei = *it;
-		edgesPos.AddEdgePosition(ei, CurPos + 1, CurPos + g.length(ei));
+		gp.edge_pos.AddEdgePosition(ei, CurPos + 1, CurPos + g.length(ei));
 		CurPos += g.length(ei);
 	}
 
@@ -363,49 +422,10 @@ void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 	}
 
 }
+*/
 
-template<size_t k>
-void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int contigId) {
-	MappingPath<typename Graph::EdgeId> m_path1 = FindGenomeMappingPath<k> (genome, g, index, kmer_mapper);
-	int CurPos = 0;
-	DEBUG("Contig "<<contigId<< " maped on "<<m_path1.size()<<" fragments.");
-	for (size_t i = 0; i < m_path1.size(); i++) {
-		EdgeId ei = m_path1[i].first;
-		MappingRange mr = m_path1[i].second;
-		int len = mr.mapped_range.end_pos - mr.mapped_range.start_pos;
-		if (i>0)
-			if (m_path1[i-1].first != ei)
-				if (g.EdgeStart(ei) != g.EdgeEnd(m_path1[i-1].first)){
-					DEBUG("Contig "<<contigId<<" maped on not adjacent edge. Position in contig is "<<m_path1[i-1].second.initial_range.start_pos+1<<"--" <<m_path1[i-1].second.initial_range.end_pos<< " and "<<mr.initial_range.start_pos+1<<"--" <<mr.initial_range.end_pos);
-				}
-		edgesPos.AddEdgePosition(ei, mr.initial_range.start_pos+1, mr.initial_range.end_pos, contigId);
-		CurPos += len;
-	}
-	//CurPos = 1000000000;
-}
 
-template<size_t k>
-void FillEdgesPos(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const string& contig_file, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int start_contig_id) {
-	INFO("Threading large contigs");
-	io::Reader<io::SingleRead> irs(contig_file);
-	for (int c = start_contig_id; !irs.eof(); c++) {
-		io::SingleRead read;
-		irs >> read;
-		DEBUG("Contig #" << c << ", length: " << read.size());
-		read.ClearQuality();
-		if (!read.IsValid()) {
-			WARN("Attention: contig #" << c << " contains Ns");
-			continue;
-		}
-		Sequence contig = read.sequence();
-		if (contig.size() < 1500000) {
-	//		continue;
-		}
-		FillEdgesPos<k>(g, index, contig, edgesPos, kmer_mapper, c);
-	}
-}
+
 
 }
 

@@ -100,7 +100,7 @@ template <class graph_pack>
 void process_resolve_repeats(
 		graph_pack& origin_gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
-		graph_pack& resolved_gp)
+		graph_pack& resolved_gp, const string& graph_name, const string& subfolder = "", bool output_contigs = true)
 {
     EdgeLabelHandler<typename graph_pack::graph_t> labels_after(resolved_gp.g, origin_gp.g);
     DEBUG("New index size: "<< clustered_index.size());
@@ -110,21 +110,26 @@ void process_resolve_repeats(
 //    if (cfg::get().rectangle_mode)
 //        RectangleResolve(clustered_index, origin_gp.g, cfg::get().output_root + "tmp/", cfg::get().output_dir);
 
-    ResolveRepeats(origin_gp  .g, origin_gp  .int_ids, clustered_index, origin_gp  .edge_pos,
-                   resolved_gp.g, resolved_gp.int_ids,                  resolved_gp.edge_pos,
-                   cfg::get().output_dir + "resolve/", labels_after);
-
-    INFO("Total labeler start");
-
     typedef TotalLabelerGraphStruct<typename graph_pack::graph_t> total_labeler_gs;
     typedef TotalLabeler           <typename graph_pack::graph_t> total_labeler;
 
+
     total_labeler_gs graph_struct_before(origin_gp  .g, &origin_gp  .int_ids, &origin_gp  .edge_pos, NULL);
+    total_labeler tot_labeler_before(&graph_struct_before);
+
+    omnigraph::WriteSimple(origin_gp.g, tot_labeler_before, cfg::get().output_dir + subfolder + graph_name + "_2_simplified.dot", "no_repeat_graph");
+
+    ResolveRepeats(origin_gp  .g, origin_gp  .int_ids, clustered_index, origin_gp  .edge_pos,
+                   resolved_gp.g, resolved_gp.int_ids,                  resolved_gp.edge_pos,
+                   cfg::get().output_dir + subfolder +"resolve_" + graph_name +  "/", labels_after);
+
+    INFO("Total labeler start");
+
     total_labeler_gs graph_struct_after (resolved_gp.g, &resolved_gp.int_ids, &resolved_gp.edge_pos, &labels_after);
 
     total_labeler tot_labeler_after(&graph_struct_after, &graph_struct_before);
 
-    omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after, cfg::get().output_dir + "3_resolved_graph.dot", "no_repeat_graph");
+    omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after, cfg::get().output_dir + subfolder + graph_name + "_3_resolved.dot", "no_repeat_graph");
 
     INFO("Total labeler finished");
 
@@ -140,64 +145,78 @@ void process_resolve_repeats(
     INFO("---Cleared---");
     INFO("---Output Contigs---");
 
-    OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_before_enlarge.fasta");
+    if (output_contigs)
+    	OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_before_enlarge.fasta");
 
     omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
-                         cfg::get().output_dir + "4_cleared_graph.dot", "no_repeat_graph");
 
-    if (cfg::get().need_consensus)
+
+    cfg::get().output_dir + subfolder + graph_name + "_4_cleared.dot", "no_repeat_graph");
+
+    if (output_contigs)
     {
-        string consensus_folder = cfg::get().output_dir + "consensus_after_resolve/";
-    	OutputSingleFileContigs(resolved_gp.g, consensus_folder);
-    	string input_dir = cfg::get().input_dir;
-		string reads_filename1 = input_dir + cfg::get().ds.first;
-		string reads_filename2 = input_dir + cfg::get().ds.second;
+		if (cfg::get().need_consensus)
+		{
+			string consensus_folder = cfg::get().output_dir + "consensus_after_resolve/";
+			OutputSingleFileContigs(resolved_gp.g, consensus_folder);
+			string input_dir = cfg::get().input_dir;
+			string reads_filename1 = input_dir + cfg::get().ds.first;
+			string reads_filename2 = input_dir + cfg::get().ds.second;
 
-		string real_reads = cfg::get().uncorrected_reads;
-		if (real_reads != "none") {
-			reads_filename1 = input_dir + (real_reads + "_1");
-			reads_filename2 = input_dir + (real_reads + "_2");
+			string real_reads = cfg::get().uncorrected_reads;
+			if (real_reads != "none") {
+				reads_filename1 = input_dir + (real_reads + "_1");
+				reads_filename2 = input_dir + (real_reads + "_2");
+			}
+
+			ReadStream reads_1(reads_filename1);
+			ReadStream reads_2(reads_filename2);
+
+			vector<ReadStream*> reads = {&reads_1, &reads_2};
+
+			SelectReadsForConsensus<K, typename graph_pack::graph_t>(origin_gp.g, resolved_gp.g, labels_after, origin_gp.index, reads, consensus_folder);
 		}
 
-		ReadStream reads_1(reads_filename1);
-		ReadStream reads_2(reads_filename2);
+		one_many_contigs_enlarger<typename graph_pack::graph_t> N50enlarger(resolved_gp.g, cfg::get().ds.IS);
+		N50enlarger.Loops_resolve();
 
-		vector<ReadStream*> reads = {&reads_1, &reads_2};
+		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+							 cfg::get().output_dir  + subfolder + graph_name + "_5_unlooped.dot", "no_repeat_graph");
 
-    	SelectReadsForConsensus<K, typename graph_pack::graph_t>(origin_gp.g, resolved_gp.g, labels_after, origin_gp.index, reads, consensus_folder);
+		OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_unlooped.fasta");
+
+		N50enlarger.one_many_resolve_with_vertex_split();
+
+		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+							 cfg::get().output_dir + subfolder + graph_name + "_6_finished.dot", "no_repeat_graph");
+
+		OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_final.fasta");
+		OutputContigs(origin_gp.g, cfg::get().output_dir + "contigs_before_resolve.fasta");
+
     }
-
-	one_many_contigs_enlarger<typename graph_pack::graph_t> N50enlarger(resolved_gp.g, cfg::get().ds.IS);
-    N50enlarger.Loops_resolve();
-
-    omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
-                         cfg::get().output_dir + "5_unlooped_graph.dot", "no_repeat_graph");
-
-    OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_unlooped.fasta");
-
-    N50enlarger.one_many_resolve_with_vertex_split();
-
-    omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
-                         cfg::get().output_dir + "6_finished_graph.dot", "no_repeat_graph");
-
-    OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_final.fasta");
-
-
-
-    OutputContigs(origin_gp.g, cfg::get().output_dir + "contigs_before_resolve.fasta");
-
-//    if (number_of_components > 0) {
-//        string output_comp = output_folder + "resolved_comp";
-//        mkdir(output_comp.c_str(),
-//                S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-//
-//        for (int i = 1; i <= number_of_components; i++)
-//            ResolveOneComponent(output_folder + "graph_components/",
-//                    output_comp + "/", i, k);
-//    }
-
 }
 
+void resolve_conjugate_component(int component_id, const Sequence& genome){
+    conj_graph_pack   conj_gp (genome);
+    paired_info_index paired_index   (conj_gp.g/*, 5.*/);
+    paired_info_index clustered_index(conj_gp.g);
+
+    INFO("Resolve component "<<component_id);
+
+	string graph_name = ConstructComponentName("graph_", component_id).c_str();
+	string component_name = cfg::get().output_dir + "graph_components/" + graph_name;
+
+	scanConjugateGraph(&conj_gp.g, &conj_gp.int_ids, component_name, &clustered_index,
+			&conj_gp.edge_pos);
+
+    conj_graph_pack   resolved_gp (genome);
+    string sub_dir = "resolve_components/";
+
+
+    string resolved_name = cfg::get().output_dir + "resolve_components" + "/resolve_" + graph_name + "/";
+	mkdir(resolved_name.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+    process_resolve_repeats(conj_gp, clustered_index, resolved_gp, graph_name, sub_dir, false ) ;
+}
 
 
 void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
@@ -215,13 +234,32 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
         OutputContigs(conj_gp.g, cfg::get().output_dir + "contigs.fasta");
         return;
     }
+
+    int number_of_components = 0;
+
+    if (cfg::get().componential_resolve){
+		mkdir((cfg::get().output_dir + "graph_components" + "/").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+		number_of_components = PrintGraphComponents(
+				cfg::get().output_dir + "graph_components/graph_", conj_gp.g,
+				cfg::get().ds.IS+100, conj_gp.int_ids, clustered_index, conj_gp.edge_pos);
+		INFO("number of components "<<number_of_components);
+    }
+
+
     if (cfg::get().rr.symmetric_resolve) {
     	conj_graph_pack   resolved_gp (genome);
-    	process_resolve_repeats(conj_gp, clustered_index, resolved_gp) ;
+    	process_resolve_repeats(conj_gp, clustered_index, resolved_gp, "graph") ;
+
+        if (cfg::get().componential_resolve){
+        	mkdir((cfg::get().output_dir + "resolve_components" + "/").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+        	for (int i = 0; i<number_of_components; i++){
+        		resolve_conjugate_component(i+1, genome);
+        	}
+        }
     } else {
     	nonconj_graph_pack origin_gp(conj_gp, clustered_index);
     	nonconj_graph_pack resolved_gp;
-    	process_resolve_repeats(origin_gp, origin_gp.clustered_index, resolved_gp) ;
+    	process_resolve_repeats(origin_gp, origin_gp.clustered_index, resolved_gp, "graph") ;
 
     }
 

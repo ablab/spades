@@ -265,7 +265,7 @@ void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 		const string& file_name, const string& graph_name) {
 	fstream filestr;
 	string simple_file_name(file_name);
-	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
+//	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
 	filestr.open((simple_file_name).c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
 	SimpleGraphVisualizer<Graph> sgv(g, gpr, labeler);
@@ -279,7 +279,7 @@ void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 		const Path<typename Graph::EdgeId> &path1, const Path<typename Graph::EdgeId> &path2) {
 	fstream filestr;
 	string simple_file_name(file_name);
-	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
+//	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
 	filestr.open(simple_file_name.c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gp(graph_name, filestr);
 	PathColorer<Graph> path_colorer(g, path1, path2);
