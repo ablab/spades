@@ -72,6 +72,7 @@ struct lc_config
 
 		bool fix_weight;
 		bool use_advanced;
+		double advanced_coeff;
 	};
 
 	struct loops_removal
@@ -219,6 +220,7 @@ void load(boost::property_tree::ptree const& pt, lc_config::extension_selection&
 	load(pt, "max_depth", es.max_depth);
 	load(pt, "use_advanced", es.use_advanced);
 	load(pt, "fix_weight", es.fix_weight);
+	load(pt, "advanced_coeff", es.advanced_coeff);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::loops_removal& lr)

@@ -12,7 +12,7 @@ QUAKE_CROPPED_400K
 }
 QUAKE_FULL
 {
-    graph_file       ./data/debruijn/08.23_01_11.QUAKE_FULL/saves/repeats_resolved_before
+    graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
 }
 EAS600_QUAKE_CROPPED_100K
 {
@@ -39,7 +39,7 @@ real_libs
         read_size     100
         insert_size   220
         is_delta      20
-        var           2
+        var           10
                 
         QUAKE_CROPPED_100K
         {
@@ -66,12 +66,12 @@ real_libs
         QUAKE_FULL
         {
             precounted       true
-            precounted_path  ./data/debruijn/QUAKE_FULL/09.15_16_31/paired_info_IS220_RS100
+            precounted_path  ./data/debruijn/QUAKE_FULL/K55/09.26_02_00/paired_info_IS220_RS100_clustered
             first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
             second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz
             
-            has_advanced     false
-            advanced         ./data/debruijn/QUAKE_FULL/09.15_16_31/paired_info_IS220_RS100_acl  
+            has_advanced     true
+            advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS220_RS100_acl
         }
         EAS600_QUAKE_CROPPED_100K
         {
@@ -109,7 +109,7 @@ real_libs
         read_size     100
         insert_size   480
         is_delta      50
-        var           2
+        var           10
 
         QUAKE_CROPPED_100K
         {
@@ -137,13 +137,13 @@ real_libs
         QUAKE_FULL
         {
             precounted       true
-            precounted_path  ./data/debruijn/QUAKE_FULL/09.15_16_31/paired_info_IS500_RS100_clustered
+            precounted_path  ./data/debruijn/QUAKE_FULL/K55/09.26_02_00/paired_info_IS480_RS100_clustered
             first            /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_1.cor.fastq.gz
             second           /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_2.cor.fastq.gz
             
             
-            has_advanced     false
-            advanced         ./data/debruijn/QUAKE_FULL/09.15_16_31/paired_info_IS500_RS100_acl
+            has_advanced     true
+            advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS480_RS100_acl
            
             ; first    ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_1.cor.fastq.gz
             ; second    ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_2.cor.fastq.gz    
@@ -228,7 +228,7 @@ es
     use_weight_function_first  false
     weight_fun_threshold       0
     weight_threshold           0.1
-    priority_coeff             2
+    priority_coeff             1.2
 
     use_delta_first       true
     etalon_distance_dev   2
@@ -239,6 +239,7 @@ es
     
     fix_weight            true
     use_advanced          true
+    advanced_coeff        2
 }    
 
 ; loops removal
@@ -272,7 +273,7 @@ fo
     length_percent          1.5
     conjugate_percent       0.4
     
-    remove_single           true
+    remove_single           false
     
     remove_similar          true
     similar_edges           0.6

@@ -39,17 +39,18 @@ void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
 
 		estimator.Estimate(clustered_index);
 	} else {
+		INFO("Estimating distances");
 		DistanceEstimator<Graph> estimator(gp.g, paired_index, cfg::get().ds.IS,
 				cfg::get().ds.RL, cfg::get().de.delta,
 				cfg::get().de.linkage_distance, cfg::get().de.max_distance);
 
 		paired_info_index raw_clustered_index(gp.g);
 		estimator.Estimate(raw_clustered_index);
+		INFO("Distances estimated");
 
-		//todo magic number
-		size_t delta = 20;
+		INFO("Normalizing weights");
 		//todo reduce number of constructor params
-		PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g, cfg::get().ds.IS, cfg::get().ds.RL, debruijn_graph::K, delta);
+		PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g, cfg::get().ds.IS, cfg::get().ds.RL, debruijn_graph::K);
 		PairedInfoNormalizer<Graph> normalizer(
 				raw_clustered_index, /*&TrivialWeightNormalization<Graph>*/
 				boost::bind(
@@ -58,11 +59,13 @@ void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
 
 		paired_info_index normalized_index(gp.g);
 		normalizer.FillNormalizedIndex(normalized_index);
+		INFO("Weights normalized");
 
-		//todo magic number
-		double threshold = 100.;
-		PairInfoFilter<Graph> filter(gp.g, threshold);
+		INFO("Filtering info");
+		//todo add coefficient dependent on coverage and K
+		PairInfoFilter<Graph> filter(gp.g, cfg::get().de.filter_threshold);
 		filter.Filter(normalized_index, clustered_index);
+		INFO("Info filtered");
 	}
 }
 

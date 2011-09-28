@@ -95,6 +95,11 @@ private:
 	DECL_LOGGER("IterativeLowCoverageEdgeRemover");
 };
 
+template <class T>
+void Append(vector<T>& current, const vector<T>& to_append) {
+	current.insert(current.end(), to_append.begin(), to_append.end());
+}
+
 template<class Graph>
 class RelativelyLowCoverageEdgeRemover {
 	typedef typename Graph::EdgeId EdgeId;
@@ -111,10 +116,6 @@ public:
 			g_(g), max_length_(max_length), coverage_gap_(coverage_gap), neighbour_length_threshold_(
 					neighbour_length_threshold) {
 
-	}
-
-	static void Append(vector<EdgeId>& edges, const vector<EdgeId>& to_append) {
-		edges.insert(edges.end(), to_append.begin(), to_append.end());
 	}
 
 	bool StrongNeighbourCondition(EdgeId neighbour_edge,
@@ -146,6 +147,97 @@ public:
 			Append(adjacent_edges, g_.IncomingEdges(g_.EdgeEnd(e)));
 
 			if (CheckAdjacent(adjacent_edges, e)) {
+				VertexId start = g_.EdgeStart(e);
+				VertexId end = g_.EdgeEnd(e);
+				if (!g_.RelatedVertices(start, end)) {
+					g_.DeleteEdge(e);
+					g_.CompressVertex(start);
+					g_.CompressVertex(end);
+				}
+			}
+		}
+		omnigraph::Cleaner<Graph> cleaner(g_);
+		cleaner.Clean();
+	}
+};
+
+template<class Graph>
+class PairInfoAwareErroneousEdgeRemover {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	Graph& g_;
+	const PairedInfoIndex<Graph>& paired_index_;
+	size_t max_length_;
+	size_t min_neighbour_length_;
+	size_t insert_size_;
+	size_t read_length_;
+	size_t gap_;
+
+public:
+	PairInfoAwareErroneousEdgeRemover(Graph& g,
+			const PairedInfoIndex<Graph>& paired_index,
+			size_t max_length,
+			size_t min_neighbour_length,
+			size_t insert_size,
+			size_t read_length) :
+			g_(g), paired_index_(paired_index),
+			max_length_(max_length),
+			min_neighbour_length_(min_neighbour_length),
+			insert_size_(insert_size),
+			read_length_(read_length),
+			gap_(insert_size_ - 2 * read_length_){
+		assert(insert_size_ >= 2 * read_length_);
+	}
+
+	bool ShouldContainInfo(EdgeId e1, EdgeId e2, size_t gap_length) {
+		//todo discuss addition of negative delta
+		//todo second condition may be included into the constructor warn/assert
+		return gap_length >= PairInfoPathLengthLowerBound(g_.k(), g_.length(e1), g_.length(e2), gap_, 0.)
+				&& gap_length <= PairInfoPathLengthUpperBound(g_.k(), insert_size_, 0.);
+	}
+
+	bool ContainsInfo(EdgeId e1, EdgeId e2, size_t ec_length) {
+		vector<PairInfo<EdgeId>> infos = paired_index_.GetEdgePairInfo(e1, e2);
+		for (auto it = infos.begin(); it != infos.end(); ++it) {
+			PairInfo<EdgeId> info = *it;
+			size_t distance = g_.length(e1) + ec_length;
+			if (math::ge(0. + distance + info.variance, info.d) && math::le(0. + distance, info.d + info.variance)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool CheckAnyPairInfoAbsense(EdgeId possible_ec) {
+		vector<EdgeId> incoming = g_.IncomingEdges(g_.EdgeStart(possible_ec));
+		vector<EdgeId> outgoing = g_.OutgoingEdges(g_.EdgeEnd(possible_ec));
+		for (auto it1 = incoming.begin(); it1 != incoming.end(); ++it1)
+			for (auto it2 = outgoing.begin(); it2 != outgoing.end(); ++it2)
+				if (!ShouldContainInfo(*it1, *it2, g_.length(possible_ec)) || ContainsInfo(*it1, *it2, g_.length(possible_ec)))
+					return false;
+		return true;
+	}
+
+	bool CheckAdjacentLengths(const vector<EdgeId>& edges, EdgeId possible_ec) {
+		for (auto it = edges.begin(); it != edges.end(); ++it)
+			if (min_neighbour_length_ > g_.length(*it))
+				return false;
+		return true;
+	}
+
+	void RemoveEdges() {
+		LengthComparator<Graph> comparator(g_);
+		for (auto it = g_.SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
+			typename Graph::EdgeId e = *it;
+			if (g_.length(e) > max_length_) {
+				return;
+			}
+			vector<EdgeId> adjacent_edges;
+			Append(adjacent_edges, g_.IncomingEdges(g_.EdgeStart(e)));
+			Append(adjacent_edges, g_.OutgoingEdges(g_.EdgeEnd(e)));
+
+			if (CheckAdjacentLengths(adjacent_edges, e) && CheckAnyPairInfoAbsense(e)) {
 				VertexId start = g_.EdgeStart(e);
 				VertexId end = g_.EdgeEnd(e);
 				if (!g_.RelatedVertices(start, end)) {

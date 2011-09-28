@@ -39,6 +39,20 @@ void FillPairedIndexWithReadCountMetric(const Graph &g,
 }
 
 template<size_t k, class ReadStream>
+void FillPairedIndexWithProductMetric(const Graph &g,
+		const EdgeIndex<k + 1, Graph>& index
+		, const KmerMapper<k + 1, Graph>& kmer_mapper
+		, PairedInfoIndex<Graph>& paired_info_index , ReadStream& stream) {
+	INFO("-----------------------------------------");
+	stream.reset();
+	INFO("Counting paired info with product weight");
+	ExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
+	LatePairedIndexFiller<k + 1, Graph, ReadStream> pif(g, mapper, stream, KmerCountProductWeight);
+	pif.FillIndex(paired_info_index);
+	INFO("Paired info with product weight counted");
+}
+
+template<size_t k, class ReadStream>
 void FillPairedIndex(const Graph &g, const EdgeIndex<k + 1, Graph>& index
 		, PairedInfoIndex<Graph>& paired_info_index,
 		ReadStream& stream) {
@@ -113,8 +127,8 @@ ReadStream& stream) {
 	INFO("Constructing DeBruijn graph");
 	DeBruijn& debruijn = index.inner_index();
 	INFO("Filling DeBruijn graph");
-	debruijn.Fill(stream);
-	INFO("DeBruijn graph constructed");
+	size_t reads = debruijn.Fill(stream);
+	INFO("DeBruijn graph constructed, " << reads << " reads used");
 
 	INFO("Condensing graph");
 	DeBruijnGraphConstructor<k, Graph> g_c(debruijn);

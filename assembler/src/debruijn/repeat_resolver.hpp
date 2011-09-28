@@ -33,7 +33,7 @@
 namespace debruijn_graph {
 
 #define MAX_DISTANCE_CORRECTION 10
-#define rc_mode 1
+
 
 
 using omnigraph::SmartVertexIterator;
@@ -163,7 +163,7 @@ public:
 		unordered_map<VertexId, VertexId> old_to_new;
 		unordered_map<EdgeId, EdgeId> old_to_new_edge;
 		cheating_mode = 0;
-
+		rc_mode = cfg::get().rr.symmetric_resolve;
 		global_cheating_edges.clear();
 		size_t paired_size = 0;
 		set<VertexId> vertices;
@@ -222,8 +222,7 @@ public:
 					old_graph.EdgeNucls(*e_iter));
 			WrappedSetCoverage(new_edge,
 					old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
-//			new_graph.coverage_index().SetCoverage(new_edge,
-//					old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
+
 			edge_labels[new_edge] = *e_iter;
 			TRACE("Adding edge " << new_edge<< " from" << *e_iter);
 			old_to_new_edge[*e_iter] = new_edge;
@@ -275,6 +274,7 @@ private:
 	void BanRCVertex(VertexId v );
 	int GetRCId (int id);
 	EdgeId RCEdge(EdgeId e);
+	bool rc_mode;
 	void WrappedSetCoverage(EdgeId e, int cov);
 	size_t GenerateVertexPairedInfo(Graph &g, PairInfoIndexData<EdgeId> &ind,
 			VertexId vid);
@@ -721,12 +721,6 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 
 
 
-	//		TotalLabelerGraphStruct<NCGraph> graph_struct_before(old_graph,
-	//					&old_IDs, &old_pos, NULL);
-	//		TotalLabelerGraphStruct<NCGraph> graph_struct_after(new_graph,
-	//					&new_IDs, &new_pos, NULL);
-	//		TotalLabeler<NCGraph> TotLabAfter(&graph_struct_after,
-	//					&graph_struct_before);
 	TotalLabelerGraphStruct<Graph> graph_struct_before(old_graph,
 			&old_IDs, &old_pos, NULL);
 	TotalLabelerGraphStruct<Graph> graph_struct_after(new_graph,
@@ -901,15 +895,8 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 
 					}
 					if (d * mult >= -0.001) {
-//						if (cheating_mode && (i == 1) && (right_id == left_id)
-//								&& (tmp[j].d == 0)) {
-//							DEBUG("Paired info in cheating mode ignored");
-//							//ignoring information from incoming edge to itself, ignoring
-//							cheating_edges.insert(left_id);
-//							continue;
-//						}
 
-//						DEBUG("PairInfo: " << new_IDs.ReturnIntId(tmp[j].first)<<" "<<old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
+						TRACE("PairInfo: " << new_IDs.ReturnIntId(tmp[j].first)<<" "<<old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 
 						pair<bool, PairInfo> correction_result =
 								CorrectedAndNotFiltered(new_graph, tmp[j]);
@@ -945,15 +932,9 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 				}
 				NotOnSelfExist = false;
 				for (int j = 0; j < (int)tmp_edge_infos.size(); j++) {
-					//if ((!NotOnSelfExist)||(tmp_edge_infos[j].lp.d != 0)||(edge_labels[tmp_edge_infos[j].lp.first] != tmp_edge_infos[j].lp.second))
-					{
-						edge_infos.push_back(tmp_edge_infos[j]);
-					}
-
+					edge_infos.push_back(tmp_edge_infos[j]);
 				}
 			}
-//			paired_di_data.DeleteEdgeInfo(edgeIds[dir][i]);
-
 		}
 	}
 
@@ -1075,10 +1056,6 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 			DEBUG("direction" << ind << " edge " << new_IDs.ReturnIntId(edgeIds[ind][i]));
 			EdgeIdMap[ind].insert(make_pair(edgeIds[ind][i], i));
 		}
-//	int table[out_count][in_count];
-//	for(int i = 0; i < out_count; i ++)
-//		for(int j = 0; j < in_count; j++)
-//			table[i][j] = 0;
 	vector<vector<int> > neighbours;
 	neighbours.resize(in_count + out_count);
 	for(int i = 0; i < size; i++){
@@ -1118,7 +1095,6 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 				neighbours[first_ind + counts[1]].push_back(second_ind);
 				neighbours[second_ind].push_back(first_ind + counts[1]);
 				DEBUG("neighbours "<<first_ind<<" + "<<counts[1]<<"  "<<second_ind);
-//				table[first_ind][second_ind] = 1;
 			}
 		}
 	}

@@ -106,6 +106,7 @@ int main() {
 		cfg::create_instance(cfg_filename);
 
 		// check config_struct.hpp parameters
+		INFO("K = " << debruijn_graph::K);
 		if (K % 2 == 0)
 			FATAL("K in config.hpp must be odd!\n");
 
@@ -124,9 +125,7 @@ int main() {
 		checkFileExistenceFATAL(genome_filename);
 		checkFileExistenceFATAL(reads_filename1);
 		checkFileExistenceFATAL(reads_filename2);
-		INFO("Assembling " << dataset << " dataset");
 
-		INFO("K = " << debruijn_graph::K);
 		// typedefs :)
 		typedef io::Reader<io::SingleRead> ReadStream;
 		typedef io::Reader<io::PairedRead> PairedReadStream;
@@ -137,15 +136,15 @@ int main() {
 
 		PairedReadStream pairStream(std::make_pair(reads_filename1,reads_filename2), cfg::get().ds.IS);
 
-		string real_reads = cfg::get().uncorrected_reads;
-		if (real_reads != "none") {
-			reads_filename1 = input_dir + (real_reads + "_1");
-			reads_filename2 = input_dir + (real_reads + "_2");
-		}
-		ReadStream reads_1(reads_filename1);
-		ReadStream reads_2(reads_filename2);
-
-		vector<ReadStream*> reads = {&reads_1, &reads_2};
+//		string real_reads = cfg::get().uncorrected_reads;
+//		if (real_reads != "none") {
+//			reads_filename1 = input_dir + (real_reads + "_1");
+//			reads_filename2 = input_dir + (real_reads + "_2");
+//		}
+//		ReadStream reads_1(reads_filename1);
+//		ReadStream reads_2(reads_filename2);
+//
+//		vector<ReadStream*> reads = {&reads_1, &reads_2};
 
 		FilteringStream filter_stream(pairStream);
 

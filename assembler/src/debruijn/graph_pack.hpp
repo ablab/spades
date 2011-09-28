@@ -51,12 +51,14 @@ struct nonconj_graph_pack
 
     graph_t                                     g;
     IdTrackHandler<graph_t>                     int_ids;
+    EdgeIndex<K + 1, graph_t>       			index;
     EdgesPositionHandler<graph_t>               edge_pos;
     PairedInfoIndex<graph_t>                    clustered_index;
 
     nonconj_graph_pack()
         : g                 (K)
         , int_ids           (g)
+    	, index				(g)
         , edge_pos          (g)
         , clustered_index   (g)
     {
@@ -65,6 +67,7 @@ struct nonconj_graph_pack
     nonconj_graph_pack(conj_graph_pack const& gp, PairedInfoIndex<ConjugateDeBruijnGraph> const& prev_clustered_index)
         : g                 (K)
         , int_ids           (g)
+    	, index				(g)
         , edge_pos          (g)
         , clustered_index   (g)
     {

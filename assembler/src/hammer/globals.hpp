@@ -16,6 +16,7 @@ struct Globals {
 	static bool use_iterative_reconstruction;
 	static bool reconstruction_in_full_iterations;
 	static double iterative_reconstruction_threshold;
+	static bool write_each_iteration_kmers;
 	static int max_reconstruction_iterations;
 	static bool read_kmers_after_clustering;
 	static bool write_kmers_after_clustering;

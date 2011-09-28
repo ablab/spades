@@ -34,4 +34,5 @@ use_iterative_reconstruction		1
 reconstruction_in_full_iterations	1
 iterative_reconstruction_threshold	0.995
 max_reconstruction_iterations		10
+write_each_iteration_kmers		1
 

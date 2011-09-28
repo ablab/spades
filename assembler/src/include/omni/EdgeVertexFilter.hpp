@@ -16,9 +16,12 @@ class EdgeVertexFilter {
 	set<EdgeId> edges_;
 	Graph &g_;
 public:
-	EdgeVertexFilter(Graph &g, vector<VertexId> vertices): g_(g){
+	EdgeVertexFilter(Graph &g, vector<VertexId> vertices, bool add_verices_with_conjugate): g_(g){
 		for (auto it = vertices.begin(); it != vertices.end(); ++it){
 			vertices_.insert(*it);
+			if (add_verices_with_conjugate){
+				vertices_.insert(g_.conjugate(*it));
+			}
 		}
 		for (auto v_it = vertices_.begin(); v_it != vertices_.end(); ++v_it) {
 			const vector<EdgeId> edges = g_.OutgoingEdges(*v_it);

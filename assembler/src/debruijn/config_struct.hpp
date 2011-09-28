@@ -105,14 +105,22 @@ namespace debruijn_graph
 				size_t sufficient_neighbour_length;
 			};
 
+			struct pair_info_ec_remover
+			{
+				size_t max_length;
+				size_t min_neighbour_length;
+			};
+
 			tip_clipper                            tc;
 			bulge_remover                          br;
 			erroneous_connections_remover          ec;
 			cheating_erroneous_connections_remover cec;
+			pair_info_ec_remover                   piec;
 		};
 
 		struct repeat_resolver
 		{
+			bool symmetric_resolve;
 			int mode;
 			int near_vertex;
 		};
@@ -121,6 +129,7 @@ namespace debruijn_graph
 			size_t delta;
 			size_t linkage_distance;
 			size_t max_distance;
+			double filter_threshold;
 		};
 		struct advanced_distance_estimator
 		{
@@ -167,6 +176,8 @@ namespace debruijn_graph
 		bool etalon_info_mode;
 		bool late_paired_info;
 		bool advanced_estimator_mode;
+		bool componential_resolve;
+
 
 		std::string uncorrected_reads;
 		bool need_consensus;
@@ -209,6 +220,15 @@ namespace debruijn_graph
 
 	inline void load(
 	    boost::property_tree::ptree const& pt,
+	    debruijn_config::simplification::pair_info_ec_remover& ec)
+	{
+		using config_common::load;
+		load(pt, "max_length", ec.max_length);
+		load(pt, "min_neighbour_length", ec.min_neighbour_length);
+	}
+
+	inline void load(
+	    boost::property_tree::ptree const& pt,
 	    debruijn_config::simplification::erroneous_connections_remover& ec)
 	{
 		using config_common::load;
@@ -232,6 +252,7 @@ namespace debruijn_graph
 		load(pt, "delta", de.delta);
 		load(pt, "linkage_distance", de.linkage_distance);
 		load(pt, "max_distance", de.max_distance);
+		load(pt, "filter_threshold", de.filter_threshold);
 	}
 
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::advanced_distance_estimator& ade)
@@ -250,6 +271,7 @@ namespace debruijn_graph
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::repeat_resolver& rr)
 	{
 		using config_common::load;
+		load(pt, "symmetric_resolve", rr.symmetric_resolve);
 		load(pt, "mode", rr.mode);
 		load(pt, "near_vertex", rr.near_vertex);
 	}
@@ -310,6 +332,7 @@ namespace debruijn_graph
 		load(pt, "rectangle_mode", cfg.rectangle_mode);
 		load(pt, "etalon_info_mode", cfg.etalon_info_mode);
 		load(pt, "late_paired_info", cfg.late_paired_info);
+		load(pt, "late_paired_info", cfg.componential_resolve);
 		load(pt, "advanced_estimator_mode", cfg.advanced_estimator_mode);
 
 		bool single_cell;

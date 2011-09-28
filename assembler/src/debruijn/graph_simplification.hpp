@@ -117,6 +117,17 @@ void RemoveRelativelyLowCoverageEdges(Graph &g) {
 }
 
 template<class Graph>
+void RemoveEroneousEdgesUsingPairedInfo(Graph &g, const PairedInfoIndex<Graph>& paired_index) {
+	INFO("Removing erroneous edges using paired info");
+	size_t max_length = cfg::get().simp.piec.max_length;
+	size_t min_neighbour_length = cfg::get().simp.piec.min_neighbour_length;
+	omnigraph::PairInfoAwareErroneousEdgeRemover<Graph> erroneous_edge_remover(g, paired_index,
+			max_length, min_neighbour_length, cfg::get().ds.IS, cfg::get().ds.RL);
+	erroneous_edge_remover.RemoveEdges();
+	INFO("Erroneous edges using paired info removed");
+}
+
+template<class Graph>
 void RemoveLowCoverageEdgesForResolver(Graph &g) {
 	INFO("-----------------------------------------");
 	INFO("Removing low coverage edges");
@@ -148,6 +159,7 @@ const Sequence& genome, size_t bound, const string &file_name) {
 
 template<size_t k>
 void SimplifyGraph(Graph& g, const EdgeIndex<k + 1, Graph>& index,
+const PairedInfoIndex<Graph>& paired_index,
 const omnigraph::GraphLabeler<Graph>& labeler, size_t iteration_count,
 const Sequence& genome, const string& output_folder) {
 	INFO("-----------------------------------------");

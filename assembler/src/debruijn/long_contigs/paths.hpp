@@ -21,35 +21,40 @@ double WeightFunction(double weight) {
 	return weight != 0 ? 1 : 0;
 }
 
+double CorrectWeightByAdvanced(double weight, double advWeight) {
+	return advWeight > 0 ? weight * lc_cfg::get().es.advanced_coeff * lc_cfg::get().es.priority_coeff : weight;
+}
+
 //Calculate weight
 double GetWeight(omnigraph::PairedInfoIndex<Graph>::PairInfos pairs, int distance, int distanceDev, bool useWeightFunction = false,
 		omnigraph::PairedInfoIndex<Graph>::PairInfos* ad_pairs = 0) {
 	double weight = 0;
 
 	for (auto iter = pairs.begin(); iter != pairs.end(); ++iter) {
-			int pairedDistance = rounded_d(*iter);
 
-			if (lc_cfg::get().es.use_delta_first) {
-				if (iter->variance != 0) {
-					distanceDev = iter->variance;
-				}
+
+		int pairedDistance = rounded_d(*iter);
+
+		if (lc_cfg::get().es.use_delta_first) {
+			if (iter->variance != 0) {
+				distanceDev = iter->variance;
 			}
+		}
 
-			//Can be modified according to distance comparison
-			if (pairedDistance >= distance - distanceDev &&
-					pairedDistance <= distance + distanceDev) {
-				weight += iter->weight;
-			}
+		//Can be modified according to distance comparison
+		if (pairedDistance >= distance - distanceDev &&
+				pairedDistance <= distance + distanceDev) {
+			weight += iter->weight;
+		}
 
+		if (ad_pairs) {
 			for (auto aiter = ad_pairs->begin(); aiter != ad_pairs->end(); ++aiter) {
 				int ad_pairedDistance = rounded_d(*aiter);
 				//Can be modified according to distance comparison
 				if (ad_pairedDistance >= distance - distanceDev &&
 						ad_pairedDistance <= distance + distanceDev) {
 
-
-				if (aiter->weight > 0) {
-					weight += iter->weight * (lc_cfg::get().es.priority_coeff - 1);
+					weight = CorrectWeightByAdvanced(weight, aiter->weight);
 				}
 			}
 		}
@@ -102,16 +107,25 @@ double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, 
 
 	static int DISTANCE_DEV = cfg::get().etalon_info_mode ? lc_cfg::get().es.etalon_distance_dev : pairedInfoLibrary.var;
 
+	DETAILED_INFO("atata " << start << " " << end);
 	for(size_t i = start; i < end; ++i) {
+		DETAILED_INFO(i);
 		EdgeId edge = path[i];
+		DETAILED_INFO("!!");
 		omnigraph::PairedInfoIndex<Graph>::PairInfos pairs =
 				forward ? pairedInfoLibrary.pairedInfoIndex->GetEdgePairInfo(edge, e) : pairedInfoLibrary.pairedInfoIndex->GetEdgePairInfo(e, edge);
 		int distance = lengths[i] + edgeLength + additionalGapLength;
 
+		if (pairedInfoLibrary.has_advanced) {
+			DETAILED_INFO("adv");
+			omnigraph::PairedInfoIndex<Graph>::PairInfos ad_pairs = forward ? pairedInfoLibrary.advanced->pairedInfoIndex->GetEdgePairInfo(edge, e) : pairedInfoLibrary.advanced->pairedInfoIndex->GetEdgePairInfo(e, edge);
+			weight += GetWeight(pairs, distance, DISTANCE_DEV, useWeightFunction, lc_cfg::get().es.use_advanced ? &ad_pairs : 0);
+		} else {
+			DETAILED_INFO("no adv");
+			weight += GetWeight(pairs, distance, DISTANCE_DEV, useWeightFunction, 0);
+		}
+		DETAILED_INFO("end " << i);
 
-		omnigraph::PairedInfoIndex<Graph>::PairInfos ad_pairs= forward ? pairedInfoLibrary.advanced->pairedInfoIndex->GetEdgePairInfo(edge, e) : pairedInfoLibrary.advanced->pairedInfoIndex->GetEdgePairInfo(e, edge);
-
-		weight += GetWeight(pairs, distance, DISTANCE_DEV, useWeightFunction, lc_cfg::get().es.use_advanced ? &ad_pairs : 0);
 	}
 
 	return lc_cfg::get().es.fix_weight ? WeightFixing(g, path, e, edgesToExclude, pairedInfoLibrary, weight, forward) : weight;
@@ -123,7 +137,9 @@ double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, 
 
 	double weight = 0;
 	for (auto lib = pairedInfo.begin(); lib != pairedInfo.end(); ++lib) {
+		DETAILED_INFO("22");
 		weight += ExtentionWeight(g, path, lengths, e, *lib, edgesToExclude, forward, useWeightFunction, additionalGapLength);
+		DETAILED_INFO("22end");
 	}
 	return weight;
 }
@@ -224,12 +240,16 @@ double FilterExtentions(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& 
 		LoopDetector& detector,
 		bool useWeightFunction = false) {
 
+	DETAILED_INFO("11");
 	std::multimap<double, EdgeId> weights;
 
 	for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
+		DETAILED_INFO("12");
 		double weight = ExtentionWeight(g, path, lengths, *iter, pairedInfo, edgesToExclude, forward, useWeightFunction);
+		DETAILED_INFO("13");
 		weights.insert(std::make_pair(weight, *iter));
 		detector.temp.AddAlternative(*iter, weight);
+		DETAILED_INFO("14");
 	}
 
 	DETAILED_INFO("Choosing weights " << (forward ? "forward" : "backward"))
@@ -256,15 +276,19 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 
 	detector.temp.clear();
 
+	DETAILED_INFO("1");
+
 	if (edges.size() == 0) {
 		handler.AddStop(&path, NO_EXTENSION, forward);
 		return 0;
 	}
+
+	DETAILED_INFO("2");
 	if (edges.size() == 1) {
 		detector.temp.AddAlternative(edges.back(), 1);
 		return edges.back();
 	}
-
+	DETAILED_INFO("3");
 	EdgeId toReturn = 0;
 	if (lc_cfg::get().rs.research_mode && lc_cfg::get().rs.force_to_cycle) {
 		for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
@@ -286,14 +310,16 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 //			return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightFunThreshold, g, path, handler, forward) : toReturn;
 //		}
 //	}
-
+	DETAILED_INFO("4");
 	*maxWeight = FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector);
 
 	static double weightThreshold = lc_cfg::get().es.weight_threshold;
 	if (edges.size() == 1) {
+		DETAILED_INFO("single");
 		return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold, g, path, handler, forward) : toReturn;
 	}
 	else if (edges.size() > 1) {
+		DETAILED_INFO("many");
 		if (ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold) == 0) {
 			DETAILED_INFO("No goo extension");
 			handler.AddStop(&path, NO_GOOD_EXTENSION, forward);
@@ -313,7 +339,7 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 			handler.AddStop(&path, MANY_GOOD_EXTENSIONS, forward);
 		}
 	}
-
+	DETAILED_INFO("Done");
 	return toReturn;
 }
 
@@ -344,7 +370,7 @@ size_t EdgesToExcludeForward(Graph& g, BidirectionalPath& path, int from = -1) {
 		}
 	}
 
-	return toExclude;
+	return std::min(toExclude, path.size());
 }
 
 //Count edges to be excludeD
@@ -373,7 +399,7 @@ size_t EdgesToExcludeBackward(Graph& g, BidirectionalPath& path, int from = -1) 
 		}
 	}
 
-	return toExclude;
+	return std::min(toExclude, path.size());
 }
 
 EdgeId FindExitFromLoop(BidirectionalPath& path, LoopDetector& detector, bool forward) {
@@ -630,7 +656,7 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	if (path.empty()) {
 		return false;
 	}
-
+	DETAILED_INFO("Ext");
 	double w = 0;
 	static bool FULL_LOOP_REMOVAL = lc_cfg::get().lr.full_loop_removal;
 	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
@@ -649,13 +675,18 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		}
 	}
 
+	DETAILED_INFO("aftrer invest");
+
 	std::vector<EdgeId> edges = g.OutgoingEdges(g.EdgeEnd(path.back()));
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, &w, EdgesToExcludeForward(g, path), true, detector, handler);
 	if (extension == 0) {
 		return false;
 	}
 
+	DETAILED_INFO("before add");
+
 	detector.AddNewEdge(extension, path.size(), w);
+	DETAILED_INFO("inc");
 	IncreaseLengths(g, lengths, extension, true);
 	path.push_back(extension);
 
@@ -756,14 +787,19 @@ void RecountDetectorForward(Graph& g, BidirectionalPath& path, PairedInfoIndices
 	DETAILED_INFO("Recounting detector forward");
 
 	for (int i = 0; i < (int) path.size(); ++i) {
+		DETAILED_INFO(i);
 		size_t edgesToExclude = EdgesToExcludeForward(g, emulPath);
 
 		detector.temp.clear();
 		if (g.OutgoingEdgeCount(g.EdgeStart(path[i])) == 1) {
+			DETAILED_INFO("Single edge");
 			detector.temp.AddAlternative(path[i]);
+			DETAILED_INFO("Single edge");
 			detector.AddNewEdge(path[i], i);
+			DETAILED_INFO("Single edge");
 		}
 		else {
+			DETAILED_INFO("Many edges");
 			auto edges = g.OutgoingEdges(g.EdgeStart(path[i]));
 
 			for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
@@ -772,13 +808,16 @@ void RecountDetectorForward(Graph& g, BidirectionalPath& path, PairedInfoIndices
 
 				detector.temp.AddAlternative(*iter, weight);
 			}
-
+			DETAILED_INFO("Many edges");
 			detector.AddNewEdge(path[i], i, detector.temp.weights[path[i]]);
+			DETAILED_INFO("Many edges");
 		}
 
 		emulPath.push_back(path[i]);
+		DETAILED_INFO("Increase");
 		IncreaseLengths(g, emulLengths, path[i], true);
 	}
+	DETAILED_INFO("Done");
 }
 
 void RecountDetectorBackward(Graph& g, BidirectionalPath& path, PairedInfoIndices& pairedInfo, LoopDetector& detector) {
@@ -826,12 +865,15 @@ void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo, 
 	while (i < lc_cfg::get().es.max_iter && !stop) {
 		RecountLengthsForward(g, seed, lengths);
 
+
 		DETAILED_INFO("Before forward");
 		DetailedPrintPath(g, seed, lengths);
 
 		RecountDetectorForward(g, seed, pairedInfo, detector);
+		DETAILED_INFO("Done");
 		while (ExtendPathForward(g, seed, lengths, detector, pairedInfo, handler)) {
 		}
+		DETAILED_INFO("After extention");
 
 		if (PathLength(g, seed) > maxIS) {
 			stop = true;

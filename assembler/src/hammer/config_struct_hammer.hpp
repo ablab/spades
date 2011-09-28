@@ -47,6 +47,7 @@ struct hammer_config
 	bool reconstruction_in_full_iterations;
 	double iterative_reconstruction_threshold;
 	int max_reconstruction_iterations;
+	bool write_each_iteration_kmers;
 };
 
 
@@ -91,6 +92,7 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 	load(pt, "reconstruction_in_full_iterations", cfg.reconstruction_in_full_iterations);
 	load(pt, "iterative_reconstruction_threshold", cfg.iterative_reconstruction_threshold);
 	load(pt, "max_reconstruction_iterations", cfg.max_reconstruction_iterations);
+	load(pt, "write_each_iteration_kmers", cfg.write_each_iteration_kmers);
 }
 
 typedef config_common::config<hammer_config> cfg;
