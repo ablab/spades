@@ -700,7 +700,7 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 	int count = 0;
 	while (comps.size() != 0) {
 		for(size_t i = 0; i < comps.size(); i++) {
-			vertices.insert(make_pair(count, comps[i]));
+			vertices.insert(make_pair(100000 - new_IDs.ReturnIntId(comps[i]), comps[i]));
 			count++;
 		}
 		if (splitter.Finished())
@@ -1027,9 +1027,9 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 	DEBUG("Edge color info " << debruijn::operator<<(oss_, edge_info_colors));
 	if (cheating_mode) {
 		if (cur_color > 1) {
-			INFO("cheat_2 resolved vertex " << new_IDs.ReturnIntId(vid));
+			DEBUG("cheat_2 resolved vertex " << new_IDs.ReturnIntId(vid));
 		} else {
-			INFO("cheat_2 ignored vertex " << new_IDs.ReturnIntId(vid));
+			DEBUG("cheat_2 ignored vertex " << new_IDs.ReturnIntId(vid));
 		}
 	}
 	MultiSplit(vid);
