@@ -65,7 +65,7 @@ void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
     INFO(cur_num << "contigs");
     for (int i = 1; i < 3; i++) {
         int read_num = 0;
-        osequencestream* mapped_reads[4000];
+        osequencestream* mapped_reads[5000];
         for (int j = 0; j < cur_num; j++) {
             string output_filename = consensus_output_dir + ToString(j)
                     + "_reads" + ToString(i) + ".fa";
@@ -74,6 +74,7 @@ void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
             mapped_reads[j] = tmp;
         }
         SingleReadMapper<k, Graph> rm(etalon_graph, index);
+        INFO("mapping reads from pair"<< i);
         while (!reads[i - 1]->eof()) {
             io::SingleRead cur_read;
             (*reads[i - 1]) >> cur_read;
