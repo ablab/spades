@@ -559,7 +559,7 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 						   << " part of cluster " << k_[blocksInPlace[n][m][0]]->first.start() << " clust=" << cluster_quality
 					           << " ind=" << blocksInPlace[n][m][j]
 						   << " cnt=" << k_[blocksInPlace[n][m][j]]->second.count
-						   << " tql=" << (1-k_[blocksInPlace[n][m][j]]->second.totalQual0 << "\n";
+						   << " tql=" << (1-k_[blocksInPlace[n][m][j]]->second.totalQual) << "\n";
 					}
 				}
 			}
