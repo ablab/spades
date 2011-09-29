@@ -753,6 +753,7 @@ class NonEmptyPathCounter: public PathProcessor<Graph>::Callback {
 	const Graph& g_;
 
 	size_t count_;
+    vector< vector<EdgeId> >  paths_;
 public:
 
 	NonEmptyPathCounter(const Graph& g) :
@@ -777,12 +778,17 @@ public:
 			 */
 
 			count_++;
+            paths_.push_back(path);
 		}
 	}
 
 	size_t count() {
 		return count_;
 	}
+    vector< vector<EdgeId> > paths()
+    {
+        return paths_;
+    }
 }
 ;
 
