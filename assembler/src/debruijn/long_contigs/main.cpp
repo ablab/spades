@@ -101,7 +101,13 @@ int main() {
 		WriteGraphWithPathsSimple(output_dir + "seeds.dot", "seeds", g, seeds, path1, path2);
 	}
 
-	FindPaths(g, seeds, pairedInfos, paths, stopHandler);
+	if (lc_cfg::get().total_symmetric_mode) {
+		FindPathsSymmetric(g, seeds, pairedInfos,  stopHandler, seedPairs);
+		paths.resize(seeds.size());
+		std::copy(seeds.begin(), seeds.end(), paths.begin());
+	} else {
+		FindPaths(g, seeds, pairedInfos, paths, stopHandler);
+	}
 
 	std::vector<BidirectionalPath> result;
 	std::vector<double> pathQuality;
