@@ -1,13 +1,9 @@
-CMakeCache.txt
-CMakeFiles
 abruijn/abruijn
-common/io/libiolib.a
 debruijn/debruijn
 hammer/main
 hammer/quake_count/quake_count
 hammer/quake_enhanced/count/count
 hammer/quake_enhanced/prepare_graph/prepare_graph
 bayes/bayes
-*~
-*.info
-
+debruijn/config.info
+debruijn/simplification.info
