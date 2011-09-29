@@ -194,6 +194,7 @@ public:
 					+ old_graph.OutgoingEdgeCount(*v_iter);
 			if (degree > 0) {
 				VertexId new_vertex = new_graph.AddVertex();
+//				new_IDs.AddVertexIntId(new_vertex, old_IDs.ReturnIntId(*v_iter));
 				real_vertices.insert(new_vertex);
 
 				TRACE("Added vertex" << new_vertex);
@@ -220,6 +221,7 @@ public:
 					old_to_new[old_graph.EdgeStart(*e_iter)],
 					old_to_new[old_graph.EdgeEnd(*e_iter)],
 					old_graph.EdgeNucls(*e_iter));
+//			new_IDs.AddEdgeIntId(new_edge, old_IDs.ReturnIntId(*e_iter));
 			WrappedSetCoverage(new_edge,
 					old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
 
@@ -639,15 +641,15 @@ void RepeatResolver<Graph>::BanRCVertex(VertexId v ){
 	int id = new_IDs.ReturnIntId(v);
 	int rc_id = GetRCId(id);
 
-	INFO("added vertex " << id << " banning vertex "<< rc_id);
+	DEBUG("added vertex " << id << " banning vertex "<< rc_id);
 	vector<EdgeId> tmp = new_graph.IncomingEdges(new_IDs.ReturnVertexId(rc_id));
 	for(size_t i = 0; i < tmp.size(); i++)
 		global_cheating_edges.insert(tmp[i]);
-	DEBUG("incoming cheaters added");
+	TRACE("incoming cheaters added");
 	tmp = new_graph.OutgoingEdges(new_IDs.ReturnVertexId(rc_id));
 	for(size_t i = 0; i < tmp.size(); i++)
 		global_cheating_edges.insert(tmp[i]);
-	DEBUG("outgoing cheaters added");
+	TRACE("outgoing cheaters added");
 }
 template<class Graph>
 int RepeatResolver<Graph>::GetRCId(int id) {
@@ -700,7 +702,7 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 	int count = 0;
 	while (comps.size() != 0) {
 		for(size_t i = 0; i < comps.size(); i++) {
-			vertices.insert(make_pair(count, comps[i]));
+			vertices.insert(make_pair(100000 - new_IDs.ReturnIntId(comps[i]), comps[i]));
 			count++;
 		}
 		if (splitter.Finished())
@@ -1027,9 +1029,9 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 	DEBUG("Edge color info " << debruijn::operator<<(oss_, edge_info_colors));
 	if (cheating_mode) {
 		if (cur_color > 1) {
-			INFO("cheat_2 resolved vertex " << new_IDs.ReturnIntId(vid));
+			DEBUG("cheat_2 resolved vertex " << new_IDs.ReturnIntId(vid));
 		} else {
-			INFO("cheat_2 ignored vertex " << new_IDs.ReturnIntId(vid));
+			DEBUG("cheat_2 ignored vertex " << new_IDs.ReturnIntId(vid));
 		}
 	}
 	MultiSplit(vid);
