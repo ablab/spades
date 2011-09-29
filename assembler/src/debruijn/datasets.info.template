@@ -1,14 +1,27 @@
 ; different datasets:
 
+; ================================================
+; ==================== E Coli ====================
+; ================================================
+
+;Paired reads from the actual genome, sequential, like this:
+; -----          -----
+;  -----          -----
+;   .....          .....
+;This makes 4 639 276 mate reads.
 ECOLI_EMUL
 {
 	first 	EAS20_8/emul/MG1655-K12_emul1.fastq.gz
 	second	EAS20_8/emul/MG1655-K12_emul2.fastq.gz
 	RL		100		; read length
-	IS 	   220 	; insert size
+	IS 	   400 	; insert size
 	LEN	   4639675 ; total size
 }
- 
+
+; ==================== Insert size: 220 ====================
+
+; E.Coli was cropped to first 1k, 10k, 100k and 400k nucleotides.
+; Then we filter Quake-reads to only mate pairs that can be aligned to this segment (using bowtie with default options).
 QUAKE_CROPPED_1K
 {
 	first	EAS20_8/quaked/cropped/s_6.first1000_1.fastq.gz
@@ -45,6 +58,7 @@ QUAKE_CROPPED_400K
 	LEN		400000 	; total size
 }
 
+; There are total 14 214 324 mate-reads, and 12 489 353 mate-reads without any 'N' letter (clear reads).
 QUAKE_FULL
 {
 	first	EAS20_8/quaked/s_6_1.cor.fastq.gz
@@ -53,6 +67,8 @@ QUAKE_FULL
 	IS		220 	; insert size
 	LEN		4639675 ; total size
 }
+
+; ==================== Insert size: 480 ====================
 
 EAS600_QUAKE_CROPPED_1K
 {
@@ -99,6 +115,19 @@ EAS600_QUAKE_FULL
 	LEN		4639675	; total size
 }
 
+EAS600_EMUL_FULL
+{
+	first	EAS600_70/emulation/reads_1.fastq
+	second	EAS600_70/emulation/reads_2.fastq
+	RL		100		; read length
+	IS		500 	; insert size
+	LEN		4639675	; total size
+}
+
+; ==================== SINGLE CELL ====================
+
+; TODO: needs comments!
+
 SC_NEW_1
 {
 	first	SC/2908_tau1_00_left.fastq.gz
@@ -135,15 +164,6 @@ SC_K35
 	LEN		4639675	; total size
 }
 
-EAS600_EMUL_FULL
-{
-	first	EAS600_70/emulation/reads_1.fastq
-	second	EAS600_70/emulation/reads_2.fastq
-	RL		100		; read length
-	IS		500 	; insert size
-	LEN		4639675	; total size
-}
-
 SC_FULL
 {
 	first	SC_OLD/left.fastq.gz
@@ -161,4 +181,3 @@ SC_EULER_FULL
 	IS		270 	; insert size
 	LEN		4639675	; total size
 }
-

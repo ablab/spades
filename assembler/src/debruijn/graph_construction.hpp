@@ -127,8 +127,8 @@ ReadStream& stream) {
 	INFO("Constructing DeBruijn graph");
 	DeBruijn& debruijn = index.inner_index();
 	INFO("Filling DeBruijn graph");
-	debruijn.Fill(stream);
-	INFO("DeBruijn graph constructed");
+	size_t reads = debruijn.Fill(stream);
+	INFO("DeBruijn graph constructed, " << reads << " reads used");
 
 	INFO("Condensing graph");
 	DeBruijnGraphConstructor<k, Graph> g_c(debruijn);

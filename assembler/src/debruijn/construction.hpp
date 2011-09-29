@@ -60,10 +60,6 @@ void save_construction(conj_graph_pack& gp, total_labeler& tl,
 	fs::path p = fs::path(cfg::get().output_saves) / "constructed_graph";
 	printGraph(gp.g, gp.int_ids, p.string(), paired_index, gp.edge_pos,
 			&gp.etalon_paired_index);
-
-	//TODO:
-//  omnigraph::WriteSimple(g, *totLab, output_folder + "1_initial_graph.dot", "no_repeat_graph");
-//  omnigraph::WriteSimple(g, *totLab, output_folder + "1_initial_graph.dot", "no_repeat_graph");
 }
 
 void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
@@ -87,6 +83,11 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 		load_construction(gp, tl, paired_index, &used_files);
 		copy_files(used_files);
 	}
+	FillEdgesPos(gp,  gp.genome, 0);
+	FillEdgesPos(gp, !gp.genome, 1);
+	FillEdgesPos(gp, cfg::get().pos.contigs_for_threading, 1000);
+	omnigraph::WriteSimple(gp.g, tl, cfg::get().output_dir + "1_initial_graph.dot",
+						"no_repeat_graph");
 }
 
 } //namespace debruijn_graph

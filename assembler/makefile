@@ -1,6 +1,8 @@
 .PHONY: dd rd
 
-dd: 
+all: rd
+
+dd:
 	make -C build/debug/debruijn
 
 rd:
@@ -11,6 +13,4 @@ clean:
 	make -C build/release clean
 
 #temporary fix
-all: make -C build/release all
-
-
+#all: make -C build/release all

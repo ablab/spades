@@ -90,13 +90,15 @@ public:
 	}
 
 	template<class ReadStream>
-	void Fill(ReadStream &stream) {
+	size_t Fill(ReadStream &stream) {
+		size_t counter = 0;
 		io::SingleRead r;
 		while (!stream.eof()) {
 			stream >> r;
-//			cout << r.getSequence() << endl;
+			counter++;
 			CountRead(r);
 		}
+		return counter;
 	}
 
 	map_iterator begin() {

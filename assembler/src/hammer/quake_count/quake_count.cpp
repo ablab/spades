@@ -122,7 +122,7 @@ Options ParseOptions(int argc, char *argv[]) {
  * @param ofiles Files to write the result k-mers. They are written
  * one per line.
  */
-void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
+void SplitToFiles(ireadstream ifs, vector<ofstream *> &ofiles,
                   bool q_mers, uint8_t error_threshold) {
   uint32_t file_number = ofiles.size();
   uint64_t read_number = 0;
@@ -139,11 +139,11 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
       if (KMer::less2()(!kmer, kmer)) {
         kmer = !kmer;
       }
-      FILE *cur_file = ofiles[hash_function(kmer) % file_number];
+      ofstream &cur_file = *ofiles[hash_function(kmer) % file_number];
       KMer::BinWrite(cur_file, kmer);
       if (q_mers) {
         double correct_probability = gen.correct_probability();
-        fwrite(&correct_probability, sizeof(correct_probability), 1, cur_file);
+        cur_file.write((const char*) &correct_probability, sizeof(correct_probability));
       }
     }
   }
@@ -157,20 +157,17 @@ void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
  * line with k-mer itself and number of its occurrences.
  */
 template<typename KMerStatMap>
-void EvalFile(FILE *ifile, FILE *ofile, bool q_mers) {
+void EvalFile(ifstream &ifile, FILE *ofile, bool q_mers) {
   KMerStatMap stat_map;
   char buffer[kK + 1];
   buffer[kK] = 0;
   KMer kmer;
-  while (KMer::BinRead(ifile, &kmer)) {
+  while  (KMer::BinRead(ifile, &kmer)) {
     KMerFreqInfo &info = stat_map[kmer];
     if (q_mers) {
       double correct_probability = -1;
-      bool readed = 
-          fread(&correct_probability, sizeof(correct_probability),
-                1, ifile);
-      assert(readed == 1);
-      SUPPRESS_UNUSED(readed);
+      ifile.read((char *) &correct_probability, sizeof(correct_probability));
+      assert(ifile.fail());
       info.q_count += correct_probability;
     } else {
       info.count += 1;
@@ -197,28 +194,27 @@ int main(int argc, char *argv[]) {
   BasicConfigurator::configure();
   LOG4CXX_INFO(logger, "Starting preproc: evaluating "
                << opts.ifile << ".");
-  vector<FILE*> ofiles(opts.file_number);
+  vector<ofstream*> ofiles(opts.file_number);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     char filename[50];
     snprintf(filename, sizeof(filename), "%u.kmer.part", i);
-    ofiles[i] = fopen(filename, "wb");
-    assert(ofiles[i] != NULL && "Too many files to open");
+    ofiles[i] = new ofstream(filename);
+    assert(ofiles[i]->fail() && "Too many files to open");
   }
-  SplitToFiles(ireadstream(opts.ifile, opts.qvoffset), 
+  SplitToFiles(ireadstream(opts.ifile, opts.qvoffset),
                ofiles, opts.q_mers, opts.error_threshold);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
-    fclose(ofiles[i]);
+    delete ofiles[i];
   }
   FILE *ofile = fopen(opts.ofile.c_str(), "w");
   assert(ofile != NULL && "Too many files to open");
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     char ifile_name[50];
     snprintf(ifile_name, sizeof(ifile_name), "%u.kmer.part", i);
-    FILE *ifile = fopen(ifile_name, "rb");
+    ifstream ifile(ifile_name);
     LOG4CXX_INFO(logger, "Processing " << ifile_name << ".");
     EvalFile<UnorderedMap>(ifile, ofile, opts.q_mers);
     LOG4CXX_INFO(logger, "Processed " << ifile_name << ".");
-    fclose(ifile);
   }
   fclose(ofile);
   LOG4CXX_INFO(logger,
