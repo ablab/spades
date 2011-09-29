@@ -16,3 +16,4 @@ src/tags
 scripts/
 tags
 *.ebwt
+log4cxx.properties
