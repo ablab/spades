@@ -4,11 +4,11 @@
 ; ==================== E Coli ====================
 ; ================================================
 
-;Paired reads from the actual genome, sequential, like this:
+; Paired reads from the actual genome, sequential, like this:
 ; -----          -----
 ;  -----          -----
 ;   .....          .....
-;This makes 4 639 276 mate reads.
+; This makes 4 639 276 mate reads.
 ECOLI_EMUL
 {
 	first 	EAS20_8/emul/MG1655-K12_emul1.fastq.gz
@@ -115,6 +115,10 @@ EAS600_QUAKE_FULL
 	LEN		4639675	; total size
 }
 
+; Paired reads from the actual genome, sequential, like this:
+; -----          -----
+;  -----          -----
+;   .....          .....
 EAS600_EMUL_FULL
 {
 	first	EAS600_70/emulation/reads_1.fastq
