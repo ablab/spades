@@ -133,7 +133,7 @@ void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence&
 	for (auto el = lc_cfg::get().etalon_libs.begin(); el != lc_cfg::get().etalon_libs.end(); ++el) {
 		INFO("Generating info with read size " << el->read_size << ", insert size " << el->insert_size);
 
-		pairedInfos.push_back(PairedInfoIndexLibrary(el->read_size, el->insert_size, 0, lc_cfg::get().es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
+		pairedInfos.push_back(PairedInfoIndexLibrary(g, el->read_size, el->insert_size, 0, lc_cfg::get().es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
 		FillEtalonPairedIndex<k> (g, *pairedInfos.back().pairedInfoIndex, index, el->insert_size, el->read_size, genome);
 	}
 }
@@ -149,7 +149,7 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 		size_t delta = rl->is_delta;
 		size_t var = rl->var;
 		string dataset = cfg::get().dataset_name;
-		pairedInfos.push_back(PairedInfoIndexLibrary(readSize, insertSize, delta, var, new PairedInfoIndex<Graph>(g, 0)));
+		pairedInfos.push_back(PairedInfoIndexLibrary(g, readSize, insertSize, delta, var, new PairedInfoIndex<Graph>(g, 0)));
 
 		INFO("Reading additional info with read size " << readSize << ", insert size " << insertSize);
 
@@ -160,7 +160,7 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 
 			pairedInfos.back().has_advanced = rl->ds.has_advanced;
 			if (rl->ds.has_advanced) {
-				pairedInfos.back().advanced = new PairedInfoIndexLibrary(readSize, insertSize, delta, var, new PairedInfoIndex<Graph>(g, 0));
+				pairedInfos.back().advanced = new PairedInfoIndexLibrary(g, readSize, insertSize, delta, var, new PairedInfoIndex<Graph>(g, 0));
 				DataScanner<Graph> advDataScanner(g, conj_IntIds);
 				advDataScanner.loadPaired(rl->ds.advanced, *pairedInfos.back().advanced->pairedInfoIndex);
 			} else {

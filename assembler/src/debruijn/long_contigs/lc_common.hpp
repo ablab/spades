@@ -45,9 +45,7 @@ typedef std::multimap<EdgeId, std::pair<size_t, double> > CycleDetector;
 //Paired infi library
 struct PairedInfoIndexLibrary {
 
-	PairedInfoIndexLibrary(size_t readS, size_t insS, size_t delta, size_t v, PairedInfoIndex<Graph>* index): readSize(readS), insertSize(insS), is_delta(delta), var(v), pairedInfoIndex(index) {
-	}
-
+	Graph const * g_;
 	size_t readSize;
 	size_t insertSize;
 	size_t is_delta;
@@ -56,6 +54,39 @@ struct PairedInfoIndexLibrary {
 
 	bool has_advanced;
 	PairedInfoIndexLibrary* advanced;
+
+	PairedInfoIndexLibrary(const Graph& g, size_t readS, size_t insS, size_t delta, size_t v, PairedInfoIndex<Graph>* index):
+		g_(&g), readSize(readS), insertSize(insS), is_delta(delta), var(v), pairedInfoIndex(index) {
+	}
+
+
+
+	double NormalizeWeight(const PairInfo<EdgeId>& pair_info) {
+		double w = 0.;
+		if (math::eq(pair_info.d, 0.) && pair_info.first == pair_info.second) {
+			w = 0. + g_->length(pair_info.first) - insertSize
+					+ 2 * readSize + 1 - K;
+		} else {
+			EdgeId e1 =	(math::ge(pair_info.d, 0.)) ?
+							pair_info.first : pair_info.second;
+			EdgeId e2 =	(math::ge(pair_info.d, 0.)) ?
+							pair_info.second : pair_info.first;
+
+			int gap_len = std::abs(rounded_d(pair_info)) - g_->length(e1);
+			int right = std::min(insertSize, gap_len + g_->length(e2) + readSize);
+			int left = std::max(gap_len, int(insertSize) - int(readSize) - int(g_->length(e1)));
+			w = 0. + right - left + 1 - K;
+		}
+
+		double result_weight = pair_info.weight;
+		if (math::gr(w, 0.)) {
+			result_weight /= w;
+		} else {
+			result_weight = 1;
+		}
+
+		return result_weight;
+	}
 };
 
 typedef std::vector<PairedInfoIndexLibrary> PairedInfoIndices;
