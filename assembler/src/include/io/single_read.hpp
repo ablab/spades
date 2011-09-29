@@ -183,12 +183,12 @@ class SingleRead {
     return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_));
   }
 
-  SingleRead SubstrStrict(size_t from, size_t to) {
+  SingleRead SubstrStrict(size_t from, size_t to) const {
     std::string new_name = name_ + ".substr(" + ToString(from) + "," + ToString(to) + ")";
     return SingleRead(new_name, seq_.substr(from, to), qual_.substr(from, to));
   }
 
-  SingleRead Substr(size_t from, size_t to) {
+  SingleRead Substr(size_t from, size_t to) const {
     size_t len = to - from;
     if (len == size()) {
       return *this;
