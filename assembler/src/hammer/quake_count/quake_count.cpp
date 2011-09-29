@@ -143,7 +143,7 @@ void SplitToFiles(ireadstream ifs, vector<ofstream *> &ofiles,
       KMer::BinWrite(cur_file, kmer);
       if (q_mers) {
         double correct_probability = gen.correct_probability();
-	cur_file.write((const char*) &correct_probability, sizeof(correct_probability));
+        cur_file.write((const char*) &correct_probability, sizeof(correct_probability));
       }
     }
   }
@@ -165,7 +165,7 @@ void EvalFile(ifstream &ifile, FILE *ofile, bool q_mers) {
   while  (KMer::BinRead(ifile, &kmer)) {
     KMerFreqInfo &info = stat_map[kmer];
     if (q_mers) {
-      double correct_probability = -1;     
+      double correct_probability = -1;
       ifile.read((char *) &correct_probability, sizeof(correct_probability));
       assert(ifile.fail());
       info.q_count += correct_probability;
@@ -200,9 +200,8 @@ int main(int argc, char *argv[]) {
     snprintf(filename, sizeof(filename), "%u.kmer.part", i);
     ofiles[i] = new ofstream(filename);
     assert(ofiles[i]->fail() && "Too many files to open");
-    //    assert(ofiles[i] != NULL && "Too many files to open");
   }
-  SplitToFiles(ireadstream(opts.ifile, opts.qvoffset), 
+  SplitToFiles(ireadstream(opts.ifile, opts.qvoffset),
                ofiles, opts.q_mers, opts.error_threshold);
   for (uint32_t i = 0; i < opts.file_number; ++i) {
     delete ofiles[i];
