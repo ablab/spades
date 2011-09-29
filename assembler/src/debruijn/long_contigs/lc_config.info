@@ -41,8 +41,8 @@ real_libs
     {
     	read_size     100
         insert_size   270
-        is_delta      5
-        var           10
+        is_delta      1
+        var           5
         
         QUAKE_FULL
         {
@@ -243,7 +243,7 @@ first_grow_forward      true
 ; seed selection
 ss
 {
-    min_coverage   1
+    min_coverage   0
     glue_seeds     false
     max_cycles     1
 }
@@ -251,10 +251,10 @@ ss
 ; extension selection
 es
 {
-    use_weight_function_first  false
-    weight_fun_threshold       0
+    use_weight_function_first  true
+    weight_fun_threshold       0.1
     weight_threshold           0.1
-    priority_coeff             10
+    priority_coeff             2
 
     use_delta_first       true
     etalon_distance_dev   2
@@ -263,7 +263,7 @@ es
     
     max_depth             0
     
-    fix_weight            false
+    fix_weight            true
     use_advanced          false
     advanced_coeff        6
 }    
@@ -298,18 +298,21 @@ fo
     remove_subpaths         true
     remove_overlaps         true
     
-    length_percent          1.5
-    conjugate_percent       0.4
+    length_percent          1.1
+    conjugate_percent       0.9
     
-    remove_single           true
+    remove_single           false
     
     remove_similar          true
-    similar_edges           0.6
-    similar_length          0.95
+    similar_edges           0.8
+    similar_length          0.99
 }
 
 utils 
 {
+	; 1 check symmetry and conjugate symmetry
+	; 2 check equality
+    mode        1  
     file1       ./data/debrujn
     file2       ./data/debrujn
 }    

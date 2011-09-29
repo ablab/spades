@@ -21,7 +21,7 @@ using namespace debruijn_graph;
 // ====== Weight functions ======
 //Weight filter
 double WeightFunction(double weight) {
-	return weight != 0 ? 1 : 0;
+	return math::gr(weight, 0.0) ? 1.0 : 0.0;
 }
 
 double CorrectWeightByAdvanced(double weight, double advWeight) {
@@ -298,18 +298,19 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 		}
 	}
 
-//	static bool useWeightFunctionFirst = lc_cfg::get().es.use_weight_function_first;
-//
-//	if (useWeightFunctionFirst) {
-//		FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector, true);
-//
-//		if (edges.size() == 1) {
-//			static double weightFunThreshold = lc_cfg::get().es.weight_fun_threshold;
-//			*maxWeight = ExtentionWeight(g, path, lengths, edges.back(), pairedInfo, edgesToExclude, forward);
-//
-//			return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightFunThreshold, g, path, handler, forward) : toReturn;
-//		}
-//	}
+	static bool useWeightFunctionFirst = lc_cfg::get().es.use_weight_function_first;
+
+	if (useWeightFunctionFirst) {
+		FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector, true);
+
+		if (edges.size() == 1) {
+			static double weightFunThreshold = lc_cfg::get().es.weight_fun_threshold;
+			*maxWeight = ExtentionWeight(g, path, lengths, edges.back(), pairedInfo, edgesToExclude, forward);
+
+			return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightFunThreshold, g, path, handler, forward) : toReturn;
+		}
+	}
+
 	*maxWeight = FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector);
 
 	static double weightThreshold = lc_cfg::get().es.weight_threshold;

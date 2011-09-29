@@ -124,7 +124,7 @@ struct lc_config
 	};
 
 	struct utils {
-
+		int mode;
 		std::string file1;
 		std::string file2;
 	};
@@ -167,6 +167,7 @@ struct lc_config
 void load(boost::property_tree::ptree const& pt, lc_config::utils& u)
 {
 	using config_common::load;
+	load(pt, "mode", u.mode);
 	load(pt, "file1", u.file1);
 	load(pt, "file2", u.file2);
 }
@@ -314,7 +315,7 @@ void load(boost::property_tree::ptree const& pt, lc_config& lc_cfg)
 	load(pt, "sc", lc_cfg.sc);
 	load(pt, "fo", lc_cfg.fo);
 	load(pt, "research", lc_cfg.rs);
-	laod(pt, "utils", lc_cfg.u);
+	load(pt, "utils", lc_cfg.u);
 }
 
 } // namespace lc
