@@ -85,6 +85,8 @@ struct lc_config
 		size_t max_loops;
 		bool full_loop_removal;
 
+		bool stop_on_long;
+
 		bool exlude_cycle;
 	};
 
@@ -121,6 +123,12 @@ struct lc_config
 		size_t cycle_priority_edge;
 	};
 
+	struct utils {
+		int mode;
+		std::string file1;
+		std::string file2;
+	};
+
 	bool from_file;
 	bool syminfo;
 
@@ -139,6 +147,9 @@ struct lc_config
 	bool print_stats;
 	std::string paired_info_file_prefix;
 
+	bool total_symmetric_mode;
+	bool first_grow_forward;
+
 	dataset ds;
 
 	std::vector<real_lib> real_libs;
@@ -150,7 +161,16 @@ struct lc_config
 	stop_criteria sc;
 	filter_options fo;
 	research rs;
+	utils u;
 };
+
+void load(boost::property_tree::ptree const& pt, lc_config::utils& u)
+{
+	using config_common::load;
+	load(pt, "mode", u.mode);
+	load(pt, "file1", u.file1);
+	load(pt, "file2", u.file2);
+}
 
 
 // specific load functions
@@ -234,6 +254,8 @@ void load(boost::property_tree::ptree const& pt, lc_config::loops_removal& lr)
 	load(pt, "max_loops", lr.max_loops);
 	load(pt, "full_loop_removal", lr.full_loop_removal);
 	load(pt, "exlude_cycle", lr.exlude_cycle);
+
+	load(pt, "stop_on_long", lr.stop_on_long);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::stop_criteria& sc)
@@ -280,6 +302,9 @@ void load(boost::property_tree::ptree const& pt, lc_config& lc_cfg)
 	load(pt, "cluster_paired_info", lc_cfg.cluster_paired_info);
 	load(pt, "paired_info_file_prefix", lc_cfg.paired_info_file_prefix);
 
+	load(pt, "total_symmetric_mode", lc_cfg.total_symmetric_mode);
+	load(pt, "first_grow_forward", lc_cfg.first_grow_forward);
+
 	load(pt, cfg::get().dataset_name, lc_cfg.ds);
 	load(pt, "real_libs", lc_cfg.real_libs);
 	load(pt, "etalon_libs", lc_cfg.etalon_libs);
@@ -290,6 +315,7 @@ void load(boost::property_tree::ptree const& pt, lc_config& lc_cfg)
 	load(pt, "sc", lc_cfg.sc);
 	load(pt, "fo", lc_cfg.fo);
 	load(pt, "research", lc_cfg.rs);
+	load(pt, "utils", lc_cfg.u);
 }
 
 } // namespace lc

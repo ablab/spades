@@ -1,6 +1,6 @@
 ; input options
 from_file     true	  ; always true
-syminfo       true
+syminfo       false
 
 QUAKE_CROPPED_100K
 {
@@ -12,7 +12,9 @@ QUAKE_CROPPED_400K
 }
 QUAKE_FULL
 {
-    graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
+    ;graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
+    graph_file       ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph
+    
 }
 EAS600_QUAKE_CROPPED_100K
 {
@@ -33,12 +35,32 @@ use_new_metrics      true
 ; additional real libs
 real_libs
 {    
-    count 2
-    item_0
+    count 1
+    
+    item_0 
+    {
+    	read_size     100
+        insert_size   270
+        is_delta      1
+        var           5
+        
+        QUAKE_FULL
+        {
+            precounted       true
+            precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph_et
+            first            
+            second           
+            
+            has_advanced     false
+            advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS220_RS100_acl
+        }
+    }
+    
+    item_1
     {
         read_size     100
         insert_size   220
-        is_delta      20
+        is_delta      2
         var           10
                 
         QUAKE_CROPPED_100K
@@ -66,11 +88,12 @@ real_libs
         QUAKE_FULL
         {
             precounted       true
-            precounted_path  ./data/debruijn/QUAKE_FULL/K55/09.26_02_00/paired_info_IS220_RS100_clustered
+            ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/09.26_02_00/paired_info_IS220_RS100_clustered
+            precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph_et
             first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
             second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz
             
-            has_advanced     true
+            has_advanced     false
             advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS220_RS100_acl
         }
         EAS600_QUAKE_CROPPED_100K
@@ -104,11 +127,11 @@ real_libs
             advanced         ./data/debruijn  
         }
     }     
-    item_1
+    item_2
     {
         read_size     100
         insert_size   480
-        is_delta      50
+        is_delta      2
         var           10
 
         QUAKE_CROPPED_100K
@@ -142,7 +165,7 @@ real_libs
             second           /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_2.cor.fastq.gz
             
             
-            has_advanced     true
+            has_advanced     false
             advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS480_RS100_acl
            
             ; first    ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_1.cor.fastq.gz
@@ -204,20 +227,23 @@ etalon_libs
 }
 
 ; output options
-write_seeds             true 
-write_overlaped_paths   true
+write_seeds             false 
+write_overlaped_paths   false
 write_paths             true
 write_contigs           true
 write_real_paired_info  true
-cluster_paired_info     true
+cluster_paired_info     false
 write_graph             true
 print_stats             true
 paired_info_file_prefix "paired_info_"
 
+total_symmetric_mode    false
+first_grow_forward      true
+
 ; seed selection
 ss
 {
-    min_coverage   120
+    min_coverage   0
     glue_seeds     false
     max_cycles     1
 }
@@ -225,10 +251,10 @@ ss
 ; extension selection
 es
 {
-    use_weight_function_first  false
-    weight_fun_threshold       0
+    use_weight_function_first  true
+    weight_fun_threshold       0.1
     weight_threshold           0.1
-    priority_coeff             1.2
+    priority_coeff             2
 
     use_delta_first       true
     etalon_distance_dev   2
@@ -238,8 +264,8 @@ es
     max_depth             0
     
     fix_weight            true
-    use_advanced          true
-    advanced_coeff        2
+    use_advanced          false
+    advanced_coeff        6
 }    
 
 ; loops removal
@@ -249,6 +275,8 @@ lr
 	loop_to_investigate 1
 	max_loop_len       2
 	max_exits          1
+	
+	stop_on_long       true
 	
     max_loops          10
     full_loop_removal  true
@@ -270,22 +298,31 @@ fo
     remove_subpaths         true
     remove_overlaps         true
     
-    length_percent          1.5
-    conjugate_percent       0.4
+    length_percent          1.1
+    conjugate_percent       0.9
     
     remove_single           false
     
     remove_similar          true
-    similar_edges           0.6
-    similar_length          0.95
+    similar_edges           0.8
+    similar_length          0.99
 }
+
+utils 
+{
+	; 1 check symmetry and conjugate symmetry
+	; 2 check equality
+    mode        1  
+    file1       ./data/debrujn
+    file2       ./data/debrujn
+}    
 
 
 ;research options
 research 
 {
     research_mode            false
-    detailed_output          true
+    detailed_output          false
     fiter_by_edge            true
     edge_length              46
     force_to_cycle           false 

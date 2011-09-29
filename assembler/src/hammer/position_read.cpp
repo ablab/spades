@@ -11,13 +11,20 @@ char PositionRead::operator [] (uint32_t pos) const {
 }
 
 void PositionRead::print(ofstream & outf, int offset) const {
-	outf << "@" << Globals::rv->at(readno_).getName().c_str() << "\n" 
-	     << Globals::rv->at(readno_).getSequenceString().c_str() << "\n"
-	     << "+" << Globals::rv->at(readno_).getName().c_str();
+	outf << "@" << Globals::rv->at(readno_).getName().c_str() << "\n";
+	for (int i=0; i < Globals::rv->at(readno_).ltrim(); ++i) outf << "N";
+	outf << Globals::rv->at(readno_).getSequenceString().c_str();
+	for (int i=0; i < Globals::rv->at(readno_).initial_size() - Globals::rv->at(readno_).rtrim(); ++i) outf << "N";
+	outf << "\n" << "+" << Globals::rv->at(readno_).getName().c_str();
 	if (Globals::rv->at(readno_).ltrim() > 0) outf << " ltrim=" << Globals::rv->at(readno_).ltrim();
 	if (Globals::rv->at(readno_).rtrim() < Globals::rv->at(readno_).initial_size())
 		outf << " rtrim=" << (Globals::rv->at(readno_).initial_size() - Globals::rv->at(readno_).rtrim());
-	outf << "\n" << Globals::rv->at(readno_).getPhredQualityString( offset ).c_str() << "\n";
+	outf << "\n";
+	char badq = (char)( offset + 2 );
+	for (int i=0; i < Globals::rv->at(readno_).ltrim(); ++i) outf << badq;
+	outf << Globals::rv->at(readno_).getPhredQualityString( offset ).c_str();
+	for (int i=0; i < Globals::rv->at(readno_).initial_size() - Globals::rv->at(readno_).rtrim(); ++i) outf << badq;
+	outf << "\n";
 }
 
 std::string PositionRead::getPhredQualityString(int offset) const {

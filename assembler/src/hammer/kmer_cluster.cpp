@@ -548,7 +548,7 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 						   << " center of bad cluster clust=" << cluster_quality
 					  	   << " ind=" << blocksInPlace[n][m][0]
 						   << " cnt=" << k_[blocksInPlace[n][m][0]]->second.count
-						   << " tql=" << k_[blocksInPlace[n][m][0]]->second.totalQual << "\n";
+						   << " tql=" << (1-k_[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
 					}
 				}
 				for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
@@ -559,7 +559,7 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 						   << " part of cluster " << k_[blocksInPlace[n][m][0]]->first.start() << " clust=" << cluster_quality
 					           << " ind=" << blocksInPlace[n][m][j]
 						   << " cnt=" << k_[blocksInPlace[n][m][j]]->second.count
-						   << " tql=" << k_[blocksInPlace[n][m][j]]->second.totalQual << "\n";
+						   << " tql=" << (1-k_[blocksInPlace[n][m][j]]->second.totalQual) << "\n";
 					}
 				}
 			}
