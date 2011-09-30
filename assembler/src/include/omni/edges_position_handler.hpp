@@ -195,7 +195,8 @@ public:
 				for (auto iter = EdgesPositions[oldEdge].begin(); iter != EdgesPositions[oldEdge].end(); ++iter){
 					int end1 = iter->start_ + (length1*(iter->end_ - iter->start_))/(length1+length2);
 					AddEdgePosition(newEdge1, iter->start_, end1, iter->contigId_);
-					AddEdgePosition(newEdge2, end1 + 1, iter->end_, iter->contigId_);
+					if(end1 + 1 > iter->end_)
+						AddEdgePosition(newEdge2, end1 + 1, iter->end_, iter->contigId_);
 					DEBUG("Contig "<<iter->contigId_<<" Split: " << iter->start_<<"--"<<iter->end_<<" after pos "<<end1);
 				}
 //				 DEBUG("EdgesPositionHandler not handled Split yet");
