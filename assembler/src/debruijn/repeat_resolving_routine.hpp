@@ -257,6 +257,7 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
     if (cfg::get().rr.symmetric_resolve) {
     	conj_graph_pack   resolved_gp (genome);
         if (cfg::get().etalon_info_mode){
+        	//temporary
         	process_resolve_repeats(conj_gp, conj_gp.etalon_paired_index, resolved_gp, "graph") ;
         } else {
         	process_resolve_repeats(conj_gp, clustered_index, resolved_gp, "graph") ;
