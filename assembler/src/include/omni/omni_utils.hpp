@@ -553,7 +553,9 @@ struct Range {
 
 	Range(size_t start_pos, size_t end_pos)
 	: start_pos(start_pos), end_pos(end_pos)
-	{assert(end_pos >= start_pos);}
+	{if (end_pos < start_pos)
+	cerr <<"end_pos "<< end_pos  << "; start_pos " << start_pos << endl;
+assert(end_pos >= start_pos);}
 };
 
 struct MappingRange {
