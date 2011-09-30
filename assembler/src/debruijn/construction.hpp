@@ -43,7 +43,7 @@ void construct_graph(PairedReadStream& stream, conj_graph_pack& gp,
 	//ProduceInfo<K>(gp.g, gp.index, labeler, gp.genome, cfg::get().output_dir + "edge_graph.dot", "edge_graph");
 
 	// todo by single_cell
-	FillEdgesPos<K>(gp.g, gp.index, gp.genome, gp.edge_pos, gp.kmer_mapper);
+//	FillEdgesPos(gp.g, gp.index, gp.genome, gp.edge_pos, gp.kmer_mapper);
 }
 
 void load_construction(conj_graph_pack& gp, total_labeler& tl,
