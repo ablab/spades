@@ -502,12 +502,16 @@ void ProcessInfos(const vector<PairInfo<EdgeId>>& infos) {
 				EdgeId e1 = info.first;
 				EdgeId e2 = info.second;
 
-				NonEmptyPathCounter<Graph> counter(g_);
+				PathReceiverCallback<Graph> counter(g_);
 
 				PathProcessor<Graph> path_processor(g_,
 						info.d - g_.length(e1), info.d - g_.length(e1),
 						g_.EdgeEnd(e1), g_.EdgeStart(e2), counter);
 				path_processor.Process();
+                //todo write this into file
+                INFO("Edges"<< e1 <<" : " << e2 << ": " << info.weight << " : " << info.d);
+                INFO("Path Numbs" << counter.count());
+
 				if (counter.count() == 1) {
 					unique_distance_cnt_++;
 				}
