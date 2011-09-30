@@ -746,6 +746,31 @@ public:
 	}
 
 };
+template<class Graph>
+class PathReceiverCallback: public PathProcessor<Graph>::Callback {
+	typedef typename Graph::EdgeId EdgeId;
+
+	const Graph& g_;
+
+    vector< vector<EdgeId> >  paths_;
+public:
+
+	PathReceiverCallback(const Graph& g) :g_(g){}
+
+	virtual void HandlePath(const vector<EdgeId>& path) {
+            paths_.push_back(path);
+	}
+    size_t count()
+    {
+        return paths_.size();
+    }
+
+	
+    vector< vector<EdgeId> > paths()
+    {
+        return paths_;
+    }
+};
 
 template<class Graph>
 class NonEmptyPathCounter: public PathProcessor<Graph>::Callback {
