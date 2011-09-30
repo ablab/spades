@@ -136,18 +136,7 @@ int main() {
 
 		PairedReadStream pairStream(std::make_pair(reads_filename1,reads_filename2), cfg::get().ds.IS);
 
-//		string real_reads = cfg::get().uncorrected_reads;
-//		if (real_reads != "none") {
-//			reads_filename1 = input_dir + (real_reads + "_1");
-//			reads_filename2 = input_dir + (real_reads + "_2");
-//		}
-//		ReadStream reads_1(reads_filename1);
-//		ReadStream reads_2(reads_filename2);
-//
-//		vector<ReadStream*> reads = {&reads_1, &reads_2};
-
 		FilteringStream filter_stream(pairStream);
-
 		RCStream rcStream(filter_stream);
 
 		// read data ('genome')
