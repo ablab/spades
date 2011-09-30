@@ -164,6 +164,7 @@ namespace debruijn_graph
 		std::string output_dir;
 		std::string output_suffix;
 		std::string output_saves;
+		std::string additional_contigs;
 
 		std::string reference_genome;
 
@@ -324,6 +325,7 @@ namespace debruijn_graph
         cfg.load_from = cfg.output_root + cfg.load_from;
 
 		load(pt, "entry_point", cfg.entry_point);
+		load(pt, "additional_contigs", cfg.additional_contigs);
 
 		load(pt, "reference_genome", cfg.reference_genome);
 		//load(pt, "start_from", cfg.start_from);

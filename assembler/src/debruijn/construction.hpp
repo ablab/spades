@@ -67,9 +67,9 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 
 	if (cfg::get().entry_point <= ws_construction) {
 		INFO("Checking for additional contigs file");
-		if (fileExists(cfg::get().output_root + "tmp_contigs.fasta")) {
+		if (fileExists(cfg::get().output_root + cfg::get().additional_contigs)) {
 			INFO("Additional contigs file found");
-			io::Reader<io::SingleRead> additional_contigs_stream(cfg::get().output_root + "tmp_contigs.fasta");
+			io::Reader<io::SingleRead> additional_contigs_stream(cfg::get().output_root + cfg::get().additional_contigs);
 			construct_graph(stream, gp, tl, paired_index, &additional_contigs_stream);
 		} else {
 			INFO("Additional contigs file not found");
