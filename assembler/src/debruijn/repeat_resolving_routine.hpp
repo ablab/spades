@@ -238,6 +238,7 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 
     int number_of_components = 0;
 
+
     if (cfg::get().componential_resolve){
 		mkdir((cfg::get().output_dir + "graph_components" + "/").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 		number_of_components = PrintGraphComponents(
@@ -249,8 +250,11 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 
     if (cfg::get().rr.symmetric_resolve) {
     	conj_graph_pack   resolved_gp (genome);
-    	process_resolve_repeats(conj_gp, clustered_index, resolved_gp, "graph") ;
-
+        if (cfg::get().etalon_info_mode){
+        	process_resolve_repeats(conj_gp, conj_gp.etalon_paired_index, resolved_gp, "graph") ;
+        } else {
+        	process_resolve_repeats(conj_gp, clustered_index, resolved_gp, "graph") ;
+        }
         if (cfg::get().componential_resolve){
         	mkdir((cfg::get().output_dir + "resolve_components" + "/").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
         	for (int i = 0; i<number_of_components; i++){
@@ -260,8 +264,7 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
     } else {
     	nonconj_graph_pack origin_gp(conj_gp, clustered_index);
     	nonconj_graph_pack resolved_gp;
-    	process_resolve_repeats(origin_gp, origin_gp.clustered_index, resolved_gp, "graph") ;
-
+       	process_resolve_repeats(origin_gp, origin_gp.clustered_index, resolved_gp, "graph") ;
     }
 
 }
