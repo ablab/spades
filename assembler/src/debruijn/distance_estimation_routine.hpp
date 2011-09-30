@@ -66,6 +66,9 @@ void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
 		PairInfoFilter<Graph> filter(gp.g, cfg::get().de.filter_threshold);
 		filter.Filter(normalized_index, clustered_index);
 		INFO("Info filtered");
+//		PairInfoChecker<Graph> checker(gp.edge_pos, 5, 100);
+//		checker.Check(raw_clustered_index);
+//		checker.WriteResults(cfg::get().output_dir + "/paired_stats");
 	}
 }
 

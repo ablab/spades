@@ -88,8 +88,18 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef int realIdType;
 
-public:
 	map<EdgeId, vector<EdgePosition> > EdgesPositions;
+public:
+	const map<EdgeId, vector<EdgePosition> > &edges_positions() const {
+		return EdgesPositions;
+	}
+
+	const vector<EdgePosition> &GetEdgePositions(EdgeId edge) const {
+		auto it = EdgesPositions.find(edge);
+		assert(it != EdgesPositions.end());
+		return it->second;
+	}
+
 	void AddEdgePosition (EdgeId NewEdgeId, int start, int end, int contigId = 0) {
 		if (EdgesPositions.find(NewEdgeId) == EdgesPositions.end()) {
 			vector<EdgePosition> NewVec;

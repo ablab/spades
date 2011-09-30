@@ -228,7 +228,7 @@ public:
 			edge_labels[new_edge] = *e_iter;
 			TRACE("Adding edge " << new_edge<< " from" << *e_iter);
 			old_to_new_edge[*e_iter] = new_edge;
-			new_pos.AddEdgePosition(new_edge, old_pos.EdgesPositions[*e_iter]);
+			new_pos.AddEdgePosition(new_edge, old_pos.edges_positions().find(*e_iter)->second);
 
 
 			if (rc_mode) {
@@ -236,7 +236,7 @@ public:
 				EdgeId old_rc_edge = old_IDs.ReturnEdgeId(GetRCId(old_IDs.ReturnIntId(*e_iter)));
 				edge_labels[new_rc_edge] = old_rc_edge;
 				old_to_new_edge[old_rc_edge] = new_rc_edge;
-				new_pos.AddEdgePosition(new_rc_edge, old_pos.EdgesPositions[old_rc_edge]);
+				new_pos.AddEdgePosition(new_rc_edge, old_pos.edges_positions().find(old_rc_edge)->second);
 
 			}
 		}
