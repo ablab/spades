@@ -216,13 +216,60 @@ void resolve_conjugate_component(int component_id, const Sequence& genome){
 	scanConjugateGraph(&conj_gp.g, &conj_gp.int_ids, component_name, &clustered_index,
 			&conj_gp.edge_pos);
 
+	//component output
+	set<conj_graph_pack::graph_t::EdgeId> incoming_edges;
+	set<conj_graph_pack::graph_t::EdgeId> outgoing_edges;
+	for(auto iter = conj_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		conj_graph_pack::graph_t::VertexId start = conj_gp.g.EdgeStart(*iter);
+		conj_graph_pack::graph_t::VertexId end = conj_gp.g.EdgeEnd(*iter);
+		if (conj_gp.g.length(*iter) > cfg::get().ds.IS + 100) {
+			if (conj_gp.g.IsDeadStart(start) /*&& conj_gp.g.CheckUniqueOutgoingEdge(start)*/){
+				incoming_edges.insert(*iter);
+			} else if (conj_gp.g.IsDeadEnd(end)/* && conj_gp.g.CheckUniqueIncomingEdge(end)*/){
+				outgoing_edges.insert(*iter);
+			} else {
+				WARN("strange long edge in component " << component_name << " , edge_id " << conj_gp.int_ids.ReturnIntId(*iter));
+			}
+		}
+	}
+	FILE* file = fopen((component_name + ".tbl").c_str(), "w");
+	DEBUG("Saving in-out table , " << component_name <<" created");
+
+	fprintf(file,"%4c", ' ');
+
+	fprintf(file, "\n");
+	for (auto out_iter = outgoing_edges.begin(); out_iter != outgoing_edges.end(); ++out_iter)
+		fprintf(file," %4d", conj_gp.int_ids.ReturnIntId(*out_iter));
+
+	for (auto inc_iter = incoming_edges.begin(); inc_iter != incoming_edges.end(); ++inc_iter){
+		fprintf(file," %4d", conj_gp.int_ids.ReturnIntId(*inc_iter));
+		for (auto out_iter = outgoing_edges.begin(); out_iter != outgoing_edges.end(); ++out_iter){
+			char c;
+			if (clustered_index.GetEdgePairInfo(*inc_iter, *out_iter).size() == 0)
+				c = '0';
+			else
+				c = 'X';
+			fprintf(file,"%4c", c);
+		}
+		fprintf(file, "\n");
+	}
+
+	fprintf(file, "\n");
+	for (auto inc_iter = incoming_edges.begin(); inc_iter != incoming_edges.end(); ++inc_iter)
+		fprintf(file," %4d", conj_gp.int_ids.ReturnIntId(*inc_iter));
+	fprintf(file, "\n");
+	for (auto out_iter = outgoing_edges.begin(); out_iter != outgoing_edges.end(); ++out_iter)
+		fprintf(file," %4d", conj_gp.int_ids.ReturnIntId(*out_iter));
+	fprintf(file, "\n");
+
+	fclose(file);
     conj_graph_pack   resolved_gp (genome);
     string sub_dir = "resolve_components/";
 
 
     string resolved_name = cfg::get().output_dir + "resolve_components" + "/resolve_" + graph_name + "/";
 	mkdir(resolved_name.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-    process_resolve_repeats(conj_gp, clustered_index, resolved_gp, graph_name, sub_dir, false ) ;
+	process_resolve_repeats(conj_gp, clustered_index, resolved_gp, graph_name, sub_dir, false ) ;
 }
 
 

@@ -14,11 +14,11 @@ reference_genome  MG1655-K12.fasta.gz
 
 load_from         latest_try/saves/ ; tmp or latest 
 
- entry_point construction
+;entry_point construction
 ;entry_point paired_info_count
 ;entry_point simplification    
 ;entry_point distance_estimation
-;entry_point repeats_resolving	
+entry_point repeats_resolving	
 ;entry_point n50_enlargement
 
 ; single cell mode swithcer, influence the simplification
