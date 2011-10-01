@@ -194,3 +194,16 @@ SC_EULER_FULL
 	IS		270 	; insert size
 	LEN		4639675	; total size
 }
+
+; ================================================
+; =============== L. Bouillonii ==================
+; ================================================
+
+LB_QUAKE_FULL
+{
+	first	../L.Bouillonii_quaked/gerwick-read1.cor.fastq.gz
+	second	../L.Bouillonii_quaked/gerwick-read2.cor.fastq.gz
+	RL		100	; read length
+	IS		400	; insert size (???????)
+	LEN		8000000	; total size (????????)
+}
