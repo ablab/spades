@@ -6,7 +6,7 @@
 #include "io/reader.hpp"
 #include "io/rc_reader_wrapper.hpp"
 #include "io/cutting_reader_wrapper.hpp"
-#include "io/filtering_reader_wrapper.hpp"
+#include "io/careful_filtering_reader_wrapper.hpp"
 #include "launch.hpp"
 #include "logging.hpp"
 #include "simple_tools.hpp"
@@ -130,13 +130,13 @@ int main() {
 		typedef io::Reader<io::SingleRead> ReadStream;
 		typedef io::Reader<io::PairedRead> PairedReadStream;
 		typedef io::RCReaderWrapper<io::PairedRead> RCStream;
-		typedef io::FilteringReaderWrapper<io::PairedRead> FilteringStream;
+		typedef io::CarefulFilteringReaderWrapper<io::PairedRead> CarefulFilteringStream;
 
 		// read data ('reads')
 
 		PairedReadStream pairStream(std::make_pair(reads_filename1,reads_filename2), cfg::get().ds.IS);
 
-		FilteringStream filter_stream(pairStream);
+		CarefulFilteringStream filter_stream(pairStream);
 		RCStream rcStream(filter_stream);
 
 		// read data ('genome')

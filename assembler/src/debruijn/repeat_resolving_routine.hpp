@@ -12,9 +12,10 @@
 #include "logging.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation_routine.hpp"
+#include "io/careful_filtering_reader_wrapper.hpp"
 typedef io::Reader<io::SingleRead> ReadStream;
 typedef io::RCReaderWrapper<io::SingleRead> RCStream;
-typedef io::FilteringReaderWrapper<io::SingleRead> FilteringStream;
+typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
 namespace debruijn_graph
 
@@ -175,8 +176,8 @@ void process_resolve_repeats(
 
 			ReadStream reads_1(reads_filename1);
 			ReadStream reads_2(reads_filename2);
-			FilteringStream freads_1(reads_1);
-			FilteringStream freads_2(reads_2);
+			CarefulFilteringStream freads_1(reads_1);
+			CarefulFilteringStream freads_2(reads_2);
 			RCStream  frc_1(freads_1);
 			RCStream  frc_2(freads_2);
 			vector<RCStream*> reads = {&frc_1, &frc_2};
