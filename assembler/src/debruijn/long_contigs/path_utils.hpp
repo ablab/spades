@@ -436,6 +436,64 @@ bool HasConjugate(Graph& g, BidirectionalPath& path) {
 }
 
 
+void BreakApart(Graph& g, BidirectionalPath& path, std::vector<BidirectionalPath>& output) {
+	int i, j;
+	bool found = false;
+
+	for (i = 0; i < (int) path.size(); ++i) {
+		for (j = path.size() - 1; j > i; --j) {
+			if (g.conjugate(path[i]) == path[j]) {
+				found = true;
+				break;
+			}
+		}
+		if (found) {
+			break;
+		}
+	}
+
+	if (!found) {
+		return;
+	}
+
+	while (g.conjugate(path[i]) == path[j]) {
+		++i;
+		--j;
+	}
+
+	for (int k = i; k <= j; ++k) {
+		if (g.length(path[k]) >= K - lc_cfg::get().fo.chimeric_delta &&
+				g.length(path[k]) <= K + lc_cfg::get().fo.chimeric_delta) {
+
+			BidirectionalPath left;
+			for (int l = 0; l < k; ++l) {
+				left.push_back(path[l]);
+			}
+			BidirectionalPath right;
+			for (int l = k + 1; l < (int) path.size(); ++l) {
+				right.push_back(path[l]);
+			}
+
+			output.push_back(left);
+			output.push_back(right);
+
+			return;
+		}
+	}
+
+	BidirectionalPath left;
+	for (int l = 0; l < i; ++l) {
+		left.push_back(path[l]);
+	}
+	BidirectionalPath right;
+	for (int l = j + 1; l < (int) path.size(); ++l) {
+		right.push_back(path[l]);
+	}
+
+	output.push_back(left);
+	output.push_back(right);
+}
+
 void RemoveWrongConjugatePaths(Graph& g, std::vector<BidirectionalPath>& paths,
 		std::vector<BidirectionalPath>& output) {
 
@@ -445,6 +503,10 @@ void RemoveWrongConjugatePaths(Graph& g, std::vector<BidirectionalPath>& paths,
 			output.push_back(*iter);
 		} else {
 			INFO("Removed as self conjugate");
+			if (lc_cfg::get().fo.break_sc) {
+				INFO("Added half");
+				BreakApart(g, *iter, output);
+			}
 		}
 	}
 }

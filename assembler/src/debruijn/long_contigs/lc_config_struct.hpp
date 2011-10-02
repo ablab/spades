@@ -116,6 +116,8 @@ struct lc_config
 
 	    bool remove_sefl_conjugate;
 	    double conj_len_percent;
+	    bool break_sc;
+	    size_t chimeric_delta;
 	};
 
 	struct research {
@@ -291,6 +293,8 @@ void load(boost::property_tree::ptree const& pt, lc_config::filter_options& fo)
 
     load(pt, "remove_sefl_conjugate", fo.remove_sefl_conjugate);
     load(pt, "conj_len_percent", fo.conj_len_percent);
+    load(pt, "break_sc", fo.break_sc);
+    load(pt, "chimeric_delta", fo.chimeric_delta);
 }
 
 

@@ -121,6 +121,8 @@ fo
     
     remove_sefl_conjugate   true
     conj_len_percent        0.2
+    break_sc                false
+    chimeric_delta          10
     
 }
 
