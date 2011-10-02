@@ -65,8 +65,8 @@ es
 {
     use_weight_function_first  false
     weight_fun_threshold       0.1
-    weight_threshold           0.3
-    priority_coeff             6
+    weight_threshold           0.5
+    priority_coeff             4
 
     use_delta_first       true
     etalon_distance_dev   2
