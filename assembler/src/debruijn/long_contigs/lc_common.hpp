@@ -14,6 +14,10 @@
 #include <map>
 
 #include "lc_config_struct.hpp"
+#include "io/reader.hpp"
+#include "io/rc_reader_wrapper.hpp"
+#include "io/cutting_reader_wrapper.hpp"
+#include "io/careful_filtering_reader_wrapper.hpp"
 #include "../launch.hpp"
 #include "logging.hpp"
 #include "../new_debruijn.hpp"
