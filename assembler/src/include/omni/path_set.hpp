@@ -1,6 +1,7 @@
 #pragma once
 #include <cmath>
 #include <map>
+#include <limits>
 #include <xmath.h>
 
 namespace omnigraph{
@@ -14,7 +15,7 @@ public:
 
     typedef vector<EdgeId> Path ;
 
-    EdgeId start;
+    EdgeId start; //These "start" and "end" maybe redundant at this step but will be useful when no-paths are found.
     EdgeId end;
     double length;
     set<Path> paths;
@@ -28,7 +29,7 @@ public:
         {
             if(lhs.end == rhs.end)
             {
-                if(lhs.distance == rhs.distance)
+                if(lhs.length == rhs.length)
                 {
                     return PathLess(lhs.paths, rhs.paths);
                 }
@@ -91,5 +92,97 @@ ostream& operator<<(ostream& os, const PathSet<EdgeId>& pathSet) {
     return os << "Start = " << pathSet.start << ", End = " << pathSet.end<< pathsString.str() ;
 }
 
+template<typename EdgeId>
+const PathSet<EdgeId> MinPathSet(EdgeId id) {
+
+    set<vector<EdgeId> > paths;
+	return PathSet<EdgeId>(id, (EdgeId) 0/*numeric_limits<EdgeId>::min()*/,
+			numeric_limits<double>::min(), paths);
+}
+
+template<typename EdgeId>
+const PathSet<EdgeId> MaxPathSet(EdgeId id) {
+
+    set<vector<EdgeId> > paths;
+	return PathSet<EdgeId>(id, (EdgeId) -1/*numeric_limits<EdgeId>::max()*/,
+			numeric_limits<double>::max(), paths);
+}
+template<typename EdgeId>
+const PathSet<EdgeId> MinPathSet(EdgeId e1, EdgeId e2) {
+	PathSet<EdgeId> pathset = MinPathSet(e1);
+	pathset.end = e2;
+	return pathset;
+}
+template<typename EdgeId>
+const PathSet<EdgeId> MaxPathSet(EdgeId e1, EdgeId e2) {
+	PathSet<EdgeId> pathset = MaxPathSet(e1);
+	pathset.end = e2;
+	return pathset;
+}
+
+//Modified from PairInfoIndexData
+
+template<typename EdgeId>
+class PathSetIndexData {
+public:
+	typedef set<PathSet<EdgeId>> Data;
+	typedef typename Data::iterator data_iterator;
+	typedef typename Data::const_iterator data_const_iterator;
+	typedef vector<PathSet<EdgeId>> PathSets;
+
+	typedef std::pair<data_const_iterator, data_const_iterator> iterator_range;
+
+	data_iterator begin() const {
+		return data_.begin();
+	}
+
+	data_iterator end() const {
+		return data_.end();
+	}
+
+	size_t size() const {
+		return data_.size();
+	}
+
+	void AddPathSet(const PathSet<EdgeId>& pathSet) {
+		data_.insert(pathSet);
+	}
+
+	void DeletePathSet(PathSet<EdgeId>& pathSet) {
+        data_.erase(pathSet);
+	}
+
+	PathSets GetPathSets(EdgeId e) const {
+		return PathSets(LowerBound(e), UpperBound(e));
+	}
+
+	PathSets GetPathSets(EdgeId e1, EdgeId e2) const {
+		return PathSets(LowerBound(e1, e2), UpperBound(e1, e2));
+	}
+
+
+	void clear() {
+		data_.clear();
+	}
+
+	data_iterator LowerBound(EdgeId e) const {
+		return data_.lower_bound(MinPathSet(e));
+	}
+
+	data_iterator UpperBound(EdgeId e) const {
+		return data_.upper_bound(MaxPathSet(e));
+	}
+
+	data_iterator LowerBound(EdgeId e1, EdgeId e2) const {
+		return data_.lower_bound(MinPathSet(e1, e2)); 
+	}
+
+	data_iterator UpperBound(EdgeId e1, EdgeId e2) const {
+		return data_.upper_bound(MaxPathSet(e1, e2));
+	}
+
+private:
+	Data data_;
+};
 
 }
