@@ -43,7 +43,7 @@ void construct_graph(PairedReadStream& stream, conj_graph_pack& gp,
 	//ProduceInfo<K>(gp.g, gp.index, labeler, gp.genome, cfg::get().output_dir + "edge_graph.dot", "edge_graph");
 
 	// todo by single_cell
-	//FillEdgesPos<K>(gp.g, gp.index, gp.genome, gp.edge_pos);
+//	FillEdgesPos(gp.g, gp.index, gp.genome, gp.edge_pos, gp.kmer_mapper);
 }
 
 void load_construction(conj_graph_pack& gp, total_labeler& tl,
@@ -67,9 +67,9 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 
 	if (cfg::get().entry_point <= ws_construction) {
 		INFO("Checking for additional contigs file");
-		if (fileExists(cfg::get().output_root + "tmp_contigs.fasta")) {
+		if (fileExists(cfg::get().output_root + cfg::get().additional_contigs)) {
 			INFO("Additional contigs file found");
-			io::Reader<io::SingleRead> additional_contigs_stream(cfg::get().output_root + "tmp_contigs.fasta");
+			io::Reader<io::SingleRead> additional_contigs_stream(cfg::get().output_root + cfg::get().additional_contigs);
 			construct_graph(stream, gp, tl, paired_index, &additional_contigs_stream);
 		} else {
 			INFO("Additional contigs file not found");

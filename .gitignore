@@ -1,8 +1,12 @@
 .settings
+.metadata/*
 stats/*
+RemoteSystemsTempFiles/*
 ~*
+*~
 *.exe
 *.exe.stackdump
-.metadata/*
-RemoteSystemsTempFiles/*
-
+gmon.out
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake

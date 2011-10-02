@@ -553,7 +553,9 @@ struct Range {
 
 	Range(size_t start_pos, size_t end_pos)
 	: start_pos(start_pos), end_pos(end_pos)
-	{assert(end_pos >= start_pos);}
+	{if (end_pos < start_pos)
+	cerr <<"end_pos "<< end_pos  << "; start_pos " << start_pos << endl;
+assert(end_pos >= start_pos);}
 };
 
 struct MappingRange {
@@ -744,6 +746,31 @@ public:
 	}
 
 };
+template<class Graph>
+class PathReceiverCallback: public PathProcessor<Graph>::Callback {
+	typedef typename Graph::EdgeId EdgeId;
+
+	const Graph& g_;
+
+    vector< vector<EdgeId> >  paths_;
+public:
+
+	PathReceiverCallback(const Graph& g) :g_(g){}
+
+	virtual void HandlePath(const vector<EdgeId>& path) {
+            paths_.push_back(path);
+	}
+    size_t count()
+    {
+        return paths_.size();
+    }
+
+	
+    vector< vector<EdgeId> > paths()
+    {
+        return paths_;
+    }
+};
 
 template<class Graph>
 class NonEmptyPathCounter: public PathProcessor<Graph>::Callback {
@@ -753,6 +780,7 @@ class NonEmptyPathCounter: public PathProcessor<Graph>::Callback {
 	const Graph& g_;
 
 	size_t count_;
+    vector< vector<EdgeId> >  paths_;
 public:
 
 	NonEmptyPathCounter(const Graph& g) :
@@ -777,12 +805,17 @@ public:
 			 */
 
 			count_++;
+            paths_.push_back(path);
 		}
 	}
 
 	size_t count() {
 		return count_;
 	}
+    vector< vector<EdgeId> > paths()
+    {
+        return paths_;
+    }
 }
 ;
 

@@ -247,8 +247,8 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 
 	if (filter_ == NULL) {
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-		    auto it = EPHandler.EdgesPositions.find(*iter);
-		    assert(it != EPHandler.EdgesPositions.end());
+		    auto it = EPHandler.edges_positions().find(*iter);
+		    assert(it != EPHandler.edges_positions().end());
 
 		    size_t size = it->second.size();
 		    file << IdHandler_.ReturnIntId(*iter) << " " << size << endl;
@@ -259,8 +259,8 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 	} else {
 		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
 
-		    auto it = EPHandler.EdgesPositions.find(*iter);
-		    assert(it != EPHandler.EdgesPositions.end());
+		    auto it = EPHandler.edges_positions().find(*iter);
+		    assert(it != EPHandler.edges_positions().end());
 
 			file << IdHandler_.ReturnIntId(*iter) << " " << it->second.size() << endl;
 

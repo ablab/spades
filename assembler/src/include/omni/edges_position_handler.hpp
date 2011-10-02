@@ -88,8 +88,18 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef int realIdType;
 
-public:
 	map<EdgeId, vector<EdgePosition> > EdgesPositions;
+public:
+	const map<EdgeId, vector<EdgePosition> > &edges_positions() const {
+		return EdgesPositions;
+	}
+
+	const vector<EdgePosition> &GetEdgePositions(EdgeId edge) const {
+		auto it = EdgesPositions.find(edge);
+		assert(it != EdgesPositions.end());
+		return it->second;
+	}
+
 	void AddEdgePosition (EdgeId NewEdgeId, int start, int end, int contigId = 0) {
 		if (EdgesPositions.find(NewEdgeId) == EdgesPositions.end()) {
 			vector<EdgePosition> NewVec;
@@ -185,7 +195,8 @@ public:
 				for (auto iter = EdgesPositions[oldEdge].begin(); iter != EdgesPositions[oldEdge].end(); ++iter){
 					int end1 = iter->start_ + (length1*(iter->end_ - iter->start_))/(length1+length2);
 					AddEdgePosition(newEdge1, iter->start_, end1, iter->contigId_);
-					AddEdgePosition(newEdge2, end1 + 1, iter->end_, iter->contigId_);
+					if(iter->end_ >= end1 + 1)
+						AddEdgePosition(newEdge2, end1 + 1, iter->end_, iter->contigId_);
 					DEBUG("Contig "<<iter->contigId_<<" Split: " << iter->start_<<"--"<<iter->end_<<" after pos "<<end1);
 				}
 //				 DEBUG("EdgesPositionHandler not handled Split yet");

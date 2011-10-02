@@ -266,6 +266,9 @@ int PrintGraphComponents(const string& file_name, Graph& g,
 	while (!splitter.Finished() && cnt <= 1000) {
 		string component_name = ConstructComponentName(file_name, cnt).c_str();
 		auto component = splitter.NextComponent();
+
+
+
 //		EdgeVertexFilter<Graph> filter(g, component);
 		EdgeVertexFilter<Graph> filter(g, component, true);
 		printGraph(g, old_IDs, component_name, paired_index, edges_positions,

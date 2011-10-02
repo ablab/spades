@@ -5,25 +5,27 @@
 
 namespace io {
 
-pair<size_t, size_t> longestValidCoords() {
+const size_t none = -1;
+
+pair<size_t, size_t> longestValidCoords(const SingleRead& r) {
 	size_t best_len = 0;
-	size_t best_pos = -1;
-	size_t pos = -1;
-	std::string seq = GetSequenceString();
+	size_t best_pos = none;
+	size_t pos = none;
+	std::string seq = r.GetSequenceString();
 	for (size_t i = 0; i <= seq.size(); ++i) {
 		if (i < seq.size() && is_nucl(seq[i])) {
-			if (pos == -1) {
+			if (pos == none) {
 				pos = i;
 			}
 		} else {
-			if (pos != -1) {
+			if (pos != none) {
 				size_t len = i - pos;
 				if (len > best_len) {
 					best_len = len;
 					best_pos = pos;
 				}
 			}
-			pos = -1;
+			pos = none;
 		}
 	}
 	if (best_len == 0) {
@@ -38,22 +40,26 @@ SingleRead longestValid(const SingleRead& r) {
 }
 
 PairedRead longestValid(const PairedRead& r) {
-	pair<size_t, size_t> c1 = longestValidCoords(r.first);
-	pair<size_t, size_t> c2 = longestValidCoords(r.second);
+	pair<size_t, size_t> c1 = longestValidCoords(r.first());
+	pair<size_t, size_t> c2 = longestValidCoords(r.second());
 	size_t len1 = c1.second - c1.first;
 	size_t len2 = c2.second - c2.first;
 	if (len1 == 0 || len2 == 0) {
 		return PairedRead();
 	}
-	if (len1 == r.first.size() && len2 == r.second.size()) {
+	if (len1 == r.first().size() && len2 == r.second().size()) {
 		return r;
 	}
-	size_t dist = r.distance() - c1.first + c2.first;
-	return PairedRead(r.first.Substr(c1.first, c1.second), r.second.Substr(c2.first, c2.second), dist);
+	size_t dist = r.distance() - c1.first - r.second().size() + c2.second;
+	return PairedRead(r.first().Substr(c1.first, c1.second), r.second().Substr(c2.first, c2.second), dist);
 }
 
+template<typename ReadType>
+class CarefulFilteringReaderWrapper : public IReader<ReadType> {
+};
+
 template<>
-class CarefulFilteringReaderWrapper<SingleRead>: public IReader<SingleRead> {
+class CarefulFilteringReaderWrapper<SingleRead> : public IReader<SingleRead> {
 public:
   /*
    * Default constructor.

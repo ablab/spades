@@ -66,6 +66,9 @@ void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
 		PairInfoFilter<Graph> filter(gp.g, cfg::get().de.filter_threshold);
 		filter.Filter(normalized_index, clustered_index);
 		INFO("Info filtered");
+//		PairInfoChecker<Graph> checker(gp.edge_pos, 5, 100);
+//		checker.Check(raw_clustered_index);
+//		checker.WriteResults(cfg::get().output_dir + "/paired_stats");
 	}
 }
 
@@ -90,6 +93,10 @@ void save_distance_estimation(conj_graph_pack& gp,
 void count_estimated_info_stats(conj_graph_pack& gp, paired_info_index& paired_index, paired_info_index& clustered_index) {
 	paired_info_index etalon_paired_index(gp.g);
 	FillEtalonPairedIndex<debruijn_graph::K>(gp.g, etalon_paired_index, gp.index, gp.genome);
+	//todo temporary
+	DataPrinter<Graph> data_printer(gp.g, gp.int_ids);
+	data_printer.savePaired(cfg::get().output_dir + "etalon_paired.prd", etalon_paired_index);
+	//temporary
 	CountClusteredPairedInfoStats(gp.g, paired_index, clustered_index, etalon_paired_index, cfg::get().output_dir);
 }
 

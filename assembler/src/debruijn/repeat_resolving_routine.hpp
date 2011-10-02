@@ -12,7 +12,10 @@
 #include "logging.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation_routine.hpp"
+#include "io/careful_filtering_reader_wrapper.hpp"
 typedef io::Reader<io::SingleRead> ReadStream;
+typedef io::RCReaderWrapper<io::SingleRead> RCStream;
+typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
 namespace debruijn_graph
 
@@ -49,7 +52,7 @@ void FillContigNumbers(   map<NonconjugateDeBruijnGraph::EdgeId, int>& contigNum
 template<size_t k, class Graph>
 void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
         EdgeLabelHandler<Graph>& LabelsAfter,
-        const EdgeIndex<K + 1, Graph>& index ,vector<ReadStream *>& reads
+        const EdgeIndex<K + 1, Graph>& index ,vector<RCStream *>& reads
         , string& consensus_output_dir)
 {
     INFO("ReadMapping started");
@@ -77,7 +80,8 @@ void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
         INFO("mapping reads from pair"<< i);
         while (!reads[i - 1]->eof()) {
             io::SingleRead cur_read;
-            (*reads[i - 1]) >> cur_read;
+
+            (* reads[i - 1]) >> cur_read;
             vector<typename Graph::EdgeId> res = rm.GetContainingEdges(
                     cur_read);
             read_num++;
@@ -172,8 +176,11 @@ void process_resolve_repeats(
 
 			ReadStream reads_1(reads_filename1);
 			ReadStream reads_2(reads_filename2);
-
-			vector<ReadStream*> reads = {&reads_1, &reads_2};
+			CarefulFilteringStream freads_1(reads_1);
+			CarefulFilteringStream freads_2(reads_2);
+			RCStream  frc_1(freads_1);
+			RCStream  frc_2(freads_2);
+			vector<RCStream*> reads = {&frc_1, &frc_2};
 
 			SelectReadsForConsensus<K, typename graph_pack::graph_t>(origin_gp.g, resolved_gp.g, labels_after, origin_gp.index, reads, consensus_folder);
 		}
@@ -210,13 +217,60 @@ void resolve_conjugate_component(int component_id, const Sequence& genome){
 	scanConjugateGraph(&conj_gp.g, &conj_gp.int_ids, component_name, &clustered_index,
 			&conj_gp.edge_pos);
 
+	//component output
+	set<conj_graph_pack::graph_t::EdgeId> incoming_edges;
+	set<conj_graph_pack::graph_t::EdgeId> outgoing_edges;
+	for(auto iter = conj_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		conj_graph_pack::graph_t::VertexId start = conj_gp.g.EdgeStart(*iter);
+		conj_graph_pack::graph_t::VertexId end = conj_gp.g.EdgeEnd(*iter);
+		if (conj_gp.g.length(*iter) > cfg::get().ds.IS + 100) {
+			if (conj_gp.g.IsDeadStart(start) /*&& conj_gp.g.CheckUniqueOutgoingEdge(start)*/){
+				incoming_edges.insert(*iter);
+			} else if (conj_gp.g.IsDeadEnd(end)/* && conj_gp.g.CheckUniqueIncomingEdge(end)*/){
+				outgoing_edges.insert(*iter);
+			} else {
+				WARN("strange long edge in component " << component_name << " , edge_id " << conj_gp.int_ids.ReturnIntId(*iter));
+			}
+		}
+	}
+	FILE* file = fopen((component_name + ".tbl").c_str(), "w");
+	DEBUG("Saving in-out table , " << component_name <<" created");
+
+	fprintf(file,"%4c", ' ');
+
+	fprintf(file, "\n");
+	for (auto out_iter = outgoing_edges.begin(); out_iter != outgoing_edges.end(); ++out_iter)
+		fprintf(file," %4d", conj_gp.int_ids.ReturnIntId(*out_iter));
+
+	for (auto inc_iter = incoming_edges.begin(); inc_iter != incoming_edges.end(); ++inc_iter){
+		fprintf(file," %4d", conj_gp.int_ids.ReturnIntId(*inc_iter));
+		for (auto out_iter = outgoing_edges.begin(); out_iter != outgoing_edges.end(); ++out_iter){
+			char c;
+			if (clustered_index.GetEdgePairInfo(*inc_iter, *out_iter).size() == 0)
+				c = '0';
+			else
+				c = 'X';
+			fprintf(file,"%4c", c);
+		}
+		fprintf(file, "\n");
+	}
+
+	fprintf(file, "\n");
+	for (auto inc_iter = incoming_edges.begin(); inc_iter != incoming_edges.end(); ++inc_iter)
+		fprintf(file," %4d", conj_gp.int_ids.ReturnIntId(*inc_iter));
+	fprintf(file, "\n");
+	for (auto out_iter = outgoing_edges.begin(); out_iter != outgoing_edges.end(); ++out_iter)
+		fprintf(file," %4d", conj_gp.int_ids.ReturnIntId(*out_iter));
+	fprintf(file, "\n");
+
+	fclose(file);
     conj_graph_pack   resolved_gp (genome);
     string sub_dir = "resolve_components/";
 
 
     string resolved_name = cfg::get().output_dir + "resolve_components" + "/resolve_" + graph_name + "/";
 	mkdir(resolved_name.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-    process_resolve_repeats(conj_gp, clustered_index, resolved_gp, graph_name, sub_dir, false ) ;
+	process_resolve_repeats(conj_gp, clustered_index, resolved_gp, graph_name, sub_dir, false ) ;
 }
 
 
@@ -238,6 +292,7 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 
     int number_of_components = 0;
 
+
     if (cfg::get().componential_resolve){
 		mkdir((cfg::get().output_dir + "graph_components" + "/").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 		number_of_components = PrintGraphComponents(
@@ -249,8 +304,12 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
 
     if (cfg::get().rr.symmetric_resolve) {
     	conj_graph_pack   resolved_gp (genome);
-    	process_resolve_repeats(conj_gp, clustered_index, resolved_gp, "graph") ;
-
+        if (cfg::get().etalon_info_mode){
+        	//temporary
+        	process_resolve_repeats(conj_gp, conj_gp.etalon_paired_index, resolved_gp, "graph") ;
+        } else {
+        	process_resolve_repeats(conj_gp, clustered_index, resolved_gp, "graph") ;
+        }
         if (cfg::get().componential_resolve){
         	mkdir((cfg::get().output_dir + "resolve_components" + "/").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
         	for (int i = 0; i<number_of_components; i++){
@@ -260,8 +319,7 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome)
     } else {
     	nonconj_graph_pack origin_gp(conj_gp, clustered_index);
     	nonconj_graph_pack resolved_gp;
-    	process_resolve_repeats(origin_gp, origin_gp.clustered_index, resolved_gp, "graph") ;
-
+       	process_resolve_repeats(origin_gp, origin_gp.clustered_index, resolved_gp, "graph") ;
     }
 
 }
