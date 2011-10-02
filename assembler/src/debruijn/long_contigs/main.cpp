@@ -41,6 +41,7 @@ int main() {
 
 	std::vector<BidirectionalPath> seeds;
 	std::vector<BidirectionalPath> rawSeeds;
+	std::vector<BidirectionalPath> filteredSeeds;
 	std::vector<BidirectionalPath> paths;
 
 	string output_dir = cfg::get().output_dir;
@@ -70,14 +71,20 @@ int main() {
 		}
 	}
 
-	FindSeeds(g, rawSeeds);
+	FindSeeds(g, rawSeeds, &pairedInfos);
 	INFO("Seeds found");
+
+	if (lc_cfg::get().fo.remove_sefl_conjugate) {
+		RemoveWrongConjugatePaths(g, rawSeeds, filteredSeeds);
+	} else {
+		filteredSeeds = rawSeeds;
+	}
 
 	std::vector<int> seedPairs;
 	std::vector<double> seedQuality;
-	FilterComplement(g, rawSeeds, &seedPairs, &seedQuality);
+	FilterComplement(g, filteredSeeds, &seedPairs, &seedQuality);
 
-	RemoveSubpaths(g, rawSeeds, seeds);
+	RemoveSubpaths(g, filteredSeeds, seeds);
 	INFO("Sub seeds removed");
 
 	FilterComplement(g, seeds, &seedPairs, &seedQuality);
@@ -99,6 +106,8 @@ int main() {
 
 	if (lc_cfg::get().write_seeds) {
 		WriteGraphWithPathsSimple(output_dir + "seeds.dot", "seeds", g, seeds, path1, path2);
+
+		OutputPathsAsContigsNoComplement(g, seeds, seedPairs, output_dir + "seeds.contigs", std::set<int>());
 	}
 
 	if (lc_cfg::get().total_symmetric_mode) {
@@ -109,18 +118,25 @@ int main() {
 		FindPaths(g, seeds, pairedInfos, paths, stopHandler);
 	}
 
+	std::vector<BidirectionalPath> filteredPaths;;
+	if (lc_cfg::get().fo.remove_sefl_conjugate) {
+		RemoveWrongConjugatePaths(g, paths, filteredPaths);
+	} else {
+		filteredPaths = paths;
+	}
+
 	std::vector<BidirectionalPath> result;
 	std::vector<double> pathQuality;
 	if (lc_cfg::get().fo.remove_subpaths || lc_cfg::get().fo.remove_overlaps) {
-		RemoveSubpaths(g, paths, result, &pathQuality);
+		RemoveSubpaths(g, filteredPaths, result, &pathQuality);
 		INFO("Subpaths removed");
 	}
 	else if (lc_cfg::get().fo.remove_duplicates) {
-		RemoveDuplicate(g, paths, result, &pathQuality);
+		RemoveDuplicate(g, filteredPaths, result, &pathQuality);
 		INFO("Duplicates removed");
 	}
 	else {
-		result = paths;
+		result = filteredPaths;
 		std::sort(result.begin(), result.end(), SimplePathComparator(g));
 		pathQuality.resize(result.size(), 1.0);
 	}

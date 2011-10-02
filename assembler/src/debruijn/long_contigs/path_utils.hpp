@@ -274,6 +274,13 @@ void FilterLowCovered(Graph& g, std::vector<BidirectionalPath>& paths, double th
 }
 
 
+void FilterUntrustedSeeds(Graph& g, std::vector<BidirectionalPath>& paths,
+		std::vector<BidirectionalPath>& output, PairedInfoIndices& pairedInfo) {
+
+
+}
+
+
 //Remove duplicate paths
 void RemoveDuplicate(Graph& g, const std::vector<BidirectionalPath>& paths,
 		std::vector<BidirectionalPath>& output,
@@ -401,6 +408,43 @@ void RemoveSimilar(Graph& g, std::vector<BidirectionalPath>& paths,
 					((double) similarEdges) / ((double) paths[j].size()) >= lc_cfg::get().fo.similar_edges) {
 				toRemove.insert(j);
 			}
+		}
+	}
+}
+
+
+bool HasConjugate(Graph& g, BidirectionalPath& path) {
+	size_t count = 0;
+	double len = 0.0;
+
+	for (auto e1 = path.begin(); e1 != path.end(); ++e1) {
+		for (auto e2 = path.begin(); e2 != path.end(); ++e2) {
+			if (*e1 != *e2 && g.conjugate(*e1) == *e2) {
+				++count;
+				len += g.length(*e2);
+				break;
+			}
+		}
+	}
+
+	if (count != 0) {
+		DETAILED_INFO("Self conjugate detected: edges " << count << ", length: " << len);
+		DetailedPrintPath(g, path);
+	}
+
+	return math::gr(len / PathLength(g, path), lc_cfg::get().fo.conj_len_percent);
+}
+
+
+void RemoveWrongConjugatePaths(Graph& g, std::vector<BidirectionalPath>& paths,
+		std::vector<BidirectionalPath>& output) {
+
+	output.clear();
+	for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+		if (!HasConjugate(g, *iter)) {
+			output.push_back(*iter);
+		} else {
+			INFO("Removed as self conjugate");
 		}
 	}
 }
@@ -639,6 +683,7 @@ void MakeBlackSet(Graph& g, Path<Graph::EdgeId>& path1, Path<Graph::EdgeId>& pat
 		}
 	}
 }
+
 
 } // namespace long_contigs
 

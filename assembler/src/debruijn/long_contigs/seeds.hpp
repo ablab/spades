@@ -11,6 +11,7 @@
 #include "lc_common.hpp"
 #include "path_utils.hpp"
 #include "loop.hpp"
+#include "extend.hpp"
 
 
 namespace long_contigs {
@@ -23,7 +24,7 @@ using namespace debruijn_graph;
 //If a start of another trivial path is found, returns it
 //Otherwise returns 0
 EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detector, const std::map<EdgeId, BidirectionalPath>& starts,
-		PathLengths* lengths = 0) {
+		PathLengths* lengths = 0, PairedInfoIndices * pairedInfo = 0) {
 	static bool glueSeeds = lc_cfg::get().ss.glue_seeds;
 	static bool maxCycles = lc_cfg::get().ss.max_cycles;
 
@@ -39,6 +40,18 @@ EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& det
 			return nextEdge;
 		}
 
+		if (pairedInfo != 0 && pairedInfo != 0 &&  lc_cfg::get().ss.check_trusted) {
+			double weight =
+					ExtentionWeight(g, path, *lengths, nextEdge, *pairedInfo, 0, true, false);
+
+			DETAILED_INFO("Forward " << nextEdge << " (" << g.length(nextEdge) << "), weight " << weight);
+			DetailedPrintPath(g, path, *lengths);
+
+			if (ExtensionGoodEnough(nextEdge, weight, lc_cfg::get().ss.trusted_threshold) == 0) {
+				break;
+			}
+		}
+
 		path.push_back(nextEdge);
 		if (lengths != 0) {
 			IncreaseLengths(g, *lengths, nextEdge, true);
@@ -49,6 +62,15 @@ EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& det
 		detector.temp.AddAlternative(nextEdge);
 		detector.AddNewEdge(nextEdge, path.size() - 1);
 		if (CheckCycle(path, nextEdge, detector, maxCycles)) {
+			if (path.size() >= 2 && path.back() == path[path.size() - 2]) {
+				path.pop_back();
+				if (lengths != 0) {
+					RecountLengthsForward(g, path, *lengths);
+				}
+				if (pairedInfo != 0) {
+					RecountDetectorForward(g, path, *pairedInfo, detector);
+				}
+			}
 			break;
 		}
 	}
@@ -56,14 +78,14 @@ EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& det
 }
 
 //Previous one without checking for other seeds' starts
-EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detector, PathLengths* lengths = 0) {
+EdgeId ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detector, PathLengths* lengths = 0, PairedInfoIndices * pairedInfo = 0) {
 	static std::map<EdgeId, BidirectionalPath> empty = std::map<EdgeId, BidirectionalPath>();
-	return ExtendTrivialForward(g, path, detector, empty, lengths);
+	return ExtendTrivialForward(g, path, detector, empty, lengths, pairedInfo);
 }
 
 
 //Trivially extend path backward
-void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& detector, PathLengths* lengths = 0) {
+void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& detector, PathLengths* lengths = 0, PairedInfoIndices * pairedInfo = 0) {
 	static bool maxCycles = lc_cfg::get().ss.max_cycles;
 
 	if (path.empty()) {
@@ -73,6 +95,18 @@ void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& dete
 	VertexId currentVertex = g.EdgeStart(path.front());
 	while (g.CheckUniqueIncomingEdge(currentVertex)) {
 		EdgeId nextEdge = g.GetUniqueIncomingEdge(currentVertex);
+
+		if (pairedInfo != 0 && pairedInfo != 0 &&  lc_cfg::get().ss.check_trusted) {
+			double weight =
+					ExtentionWeight(g, path, *lengths, nextEdge, *pairedInfo, 0, false, false);
+
+			DETAILED_INFO("Backward " << nextEdge << " (" << g.length(nextEdge) << "), weight " << weight);
+			DetailedPrintPath(g, path, *lengths);
+
+			if (ExtensionGoodEnough(nextEdge, weight, lc_cfg::get().ss.trusted_threshold) == 0) {
+				break;
+			}
+		}
 
 		path.push_front(nextEdge);
 		if (lengths != 0) {
@@ -84,6 +118,15 @@ void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& dete
 		detector.temp.AddAlternative(nextEdge);
 		detector.AddNewEdge(nextEdge, path.size() - 1);
 		if (CheckCycle(path, nextEdge, detector, maxCycles)) {
+			if (path.size() >= 2 && path.front() == path[1]) {
+				path.pop_front();
+				if (lengths != 0) {
+					RecountLengthsBackward(g, path, *lengths);
+				}
+				if (pairedInfo != 0) {
+					RecountDetectorBackward(g, path, *pairedInfo, detector);
+				}
+			}
 			break;
 		}
 	}
@@ -123,9 +166,10 @@ void SimpleRecountDetectorBackward(BidirectionalPath& path, LoopDetector& detect
 
 
 //Find all seeds as trivial paths
-void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
+void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndices * pairedInfo = 0) {
 	std::map<EdgeId, BidirectionalPath> starts;
 	LoopDetector detector;
+	PathLengths lengths;
 	int count = 0;
 
 	INFO("Finding seeds started");
@@ -142,8 +186,10 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 		BidirectionalPath& newPath = starts[e];
 		newPath.push_back(e);
 
+		RecountLengthsForward(g, newPath, lengths);
+
 		//Extend trivially
-		EdgeId nextStart = ExtendTrivialForward(g, newPath, detector, starts);
+		EdgeId nextStart = ExtendTrivialForward(g, newPath, detector, starts, &lengths, pairedInfo);
 
 		//If extended till another seed, than concatenate them
 		if (nextStart != 0) {
@@ -159,7 +205,9 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds) {
 	INFO("Extending seeds backward");
 	for (auto pathIter = starts.begin(); pathIter != starts.end(); ++pathIter) {
 		SimpleRecountDetectorBackward(pathIter->second, detector);
-		ExtendTrivialBackward(g, pathIter->second, detector);
+		RecountLengthsBackward(g, pathIter->second, lengths);
+
+		ExtendTrivialBackward(g, pathIter->second, detector, &lengths, pairedInfo);
 		seeds.push_back(pathIter->second);
 	}
 

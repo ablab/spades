@@ -54,7 +54,10 @@ struct lc_config
 	{
 	    double min_coverage;
 	    bool   glue_seeds;
+	    bool   check_trusted;
+	    bool   remove_untrusted;
 	    size_t max_cycles;
+	    double trusted_threshold;
 	};
 
 	struct extension_selection
@@ -110,6 +113,9 @@ struct lc_config
 	    bool remove_similar;
 	    double similar_edges;
 	    double similar_length;
+
+	    bool remove_sefl_conjugate;
+	    double conj_len_percent;
 	};
 
 	struct research {
@@ -225,6 +231,9 @@ void load(boost::property_tree::ptree const& pt, lc_config::seed_selection& ss)
 	load(pt, "min_coverage", ss.min_coverage);
 	load(pt, "glue_seeds", ss.glue_seeds);
 	load(pt, "max_cycles", ss.max_cycles);
+	load(pt, "check_trusted", ss.check_trusted);
+    load(pt, "remove_untrusted", ss.remove_untrusted);
+    load(pt, "trusted_threshold", ss.trusted_threshold);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::extension_selection& es)
@@ -279,6 +288,9 @@ void load(boost::property_tree::ptree const& pt, lc_config::filter_options& fo)
 	load(pt, "remove_similar", fo.remove_similar);
     load(pt, "similar_edges", fo.similar_edges);
     load(pt, "similar_length", fo.similar_length);
+
+    load(pt, "remove_sefl_conjugate", fo.remove_sefl_conjugate);
+    load(pt, "conj_len_percent", fo.conj_len_percent);
 }
 
 

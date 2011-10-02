@@ -68,9 +68,30 @@ public:
 		return result;
 	}
 
-
-
 	bool AreEqual(PairedInfoIndex<Graph>& index1, PairedInfoIndex<Graph>& index2) {
+		bool result = true;
+		for (auto iter = index1.begin(); iter != index1.end(); ++iter) {
+			auto pi = *iter;
+			if (pi.size() == 0) {
+				continue;
+			}
+			EdgeId e1 = pi.back().first;
+			EdgeId e2 = pi.back().second;
+
+			auto pi2 = index2.GetEdgePairInfo(e1, e2);
+
+			for (auto i1 = pi.begin(); i1 != pi.end(); ++i1) {
+				for (auto i2 = pi2.begin(); i2 != pi2.end(); ++i2) {
+					if (math::eq(i1->d, i2->d) && math::neq(i1->weight, i2->weight)) {
+						INFO("Unequal weights");
+						result = false;
+					}
+				}
+			}
+
+		}
+		return result;
+
 		return false;
 	}
 };
@@ -85,12 +106,31 @@ int main() {
 	Sequence sequence("");
 
 	long_contigs::LoadFromFile(lc_cfg::get().ds.graph_file, &g, &intIds, sequence, &mapper);
+	PairedInfoChecker checker(g);
 
 	DataScanner<Graph> dataScanner(g, intIds);
-	dataScanner.loadPaired(std::string(argv[1]), pairedIndex);
+	dataScanner.loadPaired(lc_cfg::get().u.file1, pairedIndex);
 
-	PairedInfoChecker checker(g);
-	INFO("Symmetric: " << checker.IsSymmetric(pairedIndex));
+	switch (lc_cfg::get().u.mode) {
+	case 1: {
+		INFO("Checking " << lc_cfg::get().u.file1);
+		INFO("Symmetric: " << checker.IsSymmetric(pairedIndex));
+		INFO("Conjugate symmetric: " << checker.IsConjugateSymmetric(pairedIndex));
+		break;
+	}
+	case 2: {
+		PairedInfoIndex<Graph> pairedIndex2(g, 0);
+		dataScanner.loadPaired(lc_cfg::get().u.file2, pairedIndex2);
+
+		INFO("Checking " << lc_cfg::get().u.file1 << " and " << lc_cfg::get().u.file2);
+		INFO("1 is subset of 2 " << checker.AreEqual(pairedIndex, pairedIndex2));
+		INFO("2 is subset of 1 " << checker.AreEqual(pairedIndex2, pairedIndex));
+		break;
+	}
+	default: {
+		INFO("Unknown mode");
+	}
+	}
 
 	return 0;
 }
