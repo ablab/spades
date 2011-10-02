@@ -170,6 +170,7 @@ int main() {
 		if (lc_cfg::get().fo.remove_overlaps) {
 			RemoveOverlaps(g, result, pairs, quality);
 			DETAILED_INFO("Removed overlaps");
+
 			if (lc_cfg::get().fo.remove_similar) {
 				RemoveSimilar(g, result, pathQuality, toRemove);
 			}

@@ -733,6 +733,8 @@ void RemoveOverlaps(Graph& g, std::vector<BidirectionalPath>& paths, std::vector
             	PrintPath(g, path);
             	PrintPath(g, paths[overlaped]);
 
+				overlap = std::min(overlap, (int) path.size() - 1);
+
 				for (int i = 0; i <= overlap; ++i) {
 					path.pop_back();
 				}

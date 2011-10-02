@@ -34,9 +34,11 @@ template<class T>
 size_t PathLength(const Graph& g, T& path) {
 	double currentLength = 0;
 
-	for(auto iter = path.begin(); iter != path.end(); ++iter) {
-		currentLength += g.length(*iter);
+	for(int i = 0; i < (int) path.size(); ++i) {
+		INFO("Made: " << i);
+		currentLength += g.length(path[i]);
 	}
+	INFO("Done");
 	return currentLength;
 }
 
@@ -220,14 +222,7 @@ size_t EdgeCount(Graph& g) {
 	return edgeCount;
 }
 
-void CountPathLengths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<size_t>& lengths) {
-	lengths.clear();
-	for (auto path = paths.begin(); path != paths.end(); ++path) {
-		lengths.push_back(PathLength(g, *path));
-	}
-}
 
-//Statistic functions
 //Prints number of edges and amount of paths with respective edge count
 void PrintPathEdgeLengthStats(std::vector<BidirectionalPath>& paths) {
 	std::map<size_t, size_t> lengthMap;
@@ -380,6 +375,16 @@ void PrintPathWithVertices(Graph& g, PathType& path) {
 		INFO(i << ", " << path[i] << ", " << g.length(path[i]));
 	}
 }
+
+void CountPathLengths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<size_t>& lengths) {
+        lengths.clear();
+        for (auto path = paths.begin(); path != paths.end(); ++path) {
+		DetailedPrintPath(g, *path);
+                lengths.push_back(PathLength(g, *path));
+        }
+	INFO("Done!");
+}
+
 
 //[,)
 void PrintPathFromTo(Graph& g, Path<Graph::EdgeId>& path, size_t startPos = 0, size_t endPos = 0) {
