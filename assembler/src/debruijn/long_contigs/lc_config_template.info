@@ -14,6 +14,7 @@ QUAKE_FULL
 {
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
     graph_file       ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph
+   	;graph_file       ./data/debruijn/QUAKE_FULL/K55/SC/new/simplified_graph
     
 }
 EAS600_QUAKE_CROPPED_100K
@@ -32,6 +33,119 @@ EAS600_QUAKE_FULL
 ; paired info options
 use_new_metrics      true
 
+
+; output options
+write_seeds             true 
+write_overlaped_paths   false
+write_paths             true
+write_contigs           true
+write_real_paired_info  true
+cluster_paired_info     false
+write_graph             true
+print_stats             true
+paired_info_file_prefix "paired_info_"
+
+total_symmetric_mode    false
+first_grow_forward      true
+
+; seed selection
+ss																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																													
+{
+    min_coverage   0
+    glue_seeds     false
+    max_cycles     1
+    
+    remove_untrusted  false
+    check_trusted     true
+    trusted_threshold 0.5
+}
+
+; extension selection
+es
+{
+    use_weight_function_first  false
+    weight_fun_threshold       0.1
+    weight_threshold           0.3
+    priority_coeff             6
+
+    use_delta_first       true
+    etalon_distance_dev   2
+    
+    max_iter              3
+    
+    max_depth             0
+    
+    fix_weight            true
+    use_advanced          true
+    advanced_coeff        1.5
+}    
+
+; loops removal
+lr
+{
+    investigation      true																														
+	loop_to_investigate 1
+	max_loop_len       2
+	max_exits          1
+	
+	stop_on_long       true
+	
+    max_loops          10
+    full_loop_removal  true
+    exlude_cycle       false
+}
+
+; stop criteria
+sc
+{
+    all_seeds       true
+    edge_coverage   0.8
+    len_coverage    0.99
+}
+
+; filter options
+fo
+{
+    remove_duplicates       true
+    remove_subpaths         true
+    remove_overlaps         true
+    
+    length_percent          1.8
+    conjugate_percent       0.95
+    
+    remove_single           false
+    
+    remove_similar          true
+    similar_edges           0.6
+    similar_length          0.95
+    
+    remove_sefl_conjugate   true
+    conj_len_percent        0.2
+    
+}
+
+utils 
+{
+	; 1 check symmetry and conjugate symmetry
+	; 2 check equality
+    mode        1  
+    file1       ./data/debrujn
+    file2       ./data/debrujn
+}    
+
+
+;research options
+research 
+{
+    research_mode            false
+    detailed_output          true
+    fiter_by_edge            true
+    edge_length              46
+    force_to_cycle           false 
+    cycle_priority_edge      55
+}
+
+
 ; additional real libs
 real_libs
 {    
@@ -41,18 +155,18 @@ real_libs
     {
     	read_size     100
         insert_size   270
-        is_delta      5
-        var           10
+        is_delta      1
+        var           5
         
         QUAKE_FULL
         {
             precounted       true
-            precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph_et
+            precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
             first            
             second           
             
-            has_advanced     false
-            advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS220_RS100_acl
+            has_advanced     true
+            advanced         ./data/debruijn/QUAKE_FULL/K55/SC/09.29_07_30/paired_info_IS270_RS100_acl
         }
     }
     
@@ -226,102 +340,3 @@ etalon_libs
     }	
 }
 
-; output options
-write_seeds             false 
-write_overlaped_paths   false
-write_paths             true
-write_contigs           true
-write_real_paired_info  true
-cluster_paired_info     false
-write_graph             true
-print_stats             true
-paired_info_file_prefix "paired_info_"
-
-total_symmetric_mode    false
-first_grow_forward      true
-
-; seed selection
-ss
-{
-    min_coverage   1
-    glue_seeds     false
-    max_cycles     1
-}
-
-; extension selection
-es
-{
-    use_weight_function_first  false
-    weight_fun_threshold       0
-    weight_threshold           0.1
-    priority_coeff             5
-
-    use_delta_first       true
-    etalon_distance_dev   2
-    
-    max_iter              3
-    
-    max_depth             0
-    
-    fix_weight            false
-    use_advanced          false
-    advanced_coeff        6
-}    
-
-; loops removal
-lr
-{
-    investigation      true																														
-	loop_to_investigate 1
-	max_loop_len       2
-	max_exits          1
-	
-	stop_on_long       true
-	
-    max_loops          10
-    full_loop_removal  true
-    exlude_cycle       false
-}
-
-; stop criteria
-sc
-{
-    all_seeds       true
-    edge_coverage   0.8
-    len_coverage    0.99
-}
-
-; filter options
-fo
-{
-    remove_duplicates       true
-    remove_subpaths         true
-    remove_overlaps         true
-    
-    length_percent          1.5
-    conjugate_percent       0.4
-    
-    remove_single           true
-    
-    remove_similar          true
-    similar_edges           0.6
-    similar_length          0.95
-}
-
-utils 
-{
-    file1       ./data/debrujn
-    file2       ./data/debrujn
-}    
-
-
-;research options
-research 
-{
-    research_mode            false
-    detailed_output          false
-    fiter_by_edge            true
-    edge_length              46
-    force_to_cycle           false 
-    cycle_priority_edge      55
-}
