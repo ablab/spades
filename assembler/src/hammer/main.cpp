@@ -103,7 +103,7 @@ string getFilename( const string & dirprefix, int iter_count, const string & suf
 int main(int argc, char * argv[]) {
 
     const size_t GB = 1 << 30;
-    limit_memory(120 * GB);
+    limit_memory(300 * GB);
 	
 	string config_file = CONFIG_FILENAME;
 	if (argc > 1) config_file = argv[1];
