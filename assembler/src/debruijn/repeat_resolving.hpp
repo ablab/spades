@@ -27,6 +27,7 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 	INFO("-----------------------------------------");
 	INFO("Resolving primitive repeats");
 	DeletedVertexHandler<Graph> tmp_deleted_handler(new_graph);
+	TRACE("deleted handler created");
 	RepeatResolver<Graph> repeat_resolver(g, old_IDs, 0, info, edges_pos,
 			new_graph, new_IDs, edges_pos_new, tmp_deleted_handler);
 	mkdir((output_folder).c_str(),

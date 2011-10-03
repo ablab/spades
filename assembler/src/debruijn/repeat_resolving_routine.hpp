@@ -140,11 +140,15 @@ void process_resolve_repeats(
 
     INFO("---Clearing resolved graph---");
 
+    if (output_contigs)
+    	OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_after_rr_before_simplify.fasta");
+
     for (int i = 0; i < 3; ++i)
     {
         ClipTipsForResolver(resolved_gp.g);
         RemoveBulges2      (resolved_gp.g);
-        RemoveLowCoverageEdgesForResolver(resolved_gp.g);
+        RemoveLowCoverageEdges(resolved_gp.g, i, 3);
+        RemoveRelativelyLowCoverageEdges(resolved_gp.g);
     }
 
     INFO("---Cleared---");
