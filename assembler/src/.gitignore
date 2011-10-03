@@ -7,3 +7,4 @@ hammer/quake_enhanced/prepare_graph/prepare_graph
 bayes/bayes
 debruijn/config.info
 debruijn/simplification.info
+debruijn/k.hpp
