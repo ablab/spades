@@ -70,7 +70,8 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 		if (fileExists(cfg::get().output_root + cfg::get().additional_contigs)) {
 			INFO("Additional contigs file found");
 			io::Reader<io::SingleRead> additional_contigs_stream(cfg::get().output_root + cfg::get().additional_contigs);
-			construct_graph(stream, gp, tl, paired_index, &additional_contigs_stream);
+			io::RCReaderWrapper<io::SingleRead> rc_additional_contigs_stream(additional_contigs_stream);
+			construct_graph(stream, gp, tl, paired_index, &rc_additional_contigs_stream);
 		} else {
 			INFO("Additional contigs file not found");
 			construct_graph(stream, gp, tl, paired_index);
