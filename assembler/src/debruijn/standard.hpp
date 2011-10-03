@@ -57,6 +57,8 @@ using boost::in_place;
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "verify.hpp"
+#include "k.hpp"
 
 //==our
 // io

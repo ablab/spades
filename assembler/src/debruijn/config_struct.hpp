@@ -9,6 +9,7 @@
 #define CONFIG_STRUCT_HPP_
 
 #include "config_common.hpp"
+#include "k.hpp"
 #include <boost/bimap.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -26,7 +27,7 @@ namespace debruijn_graph
     };
 
 	const char* const cfg_filename = "./src/debruijn/config.info";
-	const size_t K = 55; // must be odd (so there is no k-mer which is equal to it's reverse-complimentary k-mer)
+//	const size_t K = 55; // must be odd (so there is no k-mer which is equal to it's reverse-complimentary k-mer)
 
 	inline std::string MakeLaunchTimeDirName() {
 		time_t rawtime;
