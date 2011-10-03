@@ -9,5 +9,5 @@ echo "Compiling assembler for K="$i
 make rd
 
 echo "Running assembler for K="$i
-run rd > "K$i_iteration.log"
+./run rd > "K$i_iteration.log"
 done
