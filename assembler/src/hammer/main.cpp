@@ -67,6 +67,8 @@ int Globals::max_reconstruction_iterations = 1;
 bool Globals::read_kmers_after_clustering = false;
 bool Globals::write_kmers_after_clustering = false;
 bool Globals::write_each_iteration_kmers = false;
+bool Globals::regular_threshold_for_correction = false;
+bool Globals::discard_only_singletons = false;
 string Globals::kmers_after_clustering = "";
 
 struct KMerStatCount {
@@ -137,6 +139,8 @@ int main(int argc, char * argv[]) {
 	Globals::write_kmers_after_clustering = cfg::get().write_kmers_after_clustering;
 	Globals::kmers_after_clustering = cfg::get().kmers_after_clustering;
 	Globals::write_each_iteration_kmers = cfg::get().write_each_iteration_kmers;
+	Globals::regular_threshold_for_correction = cfg::get().regular_threshold_for_correction;
+	Globals::discard_only_singletons = cfg::get().discard_only_singletons;
 
 	Globals::paired_reads = cfg::get().paired_reads;
 	string readsFilenameLeft, readsFilenameRight;

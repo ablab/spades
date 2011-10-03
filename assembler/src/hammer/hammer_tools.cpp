@@ -167,15 +167,18 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 		const uint32_t pos = it.first;
 		const KMerStat & stat = it.second->second;
 
-		if (stat.isGoodForIterative() || ( !Globals::use_iterative_reconstruction && stat.isGood() ) ) {
+		if (  stat.isGoodForIterative() || 
+			// if regular_threshold_for_correction = true, we use a (more relaxed) threshold isGood() for solid k-mers
+		      ( (!Globals::use_iterative_reconstruction || Globals::regular_threshold_for_correction) && stat.isGood() ) ) {
 			Globals::rv_bad->at(readno) = false;
 			for (size_t j=0; j<K; ++j) {
 				v[dignucl(kmer[j])][pos+j]++;
 			}
 			if ((int)pos < left) left = pos; if ((int)pos > right) right = pos;
 		} else {
-			if (stat.change() && (km[stat.changeto]->second.isGoodForIterative() || 
-						( !Globals::use_iterative_reconstruction && km[stat.changeto]->second.isGood() ) ) ) {
+			// if discard_only_singletons = true, we always use centers of clusters that do not coincide with the current center
+			if (stat.change() && ( Globals::discard_only_singletons || km[stat.changeto]->second.isGoodForIterative() || 
+			((!Globals::use_iterative_reconstruction || Globals::regular_threshold_for_correction) && km[stat.changeto]->second.isGood()) ) ) {
 				Globals::rv_bad->at(readno) = false;
 				if ((int)pos < left) left = pos; if ((int)pos > right) right = pos;
 				const PositionKMer & newkmer = km[ stat.changeto ]->first;

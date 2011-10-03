@@ -20,6 +20,8 @@ struct Globals {
 	static int max_reconstruction_iterations;
 	static bool read_kmers_after_clustering;
 	static bool write_kmers_after_clustering;
+	static bool regular_threshold_for_correction;
+	static bool discard_only_singletons;
 	static string kmers_after_clustering;
 
 	static std::vector<PositionRead> * pr;

@@ -48,6 +48,8 @@ struct hammer_config
 	double iterative_reconstruction_threshold;
 	int max_reconstruction_iterations;
 	bool write_each_iteration_kmers;
+	bool regular_threshold_for_correction;
+	bool discard_only_singletons;
 };
 
 
@@ -93,6 +95,8 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 	load(pt, "iterative_reconstruction_threshold", cfg.iterative_reconstruction_threshold);
 	load(pt, "max_reconstruction_iterations", cfg.max_reconstruction_iterations);
 	load(pt, "write_each_iteration_kmers", cfg.write_each_iteration_kmers);
+	load(pt, "regular_threshold_for_correction", cfg.regular_threshold_for_correction);
+	load(pt, "discard_only_singletons", cfg.discard_only_singletons);
 }
 
 typedef config_common::config<hammer_config> cfg;
