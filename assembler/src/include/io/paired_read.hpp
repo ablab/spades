@@ -14,7 +14,7 @@
  *
  * PairedRead is a structure, where information from input files is
  * stored. 
- * It includes 2 SingleRead elements and a distance between them.
+ * It includes 2 SingleRead elements and the insert size.
  */
 
 #ifndef COMMON_IO_PAIREDREAD_HPP_
@@ -37,19 +37,19 @@ class PairedRead {
   /*
    * Default constructor.
    */
-  PairedRead() : first_(), second_(), distance_(0) {}
+  PairedRead() : first_(), second_(), insert_size_(0) {}
 
   /*
    * Conctructor from SingleReads.
    *
    * @param first First SingleRead in the pair.
    * @param second Second SingleRead in the pair.
-   * @param distance Distance between two SingleReads.
+   * @param insert_size Insert size of the paired read.
    */
   PairedRead(const SingleRead& first,
              const SingleRead& second,
-             size_t distance)
-    : first_(first), second_(second), distance_(distance) {}
+             size_t insert_size)
+    : first_(first), second_(second), insert_size_() {}
 
   /*
    * Return first SingleRead in the pair.
@@ -70,12 +70,30 @@ class PairedRead {
   }
 
   /*
-   * Return distance of PairedRead.
+   * Return insert_size of PairedRead.
+   *
+   * @return Insert size.
+   */
+  size_t insert_size() const {
+    return insert_size_;
+  }
+
+  /*
+   * Return distance between single reads.
    *
    * @return Distance.
    */
   size_t distance() const {
-    return distance_;
+    return insert_size_ - second_.size();
+  }
+
+  /*
+   * Return gap between single reads.
+   *
+   * @return Gap.
+   */
+  size_t gap() const {
+    return insert_size_ - first_.size() - second_.size();
   }
 
   /*
@@ -107,12 +125,12 @@ class PairedRead {
   /*
    * Return reversed complimentary PairedRead (PairedRead with
    * reserve complimentary first and second SingleReads
-   * and the same distance).
+   * and the same insert size).
    *
    * @return Reversed complimentary PairedRead.
    */
   const PairedRead operator!() const {
-    return PairedRead(!second_, !first_, distance_);
+    return PairedRead(!second_, !first_, insert_size_);
   }
 
   /*
@@ -120,13 +138,13 @@ class PairedRead {
    *
    * @param pairedread The PairedRead we want to compare ours with.
    * @return true if these two PairedReads have similar
-   * first and second SingleReads and distance,
+   * first and second SingleReads and insert size,
    * and false otherwise.
    */
   bool operator==(const PairedRead& pairedread) const {
     return first_ == pairedread.first_ &&
       second_ == pairedread.second_ &&
-      distance_ == pairedread.distance_;
+      insert_size_ == pairedread.insert_size_;
   }
 
  private:
@@ -139,9 +157,9 @@ class PairedRead {
    */
   SingleRead second_;
   /*
-   * @variable Distance between two SingleReads.
+   * @variable Insert size between two SingleReads.
    */
-  size_t distance_;
+  size_t insert_size_;
 };
 
 }

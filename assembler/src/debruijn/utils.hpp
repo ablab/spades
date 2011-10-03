@@ -722,10 +722,6 @@ private:
 	Stream& stream_;
 	WeightF weight_f_;
 
-	inline size_t CountDistance(const io::PairedRead& paired_read) {
-		return paired_read.distance() - paired_read.second().size();
-	}
-
 	void ProcessPairedRead(omnigraph::PairedInfoIndex<Graph>& paired_index,
 			const io::PairedRead& p_r) {
 		//DEBUG
@@ -739,7 +735,7 @@ private:
 		//		cout << "Path1 length " << path1.size() << endl;
 		MappingPath<EdgeId> path2 = mapper_.MapSequence(read2);
 		//		cout << "Path2 length " << path2.size() << endl;
-		size_t read_distance = CountDistance(p_r);
+		size_t read_distance = p_r.distance();
 		for (size_t i = 0; i < path1.size(); ++i) {
 			pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
 			for (size_t j = 0; j < path2.size(); ++j) {
@@ -816,7 +812,7 @@ public:
 		stream_.reset();
 	}
 
-	ReadThreaderResult<k + 1, Graph> ThreadNext() {
+/*	ReadThreaderResult<k + 1, Graph> ThreadNext() {
 		if (!stream_.eof()) {
 			io::PairedRead p_r;
 			stream_ >> p_r;
@@ -825,15 +821,15 @@ public:
 			Path<EdgeId> aligned_read[2];
 			aligned_read[0] = read_seq_mapper.MapSequence(read1);
 			aligned_read[1] = read_seq_mapper.MapSequence(read2);
-			size_t distance = p_r.distance();
-			int current_distance1 = distance + aligned_read[0].start_pos()
-					- aligned_read[1].start_pos();
+			size_t insert_size = p_r.insert_size();
+			// TODO bug here with insert_size/distance
+			int current_distance1 = insert_size + aligned_read[0].start_pos() - aligned_read[1].start_pos();
 			return ReadThreaderResult<k + 1, Graph> (aligned_read[0],
 					aligned_read[1], current_distance1);
 		}
 		//		else return NULL;
 	}
-
+*/
 };
 
 template<size_t k, class Graph>

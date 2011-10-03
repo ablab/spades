@@ -636,10 +636,6 @@ private:
 	const SequenceMapper& mapper_;
 	Stream& stream_;
 
-	inline size_t CountDistance(const io::PairedRead& paired_read) {
-		return paired_read.distance() - paired_read.second().size();
-	}
-
 	size_t CorrectLength(Path<EdgeId> path, size_t idx) {
 		size_t answer = graph_.length(path[idx]);
 		if (idx == 0)
@@ -655,7 +651,7 @@ private:
 		Sequence read2 = p_r.second().sequence();
 		Path<EdgeId> path1 = mapper_.MapSequence(read1);
 		Path<EdgeId> path2 = mapper_.MapSequence(read2);
-		size_t distance = CountDistance(p_r);
+		size_t distance = p_r.distance();
 		int current_distance1 = distance + path1.start_pos()
 				- path2.start_pos();
 		for (size_t i = 0; i < path1.size(); ++i) {
