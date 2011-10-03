@@ -67,13 +67,16 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 
 	if (cfg::get().entry_point <= ws_construction) {
 		INFO("Checking for additional contigs file");
-		if (fileExists(cfg::get().output_root + cfg::get().additional_contigs)) {
+		if (cfg::get().use_additional_contigs && fileExists(cfg::get().output_root + cfg::get().additional_contigs)) {
 			INFO("Additional contigs file found");
+			INFO("Constructing Debruijn graph using additional contigs");
 			io::Reader<io::SingleRead> additional_contigs_stream(cfg::get().output_root + cfg::get().additional_contigs);
 			io::RCReaderWrapper<io::SingleRead> rc_additional_contigs_stream(additional_contigs_stream);
 			construct_graph(stream, gp, tl, paired_index, &rc_additional_contigs_stream);
 		} else {
-			INFO("Additional contigs file not found");
+			if(cfg::get().use_additional_contigs)
+				INFO("Additional contigs file not found");
+			INFO("Constructing Debruijn graph without additional contigs");
 			construct_graph(stream, gp, tl, paired_index);
 		}
 		save_construction(gp, tl, paired_index);
