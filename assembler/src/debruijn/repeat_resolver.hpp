@@ -193,7 +193,7 @@ public:
 				++v_iter) {
 			if (rc_mode) {
 				if (rc_vertices.find(*v_iter) == rc_vertices.end())
-					rc_vertices.insert(old_IDs.ReturnVertexId(GetRCId(old_IDs.ReturnIntId(*v_iter))));
+					rc_vertices.insert(conj_wrap(old_graph, *v_iter));
 				else
 					continue;
 			}
@@ -209,8 +209,8 @@ public:
 				vertex_labels[new_vertex] = *v_iter;
 				old_to_new[*v_iter] = new_vertex;
 				if (rc_mode) {
-					VertexId new_rc_vertex = new_IDs.ReturnVertexId(GetRCId(new_IDs.ReturnIntId(new_vertex)));
-					VertexId old_rc_vertex = old_IDs.ReturnVertexId(GetRCId(old_IDs.ReturnIntId(*v_iter)));
+					VertexId new_rc_vertex = conj_wrap(new_graph, new_vertex);
+					VertexId old_rc_vertex = conj_wrap(old_graph, *v_iter);
 					real_vertices.insert(new_rc_vertex);
 					vertex_labels[new_rc_vertex] = old_rc_vertex;
 					old_to_new[old_rc_vertex] = new_rc_vertex;
@@ -221,7 +221,7 @@ public:
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			if (rc_mode) {
 				if (rc_edges.find(*e_iter) == rc_edges.end())
-					rc_edges.insert(old_IDs.ReturnEdgeId(GetRCId(old_IDs.ReturnIntId(*e_iter))));
+					rc_edges.insert(conj_wrap(old_graph, *e_iter));
 				else
 					continue;
 			}
@@ -243,15 +243,14 @@ public:
 
 
 			if (rc_mode) {
-				EdgeId new_rc_edge = new_IDs.ReturnEdgeId(GetRCId(new_IDs.ReturnIntId(new_edge)));
-				EdgeId old_rc_edge = old_IDs.ReturnEdgeId(GetRCId(old_IDs.ReturnIntId(*e_iter)));
+				EdgeId new_rc_edge = conj_wrap(new_graph, new_edge);
+				EdgeId old_rc_edge = conj_wrap(old_graph, *e_iter);
 				edge_labels[new_rc_edge] = old_rc_edge;
 				old_to_new_edge[old_rc_edge] = new_rc_edge;
 				new_pos.AddEdgePosition(new_rc_edge, old_pos.edges_positions().find(old_rc_edge)->second);
 				TRACE("rc edge added");
 			}
-//			if (rc_mode)
-//				edges.erase(old_IDs.ReturnEdgeId(GetRCId(old_IDs.ReturnIntId(*e_iter))));
+
 		}
 		TRACE("Edge Adding finished");
 		old_to_new.clear();
@@ -289,13 +288,11 @@ private:
 	size_t RectangleResolveVertex(VertexId vid);
 	size_t CheatingResolveVertex(VertexId vid);
 	void BanRCVertex(VertexId v );
-	int GetRCId (int id);
 	ConjugateDeBruijnGraph::VertexId conj_wrap(ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::VertexId v);
 	NonconjugateDeBruijnGraph::VertexId conj_wrap(NonconjugateDeBruijnGraph& g, NonconjugateDeBruijnGraph::VertexId v);
 
 	ConjugateDeBruijnGraph::EdgeId conj_wrap(ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::EdgeId e);
 	NonconjugateDeBruijnGraph::EdgeId conj_wrap(NonconjugateDeBruijnGraph& g, NonconjugateDeBruijnGraph::EdgeId e);
-	EdgeId RCEdge(EdgeId e);
 	bool rc_mode;
 	void WrappedSetCoverage(EdgeId e, int cov);
 	size_t GenerateVertexPairedInfo(Graph &g, PairInfoIndexData<EdgeId> &ind,
@@ -615,7 +612,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 			res.push_back(split_pair.first);
 			if (rc_mode) {
 				for( auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it) {
-					WrappedSetCoverage(RCEdge(it->second), new_graph.coverage(it->second) * new_graph.length(it->second));
+					WrappedSetCoverage(conj_wrap(new_graph, it->second), new_graph.coverage(it->second) * new_graph.length(it->second));
 				}
 			}
 			map<EdgeId, EdgeId> old_to_new_edgeId;
@@ -659,23 +656,20 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 template<class Graph>
 void RepeatResolver<Graph>::BanRCVertex(VertexId v ){
 	int id = new_IDs.ReturnIntId(v);
-	int rc_id = GetRCId(id);
-
+	VertexId rv = conj_wrap(new_graph, v);
+	int rc_id = new_IDs.ReturnIntId(rv);
 	DEBUG("added vertex " << id << " banning vertex "<< rc_id);
-	vector<EdgeId> tmp = new_graph.IncomingEdges(new_IDs.ReturnVertexId(rc_id));
+	vector<EdgeId> tmp = new_graph.IncomingEdges(rv);
 	for(size_t i = 0; i < tmp.size(); i++)
 		global_cheating_edges.insert(tmp[i]);
 	TRACE("incoming cheaters added");
-	tmp = new_graph.OutgoingEdges(new_IDs.ReturnVertexId(rc_id));
+	tmp = new_graph.OutgoingEdges(rv);
 	for(size_t i = 0; i < tmp.size(); i++)
 		global_cheating_edges.insert(tmp[i]);
 	TRACE("outgoing cheaters added");
 }
 
-template<class Graph>
-int RepeatResolver<Graph>::GetRCId(int id) {
-	return ((id - 1) / 2 ) * 2 + 2 - ((id - 1) % 2);
-}
+
 
 template<class Graph>
 ConjugateDeBruijnGraph::VertexId RepeatResolver<Graph>::conj_wrap(ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::VertexId v){
@@ -704,19 +698,13 @@ void RepeatResolver<Graph>::WrappedSetCoverage(EdgeId e, int cov){
 		new_graph.coverage_index().SetCoverage(e, cov);
 	} else {
 		new_graph.coverage_index().SetCoverage(e, cov);
-		EdgeId rc_e = new_IDs.ReturnEdgeId(GetRCId(new_IDs.ReturnIntId(e)));
+		EdgeId rc_e = conj_wrap(new_graph, e);
 		new_graph.coverage_index().SetCoverage(rc_e, cov);
 
 	}
 
 }
 
-template<class Graph>
-typename Graph::EdgeId RepeatResolver<Graph>::RCEdge(EdgeId e) {
-	int id = new_IDs.ReturnIntId(e);
-	int rc_id = GetRCId(id);
-	return new_IDs.ReturnEdgeId(rc_id);
-}
 
 template<class Graph>
 map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesAuto(){
