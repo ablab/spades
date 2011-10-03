@@ -27,7 +27,7 @@ void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
 	exec_simplification(stream, gp, paired_index);
 	INFO("STAGE == Estimating Distance");
 
-	if (cfg::get().paired_mode)
+	if (cfg::get().paired_mode) {
 		if (cfg::get().advanced_estimator_mode) {
 			AdvancedDistanceEstimator<Graph> estimator(gp.g, paired_index,
 					gp.int_ids, cfg::get().ds.IS, cfg::get().ds.RL,
@@ -73,6 +73,7 @@ void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
 			//		checker.Check(raw_clustered_index);
 			//		checker.WriteResults(cfg::get().output_dir + "/paired_stats");
 		}
+	}
 }
 
 void load_distance_estimation(conj_graph_pack& gp,
