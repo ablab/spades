@@ -1,6 +1,6 @@
 project(utils CXX)
 
-add_executable(paired_info_checker
+add_executable(utils
  paired_info_checker.cpp)
 
-target_link_libraries(paired_info_checker ${COMMON_LIBRARIES} input)
+target_link_libraries(utils ${COMMON_LIBRARIES} input)

@@ -27,7 +27,11 @@ namespace long_contigs {
 using namespace debruijn_graph;
 
 //Deque used for extending path in both directions
-typedef std::deque<EdgeId> BidirectionalPath;
+class BidirectionalPath : public std::deque<EdgeId> {
+public:
+	 std::deque<int> gaps;
+
+};
 
 //Path length
 template<class T>
@@ -60,6 +64,8 @@ struct PairedInfoIndexLibrary {
 
 	bool has_advanced;
 	PairedInfoIndexLibrary* advanced;
+
+	PairedInfoIndex<Graph>* raw;
 
 	PairedInfoIndexLibrary(const Graph& g, size_t readS, size_t insS, size_t delta, size_t v, PairedInfoIndex<Graph>* index):
 		g_(&g), readSize(readS), insertSize(insS), is_delta(delta), var(v), pairedInfoIndex(index) {

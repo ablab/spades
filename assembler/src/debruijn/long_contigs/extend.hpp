@@ -477,6 +477,13 @@ void RecountDetectorBackward(Graph& g, BidirectionalPath& path, PairedInfoIndice
 	}
 }
 
+EdgeId FindScafoldExtension(Graph& g, BidirectionalPath& path,
+		PathLengths& lengths, PairedInfoIndices& pairedInfo, double * maxWeight, bool forward) {
+
+
+
+}
+
 } //namespace long_contigs
 
 
