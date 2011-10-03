@@ -752,13 +752,13 @@ class PathReceiverCallback: public PathProcessor<Graph>::Callback {
 
 	const Graph& g_;
 
-    vector< vector<EdgeId> >  paths_;
+    set< vector<EdgeId> >  paths_;
 public:
 
 	PathReceiverCallback(const Graph& g) :g_(g){}
 
 	virtual void HandlePath(const vector<EdgeId>& path) {
-            paths_.push_back(path);
+            paths_.insert(path);
 	}
     size_t count()
     {
@@ -766,7 +766,7 @@ public:
     }
 
 	
-    vector< vector<EdgeId> > paths()
+    set< vector<EdgeId> > paths()
     {
         return paths_;
     }
