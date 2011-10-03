@@ -41,32 +41,34 @@ public:
     }
 private:
 
-    bool PathLess(set<Path> firstSet, set<Path> secondSet)
+    bool PathLess(const set<Path> firstSet,const set<Path> secondSet) const
     {
         //TODO use the lexicography default comparision.
         if(firstSet.size() < secondSet.size())
             return true;
-        vector<EdgeId> v1;
+        if(firstSet.size() > secondSet.size())
+            return false;
+
+        vector<Path> v1;
         for(auto iter = firstSet.begin() ; iter != firstSet.end() ; ++iter)
         {
             v1.push_back(*iter);
         }
-        vector<EdgeId> v2;
+        vector<Path> v2;
         for(auto iter = firstSet.begin() ; iter != firstSet.end() ; ++iter)
         {
             v2.push_back(*iter);
         }
-        if(v1.size() < v2.size())
-            return true;
-        if(v1.size() > v2.size())
-            return false;
+
         for(size_t i = 0 ; i < v1.size()  ; ++i)
         {
-            if(v1[i] < v2[i])
+            if(v1[i] < v2[i]) //lexicalgraphic comparison
                 return true;
         }
         return false;
     }
+
+
     bool operator==(const PathSet& rhs) const {
 		const PathSet &lhs = *this;
 		return !(lhs < rhs || rhs < lhs);
@@ -80,15 +82,17 @@ private:
 template<typename EdgeId>
 ostream& operator<<(ostream& os, const PathSet<EdgeId>& pathSet) {
     stringstream pathsString;
-    for(int i = 0 ; i < pathSet.paths.size() ; ++i)
+
+    for(auto iter = pathSet.paths.begin() ; iter != pathSet.paths.end() ; ++iter)
     {
         pathsString << endl;
-        for(int j = 0 ; j < pathSet.paths[i].size() ; j++)
+        for(size_t i = 0 ; i < (*iter).size() ; ++i)
         {
-            pathsString << pathSet.paths[i][j] << " " ;
+            pathsString << (*iter)[i] << " " ;
         }
         pathsString<<endl;
     }
+
     return os << "Start = " << pathSet.start << ", End = " << pathSet.end<< pathsString.str() ;
 }
 
