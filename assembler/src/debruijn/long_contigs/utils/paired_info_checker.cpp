@@ -31,7 +31,7 @@ public:
 
 			for (auto i1 = pi.begin(); i1 != pi.end(); ++i1) {
 				for (auto i2 = sym_pi.begin(); i2 != sym_pi.end(); ++i2) {
-					if (math::eq(i1->d, - i2->d) && math::neq(i1->weight, i2->weight)) {
+					if (math::eq(i1->d, - i2->d) && !math::eq(i1->weight, i2->weight)) {
 						INFO("No symmetric found ");
 						result = false;
 					}
@@ -57,7 +57,7 @@ public:
 			for (auto i1 = pi.begin(); i1 != pi.end(); ++i1) {
 				for (auto i2 = conj_pi.begin(); i2 != conj_pi.end(); ++i2) {
 					double new_d = i1->d - g_.length(e1) + g_.length(e2);
-					if (math::eq(i1->d, - new_d) && math::neq(i1->weight, i2->weight)) {
+					if (math::eq(i1->d, - new_d) && !math::eq(i1->weight, i2->weight)) {
 						INFO("No conjugate found ");
 						result = false;
 					}
@@ -82,7 +82,7 @@ public:
 
 			for (auto i1 = pi.begin(); i1 != pi.end(); ++i1) {
 				for (auto i2 = pi2.begin(); i2 != pi2.end(); ++i2) {
-					if (math::eq(i1->d, i2->d) && math::neq(i1->weight, i2->weight)) {
+					if (math::eq(i1->d, i2->d) && !math::eq(i1->weight, i2->weight)) {
 						INFO("Unequal weights");
 						result = false;
 					}

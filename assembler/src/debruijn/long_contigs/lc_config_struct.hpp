@@ -32,6 +32,7 @@ struct lc_config
 		std::string second;
 		bool has_advanced;
 		std::string advanced;
+		std::string raw;
 	};
 
 	struct real_lib
@@ -202,6 +203,7 @@ void load(boost::property_tree::ptree const& pt, lc_config::rl_dataset& ds)
 	load(pt, "second", ds.second);
 	load(pt, "has_advanced", ds.has_advanced);
 	load(pt, "advanced", ds.advanced);
+	load(pt, "raw", ds.raw);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::real_lib& rl)

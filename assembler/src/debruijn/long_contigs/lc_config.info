@@ -13,7 +13,8 @@ QUAKE_CROPPED_400K
 QUAKE_FULL
 {
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
-    graph_file       ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph
+    graph_file       ./data/debruijn/QUAKE_FULL/K55/SC/new2/distance_estimation
+    ;graph_file       ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph
    	;graph_file       ./data/debruijn/QUAKE_FULL/K55/SC/new/simplified_graph
     
 }
@@ -75,7 +76,7 @@ es
     
     max_depth             0
     
-    fix_weight            true
+    fix_weight            false
     use_advanced          true
     advanced_coeff        1.5
 }    
@@ -130,9 +131,9 @@ utils
 {
 	; 1 check symmetry and conjugate symmetry
 	; 2 check equality
-    mode        1  
-    file1       ./data/debrujn
-    file2       ./data/debrujn
+    mode        2 
+    file1       ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100
+    file2       ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph
 }    
 
 
@@ -163,11 +164,14 @@ real_libs
         QUAKE_FULL
         {
             precounted       true
-            precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
+            precounted_path ./data/debruijn/QUAKE_FULL/K55/SC/new2/distance_estimation_cl
+            ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
             first            
-            second           
+            second
             
-            has_advanced     true
+            raw             ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100
+            
+            has_advanced     false
             advanced         ./data/debruijn/QUAKE_FULL/K55/SC/09.29_07_30/paired_info_IS270_RS100_acl
         }
     }
