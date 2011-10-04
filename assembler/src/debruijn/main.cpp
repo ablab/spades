@@ -157,11 +157,11 @@ int main() {
     }
     catch(std::exception const& e)
     {
-    	std::cout << "Exception caught" << e.what() << std::endl;
+    	std::cout << "Exception caught " << e.what() << std::endl;
     }
     catch(...)
     {
-    	std::cout << "Unknown exception caught" << std::endl;
+    	std::cout << "Unknown exception caught " << std::endl;
     }
 
 	// OK
