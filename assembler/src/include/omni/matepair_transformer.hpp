@@ -28,6 +28,7 @@ void Transform(PathSetIndexData<EdgeId> & pathset_index)
         for(auto iter = infos.begin() ; iter != infos.end() ; ++iter)
         {
             if (gr(iter->d, 0.)) {
+                INFO( *iter);
                 if (iter->variance == 0) {
 
                     PathReceiverCallback<Graph> call_back(g_); 
@@ -41,7 +42,7 @@ void Transform(PathSetIndexData<EdgeId> & pathset_index)
                             g_.EdgeStart(second_edge),
                             call_back);
                     path_processor.Process();
-                    PathSet<EdgeId> pathset(first_edge, second_edge, MinPathLength(call_back.paths()) , call_back.paths());
+                    PathSet<EdgeId> pathset(first_edge, second_edge, iter->d + g_.length(second_edge) , call_back.paths());
                     PathSetFilter(pathset);
                     pathset_index.AddPathSet(pathset);
                 }
@@ -54,27 +55,10 @@ void Transform(PathSetIndexData<EdgeId> & pathset_index)
 	}
 
 }
-private:
-size_t MinPathLength(set<Path> paths)
-{
-    if(paths.size() == 0)
-        return 0;
-    vector<size_t> v;
-    for(auto it = paths.begin() ; it != paths. end() ; ++it)
-    {
-        size_t length = 0;
-        for(auto iter = it->begin() ; iter != it->end() ; ++iter)
-        {
-            length += g_.length(*iter);
-        }
-        v.push_back(length);
-    }
-    sort(v.begin() , v.end());
-    return v[0];
-}
 
 
 ///TODO  Remove invalid paths in this path_set
+//
 void PathSetFilter(PathSet<EdgeId> & path_set)
 {
 }
