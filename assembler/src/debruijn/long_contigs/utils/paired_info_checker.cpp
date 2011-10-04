@@ -91,11 +91,47 @@ public:
 
 		}
 		return result;
-
-		return false;
 	}
+
+	void AggregatePairedInfo(PairedInfoIndex<Graph>& clustered, PairedInfoIndex<Graph>& advanced,
+			size_t insert_size, size_t read_length,
+			PairedInfoIndex<Graph>* result) {
+
+		PairedInfoWeightNormalizer<Graph> normalizer(g_, insert_size, read_length, K);
+
+		for (auto iter = clustered.begin(); iter != clustered.end(); ++iter) {
+			auto pi = *iter;
+			if (pi.size() == 0) {
+				continue;
+			}
+
+			EdgeId e1 = pi.back().first;
+			EdgeId e2 = pi.back().second;
+
+			auto pi2 = advanced.GetEdgePairInfo(e1, e2);
+
+			for (auto i1 = pi.begin(); i1 != pi.end(); ++i1) {
+
+				auto norm_pi = normalizer.NormalizeWeight(*i1);
+
+				for (auto i2 = pi2.begin(); i2 != pi2.end(); ++i2) {
+					if (math::eq(i1->d, i2->d)) {
+						norm_pi.weight *= lc_cfg::get().es.advanced_coeff;
+					}
+				}
+
+				result->AddPairInfo(norm_pi, false);
+			}
+
+		}
+
+	}
+
 };
 
+
+
+DECL_PROJECT_LOGGER("d")
 
 int main() {
 	Graph g(K);
@@ -126,6 +162,27 @@ int main() {
 		INFO("1 is subset of 2 " << checker.AreEqual(pairedIndex, pairedIndex2));
 		INFO("2 is subset of 1 " << checker.AreEqual(pairedIndex2, pairedIndex));
 		break;
+	}
+	case 3: {
+		INFO("Aggregating paired info");
+
+		PairedInfoIndex<Graph> cl(g, 0);
+		PairedInfoIndex<Graph> ad(g, 0);
+		PairedInfoIndex<Graph> res(g, 0);
+
+		dataScanner.loadPaired(lc_cfg::get().u.file2, cl);
+		dataScanner.loadPaired(lc_cfg::get().u.file2, ad);
+
+		checker.AggregatePairedInfo(cl, ad,
+				lc_cfg::get().u.insert_size, lc_cfg::get().u.read_size,
+				&res);
+
+		DataPrinter<Graph> dataPrinter(g, intIds);
+		std::string fileName = cfg::get().output_dir + lc_cfg::get().paired_info_file_prefix + "IS" + ToString(lc_cfg::get().u.insert_size) + "_RS" + ToString(lc_cfg::get().u.read_size);
+		dataPrinter.savePaired(fileName + "_agregate_" + ToString(lc_cfg::get().es.advanced_coeff), res);
+
+		INFO("Done");
+
 	}
 	default: {
 		INFO("Unknown mode");

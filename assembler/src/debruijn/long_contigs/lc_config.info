@@ -13,8 +13,7 @@ QUAKE_CROPPED_400K
 QUAKE_FULL
 {
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
-    graph_file       ./data/debruijn/QUAKE_FULL/K55/SC/new2/distance_estimation
-    ;graph_file       ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph
+    graph_file       ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph
    	;graph_file       ./data/debruijn/QUAKE_FULL/K55/SC/new/simplified_graph
     
 }
@@ -131,9 +130,15 @@ utils
 {
 	; 1 check symmetry and conjugate symmetry
 	; 2 check equality
-    mode        2 
+	; 3 aggreagte paired info
+    mode        3 
     file1       ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100
     file2       ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph
+    
+    clustered   ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
+    read_size    100
+    insert_size  270
+    advanced    ./data/debruijn/QUAKE_FULL/K55/SC/09.29_07_30/paired_info_IS270_RS100_acl
 }    
 
 
@@ -164,8 +169,7 @@ real_libs
         QUAKE_FULL
         {
             precounted       true
-            precounted_path ./data/debruijn/QUAKE_FULL/K55/SC/new2/distance_estimation_cl
-            ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
+            precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
             first            
             second
             

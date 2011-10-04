@@ -136,6 +136,12 @@ struct lc_config
 		int mode;
 		std::string file1;
 		std::string file2;
+
+		std::string clustered;
+		std::string advanced;
+		size_t insert_size;
+		size_t read_size;
+
 	};
 
 	bool from_file;
@@ -179,6 +185,11 @@ void load(boost::property_tree::ptree const& pt, lc_config::utils& u)
 	load(pt, "mode", u.mode);
 	load(pt, "file1", u.file1);
 	load(pt, "file2", u.file2);
+
+	load(pt, "advanced", u.advanced);
+	load(pt, "clustered", u.clustered);
+	load(pt, "insert_size", u.insert_size);
+	load(pt, "read_size", u.read_size);
 }
 
 
