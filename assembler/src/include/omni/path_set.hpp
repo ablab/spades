@@ -23,6 +23,8 @@ public:
     PathSet(EdgeId start, EdgeId end, double length, set<Path> paths):
         start(start), end(end), length(length), paths(paths)
     {}
+
+
     bool operator<(const PathSet& rhs) const {
         const PathSet &lhs = *this;
         if(lhs.start == rhs.start)
@@ -39,6 +41,24 @@ public:
         }
         else return lhs.start < rhs.start;
     }
+
+    bool IsAbsolutePrefixOf(const PathSet<EdgeId> rhs)
+    {
+        const PathSet<EdgeId> &lhs = *this;
+    
+        return true;
+    }
+    bool IsAbsoluteSuffixOf(const PathSet<EdgeId> rhs)
+    {
+        return true;
+    }
+    bool CanBeExtended(const PathSet<EdgeId> rhs)
+    {
+        return true;
+    }
+    
+
+
 private:
 
     bool PathLess(const set<Path> firstSet,const set<Path> secondSet) const
@@ -67,7 +87,7 @@ private:
         }
         return false;
     }
-
+public:
 
     bool operator==(const PathSet& rhs) const {
 		const PathSet &lhs = *this;
@@ -82,18 +102,20 @@ private:
 template<typename EdgeId>
 ostream& operator<<(ostream& os, const PathSet<EdgeId>& pathSet) {
     stringstream pathsString;
+    size_t linecounter = 1;
 
     for(auto iter = pathSet.paths.begin() ; iter != pathSet.paths.end() ; ++iter)
     {
-        pathsString << endl;
+        pathsString << "Path " << linecounter <<": "<< pathSet.start <<"--" ;
         for(size_t i = 0 ; i < (*iter).size() ; ++i)
         {
-            pathsString << (*iter)[i] << " " ;
+            pathsString << (*iter)[i] << " -- " ;
         }
+        pathsString<<  pathSet.end;
         pathsString<<endl;
     }
 
-    return os << "Start = " << pathSet.start << ", End = " << pathSet.end<< pathsString.str() ;
+    return os << "Start = " << pathSet.start <<" ....... "<<"End = " << pathSet.end<< endl<< pathsString.str() ;
 }
 
 template<typename EdgeId>
@@ -188,5 +210,7 @@ public:
 private:
 	Data data_;
 };
+
+
 
 }
