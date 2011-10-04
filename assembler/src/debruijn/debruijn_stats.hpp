@@ -258,7 +258,7 @@ template<class Graph>
 int PrintGraphComponents(const string& file_name, Graph& g,
 		size_t split_edge_length, IdTrackHandler<Graph> &old_IDs,
 		PairedInfoIndex<Graph> &paired_index,
-		EdgesPositionHandler<Graph> &edges_positions) {
+		EdgesPositionHandler<Graph> &edges_positions, bool symmetric_mode = false) {
 	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
 	ComponentSizeFilter<Graph> checker(g, split_edge_length);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
@@ -270,7 +270,7 @@ int PrintGraphComponents(const string& file_name, Graph& g,
 
 
 //		EdgeVertexFilter<Graph> filter(g, component);
-		EdgeVertexFilter<Graph> filter(g, component, true);
+		EdgeVertexFilter<Graph> filter(g, component, symmetric_mode);
 		printGraph(g, old_IDs, component_name, paired_index, edges_positions,
 				&filter);
 		cnt++;
