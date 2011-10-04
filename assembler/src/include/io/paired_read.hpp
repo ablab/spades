@@ -119,7 +119,7 @@ class PairedRead {
     } else if (i == 1) {
       return second_;
     }
-    assert(false);
+    VERIFY(false);
   }
 
   /*

@@ -96,7 +96,7 @@ public:
 	void AddActionHandler(Handler* action_handler) const {
 		TRACE("Action handler " << action_handler->name() << " added");
 		if (find(action_handler_list_.begin(),action_handler_list_.end(), action_handler) != action_handler_list_.end()){
-			FATAL("Action handler " << action_handler->name() << " has already been added");
+			VERIFY_MSG(false, "Action handler " << action_handler->name() << " has already been added");
 		} else {
 			action_handler_list_.push_back(action_handler);
 		}

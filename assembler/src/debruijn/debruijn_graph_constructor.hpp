@@ -121,7 +121,7 @@ public:
 					end = FindVertexMaybeMissing(graph, index, end_kmer);
 				}
 				graph.AddEdge(start, end, edge_sequence);
-				assert(index.containsInIndex(edge));
+				VERIFY(index.containsInIndex(edge));
 			}
 		}
 	}

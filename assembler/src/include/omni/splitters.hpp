@@ -152,7 +152,7 @@ public:
 	virtual vector<VertexId> NextComponent() {
 		TRACE("Construction of next component started");
 		if (Finished()) {
-			assert(false);
+			VERIFY(false);
 			return vector<VertexId>();
 		}
 		EdgeId next = *iterator_;
@@ -230,7 +230,7 @@ public:
 
 	virtual vector<VertexId> NextComponent() {
 		if (Finished()) {
-			assert(false);
+			VERIFY(false);
 			return vector<VertexId>();
 		}
 		VertexId next = queue_.top();
@@ -360,7 +360,7 @@ public:
 
 	virtual vector<VertexId> NextComponent() {
 		if (Finished()) {
-			assert(false);
+			VERIFY(false);
 			return vector<VertexId>();
 		}
 		TRACE("Search started");
@@ -400,7 +400,7 @@ public:
 
 	virtual vector<VertexId> NextComponent() {
 		if (Finished()) {
-			assert(false);
+			VERIFY(false);
 			return vector<VertexId> ();
 		}
 		VertexId next = queue_.top();
@@ -490,7 +490,7 @@ public:
 
 	virtual vector<VertexId> NextComponent() {
 		if (Finished()) {
-			assert(false);
+			VERIFY(false);
 			return vector<VertexId>();
 		}
 		ready = false;

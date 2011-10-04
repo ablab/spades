@@ -9,7 +9,7 @@
 #define PEAKFINDER_HPP_
 
 #include <fftw3.h>
-#include <assert.h>
+#include "verify.hpp"
 #include "data_divider.hpp"
 #include "paired_info.hpp"
 #include "omni_utils.hpp"
@@ -56,7 +56,7 @@ private:
 			if (ind == data_size - 1)
 				f[i][0] = max;
 			else {
-                assert(x_[ind + 1] - x_[ind] > 0);
+                VERIFY(x_[ind + 1] - x_[ind] > 0);
 				f[i][0] = ((i + min - x_[ind]) * y_[ind + 1] + y_[ind] * (x_[ind + 1] - i - min)) / (1.0f * (x_[ind + 1] - x_[ind]));
 			}
             weight += f[i][0]; //   filling the array on the fly
@@ -133,17 +133,17 @@ private:
 	}
 
 	double LeftDerivative(int dist) {
-		assert(dist>min);
+		VERIFY(dist>min);
 		return outf[dist - min][0] - outf[dist - min - 1][0];
 	}
 
 	double RightDerivative(int dist) {
-		assert(dist<max);
+		VERIFY(dist<max);
 		return outf[dist - min + 1][0] - outf[dist - min][0];
 	}
 
 	double MiddleDerivative(int dist) {
-		assert(dist>min && dist<max);
+		VERIFY(dist>min && dist<max);
 		return 0.5f * (outf[dist - min + 1][0] - outf[dist - min - 1][0]);
 	}
 
@@ -210,7 +210,7 @@ public:
 		std::cout << std::endl;
 	}
 	void FFTSmoothing(double cutoff) {
-		assert(data_length>0);
+		VERIFY(data_length>0);
         if (data_length == 1){
 			in[0][0] = x_[0];
 			outf[0][0] = y_[0];

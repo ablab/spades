@@ -23,7 +23,7 @@
 
 #include <zlib.h>
 #include <string>
-#include <cassert>
+#include "verify.hpp"
 #include "statgen/SamFile.h"
 #include "statgen/SamValidation.h"
 #include "io/single_read.hpp"
@@ -116,8 +116,8 @@ class SamBamParser : public Parser {
    * Read next SingleRead from file.
    */
   void ReadAhead() {
-    assert(is_open_);
-    assert(!eof_);
+    VERIFY(is_open_);
+    VERIFY(!eof_);
     if (fp_.ReadRecord(header_, seq_) == 0) {
       eof_ = true;
     }

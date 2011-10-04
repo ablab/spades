@@ -168,7 +168,7 @@ class cuckoo {
     }
 
     const_iterator& operator++() {
-      assert(hash != NULL);
+      VERIFY(hash != NULL);
       if (pos != hash->len_) ++pos;
       while ((pos < hash->len_) && (!(hash->get_exists(pos)))) {
         ++pos;
@@ -234,7 +234,7 @@ class cuckoo {
     }
 
     iterator& operator++() {
-      assert(hash != NULL);
+      VERIFY(hash != NULL);
       if (pos != hash->len_) ++pos;
       while ((pos < hash->len_) && !(hash->get_exists(pos))) {
         ++pos;

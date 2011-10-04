@@ -150,7 +150,9 @@ public:
 			if (contains(s)) {
 				return s;
 			}
-		}FATAL("Couldn't find requested edge!");
+		}
+		VERIFY_MSG(false, "Couldn't find requested edge!");
+		return Kmer();
 		// no next edges (we should request one here).
 	}
 
@@ -163,7 +165,7 @@ public:
 
 	const pair<Value, size_t>& get(const Kmer& kmer) const {
 		map_const_iterator mci = nodes_.find(kmer);
-		assert(mci != nodes_.end());
+		VERIFY(mci != nodes_.end());
 		// contains
 		return mci->second;
 	}
@@ -178,7 +180,7 @@ public:
 	}
 
 	void RenewKmersHash(const Sequence& nucls, Value id) {
-		assert(nucls.size() >= size_);
+		VERIFY(nucls.size() >= size_);
 		Kmer kmer(nucls);
 		putInIndex(kmer, id, 0);
 		for (size_t i = size_, n = nucls.size(); i < n; ++i) {
@@ -188,7 +190,7 @@ public:
 	}
 
 	void DeleteKmersHash(const Sequence& nucls, Value id) {
-		assert(nucls.size() >= size_);
+		VERIFY(nucls.size() >= size_);
 		Kmer kmer(nucls);
 		deleteIfEqual(kmer, id);
 		for (size_t i = size_, n = nucls.size(); i < n; ++i) {

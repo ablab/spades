@@ -45,7 +45,7 @@ public:
 //		for (size_t i = 0; i < filenames.size(); ++i) {
 //			Reader<ReadType>* reader = new Reader<ReadType>(filenames[i],
 //					distance_, offset_type_);
-//			assert(reader->is_open());
+//			VERIFY(reader->is_open());
 ////      if (reader->is_open()) {
 //			readers_.push_back(reader);
 ////      } else {
@@ -57,7 +57,7 @@ public:
 	MultifileReader(const vector<IReader<ReadType>*>& readers) : /*filenames_(filenames), */
 			distance_(0), offset_type_(PhredOffset), current_reader_index_(0) {
 		for (size_t i = 0; i < readers.size(); ++i) {
-			assert(readers[i]->is_open());
+			VERIFY(readers[i]->is_open());
 			readers_.push_back(readers[i]);
 		}
 	}

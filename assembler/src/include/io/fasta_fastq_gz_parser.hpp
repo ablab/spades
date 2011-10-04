@@ -21,8 +21,8 @@
 
 #include <zlib.h>
 #include <string>
-#include <cassert>
 #include "kseq/kseq.h"
+#include "verify.hpp"
 #include "io/single_read.hpp"
 #include "io/parser.hpp"
 #include "sequence/quality.hpp"
@@ -132,8 +132,8 @@ class FastaFastqGzParser : public Parser {
    * Read next SingleRead from file.
    */
   void ReadAhead() {
-    assert(is_open_);
-    assert(!eof_);
+    VERIFY(is_open_);
+    VERIFY(!eof_);
     if (fastafastqgz::kseq_read(seq_) < 0) {
       eof_ = true;
     }

@@ -276,7 +276,7 @@ public:
 		}DEBUG("May be size is " << ind.size());
 
 		INFO("paired info size: "<<paired_size);
-		assert(leap >= 0 && leap < 100);
+		VERIFY(leap >= 0 && leap < 100);
 	}
 	void ResolveRepeats(const string& output_folder);
 
@@ -678,7 +678,7 @@ ConjugateDeBruijnGraph::VertexId RepeatResolver<Graph>::conj_wrap(ConjugateDeBru
 
 template<class Graph>
 NonconjugateDeBruijnGraph::VertexId RepeatResolver<Graph>::conj_wrap(NonconjugateDeBruijnGraph& g, NonconjugateDeBruijnGraph::VertexId v){
-	assert(0);
+	VERIFY(0);
 	return v;
 }
 
@@ -689,7 +689,7 @@ ConjugateDeBruijnGraph::EdgeId RepeatResolver<Graph>::conj_wrap(ConjugateDeBruij
 
 template<class Graph>
 NonconjugateDeBruijnGraph::EdgeId RepeatResolver<Graph>::conj_wrap(NonconjugateDeBruijnGraph& g, NonconjugateDeBruijnGraph::EdgeId e){
-	assert(0);
+	VERIFY(0);
 	return e;
 }
 template<class Graph>

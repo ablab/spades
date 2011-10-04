@@ -51,7 +51,7 @@ public:
 	}
 
 	distance_t GetDistance(VertexId vertex) {
-		assert(DistanceCounted(vertex));
+		VERIFY(DistanceCounted(vertex));
 		return distances_[vertex];
 	}
 

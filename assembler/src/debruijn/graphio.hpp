@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <fstream>
 
+#include "standard.hpp"
 #include "logging.hpp"
 #include "omni/paired_info.hpp"
 #include "omni/omni_utils.hpp"
@@ -78,7 +79,7 @@ void DataPrinter<Graph>::saveGraph(const string& file_name) {
 
 	FILE* file = fopen((file_name + ".grp").c_str(), "w");
 	DEBUG("Graph saving to " << file_name << " started");
-	assert(file != NULL);
+	VERIFY(file != NULL);
 	if (filter_ == NULL) {
 		int vertex_count = graph_.size();
 		fprintf(file, "%d %d \n", vertex_count, edge_count_);
@@ -125,7 +126,7 @@ template<class Graph>
 void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
 	FILE* file = fopen((file_name + ".sqn").c_str(), "w");
 	DEBUG("Saving sequences " << file_name <<" created");
-	assert(file != NULL);
+	VERIFY(file != NULL);
 	fprintf(file, "%d\n", edge_count_);
 	if (filter_ == NULL) {
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -153,7 +154,7 @@ template<class Graph>
 void DataPrinter<Graph>::saveCoverage(const string& file_name) {
 	FILE* file = fopen((file_name + ".cvr").c_str(), "w");
 	DEBUG("Saving coverage, " << file_name <<" created");
-	assert(file != NULL);
+	VERIFY(file != NULL);
 	fprintf(file, "%d\n", edge_count_);
 	if (filter_ == NULL) {
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -173,7 +174,7 @@ void DataPrinter<Graph>::saveCoverage(const string& file_name) {
  void DataPrinter<Graph>::saveIndex(const string& file_name) {
  FILE* file = fopen((file_name + ".ind").c_str(), "w");
  DEBUG("Saving index, " << file_name <<" created");
- assert(file != NULL);
+ VERIFY(file != NULL);
  fprintf(file, "%d\n", edge_count_);
  if (filter_ == NULL) {
  for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -194,7 +195,7 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
 		PairedInfoIndex<Graph> const& PIIndex) {
 	FILE* file = fopen((file_name + ".prd").c_str(), "w");
 	DEBUG("Saving paired info, " << file_name <<" created");
-	assert(file != NULL);
+	VERIFY(file != NULL);
 	if (filter_ == NULL) {
 		fprintf(file, "%d\n", (int) PIIndex.size());
 	} else {
@@ -241,14 +242,14 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 	ofstream file((file_name + ".pos").c_str());
 
 	DEBUG("Saving edges positions, " << file_name << " created");
-	assert(file != NULL);
+	VERIFY(file != NULL);
 
 	file << edge_count_ << endl;
 
 	if (filter_ == NULL) {
 		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		    auto it = EPHandler.edges_positions().find(*iter);
-		    assert(it != EPHandler.edges_positions().end());
+		    VERIFY(it != EPHandler.edges_positions().end());
 
 		    size_t size = it->second.size();
 		    file << IdHandler_.ReturnIntId(*iter) << " " << size << endl;
@@ -260,7 +261,7 @@ void DataPrinter<Graph>::savePositions(const string& file_name,
 		for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
 
 		    auto it = EPHandler.edges_positions().find(*iter);
-		    assert(it != EPHandler.edges_positions().end());
+		    VERIFY(it != EPHandler.edges_positions().end());
 
 			file << IdHandler_.ReturnIntId(*iter) << " " << it->second.size() << endl;
 
@@ -278,7 +279,7 @@ void DataPrinter<Graph>::saveKmerMapper(const string& file_name,
 	std::ofstream file;
 	file.open((file_name + ".kmm").c_str(),  std::ios_base::binary | std::ios_base::out);
 	DEBUG("Saving kmer mapper, " << file_name <<" created");
-	assert(file.is_open());
+	VERIFY(file.is_open());
 
 	u_int32_t k_ = K;
 	file.write((char *) &k_, sizeof(u_int32_t));
@@ -330,49 +331,49 @@ void DataScanner<Graph>::loadNonConjugateGraph(const string& file_name,
 	int read_count;
 	FILE* file = fopen((file_name + ".grp").c_str(), "r");
 	if (file == NULL) WARN("File "<<(file_name + ".grp")<<" not found");
-	assert(file != NULL);
+	VERIFY(file != NULL);
 	FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
-	assert(sequence_file != NULL);
+	VERIFY(sequence_file != NULL);
 
 	INFO("Reading NON conjugate de bruujn graph from " << file_name << " started");
 	int vertex_count;
 	read_count = fscanf(file, "%d %d \n", &vertex_count, &edge_count_);
-	assert(read_count == 2);
+	VERIFY(read_count == 2);
 	for (int i = 0; i < vertex_count; i++) {
 		int vertex_real_id;
 		read_count = fscanf(file, "Vertex %d", &vertex_real_id);
-		assert(read_count == 1);
+		VERIFY(read_count == 1);
 		char c = 'a';
 		while (c != '.') {
 			read_count = fscanf(file, "%c", &c);
-			assert(read_count == 1);
+			VERIFY(read_count == 1);
 		}
 		read_count = fscanf(file, "\n");
-		assert(read_count == 0);
+		VERIFY(read_count == 0);
 		VertexId vid = graph_.AddVertex();
 		IdHandler_.AddVertexIntId(vid, vertex_real_id);
 		TRACE(vid);
 	}
 	int tmp_edge_count;
 	read_count = fscanf(sequence_file, "%d", &tmp_edge_count);
-	assert(read_count == 1);
-	assert(edge_count_ == tmp_edge_count);
+	VERIFY(read_count == 1);
+	VERIFY(edge_count_ == tmp_edge_count);
 	char longstring[1000500];
 	for (int i = 0; i < edge_count_; i++) {
 		int e_real_id, start_id, fin_id, length;
 		read_count = fscanf(file, "Edge %d : %d -> %d, l = %d", &e_real_id,
 				&start_id, &fin_id, &length);
-		assert(read_count == 4);
+		VERIFY(read_count == 4);
 		read_count = fscanf(sequence_file, "%d %s .", &e_real_id, longstring);
-		assert(read_count == 2);
+		VERIFY(read_count == 2);
 		//does'nt matter, whether it was conjugate or not.
 		char c = 'a';
 		while (c != '.') {
 			read_count = fscanf(file, "%c", &c);
-			assert(read_count == 1);
+			VERIFY(read_count == 1);
 		}
 		read_count = fscanf(file, "\n");
-		assert(read_count == 0);
+		VERIFY(read_count == 0);
 		Sequence tmp(longstring);
 		TRACE(start_id<<" "<< fin_id <<" "<< IdHandler_.ReturnVertexId(start_id)<<" "<< IdHandler_.ReturnVertexId(fin_id));
 		EdgeId eid = graph_.AddEdge(IdHandler_.ReturnVertexId(start_id),
@@ -389,21 +390,21 @@ void DataScanner<Graph>::loadConjugateGraph(const string& file_name,
 		bool with_Sequence) {
 	int read_count;
 	FILE* file = fopen((file_name + ".grp").c_str(), "r");
-	assert(file != NULL);
+	VERIFY(file != NULL);
 	FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
-	assert(sequence_file != NULL);
+	VERIFY(sequence_file != NULL);
 	set<int> vertex_set;
 	set<int> edge_set;
 	INFO("Reading conjugate de bruijn  graph from " << file_name << " started");
 	int vertex_count;
 	read_count = fscanf(file, "%d %d \n", &vertex_count, &edge_count_);
-	assert(read_count == 2);
+	VERIFY(read_count == 2);
 	for (int i = 0; i < vertex_count; i++) {
 		int vertex_real_id, conjugate_id;
 		read_count = fscanf(file, "Vertex %d ~ %d .\n", &vertex_real_id,
 				&conjugate_id);
 		TRACE("Vertex "<<vertex_real_id<<" ~ "<<conjugate_id<<" .");
-		assert(read_count == 2);
+		VERIFY(read_count == 2);
 
 		if (vertex_set.find(vertex_real_id) == vertex_set.end()) {
 			VertexId vid = graph_.AddVertex();
@@ -417,16 +418,16 @@ void DataScanner<Graph>::loadConjugateGraph(const string& file_name,
 	}
 	int tmp_edge_count;
 	read_count = fscanf(sequence_file, "%d", &tmp_edge_count);
-	assert(read_count == 1);
-	assert(edge_count_ == tmp_edge_count);
+	VERIFY(read_count == 1);
+	VERIFY(edge_count_ == tmp_edge_count);
 	char longstring[1000500];
 	for (int i = 0; i < edge_count_; i++) {
 		int e_real_id, start_id, fin_id, length, conjugate_edge_id;
 		read_count = fscanf(file, "Edge %d : %d -> %d, l = %d ~ %d .\n",
 				&e_real_id, &start_id, &fin_id, &length, &conjugate_edge_id);
-		assert(read_count == 5);
+		VERIFY(read_count == 5);
 		read_count = fscanf(sequence_file, "%d %s .", &e_real_id, longstring);
-		assert(read_count == 2);
+		VERIFY(read_count == 2);
 		TRACE("Edge "<<e_real_id<<" : "<<start_id<<" -> " << fin_id << " l = " << length << " ~ "<< conjugate_edge_id);
 		if (edge_set.find(e_real_id) == edge_set.end()) {
 			Sequence tmp(longstring);
@@ -448,17 +449,17 @@ template<class Graph>
 void DataScanner<Graph>::loadCoverage(const string& file_name) {
 	int read_count;
 	FILE* file = fopen((file_name + ".cvr").c_str(), "r");
-	assert(file != NULL);
+	VERIFY(file != NULL);
 	INFO("Reading coverage from " << file_name << " started");
 	int edge_count;
 	read_count = fscanf(file, "%d \n", &edge_count);
-	assert(read_count == 1);
-	assert(edge_count == edge_count_);
+	VERIFY(read_count == 1);
+	VERIFY(edge_count == edge_count_);
 	for (int i = 0; i < edge_count; i++) {
 		int edge_real_id;
 		double edge_coverage;
 		read_count = fscanf(file, "%d %lf .\n", &edge_real_id, &edge_coverage);
-		assert(read_count == 2);
+		VERIFY(read_count == 2);
 		TRACE(edge_real_id<< " "<<edge_coverage <<" . ");
 		EdgeId eid = IdHandler_.ReturnEdgeId(edge_real_id);
 		TRACE("EdgeId "<<eid);
@@ -473,17 +474,17 @@ void DataScanner<Graph>::loadPaired(const string& file_name,
 	int read_count;
 	FILE* file = fopen((file_name + ".prd").c_str(), "r");
 	DEBUG((file_name + ".prd"));
-	assert(file != NULL);
+	VERIFY(file != NULL);
 	INFO("Reading paired info from " << file_name << " started");
 	int paired_count;
 	read_count = fscanf(file, "%d \n", &paired_count);
-	assert(read_count == 1);
+	VERIFY(read_count == 1);
 	for (int i = 0; i < paired_count; i++) {
 		int first_real_id, second_real_id;
 		double w, d, v;
 		read_count = fscanf(file, "%d %d %lf %lf %lf .\n", &first_real_id,
 				&second_real_id, &d, &w, &v);
-		assert(read_count == 5);
+		VERIFY(read_count == 5);
 		TRACE(first_real_id<< " " << second_real_id << " " << d << " " << w << " " << v);
 		TRACE (IdHandler_.ReturnEdgeId(first_real_id)<<" "<< IdHandler_.ReturnEdgeId(second_real_id)<<" "<< d<<" "<< w);
 		PairInfo<typename Graph::EdgeId> *p_info = new PairInfo<
@@ -501,20 +502,20 @@ void DataScanner<Graph>::loadPositions(const string& file_name,
 		EdgesPositionHandler<Graph>& EPHandler) {
 	int read_count;
 	FILE* file = fopen((file_name + ".pos").c_str(), "r");
-	assert(file != NULL);
+	VERIFY(file != NULL);
 	DEBUG("Reading edges positions, " << file_name <<" started");
-	assert(file != NULL);
+	VERIFY(file != NULL);
 	int pos_count;
 	read_count = fscanf(file, "%d\n", &pos_count);
-	assert(read_count == 1);
+	VERIFY(read_count == 1);
 	for (int i = 0; i < pos_count; i++) {
 		int edge_real_id, pos_info_count, contigId;
 		read_count = fscanf(file, "%d %d\n", &edge_real_id, &pos_info_count);
-		assert(read_count == 2);
+		VERIFY(read_count == 2);
 		for (int j = 0; j < pos_info_count; j++) {
 			int start_pos, end_pos;
 			read_count = fscanf(file, "%d: %d - %d \n", &contigId, &start_pos, &end_pos);
-			assert(read_count == 3);
+			VERIFY(read_count == 3);
 			EdgeId eid = IdHandler_.ReturnEdgeId(edge_real_id);
 			EPHandler.AddEdgePosition(eid, start_pos, end_pos, contigId);
 		}
@@ -530,12 +531,12 @@ void DataScanner<Graph>::loadKmerMapper(const string& file_name,
 	std::ifstream file;
 	file.open((file_name + ".kmm").c_str(), std::ios_base::binary | std::ios_base::in);
 	DEBUG("Reading kmer mapper, " << file_name <<" started");
-	assert(file.is_open());
+	VERIFY(file.is_open());
 
 	u_int32_t k_;
 	file.read((char *) &k_, sizeof(u_int32_t));
 
-	FATAL_ASSERT(k_ == K, "Cannot read kmer mapper, different Ks");
+	VERIFY_MSG(k_ == K, "Cannot read kmer mapper, different Ks");
 	mapper.BinRead(file);
 
 	file.close();

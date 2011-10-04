@@ -585,7 +585,7 @@ virtual ~UniqueDistanceStat() {
 
 virtual void Count() {
 	for (auto it = paired_info_.begin(); it != paired_info_.end(); ++it) {
-		assert((*it).size() > 0);
+		VERIFY((*it).size() > 0);
 		if ((*it).size() > 1) {
 			non_unique_++;
 			//				for (auto info_it = (*it).begin(); info_it != (*it).end(); ++info_it) {

@@ -20,7 +20,7 @@
 #define COMMON_IO_SINGLEREAD_HPP_
 
 #include <string>
-#include <cassert>
+#include "verify.hpp"
 #include "sequence/quality.hpp"
 #include "sequence/sequence.hpp"
 #include "sequence/nucl.hpp"
@@ -89,7 +89,7 @@ class SingleRead {
    * @return SingleRead sequence.
    */
   Sequence sequence() const {
-    assert(valid_);
+    VERIFY(valid_);
     return Sequence(seq_);
   }
 
@@ -99,7 +99,7 @@ class SingleRead {
    * @return SingleRead quality.
    */
   Quality quality() const {
-    assert(valid_);
+    VERIFY(valid_);
     return Quality(qual_);
   }
 
@@ -163,7 +163,7 @@ class SingleRead {
    * @return Nucleotide on ith position of SingleRead sequence.
    */
   char operator[](size_t i) const {
-    assert(is_nucl(seq_[i]));
+    VERIFY(is_nucl(seq_[i]));
     return dignucl(seq_[i]);
   }
 
@@ -296,7 +296,7 @@ class SingleRead {
       valid_ = false;
     }
     if (seq_.size() != qual_.size()) {
-      // assert(false); TODO Happens sometimes! o_O
+      // VERIFY(false); TODO Happens sometimes! o_O
       valid_ = false;
     }
     for (size_t i = 0; i < seq_.size(); ++i) {

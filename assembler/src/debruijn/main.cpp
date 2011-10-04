@@ -108,7 +108,7 @@ int main() {
 		// check config_struct.hpp parameters
 		INFO("K = " << debruijn_graph::K);
 		if (K % 2 == 0)
-			FATAL("K in config.hpp must be odd!\n");
+			VERIFY_MSG(false, "K in config.hpp must be odd!\n");
 
 		// read configuration file (dataset path etc.)
 		string input_dir = cfg::get().input_dir;

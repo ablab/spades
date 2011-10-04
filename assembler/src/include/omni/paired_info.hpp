@@ -166,7 +166,7 @@ public:
 	void UpdateSingleInfo(const PairInfo<EdgeId>& info, double d,
 			double weight) {
 		size_t count = data_.erase(info);
-		assert(count != 0);
+		VERIFY(count != 0);
 		data_.insert(
 				PairInfo<EdgeId>(info.first, info.second, d, weight,
 						info.variance));
@@ -174,7 +174,7 @@ public:
 
 	void ReplaceFirstEdge(const PairInfo<EdgeId>& info, EdgeId newId) {
 		//		size_t count = data_.erase(info);
-		//	assert(count != 0);
+		//	VERIFY(count != 0);
 		data_.insert(
 				PairInfo<EdgeId>(newId, info.second, info.d, info.weight,
 						info.variance));
@@ -383,7 +383,7 @@ private:
 
 	void MergeData(const PairInfo<EdgeId>& info1,
 			const PairInfo<EdgeId>& info2) {
-		assert(info1.first == info2.first && info1.second == info2.second);
+		VERIFY(info1.first == info2.first && info1.second == info2.second);
 		double newWeight = info1.weight + info2.weight;
 		double newD = (info1.d * info1.weight + info2.d * info2.weight)
 				/ newWeight;
@@ -453,10 +453,10 @@ private:
 	//				}
 	//				os << vec[next].d << " " << vec[next].weight << endl;
 	//				if (next == -1) {
-	//					assert(false);
+	//					VERIFY(false);
 	//				}
 	//				if (vec[next].d > 100000) {
-	//					assert(false);
+	//					VERIFY(false);
 	//				}
 	//				min = vec[next].d;
 	//			}
@@ -570,7 +570,7 @@ public:
 	//					cout << graph_.length(inf.first) << " " << graph_.length(inf.second) << endl;
 	//					cout << graph_.EdgeStart(inf.first) << " " << graph_.EdgeEnd(inf.first);
 	//					cout << graph_.EdgeStart(inf.second) << " " << graph_.EdgeEnd(inf.second);
-	//					assert(false);
+	//					VERIFY(false);
 	//					return false;
 	//				}
 	//			}
@@ -615,7 +615,7 @@ public:
 	}
 
 	void cluster(PairedInfoIndex<Graph> &clustered) {
-		assert(&not_clustered_ != &clustered);
+		VERIFY(&not_clustered_ != &clustered);
 		for (typename PairedInfoIndex<Graph>::EdgePairIterator it =
 				not_clustered_.begin(); it != not_clustered_.end(); ++it) {
 			PairInfos newInfos = ProcessEdgePair(*it);

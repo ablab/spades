@@ -1,7 +1,7 @@
 #ifndef QUEUE_ITERATOR_HPP_
 #define QUEUE_ITERATOR_HPP_
 
-#include <assert.h>
+#include "verify.hpp"
 #include <set>
 
 template<typename Key, typename Comparator = std::less<Key> >
@@ -11,7 +11,7 @@ private:
 public:
 	/*
 	 * Be careful! This constructor requires Comparator to have default constructor even if you call it with
-	 * specified comparator. In this case just create default constructor with assert(false) inside it.
+	 * specified comparator. In this case just create default constructor with VERIFY(false) inside it.
 	 */
 	erasable_priority_queue(const Comparator& comparator = Comparator()) :
 		storage_(comparator) {
@@ -24,12 +24,12 @@ public:
 	}
 
 	void pop() {
-		assert(!storage_.empty());
+		VERIFY(!storage_.empty());
 		storage_.erase(storage_.begin());
 	}
 
 	const Key& top() const {
-		assert(!storage_.empty());
+		VERIFY(!storage_.empty());
 		return *(storage_.begin());
 	}
 
@@ -91,7 +91,7 @@ public:
 	}
 
 	ElementId operator*() {
-		assert(!queue_.empty());
+		VERIFY(!queue_.empty());
 		if(!current_actual_) {
 			current_ = queue_.top();
 			current_actual_ = true;

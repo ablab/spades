@@ -8,7 +8,7 @@
 #include <fftw3.h>
 #include <iostream>
 #include <math.h>
-#include <assert.h>
+#include "verify.hpp"
 #include <vector>
 #include <utility>
 #include <cstdlib>
@@ -40,12 +40,12 @@ int data_size, data_length, min, max;
 size_t Threshold;
 
 bool isCluster(int index, std::vector<int> & x, std::vector<int> & y) {
-	assert(index < data_size - 1);
+	VERIFY(index < data_size - 1);
 	return (size_t(abs(x[index + 1] - x[index])) > Threshold);
 }
 
 bool isCluster(int index, std::vector<PairInfo<EdgeId> > data) {
-	assert(index < data_size - 1);
+	VERIFY(index < data_size - 1);
 	return (abs(data[index + 1].d - data[index].d) > Threshold);
 }
 

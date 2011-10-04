@@ -27,7 +27,7 @@
 #include "sequence/sequence_data.hpp"
 #include <vector>
 #include <string>
-#include <string.h>
+#include <cstring>
 using namespace std;
 
 class Sequence {
@@ -130,7 +130,7 @@ inline ostream& operator<<(ostream& os, const Sequence& s);
  */
 template<size_t size2_>
 Seq<size2_> Sequence::start() const {
-    assert(size2_ <= size_);
+    VERIFY(size2_ <= size_);
     return Seq<size2_> (*this);
 }
 
@@ -139,7 +139,7 @@ Seq<size2_> Sequence::start() const {
  */
 template<size_t size2_>
 Seq<size2_> Sequence::end() const {
-    assert(size2_ <= size_);
+    VERIFY(size2_ <= size_);
     return Seq<size2_> (*this, size_ - size2_);
 }
 
@@ -176,7 +176,7 @@ public:
     }
 
     char operator[](const size_t index) const {
-        assert(index < buf_.size());
+        VERIFY(index < buf_.size());
         return buf_[index];
 	}
 
@@ -207,8 +207,8 @@ Sequence::~Sequence() {
 }
 
 char Sequence::operator[](const size_t index) const {
-	assert(index >= 0);
-	assert(index < size_);
+	VERIFY(index >= 0);
+	VERIFY(index < size_);
 	if (rtl_) {
 		int i = from_ + size_ - 1 - index;
 		return complement(data_->operator[](i));
@@ -268,10 +268,10 @@ Sequence Sequence::operator!() const {
 //safe if not #DEFINE NDEBUG
 Sequence Sequence::Subseq(size_t from, size_t to) const {
 //	cerr << endl<<"subseq:" <<   from <<" " << to << " " <<  this->str() << endl;
-	assert(to >= from);
-	assert(from >= 0);
-	assert(to <= size_);
-	//assert(to - from <= size_);
+	VERIFY(to >= from);
+	VERIFY(from >= 0);
+	VERIFY(to <= size_);
+	//VERIFY(to - from <= size_);
 	if (rtl_) {
 		return Sequence(*this, from_ + size_ - to, to - from, true);
 	} else {

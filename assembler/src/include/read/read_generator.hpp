@@ -63,7 +63,7 @@ private:
 	void inner_set_error_probability(int probability) {
 		if (reading_started_) {
 			cerr << "can not change generator parameters while reading" << endl;
-			assert(1);
+			VERIFY(1);
 		}
 		error_probability_ = probability;
 		error_distribution_[0] = ErrorFreeProbability(probability, size_);
@@ -154,7 +154,7 @@ public:
 	void set_max_insert_length_error(int insert_error) {
 		if (reading_started_) {
 			cerr << "can not change generator parameters while reading" << endl;
-			assert(1);
+			VERIFY(1);
 		}
 		insert_error_ = insert_error / 2;
 		max_position_ = genome_.size() - size_ * cnt_ - insertLength_ * (cnt_ - 1)
@@ -176,7 +176,7 @@ public:
 	}
 
 	ReadGenerator& operator>>(io::PairedRead &p_r) {
-		assert(cnt_ ==2);
+		VERIFY(cnt_ ==2);
 		if (eof()) {
 			return *this;
 		}
@@ -191,7 +191,7 @@ public:
 
 	//todo think about interface
 	ReadGenerator& operator>>(io::SingleRead &r) {
-		assert(cnt_ == 1);
+		VERIFY(cnt_ == 1);
 
 		if (eof()) {
 			return *this;

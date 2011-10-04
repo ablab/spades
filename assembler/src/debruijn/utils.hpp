@@ -211,7 +211,7 @@ public:
 	}
 
 	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		assert(this->g().EdgeNucls(new_edge) == this->g().EdgeNucls(edge2));
+		VERIFY(this->g().EdgeNucls(new_edge) == this->g().EdgeNucls(edge2));
 		RemapKmers(this->g().EdgeNucls(edge1), this->g().EdgeNucls(edge2));
 	}
 
@@ -416,7 +416,7 @@ public:
 		if (sequence.size() < k) {
 			return MappingPath<EdgeId> ();
 		}
-		assert(sequence.size() >= k);
+		VERIFY(sequence.size() >= k);
 		Kmer kmer = sequence.start<k> () >> 0;
 		for (size_t i = k - 1; i < sequence.size(); ++i) {
 			kmer = kmer << sequence[i];
@@ -521,7 +521,7 @@ public:
 		vector<EdgeId> passed_edges;
 		RangeMappings range_mapping;
 
-		assert(sequence.size() >= k);
+		VERIFY(sequence.size() >= k);
 		Kmer kmer = sequence.start<k> () >> 0;
 		bool try_thread = false;
 		for (size_t i = k - 1; i < sequence.size(); ++i) {
@@ -613,7 +613,7 @@ public:
 		g_(g), index_(index), insert_size_(insert_size),
 				read_length_(read_length),
 				gap_(insert_size_ - 2 * read_length_), delta_(delta) {
-		assert(insert_size_ >= 2 * read_length_);
+		VERIFY(insert_size_ >= 2 * read_length_);
 	}
 
 	void FillEtalonPairedInfo(const Sequence& genome,
@@ -683,7 +683,7 @@ public:
 		g_(g), index_(index), insert_size_(insert_size),
 				read_length_(read_length),
 				gap_(insert_size_ - 2 * read_length_), delta_(delta) {
-		assert(insert_size_ >= 2 * read_length_);
+		VERIFY(insert_size_ >= 2 * read_length_);
 	}
 
 	void FillEtalonPairedInfo(const Sequence& genome,

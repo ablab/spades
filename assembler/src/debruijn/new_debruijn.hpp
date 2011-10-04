@@ -183,7 +183,8 @@ public:
 		} else if (OutgoingEdges(conjugate(v)).size() > 0) {
 			return !VertexNucls(conjugate(v));
 		}
-		assert(false);
+		VERIFY(false);
+		return Sequence();
 	}
 	//TODO:
 	/* It seems, that these two functions must be called  default_label, and str must sign lower two. */
@@ -262,7 +263,8 @@ public:
 			size_t length = EdgeNucls(inc).size();
 			return EdgeNucls(inc).Subseq(length - k_, length);
 		}
-		assert(false);
+		VERIFY(false);
+		return Sequence();
 	}
 
 //	/**

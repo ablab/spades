@@ -109,7 +109,7 @@ private:
 
 	~PairedVertex() {
 		TRACE("PairedVertex destructor");
-		assert(outgoing_edges_.size() == 0);
+		VERIFY(outgoing_edges_.size() == 0);
 		TRACE("PairedVertex destructor ok");
 	}
 };
@@ -215,7 +215,7 @@ private:
 	}
 
 	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-		assert(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
+		VERIFY(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
 		EdgeId result = AddSingleEdge(v1, v2, data);
 		if (this->master().isSelfConjugate(data)) {
 			result->set_conjugate(result);

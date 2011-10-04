@@ -23,7 +23,7 @@
 
 #include <zlib.h>
 #include <string>
-#include <cassert>
+#include "verify.hpp"
 #include <io_lib/Read.h>
 #include "io/single_read.hpp"
 #include "io/parser.hpp"

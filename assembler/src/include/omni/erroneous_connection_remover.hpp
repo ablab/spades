@@ -187,7 +187,7 @@ public:
 			insert_size_(insert_size),
 			read_length_(read_length),
 			gap_(insert_size_ - 2 * read_length_){
-		assert(insert_size_ >= 2 * read_length_);
+		VERIFY(insert_size_ >= 2 * read_length_);
 	}
 
 	bool ShouldContainInfo(EdgeId e1, EdgeId e2, size_t gap_length) {

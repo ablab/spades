@@ -1,7 +1,6 @@
 #ifndef CPCOUNT_UNION_H
 #define CPCOUNT_UNION_H
 
-#include <cassert>
 #include <cmath>
 #include <string>
 #include <iostream>

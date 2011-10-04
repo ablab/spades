@@ -65,13 +65,13 @@ namespace debruijn_graph
 
 		static const std::string& working_stage_name(working_stage stage_id) {
 			name_id_mapping::right_const_iterator it = working_stages_info().right.find(stage_id);
-			FATAL_ASSERT(it != working_stages_info().right.end(), "No name for working stage id = " << stage_id);
+			VERIFY_MSG(it != working_stages_info().right.end(), "No name for working stage id = " << stage_id);
 			return it->second;
 		}
 
 		static working_stage working_stage_id(std::string name) {
 			name_id_mapping::left_const_iterator it = working_stages_info().left.find(name);
-			FATAL_ASSERT(it != working_stages_info().left.end(), "There is no working stage with name = " << name);
+			VERIFY_MSG(it != working_stages_info().left.end(), "There is no working stage with name = " << name);
 			return it->second;
 		}
 

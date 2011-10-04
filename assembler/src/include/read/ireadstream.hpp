@@ -10,7 +10,7 @@
 
 #include "kseq/kseq.h"
 #include <zlib.h>
-#include <cassert>
+#include "verify.hpp"
 #include "read/read.hpp"
 #include "sequence/quality.hpp"
 #include "sequence/nucl.hpp"
@@ -50,7 +50,7 @@ public:
 
 	static vector<Read>* readAll(string filename, int cnt = -1) {
 		ireadstream irs(filename);
-		assert(irs.is_open());
+		VERIFY(irs.is_open());
 		vector<Read>* res = new vector<Read>();
 		Read r;
 		while (cnt-- && irs.is_open() && !irs.eof()) {
@@ -67,7 +67,7 @@ public:
 
 	static void readAllNoValidation(vector<Read>* res, string filename, uint64_t * totalsize, int qvoffset = Read::PHRED_OFFSET, int trim_quality = -1, int cnt = -1) {
 		ireadstream irs(filename, qvoffset);
-		assert(irs.is_open());
+		VERIFY(irs.is_open());
 		*totalsize = 0;
 		Read r;
 		while (cnt-- && irs.is_open() && !irs.eof()) {
@@ -80,8 +80,8 @@ public:
 	}
 	
 	ireadstream& operator>>(Read &r) {
-		assert(is_open());
-		assert(!eof());
+		VERIFY(is_open());
+		VERIFY(!eof());
 		if (!is_open() || eof()) {
 			return *this;
 		}
@@ -133,8 +133,8 @@ private:
 	}
 
 	void read_ahead() {
-		assert(is_open());
-		assert(!eof());
+		VERIFY(is_open());
+		VERIFY(!eof());
 		if (kseq_read(seq_) < 0) {
 			eof_ = true;
 		}

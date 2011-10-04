@@ -96,7 +96,7 @@ public:
 
 	const vector<EdgePosition> &GetEdgePositions(EdgeId edge) const {
 		auto it = EdgesPositions.find(edge);
-		assert(it != EdgesPositions.end());
+		VERIFY(it != EdgesPositions.end());
 		return it->second;
 	}
 

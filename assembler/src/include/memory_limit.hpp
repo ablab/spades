@@ -14,5 +14,5 @@ void limit_memory(size_t limit){
 	}
 
 	int res = setrlimit(RLIMIT_AS, &rl);
-    assert(res == 0);
+    VERIFY(res == 0);
 }

@@ -353,10 +353,10 @@ public:
 				"Triggering glue event of handler " << handler->name() << " with old edge " << edge1);
 		EdgeId rcOldEdge = graph_.conjugate(edge1);
 		EdgeId rcNewEdge = graph_.conjugate(edge2);
-		assert(edge1 != edge2);
-		assert(edge2 != rcNewEdge);
-//		assert(graph_.EdgeStart(edge1) != graph_.EdgeEnd(edge1));
-//		assert(graph_.EdgeStart(edge2) != graph_.EdgeEnd(edge2));
+		VERIFY(edge1 != edge2);
+		VERIFY(edge2 != rcNewEdge);
+//		VERIFY(graph_.EdgeStart(edge1) != graph_.EdgeEnd(edge1));
+//		VERIFY(graph_.EdgeStart(edge2) != graph_.EdgeEnd(edge2));
 		handler->HandleGlue(new_edge, edge1, edge2);
 		if (edge1 != rcOldEdge) {
 			TRACE(
@@ -372,7 +372,7 @@ public:
 	virtual void ApplySplit(ActionHandler<VertexId, EdgeId> *handler,
 	EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge2) const {
 		EdgeId rce = graph_.conjugate(old_edge);
-		assert(old_edge != rce);
+		VERIFY(old_edge != rce);
 		TRACE(
 				"Triggering split event of handler " << handler->name() << " with old edge " << old_edge);
 		handler->HandleSplit(old_edge, new_edge_1, new_edge2);
@@ -547,7 +547,7 @@ struct Range {
 	size_t end_pos;
 
 	size_t size() const {
-		assert(end_pos >= start_pos);
+		VERIFY(end_pos >= start_pos);
 		return end_pos - start_pos;
 	}
 
@@ -555,7 +555,7 @@ struct Range {
 	: start_pos(start_pos), end_pos(end_pos)
 	{if (end_pos < start_pos)
 	cerr <<"end_pos "<< end_pos  << "; start_pos " << start_pos << endl;
-assert(end_pos >= start_pos);}
+VERIFY(end_pos >= start_pos);}
 };
 
 struct MappingRange {
@@ -920,7 +920,7 @@ public:
 	 * code to compile.
 	 */
 	//	TipComparator() {
-	//		assert(false);
+	//		VERIFY(false);
 	//	}
 
 	/**
@@ -944,7 +944,7 @@ public:
 
 inline size_t PairInfoPathLengthUpperBound(size_t k, size_t insert_size, double delta) {
 	double answer = 0. +  insert_size + delta - k - 2;
-	assert(math::gr(answer, 0.));
+	VERIFY(math::gr(answer, 0.));
 	return std::floor(answer);
 }
 

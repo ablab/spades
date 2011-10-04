@@ -115,7 +115,7 @@ private:
 	}
 
 	~SingleVertex() {
-		assert(outgoing_edges_.size() == 0);
+		VERIFY(outgoing_edges_.size() == 0);
 	}
 };
 
@@ -188,7 +188,7 @@ private:
 	}
 
 	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-		assert(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
+		VERIFY(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
 		EdgeId newEdge = new SingleEdge<DataMaster> (v1,
 				v2, data);
 		v1->AddOutgoingEdge(newEdge);

@@ -10,7 +10,7 @@
 
 #include <string>
 #include <iostream>
-#include <cassert>
+#include "verify.hpp"
 #include "sequence/quality.hpp"
 #include "sequence/sequence.hpp"
 #include "sequence/nucl.hpp"
@@ -27,17 +27,17 @@ public:
   }
 
   Sequence getSequence() const {
-    assert(valid_);
+    VERIFY(valid_);
     return Sequence(seq_);
   }
 
   Sequence getSubSequence(size_t start, size_t length) const __attribute__ ((deprecated)) {
-    assert(length > 0 && start >= 0 && start + length <= seq_.size());
+    VERIFY(length > 0 && start >= 0 && start + length <= seq_.size());
     return Sequence(seq_.substr(start, length));
   }
 
   Quality getQuality() const {
-    assert(valid_);
+    VERIFY(valid_);
     return Quality(qual_);
   }
 
@@ -66,7 +66,7 @@ public:
   }
 
   char operator[](size_t i) const {
-    assert(is_nucl(seq_[i]));
+    VERIFY(is_nucl(seq_[i]));
     return dignucl(seq_[i]);
   }
 

@@ -20,7 +20,7 @@
 #ifndef NUCL_HPP_
 #define NUCL_HPP_
 
-#include <cassert>
+#include "verify.hpp"
 #include <iostream>
 
 /**
@@ -47,7 +47,7 @@ inline bool is_dignucl(char c) { // is 0123
  * @return c ^ 3
  */
 inline char complement(char c) {
-	assert(is_dignucl(c));
+	VERIFY(is_dignucl(c));
 	return c ^ 3;
 }
 
@@ -60,14 +60,14 @@ inline char nucl_complement(char c){
 //	if (!is_nucl(c)) {
 //		std::cerr << c << std::endl;
 //	}
-	assert(is_nucl(c));
+	VERIFY(is_nucl(c));
 	switch(c) {
 		case 'A': return 'T';
 		case 'C': return 'G';
 		case 'G': return 'C';
 		case 'T': return 'A';
 		//case 'N': return 'N';
-		default: assert(false); return -1; // never happens
+		default: VERIFY(false); return -1; // never happens
 	}
 }
 
@@ -77,7 +77,7 @@ inline char nucl_complement(char c){
  * @return 0 => 'A', 1 => 'C', 2 => 'G', 3 => 'T'
  */
 inline char nucl(char c) {
-	assert(is_dignucl(c));
+	VERIFY(is_dignucl(c));
 	switch(c) {
 		case 0: return 'A';
 		case 1: return 'C';
@@ -93,13 +93,13 @@ inline char nucl(char c) {
  * @return A => 0, C => 1, G => 2, T => 3
  */
 inline char dignucl(char c) {
-	assert(is_nucl(c));
+	VERIFY(is_nucl(c));
 	switch(c) {
 		case 'A': return 0;
 		case 'C': return 1;
 		case 'G': return 2;
 		case 'T': return 3;
-		default: assert(false); return -1; // never happens
+		default: VERIFY(false); return -1; // never happens
 	}
 }
 

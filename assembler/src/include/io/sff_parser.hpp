@@ -22,7 +22,7 @@
 
 #include <zlib.h>
 #include <string>
-#include <cassert>
+#include "verify.hpp"
 #include <io_lib/sff.h>
 #include "io/single_read.hpp"
 #include "io/parser.hpp"
@@ -139,8 +139,8 @@ class SffParser : public Parser {
    * Read next SingleRead from file.
    */
   void ReadAhead() {
-    assert(is_open_);
-    assert(!eof_);
+    VERIFY(is_open_);
+    VERIFY(!eof_);
     rh_ = read_sff_read_header(sff_fp_);
     rd_ = read_sff_read_data(sff_fp_, h_->flow_len, rh_->nbases);
     ++cnt_;

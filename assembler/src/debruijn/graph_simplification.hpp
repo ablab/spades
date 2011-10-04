@@ -20,7 +20,7 @@ namespace debruijn_graph {
 
 template<class Graph>
 void ClipTips(Graph &g, size_t iteration_count = 1, size_t i = 0) {
-	assert(i < iteration_count);
+	VERIFY(i < iteration_count);
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
 	omnigraph::LengthComparator<Graph> comparator(g);

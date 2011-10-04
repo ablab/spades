@@ -20,7 +20,7 @@
 #define SEQ_HPP_
 
 #include <string>
-#include <cassert>
+#include "verify.hpp"
 #include <array>
 #include <algorithm>
 #include "sequence/nucl.hpp"
@@ -76,7 +76,7 @@ private:
 		size_t cnt = 0;
 		int cur = 0;
 		for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
-			assert(is_nucl(*s));
+			VERIFY(is_nucl(*s));
 			data = data | ((T) dignucl(*s) << cnt);
 			cnt += 2;
 			if (cnt == Tbits) {
@@ -88,7 +88,7 @@ private:
 		if (cnt != 0) {
 			this->data_[cur++] = data;
 		}
-		assert(*s == 0); // C-string always ends on 0
+		VERIFY(*s == 0); // C-string always ends on 0
 	}
 
 	/**
@@ -130,7 +130,7 @@ public:
 	 * Default constructor, fills Seq with A's
 	 */
 	Seq() {
-		assert((T)(-1) >= (T)0);//be sure to use unsigned types
+		VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		std::fill(data_.begin(), data_.end(), 0);
 	}
 
@@ -139,11 +139,11 @@ public:
 	 */
 	Seq(const Seq<size_, T> &seq) :
 		data_(seq.data_) {
-		assert((T)(-1) >= (T)0);//be sure to use unsigned types
+		VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 	}
 
 	Seq(const char* s) {
-		assert((T)(-1) >= (T)0);//be sure to use unsigned types
+		VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		init(s);
 	}
 
@@ -155,11 +155,11 @@ public:
 	 */
 	template<typename S>
 	explicit Seq(const S &s, size_t offset = 0) {
-		assert((T)(-1) >= (T)0);//be sure to use unsigned types
+		VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
 			char c = s[offset + i];
-			assert(is_nucl(c) || is_dignucl(c));
+			VERIFY(is_nucl(c) || is_dignucl(c));
 			if (is_dignucl(c)) {
 				c = nucl(c);
 			}
@@ -176,8 +176,8 @@ public:
 	 * @return 0123-char on position i
 	 */
 	char operator[](const size_t i) const {
-		assert(i >= 0);
-		assert(i < size_);
+		VERIFY(i >= 0);
+		VERIFY(i < size_);
 		return (data_[i >> Tnucl_bits] >> ((i & (Tnucl - 1)) << 1)) & 3; // btw (i % Tnucl) <=> (i & (Tnucl-1))
 	}
 
@@ -211,7 +211,7 @@ public:
 		if (is_nucl(c)) {
 			c = dignucl(c);
 		}
-		assert(is_dignucl(c));
+		VERIFY(is_dignucl(c));
 		Seq<size_, T> res(data_);
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
@@ -235,7 +235,7 @@ public:
 		if (is_nucl(c)) {
 			c = dignucl(c);
 		}
-		assert(is_dignucl(c));
+		VERIFY(is_dignucl(c));
 		Seq<size_ + 1, T> s;
 		copy(this->data_.begin(), this->data_.end(), s.data_.begin());
 		s.data_[s.data_size_ - 1] = s.data_[s.data_size_ - 1] | ((T) c
@@ -250,7 +250,7 @@ public:
 		if (is_nucl(c)) {
 			c = dignucl(c);
 		}
-		assert(is_dignucl(c));
+		VERIFY(is_dignucl(c));
 		return Seq<size_ + 1, T> (nucl(c) + str());
 	}
 
@@ -264,7 +264,7 @@ public:
 		if (is_nucl(c)) {
 			c = dignucl(c);
 		}
-		assert(is_dignucl(c));
+		VERIFY(is_dignucl(c));
 		Seq<size_, T> res(data_);
 		T rm = c;
 		for (size_t i = 0; i < data_size_; ++i) {
@@ -325,13 +325,13 @@ public:
 	 */
 	template<size_t size2_, typename T2 = T>
 	Seq<size2_, T2> start() const {
-		assert(size2_ <= size_);
+		VERIFY(size2_ <= size_);
 		return Seq<size2_, T2> (*this);
 	}
 
 	template<size_t size2_/* = size_ - 1*/, typename T2 = T>
 	Seq<size2_, T2> end() const {
-		assert(size2_ <= size_);
+		VERIFY(size2_ <= size_);
 		return Seq<size2_, T2> (*this, size_ - size2_);
 	}
 

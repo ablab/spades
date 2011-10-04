@@ -136,7 +136,7 @@ public:
 	}
 
 	EdgeId GetUniqueOutgoingEdge(VertexId v) const {
-		assert(CheckUniqueOutgoingEdge(v));
+		VERIFY(CheckUniqueOutgoingEdge(v));
 		return OutgoingEdges(v)[0];
 	}
 
@@ -145,7 +145,7 @@ public:
 	}
 
 	EdgeId GetUniqueIncomingEdge(VertexId v) const {
-		assert(CheckUniqueIncomingEdge(v));
+		VERIFY(CheckUniqueIncomingEdge(v));
 		return IncomingEdges(v)[0];
 	}
 
@@ -174,8 +174,8 @@ public:
 	}
 
 	void DeleteVertex(VertexId v) {
-		assert(IsDeadEnd(v) && IsDeadStart(v));
-		assert(v != NULL);
+		VERIFY(IsDeadEnd(v) && IsDeadStart(v));
+		VERIFY(v != NULL);
 		TRACE("Deleting vertex " << PrintVertex(v));
 		FireDeleteVertex(v);
 		HiddenDeleteVertex(v);
@@ -246,7 +246,7 @@ public:
 
 	void CompressVertex(VertexId v) {
 		TRACE("Trying to compress vertex " << v);
-		//assert(CanCompressVertex(v));
+		//VERIFY(CanCompressVertex(v));
 		if (CanCompressVertex(v) && AdditionalCompressCondition(v)) {
 			TRACE("Compressing vertex " << v);
 			vector<EdgeId> edges_to_merge;
@@ -260,7 +260,7 @@ public:
 
 	//todo remove after debug
 	virtual std::string PrintDetailedPath(const vector<EdgeId>& path) {
-		assert(false);
+		VERIFY(false);
 		return "";
 	}
 
@@ -275,13 +275,13 @@ public:
 
 	//todo remove after debug
 	virtual std::string PrintDetailedVertexInfo(VertexId v) {
-		assert(false);
+		VERIFY(false);
 		return "";
 	}
 
 	//todo remove after debug
 	virtual std::string PrintEdges(const vector<EdgeId>& path) {
-		assert(false);
+		VERIFY(false);
 		return "";
 	}
 
@@ -316,10 +316,10 @@ public:
 	}
 
 	EdgeId MergePath(const vector<EdgeId>& path) {
-		assert(!path.empty());
+		VERIFY(!path.empty());
 		for (size_t i = 0; i < path.size(); i++)
 			for (size_t j = i + 1; j < path.size(); j++) {
-				assert(path[i] != path[j]);
+				VERIFY(path[i] != path[j]);
 			}
 		if (path.size() == 1) {
 			TRACE("Path of single edge " << PrintEdge(*(path.begin())) << ". Nothing to merge.");
