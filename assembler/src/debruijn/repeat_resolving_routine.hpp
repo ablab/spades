@@ -146,11 +146,11 @@ void process_resolve_repeats(
     for (int i = 0; i < 3; ++i)
     {
         ClipTipsForResolver(resolved_gp.g);
-        RemoveBulges2      (resolved_gp.g);
+        BulgeRemoveWrap(resolved_gp.g);
         RemoveLowCoverageEdges(resolved_gp.g, i, 3);
-        RemoveRelativelyLowCoverageEdges(resolved_gp.g);
+       // RemoveRelativelyLowCoverageEdges(resolved_gp.g);
     }
-
+    RemoveRelativelyLowCoverageEdges(resolved_gp.g);
     INFO("---Cleared---");
     INFO("---Output Contigs---");
 

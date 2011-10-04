@@ -52,6 +52,8 @@ void ClipTipsForResolver(Graph &g) {
 	INFO("Clipping tips finished");
 }
 
+
+
 void RemoveBulges(Graph &g) {
 	INFO("-----------------------------------------");
 	INFO("Removing bulges");
@@ -85,6 +87,14 @@ void RemoveBulges2(Graph &g) {
 			max_delta, max_relative_delta, trivial_condition);
 	bulge_remover.RemoveBulges();
 	INFO("Bulges removed");
+}
+
+void BulgeRemoveWrap(Graph& g) {
+	RemoveBulges(g);
+}
+
+void BulgeRemoveWrap(NCGraph& g) {
+	RemoveBulges2(g);
 }
 
 template<class Graph>
