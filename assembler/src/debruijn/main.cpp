@@ -118,11 +118,9 @@ int main() {
 		make_dir(cfg::get().output_dir  );
 		make_dir(cfg::get().output_saves);
 
-		string genome_filename = input_dir + cfg::get().reference_genome;
 		string reads_filename1 = input_dir + cfg::get().ds.first;
 		string reads_filename2 = input_dir + cfg::get().ds.second;
 
-		checkFileExistenceFATAL(genome_filename);
 		checkFileExistenceFATAL(reads_filename1);
 		checkFileExistenceFATAL(reads_filename2);
 
@@ -140,13 +138,17 @@ int main() {
 		RCStream rcStream(filter_stream);
 
 		// read data ('genome')
+		string genome_filename = cfg::get().reference_genome;
 		std::string genome;
-		{
+		if (genome_filename.length() > 0) {
+			genome_filename = input_dir + genome_filename;
+			checkFileExistenceFATAL(genome_filename);
 			ReadStream genome_stream(genome_filename);
 			io::SingleRead full_genome;
 			genome_stream >> full_genome;
 			genome = full_genome.GetSequenceString().substr(0, cfg::get().ds.LEN); // cropped
 		}
+
 		// assemble it!
 		INFO("Assembling " << dataset << " dataset");
 		debruijn_graph::assemble_genome(rcStream, Sequence(genome)/*, work_tmp_dir, reads*/);
