@@ -18,7 +18,7 @@
 
 #ifndef DATA_DIVIDER_HPP_
 #define DATA_DIVIDER_HPP_
-
+//todo Talk with Alex about this file!!!
 namespace omnigraph {
 
 typedef std::pair<int, int> interval;
@@ -44,6 +44,7 @@ bool isCluster(int index, std::vector<int> & x, std::vector<int> & y) {
 	return (size_t(abs(x[index + 1] - x[index])) > Threshold);
 }
 
+template <class EdgeId>
 bool isCluster(int index, std::vector<PairInfo<EdgeId> > data) {
 	VERIFY(index < data_size - 1);
 	return (abs(data[index + 1].d - data[index].d) > Threshold);
@@ -58,6 +59,7 @@ bool isCluster(int index, std::vector<PairInfo<EdgeId> > data) {
 //
 //}
 
+template <class EdgeId>
 std::vector<interval> divideData(std::vector<PairInfo<EdgeId> > data){
 
     data_size = data.size();

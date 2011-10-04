@@ -23,6 +23,7 @@ namespace  omnigraph{
 
 typedef fftw_complex complex;
 
+template <class EdgeId>
 class PeakFinder {
 private:
 

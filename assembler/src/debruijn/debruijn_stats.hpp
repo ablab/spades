@@ -9,7 +9,7 @@
 #define DEBRUIJN_STATS_HPP_
 
 #include "omni/visualization_utils.hpp"
-#include "omni/statistics.hpp"
+#include "statistics.hpp"
 #include "new_debruijn.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/EdgeVertexFilter.hpp"
@@ -21,7 +21,7 @@
 namespace debruijn_graph {
 
 template<class Graph, size_t k>
-class GenomeMappingStat: public omnigraph::AbstractStatCounter {
+class GenomeMappingStat: public AbstractStatCounter {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph &graph_;
@@ -76,9 +76,9 @@ public:
 };
 
 template<class Graph, size_t k>
-class StatCounter: public omnigraph::AbstractStatCounter {
+class StatCounter: public AbstractStatCounter {
 private:
-	omnigraph::StatList stats_;
+	StatList stats_;
 public:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
@@ -88,11 +88,11 @@ public:
 		SimpleSequenceMapper<k + 1, Graph> sequence_mapper(graph, index);
 		Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
 		Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
-		stats_.AddStat(new omnigraph::VertexEdgeStat<Graph>(graph));
+		stats_.AddStat(new VertexEdgeStat<Graph>(graph));
 		stats_.AddStat(
-				new omnigraph::BlackEdgesStat<Graph>(graph, path1, path2));
-		stats_.AddStat(new omnigraph::NStat<Graph>(graph, path1, 50));
-		stats_.AddStat(new omnigraph::SelfComplementStat<Graph>(graph));
+				new BlackEdgesStat<Graph>(graph, path1, path2));
+		stats_.AddStat(new NStat<Graph>(graph, path1, 50));
+		stats_.AddStat(new SelfComplementStat<Graph>(graph));
 		stats_.AddStat(
 				new GenomeMappingStat<Graph, k> (graph, index, Sequence(genome)));
 		stats_.AddStat(new IsolatedEdgesStat<Graph>(graph, path1, path2));
@@ -136,18 +136,14 @@ void CountPairedInfoStats(const Graph &g,
 }
 
 void CountClusteredPairedInfoStats(const Graph &g,
+		const IdTrackHandler<Graph> &int_ids,
 		const PairedInfoIndex<Graph> &paired_index,
 		const PairedInfoIndex<Graph> &clustered_index,
 		const PairedInfoIndex<Graph> &etalon_paired_index,
 		const string &output_folder) {
 	INFO("Counting clustered info stats");
-	EstimationQualityStat<Graph> estimation_stat(g, paired_index,
-			clustered_index, etalon_paired_index);
-	estimation_stat.Count();
-	string stat_folder = output_folder + "/pair_inf_stat";
-	//	boost::filesystem::create_directory(stat_folder.c_str());
-	mkdir(stat_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-	estimation_stat.WriteEstmationStats(stat_folder);
+	EstimationQualityStat<Graph> (g, int_ids, paired_index,
+			clustered_index, etalon_paired_index).Count();
 
 	INFO("Counting overall cluster stat")
 	ClusterStat<Graph> (clustered_index).Count();

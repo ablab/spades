@@ -11,6 +11,7 @@
 #include "logging.hpp"
 #include "omni/paired_info.hpp"
 #include "omni/omni_utils.hpp"
+#include "utils.hpp"
 
 #include "omni/omni_tools.hpp"
 #include "omni/omnigraph.hpp"
@@ -18,10 +19,9 @@
 #include "omni/ID_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/EdgeVertexFilter.hpp"
-using namespace omnigraph;
-using namespace debruijn_graph;
 
-namespace omnigraph {
+namespace debruijn_graph {
+using namespace omnigraph;
 //todo think of inner namespace
 //DECL_LOGGER("DataPrinter")
 
@@ -39,7 +39,7 @@ public:
 			EdgesPositionHandler<Graph> const& EPHandler);
 
 	void saveKmerMapper(const string& file_name,
-			KmerMapper<K + 1, Graph> const& mapper);
+			const KmerMapper<K + 1, Graph>& mapper);
 
 	void close();
 
@@ -542,9 +542,6 @@ void DataScanner<Graph>::loadKmerMapper(const string& file_name,
 	file.close();
 }
 
-
-
-
 template<class Graph>
 void printGraph(Graph const& g, IdTrackHandler<Graph> &old_IDs,
 		const string &file_name, PairedInfoIndex<Graph> &paired_index,
@@ -563,8 +560,8 @@ void printGraph(Graph const & g, IdTrackHandler<Graph> const& old_IDs,
 		const string &file_name, PairedInfoIndex<Graph> const& paired_index,
 		EdgesPositionHandler<Graph> const& edges_positions,
 		PairedInfoIndex<Graph> const* etalon_index = 0,
-		PairedInfoIndex<Graph> const* clustered_index = 0,
-		KmerMapper<K + 1, Graph> const* mapper = 0) {
+		PairedInfoIndex<Graph> const* clustered_index = 0/*,
+		KmerMapper<K + 1, Graph> const* mapper = 0*/) {
 
 	DataPrinter<Graph> dataPrinter(g, old_IDs);
 	dataPrinter.saveGraph(file_name);
@@ -580,9 +577,9 @@ void printGraph(Graph const & g, IdTrackHandler<Graph> const& old_IDs,
 	}
 	dataPrinter.savePositions(file_name, edges_positions);
 
-	if (mapper) {
-		dataPrinter.saveKmerMapper(file_name, *mapper);
-	}
+//	if (mapper) {
+//		dataPrinter.saveKmerMapper(file_name, *mapper);
+//	}
 }
 
 template<class Graph>
@@ -640,8 +637,8 @@ void scanConjugateGraph(Graph * g, IdTrackHandler<Graph> *new_IDs,
 		const string &file_name, PairedInfoIndex<Graph>* paired_index = 0,
 		EdgesPositionHandler<Graph> *edges_positions = NULL,
 		PairedInfoIndex<Graph>* etalon_index = 0,
-		PairedInfoIndex<Graph>* clustered_index = 0,
-		KmerMapper<K + 1, Graph> * mapper = 0) {
+		PairedInfoIndex<Graph>* clustered_index = 0/*,
+		KmerMapper<K + 1, Graph> * mapper = 0*/) {
 	//ToDo Apply * vs & conventions
 	DataScanner<Graph> dataScanner(*g, *new_IDs);
 	dataScanner.loadConjugateGraph(file_name, true);
@@ -657,9 +654,9 @@ void scanConjugateGraph(Graph * g, IdTrackHandler<Graph> *new_IDs,
 	if (clustered_index) {
 		dataScanner.loadPaired(file_name + "_cl", *clustered_index);
 	}
-	if (mapper) {
+/*	if (mapper) {
 		dataScanner.loadKmerMapper(file_name, *mapper);
-	}
+	}*/
 }
 
 template<class Graph>

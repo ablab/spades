@@ -13,7 +13,6 @@
 #include "omni/omni_utils.hpp"
 #include "logging.hpp"
 #include "omni/paired_info.hpp"
-#include "omni/statistics.hpp"
 #include "xmath.h"
 #include <boost/optional.hpp>
 #include <iostream>

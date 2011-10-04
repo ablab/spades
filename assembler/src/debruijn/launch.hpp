@@ -45,7 +45,7 @@ namespace debruijn_graph
 void assemble_genome(PairedReadStream& stream, const Sequence& genome)
 {
     INFO("Genome Assembling Started");
-    TRACE("Starting from stage: " << debruijn_config::working_stage_name(cfg::get().entry_point));
+    INFO("Starting from stage: " << debruijn_config::working_stage_name(cfg::get().entry_point));
 
     exec_repeat_resolving(stream, genome);
 

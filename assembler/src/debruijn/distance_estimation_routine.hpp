@@ -103,7 +103,7 @@ void count_estimated_info_stats(conj_graph_pack& gp,
 	data_printer.savePaired(cfg::get().output_dir + "etalon_paired.prd",
 			etalon_paired_index);
 	//temporary
-	CountClusteredPairedInfoStats(gp.g, paired_index, clustered_index,
+	CountClusteredPairedInfoStats(gp.g, gp.int_ids, paired_index, clustered_index,
 			etalon_paired_index, cfg::get().output_dir);
 }
 

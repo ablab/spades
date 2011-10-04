@@ -77,3 +77,14 @@ namespace debruijn_graph
     typedef io::IReader<io::PairedRead> PairedReadStream;
     typedef io::ConvertingReaderWrapper UnitedStream;
 } // namespace debruijn_graph
+
+inline bool make_dir(std::string const& str)
+{
+	if (fs::is_directory(str) || fs::create_directories(str))
+		return true;
+
+	WARN("Can't create directory " << str);
+	return false;
+
+    //return mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+}

@@ -20,17 +20,6 @@
 
 DECL_PROJECT_LOGGER("d")
 
-bool make_dir(std::string const& str)
-{
-	if (fs::is_directory(str) || fs::create_directories(str))
-		return true;
-
-	WARN("Can't create directory " << str);
-	return false;
-
-    //return mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-}
-
 void link_output(std::string const& link_name)
 {
 	string link = cfg::get().output_root + link_name;
@@ -106,7 +95,6 @@ int main() {
 		cfg::create_instance(cfg_filename);
 
 		// check config_struct.hpp parameters
-		INFO("K = " << debruijn_graph::K);
 		if (K % 2 == 0)
 			VERIFY_MSG(false, "K in config.hpp must be odd!\n");
 
@@ -151,6 +139,7 @@ int main() {
 
 		// assemble it!
 		INFO("Assembling " << dataset << " dataset");
+		INFO("K = " << debruijn_graph::K);
 		debruijn_graph::assemble_genome(rcStream, Sequence(genome)/*, work_tmp_dir, reads*/);
 
 		on_exit_ouput_linker("latest_success");

@@ -36,7 +36,7 @@ private:
 	vector<pair<size_t, double> > EstimateEdgePairDistances(vector<PairInfo<EdgeId> > data, vector<size_t> forward) {
         vector<pair<size_t, double> > result;
         if (data.size() <= 1) return result;
-		std::vector<interval> clusters = divideData(data);
+		std::vector<interval> clusters = divideData<EdgeId>(data);
 		size_t cur = 0;
         std::stringstream ss;
         for (size_t i = 0; i < forward.size(); i++){
@@ -56,7 +56,7 @@ private:
                     break;
                 }
                 if ((int) forward[cur] > rounded_d(data[end - 1])) continue;
-                PeakFinder peakfinder(data, begin, end, round(data_length*range_coeff_), round(data_length*delta_coeff_), percentage_, derivative_threshold_);
+                PeakFinder<EdgeId> peakfinder(data, begin, end, round(data_length*range_coeff_), round(data_length*delta_coeff_), percentage_, derivative_threshold_);
 				DEBUG("Processing window : " << rounded_d(data[begin]) << " " << rounded_d(data[end - 1]));
 				peakfinder.FFTSmoothing(cutoff_);
                 if ( ( (cur + 1) == forward.size()) || ( (int) forward[cur + 1] > rounded_d(data[end - 1]))){
@@ -124,7 +124,7 @@ public:
                     break;
                 }
                 if ((int) forward[cur] > rounded_d(data[end - 1])) continue;
-                PeakFinder peakfinder(data, begin, end);
+                PeakFinder<EdgeId> peakfinder(data, begin, end);
 				DEBUG("Processing window : " << rounded_d(data[begin]) << " " << rounded_d(data[end - 1]));
 				
                 peakfinder.FFTSmoothing(cutoff_);
