@@ -5,6 +5,7 @@
 #include "omni/abstract_nonconjugate_graph.hpp"
 #include "omni/coverage.hpp"
 #include "omni/ID_track_handler.hpp"
+#include "sequence/sequence_tools.hpp"
 
 using omnigraph::CoverageIndex;
 namespace debruijn_graph {
@@ -23,8 +24,8 @@ public:
 class DeBruijnEdgeData {
 	friend class NewDeBruijnGraph;
 	friend class DeBruinMaster;
+	Sequence nucls_;
 public:
-	const Sequence nucls_;
 
 	DeBruijnEdgeData(const Sequence &nucls) :
 		nucls_(nucls) {
@@ -47,21 +48,21 @@ public:
 		k_(k) {
 	}
 
-	const EdgeData MergeData(const vector<const EdgeData *>& toMerge) const {
-		SequenceBuilder sb;
-		sb.append(toMerge[0]->nucls_.Subseq(0, k_));
-		for (size_t i = 0; i < toMerge.size(); i++) {
-			sb.append(toMerge[i]->nucls_.Subseq(k_));
+	const EdgeData MergeData(const vector<const EdgeData*>& to_merge) const {
+		vector<const Sequence*> ss;
+		ss.reserve(to_merge.size());
+		for (auto it = to_merge.begin(); it != to_merge.end(); ++it) {
+			ss.push_back(&((*it)->nucls()));
 		}
-		return EdgeData(sb.BuildSequence());
+		return EdgeData(MergeOverlappingSequences(ss, k_));
 	}
 
 	pair<VertexData, pair<EdgeData, EdgeData> > SplitData(const EdgeData &edge,
 			size_t position) const {
 		return make_pair(
 				VertexData(),
-				make_pair(EdgeData(edge.nucls_.Subseq(0, position + k_)),
-						EdgeData(edge.nucls_.Subseq(position))));
+				make_pair(EdgeData(edge.nucls().Subseq(0, position + k_)),
+						EdgeData(edge.nucls().Subseq(position))));
 	}
 
 	EdgeData GlueData(const EdgeData &data1, const EdgeData &data2) const {
@@ -69,11 +70,11 @@ public:
 	}
 
 	bool isSelfConjugate(const EdgeData &data) const {
-		return data.nucls_ == !(data.nucls_);
+		return data.nucls() == !(data.nucls());
 	}
 
 	EdgeData conjugate(const EdgeData &data) const {
-		return EdgeData(!(data.nucls_));
+		return EdgeData(!(data.nucls()));
 	}
 
 	VertexData conjugate(const VertexData &data) const {
@@ -89,7 +90,7 @@ public:
 	}
 
 	const size_t length(EdgeData data) const {
-		return data.nucls_.size() - k_;
+		return data.nucls().size() - k_;
 	}
 
 };

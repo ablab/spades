@@ -32,7 +32,7 @@ using namespace std;
 
 class Sequence {
 private:
-    SequenceData *data_;
+    SequenceData* data_;
     size_t from_;
     size_t size_;
     bool rtl_; // Right to left + complimentary (?)

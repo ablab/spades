@@ -19,6 +19,32 @@
 namespace debruijn_graph {
 
 template<class Graph>
+class EditDistanceTrackingCallback {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::EdgeData EdgeData;
+	const Graph& g_;
+
+public:
+	EditDistanceTrackingCallback(const Graph& g) :
+			g_(g) {
+	}
+
+	bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
+		vector<const Sequence*> path_sequences;
+		for (auto it = path.begin(); it != path.end(); ++it) {
+			path_sequences.push_back(&g_.EdgeNucls(*it));
+		}
+		Sequence path_sequence(MergeOverlappingSequences(path_sequences, g_.k()));
+		size_t dist = EditDistance(g_.EdgeNucls(edge), path_sequence);
+		TRACE("Bulge sequences with distance " << dist << " were " << g_.EdgeNucls(edge) << " and " << path_sequence);
+		return true;
+	}
+
+private:
+	DECL_LOGGER("EditDistanceTrackingCallback");
+};
+
+template<class Graph>
 void ClipTips(Graph &g, size_t iteration_count = 1, size_t i = 0) {
 	VERIFY(i < iteration_count);
 	INFO("-----------------------------------------");
@@ -52,8 +78,6 @@ void ClipTipsForResolver(Graph &g) {
 	INFO("Clipping tips finished");
 }
 
-
-
 void RemoveBulges(Graph &g) {
 	INFO("-----------------------------------------");
 	INFO("Removing bulges");
@@ -63,9 +87,16 @@ void RemoveBulges(Graph &g) {
 	double max_relative_delta = cfg::get().simp.br.max_relative_delta;
 	size_t max_length_div_K = cfg::get().simp.br.max_length_div_K;
 	omnigraph::SimplePathCondition<Graph> simple_path_condition(g);
-	omnigraph::BulgeRemover<Graph, omnigraph::SimplePathCondition<Graph>> bulge_remover(
+	EditDistanceTrackingCallback<Graph> callback(g);
+	omnigraph::BulgeRemover<Graph> bulge_remover(
 			g, max_length_div_K * g.k(), max_coverage, max_relative_coverage,
-			max_delta, max_relative_delta, simple_path_condition);
+			max_delta, max_relative_delta,
+			boost::bind(&omnigraph::SimplePathCondition<Graph>::operator(),
+					&simple_path_condition, _1, _2),
+			boost::optional<omnigraph::BulgeRemover<Graph>::BulgeCallbackF>(
+					boost::bind(&EditDistanceTrackingCallback<Graph>::operator(),
+					&callback, _1, _2))
+	);
 	bulge_remover.RemoveBulges();
 	Cleaner<Graph> cleaner(g);
 	cleaner.Clean();
@@ -81,10 +112,9 @@ void RemoveBulges2(Graph &g) {
 	double max_delta = cfg::get().simp.br.max_delta;
 	double max_relative_delta = cfg::get().simp.br.max_relative_delta;
 	size_t max_length_div_K = cfg::get().simp.br.max_length_div_K;
-	omnigraph::TrivialCondition<Graph> trivial_condition;
-	omnigraph::BulgeRemover<Graph, omnigraph::TrivialCondition<Graph>> bulge_remover(
+	omnigraph::BulgeRemover<Graph> bulge_remover(
 			g, max_length_div_K * g.k(), max_coverage, 0.5 * max_relative_coverage,
-			max_delta, max_relative_delta, trivial_condition);
+			max_delta, max_relative_delta, &TrivialCondition<Graph>);
 	bulge_remover.RemoveBulges();
 	INFO("Bulges removed");
 }

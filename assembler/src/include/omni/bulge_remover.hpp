@@ -19,7 +19,6 @@ namespace omnigraph {
 template<class Graph>
 struct SimplePathCondition {
 	typedef typename Graph::EdgeId EdgeId;
-
 	const Graph& g_;
 
 	SimplePathCondition(const Graph& g) :
@@ -41,21 +40,30 @@ struct SimplePathCondition {
 		}
 		return true;
 	}
-
 };
+
+//template<class Graph>
+//struct TrivialCondition {
+//	typedef typename Graph::EdgeId EdgeId;
+//
+//	bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
+//		for (size_t i = 0; i < path.size(); ++i)
+//			for (size_t j = i + 1; j < path.size(); ++j)
+//				if (path[i] == path[j])
+//					return false;
+//		return true;
+//	}
+//};
 
 template<class Graph>
-struct TrivialCondition {
+bool TrivialCondition(typename Graph::EdgeId edge, const vector<typename Graph::EdgeId>& path) {
 	typedef typename Graph::EdgeId EdgeId;
-
-	bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
-		for (size_t i = 0; i < path.size(); ++i)
-			for (size_t j = i + 1; j < path.size(); ++j)
-				if (path[i] == path[j])
-					return false;
-		return true;
-	}
-};
+	for (size_t i = 0; i < path.size(); ++i)
+		for (size_t j = i + 1; j < path.size(); ++j)
+			if (path[i] == path[j])
+				return false;
+	return true;
+}
 
 template<class Graph>
 class MostCoveredAlternativePathChooser: public PathProcessor<Graph>::Callback {
@@ -112,23 +120,24 @@ public:
  * the graph and for each edge checks if this edge is likely to be a simple bulge
  * if edge is judged to be one it is removed.
  */
-template<class Graph, class BulgeConditionF>
+template<class Graph>
 class BulgeRemover {
-public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-
 public:
+	typedef boost::function<bool (EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
 
 	/**
 	 * Create BulgeRemover with specified parameters.
 	 */
 	BulgeRemover(Graph& g, size_t max_length, double max_coverage,
 			double max_relative_coverage, double max_delta,
-			double max_relative_delta, const BulgeConditionF& bulge_condition) :
+			double max_relative_delta, BulgeCallbackF bulge_condition,
+			boost::optional<BulgeCallbackF> opt_callback = boost::none) :
 			g_(g), max_length_(max_length), max_coverage_(max_coverage), max_relative_coverage_(
 					max_relative_coverage), max_delta_(max_delta), max_relative_delta_(
-					max_relative_delta), bulge_condition_(bulge_condition) {
+					max_relative_delta), bulge_condition_(bulge_condition), opt_callback_(
+					opt_callback) {
 	}
 
 	void RemoveBulges();
@@ -140,7 +149,8 @@ private:
 	double max_relative_coverage_;
 	double max_delta_;
 	double max_relative_delta_;
-	const BulgeConditionF& bulge_condition_;
+	BulgeCallbackF bulge_condition_;
+	boost::optional<BulgeCallbackF> opt_callback_;
 
 	bool PossibleBulgeEdge(EdgeId e);
 
@@ -197,14 +207,13 @@ private:
 	DECL_LOGGER("BulgeRemover")
 };
 
-template<class Graph, class BulgeConditionF>
-bool BulgeRemover<Graph, BulgeConditionF>::PossibleBulgeEdge(EdgeId e) {
+template<class Graph>
+bool BulgeRemover<Graph>::PossibleBulgeEdge(EdgeId e) {
 	return g_.length(e) <= max_length_ && g_.coverage(e) < max_coverage_;
 }
 
-template<class Graph, class BulgeConditionF>
-size_t BulgeRemover<Graph, BulgeConditionF>::PathLength(
-		const vector<EdgeId>& path) {
+template<class Graph>
+size_t BulgeRemover<Graph>::PathLength(const vector<EdgeId>& path) {
 	size_t length = 0;
 	for (size_t i = 0; i < path.size(); ++i) {
 		length += g_.length(path[i]);
@@ -212,22 +221,22 @@ size_t BulgeRemover<Graph, BulgeConditionF>::PathLength(
 	return length;
 }
 
-template<class Graph, class BulgeConditionF>
-void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
+template<class Graph>
+void BulgeRemover<Graph>::RemoveBulges() {
 	TRACE("Bulge remove process started");
 
 	CoverageComparator<Graph> comparator(g_);
-	for (auto iterator = g_.SmartEdgeBegin(comparator); !iterator.IsEnd(); ++iterator) {
+	for (auto iterator = g_.SmartEdgeBegin(comparator); !iterator.IsEnd();
+			++iterator) {
 		EdgeId edge = *iterator;
 		TRACE(
-				"Considering edge of length " << g_.length(edge)
-						<< " and avg coverage " << g_.coverage(edge));
+				"Considering edge of length " << g_.length(edge) << " and avg coverage " << g_.coverage(edge));
 		TRACE("Is possible bulge " << PossibleBulgeEdge(edge));
 		if (PossibleBulgeEdge(edge)) {
-			size_t kplus_one_mer_coverage = math::round(g_.length(edge) * g_.coverage(edge));
+			size_t kplus_one_mer_coverage = math::round(
+					g_.length(edge) * g_.coverage(edge));
 			TRACE(
-					"Processing edge " << g_.str(edge) << " and coverage "
-							<< kplus_one_mer_coverage);
+					"Processing edge " << g_.str(edge) << " and coverage " << kplus_one_mer_coverage);
 
 			VertexId start = g_.EdgeStart(edge);
 			TRACE("Start " << g_.str(start));
@@ -248,14 +257,14 @@ void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
 			const vector<EdgeId>& path = path_chooser.most_covered_path();
 			double path_coverage = path_chooser.max_coverage();
 			TRACE(
-					"Best path with coverage " << path_coverage << " is "
-							<< PrintPath<Graph>(g_, path));
+					"Best path with coverage " << path_coverage << " is " << PrintPath<Graph>(g_, path));
 
 			//if edge was returned, this condition will fail
 			if (BulgeCondition(edge, path, path_coverage)) {
 				TRACE("Satisfied condition");
-				TRACE(
-						"Projecting edge " << g_.str(edge));
+				if (opt_callback_) {
+					(*opt_callback_)(edge, path);
+				}TRACE( "Projecting edge " << g_.str(edge));
 				ProcessBulge(edge, path);
 				TRACE("Compressing start of edge " << edge)
 				g_.CompressVertex(start);
@@ -264,8 +273,7 @@ void BulgeRemover<Graph, BulgeConditionF>::RemoveBulges() {
 			} else {
 				TRACE("Didn't satisfy condition");
 			}
-		}
-		TRACE("-----------------------------------");
+		}TRACE("-----------------------------------");
 	}
 }
 

@@ -332,11 +332,11 @@ public:
 		TRACE("Corrected path " << PrintEdges(corrected_path));
 		VertexId v1 = EdgeStart(corrected_path[0]);
 		VertexId v2 = EdgeEnd(corrected_path[corrected_path.size() - 1]);
-		vector<const EdgeData*> toMerge;
+		vector<const EdgeData*> to_merge;
 		for (auto it = corrected_path.begin(); it != corrected_path.end(); ++it) {
-			toMerge.push_back(&(data(*it)));
+			to_merge.push_back(&(data(*it)));
 		}
-		EdgeId new_edge = HiddenAddEdge(v1, v2, master_.MergeData(toMerge));
+		EdgeId new_edge = HiddenAddEdge(v1, v2, master_.MergeData(to_merge));
 		FireMerge(corrected_path, new_edge);
 
 //		cerr << "Corrected " << PrintDetailedPath(corrected_path) << endl;
