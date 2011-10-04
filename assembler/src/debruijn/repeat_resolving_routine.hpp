@@ -293,25 +293,25 @@ void resolve_conjugate_component(int component_id, const Sequence& genome){
 }
 
 void resolve_nonconjugate_component(int component_id, const Sequence& genome){
-    nonconj_graph_pack   nonconj_gp ();
-    paired_info_index paired_index   (nonconj_gp.g/*, 5.*/);
+    nonconj_graph_pack   nonconj_gp;
+//    paired_info_index paired_index   (nonconj_gp.g/*, 5.*/);
 
     INFO("Resolve component "<<component_id);
 
 	string graph_name = ConstructComponentName("graph_", component_id).c_str();
 	string component_name = cfg::get().output_dir + "graph_components/" + graph_name;
 
-	scanNonConjugateGraph(&nonconj_gp.g, &nonconj_gp.int_ids, component_name, &nonconj_gp.clustered_index,
-			&nonconj_gp.edge_pos);
+	scanNCGraph(nonconj_gp.g, nonconj_gp.int_ids, component_name, &nonconj_gp.clustered_index,
+			nonconj_gp.edge_pos);
 
 	component_statistics(nonconj_gp, component_id, nonconj_gp.clustered_index);
 
 
-	nonconj_graph_pack   resolved_gp ();
-    string sub_dir = "resolve_components/";
+	nonconj_graph_pack   resolved_gp;
+	string sub_dir = "resolve_components/";
 
 
-    string resolved_name = cfg::get().output_dir + "resolve_components" + "/resolve_" + graph_name + "/";
+	string resolved_name = cfg::get().output_dir + "resolve_components" + "/resolve_" + graph_name + "/";
 	mkdir(resolved_name.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	process_resolve_repeats(nonconj_gp, nonconj_gp.clustered_index, resolved_gp, graph_name, sub_dir, false ) ;
 }
