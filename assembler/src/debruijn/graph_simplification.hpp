@@ -47,7 +47,7 @@ void ClipTipsForResolver(Graph &g) {
 	size_t max_coverage = cfg::get().simp.tc.max_coverage;
 	double max_relative_coverage = cfg::get().simp.tc.max_relative_coverage;
 	omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(g, comparator,
-			400, max_coverage, max_relative_coverage * 0.6);
+			100, max_coverage, max_relative_coverage * 0.5);
 	tc.ClipTips();
 	INFO("Clipping tips finished");
 }
@@ -81,7 +81,7 @@ void RemoveBulges2(Graph &g) {
 	size_t max_length_div_K = cfg::get().simp.br.max_length_div_K;
 	omnigraph::TrivialCondition<Graph> trivial_condition;
 	omnigraph::BulgeRemover<Graph, omnigraph::TrivialCondition<Graph>> bulge_remover(
-			g, max_length_div_K * g.k(), max_coverage, 0.6 * max_relative_coverage,
+			g, max_length_div_K * g.k(), max_coverage, 0.5 * max_relative_coverage,
 			max_delta, max_relative_delta, trivial_condition);
 	bulge_remover.RemoveBulges();
 	INFO("Bulges removed");
