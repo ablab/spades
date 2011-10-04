@@ -1,0 +1,14 @@
+common using :
+java Main -f <filename>
+You must have next files in your working directory:
+*.grp
+*.prd
+*_cl.prd
+*_fnr.prd
+*_fpr.prd
+
+The folder will be created for each edge pair in 'data' folder.
+To view the graph for edge pair run 
+gnuplot plot.conf
+in the corresponding folder.
+

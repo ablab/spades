@@ -1,0 +1,356 @@
+import java.io.*;
+import java.util.*;
+import java.math.*;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.Graphics;
+
+
+public class Main implements Runnable{
+	
+	private static String filename = "";
+
+	private static String folder;
+
+	private static int Thr;
+
+	private static int thr;
+
+	private static boolean symmetric = false;
+
+    private static int Nmax = 10000000;
+	
+	private static int mask = 0; 
+
+	//	2^0 = symmetric
+    //	2^1 = non-symmetric
+	//  2^2 = morethan thr
+	//	2^3 = lessthan Thr
+	//
+	//
+	//
+	//
+
+	public static void main(String[] args){
+		if (args != null){
+			for (int i = 0; i<args.length; i++) if (args[i].equals("-s")) mask |= 1<<0;
+			for (int i = 0; i<args.length; i++) if (args[i].equals("-ns")) mask |= 1<<1;
+			for (int i = 0; i<args.length; i++) if (args[i].equals("-m")) {
+				thr = Integer.parseInt(args[i+1]);
+				mask |= 1<<2;
+			}
+			for (int i = 0; i<args.length; i++) if (args[i].equals("-l")) {
+				Thr = Integer.parseInt(args[i+1]);
+				mask |= 1<<3;
+			}
+			for (int i = 0; i<args.length; i++) if (args[i].equals("-f")) filename = args[i+1];
+		}
+		new Thread(new Main()).start();
+	}
+
+	private void debug(Object obj){
+		System.out.println(obj);
+	}
+
+	private boolean isAcceptable(int len1, int len2){
+		int b = 0;
+        if (len1 == len2) b |= 1;
+        if (len1 != len2) b |= 2;
+        if (len1 > thr && len2 > thr) b |= 4;
+        if (len1 < Thr && len2 < Thr) b |= 8;
+		return ((b & mask) == mask);
+	}
+
+
+
+	
+	public void run(){
+		try{
+			MyScanner in, in2, incl, fnrin, fprin;
+			
+			Locale.setDefault(Locale.US);
+			if (filename.length()>0){
+				int a = 0;
+				while (a<filename.length() && filename.charAt(a)!='.') a++;
+				filename = filename.substring(0, a);
+				in = new MyScanner(filename + ".prd");
+				in2 = new MyScanner(filename + ".grp");
+                incl = new MyScanner(filename + "_cl.prd");
+                fnrin = new MyScanner(filename + "_fnr.prd");
+                fprin = new MyScanner(filename + "_fpr.prd");
+			}
+			else throw new IOException("no input data");
+			debug(filename);
+			//folder = ((mask & 1) == 0) ? ("testfiles_" + filename + "/!sym/") : 
+			//("testfiles_" + filename + "/sym/");
+            folder = "data/" + filename + "/";
+			File file = new File(folder);
+			//debug(file.getAbsolutePath());
+			file.mkdirs();
+			PrintWriter out = null;
+			in2.nextInt();
+			int[] edges = new int[Nmax];
+			int ind = 0;
+			while (in2.hasMoreTokens()){
+				String s = in2.nextToken();
+				if (s.equals("Edge")){
+                                	ind = in2.nextInt();					
+				}
+				else if (s.equals("=")) edges[ind-1] = in2.nextInt();
+			}
+
+            
+                        
+//          getting paired info
+			debug("Paired Info");
+            StringBuffer buf = new StringBuffer("");
+			in.nextInt();
+			int len1 = 0;
+			int len2 = 0;
+			int e1 = 0;
+			int e2 = 0;
+			boolean filtering = false;
+			while (in.hasMoreTokens()){
+				int a = in.nextInt(); //edge1
+				int b = in.nextInt(); //edge2
+				double x = in.nextDouble(); //distance
+				double y = in.nextDouble(); //weight
+				double z = in.nextDouble(); //variance
+				in.nextToken();
+				if (!(a == e1 && b == e2)){
+					if (out != null && filtering){
+						out.println(buf);
+						out.close();
+						buf = new StringBuffer("");
+					}	
+					filtering = (isAcceptable(edges[a-1], edges[b-1]));
+					if (filtering){
+
+						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
+                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+            			file = new File(folder1);
+			            file.mkdirs();
+						out = new PrintWriter(folder1 + "unclustered.prd");
+                        //generating config
+                        debug("Generating config file");
+                        PrintWriter out1 = new PrintWriter(folder1 + "plot.conf");
+                        String text =
+                        "#!/usr/bin/gnuplot -persist\n" + 
+                        "set term x11 0\n" +
+                        "plot \"unclustered.prd\" with linespoints, \"clustered.prd\" with impulses," + 
+                        "\"fpr.prd\" with points lt 1 lc 4 pt 7 ps 2," + " \"fnr.prd\" with points lt 1 lc 3 pt 7 ps 2 \n" + 
+                        "pause -1 \"press any key to continue\"\n";
+                        out1.print(text);
+                        out1.close();
+
+					}
+				}
+				if (filtering) if (x*x + y*y != 0){
+                    //for (int x1 = (int) (x - z); x1 <= x + z; x1++) 
+                        buf.append(x + " " + y + "\n");
+                }
+				e1 = a;
+				e2 = b;
+			}
+		    if (out != null && filtering) out.println(buf);
+            out.close();
+			in.close();
+
+//          getting clustered info
+            
+            debug("Clustered info");
+            buf = new StringBuffer("");
+			incl.nextInt();
+			len1 = 0;
+		
+			len2 = 0;
+			e1 = 0;
+			e2 = 0;
+			filtering = false;
+			while (incl.hasMoreTokens()){
+				int a = incl.nextInt();
+				int b = incl.nextInt();
+				double x = incl.nextDouble();
+				double y = incl.nextDouble();
+				double z = incl.nextDouble();
+				incl.nextToken();
+				if (!(a == e1 && b == e2)){
+					if (out != null && filtering){
+						out.println(buf);
+						out.close();
+						buf = new StringBuffer("");
+					}	
+					filtering = (isAcceptable(edges[a-1], edges[b-1]));
+					if (filtering){
+
+						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
+                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+						out = new PrintWriter(folder1 + "clustered.prd");
+					}
+				}
+				if (filtering) if (x*x + y*y != 0){
+                    //for (int x1 = (int) (x - z); x1 <= x + z; x1++) 
+                        buf.append(x + " " + y + "\n");
+
+                }
+				e1 = a;
+				e2 = b;
+			}
+		    if (out != null && filtering) out.println(buf);
+            out.close();
+            incl.close();
+
+//          getting fpr info
+            debug("Fpr info");
+            buf = new StringBuffer("");
+			fprin.nextInt();
+			len1 = 0;
+		
+		    len2 = 0;
+			e1 = 0;
+			e2 = 0;
+			filtering = false;
+			while (fprin.hasMoreTokens()){
+				int a = fprin.nextInt();
+				int b = fprin.nextInt();
+				double x = fprin.nextDouble();
+				double y = fprin.nextDouble();
+				double z = fprin.nextDouble();
+				fprin.nextToken();
+				if (!(a == e1 && b == e2)){
+					if (out != null && filtering){
+						out.println(buf);
+						out.close();
+						buf = new StringBuffer("");
+					}	
+					filtering = (isAcceptable(edges[a-1], edges[b-1]));
+					if (filtering){
+
+						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
+                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+						out = new PrintWriter(folder1 + "fpr.prd");
+					}
+				}
+				if (filtering) if (x*x + y*y != 0){
+                    buf.append(x + " " + 0 + "\n");
+                }
+				e1 = a;
+				e2 = b;
+			}
+		    if (out != null && filtering) out.println(buf);
+            out.close();
+            fprin.close();
+
+
+//          getting fnr info
+            debug("Fnr info");
+            buf = new StringBuffer("");
+			fnrin.nextInt();
+			len1 = 0;
+		
+			len2 = 0;
+			e1 = 0;
+			e2 = 0;
+			filtering = false;
+			while (fnrin.hasMoreTokens()){
+				int a = fnrin.nextInt();
+				int b = fnrin.nextInt();
+				double x = fnrin.nextDouble();
+				double y = fnrin.nextDouble();
+				double z = fnrin.nextDouble();
+				fnrin.nextToken();
+				if (!(a == e1 && b == e2)){
+					if (out != null && filtering){
+						out.println(buf);
+						out.close();
+						buf = new StringBuffer("");
+					}	
+					filtering = (isAcceptable(edges[a-1], edges[b-1]));
+					if (filtering){
+
+						//debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
+                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+						out = new PrintWriter(folder1 + "fnr.prd");
+					}
+				}
+				if (filtering) if (x*x + y*y != 0){
+                    buf.append(x + " " + 0 + "\n");
+                }
+				e1 = a;
+				e2 = b;
+			}
+		    if (out != null && filtering) out.println(buf);
+            out.close();
+            fnrin.close();
+             
+			
+			                                              
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+
+}
+
+class MyScanner{
+	BufferedReader in;
+	StringTokenizer st;
+
+	MyScanner(String file){
+	        try{
+		in = new BufferedReader(new FileReader(new File(file)));
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	MyScanner(InputStream inp){
+		try{                                   
+                	in = new BufferedReader(new InputStreamReader(inp));
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+	}
+
+	boolean hasMoreTokens(){
+		String s = null;
+		try{
+			while ((st==null || !st.hasMoreTokens())&& (s=in.readLine()) != null) st = new StringTokenizer(s);
+			if ((st==null || !st.hasMoreTokens())&& s==null) return false;
+	        }catch(IOException e){
+	        	e.printStackTrace();
+	        }
+		return true;
+	}
+
+	String nextToken(){
+		if (hasMoreTokens()){
+			return st.nextToken();
+		}
+		return null;
+	}
+
+	int nextInt(){
+		return Integer.parseInt(nextToken());
+	}
+
+	long nextLong(){
+		return Long.parseLong(nextToken());
+	}
+
+	double nextDouble(){
+		return Double.parseDouble(nextToken());
+	}
+
+
+	String nextString(){
+		return nextToken();
+	}
+	void close(){
+		try{
+			in.close();
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+	}
+
+}
