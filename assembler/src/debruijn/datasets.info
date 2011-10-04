@@ -168,6 +168,15 @@ SC_2909
 	LEN		4639675	; total size
 }
 
+SC_0310
+{
+	first	SC/0310_04_left.fastq.gz
+	second	SC/0310_04_right.fastq.gz
+	RL		100	; read length
+	IS		270 	; insert size
+	LEN		4639675	; total size
+}
+
 SC_K35
 {
 	first	SC/0209_tau1_095_K35_02_left.fastq.gz
