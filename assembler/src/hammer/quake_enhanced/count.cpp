@@ -37,7 +37,7 @@ typedef unordered_map<KMer, KMerInfo, KMer::hash> UnorderedMap;
  * @param ofiles Files to write the result k-mers. They are written
  * one per line.
  */
-void Quake::SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
+void Quake::SplitToFiles(ireadstream ifs, vector<ofstream*> &ofiles,
                   uint8_t error_threshold) {
   uint32_t file_number = ofiles.size();
   while (!ifs.eof()) {
@@ -49,10 +49,10 @@ void Quake::SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
       if (KMer::less2()(!kmer, kmer)) {
         kmer = !kmer;
       }
-      FILE *cur_file = ofiles[hash_function(kmer) % file_number];
+      ofstream &cur_file = *ofiles[hash_function(kmer) % file_number];
       KMer::BinWrite(cur_file, kmer);
       double q_count = gen.correct_probability();
-      fwrite(&q_count, sizeof(q_count), 1, cur_file);
+      cur_file.write((const char *) &q_count, sizeof(q_count));
     }
   }
 }
@@ -64,7 +64,7 @@ void Quake::SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
  * @param ofile Output file. For each unique k-mer there will be a
  * line with k-mer itself and number of its occurrences.
  */
-void Quake::EvalFile(FILE *ifile, FILE *ofile) {
+void Quake::EvalFile(ifstream &ifile, ofstream &ofile) {
   UnorderedMap stat_map;
   char buffer[kK + 1];
   buffer[kK] = 0;
@@ -72,11 +72,8 @@ void Quake::EvalFile(FILE *ifile, FILE *ofile) {
   while (KMer::BinRead(ifile, &kmer)) {
     KMerInfo &info = stat_map[kmer];
     double q_count = -1;
-    bool readed =
-        fread(&q_count, sizeof(q_count),
-              1, ifile);
-    assert(readed == 1);
-    SUPPRESS_UNUSED(readed);
+    ifile.read((char *) &q_count, sizeof(q_count));
+    assert(ifile.fail());
     double freq = 0;
     // ToDo 0.5 threshold ==>> command line option
     if (q_count > 0.5) {
@@ -90,38 +87,38 @@ void Quake::EvalFile(FILE *ifile, FILE *ofile) {
        it != stat_map.end(); ++it) {
     const KMerInfo &info = it->second;
     AddToHist(info.freq);
-    fprintf(ofile, "%s %d %f %f\n", it->first.str().c_str(),
-            info.count, info.q_count, info.freq);
+    ofile << it->first.str().c_str() << " " 
+          << info.count << " "
+          << info.q_count << " "
+          << info.freq << endl;
   }
 }
 
 void Quake::Count(string ifile_name, string ofile_name, 
                   string hash_file_prefix, uint32_t hash_file_number, 
                   uint8_t quality_offset, uint8_t quality_threshold) {
-  vector<FILE*> ofiles(hash_file_number);
+  vector<ofstream*> ofiles(hash_file_number);
   for (uint32_t i = 0; i < hash_file_number; ++i) {
     char filename[50];
     snprintf(filename, sizeof(filename), "%s%u.part", 
              hash_file_prefix.c_str(), i);
-    ofiles[i] = fopen(filename, "wb");
-    assert(ofiles[i] != NULL && "Too many files to open");
+    ofiles[i] = new ofstream(filename);
+    assert(ofiles[i]->fail() && "Too many files to open");
   }
   SplitToFiles(ireadstream(ifile_name, quality_offset),
                ofiles, quality_threshold);
   for (uint32_t i = 0; i < hash_file_number; ++i) {
-    fclose(ofiles[i]);
+    delete ofiles[i];
   }
-  FILE *ofile = fopen(ofile_name.c_str(), "w");
+  ofstream ofile(ofile_name.c_str());
   assert(ofile != NULL && "Too many files to open");
   for (uint32_t i = 0; i < hash_file_number; ++i) {
     char ifile_name[50];
     snprintf(ifile_name, sizeof(ifile_name), "%s%u.part", 
              hash_file_prefix.c_str(), i);
-    FILE *ifile = fopen(ifile_name, "rb");
+    ifstream ifile(ifile_name);
     EvalFile(ifile, ofile);
-    fclose(ifile);
     remove(ifile_name);
   }
-  fclose(ofile);
   cur_state_ = kRealHistPrepared;
 }

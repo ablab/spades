@@ -1,5 +1,6 @@
 #include <string>
 #include "quake_enhanced/quake.hpp"
+#include <cassert>
 using std::string;
 using quake_enhanced::Quake;
 

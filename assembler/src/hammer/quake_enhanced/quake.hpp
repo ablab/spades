@@ -36,7 +36,7 @@ class Quake {
    * @param ofiles Files to write the result k-mers. They are written
    * one per line.
    */
-  void SplitToFiles(ireadstream ifs, const vector<FILE*> &ofiles,
+  void SplitToFiles(ireadstream ifs, vector<ofstream*> &ofiles,
                     uint8_t error_threshold);
   /**
    * This function reads k-mer and calculates number of occurrences for
@@ -45,7 +45,7 @@ class Quake {
    * @param ofile Output file. For each unique k-mer there will be a
    * line with k-mer itself and number of its occurrences.
    */
-  void EvalFile(FILE *ifile, FILE *ofile);
+  void EvalFile(ifstream &ifile, ofstream &ofile);
 
   // PrepareHists
   void AddToHist(double freq);
