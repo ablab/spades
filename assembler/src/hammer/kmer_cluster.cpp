@@ -525,9 +525,11 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 				}
 				cluster_quality = 1-cluster_quality;
 
-				if ( cluster_quality > Globals::good_cluster_threshold ) {
+				if ( cluster_quality > Globals::good_cluster_threshold ||
+				     ( Globals::regular_threshold_for_correction && (cluster_quality > Globals::special_nonsingleton_threshold) ) ) {
 					k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOOD;
-					if ( cluster_quality > Globals::iterative_reconstruction_threshold) {
+					if ( cluster_quality > Globals::iterative_reconstruction_threshold ||
+					    (Globals::regular_threshold_for_correction && (cluster_quality > Globals::special_nonsingleton_threshold) )) {
 						k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER;
 					} else {
 						k_[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER_BAD;

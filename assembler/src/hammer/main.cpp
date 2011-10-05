@@ -62,6 +62,7 @@ bool Globals::trim_left_right = false;
 bool Globals::use_iterative_reconstruction = false;
 bool Globals::reconstruction_in_full_iterations = false;
 double Globals::iterative_reconstruction_threshold = 0.995;
+double Globals::special_nonsingleton_threshold = 0;
 int Globals::max_reconstruction_iterations = 1;
 
 bool Globals::read_kmers_after_clustering = false;
@@ -141,6 +142,7 @@ int main(int argc, char * argv[]) {
 	Globals::write_each_iteration_kmers = cfg::get().write_each_iteration_kmers;
 	Globals::regular_threshold_for_correction = cfg::get().regular_threshold_for_correction;
 	Globals::discard_only_singletons = cfg::get().discard_only_singletons;
+	Globals::special_nonsingleton_threshold = cfg::get().special_nonsingleton_threshold;
 
 	Globals::paired_reads = cfg::get().paired_reads;
 	string readsFilenameLeft, readsFilenameRight;

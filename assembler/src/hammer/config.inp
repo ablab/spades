@@ -34,7 +34,8 @@ use_iterative_reconstruction		1
 reconstruction_in_full_iterations	1
 iterative_reconstruction_threshold	0.995
 regular_threshold_for_correction	1
-discard_only_singletons			1
+special_nonsingleton_threshold		0.5
+discard_only_singletons			0
 max_reconstruction_iterations		10
 write_each_iteration_kmers		1
 

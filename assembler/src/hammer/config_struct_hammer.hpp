@@ -50,6 +50,7 @@ struct hammer_config
 	bool write_each_iteration_kmers;
 	bool regular_threshold_for_correction;
 	bool discard_only_singletons;
+	double special_nonsingleton_threshold;
 };
 
 
@@ -97,6 +98,7 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 	load(pt, "write_each_iteration_kmers", cfg.write_each_iteration_kmers);
 	load(pt, "regular_threshold_for_correction", cfg.regular_threshold_for_correction);
 	load(pt, "discard_only_singletons", cfg.discard_only_singletons);
+	load(pt, "special_nonsingleton_threshold", cfg.special_nonsingleton_threshold);
 }
 
 typedef config_common::config<hammer_config> cfg;
