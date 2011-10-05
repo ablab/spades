@@ -71,7 +71,7 @@ void segfault_handler(int signum)
 		std::cout << "The program was terminated by segmentation fault" << std::endl;
 		print_trace();
 
-		link_output("latest_try");
+		link_output("latest");
 	}
 
 	signal(signum, SIG_DFL);
@@ -83,7 +83,7 @@ int main() {
     const size_t GB = 1 << 30;
     limit_memory(120 * GB);
 
-    on_exit_ouput_linker try_linker("latest_try");
+    on_exit_ouput_linker try_linker("latest");
 
 	signal(SIGSEGV, segfault_handler);
 
