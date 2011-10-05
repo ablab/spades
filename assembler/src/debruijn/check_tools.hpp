@@ -10,6 +10,7 @@
 
 #include "omni/paired_info.hpp"
 #include "new_debruijn.hpp"
+#include "graph_pack.hpp"
 
 namespace debruijn_graph {
 
@@ -79,6 +80,52 @@ void CheckInfoEquality(PairedInfoIndex<Graph>& paired_index1, PairedInfoIndex<Gr
 //		}
 //	}
 }
+
+/*
+template <class k>
+bool CheckContains(Seq<k> pattern, const Sequence& s) {
+	Seq<k> kmer(s);
+	kmer = kmer >> 'A';
+	for (size_t i = k - 1; i < s.size(); ++i) {
+		kmer = kmer << s[i];
+		if (pattern == kmer)
+			return true;
+	}
+	return false;
+}
+
+template <class k>
+bool CheckContainsSubKmer(const Sequence& pattern, const Sequence& s) {
+	Seq<k> kmer(pattern);
+	kmer = kmer >> 'A';
+	for (size_t i = k - 1; i < pattern.size(); ++i) {
+		kmer = kmer << pattern[i];
+		if (CheckContains(kmer, s))
+			return true;
+	}
+	return false;
+}
+
+template <class k>
+size_t ThreadedPairedReadCount(const Sequence& s1, const Sequence& s2, io::IReader<io::PairedRead>& stream) {
+	size_t count = 0;
+	io::PairedRead paired_read;
+	while (!stream.eof()) {
+		stream >> paired_read;
+		Sequence read_s1 = paired_read.first().sequence();
+		Sequence read_s2 = paired_read.second().sequence();
+		if (CheckContains<k>(s1, read_s1) && CheckContains<k>(s2, read_s2)) {
+			count++;
+		}
+	}
+	return count;
+}
+
+template <class k>
+size_t ThreadedPairedReadCount(conj_graph_pack gp, int e1, int e2, io::IReader<io::PairedRead>& stream) {
+	return ThreadedPairedReadCount<k>(gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e1)), gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e1)), stream);
+}
+*/
 
 }
 

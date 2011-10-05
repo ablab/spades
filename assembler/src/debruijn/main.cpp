@@ -79,7 +79,6 @@ void segfault_handler(int signum)
 }
 
 int main() {
-
     const size_t GB = 1 << 30;
     limit_memory(120 * GB);
 
