@@ -123,8 +123,8 @@ void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_I
 	sequence = Sequence(genome);
 
 	INFO("Reading graph");
-	omnigraph::scanConjugateGraph(g, conj_IntIds, fileName);
-	omnigraph::scanKmerMapper(*g, *conj_IntIds, fileName, mapper);
+	debruijn_graph::scanConjugateGraph(g, conj_IntIds, fileName);
+	debruijn_graph::scanKmerMapper(*g, *conj_IntIds, fileName, mapper);
 	INFO("Graph read");
 }
 

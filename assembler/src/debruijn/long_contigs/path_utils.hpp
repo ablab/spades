@@ -363,8 +363,6 @@ void CountSimilarity(Graph& g, EdgeStat& path1, EdgeStat& path2, int& similarEdg
 	similarEdges = 0;
 	similarLen = 0;
 
-	DETAILED_INFO("Counting similarity");
-
 	auto iter = path1.begin();
 	while (iter != path1.end()) {
 		int count = std::min(path1.count(*iter), path2.count(*iter));
@@ -376,7 +374,6 @@ void CountSimilarity(Graph& g, EdgeStat& path1, EdgeStat& path2, int& similarEdg
 		}
 	}
 
-	DETAILED_INFO("Counted");
 }
 
 //Remove similar paths
@@ -400,9 +397,6 @@ void RemoveSimilar(Graph& g, std::vector<BidirectionalPath>& paths,
 		}
 		pathStat.push_back(stat);
 	}
-	DETAILED_INFO("Counted");
-
-	DETAILED_INFO("Finding similar");
 	for (int i = 0; i < (int) paths.size(); ++i) {
 		if (toRemove.count(i) != 0) {
 			continue;

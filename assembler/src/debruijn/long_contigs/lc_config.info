@@ -77,7 +77,7 @@ es
     
     fix_weight            false
     use_advanced          true
-    advanced_coeff        1.5
+    advanced_coeff        1
 }    
 
 ; loops removal
@@ -132,7 +132,7 @@ utils
 	; 2 check equality
 	; 3 aggreagte paired info
     mode        3 
-    file1       ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100
+    file1       ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
     file2       ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph
     
     clustered   ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
@@ -169,11 +169,12 @@ real_libs
         QUAKE_FULL
         {
             precounted       true
-            precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
+            ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
+            precounted_path  ./paired_info_IS270_RS100_agregate_1.5
             first            
             second
             
-            raw             ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100
+            raw             ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_acl
             
             has_advanced     false
             advanced         ./data/debruijn/QUAKE_FULL/K55/SC/09.29_07_30/paired_info_IS270_RS100_acl

@@ -8,6 +8,8 @@
 #include "../lc_common.hpp"
 #include "../lc_io.hpp"
 
+using namespace debruijn_graph;
+
 class PairedInfoChecker {
 private:
 	Graph& g_;
@@ -115,7 +117,7 @@ public:
 				auto norm_pi = normalizer.NormalizeWeight(*i1);
 
 				for (auto i2 = pi2.begin(); i2 != pi2.end(); ++i2) {
-					if (math::eq(i1->d, i2->d)) {
+					if (math::eq(i1->d, i2->d) && math::gr(i2->weight, 0.0)) {
 						norm_pi.weight *= lc_cfg::get().es.advanced_coeff;
 					}
 				}
@@ -134,6 +136,9 @@ public:
 DECL_PROJECT_LOGGER("d")
 
 int main() {
+	cfg::create_instance(cfg_filename);
+	lc_cfg::create_instance(long_contigs::lc_cfg_filename);
+
 	Graph g(K);
 	EdgeIndex<K + 1, Graph> index(g);
 	IdTrackHandler<Graph> intIds(g);
@@ -145,17 +150,18 @@ int main() {
 	PairedInfoChecker checker(g);
 
 	DataScanner<Graph> dataScanner(g, intIds);
-	dataScanner.loadPaired(lc_cfg::get().u.file1, pairedIndex);
 
 	switch (lc_cfg::get().u.mode) {
 	case 1: {
 		INFO("Checking " << lc_cfg::get().u.file1);
+		dataScanner.loadPaired(lc_cfg::get().u.file1, pairedIndex);
 		INFO("Symmetric: " << checker.IsSymmetric(pairedIndex));
 		INFO("Conjugate symmetric: " << checker.IsConjugateSymmetric(pairedIndex));
 		break;
 	}
 	case 2: {
 		PairedInfoIndex<Graph> pairedIndex2(g, 0);
+		dataScanner.loadPaired(lc_cfg::get().u.file1, pairedIndex);
 		dataScanner.loadPaired(lc_cfg::get().u.file2, pairedIndex2);
 
 		INFO("Checking " << lc_cfg::get().u.file1 << " and " << lc_cfg::get().u.file2);
@@ -170,18 +176,19 @@ int main() {
 		PairedInfoIndex<Graph> ad(g, 0);
 		PairedInfoIndex<Graph> res(g, 0);
 
-		dataScanner.loadPaired(lc_cfg::get().u.file2, cl);
-		dataScanner.loadPaired(lc_cfg::get().u.file2, ad);
+		dataScanner.loadPaired(lc_cfg::get().u.clustered, cl);
+		dataScanner.loadPaired(lc_cfg::get().u.advanced, ad);
 
 		checker.AggregatePairedInfo(cl, ad,
 				lc_cfg::get().u.insert_size, lc_cfg::get().u.read_size,
 				&res);
 
 		DataPrinter<Graph> dataPrinter(g, intIds);
-		std::string fileName = cfg::get().output_dir + lc_cfg::get().paired_info_file_prefix + "IS" + ToString(lc_cfg::get().u.insert_size) + "_RS" + ToString(lc_cfg::get().u.read_size);
-		dataPrinter.savePaired(fileName + "_agregate_" + ToString(lc_cfg::get().es.advanced_coeff), res);
+		dataPrinter.savePaired( "./" + lc_cfg::get().paired_info_file_prefix + "IS" + ToString(lc_cfg::get().u.insert_size) + "_RS" + ToString(lc_cfg::get().u.read_size)
+				+ "_agregate_" + ToString(lc_cfg::get().es.advanced_coeff), res);
 
 		INFO("Done");
+		break;
 
 	}
 	default: {

@@ -39,10 +39,8 @@ size_t PathLength(const Graph& g, T& path) {
 	double currentLength = 0;
 
 	for(int i = 0; i < (int) path.size(); ++i) {
-		INFO("Made: " << i);
 		currentLength += g.length(path[i]);
 	}
-	INFO("Done");
 	return currentLength;
 }
 
@@ -383,12 +381,10 @@ void PrintPathWithVertices(Graph& g, PathType& path) {
 }
 
 void CountPathLengths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<size_t>& lengths) {
-        lengths.clear();
-        for (auto path = paths.begin(); path != paths.end(); ++path) {
-		DetailedPrintPath(g, *path);
-                lengths.push_back(PathLength(g, *path));
-        }
-	INFO("Done!");
+	lengths.clear();
+	for (auto path = paths.begin(); path != paths.end(); ++path) {
+			lengths.push_back(PathLength(g, *path));
+	}
 }
 
 
