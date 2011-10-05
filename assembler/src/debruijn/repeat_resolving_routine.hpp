@@ -146,9 +146,9 @@ void process_resolve_repeats(
     for (int i = 0; i < 3; ++i)
     {
         ClipTipsForResolver(resolved_gp.g);
-        RemoveBulges2      (resolved_gp.g);
+        BulgeRemoveWrap      (resolved_gp.g);
         RemoveLowCoverageEdges(resolved_gp.g, i, 3);
-        RemoveRelativelyLowCoverageEdges(resolved_gp.g);
+//        RemoveRelativelyLowCoverageEdges(resolved_gp.g);
     }
 
     INFO("---Cleared---");
@@ -234,21 +234,21 @@ void component_statistics(graph_pack & conj_gp, int component_id, PairedInfoInde
 	FILE* file = fopen((component_name + ".tbl").c_str(), "w");
 	DEBUG("Saving in-out table , " << component_name <<" created");
 
-	fprintf(file,"%4c", ' ');
+	fprintf(file,"%6c", ' ');
 
-	fprintf(file, "\n");
 	for (auto out_iter = outgoing_edges.begin(); out_iter != outgoing_edges.end(); ++out_iter)
-		fprintf(file," %4d", conj_gp.int_ids.ReturnIntId(*out_iter));
+		fprintf(file," %6d", conj_gp.int_ids.ReturnIntId(*out_iter));
+	fprintf(file, "\n");
 
 	for (auto inc_iter = incoming_edges.begin(); inc_iter != incoming_edges.end(); ++inc_iter){
-		fprintf(file," %4d", conj_gp.int_ids.ReturnIntId(*inc_iter));
+		fprintf(file," %6d", conj_gp.int_ids.ReturnIntId(*inc_iter));
 		for (auto out_iter = outgoing_edges.begin(); out_iter != outgoing_edges.end(); ++out_iter){
 			char c;
 			if (clustered_index.GetEdgePairInfo(*inc_iter, *out_iter).size() == 0)
 				c = '0';
 			else
 				c = 'X';
-			fprintf(file,"%4c", c);
+			fprintf(file,"%6c", c);
 		}
 		fprintf(file, "\n");
 	}

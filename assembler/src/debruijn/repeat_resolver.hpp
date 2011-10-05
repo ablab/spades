@@ -638,12 +638,12 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 				if (edge_info_colors[j] == i)
 					paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, old_to_new_edgeId[edge_infos[j].lp.first]);
 			}
-			/*for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
-				if (new_graph.coverage(it->second) < cfg::get().simp.ec.max_coverage * 0.5) {
+			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
+				if (new_graph.coverage(it->second) < cfg::get().simp.ec.max_coverage * 0.6) {
 				    paired_di_data.DeleteEdgeInfo(it->second);
 				    new_graph.DeleteEdge(it->second);
 				}
-			}*/
+			}
 			if (rc_mode)
 				BanRCVertex(split_pair.first);
 		}
