@@ -1,6 +1,8 @@
 #pragma once
 #include "paired_info.hpp"
 #include "path_set.hpp"
+#include "xmath.h"
+using namespace math;
 
 namespace omnigraph{
 
