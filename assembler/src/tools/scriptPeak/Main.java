@@ -270,6 +270,8 @@ public class Main implements Runnable{
 
 						//debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
                         String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+                        file = new File(folder1);
+                        file.mkdirs();
 						out = new PrintWriter(folder1 + "fnr.prd");
 					}
 				}

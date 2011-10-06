@@ -49,7 +49,7 @@ class PairedRead {
   PairedRead(const SingleRead& first,
              const SingleRead& second,
              size_t insert_size)
-    : first_(first), second_(second), insert_size_() {}
+    : first_(first), second_(second), insert_size_(insert_size) {}
 
   /*
    * Return first SingleRead in the pair.
