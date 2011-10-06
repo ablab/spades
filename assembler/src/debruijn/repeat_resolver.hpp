@@ -496,14 +496,17 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		if (iter->second == 0 && cheating_mode == 2) {
 			INFO("Adding no-paired edge: " << new_IDs.ReturnIntId(iter->first)<< " potential bug here.");
 			PairInfos tmp = paired_di_data.GetEdgeInfos(iter->first);
+			int fl = 0;
 			for(size_t j = 0; j < tmp.size(); j ++ ){
 				EdgeId right_id = tmp[j].second;
 //				EdgeId left_id = tmp[j].first;
 				double d = tmp[j].d;
-							//				int w = tmp[j].weight;
-							//				if (w < 10) continue;
+				int w = tmp[j].weight;
+				if (w < 0.001)
+					continue;
 			//	if (v == new_graph.S)
 				int dif_d = 0;
+				fl ++;
 				int dir = 0;
 				// it doesn't matter now
 				EdgeInfo ei(tmp[j], dir, right_id,
@@ -511,6 +514,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 				edge_infos.push_back(ei);
 				edge_info_colors.push_back(k);
 			}
+			if (fl)
 			k++;
 		}
 	}
@@ -604,9 +608,10 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 //		}
 			}
 			else {
-				DEBUG("Very low covered pair info");
+				DEBUG("Zero covered pair info");
 			}
 		}
+		DEBUG("split_edge size " << split_edge.size());
 		if (split_edge.size() > 0) {
 			pair<VertexId, vector<pair<EdgeId, EdgeId>>> split_pair = new_graph.SplitVertex(v, split_edge, split_coeff);
 			res.push_back(split_pair.first);
@@ -639,7 +644,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 					paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, old_to_new_edgeId[edge_infos[j].lp.first]);
 			}
 			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
-				if (new_graph.coverage(it->second) < cfg::get().simp.ec.max_coverage * 0.6) {
+				if (new_graph.coverage(it->second) < cfg::get().simp.ec.max_coverage * 0.1) {
 				    paired_di_data.DeleteEdgeInfo(it->second);
 				    new_graph.DeleteEdge(it->second);
 				}
@@ -648,7 +653,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 				BanRCVertex(split_pair.first);
 		}
 	}
-
+	DEBUG("split finished, deleting vertex");
 	new_graph.ForceDeleteVertex(v);
 	return res;
 
@@ -714,7 +719,7 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesAuto(){
 			++v_iter) {
 		//			if (vertices.find(new_graph.conjugate(*v_iter)) == vertices.end()) {
 		//				if (new_graph.OutgoingEdgeCount(*v_iter) + new_graph.IncomingEdgeCount(*v_iter) > 0)
-		vertices.insert(make_pair(100000 - new_IDs.ReturnIntId(*v_iter), *v_iter));
+		vertices.insert(make_pair(10000 - new_IDs.ReturnIntId(*v_iter), *v_iter));
 		//			}
 	}
 	return vertices;
@@ -732,7 +737,7 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 	int count = 0;
 	while (comps.size() != 0) {
 		for(size_t i = 0; i < comps.size(); i++) {
-			vertices.insert(make_pair(100000 - new_IDs.ReturnIntId(comps[i]), comps[i]));
+			vertices.insert(make_pair(10000 - new_IDs.ReturnIntId(comps[i]), comps[i]));
 			count++;
 		}
 		if (splitter.Finished())

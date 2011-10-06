@@ -127,7 +127,10 @@ void process_resolve_repeats(
     ResolveRepeats(origin_gp  .g, origin_gp  .int_ids, clustered_index, origin_gp  .edge_pos,
                    resolved_gp.g, resolved_gp.int_ids,                  resolved_gp.edge_pos,
                    cfg::get().output_dir + subfolder +"resolve_" + graph_name +  "/", labels_after);
-
+    if (output_contigs) {
+       	OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_after_rr_before_simplify.fasta");
+    	OutputContigs(origin_gp.g, cfg::get().output_dir + "contigs_before_resolve.fasta");
+    }
     INFO("Total labeler start");
 
     total_labeler_gs graph_struct_after (resolved_gp.g, &resolved_gp.int_ids, &resolved_gp.edge_pos, &labels_after);
@@ -215,6 +218,9 @@ void component_statistics(graph_pack & conj_gp, int component_id, PairedInfoInde
 	string graph_name = ConstructComponentName("graph_", component_id).c_str();
 	string component_name = cfg::get().output_dir + "graph_components/" + graph_name;
 	//component output
+	string table_name = cfg::get().output_dir + "graph_components/tables/";
+	mkdir(table_name.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	table_name += graph_name;
 	set<typename graph_pack::graph_t::EdgeId> incoming_edges;
 	set<typename graph_pack::graph_t::EdgeId> outgoing_edges;
 	for(auto iter = conj_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -231,7 +237,7 @@ void component_statistics(graph_pack & conj_gp, int component_id, PairedInfoInde
 		}
 	}
 
-	FILE* file = fopen((component_name + ".tbl").c_str(), "w");
+	FILE* file = fopen((table_name + ".tbl").c_str(), "w");
 	DEBUG("Saving in-out table , " << component_name <<" created");
 
 	fprintf(file,"%6c", ' ');
