@@ -27,6 +27,26 @@ public:
 
     bool operator<(const PathSet& rhs) const {
         const PathSet &lhs = *this;
+        
+        
+        
+        if(lhs.start == rhs.start)
+        {
+            if(lhs.length == rhs.length)
+            {
+                if(lhs.end== rhs.end)
+                {
+                    return PathLess(lhs.paths, rhs.paths);
+                }
+                else return lhs.end< rhs.end;
+            }
+            else return lhs.length < rhs.length;
+        }
+        else return lhs.start < rhs.start;
+
+
+
+
         if(lhs.start == rhs.start)
         {
             if(lhs.end == rhs.end)
@@ -45,7 +65,17 @@ public:
     bool IsAbsolutePrefixOf(const PathSet<EdgeId> rhs)
     {
         const PathSet<EdgeId> &lhs = *this;
-    
+        if(rhs.start != lhs.start)
+            return false;
+        if(lhs.length >= rhs.length)
+            return false;
+        for(auto iter = lhs.paths.begin() ; iter != lhs.paths.end() ; ++iter)
+        {
+            Path singlePath( iter->begin() , iter->end());
+            singlePath.push_back(end);
+            if (!IsPrefixOfPaths(singlePath, rhs.paths))
+                return false ;
+        }
         return true;
     }
     bool IsAbsoluteSuffixOf(const PathSet<EdgeId> rhs)
@@ -60,6 +90,27 @@ public:
 
 
 private:
+    bool IsPrefixOfPaths(Path & singlePath,const set<Path> &paths)
+    {
+        for(auto iter = paths.begin() ; iter != paths.end(); ++iter)
+        {
+            if( singlePath.size() > iter->size())
+                continue;
+            bool diff = true;
+            for(size_t i = 0  ; i < singlePath.size() ; i++)
+            {
+                if(singlePath[i] != (*iter)[i])
+                {
+                    diff = false;
+                    break;
+                }
+            }
+            if(diff == true)
+                return true;
+        }
+        return false;
+    }
+
 
     bool PathLess(const set<Path> firstSet,const set<Path> secondSet) const
     {
@@ -106,7 +157,7 @@ ostream& operator<<(ostream& os, const PathSet<EdgeId>& pathSet) {
 
     for(auto iter = pathSet.paths.begin() ; iter != pathSet.paths.end() ; ++iter)
     {
-        pathsString << "Path " << linecounter <<": "<< pathSet.start <<"--" ;
+        pathsString << "Path " << linecounter <<":"<< pathSet.length<< " "<<  pathSet.start <<"--" ;
         for(size_t i = 0 ; i < (*iter).size() ; ++i)
         {
             pathsString << (*iter)[i] << " -- " ;
@@ -210,7 +261,49 @@ public:
 private:
 	Data data_;
 };
+template<typename EdgeId>
+class PathSetIndex
+{
+private:
+    PathSetIndexData<EdgeId> data_;
+    typedef vector<EdgeId> Path;
 
+public:
+    PathSetIndex(PathSetIndexData<EdgeId> data):data_(data){}
+    //TODO BAD CODE
+    void RemovePrefixes(PathSetIndexData<EdgeId> &filteredPathSetDat)
+    {
+        for(auto iter = data_.begin() ; iter != data_.end() ; )
+        {
+            int distance =0;
+            PathSet<EdgeId> currentPathset = *iter;
+            auto forward_iter = iter ;  
+            bool isPrefix = false ;
+            while(true)
+            {
+                if(iter == data_.end())
+                    break;
 
+                advance(iter,1);
+                distance++;
+            
+                if((iter == data_.end()) || ( iter->start != currentPathset.start))
+                    break;
+                if(currentPathset.IsAbsolutePrefixOf( *iter))
+                {
+                    isPrefix = true;
+                    break;
+                }
+            }
+           if(!isPrefix)
+           {
+                filteredPathSetDat.AddPathSet(currentPathset);
+           }
+
+            advance(iter, -1*distance + 1 );
+
+        }
+    }
+};
 
 }
