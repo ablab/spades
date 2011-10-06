@@ -81,9 +81,10 @@ void CheckInfoEquality(PairedInfoIndex<Graph>& paired_index1, PairedInfoIndex<Gr
 //	}
 }
 
-/*
-template <class k>
+template <size_t k>
 bool CheckContains(Seq<k> pattern, const Sequence& s) {
+	if (s.size() < k)
+		return false;
 	Seq<k> kmer(s);
 	kmer = kmer >> 'A';
 	for (size_t i = k - 1; i < s.size(); ++i) {
@@ -94,8 +95,10 @@ bool CheckContains(Seq<k> pattern, const Sequence& s) {
 	return false;
 }
 
-template <class k>
+template <size_t k>
 bool CheckContainsSubKmer(const Sequence& pattern, const Sequence& s) {
+	if (pattern.size() < k || s.size() < k)
+		return false;
 	Seq<k> kmer(pattern);
 	kmer = kmer >> 'A';
 	for (size_t i = k - 1; i < pattern.size(); ++i) {
@@ -106,7 +109,7 @@ bool CheckContainsSubKmer(const Sequence& pattern, const Sequence& s) {
 	return false;
 }
 
-template <class k>
+template <size_t k>
 size_t ThreadedPairedReadCount(const Sequence& s1, const Sequence& s2, io::IReader<io::PairedRead>& stream) {
 	size_t count = 0;
 	io::PairedRead paired_read;
@@ -114,18 +117,29 @@ size_t ThreadedPairedReadCount(const Sequence& s1, const Sequence& s2, io::IRead
 		stream >> paired_read;
 		Sequence read_s1 = paired_read.first().sequence();
 		Sequence read_s2 = paired_read.second().sequence();
-		if (CheckContains<k>(s1, read_s1) && CheckContains<k>(s2, read_s2)) {
+		if (CheckContainsSubKmer<k>(read_s1, s1) && CheckContainsSubKmer<k>(read_s2, s2)) {
 			count++;
 		}
 	}
 	return count;
 }
 
-template <class k>
-size_t ThreadedPairedReadCount(conj_graph_pack gp, int e1, int e2, io::IReader<io::PairedRead>& stream) {
+template <size_t k>
+size_t ThreadedPairedReadCount(const conj_graph_pack& gp, int e1, int e2, io::IReader<io::PairedRead>& stream) {
 	return ThreadedPairedReadCount<k>(gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e1)), gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e1)), stream);
 }
-*/
+
+double TotalPositiveWeight(const conj_graph_pack& gp, PairedInfoIndex<Graph> paired_index, int e1, int e2) {
+	vector<PairInfo<EdgeId>> infos = paired_index.GetEdgePairInfo(gp.int_ids.ReturnEdgeId(e1), gp.int_ids.ReturnEdgeId(e2));
+	double s = 0.;
+	for (auto it = infos.begin(); it != infos.end(); ++it) {
+		double weight = it->weight;
+		if (math::gr(weight, 0.)) {
+			s += weight;
+		}
+	}
+	return s;
+}
 
 }
 

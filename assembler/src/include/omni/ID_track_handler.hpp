@@ -104,8 +104,8 @@ public:
 		return it != VertexIntId.end() ? it->second : 0;
 	}
 
-	EdgeId ReturnEdgeId(realIdType id){
-		typename map<realIdType, EdgeId>::iterator it = EdgeOriginalId.find(
+	EdgeId ReturnEdgeId(realIdType id) const {
+		typename map<realIdType, EdgeId>::const_iterator it = EdgeOriginalId.find(
 				id);
 		if (it != EdgeOriginalId.end())
 			return it->second;
@@ -114,8 +114,8 @@ public:
 
 	}
 
-	VertexId ReturnVertexId(realIdType id){
-		typename map<realIdType, VertexId>::iterator it = VertexOriginalId.find(
+	VertexId ReturnVertexId(realIdType id) const {
+		typename map<realIdType, VertexId>::const_iterator it = VertexOriginalId.find(
 				id);
 		if (it != VertexOriginalId.end())
 			return it->second;

@@ -11,6 +11,8 @@
 #include "omni/paired_info.hpp"
 #include "simplification.hpp"
 
+#include "check_tools.hpp"
+
 namespace debruijn_graph {
 
 void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
@@ -40,6 +42,14 @@ void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
 
 			estimator.Estimate(clustered_index);
 		} else {
+//			stream.reset();
+//			int e1 = 1068;
+//			int e2 = 1160;
+//			cout << "ThreadedPairedReadCount = " << ThreadedPairedReadCount<K + 1>(gp, e1, e2, stream) << endl;
+//			cout << "TotalPositiveWeight = " << TotalPositiveWeight(gp, paired_index, e1, e2) << endl;
+//
+//			throw(std::exception());
+
 			INFO("Estimating distances");
 			DistanceEstimator<Graph> estimator(gp.g, paired_index,
 					cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
