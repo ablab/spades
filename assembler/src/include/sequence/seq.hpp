@@ -25,6 +25,7 @@
 #include <algorithm>
 #include "sequence/nucl.hpp"
 #include "log.hpp"
+#include <cstring>
 #include <iostream>
 
 
