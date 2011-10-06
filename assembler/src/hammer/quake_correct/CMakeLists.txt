@@ -1,4 +1,4 @@
-project(quake_count CXX)
+project(quake_correct CXX)
 
 add_executable(correct
    bithash.cpp correct.cpp edit.cpp Read.cpp gzstream.C)
