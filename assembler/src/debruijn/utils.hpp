@@ -487,8 +487,8 @@ private:
 		return false;
 	}
 
-	bool Substitute(Kmer& kmer) {
-		Kmer subs = kmer_mapper_.Substitute();
+	bool Substitute(Kmer& kmer) const {
+		Kmer subs = kmer_mapper_.Substitute(subs);
 		if (subs != kmer) {
 			kmer = subs;
 			return true;

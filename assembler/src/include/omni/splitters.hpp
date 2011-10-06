@@ -10,8 +10,11 @@ public:
 
 	virtual bool Finished() = 0;
 
-	virtual ~GraphSplitter() {
+	virtual string ComponentName() {
+		return "";
+	}
 
+	virtual ~GraphSplitter() {
 	}
 };
 
@@ -25,7 +28,7 @@ private:
 
 public:
 	ComponentFinder(const Graph &g, set<EdgeId> &edges) :
-			super(g), edges_(edges) {
+		super(g), edges_(edges) {
 	}
 
 	virtual ~ComponentFinder() {
@@ -47,7 +50,7 @@ private:
 
 public:
 	NeighbourhoodFinder(const Graph &g, set<EdgeId> &edges, size_t bound) :
-			super(g), edges_(edges), bound_(bound) {
+		super(g), edges_(edges), bound_(bound) {
 	}
 
 	virtual ~NeighbourhoodFinder() {
@@ -76,7 +79,7 @@ private:
 
 public:
 	SubgraphDijkstra(const Graph &g, const set<VertexId> &subgraph) :
-			super(g), subgraph_(subgraph) {
+		super(g), subgraph_(subgraph) {
 	}
 
 	virtual ~SubgraphDijkstra() {
@@ -101,8 +104,8 @@ private:
 
 public:
 	ErrorComponentSplitter(const Graph &graph, const set<EdgeId> &black_edges) :
-			graph_(graph), black_edges_(black_edges), iterator_(
-					graph.SmartEdgeBegin()) {
+		graph_(graph), black_edges_(black_edges),
+				iterator_(graph.SmartEdgeBegin()) {
 		TRACE("ErrorComponentSplitter created and SmartIterator initialized");
 	}
 
@@ -113,14 +116,14 @@ public:
 		ComponentFinder<Graph> cf(graph_, black_edges_);
 		cf.run(start_vertex);
 		vector < VertexId > result = cf.VisitedVertices();
-		return set<VertexId>(result.begin(), result.end());
+		return set<VertexId> (result.begin(), result.end());
 	}
 
 	set<VertexId> FindNeighbourhood(VertexId start, size_t bound) {
 		NeighbourhoodFinder<Graph> nf(graph_, black_edges_, bound);
 		nf.run(start);
 		vector < VertexId > result = nf.VisitedVertices();
-		return set<VertexId>(result.begin(), result.end());
+		return set<VertexId> (result.begin(), result.end());
 	}
 
 	size_t FindDiameter(const set<VertexId> &component) {
@@ -128,7 +131,7 @@ public:
 		SubgraphDijkstra<Graph> sd(graph_, component);
 		VertexId current = *(component.begin());
 		for (size_t i = 0; i < 4; i++) {
-			pair<VertexId, size_t> next = GetFarthest(current, component);
+			pair < VertexId, size_t > next = GetFarthest(current, component);
 			current = next.first;
 			result = next.second;
 		}
@@ -139,7 +142,7 @@ public:
 			const set<VertexId> &component) {
 		SubgraphDijkstra<Graph> sd(graph_, component);
 		sd.run(v);
-		pair<VertexId, size_t> result(v, 0);
+		pair < VertexId, size_t > result(v, 0);
 		auto bounds = sd.GetDistances();
 		for (auto it = bounds.first; it != bounds.second; ++it) {
 			if (it->second > result.second) {
@@ -153,7 +156,7 @@ public:
 		TRACE("Construction of next component started");
 		if (Finished()) {
 			VERIFY(false);
-			return vector<VertexId>();
+			return vector<VertexId> ();
 		}
 		EdgeId next = *iterator_;
 		++iterator_;
@@ -163,13 +166,13 @@ public:
 						<< component.size() << " vertices");
 		size_t component_size = FindDiameter(component);
 		TRACE("Diameter of component is " << component_size);
-		set < VertexId > neighbourhood = FindNeighbourhood(graph_.EdgeEnd(next),
-				1.5 * component_size);
+		set < VertexId > neighbourhood = FindNeighbourhood(
+				graph_.EdgeEnd(next), 1.5 * component_size);
 		TRACE(
 				"Error edges component neighborhood constructed. It contains "
 						<< neighbourhood.size() << " vertices");
 		visited_.insert(component.begin(), component.end());
-		return vector<VertexId>(neighbourhood.begin(), neighbourhood.end());
+		return vector<VertexId> (neighbourhood.begin(), neighbourhood.end());
 	}
 
 	virtual bool Finished() {
@@ -231,7 +234,7 @@ public:
 	virtual vector<VertexId> NextComponent() {
 		if (Finished()) {
 			VERIFY(false);
-			return vector<VertexId>();
+			return vector<VertexId> ();
 		}
 		VertexId next = queue_.top();
 		TRACE("Search started");
@@ -275,15 +278,14 @@ private:
 public:
 	CountingDijkstra(const Graph &graph, size_t max_size,
 			size_t edge_length_bound) :
-			super(graph), max_size_(max_size), edge_length_bound_(
-					edge_length_bound), current_(0) {
+		super(graph), max_size_(max_size),
+				edge_length_bound_(edge_length_bound), current_(0) {
 	}
 
 	virtual ~CountingDijkstra() {
 	}
 
-	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge,
-			distance_t length) {
+	virtual bool CheckPutVertex(VertexId vertex, EdgeId edge, distance_t length) {
 		if (current_ < max_size_) {
 			current_++;
 		}
@@ -349,8 +351,8 @@ private:
 public:
 	ReliableSplitter(const Graph &graph, size_t max_size,
 			size_t edge_length_bound) :
-			graph_(graph), max_size_(max_size), edge_length_bound_(
-					edge_length_bound), current_(graph.begin()) {
+		graph_(graph), max_size_(max_size),
+				edge_length_bound_(edge_length_bound), current_(graph.begin()) {
 		TRACE(
 				"Long edges splitter created and queue filled with all graph vertices");
 	}
@@ -361,7 +363,7 @@ public:
 	virtual vector<VertexId> NextComponent() {
 		if (Finished()) {
 			VERIFY(false);
-			return vector<VertexId>();
+			return vector<VertexId> ();
 		}
 		TRACE("Search started");
 		CountingDijkstra<Graph> cf(graph_, max_size_, edge_length_bound_);
@@ -376,6 +378,85 @@ public:
 
 	virtual bool Finished() {
 		return current_ == graph_.end();
+	}
+};
+
+template<class Graph>
+class ReliableSplitterAlongGenome: public GraphSplitter<
+		typename Graph::VertexId> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	const Graph &graph_;
+
+	size_t max_size_;
+	size_t edge_length_bound_;
+	set<VertexId> last_component_;
+	size_t current_index_;
+	MappingPath<EdgeId> genome_path_;
+	Range covered_range_;
+
+	bool EdgeCovered(EdgeId edge) {
+		return last_component_.count(
+				graph_.EdgeStart(genome_path_[current_index_].first)) == 1
+				&& last_component_.count(
+						graph_.EdgeEnd(genome_path_[current_index_].first)) == 1;
+	}
+
+	void SkipVisited() {
+		covered_range_.start_pos
+				= genome_path_[current_index_].second.initial_range.start_pos;
+		covered_range_.end_pos
+				= genome_path_[current_index_].second.initial_range.end_pos;
+		while (current_index_ != genome_path_.size() && !EdgeCovered(
+				genome_path_[current_index_].first)) {
+			covered_range_.end_pos
+					= genome_path_[current_index_].second.initial_range.end_pos;
+			++current_index_;
+		}
+	}
+
+public:
+	string ComponentName() {
+		stringstream ss;
+		ss << covered_range_.start_pos << "_" << covered_range_.end_pos
+				<< ".dot" << endl;
+		return ss.str();
+	}
+
+	ReliableSplitterAlongGenome(const Graph &graph, size_t max_size,
+			size_t edge_length_bound, MappingPath<EdgeId> genome_path) :
+		graph_(graph), max_size_(max_size),
+				edge_length_bound_(edge_length_bound), current_index_(0),
+				genome_path_(genome_path), covered_range_(0, 0) {
+
+	}
+
+	virtual ~ReliableSplitterAlongGenome() {
+	}
+
+	virtual vector<VertexId> NextComponent() {
+		if (Finished()) {
+			VERIFY(false);
+			return vector<VertexId> ();
+		}
+		TRACE("Search started");
+		CountingDijkstra<Graph> cf(graph_, max_size_, edge_length_bound_);
+		cf.run(graph_.EdgeStart(genome_path_[current_index_].first));
+		TRACE("Search finished");
+		vector < VertexId > result = cf.VisitedVertices();
+		last_component_.clear();
+		last_component_.insert(result.begin(), result.end());
+		VERIFY(EdgeCovered(genome_path_[current_index_].first));
+		last_component_.insert(result.begin(), result.end());
+		TRACE("Component vector filled");
+		SkipVisited();
+		return result;
+	}
+
+	virtual bool Finished() {
+		return current_index_ == genome_path_.size();
 	}
 };
 
@@ -427,12 +508,12 @@ public:
 	virtual ~AbstractFilter() {
 	}
 
-	virtual bool Check(Element &element) = 0;
+	virtual bool Check(Element &element) const = 0;
 };
 
 template<class Graph>
-class ComponentSizeFilter: public AbstractFilter<
-		vector<typename Graph::VertexId>> {
+class ComponentSizeFilter: public AbstractFilter<vector<
+		typename Graph::VertexId>> {
 private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
@@ -445,21 +526,20 @@ private:
 	//
 public:
 	ComponentSizeFilter(const Graph &graph, size_t max_length) :
-			graph_(graph), max_length_(max_length) {
+		graph_(graph), max_length_(max_length) {
 	}
 
 	virtual ~ComponentSizeFilter() {
 	}
 
-	virtual bool Check(vector<VertexId> &vertices) {
-		if(vertices.size() <= 4)
+	virtual bool Check(vector<VertexId> &vertices) const {
+		if (vertices.size() <= 4)
 			return false;
 		set<VertexId> component(vertices.begin(), vertices.end());
-		for (auto iterator = vertices.begin(); iterator != vertices.end();
-				++iterator) {
+		for (auto iterator = vertices.begin(); iterator != vertices.end(); ++iterator) {
 			vector<EdgeId> edges = graph_.OutgoingEdges(*iterator);
-			for (auto edge_iterator = edges.begin();
-					edge_iterator != edges.end(); edge_iterator++) {
+			for (auto edge_iterator = edges.begin(); edge_iterator
+					!= edges.end(); edge_iterator++) {
 				if (component.count(graph_.EdgeEnd(*edge_iterator)) == 1
 						&& graph_.length(*edge_iterator) <= max_length_) {
 					return true;
@@ -476,13 +556,13 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	GraphSplitter<typename Graph::VertexId> &inner_splitter_;
 	vector<VertexId> next;
-	AbstractFilter<vector<VertexId>> &checker_;
+	const AbstractFilter<vector<VertexId>> &checker_;
 	bool ready;
 public:
 	FilteringSplitterWrapper(
 			GraphSplitter<typename Graph::VertexId> &inner_splitter,
-			AbstractFilter<vector<VertexId>> &checker) :
-			inner_splitter_(inner_splitter), checker_(checker), ready(false) {
+			const AbstractFilter<vector<VertexId>> &checker) :
+		inner_splitter_(inner_splitter), checker_(checker), ready(false) {
 	}
 
 	virtual ~FilteringSplitterWrapper() {
@@ -491,7 +571,7 @@ public:
 	virtual vector<VertexId> NextComponent() {
 		if (Finished()) {
 			VERIFY(false);
-			return vector<VertexId>();
+			return vector<VertexId> ();
 		}
 		ready = false;
 		return next;

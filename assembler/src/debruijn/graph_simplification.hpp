@@ -26,7 +26,7 @@ class EditDistanceTrackingCallback {
 
 public:
 	EditDistanceTrackingCallback(const Graph& g) :
-			g_(g) {
+		g_(g) {
 	}
 
 	bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
@@ -34,14 +34,16 @@ public:
 		for (auto it = path.begin(); it != path.end(); ++it) {
 			path_sequences.push_back(&g_.EdgeNucls(*it));
 		}
-		Sequence path_sequence(MergeOverlappingSequences(path_sequences, g_.k()));
+		Sequence path_sequence(
+				MergeOverlappingSequences(path_sequences, g_.k()));
 		size_t dist = EditDistance(g_.EdgeNucls(edge), path_sequence);
 		TRACE("Bulge sequences with distance " << dist << " were " << g_.EdgeNucls(edge) << " and " << path_sequence);
 		return true;
 	}
 
 private:
-	DECL_LOGGER("EditDistanceTrackingCallback");
+	DECL_LOGGER("EditDistanceTrackingCallback")
+	;
 };
 
 template<class Graph>
@@ -57,8 +59,8 @@ void ClipTips(Graph &g, size_t iteration_count = 1, size_t i = 0) {
 			g,
 			comparator,
 			(size_t) math::round(
-					(double) max_tip_length / 2
-							* (1 + (i + 1.) / iteration_count)), max_coverage,
+					(double) max_tip_length / 2 * (1 + (i + 1.)
+							/ iteration_count)), max_coverage,
 			max_relative_coverage);
 	tc.ClipTips();
 	INFO("Clipping tips finished");
@@ -89,14 +91,18 @@ void RemoveBulges(Graph &g) {
 	omnigraph::SimplePathCondition<Graph> simple_path_condition(g);
 	EditDistanceTrackingCallback<Graph> callback(g);
 	omnigraph::BulgeRemover<Graph> bulge_remover(
-			g, max_length_div_K * g.k(), max_coverage, max_relative_coverage,
-			max_delta, max_relative_delta,
+			g,
+			max_length_div_K * g.k(),
+			max_coverage,
+			max_relative_coverage,
+			max_delta,
+			max_relative_delta,
 			boost::bind(&omnigraph::SimplePathCondition<Graph>::operator(),
 					&simple_path_condition, _1, _2),
 			boost::optional<omnigraph::BulgeRemover<Graph>::BulgeCallbackF>(
-					boost::bind(&EditDistanceTrackingCallback<Graph>::operator(),
-					&callback, _1, _2))
-	);
+					boost::bind(
+							&EditDistanceTrackingCallback<Graph>::operator(),
+							&callback, _1, _2)));
 	bulge_remover.RemoveBulges();
 	Cleaner<Graph> cleaner(g);
 	cleaner.Clean();
@@ -112,9 +118,9 @@ void RemoveBulges2(Graph &g) {
 	double max_delta = cfg::get().simp.br.max_delta;
 	double max_relative_delta = cfg::get().simp.br.max_relative_delta;
 	size_t max_length_div_K = cfg::get().simp.br.max_length_div_K;
-	omnigraph::BulgeRemover<Graph> bulge_remover(
-			g, max_length_div_K * g.k(), max_coverage, 0.5 * max_relative_coverage,
-			max_delta, max_relative_delta, &TrivialCondition<Graph>);
+	omnigraph::BulgeRemover<Graph> bulge_remover(g, max_length_div_K * g.k(),
+			max_coverage, 0.5 * max_relative_coverage, max_delta,
+			max_relative_delta, &TrivialCondition<Graph> );
 	bulge_remover.RemoveBulges();
 	INFO("Bulges removed");
 }
@@ -148,8 +154,8 @@ void RemoveRelativelyLowCoverageEdges(Graph &g) {
 	double coverage_gap = cfg::get().simp.cec.coverage_gap;
 	size_t sufficient_neighbour_length =
 			cfg::get().simp.cec.sufficient_neighbour_length;
-	omnigraph::RelativelyLowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
-			max_length, coverage_gap, sufficient_neighbour_length);
+	omnigraph::RelativelyLowCoverageEdgeRemover<Graph> erroneous_edge_remover(
+			g, max_length, coverage_gap, sufficient_neighbour_length);
 	//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
 	//			max_length_div_K * g.k(), max_coverage);
 	erroneous_edge_remover.RemoveEdges();
@@ -157,12 +163,14 @@ void RemoveRelativelyLowCoverageEdges(Graph &g) {
 }
 
 template<class Graph>
-void RemoveEroneousEdgesUsingPairedInfo(Graph &g, const PairedInfoIndex<Graph>& paired_index) {
+void RemoveEroneousEdgesUsingPairedInfo(Graph &g,
+		const PairedInfoIndex<Graph>& paired_index) {
 	INFO("Removing erroneous edges using paired info");
 	size_t max_length = cfg::get().simp.piec.max_length;
 	size_t min_neighbour_length = cfg::get().simp.piec.min_neighbour_length;
-	omnigraph::PairInfoAwareErroneousEdgeRemover<Graph> erroneous_edge_remover(g, paired_index,
-			max_length, min_neighbour_length, cfg::get().ds.IS, cfg::get().ds.RL);
+	omnigraph::PairInfoAwareErroneousEdgeRemover<Graph> erroneous_edge_remover(
+			g, paired_index, max_length, min_neighbour_length,
+			cfg::get().ds.IS, cfg::get().ds.RL);
 	erroneous_edge_remover.RemoveEdges();
 	INFO("Erroneous edges using paired info removed");
 }
@@ -174,14 +182,14 @@ void RemoveLowCoverageEdgesForResolver(Graph &g) {
 	double max_coverage = cfg::get().simp.ec.max_coverage * 0.6;
 	//	int max_length_div_K = CONFIG.read<int> ("ec_max_length_div_K");
 	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
-			10000000 * g.k(), max_coverage );
+			10000000 * g.k(), max_coverage);
 	erroneous_edge_remover.RemoveEdges();
 	INFO("Low coverage edges removed");
 }
 
 template<size_t k, class Graph>
 void OutputWrongContigs(const Graph& g, const EdgeIndex<k + 1, Graph>& index,
-const Sequence& genome, size_t bound, const string &file_name) {
+		const Sequence& genome, size_t bound, const string &file_name) {
 	SimpleSequenceMapper<k + 1, Graph> sequence_mapper(g, index);
 	Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
 	Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
@@ -198,65 +206,76 @@ const Sequence& genome, size_t bound, const string &file_name) {
 }
 
 template<size_t k>
-void SimplifyGraph(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-const PairedInfoIndex<Graph>& paired_index,
-const omnigraph::GraphLabeler<Graph>& labeler, size_t iteration_count,
-const Sequence& genome, const string& output_folder) {
+void SimplifyGraph(conj_graph_pack &gp,
+		const PairedInfoIndex<Graph>& paired_index,
+		const omnigraph::GraphLabeler<Graph>& labeler, size_t iteration_count,
+		const string& output_folder) {
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
 
-	CountStats<k>(g, index, genome);
-//	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "before_simplification/", "graph.dot", "non_simplified_graph");
+	CountStats<k> (gp.g, gp.index, gp.genome);
+//	ProduceDetailedInfo<k> (gp, labeler,
+//			output_folder + "before_simplification/", "graph.dot",
+//			"non_simplified_graph");
 	for (size_t i = 0; i < iteration_count; i++) {
 		INFO("-----------------------------------------");
 		INFO("Iteration " << i);
 
 		INFO(i << " TipClipping");
-		ClipTips(g, iteration_count, i);
+		ClipTips(gp.g, iteration_count, i);
 
 		INFO(i << " TipClipping stats");
-		CountStats<k>(g, index, genome);
-//		ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "tips_clipped_" + ToString(i) + "/", "graph.dot", "no_tip_graph");
-
+		CountStats<k> (gp.g, gp.index, gp.genome);
+//		ProduceDetailedInfo<k> (gp, labeler,
+//				output_folder + "tips_clipped_" + ToString(i) + "/",
+//				"graph.dot", "no_tip_graph");
 		INFO(i << " BulgeRemoval");
-		RemoveBulges(g);
+		RemoveBulges(gp.g);
 
 		INFO(i << " BulgeRemoval stats");
-		CountStats<k>(g, index, genome);
-//		ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "bulges_removed_" + ToString(i) + "/", "graph.dot", "no_bulge_graph");
-
+		CountStats<k> (gp.g, gp.index, gp.genome);
+//		ProduceDetailedInfo<k> (gp, labeler,
+//				output_folder + "bulges_removed_" + ToString(i) + "/",
+//				"graph.dot", "no_bulge_graph");
 		INFO(i << " ErroneousConnectionsRemoval");
-		RemoveLowCoverageEdges(g, iteration_count, i);
+		RemoveLowCoverageEdges(gp.g, iteration_count, i);
 		INFO(i << " ErroneousConnectionsRemoval stats");
-		CountStats<k>(g, index, genome);
-//		ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "erroneous_edges_removed_" + ToString(i) + "/", "graph.dot", "no_erroneous_edges_graph");
+		CountStats<k> (gp.g, gp.index, gp.genome);
+//		ProduceDetailedInfo<k> (gp, labeler,
+//				output_folder + "erroneous_edges_removed_" + ToString(i) + "/",
+//				"graph.dot", "no_erroneous_edges_graph");
 	}
 
 	INFO("Cheating ErroneousConnectionsRemoval");
-	RemoveRelativelyLowCoverageEdges(g);
+	RemoveRelativelyLowCoverageEdges(gp.g);
 
 	INFO("Cheating ErroneousConnectionsRemoval stats");
-	CountStats<k>(g, index, genome);
-//	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "final_erroneous_edges_removed/",	"graph.dot", "no_erroneous_edges_graph");
-
+	CountStats<k> (gp.g, gp.index, gp.genome);
+//	ProduceDetailedInfo<k> (gp, labeler,
+//			output_folder + "final_erroneous_edges_removed/", "graph.dot",
+//			"no_erroneous_edges_graph");
 	INFO("Final TipClipping");
-	ClipTips(g);
+	ClipTips(gp.g);
 	INFO("Final TipClipping stats");
-	CountStats<k>(g, index, genome);
-//	ProduceDetailedInfo<k>(g, index, labeler, genome,	output_folder + "final_tips_clipped/", "graph.dot", "no_tip_graph");
-
+	CountStats<k> (gp.g, gp.index, gp.genome);
+//	ProduceDetailedInfo<k> (gp, labeler, output_folder + "final_tips_clipped/",
+//			"graph.dot", "no_tip_graph");
 	INFO("Final BulgeRemoval");
-	RemoveBulges(g);
+	RemoveBulges(gp.g);
 	//		etalon_paired_index.Check();
 	INFO("Final BulgeRemoval stats");
-	CountStats<k>(g, index, genome);
-//	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "final_bulges_removed/", "graph.dot",	"no_bulge_graph");
-
+	CountStats<k> (gp.g, gp.index, gp.genome);
+	ProduceDetailedInfo<k> (gp, labeler,
+			output_folder + "final_bulges_removed/", "graph.dot",
+			"no_bulge_graph");
 	INFO("Simplified graph stats");
-	CountStats<k>(g, index, genome);
-	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "simplification_finished/", "graph.dot",	"simplified_graph");
+	CountStats<k> (gp.g, gp.index, gp.genome);
+//	ProduceDetailedInfo<k> (gp, labeler,
+//			output_folder + "simplification_finished/", "graph.dot",
+//			"simplified_graph");
 
-	OutputWrongContigs<k, Graph>(g, index, genome, 1000, "long_contigs.fasta");
+	OutputWrongContigs<k, Graph> (gp.g, gp.index, gp.genome, 1000,
+			"long_contigs.fasta");
 	INFO("Graph simplification finished");
 }
 

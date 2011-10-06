@@ -177,8 +177,8 @@ public:
 			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
 				VertexId edge_end = super::g_.EdgeEnd(*e_it);
 				TRACE(
-						super::g_.coverage(*e_it) << " "
-						<< super::g_.length(*e_it));
+						super::g_.coverage(*e_it) << " " << super::g_.length(
+								*e_it));
 				if (vertex_set.count(edge_end) > 0) {
 					super::gp_.AddEdge(*v_it, edge_end, gl_.label(*e_it),
 							EdgeColor(*e_it));
@@ -231,7 +231,8 @@ private:
 	}
 
 public:
-	PathColorer(const Graph &graph, const Path<EdgeId> &path1, const Path<EdgeId> &path2) :
+	PathColorer(const Graph &graph, const Path<EdgeId> &path1,
+			const Path<EdgeId> &path2) :
 		graph_(graph), path1_(path1), path2_(path2) {
 	}
 
@@ -265,7 +266,7 @@ void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 		const string& file_name, const string& graph_name) {
 	fstream filestr;
 	string simple_file_name(file_name);
-//	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
+	//	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
 	filestr.open((simple_file_name).c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gpr(graph_name, filestr);
 	SimpleGraphVisualizer<Graph> sgv(g, gpr, labeler);
@@ -276,10 +277,11 @@ void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 template<class Graph>
 void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 		const string& file_name, const string& graph_name,
-		const Path<typename Graph::EdgeId> &path1, const Path<typename Graph::EdgeId> &path2) {
+		const Path<typename Graph::EdgeId> &path1,
+		const Path<typename Graph::EdgeId> &path2) {
 	fstream filestr;
 	string simple_file_name(file_name);
-//	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
+	//	simple_file_name.insert(simple_file_name.size() - 4, "_simple");
 	filestr.open(simple_file_name.c_str(), fstream::out);
 	gvis::DotGraphPrinter<typename Graph::VertexId> gp(graph_name, filestr);
 	PathColorer<Graph> path_colorer(g, path1, path2);
@@ -360,9 +362,10 @@ private:
 	const string &graph_name_;
 	size_t max_parts_number_;
 
-	string ConstructComponentName(string file_name, size_t cnt) {
+	string ConstructComponentName(const string &file_name, size_t cnt,
+			const string &component_name) {
 		stringstream ss;
-		ss << cnt;
+		ss << cnt << "_" << component_name;
 		string res = file_name;
 		res.insert(res.length() - 4, ss.str());
 		return res;
@@ -385,16 +388,16 @@ public:
 	virtual void Visualize() {
 		size_t cnt = 1;
 		while (!splitter_.Finished() && cnt <= max_parts_number_) {
-			string component_name =
-					ConstructComponentName(file_name_, cnt).c_str();
+			auto component = splitter_.NextComponent();
+			string component_name = ConstructComponentName(file_name_, cnt,
+					splitter_.ComponentName()).c_str();
 			ofstream os;
 			os.open(component_name);
 			gvis::GraphPrinter<typename Graph::VertexId> * gp =
 					factory_.GetPrinterInstance(graph_name_, os);
 			auto visualizer = factory_.GetVisualizerInstance(*gp);
-			auto component = splitter_.NextComponent();
 			visualizer->open();
-			if(component.size() < 10000)
+			if (component.size() < 10000)
 				visualizer->Visualize(component);
 			else
 				WARN("Too large component " << component.size());
@@ -415,8 +418,11 @@ string InsertComponentName(string file_name, string component) {
 }
 
 template<class Graph>
-void WriteErrors(const Graph& g, const GraphLabeler<Graph>& labeler,
-		const string& file_name, const string& graph_name,
+void WriteErrors(
+		const Graph& g,
+		const GraphLabeler<Graph>& labeler,
+		const string& file_name,
+		const string& graph_name,
 		const Path<typename Graph::EdgeId> &path1/* = Path<typename Graph::EdgeId> ()*/,
 		const Path<typename Graph::EdgeId> &path2/* = Path<typename Graph::EdgeId> ()*/) {
 	PathColorer<Graph> path_colorer(g, path1, path2);
@@ -444,6 +450,20 @@ void WriteErrors(const Graph& g, const GraphLabeler<Graph>& labeler,
 }
 
 template<class Graph>
+void WriteComponents(const Graph& g,
+		GraphSplitter<typename Graph::VertexId> &inner_splitter,
+		const AbstractFilter<vector<typename Graph::VertexId>> &checker,
+		const string& graph_name, const string& file_name,
+		const map<typename Graph::EdgeId, string> &coloring,
+		const GraphLabeler<Graph>& labeler) {
+	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
+	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
+	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, file_name,
+			graph_name, 300);
+	gv.Visualize();
+}
+
+template<class Graph>
 void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
 		const string& file_name, const string& graph_name,
 		size_t split_edge_length,
@@ -451,14 +471,35 @@ void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
 		Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId> ()) {
 	PathColorer<Graph> path_colorer(g, path1, path2);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
+	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
 	ReliableSplitter<Graph> inner_splitter(g, 60, split_edge_length);
 	ComponentSizeFilter<Graph> checker(g, split_edge_length);
-	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
-	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
-	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, file_name,
-			graph_name, 300);
-	gv.Visualize();
+	WriteComponents<Graph> (g, inner_splitter, checker, graph_name, file_name,
+			coloring, labeler);
+}
+
+template<class Graph>
+void WriteComponentsAlongGenome(
+		const Graph& g,
+		const GraphLabeler<Graph>& labeler,
+		const string& file_name,
+		const string& graph_name,
+		size_t split_edge_length,
+		MappingPath<typename Graph::EdgeId> path1 = MappingPath<
+				typename Graph::EdgeId> (),
+		MappingPath<typename Graph::EdgeId> path2 = MappingPath<
+				typename Graph::EdgeId> ()) {
+	Path<typename Graph::EdgeId> simple_path1 = path1.simple_path();
+	Path<typename Graph::EdgeId> simple_path2 = path2.simple_path();
+	PathColorer<Graph> path_colorer(g, simple_path1, simple_path2);
+	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
+	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
+	//	ReliableSplitterAlongGenome(g, 60, split_edge_length, MappingPath<EdgeId> genome_path)
+	ReliableSplitterAlongGenome<Graph> inner_splitter(g, 60, split_edge_length,
+			path1);
+	ComponentSizeFilter<Graph> checker(g, split_edge_length);
+	WriteComponents<Graph> (g, inner_splitter, checker, graph_name, file_name,
+			coloring, labeler);
 }
 
 template<class Graph>

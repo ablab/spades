@@ -31,8 +31,7 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 	INFO("STAGE == Simplifying graph");
 
 	// by single_cell 3->10
-	SimplifyGraph<K> (gp.g, gp.index, paired_index, tot_lab, 10, gp.genome,
-			cfg::get().output_dir/*, etalon_paired_index*/);
+	SimplifyGraph<K> (gp, paired_index, tot_lab, 10, cfg::get().output_dir/*, etalon_paired_index*/);
 
 	// by single_cell
 	EdgeQuality<Graph> quality_labeler(gp.g, gp.index, gp.genome);
@@ -46,16 +45,16 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 
 	//experimental
 	if (cfg::get().paired_mode && cfg::get().late_paired_info) {
-		FillPairedIndexWithReadCountMetric<K> (gp.g, gp.index,
-				gp.kmer_mapper, paired_index, stream);
+		FillPairedIndexWithReadCountMetric<K> (gp.g, gp.index, gp.kmer_mapper,
+				paired_index, stream);
 	}
 	//experimental
 
 	//experimental
-//	INFO("Pair info aware ErroneousConnectionsRemoval");
-//	RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index);
-//	INFO("Pair info aware ErroneousConnectionsRemoval stats");
-//	CountStats<K>(gp.g, gp.index, gp.genome);
+	//	INFO("Pair info aware ErroneousConnectionsRemoval");
+	//	RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index);
+	//	INFO("Pair info aware ErroneousConnectionsRemoval stats");
+	//	CountStats<K>(gp.g, gp.index, gp.genome);
 	//experimental
 
 	//	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "with_pair_info_edges_removed/",	"graph.dot", "no_erroneous_edges_graph");
@@ -87,14 +86,14 @@ void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
 	printKmerMapper(gp.g, gp.int_ids, p.string(), gp.kmer_mapper);
 
 	//DEBUG
-//	KmerMapper<K+1, Graph> cmp(gp.g);
-//	scanKmerMapper(gp.g, gp.int_ids, p.string(), &cmp);
-//	if (!gp.kmer_mapper.CompareTo(cmp)) {
-//		WARN("Kmer mappers are not equal!");
-//	}
-//	else {
-//		INFO("Mappers are equal");
-//	}
+	//	KmerMapper<K+1, Graph> cmp(gp.g);
+	//	scanKmerMapper(gp.g, gp.int_ids, p.string(), &cmp);
+	//	if (!gp.kmer_mapper.CompareTo(cmp)) {
+	//		WARN("Kmer mappers are not equal!");
+	//	}
+	//	else {
+	//		INFO("Mappers are equal");
+	//	}
 	//DEBUG
 
 
