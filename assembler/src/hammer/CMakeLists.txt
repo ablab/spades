@@ -24,5 +24,6 @@ add_executable(main
 add_subdirectory(quake_count)
 add_subdirectory(quake_enhanced)
 add_subdirectory(quake_correct)
+add_subdirectory(gen_test_data)
 target_link_libraries(main ${COMMON_LIBRARIES} input)
 
