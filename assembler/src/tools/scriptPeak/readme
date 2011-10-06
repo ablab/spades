@@ -1,11 +1,22 @@
-common using :
-java Main -f <filename>
+The simplest using :
+. cpfiles.sh <dataset>
+where dataset -- is the specified dataset(QUAKE_CROPPED_400K,...) 
+Script copies prd files from the Latest launch of the specified dataset.
+To generate data files simply run :
+. run.sh
+
+--------------------------------------------------------------------------------------------
+
+Common using :
+java Main -f <filename> -m <lower bound of edges' length> -l <upper bound of edges' length>
 You must have next files in your working directory:
 *.grp
 *.prd
 *_cl.prd
 *_fnr.prd
 *_fpr.prd
+
+--------------------------------------------------------------------------------------------
 
 The folder will be created for each edge pair in 'data' folder.
 To view the graph for edge pair run 
