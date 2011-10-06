@@ -24,6 +24,9 @@ entry_point construction
 ; iterative mode switcher, activates additional contigs usage
 use_additional_contigs false
 
+; use single reads if they are provided
+use_single_reads false
+
 ; single cell mode swithcer, influence the simplification
 single_cell_mode false
 

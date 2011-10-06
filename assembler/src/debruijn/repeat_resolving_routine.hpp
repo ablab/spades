@@ -13,8 +13,10 @@
 #include "repeat_resolving.hpp"
 #include "distance_estimation_routine.hpp"
 #include "io/careful_filtering_reader_wrapper.hpp"
-typedef io::Reader<io::SingleRead> ReadStream;
-typedef io::RCReaderWrapper<io::SingleRead> RCStream;
+//typedef io::IReader<io::SingleRead> ReadStream;
+//typedef io::IReader<io::PairedRead> PairedReadStream;
+////typedef io::RCReaderWrapper<io::SingleRead> RCStream;
+//typedef io::MultifileReader<io::SingleRead> MultiFileStream;
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
 namespace debruijn_graph
@@ -52,7 +54,7 @@ void FillContigNumbers(   map<NonconjugateDeBruijnGraph::EdgeId, int>& contigNum
 template<size_t k, class Graph>
 void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
         EdgeLabelHandler<Graph>& LabelsAfter,
-        const EdgeIndex<K + 1, Graph>& index ,vector<RCStream *>& reads
+        const EdgeIndex<K + 1, Graph>& index ,vector<ReadStream *>& reads
         , string& consensus_output_dir)
 {
     INFO("ReadMapping started");
@@ -181,13 +183,14 @@ void process_resolve_repeats(
 				reads_filename2 = input_dir + cfg::get().ds.second;
 			}
 
-			ReadStream reads_1(reads_filename1);
-			ReadStream reads_2(reads_filename2);
-			CarefulFilteringStream freads_1(reads_1);
-			CarefulFilteringStream freads_2(reads_2);
-			RCStream  frc_1(freads_1);
-			RCStream  frc_2(freads_2);
-			vector<RCStream*> reads = {&frc_1, &frc_2};
+			typedef io::EasyReader<io::SingleRead> EasyStream;
+			EasyStream reads_1(reads_filename1);
+			EasyStream reads_2(reads_filename2);
+//			CarefulFilteringStream freads_1(reads_1);
+//			CarefulFilteringStream freads_2(reads_2);
+//			RCStream  frc_1(freads_1);
+//			RCStream  frc_2(freads_2);
+			vector<ReadStream*> reads = {/*&frc_1, &frc_2*/&reads_1, &reads_2};
 
 			SelectReadsForConsensus<K, typename graph_pack::graph_t>(origin_gp.g, resolved_gp.g, labels_after, origin_gp.index, reads, consensus_folder);
 		}

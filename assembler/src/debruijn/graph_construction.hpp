@@ -154,10 +154,19 @@ SingleReadStream& stream, SingleReadStream* contigs_stream = 0) {
 template<size_t k>
 void ConstructGraphWithPairedInfo(conj_graph_pack& gp,
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& stream,
+		SingleReadStream* single_stream = 0,
 		SingleReadStream* contigs_stream = 0) {
 	UnitedStream united_stream(stream);
-	ConstructGraphWithCoverage<k>(gp.g, gp.index, united_stream,
-			contigs_stream);
+
+	typedef io::MultifileReader<io::SingleRead> MultiFileStream;
+	vector<SingleReadStream*> streams;
+	streams.push_back(&united_stream);
+	if (single_stream) {
+		streams.push_back(single_stream);
+	}
+	MultiFileStream composite_stream(streams);
+	ConstructGraphWithCoverage<k>(gp.g, gp.index, composite_stream, contigs_stream);
+
 	if (cfg::get().etalon_info_mode)
 		FillEtalonPairedIndex<k>(gp.g, paired_index, gp.index, gp.genome);
 	else

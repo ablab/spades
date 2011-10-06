@@ -149,6 +149,8 @@ namespace debruijn_graph
 		{
 			std::string first;
 			std::string second;
+			boost::optional<std::string> single_first;
+			boost::optional<std::string> single_second;
 			size_t RL;
 			size_t IS;
 			int LEN;
@@ -166,6 +168,7 @@ namespace debruijn_graph
 		std::string output_suffix;
 		std::string output_saves;
 
+		bool use_single_reads;
 		bool use_additional_contigs;
 		std::string additional_contigs;
 
@@ -292,6 +295,8 @@ namespace debruijn_graph
 		using config_common::load;
 		load(pt, "first", ds.first);
 		load(pt, "second", ds.second);
+		ds.single_first = pt.get_optional<std::string>("single_first");
+		ds.single_first = pt.get_optional<std::string>("single_second");
 		load(pt, "RL", ds.RL);
 		load(pt, "IS", ds.IS);
 		load(pt, "LEN", ds.LEN);
@@ -330,6 +335,8 @@ namespace debruijn_graph
 		load(pt, "entry_point", cfg.entry_point);
 
 		load(pt, "use_additional_contigs", cfg.use_additional_contigs);
+		load(pt, "use_single_reads", cfg.use_single_reads);
+
 		load(pt, "additional_contigs", cfg.additional_contigs);
 
 		load(pt, "reference_genome", cfg.reference_genome);

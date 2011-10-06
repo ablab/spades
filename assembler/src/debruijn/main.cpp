@@ -3,9 +3,10 @@
  */
 
 #include "config_struct.hpp"
-#include "io/reader.hpp"
+#include "io/easy_reader.hpp"
 #include "io/rc_reader_wrapper.hpp"
 #include "io/cutting_reader_wrapper.hpp"
+#include "io/multifile_reader.hpp"
 #include "io/careful_filtering_reader_wrapper.hpp"
 #include "launch.hpp"
 #include "logging.hpp"
@@ -111,24 +112,25 @@ int main() {
 		make_dir(cfg::get().output_dir  );
 		make_dir(cfg::get().output_saves);
 
-		string reads_filename1 = input_dir + cfg::get().ds.first;
+		string reads_filename_1 = input_dir + cfg::get().ds.first;
 		string reads_filename2 = input_dir + cfg::get().ds.second;
 
-		checkFileExistenceFATAL(reads_filename1);
+		checkFileExistenceFATAL(reads_filename_1);
 		checkFileExistenceFATAL(reads_filename2);
 
 		// typedefs :)
-		typedef io::Reader<io::SingleRead> ReadStream;
-		typedef io::Reader<io::PairedRead> PairedReadStream;
-		typedef io::RCReaderWrapper<io::PairedRead> RCStream;
-		typedef io::CarefulFilteringReaderWrapper<io::PairedRead> CarefulFilteringStream;
+		typedef io::EasyReader<io::SingleRead> ReadStream;
+		typedef io::EasyReader<io::PairedRead> PairedReadStream;
+//		typedef io::RCReaderWrapper<io::PairedRead> RCStream;
+//		typedef io::CarefulFilteringReaderWrapper<io::PairedRead> CarefulFilteringStream;
 
 		// read data ('reads')
 
-		PairedReadStream pairStream(std::make_pair(reads_filename1,reads_filename2), cfg::get().ds.IS);
+		PairedReadStream /*raw_*/paired_stream(std::make_pair(reads_filename_1,reads_filename2), cfg::get().ds.IS);
 
-		CarefulFilteringStream filter_stream(pairStream);
-		RCStream rcStream(filter_stream);
+//		CarefulFilteringStream filtered_stream(raw_paired_stream);
+//		RCStream paired_stream(filtered_stream);
+
 
 		// read data ('genome')
 		string genome_filename = cfg::get().reference_genome;
@@ -145,7 +147,8 @@ int main() {
 		// assemble it!
 		INFO("Assembling " << dataset << " dataset");
 		INFO("K = " << debruijn_graph::K);
-		debruijn_graph::assemble_genome(rcStream, Sequence(genome)/*, work_tmp_dir, reads*/);
+
+		debruijn_graph::assemble_genome(paired_stream, Sequence(genome)/*, work_tmp_dir, reads*/);
 
 		on_exit_ouput_linker("latest_success");
 
