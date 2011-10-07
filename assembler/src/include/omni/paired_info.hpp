@@ -238,10 +238,10 @@ public:
 	}
 
 	void UpdateInfo(const PairInfo<EdgeId>& info, const double d,
-			const double weight) {
+			const double weight, bool add_reversed) {
 		UpdateSingleInfo(info, d, weight);
 
-		if (!IsSymmetric(info))
+		if (add_reversed && !IsSymmetric(info))
 			UpdateSingleInfo(BackwardInfo(info), -d, weight);
 	}
 
@@ -382,7 +382,7 @@ private:
 	}
 
 	void MergeData(const PairInfo<EdgeId>& info1,
-			const PairInfo<EdgeId>& info2) {
+			const PairInfo<EdgeId>& info2, bool add_reversed) {
 		VERIFY(info1.first == info2.first && info1.second == info2.second);
 		double newWeight = info1.weight + info2.weight;
 		double newD = (info1.d * info1.weight + info2.d * info2.weight)
@@ -390,7 +390,7 @@ private:
 		if (info1.first == info1.second && (info1.d == 0 || info2.d == 0)) {
 			newD = 0;
 		}
-		data_.UpdateInfo(info1, newD, newWeight);
+		data_.UpdateInfo(info1, newD, newWeight, add_reversed);
 	}
 
 	int NearestClusterIndex(const vector<PairInfo<EdgeId>>& current_pair_infos,
@@ -422,7 +422,7 @@ public:
 				pair_info.second);
 		int cluster_index = NearestClusterIndex(pair_infos, pair_info);
 		if (cluster_index >= 0) {
-			MergeData(pair_infos[cluster_index], pair_info);
+			MergeData(pair_infos[cluster_index], pair_info, add_reversed);
 		} else {
 			data_.AddPairInfo(pair_info, add_reversed);
 		}

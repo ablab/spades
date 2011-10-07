@@ -89,12 +89,6 @@ int main() {
 
     try
     {
-//    	std::cout << "false = " << debruijn_graph::CheckContains<3>(Seq<3>("ACG"), Sequence("AAAAAAA")) << std::endl;
-//    	std::cout << "true = " << debruijn_graph::CheckContains<3>(Seq<3>("ACG"), Sequence("AAACGAAA")) << std::endl;
-//    	std::cout << "false = " << debruijn_graph::CheckContainsSubKmer<3>(Sequence("ACGTACGT"), Sequence("AAAAAAA")) << std::endl;
-//    	std::cout << "true = " << debruijn_graph::CheckContainsSubKmer<3>(Sequence("TACGACGT"), Sequence("AAACGAAA")) << std::endl;
-//    	throw (std::exception());
-
 		using namespace debruijn_graph;
 
 		checkFileExistenceFATAL(cfg_filename);
