@@ -138,7 +138,7 @@ int main() {
 		if (genome_filename.length() > 0) {
 			genome_filename = input_dir + genome_filename;
 			checkFileExistenceFATAL(genome_filename);
-			ReadStream genome_stream(genome_filename);
+			io::Reader<io::SingleRead> genome_stream(genome_filename);
 			io::SingleRead full_genome;
 			genome_stream >> full_genome;
 			genome = full_genome.GetSequenceString().substr(0, cfg::get().ds.LEN); // cropped

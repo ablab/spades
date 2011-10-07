@@ -22,7 +22,6 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 namespace debruijn_graph {
 typedef io::IReader<io::SingleRead> ReadStream;
 typedef io::IReader<io::PairedRead> PairedReadStream;
-//typedef io::RCReaderWrapper<io::SingleRead> RCStream;
 typedef io::MultifileReader<io::SingleRead> MultiFileStream;
 
 // update with conj_graph_pack
@@ -43,8 +42,7 @@ void construct_graph(PairedReadStream& stream, conj_graph_pack& gp,
 				contigs_stream);
 	} else {
 		UnitedStream united_stream(stream);
-		vector<SingleReadStream*> streams;
-		streams.push_back(&united_stream);
+		vector<SingleReadStream*> streams = {&united_stream};
 		if (single_stream) {
 			streams.push_back(single_stream);
 		}

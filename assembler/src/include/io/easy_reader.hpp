@@ -14,7 +14,7 @@ class EasyReader : public DelegatingReaderWrapper<ReadType> {
 	void operator=(const EasyReader<ReadType>& reader);
 
 	Reader<ReadType> raw_reader_;
-//	FilteringReaderWrapper<ReadType> filtered_reader;
+//	FilteringReaderWrapper<ReadType> filtered_reader_;
 	CarefulFilteringReaderWrapper<ReadType> filtered_reader_;
 	RCReaderWrapper<ReadType> rc_reader_;
 

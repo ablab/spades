@@ -136,6 +136,8 @@ SC_NEW_1
 {
 	first	SC/2908_tau1_00_left.fastq.gz
 	second	SC/2908_tau1_00_right.fastq.gz
+	single_first	SC/2908_tau1_00_single_left.fastq.gz
+	single_second	SC/2908_tau1_00_single_right.fastq.gz
 	RL		100	; read length
 	IS		270 	; insert size
 	LEN		4639675	; total size
