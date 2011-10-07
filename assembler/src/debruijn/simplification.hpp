@@ -51,10 +51,12 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 	//experimental
 
 	//experimental
-	INFO("Pair info aware ErroneousConnectionsRemoval");
-	RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index);
-	INFO("Pair info aware ErroneousConnectionsRemoval stats");
-	CountStats<K>(gp.g, gp.index, gp.genome);
+//	if (cfg::get().paired_mode) {
+//		INFO("Pair info aware ErroneousConnectionsRemoval");
+//		RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index);
+//		INFO("Pair info aware ErroneousConnectionsRemoval stats");
+//		CountStats<K>(gp.g, gp.index, gp.genome);
+//	}
 	//experimental
 
 	//	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "with_pair_info_edges_removed/",	"graph.dot", "no_erroneous_edges_graph");
