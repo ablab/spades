@@ -13,6 +13,26 @@
 #include "position_kmer.hpp"
 
 
+long double Factorial(int n) {
+  if (n == 0) {
+    return 1;
+  }
+  static unordered_map<int, long double> ans;
+  if (ans.count(n) == 0) {
+    ans[n] = Factorial(n - 1) * n;
+  }
+  return ans[n];
+}
+
+long double CNK(int n, int k) {
+  return Factorial(n) / (Factorial(k) * Factorial(n - k));
+}
+
+long double Bernoulli(int k, int n, long double p) {
+  return pow(p, k) * pow(1 - p, n - k) * CNK(n, k);
+}
+
+
 /**
   * @return logarithm of {n choose k}
   */

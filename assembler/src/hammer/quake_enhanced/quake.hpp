@@ -17,14 +17,17 @@ class Quake {
   void PrepareHists(std::string hist_file, std::string trusted_hist_file,
                     std::string bad_hist_file, uint32_t top_threshold,
                     double average_min);
-  void CountLimits();
+  void PrepareLimits(long double threshold, std::string limits_file);
+  void FilterTrusted(std::string ifile, std::string ofile);
  private:
   enum QuakeState {kInitial, kCountDone, kRealHistPrepared, kRealHistPrinted,
-                   kTrustedHistPrepared, kLimitsCounted, kTrustedFiltered};
+                   kTrustedHistPrepared, kLimitsCounted, kLimitsPrinted, 
+                   kTrustedFiltered};
   QuakeState cur_state_;
   std::string kmer_count_file_;
   std::vector<uint32_t> trusted_hist_;
   std::vector<uint32_t> real_hist_;
+  std::vector<double> limits_;
 
   // Count
   /**
@@ -54,5 +57,10 @@ class Quake {
   void PrepareTrustedHist(std::string trusted_hist_file, 
                           std::string bad_hist_file, uint32_t top_threshold, 
                           double average_min);
+  // PrepareLimits
+  long double GetLimit(uint32_t x, long double threshold);
+  void CountLimits(long double threshold);
+  void PrintLimits(std::string limits_file);
+  // Filter k-mers
 };
 }

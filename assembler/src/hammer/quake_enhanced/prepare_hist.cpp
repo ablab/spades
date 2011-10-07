@@ -127,8 +127,6 @@ void Quake::PrepareHists(string hist_file, string trusted_hist_file,
   if (cur_state_ < kRealHistPrinted) {
     PrintRealHist(hist_file);
   }
-  if (cur_state_ < kTrustedHistPrepared) {
-    PrepareTrustedHist(trusted_hist_file, bad_hist_file, top_threshold,
-                       average_min);
-  }
+  PrepareTrustedHist(trusted_hist_file, bad_hist_file, top_threshold,
+                     average_min);
 }
