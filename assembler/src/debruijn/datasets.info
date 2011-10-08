@@ -224,7 +224,7 @@ LB_QUAKE_FULL
 	first	../L.Bouillonii_quaked/gerwick-read1.cor.fastq.gz
 	second	../L.Bouillonii_quaked/gerwick-read2.cor.fastq.gz
 	RL		100	; read length
-	IS		400	; insert size (???????)
-	LEN		8000000	; total size (????????)
+	IS		220	; insert size
+	LEN		8700000	; total size
 }
 
