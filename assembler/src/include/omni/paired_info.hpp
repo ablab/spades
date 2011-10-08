@@ -206,7 +206,8 @@ public:
 	}
 
 	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool addSymmetric = 1) {
-		TRACE("REALLY ADD:" << pair_info.first << pair_info.second);
+//		INFO("REALLY ADD:" << pair_info.first << " " << pair_info.second << " " << pair_info.d << " " << 
+//        pair_info.weight);
 
 		data_.insert(pair_info);
 

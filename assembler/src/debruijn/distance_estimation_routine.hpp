@@ -42,13 +42,14 @@ void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
 
 			estimator.Estimate(clustered_index);
 		} else {
-//			stream.reset();
-//			int e1 = 1068;
-//			int e2 = 1160;
-//			cout << "ThreadedPairedReadCount = " << ThreadedPairedReadCount<K + 1>(gp, e1, e2, stream) << endl;
-//			cout << "TotalPositiveWeight = " << TotalPositiveWeight(gp, paired_index, e1, e2) << endl;
-//
-//			throw(std::exception());
+//            stream.reset();
+//            int e1 = 1065;
+//            int e2 = 1158;
+//            cout << "Edge 1 " << gp.int_ids.ReturnEdgeId(e1) << endl;
+//            cout << "Edge 2 " << gp.int_ids.ReturnEdgeId(e2) << endl;
+//            cout << "K " << (gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e2))) << endl;
+//            cout << "ThreadedPairedReadCount = " << ThreadedPairedReadCount<K + 1>(gp, e1, e2, stream) << endl;
+//            cout << "TotalPositiveWeight = " << TotalPositiveWeight(gp, paired_index, e1, e2) << endl;
 
 			INFO("Estimating distances");
 			DistanceEstimator<Graph> estimator(gp.g, paired_index,
