@@ -122,8 +122,8 @@ void exec_distance_estimation(PairedReadStream& stream, conj_graph_pack& gp,
 	if (cfg::get().entry_point <= ws_distance_estimation) {
 		estimate_distance(stream, gp, paired_index, clustered_index);
 		save_distance_estimation(gp, paired_index, clustered_index);
-
-		count_estimated_info_stats(gp, paired_index, clustered_index);
+		if(cfg::get().paired_mode)
+			count_estimated_info_stats(gp, paired_index, clustered_index);
 	} else {
 		INFO("Loading Distance Estimation");
 
