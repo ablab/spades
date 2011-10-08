@@ -409,7 +409,7 @@ private:
 				= genome_path_[current_index_].second.initial_range.start_pos;
 		covered_range_.end_pos
 				= genome_path_[current_index_].second.initial_range.end_pos;
-		while (current_index_ != genome_path_.size() && !EdgeCovered(
+		while (current_index_ != genome_path_.size() && EdgeCovered(
 				genome_path_[current_index_].first)) {
 			covered_range_.end_pos
 					= genome_path_[current_index_].second.initial_range.end_pos;
@@ -566,6 +566,10 @@ public:
 	}
 
 	virtual ~FilteringSplitterWrapper() {
+	}
+
+	virtual string ComponentName() {
+		return inner_splitter_.ComponentName();
 	}
 
 	virtual vector<VertexId> NextComponent() {

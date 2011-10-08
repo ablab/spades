@@ -390,7 +390,7 @@ public:
 		while (!splitter_.Finished() && cnt <= max_parts_number_) {
 			auto component = splitter_.NextComponent();
 			string component_name = ConstructComponentName(file_name_, cnt,
-					splitter_.ComponentName()).c_str();
+					splitter_.ComponentName());
 			ofstream os;
 			os.open(component_name);
 			gvis::GraphPrinter<typename Graph::VertexId> * gp =

@@ -192,7 +192,7 @@ template<size_t k>
 MappingPath<EdgeId> NewFindGenomePath(const Sequence& genome, const Graph& g,
 		const EdgeIndex<k + 1, Graph>& index,
 		const KmerMapper<k + 1, Graph>& kmer_mapper) {
-	NewExtendedSequenceMapper<k + 1, Graph> srt(g, index, kmer_mapper);
+	ExtendedSequenceMapper<k + 1, Graph> srt(g, index, kmer_mapper);
 	return srt.MapSequence(genome);
 }
 
