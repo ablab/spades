@@ -206,6 +206,15 @@ SC_EULER_FULL
 	LEN		4639675	; total size
 }
 
+SC_EULER_NEW
+{
+	first 	SC_cor/left_6.10.cor.fasta
+	second	SC_cor/right_6.10.cor.fasta
+	RL		100	; read length
+	IS		270	; insert size
+	LEN		4639675	; total size
+}
+
 ; ================================================
 ; =============== L. Bouillonii ==================
 ; ================================================
