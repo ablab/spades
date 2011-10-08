@@ -10,7 +10,16 @@
 #include <unistd.h>
 
 #include "../config_struct.hpp"
+#include "io/easy_reader.hpp"
+#include "io/rc_reader_wrapper.hpp"
+#include "io/cutting_reader_wrapper.hpp"
+#include "io/multifile_reader.hpp"
+#include "io/careful_filtering_reader_wrapper.hpp"
+#include "../launch.hpp"
+#include "logging.hpp"
 #include "simple_tools.hpp"
+#include "omni/distance_estimation.hpp"
+
 #include "lc_config_struct.hpp"
 
 #include "lc_common.hpp"
