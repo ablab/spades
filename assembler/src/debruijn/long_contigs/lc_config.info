@@ -1,6 +1,7 @@
 ; input options
 from_file     true	  ; always true
 syminfo       false
+paired_info_only    true
 
 QUAKE_CROPPED_100K
 {

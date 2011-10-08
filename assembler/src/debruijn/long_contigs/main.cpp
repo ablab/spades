@@ -78,6 +78,10 @@ int main() {
 		if (!cfg::get().etalon_info_mode && lc_cfg::get().write_real_paired_info) {
 			SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix);
 		}
+
+		if (lc_cfg::get().paired_info_only) {
+			return 0;
+		}
 	}
 
 	FindSeeds(g, rawSeeds, &pairedInfos);

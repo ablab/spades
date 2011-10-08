@@ -158,7 +158,7 @@ struct lc_config
 
 	bool from_file;
 	bool syminfo;
-
+	bool paired_info_only;
 	//size_t real_libs_count;
 	//size_t etalon_libs_count;
 
@@ -342,6 +342,7 @@ void load(boost::property_tree::ptree const& pt, lc_config& lc_cfg)
 	using config_common::load;
 	load(pt, "from_file", lc_cfg.from_file);
 	load(pt, "syminfo", lc_cfg.syminfo);
+	load(pt, "paired_info_only", lc_cfg.paired_info_only);
 	//load(pt, "real_libs_count", cfg.real_libs_count);
 	//load(pt, "etalon_libs_count", cfg.etalon_libs_count);
 
