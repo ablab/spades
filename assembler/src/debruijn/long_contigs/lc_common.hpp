@@ -31,6 +31,8 @@ class BidirectionalPath : public std::deque<EdgeId> {
 public:
 	 std::deque<int> gaps;
 
+	 int id;
+	 int conj_id;
 };
 
 //Path length
@@ -441,6 +443,17 @@ size_t GetMaxInsertSize(PairedInfoIndices& pairedInfo) {
 		}
 	}
 	return maxIS;
+}
+
+template <class T>
+void AddPathPairToContainer(BidirectionalPath& p1, BidirectionalPath& p2, T& paths) {
+	int newId = paths.size();
+	p1.id = newId;
+	p2.conj_id = newId;
+	p2.id = newId + 1;
+	p1.conj_id = newId + 1;
+	paths.push_back(p1);
+	paths.push_back(p2);
 }
 
 } // namespace long_contigs

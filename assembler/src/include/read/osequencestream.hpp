@@ -15,7 +15,9 @@ private:
 	ofstream ofstream_;
 	int id_;
 public:
-	osequencestream(const string& filename): id_(0) {
+	void * ptr;
+
+	osequencestream(const string& filename): id_(0), ptr(0) {
 		ofstream_.open(filename);
 	}
 
@@ -26,7 +28,7 @@ public:
 	osequencestream& operator<<(const Sequence& seq) {
 //		DEBUG("outputting");
 		string s = seq.str();
-		ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << endl;
+		ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << "_ID_" << ptr << endl;
 		// Velvet format: NODE_1_length_24705_cov_358.255249
 		size_t cur = 0;
 		while (cur < s.size()) {

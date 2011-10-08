@@ -14,7 +14,6 @@ QUAKE_FULL
 {
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
     graph_file       ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph
-   	;graph_file       ./data/debruijn/QUAKE_FULL/K55/SC/new/simplified_graph
     
 }
 EAS600_QUAKE_CROPPED_100K
@@ -56,8 +55,15 @@ ss
     max_cycles     1
     
     remove_untrusted  false
-    check_trusted     true
+    check_trusted     false
     trusted_threshold 0.5
+    
+    sym 
+	{
+	    cut_tips             false
+	    min_conjugate_len    200
+	    
+	}
 }
 
 ; extension selection
@@ -75,9 +81,9 @@ es
     
     max_depth             0
     
-    fix_weight            false
+    fix_weight            true
     use_advanced          true
-    advanced_coeff        1
+    advanced_coeff        1.5
 }    
 
 ; loops removal
@@ -119,10 +125,17 @@ fo
     similar_edges           0.6
     similar_length          0.95
     
-    remove_sefl_conjugate   true
+    remove_sefl_conjugate   false
     conj_len_percent        0.2
     break_sc                false
     chimeric_delta          10
+    
+    sym 
+	{
+	    cut_tips             false
+	    min_conjugate_len    200
+	    
+	}
     
 }
 
@@ -138,6 +151,7 @@ utils
     clustered   ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
     read_size    100
     insert_size  270
+    dev          5
     advanced    ./data/debruijn/QUAKE_FULL/K55/SC/09.29_07_30/paired_info_IS270_RS100_acl
 }    
 
@@ -169,14 +183,14 @@ real_libs
         QUAKE_FULL
         {
             precounted       true
-            ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
-            precounted_path  ./paired_info_IS270_RS100_agregate_1.5
+            precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
+            ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC/aggregate/paired_info_IS270_RS100_agregate_2
             first            
             second
             
             raw             ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_acl
             
-            has_advanced     false
+            has_advanced     true
             advanced         ./data/debruijn/QUAKE_FULL/K55/SC/09.29_07_30/paired_info_IS270_RS100_acl
         }
     }

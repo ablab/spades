@@ -117,7 +117,7 @@ public:
 				auto norm_pi = normalizer.NormalizeWeight(*i1);
 
 				for (auto i2 = pi2.begin(); i2 != pi2.end(); ++i2) {
-					if (math::eq(i1->d, i2->d) && math::gr(i2->weight, 0.0)) {
+					if (math::ge(i1->d, i2->d - lc_cfg::get().u.dev) && math::le(i1->d, i2->d + lc_cfg::get().u.dev) && math::gr(i2->weight, 0.0)) {
 						norm_pi.weight *= lc_cfg::get().es.advanced_coeff;
 					}
 				}

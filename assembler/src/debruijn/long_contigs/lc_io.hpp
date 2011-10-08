@@ -320,6 +320,7 @@ void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath>& 
 			}
 
 			int toPrint = (pairs[i] == -1 || PathLength(g, paths[i]) > PathLength(g, paths[pairs[i]])) ? i : pairs[i];
+			oss.ptr = (void*) &paths[toPrint];
 			oss << PathToSequence(g, paths[toPrint]);
 			printed.insert(i);
 			printed.insert(pairs[i]);

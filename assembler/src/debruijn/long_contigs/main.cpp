@@ -74,11 +74,15 @@ int main() {
 	FindSeeds(g, rawSeeds, &pairedInfos);
 	INFO("Seeds found");
 
+	ResolveUnequalComplement(g, rawSeeds, lc_cfg::get().ss.sym.cut_tips, lc_cfg::get().ss.sym.min_conjugate_len);
+
 	if (lc_cfg::get().fo.remove_sefl_conjugate) {
-		RemoveWrongConjugatePaths(g, rawSeeds, filteredSeeds);
+		RemoveWrongConjugatePaths(g, rawSeeds, &filteredSeeds);
 	} else {
 		filteredSeeds = rawSeeds;
 	}
+
+	//RemoveUnagreedPaths();
 
 	std::vector<int> seedPairs;
 	std::vector<double> seedQuality;
@@ -118,9 +122,19 @@ int main() {
 		FindPaths(g, seeds, pairedInfos, paths, stopHandler);
 	}
 
+	ResolveUnequalComplement(g, paths, lc_cfg::get().fo.sym.cut_tips, lc_cfg::get().fo.sym.min_conjugate_len);
+
+	std::vector<int> pairs;
+	std::vector<double> quality;
+	FilterComplement(g, filteredSeeds, &pairs, &quality);
+
+	for (int i = 0; i < (int) pairs.size(); ++i) {
+		DETAILED_INFO("Paired result: " << i << " - " << pairs[i] << " : " << quality[i]);
+	}
+
 	std::vector<BidirectionalPath> filteredPaths;;
 	if (lc_cfg::get().fo.remove_sefl_conjugate) {
-		RemoveWrongConjugatePaths(g, paths, filteredPaths);
+		RemoveWrongConjugatePaths(g, paths, &filteredPaths);
 	} else {
 		filteredPaths = paths;
 	}
@@ -137,7 +151,7 @@ int main() {
 	}
 	else {
 		result = filteredPaths;
-		std::sort(result.begin(), result.end(), SimplePathComparator(g));
+		SortPathsByLength(g, result);
 		pathQuality.resize(result.size(), 1.0);
 	}
 
@@ -158,8 +172,6 @@ int main() {
 		WriteGraphWithPathsSimple(output_dir + "final_paths.dot", "final_paths", g, result, path1, path2);
 	}
 
-	std::vector<int> pairs;
-	std::vector<double> quality;
 	if (lc_cfg::get().write_contigs) {
 		OutputPathsAsContigs(g, result, output_dir + "all_paths.contigs");
 		OutputContigsNoComplement(g, output_dir + "edges.contigs");
@@ -168,7 +180,7 @@ int main() {
 
 		std::set<int> toRemove;
 		if (lc_cfg::get().fo.remove_overlaps) {
-			RemoveOverlaps(g, result, pairs, quality);
+			RemoveOverlaps(g, result);
 			DETAILED_INFO("Removed overlaps");
 
 			if (lc_cfg::get().fo.remove_similar) {
