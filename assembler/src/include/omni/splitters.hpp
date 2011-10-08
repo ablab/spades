@@ -420,8 +420,7 @@ private:
 public:
 	string ComponentName() {
 		stringstream ss;
-		ss << covered_range_.start_pos << "_" << covered_range_.end_pos
-				<< ".dot" << endl;
+		ss << covered_range_.start_pos << "_" << covered_range_.end_pos;
 		return ss.str();
 	}
 
