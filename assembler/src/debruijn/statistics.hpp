@@ -124,7 +124,7 @@ public:
 			INFO(
 					"Error edges count: " << black_count << " which is " << 100.0 * black_count / edge_count << "% of all edges");
 			INFO(
-					"Total length of all black edges: " << sum_length << ". While double genome length is " << (2 * cfg::get().reference_genome.size()));
+					"Total length of all black edges: " << sum_length << ". While double genome length is " << (2 * cfg::get().ds.reference_genome.size()));
 		} else {
 			INFO(
 					"Error edges count: " << black_count << " which is 0% of all edges");

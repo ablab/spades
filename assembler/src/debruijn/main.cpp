@@ -127,7 +127,7 @@ int main() {
 
 
 		// read data ('genome')
-		string genome_filename = cfg::get().reference_genome;
+		string genome_filename = cfg::get().ds.reference_genome;
 		std::string genome;
 		if (genome_filename.length() > 0) {
 			genome_filename = input_dir + genome_filename;
