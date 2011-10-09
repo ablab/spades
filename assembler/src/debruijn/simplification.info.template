@@ -76,4 +76,10 @@ usual_simplification
 	   coverage_gap		            5.0
 	   sufficient_neighbour_length   1000	
    }
+   
+   piec
+   {
+	   max_length		               100
+	   min_neighbour_length		       100
+   }
 }

@@ -310,6 +310,7 @@ namespace debruijn_graph
         load(pt, "br" , simp.br ); // bulge remover:
         load(pt, "ec" , simp.ec ); // erroneous connections remover:
         load(pt, "cec", simp.cec); // cheating erroneous connections remover:
+        load(pt, "piec", simp.piec); // pair info aware erroneous connections remover:
 	}
 
 	// main debruijn config load function
