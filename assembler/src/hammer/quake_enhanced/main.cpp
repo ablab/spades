@@ -23,5 +23,7 @@ int main(int argc, char **argv) {
   quake.PrepareHists(opts.hist_file, opts.trusted_hist_file, 
                      opts.bad_hist_file, opts.top_threshold,
                      opts.average_min);
+  quake.PrepareLimits(opts.bad_threshold, opts.limits_file);
+  quake.FilterTrusted(opts.kmer_count_file, opts.trusted_hist_file, opts.bad_kmer_file);
   return 0;
 }
