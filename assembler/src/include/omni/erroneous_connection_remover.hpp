@@ -99,8 +99,7 @@ public:
 			if (math::gr(g_.coverage(e), max_coverage_)) {
 				TRACE("Max coverage " << max_coverage_ << " achieved");
 				return;
-			}
-			TRACE("Checking length");
+			}TRACE("Checking length");
 			if (g_.length(e) < max_length_) {
 				TRACE("Condition ok");
 				VertexId start = g_.EdgeStart(e);
@@ -114,21 +113,19 @@ public:
 					TRACE("Vertices not related");
 					TRACE("Compressing end");
 					g_.CompressVertex(end);
-				}
-				TRACE("Compressing start");
+				}TRACE("Compressing start");
 				g_.CompressVertex(start);
 			} else {
 				TRACE("Condition failed");
-			}
-			TRACE("Edge " << e << " processed");
-		}
-		TRACE("Cleaning graph");
+			}TRACE("Edge " << e << " processed");
+		}TRACE("Cleaning graph");
 		omnigraph::Cleaner<Graph> cleaner(g_);
 		cleaner.Clean();
 		TRACE("Graph cleaned");
 	}
 private:
-	DECL_LOGGER("IterativeLowCoverageEdgeRemover");
+	DECL_LOGGER("IterativeLowCoverageEdgeRemover")
+	;
 };
 
 template<class T>
@@ -197,11 +194,13 @@ public:
 	}
 };
 
-template<class Graph>
+template<class GraphPack>
 class PairInfoAwareErroneousEdgeRemover {
+	typedef typename GraphPack::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
+	GraphPack& gp_;
 	Graph& g_;
 	const PairedInfoIndex<Graph>& paired_index_;
 	size_t max_length_;
@@ -211,63 +210,90 @@ class PairInfoAwareErroneousEdgeRemover {
 	size_t gap_;
 
 public:
-	PairInfoAwareErroneousEdgeRemover(Graph& g,
+	PairInfoAwareErroneousEdgeRemover(GraphPack& gp,
 			const PairedInfoIndex<Graph>& paired_index, size_t max_length,
 			size_t min_neighbour_length, size_t insert_size, size_t read_length) :
-			g_(g), paired_index_(paired_index), max_length_(max_length), min_neighbour_length_(
-					min_neighbour_length), insert_size_(insert_size), read_length_(
-					read_length), gap_(insert_size_ - 2 * read_length_) {
+			gp_(gp), g_(gp.g), paired_index_(paired_index), max_length_(
+					max_length), min_neighbour_length_(min_neighbour_length), insert_size_(
+					insert_size), read_length_(read_length), gap_(
+					insert_size_ - 2 * read_length_) {
 		VERIFY(insert_size_ >= 2 * read_length_);
 	}
 
 	bool ShouldContainInfo(EdgeId e1, EdgeId e2, size_t gap_length) {
 		//todo discuss addition of negative delta
 		//todo second condition may be included into the constructor warn/assert
-		return gap_length
+		TRACE("Checking whether should be pair info between e1 " << PrintEdge(e1)
+				<< " and e2 " << PrintEdge(e2) << " with gap " << gap_length);
+		bool should_contain = gap_length
 				>= PairInfoPathLengthLowerBound(g_.k(), g_.length(e1),
 						g_.length(e2), gap_, 0.)
 				&& gap_length
 						<= PairInfoPathLengthUpperBound(g_.k(), insert_size_,
 								0.);
+		TRACE("Result: " << should_contain);
+		return should_contain;
 	}
 
 	bool ContainsInfo(EdgeId e1, EdgeId e2, size_t ec_length) {
-		vector < PairInfo < EdgeId >> infos = paired_index_.GetEdgePairInfo(e1,
-				e2);
+		TRACE("Looking for pair info between e1 " << PrintEdge(e1)
+				<< " and e2 " << PrintEdge(e2));
+		vector<PairInfo<EdgeId>> infos = paired_index_.GetEdgePairInfo(e1, e2);
 		for (auto it = infos.begin(); it != infos.end(); ++it) {
 			PairInfo<EdgeId> info = *it;
 			size_t distance = g_.length(e1) + ec_length;
 			if (math::ge(0. + distance + info.variance, info.d)
 					&& math::le(0. + distance, info.d + info.variance)) {
+				TRACE("Pair info found");
 				return true;
 			}
 		}
+		TRACE("Pair info not found");
 		return false;
 	}
 
 	bool CheckAnyPairInfoAbsense(EdgeId possible_ec) {
+		TRACE("Checking pair info absense");
 		vector<EdgeId> incoming = g_.IncomingEdges(g_.EdgeStart(possible_ec));
 		vector<EdgeId> outgoing = g_.OutgoingEdges(g_.EdgeEnd(possible_ec));
 		for (auto it1 = incoming.begin(); it1 != incoming.end(); ++it1)
 			for (auto it2 = outgoing.begin(); it2 != outgoing.end(); ++it2)
 				if (!ShouldContainInfo(*it1, *it2, g_.length(possible_ec))
-						|| ContainsInfo(*it1, *it2, g_.length(possible_ec)))
+						|| ContainsInfo(*it1, *it2, g_.length(possible_ec))) {
+					TRACE("Check absense: fail");
 					return false;
+				}
+		TRACE("Check absense: ok");
 		return true;
 	}
 
 	bool CheckAdjacentLengths(const vector<EdgeId>& edges, EdgeId possible_ec) {
+		TRACE("Checking adjacent lengths");
+		TRACE("min_neighbour_length = " << min_neighbour_length_);
 		for (auto it = edges.begin(); it != edges.end(); ++it)
-			if (min_neighbour_length_ > g_.length(*it))
+			if (min_neighbour_length_ > g_.length(*it)) {
+				TRACE(
+						"Check fail: edge " << PrintEdge(*it) << " was too short");
 				return false;
+			}TRACE("Check ok");
 		return true;
 	}
 
+	string PrintEdge(EdgeId e) {
+		stringstream ss;
+		ss << gp_.int_ids.ReturnIntId(e) << "(" << e << ") " << g_.length(e)
+				<< "(" << g_.coverage(e) << ")";
+		return ss.str();
+	}
+
 	void RemoveEdges() {
+		TRACE("Removing erroneous edges based on pair info");
 		LengthComparator<Graph> comparator(g_);
 		for (auto it = g_.SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
 			typename Graph::EdgeId e = *it;
+			TRACE("Considering edge " << PrintEdge(e));
 			if (g_.length(e) > max_length_) {
+				TRACE("Max length bound = " << max_length_ << " was exceeded");
 				return;
 			}
 			vector<EdgeId> adjacent_edges;
@@ -278,16 +304,26 @@ public:
 					&& CheckAnyPairInfoAbsense(e)) {
 				VertexId start = g_.EdgeStart(e);
 				VertexId end = g_.EdgeEnd(e);
+				TRACE("Try deleting edge " << PrintEdge(e));
 				if (!g_.RelatedVertices(start, end)) {
+					TRACE("Vertices not related");
+					TRACE("Deleting edge " << PrintEdge(e));
 					g_.DeleteEdge(e);
+					TRACE("Compressing start");
 					g_.CompressVertex(start);
+					TRACE("Compressing end");
 					g_.CompressVertex(end);
+				} else {
+					TRACE("Vertices are related");
 				}
 			}
 		}
 		omnigraph::Cleaner<Graph> cleaner(g_);
 		cleaner.Clean();
 	}
+private:
+	DECL_LOGGER("PairInfoAwareErroneousEdgeRemover")
+	;
 };
 
 }

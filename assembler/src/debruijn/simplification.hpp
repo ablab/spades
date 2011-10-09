@@ -100,7 +100,8 @@ void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
 
 
 	//todo temporary solution!!!
-	OutputContigs(gp.g, cfg::get().output_root + "tmp_contigs.fasta");
+	OutputContigs(gp.g, cfg::get().output_dir + cfg::get().additional_contigs);
+	OutputContigs(gp.g, cfg::get().output_root + "../" + cfg::get().additional_contigs);
 }
 
 void exec_simplification(PairedReadStream& stream, conj_graph_pack& gp,

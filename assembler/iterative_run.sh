@@ -10,4 +10,5 @@ make rd
 
 echo "Running assembler for K="$i
 ./run rd > "K$i.log"
+
 done

@@ -87,7 +87,7 @@ void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
 
 		//experimental
 		INFO("Pair info aware ErroneousConnectionsRemoval");
-		RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index);
+		RemoveEroneousEdgesUsingPairedInfo(gp, paired_index);
 		INFO("Pair info aware ErroneousConnectionsRemoval stats");
 		CountStats<K>(gp.g, gp.index, gp.genome);
 		//experimental

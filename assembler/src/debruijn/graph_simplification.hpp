@@ -164,14 +164,14 @@ void RemoveRelativelyLowCoverageEdges(Graph &g) {
 //	remover.RemoveEdges();
 }
 
-template<class Graph>
-void RemoveEroneousEdgesUsingPairedInfo(Graph &g,
-		const PairedInfoIndex<Graph>& paired_index) {
+template<class graph_pack>
+void RemoveEroneousEdgesUsingPairedInfo(graph_pack &gp,
+		const PairedInfoIndex<typename graph_pack::graph_t>& paired_index) {
 	INFO("Removing erroneous edges using paired info");
 	size_t max_length = cfg::get().simp.piec.max_length;
 	size_t min_neighbour_length = cfg::get().simp.piec.min_neighbour_length;
-	omnigraph::PairInfoAwareErroneousEdgeRemover<Graph> erroneous_edge_remover(
-			g, paired_index, max_length, min_neighbour_length,
+	omnigraph::PairInfoAwareErroneousEdgeRemover<graph_pack> erroneous_edge_remover(
+			gp, paired_index, max_length, min_neighbour_length,
 			cfg::get().ds.IS, cfg::get().ds.RL);
 	erroneous_edge_remover.RemoveEdges();
 	INFO("Erroneous edges using paired info removed");
