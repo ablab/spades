@@ -153,6 +153,7 @@ namespace debruijn_graph
 			boost::optional<std::string> single_second;
 			size_t RL;
 			size_t IS;
+			std::string reference_genome;
 			int LEN;
 		};
 
@@ -171,8 +172,6 @@ namespace debruijn_graph
 		bool use_single_reads;
 		bool use_additional_contigs;
 		std::string additional_contigs;
-
-		std::string reference_genome;
 
 		std::string load_from;
 
@@ -299,6 +298,7 @@ namespace debruijn_graph
 		ds.single_first = pt.get_optional<std::string>("single_second");
 		load(pt, "RL", ds.RL);
 		load(pt, "IS", ds.IS);
+		load(pt, "reference_genome", ds.reference_genome);
 		load(pt, "LEN", ds.LEN);
 	}
 
@@ -339,7 +339,7 @@ namespace debruijn_graph
 
 		load(pt, "additional_contigs", cfg.additional_contigs);
 
-		load(pt, "reference_genome", cfg.reference_genome);
+		//load(pt, "reference_genome", cfg.reference_genome); moved to dataset
 		//load(pt, "start_from", cfg.start_from);
 
 		load(pt, "paired_mode", cfg.paired_mode);
