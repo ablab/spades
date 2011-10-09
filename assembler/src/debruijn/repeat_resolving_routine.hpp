@@ -145,8 +145,6 @@ void process_resolve_repeats(
 
     INFO("---Clearing resolved graph---");
 
-    if (output_contigs)
-    	OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_after_rr_before_simplify.fasta");
 
     for (int i = 0; i < 3; ++i)
     {
@@ -230,6 +228,7 @@ void component_statistics(graph_pack & conj_gp, int component_id, PairedInfoInde
 		typename graph_pack::graph_t::VertexId start = conj_gp.g.EdgeStart(*iter);
 		typename graph_pack::graph_t::VertexId end = conj_gp.g.EdgeEnd(*iter);
 		if (conj_gp.g.length(*iter) > cfg::get().ds.IS + 100) {
+
 			if (conj_gp.g.IsDeadStart(start) /*&& conj_gp.g.CheckUniqueOutgoingEdge(start)*/){
 				incoming_edges.insert(*iter);
 			} else if (conj_gp.g.IsDeadEnd(end)/* && conj_gp.g.CheckUniqueIncomingEdge(end)*/){
@@ -239,35 +238,50 @@ void component_statistics(graph_pack & conj_gp, int component_id, PairedInfoInde
 			}
 		}
 	}
+	INFO("incoming- outgoint set formed");
+	int flag = 1;
+	for (auto inc_iter = incoming_edges.begin(); inc_iter != incoming_edges.end(); ++inc_iter){
+		int count = 0;
+ 		for (auto out_iter = outgoing_edges.begin(); out_iter != outgoing_edges.end(); ++out_iter){
+			if (clustered_index.GetEdgePairInfo(*inc_iter, *out_iter).size() == 1)
+				count ++;
+		}
+ 		if (count != 1)
+ 			flag = 0;
+	}
+	FILE* file;
+	if (flag)
+		file = fopen((table_name + ".tbl_good").c_str(), "w");
+	else
+		file = fopen((table_name + ".tbl").c_str(), "w");
 
-	FILE* file = fopen((table_name + ".tbl").c_str(), "w");
-	DEBUG("Saving in-out table , " << component_name <<" created");
-
-	fprintf(file,"%6c", ' ');
+	INFO("Saving in-out table , " << component_name <<" created");
+	VERIFY(file != NULL);
+	fprintf(file,"%7c", ' ');
 
 	for (auto out_iter = outgoing_edges.begin(); out_iter != outgoing_edges.end(); ++out_iter)
-		fprintf(file," %6d", conj_gp.int_ids.ReturnIntId(*out_iter));
+		fprintf(file," %7d", conj_gp.int_ids.ReturnIntId(*out_iter));
 	fprintf(file, "\n");
 
 	for (auto inc_iter = incoming_edges.begin(); inc_iter != incoming_edges.end(); ++inc_iter){
-		fprintf(file," %6d", conj_gp.int_ids.ReturnIntId(*inc_iter));
+		fprintf(file," %7d", conj_gp.int_ids.ReturnIntId(*inc_iter));
 		for (auto out_iter = outgoing_edges.begin(); out_iter != outgoing_edges.end(); ++out_iter){
 			char c;
 			if (clustered_index.GetEdgePairInfo(*inc_iter, *out_iter).size() == 0)
 				c = '0';
 			else
 				c = 'X';
-			fprintf(file,"%6c", c);
+			fprintf(file,"%7c", c);
 		}
 		fprintf(file, "\n");
 	}
 
 	fprintf(file, "\n");
 	for (auto inc_iter = incoming_edges.begin(); inc_iter != incoming_edges.end(); ++inc_iter)
-		fprintf(file," %4d", conj_gp.int_ids.ReturnIntId(*inc_iter));
+		fprintf(file," %7d", conj_gp.int_ids.ReturnIntId(*inc_iter));
 	fprintf(file, "\n");
 	for (auto out_iter = outgoing_edges.begin(); out_iter != outgoing_edges.end(); ++out_iter)
-		fprintf(file," %4d", conj_gp.int_ids.ReturnIntId(*out_iter));
+		fprintf(file," %7d", conj_gp.int_ids.ReturnIntId(*out_iter));
 	fprintf(file, "\n");
 
 	fclose(file);
