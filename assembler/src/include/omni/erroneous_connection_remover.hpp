@@ -40,6 +40,42 @@ public:
 };
 
 template<class Graph>
+class ChimericEdgesRemover {
+private:
+	Graph &graph_;
+	size_t max_overlap_;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+public:
+	ChimericEdgesRemover(Graph &graph, size_t max_overlap) :
+			graph_(graph), max_overlap_(max_overlap) {
+	}
+
+	bool CheckEnd(VertexId v) {
+		return graph_.OutgoingEdgeCount(v) == 1
+				&& graph_.IncomingEdgeCount(v) >= 2;
+	}
+
+	bool CheckStart(VertexId v) {
+		return graph_.OutgoingEdgeCount(v) >= 2
+				&& graph_.IncomingEdgeCount(v) == 1;
+	}
+
+	void RemoveEdges() {
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			EdgeId edge = *it;
+			if (graph_.length(edge) <= graph_.k()
+					&& graph_.length(edge) >= graph_.k() - 10
+					&& CheckEnd(graph_.EdgeEnd(edge))
+					&& CheckStart(graph_.EdgeStart(edge))) {
+				graph_.DeleteEdge(edge);
+			}
+		}
+	}
+};
+
+template<class Graph>
 class IterativeLowCoverageEdgeRemover {
 	Graph& g_;
 	size_t max_length_;
@@ -95,7 +131,7 @@ private:
 	DECL_LOGGER("IterativeLowCoverageEdgeRemover");
 };
 
-template <class T>
+template<class T>
 void Append(vector<T>& current, const vector<T>& to_append) {
 	current.insert(current.end(), to_append.begin(), to_append.end());
 }
@@ -118,10 +154,10 @@ public:
 
 	}
 
-	bool StrongNeighbourCondition(EdgeId neighbour_edge,
-			EdgeId possible_ec) {
-		return neighbour_edge == possible_ec || math::gr(g_.coverage(neighbour_edge),
-				g_.coverage(possible_ec) * coverage_gap_)
+	bool StrongNeighbourCondition(EdgeId neighbour_edge, EdgeId possible_ec) {
+		return neighbour_edge == possible_ec
+				|| math::gr(g_.coverage(neighbour_edge),
+						g_.coverage(possible_ec) * coverage_gap_)
 				|| g_.length(neighbour_edge) >= neighbour_length_threshold_;
 	}
 
@@ -176,33 +212,33 @@ class PairInfoAwareErroneousEdgeRemover {
 
 public:
 	PairInfoAwareErroneousEdgeRemover(Graph& g,
-			const PairedInfoIndex<Graph>& paired_index,
-			size_t max_length,
-			size_t min_neighbour_length,
-			size_t insert_size,
-			size_t read_length) :
-			g_(g), paired_index_(paired_index),
-			max_length_(max_length),
-			min_neighbour_length_(min_neighbour_length),
-			insert_size_(insert_size),
-			read_length_(read_length),
-			gap_(insert_size_ - 2 * read_length_){
+			const PairedInfoIndex<Graph>& paired_index, size_t max_length,
+			size_t min_neighbour_length, size_t insert_size, size_t read_length) :
+			g_(g), paired_index_(paired_index), max_length_(max_length), min_neighbour_length_(
+					min_neighbour_length), insert_size_(insert_size), read_length_(
+					read_length), gap_(insert_size_ - 2 * read_length_) {
 		VERIFY(insert_size_ >= 2 * read_length_);
 	}
 
 	bool ShouldContainInfo(EdgeId e1, EdgeId e2, size_t gap_length) {
 		//todo discuss addition of negative delta
 		//todo second condition may be included into the constructor warn/assert
-		return gap_length >= PairInfoPathLengthLowerBound(g_.k(), g_.length(e1), g_.length(e2), gap_, 0.)
-				&& gap_length <= PairInfoPathLengthUpperBound(g_.k(), insert_size_, 0.);
+		return gap_length
+				>= PairInfoPathLengthLowerBound(g_.k(), g_.length(e1),
+						g_.length(e2), gap_, 0.)
+				&& gap_length
+						<= PairInfoPathLengthUpperBound(g_.k(), insert_size_,
+								0.);
 	}
 
 	bool ContainsInfo(EdgeId e1, EdgeId e2, size_t ec_length) {
-		vector<PairInfo<EdgeId>> infos = paired_index_.GetEdgePairInfo(e1, e2);
+		vector < PairInfo < EdgeId >> infos = paired_index_.GetEdgePairInfo(e1,
+				e2);
 		for (auto it = infos.begin(); it != infos.end(); ++it) {
 			PairInfo<EdgeId> info = *it;
 			size_t distance = g_.length(e1) + ec_length;
-			if (math::ge(0. + distance + info.variance, info.d) && math::le(0. + distance, info.d + info.variance)) {
+			if (math::ge(0. + distance + info.variance, info.d)
+					&& math::le(0. + distance, info.d + info.variance)) {
 				return true;
 			}
 		}
@@ -214,7 +250,8 @@ public:
 		vector<EdgeId> outgoing = g_.OutgoingEdges(g_.EdgeEnd(possible_ec));
 		for (auto it1 = incoming.begin(); it1 != incoming.end(); ++it1)
 			for (auto it2 = outgoing.begin(); it2 != outgoing.end(); ++it2)
-				if (!ShouldContainInfo(*it1, *it2, g_.length(possible_ec)) || ContainsInfo(*it1, *it2, g_.length(possible_ec)))
+				if (!ShouldContainInfo(*it1, *it2, g_.length(possible_ec))
+						|| ContainsInfo(*it1, *it2, g_.length(possible_ec)))
 					return false;
 		return true;
 	}
@@ -237,7 +274,8 @@ public:
 			Append(adjacent_edges, g_.IncomingEdges(g_.EdgeStart(e)));
 			Append(adjacent_edges, g_.OutgoingEdges(g_.EdgeEnd(e)));
 
-			if (CheckAdjacentLengths(adjacent_edges, e) && CheckAnyPairInfoAbsense(e)) {
+			if (CheckAdjacentLengths(adjacent_edges, e)
+					&& CheckAnyPairInfoAbsense(e)) {
 				VertexId start = g_.EdgeStart(e);
 				VertexId end = g_.EdgeEnd(e);
 				if (!g_.RelatedVertices(start, end)) {

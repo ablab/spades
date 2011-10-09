@@ -160,6 +160,8 @@ void RemoveRelativelyLowCoverageEdges(Graph &g) {
 	//			max_length_div_K * g.k(), max_coverage);
 	erroneous_edge_remover.RemoveEdges();
 	INFO("Hard low coverage edges removed");
+//	ChimericEdgesRemover<Graph> remover(g, 10);
+//	remover.RemoveEdges();
 }
 
 template<class Graph>
