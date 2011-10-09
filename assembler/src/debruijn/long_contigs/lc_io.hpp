@@ -159,19 +159,18 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 			dataScanner.loadPaired(rl->ds.precounted_path, *pairedInfos.back().pairedInfoIndex);
 
 			pairedInfos.back().raw = new PairedInfoIndex<Graph>(g, 0);
-			dataScanner.loadPaired(rl->ds.raw, *pairedInfos.back().raw);
-
-			pairedInfos.back().has_advanced = rl->ds.has_advanced;
-			if (rl->ds.has_advanced) {
-				pairedInfos.back().advanced = new PairedInfoIndexLibrary(g, readSize, insertSize, delta, var, new PairedInfoIndex<Graph>(g, 0));
-				DataScanner<Graph> advDataScanner(g, conj_IntIds);
-				advDataScanner.loadPaired(rl->ds.advanced, *pairedInfos.back().advanced->pairedInfoIndex);
-			} else {
-				pairedInfos.back().advanced = 0;
+			if (!lc_cfg::get().paired_info_only) {
+				dataScanner.loadPaired(rl->ds.raw, *pairedInfos.back().raw);
+		
+				pairedInfos.back().has_advanced = rl->ds.has_advanced;
+				if (rl->ds.has_advanced) {
+					pairedInfos.back().advanced = new PairedInfoIndexLibrary(g, readSize, insertSize, delta, var, new PairedInfoIndex<Graph>(g, 0));
+					DataScanner<Graph> advDataScanner(g, conj_IntIds);
+					advDataScanner.loadPaired(rl->ds.advanced, *pairedInfos.back().advanced->pairedInfoIndex);
+				} else {
+					pairedInfos.back().advanced = 0;
+				}
 			}
-
-
-
 		}
 		else {
 			//Reading paired info from fastq files
