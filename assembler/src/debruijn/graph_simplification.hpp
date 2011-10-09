@@ -248,11 +248,12 @@ void SimplifyGraph(conj_graph_pack &gp,
 //				"graph.dot", "no_erroneous_edges_graph");
 	}
 
-//	INFO("Cheating ErroneousConnectionsRemoval");
-//	RemoveRelativelyLowCoverageEdges(g);
+	INFO("Cheating ErroneousConnectionsRemoval");
+	RemoveRelativelyLowCoverageEdges(gp.g);
 
-//	INFO("Cheating ErroneousConnectionsRemoval stats");
-//	CountStats<k>(g, index, genome);
+	INFO("Cheating ErroneousConnectionsRemoval stats");
+	CountStats<k> (gp.g, gp.index, gp.genome);
+
 //	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "final_erroneous_edges_removed/",	"graph.dot", "no_erroneous_edges_graph");
 
 	INFO("Final TipClipping");
