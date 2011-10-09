@@ -242,6 +242,8 @@ SC_EULER_NEW
 {
 	first 	E.Coli.K12.MG1655/SC_cor/left_6.10.cor.fasta
 	second	E.Coli.K12.MG1655/SC_cor/right_6.10.cor.fasta
+	single_first	SC_cor/left_6.10.cor.single.fasta
+	single_second	SC_cor/right_6.10.cor.single.fasta
 	RL		100	; read length
 	IS		270	; insert size
 	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz

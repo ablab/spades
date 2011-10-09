@@ -295,7 +295,7 @@ namespace debruijn_graph
 		load(pt, "first", ds.first);
 		load(pt, "second", ds.second);
 		ds.single_first = pt.get_optional<std::string>("single_first");
-		ds.single_first = pt.get_optional<std::string>("single_second");
+		ds.single_second = pt.get_optional<std::string>("single_second");
 		load(pt, "RL", ds.RL);
 		load(pt, "IS", ds.IS);
 		load(pt, "reference_genome", ds.reference_genome);
