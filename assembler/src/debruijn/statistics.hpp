@@ -356,7 +356,7 @@ public:
 	virtual void Count() {
 		//		OutputWeights(GetWeights(edge_pairs), output_folder_ + "pair_info_weights.txt");
 		PairedInfoIndex<Graph> new_index(graph_);
-		PairInfoFilter < Graph > (graph_, 40).Filter(pair_info_, new_index);
+		PairInfoFilter<Graph>(graph_, 40).Filter(pair_info_, new_index);
 		//		RemoveUntrustful(edge_pairs, 40);
 		map<pair<EdgeId, EdgeId> , double> edge_pairs;
 		TrivialEdgePairChecker<Graph> checker(graph_);
@@ -505,10 +505,9 @@ class MatePairTransformStat: public AbstractStatCounter {
 							info.d - g_.length(e1), info.d - g_.length(e1),
 							g_.EdgeEnd(e1), g_.EdgeStart(e2), counter);
 					path_processor.Process();
-					//todo write this into file
-					INFO(
+					TRACE(
 							"Edges"<< e1 <<" : " << e2 << ": " << info.weight << " : " << info.d);
-					INFO("Path Numbs" << counter.count());
+					TRACE("Path Numbs" << counter.count());
 
 					if (counter.count() == 1) {
 						unique_distance_cnt_++;
@@ -537,11 +536,13 @@ public:
 		for (auto it = pair_info_.begin(); it != pair_info_.end(); ++it) {
 			vector<PairInfo<EdgeId>> infos = *it;
 			ProcessInfos(infos);
-		}INFO(
-				"Considered " << considered_dist_cnt_ << " edge pair distances (including trivial)")INFO(
-				unique_distance_cnt_ << " edge distances connected with unique path of appropriate length")
+		}
 		INFO(
-				non_unique_distance_cnt_ << " edge distances connected with non-unique path of appropriate length")
+				"Considered " << considered_dist_cnt_ << " edge pair distances (including trivial)");
+		INFO(
+				unique_distance_cnt_ << " edge distances connected with unique path of appropriate length");
+		INFO(
+				non_unique_distance_cnt_ << " edge distances connected with non-unique path of appropriate length");
 	}
 
 	size_t considered_edge_pair_count() {
@@ -805,14 +806,15 @@ private:
 //	}
 
 public:
-	EstimationQualityStat(const Graph &graph, const IdTrackHandler<Graph>& int_ids,
+	EstimationQualityStat(const Graph &graph,
+			const IdTrackHandler<Graph>& int_ids,
 			const PairedInfoIndex<Graph>& pair_info,
 			const PairedInfoIndex<Graph>& estimated_pair_info,
 			const PairedInfoIndex<Graph>& etalon_pair_info) :
 			graph_(graph), int_ids_(int_ids), pair_info_(pair_info), estimated_pair_info_(
 					estimated_pair_info), etalon_pair_info_(etalon_pair_info), false_positives_(
-					graph_), perfect_matches_(graph_), imperfect_matches_(graph_), false_negatives_(
-					graph_) {
+					graph_), perfect_matches_(graph_), imperfect_matches_(
+					graph_), false_negatives_(graph_) {
 	}
 
 	virtual ~EstimationQualityStat() {
