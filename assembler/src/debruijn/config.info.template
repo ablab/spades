@@ -4,21 +4,23 @@
 #include "src/debruijn/datasets.info"
 
 dataset 	      QUAKE_CROPPED_1K
+;dataset              LB_QUAKE_FULL
 
-input_dir	      ./data/input/E.Coli.K12.MG1655/
+input_dir	      ./data/input/
 output_base	      ./data/debruijn/
 
-reference_genome  MG1655-K12.fasta.gz
+reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+;reference_genome  L.Bouillonii_quaked/contigs_br_1003.fasta
 
-additional_contigs	tmp_contigs.fasta  
+additional_contigs	tmp_contigs.fasta
 
 load_from         latest/saves/ ; tmp or latest 
 
 entry_point construction
 ;entry_point paired_info_count
-;entry_point simplification    
+;entry_point simplification
 ;entry_point distance_estimation
-;entry_point repeats_resolving	
+;entry_point repeats_resolving
 ;entry_point n50_enlargement
 
 ; iterative mode switcher, activates additional contigs usage
