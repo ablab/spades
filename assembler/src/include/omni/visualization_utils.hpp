@@ -459,7 +459,7 @@ void WriteComponents(const Graph& g,
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
 	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, file_name,
-			graph_name, 300);
+			graph_name, 500);
 	gv.Visualize();
 }
 

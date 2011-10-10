@@ -255,6 +255,9 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	DetailedWriteToDot(gp.g, labeler, folder + file_name, graph_name, path1,
 			path2);
+	WriteComponents(gp.g, labeler, folder + file_name, graph_name,
+			cfg::get().ds.IS, path1, path2);
+
 	INFO("Writing graph components along genome");
 	WriteGraphComponentsAlongGenome<k> (gp.g, gp.index, gp.kmer_mapper,
 			labeler, gp.genome, folder, file_name, "components_along_genome",
