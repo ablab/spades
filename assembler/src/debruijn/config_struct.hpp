@@ -153,6 +153,7 @@ namespace debruijn_graph
 			boost::optional<std::string> single_second;
 			size_t RL;
 			size_t IS;
+			bool single_cell;
 			std::string reference_genome;
 			int LEN;
 		};
@@ -298,6 +299,7 @@ namespace debruijn_graph
 		ds.single_second = pt.get_optional<std::string>("single_second");
 		load(pt, "RL", ds.RL);
 		load(pt, "IS", ds.IS);
+		load(pt, "single_cell", ds.single_cell);
 		load(pt, "reference_genome", ds.reference_genome);
 		load(pt, "LEN", ds.LEN);
 	}
@@ -350,10 +352,6 @@ namespace debruijn_graph
 		load(pt, "componential_resolve", cfg.componential_resolve);
 		load(pt, "advanced_estimator_mode", cfg.advanced_estimator_mode);
 
-		bool single_cell;
-		load(pt, "single_cell_mode", single_cell);
-		load(pt, single_cell ? "sc_simplification" : "usual_simplification", cfg.simp);
-
 		load(pt, "de", cfg.de); // distance estimator:
 		load(pt, "ade", cfg.ade); // advanced distance estimator:
 		load(pt, "rr", cfg.rr); // repeat resolver:
@@ -361,6 +359,10 @@ namespace debruijn_graph
 		load(pt, "need_consensus", cfg.need_consensus);
 		load(pt, "uncorrected_reads", cfg.uncorrected_reads);
 		load(pt, cfg.dataset_name, cfg.ds);
+
+		bool single_cell;
+		load(pt, "single_cell_mode", single_cell);
+		load(pt, single_cell ? "sc_simplification" : "usual_simplification", cfg.simp);
 	}
 
 } // debruijn_graph
