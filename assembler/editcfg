@@ -13,9 +13,11 @@ then
 fi
 
 case $1 in
-  'c') cfg="src/debruijn/config.info" ;;
-  's') cfg="src/debruijn/simplification.info" ;;
-  'd') cfg="src/debruijn/datasets.info" ;;
+  'c')  cfg="src/debruijn/config.info" ;;
+  'ct') cfg="src/debruijn/config.info.template" ;;
+  's')  cfg="src/debruijn/simplification.info" ;;
+  'st') cfg="src/debruijn/simplification.info.template" ;;
+  'd')  cfg="src/debruijn/datasets.info" ;;
 esac
 
 $EDITOR $cfg
