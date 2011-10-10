@@ -106,43 +106,17 @@ int main() {
 		make_dir(cfg::get().output_dir  );
 		make_dir(cfg::get().output_saves);
 
-		string reads_filename_1 = input_dir + cfg::get().ds.first;
-		string reads_filename2 = input_dir + cfg::get().ds.second;
-
-		checkFileExistenceFATAL(reads_filename_1);
-		checkFileExistenceFATAL(reads_filename2);
-
 		// typedefs :)
 		typedef io::EasyReader<io::SingleRead> ReadStream;
 		typedef io::EasyReader<io::PairedRead> PairedReadStream;
 //		typedef io::RCReaderWrapper<io::PairedRead> RCStream;
 //		typedef io::CarefulFilteringReaderWrapper<io::PairedRead> CarefulFilteringStream;
 
-		// read data ('reads')
-
-		PairedReadStream /*raw_*/paired_stream(std::make_pair(reads_filename_1,reads_filename2), cfg::get().ds.IS);
-
-//		CarefulFilteringStream filtered_stream(raw_paired_stream);
-//		RCStream paired_stream(filtered_stream);
-
-
-		// read data ('genome')
-		string genome_filename = cfg::get().ds.reference_genome;
-		std::string genome;
-		if (genome_filename.length() > 0) {
-			genome_filename = input_dir + genome_filename;
-			checkFileExistenceFATAL(genome_filename);
-			io::Reader<io::SingleRead> genome_stream(genome_filename);
-			io::SingleRead full_genome;
-			genome_stream >> full_genome;
-			genome = full_genome.GetSequenceString().substr(0, cfg::get().ds.LEN); // cropped
-		}
-
 		// assemble it!
 		INFO("Assembling " << dataset << " dataset");
 		INFO("K = " << debruijn_graph::K);
 
-		debruijn_graph::assemble_genome(paired_stream, Sequence(genome)/*, work_tmp_dir, reads*/);
+		debruijn_graph::assemble_genome();
 
 		on_exit_ouput_linker("latest_success");
 

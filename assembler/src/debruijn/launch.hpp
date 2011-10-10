@@ -42,12 +42,12 @@
 namespace debruijn_graph
 {
 
-void assemble_genome(PairedReadStream& stream, const Sequence& genome)
+void assemble_genome()
 {
     INFO("Genome Assembling Started");
     INFO("Starting from stage: " << debruijn_config::working_stage_name(cfg::get().entry_point));
 
-    exec_repeat_resolving(stream, genome);
+    exec_repeat_resolving();
 
     INFO("Genome Assembling Finished");
 

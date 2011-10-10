@@ -16,7 +16,6 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 		paired_info_index& paired_index);
 } // debruijn_graph
 
-
 // move impl to *.cpp
 namespace debruijn_graph {
 
@@ -31,13 +30,14 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 	INFO("STAGE == Simplifying graph");
 
 	// by single_cell 3->10
-	SimplifyGraph<K> (gp, paired_index, tot_lab, 10, cfg::get().output_dir/*, etalon_paired_index*/);
+	SimplifyGraph<K>(gp, paired_index, tot_lab, 10,
+			cfg::get().output_dir/*, etalon_paired_index*/);
 
 	// by single_cell
 	EdgeQuality<Graph> quality_labeler(gp.g, gp.index, gp.genome);
 	LabelerList<Graph> labeler_list(tot_lab, quality_labeler);
 
-	WriteGraphComponents<K> (gp.g, gp.index, labeler_list, gp.genome,
+	WriteGraphComponents<K>(gp.g, gp.index, labeler_list, gp.genome,
 			cfg::get().output_dir + "graph_components/", "graph.dot",
 			"graph_component", cfg::get().ds.IS);
 
@@ -45,7 +45,7 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 
 	//experimental
 	if (cfg::get().paired_mode && cfg::get().late_paired_info) {
-		FillPairedIndexWithReadCountMetric<K> (gp.g, gp.index, gp.kmer_mapper,
+		FillPairedIndexWithReadCountMetric<K>(gp.g, gp.index, gp.kmer_mapper,
 				paired_index, stream);
 	}
 	//experimental
@@ -98,16 +98,26 @@ void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
 	//	}
 	//DEBUG
 
-
 	//todo temporary solution!!!
 	OutputContigs(gp.g, cfg::get().output_dir + cfg::get().additional_contigs);
-	OutputContigs(gp.g, cfg::get().output_root + "../" + cfg::get().additional_contigs);
+	OutputContigs(gp.g,
+			cfg::get().output_root + "../" + cfg::get().additional_contigs);
 }
 
-void exec_simplification(PairedReadStream& stream, conj_graph_pack& gp,
-		paired_info_index& paired_index) {
+void exec_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
 	if (cfg::get().entry_point <= ws_simplification) {
-		simplify_graph(stream, gp, paired_index);
+
+		string reads_filename_1 = cfg::get().input_dir + cfg::get().ds.first;
+		string reads_filename2 = cfg::get().input_dir + cfg::get().ds.second;
+
+		checkFileExistenceFATAL(reads_filename_1);
+		checkFileExistenceFATAL(reads_filename2);
+
+		io::EasyReader<io::PairedRead> paired_stream(
+				std::make_pair(reads_filename_1, reads_filename2),
+				cfg::get().ds.IS);
+
+		simplify_graph(paired_stream, gp, paired_index);
 		save_simplification(gp, paired_index);
 	} else {
 		INFO("Loading Simplification");

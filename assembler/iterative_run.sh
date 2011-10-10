@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "Iterative run started"
+
 for i in 21 33 55
 do
 echo "Generating k.hpp for K="$i
@@ -12,3 +14,5 @@ echo "Running assembler for K="$i
 ./run rd > "K$i.log"
 
 done
+
+echo "Iterative run finished"

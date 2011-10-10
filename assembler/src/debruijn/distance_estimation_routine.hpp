@@ -15,7 +15,7 @@
 
 namespace debruijn_graph {
 
-void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
+void estimate_distance(conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index);
 
 } // debruijn_graph
@@ -24,9 +24,9 @@ void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
 
 namespace debruijn_graph {
 
-void estimate_distance(PairedReadStream& stream, conj_graph_pack& gp,
+void estimate_distance(conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index) {
-	exec_simplification(stream, gp, paired_index);
+	exec_simplification(gp, paired_index);
 	INFO("STAGE == Estimating Distance");
 
 	if (cfg::get().paired_mode) {
@@ -125,10 +125,10 @@ void count_estimated_info_stats(conj_graph_pack& gp,
 			etalon_paired_index, cfg::get().output_dir);
 }
 
-void exec_distance_estimation(PairedReadStream& stream, conj_graph_pack& gp,
+void exec_distance_estimation(conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index) {
 	if (cfg::get().entry_point <= ws_distance_estimation) {
-		estimate_distance(stream, gp, paired_index, clustered_index);
+		estimate_distance(gp, paired_index, clustered_index);
 		save_distance_estimation(gp, paired_index, clustered_index);
 		if(cfg::get().paired_mode)
 			count_estimated_info_stats(gp, paired_index, clustered_index);
