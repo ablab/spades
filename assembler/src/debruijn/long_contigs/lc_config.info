@@ -14,7 +14,7 @@ QUAKE_CROPPED_400K
 QUAKE_FULL
 {
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
-    graph_file       ./data/debruijn/QUAKE_FULL/K55/euler/saves/simplified_graph
+    graph_file       ./data/debruijn/QUAKE_FULL/K55/wsingle1/simplified_graph
 }
 EAS600_QUAKE_CROPPED_100K
 {
@@ -185,9 +185,12 @@ real_libs
             precounted       false
             precounted_path  . ;/data/debruijn/QUAKE_FULL/K55/10.08_16_18/paired_info_IS270_RS100
             ;precounted_path  . ;/data/debruijn/QUAKE_FULL/K55/SC/aggregate/paired_info_IS270_RS100_agregate_2
-            first            /data/EULER/ablab/input/E.Coli.K12.MG1655/SC_cor/left_6.10.cor.fasta
-            second           /data/EULER/ablab/input/E.Coli.K12.MG1655/SC_cor/right_6.10.cor.fasta
-            
+            ;first            /data/EULER/ablab/input/E.Coli.K12.MG1655/SC_cor/left_6.10.cor.fasta
+            ;second           /data/EULER/ablab/input/E.Coli.K12.MG1655/SC_cor/right_6.10.cor.fasta
+            first            /data/EULER/ablab/input/E.Coli.K12.MG1655/SC/2908_tau1_00_left.fastq.gz
+            second           /data/EULER/ablab/input/E.Coli.K12.MG1655/SC/2908_tau1_00_right.fastq.gz            
+
+
             raw             ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_acl
             
             has_advanced     false
@@ -216,7 +219,7 @@ real_libs
         QUAKE_CROPPED_400K
         {   
         	precounted       true 
-        	precounted_path  ./data/debruijn/08.23_20_22.QUAKE_CROPPED_400K/paired_info_IS220_RS100  
+	       	precounted_path  ./data/debruijn/08.23_20_22.QUAKE_CROPPED_400K/paired_info_IS220_RS100  
             ;precounted_path  ./data/debruijn/08.22_20_25.QUAKE_CROPPED_400K/paired_info_IS220_RS100
             first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first400000_1.fastq.gz
             second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first400000_2.fastq.gz
