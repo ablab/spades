@@ -24,10 +24,10 @@ entry_point construction
 use_additional_contigs false
 
 ; use single reads if they are provided
-use_single_reads false
+use_single_reads true
 
 ; single cell mode swithcer, influence the simplification
-single_cell_mode false
+single_cell_mode true
 
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
 paired_mode true
