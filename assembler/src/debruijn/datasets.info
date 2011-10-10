@@ -275,10 +275,10 @@ SC_EULER_NEW
 ; resulting from throwing away all reads from SC_EULER_NEW that can be aligned to a human genome
 SC_EULER_NEW_FILTERED
 {
-	first 	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_1.fastag
+	first 	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_1.fasta
 	second	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_2.fasta
-	single_first	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_single.fasta
-	single_second	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_dummy.fasta
+	single_first	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_single_1.fasta
+	single_second	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_single_2.fasta
 	RL		100	; read length
 	IS		270	; insert size
 	single_cell	true
@@ -286,6 +286,20 @@ SC_EULER_NEW_FILTERED
 	LEN		4639675	; total size
 }
 
+
+; resulting from throwing away all reads from SC_NEW_1 that can be aligned to a human genome
+SC_NEW_1_FILTERED
+{
+        first   E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_1.fastq
+        second  E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_2.fastq
+        single_first    E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_single_1.fastq
+        single_second   E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_single_2.fastq
+        RL              100     ; read length
+        IS              270     ; insert size
+        single_cell     true
+        reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+        LEN             4639675 ; total size
+}
 
 ; ================================================
 ; =============== L. Bouillonii ==================
