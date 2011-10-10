@@ -362,9 +362,7 @@ namespace debruijn_graph
 		load(pt, "uncorrected_reads", cfg.uncorrected_reads);
 		load(pt, cfg.dataset_name, cfg.ds);
 
-		bool single_cell;
-		load(pt, "single_cell_mode", single_cell);
-		load(pt, single_cell ? "sc_simplification" : "usual_simplification", cfg.simp);
+		load(pt, cfg.ds.single_cell ? "sc_simplification" : "usual_simplification", cfg.simp);
 	}
 
 } // debruijn_graph
