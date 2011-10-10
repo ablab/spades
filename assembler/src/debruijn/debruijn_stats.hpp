@@ -314,8 +314,9 @@ void OutputContigs(NonconjugateDeBruijnGraph& g,
 		const string& contigs_output_filename) {
 	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_filename);
-	osequencestream oss(contigs_output_filename);
+	osequencestream_cov oss(contigs_output_filename);
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		oss << g.coverage(*it);
 		oss << g.EdgeNucls(*it);
 	}INFO("Contigs written");
 }
@@ -324,10 +325,11 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename) {
 	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_filename);
-	osequencestream oss(contigs_output_filename);
+	osequencestream_cov oss(contigs_output_filename);
 	set<ConjugateDeBruijnGraph::EdgeId> edges;
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		if (edges.find(*it) == edges.end()) {
+			oss << g.coverage(*it);
 			oss << g.EdgeNucls(*it);
 			edges.insert(g.conjugate(*it));
 		}
