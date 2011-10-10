@@ -52,54 +52,81 @@ void FillContigNumbers(
 	}
 }
 
-template<size_t k, class Graph>
-void SelectReadsForConsensus(Graph& etalon_graph, Graph& cur_graph,
-		EdgeLabelHandler<Graph>& LabelsAfter,
-		const EdgeIndex<K + 1, Graph>& index ,vector<ReadStream *>& reads
-		, string& consensus_output_dir) {
-	INFO("ReadMapping started");
-	map<typename Graph::EdgeId, int> contigNumbers;
-	int cur_num = 0;
-	FillContigNumbers(contigNumbers, cur_graph);
-//    for (auto iter = cur_graph.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-//        contigNumbers[*iter] = cur_num;
-//        cur_num++;
-//    }
-//
-	cur_num = contigNumbers.size();
-	INFO(cur_num << "contigs");
-	for (int i = 1; i < 3; i++) {
-		int read_num = 0;
-		osequencestream* mapped_reads[5000];
-		for (int j = 0; j < cur_num; j++) {
-			string output_filename = consensus_output_dir + ToString(j)
-					+ "_reads" + ToString(i) + ".fa";
-			osequencestream* tmp = new osequencestream(output_filename);
-//          mapped_reads.push_back(tmp);
-			mapped_reads[j] = tmp;
-		}
-		SingleReadMapper<k, Graph> rm(etalon_graph, index);
-		INFO("mapping reads from pair"<< i);
-		while (!reads[i - 1]->eof()) {
-			io::SingleRead cur_read;
-
-			(*reads[i - 1]) >> cur_read;
-			vector<typename Graph::EdgeId> res = rm.GetContainingEdges(
-					cur_read);
-			read_num++;
-			TRACE(
-					read_num<< " mapped to"<< res.size() <<" contigs :, read"<< cur_read.sequence());
-//          map_quantity += res.size();
-			for (size_t ii = 0; ii < res.size(); ii++) {
-				TRACE("conting number "<< contigNumbers[res[ii]]);
-				set<typename Graph::EdgeId> images =
-						LabelsAfter.edge_inclusions[res[ii]];
-				for (auto iter = images.begin(); iter != images.end(); ++iter)
-					(*mapped_reads[contigNumbers[*iter]])
-							<< cur_read.sequence();
-			}
-		}
+int ContigNumber(map<NonconjugateDeBruijnGraph::EdgeId, int>& contigNumbers , NonconjugateDeBruijnGraph::EdgeId eid,  NonconjugateDeBruijnGraph& cur_graph){
+	if (contigNumbers.find(eid) != contigNumbers.end())
+		return(contigNumbers[eid]);
+	else {
+		WARN("Deleted edge");
+		return -1;
 	}
+}
+int ContigNumber(map<ConjugateDeBruijnGraph::EdgeId, int>& contigNumbers , ConjugateDeBruijnGraph::EdgeId eid,  ConjugateDeBruijnGraph& cur_graph){
+	if (contigNumbers.find(eid) != contigNumbers.end())
+		return(contigNumbers[eid]);
+	else
+		if (contigNumbers.find(cur_graph.conjugate(eid)) != contigNumbers.end())
+			return(contigNumbers[cur_graph.conjugate(eid)]);
+	else {
+		WARN("Deleted edge");
+		return -1;
+	}
+}
+
+template<size_t k, class graph_pack>
+void SelectReadsForConsensus(graph_pack& etalon_gp, typename graph_pack::graph_t& cur_graph,
+        EdgeLabelHandler<typename graph_pack::graph_t>& LabelsAfter,
+        const EdgeIndex<K + 1, typename graph_pack::graph_t>& index ,vector<ReadStream *>& reads
+        , string& consensus_output_dir)
+{
+    INFO("ReadMapping started");
+    map<typename graph_pack::graph_t::EdgeId, int> contigNumbers;
+    int cur_num = 0;
+    FillContigNumbers(contigNumbers, cur_graph);
+    for(auto iter = etalon_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
+    	DEBUG("Edge number:" << etalon_gp.int_ids.ReturnIntId(*iter) << " is contained in contigs" );
+        set<typename graph_pack::graph_t::EdgeId> images =
+                            LabelsAfter.edge_inclusions[*iter];
+        for (auto it = images.begin(); it != images.end(); ++it) {
+        	DEBUG(ContigNumber(contigNumbers, *it, cur_graph) << ", ");
+        }
+    }
+    cur_num = contigNumbers.size();
+    INFO(cur_num << "contigs");
+    for (int i = 1; i < 3; i++) {
+        int read_num = 0;
+        osequencestream* mapped_reads[5000];
+        for (int j = 0; j < cur_num; j++) {
+            string output_filename = consensus_output_dir + ToString(j)
+                    + "_reads" + ToString(i) + ".fa";
+            osequencestream* tmp = new osequencestream(output_filename);
+//          mapped_reads.push_back(tmp);
+            mapped_reads[j] = tmp;
+        }
+        SingleReadMapper<k, typename graph_pack::graph_t> rm(etalon_gp.g, index);
+        INFO("mapping reads from pair"<< i);
+        while (!reads[i - 1]->eof()) {
+            io::SingleRead cur_read;
+
+            (* reads[i - 1]) >> cur_read;
+            vector<typename graph_pack::graph_t::EdgeId> res = rm.GetContainingEdges(
+                    cur_read);
+            read_num++;
+            TRACE(
+                    read_num<< " mapped to"<< res.size() <<" contigs :, read"<< cur_read.sequence());
+//          map_quantity += res.size();
+            for (size_t ii = 0; ii < res.size(); ii++) {
+                TRACE("counting number "<< contigNumbers[res[ii]]);
+                set<typename graph_pack::graph_t::EdgeId> images =
+                        LabelsAfter.edge_inclusions[res[ii]];
+                for (auto iter = images.begin(); iter != images.end(); ++iter)
+                	if (ContigNumber(contigNumbers, *iter, cur_graph) != -1)
+                		(*mapped_reads[ContigNumber(contigNumbers, *iter, cur_graph)])
+                			<< cur_read.sequence();
+                	else
+                		WARN("No edges containing" <<etalon_gp.int_ids.ReturnIntId(res[ii]));
+            }
+        }
+    }
 }
 
 template<class graph_pack>
@@ -116,50 +143,40 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //    if (cfg::get().rectangle_mode)
 //        RectangleResolve(clustered_index, origin_gp.g, cfg::get().output_root + "tmp/", cfg::get().output_dir);
 
-	typedef TotalLabelerGraphStruct<typename graph_pack::graph_t> total_labeler_gs;
-	typedef TotalLabeler<typename graph_pack::graph_t> total_labeler;
+    typedef TotalLabelerGraphStruct<typename graph_pack::graph_t> total_labeler_gs;
+    typedef TotalLabeler           <typename graph_pack::graph_t> total_labeler;
 
-	total_labeler_gs graph_struct_before(origin_gp.g, &origin_gp.int_ids,
-			&origin_gp.edge_pos, NULL);
-	total_labeler tot_labeler_before(&graph_struct_before);
 
-	omnigraph::WriteSimple(
-			origin_gp.g,
-			tot_labeler_before,
-			cfg::get().output_dir + subfolder + graph_name
-					+ "_2_simplified.dot", "no_repeat_graph");
+    total_labeler_gs graph_struct_before(origin_gp  .g, &origin_gp  .int_ids, &origin_gp  .edge_pos, NULL);
+    total_labeler tot_labeler_before(&graph_struct_before);
 
-	ResolveRepeats(origin_gp.g, origin_gp.int_ids, clustered_index,
-			origin_gp.edge_pos, resolved_gp.g, resolved_gp.int_ids,
-			resolved_gp.edge_pos,
-			cfg::get().output_dir + subfolder + "resolve_" + graph_name + "/",
-			labels_after);
-	if (output_contigs) {
-		OutputContigs(
-				resolved_gp.g,
-				cfg::get().output_dir
-						+ "contigs_after_rr_before_simplify.fasta");
-		OutputContigs(origin_gp.g,
-				cfg::get().output_dir + "contigs_before_resolve.fasta");
-	}INFO("Total labeler start");
+    omnigraph::WriteSimple(origin_gp.g, tot_labeler_before, cfg::get().output_dir + subfolder + graph_name + "_2_simplified.dot", "no_repeat_graph");
 
-	total_labeler_gs graph_struct_after(resolved_gp.g, &resolved_gp.int_ids,
-			&resolved_gp.edge_pos, &labels_after);
+    ResolveRepeats(origin_gp  .g, origin_gp  .int_ids, clustered_index, origin_gp  .edge_pos,
+                   resolved_gp.g, resolved_gp.int_ids,                  resolved_gp.edge_pos,
+                   cfg::get().output_dir + subfolder +"resolve_" + graph_name +  "/", labels_after);
+    if (output_contigs) {
+       	OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_after_rr_before_simplify.fasta");
+    	OutputContigs(origin_gp.g, cfg::get().output_dir + "contigs_before_resolve.fasta");
+    }
+    INFO("Total labeler start");
 
-	total_labeler tot_labeler_after(&graph_struct_after, &graph_struct_before);
+    total_labeler_gs graph_struct_after (resolved_gp.g, &resolved_gp.int_ids, &resolved_gp.edge_pos, &labels_after);
 
-	omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
-			cfg::get().output_dir + subfolder + graph_name + "_3_resolved.dot",
-			"no_repeat_graph");
+    total_labeler tot_labeler_after(&graph_struct_after, &graph_struct_before);
 
-	INFO("Total labeler finished");
+    omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after, cfg::get().output_dir + subfolder + graph_name + "_3_resolved.dot", "no_repeat_graph");
 
-	INFO("---Clearing resolved graph---");
+    INFO("Total labeler finished");
 
-	for (int i = 0; i < 3; ++i) {
-		ClipTipsForResolver(resolved_gp.g);
-		BulgeRemoveWrap(resolved_gp.g);
-		RemoveLowCoverageEdges(resolved_gp.g, i, 3);
+    INFO("---Clearing resolved graph---");
+
+
+    for (int i = 0; i < 3; ++i)
+    {
+        ClipTipsForResolver(resolved_gp.g);
+//        BulgeRemoveWrap      (resolved_gp.g);
+        RemoveLowCoverageEdges(resolved_gp.g, i, 3);
 //        RemoveRelativelyLowCoverageEdges(resolved_gp.g);
 	}
 
@@ -199,9 +216,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //			RCStream  frc_2(freads_2);
 			vector<ReadStream*> reads = {/*&frc_1, &frc_2*/&reads_1, &reads_2 };
 
-			SelectReadsForConsensus<K, typename graph_pack::graph_t>(
-					origin_gp.g, resolved_gp.g, labels_after, origin_gp.index,
-					reads, consensus_folder);
+			SelectReadsForConsensus<K,  graph_pack>(origin_gp, resolved_gp.g, labels_after, origin_gp.index, reads, consensus_folder);
 		}
 
 		one_many_contigs_enlarger<typename graph_pack::graph_t> N50enlarger(
