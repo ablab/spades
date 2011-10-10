@@ -21,6 +21,7 @@ namespace debruijn_graph
         ws_construction,
         ws_paired_info_count,
         ws_simplification,
+        ws_late_pair_info_count,
         ws_distance_estimation,
         ws_repeats_resolving,
         ws_n50_enlargement
@@ -52,6 +53,7 @@ namespace debruijn_graph
 			working_stages_info.insert(name_id_mapping::value_type("construction"       , ws_construction       ));
 			working_stages_info.insert(name_id_mapping::value_type("paired_info_count"  , ws_paired_info_count  ));
 			working_stages_info.insert(name_id_mapping::value_type("simplification"	    , ws_simplification     ));
+			working_stages_info.insert(name_id_mapping::value_type("late_pair_info_count", ws_late_pair_info_count));
 			working_stages_info.insert(name_id_mapping::value_type("distance_estimation", ws_distance_estimation));
 			working_stages_info.insert(name_id_mapping::value_type("repeats_resolving"	, ws_repeats_resolving  ));
 			working_stages_info.insert(name_id_mapping::value_type("n50_enlargement"	, ws_n50_enlargement    ));

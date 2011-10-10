@@ -10,6 +10,7 @@
 #include "standard.hpp"
 #include "construction.hpp"
 #include "omni_labelers.hpp"
+#include "graph_pack_io.hpp"
 
 namespace debruijn_graph {
 void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
@@ -44,13 +45,6 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 	//  ProduceInfo<k>(g, index, *totLab, genome, output_folder + "simplified_graph.dot", "simplified_graph");
 
 	//experimental
-	if (cfg::get().paired_mode && cfg::get().late_paired_info) {
-		FillPairedIndexWithReadCountMetric<K>(gp.g, gp.index, gp.kmer_mapper,
-				paired_index, stream);
-	}
-	//experimental
-
-	//experimental
 //	if (cfg::get().paired_mode) {
 //		INFO("Pair info aware ErroneousConnectionsRemoval");
 //		RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index);
@@ -74,16 +68,12 @@ void load_simplification(conj_graph_pack& gp, paired_info_index& paired_index,
 	used_files->push_back(p);
 
 	// TODO: what's the difference with construction?
-	scanConjugateGraph(&gp.g, &gp.int_ids, p.string(), &paired_index,
-			&gp.edge_pos, &gp.etalon_paired_index);
-
-	scanKmerMapper(gp.g, gp.int_ids, p.string(), &gp.kmer_mapper);
+	ScanConjugateGraphPack(p.string(), gp, &paired_index);
 }
 
 void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
 	fs::path p = fs::path(cfg::get().output_saves) / "simplified_graph";
-	printGraph(gp.g, gp.int_ids, p.string(), paired_index, gp.edge_pos,
-			&gp.etalon_paired_index);
+	PrintConjugateGraphPack(p.string(), gp, &paired_index);
 
 	printKmerMapper(gp.g, gp.int_ids, p.string(), gp.kmer_mapper);
 
@@ -104,20 +94,10 @@ void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
 			cfg::get().output_root + "../" + cfg::get().additional_contigs);
 }
 
-void exec_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
+void exec_simplification(PairedReadStream& stream, conj_graph_pack& gp, paired_info_index& paired_index) {
 	if (cfg::get().entry_point <= ws_simplification) {
 
-		string reads_filename_1 = cfg::get().input_dir + cfg::get().ds.first;
-		string reads_filename2 = cfg::get().input_dir + cfg::get().ds.second;
-
-		checkFileExistenceFATAL(reads_filename_1);
-		checkFileExistenceFATAL(reads_filename2);
-
-		io::EasyReader<io::PairedRead> paired_stream(
-				std::make_pair(reads_filename_1, reads_filename2),
-				cfg::get().ds.IS);
-
-		simplify_graph(paired_stream, gp, paired_index);
+		simplify_graph(stream, gp, paired_index);
 		save_simplification(gp, paired_index);
 	} else {
 		INFO("Loading Simplification");

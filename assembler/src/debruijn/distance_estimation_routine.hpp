@@ -9,7 +9,7 @@
 
 #include "standard.hpp"
 #include "omni/paired_info.hpp"
-#include "simplification.hpp"
+#include "late_pair_info_count.hpp"
 
 #include "check_tools.hpp"
 
@@ -26,7 +26,7 @@ namespace debruijn_graph {
 
 void estimate_distance(conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index) {
-	exec_simplification(gp, paired_index);
+	exec_late_pair_info_count(gp, paired_index);
 	INFO("STAGE == Estimating Distance");
 
 	if (cfg::get().paired_mode) {
@@ -42,6 +42,7 @@ void estimate_distance(conj_graph_pack& gp,
 
 			estimator.Estimate(clustered_index);
 		} else {
+			//todo remove
 //            stream.reset();
 //            int e1 = 1065;
 //            int e2 = 1158;
@@ -100,15 +101,13 @@ void load_distance_estimation(conj_graph_pack& gp,
 	fs::path p = fs::path(cfg::get().load_from) / "distance_estimation";
 	used_files->push_back(p);
 
-	scanConjugateGraph(&gp.g, &gp.int_ids, p.string(), &paired_index,
-			&gp.edge_pos, &gp.etalon_paired_index, &clustered_index);
+	ScanConjugateGraphPack(p.string(), gp, &paired_index, &clustered_index);
 }
 
 void save_distance_estimation(conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index) {
 	fs::path p = fs::path(cfg::get().output_saves) / "distance_estimation";
-	printGraph(gp.g, gp.int_ids, p.string(), paired_index, gp.edge_pos,
-			&gp.etalon_paired_index, &clustered_index/*, &read_count_weight_paired_index*/);
+	PrintConjugateGraphPack(p.string(), gp, &paired_index, &clustered_index);
 }
 
 void count_estimated_info_stats(conj_graph_pack& gp,

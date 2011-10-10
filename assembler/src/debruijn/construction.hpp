@@ -9,6 +9,7 @@
 
 #include "standard.hpp"
 #include "omni_labelers.hpp"
+#include "graph_pack_io.hpp"
 
 namespace debruijn_graph {
 
@@ -63,15 +64,13 @@ void load_construction(conj_graph_pack& gp, total_labeler& tl,
 	fs::path p = fs::path(cfg::get().load_from) / "constructed_graph";
 	files->push_back(p);
 
-	scanConjugateGraph(&gp.g, &gp.int_ids, p.string(), &paired_index,
-			&gp.edge_pos, &gp.etalon_paired_index);
+	ScanConjugateGraphPack(p.string(), gp, &paired_index);
 }
 
 void save_construction(conj_graph_pack& gp, total_labeler& tl,
 		paired_info_index& paired_index) {
 	fs::path p = fs::path(cfg::get().output_saves) / "constructed_graph";
-	printGraph(gp.g, gp.int_ids, p.string(), paired_index, gp.edge_pos,
-			&gp.etalon_paired_index);
+	PrintConjugateGraphPack(p.string(), gp, &paired_index);
 }
 
 boost::optional<string> single_reads_filename(
