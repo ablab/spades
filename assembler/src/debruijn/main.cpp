@@ -83,8 +83,6 @@ int main() {
     const size_t GB = 1 << 30;
     limit_memory(120 * GB);
 
-    on_exit_ouput_linker try_linker("latest");
-
 	signal(SIGSEGV, segfault_handler);
 
     try
@@ -93,6 +91,8 @@ int main() {
 
 		checkFileExistenceFATAL(cfg_filename);
 		cfg::create_instance(cfg_filename);
+
+	    on_exit_ouput_linker try_linker("latest");
 
 		// check config_struct.hpp parameters
 		if (K % 2 == 0)
