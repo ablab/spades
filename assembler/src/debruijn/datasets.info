@@ -272,6 +272,21 @@ SC_EULER_NEW
 	LEN		4639675	; total size
 }
 
+; resulting from throwing away all reads from SC_EULER_NEW that can be aligned to a human genome
+SC_EULER_NEW_FILTERED
+{
+	first 	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_1.fastag
+	second	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_2.fasta
+	single_first	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_single.fasta
+	single_second	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_dummy.fasta
+	RL		100	; read length
+	IS		270	; insert size
+	single_cell	true
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+	LEN		4639675	; total size
+}
+
+
 ; ================================================
 ; =============== L. Bouillonii ==================
 ; ================================================
