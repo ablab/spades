@@ -113,11 +113,11 @@ void save_distance_estimation(conj_graph_pack& gp,
 void count_estimated_info_stats(conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index) {
 	paired_info_index etalon_paired_index(gp.g);
-	FillEtalonPairedIndex<debruijn_graph::K> (gp.g, etalon_paired_index,
-			gp.index, gp.genome);
+	FillEtalonPairedIndex<debruijn_graph::K> (etalon_paired_index, gp.g,
+			gp.index, gp.kmer_mapper, gp.genome);
 	//todo temporary
 	DataPrinter<Graph> data_printer(gp.g, gp.int_ids);
-	data_printer.savePaired(cfg::get().output_dir + "etalon_paired.prd",
+	data_printer.savePaired(cfg::get().output_dir + "distance_estimation_et2.prd",
 			etalon_paired_index);
 	//temporary
 	CountClusteredPairedInfoStats(gp.g, gp.int_ids, paired_index, clustered_index,

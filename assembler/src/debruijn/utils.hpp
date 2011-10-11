@@ -630,6 +630,7 @@ class EtalonPairedInfoCounter {
 
 	const Graph& g_;
 	const EdgeIndex<k + 1, Graph>& index_;
+	const KmerMapper<k + 1, Graph>& kmer_mapper_;
 	size_t insert_size_;
 	size_t read_length_;
 	size_t gap_;
@@ -648,10 +649,11 @@ class EtalonPairedInfoCounter {
 		left = left >> 0;
 		for (size_t left_idx = 0; left_idx + 2 * (k + 1) + mod_gap <= sequence.size(); ++left_idx) {
 			left = left << sequence[left_idx + k];
-			if (!index_.containsInIndex(left)) {
+			Seq<k + 1> left_upd = kmer_mapper_.Substitute(left);
+			if (!index_.containsInIndex(left_upd)) {
 				continue;
 			}
-			pair<EdgeId, size_t> left_pos = index_.get(left);
+			pair<EdgeId, size_t> left_pos = index_.get(left_upd);
 
 			size_t right_idx = left_idx + k + 1 + mod_gap;
 			Seq<k + 1> right(sequence, right_idx);
@@ -659,10 +661,11 @@ class EtalonPairedInfoCounter {
 			for (; right_idx + k + 1 <= left_idx + insert_size_ + delta_
 					&& right_idx + k + 1 <= sequence.size(); ++right_idx) {
 				right = right << sequence[right_idx + k];
-				if (!index_.containsInIndex(right)) {
+				Seq<k + 1> right_upd = kmer_mapper_.Substitute(right);
+				if (!index_.containsInIndex(right_upd)) {
 					continue;
 				}
-				pair<EdgeId, size_t> right_pos = index_.get(right);
+				pair<EdgeId, size_t> right_pos = index_.get(right_upd);
 
 				AddEtalonInfo(
 						temporary_info,
@@ -677,9 +680,11 @@ class EtalonPairedInfoCounter {
 public:
 
 	EtalonPairedInfoCounter(const Graph& g,
-			const EdgeIndex<k + 1, Graph>& index, size_t insert_size,
+			const EdgeIndex<k + 1, Graph>& index,
+			const KmerMapper<k+1, Graph>& kmer_mapper,
+			size_t insert_size,
 			size_t read_length, size_t delta) :
-		g_(g), index_(index), insert_size_(insert_size),
+		g_(g), index_(index), kmer_mapper_(kmer_mapper), insert_size_(insert_size),
 				read_length_(read_length),
 				gap_(insert_size_ - 2 * read_length_), delta_(delta) {
 		VERIFY(insert_size_ >= 2 * read_length_);
