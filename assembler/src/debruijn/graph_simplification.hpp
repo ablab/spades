@@ -52,7 +52,9 @@ void ClipTips(Graph &g, size_t iteration_count = 1, size_t i = 0) {
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
 	omnigraph::LengthComparator<Graph> comparator(g);
-	size_t max_tip_length = cfg::get().simp.tc.max_tip_length_div_K * g.k();
+	size_t max_tip_length = std::min(
+			(size_t) cfg::get().simp.tc.max_tip_length_div_K * g.k(),
+			cfg::get().simp.tc.max_tip_length);
 	size_t max_coverage = cfg::get().simp.tc.max_coverage;
 	double max_relative_coverage = cfg::get().simp.tc.max_relative_coverage;
 	omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(
@@ -72,8 +74,8 @@ void ClipTipsForResolver(Graph &g) {
 	INFO("Clipping tips");
 	omnigraph::LengthComparator<Graph> comparator(g);
 	//	size_t max_tip_length = CONFIG.read<size_t> ("tc_max_tip_length");
-	size_t max_coverage = cfg::get().simp.tc.max_coverage;
-	double max_relative_coverage = cfg::get().simp.tc.max_relative_coverage;
+			size_t max_coverage = cfg::get().simp.tc.max_coverage;
+			double max_relative_coverage = cfg::get().simp.tc.max_relative_coverage;
 	omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(g, comparator,
 			100, max_coverage, max_relative_coverage * 0.5);
 	tc.ClipTips();
