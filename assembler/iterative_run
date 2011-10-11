@@ -1,0 +1,30 @@
+#!/bin/bash
+
+function iterative_run
+{
+	echo "Iterative run started"
+
+	for i in $*
+	do
+
+		echo "Generating k.hpp for K="$i
+		./gen_k $i 
+
+		echo "Compiling assembler for K="$i
+		make rd
+
+		echo "Running assembler for K="$i
+		./run rd | tee $LOG_DIR/"K$i.log"
+
+	done
+
+	echo "Iterative run finished"
+}
+
+LOG_DIR=$(date +%m.%d_%H_%M)
+rm logs/latest
+ln -s $LOG_DIR logs/latest
+LOG_DIR=logs/$LOG_DIR
+mkdir $LOG_DIR
+
+iterative_run $* | tee $LOG_DIR/"overall.log"
