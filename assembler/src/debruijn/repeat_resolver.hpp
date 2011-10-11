@@ -502,7 +502,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 //				EdgeId left_id = tmp[j].first;
 				double d = tmp[j].d;
 				int w = tmp[j].weight;
-				if (w < 0.001)
+				if (w < 1e-8)
 					continue;
 			//	if (v == new_graph.S)
 				int dif_d = 0;
@@ -931,7 +931,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 						dif_d = new_graph.length(left_id);
 
 					}
-					if (d * mult >= -0.001) {
+					if (d * mult >= -1e-8) {
 
 						TRACE("PairInfo: " << new_IDs.ReturnIntId(tmp[j].first)<<" "<<old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 
