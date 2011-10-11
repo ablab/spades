@@ -53,7 +53,7 @@ void estimate_distance(conj_graph_pack& gp,
 //            cout << "TotalPositiveWeight = " << TotalPositiveWeight(gp, paired_index, e1, e2) << endl;
 
 			INFO("Estimating distances");
-			DistanceEstimator<Graph> estimator(gp.g, paired_index,
+			DistanceEstimator<Graph> estimator(gp.g, paired_index, gp.int_ids,
 					cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
 					cfg::get().de.linkage_distance, cfg::get().de.max_distance);
 
@@ -129,8 +129,8 @@ void exec_distance_estimation(conj_graph_pack& gp,
 	if (cfg::get().entry_point <= ws_distance_estimation) {
 		estimate_distance(gp, paired_index, clustered_index);
 		save_distance_estimation(gp, paired_index, clustered_index);
-		if(cfg::get().paired_mode)
-			count_estimated_info_stats(gp, paired_index, clustered_index);
+       if(cfg::get().paired_mode)
+           count_estimated_info_stats(gp, paired_index, clustered_index);
 	} else {
 		INFO("Loading Distance Estimation");
 
