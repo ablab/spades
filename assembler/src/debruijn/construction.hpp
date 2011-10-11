@@ -32,12 +32,6 @@ void construct_graph(PairedReadStream& stream, conj_graph_pack& gp,
 				0) {
 	INFO("STAGE == Constructing Graph");
 
-	//todo extract everything connected with etalon to separate tool
-	if (cfg::get().paired_mode) {
-		FillEtalonPairedIndex<K>(gp.g, gp.etalon_paired_index, gp.index,
-				gp.genome);
-	}
-
 	if (cfg::get().paired_mode && !cfg::get().late_paired_info) {
 		ConstructGraphWithPairedInfo<K>(gp, paired_index, stream, single_stream,
 				contigs_stream);
@@ -50,6 +44,12 @@ void construct_graph(PairedReadStream& stream, conj_graph_pack& gp,
 		MultiFileStream composite_stream(streams);
 		ConstructGraphWithCoverage<K>(gp.g, gp.index, composite_stream,
 				contigs_stream);
+	}
+
+	//todo extract everything connected with etalon to separate tool
+	if (cfg::get().paired_mode) {
+		FillEtalonPairedIndex<K>(gp.g, gp.etalon_paired_index, gp.index,
+				gp.genome);
 	}
 
 	//TODO:
