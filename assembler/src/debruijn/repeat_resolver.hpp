@@ -486,12 +486,25 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		for(size_t j = 0; j < edgeIds[i].size(); j++)
 			edgeCounts.insert(make_pair(edgeIds[i][j], 0));
 	}
+
 	for (size_t i = 0; i < edge_info_colors.size(); i++) {
 		if (edge_info_colors[i] >= k)
 			k = edge_info_colors[i];
 		EdgeId le = edge_infos[i].lp.first;
 		edgeCounts[le] ++;
 	}
+	vector<VertexId> res;
+	if (k == 0) {
+		DEBUG("NOTHING TO SPLIT:( ");
+//		for (size_t j = 0; j < edge_infos.size(); j++){
+//			if (edge_info_colors[j] == 1)
+//				paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, edge_infos[j].lp.first);
+//		}
+		res.resize(1);
+		res[0] = v;
+		return res;
+	}
+
 	for(auto iter = edgeCounts.begin(); iter != edgeCounts.end(); ++iter) {
 		if (iter->second == 0 && cheating_mode == 2) {
 			INFO("Adding no-paired edge: " << new_IDs.ReturnIntId(iter->first)<< " potential bug here.");
@@ -520,7 +533,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	}
 	k++;
 	DEBUG("splitting to "<< k <<" parts");
-	vector<VertexId> res;
+
 	res.resize(k);
 	if (k == 1) {
 		DEBUG("NOTHING TO SPLIT:( ");
