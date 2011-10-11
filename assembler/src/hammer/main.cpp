@@ -48,6 +48,7 @@ hint_t Globals::blob_size = 0;
 hint_t Globals::blob_max_size = 0;
 char * Globals::blob = NULL;
 char * Globals::blobquality = NULL;
+char * Globals::totalquality = NULL;
 KMerNoHashMap Globals::hm = KMerNoHashMap();
 std::vector<uint32_t> * Globals::subKMerPositions = NULL;
 
@@ -70,6 +71,7 @@ bool Globals::write_kmers_after_clustering = false;
 bool Globals::write_each_iteration_kmers = false;
 bool Globals::regular_threshold_for_correction = false;
 bool Globals::discard_only_singletons = false;
+bool Globals::use_true_likelihood = false;
 string Globals::kmers_after_clustering = "";
 
 struct KMerStatCount {
@@ -143,6 +145,7 @@ int main(int argc, char * argv[]) {
 	Globals::regular_threshold_for_correction = cfg::get().regular_threshold_for_correction;
 	Globals::discard_only_singletons = cfg::get().discard_only_singletons;
 	Globals::special_nonsingleton_threshold = cfg::get().special_nonsingleton_threshold;
+	Globals::use_true_likelihood = cfg::get().use_true_likelihood;
 
 	Globals::paired_reads = cfg::get().paired_reads;
 	string readsFilenameLeft, readsFilenameRight;
@@ -181,6 +184,7 @@ int main(int argc, char * argv[]) {
 
 	Globals::blob = new char[ Globals::blob_max_size ];
 	Globals::blobquality = new char[ Globals::blob_max_size ];
+	if (Globals::use_true_likelihood) Globals::totalquality = new char[ Globals::blob_max_size ];
 	TIMEDLN("Max blob size as allocated is " << Globals::blob_max_size);
 
 	Globals::revNo = Globals::rv->size();

@@ -102,9 +102,20 @@ void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerCou
 			KMerNoHashMap::iterator it_hash = km->find( *it );
 			if ( it_hash == km->end() ) {
 				km->insert( make_pair( *it, new KMerCount( PositionKMer(it->index), KMerStat(1, KMERSTAT_GOODITER, it->errprob) ) ) );
+				if (Globals::use_true_likelihood) {
+					for (uint32_t j=0; j<K; ++j) {
+						Globals::totalquality[it->index + j] = Globals::blobquality[it->index + j] - (char)Globals::qvoffset;
+					}
+				}
 			} else {
 				it_hash->second->second.count++;
 				it_hash->second->second.totalQual *= it->errprob;
+				if (Globals::use_true_likelihood) {
+					for (uint32_t j=0; j<K; ++j) {
+						Globals::totalquality[it_hash->second->first.start() + j] = (char)min(255,
+								(int)Globals::totalquality[it_hash->second->first.start() + j] + (int)Globals::blobquality[it->index + j] - Globals::qvoffset);
+					}
+				}
 			}
 		}
 	}

@@ -20,6 +20,30 @@
 using std::max_element;
 using std::min_element;
 
+double KMerClustering::logLikelihoodKMer(const PositionKMer & center, const PositionKMer & x) {
+	double res = 0;
+	for (uint32_t i = 0; i < K; ++i) {
+		if (center[i] != x[i]) {
+			res += - log(10) * ((int)Globals::totalquality[x.start()+i]) / 10.0;
+		} else {
+			res += log( 1 - pow( 10, -((int)Globals::totalquality[x.start()+i]) / 10.0 ) );
+		}
+	}
+	return res;
+}
+
+double KMerClustering::logLikelihoodKMer(const string & center, const PositionKMer & x) {
+	double res = 0;
+	for (uint32_t i = 0; i < K; ++i) {
+		if (center[i] != x[i]) {
+			res += - log(10) * ((int)Globals::totalquality[x.start()+i]) / 10.0;
+		} else {
+			res += log( 1 - pow( 10, -((int)Globals::totalquality[x.start()+i]) / 10.0 ) );
+		}
+	}
+	return res;
+}
+
 int KMerClustering::hamdistKMer(const PositionKMer & x, const PositionKMer & y, int tau) {
 	int dist = 0;
 	for (uint32_t i = 0; i < K; ++i) {
@@ -191,6 +215,41 @@ double KMerClustering::clusterLogLikelihood(const vector<int> & cl, const vector
 	return res;
 }
 
+/**
+  * @return total log-likelihood of this particular clustering with real quality values
+  */
+double KMerClustering::trueClusterLogLikelihood(const vector<int> & cl, const vector<StringCount> & centers, const vector<int> & indices) {
+	size_t blockSize = cl.size();
+	if (blockSize == 0) return 0.0;
+	assert(blockSize == indices.size());
+	assert(centers.size() > 0);
+
+	// if there is only one center, there are no beta coefficients
+	if (centers.size() == 1) {
+		double logLikelihood = 0;
+		for (size_t i=0; i<blockSize; ++i) {
+			logLikelihood += logLikelihoodKMer(centers[indices[i]].first, k_[cl[i]]->first);
+		}
+		return ( lMultinomial(cl, k_) + logLikelihood );
+	}
+
+	// compute sufficient statistics
+	vector<int> count(centers.size(), 0);		// how many kmers in cluster i
+	vector<double> totalLogLikelihood(centers.size(), 0);	// total distance from kmers of cluster i to its center
+	for (size_t i=0; i<blockSize; ++i) {
+		count[indices[i]]+=k_[cl[i]]->second.count;
+		totalLogLikelihood[indices[i]] += logLikelihoodKMer(centers[indices[i]].first, k_[cl[i]]->first);
+	}
+
+	// sum up the likelihood
+	double res = lBetaPlusOne(count);   // 1/B(count)
+	res += lMultinomial(centers); 		// {sum(centers.count) \choose centers.count}
+	for (size_t i=0; i<centers.size(); ++i) {
+		res += lMultinomialWithMask(cl, k_, indices, i) + totalLogLikelihood[i];
+	}
+	return res;
+}
+
 
 double KMerClustering::lMeansClustering(int l, vector< vector<int> > & distances, const vector<int> & kmerinds, vector<int> & indices, vector<StringCount> & centers) {
 	centers.resize(l); // there are l centers
@@ -200,7 +259,7 @@ double KMerClustering::lMeansClustering(int l, vector< vector<int> > & distances
 		centers[0].first = find_consensus(kmerinds);
 		centers[0].second = kmerinds.size();
 		for (size_t i=0; i < kmerinds.size(); ++i) indices[i] = 0;
-		return clusterLogLikelihood(kmerinds, centers, indices);
+		return ( Globals::use_true_likelihood ? trueClusterLogLikelihood(kmerinds, centers, indices) : clusterLogLikelihood(kmerinds, centers, indices) );
 	}
 
 	int restartCount = 1;
@@ -288,7 +347,7 @@ double KMerClustering::lMeansClustering(int l, vector< vector<int> > & distances
 		centers[j].first = find_consensus_with_mask(kmerinds, indices, j);
 	}
 	
-	curLikelihood = clusterLogLikelihood(kmerinds, centers, indices);
+	curLikelihood = ( Globals::use_true_likelihood ? trueClusterLogLikelihood(kmerinds, centers, indices) : clusterLogLikelihood(kmerinds, centers, indices) );
 
 	if (restartCount > 1 && curLikelihood > bestLikelihood) {
 		bestLikelihood = curLikelihood;
