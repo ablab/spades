@@ -117,7 +117,7 @@ void count_estimated_info_stats(conj_graph_pack& gp,
 			gp.index, gp.kmer_mapper, gp.genome);
 	//todo temporary
 	DataPrinter<Graph> data_printer(gp.g, gp.int_ids);
-	data_printer.savePaired(cfg::get().output_dir + "distance_estimation_et2.prd",
+	data_printer.savePaired(cfg::get().output_dir + "etalon_paired",
 			etalon_paired_index);
 	//temporary
 	CountClusteredPairedInfoStats(gp.g, gp.int_ids, paired_index, clustered_index,
