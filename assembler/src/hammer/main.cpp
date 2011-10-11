@@ -366,6 +366,7 @@ int main(int argc, char * argv[]) {
 	//delete [] Globals::blobhash;
 	delete [] Globals::blob;
 	delete [] Globals::blobquality;
+	if (Globals::use_true_likelihood) delete [] Globals::totalquality;
 	return 0;
 }
 
