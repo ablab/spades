@@ -748,8 +748,10 @@ const PairInfo<typename Graph::EdgeId> TrivialWeightNormalization(
 
 template<class Graph>
 class PairedInfoNormalizer {
+public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef boost::function<const PairInfo<EdgeId>(const PairInfo<EdgeId>&)> WeightNormalizer;
+private:
 
 	const PairedInfoIndex<Graph>& paired_index_;
 	WeightNormalizer normalizing_function_;

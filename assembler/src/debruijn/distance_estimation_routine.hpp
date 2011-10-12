@@ -15,8 +15,8 @@
 
 namespace debruijn_graph {
 
-void estimate_distance(conj_graph_pack& gp,
-		paired_info_index& paired_index, paired_info_index& clustered_index);
+void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
+		paired_info_index& clustered_index);
 
 } // debruijn_graph
 
@@ -24,8 +24,8 @@ void estimate_distance(conj_graph_pack& gp,
 
 namespace debruijn_graph {
 
-void estimate_distance(conj_graph_pack& gp,
-		paired_info_index& paired_index, paired_info_index& clustered_index) {
+void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
+		paired_info_index& clustered_index) {
 	exec_late_pair_info_count(gp, paired_index);
 	INFO("STAGE == Estimating Distance");
 
@@ -62,23 +62,27 @@ void estimate_distance(conj_graph_pack& gp,
 			INFO("Distances estimated");
 
 			INFO("Normalizing weights");
-			//todo reduce number of constructor params
-			PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-					cfg::get().ds.IS, cfg::get().ds.RL, debruijn_graph::K);
-			PairedInfoNormalizer<Graph>
-					normalizer(
-							raw_clustered_index, /*&TrivialWeightNormalization<Graph>*/
-							boost::bind(
-									&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
-									&weight_normalizer, _1));
-
+			PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
+			if (cfg::get().ds.single_cell) {
+				normalizing_f = &TrivialWeightNormalization<Graph>;
+			} else {
+				//todo reduce number of constructor params
+				PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
+						cfg::get().ds.IS, cfg::get().ds.RL, debruijn_graph::K);
+				normalizing_f = boost::bind(
+						&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
+						weight_normalizer, _1);
+			}
+			PairedInfoNormalizer<Graph> normalizer(raw_clustered_index,
+					normalizing_f);
 			paired_info_index normalized_index(gp.g);
 			normalizer.FillNormalizedIndex(normalized_index);
 			INFO("Weights normalized");
 
 			INFO("Filtering info");
 			//todo add coefficient dependent on coverage and K
-			PairInfoFilter<Graph> filter(gp.g, cfg::get().de.filter_threshold);
+			double filter_threshold = (cfg::get().ds.single_cell) ? 1e-1 : cfg::get().de.filter_threshold;
+			PairInfoFilter<Graph> filter(gp.g, filter_threshold);
 			filter.Filter(normalized_index, clustered_index);
 			INFO("Info filtered");
 			//		PairInfoChecker<Graph> checker(gp.edge_pos, 5, 100);
@@ -113,15 +117,15 @@ void save_distance_estimation(conj_graph_pack& gp,
 void count_estimated_info_stats(conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index) {
 	paired_info_index etalon_paired_index(gp.g);
-	FillEtalonPairedIndex<debruijn_graph::K> (etalon_paired_index, gp.g,
+	FillEtalonPairedIndex<debruijn_graph::K>(etalon_paired_index, gp.g,
 			gp.index, gp.kmer_mapper, gp.genome);
 	//todo temporary
 	DataPrinter<Graph> data_printer(gp.g, gp.int_ids);
 	data_printer.savePaired(cfg::get().output_dir + "etalon_paired",
 			etalon_paired_index);
 	//temporary
-	CountClusteredPairedInfoStats(gp.g, gp.int_ids, paired_index, clustered_index,
-			etalon_paired_index, cfg::get().output_dir);
+	CountClusteredPairedInfoStats(gp.g, gp.int_ids, paired_index,
+			clustered_index, etalon_paired_index, cfg::get().output_dir);
 }
 
 void exec_distance_estimation(conj_graph_pack& gp,
@@ -129,13 +133,14 @@ void exec_distance_estimation(conj_graph_pack& gp,
 	if (cfg::get().entry_point <= ws_distance_estimation) {
 		estimate_distance(gp, paired_index, clustered_index);
 		save_distance_estimation(gp, paired_index, clustered_index);
-       if(cfg::get().paired_mode)
-           count_estimated_info_stats(gp, paired_index, clustered_index);
+		if (cfg::get().paired_mode)
+			count_estimated_info_stats(gp, paired_index, clustered_index);
 	} else {
 		INFO("Loading Distance Estimation");
 
 		files_t used_files;
-		load_distance_estimation(gp, paired_index, clustered_index, &used_files);
+		load_distance_estimation(gp, paired_index, clustered_index,
+				&used_files);
 		copy_files(used_files);
 	}
 }

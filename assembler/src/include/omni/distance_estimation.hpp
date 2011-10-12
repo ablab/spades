@@ -52,7 +52,7 @@ protected:
 	}
 
 	vector<pair<size_t, double> > EstimateEdgePairDistances(vector<PairInfo<
-			EdgeId> > data, vector<size_t> forward, bool debug = false) {
+			EdgeId> > data, vector<size_t> forward/*, bool debug = false*/) {
 		vector < pair<size_t, double> > result;
 		if (forward.size() == 0)
 			return result;
@@ -144,7 +144,7 @@ public:
 			//			bool debug = (int_ids_.ReturnIntId(data[0].first) == 71456 && int_ids_.ReturnIntId(data[0].second) == 71195);
 
 			vector < pair<size_t, double> > estimated
-					= EstimateEdgePairDistances(data, forward, false);
+					= EstimateEdgePairDistances(data, forward/*, false*/);
 			//            if (debug) for (size_t i = 0; i< estimated.size(); i++)
 			//                INFO("Edges MY : " << estimated[i].first << " " << estimated[i].second);
 			vector < PairInfo<EdgeId> > clustered = ClusterResult(first,
