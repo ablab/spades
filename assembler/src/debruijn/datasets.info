@@ -73,6 +73,8 @@ QUAKE_FULL
 {
 	first	E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
 	second	E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz
+	single_first	E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor_single.fastq.gz
+	single_second	E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor_single.fastq.gz
 	RL		100		; read length
 	IS		220 	; insert size
 	single_cell	false
