@@ -533,21 +533,22 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph& graph_;
 	size_t max_length_;
+	size_t vertex_number_;
 
 	//	bool CheckYellow() {
 	//
 	//	}
 	//
 public:
-	ComponentSizeFilter(const Graph &graph, size_t max_length) :
-		graph_(graph), max_length_(max_length) {
+	ComponentSizeFilter(const Graph &graph, size_t max_length, size_t vertex_number) :
+		graph_(graph), max_length_(max_length), vertex_number_(vertex_number) {
 	}
 
 	virtual ~ComponentSizeFilter() {
 	}
 
 	virtual bool Check(vector<VertexId> &vertices) const {
-		if (vertices.size() <= 4)
+		if (vertices.size() <= vertex_number)
 			return false;
 		set<VertexId> component(vertices.begin(), vertices.end());
 		for (auto iterator = vertices.begin(); iterator != vertices.end(); ++iterator) {
