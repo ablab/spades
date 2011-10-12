@@ -182,6 +182,7 @@ namespace debruijn_graph
 		working_stage entry_point;
 
 		bool paired_mode;
+		bool paired_info_statistics;
 		bool rectangle_mode;
 		bool etalon_info_mode;
 		bool late_paired_info;
@@ -350,6 +351,7 @@ namespace debruijn_graph
 		//load(pt, "start_from", cfg.start_from);
 
 		load(pt, "paired_mode", cfg.paired_mode);
+		load(pt, "paired_info_statistics", cfg.paired_info_statistics);
 		load(pt, "rectangle_mode", cfg.rectangle_mode);
 		load(pt, "etalon_info_mode", cfg.etalon_info_mode);
 		load(pt, "late_paired_info", cfg.late_paired_info);
