@@ -20,26 +20,22 @@
 using std::max_element;
 using std::min_element;
 
-double KMerClustering::logLikelihoodKMer(const PositionKMer & center, const PositionKMer & x) {
+double KMerClustering::logLikelihoodKMer(const string & center, const KMerCount * x) {
 	double res = 0;
+	bool change = false;
 	for (uint32_t i = 0; i < K; ++i) {
-		if (center[i] != x[i]) {
-			res += - log(10) * ((int)Globals::totalquality[x.start()+i]) / 10.0;
+		if (center[i] != x->first[i]) {
+			change = true;
+			res += - log(10) * x->second.qual[i] / 10.0;
 		} else {
-			res += log( 1 - pow( 10, -((int)Globals::totalquality[x.start()+i]) / 10.0 ) );
+			res += log( 1 - pow( 10, -x->second.qual[i] / 10.0 ) );
 		}
 	}
-	return res;
-}
-
-double KMerClustering::logLikelihoodKMer(const string & center, const PositionKMer & x) {
-	double res = 0;
-	for (uint32_t i = 0; i < K; ++i) {
-		if (center[i] != x[i]) {
-			res += - log(10) * ((int)Globals::totalquality[x.start()+i]) / 10.0;
-		} else {
-			res += log( 1 - pow( 10, -((int)Globals::totalquality[x.start()+i]) / 10.0 ) );
-		}
+	if (change) {
+		cout << "   logLikelihood btw\n";
+		cout << "  " << center.data() << "\n  " <<  x->first.str().data() << "\n  " << x->first.strQual() << "\n  ";
+		for (uint32_t i=0; i<K; ++i) cout << x->second.qual[i] << "  ";
+		cout << endl;
 	}
 	return res;
 }
@@ -228,18 +224,30 @@ double KMerClustering::trueClusterLogLikelihood(const vector<int> & cl, const ve
 	if (centers.size() == 1) {
 		double logLikelihood = 0;
 		for (size_t i=0; i<blockSize; ++i) {
-			logLikelihood += logLikelihoodKMer(centers[indices[i]].first, k_[cl[i]]->first);
+			logLikelihood += logLikelihoodKMer(centers[indices[i]].first, k_[cl[i]]);
 		}
 		return ( lMultinomial(cl, k_) + logLikelihood );
 	}
+
+	cout << "\nCluster of " << centers.size() << " subclusters\n";
 
 	// compute sufficient statistics
 	vector<int> count(centers.size(), 0);		// how many kmers in cluster i
 	vector<double> totalLogLikelihood(centers.size(), 0);	// total distance from kmers of cluster i to its center
 	for (size_t i=0; i<blockSize; ++i) {
 		count[indices[i]]+=k_[cl[i]]->second.count;
-		totalLogLikelihood[indices[i]] += logLikelihoodKMer(centers[indices[i]].first, k_[cl[i]]->first);
+		totalLogLikelihood[indices[i]] += logLikelihoodKMer(centers[indices[i]].first, k_[cl[i]]);
 	}
+
+	cout << "  counts: ";
+	for (size_t i=0; i<centers.size(); ++i) {
+		cout <<  count[i] << " ";
+	}
+	cout << "\n  loglikelihoods: ";
+	for (size_t i=0; i<centers.size(); ++i) {
+			cout <<  totalLogLikelihood[i] << " ";
+	}
+	cout << endl;
 
 	// sum up the likelihood
 	double res = lBetaPlusOne(count);   // 1/B(count)

@@ -48,7 +48,6 @@ hint_t Globals::blob_size = 0;
 hint_t Globals::blob_max_size = 0;
 char * Globals::blob = NULL;
 char * Globals::blobquality = NULL;
-char * Globals::totalquality = NULL;
 KMerNoHashMap Globals::hm = KMerNoHashMap();
 std::vector<uint32_t> * Globals::subKMerPositions = NULL;
 
@@ -184,7 +183,6 @@ int main(int argc, char * argv[]) {
 
 	Globals::blob = new char[ Globals::blob_max_size ];
 	Globals::blobquality = new char[ Globals::blob_max_size ];
-	if (Globals::use_true_likelihood) Globals::totalquality = new char[ Globals::blob_max_size ];
 	TIMEDLN("Max blob size as allocated is " << Globals::blob_max_size);
 
 	Globals::revNo = Globals::rv->size();
@@ -366,7 +364,6 @@ int main(int argc, char * argv[]) {
 	//delete [] Globals::blobhash;
 	delete [] Globals::blob;
 	delete [] Globals::blobquality;
-	if (Globals::use_true_likelihood) delete [] Globals::totalquality;
 	return 0;
 }
 

@@ -114,6 +114,14 @@ class PositionKMer {
 		return res;
 	}
 
+	std::string strQual() const {
+		std::string res = "";
+		for (uint32_t i = 0; i < K; ++i) {
+			res += Globals::blobquality[ start_ + i ];
+		}
+		return res;
+	}
+
 	std::string strSub(uint32_t tau, uint32_t offset) const {
 		std::string res = "";
 		for (uint32_t i = Globals::subKMerPositions->at(offset); i < Globals::subKMerPositions->at(offset+1); ++i) {

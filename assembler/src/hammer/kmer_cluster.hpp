@@ -34,9 +34,7 @@ private:
 	int tau_;
 
 	/// @return total log-likelihood that x was made from center given x's quality values
-	double logLikelihoodKMer(const PositionKMer & center, const PositionKMer & x);
-	/// @return total log-likelihood that x was made from center given x's quality values
-	double logLikelihoodKMer(const string & center, const PositionKMer & x);
+	double logLikelihoodKMer(const string & center, const KMerCount * x);
 
 	/// @return Hamming distance between x and y with upper bound tau
 	int hamdistKMer(const PositionKMer & x, const PositionKMer & y, int tau = K);
