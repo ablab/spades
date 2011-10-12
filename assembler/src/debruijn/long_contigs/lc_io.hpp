@@ -106,7 +106,7 @@ void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_I
 	string input_dir = cfg::get().input_dir;
 	string dataset = cfg::get().dataset_name;
 	string genome_filename = input_dir
-			+ cfg::get().reference_genome;
+			+ cfg::get().ds.reference_genome;
 	checkFileExistenceFATAL(genome_filename);
 	int dataset_len = cfg::get().ds.LEN;
 
@@ -124,7 +124,8 @@ void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_I
 
 	INFO("Reading graph");
 	debruijn_graph::scanConjugateGraph(g, conj_IntIds, fileName);
-	debruijn_graph::scanKmerMapper(*g, *conj_IntIds, fileName, mapper);
+	debruijn_graph::DataScanner<Graph> scanner(*g, *conj_IntIds);
+	scanner.loadKmerMapper(fileName, *mapper);
 	INFO("Graph read");
 }
 

@@ -14,7 +14,7 @@ QUAKE_CROPPED_400K
 QUAKE_FULL
 {
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
-    graph_file       ./data/debruijn/QUAKE_FULL/K55/wsingle1/simplified_graph
+    graph_file       ./data/debruijn/QUAKE_FULL/K55/HAMMER_FILTERED/simplified_graph
 }
 EAS600_QUAKE_CROPPED_100K
 {
@@ -30,7 +30,7 @@ EAS600_QUAKE_FULL
 }		 
    
 ; paired info options
-use_new_metrics      true
+use_new_metrics      false
 
 
 ; output options
@@ -171,9 +171,9 @@ research
 ; additional real libs
 real_libs
 {    
-    count 1
+    count 2
     
-    item_0 
+    item_2
     {
     	read_size     100
         insert_size   270
@@ -198,7 +198,7 @@ real_libs
         }
     }
     
-    item_1
+    item_0
     {
         read_size     100
         insert_size   220
@@ -229,11 +229,13 @@ real_libs
         }
         QUAKE_FULL
         {
-            precounted       true
+            precounted       false
             ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/09.26_02_00/paired_info_IS220_RS100_clustered
             precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph_et
             first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
             second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz
+
+            raw
             
             has_advanced     false
             advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS220_RS100_acl
@@ -269,7 +271,7 @@ real_libs
             advanced         ./data/debruijn  
         }
     }     
-    item_2
+    item_1
     {
         read_size     100
         insert_size   480
@@ -301,17 +303,18 @@ real_libs
         }
         QUAKE_FULL
         {
-            precounted       true
+            precounted       false
             precounted_path  ./data/debruijn/QUAKE_FULL/K55/09.26_02_00/paired_info_IS480_RS100_clustered
-            first            /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_1.cor.fastq.gz
-            second           /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_2.cor.fastq.gz
+;            first            /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_1.cor.fastq.gz
+;            second           /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_2.cor.fastq.gz
             
+            raw
             
             has_advanced     false
             advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS480_RS100_acl
            
-            ; first    ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_1.cor.fastq.gz
-            ; second    ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_2.cor.fastq.gz    
+            first    ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_1.cor.fastq.gz
+            second    ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_2.cor.fastq.gz    
         }
         EAS600_QUAKE_CROPPED_100K
         {
@@ -341,6 +344,7 @@ real_libs
             first            /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_1.cor.fastq.gz
             second           /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_2.cor.fastq.gz
             
+	    raw 
             
             has_advanced     false
             advanced         ./data/debruijn
