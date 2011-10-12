@@ -185,6 +185,18 @@ void SelectReadsForConsensus(graph_pack& etalon_gp, typename graph_pack::graph_t
 }
 
 template<class graph_pack>
+void CleanIsolated(graph_pack& gp){
+    for(auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+    	typename graph_pack::graph_t::VertexId start, end;
+    	start = gp.g.EdgeStart(*iter);
+       	end = gp.g.EdgeEnd(*iter);
+       	TRACE (gp.g.CheckUniqueOutgoingEdge(start)<<" "<<  gp.g.IsDeadStart(start) <<" "<< gp.g.CheckUniqueIncomingEdge(end) <<" "<<gp.g.IsDeadEnd(end));
+       	if (gp.g.CheckUniqueOutgoingEdge(start) && gp.g.IsDeadStart(start) && gp.g.CheckUniqueIncomingEdge(end) && gp.g.IsDeadEnd(end) )
+       		gp.g.DeleteEdge(*iter);
+    }
+}
+
+template<class graph_pack>
 void process_resolve_repeats(graph_pack& origin_gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
 		graph_pack& resolved_gp, const string& graph_name,
@@ -206,7 +218,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
     total_labeler tot_labeler_before(&graph_struct_before);
 
     omnigraph::WriteSimple(origin_gp.g, tot_labeler_before, cfg::get().output_dir + subfolder + graph_name + "_2_simplified.dot", "no_repeat_graph");
-
+//    CleanIsolated(origin_gp);
     ResolveRepeats(origin_gp  .g, origin_gp  .int_ids, clustered_index, origin_gp  .edge_pos,
                    resolved_gp.g, resolved_gp.int_ids,                  resolved_gp.edge_pos,
                    cfg::get().output_dir + subfolder +"resolve_" + graph_name +  "/", labels_after);
