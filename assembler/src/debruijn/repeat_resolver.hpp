@@ -319,8 +319,19 @@ public:
 							"Paired Info with deleted edge! " << pi[j].first<<"  " <<pi[j].second);
 				}
 			}
-		}DEBUG("May be size is " << ind.size());
-
+		}
+		int zero_paired_length;
+		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
+			PairInfos pi = paired_di_data.GetEdgeInfos(old_to_new_edge[*e_iter]);
+			if (pi.size() > 1 || (pi.size() == 1 && pi[0].weight > 1e-8))
+				continue;
+			else {
+				zero_paired_length += old_graph.length(*e_iter);
+				global_cheating_edges.insert(old_to_new_edge[*e_iter]);
+			}
+		}
+		INFO ("Length of edges with no paired info:: " << zero_paired_length);
+		DEBUG("May be size is " << ind.size());
 		INFO("paired info size: "<<paired_size);
 		VERIFY(leap >= 0 && leap < 100);
 	}
@@ -814,7 +825,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	//	old_index = ind;
 	INFO("resolve_repeats started");
 	sum_count = 0;
-	global_cheating_edges.clear();
+//	global_cheating_edges.clear();
 
 
 

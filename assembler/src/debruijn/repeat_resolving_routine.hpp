@@ -73,6 +73,61 @@ int ContigNumber(map<ConjugateDeBruijnGraph::EdgeId, int>& contigNumbers , Conju
 }
 
 template<size_t k, class graph_pack>
+void SelectReadsForConsensusBefore(graph_pack& etalon_gp, typename graph_pack::graph_t& cur_graph,
+        EdgeLabelHandler<typename graph_pack::graph_t>& LabelsAfter,
+        const EdgeIndex<K + 1, typename graph_pack::graph_t>& index ,vector<ReadStream *>& reads
+        , string& consensus_output_dir)
+{
+    INFO("ReadMapping started");
+    map<typename graph_pack::graph_t::EdgeId, int> contigNumbers;
+    int cur_num = 0;
+    FillContigNumbers(contigNumbers, cur_graph);
+    for(auto iter = etalon_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
+    	DEBUG("Edge number:" << etalon_gp.int_ids.ReturnIntId(*iter) << " is contained in contigs" );
+        set<typename graph_pack::graph_t::EdgeId> images =
+                            LabelsAfter.edge_inclusions[*iter];
+        for (auto it = images.begin(); it != images.end(); ++it) {
+        	DEBUG(ContigNumber(contigNumbers, *it, cur_graph) << ", ");
+        }
+    }
+    cur_num = contigNumbers.size();
+    INFO(cur_num << "contigs");
+    for (int i = 1; i < 3; i++) {
+        int read_num = 0;
+        osequencestream* mapped_reads[5000];
+        for (int j = 0; j < cur_num; j++) {
+            string output_filename = consensus_output_dir + ToString(j)
+                    + "_reads" + ToString(i) + ".fa";
+            osequencestream* tmp = new osequencestream(output_filename);
+//          mapped_reads.push_back(tmp);
+            mapped_reads[j] = tmp;
+        }
+        SingleReadMapper<k, typename graph_pack::graph_t> rm(etalon_gp.g, index);
+        INFO("mapping reads from pair"<< i);
+        while (!reads[i - 1]->eof()) {
+            io::SingleRead cur_read;
+
+            (* reads[i - 1]) >> cur_read;
+            vector<typename graph_pack::graph_t::EdgeId> res = rm.GetContainingEdges(
+                    cur_read);
+            read_num++;
+            TRACE(
+                    read_num<< " mapped to"<< res.size() <<" contigs :, read"<< cur_read.sequence());
+//          map_quantity += res.size();
+            for (size_t ii = 0; ii < res.size(); ii++) {
+                TRACE("counting number "<< contigNumbers[res[ii]]);
+                	if (ContigNumber(contigNumbers, res[ii], cur_graph) != -1)
+                		(*mapped_reads[ContigNumber(contigNumbers, res[ii], cur_graph)])
+                			<< cur_read.sequence();
+                	else
+                		WARN("No edges containing" <<etalon_gp.int_ids.ReturnIntId(res[ii]));
+            }
+        }
+    }
+}
+
+
+template<size_t k, class graph_pack>
 void SelectReadsForConsensus(graph_pack& etalon_gp, typename graph_pack::graph_t& cur_graph,
         EdgeLabelHandler<typename graph_pack::graph_t>& LabelsAfter,
         const EdgeIndex<K + 1, typename graph_pack::graph_t>& index ,vector<ReadStream *>& reads
@@ -216,7 +271,12 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //			RCStream  frc_2(freads_2);
 			vector<ReadStream*> reads = {/*&frc_1, &frc_2*/&reads_1, &reads_2 };
 
-			SelectReadsForConsensus<K,  graph_pack>(origin_gp, resolved_gp.g, labels_after, origin_gp.index, reads, consensus_folder);
+//			SelectReadsForConsensus<K,  graph_pack>(origin_gp, resolved_gp.g, labels_after, origin_gp.index, reads, consensus_folder);
+			consensus_folder = cfg::get().output_dir
+					+ "consensus_before_resolve/";
+			OutputSingleFileContigs(origin_gp.g, consensus_folder);
+			SelectReadsForConsensusBefore<K,  graph_pack>(origin_gp, origin_gp.g, labels_after, origin_gp.index, reads, consensus_folder);
+
 		}
 
 		one_many_contigs_enlarger<typename graph_pack::graph_t> N50enlarger(
