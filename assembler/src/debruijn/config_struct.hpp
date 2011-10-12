@@ -356,7 +356,8 @@ namespace debruijn_graph
 		load(pt, "componential_resolve", cfg.componential_resolve);
 		load(pt, "advanced_estimator_mode", cfg.advanced_estimator_mode);
 
-		load(pt, "de", cfg.de); // distance estimator:
+		load(pt, cfg.ds.single_cell ? "sc_de" : "usual_de", cfg.de);
+
 		load(pt, "ade", cfg.ade); // advanced distance estimator:
 		load(pt, "rr", cfg.rr); // repeat resolver:
 		load(pt, "pos", cfg.pos); // position handler:

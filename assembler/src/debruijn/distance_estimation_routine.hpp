@@ -80,9 +80,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 			INFO("Weights normalized");
 
 			INFO("Filtering info");
-			//todo add coefficient dependent on coverage and K
-			double filter_threshold = (cfg::get().ds.single_cell) ? 1e-1 : cfg::get().de.filter_threshold;
-			PairInfoFilter<Graph> filter(gp.g, filter_threshold);
+			PairInfoFilter<Graph> filter(gp.g, cfg::get().de.filter_threshold);
 			filter.Filter(normalized_index, clustered_index);
 			INFO("Info filtered");
 			//		PairInfoChecker<Graph> checker(gp.edge_pos, 5, 100);
