@@ -31,12 +31,6 @@ double KMerClustering::logLikelihoodKMer(const string & center, const KMerCount 
 			res += log( 1 - pow( 10, -x->second.qual[i] / 10.0 ) );
 		}
 	}
-	if (change) {
-		cout << "   logLikelihood btw\n";
-		cout << "  " << center.data() << "\n  " <<  x->first.str().data() << "\n  " << x->first.strQual() << "\n  ";
-		for (uint32_t i=0; i<K; ++i) cout << x->second.qual[i] << "  ";
-		cout << endl;
-	}
 	return res;
 }
 
@@ -229,8 +223,6 @@ double KMerClustering::trueClusterLogLikelihood(const vector<int> & cl, const ve
 		return ( lMultinomial(cl, k_) + logLikelihood );
 	}
 
-	cout << "\nCluster of " << centers.size() << " subclusters\n";
-
 	// compute sufficient statistics
 	vector<int> count(centers.size(), 0);		// how many kmers in cluster i
 	vector<double> totalLogLikelihood(centers.size(), 0);	// total distance from kmers of cluster i to its center
@@ -238,16 +230,6 @@ double KMerClustering::trueClusterLogLikelihood(const vector<int> & cl, const ve
 		count[indices[i]]+=k_[cl[i]]->second.count;
 		totalLogLikelihood[indices[i]] += logLikelihoodKMer(centers[indices[i]].first, k_[cl[i]]);
 	}
-
-	cout << "  counts: ";
-	for (size_t i=0; i<centers.size(); ++i) {
-		cout <<  count[i] << " ";
-	}
-	cout << "\n  loglikelihoods: ";
-	for (size_t i=0; i<centers.size(); ++i) {
-			cout <<  totalLogLikelihood[i] << " ";
-	}
-	cout << endl;
 
 	// sum up the likelihood
 	double res = lBetaPlusOne(count);   // 1/B(count)
