@@ -293,7 +293,7 @@ int PrintGraphComponents(const string& file_name, Graph& g,
 		EdgesPositionHandler<Graph> &edges_positions,
 		bool symmetric_mode = false) {
 	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
-	ComponentSizeFilter<Graph> checker(g, split_edge_length);
+	ComponentSizeFilter<Graph> checker(g, split_edge_length, 2);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	size_t cnt = 1;
 	while (!splitter.Finished() && cnt <= 1000) {
