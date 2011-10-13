@@ -264,6 +264,7 @@ public:
 			}
 
 		}
+		INFO("vertices copied");
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			if (rc_mode) {
 				if (rc_edges.find(*e_iter) == rc_edges.end())
@@ -300,6 +301,8 @@ public:
 		}
 		TRACE("Edge Adding finished");
 		old_to_new.clear();
+
+		INFO("edges copied");
 		DEBUG("Copying of paired info started");
 		for (auto p_iter = ind.begin(), p_end_iter = ind.end();
 				p_iter != p_end_iter; ++p_iter) {
@@ -320,6 +323,8 @@ public:
 				}
 			}
 		}
+
+		INFO("pi copied");
 		int zero_paired_length;
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			PairInfos pi = paired_di_data.GetEdgeInfos(old_to_new_edge[*e_iter]);
