@@ -59,7 +59,7 @@ public:
 
 		storage_[edge] = cov;
 
-		VERIFY(storage_[edge] > 0);
+		VERIFY(storage_[edge] >= 0);
 	}
 
 	/**
@@ -77,7 +77,7 @@ public:
 	 * Method increases coverage value
 	 */
 	void IncCoverage(EdgeId edge, int toAdd) {
-		VERIFY(toAdd >= 0);
+		//VERIFY(toAdd >= 0);
 		storage_[edge] += toAdd;
 		VERIFY(storage_[edge] >= 0);
 	}
