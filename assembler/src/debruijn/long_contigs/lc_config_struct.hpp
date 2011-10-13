@@ -129,6 +129,8 @@ struct lc_config
 	    bool break_sc;
 	    size_t chimeric_delta;
 
+	    double agreed_coeff;
+
 	    symmetrization sym;
 	};
 
@@ -323,6 +325,8 @@ void load(boost::property_tree::ptree const& pt, lc_config::filter_options& fo)
     load(pt, "conj_len_percent", fo.conj_len_percent);
     load(pt, "break_sc", fo.break_sc);
     load(pt, "chimeric_delta", fo.chimeric_delta);
+
+    load(pt, "agreed_coeff", fo.agreed_coeff);
 
     load(pt, "sym", fo.sym);
 }

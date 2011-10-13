@@ -19,6 +19,7 @@ namespace long_contigs {
 
 using namespace debruijn_graph;
 
+enum EdgeType { TOTALY_ISOLATED, SELF_LOOP, HAS_NEIGHBOUR, REGULAR };
 
 class PairedInfoSimpleSymmertrizer {
 private:
@@ -102,6 +103,119 @@ public:
 };
 
 
+EdgeType ClassifyEdge(Graph& g, EdgeId e) {
+	EdgeType type;
+	if (g.IncomingEdgeCount(g.EdgeStart(e)) == 0 && g.IncomingEdgeCount(g.EdgeEnd(e)) == 1 &&
+			g.OutgoingEdgeCount(g.EdgeStart(e)) == 1 && g.OutgoingEdgeCount(g.EdgeEnd(e)) == 0) {
+		type = TOTALY_ISOLATED;
+	} else if ((g.IncomingEdgeCount(g.EdgeStart(e)) == 0 && g.OutgoingEdgeCount(g.EdgeEnd(e)) == 0) &&
+			 (g.IncomingEdgeCount(g.EdgeEnd(e)) > 1 || g.OutgoingEdgeCount(g.EdgeStart(e)) > 1)) {
+		type = HAS_NEIGHBOUR;
+	} else if (g.IncomingEdgeCount(g.EdgeStart(e)) == 1 && g.OutgoingEdgeCount(g.EdgeEnd(e)) == 1
+			&& g.GetUniqueIncomingEdge(g.EdgeStart(e)) == e && g.GetUniqueOutgoingEdge(g.EdgeEnd(e)) == e) {
+
+		type = SELF_LOOP;
+	} else {
+		type = REGULAR;
+	}
+	return type;
+}
+
+std::string ToStr(EdgeType t) {
+	std::string res;
+	switch(t) {
+	case TOTALY_ISOLATED: {
+		res = "Isolated";
+		break;
+	}
+	case HAS_NEIGHBOUR: {
+		res = "With neighbours";
+		break;
+	}
+	case SELF_LOOP: {
+		res = "Self looped";
+		break;
+	}
+	case REGULAR: {
+		res = "Regular";
+		break;
+	}
+	}
+	return res;
+}
+
+void PrintEdgesStats(std::map<EdgeType, size_t>& amount, std::map<EdgeType, size_t>& lengths, const std::string& title) {
+	INFO(title);
+	for (auto iter = amount.begin(); iter != amount.end(); ++iter) {
+		INFO(ToStr(iter->first) << " edges: " << iter->second << " with total length " << lengths[iter->first]);
+	}
+}
+
+
+
+void CheckPairedInfo(Graph& g, PairedInfoIndex<Graph>& index, size_t lenThreshold) {
+	size_t total = 0, totalLength = 0;
+	std::map<EdgeType, size_t> lengths;
+	std::map<EdgeType, size_t> amount;
+
+	std::map<EdgeType, size_t> noPairedInfoOtherLen;
+	std::map<EdgeType, size_t> noPairedInfoOther;
+
+	std::map<EdgeType, size_t> noPairedInfoOtherLongLen;
+	std::map<EdgeType, size_t> noPairedInfoOtherLong;
+
+	std::map<EdgeType, size_t> noPairedInfoLen;
+	std::map<EdgeType, size_t> noPairedInfo;
+
+	std::map<EdgeType, size_t> noPairedInfoLongLen;
+	std::map<EdgeType, size_t> noPairedInfoLong;
+
+
+	INFO("Checking paired info");
+	for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		EdgeId e = *iter;
+		size_t len = g.length(e);
+		double dist = len / 2.0 + 1.0;
+		auto pi = index.GetEdgeInfo(e);
+
+		++total;
+		totalLength += len;
+
+		EdgeType et = ClassifyEdge(g, e);
+		amount[et] += 1;
+		lengths[et] += len;
+
+		if (pi.size() == 0 || (pi.size() == 1 && index.GetEdgePairInfo(e,e).size() == 1 &&	math::le(std::abs(pi[0].d), dist))) {
+
+			noPairedInfoOther[et] += 1;
+			noPairedInfoOtherLen[et] += len;
+
+			if (len > lenThreshold) {
+				noPairedInfoOtherLong[et] += 1;
+				noPairedInfoOtherLongLen[et] += len;
+			}
+		}
+
+		if (pi.size() == 0 || (pi.size() == 1 && index.GetEdgePairInfo(e,e).size() == 1 && math::le(pi[0].weight, 0.1))) {
+			noPairedInfo[et] += 1;
+			noPairedInfoLen[et] += len;
+
+			if (len > lenThreshold) {
+				noPairedInfoLong[et] += 1;
+				noPairedInfoLongLen[et] += len;
+			}
+		}
+
+
+	}
+	INFO("Total " << total << " with length " << totalLength);
+	PrintEdgesStats(amount, lengths, "All edges");
+	PrintEdgesStats(noPairedInfoOther, noPairedInfoOtherLen, "No paired info to other edges");
+	PrintEdgesStats(noPairedInfoOtherLong, noPairedInfoOtherLongLen, "No paired info to other edges for edges longer than " + ToString(lenThreshold));
+	PrintEdgesStats(noPairedInfo, noPairedInfoLen, "No paired info at all");
+	PrintEdgesStats(noPairedInfoLong, noPairedInfoLongLen, "No paired info at all for edges longer than " + ToString(lenThreshold));
+}
+
 void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_IntIds,	Sequence& sequence, KmerMapper<K+1, Graph> * mapper) {
 	string input_dir = cfg::get().input_dir;
 	string dataset = cfg::get().dataset_name;
@@ -123,19 +237,18 @@ void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_I
 	sequence = Sequence(genome);
 
 	INFO("Reading graph");
-	debruijn_graph::scanConjugateGraph(g, conj_IntIds, fileName);
-	debruijn_graph::DataScanner<Graph> scanner(*g, *conj_IntIds);
-	scanner.loadKmerMapper(fileName, *mapper);
+		debruijn_graph::scanConjugateGraph(g, conj_IntIds, fileName, (PairedInfoIndex<Graph>*) 0,
+			(EdgesPositionHandler<Graph> *) NULL, (PairedInfoIndex<Graph>*) 0, (PairedInfoIndex<Graph>*) 0, mapper);
 	INFO("Graph read");
 }
 
 template<size_t k>
-void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence& genome, PairedInfoIndices& pairedInfos) {
+void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, KmerMapper<k+1, Graph>& mapper, const Sequence& genome, PairedInfoIndices& pairedInfos) {
 	for (auto el = lc_cfg::get().etalon_libs.begin(); el != lc_cfg::get().etalon_libs.end(); ++el) {
 		INFO("Generating info with read size " << el->read_size << ", insert size " << el->insert_size);
 
 		pairedInfos.push_back(PairedInfoIndexLibrary(g, el->read_size, el->insert_size, 0, lc_cfg::get().es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
-		FillEtalonPairedIndex<k> (g, *pairedInfos.back().pairedInfoIndex, index, el->insert_size, el->read_size, genome);
+		FillEtalonPairedIndex<k> (*pairedInfos.back().pairedInfoIndex, g, index, mapper, el->insert_size, el->read_size, genome);
 	}
 }
 
@@ -158,6 +271,7 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 			//Reading saved paired info
 			DataScanner<Graph> dataScanner(g, conj_IntIds);
 			dataScanner.loadPaired(rl->ds.precounted_path, *pairedInfos.back().pairedInfoIndex);
+			CheckPairedInfo(g, *pairedInfos.back().pairedInfoIndex, insertSize - 2 * readSize + K);
 
 			pairedInfos.back().raw = new PairedInfoIndex<Graph>(g, 0);
 			if (!lc_cfg::get().paired_info_only) {
@@ -217,7 +331,7 @@ void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Gra
 
 		if (lc_cfg::get().cluster_paired_info) {
 			PairedInfoIndex<Graph> clustered_index(g);
-			DistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), lib->insertSize, lib->readSize, cfg::get().de.delta,
+			DistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), old_IDs, lib->insertSize, lib->readSize, cfg::get().de.delta,
 					cfg::get().de.linkage_distance,
 					cfg::get().de.max_distance);
 			estimator.Estimate(clustered_index);
@@ -302,29 +416,20 @@ void OutputContigsNoComplement(Graph& g, const std::string& filename) {
 
 
 
-void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<int>& pairs, const string& filename,
+void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath>& paths,
+		const string& filename,
 		std::set<int> notToPrint) {
+
 	INFO("Writing contigs to " << filename);
 	osequencestream oss(filename);
 
-	std::set<int> printed;
-
-	for (int i = 0; i < (int) paths.size(); ++i) {
-		if (notToPrint.count(i)) {
+	for (int i = 0; i < (int) paths.size(); i += 2) {
+		if (notToPrint.count(i) || notToPrint.count(i + 1) || paths[i].size() == 0) {
 			continue;
 		}
-		if (printed.count(i) == 0) {
-			if (lc_cfg::get().fo.remove_single && pairs[i] == -1) {
-				printed.insert(i);
-				continue;
-			}
 
-			int toPrint = (pairs[i] == -1 || PathLength(g, paths[i]) > PathLength(g, paths[pairs[i]])) ? i : pairs[i];
-			oss.ptr = (void*) &paths[toPrint];
-			oss << PathToSequence(g, paths[toPrint]);
-			printed.insert(i);
-			printed.insert(pairs[i]);
-		}
+		oss.ptr = (void*) &paths[i];
+		oss << PathToSequence(g, paths[i]);
 	}
 
 	INFO("Contigs written");
