@@ -52,7 +52,9 @@ void ClipTips(Graph &g, size_t iteration_count = 1, size_t i = 0) {
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
 	omnigraph::LengthComparator<Graph> comparator(g);
-	size_t max_tip_length = cfg::get().simp.tc.max_tip_length_div_K * g.k();
+	size_t max_tip_length = std::min(
+			(size_t) cfg::get().simp.tc.max_tip_length_div_K * g.k(),
+			cfg::get().simp.tc.max_tip_length);
 	size_t max_coverage = cfg::get().simp.tc.max_coverage;
 	double max_relative_coverage = cfg::get().simp.tc.max_relative_coverage;
 	omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(
@@ -72,8 +74,8 @@ void ClipTipsForResolver(Graph &g) {
 	INFO("Clipping tips");
 	omnigraph::LengthComparator<Graph> comparator(g);
 	//	size_t max_tip_length = CONFIG.read<size_t> ("tc_max_tip_length");
-	size_t max_coverage = cfg::get().simp.tc.max_coverage;
-	double max_relative_coverage = cfg::get().simp.tc.max_relative_coverage;
+			size_t max_coverage = cfg::get().simp.tc.max_coverage;
+			double max_relative_coverage = cfg::get().simp.tc.max_relative_coverage;
 	omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(g, comparator,
 			100, max_coverage, max_relative_coverage * 0.5);
 	tc.ClipTips();
@@ -160,16 +162,18 @@ void RemoveRelativelyLowCoverageEdges(Graph &g) {
 	//			max_length_div_K * g.k(), max_coverage);
 	erroneous_edge_remover.RemoveEdges();
 	INFO("Hard low coverage edges removed");
+//	ChimericEdgesRemover<Graph> remover(g, 10);
+//	remover.RemoveEdges();
 }
 
-template<class Graph>
-void RemoveEroneousEdgesUsingPairedInfo(Graph &g,
-		const PairedInfoIndex<Graph>& paired_index) {
+template<class graph_pack>
+void RemoveEroneousEdgesUsingPairedInfo(graph_pack &gp,
+		const PairedInfoIndex<typename graph_pack::graph_t>& paired_index) {
 	INFO("Removing erroneous edges using paired info");
 	size_t max_length = cfg::get().simp.piec.max_length;
 	size_t min_neighbour_length = cfg::get().simp.piec.min_neighbour_length;
-	omnigraph::PairInfoAwareErroneousEdgeRemover<Graph> erroneous_edge_remover(
-			g, paired_index, max_length, min_neighbour_length,
+	omnigraph::PairInfoAwareErroneousEdgeRemover<graph_pack> erroneous_edge_remover(
+			gp, paired_index, max_length, min_neighbour_length,
 			cfg::get().ds.IS, cfg::get().ds.RL);
 	erroneous_edge_remover.RemoveEdges();
 	INFO("Erroneous edges using paired info removed");
@@ -246,14 +250,14 @@ void SimplifyGraph(conj_graph_pack &gp,
 //				"graph.dot", "no_erroneous_edges_graph");
 	}
 
-	INFO("Cheating ErroneousConnectionsRemoval");
-	RemoveRelativelyLowCoverageEdges(gp.g);
+//	INFO("Cheating ErroneousConnectionsRemoval");
+//	RemoveRelativelyLowCoverageEdges(gp.g);
+//
+//	INFO("Cheating ErroneousConnectionsRemoval stats");
+//	CountStats<k> (gp.g, gp.index, gp.genome);
 
-	INFO("Cheating ErroneousConnectionsRemoval stats");
-	CountStats<k> (gp.g, gp.index, gp.genome);
-//	ProduceDetailedInfo<k> (gp, labeler,
-//			output_folder + "final_erroneous_edges_removed/", "graph.dot",
-//			"no_erroneous_edges_graph");
+//	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "final_erroneous_edges_removed/",	"graph.dot", "no_erroneous_edges_graph");
+
 	INFO("Final TipClipping");
 	ClipTips(gp.g);
 	INFO("Final TipClipping stats");

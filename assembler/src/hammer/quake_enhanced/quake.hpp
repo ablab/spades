@@ -18,7 +18,7 @@ class Quake {
                     std::string bad_hist_file, uint32_t top_threshold,
                     double average_min);
   void PrepareLimits(long double threshold, std::string limits_file);
-  void FilterTrusted(std::string ifile, std::string ofile);
+  void FilterTrusted(std::string ifile, std::string ofile, std::string badfile);
  private:
   enum QuakeState {kInitial, kCountDone, kRealHistPrepared, kRealHistPrinted,
                    kTrustedHistPrepared, kLimitsCounted, kLimitsPrinted, 

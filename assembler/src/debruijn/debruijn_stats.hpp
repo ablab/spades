@@ -255,6 +255,9 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	DetailedWriteToDot(gp.g, labeler, folder + file_name, graph_name, path1,
 			path2);
+	WriteComponents(gp.g, labeler, folder + file_name, graph_name,
+			cfg::get().ds.IS, path1, path2);
+
 	INFO("Writing graph components along genome");
 	WriteGraphComponentsAlongGenome<k> (gp.g, gp.index, gp.kmer_mapper,
 			labeler, gp.genome, folder, file_name, "components_along_genome",
@@ -290,7 +293,7 @@ int PrintGraphComponents(const string& file_name, Graph& g,
 		EdgesPositionHandler<Graph> &edges_positions,
 		bool symmetric_mode = false) {
 	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
-	ComponentSizeFilter<Graph> checker(g, split_edge_length);
+	ComponentSizeFilter<Graph> checker(g, split_edge_length, 2);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	size_t cnt = 1;
 	while (!splitter.Finished() && cnt <= 1000) {
@@ -311,8 +314,9 @@ void OutputContigs(NonconjugateDeBruijnGraph& g,
 		const string& contigs_output_filename) {
 	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_filename);
-	osequencestream oss(contigs_output_filename);
+	osequencestream_cov oss(contigs_output_filename);
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		oss << g.coverage(*it);
 		oss << g.EdgeNucls(*it);
 	}INFO("Contigs written");
 }
@@ -321,10 +325,11 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename) {
 	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_filename);
-	osequencestream oss(contigs_output_filename);
+	osequencestream_cov oss(contigs_output_filename);
 	set<ConjugateDeBruijnGraph::EdgeId> edges;
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		if (edges.find(*it) == edges.end()) {
+			oss << g.coverage(*it);
 			oss << g.EdgeNucls(*it);
 			edges.insert(g.conjugate(*it));
 		}

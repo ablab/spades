@@ -11,10 +11,12 @@
 ; This makes 4 639 276 mate reads.
 ECOLI_EMUL
 {
-	first 	EAS20_8/emul/MG1655-K12_emul1.fastq.gz
-	second	EAS20_8/emul/MG1655-K12_emul2.fastq.gz
+	first 	E.Coli.K12.MG1655/EAS20_8/emul/MG1655-K12_emul1.fastq.gz
+	second	E.Coli.K12.MG1655/EAS20_8/emul/MG1655-K12_emul2.fastq.gz
 	RL		100		; read length
 	IS 	   400 	; insert size
+	single_cell	false
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN	   4639675 ; total size
 }
 
@@ -24,47 +26,59 @@ ECOLI_EMUL
 ; Then we filter Quake-reads to only mate pairs that can be aligned to this segment (using bowtie with default options).
 QUAKE_CROPPED_1K
 {
-	first	EAS20_8/quaked/cropped/s_6.first1000_1.fastq.gz
-	second	EAS20_8/quaked/cropped/s_6.first1000_2.fastq.gz
+	first	E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first1000_1.fastq.gz
+	second	E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first1000_2.fastq.gz
 	RL		100		; read length
 	IS	      220 	; insert size
+	single_cell	false
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.first1000.fasta.gz
 	LEN	   1000 	; total size
 }
 
 QUAKE_CROPPED_10K
 {
-	first	EAS20_8/quaked/cropped/s_6.first10000_1.fastq.gz
-	second	EAS20_8/quaked/cropped/s_6.first10000_2.fastq.gz
+	first	E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first10000_1.fastq.gz
+	second	E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first10000_2.fastq.gz
 	RL		100		; read length
 	IS		220 	; insert size
+	single_cell	false
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.first10000.fasta.gz
 	LEN		10000 	; total size
 }
 
 QUAKE_CROPPED_100K
 {
-	first	EAS20_8/quaked/cropped/s_6.first100000_1.fastq.gz
-	second	EAS20_8/quaked/cropped/s_6.first100000_2.fastq.gz
+	first	E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first100000_1.fastq.gz
+	second	E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first100000_2.fastq.gz
 	RL		100		; read length
 	IS		220 	; insert size
+	single_cell	false
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.first100000.fasta.gz
 	LEN		100000 	; total size
 }
 
 QUAKE_CROPPED_400K
 {
-	first	EAS20_8/quaked/cropped/s_6.first400000_1.fastq.gz
-	second	EAS20_8/quaked/cropped/s_6.first400000_2.fastq.gz
+	first	E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first400000_1.fastq.gz
+	second	E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first400000_2.fastq.gz
 	RL		100		; read length
 	IS		220 	; insert size
+	single_cell	false
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		400000 	; total size
 }
 
 ; There are total 14 214 324 mate-reads, and 12 489 353 mate-reads without any 'N' letter (clear reads).
 QUAKE_FULL
 {
-	first	EAS20_8/quaked/s_6_1.cor.fastq.gz
-	second	EAS20_8/quaked/s_6_2.cor.fastq.gz
+	first	E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
+	second	E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz
+	single_first	E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor_single.fastq.gz
+	single_second	E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor_single.fastq.gz
 	RL		100		; read length
 	IS		220 	; insert size
+	single_cell	false
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		4639675 ; total size
 }
 
@@ -72,46 +86,56 @@ QUAKE_FULL
 
 EAS600_QUAKE_CROPPED_1K
 {
-	first	EAS600_70/quaked/cropped/E.Coli_600.first1000_1.fastq.gz
-	second	EAS600_70/quaked/cropped/E.Coli_600.first1000_2.fastq.gz
+	first	E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first1000_1.fastq.gz
+	second	E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first1000_2.fastq.gz
 	RL		100		; read length
 	IS		480 	; insert size
+	single_cell	false
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		1000 	; total size
 }
 
 EAS600_QUAKE_CROPPED_10K
 {
-	first	EAS600_70/quaked/cropped/E.Coli_600.first10000_1.fastq.gz
-	second	EAS600_70/quaked/cropped/E.Coli_600.first10000_2.fastq.gz
+	first	E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first10000_1.fastq.gz
+	second	E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first10000_2.fastq.gz
 	RL		100		; read length
 	IS		480 	; insert size
+	single_cell	false
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		10000 	; total size
 }
 
 EAS600_QUAKE_CROPPED_100K
 {
-	first	EAS600_70/quaked/cropped/E.Coli_600.first100000_1.fastq.gz
-	second	EAS600_70/quaked/cropped/E.Coli_600.first100000_2.fastq.gz
+	first	E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first100000_1.fastq.gz
+	second	E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first100000_2.fastq.gz
 	RL		100		; read length
 	IS		480 	; insert size
+	single_cell	false
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		100000 	; total size
 }
 
 EAS600_QUAKE_CROPPED_400K
 {
-	first	EAS600_70/quaked/cropped/E.Coli_600.first400000_1.fastq.gz
-	second	EAS600_70/quaked/cropped/E.Coli_600.first400000_2.fastq.gz
+	first	E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first400000_1.fastq.gz
+	second	E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first400000_2.fastq.gz
 	RL		100		; read length
 	IS		480 	; insert size
+	single_cell	false
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		400000 	; total size
 }
 
 EAS600_QUAKE_FULL
 {
-	first	EAS600_70/quaked/ERR022075_1.cor.fastq.gz
-	second	EAS600_70/quaked/ERR022075_2.cor.fastq.gz
+	first	E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_1.cor.fastq.gz
+	second	E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_2.cor.fastq.gz
 	RL		100		; read length
 	IS		480 	; insert size
+	single_cell	false
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		4639675	; total size
 }
 
@@ -121,10 +145,12 @@ EAS600_QUAKE_FULL
 ;   .....          .....
 EAS600_EMUL_FULL
 {
-	first	EAS600_70/emulation/reads_1.fastq
-	second	EAS600_70/emulation/reads_2.fastq
+	first	E.Coli.K12.MG1655/EAS600_70/emulation/reads_1.fastq
+	second	E.Coli.K12.MG1655/EAS600_70/emulation/reads_2.fastq
 	RL		100		; read length
 	IS		500 	; insert size
+	single_cell	false
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		4639675	; total size
 }
 
@@ -134,85 +160,147 @@ EAS600_EMUL_FULL
 
 SC_NEW_1
 {
-	first	SC/2908_tau1_00_left.fastq.gz
-	second	SC/2908_tau1_00_right.fastq.gz
-	single_first	SC/2908_tau1_00_single_left.fastq.gz
-	single_second	SC/2908_tau1_00_single_right.fastq.gz
+	first	E.Coli.K12.MG1655/SC/2908_tau1_00_left.fastq.gz
+	second	E.Coli.K12.MG1655/SC/2908_tau1_00_right.fastq.gz
+	single_first	E.Coli.K12.MG1655/SC/2908_tau1_00_single_left.fastq.gz
+	single_second	E.Coli.K12.MG1655/SC/2908_tau1_00_single_right.fastq.gz
 	RL		100	; read length
 	IS		270 	; insert size
+	single_cell	true
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		4639675	; total size
 }
 
 SC_NEW_2
 {
-	first	SC/2908_tau1_02_left.fastq.gz
-	second	SC/2908_tau1_02_right.fastq.gz
+	first	E.Coli.K12.MG1655/SC/2908_tau1_02_left.fastq.gz
+	second	E.Coli.K12.MG1655/SC/2908_tau1_02_right.fastq.gz
 	RL		100	; read length
 	IS		270 	; insert size
+	single_cell	true
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		4639675	; total size
 }
 
 SC_NEW_3
 {
-	first	SC/3008_tau1_095_02_left.fastq.gz
-	second	SC/3008_tau1_095_02_right.fastq.gz
+	first	E.Coli.K12.MG1655/SC/3008_tau1_095_02_left.fastq.gz
+	second	E.Coli.K12.MG1655/SC/3008_tau1_095_02_right.fastq.gz
 	RL		100	; read length
 	IS		270 	; insert size
+	single_cell	true
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		4639675	; total size
 }
 
 SC_2909
 {
-	first	SC/2909_tau1_099_04_left.fastq.gz
-	second	SC/2909_tau1_099_04_right.fastq.gz
+	first	E.Coli.K12.MG1655/SC/2909_tau1_099_04_left.fastq.gz
+	second	E.Coli.K12.MG1655/SC/2909_tau1_099_04_right.fastq.gz
 	RL		100	; read length
 	IS		270 	; insert size
+	single_cell	true
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		4639675	; total size
 }
 
 SC_0310
 {
-	first	SC/0310_04_left.fastq.gz
-	second	SC/0310_04_right.fastq.gz
+	first	E.Coli.K12.MG1655/SC/0310_04_left.fastq.gz
+	second	E.Coli.K12.MG1655/SC/0310_04_right.fastq.gz
 	RL		100	; read length
 	IS		270 	; insert size
+	single_cell	true
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+	LEN		4639675	; total size
+}
+
+SC_0710
+{
+	first	E.Coli.K12.MG1655/SC/0710_07_left.fastq.gz
+	second	E.Coli.K12.MG1655/SC/0710_07_right.fastq.gz
+	single_first	E.Coli.K12.MG1655/SC/0710_07_left_unpaired.fastq.gz
+	single_second	E.Coli.K12.MG1655/SC/0710_07_right_unpaired.fastq.gz
+	RL		100	; read length
+	IS		270 	; insert size
+	single_cell	true
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		4639675	; total size
 }
 
 SC_K35
 {
-	first	SC/0209_tau1_095_K35_02_left.fastq.gz
-	second	SC/0209_tau1_095_K35_02_right.fastq.gz
+	first	E.Coli.K12.MG1655/SC/0209_tau1_095_K35_02_left.fastq.gz
+	second	E.Coli.K12.MG1655/SC/0209_tau1_095_K35_02_right.fastq.gz
 	RL		100	; read length
 	IS		270 	; insert size
+	single_cell	true
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		4639675	; total size
 }
 
 SC_FULL
 {
-	first	SC_OLD/left.fastq.gz
-	second	SC_OLD/right.fastq.gz
+	first	E.Coli.K12.MG1655/SC_OLD/left.fastq.gz
+	second	E.Coli.K12.MG1655/SC_OLD/right.fastq.gz
 	RL		100	; read length
 	IS		270 	; insert size
+	single_cell	true
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		4639675	; total size
 }
 
 SC_EULER_FULL
 {
-	first	SC_EULER/sc_1.cor.fasta.gz
-	second	SC_EULER/sc_2.cor.fasta.gz
+	first	E.Coli.K12.MG1655/SC_EULER/sc_1.cor.fasta.gz
+	second	E.Coli.K12.MG1655/SC_EULER/sc_2.cor.fasta.gz
 	RL		100	; read length
 	IS		270 	; insert size
+	single_cell	true
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		4639675	; total size
 }
 
 SC_EULER_NEW
 {
-	first 	SC_cor/left_6.10.cor.fasta
-	second	SC_cor/right_6.10.cor.fasta
+	first 	E.Coli.K12.MG1655/SC_cor/left_6.10.cor.fasta
+	second	E.Coli.K12.MG1655/SC_cor/right_6.10.cor.fasta
+	single_first	E.Coli.K12.MG1655/SC_cor/left_6.10.cor.single.fasta
+	single_second	E.Coli.K12.MG1655/SC_cor/right_6.10.cor.single.fasta
 	RL		100	; read length
 	IS		270	; insert size
+	single_cell	true
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		4639675	; total size
+}
+
+; resulting from throwing away all reads from SC_EULER_NEW that can be aligned to a human genome
+SC_EULER_NEW_FILTERED
+{
+	first 	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_paired_1.fasta
+	second	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_paired_2.fasta
+	single_first	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_single_1.fasta
+	single_second	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_single_2.fasta
+	RL		100	; read length
+	IS		270	; insert size
+	single_cell	true
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+	LEN		4639675	; total size
+}
+
+
+; resulting from throwing away all reads from SC_NEW_1 that can be aligned to a human genome
+SC_NEW_1_FILTERED
+{
+        first   E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_paired_1.fastq
+        second  E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_paired_2.fastq
+        single_first    E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_single_1.fastq
+        single_second   E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_single_2.fastq
+        RL              100     ; read length
+        IS              270     ; insert size
+        single_cell     true
+        reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+        LEN             4639675 ; total size
 }
 
 ; ================================================
@@ -221,10 +309,14 @@ SC_EULER_NEW
 
 LB_QUAKE_FULL
 {
-	first	../L.Bouillonii_quaked/gerwick-read1.cor.fastq.gz
-	second	../L.Bouillonii_quaked/gerwick-read2.cor.fastq.gz
+	first	L.Bouillonii_quaked/gerwick-read1.cor.fastq.gz
+	second	L.Bouillonii_quaked/gerwick-read2.cor.fastq.gz
+	single_first	L.Bouillonii_quaked/gerwick-read1.cor_single.fastq.gz
+	single_second	L.Bouillonii_quaked/gerwick-read2.cor_single.fastq.gz
 	RL		100	; read length
-	IS		220	; insert size
+	IS		226	; insert size
+	single_cell	false
+	reference_genome  L.Bouillonii_quaked/contigs_br_1003.fasta
 	LEN		8700000	; total size
 }
 

@@ -92,6 +92,10 @@ class PositionKMer {
 		return Globals::blob[ start_ + pos ];
 	}
 
+	int totalQual (hint_t pos) const {
+		return Globals::totalquality[ start_ + pos ];
+	}
+
 	bool operator < ( const PositionKMer & kmer ) const {
 		return ( strncmp( Globals::blob + start_, Globals::blob + kmer.start_, K)  < 0 );
 	}
@@ -106,6 +110,14 @@ class PositionKMer {
 		std::string res = "";
 		for (uint32_t i = 0; i < K; ++i) {
 			res += at(i);
+		}
+		return res;
+	}
+
+	std::string strQual() const {
+		std::string res = "";
+		for (uint32_t i = 0; i < K; ++i) {
+			res += Globals::blobquality[ start_ + i ];
 		}
 		return res;
 	}

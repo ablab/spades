@@ -17,7 +17,7 @@ ext/prepare_ext.sh
 echo "/**************************************/"
 echo "/********  generating k.hpp  **********/"
 echo "/**************************************/"
-./gen_k.sh 55
+./gen_k 55
 
 echo "/**************************************/"
 echo "/********  preparing debug ************/"
@@ -34,5 +34,3 @@ echo "/**************************************/"
 mkdir -p $build/release
 cd $build/release
 cmake $src
-
-

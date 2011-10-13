@@ -101,10 +101,21 @@ void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerCou
 		for ( vector<KMerNo>::const_iterator it = vtmp[n].begin(); it != vtmp[n].end(); ++it ) {
 			KMerNoHashMap::iterator it_hash = km->find( *it );
 			if ( it_hash == km->end() ) {
-				km->insert( make_pair( *it, new KMerCount( PositionKMer(it->index), KMerStat(1, KMERSTAT_GOODITER, it->errprob) ) ) );
+				KMerCount * kmc = new KMerCount( PositionKMer(it->index), KMerStat(1, KMERSTAT_GOODITER, it->errprob) );
+				if (Globals::use_true_likelihood) {
+					for (uint32_t j=0; j<K; ++j) {
+						kmc->second.qual[j] = Globals::blobquality[it->index + j] - (char)Globals::qvoffset;
+					}
+				}
+				km->insert( make_pair( *it, kmc ) );
 			} else {
 				it_hash->second->second.count++;
 				it_hash->second->second.totalQual *= it->errprob;
+				if (Globals::use_true_likelihood) {
+					for (uint32_t j=0; j<K; ++j) {
+						it_hash->second->second.qual[j] += (int)Globals::blobquality[it->index + j] - Globals::qvoffset;
+					}
+				}
 			}
 		}
 	}

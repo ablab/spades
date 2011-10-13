@@ -37,7 +37,7 @@ Options::Options(int argc, char **argv) :
   bool need_help;
   vector<string> global_options;
   help_builder << "Usage: " << argv[0] << 
-      " --read-file <file> --corrected-read-file <file> [options]\n";
+      " --read-file <file> --corrected-read-file <file> --trusted-kmer-file <file>[options]\n";
   GetOpt_pp options(argc, argv, Include_Environment);
   // Help Options
   options >> OptionPresent('h', "help", need_help);
@@ -68,7 +68,16 @@ Options::Options(int argc, char **argv) :
                     top_threshold, top_threshold);
   options >> Option('\0', "average-min", 
                     average_min, average_min);
-
+  // PrepareLimits Options
+  options >> Option('\0', "limits-file", 
+		    limits_file, limits_file);
+  options >> Option('\0', "bad-threshold", 
+		    bad_threshold, bad_threshold);
+  // FilterTrusted Options
+  options >> Option('\0', "trusted-kmer-file", 
+		    trusted_kmer_file, trusted_kmer_file);
+  options >> Option('\0', "bad-kmer-file",
+		    bad_kmer_file, bad_kmer_file);
   if (need_help || help_module != "") {
     valid = false;
   } else {
@@ -83,7 +92,8 @@ Options::Options(int argc, char **argv) :
  "--corrected-read-file <str>         fasta file, where corrected reads will \n"
  "                                    be written                             \n" 
  "--help-module <str>                 produce a help for a given module,     \n"
- "                                    module can be: count, prepare_hist     \n";
+ "                                    module can be: count, prepare_hist     \n"
+ "                                    prepare_limits, filter_trusted         \n";
 
     if (help_module == "count") {
       help_builder << 
@@ -107,18 +117,36 @@ Options::Options(int argc, char **argv) :
       help_builder << 
  "PrepareHist options:                                                       \n" 
  "--hist-file <str>                   file where k-mer histogram will be     \n"
- "                                    written, default "" - no histogram     \n"
+ "                                    written, default \"\" - no histogram   \n"
  "--trusted-hist <str>                file where trusted k-mer histogram will\n"
- "                                    be written, default "" - no histogram  \n"
+ "                                    be written, default \"\" - no histogram\n"
  "--bad-hist <str>                    file where bad k-mer histogram will be \n"
- "                                    written, default "" - no histogram     \n"
+ "                                    written, default \"\" - no histogram   \n"
  "--top-threshold <int(>0)>           we will look for maximum which is at   \n"
  "                                    least top_threshold times higher than  \n"
  "                                    previous, default 5                    \n"
  "--average-min <float([0..1])>       trying to find Gauss's average we will \n"
  "                                    go to the left and to the right until  \n"
  "                                    we rich coverage average_min * max     \n";
+    } else if (help_module == "prepare_limits") {      
+      help_builder << 
+ "PrepareLimits options:                                                     \n" 
+ "--limits-file <str>                 file where 1-value limits for every    \n"
+ "                                    k-value will be written,               \n"
+ "                                    default \"\" - not to save limits      \n"
+ "--bad-threshold <float(>0)>         k-mer will be considered untrusted if  \n"
+ "                                    its probability of being bad is at     \n"
+ "                                    least bad-threshold times greater then \n"
+ "                                    probability of being good              \n";
+    }  else if (help_module == "filter_trusted") {      
+      help_builder << 
+ "FilterTrusted options:                                                     \n" 
+ "--trusted-kmer-file <str>           file where trusted k-mer will be       \n"
+ "                                    written                                \n"
+ "--bad--kmer-fil <str>               file where trusted k-mer will be       \n"
+ "                                    written, default \"\" - no file        \n";
     }
+
   }
   help_message += help_builder.str();
 }
@@ -151,10 +179,21 @@ void Options::Validate() {
         "Error: quality_threshold must be in 0..255\n";
     valid = false;
   }
-  // Prepare Hist Validation
+  // PrepareHist Validation
   if (average_min < 0 || average_min > 1) {
     help_builder << 
         "Error: average_min must be in 0..1\n";
+    valid = false;
+  }
+  // PrepareLimits Validation
+  if (bad_threshold < 0) {
+    help_builder << 
+      "Error: bad_threshold must be in 0..*\n";
+    valid = false;
+  }
+  // FilterTrusted Validation
+  if (trusted_kmer_file == "") {
+    help_builder << "Error: trusted_kmer_file must be provided\n";
     valid = false;
   }
 }

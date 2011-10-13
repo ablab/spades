@@ -41,4 +41,38 @@ public:
 
 };
 
+class osequencestream_cov {
+private:
+	ofstream ofstream_;
+	int id_;
+	double coverage_;
+public:
+	osequencestream_cov(const string& filename): id_(0) {
+		ofstream_.open(filename);
+	}
+
+	virtual ~osequencestream_cov() {
+		ofstream_.close();
+	}
+
+	osequencestream_cov& operator<<(double coverage) {
+		coverage_ = coverage;
+		return *this;
+	}
+
+	osequencestream_cov& operator<<(const Sequence& seq) {
+		string s = seq.str();
+		ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << "_cov_" << coverage_ << endl;
+		// Velvet format: NODE_1_length_24705_cov_358.255249
+		size_t cur = 0;
+		while (cur < s.size()) {
+			ofstream_ << s.substr(cur, 60) << endl;
+			cur += 60;
+		}
+		return *this;
+	}
+
+
+};
+
 #endif /* OSEQUENCESTREAM_HPP_ */

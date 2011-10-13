@@ -1,0 +1,3 @@
+#!/bin/bash
+
+./iterative_run 21 33 55

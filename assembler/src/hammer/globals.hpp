@@ -24,6 +24,7 @@ struct Globals {
 	static double special_nonsingleton_threshold;
 	static bool discard_only_singletons;
 	static string kmers_after_clustering;
+	static bool use_true_likelihood;
 
 	static std::vector<PositionRead> * pr;
 	static std::vector<Read> * rv;
@@ -37,6 +38,7 @@ struct Globals {
 
 	static char* blob;
 	static char* blobquality;
+	static char* totalquality;
 	static hint_t blob_max_size;
 	static hint_t blob_size;
 

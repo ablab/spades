@@ -21,6 +21,7 @@ namespace debruijn_graph
         ws_construction,
         ws_paired_info_count,
         ws_simplification,
+        ws_late_pair_info_count,
         ws_distance_estimation,
         ws_repeats_resolving,
         ws_n50_enlargement
@@ -52,6 +53,7 @@ namespace debruijn_graph
 			working_stages_info.insert(name_id_mapping::value_type("construction"       , ws_construction       ));
 			working_stages_info.insert(name_id_mapping::value_type("paired_info_count"  , ws_paired_info_count  ));
 			working_stages_info.insert(name_id_mapping::value_type("simplification"	    , ws_simplification     ));
+			working_stages_info.insert(name_id_mapping::value_type("late_pair_info_count", ws_late_pair_info_count));
 			working_stages_info.insert(name_id_mapping::value_type("distance_estimation", ws_distance_estimation));
 			working_stages_info.insert(name_id_mapping::value_type("repeats_resolving"	, ws_repeats_resolving  ));
 			working_stages_info.insert(name_id_mapping::value_type("n50_enlargement"	, ws_n50_enlargement    ));
@@ -80,6 +82,7 @@ namespace debruijn_graph
 			struct tip_clipper
 			{
 			   double max_tip_length_div_K;
+			   size_t max_tip_length;
 			   double max_coverage;
 			   double max_relative_coverage;
 			};
@@ -153,6 +156,8 @@ namespace debruijn_graph
 			boost::optional<std::string> single_second;
 			size_t RL;
 			size_t IS;
+			bool single_cell;
+			std::string reference_genome;
 			int LEN;
 		};
 
@@ -172,13 +177,12 @@ namespace debruijn_graph
 		bool use_additional_contigs;
 		std::string additional_contigs;
 
-		std::string reference_genome;
-
 		std::string load_from;
 
 		working_stage entry_point;
 
 		bool paired_mode;
+		bool paired_info_statistics;
 		bool rectangle_mode;
 		bool etalon_info_mode;
 		bool late_paired_info;
@@ -205,6 +209,7 @@ namespace debruijn_graph
 	{
 		using config_common::load;
 		load(pt, "max_tip_length_div_K" , tc.max_tip_length_div_K);
+		load(pt, "max_tip_length" , tc.max_tip_length);
 		load(pt, "max_coverage"		    , tc.max_coverage);
 		load(pt, "max_relative_coverage", tc.max_relative_coverage);
 	}
@@ -296,9 +301,11 @@ namespace debruijn_graph
 		load(pt, "first", ds.first);
 		load(pt, "second", ds.second);
 		ds.single_first = pt.get_optional<std::string>("single_first");
-		ds.single_first = pt.get_optional<std::string>("single_second");
+		ds.single_second = pt.get_optional<std::string>("single_second");
 		load(pt, "RL", ds.RL);
 		load(pt, "IS", ds.IS);
+		load(pt, "single_cell", ds.single_cell);
+		load(pt, "reference_genome", ds.reference_genome);
 		load(pt, "LEN", ds.LEN);
 	}
 
@@ -310,6 +317,7 @@ namespace debruijn_graph
         load(pt, "br" , simp.br ); // bulge remover:
         load(pt, "ec" , simp.ec ); // erroneous connections remover:
         load(pt, "cec", simp.cec); // cheating erroneous connections remover:
+        load(pt, "piec", simp.piec); // pair info aware erroneous connections remover:
 	}
 
 	// main debruijn config load function
@@ -339,27 +347,27 @@ namespace debruijn_graph
 
 		load(pt, "additional_contigs", cfg.additional_contigs);
 
-		load(pt, "reference_genome", cfg.reference_genome);
+		//load(pt, "reference_genome", cfg.reference_genome); moved to dataset
 		//load(pt, "start_from", cfg.start_from);
 
 		load(pt, "paired_mode", cfg.paired_mode);
+		load(pt, "paired_info_statistics", cfg.paired_info_statistics);
 		load(pt, "rectangle_mode", cfg.rectangle_mode);
 		load(pt, "etalon_info_mode", cfg.etalon_info_mode);
 		load(pt, "late_paired_info", cfg.late_paired_info);
 		load(pt, "componential_resolve", cfg.componential_resolve);
 		load(pt, "advanced_estimator_mode", cfg.advanced_estimator_mode);
 
-		bool single_cell;
-		load(pt, "single_cell_mode", single_cell);
-		load(pt, single_cell ? "sc_simplification" : "usual_simplification", cfg.simp);
+		load(pt, cfg.ds.single_cell ? "sc_de" : "usual_de", cfg.de);
 
-		load(pt, "de", cfg.de); // distance estimator:
 		load(pt, "ade", cfg.ade); // advanced distance estimator:
 		load(pt, "rr", cfg.rr); // repeat resolver:
 		load(pt, "pos", cfg.pos); // position handler:
 		load(pt, "need_consensus", cfg.need_consensus);
 		load(pt, "uncorrected_reads", cfg.uncorrected_reads);
 		load(pt, cfg.dataset_name, cfg.ds);
+
+		load(pt, cfg.ds.single_cell ? "sc_simplification" : "usual_simplification", cfg.simp);
 	}
 
 } // debruijn_graph

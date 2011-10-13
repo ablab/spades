@@ -33,4 +33,4 @@ cd ../..
 
 # preparing makefile for all projects and both configurations
 rm -rf build/*
-./prepare_cfg.sh
+./prepare_cfg

@@ -32,11 +32,19 @@ private:
 	std::vector<KMerCount*> & k_;
 	int nthreads_;
 	int tau_;
-		
+
+	/// @return total log-likelihood that x was made from center given x's quality values
+	double logLikelihoodKMer(const string & center, const KMerCount * x);
+
+	/// @return Hamming distance between x and y with upper bound tau
 	int hamdistKMer(const PositionKMer & x, const PositionKMer & y, int tau = K);
+	/// @return Hamming distance between x and y with upper bound tau
 	int hamdistKMer(const PositionKMer & x, const string & y, int tau = K);
+	/// @return Hamming distance between x and y with upper bound tau
 	int hamdistKMer(const string & x, const string & y, int tau = K);
+	/// @return multinomial coefficient
 	double calcMultCoef(std::vector<int> & distances, const std::vector<int> & cl);
+	/// @return consensus string for a block
 	std::string find_consensus(const std::vector<int> & block);
 
 	/**
@@ -50,6 +58,10 @@ private:
 	  * @return total log-likelihood of this particular clustering
 	  */
 	double clusterLogLikelihood(const vector<int> & cl, const vector<StringCount> & centers, const vector<int> & indices);
+	/**
+	  * @return total log-likelihood of this particular clustering with real quality values
+	  */
+	double trueClusterLogLikelihood(const vector<int> & cl, const vector<StringCount> & centers, const vector<int> & indices);
 
 	/**
 	  * perform l-means clustering on the set of k-mers with initial centers being the l most frequent k-mers here
