@@ -153,6 +153,7 @@ public:
 		for (size_t i = 0; i < readers_.size(); ++i) {
 			readers_[i]->reset();
 		}
+		current_reader_index_ = 0;
 	}
 
 private:
