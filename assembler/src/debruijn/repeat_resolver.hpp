@@ -75,35 +75,26 @@ public:
 		bool isClose(int a, int b, double max_diff) {
 			return (abs(a - b) < max_diff);
 		}
-		bool isAdjacent(EdgeInfo other_info, Graph &old_graph,
-				Graph &new_graph) {
-			//			DEBUG("comparation started: " << edge);
+
+
+
+		bool IsEdgesOnDistanceAdjacent(EdgeId edge,       int d,
+									   EdgeId other_edge, int other_d,
+									   Graph &old_graph, double max_diff, bool first_equal ){
+
 			VertexId v_s = old_graph.EdgeStart(edge);
 			VertexId v_e = old_graph.EdgeEnd(edge);
-			EdgeId other_edge = other_info.getEdge();
+//			EdgeId other_edge = other_info.getEdge();
 			//			DEBUG("to " << other_edge);
 			VertexId other_v_s = old_graph.EdgeStart(other_edge);
 			VertexId other_v_e = old_graph.EdgeEnd(other_edge);
 			//TODO: insert distance!!!
 			int len = old_graph.length(edge);
 			int other_len = old_graph.length(other_edge);
-			int other_d = other_info.getDistance();
+//			int other_d = other_info.getDistance();
 
-			double max_diff = max(lp.variance, other_info.lp.variance) + 0.5
-					+ 1e-9;
-			//		max_diff = MAXD;
-//ToDo: Understand if it is very dirty hack.
-			if ((lp.first != other_info.lp.first)
-					&& (new_graph.EdgeStart(lp.first)
-							!= new_graph.EdgeEnd(lp.first))
-					&& (new_graph.EdgeStart(other_info.lp.first)
-							!= new_graph.EdgeEnd(other_info.lp.first))) {
-				if ((new_graph.EdgeStart(lp.first)
-						== new_graph.EdgeStart(other_info.lp.first))
-						|| (new_graph.EdgeEnd(lp.first)
-								== new_graph.EdgeEnd(other_info.lp.first)))
-					return false;
-			}
+
+
 
 //TODO:: SHURIK! UBERI ZA SOBOJ !!!
 			BoundedDijkstra<Graph, int> dij(old_graph, MAXSKIPDIST);
@@ -122,7 +113,7 @@ public:
 			if ((other_edge == edge && isClose(d, other_d, max_diff)))
 				return true;
 
-			if (lp.first == other_info.lp.first) {
+			if (first_equal) {
 				if ((v_e == other_v_s && isClose(d + len, other_d, max_diff))
 						|| (v_s == other_v_e
 								&& isClose(d, other_d + other_len, max_diff))
@@ -135,7 +126,61 @@ public:
 				}
 			}
 			return false;
+
 		}
+
+
+
+
+
+		bool isAdjacent(EdgeInfo other_info, Graph &old_graph,
+				Graph &new_graph, EdgeLabelHandler<Graph> &labels_after) {
+			//			DEBUG("comparation started: " << edge);
+			//		max_diff = MAXD;
+
+
+//ToDo: Understand if it is very dirty hack.
+			if ((lp.first != other_info.lp.first)
+					&& (new_graph.EdgeStart(lp.first)
+							!= new_graph.EdgeEnd(lp.first))
+					&& (new_graph.EdgeStart(other_info.lp.first)
+							!= new_graph.EdgeEnd(other_info.lp.first))) {
+				if ((new_graph.EdgeStart(lp.first)
+						== new_graph.EdgeStart(other_info.lp.first))
+						|| (new_graph.EdgeEnd(lp.first)
+								== new_graph.EdgeEnd(other_info.lp.first)))
+					return false;
+			}
+			double max_diff = max(lp.variance, other_info.lp.variance) + 0.5
+					+ 1e-9;
+
+			bool old_res = IsEdgesOnDistanceAdjacent(this->edge, this->d, other_info.getEdge()
+					,other_info.getDistance(), old_graph, max_diff, lp.first == other_info.lp.first);
+
+
+			//new_version
+			set<EdgeId> edges_set = labels_after.edge_inclusions[this->edge];
+			set<EdgeId> other_edges_set = labels_after.edge_inclusions[other_info.getEdge()];
+
+			bool new_res = false;
+
+
+			for(auto this_edge_it = edges_set.begin(); this_edge_it != edges_set.end(); ++ this_edge_it)
+				for(auto other_edge_it = other_edges_set.begin(); other_edge_it != other_edges_set.end(); ++ other_edge_it)
+					if( IsEdgesOnDistanceAdjacent(*this_edge_it, this->d, *other_edge_it
+							,other_info.getDistance(), new_graph, max_diff, lp.first == other_info.lp.first))
+					new_res  = true;
+
+			if (old_res != new_res) {
+				DEBUG("difference in isAdjacent for ("<<this->getEdge()<<", ("<<this->lp.first<<", "<<this->lp.second<<", "<<this->lp.d<<"), "<<this->d<<")");
+				DEBUG("                          VS ("<<other_info.getEdge()<<", ("<<other_info.lp.first<<", "<<other_info.lp.second<<", "<<other_info.lp.d<<"), "<<other_info.d<<")");
+				DEBUG("   old is "<<old_res<<"    new is "<<new_res);
+				DEBUG("   first set size "<<edges_set.size()<<"    second set size "<<other_edges_set.size());
+			}
+			return old_res;
+		}
+
+
 
 		inline int getDistance() {
 			return d;
@@ -155,11 +200,12 @@ public:
 			PIIndex &ind, EdgesPositionHandler<Graph> &old_pos_,
 			Graph &new_graph_, IdTrackHandler<Graph> &new_IDs_,
 			EdgesPositionHandler<Graph> &new_pos_,
-			DeletedVertexHandler<Graph> &deleted_handler_
+			DeletedVertexHandler<Graph> &deleted_handler_,
+			EdgeLabelHandler<Graph> &LabelsAfter_
 			) :
 			leap_(leap), new_graph(new_graph_), old_graph(old_graph_), new_IDs(
 					new_IDs_), old_IDs(old_IDs_), new_pos(new_pos_), old_pos(
-					old_pos_), deleted_handler(deleted_handler_) {
+					old_pos_), deleted_handler(deleted_handler_),  labels_after(LabelsAfter_){
 		TRACE("Constructor started");
 		unordered_map<VertexId, VertexId> old_to_new;
 		unordered_map<EdgeId, EdgeId> old_to_new_edge;
@@ -456,6 +502,7 @@ private:
 	EdgesPositionHandler<Graph> &new_pos;
 	EdgesPositionHandler<Graph> &old_pos;
 	DeletedVertexHandler<Graph> &deleted_handler;
+	EdgeLabelHandler<Graph> &labels_after;
 	vector<int> edge_info_colors;
 	vector<EdgeInfo> edge_infos;
 	PairInfoIndexData<EdgeId> paired_di_data;
@@ -1052,12 +1099,12 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 			ERROR("fake edge");
 		}
 		for (int j = 0; j < size; j++) {
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph)
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after)
 					&& !edge_infos[j].isAdjacent(edge_infos[i], old_graph,
-							new_graph))
+							new_graph, labels_after))
 				WARN(
 						"ASSYMETRIC: " << new_IDs.ReturnIntId(edge_infos[i].getEdge()) << " " << new_IDs.ReturnIntId(edge_infos[j].getEdge()));
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph)) {
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after)) {
 				neighbours[i].push_back(j);
 				neighbours[j].push_back(i);
 				TRACE(
