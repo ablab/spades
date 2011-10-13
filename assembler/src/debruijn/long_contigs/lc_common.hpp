@@ -357,7 +357,7 @@ template<class PathType>
 void PrintPath(Graph& g, PathType& path) {
 	INFO("Path " << &path << " with length " << PathLength(g, path));
 	INFO("#, edge, length")
-	for(size_t i = 0; i < path.size(); ++i) {
+	for(int i = 0; i < (int) path.size(); ++i) {
 		INFO(i << ", " << path[i] << ", " << g.length(path[i]));
 	}
 }
@@ -445,8 +445,19 @@ size_t GetMaxInsertSize(PairedInfoIndices& pairedInfo) {
 	return maxIS;
 }
 
+size_t GetMinGapSize(PairedInfoIndices& pairedInfo) {
+	size_t minIS = 100000;
+	for(auto lib = pairedInfo.begin(); lib != pairedInfo.end(); ++lib) {
+		if (minIS > lib->insertSize - 2 * lib->readSize) {
+			minIS = lib->insertSize - 2 * lib->readSize;
+		}
+	}
+	return minIS;
+}
+
+
 template <class T>
-void AddPathPairToContainer(BidirectionalPath& p1, BidirectionalPath& p2, T& paths) {
+void AddPathPairToContainer(BidirectionalPath p1, BidirectionalPath p2, T& paths) {
 	int newId = paths.size();
 	p1.id = newId;
 	p2.conj_id = newId;
@@ -454,6 +465,20 @@ void AddPathPairToContainer(BidirectionalPath& p1, BidirectionalPath& p2, T& pat
 	p1.conj_id = newId + 1;
 	paths.push_back(p1);
 	paths.push_back(p2);
+}
+
+//Increase path lengths
+void IncreaseLengths(Graph& g, PathLengths& lengths, EdgeId edge, bool forward) {
+	size_t len = g.length(edge);
+	for(auto iter = lengths.begin(); iter != lengths.end(); ++iter) {
+		*iter += len;
+	}
+
+	if (forward) {
+		lengths.push_back(len);
+	} else {
+		lengths.push_front(0);
+	}
 }
 
 } // namespace long_contigs

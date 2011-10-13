@@ -35,9 +35,11 @@ void ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detec
 	while (g.CheckUniqueOutgoingEdge(currentVertex)) {
 		EdgeId nextEdge = g.GetUniqueOutgoingEdge(currentVertex);
 
-		if (pairedInfo != 0 && pairedInfo != 0 &&  lc_cfg::get().ss.check_trusted) {
+		if (pairedInfo != 0 &&  lc_cfg::get().ss.check_trusted) {
+
+			int toExclude = 0;
 			double weight =
-					ExtentionWeight(g, path, *lengths, nextEdge, *pairedInfo, 0, true, false);
+					ExtentionWeight(g, path, *lengths, nextEdge, *pairedInfo, toExclude, true, false);
 
 			DETAILED_INFO("Forward " << nextEdge << " (" << g.length(nextEdge) << "), weight " << weight);
 			DetailedPrintPath(g, path, *lengths);
@@ -85,9 +87,11 @@ void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& dete
 	while (g.CheckUniqueIncomingEdge(currentVertex)) {
 		EdgeId nextEdge = g.GetUniqueIncomingEdge(currentVertex);
 
-		if (pairedInfo != 0 && pairedInfo != 0 &&  lc_cfg::get().ss.check_trusted) {
+		if (pairedInfo != 0 &&  lc_cfg::get().ss.check_trusted) {
+
+			int toExclude = 0;
 			double weight =
-					ExtentionWeight(g, path, *lengths, nextEdge, *pairedInfo, 0, false, false);
+					ExtentionWeight(g, path, *lengths, nextEdge, *pairedInfo, toExclude, false, false);
 
 			DETAILED_INFO("Backward " << nextEdge << " (" << g.length(nextEdge) << "), weight " << weight);
 			DetailedPrintPath(g, path, *lengths);

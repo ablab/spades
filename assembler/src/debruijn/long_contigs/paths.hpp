@@ -426,25 +426,20 @@ size_t SeedPriority(const BidirectionalPath& seed) {
 }
 
 //Find paths with given seeds
-void FindPaths(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndices& pairedInfo, std::vector<BidirectionalPath>& paths,
+void FindPaths(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndices& pairedInfo,
 		PathStopHandler& handler) {
-	std::multimap<size_t, BidirectionalPath*, std::greater<size_t> > priorityQueue;
-	static bool ALL_SEEDS = lc_cfg::get().sc.all_seeds;
-	static double EDGE_COVERAGE_TRESHOLD = lc_cfg::get().sc.edge_coverage;
-	static double LENGTH_COVERAGE_TRESHOLD = lc_cfg::get().sc.len_coverage;
+
+//	static bool ALL_SEEDS = lc_cfg::get().sc.all_seeds;
+//	static double EDGE_COVERAGE_TRESHOLD = lc_cfg::get().sc.edge_coverage;
+//	static double LENGTH_COVERAGE_TRESHOLD = lc_cfg::get().sc.len_coverage;
 
 	INFO("Finding paths started");
 	for(auto seed = seeds.begin(); seed != seeds.end(); ++seed) {
-		priorityQueue.insert(std::make_pair(SeedPriority(*seed), &(*seed)));
-	}
+		GrowSeed(g, *seed, pairedInfo, handler);
 
-	for(auto seed = priorityQueue.rbegin(); seed != priorityQueue.rend(); ++seed) {
-		GrowSeed(g, *(seed->second), pairedInfo, handler);
-		paths.push_back(*(seed->second));
-
-		if (!ALL_SEEDS && PathsCoverage(g, paths) > EDGE_COVERAGE_TRESHOLD && PathsLengthCoverage(g, paths) > LENGTH_COVERAGE_TRESHOLD) {
-			break;
-		}
+//		if (!ALL_SEEDS && PathsCoverage(g, paths) > EDGE_COVERAGE_TRESHOLD && PathsLengthCoverage(g, paths) > LENGTH_COVERAGE_TRESHOLD) {
+//			break;
+//		}
 	}
 
 	INFO("Finding paths finished");
