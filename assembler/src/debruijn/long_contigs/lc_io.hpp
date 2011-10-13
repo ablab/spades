@@ -220,7 +220,7 @@ void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_I
 	string input_dir = cfg::get().input_dir;
 	string dataset = cfg::get().dataset_name;
 	string genome_filename = input_dir
-			+ cfg::get().reference_genome;
+			+ cfg::get().ds.reference_genome;
 	checkFileExistenceFATAL(genome_filename);
 	int dataset_len = cfg::get().ds.LEN;
 
@@ -237,18 +237,18 @@ void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_I
 	sequence = Sequence(genome);
 
 	INFO("Reading graph");
-	debruijn_graph::scanConjugateGraph(g, conj_IntIds, fileName);
-	debruijn_graph::scanKmerMapper(*g, *conj_IntIds, fileName, mapper);
+		debruijn_graph::scanConjugateGraph(g, conj_IntIds, fileName, (PairedInfoIndex<Graph>*) 0,
+			(EdgesPositionHandler<Graph> *) NULL, (PairedInfoIndex<Graph>*) 0, (PairedInfoIndex<Graph>*) 0, mapper);
 	INFO("Graph read");
 }
 
 template<size_t k>
-void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, const Sequence& genome, PairedInfoIndices& pairedInfos) {
+void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, KmerMapper<k+1, Graph>& mapper, const Sequence& genome, PairedInfoIndices& pairedInfos) {
 	for (auto el = lc_cfg::get().etalon_libs.begin(); el != lc_cfg::get().etalon_libs.end(); ++el) {
 		INFO("Generating info with read size " << el->read_size << ", insert size " << el->insert_size);
 
 		pairedInfos.push_back(PairedInfoIndexLibrary(g, el->read_size, el->insert_size, 0, lc_cfg::get().es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
-		FillEtalonPairedIndex<k> (g, *pairedInfos.back().pairedInfoIndex, index, el->insert_size, el->read_size, genome);
+		FillEtalonPairedIndex<k> (*pairedInfos.back().pairedInfoIndex, g, index, mapper, el->insert_size, el->read_size, genome);
 	}
 }
 
@@ -331,7 +331,7 @@ void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Gra
 
 		if (lc_cfg::get().cluster_paired_info) {
 			PairedInfoIndex<Graph> clustered_index(g);
-			DistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), lib->insertSize, lib->readSize, cfg::get().de.delta,
+			DistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), old_IDs, lib->insertSize, lib->readSize, cfg::get().de.delta,
 					cfg::get().de.linkage_distance,
 					cfg::get().de.max_distance);
 			estimator.Estimate(clustered_index);

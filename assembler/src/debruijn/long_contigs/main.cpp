@@ -70,7 +70,7 @@ int main() {
 	Path<Graph::EdgeId> path2 = FindGenomePath<K> (!sequence, g, index);
 
 	if (cfg::get().etalon_info_mode) {
-		AddEtalonInfo<K>(g, index, sequence, pairedInfos);
+		AddEtalonInfo<K>(g, index, mapper, sequence, pairedInfos);
 	} else {
 		pairedInfos.clear();
 		AddRealInfo<K>(g, index, intIds, pairedInfos, mapper, lc_cfg::get().use_new_metrics);
