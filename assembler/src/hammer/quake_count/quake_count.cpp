@@ -199,7 +199,7 @@ int main(int argc, char *argv[]) {
     char filename[50];
     snprintf(filename, sizeof(filename), "%u.kmer.part", i);
     ofiles[i] = new ofstream(filename);
-    assert(ofiles[i]->fail() && "Too many files to open");
+    assert(!ofiles[i]->fail() && "Too many files to open");
   }
   SplitToFiles(ireadstream(opts.ifile, opts.qvoffset),
                ofiles, opts.q_mers, opts.error_threshold);
