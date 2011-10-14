@@ -950,7 +950,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 //				DEBUG("too far to correct");
 		return make_pair(false, pair_inf);
 	}
-	return make_pair(true, pair_inf);
+//	return make_pair(true, pair_inf);
 
 	PairInfo corrected_info = StupidPairInfoCorrectorByOldGraph(new_graph,
 			pair_inf);
