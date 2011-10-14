@@ -67,6 +67,7 @@ public class GetStats implements Runnable{
 				double y = in_fpr.nextDouble();
 				double z = in_fpr.nextDouble();
 				in_fpr.nextToken();
+                if (x == 0) continue;
 			    if (y > Threshold - 1e-9) fpr++;
                 size_fpr++;
             }
@@ -78,12 +79,16 @@ public class GetStats implements Runnable{
 				double y = in_tp.nextDouble();
 				double z = in_tp.nextDouble();
 				in_tp.nextToken();
+                if (x == 0) continue;
 			    if (y > Threshold - 1e-9) tp++;
                 size_tp++;
             }
-            debug(tp + " " + size_tp);
+            //debug(tp + " " + size_tp);
             out.println("With threshold = " + Threshold + ":");
+            out.println("False positive rate is " + (size_fpr*100.0/(size_fpr + size_tp)));
+            out.println("True positive rate is " + (size_tp*100.0/(size_fpr + size_tp)));
             out.println("False positive rate is going to be " + (fpr*100.0/(fpr + tp)));
+            out.println("True positive rate is going to be" + (tp*100.0/(fpr + tp)));
             if (fpr <= size_fpr) out.println("FPR will be decreased by " + ( -fpr + size_fpr)*100.0 / size_fpr + " percent");
             if (tp <= size_tp) out.println("Perfect match will be decreased by " + (-tp + size_tp)*100.0 / size_tp + " percent");
             out.close();
