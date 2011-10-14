@@ -27,6 +27,7 @@ class PositionRead {
 	void setBad(bool b) { bad_ = b; }
 
 	pair<int, KMerCount*> nextKMer( int begin ) const;
+	pair<int, hint_t> nextKMerNo( int begin ) const;
 
 	const std::string & getQualityString() const;
 	const std::string & getName() const;

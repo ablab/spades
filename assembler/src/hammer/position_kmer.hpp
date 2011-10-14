@@ -44,6 +44,59 @@ class PositionKMer {
 		return true;
 	}
 
+	static bool compareSubKMersCheqDirect( const hint_t & kmer1, const hint_t & kmer2, const uint32_t tauplusone, const uint32_t start) {
+		for ( uint32_t i = start; i < K; i += tauplusone ) {
+			if ( Globals::blob[ kmer1 + i ] != Globals::blob [ kmer2 + i ] ) {
+				return ( Globals::blob[ kmer1 + i ] < Globals::blob [ kmer2 + i ] );
+			}
+		}
+		return false;
+	}
+
+	static bool compareSubKMersGreaterCheqDirect( const hint_t & kmer1, const hint_t & kmer2, const uint32_t tauplusone, const uint32_t start) {
+		for ( uint32_t i = start; i < K; i += tauplusone ) {
+			if ( Globals::blob[ kmer1 + i ] != Globals::blob [ kmer2 + i ] ) {
+				return ( Globals::blob[ kmer1 + i ] > Globals::blob [ kmer2 + i ] );
+			}
+		}
+		return false;
+	}
+
+	static bool equalSubKMersCheqDirect( const hint_t & kmer1, const hint_t & kmer2, const uint32_t tauplusone, const uint32_t start) {
+		for ( uint32_t i = start; i < K; i += tauplusone ) {
+			if ( Globals::blob[ kmer1 + i ] != Globals::blob [ kmer2 + i ] ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	static bool compareSubKMersCheqHInt( const hint_t & kmer1, const hint_t & kmer2, const std::vector<hint_t> * km, const uint32_t tauplusone, const uint32_t start) {
+		for ( uint32_t i = start; i < K; i += tauplusone ) {
+			if ( Globals::blob[ (*km)[kmer1] + i ] != Globals::blob [ (*km)[kmer2] + i ] ) {
+				return ( Globals::blob[ (*km)[kmer1] + i ] < Globals::blob [ (*km)[kmer2] + i ] );
+			}
+		}
+		return false;
+	}
+
+	static bool compareSubKMersGreaterCheqHInt( const hint_t & kmer1, const hint_t & kmer2, const std::vector<hint_t> * km, const uint32_t tauplusone, const uint32_t start) {
+		for ( uint32_t i = start; i < K; i += tauplusone ) {
+			if ( Globals::blob[ (*km)[kmer1] + i ] != Globals::blob [ (*km)[kmer2] + i ] ) {
+				return ( Globals::blob[ (*km)[kmer1] + i ] > Globals::blob [ (*km)[kmer2] + i ] );
+			}
+		}
+		return false;
+	}
+
+	static bool equalSubKMersCheqHInt( const hint_t & kmer1, const hint_t & kmer2, const std::vector<hint_t> * km, const uint32_t tauplusone, const uint32_t start) {
+		for ( uint32_t i = start; i < K; i += tauplusone ) {
+			if ( Globals::blob[ (*km)[kmer1] + i ] != Globals::blob [ (*km)[kmer2] + i ] ) {
+				return false;
+			}
+		}
+		return true;
+	}
 
 	static bool compareSubKMers( const hint_t & kmer1, const hint_t & kmer2, const std::vector<KMerCount*> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
 		return ( strncmp( Globals::blob + km->at(kmer1)->first.start_ + start_offset,
@@ -63,8 +116,27 @@ class PositionKMer {
 				  end_offset - start_offset ) == 0 );
 	}
 
+	static bool compareSubKMersHInt( const hint_t & kmer1, const hint_t & kmer2, const std::vector<hint_t> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+		return ( strncmp( Globals::blob + (*km)[kmer1] + start_offset, Globals::blob + (*km)[kmer2] + start_offset,
+				  end_offset - start_offset ) < 0 );
+	}
+
+	static bool compareSubKMersGreaterHInt( const hint_t & kmer1, const hint_t & kmer2, const std::vector<hint_t> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+		return ( strncmp( Globals::blob + (*km)[kmer1] + start_offset, Globals::blob + (*km)[kmer2] + start_offset,
+				  end_offset - start_offset ) > 0 );
+	}
+
+	static bool equalSubKMersHInt( const hint_t & kmer1, const hint_t & kmer2, const std::vector<hint_t> * km, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+		return ( strncmp( Globals::blob + (*km)[kmer1] + start_offset, Globals::blob + (*km)[kmer2] + start_offset,
+				  end_offset - start_offset ) == 0 );
+	}
+
 	static bool compareSubKMersDirect( const hint_t & kmer1, const hint_t & kmer2, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
 		return ( strncmp( Globals::blob + kmer1 + start_offset, Globals::blob + kmer2 + start_offset, end_offset - start_offset ) < 0 );
+	}
+
+	static bool compareKMersDirect( const hint_t & kmer1, const hint_t & kmer2) {
+		return ( strncmp( Globals::blob + kmer1, Globals::blob + kmer2, K ) < 0 );
 	}
 
 	static bool compareSubKMersGreaterDirect( const hint_t & kmer1, const hint_t & kmer2, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
@@ -72,6 +144,7 @@ class PositionKMer {
 	}
 
 	static bool equalSubKMersDirect( const hint_t & kmer1, const hint_t & kmer2, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+		//cout << "      equalSubKMersDirect: kmer1=" << kmer1 << " kmer2=" << kmer2 << " start_offset=" << start_offset << " end_offset=" << end_offset << " max=" << strlen(Globals::blob) << endl;
 		return ( strncmp( Globals::blob + kmer1 + start_offset, Globals::blob + kmer2 + start_offset, end_offset - start_offset ) == 0 );
 	}
 

@@ -40,6 +40,7 @@ struct Globals {
 	static std::vector<Read> * rvRight_bad;
 	static hint_t revNo;
 	static hint_t lastLeftNo;
+	static std::vector<hint_t> * kmernos;
 
 	static char* blob;
 	static char* blobquality;
