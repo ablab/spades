@@ -26,6 +26,9 @@ struct Globals {
 	static string kmers_after_clustering;
 	static bool use_true_likelihood;
 
+	static bool conserve_memory;
+	static int num_of_tmp_files;
+
 	static std::vector<PositionRead> * pr;
 	static std::vector<Read> * rv;
 	static std::vector<bool> * rv_bad;

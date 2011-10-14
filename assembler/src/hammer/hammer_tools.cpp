@@ -447,4 +447,80 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 	return res;
 }
 
+void SplitToFiles(string dirprefix, int iter_count) {
+	vector<ofstream *> ofiles(Globals::num_of_tmp_files);
+	for (int i = 0; i < Globals::num_of_tmp_files; ++i) {
+		ofiles[i] = new ofstream( getFilename( dirprefix, iter_count, "tmp.kmers", i ) );
+	}
+	Seq<K>::hash hash_function;
+	for(size_t i=0; i < Globals::pr->size(); ++i) {
+		if (Globals::pr->at(i).bad()) continue;
+		string s = Globals::pr->at(i).getSequenceString();
+		ValidKMerGenerator<K> gen(Globals::pr->at(i), s);
+		while (gen.HasMore()) {
+			ofstream &cur_file = *ofiles[hash_function(gen.kmer()) % Globals::num_of_tmp_files];
+			hint_t cur_pos = Globals::pr->at(i).start() + gen.pos() - 1;
+	        double correct_probability = 1 - gen.correct_probability();
+	        cur_file << cur_pos << "\t" << correct_probability << "\n";
+			gen.Next();
+		}
+	}
+	for (int i = 0; i < Globals::num_of_tmp_files; ++i) {
+		ofiles[i]->close();
+		delete ofiles[i];
+	}
+}
+
+void ProcessKmerHashFile( ifstream * inf, ofstream * outf ) {
+	KMerNoHashMap km;
+	char buf[1024]; // a line contains two numbers, 1024 should be enough for everybody
+	uint64_t pos; double prob;
+	while (!inf->eof()) {
+		inf->getline(buf, 1024);
+		sscanf(buf, "%lu\t%lf", &pos, &prob);
+		KMerNo kmerno(pos, prob);
+		KMerNoHashMap::iterator it_hash = km.find( kmerno );
+		if ( it_hash == km.end() ) {
+			KMerCount * kmc = new KMerCount( PositionKMer(kmerno.index), KMerStat(1, KMERSTAT_GOODITER, kmerno.errprob) );
+			for (uint32_t j=0; j<K; ++j) {
+				kmc->second.qual[j] = Globals::blobquality[kmerno.index + j] - (char)Globals::qvoffset;
+			}
+			km.insert( make_pair( kmerno, kmc ) );
+		} else {
+			it_hash->second->second.count++;
+			it_hash->second->second.totalQual *= kmerno.errprob;
+			for (uint32_t j=0; j<K; ++j) {
+				it_hash->second->second.qual[j] += (int)Globals::blobquality[kmerno.index + j] - Globals::qvoffset;
+			}
+		}
+	}
+	for (KMerNoHashMap::iterator it = km.begin(); it != km.end(); ++it) {
+		(*outf) << it->second->first.start() << "\t"
+				<< it->second->second.count << "\t"
+				<< setw(8) << it->second->second.totalQual << "\t";
+		for (int i=0; i < K; ++i) (*outf) << it->second->second.qual[i] << " ";
+		(*outf) << "\n";
+		delete it->second;
+	}
+	km.clear();
+}
+
+
+string getFilename( const string & dirprefix, const string & suffix ) {
+	ostringstream tmp;
+	tmp.str(""); tmp << dirprefix.data() << "/" << suffix.data();
+	return tmp.str();
+}
+
+string getFilename( const string & dirprefix, int iter_count, const string & suffix ) {
+	ostringstream tmp;
+	tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << "." << suffix.data();
+	return tmp.str();
+}
+
+string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num ) {
+	ostringstream tmp;
+	tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << "." << suffix.data() << "." << suffix_num;
+	return tmp.str();
+}
 

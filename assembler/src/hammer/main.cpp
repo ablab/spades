@@ -11,7 +11,6 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include <iomanip>
 #include <cstdlib>
 #include <vector>
 #include <map>
@@ -65,6 +64,9 @@ double Globals::iterative_reconstruction_threshold = 0.995;
 double Globals::special_nonsingleton_threshold = 0;
 int Globals::max_reconstruction_iterations = 1;
 
+bool Globals::conserve_memory = false;
+int Globals::num_of_tmp_files = 500;
+
 bool Globals::read_kmers_after_clustering = false;
 bool Globals::write_kmers_after_clustering = false;
 bool Globals::write_each_iteration_kmers = false;
@@ -83,24 +85,6 @@ struct KMerStatCount {
 	bool isGood() const { return changeto == KMERSTAT_GOOD; }
 	bool change() const { return changeto < KMERSTAT_CHANGE; }
 };
-
-string getFilename( const string & dirprefix, const string & suffix ) {
-	ostringstream tmp;
-	tmp.str(""); tmp << dirprefix.data() << "/" << suffix.data();
-	return tmp.str();
-}
-
-string getFilename( const string & dirprefix, int iter_count, const string & suffix ) {
-	ostringstream tmp;
-	tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << "." << suffix.data();
-	return tmp.str();
-}
-
-string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num ) {
-	ostringstream tmp;
-	tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << "." << suffix.data() << "." << suffix_num;
-	return tmp.str();
-}
 
 int main(int argc, char * argv[]) {
 
@@ -145,6 +129,8 @@ int main(int argc, char * argv[]) {
 	Globals::discard_only_singletons = cfg::get().discard_only_singletons;
 	Globals::special_nonsingleton_threshold = cfg::get().special_nonsingleton_threshold;
 	Globals::use_true_likelihood = cfg::get().use_true_likelihood;
+	Globals::num_of_tmp_files = cfg::get().num_of_tmp_files;
+	Globals::conserve_memory = cfg::get().conserve_memory;
 
 	Globals::paired_reads = cfg::get().paired_reads;
 	string readsFilenameLeft, readsFilenameRight;
@@ -229,7 +215,17 @@ int main(int argc, char * argv[]) {
 
 		if (!readBlobAndKmers || iter_count > 0) {
 			TIMEDLN("Doing honest preprocessing.");
-			DoPreprocessing(tau, readsFilename, nthreads, &kmers, &Globals::hm);
+			if (Globals::conserve_memory) {
+				SplitToFiles(dirprefix, iter_count);
+				ofstream kmerno_file( getFilename(dirprefix, iter_count, "kmers.total") );
+				for ( int iFile=0; iFile < Globals::num_of_tmp_files; ++iFile ) {
+					ifstream inStream( getFilename( dirprefix, iter_count, "tmp.kmers", iFile ) );
+					ProcessKmerHashFile( &inStream, &kmerno_file );
+				}
+				kmerno_file.close();
+			} else {
+				DoPreprocessing(tau, readsFilename, nthreads, &kmers, &Globals::hm);
+			}
 			TIMEDLN("Preprocessing done. Got " << Globals::hm.size() << " kmers.");
 		} else {
 			TIMEDLN("Reading kmers from " << kmersFilename.c_str() );
