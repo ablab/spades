@@ -34,9 +34,6 @@ paired_mode true
 ; set it true to get statistics, such as false positive/negative, perfect match, etc.
 paired_info_statistics false
 
-; rectangle_mode (1) or not (0)
-rectangle_mode	false
-
 ; use advanced distance estimation or not
 advanced_estimator_mode true
 
