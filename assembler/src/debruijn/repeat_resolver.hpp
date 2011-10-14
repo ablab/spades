@@ -162,7 +162,7 @@ public:
 			set<EdgeId> edges_set = labels_after.edge_inclusions[this->edge];
 			set<EdgeId> other_edges_set = labels_after.edge_inclusions[other_info.getEdge()];
 
-			bool new_res = false;
+//			bool new_res = false;
 
 
 //			for(auto this_edge_it = edges_set.begin(); this_edge_it != edges_set.end(); ++ this_edge_it)
