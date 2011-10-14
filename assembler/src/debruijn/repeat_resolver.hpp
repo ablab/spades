@@ -325,7 +325,7 @@ public:
 		}
 
 		INFO("pi copied");
-		int zero_paired_length;
+		int zero_paired_length = 0;
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			PairInfos pi = paired_di_data.GetEdgeInfos(old_to_new_edge[*e_iter]);
 			if (pi.size() > 1 || (pi.size() == 1 && pi[0].weight > 1e-8))
