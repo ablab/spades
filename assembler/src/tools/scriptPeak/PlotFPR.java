@@ -12,6 +12,8 @@ public class PlotFPR implements Runnable{
 
 	private static double Threshold;
 
+    private int N = 100000;
+
     private class Pair implements Comparable<Pair>{
         int a;
         int b;
@@ -60,10 +62,14 @@ public class PlotFPR implements Runnable{
 			int tp = 0;
             int size_fpr = 0;
             StringBuffer buf = new StringBuffer("");
-            int weight = 100000;
-            int total = 0;
-            int cur = 0;
-            TreeMap<Integer, Integer> map = new TreeMap<Integer, Integer>();
+            double weight = 100000;
+            double total = 0;
+            double cur = 0;
+            int ind = 0;
+            double[] fpr_weight = new double[N];
+            double[] fpr_total = new double[N];
+            double[] tp_weight = new double[N];
+            double[] tp_total = new double[N];
 			while (in_fpr.hasMoreTokens()){
 				int a = in_fpr.nextInt();
 				int b = in_fpr.nextInt();
@@ -75,20 +81,27 @@ public class PlotFPR implements Runnable{
                 if (weight > y + 1e-9){
                     total += cur;
                     cur = 0;
-                    map.put(weight, total);
+                    fpr_weight[ind] = weight;
+                    fpr_total[ind++] = total;
+                    weight = y;
                 }
                 cur++;
                 size_fpr++;
             }
-            for (Map.Entry<Integer, Integer> v : map){
-                int w = v.second();
-                buf.append(v.first + " " + (-w + size_fpr)*100.0 / size_fpr + "\n");
+            N = ind;
+            for (int i = 0; i<N; i++){
+                double w = fpr_total[i];
+                buf.insert(0, fpr_weight[i] + " " + (-w + size_fpr)*100.0 / size_fpr + "\n");
             }
+            PrintWriter out_fpr = new PrintWriter("plot_fpr.out");
+            out_fpr.println(buf);
+            out_fpr.close();
+            buf = new StringBuffer("");
             weight = 100000;
             cur = 0;
             total = 0;
+            ind = 0;
             int size_tp = 0;
-            map = new TreeMap<Integer, Integer>();
 			while (in_tp.hasMoreTokens()){
 				int a = in_tp.nextInt();
 				int b = in_tp.nextInt();
@@ -99,29 +112,34 @@ public class PlotFPR implements Runnable{
                 if (weight > y + 1e-9){
                     total += cur;
                     cur = 0;
-                    map.put(weight, total);
+                    tp_weight[ind] = weight;
+                    tp_total[ind++] = total;
+                    weight = y;
                 }
                 cur++;
                 size_tp++;
             }
-            for (Map.Entry<Integer, Integer> v : map){
-                int w = v.second();
-                buf.append(v.first + " " + (-w + size_tp)*100.0 / size_tp + "\n");
+            int NN = ind;
+            for (int i = 0; i<NN; i++){
+                double w = tp_total[i];
+                buf.insert(0, tp_weight[i] + " " + (-w + size_tp)*100.0 / size_tp + "\n");
             }
-            out.println("With threshold = " + Threshold + ":");
-            out.println("False positive rate is going to be " + (fpr*100.0/(fpr + tp)));
-            if (fpr <= size_fpr) out.println("FPR will be decreased by " + ( -fpr + size_fpr)*100.0 / size_fpr + " percent");
-            if (tp <= size_tp) out.println("Perfect match will be decreased by " + (-tp + size_tp)*100.0 / size_tp + " percent");
+            PrintWriter out_tp = new PrintWriter("plot_tp.out");
+            out_tp.println(buf);
+            out_tp.close();
+            //out.println("With threshold = " + Threshold + ":");
+            //out.println("False positive rate is going to be " + (fpr*100.0/(fpr + tp)));
+            //if (fpr <= size_fpr) out.println("FPR will be decreased by " + ( -fpr + size_fpr)*100.0 / size_fpr + " percent");
+            //if (tp <= size_tp) out.println("Perfect match will be decreased by " + (-tp + size_tp)*100.0 / size_tp + " percent");
             
-            PrintWriter out1 = new PrintWriter(folder1 + "plot.conf");
+            PrintWriter out1 = new PrintWriter("plot_fpr.conf");
                         String text =
                         "#!/usr/bin/gnuplot -persist\n" + 
                         "set term x11 0\n" +
-                        "plot \"unclustered.prd\" with linespoints, \"clustered.prd\" with impulses," + 
-                        "\"fpr.prd\" with points lt 1 lc 4 pt 7 ps 2," + " \"fnr.prd\" with points lt 1 lc 3 pt 7 ps 2 \n" + 
+                        "plot \"plot_fpr.prd\" with linespoints, \"plot_tp.prd\" with linespoints,\n" + 
                         "pause -1 \"press any key to continue\"\n";
-                        out1.print(text);
-                        out1.close();
+            out1.print(text);
+            out1.close();
             out.close();
             in_fpr.close();
             in_tp.close();
