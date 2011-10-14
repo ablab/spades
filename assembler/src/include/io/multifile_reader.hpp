@@ -41,8 +41,7 @@ public:
 	 */
 	MultifileReader(const vector<IReader<ReadType>*>& readers,
 			bool destroy_readers = false) : /*filenames_(filenames), */
-			distance_(0), offset_type_(PhredOffset), current_reader_index_(0), destroy_readers_(
-					destroy_readers) {
+			current_reader_index_(0), destroy_readers_(destroy_readers) {
 		for (size_t i = 0; i < readers.size(); ++i) {
 			VERIFY(readers[i]->is_open());
 			readers_.push_back(readers[i]);
@@ -51,8 +50,7 @@ public:
 
 	MultifileReader(IReader<ReadType>& reader_1, IReader<ReadType>& reader_2,
 			bool destroy_readers = false) : /*filenames_(filenames), */
-			distance_(0), offset_type_(PhredOffset), current_reader_index_(0), destroy_readers_(
-					destroy_readers) {
+			current_reader_index_(0), destroy_readers_(destroy_readers) {
 		VERIFY(reader_1.is_open() && reader_2.is_open());
 		readers_.push_back(reader_1);
 		readers_.push_back(reader_2);
@@ -133,23 +131,10 @@ public:
 	}
 
 private:
-//  /*
-//   * @variable The names of the files which stream read from.
-//   */
-//  vector<typename ReadType::FilenameType> filenames_;
 	/*
 	 * @variable Internal stream readers.
 	 */
 	vector<IReader<ReadType>*> readers_;
-	/*
-	 * @variable The distance between two parts of paired read.
-	 */
-	size_t distance_;
-
-	/*
-	 * @variable Quality offset type.
-	 */
-	OffsetType offset_type_;
 	/*
 	 * @variable The index of the file that is currently read from.
 	 */

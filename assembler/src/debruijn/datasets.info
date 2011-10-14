@@ -228,6 +228,19 @@ SC_0710
 	LEN		4639675	; total size
 }
 
+SC_1110
+{
+	first	E.Coli.K12.MG1655/SC/1110_05_left.fastq.gz
+	second	E.Coli.K12.MG1655/SC/1110_05_right.fastq.gz
+	single_first	E.Coli.K12.MG1655/SC/0110_05_left_unpaired.fastq.gz
+	single_second	E.Coli.K12.MG1655/SC/0110_05_right_unpaired.fastq.gz
+	RL		100	; read length
+	IS		270 	; insert size
+	single_cell	true
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+	LEN		4639675	; total size
+}
+
 SC_K35
 {
 	first	E.Coli.K12.MG1655/SC/0209_tau1_095_K35_02_left.fastq.gz

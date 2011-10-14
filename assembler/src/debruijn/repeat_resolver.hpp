@@ -162,21 +162,21 @@ public:
 			set<EdgeId> edges_set = labels_after.edge_inclusions[this->edge];
 			set<EdgeId> other_edges_set = labels_after.edge_inclusions[other_info.getEdge()];
 
-			bool new_res = false;
+//			bool new_res = false;
 
 
-			for(auto this_edge_it = edges_set.begin(); this_edge_it != edges_set.end(); ++ this_edge_it)
-				for(auto other_edge_it = other_edges_set.begin(); other_edge_it != other_edges_set.end(); ++ other_edge_it)
-					if( IsEdgesOnDistanceAdjacent(*this_edge_it, this->d, *other_edge_it
-							,other_info.getDistance(), new_graph, max_diff, lp.first == other_info.lp.first))
-					new_res  = true;
-
-			if (old_res != new_res) {
-				DEBUG("difference in isAdjacent for ("<<this->getEdge()<<", ("<<this->lp.first<<", "<<this->lp.second<<", "<<this->lp.d<<"), "<<this->d<<")");
-				DEBUG("                          VS ("<<other_info.getEdge()<<", ("<<other_info.lp.first<<", "<<other_info.lp.second<<", "<<other_info.lp.d<<"), "<<other_info.d<<")");
-				DEBUG("   old is "<<old_res<<"    new is "<<new_res);
-				DEBUG("   first set size "<<edges_set.size()<<"    second set size "<<other_edges_set.size());
-			}
+//			for(auto this_edge_it = edges_set.begin(); this_edge_it != edges_set.end(); ++ this_edge_it)
+//				for(auto other_edge_it = other_edges_set.begin(); other_edge_it != other_edges_set.end(); ++ other_edge_it)
+//					if( IsEdgesOnDistanceAdjacent(*this_edge_it, this->d, *other_edge_it
+//							,other_info.getDistance(), new_graph, max_diff, lp.first == other_info.lp.first))
+//					new_res  = true;
+//
+//			if (old_res != new_res) {
+//				DEBUG("difference in isAdjacent for ("<<this->getEdge()<<", ("<<this->lp.first<<", "<<this->lp.second<<", "<<this->lp.d<<"), "<<this->d<<")");
+//				DEBUG("                          VS ("<<other_info.getEdge()<<", ("<<other_info.lp.first<<", "<<other_info.lp.second<<", "<<other_info.lp.d<<"), "<<other_info.d<<")");
+//				DEBUG("   old is "<<old_res<<"    new is "<<new_res);
+//				DEBUG("   first set size "<<edges_set.size()<<"    second set size "<<other_edges_set.size());
+//			}
 			return old_res;
 		}
 
