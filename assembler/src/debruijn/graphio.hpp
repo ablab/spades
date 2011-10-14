@@ -389,6 +389,8 @@ template<class Graph>
 void DataScanner<Graph>::loadConjugateGraph(const string& file_name,
 		bool with_Sequence) {
 	int read_count;
+
+	INFO("Trying to read conjugate de bruijn  graph from " << file_name << ".grp");
 	FILE* file = fopen((file_name + ".grp").c_str(), "r");
 	VERIFY(file != NULL);
 	FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
