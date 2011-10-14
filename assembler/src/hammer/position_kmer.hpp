@@ -63,6 +63,18 @@ class PositionKMer {
 				  end_offset - start_offset ) == 0 );
 	}
 
+	static bool compareSubKMersDirect( const hint_t & kmer1, const hint_t & kmer2, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+		return ( strncmp( Globals::blob + kmer1 + start_offset, Globals::blob + kmer2 + start_offset, end_offset - start_offset ) < 0 );
+	}
+
+	static bool compareSubKMersGreaterDirect( const hint_t & kmer1, const hint_t & kmer2, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+		return ( strncmp( Globals::blob + kmer1 + start_offset, Globals::blob + kmer2 + start_offset, end_offset - start_offset ) > 0 );
+	}
+
+	static bool equalSubKMersDirect( const hint_t & kmer1, const hint_t & kmer2, const uint32_t tau, const uint32_t start_offset, const uint32_t end_offset) {
+		return ( strncmp( Globals::blob + kmer1 + start_offset, Globals::blob + kmer2 + start_offset, end_offset - start_offset ) == 0 );
+	}
+
   	static hint_t readNoFromBlobPosInternal( hint_t blobpos, hint_t start, hint_t end ) {
 		if (start >= end - 1) return start;
 		hint_t mid = start + (end - start) / 2;

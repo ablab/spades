@@ -76,6 +76,8 @@ void SplitToFiles(string dirprefix, int iter_count);
  */
 void ProcessKmerHashFile( ifstream * inStream, ofstream * kmerno_file );
 
+
+
 string getFilename( const string & dirprefix, const string & suffix );
 string getFilename( const string & dirprefix, int iter_count, const string & suffix );
 string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num );

@@ -1,6 +1,6 @@
 ; working directories, input files...
 working_dir		/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/tmp
-reads			/home/snikolenko/data/head100.fastq
+reads			/home/snikolenko/data/head100000.fastq
 paired_reads		0
 reads_left		/home/snikolenko/algorithmic-biology/assembler/data/hammer/head20000.fastq
 reads_right		/home/snikolenko/algorithmic-biology/assembler/data/hammer/head20000right.fastq
@@ -42,7 +42,7 @@ write_each_iteration_kmers		1
 ; true likelihood based on quality values
 use_true_likelihood			1
 
-; latest developments in RAM conservation
-conserve_memory					0
-num_of_tmp_files				20
+; latest developments in memory efficiency
+conserve_memory					1
+num_of_tmp_files				200
 

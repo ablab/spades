@@ -95,7 +95,8 @@ class SubKMerSorter {
 
 	enum SubKMerSorterType {
 		SorterTypeStraight,
-		SorterTypeChequered
+		SorterTypeChequered,
+		SorterTypeFileBasedStraight
 	};
 	
 	/**
@@ -123,7 +124,7 @@ class SubKMerSorter {
 	/**
 	  * run parallel sort
 	  */
-	void runSort();
+	void runSort(std::string inputFile = "");
 
 	/**
 	  * get next block w.r.t. the sub_equal function from the i-th subkmer (in place)
@@ -133,6 +134,7 @@ class SubKMerSorter {
 	bool getNextBlock( int i, vector<hint_t> & block );
 
   private:
+	SubKMerSorterType type_; // type of this sorter
 	vector<SubKMerFunction> sub_less;	// subkmer comparison: less
 	vector<SubKMerFunction> sub_greater;	// subkmer comparison: greater
 	vector<SubKMerFunction> sub_equal;	// subkmer comparison: equal
@@ -142,8 +144,11 @@ class SubKMerSorter {
 	int tau_;				// tau
 	size_t kmers_size_;			// size of kmer vector -- if we are sorting a newly made kmers vector
 	vector< hint_t > * kmers_;		// the kmer vector itself -- if we are sorting a specific block
+	vector< string > fnames_; // vector of file names for file-based versions
 
 	void initVectors();
+	void runMemoryBasedSort();
+	void runFileBasedSort(std::string inputFile);
 };
 
 #endif

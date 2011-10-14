@@ -7,6 +7,7 @@
 struct Globals {
 	static int qvoffset;
 	static double error_rate;
+	static std::string working_dir;
 	static int blocksize_quadratic_threshold;
 	static double good_cluster_threshold;
 	static double blob_margin;
@@ -28,6 +29,7 @@ struct Globals {
 
 	static bool conserve_memory;
 	static int num_of_tmp_files;
+	static int iteration_no;
 
 	static std::vector<PositionRead> * pr;
 	static std::vector<Read> * rv;

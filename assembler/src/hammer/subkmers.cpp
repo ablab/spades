@@ -1,8 +1,19 @@
 #include <omp.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include "hammer_tools.hpp"
 #include "subkmers.hpp"
 
-void SubKMerSorter::runSort() {
+void SubKMerSorter::runSort(std::string inputFile) {
+	if (type_ == SorterTypeFileBasedStraight) {
+		runFileBasedSort(inputFile);
+	} else {
+		runMemoryBasedSort();
+	}
+}
 
+void SubKMerSorter::runMemoryBasedSort() {
 	int subkmer_nthreads = max ( (tau_ + 1) * ( (int)(nthreads_ / (tau_ + 1)) ), tau_+1 );
 	int effective_subkmer_threads = min(subkmer_nthreads, nthreads_);
 
@@ -18,6 +29,61 @@ void SubKMerSorter::runSort() {
 
 	for (int j=0; j < tau_+1; ++j) {
 		vskpq_[j].initPQ();
+	}
+}
+
+void SubKMerSorter::runFileBasedSort(std::string inputFile) {
+	TIMEDLN("Splitting " << inputFile << " into subvector files.");
+	vector< ofstream* > ofs(tau_+1);
+	for (int j=0; j < tau_+1; ++j) {
+		ofs[j] = new ofstream(fnames_[j]);
+	}
+	ifstream ifs(inputFile);
+	char buf[16000]; // strings might run large in those files
+	while (!ifs.eof()) {
+		ifs.getline(buf, 16000);
+		hint_t pos;
+		sscanf(buf, "%lu", &pos);
+		switch(type_) {
+			case SorterTypeFileBasedStraight:
+				for (int j=0; j < tau_+1; ++j) {
+					ofs[j]->write(Globals::blob + pos + Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) - Globals::subKMerPositions->at(j));
+					(*ofs[j]) << "\t" << pos << "\n";
+				}
+				break;
+			default:
+				TIMEDLN("Wrong sorter type -- expected file-based.");
+				exit(1);
+				break;
+		}
+	}
+	ifs.close();
+	for (int j=0; j < tau_+1; ++j) {
+		ofs[j]->close();
+		delete ofs[j];
+	}
+
+	TIMEDLN("Sorting subvector files with child processes.");
+	vector< pid_t > pids(tau_+1);
+	for (int j=0; j < tau_+1; ++j) {
+		pids[j] = vfork();
+		if ( pids[j] == 0 ) {
+			TIMEDLN("  [" << getpid() << "] Child process " << j << " for sorting subkmers starting.");
+			execlp("sort", "sort", "-n", "-o", getFilename(Globals::working_dir, Globals::iteration_no, "subkmers.sorted", j).data(),
+					fnames_[j].data(), (char *) 0 );
+			_exit(0);
+		} else if ( pids[j] < 0 ) {
+			TIMEDLN("Failed to fork. Exiting.");
+			exit(1);
+		}
+	}
+	for (int j = 0; j < tau_+1; ++j) {
+	    int status;
+	    while (-1 == waitpid(pids[j], &status, 0));
+	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+	        TIMEDLN("Process " << j << " (pid " << pids[j] << ") failed. Exiting.");
+	        exit(1);
+	    }
 	}
 }
 
@@ -38,7 +104,7 @@ bool SubKMerSorter::getNextBlock( int i, vector<hint_t> & block ) {
 }
 
 SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount*> * k, int nthreads, int tau, SubKMerSorterType type ) :
-	nthreads_(nthreads), tau_(tau), kmers_size_(kmers_size), kmers_(NULL) {
+		type_(type), nthreads_(nthreads), tau_(tau), kmers_size_(kmers_size), kmers_(NULL) {
 	// we set the sorting functions depending on the type
 	// here the sorting functions are regular sorting functions predefined in PositionKMer
 	switch( type ) {
@@ -57,6 +123,17 @@ SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount*> * k, int nth
 				sub_less.push_back(    boost::bind(PositionKMer::compareSubKMersCheq,        _1, _2, k, tau, j) );
 				sub_greater.push_back( boost::bind(PositionKMer::compareSubKMersGreaterCheq, _1, _2, k, tau, j) );
 				sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMersCheq,          _1, _2, k, tau, j) );
+			}
+			break;
+		case SorterTypeFileBasedStraight:
+			for (int j=0; j < tau+1; ++j) {
+				sub_less.push_back(    boost::bind(PositionKMer::compareSubKMersDirect,        _1, _2, tau,
+						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
+				sub_greater.push_back( boost::bind(PositionKMer::compareSubKMersGreaterDirect, _1, _2, tau,
+						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
+				sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMersDirect,          _1, _2, tau,
+						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
+				fnames_.push_back( getFilename(Globals::working_dir, Globals::iteration_no, "subkmers", j) );
 			}
 			break;
 	}
