@@ -31,7 +31,8 @@ QUAKE_CROPPED_1K
 	RL		100		; read length
 	IS	      220 	; insert size
 	single_cell	false
-	reference_genome  E.Coli.K12.MG1655/MG1655-K12.first1000.fasta.gz
+;	reference_genome  E.Coli.K12.MG1655/MG1655-K12.first1000.fasta.gz
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN	   1000 	; total size
 }
 
@@ -42,7 +43,8 @@ QUAKE_CROPPED_10K
 	RL		100		; read length
 	IS		220 	; insert size
 	single_cell	false
-	reference_genome  E.Coli.K12.MG1655/MG1655-K12.first10000.fasta.gz
+;	reference_genome  E.Coli.K12.MG1655/MG1655-K12.first10000.fasta.gz
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		10000 	; total size
 }
 
@@ -53,7 +55,8 @@ QUAKE_CROPPED_100K
 	RL		100		; read length
 	IS		220 	; insert size
 	single_cell	false
-	reference_genome  E.Coli.K12.MG1655/MG1655-K12.first100000.fasta.gz
+;	reference_genome  E.Coli.K12.MG1655/MG1655-K12.first100000.fasta.gz
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		100000 	; total size
 }
 

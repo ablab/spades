@@ -70,7 +70,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 				PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
 						cfg::get().ds.IS, cfg::get().ds.RL, debruijn_graph::K);
 				normalizing_f = boost::bind(
-						&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
+						&PairedInfoWeightNormalizer < Graph > ::NormalizeWeight,
 						weight_normalizer, _1);
 			}
 			PairedInfoNormalizer<Graph> normalizer(raw_clustered_index,
@@ -89,10 +89,13 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		}
 
 		//experimental
-		INFO("Pair info aware ErroneousConnectionsRemoval");
-		RemoveEroneousEdgesUsingPairedInfo(gp, paired_index);
-		INFO("Pair info aware ErroneousConnectionsRemoval stats");
-		CountStats<K>(gp.g, gp.index, gp.genome);
+		if (cfg::get().simpl_mode
+				== debruijn_graph::simplification_mode::sm_pair_info_aware) {
+			INFO("Pair info aware ErroneousConnectionsRemoval");
+			RemoveEroneousEdgesUsingPairedInfo(gp, paired_index);
+			INFO("Pair info aware ErroneousConnectionsRemoval stats");
+			CountStats<K>(gp.g, gp.index, gp.genome);
+		}
 		//experimental
 	}
 }
