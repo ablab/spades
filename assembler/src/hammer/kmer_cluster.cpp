@@ -572,11 +572,12 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 
 		TIMEDLN("Clusters written. Reading k-mer information.");
 		ifstream ifs( getFilename(Globals::working_dir, Globals::iteration_no, "kmers.total.sorted") );
+		char seq[K+10];
 		while (!ifs.eof()) {
 			hint_t pos;
 			KMerStat curstat;
 			curstat.changeto = KMERSTAT_GOODITER;
-			ifs >> pos >> curstat.count >> curstat.totalQual;
+			ifs >> pos >> seq >> curstat.count >> curstat.totalQual;
 			for ( size_t i=0; i < K; ++i ) {
 				ifs >> curstat.qual[i];
 			}

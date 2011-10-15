@@ -65,6 +65,27 @@ class ValidKMerGenerator {
     Next();
   }
   /**
+   * @param seq sequence to generate k-mers from.
+   * @param qual quality string
+   * @param bad_quality_threshold  This class virtually cuts
+   * nucleotides with quality lower the threshold from the ends of the
+   * read.
+   */
+  explicit ValidKMerGenerator(const string & seq, const string & qual,
+                              uint32_t bad_quality_threshold = 2) :
+      bad_quality_threshold_(bad_quality_threshold),
+      pos_(-1),
+      end_(-1),
+      has_more_(true),
+      correct_probability_(1),
+      first(true),
+      kmer_(),
+      seq_(seq),
+      qual_(qual) {
+    TrimBadQuality();
+    Next();
+  }
+  /**
    * @result true if Next() succeed while generating new k-mer, false
    * otherwise. 
    */

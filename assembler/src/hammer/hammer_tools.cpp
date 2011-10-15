@@ -20,6 +20,7 @@
 #include "valid_kmer_generator.hpp"
 #include "position_kmer.hpp"
 #include "globals.hpp"
+#include "config_struct_hammer.hpp"
 #include "hammer_tools.hpp"
 
 string encode3toabyte (const string & s)  {
@@ -376,22 +377,28 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
 	outf.close(); outf_bad.close();
 }
 
-size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmers, bool hashReady, ostream * ofs) {
+size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmers, ostream * ofs) {
 	size_t res = 0;
+
 	// cycle over the reads, looking for reads completely covered by solid k-mers and adding new solid k-mers on the fly
 	#pragma omp parallel for shared(res, ofs) num_threads(nthreads)
 	for (hint_t readno = 0; readno < Globals::revNo; ++readno) {
+		cout << "Read " << readno << endl;
+		const uint32_t read_size = Globals::pr->at(readno).size();
+		string seq = Globals::conserve_memory
+				? string(Globals::blob + Globals::pr->at(readno).start(), read_size)
+				: Globals::rv->at(readno).getSequenceString();
+		cout << seq << "\t" << read_size << endl;
 		if ( ofs != NULL ) {
 			#pragma omp critical
 			{
-			(*ofs) << "Read: " << Globals::rv->at(readno).getSequenceString().c_str() << "\n";
+			(*ofs) << "Read: " << seq.c_str() << "\n";
 			}
 		}
-		const uint32_t read_size = Globals::rv->at(readno).size();
 		vector< bool > covered_by_solid( read_size, false );
 
 		const PositionRead & pr = Globals::pr->at(readno);
-		if (hashReady) {
+		if (!Globals::conserve_memory) {
 			pair<int, KMerCount *> it = make_pair( -1, (KMerCount*)NULL );
 			while ( (it = pr.nextKMer(it.first)).first > -1 ) {
 				if ( it.second->second.isGoodForIterative() ) {
@@ -414,9 +421,15 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 		}
 		if ( !isGood ) continue;
 
+		cout << "  it's good!" << endl;
+
 		const PositionRead & pr_rev = Globals::pr->at(Globals::revNo + readno);
+		string seq_rev = Globals::conserve_memory
+				? string(Globals::blob + Globals::pr->at(Globals::revNo + readno).start(), read_size)
+				: Globals::rv->at(Globals::revNo + readno).getSequenceString();
+		cout << seq_rev << endl;
 		std::fill( covered_by_solid.begin(), covered_by_solid.end(), false );
-		if (hashReady) {
+		if (!Globals::conserve_memory) {
 			pair<int, KMerCount *> it = make_pair( -1, (KMerCount*)NULL );
 			while ( (it = pr_rev.nextKMer(it.first)).first > -1 ) {
 				if ( it.second->second.isGoodForIterative() ) {
@@ -427,7 +440,9 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 		} else {
 			pair<int, hint_t > it = make_pair( -1, BLOBKMER_UNDEFINED );
 			while ( (it = pr_rev.nextKMerNo(it.first)).first > -1 ) {
+				cout << "    found " << (pr_rev.start() + it.first) << ": " << PositionKMer(pr_rev.start() + it.first).str() << endl;
 				if ( kmers[it.second]->second.isGoodForIterative() ) {
+					cout << " good" << endl;
 					for ( size_t j = it.first; j < it.first + K; ++j )
 						covered_by_solid[j] = true;
 				}
@@ -441,7 +456,7 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 
 		// ok, now we're sure that everything is covered
 		// let's mark all k-mers as solid
-		if (hashReady) {
+		if (!Globals::conserve_memory) {
 			pair<int, KMerCount *> it = make_pair( -1, (KMerCount*)NULL );
 			while ( (it = pr.nextKMer(it.first)).first > -1 ) {
 				if ( !it.second->second.isGoodForIterative() && !it.second->second.isMarkedGoodForIterative() ) {
@@ -513,9 +528,9 @@ void SplitToFiles(string dirprefix, int iter_count) {
 	}
 	Seq<K>::hash hash_function;
 	for(size_t i=0; i < Globals::pr->size(); ++i) {
-		if (Globals::pr->at(i).bad()) continue;
-		string s = Globals::pr->at(i).getSequenceString();
-		ValidKMerGenerator<K> gen(Globals::pr->at(i), s);
+		string s(Globals::blob        + Globals::pr->at(i).start(), Globals::pr->at(i).size());
+		string q(Globals::blobquality + Globals::pr->at(i).start(), Globals::pr->at(i).size());
+		ValidKMerGenerator<K> gen(s, q);
 		while (gen.HasMore()) {
 			ofstream &cur_file = *ofiles[hash_function(gen.kmer()) % Globals::num_of_tmp_files];
 			hint_t cur_pos = Globals::pr->at(i).start() + gen.pos() - 1;
@@ -555,6 +570,7 @@ void ProcessKmerHashFile( ifstream * inf, ofstream * outf ) {
 	}
 	for (KMerNoHashMap::iterator it = km.begin(); it != km.end(); ++it) {
 		(*outf) << it->second->first.start() << "\t"
+				<< string(Globals::blob + it->second->first.start(), K) << "\t"
 				<< it->second->second.count << "\t"
 				<< setw(8) << it->second->second.totalQual << "\t";
 		for (size_t i=0; i < K; ++i) (*outf) << it->second->second.qual[i] << " ";
@@ -594,6 +610,37 @@ void fillInKmersFromFile( const string & fname, vector<hint_t> *kmernos ) {
 		kmernos->push_back(pos);
 	}
 	ifs.close();
+
+	// resorting in lexicographic order -- needed for easy search
+	// sort(kmernos->begin(), kmernos->end(), PositionKMer::compareKMersDirect);
 }
 
+void getGlobalConfigParameters( const string & config_file ) {
+	TIMEDLN("Loading config from " << config_file.c_str());
+	cfg::create_instance(config_file);
+	Globals::working_dir = cfg::get().working_dir;
+	Globals::qvoffset = cfg::get().quality_offset;
+	Globals::error_rate = cfg::get().error_rate;
+	Globals::blocksize_quadratic_threshold = cfg::get().blocksize_quadratic_threshold;
+	Globals::good_cluster_threshold = cfg::get().good_cluster_threshold;
+	Globals::blob_margin = cfg::get().blob_margin;
+	Globals::trim_quality = cfg::get().trim_quality;
+	Globals::trim_left_right = cfg::get().trim_left_right;
+	Globals::use_iterative_reconstruction = cfg::get().use_iterative_reconstruction;
+	Globals::iterative_reconstruction_threshold = cfg::get().iterative_reconstruction_threshold;
+	Globals::max_reconstruction_iterations = cfg::get().max_reconstruction_iterations;
+	Globals::reconstruction_in_full_iterations = cfg::get().reconstruction_in_full_iterations;
+	Globals::read_kmers_after_clustering = cfg::get().read_kmers_after_clustering;
+	Globals::write_kmers_after_clustering = cfg::get().write_kmers_after_clustering;
+	Globals::kmers_after_clustering = cfg::get().kmers_after_clustering;
+	Globals::write_each_iteration_kmers = cfg::get().write_each_iteration_kmers;
+	Globals::regular_threshold_for_correction = cfg::get().regular_threshold_for_correction;
+	Globals::discard_only_singletons = cfg::get().discard_only_singletons;
+	Globals::special_nonsingleton_threshold = cfg::get().special_nonsingleton_threshold;
+	Globals::use_true_likelihood = cfg::get().use_true_likelihood;
+	Globals::num_of_tmp_files = cfg::get().num_of_tmp_files;
+	Globals::conserve_memory = cfg::get().conserve_memory;
+	Globals::paired_reads = cfg::get().paired_reads;
+
+}
 

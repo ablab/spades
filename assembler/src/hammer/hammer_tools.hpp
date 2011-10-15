@@ -60,7 +60,7 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
   * make a step of iterative reconstruction
   * @return number of new solid k-mers
   */
-size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmers, bool hashReady = true, ostream * ofs = NULL);
+size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmers, ostream * ofs = NULL);
 
 /**
  * This function reads reads from the stream and splits them into
@@ -87,6 +87,8 @@ void fillInKmersFromFile( const string & fname, vector<hint_t> *kmernos );
 string getFilename( const string & dirprefix, const string & suffix );
 string getFilename( const string & dirprefix, int iter_count, const string & suffix );
 string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num );
+
+void getGlobalConfigParameters( const string & config_file );
 
 #endif
 
