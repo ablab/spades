@@ -413,8 +413,7 @@ public:
 
 		if (sequence.size() < k) {
 			return MappingPath<EdgeId>();
-		}
-		VERIFY(sequence.size() >= k);
+		}VERIFY(sequence.size() >= k);
 		Kmer kmer = sequence.start<k>() >> 0;
 		for (size_t i = k - 1; i < sequence.size(); ++i) {
 			kmer = kmer << sequence[i];
@@ -974,35 +973,29 @@ public:
 };
 
 template<class Graph>
-class EdgeRemover {
+class QualityLoggingRemovalHandler {
 	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-
-	boost::optional<const EdgeQuality<Graph>&> quality_handler_;
-	size_t black_removed;
-	size_t colored_removed;
+	const EdgeQuality<Graph>& quality_handler_;
+//	size_t black_removed_;
+//	size_t colored_removed_;
 public:
-	EdgeRemover(const Graph& g,
-			boost::optional<const EdgeQuality<Graph>&> quality_handler =
-					boost::none) :
-			quality_handler_(quality_handler),
-			black_removed(0),
-			colored_removed(0) {
+	QualityLoggingRemovalHandler(const EdgeQuality<Graph>& quality_handler) :
+			quality_handler_(quality_handler)/*, black_removed_(0), colored_removed_(
+					0)*/ {
 
 	}
 
 	void HandleDelete(EdgeId edge) {
-		if (quality_handler_) {
-			TRACE("Deleting edge with quality " << quality_handler_.quality(edge));
-		}
-	}
-
-	void DeleteEdge(EdgeId edge_id) {
-
+		TRACE("Deleting edge with quality " << quality_handler_.quality(edge));
+//		if (math::gr(quality_handler_.quality(edge), 0.))
+//			colored_removed_++;
+//		else
+//			black_removed_++;
 	}
 
 private:
-	DECL_LOGGER("EdgeRemover")
+	DECL_LOGGER("QualityLoggingRemovalHandler")
+	;
 };
 
 }

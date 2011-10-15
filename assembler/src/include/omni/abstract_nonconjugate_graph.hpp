@@ -267,7 +267,7 @@ public:
 		return v->IncomingEdgeCount();
 	}
 
-	virtual vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) {
+	virtual vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) const {
 		return v->OutgoingEdgesTo(u);
 	}
 
@@ -287,7 +287,7 @@ public:
 		return edge->end();
 	}
 
-	/*virtual*/ bool RelatedVertices(VertexId v1, VertexId v2) {
+	/*virtual*/ bool RelatedVertices(VertexId v1, VertexId v2) const {
 		return v1 == v2;
 	}
 

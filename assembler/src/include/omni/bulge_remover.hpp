@@ -133,11 +133,11 @@ public:
 	BulgeRemover(Graph& g, size_t max_length, double max_coverage,
 			double max_relative_coverage, double max_delta,
 			double max_relative_delta, BulgeCallbackF bulge_condition,
-			boost::optional<BulgeCallbackF> opt_callback = boost::none) :
+			BulgeCallbackF opt_callback = 0, boost::function<void (EdgeId)> removal_handler = 0) :
 			g_(g), max_length_(max_length), max_coverage_(max_coverage), max_relative_coverage_(
 					max_relative_coverage), max_delta_(max_delta), max_relative_delta_(
 					max_relative_delta), bulge_condition_(bulge_condition), opt_callback_(
-					opt_callback) {
+					opt_callback), removal_handler_(removal_handler) {
 	}
 
 	void RemoveBulges();
@@ -150,7 +150,8 @@ private:
 	double max_delta_;
 	double max_relative_delta_;
 	BulgeCallbackF bulge_condition_;
-	boost::optional<BulgeCallbackF> opt_callback_;
+	BulgeCallbackF opt_callback_;
+	boost::function<void (EdgeId)> removal_handler_;
 
 	bool PossibleBulgeEdge(EdgeId e);
 
@@ -263,9 +264,12 @@ void BulgeRemover<Graph>::RemoveBulges() {
 			if (BulgeCondition(edge, path, path_coverage)) {
 				TRACE("Satisfied condition");
 				if (opt_callback_) {
-					(*opt_callback_)(edge, path);
+					opt_callback_(edge, path);
 				}TRACE( "Projecting edge " << g_.str(edge));
 				ProcessBulge(edge, path);
+				if (removal_handler_) {
+					removal_handler_(edge);
+				}
 				TRACE("Compressing start of edge " << edge)
 				g_.CompressVertex(start);
 				TRACE("Compressing end of edge " << edge)

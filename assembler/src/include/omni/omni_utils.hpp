@@ -679,6 +679,10 @@ public:
 
 	class Callback {
 	public:
+		virtual ~Callback() {
+
+		}
+
 		virtual void HandlePath(const vector<EdgeId>& path) = 0;
 	};
 
@@ -989,6 +993,62 @@ public:
 		}
 		return graph_.length(edge1) < graph_.length(edge2);
 	}
+};
+
+template<class Graph>
+class EdgeRemover {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	Graph& g_;
+	bool checks_enabled_;
+	boost::function<void(EdgeId)> removal_handler_;
+public:
+	EdgeRemover(Graph& g, bool checks_enabled = true,
+			boost::function<void(EdgeId)> removal_handler = 0) :
+			g_(g), checks_enabled_(checks_enabled), removal_handler_(
+					removal_handler) {
+		TRACE("Edge remover created. Checks enabled = " << checks_enabled);
+	}
+
+	bool CheckAlternatives(EdgeId e) {
+		return g_.OutgoingEdgeCount(g_.EdgeStart(e)) > 1
+				&& g_.IncomingEdgeCount(g_.EdgeEnd(e)) > 1;
+	}
+
+	void DeleteEdge(EdgeId e, bool delete_between_related = true) {
+		TRACE("Deletion of edge " << e << " was requested");
+		if (checks_enabled_ && !CheckAlternatives(e)) {
+			TRACE("Check of alternative edges failed");
+			return;
+		}
+		VertexId start = g_.EdgeStart(e);
+		VertexId end = g_.EdgeEnd(e);
+
+		if (!delete_between_related && g_.RelatedVertices(start, end)) {
+			TRACE("Start and end are related, will not delete");
+			return;
+		}
+
+		TRACE("Start " << start);
+		TRACE("End " << end);
+		if (removal_handler_) {
+			TRACE("Calling handler");
+			removal_handler_(e);
+		}
+		TRACE("Deleting edge");
+		g_.DeleteEdge(e);
+		TRACE("Compressing locality");
+		if (!g_.RelatedVertices(start, end)) {
+			TRACE("Vertices not related");
+			TRACE("Compressing end");
+			g_.CompressVertex(end);
+		}TRACE("Compressing start");
+		g_.CompressVertex(start);
+	}
+
+private:
+	DECL_LOGGER("EdgeRemover");
 };
 
 inline size_t PairInfoPathLengthUpperBound(size_t k, size_t insert_size,

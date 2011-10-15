@@ -48,7 +48,9 @@ private:
 };
 
 template<class Graph>
-void ClipTips(Graph &g, size_t iteration_count = 1, size_t i = 0) {
+void ClipTips(Graph &g,
+		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
+		size_t iteration_count = 1, size_t i = 0) {
 	VERIFY(i < iteration_count);
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
@@ -64,7 +66,7 @@ void ClipTips(Graph &g, size_t iteration_count = 1, size_t i = 0) {
 			(size_t) math::round(
 					(double) max_tip_length / 2
 							* (1 + (i + 1.) / iteration_count)), max_coverage,
-			max_relative_coverage);
+			max_relative_coverage, removal_handler);
 	tc.ClipTips();
 	INFO("Clipping tips finished");
 }
@@ -83,7 +85,8 @@ void ClipTipsForResolver(Graph &g) {
 	INFO("Clipping tips finished");
 }
 
-void RemoveBulges(Graph &g) {
+void RemoveBulges(Graph &g,
+		boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 	INFO("-----------------------------------------");
 	INFO("Removing bulges");
 	double max_coverage = cfg::get().simp.br.max_coverage;
@@ -102,10 +105,8 @@ void RemoveBulges(Graph &g) {
 			max_relative_delta,
 			boost::bind(&omnigraph::SimplePathCondition<Graph>::operator(),
 					&simple_path_condition, _1, _2),
-			boost::optional<omnigraph::BulgeRemover<Graph>::BulgeCallbackF>(
-					boost::bind(
-							&EditDistanceTrackingCallback<Graph>::operator(),
-							&callback, _1, _2)));
+			boost::bind(&EditDistanceTrackingCallback<Graph>::operator(),
+					&callback, _1, _2), removal_handler);
 	bulge_remover.RemoveBulges();
 	Cleaner<Graph> cleaner(g);
 	cleaner.Clean();
@@ -137,13 +138,15 @@ void BulgeRemoveWrap(NCGraph& g) {
 }
 
 template<class Graph>
-void RemoveLowCoverageEdges(Graph &g, size_t iteration_count, size_t i) {
+void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
+		size_t iteration_count, size_t i) {
 	INFO("-----------------------------------------");
 	INFO("Removing low coverage edges");
 	double max_coverage = cfg::get().simp.ec.max_coverage;
 	int max_length_div_K = cfg::get().simp.ec.max_length_div_K;
 	omnigraph::IterativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
-			max_length_div_K * g.k(), max_coverage / iteration_count * (i + 1));
+			max_length_div_K * g.k(), max_coverage / iteration_count * (i + 1),
+			edge_remover);
 	//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
 	//			max_length_div_K * g.k(), max_coverage);
 	erroneous_edge_remover.RemoveEdges();
@@ -151,7 +154,7 @@ void RemoveLowCoverageEdges(Graph &g, size_t iteration_count, size_t i) {
 }
 
 template<class Graph>
-void FinalRemoveErroneousEdges(Graph &g) {
+void FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 	if (cfg::get().simpl_mode
 			== debruijn_graph::simplification_mode::sm_cheating) {
 		INFO("Cheating removal of erroneous edges started");
@@ -160,31 +163,34 @@ void FinalRemoveErroneousEdges(Graph &g) {
 		size_t sufficient_neighbour_length =
 				cfg::get().simp.cec.sufficient_neighbour_length;
 		omnigraph::RelativelyLowCoverageEdgeRemover<Graph> erroneous_edge_remover(
-				g, max_length, coverage_gap, sufficient_neighbour_length);
+				g, max_length, coverage_gap, sufficient_neighbour_length,
+				edge_remover);
 		//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
 		//			max_length_div_K * g.k(), max_coverage);
 		erroneous_edge_remover.RemoveEdges();
 		INFO("Cheating removal of erroneous edges finished");
 	} else if (cfg::get().simpl_mode
 			== debruijn_graph::simplification_mode::sm_chimeric) {
-		ChimericEdgesRemover<Graph> remover(g, 10);
+		ChimericEdgesRemover<Graph> remover(g, 10, edge_remover);
 		remover.RemoveEdges();
 	}
 }
 
 template<class graph_pack>
 void RemoveEroneousEdgesUsingPairedInfo(graph_pack &gp,
-		const PairedInfoIndex<typename graph_pack::graph_t>& paired_index) {
+		const PairedInfoIndex<typename graph_pack::graph_t>& paired_index,
+		EdgeRemover<Graph>& edge_remover) {
 	INFO("Removing erroneous edges using paired info");
 	size_t max_length = cfg::get().simp.piec.max_length;
 	size_t min_neighbour_length = cfg::get().simp.piec.min_neighbour_length;
 	omnigraph::PairInfoAwareErroneousEdgeRemover<graph_pack> erroneous_edge_remover(
 			gp, paired_index, max_length, min_neighbour_length,
-			cfg::get().ds.IS, cfg::get().ds.RL);
+			cfg::get().ds.IS, cfg::get().ds.RL, edge_remover);
 	erroneous_edge_remover.RemoveEdges();
 	INFO("Erroneous edges using paired info removed");
 }
 
+//todo use another edge remover
 template<class Graph>
 void RemoveLowCoverageEdgesForResolver(Graph &g) {
 	INFO("-----------------------------------------");
@@ -227,12 +233,19 @@ void SimplifyGraph(conj_graph_pack &gp,
 //	ProduceDetailedInfo<k> (gp, labeler,
 //			output_folder + "before_simplification/", "graph.dot",
 //			"non_simplified_graph");
+	EdgeQuality<Graph> quality_handler(gp.g, gp.index, gp.genome);
+	QualityLoggingRemovalHandler<Graph> qual_removal_handler(quality_handler);
+	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
+			&QualityLoggingRemovalHandler<Graph>::HandleDelete,
+			&qual_removal_handler, _1);
+	EdgeRemover<Graph> edge_remover(gp.g, true, removal_handler_f);
+
 	for (size_t i = 0; i < iteration_count; i++) {
 		INFO("-----------------------------------------");
 		INFO("Iteration " << i);
 
 		INFO(i << " TipClipping");
-		ClipTips(gp.g, iteration_count, i);
+		ClipTips(gp.g, removal_handler_f, iteration_count, i);
 
 		INFO(i << " TipClipping stats");
 		CountStats<k>(gp.g, gp.index, gp.genome);
@@ -240,7 +253,7 @@ void SimplifyGraph(conj_graph_pack &gp,
 //				output_folder + "tips_clipped_" + ToString(i) + "/",
 //				"graph.dot", "no_tip_graph");
 		INFO(i << " BulgeRemoval");
-		RemoveBulges(gp.g);
+		RemoveBulges(gp.g, removal_handler_f);
 
 		INFO(i << " BulgeRemoval stats");
 		CountStats<k>(gp.g, gp.index, gp.genome);
@@ -248,7 +261,7 @@ void SimplifyGraph(conj_graph_pack &gp,
 //				output_folder + "bulges_removed_" + ToString(i) + "/",
 //				"graph.dot", "no_bulge_graph");
 		INFO(i << " ErroneousConnectionsRemoval");
-		RemoveLowCoverageEdges(gp.g, iteration_count, i);
+		RemoveLowCoverageEdges(gp.g, edge_remover, iteration_count, i);
 		INFO(i << " ErroneousConnectionsRemoval stats");
 		CountStats<k>(gp.g, gp.index, gp.genome);
 //		ProduceDetailedInfo<k> (gp, labeler,
@@ -257,20 +270,20 @@ void SimplifyGraph(conj_graph_pack &gp,
 	}
 
 	INFO("Final ErroneousConnectionsRemoval");
-	FinalRemoveErroneousEdges(gp.g);
+	FinalRemoveErroneousEdges(gp.g, edge_remover);
 
 	INFO("Final ErroneousConnectionsRemoval stats");
 	CountStats<k>(gp.g, gp.index, gp.genome);
 	//	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "final_erroneous_edges_removed/",	"graph.dot", "no_erroneous_edges_graph");
 
 	INFO("Final TipClipping");
-	ClipTips(gp.g);
+	ClipTips(gp.g, removal_handler_f);
 	INFO("Final TipClipping stats");
 	CountStats<k>(gp.g, gp.index, gp.genome);
 //	ProduceDetailedInfo<k> (gp, labeler, output_folder + "final_tips_clipped/",
 //			"graph.dot", "no_tip_graph");
 	INFO("Final BulgeRemoval");
-	RemoveBulges(gp.g);
+	RemoveBulges(gp.g, removal_handler_f);
 	//		etalon_paired_index.Check();
 	INFO("Final BulgeRemoval stats");
 	CountStats<k>(gp.g, gp.index, gp.genome);

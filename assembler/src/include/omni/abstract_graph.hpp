@@ -119,7 +119,7 @@ public:
 	virtual size_t IncomingEdgeCount(VertexId v) const = 0;
 
 //todo delete if nobody needs it
-	virtual vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) = 0;
+	virtual vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) const = 0;
 
 	virtual const EdgeData& data(EdgeId edge) const = 0;
 
@@ -129,7 +129,7 @@ public:
 
 	virtual VertexId EdgeEnd(EdgeId edge) const = 0;
 
-	virtual bool RelatedVertices(VertexId v1, VertexId v2) = 0;
+	virtual bool RelatedVertices(VertexId v1, VertexId v2) const = 0;
 
 	bool CheckUniqueOutgoingEdge(VertexId v) const {
 		return OutgoingEdgeCount(v) == 1;
