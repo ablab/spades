@@ -5,7 +5,7 @@ sc_de
     delta               10
     linkage_distance    20
     max_distance        75
-    filter_threshold    3.0 ;bigger than in non-single cell because normalization is disabled
+    filter_threshold    20.0 ;bigger than in non-single cell because normalization is disabled
 }
 
 
