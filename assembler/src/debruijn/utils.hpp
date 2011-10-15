@@ -683,8 +683,7 @@ class EtalonPairedInfoCounter {
 
 public:
 
-	EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<k + 1, Graph>& index
-			,
+	EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<k + 1, Graph>& index,
 			const KmerMapper<k + 1, Graph>& kmer_mapper,
 			size_t insert_size,
 			size_t read_length, size_t delta) :
@@ -900,25 +899,28 @@ class EdgeQuality: public GraphLabeler<Graph>, public GraphActionHandler<Graph> 
 
 public:
 	template<size_t l>
-	void FillQuality(const EdgeIndex<l, Graph> &index, const Sequence &genome) {
+	void FillQuality(const EdgeIndex<l, Graph> &index
+			, const KmerMapper<l, Graph>& kmer_mapper, const Sequence &genome) {
 		if (genome.size() < l)
 			return;
 		auto cur = genome.start<l>();
 		cur = cur >> 0;
 		for (size_t i = 0; i + l - 1 < genome.size(); i++) {
 			cur = cur << genome[i + l - 1];
-			if (index.containsInIndex(cur)) {
-				quality_[index.get(cur).first]++;
+			auto corr_cur = kmer_mapper.Substitute(cur);
+			if (index.containsInIndex(corr_cur)) {
+				quality_[index.get(corr_cur).first]++;
 			}
 		}
 	}
 
 	template<size_t l>
 	EdgeQuality(const Graph &graph, const EdgeIndex<l, Graph> &index,
+	const KmerMapper<l, Graph>& kmer_mapper,
 	const Sequence &genome) :
 			GraphActionHandler<Graph>(graph, "EdgeQualityLabeler") {
-		FillQuality(index, genome);
-		FillQuality(index, !genome);
+		FillQuality(index, kmer_mapper, genome);
+		FillQuality(index, kmer_mapper, !genome);
 	}
 
 	virtual ~EdgeQuality() {
@@ -960,6 +962,10 @@ public:
 			return 1. * it->second / this->g().length(edge);
 	}
 
+	bool IsPositiveQuality(EdgeId edge) const {
+		return math::gr(quality(edge), 0.);
+	}
+
 	virtual std::string label(VertexId vertexId) const {
 		return "";
 	}
@@ -981,7 +987,7 @@ class QualityLoggingRemovalHandler {
 public:
 	QualityLoggingRemovalHandler(const EdgeQuality<Graph>& quality_handler) :
 			quality_handler_(quality_handler)/*, black_removed_(0), colored_removed_(
-					0)*/ {
+	 0)*/{
 
 	}
 

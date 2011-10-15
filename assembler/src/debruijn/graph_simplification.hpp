@@ -222,7 +222,7 @@ const Sequence& genome, size_t bound, const string &file_name) {
 }
 
 template<size_t k>
-void SimplifyGraph(conj_graph_pack &gp,
+void SimplifyGraph(conj_graph_pack &gp, const EdgeQuality<Graph>& edge_qual,
 		const PairedInfoIndex<Graph>& paired_index,
 		const omnigraph::GraphLabeler<Graph>& labeler, size_t iteration_count,
 		const string& output_folder) {
@@ -233,8 +233,7 @@ void SimplifyGraph(conj_graph_pack &gp,
 //	ProduceDetailedInfo<k> (gp, labeler,
 //			output_folder + "before_simplification/", "graph.dot",
 //			"non_simplified_graph");
-	EdgeQuality<Graph> quality_handler(gp.g, gp.index, gp.genome);
-	QualityLoggingRemovalHandler<Graph> qual_removal_handler(quality_handler);
+	QualityLoggingRemovalHandler<Graph> qual_removal_handler(edge_qual);
 	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
 			&QualityLoggingRemovalHandler<Graph>::HandleDelete,
 			&qual_removal_handler, _1);
