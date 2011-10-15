@@ -86,7 +86,7 @@ void ClipTipsForResolver(Graph &g) {
 }
 
 void RemoveBulges(Graph &g,
-		boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+		boost::function<void(Graph::EdgeId)> removal_handler = 0) {
 	INFO("-----------------------------------------");
 	INFO("Removing bulges");
 	double max_coverage = cfg::get().simp.br.max_coverage;
