@@ -77,6 +77,7 @@ int Globals::max_reconstruction_iterations = 1;
 bool Globals::conserve_memory = false;
 int Globals::num_of_tmp_files = 500;
 int Globals::iteration_no = 0;
+bool Globals::skip_to_clustering = false;
 
 bool Globals::read_kmers_after_clustering = false;
 bool Globals::write_kmers_after_clustering = false;
@@ -106,6 +107,82 @@ void readFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cu
 		++cur_read;
 	}
 	irs.close();
+}
+
+bool correctAndUpdateOneRead( vector<ofstream *> outfv, const vector<KMerCount*> & kmers, vector<hint_t> & changedReads,
+		vector<hint_t> & changedNucleotides, hint_t readno, Read & r, size_t i ) {
+	bool isGood = false;
+	bool res = CorrectRead(Globals::hm, kmers, readno, r, isGood, outfv[i]);
+	if (!Globals::conserve_memory) Globals::rv_bad->at(readno) = isGood;
+	changedNucleotides[i] += res;
+	if (res) ++changedReads[i];
+	if (res && outfv[i] != NULL) {
+		#pragma omp critical
+		{
+			*(outfv[i]) << "Final result again:  size=" << r.size() << "\n"
+					<< r.getSequenceString().c_str() << "\n"
+					<< r.getPhredQualityString(Globals::qvoffset).c_str() << endl;
+		}
+	}
+	return isGood;
+}
+
+void correctAndUpdateReadFile( const string & readsFilename, vector<ofstream *> outfv, const vector<KMerCount*> & kmers, vector<hint_t> & changedReads,
+		vector<hint_t> & changedNucleotides, ofstream *outf_good, ofstream *outf_bad ) {
+	ireadstream irs(readsFilename, Globals::qvoffset);
+	VERIFY(irs.is_open());
+	hint_t readno = 0;
+	while (irs.is_open() && !irs.eof()) {
+		Read r;
+		irs >> r;
+		size_t read_size = r.trimNsAndBadQuality(Globals::trim_quality);
+		if (read_size < K) continue;
+		if ( correctAndUpdateOneRead(outfv, kmers, changedReads, changedNucleotides, readno, r, 0) ) {
+			r.print(*outf_good, Globals::qvoffset);
+		} else {
+			r.print(*outf_bad, Globals::qvoffset);
+		}
+		++readno;
+	}
+	irs.close();
+}
+
+void correctAndUpdatePairedReadFiles( const string & readsFilenameLeft, const string & readsFilenameRight, vector<ofstream *> outfv,
+		const vector<KMerCount*> & kmers, vector<hint_t> & changedReads, vector<hint_t> & changedNucleotides,
+		ofstream * ofbadl, ofstream * ofcorl, ofstream * ofunpl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunpr ) {
+	ireadstream irsl(readsFilenameLeft, Globals::qvoffset);
+	ireadstream irsr(readsFilenameRight, Globals::qvoffset);
+	VERIFY(irsl.is_open());
+	VERIFY(irsr.is_open());
+	hint_t readno_left = 0;
+	hint_t readno_right = Globals::lastLeftNo;
+	cout << "  readno_right init=" << Globals::lastLeftNo << " size=" << Globals::pr->size() << endl;
+	while (irsl.is_open() && !irsl.eof()) {
+		Read l; Read r;
+		irsl >> l; irsr >> r;
+		size_t read_size_left = l.trimNsAndBadQuality(Globals::trim_quality);
+		size_t read_size_right = r.trimNsAndBadQuality(Globals::trim_quality);
+		if (read_size_left < K && read_size_right < K) continue;
+		bool left_res = false;
+		bool right_res = false;
+		if (read_size_left >= K) {
+			left_res = correctAndUpdateOneRead(outfv, kmers, changedReads, changedNucleotides, readno_left, l, 0);
+			++readno_left;
+		}
+		if (read_size_right >= K) {
+			right_res = correctAndUpdateOneRead(outfv, kmers, changedReads, changedNucleotides, readno_right, r, 0);
+			++readno_right;
+		}
+		if (  !left_res ) l.print(*ofbadl, Globals::qvoffset);
+		if ( !right_res ) r.print(*ofbadr, Globals::qvoffset);
+		if (  left_res && !right_res ) l.print(*ofunpl, Globals::qvoffset);
+		if ( !left_res &&  right_res ) r.print(*ofunpr, Globals::qvoffset);
+		if (  left_res &&  right_res ) {
+			l.print(*ofcorl, Globals::qvoffset);
+			r.print(*ofcorr, Globals::qvoffset);
+		}
+	}
+	irsl.close(); irsr.close();
 }
 
 int main(int argc, char * argv[]) {
@@ -163,7 +240,7 @@ int main(int argc, char * argv[]) {
 			stat(readsFilenameRight.c_str(), &st);
 			totalReadSize += st.st_size;
 		}
-		totalReadSize = totalReadSize / 2;
+		totalReadSize = totalReadSize / (2.5);
 		TIMEDLN("Estimated total size of all reads is " << totalReadSize);
 	} else {
 		if (!Globals::paired_reads) {
@@ -216,9 +293,11 @@ int main(int argc, char * argv[]) {
 		if (Globals::conserve_memory) {
 			if (!Globals::paired_reads) {
 				readFileIntoBlob(readsFilename, curpos, cur_read, false);
+				cout << "  readsTotal=" << cur_read << "\tblob=" << curpos << endl;
 				Globals::lastLeftNo = cur_read;
 				Globals::revNo = cur_read;
 				readFileIntoBlob(readsFilename, curpos, cur_read, true);
+				cout << "  readsTotalWithRevComp=" << cur_read << "\tblob=" << curpos << endl;
 			} else {
 				readFileIntoBlob(readsFilenameLeft,  curpos, cur_read, false);
 				Globals::lastLeftNo = cur_read;
@@ -242,7 +321,7 @@ int main(int argc, char * argv[]) {
 			}
 		}
 		Globals::blob_size = curpos;
-		TIMEDLN("Blob done, filled up PositionReads. Real size " << Globals::blob_size << ". " << cur_read << " reads.");
+		TIMEDLN("Blob done, filled up PositionReads. Real size " << Globals::blob_size << ". " << Globals::pr->size() << " reads.");
 
 		vector<KMerCount*> kmers;
 		Globals::hm.clear();
@@ -257,32 +336,33 @@ int main(int argc, char * argv[]) {
 
 		if (!readBlobAndKmers || iter_count > 0) {
 			if (Globals::conserve_memory) {
-				TIMEDLN("Splitting kmer instances into files.");
-				SplitToFiles(Globals::working_dir, iter_count);
-				TIMEDLN("Kmer instances split. Starting merge.");
-				ofstream kmerno_file( getFilename(Globals::working_dir, iter_count, "kmers.total") );
-				for ( int iFile=0; iFile < Globals::num_of_tmp_files; ++iFile ) {
-					ifstream inStream( getFilename( Globals::working_dir, iter_count, "tmp.kmers", iFile ) );
-					ProcessKmerHashFile( &inStream, &kmerno_file );
+				if (!Globals::skip_to_clustering) {
+					TIMEDLN("Splitting kmer instances into files.");
+					SplitToFiles(Globals::working_dir, iter_count);
+					TIMEDLN("Kmer instances split. Starting merge.");
+					ofstream kmerno_file( getFilename(Globals::working_dir, iter_count, "kmers.total") );
+					hint_t kmer_num = 0;
+					for ( int iFile=0; iFile < Globals::num_of_tmp_files; ++iFile ) {
+						ifstream inStream( getFilename( Globals::working_dir, iter_count, "tmp.kmers", iFile ) );
+						ProcessKmerHashFile( &inStream, &kmerno_file, kmer_num );
+					}
+					kmerno_file.close();
+					pIDsortKmerTotalsFile = vfork();
+					if (pIDsortKmerTotalsFile == 0) {
+						TIMEDLN("  [" << getpid() << "] Child process for sorting the kmers.total file starting.");
+						execlp("sort", "sort", "-k2", "-o", getFilename(Globals::working_dir, iter_count, "kmers.total.sorted").data(),
+								getFilename(Globals::working_dir, iter_count, "kmers.total").data(), (char *) 0 );
+						_exit(0);
+					}
+					string cmd = "rm -rf " + getFilename(Globals::working_dir, iter_count, "tmp.kmers.*");
+					if ( system(cmd.data()) != 0 ) { TIMEDLN("Some error with removing temporary files. Proceeding nevertheless."); }
+					TIMEDLN("Merge done. There are " << kmer_num << " kmers in total.");
 				}
-				kmerno_file.close();
-				pIDsortKmerTotalsFile = vfork();
-				if (pIDsortKmerTotalsFile == 0) {
-					TIMEDLN("  [" << getpid() << "] Child process for sorting the kmers.total file starting.");
-					// string cmd = "sort -n -o " + getFilename(Globals::working_dir, iter_count, "kmers.total.sorted") + " "
-					//		+ getFilename(Globals::working_dir, iter_count, "kmers.total");
-					execlp("sort", "sort", "-k2", "-o", getFilename(Globals::working_dir, iter_count, "kmers.total.sorted").data(),
-							getFilename(Globals::working_dir, iter_count, "kmers.total").data(), (char *) 0 );
-					_exit(0);
-				}
-				string cmd = "rm -rf " + getFilename(Globals::working_dir, iter_count, "tmp.kmers.*");
-				if ( system(cmd.data()) != 0 ) { TIMEDLN("Some error with removing temporary files. Proceeding nevertheless."); }
-				TIMEDLN("Merge done.");
 			} else {
 				TIMEDLN("Doing honest preprocessing.");
 				DoPreprocessing(tau, readsFilename, nthreads, &kmers, &Globals::hm);
+				TIMEDLN("Preprocessing done. There are " << kmers.size() << " kmers in total.");
 			}
-			TIMEDLN("Preprocessing done. Got " << Globals::hm.size() << " kmers.");
 		} else {
 			TIMEDLN("Reading kmers from " << kmersFilename.c_str() );
 			Globals::readKMerCounts( getFilename( Globals::working_dir, kmersFilename.c_str() ).c_str(), &kmers );
@@ -304,11 +384,14 @@ int main(int argc, char * argv[]) {
 			TIMEDLN("Clustering results read.");
 		} else {
 			if (Globals::conserve_memory) {
-				int childExitStatus;
-				waitpid(pIDsortKmerTotalsFile, &childExitStatus, WNOHANG);
+				if (!Globals::skip_to_clustering) {
+					int childExitStatus;
+					waitpid(pIDsortKmerTotalsFile, &childExitStatus, 0);
+				} else {
+					TIMEDLN("Skipping straight to clustering.");
+				}
 				fillInKmersFromFile( getFilename(Globals::working_dir, iter_count, "kmers.total.sorted"), &kmernos );
-				TIMEDLN("KMer indices filled and sorted, starting subvector sorting.");
-
+				TIMEDLN("KMer indices filled, starting subvector sorting.");
 				SubKMerSorter * skmsorter = new SubKMerSorter(kmernos.size(), &kmernos, nthreads, tau, SubKMerSorter::SorterTypeFileBasedStraight);
 				skmsorter->runSort(getFilename(Globals::working_dir, iter_count, "kmers.total.sorted"));
 
@@ -378,44 +461,60 @@ int main(int argc, char * argv[]) {
 
 		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
 		vector<ofstream *> outfv; vector<hint_t> changedReads; vector<hint_t> changedNucleotides;
-		for (int i=0; i<nthreads; ++i) {
-			//outfv.push_back(new ofstream( getFilename(Globals::working_dir, iter_count, "reconstruct", i ).data() ));
+		for (int i=0; i < (Globals::conserve_memory ? 1 : nthreads); ++i) {
+			outfv.push_back(new ofstream( getFilename(Globals::working_dir, iter_count, "reconstruct", i ).data() ));
 			outfv.push_back(NULL);
 			changedReads.push_back(0);
 			changedNucleotides.push_back(0);
 		}
 
-		#pragma omp parallel for shared(changedReads, changedNucleotides, outfv) num_threads(nthreads)
-		for (size_t i = 0; i < Globals::revNo; ++i) {
-			bool res = CorrectRead(Globals::hm, kmers, i, outfv[omp_get_thread_num()]);
-			changedNucleotides[omp_get_thread_num()] += res;
-			if (res) ++changedReads[omp_get_thread_num()];
-			if (res && outfv[omp_get_thread_num()] != NULL) {
-				#pragma omp critical
-				{
-				*(outfv[omp_get_thread_num()]) << "Final result again:  size=" << Globals::rv->at(i).size() << "\n" << Globals::rv->at(i).getSequenceString().c_str() << "\n" << Globals::rv->at(i).getPhredQualityString(Globals::qvoffset).c_str() << endl;
-				}
+		// Read reconstruction and output
+		if (Globals::conserve_memory) {
+			if (!Globals::paired_reads) {
+				ofstream ofgood(getFilename(Globals::working_dir, iter_count, "reads.corrected").c_str());
+				ofstream ofbad( getFilename(Globals::working_dir, iter_count, "reads.bad").c_str());
+				correctAndUpdateReadFile(readsFilename, outfv, kmers, changedReads, changedNucleotides, &ofgood, &ofbad );
+				ofgood.close(); ofbad.close();
+			} else {
+				ofstream ofbadl(getFilename(Globals::working_dir, iter_count, "reads.left.bad").c_str());
+				ofstream ofcorr(getFilename(Globals::working_dir, iter_count, "reads.right.corrected").c_str());
+				ofstream ofbadr(getFilename(Globals::working_dir, iter_count, "reads.right.bad").c_str());
+				ofstream ofunpl(getFilename(Globals::working_dir, iter_count, "reads.left.unpaired").c_str());
+				ofstream ofunpr(getFilename(Globals::working_dir, iter_count, "reads.right.unpaired").c_str());
+				ofstream ofcorl(getFilename(Globals::working_dir, iter_count, "reads.left.corrected").c_str());
+				correctAndUpdatePairedReadFiles(readsFilenameLeft, readsFilenameRight, outfv, kmers, changedReads, changedNucleotides, &ofbadl, &ofcorl, &ofunpl, &ofbadr, &ofcorr, &ofunpr );
+				ofbadl.close(); ofbadr.close();
+				ofcorl.close(); ofcorr.close();
+				ofunpl.close(); ofunpr.close();
+			}
+		} else {
+			#pragma omp parallel for shared(changedReads, changedNucleotides, outfv) num_threads(nthreads)
+			for (size_t i = 0; i < Globals::revNo; ++i) {
+				correctAndUpdateOneRead(outfv, kmers, changedReads, changedNucleotides, i, Globals::rv->at(i), omp_get_thread_num());
 			}
 		}
 		hint_t totalReads = 0; hint_t totalNucleotides = 0;
-		for (int i=0; i<nthreads; ++i) {
+		for (int i=0; i < (Globals::conserve_memory ? 1 : nthreads); ++i) {
 			if (outfv[i] != NULL) { outfv[i]->close(); delete outfv[i]; }
 			totalReads += changedReads[i];
 			totalNucleotides += changedNucleotides[i];
 		}
 
-		TIMEDLN("Correction done. Changed " << totalNucleotides << " bases in " << totalReads << " reads. Printing out reads.");
+		TIMEDLN("Correction done. Changed " << totalNucleotides << " bases in " << totalReads << " reads.");
 
-		if (!Globals::paired_reads) {
-			outputReads( false, getFilename(Globals::working_dir, iter_count, "reads.corrected").c_str(),
-					    getFilename(Globals::working_dir, iter_count, "reads.bad").c_str() );
-		} else {
-			outputReads( true,  getFilename(Globals::working_dir, iter_count, "reads.left.corrected").c_str(),
-					    getFilename(Globals::working_dir, iter_count, "reads.left.bad").c_str(),
-					    getFilename(Globals::working_dir, iter_count, "reads.right.corrected").c_str(),
-					    getFilename(Globals::working_dir, iter_count, "reads.right.bad").c_str(),
-					    getFilename(Globals::working_dir, iter_count, "reads.left.unpaired").c_str(),
-					    getFilename(Globals::working_dir, iter_count, "reads.right.unpaired").c_str() );
+		if ( !Globals::conserve_memory ) {
+			if (!Globals::paired_reads) {
+				outputReads(false, getFilename(Globals::working_dir, iter_count, "reads.corrected").c_str(), getFilename(
+						Globals::working_dir, iter_count, "reads.bad").c_str());
+			} else {
+				outputReads(true, getFilename(Globals::working_dir, iter_count,
+						"reads.left.corrected").c_str(),
+						getFilename(Globals::working_dir, iter_count, "reads.left.bad").c_str(),
+						getFilename(Globals::working_dir, iter_count, "reads.right.corrected").c_str(),
+						getFilename(Globals::working_dir, iter_count, "reads.right.bad").c_str(),
+						getFilename(Globals::working_dir, iter_count, "reads.left.unpaired").c_str(),
+						getFilename(Globals::working_dir, iter_count, "reads.right.unpaired").c_str());
+			}
 		}
 
 		// prepare the reads for next iteration
@@ -424,13 +523,23 @@ int main(int argc, char * argv[]) {
 		kmers.clear();
 		Globals::hm.clear();
 		delete Globals::pr;
-		//std::fill( Globals::blobhash, Globals::blobhash + Globals::blob_max_size, -1 );
 
-		Globals::rv->resize( Globals::revNo );
-		for (hint_t i = 0; i < Globals::revNo; ++i) {
-			Globals::rv->push_back( !(Globals::rv->at(i)) );
+		if (Globals::conserve_memory) {
+			if (!Globals::paired_reads) {
+				readsFilename = getFilename(Globals::working_dir, iter_count, "reads.corrected");
+			} else {
+				readsFilenameLeft = getFilename(Globals::working_dir, iter_count, "reads.left.corrected");
+				readsFilenameRight = getFilename(Globals::working_dir, iter_count, "reads.right.corrected");
+			}
+			// cannot skip anywhere on subsequent iterations
+			Globals::skip_to_clustering = false;
+		} else {
+			Globals::rv->resize( Globals::revNo );
+			for (hint_t i = 0; i < Globals::revNo; ++i) {
+				Globals::rv->push_back( !(Globals::rv->at(i)) );
+			}
+			TIMEDLN("Reads restored.");
 		}
-		TIMEDLN("Reads restored.");
 
 		if (totalReads < 1) {
 			TIMEDLN("Too few reads have changed in this iteration. Exiting.");
@@ -441,10 +550,11 @@ int main(int argc, char * argv[]) {
 
 	Globals::subKMerPositions->clear();
 	delete Globals::subKMerPositions;
-	Globals::rv->clear();
-	delete Globals::rv;
-	delete Globals::rv_bad;
-	//delete [] Globals::blobhash;
+	if (!Globals::conserve_memory) {
+		Globals::rv->clear();
+		delete Globals::rv;
+		delete Globals::rv_bad;
+	}
 	delete [] Globals::blob;
 	delete [] Globals::blobquality;
 	return 0;

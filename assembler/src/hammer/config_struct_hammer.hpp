@@ -55,6 +55,7 @@ struct hammer_config
 
 	bool conserve_memory;
 	int num_of_tmp_files;
+	bool skip_to_clustering;
 };
 
 

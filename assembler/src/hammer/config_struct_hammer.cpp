@@ -55,4 +55,5 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 
 	load(pt, "conserve_memory", cfg.conserve_memory);
 	load(pt, "num_of_tmp_files", cfg.num_of_tmp_files);
+	load(pt, "skip_to_clustering", cfg.skip_to_clustering);
 }

@@ -83,7 +83,6 @@ void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, i
 		int nthreads_per_subkmer = max( (int)(nthreads_ / (tau_ + 1)), 1);
 		SubKMerSorter * subsubsorter;
 		if (fileBased) {
-			cout << "We got a file-based sorter" << endl;
 			subsubsorter = new SubKMerSorter( &block, v_, nthreads_per_subkmer, tau_, cur_subkmer,
 					SubKMerSorter::SorterTypeChequeredDirect, SubKMerSorter::SorterTypeStraight );
 		} else {

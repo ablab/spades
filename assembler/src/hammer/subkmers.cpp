@@ -237,12 +237,14 @@ SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<hint_t> * v, int 
 	SubKMerSorterType type, SubKMerSorterType parent_type ) : nthreads_(nthreads), tau_(tau), kmers_size_(kmers->size()), kmers_(kmers) {
 	assert( type == SorterTypeChequeredDirect );
 	assert(parent_type == SorterTypeStraight); // yet to implement a chequered second level
-	cout << "  got chequered direct" << endl;
 	for (int j=0; j < tau+1; ++j) {
 		sub_less.push_back(    boost::bind(PositionKMer::compareSubKMersCheqHInt,        _1, _2, v, tau+1, j) );
 		sub_greater.push_back( boost::bind(PositionKMer::compareSubKMersGreaterCheqHInt, _1, _2, v, tau+1, j) );
 		sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMersCheqHInt,          _1, _2, v, tau+1, j) );
 	}
+
+	// initialize the vectors
+	initVectors();
 }
 
 void SubKMerSorter::initVectors() {

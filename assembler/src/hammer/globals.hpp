@@ -30,6 +30,7 @@ struct Globals {
 	static bool conserve_memory;
 	static int num_of_tmp_files;
 	static int iteration_no;
+	static bool skip_to_clustering;
 
 	static std::vector<PositionRead> * pr;
 	static std::vector<Read> * rv;

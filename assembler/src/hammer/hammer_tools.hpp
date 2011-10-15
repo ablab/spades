@@ -51,10 +51,10 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
   * correct a read in place
   * @return how many nucleotides have been changed
   */
-size_t CorrectRead(const KMerNoHashMap & km, const vector<KMerCount*> & kmers, hint_t readno, ofstream * ofs = NULL);
+size_t CorrectRead(const KMerNoHashMap & km, const vector<KMerCount*> & kmers, hint_t readno, Read & r, bool & isGood, ofstream * ofs = NULL);
 bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const string & seq,
 		const vector<KMerCount*> & km, const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat,
-		vector< vector<int> > & v, int & left, int & right, ofstream * ofs );
+		vector< vector<int> > & v, int & left, int & right, bool & isGood, ofstream * ofs );
 
 /**
   * make a step of iterative reconstruction
@@ -77,7 +77,7 @@ void SplitToFiles(string dirprefix, int iter_count);
  * process a single file with kmers divided by hashes
  * output results into kmerno_file
  */
-void ProcessKmerHashFile( ifstream * inStream, ofstream * kmerno_file );
+void ProcessKmerHashFile( ifstream * inStream, ofstream * kmerno_file, 	hint_t & kmer_num );
 
 /**
  * fill in kmerno vector

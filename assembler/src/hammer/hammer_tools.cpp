@@ -154,14 +154,16 @@ void DoSplitAndSort(int tau, int nthreads, vector< vector<hint_t> > * vs, vector
 	}
 }
 
-bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const string & seq, const vector<KMerCount*> & km, const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat, vector< vector<int> > & v, int & left, int & right, ofstream * ofs ) {
+bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const string & seq, const vector<KMerCount*> & km,
+		const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat, vector< vector<int> > & v,
+		int & left, int & right, bool & isGood, ofstream * ofs ) {
 	bool res = false;
 	if (  stat.isGoodForIterative() ||
 				// if regular_threshold_for_correction = true, we use a (more relaxed) threshold isGood() for solid k-mers
 			((!Globals::use_iterative_reconstruction
 					|| Globals::regular_threshold_for_correction)
 					&& stat.isGood())) {
-		Globals::rv_bad->at(readno) = false;
+		isGood = true;
 		for (size_t j = 0; j < K; ++j) {
 			v[dignucl(kmer[j])][pos + j]++;
 		}
@@ -176,7 +178,7 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
 				|| ((!Globals::use_iterative_reconstruction
 						|| Globals::regular_threshold_for_correction)
 						&& km[stat.changeto]->second.isGood()))) {
-			Globals::rv_bad->at(readno) = false;
+			isGood = true;
 			if ((int) pos < left)
 				left = pos;
 			if ((int) pos > right)
@@ -200,19 +202,23 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
 	return res;
 }
 
-size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint_t readno, ofstream * ofs) {
+size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint_t readno, Read & r, bool & isGood, ofstream * ofs) {
 	hint_t readno_rev = Globals::revNo + readno;
-	const Read & r = Globals::rv->at(readno);
-	string seq = r.getSequenceString();
-	const uint32_t read_size = Globals::rv->at(readno).size();
+	string seq (Globals::blob        + Globals::pr->at(readno).start(), Globals::pr->at(readno).size());
+	string qual(Globals::blobquality + Globals::pr->at(readno).start(), Globals::pr->at(readno).size());
+	const uint32_t read_size = Globals::pr->at(readno).size();
 	PositionRead & pr = Globals::pr->at(readno);
 	PositionRead & pr_rev = Globals::pr->at(readno_rev);
+
+	//cout << "    readno=" << readno << "  size=" << read_size << " kmersize=" << km.size() << endl;
+	//cout << "    " << seq << endl;
+	//cout << "    " << qual << endl;
 
 	// create auxiliary structures for consensus
 	vector<int> vA(read_size, 0), vC(read_size, 0), vG(read_size, 0), vT(read_size, 0);
 	vector< vector<int> > v;  // A=0, C=1, G=2, T=3
 	v.push_back(vA); v.push_back(vC); v.push_back(vG); v.push_back(vT);
-	Globals::rv_bad->at(readno) = true;
+	isGood = false;
 
 	// getting the leftmost and rightmost positions of a solid kmer
 	int left = read_size; int right = -1;
@@ -225,7 +231,7 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 			const uint32_t pos = it.first;
 			const KMerStat & stat = km[it.second]->second;
 
-			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, ofs );
+			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, isGood, ofs );
 		}
 	} else {
 		pair<int, KMerCount *> it = make_pair( -1, (KMerCount*)NULL );
@@ -234,7 +240,7 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 			const uint32_t pos = it.first;
 			const KMerStat & stat = it.second->second;
 
-			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, ofs );
+			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, isGood, ofs );
 		}
 	}
 
@@ -245,7 +251,7 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 			const uint32_t pos = it.first;
 			const KMerStat & stat = km[it.second]->second;
 
-			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, ofs );
+			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, isGood, ofs );
 		}
 	} else {
 		pair<int, KMerCount *> it = make_pair( -1, (KMerCount*)NULL );
@@ -254,7 +260,7 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 			const uint32_t pos = it.first;
 			const KMerStat & stat = it.second->second;
 
-			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, ofs );
+			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, isGood, ofs );
 		}
 	}
 
@@ -284,28 +290,19 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 		*ofs << seq.data() << "\n";
 	}
 
-	/*if (changedRead) {
-		cout << "\n" << Globals::rv->at(readno).getSequenceString() << endl;
-		for (size_t i=0; i<4; ++i) {
-			for (size_t j=0; j<read_size; ++j) {
-				cout << (char)((int)'0' + v[i][j]);
-			}
-			cout << endl;
-		}
-		cout << seq.data() << endl;
-	}*/
-	
-	Globals::rv->at(readno).setSequence(seq.data());
-	if (ofs != NULL && changedRead) {
-		*ofs << "Final result:  size=" << Globals::rv->at(readno).size() << "\n" << Globals::rv->at(readno).getSequenceString().c_str() << "\n" << Globals::rv->at(readno).getPhredQualityString(Globals::qvoffset).c_str() << endl;
-	}
+	r.setSequence(seq.data());
 	if (Globals::trim_left_right) {
-		Globals::rv->at(readno).trimLeftRight(left, right+K-1);
+		r.trimLeftRight(left, right+K-1);
 		if (ofs != NULL && changedRead) {
 			*ofs << "Trimming to [ " << left << ", " << right+K-1 << "]" << endl;
-			*ofs << "Trimmed: " << Globals::rv->at(readno).getSequenceString().c_str() << endl;
+			*ofs << "Trimmed: " << r.getSequenceString().c_str() << endl;
 		}
 	}
+
+	if (ofs != NULL && changedRead) {
+		*ofs << "Final result:  size=" << r.size() << "\n" << r.getSequenceString() << "\n" << r.getPhredQualityString(Globals::qvoffset) << endl;
+	}
+
 	return res;
 }
 
@@ -383,12 +380,10 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 	// cycle over the reads, looking for reads completely covered by solid k-mers and adding new solid k-mers on the fly
 	#pragma omp parallel for shared(res, ofs) num_threads(nthreads)
 	for (hint_t readno = 0; readno < Globals::revNo; ++readno) {
-		cout << "Read " << readno << endl;
 		const uint32_t read_size = Globals::pr->at(readno).size();
 		string seq = Globals::conserve_memory
 				? string(Globals::blob + Globals::pr->at(readno).start(), read_size)
 				: Globals::rv->at(readno).getSequenceString();
-		cout << seq << "\t" << read_size << endl;
 		if ( ofs != NULL ) {
 			#pragma omp critical
 			{
@@ -421,38 +416,38 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 		}
 		if ( !isGood ) continue;
 
-		cout << "  it's good!" << endl;
+		//cout << "  it's good!" << endl;
 
 		const PositionRead & pr_rev = Globals::pr->at(Globals::revNo + readno);
-		string seq_rev = Globals::conserve_memory
-				? string(Globals::blob + Globals::pr->at(Globals::revNo + readno).start(), read_size)
-				: Globals::rv->at(Globals::revNo + readno).getSequenceString();
-		cout << seq_rev << endl;
-		std::fill( covered_by_solid.begin(), covered_by_solid.end(), false );
+		string seq_rev = Globals::conserve_memory ?
+						string(Globals::blob	+ Globals::pr->at(Globals::revNo + readno).start(),	read_size)
+						: Globals::rv->at(Globals::revNo + readno).getSequenceString();
+		std::fill(covered_by_solid.begin(), covered_by_solid.end(), false);
 		if (!Globals::conserve_memory) {
-			pair<int, KMerCount *> it = make_pair( -1, (KMerCount*)NULL );
-			while ( (it = pr_rev.nextKMer(it.first)).first > -1 ) {
-				if ( it.second->second.isGoodForIterative() ) {
-					for ( size_t j = it.first; j < it.first + K; ++j )
-						covered_by_solid[j] = true;
+			pair<int, KMerCount *> it = make_pair(-1, (KMerCount*) NULL );
+			while ((it = pr_rev.nextKMer(it.first)).first > -1) {
+				if (it.second->second.isGoodForIterative()) {
+					for (size_t j = it.first; j < it.first + K; ++j) covered_by_solid[j] = true;
 				}
 			}
 		} else {
-			pair<int, hint_t > it = make_pair( -1, BLOBKMER_UNDEFINED );
-			while ( (it = pr_rev.nextKMerNo(it.first)).first > -1 ) {
-				cout << "    found " << (pr_rev.start() + it.first) << ": " << PositionKMer(pr_rev.start() + it.first).str() << endl;
-				if ( kmers[it.second]->second.isGoodForIterative() ) {
-					cout << " good" << endl;
-					for ( size_t j = it.first; j < it.first + K; ++j )
-						covered_by_solid[j] = true;
+			pair<int, hint_t> it = make_pair(-1, BLOBKMER_UNDEFINED );
+			while ((it = pr_rev.nextKMerNo(it.first)).first > -1) {
+				//cout << "    found " << (pr_rev.start() + it.first) << ": "
+				//		<< PositionKMer(pr_rev.start() + it.first).str() << "\tvalue=" << it.second << "\ttotal=" << kmers.size() << endl;
+				if (kmers[it.second]->second.isGoodForIterative()) {
+					for (size_t j = it.first; j < it.first + K; ++j) covered_by_solid[j] = true;
 				}
 			}
 		}
 		isGood = true;
-		for ( size_t j = 0; j < read_size; ++j ) {
-			if ( !covered_by_solid[j] ) { isGood = false; break; }
+		for (size_t j = 0; j < read_size; ++j) {
+			if (!covered_by_solid[j]) {
+				isGood = false;
+				break;
+			}
 		}
-		if ( !isGood ) continue;
+		if (!isGood) continue;
 
 		// ok, now we're sure that everything is covered
 		// let's mark all k-mers as solid
@@ -545,7 +540,7 @@ void SplitToFiles(string dirprefix, int iter_count) {
 	}
 }
 
-void ProcessKmerHashFile( ifstream * inf, ofstream * outf ) {
+void ProcessKmerHashFile( ifstream * inf, ofstream * outf, 	hint_t & kmer_num ) {
 	KMerNoHashMap km;
 	char buf[1024]; // a line contains two numbers, 1024 should be enough for everybody
 	uint64_t pos; double prob;
@@ -576,6 +571,7 @@ void ProcessKmerHashFile( ifstream * inf, ofstream * outf ) {
 		for (size_t i=0; i < K; ++i) (*outf) << it->second->second.qual[i] << " ";
 		(*outf) << "\n";
 		delete it->second;
+		++kmer_num;
 	}
 	km.clear();
 }
@@ -641,6 +637,6 @@ void getGlobalConfigParameters( const string & config_file ) {
 	Globals::num_of_tmp_files = cfg::get().num_of_tmp_files;
 	Globals::conserve_memory = cfg::get().conserve_memory;
 	Globals::paired_reads = cfg::get().paired_reads;
-
+	Globals::skip_to_clustering = cfg::get().skip_to_clustering;
 }
 
