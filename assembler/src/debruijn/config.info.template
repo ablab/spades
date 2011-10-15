@@ -28,14 +28,14 @@ use_additional_contigs false
 ; use single reads if they are provided
 use_single_reads true
 
+;simplification mode: normal, cheating, chimeric, pair_info_aware
+simpl_mode cheating
+
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
 paired_mode true
 
 ; set it true to get statistics, such as false positive/negative, perfect match, etc.
 paired_info_statistics false
-
-; rectangle_mode (1) or not (0)
-rectangle_mode	false
 
 ; use advanced distance estimation or not
 advanced_estimator_mode true

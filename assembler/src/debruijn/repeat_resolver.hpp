@@ -162,21 +162,21 @@ public:
 			set<EdgeId> edges_set = labels_after.edge_inclusions[this->edge];
 			set<EdgeId> other_edges_set = labels_after.edge_inclusions[other_info.getEdge()];
 
-			bool new_res = false;
+//			bool new_res = false;
 
 
-			for(auto this_edge_it = edges_set.begin(); this_edge_it != edges_set.end(); ++ this_edge_it)
-				for(auto other_edge_it = other_edges_set.begin(); other_edge_it != other_edges_set.end(); ++ other_edge_it)
-					if( IsEdgesOnDistanceAdjacent(*this_edge_it, this->d, *other_edge_it
-							,other_info.getDistance(), new_graph, max_diff, lp.first == other_info.lp.first))
-					new_res  = true;
-
-			if (old_res != new_res) {
-				DEBUG("difference in isAdjacent for ("<<this->getEdge()<<", ("<<this->lp.first<<", "<<this->lp.second<<", "<<this->lp.d<<"), "<<this->d<<")");
-				DEBUG("                          VS ("<<other_info.getEdge()<<", ("<<other_info.lp.first<<", "<<other_info.lp.second<<", "<<other_info.lp.d<<"), "<<other_info.d<<")");
-				DEBUG("   old is "<<old_res<<"    new is "<<new_res);
-				DEBUG("   first set size "<<edges_set.size()<<"    second set size "<<other_edges_set.size());
-			}
+//			for(auto this_edge_it = edges_set.begin(); this_edge_it != edges_set.end(); ++ this_edge_it)
+//				for(auto other_edge_it = other_edges_set.begin(); other_edge_it != other_edges_set.end(); ++ other_edge_it)
+//					if( IsEdgesOnDistanceAdjacent(*this_edge_it, this->d, *other_edge_it
+//							,other_info.getDistance(), new_graph, max_diff, lp.first == other_info.lp.first))
+//					new_res  = true;
+//
+//			if (old_res != new_res) {
+//				DEBUG("difference in isAdjacent for ("<<this->getEdge()<<", ("<<this->lp.first<<", "<<this->lp.second<<", "<<this->lp.d<<"), "<<this->d<<")");
+//				DEBUG("                          VS ("<<other_info.getEdge()<<", ("<<other_info.lp.first<<", "<<other_info.lp.second<<", "<<other_info.lp.d<<"), "<<other_info.d<<")");
+//				DEBUG("   old is "<<old_res<<"    new is "<<new_res);
+//				DEBUG("   first set size "<<edges_set.size()<<"    second set size "<<other_edges_set.size());
+//			}
 			return old_res;
 		}
 
@@ -325,7 +325,7 @@ public:
 		}
 
 		INFO("pi copied");
-		int zero_paired_length;
+		int zero_paired_length = 0;
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			PairInfos pi = paired_di_data.GetEdgeInfos(old_to_new_edge[*e_iter]);
 			if (pi.size() > 1 || (pi.size() == 1 && pi[0].weight > 1e-8))
@@ -950,6 +950,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 //				DEBUG("too far to correct");
 		return make_pair(false, pair_inf);
 	}
+//	return make_pair(true, pair_inf);
 
 	PairInfo corrected_info = StupidPairInfoCorrectorByOldGraph(new_graph,
 			pair_inf);
@@ -993,6 +994,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 		for (int i = 0, n = edgeIds[dir].size(); i < n; i++) {
 			PairInfos tmp = paired_di_data.GetEdgeInfos(edgeIds[dir][i]);
 			vector<EdgeInfo> tmp_edge_infos;
+			DEBUG("Paired Info about vertex: " << tmp.size());
 			for (int j = 0, sz = tmp.size(); j < sz; j++) {
 				EdgeId right_id = tmp[j].second;
 				EdgeId left_id = tmp[j].first;

@@ -66,7 +66,7 @@ public:
 		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			EdgeId edge = *it;
 			if (graph_.length(edge) <= graph_.k()
-					&& graph_.length(edge) >= graph_.k() - 10
+					&& graph_.length(edge) >= graph_.k() - max_overlap_
 					&& CheckEnd(graph_.EdgeEnd(edge))
 					&& CheckStart(graph_.EdgeStart(edge))) {
 				graph_.DeleteEdge(edge);

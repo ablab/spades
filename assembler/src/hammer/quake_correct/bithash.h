@@ -1,7 +1,7 @@
 #ifndef BITHASH_H
 #define BITHASH_H
 
-const int kK = 31; //k-mer length
+const int kK = 55; //k-mer length
 #include <string>
 #include <vector>
 #include <cmath>
