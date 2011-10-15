@@ -368,7 +368,6 @@ namespace debruijn_graph
 		using config_common::load;
 		// input options:
         load(pt, "dataset", cfg.dataset_name);
-
         load(pt, "input_dir"  , cfg.input_dir);
 
 		std::string output_base;
@@ -401,7 +400,7 @@ namespace debruijn_graph
 		load(pt, "late_paired_info", cfg.late_paired_info);
 		load(pt, "componential_resolve", cfg.componential_resolve);
 		load(pt, "advanced_estimator_mode", cfg.advanced_estimator_mode);
-
+		load(pt, cfg.dataset_name, cfg.ds);
 		load(pt, cfg.ds.single_cell ? "sc_de" : "usual_de", cfg.de);
 
 		load(pt, "ade", cfg.ade); // advanced distance estimator:
@@ -409,7 +408,6 @@ namespace debruijn_graph
 		load(pt, "pos", cfg.pos); // position handler:
 		load(pt, "need_consensus", cfg.need_consensus);
 		load(pt, "uncorrected_reads", cfg.uncorrected_reads);
-		load(pt, cfg.dataset_name, cfg.ds);
 
 		load(pt, cfg.ds.single_cell ? "sc_simplification" : "usual_simplification", cfg.simp);
 	}
