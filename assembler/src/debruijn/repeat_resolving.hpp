@@ -11,7 +11,6 @@
 #include "repeat_resolver.hpp"
 #include "graphio.hpp"
 #include "omni/one_many_contigs_enlarger.hpp"
-#include "rectangleRepeatResolver.hpp"
 #include "omni/loop_resolver.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -29,7 +28,7 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 	DeletedVertexHandler<Graph> tmp_deleted_handler(new_graph);
 	TRACE("deleted handler created");
 	RepeatResolver<Graph> repeat_resolver(g, old_IDs, 0, info, edges_pos,
-			new_graph, new_IDs, edges_pos_new, tmp_deleted_handler);
+			new_graph, new_IDs, edges_pos_new, tmp_deleted_handler, LabelsAfter);
 	mkdir((output_folder).c_str(),
 			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	unordered_map<typename Graph::EdgeId, typename Graph::EdgeId> edge_labels =

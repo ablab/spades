@@ -9,22 +9,9 @@
 #define PATH_UTILS_HPP_
 
 #include "lc_common.hpp"
+#include "extend.hpp"
 
 namespace long_contigs {
-
-//Increase path lengths
-void IncreaseLengths(Graph& g, PathLengths& lengths, EdgeId edge, bool forward) {
-	size_t len = g.length(edge);
-	for(auto iter = lengths.begin(); iter != lengths.end(); ++iter) {
-		*iter += len;
-	}
-
-	if (forward) {
-		lengths.push_back(len);
-	} else {
-		lengths.push_front(0);
-	}
-}
 
 //Recounting lengths form all edges to path's end
 void RecountLengthsForward(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
@@ -127,6 +114,177 @@ bool ContainsComplementPath(Graph& g, const BidirectionalPath& path, const Bidir
 		}
 	}
 	return false;
+}
+
+size_t ContainsCommonComplementPath(Graph& g, const BidirectionalPath& path1, const BidirectionalPath& path2, int* start) {
+	size_t length;
+	size_t maxLen = 0;
+	*start = 0;
+
+	for (int i = - (int) path2.size() + 1; i < (int) path1.size(); ++i) {
+		length = 0;
+
+		for (int j = 0; j < (int) path2.size() && i + j < (int) path1.size(); ++j) {
+			if (i + j < 0) {
+				continue;
+			}
+			if (g.conjugate(path2[path2.size() - j - 1]) != path1[i + j]) {
+				length = 0;
+				break;
+			}
+			length += g.length(path1[i + j]);
+		}
+
+		if (length > maxLen) {
+			*start = i;
+			maxLen = length;
+		}
+	}
+	return maxLen;
+}
+
+size_t LongestCommonComplement(Graph& g, const BidirectionalPath& path1, const BidirectionalPath& path2, int * start1, int * start2, int * edges) {
+	size_t length;
+	size_t maxLen = 0;
+	int curEdges;
+	*edges = 0;
+
+	for (int i = - (int) path2.size() + 1; i < (int) path1.size(); ++i) {
+		length = 0;
+		curEdges = 0;
+		int j = 0;
+
+		for (; j < (int) path2.size() && i + j < (int) path1.size(); ++j) {
+			if (i + j < 0) {
+				continue;
+			}
+			if (g.conjugate(path2[path2.size() - j - 1]) != path1[i + j]) {
+				if (length > maxLen) {
+					*start1 = i + j - curEdges;
+					*start2 = path2.size() - j;
+					*edges = curEdges;
+					maxLen = length;
+				}
+				length = 0;
+				curEdges = 0;
+			} else {
+				++curEdges;
+				length += g.length(path1[i + j]);
+			}
+		}
+
+		if (length > maxLen) {
+			*start1 = i + j - curEdges;
+			*start2 = path2.size() - j;
+			*edges = curEdges;
+			maxLen = length;
+		}
+	}
+	return maxLen;
+}
+
+void GetSubpath(const BidirectionalPath& path, BidirectionalPath * res, int from, int n = -1) {
+	res->clear();
+	int to = (n < 0) ? path.size() : from + n;
+	for (int i = from; i < to; ++i) {
+		res->push_back(path[i]);
+	}
+}
+
+void SetCorrectIds(std::vector<BidirectionalPath>& paths, int i) {
+	paths[i].id = i;
+	paths[i].conj_id = i + 1;
+	paths[i + 1].id = i + 1;
+	paths[i + 1].conj_id = i;
+
+}
+
+void RecountIds(Graph& g, std::vector<BidirectionalPath>& paths) {
+	for (int i = 0; i < (int) paths.size(); i += 2) {
+		if (paths[i].id == paths[i+1].conj_id && paths[i+1].id == paths[i].conj_id) {
+			SetCorrectIds(paths, i);
+		} else {
+			INFO("Pair of paths seem to be not conjugate, wrong ids detected: " << paths[i].id << ", " << paths[i+1].conj_id  << ", " << paths[i+1].id  << ", " << paths[i].conj_id);
+			DetailedPrintPath(g, paths[i]);
+			DetailedPrintPath(g, paths[paths[i].conj_id]);
+			DetailedPrintPath(g, paths[i+1]);
+			DetailedPrintPath(g, paths[paths[i+1].conj_id]);
+		}
+	}
+}
+
+void CheckIds(Graph& g, std::vector<BidirectionalPath>& paths) {
+	INFO("Checking IDS");
+	for (int i = 0; i < (int) paths.size(); i += 2) {
+		if (paths[i].id != paths[i+1].conj_id || paths[i+1].id != paths[i].conj_id
+				|| paths[i].id != i || paths[i+1].id != i+1) {
+			INFO("Pair of paths seem to be not conjugate, wrong ids detected: " << paths[i].id << ", " << paths[i+1].conj_id  << ", " << paths[i+1].id  << ", " << paths[i].conj_id);
+			DetailedPrintPath(g, paths[i]);
+			DetailedPrintPath(g, paths[paths[i].conj_id]);
+			DetailedPrintPath(g, paths[i+1]);
+			DetailedPrintPath(g, paths[paths[i+1].conj_id]);
+		}
+	}
+}
+
+void SortPathsByLength(Graph& g, std::vector<BidirectionalPath>& paths) {
+	SimplePathComparator pathComparator(g);
+	std::stable_sort(paths.begin(), paths.end(), pathComparator);
+	RecountIds(g, paths);
+}
+
+void FindAllComplementParts(Graph& g, const BidirectionalPath& path1, const BidirectionalPath& path2, size_t minConjLen, std::vector<BidirectionalPath> * newPaths) {
+	newPaths->clear();
+	std::deque<BidirectionalPath> queue;
+	queue.push_back(BidirectionalPath(path1));
+	queue.push_back(BidirectionalPath(path2));
+
+	while(!queue.empty()) {
+		int s1, s2;
+		int edges;
+		if (LongestCommonComplement(g, queue[0], queue[1], &s1, &s2, &edges) >= minConjLen) {
+			BidirectionalPath p1;
+			GetSubpath(queue[0], &p1, s1, edges);
+			BidirectionalPath p2;
+			GetSubpath(queue[1], &p2, s2, edges);
+			newPaths->push_back(p1);
+			newPaths->push_back(p2);
+
+			INFO("Found common path: " << s1 << ", " << s2 << ", " << edges);
+			DetailedPrintPath(g, p1);
+			DetailedPrintPath(g, p2);
+
+			BidirectionalPath l1;
+			GetSubpath(queue[0], &l1, s1 + edges);
+			BidirectionalPath l2;
+			GetSubpath(queue[1], &l2, 0 , s2);
+
+			INFO("Left parts");
+			DetailedPrintPath(g, l1);
+			DetailedPrintPath(g, l2);
+
+			if (!l1.empty() && !l2.empty()) {
+				queue.push_back(l1);
+				queue.push_back(l2);
+			}
+
+			BidirectionalPath r1;
+			GetSubpath(queue[0], &r1, 0, s1);
+			BidirectionalPath r2;
+			GetSubpath(queue[1], &r2, s2 + edges);
+
+			INFO("Right parts");
+			DetailedPrintPath(g, r1);
+			DetailedPrintPath(g, r2);
+
+			if (!r1.empty() && !r2.empty()) {
+				queue.push_back(r1);
+				queue.push_back(r2);
+			}
+		}
+		queue.pop_front();
+		queue.pop_front();
+	}
 }
 
 size_t LengthComplement(Graph& g, const BidirectionalPath& path, const BidirectionalPath& sample) {
@@ -263,22 +421,17 @@ void FilterEdge(Graph& g, std::vector<BidirectionalPath>& paths, size_t edgeLen)
 }
 
 //Remove paths with low covered edges
-void FilterLowCovered(Graph& g, std::vector<BidirectionalPath>& paths, double threshold) {
-	for (auto path = paths.begin(); path != paths.end(); ) {
-		if (PathMinReadCoverage(g, *path) < threshold) {
-			paths.erase(path);
-		} else {
-			++path;
+void FilterLowCovered(Graph& g, std::vector<BidirectionalPath>& paths, double threshold,
+		std::vector<BidirectionalPath> * output) {
+
+	output->clear();
+	for (int i = 0; i < (int) paths.size(); i += 2) {
+		if (math::ge(PathMinReadCoverage(g, paths[i]), threshold)) {
+			AddPathPairToContainer(paths[i], paths[i+1], *output);
 		}
 	}
 }
 
-
-void FilterUntrustedSeeds(Graph& g, std::vector<BidirectionalPath>& paths,
-		std::vector<BidirectionalPath>& output, PairedInfoIndices& pairedInfo) {
-
-
-}
 
 
 //Remove duplicate paths
@@ -289,29 +442,30 @@ void RemoveDuplicate(Graph& g, const std::vector<BidirectionalPath>& paths,
 	std::vector<BidirectionalPath> temp(paths.size());
 	std::copy(paths.begin(), paths.end(), temp.begin());
 
-	SimplePathComparator pathComparator(g);
-	std::sort(temp.begin(), temp.end(), pathComparator);
+	SortPathsByLength(g, temp);
 
 	output.clear();
 	if (quality != 0) {
 		quality->clear();
 	}
 
-	for (int i = 0; i < (int) temp.size(); ++i) {
+	for (int i = 0; i < (int) temp.size(); i += 2) {
 		bool copy = true;
 		for (int j = 0; j < (int) output.size(); ++j) {
 			if (ComparePaths(output[j], temp[i])) {
 				copy = false;
 				if (quality != 0) {
 					quality->at(j) += 1.0;
+					quality->at(output[j].conj_id) += 1.0;
 				}
 				break;
 			}
 		}
 
 		if (copy) {
-			output.push_back(temp[i]);
+			AddPathPairToContainer(temp[i], temp[temp[i].conj_id], output);
 			if (quality != 0) {
+				quality->push_back(1.0);
 				quality->push_back(1.0);
 			}
 		}
@@ -325,9 +479,8 @@ void RemoveSubpaths(Graph& g, std::vector<BidirectionalPath>& paths,
 
 	std::vector<BidirectionalPath> temp(paths.size());
 	std::copy(paths.begin(), paths.end(), temp.begin());
+	SortPathsByLength(g, temp);
 
-	SimplePathComparator pathComparator(g);
-	std::sort(temp.begin(), temp.end(), pathComparator);
 	std::vector<size_t> lengths;
 	CountPathLengths(g, temp, lengths);
 
@@ -336,21 +489,24 @@ void RemoveSubpaths(Graph& g, std::vector<BidirectionalPath>& paths,
 		quality->clear();
 	}
 
-	for (int i = 0; i < (int) temp.size(); ++i) {
+	for (int i = 0; i < (int) temp.size(); i += 2) {
 		bool copy = true;
 		for (int j = 0; j < (int) output.size(); ++j) {
 			if (ContainsPath(output[j], temp[i])) {
 				copy = false;
 				if (quality != 0) {
-					quality->at(j) += ((double) lengths[i]) / ((double) lengths[j]);
+					double q = ((double) lengths[i]) / ((double) lengths[j]);
+					quality->at(j) += q;
+					quality->at(output[j].conj_id) += q;
 				}
 				break;
 			}
 		}
 
 		if (copy) {
-			output.push_back(temp[i]);
+			AddPathPairToContainer(temp[i], temp[temp[i].conj_id], output);
 			if (quality != 0) {
+				quality->push_back(1.0);
 				quality->push_back(1.0);
 			}
 		}
@@ -359,11 +515,9 @@ void RemoveSubpaths(Graph& g, std::vector<BidirectionalPath>& paths,
 
 typedef std::multiset<EdgeId> EdgeStat;
 
-void CountSimilarity(Graph& g, EdgeStat& path1, EdgeStat& path2, int& similarEdges, int& similarLen) {
+void CountSimilarity(Graph& g, EdgeStat& path1, EdgeStat& path2, int * similarEdges, int * similarLen) {
 	similarEdges = 0;
 	similarLen = 0;
-
-	DETAILED_INFO("Counting similarity");
 
 	auto iter = path1.begin();
 	while (iter != path1.end()) {
@@ -376,47 +530,63 @@ void CountSimilarity(Graph& g, EdgeStat& path1, EdgeStat& path2, int& similarEdg
 		}
 	}
 
-	DETAILED_INFO("Counted");
+}
+
+void CountStat(BidirectionalPath& path, EdgeStat * stat) {
+	stat->clear();
+	for (int j = 0; j < (int) path.size(); ++j) {
+		stat->insert(path[j]);
+	}
 }
 
 //Remove similar paths
 void RemoveSimilar(Graph& g, std::vector<BidirectionalPath>& paths,
 		std::vector<double>& quality,
-		std::set<int>& toRemove) {
+		std::vector<BidirectionalPath> * output) {
 
 	INFO("Removing similar");
 
-	toRemove.clear();
+	std::vector<BidirectionalPath> temp(paths.size());
+	std::copy(paths.begin(), paths.end(), temp.begin());
+	SortPathsByLength(g, temp);
+
+	output->clear();
+	output->reserve(temp.size());
 	std::vector<EdgeStat> pathStat;
-
+	pathStat.reserve(temp.size());
 	std::vector<size_t> lengths;
-	CountPathLengths(g, paths, lengths);
+	lengths.reserve(temp.size());
 
-	DETAILED_INFO("Counting stats");
-	for (int i = 0; i < (int) paths.size(); ++i) {
+	for (int i = 0; i < (int) temp.size(); i += 2) {
+		bool copy = true;
 		EdgeStat stat;
-		for (auto edge = paths[i].begin(); edge != paths[i].end(); ++edge) {
-			stat.insert(*edge);
-		}
-		pathStat.push_back(stat);
-	}
-	DETAILED_INFO("Counted");
+		CountStat(temp[i], &stat);
+		size_t length = PathLength(g, temp[i]);
 
-	DETAILED_INFO("Finding similar");
-	for (int i = 0; i < (int) paths.size(); ++i) {
-		if (toRemove.count(i) != 0) {
-			continue;
-		}
-
-		for (int j = i + 1; j < (int) paths.size(); ++j) {
+		for (int j = 0; j < (int) output->size(); ++j) {
 			int similarLen = 0;
 			int similarEdges = 0;
-			CountSimilarity(g, pathStat[i], pathStat[j], similarEdges, similarLen);
 
-			if (((double) similarLen) / ((double) lengths[j]) >= lc_cfg::get().fo.similar_length &&
-					((double) similarEdges) / ((double) paths[j].size()) >= lc_cfg::get().fo.similar_edges) {
-				toRemove.insert(j);
+			CountSimilarity(g, stat, pathStat[j], &similarEdges, &similarLen);
+
+			if (math::ge(((double) similarLen) / ((double) length), lc_cfg::get().fo.similar_length) &&
+					math::ge(((double) similarEdges) / ((double) temp[i].size()), lc_cfg::get().fo.similar_edges)) {
+
+				copy = false;
+				break;
 			}
+		}
+
+		if (copy) {
+			AddPathPairToContainer(temp[i], temp[i + 1], *output);
+
+			pathStat.push_back(stat);
+			EdgeStat conjStat;
+			CountStat(temp[i + 1], &conjStat);
+			pathStat.push_back(conjStat);
+
+			lengths.push_back(length);
+			lengths.push_back(length);
 		}
 	}
 
@@ -443,11 +613,12 @@ bool HasConjugate(Graph& g, BidirectionalPath& path) {
 		DetailedPrintPath(g, path);
 	}
 
-	return math::gr(len / PathLength(g, path), lc_cfg::get().fo.conj_len_percent);
+	return math::gr(len / PathLength(g, path), 0.0);
 }
 
 
-void BreakApart(Graph& g, BidirectionalPath& path, std::vector<BidirectionalPath>& output) {
+void BreakApart(Graph& g, std::vector<BidirectionalPath>& paths, int index, std::vector<BidirectionalPath> * output) {
+	BidirectionalPath& path = paths[index];
 	int i, j;
 	bool found = false;
 
@@ -477,46 +648,77 @@ void BreakApart(Graph& g, BidirectionalPath& path, std::vector<BidirectionalPath
 				g.length(path[k]) <= K + lc_cfg::get().fo.chimeric_delta) {
 
 			BidirectionalPath left;
-			for (int l = 0; l < k; ++l) {
-				left.push_back(path[l]);
-			}
-			BidirectionalPath right;
-			for (int l = k + 1; l < (int) path.size(); ++l) {
-				right.push_back(path[l]);
+			GetSubpath(path, &left, 0, k);
+			BidirectionalPath cleft;
+			GetSubpath(paths[path.conj_id], &cleft, path.size() - k);
+
+			if (PathLength(g, left) >= lc_cfg::get().fo.conj_len_percent) {
+				DETAILED_INFO("Following parts are added:");
+				AddPathPairToContainer(left, cleft, *output);
 			}
 
-			output.push_back(left);
-			output.push_back(right);
+			DETAILED_INFO("Left of chimeric edge");
+			DetailedPrintPath(g, left);
+			DetailedPrintPath(g, cleft);
+
+			BidirectionalPath right;
+			GetSubpath(path, &right, k + 1);
+			BidirectionalPath cright;
+			GetSubpath(paths[path.conj_id], &cright, 0, path.size() - k - 1);
+
+			if (PathLength(g, right) >= lc_cfg::get().fo.conj_len_percent) {
+				DETAILED_INFO("Following parts are added:");
+				AddPathPairToContainer(right, cright, *output);
+			}
+
+			DETAILED_INFO("Right of chimeric edge");
+			DetailedPrintPath(g, right);
+			DetailedPrintPath(g, cright);
 
 			return;
 		}
 	}
 
 	BidirectionalPath left;
-	for (int l = 0; l < i; ++l) {
-		left.push_back(path[l]);
-	}
-	BidirectionalPath right;
-	for (int l = j + 1; l < (int) path.size(); ++l) {
-		right.push_back(path[l]);
+	GetSubpath(path, &left, 0, i);
+	BidirectionalPath cleft;
+	GetSubpath(paths[path.conj_id], &cleft, path.size() - i);
+	if (PathLength(g, left) >= lc_cfg::get().fo.conj_len_percent) {
+		DETAILED_INFO("Following parts are added:");
+		AddPathPairToContainer(left, cleft, *output);
 	}
 
-	output.push_back(left);
-	output.push_back(right);
+	DETAILED_INFO("Left part");
+	DetailedPrintPath(g, left);
+	DetailedPrintPath(g, cleft);
+
+	BidirectionalPath right;
+	GetSubpath(path, &right, j + 1);
+	BidirectionalPath cright;
+	GetSubpath(paths[path.conj_id], &cright, 0, path.size() - j - 1);
+
+	if (PathLength(g, right) >= lc_cfg::get().fo.conj_len_percent) {
+		DETAILED_INFO("Following parts are added:");
+		AddPathPairToContainer(right, cright, *output);
+	}
+
+	DETAILED_INFO("Right part");
+	DetailedPrintPath(g, right);
+	DetailedPrintPath(g, cright);
 }
 
 void RemoveWrongConjugatePaths(Graph& g, std::vector<BidirectionalPath>& paths,
-		std::vector<BidirectionalPath>& output) {
+		std::vector<BidirectionalPath> * output) {
 
-	output.clear();
-	for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-		if (!HasConjugate(g, *iter)) {
-			output.push_back(*iter);
+	output->clear();
+	for (int i = 0; i < (int) paths.size(); i += 2) {
+		if (!HasConjugate(g, paths[i]) && !HasConjugate(g, paths[i + 1])) {
+			AddPathPairToContainer(paths[i], paths[i+1], *output);
 		} else {
 			INFO("Removed as self conjugate");
 			if (lc_cfg::get().fo.break_sc) {
 				INFO("Added half");
-				BreakApart(g, *iter, output);
+				BreakApart(g, paths, i, output);
 			}
 		}
 	}
@@ -610,7 +812,7 @@ std::pair<int, double> FindComlementPath(Graph& g, std::vector<BidirectionalPath
 //Filter symetric complement contigs
 void FilterComplement(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<int>* pairs, std::vector<double>* quality) {
 
-	std::sort(paths.begin(), paths.end(), SimplePathComparator(g));
+	SortPathsByLength(g, paths);
 	pairs->clear();
 	quality->clear();
 	pairs->resize(paths.size(), -1);
@@ -634,7 +836,7 @@ void FilterComplement(Graph& g, std::vector<BidirectionalPath>& paths, std::vect
 				PrintPath(g, paths[comp.first]);
 				INFO("Substituting");
 
-				if (comp.second <= quality->at(comp.first)) {
+				if (math::le(comp.second, quality->at(comp.first))) {
 					++i;
 					continue;
 				}
@@ -690,9 +892,9 @@ void FilterComplement(Graph& g, std::vector<BidirectionalPath>& paths, std::vect
 }
 
 //Remove overlaps, remove sub paths first
-void RemoveOverlaps(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<int>& pairs, std::vector<double>& quality) {
+void RemoveOverlaps(Graph& g, std::vector<BidirectionalPath>& paths) {
 	INFO("Removing overlaps");
-    for (int k = 0; k < (int) paths.size(); ++k) {
+    for (int k = 0; k < (int) paths.size(); k += 2) {
     		BidirectionalPath& path = paths[k];
             EdgeId lastEdge = path.back();
 
@@ -726,12 +928,16 @@ void RemoveOverlaps(Graph& g, std::vector<BidirectionalPath>& paths, std::vector
             if (overlap != -1) {
             	size_t overlapLength = 0;
 				for (int i = 0; i <= overlap; ++i) {
-					overlapLength += g.length(path.back());
+					overlapLength += g.length(path[i]);
 				}
 
             	INFO("Found overlap by " << overlap + 1 << " edge(s) with total length " << overlapLength);
             	PrintPath(g, path);
             	PrintPath(g, paths[overlaped]);
+
+            	if (overlap >= (int) path.size() - 1) {
+            		INFO("PATHS ABOVE ARE STRANGE!");
+            	}
 
 				overlap = std::min(overlap, (int) path.size() - 1);
 
@@ -739,12 +945,10 @@ void RemoveOverlaps(Graph& g, std::vector<BidirectionalPath>& paths, std::vector
 					path.pop_back();
 				}
 
-				if (quality[k] == 1.0) {
-					INFO("Same one removed from reverse-complement path");
-					BidirectionalPath& comp = paths[pairs[k]];
-					for (int i = 0; i <= overlap; ++i) {
-						comp.pop_front();
-					}
+				INFO("Same one removed from reverse-complement path");
+				BidirectionalPath& comp = paths[path.conj_id];
+				for (int i = 0; i <= overlap; ++i) {
+					comp.pop_front();
 				}
             }
     }
@@ -757,6 +961,153 @@ void MakeBlackSet(Graph& g, Path<Graph::EdgeId>& path1, Path<Graph::EdgeId>& pat
 			blackSet.insert(*edge1);
 		}
 	}
+}
+
+void MakeComplementPaths(Graph& g, BidirectionalPath& path1, BidirectionalPath& path2, int start, bool cutEnds) {
+	if (cutEnds) {
+		//If path2 starts 'before' path1
+		for (int i = start; i < 0; ++i) {
+			path2.pop_back();
+		}
+		//Else, two of these can never executed together
+		for (int i = 0; i < start; ++i) {
+			path1.pop_front();
+		}
+
+		int s1 = (int) path1.size();
+		int s2 = (int) path2.size();
+
+		//If path2 ends 'after' path1
+		for (int i = s1; i < s2; ++i) {
+			path2.pop_front();
+		}
+		//Else, two of these can never executed together
+		for (int i = s2; i < s1; ++i) {
+			path1.pop_back();
+		}
+	} else {
+		//If path2 starts 'before' path1
+		for (int i = start; i < 0; ++i) {
+			path1.push_front(g.conjugate(path2[path2.size() + i]));
+		}
+		//Else, two of these can never executed together
+		for (int i = 0; i < start; ++i) {
+			path2.push_back(g.conjugate(path1[start - 1 - i]));
+		}
+
+
+		int s1 = (int) path1.size();
+		int s2 = (int) path2.size();
+
+		//If path2 ends 'after' path1
+		for (int i = s1; i < s2; ++i) {
+			path1.push_back(g.conjugate(path2[path2.size() - i - 1]));
+		}
+		//Else, two of these can never executed together
+		for (int i = s2; i < s1; ++i) {
+			path2.push_front(g.conjugate(path1[i]));
+		}
+	}
+
+	INFO("Part are made complement");
+	DetailedPrintPath(g, path1);
+	DetailedPrintPath(g, path2);
+}
+
+
+void ResolveUnequalComplement(Graph& g, std::vector<BidirectionalPath>& paths, bool cutEnds, size_t minConjLen) {
+	INFO("Making paths conjugate");
+	for (int i = 0; i < (int) paths.size(); i += 2) {
+		if (!ComplementPaths(g, paths[i], paths[i + 1])) {
+			int start = 0;
+			if (ContainsCommonComplementPath(g, paths[i], paths[i + 1], &start) != 0) {
+				INFO("Found common complement path starting " << start);
+				DetailedPrintPath(g, paths[i]);
+				DetailedPrintPath(g, paths[i + 1]);
+				MakeComplementPaths(g, paths[i], paths[i + 1], start, cutEnds);
+			} else {
+				INFO("Looking for common parts");
+				DetailedPrintPath(g, paths[i]);
+				DetailedPrintPath(g, paths[i + 1]);
+
+				std::vector<BidirectionalPath> newPaths;
+				FindAllComplementParts(g, paths[i], paths[i + 1], minConjLen, &newPaths);
+				for (int j = 0; j < (int) newPaths.size(); j += 2) {
+					AddPathPairToContainer(newPaths[j], newPaths[j+1], paths);
+				}
+			}
+		}
+	}
+	INFO("Conjugate done");
+
+}
+
+bool PathAgreed(Graph& g, BidirectionalPath& path, PairedInfoIndices& pairedInfo, double threshold) {
+
+	static size_t maxl = GetMaxInsertSize(pairedInfo) - K;
+	static size_t minl = GetMinGapSize(pairedInfo) + K;
+
+	DETAILED_INFO("Agreed stat, maxl = " << maxl << ", minl = " << minl);
+	DetailedPrintPath(g, path);
+
+	for (int i = 0; i < (int) path.size(); ++i) {
+		DETAILED_INFO("Edge #" << i);
+
+		BidirectionalPath edge;
+		edge.push_back(path[i]);
+		PathLengths length;
+		length.push_back(g.length(path[i]));
+
+		for (int j = i + 1; j < (int) path.size(); ++j) {
+			if (length.back() - g.length(edge[0]) <= maxl &&
+					length.back() + g.length(path[j]) >= minl) {
+
+				double weight =
+						ExtentionWeight(g, edge, length, path[j], pairedInfo, 0, true, false);
+
+				DETAILED_INFO("With edge #" << j << ": " << weight);
+				if (weight < threshold) {
+					return false;
+				}
+			}
+
+			length[0] += g.length(path[j]);
+		}
+
+		length.clear();
+		length.push_back(0);
+
+		for (int j = i - 1; j >= 0; --j) {
+			if (length.back() <= maxl &&
+					length.back() + g.length(edge[0]) + g.length(path[j]) >= minl) {
+
+				double weight =
+						ExtentionWeight(g, edge, length, path[j], pairedInfo, 0, false, false);
+
+				DETAILED_INFO("With edge #" << j << ": " << weight);
+				if (weight < threshold) {
+					return false;
+				}
+			}
+
+			length[0] += g.length(path[j]);
+		}
+	}
+
+	return true;
+
+}
+
+
+void RemoveUnagreedPaths(Graph& g, std::vector<BidirectionalPath>& paths, PairedInfoIndices& pairedInfo, double threshold, std::vector<BidirectionalPath> * output) {
+	output->clear();
+
+	for (int i = 0; i < (int) paths.size(); i += 2) {
+		if (PathAgreed(g, paths[i], pairedInfo, threshold) && PathAgreed(g, paths[i + 1], pairedInfo, threshold)) {
+			AddPathPairToContainer(paths[i], paths[i+1], *output);
+		}
+	}
+
 }
 
 

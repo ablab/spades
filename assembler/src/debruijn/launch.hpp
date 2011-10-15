@@ -15,7 +15,6 @@
 #include "omni/paired_info.hpp"
 #include "graph_construction.hpp"
 #include "graph_simplification.hpp"
-#include "coverage_handler.hpp"
 #include "repeat_resolving.hpp"
 #include "omni/omni_tools.hpp"
 #include "seq_map.hpp"
@@ -26,7 +25,6 @@
 #include "config_struct.hpp"
 #include "debruijn_stats.hpp"
 #include "graphio.hpp"
-#include "rectangleRepeatResolver.hpp"
 #include "omni/distance_estimation.hpp"
 #include "omni/advanced_distance_estimation.hpp"
 #include "omni/loop_resolver.hpp"
@@ -42,12 +40,12 @@
 namespace debruijn_graph
 {
 
-void assemble_genome(PairedReadStream& stream, const Sequence& genome)
+void assemble_genome()
 {
     INFO("Genome Assembling Started");
     INFO("Starting from stage: " << debruijn_config::working_stage_name(cfg::get().entry_point));
 
-    exec_repeat_resolving(stream, genome);
+    exec_repeat_resolving();
 
     INFO("Genome Assembling Finished");
 

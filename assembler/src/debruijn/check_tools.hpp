@@ -85,8 +85,7 @@ template <size_t k>
 bool CheckContains(Seq<k> pattern, const Sequence& s) {
 	if (s.size() < k)
 		return false;
-	Seq<k> kmer(s);
-	kmer = kmer >> 'A';
+	Seq<k> kmer = s.start<k>() >> 0;
 	for (size_t i = k - 1; i < s.size(); ++i) {
 		kmer = kmer << s[i];
 		if (pattern == kmer)
@@ -99,12 +98,13 @@ template <size_t k>
 bool CheckContainsSubKmer(const Sequence& pattern, const Sequence& s) {
 	if (pattern.size() < k || s.size() < k)
 		return false;
-	Seq<k> kmer(pattern);
-	kmer = kmer >> 'A';
+	Seq<k> kmer = pattern.start<k>() >> 0;
 	for (size_t i = k - 1; i < pattern.size(); ++i) {
 		kmer = kmer << pattern[i];
-		if (CheckContains(kmer, s))
-			return true;
+		if (CheckContains(kmer, s)){
+			//cout << "Kmer " << kmer << endl;
+            return true;
+        }
 	}
 	return false;
 }
@@ -117,8 +117,14 @@ size_t ThreadedPairedReadCount(const Sequence& s1, const Sequence& s2, io::IRead
 		stream >> paired_read;
 		Sequence read_s1 = paired_read.first().sequence();
 		Sequence read_s2 = paired_read.second().sequence();
-		if (CheckContainsSubKmer<k>(read_s1, s1) && CheckContainsSubKmer<k>(read_s2, s2)) {
+		if ((CheckContainsSubKmer<k>(read_s1, s1) && CheckContainsSubKmer<k>(read_s2, s2))
+           || (CheckContainsSubKmer<k>(read_s1, s2) && CheckContainsSubKmer<k>(read_s2, s1))
+            ) {
 			count++;
+            //cout << "Read first " << read_s1 << endl 
+                 //<< "Seq  first " << s1 << endl 
+                 //<< "Read  second " << read_s2 << endl
+                 //<< "Seq   second " << s2 << endl;
 		}
 	}
 	return count;
@@ -126,7 +132,7 @@ size_t ThreadedPairedReadCount(const Sequence& s1, const Sequence& s2, io::IRead
 
 template <size_t k>
 size_t ThreadedPairedReadCount(const conj_graph_pack& gp, int e1, int e2, io::IReader<io::PairedRead>& stream) {
-	return ThreadedPairedReadCount<k>(gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e1)), gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e1)), stream);
+	return ThreadedPairedReadCount<k>(gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e1)), gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e2)), stream);
 }
 
 double TotalPositiveWeight(const conj_graph_pack& gp, PairedInfoIndex<Graph> paired_index, int e1, int e2) {
@@ -134,9 +140,10 @@ double TotalPositiveWeight(const conj_graph_pack& gp, PairedInfoIndex<Graph> pai
 	double s = 0.;
 	for (auto it = infos.begin(); it != infos.end(); ++it) {
 		double weight = it->weight;
-		if (math::gr(weight, 0.)) {
+        cout<<"Weight " << weight << endl;
+		//if (math::gr(weight, 0.)) {
 			s += weight;
-		}
+		//}
 	}
 	return s;
 }

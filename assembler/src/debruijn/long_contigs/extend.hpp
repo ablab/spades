@@ -481,7 +481,7 @@ EdgeId FindScafoldExtension(Graph& g, BidirectionalPath& path,
 		PathLengths& lengths, PairedInfoIndices& pairedInfo, double * maxWeight, bool forward) {
 
 
-
+	return 0;
 }
 
 } //namespace long_contigs

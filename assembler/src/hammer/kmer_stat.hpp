@@ -34,6 +34,7 @@ struct KMerStat {
 	uint32_t count;
 	hint_t changeto;
 	double totalQual;
+	int qual[K];
 
 	bool isGood() const { return changeto >= KMERSTAT_GOOD; }
 	bool isGoodForIterative() const { return (changeto == KMERSTAT_GOODITER); }

@@ -396,6 +396,7 @@ private:
 	size_t current_index_;
 	MappingPath<EdgeId> genome_path_;
 	Range covered_range_;
+	bool start_processed_;
 
 	bool EdgeCovered(EdgeId edge) {
 		return last_component_.count(
@@ -409,7 +410,7 @@ private:
 				= genome_path_[current_index_].second.initial_range.start_pos;
 		covered_range_.end_pos
 				= genome_path_[current_index_].second.initial_range.end_pos;
-		while (current_index_ != genome_path_.size() && !EdgeCovered(
+		while (current_index_ != genome_path_.size() && EdgeCovered(
 				genome_path_[current_index_].first)) {
 			covered_range_.end_pos
 					= genome_path_[current_index_].second.initial_range.end_pos;
@@ -420,8 +421,7 @@ private:
 public:
 	string ComponentName() {
 		stringstream ss;
-		ss << covered_range_.start_pos << "_" << covered_range_.end_pos
-				<< ".dot" << endl;
+		ss << covered_range_.start_pos << "_" << covered_range_.end_pos;
 		return ss.str();
 	}
 
@@ -429,7 +429,7 @@ public:
 			size_t edge_length_bound, MappingPath<EdgeId> genome_path) :
 		graph_(graph), max_size_(max_size),
 				edge_length_bound_(edge_length_bound), current_index_(0),
-				genome_path_(genome_path), covered_range_(0, 0) {
+				genome_path_(genome_path), covered_range_(0, 0), start_processed_(false) {
 
 	}
 
@@ -443,7 +443,12 @@ public:
 		}
 		TRACE("Search started");
 		CountingDijkstra<Graph> cf(graph_, max_size_, edge_length_bound_);
-		cf.run(graph_.EdgeStart(genome_path_[current_index_].first));
+		if(start_processed_)
+			cf.run(graph_.EdgeEnd(genome_path_[current_index_].first));
+		else {
+			cf.run(graph_.EdgeStart(genome_path_[current_index_].first));
+			start_processed_ = true;
+		}
 		TRACE("Search finished");
 		vector < VertexId > result = cf.VisitedVertices();
 		last_component_.clear();
@@ -451,7 +456,16 @@ public:
 		VERIFY(EdgeCovered(genome_path_[current_index_].first));
 		last_component_.insert(result.begin(), result.end());
 		TRACE("Component vector filled");
+		size_t prev_index = current_index_;
 		SkipVisited();
+		if(prev_index + 1 != current_index_) {
+			start_processed_ = true;
+		} else if(!start_processed_) {
+			current_index_ = prev_index;
+			start_processed_ = true;
+		} else {
+			start_processed_ = false;
+		}
 		return result;
 	}
 
@@ -519,21 +533,22 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph& graph_;
 	size_t max_length_;
+	size_t vertex_number_;
 
 	//	bool CheckYellow() {
 	//
 	//	}
 	//
 public:
-	ComponentSizeFilter(const Graph &graph, size_t max_length) :
-		graph_(graph), max_length_(max_length) {
+	ComponentSizeFilter(const Graph &graph, size_t max_length, size_t vertex_number) :
+		graph_(graph), max_length_(max_length), vertex_number_(vertex_number) {
 	}
 
 	virtual ~ComponentSizeFilter() {
 	}
 
 	virtual bool Check(vector<VertexId> &vertices) const {
-		if (vertices.size() <= 4)
+		if (vertices.size() <= vertex_number_)
 			return false;
 		set<VertexId> component(vertices.begin(), vertices.end());
 		for (auto iterator = vertices.begin(); iterator != vertices.end(); ++iterator) {
@@ -566,6 +581,10 @@ public:
 	}
 
 	virtual ~FilteringSplitterWrapper() {
+	}
+
+	virtual string ComponentName() {
+		return inner_splitter_.ComponentName();
 	}
 
 	virtual vector<VertexId> NextComponent() {

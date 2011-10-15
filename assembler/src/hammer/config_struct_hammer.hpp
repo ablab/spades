@@ -51,6 +51,10 @@ struct hammer_config
 	bool regular_threshold_for_correction;
 	bool discard_only_singletons;
 	double special_nonsingleton_threshold;
+	bool use_true_likelihood;
+
+	bool conserve_memory;
+	int num_of_tmp_files;
 };
 
 
@@ -99,6 +103,10 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 	load(pt, "regular_threshold_for_correction", cfg.regular_threshold_for_correction);
 	load(pt, "discard_only_singletons", cfg.discard_only_singletons);
 	load(pt, "special_nonsingleton_threshold", cfg.special_nonsingleton_threshold);
+	load(pt, "use_true_likelihood", cfg.use_true_likelihood);
+
+	load(pt, "conserve_memory", cfg.conserve_memory);
+	load(pt, "num_of_tmp_files", cfg.num_of_tmp_files);
 }
 
 typedef config_common::config<hammer_config> cfg;

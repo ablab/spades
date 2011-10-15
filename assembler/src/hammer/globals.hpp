@@ -7,6 +7,7 @@
 struct Globals {
 	static int qvoffset;
 	static double error_rate;
+	static std::string working_dir;
 	static int blocksize_quadratic_threshold;
 	static double good_cluster_threshold;
 	static double blob_margin;
@@ -24,6 +25,11 @@ struct Globals {
 	static double special_nonsingleton_threshold;
 	static bool discard_only_singletons;
 	static string kmers_after_clustering;
+	static bool use_true_likelihood;
+
+	static bool conserve_memory;
+	static int num_of_tmp_files;
+	static int iteration_no;
 
 	static std::vector<PositionRead> * pr;
 	static std::vector<Read> * rv;
@@ -34,9 +40,11 @@ struct Globals {
 	static std::vector<Read> * rvRight_bad;
 	static hint_t revNo;
 	static hint_t lastLeftNo;
+	static std::vector<hint_t> * kmernos;
 
 	static char* blob;
 	static char* blobquality;
+	static char* totalquality;
 	static hint_t blob_max_size;
 	static hint_t blob_size;
 

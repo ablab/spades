@@ -81,8 +81,8 @@ struct nonconj_graph_pack
             gp.g,
             gp.int_ids,
             p.string(),
-            paired_info_index(gp.g),
             gp.edge_pos,
+            (paired_info_index*) 0,
             &gp.etalon_paired_index,
             &prev_clustered_index);
 

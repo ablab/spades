@@ -1,4 +1,4 @@
-add_subdirectory(count)
+#add_subdirectory(count)
 add_subdirectory(prepare_graph)
 add_subdirectory(filter_trusted)
 add_subdirectory(filter_trusted_enh)
@@ -7,7 +7,7 @@ add_subdirectory(correct_hist)
 add_subdirectory(generate_limits)
 project(quake_enhanced CXX)
 add_executable(quake_enhanced
-  main.cpp options.cpp count.cpp prepare_hist.cpp prepare_limits.cpp)
+  main.cpp options.cpp count.cpp prepare_hist.cpp prepare_limits.cpp filter_trusted.cpp)
 target_link_libraries(quake_enhanced ${COMMON_LIBRARIES})
 
 

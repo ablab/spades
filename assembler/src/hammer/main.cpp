@@ -11,7 +11,6 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include <iomanip>
 #include <cstdlib>
 #include <vector>
 #include <map>
@@ -35,6 +34,12 @@
 
 #include "memory_limit.hpp"
 
+// forking
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+
 using std::string;
 using std::vector;
 using std::map;
@@ -50,7 +55,9 @@ char * Globals::blob = NULL;
 char * Globals::blobquality = NULL;
 KMerNoHashMap Globals::hm = KMerNoHashMap();
 std::vector<uint32_t> * Globals::subKMerPositions = NULL;
+std::vector<hint_t> * Globals::kmernos = NULL;
 
+std::string Globals::working_dir = "";
 double Globals::error_rate = 0.01;
 int Globals::blocksize_quadratic_threshold = 100;
 double Globals::good_cluster_threshold = 0.95;
@@ -65,11 +72,16 @@ double Globals::iterative_reconstruction_threshold = 0.995;
 double Globals::special_nonsingleton_threshold = 0;
 int Globals::max_reconstruction_iterations = 1;
 
+bool Globals::conserve_memory = false;
+int Globals::num_of_tmp_files = 500;
+int Globals::iteration_no = 0;
+
 bool Globals::read_kmers_after_clustering = false;
 bool Globals::write_kmers_after_clustering = false;
 bool Globals::write_each_iteration_kmers = false;
 bool Globals::regular_threshold_for_correction = false;
 bool Globals::discard_only_singletons = false;
+bool Globals::use_true_likelihood = false;
 string Globals::kmers_after_clustering = "";
 
 struct KMerStatCount {
@@ -83,24 +95,6 @@ struct KMerStatCount {
 	bool change() const { return changeto < KMERSTAT_CHANGE; }
 };
 
-string getFilename( const string & dirprefix, const string & suffix ) {
-	ostringstream tmp;
-	tmp.str(""); tmp << dirprefix.data() << "/" << suffix.data();
-	return tmp.str();
-}
-
-string getFilename( const string & dirprefix, int iter_count, const string & suffix ) {
-	ostringstream tmp;
-	tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << "." << suffix.data();
-	return tmp.str();
-}
-
-string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num ) {
-	ostringstream tmp;
-	tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << "." << suffix.data() << "." << suffix_num;
-	return tmp.str();
-}
-
 int main(int argc, char * argv[]) {
 
     const size_t GB = 1 << 30;
@@ -112,6 +106,7 @@ int main(int argc, char * argv[]) {
 
 	cfg::create_instance(config_file);
 	string dirprefix = cfg::get().working_dir;
+	Globals::working_dir = dirprefix;
 	string readsFilename = cfg::get().reads;
 	int tau = cfg::get().tau;
 	Globals::qvoffset = cfg::get().quality_offset;
@@ -143,6 +138,9 @@ int main(int argc, char * argv[]) {
 	Globals::regular_threshold_for_correction = cfg::get().regular_threshold_for_correction;
 	Globals::discard_only_singletons = cfg::get().discard_only_singletons;
 	Globals::special_nonsingleton_threshold = cfg::get().special_nonsingleton_threshold;
+	Globals::use_true_likelihood = cfg::get().use_true_likelihood;
+	Globals::num_of_tmp_files = cfg::get().num_of_tmp_files;
+	Globals::conserve_memory = cfg::get().conserve_memory;
 
 	Globals::paired_reads = cfg::get().paired_reads;
 	string readsFilenameLeft, readsFilenameRight;
@@ -199,6 +197,7 @@ int main(int argc, char * argv[]) {
 
 	for (int iter_count = 0; iter_count < iterno; ++iter_count) {
 		cout << "\n     === ITERATION " << iter_count << " begins ===" << endl;
+		Globals::iteration_no = iter_count;
 
 		Globals::pr = new vector<PositionRead>();
 		hint_t curpos = 0;
@@ -225,9 +224,35 @@ int main(int argc, char * argv[]) {
 			Globals::hm.resize(Globals::blob_size);
 		#endif
 
+		pid_t pIDsortKmerTotalsFile = 0;
+
 		if (!readBlobAndKmers || iter_count > 0) {
-			TIMEDLN("Doing honest preprocessing.");
-			DoPreprocessing(tau, readsFilename, nthreads, &kmers, &Globals::hm);
+			if (Globals::conserve_memory) {
+				TIMEDLN("Splitting kmer instances into files.");
+				SplitToFiles(dirprefix, iter_count);
+				TIMEDLN("Kmer instances split. Starting merge.");
+				ofstream kmerno_file( getFilename(dirprefix, iter_count, "kmers.total") );
+				for ( int iFile=0; iFile < Globals::num_of_tmp_files; ++iFile ) {
+					ifstream inStream( getFilename( dirprefix, iter_count, "tmp.kmers", iFile ) );
+					ProcessKmerHashFile( &inStream, &kmerno_file );
+				}
+				kmerno_file.close();
+				pIDsortKmerTotalsFile = vfork();
+				if (pIDsortKmerTotalsFile == 0) {
+					TIMEDLN("  [" << getpid() << "] Child process for sorting the kmers.total file starting.");
+					// string cmd = "sort -n -o " + getFilename(dirprefix, iter_count, "kmers.total.sorted") + " "
+					//		+ getFilename(dirprefix, iter_count, "kmers.total");
+					execlp("sort", "sort", "-n", "-o", getFilename(dirprefix, iter_count, "kmers.total.sorted").data(),
+							getFilename(dirprefix, iter_count, "kmers.total").data(), (char *) 0 );
+					_exit(0);
+				}
+				string cmd = "rm -rf " + getFilename(dirprefix, iter_count, "tmp.kmers.*");
+				if ( system(cmd.data()) != 0 ) { TIMEDLN("Some error with removing temporary files. Proceeding nevertheless."); }
+				TIMEDLN("Merge done.");
+			} else {
+				TIMEDLN("Doing honest preprocessing.");
+				DoPreprocessing(tau, readsFilename, nthreads, &kmers, &Globals::hm);
+			}
 			TIMEDLN("Preprocessing done. Got " << Globals::hm.size() << " kmers.");
 		} else {
 			TIMEDLN("Reading kmers from " << kmersFilename.c_str() );
@@ -242,28 +267,56 @@ int main(int argc, char * argv[]) {
 			if ( exitAfterWritingBlobAndKMers ) break;
 		}
 
+		std::vector<hint_t> kmernos;
+
 		if ( Globals::read_kmers_after_clustering ) {
 			TIMEDLN("Reading clustering results");
 			Globals::readKMerHashMap( Globals::kmers_after_clustering.c_str(), &Globals::hm, &kmers );
 			TIMEDLN("Clustering results read.");
 		} else {
-			TIMEDLN("Starting subvectors sort.");
-			SubKMerSorter * skmsorter = new SubKMerSorter( kmers.size(), &kmers, nthreads, tau, SubKMerSorter::SorterTypeStraight );
-			skmsorter->runSort();
-			TIMEDLN("Auxiliary subvectors sorted. Starting split kmer processing in " << min(nthreads, tau+1) << " effective threads.");
+			if (Globals::conserve_memory) {
+				int childExitStatus;
+				waitpid(pIDsortKmerTotalsFile, &childExitStatus, WNOHANG);
+				fillInKmersFromFile( getFilename(dirprefix, iter_count, "kmers.total.sorted"), &kmernos );
+				TIMEDLN("KMer indices filled, starting subvector sorting.");
 
-			KMerClustering kmc(kmers, nthreads, tau);
-			// prepare the maps
-			ofstream ofkmersnum( getFilename(dirprefix, iter_count, "kmers.num").data() );
-			ofkmersnum << kmers.size() << endl;
-			ofkmersnum.close();
-			ofstream ofkmers( getFilename(dirprefix, iter_count, "kmers.solid").data() );
-			ofstream ofkmers_bad( getFilename(dirprefix, iter_count, "kmers.bad").data() );
-			kmc.process(dirprefix, skmsorter, &ofkmers, &ofkmers_bad);
-			ofkmers.close();
-			ofkmers_bad.close();
-			delete skmsorter;
-			TIMEDLN("Finished clustering.");
+				SubKMerSorter * skmsorter = new SubKMerSorter(kmernos.size(), &kmernos, nthreads, tau, SubKMerSorter::SorterTypeFileBasedStraight);
+				skmsorter->runSort(getFilename(dirprefix, iter_count, "kmers.total.sorted"));
+
+				TIMEDLN("All subvector sorting done, starting clustering.");
+				KMerClustering kmc(&kmers, &kmernos, 1, tau);
+				// prepare the maps
+				ofstream ofkmersnum(getFilename(dirprefix, iter_count, "kmers.num").data());
+				ofkmersnum << kmers.size() << endl;
+				ofkmersnum.close();
+				ofstream ofkmers(getFilename(dirprefix, iter_count,	"kmers.solid").data());
+				ofstream ofkmers_bad(getFilename(dirprefix, iter_count,	"kmers.bad").data());
+				kmc.process(dirprefix, skmsorter, &ofkmers, &ofkmers_bad);
+				ofkmers.close();
+				ofkmers_bad.close();
+				delete skmsorter;
+				TIMEDLN("Finished clustering.");
+			} else {
+				TIMEDLN("Starting subvectors sort.");
+				SubKMerSorter * skmsorter = new SubKMerSorter(kmers.size(),
+						&kmers, nthreads, tau,
+						SubKMerSorter::SorterTypeStraight);
+				skmsorter->runSort();
+				TIMEDLN("Auxiliary subvectors sorted. Starting split kmer processing in " << min(nthreads, tau+1) << " effective threads.");
+
+				KMerClustering kmc(&kmers, nthreads, tau);
+				// prepare the maps
+				ofstream ofkmersnum(getFilename(dirprefix, iter_count, "kmers.num").data());
+				ofkmersnum << kmers.size() << endl;
+				ofkmersnum.close();
+				ofstream ofkmers(getFilename(dirprefix, iter_count,	"kmers.solid").data());
+				ofstream ofkmers_bad(getFilename(dirprefix, iter_count,	"kmers.bad").data());
+				kmc.process(dirprefix, skmsorter, &ofkmers, &ofkmers_bad);
+				ofkmers.close();
+				ofkmers_bad.close();
+				delete skmsorter;
+				TIMEDLN("Finished clustering.");
+			}
 		}
 
 		if ( Globals::write_kmers_after_clustering && iter_count == 0 ) {
@@ -273,8 +326,9 @@ int main(int argc, char * argv[]) {
 		}
 
 		if ( Globals::use_iterative_reconstruction ) {
+			if (Globals::conserve_memory) Globals::kmernos = &kmernos;
 			for ( int iter_no = 0; iter_no < Globals::max_reconstruction_iterations; ++iter_no ) {
-				size_t res = IterativeReconstructionStep(nthreads, kmers);
+				size_t res = IterativeReconstructionStep(nthreads, kmers, Globals::conserve_memory);
 				TIMEDLN("Solid k-mers iteration " << iter_no << " produced " << res << " new k-mers.");
 
 				if ( Globals::write_each_iteration_kmers ) {

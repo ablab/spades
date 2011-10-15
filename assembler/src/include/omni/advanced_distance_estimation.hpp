@@ -14,7 +14,6 @@ class AdvancedDistanceEstimator: public DistanceEstimator<Graph> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef std::pair<int, int> interval;
-	IdTrackHandler<Graph> &int_ids_;
 
 
     double range_coeff_;
@@ -93,8 +92,8 @@ private:
 public:
 	AdvancedDistanceEstimator(Graph &graph, PairedInfoIndex<Graph> &histogram, IdTrackHandler<Graph> &int_ids, size_t insert_size, size_t read_length, size_t delta, size_t linkage_distance, size_t max_distance, size_t threshold, double range_coeff, double delta_coeff, 
     size_t cutoff, size_t minpeakpoints, double inv_density, double percentage, double derivative_threshold) : 
-    DistanceEstimator<Graph>::DistanceEstimator(graph, histogram, insert_size, read_length, delta, linkage_distance, max_distance), 
-    int_ids_(int_ids), range_coeff_(range_coeff), delta_coeff_(delta_coeff), cutoff_(cutoff), minpeakpoints_(minpeakpoints), inv_density_(inv_density), percentage_(percentage), derivative_threshold_(derivative_threshold){  
+    DistanceEstimator<Graph>::DistanceEstimator(graph, histogram, int_ids, insert_size, read_length, delta, linkage_distance, max_distance), 
+    range_coeff_(range_coeff), delta_coeff_(delta_coeff), cutoff_(cutoff), minpeakpoints_(minpeakpoints), inv_density_(inv_density), percentage_(percentage), derivative_threshold_(derivative_threshold){  
 	        INFO("Advanced Estimator started");
             Threshold = threshold;
     }
@@ -141,8 +140,8 @@ public:
 			vector<PairInfo<EdgeId> > data = *iterator;
 			EdgeId first = data[0].first;
 			EdgeId second = data[0].second;
-            int firstNumber =  int_ids_.ReturnIntId(first); 
-            int secondNumber =  int_ids_.ReturnIntId(second); 
+            int firstNumber =  this->int_ids_.ReturnIntId(first); 
+            int secondNumber =  this->int_ids_.ReturnIntId(second); 
 
             DEBUG("Estimating edges number : " << firstNumber << " " << secondNumber); 
             vector<size_t> forward = this->GetGraphDistances(first, second);

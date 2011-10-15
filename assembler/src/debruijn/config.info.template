@@ -2,39 +2,40 @@
 
 #include "src/debruijn/simplification.info"
 #include "src/debruijn/datasets.info"
+#include "src/debruijn/distance_estimation.info"
 
 dataset 	      QUAKE_CROPPED_1K
+;dataset              LB_QUAKE_FULL
 
-input_dir	      ./data/input/E.Coli.K12.MG1655/
+input_dir	      ./data/input/
 output_base	      ./data/debruijn/
 
-reference_genome  MG1655-K12.fasta.gz
-
-additional_contigs	tmp_contigs.fasta  
+additional_contigs	tmp_contigs.fasta
 
 load_from         latest/saves/ ; tmp or latest 
 
 entry_point construction
 ;entry_point paired_info_count
-;entry_point simplification    
+;entry_point simplification
+;entry_point late_pair_info_count
 ;entry_point distance_estimation
-;entry_point repeats_resolving	
+;entry_point repeats_resolving
 ;entry_point n50_enlargement
 
 ; iterative mode switcher, activates additional contigs usage
 use_additional_contigs false
 
 ; use single reads if they are provided
-use_single_reads false
+use_single_reads true
 
-; single cell mode swithcer, influence the simplification
-single_cell_mode false
+;simplification mode: normal, cheating, chimeric, pair_info_aware
+simpl_mode cheating
 
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
 paired_mode true
 
-; rectangle_mode (1) or not (0)
-rectangle_mode	false
+; set it true to get statistics, such as false positive/negative, perfect match, etc.
+paired_info_statistics false
 
 ; use advanced distance estimation or not
 advanced_estimator_mode true
@@ -47,40 +48,6 @@ late_paired_info true
 
 ; Produce info for all components of graph and run repeat resolver for each component.
 componential_resolve true
-
-; distance estimator:
-
-de
-{
-	delta			      10
-	linkage_distance	10
-	max_distance		75
-	filter_threshold		1.0
-}
-
-; advanced distance estimator:
-
-ade
-{
-    ;data dividing
-	threshold          20 ;maximal distance between two points in cluster
-    
-    ;local maximum seeking
-	range_coeff          0.2 ;data_length*range_coeff := width of the averaging window
-	delta_coeff          0.4 ;data_length*delta_coeff := maximal difference between possible distance and real peak on the graph 
-
-    ;fft smoothing
-	percentage          0.01 ;percent of data for baseline subraction
-	cutoff	            3 ;the number of the lowest freqs in fourier decomp being taken
-    
-    ;other
-   	minpeakpoints       3 ;the minimal number of points in cluster to be considered
-	inv_density         5.0 ;maximal inverse density of points in cluster to be considered
-
-    ;hard_mode arguments
-	derivative_threshold  0.1 ;threshold for derivative in hard mode
-
-}
 
 ;repeat_resolving 
 

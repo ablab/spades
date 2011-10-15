@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include <stdexcept>
+#include <iomanip>
 #include "read/read.hpp"
 #include "read/ireadstream.hpp"
 #include "union.hpp"
@@ -51,12 +52,41 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
   * @return how many nucleotides have been changed
   */
 size_t CorrectRead(const KMerNoHashMap & km, const vector<KMerCount*> & kmers, hint_t readno, ofstream * ofs = NULL);
+bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const string & seq,
+		const vector<KMerCount*> & km, const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat,
+		vector< vector<int> > & v, int & left, int & right, ofstream * ofs );
 
 /**
   * make a step of iterative reconstruction
   * @return number of new solid k-mers
   */
-size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmers, ostream * ofs = NULL);
+size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmers, bool hashReady = true, ostream * ofs = NULL);
+
+/**
+ * This function reads reads from the stream and splits them into
+ * k-mers. Then k-mers are written to several file almost
+ * uniformly. It is guaranteed that the same k-mers are written to the
+ * same files.
+ * Different from quake_count in that it works with position reads
+ * @param dirprefix where to put the temporary files
+ * @param iter_count no. of current iteration
+ */
+void SplitToFiles(string dirprefix, int iter_count);
+
+/**
+ * process a single file with kmers divided by hashes
+ * output results into kmerno_file
+ */
+void ProcessKmerHashFile( ifstream * inStream, ofstream * kmerno_file );
+
+/**
+ * fill in kmerno vector
+ */
+void fillInKmersFromFile( const string & fname, vector<hint_t> *kmernos );
+
+string getFilename( const string & dirprefix, const string & suffix );
+string getFilename( const string & dirprefix, int iter_count, const string & suffix );
+string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num );
 
 #endif
 

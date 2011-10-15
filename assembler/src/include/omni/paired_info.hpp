@@ -206,7 +206,8 @@ public:
 	}
 
 	void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool addSymmetric = 1) {
-		TRACE("REALLY ADD:" << pair_info.first << pair_info.second);
+//		INFO("REALLY ADD:" << pair_info.first << " " << pair_info.second << " " << pair_info.d << " " << 
+//        pair_info.weight);
 
 		data_.insert(pair_info);
 
@@ -728,9 +729,12 @@ public:
 		}
 
 		double result_weight = pair_info.weight;
-		if (math::gr(w, 0.)) {
-			result_weight /= w;
-		}
+        //TODO: config it
+        if (math::gr(w, 10.)) {
+			result_weight /= (w + 10);
+		}else {
+//            cout << "HOHOHOH " << result_weight << " " << w << " " << g_.length(pair_info.first) << " " << g_.length(pair_info.second) << endl;
+        }
 
 		PairInfo<EdgeId> result(pair_info);
 		result.weight = result_weight;
@@ -747,8 +751,10 @@ const PairInfo<typename Graph::EdgeId> TrivialWeightNormalization(
 
 template<class Graph>
 class PairedInfoNormalizer {
+public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef boost::function<const PairInfo<EdgeId>(const PairInfo<EdgeId>&)> WeightNormalizer;
+private:
 
 	const PairedInfoIndex<Graph>& paired_index_;
 	WeightNormalizer normalizing_function_;

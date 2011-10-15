@@ -51,6 +51,12 @@ struct lc_config
 		size_t insert_size;
 	};
 
+
+	struct symmetrization {
+		bool cut_tips;
+		size_t min_conjugate_len;
+	};
+
 	struct seed_selection
 	{
 	    double min_coverage;
@@ -59,6 +65,8 @@ struct lc_config
 	    bool   remove_untrusted;
 	    size_t max_cycles;
 	    double trusted_threshold;
+
+	    symmetrization sym;
 	};
 
 	struct extension_selection
@@ -101,6 +109,7 @@ struct lc_config
 		double len_coverage;
 	};
 
+
 	struct filter_options
 	{
 		bool remove_duplicates;
@@ -119,6 +128,10 @@ struct lc_config
 	    double conj_len_percent;
 	    bool break_sc;
 	    size_t chimeric_delta;
+
+	    double agreed_coeff;
+
+	    symmetrization sym;
 	};
 
 	struct research {
@@ -136,11 +149,18 @@ struct lc_config
 		int mode;
 		std::string file1;
 		std::string file2;
+
+		std::string clustered;
+		std::string advanced;
+		size_t insert_size;
+		size_t read_size;
+		size_t dev;
+
 	};
 
 	bool from_file;
 	bool syminfo;
-
+	bool paired_info_only;
 	//size_t real_libs_count;
 	//size_t etalon_libs_count;
 
@@ -171,6 +191,7 @@ struct lc_config
 	filter_options fo;
 	research rs;
 	utils u;
+	symmetrization sym;
 };
 
 void load(boost::property_tree::ptree const& pt, lc_config::utils& u)
@@ -179,6 +200,12 @@ void load(boost::property_tree::ptree const& pt, lc_config::utils& u)
 	load(pt, "mode", u.mode);
 	load(pt, "file1", u.file1);
 	load(pt, "file2", u.file2);
+
+	load(pt, "advanced", u.advanced);
+	load(pt, "clustered", u.clustered);
+	load(pt, "insert_size", u.insert_size);
+	load(pt, "read_size", u.read_size);
+	load(pt, "dev", u.dev);
 }
 
 
@@ -238,6 +265,7 @@ void load(boost::property_tree::ptree const& pt, lc_config::seed_selection& ss)
 	load(pt, "check_trusted", ss.check_trusted);
     load(pt, "remove_untrusted", ss.remove_untrusted);
     load(pt, "trusted_threshold", ss.trusted_threshold);
+    load(pt, "sym", ss.sym);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::extension_selection& es)
@@ -297,6 +325,18 @@ void load(boost::property_tree::ptree const& pt, lc_config::filter_options& fo)
     load(pt, "conj_len_percent", fo.conj_len_percent);
     load(pt, "break_sc", fo.break_sc);
     load(pt, "chimeric_delta", fo.chimeric_delta);
+
+    load(pt, "agreed_coeff", fo.agreed_coeff);
+
+    load(pt, "sym", fo.sym);
+}
+
+void load(boost::property_tree::ptree const& pt, lc_config::symmetrization& sym)
+{
+	using config_common::load;
+	load(pt, "min_conjugate_len", sym.min_conjugate_len);
+	load(pt, "cut_tips", sym.cut_tips);
+
 }
 
 
@@ -306,6 +346,7 @@ void load(boost::property_tree::ptree const& pt, lc_config& lc_cfg)
 	using config_common::load;
 	load(pt, "from_file", lc_cfg.from_file);
 	load(pt, "syminfo", lc_cfg.syminfo);
+	load(pt, "paired_info_only", lc_cfg.paired_info_only);
 	//load(pt, "real_libs_count", cfg.real_libs_count);
 	//load(pt, "etalon_libs_count", cfg.etalon_libs_count);
 
@@ -334,6 +375,7 @@ void load(boost::property_tree::ptree const& pt, lc_config& lc_cfg)
 	load(pt, "fo", lc_cfg.fo);
 	load(pt, "research", lc_cfg.rs);
 	load(pt, "utils", lc_cfg.u);
+
 }
 
 } // namespace lc

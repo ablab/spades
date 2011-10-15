@@ -9,6 +9,7 @@
 
 #include "standard.hpp"
 #include "omni_labelers.hpp"
+#include "graph_pack_io.hpp"
 
 namespace debruijn_graph {
 
@@ -31,12 +32,6 @@ void construct_graph(PairedReadStream& stream, conj_graph_pack& gp,
 				0) {
 	INFO("STAGE == Constructing Graph");
 
-	//todo extract everything connected with etalon to separate tool
-	if (cfg::get().paired_mode) {
-		FillEtalonPairedIndex<K>(gp.g, gp.etalon_paired_index, gp.index,
-				gp.genome);
-	}
-
 	if (cfg::get().paired_mode && !cfg::get().late_paired_info) {
 		ConstructGraphWithPairedInfo<K>(gp, paired_index, stream, single_stream,
 				contigs_stream);
@@ -51,11 +46,17 @@ void construct_graph(PairedReadStream& stream, conj_graph_pack& gp,
 				contigs_stream);
 	}
 
+	//todo extract everything connected with etalon to separate tool
+	if (cfg::get().paired_mode) {
+		FillEtalonPairedIndex<K>(gp.etalon_paired_index, gp.g, gp.index, gp.kmer_mapper,
+				gp.genome);
+	}
+
 	//TODO:
 	//ProduceInfo<K>(gp.g, gp.index, labeler, gp.genome, cfg::get().output_dir + "edge_graph.dot", "edge_graph");
 
 	// todo by single_cell
-//	FillEdgesPos(gp.g, gp.index, gp.genome, gp.edge_pos, gp.kmer_mapper);
+	//FillEdgesPos(gp.g, gp.index, gp.genome, gp.edge_pos, gp.kmer_mapper);
 }
 
 void load_construction(conj_graph_pack& gp, total_labeler& tl,
@@ -63,15 +64,13 @@ void load_construction(conj_graph_pack& gp, total_labeler& tl,
 	fs::path p = fs::path(cfg::get().load_from) / "constructed_graph";
 	files->push_back(p);
 
-	scanConjugateGraph(&gp.g, &gp.int_ids, p.string(), &paired_index,
-			&gp.edge_pos, &gp.etalon_paired_index);
+	ScanConjugateGraphPack(p.string(), gp, &paired_index);
 }
 
 void save_construction(conj_graph_pack& gp, total_labeler& tl,
 		paired_info_index& paired_index) {
 	fs::path p = fs::path(cfg::get().output_saves) / "constructed_graph";
-	printGraph(gp.g, gp.int_ids, p.string(), paired_index, gp.edge_pos,
-			&gp.etalon_paired_index);
+	PrintConjugateGraphPack(p.string(), gp, &paired_index);
 }
 
 boost::optional<string> single_reads_filename(
@@ -116,12 +115,11 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 
 		INFO("Use additional contigs = " << cfg::get().use_additional_contigs);
 		INFO("Checking for additional contigs usage flag and file");
+		string additional_contigs_file = cfg::get().output_root + "../" + cfg::get().additional_contigs;
 		if (cfg::get().use_additional_contigs
-				&& fileExists(
-						cfg::get().output_root + cfg::get().additional_contigs)) {
+				&& fileExists(additional_contigs_file)) {
 			INFO("Additional contigs file found and WILL be used");
-			additional_contigs_stream = new EasyStream(
-					cfg::get().output_root + cfg::get().additional_contigs);
+			additional_contigs_stream = new EasyStream(additional_contigs_file);
 //			io::RCReaderWrapper<io::SingleRead> rc_additional_contigs_stream(additional_contigs_stream);
 		} else {
 			INFO("Additional contigs file WILL NOT be used");

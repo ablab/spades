@@ -390,7 +390,7 @@ public:
 		while (!splitter_.Finished() && cnt <= max_parts_number_) {
 			auto component = splitter_.NextComponent();
 			string component_name = ConstructComponentName(file_name_, cnt,
-					splitter_.ComponentName()).c_str();
+					splitter_.ComponentName());
 			ofstream os;
 			os.open(component_name);
 			gvis::GraphPrinter<typename Graph::VertexId> * gp =
@@ -459,7 +459,7 @@ void WriteComponents(const Graph& g,
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
 	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, file_name,
-			graph_name, 300);
+			graph_name, 10000);
 	gv.Visualize();
 }
 
@@ -473,7 +473,7 @@ void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
 	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
 	ReliableSplitter<Graph> inner_splitter(g, 60, split_edge_length);
-	ComponentSizeFilter<Graph> checker(g, split_edge_length);
+	ComponentSizeFilter<Graph> checker(g, split_edge_length, 0);
 	WriteComponents<Graph> (g, inner_splitter, checker, graph_name, file_name,
 			coloring, labeler);
 }
@@ -497,7 +497,7 @@ void WriteComponentsAlongGenome(
 	//	ReliableSplitterAlongGenome(g, 60, split_edge_length, MappingPath<EdgeId> genome_path)
 	ReliableSplitterAlongGenome<Graph> inner_splitter(g, 60, split_edge_length,
 			path1);
-	ComponentSizeFilter<Graph> checker(g, split_edge_length);
+	ComponentSizeFilter<Graph> checker(g, split_edge_length, 0);
 	WriteComponents<Graph> (g, inner_splitter, checker, graph_name, file_name,
 			coloring, labeler);
 }
