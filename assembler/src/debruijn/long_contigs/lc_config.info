@@ -1,7 +1,7 @@
 ; input options
 from_file     true	  ; always true
 syminfo       false
-paired_info_only    false
+paired_info_only    true
 
 QUAKE_CROPPED_100K
 {
@@ -14,7 +14,7 @@ QUAKE_CROPPED_400K
 QUAKE_FULL
 {
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
-    graph_file       ./data/debruijn/QUAKE_FULL/K55/hammer_filtered/simplified_graph
+    graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL/simplified_graph
     
 }
 EAS600_QUAKE_CROPPED_100K
@@ -31,7 +31,7 @@ EAS600_QUAKE_FULL
 }		 
    
 ; paired info options
-use_new_metrics      false
+use_new_metrics      true
 
 
 ; output options
@@ -175,7 +175,7 @@ real_libs
 {    
     count 2
     
-    item_0
+    item_2
     {
     	read_size     100
         insert_size   270
@@ -184,19 +184,19 @@ real_libs
         
         QUAKE_FULL
         {
-            precounted       true
+            precounted       false
             ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/wsingle1/10.10_10_30/paired_info_IS270_RS100_clustered
             ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC_k55/10.11_13_56/paired_info_IS270_RS100_clustered
             precounted_path  ./data/debruijn/QUAKE_FULL/K55/hammer_filtered/10.11_10_38/paired_info_IS270_RS100_clustered
             ;first            /data/EULER/ablab/input/E.Coli.K12.MG1655/SC_cor/left_6.10.cor.fasta
             ;second           /data/EULER/ablab/input/E.Coli.K12.MG1655/SC_cor/right_6.10.cor.fasta
-            first            /data/EULER/ablab/input/E.Coli.K12.MG1655/SC/2908_tau1_00_left.fastq.gz
-            second           /data/EULER/ablab/input/E.Coli.K12.MG1655/SC/2908_tau1_00_right.fastq.gz            
+            first            ./data/input/E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_paired_1.fastq
+            second           ./data/input/E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_paired_2.fastq            
 
             
             raw             ./data/debruijn/QUAKE_FULL/K55/wsingle1/10.10_10_28/paired_info_IS270_RS100_acl
             
-            has_advanced     true
+            has_advanced     false
             ;advanced         ./data/debruijn/QUAKE_FULL/K55/wsingle1/10.10_10_28/paired_info_IS270_RS100_acl
             ;advanced         ./data/debruijn/QUAKE_FULL/K55/SC_k55/10.11_13_55/paired_info_IS270_RS100_acl
             advanced         ./data/debruijn/QUAKE_FULL/K55/hammer_filtered/10.11_10_11/paired_info_IS270_RS100_acl
@@ -204,7 +204,7 @@ real_libs
     }
     
     
-    item_1
+    item_0
     {
         read_size     100
         insert_size   220
@@ -235,17 +235,16 @@ real_libs
         }
         QUAKE_FULL
         {
-            precounted       true
+            precounted       false
             precounted_path  ./data/debruijn/QUAKE_FULL/K55/09.26_02_00/paired_info_IS220_RS100_clustered
             ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/normal/10.11_15_35/paired_info_IS220_RS100_clustered
             first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
             second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz
 
-            raw
-            
+                   
             raw              ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS220_RS100_acl
             
-            has_advanced     true
+            has_advanced     false
             advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS220_RS100_acl
             ;advanced         ./data/debruijn/QUAKE_FULL/K55/normal/10.11_15_07/paired_info_IS220_RS100_acl
         }
@@ -320,11 +319,11 @@ real_libs
             precounted       false
             precounted_path  ./data/debruijn/QUAKE_FULL/K55/09.26_02_00/paired_info_IS480_RS100_clustered
             ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/normal/10.11_15_35/paired_info_IS480_RS100_clustered
-            first            /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_1.cor.fastq.gz
-            second           /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_2.cor.fastq.gz
+            ;first            /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_1.cor.fastq.gz
+            ;second           /media/9638E49E38E47E9D/BOIINF/E.Coli_600/quaked/ERR022075_2.cor.fastq.gz
             
             raw              ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS480_RS100_acl
-            has_advanced     true
+            has_advanced     false
             advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS480_RS100_acl
             ;advanced        ./data/debruijn/QUAKE_FULL/K55/normal/10.11_15_07/paired_info_IS480_RS100_acl
            
