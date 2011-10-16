@@ -652,12 +652,12 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 			} else {
 				// we've got a nontrivial cluster; computing its overall quality
 				double cluster_quality = 1;
-				cout << "subblock of " << blocksInPlace[n][m].size() << endl;
-				cout << "  " << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\t" << 
-						(*k_)[blocksInPlace[n][m][0]]->second.totalQual << endl;
+				//cout << "subblock of " << blocksInPlace[n][m].size() << endl;
+				//cout << "  " << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\t" << 
+				//		(*k_)[blocksInPlace[n][m][0]]->second.totalQual << endl;
 				for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
-					cout << "  " << (*k_)[blocksInPlace[n][m][j]]->first.str() << "\t" << 
-						(*k_)[blocksInPlace[n][m][j]]->second.totalQual << endl;
+					//cout << "  " << (*k_)[blocksInPlace[n][m][j]]->first.str() << "\t" << 
+					//	(*k_)[blocksInPlace[n][m][j]]->second.totalQual << endl;
 					cluster_quality *= (*k_)[blocksInPlace[n][m][j]]->second.totalQual;
 				}
 				cluster_quality = 1-cluster_quality;
