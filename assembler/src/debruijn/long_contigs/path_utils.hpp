@@ -947,6 +947,8 @@ void RemoveOverlaps(Graph& g, std::vector<BidirectionalPath>& paths) {
 
 				INFO("Same one removed from reverse-complement path");
 				BidirectionalPath& comp = paths[path.conj_id];
+
+				overlap = std::min(overlap, (int) comp.size() - 1);
 				for (int i = 0; i <= overlap; ++i) {
 					comp.pop_front();
 				}
