@@ -12,7 +12,6 @@
 //#include "edge_graph.hpp"
 //#include "utils.hpp"
 #include "omni_utils.hpp"
-#include "omni_tools.hpp"
 //
 //#define DEFAULT_COVERAGE_BOUND 1000
 //#define DEFAULT_RELATIVE_COVERAGE_BOUND 2.0
@@ -31,12 +30,13 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
+	Graph &graph_;
+	Comparator comparator_;
 	const size_t max_tip_length_;
 	const size_t max_coverage_;
 	const double max_relative_coverage_;
 
-	Graph &graph_;
-	Comparator comparator_;
+	boost::function<void (EdgeId)> removal_handler_;
 
 	/**
 	 * This method checks if given vertex topologically looks like end of tip
@@ -127,6 +127,9 @@ private:
 	void RemoveTip(EdgeId tip) {
 		VertexId start = graph_.EdgeStart(tip);
 		VertexId end = graph_.EdgeEnd(tip);
+		if (removal_handler_) {
+			removal_handler_(tip);
+		}
 		graph_.DeleteEdge(tip);
 		ProcessVertex(start);
 		ProcessVertex(end);
@@ -139,10 +142,10 @@ public:
 	 * certain generic checker class.
 	 */
 	TipClipper(Graph &graph, Comparator comparator, size_t max_tip_length,
-			size_t max_coverage, double max_relative_coverage) :
-		max_tip_length_(max_tip_length), max_coverage_(max_coverage),
-				max_relative_coverage_(max_relative_coverage), graph_(graph),
-				comparator_(comparator) {
+			size_t max_coverage, double max_relative_coverage, boost::function<void (EdgeId)> removal_handler = 0) :
+				graph_(graph), comparator_(comparator),
+				max_tip_length_(max_tip_length), max_coverage_(max_coverage),
+				max_relative_coverage_(max_relative_coverage), removal_handler_(removal_handler)  {
 	}
 
 	/**

@@ -134,14 +134,15 @@ void CountPairedInfoStats(const Graph &g,
 	INFO("Paired info stats counted");
 }
 
-void CountClusteredPairedInfoStats(const Graph &g,
-		const IdTrackHandler<Graph> &int_ids,
+void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 		const PairedInfoIndex<Graph> &paired_index,
 		const PairedInfoIndex<Graph> &clustered_index,
 		const PairedInfoIndex<Graph> &etalon_paired_index,
 		const string &output_folder) {
 	INFO("Counting clustered info stats");
-	EstimationQualityStat<Graph> (g, int_ids, paired_index, clustered_index,
+
+	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
+	EstimationQualityStat<Graph> (gp.g, gp.int_ids, edge_qual, paired_index, clustered_index,
 			etalon_paired_index).Count();
 
 	INFO("Counting overall cluster stat")
@@ -158,7 +159,7 @@ void CountClusteredPairedInfoStats(const Graph &g,
 	//	PairInfoFilter<Graph> (g, 1000.).Filter(
 	//			clustered_index/*etalon_clustered_index*/, filtered_clustered_index);
 	INFO("Counting mate-pair transformation stat");
-	MatePairTransformStat<Graph> (g, /*filtered_*/clustered_index).Count();
+	MatePairTransformStat<Graph> (gp.g, /*filtered_*/clustered_index).Count();
 	INFO("Mate-pair transformation stat counted");
 	INFO("Clustered info stats counted");
 }
