@@ -319,30 +319,30 @@ public:
 
         if(currentPathSet.paths.size() == 1 && (*(currentPathSet.paths.begin())).size() ==0 )
         {
-            INFO("PATHSET SHORT");
-            INFO(currentPathSet);
+//            INFO("PATHSET SHORT");
+//            INFO(currentPathSet);
             EdgeId headEdge = currentPathSet.end;
             vector<PathSet<EdgeId>>  pathSets =  indexData.GetPathSets(headEdge);
             extendablePathSets.reserve(pathSets.size());
             copy(pathSets.begin(), pathSets.end(), back_inserter(extendablePathSets));
             
-            if(extendablePathSets.size() !=0 )
-            {
-            INFO("CAN BE FOLLOWED BY");
-            for(size_t i = 0 ; i < extendablePathSets.size() ; ++i)
-            {
-                INFO(extendablePathSets[i]);
-            }
-            }
-            else
-            {
-                INFO("CAN NOT FOLLOWED");
-            }
+//            if(extendablePathSets.size() !=0 )
+//            {
+//            INFO("CAN BE FOLLOWED BY");
+//            for(size_t i = 0 ; i < extendablePathSets.size() ; ++i)
+//            {
+//                INFO(extendablePathSets[i]);
+//            }
+//            }
+//            else
+//            {
+//                INFO("CAN NOT FOLLOWED");
+//            }
         }
         else
         {
-            INFO("PATHSET LONG");
-            INFO(currentPathSet);
+//            INFO("PATHSET LONG");
+//            INFO(currentPathSet);
             for(auto iter = currentPathSet.paths.begin() ; iter != currentPathSet.paths.end() ; ++iter)
             {
                 Path currentPath  = *iter;
@@ -371,18 +371,18 @@ public:
                 }
             }
 
-            if(extendablePathSets.size() !=0 )
-            {
-            for(size_t i = 0 ; i < extendablePathSets.size() ; ++i)
-            {
-                INFO("CAN BE FOLLOWED BY");
-                INFO(extendablePathSets[i]);
-            }
-            }
-            else
-            {
-                INFO("CAN NOT FOLLOWED");
-            }
+//            if(extendablePathSets.size() !=0 )
+//            {
+//            for(size_t i = 0 ; i < extendablePathSets.size() ; ++i)
+//            {
+//                INFO("CAN BE FOLLOWED BY");
+//                INFO(extendablePathSets[i]);
+//            }
+//            }
+//            else
+//            {
+//                INFO("CAN NOT FOLLOWED");
+//            }
         
         }
 
