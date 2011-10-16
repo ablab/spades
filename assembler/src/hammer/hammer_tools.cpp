@@ -525,12 +525,13 @@ void SplitToFiles(string dirprefix, int iter_count) {
 	for(size_t i=0; i < Globals::pr->size(); ++i) {
 		string s(Globals::blob        + Globals::pr->at(i).start(), Globals::pr->at(i).size());
 		string q(Globals::blobquality + Globals::pr->at(i).start(), Globals::pr->at(i).size());
+		for ( size_t j=0; j < Globals::pr->at(i).size(); ++j) q[j] = (char)(q[j] - Globals::qvoffset);
 		ValidKMerGenerator<K> gen(s, q);
 		while (gen.HasMore()) {
 			ofstream &cur_file = *ofiles[hash_function(gen.kmer()) % Globals::num_of_tmp_files];
 			hint_t cur_pos = Globals::pr->at(i).start() + gen.pos() - 1;
-	        double correct_probability = 1 - gen.correct_probability();
-	        cur_file << cur_pos << "\t" << correct_probability << "\n";
+			double correct_probability = 1 - gen.correct_probability();
+			cur_file << cur_pos << "\t" << correct_probability << "\n";
 			gen.Next();
 		}
 	}
