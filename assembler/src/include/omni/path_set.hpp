@@ -82,7 +82,7 @@ public:
     {
         return true;
     }
-    bool CanBeExtended(const PathSet<EdgeId> rhs)
+    bool CanBeExtendedBy(const PathSet<EdgeId> rhs)
     {
         return true;
     }
@@ -304,6 +304,112 @@ public:
 
         }
     }
+    void RemoveInvalidPaths(PathSetIndexData<EdgeId> &filteredPathSetDat)
+    {
+        //we use ad hoc paired de Bruijn graph for mate-pair info
+    }
+
+    /*
+     * Find a vector of possible extension pathsets.
+     * The offSet will take care of the case where there is no pairedinfo in a very short edge. I ignore the offset by now
+     * and will consider later when we have problem with the pairinfo
+     */
+    void FindExtension(PathSetIndexData<EdgeId> &indexData, PathSet<EdgeId> &currentPathSet, vector<PathSet<EdgeId>> & extendablePathSets, size_t offSet = 0)
+    {
+
+        if(currentPathSet.paths.size() == 1 && (*(currentPathSet.paths.begin())).size() ==0 )
+        {
+//            INFO("PATHSET SHORT");
+//            INFO(currentPathSet);
+            EdgeId headEdge = currentPathSet.end;
+            vector<PathSet<EdgeId>>  pathSets =  data_.GetPathSets(headEdge);
+            extendablePathSets.reserve(pathSets.size());
+            copy(pathSets.begin(), pathSets.end(), back_inserter(extendablePathSets));
+            
+//            if(extendablePathSets.size() !=0 )
+//            {
+//            INFO("CAN BE FOLLOWED BY");
+//            for(size_t i = 0 ; i < extendablePathSets.size() ; ++i)
+//            {
+//                INFO(extendablePathSets[i]);
+//            }
+//            }
+//            else
+//            {
+//                INFO("CAN NOT FOLLOWED");
+//            }
+        }
+        else
+        {
+//            INFO("PATHSET LONG");
+//            INFO(currentPathSet);
+            for(auto iter = currentPathSet.paths.begin() ; iter != currentPathSet.paths.end() ; ++iter)
+            {
+                Path currentPath  = *iter;
+                if(currentPath.size() == 0)
+                {
+                    INFO("NEED TO BE INSPECTED");
+                }
+                else{
+                    currentPath.push_back( currentPathSet.end);
+                    Path comparedPath(currentPath.begin() +1, currentPath.end());
+                    vector<PathSet<EdgeId>> candidatePathSets = data_.GetPathSets(currentPath[0]);
+                    for(auto it = candidatePathSets.begin() ; it != candidatePathSets.end() ; ++it)
+                    {
+                        set<Path> comparedPathsCandidate;
+                        for(auto piter  = it->paths.begin() ; piter != it->paths.end() ; ++piter)
+                        {
+                            Path extendedPath(piter->begin(), piter->end());
+                            extendedPath.push_back(it->end);
+                            comparedPathsCandidate.insert(extendedPath);
+                        }
+                        if(IsPrefixOfPaths(comparedPath, comparedPathsCandidate))
+                            extendablePathSets.push_back(*it);
+                    }
+                }
+            }
+
+//            if(extendablePathSets.size() !=0 )
+//            {
+//            for(size_t i = 0 ; i < extendablePathSets.size() ; ++i)
+//            {
+//                INFO("CAN BE FOLLOWED BY");
+//                INFO(extendablePathSets[i]);
+//            }
+//            }
+//            else
+//            {
+//                INFO("CAN NOT FOLLOWED");
+//            }
+        
+        }
+
+
+
+    }
+   //TODO lazy coder 
+    
+    bool IsPrefixOfPaths(Path & singlePath,const set<Path> &paths)
+    {
+        for(auto iter = paths.begin() ; iter != paths.end(); ++iter)
+        {
+            if( singlePath.size() > iter->size())
+                continue;
+            bool diff = true;
+            for(size_t i = 0  ; i < singlePath.size() ; i++)
+            {
+                if(singlePath[i] != (*iter)[i])
+                {
+                    diff = false;
+                    break;
+                }
+            }
+            if(diff == true)
+                return true;
+        }
+        return false;
+    }
+
 };
 
 }
