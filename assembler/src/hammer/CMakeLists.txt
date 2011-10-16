@@ -19,7 +19,8 @@ add_executable(main
    position_read.cpp
    globals.cpp
    subkmers.cpp
-   kmerno.cpp)
+   kmerno.cpp
+   config_struct_hammer.cpp)
    
 add_subdirectory(quake_count)
 add_subdirectory(quake_enhanced)

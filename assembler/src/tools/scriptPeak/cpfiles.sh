@@ -9,6 +9,7 @@ fi
 echo $string
     cp ../../../data/debruijn/"$string"/K55/latest/saves/distance_estimation* .
     cp ../../../data/debruijn/"$string"/K55/latest/estimation_qual/* .
+    cp ../../../data/debruijn/"$string"/K55/latest/etalon_paired.prd distance_estimation_et.prd 
 
 cp fp.prd distance_estimation_fpr.prd
 cp fn.prd distance_estimation_fnr.prd
