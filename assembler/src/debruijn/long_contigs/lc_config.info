@@ -15,9 +15,10 @@ QUAKE_CROPPED_400K
 }
 QUAKE_FULL
 {
-    graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
+    ;graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL/simplified_graph
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/simplified_graph
+    
 }
 
 SC_NEW_1_FILTERED
@@ -41,6 +42,7 @@ write_overlaped_paths   false
 write_paths             true
 write_contigs           true
 write_real_paired_info  true
+write_raw_paired_info   false
 cluster_paired_info     true
 write_graph             true
 print_stats             false
@@ -52,13 +54,13 @@ first_grow_forward      true
 ; seed selection
 ss
 {
-    min_coverage   100
+    min_coverage   0
     glue_seeds     false
     max_cycles     1
     
-    remove_untrusted  false
-    check_trusted     false
-    trusted_threshold 0
+    remove_untrusted  true
+    check_trusted     true
+    trusted_threshold 3
     
     sym 
 	{
@@ -73,8 +75,8 @@ es
 {
     use_weight_function_first  false
     weight_fun_threshold       0.1
-    weight_threshold           0.1
-    priority_coeff             4
+    weight_threshold           3
+    priority_coeff             10	
 
     use_delta_first       true
     etalon_distance_dev   2
@@ -127,9 +129,9 @@ fo
     similar_edges           0.6
     similar_length          0.9
     
-    remove_sefl_conjugate   true
+    remove_sefl_conjugate   false
     conj_len_percent        0.2
-    break_sc                true
+    break_sc                false
     chimeric_delta          10
     
     agreed_coeff            0.0
@@ -163,7 +165,7 @@ utils
 research 
 {
     research_mode            false
-    detailed_output          false
+    detailed_output          true
     fiter_by_edge            true
     edge_length              46
     force_to_cycle           false 
@@ -174,9 +176,9 @@ research
 ; additional real libs
 real_libs
 {    
-    count 2
+    count 1
     
-    item_2
+    item_0
     {
     	read_size     100
         insert_size   270
@@ -185,14 +187,16 @@ real_libs
         
 		SC_NEW_1_FILTERED
 		{
-            precounted       false
-            precounted_path  ./data/debruijn/QUAKE_FULL/K55/
+            precounted       true
+            precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC_NEW_1_FILTERED/10.16_17_07/paired_info_IS270_RS100_clustered
             
 	        first   ./data/input/E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_paired_1_filtered.fastq
 	        second  ./data/input/E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_paired_2_filtered.fastq
 	                    
-            has_advanced     false
-            advanced         ./data/debruijn/QUAKE_FULL/K55/
+            has_advanced     true
+            advanced         ./data/debruijn/QUAKE_FULL/K55/SC_NEW_1_FILTERED/10.16_17_01/paired_info_IS270_RS100_acl
+            
+            raw              ./data/debruijn/
 		}
 		
 		SC_HAMMER_1410_FILTERED
@@ -205,12 +209,14 @@ real_libs
 	                    
             has_advanced     false
             advanced         ./data/debruijn/QUAKE_FULL/K55/
+            
+            raw              ./data/debruijn/
 		}
        
     }
     
     
-    item_0
+    item_2
     {
         read_size     100
         insert_size   220
@@ -227,6 +233,8 @@ real_libs
             
             has_advanced     false
             advanced         ./data/debruijn
+            
+            raw              ./data/debruijn/
         }
         QUAKE_CROPPED_400K
         {   
@@ -237,7 +245,9 @@ real_libs
             second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/cropped/s_6.first400000_2.fastq.gz
             
             has_advanced     false
-            advanced         ./data/debruijn                        
+            advanced         ./data/debruijn       
+            
+            raw              ./data/debruijn/                 
         }
         
         QUAKE_FULL
@@ -254,6 +264,8 @@ real_libs
             ;advanced         ./data/debruijn/QUAKE_FULL/K55/NORMAL/10.14_06_34/paired_info_IS220_RS100_acl
             ;advanced         ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/10.14_06_31/paired_info_IS220_RS100_acl
             advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS220_RS100_acl
+            
+            raw              ./data/debruijn/
         }
     }     
    
@@ -274,7 +286,9 @@ real_libs
             second           ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first100000_2.fastq.gz
             
             has_advanced     false
-            advanced         ./data/debruijn             
+            advanced         ./data/debruijn  
+            
+            raw              ./data/debruijn/           
         }                
         QUAKE_CROPPED_400K
         {   
@@ -285,7 +299,9 @@ real_libs
             second           ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/cropped/E.Coli_600.first400000_2.fastq.gz
             
             has_advanced     false
-            advanced         ./data/debruijn                        
+            advanced         ./data/debruijn      
+            
+            raw              ./data/debruijn/                  
         }
         
         QUAKE_FULL
@@ -306,6 +322,8 @@ real_libs
             ;advanced         ./data/debruijn/QUAKE_FULL/K55/NORMAL/10.14_06_34/paired_info_IS480_RS100_acl
             ;advanced         ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/10.14_06_31/paired_info_IS480_RS100_acl
             advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS480_RS100_acl
+            
+            raw              ./data/debruijn/
         }
     } 
 

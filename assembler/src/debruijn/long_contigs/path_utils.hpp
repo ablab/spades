@@ -227,6 +227,12 @@ void CheckIds(Graph& g, std::vector<BidirectionalPath>& paths) {
 	}
 }
 
+void SortPairedPathsByLength(std::vector<BidirectionalPath>& paths) {
+	std::vector<BidirectionalPath>& result;
+
+
+}
+
 void SortPathsByLength(Graph& g, std::vector<BidirectionalPath>& paths) {
 	SimplePathComparator pathComparator(g);
 	std::stable_sort(paths.begin(), paths.end(), pathComparator);
@@ -811,8 +817,14 @@ std::pair<int, double> FindComlementPath(Graph& g, std::vector<BidirectionalPath
 
 //Filter symetric complement contigs
 void FilterComplement(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<int>* pairs, std::vector<double>* quality) {
-
+	INFO("Filtering conjugate");
+	INFO(paths.size());
 	SortPathsByLength(g, paths);
+	INFO(paths.size());
+	CheckIds(g, paths);
+	INFO(paths.size());
+	PrintPathsShort(g, paths);
+
 	pairs->clear();
 	quality->clear();
 	pairs->resize(paths.size(), -1);
@@ -947,6 +959,8 @@ void RemoveOverlaps(Graph& g, std::vector<BidirectionalPath>& paths) {
 
 				INFO("Same one removed from reverse-complement path");
 				BidirectionalPath& comp = paths[path.conj_id];
+            	PrintPath(g, comp);
+            	PrintPath(g, paths[paths[overlaped].conj_id]);
 
 				overlap = std::min(overlap, (int) comp.size() - 1);
 				for (int i = 0; i <= overlap; ++i) {

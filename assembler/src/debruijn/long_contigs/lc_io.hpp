@@ -267,7 +267,7 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 
 		INFO("Reading additional info with read size " << readSize << ", insert size " << insertSize);
 
-		if (rl->ds.precounted) {
+		if (rl->ds.precounted && !lc_cfg::get().paired_info_only) {
 			//Reading saved paired info
 			DataScanner<Graph> dataScanner(g, conj_IntIds);
 			dataScanner.loadPaired(rl->ds.precounted_path, *pairedInfos.back().pairedInfoIndex);
@@ -288,30 +288,20 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 			}
 		}
 		else {
-			//Reading paired info from fastq files
-			string reads_filename1 = rl->ds.first;
-			string reads_filename2 = rl->ds.second;
-			checkFileExistenceFATAL(reads_filename1);
-			checkFileExistenceFATAL(reads_filename2);
+			string reads_filename_1 = rl->ds.first;
+			string reads_filename_2 = rl->ds.second;
 
-			typedef io::Reader<io::SingleRead> ReadStream;
-			typedef io::Reader<io::PairedRead> PairedReadStream;
-			typedef io::RCReaderWrapper<io::PairedRead> RCStream;
-			typedef io::FilteringReaderWrapper<io::PairedRead> FilteringStream;
+			checkFileExistenceFATAL(reads_filename_1);
+			checkFileExistenceFATAL(reads_filename_2);
 
-			PairedReadStream pairStream(std::pair<std::string,
-									  std::string>(reads_filename1,
-												   reads_filename2),
-												   insertSize);
-
-			FilteringStream filter_stream(pairStream);
-
-			RCStream rcStream(filter_stream);
+			io::EasyReader<io::PairedRead> stream(
+					std::make_pair(reads_filename_1, reads_filename_2),
+					rl->insert_size);
 
 			if (useNewMetrics) {
-				FillPairedIndexWithReadCountMetric<k, RCStream>(g, index, mapper, *pairedInfos.back().pairedInfoIndex, rcStream);
+				FillPairedIndexWithReadCountMetric<k, io::EasyReader<io::PairedRead> >(g, index, mapper, *pairedInfos.back().pairedInfoIndex, stream);
 			} else {
-				FillPairedIndexWithProductMetric<k, RCStream>(g, index, mapper, *pairedInfos.back().pairedInfoIndex, rcStream);
+				FillPairedIndexWithProductMetric<k, io::EasyReader<io::PairedRead> >(g, index, mapper, *pairedInfos.back().pairedInfoIndex, stream);
 			}
 		}
 		INFO("Done");
@@ -322,7 +312,8 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 	}
 }
 
-void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Graph>& old_IDs, const std::string& fileNamePrefix) {
+void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Graph>& old_IDs, const std::string& fileNamePrefix,
+		bool advEstimator = false) {
 	INFO("Saving paired info");
 	DataPrinter<Graph> dataPrinter(g, old_IDs);
 	for (auto lib = pairedInfos.begin(); lib != pairedInfos.end(); ++lib) {
@@ -330,24 +321,27 @@ void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Gra
 		INFO("Saving to " << fileName);
 
 		if (lc_cfg::get().cluster_paired_info) {
-			PairedInfoIndex<Graph> clustered_index(g);
-			DistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), old_IDs, lib->insertSize, lib->readSize, cfg::get().de.delta,
-					cfg::get().de.linkage_distance,
-					cfg::get().de.max_distance);
-			estimator.Estimate(clustered_index);
+			if (!advEstimator) {
+				PairedInfoIndex<Graph> clustered_index(g);
+				DistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), old_IDs, lib->insertSize, lib->readSize, cfg::get().de.delta,
+						cfg::get().de.linkage_distance,
+						cfg::get().de.max_distance);
+				estimator.Estimate(clustered_index);
 
-			dataPrinter.savePaired(fileName + "_clustered", clustered_index);
+				dataPrinter.savePaired(fileName + "_clustered", clustered_index);
+			} else {
+				PairedInfoIndex<Graph> clustered_index_(g);
+				AdvancedDistanceEstimator<Graph> estimator_(g, *(lib->pairedInfoIndex), old_IDs,
+						lib->insertSize, lib->readSize, cfg::get().de.delta,
+						cfg::get().de.linkage_distance, cfg::get().de.max_distance, cfg::get().ade.threshold, cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff, cfg::get().ade.cutoff, cfg::get().ade.minpeakpoints, cfg::get().ade.inv_density, cfg::get().ade.percentage, cfg::get().ade.derivative_threshold);
+				estimator_.Estimate(clustered_index_);
 
-			PairedInfoIndex<Graph> clustered_index_(g);
-            AdvancedDistanceEstimator<Graph> estimator_(g, *(lib->pairedInfoIndex), old_IDs,
-            		lib->insertSize, lib->readSize, cfg::get().de.delta,
-                    cfg::get().de.linkage_distance, cfg::get().de.max_distance, cfg::get().ade.threshold, cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff, cfg::get().ade.cutoff, cfg::get().ade.minpeakpoints, cfg::get().ade.inv_density, cfg::get().ade.percentage, cfg::get().ade.derivative_threshold);
-            estimator_.Estimate(clustered_index_);
-
-            dataPrinter.savePaired(fileName + "_acl", clustered_index_);
-
+				dataPrinter.savePaired(fileName + "_acl", clustered_index_);
+			}
 		}
-		dataPrinter.savePaired(fileName, *(lib->pairedInfoIndex));
+		if (lc_cfg::get().write_raw_paired_info) {
+			dataPrinter.savePaired(fileName, *(lib->pairedInfoIndex));
+		}
 	}
 	INFO("Saved");
 }

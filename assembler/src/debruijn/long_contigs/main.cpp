@@ -76,10 +76,17 @@ int main() {
 		AddRealInfo<K>(g, index, intIds, pairedInfos, mapper, lc_cfg::get().use_new_metrics);
 
 		if (!cfg::get().etalon_info_mode && lc_cfg::get().write_real_paired_info) {
-			SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix);
+			SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix, !lc_cfg::get().use_new_metrics);
 		}
 
 		if (lc_cfg::get().paired_info_only) {
+			pairedInfos.clear();
+			AddRealInfo<K>(g, index, intIds, pairedInfos, mapper, !lc_cfg::get().use_new_metrics);
+
+			if (lc_cfg::get().write_real_paired_info) {
+				SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix, lc_cfg::get().use_new_metrics);
+			}
+
 			return 0;
 		}
 	}
@@ -145,13 +152,19 @@ int main() {
 
 	ResolveUnequalComplement(g, paths, lc_cfg::get().fo.sym.cut_tips, lc_cfg::get().fo.sym.min_conjugate_len);
 	CheckIds(g, paths);
+	PrintPathsShort(g, paths);
+	std::vector<int> pairs;
+	std::vector<double> quality;
+	INFO("After unequal")
+	FilterComplement(g, paths, &pairs, &quality);
 
 	std::vector<BidirectionalPath> goodPaths;
 	RemoveUnagreedPaths(g, paths, pairedInfos, lc_cfg::get().fo.agreed_coeff, &goodPaths);
 	CheckIds(g, goodPaths);
 
-	std::vector<int> pairs;
-	std::vector<double> quality;
+
+	INFO("After unagreed")
+	FilterComplement(g, goodPaths, &pairs, &quality);
 
 	std::vector<BidirectionalPath> filteredPaths;;
 	if (lc_cfg::get().fo.remove_sefl_conjugate) {
@@ -161,6 +174,8 @@ int main() {
 	}
 
 	CheckIds(g, filteredPaths);
+	INFO("After wrong conjugate")
+	FilterComplement(g, filteredPaths, &pairs, &quality);
 
 	std::vector<BidirectionalPath> result;
 	std::vector<double> pathQuality;
@@ -183,6 +198,7 @@ int main() {
 	}
 
 	CheckIds(g, result);
+	INFO("After subpaths")
 	FilterComplement(g, result, &pairs, &quality);
 
 	if (lc_cfg::get().print_stats) {
