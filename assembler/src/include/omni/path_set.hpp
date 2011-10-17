@@ -271,6 +271,68 @@ private:
 public:
     PathSetIndex(PathSetIndexData<EdgeId> data):data_(data){}
     //TODO BAD CODE
+
+    
+    void Process(PathSetIndexData<EdgeId>& filteredPathSetData)
+    {
+        PathSetIndexData<EdgeId> removedPrefixData;
+        RemovePrefixes(removedPrefixData);
+        RemoveInvalidPaths(removedPrefixData, filteredPathSetData);
+    }
+
+
+    /*
+     * Find a vector of possible extension pathsets.
+     * The offSet will take care of the case where there is no pairedinfo in a very short edge. I ignore the offset by now
+     * and will consider later when we have problem with the pairinfo
+     */
+    void FindExtension(PathSetIndexData<EdgeId> &indexData, PathSet<EdgeId> &currentPathSet, vector<PathSet<EdgeId>> & extendablePathSets, size_t offSet = 0)
+    {
+
+        if(currentPathSet.paths.size() == 1 && (*(currentPathSet.paths.begin())).size() ==0 )
+        {
+
+            EdgeId headEdge = currentPathSet.end;
+            vector<PathSet<EdgeId>>  pathSets =  indexData.GetPathSets(headEdge);
+            extendablePathSets.reserve(pathSets.size());
+            copy(pathSets.begin(), pathSets.end(), back_inserter(extendablePathSets));
+
+        }
+        else
+        {
+            for(auto iter = currentPathSet.paths.begin() ; iter != currentPathSet.paths.end() ; ++iter)
+            {
+                Path currentPath  = *iter;
+                if(currentPath.size() == 0)
+                {
+                    INFO("NEED TO BE INSPECTED");
+                }
+                else{
+                    currentPath.push_back( currentPathSet.end);
+                    Path comparedPath(currentPath.begin() +1, currentPath.end());
+                    vector<PathSet<EdgeId>> candidatePathSets = indexData.GetPathSets(currentPath[0]);
+                    for(auto it = candidatePathSets.begin() ; it != candidatePathSets.end() ; ++it)
+                    {
+                        set<Path> comparedPathsCandidate;
+                        for(auto piter  = it->paths.begin() ; piter != it->paths.end() ; ++piter)
+                        {
+                            Path extendedPath(piter->begin(), piter->end());
+                            extendedPath.push_back(it->end);
+                            comparedPathsCandidate.insert(extendedPath);
+                        }
+                        if(IsPrefixOfPaths(comparedPath, comparedPathsCandidate))
+                            if(find(extendablePathSets.begin(), extendablePathSets.end(), *it) == extendablePathSets.end()){
+                                extendablePathSets.push_back(*it);
+                            }
+                    }
+                }
+            }
+
+        
+        }
+    }
+
+private:
     void RemovePrefixes(PathSetIndexData<EdgeId> &filteredPathSetDat)
     {
         for(auto iter = data_.begin() ; iter != data_.end() ; )
@@ -374,59 +436,6 @@ public:
 
     }
 
-    /*
-     * Find a vector of possible extension pathsets.
-     * The offSet will take care of the case where there is no pairedinfo in a very short edge. I ignore the offset by now
-     * and will consider later when we have problem with the pairinfo
-     */
-    void FindExtension(PathSetIndexData<EdgeId> &indexData, PathSet<EdgeId> &currentPathSet, vector<PathSet<EdgeId>> & extendablePathSets, size_t offSet = 0)
-    {
-
-        if(currentPathSet.paths.size() == 1 && (*(currentPathSet.paths.begin())).size() ==0 )
-        {
-
-            EdgeId headEdge = currentPathSet.end;
-            vector<PathSet<EdgeId>>  pathSets =  indexData.GetPathSets(headEdge);
-            extendablePathSets.reserve(pathSets.size());
-            copy(pathSets.begin(), pathSets.end(), back_inserter(extendablePathSets));
-
-        }
-        else
-        {
-            for(auto iter = currentPathSet.paths.begin() ; iter != currentPathSet.paths.end() ; ++iter)
-            {
-                Path currentPath  = *iter;
-                if(currentPath.size() == 0)
-                {
-                    INFO("NEED TO BE INSPECTED");
-                }
-                else{
-                    currentPath.push_back( currentPathSet.end);
-                    Path comparedPath(currentPath.begin() +1, currentPath.end());
-                    vector<PathSet<EdgeId>> candidatePathSets = indexData.GetPathSets(currentPath[0]);
-                    for(auto it = candidatePathSets.begin() ; it != candidatePathSets.end() ; ++it)
-                    {
-                        set<Path> comparedPathsCandidate;
-                        for(auto piter  = it->paths.begin() ; piter != it->paths.end() ; ++piter)
-                        {
-                            Path extendedPath(piter->begin(), piter->end());
-                            extendedPath.push_back(it->end);
-                            comparedPathsCandidate.insert(extendedPath);
-                        }
-                        if(IsPrefixOfPaths(comparedPath, comparedPathsCandidate))
-                            if(find(extendablePathSets.begin(), extendablePathSets.end(), *it) == extendablePathSets.end()){
-                                extendablePathSets.push_back(*it);
-                            }
-                    }
-                }
-            }
-
-        
-        }
-
-
-
-    }
    //TODO Move out duplicated functions --- lazy coder 
     
     bool IsPrefixOfPaths(Path & singlePath,const set<Path> &paths)

@@ -536,48 +536,36 @@ public:
 
 	virtual void Count() {
 
-//TODO CLEAN IT WHEN DONE
-//        PathSetIndexData<EdgeId> PII ;
-//        PathSetIndexData<EdgeId> PIIFilter ;
-//        PathSetIndexData<EdgeId> invalidPathsRemovedPII;
-//        MatePairTransformer<Graph> transformer(g_, pair_info_);
-//        transformer.Transform(PII);
-//        PathSetIndex<EdgeId> PI(PII);
-//        PI.RemovePrefixes(PIIFilter);
-//        
-//        for(auto iter = PII.begin(); iter != PII.end() ; ++iter)
-//        {
-//            INFO( *iter);
-//        } 
-//        PI.RemoveInvalidPaths(PIIFilter, invalidPathsRemovedPII);
-//
-//        INFO("FILTERED");
-//        for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
-//        {
-//            PathSet<EdgeId> first = *iter;
-//            vector<PathSet<EdgeId>> extends;
-//            PI.FindExtension(PIIFilter,first, extends);
-//        }
-//        INFO("More FILTERED");
-//        for(auto iter = invalidPathsRemovedPII.begin(); iter != invalidPathsRemovedPII.end() ; ++iter)
-//        {
-//            PathSet<EdgeId> first = *iter;
-//            vector<PathSet<EdgeId>> extends;
-//            PI.FindExtension(invalidPathsRemovedPII,first, extends);
-//        }
-//        INFO("RAW HIS");
-//        for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
-//        {
-//            PathSet<EdgeId> first = *iter;
-//            INFO(first.paths.size());
-//        }
-//        INFO("HISTO");
-//        for(auto iter = invalidPathsRemovedPII.begin(); iter != invalidPathsRemovedPII.end() ; ++iter)
-//        {
-//            PathSet<EdgeId> first = *iter;
-//            INFO(first.paths.size());
-//        }
-//        INFO("END HISTO");
+        PathSetIndexData<EdgeId> PII ;
+        PathSetIndexData<EdgeId> PIIFilter ;
+        MatePairTransformer<Graph> transformer(g_, pair_info_);
+        transformer.Transform(PII);
+        PathSetIndex<EdgeId> PI(PII);
+        PI.Process(PIIFilter);
+        for(auto iter = PII.begin(); iter != PII.end() ; ++iter)
+        {
+            INFO( *iter);
+        } 
+
+        INFO("FILTERED");
+        for(auto iter = PIIFilter.begin() ; iter != PIIFilter.end(); ++iter)
+        {
+            INFO(*iter);
+        }
+        INFO("Extension");
+        for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
+        {
+            PathSet<EdgeId> first = *iter;
+            INFO(first);
+            vector<PathSet<EdgeId>> extends;
+            PI.FindExtension(PIIFilter,first, extends);
+            for(size_t i = 0 ; i < extends.size() ; ++i)
+            {
+                INFO("CAN BE EXTENDED BY " );
+                INFO(extends[i]);
+            }
+        }
+
 
         
 		for (auto it = pair_info_.begin(); it != pair_info_.end(); ++it) {
