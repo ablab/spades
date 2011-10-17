@@ -105,20 +105,20 @@ public:
 			}TRACE("Checking length");
 			if (g_.length(e) < max_length_) {
 				TRACE("Condition ok");
-//				edge_remover_.DeleteEdge(e);
-				VertexId start = g_.EdgeStart(e);
-				VertexId end = g_.EdgeEnd(e);
-				TRACE("Start " << start);
-				TRACE("End " << end);
-				TRACE("Deleting edge");
-				g_.DeleteEdge(e);
-				TRACE("Compressing locality");
-				if (!g_.RelatedVertices(start, end)) {
-					TRACE("Vertices not related");
-					TRACE("Compressing end");
-					g_.CompressVertex(end);
-				}TRACE("Compressing start");
-				g_.CompressVertex(start);
+				edge_remover_.DeleteEdge(e);
+//				VertexId start = g_.EdgeStart(e);
+//				VertexId end = g_.EdgeEnd(e);
+//				TRACE("Start " << start);
+//				TRACE("End " << end);
+//				TRACE("Deleting edge");
+//				g_.DeleteEdge(e);
+//				TRACE("Compressing locality");
+//				if (!g_.RelatedVertices(start, end)) {
+//					TRACE("Vertices not related");
+//					TRACE("Compressing end");
+//					g_.CompressVertex(end);
+//				}TRACE("Compressing start");
+//				g_.CompressVertex(start);
 			} else {
 				TRACE("Condition failed");
 			}TRACE("Edge " << e << " processed");
