@@ -304,9 +304,74 @@ public:
 
         }
     }
-    void RemoveInvalidPaths(PathSetIndexData<EdgeId> &filteredPathSetDat)
+
+    void RemoveInvalidPaths(PathSetIndexData<EdgeId> &rawPathSetDat, PathSetIndexData<EdgeId> &filtered)
     {
-        //we use ad hoc paired de Bruijn graph for mate-pair info
+        //we use ad hoc paired de Bruijn graph for mate-pair info just in the paper
+        //Here we use the path-set platform too
+        for(auto iter = rawPathSetDat.begin() ; iter != rawPathSetDat.end() ;++iter)
+        {
+            PathSet<EdgeId> rawPathSet = *iter;
+            PathSet<EdgeId> newPathSet = *iter;
+            vector<PathSet<EdgeId>> topLevelNodes ;
+            topLevelNodes.push_back(rawPathSet);
+            for(auto pathIter = rawPathSet.paths.begin() ; pathIter != rawPathSet.paths.end() ; ++pathIter)
+            {
+                Path currentPath = *pathIter;
+                deque<EdgeId> checkPath(pathIter->begin(), pathIter->end());
+                checkPath.push_front(rawPathSet.start);
+                checkPath.push_back(rawPathSet.end);
+                if(!CheckForwardConsistent(checkPath, topLevelNodes, rawPathSetDat))
+                {
+                    newPathSet.paths.erase(currentPath);
+                }
+            }
+            if(newPathSet.paths.size() ==0)
+            {
+//                INFO("ALL PATHS IS REMOVED ---- ");
+                filtered.AddPathSet(rawPathSet);
+ //               INFO(rawPathSet);
+            }
+            else
+                filtered.AddPathSet(newPathSet);
+        }
+    }
+    bool CheckForwardConsistent(deque<EdgeId> checkPath, vector<PathSet<EdgeId>> currentPathsets, PathSetIndexData<EdgeId> &pathsetData)
+    {
+        //base case
+        if(checkPath.size() == 1)  
+        {
+            for(size_t i = 0 ; i < currentPathsets.size() ; ++i )
+            {
+                if(currentPathsets[i].start == checkPath[0])
+                    return true;
+            }
+            return false;
+        }
+        else
+        {
+            EdgeId headNode = checkPath[0];
+            vector<PathSet<EdgeId>> nextLevelPathSets ;
+            for(size_t i =  0 ; i < currentPathsets.size() ; ++i)
+            {
+                if(currentPathsets[i].start == headNode)
+                {
+                   vector<PathSet<EdgeId>> extendablePathSets; 
+                    FindExtension(pathsetData, currentPathsets[i], extendablePathSets);
+                    for(size_t t = 0 ; t< extendablePathSets.size() ; t++)
+                    {
+                        if(find(nextLevelPathSets.begin(), nextLevelPathSets.end(), extendablePathSets[t]) == nextLevelPathSets.end())
+                            nextLevelPathSets.push_back(extendablePathSets[t]);    
+                    }
+                }
+            }
+            checkPath.pop_front();
+            if(nextLevelPathSets.size() == 0)
+                return false;
+            else
+                return CheckForwardConsistent(checkPath, nextLevelPathSets , pathsetData);
+        }
+
     }
 
     /*
@@ -319,30 +384,15 @@ public:
 
         if(currentPathSet.paths.size() == 1 && (*(currentPathSet.paths.begin())).size() ==0 )
         {
-//            INFO("PATHSET SHORT");
-//            INFO(currentPathSet);
+
             EdgeId headEdge = currentPathSet.end;
             vector<PathSet<EdgeId>>  pathSets =  indexData.GetPathSets(headEdge);
             extendablePathSets.reserve(pathSets.size());
             copy(pathSets.begin(), pathSets.end(), back_inserter(extendablePathSets));
-            
-//            if(extendablePathSets.size() !=0 )
-//            {
-//            INFO("CAN BE FOLLOWED BY");
-//            for(size_t i = 0 ; i < extendablePathSets.size() ; ++i)
-//            {
-//                INFO(extendablePathSets[i]);
-//            }
-//            }
-//            else
-//            {
-//                INFO("CAN NOT FOLLOWED");
-//            }
+
         }
         else
         {
-//            INFO("PATHSET LONG");
-//            INFO(currentPathSet);
             for(auto iter = currentPathSet.paths.begin() ; iter != currentPathSet.paths.end() ; ++iter)
             {
                 Path currentPath  = *iter;
@@ -371,25 +421,13 @@ public:
                 }
             }
 
-//            if(extendablePathSets.size() !=0 )
-//            {
-//            for(size_t i = 0 ; i < extendablePathSets.size() ; ++i)
-//            {
-//                INFO("CAN BE FOLLOWED BY");
-//                INFO(extendablePathSets[i]);
-//            }
-//            }
-//            else
-//            {
-//                INFO("CAN NOT FOLLOWED");
-//            }
         
         }
 
 
 
     }
-   //TODO lazy coder 
+   //TODO Move out duplicated functions --- lazy coder 
     
     bool IsPrefixOfPaths(Path & singlePath,const set<Path> &paths)
     {
@@ -411,7 +449,7 @@ public:
         }
         return false;
     }
-
+    
 };
 
 }
