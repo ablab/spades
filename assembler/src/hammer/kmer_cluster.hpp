@@ -16,7 +16,8 @@ class unionFindClass;
 
 class KMerClustering {
 public:
-	KMerClustering(std::vector<KMerCount*> & kmers, int nthreads, int tau) : k_(kmers), nthreads_(nthreads), tau_(tau) { }
+	KMerClustering(std::vector<KMerCount*> * kmers, int nthreads, int tau) : k_(kmers), v_(NULL), nthreads_(nthreads), tau_(tau) { hintVector = false; }
+	KMerClustering(std::vector<KMerCount*> * kmers_empty, std::vector<hint_t> * kmers, int nthreads, int tau) : k_(kmers_empty), v_(kmers), nthreads_(nthreads), tau_(tau) { hintVector = true; }
 
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
@@ -25,18 +26,30 @@ public:
 
 	/// free up memory
 	void clear() {
-		k_.clear();
+		k_->clear();
 	}
 	
 private:
-	std::vector<KMerCount*> & k_;
+	std::vector<KMerCount*> * k_;
+	std::vector<hint_t> * v_;
 	int nthreads_;
 	int tau_;
-		
+	bool hintVector;
+
+	/// @return total log-likelihood that x was made from center given x's quality values
+	double logLikelihoodKMer(const string & center, const KMerCount * x);
+
+	/// @return Hamming distance between x and y with upper bound tau
 	int hamdistKMer(const PositionKMer & x, const PositionKMer & y, int tau = K);
+	/// @return Hamming distance between x and y with upper bound tau
 	int hamdistKMer(const PositionKMer & x, const string & y, int tau = K);
+	/// @return Hamming distance between x and y with upper bound tau
 	int hamdistKMer(const string & x, const string & y, int tau = K);
+	/// @return Hamming distance between x and y with upper bound tau
+	int hamdistKMer(const hint_t & x, const hint_t & y, int tau = K);
+	/// @return multinomial coefficient
 	double calcMultCoef(std::vector<int> & distances, const std::vector<int> & cl);
+	/// @return consensus string for a block
 	std::string find_consensus(const std::vector<int> & block);
 
 	/**
@@ -50,6 +63,10 @@ private:
 	  * @return total log-likelihood of this particular clustering
 	  */
 	double clusterLogLikelihood(const vector<int> & cl, const vector<StringCount> & centers, const vector<int> & indices);
+	/**
+	  * @return total log-likelihood of this particular clustering with real quality values
+	  */
+	double trueClusterLogLikelihood(const vector<int> & cl, const vector<StringCount> & centers, const vector<int> & indices);
 
 	/**
 	  * perform l-means clustering on the set of k-mers with initial centers being the l most frequent k-mers here
@@ -67,8 +84,8 @@ private:
 	  */
 	void process_block_SIN(const std::vector<int> & block, std::vector< std::vector<int> > & vec);
 
-	void processBlock(unionFindClass * uf, vector<hint_t> & block, int cur_subkmer);
-	void processBlockQuadratic(unionFindClass * uf, vector<hint_t> & block);
+	void processBlock(unionFindClass * uf, vector<hint_t> & block, int cur_subkmer, bool fileBased);
+	void processBlockQuadratic(unionFindClass * uf, vector<hint_t> & block, bool direct);
 	void clusterMerge(std::vector<unionFindClass *> uf, unionFindClass * ufMaster);
 
 };

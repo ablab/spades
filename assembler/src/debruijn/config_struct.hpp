@@ -27,6 +27,14 @@ namespace debruijn_graph
         ws_n50_enlargement
     };
 
+    enum simplification_mode
+    {
+    	sm_normal,
+    	sm_cheating,
+    	sm_chimeric,
+    	sm_pair_info_aware
+    };
+
 	const char* const cfg_filename = "./src/debruijn/config.info";
 //	const size_t K = 55; // must be odd (so there is no k-mer which is equal to it's reverse-complimentary k-mer)
 
@@ -46,33 +54,60 @@ namespace debruijn_graph
 	// struct for debruijn project's configuration file
 	struct debruijn_config
 	{
-		typedef boost::bimap<std::string, working_stage> name_id_mapping;
+		typedef boost::bimap<std::string, working_stage> stage_name_id_mapping;
+		typedef boost::bimap<std::string, simplification_mode> simpl_mode_id_mapping;
 
-		static const name_id_mapping FillStageInfo() {
-			name_id_mapping working_stages_info;
-			working_stages_info.insert(name_id_mapping::value_type("construction"       , ws_construction       ));
-			working_stages_info.insert(name_id_mapping::value_type("paired_info_count"  , ws_paired_info_count  ));
-			working_stages_info.insert(name_id_mapping::value_type("simplification"	    , ws_simplification     ));
-			working_stages_info.insert(name_id_mapping::value_type("late_pair_info_count", ws_late_pair_info_count));
-			working_stages_info.insert(name_id_mapping::value_type("distance_estimation", ws_distance_estimation));
-			working_stages_info.insert(name_id_mapping::value_type("repeats_resolving"	, ws_repeats_resolving  ));
-			working_stages_info.insert(name_id_mapping::value_type("n50_enlargement"	, ws_n50_enlargement    ));
+		static const stage_name_id_mapping FillStageInfo() {
+			stage_name_id_mapping working_stages_info;
+			working_stages_info.insert(stage_name_id_mapping::value_type("construction"       , ws_construction       ));
+			working_stages_info.insert(stage_name_id_mapping::value_type("paired_info_count"  , ws_paired_info_count  ));
+			working_stages_info.insert(stage_name_id_mapping::value_type("simplification"	    , ws_simplification     ));
+			working_stages_info.insert(stage_name_id_mapping::value_type("late_pair_info_count", ws_late_pair_info_count));
+			working_stages_info.insert(stage_name_id_mapping::value_type("distance_estimation", ws_distance_estimation));
+			working_stages_info.insert(stage_name_id_mapping::value_type("repeats_resolving"	, ws_repeats_resolving  ));
+			working_stages_info.insert(stage_name_id_mapping::value_type("n50_enlargement"	, ws_n50_enlargement    ));
 			return working_stages_info;
 		}
 
-		static const name_id_mapping& working_stages_info() {
-			static name_id_mapping working_stages_info = FillStageInfo();
+		static const simpl_mode_id_mapping FillSimplifModeInfo() {
+			simpl_mode_id_mapping simpl_mode_info;
+			simpl_mode_info.insert(simpl_mode_id_mapping::value_type("normal", sm_normal));
+			simpl_mode_info.insert(simpl_mode_id_mapping::value_type("pair_info_aware", sm_pair_info_aware));
+			simpl_mode_info.insert(simpl_mode_id_mapping::value_type("cheating", sm_cheating));
+			simpl_mode_info.insert(simpl_mode_id_mapping::value_type("chimeric", sm_chimeric));
+			return simpl_mode_info;
+		}
+
+		static const simpl_mode_id_mapping& simpl_mode_info() {
+			static simpl_mode_id_mapping simpl_mode_info = FillSimplifModeInfo();
+			return simpl_mode_info;
+		}
+
+		static const stage_name_id_mapping& working_stages_info() {
+			static stage_name_id_mapping working_stages_info = FillStageInfo();
 			return working_stages_info;
+		}
+
+		static const std::string& simpl_mode_name(simplification_mode mode_id) {
+			simpl_mode_id_mapping::right_const_iterator it = simpl_mode_info().right.find(mode_id);
+			VERIFY_MSG(it != simpl_mode_info().right.end(), "No name for simplification mode id = " << mode_id);
+			return it->second;
+		}
+
+		static simplification_mode simpl_mode_id(std::string name) {
+			simpl_mode_id_mapping::left_const_iterator it = simpl_mode_info().left.find(name);
+			VERIFY_MSG(it != simpl_mode_info().left.end(), "There is no simplification mode with name = " << name);
+			return it->second;
 		}
 
 		static const std::string& working_stage_name(working_stage stage_id) {
-			name_id_mapping::right_const_iterator it = working_stages_info().right.find(stage_id);
+			stage_name_id_mapping::right_const_iterator it = working_stages_info().right.find(stage_id);
 			VERIFY_MSG(it != working_stages_info().right.end(), "No name for working stage id = " << stage_id);
 			return it->second;
 		}
 
 		static working_stage working_stage_id(std::string name) {
-			name_id_mapping::left_const_iterator it = working_stages_info().left.find(name);
+			stage_name_id_mapping::left_const_iterator it = working_stages_info().left.find(name);
 			VERIFY_MSG(it != working_stages_info().left.end(), "There is no working stage with name = " << name);
 			return it->second;
 		}
@@ -180,9 +215,11 @@ namespace debruijn_graph
 		std::string load_from;
 
 		working_stage entry_point;
+		simplification_mode simpl_mode;
 
 		bool paired_mode;
-		bool rectangle_mode;
+		bool paired_info_statistics;
+//		bool rectangle_mode;
 		bool etalon_info_mode;
 		bool late_paired_info;
 		bool advanced_estimator_mode;
@@ -217,6 +254,12 @@ namespace debruijn_graph
 	{
 		std::string ep = pt.get<std::string>(key);
 		entry_point = debruijn_config::working_stage_id(ep);
+	}
+
+	inline void load(boost::property_tree::ptree const& pt, std::string const& key, simplification_mode& simp_mode)
+	{
+		std::string ep = pt.get<std::string>(key);
+		simp_mode = debruijn_config::simpl_mode_id(ep);
 	}
 
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::simplification::bulge_remover& br)
@@ -325,7 +368,6 @@ namespace debruijn_graph
 		using config_common::load;
 		// input options:
         load(pt, "dataset", cfg.dataset_name);
-
         load(pt, "input_dir"  , cfg.input_dir);
 
 		std::string output_base;
@@ -341,6 +383,8 @@ namespace debruijn_graph
 
 		load(pt, "entry_point", cfg.entry_point);
 
+		load(pt, "simpl_mode", cfg.simpl_mode);
+
 		load(pt, "use_additional_contigs", cfg.use_additional_contigs);
 		load(pt, "use_single_reads", cfg.use_single_reads);
 
@@ -350,19 +394,20 @@ namespace debruijn_graph
 		//load(pt, "start_from", cfg.start_from);
 
 		load(pt, "paired_mode", cfg.paired_mode);
-		load(pt, "rectangle_mode", cfg.rectangle_mode);
+		load(pt, "paired_info_statistics", cfg.paired_info_statistics);
+//		load(pt, "rectangle_mode", cfg.rectangle_mode);
 		load(pt, "etalon_info_mode", cfg.etalon_info_mode);
 		load(pt, "late_paired_info", cfg.late_paired_info);
 		load(pt, "componential_resolve", cfg.componential_resolve);
 		load(pt, "advanced_estimator_mode", cfg.advanced_estimator_mode);
+		load(pt, cfg.dataset_name, cfg.ds);
+		load(pt, cfg.ds.single_cell ? "sc_de" : "usual_de", cfg.de);
 
-		load(pt, "de", cfg.de); // distance estimator:
 		load(pt, "ade", cfg.ade); // advanced distance estimator:
 		load(pt, "rr", cfg.rr); // repeat resolver:
 		load(pt, "pos", cfg.pos); // position handler:
 		load(pt, "need_consensus", cfg.need_consensus);
 		load(pt, "uncorrected_reads", cfg.uncorrected_reads);
-		load(pt, cfg.dataset_name, cfg.ds);
 
 		load(pt, cfg.ds.single_cell ? "sc_simplification" : "usual_simplification", cfg.simp);
 	}

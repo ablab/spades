@@ -19,7 +19,7 @@ template<class Graph>
 class CoverageIndex: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef std::tr1::unordered_map<EdgeId, size_t> map_type;
+	typedef std::tr1::unordered_map<EdgeId, int> map_type;
 
 private:
 
@@ -40,9 +40,9 @@ private:
 				!= path.sequence().end(); ++it) {
 			IncCoverage(*it, this->g().length(*it));
 		}
-		IncCoverage(sequence[0], -path.start_pos());
+		IncCoverage(sequence[0], -int(path.start_pos()));
 		EdgeId last = sequence[sequence.size() - 1];
-		IncCoverage(last, path.end_pos() - this->g().length(last));
+		IncCoverage(last, int(path.end_pos()) - int(this->g().length(last)));
 	}
 
 public:
@@ -53,8 +53,13 @@ public:
 	virtual ~CoverageIndex() {
 	}
 
-	void SetCoverage(EdgeId edge, size_t cov) {
+	void SetCoverage(EdgeId edge, int cov) {
+
+		VERIFY(cov >= 0);
+
 		storage_[edge] = cov;
+
+		VERIFY(storage_[edge] >= 0);
 	}
 
 	/**
@@ -72,7 +77,9 @@ public:
 	 * Method increases coverage value
 	 */
 	void IncCoverage(EdgeId edge, int toAdd) {
+		//VERIFY(toAdd >= 0);
 		storage_[edge] += toAdd;
+		VERIFY(storage_[edge] >= 0);
 	}
 
 	/**

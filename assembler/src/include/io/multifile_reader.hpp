@@ -39,24 +39,9 @@ public:
 	 * parameter when we work with SingleReads).
 	 * @param offset The offset of the read quality.
 	 */
-//	MultifileReader(const vector<typename ReadType::FilenameType>& filenames,
-//			size_t distance = 0, OffsetType offset_type = PhredOffset) : /*filenames_(filenames),*/
-//			distance_(distance), offset_type_(offset_type), current_reader_index_(0) {
-//		for (size_t i = 0; i < filenames.size(); ++i) {
-//			Reader<ReadType>* reader = new Reader<ReadType>(filenames[i],
-//					distance_, offset_type_);
-//			VERIFY(reader->is_open());
-////      if (reader->is_open()) {
-//			readers_.push_back(reader);
-////      } else {
-////        delete reader;
-////      }
-//		}
-//	}
 	MultifileReader(const vector<IReader<ReadType>*>& readers,
 			bool destroy_readers = false) : /*filenames_(filenames), */
-			distance_(0), offset_type_(PhredOffset), current_reader_index_(0), destroy_readers_(
-					destroy_readers) {
+			current_reader_index_(0), destroy_readers_(destroy_readers) {
 		for (size_t i = 0; i < readers.size(); ++i) {
 			VERIFY(readers[i]->is_open());
 			readers_.push_back(readers[i]);
@@ -65,8 +50,7 @@ public:
 
 	MultifileReader(IReader<ReadType>& reader_1, IReader<ReadType>& reader_2,
 			bool destroy_readers = false) : /*filenames_(filenames), */
-			distance_(0), offset_type_(PhredOffset), current_reader_index_(0), destroy_readers_(
-					destroy_readers) {
+			current_reader_index_(0), destroy_readers_(destroy_readers) {
 		VERIFY(reader_1.is_open() && reader_2.is_open());
 		readers_.push_back(reader_1);
 		readers_.push_back(reader_2);
@@ -92,11 +76,7 @@ public:
 	 */
 	/* virtual */
 	bool is_open() {
-		if (readers_.size() > 0) {
-			return readers_[0]->is_open();
-		} else {
-			return false;
-		}
+		return (readers_.size() > 0) && readers_[0]->is_open();
 	}
 
 	/*
@@ -107,11 +87,10 @@ public:
 	 */
 	/* virtual */
 	bool eof() {
-		if (readers_.size() > 0) {
-			return readers_[readers_.size() - 1]->eof();
-		} else {
-			return true;
+		while ((current_reader_index_ < readers_.size()) && readers_[current_reader_index_]->eof()) {
+			++current_reader_index_;
 		}
+		return current_reader_index_ == readers_.size();
 	}
 
 	/*
@@ -124,13 +103,8 @@ public:
 	 */
 	/* virtual */
 	MultifileReader& operator>>(ReadType& read) {
-		if (readers_.size() > 0) {
-			if (readers_[current_reader_index_]->eof()) {
-				++current_reader_index_;
-			}
-			if (current_reader_index_ < readers_.size()) {
-				(*readers_[current_reader_index_]) >> read;
-			}
+		if (!eof()) {
+			(*readers_[current_reader_index_]) >> read;
 		}
 		return (*this);
 	}
@@ -153,26 +127,14 @@ public:
 		for (size_t i = 0; i < readers_.size(); ++i) {
 			readers_[i]->reset();
 		}
+		current_reader_index_ = 0;
 	}
 
 private:
-//  /*
-//   * @variable The names of the files which stream read from.
-//   */
-//  vector<typename ReadType::FilenameType> filenames_;
 	/*
 	 * @variable Internal stream readers.
 	 */
 	vector<IReader<ReadType>*> readers_;
-	/*
-	 * @variable The distance between two parts of paired read.
-	 */
-	size_t distance_;
-
-	/*
-	 * @variable Quality offset type.
-	 */
-	OffsetType offset_type_;
 	/*
 	 * @variable The index of the file that is currently read from.
 	 */

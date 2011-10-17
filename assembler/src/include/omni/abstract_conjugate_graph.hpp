@@ -352,7 +352,7 @@ public:
 		return v->conjugate()->OutgoingEdgeCount();
 	}
 
-	virtual vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) {
+	virtual vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) const {
 		return v->OutgoingEdgesTo(u);
 	}
 
@@ -380,7 +380,7 @@ public:
 		return edge->conjugate();
 	}
 
-	virtual std::string PrintEdges(const vector<EdgeId>& path) {
+	virtual std::string PrintEdges(const vector<EdgeId>& path) const {
 		stringstream ss;
 		ss << "Edges: ";
 		for (auto it = path.begin(); it != path.end(); ++it) {
@@ -389,21 +389,21 @@ public:
 		return ss.str();
 	}
 
-	virtual std::string PrintEdge(EdgeId edge) {
+	virtual std::string PrintEdge(EdgeId edge) const {
 		stringstream ss;
 //		ss << "Edge ";
 		ss << edge << " (conjugate " << conjugate(edge) << ")";
 		return ss.str();
 	}
 
-	virtual std::string PrintVertex(VertexId v) {
+	virtual std::string PrintVertex(VertexId v) const {
 		stringstream ss;
 //		ss << "Edge ";
 		ss << v << " (conjugate " << conjugate(v) << ")";
 		return ss.str();
 	}
 
-	virtual std::string PrintDetailedVertexInfo(VertexId v) {
+	virtual std::string PrintDetailedVertexInfo(VertexId v) const {
 		stringstream ss;
 		ss << "Vertex " << v << " (conjugate " << conjugate(v) << "), ";
 		ss << "Incoming " << PrintEdges(IncomingEdges(v)) << ", ";
@@ -412,7 +412,7 @@ public:
 		return ss.str();
 	}
 
-	virtual std::string PrintDetailedPath(const vector<EdgeId>& path) {
+	virtual std::string PrintDetailedPath(const vector<EdgeId>& path) const {
 		stringstream ss;
 		ss << "Path: ";
 		ss << PrintDetailedVertexInfo(EdgeStart(path[0]));
@@ -424,12 +424,12 @@ public:
 		return ss.str();
 	}
 
-	/*virtual*/ bool AdditionalCompressCondition(VertexId v) {
+	/*virtual*/ bool AdditionalCompressCondition(VertexId v) const {
 		return !(EdgeEnd(GetUniqueOutgoingEdge(v)) == conjugate(v)
 				&& EdgeStart(GetUniqueIncomingEdge(v)) == conjugate(v));
 	}
 
-	/*virtual*/ bool RelatedVertices(VertexId v1, VertexId v2) {
+	/*virtual*/ bool RelatedVertices(VertexId v1, VertexId v2) const {
 		return v1 == v2 || v1 == conjugate(v2);
 	}
 

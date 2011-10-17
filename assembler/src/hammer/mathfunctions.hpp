@@ -13,7 +13,7 @@
 #include "position_kmer.hpp"
 
 
-long double Factorial(int n) {
+inline long double Factorial(int n) {
   if (n == 0) {
     return 1;
   }
@@ -24,11 +24,11 @@ long double Factorial(int n) {
   return ans[n];
 }
 
-long double CNK(int n, int k) {
+inline long double CNK(int n, int k) {
   return Factorial(n) / (Factorial(k) * Factorial(n - k));
 }
 
-long double Bernoulli(int k, int n, long double p) {
+inline long double Bernoulli(int k, int n, long double p) {
   return pow(p, k) * pow(1 - p, n - k) * CNK(n, k);
 }
 

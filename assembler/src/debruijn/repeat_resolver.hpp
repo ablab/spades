@@ -75,35 +75,26 @@ public:
 		bool isClose(int a, int b, double max_diff) {
 			return (abs(a - b) < max_diff);
 		}
-		bool isAdjacent(EdgeInfo other_info, Graph &old_graph,
-				Graph &new_graph) {
-			//			DEBUG("comparation started: " << edge);
+
+
+
+		bool IsEdgesOnDistanceAdjacent(EdgeId edge,       int d,
+									   EdgeId other_edge, int other_d,
+									   Graph &old_graph, double max_diff, bool first_equal ){
+
 			VertexId v_s = old_graph.EdgeStart(edge);
 			VertexId v_e = old_graph.EdgeEnd(edge);
-			EdgeId other_edge = other_info.getEdge();
+//			EdgeId other_edge = other_info.getEdge();
 			//			DEBUG("to " << other_edge);
 			VertexId other_v_s = old_graph.EdgeStart(other_edge);
 			VertexId other_v_e = old_graph.EdgeEnd(other_edge);
 			//TODO: insert distance!!!
 			int len = old_graph.length(edge);
 			int other_len = old_graph.length(other_edge);
-			int other_d = other_info.getDistance();
+//			int other_d = other_info.getDistance();
 
-			double max_diff = max(lp.variance, other_info.lp.variance) + 0.5
-					+ 1e-9;
-			//		max_diff = MAXD;
-//ToDo: Understand if it is very dirty hack.
-			if ((lp.first != other_info.lp.first)
-					&& (new_graph.EdgeStart(lp.first)
-							!= new_graph.EdgeEnd(lp.first))
-					&& (new_graph.EdgeStart(other_info.lp.first)
-							!= new_graph.EdgeEnd(other_info.lp.first))) {
-				if ((new_graph.EdgeStart(lp.first)
-						== new_graph.EdgeStart(other_info.lp.first))
-						|| (new_graph.EdgeEnd(lp.first)
-								== new_graph.EdgeEnd(other_info.lp.first)))
-					return false;
-			}
+
+
 
 //TODO:: SHURIK! UBERI ZA SOBOJ !!!
 			BoundedDijkstra<Graph, int> dij(old_graph, MAXSKIPDIST);
@@ -122,7 +113,7 @@ public:
 			if ((other_edge == edge && isClose(d, other_d, max_diff)))
 				return true;
 
-			if (lp.first == other_info.lp.first) {
+			if (first_equal) {
 				if ((v_e == other_v_s && isClose(d + len, other_d, max_diff))
 						|| (v_s == other_v_e
 								&& isClose(d, other_d + other_len, max_diff))
@@ -135,7 +126,61 @@ public:
 				}
 			}
 			return false;
+
 		}
+
+
+
+
+
+		bool isAdjacent(EdgeInfo other_info, Graph &old_graph,
+				Graph &new_graph, EdgeLabelHandler<Graph> &labels_after) {
+			//			DEBUG("comparation started: " << edge);
+			//		max_diff = MAXD;
+
+
+//ToDo: Understand if it is very dirty hack.
+			if ((lp.first != other_info.lp.first)
+					&& (new_graph.EdgeStart(lp.first)
+							!= new_graph.EdgeEnd(lp.first))
+					&& (new_graph.EdgeStart(other_info.lp.first)
+							!= new_graph.EdgeEnd(other_info.lp.first))) {
+				if ((new_graph.EdgeStart(lp.first)
+						== new_graph.EdgeStart(other_info.lp.first))
+						|| (new_graph.EdgeEnd(lp.first)
+								== new_graph.EdgeEnd(other_info.lp.first)))
+					return false;
+			}
+			double max_diff = max(lp.variance, other_info.lp.variance) + 0.5
+					+ 1e-9;
+
+			bool old_res = IsEdgesOnDistanceAdjacent(this->edge, this->d, other_info.getEdge()
+					,other_info.getDistance(), old_graph, max_diff, lp.first == other_info.lp.first);
+
+
+			//new_version
+			set<EdgeId> edges_set = labels_after.edge_inclusions[this->edge];
+			set<EdgeId> other_edges_set = labels_after.edge_inclusions[other_info.getEdge()];
+
+//			bool new_res = false;
+
+
+//			for(auto this_edge_it = edges_set.begin(); this_edge_it != edges_set.end(); ++ this_edge_it)
+//				for(auto other_edge_it = other_edges_set.begin(); other_edge_it != other_edges_set.end(); ++ other_edge_it)
+//					if( IsEdgesOnDistanceAdjacent(*this_edge_it, this->d, *other_edge_it
+//							,other_info.getDistance(), new_graph, max_diff, lp.first == other_info.lp.first))
+//					new_res  = true;
+//
+//			if (old_res != new_res) {
+//				DEBUG("difference in isAdjacent for ("<<this->getEdge()<<", ("<<this->lp.first<<", "<<this->lp.second<<", "<<this->lp.d<<"), "<<this->d<<")");
+//				DEBUG("                          VS ("<<other_info.getEdge()<<", ("<<other_info.lp.first<<", "<<other_info.lp.second<<", "<<other_info.lp.d<<"), "<<other_info.d<<")");
+//				DEBUG("   old is "<<old_res<<"    new is "<<new_res);
+//				DEBUG("   first set size "<<edges_set.size()<<"    second set size "<<other_edges_set.size());
+//			}
+			return old_res;
+		}
+
+
 
 		inline int getDistance() {
 			return d;
@@ -155,11 +200,12 @@ public:
 			PIIndex &ind, EdgesPositionHandler<Graph> &old_pos_,
 			Graph &new_graph_, IdTrackHandler<Graph> &new_IDs_,
 			EdgesPositionHandler<Graph> &new_pos_,
-			DeletedVertexHandler<Graph> &deleted_handler_
+			DeletedVertexHandler<Graph> &deleted_handler_,
+			EdgeLabelHandler<Graph> &LabelsAfter_
 			) :
 			leap_(leap), new_graph(new_graph_), old_graph(old_graph_), new_IDs(
 					new_IDs_), old_IDs(old_IDs_), new_pos(new_pos_), old_pos(
-					old_pos_), deleted_handler(deleted_handler_) {
+					old_pos_), deleted_handler(deleted_handler_),  labels_after(LabelsAfter_){
 		TRACE("Constructor started");
 		unordered_map<VertexId, VertexId> old_to_new;
 		unordered_map<EdgeId, EdgeId> old_to_new_edge;
@@ -218,6 +264,7 @@ public:
 			}
 
 		}
+		INFO("vertices copied");
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			if (rc_mode) {
 				if (rc_edges.find(*e_iter) == rc_edges.end())
@@ -254,6 +301,8 @@ public:
 		}
 		TRACE("Edge Adding finished");
 		old_to_new.clear();
+
+		INFO("edges copied");
 		DEBUG("Copying of paired info started");
 		for (auto p_iter = ind.begin(), p_end_iter = ind.end();
 				p_iter != p_end_iter; ++p_iter) {
@@ -273,8 +322,21 @@ public:
 							"Paired Info with deleted edge! " << pi[j].first<<"  " <<pi[j].second);
 				}
 			}
-		}DEBUG("May be size is " << ind.size());
+		}
 
+		INFO("pi copied");
+		int zero_paired_length = 0;
+		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
+			PairInfos pi = paired_di_data.GetEdgeInfos(old_to_new_edge[*e_iter]);
+			if (pi.size() > 1 || (pi.size() == 1 && pi[0].weight > 1e-8))
+				continue;
+			else {
+				zero_paired_length += old_graph.length(*e_iter);
+				global_cheating_edges.insert(old_to_new_edge[*e_iter]);
+			}
+		}
+		INFO ("Length of edges with no paired info:: " << zero_paired_length);
+		DEBUG("May be size is " << ind.size());
 		INFO("paired info size: "<<paired_size);
 		VERIFY(leap >= 0 && leap < 100);
 	}
@@ -456,6 +518,7 @@ private:
 	EdgesPositionHandler<Graph> &new_pos;
 	EdgesPositionHandler<Graph> &old_pos;
 	DeletedVertexHandler<Graph> &deleted_handler;
+	EdgeLabelHandler<Graph> &labels_after;
 	vector<int> edge_info_colors;
 	vector<EdgeInfo> edge_infos;
 	PairInfoIndexData<EdgeId> paired_di_data;
@@ -486,12 +549,25 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		for(size_t j = 0; j < edgeIds[i].size(); j++)
 			edgeCounts.insert(make_pair(edgeIds[i][j], 0));
 	}
+
 	for (size_t i = 0; i < edge_info_colors.size(); i++) {
 		if (edge_info_colors[i] >= k)
 			k = edge_info_colors[i];
 		EdgeId le = edge_infos[i].lp.first;
 		edgeCounts[le] ++;
 	}
+	vector<VertexId> res;
+	if (k == 0) {
+		DEBUG("NOTHING TO SPLIT:( ");
+//		for (size_t j = 0; j < edge_infos.size(); j++){
+//			if (edge_info_colors[j] == 1)
+//				paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, edge_infos[j].lp.first);
+//		}
+		res.resize(1);
+		res[0] = v;
+		return res;
+	}
+
 	for(auto iter = edgeCounts.begin(); iter != edgeCounts.end(); ++iter) {
 		if (iter->second == 0 && cheating_mode == 2) {
 			INFO("Adding no-paired edge: " << new_IDs.ReturnIntId(iter->first)<< " potential bug here.");
@@ -502,7 +578,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 //				EdgeId left_id = tmp[j].first;
 				double d = tmp[j].d;
 				int w = tmp[j].weight;
-				if (w < 0.001)
+				if (w < 1e-8)
 					continue;
 			//	if (v == new_graph.S)
 				int dif_d = 0;
@@ -520,7 +596,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	}
 	k++;
 	DEBUG("splitting to "<< k <<" parts");
-	vector<VertexId> res;
+
 	res.resize(k);
 	if (k == 1) {
 		DEBUG("NOTHING TO SPLIT:( ");
@@ -754,7 +830,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 	//	old_index = ind;
 	INFO("resolve_repeats started");
 	sum_count = 0;
-	global_cheating_edges.clear();
+//	global_cheating_edges.clear();
 
 
 
@@ -874,6 +950,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 //				DEBUG("too far to correct");
 		return make_pair(false, pair_inf);
 	}
+//	return make_pair(true, pair_inf);
 
 	PairInfo corrected_info = StupidPairInfoCorrectorByOldGraph(new_graph,
 			pair_inf);
@@ -917,6 +994,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 		for (int i = 0, n = edgeIds[dir].size(); i < n; i++) {
 			PairInfos tmp = paired_di_data.GetEdgeInfos(edgeIds[dir][i]);
 			vector<EdgeInfo> tmp_edge_infos;
+			DEBUG("Paired Info about vertex: " << tmp.size());
 			for (int j = 0, sz = tmp.size(); j < sz; j++) {
 				EdgeId right_id = tmp[j].second;
 				EdgeId left_id = tmp[j].first;
@@ -931,7 +1009,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 						dif_d = new_graph.length(left_id);
 
 					}
-					if (d * mult >= -0.001) {
+					if (d * mult >= -1e-8) {
 
 						TRACE("PairInfo: " << new_IDs.ReturnIntId(tmp[j].first)<<" "<<old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 
@@ -1039,12 +1117,12 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 			ERROR("fake edge");
 		}
 		for (int j = 0; j < size; j++) {
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph)
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after)
 					&& !edge_infos[j].isAdjacent(edge_infos[i], old_graph,
-							new_graph))
+							new_graph, labels_after))
 				WARN(
 						"ASSYMETRIC: " << new_IDs.ReturnIntId(edge_infos[i].getEdge()) << " " << new_IDs.ReturnIntId(edge_infos[j].getEdge()));
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph)) {
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after)) {
 				neighbours[i].push_back(j);
 				neighbours[j].push_back(i);
 				TRACE(

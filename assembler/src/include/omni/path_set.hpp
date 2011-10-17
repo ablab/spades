@@ -82,7 +82,7 @@ public:
     {
         return true;
     }
-    bool CanBeExtended(const PathSet<EdgeId> rhs)
+    bool CanBeExtendedBy(const PathSet<EdgeId> rhs)
     {
         return true;
     }
@@ -304,6 +304,152 @@ public:
 
         }
     }
+
+    void RemoveInvalidPaths(PathSetIndexData<EdgeId> &rawPathSetDat, PathSetIndexData<EdgeId> &filtered)
+    {
+        //we use ad hoc paired de Bruijn graph for mate-pair info just in the paper
+        //Here we use the path-set platform too
+        for(auto iter = rawPathSetDat.begin() ; iter != rawPathSetDat.end() ;++iter)
+        {
+            PathSet<EdgeId> rawPathSet = *iter;
+            PathSet<EdgeId> newPathSet = *iter;
+            vector<PathSet<EdgeId>> topLevelNodes ;
+            topLevelNodes.push_back(rawPathSet);
+            for(auto pathIter = rawPathSet.paths.begin() ; pathIter != rawPathSet.paths.end() ; ++pathIter)
+            {
+                Path currentPath = *pathIter;
+                deque<EdgeId> checkPath(pathIter->begin(), pathIter->end());
+                checkPath.push_front(rawPathSet.start);
+                checkPath.push_back(rawPathSet.end);
+                if(!CheckForwardConsistent(checkPath, topLevelNodes, rawPathSetDat))
+                {
+                    newPathSet.paths.erase(currentPath);
+                }
+            }
+            if(newPathSet.paths.size() ==0)
+            {
+//                INFO("ALL PATHS IS REMOVED ---- ");
+                filtered.AddPathSet(rawPathSet);
+ //               INFO(rawPathSet);
+            }
+            else
+                filtered.AddPathSet(newPathSet);
+        }
+    }
+    bool CheckForwardConsistent(deque<EdgeId> checkPath, vector<PathSet<EdgeId>> currentPathsets, PathSetIndexData<EdgeId> &pathsetData)
+    {
+        //base case
+        if(checkPath.size() == 1)  
+        {
+            for(size_t i = 0 ; i < currentPathsets.size() ; ++i )
+            {
+                if(currentPathsets[i].start == checkPath[0])
+                    return true;
+            }
+            return false;
+        }
+        else
+        {
+            EdgeId headNode = checkPath[0];
+            vector<PathSet<EdgeId>> nextLevelPathSets ;
+            for(size_t i =  0 ; i < currentPathsets.size() ; ++i)
+            {
+                if(currentPathsets[i].start == headNode)
+                {
+                   vector<PathSet<EdgeId>> extendablePathSets; 
+                    FindExtension(pathsetData, currentPathsets[i], extendablePathSets);
+                    for(size_t t = 0 ; t< extendablePathSets.size() ; t++)
+                    {
+                        if(find(nextLevelPathSets.begin(), nextLevelPathSets.end(), extendablePathSets[t]) == nextLevelPathSets.end())
+                            nextLevelPathSets.push_back(extendablePathSets[t]);    
+                    }
+                }
+            }
+            checkPath.pop_front();
+            if(nextLevelPathSets.size() == 0)
+                return false;
+            else
+                return CheckForwardConsistent(checkPath, nextLevelPathSets , pathsetData);
+        }
+
+    }
+
+    /*
+     * Find a vector of possible extension pathsets.
+     * The offSet will take care of the case where there is no pairedinfo in a very short edge. I ignore the offset by now
+     * and will consider later when we have problem with the pairinfo
+     */
+    void FindExtension(PathSetIndexData<EdgeId> &indexData, PathSet<EdgeId> &currentPathSet, vector<PathSet<EdgeId>> & extendablePathSets, size_t offSet = 0)
+    {
+
+        if(currentPathSet.paths.size() == 1 && (*(currentPathSet.paths.begin())).size() ==0 )
+        {
+
+            EdgeId headEdge = currentPathSet.end;
+            vector<PathSet<EdgeId>>  pathSets =  indexData.GetPathSets(headEdge);
+            extendablePathSets.reserve(pathSets.size());
+            copy(pathSets.begin(), pathSets.end(), back_inserter(extendablePathSets));
+
+        }
+        else
+        {
+            for(auto iter = currentPathSet.paths.begin() ; iter != currentPathSet.paths.end() ; ++iter)
+            {
+                Path currentPath  = *iter;
+                if(currentPath.size() == 0)
+                {
+                    INFO("NEED TO BE INSPECTED");
+                }
+                else{
+                    currentPath.push_back( currentPathSet.end);
+                    Path comparedPath(currentPath.begin() +1, currentPath.end());
+                    vector<PathSet<EdgeId>> candidatePathSets = indexData.GetPathSets(currentPath[0]);
+                    for(auto it = candidatePathSets.begin() ; it != candidatePathSets.end() ; ++it)
+                    {
+                        set<Path> comparedPathsCandidate;
+                        for(auto piter  = it->paths.begin() ; piter != it->paths.end() ; ++piter)
+                        {
+                            Path extendedPath(piter->begin(), piter->end());
+                            extendedPath.push_back(it->end);
+                            comparedPathsCandidate.insert(extendedPath);
+                        }
+                        if(IsPrefixOfPaths(comparedPath, comparedPathsCandidate))
+                            if(find(extendablePathSets.begin(), extendablePathSets.end(), *it) == extendablePathSets.end()){
+                                extendablePathSets.push_back(*it);
+                            }
+                    }
+                }
+            }
+
+        
+        }
+
+
+
+    }
+   //TODO Move out duplicated functions --- lazy coder 
+    
+    bool IsPrefixOfPaths(Path & singlePath,const set<Path> &paths)
+    {
+        for(auto iter = paths.begin() ; iter != paths.end(); ++iter)
+        {
+            if( singlePath.size() > iter->size())
+                continue;
+            bool diff = true;
+            for(size_t i = 0  ; i < singlePath.size() ; i++)
+            {
+                if(singlePath[i] != (*iter)[i])
+                {
+                    diff = false;
+                    break;
+                }
+            }
+            if(diff == true)
+                return true;
+        }
+        return false;
+    }
+    
 };
 
 }

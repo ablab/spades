@@ -31,6 +31,7 @@ QUAKE_CROPPED_1K
 	RL		100		; read length
 	IS	      220 	; insert size
 	single_cell	false
+;	reference_genome  E.Coli.K12.MG1655/MG1655-K12.first1000.fasta.gz
 	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN	   1000 	; total size
 }
@@ -42,6 +43,7 @@ QUAKE_CROPPED_10K
 	RL		100		; read length
 	IS		220 	; insert size
 	single_cell	false
+;	reference_genome  E.Coli.K12.MG1655/MG1655-K12.first10000.fasta.gz
 	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		10000 	; total size
 }
@@ -53,6 +55,7 @@ QUAKE_CROPPED_100K
 	RL		100		; read length
 	IS		220 	; insert size
 	single_cell	false
+;	reference_genome  E.Coli.K12.MG1655/MG1655-K12.first100000.fasta.gz
 	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN		100000 	; total size
 }
@@ -73,6 +76,8 @@ QUAKE_FULL
 {
 	first	E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
 	second	E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz
+	single_first	E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor_single.fastq.gz
+	single_second	E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor_single.fastq.gz
 	RL		100		; read length
 	IS		220 	; insert size
 	single_cell	false
@@ -226,6 +231,19 @@ SC_0710
 	LEN		4639675	; total size
 }
 
+SC_1110
+{
+	first	E.Coli.K12.MG1655/SC/1110_05_left.fastq.gz
+	second	E.Coli.K12.MG1655/SC/1110_05_right.fastq.gz
+	single_first	E.Coli.K12.MG1655/SC/0110_05_left_unpaired.fastq.gz
+	single_second	E.Coli.K12.MG1655/SC/0110_05_right_unpaired.fastq.gz
+	RL		100	; read length
+	IS		270 	; insert size
+	single_cell	true
+	reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+	LEN		4639675	; total size
+}
+
 SC_K35
 {
 	first	E.Coli.K12.MG1655/SC/0209_tau1_095_K35_02_left.fastq.gz
@@ -275,8 +293,8 @@ SC_EULER_NEW
 ; resulting from throwing away all reads from SC_EULER_NEW that can be aligned to a human genome
 SC_EULER_NEW_FILTERED
 {
-	first 	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_1.fasta
-	second	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_2.fasta
+	first 	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_paired_1.fasta
+	second	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_paired_2.fasta
 	single_first	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_single_1.fasta
 	single_second	E.Coli.K12.MG1655/SC_cor/human_filtered/filtered_single_2.fasta
 	RL		100	; read length
@@ -290,8 +308,11 @@ SC_EULER_NEW_FILTERED
 ; resulting from throwing away all reads from SC_NEW_1 that can be aligned to a human genome
 SC_NEW_1_FILTERED
 {
-        first   E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_1.fastq
-        second  E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_2.fastq
+        ;first   E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_paired_1.fastq
+        ;second  E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_paired_2.fastq
+
+        first   E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_paired_1_filtered.fastq
+        second  E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_paired_2_filtered.fastq
         single_first    E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_single_1.fastq
         single_second   E.Coli.K12.MG1655/SC_cor/hammer_human_filtered/filtered_single_2.fastq
         RL              100     ; read length
@@ -300,6 +321,21 @@ SC_NEW_1_FILTERED
         reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
         LEN             4639675 ; total size
 }
+
+; resulting from throwing away all reads from new hammer results that can be aligned to a human genome
+SC_HAMMER_1410_FILTERED
+{
+        first   E.Coli.K12.MG1655/SC_cor/Hammer_14.10/filtered/human_filtered_paired_left.fastq
+        second  E.Coli.K12.MG1655/SC_cor/Hammer_14.10/filtered/human_filtered_paired_right.fastq
+        single_first    E.Coli.K12.MG1655/SC_cor/Hammer_14.10/filtered/human_filtered_single_left.fastq
+        single_second   E.Coli.K12.MG1655/SC_cor/Hammer_14.10/filtered/human_filtered_single_right.fastq
+        RL              100     ; read length
+        IS              270     ; insert size
+        single_cell     true
+        reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+        LEN             4639675 ; total size
+}
+
 
 ; ================================================
 ; =============== L. Bouillonii ==================

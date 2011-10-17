@@ -21,6 +21,7 @@ protected:
 	typedef typename Graph::EdgeId EdgeId;
 	Graph &graph_;
 	PairedInfoIndex<Graph> &histogram_;
+	IdTrackHandler<Graph> &int_ids_;
 	size_t insert_size_;
 	size_t read_length_;
 	size_t gap_;
@@ -29,14 +30,12 @@ protected:
 	size_t max_distance_;
 
 	const vector<size_t> GetGraphDistances(EdgeId first, EdgeId second) {
-		DifferentDistancesCallback<Graph> callback(graph_);
-		PathProcessor<Graph> path_processor(
-				graph_,
+		DifferentDistancesCallback < Graph > callback(graph_);
+		PathProcessor < Graph > path_processor(graph_,
 				omnigraph::PairInfoPathLengthLowerBound(graph_.k(),
 						graph_.length(first), graph_.length(second), gap_,
-						delta_),
-				omnigraph::PairInfoPathLengthUpperBound(graph_.k(),
-						insert_size_, delta_)
+						delta_), omnigraph::PairInfoPathLengthUpperBound(
+						graph_.k(), insert_size_, delta_)
 				//				0. + gap_  + 2 * (graph_.k() + 1) - graph_.k() - delta_ - graph_.length(first) - graph_.length(
 				//						second), insert_size_ - graph_.k() - 2 + delta_
 				, graph_.EdgeEnd(first), graph_.EdgeStart(second), callback);
@@ -52,44 +51,53 @@ protected:
 		return result;
 	}
 
-	vector<pair<size_t, double> > EstimateEdgePairDistances(
-			vector<PairInfo<EdgeId> > data, vector<size_t> forward) {
+	vector<pair<size_t, double> > EstimateEdgePairDistances(vector<PairInfo<
+			EdgeId> > data, vector<size_t> forward/*, bool debug = false*/) {
 		vector < pair<size_t, double> > result;
-		if(forward.size() == 0)
+		if (forward.size() == 0)
 			return result;
+		//        if (debug) for (size_t i = 0; i<forward.size(); i++) INFO("Distances " << forward[i]);
 		size_t cur_dist = 0;
 		vector<double> weights(forward.size());
 		for (size_t i = 0; i < data.size(); i++) {
+			if (data[i].d < 0)
+				continue;
 			while (cur_dist + 1 < forward.size() && forward[cur_dist + 1]
 					< data[i].d) {
 				cur_dist++;
 			}
-			if (cur_dist + 1 < forward.size() && math::ls(
-					forward[cur_dist + 1] - data[i].d,
-					data[i].d - forward[cur_dist])) {
+			if (cur_dist + 1 < forward.size() && math::ls(forward[cur_dist + 1]
+					- data[i].d, data[i].d - forward[cur_dist])) {
 				cur_dist++;
-				weights[cur_dist] += data[i].weight;
+				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
+					weights[cur_dist] += data[i].weight;
+				//                if (debug) INFO("Adding " << forward[cur_dist] << " " << data[i].d << " " << data[i].weight);
 			} else if (cur_dist + 1 < forward.size() && math::eq(
-					forward[cur_dist + 1] - data[i].d,
-					data[i].d - forward[cur_dist])) {
-				weights[cur_dist] += data[i].weight * 0.5;
+					forward[cur_dist + 1] - data[i].d, data[i].d
+							- forward[cur_dist])) {
+				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
+					weights[cur_dist] += data[i].weight * 0.5;
+				//                if (debug) INFO("Adding " << forward[cur_dist] << " " << data[i].d << " " << data[i].weight * 0.5);
 				cur_dist++;
-				weights[cur_dist] += data[i].weight * 0.5;
+				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
+					weights[cur_dist] += data[i].weight * 0.5;
+				//                if (debug) INFO("Adding " << forward[cur_dist] << " " << data[i].d << " " << data[i].weight * 0.5);
 			} else {
-				weights[cur_dist] += data[i].weight;
+				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
+					weights[cur_dist] += data[i].weight;
 			}
 		}
-		for(size_t i = 0; i < forward.size(); i++) {
-			if(weights[i] != 0) {
+		for (size_t i = 0; i < forward.size(); i++) {
+			if (weights[i] != 0) {
 				result.push_back(make_pair(forward[i], weights[i]));
 			}
 		}
 		return result;
 	}
 
-	vector<PairInfo<EdgeId> > ClusterResult(EdgeId edge1, EdgeId edge2,
-			vector<pair<size_t, double> > estimated) {
-		vector<PairInfo<EdgeId>> result;
+	vector<PairInfo<EdgeId> > ClusterResult(EdgeId edge1, EdgeId edge2, vector<
+			pair<size_t, double> > estimated) {
+		vector < PairInfo < EdgeId >> result;
 		for (size_t i = 0; i < estimated.size(); i++) {
 			size_t left = i;
 			double weight = estimated[i].second;
@@ -100,7 +108,7 @@ protected:
 			}
 			double center = (estimated[left].first + estimated[i].first) * 0.5;
 			double var = (estimated[i].first - estimated[left].first) * 0.5;
-			PairInfo<EdgeId> new_info(edge1, edge2, center, weight, var);
+			PairInfo < EdgeId > new_info(edge1, edge2, center, weight, var);
 			result.push_back(new_info);
 		}
 		return result;
@@ -115,13 +123,13 @@ protected:
 
 public:
 	DistanceEstimator(Graph &graph, PairedInfoIndex<Graph> &histogram,
-			size_t insert_size, size_t read_length, size_t delta,
-			size_t linkage_distance, size_t max_distance) :
-		graph_(graph), histogram_(histogram), insert_size_(insert_size),
-				read_length_(read_length),
-				gap_(insert_size - 2 * read_length_), delta_(delta),
-				linkage_distance_(linkage_distance),
-				max_distance_(max_distance) {
+			IdTrackHandler<Graph> &int_ids, size_t insert_size,
+			size_t read_length, size_t delta, size_t linkage_distance,
+			size_t max_distance) :
+		graph_(graph), histogram_(histogram), int_ids_(int_ids), insert_size_(
+				insert_size), read_length_(read_length), gap_(insert_size - 2
+				* read_length_), delta_(delta), linkage_distance_(
+				linkage_distance), max_distance_(max_distance) {
 	}
 
 	virtual ~DistanceEstimator() {
@@ -129,14 +137,20 @@ public:
 
 	virtual void Estimate(PairedInfoIndex<Graph> &result) {
 		for (auto iterator = histogram_.begin(); iterator != histogram_.end(); ++iterator) {
-			vector<PairInfo<EdgeId> > data = *iterator;
+			vector < PairInfo<EdgeId> > data = *iterator;
 			EdgeId first = data[0].first;
 			EdgeId second = data[0].second;
 			vector < size_t > forward = GetGraphDistances(first, second);
+			//			bool debug = (int_ids_.ReturnIntId(data[0].first) == 71456 && int_ids_.ReturnIntId(data[0].second) == 71195);
+
 			vector < pair<size_t, double> > estimated
-					= EstimateEdgePairDistances(data, forward);
-			vector<PairInfo<EdgeId> > clustered = ClusterResult(first, second,
-					estimated);
+					= EstimateEdgePairDistances(data, forward/*, false*/);
+			//            if (debug) for (size_t i = 0; i< estimated.size(); i++)
+			//                INFO("Edges MY : " << estimated[i].first << " " << estimated[i].second);
+			vector < PairInfo<EdgeId> > clustered = ClusterResult(first,
+					second, estimated);
+			//            if (debug) for (size_t i = 0; i<clustered.size(); i++)
+			//                INFO("Edges MY clusterizing: " << clustered[i].d << " " << clustered[i].weight);
 			AddToResult(result, clustered);
 		}
 	}

@@ -188,6 +188,23 @@ public:
     }
     return Read(newName, ReverseComplement(seq_), Reverse(qual_));
   }
+
+  void print(ofstream & outf, int offset) const {
+  	outf << "@" << name_.c_str() << "\n";
+  	for (int i=0; i < ltrim_; ++i) outf << "N";
+  	outf << seq_.c_str();
+  	for (int i=0; i < initial_size_ - rtrim_; ++i) outf << "N";
+  	outf << "\n" << "+" << name_.c_str();
+  	if (ltrim_ > 0) outf << " ltrim=" << ltrim_;
+  	if (rtrim_ < initial_size_)
+  		outf << " rtrim=" << (initial_size_ - rtrim_);
+  	outf << "\n";
+  	char badq = (char)( offset + 2 );
+  	for (int i=0; i < ltrim_; ++i) outf << badq;
+  	outf << getPhredQualityString( offset ).c_str();
+  	for (int i=0; i < initial_size_ - rtrim_; ++i) outf << badq;
+  	outf << "\n";
+  }
 };
 
 // todo: put this to *.cpp

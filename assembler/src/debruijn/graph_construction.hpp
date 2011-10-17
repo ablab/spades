@@ -68,15 +68,16 @@ void FillPairedIndex(const Graph &g, const EdgeIndex<k + 1, Graph>& index
 }
 
 template<size_t k>
-void FillEtalonPairedIndex(const Graph &g,
-		PairedInfoIndex<Graph>& etalon_paired_index,
+void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
+		const Graph &g,
 		const EdgeIndex<k + 1, Graph>& index,
+		const KmerMapper<k+1, Graph>& kmer_mapper,
 		size_t is, size_t rs,
 		const Sequence& genome) {
 	INFO("-----------------------------------------");
 	INFO("Counting etalon paired info");
 
-	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index,
+	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index, kmer_mapper,
 			is, rs, is * 0.1);
 	etalon_paired_info_counter.FillEtalonPairedInfo(genome,
 			etalon_paired_index);
@@ -85,10 +86,12 @@ void FillEtalonPairedIndex(const Graph &g,
 }
 
 template<size_t k>
-void FillEtalonPairedIndex(const Graph &g,
-		PairedInfoIndex<Graph>& etalon_paired_index,
-		const EdgeIndex<k + 1, Graph>& index, const Sequence& genome) {
-	FillEtalonPairedIndex<k>(g, etalon_paired_index, index, cfg::get().ds.IS, cfg::get().ds.RL, genome);
+void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
+		const Graph &g,
+		const EdgeIndex<k + 1, Graph>& index,
+		const KmerMapper<k+1, Graph>& kmer_mapper,
+		const Sequence& genome) {
+	FillEtalonPairedIndex<k>(etalon_paired_index, g, index, kmer_mapper, cfg::get().ds.IS, cfg::get().ds.RL, genome);
 	//////////////////DEBUG
 	//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
 	//	Path<EdgeId> path = simple_mapper.MapSequence(genome);
@@ -168,7 +171,7 @@ void ConstructGraphWithPairedInfo(conj_graph_pack& gp,
 	ConstructGraphWithCoverage<k>(gp.g, gp.index, composite_stream, contigs_stream);
 
 	if (cfg::get().etalon_info_mode)
-		FillEtalonPairedIndex<k>(gp.g, paired_index, gp.index, gp.genome);
+		FillEtalonPairedIndex<k>(paired_index, gp.g, gp.index, gp.kmer_mapper, gp.genome);
 	else
 		FillPairedIndex<k>(gp.g, gp.index, paired_index, stream);
 }

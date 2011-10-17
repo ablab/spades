@@ -10,6 +10,8 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include "omni/path_set.hpp" 
+#include "omni/matepair_transformer.hpp"
 
 namespace debruijn_graph {
 using namespace math;
@@ -533,11 +535,55 @@ public:
 	}
 
 	virtual void Count() {
+
+//TODO CLEAN IT WHEN DONE
+//        PathSetIndexData<EdgeId> PII ;
+//        PathSetIndexData<EdgeId> PIIFilter ;
+//        PathSetIndexData<EdgeId> invalidPathsRemovedPII;
+//        MatePairTransformer<Graph> transformer(g_, pair_info_);
+//        transformer.Transform(PII);
+//        PathSetIndex<EdgeId> PI(PII);
+//        PI.RemovePrefixes(PIIFilter);
+//        
+//        for(auto iter = PII.begin(); iter != PII.end() ; ++iter)
+//        {
+//            INFO( *iter);
+//        } 
+//        PI.RemoveInvalidPaths(PIIFilter, invalidPathsRemovedPII);
+//
+//        INFO("FILTERED");
+//        for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
+//        {
+//            PathSet<EdgeId> first = *iter;
+//            vector<PathSet<EdgeId>> extends;
+//            PI.FindExtension(PIIFilter,first, extends);
+//        }
+//        INFO("More FILTERED");
+//        for(auto iter = invalidPathsRemovedPII.begin(); iter != invalidPathsRemovedPII.end() ; ++iter)
+//        {
+//            PathSet<EdgeId> first = *iter;
+//            vector<PathSet<EdgeId>> extends;
+//            PI.FindExtension(invalidPathsRemovedPII,first, extends);
+//        }
+//        INFO("RAW HIS");
+//        for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
+//        {
+//            PathSet<EdgeId> first = *iter;
+//            INFO(first.paths.size());
+//        }
+//        INFO("HISTO");
+//        for(auto iter = invalidPathsRemovedPII.begin(); iter != invalidPathsRemovedPII.end() ; ++iter)
+//        {
+//            PathSet<EdgeId> first = *iter;
+//            INFO(first.paths.size());
+//        }
+//        INFO("END HISTO");
+
+        
 		for (auto it = pair_info_.begin(); it != pair_info_.end(); ++it) {
 			vector<PairInfo<EdgeId>> infos = *it;
 			ProcessInfos(infos);
-		}
-		INFO(
+		}INFO(
 				"Considered " << considered_dist_cnt_ << " edge pair distances (including trivial)");
 		INFO(
 				unique_distance_cnt_ << " edge distances connected with unique path of appropriate length");
@@ -611,6 +657,7 @@ private:
 	//input fields
 	const Graph &graph_;
 	const IdTrackHandler<Graph>& int_ids_;
+	const EdgeQuality<Graph>& quality_;
 	const PairedInfoIndex<Graph>& pair_info_;
 	const PairedInfoIndex<Graph>& estimated_pair_info_;
 	const PairedInfoIndex<Graph>& etalon_pair_info_;
@@ -629,22 +676,31 @@ private:
 //	size_t false_negative_count_;
 //	vector<Info> false_negative_infos_;
 
+	bool CheckInterestInInfo(const Info& info) {
+		return quality_.IsPositiveQuality(info.first)
+						&& quality_.IsPositiveQuality(info.second) && math::gr(info.weight, 0.);
+	}
+
 	void HandleFalsePositive(const Info& estimated) {
-		DEBUG("Handling false positive " << estimated);
-		false_positives_.AddPairInfo(estimated, false);
+//		DEBUG("Handling false positive " << estimated);
+		if (CheckInterestInInfo(estimated))
+			false_positives_.AddPairInfo(estimated, false);
 	}
 
 	void HandleFalseNegative(const Info& etalon) {
-		false_negatives_.AddPairInfo(etalon, false);
+		if (CheckInterestInInfo(etalon))
+			false_negatives_.AddPairInfo(etalon, false);
 	}
 
 	void HandlePerfectMatch(const Info& etalon, const Info& estimated) {
-		perfect_matches_.AddPairInfo(estimated, false);
+		if (CheckInterestInInfo(estimated))
+			perfect_matches_.AddPairInfo(estimated, false);
 	}
 
 	void HandleImperfectMatch(const Info &estimated_cluster,
 			const Infos& etalon_matches) {
-		imperfect_matches_.AddPairInfo(estimated_cluster, false);
+		if (CheckInterestInInfo(estimated_cluster))
+			imperfect_matches_.AddPairInfo(estimated_cluster, false);
 //		double etalon_variance = etalon_matches[etalon_matches.size() - 1].d
 //				- etalon_matches[0].d;
 //		imperfect_match_stat_.push_back(
@@ -808,10 +864,11 @@ private:
 public:
 	EstimationQualityStat(const Graph &graph,
 			const IdTrackHandler<Graph>& int_ids,
+			const EdgeQuality<Graph>& quality,
 			const PairedInfoIndex<Graph>& pair_info,
 			const PairedInfoIndex<Graph>& estimated_pair_info,
 			const PairedInfoIndex<Graph>& etalon_pair_info) :
-			graph_(graph), int_ids_(int_ids), pair_info_(pair_info), estimated_pair_info_(
+			graph_(graph), int_ids_(int_ids), quality_(quality), pair_info_(pair_info), estimated_pair_info_(
 					estimated_pair_info), etalon_pair_info_(etalon_pair_info), false_positives_(
 					graph_), perfect_matches_(graph_), imperfect_matches_(
 					graph_), false_negatives_(graph_) {

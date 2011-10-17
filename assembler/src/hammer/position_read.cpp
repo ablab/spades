@@ -54,3 +54,12 @@ pair<int, KMerCount*> PositionRead::nextKMer( int begin ) const {
 	return make_pair(-1, (KMerCount*)NULL);
 }
 
+pair<int, hint_t> PositionRead::nextKMerNo( int begin ) const {
+	for ( int pos = begin + 1; pos < (int)(size_-K+1); ++pos ) {
+		//cout << "    looking for " << (start_ + pos) << ": " << PositionKMer(start_ + pos).str();
+		vector<hint_t>::const_iterator it_vec = lower_bound(Globals::kmernos->begin(), Globals::kmernos->end(), start_ + pos, PositionKMer::compareKMersDirect );
+		//cout << "  lowerbound=" << (it_vec - Globals::kmernos->begin()) << "\tvalue=" << *it_vec << endl;
+		if ( *it_vec == start_ + pos ) return make_pair(pos, (it_vec - Globals::kmernos->begin()));
+	}
+	return make_pair(-1, BLOBKMER_UNDEFINED);
+}
