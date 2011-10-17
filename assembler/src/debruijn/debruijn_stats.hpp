@@ -31,7 +31,7 @@ public:
 	GenomeMappingStat(const Graph &graph, const EdgeIndex<k + 1, Graph> &index,
 
 	Sequence genome) :
-		graph_(graph), index_(index), genome_(genome) {
+			graph_(graph), index_(index), genome_(genome) {
 	}
 
 	virtual ~GenomeMappingStat() {
@@ -42,17 +42,18 @@ public:
 		size_t break_number = 0;
 		size_t covered_kp1mers = 0;
 		size_t fail = 0;
-		Seq<k + 1> cur = genome_.start<k + 1> () >> 0;
+		Seq<k + 1> cur = genome_.start<k + 1>() >> 0;
 		bool breaked = true;
 		pair<EdgeId, size_t> cur_position;
 		for (size_t cur_nucl = k; cur_nucl < genome_.size(); cur_nucl++) {
 			cur = cur << genome_[cur_nucl];
 			if (index_.containsInIndex(cur)) {
 				pair<EdgeId, size_t> next = index_.get(cur);
-				if (!breaked && cur_position.second + 1 < graph_.length(
-						cur_position.first)) {
-					if (next.first != cur_position.first || cur_position.second
-							+ 1 != next.second) {
+				if (!breaked
+						&& cur_position.second + 1
+								< graph_.length(cur_position.first)) {
+					if (next.first != cur_position.first
+							|| cur_position.second + 1 != next.second) {
 						fail++;
 					}
 				}
@@ -84,17 +85,18 @@ public:
 	typedef typename Graph::EdgeId EdgeId;
 
 	StatCounter(const Graph& graph, const EdgeIndex<k + 1, Graph>& index,
-			const Sequence& genome) {
+	const Sequence& genome) {
 		SimpleSequenceMapper<k + 1, Graph> sequence_mapper(graph, index);
 		Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
 		Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
-		stats_.AddStat(new VertexEdgeStat<Graph> (graph));
-		stats_.AddStat(new BlackEdgesStat<Graph> (graph, path1, path2));
-		stats_.AddStat(new NStat<Graph> (graph, path1, 50));
-		stats_.AddStat(new SelfComplementStat<Graph> (graph));
+		stats_.AddStat(new VertexEdgeStat<Graph>(graph));
+		stats_.AddStat(new BlackEdgesStat<Graph>(graph, path1, path2));
+		stats_.AddStat(new NStat<Graph>(graph, path1, 50));
+		stats_.AddStat(new SelfComplementStat<Graph>(graph));
 		stats_.AddStat(
-				new GenomeMappingStat<Graph, k> (graph, index, Sequence(genome)));
-		stats_.AddStat(new IsolatedEdgesStat<Graph> (graph, path1, path2));
+				new GenomeMappingStat<Graph, k>(graph, index,
+						Sequence(genome)));
+		stats_.AddStat(new IsolatedEdgesStat<Graph>(graph, path1, path2));
 	}
 
 	virtual ~StatCounter() {
@@ -111,7 +113,7 @@ private:
 
 template<size_t k, class Graph>
 void CountStats(const Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const Sequence& genome) {
+const Sequence& genome) {
 	INFO("Counting stats");
 	StatCounter<Graph, k> stat(g, index, genome);
 	stat.Count();
@@ -123,14 +125,14 @@ void CountPairedInfoStats(const Graph &g,
 		const PairedInfoIndex<Graph> &etalon_paired_index,
 		const string &output_folder) {
 	PairedInfoIndex<Graph> filtered_index(g);
-	PairInfoFilter<Graph> (g, 40).Filter(paired_index, filtered_index);
+	PairInfoFilter<Graph>(g, 40).Filter(paired_index, filtered_index);
 	INFO("Counting paired info stats");
-	EdgePairStat<Graph> (g, paired_index, output_folder).Count();
+	EdgePairStat<Graph>(g, paired_index, output_folder).Count();
 
 	//todo remove filtration if launch on etalon info is ok
-	UniquePathStat<Graph> (g, filtered_index, cfg::get().ds.IS,
-			cfg::get().ds.RL, 0.1 * cfg::get().ds.IS).Count();
-	UniqueDistanceStat<Graph> (etalon_paired_index).Count();
+	UniquePathStat<Graph>(g, filtered_index, cfg::get().ds.IS, cfg::get().ds.RL,
+			0.1 * cfg::get().ds.IS).Count();
+	UniqueDistanceStat<Graph>(etalon_paired_index).Count();
 	INFO("Paired info stats counted");
 }
 
@@ -142,11 +144,11 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 	INFO("Counting clustered info stats");
 
 	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
-	EstimationQualityStat<Graph> (gp.g, gp.int_ids, edge_qual, paired_index, clustered_index,
-			etalon_paired_index).Count();
+	EstimationQualityStat<Graph>(gp.g, gp.int_ids, edge_qual, paired_index,
+			clustered_index, etalon_paired_index).Count();
 
 	INFO("Counting overall cluster stat")
-	ClusterStat<Graph> (clustered_index).Count();
+	ClusterStat<Graph>(clustered_index).Count();
 	INFO("Overall cluster stat")
 
 	//	PairedInfoIndex<Graph> etalon_clustered_index;
@@ -159,7 +161,7 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 	//	PairInfoFilter<Graph> (g, 1000.).Filter(
 	//			clustered_index/*etalon_clustered_index*/, filtered_clustered_index);
 	INFO("Counting mate-pair transformation stat");
-	MatePairTransformStat<Graph> (gp.g, /*filtered_*/clustered_index).Count();
+	MatePairTransformStat<Graph>(gp.g, /*filtered_*/clustered_index).Count();
 	INFO("Mate-pair transformation stat counted");
 	INFO("Clustered info stats counted");
 }
@@ -208,20 +210,20 @@ MappingPath<typename Graph::EdgeId> FindGenomeMappingPath(
 
 template<size_t k>
 void ProduceInfo(const Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const omnigraph::GraphLabeler<Graph>& labeler, const Sequence& genome,
-		const string& file_name, const string& graph_name) {
-	CountStats<k> (g, index, genome);
-	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
-	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
+const omnigraph::GraphLabeler<Graph>& labeler, const Sequence& genome,
+const string& file_name, const string& graph_name) {
+	CountStats<k>(g, index, genome);
+	Path<typename Graph::EdgeId> path1 = FindGenomePath<k>(genome, g, index);
+	Path<typename Graph::EdgeId> path2 = FindGenomePath<k>(!genome, g, index);
 	WriteToDotFile(g, labeler, file_name, graph_name, path1, path2);
 }
 
 template<size_t k>
-void ProduceNonconjugateInfo(NCGraph& g,
-		const EdgeIndex<k + 1, NCGraph>& index, const string& genome,
+void ProduceNonconjugateInfo(NCGraph& g, const EdgeIndex<k + 1, NCGraph>& index
+		, const string& genome,
 		const string& work_tmp_dir, const string& graph_name,
 		const IdTrackHandler<NCGraph> &IdTrackLabelerResolved) {
-	CountStats<k> (g, index, genome);
+	CountStats<k>(g, index, genome);
 	//	omnigraph::WriteSimple( file_name, graph_name, g, IdTrackLabelerResolved);
 	//	omnigraph::WriteSimple( work_tmp_dir, graph_name, g, IdTrackLabelerResolved);
 
@@ -234,9 +236,9 @@ void WriteGraphComponentsAlongGenome(const Graph& g,
 		const GraphLabeler<Graph>& labeler, const Sequence& genome,
 		const string& folder, const string &file_name,
 		const string &graph_name, size_t split_edge_length) {
-	MappingPath<EdgeId> path1 = NewFindGenomePath<k> (genome, g, index,
+	MappingPath<EdgeId> path1 = NewFindGenomePath<k>(genome, g, index,
 			kmer_mapper);
-	MappingPath<EdgeId> path2 = NewFindGenomePath<k> (!genome, g, index,
+	MappingPath<EdgeId> path2 = NewFindGenomePath<k>(!genome, g, index,
 			kmer_mapper);
 	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	WriteComponentsAlongGenome(g, labeler, folder + file_name, graph_name,
@@ -244,13 +246,26 @@ void WriteGraphComponentsAlongGenome(const Graph& g,
 }
 
 template<size_t k>
+void WriteKmerComponent(conj_graph_pack &gp,
+		const omnigraph::GraphLabeler<Graph>& labeler, const string& folder, const string& graph_name,
+		Path<typename Graph::EdgeId> path1, Path<typename Graph::EdgeId> path2) {
+	Seq<k + 1> kp1mer;
+	KMerNeighborhoodFinder<Graph, k> splitter(kp1mer, gp.g,
+				gp.index , 50
+				, cfg::get().ds.IS);
+	WriteComponents<Graph>(gp.g, labeler, folder + "kmer.dot", graph_name,
+			cfg::get().ds.IS, splitter, path1, path2);
+
+}
+
+template<size_t k>
 void ProduceDetailedInfo(conj_graph_pack &gp,
 		const omnigraph::GraphLabeler<Graph>& labeler, const string& folder,
 		const string& file_name, const string& graph_name) {
-	CountStats<k> (gp.g, gp.index, gp.genome);
-	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (gp.genome, gp.g,
+	CountStats<k>(gp.g, gp.index, gp.genome);
+	Path<typename Graph::EdgeId> path1 = FindGenomePath<k>(gp.genome, gp.g,
 			gp.index);
-	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!gp.genome, gp.g,
+	Path<typename Graph::EdgeId> path2 = FindGenomePath<k>(!gp.genome, gp.g,
 			gp.index);
 
 	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
@@ -258,21 +273,21 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 			path2);
 	WriteComponents(gp.g, labeler, folder + file_name, graph_name,
 			cfg::get().ds.IS, path1, path2);
-
+//	WriteKmerComponent<k>(gp, labeler, folder, graph_name, path1, path2);
 	INFO("Writing graph components along genome");
-	WriteGraphComponentsAlongGenome<k> (gp.g, gp.index, gp.kmer_mapper,
-			labeler, gp.genome, folder, file_name, "components_along_genome",
+	WriteGraphComponentsAlongGenome<k>(gp.g, gp.index, gp.kmer_mapper, labeler,
+			gp.genome, folder, file_name, "components_along_genome",
 			cfg::get().ds.IS);
 	INFO("Writing graph components along genome finished");
 }
 
 template<size_t k>
 void WriteGraphComponents(const Graph& g, const EdgeIndex<k + 1, Graph>& index,
-		const GraphLabeler<Graph>& labeler, const Sequence& genome,
-		const string& folder, const string &file_name,
-		const string &graph_name, size_t split_edge_length) {
-	Path<typename Graph::EdgeId> path1 = FindGenomePath<k> (genome, g, index);
-	Path<typename Graph::EdgeId> path2 = FindGenomePath<k> (!genome, g, index);
+const GraphLabeler<Graph>& labeler, const Sequence& genome,
+const string& folder, const string &file_name,
+const string &graph_name, size_t split_edge_length) {
+	Path<typename Graph::EdgeId> path1 = FindGenomePath<k>(genome, g, index);
+	Path<typename Graph::EdgeId> path2 = FindGenomePath<k>(!genome, g, index);
 	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
 	WriteComponents(g, labeler, folder + file_name, graph_name,
 			split_edge_length, path1, path2);
@@ -291,8 +306,8 @@ template<class Graph>
 int PrintGraphComponents(const string& file_name, Graph& g,
 		size_t split_edge_length, IdTrackHandler<Graph> &old_IDs,
 		PairedInfoIndex<Graph> &paired_index,
-		EdgesPositionHandler<Graph> &edges_positions,
-		bool symmetric_mode = false) {
+		EdgesPositionHandler<Graph> &edges_positions, bool symmetric_mode =
+				false) {
 	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
 	ComponentSizeFilter<Graph> checker(g, split_edge_length, 2);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
@@ -319,7 +334,8 @@ void OutputContigs(NonconjugateDeBruijnGraph& g,
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		oss << g.coverage(*it);
 		oss << g.EdgeNucls(*it);
-	}INFO("Contigs written");
+	}
+	INFO("Contigs written");
 }
 
 void OutputContigs(ConjugateDeBruijnGraph& g,
@@ -335,7 +351,8 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 			edges.insert(g.conjugate(*it));
 		}
 		//		oss << g.EdgeNucls(*it);
-	}INFO("Contigs written");
+	}
+	INFO("Contigs written");
 
 }
 
@@ -355,7 +372,8 @@ void OutputSingleFileContigs(NonconjugateDeBruijnGraph& g,
 		//		osequencestream oss(contigs_output_dir + "tst.fasta");
 		oss << g.EdgeNucls(*it);
 		n++;
-	}INFO("SingleFileContigs written");
+	}
+	INFO("SingleFileContigs written");
 }
 
 void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
@@ -385,9 +403,9 @@ void FillEdgesPos(conj_graph_pack& gp, const Sequence& contig, int contigId)
 //		Graph& g, const EdgeIndex<k + 1, Graph>& index,
 //		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int contigId)
 
-{
-	MappingPath<Graph::EdgeId> m_path1 = FindGenomeMappingPath<K> (contig,
-			gp.g, gp.index, gp.kmer_mapper);
+		{
+	MappingPath<Graph::EdgeId> m_path1 = FindGenomeMappingPath<K>(contig, gp.g,
+			gp.index, gp.kmer_mapper);
 	int CurPos = 0;
 	DEBUG("Contig "<<contigId<< " maped on "<<m_path1.size()<<" fragments.");
 	for (size_t i = 0; i < m_path1.size(); i++) {
@@ -397,7 +415,8 @@ void FillEdgesPos(conj_graph_pack& gp, const Sequence& contig, int contigId)
 		if (i > 0)
 			if (m_path1[i - 1].first != ei)
 				if (gp.g.EdgeStart(ei) != gp.g.EdgeEnd(m_path1[i - 1].first)) {
-					DEBUG("Contig "<<contigId<<" maped on not adjacent edge. Position in contig is "<<m_path1[i-1].second.initial_range.start_pos+1<<"--" <<m_path1[i-1].second.initial_range.end_pos<< " and "<<mr.initial_range.start_pos+1<<"--" <<mr.initial_range.end_pos);
+					DEBUG(
+							"Contig "<<contigId<<" maped on not adjacent edge. Position in contig is "<<m_path1[i-1].second.initial_range.start_pos+1<<"--" <<m_path1[i-1].second.initial_range.end_pos<< " and "<<mr.initial_range.start_pos+1<<"--" <<mr.initial_range.end_pos);
 				}
 		gp.edge_pos.AddEdgePosition(ei, mr.initial_range.start_pos + 1,
 				mr.initial_range.end_pos, contigId);
@@ -413,7 +432,7 @@ void FillEdgesPos(conj_graph_pack& gp, const string& contig_file,
 //(Graph& g, const EdgeIndex<k + 1, Graph>& index,
 //		const string& contig_file, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int start_contig_id)
 
-{
+		{
 	INFO("Threading large contigs");
 	io::Reader<io::SingleRead> irs(contig_file);
 	for (int c = start_contig_id; !irs.eof(); c++) {

@@ -683,7 +683,8 @@ class EtalonPairedInfoCounter {
 
 public:
 
-	EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<k + 1, Graph>& index,
+	EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<k + 1, Graph>& index
+			,
 			const KmerMapper<k + 1, Graph>& kmer_mapper,
 			size_t insert_size,
 			size_t read_length, size_t delta) :
@@ -1002,6 +1003,50 @@ public:
 private:
 	DECL_LOGGER("QualityLoggingRemovalHandler")
 	;
+};
+
+template<class Graph, size_t k>
+class KMerNeighborhoodFinder: public GraphSplitter<typename Graph::VertexId> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	Graph &graph_;
+	EdgeIndex<k + 1, Graph> &index_;
+	Seq<k + 1> kp1mer_;
+	size_t max_size_;
+	size_t edge_length_bound_;
+	bool finished_;
+public:
+	KMerNeighborhoodFinder(Seq<k + 1> kp1mer, Graph &graph,
+			EdgeIndex<k + 1, Graph> &index , size_t max_size
+			, size_t edge_length_bound) :
+			graph_(graph), index_(index), kp1mer_(kp1mer), max_size_(max_size), edge_length_bound_(
+					edge_length_bound), finished_(false) {
+	}
+
+	virtual ~KMerNeighborhoodFinder() {
+	}
+
+	virtual vector<VertexId> NextComponent() {
+		CountingDijkstra<Graph> cf(graph_, max_size_, edge_length_bound_);
+		EdgeId edge = index_.get(kp1mer_).first;
+		set<VertexId> result_set;
+		cf.run(graph_.EdgeStart(edge));
+		vector<VertexId> result_start = cf.VisitedVertices();
+		result_set.insert(result_start.begin(), result_start.end());
+		cf.run(graph_.EdgeEnd(edge));
+		vector<VertexId> result_end = cf.VisitedVertices();
+		result_set.insert(result_end.begin(), result_end.end());
+		finished_ = true;
+		vector<VertexId> result;
+		for(auto it = result_set.begin(); it != result_set.end(); ++it)
+			result.push_back(*it);
+		return result;
+	}
+
+	virtual bool Finished() {
+		return finished_;
+	}
 };
 
 }
