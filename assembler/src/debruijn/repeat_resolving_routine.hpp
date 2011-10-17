@@ -196,6 +196,30 @@ void CleanIsolated(graph_pack& gp){
     }
 }
 
+string GeneratePostfix(){
+	string s = "_";
+	if (cfg::get().rr.symmetric_resolve)
+		s += "sym_";
+	else
+		s += "nonsym_";
+
+	if (cfg::get().advanced_estimator_mode)
+		s += "advanced_est_";
+	else
+		s += "usual_est_";
+
+	if (cfg::get().late_paired_info)
+		s += "late_pi_";
+	else
+		s += "early_pi_";
+	s += "k";
+	s += ToString(K);
+	s += "_nv";
+	s += ToString(cfg::get().rr.near_vertex);
+	s += ".fasta";
+	return s;
+}
+
 template<class graph_pack>
 void process_resolve_repeats(graph_pack& origin_gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
@@ -209,7 +233,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	// todo: possibly we don't need it
 //    if (cfg::get().rectangle_mode)
 //        RectangleResolve(clustered_index, origin_gp.g, cfg::get().output_root + "tmp/", cfg::get().output_dir);
-
+	string postfix = GeneratePostfix();
     typedef TotalLabelerGraphStruct<typename graph_pack::graph_t> total_labeler_gs;
     typedef TotalLabeler           <typename graph_pack::graph_t> total_labeler;
 
@@ -223,8 +247,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
                    resolved_gp.g, resolved_gp.int_ids,                  resolved_gp.edge_pos,
                    cfg::get().output_dir + subfolder +"resolve_" + graph_name +  "/", labels_after);
     if (output_contigs) {
-       	OutputContigs(resolved_gp.g, cfg::get().output_dir + "contigs_after_rr_before_simplify.fasta");
-    	OutputContigs(origin_gp.g, cfg::get().output_dir + "contigs_before_resolve.fasta");
+       	OutputContigs(resolved_gp.g, cfg::get().output_dir + "after_rr_before_simplify" + postfix);
+    	OutputContigs(origin_gp.g, cfg::get().output_dir + "before_resolve" + postfix);
     }
     INFO("Total labeler start");
 
@@ -252,7 +276,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 	if (output_contigs)
 		OutputContigs(resolved_gp.g,
-				cfg::get().output_dir + "contigs_before_enlarge.fasta");
+				cfg::get().output_dir + "resolved_and_cleared" + postfix);
 
 	omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
 
@@ -302,20 +326,19 @@ void process_resolve_repeats(graph_pack& origin_gp,
 						+ "_5_unlooped.dot", "no_repeat_graph");
 
 		OutputContigs(resolved_gp.g,
-				cfg::get().output_dir + "contigs_unlooped.fasta");
+				cfg::get().output_dir + "unlooped" + postfix);
 
-		N50enlarger.one_many_resolve_with_vertex_split();
+//		N50enlarger.one_many_resolve_with_vertex_split();
+//
+//		omnigraph::WriteSimple(
+//				resolved_gp.g,
+//				tot_labeler_after,
+//				cfg::get().output_dir + subfolder + graph_name
+//						+ "_6_finished.dot", "no_repeat_graph");
+//
+//		OutputContigs(resolved_gp.g,
+//				cfg::get().output_dir + "contigs_final.fasta");
 
-		omnigraph::WriteSimple(
-				resolved_gp.g,
-				tot_labeler_after,
-				cfg::get().output_dir + subfolder + graph_name
-						+ "_6_finished.dot", "no_repeat_graph");
-
-		OutputContigs(resolved_gp.g,
-				cfg::get().output_dir + "contigs_final.fasta");
-		OutputContigs(origin_gp.g,
-				cfg::get().output_dir + "contigs_before_resolve.fasta");
 
 	}
 }
