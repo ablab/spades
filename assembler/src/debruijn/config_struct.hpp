@@ -228,7 +228,7 @@ namespace debruijn_graph
 
 		std::string uncorrected_reads;
 		bool need_consensus;
-
+		bool path_set_graph;
 		simplification simp;
 
 		distance_estimator de;
@@ -408,7 +408,7 @@ namespace debruijn_graph
 		load(pt, "pos", cfg.pos); // position handler:
 		load(pt, "need_consensus", cfg.need_consensus);
 		load(pt, "uncorrected_reads", cfg.uncorrected_reads);
-
+		load(pt, "path_set_graph", cfg.path_set_graph);
 		load(pt, cfg.ds.single_cell ? "sc_simplification" : "usual_simplification", cfg.simp);
 	}
 

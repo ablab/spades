@@ -12,6 +12,7 @@
 #include "logging.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation_routine.hpp"
+#include "path_set_graph_constructor.hpp"
 #include "io/careful_filtering_reader_wrapper.hpp"
 //typedef io::IReader<io::SingleRead> ReadStream;
 //typedef io::IReader<io::PairedRead> PairedReadStream;
@@ -237,7 +238,11 @@ void process_resolve_repeats(graph_pack& origin_gp,
     typedef TotalLabelerGraphStruct<typename graph_pack::graph_t> total_labeler_gs;
     typedef TotalLabeler           <typename graph_pack::graph_t> total_labeler;
 
-
+	if (cfg::get().path_set_graph ) {
+		INFO("testing path-set graphs");
+		PathSetGraphConstructor<typename graph_pack::graph_t> path_set_constructor(origin_gp.g, clustered_index);
+		INFO("testing ended");
+	}
     total_labeler_gs graph_struct_before(origin_gp  .g, &origin_gp  .int_ids, &origin_gp  .edge_pos, NULL);
     total_labeler tot_labeler_before(&graph_struct_before);
 

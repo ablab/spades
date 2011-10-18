@@ -19,9 +19,10 @@ public:
     EdgeId end;
     double length;
     set<Path> paths;
+    int id;
 
     PathSet(EdgeId start, EdgeId end, double length, set<Path> paths):
-        start(start), end(end), length(length), paths(paths)
+        start(start), end(end), length(length), paths(paths), id(-1)
     {}
 
 
@@ -147,6 +148,9 @@ public:
     bool operator!=(const PathSet& rhs) const {
 		return !(*this == rhs);
 	}
+    void SetId(int id_to_set) {
+    	id = id_to_set;
+    }
 
 };
 
@@ -166,22 +170,22 @@ ostream& operator<<(ostream& os, const PathSet<EdgeId>& pathSet) {
         pathsString<<endl;
     }
 
-    return os << "Start = " << pathSet.start <<" ....... "<<"End = " << pathSet.end<< endl<< pathsString.str() ;
+    return os << "id: "<< pathSet.id <<" Start = " << pathSet.start <<" ....... "<<"End = " << pathSet.end<< endl<< pathsString.str() ;
 }
 
 template<typename EdgeId>
-const PathSet<EdgeId> MinPathSet(EdgeId id) {
+const PathSet<EdgeId> MinPathSet(EdgeId eid) {
 
     set<vector<EdgeId> > paths;
-	return PathSet<EdgeId>(id, (EdgeId) 0/*numeric_limits<EdgeId>::min()*/,
+	return PathSet<EdgeId>(eid, (EdgeId) 0/*numeric_limits<EdgeId>::min()*/,
 			numeric_limits<double>::min(), paths);
 }
 
 template<typename EdgeId>
-const PathSet<EdgeId> MaxPathSet(EdgeId id) {
+const PathSet<EdgeId> MaxPathSet(EdgeId eid) {
 
     set<vector<EdgeId> > paths;
-	return PathSet<EdgeId>(id, (EdgeId) -1/*numeric_limits<EdgeId>::max()*/,
+	return PathSet<EdgeId>(eid, (EdgeId) -1/*numeric_limits<EdgeId>::max()*/,
 			numeric_limits<double>::max(), paths);
 }
 template<typename EdgeId>
@@ -206,6 +210,10 @@ public:
 	typedef typename Data::iterator data_iterator;
 	typedef typename Data::const_iterator data_const_iterator;
 	typedef vector<PathSet<EdgeId>> PathSets;
+    PathSetIndexData(){
+    	maxId = 0;
+    	data_.clear();
+    }
 
 	typedef std::pair<data_const_iterator, data_const_iterator> iterator_range;
 
@@ -221,7 +229,9 @@ public:
 		return data_.size();
 	}
 
-	void AddPathSet(const PathSet<EdgeId>& pathSet) {
+	void AddPathSet(PathSet<EdgeId>& pathSet) {
+		pathSet.SetId(maxId);
+		maxId++;
 		data_.insert(pathSet);
 	}
 
@@ -260,6 +270,7 @@ public:
 
 private:
 	Data data_;
+	int maxId;
 };
 template<typename EdgeId>
 class PathSetIndex

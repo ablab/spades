@@ -45,6 +45,7 @@ void Transform(PathSetIndexData<EdgeId> & pathset_index)
                             call_back);
                     path_processor.Process();
                     PathSet<EdgeId> pathset(first_edge, second_edge, iter->d + g_.length(second_edge) , call_back.paths());
+
                     PathSetFilter(pathset);
                     pathset_index.AddPathSet(pathset);
                 }
