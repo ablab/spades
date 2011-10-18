@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 34
+/svn/!svn/ver/75/trunk/src/windows
+END
+port.cc
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/75/trunk/src/windows/port.cc
+END
+port.h
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/66/trunk/src/windows/port.h
+END
+config.h
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/66/trunk/src/windows/config.h
+END

@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/77/trunk/src/google/sparsehash
+END
+sparsehashtable.h
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/77/trunk/src/google/sparsehash/sparsehashtable.h
+END
+densehashtable.h
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/77/trunk/src/google/sparsehash/densehashtable.h
+END
+hashtable-common.h
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/66/trunk/src/google/sparsehash/hashtable-common.h
+END
+libc_allocator_with_realloc.h
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/!svn/ver/66/trunk/src/google/sparsehash/libc_allocator_with_realloc.h
+END

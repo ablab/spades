@@ -49,6 +49,7 @@ find_package(ssl)
 find_package(bam)
 find_package(Boost COMPONENTS signals system filesystem REQUIRED)
 find_package(fftw3)
+find_package(sparsehash)
 
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
 
@@ -62,6 +63,8 @@ include_directories(${staden_INCLUDE_DIRS})
 include_directories(${ssl_INCLUDE_DIRS})
 include_directories(${bam_INCLUDE_DIRS})
 include_directories(${fftw3_INCLUDE_DIRS})
+include_directories(${sparsehash_INCLUDE_DIRS})
+
 
 set(COMMON_LIBRARIES 
    ${ZLIB_LIBRARIES} 
@@ -72,6 +75,7 @@ set(COMMON_LIBRARIES
    ${ssl_LIBRARIES} 
    ${bam_LIBRARIES}
    ${fftw3_LIBRARIES}
+#   ${sparsehash_LIBRARIES}
    )
 
 include_directories(${EXT_DIR}/include)
