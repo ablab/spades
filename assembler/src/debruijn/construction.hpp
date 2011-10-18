@@ -136,7 +136,7 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 
 		files_t used_files;
 		load_construction(gp, tl, paired_index, &used_files);
-		copy_files(used_files);
+		copy_files_by_prefix(used_files, cfg::get().output_saves);
 	}
 	FillEdgesPos(gp, gp.genome, 0);
 	FillEdgesPos(gp, !gp.genome, 1);

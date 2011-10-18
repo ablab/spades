@@ -103,7 +103,7 @@ void exec_simplification(PairedReadStream& stream, conj_graph_pack& gp, paired_i
 
 		files_t used_files;
 		load_simplification(gp, paired_index, &used_files);
-		copy_files(used_files);
+		copy_files_by_prefix(used_files, cfg::get().output_saves);
 	}
 }
 

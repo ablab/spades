@@ -79,6 +79,15 @@ void segfault_handler(int signum)
 	kill  (getpid(), signum);
 }
 
+void copy_configs()
+{
+	using namespace debruijn_graph;
+
+	make_dir(cfg::get().output_dir + "configs");
+	copy_files_by_ext(fs::path(cfg_filename).parent_path(), cfg::get().output_dir + "configs", ".info");
+}
+
+
 int main() {
     const size_t GB = 1 << 30;
     limit_memory(120 * GB);
@@ -105,6 +114,8 @@ int main() {
 		make_dir(cfg::get().output_root );
 		make_dir(cfg::get().output_dir  );
 		make_dir(cfg::get().output_saves);
+
+		copy_configs();
 
 		// typedefs :)
 		typedef io::EasyReader<io::SingleRead> ReadStream;
