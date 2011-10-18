@@ -467,7 +467,13 @@ private:
             if(nextLevelPathSets.size() == 0)
                 return false;
             else
+            {
+                if(checkPath.size() == 1)
+                    return true;
                 return CheckForwardConsistent(checkPath, nextLevelPathSets , pathsetData);
+            
+            }
+
         }
 
     }
