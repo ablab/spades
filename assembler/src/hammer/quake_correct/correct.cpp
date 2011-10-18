@@ -116,8 +116,6 @@ static void  Usage
 	   "    two per line for paired end reads.\n"
 	   " -z\n"
 	   "    Write output files as gzipped.\n"
-	   " -k <num>\n"
-	   "    K-mer size to correct.\n"
 	   " -m <file>\n"
 	   "    File containing kmer counts in format `seq\tcount`.\n"
 	   "    Can be gzipped.\n"
@@ -163,7 +161,7 @@ static void parse_command_line(int argc, char **argv) {
   optarg = NULL;
   int option_index = 0;
   char* p;
-  
+  k = kK;
   // parse args
   while(!errflg && ((ch = getopt_long(argc, argv, myopts, long_options, &option_index)) != EOF)) {
   //while(!errflg && ((ch = getopt(argc, argv, myopts)) != EOF)) {
@@ -179,14 +177,6 @@ static void parse_command_line(int argc, char **argv) {
     case 'z':
       zip_output = true;
       break;
-
-    case 'k':
-      k = int(strtod(optarg, &p));
-      if(p == optarg || k <= 2) {
-	fprintf(stderr, "Bad kmer size \"%s\"\n",optarg);
-	errflg = true;
-      }
-      break;  
 
     case 'm':
       merf = strdup(optarg);
