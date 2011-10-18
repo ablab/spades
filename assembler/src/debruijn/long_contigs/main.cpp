@@ -98,6 +98,19 @@ int main() {
 	FindSeeds(g, rawSeeds, &pairedInfos);
 	CheckIds(g, rawSeeds);
 
+//	INFO("Removing short seeds "  << rawSeeds.size())
+//	SortPariedPathsByLength(g, rawSeeds);
+//	PrintPathsShort(g, rawSeeds);
+//	while (PathLength(g, rawSeeds.back()) <= lc_cfg::get().ss.short_single) {
+//		DETAILED_INFO("Length: " << PathLength(g, rawSeeds.back()));
+//		rawSeeds.pop_back();
+//		rawSeeds.pop_back();
+//	}
+//	INFO("Done, seeds left: " << rawSeeds.size());
+//	DETAILED_INFO("Length: " << PathLength(g, rawSeeds.back()));
+//	PrintPathsShort(g, rawSeeds);
+//	CheckIds(g, rawSeeds);
+
 	ResolveUnequalComplement(g, rawSeeds, lc_cfg::get().ss.sym.cut_tips, lc_cfg::get().ss.sym.min_conjugate_len);
 	CheckIds(g, rawSeeds);
 
@@ -106,7 +119,7 @@ int main() {
 	CheckIds(g, goodSeeds);
 
 	if (lc_cfg::get().fo.remove_sefl_conjugate) {
-		RemoveWrongConjugatePaths(g, goodSeeds, &lowCoveredSeeds);
+		RemoveWrongConjugatePaths(g, goodSeeds, lc_cfg::get().ss.sym.min_conjugate_len, &lowCoveredSeeds);
 	} else {
 		lowCoveredSeeds = goodSeeds;
 	}
@@ -168,7 +181,7 @@ int main() {
 
 	std::vector<BidirectionalPath> filteredPaths;;
 	if (lc_cfg::get().fo.remove_sefl_conjugate) {
-		RemoveWrongConjugatePaths(g, goodPaths, &filteredPaths);
+		RemoveWrongConjugatePaths(g, goodPaths, lc_cfg::get().fo.sym.min_conjugate_len, &filteredPaths);
 	} else {
 		filteredPaths = goodPaths;
 	}
@@ -220,15 +233,13 @@ int main() {
 			RemoveOverlaps(g, result);
 			DETAILED_INFO("Removed overlaps");
 			CheckIds(g, result);
-
-			if (lc_cfg::get().fo.remove_similar) {
-				RemoveSimilar(g, result, pathQuality, &noOverlaps);
-			} else {
-				noOverlaps = result;
-			}
-			DETAILED_INFO("Removed similar");
-
 		}
+		if (lc_cfg::get().fo.remove_similar) {
+			RemoveSimilar(g, result, pathQuality, &noOverlaps);
+		} else {
+			noOverlaps = result;
+		}
+		DETAILED_INFO("Removed similar");
 
 		found = PathsInGenome<K>(g, index, sequence, noOverlaps, path1, path2, &pathQuality);
 		INFO("Good paths found " << found << " in total " << noOverlaps.size());

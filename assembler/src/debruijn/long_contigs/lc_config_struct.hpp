@@ -66,6 +66,10 @@ struct lc_config
 	    size_t max_cycles;
 	    double trusted_threshold;
 
+	    size_t short_single;
+	    size_t chimeric_len;
+	    size_t chimeric_delta;
+
 	    symmetrization sym;
 	};
 
@@ -267,6 +271,9 @@ void load(boost::property_tree::ptree const& pt, lc_config::seed_selection& ss)
     load(pt, "remove_untrusted", ss.remove_untrusted);
     load(pt, "trusted_threshold", ss.trusted_threshold);
     load(pt, "sym", ss.sym);
+    load(pt, "short_single", ss.short_single);
+    load(pt, "chimeric_delta", ss.chimeric_delta);
+    load(pt, "chimeric_len", ss.chimeric_len);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::extension_selection& es)

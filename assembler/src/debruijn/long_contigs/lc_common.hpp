@@ -120,6 +120,19 @@ public:
 	}
 };
 
+template <class T1, class T2>
+class SimplePairComparator {
+public:
+
+	bool operator() (const std::pair<T1, T2>& p1, const std::pair<T1, T2>& p2) const {
+		return p1.first > p2.first;
+	}
+
+	bool operator() (const std::pair<T1, T2>* p1, const std::pair<T1, T2>* p2) const {
+		return p1->first > p2->first;
+	}
+};
+
 
 //Statistics
 enum StopReason { LOOP, LONG_LOOP, NO_EXTENSION, NO_GOOD_EXTENSION, MANY_GOOD_EXTENSIONS, WEAK_EXTENSION };

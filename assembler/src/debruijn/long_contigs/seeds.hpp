@@ -9,6 +9,7 @@
 #define SEEDS_HPP_
 
 #include "lc_common.hpp"
+#include "lc_io.hpp"
 #include "path_utils.hpp"
 #include "loop.hpp"
 #include "extend.hpp"
@@ -169,7 +170,12 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndice
 	for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		EdgeId e = *iter;
 
-		if (edges.count(e) == 0) {
+		if ((g.length(e) >= lc_cfg::get().ss.chimeric_len - lc_cfg::get().ss.chimeric_delta && g.length(e) <= lc_cfg::get().ss.chimeric_len + lc_cfg::get().ss.chimeric_delta) ||
+				(g.length(e) <= lc_cfg::get().ss.short_single && ClassifyEdge(g, e) == TOTALY_ISOLATED)) {
+			edges.insert(e);
+			edges.insert(g.conjugate(e));
+		}
+		else if (edges.count(e) == 0) {
 			edges.insert(e);
 			detector.clear();
 			detector.temp.clear();
