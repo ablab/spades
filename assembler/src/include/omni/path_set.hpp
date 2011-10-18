@@ -397,7 +397,7 @@ private:
             if(newPathSet.paths.size() ==0)
             {
                 INFO("ALL PATHS IS REMOVED ---- ");
-                filtered.AddPathSet(rawPathSet);
+               // filtered.AddPathSet(rawPathSet);
                 INFO(rawPathSet);
             }
             else
