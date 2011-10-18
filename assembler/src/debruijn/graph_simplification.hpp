@@ -238,7 +238,7 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
 			&QualityLoggingRemovalHandler<Graph>::HandleDelete,
 			&qual_removal_handler, _1);
-	EdgeRemover<Graph> edge_remover(gp.g, true, removal_handler_f);
+	EdgeRemover<Graph> edge_remover(gp.g, false, removal_handler_f);
 
 	for (size_t i = 0; i < iteration_count; i++) {
 		INFO("-----------------------------------------");
@@ -287,13 +287,13 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 	//		etalon_paired_index.Check();
 	INFO("Final BulgeRemoval stats");
 	CountStats<k>(gp.g, gp.index, gp.genome);
-	ProduceDetailedInfo<k>(gp, labeler, output_folder + "final_bulges_removed/",
-			"graph.dot", "no_bulge_graph");
+//	ProduceDetailedInfo<k>(gp, labeler, output_folder + "final_bulges_removed/",
+//			"graph.dot", "no_bulge_graph");
 	INFO("Simplified graph stats");
 	CountStats<k>(gp.g, gp.index, gp.genome);
-//	ProduceDetailedInfo<k> (gp, labeler,
-//			output_folder + "simplification_finished/", "graph.dot",
-//			"simplified_graph");
+	ProduceDetailedInfo<k> (gp, labeler,
+			output_folder + "simplification_finished/", "graph.dot",
+			"simplified_graph");
 
 	OutputWrongContigs<k, Graph>(gp.g, gp.index, gp.genome, 1000,
 			"long_contigs.fasta");
