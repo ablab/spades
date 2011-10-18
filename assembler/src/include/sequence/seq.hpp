@@ -224,7 +224,7 @@ public:
 				do {
 					--i;
 					T new_rm = res.data_[i] & 3;
-					res.data_[i] = (res.data_[i] >> 2) | (rm << (Tbits - 2)); // we need & here because if we shift negative, it fill with ones :(
+					res.data_[i] = (res.data_[i] >> 2) | (rm << (Tbits - 2)); // we need & here because if we shift negative, it fill with ones :( // no more need for that if we use unsigned type for T
 					rm = new_rm;
 				} while (i != 0);
 			}
