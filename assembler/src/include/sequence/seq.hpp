@@ -77,7 +77,7 @@ private:
 		size_t cnt = 0;
 		int cur = 0;
 		for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
-			VERIFY(is_nucl(*s));
+			// VERIFY(is_nucl(*s)); // for performance
 			data = data | ((T) dignucl(*s) << cnt);
 			cnt += 2;
 			if (cnt == Tbits) {
