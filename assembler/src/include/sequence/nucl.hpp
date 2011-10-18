@@ -37,7 +37,7 @@ const char nucl_map[4] = {'A', 'C', 'G', 'T'};
 
 const char nucl_complement_map['T' + 1] = {
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-'T', 0, 'G', 0, 0, 0, 'C', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'A'};
+'T', 0, 'G', 0, 0, 0, 'C', 0, 0, 0, 0, 0, 0, 'N', 0, 0, 0, 0, 0, 'A'};
 
 /**
  * ACGT -> true
@@ -72,8 +72,15 @@ inline char complement(char c) {
  * @param char c is 'A', 'C', 'G' or 'T'
  * @return complement symbol, i.e. 'A' => 'T', 'C' => 'G', 'G' => 'C', 'T' => 'A'.
  */
+
+struct nucl_complement_functor { // still unused
+	inline bool operator() (signed char c) const {
+		return nucl_complement_map[c];
+	}
+};
+
 inline char nucl_complement(signed char c){
-	VERIFY(is_nucl(c));
+	//VERIFY(is_nucl(c));
 	return nucl_complement_map[c];
 	/*
 	switch(c) {
@@ -111,6 +118,12 @@ inline char nucl(signed char c) {
  * @return A => 0, C => 1, G => 2, T => 3
  */
 
+/*
+struct dignucl : public unary_function<int,bool> {
+	bool operator()(signed char c) const {
+		return dignucl_map[c];		
+	}	
+};*/
 
 inline char dignucl(signed char c) {
 	return dignucl_map[c];

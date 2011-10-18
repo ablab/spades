@@ -47,7 +47,7 @@ class SingleRead {
   static const int PHRED_OFFSET = 33;
   static const int SOLEXA_OFFSET = 64;
   static const int BAD_QUALITY_THRESHOLD = 2;
-
+ 
   /*
    * Type of variables which will store file names for reading from
    * Reader stream.
@@ -174,18 +174,20 @@ class SingleRead {
    * @return Reversed complimentary SingleRead.
    */
   SingleRead operator!() const {
-    std::string new_name;
+    // !!! nobody use the names, so we can skip them! (Kolya)
+    /*std::string new_name;
     if (name_ == "" || name_[0] != '!') {
       new_name = '!' + name_;
     } else {
       new_name = name_.substr(1, name_.length());
-    }
-    return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_));
+    }*/
+    return SingleRead(name_, ReverseComplement(seq_), Reverse(qual_));
   }
 
   SingleRead SubstrStrict(size_t from, size_t to) const {
-    std::string new_name = name_ + ".substr(" + ToString(from) + "," + ToString(to) + ")";
-    return SingleRead(new_name, seq_.substr(from, to), qual_.substr(from, to));
+    // !!! nobody use the names, so we can skip them! (Kolya)
+    //std::string new_name = name_ + ".substr(" + ToString(from) + "," + ToString(to) + ")";
+    return SingleRead(name_, seq_.substr(from, to), qual_.substr(from, to));
   }
 
   SingleRead Substr(size_t from, size_t to) const {
@@ -241,7 +243,7 @@ class SingleRead {
   void SetQuality(const char* new_quality, OffsetType offset_type = PhredOffset) {
     int offset = GetOffset(offset_type);
     qual_ = new_quality;
-    for (size_t i = 0; i < qual_.size(); ++i) {
+    for (size_t i = 0; i < qual_.size(); ++i) { // oh, really does it work with char* copying?
       qual_[i] -= offset;
     }
     UpdateValid();

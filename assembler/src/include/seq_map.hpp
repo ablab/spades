@@ -13,6 +13,7 @@
 #include "sequence/seq.hpp"
 #include "cuckoo.hpp"
 #include <tr1/unordered_map>
+#include <google/sparse_hash_map>
 
 /*
  * act as DeBruijn graph and Index at the same time :)
@@ -20,17 +21,26 @@
  * size_ here is as K+1 in other parts of code
  *
  * Map from Seq<size_> to (Value, size_t)
- * where Value is usually EdgeId and size_t is offset where this Seq is in EdgeId
+ * where Value is usually EdgeId (ref) and size_t is offset where this Seq is in EdgeId
  *
  */
+
+ //#define USE_SPARSEHASH 1
 
 template<size_t size_, typename Value>
 class SeqMap {
 private:
 	friend class SeqMapBuilder;
 	typedef Seq<size_> Kmer;
-	typedef std::tr1::unordered_map<Kmer, pair<Value, size_t> ,
-		typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
+	#ifdef USE_SPARSEHASH
+		typedef google::sparse_hash_map<Kmer, pair<Value, size_t> ,
+			typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
+		Kmer deleted_key; // see http://google-sparsehash.googlecode.com/svn/trunk/doc/sparse_hash_map.html#6
+		bool deleted_key_is_defined;
+	#else
+		typedef std::tr1::unordered_map<Kmer, pair<Value, size_t> ,
+			typename Kmer::hash, typename Kmer::equal_to> map_type; // size_t is offset
+	#endif
 //	typedef cuckoo<Kmer, pair<Value, size_t> , typename Kmer::multiple_hash,
 //	typename Kmer::equal_to> map_type;
 	map_type nodes_;
@@ -42,6 +52,12 @@ private:
 	// DE BRUIJN:
 	//does it work for primitives???
 	void addEdge(const Kmer &k) {
+		#ifdef USE_SPARSEHASH
+			if (deleted_key_is_defined && k == deleted_key) {
+				nodes_.clear_deleted_key();
+				deleted_key_is_defined = false;
+			}
+		#endif
 		nodes_.insert(make_pair(k, make_pair(Value(), -1)));
 	}
 
@@ -67,6 +83,12 @@ private:
 	void putInIndex(const Kmer &kmer, Value id, size_t offset) {
 		map_iterator mi = nodes_.find(kmer);
 		if (mi == nodes_.end()) {
+			#ifdef USE_SPARSEHASH
+				if (deleted_key_is_defined && kmer == deleted_key) {
+					nodes_.clear_deleted_key();
+					deleted_key_is_defined = false;
+				}
+			#endif
 			nodes_.insert(make_pair(kmer, make_pair(id, offset)));
 		} else {
 			mi->second.first = id;
@@ -81,12 +103,17 @@ public:
 	// DE BRUIJN:
 
 	SeqMap() {
-
+		#ifdef USE_SPARSEHASH
+			deleted_key_is_defined = false;
+		#endif
 	}
 
 	template<class ReadStream>
 	SeqMap(ReadStream &stream) {
 		Fill<ReadStream>(stream);
+		#ifdef USE_SPARSEHASH
+			deleted_key_is_defined = false;
+		#endif
 	}
 
 	template<class ReadStream>
@@ -173,6 +200,13 @@ public:
 	bool deleteIfEqual(const Kmer& kmer, Value id) {
 		map_iterator mi = nodes_.find(kmer);
 		if (mi != nodes_.end() && mi->second.first == id) {
+			#ifdef USE_SPARSEHASH
+				if (!deleted_key_is_defined) {
+					nodes_.set_deleted_key(kmer);
+					deleted_key = kmer;
+					deleted_key_is_defined = true;
+				}
+			#endif
 			nodes_.erase(mi);
 			return true;
 		}
