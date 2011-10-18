@@ -284,13 +284,16 @@ public:
     /*
      * Find a vector of possible extension pathsets.
      * The offSet will take care of the case where there is no pairedinfo in a very short edge. I ignore the offset by now
-     * and will consider later when we have problem with the pairinfo
+     * and will consider later when we have problem with the pairinfo. 
+     * ****** Seems that we can not ignore the pathset in reality. There are something that has no pairinfo
      */
     void FindExtension(PathSetIndexData<EdgeId> &indexData, PathSet<EdgeId> &currentPathSet, vector<PathSet<EdgeId>> & extendablePathSets, size_t offSet = 0)
     {
 
         if(currentPathSet.paths.size() == 1 && (*(currentPathSet.paths.begin())).size() ==0 )
         {
+            if(offSet > 0)
+                return;
 
             EdgeId headEdge = currentPathSet.end;
             vector<PathSet<EdgeId>>  pathSets =  indexData.GetPathSets(headEdge);
@@ -309,8 +312,10 @@ public:
                 }
                 else{
                     currentPath.push_back( currentPathSet.end);
-                    Path comparedPath(currentPath.begin() +1, currentPath.end());
-                    vector<PathSet<EdgeId>> candidatePathSets = indexData.GetPathSets(currentPath[0]);
+                    if(currentPath.size() < offSet + 1)
+                        continue;
+                    Path comparedPath(currentPath.begin() +1 + offSet, currentPath.end());
+                    vector<PathSet<EdgeId>> candidatePathSets = indexData.GetPathSets(currentPath[offSet]);
                     for(auto it = candidatePathSets.begin() ; it != candidatePathSets.end() ; ++it)
                     {
                         set<Path> comparedPathsCandidate;
@@ -327,7 +332,6 @@ public:
                     }
                 }
             }
-
         
         }
     }
@@ -383,6 +387,8 @@ private:
                 deque<EdgeId> checkPath(pathIter->begin(), pathIter->end());
                 checkPath.push_front(rawPathSet.start);
                 checkPath.push_back(rawPathSet.end);
+                if(checkPath.size() == 2)
+                    continue;
                 if(!CheckForwardConsistent(checkPath, topLevelNodes, rawPathSetDat))
                 {
                     newPathSet.paths.erase(currentPath);
@@ -390,12 +396,19 @@ private:
             }
             if(newPathSet.paths.size() ==0)
             {
-//                INFO("ALL PATHS IS REMOVED ---- ");
+                INFO("ALL PATHS IS REMOVED ---- ");
                 filtered.AddPathSet(rawPathSet);
- //               INFO(rawPathSet);
+                INFO(rawPathSet);
             }
             else
+            {
+                INFO("PATHSET IS VALID ");
+                INFO("BEFORE:");
+                INFO(rawPathSet);
+                INFO("AFTER:");
                 filtered.AddPathSet(newPathSet);
+                INFO(newPathSet);
+            }
         }
     }
     bool CheckForwardConsistent(deque<EdgeId> checkPath, vector<PathSet<EdgeId>> currentPathsets, PathSetIndexData<EdgeId> &pathsetData)
@@ -414,12 +427,22 @@ private:
         {
             EdgeId headNode = checkPath[0];
             vector<PathSet<EdgeId>> nextLevelPathSets ;
+            
+            size_t offSet = 0;
+            vector<PathSet<EdgeId>>  allpossiblePathSets =  pathsetData.GetPathSets(headNode);
+            if((allpossiblePathSets.size() == 0) && checkPath.size() > 2)
+                offSet = 1;
+
             for(size_t i =  0 ; i < currentPathsets.size() ; ++i)
             {
                 if(currentPathsets[i].start == headNode)
                 {
+                    //if this is actually a very short edge and there is no pairInfo, we can skip to the next, but not more
+   //             EdgeId headEdge = currentPathSet.end;
+   
+
                    vector<PathSet<EdgeId>> extendablePathSets; 
-                    FindExtension(pathsetData, currentPathsets[i], extendablePathSets);
+                    FindExtension(pathsetData, currentPathsets[i], extendablePathSets,offSet);
                     for(size_t t = 0 ; t< extendablePathSets.size() ; t++)
                     {
                         if(find(nextLevelPathSets.begin(), nextLevelPathSets.end(), extendablePathSets[t]) == nextLevelPathSets.end())
@@ -428,6 +451,8 @@ private:
                 }
             }
             checkPath.pop_front();
+            if(checkPath.size() > 1 && offSet == 1)
+                checkPath.pop_front();
             if(nextLevelPathSets.size() == 0)
                 return false;
             else
