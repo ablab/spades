@@ -43,10 +43,10 @@ protected:
 	typedef GraphLabeler<Graph> super;
 	typedef typename super::EdgeId EdgeId;
 	typedef typename super::VertexId VertexId;
+public:
 	TotalLabelerGraphStruct<Graph>* graph_struct;
 	TotalLabelerGraphStruct<Graph>* proto_graph_struct;
 
-public:
 	TotalLabeler(TotalLabelerGraphStruct<Graph>* g_struct, TotalLabelerGraphStruct<Graph>* proto_g_struct = NULL) :
 		graph_struct(g_struct), proto_graph_struct(proto_g_struct)  {
 	}

@@ -27,6 +27,16 @@ std::string ToString(T& t) {
 	return ss.str();
 }
 
+template <typename T>
+std::string ToString(std::vector<T>& t) {
+	std::ostringstream ss;
+	ss << "Size "<<t.size()<<": [";
+	for (auto it = t.begin(); it != t.end(); ++it)
+		ss<<*it<<", ";
+	ss<<"]";
+	return ss.str();
+}
+
 /**
  * Checks if file exists.
  * Analogs: http://www.techbytes.ca/techbyte103.html , http://www.gamedev.net/topic/211918-determining-if-a-file-exists-c/

@@ -134,7 +134,7 @@ public:
 
 
 		bool isAdjacent(EdgeInfo other_info, Graph &old_graph,
-				Graph &new_graph, EdgeLabelHandler<Graph> &labels_after) {
+				Graph &new_graph, EdgeLabelHandler<Graph> &labels_after, TotalLabeler<Graph>& tot_lab) {
 			//			DEBUG("comparation started: " << edge);
 			//		max_diff = MAXD;
 
@@ -162,22 +162,30 @@ public:
 			set<EdgeId> edges_set = labels_after.edge_inclusions[this->edge];
 			set<EdgeId> other_edges_set = labels_after.edge_inclusions[other_info.getEdge()];
 
-//			bool new_res = false;
+			bool new_res = false;
+			for(auto this_edge_it = edges_set.begin(); this_edge_it != edges_set.end(); ++ this_edge_it)
+				for(auto other_edge_it = other_edges_set.begin(); other_edge_it != other_edges_set.end(); ++ other_edge_it)
+					if( IsEdgesOnDistanceAdjacent(*this_edge_it, this->d, *other_edge_it
+							,other_info.getDistance(), new_graph, max_diff, lp.first == other_info.lp.first))
+					new_res  = true;
 
+			if (old_res != new_res) {
+				vector<int> set1_ids;
+				for(auto this_edge_it = edges_set.begin(); this_edge_it != edges_set.end(); ++ this_edge_it){
+					set1_ids.push_back(tot_lab.graph_struct->IDs->ReturnIntId(*this_edge_it));
+				}
+				vector<int> set2_ids;
+				for(auto other_edge_it = other_edges_set.begin(); other_edge_it != other_edges_set.end(); ++ other_edge_it){
+					set2_ids.push_back(tot_lab.graph_struct->IDs->ReturnIntId(*other_edge_it));
+				}
 
-//			for(auto this_edge_it = edges_set.begin(); this_edge_it != edges_set.end(); ++ this_edge_it)
-//				for(auto other_edge_it = other_edges_set.begin(); other_edge_it != other_edges_set.end(); ++ other_edge_it)
-//					if( IsEdgesOnDistanceAdjacent(*this_edge_it, this->d, *other_edge_it
-//							,other_info.getDistance(), new_graph, max_diff, lp.first == other_info.lp.first))
-//					new_res  = true;
-//
-//			if (old_res != new_res) {
-//				DEBUG("difference in isAdjacent for ("<<this->getEdge()<<", ("<<this->lp.first<<", "<<this->lp.second<<", "<<this->lp.d<<"), "<<this->d<<")");
-//				DEBUG("                          VS ("<<other_info.getEdge()<<", ("<<other_info.lp.first<<", "<<other_info.lp.second<<", "<<other_info.lp.d<<"), "<<other_info.d<<")");
-//				DEBUG("   old is "<<old_res<<"    new is "<<new_res);
-//				DEBUG("   first set size "<<edges_set.size()<<"    second set size "<<other_edges_set.size());
-//			}
-			return old_res;
+//				INFO("difference in isAdjacent for ("<<tot_lab.proto_graph_struct->IDs->ReturnIntId(this->getEdge())<<", ("<<tot_lab.graph_struct->IDs->ReturnIntId(this->lp.first)<<", "<<tot_lab.proto_graph_struct->IDs->ReturnIntId(this->lp.second)<<", "<<this->lp.d<<"), "<<this->d<<")");
+//				INFO("                          VS ("<<tot_lab.proto_graph_struct->IDs->ReturnIntId(other_info.getEdge())<<", ("<<tot_lab.graph_struct->IDs->ReturnIntId(other_info.lp.first)<<", "<<tot_lab.proto_graph_struct->IDs->ReturnIntId(other_info.lp.second)<<", "<<other_info.lp.d<<"), "<<other_info.d<<")");
+//				INFO("   old is "<<old_res<<"    new is "<<new_res);
+//				INFO("   first  set: "<<ToString(set1_ids));
+//				INFO("   second set: "<<ToString(set2_ids));
+			}
+			return new_res;
 		}
 
 
@@ -328,9 +336,15 @@ public:
 		int zero_paired_length = 0;
 		for (auto e_iter = edges.begin(); e_iter != edges.end(); ++e_iter) {
 			PairInfos pi = paired_di_data.GetEdgeInfos(old_to_new_edge[*e_iter]);
-			if (pi.size() > 1 || (pi.size() == 1 && pi[0].weight > 1e-8))
-				continue;
-			else {
+			bool cheat_edge = true;
+
+			for(size_t i =0; i < pi.size(); ++i){
+				if ((pi[i].weight > 1e-8)&&(pi[i].d >= 0)){
+					cheat_edge = false;
+					break;
+				}
+			}
+			if (cheat_edge) {
 				zero_paired_length += old_graph.length(*e_iter);
 				global_cheating_edges.insert(old_to_new_edge[*e_iter]);
 			}
@@ -347,7 +361,7 @@ private:
 	int near_vertex;
 	map<int, VertexId> fillVerticesAuto();
 	map<int, VertexId> fillVerticesComponents();
-	size_t RectangleResolveVertex(VertexId vid);
+	size_t RectangleResolveVertex(VertexId vid, TotalLabeler<Graph>& tot_labler);
 	size_t CheatingResolveVertex(VertexId vid);
 	void BanRCVertex(VertexId v );
 	ConjugateDeBruijnGraph::VertexId conj_wrap(ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::VertexId v);
@@ -845,6 +859,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 		INFO(" cheating_mode = " << cheating_mode);
 		bool changed = true;
 		map<int, VertexId> vertices;
+		int GraphCnt = 0;
 
 		while (changed) {
 			changed = false;
@@ -854,8 +869,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				vertices = fillVerticesAuto();
 			INFO(
 					"Having "<< vertices.size() << " paired vertices, trying to split");
-			RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
-			int GraphCnt = 0;
+//			RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
 
 			omnigraph::WriteSimple(
 					new_graph, TotLabAfter,
@@ -892,7 +906,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 
 				int tcount;
 				if (cheating_mode != 1)
-					tcount = RectangleResolveVertex(v_iter->second);
+					tcount = RectangleResolveVertex(v_iter->second, TotLabAfter);
 				else
 					tcount = CheatingResolveVertex(v_iter->second);
 				DEBUG("Vertex "<< v_iter->first<< " resolved to "<< tcount);
@@ -902,6 +916,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 					omnigraph::WriteSimple(
 						new_graph, TotLabAfter, output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
 								+ ".dot", "no_repeat_graph");
+					if (cheating_mode == 0 ) changed = true;
 				}
 			}
 		}
@@ -1065,7 +1080,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 
 
 template<class Graph>
-size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
+size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid, TotalLabeler<Graph>& tot_labler) {
 	DEBUG("Rectangle resolve vertex started");
 	int size = edge_infos.size();
 	//No resolve for cheater-incident vertixes")'
@@ -1117,12 +1132,12 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid) {
 			ERROR("fake edge");
 		}
 		for (int j = 0; j < size; j++) {
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after)
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after, tot_labler)
 					&& !edge_infos[j].isAdjacent(edge_infos[i], old_graph,
-							new_graph, labels_after))
+							new_graph, labels_after, tot_labler))
 				WARN(
 						"ASSYMETRIC: " << new_IDs.ReturnIntId(edge_infos[i].getEdge()) << " " << new_IDs.ReturnIntId(edge_infos[j].getEdge()));
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after)) {
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after, tot_labler)) {
 				neighbours[i].push_back(j);
 				neighbours[j].push_back(i);
 				TRACE(
