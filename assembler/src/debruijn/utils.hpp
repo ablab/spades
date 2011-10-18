@@ -11,7 +11,7 @@
 #include <iostream>
 #include "sequence/sequence_tools.hpp"
 #include "omni/splitters.hpp"
-
+#include "new_debruijn.hpp"
 //#include "common/io/paired_read.hpp"
 namespace debruijn_graph {
 
@@ -730,6 +730,29 @@ double PairedReadCountWeight(const MappingRange&, const MappingRange&) {
 double KmerCountProductWeight(const MappingRange& mr1,
 		const MappingRange& mr2) {
 	return mr1.initial_range.size() * mr2.initial_range.size();
+}
+
+
+ConjugateDeBruijnGraph::EdgeId conj_wrap(ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::EdgeId e){
+	return g.conjugate(e);
+}
+
+NonconjugateDeBruijnGraph::EdgeId conj_wrap(NonconjugateDeBruijnGraph& g, NonconjugateDeBruijnGraph::EdgeId e){
+	VERIFY(0);
+	return e;
+}
+
+template<class Graph>
+void WrappedSetCoverage(Graph& g, typename Graph::EdgeId e, int cov){
+	if (cfg::get().rr.symmetric_resolve == false) {
+		g.coverage_index().SetCoverage(e, cov);
+	} else {
+		g.coverage_index().SetCoverage(e, cov);
+		typename Graph::EdgeId rc_e = conj_wrap(g, e);
+		g.coverage_index().SetCoverage(rc_e, cov);
+
+	}
+
 }
 
 /**

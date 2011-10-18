@@ -216,8 +216,9 @@ struct debruijn_config
 		bool   removal_checks_enabled;
 
 		//typedef map<>
-
 	};
+
+	bool path_set_graph;
 
 	struct repeat_resolver {
 		bool symmetric_resolve;
@@ -529,12 +530,12 @@ inline void load(boost::property_tree::ptree const& pt, debruijn_config& cfg) {
 	load(pt, "gap_closer", cfg.gc);
 	load(pt, "need_consensus", cfg.need_consensus);
 	load(pt, "uncorrected_reads", cfg.uncorrected_reads);
+	load(pt, "path_set_graph", cfg.path_set_graph);
 
 	load(pt, (cfg.ds.single_cell ? "sc_simplification" : "usual_simplification"), cfg.simp);
 
 	load(pt, "info_printers", cfg.info_printers);
 }
-
 
 
 
