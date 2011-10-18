@@ -348,7 +348,7 @@ LB_QUAKE_FULL
 	single_first	L.Bouillonii_quaked/gerwick-read1.cor_single.fastq.gz
 	single_second	L.Bouillonii_quaked/gerwick-read2.cor_single.fastq.gz
 	RL		100	; read length
-	IS		226	; insert size
+	IS		360	; insert size
 	single_cell	false
 	reference_genome  L.Bouillonii_quaked/contigs_br_1003.fasta
 	LEN		8700000	; total size
