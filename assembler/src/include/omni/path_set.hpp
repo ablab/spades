@@ -347,7 +347,6 @@ public:
         }
     }
 
-private:
     void RemovePrefixes(PathSetIndexData<EdgeId> &filteredPathSetDat)
     {
         for(auto iter = data_.begin() ; iter != data_.end() ; )
@@ -381,6 +380,7 @@ private:
 
         }
     }
+private:
 
     void RemoveInvalidPaths(PathSetIndexData<EdgeId> &rawPathSetDat, PathSetIndexData<EdgeId> &filtered)
     {

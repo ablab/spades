@@ -237,29 +237,30 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	string postfix = GeneratePostfix();
     typedef TotalLabelerGraphStruct<typename graph_pack::graph_t> total_labeler_gs;
     typedef TotalLabeler           <typename graph_pack::graph_t> total_labeler;
+    total_labeler_gs graph_struct_before(origin_gp  .g, &origin_gp  .int_ids, &origin_gp  .edge_pos, NULL);
+    total_labeler tot_labeler_before(&graph_struct_before);
+    total_labeler_gs graph_struct_after (resolved_gp.g, &resolved_gp.int_ids, &resolved_gp.edge_pos, &labels_after);
+
+    total_labeler tot_labeler_after(&graph_struct_after, &graph_struct_before);
+
+    omnigraph::WriteSimple(origin_gp.g, tot_labeler_before, cfg::get().output_dir + subfolder + graph_name + "_2_simplified.dot", "no_repeat_graph");
 
 	if (cfg::get().path_set_graph ) {
 		INFO("testing path-set graphs");
-		PathSetGraphConstructor<typename graph_pack::graph_t> path_set_constructor(origin_gp.g, clustered_index);
+		PathSetGraphConstructor<typename graph_pack::graph_t> path_set_constructor(origin_gp.g , clustered_index, resolved_gp.g, resolved_gp.int_ids, tot_labeler_after);
 		INFO("testing ended");
-	}
-    total_labeler_gs graph_struct_before(origin_gp  .g, &origin_gp  .int_ids, &origin_gp  .edge_pos, NULL);
-    total_labeler tot_labeler_before(&graph_struct_before);
-
-    omnigraph::WriteSimple(origin_gp.g, tot_labeler_before, cfg::get().output_dir + subfolder + graph_name + "_2_simplified.dot", "no_repeat_graph");
+	}	else {
 //    CleanIsolated(origin_gp);
-    ResolveRepeats(origin_gp  .g, origin_gp  .int_ids, clustered_index, origin_gp  .edge_pos,
+		ResolveRepeats(origin_gp  .g, origin_gp  .int_ids, clustered_index, origin_gp  .edge_pos,
                    resolved_gp.g, resolved_gp.int_ids,                  resolved_gp.edge_pos,
                    cfg::get().output_dir + subfolder +"resolve_" + graph_name +  "/", labels_after);
-    if (output_contigs) {
+	}
+	if (output_contigs) {
        	OutputContigs(resolved_gp.g, cfg::get().output_dir + "after_rr_before_simplify" + postfix);
     	OutputContigs(origin_gp.g, cfg::get().output_dir + "before_resolve" + postfix);
     }
     INFO("Total labeler start");
 
-    total_labeler_gs graph_struct_after (resolved_gp.g, &resolved_gp.int_ids, &resolved_gp.edge_pos, &labels_after);
-
-    total_labeler tot_labeler_after(&graph_struct_after, &graph_struct_before);
 
     omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after, cfg::get().output_dir + subfolder + graph_name + "_3_resolved.dot", "no_repeat_graph");
 

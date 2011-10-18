@@ -763,6 +763,7 @@ NonconjugateDeBruijnGraph::VertexId RepeatResolver<Graph>::conj_wrap(Nonconjugat
 	return v;
 }
 
+//TODO: Move to utils.
 template<class Graph>
 ConjugateDeBruijnGraph::EdgeId RepeatResolver<Graph>::conj_wrap(ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::EdgeId e){
 	return g.conjugate(e);
@@ -773,6 +774,7 @@ NonconjugateDeBruijnGraph::EdgeId RepeatResolver<Graph>::conj_wrap(NonconjugateD
 	VERIFY(0);
 	return e;
 }
+
 template<class Graph>
 void RepeatResolver<Graph>::WrappedSetCoverage(EdgeId e, int cov){
 	if (rc_mode == 0) {
