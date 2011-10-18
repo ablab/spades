@@ -462,7 +462,7 @@ void WriteComponents(const Graph& g,
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
 	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, file_name,
-			graph_name, 10000);
+			graph_name, 4000);
 	gv.Visualize();
 }
 
@@ -514,8 +514,8 @@ void WriteComponentsAlongGenome(
 	//	ReliableSplitterAlongGenome(g, 60, split_edge_length, MappingPath<EdgeId> genome_path)
 	ReliableSplitterAlongGenome<Graph> inner_splitter(g, 60, split_edge_length,
 			path1);
-	ComponentSizeFilter<Graph> checker(g, split_edge_length, 0);
-	WriteComponents<Graph>(g, inner_splitter, checker, graph_name, file_name,
+	ComponentSizeFilter<Graph> checker(g, 1000000, 0);
+	WriteComponents<Graph> (g, inner_splitter, checker, graph_name, file_name,
 			coloring, labeler);
 }
 

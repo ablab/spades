@@ -222,14 +222,15 @@ const Sequence& genome, size_t bound, const string &file_name) {
 }
 
 template<size_t k>
-void SimplifyGraph(conj_graph_pack &gp, const EdgeQuality<Graph>& edge_qual,
+void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 		const PairedInfoIndex<Graph>& paired_index,
-		const omnigraph::GraphLabeler<Graph>& labeler, size_t iteration_count,
+		omnigraph::GraphLabeler<Graph>& tot_lab, size_t iteration_count,
 		const string& output_folder) {
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
 
-	CountStats<k>(gp.g, gp.index, gp.genome);
+	LabelerList<Graph> labeler(tot_lab, edge_qual);
+	CountStats<k> (gp.g, gp.index, gp.genome);
 //	ProduceDetailedInfo<k> (gp, labeler,
 //			output_folder + "before_simplification/", "graph.dot",
 //			"non_simplified_graph");
@@ -273,7 +274,7 @@ void SimplifyGraph(conj_graph_pack &gp, const EdgeQuality<Graph>& edge_qual,
 
 	INFO("Final ErroneousConnectionsRemoval stats");
 	CountStats<k>(gp.g, gp.index, gp.genome);
-	//	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "final_erroneous_edges_removed/",	"graph.dot", "no_erroneous_edges_graph");
+//	ProduceDetailedInfo<k>(gp, labeler, output_folder + "final_erroneous_edges_removed/",	"graph.dot", "no_erroneous_edges_graph");
 
 	INFO("Final TipClipping");
 	ClipTips(gp.g, removal_handler_f);
