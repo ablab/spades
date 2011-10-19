@@ -15,6 +15,9 @@
 #include "logging.hpp"
 #include "verify.hpp"
 #include "io/ireader.hpp"
+
+#include <boost/filesystem.hpp>
+
 #include <fstream>
 
 /**
@@ -85,7 +88,8 @@ public:
 };
 
 inline bool fileExists(std::string filename) {
-	return std::ifstream(filename);
+	namespace fs = boost::filesystem;
+	return fs::is_regular_file(filename);
 }
 
 inline void checkFileExistenceFATAL(std::string filename) {
