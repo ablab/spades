@@ -11,6 +11,7 @@
 
 #include "omni/edges_position_handler.hpp"
 #include "omni/total_labeler.hpp"
+#include "path_set_stats.hpp"
 
 namespace debruijn_graph{
 template <class Graph>
@@ -32,6 +33,11 @@ PathSetGraphConstructor(const Graph& g,const PairedInfoIndex<Graph>& pair_info, 
 	transformer.Transform(PII);
 	PathSetIndex<EdgeId> PI(PII);
 	PI.RemovePrefixes(PIIFilter);
+
+
+    PathSetStats<Graph>  pathsetStatistic(g,PII , PIIFilter);
+    pathsetStatistic.Count();
+
 
 	for(auto iter = PII.begin(); iter != PII.end() ; ++iter)
 	{
