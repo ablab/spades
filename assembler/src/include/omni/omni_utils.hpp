@@ -1003,17 +1003,26 @@ class EdgeRemover {
 	Graph& g_;
 	bool checks_enabled_;
 	boost::function<void(EdgeId)> removal_handler_;
+
+	bool TryDeleteVertex(VertexId v) {
+		if (g_.IsDeadStart(v) && g_.IsDeadEnd(v)) {
+			g_.DeleteVertex(v);
+			return true;
+		}
+		return false;
+	}
+
+	bool CheckAlternatives(EdgeId e) {
+		return g_.OutgoingEdgeCount(g_.EdgeStart(e)) > 1
+				&& g_.IncomingEdgeCount(g_.EdgeEnd(e)) > 1;
+	}
+
 public:
 	EdgeRemover(Graph& g, bool checks_enabled = true,
 			boost::function<void(EdgeId)> removal_handler = 0) :
 			g_(g), checks_enabled_(checks_enabled), removal_handler_(
 					removal_handler) {
 		TRACE("Edge remover created. Checks enabled = " << checks_enabled);
-	}
-
-	bool CheckAlternatives(EdgeId e) {
-		return g_.OutgoingEdgeCount(g_.EdgeStart(e)) > 1
-				&& g_.IncomingEdgeCount(g_.EdgeEnd(e)) > 1;
 	}
 
 	void DeleteEdge(EdgeId e, bool delete_between_related = true) {
@@ -1043,8 +1052,10 @@ public:
 			TRACE("Vertices not related");
 			TRACE("Compressing end");
 			g_.CompressVertex(end);
+			TryDeleteVertex(end);
 		}TRACE("Compressing start");
 		g_.CompressVertex(start);
+		TryDeleteVertex(start);
 	}
 
 private:

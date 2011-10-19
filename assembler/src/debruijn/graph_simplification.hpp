@@ -12,6 +12,7 @@
 #include "new_debruijn.hpp"
 #include "debruijn_stats.hpp"
 #include "omni/omni_utils.hpp"
+#include "omni/omni_tools.hpp"
 #include "omni/tip_clipper.hpp"
 #include "omni/bulge_remover.hpp"
 #include "omni/erroneous_connection_remover.hpp"
@@ -238,7 +239,7 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
 			&QualityLoggingRemovalHandler<Graph>::HandleDelete,
 			&qual_removal_handler, _1);
-	EdgeRemover<Graph> edge_remover(gp.g, false, removal_handler_f);
+	EdgeRemover<Graph> edge_remover(gp.g, true, removal_handler_f);
 
 	for (size_t i = 0; i < iteration_count; i++) {
 		INFO("-----------------------------------------");
@@ -289,6 +290,16 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 	CountStats<k>(gp.g, gp.index, gp.genome);
 //	ProduceDetailedInfo<k>(gp, labeler, output_folder + "final_bulges_removed/",
 //			"graph.dot", "no_bulge_graph");
+
+	INFO("Removing isolated edges");
+	//todo use ec.maxlength after it becomes non relative
+	IsolatedEdgeRemover<Graph> isolated_edge_remover(gp.g, cfg::get().simp.cec.max_length);
+	isolated_edge_remover.RemoveIsolatedEdges();
+	INFO("Isolated edges remove stats");
+	CountStats<k>(gp.g, gp.index, gp.genome);
+//	ProduceDetailedInfo<k>(gp, labeler, output_folder + "isolated_edges_removed/",
+//			"graph.dot", "no_isolated_edges_graph");
+
 	INFO("Simplified graph stats");
 	CountStats<k>(gp.g, gp.index, gp.genome);
 	ProduceDetailedInfo<k> (gp, labeler,
