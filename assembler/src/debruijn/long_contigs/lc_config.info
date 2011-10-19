@@ -3,7 +3,7 @@ from_file     true	  ; always true
 syminfo       false
 
 ;Only precount and estimate
-paired_info_only    false
+paired_info_only    true
 
 QUAKE_CROPPED_100K
 {
@@ -20,6 +20,12 @@ QUAKE_FULL
     graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_OLD/simplified_graph
     
 }
+
+LB_QUAKE_FULL
+{
+    graph_file       ./data/debruijn/LB_QUAKE_FULL/K55/grp1910/simplified_graph
+}
+
 
 SC_NEW_1_FILTERED
 {
@@ -44,7 +50,7 @@ write_overlaped_paths   false
 write_paths             true
 write_contigs           true
 write_real_paired_info  true
-write_raw_paired_info   false
+write_raw_paired_info   true
 cluster_paired_info     true
 write_graph             true
 print_stats             false
@@ -183,8 +189,30 @@ research
 real_libs
 {    
     count 1
-    
+
     item_0
+    {
+     	read_size     100
+        insert_size   370
+        is_delta      2
+        var           5
+
+	LB_QUAKE_FULL
+	{
+		precounted false
+		precounted_path ./
+
+       		first   ./data/input/L.Bouillonii_quaked/gerwick-read1.cor.fastq.gz
+	        second  ./data/input/L.Bouillonii_quaked/gerwick-read2.cor.fastq.gz
+
+		has_advanced   false
+		advanced ./
+		
+		raw ./
+	}
+    }
+    
+    item_3
     {
     	read_size     100
         insert_size   270
