@@ -54,17 +54,17 @@ public:
 	}
 
 	bool CheckEnd(VertexId v) {
-//		return graph_.OutgoingEdgeCount(v) == 1
-//				/*&& graph_.IncomingEdgeCount(v) >= 2*/;
 		return graph_.OutgoingEdgeCount(v) == 1
-				&& graph_.IncomingEdgeCount(v) >= 2;
+				/*&& graph_.IncomingEdgeCount(v) >= 2*/;
+//		return graph_.OutgoingEdgeCount(v) == 1
+//				&& graph_.IncomingEdgeCount(v) >= 2;
 	}
 
 	bool CheckStart(VertexId v) {
-//		return /*graph_.OutgoingEdgeCount(v) >= 2
-//				&&*/ graph_.IncomingEdgeCount(v) == 1;
-		return graph_.OutgoingEdgeCount(v) >= 2
-				&& graph_.IncomingEdgeCount(v) == 1;
+		return /*graph_.OutgoingEdgeCount(v) >= 2
+				&&*/ graph_.IncomingEdgeCount(v) == 1;
+//		return graph_.OutgoingEdgeCount(v) >= 2
+//				&& graph_.IncomingEdgeCount(v) == 1;
 	}
 
 	void RemoveEdges() {
@@ -74,8 +74,8 @@ public:
 					&& graph_.length(edge) >= graph_.k() - max_overlap_
 					&& CheckEnd(graph_.EdgeEnd(edge))
 					&& CheckStart(graph_.EdgeStart(edge))) {
-//				edge_remover_.DeleteEdge(edge);
-				graph_.DeleteEdge(edge);
+				edge_remover_.DeleteEdge(edge);
+//				graph_.DeleteEdge(edge);
 			}
 		}
 	}
@@ -109,20 +109,20 @@ public:
 			}TRACE("Checking length");
 			if (g_.length(e) < max_length_) {
 				TRACE("Condition ok");
-//				edge_remover_.DeleteEdge(e);
-				VertexId start = g_.EdgeStart(e);
-				VertexId end = g_.EdgeEnd(e);
-				TRACE("Start " << start);
-				TRACE("End " << end);
-				TRACE("Deleting edge");
-				g_.DeleteEdge(e);
-				TRACE("Compressing locality");
-				if (!g_.RelatedVertices(start, end)) {
-					TRACE("Vertices not related");
-					TRACE("Compressing end");
-					g_.CompressVertex(end);
-				}TRACE("Compressing start");
-				g_.CompressVertex(start);
+				edge_remover_.DeleteEdge(e);
+//				VertexId start = g_.EdgeStart(e);
+//				VertexId end = g_.EdgeEnd(e);
+//				TRACE("Start " << start);
+//				TRACE("End " << end);
+//				TRACE("Deleting edge");
+//				g_.DeleteEdge(e);
+//				TRACE("Compressing locality");
+//				if (!g_.RelatedVertices(start, end)) {
+//					TRACE("Vertices not related");
+//					TRACE("Compressing end");
+//					g_.CompressVertex(end);
+//				}TRACE("Compressing start");
+//				g_.CompressVertex(start);
 			} else {
 				TRACE("Condition failed");
 			}TRACE("Edge " << e << " processed");
@@ -188,14 +188,14 @@ public:
 			Append(adjacent_edges, g_.IncomingEdges(g_.EdgeEnd(e)));
 
 			if (CheckAdjacent(adjacent_edges, e)) {
-//				edge_remover_.DeleteEdge(e, false);
-				VertexId start = g_.EdgeStart(e);
-				VertexId end = g_.EdgeEnd(e);
-				if (!g_.RelatedVertices(start, end)) {
-					g_.DeleteEdge(e);
-					g_.CompressVertex(start);
-					g_.CompressVertex(end);
-				}
+				edge_remover_.DeleteEdge(e, false);
+//				VertexId start = g_.EdgeStart(e);
+//				VertexId end = g_.EdgeEnd(e);
+//				if (!g_.RelatedVertices(start, end)) {
+//					g_.DeleteEdge(e);
+//					g_.CompressVertex(start);
+//					g_.CompressVertex(end);
+//				}
 			}
 		}
 		omnigraph::Cleaner<Graph> cleaner(g_);
@@ -313,21 +313,21 @@ public:
 
 			if (CheckAdjacentLengths(adjacent_edges, e)
 					&& CheckAnyPairInfoAbsense(e)) {
-				VertexId start = g_.EdgeStart(e);
-				VertexId end = g_.EdgeEnd(e);
-				TRACE("Try deleting edge " << PrintEdge(e));
-				if (!g_.RelatedVertices(start, end)) {
-					TRACE("Vertices not related");
-					TRACE("Deleting edge " << PrintEdge(e));
-					g_.DeleteEdge(e);
-					TRACE("Compressing start");
-					g_.CompressVertex(start);
-					TRACE("Compressing end");
-					g_.CompressVertex(end);
-				} else {
-					TRACE("Vertices are related");
-				}
-//				edge_remover_.DeleteEdge(e, false);
+//				VertexId start = g_.EdgeStart(e);
+//				VertexId end = g_.EdgeEnd(e);
+//				TRACE("Try deleting edge " << PrintEdge(e));
+//				if (!g_.RelatedVertices(start, end)) {
+//					TRACE("Vertices not related");
+//					TRACE("Deleting edge " << PrintEdge(e));
+//					g_.DeleteEdge(e);
+//					TRACE("Compressing start");
+//					g_.CompressVertex(start);
+//					TRACE("Compressing end");
+//					g_.CompressVertex(end);
+//				} else {
+//					TRACE("Vertices are related");
+//				}
+				edge_remover_.DeleteEdge(e, false);
 			}
 		}
 		omnigraph::Cleaner<Graph> cleaner(g_);
