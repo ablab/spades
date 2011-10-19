@@ -7,5 +7,5 @@ cp src/debruijn/config.info.template src/debruijn/config.info
 cd data/
 ./link_ftp.sh
 cd ..
-make all
+make -j 5 all
 
