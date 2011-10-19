@@ -235,7 +235,7 @@ public:
 		return IncomingEdgeCount(v) == 0;
 	}
 
-	virtual bool AdditionalCompressCondition(VertexId v) {
+	virtual bool AdditionalCompressCondition(VertexId v) const {
 		return true;
 	}
 
@@ -259,13 +259,13 @@ public:
 	}
 
 	//todo remove after debug
-	virtual std::string PrintDetailedPath(const vector<EdgeId>& path) {
+	virtual std::string PrintDetailedPath(const vector<EdgeId>& path) const {
 		VERIFY(false);
 		return "";
 	}
 
 	//todo remove after debug
-	std::string PrintConjugatePath(const vector<EdgeId>& path) {
+	std::string PrintConjugatePath(const vector<EdgeId>& path) const {
 		vector<EdgeId> conjugate_path;
 		for (int i = path.size() - 1; i >=0; --i) {
 			conjugate_path.push_back(path[i]);
@@ -274,20 +274,20 @@ public:
 	}
 
 	//todo remove after debug
-	virtual std::string PrintDetailedVertexInfo(VertexId v) {
+	virtual std::string PrintDetailedVertexInfo(VertexId v) const {
 		VERIFY(false);
 		return "";
 	}
 
 	//todo remove after debug
-	virtual std::string PrintEdges(const vector<EdgeId>& path) {
+	virtual std::string PrintEdges(const vector<EdgeId>& path) const {
 		VERIFY(false);
 		return "";
 	}
 
 	//todo remove after debug
 	template <class T>
-	std::string SimplePrint(const vector<T>& v) {
+	std::string SimplePrint(const vector<T>& v) const {
 		stringstream ss;
 		for (auto it = v.begin(); it != v.end(); ++it) {
 			ss << *it << ", ";
@@ -296,17 +296,17 @@ public:
 	}
 
 	//todo remove after debug
-	virtual std::string PrintEdge(EdgeId e) {
+	virtual std::string PrintEdge(EdgeId e) const {
 		return "";
 	}
 
 	//todo remove after debug
-	virtual std::string PrintVertex(VertexId v) {
+	virtual std::string PrintVertex(VertexId v) const {
 		return "";
 	}
 
 	//todo remove after debug
-	std::string PrintVertices(const vector<VertexId>& path) {
+	std::string PrintVertices(const vector<VertexId>& path) const {
 		stringstream ss;
 		ss << "Vertices ";
 		for (auto it = path.begin(); it != path.end(); ++it) {
