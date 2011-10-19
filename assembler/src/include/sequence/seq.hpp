@@ -131,7 +131,7 @@ public:
 	 * Default constructor, fills Seq with A's
 	 */
 	Seq() {
-		VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
+		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		std::fill(data_.begin(), data_.end(), 0);
 	}
 
@@ -140,11 +140,11 @@ public:
 	 */
 	Seq(const Seq<size_, T> &seq) :
 		data_(seq.data_) {
-		VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
+		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 	}
 
 	Seq(const char* s) {
-		VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
+		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		init(s);
 	}
 
@@ -156,7 +156,7 @@ public:
 	 */
 	template<typename S>
 	explicit Seq(const S &s, size_t offset = 0) {
-		VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
+		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
 			char c = s[offset + i];
@@ -177,8 +177,8 @@ public:
 	 * @return 0123-char on position i
 	 */
 	char operator[](const size_t i) const {
-		VERIFY(i >= 0);
-		VERIFY(i < size_);
+		//VERIFY(i >= 0);
+		//VERIFY(i < size_);
 		return (data_[i >> Tnucl_bits] >> ((i & (Tnucl - 1)) << 1)) & 3; // btw (i % Tnucl) <=> (i & (Tnucl-1))
 	}
 
@@ -212,7 +212,7 @@ public:
 		if (is_nucl(c)) {
 			c = dignucl(c);
 		}
-		VERIFY(is_dignucl(c));
+		//VERIFY(is_dignucl(c));
 		Seq<size_, T> res(data_);
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
@@ -236,7 +236,7 @@ public:
 		if (is_nucl(c)) {
 			c = dignucl(c);
 		}
-		VERIFY(is_dignucl(c));
+		//VERIFY(is_dignucl(c));
 		Seq<size_ + 1, T> s;
 		copy(this->data_.begin(), this->data_.end(), s.data_.begin());
 		s.data_[s.data_size_ - 1] = s.data_[s.data_size_ - 1] | ((T) c
@@ -346,10 +346,12 @@ public:
 
 	//	template<size_t HASH_SEED>
 	struct hash {
-		size_t operator()(const Seq<size_, T> &seq) const {
+		size_t operator()(const Seq<size_, T> seq) const {
 			size_t h = 239;
+			//size_t h = 0;
 			for (size_t i = 0; i < seq.data_size_; i++) {
 				h = ((h << 5) - h) + seq.data_[i];
+				//h = h * 239 + seq.data_[i];
 			}
 			return h;
 		}
@@ -367,7 +369,7 @@ public:
 	};
 
 	struct equal_to {
-		bool operator()(const Seq<size_, T> &l, const Seq<size_, T> &r) const {
+		bool operator()(const Seq<size_, T> l, const Seq<size_, T> r) const {
 			return 0 == memcmp(l.data_.data(), r.data_.data(),
 					sizeof(T) * data_size_);
 		}

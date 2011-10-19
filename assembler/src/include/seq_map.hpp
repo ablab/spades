@@ -25,7 +25,7 @@
  *
  */
 
- //#define USE_SPARSEHASH 1
+//#define USE_SPARSEHASH 1
 
 template<size_t size_, typename Value>
 class SeqMap {
