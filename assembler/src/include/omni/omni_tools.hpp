@@ -136,7 +136,7 @@ public:
 
 	void RemoveIsolatedEdges() {
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if (IsTerminalVertex(g_.EdgeStart(*it)) && IsTerminalVertex(g_.EdgeEnd(*it))) {
+			if (IsTerminalVertex(g_.EdgeStart(*it)) && IsTerminalVertex(g_.EdgeEnd(*it)) && g_.length(*it) <= max_length_) {
 				g_.DeleteEdge(*it);
 			}
 		}
