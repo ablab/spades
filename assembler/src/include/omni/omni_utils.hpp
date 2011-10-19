@@ -1004,13 +1004,13 @@ class EdgeRemover {
 	bool checks_enabled_;
 	boost::function<void(EdgeId)> removal_handler_;
 
-	bool TryDeleteVertex(VertexId v) {
+/*	bool TryDeleteVertex(VertexId v) {
 		if (g_.IsDeadStart(v) && g_.IsDeadEnd(v)) {
 			g_.DeleteVertex(v);
 			return true;
 		}
 		return false;
-	}
+	}*/
 
 	bool CheckAlternatives(EdgeId e) {
 		return g_.OutgoingEdgeCount(g_.EdgeStart(e)) > 1
@@ -1052,10 +1052,11 @@ public:
 			TRACE("Vertices not related");
 			TRACE("Compressing end");
 			g_.CompressVertex(end);
-			TryDeleteVertex(end);
-		}TRACE("Compressing start");
+            TRACE("End Compressed");
+		}
+        TRACE("Compressing start");
 		g_.CompressVertex(start);
-		TryDeleteVertex(start);
+        TRACE("Start compressed")
 	}
 
 private:

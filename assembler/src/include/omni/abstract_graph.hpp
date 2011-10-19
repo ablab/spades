@@ -253,6 +253,7 @@ public:
 			edges_to_merge.push_back(GetUniqueIncomingEdge(v));
 			edges_to_merge.push_back(GetUniqueOutgoingEdge(v));
 			MergePath(edges_to_merge);
+            TRACE("Vertex compressed");
 		} else {
 			TRACE("Vertex " << v << " can't be compressed");
 		}
@@ -349,7 +350,7 @@ public:
 		FireDeletePath(edges_to_delete, vertices_to_delete);
 		FireAddEdge(new_edge);
 		HiddenDeletePath(edges_to_delete, vertices_to_delete);
-		TRACE("Corrected path " << SimplePrint(corrected_path) << "merged into " << PrintEdge(new_edge));
+		TRACE("Path merged. Corrected path " << SimplePrint(corrected_path) << "merged into " << PrintEdge(new_edge));
 		return new_edge;
 	}
 
