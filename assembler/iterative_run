@@ -28,3 +28,4 @@ LOG_DIR=logs/$LOG_DIR
 mkdir $LOG_DIR
 
 iterative_run $* | tee $LOG_DIR/"overall.log"
+tail $LOG_DIR/"overall.log" | mail -s "Iterative run $* finished" $(git config --get user.email)
