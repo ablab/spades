@@ -1,5 +1,4 @@
 #!/bin/bash
-
 cd assembler
 cp src/debruijn/config.info.template src/debruijn/config.info
 ./prepare_cfg
