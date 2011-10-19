@@ -22,7 +22,25 @@ void PathsNumbersStats()
         PathSet<EdgeId> pathset = *iter;
         filteredVector.push_back(pathset.paths.size());
     }
-    //any function to write these vector to files for plotting hist?
+    stringstream outputString;
+     WriteVector(rawVector, "raw", outputString );
+     WriteVector(filteredVector, "filter" ,outputString);
+     outputString<< " h = hist ([ raw, filter ]); ha = bar(h); legend(ha, 'Before Processing Pathset', 'After Processing Pathset' ) ; ";
+
+     //todo write this out to *.m
+
+}
+void WriteVector(vector<size_t> v, const char* nameVector,stringstream& outputString)
+{
+    outputString<< nameVector;
+    outputString<< " = [ ";
+    for(size_t i = 0 ; i < v.size() ; ++i)
+    {
+        if(i != v.size() -1)
+            outputString<< v[i] << ", " ;
+        else
+            outputString<< v[i] << " ]; " ;
+    }
 }
 public:
 
