@@ -395,7 +395,7 @@ public:
 			string component_name = ConstructComponentName(file_name_, cnt,
 					splitter_.ComponentName());
 			ofstream os;
-			os.open(component_name);
+			os.open(component_name.c_str());
 			gvis::GraphPrinter<typename Graph::VertexId> * gp =
 					factory_.GetPrinterInstance(graph_name_, os);
 			auto visualizer = factory_.GetVisualizerInstance(*gp);

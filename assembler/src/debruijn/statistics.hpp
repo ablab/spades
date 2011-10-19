@@ -206,7 +206,7 @@ public:
 
 	void WriteLengths(string folder_name, string file_name) {
 		ofstream os;
-		os.open(folder_name + "/" + file_name);
+		os.open((folder_name + "/" + file_name).c_str());
 		WriteLengths(os);
 		os.close();
 	}
