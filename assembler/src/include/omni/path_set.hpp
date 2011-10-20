@@ -162,6 +162,7 @@ ostream& operator<<(ostream& os, const PathSet<EdgeId>& pathSet) {
     for(auto iter = pathSet.paths.begin() ; iter != pathSet.paths.end() ; ++iter)
     {
         pathsString << "Path " << linecounter <<":"<< pathSet.length<< " "<<  pathSet.start <<"--" ;
+        linecounter++;
         for(size_t i = 0 ; i < (*iter).size() ; ++i)
         {
             pathsString << (*iter)[i] << " -- " ;
@@ -391,11 +392,11 @@ private:
         {
             PathSet<EdgeId> rawPathSet = *iter;
             PathSet<EdgeId> newPathSet = *iter;
-            if(rawPathSet.paths.size() == 1)
-            {
-                filtered.AddPathSet(newPathSet);
-                continue;
-            }
+//            if(rawPathSet.paths.size() == 1)
+//            {
+//                filtered.AddPathSet(newPathSet);
+//                continue;
+//            }
             vector<PathSet<EdgeId>> topLevelNodes ;
             topLevelNodes.push_back(rawPathSet);
             for(auto pathIter = rawPathSet.paths.begin() ; pathIter != rawPathSet.paths.end() ; ++pathIter)
@@ -446,15 +447,24 @@ private:
             vector<PathSet<EdgeId>> nextLevelPathSets ;
             
             size_t offSet = 0;
-            vector<PathSet<EdgeId>>  allpossiblePathSets =  pathsetData.GetPathSets(headNode);
-            if((allpossiblePathSets.size() == 0) && checkPath.size() > 2)
-                offSet = 1;
+            for(size_t forwardPosition = 1 ; forwardPosition < checkPath.size() ; ++forwardPosition)
+            {
+                if(pathsetData.GetPathSets(checkPath[forwardPosition]).size() != 0)
+                    break;
+                offSet++;
+            }
+            for(size_t popNum = 0 ; popNum <= offSet ; ++popNum)
+            {
+                checkPath.pop_front();
+            }
+            if(checkPath.size() == 0)
+                return true;
 
             for(size_t i =  0 ; i < currentPathsets.size() ; ++i)
             {
                 if(currentPathsets[i].start == headNode)
                 {
-                    //if this is actually a very short edge and there is no pairInfo, we can skip to the next, but not more
+                    //if this is actually a very short edge and there is no pairInfo, we can skip to the next, and next if the condition still holds 
    //             EdgeId headEdge = currentPathSet.end;
    
 
@@ -467,9 +477,8 @@ private:
                     }
                 }
             }
-            checkPath.pop_front();
-            if(checkPath.size() > 1 && offSet == 1)
-                checkPath.pop_front();
+
+
             if(nextLevelPathSets.size() == 0)
                 return false;
             else
