@@ -215,8 +215,12 @@ string GeneratePostfix(){
 		s += "early_pi_";
 	s += "k";
 	s += ToString(K);
-	s += "_nv";
-	s += ToString(cfg::get().rr.near_vertex);
+	if (cfg::get().path_set_graph){
+		s += "_path_set";
+	} else {
+		s += "_nv";
+		s += ToString(cfg::get().rr.near_vertex);
+	}
 	s += ".fasta";
 	return s;
 }

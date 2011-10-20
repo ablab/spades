@@ -20,9 +20,9 @@ public:
     double length;
     set<Path> paths;
     int id;
-
-    PathSet(EdgeId start, EdgeId end, double length, set<Path> paths):
-        start(start), end(end), length(length), paths(paths), id(-1)
+    double weight;
+    PathSet(EdgeId start, EdgeId end, double length, set<Path> paths, double weight):
+        start(start), end(end), length(length), paths(paths), id(-1), weight(weight)
     {}
 
 
@@ -170,7 +170,7 @@ ostream& operator<<(ostream& os, const PathSet<EdgeId>& pathSet) {
         pathsString<<endl;
     }
 
-    return os << "id: "<< pathSet.id <<" Start = " << pathSet.start <<" ....... "<<"End = " << pathSet.end<< endl<< pathsString.str() ;
+    return os << "id: "<< pathSet.id <<" weight "<< pathSet.weight <<" Start = " << pathSet.start <<" ....... "<<"End = " << pathSet.end<< endl<< pathsString.str() ;
 }
 
 template<typename EdgeId>
@@ -178,7 +178,7 @@ const PathSet<EdgeId> MinPathSet(EdgeId eid) {
 
     set<vector<EdgeId> > paths;
 	return PathSet<EdgeId>(eid, (EdgeId) 0/*numeric_limits<EdgeId>::min()*/,
-			numeric_limits<double>::min(), paths);
+			numeric_limits<double>::min(), paths, 0);
 }
 
 template<typename EdgeId>
@@ -186,7 +186,7 @@ const PathSet<EdgeId> MaxPathSet(EdgeId eid) {
 
     set<vector<EdgeId> > paths;
 	return PathSet<EdgeId>(eid, (EdgeId) -1/*numeric_limits<EdgeId>::max()*/,
-			numeric_limits<double>::max(), paths);
+			numeric_limits<double>::max(), paths, 0);
 }
 template<typename EdgeId>
 const PathSet<EdgeId> MinPathSet(EdgeId e1, EdgeId e2) {
@@ -368,6 +368,7 @@ public:
                 if(currentPathset.IsAbsolutePrefixOf( *iter))
                 {
                     isPrefix = true;
+//                    iter->SetWeight(iter->weight + currentPathset.weight );
                     break;
                 }
             }

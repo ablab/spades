@@ -237,7 +237,7 @@ void SimplifyGraph(conj_graph_pack &gp, const EdgeQuality<Graph>& edge_qual,
 	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
 			&QualityLoggingRemovalHandler<Graph>::HandleDelete,
 			&qual_removal_handler, _1);
-	EdgeRemover<Graph> edge_remover(gp.g, true, removal_handler_f);
+	EdgeRemover<Graph> edge_remover(gp.g, false, removal_handler_f);
 
 	for (size_t i = 0; i < iteration_count; i++) {
 		INFO("-----------------------------------------");
