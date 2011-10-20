@@ -29,11 +29,12 @@ public:
 PathSetGraphConstructor(const Graph& g,const PairedInfoIndex<Graph>& pair_info, Graph& new_graph, IdTrackHandler<Graph>& newIds, TotalLabeler<Graph>& tot_labeler_after): g_(g), pair_info_(pair_info) {
 	PathSetIndexData<EdgeId> PII ;
 	PathSetIndexData<EdgeId> PIIFilter ;
+
 	MatePairTransformer<Graph> transformer(g_, pair_info_);
 	transformer.Transform(PII);
 	PathSetIndex<EdgeId> PI(PII);
-	PI.RemovePrefixes(PIIFilter);
-
+//	PI.RemovePrefixes(PIIFilter_tmp);
+	PI.Process(PIIFilter);
 
     PathSetStats<Graph>  pathsetStatistic(g,PII , PIIFilter);
     pathsetStatistic.Count();
@@ -115,7 +116,7 @@ PathSetGraphConstructor(const Graph& g,const PairedInfoIndex<Graph>& pair_info, 
 			VertexId new_end = newIds.ReturnVertexId(extends[i].id);
 			DEBUG("adding edge from" << newIds.ReturnIntId(new_start) << " to " << newIds.ReturnIntId(new_end) << " of length " << g.length(old_first_edge) <<" and coverage "<< g.coverage(old_first_edge) << " * " << extends[i].weight / weight_sums[old_first_edge]);
 			EdgeId eid = new_graph.AddEdge(new_start, new_end, g.EdgeNucls(old_first_edge));
-			WrappedSetCoverage(new_graph, eid, (int) (g.coverage(old_first_edge) * g.length(old_first_edge) * extends[i].weight / weight_sums[old_first_edge]));
+			WrappedSetCoverage(new_graph, eid, (int) (g.coverage(old_first_edge) * g.length(old_first_edge) * 100 *  extends[i].weight / weight_sums[old_first_edge]));
 			DEBUG("count was "<< count);
 //		    omnigraph::WriteSimple(new_graph, tot_labeler_after, cfg::get().output_dir  + ToString(count)+".dot", "no_repeat_graph");
 			count ++ ;

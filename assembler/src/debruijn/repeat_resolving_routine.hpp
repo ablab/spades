@@ -217,6 +217,8 @@ string GeneratePostfix(){
 	s += ToString(K);
 	if (cfg::get().path_set_graph){
 		s += "_path_set";
+	} else if (cfg::get().rr.mode == 2) {
+		s += "_mode2";
 	} else {
 		s += "_nv";
 		s += ToString(cfg::get().rr.near_vertex);
@@ -277,8 +279,17 @@ void process_resolve_repeats(graph_pack& origin_gp,
     {
         ClipTipsForResolver(resolved_gp.g);
 //        BulgeRemoveWrap      (resolved_gp.g);
-        RemoveLowCoverageEdges(resolved_gp.g, edge_remover, i, 3);
+        omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+
+               	cfg::get().output_dir + subfolder + ToString(i) +  "a_4_cleared.dot",
+               			"no_repeat_graph");
+        RemoveLowCoverageEdgesForResolver(resolved_gp.g);
+
 //        RemoveRelativelyLowCoverageEdges(resolved_gp.g);
+        omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+
+        	cfg::get().output_dir + subfolder + ToString(i) +  "b_4_cleared.dot",
+        			"no_repeat_graph");
 	}
 
 	INFO("---Cleared---");
