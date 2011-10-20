@@ -46,8 +46,8 @@ PathSetGraphConstructor(const Graph& g,const PairedInfoIndex<Graph>& pair_info, 
 	}
 	DEBUG("FILTERED");
 	int count = 0;
-//	map<int, int> real_id;
-//	map<VertexId, int> old_vertices;
+
+//	map<VertexId, int> long_start_vertices;
 	for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
 	{
 //		if ((old_vertices.find(g.EdgeEnd(iter->start)) != old_vertices.end()) && g.length(iter->start) > cfg::get().ds.IS) {
@@ -58,6 +58,20 @@ PathSetGraphConstructor(const Graph& g,const PairedInfoIndex<Graph>& pair_info, 
 			newIds.AddVertexIntId(v, iter->id);
 //			real_id.insert(make_pair(iter->id, iter->id));
 //			old_vertices.insert(make_pair(g.EdgeEnd(iter->start), iter->id));
+		}
+	}
+	map<EdgeId, int> long_starts;
+	map<int, int> real_ids;
+	for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
+	{
+		if (g.length(iter->start) < cfg::get().ds.IS) {
+			real_ids.insert(make_pair(iter->id, iter->id));
+		} else 	if (long_starts.find(iter->start) == long_starts.end()) {
+			long_starts.insert(make_pair(iter->start, iter->id));
+			real_ids.insert(make_pair(iter->id, iter->id));
+		} else {
+			real_ids.insert(make_pair(iter->id, long_starts[iter->start]));
+			new_graph.DeleteVertex(newIds.ReturnVertexId(iter->id));
 		}
 	}
 	DEBUG("PahtSetNumber is "<< PIIFilter.size());
@@ -106,20 +120,24 @@ PathSetGraphConstructor(const Graph& g,const PairedInfoIndex<Graph>& pair_info, 
 		PathSet<EdgeId> first = *iter;
 		vector<PathSet<EdgeId>> extends;
 		PI.FindExtension(PIIFilter,first, extends);
-		VertexId new_start = newIds.ReturnVertexId(iter->id);
+		VertexId new_start = newIds.ReturnVertexId(real_ids[iter->id]);
 		EdgeId old_first_edge = iter->start;
 		if (first.weight / weight_sums[old_first_edge] < 0.9)
 				DEBUG("low covered");
 		DEBUG ("path-set numero " << first.id<< " has "<< extends.size()<<"extensions: ");
 		for(size_t i = 0; i < extends.size(); i++) {
 			DEBUG("to pathset "<< extends[i].id << " weight "<< extends[i].weight);
-			VertexId new_end = newIds.ReturnVertexId(extends[i].id);
+			VertexId new_end = newIds.ReturnVertexId(real_ids[extends[i].id]);
 			DEBUG("adding edge from" << newIds.ReturnIntId(new_start) << " to " << newIds.ReturnIntId(new_end) << " of length " << g.length(old_first_edge) <<" and coverage "<< g.coverage(old_first_edge) << " * " << extends[i].weight / weight_sums[old_first_edge]);
-			EdgeId eid = new_graph.AddEdge(new_start, new_end, g.EdgeNucls(old_first_edge));
-			WrappedSetCoverage(new_graph, eid, (int) (g.coverage(old_first_edge) * g.length(old_first_edge) * 100 *  extends[i].weight / weight_sums[old_first_edge]));
-			DEBUG("count was "<< count);
+			if (real_ids[extends[i].id] != extends[i].id) {
+				DEBUG("ignoring clone to pathset " << extends[i].id << " and vertex " << real_ids[extends[i].id]);
+			} else {
+				EdgeId eid = new_graph.AddEdge(new_start, new_end, g.EdgeNucls(old_first_edge));
+				WrappedSetCoverage(new_graph, eid, (int) (g.coverage(old_first_edge) * g.length(old_first_edge) *   extends[i].weight / weight_sums[old_first_edge]));
+				DEBUG("count was "<< count);
 //		    omnigraph::WriteSimple(new_graph, tot_labeler_after, cfg::get().output_dir  + ToString(count)+".dot", "no_repeat_graph");
-			count ++ ;
+				count ++ ;
+			}
 		}
 		if (extends.size() == 0){
 			VertexId new_end = new_graph.AddVertex();
@@ -168,7 +186,22 @@ PathSetGraphConstructor(const Graph& g,const PairedInfoIndex<Graph>& pair_info, 
 		}
 	}
 	DEBUG(count);
+	INFO("adding isolated edges");
 
+	for(auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		VertexId start = g.EdgeStart(*iter);
+		VertexId end = g.EdgeEnd(*iter);
+		TRACE (g.CheckUniqueOutgoingEdge(start)<<" "<<  g.IsDeadStart(start) <<" "<< g.CheckUniqueIncomingEdge(end) <<" "<<g.IsDeadEnd(end));
+		if (g.CheckUniqueOutgoingEdge(start) && g.IsDeadStart(start) && g.CheckUniqueIncomingEdge(end) && g.IsDeadEnd(end) ) {
+			VertexId new_start = new_graph.AddVertex();
+			VertexId new_end = new_graph.AddVertex();
+			EdgeId old_first_edge = *iter;
+			DEBUG("adding isolated edge from" << newIds.ReturnIntId(new_start) << " to " << newIds.ReturnIntId(new_end) << " of length " << g.length(old_first_edge));
+			EdgeId eid = new_graph.AddEdge(new_start, new_end, g.EdgeNucls(old_first_edge));
+			WrappedSetCoverage(new_graph, eid, (int) (g.coverage(old_first_edge)  * g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge] */));
+
+		}
+	}
 }
 
 
