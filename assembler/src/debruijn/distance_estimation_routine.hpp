@@ -12,7 +12,6 @@
 #include "late_pair_info_count.hpp"
 #include <set>
 #include "gap_closer.hpp"
-
 #include "check_tools.hpp"
 
 namespace debruijn_graph {
