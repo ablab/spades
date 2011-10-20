@@ -25,7 +25,6 @@ public:
         start(start), end(end), length(length), paths(paths), id(-1), weight(weight)
     {}
 
-
     bool operator<(const PathSet& rhs) const {
         const PathSet &lhs = *this;
         
@@ -273,18 +272,74 @@ private:
 	Data data_;
 	int maxId;
 };
+
+
 template<typename EdgeId>
 class PathSetIndex
 {
 private:
     PathSetIndexData<EdgeId> data_;
+    PathSetIndexData<EdgeId> backwarddata_;
     typedef vector<EdgeId> Path;
+    
+    void GenerateBackwardData()
+    {
+        PathSetIndexData<EdgeId> rawBackwardData;
+        for(auto iter = data_.begin() ; iter != data_.end() ; ++iter)
+        {
+            PathSet<EdgeId> forwardPathSet = *iter;
+            set<Path> paths ;
+            for(auto itPath = forwardPathSet.paths.begin() ; itPath != forwardPathSet.paths.end() ; ++itPath)
+            {
+                Path apath = *itPath;
+                reverse(apath.begin(), apath.end());
+                paths.insert(apath);
+            }
+
+            PathSet<EdgeId> pathset(forwardPathSet.end , forwardPathSet.start, forwardPathSet.length , paths, forwardPathSet.weight);
+            rawBackwardData.AddPathSet(pathset);
+
+        }
+        for(auto iter = rawBackwardData.begin() ; iter != rawBackwardData.end() ; )
+        {
+            int distance =0;
+            PathSet<EdgeId> currentPathset = *iter;
+            auto forward_iter = iter ;  
+            bool isPrefix = false ;
+            while(true)
+            {
+                if(iter == rawBackwardData.end())
+                    break;
+
+                advance(iter,1);
+                distance++;
+
+                if((iter == rawBackwardData.end()) || ( iter->start != currentPathset.start))
+                    break;
+                if(currentPathset.IsAbsolutePrefixOf( *iter))
+                {
+                    isPrefix = true;
+                    //                    iter->SetWeight(iter->weight + currentPathset.weight );
+                    break;
+                }
+            }
+            if(!isPrefix)
+            {
+                backwarddata_.AddPathSet(currentPathset);
+            }
+
+            advance(iter, -1*distance + 1 );
+
+
+        }
+    }
 
 public:
-    PathSetIndex(PathSetIndexData<EdgeId> data):data_(data){}
-    //TODO BAD CODE
+    PathSetIndex(PathSetIndexData<EdgeId> data):data_(data){
+        GenerateBackwardData();
+    }
 
-    
+
     void Process(PathSetIndexData<EdgeId>& filteredPathSetData)
     {
         PathSetIndexData<EdgeId> removedPrefixData;
@@ -399,6 +454,9 @@ private:
 //            }
             vector<PathSet<EdgeId>> topLevelNodes ;
             topLevelNodes.push_back(rawPathSet);
+            
+            vector<PathSet<EdgeId>> topLevelBackwardNodes = backwarddata_.GetPathSets(rawPathSet.end);
+
             for(auto pathIter = rawPathSet.paths.begin() ; pathIter != rawPathSet.paths.end() ; ++pathIter)
             {
                 Path currentPath = *pathIter;
@@ -407,11 +465,27 @@ private:
                 checkPath.push_back(rawPathSet.end);
                 if(checkPath.size() == 2)
                     continue;
-                if(!CheckForwardConsistent(checkPath, topLevelNodes, rawPathSetDat))
+                deque<EdgeId> reverseCheckPath = checkPath;
+                reverse(reverseCheckPath.begin(), reverseCheckPath.end());
+                
+                if(topLevelBackwardNodes.size() == 0)
                 {
-                    newPathSet.paths.erase(currentPath);
+
+                    if(!CheckForwardConsistent(checkPath, topLevelNodes, rawPathSetDat))
+                    {
+                        newPathSet.paths.erase(currentPath);
+                    }
+                }
+                else 
+                {
+                    if((!CheckForwardConsistent(checkPath, topLevelNodes, rawPathSetDat)) || (!CheckForwardConsistent(reverseCheckPath,topLevelBackwardNodes, backwarddata_ ) ) )
+                    {
+                        newPathSet.paths.erase(currentPath);
+                    }
                 }
             }
+
+
             if(newPathSet.paths.size() ==0)
             {
                 INFO("ALL PATHS IS REMOVED ---- ");
@@ -453,6 +527,11 @@ private:
                     break;
                 offSet++;
             }
+            //We just allow 2 skips ?
+            if(offSet >= 2)
+                return false;
+
+
             for(size_t popNum = 0 ; popNum <= offSet ; ++popNum)
             {
                 checkPath.pop_front();
