@@ -156,7 +156,7 @@ void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
 
 template<class Graph>
 void FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
-	if (cfg::get().simpl_mode
+	if (cfg::get().simp.simpl_mode
 			== debruijn_graph::simplification_mode::sm_cheating) {
 		INFO("Cheating removal of erroneous edges started");
 		size_t max_length = cfg::get().simp.cec.max_length;
@@ -170,7 +170,7 @@ void FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 		//			max_length_div_K * g.k(), max_coverage);
 		erroneous_edge_remover.RemoveEdges();
 		INFO("Cheating removal of erroneous edges finished");
-	} else if (cfg::get().simpl_mode
+	} else if (cfg::get().simp.simpl_mode
 			== debruijn_graph::simplification_mode::sm_chimeric) {
 		ChimericEdgesRemover<Graph> remover(g, 10, edge_remover);
 		remover.RemoveEdges();

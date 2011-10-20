@@ -2,6 +2,9 @@
 
 sc_simplification
 {
+	;simplification mode: normal, cheating, chimeric, pair_info_aware
+	simpl_mode cheating
+
 	; tip clipper:
 	tc
 	{
@@ -45,6 +48,9 @@ sc_simplification
 
 usual_simplification
 {
+	;simplification mode: normal, cheating, chimeric, pair_info_aware
+	simpl_mode normal
+	
 	; tip clipper:
 	tc
 	{

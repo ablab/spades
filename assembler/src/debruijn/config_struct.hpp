@@ -150,6 +150,7 @@ namespace debruijn_graph
 				size_t min_neighbour_length;
 			};
 
+			simplification_mode simpl_mode;
 			tip_clipper                            tc;
 			bulge_remover                          br;
 			erroneous_connections_remover          ec;
@@ -215,7 +216,6 @@ namespace debruijn_graph
 		std::string load_from;
 
 		working_stage entry_point;
-		simplification_mode simpl_mode;
 
 		bool paired_mode;
 		bool paired_info_statistics;
@@ -224,7 +224,6 @@ namespace debruijn_graph
 		bool late_paired_info;
 		bool advanced_estimator_mode;
 		bool componential_resolve;
-
 
 		std::string uncorrected_reads;
 		bool need_consensus;
@@ -354,7 +353,7 @@ namespace debruijn_graph
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::simplification& simp)
 	{
 	    using config_common::load;
-
+		load(pt, "simpl_mode", simp.simpl_mode);
         load(pt, "tc" , simp.tc ); // tip clipper:
         load(pt, "br" , simp.br ); // bulge remover:
         load(pt, "ec" , simp.ec ); // erroneous connections remover:
@@ -382,8 +381,6 @@ namespace debruijn_graph
         cfg.load_from = cfg.output_root + cfg.load_from;
 
 		load(pt, "entry_point", cfg.entry_point);
-
-		load(pt, "simpl_mode", cfg.simpl_mode);
 
 		load(pt, "use_additional_contigs", cfg.use_additional_contigs);
 		load(pt, "use_single_reads", cfg.use_single_reads);
@@ -417,7 +414,3 @@ namespace debruijn_graph
 typedef config_common::config<debruijn_graph::debruijn_config> cfg;
 
 #endif
-
-
-
-
