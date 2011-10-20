@@ -11,6 +11,8 @@
 #include "omni/paired_info.hpp"
 #include "late_pair_info_count.hpp"
 #include <set>
+#include "gap_closer.hpp"
+
 #include "check_tools.hpp"
 
 namespace debruijn_graph {
@@ -28,6 +30,8 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		paired_info_index& clustered_index) {
 	exec_late_pair_info_count(gp, paired_index);
 	INFO("STAGE == Estimating Distance");
+
+	CloseShortGaps(gp.g, paired_index, gp.edge_pos);
 
 	if (cfg::get().paired_mode) {
 		if (cfg::get().advanced_estimator_mode) {
