@@ -46,7 +46,7 @@ namespace debruijn_graph
 		time(&rawtime);
 		timeinfo = localtime(&rawtime);
 
-		strftime(buffer, 80, "%m.%d_%H_%M", timeinfo);
+		strftime(buffer, 80, "%m.%d_%H.%M.%S", timeinfo);
 		return std::string(buffer);
 	}
 
