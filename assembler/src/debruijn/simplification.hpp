@@ -35,12 +35,6 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 	SimplifyGraph<K>(gp, quality_labeler, paired_index, tot_lab, 10,
 			cfg::get().output_dir/*, etalon_paired_index*/);
 
-	LabelerList<Graph> labeler_list(tot_lab, quality_labeler);
-
-	WriteGraphComponents<K>(gp.g, gp.index, labeler_list, gp.genome,
-			cfg::get().output_dir + "graph_components/", "graph.dot",
-			"graph_component", cfg::get().ds.IS);
-
 	//  ProduceInfo<k>(g, index, *totLab, genome, output_folder + "simplified_graph.dot", "simplified_graph");
 
 	//experimental
