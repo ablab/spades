@@ -11,6 +11,8 @@ if len(sys.argv) < 3:
 	print 'ORFs length are in codons (3bp), including start and stop codons.'
 	exit()
 
+# http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi#SG11
+# 11. The Bacterial, Archaeal and Plant Plastid Code (transl_table=11)
 AAs    = 'FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG'
 Starts = '---M---------------M------------MMMM---------------M------------'
 Base1  = 'TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG'
@@ -20,7 +22,6 @@ Base3  = 'TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG'
 fasta_filename = sys.argv[1]
 orf_min = int(sys.argv[2])
 orf_max = int(sys.argv[3]) if len(sys.argv) >= 4 else 1e3000
-fasta = fastaparser.read_fasta(fasta_filename)
 
 def find_ORFs(genome):
 	gene = False # no gene
@@ -47,6 +48,7 @@ def reverse_complement(s):
 	complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'N': 'N', 'a': 't', 'c': 'g', 'g': 'c', 't': 'a', 'n': 'n'}
 	return ''.join(map(lambda x: complement[x], s[::-1]))
 
+fasta = fastaparser.read_fasta(fasta_filename)
 cnt = 0
 for name, seq in fasta:
 	cnt += cnt_ORFs(seq, orf_min, orf_max)
@@ -56,6 +58,5 @@ for name, seq in fasta:
 	cnt += cnt_ORFs(rc_seq, orf_min, orf_max)
 	cnt += cnt_ORFs(rc_seq[1:], orf_min, orf_max)
 	cnt += cnt_ORFs(rc_seq[2:], orf_min, orf_max)
-
 
 print 'ORFs between', orf_min, 'and', orf_max, 'in', fasta_filename,' = ', cnt
