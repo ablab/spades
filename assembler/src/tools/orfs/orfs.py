@@ -14,7 +14,7 @@ if len(sys.argv) < 3:
 # http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi#SG11
 # 11. The Bacterial, Archaeal and Plant Plastid Code (transl_table=11)
 AAs    = 'FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG'
-Starts = '---M---------------M------------MMMM---------------M------------'
+Starts = '---M---------------X------------XXXM---------------M------------'
 Base1  = 'TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG'
 Base2  = 'TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG'
 Base3  = 'TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG'
