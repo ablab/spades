@@ -5,9 +5,9 @@ import itertools
 sys.path.append('../quality/libs')
 import fastaparser
 
-if len(sys.argv) < 4:
+if len(sys.argv) < 3:
 	print 'Counts bacterial ORFs (trans table 11)'
-	print 'Usage: python', sys.argv[0], ' FASTA_FILE ORF_MIN ORF_MAX'
+	print 'Usage: python', sys.argv[0], ' FASTA_FILE ORF_MIN [ORF_MAX]'
 	print 'ORFs length are in codons (3bp), including start and stop codons.'
 	exit()
 
@@ -19,7 +19,7 @@ Base3  = 'TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG'
 
 fasta_filename = sys.argv[1]
 orf_min = int(sys.argv[2])
-orf_max = int(sys.argv[3])
+orf_max = int(sys.argv[3]) if len(sys.argv) >= 4 else 1e3000
 fasta = fastaparser.read_fasta(fasta_filename)
 
 def find_ORFs(genome):
