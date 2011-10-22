@@ -31,6 +31,14 @@ struct Globals {
 	static int num_of_tmp_files;
 	static int iteration_no;
 	static bool skip_to_clustering;
+	static bool skip_to_subvectors;
+	static bool unload_blob_before_merge;
+
+	static bool likelihood_e_step;
+	static bool subtract_simplex_volume;
+
+	static bool debug_output_clustering;
+	static bool debug_output_likelihood;
 
 	static std::vector<PositionRead> * pr;
 	static std::vector<Read> * rv;

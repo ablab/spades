@@ -56,6 +56,14 @@ struct hammer_config
 	bool conserve_memory;
 	int num_of_tmp_files;
 	bool skip_to_clustering;
+	bool skip_to_subvectors;
+	bool unload_blob_before_merge;
+
+	bool likelihood_e_step;
+	bool subtract_simplex_volume;
+
+	bool debug_output_clustering;
+	bool debug_output_likelihood;
 };
 
 

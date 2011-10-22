@@ -184,6 +184,7 @@ class SubKMerSorter {
 	size_t kmers_size_;			// size of kmer vector -- if we are sorting a newly made kmers vector
 	vector< hint_t > * kmers_;		// the kmer vector itself -- if we are sorting a specific block
 	vector< string > fnames_; // vector of file names for file-based versions
+	vector< string > sorted_fnames_; // vector of file names for file-based versions
 
 	void initVectors();
 	void runMemoryBasedSort();

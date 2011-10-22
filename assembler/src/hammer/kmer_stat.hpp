@@ -24,7 +24,7 @@ class KMerStat;
 
 typedef std::map<PositionKMer, KMerStat> KMerStatMap;
 typedef std::pair<PositionKMer, KMerStat> KMerCount;
-typedef std::pair<std::string, uint32_t> StringCount;
+typedef std::pair<std::string, std::pair<uint32_t, double> > StringCount;
 
 
 struct KMerStat {

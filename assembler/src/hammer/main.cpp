@@ -78,6 +78,14 @@ bool Globals::conserve_memory = false;
 int Globals::num_of_tmp_files = 500;
 int Globals::iteration_no = 0;
 bool Globals::skip_to_clustering = false;
+bool Globals::skip_to_subvectors = false;
+bool Globals::unload_blob_before_merge = false;
+
+bool Globals::likelihood_e_step = false;
+bool Globals::subtract_simplex_volume = false;
+
+bool Globals::debug_output_clustering = false;
+bool Globals::debug_output_likelihood = false;
 
 bool Globals::read_kmers_after_clustering = false;
 bool Globals::write_kmers_after_clustering = false;
