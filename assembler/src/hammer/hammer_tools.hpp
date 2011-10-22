@@ -90,5 +90,8 @@ string getFilename( const string & dirprefix, int iter_count, const string & suf
 
 void getGlobalConfigParameters( const string & config_file );
 
+void dumpBlob( const string & fname );
+void loadBlob( const string & fname );
+
 #endif
 

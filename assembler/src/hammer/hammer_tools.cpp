@@ -105,7 +105,7 @@ void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerCou
 				KMerCount * kmc = new KMerCount( PositionKMer(it->index), KMerStat(1, KMERSTAT_GOODITER, it->errprob) );
 				if (Globals::use_true_likelihood) {
 					for (uint32_t j=0; j<K; ++j) {
-						kmc->second.qual[j] = Globals::blobquality[it->index + j] - (char)Globals::qvoffset;
+						kmc->second.qual.set(j, Globals::blobquality[it->index + j] - (char)Globals::qvoffset);
 					}
 				}
 				km->insert( make_pair( *it, kmc ) );
@@ -114,7 +114,12 @@ void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerCou
 				it_hash->second->second.totalQual *= it->errprob;
 				if (Globals::use_true_likelihood) {
 					for (uint32_t j=0; j<K; ++j) {
-						it_hash->second->second.qual[j] += (int)Globals::blobquality[it->index + j] - Globals::qvoffset;
+						const int cur_qual = (int)it_hash->second->second.qual[j];
+						if (cur_qual + (int)Globals::blobquality[it->index + j] - (int)Globals::qvoffset < MAX_SHORT) {
+							it_hash->second->second.qual.set(j, cur_qual + (short)Globals::blobquality[it->index + j] - (short)Globals::qvoffset);
+						} else {
+							it_hash->second->second.qual.set(j, MAX_SHORT);
+						}
 					}
 				}
 			}
@@ -553,14 +558,19 @@ void ProcessKmerHashFile( ifstream * inf, ofstream * outf, 	hint_t & kmer_num ) 
 		if ( it_hash == km.end() ) {
 			KMerCount * kmc = new KMerCount( PositionKMer(kmerno.index), KMerStat(1, KMERSTAT_GOODITER, kmerno.errprob) );
 			for (uint32_t j=0; j<K; ++j) {
-				kmc->second.qual[j] = Globals::blobquality[kmerno.index + j] - (char)Globals::qvoffset;
+				kmc->second.qual.set(j, Globals::blobquality[kmerno.index + j] - (char)Globals::qvoffset);
 			}
 			km.insert( make_pair( kmerno, kmc ) );
 		} else {
 			it_hash->second->second.count++;
 			it_hash->second->second.totalQual *= kmerno.errprob;
 			for (uint32_t j=0; j<K; ++j) {
-				it_hash->second->second.qual[j] += (int)Globals::blobquality[kmerno.index + j] - Globals::qvoffset;
+				const int cur_qual = (int)it_hash->second->second.qual[j];
+				if (cur_qual + (int)Globals::blobquality[kmerno.index + j] - (int)Globals::qvoffset < MAX_SHORT) {
+					it_hash->second->second.qual.set(j, cur_qual + (short)Globals::blobquality[kmerno.index + j] - (short)Globals::qvoffset);
+				} else {
+					it_hash->second->second.qual.set(j, MAX_SHORT);
+				}
 			}
 		}
 	}
@@ -611,6 +621,37 @@ void fillInKmersFromFile( const string & fname, vector<hint_t> *kmernos ) {
 	// resorting in lexicographic order -- needed for easy search
 	// sort(kmernos->begin(), kmernos->end(), PositionKMer::compareKMersDirect);
 }
+
+void dumpBlob( const string & fname ) {
+	ofstream ofs(fname);
+	ofs << Globals::blob_max_size << "\t" << Globals::blob_size << endl;
+	ofs << Globals::blob << endl;
+	ofs << Globals::blobquality << endl;
+	ofs.close();
+	cout << "deleting... " << endl;
+	delete [] Globals::blob;
+	delete [] Globals::blobquality;
+	Globals::blob = NULL; Globals::blobquality = NULL;
+	cout << "ok" << endl;
+}
+
+void loadBlob( const string & fname ) {
+	cout << "deleting... " << endl;
+	if (Globals::blob != NULL) delete [] Globals::blob;
+	if (Globals::blobquality != NULL) delete [] Globals::blobquality;
+	cout << "ok" << endl;
+	ifstream ifs(fname);
+	char buf[1024];
+	ifs.getline(buf, 1024);
+	sscanf(buf, "%lu\t%lu", &Globals::blob_max_size, &Globals::blob_size);
+	Globals::blob = new char[Globals::blob_max_size];
+	Globals::blobquality = new char[Globals::blob_max_size];
+	ifs.getline(Globals::blob, Globals::blob_max_size);
+	ifs.getline(Globals::blobquality, Globals::blob_max_size);
+	ifs.close();
+	cout << "New max_size=" << Globals::blob_max_size << "\tsize=" << Globals::blob_size << "\treal_size=" << strlen(Globals::blob) << endl;
+}
+
 
 void getGlobalConfigParameters( const string & config_file ) {
 	TIMEDLN("Loading config from " << config_file.c_str());

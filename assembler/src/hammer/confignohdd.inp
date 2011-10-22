@@ -1,5 +1,5 @@
 ; working directories, input files...
-working_dir		/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/tmphdd
+working_dir		/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/tmp
 reads			/home/snikolenko/data/head100000.fastq
 paired_reads		0
 reads_left		/home/snikolenko/data/head10000.fastq
@@ -43,7 +43,7 @@ write_each_iteration_kmers		1
 use_true_likelihood			1
 
 ; latest developments in memory efficiency
-conserve_memory					1
+conserve_memory					0
 num_of_tmp_files				2
 skip_to_clustering				0
 skip_to_subvectors				0
@@ -51,7 +51,7 @@ unload_blob_before_merge		0
 
 ; debug output
 debug_output_clustering			0
-debug_output_likelihood			1
+debug_output_likelihood 		0
 
 ; new, "better" clustering that might not work out
 likelihood_e_step				1

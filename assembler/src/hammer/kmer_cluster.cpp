@@ -548,22 +548,28 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	
 	// it may happen that consensus string from one subcluster occurs in other subclusters
 	// we need to check for that
-	for (size_t k=0; k<bestCenters.size(); ++k) {
-		if (bestCenters[k].second.first == 0) continue;
-		if (centersInCluster[k] >= 0) continue;
-		for (size_t s=0; s<bestCenters.size(); ++s) {
-			if (s == k || centersInCluster[s] < 0) continue;
-			int dist = hamdistKMer(bestCenters[k].first, bestCenters[s].first);
-			if ( dist == 0 ) {
-				// OK, that's the situation, cluster k should be added to cluster s
-				for (uint32_t i = 0; i < origBlockSize; i++) {
-					if ( indices[i] == (int)k ) {
-						indices[i] = (int)s;
-						bestCenters[s].second.first++;
+	bool foundBadCenter = true;
+	while (foundBadCenter) {
+		foundBadCenter = false;
+		for (size_t k=0; k<bestCenters.size(); ++k) {
+			if (foundBadCenter) break; // restart if found one bad center
+			if (bestCenters[k].second.first == 0) continue;
+			if (centersInCluster[k] >= 0) continue;
+			for (size_t s=0; s<bestCenters.size(); ++s) {
+				if (s == k || centersInCluster[s] < 0) continue;
+				int dist = hamdistKMer(bestCenters[k].first, bestCenters[s].first);
+				if ( dist == 0 ) {
+					// OK, that's the situation, cluster k should be added to cluster s
+					for (uint32_t i = 0; i < origBlockSize; i++) {
+						if ( indices[i] == (int)k ) {
+							indices[i] = (int)s;
+							bestCenters[s].second.first++;
+						}
 					}
+					bestCenters[k].second.first = 0; // it will be skipped now
+					foundBadCenter = true;
+					break;
 				}
-				bestCenters[k].second.first = 0; // it will be skipped now
-				break;
 			}
 		}
 	}
@@ -613,12 +619,14 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 					}
 					Globals::blob_size += bestCenters[k].first.size();
 
-					// add read
-					Read r("Consensus", bestCenters[k].first, bestCenters[k].first);
-					Globals::rv->push_back(r);
+					if (!Globals::conserve_memory) {
+						// add read
+						Read r("Consensus", bestCenters[k].first, bestCenters[k].first);
+						Globals::rv->push_back(r);
+					}
 
 					// add position read
-					PositionRead rs(Globals::blob_size - r.size(), r.size(), Globals::rv->size() - 1);
+					PositionRead rs(Globals::blob_size - bestCenters[k].first.size(), bestCenters[k].first.size(), Globals::pr->size() - 1);
 					Globals::pr->push_back(rs);
 
 					PositionKMer pkm(Globals::pr->size()-1, 0);
@@ -660,7 +668,7 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 	hint_t num_classes;
 	ufMaster->get_classes(classes);
 	num_classes = classes.size();
-	delete ufMaster; // and this one, too
+	delete ufMaster; // no longer needed
 
 	bool useFilesystem = (k_->size() == 0);
 
@@ -697,8 +705,10 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 			KMerStat curstat;
 			curstat.changeto = KMERSTAT_GOODITER;
 			ifs >> pos >> seq >> curstat.count >> curstat.totalQual;
+			unsigned short cur_qual;
 			for ( size_t i=0; i < K; ++i ) {
-				ifs >> curstat.qual[i];
+				ifs >> cur_qual;
+				curstat.qual.set(i, cur_qual);
 			}
 			k_->push_back(new KMerCount( PositionKMer(pos), curstat ) );
 		}
