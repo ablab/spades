@@ -36,9 +36,6 @@ PathSetGraphConstructor(const Graph& g,const PairedInfoIndex<Graph>& pair_info, 
 //	PI.RemovePrefixes(PIIFilter_tmp);
 	PI.Process(PIIFilter);
 
-    PathSetStats<Graph>  pathsetStatistic(g,PII , PIIFilter);
-    pathsetStatistic.Count();
-
 
 	for(auto iter = PII.begin(); iter != PII.end() ; ++iter)
 	{
