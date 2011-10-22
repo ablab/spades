@@ -345,8 +345,73 @@ public:
         PathSetIndexData<EdgeId> removedPrefixData;
         RemovePrefixes(removedPrefixData);
         RemoveInvalidPaths(removedPrefixData, filteredPathSetData);
+        PathSetIndexData<EdgeId> finnestData;
+        SplitPathSet(filteredPathSetData,finnestData);
+    }
+    void SplitPathSet(PathSetIndexData<EdgeId>&inputPathSetData, PathSetIndexData<EdgeId> &splitPathSetData )
+    {
+        for(auto iter = inputPathSetData.begin() ; iter != inputPathSetData.end() ;++iter)
+        {
+            PathSet<EdgeId> currentPathSet = *iter;
+            if(currentPathSet.paths.size() == 1)
+            {
+                splitPathSetData.AddPathSet(currentPathSet);
+            }
+            else
+            {
+                vector<set<Path>> resultsPartition; 
+                bool canbeSplitted = TrySplitSingletons(currentPathSet, inputPathSetData,  resultsPartition);
+                for(size_t i =0 ; i < resultsPartition.size() ; ++i)
+                {
+                    if(!canbeSplitted)
+                    {
+                        splitPathSetData.AddPathSet(currentPathSet);
+                        break;
+                    }
+                    PathSet<EdgeId> pathset(currentPathSet.start , currentPathSet.end, currentPathSet.length , resultsPartition[i], currentPathSet.weight);
+                    splitPathSetData.AddPathSet(pathset);
+                }
+            }
+        }
     }
 
+    /*
+     * We test if all of these paths are mandatory path. A path is a mandatory path if its removal corrupts the covering walk in the graph.*/
+    bool TrySplitSingletons(PathSet<EdgeId> &pathset, PathSetIndexData<EdgeId> &pathSetIndex, vector<set<Path>> &resultsPartition)
+    {
+        set<Path> paths = pathset.paths;
+        assert(paths.size() > 0);
+        bool canbeSplit = false ;
+        set<EdgeId> allLocaEdges;
+        //Conjecture: If there are two paths and they can be verified by back and forward, then both of them are valid ..I can't find a way not using the graph.
+        if(paths.size() ==2)
+        {
+            Path path1 = *paths.begin();
+            auto iter = paths.begin();
+            ++iter;
+            Path path2 = *iter;
+            set<Path> set1 ; 
+            set<Path> set2;
+            set1.insert(path1);
+            set2.insert(path2);
+
+            resultsPartition.push_back(set1);
+            resultsPartition.push_back(set2);
+            return true;
+        }
+        /*
+        for(auto iter = paths.begin() ; iter != paths.end() ; ++iter)
+        {
+            Path path = *iter;
+            for(size_t i = 0 ; i < path.size() ; ++i)
+            {
+                allLocaEdges.insert(path[i]);
+            }
+        }
+        */
+
+        return canbeSplit;
+    }
 
     /*
      * Find a vector of possible extension pathsets.
