@@ -436,6 +436,7 @@ void FindPaths(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndice
 	INFO("Finding paths started");
 	for(auto seed = seeds.begin(); seed != seeds.end(); ++seed) {
 		GrowSeed(g, *seed, pairedInfo, handler);
+		DETAILED_INFO("Growing seed w/length " << PathLength(g, *seed));
 
 //		if (!ALL_SEEDS && PathsCoverage(g, paths) > EDGE_COVERAGE_TRESHOLD && PathsLengthCoverage(g, paths) > LENGTH_COVERAGE_TRESHOLD) {
 //			break;

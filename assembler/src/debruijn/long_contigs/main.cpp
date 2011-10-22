@@ -143,11 +143,12 @@ int main() {
 
 	FilterComplement(g, seeds, &seedPairs, &seedQuality);
 
-	size_t found = PathsInGenome<K>(g, index, sequence, seeds, path1, path2);
-	INFO("Good seeds found " << found << " in total " << seeds.size());
-	INFO("Seed coverage " << PathsCoverage(g, seeds));
-	INFO("Path length coverage " << PathsLengthCoverage(g, seeds));
-
+	PrintPathsShort(g, seeds);
+//	size_t found = PathsInGenome<K>(g, index, sequence, seeds, path1, path2);
+//	INFO("Good seeds found " << found << " in total " << seeds.size());
+//	INFO("Seed coverage " << PathsCoverage(g, seeds));
+//	INFO("Path length coverage " << PathsLengthCoverage(g, seeds));
+//
 	if (lc_cfg::get().write_seeds) {
 		WriteGraphWithPathsSimple(output_dir + "seeds.dot", "seeds", g, seeds, path1, path2);
 		OutputPathsAsContigsNoComplement(g, seeds, output_dir + "seeds.contigs", std::set<int>());
@@ -158,7 +159,7 @@ int main() {
 //		paths.resize(seeds.size());
 //		std::copy(seeds.begin(), seeds.end(), paths.begin());
 //	} else {
-	FindPaths(g, seeds, pairedInfos, stopHandler);
+		FindPaths(g, seeds, pairedInfos, stopHandler);
 //	}
 	std::vector<BidirectionalPath> & paths = seeds;
 	CheckIds(g, paths);
@@ -241,10 +242,12 @@ int main() {
 		}
 		DETAILED_INFO("Removed similar");
 
-		found = PathsInGenome<K>(g, index, sequence, noOverlaps, path1, path2, &pathQuality);
-		INFO("Good paths found " << found << " in total " << noOverlaps.size());
-		INFO("Path coverage " << PathsCoverage(g, noOverlaps));
-		INFO("Path length coverage " << PathsLengthCoverage(g, noOverlaps));
+//		found = PathsInGenome<K>(g, index, sequence, noOverlaps, path1, path2, &pathQuality);
+//		INFO("Good paths found " << found << " in total " << noOverlaps.size());
+//		INFO("Path coverage " << PathsCoverage(g, noOverlaps));
+//		INFO("Path length coverage " << PathsLengthCoverage(g, noOverlaps));
+
+		PrintPathsShort(g, noOverlaps);
 
 		OutputPathsAsContigsNoComplement(g, noOverlaps, output_dir + "paths.contigs", toRemove);
 		INFO("All contigs written");

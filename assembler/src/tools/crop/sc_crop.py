@@ -23,7 +23,7 @@ OUTPUT_DIR = sys.argv[3]
 OUTPUT_PREF = 'E.Coli.'
 OUTPUT_SUFF = '.fastq'
 
-BOWTIE_PATH = 'bowtie/bowtie-0.12.7/'
+BOWTIE_PATH = '' #'bowtie/bowtie-0.12.7/'
 BT_BUILD = 'bowtie-build'
 BT = 'bowtie'
 

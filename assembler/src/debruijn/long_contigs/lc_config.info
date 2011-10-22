@@ -36,12 +36,12 @@ SC_NEW_1_FILTERED
 SC_HAMMER_1410_FILTERED
 {
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/SC_HAMMER_1410_FILTERED/simplified_graph
-    graph_file       ./data/debruijn/QUAKE_FULL/K55/SC_HAMMER_1410_FILTERED_wf/simplified_graph
+    graph_file       ./data/debruijn/SC_HAMMER_1410_FILTERED/K55/gr1910_2/simplified_graph
 }
 		 
    
 ; paired info options
-use_new_metrics      true
+use_new_metrics      false
 
 
 ; output options
@@ -62,17 +62,17 @@ first_grow_forward      true
 ; seed selection
 ss
 {
-    min_coverage   0
+    min_coverage   30
     glue_seeds     false
     max_cycles     1
     
     remove_untrusted  true
     check_trusted     true
-    trusted_threshold 4
+    trusted_threshold 0.1
     
-    short_single      30
-    chimeric_len      50
-    chimeric_delta    7
+    short_single      45
+    chimeric_len      0
+    chimeric_delta    0
     
     sym 
 	{
@@ -87,8 +87,8 @@ es
 {
     use_weight_function_first  false
     weight_fun_threshold       0.1
-    weight_threshold           4
-    priority_coeff             10
+    weight_threshold           0.1
+    priority_coeff             3
 
     use_delta_first       true
     etalon_distance_dev   2
@@ -99,13 +99,13 @@ es
     
     fix_weight            true
     use_advanced          true
-    advanced_coeff        1.2
+    advanced_coeff        1.4
 }    
 
 ; loops removal
 lr
 {
-    investigation      true																														
+    investigation      false																														
 	loop_to_investigate 1
 	max_loop_len       2
 	max_exits          1
@@ -190,7 +190,7 @@ real_libs
 {    
     count 1
 
-    item_0
+    item_3
     {
      	read_size     100
         insert_size   370
@@ -199,20 +199,20 @@ real_libs
 
 	LB_QUAKE_FULL
 	{
-		precounted false
-		precounted_path ./
+		precounted true
+		precounted_path ./data/debruijn/LB_QUAKE_FULL/K55/10.19_00_40/paired_info_IS370_RS100_clustered
 
        		first   ./data/input/L.Bouillonii_quaked/gerwick-read1.cor.fastq.gz
 	        second  ./data/input/L.Bouillonii_quaked/gerwick-read2.cor.fastq.gz
 
-		has_advanced   false
-		advanced ./
+		has_advanced   true
+		advanced ./data/debruijn/LB_QUAKE_FULL/K55/10.19_00_40/paired_info_IS370_RS100_acl
 		
 		raw ./
 	}
     }
     
-    item_3
+    item_0
     {
     	read_size     100
         insert_size   270
@@ -237,7 +237,7 @@ real_libs
 		
 		SC_HAMMER_1410_FILTERED
 		{
-            precounted       true
+            precounted       false
             ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC_HAMMER_1410_FILTERED/10.17_04_53/paired_info_IS270_RS100_clustered
             precounted_path  ./data/debruijn/QUAKE_FULL/K55/SC_HAMMER_1410_FILTERED_wf/10.17_04_56/paired_info_IS270_RS100_clustered
             
