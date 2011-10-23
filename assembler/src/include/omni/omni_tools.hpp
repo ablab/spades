@@ -119,6 +119,34 @@ private:
 };
 
 template<class Graph>
+class IsolatedEdgeRemover {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	Graph& g_;
+	size_t max_length_;
+
+	bool IsTerminalVertex(VertexId v) {
+		return g_.IncomingEdgeCount(v) + g_.OutgoingEdgeCount(v) == 1;
+	}
+
+public:
+	IsolatedEdgeRemover(Graph& g, size_t max_length): g_(g), max_length_(max_length) {
+	}
+
+	void RemoveIsolatedEdges() {
+		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			if (IsTerminalVertex(g_.EdgeStart(*it)) && IsTerminalVertex(g_.EdgeEnd(*it)) && g_.length(*it) <= max_length_) {
+				g_.DeleteEdge(*it);
+			}
+		}
+		Cleaner<Graph> cleaner(g_);
+		cleaner.Clean();
+	}
+
+};
+
+template<class Graph>
 class GraphCopier {
 private:
 	typedef typename Graph::EdgeId EdgeId;

@@ -9,24 +9,21 @@
 #include "sequence/sequence.hpp"
 #include "levenshtein.hpp"
 
-inline std::string Reverse(const std::string &s) {
+inline const std::string Reverse(const std::string &s) {
 	return std::string(s.rbegin(), s.rend());
 }
 
-inline std::string Complement(const std::string &s) {
-	std::string res = s;
-	for (size_t i = 0; i < s.size(); i++) {
-		if (res[i] != 'N' && res[i] != 'n') {
-			res[i] = nucl_complement(res[i]);
-		}
-	}
+inline const std::string Complement(const std::string &s) {
+	std::string res(s.size(), 0);
+	transform(s.begin(), s.end(), res.begin(), nucl_complement);
 	return res;
 }
 
 inline const Sequence MergeOverlappingSequences(const vector<const Sequence*>& ss, size_t overlap) {
-	SequenceBuilder sb;
-	if (ss.empty())
+	if (ss.empty()) {
 		return Sequence(); 
+	}
+	SequenceBuilder sb;
 	sb.append(ss.front()->Subseq(0, overlap));
 	for (auto it = ss.begin(); it != ss.end(); ++it) {
 		sb.append((*it)->Subseq(overlap));
@@ -38,8 +35,10 @@ inline size_t EditDistance(const Sequence& s1, const Sequence& s2) {
 	return edit_distance(s1.str(), s2.str());
 }
 
-inline std::string ReverseComplement(const std::string &s) {
-	return Complement(Reverse(s));
+inline const std::string ReverseComplement(const std::string &s) {
+	std::string res(s.size(), 0);
+	transform(s.begin(), s.end(), res.rbegin(), nucl_complement); // only difference with reverse is rbegin() instead of begin()
+	return res;
 }
 
 class UniformPositionAligner {

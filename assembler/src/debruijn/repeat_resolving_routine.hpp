@@ -267,7 +267,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
     {
         ClipTipsForResolver(resolved_gp.g);
 //        BulgeRemoveWrap      (resolved_gp.g);
-        RemoveLowCoverageEdges(resolved_gp.g, edge_remover, i, 3);
+        RemoveLowCoverageEdges(resolved_gp.g, edge_remover, 3, i);
 //        RemoveRelativelyLowCoverageEdges(resolved_gp.g);
 	}
 

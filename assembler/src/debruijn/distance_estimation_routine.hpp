@@ -89,14 +89,14 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		}
 
 		//experimental
-		if (cfg::get().simpl_mode
+		if (cfg::get().simp.simpl_mode
 				== debruijn_graph::simplification_mode::sm_pair_info_aware) {
 			EdgeQuality<Graph> quality_handler(gp.g, gp.index, gp.kmer_mapper, gp.genome);
 			QualityLoggingRemovalHandler<Graph> qual_removal_handler(quality_handler);
 			boost::function<void(EdgeId)> removal_handler_f = boost::bind(
 					&QualityLoggingRemovalHandler<Graph>::HandleDelete,
 					&qual_removal_handler, _1);
-			EdgeRemover<Graph> edge_remover(gp.g, false, removal_handler_f);
+			EdgeRemover<Graph> edge_remover(gp.g, true, removal_handler_f);
 			INFO("Pair info aware ErroneousConnectionsRemoval");
 			RemoveEroneousEdgesUsingPairedInfo(gp, paired_index, edge_remover);
 			INFO("Pair info aware ErroneousConnectionsRemoval stats");

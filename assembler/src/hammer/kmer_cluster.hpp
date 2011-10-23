@@ -74,7 +74,7 @@ private:
 	  * @param centers fill array indices with ints from 0 to l that denote which kmers belong where
 	  * @return the resulting likelihood of this clustering
 	  */
-	double lMeansClustering(int l, std::vector< std::vector<int> > & distances, const std::vector<int> & kmerinds, std::vector<int> & indices, std::vector<StringCount> & centers);
+	double lMeansClustering(uint32_t l, std::vector< std::vector<int> > & distances, const std::vector<int> & kmerinds, std::vector<int> & indices, std::vector<StringCount> & centers);
 
 	/**
 	  * SIN

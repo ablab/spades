@@ -71,8 +71,7 @@ void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 		pids[j] = vfork();
 		if ( pids[j] == 0 ) {
 			TIMEDLN("  [" << getpid() << "] Child process " << j << " for sorting subkmers starting.");
-			execlp("sort", "sort", "-n", "-o", getFilename(Globals::working_dir, Globals::iteration_no, "subkmers.sorted", j).data(),
-					fnames_[j].data(), (char *) 0 );
+			execlp("sort", "sort", "-n", "-T", Globals::working_dir.data(), "-o", sorted_fnames_[j].data(), fnames_[j].data(), (char *) 0 );
 			_exit(0);
 		} else if ( pids[j] < 0 ) {
 			TIMEDLN("Failed to fork. Exiting.");
@@ -96,11 +95,13 @@ void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 bool SubKMerSorter::getNextBlock( int i, vector<hint_t> & block ) {
 	block.clear();
 	if ( vskpq_[i].emptyPQ() ) return false;
+	// cout << "  new block with respect to " << i << endl;
 	hint_t last = vskpq_[i].peekPQ();
 	while (!vskpq_[i].emptyPQ()) {
 		hint_t cur = vskpq_[i].peekPQ();
 		if ( sub_equal[i](last, cur) ) { //add to current reads
 			block.push_back(cur);
+			// cout << "     " << cur << "\n";
 			vskpq_[i].popPQ();
 		} else {
 			return true;
@@ -147,6 +148,7 @@ SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount*> * k, int nth
 				sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMersDirect,          _1, _2, tau,
 						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
 				fnames_.push_back( getFilename(Globals::working_dir, Globals::iteration_no, "subkmers", j) );
+				sorted_fnames_.push_back( getFilename(Globals::working_dir, Globals::iteration_no, "subkmers.sorted", j) );
 			}
 			break;
 	}
@@ -169,6 +171,7 @@ SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<hint_t> * k, int nthread
 				sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMersHInt,          _1, _2, k, tau,
 						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
 				fnames_.push_back( getFilename(Globals::working_dir, Globals::iteration_no, "subkmers", j) );
+				sorted_fnames_.push_back( getFilename(Globals::working_dir, Globals::iteration_no, "subkmers.sorted", j) );
 			}
 			break;
 		default:
@@ -256,7 +259,7 @@ void SubKMerSorter::initVectors() {
 		for (size_t m = 0; m < kmers_size_; ++m) (*v_)[j][m] = m;
 		SubKMerCompType sort_greater = boost::bind(SubKMerPQElement::functionSubKMerPQElement, _1, _2, sub_greater[j]);
 		if ( type_ == SorterTypeFileBasedStraight ) {
-			SubKMerPQ skpq( fnames_, nthreads_per_subkmer, sort_greater );
+			SubKMerPQ skpq( vector<string>(1, sorted_fnames_[j]), nthreads_per_subkmer, sort_greater );
 			vskpq_.push_back(skpq);
 		} else {
 			SubKMerPQ skpq( &((*v_)[j]), nthreads_per_subkmer, sort_greater );
@@ -302,6 +305,7 @@ void SubKMerPQ::initPQ() {
 		}
 	} else {
 		for (int j = 0; j < nthreads; ++j) {
+			cout << "  initializing SubKMerPQ with " <<fnames_[j].data() << endl;
 			ifs_.push_back(new ifstream(fnames_[j].data()));
 			if (!ifs_[j]->eof()) {
 				hint_t nextel = getNextElementFromFile(j);

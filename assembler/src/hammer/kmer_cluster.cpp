@@ -77,6 +77,17 @@ int KMerClustering::hamdistKMer(const PositionKMer & x, const string & y, int ta
 void KMerClustering::processBlock(unionFindClass * uf, vector<hint_t> & block, int cur_subkmer, bool fileBased) {
 	uint32_t blockSize = block.size();
 
+	if (Globals::debug_output_clustering) {
+		cout << "block size=" << blockSize << "\n";
+		for (uint32_t i = 0; i < blockSize; ++i) {
+			if (v_ != NULL) {
+				cout << "  " << block[i] << "\t" << string(Globals::blob + (*v_)[block[i]], K) << "\n";
+			} else {
+				cout << "  " << block[i] << "\t" << (*k_)[block[i]]->first.str() << "\n";
+			}
+		}
+	}
+
 	if (blockSize < (uint32_t)Globals::blocksize_quadratic_threshold) {
 		processBlockQuadratic(uf, block, fileBased);
 	} else {
@@ -259,17 +270,19 @@ double KMerClustering::trueClusterLogLikelihood(const vector<int> & cl, const ve
 	for (size_t i=0; i<centers.size(); ++i) {
 		res += lMultinomialWithMask(cl, (*k_), indices, i) + totalLogLikelihood[i];
 	}
+	if (Globals::subtract_simplex_volume) res -= logSimplexVolume(centers.size());
 	return res;
 }
 
 
-double KMerClustering::lMeansClustering(int l, vector< vector<int> > & distances, const vector<int> & kmerinds, vector<int> & indices, vector<StringCount> & centers) {
+double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & distances, const vector<int> & kmerinds, vector<int> & indices, vector<StringCount> & centers) {
 	centers.resize(l); // there are l centers
 
 	// if l==1 then clustering is trivial
 	if (l == 1) {
 		centers[0].first = find_consensus(kmerinds);
-		centers[0].second = kmerinds.size();
+		centers[0].second.first = kmerinds.size();
+		centers[0].second.second = 1;
 		for (size_t i=0; i < kmerinds.size(); ++i) indices[i] = 0;
 		return ( Globals::use_true_likelihood ? trueClusterLogLikelihood(kmerinds, centers, indices) : clusterLogLikelihood(kmerinds, centers, indices) );
 	}
@@ -284,18 +297,78 @@ double KMerClustering::lMeansClustering(int l, vector< vector<int> > & distances
 	for (int restart = 0; restart < restartCount; ++restart) {
 
 	// fill in initial approximations
-	for (int j=0; j < l; ++j) centers[j].second = 0;
-	for (size_t i=0; i < kmerinds.size(); ++i) {
+	// idea: get centers at maximum distances from each other (with a greedy algorithm, of course)
+
+	vector<uint32_t> init(l);
+	for (uint32_t j=0; j < l; ++j) centers[j].second.first = 0;
+	pair<uint32_t, uint32_t> fp(0, 1); // first pair: furthest, then count, then quality
+	for (uint32_t i=0; i<kmerinds.size(); ++i) {
+		for (uint32_t j=i+1; j<kmerinds.size(); ++j) {
+			if (distances[i][j] > distances[fp.first][fp.second] ||
+			  (distances[i][j] == distances[fp.first][fp.second] &&
+					( (*k_)[kmerinds[i]]->second.count + (*k_)[kmerinds[j]]->second.count >
+					  (*k_)[kmerinds[fp.first]]->second.count + (*k_)[kmerinds[fp.second]]->second.count ||
+					  ( (*k_)[kmerinds[i]]->second.count + (*k_)[kmerinds[j]]->second.count ==
+  					    (*k_)[kmerinds[fp.first]]->second.count + (*k_)[kmerinds[fp.second]]->second.count &&
+  					    (*k_)[kmerinds[i]]->second.totalQual + (*k_)[kmerinds[j]]->second.totalQual >
+  					    (*k_)[kmerinds[fp.first]]->second.totalQual + (*k_)[kmerinds[fp.second]]->second.totalQual)))) {
+				fp.first = i; fp.second = j;
+			}
+		}
+	}
+	if (Globals::debug_output_likelihood && kmerinds.size() > 2)
+		cout << "    fp.first=" << fp.first << "  fp.second=" << fp.second << "\n";
+	init[0] = fp.first; init[1] = fp.second;
+	for (uint32_t j=2; j<l; ++j) {
+		// to find each next center candidate, maximize total distance to previous centers
+		int bestDist = -1; int ind = -1;
+		for (uint32_t i=0; i < kmerinds.size(); ++i) {
+			// check if it is a new k-mer
+			bool newIndex = true;
+			for (uint32_t k=0; k<j; ++k) if (i == init[k]) { newIndex = false; break; }
+			if (!newIndex) continue;
+
+			int curDist = 0;
+			for (uint32_t k=0; k<j; ++k) curDist += distances[i][init[k]];
+
+			if ( curDist > bestDist ) {
+				ind = i; bestDist = curDist;
+				continue;
+			}
+		}
+		init[j] = ind;
+	}
+
+	for (uint32_t j=0; j<l; ++j) {
+		centers[j].first = (*k_)[kmerinds[init[j]]]->first.str();
+		centers[j].second.first = (*k_)[kmerinds[init[j]]]->second.count;
+		centers[j].second.second = (*k_)[kmerinds[init[j]]]->second.totalQual;
+	}
+
+
+	// these were old initial approximations -- they didn't really work well
+	/*for (size_t i=0; i < kmerinds.size(); ++i) {
 		for (int j=0; j < l; ++j) {
-			if ((*k_)[kmerinds[i]]->second.count > centers[j].second) {
+			if ( (*k_)[kmerinds[i]]->second.count > centers[j].second.first ||
+					( (*k_)[kmerinds[i]]->second.count == centers[j].second.first &&
+					  (*k_)[kmerinds[i]]->second.totalQual > centers[j].second.second ) ) {
 				for (int s=j; s<l-1; ++s) {
 					centers[s+1].first = centers[s].first;
-					centers[s+1].second = centers[s].second;
+					centers[s+1].second.first = centers[s].second.first;
+					centers[s+1].second.second = centers[s].second.second;
 				}
 				centers[j].first = (*k_)[kmerinds[i]]->first.str();
-				centers[j].second = (*k_)[kmerinds[i]]->second.count;
+				centers[j].second.first = (*k_)[kmerinds[i]]->second.count;
+				centers[j].second.second = (*k_)[kmerinds[i]]->second.totalQual;
 				break;
 			}
+		}
+	}*/
+
+	if (Globals::debug_output_likelihood && kmerinds.size() > 2) {
+		cout << "    centers:\n";
+		for (size_t i=0; i < centers.size(); ++i) {
+			cout << "    " << centers[i].first << "\n";
 		}
 	}
 
@@ -303,13 +376,15 @@ double KMerClustering::lMeansClustering(int l, vector< vector<int> > & distances
 	if (restart > 0) { // introduce random noise
 		vector<bool> good(kmerinds.size(), false);
 		for (size_t i=0; i < kmerinds.size(); ++i) {
-			for (int j=0; j < l; ++j) {
-				if ((*k_)[kmerinds[i]]->second.count >= centers[j].second) {
+			for (uint32_t j=0; j < l; ++j) {
+				if ((*k_)[kmerinds[i]]->second.count >= centers[j].second.first ||
+						( (*k_)[kmerinds[i]]->second.count == centers[j].second.first &&
+						  (*k_)[kmerinds[i]]->second.totalQual > centers[j].second.second )) {
 					good[i] = true; break;
 				}
 			}
 		}
-		for (int k=0; k < l/2 + 1; ++k) {
+		for (uint32_t k=0; k < l/2 + 1; ++k) {
 			int newNo = rand() % (kmerinds.size() - l - k);
 			int indexOld = (rand() % (l-1)) + 1;
 			int indexNew = kmerinds.size()-1;
@@ -323,6 +398,7 @@ double KMerClustering::lMeansClustering(int l, vector< vector<int> > & distances
 	
 	// auxiliary variables
 	vector<int> dists(l);
+	vector<double> loglike(l);
 	vector<bool> changedCenter(l);
 
 	// main loop
@@ -331,35 +407,47 @@ double KMerClustering::lMeansClustering(int l, vector< vector<int> > & distances
 		// fill everything with zeros
 		changed = false;
 		fill(changedCenter.begin(), changedCenter.end(), false);
-		for (int j=0; j < l; ++j) centers[j].second = 0;
+		for (uint32_t j=0; j < l; ++j) centers[j].second.first = 0;
 		
 		// E step: find which clusters we belong to
 		for (size_t i=0; i < kmerinds.size(); ++i) {
-			for (int j=0; j < l; ++j) {
+			for (uint32_t j=0; j < l; ++j) {
 				dists[j] = hamdistKMer((*k_)[kmerinds[i]]->first, centers[j].first);
+				loglike[j] = logLikelihoodKMer(centers[j].first, (*k_)[kmerinds[i]]);
 			}
-			int newInd = min_element(dists.begin(), dists.end()) - dists.begin();
+			if (Globals::debug_output_likelihood && kmerinds.size() > 2) {
+				cout << "      likelihoods for " << i << ": ";
+				for (size_t j=0; j < l; ++j) {
+					cout << loglike[j] << " ";
+				}
+				cout << "\n";
+			}
+			int newInd = Globals::likelihood_e_step ?
+				 (max_element(loglike.begin(), loglike.end()) - loglike.begin()) :
+				 (min_element(dists.begin(), dists.end()) - dists.begin());
 			if (indices[i] != newInd) {
 				changed = true;
 				changedCenter[indices[i]] = true;
 				changedCenter[newInd] = true;
 				indices[i] = newInd;
 			}
-			++centers[indices[i]].second;
+			++centers[indices[i]].second.first;
 		}
 		// M step: find new cluster centers
-		for (int j=0; j < l; ++j) {
+		for (uint32_t j=0; j < l; ++j) {
 			if (!changedCenter[j]) continue; // nothing has changed
 			centers[j].first = find_consensus_with_mask(kmerinds, indices, j);
 		}
 	}
 
 	// last M step
-	for (int j=0; j < l; ++j) {
+	for (uint32_t j=0; j < l; ++j) {
 		centers[j].first = find_consensus_with_mask(kmerinds, indices, j);
 	}
 	
-	curLikelihood = ( Globals::use_true_likelihood ? trueClusterLogLikelihood(kmerinds, centers, indices) : clusterLogLikelihood(kmerinds, centers, indices) );
+	curLikelihood = Globals::use_true_likelihood ?
+			trueClusterLogLikelihood(kmerinds, centers, indices) :
+			clusterLogLikelihood(kmerinds, centers, indices);
 
 	if (restartCount > 1 && curLikelihood > bestLikelihood) {
 		bestLikelihood = curLikelihood;
@@ -375,7 +463,7 @@ double KMerClustering::lMeansClustering(int l, vector< vector<int> > & distances
 }
 
 void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector<int> > & vec) {
-	int origBlockSize = block.size();
+	uint32_t origBlockSize = block.size();
 	if (origBlockSize == 0) return;
 	
 	vector<double> multiCoef(origBlockSize,1000000);
@@ -393,17 +481,33 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		}
 	}
 
+	if (Globals::debug_output_likelihood && origBlockSize > 2) {
+		#pragma omp critical
+		{
+			cout << "\nClustering an interesting block.\n";
+		}
+	}
+
 	// Multinomial coefficients -- why? TODO: remove
-	for (int i = 0; i < origBlockSize; i++) multiCoef[i] = calcMultCoef(distances[i], block);
+	for (uint32_t i = 0; i < origBlockSize; i++) multiCoef[i] = calcMultCoef(distances[i], block);
 
 	vector<int> indices(origBlockSize);
 	double bestLikelihood = -1000000;
 	vector<StringCount> bestCenters;
 	vector<int> bestIndices(block.size());
 
-	for (int l = 1; l <= origBlockSize; ++l) {
+	for (uint32_t l = 1; l <= origBlockSize; ++l) {
 		vector<StringCount> centers(l);
 		double curLikelihood = lMeansClustering(l, distances, block, indices, centers);
+		if (Globals::debug_output_likelihood && origBlockSize > 2) {
+			#pragma omp critical
+			{
+				cout << "    indices: ";
+				for (uint32_t i = 0; i < origBlockSize; i++) cout << indices[i] << " ";
+				cout << "\n";
+				cout << "  likelihood with " << l << " clusters is " << curLikelihood << "\n";
+			}
+		}
 		if (curLikelihood <= bestLikelihood) {
 			break;
 		}
@@ -414,7 +518,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 
 	// find if centers are in clusters
 	vector<int> centersInCluster(bestCenters.size(), -1);
-	for (int i = 0; i < origBlockSize; i++) {
+	for (uint32_t i = 0; i < origBlockSize; i++) {
 		int dist = hamdistKMer((*k_)[block[i]]->first, bestCenters[bestIndices[i]].first);
 		if (dist == 0) {
 			centersInCluster[bestIndices[i]] = i;
@@ -423,72 +527,82 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	
 	bool cons_suspicion = false;
 	for (size_t k=0; k<bestCenters.size(); ++k) if (centersInCluster[k] == -1) cons_suspicion = true;
-	/*if (cons_suspicion) {
+	if (Globals::debug_output_likelihood && origBlockSize > 2) {
 		#pragma omp critical
 		{
-		cout << "\nCenters: \n";
+		cout << "Centers: \n";
 		for (size_t k=0; k<bestCenters.size(); ++k) {
 			cout << "  " << bestCenters[k].first.data() << " " << bestCenters[k].second << " ";
-			if ( centersInCluster[k] >= 0 ) cout << k_[block[centersInCluster[k]]].first.start();
+			if ( centersInCluster[k] >= 0 ) cout << (*k_)[block[centersInCluster[k]]]->first.start();
 			cout << "\n";
 		}
 		cout << "The entire block:\n";
-		for (int i = 0; i < origBlockSize; i++) {
-			cout << "  " << k_[block[i]].first.str().data() << " " << k_[block[i]].first.start() << "\n";
+		for (uint32_t i = 0; i < origBlockSize; i++) {
+			cout << "  " << (*k_)[block[i]]->first.str().data() << " " << (*k_)[block[i]]->first.start() << "\n";
+			cout << "  " << (*k_)[block[i]]->first.strQual().data() << " " << (*k_)[block[i]]->second.totalQual << "\n";
+			cout << "  "; for (uint32_t j=0; j<K; ++j) cout << (*k_)[block[i]]->second.qual[j] << " "; cout << "\n";
 		}
 		cout << endl;
 		}
-	//}*/
+	}
 	
 	// it may happen that consensus string from one subcluster occurs in other subclusters
 	// we need to check for that
-	for (size_t k=0; k<bestCenters.size(); ++k) {
-		if (bestCenters[k].second == 0) continue;
-		if (centersInCluster[k] >= 0) continue;
-		for (size_t s=0; s<bestCenters.size(); ++s) {
-			if (s == k || centersInCluster[s] < 0) continue;
-			int dist = hamdistKMer(bestCenters[k].first, bestCenters[s].first);
-			if ( dist == 0 ) {
-				// OK, that's the situation, cluster k should be added to cluster s
-				for (int i = 0; i < origBlockSize; i++) {
-					if ( indices[i] == (int)k ) {
-						indices[i] = (int)s;
-						bestCenters[s].second++;
+	bool foundBadCenter = true;
+	while (foundBadCenter) {
+		foundBadCenter = false;
+		for (size_t k=0; k<bestCenters.size(); ++k) {
+			if (foundBadCenter) break; // restart if found one bad center
+			if (bestCenters[k].second.first == 0) continue;
+			if (centersInCluster[k] >= 0) continue;
+			for (size_t s=0; s<bestCenters.size(); ++s) {
+				if (s == k || centersInCluster[s] < 0) continue;
+				int dist = hamdistKMer(bestCenters[k].first, bestCenters[s].first);
+				if ( dist == 0 ) {
+					// OK, that's the situation, cluster k should be added to cluster s
+					for (uint32_t i = 0; i < origBlockSize; i++) {
+						if ( indices[i] == (int)k ) {
+							indices[i] = (int)s;
+							bestCenters[s].second.first++;
+						}
 					}
+					bestCenters[k].second.first = 0; // it will be skipped now
+					foundBadCenter = true;
+					break;
 				}
-				bestCenters[k].second = 0; // it will be skipped now
-				break;
 			}
 		}
 	}
 
-	/*#pragma omp critical
+	#pragma omp critical
 	{
+	if (Globals::debug_output_likelihood && origBlockSize > 2) {
 	cout << "\nAfter the check we got centers: \n";
 	for (size_t k=0; k<bestCenters.size(); ++k) {
 		cout << "  " << bestCenters[k].first.data() << " " << bestCenters[k].second << " ";
-		if ( centersInCluster[k] >= 0 ) cout << k_[block[centersInCluster[k]]].first.start();
+		if ( centersInCluster[k] >= 0 ) cout << (*k_)[block[centersInCluster[k]]]->first.start();
 		cout << "\n";
 	}
 	cout << "\n";
-	}*/
+	}
+	}
 
 	for (size_t k=0; k<bestCenters.size(); ++k) {
-		if (bestCenters[k].second == 0) {
+		if (bestCenters[k].second.first == 0) {
 			continue; // superfluous cluster with zero elements
 		}
 		vector<int> v;
-		if (bestCenters[k].second == 1) {
-			for (int i = 0; i < origBlockSize; i++) {
+		if (bestCenters[k].second.first == 1) {
+			for (uint32_t i = 0; i < origBlockSize; i++) {
 				if (indices[i] == (int)k) {
 					v.push_back(block[i]);
 					break;
 				}
 			}
 		} else { // there are several kmers in this cluster
-			for (int i = 0; i < origBlockSize; i++) {
+			for (uint32_t i = 0; i < origBlockSize; i++) {
 				if (bestIndices[i] == (int)k) {
-					if (centersInCluster[k] == i) {
+					if (centersInCluster[k] == (int)i) {
 						v.insert(v.begin(), block[i]);
 					} else {
 						v.push_back(block[i]);
@@ -505,12 +619,14 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 					}
 					Globals::blob_size += bestCenters[k].first.size();
 
-					// add read
-					Read r("Consensus", bestCenters[k].first, bestCenters[k].first);
-					Globals::rv->push_back(r);
+					if (!Globals::conserve_memory) {
+						// add read
+						Read r("Consensus", bestCenters[k].first, bestCenters[k].first);
+						Globals::rv->push_back(r);
+					}
 
 					// add position read
-					PositionRead rs(Globals::blob_size - r.size(), r.size(), Globals::rv->size() - 1);
+					PositionRead rs(Globals::blob_size - bestCenters[k].first.size(), bestCenters[k].first.size(), Globals::pr->size() - 1);
 					Globals::pr->push_back(rs);
 
 					PositionKMer pkm(Globals::pr->size()-1, 0);
@@ -552,9 +668,21 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 	hint_t num_classes;
 	ufMaster->get_classes(classes);
 	num_classes = classes.size();
-	delete ufMaster; // and this one, too
+	delete ufMaster; // no longer needed
 
 	bool useFilesystem = (k_->size() == 0);
+
+	if (!useFilesystem && Globals::debug_output_clustering) {
+		TIMEDLN("Writing down clusters as debug output.");
+		ofstream ofs( getFilename(Globals::working_dir, Globals::iteration_no, "debug.hamming.classes") );
+		for ( size_t i=0; i < classes.size(); ++i ) {
+			ofs << "class " << i << " size=" << classes[i].size() << "\n";
+			for ( size_t j=0; j < classes[i].size(); ++j ) {
+				ofs << classes[i][j] << "\t" << (*k_)[classes[i][j]]->first.str() << "\n";
+			}
+		}
+		ofs.close();
+	}
 
 	if ( useFilesystem ) {
 		TIMEDLN("Writing down clusters.");
@@ -577,8 +705,10 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 			KMerStat curstat;
 			curstat.changeto = KMERSTAT_GOODITER;
 			ifs >> pos >> seq >> curstat.count >> curstat.totalQual;
+			unsigned short cur_qual;
 			for ( size_t i=0; i < K; ++i ) {
-				ifs >> curstat.qual[i];
+				ifs >> cur_qual;
+				curstat.qual.set(i, cur_qual);
 			}
 			k_->push_back(new KMerCount( PositionKMer(pos), curstat ) );
 		}

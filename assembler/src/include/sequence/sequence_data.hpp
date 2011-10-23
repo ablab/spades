@@ -92,4 +92,4 @@ public:
 
 };
 
-#endif /* REFCOUNT_HPP_ */
+#endif /* SEQUENCE_DATA_HPP_ */

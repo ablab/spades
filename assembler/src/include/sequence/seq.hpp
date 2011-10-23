@@ -37,6 +37,9 @@ using namespace std;
 template<size_t size_, typename T = u_int32_t>
 class Seq {
 private:
+
+	const typedef T Type;
+
 	/**
 	 * @variable Number of bits in type T (e.g. 8 for char)
 	 * @example 8: 2^8 = 256 or 16
@@ -67,6 +70,7 @@ private:
 	std::array<T, data_size_> data_;
 
 	friend class Seq<size_ - 1, T> ;
+	friend class Sequence; // to do Sequence::start()
 	/**
 	 * Initialize data_ array of this object with C-string
 	 *
@@ -77,7 +81,7 @@ private:
 		size_t cnt = 0;
 		int cur = 0;
 		for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
-			VERIFY(is_nucl(*s));
+			// VERIFY(is_nucl(*s)); // for performance
 			data = data | ((T) dignucl(*s) << cnt);
 			cnt += 2;
 			if (cnt == Tbits) {
@@ -97,6 +101,11 @@ private:
 	 */
 	Seq(std::array<T, data_size_> data) :
 		data_(data) {
+			// set all nucleotides to 'A' after size_'s nucleotide -- it's invariant for Seq
+			if (size_ % Tnucl) { // can be done somehow binary without this if
+				data_[data_size_ - 1] = 
+					data_[data_size_ - 1] & ( ( (T)1 << ( (size_ & (Tnucl-1)) << 1) ) - 1); // btw (i % Tnucl) <=> (i & (Tnucl-1))
+			}
 		;
 	}
 
@@ -105,7 +114,7 @@ private:
 	 */
 	inline void set(const size_t i, char c) {
 		data_[i >> Tnucl_bits] = (data_[i >> Tnucl_bits] & ~((T) 3 << ((i
-				% Tnucl) << 1))) | ((T) c << ((i % Tnucl) << 1));
+			% Tnucl) << 1))) | ((T) c << ((i % Tnucl) << 1));
 	}
 
 public:
@@ -131,7 +140,7 @@ public:
 	 * Default constructor, fills Seq with A's
 	 */
 	Seq() {
-		VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
+		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		std::fill(data_.begin(), data_.end(), 0);
 	}
 
@@ -140,23 +149,25 @@ public:
 	 */
 	Seq(const Seq<size_, T> &seq) :
 		data_(seq.data_) {
-		VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
+		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 	}
 
 	Seq(const char* s) {
-		VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
+		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		init(s);
 	}
 
 	/**
 	 * Ultimate constructor from ACGT0123-string.
 	 *
-	 * @param s Any object with operator[], which returns 0123 chars
+	 * @param s Any object with operator[], which returns ACGT0123 chars
 	 * @param offset Offset when this sequence starts
+	 *
+	 * SLOW! Especially for Sequence -> Seq transformation because of many 0123<->ACGT and string copying.
 	 */
 	template<typename S>
 	explicit Seq(const S &s, size_t offset = 0) {
-		VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
+		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {
 			char c = s[offset + i];
@@ -177,8 +188,8 @@ public:
 	 * @return 0123-char on position i
 	 */
 	char operator[](const size_t i) const {
-		VERIFY(i >= 0);
-		VERIFY(i < size_);
+		//VERIFY(i >= 0);
+		//VERIFY(i < size_);
 		return (data_[i >> Tnucl_bits] >> ((i & (Tnucl - 1)) << 1)) & 3; // btw (i % Tnucl) <=> (i & (Tnucl-1))
 	}
 
@@ -212,7 +223,7 @@ public:
 		if (is_nucl(c)) {
 			c = dignucl(c);
 		}
-		VERIFY(is_dignucl(c));
+		//VERIFY(is_dignucl(c));
 		Seq<size_, T> res(data_);
 		if (data_size_ != 0) { // unless empty sequence
 			T rm = res.data_[data_size_ - 1] & 3;
@@ -224,7 +235,7 @@ public:
 				do {
 					--i;
 					T new_rm = res.data_[i] & 3;
-					res.data_[i] = (res.data_[i] >> 2) | (rm << (Tbits - 2)); // we need & here because if we shift negative, it fill with ones :( // no more need for that if we use unsigned type for T
+					res.data_[i] = (res.data_[i] >> 2) | (rm << (Tbits - 2)); // we need & here because if we shift negative, it fill with ones :(
 					rm = new_rm;
 				} while (i != 0);
 			}
@@ -236,7 +247,7 @@ public:
 		if (is_nucl(c)) {
 			c = dignucl(c);
 		}
-		VERIFY(is_dignucl(c));
+		//VERIFY(is_dignucl(c));
 		Seq<size_ + 1, T> s;
 		copy(this->data_.begin(), this->data_.end(), s.data_.begin());
 		s.data_[s.data_size_ - 1] = s.data_[s.data_size_ - 1] | ((T) c
@@ -346,10 +357,12 @@ public:
 
 	//	template<size_t HASH_SEED>
 	struct hash {
-		size_t operator()(const Seq<size_, T> &seq) const {
+		size_t operator()(const Seq<size_, T> seq) const {
 			size_t h = 239;
+			//size_t h = 0;
 			for (size_t i = 0; i < seq.data_size_; i++) {
 				h = ((h << 5) - h) + seq.data_[i];
+				//h = h * 239 + seq.data_[i];
 			}
 			return h;
 		}
@@ -367,7 +380,7 @@ public:
 	};
 
 	struct equal_to {
-		bool operator()(const Seq<size_, T> &l, const Seq<size_, T> &r) const {
+		bool operator()(const Seq<size_, T> l, const Seq<size_, T> r) const {
 			return 0 == memcmp(l.data_.data(), r.data_.data(),
 					sizeof(T) * data_size_);
 		}

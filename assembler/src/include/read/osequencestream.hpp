@@ -18,7 +18,7 @@ public:
 	void * ptr;
 
 	osequencestream(const string& filename): id_(0), ptr(0) {
-		ofstream_.open(filename);
+		ofstream_.open(filename.c_str());
 	}
 
 	virtual ~osequencestream() {
@@ -48,7 +48,7 @@ private:
 	double coverage_;
 public:
 	osequencestream_cov(const string& filename): id_(0) {
-		ofstream_.open(filename);
+		ofstream_.open(filename.c_str());
 	}
 
 	virtual ~osequencestream_cov() {

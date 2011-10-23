@@ -56,4 +56,12 @@ void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
 	load(pt, "conserve_memory", cfg.conserve_memory);
 	load(pt, "num_of_tmp_files", cfg.num_of_tmp_files);
 	load(pt, "skip_to_clustering", cfg.skip_to_clustering);
+	load(pt, "skip_to_subvectors", cfg.skip_to_subvectors);
+	load(pt, "unload_blob_before_merge", cfg.unload_blob_before_merge);
+
+	load(pt, "likelihood_e_step", cfg.likelihood_e_step);
+	load(pt, "subtract_simplex_volume", cfg.subtract_simplex_volume);
+
+	load(pt, "debug_output_clustering", cfg.debug_output_clustering);
+	load(pt, "debug_output_likelihood", cfg.debug_output_likelihood);
 }

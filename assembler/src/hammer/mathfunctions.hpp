@@ -12,6 +12,9 @@
 #include "hammer_tools.hpp"
 #include "position_kmer.hpp"
 
+inline long double logSimplexVolume(int n) {
+	return (-lgamma(n+1));
+}
 
 inline long double Factorial(int n) {
   if (n == 0) {
@@ -81,8 +84,8 @@ inline double lMultinomial(const vector<KMerCount*> & x) {
 inline double lMultinomial(const vector<StringCount> & x) {
 	double res = 0.0, sum = 0.0;
 	for (size_t i=0; i<x.size(); ++i) {
-		res += lgamma(x[i].second+1);
-		sum += x[i].second;
+		res += lgamma(x[i].second.first+1);
+		sum += x[i].second.first;
 	}
 	return (lgamma(sum+1) - res);
 }
