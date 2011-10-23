@@ -24,6 +24,18 @@ double WeightFunction(double weight) {
 	return math::gr(weight, 0.0) ? 1.0 : 0.0;
 }
 
+//Weight from a set of libraries
+double EdgeLengthExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, EdgeId e, PairedInfoIndices& pairedInfo,
+		size_t edgesToExclude, bool forward, bool useWeightFunction = false, size_t additionalGapLength = 0) {
+
+	double weight = 0;
+	for (auto lib = pairedInfo.begin(); lib != pairedInfo.end(); ++lib) {
+		weight += ExtentionWeight(g, path, lengths, e, *lib, edgesToExclude, forward, useWeightFunction, additionalGapLength);
+	}
+	return weight;
+}
+
+
 double CorrectWeightByAdvanced(double weight, double advWeight) {
 	return math::gr(advWeight, 0.0) ? weight * lc_cfg::get().es.advanced_coeff
 			: weight;
