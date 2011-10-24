@@ -46,6 +46,8 @@ sc_simplification
 	}
 
 	isolated_min_len 100
+	
+	removal_checks_enabled         true
 }
 
 usual_simplification
@@ -94,4 +96,6 @@ usual_simplification
 	}
 
 	isolated_min_len 100
+	
+	removal_checks_enabled         true
 }

@@ -158,6 +158,7 @@ namespace debruijn_graph
 			pair_info_ec_remover                   piec;
 
 			double	isolated_min_len;
+			bool	removal_checks_enabled;
 
 		};
 
@@ -365,6 +366,7 @@ namespace debruijn_graph
         load(pt, "cec", simp.cec); // cheating erroneous connections remover:
         load(pt, "piec", simp.piec); // pair info aware erroneous connections remover:
         load(pt, "isolated_min_len", simp.isolated_min_len);
+        load(pt, "removal_checks_enabled", simp.removal_checks_enabled);
 	}
 
 	// main debruijn config load function
