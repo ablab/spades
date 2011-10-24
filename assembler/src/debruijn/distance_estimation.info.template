@@ -4,8 +4,8 @@ sc_de
 {
     delta               10
     linkage_distance    20
-    max_distance        75
-    filter_threshold    20.0 ;bigger than in non-single cell because normalization is disabled
+    max_distance        20
+    filter_threshold    3.0 ;bigger than in non-single cell because normalization is disabled
 }
 
 
@@ -13,7 +13,7 @@ usual_de
 {
     delta               10
     linkage_distance    20
-    max_distance        75
+    max_distance        45
     filter_threshold    2.5
 }
 
@@ -25,8 +25,8 @@ ade
         threshold          20 ;maximal distance between two points in cluster
 
     ;local maximum seeking
-        range_coeff          0.2 ;data_length*range_coeff := width of the averaging window
-        delta_coeff          0.4 ;data_length*delta_coeff := maximal difference between possible distance and real peak on the graph
+        range_coeff          0.3 ;data_length*range_coeff := width of the averaging window
+        delta_coeff          0.2 ;data_length*delta_coeff := maximal difference between possible distance and real peak on the graph
 
     ;fft smoothing
         percentage          0.01 ;percent of data for baseline subraction
