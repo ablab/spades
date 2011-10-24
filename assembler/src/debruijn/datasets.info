@@ -354,3 +354,21 @@ LB_QUAKE_FULL
 	LEN		8700000	; total size
 }
 
+; ================================================
+; =============== Delta Bacteria =================
+; ================================================
+
+DELTA_CORRECTED_1
+{
+        first   Delta.Bacteria/lane1_reads_corrected.fastq
+        second  Delta.Bacteria/dummy/right_paired.fastq
+        single_first    Delta.Bacteria/dummy/left_single.fastq
+        single_second  	Delta.Bacteria/dummy/left_paired.fastq
+        RL              100     ; read length
+        IS              300     ; insert size
+        single_cell     true
+        reference_genome  Delta.Bacteria/delta.fasta
+        LEN             5000000 ; total size
+}
+
+
