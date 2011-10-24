@@ -253,7 +253,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 	if (cfg::get().path_set_graph ) {
 		INFO("testing path-set graphs");
-		PathSetGraphConstructor<typename graph_pack::graph_t> path_set_constructor(origin_gp.g , clustered_index, resolved_gp.g, resolved_gp.int_ids, tot_labeler_after);
+		PathSetGraphConstructor<graph_pack> path_set_constructor(origin_gp, clustered_index,  resolved_gp, tot_labeler_after);
 		INFO("testing ended");
 	}	else {
 //    CleanIsolated(origin_gp);

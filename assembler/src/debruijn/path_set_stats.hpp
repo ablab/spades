@@ -1,4 +1,4 @@
-
+#pragma once
 template<class Graph>
 class PathSetStats {
 

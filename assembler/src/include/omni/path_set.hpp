@@ -3,7 +3,6 @@
 #include <map>
 #include <limits>
 #include <xmath.h>
-
 namespace omnigraph{
 
 /**
