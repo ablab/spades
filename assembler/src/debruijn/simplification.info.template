@@ -44,6 +44,8 @@ sc_simplification
 		max_length					100
 		min_neighbour_length		100
 	}
+
+	isolated_min_len 100
 }
 
 usual_simplification
@@ -90,4 +92,6 @@ usual_simplification
 		max_length					100
 		min_neighbour_length		100
 	}
+
+	isolated_min_len 100
 }

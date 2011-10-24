@@ -293,7 +293,7 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 
 	INFO("Removing isolated edges");
 	//todo use ec.maxlength after it becomes non relative
-	IsolatedEdgeRemover<Graph> isolated_edge_remover(gp.g, cfg::get().simp.cec.max_length);
+	IsolatedEdgeRemover<Graph> isolated_edge_remover(gp.g, cfg::get().simp.isolated_min_len);
 	isolated_edge_remover.RemoveIsolatedEdges();
 	INFO("Isolated edges remove stats");
 	CountStats<k>(gp.g, gp.index, gp.genome);
