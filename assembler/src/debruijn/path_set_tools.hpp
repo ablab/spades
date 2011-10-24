@@ -29,9 +29,6 @@ string str(const PathSet<typename graph_pack::graph_t::EdgeId>& pathSet, graph_p
 	return res.str();
 }
 
-int tst(){
-	return 23;
-}
 
 
 
