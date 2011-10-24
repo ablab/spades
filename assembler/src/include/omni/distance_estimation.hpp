@@ -19,10 +19,10 @@ template<class Graph>
 class DistanceEstimator: AbstractDistanceEstimator<Graph> {
 protected:
 	typedef typename Graph::EdgeId EdgeId;
-	Graph &graph_;
+    Graph &graph_;
 	PairedInfoIndex<Graph> &histogram_;
 	IdTrackHandler<Graph> &int_ids_;
-	size_t insert_size_;
+    size_t insert_size_;
 	size_t read_length_;
 	size_t gap_;
 	size_t delta_;
@@ -52,11 +52,15 @@ protected:
 	}
 
 	vector<pair<size_t, double> > EstimateEdgePairDistances(vector<PairInfo<
-			EdgeId> > data, vector<size_t> forward/*, bool debug = false*/) {
+			EdgeId> > data, vector<size_t> forward_/*, bool debug = false*/) {
 		vector < pair<size_t, double> > result;
+        int maxD = rounded_d(data.back());
+        int minD = rounded_d(data.front());
+        vector<size_t> forward;
+        for (size_t i = 0; i<forward_.size(); ++i) if (minD < (int) forward_[i] && (int) forward_[i] < maxD) forward.push_back(forward_[i]);
 		if (forward.size() == 0)
 			return result;
-		//        if (debug) for (size_t i = 0; i<forward.size(); i++) INFO("Distances " << forward[i]);
+		//        if (debug) for (size_t i = 0; i<forward.size(); i++) INFO("Distances " << forward[i]) 
 		size_t cur_dist = 0;
 		vector<double> weights(forward.size());
 		for (size_t i = 0; i < data.size(); i++) {
@@ -66,25 +70,24 @@ protected:
 					< data[i].d) {
 				cur_dist++;
 			}
-			if (cur_dist + 1 < forward.size() && math::ls(forward[cur_dist + 1]
-					- data[i].d, data[i].d - forward[cur_dist])) {
+			if (cur_dist + 1 < forward.size() && math::ls(forward[cur_dist + 1]	- data[i].d, data[i].d - forward[cur_dist])) {
 				cur_dist++;
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight;
+					weights[cur_dist] += data[i].weight; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
 				//                if (debug) INFO("Adding " << forward[cur_dist] << " " << data[i].d << " " << data[i].weight);
 			} else if (cur_dist + 1 < forward.size() && math::eq(
 					forward[cur_dist + 1] - data[i].d, data[i].d
 							- forward[cur_dist])) {
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight * 0.5;
+					weights[cur_dist] += data[i].weight * 0.5; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
 				//                if (debug) INFO("Adding " << forward[cur_dist] << " " << data[i].d << " " << data[i].weight * 0.5);
 				cur_dist++;
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight * 0.5;
+					weights[cur_dist] += data[i].weight * 0.5; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
 				//                if (debug) INFO("Adding " << forward[cur_dist] << " " << data[i].d << " " << data[i].weight * 0.5);
 			} else {
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight;
+					weights[cur_dist] += data[i].weight; //  * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
 			}
 		}
 		for (size_t i = 0; i < forward.size(); i++) {
@@ -134,6 +137,16 @@ public:
 
 	virtual ~DistanceEstimator() {
 	}
+
+    virtual void GetAllDistances(PairedInfoIndex<Graph> &result){
+        for (auto iter = histogram_.begin(); iter!= histogram_.end(); ++iter){
+            vector < PairInfo<EdgeId> > data = *iter;
+			EdgeId first = data[0].first;
+			EdgeId second = data[0].second;
+			vector < size_t > forward = GetGraphDistances(first, second);
+            for (size_t i = 0; i<forward.size(); i++) result.AddPairInfo(PairInfo<EdgeId>(data[0].first, data[0].second, forward[i], -10, 0.0));
+        }
+    }
 
 	virtual void Estimate(PairedInfoIndex<Graph> &result) {
 		for (auto iterator = histogram_.begin(); iterator != histogram_.end(); ++iterator) {

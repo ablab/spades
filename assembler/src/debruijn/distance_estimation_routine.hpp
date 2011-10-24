@@ -10,7 +10,7 @@
 #include "standard.hpp"
 #include "omni/paired_info.hpp"
 #include "late_pair_info_count.hpp"
-
+#include <set>
 #include "check_tools.hpp"
 
 namespace debruijn_graph {
@@ -132,8 +132,31 @@ void count_estimated_info_stats(conj_graph_pack& gp,
 			etalon_paired_index);
 	//temporary
 
-	CountClusteredPairedInfoStats(gp, paired_index,
-			clustered_index, etalon_paired_index, cfg::get().output_dir);
+//    typedef typename Graph::EdgeId EdgeId;
+    INFO("Correction of etalon paired info has been started");
+    std::set<std::pair<Graph::EdgeId, Graph::EdgeId> > setEdgePairs;
+    for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter) 
+        setEdgePairs.insert(std::make_pair((*iter)[0].first, (*iter)[0].second));
+
+    paired_info_index corrected_etalon_index(gp.g);
+    for (auto iter = etalon_paired_index.begin(); iter != etalon_paired_index.end(); ++iter){
+        std::vector<omnigraph::PairInfo<EdgeId> > pair_info = *iter;
+        if (setEdgePairs.count(std::make_pair(pair_info[0].first, pair_info[0].second)) > 0) 
+            for (auto point = pair_info.begin(); point != pair_info.end(); point++) 
+                corrected_etalon_index.AddPairInfo(*point);
+    }
+	data_printer.savePaired(cfg::get().output_dir + "etalon_paired_corrected",
+			corrected_etalon_index);
+    INFO("Correction's finished");
+     
+    DistanceEstimator<Graph> estimator(gp.g, corrected_etalon_index, gp.int_ids,
+           cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
+           cfg::get().de.linkage_distance, 3);
+
+    paired_info_index raw_clustered_index(gp.g);
+    estimator.Estimate(raw_clustered_index);
+
+	CountClusteredPairedInfoStats(gp, paired_index, clustered_index, raw_clustered_index, estimator, cfg::get().output_dir);
 }
 
 void exec_distance_estimation(conj_graph_pack& gp,

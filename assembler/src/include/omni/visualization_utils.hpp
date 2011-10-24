@@ -527,10 +527,10 @@ void WriteToFile(
 		const string& graph_name,
 		const Path<typename Graph::EdgeId> &path1/* = Path<typename Graph::EdgeId> ()*/,
 		const Path<typename Graph::EdgeId> &path2/* = Path<typename Graph::EdgeId> ()*/) {
-	if (g.size() < 10000) {
+//	if (g.size() < 10000) {
 		WritePaired(g, labeler, file_name, graph_name, path1, path2);
 		WriteSimple(g, labeler, file_name, graph_name, path1, path2);
-	}
+//	}
 	WriteErrors(g, labeler, file_name, graph_name, path1, path2);
 }
 

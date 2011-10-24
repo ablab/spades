@@ -12,6 +12,7 @@
 #include <map>
 #include "omni/path_set.hpp" 
 #include "omni/matepair_transformer.hpp"
+#include "omni/distance_estimation.hpp"
 
 namespace debruijn_graph {
 using namespace math;
@@ -661,6 +662,7 @@ private:
 	const PairedInfoIndex<Graph>& pair_info_;
 	const PairedInfoIndex<Graph>& estimated_pair_info_;
 	const PairedInfoIndex<Graph>& etalon_pair_info_;
+    DistanceEstimator<Graph>& estimator_;
 
 	//output fields
 	PairedInfoIndex<Graph> false_positives_;
@@ -677,6 +679,8 @@ private:
 //	vector<Info> false_negative_infos_;
 
 	bool CheckInterestInInfo(const Info& info) {
+        if (math::ls(info.d, 0.)) return false;
+        if (info.first == info.second && math::eq(info.d, 0.)) return false;
 		return quality_.IsPositiveQuality(info.first)
 						&& quality_.IsPositiveQuality(info.second) && math::gr(info.weight, 0.);
 	}
@@ -736,13 +740,13 @@ private:
 
 	bool InfoLess(const Info& a, const Info& b) {
 		if (eq(a.variance, 0.) && eq(b.variance, 0.)) {
-			return ls(a.d + 2, b.d);
+			return ls(a.d, b.d);
 		}
 		return ls(a.d + a.variance, b.d - b.variance);
 	}
 
 	bool IsPerfectMatch(const Info& etalon, const Info& estimated) {
-		return le(etalon.d, estimated.d + 2) && ge(etalon.d, estimated.d - 2)
+		return le(etalon.d, estimated.d) && ge(etalon.d, estimated.d)
 				&& eq(estimated.variance, 0.);
 	}
 
@@ -867,11 +871,12 @@ public:
 			const EdgeQuality<Graph>& quality,
 			const PairedInfoIndex<Graph>& pair_info,
 			const PairedInfoIndex<Graph>& estimated_pair_info,
-			const PairedInfoIndex<Graph>& etalon_pair_info) :
+			const PairedInfoIndex<Graph>& etalon_pair_info,
+            DistanceEstimator<Graph>& estimator) :
 			graph_(graph), int_ids_(int_ids), quality_(quality), pair_info_(pair_info), estimated_pair_info_(
-					estimated_pair_info), etalon_pair_info_(etalon_pair_info), false_positives_(
+					estimated_pair_info), etalon_pair_info_(etalon_pair_info), estimator_(estimator), false_positives_(
 					graph_), perfect_matches_(graph_), imperfect_matches_(
-					graph_), false_negatives_(graph_) {
+					graph_), false_negatives_(graph_){
 	}
 
 	virtual ~EstimationQualityStat() {
@@ -896,6 +901,9 @@ public:
 		//		DEBUG("Handling pairs that are not in etalon information");
 		HandlePairsNotInEtalon(pairs_in_etalon);
 
+
+        PairedInfoIndex<Graph> all_paths(graph_);
+        estimator_.GetAllDistances(all_paths);
 		//saving results
 		string dir_name = cfg::get().output_dir + "estimation_qual/";
 		make_dir(dir_name);
@@ -904,7 +912,8 @@ public:
 		printer.savePaired(dir_name + "pm", perfect_matches_);
 		printer.savePaired(dir_name + "im", imperfect_matches_);
 		printer.savePaired(dir_name + "fn", false_negatives_);
-
+        printer.savePaired(dir_name + "paths", all_paths);
+        
 //		ReportFalsePositiveWeights();
 //		ReportPerfectMatchWeights();
 //		ReportImperfectMatchWeights();

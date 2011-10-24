@@ -12,6 +12,7 @@
 #include "statistics.hpp"
 #include "new_debruijn.hpp"
 #include "omni/edges_position_handler.hpp"
+#include "omni/distance_estimation.hpp"
 #include "omni/EdgeVertexFilter.hpp"
 //#include <boost/filesystem.hpp>
 #include "read/osequencestream.hpp"
@@ -140,12 +141,13 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 		const PairedInfoIndex<Graph> &paired_index,
 		const PairedInfoIndex<Graph> &clustered_index,
 		const PairedInfoIndex<Graph> &etalon_paired_index,
+		DistanceEstimator<Graph> &estimator,
 		const string &output_folder) {
 	INFO("Counting clustered info stats");
 
 	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
 	EstimationQualityStat<Graph>(gp.g, gp.int_ids, edge_qual, paired_index,
-			clustered_index, etalon_paired_index).Count();
+			clustered_index, etalon_paired_index, estimator).Count();
 
 	INFO("Counting overall cluster stat")
 	ClusterStat<Graph>(clustered_index).Count();

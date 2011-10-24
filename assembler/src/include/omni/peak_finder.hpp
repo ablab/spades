@@ -39,7 +39,8 @@ private:
 
     double weight;
 
-	std::vector<int> x_, y_;
+	std::vector<int> x_;
+    std::vector<double> y_;
 
 	std::vector<int> peaks;
 
@@ -57,7 +58,7 @@ private:
 			if (ind == data_size - 1)
 				f[i][0] = max;
 			else {
-                VERIFY(x_[ind + 1] - x_[ind] > 0);
+                VERIFY(x_[ind + 1] > x_[ind]);
 				f[i][0] = ((i + min - x_[ind]) * y_[ind + 1] + y_[ind] * (x_[ind + 1] - i - min)) / (1.0f * (x_[ind + 1] - x_[ind]));
 			}
             weight += f[i][0]; //   filling the array on the fly
@@ -151,10 +152,8 @@ private:
 	double Derivative(int dist) {
 		if (dist == max)
 			return LeftDerivative(dist);
-
 		else if (dist == min)
 			return RightDerivative(dist);
-
 		else return MiddleDerivative(dist);
     }
 
@@ -163,16 +162,15 @@ private:
 		for (int i = left_bound + range; i <= right_bound - range; i++) {
 			int index_max = i - range;
 			for (int j = i - range; j <= i + range; j++)
-				if (outf[index_max - min][0] < outf[j - min][0]) {
+				if (math::ls(outf[index_max - min][0], outf[j - min][0])) {
 					index_max = j;
-				} else if (j < i && outf[index_max - min][0] == outf[j - min][0] ) index_max = j;
+				}// else if (j < i && outf[index_max - min][0] == outf[j - min][0] ) index_max = j;
 			
 
             if (!((index_max > i - (range >> 1)) && (index_max < i + (range >> 1)))) continue;
             if  (abs(index_max - peak) <= delta) return true;
 		}
 		return false;
-    
     }
 
 	bool isLocalMaximum(int peak, size_t range) {

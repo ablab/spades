@@ -107,7 +107,7 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 	//	new_etalon_paired_info_counter.FillEtalonPairedInfo(new_genome, new_paired_info_index);
 	//	CheckInfoEquality(etalon_paired_index, new_paired_info_index);
 	//////////////////DEBUG
-	INFO("Etalon paired info counted");
+//	INFO("Etalon paired info counted");
 }
 
 template<size_t k>

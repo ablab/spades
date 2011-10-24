@@ -336,6 +336,18 @@ SC_HAMMER_1410_FILTERED
         LEN             4639675 ; total size
 }
 
+SC_HAMMER_1410_CROPPED
+{
+        first   E.Coli.K12.MG1655/SC_cor/cropped/E.Coli.400K.from_2M.cor.1.fastq
+        second  E.Coli.K12.MG1655/SC_cor/cropped/E.Coli.400K.from_2M.cor.2.fastq
+        single_first    E.Coli.K12.MG1655/SC_cor/Hammer_14.10/filtered/human_filtered_single_left.fastq
+        single_second   E.Coli.K12.MG1655/SC_cor/Hammer_14.10/filtered/human_filtered_single_right.fastq
+        RL              100     ; read length
+        IS              270     ; insert size
+        single_cell     true
+        reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+        LEN             4639675 ; total size
+}
 
 ; ================================================
 ; =============== L. Bouillonii ==================

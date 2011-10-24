@@ -79,15 +79,34 @@ private:
 		return result;
 	}
 
-    vector<PairInfo<EdgeId> > ClusterResult(EdgeId edge1, EdgeId edge2, vector<pair<size_t, double> > estimated){
-        vector<PairInfo<EdgeId> > result;
-        for (size_t i = 0; i < estimated.size(); i++){
-            PairInfo<EdgeId> new_info(edge1, edge2, estimated[i].first, estimated[i].second, 0);
+    //vector<PairInfo<EdgeId> > ClusterResult(EdgeId edge1, EdgeId edge2, vector<pair<size_t, double> > estimated){
+        //vector<PairInfo<EdgeId> > result;
+        //for (size_t i = 0; i < estimated.size(); i++){
+            //PairInfo<EdgeId> new_info(edge1, edge2, estimated[i].first, estimated[i].second, 0);
             
-            result.push_back(new_info);
-        }
-        return result;
-    }
+            //result.push_back(new_info);
+        //}
+        //return result;
+    //}
+
+	vector<PairInfo<EdgeId> > ClusterResult(EdgeId edge1, EdgeId edge2, vector<
+			pair<size_t, double> > estimated) {
+		vector < PairInfo < EdgeId >> result;
+		for (size_t i = 0; i < estimated.size(); i++) {
+			size_t left = i;
+			double weight = estimated[i].second;
+			while (i + 1 < estimated.size() && estimated[i + 1].first
+					- estimated[i].first <= this->linkage_distance_) {
+				i++;
+				weight += estimated[i].second;
+			}
+			double center = (estimated[left].first + estimated[i].first) * 0.5;
+			double var = (estimated[i].first - estimated[left].first) * 0.5;
+			PairInfo < EdgeId > new_info(edge1, edge2, center, weight, var);
+			result.push_back(new_info);
+		}
+		return result;
+	}
 
 public:
 	AdvancedDistanceEstimator(Graph &graph, PairedInfoIndex<Graph> &histogram, IdTrackHandler<Graph> &int_ids, size_t insert_size, size_t read_length, size_t delta, size_t linkage_distance, size_t max_distance, size_t threshold, double range_coeff, double delta_coeff, 
