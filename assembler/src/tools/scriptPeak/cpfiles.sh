@@ -1,6 +1,6 @@
 #!/bin/bash
 
-string="QUAKE_CROPPED_400K";
+string="SC_HAMMER_1410_FILTERED";
 
 if [ "$1" != "" ] 
 then

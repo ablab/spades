@@ -88,7 +88,7 @@ public class GetErrors implements Runnable{
 	
 	public void run(){
 		try{
-			MyScanner in, in2, incl, fnrin, fprin;
+			MyScanner in, in2, incl, fnrin, fprin, inpaths;
 			
 			Locale.setDefault(Locale.US);
 			if (filename.length()>0){
@@ -98,6 +98,7 @@ public class GetErrors implements Runnable{
 				in = new MyScanner(filename + ".prd");
 				in2 = new MyScanner(filename + ".grp");
                 incl = new MyScanner(filename + "_cl.prd");
+                inpaths = new MyScanner("paths.prd");
                 fnrin = new MyScanner(filename + "_fnr.prd");
                 fprin = new MyScanner(filename + "_fpr.prd");
 			}
@@ -105,7 +106,7 @@ public class GetErrors implements Runnable{
 			debug(filename);
 			//folder = ((mask & 1) == 0) ? ("testfiles_" + filename + "/!sym/") : 
 			//("testfiles_" + filename + "/sym/");
-            folder = "data/" + filename + "/";
+            folder = "data/out" + "/";
 			File file = new File(folder);
 			//debug(file.getAbsolutePath());
 			file.mkdirs();
@@ -135,7 +136,6 @@ public class GetErrors implements Runnable{
             buf = new StringBuffer("");
 			fprin.nextInt();
 			len1 = 0;
-		
 		    len2 = 0;
 			e1 = 0;
 			e2 = 0;
@@ -179,10 +179,10 @@ public class GetErrors implements Runnable{
             buf = new StringBuffer("");
 			fnrin.nextInt();
 			len1 = 0;
-		
 			len2 = 0;
 			e1 = 0;
 			e2 = 0;
+            out = null;
 			filtering = false;
 			while (fnrin.hasMoreTokens()){
 				int a = fnrin.nextInt();
@@ -218,6 +218,7 @@ public class GetErrors implements Runnable{
             out.close();
             fnrin.close();
                         
+            e1 = e2 = 0;
 //          getting paired info
 			debug("Paired Info");
 			in.nextInt();
@@ -237,18 +238,18 @@ public class GetErrors implements Runnable{
 					filtering = (isAcceptable(edges[a-1], edges[b-1]));
 					if (filtering){
 
-						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
 						if (!set.contains(new Pair(a, b))) continue;
                         String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
                         out = new PrintWriter(folder1 + "unclustered.prd");
                         //generating config
+						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
                         debug("Generating config file");
                         PrintWriter out1 = new PrintWriter(folder1 + "plot.conf");
                         String text =
                         "#!/usr/bin/gnuplot -persist\n" + 
                         "set term x11 0\n" +
                         "plot \"unclustered.prd\" with linespoints, \"clustered.prd\" with impulses," + 
-                        "\"fpr.prd\" with points lt 1 lc 4 pt 7 ps 2," + " \"fnr.prd\" with points lt 1 lc 3 pt 7 ps 2 \n" + 
+                        "\"fpr.prd\" with points lt 1 lc 4 pt 7 ps 2," + " \"fnr.prd\" with points lt 1 lc 3 pt 7 ps 2, " + " \"paths.prd\" with impulses lt 1 lw 3 lc 5\n" +
                         "pause -1 \"press any key to continue\"\n";
                         out1.print(text);
                         out1.close();
@@ -311,6 +312,47 @@ public class GetErrors implements Runnable{
             out.close();
             incl.close();
 
+//          getting paths info
+            
+            debug("Paths info");
+            buf = new StringBuffer("");
+			inpaths.nextInt();
+			len1 = 0;
+			len2 = 0;
+			e1 = 0;
+			e2 = 0;
+			filtering = false;
+			while (inpaths.hasMoreTokens()){
+				int a = inpaths.nextInt();
+				int b = inpaths.nextInt();
+				double x = inpaths.nextDouble();
+				double y = inpaths.nextDouble();
+				double z = inpaths.nextDouble();
+				inpaths.nextToken();
+				if (!(a == e1 && b == e2)){
+					if (out != null && filtering){
+						out.println(buf);
+						out.close();
+						buf = new StringBuffer("");
+					}	
+					filtering = (isAcceptable(edges[a-1], edges[b-1]));
+					if (filtering){
+
+						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
+						if (!set.contains(new Pair(a, b))) continue;
+                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+						out = new PrintWriter(folder1 + "paths.prd");
+					}
+				}
+				if (filtering){
+                        buf.append(x + " " + y + "\n");
+                }
+				e1 = a;
+				e2 = b;
+			}
+		    if (out != null && filtering) out.println(buf);
+            out.close();
+            inpaths.close();
              
 			
 			                                              

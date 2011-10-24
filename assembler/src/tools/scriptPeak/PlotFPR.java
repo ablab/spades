@@ -114,6 +114,8 @@ public class PlotFPR implements Runnable{
                 cur++;
                 //size_fpr++;
             }
+            total += cur;
+            fpr_total.put(0.0, total);
             N = ind;
             
             weight = -1;
@@ -141,14 +143,15 @@ public class PlotFPR implements Runnable{
                 cur++;
                 size_tp++;
             }
+            total += cur;
+            fnr_total.put(0.0, total);
             Set<Double> fpr_set = fpr_total.keySet();
             for (double w : fpr_set){
                 double size_fpr = fpr_total.get(w);
             
                 double size_tpv = 0;
-                if (w > fpr_total.lastKey()) break;
+                if (w > fnr_total.lastKey() + 1e-9) break;
                 else size_tpv =  fnr_total.ceilingEntry(w).getValue();
-                double size_fn = size_fnr + size_tp - size_tpv;
                 buf.append(w + " " + (size_fpr)*100.0 / (size_tpv + size_fpr) + "\n");
             }
             PrintWriter out_fpr = new PrintWriter("plot_fpr.out");
