@@ -151,6 +151,10 @@ void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
 	//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
 	//			max_length_div_K * g.k(), max_coverage);
 	erroneous_edge_remover.RemoveEdges();
+
+	IsolatedEdgeRemover<Graph> isolated_edge_remover(g, cfg::get().simp.isolated_min_len);
+	isolated_edge_remover.RemoveIsolatedEdges();
+
 	INFO("Low coverage edges removed");
 }
 
@@ -175,6 +179,8 @@ void FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 		ChimericEdgesRemover<Graph> remover(g, 10, edge_remover);
 		remover.RemoveEdges();
 	}
+	IsolatedEdgeRemover<Graph> isolated_edge_remover(g, cfg::get().simp.isolated_min_len);
+	isolated_edge_remover.RemoveIsolatedEdges();
 }
 
 template<class graph_pack>
@@ -188,6 +194,10 @@ void RemoveEroneousEdgesUsingPairedInfo(graph_pack &gp,
 			gp, paired_index, max_length, min_neighbour_length,
 			cfg::get().ds.IS, cfg::get().ds.RL, edge_remover);
 	erroneous_edge_remover.RemoveEdges();
+
+	IsolatedEdgeRemover<Graph> isolated_edge_remover(gp.g, cfg::get().simp.isolated_min_len);
+	isolated_edge_remover.RemoveIsolatedEdges();
+
 	INFO("Erroneous edges using paired info removed");
 }
 
@@ -291,11 +301,10 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 //	ProduceDetailedInfo<k>(gp, labeler, output_folder + "final_bulges_removed/",
 //			"graph.dot", "no_bulge_graph");
 
-	INFO("Removing isolated edges");
-	//todo use ec.maxlength after it becomes non relative
+	INFO("Final isolated edges removal");
 	IsolatedEdgeRemover<Graph> isolated_edge_remover(gp.g, cfg::get().simp.isolated_min_len);
 	isolated_edge_remover.RemoveIsolatedEdges();
-	INFO("Isolated edges remove stats");
+	INFO("Final isolated edges removal stats");
 	CountStats<k>(gp.g, gp.index, gp.genome);
 //	ProduceDetailedInfo<k>(gp, labeler, output_folder + "isolated_edges_removed/",
 //			"graph.dot", "no_isolated_edges_graph");
