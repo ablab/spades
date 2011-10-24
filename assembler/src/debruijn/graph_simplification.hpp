@@ -311,12 +311,12 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 
 	INFO("Simplified graph stats");
 	CountStats<k>(gp.g, gp.index, gp.genome);
-	ProduceDetailedInfo<k> (gp, labeler,
-			output_folder + "simplification_finished/", "graph.dot",
-			"simplified_graph");
+//	ProduceDetailedInfo<k> (gp, labeler,
+//			output_folder + "simplification_finished/", "graph.dot",
+//			"simplified_graph");
 
-	OutputWrongContigs<k, Graph>(gp.g, gp.index, gp.genome, 1000,
-			"long_contigs.fasta");
+//	OutputWrongContigs<k, Graph>(gp.g, gp.index, gp.genome, 1000,
+//			"long_contigs.fasta");
 	INFO("Graph simplification finished");
 }
 
