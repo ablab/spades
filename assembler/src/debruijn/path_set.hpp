@@ -3,6 +3,8 @@
 #include <map>
 #include <limits>
 #include <xmath.h>
+#include "graph_pack.hpp"
+
 namespace omnigraph{
 
 /**
@@ -276,6 +278,7 @@ private:
 template<typename EdgeId>
 class PathSetIndex
 {
+
 private:
     PathSetIndexData<EdgeId> data_;
     PathSetIndexData<EdgeId> backwarddata_;

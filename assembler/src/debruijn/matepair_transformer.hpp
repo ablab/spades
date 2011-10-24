@@ -1,5 +1,5 @@
 #pragma once
-#include "paired_info.hpp"
+#include "omni/paired_info.hpp"
 #include "path_set.hpp"
 #include "xmath.h"
 using namespace math;
@@ -31,6 +31,7 @@ void Transform(PathSetIndexData<EdgeId> & pathset_index)
         {
             if (gr(iter->d, 0.)) {
                 INFO( *iter);
+                INFO(g_.length(iter->first)<<" : " << g_.length(iter->second));
                 if (iter->variance == 0) {
 
                     PathReceiverCallback<Graph> call_back(g_); 

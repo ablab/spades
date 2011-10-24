@@ -10,8 +10,9 @@
 #include <iostream>
 #include <fstream>
 #include <map>
-#include "omni/path_set.hpp" 
-#include "omni/matepair_transformer.hpp"
+#include "path_set.hpp" 
+#include "matepair_transformer.hpp"
+#include "path_set_stats.hpp"
 
 namespace debruijn_graph {
 using namespace math;
@@ -536,16 +537,23 @@ public:
 
 	virtual void Count() {
 
+        /*
         PathSetIndexData<EdgeId> PII ;
         PathSetIndexData<EdgeId> PIIFilter ;
         MatePairTransformer<Graph> transformer(g_, pair_info_);
         transformer.Transform(PII);
         PathSetIndex<EdgeId> PI(PII);
+        INFO("STATISTIC");
         PI.Process(PIIFilter);
+        INFO("END STATISTIC");
         for(auto iter = PII.begin(); iter != PII.end() ; ++iter)
         {
             INFO( *iter);
         } 
+        
+//        PathSetStats<Graph>  pathsetStatistic(g_,PII , PIIFilter);
+//        pathsetStatistic.Count();
+
 
         INFO("FILTERED");
         for(auto iter = PIIFilter.begin() ; iter != PIIFilter.end(); ++iter)
@@ -576,6 +584,7 @@ public:
             }
         }
 
+        */
 
         
 		for (auto it = pair_info_.begin(); it != pair_info_.end(); ++it) {

@@ -1,9 +1,14 @@
 #pragma once
-template<class Graph>
-class PathSetStats {
+#include "graph_pack.hpp"
 
-	typedef typename Graph::EdgeId EdgeId;
-	const Graph& g_;
+template<class graph_pack>
+class PathSetStats {
+    
+    typedef typename graph_pack::graph_t::EdgeId EdgeId;
+    typedef typename graph_pack::graph_t::VertexId VertexId;
+    typedef typename graph_pack::graph_t Graph;
+    typedef vector<EdgeId > Path;
+    const Graph& g_;
     const PathSetIndexData<EdgeId> &rawData_;
     const PathSetIndexData<EdgeId> &filteredData_;
 private:
@@ -44,8 +49,8 @@ void WriteVector(vector<size_t> v, const char* nameVector,stringstream& outputSt
 }
 public:
 
-	PathSetStats(const Graph& g,const PathSetIndexData<EdgeId> &rawData, const PathSetIndexData<EdgeId> &filteredData):
-        g_(g), rawData_(rawData), filteredData_(filteredData)
+	PathSetStats(const graph_pack& gp, const PathSetIndexData<EdgeId> &rawData, const PathSetIndexData<EdgeId> &filteredData):
+        g_(gp.g), rawData_(rawData), filteredData_(filteredData)
     {
     }
 

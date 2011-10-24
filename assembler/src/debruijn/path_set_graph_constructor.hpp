@@ -1,6 +1,6 @@
 #pragma once
-#include "omni/matepair_transformer.hpp"
-#include "omni/path_set.hpp"
+#include "matepair_transformer.hpp"
+#include "path_set.hpp"
 #include "new_debruijn.hpp"
 #include "graph_pack.hpp"
 #include "utils.hpp"

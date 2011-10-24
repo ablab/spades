@@ -5,7 +5,7 @@
  *      Author: undead
  */
 #pragma once
-#include "omni/path_set.hpp"
+#include "path_set.hpp"
 #include "graph_pack.hpp"
 
 namespace debruijn_graph {
