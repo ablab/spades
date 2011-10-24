@@ -15,13 +15,13 @@ string str(const PathSet<typename graph_pack::graph_t::EdgeId>& pathSet, graph_p
 	size_t linecounter = 1;
 	for(auto iter = pathSet.paths.begin() ; iter != pathSet.paths.end() ; ++iter)
 	{
-		pathsString << "Path " << linecounter <<":"<< pathSet.length<< " "<<  pathSet.start <<"--" ;
+		pathsString << "Path " << linecounter <<":"<< pathSet.length<< " "<<  gp.int_ids.ReturnIntId(pathSet.start) <<"--" ;
 		linecounter++;
 		for(size_t i = 0 ; i < (*iter).size() ; ++i)
 		{
 			pathsString << gp.int_ids.ReturnIntId(((*iter)[i])) << " -- " ;
 		}
-		pathsString<<  pathSet.end;
+		pathsString<<  gp.int_ids.ReturnIntId(pathSet.end);
 		pathsString<<endl;
 	}
 	stringstream res;

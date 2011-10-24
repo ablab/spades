@@ -74,7 +74,7 @@ PathSetGraphConstructor(graph_pack& gp, PairedInfoIndex<Graph>& clustered_index,
 	DEBUG("PahtSetNumber is "<< PIIFilter.size());
 	for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
 	{
-		DEBUG( *iter);
+		DEBUG(str(*iter, gp));
 	}
 
 	map<EdgeId, double> weight_sums;
