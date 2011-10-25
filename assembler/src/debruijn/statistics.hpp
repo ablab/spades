@@ -159,11 +159,13 @@ public:
 		}
 		sort(lengths.begin(), lengths.end());
 		size_t sum = 0;
-		int current = lengths.size();
+		size_t current = lengths.size();
 		while (current > 0 && sum < perc_ * 0.01 * sum_all) {
 			current--;
 			sum += lengths[current];
-		}INFO("N" << perc_ << ": " << lengths[current]);
+		}
+		if(current < lengths.size())
+			INFO("N" << perc_ << ": " << lengths[current]);
 	}
 };
 

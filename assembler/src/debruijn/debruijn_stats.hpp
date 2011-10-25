@@ -43,6 +43,8 @@ public:
 		size_t break_number = 0;
 		size_t covered_kp1mers = 0;
 		size_t fail = 0;
+		if(genome_.size() <= k)
+			return;
 		Seq<k + 1> cur = genome_.start<k + 1>() >> 0;
 		bool breaked = true;
 		pair<EdgeId, size_t> cur_position;
