@@ -104,7 +104,7 @@ private:
 			// set all nucleotides to 'A' after size_'s nucleotide -- it's invariant for Seq
 			if (size_ % Tnucl) { // can be done somehow binary without this if
 				data_[data_size_ - 1] = 
-					data_[data_size_ - 1] & ( ( (T)1 << ( (size_ & (Tnucl-1)) << 1) ) - 1); // btw (i % Tnucl) <=> (i & (Tnucl-1))
+					data_[data_size_ - 1] & ( ( (T)1 << ( (size_ % Tnucl) << 1) ) - 1);
 			}
 		;
 	}
