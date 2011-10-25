@@ -4,7 +4,7 @@
 #include <limits>
 #include <xmath.h>
 #include "graph_pack.hpp"
-
+//#include "path_set_tools.hpp"
 namespace omnigraph{
 
 /**
@@ -153,7 +153,7 @@ public:
     }
 
 };
-
+/*
 template<typename EdgeId>
 ostream& operator<<(ostream& os, const PathSet<EdgeId>& pathSet) {
     stringstream pathsString;
@@ -173,7 +173,7 @@ ostream& operator<<(ostream& os, const PathSet<EdgeId>& pathSet) {
 
     return os << "id: "<< pathSet.id <<" weight "<< pathSet.weight <<" Start = " << pathSet.start <<" ....... "<<"End = " << pathSet.end<< endl<< pathsString.str() ;
 }
-
+*/
 template<typename EdgeId>
 const PathSet<EdgeId> MinPathSet(EdgeId eid) {
 
@@ -275,14 +275,17 @@ private:
 };
 
 
-template<typename EdgeId>
+template<typename graph_pack>
 class PathSetIndex
 {
-
+	typedef typename graph_pack::graph_t::EdgeId EdgeId;
+	typedef typename graph_pack::graph_t::VertexId VertexId;
+	typedef typename graph_pack::graph_t Graph;
 private:
     PathSetIndexData<EdgeId> data_;
     PathSetIndexData<EdgeId> backwarddata_;
     typedef vector<EdgeId> Path;
+    graph_pack& gp;
     
     void GenerateBackwardData()
     {
@@ -337,7 +340,7 @@ private:
     }
 
 public:
-    PathSetIndex(PathSetIndexData<EdgeId> data):data_(data){
+    PathSetIndex(PathSetIndexData<EdgeId> data, graph_pack& gp):data_(data), gp(gp){
         GenerateBackwardData();
     }
 
@@ -557,16 +560,16 @@ private:
             {
                 INFO("ALL PATHS IS REMOVED ---- ");
                // filtered.AddPathSet(rawPathSet);
-                INFO(rawPathSet);
+                INFO(str(rawPathSet));
             }
             else
             {
                 INFO("PATHSET IS VALID ");
                 INFO("BEFORE:");
-                INFO(rawPathSet);
+                INFO(str(rawPathSet));
                 INFO("AFTER:");
                 filtered.AddPathSet(newPathSet);
-                INFO(newPathSet);
+                INFO(str(newPathSet));
             }
         }
     }
@@ -661,6 +664,26 @@ private:
         }
         return false;
     }
+    string str(const PathSet<EdgeId> pathSet) {
+    	stringstream pathsString;
+    	size_t linecounter = 1;
+    	for(auto iter = pathSet.paths.begin() ; iter != pathSet.paths.end() ; ++iter)
+    	{
+    		pathsString << "Path " << linecounter <<":"<< pathSet.length<< " "<<  gp.int_ids.ReturnIntId(pathSet.start) <<"--" ;
+    		linecounter++;
+    		for(size_t i = 0 ; i < (*iter).size() ; ++i)
+    		{
+    			pathsString << gp.int_ids.ReturnIntId(((*iter)[i])) << " -- " ;
+    		}
+    		pathsString<<  gp.int_ids.ReturnIntId(pathSet.end);
+    		pathsString<<endl;
+    	}
+    	stringstream res;
+    	res << "id: "<< pathSet.id <<" weight "<< pathSet.weight <<" Start = " << gp.int_ids.ReturnIntId(pathSet.start) <<" ....... "<<"End = " << gp.int_ids.ReturnIntId(pathSet.end)<< endl<< pathsString.str() ;
+    	return res.str();
+    }
+
+
     
 };
 

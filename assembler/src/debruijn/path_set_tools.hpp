@@ -10,7 +10,7 @@
 
 namespace debruijn_graph {
 template <typename graph_pack>
-string str(const PathSet<typename graph_pack::graph_t::EdgeId>& pathSet, graph_pack& gp) {
+string str(const PathSet<typename graph_pack::graph_t::EdgeId>& pathSet, const graph_pack& gp) {
 	stringstream pathsString;
 	size_t linecounter = 1;
 	for(auto iter = pathSet.paths.begin() ; iter != pathSet.paths.end() ; ++iter)

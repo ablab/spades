@@ -29,9 +29,9 @@ PathSetGraphConstructor(graph_pack& gp, PairedInfoIndex<Graph>& clustered_index,
 	PathSetIndexData<EdgeId> PII ;
 	PathSetIndexData<EdgeId> PIIFilter ;
 
-	MatePairTransformer<Graph> transformer(g_, pair_info_);
+	MatePairTransformer<graph_pack> transformer(gp, pair_info_);
 	transformer.Transform(PII);
-	PathSetIndex<EdgeId> PI(PII);
+	PathSetIndex<graph_pack> PI(PII, gp);
 //	PI.RemovePrefixes(PIIFilter_tmp);
 	PI.Process(PIIFilter);
 
