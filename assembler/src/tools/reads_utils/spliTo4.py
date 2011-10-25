@@ -7,7 +7,7 @@ def read_read(infile):
 	read = infile.readline()
 
 	if not read:
-		return None, None
+		return None, None, None
 
 	id1 = (read.split('/', 1)[0])[1:]
 	strand = (read.split('/', 1)[1])[0]
