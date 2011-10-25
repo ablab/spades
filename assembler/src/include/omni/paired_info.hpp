@@ -730,7 +730,7 @@ public:
 
 		double result_weight = pair_info.weight;
         //TODO: config it
-        if (math::gr(w, 10.)) {
+        if (math::gr(w, -10.)) {
 			result_weight /= (w + 10);
 		}else {
 //            cout << "HOHOHOH " << result_weight << " " << w << " " << g_.length(pair_info.first) << " " << g_.length(pair_info.second) << endl;

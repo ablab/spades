@@ -47,7 +47,7 @@ public class PlotFPR implements Runnable{
 	public void run(){
 		try{
 			MyScanner in_tp, in_fpr, in_fnr, in_et;
-			String folder0 = "data_zero/";
+			String folder0 = "";
 			Locale.setDefault(Locale.US);
 			in_tp = new MyScanner(folder0 + "tp.prd");
 			in_fpr = new MyScanner(folder0 + "fpr.prd");
@@ -57,6 +57,7 @@ public class PlotFPR implements Runnable{
             //debug(Threshold);
             int size_fnr = 0;
 			in_fnr.nextToken();
+            double maxfnr = -1;
 			while (in_fnr.hasMoreTokens()){
 				int a = in_fnr.nextInt();
 				int b = in_fnr.nextInt();
@@ -64,7 +65,8 @@ public class PlotFPR implements Runnable{
 				double x = in_fnr.nextDouble();
 				double y = in_fnr.nextDouble();
 				double z = in_fnr.nextDouble();
-				in_fnr.nextToken();
+                maxfnr = Math.max(maxfnr, x);
+                in_fnr.nextToken();
                 if (!(abs(x) < 1e-9 && abs(y) < 1e-9)) size_fnr++;
             }
             in_fnr.close();
@@ -83,6 +85,7 @@ public class PlotFPR implements Runnable{
             in_et.close();
 //          getting fpr info
             
+            double maxfpr = -1;
 			int fpr = 0;
 			int tp = 0;
             //int size_fpr = 0;
@@ -93,14 +96,17 @@ public class PlotFPR implements Runnable{
             int ind = 0;
             TreeMap<Double, Double> fpr_total = new TreeMap<Double, Double>();
             TreeMap<Double, Double> fnr_total = new TreeMap<Double, Double>();
+            fpr_total.put(100000000., 0.);
+            fnr_total.put(100000000., 0.);
 			while (in_fpr.hasMoreTokens()){
 				int a = in_fpr.nextInt();
 				int b = in_fpr.nextInt();
-
+                //debug(a + " " + b);
 				double x = in_fpr.nextDouble();
 				double y = in_fpr.nextDouble();
 				double z = in_fpr.nextDouble();
 				in_fpr.nextToken();
+                maxfpr = Math.max(maxfpr, x);
                 if (x == 0) continue;
                 if (weight > y + 1e-9){
                     total += cur;
@@ -145,38 +151,30 @@ public class PlotFPR implements Runnable{
             }
             total += cur;
             fnr_total.put(0.0, total);
-            Set<Double> fpr_set = fpr_total.keySet();
-            for (double w : fpr_set){
-                double size_fpr = fpr_total.get(w);
-            
-                double size_tpv = 0;
-                if (w > fnr_total.lastKey() + 1e-9) break;
-                else size_tpv =  fnr_total.ceilingEntry(w).getValue();
-                buf.append(w + " " + (size_fpr)*100.0 / (size_tpv + size_fpr) + "\n");
-            }
-            PrintWriter out_fpr = new PrintWriter("plot_fpr.out");
-            out_fpr.println(buf);
-            out_fpr.close();
-            buf = new StringBuffer("");
-            Set<Double> fnr_set = fnr_total.keySet();
-            for (double w : fnr_set){
-                double size_fpr = 0;
-                if ( w > fpr_total.lastKey() + 1e-9) break;
-                else size_fpr = fpr_total.ceilingEntry(w).getValue();
-                double size_tpv =  fnr_total.get(w);
-                double size_fn = size_fnr + size_tp - size_tpv;
-                //debug(size_tp - size_tpv);
-                buf.append(w + " " + (size_fn)*100.0 / (size_et) + "\n");
+            StringBuffer buf1 = new StringBuffer("");
+            StringBuffer buf2 = new StringBuffer("");
+
+            double lastKey = Math.max(maxfpr, maxfnr);
+            for (double thr = 0.0; thr<lastKey + 1; thr+=Math.max(0.1, thr/50.)){
+                double size_fpr = fpr_total.ceilingEntry(thr).getValue();
+                double size_fn = size_fnr + size_tp - fnr_total.ceilingEntry(thr).getValue();
+                debug(fnr_total.ceilingEntry(thr).getValue() + " " + size_fpr);
+                if (size_fpr == 0) buf1.append(thr + " " + 0.0 + "\n");
+                else buf1.append(thr + " " + (size_fpr * 100.0)/ (size_fpr + fnr_total.ceilingEntry(thr).getValue()) + "\n");
+                buf2.append(thr + " " + (size_fn * 100.0) / (size_et) + "\n");
             }
             PrintWriter out_tp = new PrintWriter("plot_fnr.out");
-            out_tp.println(buf);
+            out_tp.println(buf2);
             out_tp.close();
+            PrintWriter out_fp = new PrintWriter("plot_fpr.out");
+            out_fp.println(buf1);
+            out_fp.close();
             //out.println("With threshold = " + Threshold + ":");
             //out.println("False positive rate is going to be " + (fpr*100.0/(fpr + tp)));
             //if (fpr <= size_fpr) out.println("FPR will be decreased by " + ( -fpr + size_fpr)*100.0 / size_fpr + " percent");
             //if (tp <= size_tp) out.println("Perfect match will be decreased by " + (-tp + size_tp)*100.0 / size_tp + " percent");
             
-            PrintWriter out1 = new PrintWriter("plot_fpnr.conf");
+            PrintWriter out1 = new PrintWriter("fpnr_plot.conf");
                         String text =
                         "#!/usr/bin/gnuplot -persist\n" + 
                         "set term x11 0\n" +

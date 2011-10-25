@@ -417,7 +417,7 @@ public:
 
 		if (sequence.size() < k) {
 			return MappingPath<EdgeId>();
-		}VERIFY(sequence.size() >= k);
+		}
 		Kmer kmer = sequence.start<k>() >> 0;
 		for (size_t i = k - 1; i < sequence.size(); ++i) {
 			kmer = kmer << sequence[i];

@@ -73,21 +73,21 @@ protected:
 			if (cur_dist + 1 < forward.size() && math::ls(forward[cur_dist + 1]	- data[i].d, data[i].d - forward[cur_dist])) {
 				cur_dist++;
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
+					weights[cur_dist] += data[i].weight;//*data[i].weight; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
 				//                if (debug) INFO("Adding " << forward[cur_dist] << " " << data[i].d << " " << data[i].weight);
 			} else if (cur_dist + 1 < forward.size() && math::eq(
 					forward[cur_dist + 1] - data[i].d, data[i].d
 							- forward[cur_dist])) {
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight * 0.5; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
+					weights[cur_dist] += data[i].weight * 0.5;// * data[i].weight; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
 				//                if (debug) INFO("Adding " << forward[cur_dist] << " " << data[i].d << " " << data[i].weight * 0.5);
 				cur_dist++;
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight * 0.5; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
+					weights[cur_dist] += data[i].weight * 0.5;// * data[i].weight; // * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
 				//                if (debug) INFO("Adding " << forward[cur_dist] << " " << data[i].d << " " << data[i].weight * 0.5);
 			} else {
 				if (std::abs(forward[cur_dist] - data[i].d) < max_distance_)
-					weights[cur_dist] += data[i].weight; //  * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
+					weights[cur_dist] += data[i].weight;//*data[i].weight; //  * (1. - std::abs(forward[cur_dist] - data[i].d) / max_distance_);
 			}
 		}
 		for (size_t i = 0; i < forward.size(); i++) {
@@ -148,6 +148,28 @@ public:
         }
     }
 
+    // for statistics generation, to filter all etalon infos according to the paths in the graph
+	virtual void Estimate(PairedInfoIndex<Graph> &result, size_t ld, size_t md) {
+		for (auto iterator = histogram_.begin(); iterator != histogram_.end(); ++iterator) {
+			vector < PairInfo<EdgeId> > data = *iterator;
+			EdgeId first = data[0].first;
+			EdgeId second = data[0].second;
+			vector < size_t > forward = GetGraphDistances(first, second);
+			//			bool debug = (int_ids_.ReturnIntId(data[0].first) == 71456 && int_ids_.ReturnIntId(data[0].second) == 71195);
+            linkage_distance_ = ld;
+            max_distance_ = md;
+            
+			vector < pair<size_t, double> > estimated
+					= EstimateEdgePairDistances(data, forward/*, false*/);
+			//            if (debug) for (size_t i = 0; i< estimated.size(); i++)
+			//                INFO("Edges MY : " << estimated[i].first << " " << estimated[i].second);
+			vector < PairInfo<EdgeId> > clustered = ClusterResult(first,
+					second, estimated);
+			//            if (debug) for (size_t i = 0; i<clustered.size(); i++)
+			//                INFO("Edges MY clusterizing: " << clustered[i].d << " " << clustered[i].weight);
+			AddToResult(result, clustered);
+		}
+	}
 	virtual void Estimate(PairedInfoIndex<Graph> &result) {
 		for (auto iterator = histogram_.begin(); iterator != histogram_.end(); ++iterator) {
 			vector < PairInfo<EdgeId> > data = *iterator;
