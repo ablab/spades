@@ -60,24 +60,24 @@ usual_simplification
 	{
 		max_tip_length				100
 		max_tip_length_div_K		2.5
-		max_coverage				1000
+		max_coverage				200
 		max_relative_coverage		2.0		; tip_cov < this * not_tip_cov
 	}
 	
 	; bulge remover:
 	br
 	{
-		max_length_div_K			5
-		max_coverage				1000.0
+		max_length_div_K			4
+		max_coverage				200.0
 		max_relative_coverage		1.1		; bulge_cov < this * not_bulge_cov
-		max_delta					4.0
+		max_delta					2.0
 		max_relative_delta			0.1
 	}
 	
 	; erroneous connections remover:
 	ec
 	{
-		max_coverage				20.0 ; erroneous_connection < this * not_erroneous_connection_cov
+		max_coverage				40.0 ; erroneous_connection < this * not_erroneous_connection_cov
 		max_length_div_K			5
 	}
 	
@@ -97,5 +97,5 @@ usual_simplification
 
 	isolated_min_len 100
 	
-	removal_checks_enabled         true
+	removal_checks_enabled         false
 }
