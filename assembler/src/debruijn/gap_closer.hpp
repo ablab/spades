@@ -51,6 +51,8 @@ void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, Edg
     	}
     }
     INFO("Total filled " << gaps_filled<<" gaps");
+    omnigraph::Compressor<Graph> compressor(g);
+    compressor.CompressAllVertices();
 
 }
 
