@@ -15,6 +15,8 @@ public class PlotFPR implements Runnable{
 
     private int N = 100000;
 
+    private static boolean output = true;
+
     private class Pair implements Comparable<Pair>{
         int a;
         int b;
@@ -37,6 +39,7 @@ public class PlotFPR implements Runnable{
     }
 
 	public static void main(String[] args){
+        if (args.length > 0 && args[0].equals("s")) output = false;
 		new Thread(new PlotFPR()).start();
 	}
 
@@ -151,6 +154,10 @@ public class PlotFPR implements Runnable{
             }
             total += cur;
             fnr_total.put(0.0, total);
+            if (!output){
+                System.out.println("False positive rate now is " + 1. * fpr_total.size()/ (fpr_total.size() + fnr_total.size()));   
+                System.out.println("False negative rate now is " +  size_fnr * 1./size_et);   
+            }
             StringBuffer buf1 = new StringBuffer("");
             StringBuffer buf2 = new StringBuffer("");
 
@@ -158,7 +165,7 @@ public class PlotFPR implements Runnable{
             for (double thr = 0.0; thr<lastKey + 1; thr+=Math.max(0.1, thr/50.)){
                 double size_fpr = fpr_total.ceilingEntry(thr).getValue();
                 double size_fn = size_fnr + size_tp - fnr_total.ceilingEntry(thr).getValue();
-                debug(fnr_total.ceilingEntry(thr).getValue() + " " + size_fpr);
+                //debug(fnr_total.ceilingEntry(thr).getValue() + " " + size_fpr);
                 if (size_fpr == 0) buf1.append(thr + " " + 0.0 + "\n");
                 else buf1.append(thr + " " + (size_fpr * 100.0)/ (size_fpr + fnr_total.ceilingEntry(thr).getValue()) + "\n");
                 buf2.append(thr + " " + (size_fn * 100.0) / (size_et) + "\n");
