@@ -20,6 +20,7 @@ public:
 	one_many_contigs_enlarger(Graph &g, int insert_size): g_(g), insert_size_(insert_size){
 	}
 	void Loops_resolve(){
+		return; //temporary not used
 //ToDo: Think about good loop resolver
 		INFO("----Resolving Loops----");
 		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
