@@ -214,11 +214,15 @@ public:
 	}
 
 	Kmer Substitute(const Kmer& kmer) const {
+		size_t count = 0;
 		Kmer answer = kmer;
 		auto it = mapping_.find(answer);
 		while (it != mapping_.end()) {
 			answer = (*it).second;
 			it = mapping_.find(answer);
+			if (++count > 10) {
+				return kmer;
+			}
 		}
 		return answer;
 	}
