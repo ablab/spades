@@ -203,6 +203,7 @@ namespace debruijn_graph
         struct position_handler{
 			int max_single_gap;
 			std::string contigs_for_threading;
+			bool late_threading;
 		};
 
         std::string dataset_name;
@@ -337,6 +338,7 @@ namespace debruijn_graph
 		using config_common::load;
 		load(pt, "max_single_gap", pos.max_single_gap);
 		load(pt, "contigs_for_threading", pos.contigs_for_threading);
+		load(pt, "late_threading", pos.late_threading);
 	}
 
 	inline void load(boost::property_tree::ptree const& pt, debruijn_config::dataset& ds)

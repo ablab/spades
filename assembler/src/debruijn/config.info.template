@@ -62,6 +62,7 @@ pos
 {
 	max_single_gap 500
 	contigs_for_threading ./data/debruijn/contigs.fasta
+	late_threading false
 }
 
 
