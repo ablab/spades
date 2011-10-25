@@ -61,11 +61,13 @@ PathSetGraphConstructor(graph_pack& gp, PairedInfoIndex<Graph>& clustered_index,
 	map<int, int> real_ids;
 	for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
 	{
-		if (iter->length - gp.g.length(iter->end) < cfg::get().ds.IS - K) {
-			real_ids.insert(make_pair(iter->id, iter->id));
-		} else 	if (long_starts.find(iter->start) == long_starts.end()) {
-			long_starts.insert(make_pair(iter->start, iter->id));
-			real_ids.insert(make_pair(iter->id, iter->id));
+		if (long_starts.find(iter->start) == long_starts.end()) {
+			if (iter->length - gp.g.length(iter->end) < cfg::get().ds.IS ) {
+				real_ids.insert(make_pair(iter->id, iter->id));
+			} else {
+				long_starts.insert(make_pair(iter->start, iter->id));
+				real_ids.insert(make_pair(iter->id, iter->id));
+			}
 		} else {
 			real_ids.insert(make_pair(iter->id, long_starts[iter->start]));
 			new_gp.g.DeleteVertex(new_gp.int_ids.ReturnVertexId(iter->id));
@@ -76,7 +78,7 @@ PathSetGraphConstructor(graph_pack& gp, PairedInfoIndex<Graph>& clustered_index,
 	{
 		DEBUG(str(*iter, gp));
 	}
-
+	map<EdgeId, EdgeId> new_to_old;
 	map<EdgeId, double> weight_sums;
 	for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
 	{
@@ -126,13 +128,22 @@ PathSetGraphConstructor(graph_pack& gp, PairedInfoIndex<Graph>& clustered_index,
 			DEBUG("to pathset "<< extends[i].id << " weight "<< extends[i].weight);
 			VertexId new_end = new_gp.int_ids.ReturnVertexId(real_ids[extends[i].id]);
 			DEBUG("adding edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge) <<" and coverage "<< gp.g.coverage(old_first_edge) << " * " << extends[i].weight / weight_sums[old_first_edge]);
-			if (real_ids[extends[i].id] != extends[i].id || real_ids[first.id] != first.id) {
+			bool flag = true;
+			vector<EdgeId> out_e = new_gp.g.OutgoingEdges(new_start);
+			for (auto eid = out_e.begin(); eid != out_e.end(); ++eid){
+				if (new_to_old[*eid] == old_first_edge && new_gp.g.EdgeEnd(*eid)== new_end) {
+					//TODO: what's about coverage?
+					flag = false;
+					break;
+				}
+			}
+			if ( (!flag)/* && real_ids[first.id] != first.id*/) {
 				DEBUG("ignoring clone to pathset " << extends[i].id << " and vertex " << real_ids[extends[i].id]);
 			} else {
 				EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
 				WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge) *   extends[i].weight / weight_sums[old_first_edge]));
 				new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
-
+				new_to_old.insert(make_pair(eid, old_first_edge));
 				DEBUG("count was "<< count);
 //		    omnigraph::WriteSimple(new_gp.g, tot_labeler_after, cfg::get().output_dir  + ToString(count)+".dot", "no_repeat_graph");
 				count ++ ;
@@ -146,7 +157,7 @@ PathSetGraphConstructor(graph_pack& gp, PairedInfoIndex<Graph>& clustered_index,
 			EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
 			WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge]*/));
 			new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
-
+			new_to_old.insert(make_pair(eid, old_first_edge));
 			new_start = new_end;
 			count++;
 
@@ -169,6 +180,7 @@ PathSetGraphConstructor(graph_pack& gp, PairedInfoIndex<Graph>& clustered_index,
 					EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
 					WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge)));
 					new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
+					new_to_old.insert(make_pair(eid, old_first_edge));
 					new_start = new_end;
 					count++;
 
@@ -181,6 +193,7 @@ PathSetGraphConstructor(graph_pack& gp, PairedInfoIndex<Graph>& clustered_index,
 				EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
 				WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge)  * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge] */));
 				new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
+				new_to_old.insert(make_pair(eid, old_first_edge));
 				new_start = new_end;
 				DEBUG("and tail of length "<< iter->length);
 //				omnigraph::WriteSimple(new_gp.g, tot_labeler_after, cfg::get().output_dir  + ToString(count)+".dot", "no_repeat_graph");
@@ -203,7 +216,7 @@ PathSetGraphConstructor(graph_pack& gp, PairedInfoIndex<Graph>& clustered_index,
 			EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
 			WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge)  * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge] */));
 			new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
-
+			new_to_old.insert(make_pair(eid, old_first_edge));
 		}
 	}
 }
