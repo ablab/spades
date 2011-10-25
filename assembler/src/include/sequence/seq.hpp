@@ -37,9 +37,6 @@ using namespace std;
 template<size_t size_, typename T = u_int32_t>
 class Seq {
 private:
-
-	const typedef T Type;
-
 	/**
 	 * @variable Number of bits in type T (e.g. 8 for char)
 	 * @example 8: 2^8 = 256 or 16
@@ -70,7 +67,6 @@ private:
 	std::array<T, data_size_> data_;
 
 	friend class Seq<size_ - 1, T> ;
-	friend class Sequence; // to do Sequence::start()
 	/**
 	 * Initialize data_ array of this object with C-string
 	 *
@@ -101,11 +97,6 @@ private:
 	 */
 	Seq(std::array<T, data_size_> data) :
 		data_(data) {
-			// set all nucleotides to 'A' after size_'s nucleotide -- it's invariant for Seq
-			if (size_ % Tnucl) { // can be done somehow binary without this if
-				data_[data_size_ - 1] = 
-					data_[data_size_ - 1] & ( ( (T)1 << ( (size_ % Tnucl) << 1) ) - 1);
-			}
 		;
 	}
 
@@ -114,7 +105,7 @@ private:
 	 */
 	inline void set(const size_t i, char c) {
 		data_[i >> Tnucl_bits] = (data_[i >> Tnucl_bits] & ~((T) 3 << ((i
-			% Tnucl) << 1))) | ((T) c << ((i % Tnucl) << 1));
+				% Tnucl) << 1))) | ((T) c << ((i % Tnucl) << 1));
 	}
 
 public:
@@ -160,10 +151,8 @@ public:
 	/**
 	 * Ultimate constructor from ACGT0123-string.
 	 *
-	 * @param s Any object with operator[], which returns ACGT0123 chars
+	 * @param s Any object with operator[], which returns 0123 chars
 	 * @param offset Offset when this sequence starts
-	 *
-	 * SLOW! Especially for Sequence -> Seq transformation because of many 0123<->ACGT and string copying.
 	 */
 	template<typename S>
 	explicit Seq(const S &s, size_t offset = 0) {

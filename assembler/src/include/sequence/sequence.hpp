@@ -126,18 +126,12 @@ public:
 inline ostream& operator<<(ostream& os, const Sequence& s);
 
 /**
- * @todo optimize a bit more
+ * @todo optimize
  */
 template<size_t size2_>
 Seq<size2_> Sequence::start() const {
     VERIFY(size2_ <= size_);
-    VERIFY(sizeof(typename SequenceData::ST) == sizeof(typename Seq<size2_>::Type)); // same types in SequenceData and Seq
-    std::array<SequenceData::ST, Seq<size2_>::data_size_> seq_data;
-    for (size_t i = 0; i < seq_data.size(); ++i) {
-    	seq_data[i] = data_->bytes_[i].data_[0];
-    }
-    return Seq<size2_> (seq_data);
-    //return Seq<size2_> (*this); // it was before
+    return Seq<size2_> (*this);
 }
 
 /**
