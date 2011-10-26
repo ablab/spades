@@ -53,7 +53,7 @@ sc_simplification
 usual_simplification
 {
 	;simplification mode: normal, cheating, chimeric, pair_info_aware
-	simpl_mode normal
+	simpl_mode cheating
 	
 	; tip clipper:
 	tc
@@ -97,5 +97,5 @@ usual_simplification
 
 	isolated_min_len 100
 	
-	removal_checks_enabled         false
+	removal_checks_enabled         true
 }
