@@ -89,6 +89,9 @@ public:
 		reader_.reset();
 		for (size_t i = 0; !reader_.eof(); ++i) {
 			reader_ >> r;
+			if (r.size() < K) { // TODO should be K + DELTA
+				continue;       // TODO here and in many other places
+			}
 			if (mode_ & 4) {
 				gb_.takeAllKmers(r.sequence());
 			} else if (mode_ & 1) {
