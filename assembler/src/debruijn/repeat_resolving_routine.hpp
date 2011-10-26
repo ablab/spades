@@ -250,6 +250,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	if (cfg::get().path_set_graph ) {
 		INFO("testing path-set graphs");
 		PathSetGraphConstructor<graph_pack> path_set_constructor(origin_gp, clustered_index,  resolved_gp);
+		path_set_constructor.Construct();
 		INFO("testing ended");
 	}	else {
 //    CleanIsolated(origin_gp);
