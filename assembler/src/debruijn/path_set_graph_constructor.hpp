@@ -78,14 +78,18 @@ public:
 		}*/
 		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
 		{
+			DEBUG("watching on id "<<  iter->id);
 			if (long_starts.find(iter->start) == long_starts.end()) {
 				real_ids.insert(make_pair(iter->id, iter->id));
 				long_starts.insert(make_pair(iter->start, iter->id));
 			} else {
 				bool was_glued = false;
-				for(auto iter2 = PIIFilter.begin(); iter2 != iter; ++iter2){
+				DEBUG("interesting");
+				for(auto iter2 = PIIFilter.begin(); iter2 != iter; ++iter2 ){
+					if (iter2 == iter)
+						break;
 					if (NeedToGlue(*iter, *iter2)) {
-
+						DEBUG("gluing");
 						real_ids.insert(make_pair(iter->id, iter2->id));
 						new_gp.g.DeleteVertex(new_gp.int_ids.ReturnVertexId(iter->id));
 
@@ -93,10 +97,12 @@ public:
 						break;
 					}
 				}
-				if(!was_glued)
-					long_starts.insert(make_pair(iter->start, iter->id));
+				if(!was_glued) {
+					real_ids.insert(make_pair(iter->id, iter->id));
+				}
 			}
 		}
+
 		DEBUG("PahtSetNumber is "<< PIIFilter.size());
 		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
 		{
@@ -249,27 +255,32 @@ public:
 			return false;
 		} else {
 			bool glue = false;
+			DEBUG("checking " << str(e1, gp) <<" and " <<str(e2, gp));
 			for(auto iter1 = e1.paths.begin(); iter1 != e1.paths.end(); ++iter1) {
 				for(auto iter2 = e2.paths.begin(); iter2 != e2.paths.end(); ++iter2) {
 					size_t sum_len = gp.g.length(e1.start);
-					auto it = iter2->begin();
-					for(auto iter = iter1->begin(); iter!= iter1->end(); ++iter) {
-						if (*it == *iter) {
-							sum_len += gp.g.length(*it);
-							if (it != iter2->end()) {
-								++it;
+					size_t it = 0;
+					if (iter2->size() != 0) {
+						for(size_t iter = 0; iter!= iter1->size(); ++iter) {
+							if ((*iter1)[iter] == (*iter2)[it]) {
+								sum_len += gp.g.length((*iter1)[iter]);
+								if (it != iter2->size()) {
+									++it;
+								} else {
+									break;
+								}
 							} else {
 								break;
 							}
-						} else {
-							break;
 						}
 					}
-					if (sum_len < cfg::get().ds.IS - K)
+					DEBUG("sum len"<< sum_len << " " << cfg::get().ds.IS);
+					if (sum_len > cfg::get().ds.IS  + K)
 						glue = true;
 				}
 
 			}
+			DEBUG ("result is" << glue);
 			return glue;
 		}
 	}
