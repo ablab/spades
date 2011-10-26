@@ -509,11 +509,15 @@ void resolve_repeats() {
 	paired_info_index clustered_index(conj_gp.g);
 
 	exec_distance_estimation(conj_gp, paired_index, clustered_index);
+	
 	if(cfg::get().pos.late_threading){
 		FillEdgesPos(conj_gp, conj_gp.genome, 10);
 		FillEdgesPos(conj_gp, !conj_gp.genome, 11);
 		FillEdgesPos(conj_gp, cfg::get().pos.contigs_for_threading, 10000);
 	}
+	
+	tSeparatedStats(conj_gp, conj_gp.genome, clustered_index);
+	
 	INFO("STAGE == Resolving Repeats");
 
 	if (!cfg::get().paired_mode) {

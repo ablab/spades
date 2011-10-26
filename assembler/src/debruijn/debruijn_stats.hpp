@@ -401,6 +401,83 @@ void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
 	INFO("SingleFileContigs(Conjugate) written");
 }
 
+
+
+
+
+void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig, PairedInfoIndex<conj_graph_pack::graph_t> &ind)
+{
+	typedef omnigraph::PairInfo<EdgeId> PairInfo;
+
+	MappingPath<Graph::EdgeId> m_path1 = FindGenomeMappingPath<K>(contig, gp.g,
+			gp.index, gp.kmer_mapper);
+
+	map<Graph::EdgeId, vector<pair<int, int>>> inGenomeWay;
+	int CurI = 0;
+	for (size_t i = 0; i < m_path1.size(); i++) {
+		EdgeId ei = m_path1[i].first;
+		MappingRange mr = m_path1[i].second;
+		int start = mr.initial_range.start_pos - mr.mapped_range.start_pos;
+		if (inGenomeWay.find(ei) == inGenomeWay.end()){
+			vector<pair<int, int>> tmp;
+			tmp.push_back(make_pair(CurI, start));
+			inGenomeWay[ei] = tmp;
+			CurI++;
+			DEBUG("Edge "<<gp.int_ids.str(ei)<< " num "<< CurI<<" pos "<<start);
+		}
+		else {
+			if (m_path1[i - 1].first == ei){
+				if (abs(start - inGenomeWay[ei][(inGenomeWay[ei].size()-1)].second)>50){
+					inGenomeWay[ei].push_back(make_pair(CurI, start));
+					CurI++;
+				}
+			}
+			else {
+				inGenomeWay[ei].push_back(make_pair(CurI, start));
+				CurI++;
+			}
+		}
+		
+	}
+	INFO("Totaly "<<CurI<<" edges in genome path");
+	vector<int> stats(10); 
+	for (auto p_iter = ind.begin(), p_end_iter = ind.end(); p_iter != p_end_iter; ++p_iter) {
+		vector<PairInfo> pi = *p_iter;
+		for (size_t j = 0; j < pi.size(); j++) {
+			EdgeId left_edge = pi[j].first;
+			EdgeId right_edge = pi[j].second;
+			int dist = pi[j].d;
+			if (dist <-0.001) continue;
+			int best_d = 10000;
+			int best_t = 0;
+			DEBUG("PairInfo "<< gp.int_ids.str(left_edge)<<" -- "<< gp.int_ids.str(right_edge)<<" dist "<<dist);
+			for (size_t left_i = 0; left_i < inGenomeWay[left_edge].size(); left_i++)
+				for (size_t right_i = 0; right_i < inGenomeWay[right_edge].size(); right_i++){
+					if (best_d > abs(inGenomeWay[right_edge][right_i].second - inGenomeWay[left_edge][left_i].second -dist)){
+						best_d = abs(inGenomeWay[right_edge][right_i].second - inGenomeWay[left_edge][left_i].second - dist);
+						best_t = inGenomeWay[right_edge][right_i].first - inGenomeWay[left_edge][left_i].first;
+						DEBUG("best d "<<best_d);
+					}
+				}
+			DEBUG("tSep is " << best_t);
+			if (best_t > 5) best_t = 5;
+			stats[best_t]++;
+		}
+	}
+	INFO("t-separated stats: 1 - "<<stats[1]<<" 2 - "<<stats[2]<<" 3 - "<<stats[3]<<" 4 - "<<stats[4]<<" >4 - "<<stats[5]);
+}
+
+
+
+
+
+
+
+
+
+
+
+
 //template<size_t k>
 void FillEdgesPos(conj_graph_pack& gp, const Sequence& contig, int contigId)
 
@@ -428,6 +505,11 @@ void FillEdgesPos(conj_graph_pack& gp, const Sequence& contig, int contigId)
 	}
 	//CurPos = 1000000000;
 }
+
+
+
+
+
 
 //template<size_t k>
 void FillEdgesPos(conj_graph_pack& gp, const string& contig_file,
