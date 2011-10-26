@@ -44,7 +44,7 @@ using log4cxx::BasicConfigurator;
 
 namespace {
 
-const uint32_t kK = 31;
+const uint32_t kK = 55;
 typedef Seq<kK> KMer;
 typedef unordered_map<KMer, KMerFreqInfo, KMer::hash> UnorderedMap;
 

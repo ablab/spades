@@ -344,7 +344,7 @@ int main(int argc, char * argv[]) {
 
 		if (!readBlobAndKmers || iter_count > 0) {
 			if (Globals::conserve_memory) {
-				if (!Globals::skip_to_clustering) {
+				if (!Globals::skip_to_clustering && !Globals::skip_to_subvectors) {
 					TIMEDLN("Splitting kmer instances into files.");
 					SplitToFiles(Globals::working_dir, iter_count);
 					TIMEDLN("Kmer instances split. Starting merge.");
@@ -365,6 +365,8 @@ int main(int argc, char * argv[]) {
 					string cmd = "rm -rf " + getFilename(Globals::working_dir, iter_count, "tmp.kmers.*");
 					if ( system(cmd.data()) != 0 ) { TIMEDLN("Some error with removing temporary files. Proceeding nevertheless."); }
 					TIMEDLN("Merge done. There are " << kmer_num << " kmers in total.");
+				} else if (Globals::skip_to_subvectors) {
+					TIMEDLN("Skipping directly to subvectors, reading sorted kmers from " << getFilename(Globals::working_dir, iter_count, "kmers.total.sorted"));
 				}
 			} else {
 				TIMEDLN("Doing honest preprocessing.");
