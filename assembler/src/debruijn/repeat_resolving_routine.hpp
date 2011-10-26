@@ -217,7 +217,8 @@ string GeneratePostfix(){
 	s += ToString(K);
 	if (cfg::get().path_set_graph){
 		s += "_path_set";
-	} else if (cfg::get().rr.mode == 2) {
+	}
+	if (cfg::get().rr.mode == 2) {
 		s += "_mode2";
 	} else {
 		s += "_nv";
@@ -251,6 +252,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 		INFO("testing path-set graphs");
 		PathSetGraphConstructor<graph_pack> path_set_constructor(origin_gp, clustered_index,  resolved_gp);
 		path_set_constructor.Construct();
+		unordered_map<typename graph_pack::graph_t::EdgeId, typename graph_pack::graph_t::EdgeId> edge_labels =
+		path_set_constructor.GetEdgeLabels();
+		labels_after.FillLabels(edge_labels);
 		INFO("testing ended");
 	}	else {
 //    CleanIsolated(origin_gp);
@@ -333,7 +337,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 		}
 
-		one_many_contigs_enlarger<typename graph_pack::graph_t> N50enlarger(
+/*		one_many_contigs_enlarger<typename graph_pack::graph_t> N50enlarger(
 				resolved_gp.g, cfg::get().ds.IS);
 		N50enlarger.Loops_resolve();
 
@@ -345,7 +349,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 		OutputContigs(resolved_gp.g,
 				cfg::get().output_dir + "unlooped" + postfix);
-
+*/
 //		N50enlarger.one_many_resolve_with_vertex_split();
 //
 //		omnigraph::WriteSimple(
