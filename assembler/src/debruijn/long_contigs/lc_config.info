@@ -16,8 +16,8 @@ QUAKE_CROPPED_400K
 QUAKE_FULL
 {
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
-    ;graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_OLD/simplified_graph
-    graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/simplified_graph
+    graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_NEW/simplified_graph
+    ;graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/simplified_graph
     
 }
 
@@ -39,9 +39,13 @@ SC_HAMMER_1410_FILTERED
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/SC_HAMMER_1410_FILTERED/simplified_graph
 }
 		 
-   
+DELTA_CORRECTED_1   
+{
+    graph_file       ./data/debruijn/DELTA_CORRECTED_1/K55/gr1/simplified_graph
+}
+
 ; paired info options
-use_new_metrics      false
+use_new_metrics      true
 
 
 ; output options
@@ -62,7 +66,7 @@ first_grow_forward      true
 ; seed selection
 ss
 {
-    min_coverage   30
+    min_coverage   120
     glue_seeds     false
     max_cycles     1
     
@@ -188,7 +192,31 @@ research
 ; additional real libs
 real_libs
 {    
-    count 1
+    count 2
+
+    item_5
+    {
+     	read_size     100
+        insert_size   250
+        is_delta      2
+        var           5
+
+       DELTA_CORRECTED_1         
+       {
+            precounted       false
+            precounted_path  ./data/debruijn/
+
+            first  ./data/input/Delta.Bacteria/lane1_reads_corrected_left.fastq
+            second ./data/input/Delta.Bacteria/lane1_reads_corrected_right.fastq
+
+            has_advanced     false
+            advanced         ./data/debruijn/QUAK
+
+            raw              ./data/debruijn/
+        }
+    }
+
+
 
     item_3
     {
@@ -212,7 +240,7 @@ real_libs
 	}
     }
     
-    item_0
+    item_4
     {
     	read_size     100
         insert_size   270
@@ -254,7 +282,7 @@ real_libs
     }
     
     
-    item_2
+    item_0
     {
         read_size     100
         insert_size   220
@@ -290,7 +318,7 @@ real_libs
         
         QUAKE_FULL
         {
-            precounted       true
+            precounted       false
             ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_OLD/paired_info_IS220_RS100_clustered
             precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS220_RS100_clustered
             ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/09.26_02_00/paired_info_IS220_RS100_clustered
@@ -344,7 +372,7 @@ real_libs
         
         QUAKE_FULL
         {
-            precounted       true
+            precounted       false
             
             ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_OLD/paired_info_IS480_RS100_clustered
             precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS480_RS100_clustered

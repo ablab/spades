@@ -385,15 +385,15 @@ LB_QUAKE_FULL
 
 DELTA_CORRECTED_1
 {
-        first   Delta.Bacteria/lane1_reads_corrected.fastq
-        second  Delta.Bacteria/dummy/right_paired.fastq
-        single_first    Delta.Bacteria/dummy/left_single.fastq
-        single_second  	Delta.Bacteria/dummy/left_paired.fastq
+        first   Delta.Bacteria/lane1_reads_corrected_left.fastq
+        second  Delta.Bacteria/lane1_reads_corrected_right.fastq
+        single_first    Delta.Bacteria/lane1_reads_corrected_single_left.fastq
+        single_second  	Delta.Bacteria/lane1_reads_corrected_single_right.fastq
         RL              100     ; read length
-        IS              300     ; insert size
+        IS              250     ; insert size
         single_cell     true
         reference_genome  Delta.Bacteria/delta.fasta
-        LEN             5000000 ; total size
+        LEN             4500000 ; total size
 }
 
 

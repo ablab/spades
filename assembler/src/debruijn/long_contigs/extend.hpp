@@ -30,7 +30,7 @@ double EdgeLengthExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths&
 
 	double weight = 0;
 	for (auto lib = pairedInfo.begin(); lib != pairedInfo.end(); ++lib) {
-		weight += ExtentionWeight(g, path, lengths, e, *lib, edgesToExclude, forward, useWeightFunction, additionalGapLength);
+//		weight += ExtentionWeight(g, path, lengths, e, *lib, edgesToExclude, forward, useWeightFunction, additionalGapLength);
 	}
 	return weight;
 }
