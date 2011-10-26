@@ -33,6 +33,9 @@ void SubKMerSorter::runMemoryBasedSort() {
 }
 
 void SubKMerSorter::runFileBasedSort(std::string inputFile) {
+
+	if (!Globals::skip_sorting_subvectors) {
+
 	TIMEDLN("Splitting " << inputFile << " into subvector files.");
 	vector< ofstream* > ofs(tau_+1);
 	for (int j=0; j < tau_+1; ++j) {
@@ -85,6 +88,10 @@ void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 	        TIMEDLN("Process " << j << " (pid " << pids[j] << ") failed. Exiting.");
 	        exit(1);
 	    }
+	}
+
+	} else {
+		TIMEDLN("Skipping sorting subvectors, initializing priority queues from existing files.");
 	}
 
 	for (int j=0; j < tau_+1; ++j) {

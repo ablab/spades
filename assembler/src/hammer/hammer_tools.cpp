@@ -681,6 +681,7 @@ void getGlobalConfigParameters( const string & config_file ) {
 	Globals::paired_reads = cfg::get().paired_reads;
 	Globals::skip_to_clustering = cfg::get().skip_to_clustering;
 	Globals::skip_to_subvectors = cfg::get().skip_to_subvectors;
+	Globals::skip_sorting_subvectors = cfg::get().skip_sorting_subvectors;
 	Globals::unload_blob_before_merge = cfg::get().unload_blob_before_merge;
 	Globals::debug_output_clustering = cfg::get().debug_output_clustering;
 	Globals::debug_output_likelihood = cfg::get().debug_output_likelihood;

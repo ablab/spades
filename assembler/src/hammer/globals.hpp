@@ -32,6 +32,7 @@ struct Globals {
 	static int iteration_no;
 	static bool skip_to_clustering;
 	static bool skip_to_subvectors;
+	static bool skip_sorting_subvectors;
 	static bool unload_blob_before_merge;
 
 	static bool likelihood_e_step;

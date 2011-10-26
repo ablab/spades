@@ -79,6 +79,7 @@ int Globals::num_of_tmp_files = 500;
 int Globals::iteration_no = 0;
 bool Globals::skip_to_clustering = false;
 bool Globals::skip_to_subvectors = false;
+bool Globals::skip_sorting_subvectors = false;
 bool Globals::unload_blob_before_merge = false;
 
 bool Globals::likelihood_e_step = false;

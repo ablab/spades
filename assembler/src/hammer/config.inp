@@ -47,6 +47,7 @@ conserve_memory					1
 num_of_tmp_files				2
 skip_to_clustering				0
 skip_to_subvectors				1
+skip_sorting_subvectors			1
 unload_blob_before_merge		0
 
 ; debug output
