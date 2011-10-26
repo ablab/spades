@@ -441,30 +441,49 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig, PairedInfoInde
 	}
 	INFO("Totaly "<<CurI<<" edges in genome path");
 	vector<int> stats(10); 
+	vector<int> stats_d(10); 
+	int PosInfo = 0; 
+	int AllignedPI = 0;
+	int ExactDPI = 0;
+	int OurD = cfg::get().ds.IS - cfg::get().ds.RL; 
 	for (auto p_iter = ind.begin(), p_end_iter = ind.end(); p_iter != p_end_iter; ++p_iter) {
 		vector<PairInfo> pi = *p_iter;
 		for (size_t j = 0; j < pi.size(); j++) {
 			EdgeId left_edge = pi[j].first;
 			EdgeId right_edge = pi[j].second;
 			int dist = pi[j].d;
-			if (dist <-0.001) continue;
-			int best_d = 10000;
+			if (dist <0.001) continue;
+			int best_d = 100;
 			int best_t = 0;
+			PosInfo++;
 			DEBUG("PairInfo "<< gp.int_ids.str(left_edge)<<" -- "<< gp.int_ids.str(right_edge)<<" dist "<<dist);
+			bool ExactOnD = false;
 			for (size_t left_i = 0; left_i < inGenomeWay[left_edge].size(); left_i++)
 				for (size_t right_i = 0; right_i < inGenomeWay[right_edge].size(); right_i++){
 					if (best_d > abs(inGenomeWay[right_edge][right_i].second - inGenomeWay[left_edge][left_i].second -dist)){
 						best_d = abs(inGenomeWay[right_edge][right_i].second - inGenomeWay[left_edge][left_i].second - dist);
 						best_t = inGenomeWay[right_edge][right_i].first - inGenomeWay[left_edge][left_i].first;
 						DEBUG("best d "<<best_d);
+						if ((inGenomeWay[right_edge][right_i].second - inGenomeWay[left_edge][left_i].second - (int)gp.g.length(left_edge) <= OurD)&&(inGenomeWay[right_edge][right_i].second - inGenomeWay[left_edge][left_i].second + (int)gp.g.length(right_edge) >= OurD)) 
+							ExactOnD = true;
+						else ExactOnD = false;
 					}
 				}
-			DEBUG("tSep is " << best_t);
 			if (best_t > 5) best_t = 5;
-			stats[best_t]++;
+			if (best_d < 100) {
+				AllignedPI++;
+				stats[best_t]++;
+				if (ExactOnD) {
+					stats_d[best_t]++;
+					ExactDPI++;
+				}
+			}
+			
 		}
 	}
-	INFO("t-separated stats: 1 - "<<stats[1]<<" 2 - "<<stats[2]<<" 3 - "<<stats[3]<<" 4 - "<<stats[4]<<" >4 - "<<stats[5]);
+	INFO("Total positive pair info "<<PosInfo<< " alligned to genome "<< AllignedPI <<" with exact distance "<< ExactDPI);
+	INFO("t-separated stats Alligneg: 1 - "<<stats[1]<<" 2 - "<<stats[2]<<" 3 - "<<stats[3]<<" 4 - "<<stats[4]<<" >4 - "<<stats[5]);
+	INFO("t-separated stats Exact: 1 - "<<stats_d[1]<<" 2 - "<<stats_d[2]<<" 3 - "<<stats_d[3]<<" 4 - "<<stats_d[4]<<" >4 - "<<stats[5]);
 }
 
 
