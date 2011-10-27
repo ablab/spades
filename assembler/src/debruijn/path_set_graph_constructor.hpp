@@ -5,7 +5,7 @@
 #include "graph_pack.hpp"
 #include "utils.hpp"
 #include "omni/omni_utils.hpp"
-
+#include "verify.hpp"
 #include "omni/omni_tools.hpp"
 #include "omni/omnigraph.hpp"
 
@@ -24,6 +24,7 @@ typedef vector<EdgeId > Path;
 graph_pack& gp;
 const PairedInfoIndex<Graph>& pair_info_;
 graph_pack& new_gp;
+unordered_map<EdgeId, EdgeId> new_to_old;
 public:
 	PathSetGraphConstructor(graph_pack& gp, PairedInfoIndex<Graph>& clustered_index, graph_pack& new_gp): gp(gp), pair_info_(clustered_index), new_gp(new_gp)
 	{}
@@ -90,7 +91,7 @@ public:
 						break;
 					if (NeedToGlue(*iter, *iter2)) {
 						DEBUG("gluing");
-						real_ids.insert(make_pair(iter->id, iter2->id));
+						real_ids.insert(make_pair(iter->id, real_ids[iter2->id]));
 						new_gp.g.DeleteVertex(new_gp.int_ids.ReturnVertexId(iter->id));
 
 						was_glued = true;
@@ -108,7 +109,6 @@ public:
 		{
 			DEBUG(str(*iter, gp));
 		}
-		map<EdgeId, EdgeId> new_to_old;
 		map<EdgeId, double> weight_sums;
 		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
 		{
@@ -155,8 +155,10 @@ public:
 				DEBUG("low covered");
 			DEBUG ("path-set numero " << first.id<< " has "<< extends.size()<<"extensions: ");
 			for(size_t i = 0; i < extends.size(); i++) {
-				DEBUG("to pathset "<< extends[i].id << " weight "<< extends[i].weight);
+				DEBUG("to pathset "<< extends[i].id << " and vertex "<<real_ids[extends[i].id] << " weight "<< extends[i].weight);
 				VertexId new_end = new_gp.int_ids.ReturnVertexId(real_ids[extends[i].id]);
+				VERIFY(new_end != NULL);
+				VERIFY(real_ids[extends[i].id] == new_gp.int_ids.ReturnIntId(new_end));
 				DEBUG("adding edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge) <<" and coverage "<< gp.g.coverage(old_first_edge) << " * " << extends[i].weight / weight_sums[old_first_edge]);
 				bool flag = true;
 				vector<EdgeId> out_e = new_gp.g.OutgoingEdges(new_start);
@@ -174,7 +176,7 @@ public:
 					WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge) *   extends[i].weight / weight_sums[old_first_edge]));
 					new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
 					new_to_old.insert(make_pair(eid, old_first_edge));
-					DEBUG("count was "<< count);
+//					DEBUG("count was "<< count);
 					//		    omnigraph::WriteSimple(new_gp.g, tot_labeler_after, cfg::get().output_dir  + ToString(count)+".dot", "no_repeat_graph");
 					count ++ ;
 				}
@@ -188,6 +190,7 @@ public:
 				WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge]*/));
 				new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
 				new_to_old.insert(make_pair(eid, old_first_edge));
+
 				new_start = new_end;
 				count++;
 
@@ -209,8 +212,8 @@ public:
 
 						EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
 						WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge)));
-						new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
 						new_to_old.insert(make_pair(eid, old_first_edge));
+						new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
 						new_start = new_end;
 						count++;
 
@@ -275,7 +278,7 @@ public:
 						}
 					}
 					DEBUG("sum len"<< sum_len << " " << cfg::get().ds.IS);
-					if (sum_len > cfg::get().ds.IS  + K)
+					if (sum_len > cfg::get().ds.IS - cfg::get().rr.near_vertex)
 						glue = true;
 				}
 
@@ -283,6 +286,11 @@ public:
 			DEBUG ("result is" << glue);
 			return glue;
 		}
+	}
+
+
+	unordered_map<EdgeId, EdgeId> GetEdgeLabels(){
+		return new_to_old;
 	}
 
 };
