@@ -24,7 +24,7 @@ def read_read(infile):
 		line = infile.readline()
 
 	if not line:
-		return None, None, None
+		return id1, strand, read
 
 	infile.seek(infile.tell() - len(line))
 	
