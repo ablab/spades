@@ -741,13 +741,14 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	}
 
 	INFO("process global cheaters");
-	int my_s = 0;
+	/*int my_s = 0;
 	for( auto itcp = OldCopyCnt.begin(); itcp != OldCopyCnt.end(); ++itcp){
 		assert(itcp->second >= 0);
 		my_s += itcp->second;
 	}
 
 	assert (my_s == LiveNewEdges.size());
+	*/
 	if (rc_mode){
 		for (size_t i = 0; i<LiveNewEdges.size(); i++){
 			if (OldCopyCnt[LiveProtoEdges[i]] > 1){
@@ -760,7 +761,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 				if (tmp_ei_new != LiveNewEdges[i]) {
 					PairInfos conj_tmp = paired_di_data.GetEdgeInfos(tmp_ei);
 					for(size_t info_cj = 0; info_cj < conj_tmp.size(); info_cj ++ ){
-						INFO("Pi fi "<<new_IDs.str(conj_tmp[i].first)<<" to "<< new_IDs.str(tmp_ei_new));
+//						INFO("Pi fi "<<new_IDs.str(conj_tmp[i].first)<<" to "<< new_IDs.str(tmp_ei_new));
 						paired_di_data.ReplaceFirstEdge(conj_tmp[info_cj], tmp_ei_new);
 					}
 				}
@@ -889,6 +890,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 		INFO(" cheating_mode = " << cheating_mode);
 		bool changed = true;
 		map<int, VertexId> vertices;
+		int GraphCnt = 0;
 
 		while (changed) {
 			changed = false;
@@ -899,7 +901,6 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 			INFO(
 					"Having "<< vertices.size() << " paired vertices, trying to split");
 			RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
-			int GraphCnt = 0;
 
 			omnigraph::WriteSimple(
 					new_graph, TotLabAfter,
@@ -942,6 +943,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				DEBUG("Vertex "<< v_iter->first<< " resolved to "<< tcount);
 				sum_count += tcount;
 				if (tcount > 1) {
+					changed = true;
 					GraphCnt++;
 					omnigraph::WriteSimple(
 						new_graph, TotLabAfter, output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
