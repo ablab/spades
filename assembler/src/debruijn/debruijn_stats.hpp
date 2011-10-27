@@ -414,7 +414,9 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig, PairedInfoInde
 
 	map<Graph::EdgeId, vector<pair<int, int>>> inGenomeWay;
 	int CurI = 0;
+	int gaps = 0;
 	for (size_t i = 0; i < m_path1.size(); i++) {
+		bool new_edge_added = false;
 		EdgeId ei = m_path1[i].first;
 		MappingRange mr = m_path1[i].second;
 		int start = mr.initial_range.start_pos - mr.mapped_range.start_pos;
@@ -423,6 +425,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig, PairedInfoInde
 			tmp.push_back(make_pair(CurI, start));
 			inGenomeWay[ei] = tmp;
 			CurI++;
+			new_edge_added = true;
 			DEBUG("Edge "<<gp.int_ids.str(ei)<< " num "<< CurI<<" pos "<<start);
 		}
 		else {
@@ -430,16 +433,24 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig, PairedInfoInde
 				if (abs(start - inGenomeWay[ei][(inGenomeWay[ei].size()-1)].second)>50){
 					inGenomeWay[ei].push_back(make_pair(CurI, start));
 					CurI++;
+					new_edge_added = true;
+					DEBUG("Edge "<<gp.int_ids.str(ei)<< " num "<< CurI<<" pos "<<start);
 				}
 			}
 			else {
 				inGenomeWay[ei].push_back(make_pair(CurI, start));
 				CurI++;
+				new_edge_added = true;
+				DEBUG("Edge "<<gp.int_ids.str(ei)<< " num "<< CurI<<" pos "<<start);
 			}
 		}
-		
+		if (new_edge_added &&(i > 0)){
+			if (gp.g.EdgeStart(ei) != gp.g.EdgeEnd(m_path1[i - 1].first)) {
+				gaps++;
+			}
+		}
 	}
-	INFO("Totaly "<<CurI<<" edges in genome path");
+	INFO("Totaly "<<CurI<<" edges in genome path, with "<<gaps<< "not adjacent conequences");
 	vector<int> stats(10); 
 	vector<int> stats_d(10); 
 	int PosInfo = 0; 
