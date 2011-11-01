@@ -230,7 +230,7 @@ int main(int argc, char * argv[]) {
 		TIMEDLN("Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K);
 	}
 
-	if (Globals::change_n_to_random) {
+	if (Globals::change_n_to_random && !Globals::skip_to_clustering && !Globals::skip_to_subvectors && (Globals::skip_iterative < 0)) {
 		TIMEDLN("Preprocessing: change single Ns to As with quality 2");
 		if (Globals::paired_reads) {
 			pid_t pIDsubstN1 = vfork();
