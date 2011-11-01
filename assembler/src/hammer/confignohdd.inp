@@ -56,3 +56,4 @@ debug_output_likelihood 		0
 ; new, "better" clustering that might not work out
 likelihood_e_step				1
 subtract_simplex_volume			1
+change_n_to_random				1

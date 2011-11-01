@@ -83,6 +83,8 @@ void ProcessKmerHashFile( ifstream * inStream, ofstream * kmerno_file, 	hint_t &
  * fill in kmerno vector
  */
 void fillInKmersFromFile( const string & fname, vector<hint_t> *kmernos );
+void fillInSolidKmersFromFile( const string & fname, vector<KMerCount*> *kmers );
+void fillInStringMapFromFile( const string & fname, vector<KMerCount*> *kmernos );
 
 string getFilename( const string & dirprefix, const string & suffix );
 string getFilename( const string & dirprefix, int iter_count, const string & suffix );

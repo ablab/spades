@@ -58,10 +58,12 @@ struct hammer_config
 	bool skip_to_clustering;
 	bool skip_to_subvectors;
 	bool skip_sorting_subvectors;
+	int skip_iterative;
 	bool unload_blob_before_merge;
 
 	bool likelihood_e_step;
 	bool subtract_simplex_volume;
+	bool change_n_to_random;
 
 	bool debug_output_clustering;
 	bool debug_output_likelihood;

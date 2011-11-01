@@ -617,10 +617,29 @@ void fillInKmersFromFile( const string & fname, vector<hint_t> *kmernos ) {
 		kmernos->push_back(pos);
 	}
 	ifs.close();
+	// resorting in lexicographic order -- needed for easy search
+	// sort(kmernos->begin(), kmernos->end(), PositionKMer::compareKMersDirect);
+}
+
+void fillInSolidKmersFromFile( const string & fname, vector<KMerCount*> *kmers ) {
+	ifstream ifs(fname);
+	char buf[16000];
+	while (!ifs.eof()) {
+		ifs.getline(buf, 16000);
+		ifs.getline(buf, 16000);
+		hint_t pos; int cnt; double qual;
+		sscanf(buf, ">%lu  cnt=%u  tql=%lf", &pos, &cnt, &qual);
+		cout << "pos=" << pos << "\tcnt=" << cnt << "\tqual=" << qual << endl;
+		vector<hint_t>::const_iterator it_vec = lower_bound(Globals::kmernos->begin(), Globals::kmernos->end(), pos, PositionKMer::compareKMersDirect );
+		cout << "lower_bound=" << (it_vec - Globals::kmernos->begin()) << "  kmerssize=" << kmers->size() << endl;
+		if ( *it_vec == pos ) kmers->at(it_vec - Globals::kmernos->begin())->second.makeGoodForIterative();
+	}
+	ifs.close();
 
 	// resorting in lexicographic order -- needed for easy search
 	// sort(kmernos->begin(), kmernos->end(), PositionKMer::compareKMersDirect);
 }
+
 
 void dumpBlob( const string & fname ) {
 	ofstream ofs(fname);
@@ -685,7 +704,9 @@ void getGlobalConfigParameters( const string & config_file ) {
 	Globals::unload_blob_before_merge = cfg::get().unload_blob_before_merge;
 	Globals::debug_output_clustering = cfg::get().debug_output_clustering;
 	Globals::debug_output_likelihood = cfg::get().debug_output_likelihood;
+	Globals::skip_iterative = cfg::get().skip_iterative;
 	Globals::likelihood_e_step = cfg::get().likelihood_e_step;
 	Globals::subtract_simplex_volume = cfg::get().subtract_simplex_volume;
+	Globals::change_n_to_random = cfg::get().change_n_to_random;
 }
 

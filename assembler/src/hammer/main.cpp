@@ -38,6 +38,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 // file size
 #include <sys/stat.h>
 
@@ -80,10 +82,12 @@ int Globals::iteration_no = 0;
 bool Globals::skip_to_clustering = false;
 bool Globals::skip_to_subvectors = false;
 bool Globals::skip_sorting_subvectors = false;
+int Globals::skip_iterative = -1;
 bool Globals::unload_blob_before_merge = false;
 
 bool Globals::likelihood_e_step = false;
 bool Globals::subtract_simplex_volume = false;
+bool Globals::change_n_to_random = false;
 
 bool Globals::debug_output_clustering = false;
 bool Globals::debug_output_likelihood = false;
@@ -226,6 +230,52 @@ int main(int argc, char * argv[]) {
 		TIMEDLN("Starting work on " << readsFilename << " with " << nthreads << " threads, K=" << K);
 	}
 
+	if (Globals::change_n_to_random) {
+		TIMEDLN("Preprocessing: change single Ns to As with quality 2");
+		if (Globals::paired_reads) {
+			pid_t pIDsubstN1 = vfork();
+			if (pIDsubstN1 == 0) {
+				TIMEDLN("  [" << getpid() << "] Child process for substituting Ns in " << readsFilenameLeft << " starting.");
+				int exitcode = system((string("sed \'n;s/\\([ACGT]\\)N\\([ACGT]\\)/\\1A\\2/g;n;n\' ") + readsFilenameLeft + " > " + getFilename(Globals::working_dir, "reads.left.input")).c_str() );
+				if (exitcode != 0) {
+					TIMEDLN("  [" << getpid() << "] ERROR: finished with non-zero exit code " << exitcode);
+				}
+				_exit(0);
+			}
+			pid_t pIDsubstN2 = vfork();
+			if (pIDsubstN2 == 0) {
+				TIMEDLN("  [" << getpid() << "] Child process for substituting Ns in " << readsFilenameRight << " starting.");
+				int exitcode = system((string("sed \'n;s/\\([ACGT]\\)N\\([ACGT]\\)/\\1A\\2/g;n;n\' ") + readsFilenameRight + " > " + getFilename(Globals::working_dir, "reads.right.input")).c_str() );
+				if (exitcode != 0) {
+					TIMEDLN("  [" << getpid() << "] ERROR: finished with non-zero exit code " << exitcode);
+				}
+				_exit(0);
+			}
+			int childExitStatus;
+			waitpid(pIDsubstN1, &childExitStatus, 0);
+			waitpid(pIDsubstN2, &childExitStatus, 0);
+
+			readsFilenameLeft = getFilename(Globals::working_dir, "reads.left.input");
+			readsFilenameRight = getFilename(Globals::working_dir, "reads.right.input");
+			TIMEDLN("Single Ns changed, reads written to " << readsFilenameLeft << " and " << readsFilenameRight);
+		} else {
+			pid_t pIDsubstN = vfork();
+			if (pIDsubstN == 0) {
+				TIMEDLN("  [" << getpid() << "] Child process for substituting Ns in " << readsFilename << " starting.");
+				string newReads = getFilename(Globals::working_dir, "reads.input");
+				int exitcode = system((string("sed \'n;s/\\([ACGT]\\)N\\([ACGT]\\)/\\1A\\2/g;n;n\' ") + readsFilename + " > " + newReads).c_str() );
+				if (exitcode != 0) {
+					TIMEDLN("  [" << getpid() << "] ERROR: finished with non-zero exit code " << exitcode);
+				}
+				_exit(0);
+			}
+			int childExitStatus;
+			waitpid(pIDsubstN, &childExitStatus, 0);
+			readsFilename = getFilename(Globals::working_dir, "reads.input").data();
+			TIMEDLN("Single Ns changed, reads written to " << readsFilename);
+		}
+	}
+
 
 	// initialize subkmer positions
 	Globals::subKMerPositions = new std::vector<uint32_t>(tau + 2);
@@ -345,7 +395,7 @@ int main(int argc, char * argv[]) {
 
 		if (!readBlobAndKmers || iter_count > 0) {
 			if (Globals::conserve_memory) {
-				if (!Globals::skip_to_clustering && !Globals::skip_to_subvectors) {
+				if (!Globals::skip_to_clustering && !Globals::skip_to_subvectors && (Globals::skip_iterative < 0)) {
 					TIMEDLN("Splitting kmer instances into files.");
 					SplitToFiles(Globals::working_dir, iter_count);
 					TIMEDLN("Kmer instances split. Starting merge.");
@@ -419,7 +469,12 @@ int main(int argc, char * argv[]) {
 				ofkmers_bad.close();
 				delete skmsorter;
 				TIMEDLN("Finished clustering.");
-			} else {
+			} else if (Globals::conserve_memory && Globals::skip_iterative >= 0) {
+				TIMEDLN("Reading kmers from file");
+				fillInKmersFromFile( getFilename(Globals::working_dir, iter_count, "kmers.total.sorted"), &kmernos );
+				TIMEDLN("KMer indices filled, reading solid kmers.");
+
+			} else if (!Globals::conserve_memory) {
 				TIMEDLN("Starting subvectors sort.");
 				SubKMerSorter * skmsorter = new SubKMerSorter(kmers.size(),
 						&kmers, nthreads, tau,
@@ -448,7 +503,7 @@ int main(int argc, char * argv[]) {
 			TIMEDLN("K-mers hash written.");
 		}
 
-		if ( Globals::use_iterative_reconstruction ) {
+		if ( Globals::use_iterative_reconstruction && (Globals::skip_iterative < 0) ) {
 			if (Globals::conserve_memory) Globals::kmernos = &kmernos;
 			for ( int iter_no = 0; iter_no < Globals::max_reconstruction_iterations; ++iter_no ) {
 				ofstream ofs( getFilename(Globals::working_dir, iter_count, "kmers.iterative", iter_no) );
@@ -468,6 +523,10 @@ int main(int argc, char * argv[]) {
 				if ( res < 10 ) break;
 			}
 			TIMEDLN("Solid k-mers finalized.");
+		} else if (Globals::skip_iterative >= 0) {
+			TIMEDLN("Loading iterative results from " << getFilename(Globals::working_dir, iter_count, "goodkmers", Globals::skip_iterative));
+			fillInSolidKmersFromFile( getFilename(Globals::working_dir, iter_count, "goodkmers", Globals::skip_iterative), &kmers );
+			TIMEDLN("Iterative results loaded.");
 		}
 
 		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.

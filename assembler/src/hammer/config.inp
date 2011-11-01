@@ -48,6 +48,7 @@ num_of_tmp_files				2
 skip_to_clustering				0
 skip_to_subvectors				1
 skip_sorting_subvectors			1
+skip_iterative					1
 unload_blob_before_merge		0
 
 ; debug output
@@ -57,3 +58,4 @@ debug_output_likelihood			0
 ; new, "better" clustering that might not work out
 likelihood_e_step				1
 subtract_simplex_volume			1
+change_n_to_random				1
