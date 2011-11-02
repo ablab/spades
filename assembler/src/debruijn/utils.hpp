@@ -372,6 +372,7 @@ public:
 
 private:
 	const Graph& g_;
+	const IdTrackHandler<Graph>& int_ids_;
 	const Index& index_;
 	const KmerSubs& kmer_mapper_;
 
@@ -403,9 +404,9 @@ private:
 	}
 
 public:
-	ExtendedSequenceMapper(const Graph& g, const Index& index,
+	ExtendedSequenceMapper(const Graph& g, /*todo delete*/const IdTrackHandler<Graph>& int_ids, const Index& index,
 			const KmerSubs& kmer_mapper) :
-			g_(g), index_(index), kmer_mapper_(kmer_mapper) {
+			g_(g), int_ids_(int_ids), index_(index), kmer_mapper_(kmer_mapper) {
 	}
 
 	MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
@@ -420,6 +421,14 @@ public:
 			kmer = kmer << sequence[i];
 			ProcessKmer(kmer, i - k + 1, passed_edges, range_mapping);
 		}
+
+		//DEBUG
+//		for (size_t i = 0; i < passed_edges.size(); ++i) {
+//			cerr << int_ids_.ReturnIntId(passed_edges[i]) << " (" << range_mapping[i] << ")"<< "; ";
+//		}
+//		cerr << endl;
+		//DEBUG
+
 		return MappingPath<EdgeId>(passed_edges, range_mapping);
 	}
 };
@@ -436,6 +445,7 @@ public:
 
 private:
 	const Graph& g_;
+	const IdTrackHandler<Graph>& int_ids_;
 	const Index& index_;
 	const KmerSubs& kmer_mapper_;
 
@@ -463,11 +473,11 @@ private:
 
 	bool TryThread(const Kmer& kmer, size_t kmer_pos, vector<EdgeId> &passed,
 			RangeMappings& range_mappings) const {
-		range_mappings.back().initial_range.end_pos++;
 		EdgeId last_edge = passed.back();
 		size_t end_pos = range_mappings.back().mapped_range.end_pos;
 		if (end_pos < g_.length(last_edge)) {
 			if (g_.EdgeNucls(last_edge)[end_pos + k - 1] == kmer[k - 1]) {
+				range_mappings.back().initial_range.end_pos++;
 				range_mappings.back().mapped_range.end_pos++;
 				return true;
 			}
@@ -487,7 +497,7 @@ private:
 	}
 
 	bool Substitute(Kmer& kmer) const {
-		Kmer subs = kmer_mapper_.Substitute(subs);
+		Kmer subs = kmer_mapper_.Substitute(kmer);
 		if (subs != kmer) {
 			kmer = subs;
 			return true;
@@ -510,16 +520,19 @@ private:
 	}
 
 public:
-	NewExtendedSequenceMapper(const Graph& g, const Index& index,
+	NewExtendedSequenceMapper(const Graph& g, const IdTrackHandler<Graph>& int_ids, const Index& index,
 			const KmerSubs& kmer_mapper) :
-			g_(g), index_(index), kmer_mapper_(kmer_mapper) {
+			g_(g), int_ids_(int_ids), index_(index), kmer_mapper_(kmer_mapper) {
 	}
 
 	MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
 		vector<EdgeId> passed_edges;
 		RangeMappings range_mapping;
 
-		VERIFY(sequence.size() >= k);
+		if (sequence.size() < k) {
+			return MappingPath<EdgeId>();
+		}
+
 		Kmer kmer = sequence.start<k>() >> 0;
 		bool try_thread = false;
 		for (size_t i = k - 1; i < sequence.size(); ++i) {
@@ -527,6 +540,14 @@ public:
 			try_thread = ProcessKmer(kmer, i - k + 1, passed_edges,
 					range_mapping, try_thread);
 		}
+
+		//DEBUG
+//		for (size_t i = 0; i < passed_edges.size(); ++i) {
+//			cerr << int_ids_.ReturnIntId(passed_edges[i]) << " (" << range_mapping[i] << ")"<< "; ";
+//		}
+//		cerr << endl;
+		//DEBUG
+
 		return MappingPath<EdgeId>(passed_edges, range_mapping);
 	}
 };
@@ -722,14 +743,14 @@ double KmerCountProductWeight(const MappingRange& mr1,
  *
  * todo talk with Anton about simplification and speed-up of procedure with little quality loss
  */
-template<size_t k, class Graph, class Stream>
+template<size_t k, class Graph, class SequenceMapper, class Stream>
 class LatePairedIndexFiller {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef Seq<k> Kmer;
 	typedef boost::function<double(MappingRange, MappingRange)> WeightF;
 	const Graph& graph_;
-	const ExtendedSequenceMapper<k, Graph>& mapper_;
+	const SequenceMapper mapper_;
 	Stream& stream_;
 	WeightF weight_f_;
 
@@ -780,7 +801,7 @@ private:
 public:
 
 	LatePairedIndexFiller(const Graph &graph,
-			const ExtendedSequenceMapper<k, Graph>& mapper, Stream& stream
+			const SequenceMapper& mapper, Stream& stream
 			, WeightF weight_f) :
 			graph_(graph), mapper_(mapper), stream_(stream), weight_f_(weight_f) {
 

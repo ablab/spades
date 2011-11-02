@@ -47,10 +47,10 @@ void construct_graph(PairedReadStream& stream, conj_graph_pack& gp,
 	}
 
 	//todo extract everything connected with etalon to separate tool
-	if (cfg::get().paired_mode) {
-		FillEtalonPairedIndex<K>(gp.etalon_paired_index, gp.g, gp.index, gp.kmer_mapper,
-				gp.genome);
-	}
+//	if (cfg::get().paired_mode) {
+//		FillEtalonPairedIndex<K>(gp.etalon_paired_index, gp.g, gp.index, gp.kmer_mapper,
+//				gp.genome);
+//	}
 
 	//TODO:
 	//ProduceInfo<K>(gp.g, gp.index, labeler, gp.genome, cfg::get().output_dir + "edge_graph.dot", "edge_graph");
