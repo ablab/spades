@@ -146,12 +146,11 @@ void count_estimated_info_stats(conj_graph_pack& gp,
                 corrected_etalon_index.AddPairInfo(*point);
     }
      
-    DistanceEstimator<Graph> estimator(gp.g, paired_index, gp.int_ids,
+    DistanceEstimator<Graph> estimator(gp.g, corrected_etalon_index, gp.int_ids,
             cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
-            cfg::get().de.linkage_distance, cfg::get().de.max_distance);
-
+            0, 4);
     paired_info_index raw_clustered_index(gp.g);
-    estimator.Estimate(raw_clustered_index, 0, 3);
+    estimator.Estimate(raw_clustered_index);
 	data_printer.savePaired(cfg::get().output_dir + "etalon_paired_corrected",
 			raw_clustered_index);
     INFO("Correction's finished");
