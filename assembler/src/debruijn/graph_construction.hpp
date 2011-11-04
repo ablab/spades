@@ -71,12 +71,11 @@ template<size_t k>
 void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 		const Graph &g,
 		const EdgeIndex<k + 1, Graph>& index,
-		const KmerMapper<k+1, Graph>& kmer_mapper,
+		const KmerMapper<k + 1, Graph>& kmer_mapper,
 		size_t is, size_t rs,
 		const Sequence& genome) {
 	INFO("-----------------------------------------");
 	INFO("Counting etalon paired info");
-
 	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index, kmer_mapper,
 			is, rs, is * 0.1);
 	etalon_paired_info_counter.FillEtalonPairedInfo(genome,
