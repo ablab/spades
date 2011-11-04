@@ -1,4 +1,6 @@
 *.class
+*plot*
 data/
 *.prd
 *.grp
+distance_estimation*

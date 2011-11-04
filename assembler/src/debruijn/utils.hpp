@@ -217,6 +217,7 @@ public:
 		Kmer answer = kmer;
 		auto it = mapping_.find(answer);
 		while (it != mapping_.end()) {
+            VERIFY(it->first != it->second);
 			answer = (*it).second;
 			it = mapping_.find(answer);
 		}
