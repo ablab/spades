@@ -11,6 +11,7 @@
 #include <queue>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/format.hpp>
 #include <time.h>
 #include <sys/resource.h>
 #include <iomanip>
@@ -321,9 +322,10 @@ void print_time() {
 }
 
 void print_mem_usage() {
-	rusage ru;
-	getrusage(RUSAGE_SELF, &ru);
-	std::cout << "[mem = " << std::setw(7) << std::setprecision(2) << (ru.ru_maxrss / 1024.0) << "M ] ";
+	static size_t pid = getpid();
+	std::string str = (boost::format("pmap -d %d | grep writeable/private") % pid).str();
+	std::cout << "==== MEM USAGE ==== " << std::endl;
+	system(str.c_str());
 }
 
 void print_stats() {
