@@ -724,6 +724,8 @@ void getGlobalConfigParameters( const string & config_file ) {
 	Globals::skip_to_clustering = cfg::get().skip_to_clustering;
 	Globals::skip_to_subvectors = cfg::get().skip_to_subvectors;
 	Globals::skip_sorting_subvectors = cfg::get().skip_sorting_subvectors;
+	Globals::skip_cluster_merging = cfg::get().skip_cluster_merging;
+	Globals::hamming_class_buffer = cfg::get().hamming_class_buffer;
 	Globals::unload_blob_before_merge = cfg::get().unload_blob_before_merge;
 	Globals::debug_output_clustering = cfg::get().debug_output_clustering;
 	Globals::debug_output_likelihood = cfg::get().debug_output_likelihood;

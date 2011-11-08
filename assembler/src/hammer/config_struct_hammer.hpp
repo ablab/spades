@@ -58,7 +58,9 @@ struct hammer_config
 	bool skip_to_clustering;
 	bool skip_to_subvectors;
 	bool skip_sorting_subvectors;
+	bool skip_cluster_merging;
 	int skip_iterative;
+	int hamming_class_buffer;
 	bool unload_blob_before_merge;
 
 	bool likelihood_e_step;

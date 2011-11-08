@@ -45,11 +45,13 @@ use_true_likelihood			1
 ; latest developments in memory efficiency
 conserve_memory					1
 num_of_tmp_files				8
-skip_to_clustering				0
-skip_to_subvectors				0
-skip_sorting_subvectors			0
+skip_to_clustering				1
+skip_to_subvectors				1
+skip_sorting_subvectors			1
+skip_cluster_merging			1
 skip_iterative					-1
 unload_blob_before_merge		0
+hamming_class_buffer			10000
 
 ; debug output
 debug_output_clustering			0

@@ -660,6 +660,11 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 	
 	int effective_threads = min(nthreads_, tau_+1);
 	vector<unionFindClass *> uf(tau_ + 1);
+	vector<vector<int> > classes;
+
+	bool useFilesystem = (k_->size() == 0);
+
+	if (!Globals::skip_cluster_merging) {
 
 	TIMEDLN("Split kmer processing in " << effective_threads << " threads.");
 	#pragma omp parallel for shared(uf, skmsorter) num_threads(effective_threads)
@@ -678,7 +683,6 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 	unionFindClass * ufMaster;
 	ufMaster = (k_->size() == 0 ? new unionFindClass(v_->size()) : new unionFindClass(k_->size()) );
 	clusterMerge(uf, ufMaster);
-	vector<vector<int> > classes;
 	hint_t num_classes;
 	ufMaster->get_classes(classes);
 	num_classes = classes.size();
@@ -686,8 +690,6 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 	TIMEDLN("Merging finished. Centering begins.");
 
 	delete ufMaster; // no longer needed
-
-	bool useFilesystem = (k_->size() == 0);
 
 	if (!useFilesystem && Globals::debug_output_clustering) {
 		TIMEDLN("Writing down clusters as debug output.");
@@ -713,8 +715,14 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 		}
 		classes.clear();
 		ofs.close();
-
 		TIMEDLN("Clusters written. Reading k-mer information.");
+	}
+
+	} else {
+		TIMEDLN("Skipping subvectors entirely. Reading k-mer information");
+	}
+
+	if ( useFilesystem ) {
 		ifstream ifs( getFilename(Globals::working_dir, Globals::iteration_no, "kmers.total.sorted") );
 		char seq[K+10];
 		while (!ifs.eof()) {
@@ -747,15 +755,16 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 	vector< vector<int> > curClasses;
 	vector<int> cur_class;
 
-	size_t HAMMING_CLASS_BUFFER = 1000;
-	vector< vector< vector<int> > > blocksInPlace(HAMMING_CLASS_BUFFER);
+	vector< vector< vector<int> > > blocksInPlace(Globals::hamming_class_buffer);
 
-	while (cur_class_num < num_classes) {
+	while (!ifclass.eof()) {
 
 		curClasses.clear();
 
 		size_t i_nontriv = 0;
-		while (i_nontriv < HAMMING_CLASS_BUFFER && cur_class_num < num_classes) {
+		size_t cur_total_size = 0;
+		size_t orig_class_num = cur_class_num;
+		while (cur_total_size < (size_t)Globals::hamming_class_buffer && !ifclass.eof()) {
 			cur_class.clear();
 			if (useFilesystem) {
 				ifclass.getline(buf, 1024);
@@ -795,11 +804,12 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 			} else {
 				curClasses.push_back(cur_class);
 				++i_nontriv;
+				cur_total_size += cur_class.size();
 			}
 		}
-		//TIMEDLN("Processing " << i_nontriv << " nontrivial clusters from " << orig_class_num << " to " << cur_class_num << " out of  " << num_classes);
+		TIMEDLN("Processing " << i_nontriv << " nontrivial clusters with total size " << cur_total_size << " from " << orig_class_num << " to " << cur_class_num);
 
-		#pragma omp parallel for shared(blocksInPlace, classes) num_threads(nthreads_)
+		#pragma omp parallel for shared(blocksInPlace, curClasses) num_threads(nthreads_)
 		for (size_t i=0; i < i_nontriv; ++i) {
 			blocksInPlace[i].clear();
 			process_block_SIN(curClasses[i], blocksInPlace[i]);

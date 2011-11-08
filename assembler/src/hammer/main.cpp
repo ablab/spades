@@ -82,6 +82,8 @@ int Globals::iteration_no = 0;
 bool Globals::skip_to_clustering = false;
 bool Globals::skip_to_subvectors = false;
 bool Globals::skip_sorting_subvectors = false;
+bool Globals::skip_cluster_merging = false;
+int Globals::hamming_class_buffer = 10000;
 int Globals::skip_iterative = -1;
 bool Globals::unload_blob_before_merge = false;
 
