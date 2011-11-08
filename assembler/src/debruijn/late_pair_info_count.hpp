@@ -11,14 +11,14 @@ void late_pair_info_count(conj_graph_pack& gp,
 		paired_info_index& paired_index) {
 	string reads_filename_1 = cfg::get().input_dir + cfg::get().ds.first;
 	string reads_filename2 = cfg::get().input_dir + cfg::get().ds.second;
-
+	INFO("checking reads for pair info count");
 	checkFileExistenceFATAL(reads_filename_1);
 	checkFileExistenceFATAL(reads_filename2);
 
 	io::EasyReader<io::PairedRead> stream(
 			std::make_pair(reads_filename_1, reads_filename2),
 			cfg::get().ds.IS);
-
+	INFO("reads found");
 	exec_simplification(stream, gp, paired_index);
 
 	INFO("STAGE == Counting Late Pair Info");
