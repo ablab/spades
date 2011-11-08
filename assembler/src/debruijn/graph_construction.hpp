@@ -25,29 +25,31 @@ typedef io::ConvertingReaderWrapper UnitedStream;
 
 template<size_t k, class ReadStream>
 
-void FillPairedIndexWithReadCountMetric(const Graph &g,
+void FillPairedIndexWithReadCountMetric(const Graph &g, const IdTrackHandler<Graph>& int_ids,
 		const EdgeIndex<k + 1, Graph>& index
 		, const KmerMapper<k + 1, Graph>& kmer_mapper
 		, PairedInfoIndex<Graph>& paired_info_index , ReadStream& stream) {
 	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Counting paired info with read count weight");
-	ExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
-	LatePairedIndexFiller<k + 1, Graph, ReadStream> pif(g, mapper, stream, PairedReadCountWeight);
+	NewExtendedSequenceMapper<k + 1, Graph> mapper(g, int_ids, index, kmer_mapper);
+	LatePairedIndexFiller<k + 1, Graph, NewExtendedSequenceMapper<k + 1, Graph>, ReadStream> pif(g, mapper, stream, PairedReadCountWeight);
+//	ExtendedSequenceMapper<k + 1, Graph> mapper(g, int_ids, index, kmer_mapper);
+//	LatePairedIndexFiller<k + 1, Graph, ExtendedSequenceMapper<k + 1, Graph>, ReadStream> pif(g, mapper, stream, PairedReadCountWeight);
 	pif.FillIndex(paired_info_index);
 	INFO("Paired info with read count weight counted");
 }
 
 template<size_t k, class ReadStream>
-void FillPairedIndexWithProductMetric(const Graph &g,
+void FillPairedIndexWithProductMetric(const Graph &g, const IdTrackHandler<Graph>& int_ids,
 		const EdgeIndex<k + 1, Graph>& index
 		, const KmerMapper<k + 1, Graph>& kmer_mapper
 		, PairedInfoIndex<Graph>& paired_info_index , ReadStream& stream) {
 	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Counting paired info with product weight");
-	ExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
-	LatePairedIndexFiller<k + 1, Graph, ReadStream> pif(g, mapper, stream, KmerCountProductWeight);
+	ExtendedSequenceMapper<k + 1, Graph> mapper(g, int_ids, index, kmer_mapper);
+	LatePairedIndexFiller<k + 1, Graph, ExtendedSequenceMapper<k + 1, Graph>, ReadStream> pif(g, mapper, stream, KmerCountProductWeight);
 	pif.FillIndex(paired_info_index);
 	INFO("Paired info with product weight counted");
 }
@@ -71,12 +73,11 @@ template<size_t k>
 void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 		const Graph &g,
 		const EdgeIndex<k + 1, Graph>& index,
-		const KmerMapper<k+1, Graph>& kmer_mapper,
+		const KmerMapper<k + 1, Graph>& kmer_mapper,
 		size_t is, size_t rs,
 		const Sequence& genome) {
 	INFO("-----------------------------------------");
 	INFO("Counting etalon paired info");
-
 	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index, kmer_mapper,
 			is, rs, is * 0.1);
 	etalon_paired_info_counter.FillEtalonPairedInfo(genome,

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-function iterative_run
+function iterative_compilation
 {
-	echo "$NAME started"
+	echo "$NAME compilation started"
 
 	for i in $*
 	do
@@ -13,12 +13,26 @@ function iterative_run
 		echo "Compiling assembler for K="$i
 		make rd
 
-		echo "Running assembler for K="$i
-		./run rd | tee $LOG_DIR/"K$i.log"
+		cp build/release/debruijn/debruijn build/release/debruijn/debruijn$i
 
 	done
 
 	echo "$NAME finished"
+}
+
+function iterative_run
+{
+        echo "$NAME run started"
+
+        for i in $*
+        do
+
+                echo "Running assembler for K="$i
+                ./build/release/debruijn/debruijn$i | tee $LOG_DIR/"K$i.log"
+
+        done
+
+        echo "$NAME finished"
 }
 
 START=$(date +%m.%d_%H.%M.%S)
@@ -28,5 +42,6 @@ rm logs/latest
 ln -s $START logs/latest
 mkdir $LOG_DIR
 
+iterative_compilation $* | tee $LOG_DIR/"overall.log"
 iterative_run $* | tee $LOG_DIR/"overall.log"
 tail $LOG_DIR/"overall.log" | mail -s "$NAME finished" $(git config --get user.email)

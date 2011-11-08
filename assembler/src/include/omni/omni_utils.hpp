@@ -585,6 +585,11 @@ struct Range {
 	}
 };
 
+ostream& operator<<(ostream& os, const Range& range) {
+	os << "[" << range.start_pos << ", " << range.end_pos << "]";
+	return os;
+}
+
 struct MappingRange {
 	Range initial_range;
 	Range mapped_range;
@@ -593,6 +598,11 @@ struct MappingRange {
 		initial_range(initial_range), mapped_range(mapped_range) {
 	}
 };
+
+ostream& operator<<(ostream& os, const MappingRange& map_range) {
+	os << map_range.initial_range << " --> " << map_range.mapped_range;
+	return os;
+}
 
 template<typename ElementId>
 class MappingPath {
@@ -801,6 +811,7 @@ public:
 	}
 
 };
+
 template<class Graph>
 class PathReceiverCallback: public PathProcessor<Graph>::Callback {
 	typedef typename Graph::EdgeId EdgeId;
