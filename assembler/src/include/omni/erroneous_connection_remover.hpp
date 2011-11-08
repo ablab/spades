@@ -141,7 +141,7 @@ void Append(vector<T>& current, const vector<T>& to_append) {
 }
 
 template<class Graph>
-class RelativelyLowCoverageEdgeRemover {
+class TopologyBasedChimericEdgeRemover {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
@@ -152,7 +152,7 @@ class RelativelyLowCoverageEdgeRemover {
 	EdgeRemover<Graph>& edge_remover_;
 
 public:
-	RelativelyLowCoverageEdgeRemover(Graph& g, size_t max_length,
+	TopologyBasedChimericEdgeRemover(Graph& g, size_t max_length,
 			double coverage_gap, size_t neighbour_length_threshold, EdgeRemover<Graph>& edge_remover) :
 			g_(g), max_length_(max_length), coverage_gap_(coverage_gap), neighbour_length_threshold_(
 					neighbour_length_threshold), edge_remover_(edge_remover) {
@@ -196,6 +196,77 @@ public:
 //					g_.CompressVertex(start);
 //					g_.CompressVertex(end);
 //				}
+			}
+		}
+		omnigraph::Cleaner<Graph> cleaner(g_);
+		cleaner.Clean();
+	}
+};
+
+template<class Graph>
+class NewTopologyBasedChimericEdgeRemover {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	Graph& g_;
+	size_t max_length_;
+	size_t uniqueness_length_;
+	size_t plausibility_length_;
+
+	EdgeRemover<Graph>& edge_remover_;
+
+public:
+	NewTopologyBasedChimericEdgeRemover(Graph& g, size_t max_length,
+			size_t uniqueness_length, size_t plausibility_length, EdgeRemover<Graph>& edge_remover) :
+			g_(g), max_length_(max_length), uniqueness_length_(uniqueness_length), plausibility_length_(
+					plausibility_length), edge_remover_(edge_remover) {
+		VERIFY(max_length < plausibility_length);
+		VERIFY(uniqueness_length > plausibility_length);
+	}
+
+	bool CheckUniqueness(EdgeId e) {
+		return g_.length(e) >= uniqueness_length_;
+	}
+
+	bool ExistUnique(const vector<EdgeId>& edges) {
+		for (auto it = edges.begin(); it != edges.end(); ++it) {
+			if (CheckUniqueness(*it)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool CheckPlausibility(EdgeId e) {
+		return g_.length(e) >= plausibility_length_;
+	}
+
+	bool ExistPlausible(const vector<EdgeId>& edges) {
+		for (auto it = edges.begin(); it != edges.end(); ++it) {
+			if (CheckPlausibility(*it)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool CheckStart(EdgeId e) {
+		return ExistUnique(g_.IncomingEdges(g_.EdgeStart(e))) && ExistPlausible(g_.OutgoingEdges(g_.EdgeStart(e)));
+	}
+
+	bool CheckEnd(EdgeId e) {
+		return ExistUnique(g_.OutgoingEdges(g_.EdgeEnd(e))) && ExistPlausible(g_.IncomingEdges(g_.EdgeEnd(e)));
+	}
+
+	void RemoveEdges() {
+		LengthComparator<Graph> comparator(g_);
+		for (auto it = g_.SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
+			typename Graph::EdgeId e = *it;
+			if (g_.length(e) > max_length_) {
+				return;
+			}
+			if (CheckStart(e) || CheckEnd(e)) {
+				edge_remover_.DeleteEdge(e, false);
 			}
 		}
 		omnigraph::Cleaner<Graph> cleaner(g_);
