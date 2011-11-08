@@ -2,8 +2,8 @@
 
 sc_simplification
 {
-	;simplification mode: normal, cheating, chimeric, pair_info_aware
-	simpl_mode cheating
+	;simplification mode: normal, cheating, topology, chimeric, pair_info_aware
+	simpl_mode topology
 
 	; tip clipper:
 	tc
@@ -38,6 +38,14 @@ sc_simplification
 		coverage_gap				5.0
 		sufficient_neighbour_length	1000
 	}
+
+	; topology based erroneous connection connections remover
+	tec
+	{
+		max_length					100
+		uniqueness_length			5000
+		plausibility_length			200
+	}
 	
 	piec
 	{
@@ -52,8 +60,8 @@ sc_simplification
 
 usual_simplification
 {
-	;simplification mode: normal, cheating, chimeric, pair_info_aware
-	simpl_mode cheating
+	;simplification mode: normal, cheating, topology, chimeric, pair_info_aware
+	simpl_mode topology
 	
 	; tip clipper:
 	tc
@@ -89,6 +97,14 @@ usual_simplification
 		sufficient_neighbour_length	1000
 	}
 	
+	; topology based erroneous connection connections remover
+	tec
+	{
+		max_length					100
+		uniqueness_length			5000
+		plausibility_length			200
+	}
+
 	piec
 	{
 		max_length					100

@@ -160,25 +160,67 @@ void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
 
 template<class Graph>
 void FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
-	if (cfg::get().simp.simpl_mode
-			== debruijn_graph::simplification_mode::sm_cheating) {
-		INFO("Cheating removal of erroneous edges started");
-		size_t max_length = cfg::get().simp.cec.max_length;
-		double coverage_gap = cfg::get().simp.cec.coverage_gap;
-		size_t sufficient_neighbour_length =
-				cfg::get().simp.cec.sufficient_neighbour_length;
-		omnigraph::RelativelyLowCoverageEdgeRemover<Graph> erroneous_edge_remover(
-				g, max_length, coverage_gap, sufficient_neighbour_length,
-				edge_remover);
-		//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
-		//			max_length_div_K * g.k(), max_coverage);
-		erroneous_edge_remover.RemoveEdges();
-		INFO("Cheating removal of erroneous edges finished");
-	} else if (cfg::get().simp.simpl_mode
-			== debruijn_graph::simplification_mode::sm_chimeric) {
-		ChimericEdgesRemover<Graph> remover(g, 10, edge_remover);
-		remover.RemoveEdges();
+	using debruijn_graph::simplification_mode;
+	switch (cfg::get().simp.simpl_mode) {
+		case sm_cheating: {
+			INFO("Cheating removal of erroneous edges started");
+			size_t max_length = cfg::get().simp.cec.max_length;
+			double coverage_gap = cfg::get().simp.cec.coverage_gap;
+			size_t sufficient_neighbour_length =
+					cfg::get().simp.cec.sufficient_neighbour_length;
+			omnigraph::TopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
+					g, max_length, coverage_gap, sufficient_neighbour_length,
+					edge_remover);
+			//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
+			//			max_length_div_K * g.k(), max_coverage);
+			erroneous_edge_remover.RemoveEdges();
+			INFO("Cheating removal of erroneous edges finished");
+		} break;
+
+		case sm_topology: {
+			INFO("Removal of erroneous edges based on topology started");
+			omnigraph::NewTopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
+					g, cfg::get().simp.tec.max_length,
+					cfg::get().simp.tec.uniqueness_length,
+					cfg::get().simp.tec.plausibility_length,
+					edge_remover);
+			//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
+			//			max_length_div_K * g.k(), max_coverage);
+			erroneous_edge_remover.RemoveEdges();
+			INFO("Removal of erroneous edges based on topology started");
+		} break;
+
+		case sm_chimeric: {
+			INFO("Simple removal of chimeric edges based only on length started");
+			ChimericEdgesRemover<Graph> remover(g, 10, edge_remover);
+			remover.RemoveEdges();
+			INFO("Removal of chimeric edges finished");
+		} break;
+
+		default: break;
 	}
+//	if (cfg::get().simp.simpl_mode
+//			== debruijn_graph::simplification_mode::sm_cheating) {
+//		INFO("Cheating removal of erroneous edges started");
+//		size_t max_length = cfg::get().simp.cec.max_length;
+//		double coverage_gap = cfg::get().simp.cec.coverage_gap;
+//		size_t sufficient_neighbour_length =
+//				cfg::get().simp.cec.sufficient_neighbour_length;
+//		omnigraph::TopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
+//				g, max_length, coverage_gap, sufficient_neighbour_length,
+//				edge_remover);
+//		//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
+//		//			max_length_div_K * g.k(), max_coverage);
+//		erroneous_edge_remover.RemoveEdges();
+//		INFO("Cheating removal of erroneous edges finished");
+//	} else if (cfg::get().simp.simpl_mode
+//			== debruijn_graph::simplification_mode::sm_topology) {
+//
+//	} else if (cfg::get().simp.simpl_mode
+//			== debruijn_graph::simplification_mode::sm_chimeric) {
+//		ChimericEdgesRemover<Graph> remover(g, 10, edge_remover);
+//		remover.RemoveEdges();
+//	}
 	IsolatedEdgeRemover<Graph> isolated_edge_remover(g, cfg::get().simp.isolated_min_len);
 	isolated_edge_remover.RemoveIsolatedEdges();
 }
