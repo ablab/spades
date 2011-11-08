@@ -678,12 +678,12 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 	unionFindClass * ufMaster;
 	ufMaster = (k_->size() == 0 ? new unionFindClass(v_->size()) : new unionFindClass(k_->size()) );
 	clusterMerge(uf, ufMaster);
-	TIMEDLN("Merging finished. Centering begins.");
-
 	vector<vector<int> > classes;
 	hint_t num_classes;
 	ufMaster->get_classes(classes);
 	num_classes = classes.size();
+
+	TIMEDLN("Merging finished. Centering begins.");
 
 	delete ufMaster; // no longer needed
 

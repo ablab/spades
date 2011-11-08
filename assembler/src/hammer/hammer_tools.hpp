@@ -26,11 +26,13 @@ using namespace std;
 
 #define MAX_INT_64 1000000000000000000
 
-#define TIMEDLN(a) print_time(); cout << a << endl
+#define TIMEDLN(a) print_stats(); cout << a << endl
 
 double oct2phred(string qoct, int qvoffset);
 string encode3toabyte (const string & s);
 void print_time();
+void print_mem_usage();
+void print_stats();
 
 /// join two maps
 void join_maps(KMerStatMap & v1, const KMerStatMap & v2);

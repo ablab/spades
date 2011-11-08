@@ -352,11 +352,11 @@ int main(int argc, char * argv[]) {
 		if (Globals::conserve_memory) {
 			if (!Globals::paired_reads) {
 				readFileIntoBlob(readsFilename, curpos, cur_read, false);
-				cout << "  readsTotal=" << cur_read << "\tblob=" << curpos << endl;
+				TIMEDLN("  readsTotal=" << cur_read << "\tblob=" << curpos);
 				Globals::lastLeftNo = cur_read;
 				Globals::revNo = cur_read;
 				readFileIntoBlob(readsFilename, curpos, cur_read, true);
-				cout << "  readsTotalWithRevComp=" << cur_read << "\tblob=" << curpos << endl;
+				TIMEDLN("  readsTotalWithRevComp=" << cur_read << "\tblob=" << curpos);
 			} else {
 				readFileIntoBlob(readsFilenameLeft,  curpos, cur_read, false);
 				Globals::lastLeftNo = cur_read;

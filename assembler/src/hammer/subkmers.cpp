@@ -312,7 +312,7 @@ void SubKMerPQ::initPQ() {
 		}
 	} else {
 		for (size_t j = 0; j < fnames_.size(); ++j) {
-			cout << "  initializing SubKMerPQ with " <<fnames_[j].data() << endl;
+			//cout << "  initializing SubKMerPQ with " <<fnames_[j].data() << endl;
 			ifs_.push_back(new ifstream(fnames_[j].data()));
 			if (!ifs_[j]->eof()) {
 				hint_t nextel = getNextElementFromFile(j);

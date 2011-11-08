@@ -12,6 +12,7 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <time.h>
+#include <sys/resource.h>
 #include <iomanip>
 
 #include "read/ireadstream.hpp"
@@ -317,6 +318,26 @@ void print_time() {
 	time ( &rawtime );
 	ptm = gmtime( &rawtime );
 	cout << setfill('0') << "[ " << setw(2) << ptm->tm_hour << ":" << setw(2) << ptm->tm_min << ":" << setw(2) << ptm->tm_sec << " ] ";
+}
+
+void print_mem_usage() {
+	rusage ru;
+	getrusage(RUSAGE_SELF, &ru);
+	std::cout << "[mem = " << std::setw(7) << std::setprecision(2) << (ru.ru_maxrss / 1024.0) << "M ] ";
+}
+
+void print_stats() {
+	rusage ru;
+	getrusage(RUSAGE_SELF, &ru);
+	std::cout << "[";
+	tm * ptm = gmtime( &ru.ru_utime.tv_sec );
+	std::cout << " elapsed = " << setw(2) << setfill('0')  << ptm->tm_hour << ":" << setw(2) << setfill('0') << ptm->tm_min << ":" << setw(2) << setfill('0') << ptm->tm_sec;
+	if ( ru.ru_maxrss < 1024 * 1024 ) {
+		std::cout << " mem = " << setw(5) << setfill(' ') << (ru.ru_maxrss / 1024) << "M ";
+	} else {
+		std::cout << " mem = " << setw(5) << setprecision(1) << fixed << setfill(' ') << (ru.ru_maxrss / (1024.0 * 1024.0) ) << "G ";
+	}
+	std::cout << "] ";
 }
 
 struct PriorityQueueElement {
