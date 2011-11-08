@@ -678,6 +678,7 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 		}
 
 	}
+	delete skmsorter;
 	TIMEDLN("All split kmer threads finished. Starting merge.");
 	
 	unionFindClass * ufMaster;
@@ -725,6 +726,7 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 	if ( useFilesystem ) {
 		ifstream ifs( getFilename(Globals::working_dir, Globals::iteration_no, "kmers.total.sorted") );
 		char seq[K+10];
+		hint_t kmer_num = 0;
 		while (!ifs.eof()) {
 			hint_t pos;
 			KMerStat curstat;
@@ -736,9 +738,14 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 				curstat.qual.set(i, cur_qual);
 			}
 			k_->push_back(new KMerCount( PositionKMer(pos), curstat ) );
+			++kmer_num;
+			if ( kmer_num % 5000000 == 0 ) {
+				TIMEDLN("Read " << kmer_num << " k-mers.");
+			}
 		}
 		ifs.close();
 		TIMEDLN("K-mer information read. Starting subclustering in " << nthreads_ << " threads.");
+		TIMEDLN("Estimated: size=" << k_->size() << " mem=" << sizeof(KMerCount)*k_->size());
 	}
 
 	ifstream ifclass;

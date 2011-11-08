@@ -223,6 +223,9 @@ int main(int argc, char * argv[]) {
 		exitAfterWritingBlobAndKMers = cfg::get().exit_after_writing_blob_and_kmers;
 	}
 
+	TIMEDLN("sizeof: PositionKMer=" << sizeof(PositionKMer) << " QualBitSet=" << sizeof(QualBitSet) << " KMerStat=" << sizeof(KMerStat) << " KMerCount=" << sizeof(KMerCount));
+	TIMEDLN("");
+
 	string readsFilenameLeft, readsFilenameRight;
 	if (Globals::paired_reads) {
 		readsFilenameLeft = cfg::get().reads_left;
@@ -448,18 +451,26 @@ int main(int argc, char * argv[]) {
 			TIMEDLN("Clustering results read.");
 		} else {
 			if (Globals::conserve_memory) {
+				SubKMerSorter * skmsorter = NULL;
+
 				if (!Globals::skip_to_clustering) {
 					int childExitStatus;
 					waitpid(pIDsortKmerTotalsFile, &childExitStatus, 0);
 				} else {
 					TIMEDLN("Skipping straight to clustering.");
 				}
-				fillInKmersFromFile( getFilename(Globals::working_dir, iter_count, "kmers.total.sorted"), &kmernos );
-				TIMEDLN("KMer indices filled, starting subvector sorting.");
-				SubKMerSorter * skmsorter = new SubKMerSorter(kmernos.size(), &kmernos, nthreads, tau, SubKMerSorter::SorterTypeFileBasedStraight);
-				skmsorter->runSort(getFilename(Globals::working_dir, iter_count, "kmers.total.sorted"));
 
-				TIMEDLN("All subvector sorting done, starting clustering.");
+				fillInKmersFromFile( getFilename(Globals::working_dir, iter_count, "kmers.total.sorted"), &kmernos );
+
+				if (!Globals::skip_cluster_merging) {
+					TIMEDLN("KMer indices filled, starting subvector sorting.");
+					skmsorter = new SubKMerSorter(kmernos.size(), &kmernos, nthreads, tau, SubKMerSorter::SorterTypeFileBasedStraight);
+					skmsorter->runSort(getFilename(Globals::working_dir, iter_count, "kmers.total.sorted"));
+					TIMEDLN("All subvector sorting done, starting clustering.");
+				} else {
+					TIMEDLN("KMer indices filled, skipping straight to merging.");
+				}
+
 				KMerClustering kmc(&kmers, &kmernos, nthreads, tau);
 				// prepare the maps
 				ofstream ofkmersnum(getFilename(Globals::working_dir, iter_count, "kmers.num").data());
@@ -470,8 +481,8 @@ int main(int argc, char * argv[]) {
 				kmc.process(Globals::working_dir, skmsorter, &ofkmers, &ofkmers_bad);
 				ofkmers.close();
 				ofkmers_bad.close();
-				delete skmsorter;
 				TIMEDLN("Finished clustering.");
+
 			} else if (Globals::conserve_memory && Globals::skip_iterative >= 0) {
 				TIMEDLN("Reading kmers from file");
 				fillInKmersFromFile( getFilename(Globals::working_dir, iter_count, "kmers.total.sorted"), &kmernos );
