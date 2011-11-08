@@ -421,8 +421,6 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 		}
 		if ( !isGood ) continue;
 
-		//cout << "  it's good!" << endl;
-
 		const PositionRead & pr_rev = Globals::pr->at(Globals::revNo + readno);
 		string seq_rev = Globals::conserve_memory ?
 						string(Globals::blob	+ Globals::pr->at(Globals::revNo + readno).start(),	read_size)
@@ -438,8 +436,6 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 		} else {
 			pair<int, hint_t> it = make_pair(-1, BLOBKMER_UNDEFINED );
 			while ((it = pr_rev.nextKMerNo(it.first)).first > -1) {
-				//cout << "    found " << (pr_rev.start() + it.first) << ": "
-				//		<< PositionKMer(pr_rev.start() + it.first).str() << "\tvalue=" << it.second << "\ttotal=" << kmers.size() << endl;
 				if (kmers[it.second]->second.isGoodForIterative()) {
 					for (size_t j = it.first; j < it.first + K; ++j) covered_by_solid[j] = true;
 				}
@@ -574,6 +570,9 @@ void ProcessKmerHashFile( ifstream * inf, ofstream * outf, 	hint_t & kmer_num ) 
 			}
 		}
 	}
+
+	#pragma omp critical
+	{
 	for (KMerNoHashMap::iterator it = km.begin(); it != km.end(); ++it) {
 		(*outf) << it->second->first.start() << "\t"
 				<< string(Globals::blob + it->second->first.start(), K) << "\t"
@@ -585,6 +584,7 @@ void ProcessKmerHashFile( ifstream * inf, ofstream * outf, 	hint_t & kmer_num ) 
 		++kmer_num;
 	}
 	km.clear();
+	}
 }
 
 

@@ -8,7 +8,7 @@ reads_right		/home/snikolenko/data/head10000.fastq_2
 ; general parameters
 tau			1
 quality_offset		64
-num_threads		1
+num_threads		4
 num_iterations		1
 
 ; reading and writing intermediate data
@@ -44,11 +44,11 @@ use_true_likelihood			1
 
 ; latest developments in memory efficiency
 conserve_memory					1
-num_of_tmp_files				2
+num_of_tmp_files				8
 skip_to_clustering				0
-skip_to_subvectors				1
-skip_sorting_subvectors			1
-skip_iterative					1
+skip_to_subvectors				0
+skip_sorting_subvectors			0
+skip_iterative					-1
 unload_blob_before_merge		0
 
 ; debug output

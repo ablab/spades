@@ -398,9 +398,10 @@ int main(int argc, char * argv[]) {
 				if (!Globals::skip_to_clustering && !Globals::skip_to_subvectors && (Globals::skip_iterative < 0)) {
 					TIMEDLN("Splitting kmer instances into files.");
 					SplitToFiles(Globals::working_dir, iter_count);
-					TIMEDLN("Kmer instances split. Starting merge.");
+					TIMEDLN("Kmer instances split. Starting merge in " << nthreads << " threads.");
 					ofstream kmerno_file( getFilename(Globals::working_dir, iter_count, "kmers.total") );
 					hint_t kmer_num = 0;
+					#pragma omp parallel for shared(kmerno_file, kmer_num) num_threads(nthreads)
 					for ( int iFile=0; iFile < Globals::num_of_tmp_files; ++iFile ) {
 						ifstream inStream( getFilename( Globals::working_dir, iter_count, "tmp.kmers", iFile ) );
 						ProcessKmerHashFile( &inStream, &kmerno_file, kmer_num );
@@ -457,7 +458,7 @@ int main(int argc, char * argv[]) {
 				skmsorter->runSort(getFilename(Globals::working_dir, iter_count, "kmers.total.sorted"));
 
 				TIMEDLN("All subvector sorting done, starting clustering.");
-				KMerClustering kmc(&kmers, &kmernos, 1, tau);
+				KMerClustering kmc(&kmers, &kmernos, nthreads, tau);
 				// prepare the maps
 				ofstream ofkmersnum(getFilename(Globals::working_dir, iter_count, "kmers.num").data());
 				ofkmersnum << kmers.size() << endl;
@@ -490,9 +491,12 @@ int main(int argc, char * argv[]) {
 				ofstream ofkmers(getFilename(Globals::working_dir, iter_count,	"kmers.solid").data());
 				ofstream ofkmers_bad(getFilename(Globals::working_dir, iter_count,	"kmers.bad").data());
 				kmc.process(Globals::working_dir, skmsorter, &ofkmers, &ofkmers_bad);
+				TIMEDLN("Finished clustering. Closing and deleting");
 				ofkmers.close();
 				ofkmers_bad.close();
+				TIMEDLN("Finished clustering. Closed");
 				delete skmsorter;
+				TIMEDLN("Finished clustering. Deleted");
 				TIMEDLN("Finished clustering.");
 			}
 		}

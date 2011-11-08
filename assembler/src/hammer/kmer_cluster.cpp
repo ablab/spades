@@ -34,6 +34,14 @@ double KMerClustering::logLikelihoodKMer(const string & center, const KMerCount 
 	return res;
 }
 
+double KMerClustering::logLikelihoodSingleton(const KMerCount * x) {
+	double res = 0;
+	for (uint32_t i = 0; i < K; ++i) {
+		res += log( 1 - pow( 10, -x->second.qual[i] / 10.0 ) );
+	}
+	return res;
+}
+
 int KMerClustering::hamdistKMer(const PositionKMer & x, const PositionKMer & y, int tau) {
 	int dist = 0;
 	for (uint32_t i = 0; i < K; ++i) {
@@ -272,6 +280,13 @@ double KMerClustering::trueClusterLogLikelihood(const vector<int> & cl, const ve
 	}
 	if (Globals::subtract_simplex_volume) res -= logSimplexVolume(centers.size());
 	return res;
+}
+
+/**
+  * @return total log-likelihood of this particular clustering with real quality values
+  */
+double KMerClustering::trueSingletonLogLikelihood(const hint_t & kmind) {
+	return logLikelihoodSingleton((*k_)[kmind]);
 }
 
 
@@ -646,6 +661,7 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 	int effective_threads = min(nthreads_, tau_+1);
 	vector<unionFindClass *> uf(tau_ + 1);
 
+	TIMEDLN("Split kmer processing in " << effective_threads << " threads.");
 	#pragma omp parallel for shared(uf, skmsorter) num_threads(effective_threads)
 	for (int i = 0; i < tau_ + 1; i++) {
 		if ( k_->size() == 0 ) uf[i] = new unionFindClass(v_->size());
@@ -668,6 +684,7 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 	hint_t num_classes;
 	ufMaster->get_classes(classes);
 	num_classes = classes.size();
+
 	delete ufMaster; // no longer needed
 
 	bool useFilesystem = (k_->size() == 0);
@@ -713,128 +730,163 @@ void KMerClustering::process(string dirprefix, SubKMerSorter * skmsorter, ofstre
 			k_->push_back(new KMerCount( PositionKMer(pos), curstat ) );
 		}
 		ifs.close();
-		TIMEDLN("K-mer information read. Starting subclustering.");
+		TIMEDLN("K-mer information read. Starting subclustering in " << nthreads_ << " threads.");
 	}
 
 	ifstream ifclass;
 	if (useFilesystem) {
-		nthreads_ = 1;
+		// nthreads_ = 1;
 		ifclass.open( getFilename(Globals::working_dir, Globals::iteration_no, "hamming.classes") );
 	}
 
 	vector< vector< vector<int> > > blocks(nthreads_);
 
-	vector< vector< vector<int> > > blocksInPlace(nthreads_);
-
 	char buf[1024];
 
-	#pragma omp parallel for shared(blocksInPlace, classes) num_threads(nthreads_)
-	for (size_t i=0; i < num_classes; ++i) {
-		int n = omp_get_thread_num();
-		blocksInPlace[n].clear();
+	size_t cur_class_num = 0;
+	vector< vector<int> > curClasses;
+	vector<int> cur_class;
 
-		const vector<int> * curClass;
-		vector<int> myVector;
-		if (useFilesystem) {
-			ifclass.getline(buf, 1024);
-			size_t sizeClass; size_t classNum;
-			sscanf(buf, "class %lu size=%lu", &classNum, &sizeClass);
-			assert( i == classNum );
-			for (size_t j = 0; j < sizeClass; ++j) {
-				int elem;
+	size_t HAMMING_CLASS_BUFFER = 1000;
+	vector< vector< vector<int> > > blocksInPlace(HAMMING_CLASS_BUFFER);
+
+	while (cur_class_num < num_classes) {
+
+		curClasses.clear();
+
+		size_t i_nontriv = 0;
+		while (i_nontriv < HAMMING_CLASS_BUFFER && cur_class_num < num_classes) {
+			cur_class.clear();
+			if (useFilesystem) {
 				ifclass.getline(buf, 1024);
-				sscanf(buf, "%i", &elem);
-				myVector.push_back(elem);
-			}
-			curClass = &myVector;
-		} else curClass = &(classes[i]);
+				size_t sizeClass; size_t classNum;
+				sscanf(buf, "class %lu size=%lu", &classNum, &sizeClass);
+				for (size_t j = 0; j < sizeClass; ++j) {
+					int elem;
+					ifclass.getline(buf, 1024);
+					sscanf(buf, "%i", &elem);
+					cur_class.push_back(elem);
+				}
+			} else cur_class = classes[cur_class_num];
+			++cur_class_num;
 
-		process_block_SIN(*curClass, blocksInPlace[n]);
-		for (uint32_t m = 0; m < blocksInPlace[n].size(); ++m) {
-			if (blocksInPlace[n][m].size() == 0) continue;
-			if (blocksInPlace[n][m].size() == 1) {
-				if ( (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) > Globals::good_cluster_threshold) {
-					(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOOD;
-					if ( (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) > Globals::iterative_reconstruction_threshold) {
-						(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER;
+			// processing singletons immediately
+			if ( cur_class.size() == 1 ) {
+				if ( (1-(*k_)[cur_class[0]]->second.totalQual) > Globals::good_cluster_threshold) {
+					(*k_)[cur_class[0]]->second.changeto = KMERSTAT_GOOD;
+					if ( (1-(*k_)[cur_class[0]]->second.totalQual) > Globals::iterative_reconstruction_threshold) {
+						(*k_)[cur_class[0]]->second.changeto = KMERSTAT_GOODITER;
 					} else {
-						(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER_BAD;
+						(*k_)[cur_class[0]]->second.changeto = KMERSTAT_GOODITER_BAD;
 					}
-					#pragma omp critical
-					{
-					(*ofs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
-					       << " good singleton "
-					       << "  ind=" << blocksInPlace[n][m][0]
-					       << "  cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
-					       << "  tql=" << (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
-					}
+					(*ofs) << (*k_)[cur_class[0]]->first.str() << "\n>" << (*k_)[cur_class[0]]->first.start()
+							<< " good singleton "
+							<< "  ind=" << cur_class[0]
+							<< "  cnt=" << (*k_)[cur_class[0]]->second.count
+							<< "  tql=" << (1-(*k_)[cur_class[0]]->second.totalQual) << "\n";
 				} else {
-					(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_BAD;
-					#pragma omp critical
-					{
-					(*ofs_bad) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
-						   << " bad singleton "
-					       	   << "  ind=" << blocksInPlace[n][m][0]
-						   << "  cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
-						   << "  tql=" << (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
-					}
+					(*k_)[cur_class[0]]->second.changeto = KMERSTAT_BAD;
+					(*ofs_bad) << (*k_)[cur_class[0]]->first.str() << "\n>" << (*k_)[cur_class[0]]->first.start()
+							<< " bad singleton "
+							<< "  ind=" << cur_class[0]
+							<< "  cnt=" << (*k_)[cur_class[0]]->second.count
+							<< "  tql=" << (1-(*k_)[cur_class[0]]->second.totalQual) << "\n";
 				}
 			} else {
-				// we've got a nontrivial cluster; computing its overall quality
-				double cluster_quality = 1;
-				//cout << "subblock of " << blocksInPlace[n][m].size() << endl;
-				//cout << "  " << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\t" << 
-				//		(*k_)[blocksInPlace[n][m][0]]->second.totalQual << endl;
-				for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
-					//cout << "  " << (*k_)[blocksInPlace[n][m][j]]->first.str() << "\t" << 
-					//	(*k_)[blocksInPlace[n][m][j]]->second.totalQual << endl;
-					cluster_quality *= (*k_)[blocksInPlace[n][m][j]]->second.totalQual;
-				}
-				cluster_quality = 1-cluster_quality;
+				curClasses.push_back(cur_class);
+				++i_nontriv;
+			}
+		}
+		//TIMEDLN("Processing " << i_nontriv << " nontrivial clusters from " << orig_class_num << " to " << cur_class_num << " out of  " << num_classes);
 
-				if ( cluster_quality > Globals::good_cluster_threshold ||
-				     ( Globals::regular_threshold_for_correction && (cluster_quality > Globals::special_nonsingleton_threshold) ) ) {
-					(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOOD;
-					if ( cluster_quality > Globals::iterative_reconstruction_threshold ||
-					    (Globals::regular_threshold_for_correction && (cluster_quality > Globals::special_nonsingleton_threshold) )) {
-						(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER;
+		#pragma omp parallel for shared(blocksInPlace, classes) num_threads(nthreads_)
+		for (size_t i=0; i < i_nontriv; ++i) {
+			blocksInPlace[i].clear();
+			process_block_SIN(curClasses[i], blocksInPlace[i]);
+		}
+
+		for (size_t n=0; n < i_nontriv; ++n) {
+			for (uint32_t m = 0; m < blocksInPlace[n].size(); ++m) {
+				if (blocksInPlace[n][m].size() == 0) continue;
+				if (blocksInPlace[n][m].size() == 1) {
+					if ( (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) > Globals::good_cluster_threshold) {
+						(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOOD;
+						if ( (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) > Globals::iterative_reconstruction_threshold) {
+							(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER;
+						} else {
+							(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER_BAD;
+						}
+						//#pragma omp critical
+						{
+						(*ofs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
+							   << " good singleton "
+							   << "  ind=" << blocksInPlace[n][m][0]
+							   << "  cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
+							   << "  tql=" << (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
+						}
 					} else {
-						(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER_BAD;
-					}
-					#pragma omp critical
-					{
-					(*ofs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
-					       << " center clust=" << cluster_quality
-					       << " ind=" << blocksInPlace[n][m][0]
-					       << " cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
-					       << " tql=" << (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
+						(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_BAD;
+						//#pragma omp critical
+						{
+						(*ofs_bad) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
+							   << " bad singleton "
+								   << "  ind=" << blocksInPlace[n][m][0]
+							   << "  cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
+							   << "  tql=" << (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
+						}
 					}
 				} else {
-					(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_BAD;
-					#pragma omp critical
-					{
-					(*ofs_bad) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
-						   << " center of bad cluster clust=" << cluster_quality
-					  	   << " ind=" << blocksInPlace[n][m][0]
-						   << " cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
-						   << " tql=" << (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
+					// we've got a nontrivial cluster; computing its overall quality
+					double cluster_quality = 1;
+					for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
+						cluster_quality *= (*k_)[blocksInPlace[n][m][j]]->second.totalQual;
 					}
-				}
-				for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
-					(*k_)[blocksInPlace[n][m][j]]->second.changeto = blocksInPlace[n][m][0];
-					#pragma omp critical
-					{
-					(*ofs_bad) << (*k_)[blocksInPlace[n][m][j]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][j]]->first.start()
-						   << " part of cluster " << (*k_)[blocksInPlace[n][m][0]]->first.start() << " clust=" << cluster_quality
-					           << " ind=" << blocksInPlace[n][m][j]
-						   << " cnt=" << (*k_)[blocksInPlace[n][m][j]]->second.count
-						   << " tql=" << (1-(*k_)[blocksInPlace[n][m][j]]->second.totalQual) << "\n";
+					cluster_quality = 1-cluster_quality;
+
+					if ( cluster_quality > Globals::good_cluster_threshold ||
+						 ( Globals::regular_threshold_for_correction && (cluster_quality > Globals::special_nonsingleton_threshold) ) ) {
+						(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOOD;
+						if ( cluster_quality > Globals::iterative_reconstruction_threshold ||
+							(Globals::regular_threshold_for_correction && (cluster_quality > Globals::special_nonsingleton_threshold) )) {
+							(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER;
+						} else {
+							(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER_BAD;
+						}
+						//#pragma omp critical
+						{
+						(*ofs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
+							   << " center clust=" << cluster_quality
+							   << " ind=" << blocksInPlace[n][m][0]
+							   << " cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
+							   << " tql=" << (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
+						}
+					} else {
+						(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_BAD;
+						//#pragma omp critical
+						{
+						(*ofs_bad) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
+							   << " center of bad cluster clust=" << cluster_quality
+							   << " ind=" << blocksInPlace[n][m][0]
+							   << " cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
+							   << " tql=" << (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
+						}
+					}
+					for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
+						(*k_)[blocksInPlace[n][m][j]]->second.changeto = blocksInPlace[n][m][0];
+						#pragma omp critical
+						{
+						(*ofs_bad) << (*k_)[blocksInPlace[n][m][j]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][j]]->first.start()
+							   << " part of cluster " << (*k_)[blocksInPlace[n][m][0]]->first.start() << " clust=" << cluster_quality
+								   << " ind=" << blocksInPlace[n][m][j]
+							   << " cnt=" << (*k_)[blocksInPlace[n][m][j]]->second.count
+							   << " tql=" << (1-(*k_)[blocksInPlace[n][m][j]]->second.totalQual) << "\n";
+						}
 					}
 				}
 			}
 		}
 	}
 	if (useFilesystem) { ifclass.close(); }
-	TIMEDLN("Centering finished.");	
+	TIMEDLN("Centering finished.");
 }
 
