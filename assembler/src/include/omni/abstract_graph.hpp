@@ -1,6 +1,7 @@
 #pragma once
 
 #include "abstract_editable_graph.hpp"
+#include "ID_track_handler.hpp"
 
 namespace omnigraph {
 template<typename VertexIdT, typename EdgeIdT, class DataMasterT,
@@ -21,14 +22,21 @@ protected:
 	typedef set<VertexId> Vertices;
 
 	Vertices vertices_;
+
+	IdTrackHandler<AbstractGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> int_ids_;
+
 public:
 	AbstractGraph(HandlerApplier<VertexId, EdgeId>* applier,
 			const DataMaster& master) :
-		base(applier, master) {
+		base(applier, master), int_ids_(*this){
 	}
 
 	virtual ~AbstractGraph() {
 		TRACE("~AbstractGraph");
+	}
+
+	const IdTrackHandler<AbstractGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> &int_ids() {
+		return int_ids_;
 	}
 
 	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const {
