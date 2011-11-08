@@ -79,7 +79,8 @@ void SplitToFiles(string dirprefix, int iter_count);
  * process a single file with kmers divided by hashes
  * output results into kmerno_file
  */
-void ProcessKmerHashFile( ifstream * inStream, ofstream * kmerno_file, 	hint_t & kmer_num );
+void ProcessKmerHashFile( ifstream * inStream, KMerNoHashMap & km );
+void PrintProcessedKmerHashFile(ofstream * outf, hint_t & kmer_num, KMerNoHashMap & km );
 
 /**
  * fill in kmerno vector

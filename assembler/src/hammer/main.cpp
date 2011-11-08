@@ -406,11 +406,27 @@ int main(int argc, char * argv[]) {
 					TIMEDLN("Kmer instances split. Starting merge in " << nthreads << " threads.");
 					ofstream kmerno_file( getFilename(Globals::working_dir, iter_count, "kmers.total") );
 					hint_t kmer_num = 0;
-					#pragma omp parallel for shared(kmerno_file, kmer_num) num_threads(nthreads)
-					for ( int iFile=0; iFile < Globals::num_of_tmp_files; ++iFile ) {
-						ifstream inStream( getFilename( Globals::working_dir, iter_count, "tmp.kmers", iFile ) );
-						ProcessKmerHashFile( &inStream, &kmerno_file, kmer_num );
+
+					for ( int iFile=0; iFile < Globals::num_of_tmp_files;  ) {
+
+						std::vector<KMerNoHashMap> khashmaps(nthreads);
+
+						#pragma omp parallel for shared(kmerno_file, kmer_num) num_threads(nthreads)
+						for ( int j = 0; j< nthreads; ++j) {
+							if ( j + iFile > Globals::num_of_tmp_files) continue;
+							ifstream inStream( getFilename( Globals::working_dir, iter_count, "tmp.kmers", iFile+j ) );
+							ProcessKmerHashFile( &inStream, khashmaps[j] );
+						}
+
+						for ( int j = 0; j< nthreads; ++j) {
+							if ( j + iFile > Globals::num_of_tmp_files) continue;
+							PrintProcessedKmerHashFile( &kmerno_file, kmer_num, khashmaps[j] );
+						}
+
+						iFile += nthreads;
+
 					}
+
 					kmerno_file.close();
 					pIDsortKmerTotalsFile = vfork();
 					if (pIDsortKmerTotalsFile == 0) {

@@ -565,8 +565,7 @@ void SplitToFiles(string dirprefix, int iter_count) {
 	}
 }
 
-void ProcessKmerHashFile( ifstream * inf, ofstream * outf, 	hint_t & kmer_num ) {
-	KMerNoHashMap km;
+void ProcessKmerHashFile( ifstream * inf, KMerNoHashMap & km ) {
 	char buf[1024]; // a line contains two numbers, 1024 should be enough for everybody
 	uint64_t pos; double prob;
 	while (!inf->eof()) {
@@ -593,9 +592,9 @@ void ProcessKmerHashFile( ifstream * inf, ofstream * outf, 	hint_t & kmer_num ) 
 			}
 		}
 	}
+}
 
-	#pragma omp critical
-	{
+void PrintProcessedKmerHashFile( ofstream * outf, hint_t & kmer_num, KMerNoHashMap & km ) {
 	for (KMerNoHashMap::iterator it = km.begin(); it != km.end(); ++it) {
 		(*outf) << it->second->first.start() << "\t"
 				<< string(Globals::blob + it->second->first.start(), K) << "\t"
@@ -607,7 +606,6 @@ void ProcessKmerHashFile( ifstream * inf, ofstream * outf, 	hint_t & kmer_num ) 
 		++kmer_num;
 	}
 	km.clear();
-	}
 }
 
 
