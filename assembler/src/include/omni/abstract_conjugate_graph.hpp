@@ -29,7 +29,10 @@ private:
 	typedef PairedEdge<DataMaster>* EdgeId;
 	typedef typename DataMaster::VertexData VertexData;
 
-	friend class AbstractConjugateGraph<DataMaster> ;
+	friend class AbstractGraph<PairedVertex<DataMaster>*, PairedEdge<DataMaster>*
+	, DataMaster, typename set<PairedVertex<DataMaster>*>::const_iterator>;
+	friend class AbstractConjugateGraph<DataMaster>;
+	friend class PairedEdge<DataMaster>;
 
 	vector<EdgeId> outgoing_edges_;
 
@@ -69,6 +72,10 @@ private:
 			result[i] = result[i]->conjugate();
 		}
 		return result;
+	}
+
+	const vector<EdgeId> IncomingEdgesCount() const {
+		return (conjugate_->OutgoingEdges()).size();
 	}
 
 	PairedVertex(VertexData data) :
@@ -120,7 +127,9 @@ private:
 	typedef PairedVertex<DataMaster>* VertexId;
 	typedef PairedEdge<DataMaster>* EdgeId;
 	typedef typename DataMaster::EdgeData EdgeData;
-	friend class AbstractConjugateGraph<DataMaster> ;
+	friend class AbstractGraph<PairedVertex<DataMaster>*, PairedEdge<DataMaster>*
+	, DataMaster, typename set<PairedVertex<DataMaster>*>::const_iterator>;
+	friend class AbstractConjugateGraph<DataMaster>;
 	//todo unfriend
 	friend class PairedVertex<DataMaster> ;
 	VertexId end_;
@@ -143,6 +152,10 @@ private:
 
 	VertexId end() const {
 		return end_;
+	}
+
+	VertexId start() const {
+		return conjugate_->end()->conjugate();
 	}
 
 	void set_conjugate(EdgeId conjugate) {
@@ -177,9 +190,6 @@ public:
 	typedef typename base::VertexIterator VertexIterator;
 
 private:
-	typedef set<VertexId> Vertices;
-
-	Vertices vertices_;
 
 	VertexId HiddenAddVertex(const VertexData &data1, const VertexData &data2) {
 		VertexId v1 =
@@ -188,8 +198,8 @@ private:
 				new PairedVertex<DataMaster> (data2);
 		v1->set_conjugate(v2);
 		v2->set_conjugate(v1);
-		vertices_.insert(v1);
-		vertices_.insert(v2);
+		this->vertices_.insert(v1);
+		this->vertices_.insert(v2);
 		TRACE("Vettices " << v1 << "and " << v2 << " added");
 		return v1;
 	}
@@ -203,11 +213,11 @@ private:
 		TRACE("ab_conj DeleteVertex "<<v);
 		VertexId conjugate = v->conjugate();
 		TRACE("ab_conj DeleteVertex "<<v<<" and conj "<<conjugate);
-		vertices_.erase(v);
+		this->vertices_.erase(v);
 		TRACE("ab_conj delete "<<v);
 		delete v;
 		TRACE("ab_conj erase "<<conjugate);
-		vertices_.erase(conjugate);
+		this->vertices_.erase(conjugate);
 		TRACE("ab_conj delete "<<conjugate);
 		delete conjugate;
 		TRACE("ab_conj delete FINISHED");
@@ -215,7 +225,7 @@ private:
 	}
 
 	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-		VERIFY(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
+		VERIFY(this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
 		EdgeId result = AddSingleEdge(v1, v2, data);
 		if (this->master().isSelfConjugate(data)) {
 			result->set_conjugate(result);
@@ -306,70 +316,6 @@ public:
 			ForceDeleteVertex(*it);
 		}
 		TRACE("~AbstractConjugateGraph ok")
-	}
-
-	virtual VertexIterator begin() const {
-		return vertices_.begin();
-	}
-
-	virtual VertexIterator end() const {
-		return vertices_.end();
-	}
-
-	size_t size() const {
-		return vertices_.size();
-	}
-
-
-	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const {
-		return v->OutgoingEdges();
-	}
-
-	virtual const vector<EdgeId> IncomingEdges(VertexId v) const {
-		return v->IncomingEdges();
-	}
-
-	virtual size_t OutgoingEdgeCount(VertexId v) const {
-		return v->OutgoingEdgeCount();
-	}
-//
-//	virtual void CheckGraph() {
-//		double a = 0;
-//		for(auto it = this->SmartVertexBegin(); !it.IsEnd(); ++it) {
-//			vector<EdgeId> vec = OutgoingEdges(*it);
-//			for(size_t i = 0; i < vec.size(); i++) {
-//				a += length(conjugate(vec[i]));
-//			}
-//			vec = IncomingEdges(*it);
-//			for(size_t i = 0; i < vec.size(); i++) {
-//				a += length(conjugate(vec[i]));
-//			}
-//		}
-//		cout << a << endl;
-//	}
-
-	virtual size_t IncomingEdgeCount(VertexId v) const {
-		return v->conjugate()->OutgoingEdgeCount();
-	}
-
-	virtual vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) const {
-		return v->OutgoingEdgesTo(u);
-	}
-
-	virtual const EdgeData& data(EdgeId edge) const {
-		return edge->data();
-	}
-
-	virtual const VertexData& data(VertexId v) const {
-		return v->data();
-	}
-
-	virtual VertexId EdgeStart(EdgeId edge) const {
-		return edge->conjugate()->end()->conjugate();
-	}
-
-	virtual VertexId EdgeEnd(EdgeId edge) const {
-		return edge->end();
 	}
 
 	VertexId conjugate(VertexId v) const {
