@@ -228,13 +228,14 @@ public:
 		return g_.length(e) >= uniqueness_length_;
 	}
 
-	bool ExistUnique(const vector<EdgeId>& edges) {
-		for (auto it = edges.begin(); it != edges.end(); ++it) {
-			if (CheckUniqueness(*it)) {
-				return true;
-			}
-		}
-		return false;
+	bool Unique(const vector<EdgeId>& edges) {
+		return edges.size() == 1 && CheckUniqueness(*edges.begin());
+//		for (auto it = edges.begin(); it != edges.end(); ++it) {
+//			if (CheckUniqueness(*it)) {
+//				return true;
+//			}
+//		}
+//		return false;
 	}
 
 	bool CheckPlausibility(EdgeId e) {
@@ -251,11 +252,11 @@ public:
 	}
 
 	bool CheckStart(EdgeId e) {
-		return ExistUnique(g_.IncomingEdges(g_.EdgeStart(e))) && ExistPlausible(g_.OutgoingEdges(g_.EdgeStart(e)));
+		return Unique(g_.IncomingEdges(g_.EdgeStart(e))) && ExistPlausible(g_.OutgoingEdges(g_.EdgeStart(e)));
 	}
 
 	bool CheckEnd(EdgeId e) {
-		return ExistUnique(g_.OutgoingEdges(g_.EdgeEnd(e))) && ExistPlausible(g_.IncomingEdges(g_.EdgeEnd(e)));
+		return Unique(g_.OutgoingEdges(g_.EdgeEnd(e))) && ExistPlausible(g_.IncomingEdges(g_.EdgeEnd(e)));
 	}
 
 	void RemoveEdges() {
