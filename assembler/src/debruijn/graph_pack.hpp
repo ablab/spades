@@ -66,8 +66,8 @@ struct nonconj_graph_pack {
 	, clustered_index (g)
 	{
 		fs::path conv_folder = fs::path(cfg::get().output_root) / "temp_conversion";
-		mkdir(conv_folder.string().c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
-
+		make_dir(conv_folder.string());
+		
 		fs::path p = conv_folder / "conj_graph";
 
 		// todo: make printGraph const to its arguments
@@ -82,7 +82,7 @@ struct nonconj_graph_pack {
 
 		scanNCGraph<graph_t>(g, int_ids, p.string(), 0, edge_pos, 0, &clustered_index);
 
-		rmdir(conv_folder.string().c_str());
+		remove_all(conv_folder);
 	}
 };
 

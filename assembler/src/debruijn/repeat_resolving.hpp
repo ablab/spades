@@ -29,8 +29,7 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 	TRACE("deleted handler created");
 	RepeatResolver<Graph> repeat_resolver(g, old_IDs, 0, info, edges_pos,
 			new_graph, new_IDs, edges_pos_new, tmp_deleted_handler, LabelsAfter);
-	mkdir((output_folder).c_str(),
-			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	make_dir(output_folder);
 	unordered_map<typename Graph::EdgeId, typename Graph::EdgeId> edge_labels =
 			repeat_resolver.GetEdgeLabels();
 	LabelsAfter.FillLabels(edge_labels);
@@ -49,8 +48,7 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 //
 //	string save_resolving_history = ConstructComponentName(
 //			save_to_dir + "/resolve", component_id);
-//	mkdir(save_resolving_history.c_str(),
-//			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+//	make_dir(save_resolving_history);
 //
 //	NCGraph new_graph(k);
 //	IdTrackHandler<NCGraph> NewIntIds(new_graph);
@@ -114,8 +112,7 @@ void ConjugateResolveOneComponent(const string& load_from_dir, const string& sav
 
 	string save_resolving_history = ConstructComponentName(
 			save_to_dir + "/resolve", component_id);
-	mkdir(save_resolving_history.c_str(),
-			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	make_dir(save_resolving_history);
 
 	Graph new_graph(k);
 	IdTrackHandler<Graph> NewIntIds(new_graph);

@@ -245,7 +245,7 @@ void WriteGraphComponentsAlongGenome(const Graph& g,
 			kmer_mapper);
 	MappingPath<EdgeId> path2 = NewFindGenomePath<k>(!genome, g, int_ids, index,
 			kmer_mapper);
-	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	make_dir(folder);
 	WriteComponentsAlongGenome(g, labeler, folder + file_name, graph_name,
 			split_edge_length, path1, path2);
 }
@@ -273,7 +273,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 	Path<typename Graph::EdgeId> path2 = FindGenomePath<k>(!gp.genome, gp.g,
 			gp.index);
 
-	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	make_dir(folder);
 	DetailedWriteToDot(gp.g, labeler, folder + file_name, graph_name, path1,
 			path2);
 	WriteComponents(gp.g, labeler, folder + file_name, graph_name,
@@ -293,7 +293,7 @@ const string& folder, const string &file_name,
 const string &graph_name, size_t split_edge_length) {
 	Path<typename Graph::EdgeId> path1 = FindGenomePath<k>(genome, g, index);
 	Path<typename Graph::EdgeId> path2 = FindGenomePath<k>(!genome, g, index);
-	mkdir(folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	make_dir(folder);
 	WriteComponents(g, labeler, folder + file_name, graph_name,
 			split_edge_length, path1, path2);
 
@@ -366,8 +366,7 @@ void OutputSingleFileContigs(NonconjugateDeBruijnGraph& g,
 	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_dir);
 	int n = 0;
-	mkdir(contigs_output_dir.c_str(),
-			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	make_dir(contigs_output_dir);
 	char n_str[20];
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		sprintf(n_str, "%d.fa", n);
@@ -386,8 +385,7 @@ void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
 	INFO("-----------------------------------------");
 	INFO("Outputting contigs to " << contigs_output_dir);
 	int n = 0;
-	mkdir(contigs_output_dir.c_str(),
-			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	make_dir(contigs_output_dir);
 	char n_str[20];
 	set<ConjugateDeBruijnGraph::EdgeId> edges;
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {

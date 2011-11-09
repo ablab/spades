@@ -366,7 +366,7 @@ void component_statistics(graph_pack & conj_gp, int component_id,
 			+ graph_name;
 	//component output
 	string table_name = cfg::get().output_dir + "graph_components/tables/";
-	mkdir(table_name.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	make_dir(table_name);
 	table_name += graph_name;
 	set<typename graph_pack::graph_t::EdgeId> incoming_edges;
 	set<typename graph_pack::graph_t::EdgeId> outgoing_edges;
@@ -467,8 +467,7 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 
 	string resolved_name = cfg::get().output_dir + "resolve_components"
 			+ "/resolve_" + graph_name + "/";
-	mkdir(resolved_name.c_str(),
-			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	make_dir(resolved_name);
 	process_resolve_repeats(conj_gp, clustered_index, resolved_gp, graph_name,
 			sub_dir, false);
 }
@@ -493,8 +492,7 @@ void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 
 	string resolved_name = cfg::get().output_dir + "resolve_components"
 			+ "/resolve_" + graph_name + "/";
-	mkdir(resolved_name.c_str(),
-			S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH | S_IWOTH);
+	make_dir(resolved_name);
 	process_resolve_repeats(nonconj_gp, nonconj_gp.clustered_index, resolved_gp,
 			graph_name, sub_dir, false);
 }
