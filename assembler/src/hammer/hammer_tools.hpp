@@ -81,6 +81,7 @@ void SplitToFiles(string dirprefix, int iter_count);
  */
 void ProcessKmerHashFile( ifstream * inStream, KMerNoHashMap & km );
 void PrintProcessedKmerHashFile(ofstream * outf, hint_t & kmer_num, KMerNoHashMap & km );
+void PrintKMerFileWithChangeTo( ofstream * outf, const vector<KMerCount *> & kmers );
 
 /**
  * fill in kmerno vector
@@ -88,6 +89,9 @@ void PrintProcessedKmerHashFile(ofstream * outf, hint_t & kmer_num, KMerNoHashMa
 void fillInKmersFromFile( const string & fname, vector<hint_t> *kmernos );
 void fillInSolidKmersFromFile( const string & fname, vector<KMerCount*> *kmers );
 void fillInStringMapFromFile( const string & fname, vector<KMerCount*> *kmernos );
+void fillInKmersAndNosFromFile( const string & fname, vector<KMerCount*> *kmers, vector<hint_t> *kmernos );
+void fillInKmersWithChangeToFromFile( const string & fname, vector<KMerCount*> *kmers, vector<hint_t> *kmernos );
+void fillInBadKmersFromFile( const string & fname, vector<KMerCount*> *kmers );
 
 string getFilename( const string & dirprefix, const string & suffix );
 string getFilename( const string & dirprefix, int iter_count, const string & suffix );
