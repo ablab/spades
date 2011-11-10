@@ -186,10 +186,12 @@ public:
 				DEBUG("adding edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge) << " and coverage"<< gp.g.coverage(old_first_edge) /*<< " * "  << first.weight / weight_sums[old_first_edge]*/);
 
 				old_first_edge = first.start;
-				EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
-				WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge]*/));
-				new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
-				new_to_old.insert(make_pair(eid, old_first_edge));
+				AddEdgeWithAllHandlers(new_start, new_end, old_first_edge);
+
+//				EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
+//				WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge]*/));
+//				new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
+//				new_to_old.insert(make_pair(eid, old_first_edge));
 
 				new_start = new_end;
 				count++;
@@ -222,11 +224,12 @@ public:
 					old_first_edge = first.end;
 					DEBUG("adding edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge));
 
+					AddEdgeWithAllHandlers(new_start, new_end, old_first_edge);
 
-					EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
-					WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge)  * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge] */));
-					new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
-					new_to_old.insert(make_pair(eid, old_first_edge));
+//					EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
+//					WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge)  * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge] */));
+//					new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
+//					new_to_old.insert(make_pair(eid, old_first_edge));
 					new_start = new_end;
 					DEBUG("and tail of length "<< iter->length);
 					//				omnigraph::WriteSimple(new_gp.g, tot_labeler_after, cfg::get().output_dir  + ToString(count)+".dot", "no_repeat_graph");
@@ -245,11 +248,12 @@ public:
 				VertexId new_start = new_gp.g.AddVertex();
 				VertexId new_end = new_gp.g.AddVertex();
 				EdgeId old_first_edge = *iter;
-				DEBUG("adding isolated edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge));
-				EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
-				WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge)  * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge] */));
-				new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
-				new_to_old.insert(make_pair(eid, old_first_edge));
+				AddEdgeWithAllHandlers(new_start, new_end, old_first_edge);
+//				DEBUG("adding isolated edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge));
+//				EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
+//				WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge)  * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge] */));
+//				new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
+//				new_to_old.insert(make_pair(eid, old_first_edge));
 			}
 		}
 	}
@@ -292,6 +296,20 @@ public:
 	unordered_map<EdgeId, EdgeId> GetEdgeLabels(){
 		return new_to_old;
 	}
+
+	EdgeId AddEdgeWithAllHandlers(VertexId new_start, VertexId new_end, EdgeId old_first_edge){
+		DEBUG("adding edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge));
+
+
+		EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
+		WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge)  * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge] */));
+		new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
+		new_to_old.insert(make_pair(eid, old_first_edge));
+		new_start = new_end;
+		//DEBUG("and tail of length "<< iter->length);
+		return eid;
+	}
+
 
 };
 }
