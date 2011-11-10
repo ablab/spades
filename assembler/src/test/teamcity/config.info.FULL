@@ -1,0 +1,76 @@
+; input options:
+
+#include "src/debruijn/simplification.info"
+#include "src/debruijn/datasets.info"
+#include "src/debruijn/distance_estimation.info"
+
+dataset 	      QUAKE_FULL
+;dataset              LB_QUAKE_FULL
+
+input_dir	      ./data/input/
+output_base	      ./data/debruijn/
+
+additional_contigs	tmp_contigs.fasta
+
+load_from         latest/saves/ ; tmp or latest 
+
+entry_point construction
+;entry_point paired_info_count
+;entry_point simplification
+;entry_point late_pair_info_count
+;entry_point distance_estimation
+;entry_point repeats_resolving
+;entry_point n50_enlargement
+
+; iterative mode switcher, activates additional contigs usage
+use_additional_contigs false
+
+; use single reads if they are provided
+use_single_reads true
+
+; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
+paired_mode true
+
+; set it true to get statistics, such as false positive/negative, perfect match, etc.
+paired_info_statistics false
+
+; use advanced distance estimation or not
+advanced_estimator_mode false
+
+; set to true to obtain paired info from genome mapping rather than from paired reads
+etalon_info_mode  false
+
+; Collect paired information before or after graph simplification
+late_paired_info true
+
+; Produce info for all components of graph and run repeat resolver for each component.
+componential_resolve true
+
+;repeat_resolving 
+
+rr
+{
+	symmetric_resolve true
+	mode		3 ; Additional resolve cheats, don't change if you are not sure
+	near_vertex  30
+}
+
+
+;position handling
+
+pos
+{
+	max_single_gap 500
+	contigs_for_threading ./data/debruijn/contigs.fasta
+	late_threading false
+}
+
+
+
+
+
+; consensus
+need_consensus  false ; output is VERY large(gigabytes).
+uncorrected_reads	none
+
+
