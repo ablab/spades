@@ -23,7 +23,7 @@ for line in inFile:
                	len2 = len(r1)
                	len1 = len(r2)
 
-		olv = pos1 + len1 - pos2
+		ovl = pos1 + len1 - pos2
 
 		if ovl > 0:
 		
