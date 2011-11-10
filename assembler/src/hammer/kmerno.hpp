@@ -42,6 +42,10 @@ struct KMerNo {
 		uint64_t operator() (const KMerNo &kn) const;
 	};
 
+	struct string_hash {
+		uint64_t operator() (const string &kn) const;
+	};
+
 	struct are_equal {
 		bool operator() (const KMerNo &l, const KMerNo &r) const;
 	};

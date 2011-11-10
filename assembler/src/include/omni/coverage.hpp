@@ -117,17 +117,20 @@ public:
 	}
 
 	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
-		size_t length1 = this->g().length(newEdge1);
-		size_t length = this->g().length(oldEdge);
-		size_t coverage = KPlusOneMerCoverage(oldEdge);
-		size_t coverage1 = coverage * length1 / length;
-		if (coverage1 == 0)
-			coverage1 = 1;
-		size_t coverage2 = coverage - coverage1;
-		if (coverage2 == 0)
-			coverage2 = 1;
-		SetCoverage(newEdge1, coverage1);
-		SetCoverage(newEdge2, coverage2);
+//		size_t length1 = this->g().length(newEdge1);
+//		size_t length = this->g().length(oldEdge);
+//		size_t coverage = KPlusOneMerCoverage(oldEdge);
+//		size_t coverage1 = coverage * length1 / length;
+//		if (coverage1 == 0)
+//			coverage1 = 1;
+//		size_t coverage2 = coverage - coverage1;
+//		if (coverage2 == 0)
+//			coverage2 = 1;
+//		SetCoverage(newEdge1, coverage1);
+//		SetCoverage(newEdge2, coverage2);
+		double avg_cov = coverage(oldEdge);
+		SetCoverage(newEdge1, size_t(max(1., math::round(avg_cov * this->g().length(newEdge1)))));
+		SetCoverage(newEdge2, size_t(max(1., math::round(avg_cov * this->g().length(newEdge2)))));
 	}
 
  	void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) {

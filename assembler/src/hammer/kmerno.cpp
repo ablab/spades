@@ -60,6 +60,14 @@ uint64_t KMerNo::hash::operator() (const KMerNo &kn) const {
 	return h;
 }
 
+uint64_t KMerNo::string_hash::operator() (const string &kn) const {
+	size_t h = 239;
+	for (size_t i = 0; i < K; i++) {
+		h = ((h << 5) - h) + kn[i];
+	}
+	return h;
+}
+
 bool KMerNo::are_equal::operator() (const KMerNo &l, const KMerNo &r) const {
 	return ( (strncmp( Globals::blob + l.index, Globals::blob + r.index, K) == 0) );
 }

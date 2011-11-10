@@ -33,10 +33,14 @@ struct Globals {
 	static bool skip_to_clustering;
 	static bool skip_to_subvectors;
 	static bool skip_sorting_subvectors;
+	static bool skip_cluster_merging;
+	static int skip_iterative;
+	static int hamming_class_buffer;
 	static bool unload_blob_before_merge;
 
 	static bool likelihood_e_step;
 	static bool subtract_simplex_volume;
+	static bool change_n_to_random;
 
 	static bool debug_output_clustering;
 	static bool debug_output_likelihood;

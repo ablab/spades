@@ -11,7 +11,9 @@
 #include <queue>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/format.hpp>
 #include <time.h>
+#include <sys/resource.h>
 #include <iomanip>
 
 #include "read/ireadstream.hpp"
@@ -163,12 +165,15 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
 		const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat, vector< vector<int> > & v,
 		int & left, int & right, bool & isGood, ofstream * ofs ) {
 	bool res = false;
+	if (ofs != NULL)
+		*ofs << "\n " << r.getName() << "\n" << seq.data() << "\n";
 	if (  stat.isGoodForIterative() ||
-				// if regular_threshold_for_correction = true, we use a (more relaxed) threshold isGood() for solid k-mers
+			// if regular_threshold_for_correction = true, we use a (more relaxed) threshold isGood() for solid k-mers
 			((!Globals::use_iterative_reconstruction
 					|| Globals::regular_threshold_for_correction)
 					&& stat.isGood())) {
 		isGood = true;
+		// cout << "  kmer " << kmer.start() << " is solid as is" << endl;
 		for (size_t j = 0; j < K; ++j) {
 			v[dignucl(kmer[j])][pos + j]++;
 		}
@@ -176,6 +181,11 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
 			left = pos;
 		if ((int) pos > right)
 			right = pos;
+		if (ofs != NULL) {
+				for (size_t j = 0; j < pos; ++j)
+					*ofs << " ";
+				*ofs << kmer.str().data() << "\n";
+		}
 	} else {
 		// if discard_only_singletons = true, we always use centers of clusters that do not coincide with the current center
 		if (stat.change() && (Globals::discard_only_singletons
@@ -183,6 +193,7 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
 				|| ((!Globals::use_iterative_reconstruction
 						|| Globals::regular_threshold_for_correction)
 						&& km[stat.changeto]->second.isGood()))) {
+			//if (ofs != NULL) *ofs << "  kmer " << kmer.str() << " wants to change to " << km[stat.changeto]->first.str() << endl;
 			isGood = true;
 			if ((int) pos < left)
 				left = pos;
@@ -195,8 +206,6 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
 			}
 			// pretty print the k-mer
 			res = true;
-			if (ofs != NULL)
-				*ofs << "\n " << r.getName() << "\n" << seq.data() << "\n";
 			if (ofs != NULL) {
 				for (size_t j = 0; j < pos; ++j)
 					*ofs << " ";
@@ -215,9 +224,9 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 	PositionRead & pr = Globals::pr->at(readno);
 	PositionRead & pr_rev = Globals::pr->at(readno_rev);
 
-	//cout << "    readno=" << readno << "  size=" << read_size << " kmersize=" << km.size() << endl;
-	//cout << "    " << seq << endl;
-	//cout << "    " << qual << endl;
+	// cout << "    readno=" << readno << "  size=" << read_size << " kmersize=" << km.size() << endl;
+	// cout << "    " << seq << endl;
+	// cout << "    " << qual << endl;
 
 	// create auxiliary structures for consensus
 	vector<int> vA(read_size, 0), vC(read_size, 0), vG(read_size, 0), vT(read_size, 0);
@@ -280,7 +289,7 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 				cmax = nucl(k); nummax = v[k][j];
 			}
 		}
-		if (seq[j] != cmax) res = true;
+		if (seq[j] != cmax) ++res;
 		seq[j] = cmax;
 	}
 	
@@ -300,7 +309,7 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 		r.trimLeftRight(left, right+K-1);
 		if (ofs != NULL && changedRead) {
 			*ofs << "Trimming to [ " << left << ", " << right+K-1 << "]" << endl;
-			*ofs << "Trimmed: " << r.getSequenceString().c_str() << endl;
+			// *ofs << "Trimmed: " << r.getSequenceString().c_str() << endl;
 		}
 	}
 
@@ -317,6 +326,27 @@ void print_time() {
 	time ( &rawtime );
 	ptm = gmtime( &rawtime );
 	cout << setfill('0') << "[ " << setw(2) << ptm->tm_hour << ":" << setw(2) << ptm->tm_min << ":" << setw(2) << ptm->tm_sec << " ] ";
+}
+
+void print_mem_usage() {
+	static size_t pid = getpid();
+	std::string str = (boost::format("pmap -d %d | grep writeable/private") % pid).str();
+	std::cout << "==== MEM USAGE ==== " << std::endl;
+	system(str.c_str());
+}
+
+void print_stats() {
+	rusage ru;
+	getrusage(RUSAGE_SELF, &ru);
+	std::cout << "[";
+	tm * ptm = gmtime( &ru.ru_utime.tv_sec );
+	std::cout << " elapsed = " << setw(2) << setfill('0')  << ptm->tm_hour << ":" << setw(2) << setfill('0') << ptm->tm_min << ":" << setw(2) << setfill('0') << ptm->tm_sec;
+	if ( ru.ru_maxrss < 1024 * 1024 ) {
+		std::cout << " mem = " << setw(5) << setfill(' ') << (ru.ru_maxrss / 1024) << "M ";
+	} else {
+		std::cout << " mem = " << setw(5) << setprecision(1) << fixed << setfill(' ') << (ru.ru_maxrss / (1024.0 * 1024.0) ) << "G ";
+	}
+	std::cout << "] ";
 }
 
 struct PriorityQueueElement {
@@ -421,8 +451,6 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 		}
 		if ( !isGood ) continue;
 
-		//cout << "  it's good!" << endl;
-
 		const PositionRead & pr_rev = Globals::pr->at(Globals::revNo + readno);
 		string seq_rev = Globals::conserve_memory ?
 						string(Globals::blob	+ Globals::pr->at(Globals::revNo + readno).start(),	read_size)
@@ -438,8 +466,6 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 		} else {
 			pair<int, hint_t> it = make_pair(-1, BLOBKMER_UNDEFINED );
 			while ((it = pr_rev.nextKMerNo(it.first)).first > -1) {
-				//cout << "    found " << (pr_rev.start() + it.first) << ": "
-				//		<< PositionKMer(pr_rev.start() + it.first).str() << "\tvalue=" << it.second << "\ttotal=" << kmers.size() << endl;
 				if (kmers[it.second]->second.isGoodForIterative()) {
 					for (size_t j = it.first; j < it.first + K; ++j) covered_by_solid[j] = true;
 				}
@@ -546,8 +572,7 @@ void SplitToFiles(string dirprefix, int iter_count) {
 	}
 }
 
-void ProcessKmerHashFile( ifstream * inf, ofstream * outf, 	hint_t & kmer_num ) {
-	KMerNoHashMap km;
+void ProcessKmerHashFile( ifstream * inf, KMerNoHashMap & km ) {
 	char buf[1024]; // a line contains two numbers, 1024 should be enough for everybody
 	uint64_t pos; double prob;
 	while (!inf->eof()) {
@@ -574,6 +599,9 @@ void ProcessKmerHashFile( ifstream * inf, ofstream * outf, 	hint_t & kmer_num ) 
 			}
 		}
 	}
+}
+
+void PrintProcessedKmerHashFile( ofstream * outf, hint_t & kmer_num, KMerNoHashMap & km ) {
 	for (KMerNoHashMap::iterator it = km.begin(); it != km.end(); ++it) {
 		(*outf) << it->second->first.start() << "\t"
 				<< string(Globals::blob + it->second->first.start(), K) << "\t"
@@ -587,6 +615,18 @@ void ProcessKmerHashFile( ifstream * inf, ofstream * outf, 	hint_t & kmer_num ) 
 	km.clear();
 }
 
+void PrintKMerFileWithChangeTo( ofstream * outf, const vector<KMerCount *> & kmers ) {
+	for (vector<KMerCount *>::const_iterator it = kmers.begin(); it != kmers.end(); ++it) {
+		(*outf) << (*it)->first.start() << "\t"
+				<< string(Globals::blob + (*it)->first.start(), K) << "\t"
+				<< (*it)->second.count << "\t"
+				<< (*it)->second.changeto << "\t"
+				<< setw(8) << (*it)->second.totalQual << "\t";
+		for (size_t i=0; i < K; ++i) (*outf) << (*it)->second.qual[i] << " ";
+		(*outf) << "\n";
+	}
+
+}
 
 string getFilename( const string & dirprefix, const string & suffix ) {
 	ostringstream tmp;
@@ -617,10 +657,80 @@ void fillInKmersFromFile( const string & fname, vector<hint_t> *kmernos ) {
 		kmernos->push_back(pos);
 	}
 	ifs.close();
-
-	// resorting in lexicographic order -- needed for easy search
-	// sort(kmernos->begin(), kmernos->end(), PositionKMer::compareKMersDirect);
 }
+
+void fillInKmersAndNosFromFile( const string & fname, vector<KMerCount*> *kmers, vector<hint_t> *kmernos ) {
+	kmernos->clear();
+	kmers->clear();
+	ifstream ifs(fname);
+	char buf[16000];
+	while (!ifs.eof()) {
+		ifs.getline(buf, 16000);
+		hint_t pos; int cnt; double qual;
+		sscanf(buf, "%lu\t%*s\t%u\t%lf", &pos, &cnt, &qual);
+		//cout << pos << "\t" << cnt << "\t" << qual << endl;
+		kmernos->push_back(pos);
+		kmers->push_back(new KMerCount(PositionKMer(pos), KMerStat(cnt, KMERSTAT_BAD, qual)));
+	}
+	ifs.close();
+}
+
+void fillInKmersWithChangeToFromFile( const string & fname, vector<KMerCount*> *kmers, vector<hint_t> *kmernos ) {
+	kmernos->clear();
+	kmers->clear();
+	ifstream ifs(fname);
+	char buf[16000];
+	while (!ifs.eof()) {
+		ifs.getline(buf, 16000);
+		hint_t pos; int cnt; double qual; hint_t chg;
+		sscanf(buf, "%lu\t%*s\t%u\t%lu\t%lf", &pos, &cnt, &chg, &qual);
+		//cout << pos << "\t" << cnt << "\t" << qual << endl;
+		kmernos->push_back(pos);
+		kmers->push_back(new KMerCount(PositionKMer(pos), KMerStat(cnt, chg, qual)));
+	}
+	ifs.close();
+}
+
+void fillInSolidKmersFromFile( const string & fname, vector<KMerCount*> *kmers ) {
+	ifstream ifs(fname);
+	char buf[16000];
+	while (!ifs.eof()) {
+		ifs.getline(buf, 16000);
+		ifs.getline(buf, 16000);
+		hint_t pos; int cnt; double qual;
+		sscanf(buf, ">%lu  cnt=%u  tql=%lf", &pos, &cnt, &qual);
+		//cout << "kmerno =" << Globals::kmernos << endl;
+		//cout << "kmerno size=" << Globals::kmernos->size() << endl;
+		vector<hint_t>::const_iterator it_vec = lower_bound(Globals::kmernos->begin(), Globals::kmernos->end(), pos, PositionKMer::compareKMersDirect );
+		//cout << "lower_bound=" << (it_vec - Globals::kmernos->begin()) << "  kmerssize=" << kmers->size() << "  nossize=" << Globals::kmernos->size() << endl;
+		if ( *it_vec == pos ) {
+			//cout << "solid: pos=" << pos << "\tcnt=" << cnt << "\tqual=" << qual << endl;
+			kmers->at(it_vec - Globals::kmernos->begin())->second.makeGoodForIterative();
+		}
+	}
+	ifs.close();
+}
+
+
+void fillInBadKmersFromFile( const string & fname, vector<KMerCount*> *kmers ) {
+	ifstream ifs(fname);
+	char buf[16000];
+	while (!ifs.eof()) {
+		ifs.getline(buf, 16000);
+		ifs.getline(buf, 16000);
+		hint_t pos; hint_t poscent;
+		if ( sscanf(buf, ">%lu part of cluster %lu", &pos, &poscent) < 2 ) continue;
+		vector<hint_t>::const_iterator it_vec = lower_bound(Globals::kmernos->begin(), Globals::kmernos->end(), pos, PositionKMer::compareKMersDirect );
+		if ( *it_vec == pos ) {
+			//cout << "pos=" << pos << "\tchangeto=" << poscent << endl;
+			vector<hint_t>::const_iterator it_vec_tochange = lower_bound(Globals::kmernos->begin(), Globals::kmernos->end(), poscent, PositionKMer::compareKMersDirect);
+			if ( *it_vec_tochange != poscent) cout << "   BAD GOOD KMER " << poscent << "\tlower_bound=" << it_vec_tochange - Globals::kmernos->begin() << endl;
+			kmers->at(it_vec - Globals::kmernos->begin())->second.changeto = it_vec_tochange - Globals::kmernos->begin();
+		}
+	}
+	ifs.close();
+}
+
 
 void dumpBlob( const string & fname ) {
 	ofstream ofs(fname);
@@ -682,10 +792,14 @@ void getGlobalConfigParameters( const string & config_file ) {
 	Globals::skip_to_clustering = cfg::get().skip_to_clustering;
 	Globals::skip_to_subvectors = cfg::get().skip_to_subvectors;
 	Globals::skip_sorting_subvectors = cfg::get().skip_sorting_subvectors;
+	Globals::skip_cluster_merging = cfg::get().skip_cluster_merging;
+	Globals::hamming_class_buffer = cfg::get().hamming_class_buffer;
 	Globals::unload_blob_before_merge = cfg::get().unload_blob_before_merge;
 	Globals::debug_output_clustering = cfg::get().debug_output_clustering;
 	Globals::debug_output_likelihood = cfg::get().debug_output_likelihood;
+	Globals::skip_iterative = cfg::get().skip_iterative;
 	Globals::likelihood_e_step = cfg::get().likelihood_e_step;
 	Globals::subtract_simplex_volume = cfg::get().subtract_simplex_volume;
+	Globals::change_n_to_random = cfg::get().change_n_to_random;
 }
 

@@ -14,7 +14,7 @@ def read_contig(infile):
 	line = infile.readline()
 	c_len = 0
 	while line and line.find(delim) != 0:
-		read += line
+		contig += line
 		c_len += len(line) - 1
 		line = infile.readline()
 
@@ -36,15 +36,15 @@ inFile = open(inFileName, "r")
 threshold = int(sys.argv[2])
 
 fName, ext = os.path.splitext(inFileName)
-fileS = open(fName + "_short" + ext, "w") 
-fileL = open(fName + "_long" + ext, "w")
+fileS = open(fName + "_short_"+str(threshold) + ext, "w") 
+fileL = open(fName + "_long_"+str(threshold) + ext, "w")
 
 c_len, contig = read_contig(inFile)
-while id1 is not None and id2 is not None:
-	if c_len < threshold:
+while contig is not None:
+	if c_len <= threshold:
 		fileS.write(contig)
 	else:
-		fileP.write(contig)
+		fileL.write(contig)
 		
 	c_len, contig = read_contig(inFile)
 

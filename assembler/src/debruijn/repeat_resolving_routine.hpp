@@ -13,6 +13,7 @@
 #include "repeat_resolving.hpp"
 #include "distance_estimation_routine.hpp"
 #include "io/careful_filtering_reader_wrapper.hpp"
+#include "resolved_pair_info.hpp"
 //typedef io::IReader<io::SingleRead> ReadStream;
 //typedef io::IReader<io::PairedRead> PairedReadStream;
 ////typedef io::RCReaderWrapper<io::SingleRead> RCStream;
@@ -246,6 +247,19 @@ void process_resolve_repeats(graph_pack& origin_gp,
     ResolveRepeats(origin_gp  .g, origin_gp  .int_ids, clustered_index, origin_gp  .edge_pos,
                    resolved_gp.g, resolved_gp.int_ids,                  resolved_gp.edge_pos,
                    cfg::get().output_dir + subfolder +"resolve_" + graph_name +  "/", labels_after);
+
+    //Generating paired info for resolved graph
+    INFO("Generating paired info for resolved graph");
+    PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info(resolved_gp.g);
+    ResolvedGraphPairInfoCounter<typename graph_pack::graph_t> resolved_graph_paired_info_counter(
+    			origin_gp.g,
+    			clustered_index,
+    			resolved_gp.g,
+    			labels_after);
+    resolved_graph_paired_info_counter.FillResolvedGraphPairedInfo(resolved_graph_paired_info);
+    INFO("Paired info for resolved graph generated");
+    //Paired info for resolved graph generated
+
     if (output_contigs) {
        	OutputContigs(resolved_gp.g, cfg::get().output_dir + "after_rr_before_simplify" + postfix);
     	OutputContigs(origin_gp.g, cfg::get().output_dir + "before_resolve" + postfix);

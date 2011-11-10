@@ -396,4 +396,33 @@ DELTA_CORRECTED_1
         LEN             4500000 ; total size
 }
 
+DELTA_EULER_CORRECTED_1
+{
+        first   Delta.Bacteria/delta_euler_sr_ec_left.fasta
+        second  Delta.Bacteria/delta_euler_sr_ec_right.fasta
+        single_first    Delta.Bacteria/delta_euler_sr_ec_single_left.fasta
+        single_second   Delta.Bacteria/delta_euler_sr_ec_single_right.fastq
+        RL              100     ; read length
+        IS              250     ; insert size
+        single_cell     true
+        reference_genome  Delta.Bacteria/delta.fasta
+        LEN             4500000 ; total size
+}
+
+; ================================================
+; ================== S. Aureus ===================
+; ================================================
+
+SAUREUS_CORRECTED_1
+{
+        first   S.Aureus.USA300_FPR3757/saureus_cor_left.fasta
+        second  S.Aureus.USA300_FPR3757/saureus_cor_right.fasta
+        single_first    S.Aureus.USA300_FPR3757/saureus_cor_single_left.fasta
+        single_second   S.Aureus.USA300_FPR3757/saureus_cor_single_right.fasta
+        RL              100     ; read length
+        IS              220     ; insert size
+        single_cell     true
+        reference_genome  S.Aureus.USA300_FPR3757/S.Aureus.USA300_FPR3757.fasta
+        LEN             2872769 ; total size
+}
 
