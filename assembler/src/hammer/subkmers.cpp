@@ -311,8 +311,8 @@ void SubKMerPQ::initPQ() {
 			pq.push(SubKMerPQElement(*(it[j]), j));
 		}
 	} else {
-		for (int j = 0; j < nthreads; ++j) {
-			cout << "  initializing SubKMerPQ with " <<fnames_[j].data() << endl;
+		for (size_t j = 0; j < fnames_.size(); ++j) {
+			//cout << "  initializing SubKMerPQ with " <<fnames_[j].data() << endl;
 			ifs_.push_back(new ifstream(fnames_[j].data()));
 			if (!ifs_[j]->eof()) {
 				hint_t nextel = getNextElementFromFile(j);
@@ -324,7 +324,7 @@ void SubKMerPQ::initPQ() {
 
 void SubKMerPQ::closePQ() {
 	if (v == NULL) {
-		for (int j = 0; j < nthreads; ++j) {
+		for (size_t j = 0; j < ifs_.size(); ++j) {
 			ifs_[j]->close();
 			delete ifs_[j];
 		}

@@ -28,7 +28,10 @@ private:
 	typedef SingleEdge<DataMaster>* EdgeId;
 	typedef typename DataMaster::VertexData VertexData;
 
-	friend class AbstractNonconjugateGraph<DataMaster> ;
+	friend class AbstractGraph<SingleVertex<DataMaster>*,
+			SingleEdge<DataMaster>*, DataMaster, typename set<SingleVertex<
+					DataMaster>*>::const_iterator> ;
+	friend class AbstractNonconjugateGraph<DataMaster>;
 
 	vector<EdgeId> outgoing_edges_;
 
@@ -64,9 +67,9 @@ private:
 		data_ = data;
 	}
 
-//	bool IsDeadend() {
-//		return outgoing_edges_.size() == 0;
-//	}
+	//	bool IsDeadend() {
+	//		return outgoing_edges_.size() == 0;
+	//	}
 
 	void AddOutgoingEdge(EdgeId e) {
 		outgoing_edges_.push_back(e);
@@ -84,9 +87,9 @@ private:
 		return true;
 	}
 
-//	bool IsDeadstart() {
-//		return incoming_edges_.size() == 0;
-//	}
+	//	bool IsDeadstart() {
+	//		return incoming_edges_.size() == 0;
+	//	}
 
 	void AddIncomingEdge(EdgeId e) {
 		incoming_edges_.push_back(e);
@@ -126,7 +129,10 @@ private:
 	typedef SingleEdge<DataMaster>* EdgeId;
 	typedef typename DataMaster::EdgeData EdgeData;
 
-	friend class AbstractNonconjugateGraph<DataMaster> ;
+	friend class AbstractGraph<SingleVertex<DataMaster>*,
+			SingleEdge<DataMaster>*, DataMaster, typename set<SingleVertex<
+					DataMaster>*>::const_iterator> ;
+	friend class AbstractNonconjugateGraph<DataMaster>;
 	//todo unfriend
 	friend class SingleVertex<DataMaster> ;
 
@@ -160,10 +166,12 @@ private:
 };
 
 template<class DataMaster>
-class AbstractNonconjugateGraph: public AbstractGraph<SingleVertex<DataMaster>*,
-	SingleEdge<DataMaster>*, DataMaster, typename set<SingleVertex<DataMaster>*>::const_iterator> {
-	typedef AbstractGraph<SingleVertex<DataMaster>*, SingleEdge<DataMaster>*, DataMaster
-			, typename set<SingleVertex<DataMaster>*>::const_iterator> base;
+class AbstractNonconjugateGraph: public AbstractGraph<
+		SingleVertex<DataMaster>*, SingleEdge<DataMaster>*, DataMaster,
+		typename set<SingleVertex<DataMaster>*>::const_iterator> {
+	typedef AbstractGraph<SingleVertex<DataMaster>*, SingleEdge<DataMaster>*,
+			DataMaster, typename set<SingleVertex<DataMaster>*>::const_iterator>
+			base;
 public:
 	typedef typename base::VertexId VertexId;
 	typedef typename base::EdgeId EdgeId;
@@ -172,25 +180,22 @@ public:
 	typedef typename base::VertexIterator VertexIterator;
 
 private:
-	typedef set<VertexId> Vertices;
-
-	Vertices vertices_;
 
 	virtual VertexId HiddenAddVertex(const VertexData &data) {
 		VertexId v = new SingleVertex<DataMaster> (data);
-		vertices_.insert(v);
+		this->vertices_.insert(v);
 		return v;
 	}
 
 	virtual void HiddenDeleteVertex(VertexId v) {
-		vertices_.erase(v);
+		this->vertices_.erase(v);
 		delete v;
 	}
 
 	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-		VERIFY(vertices_.find(v1) != vertices_.end() && vertices_.find(v2) != vertices_.end());
-		EdgeId newEdge = new SingleEdge<DataMaster> (v1,
-				v2, data);
+		VERIFY(this->vertices_.find(v1) != this->vertices_.end()
+				&& this->vertices_.find(v2) != this->vertices_.end());
+		EdgeId newEdge = new SingleEdge<DataMaster> (v1, v2, data);
 		v1->AddOutgoingEdge(newEdge);
 		v2->AddIncomingEdge(newEdge);
 		return newEdge;
@@ -225,102 +230,56 @@ private:
 public:
 
 	AbstractNonconjugateGraph(const DataMaster& master) :
-				base(new SimpleHandlerApplier<AbstractNonconjugateGraph>(), master) {
+		base(new SimpleHandlerApplier<AbstractNonconjugateGraph> (), master) {
 	}
 
 	virtual ~AbstractNonconjugateGraph() {
-//		while (!vertices_.empty()) {
-//			ForceDeleteVertex(*vertices_.begin());
-//		}
+		//		while (!this->vertices_.empty()) {
+		//			ForceDeleteVertex(*this->vertices_.begin());
+		//		}
 		TRACE("~AbstractNonconjugateGraph")
-		for (auto it = this->SmartVertexBegin(); !it.IsEnd(); ++it) {
-			ForceDeleteVertex(*it);
+		for (auto it = this->SmartVertexBegin();
+				!it.IsEnd();
+++			it) {
+				ForceDeleteVertex(*it);
+			}
+			TRACE("~AbstractNonconjugateGraph ok")
 		}
-		TRACE("~AbstractNonconjugateGraph ok")
-	}
 
-	virtual VertexIterator begin() const {
-		return vertices_.begin();
-	}
+		/*virtual*/bool RelatedVertices(VertexId v1, VertexId v2) const {
+			return v1 == v2;
+		}
 
-	virtual VertexIterator end() const {
-		return vertices_.end();
-	}
+		pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId vertex, vector<EdgeId> splittingEdges) {
+			vector<double> split_coefficients(splittingEdges.size(),1);
+			return SplitVertex(vertex, splittingEdges, split_coefficients);
+		}
 
-	size_t size() const {
-		return vertices_.size();
-	}
-
-	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const {
-		return v->OutgoingEdges();
-	}
-
-	virtual const vector<EdgeId> IncomingEdges(VertexId v) const {
-		return v->IncomingEdges();
-	}
-
-	virtual size_t OutgoingEdgeCount(VertexId v) const {
-		return v->OutgoingEdgeCount();
-	}
-
-	virtual size_t IncomingEdgeCount(VertexId v) const {
-		return v->IncomingEdgeCount();
-	}
-
-	virtual vector<EdgeId> GetEdgesBetween(VertexId v, VertexId u) const {
-		return v->OutgoingEdgesTo(u);
-	}
-
-	virtual const EdgeData& data(EdgeId edge) const {
-		return edge->data();
-	}
-
-	virtual const VertexData& data(VertexId v) const {
-		return v->data();
-	}
-
-	virtual VertexId EdgeStart(EdgeId edge) const {
-		return edge->start();
-	}
-
-	virtual VertexId EdgeEnd(EdgeId edge) const {
-		return edge->end();
-	}
-
-	/*virtual*/ bool RelatedVertices(VertexId v1, VertexId v2) const {
-		return v1 == v2;
-	}
-
-	pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId vertex, vector<EdgeId> splittingEdges) {
-		vector<double> split_coefficients(splittingEdges.size(),1);
-		return SplitVertex(vertex, splittingEdges, split_coefficients);
-	}
-
-	pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId vertex, vector<EdgeId> &splittingEdges, vector<double> &split_coefficients) {
-//TODO:: check whether we handle loops correctly!
-		VertexId newVertex = HiddenAddVertex(vertex->data());
-		vector<pair<EdgeId, EdgeId>> edge_clones;
-		for (size_t i = 0; i < splittingEdges.size(); i++) {
-			VertexId start_v = this->EdgeStart(splittingEdges[i]);
-			VertexId start_e = this->EdgeEnd(splittingEdges[i]);
-			if (start_v == vertex)
+		pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId vertex, vector<EdgeId> &splittingEdges, vector<double> &split_coefficients) {
+			//TODO:: check whether we handle loops correctly!
+			VertexId newVertex = HiddenAddVertex(vertex->data());
+			vector<pair<EdgeId, EdgeId>> edge_clones;
+			for (size_t i = 0; i < splittingEdges.size(); i++) {
+				VertexId start_v = this->EdgeStart(splittingEdges[i]);
+				VertexId start_e = this->EdgeEnd(splittingEdges[i]);
+				if (start_v == vertex)
 				start_v = newVertex;
-			if (start_e == vertex)
+				if (start_e == vertex)
 				start_e = newVertex;
-			EdgeId newEdge = HiddenAddEdge(start_v, start_e, splittingEdges[i]->data());
-			edge_clones.push_back(make_pair(splittingEdges[i], newEdge));
-		}
-//FIRE
-		FireVertexSplit(newVertex, edge_clones, split_coefficients, vertex);
-		FireAddVertex(newVertex);
-		for(size_t i = 0; i < splittingEdges.size(); i ++)
+				EdgeId newEdge = HiddenAddEdge(start_v, start_e, splittingEdges[i]->data());
+				edge_clones.push_back(make_pair(splittingEdges[i], newEdge));
+			}
+			//FIRE
+			FireVertexSplit(newVertex, edge_clones, split_coefficients, vertex);
+			FireAddVertex(newVertex);
+			for(size_t i = 0; i < splittingEdges.size(); i ++)
 			FireAddEdge(edge_clones[i].second);
-		return make_pair(newVertex, edge_clones);
-	}
+			return make_pair(newVertex, edge_clones);
+		}
 
-private:
-	DECL_LOGGER("AbstractNonconjugateGraph")
-};
+	private:
+		DECL_LOGGER("AbstractNonconjugateGraph")
+	};
 
 }
 #endif /* ABSTRACT_NONCONJUGATE_GRAPH_HPP_ */

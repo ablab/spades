@@ -148,28 +148,6 @@ public:
         }
     }
 
-    // for statistics generation, to filter all etalon infos according to the paths in the graph
-	virtual void Estimate(PairedInfoIndex<Graph> &result, size_t ld, size_t md) {
-		for (auto iterator = histogram_.begin(); iterator != histogram_.end(); ++iterator) {
-			vector < PairInfo<EdgeId> > data = *iterator;
-			EdgeId first = data[0].first;
-			EdgeId second = data[0].second;
-			vector < size_t > forward = GetGraphDistances(first, second);
-			//			bool debug = (int_ids_.ReturnIntId(data[0].first) == 71456 && int_ids_.ReturnIntId(data[0].second) == 71195);
-            linkage_distance_ = ld;
-            max_distance_ = md;
-            
-			vector < pair<size_t, double> > estimated
-					= EstimateEdgePairDistances(data, forward/*, false*/);
-			//            if (debug) for (size_t i = 0; i< estimated.size(); i++)
-			//                INFO("Edges MY : " << estimated[i].first << " " << estimated[i].second);
-			vector < PairInfo<EdgeId> > clustered = ClusterResult(first,
-					second, estimated);
-			//            if (debug) for (size_t i = 0; i<clustered.size(); i++)
-			//                INFO("Edges MY clusterizing: " << clustered[i].d << " " << clustered[i].weight);
-			AddToResult(result, clustered);
-		}
-	}
 	virtual void Estimate(PairedInfoIndex<Graph> &result) {
 		for (auto iterator = histogram_.begin(); iterator != histogram_.end(); ++iterator) {
 			vector < PairInfo<EdgeId> > data = *iterator;

@@ -38,6 +38,7 @@ private:
 
 	/// @return total log-likelihood that x was made from center given x's quality values
 	double logLikelihoodKMer(const string & center, const KMerCount * x);
+	double logLikelihoodSingleton(const KMerCount * x);
 
 	/// @return Hamming distance between x and y with upper bound tau
 	int hamdistKMer(const PositionKMer & x, const PositionKMer & y, int tau = K);
@@ -67,6 +68,7 @@ private:
 	  * @return total log-likelihood of this particular clustering with real quality values
 	  */
 	double trueClusterLogLikelihood(const vector<int> & cl, const vector<StringCount> & centers, const vector<int> & indices);
+	double trueSingletonLogLikelihood(const hint_t & kmerind);
 
 	/**
 	  * perform l-means clustering on the set of k-mers with initial centers being the l most frequent k-mers here
