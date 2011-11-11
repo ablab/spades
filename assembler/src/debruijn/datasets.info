@@ -351,8 +351,10 @@ SC_HAMMER_1410_CROPPED
 
 HMP_LANE_7
 {
-        first HMP/hmp_mda_pilot_jcvi_0007/hmp_mda_pilot_jcvi_0007.1.fastq.bz2
-        second HMP/hmp_mda_pilot_jcvi_0007/hmp_mda_pilot_jcvi_0007.2.fastq.bz2
+        first	HMP/hmp_mda_pilot_jcvi_0007/00.reads.left.corrected.fastq.gz
+        second	HMP/hmp_mda_pilot_jcvi_0007/00.reads.right.corrected.fastq.gz
+        single_first	HMP/hmp_mda_pilot_jcvi_0007/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/hmp_mda_pilot_jcvi_0007/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              200
 	single_cell	true
@@ -362,8 +364,10 @@ HMP_LANE_7
 
 HMP_LANE_8
 {
-        first HMP/hmp_mda_pilot_jcvi_0007/hmp_mda_pilot_jcvi_0008.1.fastq.bz2
-        second HMP/hmp_mda_pilot_jcvi_0007/hmp_mda_pilot_jcvi_0008.2.fastq.bz2
+        first	HMP/hmp_mda_pilot_jcvi_0008/00.reads.left.corrected.fastq.gz
+        second	HMP/hmp_mda_pilot_jcvi_0008/00.reads.right.corrected.fastq.gz
+        single_first	HMP/hmp_mda_pilot_jcvi_0008/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/hmp_mda_pilot_jcvi_0008/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              200
 	single_cell	true
