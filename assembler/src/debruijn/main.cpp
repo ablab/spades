@@ -103,6 +103,14 @@ void copy_configs()
 }
 
 
+bool print_mem_usage(std::string const& msg)
+{
+	static size_t pid = getpid();
+	string str = (format("pmap -d %d | grep writeable/private") % pid).str();
+	cout << "==== MEM USAGE: " << msg << endl;
+	return system(str.c_str()) == 0;
+}
+
 int main() {
     const size_t GB = 1 << 30;
     limit_memory(120 * GB);
@@ -147,6 +155,8 @@ int main() {
 		on_exit_output_linker("latest_success", "previous");
 
 		INFO("Assembling " << dataset << " dataset finished");
+
+		print_mem_usage("mem usage on program end");
     }
     catch(std::exception const& e)
     {

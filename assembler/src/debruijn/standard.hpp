@@ -13,17 +13,23 @@
 #include <signal.h>
 #include <execinfo.h>
 
+#include <iostream>
 #include <algorithm>
 #include <list>
 #include <map>
 #include <vector>
 #include <set>
+#include <string>
 #include <utility>
 
+using std::cin;
+using std::cout;
+using std::endl;
 using std::list;
 using std::map;
 using std::vector;
 using std::set;
+using std::string;
 using std::make_pair;
 
 //==boost
@@ -41,6 +47,8 @@ using std::make_pair;
 #include <boost/utility/in_place_factory.hpp>
 #include <boost/utility/typed_in_place_factory.hpp>
 
+#include <boost/format.hpp>
+
 using boost::bind;
 using boost::function;
 
@@ -52,6 +60,8 @@ namespace fs = boost::filesystem;
 
 using boost::optional;
 using boost::in_place;
+
+using boost::format;
 
 //==sys
 #include <sys/stat.h>
