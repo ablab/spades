@@ -426,3 +426,33 @@ SAUREUS_CORRECTED_1
         LEN             2872769 ; total size
 }
 
+
+; ================================================
+; ================ A.Fumigatus ===================
+; ================================================
+
+AFUMIGATUS_CORRECTED_1
+{
+        first   A.fumigatus.Af293/Reads/A.fumigatus.AF1163/Quaked/SRR068950_1.cor.fastq
+        second  A.fumigatus.Af293/Reads/A.fumigatus.AF1163/Quaked/SRR068950_2.cor.fastq
+        single_first    A.fumigatus.Af293/Reads/A.fumigatus.AF1163/Quaked/SRR068950_1.cor_single.fastq
+        single_second   A.fumigatus.Af293/Reads/A.fumigatus.AF1163/Quaked/SRR068950_2.cor_single.fastq
+        RL              100     ; read length
+        IS              185     ; insert size
+        single_cell     false
+       	reference_genome  A.fumigatus.Af293/dummy.fa
+     	LEN             29805800 ; total size
+}
+
+AFUMIGATUS_S_CORRECTED_1
+{
+        first   A.fumigatus.Af293/Reads/A.fumigatus.Af293/Quaked/empty_1.fastq
+        second  A.fumigatus.Af293/Reads/A.fumigatus.Af293/Quaked/empty_2.fastq
+       	single_first    A.fumigatus.Af293/Reads/A.fumigatus.Af293/Quaked/SRR068952.cor.fastq
+       	single_second   A.fumigatus.Af293/Reads/A.fumigatus.Af293/Quaked/empty.fastq
+        RL              100     ; read length
+        IS              200     ; insert size
+        single_cell     false
+        reference_genome  A.fumigatus.Af293/dummy.fa
+        LEN             29805800 ; total size
+}
