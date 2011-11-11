@@ -8,6 +8,7 @@ outFile = open(sys.argv[2], 'w')
 delim = '/'
 
 newRead = ""
+
 line = inFile.readline()
 while line:
 	if (line.strip() == ""):
