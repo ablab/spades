@@ -349,6 +349,28 @@ SC_HAMMER_1410_CROPPED
         LEN             4639675 ; total size
 }
 
+HMP_LANE_7
+{
+        first HMP/hmp_mda_pilot_jcvi_0007/hmp_mda_pilot_jcvi_0007.1.fastq.bz2
+        second HMP/hmp_mda_pilot_jcvi_0007/hmp_mda_pilot_jcvi_0007.2.fastq.bz2
+        RL              100
+        IS              200
+	single_cell	true
+        reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+	LEN 0
+}
+
+HMP_LANE_8
+{
+        first HMP/hmp_mda_pilot_jcvi_0007/hmp_mda_pilot_jcvi_0008.1.fastq.bz2
+        second HMP/hmp_mda_pilot_jcvi_0007/hmp_mda_pilot_jcvi_0008.2.fastq.bz2
+        RL              100
+        IS              200
+	single_cell	true
+        reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+        LEN 0
+}
+
 DeltaProteo
 {
 	first DeltaProteoBacterium/hammered/lane1_reads_corrected_1_left.fastq
