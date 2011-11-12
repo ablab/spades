@@ -482,3 +482,21 @@ AFUMIGATUS_S_CORRECTED_1
         reference_genome  A.fumigatus.Af293/dummy.fa
         LEN             29805800 ; total size
 }
+
+; ================================================
+; ================= P. stipitis ==================
+; ================================================
+
+PICHIA_CORRECTED
+{
+       	first   P.stipitis/Reads/Quaked/HCT10499_s_7_1.cor.fastq
+        second  P.stipitis/Reads/Quaked/HCT10499_s_7_2.cor.fastq
+       	single_first    P.stipitis/Reads/Quaked/HCT10499_s_7_1.cor_single.fastq
+        single_second   P.stipitis/Reads/Quaked/HCT10499_s_7_2.cor_single.fastq
+        RL              75     ; read length
+        IS              280     ; insert size
+        single_cell     false
+        reference_genome  P.stipitis/dummy.fa
+        LEN             15000000 ; total size
+}
+

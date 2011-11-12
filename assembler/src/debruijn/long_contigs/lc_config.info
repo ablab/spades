@@ -44,6 +44,11 @@ DELTA_CORRECTED_1
     graph_file       ./data/debruijn/DELTA_CORRECTED_1/K55/gr1/simplified_graph
 }
 
+PICHIA_CORRECTED 
+{
+    graph_file       ./data/debruijn/
+}
+
 ; paired info options
 use_new_metrics      true
 
@@ -194,6 +199,73 @@ real_libs
 {    
     count 2
 
+    item_0
+    {
+        read_size    75
+        insert_size  280
+        is_delta      2
+        var           5
+
+        PICHIA_CORRECTED
+        {
+            precounted       false
+            precounted_path  ./data/debruijn/
+
+            first  ./data/input/P.stipitis/Reads/Quaked/HCT10499_s_7_1.cor.fastq
+            second ./data/input/P.stipitis/Reads/Quaked/HCT10499_s_7_2.cor.fastq
+
+            has_advanced     false
+            advanced         ./data/debruijn/
+
+            raw              ./data/debruijn/
+        }
+    }
+
+    item_1
+    {
+      	 read_size    75
+      	 insert_size  3200
+        is_delta      10
+        var           50
+
+       	PICHIA_CORRECTED
+       	{
+            precounted       false
+            precounted_path  ./data/debruijn/
+
+            first  ./data/input/P.stipitis/Reads/Quaked/HCT10508_s_8_1.cor.fastq
+            second ./data/input/P.stipitis/Reads/Quaked/HCT10508_s_8_2.cor.fastq
+
+            has_advanced     false
+            advanced         ./data/debruijn/    
+
+            raw              ./data/debruijn/
+        }
+    }      
+
+    item_2
+    {
+     	read_size    75
+        insert_size  280
+       	is_delta      2
+       	var           5
+
+       	PICHIA_CORRECTED
+        {
+            precounted       false
+            precounted_path  ./data/debruijn/
+
+            first  ./data/input/P.stipitis/Reads/Quaked/HCT10499_s_8_1.cor.fastq
+            second ./data/input/P.stipitis/Reads/Quaked/HCT10499_s_8_2.cor.fastq
+
+            has_advanced     false
+            advanced         ./data/debruijn/
+
+            raw              ./data/debruijn/
+       	}
+    }
+
+
     item_5
     {
      	read_size     100
@@ -218,7 +290,7 @@ real_libs
 
 
 
-    item_3
+    item_13
     {
      	read_size     100
         insert_size   370
@@ -282,7 +354,7 @@ real_libs
     }
     
     
-    item_0
+    item_11
     {
         read_size     100
         insert_size   220
@@ -336,7 +408,7 @@ real_libs
     }     
    
     
-    item_1
+    item_10
     {
         read_size     100
         insert_size   480

@@ -80,12 +80,13 @@ int main() {
 		}
 
 		if (lc_cfg::get().paired_info_only) {
-			pairedInfos.clear();
-			AddRealInfo<K>(g, index, intIds, pairedInfos, mapper, !lc_cfg::get().use_new_metrics);
+			//pairedInfos.clear();
+			//AddRealInfo<K>(g, index, intIds, pairedInfos, mapper, !lc_cfg::get().use_new_metrics);
 
-			if (lc_cfg::get().write_real_paired_info) {
-				SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix, lc_cfg::get().use_new_metrics);
-			}
+			//if (lc_cfg::get().write_real_paired_info) {
+			//	SavePairedInfo(g, pairedInfos, intIds, output_dir + lc_cfg::get().paired_info_file_prefix, 
+lc_cfg::get().use_new_metrics);
+			//}
 
 			return 0;
 		}
