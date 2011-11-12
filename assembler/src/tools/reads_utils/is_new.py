@@ -29,7 +29,10 @@ while (1):
        	pos2 = int(line.split(' ')[0])
        	len2 = int(line.split(' ')[1])
 
-	hist[pos2 - pos1 + len2] += 1
+	cord = pos2 - pos1 + len2
+
+	if cord < maxLen and cord > minLen:
+		hist[cord] += 1
 
 sum = 0
 for i in range(minLen,maxLen):
