@@ -441,7 +441,7 @@ int main(int argc, char * argv[]) {
 					if (pIDsortKmerTotalsFile == 0) {
 						TIMEDLN("  [" << getpid() << "] Child process for sorting the kmers.total file starting.");
 						execlp("sort", "sort", "-k2", "-o", getFilename(Globals::working_dir, iter_count, "kmers.total.sorted").data(),
-								getFilename(Globals::working_dir, iter_count, "kmers.total").data(), (char *) 0 );
+								"-T", Globals::working_dir.c_str(), getFilename(Globals::working_dir, iter_count, "kmers.total").data(), (char *) 0 );
 						_exit(0);
 					}
 					string cmd = "rm -rf " + getFilename(Globals::working_dir, iter_count, "tmp.kmers.*");
