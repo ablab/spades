@@ -3,7 +3,7 @@ from_file     true	  ; always true
 syminfo       false
 
 ;Only precount and estimate
-paired_info_only    true
+paired_info_only    false
 
 QUAKE_CROPPED_100K
 {
@@ -46,7 +46,7 @@ DELTA_CORRECTED_1
 
 PICHIA_CORRECTED 
 {
-    graph_file       ./data/debruijn/
+    graph_file       data/debruijn/PICHIA_CORRECTED_1/K55/11.11_21.41.46/saves/simplified_graph
 }
 
 ; paired info options
@@ -71,17 +71,17 @@ first_grow_forward      true
 ; seed selection
 ss
 {
-    min_coverage   120
+    min_coverage   20
     glue_seeds     false
     max_cycles     1
     
     remove_untrusted  true
     check_trusted     true
-    trusted_threshold 2.5
+    trusted_threshold 0.3
     
-    short_single      25
-    chimeric_len      50
-    chimeric_delta    10
+    short_single      100
+    chimeric_len      0
+    chimeric_delta    0
     
     sym 
 	{
@@ -96,8 +96,8 @@ es
 {
     use_weight_function_first  false
     weight_fun_threshold       0.1
-    weight_threshold           2.5
-    priority_coeff             8
+    weight_threshold           0.3
+    priority_coeff             3
 
     use_delta_first       true
     etalon_distance_dev   2
@@ -107,7 +107,7 @@ es
     max_depth             0
     
     fix_weight            true
-    use_advanced          true
+    use_advanced          false
     advanced_coeff        1.4
 }    
 
@@ -197,7 +197,7 @@ research
 ; additional real libs
 real_libs
 {    
-    count 2
+    count 1
 
     item_0
     {
@@ -208,9 +208,8 @@ real_libs
 
         PICHIA_CORRECTED
         {
-            precounted       false
-            precounted_path  ./data/debruijn/
-
+            precounted       true
+            precounted_path  ./data/debruijn/PICHIA_CORRECTED/K55/11.12_05.08.48/paired_info_IS280_RS75_clustered
             first  ./data/input/P.stipitis/Reads/Quaked/HCT10499_s_7_1.cor.fastq
             second ./data/input/P.stipitis/Reads/Quaked/HCT10499_s_7_2.cor.fastq
 
@@ -230,8 +229,8 @@ real_libs
 
        	PICHIA_CORRECTED
        	{
-            precounted       false
-            precounted_path  ./data/debruijn/
+            precounted       true
+            precounted_path  ./data/debruijn/PICHIA_CORRECTED/K55/11.12_05.08.48/paired_info_IS3200_RS75_clustered
 
             first  ./data/input/P.stipitis/Reads/Quaked/HCT10508_s_8_1.cor.fastq
             second ./data/input/P.stipitis/Reads/Quaked/HCT10508_s_8_2.cor.fastq
