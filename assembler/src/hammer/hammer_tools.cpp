@@ -173,7 +173,7 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
 					|| Globals::regular_threshold_for_correction)
 					&& stat.isGood())) {
 		isGood = true;
-		// cout << "  kmer " << kmer.start() << " is solid as is" << endl;
+		if (ofs != NULL) *ofs << "\t\t\tsolid";
 		for (size_t j = 0; j < K; ++j) {
 			v[dignucl(kmer[j])][pos + j]++;
 		}
@@ -181,11 +181,11 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
 			left = pos;
 		if ((int) pos > right)
 			right = pos;
-		if (ofs != NULL) {
+		/*if (ofs != NULL) {
 				for (size_t j = 0; j < pos; ++j)
 					*ofs << " ";
 				*ofs << kmer.str().data() << "\n";
-		}
+		}*/
 	} else {
 		// if discard_only_singletons = true, we always use centers of clusters that do not coincide with the current center
 		if (stat.change() && (Globals::discard_only_singletons
@@ -193,7 +193,8 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
 				|| ((!Globals::use_iterative_reconstruction
 						|| Globals::regular_threshold_for_correction)
 						&& km[stat.changeto]->second.isGood()))) {
-			//if (ofs != NULL) *ofs << "  kmer " << kmer.str() << " wants to change to " << km[stat.changeto]->first.str() << endl;
+			if (ofs != NULL) *ofs << "\tchange to\n";
+			//cout << "  kmer " << kmer.str() << " wants to change to " << km[stat.changeto]->first.str() << endl;
 			isGood = true;
 			if ((int) pos < left)
 				left = pos;
@@ -209,7 +210,7 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
 			if (ofs != NULL) {
 				for (size_t j = 0; j < pos; ++j)
 					*ofs << " ";
-				*ofs << newkmer.str().data() << "\n";
+				*ofs << newkmer.str().data();
 			}
 		}
 	}
@@ -224,9 +225,15 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 	PositionRead & pr = Globals::pr->at(readno);
 	PositionRead & pr_rev = Globals::pr->at(readno_rev);
 
-	// cout << "    readno=" << readno << "  size=" << read_size << " kmersize=" << km.size() << endl;
-	// cout << "    " << seq << endl;
-	// cout << "    " << qual << endl;
+	/*if (ofs != NULL) {
+	*ofs << "    readno=" << readno << "  size=" << read_size << " kmersize=" << km.size() << " pr=" << pr.start() << endl;
+	*ofs << "    " << seq << endl;
+	*ofs << "    " << qual << endl;
+
+	*ofs << "    readno_rev=" << readno_rev << "  size=" << read_size << " kmersize=" << km.size() << " pr=" << pr.start() << endl;
+	*ofs << "    " << string(Globals::blob        + pr_rev.start(), pr_rev.size()) << endl;
+	*ofs << "    " << string(Globals::blobquality + pr_rev.start(), pr_rev.size()) << endl;
+	}*/
 
 	// create auxiliary structures for consensus
 	vector<int> vA(read_size, 0), vC(read_size, 0), vG(read_size, 0), vT(read_size, 0);
@@ -239,7 +246,8 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 
 	if (ofs != NULL)
 		*ofs << "\n " << r.getName() << "\n" << seq.data() << "\n";
-	
+
+	// cout << seq << endl;
 	bool changedRead = false;
 	if (Globals::conserve_memory) {
 		pair<int, hint_t> it = make_pair( -1, BLOBKMER_UNDEFINED );
@@ -248,7 +256,14 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 			const uint32_t pos = it.first;
 			const KMerStat & stat = km[it.second]->second;
 
+			if (ofs != NULL) {
+				for (uint32_t i=0; i<pos; ++i) *ofs << " ";
+				*ofs << kmer.str();
+			}
+
 			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, isGood, ofs );
+
+			if (ofs != NULL) *ofs << "\n";
 		}
 	} else {
 		pair<int, KMerCount *> it = make_pair( -1, (KMerCount*)NULL );
@@ -261,6 +276,12 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 		}
 	}
 
+
+	if (ofs != NULL)
+		*ofs << "\n " << r.getName() << " revcomp\n" << string(Globals::blob        + pr_rev.start(), pr_rev.size()) << "\n";
+
+	int left_rev = read_size; int right_rev = -1;
+
 	if (Globals::conserve_memory) {
 		pair<int, hint_t> it = make_pair( -1, BLOBKMER_UNDEFINED );
 		while ( (it = pr_rev.nextKMerNo(it.first)).first > -1 ) {
@@ -268,7 +289,14 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 			const uint32_t pos = it.first;
 			const KMerStat & stat = km[it.second]->second;
 
-			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, isGood, ofs );
+			if (ofs != NULL) {
+				for (uint32_t i=0; i<pos; ++i) *ofs << " ";
+				*ofs << kmer.str();
+			}
+
+			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left_rev, right_rev, isGood, ofs );
+
+			if (ofs != NULL) *ofs << "\n";
 		}
 	} else {
 		pair<int, KMerCount *> it = make_pair( -1, (KMerCount*)NULL );
@@ -277,8 +305,23 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 			const uint32_t pos = it.first;
 			const KMerStat & stat = it.second->second;
 
-			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, isGood, ofs );
+			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left_rev, right_rev, isGood, ofs );
 		}
+	}
+
+	if (ofs != NULL) {
+		*ofs << "    direct=[" << left << ", " << right << "]\treverse=[" << left_rev << ", " << right_rev << "]";
+	}
+
+	if ( left <= right && left_rev <= right_rev ) {
+		left = std::min(left, (int)read_size - left_rev - (int)K);
+		right = std::max(right, (int)read_size - right_rev - (int)K);
+	} else if ( left > right && left_rev <= right_rev ) {
+		left = (int)read_size - left_rev - (int)K;
+		right = (int)read_size - right_rev - (int)K;
+	}
+	if (ofs != NULL) {
+		*ofs << "\tresult=[" << left << ", " << right << "]" << endl;
 	}
 
 	// at this point the array v contains votes for consensus
@@ -310,6 +353,7 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 	r.setSequence(seq.data());
 	if (Globals::trim_left_right) {
 		r.trimLeftRight(left, right+K-1);
+		if ( left > 0 || right + K -1 < read_size ) changedRead = true;
 		if (ofs != NULL && changedRead) {
 			*ofs << "Trimming to [ " << left << ", " << right+K-1 << "]" << endl;
 			// *ofs << "Trimmed: " << r.getSequenceString().c_str() << endl;

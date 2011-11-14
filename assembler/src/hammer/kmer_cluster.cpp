@@ -26,11 +26,14 @@ double KMerClustering::logLikelihoodKMer(const string & center, const KMerCount 
 	for (uint32_t i = 0; i < K; ++i) {
 		if (center[i] != x->first[i]) {
 			change = true;
+			//cout << - log(10) * x->second.qual[i] / 10.0 << "! ";
 			res += - log(10) * x->second.qual[i] / 10.0;
 		} else {
+			//cout << x->second.qual[i] << ":" << 1 - pow( 10, -x->second.qual[i] / 10.0 ) << ":" << log( 1 - pow( 10, -x->second.qual[i] / 10.0 ) ) << " ";
 			res += log( 1 - pow( 10, -x->second.qual[i] / 10.0 ) );
 		}
 	}
+	//cout << endl;
 	return res;
 }
 
@@ -331,7 +334,7 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 			}
 		}
 	}
-	if (Globals::debug_output_likelihood && kmerinds.size() > 2)
+	if (Globals::debug_output_likelihood)
 		cout << "    fp.first=" << fp.first << "  fp.second=" << fp.second << "\n";
 	init[0] = fp.first; init[1] = fp.second;
 	for (uint32_t j=2; j<l; ++j) {
@@ -380,7 +383,7 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 		}
 	}*/
 
-	if (Globals::debug_output_likelihood && kmerinds.size() > 2) {
+	if (Globals::debug_output_likelihood) {
 		cout << "    centers:\n";
 		for (size_t i=0; i < centers.size(); ++i) {
 			cout << "    " << centers[i].first << "\n";
@@ -430,7 +433,7 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 				dists[j] = hamdistKMer((*k_)[kmerinds[i]]->first, centers[j].first);
 				loglike[j] = logLikelihoodKMer(centers[j].first, (*k_)[kmerinds[i]]);
 			}
-			if (Globals::debug_output_likelihood && kmerinds.size() > 2) {
+			if (Globals::debug_output_likelihood) {
 				cout << "      likelihoods for " << i << ": ";
 				for (size_t j=0; j < l; ++j) {
 					cout << loglike[j] << " ";
@@ -478,6 +481,18 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 }
 
 void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector<int> > & vec) {
+
+	/*if ( Globals::debug_output_likelihood ) {
+		cout << "process_SIN with block size=" << block.size() << " total kmers=" << k_->size() << endl << "block:";
+		for (size_t i = 0; i < block.size(); i++) {
+			cout << " " << i;
+		}
+		cout << endl << "  kmers:\n";
+		for (size_t i = 0; i < block.size(); i++) {
+			cout << (*k_)[i]->first.str() << endl;
+		}
+	}*/
+
 	uint32_t origBlockSize = block.size();
 	if (origBlockSize == 0) return;
 	
@@ -496,7 +511,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		}
 	}
 
-	if (Globals::debug_output_likelihood && origBlockSize > 2) {
+	if (Globals::debug_output_likelihood) {
 		#pragma omp critical
 		{
 			cout << "\nClustering an interesting block.\n";
@@ -507,14 +522,14 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	for (uint32_t i = 0; i < origBlockSize; i++) multiCoef[i] = calcMultCoef(distances[i], block);
 
 	vector<int> indices(origBlockSize);
-	double bestLikelihood = -1000000;
+	double bestLikelihood = - std::numeric_limits<double>::infinity();
 	vector<StringCount> bestCenters;
 	vector<int> bestIndices(block.size());
 
 	for (uint32_t l = 1; l <= origBlockSize; ++l) {
 		vector<StringCount> centers(l);
 		double curLikelihood = lMeansClustering(l, distances, block, indices, centers);
-		if (Globals::debug_output_likelihood && origBlockSize > 2) {
+		if (Globals::debug_output_likelihood) {
 			#pragma omp critical
 			{
 				cout << "    indices: ";
@@ -523,7 +538,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 				cout << "  likelihood with " << l << " clusters is " << curLikelihood << "\n";
 			}
 		}
-		if (curLikelihood <= bestLikelihood) {
+		if (curLikelihood <= bestLikelihood && curLikelihood > -std::numeric_limits<double>::infinity()) {
 			break;
 		}
 		bestLikelihood = curLikelihood;
@@ -542,7 +557,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	
 	bool cons_suspicion = false;
 	for (size_t k=0; k<bestCenters.size(); ++k) if (centersInCluster[k] == -1) cons_suspicion = true;
-	if (Globals::debug_output_likelihood && origBlockSize > 2) {
+	if (Globals::debug_output_likelihood) {
 		#pragma omp critical
 		{
 		cout << "Centers: \n";

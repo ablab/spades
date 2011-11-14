@@ -104,6 +104,7 @@ string Globals::kmers_after_clustering = "";
 
 
 void readFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read, bool reverse_complement) {
+	TIMEDLN("Reading single reads file " << readsFilename);
 	ireadstream irs(readsFilename, Globals::qvoffset);
 	VERIFY(irs.is_open());
 	Read r;
