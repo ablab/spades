@@ -165,8 +165,8 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
 		const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat, vector< vector<int> > & v,
 		int & left, int & right, bool & isGood, ofstream * ofs ) {
 	bool res = false;
-	if (ofs != NULL)
-		*ofs << "\n " << r.getName() << "\n" << seq.data() << "\n";
+	//if (ofs != NULL)
+	//	*ofs << "\n " << r.getName() << "\n" << seq.data() << "\n";
 	if (  stat.isGoodForIterative() ||
 			// if regular_threshold_for_correction = true, we use a (more relaxed) threshold isGood() for solid k-mers
 			((!Globals::use_iterative_reconstruction
@@ -237,6 +237,9 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 	// getting the leftmost and rightmost positions of a solid kmer
 	int left = read_size; int right = -1;
 
+	if (ofs != NULL)
+		*ofs << "\n " << r.getName() << "\n" << seq.data() << "\n";
+	
 	bool changedRead = false;
 	if (Globals::conserve_memory) {
 		pair<int, hint_t> it = make_pair( -1, BLOBKMER_UNDEFINED );

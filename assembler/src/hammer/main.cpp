@@ -175,9 +175,15 @@ void correctAndUpdatePairedReadFiles( const string & readsFilenameLeft, const st
 	while (irsl.is_open() && !irsl.eof()) {
 		Read l; Read r;
 		irsl >> l; irsr >> r;
+		if (outfv[0] != NULL)
+			(*outfv[0]) << "\n " << r.getName() << "\n" << r.getSequenceString().data() << "\n";
+	
 		size_t read_size_left = l.trimNsAndBadQuality(Globals::trim_quality);
 		size_t read_size_right = r.trimNsAndBadQuality(Globals::trim_quality);
-		if (read_size_left < K && read_size_right < K) continue;
+		if (read_size_left < K && read_size_right < K) {
+			if (outfv[0] != NULL) (*outfv[0]) << "very bad, size < " << K << "\n";
+			continue;
+		}
 		bool left_res = false;
 		bool right_res = false;
 		if (read_size_left >= K) {
