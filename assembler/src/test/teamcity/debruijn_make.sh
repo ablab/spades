@@ -1,7 +1,6 @@
 #!/bin/bash
 
-#cp src/debruijn/config.info.template src/debruijn/config.info
-
+cd ../../../
 ./prepare_cfg
 ./cpcfg
 cd data/
