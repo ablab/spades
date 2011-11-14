@@ -25,7 +25,11 @@ public:
 		VERIFY(
 				labels_.edge_inclusions.find(old_edge)
 						!= labels_.edge_inclusions.end());
-		VERIFY(labels_.edge_inclusions.find(old_edge)->second.size() > 0);
+//		VERIFY(labels_.edge_inclusions.find(old_edge)->second.size() > 0);
+		if (!(labels_.edge_inclusions.find(old_edge)->second.size() > 0)){
+			WARN("There are not exist copy for old graph edge "<< old_edge);
+		}
+
 		return labels_.edge_inclusions.find(old_edge)->second.size() == 1;
 	}
 
