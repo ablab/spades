@@ -1,7 +1,6 @@
 #!/bin/bash
 
-#cp src/debruijn/config.info.template src/debruijn/config.info
-
+cd ../../../
 ./prepare_cfg
 ./cpcfg
 cd data/
@@ -9,3 +8,4 @@ cd data/
 cd ..
 make clean
 make -j 5 all
+cd src/tests/teamcity/
