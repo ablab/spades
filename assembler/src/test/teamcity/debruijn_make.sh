@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd ../../../
-./prepare_cfg
+#./prepare_cfg
 ./cpcfg
 cd data/
 ./link_ftp.sh

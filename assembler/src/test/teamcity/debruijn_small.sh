@@ -2,3 +2,4 @@
 cd ../../../
 ./cpcfg
 ./run rd
+python teamcity.py
