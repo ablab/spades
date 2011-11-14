@@ -135,6 +135,10 @@ class PositionKMer {
 		return ( strncmp( Globals::blob + kmer1 + start_offset, Globals::blob + kmer2 + start_offset, end_offset - start_offset ) < 0 );
 	}
 
+	static bool equalKMersDirect( const hint_t & kmer1, const hint_t & kmer2) {
+		return ( strncmp( Globals::blob + kmer1, Globals::blob + kmer2, K ) == 0 );
+	}
+
 	static bool compareKMersDirect( const hint_t & kmer1, const hint_t & kmer2) {
 		return ( strncmp( Globals::blob + kmer1, Globals::blob + kmer2, K ) < 0 );
 	}
