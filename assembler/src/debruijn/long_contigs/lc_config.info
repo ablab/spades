@@ -3,7 +3,7 @@ from_file     true	  ; always true
 syminfo       false
 
 ;Only precount and estimate
-paired_info_only    false
+paired_info_only    true
 
 QUAKE_CROPPED_100K
 {
@@ -46,7 +46,13 @@ DELTA_CORRECTED_1
 
 PICHIA_CORRECTED 
 {
-    graph_file       data/debruijn/PICHIA_CORRECTED_1/K55/11.11_21.41.46/saves/simplified_graph
+    ;graph_file       data/debruijn/PICHIA_CORRECTED_1/K55/11.11_21.41.46/saves/simplified_graph
+    graph_file       data/debruijn/PICHIA_CORRECTED/K47/latest/saves/simplified_graph
+}
+
+SAUREUS_CORRECTED_MS
+{
+    graph_file      data/debruijn/SAUREUS_CORRECTED_MS/K55/11.14_05.15.09/saves/simplified_graph
 }
 
 ; paired info options
@@ -201,14 +207,36 @@ real_libs
 
     item_0
     {
-        read_size    75
+        read_size    100
+        insert_size  180
+        is_delta      2
+        var           5
+
+        SAUREUS_CORRECTED_MS
+        {
+            precounted       false
+            precounted_path  ./data/debruij
+            first  ./data/input/S.Aureus.USA300_FPR3757/Reads/Quaked/SRR022868_1.cor.fastq
+            second ./data/input/S.Aureus.USA300_FPR3757/Reads/Quaked/SRR022868_2.cor.fastq
+
+            has_advanced     false
+            advanced         ./data/debruijn/
+
+            raw              ./data/debruijn/
+       	}
+
+    }
+
+    item_10
+    {
+        read_size    100
         insert_size  280
         is_delta      2
         var           5
 
         PICHIA_CORRECTED
         {
-            precounted       true
+            precounted       false
             precounted_path  ./data/debruijn/PICHIA_CORRECTED/K55/11.12_05.08.48/paired_info_IS280_RS75_clustered
             first  ./data/input/P.stipitis/Reads/Quaked/HCT10499_s_7_1.cor.fastq
             second ./data/input/P.stipitis/Reads/Quaked/HCT10499_s_7_2.cor.fastq
@@ -229,7 +257,7 @@ real_libs
 
        	PICHIA_CORRECTED
        	{
-            precounted       true
+            precounted      false
             precounted_path  ./data/debruijn/PICHIA_CORRECTED/K55/11.12_05.08.48/paired_info_IS3200_RS75_clustered
 
             first  ./data/input/P.stipitis/Reads/Quaked/HCT10508_s_8_1.cor.fastq
