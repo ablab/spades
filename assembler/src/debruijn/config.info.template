@@ -65,7 +65,10 @@ pos
 	late_threading false
 }
 
-
+gap_closer
+{
+    minimal_intersection 10
+}
 
 
 

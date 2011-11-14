@@ -9,10 +9,11 @@
 #define GAP_CLOSER_HPP_
 
 #include "omni/paired_info.hpp"
+#include "omni/omni_tools.hpp"
 
 
 template<class Graph>
-void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, EdgesPositionHandler<Graph> edges_pos){
+void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, EdgesPositionHandler<Graph> edges_pos, int MimimalIntersection){
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef vector<PairInfo<EdgeId>> PairInfos;
@@ -24,14 +25,13 @@ void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, Edg
     	if (cur_infos.size() > 0){
             VertexId endOfFirstEdge = g.EdgeEnd(cur_infos[0].first);
             VertexId startOfSecondEdge = g.EdgeStart(cur_infos[0].second);
-            if (!distanceTool.IsReachable(endOfFirstEdge, startOfSecondEdge))
-            {
+            if (!distanceTool.IsReachable(endOfFirstEdge, startOfSecondEdge)){
             	for(size_t i = 0; i < cur_infos.size(); ++i){
                 	int cur_gap = cur_infos[i].d - g.length(cur_infos[0].first);
-            		if (  cur_gap >= 0 && cur_gap <= 45){
+        			size_t k_ = debruijn_graph::K;
+            		if (  cur_gap >= 0 && cur_gap <= k_ - MimimalIntersection){
             			Sequence seq1 = g.EdgeNucls(cur_infos[0].first);
             			Sequence seq2 = g.EdgeNucls(cur_infos[0].second);
-            			size_t k_ = debruijn_graph::K;
 //            			INFO("possible short gap "<<edges_pos.str(cur_infos[0].first)<<"       "<<edges_pos.str(cur_infos[0].second));
 //            			INFO("possible short gap "<<seq1.Subseq(seq1.size()- k_ + cur_gap).str()<<"  "<<seq2.Subseq(0, k_ -  cur_gap).str());
             			if (seq1.Subseq(seq1.size()- k_ +  cur_gap) == seq2.Subseq(0, k_ -  cur_gap)){

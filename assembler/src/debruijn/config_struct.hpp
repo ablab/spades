@@ -225,6 +225,11 @@ struct debruijn_config {
 		bool late_threading;
 	};
 
+
+	struct gap_closer {
+		int minimal_intersection;
+	};
+
 	std::string dataset_name;
 	std::string input_dir;
 	std::string output_root;
@@ -258,6 +263,7 @@ struct debruijn_config {
 	repeat_resolver rr;
 	dataset ds;
 	position_handler pos;
+	gap_closer gc;
 };
 
 // specific load functions
@@ -364,6 +370,12 @@ inline void load(boost::property_tree::ptree const& pt,
 }
 
 inline void load(boost::property_tree::ptree const& pt,
+		debruijn_config::gap_closer& gc) {
+	using config_common::load;
+	load(pt, "minimal_intersection", gc.minimal_intersection);
+}
+
+inline void load(boost::property_tree::ptree const& pt,
 		debruijn_config::dataset& ds) {
 	using config_common::load;
 	load(pt, "first", ds.first);
@@ -432,6 +444,7 @@ inline void load(boost::property_tree::ptree const& pt, debruijn_config& cfg) {
 	load(pt, "ade", cfg.ade); // advanced distance estimator:
 	load(pt, "rr", cfg.rr); // repeat resolver:
 	load(pt, "pos", cfg.pos); // position handler:
+	load(pt, "gap_closer", cfg.gc);
 	load(pt, "need_consensus", cfg.need_consensus);
 	load(pt, "uncorrected_reads", cfg.uncorrected_reads);
 
