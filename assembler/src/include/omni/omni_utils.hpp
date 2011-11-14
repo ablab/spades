@@ -38,6 +38,10 @@ public:
 		handler_name_(name) {
 	}
 
+	virtual ~ActionHandler() {
+		TRACE("~ActionHandler " << handler_name_);
+	}
+
 	/**
 	 * Method returns name of this handler
 	 */
@@ -122,9 +126,6 @@ public:
 			vector<double> &split_coefficients, VertexId oldVertex) {
 	}
 
-	virtual ~ActionHandler() {
-		TRACE("~ActionHandler " << handler_name_);
-	}
 };
 
 template<class Graph>

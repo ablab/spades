@@ -20,6 +20,10 @@
 #include "omni/edges_position_handler.hpp"
 #include "omni/EdgeVertexFilter.hpp"
 
+namespace omnigraph {
+
+}
+
 namespace debruijn_graph {
 using namespace omnigraph;
 //todo think of inner namespace

@@ -87,6 +87,9 @@ add_subdirectory(debruijn)
 add_subdirectory(abruijn)
 add_subdirectory(bayes)
 add_subdirectory(hammer)
-add_subdirectory(common_test)
 add_subdirectory(debruijn/long_contigs)
 add_subdirectory(debruijn/long_contigs/utils)
+
+#tests
+add_subdirectory(test/include_test)
+add_subdirectory(test/debruijn)

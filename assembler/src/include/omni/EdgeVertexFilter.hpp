@@ -16,7 +16,7 @@ class EdgeVertexFilter {
 	set<EdgeId> edges_;
 	Graph &g_;
 public:
-	EdgeVertexFilter(Graph &g, vector<VertexId> vertices, bool add_verices_with_conjugate): g_(g){
+	EdgeVertexFilter(Graph &g, const vector<VertexId>& vertices, bool add_verices_with_conjugate): g_(g){
 		for (auto it = vertices.begin(); it != vertices.end(); ++it){
 			vertices_.insert(*it);
 			if (add_verices_with_conjugate){
@@ -36,7 +36,6 @@ public:
 			}
 		}
 	}
-	~EdgeVertexFilter(){};
 
 	size_t VertexCount(){return vertices_.size();};
 

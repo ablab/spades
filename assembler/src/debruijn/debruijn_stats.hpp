@@ -383,6 +383,26 @@ int PrintGraphComponents(const string& file_name, Graph& g,
 		string component_name = ConstructComponentName(file_name, cnt).c_str();
 		auto component = splitter.NextComponent();
 
+		EdgeVertexFilter<Graph> filter(g, component, symmetric_mode);
+		printGraph(g, old_IDs, component_name, paired_index, edges_positions,
+				&filter);
+		cnt++;
+	}
+	return (cnt - 1);
+}
+
+//for test generating
+template<class Graph>
+int PrintGraphComponentContainingEdge(const string& file_name, Graph& g,
+		size_t split_edge_length, IdTrackHandler<Graph> &int_ids) {
+	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
+	ComponentSizeFilter<Graph> checker(g, split_edge_length, 2);
+	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
+	size_t cnt = 1;
+	while (!splitter.Finished() && cnt <= 1000) {
+		string component_name = ConstructComponentName(file_name, cnt).c_str();
+		auto component = splitter.NextComponent();
+
 		//		EdgeVertexFilter<Graph> filter(g, component);
 		EdgeVertexFilter<Graph> filter(g, component, symmetric_mode);
 		printGraph(g, old_IDs, component_name, paired_index, edges_positions,
@@ -390,7 +410,6 @@ int PrintGraphComponents(const string& file_name, Graph& g,
 		cnt++;
 	}
 	return (cnt - 1);
-
 }
 
 void OutputContigs(NonconjugateDeBruijnGraph& g,
@@ -461,10 +480,6 @@ void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
 	}
 	INFO("SingleFileContigs(Conjugate) written");
 }
-
-
-
-
 
 void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig, PairedInfoIndex<conj_graph_pack::graph_t> &ind)
 {

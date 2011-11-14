@@ -531,32 +531,65 @@ public:
 	virtual ~AbstractFilter() {
 	}
 
-	virtual bool Check(Element &element) const = 0;
+	virtual bool Check(const Element &element) const = 0;
 };
 
 template<class Graph>
-class ComponentSizeFilter: public AbstractFilter<vector<
-		typename Graph::VertexId>> {
-private:
+class GraphComponentFilter : public AbstractFilter<vector<typename Graph::VertexId>> {
+	const Graph& graph_;
+protected:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	const Graph& graph_;
+
+	const Graph& graph() {
+		return graph_;
+	}
+};
+
+template<class Graph>
+class AnyEdgeContainFilter: public GraphComponentFilter<Graph> {
+	const IdTrackHandler<Graph>& int_ids_;
+	const vector<int> edges_of_interest_;
+public:
+	AnyEdgeContainFilter(const IdTrackHandler<Graph>& int_ids, const vector<int>& edges_of_interest) :
+	int_ids_(int_ids),
+	edges_of_interest_(edges_of_interest) {
+
+	}
+
+	AnyEdgeContainFilter(const IdTrackHandler<Graph>& int_ids, int edge_of_interest) :
+	int_ids_(int_ids),
+	edges_of_interest_({edge_of_interest}) {
+
+	}
+
+	bool ContainsEdge(const vector<VertexId> &component, EdgeId e) {
+		return std::find(vertices.begin(), vertices.end(), this->graph().EdgeStart(edge)) != vertices.end()
+				&& std::find(vertices.begin(), vertices.end(), this->graph().EdgeEnd(edge)) != vertices.end();
+	}
+
+	/*virtual*/ bool Check(const vector<VertexId> &vertices) const {
+		for (auto it = edges_of_interest_.begin(); it != edges_of_interest_.end(); ++it) {
+			if (ContainsEdge(vertices, int_ids_.ReturnEdgeId(*it))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+};
+
+template<class Graph>
+class ComponentSizeFilter: public GraphComponentFilter<Graph> {
+private:
 	size_t max_length_;
 	size_t vertex_number_;
-
-	//	bool CheckYellow() {
-	//
-	//	}
-	//
 public:
 	ComponentSizeFilter(const Graph &graph, size_t max_length, size_t vertex_number) :
 		graph_(graph), max_length_(max_length), vertex_number_(vertex_number) {
 	}
 
-	virtual ~ComponentSizeFilter() {
-	}
-
-	virtual bool Check(vector<VertexId> &vertices) const {
+	/*virtual*/ bool Check(const vector<VertexId> &vertices) const {
 		if (vertices.size() <= vertex_number_)
 			return false;
 		set<VertexId> component(vertices.begin(), vertices.end());
@@ -589,14 +622,11 @@ public:
 		inner_splitter_(inner_splitter), checker_(checker), ready(false) {
 	}
 
-	virtual ~FilteringSplitterWrapper() {
-	}
-
-	virtual string ComponentName() {
+	/*virtual*/ string ComponentName() {
 		return inner_splitter_.ComponentName();
 	}
 
-	virtual vector<VertexId> NextComponent() {
+	/*virtual*/ vector<VertexId> NextComponent() {
 		if (Finished()) {
 			VERIFY(false);
 			return vector<VertexId> ();
@@ -605,7 +635,7 @@ public:
 		return next;
 	}
 
-	virtual bool Finished() {
+	/*virtual*/ bool Finished() {
 		if (!ready) {
 			TRACE("Calculating next nontrivial component");
 			while (!inner_splitter_.Finished()) {
