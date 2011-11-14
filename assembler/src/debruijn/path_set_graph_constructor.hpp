@@ -8,7 +8,7 @@
 #include "verify.hpp"
 #include "omni/omni_tools.hpp"
 #include "omni/omnigraph.hpp"
-
+#include <unordered_map>
 #include "omni/edges_position_handler.hpp"
 #include "omni/total_labeler.hpp"
 #include "path_set_stats.hpp"
@@ -159,7 +159,7 @@ public:
 				VertexId new_end = new_gp.int_ids.ReturnVertexId(real_ids[extends[i].id]);
 				VERIFY(new_end != NULL);
 				VERIFY(real_ids[extends[i].id] == new_gp.int_ids.ReturnIntId(new_end));
-				DEBUG("adding edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge) <<" and coverage "<< gp.g.coverage(old_first_edge) << " * " << extends[i].weight / weight_sums[old_first_edge]);
+//				DEBUG("adding edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge) <<" and coverage "<< gp.g.coverage(old_first_edge) << " * " << extends[i].weight / weight_sums[old_first_edge]);
 				bool flag = true;
 				vector<EdgeId> out_e = new_gp.g.OutgoingEdges(new_start);
 				for (auto eid = out_e.begin(); eid != out_e.end(); ++eid){
@@ -172,10 +172,12 @@ public:
 				if ( (!flag)/* && real_ids[first.id] != first.id*/) {
 					DEBUG("ignoring clone to pathset " << extends[i].id << " and vertex " << real_ids[extends[i].id]);
 				} else {
-					EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
-					WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge) *   extends[i].weight / weight_sums[old_first_edge]));
-					new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
-					new_to_old.insert(make_pair(eid, old_first_edge));
+					AddEdgeWithAllHandlers(new_start, new_end, old_first_edge);
+
+//					EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
+//					WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge) *   extends[i].weight / weight_sums[old_first_edge]));
+//					new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
+//					new_to_old.insert(make_pair(eid, old_first_edge));
 //					DEBUG("count was "<< count);
 					//		    omnigraph::WriteSimple(new_gp.g, tot_labeler_after, cfg::get().output_dir  + ToString(count)+".dot", "no_repeat_graph");
 					count ++ ;
@@ -210,19 +212,20 @@ public:
 						VertexId new_end = new_gp.g.AddVertex();
 						old_first_edge = * path_iter;
 
-						DEBUG("adding edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge) << " and coverage"<< gp.g.coverage(old_first_edge) /*<< " * "  << first.weight / weight_sums[old_first_edge]*/);
-
-						EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
-						WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge)));
-						new_to_old.insert(make_pair(eid, old_first_edge));
-						new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
+//						DEBUG("adding edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge) << " and coverage"<< gp.g.coverage(old_first_edge) /*<< " * "  << first.weight / weight_sums[old_first_edge]*/);
+						AddEdgeWithAllHandlers(new_start, new_end, old_first_edge);
+//
+//						EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
+//						WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge)));
+//						new_to_old.insert(make_pair(eid, old_first_edge));
+//						new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
 						new_start = new_end;
 						count++;
 
 					}
 					VertexId new_end = new_gp.g.AddVertex();
 					old_first_edge = first.end;
-					DEBUG("adding edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge));
+//					DEBUG("adding edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge));
 
 					AddEdgeWithAllHandlers(new_start, new_end, old_first_edge);
 
