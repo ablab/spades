@@ -17,7 +17,7 @@ function iterative_compilation
 
 	done
 
-	echo "$NAME finished"
+	echo "$NAME compilation finished"
 }
 
 function iterative_run
@@ -32,7 +32,7 @@ function iterative_run
 
         done
 
-        echo "$NAME finished"
+        echo "$NAME run finished"
 }
 
 START=$(date +%m.%d_%H.%M.%S)
