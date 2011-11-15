@@ -95,22 +95,27 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 
 		INFO("Use single reads = " << cfg::get().use_single_reads);
 		INFO("Checking for single reads usage flag and files");
-		if (cfg::get().use_single_reads
-				&& single_reads_filename(cfg::get().ds.single_first,
-						cfg::get().input_dir)
-				&& single_reads_filename(cfg::get().ds.single_second,
-						cfg::get().input_dir)) {
-			INFO("Single read files found and WILL be used");
-			ReadStream* single_stream_1 = new EasyStream(
-					*single_reads_filename(cfg::get().ds.single_first,
+		if(cfg::get().etalon_graph_mode) {
+			single_read_stream = new EasyStream(*single_reads_filename(cfg::get().ds.reference_genome,
 							cfg::get().input_dir));
-			ReadStream* single_stream_2 = new EasyStream(
-					*single_reads_filename(cfg::get().ds.single_second,
-							cfg::get().input_dir));
-			vector<ReadStream*> single_streams = {single_stream_1, single_stream_2};
-			single_read_stream = new MultiFileStream(single_streams, true);
 		} else {
-			INFO("Single read files WILL NOT be used");
+			if (cfg::get().use_single_reads
+					&& single_reads_filename(cfg::get().ds.single_first,
+							cfg::get().input_dir)
+					&& single_reads_filename(cfg::get().ds.single_second,
+							cfg::get().input_dir)) {
+				INFO("Single read files found and WILL be used");
+				ReadStream* single_stream_1 = new EasyStream(
+						*single_reads_filename(cfg::get().ds.single_first,
+								cfg::get().input_dir));
+				ReadStream* single_stream_2 = new EasyStream(
+						*single_reads_filename(cfg::get().ds.single_second,
+								cfg::get().input_dir));
+				vector<ReadStream*> single_streams = {single_stream_1, single_stream_2};
+				single_read_stream = new MultiFileStream(single_streams, true);
+			} else {
+				INFO("Single read files WILL NOT be used");
+			}
 		}
 
 		INFO("Use additional contigs = " << cfg::get().use_additional_contigs);
