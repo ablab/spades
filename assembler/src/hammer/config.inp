@@ -48,14 +48,14 @@ num_of_tmp_files				8
 skip_to_clustering				1
 skip_to_subvectors				1
 skip_sorting_subvectors			1
-skip_cluster_merging			1
-skip_iterative					0
+skip_cluster_merging			0
+skip_iterative					-1
 unload_blob_before_merge		0
 hamming_class_buffer			100000
 
 ; debug output
-debug_output_clustering			0
-debug_output_likelihood			0
+debug_output_clustering			1
+debug_output_likelihood			1
 
 ; new, "better" clustering that might not work out
 likelihood_e_step				1
