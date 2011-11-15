@@ -239,6 +239,7 @@ struct debruijn_config {
 
 	bool use_single_reads;
 	bool use_additional_contigs;
+	bool etalon_graph_mode;
 	std::string additional_contigs;
 
 	std::string load_from;
@@ -423,6 +424,7 @@ inline void load(boost::property_tree::ptree const& pt, debruijn_config& cfg) {
 
 	load(pt, "entry_point", cfg.entry_point);
 
+	load(pt, "etalon_graph_mode", cfg.etalon_graph_mode);
 	load(pt, "use_additional_contigs", cfg.use_additional_contigs);
 	load(pt, "use_single_reads", cfg.use_single_reads);
 

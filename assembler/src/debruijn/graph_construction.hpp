@@ -173,7 +173,7 @@ void ConstructGraphWithPairedInfo(conj_graph_pack& gp,
 	MultiFileStream composite_stream(streams);
 	ConstructGraphWithCoverage<k>(gp.g, gp.index, composite_stream, contigs_stream);
 
-	if (cfg::get().etalon_info_mode)
+	if (cfg::get().etalon_info_mode || cfg::get().etalon_graph_mode)
 		FillEtalonPairedIndex<k>(paired_index, gp.g, gp.index, gp.kmer_mapper, gp.genome);
 	else
 		FillPairedIndex<k>(gp.g, gp.index, paired_index, stream);

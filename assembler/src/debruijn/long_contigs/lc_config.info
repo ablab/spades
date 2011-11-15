@@ -21,6 +21,11 @@ QUAKE_FULL
     
 }
 
+EAS600_QUAKE_FULL
+{
+    graph_file       ./data/debruijn/EAS600_QUAKE_FULL/K55/source/simplified_graph
+}
+
 LB_QUAKE_FULL
 {
     graph_file       ./data/debruijn/LB_QUAKE_FULL/K55/grp1910/simplified_graph
@@ -46,8 +51,8 @@ DELTA_CORRECTED_1
 
 PICHIA_CORRECTED 
 {
-    ;graph_file       data/debruijn/PICHIA_CORRECTED_1/K55/11.11_21.41.46/saves/simplified_graph
-    graph_file       data/debruijn/PICHIA_CORRECTED/K47/latest/saves/simplified_graph
+    graph_file       data/debruijn/PICHIA_CORRECTED_1/K55/11.11_21.41.46/saves/simplified_graph
+    ;graph_file       data/debruijn/PICHIA_CORRECTED/K47/latest/saves/simplified_graph
 }
 
 SAUREUS_CORRECTED_MS
@@ -227,9 +232,9 @@ real_libs
 
     }
 
-    item_10
+    item_0
     {
-        read_size    100
+        read_size    75
         insert_size  280
         is_delta      2
         var           5
@@ -432,6 +437,20 @@ real_libs
             
             raw              ./data/debruijn/
         }
+
+        EAS600_QUAKE_FULL
+         {
+            precounted       false
+            precounted_path  ./data/debruijn
+
+            first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
+            second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz
+
+            has_advanced     false
+            advanced         ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS220_RS100_acl
+
+            raw              ./data/debruijn/
+        }
     }     
    
     
@@ -490,6 +509,22 @@ real_libs
             
             raw              ./data/debruijn/
         }
+        
+        EAS600_QUAKE_FULL
+        {
+            precounted       false
+
+            precounted_path  ./data/debrujn/
+
+            first    ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_1.cor.fastq.gz
+            second    ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_2.cor.fastq.gz
+
+            has_advanced     false
+            advanced         ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS480_RS100_acl
+
+            raw              ./data/debruijn/
+        }
+
     } 
 
 }

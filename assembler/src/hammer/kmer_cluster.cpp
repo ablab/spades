@@ -421,12 +421,15 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 
 	// main loop
 	bool changed = true;
-	while (changed) {
+	bool likelihood_improved = true;
+	double total_likelihood = - std::numeric_limits<double>::infinity();
+	while (changed && likelihood_improved) {
 		// fill everything with zeros
 		changed = false;
 		fill(changedCenter.begin(), changedCenter.end(), false);
 		for (uint32_t j=0; j < l; ++j) centers[j].second.first = 0;
 		
+		double cur_total = 0;
 		// E step: find which clusters we belong to
 		for (size_t i=0; i < kmerinds.size(); ++i) {
 			for (uint32_t j=0; j < l; ++j) {
@@ -443,6 +446,7 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 			int newInd = Globals::likelihood_e_step ?
 				 (max_element(loglike.begin(), loglike.end()) - loglike.begin()) :
 				 (min_element(dists.begin(), dists.end()) - dists.begin());
+			cur_total += loglike[newInd];
 			if (indices[i] != newInd) {
 				changed = true;
 				changedCenter[indices[i]] = true;
@@ -451,6 +455,11 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 			}
 			++centers[indices[i]].second.first;
 		}
+		if (Globals::debug_output_likelihood) {
+			cout << "      total likelihood=" << cur_total << " as compared to previous " << total_likelihood << "\n";
+		}
+		likelihood_improved = (cur_total > total_likelihood);
+		if ( likelihood_improved ) total_likelihood = cur_total;
 		// M step: find new cluster centers
 		for (uint32_t j=0; j < l; ++j) {
 			if (!changedCenter[j]) continue; // nothing has changed

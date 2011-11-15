@@ -384,6 +384,17 @@ Sequence PathToSequence(Graph& g, BidirectionalPath& path) {
 	return result.BuildSequence();
 }
 
+double PathCoverage(Graph& g, BidirectionalPath& path) {
+	double cov = 0.0;
+	double len = 0.0;
+
+	for (int i = 0; i < (int) path.size(); ++i) {
+		cov += g.coverage(path[i]) * g.length(path[i]);
+		len += g.length(path[i]);
+	}
+	return cov / len;
+}
+
 //Output
 void OutputPathsAsContigs(Graph& g, std::vector<BidirectionalPath> paths, const string& filename) {
 	INFO("Writing contigs to " << filename);
@@ -401,8 +412,10 @@ void OutputContigsNoComplement(Graph& g, const std::string& filename) {
 	FilterComlementEdges(g, filtered);
 
 	INFO("Outputting contigs to " << filename);
-	osequencestream oss(filename);
+	osequencestream_with_data_for_scaffold oss(filename);
 	for (auto it = filtered.begin(); it != filtered.end(); ++it) {
+
+		oss.setCoverage(g.coverage(*it));
 		oss << g.EdgeNucls(*it);
 	}
 	INFO("Contigs written");
@@ -415,14 +428,15 @@ void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath>& 
 		std::set<int> notToPrint) {
 
 	INFO("Writing contigs to " << filename);
-	osequencestream oss(filename);
+	osequencestream_with_data_for_scaffold oss(filename);
 
 	for (int i = 0; i < (int) paths.size(); i += 2) {
 		if (notToPrint.count(i) || notToPrint.count(i + 1) || paths[i].size() == 0) {
 			continue;
 		}
 
-		oss.ptr = (void*) &paths[i];
+		oss.setID((size_t) &paths[i]);
+		oss.setCoverage(PathCoverage(g, paths[i]));
 		oss << PathToSequence(g, paths[i]);
 	}
 

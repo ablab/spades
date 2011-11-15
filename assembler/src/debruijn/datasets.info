@@ -509,7 +509,7 @@ PICHIA_CORRECTED
         RL              75     ; read length
         IS              280     ; insert size
         single_cell     false
-        reference_genome  P.stipitis/dummy.fa
-        LEN             15000000 ; total size
+        reference_genome  P.stipitis/picha.fa
+        LEN             15000000	; total size
 }
 
