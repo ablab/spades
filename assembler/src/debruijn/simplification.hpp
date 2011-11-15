@@ -32,7 +32,7 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 
 	EdgeQuality<Graph> quality_labeler(gp.g, gp.index, gp.kmer_mapper, gp.genome);
 
-	SimplifyGraph<K>(gp, quality_labeler, paired_index, tot_lab, 10,
+	SimplifyGraph<K>(gp, quality_labeler, tot_lab, 10,
 			cfg::get().output_dir/*, etalon_paired_index*/);
 
 	//  ProduceInfo<k>(g, index, *totLab, genome, output_folder + "simplified_graph.dot", "simplified_graph");

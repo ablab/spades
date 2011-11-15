@@ -276,7 +276,6 @@ const Sequence& genome, size_t bound, const string &file_name) {
 
 template<size_t k>
 void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
-		const PairedInfoIndex<Graph>& paired_index,
 		omnigraph::GraphLabeler<Graph>& tot_lab, size_t iteration_count,
 		const string& output_folder) {
 	INFO("-----------------------------------------");
