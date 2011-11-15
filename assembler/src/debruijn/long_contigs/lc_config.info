@@ -3,7 +3,7 @@ from_file     true	  ; always true
 syminfo       false
 
 ;Only precount and estimate
-paired_info_only    true
+paired_info_only    false
 
 QUAKE_CROPPED_100K
 {
@@ -16,8 +16,8 @@ QUAKE_CROPPED_400K
 QUAKE_FULL
 {
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
-    graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_NEW/simplified_graph
-    ;graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/simplified_graph
+    ;graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_NEW/simplified_graph
+    graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/simplified_graph
     
 }
 
@@ -52,7 +52,7 @@ PICHIA_CORRECTED
 
 SAUREUS_CORRECTED_MS
 {
-    graph_file      data/debruijn/SAUREUS_CORRECTED_MS/K55/11.14_05.15.09/saves/simplified_graph
+    graph_file      data/debruijn/SAUREUS_CORRECTED_MS/K55/source/simplified_graph
 }
 
 ; paired info options
@@ -77,13 +77,13 @@ first_grow_forward      true
 ; seed selection
 ss
 {
-    min_coverage   20
+    min_coverage   120
     glue_seeds     false
     max_cycles     1
     
     remove_untrusted  true
     check_trusted     true
-    trusted_threshold 0.3
+    trusted_threshold 0.2
     
     short_single      100
     chimeric_len      0
@@ -100,9 +100,9 @@ ss
 ; extension selection
 es
 {
-    use_weight_function_first  false
-    weight_fun_threshold       0.1
-    weight_threshold           0.3
+    use_weight_function_first  true
+    weight_fun_threshold       0.2
+    weight_threshold           0.1
     priority_coeff             3
 
     use_delta_first       true
@@ -203,9 +203,9 @@ research
 ; additional real libs
 real_libs
 {    
-    count 1
+    count 2
 
-    item_0
+    item_10
     {
         read_size    100
         insert_size  180
@@ -214,8 +214,8 @@ real_libs
 
         SAUREUS_CORRECTED_MS
         {
-            precounted       false
-            precounted_path  ./data/debruij
+            precounted       true
+            precounted_path  data/debruijn/SAUREUS_CORRECTED_MS/K55/source/paired_info_IS180_RS100_clustered
             first  ./data/input/S.Aureus.USA300_FPR3757/Reads/Quaked/SRR022868_1.cor.fastq
             second ./data/input/S.Aureus.USA300_FPR3757/Reads/Quaked/SRR022868_2.cor.fastq
 
@@ -248,7 +248,7 @@ real_libs
         }
     }
 
-    item_1
+    item_11
     {
       	 read_size    75
       	 insert_size  3200
@@ -381,7 +381,7 @@ real_libs
     }
     
     
-    item_11
+    item_0
     {
         read_size     100
         insert_size   220
@@ -417,7 +417,7 @@ real_libs
         
         QUAKE_FULL
         {
-            precounted       false
+            precounted       true
             ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_OLD/paired_info_IS220_RS100_clustered
             precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS220_RS100_clustered
             ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/09.26_02_00/paired_info_IS220_RS100_clustered
@@ -435,7 +435,7 @@ real_libs
     }     
    
     
-    item_10
+    item_1
     {
         read_size     100
         insert_size   480
@@ -471,7 +471,7 @@ real_libs
         
         QUAKE_FULL
         {
-            precounted       false
+            precounted       true
             
             ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_OLD/paired_info_IS480_RS100_clustered
             precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS480_RS100_clustered
