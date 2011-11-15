@@ -75,7 +75,7 @@ private:
 	ofstream ofstream_;
 	int id_;
 
-	size_t uid_;
+	void* uid_;
 	double cov_;
 
 public:
@@ -91,7 +91,7 @@ public:
 		cov_ = c;
 	}
 
-	void setID(size_t uid) {
+	void setID(void* uid) {
 		uid_ = uid;
 	}
 
@@ -114,7 +114,7 @@ private:
 	ofstream scstream_;
 	int id_;
 
-	size_t uid_;
+	void* uid_;
 	double cov_;
 
 public:
@@ -133,7 +133,7 @@ public:
 		cov_ = c;
 	}
 
-	void setID(size_t uid) {
+	void setID(void* uid) {
 		uid_ = uid;
 	}
 
