@@ -316,6 +316,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
     INFO("---Clearing resolved graph---");
 
+
+
     EdgeRemover<typename graph_pack::graph_t> edge_remover(resolved_gp.g, false);
     for (int i = 0; i < 3; ++i)
     {

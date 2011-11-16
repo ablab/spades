@@ -827,7 +827,7 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 	int count = 0;
 	while (comps.size() != 0) {
 		for(size_t i = 0; i < comps.size(); i++) {
-			vertices.insert(make_pair(10000 - new_IDs.ReturnIntId(comps[i]), comps[i]));
+			vertices.insert(make_pair(count, comps[i]));
 			count++;
 		}
 		if (splitter.Finished())
