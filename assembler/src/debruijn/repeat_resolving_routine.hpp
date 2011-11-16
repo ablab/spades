@@ -222,6 +222,52 @@ string GeneratePostfix(){
 }
 
 template<class graph_pack>
+void produceResolvedPairedInfo(graph_pack& origin_gp,
+		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
+		graph_pack& resolved_gp,
+		EdgeLabelHandler<typename graph_pack::graph_t>& labels_after,
+		PairedInfoIndex<typename graph_pack::graph_t>& resolved_graph_paired_info) {
+
+    INFO("Generating paired info for resolved graph");
+    ResolvedGraphPairInfoCounter<typename graph_pack::graph_t> resolved_graph_paired_info_counter(
+    			origin_gp.g,
+    			clustered_index,
+    			resolved_gp.g,
+    			labels_after);
+
+    resolved_graph_paired_info_counter.FillResolvedGraphPairedInfo(resolved_graph_paired_info);
+    INFO("Paired info for resolved graph generated");
+}
+
+
+template<class graph_pack>
+void saveResolvedPairedInfo(graph_pack& resolved_gp,
+		PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info,
+		const string& graph_name, const string& subfolder) {
+
+	std::string rr_filename = cfg::get().output_dir + subfolder + graph_name;
+	INFO("Saving graph and paired info to " << rr_filename);
+	printGraph(resolved_gp.g, resolved_gp.int_ids, rr_filename, resolved_gp.edge_pos,
+			(PairedInfoIndex<typename graph_pack::graph_t> *) 0, (PairedInfoIndex<typename graph_pack::graph_t> *) 0,
+			&resolved_graph_paired_info);
+	INFO("Saved");
+}
+
+template<>
+void saveResolvedPairedInfo(conj_graph_pack& resolved_gp,
+		PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_paired_info,
+		const string& graph_name, const string& subfolder) {
+
+	std::string rr_filename = cfg::get().output_dir + subfolder + graph_name;
+	INFO("Saving graph and paired info to " << rr_filename);
+	printGraph(resolved_gp.g, resolved_gp.int_ids, rr_filename, resolved_gp.edge_pos,
+			(PairedInfoIndex<conj_graph_pack::graph_t> *) 0, (PairedInfoIndex<conj_graph_pack	::graph_t> *) 0,
+			&resolved_graph_paired_info, &resolved_gp.kmer_mapper);
+	INFO("Saved");
+}
+
+
+template<class graph_pack>
 void process_resolve_repeats(graph_pack& origin_gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
 		graph_pack& resolved_gp, const string& graph_name,
@@ -249,15 +295,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
                    cfg::get().output_dir + subfolder +"resolve_" + graph_name +  "/", labels_after);
 
     //Generating paired info for resolved graph
-    INFO("Generating paired info for resolved graph");
     PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info(resolved_gp.g);
-    ResolvedGraphPairInfoCounter<typename graph_pack::graph_t> resolved_graph_paired_info_counter(
-    			origin_gp.g,
-    			clustered_index,
-    			resolved_gp.g,
-    			labels_after);
-    resolved_graph_paired_info_counter.FillResolvedGraphPairedInfo(resolved_graph_paired_info);
-    INFO("Paired info for resolved graph generated");
+    produceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_graph_paired_info);
+    saveResolvedPairedInfo(resolved_gp, resolved_graph_paired_info, graph_name + "_resolved", subfolder);
     //Paired info for resolved graph generated
 
     if (output_contigs) {
@@ -286,6 +326,13 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	}
 
 	INFO("---Cleared---");
+
+    //Generating paired info for resolved graph
+    PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info(resolved_gp.g);
+    produceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_cleared_graph_paired_info);
+    saveResolvedPairedInfo(resolved_gp, resolved_cleared_graph_paired_info, graph_name + "_resolved_cleared", subfolder);
+    //Paired info for resolved graph generated
+
 	INFO("---Output Contigs---");
 
 	if (output_contigs)
