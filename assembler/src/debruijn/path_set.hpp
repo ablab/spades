@@ -284,6 +284,7 @@ class PathSetIndex
 private:
     PathSetIndexData<EdgeId> data_;
     PathSetIndexData<EdgeId> backwarddata_;
+    vector<PathSetIndexData<EdgeId> > additional_libs;
     typedef vector<EdgeId> Path;
     graph_pack& gp;
     
@@ -342,8 +343,12 @@ private:
 public:
     PathSetIndex(PathSetIndexData<EdgeId> data, graph_pack& gp):data_(data), gp(gp){
         GenerateBackwardData();
+        additional_libs.clear();
     }
 
+    void AddAdditionalLib(PathSetIndexData<EdgeId>& lib){
+    	additional_libs.push_back(lib);
+    }
 
     void Process(PathSetIndexData<EdgeId>& filteredPathSetData)
     {
@@ -353,6 +358,7 @@ public:
         PathSetIndexData<EdgeId> finnestData;
         SplitPathSet(filteredPathSetData,finnestData);
     }
+
     void SplitPathSet(PathSetIndexData<EdgeId>&inputPathSetData, PathSetIndexData<EdgeId> &splitPathSetData )
     {
         for(auto iter = inputPathSetData.begin() ; iter != inputPathSetData.end() ;++iter)
