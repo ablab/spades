@@ -239,7 +239,6 @@ void produceResolvedPairedInfo(graph_pack& origin_gp,
     INFO("Paired info for resolved graph generated");
 }
 
-
 template<class graph_pack>
 void saveResolvedPairedInfo(graph_pack& resolved_gp,
 		PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info,
@@ -247,25 +246,12 @@ void saveResolvedPairedInfo(graph_pack& resolved_gp,
 
 	std::string rr_filename = cfg::get().output_dir + subfolder + graph_name;
 	INFO("Saving graph and paired info to " << rr_filename);
-	printGraph(resolved_gp.g, resolved_gp.int_ids, rr_filename, resolved_gp.edge_pos,
-			(PairedInfoIndex<typename graph_pack::graph_t> *) 0, (PairedInfoIndex<typename graph_pack::graph_t> *) 0,
-			&resolved_graph_paired_info);
+	//todo fix!!!
+	NonconjugateDataPrinter<typename graph_pack::graph_t> printer(resolved_gp.g, resolved_gp.int_ids);
+	PrintGraphPack<graph_pack>(rr_filename, printer, resolved_gp);
+	PrintClusteredIndex<typename graph_pack::graph_t>(rr_filename, printer, resolved_graph_paired_info);
 	INFO("Saved");
 }
-
-template<>
-void saveResolvedPairedInfo(conj_graph_pack& resolved_gp,
-		PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_paired_info,
-		const string& graph_name, const string& subfolder) {
-
-	std::string rr_filename = cfg::get().output_dir + subfolder + graph_name;
-	INFO("Saving graph and paired info to " << rr_filename);
-	printGraph(resolved_gp.g, resolved_gp.int_ids, rr_filename, resolved_gp.edge_pos,
-			(PairedInfoIndex<conj_graph_pack::graph_t> *) 0, (PairedInfoIndex<conj_graph_pack	::graph_t> *) 0,
-			&resolved_graph_paired_info, &resolved_gp.kmer_mapper);
-	INFO("Saved");
-}
-
 
 template<class graph_pack>
 void process_resolve_repeats(graph_pack& origin_gp,
@@ -506,8 +492,9 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 	string component_name = cfg::get().output_dir + "graph_components/"
 			+ graph_name;
 
-	scanConjugateGraph(&conj_gp.g, &conj_gp.int_ids, component_name,
-			&clustered_index, &conj_gp.edge_pos);
+	ConjugateDataScanner<Graph> scanner(conj_gp.g, conj_gp.int_ids);
+	ScanGraphPack(component_name, scanner, conj_gp);
+	ScanClusteredIndex<conj_graph_pack::graph_t>(component_name, scanner, clustered_index);
 
 	component_statistics(conj_gp, component_id, clustered_index);
 
@@ -531,8 +518,9 @@ void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 	string component_name = cfg::get().output_dir + "graph_components/"
 			+ graph_name;
 
-	scanNCGraph(nonconj_gp.g, nonconj_gp.int_ids, component_name,
-			&nonconj_gp.clustered_index, nonconj_gp.edge_pos);
+	NonconjugateDataScanner<nonconj_graph_pack::graph_t> scanner(nonconj_gp.g, nonconj_gp.int_ids);
+	ScanGraphPack(component_name, scanner, nonconj_gp);
+	ScanClusteredIndex<nonconj_graph_pack::graph_t>(component_name, scanner, nonconj_gp.clustered_index);
 
 	component_statistics(nonconj_gp, component_id, nonconj_gp.clustered_index);
 

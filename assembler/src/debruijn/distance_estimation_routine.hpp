@@ -114,13 +114,18 @@ void load_distance_estimation(conj_graph_pack& gp,
 	fs::path p = fs::path(cfg::get().load_from) / "distance_estimation";
 	used_files->push_back(p);
 
-	ScanConjugateGraphPack(p.string(), gp, &paired_index, &clustered_index);
+	ConjugateDataScanner<conj_graph_pack::graph_t> scanner(gp.g, gp.int_ids);
+	ScanGraphPack(p.string(), scanner, gp);
+	ScanPairedIndex<conj_graph_pack::graph_t>(p.string(), scanner, paired_index);
 }
 
 void save_distance_estimation(conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index) {
 	fs::path p = fs::path(cfg::get().output_saves) / "distance_estimation";
-	PrintConjugateGraphPack(p.string(), gp, &paired_index, &clustered_index);
+	ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp.g, gp.int_ids);
+	PrintGraphPack(p.string(), printer, gp);
+	PrintPairedIndex(p.string(), printer, paired_index);
+	PrintClusteredIndex(p.string(), printer, clustered_index);
 }
 
 void count_estimated_info_stats(conj_graph_pack& gp,
@@ -129,7 +134,7 @@ void count_estimated_info_stats(conj_graph_pack& gp,
 	FillEtalonPairedIndex<debruijn_graph::K>(etalon_paired_index, gp.g,
 			gp.index, gp.kmer_mapper, gp.genome);
 	//todo temporary
-	DataPrinter<Graph> data_printer(gp.g, gp.int_ids);
+	ConjugateDataPrinter<Graph> data_printer(gp.g, gp.int_ids);
 	data_printer.savePaired(cfg::get().output_dir + "etalon_paired",
 			etalon_paired_index);
 	//temporary

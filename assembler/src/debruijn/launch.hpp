@@ -18,7 +18,7 @@
 #include "repeat_resolving.hpp"
 #include "omni/omni_tools.hpp"
 #include "seq_map.hpp"
-#include "omni/ID_track_handler.hpp"
+#include "omni/id_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
 
 #include "new_debruijn.hpp"

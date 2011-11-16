@@ -1,19 +1,11 @@
-/*
- * debruijn_stats.hpp
- *
- *  Created on: Aug 12, 2011
- *      Author: sergey
- */
-
-#ifndef DEBRUIJN_STATS_HPP_
-#define DEBRUIJN_STATS_HPP_
+#pragma once
 
 #include "omni/visualization_utils.hpp"
 #include "statistics.hpp"
 #include "new_debruijn.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/distance_estimation.hpp"
-#include "omni/EdgeVertexFilter.hpp"
+#include "omni/graph_component.hpp"
 //#include <boost/filesystem.hpp>
 #include "read/osequencestream.hpp"
 #include <sys/types.h>
@@ -43,7 +35,7 @@ public:
 		size_t break_number = 0;
 		size_t covered_kp1mers = 0;
 		size_t fail = 0;
-		if(genome_.size() <= k)
+		if (genome_.size() <= k)
 			return;
 		Seq<k + 1> cur = genome_.start<k + 1>() >> 0;
 		bool breaked = true;
@@ -143,8 +135,7 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 		const PairedInfoIndex<Graph> &paired_index,
 		const PairedInfoIndex<Graph> &clustered_index,
 		const PairedInfoIndex<Graph> &etalon_paired_index,
-		DistanceEstimator<Graph> &estimator,
-		const string &output_folder) {
+		DistanceEstimator<Graph> &estimator, const string &output_folder) {
 	INFO("Counting clustered info stats");
 
 	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
@@ -196,7 +187,8 @@ Path<typename Graph::EdgeId> FindGenomePath(const Sequence& genome,
 }
 
 template<size_t k>
-MappingPath<EdgeId> NewFindGenomePath(const Sequence& genome, const Graph& g, const IdTrackHandler<Graph>& int_ids,
+MappingPath<EdgeId> NewFindGenomePath(const Sequence& genome, const Graph& g,
+		const IdTrackHandler<Graph>& int_ids,
 		const EdgeIndex<k + 1, Graph>& index,
 		const KmerMapper<k + 1, Graph>& kmer_mapper) {
 	ExtendedSequenceMapper<k + 1, Graph> srt(g, int_ids, index, kmer_mapper);
@@ -205,7 +197,8 @@ MappingPath<EdgeId> NewFindGenomePath(const Sequence& genome, const Graph& g, co
 
 template<size_t k>
 MappingPath<typename Graph::EdgeId> FindGenomeMappingPath(
-		const Sequence& genome, const Graph& g, const IdTrackHandler<Graph>& int_ids,
+		const Sequence& genome, const Graph& g,
+		const IdTrackHandler<Graph>& int_ids,
 		const EdgeIndex<k + 1, Graph>& index,
 		KmerMapper<k + 1, Graph>& kmer_mapper) {
 	ExtendedSequenceMapper<k + 1, Graph> srt(g, int_ids, index, kmer_mapper);
@@ -263,9 +256,8 @@ void WriteKmerComponent(
 	Path<Graph::EdgeId> path2,
 	Seq<K+1> const& kp1mer)
 {
-	KMerNeighborhoodFinder<Graph, K> splitter(kp1mer, gp.g, gp.index , 50, cfg::get().ds.IS);
+	KMerNeighborhoodFinder<Graph, K> splitter(gp.g, kp1mer, gp.index, 50, cfg::get().ds.IS);
 	WriteComponents<Graph>(gp.g, labeler, folder + "kmer.dot", graph_name, cfg::get().ds.IS, splitter, path1, path2);
-
 }
 
 void ProduceDetailedInfo(
@@ -371,7 +363,7 @@ string ConstructComponentName(string file_name, size_t cnt) {
 
 template<class Graph>
 int PrintGraphComponents(const string& file_name, Graph& g,
-		size_t split_edge_length, IdTrackHandler<Graph> &old_IDs,
+		size_t split_edge_length, IdTrackHandler<Graph> &int_ids,
 		PairedInfoIndex<Graph> &paired_index,
 		EdgesPositionHandler<Graph> &edges_positions, bool symmetric_mode =
 				false) {
@@ -383,9 +375,18 @@ int PrintGraphComponents(const string& file_name, Graph& g,
 		string component_name = ConstructComponentName(file_name, cnt).c_str();
 		auto component = splitter.NextComponent();
 
-		EdgeVertexFilter<Graph> filter(g, component, symmetric_mode);
-		printGraph(g, old_IDs, component_name, paired_index, edges_positions,
-				&filter);
+		auto_ptr<DataPrinter<Graph>> printer;
+		//todo refactor
+		if (symmetric_mode) {
+			printer.reset(new ConjugateDataPrinter<Graph>(g, component.begin(),
+					component.end(), int_ids));
+		} else {
+			printer.reset(new NonconjugateDataPrinter<Graph>(g, component.begin(),
+					component.end(), int_ids));
+		}
+		PrintBasicGraph<Graph>(component_name, *printer);
+		printer->savePositions(component_name, edges_positions);
+		PrintPairedIndex(component_name, *printer, paired_index);
 		cnt++;
 	}
 	return (cnt - 1);
@@ -393,20 +394,21 @@ int PrintGraphComponents(const string& file_name, Graph& g,
 
 //for test generating
 template<class Graph>
-int PrintGraphComponentContainingEdge(const string& file_name, Graph& g,
-		size_t split_edge_length, IdTrackHandler<Graph> &int_ids) {
+int PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
+		size_t split_edge_length, const IdTrackHandler<Graph>& int_ids) {
 	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
 	ComponentSizeFilter<Graph> checker(g, split_edge_length, 2);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	size_t cnt = 1;
 	while (!splitter.Finished() && cnt <= 1000) {
 		string component_name = ConstructComponentName(file_name, cnt).c_str();
-		auto component = splitter.NextComponent();
+		auto component_vertices = splitter.NextComponent();
 
 		//		EdgeVertexFilter<Graph> filter(g, component);
-		EdgeVertexFilter<Graph> filter(g, component, symmetric_mode);
-		printGraph(g, old_IDs, component_name, paired_index, edges_positions,
-				&filter);
+//		GraphComponent<Graph> component(g, component_vertices.begin(), component_vertices.end());
+		ConjugateDataPrinter<Graph> printer(g, component_vertices.begin(),
+				component_vertices.end(), int_ids);
+		PrintBasicGraph<Graph>(component_name, printer);
 		cnt++;
 	}
 	return (cnt - 1);
@@ -420,8 +422,7 @@ void OutputContigs(NonconjugateDeBruijnGraph& g,
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		oss << g.coverage(*it);
 		oss << g.EdgeNucls(*it);
-	}
-	INFO("Contigs written");
+	}INFO("Contigs written");
 }
 
 void OutputContigs(ConjugateDeBruijnGraph& g,
@@ -437,8 +438,7 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 			edges.insert(g.conjugate(*it));
 		}
 		//		oss << g.EdgeNucls(*it);
-	}
-	INFO("Contigs written");
+	}INFO("Contigs written");
 
 }
 
@@ -457,8 +457,7 @@ void OutputSingleFileContigs(NonconjugateDeBruijnGraph& g,
 		//		osequencestream oss(contigs_output_dir + "tst.fasta");
 		oss << g.EdgeNucls(*it);
 		n++;
-	}
-	INFO("SingleFileContigs written");
+	}INFO("SingleFileContigs written");
 }
 
 void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
@@ -477,16 +476,15 @@ void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
 			oss << g.EdgeNucls(*it);
 			n++;
 		}
-	}
-	INFO("SingleFileContigs(Conjugate) written");
+	}INFO("SingleFileContigs(Conjugate) written");
 }
 
-void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig, PairedInfoIndex<conj_graph_pack::graph_t> &ind)
-{
+void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
+		PairedInfoIndex<conj_graph_pack::graph_t> &ind) {
 	typedef omnigraph::PairInfo<EdgeId> PairInfo;
 
-	MappingPath<Graph::EdgeId> m_path1 = FindGenomeMappingPath<K>(contig, gp.g, gp.int_ids,
-			gp.index, gp.kmer_mapper);
+	MappingPath<Graph::EdgeId> m_path1 = FindGenomeMappingPath<K>(contig, gp.g,
+			gp.int_ids, gp.index, gp.kmer_mapper);
 
 	map<Graph::EdgeId, vector<pair<int, int>>> inGenomeWay;
 	int CurI = 0;
@@ -496,67 +494,90 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig, PairedInfoInde
 		EdgeId ei = m_path1[i].first;
 		MappingRange mr = m_path1[i].second;
 		int start = mr.initial_range.start_pos - mr.mapped_range.start_pos;
-		if (inGenomeWay.find(ei) == inGenomeWay.end()){
+		if (inGenomeWay.find(ei) == inGenomeWay.end()) {
 			vector<pair<int, int>> tmp;
 			tmp.push_back(make_pair(CurI, start));
 			inGenomeWay[ei] = tmp;
 			CurI++;
 			new_edge_added = true;
 			DEBUG("Edge "<<gp.int_ids.str(ei)<< " num "<< CurI<<" pos "<<start);
-		}
-		else {
-			if (m_path1[i - 1].first == ei){
-				if (abs(start - inGenomeWay[ei][(inGenomeWay[ei].size()-1)].second)>50){
+		} else {
+			if (m_path1[i - 1].first == ei) {
+				if (abs(
+						start
+								- inGenomeWay[ei][(inGenomeWay[ei].size() - 1)].second)
+						> 50) {
 					inGenomeWay[ei].push_back(make_pair(CurI, start));
 					CurI++;
 					new_edge_added = true;
-					DEBUG("Edge "<<gp.int_ids.str(ei)<< " num "<< CurI<<" pos "<<start);
+					DEBUG(
+							"Edge "<<gp.int_ids.str(ei)<< " num "<< CurI<<" pos "<<start);
 				}
-			}
-			else {
+			} else {
 				inGenomeWay[ei].push_back(make_pair(CurI, start));
 				CurI++;
 				new_edge_added = true;
-				DEBUG("Edge "<<gp.int_ids.str(ei)<< " num "<< CurI<<" pos "<<start);
+				DEBUG(
+						"Edge "<<gp.int_ids.str(ei)<< " num "<< CurI<<" pos "<<start);
 			}
 		}
-		if (new_edge_added &&(i > 0)){
+		if (new_edge_added && (i > 0)) {
 			if (gp.g.EdgeStart(ei) != gp.g.EdgeEnd(m_path1[i - 1].first)) {
 				gaps++;
 			}
 		}
-	}
-	INFO("Totaly "<<CurI<<" edges in genome path, with "<<gaps<< "not adjacent conequences");
-	vector<int> stats(10); 
-	vector<int> stats_d(10); 
-	int PosInfo = 0; 
+	}INFO(
+			"Totaly "<<CurI<<" edges in genome path, with "<<gaps<< "not adjacent conequences");
+	vector<int> stats(10);
+	vector<int> stats_d(10);
+	int PosInfo = 0;
 	int AllignedPI = 0;
 	int ExactDPI = 0;
-	int OurD = cfg::get().ds.IS - cfg::get().ds.RL; 
-	for (auto p_iter = ind.begin(), p_end_iter = ind.end(); p_iter != p_end_iter; ++p_iter) {
+	int OurD = cfg::get().ds.IS - cfg::get().ds.RL;
+	for (auto p_iter = ind.begin(), p_end_iter = ind.end();
+			p_iter != p_end_iter; ++p_iter) {
 		vector<PairInfo> pi = *p_iter;
 		for (size_t j = 0; j < pi.size(); j++) {
 			EdgeId left_edge = pi[j].first;
 			EdgeId right_edge = pi[j].second;
 			int dist = pi[j].d;
-			if (dist <0.001) continue;
+			if (dist < 0.001)
+				continue;
 			int best_d = 100;
 			int best_t = 0;
 			PosInfo++;
-			DEBUG("PairInfo "<< gp.int_ids.str(left_edge)<<" -- "<< gp.int_ids.str(right_edge)<<" dist "<<dist);
+			DEBUG(
+					"PairInfo "<< gp.int_ids.str(left_edge)<<" -- "<< gp.int_ids.str(right_edge)<<" dist "<<dist);
 			bool ExactOnD = false;
-			for (size_t left_i = 0; left_i < inGenomeWay[left_edge].size(); left_i++)
-				for (size_t right_i = 0; right_i < inGenomeWay[right_edge].size(); right_i++){
-					if (best_d > abs(inGenomeWay[right_edge][right_i].second - inGenomeWay[left_edge][left_i].second -dist)){
-						best_d = abs(inGenomeWay[right_edge][right_i].second - inGenomeWay[left_edge][left_i].second - dist);
-						best_t = inGenomeWay[right_edge][right_i].first - inGenomeWay[left_edge][left_i].first;
+			for (size_t left_i = 0; left_i < inGenomeWay[left_edge].size();
+					left_i++)
+				for (size_t right_i = 0;
+						right_i < inGenomeWay[right_edge].size(); right_i++) {
+					if (best_d
+							> abs(
+									inGenomeWay[right_edge][right_i].second
+											- inGenomeWay[left_edge][left_i].second
+											- dist)) {
+						best_d = abs(
+								inGenomeWay[right_edge][right_i].second
+										- inGenomeWay[left_edge][left_i].second
+										- dist);
+						best_t = inGenomeWay[right_edge][right_i].first
+								- inGenomeWay[left_edge][left_i].first;
 						DEBUG("best d "<<best_d);
-						if ((inGenomeWay[right_edge][right_i].second - inGenomeWay[left_edge][left_i].second - (int)gp.g.length(left_edge) <= OurD)&&(inGenomeWay[right_edge][right_i].second - inGenomeWay[left_edge][left_i].second + (int)gp.g.length(right_edge) >= OurD)) 
+						if ((inGenomeWay[right_edge][right_i].second
+								- inGenomeWay[left_edge][left_i].second
+								- (int) gp.g.length(left_edge) <= OurD)
+								&& (inGenomeWay[right_edge][right_i].second
+										- inGenomeWay[left_edge][left_i].second
+										+ (int) gp.g.length(right_edge) >= OurD))
 							ExactOnD = true;
-						else ExactOnD = false;
+						else
+							ExactOnD = false;
 					}
 				}
-			if (best_t > 5) best_t = 5;
+			if (best_t > 5)
+				best_t = 5;
 			if (best_d < 100) {
 				AllignedPI++;
 				stats[best_t]++;
@@ -565,24 +586,15 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig, PairedInfoInde
 					ExactDPI++;
 				}
 			}
-			
+
 		}
-	}
-	INFO("Total positive pair info "<<PosInfo<< " alligned to genome "<< AllignedPI <<" with exact distance "<< ExactDPI);
-	INFO("t-separated stats Alligneg: 1 - "<<stats[1]<<" 2 - "<<stats[2]<<" 3 - "<<stats[3]<<" 4 - "<<stats[4]<<" >4 - "<<stats[5]);
-	INFO("t-separated stats Exact: 1 - "<<stats_d[1]<<" 2 - "<<stats_d[2]<<" 3 - "<<stats_d[3]<<" 4 - "<<stats_d[4]<<" >4 - "<<stats[5]);
+	}INFO(
+			"Total positive pair info "<<PosInfo<< " alligned to genome "<< AllignedPI <<" with exact distance "<< ExactDPI);
+	INFO(
+			"t-separated stats Alligneg: 1 - "<<stats[1]<<" 2 - "<<stats[2]<<" 3 - "<<stats[3]<<" 4 - "<<stats[4]<<" >4 - "<<stats[5]);
+	INFO(
+			"t-separated stats Exact: 1 - "<<stats_d[1]<<" 2 - "<<stats_d[2]<<" 3 - "<<stats_d[3]<<" 4 - "<<stats_d[4]<<" >4 - "<<stats[5]);
 }
-
-
-
-
-
-
-
-
-
-
-
 
 //template<size_t k>
 void FillEdgesPos(conj_graph_pack& gp, const Sequence& contig, int contigId)
@@ -591,8 +603,8 @@ void FillEdgesPos(conj_graph_pack& gp, const Sequence& contig, int contigId)
 //		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int contigId)
 
 		{
-	MappingPath<Graph::EdgeId> m_path1 = FindGenomeMappingPath<K>(contig, gp.g, gp.int_ids,
-			gp.index, gp.kmer_mapper);
+	MappingPath<Graph::EdgeId> m_path1 = FindGenomeMappingPath<K>(contig, gp.g,
+			gp.int_ids, gp.index, gp.kmer_mapper);
 	int CurPos = 0;
 	DEBUG("Contig "<<contigId<< " maped on "<<m_path1.size()<<" fragments.");
 	for (size_t i = 0; i < m_path1.size(); i++) {
@@ -611,11 +623,6 @@ void FillEdgesPos(conj_graph_pack& gp, const Sequence& contig, int contigId)
 	}
 	//CurPos = 1000000000;
 }
-
-
-
-
-
 
 //template<size_t k>
 void FillEdgesPos(conj_graph_pack& gp, const string& contig_file,
@@ -676,5 +683,3 @@ void FillEdgesPos(conj_graph_pack& gp, const Sequence& genome) {
  */
 
 }
-
-#endif /* DEBRUIJN_STATS_HPP_ */

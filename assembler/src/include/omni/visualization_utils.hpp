@@ -360,7 +360,7 @@ template<class Graph>
 class ComponentGraphVisualizer: public GraphVisualizer<Graph> {
 private:
 	AbstractVisualizerFactory<Graph> &factory_;
-	GraphSplitter<typename Graph::VertexId> &splitter_;
+	ComponentSplitter<typename Graph::VertexId> &splitter_;
 	const string &file_name_;
 	const string &graph_name_;
 	size_t max_parts_number_;
@@ -377,7 +377,7 @@ private:
 public:
 	ComponentGraphVisualizer(const Graph &graph,
 			AbstractVisualizerFactory<Graph> &factory,
-			GraphSplitter<typename Graph::VertexId> &splitter,
+			ComponentSplitter<typename Graph::VertexId> &splitter,
 			const string &file_name, const string &graph_name,
 			size_t max_parts_number = 100) :
 			GraphVisualizer<Graph>(graph), factory_(factory), splitter_(
@@ -454,7 +454,7 @@ void WriteErrors(
 
 template<class Graph>
 void WriteComponents(const Graph& g,
-		GraphSplitter<typename Graph::VertexId> &inner_splitter,
+		ComponentSplitter<typename Graph::VertexId> &inner_splitter,
 		const AbstractFilter<vector<typename Graph::VertexId>> &checker,
 		const string& graph_name, const string& file_name,
 		const map<typename Graph::EdgeId, string> &coloring,
@@ -488,7 +488,7 @@ void WriteComponents(
 template<class Graph>
 void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
 		const string& file_name, const string& graph_name, size_t split_edge_length,
-		GraphSplitter<typename Graph::VertexId> &splitter,
+		ComponentSplitter<typename Graph::VertexId> &splitter,
 		Path<typename Graph::EdgeId> path1 = Path<typename Graph::EdgeId>(),
 		Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId>()) {
 //	PathColorer<Graph> path_colorer(g, path1, path2);

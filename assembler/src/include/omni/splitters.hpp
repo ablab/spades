@@ -3,8 +3,9 @@
 
 #include "dijkstra.hpp"
 namespace omnigraph {
+
 template<class Element>
-class GraphSplitter {
+class ComponentSplitter {
 public:
 	virtual vector<Element> NextComponent() = 0;
 
@@ -14,7 +15,22 @@ public:
 		return "";
 	}
 
-	virtual ~GraphSplitter() {
+	virtual ~ComponentSplitter() {
+	}
+};
+
+template<class Graph>
+class GraphSplitter
+	: public ComponentSplitter<typename Graph::VertexId> {
+	const Graph& graph_;
+protected:
+
+	GraphSplitter(const Graph& graph) : graph_(graph) {
+
+	}
+
+	const Graph& graph() const {
+		return graph_;
 	}
 };
 
@@ -92,19 +108,18 @@ public:
 };
 
 template<class Graph>
-class ErrorComponentSplitter: public GraphSplitter<typename Graph::VertexId> {
+class ErrorComponentSplitter: public GraphSplitter<Graph> {
 private:
-	typedef typename Graph::EdgeId EdgeId;
+	typedef GraphSplitter<Graph> base;
 	typedef typename Graph::VertexId VertexId;
-
-	const Graph &graph_;
+	typedef typename Graph::EdgeId EdgeId;
 	set<EdgeId> black_edges_;
 	typename Graph::SmartEdgeIt iterator_;
 	set<VertexId> visited_;
 
 public:
 	ErrorComponentSplitter(const Graph &graph, const set<EdgeId> &black_edges) :
-		graph_(graph), black_edges_(black_edges),
+		base(graph), black_edges_(black_edges),
 				iterator_(graph.SmartEdgeBegin()) {
 		TRACE("ErrorComponentSplitter created and SmartIterator initialized");
 	}
@@ -113,14 +128,14 @@ public:
 	}
 
 	set<VertexId> FindComponent(VertexId start_vertex) {
-		ComponentFinder<Graph> cf(graph_, black_edges_);
+		ComponentFinder<Graph> cf(this->graph(), black_edges_);
 		cf.run(start_vertex);
 		vector < VertexId > result = cf.VisitedVertices();
 		return set<VertexId> (result.begin(), result.end());
 	}
 
 	set<VertexId> FindNeighbourhood(VertexId start, size_t bound) {
-		NeighbourhoodFinder<Graph> nf(graph_, black_edges_, bound);
+		NeighbourhoodFinder<Graph> nf(this->graph(), black_edges_, bound);
 		nf.run(start);
 		vector < VertexId > result = nf.VisitedVertices();
 		return set<VertexId> (result.begin(), result.end());
@@ -128,7 +143,7 @@ public:
 
 	size_t FindDiameter(const set<VertexId> &component) {
 		size_t result = 0;
-		SubgraphDijkstra<Graph> sd(graph_, component);
+		SubgraphDijkstra<Graph> sd(this->graph(), component);
 		VertexId current = *(component.begin());
 		for (size_t i = 0; i < 4; i++) {
 			pair < VertexId, size_t > next = GetFarthest(current, component);
@@ -140,7 +155,7 @@ public:
 
 	pair<VertexId, size_t> GetFarthest(VertexId v,
 			const set<VertexId> &component) {
-		SubgraphDijkstra<Graph> sd(graph_, component);
+		SubgraphDijkstra<Graph> sd(this->graph(), component);
 		sd.run(v);
 		pair < VertexId, size_t > result(v, 0);
 		auto bounds = sd.GetDistances();
@@ -160,14 +175,14 @@ public:
 		}
 		EdgeId next = *iterator_;
 		++iterator_;
-		set < VertexId > component = FindComponent(graph_.EdgeEnd(next));
+		set < VertexId > component = FindComponent(this->graph().EdgeEnd(next));
 		TRACE(
 				"Error edges component constructed. It contains "
 						<< component.size() << " vertices");
 		size_t component_size = FindDiameter(component);
 		TRACE("Diameter of component is " << component_size);
 		set < VertexId > neighbourhood = FindNeighbourhood(
-				graph_.EdgeEnd(next), 1.5 * component_size);
+				this->graph().EdgeEnd(next), 1.5 * component_size);
 		TRACE(
 				"Error edges component neighborhood constructed. It contains "
 						<< neighbourhood.size() << " vertices");
@@ -178,7 +193,7 @@ public:
 	virtual bool Finished() {
 		while (!iterator_.IsEnd()) {
 			if (black_edges_.find(*iterator_) != black_edges_.end()
-					&& visited_.find(graph_.EdgeEnd(*iterator_))
+					&& visited_.find(this->graph().EdgeEnd(*iterator_))
 							== visited_.end()) {
 				return false;
 			}
@@ -213,12 +228,11 @@ public:
 };
 
 template<class Graph>
-class LongEdgesInclusiveSplitter: public GraphSplitter<typename Graph::VertexId> {
+class LongEdgesInclusiveSplitter: public GraphSplitter<Graph> {
 private:
-	typedef typename Graph::EdgeId EdgeId;
+	typedef GraphSplitter<Graph> base;
 	typedef typename Graph::VertexId VertexId;
-
-	const Graph &graph_;
+	typedef typename Graph::EdgeId EdgeId;
 	erasable_priority_queue<VertexId> queue_;
 	//	SmartVertexIterator<omnigraph::ObservableGraph<VertexId, EdgeId> >
 	//			iterator_;
@@ -227,7 +241,7 @@ private:
 
 public:
 	LongEdgesInclusiveSplitter(const Graph &graph, size_t bound) :
-		graph_(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */
+		base(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */
 		bound_(bound) {
 	}
 
@@ -239,7 +253,7 @@ public:
 		VertexId next = queue_.top();
 		TRACE("Search started");
 		queue_.pop();
-		ShortEdgeComponentNeighbourhoodFinder<Graph> cf(graph_, bound_);
+		ShortEdgeComponentNeighbourhoodFinder<Graph> cf(this->graph(), bound_);
 		cf.run(next);
 		TRACE("Search finished");
 		vector < VertexId > result = cf.VisitedVertices();
@@ -331,19 +345,18 @@ public:
 };
 
 template<class Graph>
-class ReliableSplitter: public GraphSplitter<typename Graph::VertexId> {
+class ReliableSplitter: public GraphSplitter<Graph> {
 private:
-	typedef typename Graph::EdgeId EdgeId;
+	typedef GraphSplitter<Graph> base;
 	typedef typename Graph::VertexId VertexId;
-
-	const Graph &graph_;
+	typedef typename Graph::EdgeId EdgeId;
 	set<VertexId> visited_;
 	size_t max_size_;
 	size_t edge_length_bound_;
 	typename Graph::VertexIterator current_;
 
 	void SkipVisited() {
-		while (current_ != graph_.end() && visited_.count(*current_) == 1) {
+		while (current_ != this->graph().end() && visited_.count(*current_) == 1) {
 			++current_;
 		}
 	}
@@ -351,7 +364,7 @@ private:
 public:
 	ReliableSplitter(const Graph &graph, size_t max_size,
 			size_t edge_length_bound) :
-		graph_(graph), max_size_(max_size),
+		base(graph), max_size_(max_size),
 				edge_length_bound_(edge_length_bound), current_(graph.begin()) {
 		TRACE(
 				"Long edges splitter created and queue filled with all graph vertices");
@@ -366,7 +379,7 @@ public:
 			return vector<VertexId> ();
 		}
 		TRACE("Search started");
-		CountingDijkstra<Graph> cf(graph_, max_size_, edge_length_bound_);
+		CountingDijkstra<Graph> cf(this->graph(), max_size_, edge_length_bound_);
 		cf.run(*current_);
 		TRACE("Search finished");
 		vector < VertexId > result = cf.VisitedVertices();
@@ -377,19 +390,16 @@ public:
 	}
 
 	virtual bool Finished() {
-		return current_ == graph_.end();
+		return current_ == this->graph().end();
 	}
 };
 
 template<class Graph>
-class ReliableSplitterAlongGenome: public GraphSplitter<
-		typename Graph::VertexId> {
+class ReliableSplitterAlongGenome: public GraphSplitter<Graph> {
 private:
-	typedef typename Graph::EdgeId EdgeId;
+	typedef GraphSplitter<Graph> base;
 	typedef typename Graph::VertexId VertexId;
-
-	const Graph &graph_;
-
+	typedef typename Graph::EdgeId EdgeId;
 	size_t max_size_;
 	size_t edge_length_bound_;
 	set<VertexId> last_component_;
@@ -400,9 +410,9 @@ private:
 
 	bool EdgeCovered(EdgeId edge) {
 		return last_component_.count(
-				graph_.EdgeStart(genome_path_[current_index_].first)) == 1
+				this->graph().EdgeStart(genome_path_[current_index_].first)) == 1
 				&& last_component_.count(
-						graph_.EdgeEnd(genome_path_[current_index_].first)) == 1;
+						this->graph().EdgeEnd(genome_path_[current_index_].first)) == 1;
 	}
 
 	void SkipVisited() {
@@ -427,7 +437,7 @@ public:
 
 	ReliableSplitterAlongGenome(const Graph &graph, size_t max_size,
 			size_t edge_length_bound, MappingPath<EdgeId> genome_path) :
-		graph_(graph), max_size_(max_size),
+		base(graph), max_size_(max_size),
 				edge_length_bound_(edge_length_bound), current_index_(0),
 				genome_path_(genome_path), covered_range_(0, 0), start_processed_(false) {
 
@@ -442,11 +452,11 @@ public:
 			return vector<VertexId> ();
 		}
 		TRACE("Search started");
-		CountingDijkstra<Graph> cf(graph_, max_size_, edge_length_bound_);
+		CountingDijkstra<Graph> cf(this->graph(), max_size_, edge_length_bound_);
 		if(start_processed_)
-			cf.run(graph_.EdgeEnd(genome_path_[current_index_].first));
+			cf.run(this->graph().EdgeEnd(genome_path_[current_index_].first));
 		else {
-			cf.run(graph_.EdgeStart(genome_path_[current_index_].first));
+			cf.run(this->graph().EdgeStart(genome_path_[current_index_].first));
 			start_processed_ = true;
 		}
 		TRACE("Search finished");
@@ -475,12 +485,11 @@ public:
 };
 
 template<class Graph>
-class LongEdgesExclusiveSplitter: public GraphSplitter<typename Graph::VertexId> {
+class LongEdgesExclusiveSplitter: public GraphSplitter<Graph> {
 private:
-	typedef typename Graph::EdgeId EdgeId;
+	typedef GraphSplitter<Graph> base;
 	typedef typename Graph::VertexId VertexId;
-
-	const Graph &graph_;
+	typedef typename Graph::EdgeId EdgeId;
 	erasable_priority_queue<VertexId> queue_;
 	//	SmartVertexIterator<omnigraph::ObservableGraph<VertexId, EdgeId> >
 	//			iterator_;
@@ -490,7 +499,7 @@ private:
 	DECL_LOGGER("LongEdgesExclusiveSplitter")
 public:
 	LongEdgesExclusiveSplitter(const Graph &graph, size_t bound) :
-		graph_(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */
+		base(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */
 		bound_(bound) {
 	}
 
@@ -502,10 +511,7 @@ public:
 		}
 		VertexId next = queue_.top();
 		queue_.pop();
-		TRACE("creating shortEdgeComponentFinder");
-		ShortEdgeComponentFinder<Graph> cf(graph_, bound_);
-
-		TRACE("created shortEdgeComponentFinder");
+		ShortEdgeComponentFinder<Graph> cf(this->graph(), bound_);
 		cf.run(next);
 
 		TRACE("comp Finder finished");
@@ -536,18 +542,25 @@ public:
 
 template<class Graph>
 class GraphComponentFilter : public AbstractFilter<vector<typename Graph::VertexId>> {
-	const Graph& graph_;
-protected:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
-	const Graph& graph() {
+	const Graph& graph_;
+protected:
+	GraphComponentFilter(const Graph& graph) : graph_(graph) {
+
+	}
+
+	const Graph& graph() const {
 		return graph_;
 	}
 };
 
 template<class Graph>
 class AnyEdgeContainFilter: public GraphComponentFilter<Graph> {
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
 	const IdTrackHandler<Graph>& int_ids_;
 	const vector<int> edges_of_interest_;
 public:
@@ -564,13 +577,13 @@ public:
 	}
 
 	bool ContainsEdge(const vector<VertexId> &component, EdgeId e) {
-		return std::find(vertices.begin(), vertices.end(), this->graph().EdgeStart(edge)) != vertices.end()
-				&& std::find(vertices.begin(), vertices.end(), this->graph().EdgeEnd(edge)) != vertices.end();
+		return std::find(component.begin(), component.end(), this->graph().EdgeStart(e)) != component.end()
+				&& std::find(component.begin(), component.end(), this->graph().EdgeEnd(e)) != component.end();
 	}
 
-	/*virtual*/ bool Check(const vector<VertexId> &vertices) const {
+	/*virtual*/ bool Check(const vector<VertexId> &component) const {
 		for (auto it = edges_of_interest_.begin(); it != edges_of_interest_.end(); ++it) {
-			if (ContainsEdge(vertices, int_ids_.ReturnEdgeId(*it))) {
+			if (ContainsEdge(component, int_ids_.ReturnEdgeId(*it))) {
 				return true;
 			}
 		}
@@ -582,11 +595,15 @@ public:
 template<class Graph>
 class ComponentSizeFilter: public GraphComponentFilter<Graph> {
 private:
+	typedef GraphComponentFilter<Graph> base;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
 	size_t max_length_;
 	size_t vertex_number_;
 public:
 	ComponentSizeFilter(const Graph &graph, size_t max_length, size_t vertex_number) :
-		graph_(graph), max_length_(max_length), vertex_number_(vertex_number) {
+		base(graph), max_length_(max_length), vertex_number_(vertex_number) {
 	}
 
 	/*virtual*/ bool Check(const vector<VertexId> &vertices) const {
@@ -594,11 +611,11 @@ public:
 			return false;
 		set<VertexId> component(vertices.begin(), vertices.end());
 		for (auto iterator = vertices.begin(); iterator != vertices.end(); ++iterator) {
-			vector<EdgeId> edges = graph_.OutgoingEdges(*iterator);
+			vector<EdgeId> edges = this->graph().OutgoingEdges(*iterator);
 			for (auto edge_iterator = edges.begin(); edge_iterator
 					!= edges.end(); edge_iterator++) {
-				if (component.count(graph_.EdgeEnd(*edge_iterator)) == 1
-						&& graph_.length(*edge_iterator) <= max_length_) {
+				if (component.count(this->graph().EdgeEnd(*edge_iterator)) == 1
+						&& this->graph().length(*edge_iterator) <= max_length_) {
 					return true;
 				}
 			}
@@ -608,16 +625,18 @@ public:
 };
 
 template<class Graph>
-class FilteringSplitterWrapper: public GraphSplitter<typename Graph::VertexId> {
+class FilteringSplitterWrapper: public ComponentSplitter<typename Graph::VertexId> {
 private:
 	typedef typename Graph::VertexId VertexId;
-	GraphSplitter<typename Graph::VertexId> &inner_splitter_;
+	typedef typename Graph::EdgeId EdgeId;
+
+	ComponentSplitter<typename Graph::VertexId> &inner_splitter_;
 	vector<VertexId> next;
 	const AbstractFilter<vector<VertexId>> &checker_;
 	bool ready;
 public:
 	FilteringSplitterWrapper(
-			GraphSplitter<typename Graph::VertexId> &inner_splitter,
+			ComponentSplitter<typename Graph::VertexId> &inner_splitter,
 			const AbstractFilter<vector<VertexId>> &checker) :
 		inner_splitter_(inner_splitter), checker_(checker), ready(false) {
 	}

@@ -122,7 +122,7 @@ public:
 	 * @param newVertex - resulting vertex
 	 */
 	virtual void HandleVertexSplit(VertexId newVertex,
-			vector<pair<EdgeId, EdgeId> > newEdges,
+			vector<pair<EdgeId, EdgeId>> newEdges,
 			vector<double> &split_coefficients, VertexId oldVertex) {
 	}
 

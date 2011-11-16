@@ -1028,21 +1028,20 @@ private:
 };
 
 template<class Graph, size_t k>
-class KMerNeighborhoodFinder: public GraphSplitter<typename Graph::VertexId> {
+class KMerNeighborhoodFinder: public GraphSplitter<Graph> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	Graph &graph_;
 	EdgeIndex<k + 1, Graph> &index_;
 	Seq<k + 1> kp1mer_;
 	size_t max_size_;
 	size_t edge_length_bound_;
 	bool finished_;
 public:
-	KMerNeighborhoodFinder(Seq<k + 1> kp1mer, Graph &graph,
+	KMerNeighborhoodFinder(const Graph &graph, Seq<k + 1> kp1mer,
 			EdgeIndex<k + 1, Graph> &index , size_t max_size
 			, size_t edge_length_bound) :
-			graph_(graph), index_(index), kp1mer_(kp1mer), max_size_(max_size), edge_length_bound_(
+			GraphSplitter<Graph>(graph), index_(index), kp1mer_(kp1mer), max_size_(max_size), edge_length_bound_(
 					edge_length_bound), finished_(false) {
 	}
 
@@ -1050,13 +1049,13 @@ public:
 	}
 
 	virtual vector<VertexId> NextComponent() {
-		CountingDijkstra<Graph> cf(graph_, max_size_, edge_length_bound_);
+		CountingDijkstra<Graph> cf(this->graph(), max_size_, edge_length_bound_);
 		EdgeId edge = index_.get(kp1mer_).first;
 		set<VertexId> result_set;
-		cf.run(graph_.EdgeStart(edge));
+		cf.run(this->graph().EdgeStart(edge));
 		vector<VertexId> result_start = cf.VisitedVertices();
 		result_set.insert(result_start.begin(), result_start.end());
-		cf.run(graph_.EdgeEnd(edge));
+		cf.run(this->graph().EdgeEnd(edge));
 		vector<VertexId> result_end = cf.VisitedVertices();
 		result_set.insert(result_end.begin(), result_end.end());
 		finished_ = true;

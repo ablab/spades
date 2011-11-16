@@ -66,14 +66,17 @@ void load_construction(conj_graph_pack& gp, total_labeler& tl,
 		paired_info_index& paired_index, files_t* files) {
 	fs::path p = fs::path(cfg::get().load_from) / "constructed_graph";
 	files->push_back(p);
-
-	ScanConjugateGraphPack(p.string(), gp, &paired_index);
+	ConjugateDataScanner<conj_graph_pack::graph_t> scanner(gp.g, gp.int_ids);
+	ScanGraphPack(p.string(), scanner, gp);
+	ScanPairedIndex<conj_graph_pack::graph_t>(p.string(), scanner, paired_index);
 }
 
 void save_construction(conj_graph_pack& gp, total_labeler& tl,
 		paired_info_index& paired_index) {
 	fs::path p = fs::path(cfg::get().output_saves) / "constructed_graph";
-	PrintConjugateGraphPack(p.string(), gp, &paired_index);
+	ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp.g, gp.int_ids);
+	PrintGraphPack(p.string(), printer, gp);
+	PrintPairedIndex(p.string(), printer, paired_index);
 }
 
 boost::optional<string> single_reads_filename(
@@ -123,7 +126,8 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 
 		INFO("Use additional contigs = " << cfg::get().use_additional_contigs);
 		INFO("Checking for additional contigs usage flag and file");
-		string additional_contigs_file = cfg::get().output_root + "../" + cfg::get().additional_contigs;
+		string additional_contigs_file = cfg::get().output_root + "../"
+				+ cfg::get().additional_contigs;
 		if (cfg::get().use_additional_contigs
 				&& fileExists(additional_contigs_file)) {
 			INFO("Additional contigs file found and WILL be used");

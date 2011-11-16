@@ -1,5 +1,4 @@
-#ifndef ID_TRACK_HANDLER_HPP_
-#define ID_TRACK_HANDLER_HPP_
+#pragma once
 
 #include <unordered_map>
 //#include "utils.hpp"
@@ -215,4 +214,3 @@ public:
 };
 
 }
-#endif /* ID_TRACK_HANDLER_HPP_ */
