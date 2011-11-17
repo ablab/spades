@@ -36,8 +36,11 @@ void construct_graph(PairedReadStream& stream, conj_graph_pack& gp,
 		ConstructGraphWithPairedInfo<K>(gp, paired_index, stream, single_stream,
 				contigs_stream);
 	} else {
-		UnitedStream united_stream(stream);
-		vector<SingleReadStream*> streams = {&united_stream};
+		vector<SingleReadStream*> streams;
+		if(!cfg::get().etalon_graph_mode) {
+			UnitedStream united_stream(stream);
+			streams.push_back(&united_stream);
+		}
 		if (single_stream) {
 			streams.push_back(single_stream);
 		}
