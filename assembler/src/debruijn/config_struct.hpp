@@ -386,7 +386,11 @@ inline void load(boost::property_tree::ptree const& pt,
 	load(pt, "RL", ds.RL);
 	load(pt, "IS", ds.IS);
 	load(pt, "single_cell", ds.single_cell);
-	load(pt, "reference_genome", ds.reference_genome);
+	boost::optional<std::string> rg = pt.get_optional<std::string>("reference_genome");
+	ds.reference_genome = (rg) ? *rg : "";
+	if (ds.reference_genome == "N/A") {
+		ds.reference_genome = "";
+	}
 	load(pt, "LEN", ds.LEN);
 }
 

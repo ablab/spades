@@ -353,8 +353,8 @@ HMP_LANE_1
 {
         first	HMP/hmp_mda_pilot_jcvi_0001/hammer/00.reads.left.corrected.fastq.gz
         second	HMP/hmp_mda_pilot_jcvi_0001/hammer/00.reads.right.corrected.fastq.gz
-        single_first	HMP/hmp_mda_pilot_jcvi_0001/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/hmp_mda_pilot_jcvi_0001/00.reads.right.unpaired.fastq.gz
+        single_first	HMP/hmp_mda_pilot_jcvi_0001/hammer/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/hmp_mda_pilot_jcvi_0001/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              200
 	single_cell	true
@@ -366,8 +366,8 @@ HMP_LANE_3
 {
         first	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.left.corrected.fastq.gz
         second	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.right.corrected.fastq.gz
-        single_first	HMP/hmp_mda_pilot_jcvi_0003/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/hmp_mda_pilot_jcvi_0003/00.reads.right.unpaired.fastq.gz
+        single_first	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              200
 	single_cell	true
@@ -379,8 +379,8 @@ HMP_LANE_7
 {
         first	HMP/hmp_mda_pilot_jcvi_0007/hammer/00.reads.left.corrected.fastq.gz
         second	HMP/hmp_mda_pilot_jcvi_0007/hammer/00.reads.right.corrected.fastq.gz
-        single_first	HMP/hmp_mda_pilot_jcvi_0007/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/hmp_mda_pilot_jcvi_0007/00.reads.right.unpaired.fastq.gz
+        single_first	HMP/hmp_mda_pilot_jcvi_0007/hammer/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/hmp_mda_pilot_jcvi_0007/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              200
 	single_cell	true
@@ -392,8 +392,8 @@ HMP_LANE_8
 {
         first	HMP/hmp_mda_pilot_jcvi_0008/hammer/00.reads.left.corrected.fastq.gz
         second	HMP/hmp_mda_pilot_jcvi_0008/hammer/00.reads.right.corrected.fastq.gz
-        single_first	HMP/hmp_mda_pilot_jcvi_0008/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/hmp_mda_pilot_jcvi_0008/00.reads.right.unpaired.fastq.gz
+        single_first	HMP/hmp_mda_pilot_jcvi_0008/hammer/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/hmp_mda_pilot_jcvi_0008/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              200
 	single_cell	true
@@ -427,7 +427,7 @@ LB_QUAKE_FULL
 	RL		100	; read length
 	IS		370	; insert size
 	single_cell	false
-	reference_genome  none
+	reference_genome	N/A
 	LEN		8700000	; total size
 }
 
@@ -464,6 +464,19 @@ DELTA_EULER_CORRECTED_1
 ; ================================================
 ; ================== S. Aureus ===================
 ; ================================================
+
+SAUREUS_JCVI
+{
+        first   JCVI/JCVI_control_MDA_Saureus_10/hammer/00.reads.left.corrected.fastq.gz
+        second  JCVI/JCVI_control_MDA_Saureus_10/hammer/00.reads.right.corrected.fastq.gz
+        single_first	JCVI/JCVI_control_MDA_Saureus_10/hammer/00.reads.left.unpaired.fastq.gz
+        single_second	JCVI/JCVI_control_MDA_Saureus_10/hammer/00.reads.right.unpaired.fastq.gz
+        RL              100     ; read length
+        IS              220     ; insert size todo check!!!!
+        single_cell     true
+        reference_genome  S.Aureus.USA300_FPR3757/S.Aureus.USA300_FPR3757.fasta
+        LEN             2872769 ; total size
+}
 
 SAUREUS_CORRECTED_1
 {
