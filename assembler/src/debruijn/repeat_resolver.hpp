@@ -822,10 +822,14 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, cfg::get().ds.IS);
 
 	vector<VertexId> comps;
+	DEBUG("comp filling started");
 	if (! splitter.Finished())
 		comps = splitter.NextComponent();
 	int count = 0;
+	int comp_count = 0;
 	while (comps.size() != 0) {
+		DEBUG("filling component " << comp_count);
+		comp_count++;
 		for(size_t i = 0; i < comps.size(); i++) {
 			vertices.insert(make_pair(count, comps[i]));
 			count++;
