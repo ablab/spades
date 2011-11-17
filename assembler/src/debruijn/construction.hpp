@@ -37,16 +37,16 @@ void construct_graph(PairedReadStream& stream, conj_graph_pack& gp,
 				contigs_stream);
 	} else {
 		vector<SingleReadStream*> streams;
-		if(!cfg::get().etalon_graph_mode) {
-			UnitedStream united_stream(stream);
+	    UnitedStream united_stream(stream);
+
+		if(!cfg::get().etalon_graph_mode)
 			streams.push_back(&united_stream);
-		}
-		if (single_stream) {
+
+		if (single_stream)
 			streams.push_back(single_stream);
-		}
+
 		MultiFileStream composite_stream(streams);
-		ConstructGraphWithCoverage<K>(gp.g, gp.index, composite_stream,
-				contigs_stream);
+		ConstructGraphWithCoverage<K>(gp.g, gp.index, composite_stream, contigs_stream);
 	}
 
 	//todo extract everything connected with etalon to separate tool
