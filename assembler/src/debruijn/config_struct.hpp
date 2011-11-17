@@ -387,6 +387,9 @@ inline void load(boost::property_tree::ptree const& pt,
 	load(pt, "IS", ds.IS);
 	load(pt, "single_cell", ds.single_cell);
 	load(pt, "reference_genome", ds.reference_genome);
+	if (ds.reference_genome == "N/A") {
+		ds.reference_genome = "";
+	}
 	load(pt, "LEN", ds.LEN);
 }
 
