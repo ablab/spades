@@ -28,8 +28,8 @@ void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, Edg
             if (!distanceTool.IsReachable(endOfFirstEdge, startOfSecondEdge)){
             	for(size_t i = 0; i < cur_infos.size(); ++i){
                 	int cur_gap = cur_infos[i].d - g.length(cur_infos[0].first);
-        			int k_ = (int)debruijn_graph::K;
-            		if (  cur_gap >= 0 && cur_gap <= k_ - MimimalIntersection){
+        			size_t k_ = debruijn_graph::K;
+            		if (  cur_gap >= 0 && cur_gap <= int(k_ - MimimalIntersection)){
             			Sequence seq1 = g.EdgeNucls(cur_infos[0].first);
             			Sequence seq2 = g.EdgeNucls(cur_infos[0].second);
 //            			INFO("possible short gap "<<edges_pos.str(cur_infos[0].first)<<"       "<<edges_pos.str(cur_infos[0].second));
