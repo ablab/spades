@@ -8,4 +8,5 @@ bayes/bayes
 debruijn/config.info
 debruijn/simplification.info
 debruijn/distance_estimation.info
+debruijn/detail_info_printer.info
 debruijn/k.hpp

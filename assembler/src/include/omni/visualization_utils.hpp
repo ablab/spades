@@ -467,11 +467,15 @@ void WriteComponents(const Graph& g,
 }
 
 template<class Graph>
-void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
-		const string& file_name, const string& graph_name,
-		size_t split_edge_length,
-		Path<typename Graph::EdgeId> path1 = Path<typename Graph::EdgeId>(),
-		Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId>()) {
+void WriteComponents(
+    const Graph& g,
+    const GraphLabeler<Graph>& labeler,
+	const string& file_name,
+	const string& graph_name,
+	size_t split_edge_length,
+	Path<typename Graph::EdgeId> path1 = Path<typename Graph::EdgeId>(),
+	Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId>())
+{
 	PathColorer<Graph> path_colorer(g, path1, path2);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
 	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);

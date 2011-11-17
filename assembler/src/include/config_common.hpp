@@ -37,6 +37,16 @@ namespace config_common
 	}
 
 	template <class T>
+	bool load_if_exists(boost::property_tree::ptree const& pt, std::string const& key, T& value)
+	{
+	    if (pt.find(key) == pt.not_found())
+	        return false;
+
+        load(pt, key, value);
+        return true;
+	}
+
+	template <class T>
 	typename boost::enable_if_c<details::is_equal_type<T, std::string>::value || boost::is_arithmetic<T>::value >::type
 		load(boost::property_tree::ptree const& pt, std::string const& key, T& value)
 	{

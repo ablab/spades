@@ -277,19 +277,23 @@ const Sequence& genome, size_t bound, const string &file_name) {
 template<size_t k>
 void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 		omnigraph::GraphLabeler<Graph>& tot_lab, size_t iteration_count,
-		const string& output_folder) {
+		const string& output_folder)
+{
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
 
-	LabelerList<Graph> labeler(tot_lab, edge_qual);
-	CountStats<k> (gp.g, gp.index, gp.genome);
-//	ProduceDetailedInfo<k> (gp, labeler,
-//			output_folder + "before_simplification/", "graph.dot",
-//			"non_simplified_graph");
+	LabelerList<Graph>  labeler(tot_lab, edge_qual);
+ 	detail_info_printer printer(gp, labeler, output_folder, "graph.dot");
+
+	printer(ipp_before_simplifiaction);
+
 	QualityLoggingRemovalHandler<Graph> qual_removal_handler(edge_qual);
+
 	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
-			&QualityLoggingRemovalHandler<Graph>::HandleDelete,
-			&qual_removal_handler, _1);
+        &QualityLoggingRemovalHandler<Graph>::HandleDelete,
+		&qual_removal_handler,
+		_1);
+
 	EdgeRemover<Graph> edge_remover(gp.g, cfg::get().simp.removal_checks_enabled, removal_handler_f);
 
 	for (size_t i = 0; i < iteration_count; i++) {
@@ -298,66 +302,40 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 
 		INFO(i << " TipClipping");
 		ClipTips(gp.g, removal_handler_f, iteration_count, i);
-
 		INFO(i << " TipClipping stats");
-		CountStats<k>(gp.g, gp.index, gp.genome);
-//		ProduceDetailedInfo<k> (gp, labeler,
-//				output_folder + "tips_clipped_" + ToString(i) + "/",
-//				"graph.dot", "no_tip_graph");
+		printer(ipp_tip_clipping, str(format("_%d") % i));
+
 		INFO(i << " BulgeRemoval");
 		RemoveBulges(gp.g, removal_handler_f);
-
 		INFO(i << " BulgeRemoval stats");
-		CountStats<k>(gp.g, gp.index, gp.genome);
-//		ProduceDetailedInfo<k> (gp, labeler,
-//				output_folder + "bulges_removed_" + ToString(i) + "/",
-//				"graph.dot", "no_bulge_graph");
+		printer(ipp_bulge_removal, str(format("_%d") % i));
+
 		INFO(i << " ErroneousConnectionsRemoval");
 		RemoveLowCoverageEdges(gp.g, edge_remover, iteration_count, i);
 		INFO(i << " ErroneousConnectionsRemoval stats");
-		CountStats<k>(gp.g, gp.index, gp.genome);
-//		ProduceDetailedInfo<k> (gp, labeler,
-//				output_folder + "erroneous_edges_removed_" + ToString(i) + "/",
-//				"graph.dot", "no_erroneous_edges_graph");
+		printer(ipp_err_con_removal, str(format("_%d") % i));
 	}
 
 	INFO("Final ErroneousConnectionsRemoval");
 	FinalRemoveErroneousEdges(gp.g, edge_remover);
-
-	INFO("Final ErroneousConnectionsRemoval stats");
-	CountStats<k>(gp.g, gp.index, gp.genome);
-//	ProduceDetailedInfo<k>(gp, labeler, output_folder + "final_erroneous_edges_removed/",	"graph.dot", "no_erroneous_edges_graph");
+	printer(ipp_final_err_con_removal);
 
 	INFO("Final TipClipping");
 	ClipTips(gp.g, removal_handler_f);
-	INFO("Final TipClipping stats");
-	CountStats<k>(gp.g, gp.index, gp.genome);
-//	ProduceDetailedInfo<k> (gp, labeler, output_folder + "final_tips_clipped/",
-//			"graph.dot", "no_tip_graph");
+	printer(ipp_final_tip_clipping);
+
 	INFO("Final BulgeRemoval");
 	RemoveBulges(gp.g, removal_handler_f);
-	//		etalon_paired_index.Check();
-	INFO("Final BulgeRemoval stats");
-	CountStats<k>(gp.g, gp.index, gp.genome);
-//	ProduceDetailedInfo<k>(gp, labeler, output_folder + "final_bulges_removed/",
-//			"graph.dot", "no_bulge_graph");
+	printer(ipp_final_bulge_removal);
 
 	INFO("Final isolated edges removal");
 	IsolatedEdgeRemover<Graph> isolated_edge_remover(gp.g, cfg::get().simp.isolated_min_len);
 	isolated_edge_remover.RemoveIsolatedEdges();
-	INFO("Final isolated edges removal stats");
-	CountStats<k>(gp.g, gp.index, gp.genome);
-//	ProduceDetailedInfo<k>(gp, labeler, output_folder + "isolated_edges_removed/",
-//			"graph.dot", "no_isolated_edges_graph");
+	printer(ipp_removing_isolated_edges);
 
-	INFO("Simplified graph stats");
-	CountStats<k>(gp.g, gp.index, gp.genome);
-	ProduceDetailedInfo<k> (gp, labeler,
-			output_folder + "simplification_finished/", "graph.dot",
-			"simplified_graph");
+    printer(ipp_final_simplified);
 
-//	OutputWrongContigs<k, Graph>(gp.g, gp.index, gp.genome, 1000,
-//			"long_contigs.fasta");
+//	OutputWrongContigs<k, Graph>(gp.g, gp.index, gp.genome, 1000, "long_contigs.fasta");
 	INFO("Graph simplification finished");
 }
 

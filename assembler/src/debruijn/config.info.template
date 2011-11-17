@@ -3,6 +3,7 @@
 #include "src/debruijn/simplification.info"
 #include "src/debruijn/datasets.info"
 #include "src/debruijn/distance_estimation.info"
+#include "src/debruijn/detail_info_printer.info"
 
 dataset 	      QUAKE_CROPPED_1K
 ;dataset              LB_QUAKE_FULL

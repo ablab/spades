@@ -30,10 +30,12 @@ using std::map;
 using std::vector;
 using std::set;
 using std::string;
+using std::pair;
 using std::make_pair;
 
 //==boost
 #include <boost/algorithm/string.hpp>
+#include <boost/bimap.hpp>
 
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
@@ -52,6 +54,7 @@ using std::make_pair;
 using boost::bind;
 using boost::function;
 
+using boost::bimap;
 using boost::shared_ptr;
 using boost::scoped_ptr;
 using boost::make_shared;
@@ -70,6 +73,9 @@ using boost::format;
 #include "k.hpp"
 
 //==our
+// utils
+#include "cpp_utils.hpp"
+
 // io
 #include "io/ireader.hpp"
 #include "io/converting_reader_wrapper.hpp"

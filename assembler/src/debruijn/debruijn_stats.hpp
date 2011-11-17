@@ -233,58 +233,120 @@ void ProduceNonconjugateInfo(NCGraph& g, const EdgeIndex<k + 1, NCGraph>& index
 
 }
 
-template<size_t k>
 void WriteGraphComponentsAlongGenome(const Graph& g,
 		const IdTrackHandler<Graph>& int_ids,
-		const EdgeIndex<k + 1, Graph>& index,
-		const KmerMapper<k + 1, Graph>& kmer_mapper,
+		const EdgeIndex<K + 1, Graph>& index,
+		const KmerMapper<K + 1, Graph>& kmer_mapper,
 		const GraphLabeler<Graph>& labeler, const Sequence& genome,
 		const string& folder, const string &file_name,
 		const string &graph_name, size_t split_edge_length) {
-	MappingPath<EdgeId> path1 = NewFindGenomePath<k>(genome, g, int_ids, index,
-			kmer_mapper);
-	MappingPath<EdgeId> path2 = NewFindGenomePath<k>(!genome, g, int_ids, index,
-			kmer_mapper);
-	make_dir(folder);
-	WriteComponentsAlongGenome(g, labeler, folder + file_name, graph_name,
-			split_edge_length, path1, path2);
-}
 
-template<size_t k>
-void WriteKmerComponent(conj_graph_pack &gp,
-		const omnigraph::GraphLabeler<Graph>& labeler, const string& folder, const string& graph_name,
-		Path<typename Graph::EdgeId> path1, Path<typename Graph::EdgeId> path2) {
-	Seq<k + 1> kp1mer;
-	KMerNeighborhoodFinder<Graph, k> splitter(kp1mer, gp.g,
-				gp.index , 50
-				, cfg::get().ds.IS);
-	WriteComponents<Graph>(gp.g, labeler, folder + "kmer.dot", graph_name,
-			cfg::get().ds.IS, splitter, path1, path2);
+    INFO("Writing graph components along genome");
 
-}
+    typedef MappingPath<EdgeId> map_path_t;
 
-template<size_t k>
-void ProduceDetailedInfo(conj_graph_pack &gp,
-		const omnigraph::GraphLabeler<Graph>& labeler, const string& folder,
-		const string& file_name, const string& graph_name) {
-	CountStats<k>(gp.g, gp.index, gp.genome);
-	Path<typename Graph::EdgeId> path1 = FindGenomePath<k>(gp.genome, gp.g,
-			gp.index);
-	Path<typename Graph::EdgeId> path2 = FindGenomePath<k>(!gp.genome, gp.g,
-			gp.index);
+    map_path_t path1 = NewFindGenomePath<K>( genome, g, int_ids, index, kmer_mapper);
+    map_path_t path2 = NewFindGenomePath<K>(!genome, g, int_ids, index, kmer_mapper);
 
 	make_dir(folder);
-	DetailedWriteToDot(gp.g, labeler, folder + file_name, graph_name, path1,
-			path2);
-	WriteComponents(gp.g, labeler, folder + file_name, graph_name,
-			cfg::get().ds.IS, path1, path2);
-//	WriteKmerComponent<k>(gp, labeler, folder, graph_name, path1, path2);
-	INFO("Writing graph components along genome");
-	WriteGraphComponentsAlongGenome<k>(gp.g, gp.int_ids, gp.index, gp.kmer_mapper, labeler,
-			gp.genome, folder, file_name, "components_along_genome",
-			cfg::get().ds.IS);
+	WriteComponentsAlongGenome(g, labeler, folder + file_name, graph_name, split_edge_length, path1, path2);
+
 	INFO("Writing graph components along genome finished");
 }
+
+void WriteKmerComponent(
+    conj_graph_pack &gp,
+	const omnigraph::GraphLabeler<Graph>& labeler,
+	const string& folder,
+	const string& graph_name,
+	Path<Graph::EdgeId> path1,
+	Path<Graph::EdgeId> path2,
+	Seq<K+1> const& kp1mer)
+{
+	KMerNeighborhoodFinder<Graph, K> splitter(kp1mer, gp.g, gp.index , 50, cfg::get().ds.IS);
+	WriteComponents<Graph>(gp.g, labeler, folder + "kmer.dot", graph_name, cfg::get().ds.IS, splitter, path1, path2);
+
+}
+
+void ProduceDetailedInfo(
+	conj_graph_pack &gp,
+	const omnigraph::GraphLabeler<Graph>& labeler,
+	const string& folder,
+	const string& file_name,
+	const string& graph_name,
+	info_printer_pos pos)
+{
+    auto it = cfg::get().info_printers.find(pos);
+    VERIFY(it != cfg::get().info_printers.end());
+
+    debruijn_config::info_printer const& config = it->second;
+
+    if (config.print_stats)
+    {
+        INFO("Printing statistics for " << details::info_printer_pos_name(pos));
+        CountStats<K>(gp.g, gp.index, gp.genome);
+    }
+
+	typedef Path<Graph::EdgeId> path_t;
+	path_t path1;
+	path_t path2;
+
+	if (config.detailed_dot_write           ||
+	    config.write_components             ||
+	    !config.components_for_kmer.empty() ||
+	    config.write_components_along_genome)
+	{
+	    path1 = FindGenomePath<K>( gp.genome, gp.g, gp.index);
+        path2 = FindGenomePath<K>(!gp.genome, gp.g, gp.index);
+        make_dir(folder);
+	}
+
+	if (config.detailed_dot_write)
+	    DetailedWriteToDot(gp.g, labeler, folder + file_name, graph_name, path1, path2);
+
+	if (config.write_components)
+	    WriteComponents(gp.g, labeler, folder + file_name, graph_name, cfg::get().ds.IS, path1, path2);
+
+	if (!config.components_for_kmer.empty())
+	    WriteKmerComponent(gp, labeler, folder, graph_name, path1, path2, Seq<K + 1>(config.components_for_kmer.c_str()));
+
+	if (config.write_components_along_genome)
+	    WriteGraphComponentsAlongGenome(
+            gp.g,
+            gp.int_ids,
+            gp.index,
+            gp.kmer_mapper,
+            labeler,
+            gp.genome,
+            folder,
+            file_name,
+            "components_along_genome",
+            cfg::get().ds.IS);
+}
+
+struct detail_info_printer
+{
+    detail_info_printer(
+        conj_graph_pack &gp,
+        const omnigraph::GraphLabeler<Graph>& labeler,
+        const string& folder,
+        const string& file_name)
+
+        : folder_   (folder)
+        , func_     (bind(&ProduceDetailedInfo, ref(gp), ref(labeler), _3, file_name, _2, _1))
+    {
+    }
+
+    void operator()(info_printer_pos pos, string const& folder_suffix = "") const
+    {
+        string pos_name = details::info_printer_pos_name(pos);
+        func_(pos, pos_name, (fs::path(folder_) / (pos_name + folder_suffix)).string());
+    }
+
+private:
+    string  folder_;
+    boost::function<void(info_printer_pos, string const&, string const&)>  func_;
+};
 
 template<size_t k>
 void WriteGraphComponents(const Graph& g, const EdgeIndex<k + 1, Graph>& index,

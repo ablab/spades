@@ -1,0 +1,18 @@
+info_printers
+{
+    default
+    {
+       print_stats                      true        
+       detailed_dot_write               false
+       write_components                 false
+       components_for_kmer              ""
+       write_components_along_genome    false
+    }
+    
+    final_simplified
+    {
+       write_components                 true
+       write_components_along_genome    true
+    }
+}
+  

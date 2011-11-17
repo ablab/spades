@@ -2,6 +2,7 @@
  * Assembler Main
  */
 
+#include "standard.hpp"
 #include "config_struct.hpp"
 #include "io/easy_reader.hpp"
 #include "io/rc_reader_wrapper.hpp"

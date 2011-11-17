@@ -5,17 +5,19 @@
  *      Author: Alexey.Gurevich
  */
 
-#ifndef CONFIG_STRUCT_HPP_
-#define CONFIG_STRUCT_HPP_
+#ifndef CONFIG_STRUCT_HDIP_
+#define CONFIG_STRUCT_HDIP_
 
 #include "config_common.hpp"
 #include "k.hpp"
-#include <boost/bimap.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 
-namespace debruijn_graph {
-enum working_stage {
+namespace debruijn_graph
+{
+
+enum working_stage
+{
 	ws_construction,
 	ws_paired_info_count,
 	ws_simplification,
@@ -25,12 +27,57 @@ enum working_stage {
 	ws_n50_enlargement
 };
 
-enum simplification_mode {
-	sm_normal, sm_cheating, sm_topology, sm_chimeric, sm_pair_info_aware
+enum simplification_mode
+{
+	sm_normal           ,
+	sm_cheating         ,
+	sm_topology         ,
+	sm_chimeric         ,
+	sm_pair_info_aware
 };
 
+enum info_printer_pos
+{
+    ipp_default                   = 0,
+    ipp_before_simplifiaction        ,
+    ipp_tip_clipping                 ,
+    ipp_bulge_removal                ,
+    ipp_err_con_removal              ,
+    ipp_final_err_con_removal        ,
+    ipp_final_tip_clipping           ,
+    ipp_final_bulge_removal          ,
+    ipp_removing_isolated_edges      ,
+    ipp_final_simplified             ,
+
+    ipp_total
+};
+
+namespace details
+{
+
+inline const char* info_printer_pos_name(size_t pos)
+{
+    const char* names[] =
+    {
+       "default"                ,
+       "before_simplifiaction"  ,
+       "tip_clipping"           ,
+       "bulge_removal"          ,
+       "err_con_removal"        ,
+       "final_err_con_removal"  ,
+       "final_tip_clipping"     ,
+       "final_bulge_removal"    ,
+       "removin_isolated_edges" ,
+       "final_simplified"
+    };
+
+    utils::check_array_size<ipp_total>(names);
+    return names[pos];
+}
+
+} // namespace details
+
 const char* const cfg_filename = "./src/debruijn/config.info";
-//	const size_t K = 55; // must be odd (so there is no k-mer which is equal to it's reverse-complimentary k-mer)
 
 inline std::string MakeLaunchTimeDirName() {
 	time_t rawtime;
@@ -45,50 +92,40 @@ inline std::string MakeLaunchTimeDirName() {
 }
 
 // struct for debruijn project's configuration file
-struct debruijn_config {
-	typedef boost::bimap<std::string, working_stage> stage_name_id_mapping;
-	typedef boost::bimap<std::string, simplification_mode> simpl_mode_id_mapping;
+struct debruijn_config
+{
+	typedef bimap<string, working_stage      > stage_name_id_mapping;
+	typedef bimap<string, simplification_mode> simpl_mode_id_mapping;
 
-	static const stage_name_id_mapping FillStageInfo() {
-		stage_name_id_mapping working_stages_info;
-		working_stages_info.insert(
-				stage_name_id_mapping::value_type("construction",
-						ws_construction));
-		working_stages_info.insert(
-				stage_name_id_mapping::value_type("paired_info_count",
-						ws_paired_info_count));
-		working_stages_info.insert(
-				stage_name_id_mapping::value_type("simplification",
-						ws_simplification));
-		working_stages_info.insert(
-				stage_name_id_mapping::value_type("late_pair_info_count",
-						ws_late_pair_info_count));
-		working_stages_info.insert(
-				stage_name_id_mapping::value_type("distance_estimation",
-						ws_distance_estimation));
-		working_stages_info.insert(
-				stage_name_id_mapping::value_type("repeats_resolving",
-						ws_repeats_resolving));
-		working_stages_info.insert(
-				stage_name_id_mapping::value_type("n50_enlargement",
-						ws_n50_enlargement));
-		return working_stages_info;
+	static const stage_name_id_mapping FillStageInfo()
+	{
+	    stage_name_id_mapping::value_type info [] =
+		{
+		        {"construction"         , ws_construction           },
+		        {"paired_info_count"    , ws_paired_info_count      },
+		        {"simplification"       , ws_simplification         },
+		        {"late_pair_info_count" , ws_late_pair_info_count   },
+		        {"distance_estimation"  , ws_distance_estimation    },
+		        {"repeats_resolving"    , ws_repeats_resolving      },
+		        {"repeats_resolving"    , ws_repeats_resolving      },
+		        {"n50_enlargement"      , ws_n50_enlargement        }
+		};
+
+		return stage_name_id_mapping(info, utils::array_end(info));
 	}
 
-	static const simpl_mode_id_mapping FillSimplifModeInfo() {
-		simpl_mode_id_mapping simpl_mode_info;
-		simpl_mode_info.insert(
-				simpl_mode_id_mapping::value_type("normal", sm_normal));
-		simpl_mode_info.insert(
-				simpl_mode_id_mapping::value_type("pair_info_aware",
-						sm_pair_info_aware));
-		simpl_mode_info.insert(
-				simpl_mode_id_mapping::value_type("cheating", sm_cheating));
-		simpl_mode_info.insert(
-				simpl_mode_id_mapping::value_type("topology", sm_topology));
-		simpl_mode_info.insert(
-				simpl_mode_id_mapping::value_type("chimeric", sm_chimeric));
-		return simpl_mode_info;
+	static const simpl_mode_id_mapping FillSimplifModeInfo()
+	{
+		simpl_mode_id_mapping::value_type info [] =
+        {
+                {"normal"           , sm_normal         },
+                {"pair_info_aware"  , sm_pair_info_aware},
+                {"cheating"         , sm_cheating       },
+                {"topology"         , sm_topology       },
+                {"chimeric"         , sm_chimeric       }
+        };
+
+		return simpl_mode_id_mapping(info, utils::array_end(info));
 	}
 
 	static const simpl_mode_id_mapping& simpl_mode_info() {
@@ -102,34 +139,30 @@ struct debruijn_config {
 	}
 
 	static const std::string& simpl_mode_name(simplification_mode mode_id) {
-		simpl_mode_id_mapping::right_const_iterator it =
-				simpl_mode_info().right.find(mode_id);
-		VERIFY_MSG(it != simpl_mode_info().right.end(),
-				"No name for simplification mode id = " << mode_id);
+		auto it = simpl_mode_info().right.find(mode_id);
+
+		VERIFY_MSG(it != simpl_mode_info().right.end(), "No name for simplification mode id = " << mode_id);
 		return it->second;
 	}
 
 	static simplification_mode simpl_mode_id(std::string name) {
-		simpl_mode_id_mapping::left_const_iterator it =
-				simpl_mode_info().left.find(name);
-		VERIFY_MSG(it != simpl_mode_info().left.end(),
-				"There is no simplification mode with name = " << name);
+		auto it = simpl_mode_info().left.find(name);
+		VERIFY_MSG(it != simpl_mode_info().left.end(), "There is no simplification mode with name = " << name);
+
 		return it->second;
 	}
 
 	static const std::string& working_stage_name(working_stage stage_id) {
-		stage_name_id_mapping::right_const_iterator it =
-				working_stages_info().right.find(stage_id);
-		VERIFY_MSG(it != working_stages_info().right.end(),
-				"No name for working stage id = " << stage_id);
+		auto it = working_stages_info().right.find(stage_id);
+		VERIFY_MSG(it != working_stages_info().right.end(), "No name for working stage id = " << stage_id);
+
 		return it->second;
 	}
 
 	static working_stage working_stage_id(std::string name) {
-		stage_name_id_mapping::left_const_iterator it =
-				working_stages_info().left.find(name);
-		VERIFY_MSG(it != working_stages_info().left.end(),
-				"There is no working stage with name = " << name);
+		auto it = working_stages_info().left.find(name);
+		VERIFY_MSG(it != working_stages_info().left.end(), "There is no working stage with name = " << name);
+
 		return it->second;
 	}
 
@@ -180,7 +213,9 @@ struct debruijn_config {
 		pair_info_ec_remover piec;
 
 		double isolated_min_len;
-		bool removal_checks_enabled;
+		bool   removal_checks_enabled;
+
+		//typedef map<>
 
 	};
 
@@ -230,6 +265,20 @@ struct debruijn_config {
 		int minimal_intersection;
 	};
 
+	struct info_printer
+	{
+       bool     print_stats;
+       bool     detailed_dot_write;
+       bool     write_components;
+       string   components_for_kmer;
+       bool     write_components_along_genome;
+	};
+
+	typedef map<info_printer_pos, info_printer> info_printers_t;
+
+
+public:
+
 	std::string dataset_name;
 	std::string input_dir;
 	std::string output_root;
@@ -248,7 +297,7 @@ struct debruijn_config {
 
 	bool paired_mode;
 	bool paired_info_statistics;
-//		bool rectangle_mode;
+//	bool rectangle_mode;
 	bool etalon_info_mode;
 	bool late_paired_info;
 	bool advanced_estimator_mode;
@@ -257,14 +306,15 @@ struct debruijn_config {
 	std::string uncorrected_reads;
 	bool need_consensus;
 
-	simplification simp;
-
-	distance_estimator de;
+	simplification              simp;
+	distance_estimator          de;
 	advanced_distance_estimator ade;
-	repeat_resolver rr;
-	dataset ds;
-	position_handler pos;
-	gap_closer gc;
+	repeat_resolver             rr;
+	dataset                     ds;
+	position_handler            pos;
+	gap_closer                  gc;
+
+	info_printers_t info_printers;
 };
 
 // specific load functions
@@ -408,6 +458,36 @@ inline void load(boost::property_tree::ptree const& pt,
 	load(pt, "removal_checks_enabled", simp.removal_checks_enabled);
 }
 
+inline void load(boost::property_tree::ptree const& pt, debruijn_config::info_printer& printer)
+{
+    using config_common::load_if_exists;
+
+    load_if_exists(pt, "print_stats"                  , printer.print_stats);
+    load_if_exists(pt, "detailed_dot_write"           , printer.detailed_dot_write);
+    load_if_exists(pt, "write_components"             , printer.write_components);
+    load_if_exists(pt, "components_for_kmer"          , printer.components_for_kmer);
+    load_if_exists(pt, "write_components_along_genome", printer.write_components_along_genome);
+}
+
+inline void load(boost::property_tree::ptree const& pt, debruijn_config::info_printers_t& printers)
+{
+    using config_common::load;
+    using config_common::load_if_exists;
+
+    using details::info_printer_pos_name;
+
+    debruijn_config::info_printer def;
+    load(pt, info_printer_pos_name(ipp_default), def);
+
+    for (size_t pos = ipp_default + 1; pos != ipp_total; ++pos)
+    {
+        debruijn_config::info_printer printer(def);
+        load_if_exists(pt, info_printer_pos_name(pos), printer);
+
+        printers[info_printer_pos(pos)] = printer;
+    }
+}
+
 // main debruijn config load function
 inline void load(boost::property_tree::ptree const& pt, debruijn_config& cfg) {
 	using config_common::load;
@@ -434,12 +514,8 @@ inline void load(boost::property_tree::ptree const& pt, debruijn_config& cfg) {
 
 	load(pt, "additional_contigs", cfg.additional_contigs);
 
-	//load(pt, "reference_genome", cfg.reference_genome); moved to dataset
-	//load(pt, "start_from", cfg.start_from);
-
 	load(pt, "paired_mode", cfg.paired_mode);
 	load(pt, "paired_info_statistics", cfg.paired_info_statistics);
-//		load(pt, "rectangle_mode", cfg.rectangle_mode);
 	load(pt, "etalon_info_mode", cfg.etalon_info_mode);
 	load(pt, "late_paired_info", cfg.late_paired_info);
 	load(pt, "componential_resolve", cfg.componential_resolve);
@@ -454,9 +530,14 @@ inline void load(boost::property_tree::ptree const& pt, debruijn_config& cfg) {
 	load(pt, "need_consensus", cfg.need_consensus);
 	load(pt, "uncorrected_reads", cfg.uncorrected_reads);
 
-	load(pt, cfg.ds.single_cell ? "sc_simplification" : "usual_simplification",
-			cfg.simp);
+	load(pt, (cfg.ds.single_cell ? "sc_simplification" : "usual_simplification"), cfg.simp);
+
+	load(pt, "info_printers", cfg.info_printers);
 }
+
+
+
+
 
 } // debruijn_graph
 

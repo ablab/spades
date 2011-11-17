@@ -20,6 +20,8 @@ case $1 in
   'de') cfg="src/debruijn/distance_estimation.info";;
   'det') cfg="src/debruijn/distance_estimation.info.template";;
   'd')  cfg="src/debruijn/datasets.info" ;;
+  'dip') cfg="src/debruijn/detail_info_printer.info";;
+  'dipt') cfg="src/debruijn/detail_info_printer.info.template";;
 esac
 
 $EDITOR $cfg
