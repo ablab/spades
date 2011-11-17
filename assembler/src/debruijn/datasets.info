@@ -427,7 +427,7 @@ LB_QUAKE_FULL
 	RL		100	; read length
 	IS		370	; insert size
 	single_cell	false
-	reference_genome  L.Bouillonii_quaked/contigs_br_1003.fasta
+	reference_genome  none
 	LEN		8700000	; total size
 }
 
