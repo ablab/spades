@@ -8,6 +8,9 @@
 #ifndef EDGES_POSITION_HANDLER_HPP_
 #define EDGES_POSITION_HANDLER_HPP_
 
+// todo: it shouldn't be here!!!!!
+#include "../debruijn/config_struct.hpp"
+
 //#include "utils.hpp"
 #include "graph_labeler.hpp"
 #include "simple_tools.hpp"
