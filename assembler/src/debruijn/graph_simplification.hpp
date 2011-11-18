@@ -27,7 +27,7 @@ class EditDistanceTrackingCallback {
 
 public:
 	EditDistanceTrackingCallback(const Graph& g) :
-			g_(g) {
+		g_(g) {
 	}
 
 	bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
@@ -66,7 +66,7 @@ void ClipTips(Graph &g,
 			comparator,
 			(size_t) math::round(
 					(double) max_tip_length / 2
-							* (1 + (i + 1.) / iteration_count)), max_coverage,
+					* (1 + (i + 1.) / iteration_count)), max_coverage,
 			max_relative_coverage, removal_handler);
 	tc.ClipTips();
 	INFO("Clipping tips finished");
@@ -78,8 +78,8 @@ void ClipTipsForResolver(Graph &g) {
 	INFO("Clipping tips");
 	omnigraph::LengthComparator<Graph> comparator(g);
 	//	size_t max_tip_length = CONFIG.read<size_t> ("tc_max_tip_length");
-	size_t max_coverage = cfg::get().simp.tc.max_coverage;
-	double max_relative_coverage = cfg::get().simp.tc.max_relative_coverage;
+			size_t max_coverage = cfg::get().simp.tc.max_coverage;
+			double max_relative_coverage = cfg::get().simp.tc.max_relative_coverage;
 	omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(g, comparator, 100,
 			max_coverage, max_relative_coverage * 0.5);
 	tc.ClipTips();
@@ -87,14 +87,18 @@ void ClipTipsForResolver(Graph &g) {
 }
 
 void RemoveBulges(Graph &g,
-		boost::function<void(Graph::EdgeId)> removal_handler = 0) {
+		boost::function<void(Graph::EdgeId)> removal_handler = 0, size_t additional_length_bound = 0) {
 	INFO("-----------------------------------------");
 	INFO("Removing bulges");
 	double max_coverage = cfg::get().simp.br.max_coverage;
 	double max_relative_coverage = cfg::get().simp.br.max_relative_coverage;
 	double max_delta = cfg::get().simp.br.max_delta;
 	double max_relative_delta = cfg::get().simp.br.max_relative_delta;
-	size_t max_length_div_K = cfg::get().simp.br.max_length_div_K;
+	double max_length_div_K = cfg::get().simp.br.max_length_div_K;
+	size_t max_length = max_length_div_K * g.k();
+	if(additional_length_bound != 0 && additional_length_bound < max_length) {
+		max_length = additional_length_bound;
+	}
 	omnigraph::SimplePathCondition<Graph> simple_path_condition(g);
 	EditDistanceTrackingCallback<Graph> callback(g);
 	omnigraph::BulgeRemover<Graph> bulge_remover(
@@ -274,6 +278,68 @@ const Sequence& genome, size_t bound, const string &file_name) {
 	}
 }
 
+void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover, boost::function<void(EdgeId)> &removal_handler_f,
+		detail_info_printer &printer, size_t iteration_count) {
+	printer(ipp_before_simplifiaction);
+
+	INFO("Early TipClipping");
+	ClipTips(graph, removal_handler_f);
+
+	INFO("Early BulgeRemoval");
+	RemoveBulges(graph, removal_handler_f, graph.k() + 1);
+	INFO("BulgeRemoval stats");
+
+	INFO("Early ErroneousConnectionsRemoval");
+	RemoveLowCoverageEdges(graph, edge_remover, 0, iteration_count);
+	INFO("ErroneousConnectionsRemoval stats");
+}
+
+void SimplificationCycle(Graph &graph, EdgeRemover<Graph> &edge_remover, boost::function<void(EdgeId)> &removal_handler_f,
+		detail_info_printer &printer, size_t iteration_count, size_t iteration) {
+	INFO("-----------------------------------------");
+	INFO("Iteration " << iteration);
+
+	INFO(iteration << " TipClipping");
+	ClipTips(graph, removal_handler_f, iteration_count, iteration);
+	INFO(iteration << " TipClipping stats");
+	printer(ipp_tip_clipping, str(format("_%d") % iteration));
+
+	INFO(iteration << " BulgeRemoval");
+	RemoveBulges(graph, removal_handler_f);
+	INFO(iteration << " BulgeRemoval stats");
+	printer(ipp_bulge_removal, str(format("_%d") % iteration));
+
+	INFO(iteration << " ErroneousConnectionsRemoval");
+	RemoveLowCoverageEdges(graph, edge_remover, iteration_count, iteration);
+	INFO(iteration << " ErroneousConnectionsRemoval stats");
+	printer(ipp_err_con_removal, str(format("_%d") % iteration));
+}
+
+void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover, boost::function<void(EdgeId)> &removal_handler_f,
+		detail_info_printer &printer, size_t iteration_count) {
+
+	INFO("Final ErroneousConnectionsRemoval");
+	FinalRemoveErroneousEdges(graph, edge_remover);
+	printer(ipp_final_err_con_removal);
+
+	INFO("Final TipClipping");
+	ClipTips(graph, removal_handler_f);
+	printer(ipp_final_tip_clipping);
+
+	INFO("Final BulgeRemoval");
+	RemoveBulges(graph, removal_handler_f);
+	printer(ipp_final_bulge_removal);
+
+	INFO("Final isolated edges removal");
+	IsolatedEdgeRemover<Graph> isolated_edge_remover(graph, cfg::get().simp.isolated_min_len);
+	isolated_edge_remover.RemoveIsolatedEdges();
+	printer(ipp_removing_isolated_edges);
+
+    printer(ipp_final_simplified);
+
+//	OutputWrongContigs<k, Graph>(gp.g, gp.index, gp.genome, 1000, "long_contigs.fasta");
+}
+
 template<size_t k>
 void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 		omnigraph::GraphLabeler<Graph>& tot_lab, size_t iteration_count,
@@ -285,8 +351,6 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 	LabelerList<Graph>  labeler(tot_lab, edge_qual);
  	detail_info_printer printer(gp, labeler, output_folder, "graph.dot");
 
-	printer(ipp_before_simplifiaction);
-
 	QualityLoggingRemovalHandler<Graph> qual_removal_handler(edge_qual);
 
 	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
@@ -296,46 +360,13 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 
 	EdgeRemover<Graph> edge_remover(gp.g, cfg::get().simp.removal_checks_enabled, removal_handler_f);
 
+	PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
+
 	for (size_t i = 0; i < iteration_count; i++) {
-		INFO("-----------------------------------------");
-		INFO("Iteration " << i);
-
-		INFO(i << " TipClipping");
-		ClipTips(gp.g, removal_handler_f, iteration_count, i);
-		INFO(i << " TipClipping stats");
-		printer(ipp_tip_clipping, str(format("_%d") % i));
-
-		INFO(i << " BulgeRemoval");
-		RemoveBulges(gp.g, removal_handler_f);
-		INFO(i << " BulgeRemoval stats");
-		printer(ipp_bulge_removal, str(format("_%d") % i));
-
-		INFO(i << " ErroneousConnectionsRemoval");
-		RemoveLowCoverageEdges(gp.g, edge_remover, iteration_count, i);
-		INFO(i << " ErroneousConnectionsRemoval stats");
-		printer(ipp_err_con_removal, str(format("_%d") % i));
+		SimplificationCycle(gp.g, edge_remover, removal_handler_f, printer, iteration_count, i);
 	}
 
-	INFO("Final ErroneousConnectionsRemoval");
-	FinalRemoveErroneousEdges(gp.g, edge_remover);
-	printer(ipp_final_err_con_removal);
-
-	INFO("Final TipClipping");
-	ClipTips(gp.g, removal_handler_f);
-	printer(ipp_final_tip_clipping);
-
-	INFO("Final BulgeRemoval");
-	RemoveBulges(gp.g, removal_handler_f);
-	printer(ipp_final_bulge_removal);
-
-	INFO("Final isolated edges removal");
-	IsolatedEdgeRemover<Graph> isolated_edge_remover(gp.g, cfg::get().simp.isolated_min_len);
-	isolated_edge_remover.RemoveIsolatedEdges();
-	printer(ipp_removing_isolated_edges);
-
-    printer(ipp_final_simplified);
-
-//	OutputWrongContigs<k, Graph>(gp.g, gp.index, gp.genome, 1000, "long_contigs.fasta");
+	PostSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
 	INFO("Graph simplification finished");
 }
 

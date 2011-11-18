@@ -175,7 +175,7 @@ struct debruijn_config
 		};
 
 		struct bulge_remover {
-			size_t max_length_div_K;
+			double max_length_div_K;
 			double max_coverage;
 			double max_relative_coverage;
 			double max_delta;
