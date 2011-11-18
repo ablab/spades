@@ -16,7 +16,6 @@ if [ "$cmd" == "hammer" ] ; then
 fi
 
 if [ "$cmd" == "generic" ] ; then
-    shift
     ./dataset print TODO_NAME TODO TODO TODO N/A TODO $*
     exit
 fi
@@ -41,6 +40,16 @@ shift
 sf=$1
 shift
 ss=$1
+
+p="`pwd`"
+f=`find $p -name $f`
+f=${f//*input\//}
+s=`find $p -name $s`
+s=${s//*input\//}
+sf=`find $p -name $sf 2> /dev/null`
+sf=${sf//*input\//}
+ss=`find $p -name $ss 2> /dev/null`
+ss=${ss//*input\//}
 
 echo $dataset
 echo "{"
