@@ -487,7 +487,7 @@ private:
 	set<VertexId> visited_;
 	size_t bound_;
 private:
-	DECL_LOGGER("LongEdgeExclusiveSplitter")
+	DECL_LOGGER("LongEdgesExclusiveSplitter")
 public:
 	LongEdgesExclusiveSplitter(const Graph &graph, size_t bound) :
 		graph_(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */
@@ -495,22 +495,30 @@ public:
 	}
 
 	virtual vector<VertexId> NextComponent() {
+		TRACE("search started");
 		if (Finished()) {
 			VERIFY(false);
 			return vector<VertexId> ();
 		}
 		VertexId next = queue_.top();
 		queue_.pop();
+		TRACE("creating shortEdgeComponentFinder");
 		ShortEdgeComponentFinder<Graph> cf(graph_, bound_);
+
+		TRACE("created shortEdgeComponentFinder");
 		cf.run(next);
+
+		TRACE("comp Finder finished");
 		vector < VertexId > result = cf.VisitedVertices();
 		for (auto it = result.begin(); it != result.end(); ++it) {
 			queue_.erase(*it);
 		}
+		TRACE("Returning component");
 		return result;
 	}
 
 	virtual bool Finished() {
+		TRACE("Inside Finished");
 		//		return iterator_.IsEnd();
 		return queue_.empty();
 	}
