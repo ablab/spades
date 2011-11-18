@@ -486,7 +486,8 @@ private:
 	//			iterator_;
 	set<VertexId> visited_;
 	size_t bound_;
-
+private:
+	DECL_LOGGER("LongEdgeExclusiveSplitter")
 public:
 	LongEdgesExclusiveSplitter(const Graph &graph, size_t bound) :
 		graph_(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */
