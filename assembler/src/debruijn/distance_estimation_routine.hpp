@@ -30,9 +30,8 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 	exec_late_pair_info_count(gp, paired_index);
 	INFO("STAGE == Estimating Distance");
 
-	CloseShortGaps(gp.g, paired_index, gp.edge_pos,	cfg::get().gc.minimal_intersection);
-
 	if (cfg::get().paired_mode) {
+		CloseShortGaps(gp.g, paired_index, gp.edge_pos,	cfg::get().gc.minimal_intersection);
 		if (cfg::get().advanced_estimator_mode) {
 			AdvancedDistanceEstimator<Graph> estimator(gp.g, paired_index,
 					gp.int_ids, cfg::get().ds.IS, cfg::get().ds.RL,

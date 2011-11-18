@@ -14,6 +14,7 @@
 
 template<class Graph>
 void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, EdgesPositionHandler<Graph> edges_pos, int MimimalIntersection){
+	INFO("Closing short gaps...");
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef vector<PairInfo<EdgeId>> PairInfos;
@@ -50,7 +51,7 @@ void CloseShortGaps(Graph& g, omnigraph::PairedInfoIndex<Graph> paired_info, Edg
             }
     	}
     }
-    INFO("Total filled " << gaps_filled<<" gaps");
+    INFO("Closing short gaps complete. Total filled " << gaps_filled<<" gaps.");
     omnigraph::Compressor<Graph> compressor(g);
     compressor.CompressAllVertices();
 }
