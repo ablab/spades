@@ -837,6 +837,8 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 		if (splitter.Finished())
 			break;
 		comps = splitter.NextComponent();
+		DEBUG("finished filling component " << comp_count);
+
 	}
 	return vertices;
 
