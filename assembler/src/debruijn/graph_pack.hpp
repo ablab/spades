@@ -35,7 +35,7 @@ struct conj_graph_pack {
 	g(K),
 	index(g)
 	, int_ids (g)
-	, edge_pos(g), etalon_paired_index(g, 0), kmer_mapper(g),
+	, edge_pos(g, cfg::get().pos.max_single_gap), etalon_paired_index(g, 0), kmer_mapper(g),
 	genome(genome) {
 	}
 };
@@ -53,7 +53,7 @@ struct nonconj_graph_pack {
 	: g (K)
 	, int_ids (g)
 	, index (g)
-	, edge_pos (g)
+	, edge_pos (g, cfg::get().pos.max_single_gap)
 	, clustered_index (g)
 	{
 	}
@@ -62,7 +62,7 @@ struct nonconj_graph_pack {
 	: g (K)
 	, int_ids (g)
 	, index (g)
-	, edge_pos (g)
+	, edge_pos (g, cfg::get().pos.max_single_gap)
 	, clustered_index (g)
 	{
 		fs::path conv_folder = fs::path(cfg::get().output_root) / "temp_conversion";

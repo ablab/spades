@@ -117,7 +117,7 @@ void ConjugateResolveOneComponent(const string& load_from_dir, const string& sav
 	Graph new_graph(k);
 	IdTrackHandler<Graph> NewIntIds(new_graph);
 	PairedInfoIndex<Graph> new_index(new_graph);
-	EdgesPositionHandler<Graph> EdgePosBefore(new_graph);
+	EdgesPositionHandler<Graph> EdgePosBefore(new_graph, cfg::get().pos.max_single_gap);
 //	scanNCGraph(new_graph, NewIntIds, load_from, &new_index, EdgePosBefore);
 //scanConjugateGraph(new_graph, NewIntIds, load_from, &new_index, EdgePosBefore);
 
@@ -131,7 +131,7 @@ void ConjugateResolveOneComponent(const string& load_from_dir, const string& sav
 
 	ConjugateDeBruijnGraph resolved_graph(k);
 	IdTrackHandler<Graph> Resolved_IntIds(resolved_graph);
-	EdgesPositionHandler<Graph> EdgePosAfter(resolved_graph);
+	EdgesPositionHandler<Graph> EdgePosAfter(resolved_graph, cfg::get().pos.max_single_gap);
 	EdgeLabelHandler<Graph> LabelsAfter(resolved_graph, new_graph);
 
 	ResolveRepeats(new_graph, NewIntIds, new_index, EdgePosBefore,

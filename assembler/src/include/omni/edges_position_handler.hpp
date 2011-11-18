@@ -8,9 +8,6 @@
 #ifndef EDGES_POSITION_HANDLER_HPP_
 #define EDGES_POSITION_HANDLER_HPP_
 
-// todo: it shouldn't be here!!!!!
-#include "../debruijn/config_struct.hpp"
-
 //#include "utils.hpp"
 #include "graph_labeler.hpp"
 #include "simple_tools.hpp"
@@ -38,7 +35,7 @@ bool PosCompare(const EdgePosition &a, const EdgePosition &b){
 	return ((a.contigId_ < b.contigId_) ||((a.contigId_ == b.contigId_)&&( aend < bend )));
 }
 
-vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosition> v2){
+vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosition> v2, int max_single_gap = 0){
 	vector<EdgePosition> res;
 	if (v1.size() == 0 && v2.size() == 0) return res;
 	if (v1.size() == 0) {res = v2;}
@@ -65,7 +62,7 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosi
 				}
 				else
 				{
-					if ((v1[i].end() < v2[j].start())&&(v1[i].end() + cfg::get().pos.max_single_gap > v2[j].start())){
+					if ((v1[i].end() < v2[j].start())&&(v1[i].end() + max_single_gap + 1 >= v2[j].start())){
 						//res.push_back(EdgePosition(v1[i].start_, v2[j].end_, v1[i].contigId_));
 						if (best_fit_j < 0) best_fit_j = j;
 						else if (v2[j].start() < v2[best_fit_j].start()) best_fit_j = j;
@@ -92,6 +89,7 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	typedef int realIdType;
 
 	map<EdgeId, vector<EdgePosition> > EdgesPositions;
+	int max_single_gap_;
 public:
 	const map<EdgeId, vector<EdgePosition> > &edges_positions() const {
 		return EdgesPositions;
@@ -158,8 +156,8 @@ public:
 		return s;
 	}
 
-	EdgesPositionHandler(Graph &g) :
-		GraphActionHandler<Graph> (g, "EdgePositionHandler") {
+	EdgesPositionHandler(Graph &g, int max_single_gap = 0) :
+		GraphActionHandler<Graph> (g, "EdgePositionHandler"), max_single_gap_(max_single_gap) {
 	}
 	virtual ~EdgesPositionHandler() {
 		TRACE("~EdgePositionHandler ok");
@@ -214,7 +212,7 @@ public:
  		 vector<EdgePosition> res = (EdgesPositions[oldEdges[0]]);
  		 bool positive_size = (res.size() > 0);
  		 for (size_t i = 1; i < n; i++) {
- 			 res = GluePositionsLists(res, EdgesPositions[oldEdges[i]]);
+ 			 res = GluePositionsLists(res, EdgesPositions[oldEdges[i]], max_single_gap_);
  	 		 positive_size = positive_size || (EdgesPositions[oldEdges[i]].size() > 0);
  		 }
 
