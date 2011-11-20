@@ -361,39 +361,24 @@ string ConstructComponentName(string file_name, size_t cnt) {
 	return res;
 }
 
-template<class Graph>
-int PrintGraphComponents(const string& file_name, Graph& g,
-		size_t split_edge_length, IdTrackHandler<Graph> &int_ids,
-		PairedInfoIndex<Graph> &paired_index,
-		EdgesPositionHandler<Graph> &edges_positions, bool symmetric_mode =
-				false) {
-	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
-	ComponentSizeFilter<Graph> checker(g, split_edge_length, 2);
+template<class graph_pack>
+int PrintGraphComponents(const string& file_name, graph_pack& gp,
+		size_t split_edge_length,
+		PairedInfoIndex<Graph> &clustered_index) {
+	LongEdgesInclusiveSplitter<Graph> inner_splitter(gp.g, split_edge_length);
+	ComponentSizeFilter<Graph> checker(gp.g, split_edge_length, 2);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	size_t cnt = 1;
 	while (!splitter.Finished() && cnt <= 1000) {
 		string component_name = ConstructComponentName(file_name, cnt).c_str();
 		auto component = splitter.NextComponent();
-
-		auto_ptr<DataPrinter<Graph>> printer;
-		//todo refactor
-		if (symmetric_mode) {
-			printer.reset(new ConjugateDataPrinter<Graph>(g, component.begin(),
-					component.end(), int_ids));
-		} else {
-			printer.reset(new NonconjugateDataPrinter<Graph>(g, component.begin(),
-					component.end(), int_ids));
-		}
-		PrintBasicGraph<Graph>(component_name, *printer);
-		printer->savePositions(component_name, edges_positions);
-		PrintPairedIndex(component_name, *printer, paired_index);
+		PrintWithClusteredIndex(component_name, gp, component.begin(), component.end(), clustered_index);
 		cnt++;
 	}
 	return (cnt - 1);
 }
 
 //for test generating
-template<class Graph>
 int PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
 		size_t split_edge_length, const IdTrackHandler<Graph>& int_ids) {
 	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
@@ -404,8 +389,6 @@ int PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
 		string component_name = ConstructComponentName(file_name, cnt).c_str();
 		auto component_vertices = splitter.NextComponent();
 
-		//		EdgeVertexFilter<Graph> filter(g, component);
-//		GraphComponent<Graph> component(g, component_vertices.begin(), component_vertices.end());
 		ConjugateDataPrinter<Graph> printer(g, component_vertices.begin(),
 				component_vertices.end(), int_ids);
 		PrintBasicGraph<Graph>(component_name, printer);

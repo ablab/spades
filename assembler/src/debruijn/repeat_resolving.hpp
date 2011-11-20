@@ -95,65 +95,65 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 //	omnigraph::WriteSimple(resolved_graph, IdTrackLabelerResolved, save_to + "_finished.dot", "no_repeat_graph");
 //}
 
-void ConjugateResolveOneComponent(const string& load_from_dir, const string& save_to_dir,
-		int component_id, int k) {
-	string file_name = ConstructComponentName(load_from_dir + "/graphCl",
-			component_id);
-	string save_to = ConstructComponentName(save_to_dir + "/graph",
-			component_id);
-
-	string save_resolving_history = ConstructComponentName(
-			save_to_dir + "/resolve", component_id);
-	make_dir(save_resolving_history);
-
-	Graph graph(k);
-	IdTrackHandler<Graph> int_ids(graph);
-	PairedInfoIndex<Graph> paired_index(graph);
-	EdgesPositionHandler<Graph> edge_pos(graph, cfg::get().pos.max_single_gap);
-
-	ConjugateDataScanner<Graph> scanner(graph, int_ids);
-	ScanBasicGraph(file_name, scanner);
-	scanner.loadPositions(file_name, edge_pos);
-	scanner.loadPaired(file_name, paired_index);
-
-	RealIdGraphLabeler<Graph> id_track_labeler(graph, int_ids);
-
-	omnigraph::WriteSimple(graph, id_track_labeler, save_to + "_before.dot", "no_repeat_graph");
-
-	ConjugateDeBruijnGraph resolved_graph(k);
-	IdTrackHandler<Graph> resolved_int_ids(resolved_graph);
-	EdgesPositionHandler<Graph> resolved_edge_pos(resolved_graph, cfg::get().pos.max_single_gap);
-	EdgeLabelHandler<Graph> resolve_mapper(resolved_graph, graph);
-
-	ResolveRepeats(graph, int_ids, paired_index, edge_pos,
-			resolved_graph, resolved_int_ids, resolved_edge_pos,
-			save_resolving_history + "/", resolve_mapper);
-
-	RealIdGraphLabeler<Graph> resolved_id_track_labeler(resolved_graph,
-			resolved_int_ids);
-	omnigraph::WriteSimple(resolved_graph, resolved_id_track_labeler, save_to + "_after.dot", "no_repeat_graph");
-
-	EdgesPosGraphLabeler<Graph> resolved_edge_pos_labeler(resolved_graph,
-			resolved_edge_pos);
-
-	omnigraph::WriteSimple(resolved_graph, resolved_edge_pos_labeler,
-			save_resolving_history + "/repeats_resolved_after_pos.dot",
-			"no_repeat_graph");
-
-	ClipTips(resolved_graph);
-	RemoveLowCoverageEdgesForResolver(resolved_graph);
-
-	omnigraph::WriteSimple(resolved_graph, resolved_edge_pos_labeler,
-			save_resolving_history
-					+ "/repeats_resolved_after_und_cleared_pos.dot",
-			"no_repeat_graph");
-//	omnigraph::WriteSimple(resolved_graph, resolved_id_track_labeler,
-//			save_resolving_history + "/repeats_resolved_und_cleared.dot",
+//void ConjugateResolveOneComponent(const string& load_from_dir, const string& save_to_dir,
+//		int component_id, int k) {
+//	string file_name = ConstructComponentName(load_from_dir + "/graphCl",
+//			component_id);
+//	string save_to = ConstructComponentName(save_to_dir + "/graph",
+//			component_id);
+//
+//	string save_resolving_history = ConstructComponentName(
+//			save_to_dir + "/resolve", component_id);
+//	make_dir(save_resolving_history);
+//
+//	Graph graph(k);
+//	IdTrackHandler<Graph> int_ids(graph);
+//	PairedInfoIndex<Graph> paired_index(graph);
+//	EdgesPositionHandler<Graph> edge_pos(graph, cfg::get().pos.max_single_gap);
+//
+//	ConjugateDataScanner<Graph> scanner(graph, int_ids);
+//	ScanBasicGraph(file_name, scanner);
+//	scanner.loadPositions(file_name, edge_pos);
+//	scanner.loadPaired(file_name, paired_index);
+//
+//	RealIdGraphLabeler<Graph> id_track_labeler(graph, int_ids);
+//
+//	omnigraph::WriteSimple(graph, id_track_labeler, save_to + "_before.dot", "no_repeat_graph");
+//
+//	ConjugateDeBruijnGraph resolved_graph(k);
+//	IdTrackHandler<Graph> resolved_int_ids(resolved_graph);
+//	EdgesPositionHandler<Graph> resolved_edge_pos(resolved_graph, cfg::get().pos.max_single_gap);
+//	EdgeLabelHandler<Graph> resolve_mapper(resolved_graph, graph);
+//
+//	ResolveRepeats(graph, int_ids, paired_index, edge_pos,
+//			resolved_graph, resolved_int_ids, resolved_edge_pos,
+//			save_resolving_history + "/", resolve_mapper);
+//
+//	RealIdGraphLabeler<Graph> resolved_id_track_labeler(resolved_graph,
+//			resolved_int_ids);
+//	omnigraph::WriteSimple(resolved_graph, resolved_id_track_labeler, save_to + "_after.dot", "no_repeat_graph");
+//
+//	EdgesPosGraphLabeler<Graph> resolved_edge_pos_labeler(resolved_graph,
+//			resolved_edge_pos);
+//
+//	omnigraph::WriteSimple(resolved_graph, resolved_edge_pos_labeler,
+//			save_resolving_history + "/repeats_resolved_after_pos.dot",
 //			"no_repeat_graph");
-//	one_many_contigs_enlarger<Graph> N50enlarger(resolved_graph, cfg::get().ds.IS);
-//	N50enlarger.one_many_resolve_with_vertex_split();
-//	omnigraph::WriteSimple(resolved_graph, resolved_id_track_labeler, save_to + "_finished.dot", "no_repeat_graph");
-}
+//
+//	ClipTips(resolved_graph);
+//	RemoveLowCoverageEdgesForResolver(resolved_graph);
+//
+//	omnigraph::WriteSimple(resolved_graph, resolved_edge_pos_labeler,
+//			save_resolving_history
+//					+ "/repeats_resolved_after_und_cleared_pos.dot",
+//			"no_repeat_graph");
+////	omnigraph::WriteSimple(resolved_graph, resolved_id_track_labeler,
+////			save_resolving_history + "/repeats_resolved_und_cleared.dot",
+////			"no_repeat_graph");
+////	one_many_contigs_enlarger<Graph> N50enlarger(resolved_graph, cfg::get().ds.IS);
+////	N50enlarger.one_many_resolve_with_vertex_split();
+////	omnigraph::WriteSimple(resolved_graph, resolved_id_track_labeler, save_to + "_finished.dot", "no_repeat_graph");
+//}
 
 
 //void RectangleResolve(PairedInfoIndex<NonconjugateDeBruijnGraph>& index,

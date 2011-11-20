@@ -114,18 +114,14 @@ void load_distance_estimation(conj_graph_pack& gp,
 	fs::path p = fs::path(cfg::get().load_from) / "distance_estimation";
 	used_files->push_back(p);
 
-	ConjugateDataScanner<conj_graph_pack::graph_t> scanner(gp.g, gp.int_ids);
-	ScanGraphPack(p.string(), scanner, gp);
-	ScanPairedIndex<conj_graph_pack::graph_t>(p.string(), scanner, paired_index);
+	ScanAll(p.string(), gp, paired_index, clustered_index);
 }
 
 void save_distance_estimation(conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index) {
 	fs::path p = fs::path(cfg::get().output_saves) / "distance_estimation";
-	ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp.g, gp.int_ids);
-	PrintGraphPack(p.string(), printer, gp);
-	PrintPairedIndex(p.string(), printer, paired_index);
-	PrintClusteredIndex(p.string(), printer, clustered_index);
+
+	PrintAll(p.string(), gp, paired_index, clustered_index);
 }
 
 void count_estimated_info_stats(conj_graph_pack& gp,

@@ -21,7 +21,8 @@ class GraphComponent {
 	void FillVertices(VertexIt begin, VertexIt end, bool add_conjugate) {
 		for (auto it = begin; it != end; ++it) {
 			vertices_.insert(*it);
-			vertices_.insert(g_.conjugate(*it));
+			if (add_conjugate)
+				vertices_.insert(g_.conjugate(*it));
 		}
 	}
 

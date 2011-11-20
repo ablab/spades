@@ -909,7 +909,7 @@ public:
 		//saving results
 		string dir_name = cfg::get().output_dir + "estimation_qual/";
 		make_dir(dir_name);
-		NonconjugateDataPrinter<Graph> printer(graph_, int_ids_);
+		typename PrinterTraits<Graph>::Printer printer(graph_, int_ids_);
 		printer.savePaired(dir_name + "fp", false_positives_);
 		printer.savePaired(dir_name + "pm", perfect_matches_);
 		printer.savePaired(dir_name + "im", imperfect_matches_);

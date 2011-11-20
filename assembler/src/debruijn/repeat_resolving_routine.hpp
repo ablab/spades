@@ -222,7 +222,7 @@ string GeneratePostfix(){
 }
 
 template<class graph_pack>
-void produceResolvedPairedInfo(graph_pack& origin_gp,
+void ProduceResolvedPairedInfo(graph_pack& origin_gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
 		graph_pack& resolved_gp,
 		EdgeLabelHandler<typename graph_pack::graph_t>& labels_after,
@@ -240,16 +240,13 @@ void produceResolvedPairedInfo(graph_pack& origin_gp,
 }
 
 template<class graph_pack>
-void saveResolvedPairedInfo(graph_pack& resolved_gp,
+void SaveResolvedPairedInfo(graph_pack& resolved_gp,
 		PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info,
 		const string& graph_name, const string& subfolder) {
 
 	std::string rr_filename = cfg::get().output_dir + subfolder + graph_name;
 	INFO("Saving graph and paired info to " << rr_filename);
-	//todo fix!!!
-	NonconjugateDataPrinter<typename graph_pack::graph_t> printer(resolved_gp.g, resolved_gp.int_ids);
-	PrintGraphPack<graph_pack>(rr_filename, printer, resolved_gp);
-	PrintClusteredIndex<typename graph_pack::graph_t>(rr_filename, printer, resolved_graph_paired_info);
+	PrintWithClusteredIndex(rr_filename, resolved_gp, resolved_graph_paired_info);
 	INFO("Saved");
 }
 
@@ -282,8 +279,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
     //Generating paired info for resolved graph
     PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info(resolved_gp.g);
-    produceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_graph_paired_info);
-    saveResolvedPairedInfo(resolved_gp, resolved_graph_paired_info, graph_name + "_resolved", subfolder);
+    ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_graph_paired_info);
+    SaveResolvedPairedInfo(resolved_gp, resolved_graph_paired_info, graph_name + "_resolved", subfolder);
     //Paired info for resolved graph generated
 
     if (output_contigs) {
@@ -317,8 +314,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
     //Generating paired info for resolved graph
     PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info(resolved_gp.g);
-    produceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_cleared_graph_paired_info);
-    saveResolvedPairedInfo(resolved_gp, resolved_cleared_graph_paired_info, graph_name + "_resolved_cleared", subfolder);
+    ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_cleared_graph_paired_info);
+    SaveResolvedPairedInfo(resolved_gp, resolved_cleared_graph_paired_info, graph_name + "_resolved_cleared", subfolder);
     //Paired info for resolved graph generated
 
 	INFO("---Output Contigs---");
@@ -492,9 +489,7 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 	string component_name = cfg::get().output_dir + "graph_components/"
 			+ graph_name;
 
-	ConjugateDataScanner<Graph> scanner(conj_gp.g, conj_gp.int_ids);
-	ScanGraphPack(component_name, scanner, conj_gp);
-	ScanClusteredIndex<conj_graph_pack::graph_t>(component_name, scanner, clustered_index);
+	ScanWithClusteredIndex(component_name, conj_gp, clustered_index);
 
 	component_statistics(conj_gp, component_id, clustered_index);
 
@@ -509,8 +504,8 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 }
 
 void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
-	nonconj_graph_pack nonconj_gp;
-//    paired_info_index paired_index   (nonconj_gp.g/*, 5.*/);
+	nonconj_graph_pack nonconj_gp(genome);
+	PairedInfoIndex<nonconj_graph_pack::graph_t> clustered_index(nonconj_gp.g);
 
 	INFO("Resolve component "<<component_id);
 
@@ -518,19 +513,17 @@ void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 	string component_name = cfg::get().output_dir + "graph_components/"
 			+ graph_name;
 
-	NonconjugateDataScanner<nonconj_graph_pack::graph_t> scanner(nonconj_gp.g, nonconj_gp.int_ids);
-	ScanGraphPack(component_name, scanner, nonconj_gp);
-	ScanClusteredIndex<nonconj_graph_pack::graph_t>(component_name, scanner, nonconj_gp.clustered_index);
+	ScanWithClusteredIndex(component_name, nonconj_gp, clustered_index);
 
-	component_statistics(nonconj_gp, component_id, nonconj_gp.clustered_index);
+	component_statistics(nonconj_gp, component_id, clustered_index);
 
-	nonconj_graph_pack resolved_gp;
+	nonconj_graph_pack resolved_gp(genome);
 	string sub_dir = "resolve_components/";
 
 	string resolved_name = cfg::get().output_dir + "resolve_components"
 			+ "/resolve_" + graph_name + "/";
 	make_dir(resolved_name);
-	process_resolve_repeats(nonconj_gp, nonconj_gp.clustered_index, resolved_gp,
+	process_resolve_repeats(nonconj_gp, clustered_index, resolved_gp,
 			graph_name, sub_dir, false);
 }
 
@@ -579,9 +572,8 @@ void resolve_repeats() {
 	if (cfg::get().componential_resolve) {
 		make_dir(cfg::get().output_dir + "graph_components" + "/");
 		number_of_components = PrintGraphComponents(
-				cfg::get().output_dir + "graph_components/graph_", conj_gp.g,
-				cfg::get().ds.IS + 100, conj_gp.int_ids, clustered_index,
-				conj_gp.edge_pos, cfg::get().rr.symmetric_resolve);
+				cfg::get().output_dir + "graph_components/graph_", conj_gp,
+				cfg::get().ds.IS + 100, clustered_index);
 		INFO("number of components "<<number_of_components);
 	}
 
@@ -602,9 +594,11 @@ void resolve_repeats() {
 			}
 		}
 	} else {
-		nonconj_graph_pack origin_gp(conj_gp, clustered_index);
-		nonconj_graph_pack resolved_gp;
-		process_resolve_repeats(origin_gp, origin_gp.clustered_index,
+		nonconj_graph_pack origin_gp(conj_gp.genome);
+		PairedInfoIndex<nonconj_graph_pack::graph_t> orig_clustered_idx(origin_gp.g);
+		Convert(conj_gp, clustered_index, origin_gp, orig_clustered_idx);
+		nonconj_graph_pack resolved_gp(conj_gp.genome);
+		process_resolve_repeats(origin_gp, orig_clustered_idx,
 				resolved_gp, "graph");
 		if (cfg::get().componential_resolve) {
 			make_dir(cfg::get().output_dir + "resolve_components" + "/");

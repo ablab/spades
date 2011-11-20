@@ -66,17 +66,13 @@ void load_construction(conj_graph_pack& gp, total_labeler& tl,
 		paired_info_index& paired_index, files_t* files) {
 	fs::path p = fs::path(cfg::get().load_from) / "constructed_graph";
 	files->push_back(p);
-	ConjugateDataScanner<conj_graph_pack::graph_t> scanner(gp.g, gp.int_ids);
-	ScanGraphPack(p.string(), scanner, gp);
-	ScanPairedIndex<conj_graph_pack::graph_t>(p.string(), scanner, paired_index);
+	ScanWithPairedIndex(p.string(), gp, paired_index);
 }
 
 void save_construction(conj_graph_pack& gp, total_labeler& tl,
 		paired_info_index& paired_index) {
 	fs::path p = fs::path(cfg::get().output_saves) / "constructed_graph";
-	ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp.g, gp.int_ids);
-	PrintGraphPack(p.string(), printer, gp);
-	PrintPairedIndex(p.string(), printer, paired_index);
+	PrintWithPairedIndex(p.string(), gp, paired_index);
 }
 
 boost::optional<string> single_reads_filename(

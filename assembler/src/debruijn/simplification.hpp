@@ -61,28 +61,13 @@ void load_simplification(conj_graph_pack& gp, paired_info_index& paired_index,
 	used_files->push_back(p);
 
 	// TODO: what's the difference with construction?
-	ConjugateDataScanner<conj_graph_pack::graph_t> scanner(gp.g, gp.int_ids);
-	ScanGraphPack(p.string(), scanner, gp);
-	ScanPairedIndex<conj_graph_pack::graph_t>(p.string(), scanner, paired_index);
+	ScanWithPairedIndex(p.string(), gp, paired_index);
 }
 
 void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
 	fs::path p = fs::path(cfg::get().output_saves) / "simplified_graph";
 
-	ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp.g, gp.int_ids);
-	PrintGraphPack(p.string(), printer, gp);
-	PrintPairedIndex(p.string(), printer, paired_index);
-
-	//DEBUG
-	//	KmerMapper<K+1, Graph> cmp(gp.g);
-	//	scanKmerMapper(gp.g, gp.int_ids, p.string(), &cmp);
-	//	if (!gp.kmer_mapper.CompareTo(cmp)) {
-	//		WARN("Kmer mappers are not equal!");
-	//	}
-	//	else {
-	//		INFO("Mappers are equal");
-	//	}
-	//DEBUG
+	PrintWithPairedIndex(p.string(), gp, paired_index);
 
 	//todo temporary solution!!!
 	OutputContigs(gp.g, cfg::get().output_dir + cfg::get().additional_contigs);

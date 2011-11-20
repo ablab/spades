@@ -19,8 +19,9 @@ namespace debruijn_graph {
 
 typedef PairedInfoIndex<ConjugateDeBruijnGraph> paired_info_index;
 
-struct conj_graph_pack {
-	typedef ConjugateDeBruijnGraph graph_t;
+template<class Graph>
+struct graph_pack {
+	typedef Graph graph_t;
 
 	graph_t g;
 	EdgeIndex<K + 1, graph_t> index;
@@ -31,7 +32,7 @@ struct conj_graph_pack {
 
 	Sequence const& genome;
 
-	conj_graph_pack(Sequence const& genome) :
+	graph_pack(Sequence const& genome) :
 	g(K),
 	index(g)
 	, int_ids (g)
@@ -40,55 +41,22 @@ struct conj_graph_pack {
 	}
 };
 
-struct nonconj_graph_pack {
-	typedef NonconjugateDeBruijnGraph graph_t;
+typedef graph_pack<ConjugateDeBruijnGraph> conj_graph_pack;
+typedef graph_pack<NonconjugateDeBruijnGraph> nonconj_graph_pack;
 
-	graph_t g;
-	EdgeIndex<K + 1, graph_t> index;
-	IdTrackHandler<graph_t> int_ids;
-	EdgesPositionHandler<graph_t> edge_pos;
-	PairedInfoIndex<graph_t> etalon_paired_index;
-	KmerMapper<K + 1, graph_t> kmer_mapper;
-	//todo extract from here
-	PairedInfoIndex<graph_t> clustered_index;
+inline void Convert(const conj_graph_pack& gp1, const PairedInfoIndex<conj_graph_pack::graph_t>& clustered_index1,
+		nonconj_graph_pack& gp2, PairedInfoIndex<nonconj_graph_pack::graph_t>& clustered_index2) {
+	fs::path conv_folder = fs::path(cfg::get().output_root) / "temp_conversion";
+	make_dir(conv_folder.string());
 
-	nonconj_graph_pack()
-	: g (K)
-	, index (g)
-	, int_ids (g)
-	, edge_pos (g, cfg::get().pos.max_single_gap)
-	, etalon_paired_index(g)
-	, kmer_mapper(g)
-	, clustered_index (g)
-	{
-	}
+	fs::path p = conv_folder / "conj_graph";
 
-	//todo make separate tool and make unique graph_pack
-	nonconj_graph_pack(conj_graph_pack const& gp, PairedInfoIndex<ConjugateDeBruijnGraph> const& prev_clustered_index)
-	: g (K)
-	, index (g)
-	, int_ids (g)
-	, edge_pos (g, cfg::get().pos.max_single_gap)
-	, etalon_paired_index(g)
-	, kmer_mapper(g)
-	, clustered_index (g)
-	{
-		fs::path conv_folder = fs::path(cfg::get().output_root) / "temp_conversion";
-		make_dir(conv_folder.string());
-		
-		fs::path p = conv_folder / "conj_graph";
+	PrintWithClusteredIndex(p.string(), gp1, clustered_index1);
 
-		ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp.g, gp.int_ids);
-		PrintGraphPack(p.string(), printer, gp);
-		PrintClusteredIndex(p.string(), printer, prev_clustered_index);
+	ScanWithClusteredIndex(p.string(), gp2, clustered_index2);
 
-		NonconjugateDataScanner<graph_t> scanner(g, int_ids);
-		ScanGraphPack(p.string(), scanner, *this);
-		ScanClusteredIndex(p.string(), scanner, clustered_index);
-
-		remove_all(conv_folder);
-	}
-};
+	remove_all(conv_folder);
+}
 
 } // namespace debruijn_graph
 
