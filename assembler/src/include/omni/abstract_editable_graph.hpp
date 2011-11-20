@@ -14,8 +14,7 @@ namespace omnigraph {
 
 template<typename VertexIdT, typename EdgeIdT, class DataMasterT,
 		typename VertexIt>
-class AbstractEditableGraph: public ObservableGraph<VertexIdT, EdgeIdT,
-		VertexIt> {
+class AbstractEditableGraph: public ObservableGraph<VertexIdT, EdgeIdT, VertexIt> {
 	typedef ObservableGraph<VertexIdT, EdgeIdT, VertexIt> base;
 	//todo maybe rename template params themselves???
 public:
@@ -61,23 +60,24 @@ private:
 			TRACE("DeleteIncoming " << edge);
 			DeleteEdge(edge);
 			TRACE("DeleteIncoming ok");
-		}
-		TRACE("DeleteAllIncoming ok");
+		}TRACE("DeleteAllIncoming ok");
 	}
 
-	void FireDeletePath(const vector<EdgeId> &edgesToDelete, const vector<
-			VertexId> &verticesToDelete) {
+	void FireDeletePath(const vector<EdgeId> &edgesToDelete,
+			const vector<VertexId> &verticesToDelete) {
 		for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
 			FireDeleteEdge(*it);
-		for (auto it = verticesToDelete.begin(); it != verticesToDelete.end(); ++it)
+		for (auto it = verticesToDelete.begin(); it != verticesToDelete.end();
+				++it)
 			FireDeleteVertex(*it);
 	}
 
-	void HiddenDeletePath(const vector<EdgeId> &edgesToDelete, const vector<
-			VertexId> &verticesToDelete) {
+	void HiddenDeletePath(const vector<EdgeId> &edgesToDelete,
+			const vector<VertexId> &verticesToDelete) {
 		for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
 			HiddenDeleteEdge(*it);
-		for (auto it = verticesToDelete.begin(); it != verticesToDelete.end(); ++it)
+		for (auto it = verticesToDelete.begin(); it != verticesToDelete.end();
+				++it)
 			HiddenDeleteVertex(*it);
 	}
 
@@ -86,8 +86,8 @@ public:
 	typedef typename base::SmartEdgeIt SmartEdgeIt;
 
 	AbstractEditableGraph(HandlerApplier<VertexId, EdgeId>* applier,
-			const DataMaster& master) :
-		base(applier), master_(master) {
+	const DataMaster& master) :
+			base(applier), master_(master) {
 	}
 
 	virtual ~AbstractEditableGraph() {
@@ -183,9 +183,9 @@ public:
 	EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
 		TRACE("Adding edge connecting " << v1 << " and " << v2)
 		EdgeId e = HiddenAddEdge(v1, v2, data);
-		FireAddEdge( e);
-		TRACE("Added edge " << PrintEdge(e) << " connecting " << v1 << " and "
-				<< v2);
+		FireAddEdge(e);
+		TRACE(
+				"Added edge " << PrintEdge(e) << " connecting " << v1 << " and " << v2);
 		return e;
 	}
 
@@ -314,10 +314,9 @@ public:
 				VERIFY(path[i] != path[j]);
 			}
 		if (path.size() == 1) {
-			TRACE("Path of single edge " << PrintEdge(*(path.begin()))
-					<< ". Nothing to merge.");
-		}
-		TRACE("Merging path " << PrintEdges(path));
+			TRACE(
+					"Path of single edge " << PrintEdge(*(path.begin())) << ". Nothing to merge.");
+		}TRACE("Merging path " << PrintEdges(path));
 
 		//		cerr << "Merging " << PrintDetailedPath(pObservableGraph<VertexIdT, EdgeIdT, VertexIt>ath) << endl;
 		//		cerr << "Conjugate " << PrintConjugatePath(path) << endl;
@@ -326,7 +325,8 @@ public:
 		VertexId v1 = EdgeStart(corrected_path[0]);
 		VertexId v2 = EdgeEnd(corrected_path[corrected_path.size() - 1]);
 		vector<const EdgeData*> to_merge;
-		for (auto it = corrected_path.begin(); it != corrected_path.end(); ++it) {
+		for (auto it = corrected_path.begin(); it != corrected_path.end();
+				++it) {
 			to_merge.push_back(&(data(*it)));
 		}
 		EdgeId new_edge = HiddenAddEdge(v1, v2, master_.MergeData(to_merge));
@@ -342,8 +342,8 @@ public:
 		FireDeletePath(edges_to_delete, vertices_to_delete);
 		FireAddEdge(new_edge);
 		HiddenDeletePath(edges_to_delete, vertices_to_delete);
-		TRACE("Path merged. Corrected path " << SimplePrint(corrected_path)
-				<< "merged into " << PrintEdge(new_edge));
+		TRACE(
+				"Path merged. Corrected path " << SimplePrint(corrected_path) << "merged into " << PrintEdge(new_edge));
 		return new_edge;
 	}
 
@@ -363,33 +363,35 @@ public:
 
 		FireAddEdge(new_edge2);
 		HiddenDeleteEdge(edge);
-		TRACE("Edge " << edge << " split into " << PrintEdge(new_edge1) <<" and " << PrintEdge(new_edge2));
+		TRACE(
+				"Edge " << edge << " split into " << PrintEdge(new_edge1) <<" and " << PrintEdge(new_edge2));
 		return make_pair(new_edge1, new_edge2);
 	}
 
-				void GlueEdges(EdgeId edge1, EdgeId edge2) {
-					TRACE("Gluing edges " << PrintEdge(edge1) << " and " <<PrintEdge(edge2));
-	EdgeId new_edge = HiddenAddEdge(EdgeStart(edge2), EdgeEnd(edge2),
-			master_.GlueData(data(edge1), data(edge2)));
-	FireGlue(new_edge, edge1, edge2);
-	FireDeleteEdge(edge1);
-	FireDeleteEdge(edge2);
-	FireAddEdge(new_edge);
-	VertexId start = EdgeStart(edge1);
-	VertexId end = EdgeEnd(edge1);
-	HiddenDeleteEdge(edge1);
-	HiddenDeleteEdge(edge2);
-	if (IsDeadStart(start) && IsDeadEnd(start)) {
-		DeleteVertex(start);
+	void GlueEdges(EdgeId edge1, EdgeId edge2) {
+		TRACE(
+				"Gluing edges " << PrintEdge(edge1) << " and " <<PrintEdge(edge2));
+		EdgeId new_edge = HiddenAddEdge(EdgeStart(edge2), EdgeEnd(edge2),
+				master_.GlueData(data(edge1), data(edge2)));
+		FireGlue(new_edge, edge1, edge2);
+		FireDeleteEdge(edge1);
+		FireDeleteEdge(edge2);
+		FireAddEdge(new_edge);
+		VertexId start = EdgeStart(edge1);
+		VertexId end = EdgeEnd(edge1);
+		HiddenDeleteEdge(edge1);
+		HiddenDeleteEdge(edge2);
+		if (IsDeadStart(start) && IsDeadEnd(start)) {
+			DeleteVertex(start);
+		}
+		if (IsDeadStart(end) && IsDeadEnd(end)) {
+			DeleteVertex(end);
+		}TRACE(
+				"Edges " << edge1 << " and " << edge2 << " glued into " << PrintEdge(new_edge));
 	}
-	if (IsDeadStart(end) && IsDeadEnd(end)) {
-		DeleteVertex(end);
-	}
-	TRACE("Edges " << edge1 << " and " << edge2 << " glued into " << PrintEdge(new_edge));
-}
 
 private:
-DECL_LOGGER("AbstractEditableGraph")
+	DECL_LOGGER("AbstractEditableGraph")
 };
 
 }

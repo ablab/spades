@@ -229,6 +229,10 @@ private:
 
 public:
 
+	bool SplitCondition(VertexId vertex, const vector<EdgeId> &splittingEdges) {
+		return true;
+	}
+
 	AbstractNonconjugateGraph(const DataMaster& master) :
 		base(new SimpleHandlerApplier<AbstractNonconjugateGraph> (), master) {
 	}

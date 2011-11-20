@@ -145,15 +145,16 @@ public:
 
 	}
 
-	std::string str(EdgeId edgeId){
-		std::string s = "";
-		if (EdgesPositions.find(edgeId) != EdgesPositions.end()) {
-			TRACE("Number of labels "<<EdgesPositions[edgeId].size());
-			for (size_t i = 0; i < EdgesPositions[edgeId].size(); i++){
-				s+="("+ToString((EdgesPositions[edgeId])[i].contigId_)+": "+ToString((EdgesPositions[edgeId])[i].start_)+"-"+ToString((EdgesPositions[edgeId])[i].end_)+")\\n";
+	std::string str(EdgeId edgeId) const {
+		stringstream ss;
+		auto it = EdgesPositions.find(edgeId);
+		if (it != EdgesPositions.end()) {
+			TRACE("Number of labels " << it->second.size());
+			for (auto pos_it = it->second.begin(), end = it->second.end(); pos_it != end; ++pos_it) {
+				ss << "(" << pos_it->contigId_ << ": " << pos_it->start_ << "-" << pos_it->end_ << ")" << endl;
 			}
 		}
-		return s;
+		return ss.str();
 	}
 
 	EdgesPositionHandler(Graph &g, int max_single_gap = 0) :

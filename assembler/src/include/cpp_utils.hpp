@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <boost/static_assert.hpp>
+
 namespace utils
 {
 
@@ -30,5 +32,9 @@ void check_array_size(T (&arr)[N])
     BOOST_STATIC_ASSERT(EXPECTED_SIZE == N);
 }
 
+template <class T>
+T identity_function(const T& t) {
+	return t;
+}
 
 } // namespace utils

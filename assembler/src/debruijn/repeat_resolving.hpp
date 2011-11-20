@@ -30,7 +30,6 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 	INFO("Primitive repeats resolved");
 }
 
-
 //void ResolveOneComponent(const string& load_from_dir, const string& save_to_dir,
 //		int component_id, int k) {
 //	string load_from = ConstructComponentName(load_from_dir + "/graphCl",
