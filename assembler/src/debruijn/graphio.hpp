@@ -744,7 +744,7 @@ void ScanPairedIndex(const string& file_name, DataScanner<Graph>& scanner,
 template<class Graph>
 void ScanClusteredIndex(const string& file_name, DataScanner<Graph>& scanner,
 		PairedInfoIndex<Graph>& clustered_index) {
-	scanner.loadPaired(file_name, clustered_index);
+	scanner.loadPaired(file_name + "_cl", clustered_index);
 }
 
 }
