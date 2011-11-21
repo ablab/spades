@@ -1,11 +1,9 @@
-#ifndef DEBRUIJN_GRAPH_TEST_HPP_
-#define DEBRUIJN_GRAPH_TEST_HPP_
+#pragma once
+
+#include <boost/test/unit_test.hpp>
 
 #include "debruijn_graph_constructor.hpp"
 #include "test_utils.hpp"
-#include "cute.h"
-#include "strobe_read.hpp"
-#include "paired_info.hpp"
 #include "simple_tools.hpp"
 #include "seq_map.hpp"
 #include <tr1/unordered_set>
@@ -390,29 +388,4 @@ void TestSelfRCEdgeMerge() {
 	ASSERT_EQUAL(Sequence("AACGCTATTCACGTGAATAGCGTT"), g.EdgeNucls(g.GetUniqueOutgoingEdge(v1)));
 }
 
-cute::suite EdgeGraphSuite() {
-	cute::suite s;
-	s.push_back(CUTE(EmptyGraphTest));
-	s.push_back(CUTE(OneVertexGraphTest));
-	s.push_back(CUTE(OneEdgeGraphTest));
-//	s.push_back(CUTE(EdgeMethodsSimpleTest));
-	s.push_back(CUTE(VertexMethodsSimpleTest));
-//	s.push_back(CUTE(GraphMethodsSimpleTest));
-	s.push_back(CUTE(SmartIteratorTest));
-	s.push_back(CUTE(TestBuldge));
-
-	s.push_back(CUTE(TestSimpleThread));
-	s.push_back(CUTE(TestSimpleThread2));
-	s.push_back(CUTE(TestSplitThread));
-	s.push_back(CUTE(TestSplitThread2));
-	s.push_back(CUTE(TestCondenseSimple));
-
-	s.push_back(CUTE(TestPairedInfo));
-	s.push_back(CUTE(TestSelfRCEdgeMerge));
-//	s.push_back(CUTE(TestStrange));
-
-	return s;
 }
-}
-
-#endif /* DEBRUIJN_GRAPH_TEST_HPP_ */

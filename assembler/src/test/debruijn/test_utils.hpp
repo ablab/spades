@@ -8,7 +8,7 @@
 #ifndef TEST_UTILS_HPP_
 #define TEST_UTILS_HPP_
 
-#include "read_generator.hpp"
+#include "read/read_generator.hpp"
 #include "launch.hpp"
 
 namespace debruijn_graph {
