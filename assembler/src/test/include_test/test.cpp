@@ -1,9 +1,10 @@
 #define BOOST_TEST_MODULE common_test
 #include <boost/test/unit_test.hpp>
-#include <iostream>
+#include "logging.hpp"
 
 typedef unsigned long long ull;
 #include "seq_test.hpp"
+
 //#include "sequence_test.hpp"
 //#include "quality_test.hpp"
 //#include "nucl_test.hpp"
@@ -26,8 +27,9 @@ typedef unsigned long long ull;
 
 //using namespace std;
 
-/*DECL_PROJECT_LOGGER("ct")
+DECL_PROJECT_LOGGER("ct");
 
+/*
 void runSuite() {
   cute::suite s;
   s += SeqSuite();
@@ -58,7 +60,3 @@ int main() {
   runSuite();
   return 0;
 }*/
-
-//int main() {
-//	std::cout << "Hello world" << std::endl;
-//}
