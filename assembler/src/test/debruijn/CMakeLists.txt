@@ -1,5 +1,7 @@
 project(debruijn_test CXX)
 
+include_directories("${CMAKE_SOURCE_DIR}/debruijn")
+
 add_executable(debruijn_test
  test.cpp)
 
