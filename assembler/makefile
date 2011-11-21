@@ -1,12 +1,10 @@
 .PHONY: dd rd
 
-all: rd
+rd:
+	make -C build/release/debruijn
 
 dd:
 	make -C build/debug/debruijn
-
-rd:
-	make -C build/release/debruijn
 
 ddt:
 	make -C build/debug/test/debruijn
@@ -14,9 +12,19 @@ ddt:
 rdt:
 	make -C build/release/test/debruijn
 
+dit:
+	make -C build/debug/test/include_test
+
+rit:
+	make -C build/release/test/include_test
+
 clean:
 	make -C build/debug clean
 	make -C build/release clean
+
+all:
+	make -C build/release all
+	make -C build/debug all
 
 #temporary fix
 #all: make -C build/release all

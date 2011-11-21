@@ -1,6 +1,8 @@
-#define BOOST_TEST_MODULE common test
+#define BOOST_TEST_MODULE common_test
 #include <boost/test/unit_test.hpp>
+#include <iostream>
 
+typedef unsigned long long ull;
 #include "seq_test.hpp"
 //#include "sequence_test.hpp"
 //#include "quality_test.hpp"
@@ -56,3 +58,7 @@ int main() {
   runSuite();
   return 0;
 }*/
+
+//int main() {
+//	std::cout << "Hello world" << std::endl;
+//}
