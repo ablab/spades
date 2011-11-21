@@ -96,6 +96,8 @@ public:
     inline Sequence Subseq(size_t from, size_t to) const;
     inline Sequence Subseq(size_t from) const; // up to size_ by default
     inline Sequence operator+(const Sequence &s) const;
+
+    /////todo what are these methods???
     inline int find(const Sequence &t, int from = 0) const;
     inline int similar(const Sequence &t, int k, char directed = 0) const;
     inline int leftSimilar(const Sequence &t, int k) const;
@@ -107,6 +109,7 @@ public:
          * @return true if two sequences intersect
          */
     inline bool intersects(const Sequence &t) const;
+    /////
 
     //	template<size_t size2_>
     //	Seq<size2_> start() const;

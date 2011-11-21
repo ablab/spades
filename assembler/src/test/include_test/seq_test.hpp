@@ -1,3 +1,4 @@
+#pragma once
 #include <boost/test/unit_test.hpp>
 #include "sequence/seq.hpp"
 #include "sequence/sequence.hpp"

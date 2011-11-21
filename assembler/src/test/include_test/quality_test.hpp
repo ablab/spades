@@ -1,26 +1,10 @@
-/*
- * qualTest.hpp
- *
- *  Created on: 03.03.2011
- *      Author: vyahhi
- */
-
-#ifndef QUALTEST_HPP_
-#define QUALTEST_HPP_
-
+#pragma once
+#include <boost/test/unit_test.hpp>
 #include "sequence/quality.hpp"
 
-void TestQuality() {
+BOOST_AUTO_TEST_CASE ( QualityTest ) {
 	Quality q("0123456789");
-	ASSERT_EQUAL('0', q[0]);
-	ASSERT_EQUAL('6', q[6]);
-	ASSERT_EQUAL('9', q[9]);
+	BOOST_CHECK_EQUAL('0', q[0]);
+	BOOST_CHECK_EQUAL('6', q[6]);
+	BOOST_CHECK_EQUAL('9', q[9]);
 }
-
-cute::suite QualitySuite(){
-	cute::suite s;
-	s.push_back(CUTE(TestQuality));
-	return s;
-}
-
-#endif /* QUALTEST_HPP_ */

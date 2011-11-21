@@ -1,13 +1,12 @@
 #define BOOST_TEST_MODULE common_test
-#include <boost/test/unit_test.hpp>
 #include "logging.hpp"
 
-typedef unsigned long long ull;
 #include "seq_test.hpp"
+#include "sequence_test.hpp"
+#include "quality_test.hpp"
+#include "nucl_test.hpp"
 
-//#include "sequence_test.hpp"
-//#include "quality_test.hpp"
-//#include "nucl_test.hpp"
+//todo add more tests
 ////#include "ireadstream_test.hpp"
 //#include "online_graph_visualizer_test.hpp"
 //#include "similar_test.hpp"
@@ -28,35 +27,3 @@ typedef unsigned long long ull;
 //using namespace std;
 
 DECL_PROJECT_LOGGER("ct");
-
-/*
-void runSuite() {
-  cute::suite s;
-  s += SeqSuite();
-  s += SequenceSuite();
-  s += QualitySuite();
-  s += NuclSuite();
-  //s += IReadStreamSuite();
-  s += onlineGraphVisualizerSuite();
-  s += similarSuite();
-  s += CuckooSuite();
-  s += SingleReadSuite();
-  s += PairedReadSuite();
-  s += ParserSuite();
-  s += FastaFastqGzParserSuite();
-  s += SamBamParserSuite();
-  s += SffParserSuite();
-  s += ReaderSingleReadSuite();
-  s += ReaderPairedReadSuite();
-  s += MultifileReaderSuite();
-  s += CuttingReaderWrapperSuite();
-  s += RCReaderWrapperSuite();
-  s += ConvertingReaderWrapperSuite();
-  cute::ide_listener lis;
-  cute::makeRunner(lis)(s, "The Suite");
-}
-
-int main() {
-  runSuite();
-  return 0;
-}*/
