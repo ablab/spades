@@ -47,7 +47,7 @@ find_package(statgen)
 find_package(staden)
 find_package(ssl)
 find_package(bam)
-find_package(Boost COMPONENTS signals system filesystem REQUIRED)
+find_package(Boost COMPONENTS signals system filesystem test_exec_monitor REQUIRED)
 find_package(fftw3)
 find_package(sparsehash)
 
