@@ -290,7 +290,7 @@ void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover, boost::fu
 	INFO("BulgeRemoval stats");
 
 	INFO("Early ErroneousConnectionsRemoval");
-	RemoveLowCoverageEdges(graph, edge_remover, 0, iteration_count);
+	RemoveLowCoverageEdges(graph, edge_remover, iteration_count, 0);
 	INFO("ErroneousConnectionsRemoval stats");
 }
 
