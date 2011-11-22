@@ -1,5 +1,4 @@
-#ifndef SPLITTERS_HPP_
-#define SPLITTERS_HPP_
+#pragma once
 
 #include "dijkstra.hpp"
 namespace omnigraph {
@@ -676,5 +675,3 @@ public:
 };
 
 }
-
-#endif /* SPLITTERS_HPP_ */

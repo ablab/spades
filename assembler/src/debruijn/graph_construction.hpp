@@ -158,7 +158,7 @@ SingleReadStream& stream, SingleReadStream* contigs_stream = 0) {
 }
 
 template<size_t k>
-void ConstructGraphWithPairedInfo(conj_graph_pack& gp,
+void ConstructGraphWithPairedInfo(graph_pack<ConjugateDeBruijnGraph, k>& gp,
 		PairedInfoIndex<Graph>& paired_index, PairedReadStream& stream,
 		SingleReadStream* single_stream = 0,
 		SingleReadStream* contigs_stream = 0) {

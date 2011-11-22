@@ -8,8 +8,8 @@
 #pragma once
 
 #include "standard.hpp"
+#include "io/easy_reader.hpp"
 #include "omni_labelers.hpp"
-#include "graph_pack_io.hpp"
 
 namespace debruijn_graph {
 

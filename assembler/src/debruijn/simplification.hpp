@@ -10,7 +10,6 @@
 #include "standard.hpp"
 #include "construction.hpp"
 #include "omni_labelers.hpp"
-#include "graph_pack_io.hpp"
 
 namespace debruijn_graph {
 void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,

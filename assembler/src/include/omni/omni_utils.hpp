@@ -9,6 +9,7 @@
 #include <cmath>
 #include <iterator>
 #include <vector>
+#include <boost/function.hpp>
 
 namespace omnigraph {
 using std::vector;

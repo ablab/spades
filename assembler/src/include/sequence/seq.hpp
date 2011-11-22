@@ -155,7 +155,9 @@ public:
 	 * @param offset Offset when this sequence starts
 	 */
 	template<typename S>
-	explicit Seq(const S &s, size_t offset = 0) {
+	explicit Seq(const S &s, size_t offset = 0) :
+		data_()
+	{
 		//VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
 		char a[size_ + 1];
 		for (size_t i = 0; i < size_; ++i) {

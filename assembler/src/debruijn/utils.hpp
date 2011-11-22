@@ -1,22 +1,17 @@
-/*
- * utils.hpp
- *
- *  Created on: Apr 5, 2011
- *      Author: sergey
- */
-
-#ifndef UTILS_HPP_
-#define UTILS_HPP_
+#pragma once
 
 #include "io/paired_read.hpp"
 #include "seq_map.hpp"
 #include "omni/omni_utils.hpp"
+#include "omni/id_track_handler.hpp"
 #include "logging.hpp"
 #include "omni/paired_info.hpp"
 #include "xmath.h"
 #include <boost/optional.hpp>
 #include <iostream>
 #include "sequence/sequence_tools.hpp"
+#include "omni/splitters.hpp"
+
 //#include "common/io/paired_read.hpp"
 namespace debruijn_graph {
 
@@ -1028,7 +1023,7 @@ private:
 };
 
 template<class Graph, size_t k>
-class KMerNeighborhoodFinder: public GraphSplitter<Graph> {
+class KMerNeighborhoodFinder: public omnigraph::GraphSplitter<Graph> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
@@ -1071,7 +1066,3 @@ public:
 };
 
 }
-
-
-
-#endif /* UTILS_HPP_ */

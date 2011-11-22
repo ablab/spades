@@ -19,21 +19,21 @@ namespace debruijn_graph {
 
 typedef PairedInfoIndex<ConjugateDeBruijnGraph> paired_info_index;
 
-template<class Graph>
+template<class Graph, size_t k>
 struct graph_pack {
 	typedef Graph graph_t;
 
 	graph_t g;
-	EdgeIndex<K + 1, graph_t> index;
+	EdgeIndex<k + 1, graph_t> index;
 	IdTrackHandler<graph_t> int_ids;
 	EdgesPositionHandler<graph_t> edge_pos;
 	PairedInfoIndex<graph_t> etalon_paired_index;
-	KmerMapper<K + 1, graph_t> kmer_mapper;
+	KmerMapper<k + 1, graph_t> kmer_mapper;
 
 	Sequence const& genome;
 
 	graph_pack(Sequence const& genome) :
-	g(K),
+	g(k),
 	index(g)
 	, int_ids (g)
 	, edge_pos(g, cfg::get().pos.max_single_gap), etalon_paired_index(g, 0), kmer_mapper(g),
@@ -41,8 +41,8 @@ struct graph_pack {
 	}
 };
 
-typedef graph_pack<ConjugateDeBruijnGraph> conj_graph_pack;
-typedef graph_pack<NonconjugateDeBruijnGraph> nonconj_graph_pack;
+typedef graph_pack<ConjugateDeBruijnGraph, K> conj_graph_pack;
+typedef graph_pack<NonconjugateDeBruijnGraph, K> nonconj_graph_pack;
 
 inline void Convert(const conj_graph_pack& gp1, const PairedInfoIndex<conj_graph_pack::graph_t>& clustered_index1,
 		nonconj_graph_pack& gp2, PairedInfoIndex<nonconj_graph_pack::graph_t>& clustered_index2) {

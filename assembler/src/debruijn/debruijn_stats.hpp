@@ -8,6 +8,7 @@
 #include "omni/graph_component.hpp"
 //#include <boost/filesystem.hpp>
 #include "read/osequencestream.hpp"
+#include "k.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 
