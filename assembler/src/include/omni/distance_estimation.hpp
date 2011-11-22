@@ -57,7 +57,7 @@ protected:
         int maxD = rounded_d(data.back());
         int minD = rounded_d(data.front());
         vector<size_t> forward;
-        for (size_t i = 0; i<forward_.size(); ++i) if (minD < (int) forward_[i] && (int) forward_[i] < maxD) forward.push_back(forward_[i]);
+        for (size_t i = 0; i<forward_.size(); ++i) if (((minD - (int) delta_) <= ((int) forward_[i])) && (((int) forward_[i]) <= (maxD + (int) delta_))) forward.push_back(forward_[i]);
 		if (forward.size() == 0)
 			return result;
 		//        if (debug) for (size_t i = 0; i<forward.size(); i++) INFO("Distances " << forward[i]) 
@@ -138,12 +138,17 @@ public:
 	virtual ~DistanceEstimator() {
 	}
 
+    bool debug(EdgeId first, EdgeId second){
+			return (int_ids_.ReturnIntId(first) == 423963 && int_ids_.ReturnIntId(second) == 432278);
+    }
+
     virtual void GetAllDistances(PairedInfoIndex<Graph> &result){
         for (auto iter = histogram_.begin(); iter!= histogram_.end(); ++iter){
             vector < PairInfo<EdgeId> > data = *iter;
 			EdgeId first = data[0].first;
 			EdgeId second = data[0].second;
 			vector < size_t > forward = GetGraphDistances(first, second);
+            //if (debug(first, second)) cout<<"i'm here"<<endl;
             for (size_t i = 0; i<forward.size(); i++) result.AddPairInfo(PairInfo<EdgeId>(data[0].first, data[0].second, forward[i], -10, 0.0));
         }
     }
@@ -154,7 +159,11 @@ public:
 			EdgeId first = data[0].first;
 			EdgeId second = data[0].second;
 			vector < size_t > forward = GetGraphDistances(first, second);
-			//			bool debug = (int_ids_.ReturnIntId(data[0].first) == 71456 && int_ids_.ReturnIntId(data[0].second) == 71195);
+            if (debug(first, second)){
+                //cout<<"i'm estimating"<<endl;
+                //for (size_t i = 0; i<forward.size(); i++) cout<<forward[i]<<endl;
+            }
+			//			bool debug = (int_ids_.ReturnIntId(data[0].first) == 71456 && int_ids_.ReturnIntId(dyyata[0].second) == 71195);
 
 			vector < pair<size_t, double> > estimated
 					= EstimateEdgePairDistances(data, forward/*, false*/);

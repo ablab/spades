@@ -3,8 +3,17 @@ The simplest using :
 where dataset -- is the specified dataset(QUAKE_CROPPED_400K,...) 
 Script copies prd files from the Latest launch of the specified dataset.
 To generate data files simply run :
-. run.sh
-
+. run.sh            ###DEPRECATED
+To generate false positive/negative statistics simply run:
+. genFalse.sh
+This command manages only those pairs of edges, which have such problems as false negarive/positive at them.
+Script creates data/out/* folder structure, where folders "id1_id2_len1_len2" are composed.
+There are some files about these two edges in this folder. In order to see a desired plot one needs to type in :
+gnuplot plot.conf
+in the corresponding folder.
+To generate a plot about fpr/fnr run :
+java PlotFPR [s]
+s - if you want to see current false positive/negative.
 --------------------------------------------------------------------------------------------
 
 Common using :

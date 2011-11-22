@@ -243,7 +243,7 @@ public class GetErrors implements Runnable{
                         out = new PrintWriter(folder1 + "unclustered.prd");
                         //generating config
 						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
-                        debug("Generating config file");
+                        debug("Generating config files");
                         PrintWriter out1 = new PrintWriter(folder1 + "plot.conf");
                         String text =
                         "#!/usr/bin/gnuplot -persist\n" + 
@@ -254,6 +254,16 @@ public class GetErrors implements Runnable{
                         out1.print(text);
                         out1.close();
 
+                        out1 = new PrintWriter(folder1 + "png_plot.conf");
+                        text =
+                        "#!/usr/bin/gnuplot -persist\n" + 
+                        "set term png enhanced size 1024, 768 14\n" +
+                        "plot \"unclustered.prd\" with linespoints, \"clustered.prd\" with impulses," + 
+                        "\"fpr.prd\" with points lt 1 lc 4 pt 7 ps 2," + " \"fnr.prd\" with points lt 1 lc 3 pt 7 ps 2, " + " \"paths.prd\" with impulses lt 1 lw 3 lc 5\n" +
+                        "set output \"../../../overall/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "\"\n" +
+                        "replot\n";
+                        out1.print(text);
+                        out1.close();
 					}
 				}
 				if (filtering) if (x*x + y*y != 0){

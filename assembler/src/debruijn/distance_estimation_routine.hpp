@@ -154,6 +154,8 @@ void count_estimated_info_stats(conj_graph_pack& gp,
             0, 4);
     paired_info_index raw_clustered_index(gp.g);
     estimator.Estimate(raw_clustered_index);
+	data_printer.savePaired(cfg::get().output_dir + "etalon_paired_filtered",
+			corrected_etalon_index);
 	data_printer.savePaired(cfg::get().output_dir + "etalon_paired_corrected",
 			raw_clustered_index);
     INFO("Correction's finished");
