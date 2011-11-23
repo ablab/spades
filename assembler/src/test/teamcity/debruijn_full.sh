@@ -1,5 +1,7 @@
 #!/bin/bash
-. ../../../prepare_cfg
+cd ../../../
+. prepare_cfg
+cd src/test/teamcity
 ./debruijn_make.sh
 cd ../../../
 ./cpcfg
