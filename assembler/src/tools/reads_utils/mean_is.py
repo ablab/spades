@@ -1,7 +1,13 @@
 #!/usr/bin/python -O
 
+#Calculate mean and insert size using insert size distribution file
+
 import sys
 import math
+
+if len(sys.argv) != 2:
+	print("Usage: <insert size distribution file> \n")
+	exit(0)
 
 inFile = open(sys.argv[1])
 

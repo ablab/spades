@@ -1,6 +1,12 @@
 #!/usr/bin/python -O
 
+#Merge two read files into one
+
 import sys
+
+if len(sys.argv) < 4:
+	print("Usage: <1st file> <2nd file> <output> [format: fastq/fasta] \n")
+	exit(0)
 
 file1 = open(sys.argv[1])
 file2 = open(sys.argv[2])
@@ -8,7 +14,7 @@ outFile = open(sys.argv[3], 'w')
 
 format = 'fastq'
 lines = 4
-if len(sys.argv) >= 5:
+if len(sys.argv) = 5:
 	format = sys.argv[4]
 
 if format == 'fasta':

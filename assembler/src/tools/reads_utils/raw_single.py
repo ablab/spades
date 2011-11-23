@@ -1,24 +1,25 @@
 #!/usr/bin/python -O
 
-#Create raw file for single reads using chromosome map file
+#Create raw file for single reads using chromosome map file (optional)
 #Chromosome map file should contain choromosome name (as used in bowtie) and its start position in genome, one chromosome per line
 
 import sys
 
-if len(sys.argv) != 3 && len(sys.argv) != 2:
+if len(sys.argv) != 4 && len(sys.argv) != 3:
         print("Usage: <bowtie log file> <output> [chromosomes file]");
         exit(0)
 
 inFile = open(sys.argv[1])
 outFile = open(sys.argv[2], 'w')
 
-wChrs = (len(sys.argv) == 3)
+wChrs = (len(sys.argv) == 4)
 
 chrs = {" ":0}
 if wChrs:	 
 	chrsF = open(sys.argv[3])
 	for line in chrsF:
 		chrs[line.split()[0]] =	int(line.split()[1])
+	chrsF.close()
 
 delim = '/'
 

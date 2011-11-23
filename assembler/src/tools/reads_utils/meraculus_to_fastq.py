@@ -1,6 +1,12 @@
 #!/usr/bin/python -O
 
+#Convert Meraculuos read file format to fastq
+
 import sys
+
+if len(sys.argv) != 3:
+	print("Usage: <input> <output fastq> \n")
+	exit(0)
 
 inFile = open(sys.argv[1])
 outFile = open(sys.argv[2], 'w')

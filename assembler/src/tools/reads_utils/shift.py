@@ -1,6 +1,12 @@
 #!/usr/bin/python -O
 
+#Shift both coordinates
+
 import sys
+
+if len(sys.argv) != 5:
+	print("Usage: <input> <output> <x shift> <y shift>")
+	exit(0)
 
 inFile = open(sys.argv[1])
 outFile = open(sys.argv[2], 'w')

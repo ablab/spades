@@ -4,8 +4,10 @@ import sys
 
 inFile = open(sys.argv[1])
 outFile = open(sys.argv[2], 'w')
-maxLen = int(sys.argv[3])
-minLen = int(sys.argv[4])
+minLen = int(sys.argv[3])
+maxLen = int(sys.argv[4])
+
+if 
 
 hist = {0:0}
 for i in range(minLen,maxLen):
@@ -13,7 +15,7 @@ for i in range(minLen,maxLen):
 
 
 while (1):
-	line = inFile.readline()
+	line = inFile.readline() 
 
 	if not line:
 		break

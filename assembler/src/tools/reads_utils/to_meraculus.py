@@ -1,6 +1,12 @@
 #!/usr/bin/python -O
 
+#Covert fastq to Meraculus format
+
 import sys
+
+if len(sys.args) != 3:
+	print("Usage: <input fastq> <output>\n");
+	exit(0)
 
 inFile = open(sys.argv[1])
 outFile = open(sys.argv[2], 'w')

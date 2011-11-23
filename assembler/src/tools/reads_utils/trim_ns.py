@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+#Trim Ns in fastq files by Hammer markers
+
 import sys
 import os
 

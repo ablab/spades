@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+#Split contigs by length
+
 import sys
 import os
 
@@ -27,8 +29,8 @@ def read_contig(infile):
 	
 
 
-if len(sys.argv) < 3:
-	print("Usage: " + sys.argv[0] + " <source> <threshold>")	
+if len(sys.argv) != 3:
+	print("Usage: " + sys.argv[0] + " <source> <length threshold>")	
 	sys.exit()
 
 inFileName = sys.argv[1]

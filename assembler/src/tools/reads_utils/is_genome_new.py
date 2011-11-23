@@ -34,6 +34,7 @@ while (1):
 	hist[pos] += pos2 - pos1 + len2
 	rcount[pos] += 1
 
+
 newHist = {0:0}
 newRC = {0:0}
 for i in range(0,maxLen/bar):

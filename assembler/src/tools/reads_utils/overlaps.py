@@ -1,5 +1,7 @@
 #!/usr/bin/python -O
 
+#Print reads overlaps from bowtie log
+
 import sys
 
 inFile = open(sys.argv[1])
@@ -14,33 +16,34 @@ for line in inFile:
 		continue
 
 	if (line.split(delim, 1)[0] == prevLine.split(delim, 1)[0]):
-		pos2 = int(line.split('\t', 5)[3])
-		pos1 = int(prevLine.split('\t', 5)[3])
-		r1 = line.split('\t', 5)[4]
-		r2 = prevLine.split('\t', 5)[4]
-                q1 = line.split('\t', 5)[5]
-                q2 = prevLine.split('\t', 5)[5]
-               	len2 = len(r1)
-               	len1 = len(r2)
+		l1 = line.split('\t', 6)
+		l2 = prevLine.split('\t', 6)
+
+		chr2 = l1[2]
+		chr1 = l2[2]
+		r1 = l2[3]
+		r2 = l1[3]
+		pos2 = int(r2)
+		pos1 = int(r1)
+               	len2 = len(l1[4])
+               	len1 = len(l2[4])
+		q2 = l1[5]
+		q1 = l2[5]
 
 		ovl = pos1 + len1 - pos2
 
-		if ovl > 0:
-		
+		if ovl > 0 and chr1 == chr2:
 			outFile.write('Overlap by ' + str(ovl) + ':\n')
-			outFile.write(r1[-ovl:])
-			outFile.write('\n')
-	                outFile.write(r2[:ovl+1])
-	       	        outFile.write('\n')
-                        outFile.write(q1[-ovl:])
-                        outFile.write('\n')
-                        outFile.write(q2[:ovl+1])
-                        outFile.write('\n')
+			outFile.write(r1[:ovl] + '\n')
+	                outFile.write(r2[-ovl:] + '\n')
+                        outFile.write(q1[:ovl] + '\n')
+                        outFile.write(q2[-olv:] + '\n')
 
 	else:
 		print("Non-equal pairs\n")
 		print(prevLine.split(delim, 1)[0])
 		print(line.split(delim, 1)[0])
+		exit(0)
 
 	prevLine = ""
 

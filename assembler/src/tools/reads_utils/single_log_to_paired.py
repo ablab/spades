@@ -1,9 +1,11 @@
 #!/usr/bin/python
 
+#Merge two single-read bowtie logs into paired one
+
 import sys
 import os
 
-if len(sys.argv) < 3:
+if len(sys.argv) != 3:
 	print("Usage: " + sys.argv[0] + " <1st bowtie log> <2nd bowtie log>")	
 	sys.exit()
 
@@ -16,7 +18,6 @@ rFile2 = open(rFileName2, "r")
 pc = 0
 c1 = 0
 c2 = 0
-
 
 ids = {}
 

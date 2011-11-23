@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+#Convert 
+
 import sys
 import os
 
@@ -19,8 +21,10 @@ def read_read(infile):
 	delim = (read.split('/', 1)[0])[0]
 
 	line = infile.readline()
-	while line and line.find(delim) != 0:
-		read += line
+	i = 0
+       	while line and i < 3:
+               	read += line
+		i += 1
 		line = infile.readline()
 
 	if not line:

@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+#Merge two fastq files into paired one
+
 import sys
 import os
 
@@ -29,7 +31,7 @@ def read_read(infile):
 
 
 if len(sys.argv) < 3:
-	print("Usage: " + sys.argv[0] + " <1st bowtie log> <2nd bowtie log>")	
+	print("Usage: " + sys.argv[0] + " <1st fastq> <2nd fastq>")	
 	sys.exit()
 
 rFileName1 = sys.argv[1]
@@ -41,7 +43,6 @@ rFile2 = open(rFileName2, "r")
 pc = 0
 c1 = 0
 c2 = 0
-
 
 ids = {}
 
