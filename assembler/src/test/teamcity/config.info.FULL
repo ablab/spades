@@ -3,6 +3,7 @@
 #include "src/debruijn/simplification.info"
 #include "src/debruijn/datasets.info"
 #include "src/debruijn/distance_estimation.info"
+#include "src/debruijn/detail_info_printer.info"
 
 dataset 	      QUAKE_FULL
 ;dataset              LB_QUAKE_FULL
@@ -21,6 +22,9 @@ entry_point construction
 ;entry_point distance_estimation
 ;entry_point repeats_resolving
 ;entry_point n50_enlargement
+
+; etalon graph mode switcher. If true input reads are ignored and graph is constructed with reference as the only read
+etalon_graph_mode false
 
 ; iterative mode switcher, activates additional contigs usage
 use_additional_contigs false
@@ -65,7 +69,10 @@ pos
 	late_threading false
 }
 
-
+gap_closer
+{
+    minimal_intersection 10
+}
 
 
 

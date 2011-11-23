@@ -13,10 +13,10 @@ for line in logfile_out:
 		n50 = int(line.split('|')[1]);
 		mis = int(line.split('|')[9]);
 		print('n50 = ' + str(n50) + ' missasemblies ' + str(mis));
-		if n50 < 845:
-			print('genome too short')
+		if n50 < 75000:
+			print('n50 too small')
 			sys.exit(1);
-		if (mis > 0):
+		if (mis > 1):
 			print('too much miss')
 			sys.exit(1);			
 		
