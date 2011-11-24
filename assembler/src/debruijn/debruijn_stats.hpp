@@ -379,25 +379,6 @@ int PrintGraphComponents(const string& file_name, graph_pack& gp,
 	return (cnt - 1);
 }
 
-//for test generating
-int PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
-		size_t split_edge_length, const IdTrackHandler<Graph>& int_ids) {
-	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
-	ComponentSizeFilter<Graph> checker(g, split_edge_length, 2);
-	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
-	size_t cnt = 1;
-	while (!splitter.Finished() && cnt <= 1000) {
-		string component_name = ConstructComponentName(file_name, cnt).c_str();
-		auto component_vertices = splitter.NextComponent();
-
-		ConjugateDataPrinter<Graph> printer(g, component_vertices.begin(),
-				component_vertices.end(), int_ids);
-		PrintBasicGraph<Graph>(component_name, printer);
-		cnt++;
-	}
-	return (cnt - 1);
-}
-
 void OutputContigs(NonconjugateDeBruijnGraph& g,
 		const string& contigs_output_filename) {
 	INFO("-----------------------------------------");

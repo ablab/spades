@@ -11,6 +11,8 @@
 
 namespace debruijn_graph {
 
+BOOST_AUTO_TEST_SUITE(basic_debruijn_graph_tests)
+
 using io::SingleRead;
 using io::PairedRead;
 
@@ -180,10 +182,17 @@ void EdgesEqual(const Edges& s1, const Edges& s2) {
 	}
 }
 
+const io::SingleRead MakeRead(const MyRead& read) {
+	//todo fill with good quality
+	std::string qual;
+	qual.resize(read.size());
+	return io::SingleRead("", read, qual);
+}
+
 const vector<io::SingleRead> MakeReads(const vector<MyRead>& reads) {
 	vector<io::SingleRead> ans;
 	for (size_t i = 0; i < reads.size(); ++i) {
-		ans.push_back(io::SingleRead("", reads[i], ""));
+		ans.push_back(MakeRead(reads[i]));
 	}
 	return ans;
 }
@@ -191,7 +200,7 @@ const vector<io::SingleRead> MakeReads(const vector<MyRead>& reads) {
 const vector<PairedRead> MakePairedReads(const vector<MyPairedRead>& paired_reads, size_t insert_size) {
 	vector<PairedRead> ans;
 	for (size_t i = 0; i < paired_reads.size(); ++i) {
-		ans.push_back(PairedRead(SingleRead("", paired_reads[i].first, ""), SingleRead("", paired_reads[i].second, ""), insert_size));
+		ans.push_back(PairedRead(MakeRead(paired_reads[i].first), MakeRead(paired_reads[i].second), insert_size));
 	}
 	return ans;
 }
@@ -201,12 +210,6 @@ void AssertEdges(Graph& g, const Edges& etalon_edges) {
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		edges.insert(g.EdgeNucls(*it).str());
 	}
-
-//	for (auto it = g.SmartVertexBegin(); it != g.SmartVertexEnd(); ++it) {
-//		cout << g.VertexNucls(*it) << endl;
-//	}
-//	cout << print(edges) << endl;
-//	cout << "Etalon " << print(etalon_edges) << endl;
 	EdgesEqual(edges, etalon_edges);
 }
 
@@ -330,41 +333,41 @@ BOOST_AUTO_TEST_CASE( TestCondenseSimple ) {
 	AssertGraph<5> (reads, edges);
 }
 
-BOOST_AUTO_TEST_CASE( TestStrange ) {
-	vector<string> reads = {"TTCTGCATGGTTATGCATAACCATGCAGAA", "ACACACACTGGGGGTCCCTTTTGGGGGGGGTTTTTTTTG"};
-	typedef VectorStream<SingleRead> RawStream;
-	typedef io::RCReaderWrapper<SingleRead> Stream;
-	RawStream raw_stream(MakeReads(reads));
-	Stream read_stream(raw_stream);
-	Graph g(27);
-	EdgeIndex<28, Graph> index(g);
-
-	ConstructGraph<27, Stream>(g, index, read_stream);
-	EdgeId e = index.get(Seq<28>("TTCTGCATGGTTATGCATAACCATGCAG")).first;
-	VertexId start = g.EdgeEnd(e);
-	vector<EdgeId> edgeIds[2];
-	edgeIds[0] = g.OutgoingEdges(start);
-	edgeIds[1] = g.IncomingEdges(start);
-	for(int ii = 0; ii < 2; ii++)
-		for(auto e_iter = edgeIds[ii].begin(), end_iter = edgeIds[ii].end(); e_iter != end_iter; e_iter++) {
-			g.DeleteEdge(*e_iter);
-		}
-	g.DeleteVertex(start);
-
-//		g.DeleteEdge(e);
+//BOOST_AUTO_TEST_CASE( TestStrange ) {
+//	vector<string> reads = {"TTCTGCATGGTTATGCATAACCATGCAGAA", "ACACACACTGGGGGTCCCTTTTGGGGGGGGTTTTTTTTG"};
+//	typedef VectorStream<SingleRead> RawStream;
+//	typedef io::RCReaderWrapper<SingleRead> Stream;
+//	RawStream raw_stream(MakeReads(reads));
+//	Stream read_stream(raw_stream);
+//	Graph g(27);
+//	EdgeIndex<28, Graph> index(g);
 //
-//
-//
-//	g.DeleteEdge(r_e);
+//	ConstructGraph<27, Stream>(g, index, read_stream);
+//	EdgeId e = index.get(Seq<28>("TTCTGCATGGTTATGCATAACCATGCAG")).first;
+//	VertexId start = g.EdgeEnd(e);
+//	vector<EdgeId> edgeIds[2];
+//	edgeIds[0] = g.OutgoingEdges(start);
+//	edgeIds[1] = g.IncomingEdges(start);
+//	for(int ii = 0; ii < 2; ii++)
+//		for(auto e_iter = edgeIds[ii].begin(), end_iter = edgeIds[ii].end(); e_iter != end_iter; e_iter++) {
+//			g.DeleteEdge(*e_iter);
+//		}
 //	g.DeleteVertex(start);
+//
+////		g.DeleteEdge(e);
+////
+////
+////
+////	g.DeleteEdge(r_e);
+////	g.DeleteVertex(start);
+//
+//	INFO("FINISH");
+//
+////	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
+//
+//}
 
-	INFO("FINISH");
-
-//	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
-
-}
-
-BOOST_AUTO_TEST_CASE( TestPairedInfo ) {
+BOOST_AUTO_TEST_CASE( SimpleTestEarlyPairedInfo ) {
 	vector<MyPairedRead> paired_reads = {{"CCCAC", "CCACG"}, {"ACCAC", "CCACA"}};
 	vector<MyEdge> edges = {"CCCA", "ACCA", "CCAC", "CACG", "CACA"};
 	CoverageInfo coverage_info = {{"CCCA", 1}, {"ACCA", 1}, {"CCAC", 4}, {"CACG", 1}, {"CACA", 1}};
@@ -387,5 +390,7 @@ BOOST_AUTO_TEST_CASE( TestSelfRCEdgeMerge ) {
 	BOOST_CHECK_EQUAL(1u, g.OutgoingEdgeCount(v1));
 	BOOST_CHECK_EQUAL(Sequence("AACGCTATTCACGTGAATAGCGTT"), g.EdgeNucls(g.GetUniqueOutgoingEdge(v1)));
 }
+
+BOOST_AUTO_TEST_SUITE_END()
 
 }

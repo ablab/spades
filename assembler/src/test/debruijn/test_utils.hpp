@@ -25,5 +25,19 @@ void ConstructGraphFromGenome(Graph& g, EdgeIndex<k + 1, Graph>& index/*, Covera
 	ConstructGraphWithPairedInfo<k, RCStream>(g, index/*, coverage_handler*/, paired_index, read_stream);
 }
 
+void PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
+		size_t split_edge_length, const IdTrackHandler<Graph>& int_ids) {
+	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
+	ComponentSizeFilter<Graph> checker(g, split_edge_length, 2);
+	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
+	while (!splitter.Finished()) {
+		auto component_vertices = splitter.NextComponent();
+
+		ConjugateDataPrinter<Graph> printer(g, component_vertices.begin(),
+				component_vertices.end(), int_ids);
+		PrintBasicGraph<Graph>(file_name, printer);
+	}
+}
+
 }
 #endif /* TEST_UTILS_HPP_ */
