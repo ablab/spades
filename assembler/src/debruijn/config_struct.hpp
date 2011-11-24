@@ -67,7 +67,7 @@ inline const char* info_printer_pos_name(size_t pos)
        "final_err_con_removal"  ,
        "final_tip_clipping"     ,
        "final_bulge_removal"    ,
-       "removin_isolated_edges" ,
+       "removing_isolated_edges" ,
        "final_simplified"
     };
 
@@ -272,6 +272,7 @@ struct debruijn_config
        bool     write_components;
        string   components_for_kmer;
        bool     write_components_along_genome;
+       bool		save_full_graph;
 	};
 
 	typedef map<info_printer_pos, info_printer> info_printers_t;
@@ -467,6 +468,7 @@ inline void load(boost::property_tree::ptree const& pt, debruijn_config::info_pr
     load_if_exists(pt, "write_components"             , printer.write_components);
     load_if_exists(pt, "components_for_kmer"          , printer.components_for_kmer);
     load_if_exists(pt, "write_components_along_genome", printer.write_components_along_genome);
+    load_if_exists(pt, "save_full_graph"			  , printer.save_full_graph);
 }
 
 inline void load(boost::property_tree::ptree const& pt, debruijn_config::info_printers_t& printers)

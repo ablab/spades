@@ -3,6 +3,7 @@
 #include "omni/visualization_utils.hpp"
 #include "statistics.hpp"
 #include "new_debruijn.hpp"
+#include "graphio.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/distance_estimation.hpp"
 #include "omni/graph_component.hpp"
@@ -315,6 +316,11 @@ void ProduceDetailedInfo(
             file_name,
             "components_along_genome",
             cfg::get().ds.IS);
+
+	if (config.save_full_graph) {
+		ConjugateDataPrinter<Graph> printer(gp.g, gp.int_ids);
+		PrintGraphPack(folder + "graph", printer, gp);
+	}
 }
 
 struct detail_info_printer
@@ -333,7 +339,7 @@ struct detail_info_printer
     void operator()(info_printer_pos pos, string const& folder_suffix = "") const
     {
         string pos_name = details::info_printer_pos_name(pos);
-        func_(pos, pos_name, (fs::path(folder_) / (pos_name + folder_suffix)).string());
+        func_(pos, pos_name, (fs::path(folder_) / (pos_name + folder_suffix)).string() + "/");
     }
 
 private:
@@ -404,7 +410,6 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 		}
 		//		oss << g.EdgeNucls(*it);
 	}INFO("Contigs written");
-
 }
 
 void OutputSingleFileContigs(NonconjugateDeBruijnGraph& g,

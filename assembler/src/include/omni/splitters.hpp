@@ -557,25 +557,28 @@ protected:
 
 template<class Graph>
 class AnyEdgeContainFilter: public GraphComponentFilter<Graph> {
+	typedef GraphComponentFilter<Graph> base;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
 	const IdTrackHandler<Graph>& int_ids_;
 	const vector<int> edges_of_interest_;
 public:
-	AnyEdgeContainFilter(const IdTrackHandler<Graph>& int_ids, const vector<int>& edges_of_interest) :
+	AnyEdgeContainFilter(const Graph& graph, const IdTrackHandler<Graph>& int_ids, const vector<int>& edges_of_interest) :
+	base(graph),
 	int_ids_(int_ids),
 	edges_of_interest_(edges_of_interest) {
 
 	}
 
-	AnyEdgeContainFilter(const IdTrackHandler<Graph>& int_ids, int edge_of_interest) :
+	AnyEdgeContainFilter(const Graph& graph, const IdTrackHandler<Graph>& int_ids, int edge_of_interest) :
+	base(graph),
 	int_ids_(int_ids),
 	edges_of_interest_({edge_of_interest}) {
 
 	}
 
-	bool ContainsEdge(const vector<VertexId> &component, EdgeId e) {
+	bool ContainsEdge(const vector<VertexId> &component, EdgeId e) const {
 		return std::find(component.begin(), component.end(), this->graph().EdgeStart(e)) != component.end()
 				&& std::find(component.begin(), component.end(), this->graph().EdgeEnd(e)) != component.end();
 	}
