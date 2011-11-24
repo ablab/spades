@@ -1,8 +1,11 @@
 #!/usr/bin/python
+#
+# Requires Biopython (e.g. sudo apt-get install python-biopython) and internet conncetion to NCBI. 
+#
+# BLASTN all items in FASTA file. Uses BLAST for nucleotide sequences only.
+# Can be slow since BLASTs go to the online queue.
 
 import sys
-
-# BLASTN all items in FASTA file
 
 if len(sys.argv) < 2:
 	print 'Usage: python', sys.argv[0], ' FILE_NUCL.FASTA'
