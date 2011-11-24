@@ -1,18 +1,23 @@
 #!/usr/bin/python -O
 
+#Generating insert size distribution from raw file
+
 import sys
+
+if len(sys.argv) < 5:
+	print("Usage: <input raw file> <output> <min is> <max is> [fr/rf], fr -- default, rf -- calculate insert size for rf pairs as for chimeric")
+	exit(0)
 
 inFile = open(sys.argv[1])
 outFile = open(sys.argv[2], 'w')
 minLen = int(sys.argv[3])
 maxLen = int(sys.argv[4])
 
-if 
+fr = True
+if len(sys.argv) > 5 and sys.argv[5] == "rf":
+	rf = False
 
-hist = {0:0}
-for i in range(minLen,maxLen):
-       	hist[i] = 0
-
+hist = [0 for i in range(maxLen	+ 1)]
 
 while (1):
 	line = inFile.readline() 
@@ -31,7 +36,10 @@ while (1):
        	pos2 = int(line.split(' ')[0])
        	len2 = int(line.split(' ')[1])
 
-	cord = pos2 - pos1 + len2
+	if fr:
+		cord = pos2 - pos1 + len2
+	else:
+		cord = pos1 + len1 - pos2
 
 	if cord < maxLen and cord > minLen:
 		hist[cord] += 1

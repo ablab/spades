@@ -1,17 +1,24 @@
 #!/usr/bin/python -O
 
+#Calculate insert size avergae value along the genome
+
 import sys
+
+if len(sys.argv) < 5:
+	print("Usage: <input raw file> <output> <genome length> <histogram bar size> [fr/rf], fr -- default, rf -- calculate insert size for rf pairs as for chimeric")
+	exit(0)
 
 inFile = open(sys.argv[1])
 outFile = open(sys.argv[2], 'w')
 maxLen = int(sys.argv[3])
 bar = int(sys.argv[4])
 
-hist = {0:0}
-rcount = {0:0}
-for i in range(1,maxLen):
-	hist[i] = 0
-	rcount[i] = 0
+fr = True
+if len(sys.argv) > 5 and sys.argv[5] == "rf":
+	rf = False
+
+hist = [0 for i in range(maxLen	+ 1)]
+rcount = [0 for i in range(maxLen + 1)]
 
 while (1):
         line = inFile.readline()
@@ -30,14 +37,19 @@ while (1):
         pos2 = int(line.split(' ')[0])
         len2 = int(line.split(' ')[1])
 
-	hist[(pos1 + pos2) / 2] += pos1 - pos2 + len1
+	if fr:
+		cord = pos2 - pos1 + len2
+		pos = (pos1 + pos2 + len2) / 2
+	else:
+		cord = pos1 + len1 - pos2
+		pos = (pos1 + pos2 - len1) / 2
+
+	hist[pos] += cord
 	rcount[pos] += 1
 
-newHist = {0:0}
-newRC = {0:0}
-for i in range(0,maxLen/bar):
-	newHist[i] = 0
-	newRC[i] = 0
+
+newHist = [0 for i in range((maxLen + 1) / bar + 2)]
+newRC = [0 for i in range((maxLen + 1) / bar + 2)]
 
 for i in range(0,maxLen):
 	newHist[int(i/bar)] += hist[i]
