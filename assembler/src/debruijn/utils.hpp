@@ -11,6 +11,7 @@
 #include <iostream>
 #include "sequence/sequence_tools.hpp"
 #include "omni/splitters.hpp"
+
 #include "new_debruijn.hpp"
 //#include "common/io/paired_read.hpp"
 namespace debruijn_graph {

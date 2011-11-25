@@ -278,6 +278,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
     total_labeler_gs graph_struct_before(origin_gp  .g, &origin_gp  .int_ids, &origin_gp  .edge_pos, NULL);
     total_labeler tot_labeler_before(&graph_struct_before);
 
+
 	if (cfg::get().path_set_graph ) {
 		INFO("testing path-set graphs");
 		PathSetGraphConstructor<graph_pack> path_set_constructor(origin_gp, clustered_index,  resolved_gp);
@@ -300,6 +301,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
     //Paired info for resolved graph generated
 	}
     if (output_contigs) {
+
        	OutputContigs(resolved_gp.g, cfg::get().output_dir + "after_rr_before_simplify" + postfix);
     	OutputContigs(origin_gp.g, cfg::get().output_dir + "before_resolve" + postfix);
     }
@@ -320,6 +322,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
         ClipTipsForResolver(resolved_gp.g);
 //        BulgeRemoveWrap      (resolved_gp.g);
         RemoveLowCoverageEdges(resolved_gp.g, edge_remover, 3, i);
+
 //        RemoveRelativelyLowCoverageEdges(resolved_gp.g);
         omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
 

@@ -218,7 +218,11 @@ struct debruijn_config
 		//typedef map<>
 	};
 
-	bool path_set_graph;
+
+		std::string uncorrected_reads;
+		bool need_consensus;
+		bool path_set_graph;
+		simplification simp;
 
 	struct repeat_resolver {
 		bool symmetric_resolve;

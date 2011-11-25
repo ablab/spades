@@ -10,9 +10,11 @@
 #include <iostream>
 #include <fstream>
 #include <map>
-#include "path_set.hpp"
+
+#include "path_set.hpp" 
 #include "matepair_transformer.hpp"
-#include "omni/distance_estimation.hpp"
+#include "path_set_stats.hpp"
+
 
 namespace debruijn_graph {
 using namespace math;
