@@ -151,7 +151,7 @@ public:
 		if (it != EdgesPositions.end()) {
 			TRACE("Number of labels " << it->second.size());
 			for (auto pos_it = it->second.begin(), end = it->second.end(); pos_it != end; ++pos_it) {
-				ss << "(" << pos_it->contigId_ << ": " << pos_it->start_ << "-" << pos_it->end_ << ")" << endl;
+				ss << "(" << pos_it->contigId_ << ": " << pos_it->start_ << "-" << pos_it->end_ << ")\\n";
 			}
 		}
 		return ss.str();
