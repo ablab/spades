@@ -163,8 +163,9 @@ void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
 }
 
 template<class Graph>
-void FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
+bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 	using debruijn_graph::simplification_mode;
+	bool changed = false;
 	switch (cfg::get().simp.simpl_mode) {
 		case sm_cheating: {
 			INFO("Cheating removal of erroneous edges started");
@@ -177,8 +178,9 @@ void FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 					edge_remover);
 			//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
 			//			max_length_div_K * g.k(), max_coverage);
-			erroneous_edge_remover.RemoveEdges();
+			changed = erroneous_edge_remover.RemoveEdges();
 			INFO("Cheating removal of erroneous edges finished");
+			return changed;
 		} break;
 
 		case sm_topology: {
@@ -190,18 +192,22 @@ void FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 					edge_remover);
 			//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
 			//			max_length_div_K * g.k(), max_coverage);
-			erroneous_edge_remover.RemoveEdges();
+			changed = erroneous_edge_remover.RemoveEdges();
 			INFO("Removal of erroneous edges based on topology started");
+			return changed;
 		} break;
 
 		case sm_chimeric: {
 			INFO("Simple removal of chimeric edges based only on length started");
 			ChimericEdgesRemover<Graph> remover(g, 10, edge_remover);
-			remover.RemoveEdges();
+			changed = remover.RemoveEdges();
 			INFO("Removal of chimeric edges finished");
+			return changed;
 		} break;
 
-		default: break;
+		default:
+			VERIFY(false);
+			return false;
 	}
 //	if (cfg::get().simp.simpl_mode
 //			== debruijn_graph::simplification_mode::sm_cheating) {
@@ -319,7 +325,10 @@ void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover, boost::f
 		detail_info_printer &printer, size_t iteration_count) {
 
 	INFO("Final ErroneousConnectionsRemoval");
-	FinalRemoveErroneousEdges(graph, edge_remover);
+	bool changed = true;
+	while (changed) {
+		changed = FinalRemoveErroneousEdges(graph, edge_remover);
+	}
 	printer(ipp_final_err_con_removal);
 
 	INFO("Final TipClipping");
