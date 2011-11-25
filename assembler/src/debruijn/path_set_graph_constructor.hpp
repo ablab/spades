@@ -40,17 +40,16 @@ public:
 		PI.Process(PIIFilter);
 
 
-		for(auto iter = PII.begin(); iter != PII.end() ; ++iter)
+		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
 		{
 			DEBUG(str(*iter, gp));
 			//		DEBUG(tst());
 		}
 		DEBUG("FILTERED");
-		int count = 0;
+//		int count = 0;
 		map<PathSet<EdgeId>, vector<PathSet<EdgeId> > > extentionMap, backwardMap;
 
-		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
-		{
+		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter) {
 			vector<PathSet<EdgeId> > extends;
 			PathSet<EdgeId> first = *iter;
 
@@ -66,11 +65,14 @@ public:
 
 			//		DEBUG(tst());
 		}
-		for(auto iter = PIIFilter.begin(); iter != PII.end() ; ++iter)
-		{
+		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter) {
+			INFO ("id: " << iter->id<< " fwd " <<extentionMap[*iter].size() << " bwd "<< backwardMap[*iter].size());
+		}
+		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter) {
 			if ((extentionMap[*iter].size() <= 1) && (backwardMap[*iter].size() != 1)) {
 				VertexId v = new_gp.g.AddVertex();
 				new_gp.int_ids.AddVertexIntId(v, iter->id);
+				DEBUG("working on path starting from " << iter->id);
 				auto tmp_iter = *iter;
 				while (extentionMap[tmp_iter].size() == 1) {
 					VertexId end = new_gp.g.AddVertex();
@@ -83,19 +85,25 @@ public:
 					if (tmp_iter.paths.size() != 1) {
 						WARN("Non unique tail, removed");
 					} else {
+						DEBUG("tail adding..");
 						auto current_path = tmp_iter.paths.begin();
+						DEBUG("..of length: "<<current_path->size());
 						for(auto path_iter = current_path->begin(); path_iter != current_path->end(); ++path_iter) {
 							VertexId end = new_gp.g.AddVertex();
-							new_gp.int_ids.AddVertexIntId(end, - new_gp.int_ids.ReturnIntId(end));
-							AddEdgeWithAllHandlers(v, end , *path_iter);
+//							new_gp.int_ids.AddVertexIntId(end, - new_gp.int_ids.ReturnIntId(end));
+							EdgeId old_edge = *path_iter;
+							AddEdgeWithAllHandlers(v, end , old_edge);
 							v = end;
 						}
+						DEBUG("tail added");
 					}
+				} else {
+					DEBUG("came into many-one vertex");
 				}
 			}
 		}
-
-		for(auto iter = PIIFilter.begin(); iter != PII.end() ; ++iter)
+		INFO("Adding many-outgoing edges");
+		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
 		{
 			if ((extentionMap[*iter].size() > 1)) {
 				VertexId v = new_gp.g.AddVertex();
@@ -411,6 +419,7 @@ public:
 		new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
 		new_to_old.insert(make_pair(eid, old_first_edge));
 		new_start = new_end;
+		DEBUG("edge added");
 		//DEBUG("and tail of length "<< iter->length);
 		return eid;
 	}

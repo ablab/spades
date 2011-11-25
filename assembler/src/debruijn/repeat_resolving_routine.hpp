@@ -334,8 +334,10 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
     //Generating paired info for resolved graph
     PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info(resolved_gp.g);
-    ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_cleared_graph_paired_info);
-    SaveResolvedPairedInfo(resolved_gp, resolved_cleared_graph_paired_info, graph_name + "_resolved_cleared", subfolder);
+    if (cfg::get().path_set_graph == false) {
+    	ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_cleared_graph_paired_info);
+    	SaveResolvedPairedInfo(resolved_gp, resolved_cleared_graph_paired_info, graph_name + "_resolved_cleared", subfolder);
+	}
     //Paired info for resolved graph generated
 
 	INFO("---Output Contigs---");
