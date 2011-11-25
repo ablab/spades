@@ -6,6 +6,8 @@
 #include "simple_tools.hpp"
 #include "xmath.h"
 #include "omni/paired_info.hpp"
+#include "omni/distance_estimation.hpp"
+
 #include "graphio.hpp"
 #include <iostream>
 #include <fstream>

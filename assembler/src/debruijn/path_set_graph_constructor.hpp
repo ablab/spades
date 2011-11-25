@@ -29,6 +29,108 @@ public:
 	PathSetGraphConstructor(graph_pack& gp, PairedInfoIndex<Graph>& clustered_index, graph_pack& new_gp): gp(gp), pair_info_(clustered_index), new_gp(new_gp)
 	{}
 
+	void ConstructOverlap() {
+		PathSetIndexData<EdgeId> PII ;
+		PathSetIndexData<EdgeId> PIIFilter ;
+
+		MatePairTransformer<graph_pack> transformer(gp, pair_info_);
+		transformer.Transform(PII);
+		PathSetIndex<graph_pack> PI(PII, gp);
+		//	PI.RemovePrefixes(PIIFilter_tmp);
+		PI.Process(PIIFilter);
+
+
+		for(auto iter = PII.begin(); iter != PII.end() ; ++iter)
+		{
+			DEBUG(str(*iter, gp));
+			//		DEBUG(tst());
+		}
+		DEBUG("FILTERED");
+		int count = 0;
+		map<PathSet<EdgeId>, vector<PathSet<EdgeId> > > extentionMap, backwardMap;
+
+		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
+		{
+			vector<PathSet<EdgeId> > extends;
+			PathSet<EdgeId> first = *iter;
+
+			PI.FindExtension(PIIFilter, first, extends);
+			extentionMap[*iter] = extends;
+			for(auto inside_iter = extends.begin(); inside_iter != extends.end(); ++inside_iter) {
+				if (backwardMap.find(*inside_iter) == backwardMap.end()) {
+					vector<PathSet<EdgeId> > aux;
+					backwardMap[*inside_iter] = aux;
+				}
+				backwardMap[*inside_iter].push_back(*iter);
+			}
+
+			//		DEBUG(tst());
+		}
+		for(auto iter = PIIFilter.begin(); iter != PII.end() ; ++iter)
+		{
+			if ((extentionMap[*iter].size() <= 1) && (backwardMap[*iter].size() != 1)) {
+				VertexId v = new_gp.g.AddVertex();
+				new_gp.int_ids.AddVertexIntId(v, iter->id);
+				auto tmp_iter = *iter;
+				while (extentionMap[tmp_iter].size() == 1) {
+					VertexId end = new_gp.g.AddVertex();
+					new_gp.int_ids.AddVertexIntId(end, extentionMap[tmp_iter][0].id);
+					AddEdgeWithAllHandlers(v, end , tmp_iter.start);
+					v = end;
+					tmp_iter = extentionMap[tmp_iter][0];
+				}
+				if (extentionMap[tmp_iter].size() == 0) {
+					if (tmp_iter.paths.size() != 1) {
+						WARN("Non unique tail, removed");
+					} else {
+						auto current_path = tmp_iter.paths.begin();
+						for(auto path_iter = current_path->begin(); path_iter != current_path->end(); ++path_iter) {
+							VertexId end = new_gp.g.AddVertex();
+							new_gp.int_ids.AddVertexIntId(end, - new_gp.int_ids.ReturnIntId(end));
+							AddEdgeWithAllHandlers(v, end , *path_iter);
+							v = end;
+						}
+					}
+				}
+			}
+		}
+
+		for(auto iter = PIIFilter.begin(); iter != PII.end() ; ++iter)
+		{
+			if ((extentionMap[*iter].size() > 1)) {
+				VertexId v = new_gp.g.AddVertex();
+				new_gp.int_ids.AddVertexIntId(v, iter->id);
+				VertexId end = new_gp.g.AddVertex();
+				new_gp.int_ids.AddVertexIntId(end, - 10000 -new_gp.int_ids.ReturnIntId(end));
+				AddEdgeWithAllHandlers(v, end , iter->start);
+			}
+		}
+		//	map<VertexId, int> long_start_vertices;
+
+
+		INFO("adding isolated edges");
+
+		for(auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+			VertexId start = gp.g.EdgeStart(*iter);
+			VertexId end = gp.g.EdgeEnd(*iter);
+			TRACE (gp.g.CheckUniqueOutgoingEdge(start)<<" "<<  gp.g.IsDeadStart(start) <<" "<< gp.g.CheckUniqueIncomingEdge(end) <<" "<<gp.g.IsDeadEnd(end));
+			if (gp.g.CheckUniqueOutgoingEdge(start) && gp.g.IsDeadStart(start) && gp.g.CheckUniqueIncomingEdge(end) && gp.g.IsDeadEnd(end) ) {
+				VertexId new_start = new_gp.g.AddVertex();
+				VertexId new_end = new_gp.g.AddVertex();
+				new_gp.int_ids.AddVertexIntId(new_start, - 100000 -new_gp.int_ids.ReturnIntId(new_start));
+				new_gp.int_ids.AddVertexIntId(new_end, - 100000 -new_gp.int_ids.ReturnIntId(new_end));
+
+				EdgeId old_first_edge = *iter;
+				AddEdgeWithAllHandlers(new_start, new_end, old_first_edge);
+//				DEBUG("adding isolated edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge));
+//				EdgeId eid = new_gp.g.AddEdge(nconstructorew_start, new_end, gp.g.EdgeNucls(old_first_edge));
+//				WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge)  * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge] */));
+//				new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
+//				new_to_old.insert(make_pair(eid, old_first_edge));
+			}
+		}
+
+	}
 	void Construct() {
 		PathSetIndexData<EdgeId> PII ;
 		PathSetIndexData<EdgeId> PIIFilter ;

@@ -280,7 +280,7 @@ const Sequence& genome, size_t bound, const string &file_name) {
 
 void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover, boost::function<void(EdgeId)> &removal_handler_f,
 		detail_info_printer &printer, size_t iteration_count) {
-	printer(ipp_before_simplifiaction);
+	printer(ipp_before_simplification);
 
 	INFO("Early TipClipping");
 	ClipTips(graph, removal_handler_f);

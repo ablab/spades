@@ -39,7 +39,7 @@ enum simplification_mode
 enum info_printer_pos
 {
     ipp_default                   = 0,
-    ipp_before_simplifiaction        ,
+    ipp_before_simplification        ,
     ipp_tip_clipping                 ,
     ipp_bulge_removal                ,
     ipp_err_con_removal              ,
@@ -60,7 +60,7 @@ inline const char* info_printer_pos_name(size_t pos)
     const char* names[] =
     {
        "default"                ,
-       "before_simplifiaction"  ,
+       "before_simplification"  ,
        "tip_clipping"           ,
        "bulge_removal"          ,
        "err_con_removal"        ,
@@ -309,10 +309,6 @@ public:
 	bool advanced_estimator_mode;
 	bool componential_resolve;
 
-	std::string uncorrected_reads;
-	bool need_consensus;
-
-	simplification              simp;
 	distance_estimator          de;
 	advanced_distance_estimator ade;
 	repeat_resolver             rr;
