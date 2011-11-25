@@ -80,7 +80,7 @@ public:
 
 		bool IsEdgesOnDistanceAdjacent(EdgeId edge,       int d,
 									   EdgeId other_edge, int other_d,
-									   Graph &old_graph, double max_diff, bool first_equal ){
+									   const Graph &old_graph, double max_diff, bool first_equal ){
 
 			VertexId v_s = old_graph.EdgeStart(edge);
 			VertexId v_e = old_graph.EdgeEnd(edge);
@@ -133,8 +133,8 @@ public:
 
 
 
-		bool isAdjacent(EdgeInfo other_info, Graph &old_graph,
-				Graph &new_graph, EdgeLabelHandler<Graph> &labels_after, TotalLabeler<Graph>& tot_lab) {
+		bool isAdjacent(EdgeInfo other_info, const Graph &old_graph,
+				const Graph &new_graph, EdgeLabelHandler<Graph> &labels_after, const TotalLabeler<Graph>& tot_lab) {
 			//			DEBUG("comparation started: " << edge);
 			//		max_diff = MAXD;
 
@@ -364,11 +364,11 @@ private:
 	size_t RectangleResolveVertex(VertexId vid, TotalLabeler<Graph>& tot_labler);
 	size_t CheatingResolveVertex(VertexId vid);
 	void BanRCVertex(VertexId v );
-	ConjugateDeBruijnGraph::VertexId conj_wrap(ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::VertexId v);
-	NonconjugateDeBruijnGraph::VertexId conj_wrap(NonconjugateDeBruijnGraph& g, NonconjugateDeBruijnGraph::VertexId v);
+	ConjugateDeBruijnGraph::VertexId conj_wrap(const ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::VertexId v);
+	NonconjugateDeBruijnGraph::VertexId conj_wrap(const NonconjugateDeBruijnGraph& g, NonconjugateDeBruijnGraph::VertexId v);
 
-	ConjugateDeBruijnGraph::EdgeId conj_wrap(ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::EdgeId e);
-	NonconjugateDeBruijnGraph::EdgeId conj_wrap(NonconjugateDeBruijnGraph& g, NonconjugateDeBruijnGraph::EdgeId e);
+	ConjugateDeBruijnGraph::EdgeId conj_wrap(const ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::EdgeId e);
+	NonconjugateDeBruijnGraph::EdgeId conj_wrap(const NonconjugateDeBruijnGraph& g, NonconjugateDeBruijnGraph::EdgeId e);
 	bool rc_mode;
 	void WrappedSetCoverage(EdgeId e, int cov);
 	size_t GenerateVertexPairedInfo(Graph &g, PairInfoIndexData<EdgeId> &ind,
@@ -526,11 +526,11 @@ private:
 	VertexIdMap vid_map;
 	NewVertexMap new_map;
 	Graph &new_graph;
-	Graph &old_graph;
+	const Graph &old_graph;
 	IdTrackHandler<Graph> &new_IDs;
-	IdTrackHandler<Graph> &old_IDs;
+	const IdTrackHandler<Graph> &old_IDs;
 	EdgesPositionHandler<Graph> &new_pos;
-	EdgesPositionHandler<Graph> &old_pos;
+	const EdgesPositionHandler<Graph> &old_pos;
 	DeletedVertexHandler<Graph> &deleted_handler;
 	EdgeLabelHandler<Graph> &labels_after;
 	vector<int> edge_info_colors;
@@ -706,7 +706,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 			}
 		}
 		DEBUG("split_edge size " << split_edge.size());
-		if (split_edge.size() > 0) {
+		if (split_edge.size() > 0 && new_graph.SplitCondition(v, split_edge)) {
 			pair<VertexId, vector<pair<EdgeId, EdgeId>>> split_pair = new_graph.SplitVertex(v, split_edge, split_coeff);
 			res.push_back(split_pair.first);
 			if (rc_mode) {
@@ -810,24 +810,24 @@ void RepeatResolver<Graph>::BanRCVertex(VertexId v ){
 
 
 template<class Graph>
-ConjugateDeBruijnGraph::VertexId RepeatResolver<Graph>::conj_wrap(ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::VertexId v){
+ConjugateDeBruijnGraph::VertexId RepeatResolver<Graph>::conj_wrap(const ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::VertexId v){
 	return g.conjugate(v);
 }
 
 template<class Graph>
-NonconjugateDeBruijnGraph::VertexId RepeatResolver<Graph>::conj_wrap(NonconjugateDeBruijnGraph& g, NonconjugateDeBruijnGraph::VertexId v){
+NonconjugateDeBruijnGraph::VertexId RepeatResolver<Graph>::conj_wrap(const NonconjugateDeBruijnGraph& g, NonconjugateDeBruijnGraph::VertexId v){
 	VERIFY(0);
 	return v;
 }
 
 //TODO: Move to utils.
 template<class Graph>
-ConjugateDeBruijnGraph::EdgeId RepeatResolver<Graph>::conj_wrap(ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::EdgeId e){
+ConjugateDeBruijnGraph::EdgeId RepeatResolver<Graph>::conj_wrap(const ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::EdgeId e){
 	return g.conjugate(e);
 }
 
 template<class Graph>
-NonconjugateDeBruijnGraph::EdgeId RepeatResolver<Graph>::conj_wrap(NonconjugateDeBruijnGraph& g, NonconjugateDeBruijnGraph::EdgeId e){
+NonconjugateDeBruijnGraph::EdgeId RepeatResolver<Graph>::conj_wrap(const NonconjugateDeBruijnGraph& g, NonconjugateDeBruijnGraph::EdgeId e){
 	VERIFY(0);
 	return e;
 }
@@ -920,7 +920,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				vertices = fillVerticesAuto();
 			INFO(
 					"Having "<< vertices.size() << " paired vertices, trying to split");
-//			RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
+			RealIdGraphLabeler<Graph> IdTrackLabelerAfter(new_graph, new_IDs);
 
 			omnigraph::WriteSimple(
 					new_graph, TotLabAfter,

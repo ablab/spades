@@ -160,26 +160,16 @@ public:
 		edge_labels.erase(e);
 	}
 
-	std::string str(EdgeId edgeId){
-		std::string s = "";
-		if (edge_labels.find(edgeId) != edge_labels.end()) {
-			TRACE("Number of labels "<<edge_labels[edgeId].size());
-			for (size_t i = 0; i < edge_labels[edgeId].size(); i++){
-				s+=ToString((edge_labels[edgeId])[i])+"\\n";
+	std::string str(EdgeId edgeId, boost::function<string (EdgeId)> f = boost::bind(ToString<EdgeId>, _1)) const {
+		stringstream ss;
+		auto it = edge_labels.find(edgeId);
+		if (it != edge_labels.end()) {
+			TRACE("Number of labels " << it->second.size());
+			for (auto label_it = it->second.begin(), end = it->second.end(); label_it != end; ++label_it) {
+				ss << f(*label_it) << endl;
 			}
 		}
-		return s;
-	}
-
-	std::string str(EdgeId edgeId, boost::function<string (EdgeId)> f) {
-		std::string s = "";
-		if (edge_labels.find(edgeId) != edge_labels.end()) {
-			TRACE("Number of labels "<<edge_labels[edgeId].size());
-			for (size_t i = 0; i < edge_labels[edgeId].size(); i++){
-				s+=f((edge_labels[edgeId])[i])+"\\n";
-			}
-		}
-		return s;
+		return ss.str();
 	}
 
 };

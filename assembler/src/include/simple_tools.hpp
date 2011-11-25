@@ -64,6 +64,10 @@ public:
 
 	}
 
+	virtual ~VectorStream() {
+
+	}
+
 	virtual bool eof() /*const */{
 		return pos_ == data_.size();
 	}

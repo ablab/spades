@@ -167,7 +167,7 @@ public:
 		ClearEdgeId(e);
 	}
 
-	std::string str(EdgeId edgeId) {
+	std::string str(EdgeId edgeId) const {
 		int x = this->ReturnIntId(edgeId);
 		return ToString(x);
 	}

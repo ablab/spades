@@ -228,6 +228,7 @@ private:
 		VERIFY(this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
 		EdgeId result = AddSingleEdge(v1, v2, data);
 		if (this->master().isSelfConjugate(data)) {
+			VERIFY(v1 == conjugate(v2));
 			result->set_conjugate(result);
 			return result;
 		}
@@ -384,9 +385,25 @@ public:
 		return SplitVertex(vertex, splittingEdges, split_coefficients);
 	}
 
+	bool SplitCondition(VertexId vertex, const vector<EdgeId> &splittingEdges) {
+		for (auto it = splittingEdges.begin(); it != splittingEdges.end(); ++it) {
+			if (EdgeStart(*it) == conjugate(EdgeEnd(*it)))
+				return false;
+		}
+		return true;
+	}
+
 	pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId vertex, vector<EdgeId> &splittingEdges, vector<double> &split_coefficients) {
 //TODO:: check whether we handle loops correctly!
+//		cout << "------------------------------" << endl;
+//		cout << "Splitting vertex " << vertex << " conjugate " << conjugate(vertex) << endl;
+//		cout << "Splitting edges: " << endl;
+//		for (auto it = splittingEdges.begin(); it != splittingEdges.end(); ++it) {
+//			cout << "Edge " << *it << " (start: " << EdgeStart(*it) << " end: " << EdgeEnd(*it) << " conjugate: " << conjugate(*it) << ") ; " << endl;
+//		}
+//		cout << "Edges printed" << endl;
 		VertexId newVertex = HiddenAddVertex(vertex->data());
+//		cout << "Added vertex " << newVertex << " conjugate " << conjugate(newVertex) << endl;
 		vector<pair<EdgeId, EdgeId>> edge_clones;
 		vector<pair<EdgeId, EdgeId>> rc_edge_clones;
 
@@ -398,6 +415,7 @@ public:
 			if (start_e == vertex)
 				start_e = newVertex;
 			EdgeId newEdge = HiddenAddEdge(start_v, start_e, splittingEdges[i]->data());
+//			cout << "Added edge " << newEdge << " (start: " << EdgeStart(newEdge) << " end: " << EdgeEnd(newEdge) << " conjugate: " << conjugate(newEdge) << ") ; " << endl;
 			edge_clones.push_back(make_pair(splittingEdges[i], newEdge));
 			rc_edge_clones.push_back(make_pair((splittingEdges[i])->conjugate(), newEdge->conjugate()));
 		}
@@ -413,6 +431,7 @@ public:
 			FireAddEdge(rc_edge_clones[i].second);
 
 
+//		cout << "------------------------------" << endl;
 		return make_pair(newVertex, edge_clones);
 	}
 

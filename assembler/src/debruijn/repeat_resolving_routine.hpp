@@ -62,6 +62,7 @@ int ContigNumber(map<NonconjugateDeBruijnGraph::EdgeId, int>& contigNumbers , No
 		return -1;
 	}
 }
+
 int ContigNumber(map<ConjugateDeBruijnGraph::EdgeId, int>& contigNumbers , ConjugateDeBruijnGraph::EdgeId eid,  ConjugateDeBruijnGraph& cur_graph){
 	if (contigNumbers.find(eid) != contigNumbers.end())
 		return(contigNumbers[eid]);
@@ -276,7 +277,6 @@ void process_resolve_repeats(graph_pack& origin_gp,
     typedef TotalLabeler           <typename graph_pack::graph_t> total_labeler;
     total_labeler_gs graph_struct_before(origin_gp  .g, &origin_gp  .int_ids, &origin_gp  .edge_pos, NULL);
     total_labeler tot_labeler_before(&graph_struct_before);
-       omnigraph::WriteSimple(origin_gp.g, tot_labeler_before, cfg::get().output_dir + subfolder + graph_name + "_2_simplified.dot", "no_repeat_graph");
 
 	if (cfg::get().path_set_graph ) {
 		INFO("testing path-set graphs");
@@ -287,6 +287,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 		labels_after.FillLabels(edge_labels);
 		INFO("testing ended");
 	}	else {
+
 //    CleanIsolated(origin_gp);
 		ResolveRepeats(origin_gp  .g, origin_gp  .int_ids, clustered_index, origin_gp  .edge_pos,
                    resolved_gp.g, resolved_gp.int_ids,                  resolved_gp.edge_pos,

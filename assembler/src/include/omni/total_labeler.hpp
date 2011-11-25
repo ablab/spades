@@ -24,12 +24,12 @@ namespace omnigraph {
 template<class Graph>
 class TotalLabelerGraphStruct {
 public:
-	Graph& g_;
-	IdTrackHandler<Graph>* IDs;
-	EdgesPositionHandler<Graph>* EdgesPos;
-	EdgeLabelHandler<Graph>* EdgesLabels;
-	TotalLabelerGraphStruct(Graph &g, IdTrackHandler<Graph>* id_handler, EdgesPositionHandler<Graph>* position_handler,
-							EdgeLabelHandler<Graph>* label_handler = NULL): g_(g),
+	const Graph& g_;
+	const IdTrackHandler<Graph>* IDs;
+	const EdgesPositionHandler<Graph>* EdgesPos;
+	const EdgeLabelHandler<Graph>* EdgesLabels;
+	TotalLabelerGraphStruct(const Graph &g, const IdTrackHandler<Graph>* id_handler, const EdgesPositionHandler<Graph>* position_handler,
+			const EdgeLabelHandler<Graph>* label_handler = NULL): g_(g),
 							IDs(id_handler), EdgesPos(position_handler), EdgesLabels(label_handler)	{
 
 	}
@@ -44,10 +44,10 @@ protected:
 	typedef typename super::EdgeId EdgeId;
 	typedef typename super::VertexId VertexId;
 public:
-	TotalLabelerGraphStruct<Graph>* graph_struct;
-	TotalLabelerGraphStruct<Graph>* proto_graph_struct;
+	const TotalLabelerGraphStruct<Graph>* graph_struct;
+	const TotalLabelerGraphStruct<Graph>* proto_graph_struct;
 
-	TotalLabeler(TotalLabelerGraphStruct<Graph>* g_struct, TotalLabelerGraphStruct<Graph>* proto_g_struct = NULL) :
+	TotalLabeler(const TotalLabelerGraphStruct<Graph>* g_struct, const TotalLabelerGraphStruct<Graph>* proto_g_struct = NULL) :
 		graph_struct(g_struct), proto_graph_struct(proto_g_struct)  {
 	}
 
@@ -56,7 +56,7 @@ public:
 		return ToString(vId);
 	}
 
-	std::string OldEdgeIdToStr(EdgeId e_id){
+	std::string OldEdgeIdToStr(EdgeId e_id) const {
 		if (proto_graph_struct != NULL)
 			if (proto_graph_struct->IDs != NULL){
 				int id = proto_graph_struct->IDs->ReturnIntId(e_id);

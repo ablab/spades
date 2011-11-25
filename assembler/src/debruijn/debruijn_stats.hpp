@@ -3,6 +3,7 @@
 #include "omni/visualization_utils.hpp"
 #include "statistics.hpp"
 #include "new_debruijn.hpp"
+#include "graphio.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/distance_estimation.hpp"
 #include "omni/graph_component.hpp"
@@ -315,6 +316,11 @@ void ProduceDetailedInfo(
             file_name,
             "components_along_genome",
             cfg::get().ds.IS);
+
+	if (config.save_full_graph) {
+		ConjugateDataPrinter<Graph> printer(gp.g, gp.int_ids);
+		PrintGraphPack(folder + "graph", printer, gp);
+	}
 }
 
 struct detail_info_printer
@@ -333,7 +339,7 @@ struct detail_info_printer
     void operator()(info_printer_pos pos, string const& folder_suffix = "") const
     {
         string pos_name = details::info_printer_pos_name(pos);
-        func_(pos, pos_name, (fs::path(folder_) / (pos_name + folder_suffix)).string());
+        func_(pos, pos_name, (fs::path(folder_) / (pos_name + folder_suffix)).string() + "/");
     }
 
 private:
@@ -379,25 +385,6 @@ int PrintGraphComponents(const string& file_name, graph_pack& gp,
 	return (cnt - 1);
 }
 
-//for test generating
-int PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
-		size_t split_edge_length, const IdTrackHandler<Graph>& int_ids) {
-	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
-	ComponentSizeFilter<Graph> checker(g, split_edge_length, 2);
-	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
-	size_t cnt = 1;
-	while (!splitter.Finished() && cnt <= 1000) {
-		string component_name = ConstructComponentName(file_name, cnt).c_str();
-		auto component_vertices = splitter.NextComponent();
-
-		ConjugateDataPrinter<Graph> printer(g, component_vertices.begin(),
-				component_vertices.end(), int_ids);
-		PrintBasicGraph<Graph>(component_name, printer);
-		cnt++;
-	}
-	return (cnt - 1);
-}
-
 void OutputContigs(NonconjugateDeBruijnGraph& g,
 		const string& contigs_output_filename) {
 	INFO("-----------------------------------------");
@@ -423,7 +410,6 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 		}
 		//		oss << g.EdgeNucls(*it);
 	}INFO("Contigs written");
-
 }
 
 void OutputSingleFileContigs(NonconjugateDeBruijnGraph& g,
