@@ -6,7 +6,7 @@ import java.awt.*;
 import java.awt.Graphics;
 
 
-public class Main implements Runnable{
+public class GetData implements Runnable{
 	
 	private static String filename = "";
 
@@ -30,6 +30,28 @@ public class Main implements Runnable{
 	//
 	//
 	//
+    //
+
+    private class Pair implements Comparable<Pair>{
+        int a;
+        int b;
+
+        public Pair(int x, int y){
+            a = x;
+            b = y;
+        }
+
+        public int compareTo(Pair p){
+              if (a == p.a) return (b - p.b);
+              return (a - p.a);
+        }
+
+        public String toString(){
+              
+            return a + " " + b;
+        }
+
+    }
 
 	public static void main(String[] args){
 		if (args != null){
@@ -45,7 +67,7 @@ public class Main implements Runnable{
 			}
 			for (int i = 0; i<args.length; i++) if (args[i].equals("-f")) filename = args[i+1];
 		}
-		new Thread(new Main()).start();
+		new Thread(new GetData()).start();
 	}
 
 	private void debug(Object obj){
@@ -66,6 +88,7 @@ public class Main implements Runnable{
 	
 	public void run(){
 		try{
+            MyScanner filein;
 			MyScanner in, in2, incl, fnrin, fprin, inpaths;
 			
 			Locale.setDefault(Locale.US);
@@ -79,6 +102,7 @@ public class Main implements Runnable{
                 inpaths = new MyScanner("paths.prd");
                 fnrin = new MyScanner(filename + "_fnr.prd");
                 fprin = new MyScanner(filename + "_fpr.prd");
+                filein = new MyScanner(System.in);
 			}
 			else throw new IOException("no input data");
 			debug(filename);
@@ -100,17 +124,133 @@ public class Main implements Runnable{
 				else if (s.equals("=")) edges[ind-1] = in2.nextInt();
 			}
 
-            
-                        
-//          getting paired info
-			debug("Paired Info");
+            TreeSet<Pair> set = new TreeSet<Pair>();
             StringBuffer buf = new StringBuffer("");
-			in.nextInt();
 			int len1 = 0;
 			int len2 = 0;
 			int e1 = 0;
 			int e2 = 0;
 			boolean filtering = false;
+
+//          getting input
+            
+            debug("Processing requests");
+            buf = new StringBuffer("");
+			len1 = 0;
+		    len2 = 0;
+			e1 = 0;
+			e2 = 0;
+			filtering = false;
+			while (filein.hasMoreTokens()){
+				int a = filein.nextInt();
+				int b = filein.nextInt();
+				double x = filein.nextDouble();
+				double y = filein.nextDouble();
+				double z = filein.nextDouble();
+				filein.nextToken();
+				if (!(a == e1 && b == e2)){
+					filtering = (isAcceptable(edges[a-1], edges[b-1]));
+					if (filtering){
+                        set.add(new Pair(e1, e2));
+						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
+                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+            			file = new File(folder1);
+			            file.mkdirs();
+					}
+				}
+				e1 = a;
+				e2 = b;
+			}
+            filein.close();
+
+//          getting fpr info
+            
+            debug("Fpr info");
+            buf = new StringBuffer("");
+			fprin.nextInt();
+			len1 = 0;
+		    len2 = 0;
+			e1 = 0;
+			e2 = 0;
+			filtering = false;
+			while (fprin.hasMoreTokens()){
+				int a = fprin.nextInt();
+				int b = fprin.nextInt();
+				double x = fprin.nextDouble();
+				double y = fprin.nextDouble();
+				double z = fprin.nextDouble();
+				fprin.nextToken();
+				if (!(a == e1 && b == e2)){
+					if (out != null && filtering){
+						out.println(buf);
+						out.close();
+						buf = new StringBuffer("");
+					}	
+					filtering = (isAcceptable(edges[a-1], edges[b-1]));
+					if (filtering){
+					    if (!set.contains(new Pair(a, b))) continue;
+						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
+                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+						out = new PrintWriter(folder1 + "fpr.prd");
+					}
+				}
+				if (filtering) if (x*x + y*y != 0){
+                    buf.append(x + " " + 0 + "\n");
+                }
+				e1 = a;
+				e2 = b;
+			}
+		    if (out != null && filtering) out.println(buf);
+            out.close();
+            fprin.close();
+
+
+//          getting fnr info
+            debug("Fnr info");
+            buf = new StringBuffer("");
+			fnrin.nextInt();
+			len1 = 0;
+			len2 = 0;
+			e1 = 0;
+			e2 = 0;
+            out = null;
+			filtering = false;
+			while (fnrin.hasMoreTokens()){
+				int a = fnrin.nextInt();
+				int b = fnrin.nextInt();
+				double x = fnrin.nextDouble();
+				double y = fnrin.nextDouble();
+				double z = fnrin.nextDouble();
+				fnrin.nextToken();
+				if (!(a == e1 && b == e2)){
+					if (out != null && filtering){
+						out.println(buf);
+						out.close();
+						buf = new StringBuffer("");
+					}	
+					filtering = (isAcceptable(edges[a-1], edges[b-1]));
+					if (filtering){
+					    if (!set.contains(new Pair(a, b))) continue;
+
+						//debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
+                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
+						out = new PrintWriter(folder1 + "fnr.prd");
+					}
+				}
+				if (filtering) if (x*x + y*y != 0){
+                    buf.append(x + " " + 0 + "\n");
+                }
+				e1 = a;
+				e2 = b;
+			}
+		    if (out != null && filtering) out.println(buf);
+            out.close();
+            fnrin.close();
+                        
+            e1 = e2 = 0;
+//          getting paired info
+			debug("Paired Info");
+			in.nextInt();
 			while (in.hasMoreTokens()){
 				int a = in.nextInt(); //edge1
 				int b = in.nextInt(); //edge2
@@ -127,10 +267,9 @@ public class Main implements Runnable{
 					filtering = (isAcceptable(edges[a-1], edges[b-1]));
 					if (filtering){
 
+						if (!set.contains(new Pair(a, b))) continue;
                         String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
-            			file = new File(folder1);
-			            file.mkdirs();
-						out = new PrintWriter(folder1 + "unclustered.prd");
+                        out = new PrintWriter(folder1 + "unclustered.prd");
                         //generating config
 						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
                         debug("Generating config files");
@@ -253,90 +392,6 @@ public class Main implements Runnable{
 		    if (out != null && filtering) out.println(buf);
             out.close();
             inpaths.close();
-//          getting fpr info
-            debug("Fpr info");
-            buf = new StringBuffer("");
-			fprin.nextInt();
-			len1 = 0;
-		
-		    len2 = 0;
-			e1 = 0;
-			e2 = 0;
-			filtering = false;
-			while (fprin.hasMoreTokens()){
-				int a = fprin.nextInt();
-				int b = fprin.nextInt();
-				double x = fprin.nextDouble();
-				double y = fprin.nextDouble();
-				double z = fprin.nextDouble();
-				fprin.nextToken();
-				if (!(a == e1 && b == e2)){
-					if (out != null && filtering){
-						out.println(buf);
-						out.close();
-						buf = new StringBuffer("");
-					}	
-					filtering = (isAcceptable(edges[a-1], edges[b-1]));
-					if (filtering){
-
-						debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
-                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
-						out = new PrintWriter(folder1 + "fpr.prd");
-					}
-				}
-				if (filtering) if (x*x + y*y != 0){
-                    buf.append(x + " " + 0 + "\n");
-                }
-				e1 = a;
-				e2 = b;
-			}
-		    if (out != null && filtering) out.println(buf);
-            out.close();
-            fprin.close();
-
-
-//          getting fnr info
-            debug("Fnr info");
-            buf = new StringBuffer("");
-			fnrin.nextInt();
-			len1 = 0;
-		
-			len2 = 0;
-			e1 = 0;
-			e2 = 0;
-			filtering = false;
-			while (fnrin.hasMoreTokens()){
-				int a = fnrin.nextInt();
-				int b = fnrin.nextInt();
-				double x = fnrin.nextDouble();
-				double y = fnrin.nextDouble();
-				double z = fnrin.nextDouble();
-				fnrin.nextToken();
-				if (!(a == e1 && b == e2)){
-					if (out != null && filtering){
-						out.println(buf);
-						out.close();
-						buf = new StringBuffer("");
-					}	
-					filtering = (isAcceptable(edges[a-1], edges[b-1]));
-					if (filtering){
-
-						//debug("Current edge is processing : " + a + " " + b + " " + edges[a-1] + " " + edges[b-1]);
-                        String folder1 = folder + "/" + a + "_" + b + "_" + edges[a-1] + "_" + edges[b-1] + "/";
-                        file = new File(folder1);
-                        file.mkdirs();
-						out = new PrintWriter(folder1 + "fnr.prd");
-					}
-				}
-				if (filtering) if (x*x + y*y != 0){
-                    buf.append(x + " " + 0 + "\n");
-                }
-				e1 = a;
-				e2 = b;
-			}
-		    if (out != null && filtering) out.println(buf);
-            out.close();
-            fnrin.close();
              
 			
 			                                              

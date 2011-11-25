@@ -31,6 +31,8 @@ protected:
 
 	const vector<size_t> GetGraphDistances(EdgeId first, EdgeId second) {
 		DifferentDistancesCallback < Graph > callback(graph_);
+        //if (debug(first, second))  cout<< "HUIHUIHUI " << int_ids_.ReturnVertexId(24351) << " " << int_ids_.ReturnVertexId(183534) << " " << int_ids_.ReturnVertexId(216632) << "  " << graph_.EdgeEnd(first) << " " << graph_.EdgeStart(second) << endl;
+
 		PathProcessor < Graph > path_processor(graph_,
 				omnigraph::PairInfoPathLengthLowerBound(graph_.k(),
 						graph_.length(first), graph_.length(second), gap_,
@@ -139,7 +141,7 @@ public:
 	}
 
     bool debug(EdgeId first, EdgeId second){
-			return (int_ids_.ReturnIntId(first) == 423963 && int_ids_.ReturnIntId(second) == 432278);
+			return (int_ids_.ReturnIntId(first) == 203513 && int_ids_.ReturnIntId(second) == 404167);
     }
 
     virtual void GetAllDistances(PairedInfoIndex<Graph> &result){

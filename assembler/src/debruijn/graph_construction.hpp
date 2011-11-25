@@ -77,11 +77,12 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 		const EdgeIndex<k + 1, Graph>& index,
 		const KmerMapper<k + 1, Graph>& kmer_mapper,
 		size_t is, size_t rs,
-		const Sequence& genome) {
+        size_t delta,
+		const Sequence& genome){
 	INFO("-----------------------------------------");
 	INFO("Counting etalon paired info");
 	EtalonPairedInfoCounter<k, Graph> etalon_paired_info_counter(g, index, kmer_mapper,
-			is, rs, is * 0.1);
+			is, rs, delta);
 	etalon_paired_info_counter.FillEtalonPairedInfo(genome,
 			etalon_paired_index);
 
@@ -94,7 +95,7 @@ void FillEtalonPairedIndex(PairedInfoIndex<Graph>& etalon_paired_index,
 		const EdgeIndex<k + 1, Graph>& index,
 		const KmerMapper<k+1, Graph>& kmer_mapper,
 		const Sequence& genome) {
-	FillEtalonPairedIndex<k>(etalon_paired_index, g, index, kmer_mapper, cfg::get().ds.IS, cfg::get().ds.RL, genome);
+	FillEtalonPairedIndex<k>(etalon_paired_index, g, index, kmer_mapper, cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta, genome);
 	//////////////////DEBUG
 	//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
 	//	Path<EdgeId> path = simple_mapper.MapSequence(genome);

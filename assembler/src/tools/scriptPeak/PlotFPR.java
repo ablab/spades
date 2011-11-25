@@ -39,7 +39,7 @@ public class PlotFPR implements Runnable{
     }
 
 	public static void main(String[] args){
-        if (args.length > 0 && args[0].equals("s")) output = false;
+        if (args.length > 0 && args[0].equals("-s")) output = false;
 		new Thread(new PlotFPR()).start();
 	}
 
