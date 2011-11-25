@@ -14,6 +14,7 @@ namespace omnigraph {
 #include "omni_utils.hpp"
 #include "xmath.h"
 
+
 template<class Graph>
 class LowCoverageEdgeRemover {
 	Graph& g_;
@@ -25,36 +26,74 @@ public:
 
 	}
 
-	void RemoveEdges() {
+	bool RemoveEdges() {
+		bool change = false;
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			typename Graph::EdgeId e = *it;
 			if (g_.length(e) < max_length_ && g_.coverage(e) < max_coverage_) {
 				g_.DeleteEdge(e);
+				change = true;
 			}
 		}
 		omnigraph::Compressor<Graph> compressor(g_);
 		compressor.CompressAllVertices();
 		omnigraph::Cleaner<Graph> cleaner(g_);
 		cleaner.Clean();
+		return change;
 	}
 };
 
 template<class Graph>
-class ChimericEdgesRemover {
-private:
-	Graph &graph_;
-	size_t max_overlap_;
-	EdgeRemover<Graph>& edge_remover_;
+class ErroneousEdgeRemover {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
+	Graph& g_;
+	EdgeRemover<Graph>& edge_remover_;
+	bool changed_;
+public:
+	ErroneousEdgeRemover(Graph& g, EdgeRemover<Graph>& edge_remover) :
+			g_(g), edge_remover_(edge_remover), changed_(false) {
+
+	}
+
+	virtual ~ErroneousEdgeRemover() {
+
+	}
+
+	bool RemoveEdges() {
+		InnerRemoveEdges();
+		return changed_;
+	}
+
+protected:
+	void DeleteEdge(EdgeId edge, bool delete_between_related = true) {
+		edge_remover_.DeleteEdge(edge);
+		changed_ = true;
+	}
+
+	virtual void InnerRemoveEdges() = 0;
+
+	Graph& graph() {
+		return g_;
+	}
+};
+
+template<class Graph>
+class ChimericEdgesRemover : public ErroneousEdgeRemover<Graph> {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef ErroneousEdgeRemover<Graph> base;
+
+	size_t max_overlap_;
 
 public:
 	ChimericEdgesRemover(Graph &graph, size_t max_overlap, EdgeRemover<Graph>& edge_remover) :
-			graph_(graph), max_overlap_(max_overlap), edge_remover_(edge_remover) {
+			base(graph, edge_remover), max_overlap_(max_overlap) {
 	}
 
 	bool CheckEnd(VertexId v) {
-		return graph_.OutgoingEdgeCount(v) == 1
+		return this->graph().OutgoingEdgeCount(v) == 1
 				/*&& graph_.IncomingEdgeCount(v) >= 2*/;
 //		return graph_.OutgoingEdgeCount(v) == 1
 //				&& graph_.IncomingEdgeCount(v) >= 2;
@@ -62,19 +101,19 @@ public:
 
 	bool CheckStart(VertexId v) {
 		return /*graph_.OutgoingEdgeCount(v) >= 2
-				&&*/ graph_.IncomingEdgeCount(v) == 1;
+				&&*/ this->graph().IncomingEdgeCount(v) == 1;
 //		return graph_.OutgoingEdgeCount(v) >= 2
 //				&& graph_.IncomingEdgeCount(v) == 1;
 	}
 
-	void RemoveEdges() {
-		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+	void InnerRemoveEdges() {
+		for (auto it = this->graph().SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			EdgeId edge = *it;
-			if (graph_.length(edge) <= graph_.k()
-					&& graph_.length(edge) >= graph_.k() - max_overlap_
-					&& CheckEnd(graph_.EdgeEnd(edge))
-					&& CheckStart(graph_.EdgeStart(edge))) {
-				edge_remover_.DeleteEdge(edge);
+			if (this->graph().length(edge) <= this->graph().k()
+					&& this->graph().length(edge) >= this->graph().k() - max_overlap_
+					&& CheckEnd(this->graph().EdgeEnd(edge))
+					&& CheckStart(this->graph().EdgeStart(edge))) {
+				this->DeleteEdge(edge);
 //				graph_.DeleteEdge(edge);
 			}
 		}
@@ -82,34 +121,34 @@ public:
 };
 
 template<class Graph>
-class IterativeLowCoverageEdgeRemover {
-	Graph& g_;
-	size_t max_length_;
-	double max_coverage_;
-	EdgeRemover<Graph>& edge_remover_;
+class IterativeLowCoverageEdgeRemover : public ErroneousEdgeRemover<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
+	typedef ErroneousEdgeRemover<Graph> base;
+	size_t max_length_;
+	double max_coverage_;
 
 public:
 	IterativeLowCoverageEdgeRemover(Graph& g, size_t max_length,
 			double max_coverage, EdgeRemover<Graph>& edge_remover) :
-			g_(g), max_length_(max_length), max_coverage_(max_coverage), edge_remover_(edge_remover) {
+			base(g, edge_remover), max_length_(max_length), max_coverage_(max_coverage) {
 
 	}
 
-	void RemoveEdges() {
+	void InnerRemoveEdges() {
 		TRACE("Removing edges")
-		CoverageComparator<Graph> comparator(g_);
-		for (auto it = g_.SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
+		CoverageComparator<Graph> comparator(this->graph());
+		for (auto it = this->graph().SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
 			typename Graph::EdgeId e = *it;
 			TRACE("Considering edge " << e);
-			if (math::gr(g_.coverage(e), max_coverage_)) {
+			if (math::gr(this->graph().coverage(e), max_coverage_)) {
 				TRACE("Max coverage " << max_coverage_ << " achieved");
 				return;
-			}TRACE("Checking length");
-			if (g_.length(e) < max_length_) {
+			}
+			TRACE("Checking length");
+			if (this->graph().length(e) < max_length_) {
 				TRACE("Condition ok");
-				edge_remover_.DeleteEdge(e);
+				this->DeleteEdge(e);
 //				VertexId start = g_.EdgeStart(e);
 //				VertexId end = g_.EdgeEnd(e);
 //				TRACE("Start " << start);
@@ -125,9 +164,11 @@ public:
 //				g_.CompressVertex(start);
 			} else {
 				TRACE("Condition failed");
-			}TRACE("Edge " << e << " processed");
-		}TRACE("Cleaning graph");
-		omnigraph::Cleaner<Graph> cleaner(g_);
+			}
+			TRACE("Edge " << e << " processed");
+		}
+		TRACE("Cleaning graph");
+		omnigraph::Cleaner<Graph> cleaner(this->graph());
 		cleaner.Clean();
 		TRACE("Graph cleaned");
 	}
@@ -141,29 +182,28 @@ void Append(vector<T>& current, const vector<T>& to_append) {
 }
 
 template<class Graph>
-class TopologyBasedChimericEdgeRemover {
+class TopologyBasedChimericEdgeRemover : public ErroneousEdgeRemover<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
+	typedef ErroneousEdgeRemover<Graph> base;
 
-	Graph& g_;
 	size_t max_length_;
 	double coverage_gap_;
 	size_t neighbour_length_threshold_;
-	EdgeRemover<Graph>& edge_remover_;
 
 public:
 	TopologyBasedChimericEdgeRemover(Graph& g, size_t max_length,
 			double coverage_gap, size_t neighbour_length_threshold, EdgeRemover<Graph>& edge_remover) :
-			g_(g), max_length_(max_length), coverage_gap_(coverage_gap), neighbour_length_threshold_(
-					neighbour_length_threshold), edge_remover_(edge_remover) {
+			base(g, edge_remover), max_length_(max_length), coverage_gap_(coverage_gap), neighbour_length_threshold_(
+					neighbour_length_threshold) {
 
 	}
 
 	bool StrongNeighbourCondition(EdgeId neighbour_edge, EdgeId possible_ec) {
 		return neighbour_edge == possible_ec
-				|| math::gr(g_.coverage(neighbour_edge),
-						g_.coverage(possible_ec) * coverage_gap_)
-				|| g_.length(neighbour_edge) >= neighbour_length_threshold_;
+				|| math::gr(this->graph().coverage(neighbour_edge),
+						this->graph().coverage(possible_ec) * coverage_gap_)
+				|| this->graph().length(neighbour_edge) >= neighbour_length_threshold_;
 	}
 
 	bool CheckAdjacent(const vector<EdgeId>& edges, EdgeId possible_ec) {
@@ -174,21 +214,21 @@ public:
 		return true;
 	}
 
-	void RemoveEdges() {
-		LengthComparator<Graph> comparator(g_);
-		for (auto it = g_.SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
+	void InnerRemoveEdges() {
+		LengthComparator<Graph> comparator(this->graph());
+		for (auto it = this->graph().SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
 			typename Graph::EdgeId e = *it;
-			if (g_.length(e) > max_length_) {
+			if (this->graph().length(e) > max_length_) {
 				return;
 			}
 			vector<EdgeId> adjacent_edges;
-			Append(adjacent_edges, g_.OutgoingEdges(g_.EdgeStart(e)));
-			Append(adjacent_edges, g_.IncomingEdges(g_.EdgeStart(e)));
-			Append(adjacent_edges, g_.OutgoingEdges(g_.EdgeEnd(e)));
-			Append(adjacent_edges, g_.IncomingEdges(g_.EdgeEnd(e)));
+			Append(adjacent_edges, this->graph().OutgoingEdges(this->graph().EdgeStart(e)));
+			Append(adjacent_edges, this->graph().IncomingEdges(this->graph().EdgeStart(e)));
+			Append(adjacent_edges, this->graph().OutgoingEdges(this->graph().EdgeEnd(e)));
+			Append(adjacent_edges, this->graph().IncomingEdges(this->graph().EdgeEnd(e)));
 
 			if (CheckAdjacent(adjacent_edges, e)) {
-				edge_remover_.DeleteEdge(e, false);
+				this->DeleteEdge(e, false);
 //				VertexId start = g_.EdgeStart(e);
 //				VertexId end = g_.EdgeEnd(e);
 //				if (!g_.RelatedVertices(start, end)) {
@@ -198,34 +238,32 @@ public:
 //				}
 			}
 		}
-		omnigraph::Cleaner<Graph> cleaner(g_);
+		omnigraph::Cleaner<Graph> cleaner(this->graph());
 		cleaner.Clean();
 	}
 };
 
 template<class Graph>
-class NewTopologyBasedChimericEdgeRemover {
+class NewTopologyBasedChimericEdgeRemover : public ErroneousEdgeRemover<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
+	typedef ErroneousEdgeRemover<Graph> base;
 
-	Graph& g_;
 	size_t max_length_;
 	size_t uniqueness_length_;
 	size_t plausibility_length_;
 
-	EdgeRemover<Graph>& edge_remover_;
-
 public:
 	NewTopologyBasedChimericEdgeRemover(Graph& g, size_t max_length,
 			size_t uniqueness_length, size_t plausibility_length, EdgeRemover<Graph>& edge_remover) :
-			g_(g), max_length_(max_length), uniqueness_length_(uniqueness_length), plausibility_length_(
-					plausibility_length), edge_remover_(edge_remover) {
+			base(g, edge_remover), max_length_(max_length), uniqueness_length_(uniqueness_length), plausibility_length_(
+					plausibility_length) {
 		VERIFY(max_length < plausibility_length);
 		VERIFY(uniqueness_length > plausibility_length);
 	}
 
 	bool CheckUniqueness(EdgeId e) {
-		return g_.length(e) >= uniqueness_length_;
+		return this->graph().length(e) >= uniqueness_length_;
 	}
 
 	bool Unique(const vector<EdgeId>& edges) {
@@ -239,7 +277,7 @@ public:
 	}
 
 	bool CheckPlausibility(EdgeId e) {
-		return g_.length(e) >= plausibility_length_;
+		return this->graph().length(e) >= plausibility_length_;
 	}
 
 	bool ExistPlausible(const vector<EdgeId>& edges) {
@@ -252,54 +290,51 @@ public:
 	}
 
 	bool CheckStart(EdgeId e) {
-		return Unique(g_.IncomingEdges(g_.EdgeStart(e))) && ExistPlausible(g_.OutgoingEdges(g_.EdgeStart(e)));
+		return Unique(this->graph().IncomingEdges(this->graph().EdgeStart(e))) && ExistPlausible(this->graph().OutgoingEdges(this->graph().EdgeStart(e)));
 	}
 
 	bool CheckEnd(EdgeId e) {
-		return Unique(g_.OutgoingEdges(g_.EdgeEnd(e))) && ExistPlausible(g_.IncomingEdges(g_.EdgeEnd(e)));
+		return Unique(this->graph().OutgoingEdges(this->graph().EdgeEnd(e))) && ExistPlausible(this->graph().IncomingEdges(this->graph().EdgeEnd(e)));
 	}
 
-	void RemoveEdges() {
-		LengthComparator<Graph> comparator(g_);
-		for (auto it = g_.SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
+	void InnerRemoveEdges() {
+		LengthComparator<Graph> comparator(this->graph());
+		for (auto it = this->graph().SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
 			typename Graph::EdgeId e = *it;
-			if (g_.length(e) > max_length_) {
+			if (this->graph().length(e) > max_length_) {
 				return;
 			}
 			if (CheckStart(e) || CheckEnd(e)) {
-				edge_remover_.DeleteEdge(e, false);
+				this->DeleteEdge(e, false);
 			}
 		}
-		omnigraph::Cleaner<Graph> cleaner(g_);
+		omnigraph::Cleaner<Graph> cleaner(this->graph());
 		cleaner.Clean();
 	}
 };
 
-template<class GraphPack>
-class PairInfoAwareErroneousEdgeRemover {
-	typedef typename GraphPack::graph_t Graph;
+template<class Graph>
+class PairInfoAwareErroneousEdgeRemover : public ErroneousEdgeRemover<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
+	typedef ErroneousEdgeRemover<Graph> base;
 
-	GraphPack& gp_;
-	Graph& g_;
 	const PairedInfoIndex<Graph>& paired_index_;
 	size_t max_length_;
 	size_t min_neighbour_length_;
 	size_t insert_size_;
 	size_t read_length_;
 	size_t gap_;
-	EdgeRemover<Graph>& edge_remover_;
 
 public:
-	PairInfoAwareErroneousEdgeRemover(GraphPack& gp,
+	PairInfoAwareErroneousEdgeRemover(Graph& g,
 			const PairedInfoIndex<Graph>& paired_index, size_t max_length,
 			size_t min_neighbour_length, size_t insert_size, size_t read_length,
 			EdgeRemover<Graph>& edge_remover) :
-			gp_(gp), g_(gp.g), paired_index_(paired_index), max_length_(
+			base(g, edge_remover), paired_index_(paired_index), max_length_(
 					max_length), min_neighbour_length_(min_neighbour_length), insert_size_(
 					insert_size), read_length_(read_length), gap_(
-					insert_size_ - 2 * read_length_), edge_remover_(edge_remover) {
+					insert_size_ - 2 * read_length_) {
 		VERIFY(insert_size_ >= 2 * read_length_);
 	}
 
@@ -309,10 +344,10 @@ public:
 		TRACE("Checking whether should be pair info between e1 " << PrintEdge(e1)
 				<< " and e2 " << PrintEdge(e2) << " with gap " << gap_length);
 		bool should_contain = gap_length
-				>= PairInfoPathLengthLowerBound(g_.k(), g_.length(e1),
-						g_.length(e2), gap_, 0.)
+				>= PairInfoPathLengthLowerBound(this->graph().k(), this->graph().length(e1),
+						this->graph().length(e2), gap_, 0.)
 				&& gap_length
-						<= PairInfoPathLengthUpperBound(g_.k(), insert_size_,
+						<= PairInfoPathLengthUpperBound(this->graph().k(), insert_size_,
 								0.);
 		TRACE("Result: " << should_contain);
 		return should_contain;
@@ -324,7 +359,7 @@ public:
 		vector<PairInfo<EdgeId>> infos = paired_index_.GetEdgePairInfo(e1, e2);
 		for (auto it = infos.begin(); it != infos.end(); ++it) {
 			PairInfo<EdgeId> info = *it;
-			size_t distance = g_.length(e1) + ec_length;
+			size_t distance = this->graph().length(e1) + ec_length;
 			if (math::ge(0. + distance + info.variance, info.d)
 					&& math::le(0. + distance, info.d + info.variance)) {
 				TRACE("Pair info found");
@@ -337,12 +372,12 @@ public:
 
 	bool CheckAnyPairInfoAbsense(EdgeId possible_ec) {
 		TRACE("Checking pair info absense");
-		vector<EdgeId> incoming = g_.IncomingEdges(g_.EdgeStart(possible_ec));
-		vector<EdgeId> outgoing = g_.OutgoingEdges(g_.EdgeEnd(possible_ec));
+		vector<EdgeId> incoming = this->graph().IncomingEdges(this->graph().EdgeStart(possible_ec));
+		vector<EdgeId> outgoing = this->graph().OutgoingEdges(this->graph().EdgeEnd(possible_ec));
 		for (auto it1 = incoming.begin(); it1 != incoming.end(); ++it1)
 			for (auto it2 = outgoing.begin(); it2 != outgoing.end(); ++it2)
-				if (!ShouldContainInfo(*it1, *it2, g_.length(possible_ec))
-						|| ContainsInfo(*it1, *it2, g_.length(possible_ec))) {
+				if (!ShouldContainInfo(*it1, *it2, this->graph().length(possible_ec))
+						|| ContainsInfo(*it1, *it2, this->graph().length(possible_ec))) {
 					TRACE("Check absense: fail");
 					return false;
 				}
@@ -354,7 +389,7 @@ public:
 		TRACE("Checking adjacent lengths");
 		TRACE("min_neighbour_length = " << min_neighbour_length_);
 		for (auto it = edges.begin(); it != edges.end(); ++it)
-			if (min_neighbour_length_ > g_.length(*it)) {
+			if (min_neighbour_length_ > this->graph().length(*it)) {
 				TRACE(
 						"Check fail: edge " << PrintEdge(*it) << " was too short");
 				return false;
@@ -364,24 +399,24 @@ public:
 
 	string PrintEdge(EdgeId e) {
 		stringstream ss;
-		ss << gp_.int_ids.ReturnIntId(e) << "(" << e << ") " << g_.length(e)
-				<< "(" << g_.coverage(e) << ")";
+		ss << this->graph().int_ids().ReturnIntId(e) << "(" << e << ") " << this->graph().length(e)
+				<< "(" << this->graph().coverage(e) << ")";
 		return ss.str();
 	}
 
-	void RemoveEdges() {
+	void InnerRemoveEdges() {
 		TRACE("Removing erroneous edges based on pair info");
-		LengthComparator<Graph> comparator(g_);
-		for (auto it = g_.SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
+		LengthComparator<Graph> comparator(this->graph());
+		for (auto it = this->graph().SmartEdgeBegin(comparator); !it.IsEnd(); ++it) {
 			typename Graph::EdgeId e = *it;
 			TRACE("Considering edge " << PrintEdge(e));
-			if (g_.length(e) > max_length_) {
+			if (this->graph().length(e) > max_length_) {
 				TRACE("Max length bound = " << max_length_ << " was exceeded");
 				return;
 			}
 			vector<EdgeId> adjacent_edges;
-			Append(adjacent_edges, g_.IncomingEdges(g_.EdgeStart(e)));
-			Append(adjacent_edges, g_.OutgoingEdges(g_.EdgeEnd(e)));
+			Append(adjacent_edges, this->graph().IncomingEdges(this->graph().EdgeStart(e)));
+			Append(adjacent_edges, this->graph().OutgoingEdges(this->graph().EdgeEnd(e)));
 
 			if (CheckAdjacentLengths(adjacent_edges, e)
 					&& CheckAnyPairInfoAbsense(e)) {
@@ -399,10 +434,10 @@ public:
 //				} else {
 //					TRACE("Vertices are related");
 //				}
-				edge_remover_.DeleteEdge(e, false);
+				this->DeleteEdge(e, false);
 			}
 		}
-		omnigraph::Cleaner<Graph> cleaner(g_);
+		omnigraph::Cleaner<Graph> cleaner(this->graph());
 		cleaner.Clean();
 	}
 private:

@@ -229,19 +229,19 @@ void FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 	isolated_edge_remover.RemoveIsolatedEdges();
 }
 
-template<class graph_pack>
-void RemoveEroneousEdgesUsingPairedInfo(graph_pack &gp,
-		const PairedInfoIndex<typename graph_pack::graph_t>& paired_index,
+template<class Graph>
+void RemoveEroneousEdgesUsingPairedInfo(Graph& g,
+		const PairedInfoIndex<Graph>& paired_index,
 		EdgeRemover<Graph>& edge_remover) {
 	INFO("Removing erroneous edges using paired info");
 	size_t max_length = cfg::get().simp.piec.max_length;
 	size_t min_neighbour_length = cfg::get().simp.piec.min_neighbour_length;
-	omnigraph::PairInfoAwareErroneousEdgeRemover<graph_pack> erroneous_edge_remover(
-			gp, paired_index, max_length, min_neighbour_length,
+	omnigraph::PairInfoAwareErroneousEdgeRemover<Graph> erroneous_edge_remover(
+			g, paired_index, max_length, min_neighbour_length,
 			cfg::get().ds.IS, cfg::get().ds.RL, edge_remover);
 	erroneous_edge_remover.RemoveEdges();
 
-	IsolatedEdgeRemover<Graph> isolated_edge_remover(gp.g, cfg::get().simp.isolated_min_len);
+	IsolatedEdgeRemover<Graph> isolated_edge_remover(g, cfg::get().simp.isolated_min_len);
 	isolated_edge_remover.RemoveIsolatedEdges();
 
 	INFO("Erroneous edges using paired info removed");

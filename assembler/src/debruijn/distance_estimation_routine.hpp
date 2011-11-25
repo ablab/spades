@@ -100,7 +100,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 					&qual_removal_handler, _1);
 			EdgeRemover<Graph> edge_remover(gp.g, true, removal_handler_f);
 			INFO("Pair info aware ErroneousConnectionsRemoval");
-			RemoveEroneousEdgesUsingPairedInfo(gp, paired_index, edge_remover);
+			RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index, edge_remover);
 			INFO("Pair info aware ErroneousConnectionsRemoval stats");
 			CountStats<K>(gp.g, gp.index, gp.genome);
 		}
