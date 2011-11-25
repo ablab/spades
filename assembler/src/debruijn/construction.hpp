@@ -149,8 +149,6 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 	FillEdgesPos(gp, gp.genome, 0);
 	FillEdgesPos(gp, !gp.genome, 1);
 	FillEdgesPos(gp, cfg::get().pos.contigs_for_threading, 1000);
-	omnigraph::WriteSimple(gp.g, tl,
-			cfg::get().output_dir + "1_initial_graph.dot", "no_repeat_graph");
 }
 
 } //namespace debruijn_graph
