@@ -14,6 +14,7 @@
 #include "omni/abstract_conjugate_graph.hpp"
 #include "omni/abstract_nonconjugate_graph.hpp"
 #include "utils.hpp"
+#include "new_debruijn.hpp"
 
 #include "omni/omni_tools.hpp"
 #include "omni/omnigraph.hpp"
@@ -824,6 +825,13 @@ void ScanWithPairedIndex(const string& file_name,
 		bool clustered_index = false) {
 	typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g, gp.int_ids);
 	ScanWithPairedIndex(file_name, scanner, gp, paired_index, clustered_index);
+}
+
+template <class graph_pack>
+void ScanGraphPack(const string& file_name,
+		graph_pack& gp) {
+	typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g, gp.int_ids);
+	ScanGraphPack(file_name, scanner, gp);
 }
 
 template <class graph_pack>

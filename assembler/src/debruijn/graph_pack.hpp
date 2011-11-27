@@ -39,6 +39,14 @@ struct graph_pack {
 	, edge_pos(g, cfg::get().pos.max_single_gap), etalon_paired_index(g, 0), kmer_mapper(g),
 	genome(genome) {
 	}
+
+	graph_pack() :
+	g(k),
+	index(g)
+	, int_ids (g)
+	, edge_pos(g, cfg::get().pos.max_single_gap), etalon_paired_index(g, 0), kmer_mapper(g),
+	genome(Sequence()) {
+	}
 };
 
 typedef graph_pack<ConjugateDeBruijnGraph, K> conj_graph_pack;
