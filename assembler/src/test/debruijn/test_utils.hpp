@@ -25,6 +25,7 @@ void ConstructGraphFromGenome(Graph& g, EdgeIndex<k + 1, Graph>& index/*, Covera
 			paired_index, read_stream);
 }
 
+//Prints only basic graph structure!!!
 void PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
 		size_t split_edge_length, const IdTrackHandler<Graph>& int_ids,
 		int int_edge_id) {

@@ -101,7 +101,7 @@ void DataPrinter<Graph>::saveGraph(const string& file_name) {
 
 	FILE* file = fopen((file_name + ".grp").c_str(), "w");
 	DEBUG("Graph saving to " << file_name << " started");
-	VERIFY(file != NULL);
+	VERIFY_MSG(file != NULL, "Couldn't open file " << (file_name + ".grp") << " on write");
 	size_t vertex_count = component_.v_size();
 	size_t edge_count = component_.e_size();
 	fprintf(file, "%ld %ld \n", vertex_count, edge_count);
@@ -413,7 +413,7 @@ public:
 		int flag;
 		INFO("Trying to read conjugate de bruijn  graph from " << file_name << ".grp");
 		FILE* file = fopen((file_name + ".grp").c_str(), "r");
-		VERIFY(file != NULL);
+		VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".grp"));
 		FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
 		VERIFY(sequence_file != NULL);
 		set<int> vertex_set;
@@ -825,6 +825,13 @@ void ScanWithPairedIndex(const string& file_name,
 		bool clustered_index = false) {
 	typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g, gp.int_ids);
 	ScanWithPairedIndex(file_name, scanner, gp, paired_index, clustered_index);
+}
+
+template <class Graph>
+void ScanBasicGraph(const string& file_name,
+		Graph& g, IdTrackHandler<Graph>& int_ids) {
+	typename ScannerTraits<Graph>::Scanner scanner(g, int_ids);
+	ScanBasicGraph(file_name, scanner);
 }
 
 template <class graph_pack>

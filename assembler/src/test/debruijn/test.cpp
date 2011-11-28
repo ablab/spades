@@ -14,13 +14,13 @@ DECL_PROJECT_LOGGER("dt")
 namespace debruijn_graph {
 
 //BOOST_AUTO_TEST_CASE( GenerateGraphFragment ) {
-//	std::string input_path = "/home/snurk/git/algorithmic-biology/assembler/data/debruijn/";
-//	std::string output_path = "/home/snurk/git/algorithmic-biology/assembler/src/test/debruijn_test/graph_fragments";
-//	size_t split_threshold = 100;
-//	int int_edge_id = 100;
-//	conj_graph_pack gp((Sequence()));
-//	PairedInfoIndex<Graph> clustered_index(gp.g);
-//	ScanWithClusteredIndex(input_path, gp, clustered_index);
+//	std::string input_path = "/home/snurk/git/algorithmic-biology/assembler/data/debruijn/QUAKE_CROPPED_400K/K55/latest/tip_clipping_0/graph";
+//	std::string output_path = "/home/snurk/git/algorithmic-biology/assembler/src/test/debruijn/graph_fragments/simpliest_bulge";
+//	size_t split_threshold = 1000;
+//	int int_edge_id = 1867;
+//	conj_graph_pack gp;
+//	ScanGraphPack(input_path, gp);
+//	//prints only basic graph structure
 //	PrintGraphComponentContainingEdge(output_path, gp.g,
 //			split_threshold, gp.int_ids, int_edge_id);
 //}
