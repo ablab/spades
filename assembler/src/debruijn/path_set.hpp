@@ -523,11 +523,11 @@ private:
         {
             PathSet<EdgeId> rawPathSet = *iter;
             PathSet<EdgeId> newPathSet = *iter;
-//            if(rawPathSet.paths.size() == 1)
-//            {
-//                filtered.AddPathSet(newPathSet);
-//                continue;
-//            }
+            if(rawPathSet.paths.size() == 1)
+            {
+                filtered.AddPathSet(newPathSet);
+                continue;
+            }
             vector<PathSet<EdgeId>> topLevelNodes ;
             topLevelNodes.push_back(rawPathSet);
             

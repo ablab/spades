@@ -88,13 +88,24 @@ public:
 						DEBUG("tail adding..");
 						auto current_path = tmp_iter.paths.begin();
 						DEBUG("..of length: "<<current_path->size());
+						VertexId end = new_gp.g.AddVertex();
+						new_gp.int_ids.AddVertexIntId(end, - new_gp.int_ids.ReturnIntId(end));
+						EdgeId old_edge = tmp_iter.start;
+						AddEdgeWithAllHandlers(v, end , old_edge);
+						v = end;
 						for(auto path_iter = current_path->begin(); path_iter != current_path->end(); ++path_iter) {
-							VertexId end = new_gp.g.AddVertex();
-//							new_gp.int_ids.AddVertexIntId(end, - new_gp.int_ids.ReturnIntId(end));
-							EdgeId old_edge = *path_iter;
+							end = new_gp.g.AddVertex();
+							new_gp.int_ids.AddVertexIntId(end, - new_gp.int_ids.ReturnIntId(end));
+							old_edge = *path_iter;
 							AddEdgeWithAllHandlers(v, end , old_edge);
 							v = end;
 						}
+						end = new_gp.g.AddVertex();
+						new_gp.int_ids.AddVertexIntId(end, - new_gp.int_ids.ReturnIntId(end));
+						old_edge = tmp_iter.end;
+						AddEdgeWithAllHandlers(v, end , old_edge);
+						v = end;
+
 						DEBUG("tail added");
 					}
 				} else {
