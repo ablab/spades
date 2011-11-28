@@ -6,13 +6,17 @@
 #include "simple_tools.hpp"
 #include "xmath.h"
 #include "omni/paired_info.hpp"
+#include "omni/distance_estimation.hpp"
+
 #include "graphio.hpp"
 #include <iostream>
 #include <fstream>
 #include <map>
-#include "omni/path_set.hpp" 
-#include "omni/matepair_transformer.hpp"
-#include "omni/distance_estimation.hpp"
+
+#include "path_set.hpp" 
+#include "matepair_transformer.hpp"
+#include "path_set_stats.hpp"
+
 
 namespace debruijn_graph {
 using namespace math;
@@ -539,48 +543,54 @@ public:
 
 	virtual void Count() {
 
-//TODO CLEAN IT WHEN DONE
-//        PathSetIndexData<EdgeId> PII ;
-//        PathSetIndexData<EdgeId> PIIFilter ;
-//        PathSetIndexData<EdgeId> invalidPathsRemovedPII;
-//        MatePairTransformer<Graph> transformer(g_, pair_info_);
-//        transformer.Transform(PII);
-//        PathSetIndex<EdgeId> PI(PII);
-//        PI.RemovePrefixes(PIIFilter);
-//        
-//        for(auto iter = PII.begin(); iter != PII.end() ; ++iter)
-//        {
-//            INFO( *iter);
-//        } 
-//        PI.RemoveInvalidPaths(PIIFilter, invalidPathsRemovedPII);
-//
-//        INFO("FILTERED");
-//        for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
-//        {
-//            PathSet<EdgeId> first = *iter;
-//            vector<PathSet<EdgeId>> extends;
-//            PI.FindExtension(PIIFilter,first, extends);
-//        }
-//        INFO("More FILTERED");
-//        for(auto iter = invalidPathsRemovedPII.begin(); iter != invalidPathsRemovedPII.end() ; ++iter)
-//        {
-//            PathSet<EdgeId> first = *iter;
-//            vector<PathSet<EdgeId>> extends;
-//            PI.FindExtension(invalidPathsRemovedPII,first, extends);
-//        }
-//        INFO("RAW HIS");
-//        for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
-//        {
-//            PathSet<EdgeId> first = *iter;
-//            INFO(first.paths.size());
-//        }
-//        INFO("HISTO");
-//        for(auto iter = invalidPathsRemovedPII.begin(); iter != invalidPathsRemovedPII.end() ; ++iter)
-//        {
-//            PathSet<EdgeId> first = *iter;
-//            INFO(first.paths.size());
-//        }
-//        INFO("END HISTO");
+        /*
+        PathSetIndexData<EdgeId> PII ;
+        PathSetIndexData<EdgeId> PIIFilter ;
+        MatePairTransformer<Graph> transformer(g_, pair_info_);
+        transformer.Transform(PII);
+        PathSetIndex<EdgeId> PI(PII);
+        INFO("STATISTIC");
+        PI.Process(PIIFilter);
+        INFO("END STATISTIC");
+        for(auto iter = PII.begin(); iter != PII.end() ; ++iter)
+        {
+            INFO( *iter);
+        } 
+        
+//        PathSetStats<Graph>  pathsetStatistic(g_,PII , PIIFilter);
+//        pathsetStatistic.Count();
+
+
+        INFO("FILTERED");
+        for(auto iter = PIIFilter.begin() ; iter != PIIFilter.end(); ++iter)
+        {
+            INFO(*iter);
+        }
+        INFO("Extension");
+        for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
+        {
+            PathSet<EdgeId> first = *iter;
+            INFO(first);
+            vector<PathSet<EdgeId>> extends;
+            size_t offSet = 0;
+            if(first.paths.size() > 1)
+                offSet = 1;
+            PI.FindExtension(PIIFilter,first, extends, offSet);
+            for(size_t i = 0 ; i < extends.size() ; ++i)
+            {
+                if(offSet == 0)
+                {
+                    INFO("CAN BE EXTENDED BY " );
+                }
+                else
+                {
+                    INFO("CAN BE EXTENDED BY LONGER");
+                }
+                INFO(extends[i]);
+            }
+        }
+
+        */
 
         
 		for (auto it = pair_info_.begin(); it != pair_info_.end(); ++it) {

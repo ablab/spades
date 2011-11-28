@@ -39,7 +39,7 @@ enum simplification_mode
 enum info_printer_pos
 {
     ipp_default                   = 0,
-    ipp_before_simplifiaction        ,
+    ipp_before_simplification        ,
     ipp_tip_clipping                 ,
     ipp_bulge_removal                ,
     ipp_err_con_removal              ,
@@ -60,7 +60,7 @@ inline const char* info_printer_pos_name(size_t pos)
     const char* names[] =
     {
        "default"                ,
-       "before_simplifiaction"  ,
+       "before_simplification"  ,
        "tip_clipping"           ,
        "bulge_removal"          ,
        "err_con_removal"        ,
@@ -216,8 +216,13 @@ struct debruijn_config
 		bool   removal_checks_enabled;
 
 		//typedef map<>
-
 	};
+
+
+		std::string uncorrected_reads;
+		bool need_consensus;
+		bool path_set_graph;
+		simplification simp;
 
 	struct repeat_resolver {
 		bool symmetric_resolve;
@@ -304,10 +309,6 @@ public:
 	bool advanced_estimator_mode;
 	bool componential_resolve;
 
-	std::string uncorrected_reads;
-	bool need_consensus;
-
-	simplification              simp;
 	distance_estimator          de;
 	advanced_distance_estimator ade;
 	repeat_resolver             rr;
@@ -531,12 +532,12 @@ inline void load(boost::property_tree::ptree const& pt, debruijn_config& cfg) {
 	load(pt, "gap_closer", cfg.gc);
 	load(pt, "need_consensus", cfg.need_consensus);
 	load(pt, "uncorrected_reads", cfg.uncorrected_reads);
+	load(pt, "path_set_graph", cfg.path_set_graph);
 
 	load(pt, (cfg.ds.single_cell ? "sc_simplification" : "usual_simplification"), cfg.simp);
 
 	load(pt, "info_printers", cfg.info_printers);
 }
-
 
 
 

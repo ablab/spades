@@ -12,6 +12,7 @@
 #include "logging.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation_routine.hpp"
+#include "path_set_graph_constructor.hpp"
 #include "io/careful_filtering_reader_wrapper.hpp"
 #include "resolved_pair_info.hpp"
 //typedef io::IReader<io::SingleRead> ReadStream;
@@ -216,8 +217,15 @@ string GeneratePostfix(){
 		s += "early_pi_";
 	s += "k";
 	s += ToString(K);
-	s += "_nv";
-	s += ToString(cfg::get().rr.near_vertex);
+	if (cfg::get().path_set_graph){
+		s += "_path_set";
+	}
+	if (cfg::get().rr.mode == 2) {
+		s += "_mode2";
+	} else {
+		s += "_nv";
+		s += ToString(cfg::get().rr.near_vertex);
+	}
 	s += ".fasta";
 	return s;
 }
@@ -267,33 +275,39 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	string postfix = GeneratePostfix();
     typedef TotalLabelerGraphStruct<typename graph_pack::graph_t> total_labeler_gs;
     typedef TotalLabeler           <typename graph_pack::graph_t> total_labeler;
-
-
     total_labeler_gs graph_struct_before(origin_gp  .g, &origin_gp  .int_ids, &origin_gp  .edge_pos, NULL);
     total_labeler tot_labeler_before(&graph_struct_before);
 
-    omnigraph::WriteSimple(origin_gp.g, tot_labeler_before, cfg::get().output_dir + subfolder + graph_name + "_2_simplified.dot", "simplified_graph");
+
+	if (cfg::get().path_set_graph ) {
+		INFO("testing path-set graphs");
+		PathSetGraphConstructor<graph_pack> path_set_constructor(origin_gp, clustered_index,  resolved_gp);
+		path_set_constructor.ConstructOverlap();
+		unordered_map<typename graph_pack::graph_t::EdgeId, typename graph_pack::graph_t::EdgeId> edge_labels =
+		path_set_constructor.GetEdgeLabels();
+		labels_after.FillLabels(edge_labels);
+		INFO("testing ended");
+	}	else {
+
 //    CleanIsolated(origin_gp);
-    ResolveRepeats(origin_gp  .g, origin_gp  .int_ids, clustered_index, origin_gp  .edge_pos,
+		ResolveRepeats(origin_gp  .g, origin_gp  .int_ids, clustered_index, origin_gp  .edge_pos,
                    resolved_gp.g, resolved_gp.int_ids,                  resolved_gp.edge_pos,
                    cfg::get().output_dir + subfolder +"resolve_" + graph_name +  "/", labels_after);
 
     //Generating paired info for resolved graph
-    PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info(resolved_gp.g);
-    ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_graph_paired_info);
-    SaveResolvedPairedInfo(resolved_gp, resolved_graph_paired_info, graph_name + "_resolved", subfolder);
+		PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info(resolved_gp.g);
+		ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_graph_paired_info);
+		SaveResolvedPairedInfo(resolved_gp, resolved_graph_paired_info, graph_name + "_resolved", subfolder);
     //Paired info for resolved graph generated
-
+	}
     if (output_contigs) {
+
        	OutputContigs(resolved_gp.g, cfg::get().output_dir + "after_rr_before_simplify" + postfix);
     	OutputContigs(origin_gp.g, cfg::get().output_dir + "before_resolve" + postfix);
     }
     INFO("Total labeler start");
-
     total_labeler_gs graph_struct_after (resolved_gp.g, &resolved_gp.int_ids, &resolved_gp.edge_pos, &labels_after);
-
     total_labeler tot_labeler_after(&graph_struct_after, &graph_struct_before);
-
     omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after, cfg::get().output_dir + subfolder + graph_name + "_3_resolved.dot", "no_repeat_graph");
 
     INFO("Total labeler finished");
@@ -308,15 +322,22 @@ void process_resolve_repeats(graph_pack& origin_gp,
         ClipTipsForResolver(resolved_gp.g);
 //        BulgeRemoveWrap      (resolved_gp.g);
         RemoveLowCoverageEdges(resolved_gp.g, edge_remover, 3, i);
+
 //        RemoveRelativelyLowCoverageEdges(resolved_gp.g);
+        omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+
+        	cfg::get().output_dir + subfolder + ToString(i) +  "b_4_cleared.dot",
+        			"no_repeat_graph");
 	}
 
 	INFO("---Cleared---");
 
     //Generating paired info for resolved graph
     PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info(resolved_gp.g);
-    ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_cleared_graph_paired_info);
-    SaveResolvedPairedInfo(resolved_gp, resolved_cleared_graph_paired_info, graph_name + "_resolved_cleared", subfolder);
+    if (cfg::get().path_set_graph == false) {
+    	ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_cleared_graph_paired_info);
+    	SaveResolvedPairedInfo(resolved_gp, resolved_cleared_graph_paired_info, graph_name + "_resolved_cleared", subfolder);
+	}
     //Paired info for resolved graph generated
 
 	INFO("---Output Contigs---");
@@ -362,7 +383,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 		}
 
-		one_many_contigs_enlarger<typename graph_pack::graph_t> N50enlarger(
+/*		one_many_contigs_enlarger<typename graph_pack::graph_t> N50enlarger(
 				resolved_gp.g, cfg::get().ds.IS);
 		N50enlarger.Loops_resolve();
 
@@ -374,7 +395,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 		OutputContigs(resolved_gp.g,
 				cfg::get().output_dir + "unlooped" + postfix);
-
+*/
 //		N50enlarger.one_many_resolve_with_vertex_split();
 //
 //		omnigraph::WriteSimple(

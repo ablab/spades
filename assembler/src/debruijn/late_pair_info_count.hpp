@@ -18,7 +18,7 @@ void late_pair_info_count(conj_graph_pack& gp,
 	io::EasyReader<io::PairedRead> stream(
 			std::make_pair(reads_filename_1, reads_filename2),
 			cfg::get().ds.IS);
-
+	INFO("reads found");
 	exec_simplification(stream, gp, paired_index);
 
 	INFO("STAGE == Counting Late Pair Info");
