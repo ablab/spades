@@ -230,10 +230,12 @@ public:
 		return data_.size();
 	}
 
-	void AddPathSet(PathSet<EdgeId>& pathSet) {
+	int AddPathSet(PathSet<EdgeId>& pathSet) {
 		pathSet.SetId(maxId);
+		int tmp = maxId;
 		maxId++;
 		data_.insert(pathSet);
+		return tmp;
 	}
 
 	void DeletePathSet(PathSet<EdgeId>& pathSet) {

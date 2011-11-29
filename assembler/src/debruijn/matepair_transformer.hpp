@@ -49,7 +49,8 @@ void Transform(PathSetIndexData<EdgeId> & pathset_index)
                     PathSet<EdgeId> pathset(first_edge, second_edge, iter->d + gp.g.length(second_edge) , call_back.paths(), iter->weight);
 
                     PathSetFilter(pathset);
-                    pathset_index.AddPathSet(pathset);
+                    int res_id = pathset_index.AddPathSet(pathset);
+                    INFO("Has id " << res_id);
                 }
                 else
                 {

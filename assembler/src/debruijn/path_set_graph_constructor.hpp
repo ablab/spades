@@ -25,9 +25,15 @@ graph_pack& gp;
 const PairedInfoIndex<Graph>& pair_info_;
 graph_pack& new_gp;
 unordered_map<EdgeId, EdgeId> new_to_old;
+unordered_map<EdgeId, EdgeId> old_to_new;
+
 public:
 	PathSetGraphConstructor(graph_pack& gp, PairedInfoIndex<Graph>& clustered_index, graph_pack& new_gp): gp(gp), pair_info_(clustered_index), new_gp(new_gp)
-	{}
+	{
+		new_to_old.clear();
+		old_to_new.clear();
+
+	}
 
 	void ConstructOverlap() {
 		PathSetIndexData<EdgeId> PII ;
@@ -42,7 +48,7 @@ public:
 
 		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
 		{
-			DEBUG(str(*iter, gp));
+			INFO(str(*iter, gp));
 			//		DEBUG(tst());
 		}
 		DEBUG("FILTERED");
@@ -113,18 +119,29 @@ public:
 				}
 			}
 		}
+
+
 		INFO("Adding many-outgoing edges");
 		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
 		{
+			//if edge was added as a tail because of gap in coverage
 			if ((extentionMap[*iter].size() > 1)) {
-				VertexId v = new_gp.g.AddVertex();
-				new_gp.int_ids.AddVertexIntId(v, iter->id);
-				VertexId end = new_gp.g.AddVertex();
-				new_gp.int_ids.AddVertexIntId(end, - 10000 -new_gp.int_ids.ReturnIntId(end));
-				AddEdgeWithAllHandlers(v, end , iter->start);
+				INFO ("id: " << iter->id<< " fwd " <<extentionMap[*iter].size() << " bwd "<< backwardMap[*iter].size() << "  extentions: ");
+				if (old_to_new.find(iter->start) != old_to_new.end()) {
+					INFO("Edge" << gp.int_ids.ReturnIntId(iter->start) <<" already added!(as a tail?)");
+				} else {
+					for (auto tmp_iter = extentionMap[*iter].begin(); tmp_iter < extentionMap[*iter].end(); ++tmp_iter) {
+						INFO(tmp_iter->id);
+					}
+					VertexId v = new_gp.g.AddVertex();
+					new_gp.int_ids.AddVertexIntId(v, iter->id);
+					VertexId end = new_gp.g.AddVertex();
+					new_gp.int_ids.AddVertexIntId(end, - 10000 -new_gp.int_ids.ReturnIntId(end));
+					AddEdgeWithAllHandlers(v, end , iter->start);
+				}
 			}
 		}
-		//	map<VertexId, int> long_start_vertices;
+		//	map<VertexId, int> long_start_verticesmaxId;
 
 
 		INFO("adding isolated edges");
@@ -429,6 +446,7 @@ public:
 		WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge)  * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge] */));
 		new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
 		new_to_old.insert(make_pair(eid, old_first_edge));
+		old_to_new.insert(make_pair( old_first_edge, eid));
 		new_start = new_end;
 		DEBUG("edge added");
 		//DEBUG("and tail of length "<< iter->length);
