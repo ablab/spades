@@ -67,7 +67,7 @@ public:
 
 protected:
 	void DeleteEdge(EdgeId edge, bool delete_between_related = true) {
-		edge_remover_.DeleteEdge(edge);
+		edge_remover_.DeleteEdge(edge, delete_between_related);
 		changed_ = true;
 	}
 
