@@ -326,7 +326,9 @@ void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover, boost::f
 
 	INFO("Final ErroneousConnectionsRemoval");
 	bool changed = true;
+	size_t iteration_count = 0;
 	while (changed) {
+		INFO("Iteration " << iteration_count++);
 		changed = FinalRemoveErroneousEdges(graph, edge_remover);
 	}
 	printer(ipp_final_err_con_removal);
