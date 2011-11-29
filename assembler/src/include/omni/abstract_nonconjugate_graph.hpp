@@ -179,6 +179,21 @@ public:
 	typedef typename base::EdgeData EdgeData;
 	typedef typename base::VertexIterator VertexIterator;
 
+	virtual std::string PrintEdges(const vector<EdgeId>& path) const {
+		stringstream ss;
+		ss << "Edges: ";
+		for (auto it = path.begin(); it != path.end(); ++it) {
+			ss << PrintEdge(*it) << ", ";
+		}
+		return ss.str();
+	}
+
+	virtual std::string PrintEdge(EdgeId edge) const {
+		stringstream ss;
+//		ss << "Edge ";
+//		ss << edge << " (conjugate " << conjugate(edge) << ")";
+		return ss.str();
+	}
 private:
 
 	virtual VertexId HiddenAddVertex(const VertexData &data) {
