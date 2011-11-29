@@ -49,10 +49,10 @@ class ErroneousEdgeRemover {
 	typedef typename Graph::VertexId VertexId;
 	Graph& g_;
 	EdgeRemover<Graph>& edge_remover_;
-	bool changed_;
+	bool graph_changed_;
 public:
 	ErroneousEdgeRemover(Graph& g, EdgeRemover<Graph>& edge_remover) :
-			g_(g), edge_remover_(edge_remover), changed_(false) {
+			g_(g), edge_remover_(edge_remover), graph_changed_(false) {
 
 	}
 
@@ -62,13 +62,12 @@ public:
 
 	bool RemoveEdges() {
 		InnerRemoveEdges();
-		return changed_;
+		return graph_changed_;
 	}
 
 protected:
 	void DeleteEdge(EdgeId edge, bool delete_between_related = true) {
-		edge_remover_.DeleteEdge(edge, delete_between_related);
-		changed_ = true;
+		graph_changed_ = edge_remover_.DeleteEdge(edge, delete_between_related) || graph_changed_;
 	}
 
 	virtual void InnerRemoveEdges() = 0;

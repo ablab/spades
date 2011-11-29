@@ -1038,18 +1038,18 @@ public:
 		TRACE("Edge remover created. Checks enabled = " << checks_enabled);
 	}
 
-	void DeleteEdge(EdgeId e, bool delete_between_related = true) {
+	bool DeleteEdge(EdgeId e, bool delete_between_related = true) {
 		TRACE("Deletion of edge " << e << " was requested");
 		if (checks_enabled_ && !CheckAlternatives(e)) {
 			TRACE("Check of alternative edges failed");
-			return;
+			return false;
 		}
 		VertexId start = g_.EdgeStart(e);
 		VertexId end = g_.EdgeEnd(e);
 
 		if (!delete_between_related && g_.RelatedVertices(start, end)) {
 			TRACE("Start and end are related, will not delete");
-			return;
+			return false;
 		}
 
 		TRACE("Start " << start);
@@ -1070,6 +1070,7 @@ public:
         TRACE("Compressing start");
 		g_.CompressVertex(start);
         TRACE("Start compressed")
+		return true;
 	}
 
 private:
