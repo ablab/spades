@@ -213,7 +213,7 @@ public:
 		Kmer answer = kmer;
 		auto it = mapping_.find(answer);
 		while (it != mapping_.end()) {
-            VERIFY(it->first != it->second);
+			VERIFY(it->first != it->second);
 			answer = (*it).second;
 			it = mapping_.find(answer);
 		}
@@ -400,7 +400,8 @@ private:
 	}
 
 public:
-	ExtendedSequenceMapper(const Graph& g, /*todo delete*/const IdTrackHandler<Graph>& int_ids, const Index& index,
+	ExtendedSequenceMapper(const Graph& g, /*todo delete*/
+			const IdTrackHandler<Graph>& int_ids, const Index& index,
 			const KmerSubs& kmer_mapper) :
 			g_(g), int_ids_(int_ids), index_(index), kmer_mapper_(kmer_mapper) {
 	}
@@ -516,7 +517,8 @@ private:
 	}
 
 public:
-	NewExtendedSequenceMapper(const Graph& g, const IdTrackHandler<Graph>& int_ids, const Index& index,
+	NewExtendedSequenceMapper(const Graph& g,
+			const IdTrackHandler<Graph>& int_ids, const Index& index,
 			const KmerSubs& kmer_mapper) :
 			g_(g), int_ids_(int_ids), index_(index), kmer_mapper_(kmer_mapper) {
 	}
@@ -733,27 +735,26 @@ double KmerCountProductWeight(const MappingRange& mr1,
 	return mr1.initial_range.size() * mr2.initial_range.size();
 }
 
-
-ConjugateDeBruijnGraph::EdgeId conj_wrap(ConjugateDeBruijnGraph& g, ConjugateDeBruijnGraph::EdgeId e){
+ConjugateDeBruijnGraph::EdgeId conj_wrap(ConjugateDeBruijnGraph& g,
+		ConjugateDeBruijnGraph::EdgeId e) {
 	return g.conjugate(e);
 }
 
-NonconjugateDeBruijnGraph::EdgeId conj_wrap(NonconjugateDeBruijnGraph& g, NonconjugateDeBruijnGraph::EdgeId e){
+NonconjugateDeBruijnGraph::EdgeId conj_wrap(NonconjugateDeBruijnGraph& g,
+		NonconjugateDeBruijnGraph::EdgeId e) {
 	VERIFY(0);
 	return e;
 }
 
-template<class Graph>
-void WrappedSetCoverage(Graph& g, typename Graph::EdgeId e, int cov){
-	if (cfg::get().rr.symmetric_resolve == false) {
+void WrappedSetCoverage(ConjugateDeBruijnGraph& g,
+		ConjugateDeBruijnGraph::EdgeId e, int cov) {
 		g.coverage_index().SetCoverage(e, cov);
-	} else {
-		g.coverage_index().SetCoverage(e, cov);
-		typename Graph::EdgeId rc_e = conj_wrap(g, e);
-		g.coverage_index().SetCoverage(rc_e, cov);
+		g.coverage_index().SetCoverage(g.conjugate(e), cov);
+}
 
-	}
-
+void WrappedSetCoverage(NonconjugateDeBruijnGraph& g,
+		NonconjugateDeBruijnGraph::EdgeId e, int cov) {
+	g.coverage_index().SetCoverage(e, cov);
 }
 
 /**
@@ -819,9 +820,8 @@ private:
 
 public:
 
-	LatePairedIndexFiller(const Graph &graph,
-			const SequenceMapper& mapper, Stream& stream
-			, WeightF weight_f) :
+	LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper,
+			Stream& stream, WeightF weight_f) :
 			graph_(graph), mapper_(mapper), stream_(stream), weight_f_(weight_f) {
 
 	}
@@ -1060,15 +1060,17 @@ public:
 	KMerNeighborhoodFinder(const Graph &graph, Seq<k + 1> kp1mer,
 			EdgeIndex<k + 1, Graph> &index , size_t max_size
 			, size_t edge_length_bound) :
-			GraphSplitter<Graph>(graph), index_(index), kp1mer_(kp1mer), max_size_(max_size), edge_length_bound_(
-					edge_length_bound), finished_(false) {
+			GraphSplitter<Graph>(graph), index_(index), kp1mer_(kp1mer), max_size_(
+					max_size), edge_length_bound_(edge_length_bound), finished_(
+					false) {
 	}
 
 	virtual ~KMerNeighborhoodFinder() {
 	}
 
 	virtual vector<VertexId> NextComponent() {
-		CountingDijkstra<Graph> cf(this->graph(), max_size_, edge_length_bound_);
+		CountingDijkstra<Graph> cf(this->graph(), max_size_,
+				edge_length_bound_);
 		EdgeId edge = index_.get(kp1mer_).first;
 		set<VertexId> result_set;
 		cf.run(this->graph().EdgeStart(edge));
@@ -1079,7 +1081,7 @@ public:
 		result_set.insert(result_end.begin(), result_end.end());
 		finished_ = true;
 		vector<VertexId> result;
-		for(auto it = result_set.begin(); it != result_set.end(); ++it)
+		for (auto it = result_set.begin(); it != result_set.end(); ++it)
 			result.push_back(*it);
 		return result;
 	}
