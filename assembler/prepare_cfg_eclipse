@@ -22,8 +22,16 @@ cd ../hammer
 cp -n "hammer release.launch.template" "hammer release.launch"
 cp -n "hammer debug.launch.template" "hammer debug.launch"
 
+cd ../test/debruijn
+cp -n "debruijn_test release.launch.template" "debruijn_test release.launch"
+cp -n "debruijn_test debug.launch.template" "debruijn_test debug.launch"
+
+cd ../include_test
+cp -n "include_test release.launch.template" "include_test release.launch"
+cp -n "include_test debug.launch.template" "include_test debug.launch"
+
 # going to root folder (assembler)
-cd ../..
+cd ../../..
 
 # preparing makefile for all projects and both configurations
 rm -rf build/*
