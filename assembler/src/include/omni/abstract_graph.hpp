@@ -35,7 +35,7 @@ public:
 		TRACE("~AbstractGraph");
 	}
 
-	const IdTrackHandler<AbstractGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> &int_ids() {
+	const IdTrackHandler<AbstractGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> &int_ids() const {
 		return int_ids_;
 	}
 

@@ -10,8 +10,8 @@
 namespace omnigraph {
 
 template<class Graph>
-class AdvancedDistanceEstimator: public DistanceEstimator<Graph> {
-private:
+class AdvancedDistanceEstimator: public AbstractDistanceEstimator<Graph> {
+	typedef AbstractDistanceEstimator<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef std::pair<int, int> interval;
 
@@ -30,7 +30,6 @@ private:
             res = -res;
         return res;
     }
-
 
 	vector<pair<size_t, double> > EstimateEdgePairDistances(vector<PairInfo<EdgeId> > data, vector<size_t> forward) {
         vector<pair<size_t, double> > result;
@@ -79,40 +78,11 @@ private:
 		return result;
 	}
 
-    //vector<PairInfo<EdgeId> > ClusterResult(EdgeId edge1, EdgeId edge2, vector<pair<size_t, double> > estimated){
-        //vector<PairInfo<EdgeId> > result;
-        //for (size_t i = 0; i < estimated.size(); i++){
-            //PairInfo<EdgeId> new_info(edge1, edge2, estimated[i].first, estimated[i].second, 0);
-            
-            //result.push_back(new_info);
-        //}
-        //return result;
-    //}
-
-	vector<PairInfo<EdgeId> > ClusterResult(EdgeId edge1, EdgeId edge2, vector<
-			pair<size_t, double> > estimated) {
-		vector < PairInfo < EdgeId >> result;
-		for (size_t i = 0; i < estimated.size(); i++) {
-			size_t left = i;
-			double weight = estimated[i].second;
-			while (i + 1 < estimated.size() && estimated[i + 1].first
-					- estimated[i].first <= this->linkage_distance_) {
-				i++;
-				weight += estimated[i].second;
-			}
-			double center = (estimated[left].first + estimated[i].first) * 0.5;
-			double var = (estimated[i].first - estimated[left].first) * 0.5;
-			PairInfo < EdgeId > new_info(edge1, edge2, center, weight, var);
-			result.push_back(new_info);
-		}
-		return result;
-	}
-
 public:
-	AdvancedDistanceEstimator(Graph &graph, PairedInfoIndex<Graph> &histogram, IdTrackHandler<Graph> &int_ids, size_t insert_size, size_t read_length, size_t delta, size_t linkage_distance, size_t max_distance, size_t threshold, double range_coeff, double delta_coeff, 
+	AdvancedDistanceEstimator(const Graph &graph, const PairedInfoIndex<Graph> &histogram, const GraphDistanceFinder<Graph>& dist_finder, size_t linkage_distance, size_t threshold, double range_coeff, double delta_coeff,
     size_t cutoff, size_t minpeakpoints, double inv_density, double percentage, double derivative_threshold) : 
-    DistanceEstimator<Graph>::DistanceEstimator(graph, histogram, int_ids, insert_size, read_length, delta, linkage_distance, max_distance), 
-    range_coeff_(range_coeff), delta_coeff_(delta_coeff), cutoff_(cutoff), minpeakpoints_(minpeakpoints), inv_density_(inv_density), percentage_(percentage), derivative_threshold_(derivative_threshold){  
+    base(graph, histogram, dist_finder, linkage_distance),
+    range_coeff_(range_coeff), delta_coeff_(delta_coeff), cutoff_(cutoff), minpeakpoints_(minpeakpoints), inv_density_(inv_density), percentage_(percentage), derivative_threshold_(derivative_threshold) {
 	        INFO("Advanced Estimator started");
             Threshold = threshold;
     }
@@ -154,13 +124,13 @@ public:
 		return result;
 	}
 
-	virtual void Estimate(PairedInfoIndex<Graph> &result) {
-		for (auto iterator = this->histogram_.begin(); iterator != this->histogram_.end(); ++iterator) {
+	void Estimate(PairedInfoIndex<Graph> &result) {
+		for (auto iterator = this->histogram().begin(); iterator != this->histogram().end(); ++iterator) {
 			vector<PairInfo<EdgeId> > data = *iterator;
 			EdgeId first = data[0].first;
 			EdgeId second = data[0].second;
-            int firstNumber =  this->int_ids_.ReturnIntId(first); 
-            int secondNumber =  this->int_ids_.ReturnIntId(second); 
+            int firstNumber =  this->graph().int_ids().ReturnIntId(first);
+            int secondNumber =  this->graph().int_ids().ReturnIntId(second);
 
             DEBUG("Estimating edges number : " << firstNumber << " " << secondNumber); 
             vector<size_t> forward = this->GetGraphDistances(first, second);

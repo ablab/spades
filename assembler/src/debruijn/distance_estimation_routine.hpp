@@ -32,11 +32,12 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 
 	if (cfg::get().paired_mode) {
 		CloseShortGaps(gp.g, paired_index, gp.edge_pos,	cfg::get().gc.minimal_intersection);
+
+		GraphDistanceFinder<Graph> dist_finder(gp.g, cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta);
 		if (cfg::get().advanced_estimator_mode) {
-			AdvancedDistanceEstimator<Graph> estimator(gp.g, paired_index,
-					gp.int_ids, cfg::get().ds.IS, cfg::get().ds.RL,
-					cfg::get().de.delta, cfg::get().de.linkage_distance,
-					cfg::get().de.max_distance, cfg::get().ade.threshold,
+			AdvancedDistanceEstimator<Graph> estimator(gp.g, paired_index, dist_finder,
+					cfg::get().de.linkage_distance,
+					cfg::get().ade.threshold,
 					cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff,
 					cfg::get().ade.cutoff, cfg::get().ade.minpeakpoints,
 					cfg::get().ade.inv_density, cfg::get().ade.percentage,
@@ -55,9 +56,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 //            cout << "TotalPositiveWeight = " << TotalPositiveWeight(gp, paired_index, e1, e2) << endl;
 
 			INFO("Estimating distances");
-			DistanceEstimator<Graph> estimator(gp.g, paired_index, gp.int_ids,
-					cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
-					cfg::get().de.linkage_distance, cfg::get().de.max_distance);
+			DistanceEstimator<Graph> estimator(gp.g, paired_index, dist_finder, cfg::get().de.linkage_distance, cfg::get().de.max_distance);
 
 			paired_info_index raw_clustered_index(gp.g);
 			estimator.Estimate(raw_clustered_index);
@@ -148,9 +147,9 @@ void count_estimated_info_stats(conj_graph_pack& gp,
             for (auto point = pair_info.begin(); point != pair_info.end(); point++) 
                 corrected_etalon_index.AddPairInfo(*point);
     }
-     
-    DistanceEstimator<Graph> estimator(gp.g, corrected_etalon_index, gp.int_ids,
-            cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta,
+
+    GraphDistanceFinder<Graph> dist_finder(gp.g, cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta);
+    DistanceEstimator<Graph> estimator(gp.g, corrected_etalon_index, dist_finder,
             0, 4);
     paired_info_index raw_clustered_index(gp.g);
     estimator.Estimate(raw_clustered_index);

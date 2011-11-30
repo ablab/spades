@@ -131,11 +131,11 @@ const PairInfo<EdgeId> MaxPairInfo(EdgeId e1, EdgeId e2) {
  * Method returns approximate distance between occurrences of edges in genome rounded to the nearest
  * integer. In case of a tie closest to 0 value is chosen thus one can assume that distance
  * is rounded the same way as opposite one.
- * todo check that written here is true and rewrite without e
+ * todo check that written here is true
  */
 template<typename EdgeId>
 int rounded_d(PairInfo<EdgeId> const& pi) {
-	int res = (int) (std::abs(pi.d) + 0.5 + 1e-9);
+	int res = (int) math::round(std::abs(pi.d));
 	if (pi.d < 0)
 		res = -res;
 	return res;
@@ -747,7 +747,6 @@ const PairInfo<typename Graph::EdgeId> TrivialWeightNormalization(
 		const PairInfo<typename Graph::EdgeId>& pair_info) {
 	return pair_info;
 }
-;
 
 template<class Graph>
 class PairedInfoNormalizer {

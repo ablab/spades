@@ -921,11 +921,11 @@ template<class Graph>
 class DifferentDistancesCallback: public PathProcessor<Graph>::Callback {
 	typedef typename Graph::EdgeId EdgeId;
 
-	Graph& g_;
+	const Graph& g_;
 	set<size_t> distances_;
 
 public:
-	DifferentDistancesCallback(Graph& g) :
+	DifferentDistancesCallback(const Graph& g) :
 		g_(g) {
 
 	}
