@@ -322,7 +322,7 @@ void SimplificationCycle(Graph &graph, EdgeRemover<Graph> &edge_remover, boost::
 }
 
 void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover, boost::function<void(EdgeId)> &removal_handler_f,
-		detail_info_printer &printer, size_t iteration_count) {
+		detail_info_printer &printer) {
 
 	INFO("Final ErroneousConnectionsRemoval");
 	bool changed = true;
@@ -369,7 +369,6 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 		&qual_removal_handler,
 		_1);
 
-
 	EdgeRemover<Graph> edge_remover(gp.g, cfg::get().simp.removal_checks_enabled, removal_handler_f);
 
 //	PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
@@ -378,7 +377,7 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 		SimplificationCycle(gp.g, edge_remover, removal_handler_f, printer, iteration_count, i);
 	}
 
-	PostSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
+	PostSimplification(gp.g, edge_remover, removal_handler_f, printer);
 	INFO("Graph simplification finished");
 }
 
