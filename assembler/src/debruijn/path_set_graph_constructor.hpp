@@ -155,7 +155,7 @@ public:
 				flag = 1;
 			if ((gp.g.CheckUniqueOutgoingEdge(start) && gp.g.IsDeadStart(start) && gp.g.CheckUniqueIncomingEdge(end) && gp.g.IsDeadEnd(end)) || flag ) {
 				if (flag) {
-					WARN(" adding non isolated, non added edge: " << new_gp.int_ids.ReturnIntId(*iter));
+					WARN(" adding non isolated, non added edge: " << gp.int_ids.ReturnIntId(*iter));
 				}
 				VertexId new_start = new_gp.g.AddVertex();
 				VertexId new_end = new_gp.g.AddVertex();
