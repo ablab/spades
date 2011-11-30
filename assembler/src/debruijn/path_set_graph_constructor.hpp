@@ -149,8 +149,14 @@ public:
 		for(auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 			VertexId start = gp.g.EdgeStart(*iter);
 			VertexId end = gp.g.EdgeEnd(*iter);
+			int flag = 0;
 			TRACE (gp.g.CheckUniqueOutgoingEdge(start)<<" "<<  gp.g.IsDeadStart(start) <<" "<< gp.g.CheckUniqueIncomingEdge(end) <<" "<<gp.g.IsDeadEnd(end));
-			if (gp.g.CheckUniqueOutgoingEdge(start) && gp.g.IsDeadStart(start) && gp.g.CheckUniqueIncomingEdge(end) && gp.g.IsDeadEnd(end) ) {
+			if (old_to_new.find(*iter) == old_to_new.end())
+				flag = 1;
+			if ((gp.g.CheckUniqueOutgoingEdge(start) && gp.g.IsDeadStart(start) && gp.g.CheckUniqueIncomingEdge(end) && gp.g.IsDeadEnd(end)) || flag ) {
+				if (flag) {
+					WARN(" adding non isolated, non added edge: " << new_gp.int_ids.ReturnIntId(*iter));
+				}
 				VertexId new_start = new_gp.g.AddVertex();
 				VertexId new_end = new_gp.g.AddVertex();
 				new_gp.int_ids.AddVertexIntId(new_start, - 100000 -new_gp.int_ids.ReturnIntId(new_start));
