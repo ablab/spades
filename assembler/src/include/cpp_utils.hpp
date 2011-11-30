@@ -13,7 +13,6 @@ namespace utils
 {
 
 // arrays
-
 template <class T, size_t N>
 size_t array_size(T (&arr)[N])
 {

@@ -7,9 +7,7 @@
 #include "dijkstra.hpp"
 #include "xmath.h"
 #include <cmath>
-#include <iterator>
-#include <vector>
-#include <boost/function.hpp>
+#include "elapsed_timer.h"
 
 namespace omnigraph {
 using std::vector;
@@ -673,6 +671,28 @@ public:
 };
 
 template<class Graph>
+class BackwardReliableBoundedDijkstra: public BackwardDijkstra<Graph> {
+private:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef BackwardDijkstra<Graph> super;
+	const size_t bound_;
+	const size_t max_vertex_number_;
+	size_t vertices_number_;
+
+public:
+	BackwardReliableBoundedDijkstra(const Graph &g, size_t bound, size_t max_vertex_number) :
+		super(g), bound_(bound), max_vertex_number_(max_vertex_number) {
+	}
+
+	virtual bool CheckProcessVertex(VertexId vertex, size_t distance) {
+		vertices_number_++;
+		return vertices_number_ < max_vertex_number_ && distance <= bound_;
+	}
+
+};
+
+template<class Graph>
 const string PrintPath(Graph& g, const vector<typename Graph::EdgeId>& edges) {
 	string delim = "";
 	stringstream ss;
@@ -710,7 +730,8 @@ private:
 
 	size_t call_cnt_;
 
-	static const size_t MAX_CALL_CNT = 2000;
+	static const size_t MAX_CALL_CNT          = 2000;
+	static const size_t MAX_DIJKSTRA_VERTICES = 3000;
 
 	//todo rewrite without recursion
 	void Go(VertexId v, size_t current_path_length,
@@ -774,13 +795,24 @@ public:
 
 	void Process() {
 		TRACE("Backward dijkstra creation started");
-		BackwardBoundedDijkstra<Graph> backward_dijkstra(g_, max_length_);
+		BackwardReliableBoundedDijkstra<Graph> backward_dijkstra(g_, max_length_, MAX_DIJKSTRA_VERTICES);
 		TRACE("Backward dijkstra created with bound " << max_length_);
 		TRACE("Backward dijkstra started");
+
+		elapsed_timer t;
 		backward_dijkstra.run(end_);
+
+		double elapsed = t.elapsed();
+		if (elapsed > 1e-4)
+		{
+			INFO("Too much time for dijkstra: " << elapsed);
+		}
+
 		TRACE("Backward dijkstra finished");
 		TRACE("Starting recursive traversal");
 		Go(start_, 0, backward_dijkstra);
+		if(call_cnt_ > 10)
+			INFO("number of calls: " << call_cnt_);
 		TRACE("Recursive traversal finished");
 	}
 

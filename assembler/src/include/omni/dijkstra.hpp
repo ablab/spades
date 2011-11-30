@@ -96,6 +96,8 @@ public:
 				VertexId>> , ReverseComparator<pair<distance_t, VertexId>> > q;
 		q.push(make_pair(0, start));
 		TRACE("Priority queue initialized. Starting search");
+
+		size_t it_num = 0;
 		while (!q.empty() && !finished()) {
 			TRACE("Dijkstra iteration started");
 			auto next = q.top();
@@ -115,11 +117,14 @@ public:
 			TRACE(
 					"Vertex " << vertex << " is found to be at distance "
 							<< distance << " from vertex " << start);
+
+
 			if (!CheckProcessVertex(vertex, distance)) {
-				TRACE(
-						"Check for processing vertex failed. Proceeding to the next queue entry.");
+				VERBOSE_T(it_num, 1000, "Check for processing vertex failed. Proceeding to the next queue entry.");
+				++it_num;
 				continue;
 			}
+
 			auto neighbours = Neighbours(vertex);
 			TRACE(
 					"Neighbours of vertex " << vertex

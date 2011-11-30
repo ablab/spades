@@ -277,6 +277,8 @@ void ProduceDetailedInfo(
 
     debruijn_config::info_printer const& config = it->second;
 
+    make_dir(folder);
+
     if (config.print_stats)
     {
         INFO("Printing statistics for " << details::info_printer_pos_name(pos));

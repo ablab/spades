@@ -13,6 +13,7 @@
 #include "omni_utils.hpp"
 #include "xmath.h"
 #include "sequence/sequence_tools.hpp"
+#include "elapsed_timer.h"
 
 namespace omnigraph {
 
@@ -228,19 +229,30 @@ template<class Graph>
 void BulgeRemover<Graph>::RemoveBulges() {
 	TRACE("Bulge remove process started");
 
+	size_t it_count = 0;
+
+	INFO("RemoveBulges function started");
+
 	CoverageComparator<Graph> comparator(g_);
 	for (auto iterator = g_.SmartEdgeBegin(comparator); !iterator.IsEnd();
 			++iterator) {
+
 		EdgeId edge = *iterator;
+
+		VERBOSE_T(it_count, 1000, "bulge iteration processing ");
+		++it_count;
+
 		TRACE(
 				"Considering edge of length " << g_.length(edge)
 						<< " and avg coverage " << g_.coverage(edge));
 		TRACE("Is possible bulge " << PossibleBulgeEdge(edge));
+
 		if (PossibleBulgeEdge(edge)) {
+
 			size_t kplus_one_mer_coverage = math::round(
 					g_.length(edge) * g_.coverage(edge));
-			TRACE(
-					"Processing edge " << g_.str(edge) << " and coverage "
+
+			TRACE("Processing edge " << g_.str(edge) << " and coverage "
 							<< kplus_one_mer_coverage);
 
 			VertexId start = g_.EdgeStart(edge);
@@ -261,25 +273,29 @@ void BulgeRemover<Graph>::RemoveBulges() {
 
 			const vector<EdgeId>& path = path_chooser.most_covered_path();
 			double path_coverage = path_chooser.max_coverage();
-			TRACE(
-					"Best path with coverage " << path_coverage << " is "
-							<< PrintPath < Graph > (g_, path));
+
+			TRACE("Best path with coverage " << path_coverage << " is " << PrintPath < Graph > (g_, path));
 
 			//if edge was returned, this condition will fail
 			if (BulgeCondition(edge, path, path_coverage)) {
+
 				TRACE("Satisfied condition");
-				if (opt_callback_) {
+
+				if (opt_callback_)
 					opt_callback_(edge, path);
-				}
-				if (removal_handler_) {
+
+				if (removal_handler_)
 					removal_handler_(edge);
-				}
+
 				TRACE("Projecting edge " << g_.str(edge));
 				ProcessBulge(edge, path);
+
 				TRACE("Compressing start of edge " << edge)
 				g_.CompressVertex(start);
+
 				TRACE("Compressing end of edge " << edge)
 				g_.CompressVertex(end);
+
 			} else {
 				TRACE("Didn't satisfy condition");
 			}

@@ -350,7 +350,7 @@ SC_HAMMER_1410_CROPPED
 }
 
 
-JCVI_Ecoli_cleared
+SC_Ecoli_cleared
 {
         first	JCVI/JCVI_control_MDA_Ecoli_2911/hammer/00.reads.left.corrected.fastq.gz
         second	JCVI/JCVI_control_MDA_Ecoli_2911/hammer/00.reads.right.corrected.fastq.gz
