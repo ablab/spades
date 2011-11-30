@@ -680,6 +680,7 @@ private:
 	PairedInfoIndex<Graph> perfect_matches_;
 	PairedInfoIndex<Graph> imperfect_matches_;
 	PairedInfoIndex<Graph> false_negatives_;
+	PairedInfoIndex<Graph> all_paths_;
 
 //	PairedInfoIndex<Graph> false_positive_weights_;
 //	set<Info> false_positive_infos_;
@@ -882,17 +883,17 @@ public:
 			const EdgeQuality<Graph>& quality,
 			const PairedInfoIndex<Graph>& pair_info,
 			const PairedInfoIndex<Graph>& estimated_pair_info,
-			const PairedInfoIndex<Graph>& etalon_pair_info,
-            DistanceEstimator<Graph>& estimator) :
+			const PairedInfoIndex<Graph>& etalon_pair_info) :
 			graph_(graph), int_ids_(int_ids), quality_(quality), pair_info_(pair_info), estimated_pair_info_(
 					estimated_pair_info), etalon_pair_info_(etalon_pair_info), false_positives_(
 					graph_), perfect_matches_(graph_), imperfect_matches_(
-					graph_), false_negatives_(graph_){
+					graph_), false_negatives_(graph_), all_paths_(graph_) {
 	}
 
 	virtual ~EstimationQualityStat() {
 	}
 
+	//todo do we need to count it from initial pair info
     void GetAllDistances(PairedInfoIndex<Graph> &result, const GraphDistanceFinder<Graph>& dist_finder) {
         for (auto iter = pair_info_.begin(); iter != pair_info_.end(); ++iter){
             vector < PairInfo<EdgeId> > data = *iter;
@@ -923,24 +924,8 @@ public:
 		//		DEBUG("Handling pairs that are not in etalon information");
 		HandlePairsNotInEtalon(pairs_in_etalon);
 
+        GetAllDistances(all_paths_, GraphDistanceFinder<Graph>(graph_, cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta));
 
-        PairedInfoIndex<Graph> all_paths(graph_);
-        GetAllDistances(all_paths, GraphDistanceFinder<Graph>(graph_, cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta));
-
-		//saving results
-		string dir_name = cfg::get().output_dir + "estimation_qual/";
-		make_dir(dir_name);
-		typename PrinterTraits<Graph>::Printer printer(graph_, int_ids_);
-		printer.savePaired(dir_name + "fp", false_positives_);
-		printer.savePaired(dir_name + "pm", perfect_matches_);
-		printer.savePaired(dir_name + "im", imperfect_matches_);
-		printer.savePaired(dir_name + "fn", false_negatives_);
-        printer.savePaired(dir_name + "paths", all_paths);
-        
-//		ReportFalsePositiveWeights();
-//		ReportPerfectMatchWeights();
-//		ReportImperfectMatchWeights();
-//		FalseNegativeCount();
 		INFO("Distance estimation statistics counted");
 	}
 
@@ -958,6 +943,32 @@ public:
 
 	const PairedInfoIndex<Graph>& false_negatives() {
 		return false_negatives_;
+	}
+
+	const PairedInfoIndex<Graph>& all_paths() {
+		return all_paths_;
+	}
+
+	double fpr() {
+		return 1. * false_positives_.size() / estimated_pair_info_.size();
+	}
+
+	double fnr() {
+		return 1. * false_negatives_.size() / etalon_pair_info_.size();
+	}
+
+	void SaveStats() {
+		//saving results
+		INFO("Saving estimation statistic");
+		string dir_name = cfg::get().output_dir + "estimation_qual/";
+		make_dir(dir_name);
+		typename PrinterTraits<Graph>::Printer printer(graph_, int_ids_);
+		printer.savePaired(dir_name + "fp", false_positives_);
+		printer.savePaired(dir_name + "pm", perfect_matches_);
+		printer.savePaired(dir_name + "im", imperfect_matches_);
+		printer.savePaired(dir_name + "fn", false_negatives_);
+        printer.savePaired(dir_name + "paths", all_paths_);
+		INFO("Estimation statistics saved");
 	}
 
 //	vector<double> false_positive_weights() {

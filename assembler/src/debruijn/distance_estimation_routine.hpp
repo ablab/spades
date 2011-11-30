@@ -123,6 +123,11 @@ void save_distance_estimation(conj_graph_pack& gp,
 	PrintAll(p.string(), gp, paired_index, clustered_index);
 }
 
+void preprocess_etalon_index(paired_info_index& raw_paired_index,
+		paired_info_index& processed_paired_index) {
+
+}
+
 void count_estimated_info_stats(conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index) {
 	paired_info_index etalon_paired_index(gp.g);
@@ -134,32 +139,34 @@ void count_estimated_info_stats(conj_graph_pack& gp,
 			etalon_paired_index);
 	//temporary
 
-//    typedef typename Graph::EdgeId EdgeId;
     INFO("Correction of etalon paired info has been started");
     std::set<std::pair<Graph::EdgeId, Graph::EdgeId> > setEdgePairs;
-    for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter) 
+    for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter)
         setEdgePairs.insert(std::make_pair((*iter)[0].first, (*iter)[0].second));
 
-    paired_info_index corrected_etalon_index(gp.g);
+    //leave only info between edges both present in paired_index
+    paired_info_index filtered_etalon_index(gp.g);
     for (auto iter = etalon_paired_index.begin(); iter != etalon_paired_index.end(); ++iter){
         std::vector<omnigraph::PairInfo<EdgeId> > pair_info = *iter;
-        if (setEdgePairs.count(std::make_pair(pair_info[0].first, pair_info[0].second)) > 0) 
-            for (auto point = pair_info.begin(); point != pair_info.end(); point++) 
-                corrected_etalon_index.AddPairInfo(*point);
+        if (setEdgePairs.count(std::make_pair(pair_info[0].first, pair_info[0].second)) > 0)
+            for (auto point = pair_info.begin(); point != pair_info.end(); point++)
+                filtered_etalon_index.AddPairInfo(*point);
     }
 
     GraphDistanceFinder<Graph> dist_finder(gp.g, cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta);
-    DistanceEstimator<Graph> estimator(gp.g, corrected_etalon_index, dist_finder,
+    DistanceEstimator<Graph> estimator(gp.g, filtered_etalon_index, dist_finder,
             0, 4);
-    paired_info_index raw_clustered_index(gp.g);
-    estimator.Estimate(raw_clustered_index);
-	data_printer.savePaired(cfg::get().output_dir + "etalon_paired_filtered",
-			corrected_etalon_index);
-	data_printer.savePaired(cfg::get().output_dir + "etalon_paired_corrected",
-			raw_clustered_index);
-    INFO("Correction's finished");
 
-	CountClusteredPairedInfoStats(gp, paired_index, clustered_index, raw_clustered_index, estimator, cfg::get().output_dir);
+    //push etalon info through estimator
+    paired_info_index clustered_etalon_index(gp.g);
+    estimator.Estimate(clustered_etalon_index);
+	data_printer.savePaired(cfg::get().output_dir + "etalon_paired_filtered",
+			filtered_etalon_index);
+	data_printer.savePaired(cfg::get().output_dir + "etalon_paired_corrected",
+			clustered_etalon_index);
+    INFO("Correction finished");
+
+	CountClusteredPairedInfoStats(gp, paired_index, clustered_index, clustered_etalon_index, cfg::get().output_dir);
 }
 
 void exec_distance_estimation(conj_graph_pack& gp,
