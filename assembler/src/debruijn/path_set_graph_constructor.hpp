@@ -72,7 +72,7 @@ public:
 			//		DEBUG(tst());
 		}
 		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter) {
-			INFO ("id: " << iter->id<< " fwd " <<extentionMap[*iter].size() << " bwd "<< backwardMap[*iter].size());
+			DEBUG ("id: " << iter->id<< " fwd " <<extentionMap[*iter].size() << " bwd "<< backwardMap[*iter].size());
 		}
 		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter) {
 			if ((extentionMap[*iter].size() <= 1) && (backwardMap[*iter].size() != 1)) {

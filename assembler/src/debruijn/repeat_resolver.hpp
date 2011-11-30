@@ -754,7 +754,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		}
 	}
 
-	INFO("process global cheaters");
+	TRACE("process global cheaters");
 	/*int my_s = 0;
 	for( auto itcp = OldCopyCnt.begin(); itcp != OldCopyCnt.end(); ++itcp){
 		assert(itcp->second >= 0);
@@ -784,9 +784,9 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		}
 	}
 
-	INFO("split finished, deleting vertex");
+	TRACE("split finished, deleting vertex");
 	new_graph.ForceDeleteVertex(v);
-	INFO("Delete ok");
+	TRACE("Delete ok");
 
 	return res;
 
