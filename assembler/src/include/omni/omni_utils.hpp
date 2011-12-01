@@ -814,15 +814,14 @@ public:
 		double elapsed = t.elapsed();
 		if (elapsed > 1e-4)
 		{
-			//todo why INFO?!!!
-			INFO("Too much time for dijkstra: " << elapsed);
+			DEBUG("Too much time for dijkstra: " << elapsed);
 		}
 
 		TRACE("Backward dijkstra finished");
 		TRACE("Starting recursive traversal");
 		Go(start_, 0, backward_dijkstra);
 		if(call_cnt_ > 10)
-			INFO("number of calls: " << call_cnt_);
+			DEBUG("number of calls: " << call_cnt_);
 		TRACE("Recursive traversal finished");
 	}
 
