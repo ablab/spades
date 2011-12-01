@@ -43,7 +43,7 @@ struct KMerNo {
 	};
 
 	struct string_hash {
-		uint64_t operator() (const string &kn) const;
+		uint64_t operator() (const std::string &kn) const;
 	};
 
 	struct are_equal {

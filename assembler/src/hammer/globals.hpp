@@ -24,7 +24,7 @@ struct Globals {
 	static bool regular_threshold_for_correction;
 	static double special_nonsingleton_threshold;
 	static bool discard_only_singletons;
-	static string kmers_after_clustering;
+	static std::string kmers_after_clustering;
 	static bool use_true_likelihood;
 
 	static bool conserve_memory;
