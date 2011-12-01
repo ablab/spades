@@ -430,6 +430,7 @@ public:
 				edge_length_bound_);
 		cf.run(*current_);
 		TRACE("Search finished");
+		//TODO Refactor this!!!!
 		vector < VertexId > result_vector = cf.VisitedVertices();
 		set < VertexId > result(result_vector.begin(), result_vector.end());
 		visited_.insert(result.begin(), result.end());
@@ -518,6 +519,9 @@ public:
 		vector < VertexId > result = cf.VisitedVertices();
 		last_component_.clear();
 		last_component_.insert(result.begin(), result.end());
+		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
+		cc.CloseComponent(last_component_);
+
 		VERIFY(EdgeCovered(genome_path_[current_index_].first));
 		last_component_.insert(result.begin(), result.end());
 		TRACE("Component vector filled");
