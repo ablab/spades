@@ -580,7 +580,7 @@ void resolve_repeats() {
 		FillEdgesPos(conj_gp, cfg::get().pos.contigs_for_threading, 10000);
 	}
 	
-	tSeparatedStats(conj_gp, conj_gp.genome, clustered_index);
+	//tSeparatedStats(conj_gp, conj_gp.genome, clustered_index);
 	
 	INFO("STAGE == Resolving Repeats");
 
