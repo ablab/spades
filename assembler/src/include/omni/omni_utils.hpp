@@ -682,7 +682,7 @@ private:
 
 public:
 	BackwardReliableBoundedDijkstra(const Graph &g, size_t bound, size_t max_vertex_number) :
-		super(g), bound_(bound), max_vertex_number_(max_vertex_number) {
+		super(g), bound_(bound), max_vertex_number_(max_vertex_number), vertices_number_(0) {
 	}
 
 	virtual bool CheckProcessVertex(VertexId vertex, size_t distance) {
@@ -736,7 +736,7 @@ private:
 	//todo rewrite without recursion
 	void Go(VertexId v, size_t current_path_length,
 			Dijkstra<Graph>& distances_to_end) {
-		TRACE("Processing vertex " << v << " started");
+		TRACE("Processing vertex " << v << " started; current path length " << current_path_length);
 		call_cnt_++;
 		if (call_cnt_ == MAX_CALL_CNT) {
 			DEBUG(
@@ -748,8 +748,17 @@ private:
 
 		if (!distances_to_end.DistanceCounted(v)
 				|| distances_to_end.GetDistance(v) + current_path_length
-						> max_length_)
+						> max_length_) {
+			if (!distances_to_end.DistanceCounted(v)) {
+				TRACE("Shortest distance from this vertex wasn't counted");
+			} else if (distances_to_end.GetDistance(v) + current_path_length
+					> max_length_) {
+				TRACE("Shortest distance from this vertex is " << distances_to_end.GetDistance(v)
+						<< " and sum with current path length " << current_path_length
+						<< " exceeded max length " << max_length_);
+			}
 			return;
+		}
 		TRACE("Vetex " << v << " should be processed");
 
 		if (v == end_ && current_path_length >= min_length_) {
@@ -805,6 +814,7 @@ public:
 		double elapsed = t.elapsed();
 		if (elapsed > 1e-4)
 		{
+			//todo why INFO?!!!
 			INFO("Too much time for dijkstra: " << elapsed);
 		}
 
