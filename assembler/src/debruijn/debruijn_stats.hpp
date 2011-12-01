@@ -135,12 +135,12 @@ void CountPairedInfoStats(const Graph &g,
 
 void FillAndCorrectEtalonPairedInfo (
 		paired_info_index &final_etalon_paired_index, const conj_graph_pack &gp,
-		const paired_info_index &paired_index, size_t insert_size, size_t read_length, double delta,
+		const paired_info_index &paired_index, size_t insert_size, size_t read_length, size_t delta,
 		bool save_etalon_info_history = false) {
 	INFO("Filling etalon paired index");
 	paired_info_index etalon_paired_index(gp.g);
 	FillEtalonPairedIndex<debruijn_graph::K>(etalon_paired_index, gp.g,
-			gp.index, gp.kmer_mapper, gp.genome);
+			gp.index, gp.kmer_mapper, insert_size, read_length, delta, gp.genome);
 	INFO("Etalon paired index filled");
 
 	INFO("Correction of etalon paired info has been started");
@@ -186,6 +186,30 @@ void FillAndCorrectEtalonPairedInfo (
 	INFO("Correction finished");
 }
 
+template<class Graph>
+void GetAllDistances(const PairedInfoIndex<Graph>& paired_index, PairedInfoIndex<Graph>& result, const GraphDistanceFinder<Graph>& dist_finder) {
+    for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter){
+        vector < PairInfo<EdgeId> > data = *iter;
+		EdgeId first = data[0].first;
+		EdgeId second = data[0].second;
+		vector < size_t > forward = dist_finder.GetGraphDistances(first, second);
+        //if (debug(first, second)) cout<<"i'm here"<<endl;
+        for (size_t i = 0; i<forward.size(); i++) result.AddPairInfo(PairInfo<EdgeId>(data[0].first, data[0].second, forward[i], -10, 0.0), false);
+    }
+}
+
+template<class Graph>
+void CountAndSaveAllPaths(const Graph& g, const IdTrackHandler<Graph>& int_ids, const PairedInfoIndex<Graph>& paired_index) {
+	paired_info_index all_paths(g);
+    GetAllDistances<Graph>(paired_index, all_paths, GraphDistanceFinder<Graph>(g, cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta));
+
+    string dir_name = cfg::get().output_dir + "estimation_qual/";
+	make_dir(dir_name);
+
+	typename PrinterTraits<Graph>::Printer printer(g, int_ids);
+    printer.savePaired(dir_name + "paths", all_paths);
+}
+
 void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 		const PairedInfoIndex<Graph> &paired_index,
 		const PairedInfoIndex<Graph> &clustered_index) {
@@ -199,6 +223,8 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 			paired_index, clustered_index, etalon_paired_index);
 	estimation_stat.Count();
 	estimation_stat.SaveStats();
+
+	CountAndSaveAllPaths(gp.g, gp.int_ids, paired_index);
 
 	INFO("Counting overall cluster stat")
 	ClusterStat<Graph>(clustered_index).Count();

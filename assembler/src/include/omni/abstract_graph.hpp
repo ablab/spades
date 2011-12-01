@@ -39,6 +39,14 @@ public:
 		return int_ids_;
 	}
 
+	int int_id(EdgeId edge) const {
+		return int_ids_.ReturnIntId(edge);
+	}
+
+	int int_id(VertexId vertex) const {
+		return int_ids_.ReturnIntId(vertex);
+	}
+
 	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const {
 		return v->OutgoingEdges();
 	}
