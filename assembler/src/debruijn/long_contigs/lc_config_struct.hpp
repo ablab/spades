@@ -39,6 +39,7 @@ struct lc_config
 	{
 		size_t read_size;
 		size_t insert_size;
+		size_t de_delta;
 		size_t var;
 		size_t is_delta;
 
@@ -245,6 +246,7 @@ void load(boost::property_tree::ptree const& pt, lc_config::real_lib& rl)
 	load(pt, "read_size", rl.read_size);
 	load(pt, "insert_size", rl.insert_size);
 	load(pt, "var", rl.var);
+	load(pt, "de_delta", rl.de_delta);
 	load(pt, "is_delta", rl.is_delta);
 	load(pt, cfg::get().dataset_name, rl.ds);
 }

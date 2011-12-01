@@ -244,7 +244,7 @@ void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, KmerMapper<k+1,
 	for (auto el = lc_cfg::get().etalon_libs.begin(); el != lc_cfg::get().etalon_libs.end(); ++el) {
 		INFO("Generating info with read size " << el->read_size << ", insert size " << el->insert_size);
 
-		pairedInfos.push_back(PairedInfoIndexLibrary(g, el->read_size, el->insert_size, 0, lc_cfg::get().es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
+		pairedInfos.push_back(PairedInfoIndexLibrary(g, el->read_size, el->insert_size, el->delta, el->delta, lc_cfg::get().es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
 		FillEtalonPairedIndex<k> (*pairedInfos.back().pairedInfoIndex, g, index, mapper, el->insert_size, el->read_size, el->delta, genome);
 	}
 }
@@ -258,9 +258,10 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 		size_t insertSize = rl->insert_size;
 		size_t readSize = rl->read_size;
 		size_t delta = rl->is_delta;
+		size_t de_delta = rl->de_delta;
 		size_t var = rl->var;
 		string dataset = cfg::get().dataset_name;
-		pairedInfos.push_back(PairedInfoIndexLibrary(g, readSize, insertSize, delta, var, new PairedInfoIndex<Graph>(g, 0)));
+		pairedInfos.push_back(PairedInfoIndexLibrary(g, readSize, insertSize, delta, de_delta, var, new PairedInfoIndex<Graph>(g, 0)));
 
 		INFO("Reading additional info with read size " << readSize << ", insert size " << insertSize);
 
@@ -276,7 +277,7 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 		
 				pairedInfos.back().has_advanced = rl->ds.has_advanced;
 				if (rl->ds.has_advanced) {
-					pairedInfos.back().advanced = new PairedInfoIndexLibrary(g, readSize, insertSize, delta, var, new PairedInfoIndex<Graph>(g, 0));
+					pairedInfos.back().advanced = new PairedInfoIndexLibrary(g, readSize, insertSize, delta, de_delta, var, new PairedInfoIndex<Graph>(g, 0));
 					ScanPairedIndex(rl->ds.precounted_path, scanner, *pairedInfos.back().advanced->pairedInfoIndex);
 				}
 				else {
@@ -323,20 +324,27 @@ void SavePairedInfo(Graph& g, IdTrackHandler<Graph>& intIds, PairedInfoIndices& 
 		INFO("Saving to " << fileName);
 
 		if (lc_cfg::get().cluster_paired_info) {
+			GraphDistanceFinder<Graph> dist_finder(g, lib->insertSize, lib->readSize, lib->deDelta);
+
 			if (!advEstimator) {
 				PairedInfoIndex<Graph> clustered_index(g);
-				DistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), intIds, lib->insertSize, lib->readSize, cfg::get().de.delta,
-						cfg::get().de.linkage_distance,
-						cfg::get().de.max_distance);
+
+				DistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), dist_finder, cfg::get().de.linkage_distance, cfg::get().de.max_distance);
 				estimator.Estimate(clustered_index);
 
 				PrintPairedIndex(fileName + "_clustered", printer, clustered_index);
 			} else {
+
 				PairedInfoIndex<Graph> clustered_index_(g);
-				AdvancedDistanceEstimator<Graph> estimator_(g, *(lib->pairedInfoIndex), intIds,
-						lib->insertSize, lib->readSize, cfg::get().de.delta,
-						cfg::get().de.linkage_distance, cfg::get().de.max_distance, cfg::get().ade.threshold, cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff, cfg::get().ade.cutoff, cfg::get().ade.minpeakpoints, cfg::get().ade.inv_density, cfg::get().ade.percentage, cfg::get().ade.derivative_threshold);
-				estimator_.Estimate(clustered_index_);
+				AdvancedDistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), dist_finder,
+						cfg::get().de.linkage_distance,
+						cfg::get().ade.threshold,
+						cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff,
+						cfg::get().ade.cutoff, cfg::get().ade.minpeakpoints,
+						cfg::get().ade.inv_density, cfg::get().ade.percentage,
+						cfg::get().ade.derivative_threshold);
+
+				estimator.Estimate(clustered_index_);
 
 				PrintPairedIndex(fileName + "acl", printer, clustered_index_);
 			}

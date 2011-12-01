@@ -214,6 +214,7 @@ real_libs
     {
         read_size    100
         insert_size  180
+        de_delta      15
         is_delta      2
         var           5
 
@@ -236,6 +237,7 @@ real_libs
     {
         read_size    75
         insert_size  280
+        de_delta      15        
         is_delta      2
         var           5
 
@@ -258,6 +260,7 @@ real_libs
       	 read_size    75
       	 insert_size  3200
         is_delta      10
+        de_delta      15
         var           50
 
        	PICHIA_CORRECTED
@@ -279,6 +282,7 @@ real_libs
     {
      	read_size    75
         insert_size  280
+        de_delta      15
        	is_delta      2
        	var           5
 
@@ -302,6 +306,7 @@ real_libs
     {
      	read_size     100
         insert_size   250
+        de_delta      15
         is_delta      2
         var           5
 
@@ -326,6 +331,7 @@ real_libs
     {
      	read_size     100
         insert_size   370
+        de_delta      15
         is_delta      2
         var           5
 
@@ -348,6 +354,7 @@ real_libs
     {
     	read_size     100
         insert_size   270
+        de_delta      15
         is_delta      2
         var           5
         
@@ -390,6 +397,7 @@ real_libs
     {
         read_size     100
         insert_size   220
+        de_delta      15
         is_delta      2
         var           10
                 
@@ -458,6 +466,7 @@ real_libs
     {
         read_size     100
         insert_size   480
+        de_delta      15
         is_delta      2
         var           10
 
@@ -537,13 +546,13 @@ etalon_libs
     {
         read_size    100
         insert_size  800
-        delta        50
+        delta        15
     }
     item_1
     {
         read_size    100
         insert_size  2100
-        delta 		 100
+        delta 		 30
     }	
 }
 

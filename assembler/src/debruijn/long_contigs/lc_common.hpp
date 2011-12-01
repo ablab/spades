@@ -59,6 +59,7 @@ struct PairedInfoIndexLibrary {
 	size_t readSize;
 	size_t insertSize;
 	size_t is_delta;
+	size_t deDelta;
 	size_t var;
 	PairedInfoIndex<Graph>* pairedInfoIndex;
 
@@ -67,8 +68,8 @@ struct PairedInfoIndexLibrary {
 
 	PairedInfoIndex<Graph>* raw;
 
-	PairedInfoIndexLibrary(const Graph& g, size_t readS, size_t insS, size_t delta, size_t v, PairedInfoIndex<Graph>* index):
-		g_(&g), readSize(readS), insertSize(insS), is_delta(delta), var(v), pairedInfoIndex(index) {
+	PairedInfoIndexLibrary(const Graph& g, size_t readS, size_t insS, size_t delta, size_t ded, size_t v, PairedInfoIndex<Graph>* index):
+		g_(&g), readSize(readS), insertSize(insS), is_delta(delta), deDelta(ded), var(v), pairedInfoIndex(index) {
 	}
 
 
