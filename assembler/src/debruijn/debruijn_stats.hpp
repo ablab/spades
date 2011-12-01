@@ -133,9 +133,9 @@ void CountPairedInfoStats(const Graph &g,
 	INFO("Paired info stats counted");
 }
 
-void FillAndCorrectEtalonPairedInfo(
+void FillAndCorrectEtalonPairedInfo (
 		paired_info_index &final_etalon_paired_index, const conj_graph_pack &gp,
-		const paired_info_index &paired_index,
+		const paired_info_index &paired_index, size_t insert_size, size_t read_length, double delta,
 		bool save_etalon_info_history = false) {
 	INFO("Filling etalon paired index");
 	paired_info_index etalon_paired_index(gp.g);
@@ -165,8 +165,8 @@ void FillAndCorrectEtalonPairedInfo(
 	}
 
 	INFO("Pushing etalon info through estimator");
-	GraphDistanceFinder<Graph> dist_finder(gp.g, cfg::get().ds.IS,
-			cfg::get().ds.RL, cfg::get().de.delta);
+	GraphDistanceFinder<Graph> dist_finder(gp.g, insert_size,
+			read_length, delta);
 	DistanceEstimator<Graph> estimator(gp.g, filtered_etalon_index, dist_finder,
 			0, 4);
 	estimator.Estimate(final_etalon_paired_index);
@@ -191,7 +191,8 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 		const PairedInfoIndex<Graph> &clustered_index) {
 
 	paired_info_index etalon_paired_index(gp.g);
-	FillAndCorrectEtalonPairedInfo(etalon_paired_index, gp, paired_index, true);
+	FillAndCorrectEtalonPairedInfo(etalon_paired_index, gp, paired_index,
+			cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta, true);
 	INFO("Counting clustered info stats");
 	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
 	EstimationQualityStat<Graph> estimation_stat(gp.g, gp.int_ids, edge_qual,

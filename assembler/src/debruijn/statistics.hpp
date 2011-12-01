@@ -681,6 +681,7 @@ private:
 	PairedInfoIndex<Graph> imperfect_matches_;
 	PairedInfoIndex<Graph> false_negatives_;
 	PairedInfoIndex<Graph> all_paths_;
+	bool count_all_paths_;
 
 //	PairedInfoIndex<Graph> false_positive_weights_;
 //	set<Info> false_positive_infos_;
@@ -883,11 +884,12 @@ public:
 			const EdgeQuality<Graph>& quality,
 			const PairedInfoIndex<Graph>& pair_info,
 			const PairedInfoIndex<Graph>& estimated_pair_info,
-			const PairedInfoIndex<Graph>& etalon_pair_info) :
+			const PairedInfoIndex<Graph>& etalon_pair_info,
+			bool count_all_paths = true) :
 			graph_(graph), int_ids_(int_ids), quality_(quality), pair_info_(pair_info), estimated_pair_info_(
 					estimated_pair_info), etalon_pair_info_(etalon_pair_info), false_positives_(
 					graph_), perfect_matches_(graph_), imperfect_matches_(
-					graph_), false_negatives_(graph_), all_paths_(graph_) {
+					graph_), false_negatives_(graph_), all_paths_(graph_), count_all_paths_(count_all_paths) {
 	}
 
 	virtual ~EstimationQualityStat() {
@@ -946,6 +948,7 @@ public:
 	}
 
 	const PairedInfoIndex<Graph>& all_paths() {
+		VERIFY(count_all_paths_);
 		return all_paths_;
 	}
 

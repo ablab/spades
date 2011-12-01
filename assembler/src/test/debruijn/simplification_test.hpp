@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_SUITE(graph_simplification_tests)
 BOOST_AUTO_TEST_CASE( SimpleBulgeRemovalTest ) {
 	Graph g(55);
 	IdTrackHandler<Graph> int_ids(g);
-	ScanBasicGraph("/home/snurk/git/algorithmic-biology/assembler/src/test/debruijn/graph_fragments/simpliest_bulge", g, int_ids);
+	ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g, int_ids);
 	RemoveBulges(g, standard_config());
 	BOOST_CHECK_EQUAL(g.size(), 4);
 }
