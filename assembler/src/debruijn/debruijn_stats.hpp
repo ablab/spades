@@ -133,16 +133,69 @@ void CountPairedInfoStats(const Graph &g,
 	INFO("Paired info stats counted");
 }
 
+void FillAndCorrectEtalonPairedInfo(
+		paired_info_index &final_etalon_paired_index, const conj_graph_pack &gp,
+		const paired_info_index &paired_index,
+		bool save_etalon_info_history = false) {
+	INFO("Filling etalon paired index");
+	paired_info_index etalon_paired_index(gp.g);
+	FillEtalonPairedIndex<debruijn_graph::K>(etalon_paired_index, gp.g,
+			gp.index, gp.kmer_mapper, gp.genome);
+	INFO("Etalon paired index filled");
+
+	INFO("Correction of etalon paired info has been started");
+
+	INFO("Collecting data to filter etalon info");
+	std::set<std::pair<Graph::EdgeId, Graph::EdgeId> > setEdgePairs;
+	for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter)
+		setEdgePairs.insert(
+				std::make_pair((*iter)[0].first, (*iter)[0].second));
+
+	INFO("Filtering etalon info");
+	//leave only info between edges both present in paired_index
+	paired_info_index filtered_etalon_index(gp.g);
+	for (auto iter = etalon_paired_index.begin();
+			iter != etalon_paired_index.end(); ++iter) {
+		std::vector<omnigraph::PairInfo<EdgeId> > pair_info = *iter;
+		if (setEdgePairs.count(
+				std::make_pair(pair_info[0].first, pair_info[0].second)) > 0)
+			for (auto point = pair_info.begin(); point != pair_info.end();
+					point++)
+				filtered_etalon_index.AddPairInfo(*point);
+	}
+
+	INFO("Pushing etalon info through estimator");
+	GraphDistanceFinder<Graph> dist_finder(gp.g, cfg::get().ds.IS,
+			cfg::get().ds.RL, cfg::get().de.delta);
+	DistanceEstimator<Graph> estimator(gp.g, filtered_etalon_index, dist_finder,
+			0, 4);
+	estimator.Estimate(final_etalon_paired_index);
+	if (save_etalon_info_history) {
+		INFO("Saving etalon paired info indices on different stages");
+		ConjugateDataPrinter<Graph> data_printer(gp.g, gp.int_ids);
+		data_printer.savePaired(cfg::get().output_dir + "etalon_paired",
+				etalon_paired_index);
+		data_printer.savePaired(
+				cfg::get().output_dir + "etalon_paired_filtered",
+				filtered_etalon_index);
+		data_printer.savePaired(
+				cfg::get().output_dir + "etalon_paired_corrected",
+				final_etalon_paired_index);
+		INFO("Everything saved");
+	}
+	INFO("Correction finished");
+}
+
 void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 		const PairedInfoIndex<Graph> &paired_index,
-		const PairedInfoIndex<Graph> &clustered_index,
-		const PairedInfoIndex<Graph> &etalon_paired_index,
-		const string &output_folder) {
-	INFO("Counting clustered info stats");
+		const PairedInfoIndex<Graph> &clustered_index) {
 
+	paired_info_index etalon_paired_index(gp.g);
+	FillAndCorrectEtalonPairedInfo(etalon_paired_index, gp, paired_index, true);
+	INFO("Counting clustered info stats");
 	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
-	EstimationQualityStat<Graph> estimation_stat(gp.g, gp.int_ids, edge_qual, paired_index,
-			clustered_index, etalon_paired_index);
+	EstimationQualityStat<Graph> estimation_stat(gp.g, gp.int_ids, edge_qual,
+			paired_index, clustered_index, etalon_paired_index);
 	estimation_stat.Count();
 	estimation_stat.SaveStats();
 
@@ -238,88 +291,76 @@ void WriteGraphComponentsAlongGenome(const Graph& g,
 		const string& folder, const string &file_name,
 		const string &graph_name, size_t split_edge_length) {
 
-    INFO("Writing graph components along genome");
+	INFO("Writing graph components along genome");
 
-    typedef MappingPath<EdgeId> map_path_t;
+	typedef MappingPath<EdgeId> map_path_t;
 
-    map_path_t path1 = NewFindGenomePath<K>( genome, g, int_ids, index, kmer_mapper);
-    map_path_t path2 = NewFindGenomePath<K>(!genome, g, int_ids, index, kmer_mapper);
+	map_path_t path1 = NewFindGenomePath<K>(genome, g, int_ids, index,
+			kmer_mapper);
+	map_path_t path2 = NewFindGenomePath<K>(!genome, g, int_ids, index,
+			kmer_mapper);
 
 	make_dir(folder);
-	WriteComponentsAlongGenome(g, labeler, folder + file_name, graph_name, split_edge_length, path1, path2);
+	WriteComponentsAlongGenome(g, labeler, folder + file_name, graph_name,
+			split_edge_length, path1, path2);
 
 	INFO("Writing graph components along genome finished");
 }
 
-void WriteKmerComponent(
-    conj_graph_pack &gp,
-	const omnigraph::GraphLabeler<Graph>& labeler,
-	const string& folder,
-	const string& graph_name,
-	Path<Graph::EdgeId> path1,
-	Path<Graph::EdgeId> path2,
-	Seq<K+1> const& kp1mer)
-{
-	KMerNeighborhoodFinder<Graph, K> splitter(gp.g, kp1mer, gp.index, 50, cfg::get().ds.IS);
-	WriteComponents<Graph>(gp.g, labeler, folder + "kmer.dot", graph_name, cfg::get().ds.IS, splitter, path1, path2);
+void WriteKmerComponent(conj_graph_pack &gp,
+		const omnigraph::GraphLabeler<Graph>& labeler, const string& folder,
+		const string& graph_name, Path<Graph::EdgeId> path1,
+		Path<Graph::EdgeId> path2, Seq<K + 1> const& kp1mer) {
+	KMerNeighborhoodFinder<Graph, K> splitter(gp.g, kp1mer, gp.index, 50,
+			cfg::get().ds.IS);
+	WriteComponents<Graph>(gp.g, labeler, folder + "kmer.dot", graph_name,
+			cfg::get().ds.IS, splitter, path1, path2);
 }
 
-void ProduceDetailedInfo(
-	conj_graph_pack &gp,
-	const omnigraph::GraphLabeler<Graph>& labeler,
-	const string& folder,
-	const string& file_name,
-	const string& graph_name,
-	info_printer_pos pos)
-{
-    auto it = cfg::get().info_printers.find(pos);
-    VERIFY(it != cfg::get().info_printers.end());
+void ProduceDetailedInfo(conj_graph_pack &gp,
+		const omnigraph::GraphLabeler<Graph>& labeler, const string& folder,
+		const string& file_name, const string& graph_name,
+		info_printer_pos pos) {
+	auto it = cfg::get().info_printers.find(pos);
+	VERIFY(it != cfg::get().info_printers.end());
 
-    debruijn_config::info_printer const& config = it->second;
+	debruijn_config::info_printer const& config = it->second;
 
-    make_dir(folder);
+	make_dir(folder);
 
-    if (config.print_stats)
-    {
-        INFO("Printing statistics for " << details::info_printer_pos_name(pos));
-        CountStats<K>(gp.g, gp.index, gp.genome);
-    }
+	if (config.print_stats) {
+		INFO("Printing statistics for " << details::info_printer_pos_name(pos));
+		CountStats<K>(gp.g, gp.index, gp.genome);
+	}
 
 	typedef Path<Graph::EdgeId> path_t;
 	path_t path1;
 	path_t path2;
 
-	if (config.detailed_dot_write           ||
-	    config.write_components             ||
-	    !config.components_for_kmer.empty() ||
-	    config.write_components_along_genome)
-	{
-	    path1 = FindGenomePath<K>( gp.genome, gp.g, gp.index);
-        path2 = FindGenomePath<K>(!gp.genome, gp.g, gp.index);
-        make_dir(folder);
+	if (config.detailed_dot_write || config.write_components
+			|| !config.components_for_kmer.empty()
+			|| config.write_components_along_genome) {
+		path1 = FindGenomePath<K>(gp.genome, gp.g, gp.index);
+		path2 = FindGenomePath<K>(!gp.genome, gp.g, gp.index);
+		make_dir(folder);
 	}
 
 	if (config.detailed_dot_write)
-	    DetailedWriteToDot(gp.g, labeler, folder + file_name, graph_name, path1, path2);
+		DetailedWriteToDot(gp.g, labeler, folder + file_name, graph_name, path1,
+				path2);
 
 	if (config.write_components)
-	    WriteComponents(gp.g, labeler, folder + file_name, graph_name, cfg::get().ds.IS, path1, path2);
+		WriteComponents(gp.g, labeler, folder + file_name, graph_name,
+				cfg::get().ds.IS, path1, path2);
 
 	if (!config.components_for_kmer.empty())
-	    WriteKmerComponent(gp, labeler, folder, graph_name, path1, path2, Seq<K + 1>(config.components_for_kmer.c_str()));
+		WriteKmerComponent(gp, labeler, folder, graph_name, path1, path2,
+				Seq<K + 1>(config.components_for_kmer.c_str()));
 
 	if (config.write_components_along_genome)
-	    WriteGraphComponentsAlongGenome(
-            gp.g,
-            gp.int_ids,
-            gp.index,
-            gp.kmer_mapper,
-            labeler,
-            gp.genome,
-            folder,
-            file_name,
-            "components_along_genome",
-            cfg::get().ds.IS);
+		WriteGraphComponentsAlongGenome(gp.g, gp.int_ids, gp.index,
+				gp.kmer_mapper, labeler, gp.genome, folder, file_name,
+				"components_along_genome", cfg::get().ds.IS);
 
 	if (config.save_full_graph) {
 		ConjugateDataPrinter<Graph> printer(gp.g, gp.int_ids);
@@ -327,28 +368,30 @@ void ProduceDetailedInfo(
 	}
 }
 
-struct detail_info_printer
-{
-    detail_info_printer(
-        conj_graph_pack &gp,
-        const omnigraph::GraphLabeler<Graph>& labeler,
-        const string& folder,
-        const string& file_name)
+struct detail_info_printer {
+	detail_info_printer(conj_graph_pack &gp,
+			const omnigraph::GraphLabeler<Graph>& labeler, const string& folder,
+			const string& file_name)
 
-        : folder_   (folder)
-        , func_     (bind(&ProduceDetailedInfo, ref(gp), ref(labeler), _3, file_name, _2, _1))
-    {
-    }
+	:
+			folder_(folder), func_(
+					bind(&ProduceDetailedInfo, ref(gp), ref(labeler), _3,
+							file_name, _2, _1)) {
+	}
 
-    void operator()(info_printer_pos pos, string const& folder_suffix = "") const
-    {
-        string pos_name = details::info_printer_pos_name(pos);
-        func_(pos, pos_name, (fs::path(folder_) / (pos_name + folder_suffix)).string() + "/");
-    }
+	void operator()(info_printer_pos pos,
+			string const& folder_suffix = "") const {
+		string pos_name = details::info_printer_pos_name(pos);
+		func_(
+				pos,
+				pos_name,
+				(fs::path(folder_) / (pos_name + folder_suffix)).string()
+						+ "/");
+	}
 
 private:
-    string  folder_;
-    boost::function<void(info_printer_pos, string const&, string const&)>  func_;
+	string folder_;
+	boost::function<void(info_printer_pos, string const&, string const&)> func_;
 };
 
 template<size_t k>
@@ -374,8 +417,7 @@ string ConstructComponentName(string file_name, size_t cnt) {
 
 template<class graph_pack>
 int PrintGraphComponents(const string& file_name, graph_pack& gp,
-		size_t split_edge_length,
-		PairedInfoIndex<Graph> &clustered_index) {
+		size_t split_edge_length, PairedInfoIndex<Graph> &clustered_index) {
 	LongEdgesInclusiveSplitter<Graph> inner_splitter(gp.g, split_edge_length);
 	ComponentSizeFilter<Graph> checker(gp.g, split_edge_length, 2);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
@@ -383,7 +425,8 @@ int PrintGraphComponents(const string& file_name, graph_pack& gp,
 	while (!splitter.Finished() && cnt <= 1000) {
 		string component_name = ConstructComponentName(file_name, cnt).c_str();
 		auto component = splitter.NextComponent();
-		PrintWithClusteredIndex(component_name, gp, component.begin(), component.end(), clustered_index);
+		PrintWithClusteredIndex(component_name, gp, component.begin(),
+				component.end(), clustered_index);
 		cnt++;
 	}
 	return (cnt - 1);

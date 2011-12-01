@@ -459,6 +459,7 @@ private:
 	Range covered_range_;
 	bool start_processed_;
 
+	//todo edge not used in the body
 	bool EdgeCovered(EdgeId edge) {
 		return last_component_.count(
 				this->graph().EdgeStart(genome_path_[current_index_].first))
