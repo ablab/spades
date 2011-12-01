@@ -132,11 +132,11 @@ bool correctAndUpdateOneRead( vector<ofstream *> outfv, const vector<KMerCount*>
 	if (!Globals::conserve_memory) Globals::rv_bad->at(readno) = isGood;
 	changedNucleotides[i] += res;
 	if (res) ++changedReads[i];
-	/*if (res && outfv[i] != NULL) {
+	if (res && outfv[i] != NULL) {
 			*(outfv[i]) << "Final result again:  size=" << r.size() << "\n"
 					<< r.getSequenceString().c_str() << "\n"
 					<< r.getPhredQualityString(Globals::qvoffset).c_str() << endl;
-	}*/
+	}
 	return isGood;
 }
 
@@ -154,6 +154,9 @@ void correctAndUpdateReadFile( const string & readsFilename, vector<ofstream *> 
 			continue;
 		}
 		if ( correctAndUpdateOneRead(outfv, kmers, changedReads, changedNucleotides, readno, r, 0) ) {
+			if (outfv[0] != NULL) {
+				*(outfv[0]) << " good, so again: " << r.getSequenceString().c_str() << "\n";
+			}
 			r.print(*outf_good, Globals::qvoffset);
 		} else {
 			r.print(*outf_bad, Globals::qvoffset);
@@ -452,7 +455,7 @@ int main(int argc, char * argv[]) {
 						_exit(0);
 					}
 					string cmd = "rm -rf " + getFilename(Globals::working_dir, iter_count, "tmp.kmers.*");
-					if ( system(cmd.data()) != 0 ) { TIMEDLN("Some error with removing temporary files. Proceeding nevertheless."); }
+					if ( system(cmd.c_str()) != 0 ) { TIMEDLN("Some error with removing temporary files. Proceeding nevertheless."); }
 					TIMEDLN("Merge done. There are " << kmer_num << " kmers in total.");
 				} else if (Globals::skip_to_subvectors) {
 					TIMEDLN("Skipping directly to subvectors, reading sorted kmers from " << getFilename(Globals::working_dir, iter_count, "kmers.total.sorted"));
@@ -595,7 +598,7 @@ int main(int argc, char * argv[]) {
 		vector<ofstream *> outfv; vector<hint_t> changedReads; vector<hint_t> changedNucleotides;
 		for (int i=0; i < (Globals::conserve_memory ? 1 : nthreads); ++i) {
 			outfv.push_back(new ofstream( getFilename(Globals::working_dir, iter_count, "reconstruct", i ).data() ));
-			outfv.push_back(NULL);
+			//outfv.push_back(NULL);
 			changedReads.push_back(0);
 			changedNucleotides.push_back(0);
 		}
