@@ -8,6 +8,7 @@
 #ifndef LC_IO_HPP_
 #define LC_IO_HPP_
 
+#include "../graph_pack.hpp"
 #include "io/reader.hpp"
 #include "io/parser.hpp"
 #include "io/rc_reader_wrapper.hpp"
@@ -216,29 +217,25 @@ void CheckPairedInfo(Graph& g, PairedInfoIndex<Graph>& index, size_t lenThreshol
 	PrintEdgesStats(noPairedInfoLong, noPairedInfoLongLen, "No paired info at all for edges longer than " + ToString(lenThreshold));
 }
 
-void LoadFromFile(std::string fileName, Graph* g,  IdTrackHandler<Graph>* conj_IntIds,	Sequence& sequence, KmerMapper<K+1, Graph> * mapper) {
-	string input_dir = cfg::get().input_dir;
-	string dataset = cfg::get().dataset_name;
-	string genome_filename = input_dir
-			+ cfg::get().ds.reference_genome;
-	checkFileExistenceFATAL(genome_filename);
-	int dataset_len = cfg::get().ds.LEN;
-
-	typedef io::Reader<io::SingleRead> ReadStream;
-
-	// read data ('genome')
+Sequence load_genome() {
+	string genome_filename = cfg::get().ds.reference_genome;
 	std::string genome;
-	{
-		ReadStream genome_stream(genome_filename);
+	if (genome_filename.length() > 0) {
+		genome_filename = cfg::get().input_dir + genome_filename;
+		checkFileExistenceFATAL(genome_filename);
+		io::Reader<io::SingleRead> genome_stream(genome_filename);
 		io::SingleRead full_genome;
 		genome_stream >> full_genome;
-		genome = full_genome.GetSequenceString().substr(0, dataset_len); // cropped
+		genome = full_genome.GetSequenceString().substr(0, cfg::get().ds.LEN);
 	}
-	sequence = Sequence(genome);
+	return Sequence(genome);
+}
 
+void LoadFromFile(std::string fileName, Graph& g, IdTrackHandler<Graph>& intIds, KmerMapper<K+1, Graph>& mapper) {
+	string input_dir = cfg::get().input_dir;
+	string dataset = cfg::get().dataset_name;
 	INFO("Reading graph");
-		debruijn_graph::scanConjugateGraph(g, conj_IntIds, fileName, (PairedInfoIndex<Graph>*) 0,
-			(EdgesPositionHandler<Graph> *) NULL, (PairedInfoIndex<Graph>*) 0, (PairedInfoIndex<Graph>*) 0, mapper);
+	debruijn_graph::ScanWithKmerMapper(fileName, g, intIds, mapper);
 	INFO("Graph read");
 }
 
@@ -248,7 +245,7 @@ void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, KmerMapper<k+1,
 		INFO("Generating info with read size " << el->read_size << ", insert size " << el->insert_size);
 
 		pairedInfos.push_back(PairedInfoIndexLibrary(g, el->read_size, el->insert_size, 0, lc_cfg::get().es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
-		FillEtalonPairedIndex<k> (*pairedInfos.back().pairedInfoIndex, g, index, mapper, el->insert_size, el->read_size, genome);
+		FillEtalonPairedIndex<k> (*pairedInfos.back().pairedInfoIndex, g, index, mapper, el->insert_size, el->read_size, el->delta, genome);
 	}
 }
 
@@ -269,8 +266,8 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 
 		if (rl->ds.precounted && !lc_cfg::get().paired_info_only) {
 			//Reading saved paired info
-			DataScanner<Graph> dataScanner(g, conj_IntIds);
-			dataScanner.loadPaired(rl->ds.precounted_path, *pairedInfos.back().pairedInfoIndex);
+			typename ScannerTraits<Graph>::Scanner scanner(g, conj_IntIds);
+			ScanPairedIndex(rl->ds.precounted_path, scanner, *pairedInfos.back().pairedInfoIndex);
 			CheckPairedInfo(g, *pairedInfos.back().pairedInfoIndex, insertSize - 2 * readSize + K);
 
 			pairedInfos.back().raw = new PairedInfoIndex<Graph>(g, 0);
@@ -280,9 +277,9 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 				pairedInfos.back().has_advanced = rl->ds.has_advanced;
 				if (rl->ds.has_advanced) {
 					pairedInfos.back().advanced = new PairedInfoIndexLibrary(g, readSize, insertSize, delta, var, new PairedInfoIndex<Graph>(g, 0));
-					DataScanner<Graph> advDataScanner(g, conj_IntIds);
-					advDataScanner.loadPaired(rl->ds.advanced, *pairedInfos.back().advanced->pairedInfoIndex);
-				} else {
+					ScanPairedIndex(rl->ds.precounted_path, scanner, *pairedInfos.back().advanced->pairedInfoIndex);
+				}
+				else {
 					pairedInfos.back().advanced = 0;
 				}
 			}
@@ -312,10 +309,15 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 	}
 }
 
-void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Graph>& old_IDs, const std::string& fileNamePrefix,
+
+
+void SavePairedInfo(Graph& g, IdTrackHandler<Graph>& intIds, PairedInfoIndices& pairedInfos, const std::string& fileNamePrefix,
 		bool advEstimator = false) {
+
 	INFO("Saving paired info");
-	DataPrinter<Graph> dataPrinter(g, old_IDs);
+
+	typename PrinterTraits<Graph>::Printer printer(g, g.begin(), g.end(), intIds);
+
 	for (auto lib = pairedInfos.begin(); lib != pairedInfos.end(); ++lib) {
 		std::string fileName = fileNamePrefix + "IS" + ToString(lib->insertSize) + "_RS" + ToString(lib->readSize);
 		INFO("Saving to " << fileName);
@@ -323,33 +325,28 @@ void SavePairedInfo(Graph& g, PairedInfoIndices& pairedInfos, IdTrackHandler<Gra
 		if (lc_cfg::get().cluster_paired_info) {
 			if (!advEstimator) {
 				PairedInfoIndex<Graph> clustered_index(g);
-				DistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), old_IDs, lib->insertSize, lib->readSize, cfg::get().de.delta,
+				DistanceEstimator<Graph> estimator(g, *(lib->pairedInfoIndex), intIds, lib->insertSize, lib->readSize, cfg::get().de.delta,
 						cfg::get().de.linkage_distance,
 						cfg::get().de.max_distance);
 				estimator.Estimate(clustered_index);
 
-				dataPrinter.savePaired(fileName + "_clustered", clustered_index);
+				PrintPairedIndex(fileName + "_clustered", printer, clustered_index);
 			} else {
 				PairedInfoIndex<Graph> clustered_index_(g);
-				AdvancedDistanceEstimator<Graph> estimator_(g, *(lib->pairedInfoIndex), old_IDs,
+				AdvancedDistanceEstimator<Graph> estimator_(g, *(lib->pairedInfoIndex), intIds,
 						lib->insertSize, lib->readSize, cfg::get().de.delta,
 						cfg::get().de.linkage_distance, cfg::get().de.max_distance, cfg::get().ade.threshold, cfg::get().ade.range_coeff, cfg::get().ade.delta_coeff, cfg::get().ade.cutoff, cfg::get().ade.minpeakpoints, cfg::get().ade.inv_density, cfg::get().ade.percentage, cfg::get().ade.derivative_threshold);
 				estimator_.Estimate(clustered_index_);
 
-				dataPrinter.savePaired(fileName + "_acl", clustered_index_);
+				PrintPairedIndex(fileName + "acl", printer, clustered_index_);
 			}
 		}
 		if (lc_cfg::get().write_raw_paired_info) {
-			dataPrinter.savePaired(fileName, *(lib->pairedInfoIndex));
+			PrintPairedIndex(fileName, printer, *(lib->pairedInfoIndex));
 		}
 	}
-	INFO("Saved");
-}
 
-void SaveGraph(Graph& g, IdTrackHandler<Graph>& old_IDs, const std::string& fileName) {
-	DataPrinter<Graph> dataPrinter(g, old_IDs);
-	INFO("Saving graph file to " << fileName);
-	dataPrinter.saveGraph(fileName);
+	INFO("Saved");
 }
 
 void DeleteAdditionalInfo(PairedInfoIndices& pairedInfos) {

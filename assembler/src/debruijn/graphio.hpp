@@ -859,5 +859,12 @@ void ScanWithClusteredIndex(const string& file_name,
 	ScanWithPairedIndex(file_name, gp, clustered_index, true);
 }
 
+template<class Graph>
+void ScanWithKmerMapper(const string& file_name, Graph& g, IdTrackHandler<Graph>& intIds, KmerMapper<K + 1, Graph>& mapper) {
+	typename ScannerTraits<Graph>::Scanner scanner(g, intIds);
+	scanner.loadGraph(file_name);
+	scanner.loadKmerMapper(file_name, mapper);
+}
+
 
 }

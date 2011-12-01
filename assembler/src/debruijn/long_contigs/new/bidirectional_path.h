@@ -8,11 +8,13 @@
 #ifndef BIDIRECTIONAL_PATH_H_
 #define BIDIRECTIONAL_PATH_H_
 
-#include "new_debruijn.hpp"
+#include "../new_debruijn.hpp"
 
 using debruijn_graph::Graph;
 using debruijn_graph::EdgeId;
 using debruijn_graph::VerexId;
+
+class LoopDetecor;
 
 class BidirectionalPath {
 
@@ -36,7 +38,7 @@ protected:
 	void decreaseLengths(bool direct = direction);
 
 public:
-	BidirectionalPath(Grpah g_): g(g_), data(), cumulativeLength(), gapLength(), direction(true), loopDetector(g_, *this) {
+	BidirectionalPath(Graph g_): g(g_), data(), cumulativeLength(), gapLength(), direction(true), loopDetector(g_, *this) {
 	}
 
 	size_t size() const;

@@ -49,6 +49,7 @@ struct lc_config
 	{
 		size_t read_size;
 		size_t insert_size;
+		size_t delta;
 	};
 
 
@@ -253,6 +254,7 @@ void load(boost::property_tree::ptree const& pt, lc_config::etalon_lib& el)
 	using config_common::load;
 	load(pt, "insert_size", el.insert_size);
 	load(pt, "read_size", el.read_size);
+	load(pt, "delta", el.delta);
 }
 
 void load(boost::property_tree::ptree const& pt, lc_config::dataset& ds)

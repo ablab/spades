@@ -537,11 +537,13 @@ etalon_libs
     {
         read_size    100
         insert_size  800
+        delta        50
     }
     item_1
     {
         read_size    100
         insert_size  2100
+        delta 		 100
     }	
 }
 
