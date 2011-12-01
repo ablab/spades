@@ -163,7 +163,7 @@ void DoSplitAndSort(int tau, int nthreads, vector< vector<hint_t> > * vs, vector
 
 bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const string & seq, const vector<KMerCount*> & km,
 		const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat, vector< vector<int> > & v,
-		int & left, int & right, bool & isGood, ofstream * ofs ) {
+		int & left, int & right, bool & isGood, ofstream * ofs, bool revcomp ) {
 	bool res = false;
 	//if (ofs != NULL)
 	//	*ofs << "\n " << r.getName() << "\n" << seq.data() << "\n";
@@ -175,7 +175,10 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
 		isGood = true;
 		if (ofs != NULL) *ofs << "\t\t\tsolid";
 		for (size_t j = 0; j < K; ++j) {
-			v[dignucl(kmer[j])][pos + j]++;
+			if (!revcomp)
+				v[dignucl(kmer[j])][pos + j]++;
+			else
+				v[complement(dignucl(kmer[j]))][K-1-pos-j]++;
 		}
 		if ((int) pos < left)
 			left = pos;
@@ -261,7 +264,7 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 				*ofs << kmer.str();
 			}
 
-			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, isGood, ofs );
+			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, isGood, ofs, false );
 
 			if (ofs != NULL) *ofs << "\n";
 		}
@@ -272,7 +275,7 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 			const uint32_t pos = it.first;
 			const KMerStat & stat = it.second->second;
 
-			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, isGood, ofs );
+			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left, right, isGood, ofs, false);
 		}
 	}
 
@@ -294,7 +297,7 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 				*ofs << kmer.str();
 			}
 
-			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left_rev, right_rev, isGood, ofs );
+			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left_rev, right_rev, isGood, ofs, true );
 
 			if (ofs != NULL) *ofs << "\n";
 		}
@@ -305,7 +308,7 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 			const uint32_t pos = it.first;
 			const KMerStat & stat = it.second->second;
 
-			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left_rev, right_rev, isGood, ofs );
+			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left_rev, right_rev, isGood, ofs, true );
 		}
 	}
 

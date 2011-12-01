@@ -56,7 +56,7 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
 size_t CorrectRead(const KMerNoHashMap & km, const vector<KMerCount*> & kmers, hint_t readno, Read & r, bool & isGood, ofstream * ofs = NULL);
 bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const string & seq,
 		const vector<KMerCount*> & km, const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat,
-		vector< vector<int> > & v, int & left, int & right, bool & isGood, ofstream * ofs );
+		vector< vector<int> > & v, int & left, int & right, bool & isGood, ofstream * ofs, bool revcomp );
 
 /**
   * make a step of iterative reconstruction
