@@ -283,8 +283,9 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 	if (ofs != NULL)
 		*ofs << "\n " << r.getName() << " revcomp\n" << string(Globals::blob        + pr_rev.start(), pr_rev.size()) << "\n";
 
-	int left_rev = read_size; int right_rev = -1;
+	int left_rev = 0; int right_rev = read_size-(int)K;
 
+	/*
 	if (Globals::conserve_memory) {
 		pair<int, hint_t> it = make_pair( -1, BLOBKMER_UNDEFINED );
 		while ( (it = pr_rev.nextKMerNo(it.first)).first > -1 ) {
@@ -310,7 +311,7 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 
 			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left_rev, right_rev, isGood, ofs, true );
 		}
-	}
+	}*/
 
 	if (ofs != NULL) {
 		*ofs << "    direct=[" << left << ", " << right << "]\treverse=[" << left_rev << ", " << right_rev << "]";
@@ -343,7 +344,7 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 	}
 	
 	// print consensus array
-	if (ofs != NULL && changedRead) {
+	if (ofs != NULL && isGood) {
 		for (size_t i=0; i<4; ++i) {
 			for (size_t j=0; j<read_size; ++j) {
 				*ofs << (char)((int)'0' + v[i][j]);
