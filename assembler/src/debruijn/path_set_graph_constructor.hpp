@@ -72,10 +72,22 @@ public:
 			//		DEBUG(tst());
 		}
 		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter) {
-			DEBUG ("id: " << iter->id<< " fwd " <<extentionMap[*iter].size() << " bwd "<< backwardMap[*iter].size());
+			DEBUG ("id: " << iter->id<< " fwd " <<extentionMap[*iter].size());
+			for (auto tmp_iter = extentionMap[*iter].begin(); tmp_iter != extentionMap[*iter].end(); tmp_iter++) {
+				DEBUG(tmp_iter->id);
+			}
+			DEBUG( " bwd "<< backwardMap[*iter].size());
+			for (auto tmp_iter = backwardMap[*iter].begin(); tmp_iter != backwardMap[*iter].end(); tmp_iter++) {
+				DEBUG(tmp_iter->id);
+			}
 		}
 		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter) {
-			if ((extentionMap[*iter].size() <= 1) && (backwardMap[*iter].size() != 1)) {
+			bool strange_start = ((extentionMap[*iter].size() == 1) && (backwardMap[*iter].size() == 1) && (extentionMap[backwardMap[*iter][0]].size() > 1));
+			if (((extentionMap[*iter].size() <= 1) && (backwardMap[*iter].size() != 1)) || strange_start) {
+				if(strange_start) {
+					DEBUG("strange start from pathset id " << iter-> id <<" edge "<< gp.int_ids.ReturnIntId(iter->start));
+				}
+
 				VertexId v = new_gp.g.AddVertex();
 				new_gp.int_ids.AddVertexIntId(v, iter->id);
 				DEBUG("working on path starting from " << iter->id);
@@ -86,6 +98,8 @@ public:
 					AddEdgeWithAllHandlers(v, end , tmp_iter.start);
 					v = end;
 					tmp_iter = extentionMap[tmp_iter][0];
+					if (backwardMap[tmp_iter].size() != 1)
+						break;
 				}
 				if (extentionMap[tmp_iter].size() == 0) {
 					if (tmp_iter.paths.size() != 1) {
