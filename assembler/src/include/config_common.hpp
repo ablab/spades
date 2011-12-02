@@ -8,6 +8,10 @@
 #ifndef CONFIG_COMMON_HPP_
 #define CONFIG_COMMON_HPP_
 
+// todo: undo dirty fix
+#include <boost/format.hpp>
+
+
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/info_parser.hpp>
 #include <boost/utility/enable_if.hpp>
@@ -19,9 +23,8 @@
 #include <iostream>
 #include "simple_tools.hpp"
 
-using namespace std;
+using std::string;
 using boost::format;
-//using boost::str;
 
 namespace config_common
 {
