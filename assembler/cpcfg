@@ -4,8 +4,10 @@ cmd=cp
 if [ "$1" = "-d" ] ; then
     cmd=diff
 fi
+
 $cmd src/debruijn/config.info.template                src/debruijn/config.info
 $cmd src/debruijn/simplification.info.template        src/debruijn/simplification.info
 $cmd src/debruijn/distance_estimation.info.template   src/debruijn/distance_estimation.info
 $cmd src/debruijn/detail_info_printer.info.template   src/debruijn/detail_info_printer.info
+$cmd log4cxx.properties.template                      log4cxx.properties
 
