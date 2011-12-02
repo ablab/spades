@@ -103,7 +103,6 @@ void copy_configs()
 	copy_files_by_ext(fs::path(cfg_filename).parent_path(), cfg::get().output_dir + "configs", ".info");
 }
 
-
 bool print_mem_usage(std::string const& msg)
 {
 	static size_t pid = getpid();
