@@ -48,6 +48,7 @@ enum info_printer_pos
     ipp_final_bulge_removal          ,
     ipp_removing_isolated_edges      ,
     ipp_final_simplified             ,
+    ipp_before_repeat_resolution     ,
 
     ipp_total
 };
@@ -59,16 +60,17 @@ inline const char* info_printer_pos_name(size_t pos)
 {
     const char* names[] =
     {
-       "default"                ,
-       "before_simplification"  ,
-       "tip_clipping"           ,
-       "bulge_removal"          ,
-       "err_con_removal"        ,
-       "final_err_con_removal"  ,
-       "final_tip_clipping"     ,
-       "final_bulge_removal"    ,
-       "removing_isolated_edges" ,
-       "final_simplified"
+       "default"                    ,
+       "before_simplification"      ,
+       "tip_clipping"               ,
+       "bulge_removal"              ,
+       "err_con_removal"            ,
+       "final_err_con_removal"      ,
+       "final_tip_clipping"         ,
+       "final_bulge_removal"        ,
+       "removing_isolated_edges"    ,
+       "final_simplified"           ,
+       "before_repeat_resolution"
     };
 
     utils::check_array_size<ipp_total>(names);
