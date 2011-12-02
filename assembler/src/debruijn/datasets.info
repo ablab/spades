@@ -416,6 +416,20 @@ HMP_LANE_8
         LEN 0
 }
 
+JCVI_control_MDA_EColi_0212
+{
+        first   E.Coli.K12.MG1655/SC/correted_0211/00.reads_left.corrected.fastq
+        second  E.Coli.K12.MG1655/SC/correted_0211/00.reads_right.corrected.fastq 
+        single_first    E.Coli.K12.MG1655/SC/correted_0211/00.reads_single_left.corrected.fastq
+        single_second   E.Coli.K12.MG1655/SC/correted_0211/00.reads_single_right.corrected.fastq
+        RL              100
+        IS              200
+        single_cell     true
+        reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+        LEN             4639675
+}
+
+
 DeltaProteo
 {
 	first DeltaProteoBacterium/hammered/lane1_reads_corrected_1_left.fastq
