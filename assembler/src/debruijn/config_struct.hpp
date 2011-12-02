@@ -170,7 +170,6 @@ struct debruijn_config
 
 	struct simplification {
 		struct tip_clipper {
-			double max_tip_length_div_K;
 			size_t max_tip_length;
 			double max_coverage;
 			double max_relative_coverage;
@@ -326,8 +325,6 @@ public:
 inline void load(debruijn_config::simplification::tip_clipper& tc, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-
-	load(tc.max_tip_length_div_K	, pt, "max_tip_length_div_K" );
 	load(tc.max_tip_length			, pt, "max_tip_length"		 );
 	load(tc.max_coverage			, pt, "max_coverage"		 );
 	load(tc.max_relative_coverage	, pt, "max_relative_coverage");

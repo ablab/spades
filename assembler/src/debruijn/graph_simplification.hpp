@@ -49,18 +49,16 @@ private:
 };
 
 template<class Graph>
-void ClipTips(Graph &g,
+void ClipTips(Graph &g, const debruijn_config::simplification::tip_clipper& tc_config,
 		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t iteration_count = 1, size_t i = 0) {
 	VERIFY(i < iteration_count);
 	INFO("-----------------------------------------");
 	INFO("Clipping tips");
 	omnigraph::LengthComparator<Graph> comparator(g);
-	size_t max_tip_length = std::min(
-			(size_t) cfg::get().simp.tc.max_tip_length_div_K * g.k(),
-			cfg::get().simp.tc.max_tip_length);
-	size_t max_coverage = cfg::get().simp.tc.max_coverage;
-	double max_relative_coverage = cfg::get().simp.tc.max_relative_coverage;
+	size_t max_tip_length = tc_config.max_tip_length;
+	size_t max_coverage = tc_config.max_coverage;
+	double max_relative_coverage = tc_config.max_relative_coverage;
 	omnigraph::TipClipper<Graph, LengthComparator<Graph>> tc(
 			g,
 			comparator,
@@ -70,6 +68,13 @@ void ClipTips(Graph &g,
 			max_relative_coverage, removal_handler);
 	tc.ClipTips();
 	INFO("Clipping tips finished");
+}
+
+template<class Graph>
+void ClipTips(Graph &g,
+		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
+		size_t iteration_count = 1, size_t i = 0) {
+	ClipTips(g, cfg::get().simp.tc, removal_handler, iteration_count, i);
 }
 
 template<class Graph>

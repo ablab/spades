@@ -15,11 +15,11 @@ DECL_PROJECT_LOGGER("dt")
 
 namespace debruijn_graph {
 
-//BOOST_AUTO_TEST_CASE( GenerateGraphFragment ) {
-//	std::string input_path = "/home/snurk/git/algorithmic-biology/assembler/data/debruijn/QUAKE_CROPPED_400K/K55/latest/tip_clipping_0/graph";
-//	std::string output_path = "/home/snurk/git/algorithmic-biology/assembler/src/test/debruijn/graph_fragments/simpliest_bulge";
-//	size_t split_threshold = 1000;
-//	int int_edge_id = 1867;
+BOOST_AUTO_TEST_CASE( GenerateGraphFragment ) {
+//	std::string input_path = "./data/debruijn/QUAKE_CROPPED_400K/K55/latest/bulge_removal_0/graph";
+//	std::string output_path = "./src/test/debruijn/graph_fragments/tipobulge/tipobulge";
+//	size_t split_threshold = 230;
+//	int int_edge_id = 4285;
 //	graph_pack<ConjugateDeBruijnGraph, 55> gp;
 //	ScanGraphPack(input_path, gp);
 //	//prints only basic graph structure
@@ -35,7 +35,7 @@ namespace debruijn_graph {
 //	WriteToDotFile(g,
 //			tot_lab, output_path + ".dot",
 //			"mygraph", Path<EdgeId>(), Path<EdgeId>());
-//}
+}
 
 }
 
