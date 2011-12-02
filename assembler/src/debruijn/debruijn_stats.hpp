@@ -372,26 +372,35 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 		make_dir(folder);
 	}
 
-	if (config.detailed_dot_write)
-		DetailedWriteToDot(gp.g, labeler, folder + file_name, graph_name, path1,
+	if (config.detailed_dot_write) {
+		make_dir(folder + "error_loc/");
+		DetailedWriteToDot(gp.g, labeler, folder + "error_loc/" + file_name, graph_name, path1,
 				path2);
+	}
 
-	if (config.write_components)
-		WriteComponents(gp.g, labeler, folder + file_name, graph_name,
+	if (config.write_components) {
+		make_dir(folder + "components/");
+		WriteComponents(gp.g, labeler, folder + "components/" + file_name, graph_name,
 				cfg::get().ds.IS, path1, path2);
+	}
 
-	if (!config.components_for_kmer.empty())
-		WriteKmerComponent(gp, labeler, folder, graph_name, path1, path2,
+	if (!config.components_for_kmer.empty()) {
+		make_dir(folder + "kmer_loc/");
+		WriteKmerComponent(gp, labeler, folder + "kmer_loc/", graph_name, path1, path2,
 				Seq<K + 1>(config.components_for_kmer.c_str()));
+	}
 
-	if (config.write_components_along_genome)
+	if (config.write_components_along_genome) {
+		make_dir(folder + "along_genome/");
 		WriteGraphComponentsAlongGenome(gp.g, gp.int_ids, gp.index,
-				gp.kmer_mapper, labeler, gp.genome, folder, file_name,
+				gp.kmer_mapper, labeler, gp.genome, folder + "along_genome/", file_name,
 				"components_along_genome", cfg::get().ds.IS);
+	}
 
 	if (config.save_full_graph) {
+		make_dir(folder + "full_graph_save/");
 		ConjugateDataPrinter<Graph> printer(gp.g, gp.int_ids);
-		PrintGraphPack(folder + "graph", printer, gp);
+		PrintGraphPack(folder + "full_graph_save/graph", printer, gp);
 	}
 }
 

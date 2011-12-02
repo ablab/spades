@@ -8,10 +8,8 @@ using namespace omnigraph;
 
 namespace omnigraph {
 
-template<class Graph>
-class IdTrackHandler: public GraphActionHandler<Graph> {
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
+template<class VertexId, class EdgeId>
+class BaseIdTrackHandler: public ActionHandler<VertexId, EdgeId> {
 	typedef int realIdType;
 	std::unordered_map<VertexId, realIdType> VertexIntId;
 	std::unordered_map<EdgeId, realIdType> EdgeIntId;
@@ -23,7 +21,8 @@ class IdTrackHandler: public GraphActionHandler<Graph> {
 public:
 	realIdType AddVertexIntId(VertexId NewVertexId) {
 		realIdType PreviousId = ReturnIntId(NewVertexId);
-		if (PreviousId != 0) VertexOriginalId.erase(PreviousId);
+		if (PreviousId != 0)
+			VertexOriginalId.erase(PreviousId);
 		MaxVertexIntId++;
 		VertexIntId[NewVertexId] = MaxVertexIntId;
 		VertexOriginalId[MaxVertexIntId] = NewVertexId;
@@ -32,13 +31,11 @@ public:
 	realIdType AddVertexIntId(VertexId NewVertexId, realIdType NewIntId) {
 		TRACE("AddVertexIntId( "<< NewVertexId<<", "<<NewIntId<<")");
 		realIdType PreviousId = ReturnIntId(NewVertexId);
-		if (PreviousId != 0)
-	    {
+		if (PreviousId != 0) {
 			VertexOriginalId.erase(PreviousId);
 		}
 		VertexId PreviousVertex = ReturnVertexId(NewIntId);
-		if (PreviousVertex != NULL)
-	    {
+		if (PreviousVertex != NULL) {
 			VertexIntId.erase(PreviousVertex);
 		}
 
@@ -67,8 +64,7 @@ public:
 			EdgeOriginalId.erase(PreviousId);
 		}
 		EdgeId PreviousEdge = ReturnEdgeId(NewIntId);
-		if (PreviousEdge != NULL)
-	    {
+		if (PreviousEdge != NULL) {
 			EdgeIntId.erase(PreviousEdge);
 		}
 
@@ -86,15 +82,17 @@ public:
 	}
 	void ClearVertexId(VertexId OldVertexId) {
 		realIdType PreviousId = ReturnIntId(OldVertexId);
-		if (PreviousId != 0) VertexOriginalId.erase(PreviousId);
+		if (PreviousId != 0)
+			VertexOriginalId.erase(PreviousId);
 		VertexIntId.erase(OldVertexId);
 	}
 	void ClearEdgeId(EdgeId OldEdgeId) {
 		realIdType PreviousId = ReturnIntId(OldEdgeId);
-		if (PreviousId != 0) EdgeOriginalId.erase(PreviousId);
+		if (PreviousId != 0)
+			EdgeOriginalId.erase(PreviousId);
 		EdgeIntId.erase(OldEdgeId);
 	}
-	realIdType ReturnIntId(EdgeId e) const{
+	realIdType ReturnIntId(EdgeId e) const {
 		auto it = EdgeIntId.find(e);
 		return it != EdgeIntId.end() ? it->second : 0;
 	}
@@ -104,8 +102,8 @@ public:
 	}
 
 	EdgeId ReturnEdgeId(realIdType id) const {
-		typename map<realIdType, EdgeId>::const_iterator it = EdgeOriginalId.find(
-				id);
+		typename map<realIdType, EdgeId>::const_iterator it =
+				EdgeOriginalId.find(id);
 		if (it != EdgeOriginalId.end())
 			return it->second;
 		else
@@ -114,8 +112,8 @@ public:
 	}
 
 	VertexId ReturnVertexId(realIdType id) const {
-		typename map<realIdType, VertexId>::const_iterator it = VertexOriginalId.find(
-				id);
+		typename map<realIdType, VertexId>::const_iterator it =
+				VertexOriginalId.find(id);
 		if (it != VertexOriginalId.end())
 			return it->second;
 		else
@@ -123,35 +121,26 @@ public:
 
 	}
 
-	IdTrackHandler(Graph &g) :
-		GraphActionHandler<Graph> (g, "IdTrackHandler") {
+	BaseIdTrackHandler() :
+			ActionHandler<VertexId, EdgeId>("IdTrackHandler") {
 		MaxVertexIntId = 0;
 		MaxEdgeIntId = 0;
 	}
-	IdTrackHandler(Graph &g, int VertexStartIndex, int EdgeStartIndex) :
-		GraphActionHandler<Graph> (g, "IdTrackHandler") {
+	BaseIdTrackHandler(int VertexStartIndex, int EdgeStartIndex) :
+			ActionHandler<VertexId, EdgeId>("IdTrackHandler") {
 		MaxVertexIntId = VertexStartIndex;
 		MaxEdgeIntId = EdgeStartIndex;
 	}
 
-	virtual ~IdTrackHandler() {
+	virtual ~BaseIdTrackHandler() {
 		TRACE("~IdTrackHandler ok");
 	}
 
-	/*	virtual void HandleMerge(vector<EdgeId> oldEdges, EdgeId newEdge) {
-	 }
-
-
-	 virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
-	 }
-	 */
-
-	 virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		 realIdType RealEdgeId = ReturnIntId(edge1);
-		 ClearEdgeId(edge1);
-		 AddEdgeIntId(new_edge, RealEdgeId);
-	 }
-
+	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+		realIdType RealEdgeId = ReturnIntId(edge1);
+		ClearEdgeId(edge1);
+		AddEdgeIntId(new_edge, RealEdgeId);
+	}
 
 	virtual void HandleAdd(VertexId v) {
 		AddVertexIntId(v);
@@ -168,17 +157,41 @@ public:
 	}
 
 	std::string str(EdgeId edgeId) const {
-		int x = this->ReturnIntId(edgeId);
+		int x = ReturnIntId(edgeId);
 		return ToString(x);
 	}
 
+};
 
-//	std::string str(VertexId vId) {
-//		int x = this->ReturnIntId(vId);
-//		return ToString(x);
+template<class Graph>
+class IdTrackHandler: public BaseIdTrackHandler<typename Graph::VertexId, typename Graph::EdgeId> {
+	typedef BaseIdTrackHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
+
+	const Graph& g_;
+//protected:
+//	const Graph& g() const {
+//		return g_;
 //	}
+public:
+	IdTrackHandler(const Graph& g) :
+		g_(g) {
+		TRACE("Adding new action handler: " << this->name());
+		g_.AddActionHandler(this);
+		g_.set_int_ids(this);
+	}
 
+	IdTrackHandler(const Graph& g, int vertex_start_index, int edge_start_index) :
+		base(vertex_start_index, edge_start_index), g_(g) {
+		TRACE("Adding new action handler: " << this->name());
+		g_.AddActionHandler(this);
+		g_.set_int_ids(this);
+	}
 
+	virtual ~IdTrackHandler() {
+		TRACE("Removing action handler: " << this->name());
+		g_.set_int_ids((base*) 0);
+		g_.RemoveActionHandler(this);
+	}
 };
 
 template<class Graph>
@@ -193,7 +206,7 @@ protected:
 
 public:
 	RealIdGraphLabeler(Graph& g, IdTrackHandler<Graph>& IdTrack) :
-		g_(g), IDs(IdTrack) {
+			g_(g), IDs(IdTrack) {
 	}
 
 	virtual std::string label(VertexId vertexId) const {
@@ -207,6 +220,7 @@ public:
 		int x = IDs.ReturnIntId(edgeId);
 		return ToString(x) + ": " + g_.str(edgeId);
 	}
+
 	virtual ~RealIdGraphLabeler() {
 		TRACE("~RealIdGraphLabeler");
 	}

@@ -1022,18 +1022,23 @@ public:
 template<class Graph>
 class QualityLoggingRemovalHandler {
 	typedef typename Graph::EdgeId EdgeId;
+	const Graph& g_;
 	const EdgeQuality<Graph>& quality_handler_;
 //	size_t black_removed_;
 //	size_t colored_removed_;
 public:
-	QualityLoggingRemovalHandler(const EdgeQuality<Graph>& quality_handler) :
-			quality_handler_(quality_handler)/*, black_removed_(0), colored_removed_(
+	QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler) :
+			g_(g), quality_handler_(quality_handler)/*, black_removed_(0), colored_removed_(
 	 0)*/{
 
 	}
 
 	void HandleDelete(EdgeId edge) {
-		TRACE("Deleting edge with quality " << quality_handler_.quality(edge));
+		if (math::gr(quality_handler_.quality(edge), 0.)) {
+			TRACE("Deleting edge " << g_.int_id(edge) << " with quality " << quality_handler_.quality(edge));
+		} else {
+			TRACE("Deleting edge " << g_.int_id(edge) << " with zero quality");
+		}
 //		if (math::gr(quality_handler_.quality(edge), 0.))
 //			colored_removed_++;
 //		else
