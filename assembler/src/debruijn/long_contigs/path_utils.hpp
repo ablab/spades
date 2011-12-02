@@ -214,7 +214,7 @@ void RecountIds(Graph& g, std::vector<BidirectionalPath>& paths) {
 }
 
 void CheckIds(Graph& g, std::vector<BidirectionalPath>& paths) {
-	INFO("Checking IDS");
+	INFO("Checking IDS, total paths: " << paths.size());
 	for (int i = 0; i < (int) paths.size(); i += 2) {
 		if (paths[i].id != paths[i+1].conj_id || paths[i+1].id != paths[i].conj_id
 				|| paths[i].id != i || paths[i+1].id != i+1) {

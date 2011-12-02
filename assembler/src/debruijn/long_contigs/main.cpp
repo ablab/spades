@@ -55,6 +55,8 @@ int main() {
 		}
 	}
 
+	resolve_repeats_ml(g, pairedInfos, genome);
+
 	return 0;
 }
 

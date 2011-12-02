@@ -16,8 +16,8 @@ QUAKE_CROPPED_400K
 QUAKE_FULL
 {
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
-    ;graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_NEW/simplified_graph
-    graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/simplified_graph
+    graph_file       ./data/debruijn/QUAKE_FULL/K55/source/distance_estimation
+    ;graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/simplified_graph
     
 }
 
@@ -69,10 +69,10 @@ write_seeds             true
 write_overlaped_paths   false
 write_paths             true
 write_contigs           true
-write_real_paired_info  true
-write_raw_paired_info   true
+write_real_paired_info  false
+write_raw_paired_info   false
 cluster_paired_info     true
-write_graph             true
+write_graph             false
 print_stats             false
 paired_info_file_prefix "paired_info_"
 
@@ -90,7 +90,7 @@ ss
     check_trusted     true
     trusted_threshold 0.2
     
-    short_single      100
+    short_single      15
     chimeric_len      0
     chimeric_delta    0
     
@@ -105,10 +105,10 @@ ss
 ; extension selection
 es
 {
-    use_weight_function_first  true
+    use_weight_function_first  false
     weight_fun_threshold       0.2
-    weight_threshold           0.1
-    priority_coeff             3
+    weight_threshold           0.2
+    priority_coeff             8
 
     use_delta_first       true
     etalon_distance_dev   2
@@ -117,7 +117,7 @@ es
     
     max_depth             0
     
-    fix_weight            true
+    fix_weight            false
     use_advanced          false
     advanced_coeff        1.4
 }    
@@ -197,7 +197,7 @@ utils
 research 
 {
     research_mode            false
-    detailed_output          true
+    detailed_output          false
     fiter_by_edge            true
     edge_length              46
     force_to_cycle           false 
@@ -208,7 +208,7 @@ research
 ; additional real libs
 real_libs
 {    
-    count 2
+    count 1
 
     item_10
     {
@@ -233,7 +233,7 @@ real_libs
 
     }
 
-    item_0
+    item_10
     {
         read_size    75
         insert_size  280
@@ -431,14 +431,14 @@ real_libs
         QUAKE_FULL
         {
             precounted       true
-            ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_OLD/paired_info_IS220_RS100_clustered
-            precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS220_RS100_clustered
+            precounted_path  ./data/debruijn/QUAKE_FULL/K55/source/distance_estimation_cl
+            ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS220_RS100_clustered
             ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/09.26_02_00/paired_info_IS220_RS100_clustered
             
             first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
             second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz
             
-            has_advanced     true
+            has_advanced     false
             ;advanced         ./data/debruijn/QUAKE_FULL/K55/NORMAL_OLD/paired_info_IS220_RS100_acl
             advanced         ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS220_RS100_acl
             ;advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS220_RS100_acl

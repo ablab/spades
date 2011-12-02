@@ -38,6 +38,8 @@ namespace long_contigs {
 using namespace debruijn_graph;
 
 void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& genome) {
+	std::cerr << pairedInfos.size() << std::endl;
+
 	EdgeIndex<K + 1, Graph> index(g);
 
 	std::vector<BidirectionalPath> seeds;

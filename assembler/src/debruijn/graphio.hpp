@@ -862,7 +862,7 @@ void ScanWithClusteredIndex(const string& file_name,
 template<class Graph>
 void ScanWithKmerMapper(const string& file_name, Graph& g, IdTrackHandler<Graph>& intIds, KmerMapper<K + 1, Graph>& mapper) {
 	typename ScannerTraits<Graph>::Scanner scanner(g, intIds);
-	scanner.loadGraph(file_name);
+	ScanBasicGraph(file_name, scanner);
 	scanner.loadKmerMapper(file_name, mapper);
 }
 
