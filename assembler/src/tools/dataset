@@ -8,6 +8,7 @@ if [ "$cmd" == "hammer" ] ; then
     echo copying $files ...
     cp $files hammer/
     cd hammer
+	ls | xargs -I {} mv {} {}.fastq
     echo gzipping * ...
     gzip -9 *
     files="*left.corrected* *right.corrected* *left.unpaired* *right.unpaired*"
