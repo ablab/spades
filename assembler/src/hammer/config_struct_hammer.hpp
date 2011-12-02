@@ -73,7 +73,7 @@ struct hammer_config
 
 
 // main debruijn config load function
-void load(boost::property_tree::ptree const& pt, hammer_config& cfg);
+void load(hammer_config& cfg, boost::property_tree::ptree const& pt);
 
 typedef config_common::config<hammer_config> cfg;
 

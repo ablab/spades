@@ -13,10 +13,15 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/foreach.hpp>
+#include <boost/format.hpp>
 #include <string>
 #include <vector>
 #include <iostream>
 #include "simple_tools.hpp"
+
+using namespace std;
+using boost::format;
+//using boost::str;
 
 namespace config_common
 {

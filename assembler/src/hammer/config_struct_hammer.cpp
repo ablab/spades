@@ -7,7 +7,7 @@
 
 #include "config_struct_hammer.hpp"
 
-void load(boost::property_tree::ptree const& pt, hammer_config& cfg)
+void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
 {
 	using config_common::load;
 	// input options:
