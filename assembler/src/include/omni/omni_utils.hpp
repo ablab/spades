@@ -672,24 +672,43 @@ public:
 
 template<class Graph>
 class BackwardReliableBoundedDijkstra: public BackwardDijkstra<Graph> {
-private:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef BackwardDijkstra<Graph> super;
-	const size_t bound_;
-	const size_t max_vertex_number_;
-	size_t vertices_number_;
+
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef BackwardDijkstra<Graph> super;
 
 public:
-	BackwardReliableBoundedDijkstra(const Graph &g, size_t bound, size_t max_vertex_number) :
-		super(g), bound_(bound), max_vertex_number_(max_vertex_number), vertices_number_(0) {
+	BackwardReliableBoundedDijkstra(const Graph &g, size_t bound, size_t max_vertex_number)
+	    : super                 (g)
+	    , bound_                (bound)
+	    , max_vertex_number_    (max_vertex_number)
+	    , vertices_number_      (0)
+	    , vertex_limit_exceeded_(false)
+	{
 	}
 
 	virtual bool CheckProcessVertex(VertexId vertex, size_t distance) {
 		vertices_number_++;
+
+		if (vertices_number_ > max_vertex_number_)
+		    vertex_limit_exceeded_ = true;
+
 		return vertices_number_ < max_vertex_number_ && distance <= bound_;
 	}
 
+public:
+	bool VertexLimitExceeded() const
+	{
+	    return vertex_limit_exceeded_;
+	}
+
+private:
+    const size_t bound_;
+    const size_t max_vertex_number_;
+    size_t vertices_number_;
+
+private:
+	bool vertex_limit_exceeded_;
 };
 
 template<class Graph>
@@ -813,9 +832,10 @@ public:
 
 		double elapsed = t.elapsed();
 		if (elapsed > 1e-4)
-		{
 			DEBUG("Too much time for dijkstra: " << elapsed);
-		}
+
+		if (backward_dijkstra.VertexLimitExceeded())
+		    DEBUG("backward_dijkstra : vertex limit exceeded");
 
 		TRACE("Backward dijkstra finished");
 		TRACE("Starting recursive traversal");

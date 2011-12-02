@@ -97,7 +97,6 @@ public:
 		q.push(make_pair(0, start));
 		TRACE("Priority queue initialized. Starting search");
 
-		size_t it_num = 0;
 		while (!q.empty() && !finished()) {
 			TRACE("Dijkstra iteration started");
 			auto next = q.top();
@@ -120,8 +119,7 @@ public:
 
 
 			if (!CheckProcessVertex(vertex, distance)) {
-				VERBOSE_T(it_num, 1000, "Check for processing vertex failed. Proceeding to the next queue entry.");
-				++it_num;
+				TRACE("Check for processing vertex failed. Proceeding to the next queue entry.");
 				continue;
 			}
 
