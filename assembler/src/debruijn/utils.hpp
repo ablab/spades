@@ -1014,7 +1014,7 @@ public:
 
 	virtual std::string label(EdgeId edge) const {
 		double q = quality(edge);
-		return (q == 0) ? "" : ToString("quality: " << q);
+		return (q == 0) ? "" : "quality: " + ToString(q);
 	}
 
 };
