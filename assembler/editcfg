@@ -22,6 +22,8 @@ case $1 in
   'd')  cfg="src/debruijn/datasets.info" ;;
   'dip') cfg="src/debruijn/detail_info_printer.info";;
   'dipt') cfg="src/debruijn/detail_info_printer.info.template";;
+  'log') cfg="log4cxx.properties";;
+  'logt') cfg="log4cxx.properties.template";;
 esac
 
 $EDITOR $cfg

@@ -243,7 +243,7 @@ void BulgeRemover<Graph>::RemoveBulges() {
 		++it_count;
 
 		TRACE(
-				"Considering edge of length " << g_.length(edge)
+				"Considering edge " << g_.int_id(edge) << " of length " << g_.length(edge)
 						<< " and avg coverage " << g_.coverage(edge));
 		TRACE("Is possible bulge " << PossibleBulgeEdge(edge));
 
@@ -252,14 +252,14 @@ void BulgeRemover<Graph>::RemoveBulges() {
 			size_t kplus_one_mer_coverage = math::round(
 					g_.length(edge) * g_.coverage(edge));
 
-			TRACE("Processing edge " << g_.str(edge) << " and coverage "
+			TRACE("Processing edge " << g_.int_id(edge) << " and coverage "
 							<< kplus_one_mer_coverage);
 
 			VertexId start = g_.EdgeStart(edge);
-			TRACE("Start " << g_.str(start));
+			TRACE("Start " << g_.int_id(start));
 
 			VertexId end = g_.EdgeEnd(edge);
-			TRACE("End " << g_.str(end));
+			TRACE("End " << g_.int_id(end));
 			size_t delta = std::floor(
 					std::max(max_relative_delta_ * g_.length(edge),
 							max_delta_));
@@ -287,13 +287,13 @@ void BulgeRemover<Graph>::RemoveBulges() {
 				if (removal_handler_)
 					removal_handler_(edge);
 
-				TRACE("Projecting edge " << g_.str(edge));
+				TRACE("Projecting edge " << g_.int_id(edge));
 				ProcessBulge(edge, path);
 
-				TRACE("Compressing start of edge " << edge)
+				TRACE("Compressing start of edge " << g_.int_id(edge))
 				g_.CompressVertex(start);
 
-				TRACE("Compressing end of edge " << edge)
+				TRACE("Compressing end of edge " << g_.int_id(edge))
 				g_.CompressVertex(end);
 
 			} else {

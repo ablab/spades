@@ -493,6 +493,19 @@ SAUREUS_JCVI
         LEN             2872769 ; total size
 }
 
+SAUREUS_JCVI_0212
+{
+        first   JCVI/JCVI_control_MDA_Saureus_cleared_0212/00.reads.left.corrected.fastq
+        second  JCVI/JCVI_control_MDA_Saureus_cleared_0212/00.reads.right.corrected.fastq
+        single_first	JCVI/JCVI_control_MDA_Saureus_cleared_0212/00.reads.left.unpaired.fastq
+        single_second	JCVI/JCVI_control_MDA_Saureus_cleared_0212/00.reads.right.unpaired.fastq
+        RL              100     ; read length
+        IS              220     ; insert size todo check!!!!
+        single_cell     true
+        reference_genome  S.Aureus.USA300_FPR3757/S.Aureus.USA300_FPR3757.fasta
+        LEN             2872769 ; total size
+}
+
 SAUREUS_CORRECTED_1
 {
         first   S.Aureus.USA300_FPR3757/saureus_cor_left.fasta

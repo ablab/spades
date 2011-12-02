@@ -133,14 +133,14 @@ void CountPairedInfoStats(const Graph &g,
 	INFO("Paired info stats counted");
 }
 
-void FillAndCorrectEtalonPairedInfo(
+void FillAndCorrectEtalonPairedInfo (
 		paired_info_index &final_etalon_paired_index, const conj_graph_pack &gp,
-		const paired_info_index &paired_index,
+		const paired_info_index &paired_index, size_t insert_size, size_t read_length, size_t delta,
 		bool save_etalon_info_history = false) {
 	INFO("Filling etalon paired index");
 	paired_info_index etalon_paired_index(gp.g);
 	FillEtalonPairedIndex<debruijn_graph::K>(etalon_paired_index, gp.g,
-			gp.index, gp.kmer_mapper, gp.genome);
+			gp.index, gp.kmer_mapper, insert_size, read_length, delta, gp.genome);
 	INFO("Etalon paired index filled");
 
 	INFO("Correction of etalon paired info has been started");
@@ -165,8 +165,8 @@ void FillAndCorrectEtalonPairedInfo(
 	}
 
 	INFO("Pushing etalon info through estimator");
-	GraphDistanceFinder<Graph> dist_finder(gp.g, cfg::get().ds.IS,
-			cfg::get().ds.RL, cfg::get().de.delta);
+	GraphDistanceFinder<Graph> dist_finder(gp.g, insert_size,
+			read_length, delta);
 	DistanceEstimator<Graph> estimator(gp.g, filtered_etalon_index, dist_finder,
 			0, 4);
 	estimator.Estimate(final_etalon_paired_index);
@@ -186,18 +186,45 @@ void FillAndCorrectEtalonPairedInfo(
 	INFO("Correction finished");
 }
 
+template<class Graph>
+void GetAllDistances(const PairedInfoIndex<Graph>& paired_index, PairedInfoIndex<Graph>& result, const GraphDistanceFinder<Graph>& dist_finder) {
+    for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter){
+        vector < PairInfo<EdgeId> > data = *iter;
+		EdgeId first = data[0].first;
+		EdgeId second = data[0].second;
+		vector < size_t > forward = dist_finder.GetGraphDistances(first, second);
+        //if (debug(first, second)) cout<<"i'm here"<<endl;
+        for (size_t i = 0; i<forward.size(); i++) result.AddPairInfo(PairInfo<EdgeId>(data[0].first, data[0].second, forward[i], -10, 0.0), false);
+    }
+}
+
+template<class Graph>
+void CountAndSaveAllPaths(const Graph& g, const IdTrackHandler<Graph>& int_ids, const PairedInfoIndex<Graph>& paired_index) {
+	paired_info_index all_paths(g);
+    GetAllDistances<Graph>(paired_index, all_paths, GraphDistanceFinder<Graph>(g, cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta));
+
+    string dir_name = cfg::get().output_dir + "estimation_qual/";
+	make_dir(dir_name);
+
+	typename PrinterTraits<Graph>::Printer printer(g, int_ids);
+    printer.savePaired(dir_name + "paths", all_paths);
+}
+
 void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 		const PairedInfoIndex<Graph> &paired_index,
 		const PairedInfoIndex<Graph> &clustered_index) {
 
 	paired_info_index etalon_paired_index(gp.g);
-	FillAndCorrectEtalonPairedInfo(etalon_paired_index, gp, paired_index, true);
+	FillAndCorrectEtalonPairedInfo(etalon_paired_index, gp, paired_index,
+			cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta, true);
 	INFO("Counting clustered info stats");
 	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
 	EstimationQualityStat<Graph> estimation_stat(gp.g, gp.int_ids, edge_qual,
 			paired_index, clustered_index, etalon_paired_index);
 	estimation_stat.Count();
 	estimation_stat.SaveStats();
+
+	CountAndSaveAllPaths(gp.g, gp.int_ids, paired_index);
 
 	INFO("Counting overall cluster stat")
 	ClusterStat<Graph>(clustered_index).Count();
@@ -345,26 +372,35 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 		make_dir(folder);
 	}
 
-	if (config.detailed_dot_write)
-		DetailedWriteToDot(gp.g, labeler, folder + file_name, graph_name, path1,
+	if (config.detailed_dot_write) {
+		make_dir(folder + "error_loc/");
+		DetailedWriteToDot(gp.g, labeler, folder + "error_loc/" + file_name, graph_name, path1,
 				path2);
+	}
 
-	if (config.write_components)
-		WriteComponents(gp.g, labeler, folder + file_name, graph_name,
+	if (config.write_components) {
+		make_dir(folder + "components/");
+		WriteComponents(gp.g, labeler, folder + "components/" + file_name, graph_name,
 				cfg::get().ds.IS, path1, path2);
+	}
 
-	if (!config.components_for_kmer.empty())
-		WriteKmerComponent(gp, labeler, folder, graph_name, path1, path2,
+	if (!config.components_for_kmer.empty()) {
+		make_dir(folder + "kmer_loc/");
+		WriteKmerComponent(gp, labeler, folder + "kmer_loc/", graph_name, path1, path2,
 				Seq<K + 1>(config.components_for_kmer.c_str()));
+	}
 
-	if (config.write_components_along_genome)
+	if (config.write_components_along_genome) {
+		make_dir(folder + "along_genome/");
 		WriteGraphComponentsAlongGenome(gp.g, gp.int_ids, gp.index,
-				gp.kmer_mapper, labeler, gp.genome, folder, file_name,
+				gp.kmer_mapper, labeler, gp.genome, folder + "along_genome/", file_name,
 				"components_along_genome", cfg::get().ds.IS);
+	}
 
 	if (config.save_full_graph) {
+		make_dir(folder + "full_graph_save/");
 		ConjugateDataPrinter<Graph> printer(gp.g, gp.int_ids);
-		PrintGraphPack(folder + "graph", printer, gp);
+		PrintGraphPack(folder + "full_graph_save/graph", printer, gp);
 	}
 }
 

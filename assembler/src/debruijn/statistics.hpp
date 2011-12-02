@@ -680,7 +680,6 @@ private:
 	PairedInfoIndex<Graph> perfect_matches_;
 	PairedInfoIndex<Graph> imperfect_matches_;
 	PairedInfoIndex<Graph> false_negatives_;
-	PairedInfoIndex<Graph> all_paths_;
 
 //	PairedInfoIndex<Graph> false_positive_weights_;
 //	set<Info> false_positive_infos_;
@@ -887,23 +886,11 @@ public:
 			graph_(graph), int_ids_(int_ids), quality_(quality), pair_info_(pair_info), estimated_pair_info_(
 					estimated_pair_info), etalon_pair_info_(etalon_pair_info), false_positives_(
 					graph_), perfect_matches_(graph_), imperfect_matches_(
-					graph_), false_negatives_(graph_), all_paths_(graph_) {
+					graph_), false_negatives_(graph_) {
 	}
 
 	virtual ~EstimationQualityStat() {
 	}
-
-	//todo do we need to count it from initial pair info
-    void GetAllDistances(PairedInfoIndex<Graph> &result, const GraphDistanceFinder<Graph>& dist_finder) {
-        for (auto iter = pair_info_.begin(); iter != pair_info_.end(); ++iter){
-            vector < PairInfo<EdgeId> > data = *iter;
-			EdgeId first = data[0].first;
-			EdgeId second = data[0].second;
-			vector < size_t > forward = dist_finder.GetGraphDistances(first, second);
-            //if (debug(first, second)) cout<<"i'm here"<<endl;
-            for (size_t i = 0; i<forward.size(); i++) result.AddPairInfo(PairInfo<EdgeId>(data[0].first, data[0].second, forward[i], -10, 0.0));
-        }
-    }
 
 	virtual void Count() {
 		INFO("Counting distance estimation statistics");
@@ -924,8 +911,6 @@ public:
 		//		DEBUG("Handling pairs that are not in etalon information");
 		HandlePairsNotInEtalon(pairs_in_etalon);
 
-        GetAllDistances(all_paths_, GraphDistanceFinder<Graph>(graph_, cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta));
-
 		INFO("Distance estimation statistics counted");
 	}
 
@@ -943,10 +928,6 @@ public:
 
 	const PairedInfoIndex<Graph>& false_negatives() {
 		return false_negatives_;
-	}
-
-	const PairedInfoIndex<Graph>& all_paths() {
-		return all_paths_;
 	}
 
 	double fpr() {
@@ -967,7 +948,6 @@ public:
 		printer.savePaired(dir_name + "pm", perfect_matches_);
 		printer.savePaired(dir_name + "im", imperfect_matches_);
 		printer.savePaired(dir_name + "fn", false_negatives_);
-        printer.savePaired(dir_name + "paths", all_paths_);
 		INFO("Estimation statistics saved");
 	}
 

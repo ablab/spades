@@ -38,23 +38,23 @@ log4j.appender.b_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
 
 ########## Section for D ##########
 
-log4j.category.d=TRACE, d_stdout, d_file
-log4j.category.omg=TRACE, d_stdout, d_file
+log4j.category.d=INFO, d_stdout, d_file
+log4j.category.omg=INFO, d_stdout, d_file
 #log4j.category.d.PairInfoAwareErroneousEdgeRemover=TRACE
 #log4j.category.d.QualityLoggingRemovalHandler=TRACE
 #log4j.category.d.MatePairTransformStat=TRACE
 #log4j.category.d.EditDistanceTrackingCallback=TRACE
-#log4j.category.d.RepeatResolver=TRACE
+#log4j.category.d.RepeatResolver=INFO
 #log4j.category.d.BulgeRemover=TRACE
 #log4j.category.d.AbstractConjugateGraph=TRACE
 #log4j.category.d.PathProcessor=TRACE
 #log4j.category.d.DistanceEstimationQualityStat=DEBUG
 #log4j.category.d.Dijkstra=TRACE
 #log4j.category.d.AbstractGraph=TRACE
-log4j.category.d.PathSetGraphConstructor=TRACE
+#log4j.category.d.PathSetGraphConstructor=TRACE
 
 log4j.appender.d_file=org.apache.log4j.RollingFileAppender
-log4j.appender.d_file.threshold=DEBUG
+log4j.appender.d_file.threshold=TRACE
 log4j.appender.d_file.file=logs/d.log
 log4j.appender.d_file.maxFileSize=500MB
 log4j.appender.d_file.maxBackupIndex=10
@@ -63,16 +63,21 @@ log4j.appender.d_file.layout=org.apache.log4j.PatternLayout
 log4j.appender.d_file.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
 
 log4j.appender.d_stdout=org.apache.log4j.ConsoleAppender
-log4j.appender.d_stdout.threshold=INFO
+log4j.appender.d_stdout.threshold=TRACE
 log4j.appender.d_stdout.layout=org.apache.log4j.PatternLayout
 log4j.appender.d_stdout.layout.conversionPattern=%7r %5p %c (%F:%L) - %m%n
 
 ########## Section for DT ##########
 
-log4j.category.dt=INFO, dt_stdout
+log4j.category.dt=INFO, dt_stdout, dt_file
 
+#log4j.category.dt.BulgeRemover=TRACE
+#log4j.category.dt.PathProcessor=TRACE
+#log4j.category.dt.Dijkstra=TRACE
+
+log4j.appender.dt_file=org.apache.log4j.RollingFileAppender
 log4j.appender.dt_file.threshold=TRACE
-log4j.appender.dt_file.file=logs/d.log
+log4j.appender.dt_file.file=logs/dt.log
 log4j.appender.dt_file.maxFileSize=500MB
 log4j.appender.dt_file.maxBackupIndex=10
 log4j.appender.dt_file.append=false 

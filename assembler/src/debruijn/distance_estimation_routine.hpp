@@ -93,7 +93,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		if (cfg::get().simp.simpl_mode
 				== debruijn_graph::simplification_mode::sm_pair_info_aware) {
 			EdgeQuality<Graph> quality_handler(gp.g, gp.index, gp.kmer_mapper, gp.genome);
-			QualityLoggingRemovalHandler<Graph> qual_removal_handler(quality_handler);
+			QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, quality_handler);
 			boost::function<void(EdgeId)> removal_handler_f = boost::bind(
 					&QualityLoggingRemovalHandler<Graph>::HandleDelete,
 					&qual_removal_handler, _1);

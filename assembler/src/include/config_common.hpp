@@ -36,45 +36,60 @@ namespace config_common
 		};
 	}
 
-	template <class T>
-	bool load_if_exists(boost::property_tree::ptree const& pt, std::string const& key, T& value)
-	{
-	    if (pt.find(key) == pt.not_found())
-	        return false;
+    template <class T>
+    typename boost::enable_if_c<details::is_equal_type<T, std::string>::value || boost::is_arithmetic<T>::value >::type
+        load(T& value, boost::property_tree::ptree const& pt, string const& key, bool complete)
+    {
+        if (complete || pt.find(key) != pt.not_found())
+            value = pt.get<T>(key);
+    }
 
-        load(pt, key, value);
-        return true;
-	}
-
-	template <class T>
-	typename boost::enable_if_c<details::is_equal_type<T, std::string>::value || boost::is_arithmetic<T>::value >::type
-		load(boost::property_tree::ptree const& pt, std::string const& key, T& value)
-	{
-		value = pt.get<T>(key);
-	}
-
-	template <class T>
-	typename boost::disable_if_c<details::is_equal_type<T, std::string>::value || boost::is_arithmetic<T>::value >::type
-		load(boost::property_tree::ptree const& pt, std::string const& key, T& value)
-	{
-		load(pt.get_child(key), value);
-	}
+    template <class T>
+    typename boost::disable_if_c<details::is_equal_type<T, std::string>::value || boost::is_arithmetic<T>::value >::type
+        load(T& value, boost::property_tree::ptree const& pt, string const& key, bool complete)
+    {
+        if (complete || pt.find(key) != pt.not_found())
+            load(value, pt.get_child(key), complete);
+    }
 
 	template<class T>
-	void load(boost::property_tree::ptree const& pt, std::string const& key, std::vector<T>& vec)
+	void load(std::vector<T>& vec, boost::property_tree::ptree const& pt, string const& key, bool complete)
 	{
-		size_t count = pt.get<size_t>(key + ".count");
-		for (size_t i = 0; i != count; ++i)
+		string vector_key = key + string(".count");
+		if (complete || pt.find(vector_key) != pt.not_found())
 		{
-			T t;
-			load(pt.get_child(key + ".item_" + ToString(i)), t);
-			vec.push_back(t);
+			size_t count = pt.get < size_t > (vector_key);
+
+			for (size_t i = 0; i != count; ++i)
+			{
+				T t;
+				load(t, pt.get_child(str(format("%$s.item_%d") % key % i)));
+				vec.push_back(t);
+			}
 		}
 	}
 
-	template<class T>
-	void load(boost::property_tree::ptree const&, T&);
+    template<class T>
+    void load(T& value, boost::property_tree::ptree const& pt, string const& key)
+    {
+        load(value, pt, key, true);
+    }
 
+    template<class T>
+    void load(T& value, boost::property_tree::ptree const& pt, const char* key)
+    {
+        load(value, pt, string(key), true);
+    }
+
+    template<class T>
+    void load(T& value, boost::property_tree::ptree const& pt)
+    {
+        load(value, pt, true);
+    }
+
+
+//    template<class T>
+//    void load(T&, boost::property_tree::ptree const&, bool complete);
 
 	// config singleton-wrap
 	template <class Config>
@@ -92,7 +107,7 @@ namespace config_common
 		{
 			boost::property_tree::ptree pt;
 			boost::property_tree::read_info(filename, pt);
-			load(pt, inner_cfg());
+			load(inner_cfg(), pt);
 		}
 
 		static Config const& get()

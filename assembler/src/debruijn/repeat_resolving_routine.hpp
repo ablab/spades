@@ -573,7 +573,7 @@ void resolve_repeats() {
 	paired_info_index clustered_index(conj_gp.g);
 
 	exec_distance_estimation(conj_gp, paired_index, clustered_index);
-	
+
 	if(cfg::get().pos.late_threading){
 		FillEdgesPos(conj_gp, conj_gp.genome, 10);
 		FillEdgesPos(conj_gp, !conj_gp.genome, 11);
@@ -583,6 +583,9 @@ void resolve_repeats() {
 	//tSeparatedStats(conj_gp, conj_gp.genome, clustered_index);
 	
 	INFO("STAGE == Resolving Repeats");
+
+    detail_info_printer printer(conj_gp, LabelerList<Graph>(), cfg::get().output_dir, "graph.dot");
+    printer(ipp_before_repeat_resolution);
 
 	if (!cfg::get().paired_mode) {
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "contigs.fasta");

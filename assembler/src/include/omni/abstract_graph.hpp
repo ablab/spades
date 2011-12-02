@@ -23,20 +23,36 @@ protected:
 
 	Vertices vertices_;
 
-	IdTrackHandler<AbstractGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> int_ids_;
+	mutable BaseIdTrackHandler<VertexIdT, EdgeIdT>* int_ids_;
 
 public:
 	AbstractGraph(HandlerApplier<VertexId, EdgeId>* applier,
 			const DataMaster& master) :
-		base(applier, master), int_ids_(*this){
+		base(applier, master), int_ids_(NULL){
 	}
 
 	virtual ~AbstractGraph() {
 		TRACE("~AbstractGraph");
 	}
 
-	const IdTrackHandler<AbstractGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> &int_ids() const {
-		return int_ids_;
+	void set_int_ids(BaseIdTrackHandler<VertexIdT, EdgeIdT>* int_ids) const {
+		VERIFY(!int_ids_ || !int_ids);
+		int_ids_ = int_ids;
+	}
+
+	BaseIdTrackHandler<VertexIdT, EdgeIdT> &int_ids() const {
+		VERIFY(int_ids_);
+		return *int_ids_;
+	}
+
+	int int_id(EdgeId edge) const {
+		VERIFY(int_ids_);
+		return int_ids_->ReturnIntId(edge);
+	}
+
+	int int_id(VertexId vertex) const {
+		VERIFY(int_ids_);
+		return int_ids_->ReturnIntId(vertex);
 	}
 
 	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const {

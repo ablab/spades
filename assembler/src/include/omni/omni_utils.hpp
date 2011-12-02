@@ -672,24 +672,43 @@ public:
 
 template<class Graph>
 class BackwardReliableBoundedDijkstra: public BackwardDijkstra<Graph> {
-private:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef BackwardDijkstra<Graph> super;
-	const size_t bound_;
-	const size_t max_vertex_number_;
-	size_t vertices_number_;
+
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef BackwardDijkstra<Graph> super;
 
 public:
-	BackwardReliableBoundedDijkstra(const Graph &g, size_t bound, size_t max_vertex_number) :
-		super(g), bound_(bound), max_vertex_number_(max_vertex_number) {
+	BackwardReliableBoundedDijkstra(const Graph &g, size_t bound, size_t max_vertex_number)
+	    : super                 (g)
+	    , bound_                (bound)
+	    , max_vertex_number_    (max_vertex_number)
+	    , vertices_number_      (0)
+	    , vertex_limit_exceeded_(false)
+	{
 	}
 
 	virtual bool CheckProcessVertex(VertexId vertex, size_t distance) {
 		vertices_number_++;
+
+		if (vertices_number_ > max_vertex_number_)
+		    vertex_limit_exceeded_ = true;
+
 		return vertices_number_ < max_vertex_number_ && distance <= bound_;
 	}
 
+public:
+	bool VertexLimitExceeded() const
+	{
+	    return vertex_limit_exceeded_;
+	}
+
+private:
+    const size_t bound_;
+    const size_t max_vertex_number_;
+    size_t vertices_number_;
+
+private:
+	bool vertex_limit_exceeded_;
 };
 
 template<class Graph>
@@ -736,7 +755,7 @@ private:
 	//todo rewrite without recursion
 	void Go(VertexId v, size_t current_path_length,
 			Dijkstra<Graph>& distances_to_end) {
-		TRACE("Processing vertex " << v << " started");
+		TRACE("Processing vertex " << v << " started; current path length " << current_path_length);
 		call_cnt_++;
 		if (call_cnt_ == MAX_CALL_CNT) {
 			DEBUG(
@@ -748,8 +767,17 @@ private:
 
 		if (!distances_to_end.DistanceCounted(v)
 				|| distances_to_end.GetDistance(v) + current_path_length
-						> max_length_)
+						> max_length_) {
+			if (!distances_to_end.DistanceCounted(v)) {
+				TRACE("Shortest distance from this vertex wasn't counted");
+			} else if (distances_to_end.GetDistance(v) + current_path_length
+					> max_length_) {
+				TRACE("Shortest distance from this vertex is " << distances_to_end.GetDistance(v)
+						<< " and sum with current path length " << current_path_length
+						<< " exceeded max length " << max_length_);
+			}
 			return;
+		}
 		TRACE("Vetex " << v << " should be processed");
 
 		if (v == end_ && current_path_length >= min_length_) {
@@ -804,15 +832,16 @@ public:
 
 		double elapsed = t.elapsed();
 		if (elapsed > 1e-4)
-		{
-			INFO("Too much time for dijkstra: " << elapsed);
-		}
+			DEBUG("Too much time for dijkstra: " << elapsed);
+
+		if (backward_dijkstra.VertexLimitExceeded())
+		    DEBUG("backward_dijkstra : vertex limit exceeded");
 
 		TRACE("Backward dijkstra finished");
 		TRACE("Starting recursive traversal");
 		Go(start_, 0, backward_dijkstra);
 		if(call_cnt_ > 10)
-			INFO("number of calls: " << call_cnt_);
+			DEBUG("number of calls: " << call_cnt_);
 		TRACE("Recursive traversal finished");
 	}
 

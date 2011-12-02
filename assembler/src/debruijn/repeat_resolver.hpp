@@ -63,6 +63,7 @@ public:
 		static const int MAXD = 2;
 		static const int MAXSKIPDIST = 4;
 
+
 		EdgeInfo(const PairInfo &lp_, const int dir_, const EdgeId edge_,
 				const int d_) :
 				lp(lp_), dir(dir_), edge(edge_), d(d_) {
@@ -80,12 +81,18 @@ public:
 
 		bool IsEdgesOnDistanceAdjacent(EdgeId edge,       int d,
 									   EdgeId other_edge, int other_d,
-									   const Graph &old_graph, double max_diff, bool first_equal ){
+									   const Graph &old_graph, double max_diff, bool first_equal , const 	IdTrackHandler<Graph> &old_IDs){
 
 			VertexId v_s = old_graph.EdgeStart(edge);
 			VertexId v_e = old_graph.EdgeEnd(edge);
 //			EdgeId other_edge = other_info.getEdge();
 			//			DEBUG("to " << other_edge);
+			int flag = 0;
+			if (old_IDs.ReturnIntId(edge) == 37418 || old_IDs.ReturnIntId(other_edge) == 37418 || old_IDs.ReturnIntId(edge) == 37417 || old_IDs.ReturnIntId(other_edge) == 37417) {
+				flag = 1;
+				DEBUG("comparing on adjacency edges "<< old_IDs.ReturnIntId(edge)  <<" and " << old_IDs.ReturnIntId(other_edge) <<"dists " <<d << " and " << other_d);
+			}
+
 			VertexId other_v_s = old_graph.EdgeStart(other_edge);
 			VertexId other_v_e = old_graph.EdgeEnd(other_edge);
 			//TODO: insert distance!!!
@@ -102,13 +109,19 @@ public:
 			if (dij.DistanceCounted(other_v_s))
 				if (isClose(d + len + dij.GetDistance(other_v_s), other_d,
 						max_diff))
+				{
+					if (flag){	DEBUG("first true");}
 					return true;
+				}
 
 			dij.run(other_v_e);
 			if (dij.DistanceCounted(v_s))
 				if (isClose(other_d + other_len + dij.GetDistance(v_s), d,
 						max_diff))
+				{
+					if (flag){	DEBUG("2nd true");}
 					return true;
+				}
 
 			if ((other_edge == edge && isClose(d, other_d, max_diff)))
 				return true;
@@ -119,13 +132,25 @@ public:
 								&& isClose(d, other_d + other_len, max_diff))
 						|| (other_edge == edge && isClose(d, other_d, max_diff))) {
 					//				DEBUG("ADJACENT!");
-					return true;
+					{
+						if (flag){	DEBUG("3rd true");}
+						return true;
+					}
 				} else {
 					//			DEBUG("not adjacent");
-					return false;
+					{
+						if (flag){	DEBUG("first false");}
+						return false;
+					}
 				}
 			}
-			return false;
+			{
+				if (flag){	DEBUG("second false");}
+
+				return false;
+			}
+
+			//return false;
 
 		}
 
@@ -134,7 +159,7 @@ public:
 
 
 		bool isAdjacent(EdgeInfo other_info, const Graph &old_graph,
-				const Graph &new_graph, EdgeLabelHandler<Graph> &labels_after, const TotalLabeler<Graph>& tot_lab) {
+				const Graph &new_graph, EdgeLabelHandler<Graph> &labels_after, const TotalLabeler<Graph>& tot_lab, const 	IdTrackHandler<Graph> &old_IDs) {
 			//			DEBUG("comparation started: " << edge);
 			//		max_diff = MAXD;
 
@@ -155,7 +180,7 @@ public:
 					+ 1e-9;
 
 			bool old_res = IsEdgesOnDistanceAdjacent(this->edge, this->d, other_info.getEdge()
-					,other_info.getDistance(), old_graph, max_diff, lp.first == other_info.lp.first);
+					,other_info.getDistance(), old_graph, max_diff, lp.first == other_info.lp.first, old_IDs);
 
 
 			//new_version
@@ -166,7 +191,7 @@ public:
 			for(auto this_edge_it = edges_set.begin(); this_edge_it != edges_set.end(); ++ this_edge_it)
 				for(auto other_edge_it = other_edges_set.begin(); other_edge_it != other_edges_set.end(); ++ other_edge_it)
 					if( IsEdgesOnDistanceAdjacent(*this_edge_it, this->d, *other_edge_it
-							,other_info.getDistance(), new_graph, max_diff, lp.first == other_info.lp.first))
+							,other_info.getDistance(), new_graph, max_diff, lp.first == other_info.lp.first, old_IDs))
 					new_res  = true;
 
 			if (old_res != new_res) {
@@ -185,7 +210,7 @@ public:
 //				INFO("   first  set: "<<ToString(set1_ids));
 //				INFO("   second set: "<<ToString(set2_ids));
 			}
-			return new_res;
+			return old_res;
 		}
 
 
@@ -1192,15 +1217,15 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid, TotalLabeler<
 			ERROR("fake edge");
 		}
 		for (int j = 0; j < size; j++) {
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after, tot_labler)
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after, tot_labler, old_IDs)
 					&& !edge_infos[j].isAdjacent(edge_infos[i], old_graph,
-							new_graph, labels_after, tot_labler))
+							new_graph, labels_after, tot_labler, old_IDs))
 				WARN(
 						"ASSYMETRIC: " << new_IDs.ReturnIntId(edge_infos[i].getEdge()) << " " << new_IDs.ReturnIntId(edge_infos[j].getEdge()));
-			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after, tot_labler)) {
+			if (edge_infos[i].isAdjacent(edge_infos[j], old_graph, new_graph, labels_after, tot_labler, old_IDs)) {
 				neighbours[i].push_back(j);
 				neighbours[j].push_back(i);
-				TRACE(
+				DEBUG(
 						old_IDs.ReturnIntId(edge_infos[i].lp.second) <<" " << edge_infos[i].d << " is adjacent "<<old_IDs.ReturnIntId( edge_infos[j].lp.second) <<" " << edge_infos[j].d);
 
 			}

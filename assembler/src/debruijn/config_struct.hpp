@@ -48,6 +48,7 @@ enum info_printer_pos
     ipp_final_bulge_removal          ,
     ipp_removing_isolated_edges      ,
     ipp_final_simplified             ,
+    ipp_before_repeat_resolution     ,
 
     ipp_total
 };
@@ -59,16 +60,17 @@ inline const char* info_printer_pos_name(size_t pos)
 {
     const char* names[] =
     {
-       "default"                ,
-       "before_simplification"  ,
-       "tip_clipping"           ,
-       "bulge_removal"          ,
-       "err_con_removal"        ,
-       "final_err_con_removal"  ,
-       "final_tip_clipping"     ,
-       "final_bulge_removal"    ,
-       "removing_isolated_edges" ,
-       "final_simplified"
+       "default"                    ,
+       "before_simplification"      ,
+       "tip_clipping"               ,
+       "bulge_removal"              ,
+       "err_con_removal"            ,
+       "final_err_con_removal"      ,
+       "final_tip_clipping"         ,
+       "final_bulge_removal"        ,
+       "removing_isolated_edges"    ,
+       "final_simplified"           ,
+       "before_repeat_resolution"
     };
 
     utils::check_array_size<ipp_total>(names);
@@ -168,7 +170,6 @@ struct debruijn_config
 
 	struct simplification {
 		struct tip_clipper {
-			double max_tip_length_div_K;
 			size_t max_tip_length;
 			double max_coverage;
 			double max_relative_coverage;
@@ -321,225 +322,234 @@ public:
 
 // specific load functions
 
-inline void load(boost::property_tree::ptree const& pt,
-		debruijn_config::simplification::tip_clipper& tc) {
+inline void load(debruijn_config::simplification::tip_clipper& tc, boost::property_tree::ptree const& pt, bool complete)
+{
 	using config_common::load;
-	load(pt, "max_tip_length_div_K", tc.max_tip_length_div_K);
-	load(pt, "max_tip_length", tc.max_tip_length);
-	load(pt, "max_coverage", tc.max_coverage);
-	load(pt, "max_relative_coverage", tc.max_relative_coverage);
+	load(tc.max_tip_length			, pt, "max_tip_length"		 );
+	load(tc.max_coverage			, pt, "max_coverage"		 );
+	load(tc.max_relative_coverage	, pt, "max_relative_coverage");
 }
 
-inline void load(boost::property_tree::ptree const& pt, std::string const& key,
-		working_stage& entry_point) {
+inline void load(working_stage& entry_point, boost::property_tree::ptree const& pt, std::string const& key, bool complete)
+{
 	std::string ep = pt.get<std::string>(key);
 	entry_point = debruijn_config::working_stage_id(ep);
 }
 
-inline void load(boost::property_tree::ptree const& pt, std::string const& key,
-		simplification_mode& simp_mode) {
+inline void load(simplification_mode& simp_mode, boost::property_tree::ptree const& pt, std::string const& key, bool complete)
+{
 	std::string ep = pt.get<std::string>(key);
 	simp_mode = debruijn_config::simpl_mode_id(ep);
 }
 
-inline void load(boost::property_tree::ptree const& pt,
-		debruijn_config::simplification::bulge_remover& br) {
+inline void load(debruijn_config::simplification::bulge_remover& br, boost::property_tree::ptree const& pt, bool complete)
+{
 	using config_common::load;
-	load(pt, "max_length_div_K", br.max_length_div_K);
-	load(pt, "max_coverage", br.max_coverage);
-	load(pt, "max_relative_coverage", br.max_relative_coverage);
-	load(pt, "max_delta", br.max_delta);
-	load(pt, "max_relative_delta", br.max_relative_delta);
+
+	load(br.max_length_div_K     , pt, "max_length_div_K"		);
+	load(br.max_coverage         , pt, "max_coverage"			);
+	load(br.max_relative_coverage, pt, "max_relative_coverage"  );
+	load(br.max_delta		     , pt, "max_delta"			    );
+	load(br.max_relative_delta   , pt, "max_relative_delta"	    );
 }
 
-inline void load(boost::property_tree::ptree const& pt,
-		debruijn_config::simplification::pair_info_ec_remover& ec) {
+inline void load(debruijn_config::simplification::pair_info_ec_remover& ec, boost::property_tree::ptree const& pt, bool complete)
+{
 	using config_common::load;
-	load(pt, "max_length", ec.max_length);
-	load(pt, "min_neighbour_length", ec.min_neighbour_length);
+
+	load(ec.max_length,           pt, "max_length"			);
+	load(ec.min_neighbour_length, pt, "min_neighbour_length");
 }
 
-inline void load(boost::property_tree::ptree const& pt,
-		debruijn_config::simplification::erroneous_connections_remover& ec) {
+inline void load(debruijn_config::simplification::erroneous_connections_remover& ec, boost::property_tree::ptree const& pt, bool complete)
+{
 	using config_common::load;
-	load(pt, "max_coverage", ec.max_coverage);
-	load(pt, "max_length_div_K", ec.max_length_div_K);
+
+	load(ec.max_coverage    , pt, "max_coverage"    );
+	load(ec.max_length_div_K, pt, "max_length_div_K");
 }
 
-inline void load(
-		boost::property_tree::ptree const& pt,
-		debruijn_config::simplification::cheating_erroneous_connections_remover& cec) {
+inline void load(debruijn_config::simplification::cheating_erroneous_connections_remover& cec, boost::property_tree::ptree const& pt, bool complete)
+{
 	using config_common::load;
-	load(pt, "max_length", cec.max_length);
-	load(pt, "coverage_gap", cec.coverage_gap);
-	load(pt, "sufficient_neighbour_length", cec.sufficient_neighbour_length);
+
+	load(cec.max_length                 , pt, "max_length"  );
+	load(cec.coverage_gap               , pt, "coverage_gap");
+	load(cec.sufficient_neighbour_length, pt, "sufficient_neighbour_length");
 }
 
-inline void load(
-		boost::property_tree::ptree const& pt,
-		debruijn_config::simplification::topology_based_ec_remover& tec) {
+inline void load(debruijn_config::simplification::topology_based_ec_remover& tec, boost::property_tree::ptree const& pt, bool complete)
+{
 	using config_common::load;
-	load(pt, "max_length", tec.max_length);
-	load(pt, "plausibility_length", tec.plausibility_length);
-	load(pt, "uniqueness_length", tec.uniqueness_length);
+
+	load(tec.max_length         , pt, "max_length"         );
+	load(tec.plausibility_length, pt, "plausibility_length");
+	load(tec.uniqueness_length  , pt, "uniqueness_length"  );
 }
 
-inline void load(boost::property_tree::ptree const& pt,
-		debruijn_config::distance_estimator& de) {
+inline void load(debruijn_config::distance_estimator& de, boost::property_tree::ptree const& pt, bool complete)
+{
 	using config_common::load;
-	load(pt, "delta", de.delta);
-	load(pt, "linkage_distance", de.linkage_distance);
-	load(pt, "max_distance", de.max_distance);
-	load(pt, "filter_threshold", de.filter_threshold);
+
+	load(de.linkage_distance, pt, "linkage_distance");
+    load(de.delta           , pt, "delta"           );
+	load(de.max_distance    , pt, "max_distance"	);
+	load(de.filter_threshold, pt, "filter_threshold");
 }
 
-inline void load(boost::property_tree::ptree const& pt,
-		debruijn_config::advanced_distance_estimator& ade) {
+inline void load(debruijn_config::advanced_distance_estimator& ade, boost::property_tree::ptree const& pt, bool complete)
+{
 	using config_common::load;
-	load(pt, "threshold", ade.threshold);
-	load(pt, "range_coeff", ade.range_coeff);
-	load(pt, "delta_coeff", ade.delta_coeff);
-	load(pt, "percentage", ade.percentage);
-	load(pt, "cutoff", ade.cutoff);
-	load(pt, "minpeakpoints", ade.minpeakpoints);
-	load(pt, "inv_density", ade.inv_density);
-	load(pt, "derivative_threshold", ade.derivative_threshold);
+
+	load(ade.threshold      , pt, "threshold"       );
+	load(ade.range_coeff    , pt, "range_coeff"     );
+	load(ade.delta_coeff    , pt, "delta_coeff"		);
+	load(ade.percentage     , pt, "percentage"		);
+	load(ade.cutoff         , pt, "cutoff"			);
+	load(ade.minpeakpoints  , pt, "minpeakpoints"	);
+	load(ade.inv_density    , pt, "inv_density"		);
+	load(ade.derivative_threshold, pt, "derivative_threshold");
 }
 
-inline void load(boost::property_tree::ptree const& pt,
-		debruijn_config::repeat_resolver& rr) {
+inline void load(debruijn_config::repeat_resolver& rr, boost::property_tree::ptree const& pt, bool complete)
+{
 	using config_common::load;
-	load(pt, "symmetric_resolve", rr.symmetric_resolve);
-	load(pt, "mode", rr.mode);
-	load(pt, "near_vertex", rr.near_vertex);
+
+	load(rr.symmetric_resolve, pt, "symmetric_resolve");
+	load(rr.mode             , pt, "mode"			  );
+	load(rr.near_vertex      , pt, "near_vertex"	  );
 }
 
-inline void load(boost::property_tree::ptree const& pt,
-		debruijn_config::position_handler& pos) {
+inline void load(debruijn_config::position_handler& pos, boost::property_tree::ptree const& pt, bool complete)
+{
 	using config_common::load;
-	load(pt, "max_single_gap", pos.max_single_gap);
-	load(pt, "contigs_for_threading", pos.contigs_for_threading);
-	load(pt, "late_threading", pos.late_threading);
+
+	load(pos.max_single_gap         , pt, "max_single_gap"		 );
+	load(pos.contigs_for_threading  , pt, "contigs_for_threading");
+	load(pos.late_threading         , pt, "late_threading"		 );
 }
 
-inline void load(boost::property_tree::ptree const& pt,
-		debruijn_config::gap_closer& gc) {
+inline void load(debruijn_config::gap_closer& gc, boost::property_tree::ptree const& pt, bool complete)
+{
 	using config_common::load;
-	load(pt, "minimal_intersection", gc.minimal_intersection);
+	load(gc.minimal_intersection, pt, "minimal_intersection");
 }
 
-inline void load(boost::property_tree::ptree const& pt,
-		debruijn_config::dataset& ds) {
+inline void load(debruijn_config::dataset& ds, boost::property_tree::ptree const& pt, bool complete)
+{
 	using config_common::load;
-	load(pt, "first", ds.first);
-	load(pt, "second", ds.second);
-	ds.single_first = pt.get_optional<std::string>("single_first");
+
+	load(ds.first , pt, "first" );
+	load(ds.second, pt, "second");
+
+	ds.single_first  = pt.get_optional<std::string>("single_first");
 	ds.single_second = pt.get_optional<std::string>("single_second");
-	load(pt, "RL", ds.RL);
-	load(pt, "IS", ds.IS);
-	load(pt, "single_cell", ds.single_cell);
+
+	load(ds.RL, pt, "RL");
+	load(ds.IS, pt, "IS");
+	load(ds.single_cell, pt, "single_cell");
 	boost::optional<std::string> rg = pt.get_optional<std::string>("reference_genome");
 	ds.reference_genome = (rg) ? *rg : "";
-	if (ds.reference_genome == "N/A") {
+
+	if (ds.reference_genome == "N/A")
 		ds.reference_genome = "";
-	}
-	load(pt, "LEN", ds.LEN);
+
+	load(ds.LEN, pt, "LEN");
 }
 
-inline void load(boost::property_tree::ptree const& pt,
-		debruijn_config::simplification& simp) {
-	using config_common::load;
-	load(pt, "simpl_mode", simp.simpl_mode);
-	load(pt, "tc", simp.tc); // tip clipper:
-	load(pt, "br", simp.br); // bulge remover:
-	load(pt, "ec", simp.ec); // erroneous connections remover:
-	load(pt, "cec", simp.cec); // cheating erroneous connections remover:
-	load(pt, "tec", simp.tec); // topology aware erroneous connections remover:
-	load(pt, "piec", simp.piec); // pair info aware erroneous connections remover:
-	load(pt, "isolated_min_len", simp.isolated_min_len);
-	load(pt, "removal_checks_enabled", simp.removal_checks_enabled);
-}
-
-inline void load(boost::property_tree::ptree const& pt, debruijn_config::info_printer& printer)
+inline void load(debruijn_config::simplification& simp, boost::property_tree::ptree const& pt, bool complete)
 {
-    using config_common::load_if_exists;
+	using config_common::load;
 
-    load_if_exists(pt, "print_stats"                  , printer.print_stats);
-    load_if_exists(pt, "detailed_dot_write"           , printer.detailed_dot_write);
-    load_if_exists(pt, "write_components"             , printer.write_components);
-    load_if_exists(pt, "components_for_kmer"          , printer.components_for_kmer);
-    load_if_exists(pt, "write_components_along_genome", printer.write_components_along_genome);
-    load_if_exists(pt, "save_full_graph"			  , printer.save_full_graph);
+	load(simp.simpl_mode, pt, "simpl_mode");
+
+	load(simp.tc  , pt, "tc"  ); // tip clipper:
+	load(simp.br  , pt, "br"  ); // bulge remover:
+	load(simp.ec  , pt, "ec"  ); // erroneous connections remover:
+	load(simp.cec , pt, "cec" ); // cheating erroneous connections remover:
+	load(simp.tec , pt, "tec" ); // topology aware erroneous connections remover:
+	load(simp.piec, pt, "piec"); // pair info aware erroneous connections remover:
+
+	load(simp.isolated_min_len      , pt, "isolated_min_len"      );
+	load(simp.removal_checks_enabled, pt, "removal_checks_enabled");
 }
 
-inline void load(boost::property_tree::ptree const& pt, debruijn_config::info_printers_t& printers)
+inline void load(debruijn_config::info_printer& printer, boost::property_tree::ptree const& pt, bool complete)
 {
     using config_common::load;
-    using config_common::load_if_exists;
 
+    load(printer.print_stats				  ,	pt, "print_stats"                   , complete);
+    load(printer.detailed_dot_write			  , pt, "detailed_dot_write"            , complete);
+    load(printer.write_components			  , pt, "write_components"              , complete);
+    load(printer.components_for_kmer		  , pt, "components_for_kmer"           , complete);
+    load(printer.write_components_along_genome,	pt, "write_components_along_genome" , complete);
+    load(printer.save_full_graph			  ,	pt, "save_full_graph"			  	, complete);
+}
+
+inline void load(debruijn_config::info_printers_t& printers, boost::property_tree::ptree const& pt, bool complete)
+{
+    using config_common::load;
     using details::info_printer_pos_name;
 
     debruijn_config::info_printer def;
-    load(pt, info_printer_pos_name(ipp_default), def);
+    load(def, pt, info_printer_pos_name(ipp_default), true);
 
     for (size_t pos = ipp_default + 1; pos != ipp_total; ++pos)
     {
         debruijn_config::info_printer printer(def);
-        load_if_exists(pt, info_printer_pos_name(pos), printer);
+        load(printer, pt, info_printer_pos_name(pos), false);
 
         printers[info_printer_pos(pos)] = printer;
     }
 }
 
 // main debruijn config load function
-inline void load(boost::property_tree::ptree const& pt, debruijn_config& cfg) {
+inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bool complete)
+{
 	using config_common::load;
 	// input options:
-	load(pt, "dataset", cfg.dataset_name);
-	load(pt, "input_dir", cfg.input_dir);
+	load(cfg.dataset_name, pt, "dataset"  );
+	load(cfg.input_dir   , pt, "input_dir");
 
 	std::string output_base;
-	load(pt, "output_base", output_base);
+	load(output_base, pt, "output_base");
 
-	cfg.output_root = output_base + cfg.dataset_name + "/K" + ToString(K) + "/";
-	cfg.output_suffix = MakeLaunchTimeDirName() + "/";
-	cfg.output_dir = cfg.output_root + cfg.output_suffix;
-	cfg.output_saves = cfg.output_dir + "saves/";
+	cfg.output_root     = output_base + cfg.dataset_name + "/K" + ToString(K) + "/";
+	cfg.output_suffix   = MakeLaunchTimeDirName() + "/";
+	cfg.output_dir      = cfg.output_root + cfg.output_suffix;
+	cfg.output_saves    = cfg.output_dir + "saves/";
 
-	load(pt, "load_from", cfg.load_from);
+	load(cfg.load_from, pt, "load_from");
 	cfg.load_from = cfg.output_root + cfg.load_from;
 
-	load(pt, "entry_point", cfg.entry_point);
+	load(cfg.entry_point            , pt, "entry_point"            );
 
-	load(pt, "etalon_graph_mode", cfg.etalon_graph_mode);
-	load(pt, "use_additional_contigs", cfg.use_additional_contigs);
-	load(pt, "use_single_reads", cfg.use_single_reads);
+	load(cfg.etalon_graph_mode      , pt, "etalon_graph_mode"      );
+	load(cfg.use_additional_contigs , pt, "use_additional_contigs" );
+	load(cfg.use_single_reads       , pt, "use_single_reads"       );
 
-	load(pt, "additional_contigs", cfg.additional_contigs);
+	load(cfg.additional_contigs     , pt, "additional_contigs"     );
 
-	load(pt, "paired_mode", cfg.paired_mode);
-	load(pt, "paired_info_statistics", cfg.paired_info_statistics);
-	load(pt, "etalon_info_mode", cfg.etalon_info_mode);
-	load(pt, "late_paired_info", cfg.late_paired_info);
-	load(pt, "componential_resolve", cfg.componential_resolve);
-	load(pt, "advanced_estimator_mode", cfg.advanced_estimator_mode);
-	load(pt, cfg.dataset_name, cfg.ds);
-	load(pt, cfg.ds.single_cell ? "sc_de" : "usual_de", cfg.de);
+	load(cfg.paired_mode            , pt, "paired_mode"            );
+	load(cfg.paired_info_statistics , pt, "paired_info_statistics" );
+	load(cfg.etalon_info_mode       , pt, "etalon_info_mode"       );
+	load(cfg.late_paired_info       , pt, "late_paired_info"       );
+	load(cfg.componential_resolve   , pt, "componential_resolve"   );
+	load(cfg.advanced_estimator_mode, pt, "advanced_estimator_mode");
+	load(cfg.ds                     , pt, cfg.dataset_name         );
 
-	load(pt, "ade", cfg.ade); // advanced distance estimator:
-	load(pt, "rr", cfg.rr); // repeat resolver:
-	load(pt, "pos", cfg.pos); // position handler:
-	load(pt, "gap_closer", cfg.gc);
-	load(pt, "need_consensus", cfg.need_consensus);
-	load(pt, "uncorrected_reads", cfg.uncorrected_reads);
-	load(pt, "path_set_graph", cfg.path_set_graph);
+	load(cfg.de, pt, (cfg.ds.single_cell ? "sc_de" : "usual_de"));
 
-	load(pt, (cfg.ds.single_cell ? "sc_simplification" : "usual_simplification"), cfg.simp);
+	load(cfg.ade              , pt, "ade"              ); // advanced distance estimator:
+	load(cfg.rr               , pt, "rr"               ); // repeat resolver:
+	load(cfg.pos              , pt, "pos"              ); // position handler:
+	load(cfg.gc               , pt, "gap_closer"       );
+	load(cfg.need_consensus   , pt, "need_consensus"   );
+	load(cfg.uncorrected_reads, pt, "uncorrected_reads");
 
-	load(pt, "info_printers", cfg.info_printers);
+	load(cfg.simp, pt, (cfg.ds.single_cell ? "sc_simplification" : "usual_simplification"));
+	load(cfg.info_printers, pt, "info_printers");
 }
-
-
 
 
 } // debruijn_graph
