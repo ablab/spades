@@ -454,8 +454,8 @@ int main(int argc, char * argv[]) {
 								"-T", Globals::working_dir.c_str(), getFilename(Globals::working_dir, iter_count, "kmers.total").data(), (char *) 0 );
 						_exit(0);
 					}
-					string cmd = "rm -rf " + getFilename(Globals::working_dir, iter_count, "tmp.kmers.*");
-					if ( system(cmd.c_str()) != 0 ) { TIMEDLN("Some error with removing temporary files. Proceeding nevertheless."); }
+					//string cmd = "rm -rf " + getFilename(Globals::working_dir, iter_count, "tmp.kmers.*");
+					//if ( system(cmd.c_str()) != 0 ) { TIMEDLN("Some error with removing temporary files. Proceeding nevertheless."); }
 					TIMEDLN("Merge done. There are " << kmer_num << " kmers in total.");
 				} else if (Globals::skip_to_subvectors) {
 					TIMEDLN("Skipping directly to subvectors, reading sorted kmers from " << getFilename(Globals::working_dir, iter_count, "kmers.total.sorted"));
@@ -597,8 +597,8 @@ int main(int argc, char * argv[]) {
 		// Now for the reconstruction step; we still have the reads in rv, correcting them in place.
 		vector<ofstream *> outfv; vector<hint_t> changedReads; vector<hint_t> changedNucleotides;
 		for (int i=0; i < (Globals::conserve_memory ? 1 : nthreads); ++i) {
-			outfv.push_back(new ofstream( getFilename(Globals::working_dir, iter_count, "reconstruct", i ).data() ));
-			//outfv.push_back(NULL);
+			//outfv.push_back(new ofstream( getFilename(Globals::working_dir, iter_count, "reconstruct", i ).data() ));
+			outfv.push_back(NULL);
 			changedReads.push_back(0);
 			changedNucleotides.push_back(0);
 		}
