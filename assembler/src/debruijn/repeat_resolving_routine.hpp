@@ -584,7 +584,13 @@ void resolve_repeats() {
 	
 	INFO("STAGE == Resolving Repeats");
 
-    detail_info_printer printer(conj_gp, LabelerList<Graph>(), cfg::get().output_dir, "graph.dot");
+	//todo refactor labeler creation
+	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids, &conj_gp.edge_pos);
+	total_labeler tot_lab(&graph_struct);
+	EdgeQuality<Graph> quality_labeler(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper, conj_gp.genome);
+
+	LabelerList<Graph> labeler(tot_lab, quality_labeler);
+    detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir, "graph.dot");
     printer(ipp_before_repeat_resolution);
 
 	if (!cfg::get().paired_mode) {
