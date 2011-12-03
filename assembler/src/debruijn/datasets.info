@@ -358,7 +358,7 @@ SC_Ecoli_cleared
         single_second	JCVI/JCVI_control_MDA_Ecoli_2911/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              200
-	single_cell	true
+	    single_cell	true
         reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
         LEN             4639675 ; total size
 }
@@ -372,9 +372,22 @@ HMP_LANE_1
         single_second	HMP/hmp_mda_pilot_jcvi_0001/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              200
-	single_cell	true
+    	single_cell	true
         reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
-	LEN 0
+    	LEN 0
+}
+
+HMP_LANE_2
+{
+        first	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.left.corrected.fastq.gz
+        second	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.right.corrected.fastq.gz
+        single_first	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.right.unpaired.fastq.gz
+        RL              100
+        IS              200
+    	single_cell	true
+        reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+    	LEN 0
 }
 
 HMP_LANE_3
@@ -385,9 +398,9 @@ HMP_LANE_3
         single_second	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              200
-	single_cell	true
+    	single_cell	true
         reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
-	LEN 0
+	    LEN 0
 }
 
 HMP_LANE_7
