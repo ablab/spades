@@ -271,24 +271,6 @@ void RemoveLowCoverageEdgesForResolver(Graph &g) {
 	INFO("Low coverage edges removed");
 }
 
-template<size_t k, class Graph>
-void OutputWrongContigs(const Graph& g, const EdgeIndex<k + 1, Graph>& index,
-const Sequence& genome, size_t bound, const string &file_name) {
-	SimpleSequenceMapper<k + 1, Graph> sequence_mapper(g, index);
-	Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
-	Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
-	set<EdgeId> path_set;
-	path_set.insert(path1.begin(), path1.end());
-	path_set.insert(path2.begin(), path2.end());
-	osequencestream os((cfg::get().output_dir + "/" + file_name).c_str());
-	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-		if (path_set.count(*it) == 0 && g.length(*it) > 1000) {
-			const Sequence &nucls = g.EdgeNucls(*it);
-			os << nucls;
-		}
-	}
-}
-
 void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover, boost::function<void(EdgeId)> &removal_handler_f,
 		detail_info_printer &printer, size_t iteration_count) {
 

@@ -709,6 +709,29 @@ void FillEdgesPos(conj_graph_pack& gp, const Sequence& genome) {
 	FillEdgesPos(gp, genome, 0);
 }
 
+template<size_t k>
+void OutputWrongContigs(conj_graph_pack& gp, size_t bound, const string &file_name) {
+	OutputWrongContigs<k>(gp.g, gp.index, gp.genome, bound, file_name);
+}
+
+template<size_t k>
+void OutputWrongContigs(Graph& g, EdgeIndex<k + 1, Graph>& index,
+const Sequence& genome, size_t bound, const string &file_name) {
+	SimpleSequenceMapper<k + 1, Graph> sequence_mapper(g, index);
+	Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
+	Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
+	set<EdgeId> path_set;
+	path_set.insert(path1.begin(), path1.end());
+	path_set.insert(path2.begin(), path2.end());
+	osequencestream os((cfg::get().output_dir + "/" + file_name).c_str());
+	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		if (path_set.count(*it) == 0 && g.length(*it) > 1000) {
+			const Sequence &nucls = g.EdgeNucls(*it);
+			os << nucls;
+		}
+	}
+}
+
 /*//		Graph& g, const EdgeIndex<k + 1, Graph>& index,
  //		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper)
  {

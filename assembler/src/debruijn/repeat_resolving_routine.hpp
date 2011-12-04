@@ -15,6 +15,7 @@
 #include "path_set_graph_constructor.hpp"
 #include "io/careful_filtering_reader_wrapper.hpp"
 #include "resolved_pair_info.hpp"
+#include "debruijn_stats.hpp"
 //typedef io::IReader<io::SingleRead> ReadStream;
 //typedef io::IReader<io::PairedRead> PairedReadStream;
 ////typedef io::RCReaderWrapper<io::SingleRead> RCStream;
@@ -588,7 +589,7 @@ void resolve_repeats() {
 	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids, &conj_gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
 	EdgeQuality<Graph> quality_labeler(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper, conj_gp.genome);
-
+//	OutputWrongContigs<K>(conj_gp, 1000, "contamination.fasta");
 	LabelerList<Graph> labeler(tot_lab, quality_labeler);
     detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir, "graph.dot");
     printer(ipp_before_repeat_resolution);
