@@ -371,7 +371,7 @@ HMP_LANE_1
         single_first	HMP/hmp_mda_pilot_jcvi_0001/hammer/00.reads.left.unpaired.fastq.gz
         single_second	HMP/hmp_mda_pilot_jcvi_0001/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
-        IS              200
+        IS              210
     	single_cell	true
         reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
     	LEN 0
@@ -384,7 +384,7 @@ HMP_LANE_2
         single_first	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.left.unpaired.fastq.gz
         single_second	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
-        IS              200
+        IS              210
     	single_cell	true
         reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
     	LEN 0
@@ -397,7 +397,7 @@ HMP_LANE_3
         single_first	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.left.unpaired.fastq.gz
         single_second	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
-        IS              200
+        IS              210
     	single_cell	true
         reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	    LEN 0
@@ -410,7 +410,7 @@ HMP_LANE_4
         single_first	HMP/hmp_mda_pilot_jcvi_0004/hammer/00.reads.left.unpaired.fastq.gz
         single_second	HMP/hmp_mda_pilot_jcvi_0004/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
-        IS              200
+        IS              210
     	single_cell	true
         reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	    LEN 0
@@ -423,7 +423,7 @@ HMP_LANE_7
         single_first	HMP/hmp_mda_pilot_jcvi_0007/hammer/00.reads.left.unpaired.fastq.gz
         single_second	HMP/hmp_mda_pilot_jcvi_0007/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
-        IS              200
+        IS              210
 	single_cell	true
         reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	LEN 0
@@ -436,7 +436,7 @@ HMP_LANE_8
         single_first	HMP/hmp_mda_pilot_jcvi_0008/hammer/00.reads.left.unpaired.fastq.gz
         single_second	HMP/hmp_mda_pilot_jcvi_0008/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
-        IS              200
+        IS              210
 	single_cell	true
         reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
         LEN 0
@@ -449,7 +449,7 @@ JCVI_control_MDA_EColi_0212
         single_first    E.Coli.K12.MG1655/SC/correted_0211/00.reads_single_left.corrected.fastq
         single_second   E.Coli.K12.MG1655/SC/correted_0211/00.reads_single_right.corrected.fastq
         RL              100
-        IS              200
+        IS              210
         single_cell     true
         reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
         LEN             4639675
