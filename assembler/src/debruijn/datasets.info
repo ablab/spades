@@ -350,14 +350,14 @@ SC_HAMMER_1410_CROPPED
 }
 
 
-SC_Ecoli_cleared
+JCVI_ECOLI
 {
-        first	JCVI/JCVI_control_MDA_Ecoli_2911/hammer/00.reads.left.corrected.fastq.gz
-        second	JCVI/JCVI_control_MDA_Ecoli_2911/hammer/00.reads.right.corrected.fastq.gz
-        single_first	JCVI/JCVI_control_MDA_Ecoli_2911/hammer/00.reads.left.unpaired.fastq.gz
-        single_second	JCVI/JCVI_control_MDA_Ecoli_2911/hammer/00.reads.right.unpaired.fastq.gz
+        first	JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.left.corrected.fastq.gz
+        second	JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.right.corrected.fastq.gz
+        single_first	JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.left.unpaired.fastq.gz
+        single_second	JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
-        IS              200
+        IS              210
 	    single_cell	true
         reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
         LEN             4639675 ; total size
