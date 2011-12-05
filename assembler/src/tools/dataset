@@ -1,8 +1,19 @@
 #!/bin/bash
+# go to the directory where you want to create subdirectory hammer
+#
+# run
+# ../blah/../src/tools/dataset hammer nikolenko/full/path/
+# or
+# ../blah/../src/tools/dataset hammer nikolenko/full/path/file-prefix
 cmd=$1
+base=$0
 shift
 
 if [ "$cmd" == "hammer" ] ; then
+    if [ -d hammer ] ; then
+	echo PLEASE REMOVE DIRECTORY hammer
+	exit
+    fi
     files="$1*left.corrected* $1*right.corrected* $1*left.unpaired* $1*right.unpaired*"
     mkdir hammer
     echo copying $files ...
@@ -11,13 +22,14 @@ if [ "$cmd" == "hammer" ] ; then
     ls | xargs -I {} mv {} {}.fastq
     echo gzipping * ...
     gzip -9 *
-    files="*left.corrected* *right.corrected* *left.unpaired* *right.unpaired*"
-    ./dataset generic $files
+    files="*left.corrected*gz *right.corrected*gz *left.unpaired*gz *right.unpaired*gz"
+    cd ..
+    $base generic $files
     exit
 fi
 
 if [ "$cmd" == "generic" ] ; then
-    ./dataset print TODO_NAME TODO TODO TODO N/A TODO $*
+    $base print TODO_NAME TODO TODO TODO N/A TODO $*
     exit
 fi
 
