@@ -296,15 +296,16 @@ void SimplificationCycle(Graph &graph, EdgeRemover<Graph> &edge_remover, boost::
 	INFO(iteration << " TipClipping stats");
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
-	INFO(iteration << " BulgeRemoval");
-	RemoveBulges(graph, removal_handler_f);
-	INFO(iteration << " BulgeRemoval stats");
-	printer(ipp_bulge_removal, str(format("_%d") % iteration));
-
 	INFO(iteration << " ErroneousConnectionsRemoval");
 	RemoveLowCoverageEdges(graph, edge_remover, iteration_count, iteration);
 	INFO(iteration << " ErroneousConnectionsRemoval stats");
 	printer(ipp_err_con_removal, str(format("_%d") % iteration));
+	
+    INFO(iteration << " BulgeRemoval");
+	RemoveBulges(graph, removal_handler_f);
+	INFO(iteration << " BulgeRemoval stats");
+	printer(ipp_bulge_removal, str(format("_%d") % iteration));
+
 }
 
 void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover, boost::function<void(EdgeId)> &removal_handler_f,
