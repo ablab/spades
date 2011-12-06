@@ -317,7 +317,7 @@ void SavePairedInfo(Graph& g, IdTrackHandler<Graph>& intIds, PairedInfoIndices& 
 
 	INFO("Saving paired info");
 
-	typename PrinterTraits<Graph>::Printer printer(g, g.begin(), g.end(), intIds);
+	PrinterTraits<Graph>::Printer printer(g, g.begin(), g.end(), intIds);
 
 	for (auto lib = pairedInfos.begin(); lib != pairedInfos.end(); ++lib) {
 		std::string fileName = fileNamePrefix + "IS" + ToString(lib->insertSize) + "_RS" + ToString(lib->readSize);

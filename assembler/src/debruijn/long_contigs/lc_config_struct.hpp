@@ -239,7 +239,7 @@ inline void load(lc_config::dataset::paired_lib_t& rl, boost::property_tree::ptr
 
 	load(rl.var            , pt, "var"          );
 	load(rl.de_delta       , pt, "de_delta"     );
-	load(rl.is_delta       , pt, "norm_delta"   );
+	load(rl.is_delta       , pt, "is_delta"   );
 
 	load(rl.precounted     , pt, "precounted"   );
 	load(rl.precounted_path, pt, "precounted_path");
@@ -250,8 +250,8 @@ inline void load(lc_config::dataset::paired_lib_t& rl, boost::property_tree::ptr
 	load(rl.has_advanced   , pt, "has_advanced" );
 	load(rl.advanced       , pt, "advanced"     );
 
-	load(rl.raw            , pt, "has_raw"      );
-	load(rl.has_raw        , pt, "raw"          );
+	load(rl.has_raw            , pt, "has_raw"      );
+	load(rl.raw        , pt, "raw"          );
 }
 
 inline void load(lc_config::dataset::etalon_paired_lib_t& el, boost::property_tree::ptree const& pt, bool complete)
@@ -262,7 +262,7 @@ inline void load(lc_config::dataset::etalon_paired_lib_t& el, boost::property_tr
 
 	load(el.var        , pt, "var"        );
 	load(el.de_delta   , pt, "de_delta"   );
-	load(el.is_delta   , pt, "norm_delta" );
+	load(el.is_delta   , pt, "is_delta" );
 }
 
 inline void load(lc_config::dataset& ds, boost::property_tree::ptree const& pt, bool complete)
@@ -274,7 +274,7 @@ inline void load(lc_config::dataset& ds, boost::property_tree::ptree const& pt, 
     if (ds.reference_genome == "N/A")
         ds.reference_genome = "";
 
-    load(ds.LEN, pt, "LEN");
+    load(ds.LEN, pt, "length");
 
 	load(ds.graph_file, pt, "graph_file");
 	load(ds.param_set, pt, "param_set");
@@ -286,6 +286,7 @@ inline void load(lc_config::dataset& ds, boost::property_tree::ptree const& pt, 
 inline void load(lc_config::param_set::seed_selection& ss, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
+
 	load(ss.min_coverage       , pt, "min_coverage"     );
 	load(ss.glue_seeds         , pt, "glue_seeds"       );
 	load(ss.max_cycles         , pt, "max_cycles"       );
@@ -301,6 +302,7 @@ inline void load(lc_config::param_set::seed_selection& ss, boost::property_tree:
 inline void load(lc_config::param_set::extension_selection& es, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
+
 	load(es.use_weight_function_first , pt, "use_weight_function_first");
 	load(es.weight_fun_threshold      , pt, "weight_fun_threshold"     );
 	load(es.weight_threshold          , pt, "weight_threshold"         );
@@ -370,8 +372,11 @@ inline void load(lc_config::param_set::symmetrization& sym, boost::property_tree
 }
 
 inline void load(lc_config::param_set& p, boost::property_tree::ptree const& pt, bool complete) {
-    load(p.es, pt, "es");
+
+    using config_common::load;
+
     load(p.ss, pt, "ss");
+    load(p.es, pt, "es");
     load(p.fo, pt, "fo");
     load(p.lr, pt, "lr");
     load(p.sc, pt, "sc");

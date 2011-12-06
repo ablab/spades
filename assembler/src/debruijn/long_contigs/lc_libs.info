@@ -5,7 +5,7 @@ TEMPLATE_DATASET
     param_set        singlecell 
     
     reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
-	LEN		4639675 ; total size
+	length			  4639675 
     
     real_libs {
 	    count        	
@@ -51,10 +51,14 @@ QUAKE_FULL
     graph_file       ./data/debruijn/QUAKE_FULL/K55/source/distance_estimation
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/simplified_graph
     
-    param_set        multicell 
+    param_set        multicell
+    
+        
+    reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+	length			  4639675  
     
     real_libs {
-	    count        2
+	    count        1
 	    
 	    item_0
 	    {

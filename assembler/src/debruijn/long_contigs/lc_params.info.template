@@ -1,4 +1,4 @@
-singlecell_params {
+singlecell {
 
 	; seed selection
 	ss
@@ -99,7 +99,7 @@ singlecell_params {
 }
 
 
-multicell_params {
+multicell {
 
 	; seed selection
 	ss
