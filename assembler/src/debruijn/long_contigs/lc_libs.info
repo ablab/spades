@@ -1,3 +1,50 @@
+TEMPLATE_DATASET
+{
+    graph_file       .
+    
+    param_set        singlecell 
+    
+    reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+	LEN		4639675 ; total size
+    
+    real_libs {
+	    count        	
+	    
+	    item_0
+	    {
+	        read_size     100
+	        insert_size   220
+	        de_delta      15
+	        is_delta      2
+	        var           10
+	        
+	        precounted       true
+	        precounted_path  .
+	        
+	        first            .
+	        second           .
+	        
+	        has_advanced     false
+	        advanced         .
+	    
+	    	has_raw          false    
+	        raw              .
+	    }
+    }
+    
+    etalon_libs {
+        count     0
+    
+	    item_0
+	    {
+	        read_size    100
+	        insert_size  200
+	        delta        15
+	    }
+	}
+}
+
+
 QUAKE_FULL
 {
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/09.24_14_23/saves/simplified_graph
@@ -5,46 +52,74 @@ QUAKE_FULL
     ;graph_file       ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/simplified_graph
     
     param_set        multicell 
-    lib_count        2
     
-    item_1
-    {
-        read_size     100
-        insert_size   480
-        
-        de_delta      15
-        norm_delta    2
-        variance      10
-
-        precounted       true
-            
-        ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_OLD/paired_info_IS480_RS100_clustered
-        precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS480_RS100_clustered
-        ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/09.26_02_00/paired_info_IS480_RS100_clustered
-
-  
-        first            ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_1.cor.fastq.gz
-        second           ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_2.cor.fastq.gz    
-        
-        has_advanced     true
-        ;advanced         ./data/debruijn/QUAKE_FULL/K55/NORMAL_OLD/paired_info_IS480_RS100_acl
-        advanced         ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS480_RS100_acl
-        ;advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS480_RS100_acl
-
-		has_raw          false        
-        raw              ./data/debruijn/
-    } 
-    
-    
-    etalon_lib_count     0
-    
-    item_0
-    {
-        read_size    100
-        insert_size  800
-        delta        15
+    real_libs {
+	    count        2
+	    
+	    item_0
+	    {
+	        read_size     100
+	        insert_size   220
+	        de_delta      15
+	        is_delta      2
+	        var           10
+	        
+	        precounted       true
+	        precounted_path  ./data/debruijn/QUAKE_FULL/K55/source/distance_estimation_cl
+	        ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS220_RS100_clustered
+	        ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/09.26_02_00/paired_info_IS220_RS100_clustered
+	        
+	        first            ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_1.cor.fastq.gz
+	        second           ./data/input/E.Coli.K12.MG1655/EAS20_8/quaked/s_6_2.cor.fastq.gz
+	        
+	        has_advanced     false
+	        ;advanced         ./data/debruijn/QUAKE_FULL/K55/NORMAL_OLD/paired_info_IS220_RS100_acl
+	        advanced         ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS220_RS100_acl
+	        ;advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS220_RS100_acl
+	    
+	    	has_raw          false    
+	        raw              ./data/debruijn/
+	    }
+	
+	    item_1
+	    {
+	        read_size     100
+	        insert_size   480
+	        
+	        de_delta      15
+	        norm_delta    2
+	        variance      10
+	
+	        precounted       true
+	            
+	        ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_OLD/paired_info_IS480_RS100_clustered
+	        precounted_path  ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS480_RS100_clustered
+	        ;precounted_path  ./data/debruijn/QUAKE_FULL/K55/09.26_02_00/paired_info_IS480_RS100_clustered
+	
+	  
+	        first            ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_1.cor.fastq.gz
+	        second           ./data/input/E.Coli.K12.MG1655/EAS600_70/quaked/ERR022075_2.cor.fastq.gz    
+	        
+	        has_advanced     true
+	        ;advanced         ./data/debruijn/QUAKE_FULL/K55/NORMAL_OLD/paired_info_IS480_RS100_acl
+	        advanced         ./data/debruijn/QUAKE_FULL/K55/NORMAL_ITER/paired_info_IS480_RS100_acl
+	        ;advanced         ./data/debruijn/QUAKE_FULL/K55/09.25_14_15/paired_info_IS480_RS100_acl
+	
+			has_raw          false        
+	        raw              ./data/debruijn/
+	    } 
     }
     
+    etalon_libs {
+        count     0
+    
+	    item_0
+	    {
+	        read_size    100
+	        insert_size  800
+	        delta        15
+	    }
+	}
 }
 
 

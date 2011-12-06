@@ -1,6 +1,12 @@
+#include "src/debruijn/long_contigs/lc_params.info"
+#include "src/debruijn/long_contigs/lc_libs.info"
+
 dataset         QUAKE_FULL
 
+syminfo       false
+; input options
 
+from_file     true	  ; always true
 syminfo       false
 
 ;Only precount and estimate
@@ -25,99 +31,31 @@ paired_info_file_prefix "paired_info_"
 total_symmetric_mode    false
 first_grow_forward      true
 
-; seed selection
-ss
-{
-    min_coverage   120
-    glue_seeds     false
-    max_cycles     1
-    
-    remove_untrusted  true
-    check_trusted     true
-    trusted_threshold 0.2
-    
-    short_single      15
-    chimeric_len      0
-    chimeric_delta    0
-    
-    sym 
-	{
-	    cut_tips             false
-	    min_conjugate_len    200
-	    
-	}
-}
 
-; extension selection
-es
+utils 
 {
-    use_weight_function_first  false
-    weight_fun_threshold       0.2
-    weight_threshold           0.2
-    priority_coeff             8
-
-    use_delta_first       true
-    etalon_distance_dev   2
+	; 1 check symmetry and conjugate symmetry
+	; 2 check equality
+	; 3 aggreagte paired info
+    mode        3 
+    file1       ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
+    file2       ./data/debruijn/QUAKE_FULL/K55/SC/simplified_graph
     
-    max_iter              3
-    
-    max_depth             0
-    
-    fix_weight            false
-    use_advanced          false
-    advanced_coeff        1.4
+    clustered   ./data/debruijn/QUAKE_FULL/K55/SC/09.29_08_52/paired_info_IS270_RS100_clustered
+    read_size    100
+    insert_size  270
+    dev          5
+    advanced    ./data/debruijn/QUAKE_FULL/K55/SC/09.29_07_30/paired_info_IS270_RS100_acl
 }    
 
-; loops removal
-lr
-{
-    investigation      false																														
-	loop_to_investigate 1
-	max_loop_len       2
-	max_exits          1
-	
-	stop_on_long       true
-	
-    max_loops          10
-    full_loop_removal  true
-    exlude_cycle       false
-}
 
-; stop criteria
-sc
+;research options
+research 
 {
-    all_seeds       true
-    edge_coverage   0.8
-    len_coverage    0.99
-}
-
-; filter options
-fo
-{
-    remove_duplicates       true
-    remove_subpaths         true
-    remove_overlaps         true
-    
-    length_percent          1.2
-    conjugate_percent       0.98
-    
-    remove_single           false
-    
-    remove_similar          true
-    similar_edges           0.5
-    similar_length          0.7
-    
-    remove_sefl_conjugate   false
-    conj_len_percent        0.4
-    break_sc                true
-    chimeric_delta          10
-    
-    agreed_coeff            0.0
-    
-    sym 
-	{
-	    cut_tips             false
-	    min_conjugate_len    200
-	}
-    
+    research_mode            false
+    detailed_output          false
+    fiter_by_edge            true
+    edge_length              46
+    force_to_cycle           false 
+    cycle_priority_edge      55
 }

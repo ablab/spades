@@ -218,7 +218,7 @@ void CheckPairedInfo(Graph& g, PairedInfoIndex<Graph>& index, size_t lenThreshol
 }
 
 Sequence load_genome() {
-	string genome_filename = cfg::get().ds.reference_genome;
+	string genome_filename = lc_cfg::get().ds.reference_genome;
 	std::string genome;
 	if (genome_filename.length() > 0) {
 		genome_filename = cfg::get().input_dir + genome_filename;
@@ -226,14 +226,14 @@ Sequence load_genome() {
 		io::Reader<io::SingleRead> genome_stream(genome_filename);
 		io::SingleRead full_genome;
 		genome_stream >> full_genome;
-		genome = full_genome.GetSequenceString().substr(0, cfg::get().ds.LEN);
+		genome = full_genome.GetSequenceString().substr(0, lc_cfg::get().ds.LEN);
 	}
 	return Sequence(genome);
 }
 
 void LoadFromFile(std::string fileName, Graph& g, IdTrackHandler<Graph>& intIds, KmerMapper<K+1, Graph>& mapper) {
 	string input_dir = cfg::get().input_dir;
-	string dataset = cfg::get().dataset_name;
+	string dataset = lc_cfg::get().dataset_name;
 	INFO("Reading graph");
 	debruijn_graph::ScanWithKmerMapper(fileName, g, intIds, mapper);
 	INFO("Graph read");
@@ -241,11 +241,11 @@ void LoadFromFile(std::string fileName, Graph& g, IdTrackHandler<Graph>& intIds,
 
 template<size_t k>
 void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, KmerMapper<k+1, Graph>& mapper, const Sequence& genome, PairedInfoIndices& pairedInfos) {
-	for (auto el = lc_cfg::get().etalon_libs.begin(); el != lc_cfg::get().etalon_libs.end(); ++el) {
+	for (auto el = lc_cfg::get().ds.etalon_paired_lib.begin(); el != lc_cfg::get().ds.etalon_paired_lib.end(); ++el) {
 		INFO("Generating info with read size " << el->read_size << ", insert size " << el->insert_size);
 
-		pairedInfos.push_back(PairedInfoIndexLibrary(g, el->read_size, el->insert_size, el->delta, el->delta, lc_cfg::get().es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
-		FillEtalonPairedIndex<k> (*pairedInfos.back().pairedInfoIndex, g, index, mapper, el->insert_size, el->read_size, el->delta, genome);
+		pairedInfos.push_back(PairedInfoIndexLibrary(g, el->read_size, el->insert_size, el->is_delta, el->de_delta, lc_cfg::get().ps.es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
+		FillEtalonPairedIndex<k> (*pairedInfos.back().pairedInfoIndex, g, index, mapper, el->insert_size, el->read_size, el->de_delta, genome);
 	}
 }
 
@@ -254,31 +254,31 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 		bool useNewMetrics) {
 	PairedInfoSimpleSymmertrizer sym(g);
 
-	for (auto rl = lc_cfg::get().real_libs.begin(); rl != lc_cfg::get().real_libs.end(); ++rl) {
+	for (auto rl = lc_cfg::get().ds.paired_lib.begin(); rl != lc_cfg::get().ds.paired_lib.end(); ++rl) {
 		size_t insertSize = rl->insert_size;
 		size_t readSize = rl->read_size;
 		size_t delta = rl->is_delta;
 		size_t de_delta = rl->de_delta;
 		size_t var = rl->var;
-		string dataset = cfg::get().dataset_name;
+		string dataset = lc_cfg::get().dataset_name;
 		pairedInfos.push_back(PairedInfoIndexLibrary(g, readSize, insertSize, delta, de_delta, var, new PairedInfoIndex<Graph>(g, 0)));
 
 		INFO("Reading additional info with read size " << readSize << ", insert size " << insertSize);
 
-		if (rl->ds.precounted && !lc_cfg::get().paired_info_only) {
+		if (rl->precounted && !lc_cfg::get().paired_info_only) {
 			//Reading saved paired info
 			typename ScannerTraits<Graph>::Scanner scanner(g, conj_IntIds);
-			ScanPairedIndex(rl->ds.precounted_path, scanner, *pairedInfos.back().pairedInfoIndex);
+			ScanPairedIndex(rl->precounted_path, scanner, *pairedInfos.back().pairedInfoIndex);
 			CheckPairedInfo(g, *pairedInfos.back().pairedInfoIndex, insertSize - 2 * readSize + K);
 
 			pairedInfos.back().raw = new PairedInfoIndex<Graph>(g, 0);
 			if (!lc_cfg::get().paired_info_only) {
 				//dataScanner.loadPaired(rl->ds.raw, *pairedInfos.back().raw);
 		
-				pairedInfos.back().has_advanced = rl->ds.has_advanced;
-				if (rl->ds.has_advanced) {
+				pairedInfos.back().has_advanced = rl->has_advanced;
+				if (rl->has_advanced) {
 					pairedInfos.back().advanced = new PairedInfoIndexLibrary(g, readSize, insertSize, delta, de_delta, var, new PairedInfoIndex<Graph>(g, 0));
-					ScanPairedIndex(rl->ds.precounted_path, scanner, *pairedInfos.back().advanced->pairedInfoIndex);
+					ScanPairedIndex(rl->precounted_path, scanner, *pairedInfos.back().advanced->pairedInfoIndex);
 				}
 				else {
 					pairedInfos.back().advanced = 0;
@@ -286,8 +286,8 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 			}
 		}
 		else {
-			string reads_filename_1 = rl->ds.first;
-			string reads_filename_2 = rl->ds.second;
+			string reads_filename_1 = rl->first;
+			string reads_filename_2 = rl->second;
 
 			checkFileExistenceFATAL(reads_filename_1);
 			checkFileExistenceFATAL(reads_filename_2);

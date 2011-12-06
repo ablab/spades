@@ -9,7 +9,6 @@
 #define LC_CONFIG_STRUCT_HPP_
 
 #include "config_common.hpp"
-#include "../config_struct.hpp"
 #include <vector>
 
 namespace long_contigs {
@@ -19,125 +18,138 @@ const char* const lc_cfg_filename = "./src/debruijn/long_contigs/lc_config.info"
 // struct for long_contigs subproject's configuration file
 struct lc_config
 {
+
 	struct dataset
 	{
+		struct paired_lib_t {
+			size_t read_size;
+			size_t insert_size;
+
+			size_t de_delta;
+			size_t is_delta;
+			size_t var;
+
+	        bool precounted;
+	        std::string precounted_path;
+
+	        std::string first;
+	        std::string second;
+
+	        bool has_advanced;
+	        std::string advanced;
+
+			bool has_raw;
+			std::string raw;
+		};
+
+		struct etalon_paired_lib_t {
+			size_t read_size;
+			size_t insert_size;
+
+			size_t de_delta;
+			size_t is_delta;
+			size_t var;
+		};
+
+        std::string reference_genome;
+        int LEN;
+
 		std::string graph_file;
-	};
 
-	struct rl_dataset
-	{
-		bool precounted;
-	    std::string precounted_path;
-		std::string first;
-		std::string second;
-		bool has_advanced;
-		std::string advanced;
-		std::string raw;
-	};
+	    std::string param_set;
 
-	struct real_lib
-	{
-		size_t read_size;
-		size_t insert_size;
-		size_t de_delta;
-		size_t var;
-		size_t is_delta;
-
-		rl_dataset ds;
-	};
-
-	struct etalon_lib
-	{
-		size_t read_size;
-		size_t insert_size;
-		size_t delta;
+	    std::vector<paired_lib_t> paired_lib;
+	    std::vector<etalon_paired_lib_t> etalon_paired_lib;
 	};
 
 
-	struct symmetrization {
-		bool cut_tips;
-		size_t min_conjugate_len;
-	};
 
-	struct seed_selection
-	{
-	    double min_coverage;
-	    bool   glue_seeds;
-	    bool   check_trusted;
-	    bool   remove_untrusted;
-	    size_t max_cycles;
-	    double trusted_threshold;
+	struct param_set {
+		struct symmetrization {
+			bool cut_tips;
+			size_t min_conjugate_len;
+		};
 
-	    size_t short_single;
-	    size_t chimeric_len;
-	    size_t chimeric_delta;
+		struct seed_selection
+		{
+			double min_coverage;
+			bool   glue_seeds;
+			bool   check_trusted;
+			bool   remove_untrusted;
+			size_t max_cycles;
+			double trusted_threshold;
 
-	    symmetrization sym;
-	};
+			size_t short_single;
+			size_t chimeric_len;
+			size_t chimeric_delta;
 
-	struct extension_selection
-	{
-		bool   use_weight_function_first;
-		double weight_fun_threshold;
-		double weight_threshold;
+			symmetrization sym;
+		} ss;
 
-		bool use_delta_first;
-		int  etalon_distance_dev;
-		int max_iter;
-		int max_depth;
+		struct extension_selection
+		{
+			bool   use_weight_function_first;
+			double weight_fun_threshold;
+			double weight_threshold;
 
-		double priority_coeff;
+			bool use_delta_first;
+			int  etalon_distance_dev;
+			int max_iter;
+			int max_depth;
 
-		bool fix_weight;
-		bool use_advanced;
-		double advanced_coeff;
-	};
+			double priority_coeff;
 
-	struct loops_removal
-	{
-		bool investigation;
-		size_t loop_to_investigate;
-		size_t max_exits;
-		size_t max_loop_len;
+			bool fix_weight;
+			bool use_advanced;
+			double advanced_coeff;
+		} es;
 
-		size_t max_loops;
-		bool full_loop_removal;
+		struct loops_removal
+		{
+			bool investigation;
+			size_t loop_to_investigate;
+			size_t max_exits;
+			size_t max_loop_len;
 
-		bool stop_on_long;
+			size_t max_loops;
+			bool full_loop_removal;
 
-		bool exlude_cycle;
-	};
+			bool stop_on_long;
 
-	struct stop_criteria
-	{
-		bool all_seeds;
-		double edge_coverage;
-		double len_coverage;
-	};
+			bool exlude_cycle;
+		} lr;
 
+		struct stop_criteria
+		{
+			bool all_seeds;
+			double edge_coverage;
+			double len_coverage;
+		} sc;
 
-	struct filter_options
-	{
-		bool remove_duplicates;
-		bool remove_subpaths;
-		bool remove_overlaps;
+		struct filter_options
+		{
+			bool remove_duplicates;
+			bool remove_subpaths;
+			bool remove_overlaps;
 
-		double length_percent;
-	    double conjugate_percent;
+			double length_percent;
+			double conjugate_percent;
 
-	    bool remove_single;
-	    bool remove_similar;
-	    double similar_edges;
-	    double similar_length;
+			bool remove_single;
+			bool remove_similar;
+			double similar_edges;
+			double similar_length;
 
-	    bool remove_sefl_conjugate;
-	    double conj_len_percent;
-	    bool break_sc;
-	    size_t chimeric_delta;
+			bool remove_sefl_conjugate;
+			double conj_len_percent;
+			bool break_sc;
+			size_t chimeric_delta;
 
-	    double agreed_coeff;
+			double agreed_coeff;
 
-	    symmetrization sym;
+			symmetrization sym;
+		} fo;
+
 	};
 
 	struct research {
@@ -167,8 +179,6 @@ struct lc_config
 	bool from_file;
 	bool syminfo;
 	bool paired_info_only;
-	//size_t real_libs_count;
-	//size_t etalon_libs_count;
 
 	bool use_new_metrics;
 
@@ -186,208 +196,217 @@ struct lc_config
 	bool total_symmetric_mode;
 	bool first_grow_forward;
 
+	std::string dataset_name;
 	dataset ds;
+	param_set ps;
 
-	std::vector<real_lib> real_libs;
-	std::vector<etalon_lib> etalon_libs;
-
-	seed_selection ss;
-	extension_selection es;
-	loops_removal lr;
-	stop_criteria sc;
-	filter_options fo;
 	research rs;
 	utils u;
-	symmetrization sym;
 };
 
-void load(boost::property_tree::ptree const& pt, lc_config::utils& u)
+inline void load(lc_config::utils& u, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-	load(pt, "mode", u.mode);
-	load(pt, "file1", u.file1);
-	load(pt, "file2", u.file2);
+	load(u.mode, pt, "mode");
+	load(u.file1, pt, "file1");
+	load(u.file2, pt, "file2");
 
-	load(pt, "advanced", u.advanced);
-	load(pt, "clustered", u.clustered);
-	load(pt, "insert_size", u.insert_size);
-	load(pt, "read_size", u.read_size);
-	load(pt, "dev", u.dev);
+	load(u.advanced, pt, "advanced");
+	load(u.clustered, pt, "clustered");
+	load(u.insert_size, pt, "insert_size");
+	load(u.read_size, pt, "read_size");
+	load(u.dev, pt, "dev");
 }
 
 
 // specific load functions
-void load(boost::property_tree::ptree const& pt, lc_config::research& rs)
+inline void load(lc_config::research& rs, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-	load(pt, "research_mode", rs.research_mode);
-	load(pt, "detailed_output", rs.detailed_output);
-	load(pt, "fiter_by_edge", rs.fiter_by_edge);
-	load(pt, "force_to_cycle", rs.force_to_cycle);
-	load(pt, "edge_length", rs.edge_length);
-	load(pt, "cycle_priority_edge", rs.cycle_priority_edge);
+	load(rs.research_mode  , pt, "research_mode"  );
+	load(rs.detailed_output, pt, "detailed_output");
+	load(rs.fiter_by_edge  , pt, "fiter_by_edge"  );
+	load(rs.force_to_cycle , pt, "force_to_cycle" );
+	load(rs.edge_length    , pt, "edge_length"	  );
+	load(rs.cycle_priority_edge, pt, "cycle_priority_edge");
 }
 
-void load(boost::property_tree::ptree const& pt, lc_config::rl_dataset& ds)
+inline void load(lc_config::dataset::paired_lib_t& rl, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-	load(pt, "precounted", ds.precounted);
-	load(pt, "precounted_path", ds.precounted_path);
-	load(pt, "first", ds.first);
-	load(pt, "second", ds.second);
-	load(pt, "has_advanced", ds.has_advanced);
-	load(pt, "advanced", ds.advanced);
-	load(pt, "raw", ds.raw);
+	load(rl.read_size      , pt, "read_size"    );
+	load(rl.insert_size    , pt, "insert_size"  );
+
+	load(rl.var            , pt, "var"          );
+	load(rl.de_delta       , pt, "de_delta"     );
+	load(rl.is_delta       , pt, "norm_delta"   );
+
+	load(rl.precounted     , pt, "precounted"   );
+	load(rl.precounted_path, pt, "precounted_path");
+
+	load(rl.first          , pt, "first"        );
+	load(rl.second         , pt, "second"       );
+
+	load(rl.has_advanced   , pt, "has_advanced" );
+	load(rl.advanced       , pt, "advanced"     );
+
+	load(rl.raw            , pt, "has_raw"      );
+	load(rl.has_raw        , pt, "raw"          );
 }
 
-void load(boost::property_tree::ptree const& pt, lc_config::real_lib& rl)
+inline void load(lc_config::dataset::etalon_paired_lib_t& el, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-	load(pt, "read_size", rl.read_size);
-	load(pt, "insert_size", rl.insert_size);
-	load(pt, "var", rl.var);
-	load(pt, "de_delta", rl.de_delta);
-	load(pt, "is_delta", rl.is_delta);
-	load(pt, cfg::get().dataset_name, rl.ds);
+	load(el.read_size  , pt, "read_size"  );
+	load(el.insert_size, pt, "insert_size");
+
+	load(el.var        , pt, "var"        );
+	load(el.de_delta   , pt, "de_delta"   );
+	load(el.is_delta   , pt, "norm_delta" );
 }
 
-void load(boost::property_tree::ptree const& pt, lc_config::etalon_lib& el)
+inline void load(lc_config::dataset& ds, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-	load(pt, "insert_size", el.insert_size);
-	load(pt, "read_size", el.read_size);
-	load(pt, "delta", el.delta);
+    boost::optional<std::string> rg = pt.get_optional<std::string>("reference_genome");
+    ds.reference_genome = (rg) ? *rg : "";
+
+    if (ds.reference_genome == "N/A")
+        ds.reference_genome = "";
+
+    load(ds.LEN, pt, "LEN");
+
+	load(ds.graph_file, pt, "graph_file");
+	load(ds.param_set, pt, "param_set");
+	load(ds.paired_lib, pt, "real_libs");
+	load(ds.etalon_paired_lib, pt, "etalon_libs");
 }
 
-void load(boost::property_tree::ptree const& pt, lc_config::dataset& ds)
+
+inline void load(lc_config::param_set::seed_selection& ss, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-	load(pt, "graph_file", ds.graph_file);
+	load(ss.min_coverage       , pt, "min_coverage"     );
+	load(ss.glue_seeds         , pt, "glue_seeds"       );
+	load(ss.max_cycles         , pt, "max_cycles"       );
+	load(ss.check_trusted      , pt, "check_trusted"    );
+    load(ss.remove_untrusted   , pt, "remove_untrusted" );
+    load(ss.trusted_threshold  , pt, "trusted_threshold");
+    load(ss.sym                , pt, "sym"              );
+    load(ss.short_single       , pt, "short_single"     );
+    load(ss.chimeric_delta     , pt, "chimeric_delta"   );
+    load(ss.chimeric_len       , pt, "chimeric_len"     );
 }
 
-void load(boost::property_tree::ptree const& pt, lc_config::seed_selection& ss)
+inline void load(lc_config::param_set::extension_selection& es, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-	load(pt, "min_coverage", ss.min_coverage);
-	load(pt, "glue_seeds", ss.glue_seeds);
-	load(pt, "max_cycles", ss.max_cycles);
-	load(pt, "check_trusted", ss.check_trusted);
-    load(pt, "remove_untrusted", ss.remove_untrusted);
-    load(pt, "trusted_threshold", ss.trusted_threshold);
-    load(pt, "sym", ss.sym);
-    load(pt, "short_single", ss.short_single);
-    load(pt, "chimeric_delta", ss.chimeric_delta);
-    load(pt, "chimeric_len", ss.chimeric_len);
+	load(es.use_weight_function_first , pt, "use_weight_function_first");
+	load(es.weight_fun_threshold      , pt, "weight_fun_threshold"     );
+	load(es.weight_threshold          , pt, "weight_threshold"         );
+	load(es.use_delta_first           , pt, "use_delta_first"          );
+	load(es.etalon_distance_dev       , pt, "etalon_distance_dev"      );
+	load(es.max_iter                  , pt, "max_iter"                 );
+	load(es.priority_coeff            , pt, "priority_coeff"           );
+	load(es.max_depth                 , pt, "max_depth"                );
+	load(es.use_advanced              , pt, "use_advanced"             );
+	load(es.fix_weight                , pt, "fix_weight"               );
+	load(es.advanced_coeff            , pt, "advanced_coeff"           );
 }
 
-void load(boost::property_tree::ptree const& pt, lc_config::extension_selection& es)
+inline void load(lc_config::param_set::loops_removal& lr, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-	load(pt, "use_weight_function_first", es.use_weight_function_first);
-	load(pt, "weight_fun_threshold", es.weight_fun_threshold);
-	load(pt, "weight_threshold", es.weight_threshold);
-	load(pt, "use_delta_first", es.use_delta_first);
-	load(pt, "etalon_distance_dev", es.etalon_distance_dev);
-	load(pt, "max_iter", es.max_iter);
-	load(pt, "priority_coeff", es.priority_coeff);
-	load(pt, "max_depth", es.max_depth);
-	load(pt, "use_advanced", es.use_advanced);
-	load(pt, "fix_weight", es.fix_weight);
-	load(pt, "advanced_coeff", es.advanced_coeff);
+	load(lr.investigation      , pt,"investigation"      );
+	load(lr.loop_to_investigate, pt,"loop_to_investigate");
+	load(lr.max_exits          , pt,"max_exits"          );
+	load(lr.max_loop_len       , pt,"max_loop_len"       );
+
+	load(lr.max_loops          , pt,"max_loops"          );
+	load(lr.full_loop_removal  , pt,"full_loop_removal"  );
+	load(lr.exlude_cycle       , pt,"exlude_cycle"       );
+
+	load(lr.stop_on_long       , pt,"stop_on_long"       );
 }
 
-void load(boost::property_tree::ptree const& pt, lc_config::loops_removal& lr)
+inline void load(lc_config::param_set::stop_criteria& sc, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-	load(pt, "investigation", lr.investigation);
-	load(pt, "loop_to_investigate", lr.loop_to_investigate);
-	load(pt, "max_exits", lr.max_exits);
-	load(pt, "max_loop_len", lr.max_loop_len);
-
-	load(pt, "max_loops", lr.max_loops);
-	load(pt, "full_loop_removal", lr.full_loop_removal);
-	load(pt, "exlude_cycle", lr.exlude_cycle);
-
-	load(pt, "stop_on_long", lr.stop_on_long);
+	load(sc.all_seeds    ,  pt, "all_seeds"    );
+	load(sc.edge_coverage,  pt, "edge_coverage");
+	load(sc.len_coverage ,  pt, "len_coverage" );
 }
 
-void load(boost::property_tree::ptree const& pt, lc_config::stop_criteria& sc)
+inline void load(lc_config::param_set::filter_options& fo, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-	load(pt, "all_seeds", sc.all_seeds);
-	load(pt, "edge_coverage", sc.edge_coverage);
-	load(pt, "len_coverage", sc.len_coverage);
+	load(fo.remove_overlaps      , pt, "remove_overlaps"      );
+	load(fo.remove_subpaths      , pt, "remove_subpaths"      );
+	load(fo.remove_duplicates    , pt, "remove_duplicates"    );
+	load(fo.conjugate_percent    , pt, "conjugate_percent"    );
+	load(fo.length_percent       , pt, "length_percent"       );
+	load(fo.remove_single        , pt, "remove_single"        );
+
+	load(fo.remove_similar       , pt, "remove_similar"       );
+    load(fo.similar_edges        , pt, "similar_edges"        );
+    load(fo.similar_length       , pt, "similar_length"       );
+
+    load(fo.remove_sefl_conjugate, pt, "remove_sefl_conjugate");
+    load(fo.conj_len_percent     , pt, "conj_len_percent"     );
+    load(fo.break_sc             , pt, "break_sc"             );
+    load(fo.chimeric_delta       , pt, "chimeric_delta"       );
+
+    load(fo.agreed_coeff         , pt, "agreed_coeff"         );
+
+    load(fo.sym                  , pt, "sym"                  );
 }
 
-void load(boost::property_tree::ptree const& pt, lc_config::filter_options& fo)
+inline void load(lc_config::param_set::symmetrization& sym, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-	load(pt, "remove_overlaps", fo.remove_overlaps);
-	load(pt, "remove_subpaths", fo.remove_subpaths);
-	load(pt, "remove_duplicates", fo.remove_duplicates);
-	load(pt, "conjugate_percent", fo.conjugate_percent);
-	load(pt, "length_percent", fo.length_percent);
-	load(pt, "remove_single", fo.remove_single);
-
-	load(pt, "remove_similar", fo.remove_similar);
-    load(pt, "similar_edges", fo.similar_edges);
-    load(pt, "similar_length", fo.similar_length);
-
-    load(pt, "remove_sefl_conjugate", fo.remove_sefl_conjugate);
-    load(pt, "conj_len_percent", fo.conj_len_percent);
-    load(pt, "break_sc", fo.break_sc);
-    load(pt, "chimeric_delta", fo.chimeric_delta);
-
-    load(pt, "agreed_coeff", fo.agreed_coeff);
-
-    load(pt, "sym", fo.sym);
-}
-
-void load(boost::property_tree::ptree const& pt, lc_config::symmetrization& sym)
-{
-	using config_common::load;
-	load(pt, "min_conjugate_len", sym.min_conjugate_len);
-	load(pt, "cut_tips", sym.cut_tips);
+	load(sym.min_conjugate_len, pt, "min_conjugate_len");
+	load(sym.cut_tips         , pt, "cut_tips"         );
 
 }
 
+inline void load(lc_config::param_set& p, boost::property_tree::ptree const& pt, bool complete) {
+    load(p.es, pt, "es");
+    load(p.ss, pt, "ss");
+    load(p.fo, pt, "fo");
+    load(p.lr, pt, "lr");
+    load(p.sc, pt, "sc");
+}
 
 // main long contigs config load function
-void load(boost::property_tree::ptree const& pt, lc_config& lc_cfg)
+inline void load(lc_config& lc_cfg, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-	load(pt, "from_file", lc_cfg.from_file);
-	load(pt, "syminfo", lc_cfg.syminfo);
-	load(pt, "paired_info_only", lc_cfg.paired_info_only);
-	//load(pt, "real_libs_count", cfg.real_libs_count);
-	//load(pt, "etalon_libs_count", cfg.etalon_libs_count);
+	load(lc_cfg.from_file              , pt, "from_file"             );
+	load(lc_cfg.syminfo                , pt, "syminfo"               );
+	load(lc_cfg.paired_info_only       , pt, "paired_info_only"      );
 
-	load(pt, "use_new_metrics", lc_cfg.use_new_metrics);
-	load(pt, "write_seeds", lc_cfg.write_seeds);
-	load(pt, "write_overlaped_paths", lc_cfg.write_overlaped_paths);
-	load(pt, "write_paths", lc_cfg.write_paths);
-	load(pt, "write_contigs", lc_cfg.write_contigs);
-	load(pt, "write_real_paired_info", lc_cfg.write_real_paired_info);
-	load(pt, "write_raw_paired_info", lc_cfg.write_raw_paired_info);
-	load(pt, "write_graph", lc_cfg.write_graph);
-	load(pt, "print_stats", lc_cfg.print_stats);
-	load(pt, "cluster_paired_info", lc_cfg.cluster_paired_info);
-	load(pt, "paired_info_file_prefix", lc_cfg.paired_info_file_prefix);
+	load(lc_cfg.use_new_metrics        , pt, "use_new_metrics"       );
+	load(lc_cfg.write_seeds            , pt, "write_seeds"           );
+	load(lc_cfg.write_overlaped_paths  , pt, "write_overlaped_paths" );
+	load(lc_cfg.write_paths            , pt, "write_paths"           );
+	load(lc_cfg.write_contigs          , pt, "write_contigs"         );
+	load(lc_cfg.write_real_paired_info , pt, "write_real_paired_info");
+	load(lc_cfg.write_raw_paired_info  , pt, "write_raw_paired_info" );
+	load(lc_cfg.write_graph            , pt, "write_graph"           );
+	load(lc_cfg.print_stats            , pt, "print_stats"           );
 
-	load(pt, "total_symmetric_mode", lc_cfg.total_symmetric_mode);
-	load(pt, "first_grow_forward", lc_cfg.first_grow_forward);
+	load(lc_cfg.cluster_paired_info    , pt, "cluster_paired_info"   );
+	load(lc_cfg.paired_info_file_prefix, pt, "paired_info_file_prefix");
 
-	load(pt, cfg::get().dataset_name, lc_cfg.ds);
-	load(pt, "real_libs", lc_cfg.real_libs);
-	load(pt, "etalon_libs", lc_cfg.etalon_libs);
+	load(lc_cfg.total_symmetric_mode   , pt, "total_symmetric_mode"  );
+	load(lc_cfg.first_grow_forward     , pt, "first_grow_forward"    );
+	load(lc_cfg.dataset_name           , pt, "dataset"               );
 
-	load(pt, "ss", lc_cfg.ss);
-	load(pt, "es", lc_cfg.es);
-	load(pt, "lr", lc_cfg.lr);
-	load(pt, "sc", lc_cfg.sc);
-	load(pt, "fo", lc_cfg.fo);
-	load(pt, "research", lc_cfg.rs);
-	load(pt, "utils", lc_cfg.u);
+	load(lc_cfg.ds                     , pt,  lc_cfg.dataset_name    );
+	load(lc_cfg.ps                     , pt,  lc_cfg.ds.param_set    );
+
+	load(lc_cfg.rs                     , pt, "research"              );
+	load(lc_cfg.u                      , pt, "utils"                 );
 
 }
 

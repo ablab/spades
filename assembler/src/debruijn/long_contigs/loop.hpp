@@ -320,7 +320,7 @@ size_t GetMaxExitIteration(EdgeId loopEdge, EdgeId loopExit, LoopDetector& detec
 }
 
 size_t GetFirstExitIteration(EdgeId loopEdge, EdgeId loopExit, LoopDetector& detector,
-		std::pair<size_t, size_t> iterRange, double coeff = lc_cfg::get().es.priority_coeff) {
+		std::pair<size_t, size_t> iterRange, double coeff = lc_cfg::get().ps.es.priority_coeff) {
 	auto range = detector.data.equal_range(loopEdge);
 
 	size_t maxIter = std::numeric_limits<size_t>::max();

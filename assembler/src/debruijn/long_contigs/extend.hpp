@@ -37,7 +37,7 @@ double EdgeLengthExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths&
 
 
 double CorrectWeightByAdvanced(double weight, double advWeight) {
-	return math::gr(advWeight, 0.0) ? weight * lc_cfg::get().es.advanced_coeff
+	return math::gr(advWeight, 0.0) ? weight * lc_cfg::get().ps.es.advanced_coeff
 			: weight;
 }
 
@@ -54,7 +54,7 @@ double GetWeight(omnigraph::PairedInfoIndex<Graph>::PairInfos pairs, PairedInfoI
 
 		int pairedDistance = rounded_d(*iter);
 
-		if (lc_cfg::get().es.use_delta_first) {
+		if (lc_cfg::get().ps.es.use_delta_first) {
 			if (iter->variance != 0) {
 				distanceDev = iter->variance;
 			}
@@ -65,7 +65,7 @@ double GetWeight(omnigraph::PairedInfoIndex<Graph>::PairInfos pairs, PairedInfoI
 				pairedDistance <= distance + distanceDev) {
 			double w = iter->weight;
 
-			if (lc_cfg::get().es.fix_weight) {
+			if (lc_cfg::get().ps.es.fix_weight) {
 				w = pairedInfoLibrary.NormalizeWeight(*iter);
 			}
 
@@ -133,7 +133,7 @@ double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, 
 	size_t start = forward ? 0 : edgesToExclude;
 	size_t end = forward ? path.size() - edgesToExclude : path.size();
 
-	static int DISTANCE_DEV = cfg::get().etalon_info_mode ? lc_cfg::get().es.etalon_distance_dev : pairedInfoLibrary.var;
+	static int DISTANCE_DEV = cfg::get().etalon_info_mode ? lc_cfg::get().ps.es.etalon_distance_dev : pairedInfoLibrary.var;
 
 	for(size_t i = start; i < end; ++i) {
 		EdgeId edge = path[i];
@@ -144,7 +144,7 @@ double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, 
 		double w = 0;
 		if (pairedInfoLibrary.has_advanced) {
 			omnigraph::PairedInfoIndex<Graph>::PairInfos ad_pairs = forward ? pairedInfoLibrary.advanced->pairedInfoIndex->GetEdgePairInfo(edge, e) : pairedInfoLibrary.advanced->pairedInfoIndex->GetEdgePairInfo(e, edge);
-			w = GetWeight(pairs, pairedInfoLibrary, distance, DISTANCE_DEV, useWeightFunction, lc_cfg::get().es.use_advanced ? &ad_pairs : 0);
+			w = GetWeight(pairs, pairedInfoLibrary, distance, DISTANCE_DEV, useWeightFunction, lc_cfg::get().ps.es.use_advanced ? &ad_pairs : 0);
 		} else {
 			w = GetWeight(pairs, pairedInfoLibrary, distance, DISTANCE_DEV, useWeightFunction, 0);
 		}
@@ -247,7 +247,7 @@ double FilterExtentionsDeep(Graph& g, BidirectionalPath& path, std::vector<EdgeI
 
 	//Filling maximum edges
 	edges.clear();
-	auto bestEdge = weights.lower_bound((--weights.end())->first / lc_cfg::get().es.priority_coeff);
+	auto bestEdge = weights.lower_bound((--weights.end())->first / lc_cfg::get().ps.es.priority_coeff);
 	for (auto maxEdge = bestEdge; maxEdge != weights.end(); ++maxEdge) {
 		edges.push_back(maxEdge->second);
 	}
@@ -276,7 +276,7 @@ double FilterExtentions(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& 
 
 	//Filling maximum edges
 	edges.clear();
-	auto bestEdge = weights.lower_bound((--weights.end())->first / lc_cfg::get().es.priority_coeff);
+	auto bestEdge = weights.lower_bound((--weights.end())->first / lc_cfg::get().ps.es.priority_coeff);
 	for (auto maxEdge = bestEdge; maxEdge != weights.end(); ++maxEdge) {
 		edges.push_back(maxEdge->second);
 	}
@@ -301,11 +301,11 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 
 	if (edges.size() == 1) {
 
-		if (lc_cfg::get().ss.check_trusted) {
+		if (lc_cfg::get().ps.ss.check_trusted) {
 			double weight =
 					ExtentionWeight(g, path, lengths, edges.back(), pairedInfo, 0, forward, false);
 
-			if (ExtensionGoodEnough(edges.back(), weight, lc_cfg::get().ss.trusted_threshold) == 0) {
+			if (ExtensionGoodEnough(edges.back(), weight, lc_cfg::get().ps.ss.trusted_threshold) == 0) {
 				return 0;
 			}
 		}
@@ -322,13 +322,13 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 		}
 	}
 
-	static bool useWeightFunctionFirst = lc_cfg::get().es.use_weight_function_first;
+	static bool useWeightFunctionFirst = lc_cfg::get().ps.es.use_weight_function_first;
 
 	if (useWeightFunctionFirst) {
 		FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector, true);
 
 		if (edges.size() == 1) {
-			static double weightFunThreshold = lc_cfg::get().es.weight_fun_threshold;
+			static double weightFunThreshold = lc_cfg::get().ps.es.weight_fun_threshold;
 			*maxWeight = ExtentionWeight(g, path, lengths, edges.back(), pairedInfo, edgesToExclude, forward);
 
 			return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightFunThreshold, g, path, handler, forward) : toReturn;
@@ -337,7 +337,7 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 
 	*maxWeight = FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector);
 
-	static double weightThreshold = lc_cfg::get().es.weight_threshold;
+	static double weightThreshold = lc_cfg::get().ps.es.weight_threshold;
 	if (edges.size() == 1) {
 		return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold, g, path, handler, forward) : toReturn;
 	}
@@ -348,7 +348,7 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 		} else {
 			DETAILED_INFO("Cannot choose extension, no obvious maximum");
 
-			static int maxDepth = lc_cfg::get().es.max_depth;
+			static int maxDepth = lc_cfg::get().ps.es.max_depth;
 			for (int depth = 1; depth <= maxDepth; ++depth) {
 				DETAILED_INFO("Trying to look deeper to " << depth);
 				*maxWeight = FilterExtentionsDeep(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector, depth);
@@ -366,7 +366,7 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 
 //Count edges to be excluded
 size_t EdgesToExcludeForward(Graph& g, BidirectionalPath& path, int from = -1) {
-	static bool maxCycles = lc_cfg::get().ss.max_cycles;
+	static bool maxCycles = lc_cfg::get().ps.ss.max_cycles;
 	static LoopDetector detector;
 	detector.clear();
 
@@ -396,7 +396,7 @@ size_t EdgesToExcludeForward(Graph& g, BidirectionalPath& path, int from = -1) {
 
 //Count edges to be excludeD
 size_t EdgesToExcludeBackward(Graph& g, BidirectionalPath& path, int from = -1) {
-	static bool maxCycles = lc_cfg::get().ss.max_cycles;
+	static bool maxCycles = lc_cfg::get().ps.ss.max_cycles;
 	static LoopDetector detector;
 	detector.clear();
 

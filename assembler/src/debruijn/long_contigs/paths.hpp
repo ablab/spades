@@ -173,7 +173,7 @@ bool ResolveLoopForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 
 	if (loopLength > GetMaxInsertSize(pairedInfo) - K) {
 		DETAILED_INFO("Loop is too long");
-		return !lc_cfg::get().lr.stop_on_long;
+		return !lc_cfg::get().ps.lr.stop_on_long;
 	}
 	if (!goodLoop) {
 		return true;
@@ -189,7 +189,7 @@ bool ResolveLoopForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	do {
 		ExtendTrivialForward(g, path, detector, &lengths);
 
-		int excludeCycle = (lc_cfg::get().lr.exlude_cycle && loopSize == 2) ? loopSize * i + 1 : -1;
+		int excludeCycle = (lc_cfg::get().ps.lr.exlude_cycle && loopSize == 2) ? loopSize * i + 1 : -1;
 		ImitateFork(g, path, lengths, detector, pairedInfo, loopEdge, loopExit, true, excludeCycle);
 
 		path.push_back(loopEdge);
@@ -221,7 +221,7 @@ bool ResolveLoopBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths
 
 	if (loopLength > GetMaxInsertSize(pairedInfo) - K) {
 		DETAILED_INFO("Loop is too long");
-		return !lc_cfg::get().lr.stop_on_long;
+		return !lc_cfg::get().ps.lr.stop_on_long;
 	}
 	if (!goodLoop) {
 		return true;
@@ -238,7 +238,7 @@ bool ResolveLoopBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths
 	do {
 		INFO("Extending trivially backward")
 		ExtendTrivialBackward(g, path, detector, &lengths);
-		int excludeCycle = (lc_cfg::get().lr.exlude_cycle && loopSize == 2) ? loopSize * i + 1 : -1;
+		int excludeCycle = (lc_cfg::get().ps.lr.exlude_cycle && loopSize == 2) ? loopSize * i + 1 : -1;
 		ImitateFork(g, path, lengths, detector, pairedInfo, loopEdge, loopExit, false, excludeCycle);
 
 		path.push_front(loopEdge);
@@ -269,12 +269,12 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		return false;
 	}
 	double w = 0;
-	static bool FULL_LOOP_REMOVAL = lc_cfg::get().lr.full_loop_removal;
-	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
-	static size_t LOOPS_TO_IVESTIGATE = lc_cfg::get().lr.loop_to_investigate;
+	static bool FULL_LOOP_REMOVAL = lc_cfg::get().ps.lr.full_loop_removal;
+	static size_t MAX_LOOPS = lc_cfg::get().ps.lr.max_loops;
+	static size_t LOOPS_TO_IVESTIGATE = lc_cfg::get().ps.lr.loop_to_investigate;
 
 	EdgeId loopEdge = 0;
-	if (lc_cfg::get().lr.investigation) {
+	if (lc_cfg::get().ps.lr.investigation) {
 		loopEdge = IsEdgeInShortLoopForward(g, path.back());
 		if (loopEdge != 0 || CheckCycle(path, path.back(), detector, LOOPS_TO_IVESTIGATE)) {
 			DETAILED_INFO("Seed already near loop");
@@ -299,7 +299,7 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	DETAILED_INFO("Chosen forward " << extension << " (" << g.length(extension) << ")");
 	DetailedPrintPath(g, path, lengths);
 
-	if (lc_cfg::get().lr.investigation) {
+	if (lc_cfg::get().ps.lr.investigation) {
 		loopEdge = IsEdgeInShortLoopForward(g, extension);
 		if (loopEdge != 0 || CheckCycle(path, extension, detector, LOOPS_TO_IVESTIGATE)) {
 			if (!ResolveLoopForward(g, path, lengths, detector, pairedInfo, loopEdge)) {
@@ -332,12 +332,12 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	}
 
 	double w = 0;
-	static bool FULL_LOOP_REMOVAL = lc_cfg::get().lr.full_loop_removal;
-	static size_t MAX_LOOPS = lc_cfg::get().lr.max_loops;
-	static size_t LOOPS_TO_IVESTIGATE = lc_cfg::get().lr.loop_to_investigate;
+	static bool FULL_LOOP_REMOVAL = lc_cfg::get().ps.lr.full_loop_removal;
+	static size_t MAX_LOOPS = lc_cfg::get().ps.lr.max_loops;
+	static size_t LOOPS_TO_IVESTIGATE = lc_cfg::get().ps.lr.loop_to_investigate;
 
 	EdgeId loopEdge = 0;
-	if (lc_cfg::get().lr.investigation) {
+	if (lc_cfg::get().ps.lr.investigation) {
 		loopEdge = IsEdgeInShortLoopBackward(g, path.front());
 		if (loopEdge != 0 || CheckCycle(path, path.front(), detector, LOOPS_TO_IVESTIGATE)) {
 			DETAILED_INFO("Seed already near loop");
@@ -362,7 +362,7 @@ bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 	DETAILED_INFO("Chosen backward " << extension << " (" << g.length(extension) << ")");
 	DetailedPrintPath(g, path, lengths);
 
-	if (lc_cfg::get().lr.investigation) {
+	if (lc_cfg::get().ps.lr.investigation) {
 		loopEdge = IsEdgeInShortLoopBackward(g, extension);
 		if (loopEdge != 0 || CheckCycle(path, extension, detector, LOOPS_TO_IVESTIGATE)) {
 			if (!ResolveLoopBackward(g, path, lengths, detector, pairedInfo, loopEdge)) {
@@ -394,7 +394,7 @@ void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo, 
 	int i = 0;
 	bool stop = false;
 
-	while (i < lc_cfg::get().es.max_iter && !stop) {
+	while (i < lc_cfg::get().ps.es.max_iter && !stop) {
 		RecountLengthsForward(g, seed, lengths);
 
 		DETAILED_INFO("Before forward");
@@ -429,9 +429,9 @@ size_t SeedPriority(const BidirectionalPath& seed) {
 void FindPaths(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndices& pairedInfo,
 		PathStopHandler& handler) {
 
-//	static bool ALL_SEEDS = lc_cfg::get().sc.all_seeds;
-//	static double EDGE_COVERAGE_TRESHOLD = lc_cfg::get().sc.edge_coverage;
-//	static double LENGTH_COVERAGE_TRESHOLD = lc_cfg::get().sc.len_coverage;
+//	static bool ALL_SEEDS = lc_cfg::get().ps.sc.all_seeds;
+//	static double EDGE_COVERAGE_TRESHOLD = lc_cfg::get().ps.sc.edge_coverage;
+//	static double LENGTH_COVERAGE_TRESHOLD = lc_cfg::get().ps.sc.len_coverage;
 
 	INFO("Finding paths started");
 	for(auto seed = seeds.begin(); seed != seeds.end(); ++seed) {
@@ -482,7 +482,7 @@ void GrowSeedSymmetric(Graph& g, BidirectionalPath& seed, BidirectionalPath& con
 	bool stop = false;
 	bool start = true;
 
-	while (i < lc_cfg::get().es.max_iter && !stop) {
+	while (i < lc_cfg::get().ps.es.max_iter && !stop) {
 		if (!start || lc_cfg::get().first_grow_forward) {
 			RecountLengthsForward(g, seed, lengths);
 			RecountLengthsBackward(g, conjSeed, conjLengths);

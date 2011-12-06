@@ -71,7 +71,7 @@ namespace config_common
 			for (size_t i = 0; i != count; ++i)
 			{
 				T t;
-				load(t, pt.get_child(str(format("%$s.item_%d") % key % i)));
+				load(t, pt.get_child(str(format("%$s.item_%d") % key % i)), complete);
 				vec.push_back(t);
 			}
 		}

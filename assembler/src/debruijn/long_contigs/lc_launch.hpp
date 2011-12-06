@@ -59,15 +59,15 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 	FindSeeds(g, rawSeeds, &pairedInfos);
 	CheckIds(g, rawSeeds);
 
-	ResolveUnequalComplement(g, rawSeeds, lc_cfg::get().ss.sym.cut_tips, lc_cfg::get().ss.sym.min_conjugate_len);
+	ResolveUnequalComplement(g, rawSeeds, lc_cfg::get().ps.ss.sym.cut_tips, lc_cfg::get().ps.ss.sym.min_conjugate_len);
 	CheckIds(g, rawSeeds);
 
 	std::vector<BidirectionalPath> goodSeeds;
-	RemoveUnagreedPaths(g, rawSeeds, pairedInfos, lc_cfg::get().fo.agreed_coeff, &goodSeeds);
+	RemoveUnagreedPaths(g, rawSeeds, pairedInfos, lc_cfg::get().ps.fo.agreed_coeff, &goodSeeds);
 	CheckIds(g, goodSeeds);
 
-	if (lc_cfg::get().fo.remove_sefl_conjugate) {
-		RemoveWrongConjugatePaths(g, goodSeeds, lc_cfg::get().ss.sym.min_conjugate_len, &lowCoveredSeeds);
+	if (lc_cfg::get().ps.fo.remove_sefl_conjugate) {
+		RemoveWrongConjugatePaths(g, goodSeeds, lc_cfg::get().ps.ss.sym.min_conjugate_len, &lowCoveredSeeds);
 	} else {
 		lowCoveredSeeds = goodSeeds;
 	}
@@ -76,7 +76,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 	CheckIds(g, lowCoveredSeeds);
 
 
-	FilterLowCovered(g, lowCoveredSeeds, lc_cfg::get().ss.min_coverage, &filteredSeeds);
+	FilterLowCovered(g, lowCoveredSeeds, lc_cfg::get().ps.ss.min_coverage, &filteredSeeds);
 	INFO("Seeds filtered");
 	CheckIds(g, filteredSeeds);
 
@@ -112,7 +112,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 	std::vector<BidirectionalPath> & paths = seeds;
 	CheckIds(g, paths);
 
-	ResolveUnequalComplement(g, paths, lc_cfg::get().fo.sym.cut_tips, lc_cfg::get().fo.sym.min_conjugate_len);
+	ResolveUnequalComplement(g, paths, lc_cfg::get().ps.fo.sym.cut_tips, lc_cfg::get().ps.fo.sym.min_conjugate_len);
 	CheckIds(g, paths);
 	PrintPathsShort(g, paths);
 	std::vector<int> pairs;
@@ -121,7 +121,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 	FilterComplement(g, paths, &pairs, &quality);
 
 	std::vector<BidirectionalPath> goodPaths;
-	RemoveUnagreedPaths(g, paths, pairedInfos, lc_cfg::get().fo.agreed_coeff, &goodPaths);
+	RemoveUnagreedPaths(g, paths, pairedInfos, lc_cfg::get().ps.fo.agreed_coeff, &goodPaths);
 	CheckIds(g, goodPaths);
 
 
@@ -129,8 +129,8 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 	FilterComplement(g, goodPaths, &pairs, &quality);
 
 	std::vector<BidirectionalPath> filteredPaths;;
-	if (lc_cfg::get().fo.remove_sefl_conjugate) {
-		RemoveWrongConjugatePaths(g, goodPaths, lc_cfg::get().fo.sym.min_conjugate_len, &filteredPaths);
+	if (lc_cfg::get().ps.fo.remove_sefl_conjugate) {
+		RemoveWrongConjugatePaths(g, goodPaths, lc_cfg::get().ps.fo.sym.min_conjugate_len, &filteredPaths);
 	} else {
 		filteredPaths = goodPaths;
 	}
@@ -141,11 +141,11 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 
 	std::vector<BidirectionalPath> result;
 	std::vector<double> pathQuality;
-	if (lc_cfg::get().fo.remove_subpaths || lc_cfg::get().fo.remove_overlaps) {
+	if (lc_cfg::get().ps.fo.remove_subpaths || lc_cfg::get().ps.fo.remove_overlaps) {
 		RemoveSubpaths(g, filteredPaths, result, &pathQuality);
 		INFO("Subpaths removed");
 	}
-	else if (lc_cfg::get().fo.remove_duplicates) {
+	else if (lc_cfg::get().ps.fo.remove_duplicates) {
 		RemoveDuplicate(g, filteredPaths, result, &pathQuality);
 		INFO("Duplicates removed");
 	}
@@ -178,12 +178,12 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 		std::set<int> toRemove;
 		std::vector<BidirectionalPath> noOverlaps;
 
-		if (lc_cfg::get().fo.remove_overlaps) {
+		if (lc_cfg::get().ps.fo.remove_overlaps) {
 			RemoveOverlaps(g, result);
 			DETAILED_INFO("Removed overlaps");
 			CheckIds(g, result);
 		}
-		if (lc_cfg::get().fo.remove_similar) {
+		if (lc_cfg::get().ps.fo.remove_similar) {
 			RemoveSimilar(g, result, pathQuality, &noOverlaps);
 		} else {
 			noOverlaps = result;

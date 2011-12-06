@@ -26,7 +26,7 @@ using namespace debruijn_graph;
 //Otherwise returns 0
 void ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detector,
 		PathLengths* lengths = 0, PairedInfoIndices * pairedInfo = 0) {
-	static bool maxCycles = lc_cfg::get().ss.max_cycles;
+	static bool maxCycles = lc_cfg::get().ps.ss.max_cycles;
 
 	if (path.empty()) {
 		return;
@@ -36,7 +36,7 @@ void ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detec
 	while (g.CheckUniqueOutgoingEdge(currentVertex)) {
 		EdgeId nextEdge = g.GetUniqueOutgoingEdge(currentVertex);
 
-		if (pairedInfo != 0 &&  lc_cfg::get().ss.check_trusted) {
+		if (pairedInfo != 0 &&  lc_cfg::get().ps.ss.check_trusted) {
 
 			int toExclude = 0;
 			double weight =
@@ -45,7 +45,7 @@ void ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detec
 			DETAILED_INFO("Forward " << nextEdge << " (" << g.length(nextEdge) << "), weight " << weight);
 			DetailedPrintPath(g, path, *lengths);
 
-			if (ExtensionGoodEnough(nextEdge, weight, lc_cfg::get().ss.trusted_threshold) == 0) {
+			if (ExtensionGoodEnough(nextEdge, weight, lc_cfg::get().ps.ss.trusted_threshold) == 0) {
 				break;
 			}
 		}
@@ -78,7 +78,7 @@ void ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detec
 
 //Trivially extend path backward
 void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& detector, PathLengths* lengths = 0, PairedInfoIndices * pairedInfo = 0) {
-	static bool maxCycles = lc_cfg::get().ss.max_cycles;
+	static bool maxCycles = lc_cfg::get().ps.ss.max_cycles;
 
 	if (path.empty()) {
 		return;
@@ -88,7 +88,7 @@ void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& dete
 	while (g.CheckUniqueIncomingEdge(currentVertex)) {
 		EdgeId nextEdge = g.GetUniqueIncomingEdge(currentVertex);
 
-		if (pairedInfo != 0 &&  lc_cfg::get().ss.check_trusted) {
+		if (pairedInfo != 0 &&  lc_cfg::get().ps.ss.check_trusted) {
 
 			int toExclude = 0;
 			double weight =
@@ -97,7 +97,7 @@ void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& dete
 			DETAILED_INFO("Backward " << nextEdge << " (" << g.length(nextEdge) << "), weight " << weight);
 			DetailedPrintPath(g, path, *lengths);
 
-			if (ExtensionGoodEnough(nextEdge, weight, lc_cfg::get().ss.trusted_threshold) == 0) {
+			if (ExtensionGoodEnough(nextEdge, weight, lc_cfg::get().ps.ss.trusted_threshold) == 0) {
 				break;
 			}
 		}
@@ -170,8 +170,8 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndice
 	for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		EdgeId e = *iter;
 
-		if ((g.length(e) >= lc_cfg::get().ss.chimeric_len - lc_cfg::get().ss.chimeric_delta && g.length(e) <= lc_cfg::get().ss.chimeric_len + lc_cfg::get().ss.chimeric_delta) ||
-				(g.length(e) <= lc_cfg::get().ss.short_single &&
+		if ((g.length(e) >= lc_cfg::get().ps.ss.chimeric_len - lc_cfg::get().ps.ss.chimeric_delta && g.length(e) <= lc_cfg::get().ps.ss.chimeric_len + lc_cfg::get().ps.ss.chimeric_delta) ||
+				(g.length(e) <= lc_cfg::get().ps.ss.short_single &&
 						(ClassifyEdge(g, e) == TOTALY_ISOLATED || ClassifyEdge(g, e) == HAS_NEIGHBOUR))) {
 			edges.insert(e);
 			edges.insert(g.conjugate(e));
