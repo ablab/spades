@@ -520,8 +520,6 @@ public:
 		last_component_.clear();
 		last_component_.insert(result.begin(), result.end());
 
-		VERIFY(EdgeCovered(genome_path_[current_index_].first));
-		last_component_.insert(result.begin(), result.end());
 		TRACE("Component vector filled");
 		size_t prev_index = current_index_;
 		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
