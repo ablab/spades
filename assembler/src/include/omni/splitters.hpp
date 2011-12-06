@@ -524,6 +524,8 @@ public:
 		last_component_.insert(result.begin(), result.end());
 		TRACE("Component vector filled");
 		size_t prev_index = current_index_;
+		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
+		cc.CloseComponent(last_component_);
 		SkipVisited();
 		if (prev_index + 1 != current_index_) {
 			start_processed_ = true;
@@ -533,8 +535,6 @@ public:
 		} else {
 			start_processed_ = false;
 		}
-		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
-		cc.CloseComponent(last_component_);
 		return vector<VertexId>(last_component_.begin(), last_component_.end());
 	}
 
