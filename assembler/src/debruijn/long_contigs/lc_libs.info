@@ -8,7 +8,7 @@ TEMPLATE_DATASET
 	length			  4639675 
     
     real_libs {
-	    count        	
+	    count  
 	    
 	    item_0
 	    {
@@ -43,6 +43,150 @@ TEMPLATE_DATASET
 	    }
 	}
 }
+
+
+
+HMP1
+{
+    graph_file       ./data/debruijn/source/hmp1/distance_estimation
+    
+    param_set        singlecell 
+    
+    reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+	length			  4639675 
+    
+    real_libs {
+	    count 1       	
+	    
+	    item_0
+	    {
+	        read_size     100
+	        insert_size   210
+	        de_delta      15
+	        is_delta      2
+	        var           10
+	        
+	        precounted       true
+	        precounted_path  ./data/debruijn/source/hmp1/distance_estimation_cl
+	        
+	        first            .
+	        second           .
+	        
+	        has_advanced     false
+	        advanced         .
+	    
+	    	has_raw          false    
+	        raw              .
+	    }
+    }
+    
+    etalon_libs {
+        count     0
+    
+	    item_0
+	    {
+	        read_size    100
+	        insert_size  200
+	        delta        15
+	    }
+	}
+}
+
+JCVI_ECOLI
+{
+    graph_file       ./data/debruijn/source/ecoli/distance_estimation
+    
+    param_set        singlecell 
+    
+    reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+	length			  4639675 
+    
+    real_libs {
+	    count  1      	
+	    
+	    item_0
+	    {
+	        read_size     100
+	        insert_size   210
+	        de_delta      15
+	        is_delta      2
+	        var           10
+	        
+	        precounted       true
+	        precounted_path  ./data/debruijn/source/ecoli/distance_estimation_cl
+	        
+	        first            .
+	        second           .
+	        
+	        has_advanced     false
+	        advanced         .
+	    
+	    	has_raw          false    
+	        raw              .
+	    }
+    }
+    
+    etalon_libs {
+        count     0
+    
+	    item_0
+	    {
+	        read_size    100
+	        insert_size  200
+	        delta        15
+	    }
+	}
+}
+
+
+JCVI_SAUREUS_0512
+{
+    graph_file       ./data/debruijn/source/saureus_0512/distance_estimation
+    
+    reference_genome  S.Aureus.USA300_FPR3757/S.Aureus.USA300_FPR3757.fasta
+    length            2872769 ; total size
+   
+
+    param_set        singlecell 
+    
+    real_libs {
+	    count 1        	
+	    
+	    item_0
+	    {
+	        read_size     100
+	        insert_size   210
+	        de_delta      15
+	        is_delta      2
+	        var           10
+	        
+	        precounted       true
+	        precounted_path  ./data/debruijn/source/saureus_0512/distance_estimation_cl
+	        
+	        first            .
+	        second           .
+	        
+	        has_advanced     false
+	        advanced         .
+	    
+	    	has_raw          false    
+	        raw              .
+	    }
+    }
+    
+    etalon_libs {
+        count     0
+    
+	    item_0
+	    {
+	        read_size    100
+	        insert_size  200
+	        delta        15
+	    }
+	}
+}
+
+
 
 
 QUAKE_FULL
