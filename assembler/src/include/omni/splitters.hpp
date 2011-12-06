@@ -519,8 +519,6 @@ public:
 		vector < VertexId > result = cf.VisitedVertices();
 		last_component_.clear();
 		last_component_.insert(result.begin(), result.end());
-		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
-		cc.CloseComponent(last_component_);
 
 		VERIFY(EdgeCovered(genome_path_[current_index_].first));
 		last_component_.insert(result.begin(), result.end());
@@ -535,7 +533,9 @@ public:
 		} else {
 			start_processed_ = false;
 		}
-		return result;
+		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
+		cc.CloseComponent(last_component_);
+		return vector<VertexId>(last_component_.begin(), last_component_.end());
 	}
 
 	virtual bool Finished() {
