@@ -377,6 +377,18 @@ HMP_LANE_1
     	LEN 0
 }
 
+HMP_LANE_1_2
+{
+        first	HMP/hmp_mda_pilot_jcvi_0001/hammer2/00.reads.left.corrected.fastq
+        second	HMP/hmp_mda_pilot_jcvi_0001/hammer2/00.reads.right.corrected.fastq
+        single_first	HMP/hmp_mda_pilot_jcvi_0001/hammer2/00.reads.left.unpaired.fastq
+        single_second	HMP/hmp_mda_pilot_jcvi_0001/hammer2/00.reads.right.unpaired.fastq
+        RL              100
+        IS              210
+    	single_cell	true
+        reference_genome E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+    	LEN 0
+}
 HMP_LANE_2
 {
         first	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.left.corrected.fastq.gz
