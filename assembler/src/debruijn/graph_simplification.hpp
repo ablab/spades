@@ -178,7 +178,7 @@ bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 			double coverage_gap = cfg::get().simp.cec.coverage_gap;
 			size_t sufficient_neighbour_length =
 					cfg::get().simp.cec.sufficient_neighbour_length;
-			omnigraph::TopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
+			omnigraph::AdvancedTopologyChimericEdgeRemover<Graph> erroneous_edge_remover(
 					g, max_length, coverage_gap, sufficient_neighbour_length,
 					edge_remover);
 			//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(

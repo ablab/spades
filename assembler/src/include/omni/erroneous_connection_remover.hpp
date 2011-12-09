@@ -252,27 +252,8 @@ class NewTopologyBasedChimericEdgeRemover : public ErroneousEdgeRemover<Graph> {
 	size_t uniqueness_length_;
 	size_t plausibility_length_;
 
-public:
-	NewTopologyBasedChimericEdgeRemover(Graph& g, size_t max_length,
-			size_t uniqueness_length, size_t plausibility_length, EdgeRemover<Graph>& edge_remover) :
-			base(g, edge_remover), max_length_(max_length), uniqueness_length_(uniqueness_length), plausibility_length_(
-					plausibility_length) {
-		VERIFY(max_length < plausibility_length);
-		VERIFY(uniqueness_length > plausibility_length);
-	}
-
-	bool CheckUniqueness(EdgeId e) {
-		return this->graph().length(e) >= uniqueness_length_;
-	}
-
-	bool Unique(const vector<EdgeId>& edges) {
-		return edges.size() == 1 && CheckUniqueness(*edges.begin());
-//		for (auto it = edges.begin(); it != edges.end(); ++it) {
-//			if (CheckUniqueness(*it)) {
-//				return true;
-//			}
-//		}
-//		return false;
+	bool Unique(const vector<EdgeId>& edges, bool forward) {
+		return edges.size() == 1 && CheckUniqueness(*edges.begin(), forward);
 	}
 
 	bool CheckPlausibility(EdgeId e) {
@@ -289,11 +270,30 @@ public:
 	}
 
 	bool CheckStart(EdgeId e) {
-		return Unique(this->graph().IncomingEdges(this->graph().EdgeStart(e))) && ExistPlausible(this->graph().OutgoingEdges(this->graph().EdgeStart(e)));
+		return Unique(this->graph().IncomingEdges(this->graph().EdgeStart(e)), false) && ExistPlausible(this->graph().OutgoingEdges(this->graph().EdgeStart(e)));
 	}
 
 	bool CheckEnd(EdgeId e) {
-		return Unique(this->graph().OutgoingEdges(this->graph().EdgeEnd(e))) && ExistPlausible(this->graph().IncomingEdges(this->graph().EdgeEnd(e)));
+		return Unique(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)), true) && ExistPlausible(this->graph().IncomingEdges(this->graph().EdgeEnd(e)));
+	}
+
+public:
+	NewTopologyBasedChimericEdgeRemover(Graph& g, size_t max_length,
+			size_t uniqueness_length, size_t plausibility_length, EdgeRemover<Graph>& edge_remover) :
+			base(g, edge_remover), max_length_(max_length), uniqueness_length_(uniqueness_length), plausibility_length_(
+					plausibility_length) {
+		VERIFY(max_length < plausibility_length);
+		VERIFY(uniqueness_length > plausibility_length);
+	}
+
+protected:
+
+	size_t uniqueness_length() {
+		return uniqueness_length_;
+	}
+
+	virtual bool CheckUniqueness(EdgeId e, bool forward) {
+		return this->graph().length(e) >= uniqueness_length_;
 	}
 
 	void InnerRemoveEdges() {
@@ -310,6 +310,57 @@ public:
 		omnigraph::Cleaner<Graph> cleaner(this->graph());
 		cleaner.Clean();
 	}
+};
+
+template<class Graph>
+class AdvancedTopologyChimericEdgeRemover : public NewTopologyBasedChimericEdgeRemover<Graph> {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef NewTopologyBasedChimericEdgeRemover<Graph> base;
+
+	const vector<EdgeId> UniquePathForward(EdgeId e) {
+		vector<EdgeId> answer;
+		EdgeId curr = e;
+		answer.push_back(curr);
+		while (this->graph().CheckUniqueOutgoingEdge(this->graph().EdgeEnd(curr))) {
+			curr = this->graph().GetUniqueOutgoingEdge(this->graph().EdgeEnd(curr));
+			answer.push_back(curr);
+		}
+		return answer;
+	}
+
+	const vector<EdgeId> UniquePathBackward(EdgeId e) {
+		vector<EdgeId> answer;
+		EdgeId curr = e;
+		answer.push_back(curr);
+		while (this->graph().CheckUniqueIncomingEdge(this->graph().EdgeEnd(curr))) {
+			curr = this->graph().GetUniqueIncomingEdge(this->graph().EdgeEnd(curr));
+			answer.push_back(curr);
+		}
+		return vector<EdgeId>(answer.rbegin(), answer.rend());
+	}
+
+	size_t SumLength(const vector<EdgeId>& path) {
+		size_t s = 0;
+		for (auto it = path.begin(); it != path.end(); ++it) {
+			s += this->graph().length(*it);
+		}
+		return s;
+	}
+
+public:
+	AdvancedTopologyChimericEdgeRemover(Graph& g, size_t max_length,
+			size_t uniqueness_length, size_t plausibility_length, EdgeRemover<Graph>& edge_remover) :
+			base(g, max_length, uniqueness_length, plausibility_length, edge_remover) {
+	}
+
+protected:
+
+	bool CheckUniqueness(EdgeId e, bool forward) {
+		cout << "HERE" << endl;
+		return SumLength(forward ? UniquePathForward(e) : UniquePathBackward(e)) >= this->uniqueness_length();
+	}
+
 };
 
 template<class Graph>
