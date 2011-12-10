@@ -70,7 +70,7 @@ while id1 is not None and id2 is not None:
 		print("Unequal ids!: " + id1 + " " + id2)
 		sys.exit(0)
 
-	if id1 in uids1 and id2 in uids2:
+	if id1 not in uids1 and not id2 in uids2:
 		outFile1.write(read1)
 		outFile2.write(read2)
 
