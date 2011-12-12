@@ -367,7 +367,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 				reads_filename2 = input_dir + cfg::get().ds.second;
 			}
 
-			typedef io::EasyReader<io::SingleRead> EasyStream;
+			typedef io::EasyReader EasyStream;
 			EasyStream reads_1(reads_filename1);
 			EasyStream reads_2(reads_filename2);
 //			CarefulFilteringStream freads_1(reads_1);

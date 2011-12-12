@@ -141,8 +141,8 @@ int main() {
 		copy_configs();
 
 		// typedefs :)
-		typedef io::EasyReader<io::SingleRead> ReadStream;
-		typedef io::EasyReader<io::PairedRead> PairedReadStream;
+		typedef io::EasyReader ReadStream;
+		typedef io::PairedEasyReader PairedReadStream;
 //		typedef io::RCReaderWrapper<io::PairedRead> RCStream;
 //		typedef io::CarefulFilteringReaderWrapper<io::PairedRead> CarefulFilteringStream;
 

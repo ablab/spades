@@ -15,7 +15,7 @@ void late_pair_info_count(conj_graph_pack& gp,
 	checkFileExistenceFATAL(reads_filename_1);
 	checkFileExistenceFATAL(reads_filename2);
 	INFO("reads found");
-	io::EasyReader<io::PairedRead> stream(
+	io::PairedEasyReader stream(
 			std::make_pair(reads_filename_1, reads_filename2),
 			cfg::get().ds.IS);
 	INFO("reads found");

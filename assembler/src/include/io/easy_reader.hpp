@@ -7,22 +7,20 @@
 #include "io/careful_filtering_reader_wrapper.hpp"
 
 namespace io {
+//todo refactor, and maybe merge them once again
+class EasyReader : public DelegatingReaderWrapper<io::SingleRead> {
+	explicit EasyReader(const EasyReader& reader);
+	void operator=(const EasyReader& reader);
 
-template<typename ReadType>
-class EasyReader : public DelegatingReaderWrapper<ReadType> {
-	explicit EasyReader(const EasyReader<ReadType>& reader);
-	void operator=(const EasyReader<ReadType>& reader);
-
-	Reader<ReadType> raw_reader_;
+	Reader<io::SingleRead> raw_reader_;
 //	FilteringReaderWrapper<ReadType> filtered_reader_;
-	CarefulFilteringReaderWrapper<ReadType> filtered_reader_;
-	RCReaderWrapper<ReadType> rc_reader_;
+	CarefulFilteringReaderWrapper<io::SingleRead> filtered_reader_;
+	RCReaderWrapper<io::SingleRead> rc_reader_;
 
 public:
-  explicit EasyReader(const typename ReadType::FilenameType& filename,
-                  size_t distance = 0,
+  explicit EasyReader(const typename io::SingleRead::FilenameType& filename,
                   OffsetType offset_type = PhredOffset)
-      : raw_reader_(filename, distance, offset_type),
+      : raw_reader_(filename, offset_type),
         filtered_reader_(raw_reader_),
         rc_reader_(filtered_reader_) {
 	  Init(rc_reader_);
@@ -32,6 +30,34 @@ public:
    * Default destructor.
    */
   /* virtual */ ~EasyReader() {
+  }
+
+};
+
+class PairedEasyReader : public DelegatingReaderWrapper<io::PairedRead> {
+	explicit PairedEasyReader(const PairedEasyReader& reader);
+	void operator=(const PairedEasyReader& reader);
+
+	Reader<io::PairedRead> raw_reader_;
+//	FilteringReaderWrapper<ReadType> filtered_reader_;
+	CarefulFilteringReaderWrapper<io::PairedRead> filtered_reader_;
+	RCReaderWrapper<io::PairedRead> rc_reader_;
+
+public:
+  explicit PairedEasyReader(const typename io::PairedRead::FilenameType& filename,
+                  size_t insert_size,
+                  bool change_read_order = false,
+                  OffsetType offset_type = PhredOffset)
+      : raw_reader_(filename, insert_size, change_read_order, offset_type),
+        filtered_reader_(raw_reader_),
+        rc_reader_(filtered_reader_) {
+	  Init(rc_reader_);
+  }
+
+  /*
+   * Default destructor.
+   */
+  /* virtual */ ~PairedEasyReader() {
   }
 
 };

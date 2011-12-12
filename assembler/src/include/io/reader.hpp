@@ -52,7 +52,6 @@ class Reader<SingleRead> : public IReader<SingleRead> {
    * @param offset The offset of the read quality.
    */
   explicit Reader(const SingleRead::FilenameType& filename,
-                  size_t distance = 0,
                   OffsetType offset_type = PhredOffset)
       : filename_(filename), offset_type_(offset_type), parser_(NULL) {
     parser_ = SelectParser(filename_, offset_type_);
@@ -161,9 +160,10 @@ class Reader<PairedRead> : public IReader<PairedRead> {
    * @param offset The offset of the read quality.
    */
   explicit Reader(const PairedRead::FilenameType& filename,
-         size_t distance = 100,
+         size_t insert_size, bool change_order = false,
          OffsetType offset_type = PhredOffset)
-      : filename_(filename), distance_(distance), 
+      : filename_(filename), insert_size_(insert_size),
+        change_order_(change_order),
         offset_type_(offset_type),
         first_(new Reader<SingleRead>(filename_.first, offset_type_)),
         second_(new Reader<SingleRead>(filename_.second, offset_type_)) {}
@@ -207,7 +207,8 @@ class Reader<PairedRead> : public IReader<PairedRead> {
     SingleRead sr1, sr2;
     (*first_) >> sr1;
     (*second_) >> sr2;
-    pairedread = PairedRead(sr1, !sr2, distance_);
+
+    pairedread = PairedRead(sr1, !sr2, insert_size_);
     return *this;
   }
 
@@ -232,10 +233,11 @@ class Reader<PairedRead> : public IReader<PairedRead> {
    * @variable The names of the files which stream reads from.
    */
   PairedRead::FilenameType filename_;
-  /*
-   * @variable The distance between two parts of PairedRead.
-   */
-  size_t distance_;
+
+  size_t insert_size_;
+
+  bool change_order_;
+
   /*
    * @variable Quality offset type.
    */

@@ -88,7 +88,7 @@ boost::optional<string> single_reads_filename(
 
 void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 		total_labeler& tl, paired_info_index& paired_index) {
-	typedef io::EasyReader<io::SingleRead> EasyStream;
+	typedef io::EasyReader EasyStream;
 
 	if (cfg::get().entry_point <= ws_construction) {
 		//todo use boost::optional
