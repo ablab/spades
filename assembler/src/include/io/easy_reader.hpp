@@ -18,7 +18,7 @@ class EasyReader : public DelegatingReaderWrapper<io::SingleRead> {
 	RCReaderWrapper<io::SingleRead> rc_reader_;
 
 public:
-  explicit EasyReader(const typename io::SingleRead::FilenameType& filename,
+  explicit EasyReader(const io::SingleRead::FilenameType& filename,
                   OffsetType offset_type = PhredOffset)
       : raw_reader_(filename, offset_type),
         filtered_reader_(raw_reader_),
@@ -44,7 +44,7 @@ class PairedEasyReader : public DelegatingReaderWrapper<io::PairedRead> {
 	RCReaderWrapper<io::PairedRead> rc_reader_;
 
 public:
-  explicit PairedEasyReader(const typename io::PairedRead::FilenameType& filename,
+  explicit PairedEasyReader(const io::PairedRead::FilenameType& filename,
                   size_t insert_size,
                   bool change_read_order = false,
                   OffsetType offset_type = PhredOffset)
