@@ -297,53 +297,6 @@ public:
 };
 
 template<class Graph>
-class PairInfoFilter {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	const Graph &graph_;
-	double weight_threshold_;
-
-//	bool ContainsPositiveDistance(const vector<PairInfo<EdgeId>>& infos) {
-//		double s = 0.0;
-//		for (auto it = infos.begin(); it != infos.end(); ++it) {
-//			if ((*it).d > graph_.length((*it).first)) {
-//				s += (*it).weight;
-//			}
-//		}
-//		return s > weight_threshold_;
-//	}
-//
-//	void InsertData(const vector<PairInfo<EdgeId>>& infos,
-//			PairedInfoIndex<Graph> &new_index) {
-//		double s = 0.0;
-//		for (auto it = infos.begin(); it != infos.end(); ++it) {
-//			if ((*it).d > graph_.length((*it).first)) {
-//				s += (*it).weight;
-//				new_index.AddPairInfo(*it);
-//			}
-//		}
-//	}
-
-public:
-	PairInfoFilter(const Graph &graph, double weight_threshold) :
-		graph_(graph), weight_threshold_(weight_threshold) {
-
-	}
-
-	void Filter(const PairedInfoIndex<Graph> &old_index,
-			PairedInfoIndex<Graph> &new_index) {
-		for (auto it = old_index.begin(); it != old_index.end(); ++it) {
-			auto infos = *it;
-			for (auto info_it = infos.begin(); info_it != infos.end(); ++info_it) {
-				if (math::ge(info_it->weight, weight_threshold_)) {
-					new_index.AddPairInfo(*info_it, false);
-				}
-			}
-		}
-	}
-};
-
-template<class Graph>
 class PairInfoChecker {
 private:
 	typedef typename Graph::EdgeId EdgeId;

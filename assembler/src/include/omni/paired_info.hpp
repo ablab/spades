@@ -230,6 +230,12 @@ public:
 		data_.erase(LowerBound(e), UpperBound(e));
 	}
 
+	void DeleteEdgePairInfo(EdgeId e1, EdgeId e2) {
+		data_.erase(LowerBound(e1, e2), UpperBound(e1, e2));
+		if(e1 != e2)
+			data_.erase(LowerBound(e2, e1), UpperBound(e2, e1));
+	}
+
 	PairInfos GetEdgeInfos(EdgeId e) const {
 		return PairInfos(LowerBound(e), UpperBound(e));
 	}

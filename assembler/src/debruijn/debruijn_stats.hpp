@@ -7,6 +7,7 @@
 #include "omni/edges_position_handler.hpp"
 #include "omni/distance_estimation.hpp"
 #include "omni/graph_component.hpp"
+#include "omni/pair_info_filters.hpp"
 //#include <boost/filesystem.hpp>
 #include "read/osequencestream.hpp"
 #include "k.hpp"
@@ -122,7 +123,7 @@ void CountPairedInfoStats(const Graph &g,
 		const PairedInfoIndex<Graph> &etalon_paired_index,
 		const string &output_folder) {
 	PairedInfoIndex<Graph> filtered_index(g);
-	PairInfoFilter<Graph>(g, 40).Filter(paired_index, filtered_index);
+	PairInfoWeightFilter<Graph>(g, 40).Filter(paired_index, filtered_index);
 	INFO("Counting paired info stats");
 	EdgePairStat<Graph>(g, paired_index, output_folder).Count();
 

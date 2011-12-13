@@ -7,6 +7,7 @@
 #include "xmath.h"
 #include "omni/paired_info.hpp"
 #include "omni/distance_estimation.hpp"
+#include "omni/pair_info_filters.hpp"
 
 #include "graphio.hpp"
 #include <iostream>
@@ -365,7 +366,7 @@ public:
 	virtual void Count() {
 		//		OutputWeights(GetWeights(edge_pairs), output_folder_ + "pair_info_weights.txt");
 		PairedInfoIndex<Graph> new_index(graph_);
-		PairInfoFilter<Graph>(graph_, 40).Filter(pair_info_, new_index);
+		PairInfoWeightFilter<Graph>(graph_, 40).Filter(pair_info_, new_index);
 		//		RemoveUntrustful(edge_pairs, 40);
 		map<pair<EdgeId, EdgeId> , double> edge_pairs;
 		TrivialEdgePairChecker<Graph> checker(graph_);
