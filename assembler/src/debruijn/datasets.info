@@ -599,6 +599,19 @@ SAUREUS_CORRECTED_1
         LEN             2872769 ; total size
 }
 
+SAUREUS_QUAKED
+{
+	first   S.aureus_quaked/frag_1.cor.fastq
+	second  S.aureus_quaked/frag_2.cor.fastq
+	single_first   S.aureus_quaked/frag_1.cor_single.fastq
+	single_second  S.aureus_quaked/frag_2.cor_single.fastq
+	RL	100	; read length
+	IS	180	; insert size
+	single_cell	false
+	reference_genome  S.Aureus.USA300_FPR3757/S.Aureus.USA300_FPR3757.fasta
+	LEN             2872769 ; total size
+}
+
 SAUREUS_CORRECTED_MS
 {
         first   S.Aureus.USA300_FPR3757/Reads/Quaked/SRR022868_1.cor.fastq
