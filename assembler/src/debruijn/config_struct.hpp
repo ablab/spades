@@ -36,6 +36,14 @@ enum simplification_mode
 	sm_pair_info_aware
 };
 
+enum resolving_mode
+{
+	rm_none           ,
+	rm_dima           ,
+	rm_andrew         ,
+	rm_jump
+};
+
 enum info_printer_pos
 {
     ipp_default                   = 0,
@@ -98,6 +106,7 @@ struct debruijn_config
 {
 	typedef bimap<string, working_stage      > stage_name_id_mapping;
 	typedef bimap<string, simplification_mode> simpl_mode_id_mapping;
+	typedef bimap<string, resolving_mode     > resolve_mode_id_mapping;
 
 	static const stage_name_id_mapping FillStageInfo()
 	{
@@ -130,6 +139,19 @@ struct debruijn_config
 		return simpl_mode_id_mapping(info, utils::array_end(info));
 	}
 
+	static const resolve_mode_id_mapping FillResolveModeInfo()
+	{
+		resolve_mode_id_mapping::value_type info [] =
+        {
+                {"none"             , rm_none           },
+                {"dima"  			, rm_dima			},
+                {"andrew"           , rm_andrew         },
+                {"jump"             , rm_jump           },
+        };
+
+		return resolve_mode_id_mapping(info, utils::array_end(info));
+	}
+
 	static const simpl_mode_id_mapping& simpl_mode_info() {
 		static simpl_mode_id_mapping simpl_mode_info = FillSimplifModeInfo();
 		return simpl_mode_info;
@@ -138,6 +160,11 @@ struct debruijn_config
 	static const stage_name_id_mapping& working_stages_info() {
 		static stage_name_id_mapping working_stages_info = FillStageInfo();
 		return working_stages_info;
+	}
+
+	static const resolve_mode_id_mapping& resolve_mode_info() {
+		static resolve_mode_id_mapping info = FillResolveModeInfo();
+		return info;
 	}
 
 	static const std::string& simpl_mode_name(simplification_mode mode_id) {
@@ -164,6 +191,20 @@ struct debruijn_config
 	static working_stage working_stage_id(std::string name) {
 		auto it = working_stages_info().left.find(name);
 		VERIFY_MSG(it != working_stages_info().left.end(), "There is no working stage with name = " << name);
+
+		return it->second;
+	}
+
+	static const std::string& resolving_mode_name(resolving_mode mode_id) {
+		auto it = resolve_mode_info().right.find(mode_id);
+		VERIFY_MSG(it != resolve_mode_info().right.end(), "No name for resolving mode id = " << mode_id);
+
+		return it->second;
+	}
+
+	static resolving_mode resolving_mode_id(std::string name) {
+		auto it = resolve_mode_info().left.find(name);
+		VERIFY_MSG(it != resolve_mode_info().left.end(), "There is no resolving mode with name = " << name);
 
 		return it->second;
 	}
@@ -253,6 +294,8 @@ struct debruijn_config
 		std::string second;
 		boost::optional<std::string> single_first;
 		boost::optional<std::string> single_second;
+		boost::optional<std::string> jumping_first;
+		boost::optional<std::string> jumping_second;
 		size_t RL;
 		size_t IS;
 		bool single_cell;
@@ -295,6 +338,7 @@ public:
 
 	bool use_single_reads;
 	bool use_additional_contigs;
+	bool use_jumping_lib;
 	bool etalon_graph_mode;
 	std::string additional_contigs;
 
@@ -309,6 +353,8 @@ public:
 	bool late_paired_info;
 	bool advanced_estimator_mode;
 	bool componential_resolve;
+
+	resolving_mode rm;
 
 	distance_estimator          de;
 	advanced_distance_estimator ade;
@@ -334,6 +380,12 @@ inline void load(working_stage& entry_point, boost::property_tree::ptree const& 
 {
 	std::string ep = pt.get<std::string>(key);
 	entry_point = debruijn_config::working_stage_id(ep);
+}
+
+inline void load(resolving_mode& rm, boost::property_tree::ptree const& pt, std::string const& key, bool complete)
+{
+	std::string ep = pt.get<std::string>(key);
+	rm = debruijn_config::resolving_mode_id(ep);
 }
 
 inline void load(simplification_mode& simp_mode, boost::property_tree::ptree const& pt, std::string const& key, bool complete)
@@ -445,6 +497,9 @@ inline void load(debruijn_config::dataset& ds, boost::property_tree::ptree const
 	ds.single_first  = pt.get_optional<std::string>("single_first");
 	ds.single_second = pt.get_optional<std::string>("single_second");
 
+	ds.jumping_first  = pt.get_optional<std::string>("jumping_first");
+	ds.jumping_second = pt.get_optional<std::string>("jumping_second");
+
 	load(ds.RL, pt, "RL");
 	load(ds.IS, pt, "IS");
 	load(ds.single_cell, pt, "single_cell");
@@ -525,8 +580,9 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.entry_point            , pt, "entry_point"            );
 
 	load(cfg.etalon_graph_mode      , pt, "etalon_graph_mode"      );
-	load(cfg.use_additional_contigs , pt, "use_additional_contigs" );
 	load(cfg.use_single_reads       , pt, "use_single_reads"       );
+	load(cfg.use_additional_contigs , pt, "use_additional_contigs" );
+	load(cfg.use_jumping_lib 		, pt, "use_jumping_lib" );
 
 	load(cfg.additional_contigs     , pt, "additional_contigs"     );
 
@@ -540,9 +596,13 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 	load(cfg.de, pt, (cfg.ds.single_cell ? "sc_de" : "usual_de"));
 
+
 	load(cfg.ade              , pt, "ade"              ); // advanced distance estimator:
 	load(cfg.rr               , pt, "rr"               ); // repeat resolver:
 	load(cfg.pos              , pt, "pos"              ); // position handler:
+
+	load(cfg.rm               , pt, "resolving_mode"   );
+
 	load(cfg.gc               , pt, "gap_closer"       );
 	load(cfg.need_consensus   , pt, "need_consensus"   );
 	load(cfg.uncorrected_reads, pt, "uncorrected_reads");
