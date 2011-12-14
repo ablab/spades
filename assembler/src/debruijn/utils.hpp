@@ -763,7 +763,7 @@ void WrappedSetCoverage(NonconjugateDeBruijnGraph& g,
  *
  * todo talk with Anton about simplification and speed-up of procedure with little quality loss
  */
-template<size_t k, class Graph, class SequenceMapper, class Stream>
+template<size_t k, class Graph, class SequenceMapper>
 class LatePairedIndexFiller {
 private:
 	typedef typename Graph::EdgeId EdgeId;
@@ -771,22 +771,16 @@ private:
 	typedef boost::function<double(MappingRange, MappingRange)> WeightF;
 	const Graph& graph_;
 	const SequenceMapper mapper_;
-	Stream& stream_;
+	io::IReader<io::PairedRead>& stream_;
 	WeightF weight_f_;
 
 	void ProcessPairedRead(omnigraph::PairedInfoIndex<Graph>& paired_index,
 			const io::PairedRead& p_r) {
-		//DEBUG
-		//static size_t count = 0;
-		//DEBUG
-
 		Sequence read1 = p_r.first().sequence();
 		Sequence read2 = p_r.second().sequence();
 
 		MappingPath<EdgeId> path1 = mapper_.MapSequence(read1);
-		//		cout << "Path1 length " << path1.size() << endl;
 		MappingPath<EdgeId> path2 = mapper_.MapSequence(read2);
-		//		cout << "Path2 length " << path2.size() << endl;
 		size_t read_distance = p_r.distance();
 		for (size_t i = 0; i < path1.size(); ++i) {
 			pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
@@ -805,15 +799,6 @@ private:
 						PairInfo<EdgeId>(mapping_edge_1.first,
 								mapping_edge_2.first, (double) edge_distance,
 								weight, 0.));
-				//DEBUG
-//				cout << "here2 " << PairInfo<EdgeId> (mapping_edge_1.first,
-//						mapping_edge_2.first, (double) edge_distance, weight,
-//						0.) << endl;
-//				count++;
-//				if (count == 10000) {
-//					exit(0);
-//				}
-				//DEBUG
 			}
 		}
 	}
@@ -821,7 +806,7 @@ private:
 public:
 
 	LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper,
-			Stream& stream, WeightF weight_f) :
+			io::IReader<io::PairedRead>& stream, WeightF weight_f) :
 			graph_(graph), mapper_(mapper), stream_(stream), weight_f_(weight_f) {
 
 	}

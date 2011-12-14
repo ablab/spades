@@ -18,6 +18,125 @@ namespace long_contigs {
 
 using namespace debruijn_graph;
 
+template <class Graph>
+class JumpingHero {
+	typedef typename Graph::EdgeId EdgeId;
+	const Graph& g_;
+	const PairedInfoIndex<Graph>& jump_index_;
+	//always contains at most 2 edges
+	size_t length_bound_;
+	size_t invalidation_length_;
+	bool forward_direct_;
+	std::vector<EdgeId> edges_;
+	size_t length_from_long_;
+	double weight_threshold_;
+
+	bool ConnectedForwardWithInfo(EdgeId e1, EdgeId e2) const {
+		vector<PairInfo<EdgeId>> infos = jump_index_.GetEdgePairInfo(e1, e2);
+		double s = 0.;
+		for (auto it = infos.begin(); it != infos.end(); ++it) {
+			if (math::gr(it->d, 0.)) {
+				s += it->weight;
+			}
+		}
+		return math::gr(s, weight_threshold_);
+	}
+
+	bool ConnectedWithInfo(EdgeId e1, EdgeId e2, bool forward_direct) const {
+		return forward_direct ? ConnectedForwardWithInfo(e1, e2) : ConnectedForwardWithInfo(e2, e1);
+	}
+
+	boost::optional<EdgeId> UniqueLongProlongation(EdgeId e) const {
+		boost::optional<EdgeId> answer;
+		vector<PairInfo<EdgeId>> infos = jump_index_.GetEdgeInfo(e);
+		set<EdgeId> paired_edges;
+		for (auto it = infos.begin(); it != infos.end(); ++it) {
+			paired_edges.insert(it->second);
+		}
+		for (auto it = paired_edges.begin(); it != paired_edges.end(); ++it) {
+			if (g_.length(*it) > length_bound_ && (*it) != e
+					&& ConnectedWithInfo(e, *it, forward_direct_)) {
+				if (!answer) {
+					answer.reset(*it);
+				} else {
+					WARN("Several long prolongations were found for edge " << e);
+					return boost::none;
+				}
+			}
+		}
+		return answer;
+	}
+
+	void RefreshLongEdges(EdgeId e) {
+		VERIFY(g_.length(e) >= length_bound_);
+		edges_.clear();
+		edges_.push_back(e);
+		boost::optional<EdgeId> prolong = UniqueLongProlongation(e);
+		if (prolong) {
+			edges_.push_back(*prolong);
+		}
+	}
+
+	template <class It>
+	void Init(It begin, It end) {
+		for (auto it = begin; it != end; ++it) {
+			ProcessEdge(*it);
+		}
+	}
+
+	template <class Container>
+	void Init(const Container& path) {
+		if (forward_direct_)
+			Init(path.begin(), path.end());
+		else
+			Init(path.rbegin(), path.rend());
+	}
+
+public:
+//	JumpingHero(const Graph& g, const PairedInfoIndex<Graph>& jump_index,
+//			size_t length_bound, size_t invalidation_length, bool forward_direct,
+//			double weight_threshold):
+//		g_(g), length_bound_(length_bound), invalidation_length_(invalidation_length),
+//		forward_direct_(forward_direct), length_from_long_(0), weight_threshold_(weight_threshold) {
+//
+//	}
+
+	template <class Container>
+	JumpingHero(const Graph& g, const Container& path, const PairedInfoIndex<Graph>& jump_index,
+			size_t length_bound, size_t invalidation_length, bool forward_direct,
+			double weight_threshold):
+		g_(g), jump_index_(jump_index), length_bound_(length_bound), invalidation_length_(invalidation_length),
+		forward_direct_(forward_direct), length_from_long_(0), weight_threshold_(weight_threshold) {
+		Init(path);
+	}
+
+	void ProcessEdge(EdgeId e) {
+		if (g_.length(e) > length_bound_) {
+			RefreshLongEdges(e);
+			length_from_long_ = 0;
+		} else {
+			length_from_long_ += g_.length(e);
+			if (length_from_long_ > invalidation_length_) {
+				if (edges_.size() > 1) {
+					WARN("Something strange happened!!! Need help!!!");
+				}
+				edges_.clear();
+			}
+		}
+	}
+
+	//returns number of long edges that has pair info to e
+	size_t CheckEdge(EdgeId e) const {
+		size_t answer = 0;
+		for (size_t i = 0; i < edges_.size(); ++i) {
+			if (ConnectedWithInfo(edges_[i], e, forward_direct_ != bool(i))) {
+				answer++;
+			}
+		}
+		return answer;
+	}
+};
+
 // ====== Weight functions ======
 //Weight filter
 double WeightFunction(double weight) {
@@ -259,7 +378,10 @@ double FilterExtentionsDeep(Graph& g, BidirectionalPath& path, std::vector<EdgeI
 double FilterExtentions(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& edges,
 		PathLengths& lengths, PairedInfoIndices& pairedInfo, size_t edgesToExclude, bool forward,
 		LoopDetector& detector,
+		JumpingHero<Graph>& hero,
 		bool useWeightFunction = false) {
+
+	static const double magic_constant = 1000.0;
 
 	std::multimap<double, EdgeId> weights;
 
@@ -275,12 +397,35 @@ double FilterExtentions(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& 
 	}
 
 	//Filling maximum edges
-	edges.clear();
+//	edges.clear();
+	std::vector<EdgeId> tmp;
 	auto bestEdge = weights.lower_bound((--weights.end())->first / params.ps.es.priority_coeff);
 	for (auto maxEdge = bestEdge; maxEdge != weights.end(); ++maxEdge) {
-		edges.push_back(maxEdge->second);
+		tmp.push_back(maxEdge->second);
 	}
-
+	if (tmp.size() > 1) {
+		size_t max_long_paired = 0;
+		bool valid = false;
+		EdgeId best;
+		for (auto it = edges.begin(); it != edges.end(); ++it) {
+			size_t curr = hero.CheckEdge(*it);
+			if (curr > max_long_paired) {
+				max_long_paired = curr;
+				valid = true;
+				best = *it;
+			}
+			if (curr == max_long_paired) {
+				valid = false;
+			}
+		}
+		if (valid && max_long_paired > 0) {
+			edges.clear();
+			edges.push_back(best);
+			return magic_constant;
+		}
+	}
+	edges.clear();
+	edges.insert(edges.end(), tmp.begin(), tmp.end());
 	return bestEdge->first;
 }
 
@@ -289,7 +434,8 @@ double FilterExtentions(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& 
 EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& edges,
 		PathLengths& lengths, PairedInfoIndices& pairedInfo, double * maxWeight, size_t edgesToExclude, bool forward,
 		LoopDetector& detector,
-		PathStopHandler& handler) {
+		PathStopHandler& handler,
+		JumpingHero<Graph>& hero) {
 
 	detector.temp.clear();
 
@@ -325,7 +471,7 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 	static bool useWeightFunctionFirst = params.ps.es.use_weight_function_first;
 
 	if (useWeightFunctionFirst) {
-		FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector, true);
+		FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector, hero, true);
 
 		if (edges.size() == 1) {
 			static double weightFunThreshold = params.ps.es.weight_fun_threshold;
@@ -335,13 +481,13 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 		}
 	}
 
-	*maxWeight = FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector);
+	*maxWeight = FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector, hero);
 
 	static double weightThreshold = params.ps.es.weight_threshold;
 	if (edges.size() == 1) {
+		//todo WTF???
 		return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold, g, path, handler, forward) : toReturn;
-	}
-	else if (edges.size() > 1) {
+	} else if (edges.size() > 1) {
 		if (ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold) == 0) {
 			DETAILED_INFO("No good extension");
 			handler.AddStop(&path, NO_GOOD_EXTENSION, forward);

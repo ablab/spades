@@ -299,6 +299,7 @@ struct debruijn_config
 		boost::optional<std::string> single_second;
 		boost::optional<std::string> jumping_first;
 		boost::optional<std::string> jumping_second;
+		boost::optional<size_t> jump_is;
 		size_t RL;
 		size_t IS;
 		bool single_cell;
@@ -342,7 +343,6 @@ public:
 
 	bool use_single_reads;
 	bool use_additional_contigs;
-	bool use_jumping_lib;
 	bool etalon_graph_mode;
 	std::string additional_contigs;
 
@@ -504,6 +504,7 @@ inline void load(debruijn_config::dataset& ds, boost::property_tree::ptree const
 
 	ds.jumping_first  = pt.get_optional<std::string>("jumping_first");
 	ds.jumping_second = pt.get_optional<std::string>("jumping_second");
+	ds.jump_is = pt.get_optional<size_t>("jump_is");
 
 	load(ds.RL, pt, "RL");
 	load(ds.IS, pt, "IS");
@@ -586,7 +587,6 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.etalon_graph_mode      , pt, "etalon_graph_mode"      );
 	load(cfg.use_single_reads       , pt, "use_single_reads"       );
 	load(cfg.use_additional_contigs , pt, "use_additional_contigs" );
-	load(cfg.use_jumping_lib 		, pt, "use_jumping_lib" );
 
 	load(cfg.additional_contigs     , pt, "additional_contigs"     );
 

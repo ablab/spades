@@ -15,7 +15,7 @@ public:
 
 	/* virtual */
 	ISCorruptingWrapper& operator>>(ReadType& read) {
-		(*reader_) >> read;
+		(this->reader()) >> read;
 		read = PairedRead(read.first(), read.second(), is_);
 		return *this;
 	}

@@ -17,12 +17,14 @@
 #include "paths.hpp"
 #include "quality.hpp"
 #include "visualize.hpp"
+#include <boost/optional.hpp>
 
 namespace long_contigs {
 
 using namespace debruijn_graph;
 
-void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& genome, std::string output_dir, const lc_config::lc_params& p) {
+void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& genome, std::string output_dir, const lc_config::lc_params& p,
+		boost::optional<const PairedInfoIndex<Graph>> jump_index_opt = boost::none) {
 	INFO("Multilayer resolving tool started");
 
 	make_dir(output_dir);
@@ -94,7 +96,10 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 //		paths.resize(seeds.size());
 //		std::copy(seeds.begin(), seeds.end(), paths.begin());
 //	} else {
-		FindPaths(g, seeds, pairedInfos, stopHandler);
+	if (!jump_index_opt) {
+		jump_index_opt = in_place<PairedInfoIndex<Graph>>(cref(g));
+	}
+	FindPaths(g, seeds, pairedInfos, stopHandler, *jump_index_opt);
 //	}
 	std::vector<BidirectionalPath> & paths = seeds;
 	CheckIds(g, paths);
