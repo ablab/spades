@@ -9,6 +9,7 @@
 #define CONFIG_STRUCT_HDIP_
 
 #include "config_common.hpp"
+#include "long_contigs/lc_config_struct.hpp"
 #include "k.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -356,6 +357,7 @@ public:
 	bool componential_resolve;
 
 	resolving_mode rm;
+	long_contigs::lc_config::lc_params andrey_params;
 
 	distance_estimator          de;
 	advanced_distance_estimator ade;
@@ -602,6 +604,10 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.pos              , pt, "pos"              ); // position handler:
 
 	load(cfg.rm               , pt, "resolving_mode"   );
+	if (cfg.rm == rm_andrew) {
+	    cfg.andrey_params.param_set_name = cfg.ds.single_cell ? "singlecell" : "multicell";
+	    load(cfg.andrey_params, pt, "andrey_params"    );
+	}
 
 	load(cfg.gc               , pt, "gap_closer"       );
 	load(cfg.need_consensus   , pt, "need_consensus"   );

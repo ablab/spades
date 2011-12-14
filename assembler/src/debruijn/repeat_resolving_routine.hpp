@@ -16,6 +16,10 @@
 #include "io/careful_filtering_reader_wrapper.hpp"
 #include "resolved_pair_info.hpp"
 #include "debruijn_stats.hpp"
+
+#include "long_contigs/lc_launch.hpp"
+
+
 //typedef io::IReader<io::SingleRead> ReadStream;
 //typedef io::IReader<io::PairedRead> PairedReadStream;
 ////typedef io::RCReaderWrapper<io::SingleRead> RCStream;
@@ -648,6 +652,10 @@ void resolve_repeats() {
 		cout << "HERE3" << endl;
 
 	}
+
+	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_andrew) {
+        resolve_repeats_ml(conj_gp.g, clustered_index, genome, cfg::get().output_dir + "alt_resolve/", cfg::get().andrey_params);
+    }
 }
 
 void exec_repeat_resolving() {

@@ -3,6 +3,8 @@
 	<name>debruijn</name>
 	<comment></comment>
 	<projects>
+		<project>include</project>
+		<project>long_contigs</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

@@ -53,6 +53,10 @@ late_paired_info true
 ; repeat resolving mode (none dima andrew jump)
 resolving_mode dima
 
+andrey_params {
+	#include "src/debruijn/long_contigs/lc_params.info"
+}
+
 ; Produce info for all components of graph and run repeat resolver for each component.
 componential_resolve false
 

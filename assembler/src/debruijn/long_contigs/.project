@@ -3,6 +3,8 @@
 	<name>long_contigs</name>
 	<comment></comment>
 	<projects>
+		<project>debruijn</project>
+		<project>include</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
@@ -32,7 +34,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.buildLocation</key>
-					<value>${workspace_loc:/debruijn/long_contigs}</value>
+					<value>${workspace_loc:/long_contigs}/build-debug</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.cleanBuildTarget</key>
