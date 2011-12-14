@@ -5,7 +5,7 @@
 
 import sys
 
-if len(sys.argv) != 4 && len(sys.argv) != 3:
+if len(sys.argv) != 4 and len(sys.argv) != 3:
         print("Usage: <bowtie log file> <output> [chromosomes file]");
         exit(0)
 

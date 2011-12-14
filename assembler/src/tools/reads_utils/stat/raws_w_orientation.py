@@ -6,7 +6,7 @@
 import sys
 import os
 
-if len(sys.argv) != 3 && len(sys.argv) != 2:
+if len(sys.argv) != 3 and len(sys.argv) != 2:
 	print("Usage: " + sys.argv[0] + " <bowtie log> [chromosomes file]")	
 	sys.exit()
 
