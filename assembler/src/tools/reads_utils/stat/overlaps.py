@@ -4,6 +4,10 @@
 
 import sys
 
+if len(sys.argv) != 3:
+        print("Usage: <bowtie log file> <output>");
+        exit(0)
+
 inFile = open(sys.argv[1])
 outFile = open(sys.argv[2], 'w')
 
