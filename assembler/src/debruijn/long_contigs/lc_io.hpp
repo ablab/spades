@@ -290,14 +290,14 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 			checkFileExistenceFATAL(reads_filename_1);
 			checkFileExistenceFATAL(reads_filename_2);
 
-			io::EasyReader<io::PairedRead> stream(
+			io::PairedEasyReader stream(
 					std::make_pair(reads_filename_1, reads_filename_2),
 					rl->insert_size);
 
 			if (useNewMetrics) {
-				FillPairedIndexWithReadCountMetric<k, io::EasyReader<io::PairedRead> >(g, conj_IntIds, index, mapper, *pairedInfos.back().pairedInfoIndex, stream);
+				FillPairedIndexWithReadCountMetric<k, io::PairedEasyReader >(g, conj_IntIds, index, mapper, *pairedInfos.back().pairedInfoIndex, stream);
 			} else {
-				FillPairedIndexWithProductMetric<k, io::EasyReader<io::PairedRead> >(g, conj_IntIds, index, mapper, *pairedInfos.back().pairedInfoIndex, stream);
+				FillPairedIndexWithProductMetric<k, io::PairedEasyReader >(g, conj_IntIds, index, mapper, *pairedInfos.back().pairedInfoIndex, stream);
 			}
 		}
 		INFO("Done");
