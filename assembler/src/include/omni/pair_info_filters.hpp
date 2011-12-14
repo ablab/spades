@@ -33,7 +33,7 @@ public:
 			EdgeId edge2 = infos[0].second;
 			if (Check(edge1, edge2)) {
 				for (auto pair_info_it = infos.begin();
-						pair_info_it != infos.end(); ++it) {
+						pair_info_it != infos.end(); ++pair_info_it) {
 					if (Check(*pair_info_it)) {
 						new_index.AddPairInfo(*pair_info_it, false);
 					}
