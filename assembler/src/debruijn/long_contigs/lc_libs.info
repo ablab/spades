@@ -4,7 +4,7 @@ TEMPLATE_DATASET
     
     param_set        singlecell 
     
-    reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+    reference_genome  ./data/input/E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	length			  4639675 
     
     real_libs {
@@ -52,8 +52,8 @@ HMP1
     
     param_set        singlecell 
     
-    reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
-	length			  4639675 
+    reference_genome  .
+	length			  0 
     
     real_libs {
 	    count 1       	
@@ -68,6 +68,98 @@ HMP1
 	        
 	        precounted       true
 	        precounted_path  ./data/debruijn/source/hmp1/distance_estimation_cl
+	        
+	        first            .
+	        second           .
+	        
+	        has_advanced     false
+	        advanced         .
+	    
+	    	has_raw          false    
+	        raw              .
+	    }
+    }
+    
+    etalon_libs {
+        count     0
+    
+	    item_0
+	    {
+	        read_size    100
+	        insert_size  200
+	        delta        15
+	    }
+	}
+}
+
+HMP2
+{
+    graph_file       ./data/debruijn/source/hmp2/distance_estimation
+    
+    param_set        singlecell 
+    
+    reference_genome  .
+	length			  0 
+    
+    real_libs {
+	    count 1       	
+	    
+	    item_0
+	    {
+	        read_size     100
+	        insert_size   210
+	        de_delta      15
+	        is_delta      2
+	        var           10
+	        
+	        precounted       true
+	        precounted_path  ./data/debruijn/source/hmp2/distance_estimation_cl
+	        
+	        first            .
+	        second           .
+	        
+	        has_advanced     false
+	        advanced         .
+	    
+	    	has_raw          false    
+	        raw              .
+	    }
+    }
+    
+    etalon_libs {
+        count     0
+    
+	    item_0
+	    {
+	        read_size    100
+	        insert_size  200
+	        delta        15
+	    }
+	}
+}
+
+HMP3
+{
+    graph_file       ./data/debruijn/source/hmp3/distance_estimation
+    
+    param_set        singlecell 
+    
+    reference_genome  ./data/input/E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+	length			  4639675 
+    
+    real_libs {
+	    count 1       	
+	    
+	    item_0
+	    {
+	        read_size     100
+	        insert_size   210
+	        de_delta      15
+	        is_delta      2
+	        var           10
+	        
+	        precounted       true
+	        precounted_path  ./data/debruijn/source/hmp3/distance_estimation_cl
 	        
 	        first            .
 	        second           .
@@ -198,7 +290,7 @@ QUAKE_FULL
     param_set        multicell
     
         
-    reference_genome  E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+    reference_genome  ./data/input/E.Coli.K12.MG1655/MG1655-K12.fasta.gz
 	length			  4639675  
     
     real_libs {

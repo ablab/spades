@@ -224,7 +224,7 @@ public:
 };
 
 //Detailed output for research mode
-#define DETAILED_INFO(message) { if (lc_cfg::get().rs.detailed_output) { INFO(message) } }
+#define DETAILED_INFO(message) { if (lc_cfg::get().params.rs.detailed_output) { INFO(message) } }
 
 // ====== Support functions ======
 //Pause to see output
@@ -361,7 +361,7 @@ void PrintPath(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
 
 //Print path with length from start / end to the every edge
 void DetailedPrintPath(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
-	if (lc_cfg::get().rs.detailed_output) {
+	if (lc_cfg::get().params.rs.detailed_output) {
 		PrintPath(g, path, lengths);
 	}
 }
@@ -379,7 +379,7 @@ void PrintPath(Graph& g, PathType& path) {
 //Print path
 template<class PathType>
 void DetailedPrintPath(Graph& g, PathType& path) {
-	if (lc_cfg::get().rs.detailed_output) {
+	if (lc_cfg::get().params.rs.detailed_output) {
 		PrintPath(g, path);
 	}
 }

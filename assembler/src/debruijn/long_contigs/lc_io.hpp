@@ -221,7 +221,6 @@ Sequence load_genome() {
 	string genome_filename = lc_cfg::get().ds.reference_genome;
 	std::string genome;
 	if (genome_filename.length() > 0) {
-		genome_filename = cfg::get().input_dir + genome_filename;
 		checkFileExistenceFATAL(genome_filename);
 		io::Reader<io::SingleRead> genome_stream(genome_filename);
 		io::SingleRead full_genome;
@@ -232,7 +231,6 @@ Sequence load_genome() {
 }
 
 void LoadFromFile(std::string fileName, Graph& g, IdTrackHandler<Graph>& intIds, KmerMapper<K+1, Graph>& mapper) {
-	string input_dir = cfg::get().input_dir;
 	string dataset = lc_cfg::get().dataset_name;
 	INFO("Reading graph");
 	debruijn_graph::ScanWithKmerMapper(fileName, g, intIds, mapper);
@@ -244,7 +242,7 @@ void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, KmerMapper<k+1,
 	for (auto el = lc_cfg::get().ds.etalon_paired_lib.begin(); el != lc_cfg::get().ds.etalon_paired_lib.end(); ++el) {
 		INFO("Generating info with read size " << el->read_size << ", insert size " << el->insert_size);
 
-		pairedInfos.push_back(PairedInfoIndexLibrary(g, el->read_size, el->insert_size, el->is_delta, el->de_delta, lc_cfg::get().ps.es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
+		pairedInfos.push_back(PairedInfoIndexLibrary(g, el->read_size, el->insert_size, el->is_delta, el->de_delta, params.ps.es.etalon_distance_dev, new PairedInfoIndex<Graph>(g, 0)));
 		FillEtalonPairedIndex<k> (*pairedInfos.back().pairedInfoIndex, g, index, mapper, el->insert_size, el->read_size, el->de_delta, genome);
 	}
 }
@@ -349,7 +347,7 @@ void SavePairedInfo(Graph& g, IdTrackHandler<Graph>& intIds, PairedInfoIndices& 
 				PrintPairedIndex(fileName + "acl", printer, clustered_index_);
 			}
 		}
-		if (lc_cfg::get().write_raw_paired_info) {
+		if (params.write_raw_paired_info) {
 			PrintPairedIndex(fileName, printer, *(lib->pairedInfoIndex));
 		}
 	}

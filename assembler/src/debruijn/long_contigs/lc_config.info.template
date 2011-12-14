@@ -1,7 +1,5 @@
-#include "src/debruijn/long_contigs/lc_params.info"
-#include "src/debruijn/long_contigs/lc_libs.info"
-
 dataset         QUAKE_FULL
+etalon_mode     false
 
 syminfo       false
 ; input options
@@ -13,24 +11,12 @@ syminfo       false
 paired_info_only    false
 
 ; paired info options
+cluster_paired_info     true
 use_new_metrics      true
 
 
-; output options
-write_seeds             true 
-write_overlaped_paths   false
-write_paths             true
-write_contigs           true
 write_real_paired_info  false
-write_raw_paired_info   false
-cluster_paired_info     true
-write_graph             false
-print_stats             false
 paired_info_file_prefix "paired_info_"
-
-total_symmetric_mode    false
-first_grow_forward      true
-
 
 utils 
 {
@@ -48,14 +34,8 @@ utils
     advanced    ./data/debruijn/QUAKE_FULL/K55/SC/09.29_07_30/paired_info_IS270_RS100_acl
 }    
 
+#include "src/debruijn/long_contigs/lc_libs.info"
 
-;research options
-research 
-{
-    research_mode            false
-    detailed_output          false
-    fiter_by_edge            true
-    edge_length              46
-    force_to_cycle           false 
-    cycle_priority_edge      55
+lc_params {
+	#include "src/debruijn/long_contigs/lc_params.info"
 }

@@ -37,8 +37,10 @@ namespace long_contigs {
 
 using namespace debruijn_graph;
 
-void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& genome) {
-	std::cerr << pairedInfos.size() << std::endl;
+void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& genome, std::string output_dir, const lc_config::lc_params& p) {
+	INFO("Multilayer resolving tool started");
+
+	params = p;
 
 	EdgeIndex<K + 1, Graph> index(g);
 
@@ -46,8 +48,6 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 	std::vector<BidirectionalPath> rawSeeds;
 	std::vector<BidirectionalPath> filteredSeeds;
 	std::vector<BidirectionalPath> lowCoveredSeeds;
-
-	string output_dir = cfg::get().output_dir;
 
 	PathStopHandler stopHandler(g);
 	Path<Graph::EdgeId> path1 = FindGenomePath<K> (genome, g, index);
@@ -59,15 +59,15 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 	FindSeeds(g, rawSeeds, &pairedInfos);
 	CheckIds(g, rawSeeds);
 
-	ResolveUnequalComplement(g, rawSeeds, lc_cfg::get().ps.ss.sym.cut_tips, lc_cfg::get().ps.ss.sym.min_conjugate_len);
+	ResolveUnequalComplement(g, rawSeeds, params.ps.ss.sym.cut_tips, params.ps.ss.sym.min_conjugate_len);
 	CheckIds(g, rawSeeds);
 
 	std::vector<BidirectionalPath> goodSeeds;
-	RemoveUnagreedPaths(g, rawSeeds, pairedInfos, lc_cfg::get().ps.fo.agreed_coeff, &goodSeeds);
+	RemoveUnagreedPaths(g, rawSeeds, pairedInfos, params.ps.fo.agreed_coeff, &goodSeeds);
 	CheckIds(g, goodSeeds);
 
-	if (lc_cfg::get().ps.fo.remove_sefl_conjugate) {
-		RemoveWrongConjugatePaths(g, goodSeeds, lc_cfg::get().ps.ss.sym.min_conjugate_len, &lowCoveredSeeds);
+	if (params.ps.fo.remove_sefl_conjugate) {
+		RemoveWrongConjugatePaths(g, goodSeeds, params.ps.ss.sym.min_conjugate_len, &lowCoveredSeeds);
 	} else {
 		lowCoveredSeeds = goodSeeds;
 	}
@@ -76,7 +76,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 	CheckIds(g, lowCoveredSeeds);
 
 
-	FilterLowCovered(g, lowCoveredSeeds, lc_cfg::get().ps.ss.min_coverage, &filteredSeeds);
+	FilterLowCovered(g, lowCoveredSeeds, params.ps.ss.min_coverage, &filteredSeeds);
 	INFO("Seeds filtered");
 	CheckIds(g, filteredSeeds);
 
@@ -84,8 +84,8 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 	INFO("Sub seeds removed");
 	CheckIds(g, seeds);
 
-//	if (lc_cfg::get().rs.research_mode && lc_cfg::get().rs.fiter_by_edge) {
-//		FilterEdge(g, seeds, lc_cfg::get().rs.edge_length);
+//	if (params.rs.research_mode && params.rs.fiter_by_edge) {
+//		FilterEdge(g, seeds, params.rs.edge_length);
 //	}
 
 
@@ -97,12 +97,12 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 //	INFO("Seed coverage " << PathsCoverage(g, seeds));
 //	INFO("Path length coverage " << PathsLengthCoverage(g, seeds));
 //
-	if (lc_cfg::get().write_seeds) {
+	if (params.write_seeds) {
 		WriteGraphWithPathsSimple(output_dir + "seeds.dot", "seeds", g, seeds, path1, path2);
-		OutputPathsAsContigsNoComplement(g, seeds, output_dir + "seeds.contigs", std::set<int>());
+		OutputPathsAsContigsNoComplement(g, seeds, output_dir + "seeds.fadta", std::set<int>());
 	}
 
-//	if (lc_cfg::get().total_symmetric_mode) {
+//	if (params.total_symmetric_mode) {
 //		FindPathsSymmetric(g, seeds, pairedInfos,  stopHandler, seedPairs);
 //		paths.resize(seeds.size());
 //		std::copy(seeds.begin(), seeds.end(), paths.begin());
@@ -112,7 +112,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 	std::vector<BidirectionalPath> & paths = seeds;
 	CheckIds(g, paths);
 
-	ResolveUnequalComplement(g, paths, lc_cfg::get().ps.fo.sym.cut_tips, lc_cfg::get().ps.fo.sym.min_conjugate_len);
+	ResolveUnequalComplement(g, paths, params.ps.fo.sym.cut_tips, params.ps.fo.sym.min_conjugate_len);
 	CheckIds(g, paths);
 	PrintPathsShort(g, paths);
 	std::vector<int> pairs;
@@ -121,7 +121,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 	FilterComplement(g, paths, &pairs, &quality);
 
 	std::vector<BidirectionalPath> goodPaths;
-	RemoveUnagreedPaths(g, paths, pairedInfos, lc_cfg::get().ps.fo.agreed_coeff, &goodPaths);
+	RemoveUnagreedPaths(g, paths, pairedInfos, params.ps.fo.agreed_coeff, &goodPaths);
 	CheckIds(g, goodPaths);
 
 
@@ -129,8 +129,8 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 	FilterComplement(g, goodPaths, &pairs, &quality);
 
 	std::vector<BidirectionalPath> filteredPaths;;
-	if (lc_cfg::get().ps.fo.remove_sefl_conjugate) {
-		RemoveWrongConjugatePaths(g, goodPaths, lc_cfg::get().ps.fo.sym.min_conjugate_len, &filteredPaths);
+	if (params.ps.fo.remove_sefl_conjugate) {
+		RemoveWrongConjugatePaths(g, goodPaths, params.ps.fo.sym.min_conjugate_len, &filteredPaths);
 	} else {
 		filteredPaths = goodPaths;
 	}
@@ -141,11 +141,11 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 
 	std::vector<BidirectionalPath> result;
 	std::vector<double> pathQuality;
-	if (lc_cfg::get().ps.fo.remove_subpaths || lc_cfg::get().ps.fo.remove_overlaps) {
+	if (params.ps.fo.remove_subpaths || params.ps.fo.remove_overlaps) {
 		RemoveSubpaths(g, filteredPaths, result, &pathQuality);
 		INFO("Subpaths removed");
 	}
-	else if (lc_cfg::get().ps.fo.remove_duplicates) {
+	else if (params.ps.fo.remove_duplicates) {
 		RemoveDuplicate(g, filteredPaths, result, &pathQuality);
 		INFO("Duplicates removed");
 	}
@@ -155,7 +155,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 		pathQuality.resize(result.size(), 1.0);
 	}
 
-	if (lc_cfg::get().write_overlaped_paths) {
+	if (params.write_overlaped_paths) {
 		WriteGraphWithPathsSimple(output_dir + "overlaped_paths.dot", "overlaped_paths", g, result, path1, path2);
 	}
 
@@ -163,27 +163,27 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 	INFO("After subpaths")
 	FilterComplement(g, result, &pairs, &quality);
 
-	if (lc_cfg::get().print_stats) {
+	if (params.print_stats) {
 		stopHandler.print();
 	}
 
-	if (lc_cfg::get().write_paths) {
+	if (params.write_paths) {
 		WriteGraphWithPathsSimple(output_dir + "final_paths.dot", "final_paths", g, result, path1, path2);
 	}
 
-	if (lc_cfg::get().write_contigs) {
-		OutputPathsAsContigs(g, result, output_dir + "all_paths.contigs");
-		OutputContigsNoComplement(g, output_dir + "edges.contigs");
+	if (params.write_contigs) {
+		OutputPathsAsContigs(g, result, output_dir + "all_paths.fasta");
+		OutputContigsNoComplement(g, output_dir + "before_rr.fasta");
 
 		std::set<int> toRemove;
 		std::vector<BidirectionalPath> noOverlaps;
 
-		if (lc_cfg::get().ps.fo.remove_overlaps) {
+		if (params.ps.fo.remove_overlaps) {
 			RemoveOverlaps(g, result);
 			DETAILED_INFO("Removed overlaps");
 			CheckIds(g, result);
 		}
-		if (lc_cfg::get().ps.fo.remove_similar) {
+		if (params.ps.fo.remove_similar) {
 			RemoveSimilar(g, result, pathQuality, &noOverlaps);
 		} else {
 			noOverlaps = result;
@@ -197,7 +197,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 
 		PrintPathsShort(g, noOverlaps);
 
-		OutputPathsAsContigsNoComplement(g, noOverlaps, output_dir + "paths.contigs", toRemove);
+		OutputPathsAsContigsNoComplement(g, noOverlaps, output_dir + "resolved.fasta", toRemove);
 		INFO("All contigs written");
 	}
 
@@ -209,9 +209,11 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 }
 
 
+void resolve_repeats_ml(Graph& g, PairedInfoIndex<Graph>& index, Sequence& genome, std::string output_dir, const lc_config::lc_params& p) {
+    PairedInfoIndices pairedInfos;
+    pairedInfos.push_back(PairedInfoIndexLibrary(g, cfg::get().ds.RL, cfg::get().ds.IS, 2, cfg::get().de.delta, 5, &index));
 
-void resolve_repeats_ml(Graph& g, PairedInfoIndex<Graph>& index) {
-
+    resolve_repeats_ml(g, pairedInfos, genome, output_dir, p);
 }
 
 } /* long_contigs */

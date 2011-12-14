@@ -611,8 +611,8 @@ void RemoveSimilar(Graph& g, std::vector<BidirectionalPath>& paths,
 
 			CountSimilarity(g, stat, pathStat[j], &similarEdges, &similarLen);
 
-			if (math::ge(((double) similarLen) / ((double) length), lc_cfg::get().ps.fo.similar_length) &&
-					math::ge(((double) similarEdges) / ((double) temp[i].size()), lc_cfg::get().ps.fo.similar_edges)) {
+			if (math::ge(((double) similarLen) / ((double) length), params.ps.fo.similar_length) &&
+					math::ge(((double) similarEdges) / ((double) temp[i].size()), params.ps.fo.similar_edges)) {
 
 				copy = false;
 				break;
@@ -655,7 +655,7 @@ bool HasConjugate(Graph& g, BidirectionalPath& path) {
 		DetailedPrintPath(g, path);
 	}
 
-	return math::gr(len / PathLength(g, path), lc_cfg::get().ps.fo.conj_len_percent);
+	return math::gr(len / PathLength(g, path), params.ps.fo.conj_len_percent);
 }
 
 
@@ -686,8 +686,8 @@ void BreakApart(Graph& g, std::vector<BidirectionalPath>& paths, int index,  siz
 	}
 
 	for (int k = i; k <= j; ++k) {
-		if (g.length(path[k]) >= K - lc_cfg::get().ps.fo.chimeric_delta &&
-				g.length(path[k]) <= K + lc_cfg::get().ps.fo.chimeric_delta) {
+		if (g.length(path[k]) >= K - params.ps.fo.chimeric_delta &&
+				g.length(path[k]) <= K + params.ps.fo.chimeric_delta) {
 
 			BidirectionalPath left;
 			GetSubpath(path, &left, 0, k);
@@ -758,7 +758,7 @@ void RemoveWrongConjugatePaths(Graph& g, std::vector<BidirectionalPath>& paths, 
 			AddPathPairToContainer(paths[i], paths[i+1], *output);
 		} else {
 			INFO("Removed as self conjugate");
-			if (lc_cfg::get().ps.fo.break_sc) {
+			if (params.ps.fo.break_sc) {
 				INFO("Added half");
 				BreakApart(g, paths, i, len, output);
 			}
@@ -796,8 +796,8 @@ void RemoveSimilarConjugatePaths(Graph& g, std::vector<BidirectionalPath>& paths
 				int chimericEdge = -1;
 
 				for (int k = 0; k <= (int) paths[j].size(); ++k) {
-					if (g.length(paths[j][k]) >= K - lc_cfg::get().ps.fo.chimeric_delta &&
-							g.length(paths[j][k]) <= K + lc_cfg::get().ps.fo.chimeric_delta) {
+					if (g.length(paths[j][k]) >= K - params.ps.fo.chimeric_delta &&
+							g.length(paths[j][k]) <= K + params.ps.fo.chimeric_delta) {
 
 						chimericEdge = k;
 					}
@@ -845,7 +845,7 @@ std::pair<int, int> FindSameSearchRange(std::vector<BidirectionalPath>& paths, s
 
 
 std::pair<int, int> FindSearchRange(std::vector<BidirectionalPath>& paths, std::vector<size_t>& lengths, int pathNum) {
-	static double coeff = lc_cfg::get().ps.fo.length_percent;
+	static double coeff = params.ps.fo.length_percent;
 	double length = (double) lengths[pathNum];
 
 	int i = pathNum - 1;
@@ -863,7 +863,7 @@ std::pair<int, int> FindSearchRange(std::vector<BidirectionalPath>& paths, std::
 
 
 std::pair<int, double> FindComlementPath(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<size_t>& lengths, int pathNum) {
-	static double conjugatePercent = lc_cfg::get().ps.fo.conjugate_percent;
+	static double conjugatePercent = params.ps.fo.conjugate_percent;
 	BidirectionalPath& path = paths[pathNum];
 
 	if (ComplementPaths(g, path, paths[paths[pathNum].conj_id])) {

@@ -1,3 +1,30 @@
+; output options
+write_seeds             true 
+write_overlaped_paths   false
+write_paths             true
+write_contigs           true
+write_raw_paired_info   false
+cluster_paired_info     true
+write_graph             false
+print_stats             false
+
+
+total_symmetric_mode    false
+first_grow_forward      true
+
+;research options
+research 
+{
+    research_mode            false
+    detailed_output          false
+    fiter_by_edge            true
+    edge_length              46
+    force_to_cycle           false 
+    cycle_priority_edge      55
+}
+
+
+
 singlecell {
 
 	; seed selection

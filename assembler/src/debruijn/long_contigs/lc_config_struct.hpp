@@ -179,29 +179,37 @@ struct lc_config
 	bool from_file;
 	bool syminfo;
 	bool paired_info_only;
+	bool cluster_paired_info;
+	bool etalon_mode;
+
+    bool write_real_paired_info;
+    std::string paired_info_file_prefix;
 
 	bool use_new_metrics;
-
-	bool write_seeds;
-	bool write_overlaped_paths;
-	bool write_paths;
-	bool write_contigs;
-	bool write_real_paired_info;
-	bool write_raw_paired_info;
-	bool cluster_paired_info;
-	bool write_graph;
-	bool print_stats;
-	std::string paired_info_file_prefix;
-
-	bool total_symmetric_mode;
-	bool first_grow_forward;
-
 	std::string dataset_name;
-	dataset ds;
-	param_set ps;
+    utils u;
 
-	research rs;
-	utils u;
+    dataset ds;
+
+    struct lc_params {
+        bool write_seeds;
+        bool write_overlaped_paths;
+        bool write_paths;
+        bool write_contigs;
+        bool write_raw_paired_info;
+
+        bool write_graph;
+        bool print_stats;
+
+
+        bool total_symmetric_mode;
+        bool first_grow_forward;
+
+        std::string param_set_name;
+
+        param_set ps;
+        research rs;
+    } params;
 };
 
 inline void load(lc_config::utils& u, boost::property_tree::ptree const& pt, bool complete)
@@ -382,6 +390,26 @@ inline void load(lc_config::param_set& p, boost::property_tree::ptree const& pt,
     load(p.sc, pt, "sc");
 }
 
+inline void load(lc_config::lc_params& p, boost::property_tree::ptree const& pt, bool complete) {
+    using config_common::load;
+    load(p.write_seeds            , pt, "write_seeds"           );
+    load(p.write_overlaped_paths  , pt, "write_overlaped_paths" );
+    load(p.write_paths            , pt, "write_paths"           );
+    load(p.write_contigs          , pt, "write_contigs"         );
+    load(p.write_raw_paired_info  , pt, "write_raw_paired_info" );
+    load(p.write_graph            , pt, "write_graph"           );
+    load(p.print_stats            , pt, "print_stats"           );
+
+
+    load(p.total_symmetric_mode   , pt, "total_symmetric_mode"  );
+    load(p.first_grow_forward     , pt, "first_grow_forward"    );
+
+    load(p.rs                     , pt, "research"              );
+
+    load(p.ps                     , pt,  p.param_set_name       );
+}
+
+
 // main long contigs config load function
 inline void load(lc_config& lc_cfg, boost::property_tree::ptree const& pt, bool complete)
 {
@@ -390,33 +418,25 @@ inline void load(lc_config& lc_cfg, boost::property_tree::ptree const& pt, bool 
 	load(lc_cfg.syminfo                , pt, "syminfo"               );
 	load(lc_cfg.paired_info_only       , pt, "paired_info_only"      );
 
-	load(lc_cfg.use_new_metrics        , pt, "use_new_metrics"       );
-	load(lc_cfg.write_seeds            , pt, "write_seeds"           );
-	load(lc_cfg.write_overlaped_paths  , pt, "write_overlaped_paths" );
-	load(lc_cfg.write_paths            , pt, "write_paths"           );
-	load(lc_cfg.write_contigs          , pt, "write_contigs"         );
-	load(lc_cfg.write_real_paired_info , pt, "write_real_paired_info");
-	load(lc_cfg.write_raw_paired_info  , pt, "write_raw_paired_info" );
-	load(lc_cfg.write_graph            , pt, "write_graph"           );
-	load(lc_cfg.print_stats            , pt, "print_stats"           );
-
 	load(lc_cfg.cluster_paired_info    , pt, "cluster_paired_info"   );
-	load(lc_cfg.paired_info_file_prefix, pt, "paired_info_file_prefix");
+	load(lc_cfg.use_new_metrics        , pt, "use_new_metrics"       );
+    load(lc_cfg.write_real_paired_info , pt, "write_real_paired_info");
+    load(lc_cfg.paired_info_file_prefix, pt, "paired_info_file_prefix");
+    load(lc_cfg.etalon_mode            , pt, "etalon_mode"           );
 
-	load(lc_cfg.total_symmetric_mode   , pt, "total_symmetric_mode"  );
-	load(lc_cfg.first_grow_forward     , pt, "first_grow_forward"    );
-	load(lc_cfg.dataset_name           , pt, "dataset"               );
+    load(lc_cfg.dataset_name           , pt, "dataset"               );
+    load(lc_cfg.u                      , pt, "utils"                 );
 
-	load(lc_cfg.ds                     , pt,  lc_cfg.dataset_name    );
-	load(lc_cfg.ps                     , pt,  lc_cfg.ds.param_set    );
+    load(lc_cfg.ds                     , pt,  lc_cfg.dataset_name    );
 
-	load(lc_cfg.rs                     , pt, "research"              );
-	load(lc_cfg.u                      , pt, "utils"                 );
-
+    lc_cfg.params.param_set_name = lc_cfg.ds.param_set;
+    load(lc_cfg.params                 , pt, "lc_params"             );
 }
 
 } // namespace lc
 
 typedef config_common::config<long_contigs::lc_config> lc_cfg;
+
+long_contigs::lc_config::lc_params params;
 
 #endif /* CONFIG_STRUCT_HPP_ */
