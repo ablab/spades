@@ -26,7 +26,10 @@ public:
 	}
 
 	void Filter(const PairedInfoIndex<Graph>& index,
-			PairedInfoIndex<Graph>& new_index) const {
+			PairedInfoIndex<Graph>& new_index) const
+	{
+	    INFO("index size: " << index.size());
+
 		for (auto it = index.begin(); it != index.end(); ++it) {
 			auto infos = *it;
 			EdgeId edge1 = infos[0].first;
@@ -61,7 +64,7 @@ public:
 	}
 
 protected:
-	virtual bool Check(EdgeId edge1, EdgeId edge2) {
+	virtual bool Check(EdgeId edge1, EdgeId edge2) const {
 		vector<size_t> result = finder_.GetGraphDistances(edge2, edge1);
 		return result.size() > 0;
 	}
@@ -79,7 +82,7 @@ public:
 	}
 
 protected:
-	virtual bool Check(PairInfo<EdgeId> info) {
+	virtual bool Check(PairInfo<EdgeId> info) const {
 		return math::ge(info.weight, weight_threshold_);
 	}
 };
