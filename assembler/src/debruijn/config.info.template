@@ -50,7 +50,7 @@ etalon_info_mode  false
 ; Collect paired information before or after graph simplification
 late_paired_info true
 
-; repeat resolving mode (none dima andrew jump)
+; repeat resolving mode (none dima andrew jump combined)
 resolving_mode dima
 
 andrey_params {

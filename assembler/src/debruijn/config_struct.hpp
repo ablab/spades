@@ -606,7 +606,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.pos              , pt, "pos"              ); // position handler:
 
 	load(cfg.rm               , pt, "resolving_mode"   );
-	if (cfg.rm == rm_andrew) {
+	if (cfg.rm == rm_andrew || cfg.rm == rm_combined) {
 	    cfg.andrey_params.param_set_name = cfg.ds.single_cell ? "singlecell" : "multicell";
 	    load(cfg.andrey_params, pt, "andrey_params"    );
 	}
