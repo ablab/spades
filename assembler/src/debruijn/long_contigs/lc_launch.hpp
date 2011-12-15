@@ -25,6 +25,8 @@ using namespace debruijn_graph;
 void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& genome, std::string output_dir, const lc_config::lc_params& p) {
 	INFO("Multilayer resolving tool started");
 
+	make_dir(output_dir);
+
 	params = p;
 
 	EdgeIndex<K + 1, Graph> index(g);

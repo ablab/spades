@@ -142,7 +142,7 @@ double ExtentionWeight(Graph& g, BidirectionalPath& path, PathLengths& lengths, 
 		int distance = lengths[i] + edgeLength + additionalGapLength;
 
 		double w = 0;
-		if (pairedInfoLibrary.has_advanced) {
+		if (params.ps.es.use_advanced && pairedInfoLibrary.has_advanced) {
 			omnigraph::PairedInfoIndex<Graph>::PairInfos ad_pairs = forward ? pairedInfoLibrary.advanced->pairedInfoIndex->GetEdgePairInfo(edge, e) : pairedInfoLibrary.advanced->pairedInfoIndex->GetEdgePairInfo(e, edge);
 			w = GetWeight(pairs, pairedInfoLibrary, distance, DISTANCE_DEV, useWeightFunction, params.ps.es.use_advanced ? &ad_pairs : 0);
 		} else {
