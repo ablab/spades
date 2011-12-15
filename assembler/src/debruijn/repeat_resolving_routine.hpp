@@ -264,13 +264,17 @@ void SaveResolvedPairedInfo(graph_pack& resolved_gp,
 	INFO("Saved");
 }
 
+
 template<class graph_pack>
 void process_resolve_repeats(graph_pack& origin_gp,
 		PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
 		graph_pack& resolved_gp, const string& graph_name,
+		EdgeLabelHandler<typename graph_pack::graph_t>& labels_after,
 		const string& subfolder = "", bool output_contigs = true) {
-	EdgeLabelHandler<typename graph_pack::graph_t> labels_after(resolved_gp.g,
-			origin_gp.g);
+
+//	EdgeLabelHandler<typename graph_pack::graph_t> labels_after(resolved_gp.g,
+//			origin_gp.g);
+
 	DEBUG("New index size: "<< clustered_index.size());
 	// todo: make printGraph const to its arguments
 
@@ -300,9 +304,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
                    cfg::get().output_dir + subfolder +"resolve_" + graph_name +  "/", labels_after);
 
     //Generating paired info for resolved graph
-		PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info(resolved_gp.g);
-		ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_graph_paired_info);
-		SaveResolvedPairedInfo(resolved_gp, resolved_graph_paired_info, graph_name + "_resolved", subfolder);
+//		PairedInfoIndex<typename graph_pack::graph_t> resolved_graph_paired_info(resolved_gp.g);
+//		ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_graph_paired_info);
+//		SaveResolvedPairedInfo(resolved_gp, resolved_graph_paired_info, graph_name + "_resolved", subfolder);
     //Paired info for resolved graph generated
 	}
     if (output_contigs) {
@@ -415,6 +419,20 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 	}
 }
+
+
+template<class graph_pack>
+void process_resolve_repeats(graph_pack& origin_gp,
+        PairedInfoIndex<typename graph_pack::graph_t>& clustered_index,
+        graph_pack& resolved_gp, const string& graph_name,
+        const string& subfolder = "", bool output_contigs = true) {
+
+    EdgeLabelHandler<typename graph_pack::graph_t> labels_after(resolved_gp.g,
+            origin_gp.g);
+
+    process_resolve_repeats(origin_gp, clustered_index, resolved_gp, graph_name, labels_after, subfolder, output_contigs);
+}
+
 
 template<class graph_pack>
 void component_statistics(graph_pack & conj_gp, int component_id,
@@ -655,6 +673,32 @@ void resolve_repeats() {
 
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_andrew) {
         resolve_repeats_ml(conj_gp.g, clustered_index, genome, cfg::get().output_dir + "alt_resolve/", cfg::get().andrey_params);
+    }
+
+    if (cfg::get().rm == debruijn_graph::resolving_mode::rm_combined && !cfg::get().path_set_graph) {
+        INFO("Combined resolving started");
+
+        std::string graph_name = "resolved_graph";
+
+        conj_graph_pack resolved_gp(genome);
+
+        EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(resolved_gp.g,
+                conj_gp.g);
+
+        if (cfg::get().etalon_info_mode) {
+            //temporary
+            process_resolve_repeats(conj_gp, conj_gp.etalon_paired_index, resolved_gp, "graph", labels_after);
+        } else {
+            process_resolve_repeats(conj_gp, clustered_index, resolved_gp, "graph", labels_after);
+        }
+
+        PairedInfoIndex<conj_graph_pack::graph_t> resolved_graph_paired_info(resolved_gp.g);
+        ProduceResolvedPairedInfo(conj_gp, clustered_index, resolved_gp, labels_after, resolved_graph_paired_info);
+        SaveResolvedPairedInfo(resolved_gp, resolved_graph_paired_info, "resolved", "saves/");
+
+        resolve_repeats_ml(resolved_gp.g, resolved_graph_paired_info, genome, cfg::get().output_dir + "combined_resolve/", cfg::get().andrey_params);
+
+        INFO("Combined resolving finished");
     }
 }
 

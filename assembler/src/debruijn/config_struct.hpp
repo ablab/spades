@@ -42,6 +42,7 @@ enum resolving_mode
 	rm_none           ,
 	rm_dima           ,
 	rm_andrew         ,
+	rm_combined       ,
 	rm_jump
 };
 
@@ -147,6 +148,7 @@ struct debruijn_config
                 {"none"             , rm_none           },
                 {"dima"  			, rm_dima			},
                 {"andrew"           , rm_andrew         },
+                {"combined"         , rm_combined       },
                 {"jump"             , rm_jump           },
         };
 
