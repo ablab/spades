@@ -10,7 +10,7 @@ public:
 	typedef PairedRead ReadType;
 
 	explicit ISCorruptingWrapper(IReader<ReadType>& reader, size_t is) :
-			DelegatingReaderWrapper(reader), is_(is) {
+			DelegatingReaderWrapper<PairedRead>(reader), is_(is) {
 	}
 
 	/* virtual */
