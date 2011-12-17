@@ -294,10 +294,11 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 					std::make_pair(reads_filename_1, reads_filename_2),
 					rl->insert_size);
 
+
 			if (useNewMetrics) {
-				FillPairedIndexWithReadCountMetric<k, io::PairedEasyReader >(g, conj_IntIds, index, mapper, *pairedInfos.back().pairedInfoIndex, stream);
+				FillPairedIndexWithReadCountMetric<k>(g, conj_IntIds, index, mapper, *pairedInfos.back().pairedInfoIndex, stream);
 			} else {
-				FillPairedIndexWithProductMetric<k, io::PairedEasyReader >(g, conj_IntIds, index, mapper, *pairedInfos.back().pairedInfoIndex, stream);
+				FillPairedIndexWithProductMetric<k>(g, conj_IntIds, index, mapper, *pairedInfos.back().pairedInfoIndex, stream);
 			}
 		}
 		INFO("Done");

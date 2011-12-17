@@ -363,6 +363,74 @@ QUAKE_FULL
 }
 
 
+PICHIA_CORRECTED 
+{
+    graph_file       data/debruijn/PICHIA_CORRECTED/K47/latest/saves/simplified_graph
+    
+        
+    param_set        multicell 
+    
+    reference_genome  N/A
+	length			  15000000 
+    
+    real_libs {
+	    count 1 
+	    
+	    item_1
+	    {
+	        read_size     75
+	        insert_size   280
+	        de_delta      10
+	        is_delta      2
+	        var           10
+	        
+	        precounted       true
+	        precounted_path  .
+	        
+	        first            .
+	        second           .
+	        
+	        has_advanced     false
+	        advanced         .
+	    
+	    	has_raw          false    
+	        raw              .
+	    }
+	    
+	    item_0
+	    {
+	        read_size     75
+	        insert_size   3270
+	        de_delta      50
+	        is_delta      10
+	        var           20
+	        
+	        precounted       false
+	        precounted_path  .
+	        
+	        first            .
+	        second           .
+	        
+	        has_advanced     false
+	        advanced         .
+	    
+	    	has_raw          false    
+	        raw              .
+	    }
+    }
+    
+    etalon_libs {
+        count     0
+    
+	    item_0
+	    {
+	        read_size    100
+	        insert_size  200
+	        delta        15
+	    }
+	}
+}
+
 EAS600_QUAKE_FULL
 {
     graph_file       ./data/debruijn/EAS600_QUAKE_FULL/K55/source/simplified_graph
@@ -391,11 +459,7 @@ DELTA_CORRECTED_1
     graph_file       ./data/debruijn/DELTA_CORRECTED_1/K55/gr1/simplified_graph
 }
 
-PICHIA_CORRECTED 
-{
-    ;graph_file       data/debruijn/PICHIA_CORRECTED_1/K55/11.11_21.41.46/saves/simplified_graph
-    graph_file       data/debruijn/PICHIA_CORRECTED/K47/latest/saves/simplified_graph
-}
+
 
 SAUREUS_CORRECTED_MS
 {

@@ -179,6 +179,8 @@ struct lc_config
 	bool from_file;
 	bool syminfo;
 	bool paired_info_only;
+	bool paired_info_for_resolved;
+	std::string resolved_graph;
 	bool cluster_paired_info;
 	bool etalon_mode;
 
@@ -417,6 +419,8 @@ inline void load(lc_config& lc_cfg, boost::property_tree::ptree const& pt, bool 
 	load(lc_cfg.from_file              , pt, "from_file"             );
 	load(lc_cfg.syminfo                , pt, "syminfo"               );
 	load(lc_cfg.paired_info_only       , pt, "paired_info_only"      );
+	load(lc_cfg.paired_info_for_resolved, pt, "paired_info_for_resolved");
+	load(lc_cfg.resolved_graph         , pt, "resolved_graph"       );
 
 	load(lc_cfg.cluster_paired_info    , pt, "cluster_paired_info"   );
 	load(lc_cfg.use_new_metrics        , pt, "use_new_metrics"       );

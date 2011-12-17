@@ -7,6 +7,8 @@
 
 #include "lc_launch.hpp"
 
+#include "../resolved_pair_info.hpp"
+
 using namespace long_contigs;
 using namespace debruijn_graph;
 
@@ -42,6 +44,29 @@ int main() {
 
 		if (!cfg::get().etalon_info_mode && lc_cfg::get().write_real_paired_info) {
 			SavePairedInfo(g, intIds, pairedInfos, output_dir + lc_cfg::get().paired_info_file_prefix, !lc_cfg::get().use_new_metrics);
+		}
+
+		if (lc_cfg::get().paired_info_for_resolved) {
+		    Graph rg(K);
+		    IdTrackHandler<Graph> r_intIds(rg);
+		    KmerMapper<K+1, Graph> r_mapper(rg);
+		    PairedInfoIndex<Graph> r_pairedIndex(rg, 0);
+		    PairedInfoIndices r_pairedInfos;
+
+            LoadFromFile(lc_cfg::get().resolved_graph, rg, r_intIds, r_mapper);
+
+//            ResolvedGraphPairInfoCounter<Graph> resolved_graph_paired_info_counter(
+//                    g, pairedInfos[0].pairedInfoIndex, rg, labels_after);
+
+//            resolved_graph_paired_info_counter.FillResolvedGraphPairedInfo(
+//                    r_pairedIndex);
+
+            r_pairedInfos.push_back(PairedInfoIndexLibrary(rg, pairedInfos[0].readSize, pairedInfos[0].insertSize, pairedInfos[0].is_delta, pairedInfos[0].deDelta, pairedInfos[0].var,
+                    &r_pairedIndex));
+
+            SavePairedInfo(rg, r_intIds, r_pairedInfos, output_dir + lc_cfg::get().paired_info_file_prefix + "resolved_", lc_cfg::get().use_new_metrics);
+
+		    return 0;
 		}
 
 		if (lc_cfg::get().paired_info_only) {
