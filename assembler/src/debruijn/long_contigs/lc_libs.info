@@ -365,9 +365,8 @@ QUAKE_FULL
 
 PICHIA_CORRECTED 
 {
-    graph_file       data/debruijn/PICHIA_CORRECTED/K47/latest/saves/simplified_graph
-    
-        
+    graph_file       data/debruijn/PICHIA_CORRECTED/K55/12.17_02.37.45/saves/distance_estimation
+            
     param_set        multicell 
     
     reference_genome  N/A
@@ -401,15 +400,15 @@ PICHIA_CORRECTED
 	    {
 	        read_size     75
 	        insert_size   3270
-	        de_delta      50
-	        is_delta      10
+	        de_delta      60
+	        is_delta      15
 	        var           20
 	        
 	        precounted       false
 	        precounted_path  .
 	        
-	        first            .
-	        second           .
+	        first            ./data/input/P.stipitis/Reads/Quaked/HCT10508_s_8_1.cor.fastq
+	        second           ./data/input/P.stipitis/Reads/Quaked/HCT10508_s_8_2.cor.fastq
 	        
 	        has_advanced     false
 	        advanced         .
