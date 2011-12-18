@@ -445,6 +445,8 @@ private:
 	const IdTrackHandler<Graph>& int_ids_;
 	const Index& index_;
 	const KmerSubs& kmer_mapper_;
+	mutable size_t mapped_;
+	mutable size_t unmapped_;
 
 	bool FindKmer(Kmer kmer, size_t kmer_pos, vector<EdgeId> &passed,
 			RangeMappings& range_mappings) const {
@@ -520,7 +522,14 @@ public:
 	NewExtendedSequenceMapper(const Graph& g,
 			const IdTrackHandler<Graph>& int_ids, const Index& index,
 			const KmerSubs& kmer_mapper) :
-			g_(g), int_ids_(int_ids), index_(index), kmer_mapper_(kmer_mapper) {
+			g_(g), int_ids_(int_ids), index_(index),
+			kmer_mapper_(kmer_mapper), mapped_(0), unmapped_(0) {
+	}
+
+	~NewExtendedSequenceMapper() {
+		TRACE("In destructor of sequence mapper");
+		TRACE(mapped_ << " sequences were mapped");
+		TRACE(unmapped_ << " sequences couldn't be mapped");
 	}
 
 	MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
@@ -539,15 +548,18 @@ public:
 					range_mapping, try_thread);
 		}
 
-		//DEBUG
-//		for (size_t i = 0; i < passed_edges.size(); ++i) {
-//			cerr << int_ids_.ReturnIntId(passed_edges[i]) << " (" << range_mapping[i] << ")"<< "; ";
-//		}
-//		cerr << endl;
-		//DEBUG
+		if (passed_edges.empty()) {
+			TRACE("Sequence " << sequence << "couldn't be mapped");
+			unmapped_++;
+			//todo maybe check path consistency?
+		} else {
+			mapped_++;
+		}
 
 		return MappingPath<EdgeId>(passed_edges, range_mapping);
 	}
+private:
+	DECL_LOGGER("NewExtendedSequenceMapper");
 };
 
 template<size_t k, class Graph>

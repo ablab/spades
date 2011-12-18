@@ -23,8 +23,8 @@ namespace long_contigs {
 
 using namespace debruijn_graph;
 
-void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& genome, std::string output_dir, const lc_config::lc_params& p,
-		boost::optional<const PairedInfoIndex<Graph>> jump_index_opt = boost::none) {
+void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence& genome, std::string output_dir, const lc_config::lc_params& p,
+		boost::optional<const PairedInfoIndex<Graph>&> jump_index_opt = boost::none) {
 	INFO("Multilayer resolving tool started");
 
 	make_dir(output_dir);
@@ -96,8 +96,10 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 //		paths.resize(seeds.size());
 //		std::copy(seeds.begin(), seeds.end(), paths.begin());
 //	} else {
+	PairedInfoIndex<Graph> empty_info(g);
 	if (!jump_index_opt) {
-		jump_index_opt = in_place<PairedInfoIndex<Graph>>(cref(g));
+//		jump_index_opt = in_place<const PairedInfoIndex<Graph>&>(cref(g));
+		jump_index_opt.reset(empty_info);
 	}
 	FindPaths(g, seeds, pairedInfos, stopHandler, *jump_index_opt);
 //	}
@@ -201,11 +203,12 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, Sequence& geno
 }
 
 
-void resolve_repeats_ml(Graph& g, PairedInfoIndex<Graph>& index, Sequence& genome, std::string output_dir, const lc_config::lc_params& p) {
+void resolve_repeats_ml(Graph& g, PairedInfoIndex<Graph>& index, const Sequence& genome, std::string output_dir, const lc_config::lc_params& p,
+		boost::optional<const PairedInfoIndex<Graph>&> jump_index_opt = boost::none) {
     PairedInfoIndices pairedInfos;
     pairedInfos.push_back(PairedInfoIndexLibrary(g, cfg::get().ds.RL, cfg::get().ds.IS, 2, cfg::get().de.delta, 5, &index));
 
-    resolve_repeats_ml(g, pairedInfos, genome, output_dir, p);
+    resolve_repeats_ml(g, pairedInfos, genome, output_dir, p, jump_index_opt);
 }
 
 } /* long_contigs */

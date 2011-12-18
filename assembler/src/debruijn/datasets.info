@@ -356,6 +356,9 @@ JCVI_ECOLI
         second	JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.right.corrected.fastq.gz
         single_first	JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.left.unpaired.fastq.gz
         single_second	JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.right.unpaired.fastq.gz
+        jumping_first	JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.shearjump.left.corrected.fastq.gz
+        jumping_second	JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.shearjump.right.corrected.fastq.gz
+	jump_is		3000
         RL              100
         IS              210
 	    single_cell	true

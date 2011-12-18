@@ -611,10 +611,11 @@ Sequence load_genome() {
 	return Sequence(genome);
 }
 
-void resolve_with_jumps(const conj_graph_pack& gp,
-		const paired_info_index& clustered_index,
+void resolve_with_jumps(Graph& g, PairedInfoIndex<Graph>& index, const Sequence& genome,
 		const paired_info_index& jump_index) {
-
+	resolve_repeats_ml(g, index, genome,
+			cfg::get().output_dir + "jump_resolve/",
+			cfg::get().andrey_params, boost::optional<const paired_info_index&>(jump_index));
 }
 
 void resolve_repeats() {
@@ -714,7 +715,7 @@ void resolve_repeats() {
 			FillPairedIndexWithReadCountMetric<K>(conj_gp.g, conj_gp.int_ids,
 					conj_gp.index, conj_gp.kmer_mapper, raw_jump_index,
 					wrapped_jump_stream);
-			JumpingPairInfoChecker<Graph> filter(conj_gp.g, 300, 100, 10);
+			JumpingPairInfoChecker<Graph> filter(conj_gp.g, 300, 100, 100);
 			paired_info_index jump_index(conj_gp.g);
 			filter.Filter(raw_jump_index, jump_index);
 
@@ -723,12 +724,12 @@ void resolve_repeats() {
 					raw_jump_index);
 			printer.savePaired(cfg::get().output_dir + "jump_cleared",
 					jump_index);
-			resolve_with_jumps(conj_gp, clustered_index, jump_index);
+			resolve_with_jumps(conj_gp.g, clustered_index, conj_gp.genome, jump_index);
 		} else {
 			ConjugateDataScanner<Graph> scanner(conj_gp.g, conj_gp.int_ids);
 			paired_info_index jump_index(conj_gp.g);
 			scanner.loadPaired(cfg::get().input_dir + "jump_cleared", jump_index);
-			resolve_with_jumps(conj_gp, clustered_index, jump_index);
+			resolve_with_jumps(conj_gp.g, clustered_index, conj_gp.genome, jump_index);
 		}
 	}
 

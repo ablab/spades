@@ -55,19 +55,34 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	const GraphDistanceFinder<Graph> finder_;
+	mutable size_t filtered_;
+	mutable size_t passed_;
 
 public:
 	JumpingPairInfoChecker(const Graph& graph, size_t short_is,
 			size_t read_length, size_t delta) :
 			AbstractPairInfoFilter<Graph>(graph), finder_(graph,
-					short_is, read_length, delta) {
+					short_is, read_length, delta),
+					filtered_(0), passed_(0) {
+	}
+
+	virtual ~JumpingPairInfoChecker() {
+		TRACE("In destructor of JumpingPairInfoChecker");
+		TRACE("Filtered edge pairs " << filtered_);
+		TRACE("Passed edge pairs " << passed_);
 	}
 
 protected:
 	virtual bool Check(EdgeId edge1, EdgeId edge2) const {
 		vector<size_t> result = finder_.GetGraphDistances(edge2, edge1);
-		return result.size() > 0;
+		if (result.empty())
+			passed_++;
+		else
+			filtered_++;
+		return result.empty();
 	}
+private:
+	DECL_LOGGER("JumpingPairInfoChecker");
 };
 
 template<class Graph>
