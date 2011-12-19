@@ -130,6 +130,20 @@ public:
 
 	}
 
+	bool IsConsistentWithGenome(vector<EdgeId> Path){
+		if (Path.size() > 0) {
+	 		 vector<EdgePosition> res = (EdgesPositions[Path[0]]);
+	 		 for (size_t i = 1; i<Path.size(); i++){
+	 			 res = GluePositionsLists(res, EdgesPositions[Path[i]], max_single_gap_);
+	 		 }
+			if (res.size()>0){
+				for(size_t i = 0; i<Path.size(); i++)
+					if (res[i].contigId_ < 15) return true; //ToDo: Curent pipeline trace genome as contigsId 0, 1, 10 and 11 but in future it can be not true.
+			}
+		}
+		return false;
+	}
+
 	void AddEdgePosition (EdgeId NewEdgeId, vector<EdgePosition> NewPositions) {
 			if (EdgesPositions.find(NewEdgeId) == EdgesPositions.end()) {
 				vector<EdgePosition> NewVec;
