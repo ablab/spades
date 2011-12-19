@@ -561,9 +561,9 @@ int main(int argc, char * argv[]) {
 		if ( Globals::use_iterative_reconstruction && (Globals::skip_iterative < 0) ) {
 			if (Globals::conserve_memory) Globals::kmernos = &kmernos;
 			for ( int iter_no = 0; iter_no < Globals::max_reconstruction_iterations; ++iter_no ) {
-				ofstream ofs( getFilename(Globals::working_dir, iter_count, "kmers.iterative", iter_no) );
-				size_t res = IterativeReconstructionStep(nthreads, kmers, &ofs);
-				ofs.close();
+				// ofstream ofs( getFilename(Globals::working_dir, iter_count, "kmers.iterative", iter_no) );
+				size_t res = IterativeReconstructionStep(nthreads, kmers, NULL);
+				//ofs.close();
 				TIMEDLN("Solid k-mers iteration " << iter_no << " produced " << res << " new k-mers.");
 
 				if ( Globals::write_each_iteration_kmers ) {
