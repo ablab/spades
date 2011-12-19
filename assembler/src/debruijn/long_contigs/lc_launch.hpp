@@ -88,7 +88,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence
 //
 	if (params.write_seeds) {
 		WriteGraphWithPathsSimple(output_dir + "seeds.dot", "seeds", g, seeds, path1, path2);
-		OutputPathsAsContigsNoComplement(g, seeds, output_dir + "seeds.fadta", std::set<int>());
+		OutputPathsAsContigsNoComplement(g, seeds, output_dir + "seeds.fasta", std::set<int>());
 	}
 
 //	if (params.total_symmetric_mode) {
@@ -174,7 +174,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence
 
 		if (params.ps.fo.remove_overlaps) {
 			RemoveOverlaps(g, result);
-			DETAILED_INFO("Removed overlaps");
+			INFO("Removed overlaps");
 			CheckIds(g, result);
 		}
 		if (params.ps.fo.remove_similar) {
@@ -182,7 +182,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence
 		} else {
 			noOverlaps = result;
 		}
-		DETAILED_INFO("Removed similar");
+		INFO("Removed similar");
 
 //		found = PathsInGenome<K>(g, index, sequence, noOverlaps, path1, path2, &pathQuality);
 //		INFO("Good paths found " << found << " in total " << noOverlaps.size());

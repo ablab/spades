@@ -236,7 +236,7 @@ int FixingCoefficient(Graph& g, const BidirectionalPath& path, EdgeId edge, size
 double WeightFixing(Graph& g, const BidirectionalPath& path, EdgeId edge, size_t edgesToExclude, PairedInfoIndexLibrary& pairedInfoLibrary, double weight, bool forward) {
 	int coeff = FixingCoefficient(g, path, edge, edgesToExclude, pairedInfoLibrary, forward);
 	if (coeff < 0 && weight != 0) {
-		INFO("Strange fixing!!! Weight: " << weight << ", c = " << coeff << ", edge: " << edge << " = " << g.length(edge));
+		DEBUG("Strange fixing!!! Weight: " << weight << ", c = " << coeff << ", edge: " << edge << " = " << g.length(edge));
 		PrintPath(g ,path);
 		return 0;
 	}
@@ -331,10 +331,10 @@ void FindEdges(Graph& g, EdgeId edge, int depth, std::vector<EdgeId>& result, st
 		}
 		++i;
 	}
-	INFO("== Depth info == ");
+	DEBUG("== Depth info == ");
 	PrintPath(g, result);
 	for (int i = 0; i < (int) result.size(); ++i) {
-		INFO("D = " << distances[i] << ", DEPTH = " << depths[i]);
+		DEBUG("D = " << distances[i] << ", DEPTH = " << depths[i]);
 	}
 }
 
@@ -359,9 +359,9 @@ double FilterExtentionsDeep(Graph& g, BidirectionalPath& path, std::vector<EdgeI
 		detector.temp.weights[*iter] = weight;
 	}
 
-	DETAILED_INFO("Choosing weights deeper (" << depth << "): " << (forward ? "forward" : "backward"))
+	DETAILED_DEBUG("Choosing weights deeper (" << depth << "): " << (forward ? "forward" : "backward"))
 	for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
-		DETAILED_INFO(iter->second << " (" << g.length(iter->second) << ") = " << iter->first);
+		DETAILED_DEBUG(iter->second << " (" << g.length(iter->second) << ") = " << iter->first);
 	}
 
 	//Filling maximum edges
@@ -391,9 +391,9 @@ double FilterExtentions(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& 
 		detector.temp.AddAlternative(*iter, weight);
 	}
 
-	DETAILED_INFO("Choosing weights " << (forward ? "forward" : "backward"))
+	DETAILED_DEBUG("Choosing weights " << (forward ? "forward" : "backward"))
 	for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
-		DETAILED_INFO(iter->second << " (" << g.length(iter->second) << ") = " << iter->first);
+		DETAILED_DEBUG(iter->second << " (" << g.length(iter->second) << ") = " << iter->first);
 	}
 
 	//Filling maximum edges
@@ -489,21 +489,21 @@ EdgeId ChooseExtension(Graph& g, BidirectionalPath& path, std::vector<EdgeId>& e
 		return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold, g, path, handler, forward) : toReturn;
 	} else if (edges.size() > 1) {
 		if (ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold) == 0) {
-			DETAILED_INFO("No good extension");
+			DETAILED_DEBUG("No good extension");
 			handler.AddStop(&path, NO_GOOD_EXTENSION, forward);
 		} else {
-			DETAILED_INFO("Cannot choose extension, no obvious maximum");
+			DETAILED_DEBUG("Cannot choose extension, no obvious maximum");
 
 			static int maxDepth = params.ps.es.max_depth;
 			for (int depth = 1; depth <= maxDepth; ++depth) {
-				DETAILED_INFO("Trying to look deeper to " << depth);
+				DETAILED_DEBUG("Trying to look deeper to " << depth);
 				*maxWeight = FilterExtentionsDeep(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector, depth);
 
 				if (edges.size() == 1) {
 					return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold, g, path, handler, forward) : toReturn;
 				}
 			}
-			INFO("Still no obvious selection, will stop growing");
+			DEBUG("Still no obvious selection, will stop growing");
 			handler.AddStop(&path, MANY_GOOD_EXTENSIONS, forward);
 		}
 	}
@@ -532,7 +532,7 @@ size_t EdgesToExcludeForward(Graph& g, BidirectionalPath& path, int from = -1) {
 		detector.temp.AddAlternative(e);
 		detector.AddNewEdge(e, toExclude);
 		if (CheckCycle(path, e, detector, maxCycles)) {
-			INFO("Cycled trivial path");
+			DEBUG("Cycled trivial path");
 			return 0;
 		}
 	}
@@ -561,7 +561,7 @@ size_t EdgesToExcludeBackward(Graph& g, BidirectionalPath& path, int from = -1) 
 		detector.temp.AddAlternative(e);
 		detector.AddNewEdge(e, toExclude);
 		if (CheckCycle(path, e, detector, maxCycles)) {
-			INFO("Cycled trivial path");
+			DEBUG("Cycled trivial path");
 			return 0;
 		}
 	}
@@ -574,10 +574,10 @@ void RecountDetectorForward(Graph& g, BidirectionalPath& path, PairedInfoIndices
 	PathLengths emulLengths;
 	detector.clear();
 
-	DETAILED_INFO("Recounting detector forward");
+	DETAILED_DEBUG("Recounting detector forward");
 
 	for (int i = 0; i < (int) path.size(); ++i) {
-		DETAILED_INFO(i);
+		DETAILED_DEBUG(i);
 		size_t edgesToExclude = EdgesToExcludeForward(g, emulPath);
 
 		detector.temp.clear();
@@ -607,7 +607,7 @@ void RecountDetectorBackward(Graph& g, BidirectionalPath& path, PairedInfoIndice
 	PathLengths emulLengths;
 	detector.clear();
 
-	DETAILED_INFO("Recounting detector backward");
+	DETAILED_DEBUG("Recounting detector backward");
 
 	for (int i = path.size() - 1; i >= 0; --i) {
 		size_t edgesToExclude = EdgesToExcludeBackward(g, emulPath);

@@ -42,7 +42,7 @@ void ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detec
 			double weight =
 					ExtentionWeight(g, path, *lengths, nextEdge, *pairedInfo, toExclude, true, false);
 
-			DETAILED_INFO("Forward " << nextEdge << " (" << g.length(nextEdge) << "), weight " << weight);
+			DETAILED_DEBUG("Forward " << nextEdge << " (" << g.length(nextEdge) << "), weight " << weight);
 			DetailedPrintPath(g, path, *lengths);
 
 			if (ExtensionGoodEnough(nextEdge, weight, params.ps.ss.trusted_threshold) == 0) {
@@ -94,7 +94,7 @@ void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& dete
 			double weight =
 					ExtentionWeight(g, path, *lengths, nextEdge, *pairedInfo, toExclude, false, false);
 
-			DETAILED_INFO("Backward " << nextEdge << " (" << g.length(nextEdge) << "), weight " << weight);
+			DETAILED_DEBUG("Backward " << nextEdge << " (" << g.length(nextEdge) << "), weight " << weight);
 			DetailedPrintPath(g, path, *lengths);
 
 			if (ExtensionGoodEnough(nextEdge, weight, params.ps.ss.trusted_threshold) == 0) {
@@ -129,7 +129,7 @@ void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& dete
 //Glue second path to the first one
 void JoinPaths(BidirectionalPath& path1, BidirectionalPath& path2) {
 	if (path1 == path2) {
-		INFO("Cannot join path with itself");
+		DEBUG("Cannot join path with itself");
 		return;
 	}
 
@@ -212,7 +212,7 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndice
 
 	for (auto iter = seeds.begin(); iter != seeds.end(); ++iter) {
 		if (std::abs(iter->conj_id - iter->id) != 1) {
-			INFO("Complement ids are wrong.");
+			DEBUG("Complement ids are wrong.");
 		}
 	}
 

@@ -32,7 +32,7 @@ private:
 				return i;
 			}
 		}
-		INFO("Can not find info with distance " << d);
+		DEBUG("Can not find info with distance " << d);
 		return -1;
 	}
 
@@ -41,7 +41,7 @@ public:
 	}
 
 	void MakeSymmetricInfo(PairedInfoIndexLibrary& lib) {
-		INFO("Making symmetric info");
+		DEBUG("Making symmetric info");
 		for (auto edge1 = g.SmartEdgeBegin(); !edge1.IsEnd(); ++edge1) {
 			for (auto edge2 = g.SmartEdgeBegin(); !edge2.IsEnd(); ++edge2) {
 
@@ -49,7 +49,7 @@ public:
 				std::vector<PairInfo<EdgeId>> conjPairs = lib.pairedInfoIndex->GetEdgePairInfo(g.conjugate(*edge2), g.conjugate(*edge1));
 
 				if (pairs.size() != conjPairs.size()) {
-					INFO("Paired info count is not the same in conjugate");
+					DEBUG("Paired info count is not the same in conjugate");
 				}
 
 				for (auto iter1 = pairs.begin(); iter1 != pairs.end(); ++iter1) {
@@ -58,24 +58,24 @@ public:
 					int i = FindInfoByDistance(conjPairs, conjD);
 
 					if (i == -1) {
-						INFO("Edges: " << g.length(*edge1) << ", " << g.length(*edge2)  << ". Distances: " << d << ", " << conjD);
+						DEBUG("Edges: " << g.length(*edge1) << ", " << g.length(*edge2)  << ". Distances: " << d << ", " << conjD);
 						continue;
 					}
 
 					if (conjPairs[i].d != conjD) {
-						INFO("Changing distances");
+						DEBUG("Changing distances");
 						conjPairs[i].d = conjD;
 
 						std::vector<PairInfo<EdgeId>> conjSymPairs = lib.pairedInfoIndex->GetEdgePairInfo(g.conjugate(*edge1), g.conjugate(*edge2));
 						int j = FindInfoByDistance(conjSymPairs, -conjD);
 						if (j == -1) {
-							INFO("SYMETIC CONJ! Edges: " << g.length(*edge1) << ", " << g.length(*edge2)  << ". Distances: " << d << ", " << - conjD);
+							DEBUG("SYMETIC CONJ! Edges: " << g.length(*edge1) << ", " << g.length(*edge2)  << ". Distances: " << d << ", " << - conjD);
 						}
 						conjSymPairs[j].d = - conjD;
 					}
 
 					if (conjPairs[i].weight != iter1->weight) {
-						INFO("Changing weights");
+						DEBUG("Changing weights");
 						double newWeight = (conjPairs[i].weight + iter1->weight) / 2;
 						iter1->weight = newWeight;
 						conjPairs[i].weight = newWeight;
@@ -84,21 +84,21 @@ public:
 						std::vector<PairInfo<EdgeId>> symPairs = lib.pairedInfoIndex->GetEdgePairInfo(*edge2, *edge1);
 						int j = FindInfoByDistance(symPairs, -d);
 						if (j == -1) {
-							INFO("SYMETIC! Edges: " << g.length(*edge1) << ", " << g.length(*edge2)  << ". Distances: " << d << ", " << -d);
+							DEBUG("SYMETIC! Edges: " << g.length(*edge1) << ", " << g.length(*edge2)  << ". Distances: " << d << ", " << -d);
 						}
 						symPairs[j].weight = newWeight;
 
 						std::vector<PairInfo<EdgeId>> conjSymPairs = lib.pairedInfoIndex->GetEdgePairInfo(g.conjugate(*edge1), g.conjugate(*edge2));
 						j = FindInfoByDistance(conjSymPairs, -conjD);
 						if (j == -1) {
-							INFO("SYMETIC CONJ! Edges: " << g.length(*edge1) << ", " << g.length(*edge2)  << ". Distances: " << d << ", " << - conjD);
+							DEBUG("SYMETIC CONJ! Edges: " << g.length(*edge1) << ", " << g.length(*edge2)  << ". Distances: " << d << ", " << - conjD);
 						}
 						conjSymPairs[j].weight = newWeight;
 					}
 				}
 			}
 		}
-		INFO("Done")
+		DEBUG("Done")
 	}
 
 };
@@ -148,7 +148,7 @@ std::string ToStr(EdgeType t) {
 void PrintEdgesStats(std::map<EdgeType, size_t>& amount, std::map<EdgeType, size_t>& lengths, const std::string& title) {
 	INFO(title);
 	for (auto iter = amount.begin(); iter != amount.end(); ++iter) {
-		INFO(ToStr(iter->first) << " edges: " << iter->second << " with total length " << lengths[iter->first]);
+	    INFO(ToStr(iter->first) << " edges: " << iter->second << " with total length " << lengths[iter->first]);
 	}
 }
 

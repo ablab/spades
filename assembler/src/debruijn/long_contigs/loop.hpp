@@ -78,11 +78,11 @@ struct LoopDetector {
 	}
 
 	void print(Graph& g) {
-		INFO("== Detector data ==");
+		DEBUG("== Detector data ==");
 		for (auto iter = data.begin(); iter != data.end(); ++iter) {
-			INFO("Edge " << g.length(iter->first) << ", weight " << iter->second.selfWeight << ", iteration " << iter->second.iteration);
+			DEBUG("Edge " << g.length(iter->first) << ", weight " << iter->second.selfWeight << ", iteration " << iter->second.iteration);
 			for(auto alt = iter->second.weights.begin(); alt != iter->second.weights.end(); ++alt) {
-				INFO("Edge " << g.length(alt->first) << ", weight " << alt->second);
+				DEBUG("Edge " << g.length(alt->first) << ", weight " << alt->second);
 			}
 		}
 	}
@@ -158,15 +158,15 @@ size_t CountEdgesToRemove(BidirectionalPath& path, EdgeId lastEdge, LoopDetector
 	bool onlyCycle = PathIsOnlyLoop(path, detector, forward);
 
 	if (onlyCycle || path.size() <= loopCount * loopSize + 1) {
-		INFO("Only loop, loop size " << loopSize << ", loop count " << loopCount);
+		DEBUG("Only loop, loop size " << loopSize << ", loop count " << loopCount);
 		return path.size() - loopSize;
 	}
 
 	if (fullRemoval) {
-		INFO("Loop size " << loopSize << ", loop count " << loopCount);
+		DEBUG("Loop size " << loopSize << ", loop count " << loopCount);
 		return loopCount * loopSize + 1;
 	} else {
-		INFO("loop size " << loopSize << ", loop count " << loopCount);
+		DEBUG("loop size " << loopSize << ", loop count " << loopCount);
 		return (loopCount - 1) * loopSize + 1;
 	}
 }
@@ -190,7 +190,7 @@ void RemoveLoopBackward(BidirectionalPath& path, LoopDetector& detector, bool fu
 
 bool LoopBecameStable(EdgeId e, LoopDetector& detector) {
 	if (detector.data.count(e) < 2) {
-		DETAILED_INFO("Loop still unstable");
+		DETAILED_DEBUG("Loop still unstable");
 		return false;
 	}
 	auto iter = detector.data.upper_bound(e);
@@ -200,9 +200,9 @@ bool LoopBecameStable(EdgeId e, LoopDetector& detector) {
 	bool res = prev->second == last->second;
 
 	if (res) {
-		DETAILED_INFO("Loop became stable");
+		DETAILED_DEBUG("Loop became stable");
 	} else {
-		DETAILED_INFO("Loop still unstable");
+		DETAILED_DEBUG("Loop still unstable");
 	}
 	return res;
 }
@@ -278,7 +278,7 @@ EdgeId IsEdgeInShortLoopForward(Graph& g, EdgeId e) {
 	}
 
 	if (g.OutgoingEdgeCount(v) == 1 && result != 0) {
-		INFO("Seems no fork backward: edge " << g.length(e) << ", loops with " << g.length(result) << ". " << g.OutgoingEdgeCount(v));
+		DEBUG("Seems no fork backward: edge " << g.length(e) << ", loops with " << g.length(result) << ". " << g.OutgoingEdgeCount(v));
 	}
 
 	return result;
@@ -296,7 +296,7 @@ EdgeId IsEdgeInShortLoopBackward(Graph& g, EdgeId e) {
 	}
 
 	if (g.IncomingEdgeCount(v) == 1 && result != 0) {
-		INFO("Seems no fork backward: edge " << g.length(e) << ", loops with " << g.length(result) << ". " << g.IncomingEdgeCount(v));
+		DEBUG("Seems no fork backward: edge " << g.length(e) << ", loops with " << g.length(result) << ". " << g.IncomingEdgeCount(v));
 	}
 
 	return result;

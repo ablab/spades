@@ -10,7 +10,7 @@ syminfo       false
 ;Only precount and estimate
 paired_info_only    false
 paired_info_for_resolved false
-resolve_graph ./data/
+resolved_graph ./data/
 
 ; paired info options
 cluster_paired_info     true

@@ -216,14 +216,14 @@ public:
 	}
 
 	void print(BidirectionalPath* path) {
-		INFO("Stats for path " << path << " with " << path->size() << " edges and length " <<  PathLength(g_, *path));
-		INFO("Stoppages forward (" << forward_.count(path) << "):");
+		DEBUG("Stats for path " << path << " with " << path->size() << " edges and length " <<  PathLength(g_, *path));
+		DEBUG("Stoppages forward (" << forward_.count(path) << "):");
 		for (auto iter = forward_.lower_bound(path); iter != forward_.upper_bound(path); ++iter) {
-			INFO("Stop reason at length " << iter->second.pathLength << ", reason: " << iter->second.message);
+			DEBUG("Stop reason at length " << iter->second.pathLength << ", reason: " << iter->second.message);
 		}
-		INFO("Stoppages backward (" << backward_.count(path) << "):");
+		DEBUG("Stoppages backward (" << backward_.count(path) << "):");
 		for (auto iter = backward_.lower_bound(path); iter != backward_.upper_bound(path); ++iter) {
-			INFO("Stop reason at length " << iter->second.pathLength << ", reason: " << iter->second.message);
+			DEBUG("Stop reason at length " << iter->second.pathLength << ", reason: " << iter->second.message);
 		}
 	}
 
@@ -240,7 +240,7 @@ public:
 };
 
 //Detailed output for research mode
-#define DETAILED_INFO(message) { if (lc_cfg::get().params.rs.detailed_output) { INFO(message) } }
+#define DETAILED_DEBUG(message) { if (lc_cfg::get().params.rs.detailed_output) { DEBUG(message) } }
 
 // ====== Support functions ======
 //Pause to see output
@@ -267,10 +267,10 @@ void PrintPathEdgeLengthStats(std::vector<BidirectionalPath>& paths) {
 		++lengthMap[iter->size()];
 	}
 
-	INFO("Total paths " << paths.size());
-	INFO("Edges in path : path count");
+	DEBUG("Total paths " << paths.size());
+	DEBUG("Edges in path : path count");
 	for(auto iter = lengthMap.begin(); iter != lengthMap.end(); ++iter) {
-		INFO(iter->first << " : " << iter->second);
+		DEBUG(iter->first << " : " << iter->second);
 	}
 }
 
@@ -282,10 +282,10 @@ void PrintPathLengthStats(Graph& g, std::vector<BidirectionalPath>& paths) {
 		++lengthMap[PathLength(g, *iter)];
 	}
 
-	INFO("Total paths " << paths.size());
-	INFO("Path length : paths count");
+	DEBUG("Total paths " << paths.size());
+	DEBUG("Path length : paths count");
 	for(auto iter = lengthMap.begin(); iter != lengthMap.end(); ++iter) {
-		INFO(iter->first << " : " << iter->second);
+		DEBUG(iter->first << " : " << iter->second);
 	}
 }
 
@@ -306,12 +306,12 @@ double PrintPathCoverage(Graph& g, std::vector<BidirectionalPath>& paths) {
 		++edgeCount;
 	}
 
-	INFO("Covered times : edges")
+	DEBUG("Covered times : edges")
 	for(auto iter = coveredTimes.begin(); iter != coveredTimes.end(); ++iter) {
-		INFO(iter->first << " : " << iter->second);
+		DEBUG(iter->first << " : " << iter->second);
 	}
 
-	INFO("Total edge coverage: " << edgeCount - coveredTimes[0] << " out of " << edgeCount);
+	DEBUG("Total edge coverage: " << edgeCount - coveredTimes[0] << " out of " << edgeCount);
 
 	return 1.0 - (double) (coveredTimes[0]) / double (edgeCount);
 }
@@ -359,19 +359,19 @@ double PathsLengthCoverage(Graph& g, std::vector<BidirectionalPath>& paths) {
 
 //Print short info about paths paths (length and edge count)
 void PrintPathsShort(Graph& g, std::vector<BidirectionalPath>& paths) {
-	INFO("Total paths " << paths.size());
-	INFO("Path length : edge count")
+	DEBUG("Total paths " << paths.size());
+	DEBUG("Path length : edge count")
 	for(auto iter = paths.begin(); iter != paths.end(); ++iter) {
-		INFO(PathLength(g, *iter) << " : " << iter->size());
+		DEBUG(PathLength(g, *iter) << " : " << iter->size());
 	}
 }
 
 //Print path with length from start / end to the every edge
 void PrintPath(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
-	INFO("Path " << &path)
-	INFO("#, edge, length, total length")
+	DEBUG("Path " << &path)
+	DEBUG("#, edge, length, total length")
 	for(size_t i = 0; i < path.size(); ++i) {
-		INFO(i << ", " << path[i] << ", " << g.length(path[i]) << ", " << lengths[i]);
+		DEBUG(i << ", " << path[i] << ", " << g.length(path[i]) << ", " << lengths[i]);
 	}
 }
 
@@ -385,10 +385,10 @@ void DetailedPrintPath(Graph& g, BidirectionalPath& path, PathLengths& lengths) 
 //Print path
 template<class PathType>
 void PrintPath(Graph& g, PathType& path) {
-	INFO("Path " << &path << " with length " << PathLength(g, path));
-	INFO("#, edge, length")
+	DEBUG("Path " << &path << " with length " << PathLength(g, path));
+	DEBUG("#, edge, length")
 	for(int i = 0; i < (int) path.size(); ++i) {
-		INFO(i << ", " << path[i] << ", " << g.length(path[i]));
+		DEBUG(i << ", " << path[i] << ", " << g.length(path[i]));
 	}
 }
 
@@ -403,12 +403,12 @@ void DetailedPrintPath(Graph& g, PathType& path) {
 //Print path
 template<class PathType>
 void PrintPathWithVertices(Graph& g, PathType& path) {
-	INFO("Path " << &path)
-	INFO("#, edge, length")
+	DEBUG("Path " << &path)
+	DEBUG("#, edge, length")
 
 	for(size_t i = 0; i < path.size(); ++i) {
-		INFO(g.EdgeStart(path[i]));
-		INFO(i << ", " << path[i] << ", " << g.length(path[i]));
+		DEBUG(g.EdgeStart(path[i]));
+		DEBUG(i << ", " << path[i] << ", " << g.length(path[i]));
 	}
 }
 
@@ -428,9 +428,9 @@ void PrintPathFromTo(Graph& g, Path<Graph::EdgeId>& path, size_t startPos = 0, s
 		endPos = path.size();
 	}
 
-	INFO("Path of length " << path.size() << " from " << startPos << " to " << endPos);
+	DEBUG("Path of length " << path.size() << " from " << startPos << " to " << endPos);
 	for (size_t i = startPos; i < endPos; ++i) {
-		INFO(i << ", " << path[i] << ", " << g.length(path[i]));
+		DEBUG(i << ", " << path[i] << ", " << g.length(path[i]));
 	}
 }
 
@@ -442,17 +442,17 @@ void PrintPathFromTo(Graph& g, BidirectionalPath& path, size_t startPos = 0, siz
 		endPos = path.size();
 	}
 
-	INFO("Path of length " << path.size() << " from " << startPos << " to " << endPos);
+	DEBUG("Path of length " << path.size() << " from " << startPos << " to " << endPos);
 	for (size_t i = startPos; i < endPos; ++i) {
-		INFO(i << ", " << path[i] << ", " << g.length(path[i]));
+		DEBUG(i << ", " << path[i] << ", " << g.length(path[i]));
 	}
 }
 
 //Print cycle detector data
 void PrintDetector(CycleDetector& detector) {
-	INFO("Detector data");
+	DEBUG("Detector data");
 	for(auto iter = detector.begin(); iter != detector.end(); ++iter) {
-		INFO("Edge " << iter->first << " comes when path length is " << iter->second.first << " with weight " << iter->second.second);
+		DEBUG("Edge " << iter->first << " comes when path length is " << iter->second.first << " with weight " << iter->second.second);
 	}
 }
 
@@ -460,7 +460,7 @@ void PrintDetector(CycleDetector& detector) {
 void PrintEdgeNuclsByLength(Graph& g, size_t edgeLen) {
 	for (auto edge = g.SmartEdgeBegin(); !edge.IsEnd(); ++edge) {
 		if (g.length(*edge) == edgeLen) {
-			INFO("Length " << edgeLen << ", Data: " << g.EdgeNucls(*edge).Subseq(0, g.length(*edge) + 1).str());
+			DEBUG("Length " << edgeLen << ", Data: " << g.EdgeNucls(*edge).Subseq(0, g.length(*edge) + 1).str());
 		}
 	}
 }
