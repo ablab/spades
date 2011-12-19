@@ -272,6 +272,7 @@ struct debruijn_config
 	struct repeat_resolver {
 		bool symmetric_resolve;
 		int mode;
+		double inresolve_cutoff_proportion;
 		int near_vertex;
 	};
 	struct distance_estimator {
@@ -474,6 +475,7 @@ inline void load(debruijn_config::repeat_resolver& rr, boost::property_tree::ptr
 
 	load(rr.symmetric_resolve, pt, "symmetric_resolve");
 	load(rr.mode             , pt, "mode"			  );
+	load(rr.inresolve_cutoff_proportion, pt, "inresolve_cutoff_proportion");
 	load(rr.near_vertex      , pt, "near_vertex"	  );
 }
 
