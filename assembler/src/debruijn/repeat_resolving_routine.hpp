@@ -613,6 +613,7 @@ Sequence load_genome() {
 
 void resolve_with_jumps(Graph& g, PairedInfoIndex<Graph>& index, const Sequence& genome,
 		const paired_info_index& jump_index) {
+	VERIFY(cfg::get().andrey_params.write_contigs);
 	resolve_repeats_ml(g, index, genome,
 			cfg::get().output_dir + "jump_resolve/",
 			cfg::get().andrey_params, boost::optional<const paired_info_index&>(jump_index));
@@ -702,16 +703,29 @@ void resolve_repeats() {
 
 	//todo magic constants!!!
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_jump) {
-		bool load_jump = false;
+		bool load_jump = true;
 		if (!load_jump) {
 			VERIFY(
 					cfg::get().ds.jumping_first && cfg::get().ds.jumping_second && cfg::get().ds.jump_is);
+			checkFileExistenceFATAL(cfg::get().input_dir + (*cfg::get().ds.jumping_first));
+			checkFileExistenceFATAL(cfg::get().input_dir + (*cfg::get().ds.jumping_second));
 			paired_info_index raw_jump_index(conj_gp.g);
 			io::PairedEasyReader jump_stream(
-					make_pair(*cfg::get().ds.jumping_first,
-							*cfg::get().ds.jumping_second),
+					make_pair(cfg::get().input_dir + (*cfg::get().ds.jumping_first),
+							cfg::get().input_dir + (*cfg::get().ds.jumping_second)),
 					*cfg::get().ds.jump_is, true);
+
+//			cout << "eof " << jump_stream.eof() << endl;
+//			cout << "START HERE" << endl;
+//			io::PairedRead paired_read;
+//			while (!jump_stream.eof()) {
+//				jump_stream >> paired_read;
+//				cout << "HERE " << paired_read.first().sequence() << endl;
+//			}
+//			cout << "END HERE" << endl;
+
 			io::ISCorruptingWrapper wrapped_jump_stream(jump_stream, 100000);
+
 			FillPairedIndexWithReadCountMetric<K>(conj_gp.g, conj_gp.int_ids,
 					conj_gp.index, conj_gp.kmer_mapper, raw_jump_index,
 					wrapped_jump_stream);
@@ -728,7 +742,7 @@ void resolve_repeats() {
 		} else {
 			ConjugateDataScanner<Graph> scanner(conj_gp.g, conj_gp.int_ids);
 			paired_info_index jump_index(conj_gp.g);
-			scanner.loadPaired(cfg::get().input_dir + "jump_cleared", jump_index);
+			scanner.loadPaired(cfg::get().output_dir + "../jump_cleared", jump_index);
 			resolve_with_jumps(conj_gp.g, clustered_index, conj_gp.genome, jump_index);
 		}
 	}
