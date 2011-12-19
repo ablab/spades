@@ -73,6 +73,7 @@ struct lc_config
 		struct seed_selection
 		{
 			double min_coverage;
+			double start_egde_coverage;
 			bool   glue_seeds;
 			bool   check_trusted;
 			bool   remove_untrusted;
@@ -298,6 +299,7 @@ inline void load(lc_config::param_set::seed_selection& ss, boost::property_tree:
 	using config_common::load;
 
 	load(ss.min_coverage       , pt, "min_coverage"     );
+	load(ss.start_egde_coverage, pt, "start_egde_coverage");
 	load(ss.glue_seeds         , pt, "glue_seeds"       );
 	load(ss.max_cycles         , pt, "max_cycles"       );
 	load(ss.check_trusted      , pt, "check_trusted"    );

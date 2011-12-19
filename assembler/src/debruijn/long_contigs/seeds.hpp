@@ -172,7 +172,8 @@ void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndice
 
 		if ((g.length(e) >= params.ps.ss.chimeric_len - params.ps.ss.chimeric_delta && g.length(e) <= params.ps.ss.chimeric_len + params.ps.ss.chimeric_delta) ||
 				(g.length(e) <= params.ps.ss.short_single &&
-						(ClassifyEdge(g, e) == TOTALY_ISOLATED || ClassifyEdge(g, e) == HAS_NEIGHBOUR))) {
+						(ClassifyEdge(g, e) == TOTALY_ISOLATED || ClassifyEdge(g, e) == HAS_NEIGHBOUR)) ||
+						g.coverage(e) < params.ps.ss.start_egde_coverage) {
 			edges.insert(e);
 			edges.insert(g.conjugate(e));
 		}
