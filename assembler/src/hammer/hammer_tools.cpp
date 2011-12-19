@@ -94,7 +94,7 @@ void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerCou
 
 	#pragma omp parallel for shared(vtmp) num_threads(nthreads)
 	for(size_t i=0; i < Globals::pr->size(); ++i) {
-		if (Globals::pr->at(i).bad()) continue;
+		if (Globals::pr->at(i).isDone()) continue;
 		AddKMerNos(Globals::pr->at(i), i, &vtmp[omp_get_thread_num()]);
 	}
 	
@@ -165,8 +165,6 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
 		const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat, vector< vector<int> > & v,
 		int & left, int & right, bool & isGood, ofstream * ofs, bool revcomp ) {
 	bool res = false;
-	//if (ofs != NULL)
-	//	*ofs << "\n " << r.getName() << "\n" << seq.data() << "\n";
 	if (  stat.isGoodForIterative() ||
 			// if regular_threshold_for_correction = true, we use a (more relaxed) threshold isGood() for solid k-mers
 			((!Globals::use_iterative_reconstruction
@@ -184,11 +182,6 @@ bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const st
 			left = pos;
 		if ((int) pos > right)
 			right = pos;
-		/*if (ofs != NULL) {
-				for (size_t j = 0; j < pos; ++j)
-					*ofs << " ";
-				*ofs << kmer.str().data() << "\n";
-		}*/
 	} else {
 		// if discard_only_singletons = true, we always use centers of clusters that do not coincide with the current center
 		if (stat.change() && (Globals::discard_only_singletons
@@ -227,16 +220,6 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 	const uint32_t read_size = Globals::pr->at(readno).size();
 	PositionRead & pr = Globals::pr->at(readno);
 	PositionRead & pr_rev = Globals::pr->at(readno_rev);
-
-	/*if (ofs != NULL) {
-	*ofs << "    readno=" << readno << "  size=" << read_size << " kmersize=" << km.size() << " pr=" << pr.start() << endl;
-	*ofs << "    " << seq << endl;
-	*ofs << "    " << qual << endl;
-
-	*ofs << "    readno_rev=" << readno_rev << "  size=" << read_size << " kmersize=" << km.size() << " pr=" << pr.start() << endl;
-	*ofs << "    " << string(Globals::blob        + pr_rev.start(), pr_rev.size()) << endl;
-	*ofs << "    " << string(Globals::blobquality + pr_rev.start(), pr_rev.size()) << endl;
-	}*/
 
 	// create auxiliary structures for consensus
 	vector<int> vA(read_size, 0), vC(read_size, 0), vG(read_size, 0), vT(read_size, 0);
@@ -284,34 +267,6 @@ size_t CorrectRead(const KMerNoHashMap & hm, const vector<KMerCount*> & km, hint
 		*ofs << "\n " << r.getName() << " revcomp\n" << string(Globals::blob        + pr_rev.start(), pr_rev.size()) << "\n";
 
 	int left_rev = 0; int right_rev = read_size-(int)K;
-
-	/*
-	if (Globals::conserve_memory) {
-		pair<int, hint_t> it = make_pair( -1, BLOBKMER_UNDEFINED );
-		while ( (it = pr_rev.nextKMerNo(it.first)).first > -1 ) {
-			const PositionKMer & kmer = km[it.second]->first;
-			const uint32_t pos = it.first;
-			const KMerStat & stat = km[it.second]->second;
-
-			if (ofs != NULL) {
-				for (uint32_t i=0; i<pos; ++i) *ofs << " ";
-				*ofs << kmer.str();
-			}
-
-			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left_rev, right_rev, isGood, ofs, true );
-
-			if (ofs != NULL) *ofs << "\n";
-		}
-	} else {
-		pair<int, KMerCount *> it = make_pair( -1, (KMerCount*)NULL );
-		while ( (it = pr_rev.nextKMer(it.first)).first > -1 ) {
-			const PositionKMer & kmer = it.second->first;
-			const uint32_t pos = it.first;
-			const KMerStat & stat = it.second->second;
-
-			changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, km, kmer, pos, stat, v, left_rev, right_rev, isGood, ofs, true );
-		}
-	}*/
 
 	if (ofs != NULL) {
 		*ofs << "    direct=[" << left << ", " << right << "]\treverse=[" << left_rev << ", " << right_rev << "]";
@@ -463,13 +418,16 @@ void outputReads(bool paired, const char * fname, const char * fname_bad, const 
 size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmers, ostream * ofs) {
 	size_t res = 0;
 
-	// cycle over the reads, looking for reads completely covered by solid k-mers and adding new solid k-mers on the fly
+	// cycle over the reads, looking for reads completely covered by solid k-mers
+	// and adding new solid k-mers on the fly
 	#pragma omp parallel for shared(res, ofs) num_threads(nthreads)
 	for (hint_t readno = 0; readno < Globals::revNo; ++readno) {
-		const uint32_t read_size = Globals::pr->at(readno).size();
-		string seq = Globals::conserve_memory
-				? string(Globals::blob + Globals::pr->at(readno).start(), read_size)
-				: Globals::rv->at(readno).getSequenceString();
+		// maybe this read has already been covered by solid k-mers
+		if (Globals::pr->at(readno).isDone()) continue;
+
+		const PositionRead & pr = Globals::pr->at(readno);
+		const uint32_t read_size = pr.size();
+		string seq = Globals::conserve_memory ? string(Globals::blob + pr.start(), read_size) : pr.getSequenceString();
 		if ( ofs != NULL ) {
 			#pragma omp critical
 			{
@@ -477,8 +435,8 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 			}
 		}
 		vector< bool > covered_by_solid( read_size, false );
+		vector< hint_t > kmer_indices( read_size, -1 );
 
-		const PositionRead & pr = Globals::pr->at(readno);
 		if (!Globals::conserve_memory) {
 			pair<int, KMerCount *> it = make_pair( -1, (KMerCount*)NULL );
 			while ( (it = pr.nextKMer(it.first)).first > -1 ) {
@@ -490,6 +448,7 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 		} else {
 			pair<int, hint_t > it = make_pair( -1, BLOBKMER_UNDEFINED );
 			while ( (it = pr.nextKMerNo(it.first)).first > -1 ) {
+				kmer_indices[it.first] = it.second;
 				if ( kmers[it.second]->second.isGoodForIterative() ) {
 					for ( size_t j = it.first; j < it.first + K; ++j )
 						covered_by_solid[j] = true;
@@ -502,37 +461,11 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 		}
 		if ( !isGood ) continue;
 
-		const PositionRead & pr_rev = Globals::pr->at(Globals::revNo + readno);
-		string seq_rev = Globals::conserve_memory ?
-						string(Globals::blob	+ Globals::pr->at(Globals::revNo + readno).start(),	read_size)
-						: Globals::rv->at(Globals::revNo + readno).getSequenceString();
-		std::fill(covered_by_solid.begin(), covered_by_solid.end(), false);
-		if (!Globals::conserve_memory) {
-			pair<int, KMerCount *> it = make_pair(-1, (KMerCount*) NULL );
-			while ((it = pr_rev.nextKMer(it.first)).first > -1) {
-				if (it.second->second.isGoodForIterative()) {
-					for (size_t j = it.first; j < it.first + K; ++j) covered_by_solid[j] = true;
-				}
-			}
-		} else {
-			pair<int, hint_t> it = make_pair(-1, BLOBKMER_UNDEFINED );
-			while ((it = pr_rev.nextKMerNo(it.first)).first > -1) {
-				if (kmers[it.second]->second.isGoodForIterative()) {
-					for (size_t j = it.first; j < it.first + K; ++j) covered_by_solid[j] = true;
-				}
-			}
-		}
-		isGood = true;
-		for (size_t j = 0; j < read_size; ++j) {
-			if (!covered_by_solid[j]) {
-				isGood = false;
-				break;
-			}
-		}
-		if (!isGood) continue;
-
 		// ok, now we're sure that everything is covered
-		// let's mark all k-mers as solid
+		// first, set this read as already done
+		Globals::pr->at(readno).done();
+
+		// second, mark all k-mers as solid
 		if (!Globals::conserve_memory) {
 			pair<int, KMerCount *> it = make_pair( -1, (KMerCount*)NULL );
 			while ( (it = pr.nextKMer(it.first)).first > -1 ) {
@@ -546,7 +479,7 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 					}
 				}
 			}
-			it = make_pair( -1, (KMerCount*)NULL );
+			/*it = make_pair( -1, (KMerCount*)NULL );
 			while ( (it = pr_rev.nextKMer(it.first)).first > -1 ) {
 				if ( !it.second->second.isGoodForIterative() && !it.second->second.isMarkedGoodForIterative() ) {
 					#pragma omp critical
@@ -557,21 +490,23 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 					else it.second->second.makeGoodForIterative();
 					}
 				}
-			}
+			}*/
 		} else {
-			pair<int, hint_t > it = make_pair( -1, BLOBKMER_UNDEFINED );
-			while ( (it = pr.nextKMerNo(it.first)).first > -1 ) {
-				if ( !kmers[it.second]->second.isGoodForIterative() && !kmers[it.second]->second.isMarkedGoodForIterative() ) {
+			for (size_t j = 0; j < read_size; ++j) {
+				if ( kmer_indices[j] == -1 ) continue;
+				if ( !kmers[kmer_indices[j]]->second.isGoodForIterative() &&
+					 !kmers[kmer_indices[j]]->second.isMarkedGoodForIterative() ) {
 					#pragma omp critical
 					{
 					++res;
-					if ( ofs != NULL ) (*ofs) << "    make solid: " << kmers[it.second]->first.str().c_str() << "\n";
-					if (Globals::reconstruction_in_full_iterations) kmers[it.second]->second.markGoodForIterative();
-					else kmers[it.second]->second.makeGoodForIterative();
+					if ( ofs != NULL ) (*ofs) << "    make solid: " << kmers[kmer_indices[j]]->first.str().c_str() << "\n";
+					if (Globals::reconstruction_in_full_iterations) kmers[kmer_indices[j]]->second.markGoodForIterative();
+					else kmers[kmer_indices[j]]->second.makeGoodForIterative();
 					}
 				}
 			}
-			it = make_pair( -1, BLOBKMER_UNDEFINED );
+			// TODO: to make it honest, I'll need to always take the lex-minimal k-mer out of two
+			/*it = make_pair( -1, BLOBKMER_UNDEFINED );
 			while ( (it = pr_rev.nextKMerNo(it.first)).first > -1 ) {
 				if ( !kmers[it.second]->second.isGoodForIterative() && !kmers[it.second]->second.isMarkedGoodForIterative() ) {
 					#pragma omp critical
@@ -582,7 +517,7 @@ size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmer
 					else kmers[it.second]->second.makeGoodForIterative();
 					}
 				}
-			}
+			}*/
 		}
 	}
 

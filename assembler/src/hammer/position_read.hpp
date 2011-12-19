@@ -14,17 +14,17 @@ class PositionRead {
 	hint_t start_;
 	uint32_t size_;
 	hint_t readno_;
-	bool bad_;
+	bool done_;
 	
   public:
-	PositionRead(hint_t start, uint32_t size, hint_t readno) : start_(start), size_(size), readno_(readno), bad_(false) { }
-	PositionRead(hint_t start, uint32_t size, hint_t readno, bool bad) : start_(start), size_(size), readno_(readno), bad_(bad) { }
+	PositionRead(hint_t start, uint32_t size, hint_t readno) : start_(start), size_(size), readno_(readno), done_(false) { }
+	PositionRead(hint_t start, uint32_t size, hint_t readno, bool bad) : start_(start), size_(size), readno_(readno), done_(bad) { }
 	hint_t start() const { return start_; }
 	uint32_t size() const { return size_; }
 	char at(uint32_t pos) const;
 	char operator [] (uint32_t pos) const;
-	bool bad() { return bad_; }
-	void setBad(bool b) { bad_ = b; }
+	bool isDone() { return done_; }
+	void done() { done_ = true; }
 
 	pair<int, KMerCount*> nextKMer( int begin ) const;
 	pair<int, hint_t> nextKMerNo( int begin ) const;
