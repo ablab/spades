@@ -15,10 +15,11 @@ if [ "$cmd" == "hammer" ] ; then
 	exit
     fi
     files="$1*left.corrected* $1*right.corrected* $1*left.unpaired* $1*right.unpaired*"
-    mkdir hammer
+    $d="hammer"
+    mkdir $d
     echo copying $files ...
-    cp $files hammer/
-    cd hammer
+    cp $files $d/
+    cd $d
     ls | xargs -I {} mv {} {}.fastq
     echo gzipping * ...
     gzip -9 *
@@ -34,50 +35,52 @@ if [ "$cmd" == "generic" ] ; then
 fi
 
 if [ "$cmd" == "print" ] ; then
-dataset=$1
-shift
-rl=$1
-shift
-is=$1
-shift
-ss=$1
-shift
-rg=$1
-shift
-len=$1
-shift
-f=$1
-shift
-s=$1
-shift
-sf=$1
-shift
-ss=$1
+    dataset=$1
+    shift
+    rl=$1
+    shift
+    is=$1
+    shift
+    ss=$1
+    shift
+    rg=$1
+    shift
+    len=$1
+    shift
+    f=$1
+    shift
+    s=$1
+    shift
+    sf=$1
+    shift
+    ss=$1
 
-p="`pwd`"
-f=`find $p -name $f`
-f=${f//*input\//}
-s=`find $p -name $s`
-s=${s//*input\//}
-sf=`find $p -name $sf 2> /dev/null`
-sf=${sf//*input\//}
-ss=`find $p -name $ss 2> /dev/null`
-ss=${ss//*input\//}
+    p="`pwd`"
+    f=`find $p -name $f`
+    f=${f//*input\//}
+    s=`find $p -name $s`
+    s=${s//*input\//}
+    sf=`find $p -name $sf 2> /dev/null`
+    sf=${sf//*input\//}
+    ss=`find $p -name $ss 2> /dev/null`
+    ss=${ss//*input\//}
 
-echo $dataset
-echo "{"
-echo "	first	$f"
-echo "	second	$s"
-if [ "$sf" != "" ] ; then
-    echo "	single_first	$sf"
+    echo $dataset
+    echo "{"
+    echo "	first	$f"
+    echo "	second	$s"
+    if [ "$sf" != "" ] ; then
+        echo "	single_first	$sf"
+    fi
+    if [ "$ss" != "" ] ; then
+        echo "	single_second	$ss"
+    fi
+    echo "	RL	$rl"
+    echo "	IS	$is"
+    echo "	single_cell	$ss"
+    echo "	reference_genome	$rg"
+    echo "	LEN	$len"
+    echo "}"
 fi
-if [ "$ss" != "" ] ; then
-    echo "	single_second	$ss"
-fi
-echo "	RL	$rl"
-echo "	IS	$is"
-echo "	single_cell	$ss"
-echo "	reference_genome	$rg"
-echo "	LEN	$len"
-echo "}"
-fi
+
+echo Unknown command: "$cmd"

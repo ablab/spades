@@ -1,0 +1,5 @@
+#!/bin/bash
+
+base=`pwd`
+cd data/input
+python $base/src/tools/dataset.py $base/src/debruijn/datasets.info
