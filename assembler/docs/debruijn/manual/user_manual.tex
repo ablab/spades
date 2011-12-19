@@ -1,0 +1,66 @@
+\documentclass[a4paper,10pt]{article}
+
+
+\title{User manual}
+
+\begin{document}
+
+\maketitle
+
+\section{What do you need to do to run Spades}
+\begin{itemize}
+\item Get Spades source code
+\item Here should be a part about hammer
+\item Prepare input data
+\item Create corresponding dataset entry
+\item Adjust configs
+\item Compile Spades
+\item Run Spades
+\end{itemize}
+
+\subsection{Get Spades source code}
+It is in master copy of our git. (Later here should be a reference to code location on our site.)
+
+\subsection{Prepare input data}
+Spades requires paired reads to be in separate files.
+Also Spades can use unpaired reads which normally appear after discarding one read of the paired read in error correction step.
+Thus input reads should be arranged into four files:
+\begin{itemize}
+ \item Paired reads left parts
+ \item Paired reads right parts
+ \item Unpaired reads which originally were left parts
+ \item Unpaired reads which originally were right parts
+\end{itemize}
+
+Actually unpaired reads do not have to be arranged strictly this way i.e. the last two file should just contain reads which should be regarded as single reads by Spades.
+Files should be in fasta or fastq formats and can be compressed.
+
+\subsection{Create corresponding dataset entry}
+In file src/debruijn/datasets.info add new entry following this pattern:
+
+DATASET\_NAME
+\{
+\begin{itemize}
+\item {\it first} path to file with left parts of paired reads
+\item{\it second} path to file with right parts of paired reads
+\item{\it single\_first} path to file with unpaired reads which originally were left parts
+\item{\it single\_second} path to file with unpaired reads which originally were right parts
+\item{\it jumping\_first} Separate section should be written about these three parameters. For now you can just skip this parameters and not to include them here.
+\item{\it jumping\_second}
+\item{\it jump\_is} 
+\item{\it RL} Approximate length of reads in the input.
+\item{\it IS} Approxmiate insert size of input paired reads
+\item{\it single\_cell} true if input data was obtained with mda (single cell) technology and false otherwise. Parameters to be used in graph simplification procedures depend on this parameter
+\item{\it reference\_genome} Path to file with reference genome if available otherwise just skip this parameter
+\item{\it LEN} Approximate total size of genome to be assembled
+\end{itemize}
+\}
+
+\subsection{Adjust configs}
+There are a lot of configs in our assembler and all of them should be described in the release version of this manual. Here I will describe structure of configs and the most important of them, 
+
+\subsection{Compile Spades}
+
+\subsection{Run Spades}
+
+\end{document}
