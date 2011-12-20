@@ -9,7 +9,7 @@
 
 \section{What do you need to do to run Spades}
 \begin{itemize}
-\item Get Spades source code
+\item Get Spades source code and prepare it.
 \item Here should be a part about hammer
 \item Prepare input data
 \item Create corresponding dataset entry
@@ -18,8 +18,20 @@
 \item Run Spades
 \end{itemize}
 
-\subsection{Get Spades source code}
-It is in master copy of our git. (Later here should be a reference to code location on our site.)
+\subsection{Get Spades source code and prepare it}
+Spades requires the following packages to be installed:
+\begin{itemize}
+\item gcc 4.4 ({\it sudo apt-get install gcc} on ubuntu version 10.4 or later)
+\item cmake 2.6 or later ({\it sudo apt-get install cmake})
+\item log4cxx ({\it sudo apt-get install liblog4cxx10-dev})
+\item boost 1.42(exactly!) {\it sudo apt-get install libboost-all-dev} 
+\item zlib {\it sudo apt-get install zlib-bin} 
+\end{itemize}
+
+Spades source code is in master copy of our git.
+(Later here should be a reference to code location on our site.)
+After that one should run preparecfg script which is located in directory algorithmic-biology/assembler/.
+Most of the scripts are located in this directory so if not otherwise stated you should assume that if the script is mentioned in this manual it is located in algorithmic-biology/assembler/ directory.
 
 \subsection{Prepare input data}
 Spades requires paired reads to be in separate files.
@@ -35,7 +47,7 @@ Thus input reads should be arranged into four files:
 Actually unpaired reads do not have to be arranged strictly this way i.e. the last two file should just contain reads which should be regarded as single reads by Spades.
 Files should be in fasta or fastq formats and can be compressed.
 
-\subsection{Create corresponding dataset entry}
+\subsection{Create dataset entry}
 In file src/debruijn/datasets.info add new entry following this pattern:
 
 DATASET\_NAME
@@ -57,10 +69,50 @@ DATASET\_NAME
 \}
 
 \subsection{Adjust configs}
-There are a lot of configs in our assembler and all of them should be described in the release version of this manual. Here I will describe structure of configs and the most important of them, 
+There are a lot of configs in our assembler and all of them should be described in the release version of this manual. Here I will describe structure of configs and the most important of them.
+
+Our configs are organized into four files: configs.info, simplification.info, distance\_estimation.info and detail\_info\_printer.info. All of them are located in directory src/debruijn.
+Note that semicolon sign in the config format that is used in our assembler marks all the remaining as comment and is ignored.
+in order to fill these files with default values one should run cpcfg command () 
+The most important parameters in these files are:
+
+\begin{itemize}
+\item {\it configs.info}
+
+\begin{itemize}
+\item {\it dataset} the name of dataset as it was in datasets.info file (see ``Create dataset entry'' section)
+\item {\it entry point} parameter defines the starting point of assembler run.
+In case this parameter is set to the value other than ``construction'' assembler loads save files which were created on the previous assembler run and thus continues previous run from the corresponding point.
+All possible values of this parameter can be found commented in default configs.
+The most useful of them are:
+\begin{itemize}
+\item {\it construction} run assembler from the very beginning.
+\item {\it simplification} run assembler from graph simplification step in case you would like to rerun assembler with different simplification parameters or draw some graph pictures (see ``Pictures'' section).
+\item {\it repeats\_resolving} run assembler from repeats resolving step in case you would like to rerun assembler with different resolving parameters or even with another repeats resolving.
+\end{itemize}
+\item {\it use_additional_contigs} parameter indicates whether additioanl contigs should be used for graph constraction.
+Normally these contigs are obtained from the previous iterations of iterative run of Spades thus in most cases this parameter should be true for iterative run of Spades and false otherwise (see ``Run Spades'' section for further details).
+Later this parameter will be removed and its value will be automatically generated based on the type of run.
+\item {\it paired\_mode} parameter indicates whether assembler should be run in single reads mode or in paired reads mode. In single reads mode paired info is not collected and thus repeat resolving step is not performed.
+\item {\it resolving\_mode} parameter defines which of our repeat resolvings should be used.
+Currently there are ``dima'', ``andrey'' and ``jump'' modes.
+These modes should be discribed in the release version of this manual. 
+\end{itemize}
+
+\item {\it simplification.info}
+
+
+\item {\it distance\_estimation.info}
+\item {\it detail\_info\_printer.info}
+\end{itemize}
+
 
 \subsection{Compile Spades}
 
 \subsection{Run Spades}
+
+\section{Spades results}
+\subsection{Quality tools}
+\subsection{Pictures}
 
 \end{document}
