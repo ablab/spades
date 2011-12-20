@@ -132,7 +132,7 @@ multicell {
 	; seed selection
 	ss
 	{
-	    min_coverage   0
+	    min_coverage   	0
 	    start_egde_coverage 120
 	    glue_seeds     false
 	    max_cycles     1
