@@ -11,7 +11,7 @@ if (bowtie == '-h'):
 
 genome = sys.argv[2]
 flist = open(sys.argv[3])
-offset = sys.argv[4]
+outdir = sys.argv[4]
 
 crop_len = 100000
 if len(sys.argv) > 5:
@@ -57,8 +57,7 @@ ogf.close()
 
 print('Cropped\n')
 
-
-file_suff = str(max) +'_' + str(offset) +'_'+ str(minIS) +'_'+str(maxIS)
+file_suff = str(crop_len) + '_' + str(offset) 
 
 # build bowtie index
 os.system('mkdir -p index')
@@ -67,7 +66,8 @@ print('Index built\n')
 
 # align reads using bowtie
 for line in flist:
-	os.system(bowtie + 'bowtie -p 8 -c ' + format + ' ' + outdir + 'index/' + output_genome + ' ' + line + ' --al ' + line + file_suff + ' > /dev/null 2>  + errlog ' + file_suff)
+	fName, ext = os.path.splitext(line)
+	os.system(bowtie + 'bowtie -p 8 -c ' + format + ' ' + outdir + 'index/' + output_genome + ' ' + line + ' --al ' + fName + file_suff + ext + ' > /dev/null 2>  + errlog ' + file_suff)
 
 print('Alligned\n')
 # use -X for maxins length
