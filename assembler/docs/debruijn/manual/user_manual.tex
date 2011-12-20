@@ -21,7 +21,7 @@
 \subsection{Get Spades source code and prepare it}
 Spades requires the following packages to be installed:
 \begin{itemize}
-\item gcc 4.4 ({\it sudo apt-get install gcc} on ubuntu version 10.4 or later)
+\item g++ 4.4 ({\it sudo apt-get install gcc} on ubuntu version 10.4 or later)
 \item cmake 2.6 or later ({\it sudo apt-get install cmake})
 \item log4cxx ({\it sudo apt-get install liblog4cxx10-dev})
 \item boost 1.42(exactly!) {\it sudo apt-get install libboost-all-dev} 
@@ -44,7 +44,8 @@ Thus input reads should be arranged into four files:
  \item Unpaired reads which originally were right parts
 \end{itemize}
 
-Actually unpaired reads do not have to be arranged strictly this way i.e. the last two file should just contain reads which should be regarded as single reads by Spades.
+Actually unpaired reads do not have to be arranged strictly this way i.e. the last two file should just contain reads 
+which should be regarded as single reads by Spades.
 Files should be in fasta or fastq formats and can be compressed.
 
 \subsection{Create dataset entry}
@@ -73,7 +74,7 @@ There are a lot of configs in our assembler and all of them should be described 
 
 Our configs are organized into four files: configs.info, simplification.info, distance\_estimation.info and detail\_info\_printer.info. All of them are located in directory src/debruijn.
 Note that semicolon sign in the config format that is used in our assembler marks all the remaining as comment and is ignored.
-in order to fill these files with default values one should run cpcfg command () 
+in order to fill these files with default values one should run ./cpcfg command  
 The most important parameters in these files are:
 
 \begin{itemize}
@@ -90,19 +91,28 @@ The most useful of them are:
 \item {\it simplification} run assembler from graph simplification step in case you would like to rerun assembler with different simplification parameters or draw some graph pictures (see ``Pictures'' section).
 \item {\it repeats\_resolving} run assembler from repeats resolving step in case you would like to rerun assembler with different resolving parameters or even with another repeats resolving.
 \end{itemize}
-\item {\it use_additional_contigs} parameter indicates whether additioanl contigs should be used for graph constraction.
-Normally these contigs are obtained from the previous iterations of iterative run of Spades thus in most cases this parameter should be true for iterative run of Spades and false otherwise (see ``Run Spades'' section for further details).
+\item {\it use\_additional\_contigs} parameter indicates whether additioanl contigs should be used for graph constraction.
+
+Normally these contigs are obtained from the previous iterations of iterative run of Spades thus 
+in most cases this parameter should be \textbf{true for iterative run of Spades} 
+and false otherwise (see ``Run Spades'' section for further details).
+
 Later this parameter will be removed and its value will be automatically generated based on the type of run.
-\item {\it paired\_mode} parameter indicates whether assembler should be run in single reads mode or in paired reads mode. In single reads mode paired info is not collected and thus repeat resolving step is not performed.
-\item {\it resolving\_mode} parameter defines which of our repeat resolvings should be used.
-Currently there are ``dima'', ``andrey'' and ``jump'' modes.
+\item {\it paired\_mode} parameter indicates whether assembler should be run in single reads mode or in paired reads mode. 
+In single reads mode paired info is not collected and thus repeat resolving step is not performed. Single mode is much faster and recommended
+for the first assembly attempt (repeat resolving can be applied later)
+\item {\it resolving\_mode} parameter defines which of our repeat resolving algorithms should be used.
+Currently there are ``none'', ``dima'', ``andrey'', ``combined'' and ``jump'' modes. (As for now use ``dima'' mode by default).
 These modes should be discribed in the release version of this manual. 
+
+\textbf{Important.} Repeat resolution won't happen if paired\_mode is set to false.
 \end{itemize}
 
 \item {\it simplification.info}
 
 File is divided into two parts: for single cell and for multicell assembly depending on the value of ``single\_cell'' flag in dataset parameters (see section ``Create dataset entry'').
-The most common parameter to vary here is ec::max\_coverage (parameter max\_coverage in ec section). It determines the coverage of edges that should be checked for being erroneous.
+
+The most common parameter to vary here is ec::max\_coverage (parameter max\_coverage in ec section). It determines the coverage of edges that should be checked for being erroneous. Don't put large values here before some preliminary analysis of pictures was made. 15-20 should be more than enough for first attempt.
 
 \item {\it distance\_estimation.info}
 No interesting parameters here.
@@ -113,21 +123,35 @@ Too much to explain. For now just set detailed\_dot\_write in final\_simplified 
 
 
 \subsection{Compile Spades}
-Run ``./gen_k K'' where K is the value of K you would like to choose for assembly (for read length 100 K=55 is recommended).
+Run ``./gen\_k K'' where K is the value of K you would like to choose for assembly (for read length 100 K=55 is recommended).
 Then just run make script.
 Actually these procedures are not necessary in case you are going to launch iterative run (see section ``Run Spades'').
 
 \subsection{Run Spades}
-There are two ways to run Spades: normal and iterative. Normal way is easy: after compiling Spades run ``run'' and it will start. Note that it would be better to redirect output to file since there is a fair bit of logs that is printed to console.
+There are two ways to run Spades: normal and iterative. Normal way is easy: after compiling Spades run ``run'' and it will start. 
+Note that it would be better to redirect output to file since there is a fair bit of logs that is printed to console.
 
 The other way is iterative run.
-This way should be used for datasets with low coverage or with unevenly destributed coverage. 
-In order launch iterative run just run ``./iterative\_run $K_1 K_2 \dots K_m$'' where $K_i$ is the sequence of values of K to be used by iterative run.
+This way should be used for datasets with low coverage or with unevenly destributed coverage 
+(but you can use it in all the cases if you have some time and patience to wait). 
+In order to launch iterative run just run ``./iterative\_run $K_1 K_2 \dots K_m$'' where $K_i$ is the sequence of values of K to be used by iterative run.
 Normally we use sequence 21 33 55 (there even is a separate script named ``iterative\_run\_21\_33\_55'').
 Preliminary compilation is not required for iterative run since this script itself compiles the code.
-Do not forget to set use_additional_contigs parameter to true for iterative run!
+
+\textbf{Important!} Do not forget to set use\_additional\_contigs parameter = true and paired\_mode = false for iterative run!
+
+During iterative run logs will be written to console and to files in logs/DATE\_TIME/...
+Symlink ``latest'' in folder ``logs'' leads to the latest run logs' folder.
 
 \section{Spades results}
+Results can be found in data/debruijn/DATASET\_NAME/K.../DATE\_TIME
+
+Symlink ``latest'' in folder ``K...'' leads to the latest run results folder.
+
+There are a lot of files there but the most important are the ones ending with .fasta extension. ``before...'' are contigs before repeat
+resolution and ``after'' are contigs after this process.
+
+
 \subsection{Quality tools}
 \subsection{Pictures}
 
