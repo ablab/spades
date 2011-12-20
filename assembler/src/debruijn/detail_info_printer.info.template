@@ -12,13 +12,16 @@ info_printers
     
     final_simplified
     {
-       ;write_components                 true
-       ;write_components_along_genome    true
+       write_components                 true
+       write_components_along_genome    true
+       ;detailed_dot_write		true
     }
 
     before_repeat_resolution
     {
-       write_components                 true
+       ;write_components                 true
+       ;write_components_along_genome    true
+       ;detailed_dot_write		 true
     }
 }
 
