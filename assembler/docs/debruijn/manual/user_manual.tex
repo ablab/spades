@@ -53,7 +53,7 @@ In file src/debruijn/datasets.info add new entry following this pattern:
 DATASET\_NAME
 \{
 \begin{itemize}
-\item {\it first} path to file with left parts of paired reads
+\item {\it first} path rto file with left parts of paired reads
 \item{\it second} path to file with right parts of paired reads
 \item{\it single\_first} path to file with unpaired reads which originally were left parts
 \item{\it single\_second} path to file with unpaired reads which originally were right parts
@@ -101,15 +101,31 @@ These modes should be discribed in the release version of this manual.
 
 \item {\it simplification.info}
 
+File is divided into two parts: for single cell and for multicell assembly depending on the value of ``single\_cell'' flag in dataset parameters (see section ``Create dataset entry'').
+The most common parameter to vary here is ec::max\_coverage (parameter max\_coverage in ec section). It determines the coverage of edges that should be checked for being erroneous.
 
 \item {\it distance\_estimation.info}
+No interesting parameters here.
+
 \item {\it detail\_info\_printer.info}
+Too much to explain. For now just set detailed\_dot\_write in final\_simplified to true in case reference (uncomment correspondent record in default configs) genome is available and false otherwise.
 \end{itemize}
 
 
 \subsection{Compile Spades}
+Run ``./gen_k K'' where K is the value of K you would like to choose for assembly (for read length 100 K=55 is recommended).
+Then just run make script.
+Actually these procedures are not necessary in case you are going to launch iterative run (see section ``Run Spades'').
 
 \subsection{Run Spades}
+There are two ways to run Spades: normal and iterative. Normal way is easy: after compiling Spades run ``run'' and it will start. Note that it would be better to redirect output to file since there is a fair bit of logs that is printed to console.
+
+The other way is iterative run.
+This way should be used for datasets with low coverage or with unevenly destributed coverage. 
+In order launch iterative run just run ``./iterative\_run $K_1 K_2 \dots K_m$'' where $K_i$ is the sequence of values of K to be used by iterative run.
+Normally we use sequence 21 33 55 (there even is a separate script named ``iterative\_run\_21\_33\_55'').
+Preliminary compilation is not required for iterative run since this script itself compiles the code.
+Do not forget to set use_additional_contigs parameter to true for iterative run!
 
 \section{Spades results}
 \subsection{Quality tools}
