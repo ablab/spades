@@ -24,6 +24,7 @@ cfg = open(cfg, 'r')
 while 1:
     ds = readline(cfg)
     if not ds: break
+    if ds.startswith("#include"): continue
     s = readline(cfg)
     if s != "{":
 	print "'{' expected, but found", s
