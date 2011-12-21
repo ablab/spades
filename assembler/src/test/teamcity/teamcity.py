@@ -11,7 +11,7 @@ cur_line = 0;
 for line in logfile_out:
 	if cur_line == 1:
 		n50 = int(line.split('|')[1]);
-		mis = int(line.split('|')[9]);
+		mis = int(line.split('|')[10]);
 		print('n50 = ' + str(n50) + ' missasemblies ' + str(mis));
 		if n50 < 72000:
 			print('n50 too small')
