@@ -1,3 +1,38 @@
+;=============== AGREEMENT VIOLATION (Sorry, I need these 2 datasets badly, will delete them as soon as possible - Nurk) ==========
+JCVI_ECOLI
+{
+        first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.left.corrected.fastq.gz
+        second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.right.corrected.fastq.gz
+        single_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.left.unpaired.fastq.gz
+        single_second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.right.unpaired.fastq.gz
+        jumping_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.shearjump.left.corrected.fastq.gz
+        jumping_second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.shearjump.right.corrected.fastq.gz
+	jump_is		3000
+        RL              100
+        IS              210
+	single_cell	true
+        reference_genome E.coli/MG1655-K12.fasta.gz
+        LEN             4639675 ; total size
+}
+
+
+JCVI_ECOLI_400K
+{
+        first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.left.corrected400000_0.fastq
+        second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.right.corrected400000_0.fastq
+        single_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.left.unpaired400000_0.fastq
+        single_second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.right.unpaired400000_0.fastq
+        jumping_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.shearjump.right.corrected400000_0.fastq
+        jumping_second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.shearjump.right.corrected400000_0.fastq
+		jump_is		3000
+        RL              100
+        IS              210
+		single_cell	true
+        reference_genome E.coli/MG1655-K12.fasta.gz
+        LEN             400000 ; total size
+}
+;================== END OF VIOLATION ============================================================================================
+
 ; ================================================
 ; ==================== E Coli ====================
 ; ================================================

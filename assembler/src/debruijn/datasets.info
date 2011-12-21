@@ -75,51 +75,16 @@ ECOLI_JCVI_BH ; old JCVI_ECOLI
         LEN             4639675 ; total size
 }
 
-;=============== AGREEMENT VIOLATION (Sorry, I need these 2 datasets badly, will delete them as soon as possible) ================
-JCVI_ECOLI
-{
-        first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.left.corrected.fastq.gz
-        second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.right.corrected.fastq.gz
-        single_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.left.unpaired.fastq.gz
-        single_second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.reads.right.unpaired.fastq.gz
-        jumping_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.shearjump.left.corrected.fastq.gz
-        jumping_second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer/00.shearjump.right.corrected.fastq.gz
-	jump_is		3000
-        RL              100
-        IS              210
-	single_cell	true
-        reference_genome E.coli/MG1655-K12.fasta.gz
-        LEN             4639675 ; total size
-}
-
-
-JCVI_ECOLI_400K
-{
-        first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.left.corrected400000_0.fastq
-        second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.right.corrected400000_0.fastq
-        single_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.left.unpaired400000_0.fastq
-        single_second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.right.unpaired400000_0.fastq
-        jumping_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.shearjump.right.corrected400000_0.fastq
-        jumping_second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.shearjump.right.corrected400000_0.fastq
-		jump_is		3000
-        RL              100
-        IS              210
-		single_cell	true
-        reference_genome E.coli/MG1655-K12.fasta.gz
-        LEN             400000 ; total size
-}
-;================== END OF VIOLATION ============================================================================================
-
 ; ================================================
 ; ===============     HMP     ====================
 ; ================================================
 
 HMP_LANE_1_BH ; old HMP_LANE_1_2
 {
-        first	HMP/hmp_mda_pilot_jcvi_0001/hammer2/00.reads.left.corrected.fastq
-        second	HMP/hmp_mda_pilot_jcvi_0001/hammer2/00.reads.right.corrected.fastq
-        single_first	HMP/hmp_mda_pilot_jcvi_0001/hammer2/00.reads.left.unpaired.fastq
-        single_second	HMP/hmp_mda_pilot_jcvi_0001/hammer2/00.reads.right.unpaired.fastq
+        first	HMP/lane_1/bh20111219/00.reads.left.corrected.fastq
+        second	HMP/lane_1/bh20111219/00.reads.right.corrected.fastq
+        single_first	HMP/lane_1/bh20111219/00.reads.left.unpaired.fastq
+        single_second	HMP/lane_1/bh20111219/00.reads.right.unpaired.fastq
         RL              100
         IS              210
     	single_cell	true
@@ -128,10 +93,10 @@ HMP_LANE_1_BH ; old HMP_LANE_1_2
 }
 HMP_LANE_2_BH ; old HMP_LANE_2
 {
-        first	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.left.corrected.fastq.gz
-        second	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.right.corrected.fastq.gz
-        single_first	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.right.unpaired.fastq.gz
+        first	HMP/lane_2/bh20111202/00.reads.left.corrected.fastq.gz
+        second	HMP/lane_2/bh20111202/00.reads.right.corrected.fastq.gz
+        single_first	HMP/lane_2/bh20111202/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/lane_2/bh20111202/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              210
     	single_cell	true
@@ -141,10 +106,10 @@ HMP_LANE_2_BH ; old HMP_LANE_2
 
 HMP_LANE_3_BH ; old HMP_LANE_3
 {
-        first	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.left.corrected.fastq.gz
-        second	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.right.corrected.fastq.gz
-        single_first	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.right.unpaired.fastq.gz
+        first	HMP/lane_3/bh20111205/00.reads.left.corrected.fastq.gz
+        second	HMP/lane_3/bh20111205/00.reads.right.corrected.fastq.gz
+        single_first	HMP/lane_3/bh20111205/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/lane_3/bh20111205/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              210
     	single_cell	true
@@ -154,10 +119,10 @@ HMP_LANE_3_BH ; old HMP_LANE_3
 
 HMP_LANE_4_BH ; old HMP_LANE_4
 {
-        first	HMP/hmp_mda_pilot_jcvi_0004/hammer/00.reads.left.corrected.fastq.gz
-        second	HMP/hmp_mda_pilot_jcvi_0004/hammer/00.reads.right.corrected.fastq.gz
-        single_first	HMP/hmp_mda_pilot_jcvi_0004/hammer/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/hmp_mda_pilot_jcvi_0004/hammer/00.reads.right.unpaired.fastq.gz
+        first	HMP/lane_4/bh20111206/00.reads.left.corrected.fastq.gz
+        second	HMP/lane_4/bh20111206/00.reads.right.corrected.fastq.gz
+        single_first	HMP/lane_4/bh20111206/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/lane_4/bh20111206/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              210
     	single_cell	true
@@ -167,10 +132,10 @@ HMP_LANE_4_BH ; old HMP_LANE_4
 
 HMP_LANE_7_BH ; old HMP_LANE_7
 {
-        first	HMP/hmp_mda_pilot_jcvi_0007/hammer/00.reads.left.corrected.fastq.gz
-        second	HMP/hmp_mda_pilot_jcvi_0007/hammer/00.reads.right.corrected.fastq.gz
-        single_first	HMP/hmp_mda_pilot_jcvi_0007/hammer/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/hmp_mda_pilot_jcvi_0007/hammer/00.reads.right.unpaired.fastq.gz
+        first	HMP/lane_7/bhTODO/00.reads.left.corrected.fastq.gz
+        second	HMP/lane_7/bhTODO/00.reads.right.corrected.fastq.gz
+        single_first	HMP/lane_7/bhTODO/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/lane_7/bhTODO/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              210
 	single_cell	true
@@ -180,10 +145,10 @@ HMP_LANE_7_BH ; old HMP_LANE_7
 
 HMP_LANE_8_BH ; old HMP_LANE_8
 {
-        first	HMP/hmp_mda_pilot_jcvi_0008/hammer/00.reads.left.corrected.fastq.gz
-        second	HMP/hmp_mda_pilot_jcvi_0008/hammer/00.reads.right.corrected.fastq.gz
-        single_first	HMP/hmp_mda_pilot_jcvi_0008/hammer/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/hmp_mda_pilot_jcvi_0008/hammer/00.reads.right.unpaired.fastq.gz
+        first	HMP/lane_8/bhTODO/00.reads.left.corrected.fastq.gz
+        second	HMP/lane_8/bhTODO/00.reads.right.corrected.fastq.gz
+        single_first	HMP/lane_8/bhTODO/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/lane_8/bhTODO/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              210
 	single_cell	true
@@ -348,5 +313,69 @@ PGINGIVALIS_BH
         single_cell     true
 	reference_genome  P.gingivalis/TDC60.fasta.gz
         LEN             TODO	; total size
+}
+
+; ================================================
+; =============== C. S. muelleri =================
+; ================================================
+
+; ================================================
+; =============== S. smaragdinae =================
+; ================================================
+
+SSMARAGDINAE_QUAKE
+{
+	first	S.smaragdinae/std_left.cor.fastq.gz
+	second	S.smaragdinae/std_right.cor.fastq.gz
+	single_first	S.smaragdinae/std_left.cor_single.fastq.gz
+	single_second	S.smaragdinae/std_right.cor_single.fastq.gz
+	jumping_first	S.smaragdinae/CLIP_6kb_left.cor.fastq.gz
+	jumping_second	S.smaragdinae/CLIP_6kb_right.cor.fastq.gz
+	jumping_single_first	S.smaragdinae/CLIP_6kb_left.cor_single.fastq.gz
+	jumping_single_second	S.smaragdinae/CLIP_6kb_right.cor_single.fastq.gz
+	RL	TODO
+	IS	TODO
+	single_cell	false
+	reference_genome	S.smaragdinae/ref.fasta.gz
+}
+
+; ================================================
+; ================= B. faecium ===================
+; ================================================
+
+BFAECIUM_QUAKE
+{
+	first	B.faecium/std_left.cor.fastq.gz
+	second	B.faecium/std_right.cor.fastq.gz
+	single_first	B.faecium/std_left.cor_single.fastq.gz
+	single_second	B.faecium/std_right.cor_single.fastq.gz
+	jumping_first	B.faecium/CLIP_7.5kb_left.cor.fastq.gz
+	jumping_second	B.faecium/CLIP_7.5kb_right.cor.fastq.gz
+	jumping_single_first	B.faecium/CLIP_7.5kb_left.cor_single.fastq.gz
+	jumping_single_second	B.faecium/CLIP_7.5kb_right.cor_single.fastq.gz
+	RL	TODO
+	IS	TODO
+	single_cell	false
+	reference_genome	B.faecium/ref.fasta.gz
+}
+
+; ================================================
+; ================= L. gasseri ===================
+; ================================================
+
+LGASSERI_QUAKE
+{
+	first	L.gasseri/std_left.cor.fastq.gz
+	second	L.gasseri/std_right.cor.fastq.gz
+	single_first	L.gasseri/std_left.cor_single.fastq.gz
+	single_second	L.gasseri/std_right.cor_single.fastq.gz
+	jumping_first	L.gasseri/CLIP_7.5kb_left.cor.fastq.gz
+	jumping_second	L.gasseri/CLIP_7.5kb_right.cor.fastq.gz
+	jumping_single_first	L.gasseri/CLIP_7.5kb_left.cor_single.fastq.gz
+	jumping_single_second	L.gasseri/CLIP_7.5kb_right.cor_single.fastq.gz
+	RL	TODO
+	IS	TODO
+	single_cell	false
+	reference_genome	L.gasseri/ref.fasta.gz
 }
 
