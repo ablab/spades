@@ -81,10 +81,10 @@ ECOLI_JCVI_BH ; old JCVI_ECOLI
 
 HMP_LANE_1_BH ; old HMP_LANE_1_2
 {
-        first	HMP/lane_1/bh20111219/00.reads.left.corrected.fastq
-        second	HMP/lane_1/bh20111219/00.reads.right.corrected.fastq
-        single_first	HMP/lane_1/bh20111219/00.reads.left.unpaired.fastq
-        single_second	HMP/lane_1/bh20111219/00.reads.right.unpaired.fastq
+        first	HMP/lane_1/bh20111219/00.reads.left.corrected.fastq.gz
+        second	HMP/lane_1/bh20111219/00.reads.right.corrected.fastq.gz
+        single_first	HMP/lane_1/bh20111219/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/lane_1/bh20111219/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              210
     	single_cell	true
