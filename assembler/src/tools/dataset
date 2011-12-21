@@ -1,5 +1,5 @@
 #!/bin/bash
-# go to the directory where you want to create subdirectory hammer
+# go to the directory where you want to create subdirectory with corrected data
 #
 # run
 # ../blah/../src/tools/dataset hammer nikolenko/full/path/
@@ -10,12 +10,12 @@ base=$0
 shift
 
 if [ "$cmd" == "hammer" ] ; then
-    if [ -d hammer ] ; then
-	echo PLEASE REMOVE DIRECTORY hammer
+    $d=bh`date +%Y%m%d`
+    if [ -d $d ] ; then
+	echo ?! DIRECTORY ALREADY PRESENT: $d
 	exit
     fi
     files="$1*left.corrected* $1*right.corrected* $1*left.unpaired* $1*right.unpaired*"
-    $d="hammer"
     mkdir $d
     echo copying $files ...
     cp $files $d/
