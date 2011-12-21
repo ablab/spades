@@ -5,7 +5,7 @@
 #include "src/debruijn/distance_estimation.info"
 #include "src/debruijn/detail_info_printer.info"
 
-dataset 	      QUAKE_FULL
+dataset 	      ECOLI_IS220_QUAKE
 ;dataset              LB_QUAKE_FULL
 
 input_dir	      ./data/input/
