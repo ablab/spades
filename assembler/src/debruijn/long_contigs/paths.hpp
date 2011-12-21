@@ -468,7 +468,7 @@ void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo,
 
 		RecountDetectorForward(g, seed, pairedInfo, detector);
 
-		JumpingHero<Graph> forward_hero(g, seed, jump_index, 10000, 11000, true, 20.);
+		JumpingHero<Graph> forward_hero(g, seed, jump_index, 2000, 2500, true, 10.);
 
 		while (ExtendPathForward(g, seed, lengths, detector, pairedInfo,
 				handler, forward_hero)) {
