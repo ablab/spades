@@ -30,7 +30,7 @@ def tar(ds):
     s = [ds.get(f) for f in files]
     s = filter(lambda x: x, s)
     s = reduce(lambda x, y: x + " " + y, s)
-    print "tar -cf", ds["name"] + ".tar", s
+    os.system("tar -cf " + ds["name"] + ".tar " + s)
 
 def process(cfg, func, filt):
     if not os.path.exists(cfg):
