@@ -3,6 +3,7 @@
 import sys
 import os
 import string
+import re
 
 def readline(f):
     while 1:
@@ -12,7 +13,7 @@ def readline(f):
 	line = line.split(';')[0].strip()
 	if line: return line
 
-def miss(f):
+def missFile(f):
     if (not f) or (f.lower() == "n/a"):
 	return False
     return not os.path.exists(f)
@@ -22,14 +23,20 @@ files += ["single_" + x for x in files]
 files += ["jumping_" + x for x in files]
 files += ["reference_genome"]
 
+def miss(ds):
+    return reduce(lambda x, y: x or y, [missFile(ds.get(f)) for f in files])
+
 def check(ds):
-    m = reduce(lambda x, y: x or y, [miss(ds.get(f)) for f in files])
-    print ds["name"], not m
+    print ds["name"], not miss(ds)
 
 def tar(ds):
+    if miss(ds):
+	print "#####", ds["name"], "is missing!", "#####"
+	return
     s = [ds.get(f) for f in files]
     s = filter(lambda x: x, s)
     s = reduce(lambda x, y: x + " " + y, s)
+    print "tarring", ds["name"], "..."
     os.system("tar -cf " + ds["name"] + ".tar " + s)
 
 def process(cfg, func, filt):
@@ -59,5 +66,6 @@ def process(cfg, func, filt):
 if sys.argv[1] == "check":
     process(sys.argv[2], check, lambda ds: True);
 if sys.argv[1] == "tar":
-    sets = sys.argv[3:]
-    process(sys.argv[2], tar, lambda ds: ds["name"] in sets);
+    regexp = ("^.*" + sys.argv[3] + ".*$") if 3 < len(sys.argv) else ""
+    filt = lambda ds: re.match(regexp, ds["name"])
+    process(sys.argv[2], tar, filt);
