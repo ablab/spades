@@ -43,6 +43,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence
 	std::vector<BidirectionalPath> lowCoveredSeeds;
 
 	PathStopHandler stopHandler(g);
+	Path<Graph::EdgeId> path1 = FindGenomePath<K> (genome, g, index);
 	Path<Graph::EdgeId> path2 = FindGenomePath<K> (!genome, g, index);
 
 	std::vector<int> seedPairs;

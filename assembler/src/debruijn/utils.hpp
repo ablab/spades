@@ -549,7 +549,7 @@ public:
 		}
 
 		if (passed_edges.empty()) {
-			TRACE("Sequence " << sequence << "couldn't be mapped");
+//			TRACE("Sequence " << sequence << "couldn't be mapped");
 			unmapped_++;
 			//todo maybe check path consistency?
 		} else {
