@@ -208,7 +208,7 @@ class Reader<PairedRead> : public IReader<PairedRead> {
     (*first_) >> sr1;
     (*second_) >> sr2;
 
-    pairedread = PairedRead(sr1, !sr2, insert_size_);
+    pairedread = change_order_ ? PairedRead(!sr2, sr1, insert_size_): PairedRead(sr1, !sr2, insert_size_);
     return *this;
   }
 

@@ -27,6 +27,10 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence
 		boost::optional<const PairedInfoIndex<Graph>&> jump_index_opt = boost::none) {
 	INFO("Multilayer resolving tool started");
 
+//	for (auto it  = pairedInfos.begin(); it != pairedInfos.end(); ++it) {
+//		cout << "Index size " << it->pairedInfoIndex->size() << endl;
+//	}
+
 	make_dir(output_dir);
 
 	params = p;
@@ -39,7 +43,6 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence
 	std::vector<BidirectionalPath> lowCoveredSeeds;
 
 	PathStopHandler stopHandler(g);
-	Path<Graph::EdgeId> path1 = FindGenomePath<K> (genome, g, index);
 	Path<Graph::EdgeId> path2 = FindGenomePath<K> (!genome, g, index);
 
 	std::vector<int> seedPairs;
@@ -98,6 +101,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence
 //	} else {
 	PairedInfoIndex<Graph> empty_info(g);
 	if (!jump_index_opt) {
+//		cout << "FAIL!!!" << endl;
 //		jump_index_opt = in_place<const PairedInfoIndex<Graph>&>(cref(g));
 		jump_index_opt.reset(empty_info);
 	}
@@ -167,7 +171,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence
 
 	if (params.write_contigs) {
 		OutputPathsAsContigs(g, result, output_dir + "all_paths.fasta");
-		OutputContigsNoComplement(g, output_dir + "before_rr.fasta");
+		OutputContigsNoComplement(g, output_dir + "complement_filtered.fasta");
 
 		std::set<int> toRemove;
 		std::vector<BidirectionalPath> noOverlaps;

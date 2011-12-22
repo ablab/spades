@@ -21,12 +21,12 @@ JCVI_ECOLI_400K
         second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.right.corrected400000_0.fastq
         single_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.left.unpaired400000_0.fastq
         single_second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.right.unpaired400000_0.fastq
-        jumping_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.shearjump.right.corrected400000_0.fastq
+        jumping_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.shearjump.left.corrected400000_0.fastq
         jumping_second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.shearjump.right.corrected400000_0.fastq
-		jump_is		3000
+	jump_is		3000
         RL              100
         IS              210
-		single_cell	true
+	single_cell	true
         reference_genome E.coli/MG1655-K12.fasta.gz
 }
 ;================== END OF VIOLATION ============================================================================================
