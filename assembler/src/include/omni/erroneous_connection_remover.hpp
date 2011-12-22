@@ -62,6 +62,8 @@ public:
 
 	bool RemoveEdges() {
 		InnerRemoveEdges();
+		omnigraph::Cleaner<Graph> cleaner(g_);
+		cleaner.Clean();
 		return graph_changed_;
 	}
 
@@ -72,7 +74,7 @@ protected:
 
 	virtual void InnerRemoveEdges() = 0;
 
-	Graph& graph() {
+	const Graph& graph() const {
 		return g_;
 	}
 };
@@ -166,10 +168,10 @@ public:
 			}
 			TRACE("Edge " << e << " processed");
 		}
-		TRACE("Cleaning graph");
-		omnigraph::Cleaner<Graph> cleaner(this->graph());
-		cleaner.Clean();
-		TRACE("Graph cleaned");
+//		TRACE("Cleaning graph");
+//		omnigraph::Cleaner<Graph> cleaner(this->graph());
+//		cleaner.Clean();
+//		TRACE("Graph cleaned");
 	}
 private:
 	DECL_LOGGER("IterativeLowCoverageEdgeRemover");
@@ -237,8 +239,8 @@ public:
 //				}
 			}
 		}
-		omnigraph::Cleaner<Graph> cleaner(this->graph());
-		cleaner.Clean();
+//		omnigraph::Cleaner<Graph> cleaner(this->graph());
+//		cleaner.Clean();
 	}
 };
 
@@ -252,15 +254,15 @@ class NewTopologyBasedChimericEdgeRemover : public ErroneousEdgeRemover<Graph> {
 	size_t uniqueness_length_;
 	size_t plausibility_length_;
 
-	bool Unique(const vector<EdgeId>& edges, bool forward) {
+	bool Unique(const vector<EdgeId>& edges, bool forward) const {
 		return edges.size() == 1 && CheckUniqueness(*edges.begin(), forward);
 	}
 
-	bool CheckPlausibility(EdgeId e) {
+	bool CheckPlausibility(EdgeId e) const {
 		return this->graph().length(e) >= plausibility_length_;
 	}
 
-	bool ExistPlausible(const vector<EdgeId>& edges) {
+	bool ExistPlausible(const vector<EdgeId>& edges) const {
 		for (auto it = edges.begin(); it != edges.end(); ++it) {
 			if (CheckPlausibility(*it)) {
 				return true;
@@ -269,11 +271,11 @@ class NewTopologyBasedChimericEdgeRemover : public ErroneousEdgeRemover<Graph> {
 		return false;
 	}
 
-	bool CheckStart(EdgeId e) {
+	bool CheckStart(EdgeId e) const {
 		return Unique(this->graph().IncomingEdges(this->graph().EdgeStart(e)), false) && ExistPlausible(this->graph().OutgoingEdges(this->graph().EdgeStart(e)));
 	}
 
-	bool CheckEnd(EdgeId e) {
+	bool CheckEnd(EdgeId e) const {
 		return Unique(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)), true) && ExistPlausible(this->graph().IncomingEdges(this->graph().EdgeEnd(e)));
 	}
 
@@ -288,11 +290,11 @@ public:
 
 protected:
 
-	size_t uniqueness_length() {
+	size_t uniqueness_length() const {
 		return uniqueness_length_;
 	}
 
-	virtual bool CheckUniqueness(EdgeId e, bool forward) {
+	virtual bool CheckUniqueness(EdgeId e, bool forward) const {
 		return this->graph().length(e) >= uniqueness_length_;
 	}
 
@@ -307,8 +309,6 @@ protected:
 				this->DeleteEdge(e, false);
 			}
 		}
-		omnigraph::Cleaner<Graph> cleaner(this->graph());
-		cleaner.Clean();
 	}
 };
 
@@ -318,47 +318,19 @@ class AdvancedTopologyChimericEdgeRemover : public NewTopologyBasedChimericEdgeR
 	typedef typename Graph::VertexId VertexId;
 	typedef NewTopologyBasedChimericEdgeRemover<Graph> base;
 
-	const vector<EdgeId> UniquePathForward(EdgeId e) {
-		vector<EdgeId> answer;
-		EdgeId curr = e;
-		answer.push_back(curr);
-		while (this->graph().CheckUniqueOutgoingEdge(this->graph().EdgeEnd(curr))) {
-			curr = this->graph().GetUniqueOutgoingEdge(this->graph().EdgeEnd(curr));
-			answer.push_back(curr);
-		}
-		return answer;
-	}
-
-	const vector<EdgeId> UniquePathBackward(EdgeId e) {
-		vector<EdgeId> answer;
-		EdgeId curr = e;
-		answer.push_back(curr);
-		while (this->graph().CheckUniqueIncomingEdge(this->graph().EdgeEnd(curr))) {
-			curr = this->graph().GetUniqueIncomingEdge(this->graph().EdgeEnd(curr));
-			answer.push_back(curr);
-		}
-		return vector<EdgeId>(answer.rbegin(), answer.rend());
-	}
-
-	size_t SumLength(const vector<EdgeId>& path) {
-		size_t s = 0;
-		for (auto it = path.begin(); it != path.end(); ++it) {
-			s += this->graph().length(*it);
-		}
-		return s;
-	}
+	UniquePathFinder<Graph> unique_path_finder_;
 
 public:
 	AdvancedTopologyChimericEdgeRemover(Graph& g, size_t max_length,
 			size_t uniqueness_length, size_t plausibility_length, EdgeRemover<Graph>& edge_remover) :
-			base(g, max_length, uniqueness_length, plausibility_length, edge_remover) {
+			base(g, max_length, uniqueness_length, plausibility_length, edge_remover),
+			unique_path_finder_(g) {
 	}
 
 protected:
 
-	bool CheckUniqueness(EdgeId e, bool forward) {
-		cout << "HERE" << endl;
-		return SumLength(forward ? UniquePathForward(e) : UniquePathBackward(e)) >= this->uniqueness_length();
+	bool CheckUniqueness(EdgeId e, bool forward) const {
+		return CummulativeLength(this->graph(), forward ? unique_path_finder_.UniquePathForward(e) : unique_path_finder_.UniquePathBackward(e)) >= this->uniqueness_length();
 	}
 
 };
@@ -487,8 +459,6 @@ public:
 				this->DeleteEdge(e, false);
 			}
 		}
-		omnigraph::Cleaner<Graph> cleaner(this->graph());
-		cleaner.Clean();
 	}
 private:
 	DECL_LOGGER("PairInfoAwareErroneousEdgeRemover");

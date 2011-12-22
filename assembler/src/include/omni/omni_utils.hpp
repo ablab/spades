@@ -1138,6 +1138,55 @@ private:
 	DECL_LOGGER("EdgeRemover");
 };
 
+template<class Graph>
+size_t CummulativeLength(const Graph& g, const vector<typename Graph::EdgeId>& path) {
+	size_t s = 0;
+	for (auto it = path.begin(); it != path.end(); ++it) {
+		s += g.length(*it);
+	}
+	return s;
+}
+
+
+template <class Graph>
+class UniquePathFinder {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+
+	const Graph& g_;
+public:
+
+	UniquePathFinder(const Graph& g): g_(g) {
+
+	}
+
+	const vector<EdgeId> UniquePathForward(EdgeId e) const {
+		vector<EdgeId> answer;
+		EdgeId curr = e;
+		answer.push_back(curr);
+		while (g_.CheckUniqueOutgoingEdge(g_.EdgeEnd(curr))) {
+			curr = g_.GetUniqueOutgoingEdge(g_.EdgeEnd(curr));
+			if (curr == e)
+				break;
+			answer.push_back(curr);
+		}
+		return answer;
+	}
+
+	const vector<EdgeId> UniquePathBackward(EdgeId e) const {
+		vector<EdgeId> answer;
+		EdgeId curr = e;
+		answer.push_back(curr);
+		while (g_.CheckUniqueIncomingEdge(g_.EdgeStart(curr))) {
+			curr = g_.GetUniqueIncomingEdge(g_.EdgeStart(curr));
+			if (curr == e)
+				break;
+			answer.push_back(curr);
+		}
+		return vector<EdgeId>(answer.rbegin(), answer.rend());
+	}
+};
+
 inline size_t PairInfoPathLengthUpperBound(size_t k, size_t insert_size,
 		double delta) {
 	double answer = 0. + insert_size + delta - k - 2;
