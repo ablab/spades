@@ -259,7 +259,7 @@ void AddRealInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Gr
 		size_t de_delta = rl->de_delta;
 		size_t var = rl->var;
 		string dataset = lc_cfg::get().dataset_name;
-		pairedInfos.push_back(PairedInfoIndexLibrary(g, readSize, insertSize, delta, de_delta, var, new PairedInfoIndex<Graph>(g, 0)));
+		pairedInfos.push_back(PairedInfoIndexLibrary(g, readSize, insertSize, delta, de_delta, var, new PairedInfoIndex<Graph>(g)));
 
 		INFO("Reading additional info with read size " << readSize << ", insert size " << insertSize);
 
