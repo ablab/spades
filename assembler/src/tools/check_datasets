@@ -1,5 +1,6 @@
 #!/bin/bash
 
-base=`pwd`
-cd data/input
-python $base/src/tools/dataset.py $base/src/debruijn/datasets.info
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+BASE="$( cd "$( dirname "$0" )" && cd ../.. && pwd )"
+pushd $BASE/data/input > /dev/null
+python $BASE/src/tools/dataset.py check $BASE/src/debruijn/datasets.info
