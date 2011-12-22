@@ -67,6 +67,6 @@ if sys.argv[1] == "check":
     process(sys.argv[2], check, lambda ds: True);
 if sys.argv[1] == "tar":
     regexp = ""
-    if 3 < len(sys.argv): ("^.*" + sys.argv[3] + ".*$") 
+    if 3 < len(sys.argv): regexp = "^.*" + sys.argv[3] + ".*$"
     filt = lambda ds: re.match(regexp, ds["name"])
     process(sys.argv[2], tar, filt);
