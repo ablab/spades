@@ -14,8 +14,7 @@ ECOLI_IS220_QUAKE ; old QUAKE_FULL
 	RL		100		; read length
 	IS		220 	; insert size
 	single_cell	false
-	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675 ; total size
+	reference_genome  E.coli/MG1655-K12.fasta.gz	; length 4639675
 }
 
 ECOLI_IS480_QUAKE ; old EAS600_QUAKE_FULL
@@ -26,7 +25,6 @@ ECOLI_IS480_QUAKE ; old EAS600_QUAKE_FULL
 	IS		480 	; insert size
 	single_cell	false
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675	; total size
 }
 
 ; ==================== SINGLE CELL ====================
@@ -42,7 +40,6 @@ ECOLI_SC_BH_woHUMAN ; old SC_HAMMER_1410_FILTERED
         IS              270     ; insert size
         single_cell     true
         reference_genome  E.coli/MG1655-K12.fasta.gz
-        LEN             4639675 ; total size
 }
 
 ECOLI_SC_BH_400K ; old SC_HAMMER_1410_CROPPED
@@ -55,7 +52,6 @@ ECOLI_SC_BH_400K ; old SC_HAMMER_1410_CROPPED
         IS              270     ; insert size
         single_cell     true
         reference_genome  E.coli/MG1655-K12.fasta.gz
-        LEN             4639675 ; total size
 }
 
 
@@ -72,7 +68,6 @@ ECOLI_JCVI_BH ; old JCVI_ECOLI
         IS              210
 	single_cell	true
         reference_genome E.coli/MG1655-K12.fasta.gz
-        LEN             4639675 ; total size
 }
 
 ; ================================================
@@ -89,7 +84,6 @@ HMP_LANE_1_BH ; old HMP_LANE_1_2
         IS              210
     	single_cell	true
         reference_genome	N/A
-    	LEN 0
 }
 HMP_LANE_2_BH ; old HMP_LANE_2
 {
@@ -101,7 +95,6 @@ HMP_LANE_2_BH ; old HMP_LANE_2
         IS              210
     	single_cell	true
         reference_genome	N/A
-    	LEN 0
 }
 
 HMP_LANE_3_BH ; old HMP_LANE_3
@@ -114,7 +107,6 @@ HMP_LANE_3_BH ; old HMP_LANE_3
         IS              210
     	single_cell	true
         reference_genome	N/A
-	    LEN 0
 }
 
 HMP_LANE_4_BH ; old HMP_LANE_4
@@ -127,7 +119,6 @@ HMP_LANE_4_BH ; old HMP_LANE_4
         IS              210
     	single_cell	true
         reference_genome	N/A
-	    LEN 0
 }
 
 HMP_LANE_7_BH ; old HMP_LANE_7
@@ -140,7 +131,6 @@ HMP_LANE_7_BH ; old HMP_LANE_7
         IS              210
 	single_cell	true
         reference_genome	N/A
-	LEN 0
 }
 
 HMP_LANE_8_BH ; old HMP_LANE_8
@@ -153,7 +143,6 @@ HMP_LANE_8_BH ; old HMP_LANE_8
         IS              210
 	single_cell	true
         reference_genome	N/A
-        LEN 0
 }
 
 ; ================================================
@@ -169,8 +158,7 @@ LBOUILLONII_QUAKE ; old LB_QUAKE_FULL
 	RL		100	; read length
 	IS		370	; insert size
 	single_cell	false
-	reference_genome	N/A
-	LEN		8700000	; total size
+	reference_genome	N/A	; length approx	8.7M
 }
 
 ; ================================================
@@ -186,8 +174,7 @@ TRASH_DELTA_CORRECTED_1 ; old DELTA_CORRECTED_1
         RL              100     ; read length
         IS              250     ; insert size
         single_cell     true
-        reference_genome	N/A
-        LEN             4500000 ; total size
+        reference_genome	N/A	; length approx 4.5M
 }
 
 TRASH_DELTA_EULER_CORRECTED_1 ; old DELTA_EULER_CORRECTED_1
@@ -200,7 +187,6 @@ TRASH_DELTA_EULER_CORRECTED_1 ; old DELTA_EULER_CORRECTED_1
         IS              250     ; insert size
         single_cell     true
         reference_genome	N/A
-        LEN             4500000 ; total size
 }
 
 DELTA_BH ; old DeltaProteo
@@ -213,7 +199,6 @@ DELTA_BH ; old DeltaProteo
 	IS		100	; insert size
 	single_cell 	true
 	reference_genome	N/A
-	LEN 		1
 }
 
 ; ================================================
@@ -229,8 +214,7 @@ SAUREUS_JCVI_BH ; old SAUREUS_JCVI
         RL              100     ; read length
         IS              220     ; insert size todo check!!!!
         single_cell     true
-        reference_genome  S.aureus/USA300_FPR3757.fasta.gz
-        LEN             2872769 ; total size
+        reference_genome  S.aureus/USA300_FPR3757.fasta.gz	; length 2872769
 }
 
 SAUREUS_BENCHMARK_QUAKE ; old SAUREUS_QUAKED
@@ -247,7 +231,6 @@ SAUREUS_BENCHMARK_QUAKE ; old SAUREUS_QUAKED
 	IS	180	; insert size
 	single_cell	false
 	reference_genome  S.aureus/USA300_FPR3757.fasta.gz
-	LEN             2872769 ; total size
 }
 
 ; ================================================
@@ -263,8 +246,7 @@ AFUMIGATUS_AF1163_QUAKE ; old AFUMIGATUS_CORRECTED_1
         RL              100     ; read length
         IS              185     ; insert size
         single_cell     false
-       	reference_genome  N/A
-     	LEN             29805800 ; total size
+       	reference_genome  N/A	; length 29805800
 }
 
 AFUMIGATUS_AF293_QUAKE ; old AFUMIGATUS_S_CORRECTED_1
@@ -274,7 +256,6 @@ AFUMIGATUS_AF293_QUAKE ; old AFUMIGATUS_S_CORRECTED_1
         IS              200     ; insert size
         single_cell     false
         reference_genome  N/A
-        LEN             29805800 ; total size
 }
 
 ; ================================================
@@ -294,8 +275,7 @@ PSTIPITIS_QUAKE ; old PICHIA_CORRECTED
         RL              75     ; read length
         IS              280     ; insert size
         single_cell     false
-        reference_genome  P.stipitis/Pichia_stipitis_Sanger_reference.fa.gz
-        LEN             15000000	; total size
+        reference_genome  P.stipitis/Pichia_stipitis_Sanger_reference.fa.gz	; length approx 15M
 }
 
 ; ================================================
@@ -312,7 +292,6 @@ PGINGIVALIS_BH
         IS              TODO     ; insert size
         single_cell     true
 	reference_genome  P.gingivalis/TDC60.fasta.gz
-        LEN             TODO	; total size
 }
 
 ; ================================================

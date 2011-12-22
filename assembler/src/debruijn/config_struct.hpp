@@ -516,8 +516,6 @@ inline void load(debruijn_config::dataset& ds, boost::property_tree::ptree const
 
 	if (ds.reference_genome == "N/A")
 		ds.reference_genome = "";
-
-	load(ds.LEN, pt, "LEN");
 }
 
 inline void load(debruijn_config::simplification& simp, boost::property_tree::ptree const& pt, bool complete)

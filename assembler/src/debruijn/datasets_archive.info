@@ -12,7 +12,6 @@ JCVI_ECOLI
         IS              210
 	single_cell	true
         reference_genome E.coli/MG1655-K12.fasta.gz
-        LEN             4639675 ; total size
 }
 
 
@@ -29,7 +28,6 @@ JCVI_ECOLI_400K
         IS              210
 		single_cell	true
         reference_genome E.coli/MG1655-K12.fasta.gz
-        LEN             400000 ; total size
 }
 ;================== END OF VIOLATION ============================================================================================
 
@@ -51,7 +49,6 @@ ECOLI_EMUL
 	IS	400
 	single_cell	false
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN	4639675
 }
 
 TRASH_EAS600_EMUL_FULL ; old EAS600_EMUL_FULL
@@ -62,7 +59,6 @@ TRASH_EAS600_EMUL_FULL ; old EAS600_EMUL_FULL
 	IS		500 	; insert size
 	single_cell	false
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675	; total size
 }
 
 ; ========== Cropped ==========
@@ -78,7 +74,6 @@ ECOLI_IS220_QUAKE_1K ; old QUAKE_CROPPED_1K
 	single_cell	false
 ;	reference_genome  E.coli/MG1655-K12.first1000.fasta.gz
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN	   1000 	; total size
 }
 
 ECOLI_IS220_QUAKE_10K ; old QUAKE_CROPPED_10K
@@ -90,7 +85,6 @@ ECOLI_IS220_QUAKE_10K ; old QUAKE_CROPPED_10K
 	single_cell	false
 ;	reference_genome  E.coli/MG1655-K12.first10000.fasta.gz
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		10000 	; total size
 }
 
 ECOLI_IS220_QUAKE_100K ; old QUAKE_CROPPED_100K
@@ -102,7 +96,6 @@ ECOLI_IS220_QUAKE_100K ; old QUAKE_CROPPED_100K
 	single_cell	false
 ;	reference_genome  E.coli/MG1655-K12.first100000.fasta.gz
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		100000 	; total size
 }
 
 ECOLI_IS220_QUAKE_400K ; old QUAKE_CROPPED_400K
@@ -113,7 +106,6 @@ ECOLI_IS220_QUAKE_400K ; old QUAKE_CROPPED_400K
 	IS		220 	; insert size
 	single_cell	false
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		400000 	; total size
 }
 
 ECOLI_IS480_QUAKE_1K ; old EAS600_QUAKE_CROPPED_1K
@@ -124,7 +116,6 @@ ECOLI_IS480_QUAKE_1K ; old EAS600_QUAKE_CROPPED_1K
 	IS		480 	; insert size
 	single_cell	false
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		1000 	; total size
 }
 
 ECOLI_IS480_QUAKE_10K ; old EAS600_QUAKE_CROPPED_10K
@@ -135,7 +126,6 @@ ECOLI_IS480_QUAKE_10K ; old EAS600_QUAKE_CROPPED_10K
 	IS		480 	; insert size
 	single_cell	false
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		10000 	; total size
 }
 
 ECOLI_IS480_QUAKE_100K ; old EAS600_QUAKE_CROPPED_100K
@@ -146,7 +136,6 @@ ECOLI_IS480_QUAKE_100K ; old EAS600_QUAKE_CROPPED_100K
 	IS		480 	; insert size
 	single_cell	false
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		100000 	; total size
 }
 
 ECOLI_IS480_QUAKE_400K ; old EAS600_QUAKE_CROPPED_400K
@@ -157,7 +146,6 @@ ECOLI_IS480_QUAKE_400K ; old EAS600_QUAKE_CROPPED_400K
 	IS		480 	; insert size
 	single_cell	false
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		400000 	; total size
 }
 
 ; ========== Single cell old datasets ==========
@@ -172,7 +160,6 @@ TRASH_SC_NEW_1 ; SC_NEW_1
 	IS		270 	; insert size
 	single_cell	true
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675	; total size
 }
 
 TRASH_SC_NEW_2 ; old SC_NEW_2
@@ -183,7 +170,6 @@ TRASH_SC_NEW_2 ; old SC_NEW_2
 	IS		270 	; insert size
 	single_cell	true
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675	; total size
 }
 
 TRASH_SC_NEW_3 ; old SC_NEW_3
@@ -194,7 +180,6 @@ TRASH_SC_NEW_3 ; old SC_NEW_3
 	IS		270 	; insert size
 	single_cell	true
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675	; total size
 }
 
 TRASH_SC_2909 ; old SC_2909
@@ -205,7 +190,6 @@ TRASH_SC_2909 ; old SC_2909
 	IS		270 	; insert size
 	single_cell	true
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675	; total size
 }
 
 TRASH_SC_0310 ; old SC_0310
@@ -216,7 +200,6 @@ TRASH_SC_0310 ; old SC_0310
 	IS		270 	; insert size
 	single_cell	true
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675	; total size
 }
 
 TRASH_SC_0710 ; old SC_0710
@@ -229,7 +212,6 @@ TRASH_SC_0710 ; old SC_0710
 	IS		270 	; insert size
 	single_cell	true
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675	; total size
 }
 
 TRASH_SC_1110 ; old SC_1110
@@ -242,7 +224,6 @@ TRASH_SC_1110 ; old SC_1110
 	IS		270 	; insert size
 	single_cell	true
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675	; total size
 }
 
 TRASH_SC_K35 ; old SC_K35
@@ -253,7 +234,6 @@ TRASH_SC_K35 ; old SC_K35
 	IS		270 	; insert size
 	single_cell	true
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675	; total size
 }
 
 TRASH_SC_FULL ; old SC_FULL
@@ -264,7 +244,6 @@ TRASH_SC_FULL ; old SC_FULL
 	IS		270 	; insert size
 	single_cell	true
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675	; total size
 }
 
 TRASH_SC_EULER_FULL ; old SC_EULER_FULL
@@ -275,7 +254,6 @@ TRASH_SC_EULER_FULL ; old SC_EULER_FULL
 	IS		270 	; insert size
 	single_cell	true
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675	; total size
 }
 
 TRASH_SC_EULER_NEW ; old SC_EULER_NEW
@@ -288,7 +266,6 @@ TRASH_SC_EULER_NEW ; old SC_EULER_NEW
 	IS		270	; insert size
 	single_cell	true
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675	; total size
 }
 
 ; resulting from throwing away all reads from SC_EULER_NEW that can be aligned to a human genome
@@ -302,7 +279,6 @@ TRASH_SC_EULER_NEW_FILTERED ; old SC_EULER_NEW_FILTERED
 	IS		270	; insert size
 	single_cell	true
 	reference_genome  E.coli/MG1655-K12.fasta.gz
-	LEN		4639675	; total size
 }
 
 
@@ -320,7 +296,6 @@ TRASH_SC_NEW_1_FILTERED ; old SC_NEW_1_FILTERED
         IS              270     ; insert size
         single_cell     true
         reference_genome  E.coli/MG1655-K12.fasta.gz
-        LEN             4639675 ; total size
 }
 
 TRASH_JCVI_control_MDA_EColi_0212 ; old JCVI_control_MDA_EColi_0212
@@ -333,7 +308,6 @@ TRASH_JCVI_control_MDA_EColi_0212 ; old JCVI_control_MDA_EColi_0212
         IS              210
         single_cell     true
         reference_genome E.coli/MG1655-K12.fasta.gz
-        LEN             4639675eqweqweqewqqqwe
 }
 
 ; ================================================
@@ -350,7 +324,6 @@ HMP_LANE_1_BH_20111203 ; old HMP_LANE_1
         IS              210
     	single_cell	true					
         reference_genome	N/A
-    	LEN 0
 }
 
 ; ================================================
@@ -375,7 +348,6 @@ TRASH_SAUREUS_JCVI_0212 ; old SAUREUS_JCVI_0212
         IS              220     ; insert size todo check!!!!
         single_cell     true
         reference_genome  S.aureus/USA300_FPR3757.fasta.gz
-        LEN             2872769 ; total size
 }
 
 TRASH_SAUREUS_JCVI_0412_it2 ; old SAUREUS_JCVI_0412_it2
@@ -388,7 +360,6 @@ TRASH_SAUREUS_JCVI_0412_it2 ; old SAUREUS_JCVI_0412_it2
         IS              208     ; 
         single_cell     true
         reference_genome  S.aureus/USA300_FPR3757.fasta.gz
-        LEN             2872769 ; total size
 }
 
 TRASH_SAUREUS_JCVI_0512_it3 ; old SAUREUS_JCVI_0512_it3
@@ -401,7 +372,6 @@ TRASH_SAUREUS_JCVI_0512_it3 ; old SAUREUS_JCVI_0512_it3
         IS              208     ; 
         single_cell     true
         reference_genome  S.aureus/USA300_FPR3757.fasta.gz
-        LEN             2872769 ; total size
 }
 
 TRASH_SAUREUS_CORRECTED_1 ; old SAUREUS_CORRECTED_1
@@ -414,7 +384,6 @@ TRASH_SAUREUS_CORRECTED_1 ; old SAUREUS_CORRECTED_1
         IS              220     ; insert size
         single_cell     true
         reference_genome  S.aureus/USA300_FPR3757.fasta.gz
-        LEN             2872769 ; total size
 }
 
 TRASH_SAUREUS_CORRECTED_MS ; old SAUREUS_CORRECTED_MS
@@ -427,7 +396,6 @@ TRASH_SAUREUS_CORRECTED_MS ; old SAUREUS_CORRECTED_MS
        	IS              180     ; insert size
         single_cell     false
        	reference_genome  S.aureus/USA300_FPR3757.fasta.gz
-       	LEN             2872769 ; total size
 }
 
 ; ================================================
@@ -441,4 +409,21 @@ TRASH_SAUREUS_CORRECTED_MS ; old SAUREUS_CORRECTED_MS
 ; ================================================
 ; =============== P. gingivalis ==================
 ; ================================================
+
+; ================================================
+; =============== C. S. muelleri =================
+; ================================================
+
+; ================================================
+; =============== S. smaragdinae =================
+; ================================================
+
+; ================================================
+; ================= B. faecium ===================
+; ================================================
+
+; ================================================
+; ================= L. gasseri ===================
+; ================================================
+
 
