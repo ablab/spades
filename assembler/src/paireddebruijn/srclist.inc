@@ -1,1 +1,0 @@
-SRC1=graphConstruction.cpp pairedGraph.cpp constructHashTable.cpp sequence.cpp graphVisualizer.cpp bulgeCorruption.cpp readTracing.cpp graphio.cpp common.cpp graphSimplification.cpp constdConstruction.cpp vardConstruction.cpp
