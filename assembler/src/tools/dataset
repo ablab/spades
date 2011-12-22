@@ -10,7 +10,7 @@ base=$0
 shift
 
 if [ "$cmd" == "hammer" ] ; then
-    $d=bh`date +%Y%m%d`
+    d=bh`date +%Y%m%d`
     if [ -d $d ] ; then
 	echo ?! DIRECTORY ALREADY PRESENT: $d
 	exit
