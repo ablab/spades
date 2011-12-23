@@ -755,7 +755,7 @@ private:
 	//todo rewrite without recursion
 	void Go(VertexId v, size_t current_path_length,
 			Dijkstra<Graph>& distances_to_end) {
-		TRACE("Processing vertex " << v << " started; current path length " << current_path_length);
+		TRACE("Processing vertex " << g_.int_id(v) << " started; current path length " << current_path_length);
 		call_cnt_++;
 		if (call_cnt_ == MAX_CALL_CNT) {
 			DEBUG(
@@ -778,18 +778,18 @@ private:
 			}
 			return;
 		}
-		TRACE("Vetex " << v << " should be processed");
+		TRACE("Vetex " << g_.int_id(v) << " should be processed");
 
 		if (v == end_ && current_path_length >= min_length_) {
 			TRACE("New path found: " << PrintPath(g_, path_));
 			TRACE("Callback is performed.");
 			callback_.HandlePath(path_);
 			TRACE("Callback finished");
-		}TRACE("Iterating through outgoing edges of vertex " << v)
+		}TRACE("Iterating through outgoing edges of vertex " << g_.int_id(v))
 		vector<EdgeId> outgoing_edges = g_.OutgoingEdges(v);
 		for (size_t i = 0; i < outgoing_edges.size(); ++i) {
 			TRACE(
-					"Processing outgoing edge " << outgoing_edges[i]
+					"Processing outgoing edge " << g_.int_id(outgoing_edges[i])
 							<< " started");
 			EdgeId edge = outgoing_edges[i];
 			path_.push_back(edge);
@@ -797,10 +797,10 @@ private:
 					distances_to_end);
 			path_.pop_back();
 			TRACE(
-					"Processing outgoing edge " << outgoing_edges[i]
+					"Processing outgoing edge " << g_.int_id(outgoing_edges[i])
 							<< " finished");
 		}
-		TRACE("Processing vertex " << v << " finished");
+		TRACE("Processing vertex " << g_.int_id(v) << " finished");
 	}
 
 public:
@@ -812,7 +812,7 @@ public:
 				max_length_((size_t) std::floor(max_length + 0.5)),
 				start_(start), end_(end), callback_(callback), call_cnt_(0) {
 		TRACE(
-				"Finding path from vertex " << start_ << " to vertex " << end_
+				"Finding path from vertex " << g.int_id(start_) << " to vertex " << g.int_id(end_)
 						<< " of length [" << min_length_ << ", " << max_length_
 						<< "]");
 	}
