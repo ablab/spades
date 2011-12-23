@@ -597,20 +597,6 @@ void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 			graph_name, sub_dir, false);
 }
 
-Sequence load_genome() {
-	string genome_filename = cfg::get().ds.reference_genome;
-	std::string genome;
-	if (genome_filename.length() > 0) {
-		genome_filename = cfg::get().input_dir + genome_filename;
-		checkFileExistenceFATAL(genome_filename);
-		io::Reader<io::SingleRead> genome_stream(genome_filename);
-		io::SingleRead full_genome;
-		genome_stream >> full_genome;
-		genome = full_genome.GetSequenceString().substr(0, cfg::get().ds.LEN); // cropped
-	}
-	return Sequence(genome);
-}
-
 void resolve_with_jumps(Graph& g, PairedInfoIndex<Graph>& index, const Sequence& genome,
 		const paired_info_index& jump_index) {
 	VERIFY(cfg::get().andrey_params.write_contigs);
@@ -620,8 +606,7 @@ void resolve_with_jumps(Graph& g, PairedInfoIndex<Graph>& index, const Sequence&
 }
 
 void resolve_repeats() {
-	// read data ('genome')
-	Sequence genome = load_genome();
+	Sequence genome = cfg::get().ds.reference_genome;
 
 	conj_graph_pack conj_gp(genome);
 	paired_info_index paired_index(conj_gp.g/*, 5.*/);
