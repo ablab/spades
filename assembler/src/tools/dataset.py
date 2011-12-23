@@ -28,9 +28,6 @@ files += ["single_" + x for x in files]
 files += ["jumping_" + x for x in files]
 files += ["reference_genome"]
 
-def miss(ds):
-    return reduce(lambda x, y: x or y, [missFile(ds.get(f)) for f in files])
-
 def check(ds):
     print ds["name"], "is present"
 
@@ -73,7 +70,7 @@ def process(cfg, func, filt):
 	        exit(2)
 	    ds[s[0]] = s[1]
 	if filt(ds):
-	    if miss(ds):
+	    if reduce(lambda x, y: x or y, [missFile(ds.get(f)) for f in files]):
 		print ds["name"], "is missing!!!!!!!!!!!!!!!!!!!!"
 	    else:
 		func(ds)
