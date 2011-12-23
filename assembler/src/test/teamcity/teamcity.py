@@ -19,8 +19,7 @@ for line in logfile_out:
 			sys.exit(1);
 		if (mis > 2):
 			print('too many missassembles')
-			sys.exit(1);
-		
+			sys.exit(1);		
 	cur_line += 1;
 	
 logfile_out.close()
