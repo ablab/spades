@@ -39,6 +39,16 @@ def tar(ds):
     print "tarring", ds["name"], "..."
     os.system("tar -cf " + ds["name"] + ".tar " + s)
 
+def md5(ds):
+    if miss(ds):
+	print "#####", ds["name"], "is missing!", "#####"
+	return
+    print ds["name"]
+    s = [ds.get(f) for f in files]
+    s = filter(lambda x: x, s)
+    for f in s:
+	os.system("md5sum " + f)
+
 def process(cfg, func, filt):
     if not os.path.exists(cfg):
         print "no such file:", cfg
@@ -70,3 +80,8 @@ if sys.argv[1] == "tar":
     if 3 < len(sys.argv): regexp = "^.*" + sys.argv[3] + ".*$"
     filt = lambda ds: re.match(regexp, ds["name"])
     process(sys.argv[2], tar, filt);
+if sys.argv[1] == "md5":
+    regexp = ""
+    if 3 < len(sys.argv): regexp = "^.*" + sys.argv[3] + ".*$"
+    filt = lambda ds: re.match(regexp, ds["name"])
+    process(sys.argv[2], md5, filt);
