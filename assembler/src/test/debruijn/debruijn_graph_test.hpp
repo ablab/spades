@@ -17,7 +17,7 @@ BOOST_AUTO_TEST_CASE( EmptyGraphTest ) {
 BOOST_AUTO_TEST_CASE( OneVertexGraphTest ) {
 	Graph g(11);
 	g.AddVertex();
-	BOOST_CHECK_EQUAL(3u, g.size());
+	BOOST_CHECK_EQUAL(2u, g.size());
 	VertexId v = *(g.begin());
 	VertexId rcv = g.conjugate(v);
 	BOOST_CHECK(v != rcv);
