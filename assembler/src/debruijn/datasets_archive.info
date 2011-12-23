@@ -298,6 +298,18 @@ TRASH_SC_NEW_1_FILTERED ; old SC_NEW_1_FILTERED
         reference_genome  E.coli/MG1655-K12.fasta.gz
 }
 
+TRASH_SC_HAMMER_1410_CROPPED ; old SC_HAMMER_1410_CROPPED
+{
+        first   E.coli/SC_cor/cropped/E.Coli.400K.from_2M.cor.1.fastq
+        second  E.coli/SC_cor/cropped/E.Coli.400K.from_2M.cor.2.fastq
+;        single_first    E.coli/SC_cor/Hammer_14.10/filtered/human_filtered_single_left.fastq ; SEEMS VERY STRANGE - why not cropped?
+;        single_second   E.coli/SC_cor/Hammer_14.10/filtered/human_filtered_single_right.fastq
+        RL              100     ; read length
+        IS              270     ; insert size
+        single_cell     true
+        reference_genome  E.coli/MG1655-K12.fasta.gz
+}
+
 TRASH_JCVI_control_MDA_EColi_0212 ; old JCVI_control_MDA_EColi_0212
 {
         first   E.coli/SC/correted_0211/00.reads_left.corrected.fastq

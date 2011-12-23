@@ -29,31 +29,30 @@ ECOLI_IS480_QUAKE ; old EAS600_QUAKE_FULL
 
 ; ==================== SINGLE CELL ====================
 
-; resulting from throwing away all reads from hammer results that can be aligned to a human genome
-ECOLI_SC_BH_woHUMAN ; old SC_HAMMER_1410_FILTERED
+ECOLI_SC_LANE_1_BH
 {
-        first   E.coli/SC_cor/Hammer_14.10/filtered/human_filtered_paired_left.fastq
-        second  E.coli/SC_cor/Hammer_14.10/filtered/human_filtered_paired_right.fastq
-        single_first    E.coli/SC_cor/Hammer_14.10/filtered/human_filtered_single_left.fastq
-        single_second   E.coli/SC_cor/Hammer_14.10/filtered/human_filtered_single_right.fastq
+        first   E.coli/sc_lane_1/bh20111014/05.reads.left.corrected.fastq.gz
+        second  E.coli/sc_lane_1/bh20111014/05.reads.right.corrected.fastq.gz
+        single_first    E.coli/sc_lane_1/bh20111014/05.reads.left.unpaired.fastq.gz
+        single_second   E.coli/sc_lane_1/bh20111014/05.reads.right.unpaired.fastq.gz
         RL              100     ; read length
         IS              270     ; insert size
         single_cell     true
         reference_genome  E.coli/MG1655-K12.fasta.gz
 }
 
-ECOLI_SC_BH_400K ; old SC_HAMMER_1410_CROPPED
+; resulting from throwing away all reads that can be aligned to a human genome
+ECOLI_SC_LANE_1_BH_woHUMAN ; old SC_HAMMER_1410_FILTERED
 {
-        first   E.coli/SC_cor/cropped/E.Coli.400K.from_2M.cor.1.fastq
-        second  E.coli/SC_cor/cropped/E.Coli.400K.from_2M.cor.2.fastq
-;        single_first    E.coli/SC_cor/Hammer_14.10/filtered/human_filtered_single_left.fastq ; SEEMS VERY STRANGE - why not cropped?
-;        single_second   E.coli/SC_cor/Hammer_14.10/filtered/human_filtered_single_right.fastq
+        first   E.coli/sc_lane_1/bh20111014/human_filtered_paired_left.fastq.gz
+        second  E.coli/sc_lane_1/bh20111014/human_filtered_paired_right.fastq.gz
+        single_first    E.coli/sc_lane_1/bh20111014/human_filtered_single_left.fastq.gz
+        single_second   E.coli/sc_lane_1/bh20111014/human_filtered_single_right.fastq.gz
         RL              100     ; read length
         IS              270     ; insert size
         single_cell     true
         reference_genome  E.coli/MG1655-K12.fasta.gz
 }
-
 
 ECOLI_JCVI_BH ; old JCVI_ECOLI
 {
