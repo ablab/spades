@@ -18,6 +18,11 @@ def missFile(f):
 	return False
     return not os.path.exists(f)
 
+def presentFile(f):
+    if (not f) or (f.lower() == "n/a"):
+	return False
+    return os.path.exists(f)
+
 files = ["first", "second"]
 files += ["single_" + x for x in files]
 files += ["jumping_" + x for x in files]
@@ -27,25 +32,21 @@ def miss(ds):
     return reduce(lambda x, y: x or y, [missFile(ds.get(f)) for f in files])
 
 def check(ds):
-    print ds["name"], not miss(ds)
+    print ds["name"], "is present"
 
 def tar(ds):
-    if miss(ds):
-	print "#####", ds["name"], "is missing!", "#####"
-	return
-    s = [ds.get(f) for f in files]
-    s = filter(lambda x: x, s)
+    s = filter(presentFile, [ds.get(f) for f in files])
     s = reduce(lambda x, y: x + " " + y, s)
+    a = ds["name"] + ".tar"
+    if os.path.exists(a):
+	print "ERROR:", a, "already exists"
+	exit(2)
     print "tarring", ds["name"], "..."
-    os.system("tar -cf " + ds["name"] + ".tar " + s)
+    os.system("tar -cf " + a + " " + s)
 
 def md5(ds):
-    if miss(ds):
-	print "#####", ds["name"], "is missing!", "#####"
-	return
+    s = filter(presentFile, [ds.get(f) for f in files])
     print ds["name"]
-    s = [ds.get(f) for f in files]
-    s = filter(lambda x: x, s)
     for f in s:
 	os.system("md5sum " + f)
 
@@ -71,7 +72,11 @@ def process(cfg, func, filt):
 	        print "Invalid property line:", s
 	        exit(2)
 	    ds[s[0]] = s[1]
-	if filt(ds): func(ds)
+	if filt(ds):
+	    if miss(ds):
+		print ds["name"], "is missing!!!!!!!!!!!!!!!!!!!!"
+	    else:
+		func(ds)
 
 if sys.argv[1] == "check":
     process(sys.argv[2], check, lambda ds: True);
