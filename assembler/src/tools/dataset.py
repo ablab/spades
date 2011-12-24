@@ -36,8 +36,8 @@ def tar(ds):
     s = reduce(lambda x, y: x + " " + y, s)
     a = ds["name"] + ".tar"
     if os.path.exists(a):
-	print "ERROR:", a, "already exists"
-	exit(2)
+	print "ATTENTION:", a, "already exists"
+	return
     print "tarring", ds["name"], "..."
     os.system("tar -cf " + a + " " + s)
 
