@@ -17,7 +17,7 @@ for line in logfile_out:
 		if n50 < 75000:
 			print('n50 is too small')
 			sys.exit(1);
-		if (mis > 1):
+		if (mis > 2):
 			print('too many missassembles')
 			sys.exit(1);
 		
