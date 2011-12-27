@@ -40,6 +40,8 @@
 
 namespace long_contigs {
 
+DECL_LOGGER("lc");
+
 using namespace debruijn_graph;
 
 //Deque used for extending path in both directions

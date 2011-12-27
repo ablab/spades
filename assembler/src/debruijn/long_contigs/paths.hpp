@@ -309,6 +309,7 @@ bool ExtendPathForward(const Graph& g, BidirectionalPath& path, PathLengths& len
 			if (!ResolveLoopForward(g, path, lengths, detector, pairedInfo,
 					loopEdge)) {
 				handler.AddStop(&path, LONG_LOOP, true);
+				cout << "Strange stop 1" << endl;
 				return false;
 			}
 			loopEdge = 0;
@@ -316,9 +317,13 @@ bool ExtendPathForward(const Graph& g, BidirectionalPath& path, PathLengths& len
 	}
 
 	std::vector<EdgeId> edges = g.OutgoingEdges(g.EdgeEnd(path.back()));
+
+	cout << "Choosing extension among edges " << g.str(edges) << endl;
+
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, &w,
 			EdgesToExcludeForward(g, path), true, detector, handler, hero);
 	if (extension == 0) {
+		cout << "No extension" << endl;
 		return false;
 	}
 
@@ -338,6 +343,7 @@ bool ExtendPathForward(const Graph& g, BidirectionalPath& path, PathLengths& len
 			if (!ResolveLoopForward(g, path, lengths, detector, pairedInfo,
 					loopEdge)) {
 				handler.AddStop(&path, LONG_LOOP, true);
+				cout << "Strange stop 2" << endl;
 				return false;
 			}
 		}
@@ -350,6 +356,7 @@ bool ExtendPathForward(const Graph& g, BidirectionalPath& path, PathLengths& len
 		DETAILED_DEBUG("Cycle detected");
 		DetailedPrintPath(g, path, lengths);
 		handler.AddStop(&path, LOOP, true);
+		cout << "Strange stop 3" << endl;
 		return false;
 	}
 
