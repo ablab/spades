@@ -17,12 +17,12 @@ JCVI_ECOLI
 
 JCVI_ECOLI_400K
 {
-        first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.left.corrected400000_0.fastq
-        second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.right.corrected400000_0.fastq
-        single_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.left.unpaired400000_0.fastq
-        single_second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.reads.right.unpaired400000_0.fastq
-        jumping_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.shearjump.left.corrected400000_0.fastq
-        jumping_second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/00.shearjump.right.corrected400000_0.fastq
+        first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/reads400000_left.fastq
+        second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/reads400000_right.fastq
+        single_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/reads400000_single_left.fastq
+        single_second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/reads400000_single_right.fastq
+        jumping_first	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/shearjump400000_left.fastq
+        jumping_second	_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/shearjump400000_right.fastq
 	jump_is		3000
         RL              100
         IS              210

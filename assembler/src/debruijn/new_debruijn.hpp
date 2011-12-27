@@ -82,14 +82,6 @@ public:
 		return VertexData();
 	}
 
-	std::string str(const EdgeData &edge) const {
-		return " ";
-	}
-
-	std::string str(const VertexData &v) const {
-		return "";
-	}
-
 	const size_t length(EdgeData data) const {
 		return data.nucls().size() - k_;
 	}

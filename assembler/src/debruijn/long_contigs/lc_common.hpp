@@ -77,7 +77,7 @@ struct PairedInfoIndexLibrary {
 	size_t is_delta;
 	size_t deDelta;
 	size_t var;
-	PairedInfoIndex<Graph>* pairedInfoIndex;
+	PairedInfoIndex<Graph> * pairedInfoIndex;
 
 	bool has_advanced;
 	PairedInfoIndexLibrary* advanced;
@@ -87,8 +87,6 @@ struct PairedInfoIndexLibrary {
 	PairedInfoIndexLibrary(const Graph& g, size_t readS, size_t insS, size_t delta, size_t ded, size_t v, PairedInfoIndex<Graph>* index):
 		g_(&g), readSize(readS), insertSize(insS), is_delta(delta), deDelta(ded), var(v), pairedInfoIndex(index), has_advanced(false), advanced(0), raw(0) {
 	}
-
-
 
 	double NormalizeWeight(const PairInfo<EdgeId>& pair_info) {
 		double w = 0.;
@@ -123,10 +121,10 @@ typedef std::vector<PairedInfoIndexLibrary> PairedInfoIndices;
 
 class SimplePathComparator {
 private:
-	Graph& g_;
+	const Graph& g_;
 
 public:
-	SimplePathComparator(Graph& g): g_(g) {}
+	SimplePathComparator(const Graph& g): g_(g) {}
 
 	bool operator() (const BidirectionalPath& path1, const BidirectionalPath& path2) const {
 		return PathLength(g_, path1) > PathLength(g_, path2);
@@ -165,12 +163,12 @@ struct PathStatData {
 
 class PathStopHandler {
 private:
-	Graph& g_;
+	const Graph& g_;
 	std::multimap<BidirectionalPath*, PathStatData> forward_;
 	std::multimap<BidirectionalPath*, PathStatData> backward_;
 
 public:
-	PathStopHandler(Graph& g):  g_(g), forward_(), backward_() {}
+	PathStopHandler(const Graph& g):  g_(g), forward_(), backward_() {}
 
 	void AddStop(BidirectionalPath* path, StopReason reason, bool forward) {
 		std::string msg;
@@ -250,7 +248,7 @@ void MakeKeyPause() {
 }
 
 //Edge count in graph
-size_t EdgeCount(Graph& g) {
+size_t EdgeCount(const Graph& g) {
 	size_t edgeCount = 0;
 	for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		++edgeCount;
@@ -275,7 +273,7 @@ void PrintPathEdgeLengthStats(std::vector<BidirectionalPath>& paths) {
 }
 
 //Prints length and amount of paths with respective length
-void PrintPathLengthStats(Graph& g, std::vector<BidirectionalPath>& paths) {
+void PrintPathLengthStats(const Graph& g, std::vector<BidirectionalPath>& paths) {
 	std::map<size_t, size_t> lengthMap;
 
 	for(auto iter = paths.begin(); iter != paths.end(); ++iter) {
@@ -290,7 +288,7 @@ void PrintPathLengthStats(Graph& g, std::vector<BidirectionalPath>& paths) {
 }
 
 //Prints coverage of all edges by given paths and total edge coverage
-double PrintPathCoverage(Graph& g, std::vector<BidirectionalPath>& paths) {
+double PrintPathCoverage(const Graph& g, std::vector<BidirectionalPath>& paths) {
 	std::multiset<EdgeId> covered;
 
 	for(auto path = paths.begin(); path != paths.end(); ++path) {
@@ -317,7 +315,7 @@ double PrintPathCoverage(Graph& g, std::vector<BidirectionalPath>& paths) {
 }
 
 //Percentage of edges covered by paths
-double PathsCoverage(Graph& g, std::vector<BidirectionalPath>& paths) {
+double PathsCoverage(const Graph& g, std::vector<BidirectionalPath>& paths) {
 	std::set<EdgeId> covered;
 
 	for(auto path = paths.begin(); path != paths.end(); ++path) {
@@ -335,7 +333,7 @@ double PathsCoverage(Graph& g, std::vector<BidirectionalPath>& paths) {
 }
 
 //Percentage of nucleotides covered by paths
-double PathsLengthCoverage(Graph& g, std::vector<BidirectionalPath>& paths) {
+double PathsLengthCoverage(const Graph& g, std::vector<BidirectionalPath>& paths) {
 	std::set<EdgeId> covered;
 
 	for(auto path = paths.begin(); path != paths.end(); ++path) {
@@ -358,7 +356,7 @@ double PathsLengthCoverage(Graph& g, std::vector<BidirectionalPath>& paths) {
 }
 
 //Print short info about paths paths (length and edge count)
-void PrintPathsShort(Graph& g, std::vector<BidirectionalPath>& paths) {
+void PrintPathsShort(const Graph& g, const std::vector<BidirectionalPath>& paths) {
 	DEBUG("Total paths " << paths.size());
 	DEBUG("Path length : edge count")
 	for(auto iter = paths.begin(); iter != paths.end(); ++iter) {
@@ -367,7 +365,7 @@ void PrintPathsShort(Graph& g, std::vector<BidirectionalPath>& paths) {
 }
 
 //Print path with length from start / end to the every edge
-void PrintPath(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
+void PrintPath(const Graph& g, BidirectionalPath& path, PathLengths& lengths) {
 	DEBUG("Path " << &path)
 	DEBUG("#, edge, length, total length")
 	for(size_t i = 0; i < path.size(); ++i) {
@@ -376,7 +374,7 @@ void PrintPath(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
 }
 
 //Print path with length from start / end to the every edge
-void DetailedPrintPath(Graph& g, BidirectionalPath& path, PathLengths& lengths) {
+void DetailedPrintPath(const Graph& g, BidirectionalPath& path, PathLengths& lengths) {
 	if (lc_cfg::get().params.rs.detailed_output) {
 		PrintPath(g, path, lengths);
 	}
@@ -384,7 +382,7 @@ void DetailedPrintPath(Graph& g, BidirectionalPath& path, PathLengths& lengths) 
 
 //Print path
 template<class PathType>
-void PrintPath(Graph& g, PathType& path) {
+void PrintPath(const Graph& g, const PathType& path) {
 	DEBUG("Path " << &path << " with length " << PathLength(g, path));
 	DEBUG("#, edge, length")
 	for(int i = 0; i < (int) path.size(); ++i) {
@@ -394,7 +392,7 @@ void PrintPath(Graph& g, PathType& path) {
 
 //Print path
 template<class PathType>
-void DetailedPrintPath(Graph& g, PathType& path) {
+void DetailedPrintPath(const Graph& g, PathType& path) {
 	if (lc_cfg::get().params.rs.detailed_output) {
 		PrintPath(g, path);
 	}
@@ -402,7 +400,7 @@ void DetailedPrintPath(Graph& g, PathType& path) {
 
 //Print path
 template<class PathType>
-void PrintPathWithVertices(Graph& g, PathType& path) {
+void PrintPathWithVertices(const Graph& g, PathType& path) {
 	DEBUG("Path " << &path)
 	DEBUG("#, edge, length")
 
@@ -412,7 +410,7 @@ void PrintPathWithVertices(Graph& g, PathType& path) {
 	}
 }
 
-void CountPathLengths(Graph& g, std::vector<BidirectionalPath>& paths, std::vector<size_t>& lengths) {
+void CountPathLengths(const Graph& g, std::vector<BidirectionalPath>& paths, std::vector<size_t>& lengths) {
 	lengths.clear();
 	for (auto path = paths.begin(); path != paths.end(); ++path) {
 			lengths.push_back(PathLength(g, *path));
@@ -421,7 +419,7 @@ void CountPathLengths(Graph& g, std::vector<BidirectionalPath>& paths, std::vect
 
 
 //[,)
-void PrintPathFromTo(Graph& g, Path<Graph::EdgeId>& path, size_t startPos = 0, size_t endPos = 0) {
+void PrintPathFromTo(const Graph& g, Path<Graph::EdgeId>& path, size_t startPos = 0, size_t endPos = 0) {
 	if (startPos >= path.size() || endPos > path.size()) return;
 
 	if (endPos == 0) {
@@ -435,7 +433,7 @@ void PrintPathFromTo(Graph& g, Path<Graph::EdgeId>& path, size_t startPos = 0, s
 }
 
 //[,)
-void PrintPathFromTo(Graph& g, BidirectionalPath& path, size_t startPos = 0, size_t endPos = 0) {
+void PrintPathFromTo(const Graph& g, BidirectionalPath& path, size_t startPos = 0, size_t endPos = 0) {
 	if (startPos >= path.size() || endPos > path.size()) return;
 
 	if (endPos == 0) {
@@ -457,7 +455,7 @@ void PrintDetector(CycleDetector& detector) {
 }
 
 //Ouput only edges with specified length
-void PrintEdgeNuclsByLength(Graph& g, size_t edgeLen) {
+void PrintEdgeNuclsByLength(const Graph& g, size_t edgeLen) {
 	for (auto edge = g.SmartEdgeBegin(); !edge.IsEnd(); ++edge) {
 		if (g.length(*edge) == edgeLen) {
 			DEBUG("Length " << edgeLen << ", Data: " << g.EdgeNucls(*edge).Subseq(0, g.length(*edge) + 1).str());
@@ -498,7 +496,7 @@ void AddPathPairToContainer(BidirectionalPath p1, BidirectionalPath p2, T& paths
 }
 
 //Increase path lengths
-void IncreaseLengths(Graph& g, PathLengths& lengths, EdgeId edge, bool forward) {
+void IncreaseLengths(const Graph& g, PathLengths& lengths, EdgeId edge, bool forward) {
 	size_t len = g.length(edge);
 	for(auto iter = lengths.begin(); iter != lengths.end(); ++iter) {
 		*iter += len;

@@ -77,7 +77,7 @@ struct LoopDetector {
 		temp.clear();
 	}
 
-	void print(Graph& g) {
+	void print(const Graph& g) {
 		DEBUG("== Detector data ==");
 		for (auto iter = data.begin(); iter != data.end(); ++iter) {
 			DEBUG("Edge " << g.length(iter->first) << ", weight " << iter->second.selfWeight << ", iteration " << iter->second.iteration);
@@ -137,7 +137,7 @@ bool PathIsOnlyLoop(BidirectionalPath& path, LoopDetector& detector, bool forwar
 }
 
 
-size_t CountLoopLength(Graph& g, BidirectionalPath& path, LoopDetector& detector, bool forward) {
+size_t CountLoopLength(const Graph& g, BidirectionalPath& path, LoopDetector& detector, bool forward) {
 	EdgeId lastEdge = forward ? path.back() : path.front();
 	size_t loopSize = CountLoopEdges(lastEdge, detector);
 
@@ -236,7 +236,7 @@ EdgeId FindFirstFork(BidirectionalPath& path, EdgeId e, LoopDetector& detector, 
 	return 0;
 }
 
-EdgeId GetForwardFork(Graph& g, EdgeId e) {
+EdgeId GetForwardFork(const Graph& g, EdgeId e) {
 	VertexId v = g.EdgeStart(e);
 	if (g.OutgoingEdgeCount(v) != 2) {
 		return 0;
@@ -249,7 +249,7 @@ EdgeId GetForwardFork(Graph& g, EdgeId e) {
 	}
 }
 
-EdgeId GetBackwardFork(Graph& g, EdgeId e) {
+EdgeId GetBackwardFork(const Graph& g, EdgeId e) {
 	VertexId v = g.EdgeEnd(e);
 	if (g.IncomingEdgeCount(v) != 2) {
 		return 0;
@@ -262,11 +262,11 @@ EdgeId GetBackwardFork(Graph& g, EdgeId e) {
 	}
 }
 
-bool EdgesMakeShortLoop(Graph& g, EdgeId e1, EdgeId e2) {
+bool EdgesMakeShortLoop(const Graph& g, EdgeId e1, EdgeId e2) {
 	return g.EdgeStart(e1) == g.EdgeEnd(e2) && g.EdgeStart(e2) == g.EdgeEnd(e1);
 }
 
-EdgeId IsEdgeInShortLoopForward(Graph& g, EdgeId e) {
+EdgeId IsEdgeInShortLoopForward(const Graph& g, EdgeId e) {
 	VertexId v = g.EdgeEnd(e);
 	auto edges = g.OutgoingEdges(v);
 	EdgeId result = 0;
@@ -284,7 +284,7 @@ EdgeId IsEdgeInShortLoopForward(Graph& g, EdgeId e) {
 	return result;
 }
 
-EdgeId IsEdgeInShortLoopBackward(Graph& g, EdgeId e) {
+EdgeId IsEdgeInShortLoopBackward(const Graph& g, EdgeId e) {
 	VertexId v = g.EdgeStart(e);
 	auto edges = g.IncomingEdges(v);
 	EdgeId result = 0;

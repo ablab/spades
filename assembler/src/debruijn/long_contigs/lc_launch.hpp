@@ -23,7 +23,7 @@ namespace long_contigs {
 
 using namespace debruijn_graph;
 
-void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence& genome, std::string output_dir, const lc_config::lc_params& p,
+void resolve_repeats_ml(const conj_graph_pack& gp, PairedInfoIndices& pairedInfos, std::string output_dir, const lc_config::lc_params& p,
 		boost::optional<const PairedInfoIndex<Graph>&> jump_index_opt = boost::none) {
 	INFO("Multilayer resolving tool started");
 
@@ -35,16 +35,16 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence
 
 	params = p;
 
-	EdgeIndex<K + 1, Graph> index(g);
+//	EdgeIndex<K + 1, Graph> index(g);
 
 	std::vector<BidirectionalPath> seeds;
 	std::vector<BidirectionalPath> rawSeeds;
 	std::vector<BidirectionalPath> filteredSeeds;
 	std::vector<BidirectionalPath> lowCoveredSeeds;
 
+	const Graph& g = gp.g;
+
 	PathStopHandler stopHandler(g);
-	Path<Graph::EdgeId> path1 = FindGenomePath<K> (genome, g, index);
-	Path<Graph::EdgeId> path2 = FindGenomePath<K> (!genome, g, index);
 
 	std::vector<int> seedPairs;
 	std::vector<double> seedQuality;
@@ -91,7 +91,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence
 //	INFO("Path length coverage " << PathsLengthCoverage(g, seeds));
 //
 	if (params.write_seeds) {
-		WriteGraphWithPathsSimple(output_dir + "seeds.dot", "seeds", g, seeds, path1, path2);
+		WriteGraphWithPathsSimple(gp, output_dir + "seeds.dot", "seeds", seeds);
 		OutputPathsAsContigsNoComplement(g, seeds, output_dir + "seeds.fasta", std::set<int>());
 	}
 
@@ -155,7 +155,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence
 	}
 
 	if (params.write_overlaped_paths) {
-		WriteGraphWithPathsSimple(output_dir + "overlaped_paths.dot", "overlaped_paths", g, result, path1, path2);
+		WriteGraphWithPathsSimple(gp, output_dir + "overlaped_paths.dot", "overlaped_paths", result);
 	}
 
 	CheckIds(g, result);
@@ -167,7 +167,7 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence
 	}
 
 	if (params.write_paths) {
-		WriteGraphWithPathsSimple(output_dir + "final_paths.dot", "final_paths", g, result, path1, path2);
+		WriteGraphWithPathsSimple(gp, output_dir + "final_paths.dot", "final_paths", result);
 	}
 
 	if (params.write_contigs) {
@@ -200,20 +200,19 @@ void resolve_repeats_ml(Graph& g, PairedInfoIndices& pairedInfos, const Sequence
 		INFO("All contigs written");
 	}
 
-	PrintPath(g, path1);
-	PrintPath(g, path2);
+	PrintPath(gp.g, FindGenomePath<K>(gp.genome, gp.g, gp.index));
+	PrintPath(gp.g, FindGenomePath<K>(!gp.genome, gp.g, gp.index));
 
 	INFO("Tool finished");
 	DeleteAdditionalInfo(pairedInfos);
 }
 
-
-void resolve_repeats_ml(Graph& g, PairedInfoIndex<Graph>& index, const Sequence& genome, std::string output_dir, const lc_config::lc_params& p,
+void resolve_repeats_ml(const conj_graph_pack& gp, PairedInfoIndex<Graph>& paired_index, const std::string& output_dir, const lc_config::lc_params& p,
 		boost::optional<const PairedInfoIndex<Graph>&> jump_index_opt = boost::none) {
     PairedInfoIndices pairedInfos;
-    pairedInfos.push_back(PairedInfoIndexLibrary(g, cfg::get().ds.RL, cfg::get().ds.IS, 2, cfg::get().de.delta, 5, &index));
+    pairedInfos.push_back(PairedInfoIndexLibrary(gp.g, cfg::get().ds.RL, cfg::get().ds.IS, 2, cfg::get().de.delta, 5, &paired_index));
 
-    resolve_repeats_ml(g, pairedInfos, genome, output_dir, p, jump_index_opt);
+    resolve_repeats_ml(gp, pairedInfos, output_dir, p, jump_index_opt);
 }
 
 } /* long_contigs */

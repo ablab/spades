@@ -25,7 +25,7 @@ EdgeId FindExitFromLoop(BidirectionalPath& path, LoopDetector& detector,
 	return FindFirstFork(path, lastEdge, detector, forward);
 }
 
-void ImitateFork(Graph& g, BidirectionalPath& path, PathLengths& lengths,
+void ImitateFork(const Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		LoopDetector& detector, PairedInfoIndices& pairedInfo, EdgeId loopEdge,
 		EdgeId loopExit, bool forward, int excludeCycle = -1) {
 	DEBUG("Imitating fork " << g.length(loopEdge) << " " << g.length(loopExit));
@@ -105,7 +105,7 @@ void ReducePathTo(BidirectionalPath& path, LoopDetector& detector,
 }
 
 //Find length
-bool CheckLoop(Graph& g, BidirectionalPath& path, LoopDetector& detector,
+bool CheckLoop(const Graph& g, BidirectionalPath& path, LoopDetector& detector,
 		EdgeId& loopEdge, size_t& loopLength, bool forward, size_t& loopSize) {
 	loopLength = 0;
 	if (loopEdge == 0) {
@@ -178,7 +178,7 @@ bool MakeCorrectLoop(BidirectionalPath& path, LoopDetector& detector,
 }
 
 //Find best loop path
-bool ResolveLoopForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
+bool ResolveLoopForward(const Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		LoopDetector& detector, PairedInfoIndices& pairedInfo,
 		EdgeId loopEdge) {
 
@@ -231,7 +231,7 @@ bool ResolveLoopForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 }
 
 //Find best loop path
-bool ResolveLoopBackward(Graph& g, BidirectionalPath& path,
+bool ResolveLoopBackward(const Graph& g, BidirectionalPath& path,
 		PathLengths& lengths, LoopDetector& detector,
 		PairedInfoIndices& pairedInfo, EdgeId loopEdge) {
 
@@ -287,13 +287,14 @@ bool ResolveLoopBackward(Graph& g, BidirectionalPath& path,
 }
 
 //Extend path forward
-bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
+bool ExtendPathForward(const Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		LoopDetector& detector, PairedInfoIndices& pairedInfo,
 		PathStopHandler& handler, JumpingHero<Graph>& hero) {
 
 	if (path.empty()) {
 		return false;
 	}
+
 	double w = 0;
 	static bool FULL_LOOP_REMOVAL = params.ps.lr.full_loop_removal;
 	static size_t MAX_LOOPS = params.ps.lr.max_loops;
@@ -356,7 +357,7 @@ bool ExtendPathForward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
 }
 
 //And backward
-bool ExtendPathBackward(Graph& g, BidirectionalPath& path, PathLengths& lengths,
+bool ExtendPathBackward(const Graph& g, BidirectionalPath& path, PathLengths& lengths,
 		LoopDetector& detector, PairedInfoIndices& pairedInfo,
 		PathStopHandler& handler, JumpingHero<Graph>& hero) {
 
@@ -450,7 +451,7 @@ boost::optional<EdgeId> FindLastLongEdge(const Graph& g, double length_bound,
 
 
 //Grow selected seed in both directions
-void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo,
+void GrowSeed(const Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo,
 		PathStopHandler& handler,
 		const PairedInfoIndex<Graph>& jump_index) {
 	PathLengths lengths;
@@ -468,7 +469,7 @@ void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo,
 
 		RecountDetectorForward(g, seed, pairedInfo, detector);
 
-		JumpingHero<Graph> forward_hero(g, seed, jump_index, 2000, 2500, true, 10.);
+		JumpingHero<Graph> forward_hero(g, seed, jump_index, 2000, 3500, true, 10.);
 
 		while (ExtendPathForward(g, seed, lengths, detector, pairedInfo,
 				handler, forward_hero)) {
@@ -484,7 +485,7 @@ void GrowSeed(Graph& g, BidirectionalPath& seed, PairedInfoIndices& pairedInfo,
 
 		RecountDetectorBackward(g, seed, pairedInfo, detector);
 
-		JumpingHero<Graph> backward_hero(g, seed, jump_index, 10000, 11000, false, 20.);
+		JumpingHero<Graph> backward_hero(g, seed, jump_index, 2000, 3500, false, 10.);
 
 		while (ExtendPathBackward(g, seed, lengths, detector, pairedInfo,
 				handler, backward_hero)) {
@@ -500,7 +501,7 @@ size_t SeedPriority(const BidirectionalPath& seed) {
 }
 
 //Find paths with given seeds
-void FindPaths(Graph& g, std::vector<BidirectionalPath>& seeds,
+void FindPaths(const Graph& g, std::vector<BidirectionalPath>& seeds,
 		PairedInfoIndices& pairedInfo, PathStopHandler& handler,
 		const PairedInfoIndex<Graph>& jump_index) {
 
@@ -523,7 +524,7 @@ void FindPaths(Graph& g, std::vector<BidirectionalPath>& seeds,
 
 // === Totally symmertic mode ===
 
-void CompareConjugateGrowth(Graph& g, BidirectionalPath& path,
+void CompareConjugateGrowth(const Graph& g, BidirectionalPath& path,
 		PathLengths& lengths, LoopDetector& detector,
 		BidirectionalPath& conjPath, PathLengths& conjLengths,
 		LoopDetector& conjDetector) {
@@ -547,7 +548,7 @@ void SymmetrizePaths() {
 
 //todo ask andrew
 //Grow selected seed in both directions
-//void GrowSeedSymmetric(Graph& g, BidirectionalPath& seed,
+//void GrowSeedSymmetric(const Graph& g, BidirectionalPath& seed,
 //		BidirectionalPath& conjSeed, PairedInfoIndices& pairedInfo,
 //		PathStopHandler& handler) {
 //
@@ -609,7 +610,7 @@ void SymmetrizePaths() {
 //}
 
 //todo ask andrew
-//void FindPathsSymmetric(Graph& g, std::vector<BidirectionalPath>& seeds,
+//void FindPathsSymmetric(const Graph& g, std::vector<BidirectionalPath>& seeds,
 //		PairedInfoIndices& pairedInfo, PathStopHandler& handler,
 //		std::vector<int>& seedPairs) {
 //

@@ -327,50 +327,6 @@ public:
 		return edge->conjugate();
 	}
 
-	virtual std::string PrintEdges(const vector<EdgeId>& path) const {
-		stringstream ss;
-		ss << "Edges: ";
-		for (auto it = path.begin(); it != path.end(); ++it) {
-			ss << PrintEdge(*it) << ", ";
-		}
-		return ss.str();
-	}
-
-	virtual std::string PrintEdge(EdgeId edge) const {
-		stringstream ss;
-//		ss << "Edge ";
-		ss << edge << " (conjugate " << conjugate(edge) << ")";
-		return ss.str();
-	}
-
-	virtual std::string PrintVertex(VertexId v) const {
-		stringstream ss;
-//		ss << "Edge ";
-		ss << v << " (conjugate " << conjugate(v) << ")";
-		return ss.str();
-	}
-
-	virtual std::string PrintDetailedVertexInfo(VertexId v) const {
-		stringstream ss;
-		ss << "Vertex " << v << " (conjugate " << conjugate(v) << "), ";
-		ss << "Incoming " << PrintEdges(IncomingEdges(v)) << ", ";
-		ss << "Outgoing " << PrintEdges(OutgoingEdges(v));
-		ss << ";";
-		return ss.str();
-	}
-
-	virtual std::string PrintDetailedPath(const vector<EdgeId>& path) const {
-		stringstream ss;
-		ss << "Path: ";
-		ss << PrintDetailedVertexInfo(EdgeStart(path[0]));
-		for (auto it = path.begin(); it != path.end(); ++it) {
-			EdgeId e = *it;
-			ss << "Edge " << e << " (conjugate " << conjugate(e) << "); ";
-			ss << PrintDetailedVertexInfo(EdgeEnd(e));
-		}
-		return ss.str();
-	}
-
 	/*virtual*/ bool AdditionalCompressCondition(VertexId v) const {
 		return !(EdgeEnd(GetUniqueOutgoingEdge(v)) == conjugate(v)
 				&& EdgeStart(GetUniqueIncomingEdge(v)) == conjugate(v));

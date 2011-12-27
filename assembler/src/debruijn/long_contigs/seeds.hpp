@@ -24,7 +24,7 @@ using namespace debruijn_graph;
 //Extends trivial path forward
 //If a start of another trivial path is found, returns it
 //Otherwise returns 0
-void ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detector,
+void ExtendTrivialForward(const Graph& g, BidirectionalPath& path, LoopDetector& detector,
 		PathLengths* lengths = 0, PairedInfoIndices * pairedInfo = 0) {
 	static bool maxCycles = params.ps.ss.max_cycles;
 
@@ -77,7 +77,7 @@ void ExtendTrivialForward(Graph& g, BidirectionalPath& path, LoopDetector& detec
 
 
 //Trivially extend path backward
-void ExtendTrivialBackward(Graph& g, BidirectionalPath& path, LoopDetector& detector, PathLengths* lengths = 0, PairedInfoIndices * pairedInfo = 0) {
+void ExtendTrivialBackward(const Graph& g, BidirectionalPath& path, LoopDetector& detector, PathLengths* lengths = 0, PairedInfoIndices * pairedInfo = 0) {
 	static bool maxCycles = params.ps.ss.max_cycles;
 
 	if (path.empty()) {
@@ -160,7 +160,7 @@ void SimpleRecountDetectorBackward(BidirectionalPath& path, LoopDetector& detect
 
 
 //Find all seeds as trivial paths
-void FindSeeds(Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndices * pairedInfo = 0) {
+void FindSeeds(const Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfoIndices * pairedInfo = 0) {
 	LoopDetector detector;
 	PathLengths lengths;
 	std::set<EdgeId> edges;

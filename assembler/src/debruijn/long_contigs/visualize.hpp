@@ -15,18 +15,16 @@ namespace long_contigs {
 using namespace debruijn_graph;
 
 template<class Graph>
-class PathsGraphLabeler : public GraphLabeler<Graph> {
+class PathsGraphLabeler : public AbstractGraphLabeler<Graph> {
+	typedef AbstractGraphLabeler<Graph> base;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
 
-protected:
-	typedef GraphLabeler<Graph> super;
-	typedef typename super::EdgeId EdgeId;
-	typedef typename super::VertexId VertexId;
-	Graph& g_;
 	std::vector<BidirectionalPath>& paths_;
 	std::map<EdgeId, std::string> labels_;
 
 public:
-	PathsGraphLabeler(Graph& g, std::vector<BidirectionalPath>& paths) : g_(g), paths_(paths){
+	PathsGraphLabeler(const Graph& g, std::vector<BidirectionalPath>& paths) : base(g), paths_(paths){
 		for(size_t i = 0; i < paths.size(); ++i) {
 			BidirectionalPath& path = paths[i];
 
@@ -52,19 +50,27 @@ public:
 	}
 };
 
-void WriteGraphWithPathsSimple(const string& file_name, const string& graph_name, Graph& g, std::vector<BidirectionalPath>& paths,
-		Path<Graph::EdgeId> path1, Path<Graph::EdgeId> path2) {
+void WriteGraphWithPathsSimple(const conj_graph_pack& gp, const string& file_name, const string& graph_name, std::vector<BidirectionalPath>& paths) {
+
+	Path<Graph::EdgeId> path1 = FindGenomePath<K> (gp.genome, gp.g, gp.index);
+	Path<Graph::EdgeId> path2 = FindGenomePath<K> (!gp.genome, gp.g, gp.index);
 
 	std::fstream filestr;
 	filestr.open(file_name.c_str(), std::fstream::out);
 
-	gvis::DotGraphPrinter<Graph::VertexId> gp(graph_name, filestr);
-	PathColorer<Graph> path_colorer(g, path1, path2);
+	gvis::DotGraphPrinter<Graph::VertexId> printer(graph_name, filestr);
+	PathColorer<Graph> path_colorer(gp.g, path1, path2);
+
 	map<Graph::EdgeId, string> coloring = path_colorer.ColorPath();
 
-	PathsGraphLabeler<Graph> gl(g, paths);
-	ColoredGraphVisualizer<Graph> gv(g, gp, gl, coloring);
-	AdapterGraphVisualizer<Graph> result_vis(g, gv);
+	StrGraphLabeler<Graph> str_labeler(gp.g);
+	PathsGraphLabeler<Graph> path_labeler(gp.g, paths);
+	EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
+
+	CompositeLabeler<Graph> composite_labeler = {&str_labeler, &path_labeler, &pos_labeler};
+
+	ColoredGraphVisualizer<Graph> gv(gp.g, printer, composite_labeler, coloring);
+	AdapterGraphVisualizer<Graph> result_vis(gp.g, gv);
 	result_vis.Visualize();
 	filestr.close();
 }

@@ -87,6 +87,7 @@ public:
 		ret_label += "Len(cov): " + ToString(len)+"("+ToString(cov)+")";// + graph_struct->g_.str(edgeId);
 		return ret_label;
 	}
+
 	virtual ~TotalLabeler() {
 		TRACE("~TotalLabeler");
 	}

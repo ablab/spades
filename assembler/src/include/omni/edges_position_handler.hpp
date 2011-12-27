@@ -256,7 +256,8 @@ public:
  			EdgesPositions[e] = NewVec;
 		}
  	}
-	virtual void HandleDelete(EdgeId e) {
+
+ 	virtual void HandleDelete(EdgeId e) {
 //		if (EdgesPositions[e].size() > 0) {
 //			DEBUG("Delete edge "<<e<<" handled. Not empty info: "<<EdgesPositions[e].size());
 //			for (size_t i = 0; i < EdgesPositions[e].size(); i++){
@@ -268,42 +269,12 @@ public:
 //		}
 		EdgesPositions.erase(e);
 	}
- 	void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) {
+
+	void HandleVertexSplit(VertexId newVertex, vector<pair<EdgeId, EdgeId> > newEdges, vector<double> &split_coefficients, VertexId oldVertex) {
  		for (auto cur_edges_pair = newEdges.begin(); cur_edges_pair != newEdges.end(); ++cur_edges_pair){
  			AddEdgePosition(cur_edges_pair->second, EdgesPositions[cur_edges_pair->first]);
  		}
  	}
-
-
-};
-
-
-
-template<class Graph>
-class EdgesPosGraphLabeler: public GraphLabeler<Graph> {
-
-protected:
-	typedef GraphLabeler<Graph> super;
-	typedef typename super::EdgeId EdgeId;
-	typedef typename super::VertexId VertexId;
-	Graph& g_;
-public:
-	EdgesPositionHandler<Graph>& EdgesPos;
-
-	EdgesPosGraphLabeler(Graph& g, EdgesPositionHandler<Graph>& EdgesPosit) :
-		g_(g), EdgesPos(EdgesPosit) {
-	}
-
-	virtual std::string label(VertexId vertexId) const {
-		return g_.str(vertexId);
-	}
-
-	virtual std::string label(EdgeId edgeId) const {
-		return EdgesPos.str(edgeId) + ": " + g_.str(edgeId);
-	}
-	virtual ~EdgesPosGraphLabeler() {
-		TRACE("~EdgesPosGraphLabeler");
-	}
 
 };
 
