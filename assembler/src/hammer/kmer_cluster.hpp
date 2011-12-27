@@ -22,7 +22,7 @@ public:
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
-	void process(std::string dirprefix, SubKMerSorter * skmsorter, ofstream * ofs, ofstream * ofs_bad);
+	void process(bool doHamming, std::string dirprefix, SubKMerSorter * skmsorter, ofstream * ofs, ofstream * ofs_bad);
 
 	/// free up memory
 	void clear() {
@@ -48,8 +48,6 @@ private:
 	int hamdistKMer(const string & x, const string & y, int tau = K);
 	/// @return Hamming distance between x and y with upper bound tau
 	int hamdistKMer(const hint_t & x, const hint_t & y, int tau = K);
-	/// @return multinomial coefficient
-	double calcMultCoef(std::vector<int> & distances, const std::vector<int> & cl);
 	/// @return consensus string for a block
 	std::string find_consensus(const std::vector<int> & block);
 
@@ -60,10 +58,6 @@ private:
 	  */
 	std::string find_consensus_with_mask(const std::vector<int> & block, const std::vector<int> & mask, int maskVal);
 	
-	/**
-	  * @return total log-likelihood of this particular clustering
-	  */
-	double clusterLogLikelihood(const vector<int> & cl, const vector<StringCount> & centers, const vector<int> & indices);
 	/**
 	  * @return total log-likelihood of this particular clustering with real quality values
 	  */

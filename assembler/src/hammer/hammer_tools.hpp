@@ -34,73 +34,67 @@ void print_time();
 void print_mem_usage();
 void print_stats();
 
-/// join two maps
-void join_maps(KMerStatMap & v1, const KMerStatMap & v2);
-
 /**
- * add k-mers from read to map
+ * a container class for all general procedures in BayesHammer
  */
-template<uint32_t kK, typename KMerStatMap>
-void AddKMers(const PositionRead &r, hint_t readno, KMerStatMap *v);
+class HammerTools {
+public:
+	/// change single Ns to As in input read files
+	static void ChangeNtoAinReadFiles();
 
-void AddKMerNos(const PositionRead &r, hint_t readno, vector<KMerNo> *v);
+	/// estimate total read size in input read files
+	static hint_t EstimateTotalReadSize();
 
-void DoPreprocessing(int tau, string readsFilename, int nthreads, vector<KMerCount*> * kmers, KMerNoHashMap * km);
-void DoSplitAndSort(int tau, int nthreads, vector< vector<hint_t> > * vs, vector<KMerCount> * kmers, vector<SubKMerPQ> * vskpq);
-void outputReads(bool paired, const char * fname, const char * fname_bad, const char * fname_right = NULL, const char * fname_right_bad = NULL, const char * fname_left_unpaired = NULL, const char * fname_right_unpaired = NULL);
+	/// initialize subkmer positions and log about it
+	static void InitializeSubKMerPositions();
 
-/**
-  * correct a read in place
-  * @return how many nucleotides have been changed
-  */
-size_t CorrectRead(const KMerNoHashMap & km, const vector<KMerCount*> & kmers, hint_t readno, Read & r, bool & isGood, ofstream * ofs = NULL);
-bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const string & seq,
-		const vector<KMerCount*> & km, const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat,
-		vector< vector<int> > & v, int & left, int & right, bool & isGood, ofstream * ofs, bool revcomp );
+	/// read one input file into the blob and output current position and read number
+	static void ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read, bool reverse_complement);
+	/// read all input files into the blob
+	static void ReadAllFilesIntoBlob();
 
-/**
-  * make a step of iterative reconstruction
-  * @return number of new solid k-mers
-  */
-size_t IterativeReconstructionStep(int nthreads, const vector<KMerCount*> & kmers, ostream * ofs = NULL);
+	/// process a k-mer hash file
+	static void ProcessKmerHashFile( ifstream * inStream, KMerNoHashMap & km );
+	/// print a processed k-mer hash file
+	static void PrintProcessedKmerHashFile(ofstream * outf, hint_t & kmer_num, KMerNoHashMap & km );
+	/// count k-mers in input files
+	static void CountKMersBySplitAndMerge();
 
-/**
- * This function reads reads from the stream and splits them into
- * k-mers. Then k-mers are written to several file almost
- * uniformly. It is guaranteed that the same k-mers are written to the
- * same files.
- * Different from quake_count in that it works with position reads
- * @param dirprefix where to put the temporary files
- * @param iter_count no. of current iteration
- */
-void SplitToFiles(string dirprefix, int iter_count);
+	/// do one step of iterative expansion, return the number of new solid k-mers
+	static hint_t IterativeExpansionStep(int expand_iter_no, int nthreads, const vector<KMerCount*> & kmers);
 
-/**
- * process a single file with kmers divided by hashes
- * output results into kmerno_file
- */
-void ProcessKmerHashFile( ifstream * inStream, KMerNoHashMap & km );
-void PrintProcessedKmerHashFile(ofstream * outf, hint_t & kmer_num, KMerNoHashMap & km );
-void PrintKMerFileWithChangeTo( ofstream * outf, const vector<KMerCount *> & kmers );
+	/// print out the resulting set of k-mers
+	static void PrintKMerResult( ofstream * outf, const vector<KMerCount *> & kmers );
 
-/**
- * fill in kmerno vector
- */
-void fillInKmersFromFile( const string & fname, vector<hint_t> *kmernos );
-void fillInSolidKmersFromFile( const string & fname, vector<KMerCount*> *kmers );
-void fillInStringMapFromFile( const string & fname, vector<KMerCount*> *kmernos );
-void fillInKmersAndNosFromFile( const string & fname, vector<KMerCount*> *kmers, vector<hint_t> *kmernos );
-void fillInKmersWithChangeToFromFile( const string & fname, vector<KMerCount*> *kmers, vector<hint_t> *kmernos );
-void fillInBadKmersFromFile( const string & fname, vector<KMerCount*> *kmers );
+	/// internal procedure
+	static bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const string & seq,
+			const vector<KMerCount*> & km, const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat,
+			vector< vector<int> > & v, int & left, int & right, bool & isGood, ofstream * ofs, bool revcomp );
 
-string getFilename( const string & dirprefix, const string & suffix );
-string getFilename( const string & dirprefix, int iter_count, const string & suffix );
-string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num );
+	/// correct one read
+	static bool CorrectOneRead( const vector<KMerCount*> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno, Read & r, size_t i );
+	/// correct reads in a given file
+	static void CorrectReadFile( const string & readsFilename, const vector<KMerCount*> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno_start, ofstream *outf_good, ofstream *outf_bad );
+	/// correct reads in a given pair of files
+	static void CorrectPairedReadFiles( const string & readsFilenameLeft, const string & readsFilenameRight,
+			const vector<KMerCount*> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno_left_start, hint_t readno_right_start,
+			ofstream * ofbadl, ofstream * ofcorl, ofstream * ofunpl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunpr );
+	/// correct all reads
+	static hint_t CorrectAllReads();
 
-void getGlobalConfigParameters( const string & config_file );
+	/// read k-mer indices from file
+	static void ReadKmerNosFromFile( const string & fname, vector<hint_t> *kmernos );
+	/// read a k-mer result file
+	static void ReadKmersAndNosFromFile( const string & fname, vector<KMerCount*> *kmers, vector<hint_t> *kmernos );
 
-void dumpBlob( const string & fname );
-void loadBlob( const string & fname );
+	static string getFilename( const string & dirprefix, const string & suffix );
+	static string getFilename( const string & dirprefix, int iter_count, const string & suffix );
+	static string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num );
+	static string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num, const string & suffix2 );
+	static string getFilename( const string & dirprefix, const string & suffix, int suffix_num );
+};
+
+
 
 #endif
 

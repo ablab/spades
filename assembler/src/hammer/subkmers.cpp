@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include "hammer_tools.hpp"
 #include "subkmers.hpp"
+#include "config_struct_hammer.hpp"
 
 void SubKMerSorter::runSort(std::string inputFile) {
 	if (type_ == SorterTypeFileBasedStraight) {
@@ -34,7 +35,7 @@ void SubKMerSorter::runMemoryBasedSort() {
 
 void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 
-	if (!Globals::skip_sorting_subvectors) {
+	if (cfg::get().subvectors_do) {
 
 	TIMEDLN("Splitting " << inputFile << " into subvector files.");
 	vector< ofstream* > ofs(tau_+1);
@@ -74,7 +75,7 @@ void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 		pids[j] = vfork();
 		if ( pids[j] == 0 ) {
 			TIMEDLN("  [" << getpid() << "] Child process " << j << " for sorting subkmers starting.");
-			execlp("sort", "sort", "-n", "-T", Globals::working_dir.data(), "-o", sorted_fnames_[j].data(), fnames_[j].data(), (char *) 0 );
+			execlp("sort", "sort", "-n", "-T", cfg::get().input_working_dir.data(), "-o", sorted_fnames_[j].data(), fnames_[j].data(), (char *) 0 );
 			_exit(0);
 		} else if ( pids[j] < 0 ) {
 			TIMEDLN("Failed to fork. Exiting.");
@@ -154,8 +155,8 @@ SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<KMerCount*> * k, int nth
 						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
 				sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMersDirect,          _1, _2, tau,
 						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
-				fnames_.push_back( getFilename(Globals::working_dir, Globals::iteration_no, "subkmers", j) );
-				sorted_fnames_.push_back( getFilename(Globals::working_dir, Globals::iteration_no, "subkmers.sorted", j) );
+				fnames_.push_back( HammerTools::getFilename( cfg::get().input_working_dir, Globals::iteration_no, "subkmers", j) );
+				sorted_fnames_.push_back( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers.sorted", j) );
 			}
 			break;
 	}
@@ -177,8 +178,8 @@ SubKMerSorter::SubKMerSorter( size_t kmers_size, vector<hint_t> * k, int nthread
 						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
 				sub_equal.push_back(   boost::bind(PositionKMer::equalSubKMersHInt,          _1, _2, k, tau,
 						Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) ) );
-				fnames_.push_back( getFilename(Globals::working_dir, Globals::iteration_no, "subkmers", j) );
-				sorted_fnames_.push_back( getFilename(Globals::working_dir, Globals::iteration_no, "subkmers.sorted", j) );
+				fnames_.push_back( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers", j) );
+				sorted_fnames_.push_back( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "subkmers.sorted", j) );
 			}
 			break;
 		default:
@@ -312,7 +313,6 @@ void SubKMerPQ::initPQ() {
 		}
 	} else {
 		for (size_t j = 0; j < fnames_.size(); ++j) {
-			//cout << "  initializing SubKMerPQ with " <<fnames_[j].data() << endl;
 			ifs_.push_back(new ifstream(fnames_[j].data()));
 			if (!ifs_[j]->eof()) {
 				hint_t nextel = getNextElementFromFile(j);
