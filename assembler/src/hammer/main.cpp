@@ -142,33 +142,6 @@ int main(int argc, char * argv[]) {
 				int childExitStatus;
 				waitpid(pIDsortKmerTotalsFile, &childExitStatus, 0);
 			}
-<<<<<<< HEAD
-		}
-
-		if ( Globals::write_kmers_after_clustering && iter_count == 0 ) {
-			TIMEDLN("Writing k-mers hash after clustering.");
-			Globals::writeKMerHashMap( getFilename(Globals::working_dir, iter_count, "kmers.hash").data(), Globals::hm);
-			TIMEDLN("K-mers hash written.");
-		}
-
-		if ( Globals::use_iterative_reconstruction && (Globals::skip_iterative < 0) ) {
-			if (Globals::conserve_memory) Globals::kmernos = &kmernos;
-			for ( int iter_no = 0; iter_no < Globals::max_reconstruction_iterations; ++iter_no ) {
-				// ofstream ofs( getFilename(Globals::working_dir, iter_count, "kmers.iterative", iter_no) );
-				size_t res = IterativeReconstructionStep(nthreads, kmers, NULL);
-				//ofs.close();
-				TIMEDLN("Solid k-mers iteration " << iter_no << " produced " << res << " new k-mers.");
-
-				if ( Globals::write_each_iteration_kmers ) {
-					ofstream oftmp( getFilename(Globals::working_dir, iter_count, "goodkmers", iter_no ).data() );
-					for ( hint_t n = 0; n < kmers.size(); ++n ) {
-						if ( kmers[n]->second.isGoodForIterative() ) {
-							oftmp << kmers[n]->first.str() << "\n>" << kmers[n]->first.start()
-							      << "  cnt=" << kmers[n]->second.count << "  tql=" << (1-kmers[n]->second.totalQual) << "\n";
-						}
-					}
-				}
-=======
 			TIMEDLN("K-mer sorting done, reading k-mer info from the sorted file.");
 			HammerTools::ReadKmerNosFromFile( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.sorted"), Globals::kmernos );
 			TIMEDLN("K-mer info read.");
@@ -211,7 +184,6 @@ int main(int argc, char * argv[]) {
 			for ( int expand_iter_no = 0; expand_iter_no < cfg::get().expand_max_iterations; ++expand_iter_no ) {
 				size_t res = HammerTools::IterativeExpansionStep(expand_iter_no, expand_nthreads, *Globals::kmers);
 				TIMEDLN("Solid k-mers iteration " << expand_iter_no << " produced " << res << " new k-mers.");
->>>>>>> -- first stage of a large refactor: removed extra code, cleaned up main and hammer_tools, changed config file structure
 				if ( res < 10 ) break;
 			}
 			TIMEDLN("Solid k-mers finalized.");
