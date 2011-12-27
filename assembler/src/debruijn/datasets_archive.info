@@ -27,7 +27,7 @@ JCVI_ECOLI_400K
         RL              100
         IS              210
 	single_cell	true
-        reference_genome E.coli/MG1655-K12.fasta.gz
+        reference_genome E.coli/MG1655-K12.first400K.fasta.gz
 }
 ;================== END OF VIOLATION ============================================================================================
 
@@ -72,8 +72,7 @@ ECOLI_IS220_QUAKE_1K ; old QUAKE_CROPPED_1K
 	RL		100		; read length
 	IS	      220 	; insert size	
 	single_cell	false
-;	reference_genome  E.coli/MG1655-K12.first1000.fasta.gz
-	reference_genome  E.coli/MG1655-K12.fasta.gz
+	reference_genome  E.coli/MG1655-K12.first1K.fasta.gz
 }
 
 ECOLI_IS220_QUAKE_10K ; old QUAKE_CROPPED_10K
@@ -83,8 +82,7 @@ ECOLI_IS220_QUAKE_10K ; old QUAKE_CROPPED_10K
 	RL		100		; read length
 	IS		220 	; insert size
 	single_cell	false
-;	reference_genome  E.coli/MG1655-K12.first10000.fasta.gz
-	reference_genome  E.coli/MG1655-K12.fasta.gz
+	reference_genome  E.coli/MG1655-K12.first10K.fasta.gz
 }
 
 ECOLI_IS220_QUAKE_100K ; old QUAKE_CROPPED_100K
@@ -94,8 +92,7 @@ ECOLI_IS220_QUAKE_100K ; old QUAKE_CROPPED_100K
 	RL		100		; read length
 	IS		220 	; insert size
 	single_cell	false
-;	reference_genome  E.coli/MG1655-K12.first100000.fasta.gz
-	reference_genome  E.coli/MG1655-K12.fasta.gz
+	reference_genome  E.coli/MG1655-K12.first100K.fasta.gz
 }
 
 ECOLI_IS220_QUAKE_400K ; old QUAKE_CROPPED_400K
@@ -105,7 +102,7 @@ ECOLI_IS220_QUAKE_400K ; old QUAKE_CROPPED_400K
 	RL		100		; read length
 	IS		220 	; insert size
 	single_cell	false
-	reference_genome  E.coli/MG1655-K12.fasta.gz
+	reference_genome  E.coli/MG1655-K12.first400K.fasta.gz
 }
 
 ECOLI_IS480_QUAKE_1K ; old EAS600_QUAKE_CROPPED_1K
@@ -115,7 +112,7 @@ ECOLI_IS480_QUAKE_1K ; old EAS600_QUAKE_CROPPED_1K
 	RL		100		; read length
 	IS		480 	; insert size
 	single_cell	false
-	reference_genome  E.coli/MG1655-K12.fasta.gz
+	reference_genome  E.coli/MG1655-K12.first1K.fasta.gz
 }
 
 ECOLI_IS480_QUAKE_10K ; old EAS600_QUAKE_CROPPED_10K
@@ -125,7 +122,7 @@ ECOLI_IS480_QUAKE_10K ; old EAS600_QUAKE_CROPPED_10K
 	RL		100		; read length
 	IS		480 	; insert size
 	single_cell	false
-	reference_genome  E.coli/MG1655-K12.fasta.gz
+	reference_genome  E.coli/MG1655-K12.first10K.fasta.gz
 }
 
 ECOLI_IS480_QUAKE_100K ; old EAS600_QUAKE_CROPPED_100K
@@ -135,7 +132,7 @@ ECOLI_IS480_QUAKE_100K ; old EAS600_QUAKE_CROPPED_100K
 	RL		100		; read length
 	IS		480 	; insert size
 	single_cell	false
-	reference_genome  E.coli/MG1655-K12.fasta.gz
+	reference_genome  E.coli/MG1655-K12.first100K.fasta.gz
 }
 
 ECOLI_IS480_QUAKE_400K ; old EAS600_QUAKE_CROPPED_400K
@@ -145,7 +142,7 @@ ECOLI_IS480_QUAKE_400K ; old EAS600_QUAKE_CROPPED_400K
 	RL		100		; read length
 	IS		480 	; insert size
 	single_cell	false
-	reference_genome  E.coli/MG1655-K12.fasta.gz
+	reference_genome  E.coli/MG1655-K12.first400K.fasta.gz
 }
 
 ; ========== Single cell old datasets ==========
@@ -307,7 +304,7 @@ TRASH_SC_HAMMER_1410_CROPPED ; old SC_HAMMER_1410_CROPPED
         RL              100     ; read length
         IS              270     ; insert size
         single_cell     true
-        reference_genome  E.coli/MG1655-K12.fasta.gz
+        reference_genome  E.coli/MG1655-K12.first1K.fasta.gz
 }
 
 TRASH_JCVI_control_MDA_EColi_0212 ; old JCVI_control_MDA_EColi_0212
