@@ -2,6 +2,7 @@
 write_seeds             true 
 write_overlaped_paths   false
 write_paths             true
+write_path_loc		false
 write_contigs           true
 write_raw_paired_info   false
 cluster_paired_info     true

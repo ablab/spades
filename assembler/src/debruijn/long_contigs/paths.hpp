@@ -309,7 +309,7 @@ bool ExtendPathForward(const Graph& g, BidirectionalPath& path, PathLengths& len
 			if (!ResolveLoopForward(g, path, lengths, detector, pairedInfo,
 					loopEdge)) {
 				handler.AddStop(&path, LONG_LOOP, true);
-				cout << "Strange stop 1" << endl;
+//				cout << "Strange stop 1" << endl;
 				return false;
 			}
 			loopEdge = 0;
@@ -318,12 +318,12 @@ bool ExtendPathForward(const Graph& g, BidirectionalPath& path, PathLengths& len
 
 	std::vector<EdgeId> edges = g.OutgoingEdges(g.EdgeEnd(path.back()));
 
-	cout << "Choosing extension among edges " << g.str(edges) << endl;
+//	cout << "Choosing extension among edges " << g.str(edges) << endl;
 
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, &w,
 			EdgesToExcludeForward(g, path), true, detector, handler, hero);
 	if (extension == 0) {
-		cout << "No extension" << endl;
+//		cout << "No extension" << endl;
 		return false;
 	}
 
@@ -343,7 +343,7 @@ bool ExtendPathForward(const Graph& g, BidirectionalPath& path, PathLengths& len
 			if (!ResolveLoopForward(g, path, lengths, detector, pairedInfo,
 					loopEdge)) {
 				handler.AddStop(&path, LONG_LOOP, true);
-				cout << "Strange stop 2" << endl;
+//				cout << "Strange stop 2" << endl;
 				return false;
 			}
 		}
@@ -356,7 +356,7 @@ bool ExtendPathForward(const Graph& g, BidirectionalPath& path, PathLengths& len
 		DETAILED_DEBUG("Cycle detected");
 		DetailedPrintPath(g, path, lengths);
 		handler.AddStop(&path, LOOP, true);
-		cout << "Strange stop 3" << endl;
+//		cout << "Strange stop 3" << endl;
 		return false;
 	}
 
@@ -476,7 +476,7 @@ void GrowSeed(const Graph& g, BidirectionalPath& seed, PairedInfoIndices& paired
 
 		RecountDetectorForward(g, seed, pairedInfo, detector);
 
-		JumpingHero<Graph> forward_hero(g, seed, jump_index, 2000, 3500, true, 10.);
+		JumpingHero<Graph> forward_hero(g, seed, jump_index, 2000, 3500, true, 5.);
 
 		while (ExtendPathForward(g, seed, lengths, detector, pairedInfo,
 				handler, forward_hero)) {
@@ -492,7 +492,7 @@ void GrowSeed(const Graph& g, BidirectionalPath& seed, PairedInfoIndices& paired
 
 		RecountDetectorBackward(g, seed, pairedInfo, detector);
 
-		JumpingHero<Graph> backward_hero(g, seed, jump_index, 2000, 3500, false, 10.);
+		JumpingHero<Graph> backward_hero(g, seed, jump_index, 2000, 3500, false, 5.);
 
 		while (ExtendPathBackward(g, seed, lengths, detector, pairedInfo,
 				handler, backward_hero)) {

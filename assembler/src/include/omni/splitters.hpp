@@ -447,7 +447,7 @@ public:
 };
 
 template<class Graph>
-class ReliableSplitterAlongGenome: public GraphSplitter<Graph> {
+class ReliableSplitterAlongPath: public GraphSplitter<Graph> {
 private:
 	typedef GraphSplitter<Graph> base;
 	typedef typename Graph::VertexId VertexId;
@@ -456,29 +456,29 @@ private:
 	size_t edge_length_bound_;
 	set<VertexId> last_component_;
 	size_t current_index_;
-	MappingPath<EdgeId> genome_path_;
+	const MappingPath<EdgeId>& path_;
 	Range covered_range_;
 	bool start_processed_;
 
 	//todo edge not used in the body
 	bool EdgeCovered(EdgeId edge) {
 		return last_component_.count(
-				this->graph().EdgeStart(genome_path_[current_index_].first))
+				this->graph().EdgeStart(path_[current_index_].first))
 				== 1
 				&& last_component_.count(
 						this->graph().EdgeEnd(
-								genome_path_[current_index_].first)) == 1;
+								path_[current_index_].first)) == 1;
 	}
 
 	void SkipVisited() {
 		covered_range_.start_pos =
-				genome_path_[current_index_].second.initial_range.start_pos;
+				path_[current_index_].second.initial_range.start_pos;
 		covered_range_.end_pos =
-				genome_path_[current_index_].second.initial_range.end_pos;
-		while (current_index_ != genome_path_.size()
-				&& EdgeCovered(genome_path_[current_index_].first)) {
+				path_[current_index_].second.initial_range.end_pos;
+		while (current_index_ != path_.size()
+				&& EdgeCovered(path_[current_index_].first)) {
 			covered_range_.end_pos =
-					genome_path_[current_index_].second.initial_range.end_pos;
+					path_[current_index_].second.initial_range.end_pos;
 			++current_index_;
 		}
 	}
@@ -490,15 +490,15 @@ public:
 		return ss.str();
 	}
 
-	ReliableSplitterAlongGenome(const Graph &graph, size_t max_size,
-			size_t edge_length_bound, MappingPath<EdgeId> genome_path) :
+	ReliableSplitterAlongPath(const Graph &graph, size_t max_size,
+			size_t edge_length_bound, const MappingPath<EdgeId>& path) :
 			base(graph), max_size_(max_size), edge_length_bound_(
-					edge_length_bound), current_index_(0), genome_path_(
-					genome_path), covered_range_(0, 0), start_processed_(false) {
+					edge_length_bound), current_index_(0), path_(
+					path), covered_range_(0, 0), start_processed_(false) {
 
 	}
 
-	virtual ~ReliableSplitterAlongGenome() {
+	virtual ~ReliableSplitterAlongPath() {
 	}
 
 	virtual vector<VertexId> NextComponent() {
@@ -510,9 +510,9 @@ public:
 		CountingDijkstra<Graph> cf(this->graph(), max_size_,
 				edge_length_bound_);
 		if (start_processed_)
-			cf.run(this->graph().EdgeEnd(genome_path_[current_index_].first));
+			cf.run(this->graph().EdgeEnd(path_[current_index_].first));
 		else {
-			cf.run(this->graph().EdgeStart(genome_path_[current_index_].first));
+			cf.run(this->graph().EdgeStart(path_[current_index_].first));
 			start_processed_ = true;
 		}
 		TRACE("Search finished");
@@ -537,7 +537,7 @@ public:
 	}
 
 	virtual bool Finished() {
-		return current_index_ == genome_path_.size();
+		return current_index_ == path_.size();
 	}
 };
 

@@ -452,6 +452,7 @@ void WriteErrors(
 	//	}
 }
 
+//todo strange similar looking methods!!!
 template<class Graph>
 void WriteComponents(const Graph& g,
 		ComponentSplitter<typename Graph::VertexId> &inner_splitter,
@@ -499,6 +500,33 @@ void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
 //			coloring, labeler);
 }
 
+//todo alert!!! magic constants!!!
+template<class Graph>
+void WriteComponentsAlongPath(
+		const Graph& g,
+		const GraphLabeler<Graph>& labeler,
+		const string& file_name,
+		const string& graph_name,
+		size_t split_edge_length,
+		const MappingPath<typename Graph::EdgeId>& path,
+		Path<typename Graph::EdgeId> color1 = Path<
+				typename Graph::EdgeId>(),
+		Path<typename Graph::EdgeId> color2 = Path<
+				typename Graph::EdgeId>()) {
+//	Path<typename Graph::EdgeId> simple_path1 = color1.simple_path();
+//	Path<typename Graph::EdgeId> simple_path2 = color2.simple_path();
+	PathColorer<Graph> path_colorer(g, /*simple_path1*/color1, /*simple_path2*/color2);
+	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
+	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
+	//	ReliableSplitterAlongGenome(g, 60, split_edge_length, MappingPath<EdgeId> genome_path)
+	ReliableSplitterAlongPath<Graph> inner_splitter(g, 60, split_edge_length,
+			path);
+	ComponentSizeFilter<Graph> checker(g, 1000000, 0);
+	WriteComponents<Graph> (g, inner_splitter, checker, graph_name, file_name,
+			coloring, labeler);
+}
+
+//todo alert!!! magic constants!!!
 template<class Graph>
 void WriteComponentsAlongGenome(
 		const Graph& g,
@@ -506,21 +534,12 @@ void WriteComponentsAlongGenome(
 		const string& file_name,
 		const string& graph_name,
 		size_t split_edge_length,
-		MappingPath<typename Graph::EdgeId> path1 = MappingPath<
+		MappingPath<typename Graph::EdgeId> color1 = MappingPath<
 				typename Graph::EdgeId>(),
-		MappingPath<typename Graph::EdgeId> path2 = MappingPath<
+		MappingPath<typename Graph::EdgeId> color2 = MappingPath<
 				typename Graph::EdgeId>()) {
-	Path<typename Graph::EdgeId> simple_path1 = path1.simple_path();
-	Path<typename Graph::EdgeId> simple_path2 = path2.simple_path();
-	PathColorer<Graph> path_colorer(g, simple_path1, simple_path2);
-	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
-	//	ReliableSplitterAlongGenome(g, 60, split_edge_length, MappingPath<EdgeId> genome_path)
-	ReliableSplitterAlongGenome<Graph> inner_splitter(g, 60, split_edge_length,
-			path1);
-	ComponentSizeFilter<Graph> checker(g, 1000000, 0);
-	WriteComponents<Graph> (g, inner_splitter, checker, graph_name, file_name,
-			coloring, labeler);
+	WriteComponentsAlongPath<Graph>(g, labeler, file_name, graph_name, split_edge_length
+			, color1, color1.simple_path(), color2.simple_path());
 }
 
 template<class Graph>

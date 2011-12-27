@@ -690,7 +690,7 @@ void resolve_repeats() {
 
 	//todo magic constants!!!
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_jump) {
-		bool load_jump = false;
+		bool load_jump = true;
 		if (!load_jump) {
 			VERIFY(
 					cfg::get().ds.jumping_first && cfg::get().ds.jumping_second && cfg::get().ds.jump_is);
@@ -711,25 +711,45 @@ void resolve_repeats() {
 //			}
 //			cout << "END HERE" << endl;
 
-			io::ISCorruptingWrapper wrapped_jump_stream(jump_stream, 1e8);
+			io::ISCorruptingWrapper wrapped_jump_stream(jump_stream, 1e6);
 
 			FillPairedIndexWithReadCountMetric<K>(conj_gp.g, conj_gp.int_ids,
 					conj_gp.index, conj_gp.kmer_mapper, raw_jump_index,
 					wrapped_jump_stream);
-			JumpingPairInfoChecker<Graph> filter(conj_gp.g, 300, 100, 100);
-			paired_info_index jump_index(conj_gp.g);
-			filter.Filter(raw_jump_index, jump_index);
 
 			ConjugateDataPrinter<Graph> printer(conj_gp.g, conj_gp.int_ids);
 			printer.savePaired(cfg::get().output_dir + "jump_raw",
 					raw_jump_index);
+
+			JumpingEstimator<Graph> estimator(raw_jump_index);
+			paired_info_index clustered_jump_index(conj_gp.g);
+			estimator.Estimate(clustered_index);
+
+			JumpingNormilizerFunction<Graph> nf(conj_gp.g, 500);
+			PairedInfoNormalizer<Graph> normalizer(clustered_jump_index, nf);
+			paired_info_index normalized_jump_index(conj_gp.g);
+			normalizer.FillNormalizedIndex(normalized_jump_index);
+
+			JumpingPairInfoChecker<Graph> filter(conj_gp.g, 300, 100, 100);
+ 			paired_info_index jump_index(conj_gp.g);
+			filter.Filter(raw_jump_index, jump_index);
+
 			printer.savePaired(cfg::get().output_dir + "jump_cleared",
 					jump_index);
 			resolve_with_jumps(conj_gp, clustered_index, jump_index);
 		} else {
+//			ConjugateDataScanner<Graph> scanner(conj_gp.g, conj_gp.int_ids);
+//			paired_info_index jump_index(conj_gp.g);
+//			scanner.loadPaired(cfg::get().output_dir + "../jump_cleared", jump_index);
+//			resolve_with_jumps(conj_gp, clustered_index, jump_index);
 			ConjugateDataScanner<Graph> scanner(conj_gp.g, conj_gp.int_ids);
+			paired_info_index raw_jump_index(conj_gp.g);
+			scanner.loadPaired(cfg::get().output_dir + "../jump_raw", raw_jump_index);
+
+			JumpingPairInfoChecker<Graph> filter(conj_gp.g, 300, 100, 100);
 			paired_info_index jump_index(conj_gp.g);
-			scanner.loadPaired(cfg::get().output_dir + "../jump_cleared", jump_index);
+			filter.Filter(raw_jump_index, jump_index);
+
 			resolve_with_jumps(conj_gp, clustered_index, jump_index);
 		}
 	}

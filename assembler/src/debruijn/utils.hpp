@@ -368,7 +368,6 @@ public:
 
 private:
 	const Graph& g_;
-	const IdTrackHandler<Graph>& int_ids_;
 	const Index& index_;
 	const KmerSubs& kmer_mapper_;
 
@@ -400,10 +399,10 @@ private:
 	}
 
 public:
-	ExtendedSequenceMapper(const Graph& g, /*todo delete*/
-			const IdTrackHandler<Graph>& int_ids, const Index& index,
+	ExtendedSequenceMapper(const Graph& g,
+			const Index& index,
 			const KmerSubs& kmer_mapper) :
-			g_(g), int_ids_(int_ids), index_(index), kmer_mapper_(kmer_mapper) {
+			g_(g), index_(index), kmer_mapper_(kmer_mapper) {
 	}
 
 	MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
@@ -782,7 +781,7 @@ private:
 	typedef Seq<k> Kmer;
 	typedef boost::function<double(MappingRange, MappingRange)> WeightF;
 	const Graph& graph_;
-	const SequenceMapper mapper_;
+	const SequenceMapper& mapper_;
 	io::IReader<io::PairedRead>& stream_;
 	WeightF weight_f_;
 

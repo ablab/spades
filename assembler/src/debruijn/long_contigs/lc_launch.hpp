@@ -175,6 +175,11 @@ void resolve_repeats_ml(const conj_graph_pack& gp, PairedInfoIndices& pairedInfo
 //		WriteGraphWithPathsSimple(gp, output_dir + "final_paths.dot", "final_paths", result);
 //	}
 
+	if (params.write_path_loc) {
+		make_dir(output_dir + "path_loc/");
+		WritePathLocalities(gp, output_dir + "path_loc/", result);
+	}
+
 	if (params.write_contigs) {
 		OutputPathsAsContigs(g, result, output_dir + "all_paths.fasta");
 		OutputContigsNoComplement(g, output_dir + "complement_filtered.fasta");

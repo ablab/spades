@@ -53,6 +53,7 @@ public:
 
 	 int id;
 	 int conj_id;
+
 };
 
 //Path length
@@ -64,6 +65,21 @@ size_t PathLength(const Graph& g, T& path) {
 		currentLength += g.length(path[i]);
 	}
 	return currentLength;
+}
+
+const Path<EdgeId> as_simple_path(const Graph& g, const BidirectionalPath& path) {
+	 return Path<EdgeId>(vector<EdgeId>(path.begin(), path.end()), 0, g.length(path.back()));
+}
+
+const MappingPath<EdgeId> as_trivial_mapping_path(const Graph& g, const Path<EdgeId>& path) {
+	vector<MappingRange> ranges;
+	size_t cum_length = 0;
+	for (auto it = path.begin(); it != path.end(); ++it) {
+		ranges.push_back(MappingRange(Range(cum_length, cum_length + g.length(*it))
+				, Range(0, g.length(*it))));
+		cum_length += g.length(*it);
+	}
+	return MappingPath<EdgeId>(vector<EdgeId>(path.begin(), path.end()), ranges);
 }
 
 //Path cumulative lengths

@@ -507,7 +507,7 @@ class Path {
 public:
 	typedef typename vector<ElementId>::const_iterator iterator;
 
-	Path(vector<ElementId> sequence, size_t start_pos, size_t end_pos) :
+	Path(const vector<ElementId>& sequence, size_t start_pos, size_t end_pos) :
 			sequence_(sequence), start_pos_(start_pos), end_pos_(end_pos) {
 	}
 
@@ -535,11 +535,11 @@ public:
 		return sequence_[index];
 	}
 
-	iterator begin() {
+	iterator begin() const {
 		return sequence_.begin();
 	}
 
-	iterator end() {
+	iterator end() const {
 		return sequence_.end();
 	}
 

@@ -198,6 +198,7 @@ struct lc_config
         bool write_seeds;
         bool write_overlaped_paths;
         bool write_paths;
+        bool write_path_loc;
         bool write_contigs;
         bool write_raw_paired_info;
 
@@ -399,6 +400,7 @@ inline void load(lc_config::lc_params& p, boost::property_tree::ptree const& pt,
     load(p.write_seeds            , pt, "write_seeds"           );
     load(p.write_overlaped_paths  , pt, "write_overlaped_paths" );
     load(p.write_paths            , pt, "write_paths"           );
+    load(p.write_path_loc         , pt, "write_path_loc"        );
     load(p.write_contigs          , pt, "write_contigs"         );
     load(p.write_raw_paired_info  , pt, "write_raw_paired_info" );
     load(p.write_graph            , pt, "write_graph"           );

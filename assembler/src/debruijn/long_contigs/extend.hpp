@@ -79,7 +79,11 @@ class JumpingHero {
 				}
 			}
 		}
-		TRACE("Unique prolongation for edge " << g_.str(e) << " found. It is edge " << g_.str(*answer));
+		if (answer) {
+			TRACE("Unique prolongation for edge " << g_.str(e) << " found. It is edge " << g_.str(*answer));
+		} else {
+			TRACE("Unique prolongation for edge " << g_.str(e) << " wasn't found.");
+		}
 		return answer;
 	}
 
@@ -198,8 +202,6 @@ double CorrectWeightByAdvanced(double weight, double advWeight) {
 	return math::gr(advWeight, 0.0) ? weight * params.ps.es.advanced_coeff
 			: weight;
 }
-
-
 
 //Calculate weight
 double GetWeight(omnigraph::PairedInfoIndex<Graph>::PairInfos pairs, PairedInfoIndexLibrary& pairedInfoLibrary,
@@ -342,8 +344,6 @@ EdgeId ExtensionGoodEnough(EdgeId edge, double weight, double threshold, const G
 	}
 }
 
-
-
 void FindEdges(const Graph& g, EdgeId edge, int depth, std::vector<EdgeId>& result, std::vector<int>& distances, bool forward) {
 	std::vector<int> depths;
 	result.clear();
@@ -442,8 +442,10 @@ double FilterExtentions(const Graph& g, BidirectionalPath& path, std::vector<Edg
 	for (auto maxEdge = bestEdge; maxEdge != weights.end(); ++maxEdge) {
 		tmp.push_back(maxEdge->second);
 	}
-	if (tmp.size() > 1) {
+	//todo discuss logic with Anton and Andrew
+	if (true/*tmp.size() > 1*/) {
 		//todo add traces!!!
+//		cout << "Using jumps to resolve ambiguity" << endl;
 		size_t max_long_paired = 0;
 		bool valid = false;
 		EdgeId best;
@@ -461,11 +463,14 @@ double FilterExtentions(const Graph& g, BidirectionalPath& path, std::vector<Edg
 		if (valid && max_long_paired > 0) {
 			edges.clear();
 			edges.push_back(best);
+//			cout << "Success" << endl;
 			return magic_constant;
 		}
+//		cout << "Fail" << endl;
 	}
 	edges.clear();
 	edges.insert(edges.end(), tmp.begin(), tmp.end());
+//	cout << "Best weight is " << bestEdge->first << endl;
 	return bestEdge->first;
 }
 
@@ -476,6 +481,7 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path, std::vector<Edge
 		LoopDetector& detector,
 		PathStopHandler& handler,
 		JumpingHero<Graph>& hero) {
+//	cout << "here" << endl;
 
 	detector.temp.clear();
 
@@ -484,6 +490,7 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path, std::vector<Edge
 		//TODO: scafolder mode here
 		return 0;
 	}
+//	cout << "here" << endl;
 	if (edges.size() == 1) {
 		if (params.ps.ss.check_trusted) {
 			double weight =
@@ -497,6 +504,7 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path, std::vector<Edge
 		detector.temp.AddAlternative(edges.back(), 1);
 		return edges.back();
 	}
+//	cout << "here" << endl;
 
 	EdgeId toReturn = 0;
 	if (params.rs.research_mode && params.rs.force_to_cycle) {
@@ -518,18 +526,21 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path, std::vector<Edge
 			return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightFunThreshold, g, path, handler, forward) : toReturn;
 		}
 	}
+//	cout << "here" << endl;
 
 	*maxWeight = FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector, hero);
 
 	static double weightThreshold = params.ps.es.weight_threshold;
 	if (edges.size() == 1) {
-		//todo WTF???
+//		cout << "here2_0 weight_threshold = " << weightThreshold << endl;
 		return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold, g, path, handler, forward) : toReturn;
 	} else if (edges.size() > 1) {
 		if (ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold) == 0) {
+//			cout << "here2" << endl;
 			DETAILED_DEBUG("No good extension");
 			handler.AddStop(&path, NO_GOOD_EXTENSION, forward);
 		} else {
+//			cout << "here3" << endl;
 			DETAILED_DEBUG("Cannot choose extension, no obvious maximum");
 
 			static int maxDepth = params.ps.es.max_depth;

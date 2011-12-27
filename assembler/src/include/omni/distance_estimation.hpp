@@ -214,6 +214,28 @@ public:
 	}
 };
 
+template<class Graph>
+class JumpingEstimator {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	const PairedInfoIndex<Graph>& histogram_;
+public:
+	JumpingEstimator(const PairedInfoIndex<Graph>& histogram) : histogram_(histogram) {
+	}
+
+	void Estimate(PairedInfoIndex<Graph> &result) {
+		for(auto it = histogram_.begin(); it != histogram_.end(); ++it) {
+			vector<PairInfo<EdgeId> > infos = *it;
+			double forward = 0;
+			for(auto pi_it = infos.begin(); pi_it != infos.end(); ++pi_it)
+				if(pi_it->d > 0)
+					forward += pi_it->weight;
+			if(forward > 0)
+				result.AddPairInfo(PairInfo<EdgeId>(infos[0].first, infos[0].second, 1000000, forward, 0));
+		}
+	}
+};
+
 }
 
 #endif /* DISTANCE_ESTIMATION_HPP_ */
