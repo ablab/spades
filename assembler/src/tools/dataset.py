@@ -4,6 +4,7 @@ import sys
 import os
 import string
 import re
+import subprocess
 
 def readline(f):
     while 1:
@@ -82,7 +83,10 @@ def printDS(p):
     print "}"
 
 def hammer(prefix):
-    os.system('((ls -1 ' + prefix + '* 2> /dev/null | grep left.cor | grep -v single) || echo "") | head -n 1')
+    #left_cor = subprocess.check_output('((ls -1 ' + prefix + '* 2> /dev/null | grep left.cor | grep -v single) || echo "")', shell=True).strip()
+    files = subprocess.check_output('ls -1 ' + prefix + '*', shell=True).split('\n')
+    files = filter(os.path.isfile, files)
+    print files
 
 if sys.argv[1] == "check":
     process(sys.argv[2], check, lambda ds: True);
