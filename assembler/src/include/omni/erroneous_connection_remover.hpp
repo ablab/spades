@@ -68,6 +68,7 @@ public:
 
 protected:
 	void DeleteEdge(EdgeId edge, bool delete_between_related = true) {
+		TRACE("Transferring delition task to edge remover");
 		graph_changed_ = edge_remover_.DeleteEdge(edge, delete_between_related)
 				|| graph_changed_;
 	}
@@ -77,6 +78,9 @@ protected:
 	const Graph& graph() const {
 		return g_;
 	}
+
+private:
+	DECL_LOGGER("ErroneousEdgeRemover");
 };
 
 template<class Graph>
@@ -269,9 +273,9 @@ class NewTopologyBasedChimericEdgeRemover: public ErroneousEdgeRemover<Graph> {
 		return edges.size() == 1 && CheckUniqueness(*edges.begin(), forward);
 	}
 
-	bool ExistPlausible(const vector<EdgeId>& edges) const {
+	bool ExistPlausible(EdgeId edge, const vector<EdgeId>& edges, bool forward) const {
 		for (auto it = edges.begin(); it != edges.end(); ++it) {
-			if (CheckPlausibility(*it)) {
+			if (edge != *it && CheckPlausibility(*it, forward)) {
 				return true;
 			}
 		}
@@ -279,17 +283,23 @@ class NewTopologyBasedChimericEdgeRemover: public ErroneousEdgeRemover<Graph> {
 	}
 
 	bool CheckStart(EdgeId e) const {
-		return Unique(this->graph().IncomingEdges(this->graph().EdgeStart(e)),
+		TRACE("Checking conditions for edge start");
+		bool result = Unique(this->graph().IncomingEdges(this->graph().EdgeStart(e)),
 				false)
-				&& ExistPlausible(
-						this->graph().OutgoingEdges(this->graph().EdgeStart(e)));
+				&& ExistPlausible(e,
+						this->graph().OutgoingEdges(this->graph().EdgeStart(e)), true);
+		TRACE("Checks for edge start " << (result ? "passed" : "failed"));
+		return result;
 	}
 
 	bool CheckEnd(EdgeId e) const {
-		return Unique(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)),
+		TRACE("Checking conditions for edge end");
+		bool result = Unique(this->graph().OutgoingEdges(this->graph().EdgeEnd(e)),
 				true)
-				&& ExistPlausible(
-						this->graph().IncomingEdges(this->graph().EdgeEnd(e)));
+				&& ExistPlausible(e,
+						this->graph().IncomingEdges(this->graph().EdgeEnd(e)), false);
+		TRACE("Checks for edge end" << (result ? "passed" : "failed"));
+		return result;
 	}
 
 public:
@@ -317,7 +327,7 @@ protected:
 		return this->graph().length(e) >= uniqueness_length_;
 	}
 
-	virtual bool CheckPlausibility(EdgeId e) const {
+	virtual bool CheckPlausibility(EdgeId e, bool forward) const {
 		return this->graph().length(e) >= plausibility_length_;
 	}
 
@@ -329,11 +339,18 @@ protected:
 			if (this->graph().length(e) > max_length_) {
 				return;
 			}
+			TRACE("Checking edge " << this->graph().length(e));
 			if (CheckStart(e) || CheckEnd(e)) {
+				TRACE("Deleting edge " << this->graph().length(e));
 				this->DeleteEdge(e, false);
+				TRACE("Edge was deleted");
+			} else {
+				TRACE("Edge " << this->graph().length(e) << " was not deleted");
 			}
 		}
 	}
+private:
+	DECL_LOGGER("NewTopologyBasedChimericEdgeRemover");
 };
 
 template<class Graph>
@@ -353,22 +370,26 @@ public:
 			EdgeRemover<Graph>& edge_remover) :
 			base(g, max_length, uniqueness_length, plausibility_length,
 					edge_remover), unique_path_finder_(g), plausible_path_finder_(
-					g) {
+					g, plausibility_length * 2) {
 	}
 
 protected:
 
 	bool CheckUniqueness(EdgeId e, bool forward) const {
-		return CummulativeLength(
+		TRACE("Checking " << this->graph().length(e) << " for uniqueness in " << (forward ? "forward" : "backward") << " direction");
+		bool result = CummulativeLength(
 				this->graph(),
 				forward ?
 						unique_path_finder_.UniquePathForward(e) :
 						unique_path_finder_.UniquePathBackward(e))
 				>= this->uniqueness_length();
+		TRACE("Edge " << this->graph().length(e) << " is" << (result ? "" : " not") << " unique");
+		return result;
 	}
 
 	bool CheckPlausibility(EdgeId e, bool forward) const {
-		return CummulativeLength(
+		TRACE("Checking " << this->graph().length(e) << " for plausibility in " << (forward ? "forward" : "backward") << " direction");
+		bool result = CummulativeLength(
 				this->graph(),
 				forward ?
 						plausible_path_finder_.PlausiblePath(e,
@@ -376,7 +397,11 @@ protected:
 						plausible_path_finder_.PlausiblePath(e,
 								BackwardDirection<Graph>(this->graph())))
 				>= this->plausibility_length();
+		TRACE("Edge " << this->graph().length(e) << " is" << (result ? "" : " not") << " plausible");
+		return result;
 	}
+private:
+	DECL_LOGGER("AdvancedTopologyChimericEdgeRemover");
 };
 
 template<class Graph>

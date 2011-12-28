@@ -168,49 +168,63 @@ void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
 }
 
 template<class Graph>
+bool CheatingRemoveErroneousEdges(Graph &g, const debruijn_config::simplification::cheating_erroneous_connections_remover& cec_config, EdgeRemover<Graph>& edge_remover) {
+	INFO("Cheating removal of erroneous edges started");
+	size_t max_length = cec_config.max_length;
+	double coverage_gap = cec_config.coverage_gap;
+	size_t sufficient_neighbour_length =
+			cec_config.sufficient_neighbour_length;
+	omnigraph::TopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
+			g, max_length, coverage_gap, sufficient_neighbour_length,
+			edge_remover);
+	//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
+	//			max_length_div_K * g.k(), max_coverage);
+	bool changed = erroneous_edge_remover.RemoveEdges();
+	INFO("Cheating removal of erroneous edges finished");
+	return changed;
+}
+
+template<class Graph>
+bool TopologyRemoveErroneousEdges(Graph &g, const debruijn_config::simplification::topology_based_ec_remover& tec_config, EdgeRemover<Graph>& edge_remover) {
+	INFO("Removal of erroneous edges based on topology started");
+	bool changed = true;
+	size_t iteration_count = 0;
+	while (changed) {
+		changed = false;
+		INFO("Iteration " << iteration_count++);
+		omnigraph::AdvancedTopologyChimericEdgeRemover<Graph> erroneous_edge_remover(
+			g, tec_config.max_length,
+			tec_config.uniqueness_length,
+			tec_config.plausibility_length,
+			edge_remover);
+		changed = erroneous_edge_remover.RemoveEdges();
+		INFO("Removal of erroneous edges based on topology started");
+	}
+	return changed;
+}
+
+template<class Graph>
+bool ChimericRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
+	INFO("Simple removal of chimeric edges based only on length started");
+	ChimericEdgesRemover<Graph> remover(g, 10, edge_remover);
+	bool changed = remover.RemoveEdges();
+	INFO("Removal of chimeric edges finished");
+	return changed;
+}
+
+template<class Graph>
 bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 	using debruijn_graph::simplification_mode;
-	bool changed = false;
 	switch (cfg::get().simp.simpl_mode) {
 		case sm_cheating: {
-			INFO("Cheating removal of erroneous edges started");
-			size_t max_length = cfg::get().simp.cec.max_length;
-			double coverage_gap = cfg::get().simp.cec.coverage_gap;
-			size_t sufficient_neighbour_length =
-					cfg::get().simp.cec.sufficient_neighbour_length;
-			omnigraph::TopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
-					g, max_length, coverage_gap, sufficient_neighbour_length,
-					edge_remover);
-			//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
-			//			max_length_div_K * g.k(), max_coverage);
-			changed = erroneous_edge_remover.RemoveEdges();
-			INFO("Cheating removal of erroneous edges finished");
-			return changed;
+			return CheatingRemoveErroneousEdges(g, cfg::get().simp.cec, edge_remover);
 		} break;
-
 		case sm_topology: {
-			INFO("Removal of erroneous edges based on topology started");
-//			omnigraph::NewTopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
-			omnigraph::AdvancedTopologyChimericEdgeRemover<Graph> erroneous_edge_remover(
-					g, cfg::get().simp.tec.max_length,
-					cfg::get().simp.tec.uniqueness_length,
-					cfg::get().simp.tec.plausibility_length,
-					edge_remover);
-			//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
-			//			max_length_div_K * g.k(), max_coverage);
-			changed = erroneous_edge_remover.RemoveEdges();
-			INFO("Removal of erroneous edges based on topology started");
-			return changed;
+			return TopologyRemoveErroneousEdges(g, cfg::get().simp.tec, edge_remover);
 		} break;
-
 		case sm_chimeric: {
-			INFO("Simple removal of chimeric edges based only on length started");
-			ChimericEdgesRemover<Graph> remover(g, 10, edge_remover);
-			changed = remover.RemoveEdges();
-			INFO("Removal of chimeric edges finished");
-			return changed;
+			return ChimericRemoveErroneousEdges(g, edge_remover);
 		} break;
-
 		default:
 			VERIFY(false);
 			return false;
@@ -313,12 +327,7 @@ void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover, boost::f
 		detail_info_printer &printer) {
 
 	INFO("Final ErroneousConnectionsRemoval");
-	bool changed = true;
-	size_t iteration_count = 0;
-	while (changed) {
-		INFO("Iteration " << iteration_count++);
-		changed = FinalRemoveErroneousEdges(graph, edge_remover);
-	}
+	FinalRemoveErroneousEdges(graph, edge_remover);
 	printer(ipp_final_err_con_removal);
 
 	INFO("Final TipClipping");

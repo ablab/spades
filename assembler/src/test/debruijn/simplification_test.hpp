@@ -35,6 +35,19 @@ debruijn_config::simplification::erroneous_connections_remover standard_ec_confi
 	return ec_config;
 }
 
+static debruijn_config::simplification::topology_based_ec_remover topology_based_ec_config_generation() {
+	debruijn_config::simplification::topology_based_ec_remover tec_config;
+	tec_config.max_length = 100;
+	tec_config.plausibility_length = 200;
+	tec_config.uniqueness_length = 3000;
+	return tec_config;
+}
+
+debruijn_config::simplification::topology_based_ec_remover standard_tec_config() {
+	static debruijn_config::simplification::topology_based_ec_remover tec_config = topology_based_ec_config_generation();
+	return tec_config;
+}
+
 static debruijn_config::simplification::tip_clipper standard_tc_config_generation() {
 	debruijn_config::simplification::tip_clipper tc_config;
 	tc_config.max_coverage = 1000.;
@@ -78,6 +91,27 @@ BOOST_AUTO_TEST_CASE( TipobulgeTest ) {
 	RemoveBulges(g, standard_br_config());
 
 	BOOST_CHECK_EQUAL(g.size(), 16);
+}
+
+BOOST_AUTO_TEST_CASE( IterUniquePath ) {
+	Graph g(55);
+	IdTrackHandler<Graph> int_ids(g);
+	ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g, int_ids);
+
+	EdgeRemover<Graph> edge_remover(g, true);
+	TopologyRemoveErroneousEdges<Graph>(g, standard_tec_config(), edge_remover);
+
+	BOOST_CHECK_EQUAL(g.size(), 16);
+}
+
+BOOST_AUTO_TEST_CASE( UniquePath ) {
+	Graph g(55);
+	IdTrackHandler<Graph> int_ids(g);
+	ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g, int_ids);
+	EdgeRemover<Graph> edge_remover(g, true);
+	TopologyRemoveErroneousEdges<Graph>(g, standard_tec_config(), edge_remover);
+
+	BOOST_CHECK_EQUAL(g.size(), 12);
 }
 
 BOOST_AUTO_TEST_SUITE_END()}

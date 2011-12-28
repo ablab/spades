@@ -729,7 +729,8 @@ private:
 	//todo rewrite without recursion
 	void Go(VertexId v, size_t current_path_length,
 			Dijkstra<Graph>& distances_to_end) {
-		TRACE("Processing vertex " << g_.int_id(v) << " started; current path length " << current_path_length);
+		TRACE(
+				"Processing vertex " << g_.int_id(v) << " started; current path length " << current_path_length);
 		call_cnt_++;
 		if (call_cnt_ == MAX_CALL_CNT) {
 			DEBUG(
@@ -749,8 +750,7 @@ private:
 						"Shortest distance from this vertex is " << distances_to_end.GetDistance(v) << " and sum with current path length " << current_path_length << " exceeded max length " << max_length_);
 			}
 			return;
-		}
-		TRACE("Vetex " << g_.int_id(v) << " should be processed");
+		}TRACE("Vetex " << g_.int_id(v) << " should be processed");
 
 		if (v == end_ && current_path_length >= min_length_) {
 			TRACE("New path found: " << PrintPath(g_, path_));
@@ -761,18 +761,15 @@ private:
 		vector<EdgeId> outgoing_edges = g_.OutgoingEdges(v);
 		for (size_t i = 0; i < outgoing_edges.size(); ++i) {
 			TRACE(
-					"Processing outgoing edge " << g_.int_id(outgoing_edges[i])
-							<< " started");
+					"Processing outgoing edge " << g_.int_id(outgoing_edges[i]) << " started");
 			EdgeId edge = outgoing_edges[i];
 			path_.push_back(edge);
 			Go(g_.EdgeEnd(edge), current_path_length + g_.length(edge),
 					distances_to_end);
 			path_.pop_back();
 			TRACE(
-					"Processing outgoing edge " << g_.int_id(outgoing_edges[i])
-							<< " finished");
-		}
-		TRACE("Processing vertex " << g_.int_id(v) << " finished");
+					"Processing outgoing edge " << g_.int_id(outgoing_edges[i]) << " finished");
+		}TRACE("Processing vertex " << g_.int_id(v) << " finished");
 	}
 
 public:
@@ -783,9 +780,7 @@ public:
 					(size_t) std::floor(max_length + 0.5)), start_(start), end_(
 					end), callback_(callback), call_cnt_(0) {
 		TRACE(
-				"Finding path from vertex " << g.int_id(start_) << " to vertex " << g.int_id(end_)
-						<< " of length [" << min_length_ << ", " << max_length_
-						<< "]");
+				"Finding path from vertex " << g.int_id(start_) << " to vertex " << g.int_id(end_) << " of length [" << min_length_ << ", " << max_length_ << "]");
 	}
 
 	~PathProcessor() {
@@ -1165,12 +1160,17 @@ private:
 
 	const Graph& graph_;
 
-	const Graph &graph() {
+protected:
+	const Graph &graph() const {
 		return graph_;
 	}
+
 public:
 	AbstractDirection(const Graph& graph) :
 			graph_(graph) {
+	}
+
+	virtual ~AbstractDirection() {
 	}
 
 	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const = 0;
@@ -1209,7 +1209,8 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 public:
-	ForwardDirection(const Graph &graph): AbstractDirection<Graph>(graph) {
+	ForwardDirection(const Graph &graph) :
+			AbstractDirection<Graph>(graph) {
 	}
 
 	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const {
@@ -1243,7 +1244,8 @@ private:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 public:
-	BackwardDirection(const Graph &graph): AbstractDirection<Graph>(graph) {
+	BackwardDirection(const Graph &graph) :
+			AbstractDirection<Graph>(graph) {
 	}
 
 	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const {
@@ -1277,21 +1279,23 @@ class PlausiblePathFinder {
 	typedef typename Graph::VertexId VertexId;
 
 	const Graph& graph_;
+	const size_t length_bound_;
 
 	class DFS {
 	private:
 		const Graph &graph_;
 		const AbstractDirection<Graph> &direction_;
+		const size_t length_bound_;
 
-		pair<EdgeId, size_t> find(EdgeId edge, size_t length) {
+		pair<size_t, EdgeId> find(EdgeId edge, size_t length) {
 			length += graph_.length(edge);
 			VertexId cross = direction_.EdgeEnd(edge);
 			auto result = make_pair(length, edge);
-			if(direction_.CheckUniqueIncomingEdge(edge)) {
+			if (length < length_bound_ && direction_.CheckUniqueIncomingEdge(cross)) {
 				vector<EdgeId> outgoing = direction_.OutgoingEdges(cross);
-				for(auto it = outgoing.begin(); it != outgoing.end(); ++it) {
+				for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
 					auto candidate = find(*it, length);
-					if(candidate > result)
+					if (candidate > result)
 						result = candidate;
 				}
 			}
@@ -1300,17 +1304,18 @@ class PlausiblePathFinder {
 
 		vector<EdgeId> RestoreAnswer(EdgeId start, EdgeId end) {
 			vector<EdgeId> result;
-			while(end != start) {
+			while (end != start) {
 				result.push_back(end);
-				end = direction_.GetUniqueIncomingEdge(end);
+				end = direction_.GetUniqueIncomingEdge(
+						direction_.EdgeStart(end));
 			}
 			result.push_back(start);
 			return vector<EdgeId>(result.rbegin(), result.rend());
 		}
 
 	public:
-		DFS(const Graph &graph, const AbstractDirection<Graph> &direction) :
-				graph_(graph), direction_(direction) {
+		DFS(const Graph &graph, const AbstractDirection<Graph> &direction, size_t length_bound) :
+				graph_(graph), direction_(direction), length_bound_(length_bound) {
 		}
 
 		vector<EdgeId> find(EdgeId edge) {
@@ -1319,14 +1324,14 @@ class PlausiblePathFinder {
 	};
 
 public:
-	PlausiblePathFinder(const Graph& graph) :
-		graph_(graph) {
+	PlausiblePathFinder(const Graph& graph, size_t length_bound) :
+			graph_(graph), length_bound_(length_bound) {
 	}
 
 	const vector<EdgeId> PlausiblePath(EdgeId e,
 			const AbstractDirection<Graph> &direction) const {
 		vector<EdgeId> answer;
-		return DFS(graph_, direction).find(e);
+		return DFS(graph_, direction, length_bound_).find(e);
 	}
 
 };
