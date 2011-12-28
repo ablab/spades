@@ -370,18 +370,26 @@ LGASSERI_QUAKE
 ; ================== x5 Fungi ====================
 ; ================================================
 
-X5_QUAKE
+X5_A_QUAKE
 {
 	first	x5/left.cor.fastq
 	second	x5/right.cor.fastq
 	single_first	x5/left.cor_single.fastq
 	single_second	x5/right.cor_single.fastq
-;	first	x5/a.fastq
-;	second	x5/a.fastq
-;	single_first	x5/a.fastq
-;	single_second	x5/a.fastq
-	RL	100
-	IS	1000
+	RL	TODO
+	IS	TODO
 	single_cell	false
-	reference_genome N/A
+	reference_genome	N/A
+}
+
+X5_B_QUAKE
+{
+	first	x5/left_l.cor.fastq
+	second	x5/right_l.cor.fastq
+	single_first	x5/left_l.cor_single.fastq
+	single_second	x5/right_l.cor_single.fastq
+	RL	TODO
+	IS	TODO
+	single_cell	false
+	reference_genome	N/A
 }
