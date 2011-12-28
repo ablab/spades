@@ -297,6 +297,15 @@ PGINGIVALIS_BH
 ; =============== C. S. muelleri =================
 ; ================================================
 
+CSMUELLERI_BH
+{
+	single_first    C.S.muelleri/bh20111221/09.reads.corrected.fastq.gz
+        RL              36
+        IS              N/A
+        single_cell     false
+        reference_genome	C.S.muelleri/4085179.chromosome1.final.fasta.gz
+}
+
 ; ================================================
 ; =============== S. smaragdinae =================
 ; ================================================
