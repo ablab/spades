@@ -521,6 +521,10 @@ inline void load(debruijn_config::dataset& ds, boost::property_tree::ptree const
 }
 
 inline void load_reference_genome(debruijn_config::dataset& ds, std::string input_dir) {
+	if (ds.reference_genome_filename == "") {
+		ds.reference_genome = Sequence();
+		return;
+	}
 	std::string genome_filename = input_dir + ds.reference_genome_filename;
 	checkFileExistenceFATAL(genome_filename);
 	io::Reader<io::SingleRead> genome_stream(genome_filename);
