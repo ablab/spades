@@ -109,6 +109,7 @@ public:
 		VERIFY(int_ids_);
 		return *int_ids_;
 	}
+	BaseIdTrackHandler<VertexIdT, EdgeIdT>* ReturnIntIdPointer() const {return int_ids_;};
 
 	int int_id(EdgeId edge) const {
 		VERIFY(int_ids_);

@@ -254,14 +254,12 @@ void ProduceResolvedPairedInfo(
 		graph_pack& resolved_gp,
 		EdgeLabelHandler<typename graph_pack::graph_t>& labels_after,
 		PairedInfoIndex<typename graph_pack::graph_t>& resolved_graph_paired_info) {
-
-	INFO("Generating paired info for resolved graph");
-	ResolvedGraphPairInfoCounter<typename graph_pack::graph_t> resolved_graph_paired_info_counter(
+		INFO("Generating paired info for resolved graph");
+		ResolvedGraphPairInfoCounter<typename graph_pack::graph_t> resolved_graph_paired_info_counter(
 			origin_gp.g, clustered_index, resolved_gp.g, labels_after);
-
-	resolved_graph_paired_info_counter.FillResolvedGraphPairedInfo(
+		resolved_graph_paired_info_counter.FillResolvedGraphPairedInfo(
 			resolved_graph_paired_info);
-	INFO("Paired info for resolved graph generated");
+		INFO("Generating paired info for resolved graph");
 }
 
 template<class graph_pack>
@@ -329,7 +327,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //		ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_graph_paired_info);
 //		SaveResolvedPairedInfo(resolved_gp, resolved_graph_paired_info, graph_name + "_resolved", subfolder);
 		//Paired info for resolved graph generated
+
 	}
+
 	if (output_contigs) {
 
 		OutputContigs(resolved_gp.g,
@@ -337,6 +337,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 		OutputContigs(origin_gp.g,
 				cfg::get().output_dir + "before_resolve" + postfix);
 	}INFO("Total labeler start");
+
 	total_labeler_gs graph_struct_after(resolved_gp.g, &resolved_gp.int_ids,
 			&resolved_gp.edge_pos, &labels_after);
 	total_labeler tot_labeler_after(&graph_struct_after, &graph_struct_before);
@@ -368,6 +369,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info(
 			resolved_gp.g);
 	if (cfg::get().path_set_graph == false) {
+
 		ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
 				labels_after, resolved_cleared_graph_paired_info);
 		SaveResolvedPairedInfo(resolved_gp, resolved_cleared_graph_paired_info,
