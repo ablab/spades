@@ -61,13 +61,13 @@ file_suff = str(crop_len) + '_' + str(offset)
 
 # build bowtie index
 os.system('mkdir -p index')
-os.system(bowtie +'bowtie-build ' + output_genome + ' ' + outdir + 'index/' + output_genome)
+os.system(bowtie +'bowtie-build ' + output_genome + ' ' + outdir + 'index/ref' + file_suff)
 print('Index built\n')
 
 # align reads using bowtie
 for line in flist:
 	fName, ext = os.path.splitext(line)
-	os.system(bowtie + 'bowtie -p 8 -c ' + format + ' ' + outdir + 'index/' + output_genome + ' ' + line + ' --al ' + fName + file_suff + ext + ' > /dev/null 2>  + errlog ' + file_suff)
+	os.system(bowtie + 'bowtie -p 8 -c ' + format + ' ' + outdir + 'index/ref' + file_suff + ' ' + line.strip() + ' --al ' + fName + file_suff + ext.strip() + ' > /dev/null 2> errlog_' + fName)
 
 print('Alligned\n')
 # use -X for maxins length
