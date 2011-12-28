@@ -28,12 +28,14 @@ private:
 	//todo think of necessity to pull these typedefs through hierarchy
 	DataMaster master_;
 
+	mutable BaseIdTrackHandler<VertexIdT, EdgeIdT>* int_ids_;
+
 	virtual VertexId HiddenAddVertex(const VertexData &data) = 0;
 
 	virtual void HiddenDeleteVertex(VertexId v) = 0;
 
-	virtual EdgeId
-	HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) = 0;
+	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2,
+			const EdgeData &data) = 0;
 
 	virtual void HiddenDeleteEdge(EdgeId edge) = 0;
 
@@ -87,7 +89,7 @@ public:
 
 	AbstractEditableGraph(HandlerApplier<VertexId, EdgeId>* applier,
 	const DataMaster& master) :
-			base(applier), master_(master) {
+			base(applier), master_(master), int_ids_(NULL) {
 	}
 
 	virtual ~AbstractEditableGraph() {
@@ -98,11 +100,32 @@ public:
 		//		}
 	}
 
+	void set_int_ids(BaseIdTrackHandler<VertexIdT, EdgeIdT>* int_ids) const {
+		VERIFY(!int_ids_ || !int_ids);
+		int_ids_ = int_ids;
+	}
+
+	BaseIdTrackHandler<VertexIdT, EdgeIdT> &int_ids() const {
+		VERIFY(int_ids_);
+		return *int_ids_;
+	}
+
+	int int_id(EdgeId edge) const {
+		VERIFY(int_ids_);
+		return int_ids_->ReturnIntId(edge);
+	}
+
+	int int_id(VertexId vertex) const {
+		VERIFY(int_ids_);
+		return int_ids_->ReturnIntId(vertex);
+	}
+
 	const DataMaster& master() const {
 		return master_;
 	}
 
 	virtual const EdgeData& data(EdgeId edge) const = 0;
+
 	virtual const VertexData& data(VertexId v) const = 0;
 
 	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const = 0;
@@ -139,14 +162,6 @@ public:
 		return IncomingEdges(v)[0];
 	}
 
-	std::string str(const EdgeId edge) const {
-		return master_.str(data(edge));
-	}
-
-	std::string str(const VertexId v) const {
-		return master_.str(data(v));
-	}
-
 	size_t length(const EdgeId edge) const {
 		return master_.length(data(edge));
 	}
@@ -159,21 +174,21 @@ public:
 		TRACE("Adding vertex");
 		VertexId v = HiddenAddVertex(data);
 		FireAddVertex(v);
-		TRACE("Vertex " << PrintVertex(v) << " added");
+		TRACE("Vertex " << str(v) << " added");
 		return v;
 	}
 
 	void DeleteVertex(VertexId v) {
 		VERIFY(IsDeadEnd(v) && IsDeadStart(v));
 		VERIFY(v != NULL);
-		TRACE("Deleting vertex " << PrintVertex(v));
+		TRACE("Deleting vertex " << str(v));
 		FireDeleteVertex(v);
 		HiddenDeleteVertex(v);
 		TRACE("Vertex " << v << " deleted");
 	}
 
 	void ForceDeleteVertex(VertexId v) {
-		TRACE("Forcing deletion of vertex " << PrintVertex(v));
+		TRACE("Forcing deletion of vertex " << str(v));
 		DeleteAllOutgoing(v);
 		DeleteAllIncoming(v);
 		DeleteVertex(v);
@@ -185,7 +200,7 @@ public:
 		EdgeId e = HiddenAddEdge(v1, v2, data);
 		FireAddEdge(e);
 		TRACE(
-				"Added edge " << PrintEdge(e) << " connecting " << v1 << " and " << v2);
+				"Added edge " << str(e) << " connecting " << v1 << " and " << v2);
 		return e;
 	}
 
@@ -212,7 +227,7 @@ public:
 	}
 
 	void DeleteEdge(EdgeId e) {
-		TRACE("Deleting edge " << PrintEdge(e));
+		TRACE("Deleting edge " << str(e));
 		FireDeleteEdge(e);
 		HiddenDeleteEdge(e);
 		TRACE("Edge " << e << " deleted");
@@ -250,59 +265,50 @@ public:
 		}
 	}
 
-	//todo remove after debug
-	virtual std::string PrintDetailedPath(const vector<EdgeId>& path) const {
-		VERIFY(false);
-		return "";
-	}
-
-	//todo remove after debug
-	std::string PrintConjugatePath(const vector<EdgeId>& path) const {
-		vector<EdgeId> conjugate_path;
-		for (int i = path.size() - 1; i >= 0; --i) {
-			conjugate_path.push_back(path[i]);
-		}
-		return PrintDetailedPath(conjugate_path);
-	}
-
-	//todo remove after debug
-	virtual std::string PrintDetailedVertexInfo(VertexId v) const {
-		VERIFY(false);
-		return "";
-	}
-
-	//todo remove after debug
-	virtual std::string PrintEdges(const vector<EdgeId>& path) const {
-		VERIFY(false);
-		return "";
-	}
-
-	//todo remove after debug
-	template<class T>
-	std::string SimplePrint(const vector<T>& v) const {
+	virtual std::string str(const EdgeId e) const {
+//		return master_.str(data(edge));
 		stringstream ss;
-		for (auto it = v.begin(); it != v.end(); ++it) {
-			ss << *it << ", ";
+		ss << int_id(e) << " (" << length(e) << ")";
+		return ss.str();
+	}
+
+	virtual std::string str(const VertexId v) const {
+//		return master_.str(data(v));
+		return ToString(int_id(v));
+	}
+
+	std::string detailed_str(const VertexId v) const {
+		stringstream ss;
+		ss << str(v) << ";";
+		ss << "Incoming edges" << str(IncomingEdges(v)) << "; ";
+		ss << "Outgoing edges" << str(OutgoingEdges(v)) << ";";
+		return ss.str();
+	}
+
+	std::string detailed_str(const vector<EdgeId>& path) const {
+		stringstream ss;
+		ss << "Path: ";
+		ss << "Vertex " << detailed_str(EdgeStart(path[0])) << " | ";
+		for (auto it = path.begin(); it != path.end(); ++it) {
+			EdgeId e = *it;
+			ss << "Edge " << str(e) << " | ";
+			ss << "Vertex " << detailed_str(EdgeEnd(e)) << " | ";
 		}
 		return ss.str();
 	}
 
-	//todo remove after debug
-	virtual std::string PrintEdge(EdgeId e) const {
-		return "";
+	template<class Container>
+	std::string str(const Container& container) const {
+		return str(container.begin(), container.end());
 	}
 
-	//todo remove after debug
-	virtual std::string PrintVertex(VertexId v) const {
-		return "";
-	}
-
-	//todo remove after debug
-	std::string PrintVertices(const vector<VertexId>& path) const {
+	template<class It>
+	std::string str(It begin, It end) const {
 		stringstream ss;
-		ss << "Vertices ";
-		for (auto it = path.begin(); it != path.end(); ++it) {
-			ss << *it << ", ";
+		string delim = "";
+		for (auto it = begin; it != end; ++it) {
+			ss << delim << str(*it);
+			delim = ", ";
 		}
 		return ss.str();
 	}
@@ -315,13 +321,13 @@ public:
 			}
 		if (path.size() == 1) {
 			TRACE(
-					"Path of single edge " << PrintEdge(*(path.begin())) << ". Nothing to merge.");
-		}TRACE("Merging path " << PrintEdges(path));
+					"Path of single edge " << str(*(path.begin())) << ". Nothing to merge.");
+		}TRACE("Merging path of edges " << str(path));
 
 		//		cerr << "Merging " << PrintDetailedPath(pObservableGraph<VertexIdT, EdgeIdT, VertexIt>ath) << endl;
 		//		cerr << "Conjugate " << PrintConjugatePath(path) << endl;
 		vector<EdgeId> corrected_path = CorrectMergePath(path);
-		TRACE("Corrected path " << PrintEdges(corrected_path));
+		TRACE("Corrected path: " << str(corrected_path));
 		VertexId v1 = EdgeStart(corrected_path[0]);
 		VertexId v2 = EdgeEnd(corrected_path[corrected_path.size() - 1]);
 		vector<const EdgeData*> to_merge;
@@ -343,12 +349,12 @@ public:
 		FireAddEdge(new_edge);
 		HiddenDeletePath(edges_to_delete, vertices_to_delete);
 		TRACE(
-				"Path merged. Corrected path " << SimplePrint(corrected_path) << "merged into " << PrintEdge(new_edge));
+				"Path merged. Corrected path merged into " << str(new_edge));
 		return new_edge;
 	}
 
 	pair<EdgeId, EdgeId> SplitEdge(EdgeId edge, size_t position) {
-		TRACE("Splitting edge " << PrintEdge(edge));
+		TRACE("Splitting edge " << str(edge));
 		pair<VertexData, pair<EdgeData, EdgeData>> newData = master_.SplitData(
 				data(edge), position);
 		VertexId splitVertex = HiddenAddVertex(newData.first);
@@ -364,13 +370,13 @@ public:
 		FireAddEdge(new_edge2);
 		HiddenDeleteEdge(edge);
 		TRACE(
-				"Edge " << edge << " split into " << PrintEdge(new_edge1) <<" and " << PrintEdge(new_edge2));
+				"Edge split into edges " << str(new_edge1) << " and " << str(new_edge2));
 		return make_pair(new_edge1, new_edge2);
 	}
 
 	void GlueEdges(EdgeId edge1, EdgeId edge2) {
 		TRACE(
-				"Gluing edges " << PrintEdge(edge1) << " and " <<PrintEdge(edge2));
+				"Gluing edges " << str(edge1) << " and " << str(edge2));
 		EdgeId new_edge = HiddenAddEdge(EdgeStart(edge2), EdgeEnd(edge2),
 				master_.GlueData(data(edge1), data(edge2)));
 		FireGlue(new_edge, edge1, edge2);
@@ -387,7 +393,7 @@ public:
 		if (IsDeadStart(end) && IsDeadEnd(end)) {
 			DeleteVertex(end);
 		}TRACE(
-				"Edges " << edge1 << " and " << edge2 << " glued into " << PrintEdge(new_edge));
+				"Edges glued into " << str(new_edge));
 	}
 
 private:

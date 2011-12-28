@@ -11,14 +11,15 @@ cur_line = 0;
 for line in logfile_out:
 	if cur_line == 1:
 		n50 = int(line.split('|')[1]);
-		mis = int(line.split('|')[9]);
-		print('n50 = ' + str(n50) + ' missasemblies ' + str(mis));
-		if n50 < 72000:
-			print('n50 too small')
+		mis = int(line.split('|')[11]);
+		print('n50 = ' + str(n50))
+		print('missasembled contigs = ' + str(mis));
+		if n50 < 75000:
+			print('n50 is too small')
 			sys.exit(1);
-		if (mis > 1):
-			print('too much miss')
-			sys.exit(1);			
+		if (mis > 2):
+			print('too many missassembles')
+			sys.exit(1);
 		
 	cur_line += 1;
 	

@@ -26,15 +26,9 @@ class PositionRead {
 	bool isDone() { return done_; }
 	void done() { done_ = true; }
 
-	pair<int, KMerCount*> nextKMer( int begin ) const;
 	pair<int, hint_t> nextKMerNo( int begin ) const;
 
 	const std::string & getQualityString() const;
-	const std::string & getName() const;
-	const std::string & getSequenceString() const;
-	std::string getPhredQualityString(int offset) const;
-
-	void print(ofstream & ofs, int offset = Globals::qvoffset) const;
 
 };
 

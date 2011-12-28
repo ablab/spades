@@ -24,7 +24,7 @@
  * Converts anything to string (using ostringstream).
  */
 template <typename T>
-std::string ToString(T& t) {
+std::string ToString(const T& t) {
 	std::ostringstream ss;
 	ss << t;
 	return ss.str();

@@ -45,13 +45,6 @@ uint64_t KMerNo::next_hash( uint64_t old_hash, hint_t new_index ) {
 		+ my_dignucl(Globals::blob[new_index+K-1])*KMERNO_HASH_Q_POW_K_MINUS_ONE ) % KMERNO_HASH_MODULUS);
 }
 
-/*void KMerNo::precomputeHashes() {
-	Globals::blobhash[0] = KMerNo::new_hash(0);
-	for (hint_t i=1; i < (Globals::blob_size - K + 1); ++i) {
-		Globals::blobhash[i] = KMerNo::next_hash(Globals::blobhash[i-1], i);
-	}
-}*/
-
 uint64_t KMerNo::hash::operator() (const KMerNo &kn) const {
 	size_t h = 239;
 	for (size_t i = 0; i < K; i++) {

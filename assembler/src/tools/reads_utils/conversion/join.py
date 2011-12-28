@@ -14,7 +14,7 @@ outFile = open(sys.argv[3], 'w')
 
 format = 'fastq'
 lines = 4
-if len(sys.argv) = 5:
+if len(sys.argv) == 5:
 	format = sys.argv[4]
 
 if format == 'fasta':

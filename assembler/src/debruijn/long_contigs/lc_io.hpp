@@ -104,7 +104,7 @@ public:
 };
 
 
-EdgeType ClassifyEdge(Graph& g, EdgeId e) {
+EdgeType ClassifyEdge(const Graph& g, EdgeId e) {
 	EdgeType type;
 	if (g.IncomingEdgeCount(g.EdgeStart(e)) == 0 && g.IncomingEdgeCount(g.EdgeEnd(e)) == 1 &&
 			g.OutgoingEdgeCount(g.EdgeStart(e)) == 1 && g.OutgoingEdgeCount(g.EdgeEnd(e)) == 0) {
@@ -154,7 +154,7 @@ void PrintEdgesStats(std::map<EdgeType, size_t>& amount, std::map<EdgeType, size
 
 
 
-void CheckPairedInfo(Graph& g, PairedInfoIndex<Graph>& index, size_t lenThreshold) {
+void CheckPairedInfo(const Graph& g, const PairedInfoIndex<Graph>& index, size_t lenThreshold) {
 	size_t total = 0, totalLength = 0;
 	std::map<EdgeType, size_t> lengths;
 	std::map<EdgeType, size_t> amount;
@@ -248,7 +248,7 @@ void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, KmerMapper<k+1,
 }
 
 template<size_t k>
-void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds, PairedInfoIndices& pairedInfos, KmerMapper<k+1, Graph>& mapper,
+void AddRealInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds, PairedInfoIndices& pairedInfos, KmerMapper<k+1, Graph>& mapper,
 		bool useNewMetrics) {
 	PairedInfoSimpleSymmertrizer sym(g);
 
@@ -259,7 +259,7 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 		size_t de_delta = rl->de_delta;
 		size_t var = rl->var;
 		string dataset = lc_cfg::get().dataset_name;
-		pairedInfos.push_back(PairedInfoIndexLibrary(g, readSize, insertSize, delta, de_delta, var, new PairedInfoIndex<Graph>(g, 0)));
+		pairedInfos.push_back(PairedInfoIndexLibrary(g, readSize, insertSize, delta, de_delta, var, new PairedInfoIndex<Graph>(g)));
 
 		INFO("Reading additional info with read size " << readSize << ", insert size " << insertSize);
 
@@ -309,9 +309,7 @@ void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& 
 	}
 }
 
-
-
-void SavePairedInfo(Graph& g, IdTrackHandler<Graph>& intIds, PairedInfoIndices& pairedInfos, const std::string& fileNamePrefix,
+void SavePairedInfo(const Graph& g, IdTrackHandler<Graph>& intIds, PairedInfoIndices& pairedInfos, const std::string& fileNamePrefix,
 		bool advEstimator = false) {
 
 	INFO("Saving paired info");
@@ -363,7 +361,7 @@ void DeleteAdditionalInfo(PairedInfoIndices& pairedInfos) {
 	}
 }
 
-void PrintPairedInfo(Graph& g, PairedInfoIndex<Graph>& pairedInfo, IdTrackHandler<Graph>& intIds) {
+void PrintPairedInfo(const Graph& g, PairedInfoIndex<Graph>& pairedInfo, IdTrackHandler<Graph>& intIds) {
 	for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 		for (auto iter2 = g.SmartEdgeBegin(); !iter2.IsEnd(); ++iter2) {
 			omnigraph::PairedInfoIndex<Graph>::PairInfos pairs = pairedInfo.GetEdgePairInfo(*iter, *iter2);
@@ -375,7 +373,7 @@ void PrintPairedInfo(Graph& g, PairedInfoIndex<Graph>& pairedInfo, IdTrackHandle
 }
 
 //Convert path to contig sequence
-Sequence PathToSequence(Graph& g, BidirectionalPath& path) {
+Sequence PathToSequence(const Graph& g, BidirectionalPath& path) {
 	SequenceBuilder result;
 
 	if (!path.empty()) {
@@ -388,7 +386,7 @@ Sequence PathToSequence(Graph& g, BidirectionalPath& path) {
 	return result.BuildSequence();
 }
 
-double PathCoverage(Graph& g, BidirectionalPath& path) {
+double PathCoverage(const Graph& g, BidirectionalPath& path) {
 	double cov = 0.0;
 	double len = 0.0;
 
@@ -400,7 +398,7 @@ double PathCoverage(Graph& g, BidirectionalPath& path) {
 }
 
 //Output
-void OutputPathsAsContigs(Graph& g, std::vector<BidirectionalPath> paths, const string& filename) {
+void OutputPathsAsContigs(const Graph& g, std::vector<BidirectionalPath> paths, const string& filename) {
 	INFO("Writing contigs to " << filename);
 	osequencestream oss(filename);
 	for (auto path = paths.begin(); path != paths.end(); ++path ) {
@@ -411,7 +409,7 @@ void OutputPathsAsContigs(Graph& g, std::vector<BidirectionalPath> paths, const 
 
 
 //Output only one half of edges
-void OutputContigsNoComplement(Graph& g, const std::string& filename) {
+void OutputContigsNoComplement(const Graph& g, const std::string& filename) {
 	std::set<EdgeId> filtered;
 	FilterComlementEdges(g, filtered);
 
@@ -427,7 +425,7 @@ void OutputContigsNoComplement(Graph& g, const std::string& filename) {
 
 
 
-void OutputPathsAsContigsNoComplement(Graph& g, std::vector<BidirectionalPath>& paths,
+void OutputPathsAsContigsNoComplement(const Graph& g, std::vector<BidirectionalPath>& paths,
 		const string& filename,
 		std::set<int> notToPrint) {
 

@@ -13,6 +13,7 @@
 #include "k.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <io/reader.hpp>
 
 namespace debruijn_graph
 {
@@ -304,8 +305,8 @@ struct debruijn_config
 		size_t RL;
 		size_t IS;
 		bool single_cell;
-		std::string reference_genome;
-		int LEN;
+		std::string reference_genome_filename;
+		Sequence reference_genome;
 	};
 
 	struct position_handler {
@@ -511,13 +512,24 @@ inline void load(debruijn_config::dataset& ds, boost::property_tree::ptree const
 	load(ds.RL, pt, "RL");
 	load(ds.IS, pt, "IS");
 	load(ds.single_cell, pt, "single_cell");
-	boost::optional<std::string> rg = pt.get_optional<std::string>("reference_genome");
-	ds.reference_genome = (rg) ? *rg : "";
 
-	if (ds.reference_genome == "N/A")
-		ds.reference_genome = "";
+	ds.reference_genome_filename = "";
+	boost::optional<std::string> refgen = pt.get_optional<std::string>("reference_genome");
+	if (refgen && *refgen != "N/A") {
+		ds.reference_genome_filename = *refgen;
+	}
+}
 
-	load(ds.LEN, pt, "LEN");
+inline void load_reference_genome(debruijn_config::dataset& ds, std::string input_dir) {
+	std::string genome_filename = input_dir + ds.reference_genome_filename;
+	checkFileExistenceFATAL(genome_filename);
+	io::Reader<io::SingleRead> genome_stream(genome_filename);
+	io::SingleRead genome;
+	genome_stream >> genome;
+	ds.reference_genome = genome.sequence();
+//		std::string genome;
+//		genome = full_genome.GetSequenceString().substr(0, cfg::get().ds.LEN); // cropped
+//		return Sequence(genome);
 }
 
 inline void load(debruijn_config::simplification& simp, boost::property_tree::ptree const& pt, bool complete)
@@ -619,6 +631,8 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 	load(cfg.simp, pt, (cfg.ds.single_cell ? "sc_simplification" : "usual_simplification"));
 	load(cfg.info_printers, pt, "info_printers");
+
+	load_reference_genome(cfg.ds, cfg.input_dir);
 }
 
 

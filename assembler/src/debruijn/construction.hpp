@@ -98,8 +98,8 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 		INFO("Use single reads = " << cfg::get().use_single_reads);
 		INFO("Checking for single reads usage flag and files");
 		if(cfg::get().etalon_graph_mode) {
-			single_read_stream = new EasyStream(*single_reads_filename(cfg::get().ds.reference_genome,
-							cfg::get().input_dir));
+			// TODO we already have ref genome read by this point, so no need to read again. Use ds.reference_genome
+			single_read_stream = new EasyStream(*single_reads_filename(cfg::get().ds.reference_genome_filename, cfg::get().input_dir));
 		} else {
 			if (cfg::get().use_single_reads
 					&& single_reads_filename(cfg::get().ds.single_first,

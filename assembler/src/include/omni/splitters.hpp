@@ -650,6 +650,7 @@ public:
 	bool Check(const vector<VertexId> &component) const {
 		for (auto it = edges_of_interest_.begin();
 				it != edges_of_interest_.end(); ++it) {
+			VERIFY_MSG(int_ids_.ReturnEdgeId(*it) != NULL, "Couldn't find edge with id = " << *it);
 			if (ContainsEdge(component, int_ids_.ReturnEdgeId(*it))) {
 				return true;
 			}

@@ -597,31 +597,16 @@ void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 			graph_name, sub_dir, false);
 }
 
-Sequence load_genome() {
-	string genome_filename = cfg::get().ds.reference_genome;
-	std::string genome;
-	if (genome_filename.length() > 0) {
-		genome_filename = cfg::get().input_dir + genome_filename;
-		checkFileExistenceFATAL(genome_filename);
-		io::Reader<io::SingleRead> genome_stream(genome_filename);
-		io::SingleRead full_genome;
-		genome_stream >> full_genome;
-		genome = full_genome.GetSequenceString().substr(0, cfg::get().ds.LEN); // cropped
-	}
-	return Sequence(genome);
-}
-
-void resolve_with_jumps(Graph& g, PairedInfoIndex<Graph>& index, const Sequence& genome,
+void resolve_with_jumps(conj_graph_pack& gp, PairedInfoIndex<Graph>& index,
 		const paired_info_index& jump_index) {
 	VERIFY(cfg::get().andrey_params.write_contigs);
-	resolve_repeats_ml(g, index, genome,
+	resolve_repeats_ml(gp, index,
 			cfg::get().output_dir + "jump_resolve/",
 			cfg::get().andrey_params, boost::optional<const paired_info_index&>(jump_index));
 }
 
 void resolve_repeats() {
-	// read data ('genome')
-	Sequence genome = load_genome();
+	Sequence genome = cfg::get().ds.reference_genome;
 
 	conj_graph_pack conj_gp(genome);
 	paired_info_index paired_index(conj_gp.g/*, 5.*/);
@@ -646,7 +631,7 @@ void resolve_repeats() {
 	EdgeQuality<Graph> quality_labeler(conj_gp.g, conj_gp.index,
 			conj_gp.kmer_mapper, conj_gp.genome);
 //	OutputWrongContigs<K>(conj_gp, 1000, "contamination.fasta");
-	LabelerList<Graph> labeler(tot_lab, quality_labeler);
+	CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
 	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir,
 			"graph.dot");
 	printer(ipp_before_repeat_resolution);
@@ -703,7 +688,7 @@ void resolve_repeats() {
 
 	//todo magic constants!!!
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_jump) {
-		bool load_jump = true;
+		bool load_jump = false;
 		if (!load_jump) {
 			VERIFY(
 					cfg::get().ds.jumping_first && cfg::get().ds.jumping_second && cfg::get().ds.jump_is);
@@ -724,7 +709,7 @@ void resolve_repeats() {
 //			}
 //			cout << "END HERE" << endl;
 
-			io::ISCorruptingWrapper wrapped_jump_stream(jump_stream, 100000);
+			io::ISCorruptingWrapper wrapped_jump_stream(jump_stream, 1e8);
 
 			FillPairedIndexWithReadCountMetric<K>(conj_gp.g, conj_gp.int_ids,
 					conj_gp.index, conj_gp.kmer_mapper, raw_jump_index,
@@ -738,17 +723,17 @@ void resolve_repeats() {
 					raw_jump_index);
 			printer.savePaired(cfg::get().output_dir + "jump_cleared",
 					jump_index);
-			resolve_with_jumps(conj_gp.g, clustered_index, conj_gp.genome, jump_index);
+			resolve_with_jumps(conj_gp, clustered_index, jump_index);
 		} else {
 			ConjugateDataScanner<Graph> scanner(conj_gp.g, conj_gp.int_ids);
 			paired_info_index jump_index(conj_gp.g);
 			scanner.loadPaired(cfg::get().output_dir + "../jump_cleared", jump_index);
-			resolve_with_jumps(conj_gp.g, clustered_index, conj_gp.genome, jump_index);
+			resolve_with_jumps(conj_gp, clustered_index, jump_index);
 		}
 	}
 
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_andrew) {
-		resolve_repeats_ml(conj_gp.g, clustered_index, genome,
+		resolve_repeats_ml(conj_gp, clustered_index,
 				cfg::get().output_dir + "alt_resolve/",
 				cfg::get().andrey_params);
 	}
@@ -780,7 +765,7 @@ void resolve_repeats() {
 		SaveResolvedPairedInfo(resolved_gp, resolved_graph_paired_info,
 				"resolved", "saves/");
 
-		resolve_repeats_ml(resolved_gp.g, resolved_graph_paired_info, genome,
+		resolve_repeats_ml(resolved_gp, resolved_graph_paired_info,
 				cfg::get().output_dir + "combined_resolve/",
 				cfg::get().andrey_params);
 

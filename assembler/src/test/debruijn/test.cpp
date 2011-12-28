@@ -15,11 +15,11 @@ DECL_PROJECT_LOGGER("dt")
 
 namespace debruijn_graph {
 
-BOOST_AUTO_TEST_CASE( GenerateGraphFragment ) {
-//	std::string input_path = "./data/debruijn/QUAKE_CROPPED_400K/K55/latest/bulge_removal_0/graph";
-//	std::string output_path = "./src/test/debruijn/graph_fragments/tipobulge/tipobulge";
+//BOOST_AUTO_TEST_CASE( GenerateGraphFragment ) {
+//	std::string input_path = "./data/debruijn/HMP_LANE_3_0/K55/latest/saves/simplified_graph";
+//	std::string output_path = "./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path";
 //	size_t split_threshold = 230;
-//	int int_edge_id = 4285;
+//	int int_edge_id = 5573881;
 //	graph_pack<ConjugateDeBruijnGraph, 55> gp;
 //	ScanGraphPack(input_path, gp);
 //	//prints only basic graph structure
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE( GenerateGraphFragment ) {
 //	WriteToDotFile(g,
 //			tot_lab, output_path + ".dot",
 //			"mygraph", Path<EdgeId>(), Path<EdgeId>());
-}
+//}
 
 }
 
