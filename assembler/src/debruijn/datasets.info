@@ -366,3 +366,22 @@ LGASSERI_QUAKE
 	reference_genome	L.gasseri/ref.fasta.gz
 }
 
+; ================================================
+; ================== x5 Fungi ====================
+; ================================================
+
+X5_QUAKE
+{
+	first	x5/left.cor.fastq
+	second	x5/right.cor.fastq
+	single_first	x5/left.cor_single.fastq
+	single_second	x5/right.cor_single.fastq
+;	first	x5/a.fastq
+;	second	x5/a.fastq
+;	single_first	x5/a.fastq
+;	single_second	x5/a.fastq
+	RL	100
+	IS	1000
+	single_cell	false
+	reference_genome N/A
+}
