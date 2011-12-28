@@ -98,7 +98,7 @@ inline bool fileExists(std::string filename) {
 
 inline void checkFileExistenceFATAL(std::string filename) {
 	if (!fileExists(filename)) {
-		VERIFY_MSG(false, "File " << filename << " doesn't exists or can't be read!\n");
+		VERIFY_MSG(false, "File " << filename << " doesn't exist or can't be read!\n");
 	}
 }
 
