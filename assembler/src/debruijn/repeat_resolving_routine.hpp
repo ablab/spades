@@ -688,7 +688,7 @@ void resolve_repeats() {
 
 	//todo magic constants!!!
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_jump) {
-		bool load_jump = true;
+		bool load_jump = false;
 		if (!load_jump) {
 			VERIFY(
 					cfg::get().ds.jumping_first && cfg::get().ds.jumping_second && cfg::get().ds.jump_is);

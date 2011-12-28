@@ -1034,7 +1034,7 @@ public:
 		if (math::gr(quality_handler_.quality(edge), 0.)) {
 			TRACE("Deleting edge " << g_.int_id(edge) << " with quality " << quality_handler_.quality(edge));
 		} else {
-			TRACE("Deleting edge " << g_.int_id(edge) << " with zero quality");
+//			TRACE("Deleting edge " << g_.int_id(edge) << " with zero quality");
 		}
 //		if (math::gr(quality_handler_.quality(edge), 0.))
 //			colored_removed_++;
