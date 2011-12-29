@@ -368,8 +368,12 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 	if (config.detailed_dot_write || config.write_components
 			|| !config.components_for_kmer.empty()
 			|| config.write_components_along_genome) {
-		path1 = FindGenomePath<K>(gp.genome, gp.g, gp.index);
-		path2 = FindGenomePath<K>(!gp.genome, gp.g, gp.index);
+		path1 = NewFindGenomePath<K>(gp.genome, gp.g, gp.int_ids, gp.index,
+				gp.kmer_mapper).simple_path();
+		path2 = NewFindGenomePath<K>(!gp.genome, gp.g, gp.int_ids, gp.index,
+				gp.kmer_mapper).simple_path();
+//		path1 = FindGenomePath<K>(gp.genome, gp.g, gp.index);
+//		path2 = FindGenomePath<K>(!gp.genome, gp.g, gp.index);
 		make_dir(folder);
 	}
 
