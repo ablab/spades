@@ -181,6 +181,7 @@ int main(int argc, char * argv[]) {
 		// expand the set of solid k-mers
 		if ( cfg::get().expand_do || do_everything ) {
 			int expand_nthreads = min( cfg::get().general_max_nthreads, cfg::get().expand_nthreads);
+			TIMEDLN("Starting solid k-mers expansion in " << expand_nthreads << " threads.");
 			for ( int expand_iter_no = 0; expand_iter_no < cfg::get().expand_max_iterations; ++expand_iter_no ) {
 				size_t res = HammerTools::IterativeExpansionStep(expand_iter_no, expand_nthreads, *Globals::kmers);
 				TIMEDLN("Solid k-mers iteration " << expand_iter_no << " produced " << res << " new k-mers.");

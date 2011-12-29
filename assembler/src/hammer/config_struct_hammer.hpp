@@ -126,6 +126,7 @@ struct hammer_config
 	bool correct_do;
 	bool correct_use_threshold;
 	double correct_threshold;
+	int correct_nthreads;
 };
 
 

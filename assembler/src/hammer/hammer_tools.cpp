@@ -213,8 +213,7 @@ void HammerTools::CountKMersBySplitAndMerge() {
 	hint_t kmer_num = 0;
 
 	int merge_nthreads = min( cfg::get().general_max_nthreads, cfg::get().count_merge_nthreads);
-	// TODO: make multiple threads work
-	for ( int iFile=0; iFile < cfg::get().count_numfiles;  ) {
+	for ( int iFile=0; iFile < cfg::get().count_numfiles; ) {
 
 		std::vector<KMerNoHashMap> khashmaps(merge_nthreads);
 
@@ -223,11 +222,10 @@ void HammerTools::CountKMersBySplitAndMerge() {
 			if ( j + iFile > cfg::get().count_numfiles) continue;
 			ifstream inStream( getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile+j ) );
 			ProcessKmerHashFile( &inStream, khashmaps[j] );
-		}
-
-		for ( int j = 0; j< merge_nthreads; ++j) {
-			if ( j + iFile > cfg::get().count_numfiles) continue;
+			#pragma omp critical
+			{
 			PrintProcessedKmerHashFile( &kmerno_file, kmer_num, khashmaps[j] );
+			}
 		}
 
 		iFile += merge_nthreads;
@@ -439,8 +437,12 @@ hint_t HammerTools::CorrectAllReads() {
 	hint_t changedReads = 0;
 	hint_t changedNucleotides = 0;
 
-	TIMEDLN("Starting read correction.");
+	int correct_nthreads = min( cfg::get().correct_nthreads, cfg::get().general_max_nthreads );
+
+	// TODO: make threaded read correction!
+	TIMEDLN("Starting read correction in " << correct_nthreads << " threads (threaded correction does not work yet).");
 	hint_t readno = 0;
+
 	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
 		if (!cfg::get().input_paired) {
 			ofstream ofgood(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "corrected").c_str());

@@ -113,6 +113,7 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
 	load(cfg.expand_write_kmers_result, pt, "expand_write_kmers_result");
 
 	load(cfg.correct_do, pt, "correct_do");
+	load(cfg.correct_nthreads, pt, "correct_nthreads");
 	load(cfg.correct_threshold, pt, "correct_threshold");
 	load(cfg.correct_use_threshold, pt, "correct_use_threshold");
 

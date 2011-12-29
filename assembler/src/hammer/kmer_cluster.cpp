@@ -666,7 +666,7 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 		}
 		ifs.close();
 		TIMEDLN("K-mer information read. Starting subclustering in " << nthreads_ << " threads.");
-		TIMEDLN("Estimated: size=" << k_->size() << " mem=" << sizeof(KMerCount)*k_->size());
+		TIMEDLN("Estimated: size=" << k_->size() << " mem=" << sizeof(KMerCount)*k_->size() << " clustering buffer size=" << cfg::get().hamming_class_buffer);
 	}
 
 	ifstream ifclass;
@@ -736,7 +736,7 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 				cur_total_size += cur_class.size();
 			}
 		}
-		TIMEDLN("Processing " << i_nontriv << " nontrivial clusters with total size " << cur_total_size << " from " << orig_class_num << " to " << cur_class_num);
+		TIMEDLN("Processing " << i_nontriv << " nontrivial clusters from " << orig_class_num << " to " << cur_class_num << " in " << nthreads_ << " threads.");
 
 		#pragma omp parallel for shared(blocksInPlace, curClasses) num_threads(nthreads_)
 		for (size_t i=0; i < i_nontriv; ++i) {
