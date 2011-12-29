@@ -437,7 +437,7 @@ void OutputPathsAsContigsNoComplement(const Graph& g, std::vector<BidirectionalP
 			continue;
 		}
 
-		oss.setID((void*) &paths[i]);
+		oss.setID(paths[i].uid);
 		oss.setCoverage(PathCoverage(g, paths[i]));
 		oss << PathToSequence(g, paths[i]);
 	}

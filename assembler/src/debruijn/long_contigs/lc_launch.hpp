@@ -84,13 +84,18 @@ void resolve_repeats_ml(const conj_graph_pack& gp, PairedInfoIndices& pairedInfo
 
 	FilterComplement(g, seeds, &seedPairs, &seedQuality);
 
-	PrintPathsShort(g, seeds);
+	//PrintPathsShort(g, seeds);
 //	size_t found = PathsInGenome<K>(g, index, sequence, seeds, path1, path2);
 //	INFO("Good seeds found " << found << " in total " << seeds.size());
 //	INFO("Seed coverage " << PathsCoverage(g, seeds));
 //	INFO("Path length coverage " << PathsLengthCoverage(g, seeds));
 //
 	if (params.write_seeds) {
+        INFO("=== Final seeds ===");
+        for (size_t i = 0; i < seeds.size(); ++i) {
+            PrintPath(g, seeds[i]);
+        }
+
 		WriteGraphWithPathsSimple(gp, output_dir + "seeds.dot", "seeds", seeds);
 		OutputPathsAsContigsNoComplement(g, seeds, output_dir + "seeds.fasta", std::set<int>());
 	}
@@ -166,9 +171,9 @@ void resolve_repeats_ml(const conj_graph_pack& gp, PairedInfoIndices& pairedInfo
 		stopHandler.print();
 	}
 
-	if (params.write_paths) {
-		WriteGraphWithPathsSimple(gp, output_dir + "final_paths.dot", "final_paths", result);
-	}
+//	if (params.write_paths) {
+//		WriteGraphWithPathsSimple(gp, output_dir + "final_paths.dot", "final_paths", result);
+//	}
 
 	if (params.write_contigs) {
 		OutputPathsAsContigs(g, result, output_dir + "all_paths.fasta");
@@ -198,10 +203,15 @@ void resolve_repeats_ml(const conj_graph_pack& gp, PairedInfoIndices& pairedInfo
 
 		OutputPathsAsContigsNoComplement(g, noOverlaps, output_dir + "resolved.fasta", toRemove);
 		INFO("All contigs written");
+
+		INFO("=== Final paths ===");
+		for (size_t i = 0; i < noOverlaps.size(); ++i) {
+		    PrintPath(g, noOverlaps[i]);
+		}
 	}
 
-	PrintPath(gp.g, FindGenomePath<K>(gp.genome, gp.g, gp.index));
-	PrintPath(gp.g, FindGenomePath<K>(!gp.genome, gp.g, gp.index));
+//	PrintPath(gp.g, FindGenomePath<K>(gp.genome, gp.g, gp.index));
+//	PrintPath(gp.g, FindGenomePath<K>(!gp.genome, gp.g, gp.index));
 
 	INFO("Tool finished");
 	DeleteAdditionalInfo(pairedInfos);

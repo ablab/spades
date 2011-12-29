@@ -371,7 +371,7 @@ void FindEdges(const Graph& g, EdgeId edge, int depth, std::vector<EdgeId>& resu
 		++i;
 	}
 	DEBUG("== Depth info == ");
-	long_contigs::PrintPath(g, result);
+	long_contigs::PrintAnyPath(g, result);
 	for (int i = 0; i < (int) result.size(); ++i) {
 		DEBUG("D = " << distances[i] << ", DEPTH = " << depths[i]);
 	}

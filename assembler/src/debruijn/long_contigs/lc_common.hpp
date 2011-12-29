@@ -47,6 +47,8 @@ class BidirectionalPath : public std::deque<EdgeId> {
 public:
 	 std::deque<int> gaps;
 
+	 int uid;
+
 	 int id;
 	 int conj_id;
 };
@@ -366,10 +368,10 @@ void PrintPathsShort(const Graph& g, const std::vector<BidirectionalPath>& paths
 
 //Print path with length from start / end to the every edge
 void PrintPath(const Graph& g, BidirectionalPath& path, PathLengths& lengths) {
-	DEBUG("Path " << &path)
+	DEBUG("Path " << path.uid)
 	DEBUG("#, edge, length, total length")
 	for(size_t i = 0; i < path.size(); ++i) {
-		DEBUG(i << ", " << path[i] << ", " << g.length(path[i]) << ", " << lengths[i]);
+		DEBUG(i << ", " << g.int_id(path[i]) << ", " << g.length(path[i]) << ", " << lengths[i]);
 	}
 }
 
@@ -382,31 +384,45 @@ void DetailedPrintPath(const Graph& g, BidirectionalPath& path, PathLengths& len
 
 //Print path
 template<class PathType>
-void PrintPath(const Graph& g, const PathType& path) {
+void PrintAnyPath(const Graph& g, const PathType& path) {
 	DEBUG("Path " << &path << " with length " << PathLength(g, path));
 	DEBUG("#, edge, length")
 	for(int i = 0; i < (int) path.size(); ++i) {
-		DEBUG(i << ", " << path[i] << ", " << g.length(path[i]));
+		DEBUG(i << ", " << g.int_id(path[i]) << ", " << g.length(path[i]));
 	}
+}
+
+void PrintPath(const Graph& g, const BidirectionalPath& path) {
+    INFO("Path " << path.uid << " with length " << PathLength(g, path));
+    INFO("#, edge, length, coverage")
+    for(int i = 0; i < (int) path.size(); ++i) {
+        INFO(i << ", " << g.int_id(path[i]) << ", len: " << g.length(path[i]) << ", cov: " << g.coverage(path[i]));
+    }
 }
 
 //Print path
 template<class PathType>
-void DetailedPrintPath(const Graph& g, PathType& path) {
+void DetailedPrintAnyPath(const Graph& g, PathType& path) {
 	if (lc_cfg::get().params.rs.detailed_output) {
 		PrintPath(g, path);
 	}
 }
 
+void DetailedPrintPath(const Graph& g, BidirectionalPath& path) {
+    if (lc_cfg::get().params.rs.detailed_output) {
+        PrintPath(g, path);
+    }
+}
+
 //Print path
 template<class PathType>
 void PrintPathWithVertices(const Graph& g, PathType& path) {
-	DEBUG("Path " << &path)
+	DEBUG("Path " << path.uid)
 	DEBUG("#, edge, length")
 
 	for(size_t i = 0; i < path.size(); ++i) {
-		DEBUG(g.EdgeStart(path[i]));
-		DEBUG(i << ", " << path[i] << ", " << g.length(path[i]));
+		DEBUG(g.int_id(g.EdgeStart(path[i])));
+		DEBUG(i << ", " << g.int_id(path[i]) << ", " << g.length(path[i]));
 	}
 }
 
