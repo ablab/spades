@@ -445,27 +445,27 @@ hint_t HammerTools::CorrectAllReads() {
 
 	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
 		if (!cfg::get().input_paired) {
-			ofstream ofgood(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "corrected").c_str());
-			ofstream ofbad( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "bad").c_str());
+			ofstream ofgood(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "corrected.fastq").c_str());
+			ofstream ofbad( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "bad.fastq").c_str());
 			HammerTools::CorrectReadFile(Globals::input_filenames[iFile], *Globals::kmers, changedReads, changedNucleotides, readno, &ofgood, &ofbad );
 			TIMEDLN("  " << Globals::input_filenames[iFile].c_str() << " corrected.");
 			// makes sense to change the input filenames for the next iteration immediately
 			Globals::input_filenames[iFile] = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "corrected");
 		} else {
-			ofstream ofbadl(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "left.bad").c_str());
-			ofstream ofcorr(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "right.corrected").c_str());
-			ofstream ofbadr(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "right.bad").c_str());
-			ofstream ofunpl(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "left.unpaired").c_str());
-			ofstream ofunpr(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "right.unpaired").c_str());
-			ofstream ofcorl(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "left.corrected").c_str());
+			ofstream ofbadl(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "left.bad.fastq").c_str());
+			ofstream ofcorr(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "right.corrected.fastq").c_str());
+			ofstream ofbadr(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "right.bad.fastq").c_str());
+			ofstream ofunpl(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "left.unpaired.fastq").c_str());
+			ofstream ofunpr(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "right.unpaired.fastq").c_str());
+			ofstream ofcorl(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "left.corrected.fastq").c_str());
 			HammerTools::CorrectPairedReadFiles(Globals::input_filenames[iFile], Globals::input_filenames[iFile+1],
 					*Globals::kmers, changedReads, changedNucleotides,
 					Globals::input_file_blob_positions[iFile], Globals::input_file_blob_positions[iFile+1],
 					&ofbadl, &ofcorl, &ofunpl, &ofbadr, &ofcorr, &ofunpr );
 			TIMEDLN("  " << Globals::input_filenames[iFile].c_str() << " and " << Globals::input_filenames[iFile+1].c_str() << " corrected as a pair.");
 			// makes sense to change the input filenames for the next iteration immediately
-			Globals::input_filenames[iFile] = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "left.corrected");
-			Globals::input_filenames[iFile+1] = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "right.corrected");
+			Globals::input_filenames[iFile] = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "left.corrected.fastq");
+			Globals::input_filenames[iFile+1] = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "reads", iFile, "right.corrected.fastq");
 			++iFile;
 		}
 	}

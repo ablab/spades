@@ -410,6 +410,8 @@ double KMerClustering::lMeansClustering(uint32_t l, vector< vector<int> > & dist
 void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector<int> > & vec) {
 
 	if ( cfg::get().bayes_debug_output ) {
+		#pragma omp critical
+		{
 		cout << "process_SIN with block size=" << block.size() << " total kmers=" << k_->size() << endl << "block:";
 		for (size_t i = 0; i < block.size(); i++) {
 			cout << " " << i;
@@ -417,6 +419,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		cout << endl << "  kmers:\n";
 		for (size_t i = 0; i < block.size(); i++) {
 			cout << (*k_)[i]->first.str() << endl;
+		}
 		}
 	}
 
@@ -450,7 +453,9 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	vector<StringCount> bestCenters;
 	vector<int> bestIndices(block.size());
 
-	for (uint32_t l = 1; l <= origBlockSize; ++l) {
+	uint32_t max_l = cfg::get().bayes_hammer_mode ? 1 : origBlockSize;
+
+	for (uint32_t l = 1; l <= max_l; ++l) {
 		vector<StringCount> centers(l);
 		double curLikelihood = lMeansClustering(l, distances, block, indices, centers);
 		if (cfg::get().bayes_debug_output) {
@@ -528,17 +533,17 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		}
 	}
 
-	#pragma omp critical
-	{
 	if (cfg::get().bayes_debug_output && origBlockSize > 2) {
-	cout << "\nAfter the check we got centers: \n";
-	for (size_t k=0; k<bestCenters.size(); ++k) {
-		cout << "  " << bestCenters[k].first.data() << " " << bestCenters[k].second << " ";
-		if ( centersInCluster[k] >= 0 ) cout << (*k_)[block[centersInCluster[k]]]->first.start();
-		cout << "\n";
-	}
-	cout << "\n";
-	}
+		#pragma omp critical
+		{
+			cout << "\nAfter the check we got centers: \n";
+			for (size_t k=0; k<bestCenters.size(); ++k) {
+				cout << "  " << bestCenters[k].first.data() << " " << bestCenters[k].second << " ";
+				if ( centersInCluster[k] >= 0 ) cout << (*k_)[block[centersInCluster[k]]]->first.start();
+				cout << "\n";
+			}
+			cout << "\n";
+		}
 	}
 
 	for (size_t k=0; k<bestCenters.size(); ++k) {
@@ -776,7 +781,8 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 					}
 					cluster_quality = 1-cluster_quality;
 
-					if ( cluster_quality > cfg::get().bayes_nonsingleton_threshold) {
+					// in regular hammer mode, all nonsingletons are good
+					if ( cfg::get().bayes_hammer_mode || cluster_quality > cfg::get().bayes_nonsingleton_threshold) {
 						(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER;
 						if (ofs) {
 							(*ofs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
