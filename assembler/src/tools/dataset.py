@@ -49,6 +49,11 @@ def md5(ds):
     for f in s:
 	os.system("md5sum " + f)
 
+def neat(files):
+    if len(files) == 1:
+	return files[0]
+    return files[0] + " and " + str(len(files) - 1) + " more"
+
 def process(cfg, func, filt):
     if not os.path.isfile(cfg):
         print "no such file:", cfg
@@ -72,8 +77,9 @@ def process(cfg, func, filt):
 	        exit(2)
 	    ds[s[0]] = s[1]
 	if filt(ds):
-	    if reduce(lambda x, y: x or y, [missFile(ds.get(f)) for f in files]):
-		print ds["name"], "is missing!!!!!!!!!!!!!!!!!!!!"
+	    missing = filter(missFile, map(ds.get, files))
+	    if missing:
+		print ds["name"], "is missing", neat(missing)
 	    else:
 		func(ds)
 
