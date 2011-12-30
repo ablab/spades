@@ -13,6 +13,7 @@
 #include "k.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <cmath>
 
 namespace debruijn_graph {
 
@@ -211,6 +212,29 @@ void CountAndSaveAllPaths(const Graph& g, const IdTrackHandler<Graph>& int_ids, 
     printer.savePaired(dir_name + "paths", all_paths);
 }
 
+template<typename EdgeId>
+struct PairOfEdges {
+	EdgeId first;
+	EdgeId second;
+    PairOfEdges (const PairInfo<EdgeId>& pair_info):
+        first(pair_info.first), second(pair_info.second){
+
+    }
+
+    bool operator<( const PairOfEdges& rhs) const{
+        const PairOfEdges &lhs = *this;
+        if (lhs.first == rhs.first) return (lhs.second < rhs.second);
+        return (lhs.first < rhs.first);
+    }
+
+    bool operator==(const PairOfEdges& rhs) const{
+        const PairOfEdges &lhs = *this;
+        return (lhs.first == rhs.first && lhs.second == rhs.second);
+    }
+
+    
+};
+
 void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 		const PairedInfoIndex<Graph> &paired_index,
 		const PairedInfoIndex<Graph> &clustered_index) {
@@ -218,6 +242,31 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 	paired_info_index etalon_paired_index(gp.g);
 	FillAndCorrectEtalonPairedInfo(etalon_paired_index, gp, paired_index,
 			cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta, true);
+    INFO("Counting correlation between etalon and clustered paired infos statistics");
+    std::map<PairOfEdges<EdgeId> , vector<double> > my_index;
+    std::map<double, int> gr;
+    for (auto iter = etalon_paired_index.begin(); iter != etalon_paired_index.end(); ++iter){
+        vector<PairInfo<EdgeId> > data = *iter;
+        PairOfEdges<EdgeId> ppp(data[0]);
+        for (size_t i = 0; i<data.size(); ++i) my_index[ppp].push_back(data[i].d);
+    }
+
+    for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter){
+            vector<PairInfo<EdgeId> > data = *iter;
+            PairOfEdges<EdgeId> ppp(data[0]);
+            for (size_t i = 0; i<data.size(); ++i){
+                double min = 1000;
+                vector<double> etalon_pair = my_index[ppp];
+                 
+                for (size_t j = 0; j<etalon_pair.size(); ++j){
+                    if (math::ge(min, abs(data[i].d - etalon_pair[j])))
+                        min = abs(data[i].d - etalon_pair[j]);
+                }
+                gr[min]++;
+            }
+             
+    }
+
 	INFO("Counting clustered info stats");
 	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
 	EstimationQualityStat<Graph> estimation_stat(gp.g, gp.int_ids, edge_qual,
