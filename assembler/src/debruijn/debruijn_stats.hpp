@@ -243,30 +243,33 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 	FillAndCorrectEtalonPairedInfo(etalon_paired_index, gp, paired_index,
 			cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta, true);
     INFO("Counting correlation between etalon and clustered paired infos statistics");
-    std::map<PairOfEdges<EdgeId> , vector<double> > my_index;
-    std::map<double, int> gr;
+    std::map<PairOfEdges<EdgeId> , vector<int> > my_index;
+    std::map<int, int> gr;
     for (auto iter = etalon_paired_index.begin(); iter != etalon_paired_index.end(); ++iter){
         vector<PairInfo<EdgeId> > data = *iter;
         PairOfEdges<EdgeId> ppp(data[0]);
-        for (size_t i = 0; i<data.size(); ++i) my_index[ppp].push_back(data[i].d);
+        for (size_t i = 0; i<data.size(); ++i) my_index[ppp].push_back(10*data[i].d);
     }
 
     for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter){
             vector<PairInfo<EdgeId> > data = *iter;
             PairOfEdges<EdgeId> ppp(data[0]);
             for (size_t i = 0; i<data.size(); ++i){
-                double min = 1000;
-                vector<double> etalon_pair = my_index[ppp];
+                int min = 10000000;
+                vector<int> etalon_pair = my_index[ppp];
                  
                 for (size_t j = 0; j<etalon_pair.size(); ++j){
-                    if (math::ge(min, abs(data[i].d - etalon_pair[j])))
-                        min = abs(data[i].d - etalon_pair[j]);
+                    if (min >  abs(10*data[i].d - etalon_pair[j]))
+                        min = abs(10*data[i].d - etalon_pair[j]);
                 }
                 gr[min]++;
             }
              
     }
 
+    for (auto iter = gr.begin(); iter != gr.end(); ++iter){
+        cout << "Pavel " << (*iter).first / 100. << " "<< (*iter).second << endl;
+    }
 	INFO("Counting clustered info stats");
 	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
 	EstimationQualityStat<Graph> estimation_stat(gp.g, gp.int_ids, edge_qual,
