@@ -67,7 +67,7 @@ public:
 	static void PrintKMerResult( ofstream * outf, const vector<KMerCount *> & kmers );
 
 	/// internal procedure
-	static bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const string & seq,
+	static bool internalCorrectReadProcedure( const Read & r, const PositionRead & pr, const hint_t readno, const string & seq,
 			const vector<KMerCount*> & km, const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat,
 			vector< vector<int> > & v, int & left, int & right, bool & isGood, ofstream * ofs, bool revcomp );
 

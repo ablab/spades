@@ -418,7 +418,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		}
 		cout << endl << "  kmers:\n";
 		for (size_t i = 0; i < block.size(); i++) {
-			cout << (*k_)[i]->first.str() << endl;
+			cout << (*k_)[block[i]]->first.str() << endl;
 		}
 		}
 	}
@@ -635,9 +635,17 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 		ofstream ofs( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "hamming.classes") );
 		for ( size_t i=0; i < classes.size(); ++i ) {
 			ofs << "class " << i << " size=" << classes[i].size() << "\n";
+			//cout << "class " << i << " size=" << classes[i].size() << "\n";
 			for ( size_t j=0; j < classes[i].size(); ++j ) {
 				ofs << classes[i][j] << "\n";
+				//cout << classes[i][j] << "\t" << v_->at(classes[i][j]) << "\t" << string(Globals::blob + v_->at(classes[i][j]), K) << endl;
 			}
+			/*if (classes[i].size() > 1) {
+				cout << "class " << i << " size=" << classes[i].size() << "\n";
+				for ( size_t j=0; j < classes[i].size(); ++j ) {
+					cout << classes[i][j] << "\t" << v_->at(classes[i][j]) << "\t" << string(Globals::blob + v_->at(classes[i][j]), K) << endl;
+				}
+			}*/
 			classes[i].clear();
 		}
 		classes.clear();

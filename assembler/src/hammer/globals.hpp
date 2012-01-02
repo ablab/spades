@@ -11,12 +11,14 @@ struct Globals {
 	static std::vector<uint32_t> * subKMerPositions;
 	static char* blob;
 	static char* blobquality;
+	static bool* blobrc;
 	static std::vector<PositionRead> * pr;
 	static std::vector<hint_t> * kmernos;
 	static std::vector<KMerCount *> * kmers;
 	static hint_t blob_max_size;
 	static hint_t blob_size;
 	static hint_t revNo;
+	static hint_t revPos;
 
 	static void writeBlob( const char * fname );
 	static void readBlob( const char * fname );

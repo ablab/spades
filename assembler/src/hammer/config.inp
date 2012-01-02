@@ -1,5 +1,5 @@
 ; input options: working dir, input files, offset, and possibly kmers
-input_working_dir			/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/tmp_dir_threaded
+input_working_dir			/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/test_dir
 input_numfiles				1
 input_paired				0
 input_file_0				/home/snikolenko/data/head100000.fastq
@@ -12,20 +12,20 @@ input_solid_kmers			...
 ; general options
 general_do_everything_after_first_iteration	1
 general_reconstruct_only	0
-general_change_n_to_a		1
+general_change_n_to_a		0
 general_hard_memory_limit	15
-general_max_nthreads		2
+general_max_nthreads		1
 general_tau					1
-general_max_iterations		3
+general_max_iterations		1
 general_blob_margin			0.25
 
 ; count k-mers
-count_do					0
-count_numfiles				8
+count_do					1
+count_numfiles				4
 count_merge_nthreads		6
 
 ; sort k-mers
-sort_do						0
+sort_do						1
 
 ; extract and sort subvectors
 subvectors_do								1
@@ -39,19 +39,19 @@ hamming_class_buffer		100000
 
 ; bayesian subclustering
 bayes_do						1
-bayes_nthreads					6
+bayes_nthreads					1
 bayes_quality_threshold			0.995
 bayes_singleton_threshold		0.995
 bayes_nonsingleton_threshold	0.5
 bayes_use_hamming_dist			0
 bayes_discard_only_singletons	0
 bayes_debug_output				0
-bayes_hammer_mode				1
+bayes_hammer_mode				0
 
 ; iterative expansion step
-expand_do					0
+expand_do					1
 expand_max_iterations		5
-expand_nthreads				6
+expand_nthreads				2
 expand_write_each_iteration	0
 expand_write_kmers_result	1
 

@@ -45,10 +45,13 @@ void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 	ifstream ifs(inputFile);
 	char buf[16000]; // strings might run large in those files
 	hint_t line_no = 0;
+	hint_t prev_pos = -1;
 	while (!ifs.eof()) {
 		ifs.getline(buf, 16000);
 		hint_t pos;
 		sscanf(buf, "%lu", &pos);
+		if (prev_pos == pos) continue;
+		prev_pos = pos;
 		switch(type_) {
 			case SorterTypeFileBasedStraight:
 				for (int j=0; j < tau_+1; ++j) {

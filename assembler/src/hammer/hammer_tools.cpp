@@ -79,7 +79,7 @@ void print_mem_usage() {
 	static size_t pid = getpid();
 	std::string str = (boost::format("pmap -d %d | grep writeable/private") % pid).str();
 	std::cout << "==== MEM USAGE ==== " << std::endl;
-	system(str.c_str());
+	if (system(str.c_str()) != 0) std::cout << "  mem usage output failed!";
 }
 
 void print_stats() {
@@ -101,22 +101,26 @@ void HammerTools::ChangeNtoAinReadFiles() {
 	std::vector<pid_t> pids;
 	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
 		string cur_filename = getFilename(cfg::get().input_working_dir, "reads.input", iFile);
-		pid_t cur_pid = vfork();
-		if (cur_pid == 0) {
-			TIMEDLN("  [" << getpid() << "] Child process for substituting Ns in " << Globals::input_filenames[iFile] << " starting.");
-			string cmd = string("sed \'n;s/\\([ACGT]\\)N\\([ACGT]\\)/\\1A\\2/g;n;n\' ") + Globals::input_filenames[iFile].c_str() + " > " + cur_filename.c_str();
-			int exitcode = system( cmd.c_str() );
-			if (exitcode != 0) {
-				TIMEDLN("  [" << getpid() << "] ERROR: finished with non-zero exit code " << exitcode);
+		if (cfg::get().count_do) {
+			pid_t cur_pid = vfork();
+			if (cur_pid == 0) {
+				TIMEDLN("  [" << getpid() << "] Child process for substituting Ns in " << Globals::input_filenames[iFile] << " starting.");
+				string cmd = string("sed \'n;s/\\([ACGT]\\)N\\([ACGT]\\)/\\1A\\2/g;n;n\' ") + Globals::input_filenames[iFile].c_str() + " > " + cur_filename.c_str();
+				int exitcode = system( cmd.c_str() );
+				if (exitcode != 0) {
+					TIMEDLN("  [" << getpid() << "] ERROR: finished with non-zero exit code " << exitcode);
+				}
+				_exit(0);
 			}
-			_exit(0);
+			pids.push_back(cur_pid);
 		}
-		pids.push_back(cur_pid);
 		Globals::input_filenames[iFile] = cur_filename;
 	}
-	int childExitStatus;
-	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
-		waitpid(pids[iFile], &childExitStatus, 0);
+	if (cfg::get().count_do) {
+		int childExitStatus;
+		for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
+			waitpid(pids[iFile], &childExitStatus, 0);
+		}
 	}
 }
 
@@ -160,6 +164,7 @@ void HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curpos
 			Globals::blob[curpos + j] = r.getSequenceString()[j];
 			Globals::blobquality[curpos + j] = (char) (cfg::get().input_qvoffset + r.getQualityString()[j]);
 		}
+		//cout << "  read " << cur_read << "." << reverse_complement << ": pos=" << curpos << " size=" << read_size << endl;
 		curpos += read_size;
 		++cur_read;
 	}
@@ -176,9 +181,16 @@ void HammerTools::ReadAllFilesIntoBlob() {
 		Globals::input_file_blob_positions.push_back(cur_read);
 	}
 	Globals::revNo = cur_read;
+	Globals::revPos = curpos;
+	//std::cout << "revPos=" << Globals::revPos << endl;
+	//std::cout << "blob without revcomp:\n" << string(Globals::blob, curpos) << endl;
 	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
 		ReadFileIntoBlob(Globals::input_filenames[iFile], curpos, cur_read, true);
 	}
+	Globals::blob_size = curpos;
+	//std::cout << "  real blob size = " << curpos << endl;
+	//std::cout << string(Globals::blob, curpos) << endl;
+	//std::cout << "blob with revcomp:\n" << string(Globals::blob + Globals::revPos, curpos - Globals::revPos) << endl;
 }
 
 void HammerTools::CountKMersBySplitAndMerge() {
@@ -188,18 +200,30 @@ void HammerTools::CountKMersBySplitAndMerge() {
 		ofiles[i] = new ofstream( getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i ) );
 	}
 	Seq<K>::hash hash_function;
-	for(size_t i=0; i < Globals::pr->size(); ++i) {
+	Seq<K>::less2 cmp_kmers;
+	for(size_t i=0; i < Globals::revNo; ++i) {
 		string s(Globals::blob        + Globals::pr->at(i).start(), Globals::pr->at(i).size());
 		string q(Globals::blobquality + Globals::pr->at(i).start(), Globals::pr->at(i).size());
 		for ( size_t j=0; j < Globals::pr->at(i).size(); ++j) q[j] = (char)(q[j] - cfg::get().input_qvoffset);
 		ValidKMerGenerator<K> gen(s, q);
 		while (gen.HasMore()) {
-			ofstream &cur_file = *ofiles[hash_function(gen.kmer()) % cfg::get().count_numfiles];
+			Seq<K> cur_kmer = gen.kmer();
+			Seq<K> cur_rckmer = !cur_kmer;
 			hint_t cur_pos = Globals::pr->at(i).start() + gen.pos() - 1;
+			//std::cout << "  pos=" << cur_pos << "\t" << cur_kmer.str() << "\t" << cur_rckmer.str() << endl;
+			if (cmp_kmers(cur_rckmer, cur_kmer)) {
+				cur_kmer = cur_rckmer;
+				cur_pos = Globals::pr->at(i).getRCPosition(gen.pos());
+				Globals::pr->at(i).setRCBit(gen.pos() - 1);
+				//std::cout << "      reversing pos=" << Globals::pr->at(i).start() + gen.pos() - 1 << " into pos=" << cur_pos << "\t" << cur_kmer.str() << endl;
+				//std::cout << "      and the prs're pos=" << cur_pos << "\t" << string(Globals::blob + cur_pos, K) << endl;
+			}
+			ofstream &cur_file = *ofiles[hash_function(cur_kmer) % cfg::get().count_numfiles];
 			double correct_probability = 1 - gen.correct_probability();
 			cur_file << cur_pos << "\t" << correct_probability << "\n";
 			gen.Next();
 		}
+		//cout << "  pr " << i << " start=" << Globals::pr->at(i).start() << "\tsize=" << Globals::pr->at(i).size() << "\trevPos=" << Globals::revPos << "\trc=" << Globals::pr->at(i).getRCBitString() << "\t" << Globals::pr->at(i).getRCBit(0) << endl;
 	}
 	for (int i = 0; i < cfg::get().count_numfiles; ++i) {
 		ofiles[i]->close();
@@ -253,6 +277,10 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, con
 		vector< hint_t > kmer_indices( read_size, -1 );
 
 		pair<int, hint_t > it = make_pair( -1, BLOBKMER_UNDEFINED );
+
+		//int i = readno;
+		//cout << "  pr " << i << " start=" << Globals::pr->at(i).start() << "\tsize=" << Globals::pr->at(i).size() << "\trevPos=" << Globals::revPos << "\trc=" << Globals::pr->at(i).getRCBitString() << "\t" << Globals::pr->at(i).getRCBit(0) << endl;
+
 		while ( (it = pr.nextKMerNo(it.first)).first > -1 ) {
 			kmer_indices[it.first] = it.second;
 			if ( kmers[it.second]->second.isGoodForIterative() ) {
@@ -326,6 +354,9 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount*> & kmers, hint_t & cha
 	v.push_back(vA); v.push_back(vC); v.push_back(vG); v.push_back(vT);
 	isGood = false;
 
+//	cout << "  pr " << readno << " start=" << Globals::pr->at(readno).start() << "\tsize=" << Globals::pr->at(readno).size() << "\trevPos=" << Globals::revPos << "\trc=" << Globals::pr->at(readno).getRCBitString() << "\t" << Globals::pr->at(readno).getRCBit(0) << endl;
+//	cout << string(Globals::blob + Globals::pr->at(readno).start(), Globals::pr->at(readno).size()) << endl;
+
 	// getting the leftmost and rightmost positions of a solid kmer
 	int left = read_size; int right = -1;
 	bool changedRead = false;
@@ -334,7 +365,9 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount*> & kmers, hint_t & cha
 		const PositionKMer & kmer = kmers[it.second]->first;
 		const uint32_t pos = it.first;
 		const KMerStat & stat = kmers[it.second]->second;
-		changedRead = changedRead || internalCorrectReadProcedure( r, readno, seq, kmers, kmer, pos, stat, v, left, right, isGood, NULL, false );
+		//cout << "    pos=" << pos << "\trc=" << pr.getRCBit(pos) << "\tkmer=" << kmer.str() << endl;
+		changedRead = changedRead || internalCorrectReadProcedure( r, pr, readno, seq, kmers, kmer, pos, stat, v, left, right, isGood, NULL, pr.getRCBit(pos) );
+		//cout << "    internal ok " << endl;
 	}
 
 
@@ -350,6 +383,15 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount*> & kmers, hint_t & cha
 
 	// at this point the array v contains votes for consensus
 
+	/*
+	cout << "    consensus array:" << endl;
+	for (size_t k=0; k<4; ++k) {
+		for (size_t j=0; j<read_size; ++j) {
+			cout << (char)((int)v[k][j] + (int)'0');
+		}
+		cout << endl;
+	}*/
+
 	size_t res = 0; // how many nucleotides have really changed?
 	// find max consensus element
 	for (size_t j=0; j<read_size; ++j) {
@@ -362,6 +404,7 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount*> & kmers, hint_t & cha
 		if (seq[j] != cmax) ++res;
 		seq[j] = cmax;
 	}
+
 
 	r.setSequence(seq.data());
 	r.trimLeftRight(left, right+K-1);
@@ -382,6 +425,7 @@ void HammerTools::CorrectReadFile( const string & readsFilename, const vector<KM
 		irs >> r;
 		size_t read_size = r.trimNsAndBadQuality(cfg::get().input_trim_quality);
 		if (read_size < K) continue;
+//		cout << "read:\t" << r.getSequenceString() << endl;
 		if ( HammerTools::CorrectOneRead(kmers, changedReads, changedNucleotides, readno, r, 0) ) {
 			r.print(*outf_good, cfg::get().input_qvoffset);
 		} else {
@@ -535,18 +579,18 @@ string HammerTools::getFilename( const string & dirprefix, int iter_count, const
 }
 
 
-bool HammerTools::internalCorrectReadProcedure( const Read & r, const hint_t readno, const string & seq, const vector<KMerCount*> & km,
+bool HammerTools::internalCorrectReadProcedure( const Read & r, const PositionRead & pr, const hint_t readno, const string & seq, const vector<KMerCount*> & km,
 		const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat, vector< vector<int> > & v,
 		int & left, int & right, bool & isGood, ofstream * ofs, bool revcomp ) {
 	bool res = false;
 	if (  stat.isGoodForIterative() || ( cfg::get().correct_use_threshold && stat.isGood() ) ) {
 		isGood = true;
-		if (ofs != NULL) *ofs << "\t\t\tsolid";
+		// std::cout << "\t\t\tsolid " << kmer.str() << "\tpos=" << pos << endl;
 		for (size_t j = 0; j < K; ++j) {
 			if (!revcomp)
 				v[dignucl(kmer[j])][pos + j]++;
 			else
-				v[complement(dignucl(kmer[j]))][K-1-pos-j]++;
+				v[complement(dignucl(kmer[j]))][K-1+pos-j]++;
 		}
 		if ((int) pos < left)
 			left = pos;
@@ -557,7 +601,7 @@ bool HammerTools::internalCorrectReadProcedure( const Read & r, const hint_t rea
 		if (stat.change() && (cfg::get().bayes_discard_only_singletons
 				|| km[stat.changeto]->second.isGoodForIterative()
 				|| ( cfg::get().correct_use_threshold && stat.isGood() ))) {
-			if (ofs != NULL) *ofs << "\tchange to\n";
+			//std::cout << "\tchange to\n";
 			//cout << "  kmer " << kmer.str() << " wants to change to " << km[stat.changeto]->first.str() << endl;
 			isGood = true;
 			if ((int) pos < left)
@@ -567,14 +611,21 @@ bool HammerTools::internalCorrectReadProcedure( const Read & r, const hint_t rea
 			const PositionKMer & newkmer = km[stat.changeto]->first;
 
 			for (size_t j = 0; j < K; ++j) {
-				v[dignucl(newkmer[j])][pos + j]++;
+				if (!revcomp)
+					v[dignucl(newkmer[j])][pos + j]++;
+				else
+					v[complement(dignucl(newkmer[j]))][K-1+pos-j]++;
 			}
+			/*for (size_t j = 0; j < K; ++j) {
+			}
+				v[dignucl(newkmer[j])][pos + j]++;
+			}*/
 			// pretty print the k-mer
 			res = true;
 			if (ofs != NULL) {
 				for (size_t j = 0; j < pos; ++j)
-					*ofs << " ";
-				*ofs << newkmer.str().data();
+					std::cout << " ";
+				std::cout << newkmer.str().data();
 			}
 		}
 	}
