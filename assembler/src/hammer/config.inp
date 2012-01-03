@@ -2,7 +2,7 @@
 input_working_dir			/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/test_dir
 input_numfiles				1
 input_paired				0
-input_file_0				/home/snikolenko/data/head100000.fastq
+input_file_0				/home/snikolenko/data/head100.fastq
 input_file_1				/home/snikolenko/data/head100000.fastq_2
 input_trim_quality			4
 input_qvoffset				33
@@ -20,12 +20,12 @@ general_max_iterations		1
 general_blob_margin			0.25
 
 ; count k-mers
-count_do					1
+count_do					0
 count_numfiles				4
 count_merge_nthreads		6
 
 ; sort k-mers
-sort_do						1
+sort_do						0
 
 ; extract and sort subvectors
 subvectors_do								1
@@ -45,7 +45,7 @@ bayes_singleton_threshold		0.995
 bayes_nonsingleton_threshold	0.5
 bayes_use_hamming_dist			0
 bayes_discard_only_singletons	0
-bayes_debug_output				0
+bayes_debug_output				1
 bayes_hammer_mode				0
 
 ; iterative expansion step

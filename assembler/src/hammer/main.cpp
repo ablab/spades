@@ -119,6 +119,8 @@ int main(int argc, char * argv[]) {
 		// count k-mers
 		if ( cfg::get().count_do || do_everything ) {
 			HammerTools::CountKMersBySplitAndMerge();
+		} else {
+			HammerTools::CountAndSplitKMers(false);
 		}
 
 		// sort k-mers

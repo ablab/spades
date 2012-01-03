@@ -57,6 +57,8 @@ public:
 	static void ProcessKmerHashFile( ifstream * inStream, KMerNoHashMap & km );
 	/// print a processed k-mer hash file
 	static void PrintProcessedKmerHashFile(ofstream * outf, hint_t & kmer_num, KMerNoHashMap & km );
+	/// count and split k-mers (either writing in files or not)
+	static void CountAndSplitKMers(bool writeFiles);
 	/// count k-mers in input files
 	static void CountKMersBySplitAndMerge();
 

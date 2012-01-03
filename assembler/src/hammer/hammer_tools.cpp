@@ -182,8 +182,6 @@ void HammerTools::ReadAllFilesIntoBlob() {
 	}
 	Globals::revNo = cur_read;
 	Globals::revPos = curpos;
-	//std::cout << "revPos=" << Globals::revPos << endl;
-	//std::cout << "blob without revcomp:\n" << string(Globals::blob, curpos) << endl;
 	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
 		ReadFileIntoBlob(Globals::input_filenames[iFile], curpos, cur_read, true);
 	}
@@ -193,11 +191,15 @@ void HammerTools::ReadAllFilesIntoBlob() {
 	//std::cout << "blob with revcomp:\n" << string(Globals::blob + Globals::revPos, curpos - Globals::revPos) << endl;
 }
 
-void HammerTools::CountKMersBySplitAndMerge() {
-	TIMEDLN("Splitting kmer instances into files.");
+void HammerTools::CountAndSplitKMers(bool writeFiles) {
 	vector<ofstream *> ofiles(cfg::get().count_numfiles);
-	for (int i = 0; i < cfg::get().count_numfiles; ++i) {
-		ofiles[i] = new ofstream( getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i ) );
+	if (writeFiles) {
+		TIMEDLN("Splitting kmer instances into files.");
+		for (int i = 0; i < cfg::get().count_numfiles; ++i) {
+			ofiles[i] = new ofstream( getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i ) );
+		}
+	} else {
+		TIMEDLN("Reading kmer instances of the reads.");
 	}
 	Seq<K>::hash hash_function;
 	Seq<K>::less2 cmp_kmers;
@@ -218,18 +220,25 @@ void HammerTools::CountKMersBySplitAndMerge() {
 				//std::cout << "      reversing pos=" << Globals::pr->at(i).start() + gen.pos() - 1 << " into pos=" << cur_pos << "\t" << cur_kmer.str() << endl;
 				//std::cout << "      and the prs're pos=" << cur_pos << "\t" << string(Globals::blob + cur_pos, K) << endl;
 			}
-			ofstream &cur_file = *ofiles[hash_function(cur_kmer) % cfg::get().count_numfiles];
-			double correct_probability = 1 - gen.correct_probability();
-			cur_file << cur_pos << "\t" << correct_probability << "\n";
+			if (writeFiles) {
+				ofstream &cur_file = *ofiles[hash_function(cur_kmer) % cfg::get().count_numfiles];
+				double correct_probability = 1 - gen.correct_probability();
+				cur_file << cur_pos << "\t" << correct_probability << "\n";
+			}
 			gen.Next();
 		}
 		//cout << "  pr " << i << " start=" << Globals::pr->at(i).start() << "\tsize=" << Globals::pr->at(i).size() << "\trevPos=" << Globals::revPos << "\trc=" << Globals::pr->at(i).getRCBitString() << "\t" << Globals::pr->at(i).getRCBit(0) << endl;
 	}
-	for (int i = 0; i < cfg::get().count_numfiles; ++i) {
-		ofiles[i]->close();
-		delete ofiles[i];
+	if (writeFiles) {
+		for (int i = 0; i < cfg::get().count_numfiles; ++i) {
+			ofiles[i]->close();
+			delete ofiles[i];
+		}
 	}
+}
 
+void HammerTools::CountKMersBySplitAndMerge() {
+	CountAndSplitKMers(true);
 	int count_num_threads = min( cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads );
 
 	TIMEDLN("Kmer instances split. Starting merge in " << count_num_threads << " threads.");
