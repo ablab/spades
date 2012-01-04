@@ -354,7 +354,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	for (int i = 0; i < 3; ++i) {
 		ClipTipsForResolver(resolved_gp.g);
 //        BulgeRemoveWrap      (resolved_gp.g);
-		RemoveLowCoverageEdges(resolved_gp.g, edge_remover, 3, i);
+		FinalRemoveErroneousEdges(resolved_gp.g, edge_remover);
 
 //        RemoveRelativelyLowCoverageEdges(resolved_gp.g);
 		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
