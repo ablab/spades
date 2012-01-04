@@ -83,15 +83,21 @@ void print_mem_usage() {
 }
 
 void print_stats() {
+	std::cout << "[";
+	time_t rawtime;
+	tm * ptm2;
+	time ( &rawtime );
+	ptm2 = gmtime( &rawtime );
+	cout << " " << setfill('0') << setw(2) << ptm2->tm_hour << ":" << setw(2) << ptm2->tm_min << ":" << setw(2) << ptm2->tm_sec;
+
 	rusage ru;
 	getrusage(RUSAGE_SELF, &ru);
-	std::cout << "[";
 	tm * ptm = gmtime( &ru.ru_utime.tv_sec );
-	std::cout << " elapsed = " << setw(2) << setfill('0')  << ptm->tm_hour << ":" << setw(2) << setfill('0') << ptm->tm_min << ":" << setw(2) << setfill('0') << ptm->tm_sec;
+	std::cout << " " << setw(2) << setfill('0')  << ptm->tm_hour << ":" << setw(2) << setfill('0') << ptm->tm_min << ":" << setw(2) << setfill('0') << ptm->tm_sec;
 	if ( ru.ru_maxrss < 1024 * 1024 ) {
-		std::cout << " mem = " << setw(5) << setfill(' ') << (ru.ru_maxrss / 1024) << "M ";
+		std::cout << setw(4) << setfill(' ') << (ru.ru_maxrss / 1024) << "M ";
 	} else {
-		std::cout << " mem = " << setw(5) << setprecision(1) << fixed << setfill(' ') << (ru.ru_maxrss / (1024.0 * 1024.0) ) << "G ";
+		std::cout << setw(4) << setprecision(1) << fixed << setfill(' ') << (ru.ru_maxrss / (1024.0 * 1024.0) ) << "G ";
 	}
 	std::cout << "] ";
 }
