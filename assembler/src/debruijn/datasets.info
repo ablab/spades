@@ -190,15 +190,16 @@ TRASH_DELTA_EULER_CORRECTED_1 ; old DELTA_EULER_CORRECTED_1
 
 DELTA_BH ; old DeltaProteo
 {
-	first DeltaProteoBacterium/hammered/lane1_reads_corrected_1_left.fastq
-	second DeltaProteoBacterium/hammered/lane1_reads_corrected_1_right.fastq
-        single_first DeltaProteoBacterium/hammered/lane1_reads_corrected_1_single_left.fastq
-        single_second DeltaProteoBacterium/hammered/lane1_reads_corrected_1_single_right.fastq
-	RL		100	; read length
-	IS		100	; insert size
-	single_cell 	true
-	reference_genome	N/A
+        first Delta.Bacteria/hammer/single_left.fastq ; DeltaProteoBacterium/hammered/lane1_reads_corrected_1_left.fastq
+        second Delta.Bacteria/hammer/single_right.fastq ;DeltaProteoBacterium/hammered/lane1_reads_corrected_1_right.fastq
+        single_first Delta.Bacteria/hammer/single_single_left.fastq  ;DeltaProteoBacterium/hammered/lane1_reads_corrected_1_single_left.fastq
+        single_second Delta.Bacteria/hammer/single_single_right.fastq  ;DeltaProteoBacterium/hammered/lane1_reads_corrected_1_single_right.fastq
+        RL              100     ; read length
+        IS              250     ; insert size
+        single_cell     true
+        reference_genome        N/A
 }
+
 
 ; ================================================
 ; ================== S. Aureus ===================
