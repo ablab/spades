@@ -80,17 +80,22 @@ public:
     if (ltrim >= (int)seq_.size() || rtrim < 0 || rtrim < ltrim ) {
       seq_ = ""; qual_ = ""; valid_ = false; return 0;
     }
+    //cout << "trimming seq " << seq_.size() << " qual " << qual_.size() << " to [" << ltrim << ", " << rtrim << "]";
+    bool donesomething = false;
     if (ltrim > 0) {
       ltrim_ += ltrim;
       seq_.erase(0, ltrim);
-      qual_.erase(0, ltrim);      
+      qual_.erase(0, ltrim);
+      donesomething = true;
     }
-    if (rtrim < (int)seq_.size()-ltrim-1) {
+    if (rtrim-ltrim+1 < seq_.size() && rtrim < (int)seq_.size()-ltrim-1) {
       rtrim_ -= ((int)seq_.size()-(rtrim-ltrim+1));
       seq_.erase(rtrim-ltrim+1, string::npos);
       qual_.erase(rtrim-ltrim+1, string::npos);
+      donesomething = true;
     }
-    valid_ = updateValid();
+    //cout << "  got seq " << seq_.size() << " qual " << qual_.size() << endl;
+    if (donesomething) valid_ = updateValid();
     return true;
   }
 

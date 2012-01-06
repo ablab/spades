@@ -162,6 +162,7 @@ void HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curpos
 	while (irs.is_open() && !irs.eof()) {
 		irs >> r;
 		size_t read_size = r.trimNsAndBadQuality(cfg::get().input_trim_quality);
+		//cout << r.getSequenceString().c_str() << endl;
 		if (read_size < K) continue;
 		if ( reverse_complement ) r = !r;
 		PositionRead pread(curpos, read_size, cur_read, false);
@@ -182,6 +183,7 @@ void HammerTools::ReadAllFilesIntoBlob() {
 	hint_t curpos = 0;
 	hint_t cur_read = 0;
 	Globals::input_file_blob_positions.clear();
+	Globals::input_file_blob_positions.push_back(0);
 	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
 		ReadFileIntoBlob(Globals::input_filenames[iFile], curpos, cur_read, false);
 		Globals::input_file_blob_positions.push_back(cur_read);
@@ -218,13 +220,10 @@ void HammerTools::CountAndSplitKMers(bool writeFiles) {
 			Seq<K> cur_kmer = gen.kmer();
 			Seq<K> cur_rckmer = !cur_kmer;
 			hint_t cur_pos = Globals::pr->at(i).start() + gen.pos() - 1;
-			//std::cout << "  pos=" << cur_pos << "\t" << cur_kmer.str() << "\t" << cur_rckmer.str() << endl;
 			if (cmp_kmers(cur_rckmer, cur_kmer)) {
 				cur_kmer = cur_rckmer;
 				cur_pos = Globals::pr->at(i).getRCPosition(gen.pos());
 				Globals::pr->at(i).setRCBit(gen.pos() - 1);
-				//std::cout << "      reversing pos=" << Globals::pr->at(i).start() + gen.pos() - 1 << " into pos=" << cur_pos << "\t" << cur_kmer.str() << endl;
-				//std::cout << "      and the prs're pos=" << cur_pos << "\t" << string(Globals::blob + cur_pos, K) << endl;
 			}
 			if (writeFiles) {
 				ofstream &cur_file = *ofiles[hash_function(cur_kmer) % cfg::get().count_numfiles];
@@ -293,21 +292,13 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, con
 
 		pair<int, hint_t > it = make_pair( -1, BLOBKMER_UNDEFINED );
 
-		int i = readno;
-		cout << "  pr " << i << " start=" << Globals::pr->at(i).start() << "\tsize=" << Globals::pr->at(i).size() << "\trevPos=" << Globals::revPos << "\trc=" << Globals::pr->at(i).getRCBitString() << "\t" << kmers.size() << endl;
-
 		while ( (it = pr.nextKMerNo(it.first)).first > -1 ) {
-			cout << "   next kmer = " << it.first << "\t" << it.second << endl;
-			cout << "   " << kmers[it.second]->first.str() << "\t" << kmers[it.second]->second.isGoodForIterative() << "\t" << kmers[it.second]->second.changeto << endl;
 			kmer_indices[it.first] = it.second;
 			if ( kmers[it.second]->second.isGoodForIterative() ) {
 				for ( size_t j = it.first; j < it.first + K; ++j )
 					covered_by_solid[j] = true;
 			}
-			cout << "   covered" << endl;
 		}
-
-		cout << "  kmers over" << endl;
 
 		bool isGood = true;
 		for ( size_t j = 0; j < read_size; ++j ) {
@@ -317,13 +308,13 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, con
 
 		// ok, now we're sure that everything is covered
 		// first, set this read as already done
-		cout << "  read " << readno << " out of " << Globals::pr->size() << " is done!" << endl;
+		//cout << "  read " << readno << " out of " << Globals::pr->size() << " is done!" << endl;
 		Globals::pr->at(readno).done();
 
 		// second, mark all k-mers as solid
 		for (size_t j = 0; j < read_size; ++j) {
 			if ( kmer_indices[j] == (hint_t)-1 ) continue;
-			cout << "    marking kmer " << kmer_indices[j] << " out of " << kmers.size() << " as good for iterative" << endl;
+			// cout << "    marking kmer " << kmer_indices[j] << " out of " << kmers.size() << " as good for iterative" << endl;
 			if ( !kmers[kmer_indices[j]]->second.isGoodForIterative() &&
 				 !kmers[kmer_indices[j]]->second.isMarkedGoodForIterative() ) {
 				#pragma omp critical
@@ -376,8 +367,8 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount*> & kmers, hint_t & cha
 	v.push_back(vA); v.push_back(vC); v.push_back(vG); v.push_back(vT);
 	isGood = false;
 
-//	cout << "  pr " << readno << " start=" << Globals::pr->at(readno).start() << "\tsize=" << Globals::pr->at(readno).size() << "\trevPos=" << Globals::revPos << "\trc=" << Globals::pr->at(readno).getRCBitString() << "\t" << Globals::pr->at(readno).getRCBit(0) << endl;
-//	cout << string(Globals::blob + Globals::pr->at(readno).start(), Globals::pr->at(readno).size()) << endl;
+	//cout << "  pr " << readno << " start=" << Globals::pr->at(readno).start() << "\tsize=" << Globals::pr->at(readno).size() << "\trevPos=" << Globals::revPos << "\trc=" << Globals::pr->at(readno).getRCBitString() << "\t" << Globals::pr->at(readno).getRCBit(0) << endl;
+	//cout << string(Globals::blob + Globals::pr->at(readno).start(), Globals::pr->at(readno).size()) << endl;
 
 	// getting the leftmost and rightmost positions of a solid kmer
 	int left = read_size; int right = -1;
@@ -389,9 +380,8 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount*> & kmers, hint_t & cha
 		const KMerStat & stat = kmers[it.second]->second;
 		//cout << "    pos=" << pos << "\trc=" << pr.getRCBit(pos) << "\tkmer=" << kmer.str() << endl;
 		changedRead = changedRead || internalCorrectReadProcedure( r, pr, readno, seq, kmers, kmer, pos, stat, v, left, right, isGood, NULL, pr.getRCBit(pos) );
-		//cout << "    internal ok " << endl;
+		//cout << "    internal ok " << " left=" << left << " right=" << right << endl;
 	}
-
 
 	int left_rev = 0; int right_rev = read_size-(int)K;
 
@@ -405,8 +395,7 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount*> & kmers, hint_t & cha
 
 	// at this point the array v contains votes for consensus
 
-	/*
-	cout << "    consensus array:" << endl;
+	/*cout << "    consensus array:" << endl;
 	for (size_t k=0; k<4; ++k) {
 		for (size_t j=0; j<read_size; ++j) {
 			cout << (char)((int)v[k][j] + (int)'0');
@@ -427,9 +416,13 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount*> & kmers, hint_t & cha
 		seq[j] = cmax;
 	}
 
-
+/*	cout << seq.data() << endl;
+	cout << "  trimming to [" << left << ", " << right+K-1 << "]\tcurrent trim [" << r.ltrim() << ", " << r.rtrim() << "]" << endl;
+	cout << "  before setsequence got read size=" << r.size() << ":\n    " << r.getSequenceString() << "\n    " << r.getPhredQualityString(64) << endl;
+	cout << "  before setsequence got read size=" << r.size() << ":\n    " << r.getSequenceString() << "\n    " << r.getPhredQualityString(64) << endl;
+	cout << "  before setsequence got read size=" << r.size() << ":\n    " << r.getSequenceString() << "\n    " << r.getPhredQualityString(64) << endl;*/
 	r.setSequence(seq.data());
-	r.trimLeftRight(left, right+K-1);
+	r.trimLeftRight(left, right+(int)K-1);
 	if ( left > 0 || right + K -1 < read_size ) changedRead = true;
 
 	changedNucleotides += res;
@@ -478,10 +471,12 @@ void HammerTools::CorrectPairedReadFiles( const string & readsFilenameLeft, cons
 		bool left_res = false;
 		bool right_res = false;
 		if (read_size_left >= K) {
+			//cout << "  correcting lread " << readno_left << "\n" << l.getSequenceString() << "\n" << string(Globals::blob + Globals::pr->at(readno_left).start(), K) << endl;
 			left_res = HammerTools::CorrectOneRead(kmers, changedReads, changedNucleotides, readno_left, l, 0);
 			++readno_left;
 		}
 		if (read_size_right >= K) {
+			//cout << "  correcting rread " << readno_right << "\n" << r.getSequenceString() << "\n" << string(Globals::blob + Globals::pr->at(readno_right).start(), K) << endl;
 			right_res = HammerTools::CorrectOneRead(kmers, changedReads, changedNucleotides, readno_right, r, 0);
 			++readno_right;
 		}
@@ -607,29 +602,28 @@ bool HammerTools::internalCorrectReadProcedure( const Read & r, const PositionRe
 	bool res = false;
 	if (  stat.isGoodForIterative() || ( cfg::get().correct_use_threshold && stat.isGood() ) ) {
 		isGood = true;
-		// std::cout << "\t\t\tsolid " << kmer.str() << "\tpos=" << pos << endl;
+		//std::cout << "\t\t\tsolid " << kmer.str() << "\tpos=" << pos << endl;
 		for (size_t j = 0; j < K; ++j) {
 			if (!revcomp)
 				v[dignucl(kmer[j])][pos + j]++;
 			else
 				v[complement(dignucl(kmer[j]))][K-1+pos-j]++;
 		}
-		if ((int) pos < left)
-			left = pos;
-		if ((int) pos > right)
-			right = pos;
+		if ((int) pos < left) left = pos;
+		if ((int) pos > right) right = pos;
+		//for (size_t j = 0; j < pos; ++j) std::cout << " ";
+		//std::cout << kmer.str().data() << "\t" << pos << endl;
+
 	} else {
 		// if discard_only_singletons = true, we always use centers of clusters that do not coincide with the current center
 		if (stat.change() && (cfg::get().bayes_discard_only_singletons
 				|| km[stat.changeto]->second.isGoodForIterative()
 				|| ( cfg::get().correct_use_threshold && stat.isGood() ))) {
 			//std::cout << "\tchange to\n";
-			//cout << "  kmer " << kmer.str() << " wants to change to " << km[stat.changeto]->first.str() << endl;
+			//cout << "  kmer " << kmer.str() << " wants to change to " << km[stat.changeto]->first.str() << " pos=" << pos << endl;
 			isGood = true;
-			if ((int) pos < left)
-				left = pos;
-			if ((int) pos > right)
-				right = pos;
+			if ((int) pos < left) left = pos;
+			if ((int) pos > right) right = pos;
 			const PositionKMer & newkmer = km[stat.changeto]->first;
 
 			for (size_t j = 0; j < K; ++j) {
@@ -638,10 +632,7 @@ bool HammerTools::internalCorrectReadProcedure( const Read & r, const PositionRe
 				else
 					v[complement(dignucl(newkmer[j]))][K-1+pos-j]++;
 			}
-			/*for (size_t j = 0; j < K; ++j) {
-			}
-				v[dignucl(newkmer[j])][pos + j]++;
-			}*/
+
 			// pretty print the k-mer
 			res = true;
 			if (ofs != NULL) {
