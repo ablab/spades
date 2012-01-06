@@ -288,8 +288,8 @@ PGINGIVALIS_BH
        	second	P.gingivalis/bh20111209/00.reads.right.corrected.fastq.gz
        	single_first	P.gingivalis/bh20111209/00.reads.left.unpaired.fastq.gz
        	single_second	P.gingivalis/bh20111209/00.reads.right.unpaired.fastq.gz
-        RL              TODO     ; read length
-        IS              TODO     ; insert size
+        RL              100     ; read length
+        IS              270     ; insert size
         single_cell     true
 	reference_genome  P.gingivalis/TDC60.fasta.gz
 }
@@ -322,8 +322,10 @@ SSMARAGDINAE_QUAKE
 	jumping_second	S.smaragdinae/CLIP_6kb_right.cor.fastq.gz
 	jumping_single_first	S.smaragdinae/CLIP_6kb_left.cor_single.fastq.gz
 	jumping_single_second	S.smaragdinae/CLIP_6kb_right.cor_single.fastq.gz
-	RL	TODO
-	IS	TODO
+	jump_rl 75
+	jump_is 6700
+	RL	150
+	IS	380
 	single_cell	false
 	reference_genome	S.smaragdinae/ref.fasta.gz
 }
@@ -342,8 +344,10 @@ BFAECIUM_QUAKE
 	jumping_second	B.faecium/CLIP_7.5kb_right.cor.fastq.gz
 	jumping_single_first	B.faecium/CLIP_7.5kb_left.cor_single.fastq.gz
 	jumping_single_second	B.faecium/CLIP_7.5kb_right.cor_single.fastq.gz
-	RL	TODO
-	IS	TODO
+	jump_rl 150
+	jump_is 7450
+	RL	150
+	IS	250
 	single_cell	false
 	reference_genome	B.faecium/ref.fasta.gz
 }
@@ -362,8 +366,10 @@ LGASSERI_QUAKE
 	jumping_second	L.gasseri/CLIP_7.5kb_right.cor.fastq.gz
 	jumping_single_first	L.gasseri/CLIP_7.5kb_left.cor_single.fastq.gz
 	jumping_single_second	L.gasseri/CLIP_7.5kb_right.cor_single.fastq.gz
-	RL	TODO
-	IS	TODO
+	jump_rl 150
+	jump_is 7450
+	RL	150
+	IS	250
 	single_cell	false
 	reference_genome	L.gasseri/ref.fasta.gz
 }
@@ -378,8 +384,8 @@ X5_A_QUAKE
 	second	x5/right.cor.fastq
 	single_first	x5/left.cor_single.fastq
 	single_second	x5/right.cor_single.fastq
-	RL	TODO
-	IS	TODO
+	RL	100
+	IS	300     ;TODO
 	single_cell	false
 	reference_genome	N/A
 }
@@ -390,8 +396,8 @@ X5_B_QUAKE
 	second	x5/right_l.cor.fastq
 	single_first	x5/left_l.cor_single.fastq
 	single_second	x5/right_l.cor_single.fastq
-	RL	TODO
-	IS	TODO
+	RL	100
+	IS 	300	;TODO
 	single_cell	false
 	reference_genome	N/A
 }
