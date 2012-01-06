@@ -40,9 +40,9 @@ void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 	TIMEDLN("Splitting " << inputFile << " into subvector files.");
 	vector< ofstream* > ofs(tau_+1);
 	for (int j=0; j < tau_+1; ++j) {
-		ofs[j] = new ofstream(fnames_[j]);
+		ofs[j] = new ofstream(fnames_[j].c_str());
 	}
-	ifstream ifs(inputFile);
+	ifstream ifs(inputFile.c_str());
 	char buf[16000]; // strings might run large in those files
 	hint_t line_no = 0;
 	hint_t prev_pos = -1;

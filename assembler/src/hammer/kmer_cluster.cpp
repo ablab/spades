@@ -632,7 +632,7 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 
 	if ( useFilesystem ) {
 		TIMEDLN("Writing down clusters.");
-		ofstream ofs( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "hamming.classes") );
+		ofstream ofs( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "hamming.classes").c_str() );
 		for ( size_t i=0; i < classes.size(); ++i ) {
 			ofs << "class " << i << " size=" << classes[i].size() << "\n";
 			//cout << "class " << i << " size=" << classes[i].size() << "\n";
@@ -658,7 +658,7 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 	}
 
 	if ( useFilesystem ) {
-		ifstream ifs( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.sorted") );
+		ifstream ifs( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.sorted").c_str() );
 		char seq[K+10];
 		hint_t kmer_num = 0;
 		while (!ifs.eof()) {
@@ -685,7 +685,7 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 	ifstream ifclass;
 	if (useFilesystem) {
 		// nthreads_ = 1;
-		ifclass.open( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "hamming.classes") );
+		ifclass.open( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "hamming.classes").c_str() );
 	}
 
 	vector< vector< vector<int> > > blocks(nthreads_);
