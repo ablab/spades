@@ -185,8 +185,9 @@ void FindSeeds(const Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfo
 			detector.AddNewEdge(e, 0);
 
 			BidirectionalPath newPath;
-			newPath.push_back(e);
 
+			newPath.push_back(e);
+			newPath.uid = g.int_id(e);
 			RecountLengthsForward(g, newPath, lengths);
 
 			//Extend trivially
@@ -200,6 +201,7 @@ void FindSeeds(const Graph& g, std::vector<BidirectionalPath>& seeds, PairedInfo
 			detector.AddNewEdge(e, 0);
 
 			BidirectionalPath conjPath;
+			conjPath.uid = g.int_id(e);
 			conjPath.push_back(e);
 
 			RecountLengthsForward(g, conjPath, lengths);

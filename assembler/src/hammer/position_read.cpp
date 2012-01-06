@@ -12,14 +12,17 @@ char PositionRead::operator [] (uint32_t pos) const {
 }
 
 pair<int, hint_t> PositionRead::nextKMerNo( int begin ) const {
-	for ( int pos = begin + 1; pos < (int)(size_-K+1); ++pos ) {
-		//cout << "    looking for " << (start_ + pos) << ": " << PositionKMer(start_ + pos).str();
-		vector<hint_t>::const_iterator it_vec = lower_bound(Globals::kmernos->begin(), Globals::kmernos->end(), start_ + pos, PositionKMer::compareKMersDirect );
+	for ( int cur_pos = begin + 1; cur_pos < (int)(size_-K+1); ++cur_pos ) {
+		int pos = rc_[cur_pos] ? getRCPosition(cur_pos+1) : start_ + cur_pos;
+		//cout << "    looking for " << (pos) << " (from " << (cur_pos) << "): " << PositionKMer(pos).str() << endl;
+		//cout << "         direct:\t" <<  PositionKMer(start_ + cur_pos).str();
+		vector<hint_t>::const_iterator it_vec = lower_bound(Globals::kmernos->begin(), Globals::kmernos->end(), pos, PositionKMer::compareKMersDirect );
 		//cout << "  lowerbound=" << (it_vec - Globals::kmernos->begin()) << "\tvalue=" << *it_vec;
-		if ( PositionKMer::equalKMersDirect(*it_vec, start_ + pos)  ) {
+		if ( PositionKMer::equalKMersDirect(*it_vec, pos)  ) {
 			//cout << "  ok" << endl;
-			return make_pair(pos, (it_vec - Globals::kmernos->begin()));
+			return make_pair(cur_pos, (it_vec - Globals::kmernos->begin()));
 		}
+		//else cout << endl;
 	}
 	//cout << endl;
 	return make_pair(-1, BLOBKMER_UNDEFINED);

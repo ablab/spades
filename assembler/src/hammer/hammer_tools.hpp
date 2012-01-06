@@ -57,6 +57,8 @@ public:
 	static void ProcessKmerHashFile( ifstream * inStream, KMerNoHashMap & km );
 	/// print a processed k-mer hash file
 	static void PrintProcessedKmerHashFile(ofstream * outf, hint_t & kmer_num, KMerNoHashMap & km );
+	/// count and split k-mers (either writing in files or not)
+	static void CountAndSplitKMers(bool writeFiles);
 	/// count k-mers in input files
 	static void CountKMersBySplitAndMerge();
 
@@ -67,7 +69,7 @@ public:
 	static void PrintKMerResult( ofstream * outf, const vector<KMerCount *> & kmers );
 
 	/// internal procedure
-	static bool internalCorrectReadProcedure( const Read & r, const hint_t readno, const string & seq,
+	static bool internalCorrectReadProcedure( const Read & r, const PositionRead & pr, const hint_t readno, const string & seq,
 			const vector<KMerCount*> & km, const PositionKMer & kmer, const uint32_t pos, const KMerStat & stat,
 			vector< vector<int> > & v, int & left, int & right, bool & isGood, ofstream * ofs, bool revcomp );
 

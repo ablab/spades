@@ -55,11 +55,13 @@ std::vector<hint_t> * Globals::kmernos = NULL;
 std::vector<KMerCount *> * Globals::kmers = NULL;
 int Globals::iteration_no = 0;
 hint_t Globals::revNo = 0;
+hint_t Globals::revPos = 0;
 
 hint_t Globals::blob_size = 0;
 hint_t Globals::blob_max_size = 0;
 char * Globals::blob = NULL;
 char * Globals::blobquality = NULL;
+bool * Globals::blobrc = NULL;
 
 std::vector<PositionRead> * Globals::pr = NULL;
 
@@ -83,10 +85,10 @@ int main(int argc, char * argv[]) {
     if (cfg::get().input_numfiles > 4) Globals::input_filenames.push_back(cfg::get().input_file_4);
 
     // if we need to change single Ns to As, this is the time
-    if (cfg::get().general_change_n_to_a && cfg::get().count_do) {
-    	TIMEDLN("Changing single Ns to As in input read files.");
+    if (cfg::get().general_change_n_to_a) {
+    	if (cfg::get().count_do) TIMEDLN("Changing single Ns to As in input read files.");
     	HammerTools::ChangeNtoAinReadFiles();
-    	TIMEDLN("Single Ns changed, " << Globals::input_filenames.size() << " read files written.");
+    	if (cfg::get().count_do) TIMEDLN("Single Ns changed, " << Globals::input_filenames.size() << " read files written.");
     }
 
     // estimate total read size
@@ -98,6 +100,7 @@ int main(int argc, char * argv[]) {
 	Globals::blob_max_size = (hint_t)(Globals::blob_size * ( 2 + cfg::get().general_blob_margin));
 	Globals::blob = new char[ Globals::blob_max_size ];
 	Globals::blobquality = new char[ Globals::blob_max_size ];
+	Globals::blobrc = new bool[ Globals::blob_max_size ];
 	TIMEDLN("Max blob size as allocated is " << Globals::blob_max_size);
 
 
@@ -116,6 +119,8 @@ int main(int argc, char * argv[]) {
 		// count k-mers
 		if ( cfg::get().count_do || do_everything ) {
 			HammerTools::CountKMersBySplitAndMerge();
+		} else {
+			HammerTools::CountAndSplitKMers(false);
 		}
 
 		// sort k-mers
@@ -135,6 +140,10 @@ int main(int argc, char * argv[]) {
 		// initialize k-mer structures
 		if (Globals::kmernos) Globals::kmernos->clear(); else Globals::kmernos = new std::vector<hint_t>;
 		if (Globals::kmers) Globals::kmers->clear(); else Globals::kmers = new std::vector<KMerCount *>;
+
+//		cout << "   outputting blob of size " << Globals::blob_size << " max size " << Globals::blob_max_size << endl;
+//		cout << string(Globals::blob, Globals::revPos) << endl;
+//		cout << string(Globals::blob + Globals::revPos, Globals::blob_size - Globals::revPos) << endl;
 
 		// fill in sorted unclustered k-mers
 		if ( do_everything || cfg::get().subvectors_do || cfg::get().hamming_do || cfg::get().bayes_do ) {
@@ -181,6 +190,7 @@ int main(int argc, char * argv[]) {
 		// expand the set of solid k-mers
 		if ( cfg::get().expand_do || do_everything ) {
 			int expand_nthreads = min( cfg::get().general_max_nthreads, cfg::get().expand_nthreads);
+			TIMEDLN("Starting solid k-mers expansion in " << expand_nthreads << " threads.");
 			for ( int expand_iter_no = 0; expand_iter_no < cfg::get().expand_max_iterations; ++expand_iter_no ) {
 				size_t res = HammerTools::IterativeExpansionStep(expand_iter_no, expand_nthreads, *Globals::kmers);
 				TIMEDLN("Solid k-mers iteration " << expand_iter_no << " produced " << res << " new k-mers.");

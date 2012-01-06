@@ -46,16 +46,6 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 
 			estimator.Estimate(clustered_index);
 		} else {
-			//todo remove
-//            stream.reset();
-//            int e1 = 1065;
-//            int e2 = 1158;
-//            cout << "Edge 1 " << gp.int_ids.ReturnEdgeId(e1) << endl;
-//            cout << "Edge 2 " << gp.int_ids.ReturnEdgeId(e2) << endl;
-//            cout << "K " << (gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e2))) << endl;
-//            cout << "ThreadedPairedReadCount = " << ThreadedPairedReadCount<K + 1>(gp, e1, e2, stream) << endl;
-//            cout << "TotalPositiveWeight = " << TotalPositiveWeight(gp, paired_index, e1, e2) << endl;
-
 			INFO("Estimating distances");
 			DistanceEstimator<Graph> estimator(gp.g, paired_index, dist_finder, cfg::get().de.linkage_distance, cfg::get().de.max_distance);
 

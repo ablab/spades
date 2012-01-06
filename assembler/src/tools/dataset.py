@@ -24,10 +24,11 @@ def presentFile(f):
 	return False
     return os.path.isfile(f)
 
-files = ["first", "second"]
-files += ["single_" + x for x in files]
-files += ["jumping_" + x for x in files]
-files += ["reference_genome"]
+read_files = ["first", "second"]
+read_files += ["single_" + x for x in read_files]
+read_files += ["jumping_" + x for x in read_files]
+files = read_files + ["reference_genome"]
+props = ["RL", "IS", "jump_is", "single_cell"]
 
 def check(ds):
     print ds["name"], "is present"
@@ -47,6 +48,11 @@ def md5(ds):
     print ds["name"]
     for f in s:
 	os.system("md5sum " + f)
+
+def neat(files):
+    if len(files) == 1:
+	return files[0]
+    return files[0] + " and " + str(len(files) - 1) + " more"
 
 def process(cfg, func, filt):
     if not os.path.isfile(cfg):
@@ -71,8 +77,9 @@ def process(cfg, func, filt):
 	        exit(2)
 	    ds[s[0]] = s[1]
 	if filt(ds):
-	    if reduce(lambda x, y: x or y, [missFile(ds.get(f)) for f in files]):
-		print ds["name"], "is missing!!!!!!!!!!!!!!!!!!!!"
+	    missing = filter(missFile, map(ds.get, files))
+	    if missing:
+		print ds["name"], "is missing", neat(missing)
 	    else:
 		func(ds)
 
@@ -84,9 +91,32 @@ def printDS(p):
 
 def hammer(prefix):
     #left_cor = subprocess.check_output('((ls -1 ' + prefix + '* 2> /dev/null | grep left.cor | grep -v single) || echo "")', shell=True).strip()
-    files = subprocess.check_output('ls -1 ' + prefix + '*', shell=True).split('\n')
-    files = filter(os.path.isfile, files)
-    print files
+    ls = subprocess.check_output('ls -1 ' + prefix + '*', shell=True).split('\n')
+    ls = filter(os.path.isfile, ls)
+    print ""
+    for i in range(len(ls)):
+	f = ls[i]
+	print i, ":", os.path.basename(f)
+    def askFile(prop):
+	print "Which file is", prop, "?", "(enter number from 0 to", (len(ls) - 1), "or press Enter if none)"
+	a = raw_input().strip()
+	if not a:
+	    return []
+	a = int(a)
+	return [(prop, ls[a])]
+    def askProp(prop):
+	print "Enter", prop, "(or press Enter if you don't know yet)"
+	a = raw_input().strip()
+	if not a:
+	    return [(prop, "TODO")]
+	return [(prop, a)]
+    p1 = []
+    p2 = []
+    for prop in read_files:
+	p1 += askFile(prop)
+    for prop in props:
+	p2 += askProp(prop)
+    printDS(p1 + p2)
 
 if sys.argv[1] == "check":
     process(sys.argv[2], check, lambda ds: True);

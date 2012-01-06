@@ -30,12 +30,12 @@ public:
 
 			for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
 				size_t edgeLen = g.length(*iter);
-				std::string label = "{" + ToString(edgeLen) + "}";
+				std::string label = "{len: " + ToString(edgeLen) + ", cov: " + ToString(g.coverage(*iter)) + "}";
 				labels_.insert(std::make_pair(*iter, label));
 			}
 
 			for(size_t edge = 0; edge < path.size(); ++edge) {
-				labels_[path[edge]] += "," + ToString(i) + "(" + ToString(edge) + ")";
+				labels_[path[edge]] += "," + ToString(paths[i].uid) + "(" + ToString(edge) + ":" + ToString(g.int_id(paths[i][edge])) + ")";
 			}
 		}
 	}

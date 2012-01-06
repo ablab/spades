@@ -190,15 +190,16 @@ TRASH_DELTA_EULER_CORRECTED_1 ; old DELTA_EULER_CORRECTED_1
 
 DELTA_BH ; old DeltaProteo
 {
-	first DeltaProteoBacterium/hammered/lane1_reads_corrected_1_left.fastq
-	second DeltaProteoBacterium/hammered/lane1_reads_corrected_1_right.fastq
-        single_first DeltaProteoBacterium/hammered/lane1_reads_corrected_1_single_left.fastq
-        single_second DeltaProteoBacterium/hammered/lane1_reads_corrected_1_single_right.fastq
-	RL		100	; read length
-	IS		100	; insert size
-	single_cell 	true
-	reference_genome	N/A
+        first Delta.Bacteria/hammer/single_left.fastq ; DeltaProteoBacterium/hammered/lane1_reads_corrected_1_left.fastq
+        second Delta.Bacteria/hammer/single_right.fastq ;DeltaProteoBacterium/hammered/lane1_reads_corrected_1_right.fastq
+        single_first Delta.Bacteria/hammer/single_single_left.fastq  ;DeltaProteoBacterium/hammered/lane1_reads_corrected_1_single_left.fastq
+        single_second Delta.Bacteria/hammer/single_single_right.fastq  ;DeltaProteoBacterium/hammered/lane1_reads_corrected_1_single_right.fastq
+        RL              100     ; read length
+        IS              250     ; insert size
+        single_cell     true
+        reference_genome        N/A
 }
+
 
 ; ================================================
 ; ================== S. Aureus ===================
@@ -299,9 +300,10 @@ PGINGIVALIS_BH
 
 CSMUELLERI_BH
 {
-	single_first    C.S.muelleri/bh20111221/09.reads.corrected.fastq.gz
+	first    C.S.muelleri/bh20111221/09.reads.corrected.fastq.gz
+	second    C.S.muelleri/bh20111221/09.reads.corrected.fastq.gz
         RL              36
-        IS              N/A
+        IS              36
         single_cell     false
         reference_genome	C.S.muelleri/4085179.chromosome1.final.fasta.gz
 }
@@ -364,5 +366,33 @@ LGASSERI_QUAKE
 	IS	TODO
 	single_cell	false
 	reference_genome	L.gasseri/ref.fasta.gz
+}
+
+; ================================================
+; ================== x5 Fungi ====================
+; ================================================
+
+X5_A_QUAKE
+{
+	first	x5/left.cor.fastq
+	second	x5/right.cor.fastq
+	single_first	x5/left.cor_single.fastq
+	single_second	x5/right.cor_single.fastq
+	RL	TODO
+	IS	TODO
+	single_cell	false
+	reference_genome	N/A
+}
+
+X5_B_QUAKE
+{
+	first	x5/left_l.cor.fastq
+	second	x5/right_l.cor.fastq
+	single_first	x5/left_l.cor_single.fastq
+	single_second	x5/right_l.cor_single.fastq
+	RL	TODO
+	IS	TODO
+	single_cell	false
+	reference_genome	N/A
 }
 

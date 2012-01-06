@@ -1265,11 +1265,11 @@ public:
 	}
 
 	virtual VertexId EdgeStart(EdgeId edge) const {
-		return this->graph().EdgeStart(edge);
+		return this->graph().EdgeEnd(edge);
 	}
 
 	virtual VertexId EdgeEnd(EdgeId edge) const {
-		return this->graph().EdgeEnd(edge);
+		return this->graph().EdgeStart(edge);
 	}
 };
 

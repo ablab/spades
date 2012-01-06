@@ -1045,8 +1045,8 @@ void RemoveOverlaps(const Graph& g, std::vector<BidirectionalPath>& paths) {
 				}
 
             	DEBUG("Found overlap by " << overlap + 1 << " edge(s) with total length " << overlapLength);
-            	PrintPath(g, path);
-            	PrintPath(g, paths[overlaped]);
+//            	PrintPath(g, path);
+//            	PrintPath(g, paths[overlaped]);
 
             	if (overlap >= (int) path.size() - 1) {
             		DEBUG("PATHS ABOVE ARE STRANGE!");
@@ -1060,8 +1060,8 @@ void RemoveOverlaps(const Graph& g, std::vector<BidirectionalPath>& paths) {
 
 				DEBUG("Same one removed from reverse-complement path");
 				BidirectionalPath& comp = paths[path.conj_id];
-            	PrintPath(g, comp);
-            	PrintPath(g, paths[paths[overlaped].conj_id]);
+//            	PrintPath(g, comp);
+//            	PrintPath(g, paths[paths[overlaped].conj_id]);
 
 				overlap = std::min(overlap, (int) comp.size() - 1);
 				for (int i = 0; i <= overlap; ++i) {

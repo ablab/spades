@@ -164,7 +164,10 @@ public:
 };
 
 template<class Graph>
-class IdTrackHandler: public BaseIdTrackHandler<typename Graph::VertexId, typename Graph::EdgeId> {
+class IdTrackHandler:
+	public BaseIdTrackHandler<typename Graph::VertexId, typename Graph::EdgeId>,
+	private boost::noncopyable
+{
 	typedef BaseIdTrackHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
 
 	const Graph& g_;
