@@ -303,6 +303,7 @@ struct debruijn_config
 		boost::optional<std::string> jumping_first;
 		boost::optional<std::string> jumping_second;
 		boost::optional<size_t> jump_is;
+		boost::optional<size_t> jump_rl;
 		size_t RL;
 		size_t IS;
 		bool single_cell;
@@ -510,6 +511,7 @@ inline void load(debruijn_config::dataset& ds, boost::property_tree::ptree const
 	ds.jumping_first  = pt.get_optional<std::string>("jumping_first");
 	ds.jumping_second = pt.get_optional<std::string>("jumping_second");
 	ds.jump_is = pt.get_optional<size_t>("jump_is");
+	ds.jump_rl = pt.get_optional<size_t>("jump_rl");
 
 	load(ds.RL, pt, "RL");
 	load(ds.IS, pt, "IS");
