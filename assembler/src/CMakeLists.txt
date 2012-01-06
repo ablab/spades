@@ -49,7 +49,7 @@ find_package(ssl)
 find_package(bam)
 
 set (Boost_USE_MULTITHREADED ON)
-find_package(Boost COMPONENTS signals system filesystem test_exec_monitor REQUIRED)
+find_package(Boost COMPONENTS signals system filesystem test_exec_monitor iostreams REQUIRED)
 
 find_package(fftw3)
 find_package(sparsehash)

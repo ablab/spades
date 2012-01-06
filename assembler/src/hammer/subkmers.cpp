@@ -38,25 +38,23 @@ void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 	if (cfg::get().subvectors_do) {
 
 	TIMEDLN("Splitting " << inputFile << " into subvector files.");
-	vector< ofstream* > ofs(tau_+1);
-	for (int j=0; j < tau_+1; ++j) {
-		ofs[j] = new ofstream(fnames_[j].c_str());
+	vector< boost::shared_ptr<FOStream> > ostreams(tau_+1);
+	for (int i = 0; i < tau_+1; ++i) {
+		ostreams[i] = FOStream::init(fnames_[i]);
 	}
-	ifstream ifs(inputFile.c_str());
-	char buf[16000]; // strings might run large in those files
+
+	boost::shared_ptr<FIStream> ifs = FIStream::init(inputFile);
+	string buf;
 	hint_t line_no = 0;
-	hint_t prev_pos = -1;
-	while (!ifs.eof()) {
-		ifs.getline(buf, 16000);
+	while (ifs->fs.good()) {
+		std::getline(ifs->fs, buf);
 		hint_t pos;
-		sscanf(buf, "%lu", &pos);
-		if (prev_pos == pos) continue;
-		prev_pos = pos;
+		sscanf(buf.c_str(), "%lu", &pos);
 		switch(type_) {
 			case SorterTypeFileBasedStraight:
 				for (int j=0; j < tau_+1; ++j) {
-					ofs[j]->write(Globals::blob + pos + Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) - Globals::subKMerPositions->at(j));
-					(*ofs[j]) << "\t" << line_no << "\n";
+					(ostreams[j]->fs) << string(Globals::blob + pos + Globals::subKMerPositions->at(j), Globals::subKMerPositions->at(j+1) - Globals::subKMerPositions->at(j))
+							  << "\t" << line_no << "\n";
 				}
 				break;
 			default:
@@ -66,11 +64,8 @@ void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 		}
 		++line_no;
 	}
-	ifs.close();
-	for (int j=0; j < tau_+1; ++j) {
-		ofs[j]->close();
-		delete ofs[j];
-	}
+	ifs.reset();
+	ostreams.clear();
 
 	TIMEDLN("Sorting subvector files with child processes.");
 	vector< pid_t > pids(tau_+1);
@@ -78,7 +73,19 @@ void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 		pids[j] = vfork();
 		if ( pids[j] == 0 ) {
 			TIMEDLN("  [" << getpid() << "] Child process " << j << " for sorting subkmers starting.");
-			execlp("sort", "sort", "-n", "-T", cfg::get().input_working_dir.data(), "-o", sorted_fnames_[j].data(), fnames_[j].data(), (char *) 0 );
+			string systemcall;
+			if (cfg::get().general_gzip) {
+				systemcall = string("gunzip -c ") + fnames_[j].c_str() +
+						string(" | sort -k1 -T ") + cfg::get().input_working_dir.c_str() +
+						string(" | gzip -1 > ") + sorted_fnames_[j].c_str();
+			} else {
+				systemcall = string("sort -k1 -o") + sorted_fnames_[j] +
+						string(" -T ") + cfg::get().input_working_dir + string(" ") + fnames_[j];
+			}
+			TIMEDLN("  [" << getpid() << "] " << systemcall);
+			if (std::system(systemcall.c_str())) {
+				TIMEDLN("  [" << getpid() << "] System error with sorting subkmers!");
+			}
 			_exit(0);
 		} else if ( pids[j] < 0 ) {
 			TIMEDLN("Failed to fork. Exiting.");
@@ -106,13 +113,11 @@ void SubKMerSorter::runFileBasedSort(std::string inputFile) {
 bool SubKMerSorter::getNextBlock( int i, vector<hint_t> & block ) {
 	block.clear();
 	if ( vskpq_[i].emptyPQ() ) return false;
-	// cout << "  new block with respect to " << i << endl;
 	hint_t last = vskpq_[i].peekPQ();
 	while (!vskpq_[i].emptyPQ()) {
 		hint_t cur = vskpq_[i].peekPQ();
 		if ( sub_equal[i](last, cur) ) { //add to current reads
 			block.push_back(cur);
-			// cout << "     " << cur << "\n";
 			vskpq_[i].popPQ();
 		} else {
 			return true;
@@ -296,9 +301,9 @@ void SubKMerPQ::doSort(int j, const SubKMerFunction & sub_sort) {
 }
 
 hint_t SubKMerPQ::getNextElementFromFile(size_t j) {
-	ifs_[j]->getline(buf_, 2048);
+	std::getline(ifs_[j]->fs, buf_);
 	hint_t kmerno;
-	if ( !strlen(buf_) || sscanf(buf_, "%*s\t%lu", &kmerno) < 1 ) {
+	if ( !buf_.size() || sscanf(buf_.c_str(), "%*s\t%lu", &kmerno) < 1 ) {
 		return BLOBKMER_UNDEFINED;
 	}
 	return kmerno;
@@ -307,9 +312,9 @@ hint_t SubKMerPQ::getNextElementFromFile(size_t j) {
 void SubKMerPQ::initPQ() {
 	if (v != NULL) {
 		for (int j = 0; j < nthreads; ++j) {
-			ind[j] = boundaries[j];
-			ind_end[j] = boundaries[j + 1];
-			pq.push(SubKMerPQElement((*v)[j], j));
+			it[j] = v->begin() + boundaries[j];
+			it_end[j] = v->begin() + boundaries[j + 1];
+			pq.push(SubKMerPQElement(*(it[j]), j));
 		}
 	} else {
 		for (size_t j = 0; j < fnames_.size(); ++j) {
@@ -324,10 +329,7 @@ void SubKMerPQ::initPQ() {
 
 void SubKMerPQ::closePQ() {
 	if (v == NULL) {
-		for (size_t j = 0; j < ifs_.size(); ++j) {
-			ifs_[j]->close();
-			delete ifs_[j];
-		}
+		ifs_.clear();
 	}
 }
 
@@ -342,7 +344,7 @@ void SubKMerPQ::popPQ() {
 		++ind[pqel.n];
 		if ( ind[pqel.n] != ind_end[pqel.n] ) pq.push( SubKMerPQElement((*v)[pqel.n], pqel.n) );
 	} else {
-		if ( !ifs_[pqel.n]->eof() ) {
+		if ( ifs_[pqel.n]->fs.good() ) {
 			hint_t nextel = getNextElementFromFile(pqel.n);
 			if (nextel != BLOBKMER_UNDEFINED) pq.push( SubKMerPQElement( nextel, pqel.n ) );
 		}

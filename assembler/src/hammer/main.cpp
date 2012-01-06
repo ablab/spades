@@ -129,10 +129,22 @@ int main(int argc, char * argv[]) {
 			pIDsortKmerTotalsFile = vfork();
 			if (pIDsortKmerTotalsFile == 0) {
 				TIMEDLN("  [" << getpid() << "] Child process for sorting the kmers.total file starting.");
-				execlp("sort", "sort", "-k2",
-						"-o", HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.sorted").c_str(),
-						"-T", cfg::get().input_working_dir.c_str(),
-						HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total").data(), (char *) 0 );
+				if (cfg::get().general_gzip) {
+					string systemcall = string("gunzip -c ") +
+							HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total").c_str() +
+							string(" | sort -k2 -T ") + cfg::get().input_working_dir.c_str() +
+							string(" | gzip -1 > ") +
+							HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.sorted").c_str();
+					TIMEDLN("  [" << getpid() << "] " << systemcall);
+					if (std::system(systemcall.c_str())) {
+						TIMEDLN("  [" << getpid() << "] System error with sorting kmers.total!");
+					}
+				} else {
+					execlp("sort", "sort", "-k2",
+							"-o", HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.sorted").c_str(),
+							"-T", cfg::get().input_working_dir.c_str(),
+							HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total").data(), (char *) 0 );
+				}
 				_exit(0);
 			}
 		}
@@ -157,9 +169,9 @@ int main(int argc, char * argv[]) {
 		}
 
 		// fill in already prepared k-mers
-		if ( cfg::get().input_read_solid_kmers ) {
+		if ( !do_everything && cfg::get().input_read_solid_kmers ) {
 			TIMEDLN("Loading k-mers from " << cfg::get().input_solid_kmers );
-			HammerTools::ReadKmersAndNosFromFile( cfg::get().input_solid_kmers, Globals::kmers, Globals::kmernos );
+			HammerTools::ReadKmersWithChangeToFromFile( cfg::get().input_solid_kmers, Globals::kmers, Globals::kmernos );
 			TIMEDLN("K-mers loaded.");
 		}
 
@@ -176,14 +188,12 @@ int main(int argc, char * argv[]) {
 		if ( cfg::get().hamming_do || cfg::get().bayes_do || do_everything ) {
 			int clustering_nthreads = min( cfg::get().general_max_nthreads, cfg::get().bayes_nthreads);
 			KMerClustering kmc(Globals::kmers, Globals::kmernos, clustering_nthreads, cfg::get().general_tau);
-			ofstream * ofkmers = cfg::get().hamming_write_solid_kmers ?
-				new ofstream(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.solid").c_str()) : NULL;
-			ofstream * ofkmers_bad = cfg::get().hamming_write_bad_kmers ?
-				new ofstream(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.bad").c_str()) : NULL;
+			boost::shared_ptr<FOStream> ofkmers = cfg::get().hamming_write_solid_kmers ?
+				FOStream::init(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.solid").c_str()) : boost::shared_ptr<FOStream>();
+			boost::shared_ptr<FOStream> ofkmers_bad = cfg::get().hamming_write_bad_kmers ?
+				FOStream::init(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.bad").c_str()) : boost::shared_ptr<FOStream>();
 			kmc.process((cfg::get().hamming_do || do_everything),
 					cfg::get().input_working_dir, skmsorter, ofkmers, ofkmers_bad);
-			if (ofkmers) ofkmers->close();
-			if (ofkmers_bad) ofkmers_bad->close();
 			TIMEDLN("Finished clustering.");
 		}
 
@@ -200,10 +210,13 @@ int main(int argc, char * argv[]) {
 		}
 
 		// write the final set of k-mers
-		if ( cfg::get().expand_write_kmers_result || do_everything ) {
+		if ((cfg::get().expand_write_kmers_result && !cfg::get().input_read_solid_kmers) || do_everything ) {
 			ofstream ofkmerstotal(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.result").data());
-			HammerTools::PrintKMerResult( &ofkmerstotal, *Globals::kmers );
-			ofkmerstotal.close();
+			boost::iostreams::filtering_ostream kmer_res;
+			if (cfg::get().general_gzip)
+				kmer_res.push(boost::iostreams::gzip_compressor(boost::iostreams::gzip_params(boost::iostreams::gzip::best_speed, boost::iostreams::gzip::deflated, 15, 9)));
+			kmer_res.push(ofkmerstotal);
+			HammerTools::PrintKMerResult( kmer_res, *Globals::kmers );
 			TIMEDLN("KMers with changetos written.");
 		}
 

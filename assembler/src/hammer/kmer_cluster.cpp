@@ -418,7 +418,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 		}
 		cout << endl << "  kmers:\n";
 		for (size_t i = 0; i < block.size(); i++) {
-			cout << (*k_)[block[i]]->first.str() << endl;
+			cout << (*k_)[i]->first.str() << endl;
 		}
 		}
 	}
@@ -594,7 +594,7 @@ void KMerClustering::process_block_SIN(const vector<int> & block, vector< vector
 	}
 }
 
-void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * skmsorter, ofstream * ofs, ofstream * ofs_bad) {
+void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * skmsorter, boost::shared_ptr<FOStream> ofs, boost::shared_ptr<FOStream> ofs_bad) {
 	
 	int effective_threads = min(nthreads_, tau_+1);
 	vector<unionFindClass *> uf(tau_ + 1);
@@ -632,13 +632,6 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 
 	if ( useFilesystem ) {
 		TIMEDLN("Writing down clusters.");
-		ofstream ofs( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "hamming.classes").c_str() );
-		for ( size_t i=0; i < classes.size(); ++i ) {
-			ofs << "class " << i << " size=" << classes[i].size() << "\n";
-			//cout << "class " << i << " size=" << classes[i].size() << "\n";
-			for ( size_t j=0; j < classes[i].size(); ++j ) {
-				ofs << classes[i][j] << "\n";
-				//cout << classes[i][j] << "\t" << v_->at(classes[i][j]) << "\t" << string(Globals::blob + v_->at(classes[i][j]), K) << endl;
 			}
 			/*if (classes[i].size() > 1) {
 				cout << "class " << i << " size=" << classes[i].size() << "\n";
@@ -649,7 +642,6 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 			classes[i].clear();
 		}
 		classes.clear();
-		ofs.close();
 		TIMEDLN("Clusters written. Reading k-mer information.");
 	}
 
@@ -658,17 +650,17 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 	}
 
 	if ( useFilesystem ) {
-		ifstream ifs( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.sorted").c_str() );
+		boost::shared_ptr<FIStream> ifs = FIStream::init(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.sorted"));
 		char seq[K+10];
 		hint_t kmer_num = 0;
-		while (!ifs.eof()) {
+		while (ifs->fs.good()) {
 			hint_t pos;
 			KMerStat curstat;
 			curstat.changeto = KMERSTAT_GOODITER;
-			ifs >> pos >> seq >> curstat.count >> curstat.totalQual;
+			ifs->fs >> pos >> seq >> curstat.count >> curstat.totalQual;
 			unsigned short cur_qual;
 			for ( size_t i=0; i < K; ++i ) {
-				ifs >> cur_qual;
+				ifs->fs >> cur_qual;
 				curstat.qual.set(i, cur_qual);
 			}
 			k_->push_back(new KMerCount( PositionKMer(pos), curstat ) );
@@ -677,20 +669,15 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 				TIMEDLN("Read " << kmer_num << " k-mers.");
 			}
 		}
-		ifs.close();
 		TIMEDLN("K-mer information read. Starting subclustering in " << nthreads_ << " threads.");
 		TIMEDLN("Estimated: size=" << k_->size() << " mem=" << sizeof(KMerCount)*k_->size() << " clustering buffer size=" << cfg::get().hamming_class_buffer);
 	}
 
-	ifstream ifclass;
-	if (useFilesystem) {
-		// nthreads_ = 1;
-		ifclass.open( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "hamming.classes").c_str() );
-	}
+	boost::shared_ptr<FIStream> ifs = FIStream::init(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "hamming.classes"));
 
 	vector< vector< vector<int> > > blocks(nthreads_);
 
-	char buf[1024];
+	string buf;
 
 	size_t cur_class_num = 0;
 	vector< vector<int> > curClasses;
@@ -698,23 +685,23 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 
 	vector< vector< vector<int> > > blocksInPlace(cfg::get().hamming_class_buffer);
 
-	while (!ifclass.eof()) {
+	while (ifs->fs.good()) {
 
 		curClasses.clear();
 
 		size_t i_nontriv = 0;
 		size_t cur_total_size = 0;
 		size_t orig_class_num = cur_class_num;
-		while (cur_total_size < (size_t)cfg::get().hamming_class_buffer && !ifclass.eof()) {
+		while (cur_total_size < (size_t)cfg::get().hamming_class_buffer && ifs->fs.good()) {
 			cur_class.clear();
 			if (useFilesystem) {
-				ifclass.getline(buf, 1024);
+				std::getline(ifs->fs, buf);
 				size_t sizeClass; size_t classNum;
-				sscanf(buf, "class %lu size=%lu", &classNum, &sizeClass);
+				sscanf(buf.c_str(), "class %lu size=%lu", &classNum, &sizeClass);
 				for (size_t j = 0; j < sizeClass; ++j) {
 					int elem;
-					ifclass.getline(buf, 1024);
-					sscanf(buf, "%i", &elem);
+					std::getline(ifs->fs, buf);
+					sscanf(buf.c_str(), "%i", &elem);
 					cur_class.push_back(elem);
 				}
 			} else cur_class = classes[cur_class_num];
@@ -724,8 +711,8 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 			if ( cur_class.size() == 1 ) {
 				if ( (1-(*k_)[cur_class[0]]->second.totalQual) > cfg::get().bayes_singleton_threshold) {
 					(*k_)[cur_class[0]]->second.changeto = KMERSTAT_GOODITER;
-					if (ofs) {
-						(*ofs) << (*k_)[cur_class[0]]->first.str() << "\n>" << (*k_)[cur_class[0]]->first.start()
+					if (ofs.get()) {
+						(ofs->fs) << (*k_)[cur_class[0]]->first.str() << "\n>" << (*k_)[cur_class[0]]->first.start()
 							<< " good singleton " << "  ind=" << cur_class[0]
 							<< "  cnt=" << (*k_)[cur_class[0]]->second.count
 							<< "  tql=" << (1-(*k_)[cur_class[0]]->second.totalQual) << "\n";
@@ -735,8 +722,8 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 						(*k_)[cur_class[0]]->second.changeto = KMERSTAT_GOODITER_BAD;
 					else
 						(*k_)[cur_class[0]]->second.changeto = KMERSTAT_BAD;
-					if (ofs_bad) {
-						(*ofs_bad) << (*k_)[cur_class[0]]->first.str() << "\n>" << (*k_)[cur_class[0]]->first.start()
+					if (ofs_bad.get()) {
+						(ofs_bad->fs) << (*k_)[cur_class[0]]->first.str() << "\n>" << (*k_)[cur_class[0]]->first.start()
 							<< " bad singleton "
 							<< "  ind=" << cur_class[0]
 							<< "  cnt=" << (*k_)[cur_class[0]]->second.count
@@ -763,8 +750,8 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 				if (blocksInPlace[n][m].size() == 1) {
 					if ( (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) > cfg::get().bayes_singleton_threshold) {
 						(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER;
-						if (ofs) {
-							(*ofs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
+						if (ofs.get()) {
+							(ofs->fs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
 							   << " good singleton " << "  ind=" << blocksInPlace[n][m][0]
 							   << "  cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
 							   << "  tql=" << (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
@@ -774,8 +761,8 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 							(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER_BAD;
 						else
 							(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_BAD;
-						if (ofs_bad) {
-							(*ofs_bad) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
+						if (ofs_bad.get()) {
+							(ofs_bad->fs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
 							   << " bad singleton " << "  ind=" << blocksInPlace[n][m][0]
 							   << "  cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
 							   << "  tql=" << (1-(*k_)[blocksInPlace[n][m][0]]->second.totalQual) << "\n";
@@ -792,8 +779,8 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 					// in regular hammer mode, all nonsingletons are good
 					if ( cfg::get().bayes_hammer_mode || cluster_quality > cfg::get().bayes_nonsingleton_threshold) {
 						(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER;
-						if (ofs) {
-							(*ofs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
+						if (ofs.get()) {
+							(ofs->fs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
 							   << " center clust=" << cluster_quality
 							   << " ind=" << blocksInPlace[n][m][0]
 							   << " cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
@@ -804,8 +791,8 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 							(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_GOODITER_BAD;
 						else
 							(*k_)[blocksInPlace[n][m][0]]->second.changeto = KMERSTAT_BAD;
-						if (ofs_bad) {
-							(*ofs_bad) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
+						if (ofs_bad.get()) {
+							(ofs_bad->fs) << (*k_)[blocksInPlace[n][m][0]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][0]]->first.start()
 							   << " center of bad cluster clust=" << cluster_quality
 							   << " ind=" << blocksInPlace[n][m][0]
 							   << " cnt=" << (*k_)[blocksInPlace[n][m][0]]->second.count
@@ -814,8 +801,8 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 					}
 					for (uint32_t j=1; j < blocksInPlace[n][m].size(); ++j) {
 						(*k_)[blocksInPlace[n][m][j]]->second.changeto = blocksInPlace[n][m][0];
-						if (ofs_bad) {
-							(*ofs_bad) << (*k_)[blocksInPlace[n][m][j]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][j]]->first.start()
+						if (ofs_bad.get()) {
+							(ofs_bad->fs) << (*k_)[blocksInPlace[n][m][j]]->first.str() << "\n>" << (*k_)[blocksInPlace[n][m][j]]->first.start()
 							   << " part of cluster " << (*k_)[blocksInPlace[n][m][0]]->first.start() << " clust=" << cluster_quality
 								   << " ind=" << blocksInPlace[n][m][j]
 							   << " cnt=" << (*k_)[blocksInPlace[n][m][j]]->second.count
@@ -826,7 +813,6 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 			}
 		}
 	}
-	if (useFilesystem) { ifclass.close(); }
 	TIMEDLN("Centering finished.");
 }
 

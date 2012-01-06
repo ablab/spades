@@ -5,10 +5,16 @@
 #include <queue>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/device/file.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/filter/bzip2.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 #include "read/read.hpp"
 #include "kmer_stat.hpp"
 #include "position_read.hpp"
 #include "position_kmer.hpp"
+#include "hammer_tools.hpp"
 
 
 struct SubKMerPQElement; // forward declaration
@@ -57,8 +63,8 @@ class SubKMerPQ {
 	vector< size_t > ind_end;
 
 	vector< string > fnames_;
-	vector< ifstream* > ifs_;
-	char buf_[2048];
+	vector< boost::shared_ptr<FIStream> > ifs_;
+	string buf_;
 
 	hint_t getNextElementFromFile(size_t j);
 

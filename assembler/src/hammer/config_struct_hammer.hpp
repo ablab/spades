@@ -31,6 +31,7 @@ struct hammer_config
 	bool general_do_everything_after_first_iteration;
 	bool general_reconstruct_only;
 	bool general_change_n_to_a;
+	bool general_gzip;
 	int general_hard_memory_limit;
 	int general_max_nthreads;
 	int general_tau;

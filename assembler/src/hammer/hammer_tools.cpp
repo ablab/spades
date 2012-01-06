@@ -23,6 +23,7 @@
 #include "position_kmer.hpp"
 #include "globals.hpp"
 #include "config_struct_hammer.hpp"
+#include "subkmers.hpp"
 #include "hammer_tools.hpp"
 
 // forking
@@ -79,7 +80,7 @@ void print_mem_usage() {
 	static size_t pid = getpid();
 	std::string str = (boost::format("pmap -d %d | grep writeable/private") % pid).str();
 	std::cout << "==== MEM USAGE ==== " << std::endl;
-	if (system(str.c_str()) != 0) std::cout << "  mem usage output failed!";
+	if (system(str.c_str())) { std::cout << "  System error!" << endl; }
 }
 
 void print_stats() {
@@ -199,19 +200,14 @@ void HammerTools::ReadAllFilesIntoBlob() {
 	//std::cout << "blob with revcomp:\n" << string(Globals::blob + Globals::revPos, curpos - Globals::revPos) << endl;
 }
 
-void HammerTools::CountAndSplitKMers(bool writeFiles) {
-	vector<ofstream *> ofiles(cfg::get().count_numfiles);
-	if (writeFiles) {
-		TIMEDLN("Splitting kmer instances into files.");
-		for (int i = 0; i < cfg::get().count_numfiles; ++i) {
-			ofiles[i] = new ofstream( getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i ).c_str() );
-		}
-	} else {
-		TIMEDLN("Reading kmer instances of the reads.");
+void HammerTools::CountKMersBySplitAndMerge() {
+	TIMEDLN("Splitting kmer instances into files.");
+	vector<boost::shared_ptr<FOStream> > ostreams(cfg::get().count_numfiles);
+	for (int i = 0; i < cfg::get().count_numfiles; ++i) {
+		ostreams[i] = FOStream::init(getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i ));
 	}
 	Seq<K>::hash hash_function;
-	Seq<K>::less2 cmp_kmers;
-	for(size_t i=0; i < Globals::revNo; ++i) {
+	for(size_t i=0; i < Globals::pr->size(); ++i) {
 		string s(Globals::blob        + Globals::pr->at(i).start(), Globals::pr->at(i).size());
 		string q(Globals::blobquality + Globals::pr->at(i).start(), Globals::pr->at(i).size());
 		for ( size_t j=0; j < Globals::pr->at(i).size(); ++j) q[j] = (char)(q[j] - cfg::get().input_qvoffset);
@@ -225,52 +221,36 @@ void HammerTools::CountAndSplitKMers(bool writeFiles) {
 				cur_pos = Globals::pr->at(i).getRCPosition(gen.pos());
 				Globals::pr->at(i).setRCBit(gen.pos() - 1);
 			}
-			if (writeFiles) {
-				ofstream &cur_file = *ofiles[hash_function(cur_kmer) % cfg::get().count_numfiles];
-				double correct_probability = 1 - gen.correct_probability();
-				cur_file << cur_pos << "\t" << correct_probability << "\n";
-			}
+			boost::iostreams::filtering_ostream & cur_gz = ostreams[hash_function(gen.kmer()) % cfg::get().count_numfiles]->fs;
+			hint_t cur_pos = Globals::pr->at(i).start() + gen.pos() - 1;
+			double correct_probability = 1 - gen.correct_probability();
+			cur_gz << cur_pos << "\t" << correct_probability << "\n";
 			gen.Next();
 		}
-		//cout << "  pr " << i << " start=" << Globals::pr->at(i).start() << "\tsize=" << Globals::pr->at(i).size() << "\trevPos=" << Globals::revPos << "\trc=" << Globals::pr->at(i).getRCBitString() << "\t" << Globals::pr->at(i).getRCBit(0) << endl;
 	}
-	if (writeFiles) {
-		for (int i = 0; i < cfg::get().count_numfiles; ++i) {
-			ofiles[i]->close();
-			delete ofiles[i];
-		}
-	}
-}
+	ostreams.clear();
 
 void HammerTools::CountKMersBySplitAndMerge() {
 	CountAndSplitKMers(true);
 	int count_num_threads = min( cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads );
-
 	TIMEDLN("Kmer instances split. Starting merge in " << count_num_threads << " threads.");
-	ofstream kmerno_file( getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total").c_str() );
+	boost::shared_ptr<FOStream> kmerno_gz = FOStream::init(getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total"));
 	hint_t kmer_num = 0;
 
 	int merge_nthreads = min( cfg::get().general_max_nthreads, cfg::get().count_merge_nthreads);
-	for ( int iFile=0; iFile < cfg::get().count_numfiles; ) {
 
-		std::vector<KMerNoHashMap> khashmaps(merge_nthreads);
-
-		#pragma omp parallel for shared(kmerno_file, kmer_num) num_threads(merge_nthreads)
-		for ( int j = 0; j< merge_nthreads; ++j) {
-			if ( j + iFile > cfg::get().count_numfiles) continue;
-			ifstream inStream( getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile+j ).c_str() );
-			ProcessKmerHashFile( &inStream, khashmaps[j] );
-			#pragma omp critical
-			{
-			PrintProcessedKmerHashFile( &kmerno_file, kmer_num, khashmaps[j] );
-			}
+	#pragma omp parallel for shared(kmerno_gz, kmer_num) num_threads(merge_nthreads)
+	for ( int iFile=0; iFile < cfg::get().count_numfiles; ++iFile ) {
+		KMerNoHashMap khashmap;
+		boost::shared_ptr<FIStream> inStream = FIStream::init(getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile ));
+		ProcessKmerHashFile( inStream->fs, khashmap );
+		#pragma omp critical
+		{
+			PrintProcessedKmerHashFile( kmerno_gz->fs, kmer_num, khashmap );
+			TIMEDLN("Processed file " << iFile << " with thread " << omp_get_thread_num());
 		}
-
-		iFile += merge_nthreads;
-
 	}
 
-	kmerno_file.close();
 	TIMEDLN("Merge done. There are " << kmer_num << " kmers in total.");
 }
 
@@ -308,13 +288,11 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, con
 
 		// ok, now we're sure that everything is covered
 		// first, set this read as already done
-		//cout << "  read " << readno << " out of " << Globals::pr->size() << " is done!" << endl;
 		Globals::pr->at(readno).done();
 
 		// second, mark all k-mers as solid
 		for (size_t j = 0; j < read_size; ++j) {
 			if ( kmer_indices[j] == (hint_t)-1 ) continue;
-			// cout << "    marking kmer " << kmer_indices[j] << " out of " << kmers.size() << " as good for iterative" << endl;
 			if ( !kmers[kmer_indices[j]]->second.isGoodForIterative() &&
 				 !kmers[kmer_indices[j]]->second.isMarkedGoodForIterative() ) {
 				#pragma omp critical
@@ -339,15 +317,15 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, con
 	return res;
 }
 
-void HammerTools::PrintKMerResult( ofstream * outf, const vector<KMerCount *> & kmers ) {
+void HammerTools::PrintKMerResult( boost::iostreams::filtering_ostream & outf, const vector<KMerCount *> & kmers ) {
 	for (vector<KMerCount *>::const_iterator it = kmers.begin(); it != kmers.end(); ++it) {
-		(*outf) << (*it)->first.start() << "\t"
-				<< string(Globals::blob + (*it)->first.start(), K) << "\t"
-				<< (*it)->second.count << "\t"
-				<< (*it)->second.changeto << "\t"
-				<< setw(8) << (*it)->second.totalQual << "\t";
-		for (size_t i=0; i < K; ++i) (*outf) << (*it)->second.qual[i] << " ";
-		(*outf) << "\n";
+		outf << (*it)->first.start() << "\t"
+			 << string(Globals::blob + (*it)->first.start(), K) << "\t"
+			 << (*it)->second.count << "\t"
+			 << (*it)->second.changeto << "\t"
+			 << setw(8) << (*it)->second.totalQual << "\t";
+		for (size_t i=0; i < K; ++i) outf << (*it)->second.qual[i] << " ";
+		outf << "\n";
 	}
 }
 
@@ -432,7 +410,7 @@ bool HammerTools::CorrectOneRead( const vector<KMerCount*> & kmers, hint_t & cha
 
 
 void HammerTools::CorrectReadFile( const string & readsFilename, const vector<KMerCount*> & kmers,
-		hint_t & changedReads, hint_t & changedNucleotides, hint_t readno, ofstream *outf_good, ofstream *outf_bad ) {
+		hint_t & changedReads, hint_t & changedNucleotides, hint_t & readno, ofstream *outf_good, ofstream *outf_bad ) {
 	ireadstream irs(readsFilename, cfg::get().input_qvoffset);
 	VERIFY(irs.is_open());
 	while (irs.is_open() && !irs.eof()) {
@@ -538,32 +516,43 @@ hint_t HammerTools::CorrectAllReads() {
 
 void HammerTools::ReadKmerNosFromFile( const string & fname, vector<hint_t> *kmernos ) {
 	kmernos->clear();
-	ifstream ifs(fname.c_str());
-	char buf[16000];
+	boost::shared_ptr<FIStream> fis = FIStream::init(fname);
 	hint_t pos;
-	while (!ifs.eof()) {
-		ifs.getline(buf, 16000);
-		sscanf(buf, "%lu", &pos);
+	string buf;
+	while (fis->fs.good()) {
+		std::getline(fis->fs, buf);
+		sscanf(buf.c_str(), "%lu", &pos);
 		kmernos->push_back(pos);
 	}
-	ifs.close();
 }
 
 void HammerTools::ReadKmersAndNosFromFile( const string & fname, vector<KMerCount*> *kmers, vector<hint_t> *kmernos ) {
 	kmernos->clear();
 	kmers->clear();
-	ifstream ifs(fname.c_str());
-	char buf[16000];
-	while (!ifs.eof()) {
-		ifs.getline(buf, 16000);
+	boost::shared_ptr<FIStream> fis = FIStream::init(fname);
+	string buf;
+	while (fis->fs.good()) {
+		std::getline(fis->fs, buf);
 		hint_t pos; int cnt; double qual;
-		sscanf(buf, "%lu\t%*s\t%u\t%lf", &pos, &cnt, &qual);
+		sscanf(buf.c_str(), "%lu\t%*s\t%u\t%lf", &pos, &cnt, &qual);
 		kmernos->push_back(pos);
 		kmers->push_back(new KMerCount(PositionKMer(pos), KMerStat(cnt, KMERSTAT_BAD, qual)));
 	}
-	ifs.close();
 }
 
+void HammerTools::ReadKmersWithChangeToFromFile( const string & fname, vector<KMerCount*> *kmers, vector<hint_t> *kmernos ) {
+	kmernos->clear();
+	kmers->clear();
+	boost::shared_ptr<FIStream> fis = FIStream::init(fname);
+	string buf;
+	while (fis->fs.good()) {
+		std::getline(fis->fs, buf);
+		hint_t pos; int cnt; double qual; hint_t chg;
+		sscanf(buf.c_str(), "%lu\t%*s\t%u\t%lu\t%lf", &pos, &cnt, &chg, &qual);
+		kmernos->push_back(pos);
+		kmers->push_back(new KMerCount(PositionKMer(pos), KMerStat(cnt, chg, qual)));
+	}
+}
 
 string HammerTools::getFilename( const string & dirprefix, const string & suffix ) {
 	ostringstream tmp;
@@ -645,12 +634,12 @@ bool HammerTools::internalCorrectReadProcedure( const Read & r, const PositionRe
 	return res;
 }
 
-void HammerTools::ProcessKmerHashFile( ifstream * inf, KMerNoHashMap & km ) {
-	char buf[1024]; // a line contains two numbers, 1024 should be enough for everybody
+void HammerTools::ProcessKmerHashFile( boost::iostreams::filtering_istream & inf, KMerNoHashMap & km ) {
+	string buf; // a line contains two numbers, 1024 should be enough for everybody
 	uint64_t pos; double prob;
-	while (!inf->eof()) {
-		inf->getline(buf, 1024);
-		sscanf(buf, "%lu\t%lf", &pos, &prob);
+	while (inf.good()) {
+		std::getline(inf, buf);
+		sscanf(buf.c_str(), "%lu\t%lf", &pos, &prob);
 		KMerNo kmerno(pos, prob);
 		KMerNoHashMap::iterator it_hash = km.find( kmerno );
 		if ( it_hash == km.end() ) {
@@ -674,16 +663,40 @@ void HammerTools::ProcessKmerHashFile( ifstream * inf, KMerNoHashMap & km ) {
 	}
 }
 
-void HammerTools::PrintProcessedKmerHashFile( ofstream * outf, hint_t & kmer_num, KMerNoHashMap & km ) {
+void HammerTools::PrintProcessedKmerHashFile( boost::iostreams::filtering_ostream & outf, hint_t & kmer_num, KMerNoHashMap & km ) {
 	for (KMerNoHashMap::iterator it = km.begin(); it != km.end(); ++it) {
-		(*outf) << it->second->first.start() << "\t"
+		outf << it->second->first.start() << "\t"
 				<< string(Globals::blob + it->second->first.start(), K) << "\t"
 				<< it->second->second.count << "\t"
 				<< setw(8) << it->second->second.totalQual << "\t";
-		for (size_t i=0; i < K; ++i) (*outf) << it->second->second.qual[i] << " ";
-		(*outf) << "\n";
+		for (size_t i=0; i < K; ++i) outf << it->second->second.qual[i] << " ";
+		outf << "\n";
 		delete it->second;
 		++kmer_num;
 	}
 	km.clear();
+}
+
+FIStream::FIStream(const string & fname) : stdstream(fname, cfg::get().general_gzip ? (std::ios::in | std::ios::binary) : std::ios::in) {
+	if (cfg::get().general_gzip) fs.push(boost::iostreams::gzip_decompressor());
+	fs.push(stdstream);
+}
+
+FIStream::~FIStream() { fs.reset(); }
+
+boost::shared_ptr<FIStream> FIStream::init(const string & fname) {
+	boost::shared_ptr<FIStream> p(new FIStream(fname));
+	return p;
+}
+
+FOStream::FOStream(const string & fname) : stdstream(fname, cfg::get().general_gzip ? (std::ios::out | std::ios::binary) : std::ios::out) {
+	if (cfg::get().general_gzip) fs.push(boost::iostreams::gzip_compressor(boost::iostreams::gzip_params(boost::iostreams::gzip::best_speed)));
+	fs.push(stdstream);
+}
+
+FOStream::~FOStream() { fs.reset(); }
+
+boost::shared_ptr<FOStream> FOStream::init(const string & fname) {
+	boost::shared_ptr<FOStream> p(new FOStream(fname));
+	return p;
 }

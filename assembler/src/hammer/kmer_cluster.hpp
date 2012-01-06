@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include "subkmers.hpp"
 #include "position_kmer.hpp"
 
 class unionFindClass;
@@ -22,7 +23,7 @@ public:
 	/**
 	  * perform k-mer clustering and store the results in the map and the set
 	  */
-	void process(bool doHamming, std::string dirprefix, SubKMerSorter * skmsorter, ofstream * ofs, ofstream * ofs_bad);
+	void process(bool doHamming, std::string dirprefix, SubKMerSorter * skmsorter, boost::shared_ptr<FOStream> ofs, boost::shared_ptr<FOStream> ofs_bad);
 
 	/// free up memory
 	void clear() {

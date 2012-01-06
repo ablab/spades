@@ -13,6 +13,13 @@
 #include <algorithm>
 #include <stdexcept>
 #include <iomanip>
+#include <fstream>
+#include <zlib.h>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/device/file.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/filter/bzip2.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 #include "read/read.hpp"
 #include "read/ireadstream.hpp"
 #include "union.hpp"
@@ -20,7 +27,6 @@
 #include "globals.hpp"
 #include "kmer_stat.hpp"
 #include "position_kmer.hpp"
-#include "subkmers.hpp"
 
 using namespace std;
 
@@ -33,6 +39,26 @@ string encode3toabyte (const string & s);
 void print_time();
 void print_mem_usage();
 void print_stats();
+
+/// structure for boost istreams
+struct FIStream {
+	boost::iostreams::filtering_istream fs;
+	std::ifstream stdstream;
+	FIStream(const string & fname);
+	~FIStream();
+
+	static boost::shared_ptr<FIStream> init(const string & fname);
+};
+
+/// structure for boost ostreams
+struct FOStream {
+	boost::iostreams::filtering_ostream fs;
+	std::ofstream stdstream;
+	FOStream(const string & fname);
+	~FOStream();
+
+	static boost::shared_ptr<FOStream> init(const string & fname);
+};
 
 /**
  * a container class for all general procedures in BayesHammer
@@ -54,11 +80,11 @@ public:
 	static void ReadAllFilesIntoBlob();
 
 	/// process a k-mer hash file
-	static void ProcessKmerHashFile( ifstream * inStream, KMerNoHashMap & km );
-	/// print a processed k-mer hash file
-	static void PrintProcessedKmerHashFile(ofstream * outf, hint_t & kmer_num, KMerNoHashMap & km );
+	static void ProcessKmerHashFile( boost::iostreams::filtering_istream & inStream, KMerNoHashMap & km );
 	/// count and split k-mers (either writing in files or not)
 	static void CountAndSplitKMers(bool writeFiles);
+	/// print a processed k-mer hash file
+	static void PrintProcessedKmerHashFile( boost::iostreams::filtering_ostream & outStream, hint_t & kmer_num, KMerNoHashMap & km );
 	/// count k-mers in input files
 	static void CountKMersBySplitAndMerge();
 
@@ -66,7 +92,7 @@ public:
 	static hint_t IterativeExpansionStep(int expand_iter_no, int nthreads, const vector<KMerCount*> & kmers);
 
 	/// print out the resulting set of k-mers
-	static void PrintKMerResult( ofstream * outf, const vector<KMerCount *> & kmers );
+	static void PrintKMerResult( boost::iostreams::filtering_ostream & outf, const vector<KMerCount *> & kmers );
 
 	/// internal procedure
 	static bool internalCorrectReadProcedure( const Read & r, const PositionRead & pr, const hint_t readno, const string & seq,
@@ -76,7 +102,7 @@ public:
 	/// correct one read
 	static bool CorrectOneRead( const vector<KMerCount*> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno, Read & r, size_t i );
 	/// correct reads in a given file
-	static void CorrectReadFile( const string & readsFilename, const vector<KMerCount*> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno_start, ofstream *outf_good, ofstream *outf_bad );
+	static void CorrectReadFile( const string & readsFilename, const vector<KMerCount*> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t & readno_start, ofstream *outf_good, ofstream *outf_bad );
 	/// correct reads in a given pair of files
 	static void CorrectPairedReadFiles( const string & readsFilenameLeft, const string & readsFilenameRight,
 			const vector<KMerCount*> & kmers, hint_t & changedReads, hint_t & changedNucleotides, hint_t readno_left_start, hint_t readno_right_start,
@@ -86,14 +112,17 @@ public:
 
 	/// read k-mer indices from file
 	static void ReadKmerNosFromFile( const string & fname, vector<hint_t> *kmernos );
-	/// read a k-mer result file
+	/// read a k-mer totals file
 	static void ReadKmersAndNosFromFile( const string & fname, vector<KMerCount*> *kmers, vector<hint_t> *kmernos );
+	/// read a k-mer result file
+	static void ReadKmersWithChangeToFromFile( const string & fname, vector<KMerCount*> *kmers, vector<hint_t> *kmernos );
 
 	static string getFilename( const string & dirprefix, const string & suffix );
 	static string getFilename( const string & dirprefix, int iter_count, const string & suffix );
 	static string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num );
 	static string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num, const string & suffix2 );
 	static string getFilename( const string & dirprefix, const string & suffix, int suffix_num );
+
 };
 
 

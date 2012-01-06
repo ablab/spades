@@ -5,7 +5,7 @@ input_paired				1
 input_file_0				/home/snikolenko/data/reads.input.0.head
 input_file_1				/home/snikolenko/data/reads.input.1.head
 input_trim_quality			4
-input_qvoffset				64
+input_qvoffset				33
 input_read_solid_kmers		0
 input_solid_kmers			...
 
@@ -16,6 +16,7 @@ general_change_n_to_a		0
 general_hard_memory_limit	15
 general_max_nthreads		1
 general_tau					1
+general_gzip				1
 general_max_iterations		1
 general_blob_margin			0.25
 
