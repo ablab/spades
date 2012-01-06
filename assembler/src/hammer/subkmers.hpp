@@ -51,8 +51,8 @@ class SubKMerPQ {
 
 	SubKMerCompType sort_routine;
 	std::priority_queue< SubKMerPQElement, vector<SubKMerPQElement>, SubKMerCompType  > pq;
-	vector< vector<hint_t>::iterator > it;
-	vector< vector<hint_t>::iterator > it_end;
+	//vector< vector<hint_t>::iterator > it;
+	//vector< vector<hint_t>::iterator > it_end;
 
 	vector< string > fnames_;
 	vector< ifstream* > ifs_;

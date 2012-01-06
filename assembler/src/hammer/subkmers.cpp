@@ -262,6 +262,7 @@ SubKMerSorter::SubKMerSorter( vector< hint_t > * kmers, vector<hint_t> * v, int 
 }
 
 void SubKMerSorter::initVectors() {
+	cout << "Initializing vectors" << endl;
 	v_ = new vector< vector<hint_t> >(tau_+1);
 	int nthreads_per_subkmer = max( (int)(nthreads_ / (tau_ + 1)), 1);
 
@@ -270,16 +271,20 @@ void SubKMerSorter::initVectors() {
 		for (size_t m = 0; m < kmers_size_; ++m) (*v_)[j][m] = m;
 		SubKMerCompType sort_greater = boost::bind(SubKMerPQElement::functionSubKMerPQElement, _1, _2, sub_greater[j]);
 		if ( type_ == SorterTypeFileBasedStraight ) {
+			cout << j << endl;
 			SubKMerPQ skpq( vector<string>(1, sorted_fnames_[j]), nthreads_per_subkmer, sort_greater );
+			cout << j << endl;
 			vskpq_.push_back(skpq);
+			cout << " ok" << endl;
 		} else {
 			SubKMerPQ skpq( &((*v_)[j]), nthreads_per_subkmer, sort_greater );
 			vskpq_.push_back(skpq);
 		}
 	}
+	cout << "initializing vectors done" << endl;
 }
 
-SubKMerPQ::SubKMerPQ( vector<hint_t> * vec, int nthr, SubKMerCompType sort_routine ) : boundaries(nthr + 1), v(vec), nthreads(nthr), pq(sort_routine), it(nthr), it_end(nthr) {
+SubKMerPQ::SubKMerPQ( vector<hint_t> * vec, int nthr, SubKMerCompType sort_routine ) : boundaries(nthr + 1), v(vec), nthreads(nthr), pq(sort_routine) {
 	// find boundaries of the pieces
 	size_t sub_size = (size_t)(v->size() / nthreads);
 	for (int j=0; j<nthreads; ++j) {
@@ -288,7 +293,8 @@ SubKMerPQ::SubKMerPQ( vector<hint_t> * vec, int nthr, SubKMerCompType sort_routi
 	boundaries[nthreads] = v->size();
 }
 
-SubKMerPQ::SubKMerPQ( const vector<string> & fnames, int nthr, SubKMerCompType sort_routine ) : boundaries(nthr + 1), v(NULL), nthreads(nthr), pq(sort_routine), it(nthr), it_end(nthr) {
+SubKMerPQ::SubKMerPQ( const vector<string> & fnames, int nthr, SubKMerCompType sort_routine ) : boundaries(nthr + 1), v(NULL), nthreads(nthr), pq(sort_routine) {
+	cout << "  constructor" << endl;
 	for (size_t j=0; j<fnames.size(); ++j) {
 		fnames_.push_back(fnames[j]);
 	}
@@ -308,19 +314,18 @@ hint_t SubKMerPQ::getNextElementFromFile(size_t j) {
 }
 
 void SubKMerPQ::initPQ() {
-	if (v != NULL) {
-		for (int j = 0; j < nthreads; ++j) {
+	assert(v == NULL);
+	/*	for (int j = 0; j < nthreads; ++j) {
 			it[j] = v->begin() + boundaries[j];
 			it_end[j] = v->begin() + boundaries[j + 1];
 			pq.push(SubKMerPQElement(*(it[j]), j));
 		}
-	} else {
-		for (size_t j = 0; j < fnames_.size(); ++j) {
-			ifs_.push_back(new ifstream(fnames_[j].data()));
-			if (!ifs_[j]->eof()) {
-				hint_t nextel = getNextElementFromFile(j);
-				if (nextel != BLOBKMER_UNDEFINED) pq.push( SubKMerPQElement( nextel, j ) );
-			}
+	} else {*/
+	for (size_t j = 0; j < fnames_.size(); ++j) {
+		ifs_.push_back(new ifstream(fnames_[j].data()));
+		if (!ifs_[j]->eof()) {
+			hint_t nextel = getNextElementFromFile(j);
+			if (nextel != BLOBKMER_UNDEFINED) pq.push( SubKMerPQElement( nextel, j ) );
 		}
 	}
 }
@@ -341,14 +346,10 @@ hint_t SubKMerPQ::nextPQ() {
 
 void SubKMerPQ::popPQ() {
 	SubKMerPQElement pqel = pq.top(); pq.pop();
-	if (v != NULL) {
-		++it[pqel.n];
-		if ( it[pqel.n] != it_end[pqel.n] ) pq.push( SubKMerPQElement(*(it[pqel.n]), pqel.n) );
-	} else {
-		if ( !ifs_[pqel.n]->eof() ) {
-			hint_t nextel = getNextElementFromFile(pqel.n);
-			if (nextel != BLOBKMER_UNDEFINED) pq.push( SubKMerPQElement( nextel, pqel.n ) );
-		}
+	assert(v == NULL);
+	if ( !ifs_[pqel.n]->eof() ) {
+		hint_t nextel = getNextElementFromFile(pqel.n);
+		if (nextel != BLOBKMER_UNDEFINED) pq.push( SubKMerPQElement( nextel, pqel.n ) );
 	}
 }
 
