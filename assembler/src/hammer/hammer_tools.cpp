@@ -202,7 +202,7 @@ void HammerTools::CountAndSplitKMers(bool writeFiles) {
 	if (writeFiles) {
 		TIMEDLN("Splitting kmer instances into files.");
 		for (int i = 0; i < cfg::get().count_numfiles; ++i) {
-			ofiles[i] = new ofstream( getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i ) );
+			ofiles[i] = new ofstream( getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i ).c_str() );
 		}
 	} else {
 		TIMEDLN("Reading kmer instances of the reads.");
@@ -248,7 +248,7 @@ void HammerTools::CountKMersBySplitAndMerge() {
 	int count_num_threads = min( cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads );
 
 	TIMEDLN("Kmer instances split. Starting merge in " << count_num_threads << " threads.");
-	ofstream kmerno_file( getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total") );
+	ofstream kmerno_file( getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total").c_str() );
 	hint_t kmer_num = 0;
 
 	int merge_nthreads = min( cfg::get().general_max_nthreads, cfg::get().count_merge_nthreads);
@@ -259,7 +259,7 @@ void HammerTools::CountKMersBySplitAndMerge() {
 		#pragma omp parallel for shared(kmerno_file, kmer_num) num_threads(merge_nthreads)
 		for ( int j = 0; j< merge_nthreads; ++j) {
 			if ( j + iFile > cfg::get().count_numfiles) continue;
-			ifstream inStream( getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile+j ) );
+			ifstream inStream( getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", iFile+j ).c_str() );
 			ProcessKmerHashFile( &inStream, khashmaps[j] );
 			#pragma omp critical
 			{
@@ -293,16 +293,21 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, con
 
 		pair<int, hint_t > it = make_pair( -1, BLOBKMER_UNDEFINED );
 
-		//int i = readno;
-		//cout << "  pr " << i << " start=" << Globals::pr->at(i).start() << "\tsize=" << Globals::pr->at(i).size() << "\trevPos=" << Globals::revPos << "\trc=" << Globals::pr->at(i).getRCBitString() << "\t" << Globals::pr->at(i).getRCBit(0) << endl;
+		int i = readno;
+		cout << "  pr " << i << " start=" << Globals::pr->at(i).start() << "\tsize=" << Globals::pr->at(i).size() << "\trevPos=" << Globals::revPos << "\trc=" << Globals::pr->at(i).getRCBitString() << "\t" << kmers.size() << endl;
 
 		while ( (it = pr.nextKMerNo(it.first)).first > -1 ) {
+			cout << "   next kmer = " << it.first << "\t" << it.second << endl;
+			cout << "   " << kmers[it.second]->first.str() << "\t" << kmers[it.second]->second.isGoodForIterative() << "\t" << kmers[it.second]->second.changeto << endl;
 			kmer_indices[it.first] = it.second;
 			if ( kmers[it.second]->second.isGoodForIterative() ) {
 				for ( size_t j = it.first; j < it.first + K; ++j )
 					covered_by_solid[j] = true;
 			}
+			cout << "   covered" << endl;
 		}
+
+		cout << "  kmers over" << endl;
 
 		bool isGood = true;
 		for ( size_t j = 0; j < read_size; ++j ) {
@@ -312,11 +317,13 @@ hint_t HammerTools::IterativeExpansionStep(int expand_iter_no, int nthreads, con
 
 		// ok, now we're sure that everything is covered
 		// first, set this read as already done
+		cout << "  read " << readno << " out of " << Globals::pr->size() << " is done!" << endl;
 		Globals::pr->at(readno).done();
 
 		// second, mark all k-mers as solid
 		for (size_t j = 0; j < read_size; ++j) {
 			if ( kmer_indices[j] == (hint_t)-1 ) continue;
+			cout << "    marking kmer " << kmer_indices[j] << " out of " << kmers.size() << " as good for iterative" << endl;
 			if ( !kmers[kmer_indices[j]]->second.isGoodForIterative() &&
 				 !kmers[kmer_indices[j]]->second.isMarkedGoodForIterative() ) {
 				#pragma omp critical
@@ -536,7 +543,7 @@ hint_t HammerTools::CorrectAllReads() {
 
 void HammerTools::ReadKmerNosFromFile( const string & fname, vector<hint_t> *kmernos ) {
 	kmernos->clear();
-	ifstream ifs(fname);
+	ifstream ifs(fname.c_str());
 	char buf[16000];
 	hint_t pos;
 	while (!ifs.eof()) {
@@ -550,7 +557,7 @@ void HammerTools::ReadKmerNosFromFile( const string & fname, vector<hint_t> *kme
 void HammerTools::ReadKmersAndNosFromFile( const string & fname, vector<KMerCount*> *kmers, vector<hint_t> *kmernos ) {
 	kmernos->clear();
 	kmers->clear();
-	ifstream ifs(fname);
+	ifstream ifs(fname.c_str());
 	char buf[16000];
 	while (!ifs.eof()) {
 		ifs.getline(buf, 16000);
