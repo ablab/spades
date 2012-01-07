@@ -642,6 +642,7 @@ private:
 	const Graph &graph_;
 	const SequenceMapper& mapper_;
 	Stream& stream_;
+	size_t processed_count_;
 
 	size_t CorrectLength(Path<EdgeId> path, size_t idx) {
 		size_t answer = graph_.length(path[idx]);
@@ -664,8 +665,8 @@ private:
 		for (size_t i = 0; i < path1.size(); ++i) {
 			int current_distance2 = current_distance1;
 			for (size_t j = 0; j < path2.size(); ++j) {
-				double weight = CorrectLength(path1, i)
-						* CorrectLength(path2, j);
+				double weight = 1./*CorrectLength(path1, i)
+						* CorrectLength(path2, j)*/;
 				PairInfo<EdgeId> new_info(path1[i], path2[j], current_distance2,
 						weight, 0.);
 				paired_index.AddPairInfo(new_info);
@@ -673,13 +674,16 @@ private:
 			}
 			current_distance1 -= graph_.length(path1[i]);
 		}
+		if (++processed_count_ % 100000 == 0) {
+			TRACE("Processed " << processed_count_ << " reads");
+		}
 	}
 
 public:
 
 	PairedIndexFiller(const Graph &graph, const SequenceMapper& mapper,
 			Stream& stream) :
-			graph_(graph), mapper_(mapper), stream_(stream) {
+			graph_(graph), mapper_(mapper), stream_(stream), processed_count_(0) {
 
 	}
 
@@ -697,6 +701,9 @@ public:
 			ProcessPairedRead(paired_index, p_r);
 		}
 	}
+
+private:
+	DECL_LOGGER("PairedIndexFiller");
 
 };
 

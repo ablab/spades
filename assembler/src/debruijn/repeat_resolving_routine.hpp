@@ -734,8 +734,11 @@ void resolve_repeats() {
 
 			io::ISCorruptingWrapper wrapped_jump_stream(jump_stream, 1e6);
 
-			FillPairedIndexWithReadCountMetric<K>(conj_gp.g, conj_gp.int_ids,
-					conj_gp.index, conj_gp.kmer_mapper, raw_jump_index,
+//			FillPairedIndexWithReadCountMetric<K>(conj_gp.g, conj_gp.int_ids,
+//					conj_gp.index, conj_gp.kmer_mapper, raw_jump_index,
+//					wrapped_jump_stream);
+			FillPairedIndex<K>(conj_gp.g,
+					conj_gp.index, raw_jump_index,
 					wrapped_jump_stream);
 
 			ConjugateDataPrinter<Graph> printer(conj_gp.g, conj_gp.int_ids);
