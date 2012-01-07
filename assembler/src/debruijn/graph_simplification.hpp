@@ -152,12 +152,37 @@ void BulgeRemoveWrap(NCGraph& g) {
 	RemoveBulges2(g);
 }
 
+size_t PrecountThreshold(Graph &g, double percentile){
+    INFO("Precounting Threshold...");
+    std::map<size_t, size_t> edge_map;
+    LengthComparator<Graph> comparator(g);
+
+    size_t sum = 0;
+
+    for (auto it = g.SmartEdgeBegin(comparator); !it.IsEnd(); ++it){
+        edge_map[(size_t) (10.*g.coverage(*it))]++;
+        sum++;
+    }
+
+    size_t i = 0;
+    size_t area = 0;
+    for (i = 0; area < (size_t) (percentile*sum); i++){
+        area += edge_map[i];
+    }
+    INFO("Threshold has been found " << (i*.1) << ", while the on in the config is " << cfg::get().simp.ec.max_coverage);
+
+    return i*.1;
+
+}
+
 template<class Graph>
 void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
 		size_t iteration_count, size_t i) {
 	INFO("-----------------------------------------");
 	INFO("Removing low coverage edges");
-	double max_coverage = cfg::get().simp.ec.max_coverage;
+	//double max_coverage = cfg::get().simp.ec.max_coverage;
+    size_t max_coverage = PrecountThreshold(g, cfg::get().simp.ec.threshold_percentile);
+
 	int max_length_div_K = cfg::get().simp.ec.max_length_div_K;
 	omnigraph::IterativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
 			max_length_div_K * g.k(), max_coverage / iteration_count * (i + 1),
@@ -374,6 +399,7 @@ void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 //	OutputWrongContigs<k, Graph>(gp.g, gp.index, gp.genome, 1000, "long_contigs.fasta");
 }
 
+
 template<size_t k>
 void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 		omnigraph::GraphLabeler<Graph>& tot_lab, size_t iteration_count,
@@ -396,6 +422,7 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 
 //	PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
 
+    
 	for (size_t i = 0; i < iteration_count; i++) {
 		SimplificationCycle(gp.g, edge_remover, removal_handler_f, printer,
 				iteration_count, i);
