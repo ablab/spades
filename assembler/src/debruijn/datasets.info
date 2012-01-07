@@ -137,10 +137,10 @@ HMP_LANE_4_BH ; old HMP_LANE_4
 
 HMP_LANE_7_BH ; old HMP_LANE_7
 {
-        first	HMP/lane_7/bhTODO/00.reads.left.corrected.fastq.gz
-        second	HMP/lane_7/bhTODO/00.reads.right.corrected.fastq.gz
-        single_first	HMP/lane_7/bhTODO/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/lane_7/bhTODO/00.reads.right.unpaired.fastq.gz
+        first	HMP/lane_7/bh20120701/00.reads.0.left.corrected.fastq
+        second	HMP/lane_7/bh20120701/00.reads.0.right.corrected.fastq
+        single_first	HMP/lane_7/bh20120701/00.reads.0.left.unpaired.fastq
+        single_second	HMP/lane_7/bh20120701/00.reads.0.right.unpaired.fastq
         RL              100
         IS              210
 	single_cell	true
@@ -149,10 +149,10 @@ HMP_LANE_7_BH ; old HMP_LANE_7
 
 HMP_LANE_8_BH ; old HMP_LANE_8
 {
-        first	HMP/lane_8/bhTODO/00.reads.left.corrected.fastq.gz
-        second	HMP/lane_8/bhTODO/00.reads.right.corrected.fastq.gz
-        single_first	HMP/lane_8/bhTODO/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/lane_8/bhTODO/00.reads.right.unpaired.fastq.gz
+        first	HMP/lane_8/bh20120701/00.reads.0.left.corrected.fastq
+        second	HMP/lane_8/bh20120701/00.reads.0.right.corrected.fastq
+        single_first	HMP/lane_8/bh20120701/00.reads.0.left.unpaired.fastq
+        single_second	HMP/lane_8/bh20120701/00.reads.0.right.unpaired.fastq
         RL              100
         IS              210
 	single_cell	true
