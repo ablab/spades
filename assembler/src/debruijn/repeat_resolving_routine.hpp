@@ -746,24 +746,24 @@ void resolve_repeats() {
 					jump_index);
 			resolve_with_jumps(conj_gp, clustered_index, jump_index);
 		} else {
-//			ConjugateDataScanner<Graph> scanner(conj_gp.g, conj_gp.int_ids);
-//			paired_info_index jump_index(conj_gp.g);
-//			scanner.loadPaired(cfg::get().output_dir + "../jump_cleared", jump_index);
-//			resolve_with_jumps(conj_gp, clustered_index, jump_index);
-
 			ConjugateDataScanner<Graph> scanner(conj_gp.g, conj_gp.int_ids);
-			paired_info_index raw_jump_index(conj_gp.g);
-			scanner.loadPaired(cfg::get().output_dir + "../jump_raw",
-					raw_jump_index);
-
 			paired_info_index jump_index(conj_gp.g);
-			prepare_jump_index(conj_gp.g, raw_jump_index, jump_index);
-
-			ConjugateDataPrinter<Graph> printer(conj_gp.g, conj_gp.int_ids);
-			printer.savePaired(cfg::get().output_dir + "jump_cleared",
-					jump_index);
-
+			scanner.loadPaired(cfg::get().output_dir + "../jump_cleared", jump_index);
 			resolve_with_jumps(conj_gp, clustered_index, jump_index);
+
+//			ConjugateDataScanner<Graph> scanner(conj_gp.g, conj_gp.int_ids);
+//			paired_info_index raw_jump_index(conj_gp.g);
+//			scanner.loadPaired(cfg::get().output_dir + "../jump_raw",
+//					raw_jump_index);
+//
+//			paired_info_index jump_index(conj_gp.g);
+//			prepare_jump_index(conj_gp.g, raw_jump_index, jump_index);
+//
+//			ConjugateDataPrinter<Graph> printer(conj_gp.g, conj_gp.int_ids);
+//			printer.savePaired(cfg::get().output_dir + "jump_cleared",
+//					jump_index);
+//
+//			resolve_with_jumps(conj_gp, clustered_index, jump_index);
 		}
 	}
 

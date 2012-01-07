@@ -784,6 +784,7 @@ private:
 	const SequenceMapper& mapper_;
 	io::IReader<io::PairedRead>& stream_;
 	WeightF weight_f_;
+	size_t processed_count_;
 
 	void ProcessPairedRead(omnigraph::PairedInfoIndex<Graph>& paired_index,
 			const io::PairedRead& p_r) {
@@ -812,13 +813,18 @@ private:
 								weight, 0.));
 			}
 		}
+
+		if (++processed_count_ % 100000 == 0) {
+			TRACE("Processed " << processed_count_ << " reads");
+		}
 	}
 
 public:
 
 	LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper,
 			io::IReader<io::PairedRead>& stream, WeightF weight_f) :
-			graph_(graph), mapper_(mapper), stream_(stream), weight_f_(weight_f) {
+			graph_(graph), mapper_(mapper), stream_(stream), weight_f_(weight_f),
+			processed_count_(0) {
 
 	}
 
@@ -835,6 +841,8 @@ public:
 		}
 	}
 
+private:
+	DECL_LOGGER("LatePairedIndexFiller");
 };
 
 /**
