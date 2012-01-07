@@ -753,14 +753,15 @@ class JumpingNormilizerFunction {
 private:
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph& graph_;
+	size_t read_length_;
 	size_t max_norm_;
 
 public:
-	JumpingNormilizerFunction(const Graph& graph, size_t max_norm) : graph_(graph), max_norm_(max_norm) {
+	JumpingNormilizerFunction(const Graph& graph, size_t read_length, size_t max_norm) : graph_(graph), read_length_(read_length), max_norm_(max_norm) {
 	}
 
 	size_t norm(EdgeId first, EdgeId second) const {
-		return std::min(std::min(graph_.length(first), graph_.length(second)), max_norm_) + graph_.k();
+		return std::min(std::min(graph_.length(first), graph_.length(second)), max_norm_) + read_length_ - graph_.k();
 	}
 
 	const PairInfo<EdgeId> operator()(const PairInfo<EdgeId>& pair_info) const {

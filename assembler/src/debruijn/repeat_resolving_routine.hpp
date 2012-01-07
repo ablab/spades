@@ -725,7 +725,7 @@ void resolve_repeats() {
 			paired_info_index clustered_jump_index(conj_gp.g);
 			estimator.Estimate(clustered_index);
 
-			JumpingNormilizerFunction<Graph> nf(conj_gp.g, 500);
+			JumpingNormilizerFunction<Graph> nf(conj_gp.g, cfg::get().ds.RL, 500);
 			PairedInfoNormalizer<Graph> normalizer(clustered_jump_index, nf);
 			paired_info_index normalized_jump_index(conj_gp.g);
 			normalizer.FillNormalizedIndex(normalized_jump_index);
