@@ -135,8 +135,8 @@ void SelectReadsForConsensusBefore(graph_pack& etalon_gp,
 					(*mapped_reads[ContigNumber(contigNumbers, res[ii],
 							cur_graph)]) << cur_read.sequence();
 				else
-					WARN(
-							"No edges containing" <<etalon_gp.int_ids.ReturnIntId(res[ii]));
+				WARN(
+						"No edges containing" <<etalon_gp.int_ids.ReturnIntId(res[ii]));
 			}
 		}
 	}
@@ -195,8 +195,8 @@ void SelectReadsForConsensus(graph_pack& etalon_gp,
 						(*mapped_reads[ContigNumber(contigNumbers, *iter,
 								cur_graph)]) << cur_read.sequence();
 					else
-						WARN(
-								"No edges containing" <<etalon_gp.int_ids.ReturnIntId(res[ii]));
+					WARN(
+							"No edges containing" <<etalon_gp.int_ids.ReturnIntId(res[ii]));
 			}
 		}
 	}
@@ -254,12 +254,12 @@ void ProduceResolvedPairedInfo(
 		graph_pack& resolved_gp,
 		EdgeLabelHandler<typename graph_pack::graph_t>& labels_after,
 		PairedInfoIndex<typename graph_pack::graph_t>& resolved_graph_paired_info) {
-		INFO("Generating paired info for resolved graph");
-		ResolvedGraphPairInfoCounter<typename graph_pack::graph_t> resolved_graph_paired_info_counter(
+	INFO("Generating paired info for resolved graph");
+	ResolvedGraphPairInfoCounter<typename graph_pack::graph_t> resolved_graph_paired_info_counter(
 			origin_gp.g, clustered_index, resolved_gp.g, labels_after);
-		resolved_graph_paired_info_counter.FillResolvedGraphPairedInfo(
+	resolved_graph_paired_info_counter.FillResolvedGraphPairedInfo(
 			resolved_graph_paired_info);
-		INFO("Generating paired info for resolved graph");
+	INFO("Generating paired info for resolved graph");
 }
 
 template<class graph_pack>
@@ -444,7 +444,6 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //
 //		OutputContigs(resolved_gp.g,
 //				cfg::get().output_dir + "contigs_final.fasta");
-
 	}
 }
 
@@ -602,9 +601,23 @@ void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 void resolve_with_jumps(conj_graph_pack& gp, PairedInfoIndex<Graph>& index,
 		const paired_info_index& jump_index) {
 	VERIFY(cfg::get().andrey_params.write_contigs);
-	resolve_repeats_ml(gp, index,
-			cfg::get().output_dir + "jump_resolve/",
-			cfg::get().andrey_params, boost::optional<const paired_info_index&>(jump_index));
+	resolve_repeats_ml(gp, index, cfg::get().output_dir + "jump_resolve/",
+			cfg::get().andrey_params,
+			boost::optional<const paired_info_index&>(jump_index));
+}
+
+void prepare_jump_index(const Graph& g, const paired_info_index& raw_jump_index, paired_info_index& jump_index) {
+	JumpingEstimator<Graph> estimator(raw_jump_index);
+	paired_info_index clustered_jump_index(g);
+	estimator.Estimate(clustered_jump_index);
+
+	JumpingNormilizerFunction<Graph> nf(g, cfg::get().ds.RL, 500);
+	PairedInfoNormalizer<Graph> normalizer(clustered_jump_index, nf);
+	paired_info_index normalized_jump_index(g);
+	normalizer.FillNormalizedIndex(normalized_jump_index);
+
+	JumpingPairInfoChecker<Graph> filter(g, 300, 100, 100);
+	filter.Filter(normalized_jump_index, jump_index);
 }
 
 void resolve_repeats() {
@@ -694,12 +707,17 @@ void resolve_repeats() {
 		if (!load_jump) {
 			VERIFY(
 					cfg::get().ds.jumping_first && cfg::get().ds.jumping_second && cfg::get().ds.jump_is);
-			checkFileExistenceFATAL(cfg::get().input_dir + (*cfg::get().ds.jumping_first));
-			checkFileExistenceFATAL(cfg::get().input_dir + (*cfg::get().ds.jumping_second));
+			checkFileExistenceFATAL(
+					cfg::get().input_dir + (*cfg::get().ds.jumping_first));
+			checkFileExistenceFATAL(
+					cfg::get().input_dir + (*cfg::get().ds.jumping_second));
 			paired_info_index raw_jump_index(conj_gp.g);
 			io::PairedEasyReader jump_stream(
-					make_pair(cfg::get().input_dir + (*cfg::get().ds.jumping_first),
-							cfg::get().input_dir + (*cfg::get().ds.jumping_second)),
+					make_pair(
+							cfg::get().input_dir
+									+ (*cfg::get().ds.jumping_first),
+							cfg::get().input_dir
+									+ (*cfg::get().ds.jumping_second)),
 					*cfg::get().ds.jump_is, true);
 
 //			cout << "eof " << jump_stream.eof() << endl;
@@ -721,18 +739,8 @@ void resolve_repeats() {
 			printer.savePaired(cfg::get().output_dir + "jump_raw",
 					raw_jump_index);
 
-			JumpingEstimator<Graph> estimator(raw_jump_index);
-			paired_info_index clustered_jump_index(conj_gp.g);
-			estimator.Estimate(clustered_index);
-
-			JumpingNormilizerFunction<Graph> nf(conj_gp.g, cfg::get().ds.RL, 500);
-			PairedInfoNormalizer<Graph> normalizer(clustered_jump_index, nf);
-			paired_info_index normalized_jump_index(conj_gp.g);
-			normalizer.FillNormalizedIndex(normalized_jump_index);
-
-			JumpingPairInfoChecker<Graph> filter(conj_gp.g, 300, 100, 100);
- 			paired_info_index jump_index(conj_gp.g);
-			filter.Filter(raw_jump_index, jump_index);
+			paired_info_index jump_index(conj_gp.g);
+			prepare_jump_index(conj_gp.g, raw_jump_index, jump_index);
 
 			printer.savePaired(cfg::get().output_dir + "jump_cleared",
 					jump_index);
@@ -742,13 +750,18 @@ void resolve_repeats() {
 //			paired_info_index jump_index(conj_gp.g);
 //			scanner.loadPaired(cfg::get().output_dir + "../jump_cleared", jump_index);
 //			resolve_with_jumps(conj_gp, clustered_index, jump_index);
+
 			ConjugateDataScanner<Graph> scanner(conj_gp.g, conj_gp.int_ids);
 			paired_info_index raw_jump_index(conj_gp.g);
-			scanner.loadPaired(cfg::get().output_dir + "../jump_raw", raw_jump_index);
+			scanner.loadPaired(cfg::get().output_dir + "../jump_raw",
+					raw_jump_index);
 
-			JumpingPairInfoChecker<Graph> filter(conj_gp.g, 300, 100, 100);
 			paired_info_index jump_index(conj_gp.g);
-			filter.Filter(raw_jump_index, jump_index);
+			prepare_jump_index(conj_gp.g, raw_jump_index, jump_index);
+
+			ConjugateDataPrinter<Graph> printer(conj_gp.g, conj_gp.int_ids);
+			printer.savePaired(cfg::get().output_dir + "jump_cleared",
+					jump_index);
 
 			resolve_with_jumps(conj_gp, clustered_index, jump_index);
 		}
