@@ -480,7 +480,7 @@ void WriteComponents(
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
 	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
 	ReliableSplitter<Graph> inner_splitter(g, 60, split_edge_length);
-	ComponentSizeFilter<Graph> checker(g, split_edge_length, 0);
+	ComponentSizeFilter<Graph> checker(g, split_edge_length, 2);
 	WriteComponents<Graph>(g, inner_splitter, checker, graph_name, file_name,
 			coloring, labeler);
 }
