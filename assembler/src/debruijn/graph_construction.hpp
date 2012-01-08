@@ -55,16 +55,16 @@ void FillPairedIndexWithProductMetric(const Graph &g, const IdTrackHandler<Graph
 	INFO("Paired info with product weight counted");
 }
 
-template<size_t k, class ReadStream>
+template<size_t k>
 void FillPairedIndex(const Graph &g, const EdgeIndex<k + 1, Graph>& index
 		, PairedInfoIndex<Graph>& paired_info_index,
-		ReadStream& stream) {
+		io::IReader<io::PairedRead>& stream) {
 	typedef SimpleSequenceMapper<k + 1, Graph> SequenceMapper;
 	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Counting paired info");
 	SequenceMapper mapper(g, index);
-	PairedIndexFiller<k + 1, Graph, SequenceMapper, ReadStream> pif(g, mapper,
+	PairedIndexFiller<k + 1, Graph, SequenceMapper> pif(g, mapper,
 			stream);
 	pif.FillIndex(paired_info_index);
 	INFO("Paired info counted");
@@ -125,9 +125,9 @@ void FillCoverage(Graph& g, SingleReadStream& stream,
 	INFO("Coverage counted");
 }
 
-template<size_t k, class ReadStream>
+template<size_t k>
 void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
-ReadStream& stream) {
+		io::IReader<io::SingleRead>& stream) {
 	typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;
 	INFO("-----------------------------------------");
 	INFO("Constructing DeBruijn graph");

@@ -849,14 +849,14 @@ private:
  * This class finds how certain _paired_ read is mapped to genome. As it is now it is hoped to work correctly only if read
  * is mapped to graph ideally and in unique way.
  */
-template<size_t k, class Graph, class Stream>
+template<size_t k, class Graph>
 class TemplateReadMapper {
 public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef EdgeIndex<k + 1, Graph> Index;
 private:
 	SimpleSequenceMapper<k, Graph> read_seq_mapper;
-	Stream& stream_;
+	io::IReader<io::SingleRead>& stream_;
 public:
 	/**
 	 * Creates TemplateReadMapper for given graph. Also requires index_ which should be synchronized
@@ -864,7 +864,7 @@ public:
 	 * @param g graph sequences should be mapped to
 	 * @param index index syncronized with graph
 	 */
-	TemplateReadMapper(const Graph& g, const Index& index, Stream & stream) :
+	TemplateReadMapper(const Graph& g, const Index& index, io::IReader<io::SingleRead>& stream) :
 			read_seq_mapper(g, index), stream_(stream) {
 		stream_.reset();
 	}

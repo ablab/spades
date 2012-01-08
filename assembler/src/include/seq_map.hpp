@@ -9,6 +9,7 @@
 #define SEQ_MAP_HPP_
 
 #include "io/single_read.hpp"
+#include "io/reader.hpp"
 #include "sequence/sequence.hpp"
 #include "sequence/seq.hpp"
 #include "cuckoo.hpp"
@@ -108,16 +109,14 @@ public:
 		#endif
 	}
 
-	template<class ReadStream>
-	SeqMap(ReadStream &stream) {
-		Fill<ReadStream>(stream);
+	SeqMap(io::IReader<io::SingleRead> &stream) {
+		Fill(stream);
 		#ifdef USE_SPARSEHASH
 			deleted_key_is_defined = false;
 		#endif
 	}
 
-	template<class ReadStream>
-	size_t Fill(ReadStream &stream) {
+	size_t Fill(io::IReader<io::SingleRead> &stream) {
 		size_t counter = 0;
 		io::SingleRead r;
 		while (!stream.eof()) {

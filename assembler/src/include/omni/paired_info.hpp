@@ -633,7 +633,7 @@ public:
 	}
 };
 
-template<size_t k, class Graph, class SequenceMapper, class Stream>
+template<size_t k, class Graph, class SequenceMapper>
 class PairedIndexFiller {
 private:
 	typedef typename Graph::EdgeId EdgeId;
@@ -641,7 +641,7 @@ private:
 
 	const Graph &graph_;
 	const SequenceMapper& mapper_;
-	Stream& stream_;
+	io::IReader<io::PairedRead>& stream_;
 	size_t processed_count_;
 
 	size_t CorrectLength(Path<EdgeId> path, size_t idx) {
@@ -665,8 +665,8 @@ private:
 		for (size_t i = 0; i < path1.size(); ++i) {
 			int current_distance2 = current_distance1;
 			for (size_t j = 0; j < path2.size(); ++j) {
-				double weight = 1./*CorrectLength(path1, i)
-						* CorrectLength(path2, j)*/;
+				double weight = CorrectLength(path1, i)
+						* CorrectLength(path2, j);
 				PairInfo<EdgeId> new_info(path1[i], path2[j], current_distance2,
 						weight, 0.);
 				paired_index.AddPairInfo(new_info);
@@ -682,7 +682,7 @@ private:
 public:
 
 	PairedIndexFiller(const Graph &graph, const SequenceMapper& mapper,
-			Stream& stream) :
+			io::IReader<io::PairedRead>& stream) :
 			graph_(graph), mapper_(mapper), stream_(stream), processed_count_(0) {
 
 	}
