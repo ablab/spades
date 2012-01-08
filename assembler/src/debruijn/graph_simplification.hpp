@@ -169,7 +169,7 @@ size_t PrecountThreshold(Graph &g, double percentile){
     for (i = 0; area < (size_t) (percentile*sum); i++){
         area += edge_map[i];
     }
-    INFO("Threshold has been found " << (i*.1) << ", while the on in the config is " << cfg::get().simp.ec.max_coverage);
+    INFO("Threshold has been found " << (i*.1) << ", while the one in the config is " << cfg::get().simp.ec.max_coverage);
 
     return i*.1;
 
@@ -177,11 +177,10 @@ size_t PrecountThreshold(Graph &g, double percentile){
 
 template<class Graph>
 void RemoveLowCoverageEdges(Graph &g, EdgeRemover<Graph>& edge_remover,
-		size_t iteration_count, size_t i) {
+		size_t iteration_count, size_t i, double max_coverage) {
 	INFO("-----------------------------------------");
 	INFO("Removing low coverage edges");
 	//double max_coverage = cfg::get().simp.ec.max_coverage;
-    size_t max_coverage = PrecountThreshold(g, cfg::get().simp.ec.threshold_percentile);
 
 	int max_length_div_K = cfg::get().simp.ec.max_length_div_K;
 	omnigraph::IterativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(g,
@@ -344,14 +343,14 @@ void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 	INFO("BulgeRemoval stats");
 
 	INFO("Early ErroneousConnectionsRemoval");
-	RemoveLowCoverageEdges(graph, edge_remover, iteration_count, 0);
+	//RemoveLowCoverageEdges(graph, edge_remover, iteration_count, 0);
 	INFO("ErroneousConnectionsRemoval stats");
 }
 
 void SimplificationCycle(Graph &graph, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
 		detail_info_printer &printer, size_t iteration_count,
-		size_t iteration) {
+		size_t iteration, double max_coverage) {
 	INFO("-----------------------------------------");
 	INFO("Iteration " << iteration);
 
@@ -361,7 +360,7 @@ void SimplificationCycle(Graph &graph, EdgeRemover<Graph> &edge_remover,
 	printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
 	INFO(iteration << " ErroneousConnectionsRemoval");
-	RemoveLowCoverageEdges(graph, edge_remover, iteration_count, iteration);
+	RemoveLowCoverageEdges(graph, edge_remover, iteration_count, iteration, max_coverage);
 	INFO(iteration << " ErroneousConnectionsRemoval stats");
 	printer(ipp_err_con_removal, str(format("_%d") % iteration));
 
@@ -420,12 +419,13 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 	EdgeRemover<Graph> edge_remover(gp.g,
 			cfg::get().simp.removal_checks_enabled, removal_handler_f);
 
-//	PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
+	if (cfg::get().ds.single_cell) PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
+    double max_coverage = PrecountThreshold(gp.g, cfg::get().simp.ec.threshold_percentile);
 
     
 	for (size_t i = 0; i < iteration_count; i++) {
 		SimplificationCycle(gp.g, edge_remover, removal_handler_f, printer,
-				iteration_count, i);
+				iteration_count, i, max_coverage);
 	}
 
 	PostSimplification(gp.g, edge_remover, removal_handler_f, printer);
