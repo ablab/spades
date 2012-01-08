@@ -335,6 +335,12 @@ struct debruijn_config
        bool		save_full_graph;
 	};
 
+	struct jump_cfg
+	{
+		bool load;
+		double weight_threshold;
+	};
+
 	typedef map<info_printer_pos, info_printer> info_printers_t;
 
 
@@ -374,6 +380,7 @@ public:
 	dataset                     ds;
 	position_handler            pos;
 	gap_closer                  gc;
+	jump_cfg                  	jump;
 
 	info_printers_t info_printers;
 };
@@ -591,6 +598,14 @@ inline void load(debruijn_config::info_printers_t& printers, boost::property_tre
     }
 }
 
+inline void load(debruijn_config::jump_cfg& jump, boost::property_tree::ptree const& pt, bool complete)
+{
+	using config_common::load;
+
+	load(jump.load, pt, "load");
+	load(jump.weight_threshold, pt, "weight_threshold");
+}
+
 // main debruijn config load function
 inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bool complete)
 {
@@ -645,6 +660,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 	load(cfg.simp, pt, (cfg.ds.single_cell ? "sc_simplification" : "usual_simplification"));
 	load(cfg.info_printers, pt, "info_printers");
+	load(cfg.jump, pt, "jump");
 
 	load_reference_genome(cfg.ds, cfg.input_dir);
 }

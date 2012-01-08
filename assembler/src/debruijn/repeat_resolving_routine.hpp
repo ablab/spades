@@ -706,8 +706,8 @@ void resolve_repeats() {
 
 	//todo magic constants!!!
 	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_jump) {
-		bool load_jump = true;
-		if (!load_jump) {
+		if (!cfg::get().jump.load) {
+			INFO("Going to count jumping paired info");
 			VERIFY(
 					cfg::get().ds.jumping_first && cfg::get().ds.jumping_second && cfg::get().ds.jump_is);
 			checkFileExistenceFATAL(

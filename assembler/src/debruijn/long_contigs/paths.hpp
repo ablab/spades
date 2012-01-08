@@ -476,7 +476,10 @@ void GrowSeed(const Graph& g, BidirectionalPath& seed, PairedInfoIndices& paired
 
 		RecountDetectorForward(g, seed, pairedInfo, detector);
 
-		JumpingHero<Graph> forward_hero(g, seed, jump_index, 2000, 3500, true, 0.05);
+		VERIFY(cfg::get().jump.weight_threshold > 0. && cfg::get().jump.weight_threshold < 10.);
+
+		JumpingHero<Graph> forward_hero(g, seed, jump_index, 2000, 3500
+				, true, cfg::get().jump.weight_threshold);
 
 		while (ExtendPathForward(g, seed, lengths, detector, pairedInfo,
 				handler, forward_hero)) {
@@ -492,7 +495,8 @@ void GrowSeed(const Graph& g, BidirectionalPath& seed, PairedInfoIndices& paired
 
 		RecountDetectorBackward(g, seed, pairedInfo, detector);
 
-		JumpingHero<Graph> backward_hero(g, seed, jump_index, 2000, 3500, false, 0.05);
+		JumpingHero<Graph> backward_hero(g, seed, jump_index, 2000, 3500
+				, false, cfg::get().jump.weight_threshold);
 
 		while (ExtendPathBackward(g, seed, lengths, detector, pairedInfo,
 				handler, backward_hero)) {
