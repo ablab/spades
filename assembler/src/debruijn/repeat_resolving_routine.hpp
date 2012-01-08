@@ -714,7 +714,7 @@ void resolve_repeats() {
 					cfg::get().input_dir + (*cfg::get().ds.jumping_first));
 			checkFileExistenceFATAL(
 					cfg::get().input_dir + (*cfg::get().ds.jumping_second));
-			paired_info_index raw_jump_index(conj_gp.g);
+			paired_info_index raw_jump_index(conj_gp.g, 1000.);
 			io::PairedEasyReader jump_stream(
 					make_pair(
 							cfg::get().input_dir
