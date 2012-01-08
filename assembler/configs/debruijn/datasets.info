@@ -638,7 +638,7 @@ X5_A_QUAKE
 	single_first	x5/left.cor_single.fastq
 	single_second	x5/right.cor_single.fastq
 	RL	100
-	IS	300     ;TODO
+	IS	175     
 	single_cell	false
 	reference_genome	N/A
 }
@@ -650,7 +650,7 @@ X5_B_QUAKE
 	single_first	x5/left_l.cor_single.fastq
 	single_second	x5/right_l.cor_single.fastq
 	RL	100
-	IS 	300	;TODO
+	IS 	280	
 	single_cell	false
 	reference_genome	N/A
 }
