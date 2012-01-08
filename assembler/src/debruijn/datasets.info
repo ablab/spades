@@ -111,6 +111,21 @@ HMP_LANE_2_BH ; old HMP_LANE_2
         reference_genome	N/A
 }
 
+HMP_LANE_2_JUMPING_BH ; new HMP_LANE_2
+{
+        first   HMP/lane_2_jumping/bh20111202/00.reads.left.short.corrected.fastq.gz
+        second  HMP/lane_2_jumping/bh20111202/00.reads.right.short.corrected.fastq.gz
+        single_first    HMP/lane_2_jumping/bh20111202/00.reads.left.short.unpaired.fastq.gz
+        single_second   HMP/lane_2_jumping/bh20111202/00.reads.right.short,unpaired.fastq.gz
+        jumping_first    HMP/lane_2_jumping/bh20111202/00.reads.left.long.corrected.fastq.gz
+        jumping_second   HMP/lane_2_jumping/bh20111202/00.reads.right.long.corrected.fastq.gz
+
+        RL              100
+        IS              210
+        single_cell     true
+        reference_genome        N/A
+}
+
 HMP_LANE_3_BH ; old HMP_LANE_3
 {
         first	HMP/lane_3/bh20111205/00.reads.left.corrected.fastq.gz
