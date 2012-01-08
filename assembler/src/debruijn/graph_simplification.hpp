@@ -153,6 +153,10 @@ void BulgeRemoveWrap(NCGraph& g) {
 }
 
 size_t PrecountThreshold(Graph &g, double percentile){
+	if (percentile == 0) {
+		INFO("Used manual value of erroneous connections coverage threshold.");
+		return cfg::get().simp.ec.max_coverage;
+	}
     INFO("Precounting Threshold...");
     std::map<size_t, size_t> edge_map;
     LengthComparator<Graph> comparator(g);
