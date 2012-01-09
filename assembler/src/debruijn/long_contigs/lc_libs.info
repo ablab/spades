@@ -290,7 +290,7 @@ QUAKE_FULL
     param_set        multicell
     
         
-    reference_genome  ./data/input/E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+    reference_genome  ./data/input/E.coli/MG1655-K12.fasta.gz
 	length			  4639675  
     
     real_libs {

@@ -21,18 +21,21 @@ int main() {
 	checkFileExistenceFATAL(lc_cfg_filename);
 	checkFileExistenceFATAL(debruijn_graph::cfg_filename);
 
+	std::cerr << "!!!\n";
 
     Sequence genome = long_contigs::load_genome();
 	conj_graph_pack gp(genome);
 
+	std::cerr << "!!!\n";
+
 	Graph& g = gp.g;
-	EdgeIndex<K + 1, Graph> index(g);
-	IdTrackHandler<Graph> intIds(g);
+	EdgeIndex<K + 1, Graph>& index = gp.index;
+	IdTrackHandler<Graph>& intIds = gp.int_ids;
 	PairedInfoIndex<Graph> pairedIndex(g, 0);
 	PairedInfoIndices pairedInfos;
-	KmerMapper<K+1, Graph> mapper(g);
+	KmerMapper<K+1, Graph>& mapper = gp.kmer_mapper;
 
-
+	std::cerr << "!!!\n";
 
 	LoadFromFile(lc_cfg::get().ds.graph_file, g, intIds, mapper);
 
