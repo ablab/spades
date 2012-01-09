@@ -45,6 +45,72 @@ TEMPLATE_DATASET
 }
 
 
+ECOLI_JCVI_BIG_JUMP_BH
+{
+    graph_file       ./data/debruijn/ECOLI_JCVI_BIG_JUMP_BH/K55/jump/distance_estimation
+
+    param_set        singlecell
+
+    reference_genome  ./data/input/E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+    length                    4639675
+
+    real_libs {
+            count 1
+
+            item_0
+            {
+                read_size     100
+                insert_size   210
+                de_delta      40
+                is_delta      3
+                var           10
+
+                precounted       true
+                precounted_path  ./data/debruijn/ECOLI_JCVI_BIG_JUMP_BH/K55/jump/distance_estimation 
+
+                first            .
+                second           .
+
+                has_advanced     false
+                advanced         .
+
+                has_raw          false
+                raw              .
+            }
+
+            item_1
+            {
+                read_size     100
+                insert_size   3000
+                de_delta      500
+                is_delta      100
+                var           500
+
+                precounted       true
+                precounted_path  ./data/debruijn/ECOLI_JCVI_BIG_JUMP_BH/K55/jump/jump_raw_normal
+
+                first            .
+                second           .
+
+                has_advanced     false
+                advanced         .
+
+                has_raw          false
+                raw              .
+            }
+    }
+    etalon_libs {
+        count     0
+
+            item_0
+            {
+                read_size    100
+                insert_size  200
+                delta        15
+            }
+        }
+}
+
 
 HMP1
 {
