@@ -248,9 +248,9 @@ void AddEtalonInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, KmerMapper<k+1,
 }
 
 template<size_t k>
-void AddRealInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds, PairedInfoIndices& pairedInfos, KmerMapper<k+1, Graph>& mapper,
+void AddRealInfo(Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Graph>& conj_IntIds, PairedInfoIndices& pairedInfos, KmerMapper<k+1, Graph>& mapper,
 		bool useNewMetrics) {
-	PairedInfoSimpleSymmertrizer sym(g);
+	//PairedInfoSimpleSymmertrizer sym(g);
 
 	for (auto rl = lc_cfg::get().ds.paired_lib.begin(); rl != lc_cfg::get().ds.paired_lib.end(); ++rl) {
 		size_t insertSize = rl->insert_size;
@@ -265,7 +265,7 @@ void AddRealInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Gr
 
 		if (rl->precounted && !lc_cfg::get().paired_info_only) {
 			//Reading saved paired info
-			typename ScannerTraits<Graph>::Scanner scanner(g, conj_IntIds);
+		    typename ScannerTraits<Graph>::Scanner scanner(g, conj_IntIds);
 			ScanPairedIndex(rl->precounted_path, scanner, *pairedInfos.back().pairedInfoIndex);
 			CheckPairedInfo(g, *pairedInfos.back().pairedInfoIndex, insertSize - 2 * readSize + K);
 
@@ -303,9 +303,9 @@ void AddRealInfo(const Graph& g, EdgeIndex<k+1, Graph>& index, IdTrackHandler<Gr
 		}
 		INFO("Done");
 
-		if (lc_cfg::get().syminfo) {
-			sym.MakeSymmetricInfo(pairedInfos.back());
-		}
+//		if (lc_cfg::get().syminfo) {
+//			sym.MakeSymmetricInfo(pairedInfos.back());
+//		}
 	}
 }
 

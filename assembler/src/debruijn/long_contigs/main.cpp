@@ -21,7 +21,11 @@ int main() {
 	checkFileExistenceFATAL(lc_cfg_filename);
 	checkFileExistenceFATAL(debruijn_graph::cfg_filename);
 
-	Graph g(K);
+
+    Sequence genome = long_contigs::load_genome();
+	conj_graph_pack gp(genome);
+
+	Graph& g = gp.g;
 	EdgeIndex<K + 1, Graph> index(g);
 	IdTrackHandler<Graph> intIds(g);
 	PairedInfoIndex<Graph> pairedIndex(g, 0);
@@ -29,7 +33,6 @@ int main() {
 	KmerMapper<K+1, Graph> mapper(g);
 
 
-	Sequence genome = long_contigs::load_genome();
 
 	LoadFromFile(lc_cfg::get().ds.graph_file, g, intIds, mapper);
 
@@ -81,7 +84,7 @@ int main() {
 		}
 	}
 
-	resolve_repeats_ml(g, pairedInfos, genome, output_dir, lc_cfg::get().params);
+	resolve_repeats_ml(gp, pairedInfos, output_dir, lc_cfg::get().params);
 
 	return 0;
 }
