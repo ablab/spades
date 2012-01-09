@@ -51,7 +51,7 @@ ECOLI_JCVI_BIG_JUMP_BH
 
     param_set        singlecell
 
-    reference_genome  ./data/input/E.Coli.K12.MG1655/MG1655-K12.fasta.gz
+    reference_genome  ./data/input/E.coli/MG1655-K12.fasta.gz
     length                    4639675
 
     real_libs {
