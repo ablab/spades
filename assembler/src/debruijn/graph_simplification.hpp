@@ -424,8 +424,10 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 			cfg::get().simp.removal_checks_enabled, removal_handler_f);
 
 	if (cfg::get().ds.single_cell) PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
-    double max_coverage = PrecountThreshold(gp.g, cfg::get().simp.ec.threshold_percentile);
 
+	double max_coverage = cfg::get().simp.ec.threshold_percentile
+			? PrecountThreshold(gp.g, *cfg::get().simp.ec.threshold_percentile)
+			: cfg::get().simp.ec.max_coverage;
     
 	for (size_t i = 0; i < iteration_count; i++) {
 		SimplificationCycle(gp.g, edge_remover, removal_handler_f, printer,
