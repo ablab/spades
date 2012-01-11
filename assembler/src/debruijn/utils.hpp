@@ -1082,10 +1082,10 @@ public:
 		EdgeId edge = index_.get(kp1mer_).first;
 		set<VertexId> result_set;
 		cf.run(this->graph().EdgeStart(edge));
-		vector<VertexId> result_start = cf.VisitedVertices();
+		vector<VertexId> result_start = cf.ReachedVertices();
 		result_set.insert(result_start.begin(), result_start.end());
 		cf.run(this->graph().EdgeEnd(edge));
-		vector<VertexId> result_end = cf.VisitedVertices();
+		vector<VertexId> result_end = cf.ReachedVertices();
 		result_set.insert(result_end.begin(), result_end.end());
 		finished_ = true;
 		vector<VertexId> result;

@@ -25,6 +25,8 @@ private:
 	const Graph &graph_;
 	bool finished_;
 	map<VertexId, distance_t> distances_;
+	set<VertexId> processed_vertices_;
+
 protected:
 	const Graph& graph() {
 		return graph_;
@@ -121,6 +123,8 @@ public:
 			if (!CheckProcessVertex(vertex, distance)) {
 				TRACE("Check for processing vertex failed. Proceeding to the next queue entry.");
 				continue;
+			} else {
+				processed_vertices_.insert(vertex);
 			}
 
 			auto neighbours = Neighbours(vertex);
@@ -150,12 +154,16 @@ public:
 		TRACE("Finished dijkstra run from vertex " << start);
 	}
 
-	vector<VertexId> VisitedVertices() {
+	vector<VertexId> ReachedVertices() {
 		vector<VertexId> result;
 		for (auto it = distances_.begin(); it != distances_.end(); ++it) {
 			result.push_back(it->first);
 		}
 		return result;
+	}
+
+	const set<VertexId>& ProcessedVertices() {
+		return processed_vertices_;
 	}
 
 private:

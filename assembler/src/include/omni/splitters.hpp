@@ -129,14 +129,14 @@ public:
 	set<VertexId> FindComponent(VertexId start_vertex) {
 		ComponentFinder<Graph> cf(this->graph(), black_edges_);
 		cf.run(start_vertex);
-		vector < VertexId > result = cf.VisitedVertices();
+		vector < VertexId > result = cf.ReachedVertices();
 		return set<VertexId>(result.begin(), result.end());
 	}
 
 	set<VertexId> FindNeighbourhood(VertexId start, size_t bound) {
 		NeighbourhoodFinder<Graph> nf(this->graph(), black_edges_, bound);
 		nf.run(start);
-		vector < VertexId > result = nf.VisitedVertices();
+		vector < VertexId > result = nf.ReachedVertices();
 		return set<VertexId>(result.begin(), result.end());
 	}
 
@@ -255,7 +255,7 @@ public:
 		ShortEdgeComponentNeighbourhoodFinder<Graph> cf(this->graph(), bound_);
 		cf.run(next);
 		TRACE("Search finished");
-		vector < VertexId > result = cf.VisitedVertices();
+		vector < VertexId > result = cf.ReachedVertices();
 		for (auto it = result.begin(); it != result.end(); ++it) {
 			if (cf.GetDistance(*it) == 0) {
 				//				iterator_.erase(*it);
@@ -431,7 +431,7 @@ public:
 		cf.run(*current_);
 		TRACE("Search finished");
 		//TODO Refactor this!!!!
-		vector < VertexId > result_vector = cf.VisitedVertices();
+		vector < VertexId > result_vector = cf.ReachedVertices();
 		set < VertexId > result(result_vector.begin(), result_vector.end());
 		visited_.insert(result.begin(), result.end());
 		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
@@ -516,9 +516,9 @@ public:
 			start_processed_ = true;
 		}
 		TRACE("Search finished");
-		vector < VertexId > result = cf.VisitedVertices();
+		set<VertexId> last_component = cf.ProcessedVertices();
 		last_component_.clear();
-		last_component_.insert(result.begin(), result.end());
+		last_component_.insert(last_component.begin(), last_component.end());
 
 		TRACE("Component vector filled");
 		size_t prev_index = current_index_;
@@ -572,7 +572,7 @@ public:
 		cf.run(next);
 
 		TRACE("comp Finder finished");
-		vector < VertexId > result = cf.VisitedVertices();
+		vector < VertexId > result = cf.ReachedVertices();
 		for (auto it = result.begin(); it != result.end(); ++it) {
 			queue_.erase(*it);
 		}
