@@ -28,23 +28,7 @@ etalon_graph_mode false
 ; iterative mode switcher, activates additional contigs usage
 use_additional_contigs false
 
-; use single r
-sc_rr
-{
-	symmetric_resolve true
-	mode		2 ; Additional resolve cheats, don't change if you are not sure
-	inresolve_cutoff_proportion 0.1
-	near_vertex  30
-}
-
-usual_rr
-{
-	symmetric_resolve true
-	mode		3 ; Additional resolve cheats, don't change if you are not sure
-	inresolve_cutoff_proportion 0.5
-	near_vertex  30
-}
-eads if they are provided
+; use single reads if they are provided
 use_single_reads true
 
 ; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
@@ -53,22 +37,7 @@ paired_mode true
 ; set it true to get statistics, such as false positive/negative, perfect match, etc.
 paired_info_statistics false
 
-; use advancedsc_rr
-{
-	symmetric_resolve true
-	mode		2 ; Additional resolve cheats, don't change if you are not sure
-	inresolve_cutoff_proportion 0.1
-	near_vertex  30
-}
-
-mc_rr
-{
-	symmetric_resolve true
-	mode		3 ; Additional resolve cheats, don't change if you are not sure
-	inresolve_cutoff_proportion 0.5
-	near_vertex  30
-}
- distance estimation or not
+; use advanced distance estimation or not
 advanced_estimator_mode false
 
 ; set to true to obtain paired info from genome mapping rather than from paired reads
