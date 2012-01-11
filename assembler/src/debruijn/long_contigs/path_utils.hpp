@@ -1023,6 +1023,11 @@ void RemoveOverlaps(const Graph& g, std::vector<BidirectionalPath>& paths) {
 							bool found = true;
 
 							for (int j = i - 1; j >= 0; --j) {
+							    if (j < 0) {
+							        found = false;
+							        break;
+							    }
+
 								if (toCompare[j] != path[j + diff]) {
 									found = false;
 									break;

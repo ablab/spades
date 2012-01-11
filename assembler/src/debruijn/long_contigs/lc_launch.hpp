@@ -191,6 +191,7 @@ void resolve_repeats_ml(const conj_graph_pack& gp, PairedInfoIndices& pairedInfo
 			RemoveOverlaps(g, result);
 			INFO("Removed overlaps");
 			CheckIds(g, result);
+			//TODO: remove subseeds again
 		}
 		if (params.ps.fo.remove_similar) {
 			RemoveSimilar(g, result, pathQuality, &noOverlaps);
