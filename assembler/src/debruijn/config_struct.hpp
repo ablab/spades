@@ -624,7 +624,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 
 
 	load(cfg.ade              , pt, "ade"              ); // advanced distance estimator:
-	load(cfg.rr               , pt, "rr"               ); // repeat resolver:
+	load(cfg.rr               , pt, (cfg.ds.single_cell ? "sc_rr" : "usual_rr")               ); // repeat resolver:
 	load(cfg.pos              , pt, "pos"              ); // position handler:
 
 	load(cfg.rm               , pt, "resolving_mode"   );
