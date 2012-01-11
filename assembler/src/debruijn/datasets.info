@@ -324,6 +324,64 @@ PGINGIVALIS_BH
 	reference_genome  P.gingivalis/TDC60.fasta.gz
 }
 
+PGINGIVALIS_LANE2_BH
+{
+       	first	P.gingivalis/lane_2/02.reads.0.left.corrected.fastq.gz
+       	second	P.gingivalis/lane_2/02.reads.0.right.corrected.fastq.gz
+       	single_first	P.gingivalis/lane_2/02.reads.0.left.unpaired.fastq.gz
+       	single_second	P.gingivalis/lane_2/02.reads.0.right.unpaired.fastq.gz
+        RL              100     ; read length
+        IS              270     ; insert size
+        single_cell     true
+	reference_genome  P.gingivalis/TDC60.fasta.gz
+}
+PGINGIVALIS_LANE3_BH
+{
+       	first	P.gingivalis/lane_3/00.reads.0.left.corrected.fastq.gz
+       	second	P.gingivalis/lane_3/00.reads.0.right.corrected.fastq.gz
+       	single_first	P.gingivalis/lane_3/00.reads.0.left.unpaired.fastq.gz
+       	single_second	P.gingivalis/lane_3/00.reads.0.right.unpaired.fastq.gz
+        RL              100     ; read length
+        IS              270     ; insert size
+        single_cell     true
+	reference_genome  P.gingivalis/TDC60.fasta.gz
+}
+PGINGIVALIS_LANE4_BH
+{
+       	first	P.gingivalis/lane_4/02.reads.0.left.corrected.fastq.gz
+       	second	P.gingivalis/lane_4/02.reads.0.right.corrected.fastq.gz
+       	single_first	P.gingivalis/lane_4/02.reads.0.left.unpaired.fastq.gz
+       	single_second	P.gingivalis/lane_4/02.reads.0.right.unpaired.fastq.gz
+        RL              100     ; read length
+        IS              270     ; insert size
+        single_cell     true
+	reference_genome  P.gingivalis/TDC60.fasta.gz
+}
+PGINGIVALIS_LANE5_BH
+{
+       	first	P.gingivalis/lane_5/02.reads.0.left.corrected.fastq.gz
+       	second	P.gingivalis/lane_5/02.reads.0.right.corrected.fastq.gz
+       	single_first	P.gingivalis/lane_5/02.reads.0.left.unpaired.fastq.gz
+       	single_second	P.gingivalis/lane_5/02.reads.0.right.unpaired.fastq.gz
+        RL              100     ; read length
+        IS              270     ; insert size
+        single_cell     true
+	reference_genome  P.gingivalis/TDC60.fasta.gz
+}
+PGINGIVALIS_LANE6_BH
+{
+       	first	P.gingivalis/lane_6/04.reads.0.left.corrected.fastq.gz
+       	second	P.gingivalis/lane_6/04.reads.0.right.corrected.fastq.gz
+       	single_first	P.gingivalis/lane_6/04.reads.0.left.unpaired.fastq.gz
+       	single_second	P.gingivalis/lane_6/04.reads.0.right.unpaired.fastq.gz
+        RL              100     ; read length
+        IS              270     ; insert size
+        single_cell     true
+	reference_genome  P.gingivalis/TDC60.fasta.gz
+}
+
+
+
 ; ================================================
 ; =============== C. S. muelleri =================
 ; ================================================
