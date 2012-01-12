@@ -30,29 +30,30 @@ void link_output(std::string const& link_name)
 	    WARN( "Symlink to \"" << link << "\" launch failed");
 }
 
-void link_previous_run(std::string const& previous_link_name, std::string const& link_name){
-    char buf[255];
-
-	std::string link = cfg::get().output_dir + previous_link_name;
-    unlink(link.c_str());
-    int count = readlink((cfg::get().output_root + link_name).c_str(), buf, sizeof(buf) - 1);
-    if (count >= 0){
-        buf[count] = '\0';
-        std::string previous_run("../");
-        previous_run = previous_run + buf;
-        if (symlink(previous_run.c_str(), link.c_str()) != 0)
-            WARN( "Symlink to \"" << link << "\" launch failed : " << previous_run);
-    }else WARN( "Symlink to \"" << link << "\" launch failed");
-}
+//void link_previous_run(std::string const& previous_link_name, std::string const& link_name){
+//    char buf[255];
+//
+//	std::string link = cfg::get().output_dir + previous_link_name;
+//    unlink(link.c_str());
+//    int count = readlink((cfg::get().output_root + link_name).c_str(), buf, sizeof(buf) - 1);
+//    if (count >= 0){
+//        buf[count] = '\0';
+//        std::string previous_run("../");
+//        previous_run = previous_run + buf;
+//        if (symlink(previous_run.c_str(), link.c_str()) != 0)
+//            WARN( "Symlink to \"" << link << "\" launch failed : " << previous_run);
+//    }else WARN( "Symlink to \"" << link << "\" launch failed");
+//}
 
 struct on_exit_output_linker
 {
-	on_exit_output_linker(std::string const& link_name, std::string const& previous_link_name)
-		: link_name_(link_name), previous_link_name_(previous_link_name){}
+	on_exit_output_linker(std::string const& link_name)
+		: link_name_(link_name)
+	{
+	}
 
 	~on_exit_output_linker()
 	{
-        link_previous_run(previous_link_name_, link_name_);
 		link_output(link_name_);
 	}
 
@@ -88,14 +89,14 @@ void segfault_handler(int signum)
 		print_trace();
 
 		link_output("latest");
-        link_previous_run("latest", "previous");
+        //link_previous_run("latest", "previous");
 	}
 
 	signal(signum, SIG_DFL);
 	kill  (getpid(), signum);
 }
 
-void copy_configs()
+void copy_configs(string const& cfg_filename)
 {
 	using namespace debruijn_graph;
 
@@ -111,7 +112,8 @@ bool print_mem_usage(std::string const& msg)
 	return system(str.c_str()) == 0;
 }
 
-int main() {
+int main(int argc, char** argv)
+{
     const size_t GB = 1 << 30;
     limit_memory(120 * GB);
 
@@ -121,10 +123,13 @@ int main() {
     {
 		using namespace debruijn_graph;
 
-		checkFileExistenceFATAL(cfg_filename);
-		cfg::create_instance(cfg_filename);
+		string cfg_filename = argv[1];
+		std::cout << fs::initial_path() << std::endl;
 
-	    on_exit_output_linker try_linker("latest", "previous");
+		checkFileExistenceFATAL(cfg_filename);
+		cfg::create_instance   (cfg_filename);
+
+	    on_exit_output_linker try_linker("latest");
 
 		// check config_struct.hpp parameters
 		if (K % 2 == 0)
@@ -138,13 +143,11 @@ int main() {
 		make_dir(cfg::get().output_dir  );
 		make_dir(cfg::get().output_saves);
 
-		copy_configs();
+		copy_configs(cfg_filename);
 
 		// typedefs :)
 		typedef io::EasyReader ReadStream;
 		typedef io::PairedEasyReader PairedReadStream;
-//		typedef io::RCReaderWrapper<io::PairedRead> RCStream;
-//		typedef io::CarefulFilteringReaderWrapper<io::PairedRead> CarefulFilteringStream;
 
 		// assemble it!
 		INFO("Assembling " << dataset << " dataset");
@@ -152,11 +155,10 @@ int main() {
 
         debruijn_graph::assemble_genome();
 
-		on_exit_output_linker("latest_success", "previous");
+		on_exit_output_linker("latest_success");
 
 		INFO("Assembling " << dataset << " dataset finished");
 
-		print_mem_usage("at the end of program execution");
 
 		if (cfg::get().ds.is_refined) {
 			cout << "===== IMPORTANT! Insert size and delta for the dataset were refined. Please include these data into corresponding config file: =====" << endl;

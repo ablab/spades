@@ -9,4 +9,4 @@ cd data/
 cd ..
 make clean
 make -j 5 all
-./run rd
+./run

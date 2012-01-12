@@ -380,8 +380,11 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	INFO("---Output Contigs---");
 
 	if (output_contigs)
-		OutputContigs(resolved_gp.g,
-				cfg::get().output_dir + "resolved_and_cleared" + postfix);
+	{
+	    OutputContigs(resolved_gp.g, cfg::get().output_dir + "resolved_and_cleared" + postfix);
+	    OutputContigs(resolved_gp.g, cfg::get().output_dir + "final_contigs.fasta");
+	}
+
 
 	omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
 
@@ -653,7 +656,7 @@ void resolve_repeats() {
 
 	if (!cfg::get().paired_mode
 			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
-		OutputContigs(conj_gp.g, cfg::get().output_dir + "contigs.fasta");
+		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
 		return;
 	}
 

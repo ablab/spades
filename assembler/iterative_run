@@ -28,7 +28,7 @@ function iterative_run
         do
 
                 echo "Running assembler for K="$i
-                ./build/release/debruijn/debruijn$i | tee $LOG_DIR/"K$i.log"
+                ./build/release/debruijn/debruijn$i ./configs/debruijn/config.info | tee $LOG_DIR/"K$i.log"
 
         done
 

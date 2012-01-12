@@ -13,16 +13,16 @@ then
 fi
 
 case $1 in
-  'c')  cfg="src/debruijn/config.info" ;;
-  'ct') cfg="src/debruijn/config.info.template" ;;
-  's')  cfg="src/debruijn/simplification.info" ;;
-  'st') cfg="src/debruijn/simplification.info.template" ;;
-  'de') cfg="src/debruijn/distance_estimation.info";;
-  'det') cfg="src/debruijn/distance_estimation.info.template";;
-  'd')  cfg="src/debruijn/datasets.info" ;;
-  'da')  cfg="src/debruijn/datasets_archive.info" ;;
-  'dip') cfg="src/debruijn/detail_info_printer.info";;
-  'dipt') cfg="src/debruijn/detail_info_printer.info.template";;
+  'c')  cfg="configs/debruijn/config.info" ;;
+  'ct') cfg="configs/debruijn/config.info.template" ;;
+  's')  cfg="configs/debruijn/simplification.info" ;;
+  'st') cfg="configs/debruijn/simplification.info.template" ;;
+  'de') cfg="configs/debruijn/distance_estimation.info";;
+  'det') cfg="configs/debruijn/distance_estimation.info.template";;
+  'd')  cfg="configs/debruijn/datasets.info" ;;
+  'da')  cfg="configs/debruijn/datasets_archive.info" ;;
+  'dip') cfg="configs/debruijn/detail_info_printer.info";;
+  'dipt') cfg="configs/debruijn/detail_info_printer.info.template";;
   'log') cfg="log4cxx.properties";;
   'logt') cfg="log4cxx.properties.template";;
 esac

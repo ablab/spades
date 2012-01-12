@@ -122,8 +122,8 @@ void exec_construction(PairedReadStream& stream, conj_graph_pack& gp,
 
 		INFO("Use additional contigs = " << cfg::get().use_additional_contigs);
 		INFO("Checking for additional contigs usage flag and file");
-		string additional_contigs_file = cfg::get().output_root + "../"
-				+ cfg::get().additional_contigs;
+
+		string additional_contigs_file = cfg::get().additional_contigs;
 		if (cfg::get().use_additional_contigs
 				&& fileExists(additional_contigs_file)) {
 			INFO("Additional contigs file found and WILL be used");

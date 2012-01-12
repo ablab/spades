@@ -92,8 +92,6 @@ inline const char* info_printer_pos_name(size_t pos)
 
 } // namespace details
 
-const char* const cfg_filename = "./src/debruijn/config.info";
-
 inline std::string MakeLaunchTimeDirName() {
 	time_t rawtime;
 	struct tm * timeinfo;
