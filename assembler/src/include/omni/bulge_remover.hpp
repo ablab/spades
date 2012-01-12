@@ -239,7 +239,7 @@ void BulgeRemover<Graph>::RemoveBulges() {
 
 		EdgeId edge = *iterator;
 
-		VERBOSE_T(it_count, 1000, "bulge iteration processing ");
+		VERBOSE_T(it_count, 1000, "th iteration of bulge processing");
 		++it_count;
 
 		TRACE(
