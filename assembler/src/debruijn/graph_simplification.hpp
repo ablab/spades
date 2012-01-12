@@ -231,14 +231,14 @@ bool TopologyRemoveErroneousEdges(
 	while (changed) {
 		changed = false;
 		INFO("Iteration " << iteration_count++);
-		omnigraph::AdvancedTopologyChimericEdgeRemover<Graph> erroneous_edge_remover(
-			g, tec_config.max_length,
-			tec_config.uniqueness_length,
-			tec_config.plausibility_length,
-			edge_remover);
-//		omnigraph::NewTopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
-//				g, tec_config.max_length, tec_config.uniqueness_length,
-//				tec_config.plausibility_length, edge_remover);
+//		omnigraph::AdvancedTopologyChimericEdgeRemover<Graph> erroneous_edge_remover(
+//			g, tec_config.max_length,
+//			tec_config.uniqueness_length,
+//			tec_config.plausibility_length,
+//			edge_remover);
+		omnigraph::NewTopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
+				g, tec_config.max_length, tec_config.uniqueness_length,
+				tec_config.plausibility_length, edge_remover);
 		changed = erroneous_edge_remover.RemoveEdges();
 		INFO("Removal of erroneous edges based on topology started");
 	}
