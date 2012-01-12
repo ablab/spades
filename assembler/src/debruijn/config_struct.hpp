@@ -54,6 +54,7 @@ enum info_printer_pos
     ipp_tip_clipping                 ,
     ipp_bulge_removal                ,
     ipp_err_con_removal              ,
+    ipp_before_final_err_con_removal ,
     ipp_final_err_con_removal        ,
     ipp_final_tip_clipping           ,
     ipp_final_bulge_removal          ,
@@ -71,16 +72,17 @@ inline const char* info_printer_pos_name(size_t pos)
 {
     const char* names[] =
     {
-       "default"                    ,
-       "before_simplification"      ,
-       "tip_clipping"               ,
-       "bulge_removal"              ,
-       "err_con_removal"            ,
-       "final_err_con_removal"      ,
-       "final_tip_clipping"         ,
-       "final_bulge_removal"        ,
-       "removing_isolated_edges"    ,
-       "final_simplified"           ,
+       "default"                     ,
+       "before_simplification"       ,
+       "tip_clipping"                ,
+       "bulge_removal"               ,
+       "err_con_removal"             ,
+       "before_final_err_con_removal",
+       "final_err_con_removal"       ,
+       "final_tip_clipping"          ,
+       "final_bulge_removal"         ,
+       "removing_isolated_edges"     ,
+       "final_simplified"            ,
        "before_repeat_resolution"
     };
 

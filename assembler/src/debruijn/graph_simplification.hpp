@@ -380,6 +380,7 @@ void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 		detail_info_printer &printer) {
 
 	INFO("Final ErroneousConnectionsRemoval");
+	printer(ipp_before_final_err_con_removal);
 	FinalRemoveErroneousEdges(graph, edge_remover);
 	printer(ipp_final_err_con_removal);
 
