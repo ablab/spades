@@ -1117,37 +1117,47 @@ class UniquePathFinder {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
-	const Graph& g_;
+	const Graph& graph_;
 public:
 
-	UniquePathFinder(const Graph& g) :
-			g_(g) {
+	UniquePathFinder(const Graph& graph) :
+		graph_(graph) {
 
 	}
 
 	const vector<EdgeId> UniquePathForward(EdgeId e) const {
+		TRACE("UniquePathForward from " << graph_.int_ids().ReturnIntId(e));
 		vector<EdgeId> answer;
 		EdgeId curr = e;
 		answer.push_back(curr);
-		while (g_.CheckUniqueOutgoingEdge(g_.EdgeEnd(curr))) {
-			curr = g_.GetUniqueOutgoingEdge(g_.EdgeEnd(curr));
-			if (curr == e)
+		set<EdgeId> was;
+		while (graph_.CheckUniqueOutgoingEdge(graph_.EdgeEnd(curr))) {
+			TRACE("current " << graph_.int_ids().ReturnIntId(curr));
+			curr = graph_.GetUniqueOutgoingEdge(graph_.EdgeEnd(curr));
+			if (was.count(curr) > 0)
 				break;
+			was.insert(curr);
 			answer.push_back(curr);
 		}
+		TRACE("UniquePathForward from " << graph_.int_ids().ReturnIntId(e) << " finished");
 		return answer;
 	}
 
 	const vector<EdgeId> UniquePathBackward(EdgeId e) const {
+		TRACE("UniquePathBackward from " << e);
 		vector<EdgeId> answer;
 		EdgeId curr = e;
 		answer.push_back(curr);
-		while (g_.CheckUniqueIncomingEdge(g_.EdgeStart(curr))) {
-			curr = g_.GetUniqueIncomingEdge(g_.EdgeStart(curr));
-			if (curr == e)
+		set<EdgeId> was;
+		while (graph_.CheckUniqueIncomingEdge(graph_.EdgeStart(curr))) {
+			TRACE("current " << curr);
+			curr = graph_.GetUniqueIncomingEdge(graph_.EdgeStart(curr));
+			if (was.count(curr) > 0)
 				break;
+			was.insert(curr);
 			answer.push_back(curr);
 		}
+		TRACE("UniquePathBackward from " << e << " finished");
 		return vector<EdgeId>(answer.rbegin(), answer.rend());
 	}
 };
@@ -1290,6 +1300,7 @@ class PlausiblePathFinder {
 		pair<size_t, EdgeId> find(EdgeId edge, size_t length) {
 			length += graph_.length(edge);
 			VertexId cross = direction_.EdgeEnd(edge);
+			TRACE("Find from " << graph_.int_ids().ReturnIntId(edge) << " length: " << length << " cross: " << graph_.int_ids().ReturnIntId(cross));
 			auto result = make_pair(length, edge);
 			if (length < length_bound_ && direction_.CheckUniqueIncomingEdge(cross)) {
 				vector<EdgeId> outgoing = direction_.OutgoingEdges(cross);
@@ -1303,12 +1314,15 @@ class PlausiblePathFinder {
 		}
 
 		vector<EdgeId> RestoreAnswer(EdgeId start, EdgeId end) {
+			TRACE("Restore answer from " << graph_.int_ids().ReturnIntId(start) << " to " << graph_.int_ids().ReturnIntId(end));
 			vector<EdgeId> result;
 			while (end != start) {
+				TRACE("Current edge is " << graph_.int_ids().ReturnIntId(start));
 				result.push_back(end);
 				end = direction_.GetUniqueIncomingEdge(
 						direction_.EdgeStart(end));
 			}
+			TRACE("Restore answer from " << graph_.int_ids().ReturnIntId(start) << " to " << graph_.int_ids().ReturnIntId(end) << " finished");
 			result.push_back(start);
 			return vector<EdgeId>(result.rbegin(), result.rend());
 		}
@@ -1319,7 +1333,10 @@ class PlausiblePathFinder {
 		}
 
 		vector<EdgeId> find(EdgeId edge) {
-			return RestoreAnswer(edge, find(edge, 0).second);
+			TRACE("Find start from " << graph_.int_ids().ReturnIntId(edge));
+			vector<EdgeId> result = RestoreAnswer(edge, find(edge, 0).second);
+			TRACE("Find end from " << graph_.int_ids().ReturnIntId(edge));
+			return result;
 		}
 	};
 
