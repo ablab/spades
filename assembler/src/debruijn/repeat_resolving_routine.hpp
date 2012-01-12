@@ -297,12 +297,12 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	total_labeler_gs graph_struct_before(origin_gp.g, &origin_gp.int_ids,
 			&origin_gp.edge_pos, NULL);
 	total_labeler tot_labeler_before(&graph_struct_before);
-
+	INFO (cfg::get().path_set_graph);
 	if (cfg::get().path_set_graph) {
 		INFO("testing path-set graphs");
 		PathSetGraphConstructor<graph_pack> path_set_constructor(origin_gp,
 				clustered_index, resolved_gp);
-		path_set_constructor.ConstructOverlap();
+		path_set_constructor.Construct();
 		unordered_map<typename graph_pack::graph_t::EdgeId,
 				typename graph_pack::graph_t::EdgeId> edge_labels =
 				path_set_constructor.GetEdgeLabels();
