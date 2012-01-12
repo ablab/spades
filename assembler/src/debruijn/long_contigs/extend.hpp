@@ -422,6 +422,8 @@ double FilterExtentions(const Graph& g, BidirectionalPath& path, std::vector<Edg
 
 	static const double magic_constant = 1000.0;
 
+	DETAILED_DEBUG("Filtering " << (forward ? "forward" : "backward") << " extensions based on pair info weight");
+
 	std::multimap<double, EdgeId> weights;
 
 	for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
@@ -429,26 +431,32 @@ double FilterExtentions(const Graph& g, BidirectionalPath& path, std::vector<Edg
 		weights.insert(std::make_pair(weight, *iter));
 		detector.temp.AddAlternative(*iter, weight);
 	}
-	DETAILED_DEBUG("Choosing weights " << (forward ? "forward" : "backward"))
+
 	for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
-		DETAILED_DEBUG(iter->second << " (" << g.length(iter->second) << ") = " << iter->first);
+		DETAILED_DEBUG("Weight for " << g.str(iter->second) << " = " << iter->first);
 	}
 
 	//Filling maximum edges
 //	edges.clear();
 	std::vector<EdgeId> tmp;
+	DETAILED_DEBUG("Choosing edges with max weight with coeff " << params.ps.es.priority_coeff);
 	auto bestEdge = weights.lower_bound((--weights.end())->first / params.ps.es.priority_coeff);
 	for (auto maxEdge = bestEdge; maxEdge != weights.end(); ++maxEdge) {
 		tmp.push_back(maxEdge->second);
 	}
+	DETAILED_DEBUG("Edges with max weight: " << g.str(tmp));
+	if (bestEdge != weights.end()) {
+		DETAILED_DEBUG("Best edge: " << g.str(bestEdge->second) << " with weight " << bestEdge->first);
+	}
+
 	//todo discuss logic with Anton and Andrew
 	if (true/*tmp.size() > 1*/) {
-		//todo add traces!!!
-//		cout << "Using jumps to resolve ambiguity" << endl;
+		DETAILED_DEBUG("Processing with JumpingHero");
 		size_t max_long_paired = 0;
 		bool valid = false;
 		EdgeId best;
-		for (auto it = edges.begin(); it != edges.end(); ++it) {
+		//todo think of logic!!!
+		for (auto it = edges/*tmp*/.begin(); it != edges/*tmp*/.end(); ++it) {
 			size_t curr = hero.CheckEdge(*it);
 			if (curr == max_long_paired) {
 				valid = false;
@@ -460,16 +468,23 @@ double FilterExtentions(const Graph& g, BidirectionalPath& path, std::vector<Edg
 			}
 		}
 		if (valid && max_long_paired > 0) {
+			DETAILED_DEBUG("Jumping hero found best extension edge " << best);
 			edges.clear();
 			edges.push_back(best);
 //			cout << "Success" << endl;
 			return magic_constant;
+		} else {
+			DETAILED_DEBUG("Jumping hero failed to find best extension edge ");
 		}
 //		cout << "Fail" << endl;
 	}
 	edges.clear();
+	DETAILED_DEBUG("Returning edges with max weight: " << g.str(tmp));
+
 	edges.insert(edges.end(), tmp.begin(), tmp.end());
 //	cout << "Best weight is " << bestEdge->first << endl;
+
+	DETAILED_DEBUG("Best edge's weight: " << bestEdge->first);
 	return bestEdge->first;
 }
 
@@ -482,21 +497,32 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path, std::vector<Edge
 		JumpingHero<Graph>& hero) {
 //	cout << "here" << endl;
 
+	DETAILED_DEBUG("Choosing " << (forward ? "forward" : "backward")
+			<< "  extension among edges " << g.str(edges));
+
 	detector.temp.clear();
 
 	if (edges.size() == 0) {
+		DETAILED_DEBUG("No edges to choose from");
+
 		handler.AddStop(&path, NO_EXTENSION, forward);
 		//TODO: scafolder mode here
 		return 0;
 	}
 //	cout << "here" << endl;
 	if (edges.size() == 1) {
+		DETAILED_DEBUG("Single possible extension edge " << g.str(*edges.begin()));
+
 		if (params.ps.ss.check_trusted) {
+			DETAILED_DEBUG("Checking if trusted");
 			double weight =
 					ExtentionWeight(g, path, lengths, edges.back(), pairedInfo, 0, forward, false);
 
 			if (ExtensionGoodEnough(edges.back(), weight, params.ps.ss.trusted_threshold) == 0) {
+				DETAILED_DEBUG("No");
 				return 0;
+			} else {
+				DETAILED_DEBUG("Yes");
 			}
 		}
 
@@ -507,6 +533,7 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path, std::vector<Edge
 
 	EdgeId toReturn = 0;
 	if (params.rs.research_mode && params.rs.force_to_cycle) {
+		WARN("Strange mode launched");
 		for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
 			if (g.length(*edge) == params.rs.cycle_priority_edge) {
 				toReturn = *edge;
@@ -516,34 +543,46 @@ EdgeId ChooseExtension(const Graph& g, BidirectionalPath& path, std::vector<Edge
 	static bool useWeightFunctionFirst = params.ps.es.use_weight_function_first;
 
 	if (useWeightFunctionFirst) {
+		WARN("Strange path chosen!!! use_weight_function_first set to true!!!");
 		FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector, hero, true);
 
 		if (edges.size() == 1) {
 			static double weightFunThreshold = params.ps.es.weight_fun_threshold;
 			*maxWeight = ExtentionWeight(g, path, lengths, edges.back(), pairedInfo, edgesToExclude, forward);
 
+			WARN("Shouldn't be here!!!");
 			return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightFunThreshold, g, path, handler, forward) : toReturn;
 		}
 	}
-//	cout << "here" << endl;
 
 	*maxWeight = FilterExtentions(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector, hero);
 
 	static double weightThreshold = params.ps.es.weight_threshold;
 	if (edges.size() == 1) {
-//		cout << "here2_0 weight_threshold = " << weightThreshold << endl;
+		DETAILED_DEBUG("Single extension passed filtering: "
+				<< g.str(*edges.begin()) << " with weight " << *maxWeight);
+
+		DETAILED_DEBUG("Checking if good enough with threshold " << weightThreshold);
+
 		return toReturn == 0 ? ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold, g, path, handler, forward) : toReturn;
 	} else if (edges.size() > 1) {
+		DETAILED_DEBUG("Several extension passed filtering: "
+				<< g.str(edges) << " with best weight " << *maxWeight);
+
 		if (ExtensionGoodEnough(edges.back(), *maxWeight, weightThreshold) == 0) {
 //			cout << "here2" << endl;
+			DETAILED_DEBUG("Best weight extension didn't pass threshold " << weightThreshold);
 			DETAILED_DEBUG("No good extension");
 			handler.AddStop(&path, NO_GOOD_EXTENSION, forward);
 		} else {
+			DETAILED_DEBUG("Best weight extension passed threshold " << weightThreshold);
 //			cout << "here3" << endl;
 			DETAILED_DEBUG("Cannot choose extension, no obvious maximum");
 
+			DETAILED_DEBUG("Hopefully doing nothing and will return no extension");
 			static int maxDepth = params.ps.es.max_depth;
 			for (int depth = 1; depth <= maxDepth; ++depth) {
+				WARN("Shouldn't be here!!!");
 				DETAILED_DEBUG("Trying to look deeper to " << depth);
 				*maxWeight = FilterExtentionsDeep(g, path, edges, lengths, pairedInfo, edgesToExclude, forward, detector, depth);
 

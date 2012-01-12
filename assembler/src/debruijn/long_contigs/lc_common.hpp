@@ -395,9 +395,9 @@ void PrintPath(const Graph& g, BidirectionalPath& path, PathLengths& lengths) {
 
 //Print path with length from start / end to the every edge
 void DetailedPrintPath(const Graph& g, BidirectionalPath& path, PathLengths& lengths) {
-	if (lc_cfg::get().params.rs.detailed_output) {
+//	if (lc_cfg::get().params.rs.detailed_output) {
 		PrintPath(g, path, lengths);
-	}
+//	}
 }
 
 //Print path

@@ -291,7 +291,10 @@ bool ExtendPathForward(const Graph& g, BidirectionalPath& path, PathLengths& len
 		LoopDetector& detector, PairedInfoIndices& pairedInfo,
 		PathStopHandler& handler, JumpingHero<Graph>& hero) {
 
+	DETAILED_DEBUG("Try to forward-extend path " << path.uid << ": " << g.str(path));
+
 	if (path.empty()) {
+		WARN("Extension of path " << path.uid << " ended unexpectedly");
 		return false;
 	}
 
@@ -309,7 +312,7 @@ bool ExtendPathForward(const Graph& g, BidirectionalPath& path, PathLengths& len
 			if (!ResolveLoopForward(g, path, lengths, detector, pairedInfo,
 					loopEdge)) {
 				handler.AddStop(&path, LONG_LOOP, true);
-//				cout << "Strange stop 1" << endl;
+				WARN("Extension of path " << path.uid << " ended unexpectedly");
 				return false;
 			}
 			loopEdge = 0;
@@ -319,21 +322,23 @@ bool ExtendPathForward(const Graph& g, BidirectionalPath& path, PathLengths& len
 	std::vector<EdgeId> edges = g.OutgoingEdges(g.EdgeEnd(path.back()));
 
 //	cout << "Choosing extension among edges " << g.str(edges) << endl;
+	DETAILED_DEBUG("Choosing extension after edge " << g.str(path.back()));
 
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, &w,
 			EdgesToExcludeForward(g, path), true, detector, handler, hero);
 	if (extension == 0) {
-//		cout << "No extension" << endl;
+		DETAILED_DEBUG("No good extension found after edge " << g.str(path.back()));
 		return false;
 	}
+
+	DETAILED_DEBUG(
+			"Chosen forward extension " << g.str(extension) << " after edge " << g.str(path.front()));
 
 	detector.AddNewEdge(extension, path.size(), w);
 	IncreaseLengths(g, lengths, extension, true);
 	hero.ProcessEdge(extension);
 	path.push_back(extension);
 
-	DETAILED_DEBUG(
-			"Chosen forward " << extension << " (" << g.length(extension) << ")");
 	DetailedPrintPath(g, path, lengths);
 
 	if (params.ps.lr.investigation) {
@@ -343,7 +348,7 @@ bool ExtendPathForward(const Graph& g, BidirectionalPath& path, PathLengths& len
 			if (!ResolveLoopForward(g, path, lengths, detector, pairedInfo,
 					loopEdge)) {
 				handler.AddStop(&path, LONG_LOOP, true);
-//				cout << "Strange stop 2" << endl;
+				WARN("Extension of path " << path.uid << " ended unexpectedly");
 				return false;
 			}
 		}
@@ -356,7 +361,7 @@ bool ExtendPathForward(const Graph& g, BidirectionalPath& path, PathLengths& len
 		DETAILED_DEBUG("Cycle detected");
 		DetailedPrintPath(g, path, lengths);
 		handler.AddStop(&path, LOOP, true);
-//		cout << "Strange stop 3" << endl;
+		WARN("Extension of path " << path.uid << " ended unexpectedly");
 		return false;
 	}
 
@@ -368,7 +373,10 @@ bool ExtendPathBackward(const Graph& g, BidirectionalPath& path, PathLengths& le
 		LoopDetector& detector, PairedInfoIndices& pairedInfo,
 		PathStopHandler& handler, JumpingHero<Graph>& hero) {
 
+	DETAILED_DEBUG("Try to backward-extend path " << path.uid << ": " << g.str(path));
+
 	if (path.empty()) {
+		WARN("Extension of path " << path.uid << " ended unexpectedly");
 		return false;
 	}
 
@@ -393,19 +401,24 @@ bool ExtendPathBackward(const Graph& g, BidirectionalPath& path, PathLengths& le
 	}
 
 	std::vector<EdgeId> edges = g.IncomingEdges(g.EdgeStart(path.front()));
+
+	DETAILED_DEBUG("Choosing extension before edge " << g.str(path.front()));
+
 	EdgeId extension = ChooseExtension(g, path, edges, lengths, pairedInfo, &w,
 			EdgesToExcludeBackward(g, path), false, detector, handler, hero);
 	if (extension == 0) {
+		DETAILED_DEBUG("No good extension found before edge " << g.str(path.front()));
 		return false;
 	}
+
+	DETAILED_DEBUG(
+			"Chosen backward extension " << g.str(extension) << " before edge " << g.str(path.front()));
 
 	detector.AddNewEdge(extension, path.size(), w);
 	IncreaseLengths(g, lengths, extension, false);
 	hero.ProcessEdge(extension);
 	path.push_front(extension);
 
-	DETAILED_DEBUG(
-			"Chosen backward " << extension << " (" << g.length(extension) << ")");
 	DetailedPrintPath(g, path, lengths);
 
 	if (params.ps.lr.investigation) {
@@ -415,6 +428,7 @@ bool ExtendPathBackward(const Graph& g, BidirectionalPath& path, PathLengths& le
 			if (!ResolveLoopBackward(g, path, lengths, detector, pairedInfo,
 					loopEdge)) {
 				handler.AddStop(&path, LONG_LOOP, false);
+				WARN("Extension of path " << path.uid << " ended unexpectedly");
 				return false;
 			}
 		}
@@ -427,6 +441,7 @@ bool ExtendPathBackward(const Graph& g, BidirectionalPath& path, PathLengths& le
 		DETAILED_DEBUG("Cycle detected");
 		DetailedPrintPath(g, path, lengths);
 		handler.AddStop(&path, LOOP, false);
+		WARN("Extension of path " << path.uid << " ended unexpectedly");
 		return false;
 	}
 
