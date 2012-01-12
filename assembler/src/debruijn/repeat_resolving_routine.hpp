@@ -477,7 +477,7 @@ void component_statistics(graph_pack & conj_gp, int component_id,
 		typename graph_pack::graph_t::VertexId start = conj_gp.g.EdgeStart(
 				*iter);
 		typename graph_pack::graph_t::VertexId end = conj_gp.g.EdgeEnd(*iter);
-		if (conj_gp.g.length(*iter) > cfg::get().ds.IS + 100) {
+		if (conj_gp.g.length(*iter) > *cfg::get().ds.IS + 100) {
 
 			if (conj_gp.g.IsDeadStart(
 					start) /*&& conj_gp.g.CheckUniqueOutgoingEdge(start)*/) {
@@ -664,7 +664,7 @@ void resolve_repeats() {
 			make_dir(cfg::get().output_dir + "graph_components" + "/");
 			number_of_components = PrintGraphComponents(
 					cfg::get().output_dir + "graph_components/graph_", conj_gp,
-					cfg::get().ds.IS + 100, clustered_index);
+					*cfg::get().ds.IS + 100, clustered_index);
 			INFO("number of components "<<number_of_components);
 		}
 

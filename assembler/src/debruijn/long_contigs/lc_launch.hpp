@@ -226,7 +226,7 @@ void resolve_repeats_ml(const conj_graph_pack& gp, PairedInfoIndices& pairedInfo
 void resolve_repeats_ml(const conj_graph_pack& gp, PairedInfoIndex<Graph>& paired_index, const std::string& output_dir, const lc_config::lc_params& p,
 		boost::optional<const PairedInfoIndex<Graph>&> jump_index_opt = boost::none) {
     PairedInfoIndices pairedInfos;
-    pairedInfos.push_back(PairedInfoIndexLibrary(gp.g, cfg::get().ds.RL, cfg::get().ds.IS, 2, cfg::get().de.delta, 5, &paired_index));
+    pairedInfos.push_back(PairedInfoIndexLibrary(gp.g, cfg::get().ds.RL, *cfg::get().ds.IS, 2, cfg::get().de.delta, 5, &paired_index));
 
     resolve_repeats_ml(gp, pairedInfos, output_dir, p, jump_index_opt);
 }

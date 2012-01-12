@@ -156,7 +156,13 @@ int main() {
 
 		INFO("Assembling " << dataset << " dataset finished");
 
-		print_mem_usage("mem usage on program end");
+		print_mem_usage("at the end of program execution");
+
+		if (cfg::get().ds.is_refined) {
+			cout << "===== IMPORTANT! Insert size and delta for the dataset were refined. Please include these data into corresponding config file: =====" << endl;
+			cout << "\tIS\t" << cfg::get().ds.IS << endl;
+			cout << "\tdelta\t" << cfg::get().ds.delta << endl;
+		}
     }
     catch(std::exception const& e)
     {

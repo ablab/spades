@@ -123,6 +123,11 @@ namespace config_common
 			return inner_cfg();
 		}
 
+		static Config& get_writeable()
+		{
+			return inner_cfg();
+		}
+
 	private:
 		static Config& inner_cfg()
 		{

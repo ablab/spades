@@ -34,7 +34,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 	if (cfg::get().paired_mode) {
 		CloseShortGaps(gp.g, paired_index, gp.edge_pos,	cfg::get().gc.minimal_intersection);
 
-		GraphDistanceFinder<Graph> dist_finder(gp.g, cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta);
+		GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta);
 		if (cfg::get().advanced_estimator_mode) {
 			AdvancedDistanceEstimator<Graph> estimator(gp.g, paired_index, dist_finder,
 					cfg::get().de.linkage_distance,
@@ -60,7 +60,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 			} else {
 				//todo reduce number of constructor params
 				PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-						cfg::get().ds.IS, cfg::get().ds.RL, debruijn_graph::K);
+						*cfg::get().ds.IS, cfg::get().ds.RL, debruijn_graph::K);
 				normalizing_f = boost::bind(
 						&PairedInfoWeightNormalizer < Graph > ::NormalizeWeight,
 						weight_normalizer, _1);

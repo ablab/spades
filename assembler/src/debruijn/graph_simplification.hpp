@@ -311,7 +311,7 @@ void RemoveEroneousEdgesUsingPairedInfo(Graph& g,
 	size_t max_length = cfg::get().simp.piec.max_length;
 	size_t min_neighbour_length = cfg::get().simp.piec.min_neighbour_length;
 	omnigraph::PairInfoAwareErroneousEdgeRemover<Graph> erroneous_edge_remover(
-			g, paired_index, max_length, min_neighbour_length, cfg::get().ds.IS,
+			g, paired_index, max_length, min_neighbour_length, *cfg::get().ds.IS,
 			cfg::get().ds.RL, edge_remover);
 	erroneous_edge_remover.RemoveEdges();
 

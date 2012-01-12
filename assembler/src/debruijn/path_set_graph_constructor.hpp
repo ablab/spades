@@ -443,7 +443,7 @@ public:
 						}
 					}
 					DEBUG("sum len"<< sum_len << " " << cfg::get().ds.IS);
-					if (sum_len > cfg::get().ds.IS - cfg::get().rr.near_vertex)
+					if (sum_len > *cfg::get().ds.IS - cfg::get().rr.near_vertex)
 						glue = true;
 				}
 

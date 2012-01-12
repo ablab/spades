@@ -307,7 +307,9 @@ struct debruijn_config
 		boost::optional<size_t> jump_is;
 		boost::optional<size_t> jump_rl;
 		size_t RL;
-		size_t IS;
+		boost::optional<size_t> IS;
+		boost::optional<size_t> delta;
+		bool is_refined;
 		bool single_cell;
 		std::string reference_genome_filename;
 		Sequence reference_genome;
@@ -517,7 +519,8 @@ inline void load(debruijn_config::dataset& ds, boost::property_tree::ptree const
 	ds.jump_rl = pt.get_optional<size_t>("jump_rl");
 
 	load(ds.RL, pt, "RL");
-	load(ds.IS, pt, "IS");
+	ds.IS = pt.get_optional<size_t>("IS");
+	ds.delta = pt.get_optional<size_t>("delta");
 	load(ds.single_cell, pt, "single_cell");
 
 	ds.reference_genome_filename = "";
