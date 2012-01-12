@@ -19,6 +19,22 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 // move impl to *.cpp
 namespace debruijn_graph {
 
+template<size_t k>
+void PrintWeightDistribution(Graph &g, const string &file_name) {
+	ofstream os(file_name.c_str());
+	for(auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		vector<EdgeId> v1 = g.OutgoingEdges(g.EdgeStart(*it));
+		vector<EdgeId> v2 = g.IncomingEdges(g.EdgeEnd(*it));
+		bool eq = false;
+		if(v1.size() == 2 && v2.size() == 2)
+			if((v1[0] == v2[0] && v1[1] == v2[1]) || (v1[0] == v2[1] && v1[0] == v2[1]))
+				eq = false;
+		if(g.length(*it) > k - 10 && g.length(*it) <= k + 1 && g.OutgoingEdgeCount(g.EdgeStart(*it))>= 2 && g.IncomingEdgeCount(g.EdgeEnd(*it))>= 2 && !eq)
+			os << g.coverage(*it) << endl;
+	}
+	os.close();
+}
+
 void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 		paired_info_index& paired_index) {
 	using namespace omnigraph;
@@ -31,6 +47,7 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 
 	EdgeQuality<Graph> quality_labeler(gp.g, gp.index, gp.kmer_mapper, gp.genome);
 
+//	PrintWeightDistribution<K>(gp.g, "distribution.txt");
 	SimplifyGraph<K>(gp, quality_labeler, tot_lab, 10,
 			cfg::get().output_dir/*, etalon_paired_index*/);
 
