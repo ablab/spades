@@ -258,7 +258,7 @@ public:
 };
 
 //Detailed output for research mode
-#define DETAILED_DEBUG(message) { if (lc_cfg::get().params.rs.detailed_output) { DEBUG(message) } }
+#define DETAILED_DEBUG(message) { /*if (lc_cfg::get().params.rs.detailed_output) {*/ DEBUG(message) /*}*/ }
 
 // ====== Support functions ======
 //Pause to see output

@@ -429,7 +429,6 @@ double FilterExtentions(const Graph& g, BidirectionalPath& path, std::vector<Edg
 		weights.insert(std::make_pair(weight, *iter));
 		detector.temp.AddAlternative(*iter, weight);
 	}
-
 	DETAILED_DEBUG("Choosing weights " << (forward ? "forward" : "backward"))
 	for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
 		DETAILED_DEBUG(iter->second << " (" << g.length(iter->second) << ") = " << iter->first);
