@@ -76,7 +76,6 @@ void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp
 		sum += iter->second * 1.0 * iter->first;
 		sum2 += iter->second * 1.0 * iter->first * iter->first;
 	}
-
 	INFO("Insert size refined:");
 	INFO("IS = " << *cfg::get().ds.IS);
 	INFO("delta = " << *cfg::get().ds.delta);
