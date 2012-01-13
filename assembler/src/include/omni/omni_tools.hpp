@@ -379,6 +379,87 @@ public:
 	}
 };
 
+template<class Graph>
+class ErroneousConnectionThresholdFinder {
+private:
+	typedef typename Graph::Vertexid VertexId;
+	typedef typename Graph::Edge EdgeId;
+	const Graph &graph_;
+	const size_t backet_width_;
+
+	vector<double> CollectWeights() const {
+		vector<double> result;
+		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			vector<EdgeId> v1 = graph_.OutgoingEdges(graph_.EdgeStart(*it));
+			vector<EdgeId> v2 = graph_.IncomingEdges(graph_.EdgeEnd(*it));
+			bool eq = false;
+			if (v1.size() == 2 && v2.size() == 2)
+				if ((v1[0] == v2[0] && v1[1] == v2[1])
+						|| (v1[0] == v2[1] && v1[0] == v2[1]))
+					eq = false;
+			if (graph_.length(*it) > graph_.k() - 10
+					&& graph_.length(*it) <= graph_.k() + 1
+					&& graph_.OutgoingEdgeCount(graph_.EdgeStart(*it)) >= 2
+					&& graph_.IncomingEdgeCount(graph_.EdgeEnd(*it)) >= 2
+					&& !eq)
+				result.push_back(graph_.coverage(*it));
+		}
+		std::sort(result.begin(), result.end());
+		return result;
+	}
+
+	vector<size_t> ConstructHistogram(vector<double> coverage_set) const {
+		vecot<size_t> result;
+		size_t cur = 0;
+		for(size_t i = 0; i < coverage_set.size(); i++) {
+			if(coverage_set[i] >= cur + 1) {
+				result.push_back(0);
+				cur++;
+			}
+			result[cur]++;
+		}
+		return result;
+	}
+
+	double weight(size_t value, vector<size_t> histogram) {
+		double result = 0;
+		for(size_t i = 0; i + backet_width_ < histogram.size(); i++) {
+			result += histogram[value + i] * std::min(i + 1, backet_width_ - i);
+		}
+		return result;
+	}
+
+	double AvgCoverage() {
+		double cov = 0;
+		double length = 0;
+		for(auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			cov += graph_.coverage(*it) * graph_.length(*it);
+			length += graph.length(*it);
+		}
+		return cov / length;
+	}
+
+public:
+	ErroneousConnectionThresholdFinder(const Graph &graph, size_t backet_width) :
+			graph_(graph), backet_width_(backet_width) {
+	}
+
+	double FindThreshold(vector<size_t> histogram) const {
+		for(size_t i = 1; i + backet_width_ < histogram.size(); i++) {
+			if(weight(i, histogram) > weight(i - 1, histogram)) {
+				return i + backet_width_;
+			}
+		}
+		INFO("Proper threshold was not found. Threshold set to 0.1 of average coverage");
+		return 0.1 * AvgCoverage();
+	}
+
+	double FindThreshold() const {
+		vector<double> weights = CollectWeights();
+		vector<size_t> histogram = ConstructHistogram(weights);
+		return FindThreshold(histogram);
+	}
+}
 
 }
 

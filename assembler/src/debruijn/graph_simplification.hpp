@@ -426,9 +426,16 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 
 	if (cfg::get().ds.single_cell) PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
 
-	double max_coverage = cfg::get().simp.ec.threshold_percentile
-			? PrecountThreshold(gp.g, *cfg::get().simp.ec.threshold_percentile)
-			: cfg::get().simp.ec.max_coverage;
+	double max_coverage = 0;
+	if(cfg::get().simp.ec.max_coverage) {
+		max_coverage = cfg::get().simp.ec.max_coverage;
+	} else {
+		ErroneousConnectionThresholdFinder t_finder(gp.g, 20);
+		max_coverage = t_finder.FindThreshold();
+	}
+//	double max_coverage = cfg::get().simp.ec.threshold_percentile
+//			? PrecountThreshold(gp.g, *cfg::get().simp.ec.threshold_percentile)
+//			: cfg::get().simp.ec.max_coverage;
     
 	for (size_t i = 0; i < iteration_count; i++) {
 		SimplificationCycle(gp.g, edge_remover, removal_handler_f, printer,
