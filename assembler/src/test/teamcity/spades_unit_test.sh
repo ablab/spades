@@ -1,8 +1,8 @@
 #!/bin/bash 
 
-cd ../../../
+pushd ../../../
+make clean
 ./gen_k 55
-make rdt 
-./run rdt 
-cd src/test/teamcity/
-
+make rdt
+./run rdt
+popd
