@@ -1,3 +1,4 @@
+#!/bin/bash
 ./debruijn_make.sh
 pushd ../../../
 ./cpcfg
