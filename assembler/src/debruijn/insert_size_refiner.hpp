@@ -34,25 +34,48 @@ void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp
 		if (pos_left.first != pos_right.first) {
 			continue;
 		}
-		size_t positive = pos_right.second + sequence_left.size() + sequence_right.size();
-		size_t negative = pos_left.second + K + 1 + r.insert_size();
-		if (positive < negative) {
-			continue;
-		}
-		size_t is = positive - negative;
+		int is = pos_right.second - pos_left.second - K - 1 - r.insert_size() + sequence_left.size() + sequence_right.size();
 		TRACE("refine insert size evidence: " << is);
 		hist[is] += 1;
 		n++;
 		sum += is;
 		sum2 += is * 1.0 * is;
 	}
-	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-		INFO("histogram: " << iter->first << " " << iter->second);
-	}
 	double mean = sum / n;
+	double delta = sqrt(sum2 / n - mean * mean);
 	cfg::get_writeable().ds.IS 	= mean;
-	cfg::get_writeable().ds.delta = sqrt(sum2 / n - mean * mean);
+	cfg::get_writeable().ds.delta = delta;
 	cfg::get_writeable().ds.is_refined = true;
+	size_t often = 0;
+	size_t median = -1;
+	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+		TRACE("histogram: " << iter->first << " " << iter->second);
+		if (iter->second > often) {
+			often = iter->second;
+			median = iter->first;
+		}
+	}
+	n = 0;
+	sum = 0;
+	sum2 = 0;
+	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+		if (iter->first < -mean || iter->first > 3 * mean) {
+			continue;
+		}
+		n += iter->second;
+		sum += iter->second * 1.0 * iter->first;
+		sum2 += iter->second * 1.0 * iter->first * iter->first;
+	}
+	mean = sum / n;
+	delta = sqrt(sum2 / n - mean * mean);
+	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+		if (iter->first < mean - 5 * delta || iter->first > mean + 5 * delta) {
+			continue;
+		}
+		n += iter->second;
+		sum += iter->second * 1.0 * iter->first;
+		sum2 += iter->second * 1.0 * iter->first * iter->first;
+	}
 
 	INFO("Insert size refined:");
 	INFO("IS = " << *cfg::get().ds.IS);
