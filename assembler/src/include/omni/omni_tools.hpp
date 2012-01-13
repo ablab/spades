@@ -382,8 +382,8 @@ public:
 template<class Graph>
 class ErroneousConnectionThresholdFinder {
 private:
-	typedef typename Graph::Vertexid VertexId;
-	typedef typename Graph::Edge EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
 	const Graph &graph_;
 	const size_t backet_width_;
 
@@ -409,7 +409,7 @@ private:
 	}
 
 	vector<size_t> ConstructHistogram(vector<double> coverage_set) const {
-		vecot<size_t> result;
+		vector<size_t> result;
 		size_t cur = 0;
 		for(size_t i = 0; i < coverage_set.size(); i++) {
 			if(coverage_set[i] >= cur + 1) {
@@ -421,7 +421,7 @@ private:
 		return result;
 	}
 
-	double weight(size_t value, vector<size_t> histogram) {
+	double weight(size_t value, vector<size_t> histogram) const {
 		double result = 0;
 		for(size_t i = 0; i + backet_width_ < histogram.size(); i++) {
 			result += histogram[value + i] * std::min(i + 1, backet_width_ - i);
@@ -429,12 +429,12 @@ private:
 		return result;
 	}
 
-	double AvgCoverage() {
+	double AvgCoverage() const {
 		double cov = 0;
 		double length = 0;
 		for(auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			cov += graph_.coverage(*it) * graph_.length(*it);
-			length += graph.length(*it);
+			length += graph_.length(*it);
 		}
 		return cov / length;
 	}
@@ -455,11 +455,14 @@ public:
 	}
 
 	double FindThreshold() const {
+		INFO("Finding threshold started");
 		vector<double> weights = CollectWeights();
 		vector<size_t> histogram = ConstructHistogram(weights);
-		return FindThreshold(histogram);
+		double result = FindThreshold(histogram);
+		INFO("Threshold finding finished. Threshold is set to " << result);
+		return result;
 	}
-}
+};
 
 }
 

@@ -403,6 +403,15 @@ void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 //	OutputWrongContigs<k, Graph>(gp.g, gp.index, gp.genome, 1000, "long_contigs.fasta");
 }
 
+double FindErroneousConnectionsCoverageThreshold(const Graph &graph) {
+	if(cfg::get().simp.ec.max_coverage) {
+		INFO("Manual coverage threshold value was found in config. Coverage threshold value is set to " << cfg::get().simp.ec.max_coverage);
+		return cfg::get().simp.ec.max_coverage;
+	} else {
+		ErroneousConnectionThresholdFinder<Graph> t_finder(graph, 20);
+		return t_finder.FindThreshold();
+	}
+}
 
 template<size_t k>
 void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
@@ -426,13 +435,7 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 
 	if (cfg::get().ds.single_cell) PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
 
-	double max_coverage = 0;
-	if(cfg::get().simp.ec.max_coverage) {
-		max_coverage = cfg::get().simp.ec.max_coverage;
-	} else {
-		ErroneousConnectionThresholdFinder t_finder(gp.g, 20);
-		max_coverage = t_finder.FindThreshold();
-	}
+	double max_coverage = FindErroneousConnectionsCoverageThreshold(gp.g);
 //	double max_coverage = cfg::get().simp.ec.threshold_percentile
 //			? PrecountThreshold(gp.g, *cfg::get().simp.ec.threshold_percentile)
 //			: cfg::get().simp.ec.max_coverage;
