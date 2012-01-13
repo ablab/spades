@@ -397,8 +397,7 @@ private:
 				if ((v1[0] == v2[0] && v1[1] == v2[1])
 						|| (v1[0] == v2[1] && v1[0] == v2[1]))
 					eq = false;
-			if (graph_.length(*it) > graph_.k() - 10
-					&& graph_.length(*it) <= graph_.k() + 1
+			if (graph_.length(*it) <= graph_.k() + 1
 					&& graph_.OutgoingEdgeCount(graph_.EdgeStart(*it)) >= 2
 					&& graph_.IncomingEdgeCount(graph_.EdgeEnd(*it)) >= 2
 					&& !eq)
