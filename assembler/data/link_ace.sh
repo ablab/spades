@@ -1,1 +1,1 @@
-ln -s /home/data/input input 
+ln -s /acestorage/data/input input 
