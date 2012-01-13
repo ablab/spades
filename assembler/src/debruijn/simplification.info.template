@@ -27,6 +27,7 @@ sc_simplification
 	ec
 	{
         threshold_percentile        0.6
+        estimate_max_coverage		false
 		max_coverage				20.0
 		max_length_div_K			3
 	}
@@ -84,7 +85,8 @@ usual_simplification
 	; erroneous connections remover:
 	ec
 	{
-        threshold_percentile         0.25
+        threshold_percentile        0.25
+        estimate_max_coverage		false
 		max_coverage				40.0 ; erroneous_connection < this * not_erroneous_connection_cov
 		max_length_div_K			5
 	}

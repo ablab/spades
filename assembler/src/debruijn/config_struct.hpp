@@ -232,7 +232,8 @@ struct debruijn_config
 
 		struct erroneous_connections_remover {
             optional<double> 	threshold_percentile;
-			optional<double>	max_coverage;
+            bool				estimate_max_coverage;
+			double				max_coverage;
 			int 				max_length_div_K;
 		};
 
