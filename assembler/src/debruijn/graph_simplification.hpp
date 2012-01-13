@@ -419,7 +419,6 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 		const string& output_folder) {
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
-qq
 	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 	detail_info_printer printer(gp, labeler, output_folder, "graph.dot");
 	printer(ipp_before_simplification);
