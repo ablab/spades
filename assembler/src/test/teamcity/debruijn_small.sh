@@ -1,5 +1,5 @@
 ./debruijn_make.sh
-cd ../../../
+pushd ../../../
 ./cpcfg
 ./run rd
 #cd src/tools/quality/

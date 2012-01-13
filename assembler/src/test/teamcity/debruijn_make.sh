@@ -1,11 +1,11 @@
 #!/bin/bash
 
-cd ../../../
+pushd ../../../
+make clean
 #./prepare_cfg
 ./cpcfg
-cd data/
-./link_ftp.sh
-cd ..
-make clean
+pushd data/
+./link_morality.sh
+popd
 make -j 5 rd
-cd src/test/teamcity/
+popd
