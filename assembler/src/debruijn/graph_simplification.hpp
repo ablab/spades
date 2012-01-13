@@ -419,7 +419,7 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 		const string& output_folder) {
 	INFO("-----------------------------------------");
 	INFO("Graph simplification started");
-
+qq
 	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 	detail_info_printer printer(gp, labeler, output_folder, "graph.dot");
 	printer(ipp_before_simplification);
@@ -433,9 +433,9 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 	EdgeRemover<Graph> edge_remover(gp.g,
 			cfg::get().simp.removal_checks_enabled, removal_handler_f);
 
+	double max_coverage = FindErroneousConnectionsCoverageThreshold(gp.g);
 	if (cfg::get().ds.single_cell) PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
 
-	double max_coverage = FindErroneousConnectionsCoverageThreshold(gp.g);
 //	double max_coverage = cfg::get().simp.ec.threshold_percentile
 //			? PrecountThreshold(gp.g, *cfg::get().simp.ec.threshold_percentile)
 //			: cfg::get().simp.ec.max_coverage;
