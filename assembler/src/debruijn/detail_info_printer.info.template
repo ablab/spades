@@ -1,0 +1,30 @@
+info_printers
+{
+    default
+    {
+       print_stats                      true        
+       detailed_dot_write               false
+       write_components                 false
+       components_for_kmer              ""
+       components_for_genome_pos        "" ; (k+1)-mers starting on this positions will be investigated
+       write_components_along_genome    false
+       save_full_graph                  false
+    }
+    
+    final_simplified
+    {
+       write_components                 true
+       write_components_along_genome    true
+       ;detailed_dot_write		true
+    }
+
+    before_repeat_resolution
+    {
+       ;write_components                 true
+       ;write_components_along_genome    true
+       ;detailed_dot_write		 true
+    }
+}
+
+
+  

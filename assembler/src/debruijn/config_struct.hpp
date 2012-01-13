@@ -331,6 +331,7 @@ struct debruijn_config
        bool     detailed_dot_write;
        bool     write_components;
        string   components_for_kmer;
+       string  	components_for_genome_pos;
        bool     write_components_along_genome;
        bool		save_full_graph;
 	};
@@ -577,6 +578,7 @@ inline void load(debruijn_config::info_printer& printer, boost::property_tree::p
     load(printer.detailed_dot_write			  , pt, "detailed_dot_write"            , complete);
     load(printer.write_components			  , pt, "write_components"              , complete);
     load(printer.components_for_kmer		  , pt, "components_for_kmer"           , complete);
+    load(printer.components_for_genome_pos	  , pt, "components_for_genome_pos"     , complete);
     load(printer.write_components_along_genome,	pt, "write_components_along_genome" , complete);
     load(printer.save_full_graph			  ,	pt, "save_full_graph"			  	, complete);
 }

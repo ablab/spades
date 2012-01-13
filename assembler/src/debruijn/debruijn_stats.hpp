@@ -394,8 +394,6 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 
 	debruijn_config::info_printer const& config = it->second;
 
-	make_dir(folder);
-
 	if (config.print_stats) {
 		INFO("Printing statistics for " << details::info_printer_pos_name(pos));
 		CountStats<K>(gp.g, gp.index, gp.genome);
@@ -407,7 +405,9 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 
 	if (config.detailed_dot_write || config.write_components
 			|| !config.components_for_kmer.empty()
-			|| config.write_components_along_genome) {
+			|| config.write_components_along_genome
+			|| config.save_full_graph
+			|| !config.components_for_genome_pos.empty()) {
 		path1 = FindGenomeMappingPath<K>(gp.genome, gp.g, gp.index,
 				gp.kmer_mapper).simple_path();
 		path2 = FindGenomeMappingPath<K>(!gp.genome, gp.g, gp.index,
@@ -446,6 +446,19 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 		make_dir(folder + "full_graph_save/");
 		ConjugateDataPrinter<Graph> printer(gp.g, gp.int_ids);
 		PrintGraphPack(folder + "full_graph_save/graph", printer, gp);
+	}
+
+	if (!config.components_for_genome_pos.empty()) {
+		string pos_loc_folder = folder + "pos_loc/";
+		make_dir(pos_loc_folder);
+		vector<string> positions;
+		boost::split(positions, config.components_for_genome_pos, boost::is_any_of(" ,"));
+		for (auto it = positions.begin(); it != positions.end(); ++it) {
+			string locality_folder = pos_loc_folder + *it;
+			make_dir(locality_folder);
+			WriteKmerComponent(gp, labeler, locality_folder, graph_name, path1, path2,
+					Seq<K + 1>(gp.genome, boost::lexical_cast<int>(*it)));
+		}
 	}
 }
 
