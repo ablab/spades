@@ -387,6 +387,7 @@ inline void load(debruijn_config::simplification::tip_clipper& tc, boost::proper
 {
 	using config_common::load;
 	load(tc.max_tip_length			, pt, "max_tip_length"		 );
+	load(estimate_max_coverage		, pt, "estimate_max_coverage");
 	load(tc.max_coverage			, pt, "max_coverage"		 );
 	load(tc.max_relative_coverage	, pt, "max_relative_coverage");
 }
