@@ -9,7 +9,7 @@ void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp
 		return;
 	}
 	INFO("SUBSTAGE == Refining insert size");
-//	map<size_t, size_t> hist;
+	map<size_t, size_t> hist;
 	size_t n = 0;
 	double sum = 0;
 	double sum2 = 0;
@@ -34,16 +34,21 @@ void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp
 		if (pos_left.first != pos_right.first) {
 			continue;
 		}
-		size_t is = pos_right.second - pos_left.second - K - 1 + sequence_left.size() + sequence_right.size() - r.insert_size();
+		size_t positive = pos_right.second + sequence_left.size() + sequence_right.size();
+		size_t negative = pos_left.second + K + 1 + r.insert_size();
+		if (positive < negative) {
+			continue;
+		}
+		size_t is = positive - negative;
 		TRACE("refine insert size evidence: " << is);
-//		hist[is] += 1;
+		hist[is] += 1;
 		n++;
 		sum += is;
 		sum2 += is * 1.0 * is;
 	}
-//	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-//		INFO("histogram: " << iter->first << " " << iter->second);
-//	}
+	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+		INFO("histogram: " << iter->first << " " << iter->second);
+	}
 	double mean = sum / n;
 	cfg::get_writeable().ds.IS 	= mean;
 	cfg::get_writeable().ds.delta = sqrt(sum2 / n - mean * mean);
