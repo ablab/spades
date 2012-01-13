@@ -90,10 +90,10 @@ ECOLI_JCVI_BIG_JUMP_BH ; new JCVI_ECOLI with jump
 
 HMP_LANE_1_BH ; old HMP_LANE_1_2
 {
-        first	HMP/lane_1/bh20111219/00.reads.left.corrected.fastq.gz
-        second	HMP/lane_1/bh20111219/00.reads.right.corrected.fastq.gz
-        single_first	HMP/lane_1/bh20111219/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/lane_1/bh20111219/00.reads.right.unpaired.fastq.gz
+        first	HMP/hmp_mda_pilot_jcvi_0001/hammer/00.reads.left.corrected.fastq.gz
+        second	HMP/hmp_mda_pilot_jcvi_0001/hammer/00.reads.right.corrected.fastq.gz
+        single_first	HMP/hmp_mda_pilot_jcvi_0001/hammer/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/hmp_mda_pilot_jcvi_0001/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              210
     	single_cell	true
@@ -101,10 +101,10 @@ HMP_LANE_1_BH ; old HMP_LANE_1_2
 }
 HMP_LANE_2_BH ; old HMP_LANE_2
 {
-        first	HMP/lane_2/bh20111202/00.reads.left.corrected.fastq.gz
-        second	HMP/lane_2/bh20111202/00.reads.right.corrected.fastq.gz
-        single_first	HMP/lane_2/bh20111202/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/lane_2/bh20111202/00.reads.right.unpaired.fastq.gz
+        first	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.left.corrected.fastq.gz
+        second	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.right.corrected.fastq.gz
+        single_first	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/hmp_mda_pilot_jcvi_0002/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              210
     	single_cell	true
@@ -128,10 +128,10 @@ HMP_LANE_2_JUMPING_BH ; new HMP_LANE_2
 
 HMP_LANE_3_BH ; old HMP_LANE_3
 {
-        first	HMP/lane_3/bh20111205/00.reads.left.corrected.fastq.gz
-        second	HMP/lane_3/bh20111205/00.reads.right.corrected.fastq.gz
-        single_first	HMP/lane_3/bh20111205/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/lane_3/bh20111205/00.reads.right.unpaired.fastq.gz
+        first	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.left.corrected.fastq.gz
+        second	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.right.corrected.fastq.gz
+        single_first	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              210
     	single_cell	true
@@ -140,10 +140,10 @@ HMP_LANE_3_BH ; old HMP_LANE_3
 
 HMP_LANE_4_BH ; old HMP_LANE_4
 {
-        first	HMP/lane_4/bh20111206/00.reads.left.corrected.fastq.gz
-        second	HMP/lane_4/bh20111206/00.reads.right.corrected.fastq.gz
-        single_first	HMP/lane_4/bh20111206/00.reads.left.unpaired.fastq.gz
-        single_second	HMP/lane_4/bh20111206/00.reads.right.unpaired.fastq.gz
+        first	HMP/hmp_mda_pilot_jcvi_0004/hammer/00.reads.left.corrected.fastq.gz
+        second	HMP/hmp_mda_pilot_jcvi_0004/hammer/00.reads.right.corrected.fastq.gz
+        single_first	HMP/hmp_mda_pilot_jcvi_0004/hammer/00.reads.left.unpaired.fastq.gz
+        single_second	HMP/hmp_mda_pilot_jcvi_0004/hammer/00.reads.right.unpaired.fastq.gz
         RL              100
         IS              210
     	single_cell	true
