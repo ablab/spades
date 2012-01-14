@@ -267,9 +267,9 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
              
     }
 
-    for (auto iter = gr.begin(); iter != gr.end(); ++iter){
-        cout << "Pavel " << (*iter).first / 100. << " "<< (*iter).second << endl;
-    }
+//    for (auto iter = gr.begin(); iter != gr.end(); ++iter){
+//        cout << "Pavel " << (*iter).first / 100. << " "<< (*iter).second << endl;
+//    }
 	INFO("Counting clustered info stats");
 	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
 	EstimationQualityStat<Graph> estimation_stat(gp.g, gp.int_ids, edge_qual,
@@ -455,7 +455,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 		boost::split(positions, config.components_for_genome_pos, boost::is_any_of(" ,")
 				, boost::token_compress_on);
 		for (auto it = positions.begin(); it != positions.end(); ++it) {
-			string locality_folder = pos_loc_folder + *it +"/";
+			string locality_folder = pos_loc_folder + *it + "/";
 			make_dir(locality_folder);
 			WriteKmerComponent(gp, labeler, locality_folder, graph_name, path1, path2,
 					Seq<K + 1>(gp.genome, boost::lexical_cast<int>(*it)));
