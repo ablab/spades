@@ -452,7 +452,8 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 		string pos_loc_folder = folder + "pos_loc/";
 		make_dir(pos_loc_folder);
 		vector<string> positions;
-		boost::split(positions, config.components_for_genome_pos, boost::is_any_of(" ,"));
+		boost::split(positions, config.components_for_genome_pos, boost::is_any_of(" ,")
+				, boost::token_compress_on);
 		for (auto it = positions.begin(); it != positions.end(); ++it) {
 			string locality_folder = pos_loc_folder + *it;
 			make_dir(locality_folder);
