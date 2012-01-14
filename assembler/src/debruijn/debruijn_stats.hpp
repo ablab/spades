@@ -455,7 +455,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 		boost::split(positions, config.components_for_genome_pos, boost::is_any_of(" ,")
 				, boost::token_compress_on);
 		for (auto it = positions.begin(); it != positions.end(); ++it) {
-			string locality_folder = pos_loc_folder + *it;
+			string locality_folder = pos_loc_folder + *it +"/";
 			make_dir(locality_folder);
 			WriteKmerComponent(gp, labeler, locality_folder, graph_name, path1, path2,
 					Seq<K + 1>(gp.genome, boost::lexical_cast<int>(*it)));
