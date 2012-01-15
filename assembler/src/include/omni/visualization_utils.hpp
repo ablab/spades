@@ -199,7 +199,7 @@ private:
 	const Path<EdgeId> &path1_;
 	const Path<EdgeId> &path2_;
 
-	void SetColor(map<EdgeId, string> &color, EdgeId edge, string col) {
+	void SetColor(map<EdgeId, string> &color, EdgeId edge, string col) const {
 		auto it = color.find(edge);
 		if (it != color.end() && it->second != col) {
 			color[edge] = "purple";
@@ -207,7 +207,7 @@ private:
 			color[edge] = col;
 	}
 
-	void ConstructColorMap(map<EdgeId, string> &color) {
+	void ConstructColorMap(map<EdgeId, string> &color) const {
 		for (auto it = path1_.sequence().begin(); it != path1_.sequence().end();
 				++it) {
 			SetColor(color, *it, "red");
@@ -218,7 +218,7 @@ private:
 		}
 	}
 
-	void ConstructBlackEdgesSet(set<EdgeId> &result) {
+	void ConstructBlackEdgesSet(set<EdgeId> &result) const {
 		for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd();
 				++iterator) {
 			result.insert(*iterator);
@@ -239,13 +239,13 @@ public:
 			graph_(graph), path1_(path1), path2_(path2) {
 	}
 
-	map<EdgeId, string> ColorPath() {
+	map<EdgeId, string> ColorPath() const {
 		map<EdgeId, string> colors;
 		ConstructColorMap(colors);
 		return colors;
 	}
 
-	set<EdgeId> BlackEdges() {
+	set<EdgeId> BlackEdges() const {
 		set<EdgeId> result;
 		ConstructBlackEdgesSet(result);
 		return result;
@@ -400,7 +400,7 @@ public:
 					factory_.GetPrinterInstance(graph_name_, os);
 			auto visualizer = factory_.GetVisualizerInstance(*gp);
 			visualizer->open();
-			if (component.size() < 10000)
+			if (component.size() < 1000)
 				visualizer->Visualize(component);
 			else
 				WARN("Too large component " << component.size());

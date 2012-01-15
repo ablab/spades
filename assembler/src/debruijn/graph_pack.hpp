@@ -32,7 +32,7 @@ struct graph_pack {
 
 	Sequence const& genome;
 
-	graph_pack(Sequence const& genome) :
+	explicit graph_pack(Sequence const& genome) :
 	g(k),
 	index(g)
 	, int_ids (g)

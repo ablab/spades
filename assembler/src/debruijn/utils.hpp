@@ -160,7 +160,7 @@ public:
 	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
 	}
 
-	bool containsInIndex(const Kmer& kmer) const {
+	bool contains(const Kmer& kmer) const {
 		return inner_index_.containsInIndex(kmer);
 	}
 
@@ -298,7 +298,7 @@ private:
 
 	bool FindKmer(Kmer kmer, vector<EdgeId> &passed, size_t &startPosition,
 			size_t &endPosition) const {
-		if (index_.containsInIndex(kmer)) {
+		if (index_.contains(kmer)) {
 			pair<EdgeId, size_t> position = index_.get(kmer);
 			endPosition = position.second;
 			if (passed.empty()) {
@@ -374,7 +374,7 @@ private:
 	void FindKmer(Kmer kmer, size_t kmer_pos, vector<EdgeId> &passed,
 			RangeMappings& range_mappings) const {
 
-		if (index_.containsInIndex(kmer)) {
+		if (index_.contains(kmer)) {
 			pair<EdgeId, size_t> position = index_.get(kmer);
 			if (passed.empty() || passed.back() != position.first
 					|| kmer_pos != range_mappings.back().initial_range.end_pos
@@ -449,7 +449,7 @@ private:
 
 	bool FindKmer(Kmer kmer, size_t kmer_pos, vector<EdgeId> &passed,
 			RangeMappings& range_mappings) const {
-		if (index_.containsInIndex(kmer)) {
+		if (index_.contains(kmer)) {
 			pair<EdgeId, size_t> position = index_.get(kmer);
 			if (passed.empty() || passed.back() != position.first
 					|| kmer_pos != range_mappings.back().initial_range.end_pos
@@ -683,7 +683,7 @@ class EtalonPairedInfoCounter {
 				++left_idx) {
 			left = left << sequence[left_idx + k];
 			Seq<k + 1> left_upd = kmer_mapper_.Substitute(left);
-			if (!index_.containsInIndex(left_upd)) {
+			if (!index_.contains(left_upd)) {
 				continue;
 			}
 			pair<EdgeId, size_t> left_pos = index_.get(left_upd);
@@ -697,7 +697,7 @@ class EtalonPairedInfoCounter {
 					++right_idx) {
 				right = right << sequence[right_idx + k];
 				Seq<k + 1> right_upd = kmer_mapper_.Substitute(right);
-				if (!index_.containsInIndex(right_upd)) {
+				if (!index_.contains(right_upd)) {
 					continue;
 				}
 				pair<EdgeId, size_t> right_pos = index_.get(right_upd);
@@ -917,7 +917,7 @@ public:
 			Seq<k + 1> kmer = read.start<k + 1>();
 			bool found;
 			for (size_t i = k + 1; i <= read.size(); ++i) {
-				if (index_.containsInIndex(kmer)) {
+				if (index_.contains(kmer)) {
 					pair<EdgeId, size_t> position = index_.get(kmer);
 					found = false;
 					for (size_t j = 0; j < res.size(); j++)
@@ -954,7 +954,7 @@ public:
 		for (size_t i = 0; i + l - 1 < genome.size(); i++) {
 			cur = cur << genome[i + l - 1];
 			auto corr_cur = kmer_mapper.Substitute(cur);
-			if (index.containsInIndex(corr_cur)) {
+			if (index.contains(corr_cur)) {
 				quality_[index.get(corr_cur).first]++;
 			}
 		}
@@ -1051,6 +1051,42 @@ public:
 
 private:
 	DECL_LOGGER("QualityLoggingRemovalHandler")
+	;
+};
+
+template<class Graph>
+class QualityEdgeLocalityPrintingRH {
+	typedef typename Graph::EdgeId EdgeId;
+	const Graph& g_;
+	const EdgeQuality<Graph>& quality_handler_;
+	const GraphLabeler<Graph>& labeler_;
+//	size_t black_removed_;
+//	size_t colored_removed_;
+public:
+	QualityEdgeLocalityPrintingRH(const Graph& g
+			, const EdgeQuality<Graph>& quality_handler
+			, const GraphLabeler<Graph>& labeler) :
+			g_(g), quality_handler_(quality_handler),
+			labeler_(labeler) {
+	}
+
+	void HandleDelete(EdgeId edge) {
+		if (quality_handler_.IsPositiveQuality(edge)) {
+			TRACE("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
+			string folder = cfg::get().output_dir + "colored_edges_deleted/";
+			make_dir(folder);
+			AnyEdgeContainFilter<Graph> filter(g_, edge);
+			//todo magic constant
+			LongEdgesInclusiveSplitter<Graph> splitter(g_, 220);
+			map<EdgeId, string> empty_coloring;
+			WriteComponents(g_, splitter, filter, "locality_of_edge_" + ToString(g_.int_id(edge))
+					, folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
+					, empty_coloring, labeler_);
+		}
+	}
+
+private:
+	DECL_LOGGER("QualityEdgeLocalityPrintingRH")
 	;
 };
 

@@ -64,6 +64,7 @@ using boost::make_shared;
 namespace fs = boost::filesystem;
 
 using boost::optional;
+using boost::none;
 using boost::in_place;
 
 using boost::format;

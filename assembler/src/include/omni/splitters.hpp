@@ -621,25 +621,23 @@ class AnyEdgeContainFilter: public GraphComponentFilter<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
-	const IdTrackHandler<Graph>& int_ids_;
-	const vector<int> edges_of_interest_;
+	const vector<EdgeId> edges_of_interest_;
 public:
 	AnyEdgeContainFilter(const Graph& graph,
-			const IdTrackHandler<Graph>& int_ids,
-			const vector<int>& edges_of_interest) :
-			base(graph), int_ids_(int_ids), edges_of_interest_(
+			const vector<EdgeId>& edges_of_interest) :
+			base(graph), edges_of_interest_(
 					edges_of_interest) {
 
 	}
 
 	AnyEdgeContainFilter(const Graph& graph,
-			const IdTrackHandler<Graph>& int_ids, int edge_of_interest) :
-			base(graph), int_ids_(int_ids), edges_of_interest_( {
+			EdgeId edge_of_interest) :
+			base(graph), edges_of_interest_( {
 					edge_of_interest }) {
 
 	}
 
-	bool ContainsEdge(const vector<VertexId> &component, EdgeId e) const {
+	bool ContainsEdge(const vector<VertexId>& component, EdgeId e) const {
 		return std::find(component.begin(), component.end(),
 				this->graph().EdgeStart(e)) != component.end()
 				&& std::find(component.begin(), component.end(),
@@ -650,8 +648,7 @@ public:
 	bool Check(const vector<VertexId> &component) const {
 		for (auto it = edges_of_interest_.begin();
 				it != edges_of_interest_.end(); ++it) {
-			VERIFY_MSG(int_ids_.ReturnEdgeId(*it) != NULL, "Couldn't find edge with id = " << *it);
-			if (ContainsEdge(component, int_ids_.ReturnEdgeId(*it))) {
+			if (ContainsEdge(component, *it)) {
 				return true;
 			}
 		}
@@ -748,6 +745,8 @@ public:
 		return false;
 	}
 
+private:
+	DECL_LOGGER("FilteringSplitterWrapper");
 };
 
 }

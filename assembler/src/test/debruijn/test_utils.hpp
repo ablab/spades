@@ -30,7 +30,10 @@ void PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
 		size_t split_edge_length, const IdTrackHandler<Graph>& int_ids,
 		int int_edge_id) {
 	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
-	AnyEdgeContainFilter<Graph> filter(g, int_ids, int_edge_id);
+
+	VERIFY_MSG(int_ids.ReturnEdgeId(int_edge_id) != NULL, "Couldn't find edge with id = " << int_edge_id);
+
+	AnyEdgeContainFilter<Graph> filter(g, int_ids.ReturnEdgeId(int_edge_id));
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, filter);
 	vector<vector<VertexId>> components;
 	while (!splitter.Finished()) {
