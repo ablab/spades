@@ -33,7 +33,7 @@ void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 
 	if (cfg::get().paired_mode) {
 
-	    if (cfg::get().gc.turn_on)
+	    if (cfg::get().gc.enable)
 	        CloseShortGaps(gp.g, paired_index, gp.edge_pos,	cfg::get().gc.minimal_intersection);
 
 		GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS, cfg::get().ds.RL, cfg::get().de.delta);

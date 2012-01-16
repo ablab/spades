@@ -323,7 +323,7 @@ struct debruijn_config
 
 
 	struct gap_closer {
-	    bool    turn_on;
+	    bool    enable;
 		int     minimal_intersection;
 	};
 
@@ -501,7 +501,7 @@ inline void load(debruijn_config::position_handler& pos, boost::property_tree::p
 inline void load(debruijn_config::gap_closer& gc, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
-	load(gc.turn_on             , pt, "turn_on"             );
+	load(gc.enable              , pt, "enable"              );
 	load(gc.minimal_intersection, pt, "minimal_intersection");
 }
 
