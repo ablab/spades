@@ -46,8 +46,8 @@ etalon_info_mode  false
 ; Collect paired information before or after graph simplification
 late_paired_info true
 
-; repeat resolving mode (none dima andrew jump combined)
-resolving_mode dima
+; repeat resolving mode (none split path_extend jump combined)
+resolving_mode split
 
 andrey_params {
 	#include "src/debruijn/long_contigs/lc_params.info"
@@ -87,7 +87,8 @@ pos
 
 gap_closer
 {
-    minimal_intersection 10
+    enable	false
+    minimal_intersection	10
 }
 
 
