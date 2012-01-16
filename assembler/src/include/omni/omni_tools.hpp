@@ -385,7 +385,7 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph &graph_;
-	const size_t backet_width_;
+	size_t backet_width_;
 
 	vector<double> CollectWeights() const {
 		vector<double> result;
@@ -410,6 +410,7 @@ private:
 	vector<size_t> ConstructHistogram(vector<double> coverage_set) const {
 		vector<size_t> result;
 		size_t cur = 0;
+		result.push_back(0);
 		for(size_t i = 0; i < coverage_set.size(); i++) {
 			if(coverage_set[i] >= cur + 1) {
 				result.push_back(0);
@@ -420,10 +421,10 @@ private:
 		return result;
 	}
 
-	double weight(size_t value, vector<size_t> histogram) const {
+	double weight(size_t value, vector<size_t> histogram, size_t backet_width) const {
 		double result = 0;
-		for(size_t i = 0; i + backet_width_ < histogram.size(); i++) {
-			result += histogram[value + i] * std::min(i + 1, backet_width_ - i);
+		for(size_t i = 0; i < backet_width && value + i < histogram.size(); i++) {
+			result += histogram[value + i] * std::min(i + 1, backet_width - i);
 		}
 		return result;
 	}
@@ -436,18 +437,51 @@ private:
 			length += graph_.length(*it);
 		}
 		return cov / length;
+		vector<double> coverages;
+		for(auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			coverages.push_back(graph_.coverage(*it));
+		}
+		sort(coverages.begin(), coverages.end());
+		return coverages[coverages.size() / 2];
+	}
+
+	double Median() {
+        vector<double> coverages;
+		for(auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			coverages.push_back(graph_.coverage(*it));
+		}
+		sort(coverages.begin(), coverages.end());
+		return coverages[coverages.size() / 2];
 	}
 
 public:
-	ErroneousConnectionThresholdFinder(const Graph &graph, size_t backet_width) :
+	ErroneousConnectionThresholdFinder(const Graph &graph, size_t backet_width = 0) :
 			graph_(graph), backet_width_(backet_width) {
 	}
 
 	double FindThreshold(vector<size_t> histogram) const {
-		for(size_t i = 1; i + backet_width_ < histogram.size(); i++) {
-			if(weight(i, histogram) > weight(i - 1, histogram)) {
-				return i + backet_width_;
+		size_t backet_width = backet_width_;
+		if(backet_width == 0) {
+			backet_width = (size_t)(0.1 * AvgCoverage() + 5);
+		}
+		INFO("Bucket size: " << backet_width);
+		for(size_t i = 0; i < 100; i++) {
+			cout << i << " " << histogram[i] << endl;
+		}
+		cout << endl;
+		size_t cnt = 0;
+		for(size_t i = 1; i + backet_width < histogram.size(); i++) {
+			cout << i << " " << weight(i, histogram, backet_width) << endl;
+	
+			if(weight(i, histogram, backet_width) > weight(i - 1, histogram, backet_width)) {
+				cnt++;
 			}
+			if(i > backet_width && weight(i - backet_width, histogram, backet_width) > weight(i - backet_width - 1, histogram, backet_width)) {
+				cnt--;
+			}
+			if(2 * cnt >= backet_width)
+				return i + backet_width / 2;
+			
 		}
 		INFO("Proper threshold was not found. Threshold set to 0.1 of average coverage");
 		return 0.1 * AvgCoverage();

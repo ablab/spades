@@ -405,7 +405,7 @@ void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 
 double FindErroneousConnectionsCoverageThreshold(const Graph &graph) {
 	if(cfg::get().simp.ec.estimate_max_coverage) {
-		ErroneousConnectionThresholdFinder<Graph> t_finder(graph, 20);
+		ErroneousConnectionThresholdFinder<Graph> t_finder(graph);
 		return t_finder.FindThreshold();
 	} else {
 		INFO("Coverage threshold value was set manually to " << cfg::get().simp.ec.max_coverage);
