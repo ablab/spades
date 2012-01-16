@@ -657,7 +657,7 @@ void resolve_repeats() {
 		return;
 	}
 
-	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_dima) {
+	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_split) {
 		int number_of_components = 0;
 
 		if (cfg::get().componential_resolve) {
@@ -767,7 +767,7 @@ void resolve_repeats() {
 		}
 	}
 
-	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_andrew) {
+	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {
 		resolve_repeats_ml(conj_gp, clustered_index,
 				cfg::get().output_dir + "alt_resolve/",
 				cfg::get().andrey_params);

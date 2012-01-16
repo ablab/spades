@@ -41,8 +41,8 @@ enum simplification_mode
 enum resolving_mode
 {
 	rm_none           ,
-	rm_dima           ,
-	rm_andrew         ,
+	rm_split          ,
+	rm_path_extend    ,
 	rm_combined       ,
 	rm_jump
 };
@@ -149,8 +149,8 @@ struct debruijn_config
 		resolve_mode_id_mapping::value_type info [] =
         {
                 {"none"             , rm_none           },
-                {"dima"  			, rm_dima			},
-                {"andrew"           , rm_andrew         },
+                {"split"  			, rm_split			},
+                {"path_extend"      , rm_path_extend    },
                 {"combined"         , rm_combined       },
                 {"jump"             , rm_jump           },
         };
@@ -634,7 +634,7 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	load(cfg.pos              , pt, "pos"              ); // position handler:
 
 	load(cfg.rm               , pt, "resolving_mode"   );
-	if (cfg.rm == rm_andrew || cfg.rm == rm_combined || cfg.rm == rm_jump) {
+	if (cfg.rm == rm_path_extend || cfg.rm == rm_combined || cfg.rm == rm_jump) {
 	    cfg.andrey_params.param_set_name = cfg.ds.single_cell ? "singlecell" : "multicell";
 	    load(cfg.andrey_params, pt, "andrey_params"    );
 	}
