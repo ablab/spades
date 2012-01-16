@@ -1,4 +1,8 @@
 #!/bin/bash
+echo "Executing $0, here is its code:"
+echo ""
+cat $0
+echo ""
 ./debruijn_make.sh
 pushd ../../../
 ./cpcfg

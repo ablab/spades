@@ -1,4 +1,8 @@
 #!/bin/bash
+echo "Executing $0, here is its code:"
+echo ""
+cat $0
+echo ""
 pushd ../../../
 rm data/debruijn/ECOLI_IS220_QUAKE/K55/latest
 ./prepare_cfg
