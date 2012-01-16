@@ -437,18 +437,13 @@ private:
 			length += graph_.length(*it);
 		}
 		return cov / length;
-		vector<double> coverages;
-		for(auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			coverages.push_back(graph_.coverage(*it));
-		}
-		sort(coverages.begin(), coverages.end());
-		return coverages[coverages.size() / 2];
 	}
 
-	double Median() {
+	double Median() const {
         vector<double> coverages;
 		for(auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			coverages.push_back(graph_.coverage(*it));
+			if(graph_.length(*it) > 500)
+				coverages.push_back(graph_.coverage(*it));
 		}
 		sort(coverages.begin(), coverages.end());
 		return coverages[coverages.size() / 2];
@@ -462,10 +457,10 @@ public:
 	double FindThreshold(vector<size_t> histogram) const {
 		size_t backet_width = backet_width_;
 		if(backet_width == 0) {
-			backet_width = (size_t)(0.1 * AvgCoverage() + 5);
+			backet_width = (size_t)(0.2 * AvgCoverage() + 5);
 		}
 		INFO("Bucket size: " << backet_width);
-		for(size_t i = 0; i < 100; i++) {
+		for(size_t i = 0; i < 200; i++) {
 			cout << i << " " << histogram[i] << endl;
 		}
 		cout << endl;
@@ -480,7 +475,7 @@ public:
 				cnt--;
 			}
 			if(2 * cnt >= backet_width)
-				return i + backet_width / 2;
+				return i;
 			
 		}
 		INFO("Proper threshold was not found. Threshold set to 0.1 of average coverage");
