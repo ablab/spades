@@ -87,6 +87,7 @@ pos
 
 gap_closer
 {
+    turn_on	         false
     minimal_intersection 10
 }
 
