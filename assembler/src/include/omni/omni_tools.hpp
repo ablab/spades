@@ -460,14 +460,8 @@ public:
 			backet_width = (size_t)(0.2 * AvgCoverage() + 5);
 		}
 		INFO("Bucket size: " << backet_width);
-		for(size_t i = 0; i < 200; i++) {
-			cout << i << " " << histogram[i] << endl;
-		}
-		cout << endl;
 		size_t cnt = 0;
 		for(size_t i = 1; i + backet_width < histogram.size(); i++) {
-			cout << i << " " << weight(i, histogram, backet_width) << endl;
-	
 			if(weight(i, histogram, backet_width) > weight(i - 1, histogram, backet_width)) {
 				cnt++;
 			}
