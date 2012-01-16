@@ -494,7 +494,6 @@ void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
 		Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId>()) {
 	PathColorer<Graph> path_colorer(g, path1, path2);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
 	ComponentSizeFilter<Graph> checker(g, split_edge_length, 0);
 	WriteComponents<Graph>(g, splitter, checker, graph_name, file_name,
 			coloring, labeler);

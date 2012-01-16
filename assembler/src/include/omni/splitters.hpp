@@ -597,6 +597,14 @@ public:
 	virtual bool Check(const Element &element) const = 0;
 };
 
+template<class Element>
+class TrueFilter: public AbstractFilter<Element> {
+
+	/*virtual*/ bool Check(const Element &element) const {
+		return true;
+	}
+};
+
 template<class Graph>
 class GraphComponentFilter: public AbstractFilter<
 		vector<typename Graph::VertexId>> {

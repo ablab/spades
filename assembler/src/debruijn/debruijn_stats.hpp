@@ -395,7 +395,8 @@ void WriteKmerComponent(conj_graph_pack &gp,
 		const omnigraph::GraphLabeler<Graph>& labeler, const string& folder,
 		const string& graph_name, Path<Graph::EdgeId> path1,
 		Path<Graph::EdgeId> path2, Seq<K + 1> const& kp1mer) {
-	KMerNeighborhoodFinder<Graph, K> splitter(gp.g, kp1mer, gp.index, 50,
+	VERIFY(gp.index.contains(kp1mer));
+	EdgeNeighborhoodFinder<Graph> splitter(gp.g, gp.index.get(kp1mer).first, 50,
 			*cfg::get().ds.IS);
 	WriteComponents<Graph>(gp.g, labeler, folder + "kmer.dot", graph_name,
 			*cfg::get().ds.IS, splitter, path1, path2);
