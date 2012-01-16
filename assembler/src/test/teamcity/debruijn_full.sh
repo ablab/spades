@@ -13,7 +13,7 @@ pushd ../../../
 cp ./src/test/teamcity/config.info.FULL ./src/debruijn/config.info
 ./run rd
 cd src/tools/quality/
-./run_EColi.sh -m ../../../data/debruijn/ECOLI_IS220_QUAKE/K55/latest/resolved_and_cleared_*.fasta
+./run_Ecoli.sh -m ../../../data/debruijn/ECOLI_IS220_QUAKE/K55/latest/resolved_and_cleared_*.fasta
 popd
 
 python teamcity.py
