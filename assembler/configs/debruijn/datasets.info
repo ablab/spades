@@ -84,6 +84,19 @@ ECOLI_JCVI_BIG_JUMP_BH ; new JCVI_ECOLI with jump
         reference_genome E.coli/MG1655-K12.fasta.gz
 }
 
+ECOLI_JGI
+{
+        first   E.coli/jgi/bh20120117/04.reads.0.left.corrected.fastq.gz
+        second  E.coli/jgi/bh20120117/04.reads.0.right.corrected.fastq.gz
+        single_first    E.coli/jgi/bh20120117/04.reads.0.left.unpaired.fastq.gz
+        single_second   E.coli/jgi/bh20120117/04.reads.0.right.unpaired.fastq.gz
+        RL      100
+        IS      220
+        single_cell     true
+        reference_genome E.coli/MG1655-K12.fasta.gz
+}
+
+
 ; ================================================
 ; ===============     HMP     ====================
 ; ================================================
