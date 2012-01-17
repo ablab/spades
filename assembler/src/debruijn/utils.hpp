@@ -1081,6 +1081,10 @@ public:
 		cf.run(this->graph().EdgeEnd(edge_));
 		vector<VertexId> result_end = cf.ReachedVertices();
 		result_set.insert(result_end.begin(), result_end.end());
+
+		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
+		cc.CloseComponent(result_set);
+
 		finished_ = true;
 		vector<VertexId> result;
 		for (auto it = result_set.begin(); it != result_set.end(); ++it)
