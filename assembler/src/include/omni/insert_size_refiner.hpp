@@ -24,7 +24,7 @@ void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp
 		Seq<K + 1> right = sequence_right.start<K + 1>();
 		left = gp.kmer_mapper.Substitute(left);
 		right = gp.kmer_mapper.Substitute(right);
-		if (!gp.index.containsInIndex(left) || !gp.index.containsInIndex(right)) {
+		if (!gp.index.contains(left) || !gp.index.contains(right)) {
 			continue; // TODO rather use binary search.
 		}
 		auto pos_left = gp.index.get(left);

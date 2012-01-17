@@ -1122,7 +1122,7 @@ public:
 			//todo magic constant
 			map<EdgeId, string> empty_coloring;
 			EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
-					cfg::get().ds.IS);
+					*cfg::get().ds.IS);
 			WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
 					, folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
 					, empty_coloring, labeler_);
