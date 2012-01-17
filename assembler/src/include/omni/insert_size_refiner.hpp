@@ -1,6 +1,6 @@
 #pragma once
 
-#include "standard.hpp"
+//#include "standard.hpp"
 
 namespace debruijn_graph {
 
@@ -8,8 +8,8 @@ void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp
 	if (cfg::get().ds.IS && cfg::get().ds.delta) {
 		return;
 	}
-	INFO("SUBSTAGE == Refining insert size");
-	map<size_t, size_t> hist;
+	INFO("SUBSTAGE == Refining insert size and its distribution");
+	map<int, size_t> hist;
 	size_t n = 0;
 	double sum = 0;
 	double sum2 = 0;

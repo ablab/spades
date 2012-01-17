@@ -4,7 +4,7 @@
 #include "omni/paired_info.hpp"
 #include "simplification.hpp"
 #include "graph_construction.hpp"
-#include "insert_size_refiner.hpp"
+#include "omni/insert_size_refiner.hpp"
 
 namespace debruijn_graph {
 
