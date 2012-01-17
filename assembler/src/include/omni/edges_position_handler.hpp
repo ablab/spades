@@ -50,7 +50,7 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosi
 				contigs_num.insert(iter->contigId_);
 			}
 		}
-		INFO("Possible misassemble happened");
+		//INFO("Possible misassemble happened");
 		return res;
 	}
 	for( size_t i = 0; i< v1.size(); i++){
@@ -78,7 +78,7 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosi
 				DEBUG("Contig "<<v1[i].contigId_<< " Glue parts with gap: "<<v1[i].start()<<"-"<<v1[i].end()<<" and "<<v2[best_fit_j].start()<<"-"<<v2[best_fit_j].end());
 			}
 		} else {
-			INFO("Possible misassemble happened");
+			//INFO("Possible misassemble happened");
 		}
 	}
 	return res;
