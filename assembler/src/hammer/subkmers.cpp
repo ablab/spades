@@ -312,14 +312,14 @@ hint_t SubKMerPQ::getNextElementFromFile(size_t j) {
 void SubKMerPQ::initPQ() {
 	if (v != NULL) {
 		for (int j = 0; j < nthreads; ++j) {
-			it[j] = v->begin() + boundaries[j];
-			it_end[j] = v->begin() + boundaries[j + 1];
-			pq.push(SubKMerPQElement(*(it[j]), j));
+			ind[j] = boundaries[j];
+			ind_end[j] = boundaries[j + 1];
+			pq.push(SubKMerPQElement((*v)[j], j));
 		}
 	} else {
 		for (size_t j = 0; j < fnames_.size(); ++j) {
-			ifs_.push_back(new ifstream(fnames_[j].data()));
-			if (!ifs_[j]->eof()) {
+			ifs_.push_back( FIStream::init(fnames_[j]));
+			if (ifs_[j]->fs.good()) {
 				hint_t nextel = getNextElementFromFile(j);
 				if (nextel != BLOBKMER_UNDEFINED) pq.push( SubKMerPQElement( nextel, j ) );
 			}

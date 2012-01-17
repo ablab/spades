@@ -632,22 +632,23 @@ void KMerClustering::process(bool doHamming, string dirprefix, SubKMerSorter * s
 
 	if ( useFilesystem ) {
 		TIMEDLN("Writing down clusters.");
+		ofstream ofs( HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "hamming.classes").c_str() );
+		for ( size_t i=0; i < classes.size(); ++i ) {
+			ofs << "class " << i << " size=" << classes[i].size() << "\n";
+			for ( size_t j=0; j < classes[i].size(); ++j ) {
+				ofs << classes[i][j] << "\n";
 			}
-			/*if (classes[i].size() > 1) {
-				cout << "class " << i << " size=" << classes[i].size() << "\n";
-				for ( size_t j=0; j < classes[i].size(); ++j ) {
-					cout << classes[i][j] << "\t" << v_->at(classes[i][j]) << "\t" << string(Globals::blob + v_->at(classes[i][j]), K) << endl;
-				}
-			}*/
 			classes[i].clear();
 		}
 		classes.clear();
+		ofs.close();
 		TIMEDLN("Clusters written. Reading k-mer information.");
-	}
-
 	} else {
 		TIMEDLN("Skipping subvectors entirely. Reading k-mer information");
 	}
+
+	}
+
 
 	if ( useFilesystem ) {
 		boost::shared_ptr<FIStream> ifs = FIStream::init(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.total.sorted"));

@@ -200,14 +200,17 @@ void HammerTools::ReadAllFilesIntoBlob() {
 	//std::cout << "blob with revcomp:\n" << string(Globals::blob + Globals::revPos, curpos - Globals::revPos) << endl;
 }
 
-void HammerTools::CountKMersBySplitAndMerge() {
+void HammerTools::CountAndSplitKMers(bool writeFiles) {
 	TIMEDLN("Splitting kmer instances into files.");
 	vector<boost::shared_ptr<FOStream> > ostreams(cfg::get().count_numfiles);
-	for (int i = 0; i < cfg::get().count_numfiles; ++i) {
-		ostreams[i] = FOStream::init(getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i ));
+	if (writeFiles) {
+		for (int i = 0; i < cfg::get().count_numfiles; ++i) {
+			ostreams[i] = FOStream::init(getFilename( cfg::get().input_working_dir, Globals::iteration_no, "tmp.kmers", i ));
+		}
 	}
 	Seq<K>::hash hash_function;
-	for(size_t i=0; i < Globals::pr->size(); ++i) {
+	Seq<K>::less2 cmp_kmers;
+	for(size_t i=0; i < Globals::revNo; ++i) {
 		string s(Globals::blob        + Globals::pr->at(i).start(), Globals::pr->at(i).size());
 		string q(Globals::blobquality + Globals::pr->at(i).start(), Globals::pr->at(i).size());
 		for ( size_t j=0; j < Globals::pr->at(i).size(); ++j) q[j] = (char)(q[j] - cfg::get().input_qvoffset);
@@ -221,14 +224,17 @@ void HammerTools::CountKMersBySplitAndMerge() {
 				cur_pos = Globals::pr->at(i).getRCPosition(gen.pos());
 				Globals::pr->at(i).setRCBit(gen.pos() - 1);
 			}
-			boost::iostreams::filtering_ostream & cur_gz = ostreams[hash_function(gen.kmer()) % cfg::get().count_numfiles]->fs;
-			hint_t cur_pos = Globals::pr->at(i).start() + gen.pos() - 1;
-			double correct_probability = 1 - gen.correct_probability();
-			cur_gz << cur_pos << "\t" << correct_probability << "\n";
+			if (writeFiles) {
+				boost::iostreams::filtering_ostream & cur_gz = ostreams[hash_function(gen.kmer()) % cfg::get().count_numfiles]->fs;
+				double correct_probability = 1 - gen.correct_probability();
+				cur_gz << cur_pos << "\t" << correct_probability << "\n";
+			}
 			gen.Next();
 		}
 	}
 	ostreams.clear();
+}
+
 
 void HammerTools::CountKMersBySplitAndMerge() {
 	CountAndSplitKMers(true);

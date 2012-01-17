@@ -41,5 +41,5 @@ bool ReadReconstructor::makeOneReconstructionIteration() {
 }
 
 bool ReadReconstructor::correctOneRead(PositionRead & pr) {
-
+	return true;
 }
