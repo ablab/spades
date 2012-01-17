@@ -131,7 +131,6 @@ def hammer(prefix):
 	else:
 	    a = askProp(prop)
 	    p += a
-    print p
     printDS(p)
     for c in cmd:
 	print c
