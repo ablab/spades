@@ -5,8 +5,4 @@ hammer/quake_count/quake_count
 hammer/quake_enhanced/count/count
 hammer/quake_enhanced/prepare_graph/prepare_graph
 bayes/bayes
-debruijn/config.info
-debruijn/simplification.info
-debruijn/distance_estimation.info
-debruijn/detail_info_printer.info
 debruijn/k.hpp
