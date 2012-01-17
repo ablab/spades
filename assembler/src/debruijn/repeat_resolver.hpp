@@ -1108,9 +1108,9 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				if (tcount > 1) {
 					changed = true;
 					GraphCnt++;
-					omnigraph::WriteSimple(
-						new_graph, TotLabAfter, output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
-								+ ".dot", "no_repeat_graph");
+//					omnigraph::WriteSimple(
+//						new_graph, TotLabAfter, output_folder + "resolve_" + ToString(cheating_mode)+"_" + ToString(GraphCnt)
+//								+ ".dot", "no_repeat_graph");
 					if (cheating_mode == 0 ) changed = true;
 				}
 			}
