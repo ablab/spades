@@ -25,6 +25,9 @@ case $1 in
   'dipt') cfg="configs/debruijn/detail_info_printer.info.template";;
   'log') cfg="log4cxx.properties";;
   'logt') cfg="log4cxx.properties.template";;
+  'sp')   cfg="spades_config.info";;
+  'spt')   cfg="spades_config.info.template";;
+  
 esac
 
 $EDITOR $cfg

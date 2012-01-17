@@ -1,7 +1,0 @@
-iterative_K         21
-paired_mode         true 
-dataset             ECOLI_IS220_QUAKE_1K
-input_dir           ./data/input/
-output_dir          ./data/debruijn/
-output_to_console   false
-

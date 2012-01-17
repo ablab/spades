@@ -5,6 +5,7 @@ if [ "$1" = "-d" ] ; then
     cmd=diff
 fi
 
+$cmd spades_config.info.template                          spades_config.info
 $cmd configs/debruijn/config.info.template                configs/debruijn/config.info
 $cmd configs/debruijn/simplification.info.template        configs/debruijn/simplification.info
 $cmd configs/debruijn/distance_estimation.info.template   configs/debruijn/distance_estimation.info
