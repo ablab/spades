@@ -5,7 +5,7 @@ cat $0
 echo ""
 pushd ../../../
 rm data/debruijn/ECOLI_IS220_QUAKE/K55/latest
-rm ../../tools/quality/results/all.txt
+rm src/tools/quality/results/all.txt
 ./prepare_cfg
 popd
 ./debruijn_make.sh
