@@ -99,3 +99,9 @@ uncorrected_reads	none
 
 path_set_graph false  ;experimental
 
+jump
+{
+	    load                false
+	    weight_threshold    0.05
+}
+
