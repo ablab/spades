@@ -20,20 +20,24 @@ g_pos = g_pos.strip().split('\n')
 output_root = "interest_pos/"
 os.mkdir(output_root)
 
-for pos in g_pos
-	os.mkdir(output_root + g_pos)
+for pos in g_pos:
+	os.mkdir(output_root + pos)
 
-cnt = 1;
-for i in range(1, 10)
-	for dir_pref in dirs
-		if (os.path.exists(dir_pref + str(i)))
-			for pos in g_pos
-				file_from = dir_pref + str(i) + "/" + pos
-				if (os.path.exists(file_from))
-					file_to = output_root + pos + "/" + cnt + "_" + dir_pref + str(i)
+cnt = 0;
+for i in range(0, 10):
+	for dir_pref in dirs:
+		if (os.path.exists(dir_pref + str(i))):
+			print "found dir " + dir_pref + str(i) 
+			for pos in g_pos:
+				file_from = dir_pref + str(i) + "/pos_loc/" + pos + "/kmer1_.dot"
+				print "looking for file " + file_from
+				if (os.path.exists(file_from)):
+					print "found file " + file_from
+					file_to = output_root + pos + "/" + str(cnt) + "_" + dir_pref + str(i) + ".dot"
+					print "copying to " + file_to
 					os.system('cp ' + file_from + " " + file_to) 
-			cnt++		
-		else
+			cnt = cnt + 1	
+		else:
 			print "Finished"
 			exit(0)
 
