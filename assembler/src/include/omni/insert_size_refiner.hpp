@@ -1,7 +1,5 @@
 #pragma once
 
-//#include "standard.hpp"
-
 namespace debruijn_graph {
 
 void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp) {
@@ -23,7 +21,7 @@ void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp
 			continue;
 		}
 		Seq<K + 1> left = sequence_left.end<K + 1>();
-		Seq<K + 1> right = sequence_right.end<K + 1>();
+		Seq<K + 1> right = sequence_right.start<K + 1>();
 		left = gp.kmer_mapper.Substitute(left);
 		right = gp.kmer_mapper.Substitute(right);
 		if (!gp.index.containsInIndex(left) || !gp.index.containsInIndex(right)) {
@@ -49,7 +47,7 @@ void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp
 	size_t often = 0;
 	size_t median = -1;
 	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-		TRACE("histogram: " << iter->first << " " << iter->second);
+		INFO("histogram: " << iter->first << " " << iter->second);
 		if (iter->second > often) {
 			often = iter->second;
 			median = iter->first;
