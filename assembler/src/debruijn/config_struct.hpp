@@ -231,7 +231,6 @@ struct debruijn_config
 		};
 
 		struct erroneous_connections_remover {
-            optional<double> 	threshold_percentile;
             bool				estimate_max_coverage;
 			double				max_coverage;
 			int 				max_length_div_K;
@@ -432,7 +431,6 @@ inline void load(debruijn_config::simplification::erroneous_connections_remover&
 {
 	using config_common::load;
 
-	ec.threshold_percentile = pt.get_optional<double>("threshold_percentile");
 	load(ec.estimate_max_coverage	, pt, "estimate_max_coverage");
 	load(ec.max_coverage    	, pt, "max_coverage"    );
 	load(ec.max_length_div_K	, pt, "max_length_div_K");
