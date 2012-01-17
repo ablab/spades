@@ -920,27 +920,32 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesAuto(){
 }
 
 
+namespace details
+{
+    template<class Graph>
+    struct VertexCompositId
+    {
+            typename Graph::VertexId Id;
+	    int intId;
+	    int componentId;
+    };
 
+    struct CompositIdCompare
+    {
+        template<class Id>
+	bool operator() (Id i, Id j){
+		if (i.componentId < j.componentId) return true;
+		if (j.componentId < i.componentId) return false;
+		if (i.intId < j.intId) return true;
+		return false;
+	}
+    };
+}
 
 template<class Graph>
 map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponentsInNonVariableOrder(){
 
-	struct VertexCompositId{
-		typename Graph::VertexId Id;
-		int intId;
-		int componentId;
-	};
-
-	struct CompositIdCompare{
-		bool operator() (VertexCompositId i, VertexCompositId j){
-			if (i.componentId < j.componentId) return true;
-			if (j.componentId < i.componentId) return false;
-			if (i.intId < j.intId) return true;
-			return false;
-		}
-	} CompositeComparator;
-
-	vector<VertexCompositId> TemporaryOrderVect;
+	vector<details::VertexCompositId<Graph>> TemporaryOrderVect;
 
 	map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
@@ -965,7 +970,7 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 		}
 
 		for(size_t i = 0; i < comps.size(); i++) {
-			VertexCompositId curVertex;
+			details::VertexCompositId<Graph> curVertex;
 			curVertex.Id = comps[i];
 			curVertex.componentId = CompId;
 			curVertex.intId = new_graph.int_id(comps[i]);
@@ -981,7 +986,7 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 	}
 
 
-	sort(TemporaryOrderVect.begin(), TemporaryOrderVect.end(), CompositeComparator);
+	sort(TemporaryOrderVect.begin(), TemporaryOrderVect.end(), details::CompositIdCompare());
 
 	for(size_t i = 0; i < TemporaryOrderVect.size(); i++) {
 		vertices.insert(make_pair(count, TemporaryOrderVect[i].Id));
@@ -1180,26 +1185,32 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 //	return make_pair(true, pair_inf);
 }
 
+namespace details
+{
+    template<class Graph>
+    struct EdgeInfoCompare {
+	const Graph* new_graph;
+	const Graph* old_graph;
+        template<class EI>
+	bool operator() (EI i, EI j){
+		if (new_graph->int_id(i.lp.first) < new_graph->int_id(j.lp.first)) return true;
+		if (new_graph->int_id(i.lp.first) > new_graph->int_id(j.lp.first)) return false;
+		if (old_graph->int_id(i.lp.second) < old_graph->int_id(j.lp.second)) return true;
+		if (old_graph->int_id(i.lp.second) > old_graph->int_id(j.lp.second)) return false;
+		if (i.lp.d < j.lp.d) return true;
+		return false;
+	}
+    };
+}
+
 template<class Graph>
 size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 		PairInfoIndexData<EdgeId> &paired_data, VertexId vid) {
-	struct EdgeInfoCompare {
-		const Graph* new_graph;
-		const Graph* old_graph;
-		bool operator() (EdgeInfo i, EdgeInfo j){
-			if (new_graph->int_id(i.lp.first) < new_graph->int_id(j.lp.first)) return true;
-			if (new_graph->int_id(i.lp.first) > new_graph->int_id(j.lp.first)) return false;
-			if (old_graph->int_id(i.lp.second) < old_graph->int_id(j.lp.second)) return true;
-			if (old_graph->int_id(i.lp.second) > old_graph->int_id(j.lp.second)) return false;
-			if (i.lp.d < j.lp.d) return true;
-			return false;
-		}
-	};
-	EdgeInfoCompare EI_comparator;
+
+	details::EdgeInfoCompare<Graph> EI_comparator;
 
 	EI_comparator.new_graph = &new_graph;
 	EI_comparator.old_graph = &old_graph;
-
 
 	DEBUG("---- Generate vertex paired info for:  " << vid <<" ("<<new_IDs.ReturnIntId(vid) <<") -----------------------------");
 	edge_infos.clear();
