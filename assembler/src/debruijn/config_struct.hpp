@@ -276,6 +276,8 @@ struct debruijn_config
 		int mode;
 		double inresolve_cutoff_proportion;
 		int near_vertex;
+		int max_distance;
+		size_t max_repeat_length;
 	};
 	struct distance_estimator {
 		size_t delta;
@@ -492,6 +494,8 @@ inline void load(debruijn_config::repeat_resolver& rr, boost::property_tree::ptr
 	load(rr.mode             , pt, "mode"			  );
 	load(rr.inresolve_cutoff_proportion, pt, "inresolve_cutoff_proportion");
 	load(rr.near_vertex      , pt, "near_vertex"	  );
+	load(rr.max_distance      , pt, "max_distance"	  );
+	load(rr.max_repeat_length      , pt, "max_repeat_length"	  );
 }
 
 inline void load(debruijn_config::position_handler& pos, boost::property_tree::ptree const& pt, bool complete)

@@ -60,9 +60,6 @@ public:
 
 	class EdgeInfo {
 	public:
-		static const int MAXD = 2;
-		static const int MAXSKIPDIST = 50;
-
 
 		EdgeInfo(const PairInfo &lp_, const int dir_, const EdgeId edge_,
 				const int d_) :
@@ -104,7 +101,7 @@ public:
 
 
 //TODO:: SHURIK! UBERI ZA SOBOJ !!!
-			BoundedDijkstra<Graph, int> dij(old_graph, MAXSKIPDIST);
+			BoundedDijkstra<Graph, int> dij(old_graph, cfg::get().rr.max_distance);
 			dij.run(v_e);
 			if (dij.DistanceCounted(other_v_s))
 				if (isClose(d + len + dij.GetDistance(other_v_s), other_d,
@@ -161,8 +158,6 @@ public:
 		bool isAdjacent(EdgeInfo other_info, const Graph &old_graph,
 				const Graph &new_graph, EdgeLabelHandler<Graph> &labels_after, const TotalLabeler<Graph>& tot_lab, const 	IdTrackHandler<Graph> &old_IDs) {
 			//			DEBUG("comparation started: " << edge);
-			//		max_diff = MAXD;
-
 
 //ToDo: Understand if it is very dirty hack.
 			if ((lp.first != other_info.lp.first)
@@ -176,6 +171,11 @@ public:
 								== new_graph.EdgeEnd(other_info.lp.first)))
 					return false;
 			}
+
+			if (lp.first == other_info.lp.first)
+				if (new_graph.length(lp.first) > cfg::get().rr.max_repeat_length)
+					return true;
+
 			double max_diff = max(lp.variance, other_info.lp.variance) + 0.5
 					+ 1e-9;
 
@@ -287,12 +287,14 @@ public:
 				TRACE("Added vertex" << new_vertex);
 				vertex_labels[new_vertex] = *v_iter;
 				old_to_new[*v_iter] = new_vertex;
+				new_IDs.AddVertexIntId(new_vertex, old_IDs.ReturnIntId(*v_iter));
 				if (rc_mode) {
 					VertexId new_rc_vertex = conj_wrap(new_graph, new_vertex);
 					VertexId old_rc_vertex = conj_wrap(old_graph, *v_iter);
 					real_vertices.insert(new_rc_vertex);
 					vertex_labels[new_rc_vertex] = old_rc_vertex;
 					old_to_new[old_rc_vertex] = new_rc_vertex;
+					new_IDs.AddVertexIntId(new_rc_vertex, old_IDs.ReturnIntId(old_rc_vertex));
 				}
 			}
 
@@ -312,7 +314,7 @@ public:
 					old_to_new[old_graph.EdgeStart(*e_iter)],
 					old_to_new[old_graph.EdgeEnd(*e_iter)],
 					old_graph.EdgeNucls(*e_iter));
-//			new_IDs.AddEdgeIntId(new_edge, old_IDs.ReturnIntId(*e_iter));
+			new_IDs.AddEdgeIntId(new_edge, old_IDs.ReturnIntId(*e_iter));
 			WrappedSetCoverage(new_edge,
 					old_graph.coverage(*e_iter) * old_graph.length(*e_iter));
 
@@ -329,6 +331,7 @@ public:
 				old_to_new_edge[old_rc_edge] = new_rc_edge;
 				new_pos.AddEdgePosition(new_rc_edge, old_pos.edges_positions().find(old_rc_edge)->second);
 				TRACE("rc edge added");
+				new_IDs.AddEdgeIntId(new_rc_edge, old_IDs.ReturnIntId(old_rc_edge));
 			}
 
 		}
@@ -372,6 +375,7 @@ public:
 			if (cheat_edge) {
 				zero_paired_length += old_graph.length(*e_iter);
 				global_cheating_edges.insert(old_to_new_edge[*e_iter]);
+				TRACE("Global cheater add "<<old_to_new_edge[*e_iter]<<" id "<<new_graph.int_id(old_to_new_edge[*e_iter]));
 			}
 		}
 		INFO ("Length of edges with no paired info:: " << zero_paired_length);
@@ -386,6 +390,7 @@ private:
 	int near_vertex;
 	map<int, VertexId> fillVerticesAuto();
 	map<int, VertexId> fillVerticesComponents();
+	map<int, VertexId> fillVerticesComponentsInNonVariableOrder();
 	size_t RectangleResolveVertex(VertexId vid, TotalLabeler<Graph>& tot_labler);
 	size_t CheatingResolveVertex(VertexId vid);
 	void BanRCVertex(VertexId v );
@@ -612,7 +617,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 
 	for(auto iter = edgeCounts.begin(); iter != edgeCounts.end(); ++iter) {
 		if (iter->second == 0 && cheating_mode == 2) {
-			INFO("Adding no-paired edge: " << new_IDs.ReturnIntId(iter->first)<< " potential bug here.");
+			DEBUG("Adding no-paired edge: " << new_IDs.ReturnIntId(iter->first)<< " potential bug here.");
 			PairInfos tmp = paired_di_data.GetEdgeInfos(iter->first);
 			int fl = 0;
 			for(size_t j = 0; j < tmp.size(); j ++ ){
@@ -759,7 +764,10 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 							} else{
 								DEBUG( "cheating OK");
 							}
+
 							global_cheating_edges.insert(it->second);
+							TRACE("Global cheater add "<<it->second<<" id "<<new_graph.int_id(it->second));
+
 						}
 					}
 				}
@@ -799,6 +807,8 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 		for (size_t i = 0; i<LiveNewEdges.size(); i++){
 			if (OldCopyCnt[LiveProtoEdges[i]] > 1){
 				global_cheating_edges.insert(conj_wrap(new_graph, LiveNewEdges[i]));
+				TRACE("Global cheater add "<<conj_wrap(new_graph, LiveNewEdges[i])<<" id "<<new_graph.int_id(conj_wrap(new_graph, LiveNewEdges[i])));
+
 			}
 			else
 			if  (OldCopyCnt[LiveProtoEdges[i]] == 1){
@@ -820,8 +830,10 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	for(int i = 0; i < 2; i++) {
 		for(size_t j = 0; j < edgeIds[i].size(); j++) {
 			paired_di_data.DeleteEdgeInfo(edgeIds[i][j]);
+			global_cheating_edges.erase(edgeIds[i][j]);
 			if (rc_mode){
 				paired_di_data.DeleteEdgeInfo(conj_wrap(new_graph,edgeIds[i][j]));
+				global_cheating_edges.erase(conj_wrap(new_graph,edgeIds[i][j]));
 			}
 		}
 	}
@@ -838,12 +850,18 @@ void RepeatResolver<Graph>::BanRCVertex(VertexId v ){
 	int rc_id = new_IDs.ReturnIntId(rv);
 	DEBUG("added vertex " << id << " banning vertex "<< rc_id);
 	vector<EdgeId> tmp = new_graph.IncomingEdges(rv);
-	for(size_t i = 0; i < tmp.size(); i++)
+	for(size_t i = 0; i < tmp.size(); i++) {
 		global_cheating_edges.insert(tmp[i]);
+		TRACE("Global cheater add "<<tmp[i]<<" id "<<new_graph.int_id(tmp[i]));
+
+	}
 	TRACE("incoming cheaters added");
 	tmp = new_graph.OutgoingEdges(rv);
-	for(size_t i = 0; i < tmp.size(); i++)
+	for(size_t i = 0; i < tmp.size(); i++){
 		global_cheating_edges.insert(tmp[i]);
+		TRACE("Global cheater add "<<tmp[i]<<" id "<<new_graph.int_id(tmp[i]));
+
+	}
 	TRACE("outgoing cheaters added");
 }
 
@@ -886,6 +904,7 @@ void RepeatResolver<Graph>::WrappedSetCoverage(EdgeId e, int cov){
 }
 
 
+
 template<class Graph>
 map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesAuto(){
 	map<int, typename Graph::VertexId> vertices;
@@ -900,6 +919,80 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesAuto(){
 	return vertices;
 }
 
+
+
+
+template<class Graph>
+map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponentsInNonVariableOrder(){
+
+	struct VertexCompositId{
+		typename Graph::VertexId Id;
+		int intId;
+		int componentId;
+	};
+
+	struct CompositIdCompare{
+		bool operator() (VertexCompositId i, VertexCompositId j){
+			if (i.componentId < j.componentId) return true;
+			if (j.componentId < i.componentId) return false;
+			if (i.intId < j.intId) return true;
+			return false;
+		}
+	} CompositeComparator;
+
+	vector<VertexCompositId> TemporaryOrderVect;
+
+	map<int, typename Graph::VertexId> vertices;
+	vertices.clear();
+	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, *cfg::get().ds.IS);
+
+	vector<VertexId> comps;
+	DEBUG("comp filling started");
+	if (! splitter.Finished())
+		comps = splitter.NextComponent();
+	int count = 0;
+	int comp_count = 0;
+
+	while (comps.size() != 0) {
+
+		DEBUG("filling component " << comp_count);
+		comp_count++;
+
+		int CompId = new_graph.int_id(comps[0]);
+		for(size_t i = 1; i < comps.size(); i++) {
+			if (CompId > new_graph.int_id(comps[i]))
+				CompId = new_graph.int_id(comps[i]);
+		}
+
+		for(size_t i = 0; i < comps.size(); i++) {
+			VertexCompositId curVertex;
+			curVertex.Id = comps[i];
+			curVertex.componentId = CompId;
+			curVertex.intId = new_graph.int_id(comps[i]);
+			TemporaryOrderVect.push_back(curVertex);
+		}
+
+		if (splitter.Finished())
+			break;
+
+		comps = splitter.NextComponent();
+		DEBUG("finished filling component " << comp_count);
+
+	}
+
+
+	sort(TemporaryOrderVect.begin(), TemporaryOrderVect.end(), CompositeComparator);
+
+	for(size_t i = 0; i < TemporaryOrderVect.size(); i++) {
+		vertices.insert(make_pair(count, TemporaryOrderVect[i].Id));
+		count++;
+	}
+
+	return vertices;
+}
+
+
+
 template<class Graph>
 map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents(){
 	map<int, typename Graph::VertexId> vertices;
@@ -913,6 +1006,7 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 	int count = 0;
 	int comp_count = 0;
 	while (comps.size() != 0) {
+
 		DEBUG("filling component " << comp_count);
 		comp_count++;
 		for(size_t i = 0; i < comps.size(); i++) {
@@ -955,7 +1049,8 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 		while (changed) {
 			changed = false;
 			if (rc_mode)
-				vertices = fillVerticesComponents();
+//				vertices = fillVerticesComponents();
+				vertices = fillVerticesComponentsInNonVariableOrder();
 			else
 				vertices = fillVerticesAuto();
 			INFO(
@@ -977,6 +1072,7 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				} else {
 					DEBUG("not deleted");
 				}
+
 				vector<EdgeId> edgeIds[2];
 				int flag = 1;
 				edgeIds[0] = new_graph.OutgoingEdges(v_iter->second);
@@ -984,6 +1080,8 @@ void RepeatResolver<Graph>::ResolveRepeats(const string& output_folder) {
 				for(int i = 0; i < 2; i++) {
 					for(size_t j = 0; j < edgeIds[i].size(); j++)
 						if (global_cheating_edges.find(edgeIds[i][j]) != global_cheating_edges.end()) {
+							TRACE("Global cheater found "<<edgeIds[i][j]<<" id "<<new_graph.int_id(edgeIds[i][j]));
+
 							flag = 0;
 							break;
 						}
@@ -1085,6 +1183,24 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 template<class Graph>
 size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 		PairInfoIndexData<EdgeId> &paired_data, VertexId vid) {
+	struct EdgeInfoCompare {
+		const Graph* new_graph;
+		const Graph* old_graph;
+		bool operator() (EdgeInfo i, EdgeInfo j){
+			if (new_graph->int_id(i.lp.first) < new_graph->int_id(j.lp.first)) return true;
+			if (new_graph->int_id(i.lp.first) > new_graph->int_id(j.lp.first)) return false;
+			if (old_graph->int_id(i.lp.second) < old_graph->int_id(j.lp.second)) return true;
+			if (old_graph->int_id(i.lp.second) > old_graph->int_id(j.lp.second)) return false;
+			if (i.lp.d < j.lp.d) return true;
+			return false;
+		}
+	};
+	EdgeInfoCompare EI_comparator;
+
+	EI_comparator.new_graph = &new_graph;
+	EI_comparator.old_graph = &old_graph;
+
+
 	DEBUG("---- Generate vertex paired info for:  " << vid <<" ("<<new_IDs.ReturnIntId(vid) <<") -----------------------------");
 	edge_infos.clear();
 	local_cheating_edges.clear();
@@ -1168,6 +1284,8 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 	}
 	DEBUG(" all info getted for all edges")
 
+	sort(edge_infos.begin(), edge_infos.end(), EI_comparator);
+
 	for (int j = 0; j < (int)edge_infos.size(); j++) {
 		PairInfo tmp = edge_infos[j].lp;
 		DEBUG("Edge infos "<<j<<":"  << new_IDs.ReturnIntId(tmp.first)<<" ("<<old_IDs.ReturnIntId(edge_labels[tmp.first]) << ") -- " << old_IDs.ReturnIntId(tmp.second) <<" "<< tmp.d << " from vertex: "<<edge_infos[j].d<< " weigth "<<tmp.weight);
@@ -1192,6 +1310,7 @@ size_t RepeatResolver<Graph>::RectangleResolveVertex(VertexId vid, TotalLabeler<
 			for(size_t j = 0; j <edgeIds[i].size(); j++ ) {
 				if (global_cheating_edges.find(edgeIds[i][j]) != global_cheating_edges.end()) {
 					DEBUG ("Can not resolve vertex " << new_IDs.ReturnIntId(vid) <<" because of incident cheater edge "<< new_IDs.ReturnIntId(edgeIds[i][j]));
+					TRACE("Global cheater found "<<edgeIds[i][j]<<" id "<<new_graph.int_id(edgeIds[i][j]));
 					return 1;
 				}
 				if (size == 0) {

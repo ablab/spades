@@ -65,6 +65,9 @@ sc_rr
 	mode		2 ; Additional resolve cheats, don't change if you are not sure
 	inresolve_cutoff_proportion 0.1
 	near_vertex  30
+	max_distance 50
+	max_repeat_length 8000
+	
 }
 
 usual_rr
@@ -73,6 +76,8 @@ usual_rr
 	mode		3 ; Additional resolve cheats, don't change if you are not sure
 	inresolve_cutoff_proportion 0.5
 	near_vertex  30
+	max_distance 50
+	max_repeat_length 8000
 }
 
 
@@ -80,7 +85,7 @@ usual_rr
 
 pos
 {
-	max_single_gap 500
+	max_single_gap 50
 	contigs_for_threading ./data/debruijn/contigs.fasta
 	late_threading false
 }
