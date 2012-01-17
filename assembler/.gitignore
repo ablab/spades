@@ -5,6 +5,7 @@ CMakeFiles/
 scripts/
 *.launch
 *.ebwt
+*.pyc
 log4cxx.properties
 abruijn.sh
 tags
