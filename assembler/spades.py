@@ -68,6 +68,8 @@ def main():
     log_filename = build_path + "spades.log"
     cfg.__dict__["log_filename"] = log_filename
 
+    print("\n== Log could be found here: " + cfg.log_filename + "\n")
+
     log_file = open(log_filename, "w")
 
     old_stdout = sys.stdout
@@ -105,7 +107,7 @@ def main():
     sys.stdout = old_stdout
     sys.stderr = old_stderr
 
-    print("\n== Assembling finished. Log could be found here: " + cfg.log_filename)
+    print("\n== Assembling finished. Log could be found here: " + cfg.log_filename + "\n")
 
 if __name__ == '__main__':
   main()
