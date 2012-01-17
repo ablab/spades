@@ -352,6 +352,18 @@ SAUREUS_BENCHMARK_QUAKE ; old SAUREUS_QUAKED
 	reference_genome  S.aureus/USA300_FPR3757.fasta.gz
 }
 
+SAUREUS_SC_LANE_7_BH
+{
+        first   S.aureus/sc_lane_7/bh20120117/00.reads.0.left.corrected.fastq.gz
+        second  S.aureus/sc_lane_7/bh20120117/00.reads.0.right.corrected.fastq.gz
+        single_first    S.aureus/sc_lane_7/bh20120117/00.reads.0.left.unpaired.fastq.gz
+        single_second   S.aureus/sc_lane_7/bh20120117/00.reads.0.right.unpaired.fastq.gz
+        RL      100
+        IS      300
+        single_cell     true
+        reference_genome        S.aureus/USA300_FPR3757.fasta.gz
+}
+
 ; ================================================
 ; ================ A.Fumigatus ===================
 ; ================================================
