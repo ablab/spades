@@ -61,7 +61,7 @@ public:
 	class EdgeInfo {
 	public:
 		static const int MAXD = 2;
-		static const int MAXSKIPDIST = 4;
+		static const int MAXSKIPDIST = 50;
 
 
 		EdgeInfo(const PairInfo &lp_, const int dir_, const EdgeId edge_,
@@ -184,7 +184,7 @@ public:
 
 
 			//new_version
-			set<EdgeId> edges_set = labels_after.edge_inclusions[this->edge];
+/*			set<EdgeId> edges_set = labels_after.edge_inclusions[this->edge];
 			set<EdgeId> other_edges_set = labels_after.edge_inclusions[other_info.getEdge()];
 
 			bool new_res = false;
@@ -210,7 +210,7 @@ public:
 //				INFO("   first  set: "<<ToString(set1_ids));
 //				INFO("   second set: "<<ToString(set2_ids));
 			}
-			return old_res;
+	*/		return old_res;
 		}
 
 
@@ -473,6 +473,8 @@ private:
 			const PairInfo &pair_info) {
 		std::multimap<int, EdgeId> Map_queue;
 		EdgeId StartEdge = labels_after.edge_labels[pair_info.first][0];
+		DEBUG("Start edge mark is "<<old_IDs.ReturnIntId(labels_after.edge_labels[pair_info.first][0]));
+		DEBUG("Start edge mark is old "<<old_IDs.ReturnIntId(edge_labels[pair_info.first]));
 		EdgeId EndEdge = pair_info.second;
 		int dist = pair_info.d;
 		int best = dist + MAX_DISTANCE_CORRECTION + 3;
@@ -481,6 +483,7 @@ private:
 		vector<EdgeId> edges;
 		int len;
 		pair<EdgeId, int> Prev_pair;
+		DEBUG("Start edge "<<StartEdge<<" End edge"<<EndEdge);
 		if (StartEdge == EndEdge) {
 			if (abs(dist) < MAX_DISTANCE_CORRECTION
 			)
@@ -651,6 +654,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	for(auto iter = edgeCounts.begin(); iter != edgeCounts.end(); ++iter) {
 		if (iter->second > 1) {
 			paired_di_data.DeleteEdgeInfo(iter->first);
+
 		} else 
 		if (iter->second == 1){
 			int updated_edge_color = -1;
@@ -761,8 +765,11 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 				}
 			}
 			for (size_t j = 0; j < edge_infos.size(); j++){
-				if (edge_info_colors[j] == i)
+				if (edge_info_colors[j] == i){
 					paired_di_data.ReplaceFirstEdge(edge_infos[j].lp, old_to_new_edgeId[edge_infos[j].lp.first]);
+					DEBUG("Replace first edge: new info is " << new_IDs.ReturnIntId(old_to_new_edgeId[edge_infos[j].lp.first])<<" << "<< new_IDs.ReturnIntId(edge_infos[j].lp.first)<<"  "<< old_IDs.ReturnIntId(edge_infos[j].lp.second) <<" "<< edge_infos[j].lp.d);
+
+				}
 			}
 			for(auto it = split_pair.second.begin(); it != split_pair.second.end(); ++it){
 				if (new_graph.coverage(it->second) < cfg::get().simp.ec.max_coverage * cfg::get().rr.inresolve_cutoff_proportion) {
@@ -800,7 +807,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 				if (tmp_ei_new != LiveNewEdges[i]) {
 					PairInfos conj_tmp = paired_di_data.GetEdgeInfos(tmp_ei);
 					for(size_t info_cj = 0; info_cj < conj_tmp.size(); info_cj ++ ){
-//						INFO("Pi fi "<<new_IDs.str(conj_tmp[i].first)<<" to "<< new_IDs.str(tmp_ei_new));
+						DEBUG("Pi fi "<<new_IDs.str(conj_tmp[i].first)<<" to "<< new_IDs.str(tmp_ei_new));
 						paired_di_data.ReplaceFirstEdge(conj_tmp[info_cj], tmp_ei_new);
 					}
 				}
@@ -810,6 +817,14 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 	}
 
 	TRACE("split finished, deleting vertex");
+	for(int i = 0; i < 2; i++) {
+		for(size_t j = 0; j < edgeIds[i].size(); j++) {
+			paired_di_data.DeleteEdgeInfo(edgeIds[i][j]);
+			if (rc_mode){
+				paired_di_data.DeleteEdgeInfo(conj_wrap(new_graph,edgeIds[i][j]));
+			}
+		}
+	}
 	new_graph.ForceDeleteVertex(v);
 	TRACE("Delete ok");
 
@@ -1048,7 +1063,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 
 	PairInfo corrected_info = StupidPairInfoCorrectorByOldGraph(new_graph,
 			pair_inf);
-	DEBUG("PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<pair_inf.d<< " corrected into "<<corrected_info.d);
+	DEBUG("PairInfo "<<left_id<<"("<<edge_labels[left_id]<<") "<<right_id<<" "<<pair_inf.d<< " corrected into "<<corrected_info.d);
 	if (abs(corrected_info.d - pair_inf.d) > MAX_DISTANCE_CORRECTION) {
 		DEBUG("big correction");
 		return make_pair(false, corrected_info);
@@ -1058,7 +1073,7 @@ pair<bool, PairInfo<typename Graph::EdgeId> > RepeatResolver<Graph>::CorrectedAn
 //		return make_pair(false, corrected_info);
 //	}
 	//todo check correctness. right_id belongs to original graph, not to new_graph.
-	if (corrected_info.d + old_graph.length(right_id) < (1/(1.3)) * *cfg::get().ds.IS) {
+	if (corrected_info.d + old_graph.length(right_id) < (1/(1.3)) * (*cfg::get().ds.IS-cfg::get().ds.RL)) {
 		DEBUG("too close");
 		return make_pair(false, corrected_info);
 	}
@@ -1114,7 +1129,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 						if (!correction_result.first)
 							continue;
 						DEBUG(
-								"PairInfo "<<edge_labels[left_id]<<" "<<right_id<<" "<<d<< " corrected into "<<tmp[j].d<< "weight" << tmp[j].weight);
+								"PairInfo from new "<<left_id<<" (old  "<< labels_after.edge_labels[left_id][0]<<") to old"<<right_id<<" "<<d<< " corrected into "<<tmp[j].d<< "weight" << tmp[j].weight);
 						DEBUG(
 								"PairInfo: " << old_IDs.ReturnIntId(edge_labels[tmp[j].first]) << " " << old_IDs.ReturnIntId(tmp[j].second) <<" "<< tmp[j].d);
 						EdgeInfo ei(correction_result.second, dir, right_id,
@@ -1356,6 +1371,7 @@ size_t RepeatResolver<Graph>::CheatingResolveVertex(VertexId vid) {
 	MultiSplit(vid);
 	return cur_color;
 }
+
 
 }
 
