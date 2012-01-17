@@ -19,11 +19,12 @@ void late_pair_info_count(conj_graph_pack& gp,
 	io::PairedEasyReader stream(read_filenames,	*cfg::get().ds.IS);
 	exec_simplification(stream, gp, paired_index);
 
-	refine_insert_size(read_filenames, gp);
-
-	INFO("STAGE == Counting Late Pair Info");
+	if (cfg::get().paired_mode) {
+		refine_insert_size(read_filenames, gp);
+	}
 
 	if (cfg::get().paired_mode && cfg::get().late_paired_info) {
+		INFO("STAGE == Counting Late Pair Info");
 		if (cfg::get().advanced_estimator_mode) {
 			FillPairedIndexWithProductMetric<K>(gp.g, gp.int_ids, gp.index,
 					gp.kmer_mapper, paired_index, stream);
