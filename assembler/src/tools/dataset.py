@@ -92,6 +92,7 @@ def hammer(prefix):
     if os.path.exists(bh):
 	print bh, "already exists!", "Please enter another directory name:"
 	bh = raw_input().strip()
+    bh = os.path.abspath(bh)
     #left_cor = subprocess.check_output('((ls -1 ' + prefix + '* 2> /dev/null | grep left.cor | grep -v single) || echo "")', shell=True).strip()
     try:
 	ls = subprocess.check_output('ls -1 ' + prefix + '*', shell=True)
@@ -116,15 +117,25 @@ def hammer(prefix):
 	    return [(prop, "TODO")]
 	return [(prop, a)]
     p = []
-    f = []
+    cmd = ["mkdir " + bh]
     for prop in props:
-	a = askFile(prop)
-	p += a
 	if prop in read_files:
-	    f += map
+	    a = askFile(prop)
+	    for (rf, f) in a:
+		nf = bh + "/" + os.path.basename(f)
+		cmd += ["cp " + f + " " + bh + "/"]
+		cmd += ["gzip -9 " + nf]
+		nf += ".gz"
+		nf = re.sub(".*input/", "", nf)
+		p += [(rf, nf)]
+	else:
+	    a = askProp(prop)
+	    p += a
+    print p
     printDS(p)
-    os.mkdir(bh)
-    print subprocess.check_output('ls -l', shell=True)
+    for c in cmd:
+	print c
+	os.system(c)
 
 if sys.argv[1] == "check":
     process(sys.argv[2], check, lambda ds: True);
