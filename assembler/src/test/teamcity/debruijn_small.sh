@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 pushd ../../../
 make clean
 ./cpcfg

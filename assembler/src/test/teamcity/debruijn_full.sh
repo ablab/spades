@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 pushd ../../../
 rm data/debruijn/ECOLI_IS220_QUAKE/K55/latest
 rm src/tools/quality/results/all.txt
