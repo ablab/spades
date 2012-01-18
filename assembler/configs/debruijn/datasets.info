@@ -193,10 +193,10 @@ HMP_LANE_8_BH ; old HMP_LANE_8
 
 GEBA_1_BH
 {
-        first   GEBA/0001/bh20120117/03.reads.0.left.corrected.fastq.gz
-        second  GEBA/0001/bh20120117/03.reads.0.right.corrected.fastq.gz
-        single_first    GEBA/0001/bh20120117/03.reads.0.left.unpaired.fastq.gz
-        single_second   GEBA/0001/bh20120117/03.reads.0.right.unpaired.fastq.gz
+        first   GEBA/0001/bh20120118/04.reads.0.left.corrected.fastq.gz
+        second  GEBA/0001/bh20120118/04.reads.0.right.corrected.fastq.gz
+        single_first    GEBA/0001/bh20120118/04.reads.0.left.unpaired.fastq.gz
+        single_second   GEBA/0001/bh20120118/04.reads.0.right.unpaired.fastq.gz
         RL      150
         IS      300
         single_cell     true
