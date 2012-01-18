@@ -91,30 +91,29 @@ The simplest way to install all of them is to run
 \begin{lstlisting}
 sudo ./install_prerequirements
 \end{lstlisting}
-You can also install each package separately, e.g., by running
-\begin{lstlisting}
-sudo apt-get install <package>
-\end{lstlisting}
+This install all the required packages in a debian-like unix systems through {\tt apt-get install}.
+If your operating system does not support {\tt apt-get} command you
+need to install all the packages manually. 
 
 \begin{center}
 \begin{tabular}{lll}
 \toprule
-package & description & version\\
+package & description & recommended version\\
 \midrule
-{\tt gcc++-4.4} & GNU C Compiler & 4.4 or later\\
-{\tt python2.6-dev} & Python & 2.6 or later\\
-{\tt java-common} & Java & \\
-{\tt cmake} & make system & 2.6 or later\\
+{\tt gcc++-4.4} & GNU C Compiler & 4.4\\
+{\tt python2.6-dev} & Python & 2.6\\
+% {\tt java-common} & Java & \\ % needed for quality
+{\tt cmake} & make system & 2.6\\
 {\tt liblog4cxx10-dev} & logging library for {\tt C++} & \\
-{\tt libboost1.42-all-dev} & Boost {\tt C++} libraries & 1.42 (exactly this version!) \\
+{\tt libboost1.42-all-dev} & Boost {\tt C++} libraries & 1.42\\
 {\tt zlib-bin} & compression library & \\
-% the following libraries are needed for quality tool
-{\tt python-matplotlib} & plotting system & \\
-{\tt python-numpy} & fast arrays for python & \\
-{\tt bioperl} & Perl tools for computational molecular biology & \\
-{\tt mummer} & efficient sequence alignment of full genomes & \\
-{\tt r-recommended} & GNU R recommended packages & \\
-{\tt pdftk} & tool for manipulating PDF documents & \\
+%%% the following libraries are needed for quality tool
+%{\tt python-matplotlib} & plotting system & \\
+%{\tt python-numpy} & fast arrays for python & \\
+%{\tt bioperl} & Perl tools for computational molecular biology & \\
+%{\tt mummer} & efficient sequence alignment of full genomes & \\
+%{\tt r-recommended} & GNU R recommended packages & \\
+%{\tt pdftk} & tool for manipulating PDF documents & \\
 \bottomrule
 \end{tabular}
 \end{center}
