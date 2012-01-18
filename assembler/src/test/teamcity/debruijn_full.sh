@@ -1,20 +1,10 @@
 #!/bin/bash
-echo "Executing $0, here is its code:"
-echo ""
-cat $0
-echo ""
 pushd ../../../
 rm data/debruijn/ECOLI_IS220_QUAKE/K55/latest
 rm src/tools/quality/results/all.txt
-./prepare_cfg
-popd
-./debruijn_make.sh
-pushd ../../../
+make clean
 ./cpcfg
-cp ./src/test/teamcity/config.info.FULL ./src/debruijn/config.info
-./run rd
-cd src/tools/quality/
-./run_Ecoli.sh -m ../../../data/debruijn/ECOLI_IS220_QUAKE/K55/latest/resolved_and_cleared_*.fasta
+./spades.py src/test/teamcity/spades_config.full.info
+src/tools/quality/run_Ecoli.sh -m data/debruijn/ECOLI_IS220_QUAKE/K55/latest/resolved_and_cleared_*.fasta
 popd
-
 python teamcity.py
