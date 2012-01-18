@@ -14,7 +14,7 @@ for line in logfile_out:
 		mis = int(line.split('|')[11]);
 		print('n50 = ' + str(n50))
 		print('missasembled contigs = ' + str(mis));
-		if n50 < 75000:
+		if n50 < 65000:
 			print('n50 is too small')
 			sys.exit(1);
 		if (mis > 2):
