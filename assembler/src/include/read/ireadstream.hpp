@@ -14,7 +14,6 @@
 #include "read/read.hpp"
 #include "sequence/quality.hpp"
 #include "sequence/nucl.hpp"
-#include "standard.hpp"
 
 // STEP 1: declare the type of file handler and the read() function
 KSEQ_INIT(gzFile, gzread)

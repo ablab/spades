@@ -3,6 +3,12 @@
 import sys
 import support
 
+def config_file_name():
+    if len(sys.argv) != 2:
+        support.error("Usage: <script_name>.py <config_file_name>", "")
+
+    return sys.argv[1]
+
 def file_lines(filename):
     return open(filename).readlines()
 
