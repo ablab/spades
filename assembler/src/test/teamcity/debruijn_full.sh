@@ -8,4 +8,4 @@ make clean
 ./spades.py src/test/teamcity/spades_config.full.info
 src/tools/quality/run_Ecoli.sh -m data/debruijn/ECOLI_IS220_QUAKE/K55/latest/resolved_and_cleared_*.fasta
 popd
-python teamcity.py
+python assess.py
