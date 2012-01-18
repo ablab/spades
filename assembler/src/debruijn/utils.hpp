@@ -1104,25 +1104,27 @@ class QualityEdgeLocalityPrintingRH {
 	const Graph& g_;
 	const EdgeQuality<Graph>& quality_handler_;
 	const GraphLabeler<Graph>& labeler_;
+	const string& output_folder_;
 //	size_t black_removed_;
 //	size_t colored_removed_;
 public:
 	QualityEdgeLocalityPrintingRH(const Graph& g
 			, const EdgeQuality<Graph>& quality_handler
-			, const GraphLabeler<Graph>& labeler) :
+			, const GraphLabeler<Graph>& labeler
+			, const string& output_folder) :
 			g_(g), quality_handler_(quality_handler),
-			labeler_(labeler) {
+			labeler_(labeler), output_folder_(output_folder) {
 	}
 
 	void HandleDelete(EdgeId edge) {
 		if (quality_handler_.IsPositiveQuality(edge)) {
 			TRACE("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
-			string folder = cfg::get().output_dir + "colored_edges_deleted/";
+			string folder = output_folder_ + "colored_edges_deleted/";
 			make_dir(folder);
 			//todo magic constant
 			map<EdgeId, string> empty_coloring;
 			EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
-					*cfg::get().ds.IS);
+					250);
 			WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
 					, folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
 					, empty_coloring, labeler_);

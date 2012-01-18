@@ -426,7 +426,8 @@ void SimplifyGraph(conj_graph_pack &gp, EdgeQuality<Graph>& edge_qual,
 //	QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
 	QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g,
 			edge_qual,
-			labeler);
+			labeler,
+			output_folder);
 
 	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
 //			&QualityLoggingRemovalHandler<Graph>::HandleDelete,
