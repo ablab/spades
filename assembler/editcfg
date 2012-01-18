@@ -9,7 +9,7 @@ fi
 
 if [ $# = 0 ]
 then
-  set $1 'c'
+  set $1 'sp'
 fi
 
 case $1 in
