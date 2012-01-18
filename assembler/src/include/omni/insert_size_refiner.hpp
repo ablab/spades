@@ -1,5 +1,7 @@
 #pragma once
 
+#include "cpp_utils.hpp"
+
 namespace debruijn_graph {
 
 void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp) {
@@ -33,31 +35,33 @@ void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp
 			continue;
 		}
 		int is = pos_right.second - pos_left.second - K - 1 - r.insert_size() + sequence_left.size() + sequence_right.size();
-		TRACE("refine insert size evidence: " << is);
+		// DEBUG("insert size refinement evidence: " << is);
 		hist[is] += 1;
 		n++;
 		sum += is;
 		sum2 += is * 1.0 * is;
 	}
-	double mean = sum / n;
-	double delta = sqrt(sum2 / n - mean * mean);
-	cfg::get_writeable().ds.IS 	= mean;
-	cfg::get_writeable().ds.delta = delta;
-	cfg::get_writeable().ds.is_refined = true;
+
+	double mean, delta;
+	mean = sum / n;
+	delta = sqrt(sum2 / n - mean * mean);
 	size_t often = 0;
 	size_t median = -1;
 	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-		INFO("histogram: " << iter->first << " " << iter->second);
 		if (iter->second > often) {
 			often = iter->second;
 			median = iter->first;
 		}
 	}
+
+	int low = -median;
+	int high = 3 * median;
+
 	n = 0;
 	sum = 0;
 	sum2 = 0;
 	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-		if (iter->first < -mean || iter->first > 3 * mean) {
+		if (iter->first < low || iter->first > high) {
 			continue;
 		}
 		n += iter->second;
@@ -66,14 +70,44 @@ void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp
 	}
 	mean = sum / n;
 	delta = sqrt(sum2 / n - mean * mean);
+
+	low = mean - 5 * delta;
+	high = mean + 5 * delta;
+
+	n = 0;
+	sum = 0;
+	sum2 = 0;
 	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-		if (iter->first < mean - 5 * delta || iter->first > mean + 5 * delta) {
+		if (iter->first < low || iter->first > high) {
+			INFO("outsiders: " << iter->first << " " << iter->second);
 			continue;
 		}
+		INFO("histogram: " << iter->first << " " << iter->second);
 		n += iter->second;
 		sum += iter->second * 1.0 * iter->first;
 		sum2 += iter->second * 1.0 * iter->first * iter->first;
 	}
+	mean = sum / n;
+	delta = sqrt(sum2 / n - mean * mean);
+
+	size_t m = 0;
+	size_t const q[] = {(size_t) (0.05 * n), (size_t) (0.15 * n), (size_t) (0.85 * n), (size_t) (0.95 * n)};
+	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+		if (iter->first < low || iter->first > high) {
+			continue;
+		}
+		size_t mm = m + iter->second;
+		for (size_t i = 0; i < utils::array_size(q); i++) {
+			if (m < q[i] && mm >= q[i]) {
+				INFO("Percentile: " << iter->first);
+			}
+		}
+		m = mm;
+	}
+
+	cfg::get_writeable().ds.IS 	= mean;
+	cfg::get_writeable().ds.delta = delta;
+	cfg::get_writeable().ds.is_refined = true;
 	INFO("Insert size refined:");
 	INFO("IS = " << *cfg::get().ds.IS);
 	INFO("delta = " << *cfg::get().ds.delta);
