@@ -25,20 +25,29 @@ def presentFile(f):
 	return False
     return os.path.isfile(f)
 
-read_files = ["first", "second"]
-read_files += ["single_" + x for x in read_files]
-read_files += ["jumping_" + x for x in read_files]
-ref_files = ["reference_genome"]
-misc_props = ["RL", "IS", "jump_is", "single_cell"]
+def read_files():
+    read_files = ["first", "second"]
+    read_files += ["single_" + x for x in read_files]
+    read_files += ["jumping_" + x for x in read_files]
+    return read_files
 
-files = read_files + ref_files
-props = read_files + misc_props + ref_files
+def ref_files():
+    return ["reference_genome"]
+
+def misc_props():
+    return ["RL", "IS", "jump_is", "single_cell"]
+
+def files():
+    return read_files() + ref_files()
+
+def props():
+    return read_files() + misc_props() + ref_files()
 
 def check(ds):
     print ds["name"], "is present"
 
 def tar(ds):
-    s = filter(presentFile, [ds.get(f) for f in files])
+    s = filter(presentFile, [ds.get(f) for f in files()])
     s = reduce(lambda x, y: x + " " + y, s)
     a = ds["name"] + ".tar"
     if os.path.exists(a):
@@ -48,7 +57,7 @@ def tar(ds):
     os.system("tar -cf " + a + " " + s)
 
 def md5(ds):
-    s = filter(presentFile, [ds.get(f) for f in files])
+    s = filter(presentFile, [ds.get(f) for f in files()])
     print ds["name"]
     for f in s:
 	os.system("md5sum " + f)
@@ -76,23 +85,17 @@ def process(cfg, func, filt):
 	        exit(2)
 	    ds[s[0]] = s[1]
 	if filt(ds):
-	    if reduce(lambda x, y: x or y, [missFile(ds.get(f)) for f in files]):
+	    if reduce(lambda x, y: x or y, [missFile(ds.get(f)) for f in files()]):
 		print ds["name"], "is missing!!!!!!!!!!!!!!!!!!!!"
 	    else:
 		func(ds)
 
-def printDS(p):
-    print "{"
-    for (a, b) in p:
-	print "\t" + a + "\t" + b
-    print "}"
-
-def hammer(prefix):
-    bh = "bh" + datetime.date.today().strftime('%Y%m%d')
-    if os.path.exists(bh):
-	print bh, "already exists!", "Please enter another directory name:"
-	bh = raw_input().strip()
-    bh = os.path.abspath(bh)
+def hammer_interactive(prefix):
+    output_dir = "bh" + datetime.date.today().strftime('%Y%m%d')
+    if os.path.exists(output_dir):
+	print output_dir, "already exists!", "Please enter another directory name:"
+	output_dir = raw_input().strip()
+    output_dir = os.path.abspath(output_dir)
     #left_cor = subprocess.check_output('((ls -1 ' + prefix + '* 2> /dev/null | grep left.cor | grep -v single) || echo "")', shell=True).strip()
     try:
 	ls = subprocess.check_output('ls -1 ' + prefix + '*', shell=True)
@@ -107,46 +110,60 @@ def hammer(prefix):
 	print 'Which file is "' + prop + '"?', "(enter number from 0 to", (len(ls) - 1), "or press Enter if none)"
 	a = raw_input().strip()
 	if not a:
-	    return []
-	a = int(a)
-	return [(prop, ls[a])]
+	    return ""
+	return ls[int(a)]
     def askProp(prop):
 	print "Enter", prop, "(or press Enter if you don't know yet)"
 	a = raw_input().strip()
 	if not a:
-	    return [(prop, "TODO")]
-	return [(prop, a)]
-    p = []
-    cmd = ["mkdir " + bh]
-    for prop in props:
-	if prop in read_files:
+	    return "TODO"
+	return a
+    asked_props = {}
+    for prop in props():
+	if prop in read_files():
 	    a = askFile(prop)
-	    for (rf, f) in a:
-		nf = bh + "/" + os.path.basename(f)
-		cmd += ["cp " + f + " " + bh + "/"]
-		cmd += ["gzip -9 " + nf]
-		nf += ".gz"
-		nf = re.sub(".*input/", "", nf)
-		p += [(rf, nf)]
 	else:
 	    a = askProp(prop)
-	    p += a
-    printDS(p)
-    for c in cmd:
-	print c
-	os.system(c)
+	if a:
+	    asked_props[prop] = a
+    hammer(asked_props, output_dir, True)
 
-if sys.argv[1] == "check":
-    process(sys.argv[2], check, lambda ds: True);
-if sys.argv[1] == "tar":
-    regexp = ""
-    if 3 < len(sys.argv): regexp = "^.*" + sys.argv[3] + ".*$"
-    filt = lambda ds: re.match(regexp, ds["name"])
-    process(sys.argv[2], tar, filt);
-if sys.argv[1] == "md5":
-    regexp = ""
-    if 3 < len(sys.argv): regexp = "^.*" + sys.argv[3] + ".*$"
-    filt = lambda ds: re.match(regexp, ds["name"])
-    process(sys.argv[2], md5, filt);
-if sys.argv[1] == "hammer":
-    hammer(sys.argv[2])
+def hammer(given_props, output_dir, verbose):
+    dataset_entry = []
+    cmd = ["mkdir " + output_dir]
+    for prop in props():
+	if not (prop in given_props):
+	    continue
+	val = given_props[prop]
+	if prop in read_files():
+	    newfile = output_dir + "/" + os.path.basename(val)
+	    cmd += ["cp " + val + " " + output_dir + "/"]
+	    cmd += ["gzip -9 " + newfile]
+	    newfile += ".gz"
+	    val = re.sub(".*input/", "", newfile)
+	dataset_entry += [(prop, val)]
+    dataset_entry = ["{"] + map(lambda (a, b): "\t" + a + "\t" + b, dataset_entry) + ["}"]
+    dataset_entry = reduce(lambda x, y: x + "\n" + y, dataset_entry)
+    if verbose:
+        print dataset_entry
+    for c in cmd:
+	if verbose:
+	    print c
+	os.system(c)
+    return dataset_entry
+
+if __name__ == "__main__":
+    if sys.argv[1] == "check":
+        process(sys.argv[2], check, lambda ds: True);
+    if sys.argv[1] == "tar":
+        regexp = ""
+        if 3 < len(sys.argv): regexp = "^.*" + sys.argv[3] + ".*$"
+        filt = lambda ds: re.match(regexp, ds["name"])
+        process(sys.argv[2], tar, filt);
+    if sys.argv[1] == "md5":
+        regexp = ""
+        if 3 < len(sys.argv): regexp = "^.*" + sys.argv[3] + ".*$"
+        filt = lambda ds: re.match(regexp, ds["name"])
+        process(sys.argv[2], md5, filt);
+    if sys.argv[1] == "hammer":
+        hammer_interactive(sys.argv[2])
