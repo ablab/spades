@@ -146,7 +146,7 @@ there are no requirements on the number of reads in the last two files (any of t
 Files are expected to be in fasta or fastq formats and can be compressed.
 
 In file {\tt configs/debruijn/datasets.info} add a new entry according to the following self-explaining pattern (recall that parts of lines starting from
-semicolon are comments):{\todo{Misha, anything to be added here?}}
+semicolon are comments):
 \begin{lstlisting}
 ECOLI_IS220_QUAKE
 {
@@ -155,13 +155,13 @@ ECOLI_IS220_QUAKE
   single_first     E.coli/s_6_1.single.fastq.gz ; unpaired left (optional)
   single_second    E.coli/s_6_2.single.fastq.gz ; unpaired right (optional)
   RL               100 ; read length
-  IS               220 ; insert size (optional)
-  variation        20 ; (optional)
   single_cell      false ; true if input data was obtained 
                          ; with mda (single cell) technology
   reference_genome E.coli/MG1655-K12.fasta.gz ; optional
 }
 \end{lstlisting}
+Note that you do not need to specify the insert size and its deviation as {\spades}
+computes them itself.
 
 \section{Running {\spades}}
 To run {\spades} type
