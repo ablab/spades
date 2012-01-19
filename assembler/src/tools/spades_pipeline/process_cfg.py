@@ -3,14 +3,6 @@
 import sys
 import support
 
-
-def config_file_name():
-    if len(sys.argv) != 2:
-        support.error("Usage: spades.py <config_file_name>", "")
-
-    return sys.argv[1]
-
-
 def file_lines(filename):
     return open(filename).readlines()
 
@@ -92,5 +84,5 @@ def load_config_from_vars(cfg_vars):
     return cfg
 
 def load_config_from_file(filename):
-    return load_config_from_vars(vars_from_lines(file_lines(config_file_name())))
+    return load_config_from_vars(vars_from_lines(file_lines(filename)))
 

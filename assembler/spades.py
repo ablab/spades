@@ -33,8 +33,12 @@ def prepare_config(filename, build_path, cfg, prev_K, last_one):
     substitute_params(filename, subst_dict)
 
 def main():
+    if len(sys.argv) >= 2:
+        config_file_name = sys.argv[1]
+    else:
+        config_file_name = "spades_config.info"
 
-    cfg = load_config_from_file(config_file_name())
+    cfg = load_config_from_file(config_file_name)
 
     # workaround on stdout & stderr redirecting
     class redirected_stream:
