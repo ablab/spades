@@ -17,6 +17,19 @@ ECOLI_IS220_QUAKE ; old QUAKE_FULL
 	reference_genome  E.coli/MG1655-K12.fasta.gz	; length 4639675
 }
 
+ECOLI_IS220_BH
+{
+        first   E.coli/is220_bh/05.reads.left.corrected.fastq
+        second  E.coli/is220_bh/05.reads.right.corrected.fastq
+        single_first    E.coli/is220_bh/05.reads.left.unpaired.fastq
+        single_second   E.coli/is220_bh/05.reads.right.unpaired.fastq
+        RL              100     ; read length
+        IS              270     ; insert size
+        single_cell     true
+        reference_genome  E.coli/MG1655-K12.fasta.gz
+}
+
+
 ECOLI_IS480_QUAKE ; old EAS600_QUAKE_FULL
 {
 	first	E.coli/is480/ERR022075_1.cor.fastq.gz
