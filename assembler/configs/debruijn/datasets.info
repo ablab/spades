@@ -347,7 +347,8 @@ SAUREUS_BENCHMARK_QUAKE ; old SAUREUS_QUAKED
 	jumping_single_first	S.aureus/shortjump_1.cor_single.fastq.gz
 	jumping_single_second	S.aureus/shortjump_2.cor_single.fastq.gz
 	RL	100	; read length
-	IS	180	; insert size
+	IS	170	; insert size
+	delta 	21
 	single_cell	false
 	reference_genome  S.aureus/USA300_FPR3757.fasta.gz
 }
