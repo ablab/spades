@@ -5,9 +5,6 @@
 namespace debruijn_graph {
 
 void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp) {
-	if (cfg::get().ds.IS && cfg::get().ds.delta) {
-		return;
-	}
 	INFO("SUBSTAGE == Refining insert size and its distribution");
 	map<int, size_t> hist;
 	size_t n = 0;
@@ -106,11 +103,9 @@ void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp
 	}
 
 	cfg::get_writeable().ds.IS 	= mean;
-	cfg::get_writeable().ds.delta = delta;
-	cfg::get_writeable().ds.is_refined = true;
 	INFO("Insert size refined:");
-	INFO("IS = " << *cfg::get().ds.IS);
-	INFO("delta = " << *cfg::get().ds.delta);
+	INFO("IS = " << mean);
+	INFO("delta = " << delta);
 }
 
 }

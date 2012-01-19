@@ -150,21 +150,13 @@ int main(int argc, char** argv)
 		typedef io::PairedEasyReader PairedReadStream;
 
 		// assemble it!
-		INFO("Assembling " << dataset << " dataset");
-		INFO("K = " << debruijn_graph::K);
+		INFO("Assembling " << dataset << " dataset with K=" << debruijn_graph::K);
 
         debruijn_graph::assemble_genome();
 
 		on_exit_output_linker("latest_success");
 
-		INFO("Assembling " << dataset << " dataset finished");
-
-
-		if (cfg::get().ds.is_refined) {
-			cout << "===== IMPORTANT! Insert size and delta for the dataset were refined. Please include these data into corresponding config file: =====" << endl;
-			cout << "\tIS\t" << cfg::get().ds.IS << endl;
-			cout << "\tdelta\t" << cfg::get().ds.delta << endl;
-		}
+		INFO("Assembling " << dataset << " dataset with K=" << debruijn_graph::K << " finished");
     }
     catch(std::exception const& e)
     {
