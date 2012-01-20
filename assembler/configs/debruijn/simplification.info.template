@@ -8,17 +8,17 @@ sc_simplification
 	; tip clipper:
 	tc
 	{
-		max_tip_length				100
-		max_coverage				1000.0
-		max_relative_coverage		100.0   ; tip_cov < this * not_tip_cov
+		max_tip_length				140
+		max_coverage				100000
+		max_relative_coverage		10000   ; tip_cov < this * not_tip_cov
 	}
 
 	; bulge remover:
 	br
 	{
 		max_length_div_K			5
-		max_coverage				1000.0
-		max_relative_coverage		100.0	; bulge_cov < this * not_bulge_cov
+		max_coverage				1000000.0
+		max_relative_coverage		10000.0	; bulge_cov < this * not_bulge_cov
 		max_delta					2.1
 		max_relative_delta			0.1
 	}
@@ -28,7 +28,7 @@ sc_simplification
 	{
         estimate_max_coverage		true
 		max_coverage				20.0
-		max_length_div_K			3
+		max_length_div_K			2
 	}
 	
 	; cheating erroneous connections remover
@@ -43,7 +43,7 @@ sc_simplification
 	tec
 	{
 		max_length					100
-		uniqueness_length			5000
+		uniqueness_length			1500
 		plausibility_length			200
 	}
 	

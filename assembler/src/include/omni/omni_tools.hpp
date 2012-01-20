@@ -457,7 +457,7 @@ public:
 	double FindThreshold(vector<size_t> histogram) const {
 		size_t backet_width = backet_width_;
 		if(backet_width == 0) {
-			backet_width = (size_t)(0.2 * AvgCoverage() + 5);
+			backet_width = (size_t)(0.3 * AvgCoverage() + 5);
 		}
 		INFO("Bucket size: " << backet_width);
 		size_t cnt = 0;
