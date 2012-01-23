@@ -25,6 +25,10 @@ struct NucmerAllign {
 };
 std::vector<NucmerAllign> ReadCoordsFile(std::string file_name);
 inline bool MyLess(NucmerAllign i, NucmerAllign j){
+	return (i.inReferenceStart < j.inReferenceStart);
+}
+
+inline bool MyLess2(NucmerAllign i, NucmerAllign j){
 	if (i.contigName < j.contigName) return true;
 	if (i.contigName > j.contigName) return false;
 	if (i.inContigLength > j.inContigLength) return true;

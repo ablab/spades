@@ -17,9 +17,23 @@ void ResolveRepeats(Graph &g, IdTrackHandler<Graph> &old_IDs,
 		EdgeLabelHandler<Graph> &LabelsAfter) {
 	INFO("-----------------------------------------");
 	INFO("Resolving primitive repeats");
+	for (auto e_iter = g.SmartEdgeBegin(); !e_iter.IsEnd();
+			++e_iter) {
+		{
+			if ( (g.EdgeStart(*e_iter) == g.EdgeEnd(*e_iter))){
+				if ((g.length(*e_iter) > 1) ){
+					size_t half_len = g.length(*e_iter) / 2;
+					g.SplitEdge(*e_iter, half_len);
+				}
+				else {
+					WARN("Loop of length 1 presented.");
+				}
+			}
+		}
+	}
 	DeletedVertexHandler<Graph> tmp_deleted_handler(new_graph);
 	TRACE("deleted handler created");
-	RepeatResolver<Graph> repeat_resolver(g, old_IDs, 0, info, edges_pos,
+	RepeatResolver<Graph> repeat_resolver(g, old_IDs, info, edges_pos,
 			new_graph, new_IDs, edges_pos_new, tmp_deleted_handler, LabelsAfter);
 	make_dir(output_folder);
 	unordered_map<typename Graph::EdgeId, typename Graph::EdgeId> edge_labels =

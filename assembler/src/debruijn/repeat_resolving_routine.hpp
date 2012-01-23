@@ -347,14 +347,48 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 	INFO("Total labeler finished");
 
+
+	//Generating paired info for resolved graph
+		PairedInfoIndex<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
+				resolved_gp.g);
+		if (cfg::get().path_set_graph == false) {
+
+			ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
+					labels_after, resolved_cleared_graph_paired_info_before);
+		}
+
+
+
 	INFO("---Clearing resolved graph---");
+
+
+	 omnigraph::Compressor<typename graph_pack::graph_t> compressor(resolved_gp.g);
+	    compressor.CompressAllVertices();
 
 	EdgeRemover<typename graph_pack::graph_t> edge_remover(resolved_gp.g,
 			false);
 	for (int i = 0; i < 3; ++i) {
-		ClipTipsForResolver(resolved_gp.g);
+//		ClipTipsForResolver(resolved_gp.g);
+		INFO("ClipTip "<<i);
+
+
+		ClipTips(resolved_gp.g);
+
+		if (cfg::get().path_set_graph == false) {
+
+			ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
+					labels_after, resolved_cleared_graph_paired_info_before);
+		}
+
+		INFO("Erroneous remove "<<i);
 //        BulgeRemoveWrap      (resolved_gp.g);
 		FinalRemoveErroneousEdges(resolved_gp.g, edge_remover);
+
+		if (cfg::get().path_set_graph == false) {
+
+			ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
+					labels_after, resolved_cleared_graph_paired_info_before);
+		}
 
 //        RemoveRelativelyLowCoverageEdges(resolved_gp.g);
 		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,

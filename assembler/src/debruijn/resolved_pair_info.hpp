@@ -78,6 +78,11 @@ public:
 			WARN("There were no current copies for " << no_current_copies << " old graph edges");
 		}
 	}
+private:
+DECL_LOGGER("ResolvedGraphPairInfoCounter")
+
 };
+
+
 
 }
