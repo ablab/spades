@@ -3,7 +3,7 @@
 import os
 import sys
 
-sys.path.append("src/tools/spades_pipeline/")
+sys.path.append("src/tools/spades_pipeline/") # is it OK to have relative path here? what if user runs it from other directory?
 
 import support
 from process_cfg import *
@@ -59,11 +59,11 @@ def main():
     old_stderr = sys.stderr
 
     if cfg.output_to_console:
-        sys.stderr = redirected_stream(log_file, sys.stderr)
-        sys.stdout = redirected_stream(log_file, sys.stdout)
+        sys.stderr = support.redirected_stream(log_file, sys.stderr)
+        sys.stdout = support.redirected_stream(log_file, sys.stdout)
     else:
-        sys.stderr = redirected_stream(log_file, None)
-        sys.stdout = redirected_stream(log_file, None)
+        sys.stderr = support.redirected_stream(log_file, None)
+        sys.stdout = support.redirected_stream(log_file, None)
 
     # --
 
