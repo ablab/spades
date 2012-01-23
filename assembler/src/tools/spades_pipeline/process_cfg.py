@@ -53,7 +53,7 @@ def substitute_params(filename, var_dict):
 
     for var, value in var_dict.items():
         if var not in vars_in_file:
-            error("Couldn't find " + var + " in " + filename)
+            support.error("Couldn't find " + var + " in " + filename)
 
         meta = vars_in_file[var]
         lines[meta.line_num] = meta.indent + str(var) + " " + str(value) + "\n"
