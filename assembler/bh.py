@@ -75,7 +75,7 @@ def main():
 		dataset_cfg = determine_read_files(tmp_dir + r"/", str_it_count)
 		dataset_cfg["RL"] = "100"
 		dataset_cfg["single_cell"] = "true"
-		hammer(dataset_cfg, cfg.output_dir, True)
+		return cfg.dataset_name + "\n" + hammer(dataset_cfg, cfg.output_dir, True)
 		
 	
 	#Preparations
@@ -118,7 +118,7 @@ def main():
 	print("\n== BayesHammer run finished. ==\n") 
 	print("\n== Generating dataset " + cfg.dataset_name + ". ==\n") 
 	
-	#os.system("touch " + build_path + "02.reads.left.corrected "  + build_path + "02.reads.left.unpaired "  + build_path + "02.reads.right.corrected " + build_path + "02.reads.right.unpaired")
+	os.system("touch " + build_path + "02.reads.left.corrected "  + build_path + "02.reads.left.unpaired "  + build_path + "02.reads.right.corrected " + build_path + "02.reads.right.unpaired")
 
 	dataset_str = generate_dataset(cfg, build_path)
 	
