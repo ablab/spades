@@ -36,9 +36,18 @@ void copy_files_by_prefix(files_t const& files, fs::path const& to_folder)
 	}
 }
 
-void copy_files_by_ext(fs::path const& from_folder, fs::path const& to_folder, std::string const& ext)
+void copy_files_by_ext(fs::path const& from_folder, fs::path const& to_folder, std::string const& ext, bool recursive)
 {
 	for (auto it = fs::directory_iterator(from_folder), end = fs::directory_iterator(); it != end; ++it)
-		if (it->path().extension() == ext)
+    {
+	    if (recursive && is_directory(it->path()))
+        {
+		    fs::path subdir = to_folder / it->path().filename();
+		    make_dir(subdir);
+		    copy_files_by_ext(it->path(), subdir, ext, recursive);
+        }
+
+	    if (it->path().extension() == ext)
 			copy_file(*it, to_folder / it->filename());
+    }
 }

@@ -9,6 +9,7 @@
 
 //==crt and stl
 #include <cstdlib>
+#include <cstdio>
 #include <time.h>
 #include <signal.h>
 #include <execinfo.h>
@@ -21,6 +22,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <fstream>
 
 using std::cin;
 using std::cout;
@@ -32,6 +34,8 @@ using std::set;
 using std::string;
 using std::pair;
 using std::make_pair;
+using std::ifstream;
+using std::ofstream;
 
 //==boost
 #include <boost/algorithm/string.hpp>
@@ -97,11 +101,11 @@ namespace debruijn_graph
     typedef io::ConvertingReaderWrapper UnitedStream;
 } // namespace debruijn_graph
 
-inline bool make_dir(std::string const& str)
+inline bool make_dir(fs::path p)
 {
-	if (fs::is_directory(str) || fs::create_directories(str))
+	if (fs::is_directory(p) || fs::create_directories(p))
 		return true;
 
-	WARN("Can't create directory " << str);
+	WARN("Can't create directory " << p);
 	return false;
 }

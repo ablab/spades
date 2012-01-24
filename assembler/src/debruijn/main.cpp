@@ -24,10 +24,10 @@ DECL_PROJECT_LOGGER("d")
 
 void link_output(std::string const& link_name)
 {
-	std::string link = cfg::get().output_root + link_name;
+    std::string link = cfg::get().output_root + link_name;
     unlink(link.c_str());
-	if (symlink(cfg::get().output_suffix.c_str(), link.c_str()) != 0)
-	    WARN( "Symlink to \"" << link << "\" launch failed");
+    if (symlink(cfg::get().output_suffix.c_str(), link.c_str()) != 0)
+        WARN( "Symlink to \"" << link << "\" launch failed");
 }
 
 //void link_previous_run(std::string const& previous_link_name, std::string const& link_name){
@@ -47,69 +47,80 @@ void link_output(std::string const& link_name)
 
 struct on_exit_output_linker
 {
-	on_exit_output_linker(std::string const& link_name)
-		: link_name_(link_name)
-	{
-	}
+    on_exit_output_linker(std::string const& link_name) :
+            link_name_(link_name)
+    {
+    }
 
-	~on_exit_output_linker()
-	{
-		link_output(link_name_);
-	}
+    ~on_exit_output_linker()
+    {
+        link_output(link_name_);
+    }
 
 private:
-	std::string link_name_;
-	std::string previous_link_name_;
+    std::string link_name_;
+    std::string previous_link_name_;
 };
 
 void print_trace()
 {
-	std::cout << "=== Stack Trace ===" << std::endl;
+    std::cout << "=== Stack Trace ===" << std::endl;
 
-	const size_t max_stack_size = 1000;
+    const size_t max_stack_size = 1000;
 
-	void* stack_pointers[max_stack_size];
-	int count = backtrace(stack_pointers, max_stack_size);
+    void* stack_pointers[max_stack_size];
+    int count = backtrace(stack_pointers, max_stack_size);
 
-	char** func_names = backtrace_symbols(stack_pointers, count);
+    char** func_names = backtrace_symbols(stack_pointers, count);
 
-	// Print the stack trace
-	for(int i = 0; i < count; ++i)
-		std::cout << func_names[i] << std::endl;
+    // Print the stack trace
+    for (int i = 0; i < count; ++i)
+        std::cout << func_names[i] << std::endl;
 
-	// Free the string pointers
-	free(func_names);
+    // Free the string pointers
+    free(func_names);
 }
 
 void segfault_handler(int signum)
 {
-	if (signum == SIGSEGV)
-	{
-		std::cout << "The program was terminated by segmentation fault" << std::endl;
-		print_trace();
+    if (signum == SIGSEGV)
+    {
+        std::cout << "The program was terminated by segmentation fault"
+                << std::endl;
+        print_trace();
 
-		link_output("latest");
+        link_output("latest");
         //link_previous_run("latest", "previous");
-	}
+    }
 
-	signal(signum, SIG_DFL);
-	kill  (getpid(), signum);
+    signal(signum, SIG_DFL);
+    kill(getpid(), signum);
 }
 
-void copy_configs(string const& cfg_filename)
+void copy_configs(fs::path cfg_filename, fs::path to)
 {
-	using namespace debruijn_graph;
+    using namespace debruijn_graph;
 
-	make_dir(cfg::get().output_dir + "configs");
-	copy_files_by_ext(fs::path(cfg_filename).parent_path(), cfg::get().output_dir + "configs", ".info");
+    make_dir(to);
+    copy_files_by_ext(cfg_filename.parent_path(), to, ".info", true);
 }
 
-bool print_mem_usage(std::string const& msg)
+void load_config(string cfg_filename)
 {
-	static size_t pid = getpid();
-	string str = (format("pmap -d %d | grep writeable/private") % pid).str();
-	cout << "==== MEM USAGE: " << msg << endl;
-	return system(str.c_str()) == 0;
+    checkFileExistenceFATAL(cfg_filename);
+
+    fs::path tmp_folder = fs::path(tmpnam (NULL)).parent_path() / debruijn_graph::MakeLaunchTimeDirName();
+    copy_configs(cfg_filename, tmp_folder);
+
+    cfg_filename = (tmp_folder / fs::path(cfg_filename).filename()).string();
+    cfg::create_instance(cfg_filename);
+
+    make_dir(cfg::get().output_root);
+    make_dir(cfg::get().output_dir);
+    make_dir(cfg::get().output_saves);
+
+    fs::path path_to_copy = fs::path(cfg::get().output_dir) / "configs";
+    copy_configs(cfg_filename, path_to_copy);
 }
 
 int main(int argc, char** argv)
@@ -117,57 +128,44 @@ int main(int argc, char** argv)
     const size_t GB = 1 << 30;
     limit_memory(120 * GB);
 
-	signal(SIGSEGV, segfault_handler);
+    signal(SIGSEGV, segfault_handler);
 
     try
     {
-		using namespace debruijn_graph;
+        using namespace debruijn_graph;
+        load_config(argv[1]);
 
-		string cfg_filename = argv[1];
-		std::cout << fs::initial_path() << std::endl;
+        on_exit_output_linker try_linker("latest");
 
-		checkFileExistenceFATAL(cfg_filename);
-		cfg::create_instance   (cfg_filename);
+        // check config_struct.hpp parameters
+        if (K % 2 == 0)
+            VERIFY_MSG(false, "K in config.hpp must be odd!\n");
 
-	    on_exit_output_linker try_linker("latest");
+        // read configuration file (dataset path etc.)
+        string dataset = cfg::get().dataset_name;
 
-		// check config_struct.hpp parameters
-		if (K % 2 == 0)
-			VERIFY_MSG(false, "K in config.hpp must be odd!\n");
+        // typedefs :)
+        typedef io::EasyReader ReadStream;
+        typedef io::PairedEasyReader PairedReadStream;
 
-		// read configuration file (dataset path etc.)
-		string input_dir = cfg::get().input_dir;
-		string dataset   = cfg::get().dataset_name;
-
-		make_dir(cfg::get().output_root );
-		make_dir(cfg::get().output_dir  );
-		make_dir(cfg::get().output_saves);
-
-		copy_configs(cfg_filename);
-
-		// typedefs :)
-		typedef io::EasyReader ReadStream;
-		typedef io::PairedEasyReader PairedReadStream;
-
-		// assemble it!
-		INFO("Assembling " << dataset << " dataset with K=" << debruijn_graph::K);
+        // assemble it!
+        INFO("Assembling " << dataset << " dataset with K=" << debruijn_graph::K);
 
         debruijn_graph::assemble_genome();
 
-		on_exit_output_linker("latest_success");
+        on_exit_output_linker("latest_success");
 
-		INFO("Assembling " << dataset << " dataset with K=" << debruijn_graph::K << " finished");
+        INFO("Assembling " << dataset << " dataset with K=" << debruijn_graph::K << " finished");
     }
-    catch(std::exception const& e)
+    catch (std::exception const& e)
     {
-    	std::cout << "Exception caught " << e.what() << std::endl;
-    }
-    catch(...)
+        std::cout << "Exception caught " << e.what() << std::endl;
+    } catch (...)
     {
-    	std::cout << "Unknown exception caught " << std::endl;
+        std::cout << "Unknown exception caught " << std::endl;
     }
 
-	// OK
-	return 0;
+    // OK
+    return 0;
 }
 

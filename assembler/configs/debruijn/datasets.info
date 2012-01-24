@@ -1,4 +1,4 @@
-#include "configs/debruijn/datasets_archive.info" 
+#include "datasets_archive.info" 
 ; contains old, unused and broken datasets
 
 ; ================================================
