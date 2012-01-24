@@ -118,7 +118,7 @@ def main():
 	print("\n== BayesHammer run finished. ==\n") 
 	print("\n== Generating dataset " + cfg.dataset_name + ". ==\n") 
 	
-	os.system("touch " + build_path + "02.reads.left.corrected "  + build_path + "02.reads.left.unpaired "  + build_path + "02.reads.right.corrected " + build_path + "02.reads.right.unpaired")
+	#os.system("touch " + build_path + "02.reads.left.corrected "  + build_path + "02.reads.left.unpaired "  + build_path + "02.reads.right.corrected " + build_path + "02.reads.right.unpaired")
 
 	dataset_str = generate_dataset(cfg, build_path)
 	
