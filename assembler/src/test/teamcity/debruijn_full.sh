@@ -2,7 +2,7 @@
 set -e
 pushd ../../../
 [ -e data/debruijn/ECOLI_IS220_QUAKE/K55/latest ] && rm data/debruijn/ECOLI_IS220_QUAKE/K55/latest
-[ -e src/tools/quality/results] && rm -rf src/tools/quality/results
+[ -e src/tools/quality/results ] && rm -rf src/tools/quality/results
 make clean
 ./cpcfg
 ./spades.py src/test/teamcity/spades_config.full.info
