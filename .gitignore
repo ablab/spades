@@ -1,5 +1,6 @@
 .settings
 .metadata/*
+.idea
 stats/*
 RemoteSystemsTempFiles/*
 ~*
