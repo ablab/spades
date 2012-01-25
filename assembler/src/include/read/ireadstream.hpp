@@ -14,6 +14,7 @@
 #include "read/read.hpp"
 #include "sequence/quality.hpp"
 #include "sequence/nucl.hpp"
+#include "boost/lexical_cast.hpp"
 
 // STEP 1: declare the type of file handler and the read() function
 KSEQ_INIT(gzFile, gzread)
@@ -138,5 +139,27 @@ private:
 		}
 	}
 };
+
+//return -1 if failed to determine offset
+inline int determine_offset(const string& filename) {
+	ireadstream stream(filename, 0);
+	size_t count = 0;
+	Read r;
+	while (!stream.eof() && count++ < 10000) {
+		stream >> r;
+		Sequence s = r.getSequence();
+		std::string q_str = r.getQualityString();
+		for (size_t i = 0; i < q_str.size(); ++i) {
+			int q_val = q_str[i];
+			if (q_val - 64 < 0)
+				return 33;
+			if (s[i] == 'N') {
+				VERIFY(q_val - 2 == 33 || q_val - 2 == 64);
+				return q_val - 2;
+			}
+		}
+	}
+	return -1;
+}
 
 #endif /* IREADSTREAM_HPP_ */

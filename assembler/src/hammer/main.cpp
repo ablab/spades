@@ -84,6 +84,21 @@ int main(int argc, char * argv[]) {
     if (cfg::get().input_numfiles > 3) Globals::input_filenames.push_back(cfg::get().input_file_3);
     if (cfg::get().input_numfiles > 4) Globals::input_filenames.push_back(cfg::get().input_file_4);
 
+    VERIFY(cfg::get().input_numfiles > 0);
+    if (!cfg::get().input_qvoffset_opt) {
+    	cout << "Trying to determine PHRED offset" << endl;
+    	int determined_offset = determine_offset(Globals::input_filenames.front());
+    	if (determined_offset < 0) {
+    		cout << "Failed to determine offset! Specify it manually and restart, please!" << endl;
+    		return 0;
+    	} else {
+    		cout << "Determined value is " << determined_offset << endl;
+    		cfg::get_writeable().input_qvoffset = determined_offset;
+    	}
+    } else {
+    	cfg::get_writeable().input_qvoffset = *cfg::get().input_qvoffset_opt;
+    }
+
     // if we need to change single Ns to As, this is the time
     if (cfg::get().general_change_n_to_a) {
     	if (cfg::get().count_do) TIMEDLN("Changing single Ns to As in input read files.");

@@ -9,6 +9,7 @@
 #define CONFIG_STRUCT_HAMMER_HPP_
 
 #include "config_common.hpp"
+#include "boost/optional.hpp"
 
 #define CONFIG_FILENAME "/home/snikolenko/algorithmic-biology/assembler/src/hammer/config.inp"
 
@@ -25,6 +26,7 @@ struct hammer_config
 	string input_solid_kmers;
 	string input_working_dir;
 	int input_trim_quality;
+	boost::optional<int> input_qvoffset_opt;
 	int input_qvoffset;
 	bool input_read_solid_kmers;
 

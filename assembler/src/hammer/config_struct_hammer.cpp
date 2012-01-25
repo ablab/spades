@@ -65,7 +65,7 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
 	load(cfg.input_solid_kmers, pt, "input_solid_kmers");
 	load(cfg.input_working_dir, pt, "input_working_dir");
 	load(cfg.input_trim_quality, pt, "input_trim_quality");
-	load(cfg.input_qvoffset, pt, "input_qvoffset");
+	cfg.input_qvoffset_opt = pt.get_optional<int>("input_qvoffset");
 	load(cfg.input_read_solid_kmers, pt, "input_read_solid_kmers");
 	load(cfg.input_solid_kmers, pt, "input_solid_kmers");
 }
