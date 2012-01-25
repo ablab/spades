@@ -418,32 +418,59 @@ template<class Graph, typename ElementId, typename Comparator = std::less<
 class SmartIterator: public GraphActionHandler<Graph>, public QueueIterator<
 		ElementId, Comparator> {
 public:
-	typedef QueueIterator<ElementId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
+private:
+	bool add_new_;
 public:
-	SmartIterator(const Graph &graph, const string &name,
+	SmartIterator(const Graph &graph, const string &name, bool add_new,
 			const Comparator& comparator = Comparator()) :
 			GraphActionHandler<Graph>(graph, name), QueueIterator<ElementId,
-					Comparator>(comparator) {
+					Comparator>(comparator), add_new_(add_new) {
 	}
 
 	virtual ~SmartIterator() {
 	}
 
 	virtual void HandleAdd(ElementId v) {
-		super::push(v);
+		if(add_new_)
+			this->push(v);
 	}
 
 	virtual void HandleDelete(ElementId v) {
-		super::erase(v);
+		this->erase(v);
+	}
+};
+
+/**
+ * SmartIterator is abstract class which acts both as QueueIterator and GraphActionHandler. As QueueIterator
+ * SmartIterator is able to iterate through collection content of which can be changed in process of
+ * iteration. And as GraphActionHandler SmartIterator can change collection contents with respect to the
+ * way graph is changed. Also one can define order of iteration by specifying Comparator.
+ */
+template<class Graph, typename ElementId, typename Comparator = std::less<
+		ElementId> >
+class SmartSetIterator: public SmartIterator<Graph, ElementId, Comparator> {
+public:
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+public:
+	template<class Iterator>
+	SmartSetIterator(const Graph &graph, Iterator begin, Iterator end, const Comparator& comparator =
+			Comparator()) :
+			SmartIterator<Graph, ElementId, Comparator>(graph,
+					"SmartSet " + ToString(this), false, comparator) {
+		this->insert(begin, end);
+	}
+
+	virtual ~SmartSetIterator() {
 	}
 };
 
 /**
  * SmartVertexIterator iterates through vertices of graph. It listens to AddVertex/DeleteVertex graph events
  * and correspondingly edits the set of vertices to iterate through. Note: high level event handlers are
- * triggered before low level event handlers like HandleAdd/HandleDelete. Thus if Comparator uses certain
+ * triggered before low level event handlers like H>andleAdd/HandleDelete. Thus if Comparator uses certain
  * structure which is also updated with handlers make sure that all information is updated in high level
  * event handlers.
  */
@@ -451,15 +478,14 @@ template<class Graph, typename Comparator = std::less<typename Graph::VertexId> 
 class SmartVertexIterator: public SmartIterator<Graph, typename Graph::VertexId,
 		Comparator> {
 public:
-	typedef QueueIterator<typename Graph::VertexId, Comparator> super;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
 	SmartVertexIterator(const Graph &graph, const Comparator& comparator =
 			Comparator()) :
 			SmartIterator<Graph, VertexId, Comparator>(graph,
-					"SmartVertexIterator " + ToString(this), comparator) {
-		super::insert(graph.begin(), graph.end());
+					"SmartVertexIterator " + ToString(this), true, comparator) {
+		this->insert(graph.begin(), graph.end());
 	}
 
 	virtual ~SmartVertexIterator() {
@@ -484,7 +510,7 @@ public:
 public:
 	SmartEdgeIterator(const Graph &graph, Comparator comparator = Comparator()) :
 			SmartIterator<Graph, EdgeId, Comparator>(graph,
-					"SmartEdgeIterator " + ToString(this), comparator) {
+					"SmartEdgeIterator " + ToString(this), true, comparator) {
 		for (auto it = graph.begin(); it != graph.end(); ++it) {
 			const vector<EdgeId> outgoing = graph.OutgoingEdges(*it);
 			this->super::insert(outgoing.begin(), outgoing.end());
@@ -1064,7 +1090,8 @@ public:
 		TRACE("Edge remover created. Checks enabled = " << checks_enabled);
 	}
 
-	bool DeleteEdge(EdgeId e, bool delete_between_related = true) {
+	bool DeleteEdge(EdgeId e, bool compress = true) {
+		bool delete_between_related = false;
 		TRACE("Deletion of edge " << e << " was requested");
 		if (checks_enabled_ && !CheckAlternatives(e)) {
 			TRACE("Check of alternative edges failed");
@@ -1085,15 +1112,18 @@ public:
 			removal_handler_(e);
 		}TRACE("Deleting edge");
 		g_.DeleteEdge(e);
-		TRACE("Compressing locality");
-		if (!g_.RelatedVertices(start, end)) {
-			TRACE("Vertices not related");
-			TRACE("Compressing end");
-			g_.CompressVertex(end);
-			TRACE("End Compressed");
-		}TRACE("Compressing start");
-		g_.CompressVertex(start);
-		TRACE("Start compressed")
+		if (compress) {
+			TRACE("Compressing locality");
+			if (!g_.RelatedVertices(start, end)) {
+				TRACE("Vertices not related");
+				TRACE("Compressing end");
+				g_.CompressVertex(end);
+				TRACE("End Compressed");
+			}
+			TRACE("Compressing start");
+			g_.CompressVertex(start);
+			TRACE("Start compressed");
+		}
 		return true;
 	}
 

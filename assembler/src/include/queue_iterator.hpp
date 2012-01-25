@@ -74,6 +74,11 @@ protected:
 		current_actual_(false), current_deleted_(false), queue_(comparator) {
 	}
 
+	void push(const ElementId& toAdd) {
+		queue_.push(toAdd);
+	}
+
+public:
 	void erase(const ElementId& toRemove) {
 		if (current_actual_ && toRemove == current_) {
 			current_deleted_ = true;
@@ -81,11 +86,6 @@ protected:
 		queue_.erase(toRemove);
 	}
 
-	void push(const ElementId& toAdd) {
-		queue_.push(toAdd);
-	}
-
-public:
 	bool IsEnd() const {
 		return queue_.empty();
 	}

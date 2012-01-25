@@ -35,6 +35,7 @@ enum simplification_mode
 	sm_cheating         ,
 	sm_topology         ,
 	sm_chimeric         ,
+	sm_max_flow			,
 	sm_pair_info_aware
 };
 
@@ -136,7 +137,8 @@ struct debruijn_config
                 {"pair_info_aware"  , sm_pair_info_aware},
                 {"cheating"         , sm_cheating       },
                 {"topology"         , sm_topology       },
-                {"chimeric"         , sm_chimeric       }
+                {"chimeric"         , sm_chimeric       },
+                {"max_flow"			, sm_max_flow		}
         };
 
 		return simpl_mode_id_mapping(info, utils::array_end(info));
@@ -246,6 +248,12 @@ struct debruijn_config
 			size_t plausibility_length;
 		};
 
+		struct max_flow_ec_remover {
+			size_t max_length;
+			size_t uniqueness_length;
+			size_t plausibility_length;
+		};
+
 		struct pair_info_ec_remover {
 			size_t max_length;
 			size_t min_neighbour_length;
@@ -257,6 +265,7 @@ struct debruijn_config
 		erroneous_connections_remover ec;
 		cheating_erroneous_connections_remover cec;
 		topology_based_ec_remover tec;
+		max_flow_ec_remover mfec;
 		pair_info_ec_remover piec;
 
 		double isolated_min_len;
@@ -460,6 +469,15 @@ inline void load(debruijn_config::simplification::topology_based_ec_remover& tec
 	load(tec.uniqueness_length  , pt, "uniqueness_length"  );
 }
 
+inline void load(debruijn_config::simplification::max_flow_ec_remover& mfec, boost::property_tree::ptree const& pt, bool complete)
+{
+	using config_common::load;
+
+	load(mfec.max_length         , pt, "max_length"         );
+	load(mfec.plausibility_length, pt, "plausibility_length");
+	load(mfec.uniqueness_length  , pt, "uniqueness_length"  );
+}
+
 inline void load(debruijn_config::distance_estimator& de, boost::property_tree::ptree const& pt, bool complete)
 {
 	using config_common::load;
@@ -565,6 +583,7 @@ inline void load(debruijn_config::simplification& simp, boost::property_tree::pt
 	load(simp.ec  , pt, "ec"  ); // erroneous connections remover:
 	load(simp.cec , pt, "cec" ); // cheating erroneous connections remover:
 	load(simp.tec , pt, "tec" ); // topology aware erroneous connections remover:
+	load(simp.mfec, pt, "mfec"); // max glow erroneous connections remover:
 	load(simp.piec, pt, "piec"); // pair info aware erroneous connections remover:
 
 	load(simp.isolated_min_len      , pt, "isolated_min_len"      );

@@ -47,6 +47,14 @@ sc_simplification
 		plausibility_length			200
 	}
 	
+	; max flow erroneous connection connections remover
+	mfec
+	{
+		max_length					100
+		uniqueness_length			1500
+		plausibility_length			200
+	}
+	
 	piec
 	{
 		max_length					100
