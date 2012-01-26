@@ -9,7 +9,7 @@ n = int(sys.argv[2])
 ogf = open(sys.argv[3], 'w')
 
 for line in gf:
-    ogf.write(line.strip() + ", cropped to first " + str(n) + " nucleotides\n")
+    ogf.write(line.strip() + ",_cropped_to_first_" + str(n) + "_nucleotides\n")
     break
 
 cnt = 0
