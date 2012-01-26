@@ -2,7 +2,7 @@
 
 sc_simplification
 {
-	;simplification mode: normal, cheating, topology, chimeric, pair_info_aware
+	;simplification mode: normal, cheating, topology, chimeric, pair_info_aware, max_flow
 	simpl_mode topology
 
 	; tip clipper:
@@ -113,6 +113,14 @@ usual_simplification
 		plausibility_length			200
 	}
 
+	; max flow erroneous connection connections remover
+	mfec
+	{
+		max_length					100
+		uniqueness_length			1500
+		plausibility_length			200
+	}
+	
 	piec
 	{
 		max_length					100
