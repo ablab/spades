@@ -99,6 +99,8 @@ int main(int argc, char * argv[]) {
     } else {
     	cfg::get_writeable().input_qvoffset = *cfg::get().input_qvoffset_opt;
     }
+    // decompress input reads if they are gzipped
+    HammerTools::DecompressIfNeeded();
 
     // if we need to change single Ns to As, this is the time
     if (cfg::get().general_change_n_to_a) {
@@ -107,6 +109,8 @@ int main(int argc, char * argv[]) {
     	if (cfg::get().count_do) TIMEDLN("Single Ns changed, " << Globals::input_filenames.size() << " read files written.");
     }
 
+    TIMEDLN(Globals::input_filenames[0]);
+    TIMEDLN(Globals::input_filenames[1]);
     // estimate total read size
     hint_t totalReadSize = HammerTools::EstimateTotalReadSize();
 	TIMEDLN("Estimated total size of all reads is " << totalReadSize);

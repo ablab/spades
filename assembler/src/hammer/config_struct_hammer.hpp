@@ -28,6 +28,7 @@ struct hammer_config
 	int input_trim_quality;
 	boost::optional<int> input_qvoffset_opt;
 	int input_qvoffset;
+	bool input_gzipped;
 	bool input_read_solid_kmers;
 
 	bool general_do_everything_after_first_iteration;
@@ -39,6 +40,7 @@ struct hammer_config
 	int general_tau;
 	int general_max_iterations;
 	double general_blob_margin;
+	double general_gzip_margin;
 
 	bool count_do;
 	int count_numfiles;

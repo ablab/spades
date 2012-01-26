@@ -1,14 +1,17 @@
+; = HAMMER =
 ; input options: working dir, input files, offset, and possibly kmers
 input_working_dir			/home/snikolenko/algorithmic-biology/assembler/build/release/hammer/test_dir
 input_numfiles				2
 input_paired				1
-input_file_0				/home/snikolenko/data/reads.input.0.head
-input_file_1				/home/snikolenko/data/reads.input.1.head
+input_file_0				/home/snikolenko/data/reads.input.0.head.gz
+input_file_1				/home/snikolenko/data/reads.input.1.head.gz
 input_trim_quality			4
+input_gzipped				1
 input_qvoffset				33
 input_read_solid_kmers		0
 input_solid_kmers			...
 
+; == HAMMER GENERAL ==
 ; general options
 general_do_everything_after_first_iteration	1
 general_reconstruct_only	0
@@ -19,6 +22,7 @@ general_tau					1
 general_gzip				1
 general_max_iterations		1
 general_blob_margin			0.25
+general_gzip_margin			4.0
 
 ; count k-mers
 count_do					1

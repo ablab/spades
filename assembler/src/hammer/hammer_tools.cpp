@@ -132,6 +132,38 @@ void HammerTools::ChangeNtoAinReadFiles() {
 	}
 }
 
+void HammerTools::DecompressIfNeeded() {
+	struct stat st;
+	char f_cont[2];
+	vector<pid_t> pIDs(Globals::input_filenames.size(), 0);
+	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
+		stat(Globals::input_filenames[iFile].c_str(), &st);
+		std::ifstream ifs(Globals::input_filenames[iFile], std::ios::in | std::ios::binary );
+		ifs.read(f_cont, 2);
+		ifs.close();
+		if ( (f_cont[0] == (char)0x1f) && (f_cont[1] == (char)0x8b) ) {
+			string newFilename = HammerTools::getFilename(cfg::get().input_working_dir, "reads.input", iFile);
+			string oldFilename = Globals::input_filenames[iFile];
+			Globals::input_filenames[iFile] = newFilename;
+			pIDs[iFile] = vfork();
+			if (pIDs[iFile] == 0) {
+				string systemcall = string("gunzip -c ") + oldFilename + string(" > ") + newFilename;
+				TIMEDLN("  [" << getpid() << "] " << systemcall);
+				if (system(systemcall.c_str())) {
+					TIMEDLN("  [" << getpid() << "] System error with unzipping input files!");
+				}
+			_exit(0);
+			}
+		}
+	}
+	for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
+		if (pIDs[iFile] != 0) {
+			int childExitStatus;
+			waitpid(pIDs[iFile], &childExitStatus, 0);
+		}
+	}
+}
+
 hint_t HammerTools::EstimateTotalReadSize() {
 	struct stat st;
 	hint_t totalReadSize = 0;
@@ -159,7 +191,6 @@ void HammerTools::InitializeSubKMerPositions() {
 void HammerTools::ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read, bool reverse_complement) {
 	TIMEDLN("Reading input file " << readsFilename);
 	ireadstream irs(readsFilename, cfg::get().input_qvoffset);
-	VERIFY(irs.is_open());
 	Read r;
 	while (irs.is_open() && !irs.eof()) {
 		irs >> r;
@@ -689,10 +720,16 @@ FIStream::FIStream(const string & fname) : stdstream(fname, cfg::get().general_g
 	fs.push(stdstream);
 }
 
+FIStream::FIStream(const string & fname, bool input_output) : stdstream(fname,
+		((!input_output && cfg::get().general_gzip) || (input_output && cfg::get().input_gzipped)) ? (std::ios::in | std::ios::binary) : std::ios::in) {
+	if (cfg::get().general_gzip) fs.push(boost::iostreams::gzip_decompressor());
+	fs.push(stdstream);
+}
+
 FIStream::~FIStream() { fs.reset(); }
 
-boost::shared_ptr<FIStream> FIStream::init(const string & fname) {
-	boost::shared_ptr<FIStream> p(new FIStream(fname));
+boost::shared_ptr<FIStream> FIStream::init(const string & fname, bool input_output) {
+	boost::shared_ptr<FIStream> p(new FIStream(fname, input_output));
 	return p;
 }
 
@@ -701,9 +738,15 @@ FOStream::FOStream(const string & fname) : stdstream(fname, cfg::get().general_g
 	fs.push(stdstream);
 }
 
+FOStream::FOStream(const string & fname, bool input_output) : stdstream(fname,
+		((!input_output && cfg::get().general_gzip) || (input_output && cfg::get().input_gzipped)) ? (std::ios::out | std::ios::binary) : std::ios::out) {
+	if (cfg::get().general_gzip) fs.push(boost::iostreams::gzip_compressor(boost::iostreams::gzip_params(boost::iostreams::gzip::best_speed)));
+	fs.push(stdstream);
+}
+
 FOStream::~FOStream() { fs.reset(); }
 
-boost::shared_ptr<FOStream> FOStream::init(const string & fname) {
-	boost::shared_ptr<FOStream> p(new FOStream(fname));
+boost::shared_ptr<FOStream> FOStream::init(const string & fname, bool input_output) {
+	boost::shared_ptr<FOStream> p(new FOStream(fname, input_output));
 	return p;
 }

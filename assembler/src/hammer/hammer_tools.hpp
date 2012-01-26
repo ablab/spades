@@ -45,9 +45,10 @@ struct FIStream {
 	boost::iostreams::filtering_istream fs;
 	std::ifstream stdstream;
 	FIStream(const string & fname);
+	FIStream(const string & fname, bool input_output);
 	~FIStream();
 
-	static boost::shared_ptr<FIStream> init(const string & fname);
+	static boost::shared_ptr<FIStream> init(const string & fname, bool input_output = false);
 };
 
 /// structure for boost ostreams
@@ -55,9 +56,10 @@ struct FOStream {
 	boost::iostreams::filtering_ostream fs;
 	std::ofstream stdstream;
 	FOStream(const string & fname);
+	FOStream(const string & fname, bool input_output);
 	~FOStream();
 
-	static boost::shared_ptr<FOStream> init(const string & fname);
+	static boost::shared_ptr<FOStream> init(const string & fname, bool input_output = false);
 };
 
 /**
@@ -65,6 +67,10 @@ struct FOStream {
  */
 class HammerTools {
 public:
+
+	/// decompress gzipped input files if needed
+	static void DecompressIfNeeded();
+
 	/// change single Ns to As in input read files
 	static void ChangeNtoAinReadFiles();
 
