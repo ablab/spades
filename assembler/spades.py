@@ -16,6 +16,8 @@ def prepare_config(filename, build_path, cfg, prev_K, last_one):
     subst_dict["input_dir"]         = cfg.input_dir
     subst_dict["output_base"]       = cfg.output_dir
     subst_dict["additional_contigs"]= build_path + "simplified_contigs.fasta"
+    subst_dict["entry_point"]       = 'construction'
+
 
     if cfg.paired_mode and last_one:
         subst_dict["paired_mode"] = "true"
