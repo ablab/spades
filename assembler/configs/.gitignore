@@ -2,6 +2,6 @@ debruijn/config.info
 debruijn/simplification.info
 debruijn/distance_estimation.info
 debruijn/detail_info_printer.info
-debruijn/long_contigs/lc_configs.info
+debruijn/long_contigs/lc_config.info
 debruijn/long_contigs/lc_params.info
 debruijn/long_contigs/lc_libs.info
