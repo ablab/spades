@@ -73,6 +73,8 @@ using boost::in_place;
 
 using boost::format;
 
+using boost::lexical_cast;
+
 //==sys
 #include <sys/stat.h>
 #include <sys/types.h>
