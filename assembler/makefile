@@ -9,14 +9,12 @@ dd:
 ddt:
 	make -C build/debug/test/debruijn
 
-rdt:
-	make -C build/release/test/debruijn
-
 dit:
 	make -C build/debug/test/include_test
 
-rit:
-	make -C build/release/test/include_test
+dt:
+	make ddt
+	make dit
 
 clean:
 	make -C build/debug clean

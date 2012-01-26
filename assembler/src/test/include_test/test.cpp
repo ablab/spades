@@ -1,4 +1,4 @@
-#define BOOST_TEST_MODULE common_test
+#define BOOST_TEST_MODULE include_test
 #include "logging.hpp"
 
 #include "seq_test.hpp"

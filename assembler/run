@@ -2,7 +2,7 @@
 
 function run_n_measure
 {
-   /usr/bin/time -f "\n\ntime: %E\nmemory: %MKb" $1 $2 $3 $4 $5 $6 $7 
+   /usr/bin/time -f "\n\ntime: %E" $1 $2 $3 $4 $5 $6 $7
 }
 
 if [ $# = 0 ]
@@ -12,9 +12,11 @@ fi
 
 case $1 in
 
-'rd' ) run_n_measure build/release/debruijn/debruijn configs/debruijn/config.info $2 $3 $4 $5 ;;
-'dd' ) run_n_measure build/debug/debruijn/debruijn configs/debruijn/config.info $2 $3 $4 $5 ;;
-'rdt' ) run_n_measure build/release/test/debruijn/debruijn_test $2 $3 $4 $5 ;;
+'rd' ) run_n_measure build/release/debruijn/debruijn configs/debruijn/config.info ;;
+'dd' ) run_n_measure build/debug/debruijn/debruijn configs/debruijn/config.info ;;
+'ddt' ) run_n_measure build/debug/test/debruijn/debruijn_test ;;
+'dit' ) run_n_measure build/debug/test/include_test/include_test ;;
+'dt') run_n_measure build/debug/test/debruijn/debruijn_test && run_n_measure build/debug/test/include_test/include_test ;;
 
 * ) run_n_measure $1 $2 $3 $4 $5
 
