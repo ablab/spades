@@ -67,9 +67,9 @@ public:
 	}
 
 protected:
-	void DeleteEdge(EdgeId edge) {
+	void DeleteEdge(EdgeId edge, bool delete_between_related = true) {
 		TRACE("Transferring delition task to edge remover");
-		graph_changed_ = edge_remover_.DeleteEdge(edge)
+		graph_changed_ = edge_remover_.DeleteEdge(edge, delete_between_related)
 				|| graph_changed_;
 	}
 
@@ -244,7 +244,7 @@ public:
 					this->graph().IncomingEdges(this->graph().EdgeEnd(e)));
 
 			if (CheckAdjacent(adjacent_edges, e)) {
-				this->DeleteEdge(e);
+				this->DeleteEdge(e, false);
 //				VertexId start = g_.EdgeStart(e);
 //				VertexId end = g_.EdgeEnd(e);
 //				if (!g_.RelatedVertices(start, end)) {
@@ -342,7 +342,7 @@ protected:
 			TRACE("Checking edge " << this->graph().length(e));
 			if (CheckStart(e) || CheckEnd(e)) {
 				TRACE("Deleting edge " << this->graph().length(e));
-				this->DeleteEdge(e);
+				this->DeleteEdge(e, false);
 				TRACE("Edge was deleted");
 			} else {
 				TRACE("Edge " << this->graph().length(e) << " was not deleted");
@@ -532,7 +532,7 @@ public:
 //				} else {
 //					TRACE("Vertices are related");
 //				}
-				this->DeleteEdge(e);
+				this->DeleteEdge(e, false);
 			}
 		}
 	}

@@ -16,7 +16,6 @@
 #include "omni/tip_clipper.hpp"
 #include "omni/bulge_remover.hpp"
 #include "omni/erroneous_connection_remover.hpp"
-#include "omni/mf_ec_remover.hpp"
 
 namespace debruijn_graph {
 
@@ -256,18 +255,7 @@ bool ChimericRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 }
 
 template<class Graph>
-bool MaxFlowRemoveErroneousEdges(Graph &g,
-		const debruijn_config::simplification::max_flow_ec_remover& mfec_config,
-		EdgeRemover<Graph>& edge_remover) {
-	INFO("Removal of erroneous edges based on topology started");
-	omnigraph::MaxFlowECRemover<Graph> erroneous_edge_remover(g,
-			mfec_config.max_length, mfec_config.uniqueness_length,
-			mfec_config.plausibility_length, edge_remover);
-	return erroneous_edge_remover.RemoveEdges();
-}
-
-template<class Graph>
-bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover, boost::function<void(EdgeId)> &removal_handler_f) {
+bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover) {
 	using debruijn_graph::simplification_mode;
 	switch (cfg::get().simp.simpl_mode) {
 	case sm_cheating: {
@@ -284,15 +272,32 @@ bool FinalRemoveErroneousEdges(Graph &g, EdgeRemover<Graph>& edge_remover, boost
 		return ChimericRemoveErroneousEdges(g, edge_remover);
 	}
 		break;
-	case sm_max_flow: {
-		EdgeRemover<Graph> rough_edge_remover(g, false, removal_handler_f);
-		return MaxFlowRemoveErroneousEdges(g, cfg::get().simp.mfec, rough_edge_remover);
-	}
-		break;
 	default:
 		VERIFY(false);
 		return false;
 	}
+//	if (cfg::get().simp.simpl_mode
+//			== debruijn_graph::simplification_mode::sm_cheating) {
+//		INFO("Cheating removal of erroneous edges started");
+//		size_t max_length = cfg::get().simp.cec.max_length;
+//		double coverage_gap = cfg::get().simp.cec.coverage_gap;
+//		size_t sufficient_neighbour_length =
+//				cfg::get().simp.cec.sufficient_neighbour_length;
+//		omnigraph::TopologyBasedChimericEdgeRemover<Graph> erroneous_edge_remover(
+//				g, max_length, coverage_gap, sufficient_neighbour_length,
+//				edge_remover);
+//		//	omnigraph::LowCoverageEdgeRemover<Graph> erroneous_edge_remover(
+//		//			max_length_div_K * g.k(), max_coverage);
+//		erroneous_edge_remover.RemoveEdges();
+//		INFO("Cheating removal of erroneous edges finished");
+//	} else if (cfg::get().simp.simpl_mode
+//			== debruijn_graph::simplification_mode::sm_topology) {
+//
+//	} else if (cfg::get().simp.simpl_mode
+//			== debruijn_graph::simplification_mode::sm_chimeric) {
+//		ChimericEdgesRemover<Graph> remover(g, 10, edge_remover);
+//		remover.RemoveEdges();
+//	}
 	IsolatedEdgeRemover<Graph> isolated_edge_remover(g,
 			cfg::get().simp.isolated_min_len);
 	isolated_edge_remover.RemoveIsolatedEdges();
@@ -376,7 +381,7 @@ void PostSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 
 	INFO("Final ErroneousConnectionsRemoval");
 	printer(ipp_before_final_err_con_removal);
-	FinalRemoveErroneousEdges(graph, edge_remover, removal_handler_f);
+	FinalRemoveErroneousEdges(graph, edge_remover);
 	printer(ipp_final_err_con_removal);
 
 	INFO("Final TipClipping");
