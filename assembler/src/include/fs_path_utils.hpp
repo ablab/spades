@@ -13,7 +13,7 @@ namespace filesystem
 {
 
 // copied from http://stackoverflow.com/questions/1746136/how-do-i-normalize-a-pathname-using-boostfilesystem
-fs::path resolve(const fs::path& p)
+inline fs::path resolve(const fs::path& p)
 {
     using namespace fs;
 
@@ -46,7 +46,7 @@ fs::path resolve(const fs::path& p)
     return result;
 }
 
-fs::path make_relative_path(fs::path p, fs::path base = fs::initial_path())
+inline fs::path make_relative_path(fs::path p, fs::path base = fs::initial_path())
 {
     p    = resolve(p);
     base = resolve(base);

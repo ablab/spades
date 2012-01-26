@@ -5,6 +5,7 @@
  *      Author: snikolenko
  */
 
+#include "standard.hpp"
 #include "config_struct_hammer.hpp"
 
 void load(hammer_config& cfg, boost::property_tree::ptree const& pt)

@@ -41,7 +41,7 @@ namespace config_common
 		};
 	}
 
-	void correct_relative_includes(const fs::path& p, fs::path const& working_dir = fs::initial_path())
+	inline void correct_relative_includes(const fs::path& p, fs::path const& working_dir = fs::initial_path())
     {
 	    using namespace boost;
 	    using namespace boost::filesystem;

@@ -1,3 +1,4 @@
+#include "standard.hpp"
 #include "kmer_stat.hpp"
 #include "position_kmer.hpp"
 #include "globals.hpp"

@@ -1,4 +1,5 @@
-#include <vector>
+
+#include "standard.hpp"
 #include "position_kmer.hpp"
 #include "position_read.hpp"
 #include "config_struct_hammer.hpp"

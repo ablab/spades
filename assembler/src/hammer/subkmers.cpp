@@ -1,3 +1,4 @@
+#include "standard.hpp"
 #include <omp.h>
 #include <sys/types.h>
 #include <sys/wait.h>

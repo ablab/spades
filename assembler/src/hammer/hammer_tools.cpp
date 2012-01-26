@@ -5,6 +5,7 @@
  *      Author: snikolenko
  */
 
+#include "standard.hpp"
 #include <omp.h>
 #include <iostream>
 #include <fstream>
