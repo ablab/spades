@@ -123,6 +123,7 @@ public:
 	 */
 	void ClipTips() {
 		TRACE("Tip clipping started");
+        TipChecker<Graph> tipchecker(graph_, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein);
 		for (auto iterator = graph_.SmartEdgeBegin(comparator_);
 				!iterator.IsEnd();) {
 			EdgeId tip = *iterator;
@@ -131,9 +132,12 @@ public:
 				TRACE(
 						"Edge " << tip << " judged to look like tip topologically");
 				if (AdditionalCondition(tip)) {
-					TRACE("Edge " << tip << " judged to be tip");
-					RemoveTip(tip);
-					TRACE("Edge " << tip << " removed as tip");
+                    TRACE("Additional sequence comparing");
+                    if (tipchecker.TipCanBeProjected(tip)){
+					    TRACE("Edge " << tip << " judged to be tip");
+    					RemoveTip(tip);
+					    TRACE("Edge " << tip << " removed as tip");
+                    }
 				} else {
 					TRACE("Edge " << tip << " judged NOT to be tip");
 				}

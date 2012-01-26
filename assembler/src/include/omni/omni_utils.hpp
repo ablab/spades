@@ -1367,6 +1367,104 @@ public:
 };
 
 template<class Graph>
+class TipChecker{
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+
+    const Graph& graph_;
+    
+
+private:
+    size_t lower_bound;
+    size_t upper_bound;
+    size_t max_iterations_;
+    size_t max_distance_;
+    size_t iteration;
+    size_t path_length;
+    EdgeId tip;
+
+
+    bool CheckSimilarity(vector<EdgeId> path){
+        SequenceBuilder seq;
+        SequenceBuilder edge_seq;
+        for (size_t i = 0; i<path.size(); ++i){
+            seq.append(graph_.EdgeNucls(path[i]));
+            seq.append(graph_.VertexNucls(graph_.EdgeEnd(path[i])));
+        }
+        
+        Sequence sequence;
+        Sequence sequence_edge = graph_.EdgeNucls(tip);
+        
+        size_t edge_len = sequence_edge.size();
+//      trimming
+        if (seq.size() > edge_len + (max_distance_ >> 1))
+            sequence = seq.BuildSequence().Subseq(0, edge_len + (max_distance_ >> 1));
+        else 
+            sequence = seq.BuildSequence();
+        
+        VERIFY(sequence.size() >= sequence_edge.size());
+
+        if (edit_distance(sequence.str(), (sequence_edge).str()) < max_distance_){
+            TRACE("Sequence 1 " << sequence.str());
+            TRACE("Sequence 2 " << graph_.EdgeNucls(tip).str());
+            return true;
+        }
+        return false;
+    } 
+
+    bool dfs(VertexId vertex, const AbstractDirection<Graph>& direction, vector<EdgeId>& path){
+        if (iteration++ > max_iterations_) 
+            return false;
+        if (path_length > upper_bound) return false;
+        if (path_length > lower_bound){
+            if (CheckSimilarity(path)) return true;
+        }
+        for (size_t i = 0; i<direction.OutgoingEdgeCount(vertex); i++){
+            EdgeId edge = direction.OutgoingEdges(vertex)[i];
+            if (edge != tip){
+                path.push_back(edge);
+                size_t sum = graph_.EdgeNucls(edge).size();
+                path_length += sum;
+                if (dfs(graph_.EdgeEnd(edge), direction, path)) return true;
+                path_length -= sum;
+                path.pop_back();
+            }
+        }
+       return false;
+    }
+
+
+public:
+
+    TipChecker(Graph& graph, size_t max_iterations_, size_t max_distance):
+    graph_(graph), max_iterations_(max_iterations_), max_distance_(max_distance){
+
+    }
+
+   
+    /**
+     * Hard check whether it's really the tip
+     */
+
+    bool TipCanBeProjected(EdgeId edge_tip){
+        vector<EdgeId> path;
+        tip = edge_tip;
+        iteration = 0;
+        path_length = 0;
+        lower_bound = graph_.EdgeNucls(tip).size();
+        upper_bound = lower_bound << 1;
+
+        VertexId vert = graph_.EdgeStart(tip);
+        if (graph_.IncomingEdgeCount(vert) > 0)
+            return dfs(vert, ForwardDirection<Graph>(graph_), path);
+        else
+            return dfs(vert, BackwardDirection<Graph>(graph_), path);
+     
+    }
+
+};
+
+template<class Graph>
 class PlausiblePathFinder {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
