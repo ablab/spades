@@ -123,6 +123,13 @@ void load_config(string cfg_filename)
     copy_configs(cfg_filename, path_to_copy);
 }
 
+void save_info_file() {
+	ofstream file(cfg::get().output_dir + "result.info");
+	file << "contigs\t" << cfg::get().final_contigs_file << endl;
+	file << "reference\t" << cfg::get().ds.reference_genome_filename << endl;
+	file.close();
+}
+
 int main(int argc, char** argv)
 {
     const size_t GB = 1 << 30;
@@ -154,6 +161,8 @@ int main(int argc, char** argv)
         debruijn_graph::assemble_genome();
 
         on_exit_output_linker("latest_success");
+
+        save_info_file();
 
         INFO("Assembling " << dataset << " dataset with K=" << debruijn_graph::K << " finished");
     }

@@ -363,6 +363,7 @@ public:
 	std::string output_dir;
 	std::string output_suffix;
 	std::string output_saves;
+	std::string final_contigs_file;
 
 	bool use_single_reads;
 	bool use_additional_contigs;
@@ -561,15 +562,12 @@ inline void load_reference_genome(debruijn_config::dataset& ds, std::string inpu
 		ds.reference_genome = Sequence();
 		return;
 	}
-	std::string genome_filename = input_dir + ds.reference_genome_filename;
-	checkFileExistenceFATAL(genome_filename);
-	io::Reader<io::SingleRead> genome_stream(genome_filename);
+	ds.reference_genome_filename = input_dir + ds.reference_genome_filename;
+	checkFileExistenceFATAL(ds.reference_genome_filename);
+	io::Reader<io::SingleRead> genome_stream(ds.reference_genome_filename);
 	io::SingleRead genome;
 	genome_stream >> genome;
 	ds.reference_genome = genome.sequence();
-//		std::string genome;
-//		genome = full_genome.GetSequenceString().substr(0, cfg::get().ds.LEN); // cropped
-//		return Sequence(genome);
 }
 
 inline void load(debruijn_config::simplification& simp, boost::property_tree::ptree const& pt, bool complete)
@@ -635,8 +633,14 @@ inline void load(debruijn_config& cfg, boost::property_tree::ptree const& pt, bo
 	// input options:
 	load(cfg.dataset_name, pt, "dataset"  );
 	load(cfg.input_dir   , pt, "input_dir");
+	if (cfg.input_dir[cfg.input_dir.length() - 1] != '/') {
+		cfg.input_dir += '/';
+	}
 
 	load(cfg.output_base, pt, "output_base");
+	if (cfg.output_base[cfg.output_base.length() - 1] != '/') {
+		cfg.output_base += '/';
+	}
 
 	cfg.output_root     = cfg.output_base + cfg.dataset_name + "/K" + ToString(K) + "/";
 	cfg.output_suffix   = MakeLaunchTimeDirName() + "/";

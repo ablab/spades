@@ -417,6 +417,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	{
 	    OutputContigs(resolved_gp.g, cfg::get().output_dir + "resolved_and_cleared" + postfix);
 	    OutputContigs(resolved_gp.g, cfg::get().output_dir + "final_contigs.fasta");
+	    cfg::get_writeable().final_contigs_file = cfg::get().output_dir + "final_contigs.fasta";
 	}
 
 
