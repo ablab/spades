@@ -276,7 +276,7 @@ void BulgeRemover<Graph>::RemoveBulges() {
 			const vector<EdgeId>& path = path_chooser.most_covered_path();
 			double path_coverage = path_chooser.max_coverage();
 
-			TRACE("Best path with coverage " << path_coverage << " is " << PrintPath < Graph > (g_, path));
+			TRACE("Best path with coverage " << path_coverage << " is " << PrintPath<Graph>(g_, path));
 
 			//if edge was returned, this condition will fail
 			if (BulgeCondition(edge, path, path_coverage)) {

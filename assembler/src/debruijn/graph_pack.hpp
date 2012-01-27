@@ -23,6 +23,10 @@ template<class Graph, size_t k>
 struct graph_pack {
 	typedef Graph graph_t;
 
+	enum {
+		k_value = k
+	};
+
 	graph_t g;
 	EdgeIndex<k + 1, graph_t> index;
 	IdTrackHandler<graph_t> int_ids;

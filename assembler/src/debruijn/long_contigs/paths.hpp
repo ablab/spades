@@ -493,7 +493,7 @@ void GrowSeed(const Graph& g, BidirectionalPath& seed, PairedInfoIndices& paired
 
 		VERIFY(cfg::get().jump.weight_threshold > 0. && cfg::get().jump.weight_threshold < 10.);
 
-		JumpingHero<Graph> forward_hero(g, seed, jump_index, 2000, 3500
+		JumpingHero<Graph> forward_hero(g, seed, jump_index, 2000, /*invalidation length*/3500
 				, true, cfg::get().jump.weight_threshold);
 
 		while (ExtendPathForward(g, seed, lengths, detector, pairedInfo,

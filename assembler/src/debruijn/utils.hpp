@@ -441,7 +441,6 @@ public:
 
 private:
 	const Graph& g_;
-	const IdTrackHandler<Graph>& int_ids_;
 	const Index& index_;
 	const KmerSubs& kmer_mapper_;
 	mutable size_t mapped_;
@@ -519,9 +518,9 @@ private:
 
 public:
 	NewExtendedSequenceMapper(const Graph& g,
-			const IdTrackHandler<Graph>& int_ids, const Index& index,
+			const Index& index,
 			const KmerSubs& kmer_mapper) :
-			g_(g), int_ids_(int_ids), index_(index),
+			g_(g), index_(index),
 			kmer_mapper_(kmer_mapper), mapped_(0), unmapped_(0) {
 	}
 
