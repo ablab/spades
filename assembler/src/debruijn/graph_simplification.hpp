@@ -369,6 +369,9 @@ void RemoveLowCoverageEdgesForResolver(Graph &g) {
 void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 		boost::function<void(EdgeId)> &removal_handler_f,
 		detail_info_printer &printer, size_t iteration_count) {
+	//INFO("Early ErroneousConnectionsRemoval");
+    //RemoveLowCoverageEdges(graph, edge_remover, 1, 0, 10);
+	//INFO("ErroneousConnectionsRemoval stats");
 
 	INFO("Early TipClipping");
 	ClipTips(graph, removal_handler_f);
@@ -377,9 +380,9 @@ void PreSimplification(Graph &graph, EdgeRemover<Graph> &edge_remover,
 	RemoveBulges(graph, removal_handler_f, graph.k() + 1);
 	INFO("BulgeRemoval stats");
 
-	INFO("Early ErroneousConnectionsRemoval");
+	//INFO("Early ErroneousConnectionsRemoval");
 	//RemoveLowCoverageEdges(graph, edge_remover, iteration_count, 0);
-	INFO("ErroneousConnectionsRemoval stats");
+	//INFO("ErroneousConnectionsRemoval stats");
 }
 
 void SimplificationCycle(Graph &graph, EdgeRemover<Graph> &edge_remover,
@@ -456,7 +459,8 @@ void SimplifyGraph(conj_graph_pack &gp, boost::function<void(EdgeId)> removal_ha
 			cfg::get().simp.removal_checks_enabled, removal_handler_f);
 
 	double max_coverage = FindErroneousConnectionsCoverageThreshold(gp.g);
-	if (cfg::get().ds.single_cell) PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
+	if (cfg::get().ds.single_cell) 
+        PreSimplification(gp.g, edge_remover, removal_handler_f, printer, iteration_count);
 
 //	double max_coverage = cfg::get().simp.ec.threshold_percentile
 //			? PrecountThreshold(gp.g, *cfg::get().simp.ec.threshold_percentile)

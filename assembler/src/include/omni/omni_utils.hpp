@@ -11,6 +11,7 @@
 #include <boost/function.hpp>
 #include <boost/filesystem.hpp>
 #include "elapsed_timer.h"
+#include <ctime>
 
 namespace omnigraph {
 using std::vector;
@@ -1382,55 +1383,114 @@ private:
     size_t iteration;
     size_t path_length;
     EdgeId tip;
-
+    bool backward;
+    size_t size_hist;
+    size_t size_dist;
+    size_t size_max_iter;
+    size_t size_upper;
+    vector<size_t> hist;
+    vector<size_t> coverage;
+    vector<size_t> lentolev; // mult. by 10
 
     bool CheckSimilarity(vector<EdgeId> path){
-        SequenceBuilder seq;
-        SequenceBuilder edge_seq;
-        for (size_t i = 0; i<path.size(); ++i){
-            seq.append(graph_.EdgeNucls(path[i]));
-            seq.append(graph_.VertexNucls(graph_.EdgeEnd(path[i])));
-        }
-        
-        Sequence sequence;
-        Sequence sequence_edge = graph_.EdgeNucls(tip);
-        
-        size_t edge_len = sequence_edge.size();
-//      trimming
-        if (seq.size() > edge_len + (max_distance_ >> 1))
-            sequence = seq.BuildSequence().Subseq(0, edge_len + (max_distance_ >> 1));
-        else 
-            sequence = seq.BuildSequence();
-        
-        VERIFY(sequence.size() >= sequence_edge.size());
+        SequenceBuilder seq_builder;
+        if (backward){
 
-        if (edit_distance(sequence.str(), (sequence_edge).str()) < max_distance_){
-            TRACE("Sequence 1 " << sequence.str());
-            TRACE("Sequence 2 " << graph_.EdgeNucls(tip).str());
-            return true;
+            for (auto iter = path.rbegin(); iter != path.rend(); ++iter){ 
+                seq_builder.append(graph_.EdgeNucls(*iter));
+            }
+                
+            Sequence sequence;
+            Sequence sequence_tip = graph_.EdgeNucls(tip);
+            
+
+    //      trimming
+            VERIFY(path_length == seq_builder.size());
+            sequence = seq_builder.BuildSequence().Subseq(seq_builder.size() - sequence_tip.size(), seq_builder.size());
+            VERIFY(sequence.size() == sequence_tip.size());
+            
+            size_t dist = edit_distance(sequence.str(), sequence_tip.str());
+
+            coverage[(size_t) 10.*graph_.coverage(tip)]++;
+            lentolev[(size_t) 10.*dist/sequence_tip.size()]++;
+            
+            VERIFY(dist <= sequence_tip.size());
+
+            if (dist < size_hist) hist[dist]++;
+            if (dist < max_distance_){
+                INFO("Sequence 1 " << sequence.str());
+                INFO("Sequence 2 " << sequence_tip.str());
+                INFO("Backward tip " << backward << " Distance " << dist << " Edge " << graph_.int_id(tip) << " length " << graph_.length(tip) << " Path size " << path.size());
+                return true;
+            }
+            
+            size_dist++;
+            
+            return false;
+
         }
-        return false;
+        else{
+
+            for (size_t i = 0; i<path.size(); ++i)
+                seq_builder.append(graph_.EdgeNucls(path[i]));
+            
+            Sequence sequence;
+            SequenceBuilder tip_builder;
+
+            tip_builder.append(graph_.EdgeNucls(tip));
+            tip_builder.append(graph_.VertexNucls(graph_.EdgeEnd(tip)));
+            Sequence sequence_tip = tip_builder.BuildSequence();
+            
+            VERIFY(seq_builder.size() == path_length);
+
+    //      trimming
+            sequence = seq_builder.BuildSequence().Subseq(0, sequence_tip.size());
+            
+            VERIFY(sequence.size() == sequence_tip.size());
+            
+            size_t dist = edit_distance(sequence.str(), sequence_tip.str());
+
+            coverage[(size_t) 10.*graph_.coverage(tip)]++;
+            lentolev[(size_t) 10.*dist/(sequence_tip.size() - graph_.k())]++;
+            
+            VERIFY(dist <= sequence_tip.size());
+
+            if (dist < size_hist) hist[dist]++;
+            if (dist < max_distance_){
+                INFO("Sequence 1 " << sequence.str());
+                INFO("Sequence 2 " << sequence_tip.str());
+                INFO("Backward tip " << backward << " Distance " << dist << " Edge " << graph_.int_id(tip) << " length " << graph_.length(tip) << " Path size " << path.size());
+                return true;
+            }
+            
+            size_dist++;
+            
+            return false;
+            
+        }
     } 
 
     bool dfs(VertexId vertex, const AbstractDirection<Graph>& direction, vector<EdgeId>& path){
-        if (iteration++ > max_iterations_) 
+        if (iteration++ > max_iterations_) {
+            WARN("MAX_ITERARION was reached " << graph_.int_id(tip));
+            size_max_iter++;
             return false;
-        if (path_length > upper_bound) return false;
-        if (path_length > lower_bound){
-            if (CheckSimilarity(path)) return true;
+        }
+        if (path_length >= lower_bound){
+            return (CheckSimilarity(path));
         }
         for (size_t i = 0; i<direction.OutgoingEdgeCount(vertex); i++){
             EdgeId edge = direction.OutgoingEdges(vertex)[i];
             if (edge != tip){
                 path.push_back(edge);
-                size_t sum = graph_.EdgeNucls(edge).size();
+                size_t sum = graph_.k() + graph_.length(edge);
                 path_length += sum;
                 if (dfs(graph_.EdgeEnd(edge), direction, path)) return true;
                 path_length -= sum;
                 path.pop_back();
             }
         }
-       return false;
+        return false;
     }
 
 
@@ -1438,7 +1498,15 @@ public:
 
     TipChecker(Graph& graph, size_t max_iterations_, size_t max_distance):
     graph_(graph), max_iterations_(max_iterations_), max_distance_(max_distance){
-
+        size_dist = 0;
+        size_max_iter = 0;
+        size_upper = 0;
+        size_hist = 150;
+        for (size_t i = 0; i<size_hist*100; i++){ 
+            hist.push_back(0);
+            lentolev.push_back(0);
+            coverage.push_back(0);
+        }
     }
 
    
@@ -1451,16 +1519,27 @@ public:
         tip = edge_tip;
         iteration = 0;
         path_length = 0;
-        lower_bound = graph_.EdgeNucls(tip).size();
-        upper_bound = lower_bound << 1;
+        lower_bound = 2*graph_.k() + graph_.length(tip);
 
         VertexId vert = graph_.EdgeStart(tip);
-        if (graph_.IncomingEdgeCount(vert) > 0)
+        if (graph_.IncomingEdgeCount(vert) == 0 && graph_.OutgoingEdgeCount(vert) == 1){
+            backward = true;
+            return dfs(graph_.EdgeEnd(tip), BackwardDirection<Graph>(graph_), path);
+        }else{
+            VERIFY(graph_.OutgoingEdgeCount(graph_.EdgeEnd(tip)) == 0 && graph_.IncomingEdgeCount(graph_.EdgeEnd(tip)) == 1);
+            backward = false;
             return dfs(vert, ForwardDirection<Graph>(graph_), path);
-        else
-            return dfs(vert, BackwardDirection<Graph>(graph_), path);
-     
+        }
     }
+
+    void PrintTimeStats(){
+        INFO("False counted max iter " << size_max_iter << " size_upper " << size_upper << " size_dist " << size_dist);   
+        for (size_t i = 0; i<size_hist; ++i) cout << "hist " << i << " " << hist[i] << endl;
+        for (size_t i = 0; i<size_hist; ++i) cout << "hist_len " << i << " " << lentolev[i] << endl;
+        for (size_t i = 0; i<size_hist; ++i) cout << "hist_coverage " << i << " " << coverage[i] << endl;
+
+    }
+
 
 };
 

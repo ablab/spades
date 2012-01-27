@@ -9,14 +9,30 @@ function run_n_measure
    fi
 }
 
+function run_dataset
+{
+
+    awk '/\{/ {print str} {str = $1}' configs/debruijn/datasets.info > temp
+
+    dataset="`grep $1 temp`"
+    if [ ` echo "$dataset" | sed -n '$='` == 1 ]; then
+        echo "$dataset dataset chosen"
+        awk -v ds=$dataset '{if ($1 == "dataset") print "dataset","\t",ds; else print $0}' configs/debruijn/config.info  > config.info
+        mv config.info configs/debruijn/config.info
+    else
+        echo "Dataset ambiguos :"
+        echo "$dataset"
+    fi
+
+    rm temp
+}
+
 if [ $# = 0 ]
 then
-  set $1 'rd'
-fi
-
+    run_n_measure build/release/debruijn/debruijn configs/debruijn/config.info 
+else 
 case $1 in
 
-'rd' ) run_n_measure build/release/debruijn/debruijn configs/debruijn/config.info ;;
 'dd' ) run_n_measure build/debug/debruijn/debruijn configs/debruijn/config.info ;;
 'ddt' ) run_n_measure build/debug/test/debruijn/debruijn_test ;;
 'rdt' ) run_n_measure build/release/test/debruijn/debruijn_test ;;
@@ -26,5 +42,6 @@ case $1 in
 * ) run_n_measure $1 $2 $3 $4 $5
 
 esac
+fi
 
 

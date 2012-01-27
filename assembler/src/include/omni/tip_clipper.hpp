@@ -122,6 +122,8 @@ public:
 	 * Method clips tips of the graph.
 	 */
 	void ClipTips() {
+        size_t removed = 0;
+        size_t removed_with_check = 0;
 		TRACE("Tip clipping started");
         TipChecker<Graph> tipchecker(graph_, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein);
 		for (auto iterator = graph_.SmartEdgeBegin(comparator_);
@@ -133,9 +135,11 @@ public:
 						"Edge " << tip << " judged to look like tip topologically");
 				if (AdditionalCondition(tip)) {
                     TRACE("Additional sequence comparing");
+                    removed++;
                     if (tipchecker.TipCanBeProjected(tip)){
 					    TRACE("Edge " << tip << " judged to be tip");
-    					RemoveTip(tip);
+    					removed_with_check++;
+                        RemoveTip(tip);
 					    TRACE("Edge " << tip << " removed as tip");
                     }
 				} else {
@@ -147,7 +151,10 @@ public:
 			}TRACE("Try to find next edge");
 			++iterator;
 			TRACE("Use next edge");
-		}TRACE("Tip clipping finished");
+		}
+		TRACE("Tip clipping finished");
+        INFO("REMOVED STATS " << removed_with_check << " " << removed);
+        tipchecker.PrintTimeStats();
 		Compressor<Graph> compressor(graph_);
 		compressor.CompressAllVertices();
 	}

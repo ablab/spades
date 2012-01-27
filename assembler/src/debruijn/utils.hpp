@@ -1058,6 +1058,44 @@ private:
 };
 
 template<class Graph>
+class QualityLoggingRemovalCountHandler {
+	typedef typename Graph::EdgeId EdgeId;
+	const Graph& g_;
+	const EdgeQuality<Graph>& quality_handler_;
+	size_t black_removed_;
+    size_t total;
+
+public:
+	QualityLoggingRemovalCountHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler) :
+			g_(g), quality_handler_(quality_handler)/*, black_removed_(0), colored_removed_(
+	 0)*/{
+        black_removed_ = 0;
+        total = 0;
+	}
+
+    void CheckQuality(EdgeId edge){
+        if (math::gr(quality_handler_.quality(edge), 0.)){
+            INFO("Checking the quality of the edge " << g_.int_id(edge) << " : " << quality_handler_.quality(edge));   
+        }else{
+            INFO("Checking the quality of the edge " << g_.int_id(edge) << " : ZERO_QUALITY");   
+        }
+    }
+
+	void HandleDelete(EdgeId edge) {
+        total++;
+		if (math::gr(quality_handler_.quality(edge), 0.)) {
+            INFO("Deleting good edge " << g_.int_id(edge) << " with quality " << quality_handler_.quality(edge) << " cov " << g_.coverage(edge) << " length " << g_.length(edge));
+		}else{
+            black_removed_++;
+        }
+        if ((total % (1<<10)) != 0)   
+            TRACE("Removed still " << black_removed_ << " " << total); 
+	}
+
+private:
+};
+
+template<class Graph>
 class EdgeNeighborhoodFinder: public omnigraph::GraphSplitter<Graph> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
