@@ -51,25 +51,41 @@ def main():
 
 	def check_files(files, str_it_count):
 		msg = "Failure! Check output files."
-		verify(len(files) == 4, msg + "1")
-		verify(str_it_count + ".reads.left.corrected" in files, msg + "2")
-		verify(str_it_count + ".reads.right.corrected" in files, msg + "3")
-		verify(str_it_count + ".reads.left.unpaired" in files, msg + "4")
-		verify(str_it_count + ".reads.right.unpaired" in files, msg + "5")
+		verify(len(files) == 6, msg + "1")
+		verify(str_it_count + ".reads.0.left.corrected.fastq" in files, msg + "2")
+		verify(str_it_count + ".reads.0.right.corrected.fastq" in files, msg + "3")
+		verify(str_it_count + ".reads.0.left.unpaired.fastq" in files, msg + "4")
+		verify(str_it_count + ".reads.0.right.unpaired.fastq" in files, msg + "5")
+		verify(str_it_count + ".reads.0.left.bad.fastq" in files, msg + "6")
+		verify(str_it_count + ".reads.0.right.bad.fastq" in files, msg + "7")
+
+	def determine_it_count(tmp_dir):
+		import re
+		files = subprocess.check_output('ls -1 ' + tmp_dir, shell=True).strip().split('\n')
+		answer = 0;
+		for f in files:
+			m = re.match(r"^(\d+)\..*", f)
+			if m:
+				val = int(m.group(1))
+				if (val > answer):
+					answer = val
+		return answer			
 
 	def determine_read_files(folder, str_it_count):
-		check_files(subprocess.check_output('ls -1 ' + folder + r"/" + str_it_count + "*.reads.* | xargs -n1 basename"\
-		, shell=True).strip().split('\n'), str_it_count)
+		files = subprocess.check_output('ls -1 ' + folder + r"/" + str_it_count + "*.reads.* | xargs -n1 basename"\
+		, shell=True).strip().split('\n')
+		check_files(files, str_it_count)
 		
 		answer = dict()	
-		answer["first"] = folder + str_it_count + ".reads.left.corrected"	
-		answer["second"] = folder + str_it_count + ".reads.right.corrected"
-		answer["single_first"] = folder + str_it_count + ".reads.left.unpaired"	
-		answer["single_second"] = folder + str_it_count + ".reads.right.unpaired"
+		answer["first"] = folder + str_it_count + ".reads.0.left.corrected.fastq"	
+		answer["second"] = folder + str_it_count + ".reads.0.right.corrected.fastq"
+		answer["single_first"] = folder + str_it_count + ".reads.0.left.unpaired.fastq"	
+		answer["single_second"] = folder + str_it_count + ".reads.0.right.unpaired.fastq"
 		return answer
 
 	def generate_dataset(cfg, tmp_dir):	
-		str_it_count = str(cfg.iteration_count - 1)
+		str_it_count = str(determine_it_count(tmp_dir))
+
 		if (cfg.iteration_count <= 10):
 			str_it_count = "0" + str_it_count
 		dataset_cfg = determine_read_files(tmp_dir + r"/", str_it_count)
