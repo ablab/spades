@@ -106,9 +106,49 @@ ECOLI_JGI
         RL      100
         IS      220
         single_cell     true
-        reference_genome E.coli/MG1655-K12.fasta.gz
+        reference_genome  E.coli/DH10B-K12.fasta.gz; N/A ;E.coli/MG1655-K12.fasta.gz
 }
 
+
+ECOLI_JGI_0005_BH
+{
+        first   E.coli/jgi/0005/bh20120126/04.reads.0.left.corrected.fastq.gz
+        second  E.coli/jgi/0005/bh20120126/04.reads.0.right.corrected.fastq.gz
+        single_first    E.coli/jgi/0005/bh20120126/04.reads.0.left.unpaired.fastq.gz
+        single_second   E.coli/jgi/0005/bh20120126/04.reads.0.right.unpaired.fastq.gz
+        RL      100
+        IS      220
+        single_cell     true
+        reference_genome E.coli/DH10B-K12.fasta.gz 
+	;E.coli/DH10B-K12.fasta.gz ;
+}
+
+
+ECOLI_JGI_0011_BH
+{
+        first   E.coli/jgi/0011/bh20120127/03.reads.0.left.corrected.fastq.gz
+        second  E.coli/jgi/0011/bh20120127/03.reads.0.right.corrected.fastq.gz
+        single_first    E.coli/jgi/0011/bh20120127/03.reads.0.left.unpaired.fastq.gz
+        single_second   E.coli/jgi/0011/bh20120127/03.reads.0.right.unpaired.fastq.gz
+        RL      100
+        IS      220
+        single_cell     true
+        reference_genome E.coli/DH10B-K12.fasta.gz
+}
+
+
+
+ECOLI_JGI_0012_BH
+{
+        first   E.coli/jgi/0012/bh20120127/04.reads.0.left.corrected.fastq.gz
+        second  E.coli/jgi/0012/bh20120127/04.reads.0.right.corrected.fastq.gz
+        single_first    E.coli/jgi/0012/bh20120127/04.reads.0.left.unpaired.fastq.gz
+        single_second   E.coli/jgi/0012/bh20120127/04.reads.0.right.unpaired.fastq.gz
+        RL      100
+        IS      220
+        single_cell     true
+	reference_genome E.coli/DH10B-K12.fasta.gz
+}
 
 ; ================================================
 ; ===============     HMP     ====================
