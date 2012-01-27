@@ -28,6 +28,8 @@ struct SimplePathCondition {
 	}
 
 	bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
+		if (edge == g_.conjugate(edge))
+			return false;
 		for (size_t i = 0; i < path.size(); ++i)
 			if (edge == path[i] || edge == g_.conjugate(path[i]))
 				return false;

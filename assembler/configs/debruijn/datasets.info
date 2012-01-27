@@ -658,14 +658,3 @@ HUMAN_CHR14_QUAKE
         single_cell     false
         ;reference_genome  H.sapiens/chr14/chr14_GRCh37.fa    ; length about 100mbp, with Ns, from ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Eukaryotes/vertebrates_mammals/Homo_sapiens/GRCh37/Primary_Assembly/assembled_chromosomes/FASTA/
 }
-
-
-TEST
-{
-	first	hammer_output/02.reads.left.corrected.gz
-	second	hammer_output/02.reads.right.corrected.gz
-	single_first	hammer_output/02.reads.left.unpaired.gz
-	single_second	hammer_output/02.reads.right.unpaired.gz
-	RL	100
-	single_cell	true
-}
