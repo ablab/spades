@@ -137,8 +137,8 @@ struct debruijn_config
                 {"pair_info_aware"  , sm_pair_info_aware},
                 {"cheating"         , sm_cheating       },
                 {"topology"         , sm_topology       },
-                {"chimeric"         , sm_chimeric       }
-                {"max_flow"			, sm_max_flow		}
+                {"chimeric"         , sm_chimeric       },
+                {"max_flow"			, sm_max_flow		},
         };
 
 		return simpl_mode_id_mapping(info, utils::array_end(info));
