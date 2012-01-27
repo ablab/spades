@@ -52,7 +52,7 @@ class CoveredRangesFinder {
 		for (size_t i = 0; i < path.size(); ++i) {
 			auto mapping = path[i];
 			EdgeId edge = mapping.first;
-			vector<Range>& curr_ranges = crs[edge];
+			const vector<Range>& curr_ranges = crs[edge];
 			Range mapping_range = mapping.second.mapped_range;
 			crs[edge] = ProcessRange(mapping_range, curr_ranges);
 		}
@@ -79,19 +79,78 @@ public:
 
 template<class gp_t>
 class AssemblyComparer {
+public:
+	enum edge_type {
+		black = 0, red, blue, violet
+	};
+private:
 	typedef typename graph_pack::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef map<EdgeId, vector<Range>> CoveredRanges;
-	typedef map<EdgeId, vector<size_t>> BreakPoints;
+	typedef map<EdgeId, pair<vector<size_t>, vector<edge_type>>> BreakPoints;
 
-	void FindBreakPoints(BreakPoints& bps, const CoveredRanges& crs1, const CoveredRanges& crs2) {
-		map<EdgeId, set<size_t>> tmp;
-		for (auto it = crs1.begin(); it != crs1.end(); ++it) {
-			EdgeId edge = it->first;
-			const vector<Range>& ranges = it->second;
-			for (auto r_it = ranges.begin(); r_it != ranges.end(); ++r_it) {
+	void AddBreaks(set<size_t>& breaks, const vector<Range>& ranges) {
+		for (auto it = ranges.begin(); it != ranges.end(); ++it) {
+			breaks.insert(it->start_pos);
+			breaks.insert(it->end_pos);
+		}
+	}
 
+	void Paint(vector<edge_type>& coloring, const vector<Range>& ranges, const vector<size_t>& breaks, edge_type paint) {
+		size_t i = 0;
+		for (auto it = ranges.begin(); it != ranges.end(); ++it) {
+			while (breaks[i] != it->start_pos)
+				++i;
+			while (breaks[i] != it->end_pos) {
+				coloring[i] += paint;
+				++i;
 			}
+		}
+	}
+
+	pair<vector<size_t>, vector<edge_type>> CombineCoveredRanges(const vector<Range>& ranges1, const vector<Range>& ranges2) {
+		set<size_t> tmp_breaks;
+		AddBreaks(tmp_breaks, ranges1);
+		AddBreaks(tmp_breaks, ranges2);
+		vector<size_t> breaks(tmp_breaks.begin(), tmp_breaks.end());
+		//breaks contain 0 and edge_length here!
+		vector<edge_type> coloring;
+		Paint(coloring, ranges1, breaks, edge_type::red);
+		Paint(coloring, ranges1, breaks, edge_type::blue);
+		//cleaning breaks from 0 and edge_length
+		vector<size_t> final_breaks;
+		for (size_t i = 1; i < breaks.size() - 1; ++i) {
+			final_breaks.push_back(breaks[i]);
+		}
+		return make_pair(final_breaks, coloring);
+	}
+
+	void FindBreakPoints(const Graph& g, BreakPoints& bps, /*const */CoveredRanges& crs1, /*const */CoveredRanges& crs2) {
+		for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			EdgeId e = *it;
+			bps[e] = CombineCoveredRanges(crs1[e], crs2[e]);
+		}
+	}
+
+	void SplitEdge(const vector<size_t>& breaks, vector<edge_type>& colors, EdgeId e, Graph& g, map<EdgeId, string>& coloring) {
+		vector<size_t> shifts;
+		if (!breaks.empty) {
+			shifts[0] = breaks[0];
+			for (size_t i = 1; i < breaks.size(); ++i) {
+				shifts[i] = breaks[i] - breaks[i-1];
+			}
+		}
+		EdgeId curr_e = e;
+		for (size_t i = 0; i < breaks.size(); ++i) {
+
+		}
+	}
+
+	void SplitGraph(/*const */BreakPoints& bps, Graph& g, map<EdgeId, string>& coloring) {
+		for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			EdgeId e = *it;
+			VERIFY(bps.find(e) != bps.end());
+			SplitEdge(bps[e].first, bps[e].second, e, g, coloring);
 		}
 	}
 
@@ -99,7 +158,6 @@ public:
 
 	template<size_t k>
 	void CompareAssemblies(ContigStream& ass1, ContigStream& ass2) {
-		typedef graph_pack<ConjugateDeBruijnGraph, k> gp_t;
 		gp_t gp;
 		CompositeContigStream stream(ass1, ass2);
 		ConstructGraph<k>(gp.g, gp.index, stream);
@@ -111,7 +169,7 @@ public:
 		CoveredRanges crs2;
 		crs_finder.FindCoveredRanges(crs2, ass2);
 		BreakPoints bps;
-		FindBreakPoints(bps, crs1, crs2);
+		FindBreakPoints(gp.g, bps, crs1, crs2);
 	}
 };
 
