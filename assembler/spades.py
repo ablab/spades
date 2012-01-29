@@ -102,8 +102,8 @@ def main():
     support.sys_call(cfg.output_to_console, cfg.log_filename, "cp " + result.contigs + " " + build_path)
 
     cmd = "python src/tools/quality/quality.py " + result.contigs
-#    if result.reference:
-#        cmd += " -R " + result.reference
+    if result.reference:
+        cmd += " -R " + result.reference
     cmd += " -o " + build_path + "quality_results"
     support.sys_call(cfg.output_to_console, cfg.log_filename, cmd)
 
