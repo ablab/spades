@@ -148,6 +148,8 @@ struct lc_config
 
 			double agreed_coeff;
 
+			bool write_uncovered_edges;
+
 			symmetrization sym;
 		} fo;
 
@@ -374,6 +376,8 @@ inline void load(lc_config::param_set::filter_options& fo, boost::property_tree:
     load(fo.agreed_coeff         , pt, "agreed_coeff"         );
 
     load(fo.sym                  , pt, "sym"                  );
+
+    load(fo.write_uncovered_edges, pt, "write_uncovered_edges");
 }
 
 inline void load(lc_config::param_set::symmetrization& sym, boost::property_tree::ptree const& pt, bool complete)

@@ -200,6 +200,10 @@ void resolve_repeats_ml(const conj_graph_pack& gp, PairedInfoIndices& pairedInfo
 		}
 		INFO("Removed similar");
 
+		if (params.ps.fo.write_uncovered_edges) {
+		    AddUncoveredEdges(g, noOverlaps);
+		}
+
 //		found = PathsInGenome<K>(g, index, sequence, noOverlaps, path1, path2, &pathQuality);
 //		INFO("Good paths found " << found << " in total " << noOverlaps.size());
 //		INFO("Path coverage " << PathsCoverage(g, noOverlaps));

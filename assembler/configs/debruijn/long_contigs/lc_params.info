@@ -40,7 +40,7 @@ singlecell {
 	    check_trusted     true
 	    trusted_threshold 3
 	    
-	    short_single      15
+	    short_single      0
 	    chimeric_len      0
 	    chimeric_delta    0
 	    
@@ -66,7 +66,7 @@ singlecell {
 	    
 	    max_depth             0
 	    
-	    fix_weight            false
+	    fix_weight            true
 	    use_advanced          false
 	    advanced_coeff        1.4
 	}    
@@ -122,6 +122,8 @@ singlecell {
 		    cut_tips             false
 		    min_conjugate_len    200
 		}
+
+	    write_uncovered_edges   true
 	    
 	}
 
@@ -142,7 +144,7 @@ multicell {
 	    check_trusted     true
 	    trusted_threshold 0.1
 	    
-	    short_single      15
+	    short_single      0
 	    chimeric_len      0
 	    chimeric_delta    0
 	    
@@ -160,7 +162,7 @@ multicell {
 	    use_weight_function_first  false
 	    weight_fun_threshold       0.2
 	    weight_threshold           0.1
-	    priority_coeff             4
+	    priority_coeff             2
 	
 	    use_delta_first       true
 	    etalon_distance_dev   2
@@ -202,7 +204,7 @@ multicell {
 	{
 	    remove_duplicates       true
 	    remove_subpaths         true
-	    remove_overlaps         true
+	    remove_overlaps         false
 	    
 	    length_percent          1.2
 	    conjugate_percent       0.98
@@ -225,6 +227,8 @@ multicell {
 		    cut_tips             false
 		    min_conjugate_len    200
 		}
+
+	    write_uncovered_edges   true
 	    
 	}
 }

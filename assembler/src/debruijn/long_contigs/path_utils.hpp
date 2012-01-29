@@ -1233,6 +1233,30 @@ void RemoveUnagreedPaths(const Graph& g, std::vector<BidirectionalPath>& paths, 
 }
 
 
+void AddUncoveredEdges(const Graph& g, std::vector<BidirectionalPath>& paths) {
+    std::set<EdgeId> covered;
+
+    for(auto path = paths.begin(); path != paths.end(); ++path) {
+        for(auto iter = path->begin(); iter != path->end(); ++iter) {
+            covered.insert(*iter);
+        }
+    }
+
+    for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        if (covered.count(*iter) == 0) {
+            INFO("Added");
+            BidirectionalPath p, cp;
+            p.push_back(*iter);
+            cp.push_back(g.conjugate(*iter));
+
+            AddPathPairToContainer(p, cp, paths);
+
+            covered.insert(*iter);
+            covered.insert(g.conjugate(*iter));
+        }
+    }
+}
+
 } // namespace long_contigs
 
 #endif /* PATH_UTILS_HPP_ */
