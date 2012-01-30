@@ -125,8 +125,10 @@ void load_config(string cfg_filename)
 
 void save_info_file() {
 	ofstream file(cfg::get().output_dir + "result.info");
-	file << "contigs\t" << cfg::get().final_contigs_file << endl;
+	file << "first\t" << cfg::get().input_dir + cfg::get().ds.first << endl;
+	file << "second\t" << cfg::get().input_dir + cfg::get().ds.second << endl;
 	file << "reference\t" << cfg::get().ds.reference_genome_filename << endl;
+	file << "contigs\t" << cfg::get().final_contigs_file << endl;
 	file.close();
 }
 
