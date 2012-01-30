@@ -6,7 +6,7 @@ apt-get --yes install cmake
 apt-get --yes install liblog4cxx10-dev
 apt-get --yes install libboost1.42-all-dev
 apt-get --yes install zlib1g-dev
-apt-get --yes install python-mathplotlib
+apt-get --yes install python-matplotlib
 apt-get --yes install python-numpy
 apt-get --yes install bioperl
 apt-get --yes install mummer
