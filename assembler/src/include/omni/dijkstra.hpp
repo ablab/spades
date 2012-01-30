@@ -93,6 +93,7 @@ public:
 		TRACE("Initializing dijkstra priority queue");
 		set_finished(false);
 		distances_.clear();
+		processed_vertices_.clear();
 		init(start);
 		priority_queue<pair<distance_t, VertexId> , vector<pair<distance_t,
 				VertexId>> , ReverseComparator<pair<distance_t, VertexId>> > q;

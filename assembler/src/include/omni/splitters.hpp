@@ -476,7 +476,9 @@ private:
 				path_[current_index_].second.initial_range.start_pos;
 		covered_range_.end_pos =
 				path_[current_index_].second.initial_range.end_pos;
-		while (current_index_ != path_.size()
+		//always go forward at least one path element
+		++current_index_;
+		while (current_index_ < path_.size()
 				&& EdgeCovered(path_[current_index_].first)) {
 			covered_range_.end_pos =
 					path_[current_index_].second.initial_range.end_pos;
@@ -526,6 +528,7 @@ public:
 		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
 		cc.CloseComponent(last_component_);
 		SkipVisited();
+		//todo ask Anton what is this...
 		if (prev_index + 1 != current_index_) {
 			start_processed_ = true;
 		} else if (!start_processed_) {
