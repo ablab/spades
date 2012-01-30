@@ -1096,6 +1096,10 @@ public:
 	}
 };
 
+void EmptyHandleF(EdgeId edge) {
+
+}
+
 template<class Graph>
 class QualityEdgeLocalityPrintingRH {
 	typedef typename Graph::EdgeId EdgeId;

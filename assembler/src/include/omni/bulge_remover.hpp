@@ -175,7 +175,7 @@ private:
 	 */
 	bool BulgeCondition(EdgeId e, const vector<EdgeId>& path,
 			double path_coverage) {
-		return path_coverage * max_relative_coverage_ > g_.coverage(e)
+		return math::ge(path_coverage * max_relative_coverage_, g_.coverage(e))
 				&& bulge_condition_(e, path);
 		//		return path_and_coverage.second > max_relative_coverage * g.kplus_one_mer_coverage(edge);
 	}

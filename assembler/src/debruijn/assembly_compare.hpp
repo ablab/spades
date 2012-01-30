@@ -5,6 +5,7 @@
 #include "omni_utils.hpp"
 #include "graph_pack.hpp"
 #include "graph_construction.hpp"
+#include "graph_simplification.hpp"
 
 namespace debruijn_graph {
 typedef io::IReader<io::SingleRead> ContigStream;
@@ -77,6 +78,8 @@ public:
 
 };
 
+
+
 template<class gp_t>
 class AssemblyComparer {
 public:
@@ -133,6 +136,7 @@ private:
 	}
 
 	void SplitEdge(const vector<size_t>& breaks, vector<edge_type>& colors, EdgeId e, Graph& g, map<EdgeId, string>& coloring) {
+		VERIFY(breaks.size() + 1 == colors.size());
 		vector<size_t> shifts;
 		if (!breaks.empty) {
 			shifts[0] = breaks[0];
@@ -142,8 +146,11 @@ private:
 		}
 		EdgeId curr_e = e;
 		for (size_t i = 0; i < breaks.size(); ++i) {
-
+			auto split_result = g.SplitEdge(curr_e, shifts[i]);
+			coloring.insert(make_pair(split_result.first, colors[i]));
+			curr_e = split_result.second;
 		}
+		coloring.insert(make_pair(curr_e, colors[breaks.size()]));
 	}
 
 	void SplitGraph(/*const */BreakPoints& bps, Graph& g, map<EdgeId, string>& coloring) {
@@ -170,7 +177,12 @@ public:
 		crs_finder.FindCoveredRanges(crs2, ass2);
 		BreakPoints bps;
 		FindBreakPoints(gp.g, bps, crs1, crs2);
+		map<EdgeId, string> coloring;
+		SplitGraph(bps, gp.g, coloring);
+		RemoveBulges(gp.g, EmptyHandleF);
+
 	}
+
 };
 
 }
