@@ -99,13 +99,13 @@ def main():
     fn = os.path.join(cfg.output_dir, cfg.dataset + "/K" + str(prev_K) + "/latest/result.info")
     result = load_config_from_file(fn)
 
-    support.sys_call(cfg.output_to_console, cfg.log_filename, "cp " + result.contigs + " " + build_path)
+    support.sys_call("cp " + result.contigs + " " + build_path)
 
     cmd = "python src/tools/quality/quality.py " + result.contigs
     if result.reference:
         cmd += " -R " + result.reference
     cmd += " -o " + build_path + "quality_results"
-    support.sys_call(cfg.output_to_console, cfg.log_filename, cmd)
+    support.sys_call(cmd)
 
 if __name__ == '__main__':
   main()
