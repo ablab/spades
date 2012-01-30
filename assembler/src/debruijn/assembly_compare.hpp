@@ -2,7 +2,6 @@
 
 #include "standard.hpp"
 #include "utils.hpp"
-#include "omni_utils.hpp"
 #include "graph_pack.hpp"
 #include "graph_construction.hpp"
 #include "graph_simplification.hpp"
@@ -15,7 +14,7 @@ template<class gp_t>
 class CoveredRangesFinder {
 	const gp_t& gp_;
 
-	typedef typename graph_pack::graph_t Graph;
+	typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef map<EdgeId, vector<Range>> CoveredRanges;
 
@@ -68,7 +67,7 @@ public:
 
 	void FindCoveredRanges(CoveredRanges& crs, ContigStream& stream) {
 		io::SingleRead read;
-		NewExtendedSequenceMapper<gp_t::k_value, Graph> mapper(gp_.g, gp_.index,
+		NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> mapper(gp_.g, gp_.index,
 				gp_.kmer_mapper);
 		while (!stream.eof()) {
 			stream >> read;
@@ -78,16 +77,22 @@ public:
 
 };
 
-
-
 template<class gp_t>
+//todo add default colorings???
 class AssemblyComparer {
 public:
 	enum edge_type {
+		//don't change order!!!
 		black = 0, red, blue, violet
 	};
+
+	static string color_str(edge_type color) {
+		static string colors[] = {"black", "red", "blue", "violet"};
+		return colors[(int)color];
+	}
+
 private:
-	typedef typename graph_pack::graph_t Graph;
+	typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef map<EdgeId, vector<Range>> CoveredRanges;
 	typedef map<EdgeId, pair<vector<size_t>, vector<edge_type>>> BreakPoints;
@@ -105,7 +110,7 @@ private:
 			while (breaks[i] != it->start_pos)
 				++i;
 			while (breaks[i] != it->end_pos) {
-				coloring[i] += paint;
+				coloring[i] = (edge_type)((int)coloring[i] + paint);
 				++i;
 			}
 		}
@@ -138,7 +143,7 @@ private:
 	void SplitEdge(const vector<size_t>& breaks, vector<edge_type>& colors, EdgeId e, Graph& g, map<EdgeId, string>& coloring) {
 		VERIFY(breaks.size() + 1 == colors.size());
 		vector<size_t> shifts;
-		if (!breaks.empty) {
+		if (!breaks.empty()) {
 			shifts[0] = breaks[0];
 			for (size_t i = 1; i < breaks.size(); ++i) {
 				shifts[i] = breaks[i] - breaks[i-1];
@@ -147,10 +152,10 @@ private:
 		EdgeId curr_e = e;
 		for (size_t i = 0; i < breaks.size(); ++i) {
 			auto split_result = g.SplitEdge(curr_e, shifts[i]);
-			coloring.insert(make_pair(split_result.first, colors[i]));
+			coloring.insert(make_pair(split_result.first, color_str(colors[i])));
 			curr_e = split_result.second;
 		}
-		coloring.insert(make_pair(curr_e, colors[breaks.size()]));
+		coloring.insert(make_pair(curr_e, color_str(colors[breaks.size()])));
 	}
 
 	void SplitGraph(/*const */BreakPoints& bps, Graph& g, map<EdgeId, string>& coloring) {
@@ -163,11 +168,10 @@ private:
 
 public:
 
-	template<size_t k>
 	void CompareAssemblies(ContigStream& ass1, ContigStream& ass2) {
 		gp_t gp;
 		CompositeContigStream stream(ass1, ass2);
-		ConstructGraph<k>(gp.g, gp.index, stream);
+		ConstructGraph<gp_t::k_value>(gp.g, gp.index, stream);
 		CoveredRangesFinder<gp_t> crs_finder(gp);
 		ass1.reset();
 		ass2.reset();
@@ -178,9 +182,15 @@ public:
 		BreakPoints bps;
 		FindBreakPoints(gp.g, bps, crs1, crs2);
 		map<EdgeId, string> coloring;
+
 		SplitGraph(bps, gp.g, coloring);
 		RemoveBulges(gp.g, EmptyHandleF);
 
+		ReliableSplitter<Graph> splitter(gp.g, /*max_size*/100, /*edge_length_bound*/500);
+		StrGraphLabeler<Graph> labeler(gp.g);
+		WriteComponents(gp.g, splitter,
+				"breakpoint_graph", "breakpoint_graph.dot",
+				coloring, labeler);
 	}
 
 };

@@ -20,6 +20,8 @@
 
 #include "memory_limit.hpp"
 
+#include "assembly_compare.hpp"
+
 DECL_PROJECT_LOGGER("d")
 
 void link_output(std::string const& link_name)
@@ -167,6 +169,12 @@ int main(int argc, char** argv)
         save_info_file();
 
         INFO("Assembling " << dataset << " dataset with K=" << debruijn_graph::K << " finished");
+
+    	///debug
+    	AssemblyComparer<graph_pack<ConjugateDeBruijnGraph, 101>> comparer;
+    	io::EasyReader stream("");
+    	comparer.CompareAssemblies(stream, stream);
+    	///debug
     }
     catch (std::exception const& e)
     {

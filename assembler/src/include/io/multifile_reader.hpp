@@ -52,8 +52,8 @@ public:
 			bool destroy_readers = false) : /*filenames_(filenames), */
 			current_reader_index_(0), destroy_readers_(destroy_readers) {
 		VERIFY(reader_1.is_open() && reader_2.is_open());
-		readers_.push_back(reader_1);
-		readers_.push_back(reader_2);
+		readers_.push_back(&reader_1);
+		readers_.push_back(&reader_2);
 	}
 
 	/*

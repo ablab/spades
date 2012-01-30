@@ -26,7 +26,7 @@ void late_pair_info_count(conj_graph_pack& gp,
 	if (cfg::get().paired_mode && cfg::get().late_paired_info) {
 		INFO("STAGE == Counting Late Pair Info");
 		if (cfg::get().advanced_estimator_mode) {
-			FillPairedIndexWithProductMetric<K>(gp.g, gp.int_ids, gp.index,
+			FillPairedIndexWithProductMetric<K>(gp.g, gp.index,
 					gp.kmer_mapper, paired_index, stream);
 		} else {
 			FillPairedIndexWithReadCountMetric<K>(gp.g, gp.int_ids, gp.index,

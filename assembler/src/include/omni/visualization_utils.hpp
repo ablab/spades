@@ -463,16 +463,25 @@ void WriteErrors(
 //todo strange similar looking methods!!!
 template<class Graph>
 void WriteComponents(const Graph& g,
+		ComponentSplitter<typename Graph::VertexId> &splitter,
+		const string& graph_name, const string& file_name,
+		const map<typename Graph::EdgeId, string> &coloring,
+		const GraphLabeler<Graph>& labeler) {
+	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
+	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, file_name,
+			graph_name, 4000);
+	gv.Visualize();
+}
+
+template<class Graph>
+void WriteComponents(const Graph& g,
 		ComponentSplitter<typename Graph::VertexId> &inner_splitter,
 		const AbstractFilter<vector<typename Graph::VertexId>> &checker,
 		const string& graph_name, const string& file_name,
 		const map<typename Graph::EdgeId, string> &coloring,
 		const GraphLabeler<Graph>& labeler) {
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
-	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
-	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, file_name,
-			graph_name, 4000);
-	gv.Visualize();
+	WriteComponents(g, splitter, graph_name, file_name, coloring, labeler);
 }
 
 template<class Graph>

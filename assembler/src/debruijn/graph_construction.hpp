@@ -31,7 +31,7 @@ void FillPairedIndexWithReadCountMetric(const Graph &g, const IdTrackHandler<Gra
 	INFO("-----------------------------------------");
 	stream.reset();
 	INFO("Counting paired info with read count weight");
-	NewExtendedSequenceMapper<k + 1, Graph> mapper(g, int_ids, index, kmer_mapper);
+	NewExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
 	LatePairedIndexFiller<k + 1, Graph, NewExtendedSequenceMapper<k + 1, Graph>> pif(g, mapper, stream, PairedReadCountWeight);
 //	ExtendedSequenceMapper<k + 1, Graph> mapper(g, int_ids, index, kmer_mapper);
 //	LatePairedIndexFiller<k + 1, Graph, ExtendedSequenceMapper<k + 1, Graph>, ReadStream> pif(g, mapper, stream, PairedReadCountWeight);
@@ -40,8 +40,8 @@ void FillPairedIndexWithReadCountMetric(const Graph &g, const IdTrackHandler<Gra
 }
 
 template<size_t k>
-void FillPairedIndexWithProductMetric(const Graph &g, const IdTrackHandler<Graph>& int_ids,
-		const EdgeIndex<k + 1, Graph>& index
+void FillPairedIndexWithProductMetric(const Graph &g
+		, const EdgeIndex<k + 1, Graph>& index
 		, const KmerMapper<k + 1, Graph>& kmer_mapper
 		, PairedInfoIndex<Graph>& paired_info_index , io::IReader<io::PairedRead>& stream) {
 	INFO("-----------------------------------------");
@@ -49,7 +49,7 @@ void FillPairedIndexWithProductMetric(const Graph &g, const IdTrackHandler<Graph
 	INFO("Counting paired info with product weight");
 	//	ExtendedSequenceMapper<k + 1, Graph> mapper(g, int_ids, index, kmer_mapper);
 	//	LatePairedIndexFiller<k + 1, Graph, ExtendedSequenceMapper<k + 1, Graph>, ReadStream> pif(g, mapper, stream, PairedReadCountWeight);
-	NewExtendedSequenceMapper<k + 1, Graph> mapper(g, int_ids, index, kmer_mapper);
+	NewExtendedSequenceMapper<k + 1, Graph> mapper(g, index, kmer_mapper);
 	LatePairedIndexFiller<k + 1, Graph, NewExtendedSequenceMapper<k + 1, Graph>> pif(g, mapper, stream, KmerCountProductWeight);
 	pif.FillIndex(paired_info_index);
 	INFO("Paired info with product weight counted");

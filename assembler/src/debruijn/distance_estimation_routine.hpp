@@ -28,9 +28,6 @@ namespace debruijn_graph {
 
 void estimate_distance(conj_graph_pack& gp, paired_info_index& paired_index,
 		paired_info_index& clustered_index) {
-	exec_late_pair_info_count(gp, paired_index);
-	INFO("STAGE == Estimating Distance");
-
 	if (cfg::get().paired_mode) {
 	    if (cfg::get().gc.enable)
 	        CloseShortGaps(gp.g, paired_index, gp.edge_pos,	cfg::get().gc.minimal_intersection);
@@ -127,6 +124,8 @@ void count_estimated_info_stats(conj_graph_pack& gp,
 void exec_distance_estimation(conj_graph_pack& gp,
 		paired_info_index& paired_index, paired_info_index& clustered_index) {
 	if (cfg::get().entry_point <= ws_distance_estimation) {
+		exec_late_pair_info_count(gp, paired_index);
+		INFO("STAGE == Estimating Distance");
 		estimate_distance(gp, paired_index, clustered_index);
 		save_distance_estimation(gp, paired_index, clustered_index);
 		if (cfg::get().paired_mode && cfg::get().paired_info_statistics)
