@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dijkstra.hpp"
+#include "observable_graph.hpp"
 namespace omnigraph {
 
 template<class Element>
@@ -547,16 +548,15 @@ private:
 	typedef GraphSplitter<Graph> base;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	erasable_priority_queue<VertexId> queue_;
-	//	SmartVertexIterator<omnigraph::ObservableGraph<VertexId, EdgeId> >
-	//			iterator_;
+//	erasable_priority_queue<VertexId> queue_;
+	typename Graph::SmartVertexIt iterator_;
 	set<VertexId> visited_;
 	size_t bound_;
 private:
 	DECL_LOGGER("LongEdgesExclusiveSplitter")
 public:
 	LongEdgesExclusiveSplitter(const Graph &graph, size_t bound) :
-	base(graph), queue_(graph.begin(), graph.end()), /*iterator_(graph.SmartVertexBegin()), */
+	base(graph), /*queue_(graph.begin(), graph.end()), */iterator_(graph.SmartVertexBegin()),
 	bound_(bound) {
 	}
 
@@ -566,15 +566,15 @@ public:
 			VERIFY(false);
 			return vector<VertexId>();
 		}
-		VertexId next = queue_.top();
-		queue_.pop();
+		VertexId next = *iterator_;//queue_.top();
+		++iterator_;//queue_.pop();
 		ShortEdgeComponentFinder<Graph> cf(this->graph(), bound_);
 		cf.run(next);
 
 		TRACE("comp Finder finished");
 		vector < VertexId > result = cf.ReachedVertices();
 		for (auto it = result.begin(); it != result.end(); ++it) {
-			queue_.erase(*it);
+			iterator_.erase(*it);//queue_.erase(*it);
 		}
 		TRACE("Returning component");
 		return result;
@@ -582,8 +582,8 @@ public:
 
 	virtual bool Finished() {
 		TRACE("Inside Finished");
-		//		return iterator_.IsEnd();
-		return queue_.empty();
+		return iterator_.IsEnd();
+//		return queue_.empty();
 	}
 
 };

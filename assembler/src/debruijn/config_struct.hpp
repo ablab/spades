@@ -138,7 +138,7 @@ struct debruijn_config
                 {"cheating"         , sm_cheating       },
                 {"topology"         , sm_topology       },
                 {"chimeric"         , sm_chimeric       },
-                {"max_flow"			, sm_max_flow		},
+                {"max_flow"			, sm_max_flow		}
         };
 
 		return simpl_mode_id_mapping(info, utils::array_end(info));
@@ -581,6 +581,7 @@ inline void load(debruijn_config::simplification& simp, boost::property_tree::pt
 	load(simp.ec  , pt, "ec"  ); // erroneous connections remover:
 	load(simp.cec , pt, "cec" ); // cheating erroneous connections remover:
 	load(simp.tec , pt, "tec" ); // topology aware erroneous connections remover:
+	// need fix in config file
 	load(simp.mfec, pt, "mfec"); // max flow erroneous connections remover:
 	load(simp.piec, pt, "piec"); // pair info aware erroneous connections remover:
 

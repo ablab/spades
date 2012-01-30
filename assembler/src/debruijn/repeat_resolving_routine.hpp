@@ -382,7 +382,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 		INFO("Erroneous remove "<<i);
 //        BulgeRemoveWrap      (resolved_gp.g);
-		FinalRemoveErroneousEdges(resolved_gp.g, edge_remover);
+//		FinalRemoveErroneousEdges(resolved_gp.g, edge_remover);
 
 		if (cfg::get().path_set_graph == false) {
 
