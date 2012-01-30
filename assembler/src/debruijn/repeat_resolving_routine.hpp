@@ -284,7 +284,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 //	EdgeLabelHandler<typename graph_pack::graph_t> labels_after(resolved_gp.g,
 //			origin_gp.g);
-
+	ProduceLongEdgesStat( origin_gp,  clustered_index);
 	DEBUG("New index size: "<< clustered_index.size());
 	// todo: make printGraph const to its arguments
 
@@ -483,6 +483,30 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //		OutputContigs(resolved_gp.g,
 //				cfg::get().output_dir + "contigs_final.fasta");
 	}
+}
+
+template<class graph_pack>
+void ProduceLongEdgesStat(graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
+	int missing_paired_info_count = 0;
+	int extra_paired_info_count = 0;
+	int long_edges_count = 0;
+	for (auto e_iter = origin_gp.g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+		if (origin_gp.g.length(*e_iter) >= cfg::get().rr.max_repeat_length){
+			long_edges_count ++;
+			auto pi = clustered_index.GetEdgeInfo(*e_iter);
+			for (auto i_iter = pi.begin(); i_iter!= pi.end(); ++i_iter){
+				auto first_edge = i_iter->second;
+				for(auto j_iter = i_iter + 1; j_iter != pi.end(); ++j_iter) {
+					auto second_edge = i_iter->second;
+					if (first_edge == second_edge){
+						extra_paired_info_count++;
+						INFO("doubled PI to edge" <<origin_gp.int_ids.ReturnIntId(second_edge));
+					}
+				}
+			}
+		}
+	}
+	INFO("long edges: " << long_edges_count << " doubled paired info" << extra_paired_info_count);
 }
 
 template<class graph_pack>

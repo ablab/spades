@@ -178,11 +178,6 @@ public:
 
 				EdgeId old_first_edge = *iter;
 				AddEdgeWithAllHandlers(new_start, new_end, old_first_edge);
-//				DEBUG("adding isolated edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge));
-//				EdgeId eid = new_gp.g.AddEdge(nconstructorew_start, new_end, gp.g.EdgeNucls(old_first_edge));
-//				WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge)  * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge] */));
-//				new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
-//				new_to_old.insert(make_pair(eid, old_first_edge));
 			}
 		}
 
@@ -201,40 +196,16 @@ public:
 		for(auto iter = PII.begin(); iter != PII.end() ; ++iter)
 		{
 			DEBUG(str(*iter, gp));
-			//		DEBUG(tst());
 		}
 		DEBUG("FILTERED");
 		int count = 0;
-
-		//	map<VertexId, int> long_start_vertices;
 		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
 		{
-			//		if ((old_vertices.find(gp.gp.g.EdgeEnd(iter->start)) != old_vertices.end()) && gp.gp.g.length(iter->start) > cfg::get().ds.IS) {
-			//			real_id.insert(make_pair(iter->id, iter->id));
-			//		} else
-			{
-				VertexId v = new_gp.g.AddVertex();
-				new_gp.int_ids.AddVertexIntId(v, iter->id);
-				//			real_id.insert(make_pair(iter->id, iter->id));
-				//			old_vertices.insert(make_pair(gp.gp.g.EdgeEnd(iter->start), iter->id));
-			}
+			VertexId v = new_gp.g.AddVertex();
+			new_gp.int_ids.AddVertexIntId(v, iter->id);
 		}
 		map<EdgeId, int> long_starts;
 		map<int, int> real_ids;
-		/*for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
-		{
-			if (long_starts.find(iter->start) == long_starts.end()) {
-				if (iter->length - gp.g.length(iter->end) < cfg::get().ds.IS ) {
-					real_ids.insert(make_pair(iter->id, iter->id));
-				} else {
-					long_starts.insert(make_pair(iter->start, iter->id));
-					real_ids.insert(make_pair(iter->id, iter->id));
-				}
-			} else {
-				real_ids.insert(make_pair(iter->id, long_starts[iter->start]));
-				new_gp.g.DeleteVertex(new_gp.int_ids.ReturnVertexId(iter->id));
-			}
-		}*/
 		for(auto iter = PIIFilter.begin(); iter != PIIFilter.end() ; ++iter)
 		{
 			DEBUG("watching on id "<<  iter->id);
@@ -331,13 +302,6 @@ public:
 					DEBUG("ignoring clone to pathset " << extends[i].id << " and vertex " << real_ids[extends[i].id]);
 				} else {
 					AddEdgeWithAllHandlers(new_start, new_end, old_first_edge);
-
-//					EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
-//					WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge) *   extends[i].weight / weight_sums[old_first_edge]));
-//					new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
-//					new_to_old.insert(make_pair(eid, old_first_edge));
-//					DEBUG("count was "<< count);
-					//		    omnigraph::WriteSimple(new_gp.g, tot_labeler_after, cfg::get().output_dir  + ToString(count)+".dot", "no_repeat_graph");
 					count ++ ;
 				}
 			}
@@ -348,11 +312,6 @@ public:
 				old_first_edge = first.start;
 				AddEdgeWithAllHandlers(new_start, new_end, old_first_edge);
 
-//				EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
-//				WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge]*/));
-//				new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
-//				new_to_old.insert(make_pair(eid, old_first_edge));
-
 				new_start = new_end;
 				count++;
 
@@ -362,29 +321,14 @@ public:
 					DEBUG("singleton dead end!");
 					auto current_path = first.paths.begin();
 					DEBUG(current_path->size());
-					//	DEBUG(first);
-
-
 					for(auto path_iter = current_path->begin(); path_iter != current_path->end(); ++path_iter) {
-
 						VertexId new_end = new_gp.g.AddVertex();
 						old_first_edge = * path_iter;
-
-//						DEBUG("adding edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge) << " and coverage"<< gp.g.coverage(old_first_edge) /*<< " * "  << first.weight / weight_sums[old_first_edge]*/);
 						AddEdgeWithAllHandlers(new_start, new_end, old_first_edge);
-//
-//						EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
-//						WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge) * gp.g.length(old_first_edge)));
-//						new_to_old.insert(make_pair(eid, old_first_edge));
-//						new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
-						new_start = new_end;
 						count++;
-
 					}
 					VertexId new_end = new_gp.g.AddVertex();
 					old_first_edge = first.end;
-//					DEBUG("adding edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge));
-
 					AddEdgeWithAllHandlers(new_start, new_end, old_first_edge);
 
 //					EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
@@ -410,11 +354,6 @@ public:
 				VertexId new_end = new_gp.g.AddVertex();
 				EdgeId old_first_edge = *iter;
 				AddEdgeWithAllHandlers(new_start, new_end, old_first_edge);
-//				DEBUG("adding isolated edge from" << new_gp.int_ids.ReturnIntId(new_start) << " to " << new_gp.int_ids.ReturnIntId(new_end) << " of length " << gp.g.length(old_first_edge));
-//				EdgeId eid = new_gp.g.AddEdge(new_start, new_end, gp.g.EdgeNucls(old_first_edge));
-//				WrappedSetCoverage(new_gp.g, eid, (int) (gp.g.coverage(old_first_edge)  * gp.g.length(old_first_edge) /** first.weight / weight_sums[old_first_edge] */));
-//				new_gp.edge_pos.AddEdgePosition(eid, gp.edge_pos.edges_positions().find(old_first_edge)->second);
-//				new_to_old.insert(make_pair(eid, old_first_edge));
 			}
 		}
 	}
