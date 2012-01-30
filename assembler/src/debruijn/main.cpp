@@ -171,9 +171,12 @@ int main(int argc, char** argv)
     catch (std::exception const& e)
     {
         std::cout << "Exception caught " << e.what() << std::endl;
-    } catch (...)
+        return EINTR;
+    }
+    catch (...)
     {
         std::cout << "Unknown exception caught " << std::endl;
+        return EINTR;
     }
 
     // OK

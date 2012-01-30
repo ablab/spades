@@ -16,6 +16,16 @@ class redirected_stream:
         self.file.write(data)
         self.file.flush()
 
+    def writelines(self, data):
+
+        if self.stream is not None:
+            self.stream.writelines(data)
+            self.stream.flush()
+
+        self.file.writelines(data)
+        self.file.flush()
+
+
     def fileno(self):
         if self.stream is not None:
             return self.stream.fileno()
@@ -27,15 +37,28 @@ def error(err_str, prefix="== Error == ", code=1):
     exit(code)
 
 
-def sys_call(output_to_console, log_file, cmd):
-    import os
-    import subprocess
+#TODO: error log -> log
+#TODO: os.sytem gives error -> stop
+
+def sys_call(cmd):
+
+    import shlex
+    import time
     import sys
+    import subprocess
 
-    if output_to_console:   cmd += " | tee -a " + log_file
-    else:                   cmd += " >> " + log_file
+    cmd_list = shlex.split(cmd)
+    proc = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-    code = os.system(cmd)
+    while not proc.poll():
+        sys.stdout.write(proc.stdout.readline())
+        time.sleep(0)
 
-    if code != 0:
-        error("command ".join(cmd_list) + " finished abnormally, err code:" + str(code))
+        if proc.returncode is not None:
+            break
+
+    sys.stdout.writelines(proc.stdout.readlines())
+    proc.communicate()
+
+    if proc.returncode != 0:
+        error("system call for: \"" + cmd + "\" finished abnormally, err code:" + str(proc.returncode))

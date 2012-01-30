@@ -5,8 +5,8 @@ import support
 
 def build_spades(cfg, K):
 
-    support.sys_call(cfg.output_to_console, cfg.log_filename, "./gen_k " + str(K))
-    support.sys_call(cfg.output_to_console, cfg.log_filename, "make")
+    support.sys_call("./gen_k " + str(K))
+    support.sys_call("make")
 
 
 def build_spades_n_copy(cfg, build_path):

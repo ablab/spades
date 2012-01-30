@@ -89,7 +89,7 @@ def main():
         prepare_config(cfg_file_name, build_path, cfg, prev_K, count == len(cfg.iterative_K))
         prev_K = K
 
-        support.sys_call(cfg.output_to_console, cfg.log_filename, path + "debruijn " + cfg_file_name)
+        support.sys_call(path + "debruijn " + cfg_file_name)
 
     sys.stdout = old_stdout
     sys.stderr = old_stderr
