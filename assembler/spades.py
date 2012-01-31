@@ -111,9 +111,9 @@ def run(cfg):
         latest = os.path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), latest)
         os.symlink(os.path.relpath(latest, cfg.build_path), os.path.join(cfg.build_path, "link_K%d" % (K)))
 
-    support.copy(os.path.join(latest, "result.info"), build_path)
-    result = load_config_from_file(os.path.join(build_path, "result.info"))
-    support.copy(result.contigs, build_path)
+    support.copy(os.path.join(latest, "result.info"), cfg.build_path)
+    result = load_config_from_file(os.path.join(cfg.build_path, "result.info"))
+    support.copy(result.contigs, cfg.build_path)
 
     print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
     cmd = "python src/tools/quality/quality.py " + result.contigs
