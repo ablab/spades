@@ -54,9 +54,9 @@ explained in the picture below.
 \begin{center}
 \begin{tikzpicture}
 %\draw[help lines] (0,-3) grid (10,3);
-\draw[line width=1pt] (0,2) -- (10,2);
-\draw[line width=1pt,->] (0,2.5) -- (3,2.5);
-\draw[line width=1pt,->] (10,1.5) -- (7,1.5);
+\draw[line width=2pt] (0,2) -- (10,2);
+\draw[line width=2pt,->] (0,2.5) -- (3,2.5);
+\draw[line width=2pt,->] (10,1.5) -- (7,1.5);
 
 \foreach \x in {0, 3, 7, 10}
   \draw[dashed,gray] (\x,3) -- (\x,-1.5);
@@ -80,19 +80,20 @@ The following code shows how to download and unpack the archived file
 directly from the command line.
 
 \begin{lstlisting}
-wget http://bioinf.spbau.ru/spades/spades.tar.gz
-tar -xzf spades.tar.gz
+wget http://bioinf.spbau.ru/sites/default/files/spades.zip
+unzip spades.zip
 \end{lstlisting}
 
 \section{Requirements}\label{section:requirements}
 \subsection{Packages}\label{subsection:packages}
 %The following packages are required for using {\spades}.
 The list of packages required for using {\spades} is given below.
-The simplest way to install all of them is to run
+The command
 \begin{lstlisting}
 sudo ./install_prerequirements
 \end{lstlisting}
-This install all the required packages in a debian-like unix systems through {\tt apt-get install}.
+installs all these packages automatically if you are using {\tt apt} (advanced package tool).
+%This installs all the required packages in a debian-like unix systems through {\tt apt-get install}.
 If your operating system does not support {\tt apt-get} command you
 need to install all the packages manually. 
 
@@ -105,6 +106,7 @@ package & description & recommended version\\
 {\tt python2.6-dev} & Python & 2.6\\
 % {\tt java-common} & Java & \\ % needed for quality
 {\tt cmake} & make system & 2.6\\
+{\tt cmake-curses-gui} & curses based user interface for cmake & 2.6\\
 {\tt liblog4cxx10-dev} & logging library for {\tt C++} & \\
 {\tt libboost1.42-all-dev} & Boost {\tt C++} libraries & 1.42\\
 {\tt zlib-bin} & compression library & \\
@@ -120,9 +122,10 @@ package & description & recommended version\\
 \end{center}
 
 \subsection{RAM}
-It is recommended to run {\spades} on a $64$-bit linux system with at least $30$Gb of RAM.
-E.g., on a multi-cell {\it E.coli} dataset {\spades} uses $20$Gb of RAM for error correction step
-and $1.5$Gb of RAM for assembling.{\todo{Alexey, Sergey, are these the right estimates?}}
+It is recommended to run {\spades} on a $64$-bit linux system. %with at least $30$Gb of RAM.
+E.g., on a multi-cell {\it E. coli} dataset {\spades} uses about $700$Mb of RAM,
+while on a single-cell {\it E. coli} datset {\spades} needs about $6$Gb of RAM
+and about $30$Gb of RAM if error correction (see subsection~\ref{subsec:bh}) is used.
 
 \section{Compiling}
 When all the required packages are installed (see 
@@ -135,7 +138,7 @@ in the root directory.
 This collects all dependencies and runs {\tt cmake}.
 
 \section{Preparing input data}
-\subsection{Correcting errors in your dataset}
+\subsection{Correcting errors in your dataset}\label{subsec:bh}
 You can do error correction with your favourite tool and then supply the resulting reads to {\spades}, but the recommended error correction tool for
 the {\spades} project is {\bh} which is also supplied in this release. To use {\bh}, you need to create a {\tt bayeshammer.info} file similar to the one
 \todo[inline]{Insert path to sample bayeshammer.info file.}
@@ -185,7 +188,7 @@ of the working directory wisely.
 {\spades} requires paired end reads to be in separate files.
 Additionally, {\spades} can use unpaired reads that normally appear after discarding one read of the paired read during error correction step.
 Thus input reads should be arranged into four files: paired reads left parts, paired reads right parts, unpaired reads which originally were left parts, and
-unpaired reads which originally were right parts. Thus, the first two files should contain the same number of reads, while
+unpaired reads which originally were right parts. The first two files should contain the same number of reads, while
 there are no requirements on the number of reads in the last two files (any of them can even be empty).
 Files are expected to be in fasta or fastq formats and can be compressed.
 
@@ -212,11 +215,11 @@ To run {\spades} type
 \begin{lstlisting}
 ./spades.py <config.info>
 \end{lstlisting}
-where {\tt <config.info>} contains all the parameters and looks like this.\todo{Valera, do not forget to rename output\_base =) }
+where {\tt <config.info>} contains all the parameters and looks like this.
 \begin{lstlisting}
 iterative_K         21 33 55
 paired_mode         true 
-dataset             ECOLI_IS220_QUAKE
+dataset             ECOLI_IS220_QUAKE_1K
 input_dir           ./data/input/
 output_dir         ./data/debruijn/
 measure_quality     true
