@@ -2,7 +2,11 @@
 
 function run_n_measure
 {
-   /usr/bin/time -f "\n\ntime: %E" $1 $2 $3 $4 $5 $6 $7
+   if [ "$(uname -s)" == "Darwin" ]; then # Mac OS X
+       /usr/bin/time $1 $2 $3 $4 $5 $6 $7
+   else # other, e.g. Linux
+       /usr/bin/time -f "\n\ntime: %E" $1 $2 $3 $4 $5 $6 $7
+   fi
 }
 
 if [ $# = 0 ]
