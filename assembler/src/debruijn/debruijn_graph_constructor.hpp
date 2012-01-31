@@ -9,6 +9,7 @@
 #define DEBRUIJN_GRAPH_CONSTRUCTOR_HPP_
 #include "utils.hpp"
 #include "seq_map.hpp"
+#include "new_debruijn.hpp"
 
 namespace debruijn_graph {
 
@@ -29,14 +30,14 @@ private:
 
 	bool StepRightIfPossible(KPlusOneMer &edge) {
 		TRACE("Considering edge " << edge);
-		if (origin_.RivalEdgeCount(edge) == 1 && origin_.NextEdgeCount(edge) == 1) {
+		if (origin_.RivalEdgeCount(edge) == 1
+				&& origin_.NextEdgeCount(edge) == 1) {
 			KPlusOneMer next_edge = origin_.NextEdge(edge);
 			//if (edge != !next_edge) { // rev compl
 			edge = next_edge;
 			return true;
 			//}
-		}
-		TRACE("Stopped going right at " << edge);
+		}TRACE("Stopped going right at " << edge);
 		return false;
 	}
 
@@ -99,27 +100,45 @@ private:
 		return v != NULL ? v : graph.AddVertex();
 	}
 
+	//todo discuss with Valera
+	VertexId FindEndMaybeMissing(ConjugateDeBruijnGraph& graph, Index& index, VertexId start, Kmer start_kmer,
+			Kmer end_kmer) {
+		if (start_kmer == end_kmer) {
+			return start;
+		} else if (start_kmer == !end_kmer) {
+			return graph.conjugate(start);
+		} else {
+			return FindVertexMaybeMissing(graph, index, end_kmer);
+		}
+	}
+
+	VertexId FindEndMaybeMissing(NonconjugateDeBruijnGraph& graph, Index& index, VertexId start, Kmer start_kmer,
+			Kmer end_kmer) {
+		if (start_kmer == end_kmer) {
+			return start;
+		}  else {
+			return FindVertexMaybeMissing(graph, index, end_kmer);
+		}
+	}
+	//
+
 public:
 	DeBruijnGraphConstructor(DeBruijn &origin) :
-		origin_(origin) {
+			origin_(origin) {
 	}
 
 	void ConstructGraph(Graph &graph, Index &index) {
-		for (typename DeBruijn::map_iterator it = origin_.begin(); it != origin_.end(); it++) {
+		for (typename DeBruijn::map_iterator it = origin_.begin();
+				it != origin_.end(); it++) {
 			KPlusOneMer edge = it->first;
 			if (!index.contains(edge)) {
 				Sequence edge_sequence = ConstructSequenceWithEdge(edge);
 				Kmer start_kmer = edge_sequence.start<kmer_size_>();
-				Kmer end_kmer = edge_sequence.end<kmer_size_> ();
-				VertexId start = FindVertexMaybeMissing(graph, index, start_kmer);
-				VertexId end;
-				if (start_kmer == end_kmer) {
-					end = start;
-				} else if (start_kmer == !end_kmer) {
-					end = graph.conjugate(start);
-				} else {
-					end = FindVertexMaybeMissing(graph, index, end_kmer);
-				}
+				Kmer end_kmer = edge_sequence.end<kmer_size_>();
+				VertexId start = FindVertexMaybeMissing(graph, index,
+						start_kmer);
+				VertexId end = FindEndMaybeMissing(graph, index, start, start_kmer, end_kmer);
+
 				graph.AddEdge(start, end, edge_sequence);
 				VERIFY(index.contains(edge));
 			}

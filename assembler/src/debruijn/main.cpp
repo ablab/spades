@@ -172,9 +172,9 @@ int main(int argc, char** argv)
         INFO("Assembling " << dataset << " dataset with K=" << debruijn_graph::K << " finished");
 
     	///debug
-    	AssemblyComparer<graph_pack<ConjugateDeBruijnGraph, 101>> comparer;
-    	io::EasyReader stream1("/home/snurk/ass_comp/geba_0001_vsc.fa.gz");
-    	io::EasyReader stream2("/home/snurk/ass_comp/gabe_0001_spades.fasta.gz");
+    	AssemblyComparer<graph_pack<NonconjugateDeBruijnGraph, 101>> comparer;
+    	io::EasyReader stream1("/home/sergey/assembly_compare/geba_0001_vsc.fasta.gz");
+    	io::EasyReader stream2("/home/sergey/assembly_compare/geba_0001_spades.fasta.gz");
     	comparer.CompareAssemblies(stream1, stream2);
     	///debug
     }

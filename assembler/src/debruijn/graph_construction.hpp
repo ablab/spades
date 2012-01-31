@@ -125,7 +125,7 @@ void FillCoverage(Graph& g, SingleReadStream& stream,
 	INFO("Coverage counted");
 }
 
-template<size_t k>
+template<size_t k, class Graph>
 void ConstructGraph(Graph& g, EdgeIndex<k + 1, Graph>& index,
 		io::IReader<io::SingleRead>& stream) {
 	typedef SeqMap<k + 1, typename Graph::EdgeId> DeBruijn;

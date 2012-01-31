@@ -24,8 +24,8 @@ public:
 	int end_;
 	int start() const{return m_range_.initial_range.start_pos;}
 	int end() const{return m_range_.initial_range.end_pos;}
-	int contigId_;
-	EdgePosition (int start, int end, int contigId = 0):  m_range_(Range(start,end), Range(0,0)), start_(start), end_(end), contigId_(contigId) {
+	std::string contigId_;
+	EdgePosition (int start, int end, std::string contigId = "0"):  m_range_(Range(start,end), Range(0,0)), start_(start), end_(end), contigId_(contigId) {
 	};
 };
 
@@ -43,7 +43,7 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1, vector<EdgePosi
 
 	if (v1.size() == 0 || v2.size() == 0) {
 		DEBUG("GluePosition fist parameter size "<<v1.size()<<", second parameter size "<<v2.size());
-		set<int> contigs_num;
+		set<std::string> contigs_num;
 		for (auto iter = res.begin(); iter != res.end(); ++iter){
 			if (contigs_num.find(iter->contigId_)==contigs_num.end()){
 				DEBUG("Contig "<<iter->contigId_<< " glued with empty edge");
@@ -104,7 +104,7 @@ public:
 		return it->second;
 	}
 
-	void AddEdgePosition (EdgeId NewEdgeId, int start, int end, int contigId = 0) {
+	void AddEdgePosition (EdgeId NewEdgeId, int start, int end, std::string contigId = "0") {
 		if (EdgesPositions.find(NewEdgeId) == EdgesPositions.end()) {
 			vector<EdgePosition> NewVec;
 			EdgesPositions[NewEdgeId] = NewVec;
@@ -140,8 +140,11 @@ public:
 	 			 res = GluePositionsLists(res, EdgesPositions[Path[i]], max_single_gap_);
 	 		 }
 			if (res.size()>0){
-				for(size_t i = 0; i<Path.size(); i++)
-					if (res[i].contigId_ < 15) return true; //ToDo: Curent pipeline trace genome as contigsId 0, 1, 10 and 11 but in future it can be not true.
+				for(size_t i = 0; i<Path.size(); i++) {
+					//todo what was it???
+//					if (res[i].contigId_ < 15)
+						return true; //ToDo: Curent pipeline trace genome as contigsId 0, 1, 10 and 11 but in future it can be not true.
+				}
 			}
 		}
 		return false;

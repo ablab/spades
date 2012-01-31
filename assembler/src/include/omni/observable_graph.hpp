@@ -5,7 +5,7 @@
 
 namespace omnigraph {
 template<typename VertexIdT, typename EdgeIdT, typename VertexIterator/* = typename set<VertexIdT>::iterator*/>
-class ObservableGraph {
+class ObservableGraph : private boost::noncopyable {
 public:
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;

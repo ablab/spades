@@ -20,7 +20,7 @@ namespace debruijn_graph {
 typedef PairedInfoIndex<ConjugateDeBruijnGraph> paired_info_index;
 
 template<class Graph, size_t k>
-struct graph_pack {
+struct graph_pack : private boost::noncopyable {
 	typedef Graph graph_t;
 
 	enum {

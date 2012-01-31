@@ -131,6 +131,7 @@ std::string GetExtension(const std::string& filename);
 Parser* SelectParser(const std::string& filename,
                      OffsetType offset_type = PhredOffset);
 
+//todo delete???
 void first_fun(int);
 
 }

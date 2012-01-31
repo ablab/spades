@@ -27,6 +27,7 @@
 #include "io/single_read.hpp"
 #include "io/paired_read.hpp"
 #include "io/parser.hpp"
+#include "simple_tools.hpp"
 
 namespace io {
 
@@ -54,7 +55,8 @@ class Reader<SingleRead> : public IReader<SingleRead> {
   explicit Reader(const SingleRead::FilenameType& filename,
                   OffsetType offset_type = PhredOffset)
       : filename_(filename), offset_type_(offset_type), parser_(NULL) {
-    parser_ = SelectParser(filename_, offset_type_);
+	  checkFileExistenceFATAL(filename_);
+	  parser_ = SelectParser(filename_, offset_type_);
   }
 
   /* 

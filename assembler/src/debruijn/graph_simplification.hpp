@@ -93,15 +93,16 @@ void ClipTipsForResolver(Graph &g) {
 	INFO("Clipping tips finished");
 }
 
+template<class Graph>
 void RemoveBulges(Graph &g,
 		const debruijn_config::simplification::bulge_remover& br_config,
-		boost::function<void(Graph::EdgeId)> removal_handler = 0,
+		typename omnigraph::BulgeRemover<Graph>::BulgeCallbackF bulge_cond,
+		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
 	size_t max_length = br_config.max_length_div_K * g.k();
 	if (additional_length_bound != 0 && additional_length_bound < max_length) {
 		max_length = additional_length_bound;
 	}
-	omnigraph::SimplePathCondition<Graph> simple_path_condition(g);
 	EditDistanceTrackingCallback<Graph> callback(g);
 	omnigraph::BulgeRemover<Graph> bulge_remover(
 			g,
@@ -110,15 +111,31 @@ void RemoveBulges(Graph &g,
 			br_config.max_relative_coverage,
 			br_config.max_delta,
 			br_config.max_relative_delta,
-			boost::bind(&omnigraph::SimplePathCondition<Graph>::operator(),
-					&simple_path_condition, _1, _2),
+			bulge_cond,
 			boost::bind(&EditDistanceTrackingCallback<Graph>::operator(),
 					&callback, _1, _2), removal_handler);
 	bulge_remover.RemoveBulges();
 }
 
+void RemoveBulges(ConjugateDeBruijnGraph &g,
+		const debruijn_config::simplification::bulge_remover& br_config,
+		boost::function<void(ConjugateDeBruijnGraph::EdgeId)> removal_handler = 0,
+		size_t additional_length_bound = 0) {
+	omnigraph::SimplePathCondition<ConjugateDeBruijnGraph> simple_path_condition(g);
+	RemoveBulges(g, br_config, boost::bind(&omnigraph::SimplePathCondition<ConjugateDeBruijnGraph>::operator(),
+			&simple_path_condition, _1, _2), removal_handler, additional_length_bound);
+}
+
+void RemoveBulges(NonconjugateDeBruijnGraph &g,
+		const debruijn_config::simplification::bulge_remover& br_config,
+		boost::function<void(NonconjugateDeBruijnGraph::EdgeId)> removal_handler = 0,
+		size_t additional_length_bound = 0) {
+	RemoveBulges(g, br_config, &TrivialCondition<NonconjugateDeBruijnGraph>, removal_handler, additional_length_bound);
+}
+
+template<class Graph>
 void RemoveBulges(Graph &g,
-		boost::function<void(Graph::EdgeId)> removal_handler = 0,
+		boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
 		size_t additional_length_bound = 0) {
 	INFO("-----------------------------------------");
 	INFO("Removing bulges");

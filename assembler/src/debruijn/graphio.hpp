@@ -622,7 +622,7 @@ void DataScanner<Graph>::loadPositions(const string& file_name,
 					&end_pos);
 			VERIFY(read_count == 3);
 			EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
-			edge_pos.AddEdgePosition(eid, start_pos, end_pos, contigId);
+			edge_pos.AddEdgePosition(eid, start_pos, end_pos, ToString(contigId));
 		}
 	}
 	fclose(file);

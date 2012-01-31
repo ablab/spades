@@ -7,6 +7,7 @@
 #include "graph_simplification.hpp"
 #include "simple_tools.hpp"
 #include "omni/omni_utils.hpp"
+#include "debruijn_stats.hpp"
 
 namespace debruijn_graph {
 typedef io::IReader<io::SingleRead> ContigStream;
@@ -72,6 +73,7 @@ public:
 
 	void FindCoveredRanges(CoveredRanges& crs, ContigStream& stream) {
 		io::SingleRead read;
+		stream.reset();
 		NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> mapper(gp_.g, gp_.index,
 				gp_.kmer_mapper);
 		while (!stream.eof()) {
@@ -82,8 +84,39 @@ public:
 
 };
 
+template<class Graph>
+class BreakPointsFilter: public GraphComponentFilter<Graph> {
+	typedef GraphComponentFilter<Graph> base;
+	typedef typename Graph::VertexId VertexId;
+	typedef typename Graph::EdgeId EdgeId;
+
+	const map<EdgeId, string>& coloring_;
+public:
+	BreakPointsFilter(const Graph& graph, const map<EdgeId, string>& coloring) :
+			base(graph), coloring_(coloring) {
+
+	}
+
+	bool MultiColored(const GraphComponent<Graph>& component) const {
+		set<string> colors;
+		for (auto it = component.e_begin(); it != component.e_end(); ++it) {
+			auto color_it = coloring_.find(*it);
+			VERIFY(color_it != coloring_.end());
+			colors.insert(color_it->second);
+		}
+		return colors.size() > 1;
+	}
+
+	/*virtual*/
+	//todo change to set or GraphComponent and add useful protected methods
+	bool Check(const vector<VertexId> &component_veritces) const {
+		GraphComponent<Graph> component(this->graph(), component_veritces.begin(), component_veritces.end());
+		return component.v_size() > 2 && MultiColored(component);
+	}
+
+};
+
 template<class gp_t>
-//todo add default colorings???
 class AssemblyComparer {
 public:
 	enum edge_type {
@@ -92,7 +125,7 @@ public:
 	};
 
 	static string color_str(edge_type color) {
-		static string colors[] = {"black", "red", "blue", "violet"};
+		static string colors[] = {"black", "red", "blue", "purple"};
 		return colors[(int)color];
 	}
 
@@ -162,6 +195,7 @@ private:
 		EdgeId curr_e = e;
 		for (size_t i = 0; i < breaks.size(); ++i) {
 			auto split_result = g.SplitEdge(curr_e, shifts[i]);
+			//todo doesn't work for paired graph!!!
 			coloring.insert(make_pair(split_result.first, color_str(colors[i])));
 			curr_e = split_result.second;
 		}
@@ -181,30 +215,46 @@ private:
 		}
 	}
 
+	void FillPos(gp_t& gp, ContigStream& stream, string stream_prefix) {
+		stream.reset();
+		io::SingleRead read;
+		while (!stream.eof()) {
+			stream >> read;
+			FillEdgesPos(gp, read.sequence(), stream_prefix + read.name());
+		}
+	}
+
 public:
 
-	void CompareAssemblies(ContigStream& ass1, ContigStream& ass2) {
+	void CompareAssemblies(ContigStream& stream1, ContigStream& stream2) {
 		gp_t gp;
-		CompositeContigStream stream(ass1, ass2);
-		ConstructGraph<gp_t::k_value>(gp.g, gp.index, stream);
+		CompositeContigStream stream(stream1, stream2);
+		ConstructGraph<gp_t::k_value, Graph>(gp.g, gp.index, stream);
+		RemoveBulges(gp.g);
+
 		CoveredRangesFinder<gp_t> crs_finder(gp);
-		ass1.reset();
-		ass2.reset();
 		CoveredRanges crs1;
-		crs_finder.FindCoveredRanges(crs1, ass1);
+		crs_finder.FindCoveredRanges(crs1, stream1);
 		CoveredRanges crs2;
-		crs_finder.FindCoveredRanges(crs2, ass2);
+		crs_finder.FindCoveredRanges(crs2, stream2);
 		BreakPoints bps;
 		FindBreakPoints(gp.g, bps, crs1, crs2);
 		map<EdgeId, string> coloring;
 
 		SplitGraph(bps, gp.g, coloring);
-		RemoveBulges(gp.g, EmptyHandleF);
+
+		FillPos(gp, stream1, "first_");
+		FillPos(gp, stream2, "second_");
+
+		EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
+		StrGraphLabeler<Graph> str_labeler(gp.g);
+		CompositeLabeler<Graph> labeler(pos_labeler, str_labeler);
 
 		ReliableSplitter<Graph> splitter(gp.g, /*max_size*/100, /*edge_length_bound*/500);
-		StrGraphLabeler<Graph> labeler(gp.g);
-		WriteComponents(gp.g, splitter,
-				"breakpoint_graph", "breakpoint_graph.dot",
+		BreakPointsFilter<Graph> filter(gp.g, coloring);
+		make_dir("assembly_comparison");
+		WriteComponents(gp.g, splitter, filter,
+				"breakpoint_graph", "assembly_comparison/breakpoint_graph.dot",
 				coloring, labeler);
 	}
 

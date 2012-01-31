@@ -8,6 +8,8 @@
 #include <queue>
 #include "dijkstra.hpp"
 #include "splitters.hpp"
+#include "abstract_conjugate_graph.hpp"
+#include "abstract_nonconjugate_graph.hpp"
 
 namespace omnigraph {
 
@@ -84,13 +86,11 @@ public:
 		TRACE("Visualize started");
 		for (auto it = super::g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
 			gp_.AddVertex(*it, gl_.label(*it));
-		}
-		TRACE("Vertices printed");
+		}TRACE("Vertices printed");
 		for (auto it = super::g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			gp_.AddEdge(super::g_.EdgeStart(*it), super::g_.EdgeEnd(*it),
 					gl_.label(*it));
-		}
-		TRACE("Edges printed");
+		}TRACE("Edges printed");
 		gp_.close();
 	}
 
@@ -131,7 +131,7 @@ class ColoredGraphVisualizer: public PartialGraphVisualizer<Graph> {
 	bool IsBorder(VertexId v, const set<VertexId>& vertices) {
 		const vector<EdgeId> outgoing_edges = super::g_.OutgoingEdges(v);
 		const vector<EdgeId> incoming_edges = super::g_.IncomingEdges(v);
-		set < EdgeId > adjacent_edges;
+		set<EdgeId> adjacent_edges;
 		adjacent_edges.insert(outgoing_edges.begin(), outgoing_edges.end());
 		adjacent_edges.insert(incoming_edges.begin(), incoming_edges.end());
 		for (auto e_it = adjacent_edges.begin(); e_it != adjacent_edges.end();
@@ -164,7 +164,7 @@ public:
 	}
 
 	virtual void Visualize(const vector<VertexId>& vertices) {
-		set < VertexId > vertex_set(vertices.begin(), vertices.end());
+		set<VertexId> vertex_set(vertices.begin(), vertices.end());
 		for (auto v_it = vertex_set.begin(); v_it != vertex_set.end(); ++v_it) {
 			string vertex_color =
 					IsBorder(*v_it, vertex_set) ?
@@ -177,8 +177,7 @@ public:
 			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
 				VertexId edge_end = super::g_.EdgeEnd(*e_it);
 				TRACE(
-						super::g_.coverage(*e_it) << " "
-								<< super::g_.length(*e_it));
+						super::g_.coverage(*e_it) << " " << super::g_.length(*e_it));
 				if (vertex_set.count(edge_end) > 0) {
 					super::gp_.AddEdge(*v_it, edge_end, gl_.label(*e_it),
 							EdgeColor(*e_it));
@@ -334,6 +333,20 @@ private:
 	const Graph &graph_;
 	const GraphLabeler<Graph> &labeler_;
 	const map<EdgeId, string> &coloring_;
+
+	gvis::GraphPrinter<VertexId>* PrinterInstance(
+			const AbstractConjugateGraph<typename Graph::DataMaster>& graph, const string &graph_name,
+			ostream &os) {
+		return new gvis::DotPairedGraphPrinter<AbstractConjugateGraph<typename Graph::DataMaster>>(
+				graph, graph_name, os);
+	}
+
+	gvis::GraphPrinter<VertexId>* PrinterInstance(
+			const AbstractNonconjugateGraph<typename Graph::DataMaster>& graph, const string &graph_name,
+			ostream &os) {
+		return new gvis::DotGraphPrinter<VertexId>(graph_name, os);
+	}
+
 public:
 	ColoredVisualizerFactory(const Graph& graph,
 			const GraphLabeler<Graph> &labeler,
@@ -343,7 +356,7 @@ public:
 
 	virtual gvis::GraphPrinter<typename Graph::VertexId> *GetPrinterInstance(
 			const string &graph_name, ostream &os) {
-		return new gvis::DotPairedGraphPrinter<Graph>(graph_, graph_name, os);
+		return PrinterInstance(graph_, graph_name, os);
 	}
 
 	virtual PartialGraphVisualizer<Graph> *GetVisualizerInstance(
@@ -403,7 +416,7 @@ public:
 			if (component.size() < 1000)
 				visualizer->Visualize(component);
 			else
-				WARN("Too large component " << component.size());
+			WARN("Too large component " << component.size());
 			visualizer->close();
 			os.close();
 			delete visualizer;
@@ -481,19 +494,16 @@ void WriteComponents(const Graph& g,
 		const map<typename Graph::EdgeId, string> &coloring,
 		const GraphLabeler<Graph>& labeler) {
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
-	WriteComponents(g, splitter, graph_name, file_name, coloring, labeler);
+	WriteComponents<Graph>(g, splitter, graph_name, file_name, coloring,
+			labeler);
 }
 
 template<class Graph>
-void WriteComponents(
-    const Graph& g,
-    const GraphLabeler<Graph>& labeler,
-	const string& file_name,
-	const string& graph_name,
-	size_t split_edge_length,
-	Path<typename Graph::EdgeId> path1 = Path<typename Graph::EdgeId>(),
-	Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId>())
-{
+void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
+		const string& file_name, const string& graph_name,
+		size_t split_edge_length,
+		Path<typename Graph::EdgeId> path1 = Path<typename Graph::EdgeId>(),
+		Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId>()) {
 	PathColorer<Graph> path_colorer(g, path1, path2);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
 	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
@@ -505,7 +515,8 @@ void WriteComponents(
 
 template<class Graph>
 void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
-		const string& file_name, const string& graph_name, size_t split_edge_length,
+		const string& file_name, const string& graph_name,
+		size_t split_edge_length,
 		ComponentSplitter<typename Graph::VertexId> &splitter,
 		Path<typename Graph::EdgeId> path1 = Path<typename Graph::EdgeId>(),
 		Path<typename Graph::EdgeId> path2 = Path<typename Graph::EdgeId>()) {
@@ -518,27 +529,23 @@ void WriteComponents(const Graph& g, const GraphLabeler<Graph>& labeler,
 
 //todo alert!!! magic constants!!!
 template<class Graph>
-void WriteComponentsAlongPath(
-		const Graph& g,
-		const GraphLabeler<Graph>& labeler,
-		const string& file_name,
-		const string& graph_name,
-		size_t split_edge_length,
+void WriteComponentsAlongPath(const Graph& g,
+		const GraphLabeler<Graph>& labeler, const string& file_name,
+		const string& graph_name, size_t split_edge_length,
 		const MappingPath<typename Graph::EdgeId>& path,
-		Path<typename Graph::EdgeId> color1 = Path<
-				typename Graph::EdgeId>(),
-		Path<typename Graph::EdgeId> color2 = Path<
-				typename Graph::EdgeId>()) {
+		Path<typename Graph::EdgeId> color1 = Path<typename Graph::EdgeId>(),
+		Path<typename Graph::EdgeId> color2 = Path<typename Graph::EdgeId>()) {
 //	Path<typename Graph::EdgeId> simple_path1 = color1.simple_path();
 //	Path<typename Graph::EdgeId> simple_path2 = color2.simple_path();
-	PathColorer<Graph> path_colorer(g, /*simple_path1*/color1, /*simple_path2*/color2);
+	PathColorer<Graph> path_colorer(g, /*simple_path1*/color1, /*simple_path2*/
+			color2);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
 	//	LongEdgesSplitter<Graph> inner_splitter(g, split_edge_length);
 	//	ReliableSplitterAlongGenome(g, 60, split_edge_length, MappingPath<EdgeId> genome_path)
 	ReliableSplitterAlongPath<Graph> inner_splitter(g, 60, split_edge_length,
 			path);
 	ComponentSizeFilter<Graph> checker(g, 1000000, 0);
-	WriteComponents<Graph> (g, inner_splitter, checker, graph_name, file_name,
+	WriteComponents<Graph>(g, inner_splitter, checker, graph_name, file_name,
 			coloring, labeler);
 }
 
@@ -554,8 +561,9 @@ void WriteComponentsAlongGenome(
 				typename Graph::EdgeId>(),
 		MappingPath<typename Graph::EdgeId> color2 = MappingPath<
 				typename Graph::EdgeId>()) {
-	WriteComponentsAlongPath<Graph>(g, labeler, file_name, graph_name, split_edge_length
-			, color1, color1.simple_path(), color2.simple_path());
+	WriteComponentsAlongPath<Graph>(g, labeler, file_name, graph_name,
+			split_edge_length, color1, color1.simple_path(),
+			color2.simple_path());
 }
 
 template<class Graph>
@@ -567,8 +575,8 @@ void WriteToFile(
 		const Path<typename Graph::EdgeId> &path1/* = Path<typename Graph::EdgeId> ()*/,
 		const Path<typename Graph::EdgeId> &path2/* = Path<typename Graph::EdgeId> ()*/) {
 //	if (g.size() < 10000) {
-		WritePaired(g, labeler, file_name, graph_name, path1, path2);
-		WriteSimple(g, labeler, file_name, graph_name, path1, path2);
+	WritePaired(g, labeler, file_name, graph_name, path1, path2);
+	WriteSimple(g, labeler, file_name, graph_name, path1, path2);
 //	}
 	WriteErrors(g, labeler, file_name, graph_name, path1, path2);
 }

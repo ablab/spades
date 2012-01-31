@@ -323,14 +323,14 @@ void DetailedWriteToDot(const Graph &g,
 	INFO("Graph '" << graph_name << "' written to file " << file_name);
 }
 
-template<size_t k>
+template<size_t k, class Graph>
 Path<typename Graph::EdgeId> FindGenomePath(const Sequence& genome,
 		const Graph& g, const EdgeIndex<k + 1, Graph>& index) {
 	SimpleSequenceMapper<k + 1, Graph> srt(g, index);
 	return srt.MapSequence(genome);
 }
 
-template<size_t k>
+template<size_t k, class Graph>
 MappingPath<typename Graph::EdgeId> FindGenomeMappingPath(
 		const Sequence& genome, const Graph& g,
 		const EdgeIndex<k + 1, Graph>& index,
@@ -742,14 +742,10 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 			"t-separated stats Exact: 1 - "<<stats_d[1]<<" 2 - "<<stats_d[2]<<" 3 - "<<stats_d[3]<<" 4 - "<<stats_d[4]<<" >4 - "<<stats[5]);
 }
 
-//template<size_t k>
-void FillEdgesPos(conj_graph_pack& gp, const Sequence& contig, int contigId)
-
-//		Graph& g, const EdgeIndex<k + 1, Graph>& index,
-//		const Sequence& genome, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int contigId)
-
-		{
-	MappingPath<Graph::EdgeId> m_path1 = FindGenomeMappingPath<K>(contig, gp.g,
+template<class gp_t>
+void FillEdgesPos(gp_t& gp, const Sequence& contig, string contigId) {
+	typedef typename gp_t::graph_t::EdgeId EdgeId;
+	MappingPath<EdgeId> m_path1 = FindGenomeMappingPath<gp_t::k_value>(contig, gp.g,
 			gp.index, gp.kmer_mapper);
 	int CurPos = 0;
 	DEBUG("Contig "<<contigId<< " maped on "<<m_path1.size()<<" fragments.");
@@ -770,14 +766,10 @@ void FillEdgesPos(conj_graph_pack& gp, const Sequence& contig, int contigId)
 	//CurPos = 1000000000;
 }
 
-//template<size_t k>
-void FillEdgesPos(conj_graph_pack& gp, const string& contig_file,
-		int start_contig_id)
-
-//(Graph& g, const EdgeIndex<k + 1, Graph>& index,
-//		const string& contig_file, EdgesPositionHandler<Graph>& edgesPos, KmerMapper<k + 1, Graph>& kmer_mapper, int start_contig_id)
-
-		{
+template<class gp_t>
+void FillEdgesPos(gp_t& gp, const string& contig_file,
+		int start_contig_id) {
+//	typedef typename gp_t::Graph::EdgeId EdgeId;
 	INFO("Threading large contigs");
 	io::Reader<io::SingleRead> irs(contig_file);
 	for (int c = start_contig_id; !irs.eof(); c++) {
@@ -793,7 +785,7 @@ void FillEdgesPos(conj_graph_pack& gp, const string& contig_file,
 		if (contig.size() < 1500000) {
 			//		continue;
 		}
-		FillEdgesPos(gp, contig, c);
+		FillEdgesPos(gp, contig, ToString(c));
 	}
 }
 

@@ -181,7 +181,7 @@ class SingleRead {
     } else {
       new_name = name_.substr(1, name_.length());
     }*/
-    return SingleRead(name_, ReverseComplement(seq_), Reverse(qual_));
+    return SingleRead(name_ + "_RC", ReverseComplement(seq_), Reverse(qual_));
   }
 
   SingleRead SubstrStrict(size_t from, size_t to) const {
