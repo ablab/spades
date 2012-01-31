@@ -104,9 +104,14 @@ def main():
     result = load_config_from_file(os.path.join(build_path, "result.info"))
     support.copy(result.contigs, build_path)
 
+    print("\n== Running quality assessment tools: " + cfg.log_filename + "\n")
     cmd = "python src/tools/quality/quality.py " + result.contigs
     if result.reference:
         cmd += " -R " + result.reference
+#    if result.genes:
+#        cmd += " -G " + result.genes
+#    if result.operons:
+#        cmd += " -O " + result.operons
     qr = "quality_results"
     cmd += " -o " + os.path.join(build_path, qr)
     support.sys_call(cmd)
