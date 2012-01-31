@@ -24,7 +24,7 @@ def build_spades_n_copy(cfg, build_path):
         os.makedirs(build_folder_k + "configs", 0755)
         shutil.copytree(cfg_folder, build_folder_k + cfg_folder)
 
-        print("\n== Processing K: " + str(K) + "==\n")
+        print("\n== Compiling with K=" + str(K) + " ==\n")
         build_spades(cfg, K)
         shutil.copy("build/release/debruijn/debruijn", build_folder_k)
 

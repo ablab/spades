@@ -90,13 +90,21 @@ def main():
         prev_K = K
 
         support.sys_call(path + "debruijn " + cfg_file_name)
+        latest = os.path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), "latest")
+        latest = os.readlink(latest)
+        latest = os.path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), latest)
+        os.symlink(os.path.relpath(latest, build_path), os.path.join(build_path, "link_K%d" % (K)))
+        print latest
+        print os.path.relpath(latest, build_path)
 
     sys.stdout = old_stdout
     sys.stderr = old_stderr
 
     print("\n== Assembling finished. Log can be found here: " + cfg.log_filename + "\n")
 
-    fn = os.path.join(cfg.output_dir, cfg.dataset + "/K" + str(prev_K) + "/latest/result.info")
+    fn = os.path.join(cfg.output_dir, cfg.dataset, "K%d" % (prev_K), "latest", "result.info")
+    support.sys_call(cfg.output_to_console, cfg.log_filename, "cp " + fn + " " + build_path)
+    fn = os.path.join(build_path, "result.info")
     result = load_config_from_file(fn)
 
     support.sys_call("cp " + result.contigs + " " + build_path)
@@ -104,8 +112,16 @@ def main():
     cmd = "python src/tools/quality/quality.py " + result.contigs
     if result.reference:
         cmd += " -R " + result.reference
-    cmd += " -o " + build_path + "quality_results"
+    qr = "quality_results"
+    cmd += " -o " + os.path.join(build_path, qr)
     support.sys_call(cmd)
+
+    print ""
+    print "All the resulting information can be found here: " + build_path
+    print " * Resulting contigs are called " + os.path.split(result.contigs)[1]
+    print " * Assessment of their quality is in " + qr + "/"
+    print ""
+    print "Thank you for using SPAdes!"
 
 if __name__ == '__main__':
   main()

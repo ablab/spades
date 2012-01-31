@@ -62,3 +62,7 @@ def sys_call(cmd):
 
     if proc.returncode != 0:
         error("system call for: \"" + cmd + "\" finished abnormally, err code:" + str(proc.returncode))
+
+def sys_call_output(cmd):
+    import subprocess
+    return subprocess.check_output(cmd, shell=True)

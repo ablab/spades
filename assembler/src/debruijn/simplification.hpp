@@ -88,6 +88,7 @@ void save_simplification(conj_graph_pack& gp, paired_info_index& paired_index) {
 	//todo temporary solution!!!
 	OutputContigs(gp.g, cfg::get().additional_contigs);
 	OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
+    cfg::get_writeable().final_contigs_file = cfg::get().output_dir + "final_contigs.fasta";
 
 // run script automatically takes simplified contigs from correct path
 
