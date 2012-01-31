@@ -109,7 +109,7 @@ def run(cfg):
         latest = os.path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), "latest")
         latest = os.readlink(latest)
         latest = os.path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), latest)
-        os.symlink(os.path.relpath(latest, build_path), os.path.join(build_path, "link_K%d" % (K)))
+        os.symlink(os.path.relpath(latest, cfg.build_path), os.path.join(cfg.build_path, "link_K%d" % (K)))
 
 
     fn = os.path.join(cfg.output_dir, cfg.dataset + "/K" + str(prev_K) + "/latest/result.info")
@@ -130,7 +130,7 @@ def run(cfg):
     support.sys_call(cmd)
 
     print ""
-    print "All the resulting information can be found here: " + build_path
+    print "All the resulting information can be found here: " + cfg.build_path
     print " * Resulting contigs are called " + os.path.split(result.contigs)[1]
     print " * Assessment of their quality is in " + qr + "/"
     print ""
