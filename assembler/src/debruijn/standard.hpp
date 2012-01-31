@@ -47,6 +47,7 @@ using std::ofstream;
 #include <boost/smart_ptr.hpp>
 #include <boost/make_shared.hpp>
 
+#define BOOST_FILESYSTEM_VERSION 2
 #include <boost/filesystem.hpp>
 
 #include <boost/optional.hpp>

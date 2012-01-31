@@ -8,7 +8,6 @@
 #include "omni/distance_estimation.hpp"
 #include "omni/graph_component.hpp"
 #include "omni/pair_info_filters.hpp"
-//#include <boost/filesystem.hpp>
 #include "read/osequencestream.hpp"
 #include "k.hpp"
 #include <sys/types.h>
