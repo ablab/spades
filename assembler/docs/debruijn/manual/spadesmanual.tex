@@ -215,14 +215,17 @@ To run {\spades} type
 \begin{lstlisting}
 ./spades.py <config.info>
 \end{lstlisting}
-where {\tt <config.info>} contains all the parameters and looks like this.
+By default (i.e., if no config file is given) {\spades} uses the file {\tt spades\_config.info}. Below we first give an example of a config file
+and then explain its contents in detail.
+
 \begin{lstlisting}
 iterative_K         21 33 55
 paired_mode         true 
 dataset             ECOLI_IS220_QUAKE_1K
 input_dir           ./data/input/
-output_dir         ./data/debruijn/
+output_dir          ./data/debruijn/
 measure_quality     true
+output_to_console   true
 \end{lstlisting}
 
 \begin{description}
@@ -235,6 +238,7 @@ See the paper for more details.
 \item[{\tt output\_dir}] is the output directory.
 \item[{\tt measure\_quality}] flag allows to call quality estimation tool after the assembly is performed (the tool computes usual
 metrics like N50, genome coverage, number of misassemblies, etc).
+\item[{\tt output\_to\_console}] flag controls outputting log messages to the console.
 \end{description}
 
 \section{Understanding the output}
