@@ -32,10 +32,13 @@ class redirected_stream:
 
         return self.file.fileno()
 
-def error(err_str, prefix="== Error == ", code=1):
-    print("\n\n" + prefix + " " + err_str + "\n\n")
-    exit(code)
+class spades_error:
+    def spades_error(self, code, err_str = ""):
+        self.code    = code
+        self.err_str = err_str
 
+def error(err_str, prefix="== Error == ", code=1):
+    raise spades_error(code, "\n\n" + prefix + " " + err_str + "\n\n")
 
 #TODO: error log -> log
 #TODO: os.sytem gives error -> stop
