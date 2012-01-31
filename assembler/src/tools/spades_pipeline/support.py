@@ -66,3 +66,6 @@ def sys_call(cmd):
 def sys_call_output(cmd):
     import subprocess
     return subprocess.check_output(cmd, shell=True)
+
+def copy(source, dest):
+    sys_call("cp " + source + " " + dest)

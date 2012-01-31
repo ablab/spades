@@ -89,25 +89,20 @@ def main():
         prepare_config(cfg_file_name, build_path, cfg, prev_K, count == len(cfg.iterative_K))
         prev_K = K
 
-        support.sys_call(path + "debruijn " + cfg_file_name)
+        support.sys_call(os.path.join(path, "debruijn") + " " + cfg_file_name)
         latest = os.path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), "latest")
         latest = os.readlink(latest)
         latest = os.path.join(cfg.output_dir, cfg.dataset, "K%d" % (K), latest)
         os.symlink(os.path.relpath(latest, build_path), os.path.join(build_path, "link_K%d" % (K)))
-        print latest
-        print os.path.relpath(latest, build_path)
 
     sys.stdout = old_stdout
     sys.stderr = old_stderr
 
     print("\n== Assembling finished. Log can be found here: " + cfg.log_filename + "\n")
 
-    fn = os.path.join(cfg.output_dir, cfg.dataset, "K%d" % (prev_K), "latest", "result.info")
-    support.sys_call(cfg.output_to_console, cfg.log_filename, "cp " + fn + " " + build_path)
-    fn = os.path.join(build_path, "result.info")
-    result = load_config_from_file(fn)
-
-    support.sys_call("cp " + result.contigs + " " + build_path)
+    support.copy(os.path.join(latest, "result.info"), build_path)
+    result = load_config_from_file(os.path.join(build_path, "result.info"))
+    support.copy(result.contigs, build_path)
 
     cmd = "python src/tools/quality/quality.py " + result.contigs
     if result.reference:
