@@ -82,7 +82,10 @@ def load_config_from_vars(cfg_vars):
         if len(value_list) > 1:
             return [load_value(one_value) for one_value in value_list]
 
-        return load_value(value_list[0])
+        if len(value_list) == 1:
+            return load_value(value_list[0])
+
+        return None
 
     for var, meta in cfg_vars.items():
         cfg.__dict__[var] = load_value_list(meta.value)
