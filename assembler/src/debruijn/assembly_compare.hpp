@@ -5,6 +5,8 @@
 #include "graph_pack.hpp"
 #include "graph_construction.hpp"
 #include "graph_simplification.hpp"
+#include "simple_tools.hpp"
+#include "omni/omni_utils.hpp"
 
 namespace debruijn_graph {
 typedef io::IReader<io::SingleRead> ContigStream;
@@ -44,6 +46,7 @@ class CoveredRangesFinder {
 		answer.push_back(Range(merge_start, merge_end));
 		while (i < curr_ranges.size()) {
 			answer.push_back(curr_ranges[i]);
+			++i;
 		}
 		return answer;
 	}
@@ -54,7 +57,9 @@ class CoveredRangesFinder {
 			EdgeId edge = mapping.first;
 			const vector<Range>& curr_ranges = crs[edge];
 			Range mapping_range = mapping.second.mapped_range;
+			VERIFY(gp_.g.length(edge) >= mapping_range.end_pos);
 			crs[edge] = ProcessRange(mapping_range, curr_ranges);
+			VERIFY(gp_.g.length(edge) >= crs[edge].back().end_pos);
 		}
 	}
 
@@ -107,11 +112,14 @@ private:
 	void Paint(vector<edge_type>& coloring, const vector<Range>& ranges, const vector<size_t>& breaks, edge_type paint) {
 		size_t i = 0;
 		for (auto it = ranges.begin(); it != ranges.end(); ++it) {
-			while (breaks[i] != it->start_pos)
+			while (breaks[i] != it->start_pos) {
 				++i;
+				VERIFY(i < breaks.size());
+			}
 			while (breaks[i] != it->end_pos) {
-				coloring[i] = (edge_type)((int)coloring[i] + paint);
+				coloring[i] = (edge_type)((int)coloring[i] + (int) paint);
 				++i;
+				VERIFY(i < breaks.size());
 			}
 		}
 	}
@@ -121,10 +129,11 @@ private:
 		AddBreaks(tmp_breaks, ranges1);
 		AddBreaks(tmp_breaks, ranges2);
 		vector<size_t> breaks(tmp_breaks.begin(), tmp_breaks.end());
+		VERIFY(breaks.size() >= 2);
 		//breaks contain 0 and edge_length here!
-		vector<edge_type> coloring;
+		vector<edge_type> coloring(breaks.size() - 1, edge_type::black);
 		Paint(coloring, ranges1, breaks, edge_type::red);
-		Paint(coloring, ranges1, breaks, edge_type::blue);
+		Paint(coloring, ranges2, breaks, edge_type::blue);
 		//cleaning breaks from 0 and edge_length
 		vector<size_t> final_breaks;
 		for (size_t i = 1; i < breaks.size() - 1; ++i) {
@@ -137,12 +146,13 @@ private:
 		for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			EdgeId e = *it;
 			bps[e] = CombineCoveredRanges(crs1[e], crs2[e]);
+			VERIFY(bps[e].first.empty() || bps[e].first.back() < g.length(e));
 		}
 	}
 
-	void SplitEdge(const vector<size_t>& breaks, vector<edge_type>& colors, EdgeId e, Graph& g, map<EdgeId, string>& coloring) {
+	void SplitEdge(const vector<size_t>& breaks, const vector<edge_type>& colors, EdgeId e, Graph& g, map<EdgeId, string>& coloring) {
 		VERIFY(breaks.size() + 1 == colors.size());
-		vector<size_t> shifts;
+		vector<size_t> shifts(breaks.size());
 		if (!breaks.empty()) {
 			shifts[0] = breaks[0];
 			for (size_t i = 1; i < breaks.size(); ++i) {
@@ -159,9 +169,14 @@ private:
 	}
 
 	void SplitGraph(/*const */BreakPoints& bps, Graph& g, map<EdgeId, string>& coloring) {
+		set<EdgeId> initial_edges;
 		for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+			initial_edges.insert(*it);
+		}
+		for (auto it = SmartSetIterator<Graph, EdgeId>(g, initial_edges.begin(), initial_edges.end()); !it.IsEnd(); ++it) {
 			EdgeId e = *it;
 			VERIFY(bps.find(e) != bps.end());
+			VERIFY(bps[e].first.empty() || bps[e].first.back() < g.length(e));
 			SplitEdge(bps[e].first, bps[e].second, e, g, coloring);
 		}
 	}

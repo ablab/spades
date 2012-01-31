@@ -355,6 +355,9 @@ public:
 	}
 
 	pair<EdgeId, EdgeId> SplitEdge(EdgeId edge, size_t position) {
+		TRACE("Splitting edge " << str(edge) << " in position " << position);
+		VERIFY_MSG(position > 0 && position < length(edge)
+				, "Edge length is " << length(edge) << " but split pos was " << position);
 		TRACE("Splitting edge " << str(edge));
 		pair<VertexData, pair<EdgeData, EdgeData>> newData = master_.SplitData(
 				data(edge), position);

@@ -112,7 +112,7 @@ std::ostream& operator<< (std::ostream& os, std::pair<T1, T2> const& pair)
 }
 }
 
-namespace debruijn
+namespace omnigraph
 {
 template<class T>
 std::ostream& operator<< (std::ostream& os, std::vector<T> const& v)

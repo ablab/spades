@@ -147,10 +147,11 @@ int main(int argc, char** argv)
         load_config(argv[1]);
 
         on_exit_output_linker try_linker("latest");
-
-        // check config_struct.hpp parameters
+//
+//        // check config_struct.hpp parameters
         if (K % 2 == 0)
             VERIFY_MSG(false, "K in config.hpp must be odd!\n");
+<<<<<<< HEAD
 
         // read configuration file (dataset path etc.)
         string dataset = cfg::get().dataset_name;
@@ -172,8 +173,9 @@ int main(int argc, char** argv)
 
     	///debug
     	AssemblyComparer<graph_pack<ConjugateDeBruijnGraph, 101>> comparer;
-    	io::EasyReader stream("");
-    	comparer.CompareAssemblies(stream, stream);
+    	io::EasyReader stream1("/home/snurk/ass_comp/geba_0001_vsc.fa.gz");
+    	io::EasyReader stream2("/home/snurk/ass_comp/gabe_0001_spades.fasta.gz");
+    	comparer.CompareAssemblies(stream1, stream2);
     	///debug
     }
     catch (std::exception const& e)
