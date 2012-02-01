@@ -147,18 +147,17 @@ int main(int argc, char** argv)
         load_config(argv[1]);
 
         on_exit_output_linker try_linker("latest");
-//
-//        // check config_struct.hpp parameters
+
+        // check config_struct.hpp parameters
         if (K % 2 == 0)
             VERIFY_MSG(false, "K in config.hpp must be odd!\n");
-<<<<<<< HEAD
 
         // read configuration file (dataset path etc.)
         string dataset = cfg::get().dataset_name;
 
         // typedefs :)
-        typedef io::EasyReader ReadStream;
-        typedef io::PairedEasyReader PairedReadStream;
+//        typedef io::EasyReader ReadStream;
+//        typedef io::PairedEasyReader PairedReadStream;
 
         // assemble it!
         INFO("Assembling " << dataset << " dataset with K=" << debruijn_graph::K);
@@ -171,14 +170,6 @@ int main(int argc, char** argv)
 
         INFO("Assembling " << dataset << " dataset with K=" << debruijn_graph::K << " finished");
 
-    	///debug
-    	AssemblyComparer<graph_pack<NonconjugateDeBruijnGraph, 101>> comparer;
-//    	io::EasyReader stream1("/home/snurk/assembly_compare/geba_0001_vsc.fasta.gz");
-//    	io::EasyReader stream2("/home/snurk/assembly_compare/geba_0001_spades.fasta.gz");
-    	io::EasyReader stream1("/home/snurk/assembly_compare/lane3.fa.gz");
-    	io::EasyReader stream2("/home/snurk/assembly_compare/PGINGIVALIS_LANE3_BH_single.fasta.gz");
-    	comparer.CompareAssemblies(stream1, stream2, "vsc", "spades");
-    	///debug
     }
     catch (std::exception const& e)
     {
