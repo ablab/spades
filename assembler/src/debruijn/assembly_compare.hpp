@@ -91,9 +91,10 @@ class BreakPointsFilter: public GraphComponentFilter<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 
 	const map<EdgeId, string>& coloring_;
+	size_t color_threshold_;
 public:
-	BreakPointsFilter(const Graph& graph, const map<EdgeId, string>& coloring) :
-			base(graph), coloring_(coloring) {
+	BreakPointsFilter(const Graph& graph, const map<EdgeId, string>& coloring, size_t color_threshold) :
+			base(graph), coloring_(coloring), color_threshold_(color_threshold) {
 
 	}
 
@@ -104,7 +105,7 @@ public:
 			VERIFY(color_it != coloring_.end());
 			colors.insert(color_it->second);
 		}
-		return colors.size() > 1;
+		return colors.size() >= color_threshold_;
 	}
 
 	/*virtual*/
@@ -226,7 +227,8 @@ private:
 
 public:
 
-	void CompareAssemblies(ContigStream& stream1, ContigStream& stream2) {
+	void CompareAssemblies(ContigStream& stream1, ContigStream& stream2
+			, const string& name1, const string& name2) {
 		gp_t gp;
 		CompositeContigStream stream(stream1, stream2);
 		ConstructGraph<gp_t::k_value, Graph>(gp.g, gp.index, stream);
@@ -241,17 +243,18 @@ public:
 		FindBreakPoints(gp.g, bps, crs1, crs2);
 		map<EdgeId, string> coloring;
 
+		//todo color after split!!! for dealing with conjugate graphs
 		SplitGraph(bps, gp.g, coloring);
 
-		FillPos(gp, stream1, "first_");
-		FillPos(gp, stream2, "second_");
+		FillPos(gp, stream1, name1);
+		FillPos(gp, stream2, name2);
 
 		EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
 		StrGraphLabeler<Graph> str_labeler(gp.g);
 		CompositeLabeler<Graph> labeler(pos_labeler, str_labeler);
 
 		ReliableSplitter<Graph> splitter(gp.g, /*max_size*/100, /*edge_length_bound*/500);
-		BreakPointsFilter<Graph> filter(gp.g, coloring);
+		BreakPointsFilter<Graph> filter(gp.g, coloring, 3);
 		make_dir("assembly_comparison");
 		WriteComponents(gp.g, splitter, filter,
 				"breakpoint_graph", "assembly_comparison/breakpoint_graph.dot",
