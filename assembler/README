@@ -65,3 +65,12 @@ If you do not have sudo account you should install all the necessary libraries s
 Run ccmake . in the directory where CMakeLists.txt are (e.g. build/debug/ or build/release/). Press t to see all the options. Now you can manually correct the paths to libraries and their headers. 
 
 Updated 26 Aug 2011
+
+== Mac OS X ==
+
+brew install log4cxx
+brew install https://github.com/adamv/homebrew-alt/raw/master/duplicates/gcc.rb --enable-cxx
+relink /usr/bin/c++, g++, gcc to /usr/local/bin/c++-4.6, g++-4.6, gcc-4.6
+brew install https://raw.github.com/mxcl/homebrew/7dde1d05fed3924371d0571c759f5fb4239d6180/Library/Formula/boost.rb (or brew install boost)
+brew install https://raw.github.com/vyahhi/homebrew-alt/834a63f1b90793884852c80cf5cb338bda43fcd7/duplicates/zlib.rb
+
