@@ -18,7 +18,7 @@
 #include "resolved_pair_info.hpp"
 #include "graph_construction.hpp"
 #include "debruijn_stats.hpp"
-
+#include  "omni/distance_estimation.hpp"
 #include "long_contigs/lc_launch.hpp"
 
 //typedef io::IReader<io::SingleRead> ReadStream;
@@ -486,27 +486,43 @@ void process_resolve_repeats(graph_pack& origin_gp,
 }
 
 template<class graph_pack>
-void ProduceLongEdgesStat(graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
+void ProduceLongEdgesStat(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
 //	int missing_paired_info_count = 0;
+	size_t tmp = *cfg::get().ds.IS;
+	GraphDistanceFinder<typename graph_pack::graph_t> dist_finder(origin_gp.g,  tmp , cfg::get().ds.RL, cfg::get().de.delta);
 	int extra_paired_info_count = 0;
 	int long_edges_count = 0;
+	int max_comparable_path = 2* cfg::get().de.delta;
 	for (auto e_iter = origin_gp.g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
 		if (origin_gp.g.length(*e_iter) >= cfg::get().rr.max_repeat_length){
 			long_edges_count ++;
 			auto pi = clustered_index.GetEdgeInfo(*e_iter);
 			for (auto i_iter = pi.begin(); i_iter!= pi.end(); ++i_iter){
 				auto first_edge = i_iter->second;
+				double first_weight = i_iter->weight;
 				for(auto j_iter = i_iter + 1; j_iter != pi.end(); ++j_iter) {
 					auto second_edge = i_iter->second;
-					if (first_edge == second_edge){
+					double second_weight = j_iter->weight;
+					vector<size_t> distances = dist_finder.GetGraphDistances(first_edge, second_edge);
+					bool comparable = false;
+					for(size_t i = 0; i < distances.size(); i++) {
+						if (abs((int)distances[i] - (int)origin_gp.g.length(first_edge)) < max_comparable_path) {
+							comparable = true;
+							break;
+						}
+
+					}
+					if (comparable == false){
 						extra_paired_info_count++;
-						INFO("doubled PI to edge" <<origin_gp.int_ids.ReturnIntId(second_edge));
+						double ratio = (1.0 * second_weight)/first_weight;
+						if (ratio > 1) ratio = 1/ratio;
+						INFO("contradictional paired info from edge " <<origin_gp.int_ids.ReturnIntId(*e_iter) << " to edges "<<  origin_gp.int_ids.ReturnIntId(first_edge) << " and " << origin_gp.int_ids.ReturnIntId(second_edge) << "weights ratio " << ratio);
 					}
 				}
 			}
 		}
 	}
-	INFO("long edges: " << long_edges_count << " doubled paired info" << extra_paired_info_count);
+	INFO("long edges: " << long_edges_count << " contradictional paired info" << extra_paired_info_count);
 }
 
 template<class graph_pack>
