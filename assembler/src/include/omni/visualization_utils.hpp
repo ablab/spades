@@ -432,11 +432,19 @@ void WriteErrors(
 	set<typename Graph::EdgeId> black = path_colorer.BlackEdges();
 	ErrorComponentSplitter<Graph> splitter(g, black);
 	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
-	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
+	ComponentSizeFilter<Graph> checker(g, 1500, 2);
 	string error_file_name = InsertComponentName<Graph>(file_name, "error");
-	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, error_file_name,
-			graph_name, 200);
-	gv.Visualize();
+	WriteComponents(g, splitter, checker, graph_name, error_file_name, coloring, labeler);
+
+//	PathColorer<Graph> path_colorer(g, path1, path2);
+//	set<typename Graph::EdgeId> black = path_colorer.BlackEdges();
+//	ErrorComponentSplitter<Graph> splitter(g, black);
+//	map<typename Graph::EdgeId, string> coloring = path_colorer.ColorPath();
+//	ColoredVisualizerFactory<Graph> factory(g, labeler, coloring);
+//	string error_file_name = InsertComponentName<Graph>(file_name, "error");
+//	ComponentGraphVisualizer<Graph> gv(g, factory, splitter, error_file_name,
+//			graph_name, 200);
+//	gv.Visualize();
 	//	size_t cnt = 0;
 	//	while (!splitter.Finished() && cnt < 100) {
 	//		fstream filestr;

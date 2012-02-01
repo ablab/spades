@@ -1097,7 +1097,7 @@ public:
 	}
 
 	bool DeleteEdge(EdgeId e, bool compress = true) {
-		bool delete_between_related = false;
+		bool delete_between_related = true;
 		TRACE("Deletion of edge " << e << " was requested");
 		if (checks_enabled_ && !CheckAlternatives(e)) {
 			TRACE("Check of alternative edges failed");
@@ -1108,6 +1108,10 @@ public:
 
 		if (!delete_between_related && g_.RelatedVertices(start, end)) {
 			TRACE("Start and end are related, will not delete");
+			return false;
+		}
+
+		if(start == end) {
 			return false;
 		}
 
