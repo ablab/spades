@@ -55,7 +55,7 @@ class Reader<SingleRead> : public IReader<SingleRead> {
   explicit Reader(const SingleRead::FilenameType& filename,
                   OffsetType offset_type = PhredOffset)
       : filename_(filename), offset_type_(offset_type), parser_(NULL) {
-	  checkFileExistenceFATAL(filename_);
+//	  checkFileExistenceFATAL(filename_);
 	  parser_ = SelectParser(filename_, offset_type_);
   }
 
