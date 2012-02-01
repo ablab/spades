@@ -487,7 +487,7 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 template<class graph_pack>
 void ProduceLongEdgesStat(graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
-	int missing_paired_info_count = 0;
+//	int missing_paired_info_count = 0;
 	int extra_paired_info_count = 0;
 	int long_edges_count = 0;
 	for (auto e_iter = origin_gp.g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
