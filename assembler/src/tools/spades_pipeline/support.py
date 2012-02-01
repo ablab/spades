@@ -33,7 +33,7 @@ class redirected_stream:
         return self.file.fileno()
 
 class spades_error:
-    def spades_error(self, code, err_str = ""):
+    def __init__(self, code, err_str = ""):
         self.code    = code
         self.err_str = err_str
 
