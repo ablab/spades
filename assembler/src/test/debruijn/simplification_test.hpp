@@ -43,8 +43,21 @@ static debruijn_config::simplification::topology_based_ec_remover topology_based
 	return tec_config;
 }
 
+static debruijn_config::simplification::max_flow_ec_remover max_flow_based_ec_config_generation() {
+	debruijn_config::simplification::max_flow_ec_remover mfec_config;
+	mfec_config.max_length = 100;
+	mfec_config.plausibility_length = 200;
+	mfec_config.uniqueness_length = 3000;
+	return mfec_config;
+}
+
 debruijn_config::simplification::topology_based_ec_remover standard_tec_config() {
 	static debruijn_config::simplification::topology_based_ec_remover tec_config = topology_based_ec_config_generation();
+	return tec_config;
+}
+
+debruijn_config::simplification::max_flow_ec_remover standard_mfec_config() {
+	static debruijn_config::simplification::max_flow_ec_remover tec_config = max_flow_based_ec_config_generation();
 	return tec_config;
 }
 
@@ -98,8 +111,10 @@ BOOST_AUTO_TEST_CASE( IterUniquePath ) {
 	IdTrackHandler<Graph> int_ids(g);
 	ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g, int_ids);
 
-	EdgeRemover<Graph> edge_remover(g, true);
-	TopologyRemoveErroneousEdges<Graph>(g, standard_tec_config(), edge_remover);
+	EdgeRemover<Graph> edge_remover(g, false);
+	debruijn_config::simplification::max_flow_ec_remover tec_config = standard_mfec_config();
+	tec_config.uniqueness_length = 500;
+	MaxFlowRemoveErroneousEdges<Graph>(g, tec_config, edge_remover);
 
 	BOOST_CHECK_EQUAL(g.size(), 16);
 }
@@ -108,8 +123,10 @@ BOOST_AUTO_TEST_CASE( UniquePath ) {
 	Graph g(55);
 	IdTrackHandler<Graph> int_ids(g);
 	ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g, int_ids);
-	EdgeRemover<Graph> edge_remover(g, true);
-	TopologyRemoveErroneousEdges<Graph>(g, standard_tec_config(), edge_remover);
+	EdgeRemover<Graph> edge_remover(g, false);
+	debruijn_config::simplification::max_flow_ec_remover tec_config = standard_mfec_config();
+	tec_config.uniqueness_length = 400;
+	MaxFlowRemoveErroneousEdges<Graph>(g, tec_config, edge_remover);
 
 	BOOST_CHECK_EQUAL(g.size(), 12);
 }

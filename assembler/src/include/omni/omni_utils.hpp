@@ -144,6 +144,12 @@ public:
 		g_.AddActionHandler(this);
 	}
 
+	GraphActionHandler(const GraphActionHandler<Graph> &other) :
+			base(other.name()), g_(other.g_) {
+		TRACE("Adding new action handler: " << this->name());
+		g_.AddActionHandler(this);
+	}
+
 	virtual ~GraphActionHandler() {
 		TRACE("Removing action handler: " << this->name());
 		g_.RemoveActionHandler(this);

@@ -380,7 +380,7 @@ public:
 			UnorientedDijkstra<Graph>(graph), bound_(bound) {
 	}
 
-	virtual bool CheckPutVertex(VertexId vertex, size_t distance) {
+	virtual bool CheckProcessVertex(VertexId vertex, size_t distance) {
 		return distance == 0;
 	}
 
@@ -575,12 +575,12 @@ public:
 		cf.run(next);
 
 		TRACE("comp Finder finished");
-		vector < VertexId > result = cf.ReachedVertices();
+		set < VertexId > result = cf.ProcessedVertices();
 		for (auto it = result.begin(); it != result.end(); ++it) {
 			iterator_.erase(*it);//queue_.erase(*it);
 		}
 		TRACE("Returning component");
-		return result;
+		return vector<VertexId>(result.begin(), result.end());
 	}
 
 	virtual bool Finished() {
