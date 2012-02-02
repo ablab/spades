@@ -101,9 +101,6 @@ int main(int argc, char** argv)
         if (K % 2 == 0)
             VERIFY_MSG(false, "K in config.hpp must be odd!\n");
 
-        optional<int> x;
-        std::cout << *x;
-
         // read configuration file (dataset path etc.)
         string dataset = cfg::get().dataset_name;
 
