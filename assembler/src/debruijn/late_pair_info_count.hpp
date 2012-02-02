@@ -30,7 +30,7 @@ void late_pair_info_count(conj_graph_pack& gp,
 		io::PairedEasyReader stream(read_filenames, *cfg::get().ds.IS);
 
 		if (cfg::get().advanced_estimator_mode)
-			FillPairedIndexWithProductMetric  <K>(gp.g, gp.int_ids, gp.index, gp.kmer_mapper, paired_index, stream);
+			FillPairedIndexWithProductMetric  <K>(gp.g,             gp.index, gp.kmer_mapper, paired_index, stream);
 		else
 			FillPairedIndexWithReadCountMetric<K>(gp.g, gp.int_ids, gp.index, gp.kmer_mapper, paired_index, stream);
 	}
