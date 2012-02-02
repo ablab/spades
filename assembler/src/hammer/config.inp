@@ -17,7 +17,7 @@ general_do_everything_after_first_iteration	1
 general_reconstruct_only	0
 general_change_n_to_a		0
 general_hard_memory_limit	15
-general_max_nthreads		1
+general_max_nthreads		4
 general_tau					1
 general_gzip				1
 general_max_iterations		1

@@ -241,25 +241,25 @@ void HammerTools::CountAndSplitKMers(bool writeFiles) {
 		}
 	}
 	Seq<K>::hash hash_function;
-	Seq<K>::less2 cmp_kmers;
+	//Seq<K>::less2 cmp_kmers;
 	for(size_t i=0; i < Globals::revNo; ++i) {
 		string s(Globals::blob        + Globals::pr->at(i).start(), Globals::pr->at(i).size());
 		string q(Globals::blobquality + Globals::pr->at(i).start(), Globals::pr->at(i).size());
 		for ( size_t j=0; j < Globals::pr->at(i).size(); ++j) q[j] = (char)(q[j] - cfg::get().input_qvoffset);
 		ValidKMerGenerator<K> gen(s, q);
 		while (gen.HasMore()) {
-			Seq<K> cur_kmer = gen.kmer();
-			Seq<K> cur_rckmer = !cur_kmer;
-			hint_t cur_pos = Globals::pr->at(i).start() + gen.pos() - 1;
-			if (cmp_kmers(cur_rckmer, cur_kmer)) {
+			//Seq<K> cur_kmer = gen.kmer();
+			//Seq<K> cur_rckmer = !cur_kmer;
+			//hint_t cur_pos = Globals::pr->at(i).start() + gen.pos() - 1;
+			/*if (cmp_kmers(cur_rckmer, cur_kmer)) {
 				cur_kmer = cur_rckmer;
 				cur_pos = Globals::pr->at(i).getRCPosition(gen.pos());
 				Globals::pr->at(i).setRCBit(gen.pos() - 1);
-			}
+			}*/
 			if (writeFiles) {
 				boost::iostreams::filtering_ostream & cur_gz = ostreams[hash_function(gen.kmer()) % cfg::get().count_numfiles]->fs;
 				double correct_probability = 1 - gen.correct_probability();
-				cur_gz << cur_pos << "\t" << correct_probability << "\n";
+				cur_gz << (Globals::pr->at(i).start() + gen.pos() - 1) << "\t" << correct_probability << "\n";
 			}
 			gen.Next();
 		}
