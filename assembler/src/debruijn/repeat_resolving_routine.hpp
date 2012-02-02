@@ -19,6 +19,7 @@
 #include "graph_construction.hpp"
 #include "debruijn_stats.hpp"
 #include  "omni/distance_estimation.hpp"
+#include "omni/omni_utils.hpp"
 #include "long_contigs/lc_launch.hpp"
 
 //typedef io::IReader<io::SingleRead> ReadStream;
@@ -391,10 +392,10 @@ void process_resolve_repeats(graph_pack& origin_gp,
 		}
 
 //        RemoveRelativelyLowCoverageEdges(resolved_gp.g);
-		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
-
-		cfg::get().output_dir + subfolder + ToString(i) + "b_4_cleared.dot",
-				"no_repeat_graph");
+//		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+//
+//		cfg::get().output_dir + subfolder + ToString(i) + "b_4_cleared.dot",
+//				"no_repeat_graph");
 	}
 
 	INFO("---Cleared---");
@@ -488,11 +489,12 @@ void process_resolve_repeats(graph_pack& origin_gp,
 template<class graph_pack>
 void ProduceLongEdgesStat(const graph_pack& origin_gp, PairedInfoIndex<typename graph_pack::graph_t>& clustered_index) {
 //	int missing_paired_info_count = 0;
-	size_t tmp = *cfg::get().ds.IS;
-	GraphDistanceFinder<typename graph_pack::graph_t> dist_finder(origin_gp.g,  tmp , cfg::get().ds.RL, cfg::get().de.delta);
+//	size_t tmp = *cfg::get().ds.IS;
+
 	int extra_paired_info_count = 0;
 	int long_edges_count = 0;
-	int max_comparable_path = 2* cfg::get().de.delta;
+	size_t max_comparable_path = *cfg::get().ds.IS - K + cfg::get().de.delta;
+	INFO ("max path cutoff " << max_comparable_path);
 	for (auto e_iter = origin_gp.g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
 		if (origin_gp.g.length(*e_iter) >= cfg::get().rr.max_repeat_length){
 			long_edges_count ++;
@@ -500,29 +502,59 @@ void ProduceLongEdgesStat(const graph_pack& origin_gp, PairedInfoIndex<typename 
 			for (auto i_iter = pi.begin(); i_iter!= pi.end(); ++i_iter){
 				auto first_edge = i_iter->second;
 				double first_weight = i_iter->weight;
+				if (i_iter->d < 0)
+					continue;
 				for(auto j_iter = i_iter + 1; j_iter != pi.end(); ++j_iter) {
-					auto second_edge = i_iter->second;
+					auto second_edge = j_iter->second;
 					double second_weight = j_iter->weight;
-					vector<size_t> distances = dist_finder.GetGraphDistances(first_edge, second_edge);
+					if (j_iter->d < 0)
+										continue;
+
+					DifferentDistancesCallback<typename graph_pack::graph_t> callback(origin_gp.g);
+					PathProcessor<typename graph_pack::graph_t> path_processor(origin_gp.g, 0, *cfg::get().ds.IS - K + cfg::get().de.delta,
+														    origin_gp.g.EdgeEnd(first_edge),
+														    origin_gp.g.EdgeStart(second_edge), callback);
+										path_processor.Process();
+					vector<size_t> distances = callback.distances();
 					bool comparable = false;
 					for(size_t i = 0; i < distances.size(); i++) {
-						if (abs((int)distances[i] - (int)origin_gp.g.length(first_edge)) < max_comparable_path) {
+						DEBUG(distances[i] );
+						if (distances[i] < max_comparable_path) {
 							comparable = true;
 							break;
 						}
+					}
+					DEBUG("reversing");
 
+					PathProcessor<typename graph_pack::graph_t> path_processor2(origin_gp.g, 0, *cfg::get().ds.IS - K + cfg::get().de.delta,
+									    origin_gp.g.EdgeEnd(second_edge),
+										origin_gp.g.EdgeStart(first_edge), callback);
+					path_processor2.Process();
+					distances = callback.distances();
+					for(size_t i = 0; i < distances.size(); i++) {
+						DEBUG(distances[i]);
+						if (distances[i] < max_comparable_path) {
+							comparable = true;
+							break;
+						}
 					}
 					if (comparable == false){
 						extra_paired_info_count++;
 						double ratio = (1.0 * second_weight)/first_weight;
-						if (ratio > 1) ratio = 1/ratio;
+						if (ratio > 1)
+							ratio = 1/ratio;
+//						if (first_weight > second_weight * 2)
+//							clustered_index.DeleteEdgePairInfo(*e_iter, )
 						INFO("contradictional paired info from edge " <<origin_gp.int_ids.ReturnIntId(*e_iter) << " to edges "<<  origin_gp.int_ids.ReturnIntId(first_edge) << " and " << origin_gp.int_ids.ReturnIntId(second_edge) << "weights ratio " << ratio);
+					} else {
+						DEBUG("no contras");
 					}
+
 				}
 			}
 		}
 	}
-	INFO("long edges: " << long_edges_count << " contradictional paired info" << extra_paired_info_count);
+	INFO("long edges: " << long_edges_count << " contradictional paired info: " << extra_paired_info_count);
 }
 
 template<class graph_pack>
