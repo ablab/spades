@@ -38,6 +38,8 @@ using std::ifstream;
 using std::ofstream;
 
 //==boost
+#define BOOST_ENABLE_ASSERT_HANDLER
+#include <boost/assert.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/bimap.hpp>
 
@@ -86,6 +88,19 @@ using boost::lexical_cast;
 // utils
 #include "cpp_utils.hpp"
 
+// err handling
+#include "stacktrace.hpp"
+
+namespace boost
+{
+inline void assertion_failed(char const * expr, char const * function, char const * file, long line)
+{
+    std::cerr << "Aborted by assert: " << std::endl;
+    print_stacktrace();
+    __assert_fail (expr, file, line, function);
+}
+} // namespace boost
+
 // io
 #include "io/ireader.hpp"
 #include "io/converting_reader_wrapper.hpp"
@@ -112,3 +127,5 @@ inline bool make_dir(fs::path p)
 	WARN("Can't create directory " << p);
 	return false;
 }
+
+
