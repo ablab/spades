@@ -9,19 +9,35 @@ function run_n_measure
    fi
 }
 
-function run_dataset
+function change_config
 {
 
     awk '/\{/ {print str} {str = $1}' configs/debruijn/datasets.info > temp
+    awk '/\{/ {print str} {str = $1}' configs/debruijn/datasets_archive.info >> temp
 
-    dataset="`grep $1 temp`"
+# firstly exact match
+
+    dataset="`grep -w $1 temp`"
+    if [ "{$dataset" == "{" ]; then
+        dataset="`grep $1 temp`"
+    fi
+    if [ "{$dataset" == "{" ]; then
+        echo "No dataset for you!"
+        rm temp
+        exit
+    fi
     if [ ` echo "$dataset" | sed -n '$='` == 1 ]; then
         echo "$dataset dataset chosen"
         awk -v ds=$dataset '{if ($1 == "dataset") print "dataset","\t",ds; else print $0}' configs/debruijn/config.info  > config.info
         mv config.info configs/debruijn/config.info
     else
-        echo "Dataset ambiguos :"
+        echo "Dataset ambiguous :"
         echo "$dataset"
+        echo "The first one will be chosen :"
+        dataset=`echo $dataset | awk '{print $1}' `
+        echo "$dataset"
+        awk -v ds=$dataset '{if ($1 == "dataset") print "dataset","\t",ds; else print $0}' configs/debruijn/config.info  > config.info
+        mv config.info configs/debruijn/config.info
     fi
 
     rm temp
@@ -33,14 +49,18 @@ then
 else 
 case $1 in
 
+'rd' ) run_n_measure build/release/debruijn/debruijn configs/debruijn/config.info ;;
 'dd' ) run_n_measure build/debug/debruijn/debruijn configs/debruijn/config.info ;;
 'ddt' ) run_n_measure build/debug/test/debruijn/debruijn_test ;;
 'rdt' ) run_n_measure build/release/test/debruijn/debruijn_test ;;
 'dit' ) run_n_measure build/debug/test/include_test/include_test ;;
 'dt') run_n_measure build/debug/test/debruijn/debruijn_test && run_n_measure build/debug/test/include_test/include_test ;;
 
-* ) run_n_measure $1 $2 $3 $4 $5
+* ) 
+    change_config $1
 
+    run_n_measure build/release/debruijn/debruijn configs/debruijn/config.info ;;
+#    run_n_measure $1 $2 $3 $4 $5 
 esac
 fi
 

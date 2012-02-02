@@ -1384,6 +1384,7 @@ private:
     size_t path_length;
     EdgeId tip;
     bool backward;
+    size_t sim;
     size_t size_hist;
     size_t size_dist;
     size_t size_max_iter;
@@ -1391,36 +1392,97 @@ private:
     vector<size_t> hist;
     vector<size_t> coverage;
     vector<size_t> lentolev; // mult. by 10
+    vector<size_t> len; // mult. by 10
+
+    vector<size_t> histq;
+    vector<size_t> coverageq;
+    vector<size_t> lentolevq; // mult. by 10
+    vector<size_t> lenq; // mult. by 10
+
+    boost::function<double(EdgeId)> qual_f_;
+        
+    bool IsTip(EdgeId edge){
+        if (graph_.length(edge) > 140) return false;
+        VertexId start = graph_.EdgeStart(edge);
+        if (graph_.IncomingEdgeCount(start) + graph_.OutgoingEdgeCount(start) == 1) return true;
+        VertexId end = graph_.EdgeEnd(edge);
+        if (graph_.IncomingEdgeCount(end) + graph_.OutgoingEdgeCount(end) == 1) return true;
+        return false;
+    }
+
+
+    bool CheckTipTip(EdgeId tip, EdgeId alter){
+        if (backward){
+            for (size_t i = 0; i<graph_.OutgoingEdgeCount(graph_.EdgeStart(alter)); ++i) 
+                if (IsTip(graph_.OutgoingEdges(graph_.EdgeStart(alter))[i])) return true; 
+        }else{
+            for (size_t i = 0; i<graph_.IncomingEdgeCount(graph_.EdgeEnd(alter)); ++i)
+                if (IsTip(graph_.IncomingEdges(graph_.EdgeEnd(alter))[i])) return true;
+        }
+        return false;
+    }
+
+    bool CheckAlternativeForEC(EdgeId tip, EdgeId alter){
+            if (graph_.length(alter) > graph_.k() + 4) 
+                return false; 
+            if (graph_.OutgoingEdgeCount(graph_.EdgeStart(alter)) <= 1 
+                || graph_.IncomingEdgeCount(graph_.EdgeEnd(alter)) <= 1) 
+                return false;
+            return !CheckTipTip(tip, alter);
+    }
 
     bool CheckSimilarity(vector<EdgeId> path){
         SequenceBuilder seq_builder;
+        sim++;
         if (backward){
 
             for (auto iter = path.rbegin(); iter != path.rend(); ++iter){ 
-                seq_builder.append(graph_.EdgeNucls(*iter));
+                seq_builder.append(graph_.EdgeNucls(*iter).Subseq(0, graph_.length(*iter)));
             }
                 
             Sequence sequence;
-            Sequence sequence_tip = graph_.EdgeNucls(tip);
+            Sequence sequence_tip = graph_.EdgeNucls(tip).Subseq(0, graph_.length(tip));
             
 
     //      trimming
             VERIFY(path_length == seq_builder.size());
-            sequence = seq_builder.BuildSequence().Subseq(seq_builder.size() - sequence_tip.size(), seq_builder.size());
+            sequence = seq_builder.BuildSequence().Subseq(0, sequence_tip.size());
             VERIFY(sequence.size() == sequence_tip.size());
             
             size_t dist = edit_distance(sequence.str(), sequence_tip.str());
 
             coverage[(size_t) 10.*graph_.coverage(tip)]++;
-            lentolev[(size_t) 10.*dist/sequence_tip.size()]++;
+            lentolev[(size_t) 100.*dist/sequence_tip.size()]++;
+            len[sequence_tip.size()]++;
             
             VERIFY(dist <= sequence_tip.size());
 
             if (dist < size_hist) hist[dist]++;
             if (dist < max_distance_){
-                INFO("Sequence 1 " << sequence.str());
-                INFO("Sequence 2 " << sequence_tip.str());
-                INFO("Backward tip " << backward << " Distance " << dist << " Edge " << graph_.int_id(tip) << " length " << graph_.length(tip) << " Path size " << path.size());
+                if (qual_f_ && math::gr(qual_f_(tip), 0.)) {
+                    coverageq[(size_t) 10.*graph_.coverage(tip)]++;
+                    lentolevq[(size_t) 100.*dist/sequence_tip.size()]++;
+                    lenq[sequence_tip.size()]++;
+                    histq[dist]++;
+                    
+                    cout << endl;
+                    if (path.size() == 1){
+                        if (IsTip(path[0])) cout << "TIPTIPTIPTIP" << endl;
+                        if (CheckAlternativeForEC(tip, path[0])){
+                            cout << "ECECECEC" << endl;
+                            
+                        }
+                    }
+                    cout << "Backward tip " << backward << " Distance " << dist << " Edge " << graph_.int_id(tip) << " Lev to Len " << (100.*dist/sequence_tip.size()) << " Length " << graph_.length(tip) << " Quality " << qual_f_(tip) << " Coverage " << graph_.coverage(tip) << endl;
+                    cout << "Sequence 1 " << sequence.str() << endl;
+                    cout << "Sequence 2 " << sequence_tip.str() << endl;
+                    cout << "Path Size " << path.size() << endl;
+                    for (auto iter = path.rbegin(); iter != path.rend(); ++iter) 
+                        cout << "Path edge " << graph_.int_id(*iter) << " length " << graph_.length(*iter) << " quality " << qual_f_(*iter) << " Coverage " << graph_.coverage(*iter) << endl;
+                }
+                if ((path.size() == 1) && (CheckAlternativeForEC(tip, path[0])) && math::ls(graph_.coverage(path[0]), 20.)) 
+                    return false;
+                //cout << "TRUE" << endl;
                 return true;
             }
             
@@ -1432,14 +1494,13 @@ private:
         else{
 
             for (size_t i = 0; i<path.size(); ++i)
-                seq_builder.append(graph_.EdgeNucls(path[i]));
+                seq_builder.append(graph_.EdgeNucls(path[i]).Subseq(graph_.k(), graph_.k() + graph_.length(path[i])));
             
             Sequence sequence;
             SequenceBuilder tip_builder;
 
             tip_builder.append(graph_.EdgeNucls(tip));
-            tip_builder.append(graph_.VertexNucls(graph_.EdgeEnd(tip)));
-            Sequence sequence_tip = tip_builder.BuildSequence();
+            Sequence sequence_tip = tip_builder.BuildSequence().Subseq(graph_.k(), tip_builder.size());
             
             VERIFY(seq_builder.size() == path_length);
 
@@ -1451,15 +1512,40 @@ private:
             size_t dist = edit_distance(sequence.str(), sequence_tip.str());
 
             coverage[(size_t) 10.*graph_.coverage(tip)]++;
-            lentolev[(size_t) 10.*dist/(sequence_tip.size() - graph_.k())]++;
+            lentolev[(size_t) 100.*dist/(sequence_tip.size())]++;
+            len[sequence_tip.size()]++;
             
             VERIFY(dist <= sequence_tip.size());
 
             if (dist < size_hist) hist[dist]++;
+
             if (dist < max_distance_){
-                INFO("Sequence 1 " << sequence.str());
-                INFO("Sequence 2 " << sequence_tip.str());
-                INFO("Backward tip " << backward << " Distance " << dist << " Edge " << graph_.int_id(tip) << " length " << graph_.length(tip) << " Path size " << path.size());
+                if (qual_f_ && math::gr(qual_f_(tip), 0.)) {
+                    coverageq[(size_t) 10.*graph_.coverage(tip)]++;
+                    lentolevq[(size_t) 100.*dist/sequence_tip.size()]++;
+                    lenq[sequence_tip.size()]++;
+                    histq[dist]++;
+
+                    cout << endl;
+                    if (path.size() == 1){
+                        if (IsTip(path[0])) cout << "TIPTIPTIPTIP" << endl;
+                        if (CheckAlternativeForEC(tip, path[0])){
+                            cout << "ECECECEC" << endl;
+                            
+                        }
+                    }
+
+                    cout << "Backward tip " << backward << " Distance " << dist << " Edge " << graph_.int_id(tip) << " Lev to Len " << (100.*dist/sequence_tip.size()) << " Length " << graph_.length(tip) << " Quality " << qual_f_(tip) << " Coverage " << graph_.coverage(tip) << endl;;
+                    cout << "Sequence 1 " << sequence.str() << endl;
+                    cout << "Sequence 2 " << sequence_tip.str() << endl;
+                
+                    cout << "Path Size " << path.size() << endl;
+                    for (auto iter = path.begin(); iter != path.end(); ++iter) 
+                        cout << "Path edge " << graph_.int_id(*iter) << " length " << graph_.length(*iter) << " quality " << qual_f_(*iter) << " Coverage " << graph_.coverage(*iter) << endl;
+                }
+                if ((path.size() == 1) && (CheckAlternativeForEC(tip, path[0])) && math::ls(graph_.coverage(path[0]), 20.)) 
+                    return false;
+                //cout << "TRUE" << endl;
                 return true;
             }
             
@@ -1477,15 +1563,18 @@ private:
             return false;
         }
         if (path_length >= lower_bound){
+            //INFO("Checking similarity");
             return (CheckSimilarity(path));
         }
         for (size_t i = 0; i<direction.OutgoingEdgeCount(vertex); i++){
             EdgeId edge = direction.OutgoingEdges(vertex)[i];
             if (edge != tip){
                 path.push_back(edge);
-                size_t sum = graph_.k() + graph_.length(edge);
+                //INFO("Pushing edge " << graph_.int_id(edge) << " length " << graph_.length(edge));
+                size_t sum = graph_.length(edge);
                 path_length += sum;
-                if (dfs(graph_.EdgeEnd(edge), direction, path)) return true;
+                if (dfs(direction.EdgeEnd(edge), direction, path)) return true;
+                //INFO("Popping edge " << graph_.int_id(edge) << " length " << graph_.length(edge));
                 path_length -= sum;
                 path.pop_back();
             }
@@ -1496,16 +1585,23 @@ private:
 
 public:
 
-    TipChecker(Graph& graph, size_t max_iterations_, size_t max_distance):
-    graph_(graph), max_iterations_(max_iterations_), max_distance_(max_distance){
+    TipChecker(Graph& graph, size_t max_iterations_, size_t max_distance, boost::function<double(EdgeId)> qual_f = 0):
+    graph_(graph), max_iterations_(max_iterations_), max_distance_(max_distance), qual_f_(qual_f){
         size_dist = 0;
         size_max_iter = 0;
         size_upper = 0;
         size_hist = 150;
+        sim = 0;
+        INFO("Quality_handler " << qual_f_);
         for (size_t i = 0; i<size_hist*100; i++){ 
             hist.push_back(0);
             lentolev.push_back(0);
+            len.push_back(0);
             coverage.push_back(0);
+            histq.push_back(0);
+            lentolevq.push_back(0);
+            lenq.push_back(0);
+            coverageq.push_back(0);
         }
     }
 
@@ -1519,24 +1615,31 @@ public:
         tip = edge_tip;
         iteration = 0;
         path_length = 0;
-        lower_bound = 2*graph_.k() + graph_.length(tip);
+        lower_bound = graph_.length(tip);
 
         VertexId vert = graph_.EdgeStart(tip);
+        //if (graph_.length(tip) >= 55) return false;
+        //if (graph_.coverage(tip) >= 35) return false;
         if (graph_.IncomingEdgeCount(vert) == 0 && graph_.OutgoingEdgeCount(vert) == 1){
             backward = true;
             return dfs(graph_.EdgeEnd(tip), BackwardDirection<Graph>(graph_), path);
         }else{
-            VERIFY(graph_.OutgoingEdgeCount(graph_.EdgeEnd(tip)) == 0 && graph_.IncomingEdgeCount(graph_.EdgeEnd(tip)) == 1);
             backward = false;
             return dfs(vert, ForwardDirection<Graph>(graph_), path);
         }
     }
 
     void PrintTimeStats(){
-        INFO("False counted max iter " << size_max_iter << " size_upper " << size_upper << " size_dist " << size_dist);   
-        for (size_t i = 0; i<size_hist; ++i) cout << "hist " << i << " " << hist[i] << endl;
-        for (size_t i = 0; i<size_hist; ++i) cout << "hist_len " << i << " " << lentolev[i] << endl;
+        INFO("False counted max iter " << size_max_iter << " size_upper " << size_upper << " size_dist " << size_dist << " Similar " << sim);   
+        for (size_t i = 0; i<size_hist; ++i) cout << "hist_lev " << i << " " << hist[i] << endl;
+        for (size_t i = 0; i<size_hist; ++i) cout << "hist_lentolev " << i << " " << lentolev[i] << endl;
+        for (size_t i = 0; i<size_hist; ++i) cout << "hist_len " << i << " " << len[i] << endl;
         for (size_t i = 0; i<size_hist; ++i) cout << "hist_coverage " << i << " " << coverage[i] << endl;
+
+        for (size_t i = 0; i<size_hist; ++i) cout << "qhist_lev " << i << " " << histq[i] << endl;
+        for (size_t i = 0; i<size_hist; ++i) cout << "qhist_lentolev " << i << " " << lentolevq[i] << endl;
+        for (size_t i = 0; i<size_hist; ++i) cout << "qhist_len " << i << " " << lenq[i] << endl;
+        for (size_t i = 0; i<size_hist; ++i) cout << "qhist_coverage " << i << " " << coverageq[i] << endl;
 
     }
 

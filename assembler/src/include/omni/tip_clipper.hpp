@@ -36,7 +36,7 @@ private:
 	const size_t max_tip_length_;
 
 	boost::function<void(EdgeId)> removal_handler_;
-
+	//boost::function<double (EdgeId)> qual_handler_;
 protected:
 
 	/**
@@ -50,6 +50,13 @@ protected:
 					max_tip_length), removal_handler_(removal_handler) {
 
 	}
+    //
+	//TipClipper(Graph &graph, Comparator comparator, size_t max_tip_length,
+			//size_t max_coverage, double max_relative_coverage, boost::function<void (EdgeId)> removal_handler = 0, boost::function<double (EdgeId)> qual_handler = 0) :
+				//graph_(graph), comparator_(comparator),
+				//max_tip_length_(max_tip_length), max_coverage_(max_coverage),
+				//max_relative_coverage_(max_relative_coverage), removal_handler_(removal_handler), qual_handler_(qual_handler)  {
+	//}
 
 	const Graph& graph() const {
 		return graph_;
@@ -121,13 +128,13 @@ public:
 	/**
 	 * Method clips tips of the graph.
 	 */
-	void ClipTips() {
+	vector<EdgeId> ClipTips() {
+        vector<EdgeId> ans;
         size_t removed = 0;
         size_t removed_with_check = 0;
 		TRACE("Tip clipping started");
         TipChecker<Graph> tipchecker(graph_, cfg::get().simp.tc.max_iterations, cfg::get().simp.tc.max_levenshtein);
-		for (auto iterator = graph_.SmartEdgeBegin(comparator_);
-				!iterator.IsEnd();) {
+		for (auto iterator = graph_.SmartEdgeBegin(comparator_); !iterator.IsEnd(); ) {
 			EdgeId tip = *iterator;
 			TRACE("Checking edge for being tip " << tip);
 			if (IsTip(tip)) {
@@ -139,9 +146,11 @@ public:
                     if (tipchecker.TipCanBeProjected(tip)){
 					    TRACE("Edge " << tip << " judged to be tip");
     					removed_with_check++;
+                        //if (math::gr(qual_handler_(tip), 0.)) INFO("Good edge " << graph_.int_id(tip));
                         RemoveTip(tip);
 					    TRACE("Edge " << tip << " removed as tip");
-                    }
+                    }else 
+                        ans.push_back(tip);
 				} else {
 					TRACE("Edge " << tip << " judged NOT to be tip");
 				}
@@ -157,6 +166,7 @@ public:
         tipchecker.PrintTimeStats();
 		Compressor<Graph> compressor(graph_);
 		compressor.CompressAllVertices();
+        return ans;
 	}
 };
 
