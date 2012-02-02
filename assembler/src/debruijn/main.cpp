@@ -32,6 +32,21 @@ void link_output(std::string const& link_name)
         WARN( "Symlink to \"" << link << "\" launch failed");
 }
 
+void link_previous_run(std::string const& previous_link_name, std::string const& link_name){
+   char buf[255];
+
+   std::string link = cfg::get().output_dir + previous_link_name;
+   unlink(link.c_str());
+   int count = readlink((cfg::get().output_root + link_name).c_str(), buf, sizeof(buf) - 1);
+   if (count >= 0){
+       buf[count] = '\0';
+       std::string previous_run("../");
+       previous_run = previous_run + buf;
+       if (symlink(previous_run.c_str(), link.c_str()) != 0)
+           WARN( "Symlink to \"" << link << "\" launch failed : " << previous_run);
+   }else WARN( "Symlink to \"" << link << "\" launch failed");
+}
+
 struct on_exit_output_linker
 {
     on_exit_output_linker(std::string const& link_name) :
@@ -41,6 +56,7 @@ struct on_exit_output_linker
 
     ~on_exit_output_linker()
     {
+        link_previous_run("previous", link_name_);
         link_output(link_name_);
     }
 
@@ -113,7 +129,7 @@ int main(int argc, char** argv)
 
         debruijn_graph::assemble_genome();
 
-        on_exit_output_linker("latest_success");
+        link_output("latest_success");
 
         save_info_file();
 
