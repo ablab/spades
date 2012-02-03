@@ -76,7 +76,7 @@ void refine_insert_size(pair<string, string> read_filenames, conj_graph_pack& gp
 	sum2 = 0;
 	for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
 		if (iter->first < low || iter->first > high) {
-			INFO("outsiders: " << iter->first << " " << iter->second);
+			//INFO("outsiders: " << iter->first << " " << iter->second);
 			continue;
 		}
 		INFO("histogram: " << iter->first << " " << iter->second);
